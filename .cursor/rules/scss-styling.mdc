@@ -1,0 +1,37 @@
+---
+description: SCSS 스타일링 규칙, 변수/믹스인, 아이콘 시스템
+globs: "**/*.{vue,scss}"
+alwaysApply: true
+---
+
+# SCSS Styling Rules
+
+## 필수 규칙
+- `<style lang="scss" scoped>` 필수
+- SCSS 변수 사용: `$color-primary`, `$font-size-base` 등
+- SCSS 믹스인 사용: `@include responsive(lg)` 등
+- 디자인 토큰은 `assets/scss/` 에서 관리
+
+## 아이콘 시스템 (mask-image 방식)
+
+### 사용법
+```scss
+.icon-search {
+  @include icon('search');
+}
+```
+```html
+<i class="icon-search size-24"></i>
+```
+
+### 색상 변경
+- `background-color: currentColor` (부모 color 상속)
+- 유틸리티 클래스: `.icon-primary`, `.icon-white`, `.icon-red` 등
+
+### 사이즈 클래스
+- `.size-12` ~ `.size-48` (4px 단위)
+
+### SVG 준비 시 주의
+- fill 기반 SVG 권장 (mask-image 호환)
+- stroke 기반 → fill 변환 필요 시 Figma에서 Outline Stroke 적용
+- `fill="currentColor"` 또는 `fill="#000"` 사용

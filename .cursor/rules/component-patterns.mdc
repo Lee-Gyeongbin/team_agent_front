@@ -1,0 +1,39 @@
+---
+description: 컴포넌트 사용 패턴. Radix-vue vs 직접 제작 구분, 상태별 UI 규칙.
+globs: "**/*.vue"
+alwaysApply: true
+---
+
+# Component Patterns
+
+## UI 컴포넌트 구분
+
+### Radix-vue 사용 (접근성 컴포넌트)
+- Dialog, Dropdown, Tooltip, Toast, Select, Tabs, Accordion, Popover
+
+### 직접 제작 (`components/ui/`)
+- Button, Input, Textarea, Badge, Avatar, Card, Skeleton, Spinner
+
+### 원칙
+- 프로젝트 UI 컴포넌트 **우선 사용** (직접 HTML 작성 최소화)
+
+## 상태별 UI 필수 구현
+
+모든 데이터 표시 컴포넌트는 4가지 상태를 구현해야 함:
+
+1. **로딩** - Skeleton 또는 Spinner 표시
+2. **빈 상태** - "데이터가 없습니다" 등 안내 메시지
+3. **에러** - 에러 메시지 + 재시도 버튼
+4. **데이터 있음** - 정상 렌더링
+
+## 더미 데이터 규칙 (퍼블리싱 단계)
+
+더미 데이터 사용 시 반드시 주석 표기:
+```typescript
+// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
+const dummyList = ref([...])
+```
+
+## watch / onMounted 위치
+- `index.vue` (페이지) 또는 `PageHeader` 컴포넌트에서만 정의
+- 하위 컴포넌트에서는 props/emit으로 통신
