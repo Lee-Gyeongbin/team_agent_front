@@ -6,6 +6,10 @@ export default defineNuxtConfig({
 
   modules: ['@nuxt/eslint'],
 
+  imports: {
+    dirs: ['composables/**'],
+  },
+
   css: ['~/assets/scss/main.scss'],
 
   vite: {
