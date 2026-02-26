@@ -58,6 +58,10 @@ export interface Agent {
 definePageMeta({ layout: 'auth' })
 ```
 
+## watch / onMounted 위치
+- `index.vue` (페이지) 또는 `PageHeader` 컴포넌트에서만 정의
+- 하위 컴포넌트에서는 props/emit으로 통신
+
 ## 라우팅 (자동 생성)
 
 | 파일 | URL |

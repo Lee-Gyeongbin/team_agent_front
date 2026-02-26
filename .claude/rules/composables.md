@@ -23,27 +23,75 @@ composables/
 - HTTP 메서드별 단축 함수: `get`, `post`, `put`, `del`
 - baseURL은 `🔽 백엔드 연결 시 실제 URL로 교체` 주석 표기
 
-## 도메인 composable 패턴
+## API 호출 규칙
+
+### 필수: useApi 커스텀 래퍼 사용
+- `useFetch`, `$fetch` 직접 사용 금지
+- 일반 요청: `useApi`
+- 파일/HTML 포함: `useApi_multipart`
+
+### 전송 방식 선택
+
+| 상황 | 방식 | 헤더 |
+|------|------|------|
+| 일반 조회/저장/삭제 | `URLSearchParams` → `.toString()` | `application/x-www-form-urlencoded` 명시 |
+| 단순 GET 조회 | `query` 파라미터 | 없음 |
+| 배열 데이터 저장 | `FormData` | 생략 (자동 인식) |
+| 파일 업로드 | `FormData` + `useApi_multipart` | 생략 (자동 인식) |
+| HTML 에디터 내용 | `FormData` + `useApi_multipart` | `Html-Tag-Escape: N` 추가 |
+
+## API 함수 패턴 (use[Domain]Api.ts)
 
 ```ts
-export const useAgent = () => {
-  const { get, post, put, del } = useApi()
-  const agents = ref<Agent[]>([])
-  const isLoading = ref(false)
-  const hasError = ref(false)
+import { useApi } from '~/composables/useApi'
 
-  const fetchAgents = async () => { /* ... */ }
-  const createAgent = async (data: Partial<Agent>) => { /* ... */ }
-  const updateAgent = async (id: string, data: Partial<Agent>) => { /* ... */ }
-  const deleteAgent = async (id: string) => { /* ... */ }
+export const useKpiApi = () => {
+  const fetchKpiList = (params: URLSearchParams) => {
+    return useApi('/api/hcm/kpi/selectKpiList.do', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString()
+    })
+  }
+  return { fetchKpiList }
+}
+```
 
-  return { agents, isLoading, hasError, fetchAgents, createAgent, updateAgent, deleteAgent }
+## Store 패턴 (use[Domain]Store.ts)
+
+### 필수 규칙
+- **Pinia `defineStore` 사용 금지** → composable 반환 패턴 사용
+- **`storeToRefs` 사용 금지** → 직접 구조분해
+- loading/error state 추가 불필요 (useApi가 자동 처리)
+
+### 기본 패턴
+
+```ts
+const kpiList = ref([])
+const selectedYear = ref('')
+
+const buildParams = (obj: Record<string, string>) => {
+  const params = new URLSearchParams()
+  Object.entries(obj).forEach(([k, v]) => params.append(k, v))
+  return params
+}
+
+const handleSelectKpiList = async () => {
+  kpiList.value = []
+  const params = buildParams({ findYear: selectedYear.value })
+  const res = await fetchKpiList(params)
+  kpiList.value = res.list
+}
+
+export const useKpiStore = () => {
+  return { kpiList, handleSelectKpiList }
 }
 ```
 
 ## 페이지에서 사용
 
 ```ts
-const { agents, isLoading, hasError, fetchAgents } = useAgent()
-onMounted(() => fetchAgents())
+// storeToRefs 안 씀 — composable이라 직접 구조분해
+const { kpiList, handleSelectKpiList } = useKpiStore()
+onMounted(() => handleSelectKpiList())
 ```
