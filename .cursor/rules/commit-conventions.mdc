@@ -1,4 +1,6 @@
 ---
+description: Git 커밋 메시지 작성 시 한글 컨벤션 적용. type(scope) 형식 + 한글 제목.
+globs:
 alwaysApply: true
 ---
 # Git 커밋 컨벤션

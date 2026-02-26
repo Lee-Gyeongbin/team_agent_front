@@ -1,6 +1,6 @@
 <template>
   <div class="agents-new">
-    <h1>에이전트 생성</h1>
+    <h1>에이전트 생성2</h1>
   </div>
 </template>
 
