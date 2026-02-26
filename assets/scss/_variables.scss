@@ -1,0 +1,88 @@
+// ===================================
+// 색상 (피그마에서 추출)
+// ===================================
+$color-primary: #2563eb;
+$color-primary-hover: #1d4ed8;
+$color-secondary: #64748b;
+$color-background: #ffffff;
+$color-surface: #f8fafc;
+$color-border: #e2e8f0;
+$color-text-primary: #0f172a;
+$color-text-secondary: #64748b;
+$color-text-disabled: #94a3b8;
+$color-success: #22c55e;
+$color-error: #ef4444;
+$color-warning: #f59e0b;
+$color-info: #3b82f6;
+// 채팅 전용
+$color-chat-user-bg: #eff6ff;
+$color-chat-assistant-bg: #f8fafc;
+// ===================================
+// 타이포그래피
+// ===================================
+$font-family-base: 'Pretendard', -apple-system, sans-serif;
+$font-family-mono: 'JetBrains Mono', monospace;
+$font-size-xs: 0.75rem; // 12px — 캡션, 타임스탬프
+$font-size-sm: 0.875rem; // 14px — 본문 보조, 버튼
+$font-size-base: 1rem; // 16px — 본문 기본
+$font-size-lg: 1.125rem; // 18px — 소제목
+$font-size-xl: 1.25rem; // 20px — 섹션 제목
+$font-size-2xl: 1.5rem; // 24px — 페이지 제목
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+$line-height-tight: 1.25; // 제목
+$line-height-base: 1.5; // 본문
+$line-height-relaxed: 1.75; // 채팅 메시지 (긴 텍스트 읽기 편하게)
+// ===================================
+// 간격 (4px 기준 그리드)
+// ===================================
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 16px;
+$spacing-lg: 24px;
+$spacing-xl: 32px;
+$spacing-2xl: 48px;
+// ===================================
+// 반응형 분기점 (대시보드 레이아웃 기준)
+// ===================================
+$breakpoint-sm: 640px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 1024px;
+$breakpoint-xl: 1440px;
+// ===================================
+// 레이아웃
+// ===================================
+$sidebar-width: 260px;
+$sidebar-width-collapsed: 64px;
+$header-height: 56px;
+$chat-input-height: 64px;
+$chat-max-width: 768px;
+// ===================================
+// 둥글기
+// ===================================
+$border-radius-sm: 6px;
+$border-radius-md: 8px;
+$border-radius-lg: 12px;
+$border-radius-full: 9999px;
+// ===================================
+// 그림자
+// ===================================
+$shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+$shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.12);
+// ===================================
+// z-index 체계
+// ===================================
+$z-dropdown: 100;
+$z-sticky: 200;
+$z-overlay: 300;
+$z-modal: 400;
+$z-toast: 500;
+// ===================================
+// 트랜지션
+// ===================================
+$transition-fast: 150ms ease;
+$transition-base: 200ms ease;
+$transition-slow: 300ms ease;
