@@ -1,6 +1,6 @@
 <script setup lang="ts">
 definePageMeta({
-  middleware: () => navigateTo('/agents/new', { replace: true }),
+  middleware: () => navigateTo('/excelView/excel', { replace: true }),
 })
 </script>
 
