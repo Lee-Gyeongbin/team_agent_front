@@ -14,7 +14,7 @@
 - `vue/no-multiple-template-root`: off (Vue 3 다중 루트 허용)
 - `vue/no-v-html`: warn (XSS 위험)
 - `@typescript-eslint/no-explicit-any`: warn (MVP라 에러 아닌 경고)
-- `@typescript-eslint/no-unused-vars`: warn (_로 시작하면 무시)
+- `@typescript-eslint/no-unused-vars`: warn (\_로 시작하면 무시)
 - `no-console`: warn (warn, error는 허용)
 - `no-debugger`: warn
 

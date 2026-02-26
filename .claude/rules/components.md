@@ -14,10 +14,12 @@
 ## 컴포넌트 분류
 
 ### Radix-vue 사용 (접근성 복잡한 것)
+
 - Dialog/Modal, Dropdown Menu, Tooltip, Toast, Popover, Tabs, Select, Accordion
 - Radix가 포커스 트랩, ESC 닫기, aria 속성 처리 → SCSS로 디자인만 입히기
 
 ### 직접 제작 (SCSS만으로 충분한 것)
+
 - Button, Input, Textarea, Badge, Avatar, Card, Skeleton, Spinner, Icon wrapper, Form Label, Divider
 
 ## 타입 정의 예시
@@ -54,22 +56,24 @@ export interface Agent {
 - `blank.vue`: 빈 레이아웃
 
 페이지에서 레이아웃 변경:
+
 ```ts
 definePageMeta({ layout: 'auth' })
 ```
 
 ## watch / onMounted 위치
+
 - `index.vue` (페이지) 또는 `PageHeader` 컴포넌트에서만 정의
 - 하위 컴포넌트에서는 props/emit으로 통신
 
 ## 라우팅 (자동 생성)
 
-| 파일 | URL |
-|------|-----|
-| pages/index.vue | / |
-| pages/login.vue | /login |
-| pages/chat/index.vue | /chat |
-| pages/chat/[id].vue | /chat/:id |
-| pages/agents/index.vue | /agents |
-| pages/agents/new.vue | /agents/new |
-| pages/agents/[id].vue | /agents/:id |
+| 파일                   | URL         |
+| ---------------------- | ----------- |
+| pages/index.vue        | /           |
+| pages/login.vue        | /login      |
+| pages/chat/index.vue   | /chat       |
+| pages/chat/[id].vue    | /chat/:id   |
+| pages/agents/index.vue | /agents     |
+| pages/agents/new.vue   | /agents/new |
+| pages/agents/[id].vue  | /agents/:id |

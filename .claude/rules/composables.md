@@ -26,19 +26,20 @@ composables/
 ## API 호출 규칙
 
 ### 필수: useApi 커스텀 래퍼 사용
+
 - `useFetch`, `$fetch` 직접 사용 금지
 - 일반 요청: `useApi`
 - 파일/HTML 포함: `useApi_multipart`
 
 ### 전송 방식 선택
 
-| 상황 | 방식 | 헤더 |
-|------|------|------|
+| 상황                | 방식                              | 헤더                                     |
+| ------------------- | --------------------------------- | ---------------------------------------- |
 | 일반 조회/저장/삭제 | `URLSearchParams` → `.toString()` | `application/x-www-form-urlencoded` 명시 |
-| 단순 GET 조회 | `query` 파라미터 | 없음 |
-| 배열 데이터 저장 | `FormData` | 생략 (자동 인식) |
-| 파일 업로드 | `FormData` + `useApi_multipart` | 생략 (자동 인식) |
-| HTML 에디터 내용 | `FormData` + `useApi_multipart` | `Html-Tag-Escape: N` 추가 |
+| 단순 GET 조회       | `query` 파라미터                  | 없음                                     |
+| 배열 데이터 저장    | `FormData`                        | 생략 (자동 인식)                         |
+| 파일 업로드         | `FormData` + `useApi_multipart`   | 생략 (자동 인식)                         |
+| HTML 에디터 내용    | `FormData` + `useApi_multipart`   | `Html-Tag-Escape: N` 추가                |
 
 ## API 함수 패턴 (use[Domain]Api.ts)
 
@@ -50,7 +51,7 @@ export const useKpiApi = () => {
     return useApi('/api/hcm/kpi/selectKpiList.do', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params.toString()
+      body: params.toString(),
     })
   }
   return { fetchKpiList }
@@ -60,6 +61,7 @@ export const useKpiApi = () => {
 ## Store 패턴 (use[Domain]Store.ts)
 
 ### 필수 규칙
+
 - **Pinia `defineStore` 사용 금지** → composable 반환 패턴 사용
 - **`storeToRefs` 사용 금지** → 직접 구조분해
 - loading/error state 추가 불필요 (useApi가 자동 처리)

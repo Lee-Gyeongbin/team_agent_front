@@ -17,16 +17,16 @@
 
 ## 함수명 접두사 규칙
 
-| 접두사 | 용도 | 예시 |
-|--------|------|------|
-| `fetch~` | API 호출 함수 (Api 파일) | `fetchKpiList()`, `fetchSaveKpi()`, `fetchDeleteKpi()` |
-| `handle~` | store action (API+상태관리) | `handleSelectKpiList()`, `handleSaveKpi()` |
-| `on~` | 이벤트 핸들러 / emit | `onYearChange()`, `onGroupChange()`, `@on-select` |
-| `do~` | 실행 함수 (confirm 후 호출) | `doDelete()`, `doCopy()` |
-| `open~` | 모달 열기 | `openAddModal()`, `openEditModal()` |
-| `is~` / `has~` | boolean 변수/함수 | `isModalOpen`, `hasPermission` |
-| `toggle~` | on/off 전환 | `toggleModal()`, `toggleSidebar()` |
-| `validate` | 유효성 검사 | `validateForm()`, `validateEmail()` |
+| 접두사         | 용도                        | 예시                                                   |
+| -------------- | --------------------------- | ------------------------------------------------------ |
+| `fetch~`       | API 호출 함수 (Api 파일)    | `fetchKpiList()`, `fetchSaveKpi()`, `fetchDeleteKpi()` |
+| `handle~`      | store action (API+상태관리) | `handleSelectKpiList()`, `handleSaveKpi()`             |
+| `on~`          | 이벤트 핸들러 / emit        | `onYearChange()`, `onGroupChange()`, `@on-select`      |
+| `do~`          | 실행 함수 (confirm 후 호출) | `doDelete()`, `doCopy()`                               |
+| `open~`        | 모달 열기                   | `openAddModal()`, `openEditModal()`                    |
+| `is~` / `has~` | boolean 변수/함수           | `isModalOpen`, `hasPermission`                         |
+| `toggle~`      | on/off 전환                 | `toggleModal()`, `toggleSidebar()`                     |
+| `validate`     | 유효성 검사                 | `validateForm()`, `validateEmail()`                    |
 
 ## 변수
 

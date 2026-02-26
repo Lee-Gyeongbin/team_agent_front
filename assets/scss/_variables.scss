@@ -20,7 +20,10 @@ $color-chat-assistant-bg: #f8fafc;
 // ===================================
 // 타이포그래피
 // ===================================
-$font-family-base: 'Pretendard', -apple-system, sans-serif;
+$font-family-base:
+  'Pretendard',
+  -apple-system,
+  sans-serif;
 $font-family-mono: 'JetBrains Mono', monospace;
 $font-size-xs: 0.75rem; // 12px — 캡션, 타임스탬프
 $font-size-sm: 0.875rem; // 14px — 본문 보조, 버튼

@@ -1,11 +1,24 @@
 <template>
   <div class="excel-view-page">
     <h1>엑셀 뷰어</h1>
-    <div v-if="healthLoading" class="health-status">연결 확인 중...</div>
-    <div v-else-if="healthError" class="health-status health-error">
+    <div
+      v-if="healthLoading"
+      class="health-status"
+    >
+      연결 확인 중...
+    </div>
+    <div
+      v-else-if="healthError"
+      class="health-status health-error"
+    >
       {{ healthError }}
     </div>
-    <div v-else class="health-status">{{ healthData }}</div>
+    <div
+      v-else
+      class="health-status"
+    >
+      {{ healthData }}
+    </div>
   </div>
 </template>
 

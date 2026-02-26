@@ -1,17 +1,20 @@
 # Git 커밋 컨벤션
 
 ## 기본 포맷
+
 ```
 <type>(<scope>): <한글 제목>
 
 1. 상세 내용
 2. 상세 내용
 ```
+
 - 제목: 한글, 50자 이내, 마침표 없음
 - 본문: 줄 바꿈 후 번호 리스트로 작업 내역 상세 기술
 - 단순 작업은 본문 생략 가능
 
 ## Type 정의
+
 - `feat` — 새 기능 추가 (minor)
 - `fix` — 버그 수정 (patch)
 - `refactor` — 동작 변경 없는 코드 개선
@@ -25,16 +28,19 @@
 - `revert` — 커밋 되돌리기
 
 ## Scope 정의
+
 - 기능 도메인: `agent`, `chat`, `dashboard`, `auth`, `settings`
 - 기술 레이어: `api`, `composable`, `ui`, `layout`, `types`
 - 인프라: `deps`, `config`, `env`
 - scope는 권장 (필수 아님), 단순 작업은 생략 가능
 
 ## Breaking Change
+
 - type 뒤에 `!` 붙이고 footer에 `BREAKING CHANGE:` 명시
 - 예: `feat(api)!: 인증 방식 변경`
 
 ## 판단 기준
+
 - HTML/CSS 마크업 신규 작성 → `publish`
 - 마크업 완료 후 기능 로직 추가 → `feat`
 - 변수명/함수명 변경 (동작 동일) → `refactor`
@@ -45,6 +51,7 @@
 - 타입 정의 추가/수정 → `refactor(types)`
 
 ## 커밋 예시
+
 ```bash
 # 퍼블리싱
 git commit -m "publish(page): 메인 페이지 헤더 구조 작성
