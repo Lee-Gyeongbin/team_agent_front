@@ -1,8 +1,8 @@
 <template>
   <div class="layout-default">
-    <AppSidebar class="sidebar" />
+    <AppSidebar />
     <div class="main">
-      <AppHeader class="header" />
+      <AppHeader />
       <main class="content">
         <slot />
       </main>
@@ -10,7 +10,8 @@
   </div>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+</script>
 
 <style lang="scss" scoped>
 .layout-default {
@@ -18,23 +19,12 @@
   height: 100vh;
   overflow: hidden;
 
-  .sidebar {
-    width: $sidebar-width;
-    flex-shrink: 0;
-    border-right: 1px solid $color-border;
-  }
-
   .main {
+    width: calc(100% - #{$sidebar-width}); // 사이드바를 뺀 나머지 너비
     flex: 1;
     display: flex;
     flex-direction: column;
     min-width: 0;
-  }
-
-  .header {
-    height: $header-height;
-    flex-shrink: 0;
-    border-bottom: 1px solid $color-border;
   }
 
   .content {

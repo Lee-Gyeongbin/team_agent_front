@@ -10,6 +10,10 @@ export default defineNuxtConfig({
     dirs: ['composables/**'],
   },
 
+  components: [
+    { path: '~/components', pathPrefix: false },
+  ],
+
   css: ['~/assets/styles/main.scss'],
 
   vite: {

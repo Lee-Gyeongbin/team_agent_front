@@ -1,6 +1,6 @@
 <template>
   <aside class="app-sidebar">
-    <!-- AppSidebar placeholder -->
+    <p>sidebar</p>
   </aside>
 </template>
 
