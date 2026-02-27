@@ -8,6 +8,8 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  height: 100%;
 }
 
 body {
@@ -27,6 +29,14 @@ textarea {
   font: inherit;
 }
 
+button {
+  cursor: pointer;
+}
+
+textarea {
+  resize: vertical; // textarea resize 제한
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -35,4 +45,20 @@ a {
 ul,
 ol {
   list-style: none;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
 }

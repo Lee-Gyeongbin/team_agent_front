@@ -10,15 +10,15 @@ export default defineNuxtConfig({
     dirs: ['composables/**'],
   },
 
-  css: ['~/assets/scss/main.scss'],
+  css: ['~/assets/styles/main.scss'],
 
   vite: {
     css: {
       preprocessorOptions: {
         scss: {
           additionalData: `
-            @use "~/assets/scss/_variables.scss" as *;
-            @use "~/assets/scss/_mixins.scss" as *;
+            @use "@/assets/styles/utils/variables" as *;
+            @use "@/assets/styles/utils/mixins" as *;
           `,
         },
       },

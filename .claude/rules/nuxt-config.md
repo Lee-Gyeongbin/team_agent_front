@@ -4,8 +4,8 @@
 
 - `ssr: false` (SPA 모드, SEO 불필요)
 - 모듈: `@nuxt/eslint`
-- 전역 CSS: `~/assets/scss/main.scss`
-- SCSS 자동 주입: `_variables.scss`, `_mixins.scss` → 매번 @use 안 써도 됨
+- 전역 CSS: `~/assets/styles/main.scss`
+- SCSS 자동 주입: `_variables.scss`, `_mixins.scss` → 모든 <style lang="scss">에서 별도 @use 없이 사용 가능
 - Vue Devtools 활성화
 
 ## ESLint 주요 규칙
