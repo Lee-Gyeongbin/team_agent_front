@@ -1,7 +1,5 @@
 <template>
-  <header class="app-header">
-    <!-- AppHeader placeholder -->
-  </header>
+  <header class="app-header"><!-- AppHeader placeholder -->1</header>
 </template>
 
 <script setup lang="ts"></script>
