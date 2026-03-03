@@ -2,7 +2,7 @@
   <aside class="app-sidebar">
     <!-- 햄버거 메뉴 -->
     <button class="sidebar-btn">
-      <i class="icon icon-menu size-20" />
+      <i class="icon-menu size-20" />
     </button>
 
     <!-- 네비게이션 아이콘 -->
@@ -18,7 +18,7 @@
         :title="item.label"
       >
         <i
-          class="icon size-20"
+          class="size-20"
           :class="item.icon"
         />
       </button>
@@ -47,7 +47,7 @@ const navItems = [
   flex-direction: column;
   align-items: center;
   padding: 12px 8px;
-  background-color: $color-background;
+  background-color: #fff;
   border-right: 1px solid $color-border;
   gap: 12px;
 }

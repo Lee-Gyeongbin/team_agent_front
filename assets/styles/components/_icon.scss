@@ -13,14 +13,6 @@ $icon-sizes: 12, 16, 20, 24, 28, 32, 36, 40, 48;
   }
 }
 
-.icon {
-  @include bg-base($size: contain);
-
-  display: inline-block;
-  vertical-align: middle;
-  flex-shrink: 0;
-}
-
 // ===================================
 // 아이콘 색상 유틸리티
 // ===================================

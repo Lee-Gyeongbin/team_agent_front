@@ -78,6 +78,8 @@
 // 아이콘 - SVG 파일 참조 방식 (assets/icons/svg/ 폴더의 파일명만 입력)
 @mixin icon-file($name) {
   display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
   background-image: url('@/assets/icons/svg/#{$name}.svg');
   background-repeat: no-repeat;
   background-position: center;
@@ -86,6 +88,8 @@
 
 @mixin icon-file-bg($name) {
   display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
   mask-image: url('@/assets/icons/svg/#{$name}.svg');
   mask-repeat: no-repeat;
   mask-position: center;
