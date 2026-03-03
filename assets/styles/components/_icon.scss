@@ -1,3 +1,29 @@
 @use '../utils/variables' as *;
 @use '../utils/mixins' as *;
 
+// ===================================
+// 아이콘 사이즈 클래스 (4px 단위)
+// ===================================
+$icon-sizes: 12, 16, 20, 24, 28, 32, 36, 40, 48;
+
+@each $size in $icon-sizes {
+  .size-#{$size} {
+    width: #{$size}px;
+    height: #{$size}px;
+  }
+}
+
+// ===================================
+// 아이콘 색상 유틸리티
+// ===================================
+.icon-primary {
+  background-color: $color-primary;
+}
+
+.icon-white {
+  background-color: #fff;
+}
+
+.icon-black {
+  background-color: #000;
+}

@@ -75,6 +75,34 @@
   }
 }
 
+// 아이콘 - 인라인 data URI 방식 (인코딩된 SVG 직접 입력)
+@mixin icon($svg-data) {
+  display: inline-block;
+  mask-image: url($svg-data);
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+  -webkit-mask-image: url($svg-data);
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  -webkit-mask-size: contain;
+  background-color: currentColor;
+}
+
+// 아이콘 - SVG 파일 참조 방식 (assets/icons/svg/ 폴더의 파일명만 입력)
+@mixin icon-file($name) {
+  display: inline-block;
+  mask-image: url('@/assets/icons/svg/#{$name}.svg');
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+  -webkit-mask-image: url('@/assets/icons/svg/#{$name}.svg');
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  -webkit-mask-size: contain;
+  background-color: currentColor;
+}
+
 // button base
 @mixin btn-base {
   @include input-reset;
