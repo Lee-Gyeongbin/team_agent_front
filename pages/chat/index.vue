@@ -1,11 +1,18 @@
 <template>
   <div class="chat-index flex flex-col items-center justify-center">
-    <div class="chat-index-header">
+    <div
+      class="chat-index-header"
+      data-aos="fade-up"
+    >
       <h1 class="chat-index-title f-center">TeamAgent</h1>
       <p class="chat-index-description f-center">어떤게 궁금하세요?</p>
     </div>
 
-    <div class="chat-index-input-wrapper flex flex-col items-center w-full">
+    <div
+      class="chat-index-input-wrapper flex flex-col items-center w-full"
+      data-aos="fade-up"
+      data-aos-delay="200"
+    >
       <div class="chat-index-input-top flex items-start w-full">
         <i
           class="icon-sparkle size-24"
@@ -32,7 +39,11 @@
       </div>
     </div>
 
-    <div class="btn-grp">
+    <div
+      class="btn-grp"
+      data-aos="fade-up"
+      data-aos-delay="400"
+    >
       <button class="btn btn-chat-index">
         <span class="icon-circle"><i class="icon-knowledge size-20"></i></span>
         <p>지식검색 (매뉴얼 AI)</p>
