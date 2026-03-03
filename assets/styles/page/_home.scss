@@ -3,7 +3,7 @@
 
 .chat-index{
   background: $color-background;
-  height: 100vh;
+  height: calc(100vh - #{$header-height});
 
   .chat-index-header {
     margin-bottom: 27px;
