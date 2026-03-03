@@ -1,21 +1,9 @@
 @use './variables' as *;
 
-// 반응형 분기점 (ex. @include responsive(tablet))
-@mixin responsive($device) {
-  @if $device == laptop {
-    @media (max-width: $breakpoint-laptop) {
-      @content;
-    }
-  } @else if $device == tablet {
-    @media (max-width: $breakpoint-tablet) {
-      @content;
-    }
-  } @else if $device == mobile {
-    @media (max-width: $breakpoint-mobile) {
-      @content;
-    }
-  } @else {
-    @error "Unknown device: #{$device}. Use: laptop, tablet, mobile.";
+// 모바일+태블릿 분기 (1024px 미만)
+@mixin mobile {
+  @media (max-width: #{$breakpoint-lg - 1}) {
+    @content;
   }
 }
 

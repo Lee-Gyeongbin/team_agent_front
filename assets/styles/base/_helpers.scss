@@ -10,66 +10,33 @@
   display: none !important;
 }
 
-// 브라우저 크기별 레이아웃 보이기(노출 여부)
-
-// 모바일
-.mb-hide {
-  @include responsive(mobile) {
+// 모바일+태블릿(1024px 미만) 노출 제어
+.mo-hide {
+  @include mobile {
     display: none !important;
   }
 }
 
-.mb-show {
+.mo-show {
   display: none !important;
 
-  @include responsive(mobile) {
+  @include mobile {
     display: block !important;
   }
 }
 
-.mb-show-flex {
+.mo-show-flex {
   display: none !important;
 
-  @include responsive(mobile) {
+  @include mobile {
     display: flex !important;
   }
 }
 
-.mb-show-ib {
+.mo-show-ib {
   display: none !important;
 
-  @include responsive(mobile) {
-    display: inline-block !important;
-  }
-}
-
-// 태블릿
-.tab-hide {
-  @include responsive(tablet) {
-    display: none !important;
-  }
-}
-
-.tab-show {
-  display: none !important;
-
-  @include responsive(tablet) {
-    display: block !important;
-  }
-}
-
-.tab-show-flex {
-  display: none !important;
-
-  @include responsive(tablet) {
-    display: flex !important;
-  }
-}
-
-.tab-show-ib {
-  display: none !important;
-
-  @include responsive(tablet) {
+  @include mobile {
     display: inline-block !important;
   }
 }

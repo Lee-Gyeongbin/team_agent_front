@@ -16,7 +16,14 @@
 .layout-default {
   display: flex;
   height: 100vh;
-  overflow: hidden;
+  min-width: 1024px; // PC 레이아웃 최소 너비 보장
+  overflow-x: auto; // 축소 시 가로 스크롤
+  overflow-y: hidden;
+
+  @include mobile {
+    min-width: auto; // 모바일은 유동 레이아웃
+    overflow-x: hidden;
+  }
 
   .main {
     width: calc(100% - #{$sidebar-width}); // 사이드바를 뺀 나머지 너비
