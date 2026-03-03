@@ -233,6 +233,7 @@ const statusList = [
   { category: '공통', name: 'AppHeader', location: 'components/common/', url: '', done: true },
   { category: '공통', name: 'AppSidebar', location: 'components/common/', url: '', done: true },
   { category: 'UI', name: 'UiTextarea', location: 'components/ui/', url: '', done: true },
+  { category: 'UI', name: 'UiSelect', location: 'components/ui/', url: '', done: true },
 ]
 
 // 섹션 2: 디자인 토큰 — 색상
@@ -294,6 +295,12 @@ const componentList = [
     to: '/guide/ui-textarea',
     description: 'v-model 지원, autoResize, maxRows 제한 등',
     tags: ['v-model', 'autoResize', 'disabled'],
+  },
+  {
+    name: 'UiSelect',
+    to: '/guide/ui-select',
+    description: 'v-model 지원 네이티브 Select — size 3단계 (sm/md/lg)',
+    tags: ['v-model', 'size', 'placeholder', 'disabled'],
   },
 ]
 

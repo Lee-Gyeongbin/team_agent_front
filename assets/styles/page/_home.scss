@@ -37,8 +37,13 @@
     .chat-index-input-top {
       gap: 8px;
 
-      .icon {
+      .icon-sparkle {
         flex-shrink: 0;
+        transition: background-color $transition-base;
+
+        &.is-active {
+          background-color: $color-primary;
+        }
       }
 
       .inp-chat-search {

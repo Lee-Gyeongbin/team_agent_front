@@ -62,3 +62,24 @@ table {
   border-collapse: collapse;
   border-spacing: 0;
 }
+
+// 글로벌 커스텀 스크롤바
+* {
+  &::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 9999px;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.25);
+    }
+  }
+}

@@ -24,7 +24,6 @@
     display: flex;
     flex-direction: column;
     min-width: 0;
-    background: #f4f7f9;
   }
 
   .content {

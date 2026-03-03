@@ -20,12 +20,16 @@
 
 ### 직접 제작 — `Ui` 접두사 (`components/ui/`)
 
-- Button, Input, Textarea, Badge, Avatar, Card, Skeleton, Spinner, Icon wrapper, Form Label, Divider
+- Button, Input, Textarea, Select, Badge, Avatar, Card, Skeleton, Spinner, Icon wrapper, Form Label, Divider
 - 파일명: `Ui` + PascalCase → `UiButton.vue`, `UiInput.vue`, `UiTextarea.vue`
 - CSS 클래스: `ui-` + kebab-case → `.ui-button`, `.ui-input`, `.ui-textarea`
 - 글로벌 `.inp` 클래스 위에 scoped 스타일 추가
 - v-model 지원 필수 (`modelValue` prop + `update:modelValue` emit)
 - `<style lang="scss" scoped>` 필수
+- **가이드 페이지 필수**: UI 컴포넌트 생성/수정 시 아래 작업 함께 수행
+  1. `pages/guide/ui-{컴포넌트명}.vue` 가이드 페이지 생성 (데모 + Props 테이블)
+  2. `pages/guide/index.vue`의 `componentList`에 카드 추가
+  3. `pages/guide/index.vue`의 `statusList`에 작업 현황 추가
 
 ## 타입 정의 예시
 
