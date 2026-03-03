@@ -1,9 +1,17 @@
 @use '../utils/variables' as *;
 @use '../utils/mixins' as *;
 
-input,select{
+.inp{
   @include input-reset;
   transition: all 0.3s;
+
+  &::placeholder{
+    color: #AEBCCB;
+  }
+}
+
+textarea{
+  resize: none;
 }
 
 .inp-select{

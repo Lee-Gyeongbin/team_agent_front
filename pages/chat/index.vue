@@ -8,11 +8,11 @@
     <div class="chat-index-input-wrapper flex flex-col items-center w-full">
       <div class="chat-index-input-top flex items-start w-full">
         <i class="icon icon-sparkle"></i>
-        <input class="inp-chat-search" type="text" placeholder="궁금하신 내용을 입력하세요." />
+        <textarea class="inp inp-chat-search" type="text" placeholder="궁금하신 내용을 입력하세요." />
       </div>
 
       <div class="chat-index-input-bottom flex justify-end items-center w-full">
-        <select class="inp-select inp-select-ai-model" name="ai-model" id="ai-model">
+        <select class="inp inp-select inp-select-ai-model" name="ai-model" id="ai-model">
           <option value="1">자동</option>
           <option value="2">2</option>
           <option value="3">3</option>
