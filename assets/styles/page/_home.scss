@@ -23,56 +23,39 @@
   }
 
   .chat-index-input-wrapper{
+    justify-content: space-between;
+    gap: 12px;
     max-width: 800px;
     width: 100%;
     height: 136px;
-    padding: 16px;
     margin-bottom: 16px;
+    padding: 16px;
     border-radius: 20px;
     border: 1px solid $color-border;
     background: #FFF;
+
+    .chat-index-input-top{
+      gap: 8px;
+
+      .inp-chat-search{
+        width: calc(100% - 32px);
+        min-height: 24px;
+      }
+    }
+
+    .chat-index-input-bottom{
+      gap: 12px;
+
+      .inp-select-ai-model{
+        width: 180px;
+      }
+    }
+
   }
+  
+
 
   .btn-grp{
     gap: 11px;
-  }
-
-  .btn-chat-index{
-    justify-content: flex-start;
-    gap: 12px;
-    padding: 10px 12px;
-    width: 210px;
-    height: 60px;
-    border-radius: 50px;
-    border: 1px solid #B2D0FF;
-    background: #FFF;
-    font-size: $font-size-sm;
-    color: #464C53;
-    font-weight: 500;
-
-    .icon-circle{
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 40px;
-      height: 40px;
-      aspect-ratio: 1/1;
-      flex-shrink: 0;
-      border-radius: 100%;
-      background: #E9F1FC;
-      transition: background 0.3s;
-    }
-
-    &:hover{
-      background: #4B81E6;
-      box-shadow: 0 4px 16px 0 rgba(17, 17, 17, 0.12);
-      border-color: #4B81E6;
-      color: #FFF;
-      transform: translateY(-4px);
-
-      .icon-circle{
-        background: #fff;
-      }
-    }
   }
 }
