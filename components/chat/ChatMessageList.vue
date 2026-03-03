@@ -54,9 +54,12 @@ defineExpose({ scrollToBottom })
 
 <style lang="scss" scoped>
 .chat-message-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
   flex: 1;
   overflow-y: auto;
-  padding: $spacing-md $spacing-lg;
+  padding: 0 16px 32px 0;
   @include custom-scrollbar;
 }
 </style>

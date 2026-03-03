@@ -54,7 +54,7 @@ const emit = defineEmits<{
   display: flex;
   align-items: center;
   gap: $spacing-xs;
-  margin-top: $spacing-sm;
+  padding-left: 50px; // 아이콘(24px) + gap(16px) + 여백 맞춤
 
   .btn-action {
     width: 28px;

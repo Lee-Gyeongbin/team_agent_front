@@ -1,6 +1,9 @@
 <template>
   <div class="chat-input">
-    <div class="chat-input-inner">
+    <div
+      class="chat-input-inner"
+      :class="{ 'is-active': modelValue.trim() }"
+    >
       <div class="chat-input-top flex items-start">
         <i
           class="icon-sparkle size-24"
@@ -77,20 +80,28 @@ const modelOptions = [
 <style lang="scss" scoped>
 .chat-input {
   width: 100%;
+  margin-bottom: 20px;
 
   .chat-input-inner {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: $spacing-md;
+    justify-content: space-between;
+    padding: 16px;
     border-radius: 20px;
-    border: 1px solid $color-border;
+    border: 1px solid #c6d2db;
     background: #fff;
+    min-height: 128px;
+    box-sizing: border-box;
+    transition: border-color $transition-base;
+
+    &.is-active {
+      border: 2px solid #4B81E6;
+      padding: 15px; // border 2px 보정
+    }
   }
 
   .chat-input-top {
     gap: $spacing-sm;
-
     .icon-sparkle {
       flex-shrink: 0;
       transition: background-color $transition-base;
@@ -103,15 +114,17 @@ const modelOptions = [
     .inp-chat-search {
       width: calc(100% - 32px);
       min-height: 24px;
+      font-size: $font-size-base;
+      color: #2d3139;
+
+      &::placeholder {
+        color: #828fa9;
+      }
     }
   }
 
   .chat-input-bottom {
-    gap: 12px;
-
-    .inp-select-ai-model {
-      width: 180px;
-    }
+    gap: 8px;
   }
 }
 </style>

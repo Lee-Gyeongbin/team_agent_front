@@ -103,14 +103,19 @@ const onUpdate = (val: string) => {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 0 8px;
+  padding: 0 16px;
   gap: 4px;
 
   font-weight: $font-weight-medium;
-  color: $color-text-primary;
+  color: #333;
+
+  // 미선택(placeholder) 상태
+  &[data-placeholder] {
+    color: #94A3B8;
+  }
   background-color: #fff;
-  border: 1px solid $color-border;
-  border-radius: $border-radius-sm;
+  border: 1px solid #C6D2DB;
+  border-radius: $border-radius-md;
 
   cursor: pointer;
   outline: none;

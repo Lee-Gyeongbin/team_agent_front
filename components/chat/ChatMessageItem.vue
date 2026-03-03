@@ -5,15 +5,20 @@
   >
     <!-- assistant 메시지 -->
     <template v-if="message.role === 'assistant'">
-      <div class="avatar">
-        <i class="icon-bot size-20"></i>
+      <div
+        class="avatar"
+        :class="{ 'is-streaming': message.isStreaming }"
+      >
+        <i class="icon-bot size-24"></i>
       </div>
       <div class="message-body">
         <div
           class="message-content"
           v-html="message.content"
         ></div>
+        <!-- 스트리밍 중이면 액션 버튼 숨김 -->
         <ChatMessageActions
+          v-if="!message.isStreaming"
           :is-liked="message.isLiked"
           :is-disliked="message.isDisliked"
           @on-copy="emit('on-copy', message.id)"
@@ -51,29 +56,62 @@ const emit = defineEmits<{
 </script>
 
 <style lang="scss" scoped>
+$chat-text-color: #2D3139;
+
 .chat-message-item {
   display: flex;
-  gap: $spacing-sm;
-  padding: $spacing-md 0;
+  gap: 16px;
+  padding: 10px 0;
 
   // assistant — 좌측 정렬
   &.role-assistant {
     justify-content: flex-start;
+    padding: 12px 16px;
+    background: #fff;
+    border-radius: 10px;
 
     .avatar {
       @include flex-center;
       flex-shrink: 0;
-      width: 32px;
-      height: 32px;
-      border-radius: $border-radius-full;
-      background: $color-background;
+      width: 24px;
+      height: 24px;
       color: $color-primary;
+
+      // 스트리밍 중 바운스 애니메이션
+      &.is-streaming {
+        animation: avatar-bounce 1s ease-in-out infinite;
+      }
+    }
+
+    .message-body {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
 
     .message-content {
-      line-height: $line-height-relaxed;
-      color: $color-text-primary;
-      font-size: $font-size-sm;
+      line-height: 1.5em;
+      color: $chat-text-color;
+      font-size: $font-size-base;
+
+      // v-html 내부 요소 간격 (피그마 gap: 16px)
+      :deep(p + p),
+      :deep(p + ol),
+      :deep(ol + p) {
+        margin-top: 16px;
+      }
+
+      :deep(ol) {
+        padding-left: 1.2em;
+      }
+
+      :deep(li) {
+        line-height: 1.5em;
+      }
+
+      :deep(strong) {
+        font-weight: $font-weight-medium;
+      }
     }
   }
 
@@ -81,19 +119,24 @@ const emit = defineEmits<{
   &.role-user {
     justify-content: flex-end;
 
-    .message-body {
-      max-width: 70%;
-    }
-
     .message-content {
-      padding: $spacing-sm $spacing-md;
-      border-radius: $border-radius-lg;
-      background: $color-chat-user-bg;
-      color: $color-text-primary;
-      font-size: $font-size-sm;
-      line-height: $line-height-base;
+      padding: 12px 16px;
+      border-radius: 50px;
+      background: #ECF0F3;
+      color: $chat-text-color;
+      font-size: $font-size-base;
+      line-height: 1.5em;
       word-break: break-word;
     }
+  }
+}
+
+@keyframes avatar-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
   }
 }
 </style>
