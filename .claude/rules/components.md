@@ -18,9 +18,14 @@
 - Dialog/Modal, Dropdown Menu, Tooltip, Toast, Popover, Tabs, Select, Accordion
 - Radix가 포커스 트랩, ESC 닫기, aria 속성 처리 → SCSS로 디자인만 입히기
 
-### 직접 제작 (SCSS만으로 충분한 것)
+### 직접 제작 — `Ui` 접두사 (`components/ui/`)
 
 - Button, Input, Textarea, Badge, Avatar, Card, Skeleton, Spinner, Icon wrapper, Form Label, Divider
+- 파일명: `Ui` + PascalCase → `UiButton.vue`, `UiInput.vue`, `UiTextarea.vue`
+- CSS 클래스: `ui-` + kebab-case → `.ui-button`, `.ui-input`, `.ui-textarea`
+- 글로벌 `.inp` 클래스 위에 scoped 스타일 추가
+- v-model 지원 필수 (`modelValue` prop + `update:modelValue` emit)
+- `<style lang="scss" scoped>` 필수
 
 ## 타입 정의 예시
 

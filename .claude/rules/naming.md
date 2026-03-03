@@ -10,7 +10,7 @@
 
 ## 컴포넌트 접두사
 
-- 공통 UI: `App` → AppButton, AppInput, AppModal
+- UI 컴포넌트: `Ui` → UiButton, UiInput, UiTextarea, UiModal (`components/ui/`)
 - 채팅: `Chat` → ChatMessage, ChatInput, ChatWindow
 - 에이전트: `Agent` → AgentCard, AgentBuilder, AgentList
 - 레이아웃: `App` → AppSidebar, AppHeader

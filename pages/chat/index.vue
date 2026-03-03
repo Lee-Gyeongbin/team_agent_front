@@ -8,10 +8,11 @@
     <div class="chat-index-input-wrapper flex flex-col items-center w-full">
       <div class="chat-index-input-top flex items-start w-full">
         <i class="icon-sparkle size-24"></i>
-        <textarea
-          class="inp inp-chat-search"
-          type="text"
+        <UiTextarea
+          class="inp-chat-search"
           placeholder="궁금하신 내용을 입력하세요."
+          :auto-resize="true"
+          :max-rows="5"
         />
       </div>
 

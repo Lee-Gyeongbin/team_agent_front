@@ -1,0 +1,361 @@
+@use '../utils/variables' as *;
+@use '../utils/mixins' as *;
+
+.guide-page {
+  padding: $spacing-xl;
+  background: #fff;
+  min-height: calc(100vh - #{$header-height});
+
+  @include custom-scrollbar;
+
+  .guide-title {
+    font-size: $font-size-2xl;
+    font-weight: $font-weight-bold;
+    color: $color-text-primary;
+    margin-bottom: $spacing-xs;
+  }
+
+  .guide-description {
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+    margin-bottom: $spacing-xl;
+  }
+}
+
+// 섹션 공통
+.guide-section {
+  margin-bottom: $spacing-2xl;
+
+  .section-title {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-semibold;
+    color: $color-text-primary;
+    margin-bottom: $spacing-md;
+    padding-bottom: $spacing-sm;
+    border-bottom: 2px solid $color-primary;
+  }
+
+  .section-subtitle {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-medium;
+    color: $color-text-primary;
+    margin-top: $spacing-lg;
+    margin-bottom: $spacing-sm;
+  }
+}
+
+// 뒤로가기 링크
+.guide-back {
+  display: inline-block;
+  font-size: $font-size-sm;
+  color: $color-primary;
+  text-decoration: none;
+  margin-bottom: $spacing-md;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+// 설명 텍스트 (상세 페이지)
+.guide-demo-desc {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  margin-bottom: $spacing-sm;
+}
+
+// 섹션 1: 작업 현황 테이블
+.guide-status-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: $font-size-sm;
+
+  th,
+  td {
+    padding: $spacing-sm $spacing-md;
+    text-align: left;
+    border-bottom: 1px solid $color-border;
+  }
+
+  th {
+    font-weight: $font-weight-semibold;
+    color: $color-text-secondary;
+    background: $color-background;
+  }
+
+  td {
+    color: $color-text-primary;
+  }
+
+  .status-done {
+    color: $color-success;
+  }
+
+  .status-pending {
+    color: $color-text-disabled;
+  }
+
+  .status-link {
+    color: $color-primary;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+// 섹션 3: 컴포넌트 카드 그리드
+.guide-component-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: $spacing-md;
+}
+
+.component-card {
+  display: block;
+  padding: $spacing-md;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  background: #fff;
+  text-decoration: none;
+  color: inherit;
+  transition: all $transition-base;
+  cursor: pointer;
+
+  &:hover {
+    border-color: $color-primary;
+    box-shadow: $shadow-md;
+    transform: translateY(-2px);
+  }
+
+  .component-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: $spacing-sm;
+  }
+
+  .component-card-name {
+    font-size: $font-size-base;
+    font-weight: $font-weight-semibold;
+    color: $color-text-primary;
+  }
+
+  .component-card-arrow {
+    font-size: $font-size-lg;
+    color: $color-text-disabled;
+    transition: color $transition-fast;
+  }
+
+  &:hover .component-card-arrow {
+    color: $color-primary;
+  }
+
+  .component-card-desc {
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+    margin-bottom: $spacing-sm;
+    line-height: $line-height-base;
+  }
+
+  .component-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-xs;
+  }
+
+  .component-card-tag {
+    font-size: $font-size-xs;
+    color: $color-primary;
+    background: rgba($color-primary, 0.08);
+    padding: 2px $spacing-sm;
+    border-radius: $border-radius-full;
+  }
+}
+
+// 섹션 2: 디자인 토큰
+.guide-tokens {
+  .token-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-md;
+    margin-bottom: $spacing-lg;
+  }
+}
+
+// 색상 스와치
+.guide-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-xs;
+
+  .swatch-box {
+    width: 64px;
+    height: 64px;
+    border-radius: $border-radius-md;
+    border: 1px solid $color-border;
+  }
+
+  .swatch-label {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    color: $color-text-primary;
+  }
+
+  .swatch-value {
+    font-size: $font-size-xs;
+    color: $color-text-secondary;
+    font-family: $font-family-mono;
+  }
+}
+
+// 타이포그래피 프리뷰
+.guide-typo-item {
+  display: flex;
+  align-items: baseline;
+  gap: $spacing-lg;
+  padding: $spacing-sm 0;
+  border-bottom: 1px solid $color-border;
+
+  .typo-label {
+    flex-shrink: 0;
+    width: 140px;
+    font-size: $font-size-xs;
+    color: $color-text-secondary;
+    font-family: $font-family-mono;
+  }
+
+  .typo-preview {
+    color: $color-text-primary;
+  }
+}
+
+// 간격 시각 바
+.guide-spacing-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  margin-bottom: $spacing-sm;
+
+  .spacing-label {
+    flex-shrink: 0;
+    width: 120px;
+    font-size: $font-size-xs;
+    color: $color-text-secondary;
+    font-family: $font-family-mono;
+  }
+
+  .spacing-bar {
+    height: 20px;
+    background: $color-primary;
+    border-radius: $border-radius-sm;
+    opacity: 0.3;
+  }
+
+  .spacing-value {
+    flex-shrink: 0;
+    font-size: $font-size-xs;
+    color: $color-text-secondary;
+    font-family: $font-family-mono;
+  }
+}
+
+// 둥글기 프리뷰
+.guide-radius-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-xs;
+
+  .radius-box {
+    width: 64px;
+    height: 64px;
+    background: $color-background;
+    border: 2px solid $color-primary;
+  }
+
+  .radius-label {
+    font-size: $font-size-xs;
+    color: $color-text-secondary;
+    font-family: $font-family-mono;
+  }
+}
+
+// 그림자 프리뷰
+.guide-shadow-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-xs;
+
+  .shadow-box {
+    width: 100px;
+    height: 64px;
+    background: #fff;
+    border-radius: $border-radius-md;
+  }
+
+  .shadow-label {
+    font-size: $font-size-xs;
+    color: $color-text-secondary;
+    font-family: $font-family-mono;
+  }
+}
+
+// 섹션 3, 4: 컴포넌트 데모
+.guide-demo {
+  margin-bottom: $spacing-lg;
+
+  .demo-label {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-text-secondary;
+    margin-bottom: $spacing-sm;
+  }
+
+  .demo-box {
+    padding: $spacing-md;
+    border: 1px solid $color-border;
+    border-radius: $border-radius-md;
+    background: $color-background;
+    margin-bottom: $spacing-sm;
+  }
+
+  .demo-code {
+    padding: $spacing-md;
+    background: #1e293b;
+    color: #e2e8f0;
+    border-radius: $border-radius-md;
+    font-family: $font-family-mono;
+    font-size: $font-size-xs;
+    line-height: $line-height-base;
+    overflow-x: auto;
+    white-space: pre;
+  }
+}
+
+// 아이콘 그리드
+.guide-icon-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-md;
+
+  .icon-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: $spacing-md;
+    border: 1px solid $color-border;
+    border-radius: $border-radius-md;
+    min-width: 90px;
+
+    .icon-name {
+      font-size: $font-size-xs;
+      color: $color-text-secondary;
+      font-family: $font-family-mono;
+    }
+  }
+}
