@@ -52,3 +52,17 @@
 .icon-send{
   @include icon-file('send-white');
 }
+
+// ===================================
+// 헤더 아이콘
+// ===================================
+
+// 알림
+.icon-notification {
+  @include icon-file('notification');
+}
+
+// 유저 프로필
+.icon-user {
+  @include icon-file('user');
+}

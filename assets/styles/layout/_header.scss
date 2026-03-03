@@ -2,10 +2,47 @@
 @use '../utils/mixins' as *;
 
 .app-header {
-  position: fixed;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
   flex-shrink: 0;
-  width: calc(100% - #{$sidebar-width});
   height: $header-height;
-  background: transparent;
-  text-align: right;
+  padding: 0 $spacing-md;
+  background-color: transparent;
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+  }
+
+  .header-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: $border-radius-full;
+    background-color: transparent;
+    color: #58616a;
+    cursor: pointer;
+    transition: background-color $transition-fast;
+
+    &:hover {
+      background-color: #e6e8ea;
+    }
+  }
+
+  // 알림 상태 표시 (빨간 점)
+  .status-dot {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 4px;
+    height: 4px;
+    border-radius: $border-radius-full;
+    background-color: $color-error;
+  }
 }

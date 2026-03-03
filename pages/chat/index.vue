@@ -7,7 +7,7 @@
 
     <div class="chat-index-input-wrapper flex flex-col items-center w-full">
       <div class="chat-index-input-top flex items-start w-full">
-        <i class="icon icon-sparkle size-24"></i>
+        <i class="icon-sparkle size-24"></i>
         <textarea
           class="inp inp-chat-search"
           type="text"
@@ -25,17 +25,17 @@
           <option value="2">2</option>
           <option value="3">3</option>
         </select>
-        <button class="btn btn-chat-send"><i class="icon icon-send size-20"></i></button>
+        <button class="btn btn-chat-send"><i class="icon-send size-20"></i></button>
       </div>
     </div>
 
     <div class="btn-grp">
       <button class="btn btn-chat-index">
-        <span class="icon-circle"><i class="icon icon-knowledge size-20"></i></span>
+        <span class="icon-circle"><i class="icon-knowledge size-20"></i></span>
         <p>지식검색 (매뉴얼 AI)</p>
       </button>
       <button class="btn btn-chat-index">
-        <span class="icon-circle"><i class="icon icon-database size-20"></i></span>
+        <span class="icon-circle"><i class="icon-database size-20"></i></span>
         <p>데이터분석 (SQL)</p>
       </button>
     </div>

@@ -2,7 +2,8 @@
 
 ## 구조
 
-- 모든 컴포넌트: `<style lang="scss" scoped>` 필수
+- 일반 컴포넌트: `<style lang="scss" scoped>` 필수
+- **레이아웃 컴포넌트** (AppHeader, AppSidebar 등): `assets/styles/layout/` 글로벌 SCSS 파일에 스타일 작성, 컴포넌트에 `<style>` 태그 없음
 - BEM 사용 안 함 — SCSS 중첩으로 부모-자식 관계 표현
 - `scoped`가 스코프를 잡아주므로 클래스 충돌 없음
 
