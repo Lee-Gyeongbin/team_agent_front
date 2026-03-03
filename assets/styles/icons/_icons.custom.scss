@@ -36,3 +36,19 @@
 .icon-settings {
   @include icon-file('settings');
 }
+
+.icon-knowledge{
+  @include icon-file('knowledge');
+}
+
+.icon-database{
+  @include icon-file('database');
+}
+
+.icon-sparkle{
+  @include icon-file('sparkle');
+}
+
+.icon-send{
+  @include icon-file('send-white');
+}

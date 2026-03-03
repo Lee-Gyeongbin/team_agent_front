@@ -37,6 +37,10 @@
     .chat-index-input-top{
       gap: 8px;
 
+      .icon{
+        flex-shrink: 0;
+      }
+
       .inp-chat-search{
         width: calc(100% - 32px);
         min-height: 24px;
