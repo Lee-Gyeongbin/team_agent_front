@@ -144,11 +144,3 @@ const onRegenerate = (id: string) => {
   console.warn('재생성 요청:', id)
 }
 </script>
-
-<style lang="scss" scoped>
-.chat-detail {
-  height: calc(100vh - #{$header-height});
-  overflow: hidden; // 자체 스크롤 방지 → ChatMessageList가 스크롤 담당
-  background: #fff;
-}
-</style>

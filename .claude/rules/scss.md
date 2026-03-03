@@ -4,8 +4,31 @@
 
 - 일반 컴포넌트: `<style lang="scss" scoped>` 필수
 - **레이아웃 컴포넌트** (AppHeader, AppSidebar 등): `assets/styles/layout/` 글로벌 SCSS 파일에 스타일 작성, 컴포넌트에 `<style>` 태그 없음
+- **페이지 전용 컴포넌트** (Chat, Agent 등): `assets/styles/page/_[도메인].scss` 글로벌 SCSS 파일에 스타일 작성, 컴포넌트에 `<style>` 태그 없음
 - BEM 사용 안 함 — SCSS 중첩으로 부모-자식 관계 표현
 - `scoped`가 스코프를 잡아주므로 클래스 충돌 없음
+
+## 스타일 파일 배치 기준
+
+| 분류 | 스타일 위치 | `<style>` 태그 | 예시 |
+|------|-------------|----------------|------|
+| 일반 컴포넌트 | 컴포넌트 내 `<style lang="scss" scoped>` | O | `UiButton.vue`, `UiInput.vue` |
+| 레이아웃 컴포넌트 | `assets/styles/layout/_[이름].scss` | X | `AppHeader` → `_header.scss` |
+| 페이지 전용 컴포넌트 | `assets/styles/page/_[도메인].scss` | X | `Chat*` → `_chat.scss` |
+| Radix-vue 포탈 | 컴포넌트 내 global `<style>` 블록 추가 | O (scoped + global 분리) | `UiSelect.vue` |
+
+### 페이지 전용 스타일 규칙
+
+- 한 도메인의 컴포넌트 + 페이지 스타일을 **하나의 SCSS 파일**로 통합
+- 파일 생성 후 `assets/styles/main.scss`에 `@use './page/[도메인]';` 등록
+- 컴포넌트에 `<style>` 태그 작성하지 않음
+
+```
+assets/styles/page/
+├── _home.scss      # pages/chat/index.vue (채팅 홈)
+├── _chat.scss      # components/chat/* + pages/chat/[id].vue
+└── _agent.scss     # components/agent/* + pages/agents/*
+```
 
 ## 클래스 네이밍
 

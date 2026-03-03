@@ -48,29 +48,3 @@ const emit = defineEmits<{
   'on-regenerate': []
 }>()
 </script>
-
-<style lang="scss" scoped>
-.chat-message-actions {
-  display: flex;
-  align-items: center;
-  gap: $spacing-xs;
-  padding-left: 50px; // 아이콘(24px) + gap(16px) + 여백 맞춤
-
-  .btn-action {
-    width: 28px;
-    height: 28px;
-    border-radius: $border-radius-sm;
-    color: $color-text-disabled;
-    transition: all $transition-fast;
-
-    &:hover {
-      color: $color-text-primary;
-      background: $color-background;
-    }
-
-    &.is-active {
-      color: $color-primary;
-    }
-  }
-}
-</style>
