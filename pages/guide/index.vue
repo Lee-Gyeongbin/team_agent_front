@@ -30,7 +30,8 @@
                 :href="item.url"
                 target="_blank"
                 class="status-link"
-              >{{ item.location }}</a>
+                >{{ item.location }}</a
+              >
               <span v-else>{{ item.location }}</span>
             </td>
             <td :class="item.done ? 'status-done' : 'status-pending'">
@@ -161,7 +162,8 @@
               v-for="tag in comp.tags"
               :key="tag"
               class="component-card-tag"
-            >{{ tag }}</span>
+              >{{ tag }}</span
+            >
           </div>
         </NuxtLink>
       </div>
@@ -182,9 +184,7 @@
               :key="icon.class"
               class="icon-item"
             >
-              <i
-                :class="[icon.class, 'size-24']"
-              />
+              <i :class="[icon.class, 'size-24']" />
               <span class="icon-name">.{{ icon.class }}</span>
             </div>
           </div>
@@ -194,22 +194,22 @@
       <div class="guide-demo">
         <p class="demo-label">사이즈 클래스 비교</p>
         <div class="demo-box">
-          <div
-            style="display: flex; align-items: center; gap: 16px;"
-          >
+          <div style="display: flex; align-items: center; gap: 16px">
             <span
               v-for="size in [12, 16, 20, 24, 28, 32, 36, 40, 48]"
               :key="size"
-              style="display: flex; flex-direction: column; align-items: center; gap: 4px;"
+              style="display: flex; flex-direction: column; align-items: center; gap: 4px"
             >
               <i :class="['icon-ai-chat', `size-${size}`]" />
-              <span style="font-size: 11px; color: #64748b;">.size-{{ size }}</span>
+              <span style="font-size: 11px; color: #64748b">.size-{{ size }}</span>
             </span>
           </div>
         </div>
-        <pre class="demo-code">&lt;i class="icon-ai-chat size-24" /&gt;
+        <pre class="demo-code">
+&lt;i class="icon-ai-chat size-24" /&gt;
 &lt;i class="icon-ai-chat size-32" /&gt;
-&lt;i class="icon-ai-chat size-48" /&gt;</pre>
+&lt;i class="icon-ai-chat size-48" /&gt;</pre
+        >
       </div>
     </section>
   </div>

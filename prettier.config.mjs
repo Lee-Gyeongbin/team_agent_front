@@ -6,7 +6,7 @@ export default {
   printWidth: 120,
   bracketSpacing: true,
   arrowParens: 'always',
-  endOfLine: 'lf',
+  endOfLine: 'auto',
   vueIndentScriptAndStyle: false,
   singleAttributePerLine: true,
 }

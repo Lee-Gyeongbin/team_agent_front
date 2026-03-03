@@ -3,7 +3,8 @@
     <NuxtLink
       to="/guide"
       class="guide-back"
-    >← 가이드 목록</NuxtLink>
+      >← 가이드 목록</NuxtLink
+    >
     <h1 class="guide-title">UiTextarea</h1>
     <p class="guide-description">v-model 지원 Textarea 컴포넌트 — autoResize, maxRows, disabled</p>
 
@@ -88,9 +89,13 @@
             v-for="prop in propList"
             :key="prop.name"
           >
-            <td><code>{{ prop.name }}</code></td>
+            <td>
+              <code>{{ prop.name }}</code>
+            </td>
             <td>{{ prop.type }}</td>
-            <td><code>{{ prop.default }}</code></td>
+            <td>
+              <code>{{ prop.default }}</code>
+            </td>
             <td>{{ prop.desc }}</td>
           </tr>
         </tbody>
