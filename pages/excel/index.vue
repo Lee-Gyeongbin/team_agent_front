@@ -87,8 +87,8 @@
       <!-- 테이블 영역 -->
       <div class="excel-table-wrapper">
         <div
-          class="excel-table-container"
           ref="tableContainerRef"
+          class="excel-table-container"
         >
           <table class="excel-table">
             <colgroup>
