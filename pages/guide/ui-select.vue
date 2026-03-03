@@ -6,14 +6,14 @@
       >← 가이드 목록</NuxtLink
     >
     <h1 class="guide-title">UiSelect</h1>
-    <p class="guide-description">v-model 지원 Select 컴포넌트 — size 3단계, placeholder, disabled</p>
+    <p class="guide-description">Radix-vue 기반 커스텀 Select — hover/active 스타일, 키보드 접근성 지원</p>
 
     <!-- 기본 (md) -->
     <section class="guide-section">
       <h2 class="section-title">기본 (size=md)</h2>
       <div class="guide-demo">
         <div class="demo-box">
-          <div style="max-width: 200px">
+          <div class="w-200">
             <UiSelect
               v-model="selectedDefault"
               :options="fruitOptions"
@@ -32,7 +32,7 @@
       <div class="guide-demo">
         <div class="demo-box">
           <div style="display: flex; align-items: center; gap: 16px">
-            <div>
+            <div class="w-150">
               <p class="demo-label">sm (28px)</p>
               <UiSelect
                 v-model="selectedSm"
@@ -41,7 +41,7 @@
                 placeholder="sm"
               />
             </div>
-            <div>
+            <div class="w-150">
               <p class="demo-label">md (32px)</p>
               <UiSelect
                 v-model="selectedMd"
@@ -50,7 +50,7 @@
                 placeholder="md"
               />
             </div>
-            <div>
+            <div class="w-150">
               <p class="demo-label">lg (36px)</p>
               <UiSelect
                 v-model="selectedLg"
@@ -72,7 +72,7 @@
       <h2 class="section-title">disabled</h2>
       <div class="guide-demo">
         <div class="demo-box">
-          <div style="max-width: 200px">
+          <div class="w-200">
             <UiSelect
               model-value="apple"
               :options="fruitOptions"
@@ -84,22 +84,30 @@
       </div>
     </section>
 
-    <!-- placeholder -->
+    <!-- hover / active -->
     <section class="guide-section">
-      <h2 class="section-title">placeholder</h2>
-      <p class="guide-demo-desc">미선택 시 안내 텍스트를 표시합니다. 선택 불가 옵션으로 처리됩니다.</p>
+      <h2 class="section-title">hover / active 상태</h2>
+      <p class="guide-demo-desc">드롭다운 열면 hover 시 배경색, 선택된 항목은 파란색 강조 표시됩니다.</p>
       <div class="guide-demo">
         <div class="demo-box">
-          <div style="max-width: 200px">
+          <div class="w-200">
             <UiSelect
-              v-model="selectedPlaceholder"
+              v-model="selectedHover"
               :options="fruitOptions"
-              placeholder="과일을 선택하세요"
+              placeholder="클릭해서 확인"
             />
           </div>
         </div>
-        <pre class="demo-code">&lt;UiSelect v-model="value" :options="options" placeholder="과일을 선택하세요" /&gt;</pre>
+        <pre class="demo-code">&lt;!-- hover: data-highlighted → 배경색 --&gt;
+&lt;!-- active: data-state="checked" → 파란색 + bold --&gt;
+&lt;UiSelect v-model="value" :options="options" /&gt;</pre>
       </div>
+    </section>
+
+    <!-- 공간 부족 시 위로 -->
+    <section class="guide-section">
+      <h2 class="section-title">자동 방향 전환</h2>
+      <p class="guide-demo-desc">아래 공간이 부족하면 드롭다운이 자동으로 위로 뜹니다. (Radix avoidCollisions)</p>
     </section>
 
     <!-- Props 정리 -->
@@ -145,16 +153,16 @@ const fruitOptions = [
   { label: '딸기', value: 'strawberry' },
 ]
 
-const selectedDefault = ref('')
-const selectedSm = ref('')
-const selectedMd = ref('')
-const selectedLg = ref('')
-const selectedPlaceholder = ref('')
+const selectedDefault = ref('apple')
+const selectedSm = ref('apple')
+const selectedMd = ref('apple')
+const selectedLg = ref('apple')
+const selectedHover = ref('apple')
 
 const propList = [
-  { name: 'modelValue', type: 'string | number', default: "''", desc: 'v-model 바인딩 값' },
+  { name: 'modelValue', type: 'string | number', default: 'undefined', desc: 'v-model 바인딩 값 (빈 문자열 불가)' },
   { name: 'options', type: 'SelectOption[]', default: '필수', desc: '옵션 목록 ({ label, value })' },
-  { name: 'placeholder', type: 'string', default: "''", desc: '미선택 시 안내 텍스트' },
+  { name: 'placeholder', type: 'string', default: "'선택'", desc: '미선택 시 안내 텍스트' },
   { name: 'disabled', type: 'boolean', default: 'false', desc: '비활성 상태' },
   { name: 'name', type: 'string', default: 'undefined', desc: 'form name 속성' },
   { name: 'id', type: 'string', default: 'undefined', desc: 'id 속성' },

@@ -14,6 +14,29 @@ textarea{
   resize: none;
 }
 
+// 공통 사이즈
+.size-sm {
+  height: 28px;
+  font-size: $font-size-xs;
+}
+
+.size-md {
+  height: 32px;
+  font-size: $font-size-sm;
+}
+
+.size-lg {
+  height: 36px;
+  font-size: $font-size-base;
+}
+
+// 공통 비활성
+.is-disabled {
+  color: $color-text-disabled;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .inp-select{
   height: 32px;
   line-height: 32px;

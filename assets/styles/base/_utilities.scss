@@ -1,3 +1,5 @@
+@use '../utils/variables' as *;
+
 /* ==============================
    Utilities
    프로젝트 전역 유틸 클래스 모음
@@ -34,6 +36,19 @@
 /* width ================================ */
 .w-full { width: 100% !important; }
 .w-half { width: 50%; }
+
+// w-1 ~ w-500 (px 단위)
+@for $i from 1 through 500 {
+  .w-#{$i} { width: #{$i}px; }
+}
+
+/* content inner ======================== */
+.content-inner {
+  max-width: $chat-max-width;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
 
 /* typography =========================== */
 .fw-800 { font-weight: 800; }

@@ -9,34 +9,14 @@
     </div>
 
     <div
-      class="chat-index-input-wrapper flex flex-col items-center w-full"
+      class="chat-index-input-wrapper"
       data-aos="fade-up"
       data-aos-delay="200"
     >
-      <div class="chat-index-input-top flex items-start w-full">
-        <i
-          class="icon-sparkle size-24"
-          :class="{ 'is-active': chatMessage }"
-        ></i>
-        <UiTextarea
-          v-model="chatMessage"
-          class="inp-chat-search"
-          placeholder="궁금하신 내용을 입력하세요."
-          :auto-resize="true"
-          :max-rows="5"
-        />
-      </div>
-
-      <div class="chat-index-input-bottom flex justify-end items-center w-full">
-        <UiSelect
-          id="ai-model"
-          class="inp-select-ai-model"
-          name="ai-model"
-          :options="modelOptions"
-          size="lg"
-        />
-        <button class="btn btn-chat-send"><i class="icon-send size-20"></i></button>
-      </div>
+      <ChatInput
+        v-model="chatMessage"
+        @on-send="onSend"
+      />
     </div>
 
     <div
@@ -59,20 +39,13 @@
 <script setup lang="ts">
 const chatMessage = ref('')
 
-// ============================================
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-// ============================================
-const modelOptions = [
-  { label: '자동', value: '' },
-  { label: 'GPT-4o', value: 'gpt-4o' },
-  { label: 'GPT-4o mini', value: 'gpt-4o-mini' },
-  { label: 'Claude 3.5 Sonnet', value: 'claude-3-5-sonnet' },
-  { label: 'Claude 3 Opus', value: 'claude-3-opus' },
-  { label: 'Gemini 1.5 Pro', value: 'gemini-1.5-pro' },
-  { label: 'Gemini 1.5 Flash', value: 'gemini-1.5-flash' },
-  { label: 'Llama 3.1 405B', value: 'llama-3.1-405b' },
-  { label: 'Mixtral 8x22B', value: 'mixtral-8x22b' },
-  { label: 'DeepSeek V3', value: 'deepseek-v3' },
-  { label: 'Qwen 2.5 72B', value: 'qwen-2.5-72b' },
-]
+// 메시지 전송 → 채팅방 생성 후 이동
+const onSend = () => {
+  const content = chatMessage.value.trim()
+  if (!content) return
+
+  // 🔽 더미 — 백엔드 연결 시 API로 채팅방 생성 후 실제 ID 사용
+  const newRoomId = Date.now().toString()
+  navigateTo(`/chat/${newRoomId}`)
+}
 </script>

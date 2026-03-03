@@ -23,42 +23,9 @@
   }
 
   .chat-index-input-wrapper {
-    justify-content: space-between;
-    gap: 12px;
     max-width: 800px;
     width: 100%;
-    min-height: 136px;
     margin-bottom: 16px;
-    padding: 16px;
-    border-radius: 20px;
-    border: 1px solid $color-border;
-    background: #fff;
-
-    .chat-index-input-top {
-      gap: 8px;
-
-      .icon-sparkle {
-        flex-shrink: 0;
-        transition: background-color $transition-base;
-
-        &.is-active {
-          background-color: $color-primary;
-        }
-      }
-
-      .inp-chat-search {
-        width: calc(100% - 32px);
-        min-height: 24px;
-      }
-    }
-
-    .chat-index-input-bottom {
-      gap: 12px;
-
-      .inp-select-ai-model {
-        width: 180px;
-      }
-    }
   }
 
   .btn-grp {
