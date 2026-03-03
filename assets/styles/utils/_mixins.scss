@@ -75,29 +75,6 @@
   }
 }
 
-// 아이콘 - 인라인 data URI 방식 (인코딩된 SVG 직접 입력, 원본 색상 사용)
-@mixin icon($svg-data) {
-  display: inline-block;
-  background-image: url($svg-data);
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: contain;
-}
-
-// 아이콘 - 인라인 data URI 방식 (mask + background-color로 색상 제어)
-@mixin icon-bg($svg-data) {
-  display: inline-block;
-  mask-image: url($svg-data);
-  mask-repeat: no-repeat;
-  mask-position: center;
-  mask-size: contain;
-  -webkit-mask-image: url($svg-data);
-  -webkit-mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  -webkit-mask-size: contain;
-  background-color: currentColor;
-}
-
 // 아이콘 - SVG 파일 참조 방식 (assets/icons/svg/ 폴더의 파일명만 입력)
 @mixin icon-file($name) {
   display: inline-block;
