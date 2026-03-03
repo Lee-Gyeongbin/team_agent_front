@@ -12,11 +12,11 @@
 
       <div class="btn-grp">
         <button class="btn btn-chat-index">
-          <span class="icon-circle white"><i class="icon-manual"></i></span>
+          <span class="icon-circle"><i class="icon-manual"></i></span>
           <p>지식검색 (매뉴얼 AI)</p>
         </button>
         <button class="btn btn-chat-index">
-          <span class="icon-circle white"><i class="icon-date"></i></span>
+          <span class="icon-circle"><i class="icon-data"></i></span>
           <p>데이터분석 (SQL)</p>
         </button>
       </div>

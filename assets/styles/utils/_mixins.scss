@@ -86,5 +86,23 @@
 
   border-radius: $border-radius-md;
   font-weight: $font-weight-semibold;
-  transition: background-color $transition-base, color $transition-base, border-color $transition-base;
+  transition: all 0.3s;
+}
+
+@mixin bg-base(
+  $position: center,
+  $size: auto,
+  $repeat: no-repeat
+) {
+  background-position: $position;
+  background-size: $size;
+  background-repeat: $repeat;
+}
+
+@mixin icon-base($size: 24px) {
+  @include bg-base($size: contain);
+  display: inline-block;
+  width: $size;
+  height: $size;
+  vertical-align: middle;
 }
