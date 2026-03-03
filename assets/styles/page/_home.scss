@@ -1,2 +1,41 @@
 @use '../utils/variables' as *;
 @use '../utils/mixins' as *;
+
+.chat-index{
+  background: #F4F7F9;
+  height: 100vh;
+
+  .chat-index-header {
+    margin-bottom: 27px;
+  }
+
+  .chat-index-title{
+    font-size: 36px;
+    font-weight: $font-weight-bold;
+    line-height: 150%;
+    color: $color-text-primary;
+    margin-bottom: 8px;
+  }
+
+  .chat-index-description{
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+  }
+
+  .chat-index-input-wrapper{
+    max-width: 800px;
+    width: 100%;
+    height: 136px;
+    padding: 16px;
+    margin-bottom: 16px;
+    border-radius: 20px;
+    border: 1px solid $color-border;
+    background: #FFF;
+
+
+  }
+
+  .btn-grp{
+    
+  }
+}

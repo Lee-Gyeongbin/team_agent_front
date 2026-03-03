@@ -1,3 +1,11 @@
 @use '../utils/variables' as *;
 @use '../utils/mixins' as *;
 
+.app-header {
+  position: fixed;
+  flex-shrink: 0;
+  width: calc(100% - #{$sidebar-width});
+  height: $header-height;
+  background: transparent;
+  text-align: right;
+}
