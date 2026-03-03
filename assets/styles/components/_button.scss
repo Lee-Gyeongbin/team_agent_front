@@ -3,12 +3,7 @@
 
 .btn{
   @include btn-base;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  transition: all 0.3s;
   text-align: center;
-  cursor: pointer;
 
   &.btn-full {
     width: 100%;
@@ -19,4 +14,59 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+// chat-index btn
+.btn-chat-index{
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 10px 12px;
+  width: 210px;
+  height: 60px;
+  border-radius: 50px;
+  border: 1px solid #B2D0FF;
+  background: #FFF;
+  font-size: $font-size-sm;
+  color: #464C53;
+  font-weight: 500;
+
+  .icon-circle{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    aspect-ratio: 1/1;
+    flex-shrink: 0;
+    border-radius: 100%;
+    background: #E9F1FC;
+    transition: background 0.3s;
+  }
+
+  &:hover{
+    background: #4B81E6;
+    box-shadow: 0 4px 16px 0 rgba(17, 17, 17, 0.12);
+    border-color: #4B81E6;
+    color: #FFF;
+    transform: translateY(-4px);
+
+    .icon-circle{
+      background: #fff;
+    }
+  }
+}
+
+// chat send btn
+.btn-chat-send{
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  aspect-ratio: 1/1;
+  border-radius: 100%;
+  background: #2D51C8;
+
+  &:hover{
+    box-shadow: 0 4px 16px 0 rgba(17, 17, 17, 0.12);
+    transform: translateY(-2px);
+  }
 }

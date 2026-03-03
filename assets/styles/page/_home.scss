@@ -2,7 +2,7 @@
 @use '../utils/mixins' as *;
 
 .chat-index{
-  background: #F4F7F9;
+  background: $color-background;
   height: 100vh;
 
   .chat-index-header {
@@ -10,7 +10,7 @@
   }
 
   .chat-index-title{
-    font-size: 36px;
+    font-size: 2.25rem;
     font-weight: $font-weight-bold;
     line-height: 150%;
     color: $color-text-primary;
@@ -23,19 +23,39 @@
   }
 
   .chat-index-input-wrapper{
+    justify-content: space-between;
+    gap: 12px;
     max-width: 800px;
     width: 100%;
-    height: 136px;
-    padding: 16px;
+    min-height: 136px;
     margin-bottom: 16px;
+    padding: 16px;
     border-radius: 20px;
     border: 1px solid $color-border;
     background: #FFF;
 
+    .chat-index-input-top{
+      gap: 8px;
+
+      .inp-chat-search{
+        width: calc(100% - 32px);
+        min-height: 24px;
+      }
+    }
+
+    .chat-index-input-bottom{
+      gap: 12px;
+
+      .inp-select-ai-model{
+        width: 180px;
+      }
+    }
 
   }
+  
+
 
   .btn-grp{
-    
+    gap: 11px;
   }
 }
