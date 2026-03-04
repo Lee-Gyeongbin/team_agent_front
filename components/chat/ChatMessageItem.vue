@@ -16,6 +16,17 @@
           class="message-content"
           v-html="message.content"
         ></div>
+        <!-- 원문보기 버튼 -->
+        <button
+          v-if="!message.isStreaming"
+          class="btn btn-view-source"
+          @click="emit('on-view-source', message.id)"
+        >
+          원문보기
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M6 4L10 8L6 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
         <!-- 스트리밍 중이면 액션 버튼 숨김 -->
         <ChatMessageActions
           v-if="!message.isStreaming"
@@ -52,5 +63,6 @@ const emit = defineEmits<{
   'on-like': [id: string]
   'on-dislike': [id: string]
   'on-regenerate': [id: string]
+  'on-view-source': [id: string]
 }>()
 </script>

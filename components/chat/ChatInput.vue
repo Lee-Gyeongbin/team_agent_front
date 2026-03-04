@@ -14,7 +14,7 @@
           class="inp-chat-search"
           placeholder="궁금하신 내용을 입력하세요."
           :auto-resize="true"
-          :max-rows="5"
+          :max-rows="7"
           @update:model-value="emit('update:modelValue', $event)"
           @keydown.enter.exact.prevent="onSend"
         />

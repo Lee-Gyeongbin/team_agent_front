@@ -117,6 +117,30 @@ $chat-text-color: #2d3139;
 }
 
 // ===================================
+// 원문보기 버튼
+// ===================================
+.btn-view-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 20px;
+  border-radius: 50px;
+  background: $color-primary;
+  color: #fff;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  transition: background-color $transition-base;
+
+  &:hover {
+    background: darken($color-primary, 8%);
+  }
+
+  svg {
+    flex-shrink: 0;
+  }
+}
+
+// ===================================
 // 메시지 액션 버튼
 // ===================================
 .chat-message-actions {
@@ -140,6 +164,23 @@ $chat-text-color: #2d3139;
       color: $color-primary;
     }
   }
+}
+
+// 기본: 액션 버튼 숨김, hover 시 표시
+.chat-message-item .chat-message-actions .btn-action {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.chat-message-item:hover .chat-message-actions .btn-action {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+// 마지막 메시지: 항상 표시
+.chat-message-item:last-child .chat-message-actions .btn-action {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 // ===================================
@@ -194,4 +235,82 @@ $chat-text-color: #2d3139;
   .chat-input-bottom {
     gap: 8px;
   }
+}
+
+// ===================================
+// 관련자료 PDF 모달
+// ===================================
+.chat-ref-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: $z-overlay;
+}
+
+.chat-ref-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: $z-modal;
+  display: flex;
+  flex-direction: column;
+  width: 90vw;
+  max-width: 900px;
+  height: 80vh;
+  background: #fff;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-lg;
+  overflow: hidden;
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.chat-ref-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid $color-border;
+  flex-shrink: 0;
+}
+
+.chat-ref-title {
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.chat-ref-header-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+
+  .btn-icon {
+    @include flex-center;
+    width: 32px;
+    height: 32px;
+    border-radius: $border-radius-sm;
+    color: $color-text-secondary;
+    transition: all $transition-fast;
+
+    &:hover {
+      color: $color-text-primary;
+      background: $color-background;
+    }
+  }
+}
+
+.chat-ref-body {
+  flex: 1;
+  overflow: hidden;
+}
+
+// PDF 플러그인 영역 (빈 여백)
+.chat-ref-pdf-area {
+  width: 100%;
+  height: 100%;
+  background: #000;
 }

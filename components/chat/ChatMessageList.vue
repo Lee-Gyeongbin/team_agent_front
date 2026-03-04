@@ -11,6 +11,7 @@
       @on-like="emit('on-like', $event)"
       @on-dislike="emit('on-dislike', $event)"
       @on-regenerate="emit('on-regenerate', $event)"
+      @on-view-source="emit('on-view-source', $event)"
     />
   </div>
 </template>
@@ -29,6 +30,7 @@ const emit = defineEmits<{
   'on-like': [id: string]
   'on-dislike': [id: string]
   'on-regenerate': [id: string]
+  'on-view-source': [id: string]
 }>()
 
 const listRef = ref<HTMLElement | null>(null)
