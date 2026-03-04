@@ -19,6 +19,7 @@
         <!-- 원문보기 버튼 -->
         <UiButton
           v-if="!message.isStreaming"
+          size="xlg"
           @click="emit('on-view-source', message.id)"
         >
           원문보기

@@ -27,15 +27,20 @@
           class="w-180"
           name="ai-model"
           :options="modelOptions"
-          size="lg"
+          size="xlg"
         />
-        <button
-          class="btn btn-chat-send"
+        <UiButton
+          variant="primary"
+          size="xlg"
+          icon-only
+          class="btn-chat-send"
           :disabled="!modelValue.trim()"
           @click="onSend"
         >
-          <i class="icon-send size-20"></i>
-        </button>
+          <template #icon-left>
+            <i class="icon-send size-16" />
+          </template>
+        </UiButton>
       </div>
     </div>
   </div>
