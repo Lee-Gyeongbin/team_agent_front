@@ -1,20 +1,4 @@
-interface UserInfo {
-  userId: string
-  userNm: string
-  compId: string
-  deptId: string
-  deptNm: string
-  email: string
-  jikgubNm: string
-  posNm: string
-}
-
-interface LoginResponse {
-  success: boolean
-  errorType?: string
-  message?: string
-  user?: UserInfo
-}
+import type { LoginResponse, UserInfo } from '~/types/auth'
 
 const COOKIE_NAME = 'ta_user'
 

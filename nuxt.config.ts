@@ -7,7 +7,7 @@ export default defineNuxtConfig({
   modules: ['@nuxt/eslint'],
 
   imports: {
-    dirs: ['composables/**'],
+    dirs: ['composables/**', 'utils/global/**'],
   },
 
   components: [
