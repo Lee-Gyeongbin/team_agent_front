@@ -1,21 +1,26 @@
 <template>
-  <div class="chat-detail flex flex-col">
-    <ChatMessageList
-      :messages="messages"
-      @on-copy="onCopy"
-      @on-like="onLike"
-      @on-dislike="onDislike"
-      @on-regenerate="onRegenerate"
-      @on-view-source="onViewSource"
-    />
-    <ChatInput
-      v-model="chatMessage"
-      @on-send="onSend"
-    />
-    <!-- 관련자료 PDF 모달 -->
-    <ChatReferenceModal
-      :open="isRefModalOpen"
-      @update:open="isRefModalOpen = $event"
+  <div
+    class="chat-detail"
+    :class="{ 'is-panel-open': isRefPanelOpen }"
+  >
+    <div class="chat-detail-main flex flex-col">
+      <ChatMessageList
+        :messages="messages"
+        @on-copy="onCopy"
+        @on-like="onLike"
+        @on-dislike="onDislike"
+        @on-regenerate="onRegenerate"
+        @on-view-source="onViewSource"
+      />
+      <ChatInput
+        v-model="chatMessage"
+        @on-send="onSend"
+      />
+    </div>
+    <!-- 관련자료 사이드 패널 -->
+    <ChatReferencePanel
+      :open="isRefPanelOpen"
+      @update:open="isRefPanelOpen = $event"
     />
   </div>
 </template>
@@ -25,7 +30,24 @@ import type { ChatMessage } from '~/types/chat'
 
 const route = useRoute()
 const chatMessage = ref('')
-const isRefModalOpen = ref(false)
+const isRefPanelOpen = ref(false)
+
+// 패널 열릴 때 부모 content-inner의 max-width 해제
+const parentEl = ref<HTMLElement | null>(null)
+
+onMounted(() => {
+  parentEl.value = document.querySelector('.content-inner')
+})
+
+watch(isRefPanelOpen, (open) => {
+  if (parentEl.value) {
+    if (open) {
+      parentEl.value.style.maxWidth = 'none'
+    } else {
+      parentEl.value.style.maxWidth = ''
+    }
+  }
+})
 
 // ============================================
 // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
@@ -153,6 +175,6 @@ const onRegenerate = (id: string) => {
 
 // 관련자료 모달 열기
 const onViewSource = (id: string) => {
-  isRefModalOpen.value = true
+  isRefPanelOpen.value = true
 }
 </script>

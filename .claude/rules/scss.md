@@ -55,8 +55,28 @@ assets/styles/page/
 - `$header-height: 56px`
 - `$chat-input-height: 64px`, `$chat-max-width: 768px`
 
+## 타이포 프리셋 (SCSS Map)
+
+`@include typo($변수명)`으로 font-size, font-weight, line-height를 한 줄로 적용. 색상은 포함하지 않음 (컨텍스트별 별도 지정).
+
+| 프리셋 | 사이즈 | weight | line-height |
+|--------|--------|--------|-------------|
+| `$body-caption` / `-bold` | 10px | 400 / 700 | 150% |
+| `$body-xsmall` / `-bold` | 12px | 400 / 700 | 150% |
+| `$body-small` / `-bold` | 14px | 400 / 700 | 150% |
+| `$body-medium` / `-bold` | 16px | 400 / 700 | 150% |
+| `$body-large` / `-bold` | 18px | 400 / 700 | 150% |
+| `$body-xlarge` / `-bold` | 20px | 400 / 700 | 150% |
+
+```scss
+// 사용 예시
+.title { @include typo($body-medium-bold); color: $color-text-dark; }
+.desc  { @include typo($body-small); }
+```
+
 ## 믹스인 사용
 
+- 타이포 프리셋: `@include typo($body-medium-bold)` → font-size/weight/line-height 일괄 적용
 - 모바일/태블릿 전용: `@include mobile { ... }` → `@media (max-width: 1023px)`
 - 텍스트 말줄임: `@include ellipsis(1)` 또는 `@include ellipsis(2)`
 - 커스텀 스크롤바: `@include custom-scrollbar`

@@ -46,6 +46,13 @@
   justify-content: center;
 }
 
+// 타이포그래피 프리셋 적용 (SCSS Map → CSS 속성)
+@mixin typo($map) {
+  @each $prop, $val in $map {
+    #{$prop}: $val;
+  }
+}
+
 // input reset
 @mixin input-reset {
   border: 0;

@@ -1,18 +1,23 @@
 @use '../utils/variables' as *;
 @use '../utils/mixins' as *;
 
-// ===================================
-// 채팅 텍스트 색상
-// ===================================
-$chat-text-color: #2d3139;
+// $color-text-dark (#2D3139) — 글로벌 변수 사용
 
 // ===================================
 // 채팅 상세 페이지
 // ===================================
 .chat-detail {
+  display: flex;
   height: calc(100vh - #{$header-height});
   overflow: hidden;
   background: #fff;
+}
+
+.chat-detail-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
 }
 
 // ===================================
@@ -62,11 +67,12 @@ $chat-text-color: #2d3139;
       display: flex;
       flex-direction: column;
       gap: 16px;
+      align-items: flex-end;
     }
 
     .message-content {
       line-height: 1.5em;
-      color: $chat-text-color;
+      color: $color-text-dark;
       font-size: $font-size-base;
 
       // v-html 내부 요소 간격 (피그마 gap: 16px)
@@ -98,7 +104,7 @@ $chat-text-color: #2d3139;
       padding: 12px 16px;
       border-radius: 50px;
       background: #ecf0f3;
-      color: $chat-text-color;
+      color: $color-text-dark;
       font-size: $font-size-base;
       line-height: 1.5em;
       word-break: break-word;
@@ -117,27 +123,10 @@ $chat-text-color: #2d3139;
 }
 
 // ===================================
-// 원문보기 버튼
+// 원문보기 버튼 (UiButton 오버라이드)
 // ===================================
 .btn-view-source {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 10px 20px;
   border-radius: 50px;
-  background: $color-primary;
-  color: #fff;
-  font-size: $font-size-sm;
-  font-weight: $font-weight-semibold;
-  transition: background-color $transition-base;
-
-  &:hover {
-    background: darken($color-primary, 8%);
-  }
-
-  svg {
-    flex-shrink: 0;
-  }
 }
 
 // ===================================
@@ -147,18 +136,13 @@ $chat-text-color: #2d3139;
   display: flex;
   align-items: center;
   gap: $spacing-xs;
+  align-self: flex-start;
 
   .btn-action {
     width: 28px;
     height: 28px;
-    border-radius: $border-radius-sm;
+    padding: 0;
     color: $color-text-disabled;
-    transition: all $transition-fast;
-
-    &:hover {
-      color: $color-text-primary;
-      background: $color-background;
-    }
 
     &.is-active {
       color: $color-primary;
@@ -238,33 +222,18 @@ $chat-text-color: #2d3139;
 }
 
 // ===================================
-// 관련자료 PDF 모달
+// 관련자료 사이드 패널
 // ===================================
-.chat-ref-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: $z-overlay;
-}
 
-.chat-ref-modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: $z-modal;
-  display: flex;
+.chat-ref-panel {
+  display: none;
   flex-direction: column;
-  width: 90vw;
-  max-width: 900px;
-  height: 80vh;
+  width: 50%;
+  border-left: 1px solid $color-border;
   background: #fff;
-  border-radius: $border-radius-lg;
-  box-shadow: $shadow-lg;
-  overflow: hidden;
 
-  &:focus {
-    outline: none;
+  &.is-open {
+    display: flex;
   }
 }
 
@@ -272,15 +241,14 @@ $chat-text-color: #2d3139;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
+  padding: 12px 16px;
   border-bottom: 1px solid $color-border;
   flex-shrink: 0;
 }
 
 .chat-ref-title {
-  font-size: $font-size-base;
-  font-weight: $font-weight-semibold;
-  color: $color-text-primary;
+  @include typo($body-medium-bold);
+  color: $color-text-dark;
 }
 
 .chat-ref-header-actions {
@@ -290,8 +258,8 @@ $chat-text-color: #2d3139;
 
   .btn-icon {
     @include flex-center;
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     border-radius: $border-radius-sm;
     color: $color-text-secondary;
     transition: all $transition-fast;

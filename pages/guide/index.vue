@@ -234,6 +234,7 @@ const statusList = [
   { category: '공통', name: 'AppSidebar', location: 'components/common/', url: '', done: true },
   { category: 'UI', name: 'UiTextarea', location: 'components/ui/', url: '', done: true },
   { category: 'UI', name: 'UiSelect', location: 'components/ui/', url: '', done: true },
+  { category: 'UI', name: 'UiButton', location: 'components/ui/', url: '', done: true },
 ]
 
 // 섹션 2: 디자인 토큰 — 색상
@@ -302,6 +303,12 @@ const componentList = [
     description: 'v-model 지원 네이티브 Select — size 3단계 (sm/md/lg)',
     tags: ['v-model', 'size', 'placeholder', 'disabled'],
   },
+  {
+    name: 'UiButton',
+    to: '/guide/ui-button',
+    description: 'variant / size / icon / iconOnly 지원 버튼 컴포넌트',
+    tags: ['variant', 'size', 'icon-left', 'icon-right', 'iconOnly'],
+  },
 ]
 
 // 섹션 4: 아이콘 목록
@@ -318,5 +325,8 @@ const iconList = [
   { class: 'icon-send' },
   { class: 'icon-notification' },
   { class: 'icon-user' },
+  { class: 'icon-expand' },
+  { class: 'icon-close' },
+  { class: 'icon-arrow-right' },
 ]
 </script>

@@ -105,3 +105,22 @@
 .icon-logout {
   @include icon-file('logout');
 }
+
+// ===================================
+// 관련자료 패널 아이콘
+// ===================================
+
+// 전체화면
+.icon-expand {
+  @include icon-file-bg('expand');
+}
+
+// 닫기
+.icon-close {
+  @include icon-file-bg('close');
+}
+
+// 오른쪽 화살표
+.icon-arrow-right {
+  @include icon-file-bg('arrow-right');
+}

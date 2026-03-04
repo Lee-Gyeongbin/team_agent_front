@@ -6,61 +6,121 @@
    ============================== */
 
 /* position ============================= */
-.pos-rel { position: relative; }
-.pos-abs { position: absolute; }
-.pos-fix { position: fixed; }
+.pos-rel {
+  position: relative;
+}
+.pos-abs {
+  position: absolute;
+}
+.pos-fix {
+  position: fixed;
+}
 
 /* display ============================== */
-.flex   { display: flex; }
-.block  { display: block; }
-.inline { display: inline-block; }
+.flex {
+  display: flex;
+}
+.block {
+  display: block;
+}
+.inline {
+  display: inline-block;
+}
 
 /* flex align =========================== */
-.items-start   { align-items: flex-start; }
-.items-center  { align-items: center; }
-.items-end     { align-items: flex-end; }
-.items-stretch { align-items: stretch; }
+.items-start {
+  align-items: flex-start;
+}
+.items-center {
+  align-items: center;
+}
+.items-end {
+  align-items: flex-end;
+}
+.items-stretch {
+  align-items: stretch;
+}
 
 /* flex justify ========================= */
-.justify-start   { justify-content: flex-start; }
-.justify-center  { justify-content: center; }
-.justify-between { justify-content: space-between; }
-.justify-end     { justify-content: flex-end; }
+.justify-start {
+  justify-content: flex-start;
+}
+.justify-center {
+  justify-content: center;
+}
+.justify-between {
+  justify-content: space-between;
+}
+.justify-end {
+  justify-content: flex-end;
+}
 
 /* flex options ========================= */
-.flex-col  { flex-direction: column; }
-.flex-wrap { flex-wrap: wrap; }
-.shrink-0  { flex-shrink: 0; }
-.grow-1    { flex-grow: 1; }
+.flex-col {
+  flex-direction: column;
+}
+.flex-wrap {
+  flex-wrap: wrap;
+}
+.shrink-0 {
+  flex-shrink: 0;
+}
+.grow-1 {
+  flex-grow: 1;
+}
 
 /* width ================================ */
-.w-full { width: 100% !important; }
-.w-half { width: 50%; }
+.w-full {
+  width: 100% !important;
+}
+.w-half {
+  width: 50%;
+}
 
 // w-1 ~ w-500 (px 단위)
 @for $i from 1 through 500 {
-  .w-#{$i} { width: #{$i}px; }
+  .w-#{$i} {
+    width: #{$i}px;
+  }
 }
 
 /* content inner ======================== */
 .content-inner {
-  max-width: $chat-max-width;
   width: 100%;
   margin-left: auto;
   margin-right: auto;
+  max-width: 769px;
 }
 
 /* typography =========================== */
-.fw-800 { font-weight: 800; }
-.fw-700 { font-weight: 700; }
-.fw-600 { font-weight: 600; }
-.fw-500 { font-weight: 500; }
-.fw-400 { font-weight: 400; }
-.fw-300 { font-weight: 300; }
-.fw-200 { font-weight: 200; }
+.fw-800 {
+  font-weight: 800;
+}
+.fw-700 {
+  font-weight: 700;
+}
+.fw-600 {
+  font-weight: 600;
+}
+.fw-500 {
+  font-weight: 500;
+}
+.fw-400 {
+  font-weight: 400;
+}
+.fw-300 {
+  font-weight: 300;
+}
+.fw-200 {
+  font-weight: 200;
+}
 
-.f-center { text-align: center; }
-.f-right  { text-align: right; }
+.f-center {
+  text-align: center;
+}
+.f-right {
+  text-align: right;
+}
 
 /* image ================================ */
 .img-contain {

@@ -1,35 +1,51 @@
 <template>
   <div class="chat-message-actions">
-    <button
-      class="btn btn-action"
+    <UiButton
+      variant="ghost"
+      size="sm"
+      icon-only
       title="복사"
       @click="emit('on-copy')"
     >
-      <i class="icon-copy size-16"></i>
-    </button>
-    <button
-      class="btn btn-action"
+      <template #icon-left>
+        <i class="icon-copy size-16" />
+      </template>
+    </UiButton>
+    <UiButton
+      variant="ghost"
+      size="sm"
+      icon-only
       :class="{ 'is-active': isLiked }"
       title="좋아요"
       @click="emit('on-like')"
     >
-      <i class="icon-thumbs-up size-16"></i>
-    </button>
-    <button
-      class="btn btn-action"
+      <template #icon-left>
+        <i class="icon-thumbs-up size-16" />
+      </template>
+    </UiButton>
+    <UiButton
+      variant="ghost"
+      size="sm"
+      icon-only
       :class="{ 'is-active': isDisliked }"
       title="싫어요"
       @click="emit('on-dislike')"
     >
-      <i class="icon-thumbs-down size-16"></i>
-    </button>
-    <button
-      class="btn btn-action"
+      <template #icon-left>
+        <i class="icon-thumbs-down size-16" />
+      </template>
+    </UiButton>
+    <UiButton
+      variant="ghost"
+      size="sm"
+      icon-only
       title="재생성"
       @click="emit('on-regenerate')"
     >
-      <i class="icon-refresh size-16"></i>
-    </button>
+      <template #icon-left>
+        <i class="icon-refresh size-16" />
+      </template>
+    </UiButton>
   </div>
 </template>
 
