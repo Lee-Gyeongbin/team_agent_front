@@ -75,7 +75,7 @@ interface Props {
   disabled?: boolean
   name?: string
   id?: string
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'xs' | 'sm' | 'md' | 'lg'
 }
 
 withDefaults(defineProps<Props>(), {
@@ -111,10 +111,10 @@ const onUpdate = (val: string) => {
 
   // 미선택(placeholder) 상태
   &[data-placeholder] {
-    color: #94A3B8;
+    color: #94a3b8;
   }
   background-color: #fff;
-  border: 1px solid #C6D2DB;
+  border: 1px solid #c6d2db;
   border-radius: $border-radius-md;
 
   cursor: pointer;
@@ -131,8 +131,13 @@ const onUpdate = (val: string) => {
   }
 
   // 사이즈
-  &.size-sm {
+  &.size-xs {
     height: 28px;
+    font-size: $font-size-xs;
+  }
+
+  &.size-sm {
+    height: 30px;
     font-size: $font-size-xs;
   }
 

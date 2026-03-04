@@ -2,7 +2,7 @@
   <div class="chat-message-actions">
     <UiButton
       variant="ghost"
-      size="sm"
+      size="xs"
       icon-only
       title="복사"
       @click="emit('on-copy')"
@@ -13,7 +13,7 @@
     </UiButton>
     <UiButton
       variant="ghost"
-      size="sm"
+      size="xs"
       icon-only
       :class="{ 'is-active': isLiked }"
       title="좋아요"
@@ -25,7 +25,7 @@
     </UiButton>
     <UiButton
       variant="ghost"
-      size="sm"
+      size="xs"
       icon-only
       :class="{ 'is-active': isDisliked }"
       title="싫어요"
@@ -37,7 +37,7 @@
     </UiButton>
     <UiButton
       variant="ghost"
-      size="sm"
+      size="xs"
       icon-only
       title="재생성"
       @click="emit('on-regenerate')"

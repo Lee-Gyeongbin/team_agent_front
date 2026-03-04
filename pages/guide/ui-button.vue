@@ -37,11 +37,13 @@
           class="demo-box"
           style="display: flex; gap: 12px; align-items: center"
         >
+          <UiButton size="xs">Extra Small</UiButton>
           <UiButton size="sm">Small</UiButton>
           <UiButton size="md">Medium</UiButton>
           <UiButton size="lg">Large</UiButton>
         </div>
-        <pre class="demo-code">&lt;UiButton size="sm"&gt;Small&lt;/UiButton&gt;
+        <pre class="demo-code">&lt;UiButton size="xs"&gt;Extra Small&lt;/UiButton&gt;
+&lt;UiButton size="sm"&gt;Small&lt;/UiButton&gt;
 &lt;UiButton size="md"&gt;Medium&lt;/UiButton&gt;
 &lt;UiButton size="lg"&gt;Large&lt;/UiButton&gt;</pre>
       </div>
@@ -108,7 +110,7 @@
           <UiButton
             variant="ghost"
             icon-only
-            size="sm"
+            size="xs"
           >
             <template #icon-left>
               <i class="icon-close size-16" />
@@ -132,7 +134,7 @@
             </template>
           </UiButton>
         </div>
-        <pre class="demo-code">&lt;UiButton variant="ghost" icon-only size="sm"&gt;
+        <pre class="demo-code">&lt;UiButton variant="ghost" icon-only size="xs"&gt;
   &lt;template #icon-left&gt;&lt;i class="icon-close size-16" /&gt;&lt;/template&gt;
 &lt;/UiButton&gt;</pre>
       </div>
@@ -230,7 +232,7 @@
 <script setup lang="ts">
 const propList = [
   { name: 'variant', type: "'primary' | 'secondary' | 'outline' | 'ghost'", default: "'primary'", desc: '버튼 스타일' },
-  { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'", desc: '버튼 크기 (32 / 40 / 48px)' },
+  { name: 'size', type: "'xs' | 'sm' | 'md' | 'lg'", default: "'md'", desc: '버튼 크기 (28 / 30 / 40 / 48px)' },
   { name: 'disabled', type: 'boolean', default: 'false', desc: '비활성 상태' },
   { name: 'loading', type: 'boolean', default: 'false', desc: '로딩 상태' },
   { name: 'fullWidth', type: 'boolean', default: 'false', desc: '전체 너비' },

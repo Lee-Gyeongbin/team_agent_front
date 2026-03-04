@@ -19,7 +19,7 @@
             id="sort-order"
             name="sort-order"
             :options="searchOptions"
-            size="sm"
+            size="xs"
           />
         </div>
         <div class="btn-grp">
@@ -105,7 +105,7 @@
           </div>
         </div>
       </div>
-      
+
       <!-- 새 카테고리 -->
       <div class="library-list-grp">
         <div class="library-list-header flex justify-between items-center">
@@ -147,12 +147,26 @@
         </div>
       </div>
 
-      <!-- 카테고리 추가 -->
-      <div class="library-list-add">
-        <button class="btn btn-library-list-add">
-          <i class="icon icon-plus size-16"></i>
-          <p>카테고리 추가</p>
-        </button>
+      <!-- 카테고리 입력 -->
+      <div class="library-list-grp">
+        <div
+          class="library-category-input-grp flex items-center"
+          :class="{ 'is-focused': isCategoryInputFocused }"
+        >
+          <input
+            type="text"
+            class="inp inp-category"
+            placeholder="카테고리명을 입력하세요"
+            @focus="isCategoryInputFocused = true"
+            @blur="isCategoryInputFocused = false"
+          />
+          <UiButton
+            :variant="isCategoryInputFocused ? 'primary' : 'secondary'"
+            size="xs"
+          >
+            추가
+          </UiButton>
+        </div>
       </div>
     </div>
   </div>
@@ -170,6 +184,9 @@ const searchOptions = [
 
 // 드롭다운 토글 상태
 const isDropdownOpen = ref(false)
+
+// 카테고리 입력 포커스 상태
+const isCategoryInputFocused = ref(false)
 
 // 드래그 스크롤 적용
 const { setupDragScroll, setupDragScrollDirect } = useDragScroll()
