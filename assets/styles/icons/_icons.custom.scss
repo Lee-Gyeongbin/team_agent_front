@@ -37,19 +37,19 @@
   @include icon-file('settings');
 }
 
-.icon-knowledge{
+.icon-knowledge {
   @include icon-file('knowledge');
 }
 
-.icon-database{
+.icon-database {
   @include icon-file('database');
 }
 
-.icon-sparkle{
+.icon-sparkle {
   @include icon-file-bg('sparkle');
 }
 
-.icon-send{
+.icon-send {
   @include icon-file('send-white');
 }
 
@@ -99,4 +99,9 @@
 // 유저 프로필
 .icon-user {
   @include icon-file('user');
+}
+
+// 로그아웃
+.icon-logout {
+  @include icon-file('logout');
 }
