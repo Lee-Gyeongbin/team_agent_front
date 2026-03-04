@@ -5,7 +5,11 @@ button{
   @include btn-base;
 }
 
-.btn{
+button{
+  @include btn-base;
+}
+
+.btn {
   @include btn-base;
   text-align: center;
 
@@ -14,27 +18,27 @@ button{
   }
 }
 
-.btn-grp{
+.btn-grp {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 // chat-index btn
-.btn-chat-index{
+.btn-chat-index {
   justify-content: flex-start;
   gap: 12px;
   padding: 10px 12px;
   width: 210px;
   height: 60px;
   border-radius: 50px;
-  border: 1px solid #B2D0FF;
-  background: #FFF;
+  border: 1px solid #b2d0ff;
+  background: #fff;
   font-size: $font-size-sm;
-  color: #464C53;
+  color: #464c53;
   font-weight: 500;
 
-  .icon-circle{
+  .icon-circle {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -43,33 +47,33 @@ button{
     aspect-ratio: 1/1;
     flex-shrink: 0;
     border-radius: 100%;
-    background: #E9F1FC;
+    background: #e9f1fc;
     transition: background 0.3s;
   }
 
-  &:hover{
-    background: #4B81E6;
+  &:hover {
+    background: #4b81e6;
     box-shadow: 0 4px 16px 0 rgba(17, 17, 17, 0.12);
-    border-color: #4B81E6;
-    color: #FFF;
+    border-color: #4b81e6;
+    color: #fff;
     transform: translateY(-4px);
 
-    .icon-circle{
+    .icon-circle {
       background: #fff;
     }
   }
 }
 
 // chat send btn
-.btn-chat-send{
+.btn-chat-send {
   flex-shrink: 0;
-  width: 48px;
-  height: 48px;
+  width: 36px;
+  height: 36px;
   aspect-ratio: 1/1;
   border-radius: 100%;
-  background: #2D51C8;
+  background: #2d51c8;
 
-  &:hover{
+  &:hover {
     box-shadow: 0 4px 16px 0 rgba(17, 17, 17, 0.12);
     transform: translateY(-2px);
   }

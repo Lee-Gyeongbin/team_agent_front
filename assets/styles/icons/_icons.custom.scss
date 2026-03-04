@@ -39,24 +39,63 @@
   @include icon-file('settings');
 }
 
-.icon-knowledge{
+.icon-knowledge {
   @include icon-file('knowledge');
 }
 
-.icon-database{
+.icon-database {
   @include icon-file('database');
 }
 
+<<<<<<< HEAD
 // ===================================
 // chat 아이콘
 // ===================================
 
 .icon-sparkle{
   @include icon-file('sparkle');
+=======
+.icon-sparkle {
+  @include icon-file-bg('sparkle');
+>>>>>>> 9f2dbd00d238c0d9840f408da354daa103b989d7
 }
 
-.icon-send{
+.icon-send {
   @include icon-file('send-white');
+}
+
+// ===================================
+// 채팅 아이콘
+// ===================================
+
+// 봇 아바타
+.icon-bot {
+  @include icon-file('bot');
+}
+
+// 복사
+.icon-copy {
+  @include icon-file-bg('copy');
+}
+
+// 좋아요
+.icon-thumbs-up {
+  @include icon-file-bg('thumbs-up');
+}
+
+// 싫어요
+.icon-thumbs-down {
+  @include icon-file-bg('thumbs-down');
+}
+
+// 재생성
+.icon-refresh {
+  @include icon-file-bg('refresh');
+}
+
+// 더보기
+.icon-more {
+  @include icon-file-bg('more');
 }
 
 // ===================================
@@ -72,7 +111,6 @@
 .icon-user {
   @include icon-file('user');
 }
-
 // ===================================
 // library 아이콘
 // ===================================
@@ -114,4 +152,9 @@
 
 .icon-plus {
   @include icon-file('plus');
+}
+
+// 로그아웃
+.icon-logout {
+  @include icon-file('logout');
 }

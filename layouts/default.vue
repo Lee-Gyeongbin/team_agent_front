@@ -3,7 +3,7 @@
     <AppSidebar />
     <div class="main">
       <AppHeader />
-      <main class="content">
+      <main class="content content-inner">
         <slot />
       </main>
     </div>
