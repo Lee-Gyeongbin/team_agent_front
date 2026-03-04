@@ -17,12 +17,10 @@ interface LoginResponse {
 }
 
 const COOKIE_NAME = 'ta_user'
-const COOKIE_MAX_AGE = 60 * 60 * 24
 
 export const useAuth = () => {
   const { post, get } = useApi()
   const userCookie = useCookie<UserInfo | null>(COOKIE_NAME, {
-    maxAge: COOKIE_MAX_AGE,
     path: '/',
     default: () => null,
   })
