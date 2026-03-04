@@ -246,6 +246,7 @@
 // 패널 열릴 때 채팅 영역 축소
 .chat-detail.is-panel-open .chat-detail-main {
   max-width: calc(50vw - #{$sidebar-width});
+  margin-left: 0;
   margin-right: 0;
 }
 
