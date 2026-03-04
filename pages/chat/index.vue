@@ -5,7 +5,7 @@
       data-aos="fade-up"
     >
       <h1 class="chat-index-title f-center">TeamAgent</h1>
-      <p class="chat-index-description f-center">어떤게 궁금하세요?</p>
+      <p class="chat-index-description f-center">{{ user?.userNm || '' }}님, 어떤게 궁금하세요?</p>
     </div>
 
     <div
@@ -38,6 +38,7 @@
 
 <script setup lang="ts">
 const chatMessage = ref('')
+const { user } = useAuth()
 
 // 메시지 전송 → 채팅방 생성 후 이동
 const onSend = () => {

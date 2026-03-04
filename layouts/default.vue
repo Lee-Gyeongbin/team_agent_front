@@ -36,6 +36,7 @@
   .content {
     flex: 1;
     overflow-y: auto;
+    width: 100%;
     @include custom-scrollbar;
   }
 }

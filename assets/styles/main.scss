@@ -14,6 +14,8 @@
 @use './layout/header';
 @use './layout/sidebar';
 
-@use './page/home';
-@use './page/chat';
 @use './page/guide';
+@use './page/home';
+@use './page/library';
+@use './page/chat';
+

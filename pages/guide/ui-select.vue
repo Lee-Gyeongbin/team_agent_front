@@ -32,8 +32,17 @@
       <div class="guide-demo">
         <div class="demo-box">
           <div style="display: flex; align-items: center; gap: 16px">
-            <div class="w-150">
-              <p class="demo-label">sm (28px)</p>
+            <div>
+              <p class="demo-label">xs (28px)</p>
+              <UiSelect
+                v-model="selectedXs"
+                :options="fruitOptions"
+                size="xs"
+                placeholder="xs"
+              />
+            </div>
+            <div>
+              <p class="demo-label">sm (30px)</p>
               <UiSelect
                 v-model="selectedSm"
                 :options="fruitOptions"
@@ -61,7 +70,8 @@
             </div>
           </div>
         </div>
-        <pre class="demo-code">&lt;UiSelect :options="opts" size="sm" /&gt;
+        <pre class="demo-code">&lt;UiSelect :options="opts" size="xs" /&gt;
+&lt;UiSelect :options="opts" size="sm" /&gt;
 &lt;UiSelect :options="opts" size="md" /&gt;  &lt;!-- 기본 --&gt;
 &lt;UiSelect :options="opts" size="lg" /&gt;</pre>
       </div>
@@ -153,11 +163,11 @@ const fruitOptions = [
   { label: '딸기', value: 'strawberry' },
 ]
 
-const selectedDefault = ref('apple')
-const selectedSm = ref('apple')
-const selectedMd = ref('apple')
-const selectedLg = ref('apple')
-const selectedHover = ref('apple')
+const selectedDefault = ref('')
+const selectedSm = ref('')
+const selectedMd = ref('')
+const selectedLg = ref('')
+const selectedPlaceholder = ref('')
 
 const propList = [
   { name: 'modelValue', type: 'string | number', default: 'undefined', desc: 'v-model 바인딩 값 (빈 문자열 불가)' },
@@ -166,6 +176,6 @@ const propList = [
   { name: 'disabled', type: 'boolean', default: 'false', desc: '비활성 상태' },
   { name: 'name', type: 'string', default: 'undefined', desc: 'form name 속성' },
   { name: 'id', type: 'string', default: 'undefined', desc: 'id 속성' },
-  { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'", desc: '높이 사이즈 (28/32/36px)' },
+  { name: 'size', type: "'xs' | 'sm' | 'md' | 'lg'", default: "'md'", desc: '높이 사이즈 (28/30/32/36px)' },
 ]
 </script>
