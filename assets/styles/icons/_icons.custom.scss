@@ -47,17 +47,12 @@
   @include icon-file('database');
 }
 
-<<<<<<< HEAD
 // ===================================
 // chat 아이콘
 // ===================================
 
 .icon-sparkle{
   @include icon-file('sparkle');
-=======
-.icon-sparkle {
-  @include icon-file-bg('sparkle');
->>>>>>> 9f2dbd00d238c0d9840f408da354daa103b989d7
 }
 
 .icon-send {
