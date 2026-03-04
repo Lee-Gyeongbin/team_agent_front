@@ -1,5 +1,6 @@
 <template>
   <header class="app-header">
+    <span class="header-logo">TeamAgent</span>
     <div class="header-actions">
       <!-- 알림 -->
       <button

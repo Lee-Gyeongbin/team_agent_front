@@ -4,10 +4,15 @@
 .app-header {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   flex-shrink: 0;
   height: $header-height;
   padding: 0 $spacing-md;
+
+  .header-logo {
+    @include typo($body-large-bold);
+    color: $color-text-dark;
+  }
 
   .header-actions {
     display: flex;
