@@ -6,10 +6,16 @@
       @on-like="onLike"
       @on-dislike="onDislike"
       @on-regenerate="onRegenerate"
+      @on-view-source="onViewSource"
     />
     <ChatInput
       v-model="chatMessage"
       @on-send="onSend"
+    />
+    <!-- 관련자료 PDF 모달 -->
+    <ChatReferenceModal
+      :open="isRefModalOpen"
+      @update:open="isRefModalOpen = $event"
     />
   </div>
 </template>
@@ -19,6 +25,7 @@ import type { ChatMessage } from '~/types/chat'
 
 const route = useRoute()
 const chatMessage = ref('')
+const isRefModalOpen = ref(false)
 
 // ============================================
 // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
@@ -142,5 +149,10 @@ const onDislike = (id: string) => {
 const onRegenerate = (id: string) => {
   // 🔽 더미 — 백엔드 연결 시 API 호출로 교체
   console.warn('재생성 요청:', id)
+}
+
+// 관련자료 모달 열기
+const onViewSource = (id: string) => {
+  isRefModalOpen.value = true
 }
 </script>
