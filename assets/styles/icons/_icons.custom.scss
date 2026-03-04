@@ -7,6 +7,8 @@
 // @include icon-file('파일명')으로 사용
 // ===================================
 
+
+
 // 햄버거 메뉴
 .icon-menu {
   @include icon-file('menu');
@@ -45,8 +47,12 @@
   @include icon-file('database');
 }
 
+// ===================================
+// chat 아이콘
+// ===================================
+
 .icon-sparkle{
-  @include icon-file-bg('sparkle');
+  @include icon-file('sparkle');
 }
 
 .icon-send{
@@ -65,4 +71,47 @@
 // 유저 프로필
 .icon-user {
   @include icon-file('user');
+}
+
+// ===================================
+// library 아이콘
+// ===================================
+
+// 보관함
+.icon-archive {
+  @include icon-file('archive');
+}
+
+// 쓰레기통
+.icon-delete {
+  @include icon-file('delete');
+}
+
+// 점 3개
+.icon-add-dot {
+  @include icon-file('add-dot');
+}
+
+// 다이아몬드
+.icon-diamond {
+  @include icon-file('diamond');
+}
+
+// 편집/이름 변경
+.icon-edit {
+  @include icon-file('edit');
+}
+
+// 드롭다운 쓰레기통(각진ver)
+.icon-trashcan {
+  @include icon-file('trashcan');
+}
+
+// 하트(그레이)
+.icon-heart {
+  @include icon-file('heart');
+}
+
+.icon-plus {
+  @include icon-file('plus');
 }

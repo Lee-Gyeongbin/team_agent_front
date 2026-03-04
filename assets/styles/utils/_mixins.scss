@@ -35,6 +35,16 @@
   }
 }
 
+// 스크롤바 숨김
+@mixin hide-scrollbar {
+  scrollbar-width: none; // Firefox
+  -ms-overflow-style: none; // IE, Edge
+
+  &::-webkit-scrollbar {
+    display: none; // Chrome, Safari
+  }
+}
+
 @mixin flex-center {
   display: flex;
   align-items: center;

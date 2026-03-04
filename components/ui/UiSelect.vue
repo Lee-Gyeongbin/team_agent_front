@@ -5,10 +5,10 @@
   >
     <select
       class="ui-select"
+      :id="id"
+      :name="name"
       :value="modelValue ?? options[0]?.value"
       :disabled="disabled"
-      :name="name"
-      :id="id"
       @change="onChange"
     >
       <option
@@ -43,7 +43,7 @@ interface Props {
   disabled?: boolean
   name?: string
   id?: string
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'xs' | 'sm' | 'md' | 'lg'
 }
 
 withDefaults(defineProps<Props>(), {
@@ -97,10 +97,16 @@ const onChange = (event: Event) => {
   }
 
   // 사이즈
-  &.size-sm .ui-select {
+  &.size-xs .ui-select {
     height: 28px;
     line-height: 28px;
     font-size: $font-size-xs;
+  }
+
+  &.size-sm .ui-select {
+    height: 30px;
+    line-height: 30px;
+    font-size: $font-size-sm;
   }
 
   &.size-md .ui-select {

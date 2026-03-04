@@ -2,7 +2,6 @@
 @use '../utils/mixins' as *;
 
 .chat-index {
-  background: #fff;
   height: calc(100vh - #{$header-height});
 
   .chat-index-header {
