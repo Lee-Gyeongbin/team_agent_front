@@ -41,7 +41,7 @@
 <script setup lang="ts">
 interface Props {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost'
-  size?: 'xs' | 'sm' | 'md' | 'lg'
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xlg'
   disabled?: boolean
   loading?: boolean
   fullWidth?: boolean
@@ -85,26 +85,32 @@ const emit = defineEmits<{
   // ===================================
   &.size-btn-xs {
     @include typo($body-xsmall);
-    height: 28px;
-    padding: 0 12px;
+    height: $height-xs;
+    padding: 0 8px;
   }
 
   &.size-btn-sm {
     @include typo($body-xsmall);
-    height: 30px;
-    padding: 0 12px;
+    height: $height-sm;
+    padding: 0 10px;
   }
 
   &.size-btn-md {
     @include typo($body-small);
-    height: 40px;
-    padding: 0 20px;
+    height: $height-md;
+    padding: 0 12px;
   }
 
   &.size-btn-lg {
+    @include typo($body-small);
+    height: $height-lg;
+    padding: 0 14px;
+  }
+
+  &.size-btn-xlg {
     @include typo($body-medium);
-    height: 48px;
-    padding: 0 24px;
+    height: $height-xlg;
+    padding: 0 16px;
   }
 
   // ===================================
@@ -113,18 +119,11 @@ const emit = defineEmits<{
   &.is-icon-only {
     padding: 0;
 
-    &.size-btn-xs {
-      width: 28px;
-    }
-    &.size-btn-sm {
-      width: 30px;
-    }
-    &.size-btn-md {
-      width: 40px;
-    }
-    &.size-btn-lg {
-      width: 48px;
-    }
+    &.size-btn-xs { width: $height-xs; }
+    &.size-btn-sm { width: $height-sm; }
+    &.size-btn-md { width: $height-md; }
+    &.size-btn-lg { width: $height-lg; }
+    &.size-btn-xlg { width: $height-xlg; }
   }
 
   // ===================================

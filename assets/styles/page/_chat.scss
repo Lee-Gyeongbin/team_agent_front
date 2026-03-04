@@ -229,13 +229,24 @@
 .chat-ref-panel {
   display: none;
   flex-direction: column;
+  position: fixed;
+  top: 0;
+  right: 0;
   width: 50%;
+  height: 100vh;
   border-left: 1px solid $color-border;
   background: #fff;
+  z-index: $z-overlay;
 
   &.is-open {
     display: flex;
   }
+}
+
+// 패널 열릴 때 채팅 영역 축소
+.chat-detail.is-panel-open .chat-detail-main {
+  max-width: calc(50vw - #{$sidebar-width});
+  margin-right: 0;
 }
 
 .chat-ref-header {

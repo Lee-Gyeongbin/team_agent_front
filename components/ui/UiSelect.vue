@@ -75,7 +75,7 @@ interface Props {
   disabled?: boolean
   name?: string
   id?: string
-  size?: 'xs' | 'sm' | 'md' | 'lg'
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xlg'
 }
 
 withDefaults(defineProps<Props>(), {
@@ -132,22 +132,27 @@ const onUpdate = (val: string) => {
 
   // 사이즈
   &.size-xs {
-    height: 28px;
+    height: $height-xs;
     font-size: $font-size-xs;
   }
 
   &.size-sm {
-    height: 30px;
+    height: $height-sm;
     font-size: $font-size-xs;
   }
 
   &.size-md {
-    height: 32px;
+    height: $height-md;
     font-size: $font-size-sm;
   }
 
   &.size-lg {
-    height: 36px;
+    height: $height-lg;
+    font-size: $font-size-sm;
+  }
+
+  &.size-xlg {
+    height: $height-xlg;
     font-size: $font-size-base;
   }
 
