@@ -1,0 +1,69 @@
+interface UserInfo {
+  userId: string
+  userNm: string
+  compId: string
+  deptId: string
+  deptNm: string
+  email: string
+  jikgubNm: string
+  posNm: string
+}
+
+interface LoginResponse {
+  success: boolean
+  errorType?: string
+  message?: string
+  user?: UserInfo
+}
+
+const COOKIE_NAME = 'ta_user'
+const COOKIE_MAX_AGE = 60 * 60 * 24
+
+export const useAuth = () => {
+  const { post, get } = useApi()
+  const userCookie = useCookie<UserInfo | null>(COOKIE_NAME, {
+    maxAge: COOKIE_MAX_AGE,
+    path: '/',
+    default: () => null,
+  })
+
+  const user = computed(() => userCookie.value)
+  const isLoggedIn = computed(() => !!userCookie.value)
+
+  const login = async (userId: string, password: string): Promise<LoginResponse> => {
+    const res = await post<LoginResponse>('/api/login.do', { userId, password })
+
+    if (res.success && res.user) {
+      userCookie.value = res.user
+    }
+
+    return res
+  }
+
+  const logout = async () => {
+    try {
+      await post<LoginResponse>('/api/logout.do', {})
+    } catch {
+      // 세션 만료 등으로 실패해도 로컬 쿠키는 정리
+    }
+    userCookie.value = null
+    navigateTo('/login')
+  }
+
+  const checkSession = async (): Promise<boolean> => {
+    try {
+      const res = await get<LoginResponse>('/api/session/user.do')
+      if (res.success && res.user) {
+        userCookie.value = res.user
+        return true
+      }
+      userCookie.value = null
+      return false
+    } catch {
+      userCookie.value = null
+      return false
+    }
+  }
+
+  return { user, isLoggedIn, login, logout, checkSession }
+}
