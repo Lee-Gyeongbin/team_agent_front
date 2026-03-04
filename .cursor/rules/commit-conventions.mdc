@@ -83,3 +83,18 @@ git commit -m "fix(chat): 메시지 전송 후 스크롤 미동작 수정
 # 단순 작업 (본문 생략)
 git commit -m "style(ui): 사이드바 active 상태 색상 수정"
 ```
+
+### ❌ 잘못된 예시 (영어 사용 금지)
+
+다음과 같은 영어 커밋 메시지는 **절대 사용하지 말 것**:
+
+```bash
+# ❌ 잘못됨 - 영어 사용
+git commit -m "style: Update SCSS utilities and layout for improved responsiveness"
+
+# ❌ 잘못됨 - 영어 사용
+git commit -m "feat: Add new component for better UX"
+
+# ✅ 올바름 - 한글 사용
+git commit -m "style: SCSS 유틸리티 및 레이아웃 반응형 개선"
+```

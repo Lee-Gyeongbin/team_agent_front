@@ -19,7 +19,7 @@
             id="sort-order"
             name="sort-order"
             :options="searchOptions"
-            size="xs"
+            size="md"
           />
         </div>
         <div class="btn-grp">
@@ -162,7 +162,7 @@
           />
           <UiButton
             :variant="isCategoryInputFocused ? 'primary' : 'secondary'"
-            size="xs"
+            size="md"
           >
             추가
           </UiButton>
