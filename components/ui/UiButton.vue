@@ -41,7 +41,7 @@
 <script setup lang="ts">
 interface Props {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost'
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'xs' | 'sm' | 'md' | 'lg'
   disabled?: boolean
   loading?: boolean
   fullWidth?: boolean
@@ -83,9 +83,15 @@ const emit = defineEmits<{
   // ===================================
   // 사이즈 (width: auto, padding으로 좌우 여백 조절)
   // ===================================
+  &.size-btn-xs {
+    @include typo($body-xsmall);
+    height: 28px;
+    padding: 0 12px;
+  }
+
   &.size-btn-sm {
     @include typo($body-xsmall);
-    height: 32px;
+    height: 30px;
     padding: 0 12px;
   }
 
@@ -107,9 +113,18 @@ const emit = defineEmits<{
   &.is-icon-only {
     padding: 0;
 
-    &.size-btn-sm { width: 32px; }
-    &.size-btn-md { width: 40px; }
-    &.size-btn-lg { width: 48px; }
+    &.size-btn-xs {
+      width: 28px;
+    }
+    &.size-btn-sm {
+      width: 30px;
+    }
+    &.size-btn-md {
+      width: 40px;
+    }
+    &.size-btn-lg {
+      width: 48px;
+    }
   }
 
   // ===================================

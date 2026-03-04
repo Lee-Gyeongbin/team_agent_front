@@ -3,7 +3,7 @@
     class="chat-detail"
     :class="{ 'is-panel-open': isRefPanelOpen }"
   >
-    <div class="chat-detail-main flex flex-col">
+    <div class="chat-detail-main flex flex-col m-center">
       <ChatMessageList
         :messages="messages"
         @on-copy="onCopy"

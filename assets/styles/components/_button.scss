@@ -182,3 +182,36 @@ button{
     background-color: #F5F6F8;
   }
 }
+// END 드롭다운 메뉴
+
+// 카테고리 입력 그룹
+.library-category-input-grp{
+  gap: 8px;
+
+  .inp-category{
+    flex: 1;
+    min-width: 0;
+    padding: 0 8px;
+    border: none;
+    outline: none;
+    height: 32px;
+    font-size: $font-size-sm;
+    background: transparent;
+    color: $color-text-dark;
+    border: 1px solid $color-border;
+    border-radius: $border-radius-md;
+    background: #fff;
+    transition: border-color $transition-base;
+
+    &::placeholder{
+      color: #8A949E;
+    }
+  }
+
+  // focus 상태
+  &.is-focused{
+    .inp-category{
+      border-color: $color-primary;
+    }
+  }
+}
