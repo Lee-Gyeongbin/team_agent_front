@@ -54,6 +54,40 @@
 }
 
 // ===================================
+// 채팅 아이콘
+// ===================================
+
+// 봇 아바타
+.icon-bot {
+  @include icon-file('bot');
+}
+
+// 복사
+.icon-copy {
+  @include icon-file-bg('copy');
+}
+
+// 좋아요
+.icon-thumbs-up {
+  @include icon-file-bg('thumbs-up');
+}
+
+// 싫어요
+.icon-thumbs-down {
+  @include icon-file-bg('thumbs-down');
+}
+
+// 재생성
+.icon-refresh {
+  @include icon-file-bg('refresh');
+}
+
+// 더보기
+.icon-more {
+  @include icon-file-bg('more');
+}
+
+// ===================================
 // 헤더 아이콘
 // ===================================
 
