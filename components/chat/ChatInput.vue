@@ -6,8 +6,8 @@
     >
       <div class="chat-input-top flex items-start">
         <i
+          v-show="!modelValue"
           class="icon-sparkle size-24"
-          :class="{ 'is-active': modelValue }"
         ></i>
         <UiTextarea
           :model-value="modelValue"

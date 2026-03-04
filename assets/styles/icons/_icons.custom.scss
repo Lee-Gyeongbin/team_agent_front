@@ -7,8 +7,6 @@
 // @include icon-file('파일명')으로 사용
 // ===================================
 
-
-
 // 햄버거 메뉴
 .icon-menu {
   @include icon-file('menu');
@@ -51,7 +49,7 @@
 // chat 아이콘
 // ===================================
 
-.icon-sparkle{
+.icon-sparkle {
   @include icon-file('sparkle');
 }
 
@@ -171,5 +169,4 @@
 // 오른쪽 화살표
 .icon-arrow-right {
   @include icon-file-bg('arrow-right');
-}
 }

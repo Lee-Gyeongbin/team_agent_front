@@ -150,19 +150,20 @@
   }
 }
 
-// 기본: 액션 버튼 숨김, hover 시 표시
-.chat-message-item .chat-message-actions .btn-action {
+// 기본: 액션 영역 숨김, hover 시 표시
+.chat-message-item .chat-message-actions {
   opacity: 0;
   pointer-events: none;
+  transition: opacity $transition-fast;
 }
 
-.chat-message-item:hover .chat-message-actions .btn-action {
+.chat-message-item:hover .chat-message-actions {
   opacity: 1;
   pointer-events: auto;
 }
 
 // 마지막 메시지: 항상 표시
-.chat-message-item:last-child .chat-message-actions .btn-action {
+.chat-message-item:last-child .chat-message-actions {
   opacity: 1;
   pointer-events: auto;
 }
