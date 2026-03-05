@@ -80,28 +80,37 @@
             v-for="card in 7"
             :key="card"
             class="library-card"
+            @click="openModal(card)"
           >
             <!-- 상단 영역 -->
             <div class="library-card-top flex justify-between items-center">
-              <!-- 
-                TODO: 카테고리 타입에 따라 modifier 변경
-                data-line   → 데이터분석
-                basic-chat  → 기본대화
-                manual-ai   → 매뉴얼AI
-                class="library-card-badge badge--{type}"
-              -->
-              <p class="library-card-badge badge--data-line">
-                <i class="icon badge-icon size-14"></i>
-                <span>데이터분석</span>
-              </p>
+              <UiBadge variant="data-line">
+                <template #icon-left>
+                  <i class="icon icon-data-line-small size-14"></i>
+                </template>
+                데이터분석
+              </UiBadge>
+              <UiBadge variant="basic-chat">
+                <template #icon-left>
+                  <i class="icon icon-data-line-small size-14"></i>
+                </template>
+                기본대화
+              </UiBadge>
+              <UiBadge variant="manual-ai">
+                <template #icon-left>
+                  <i class="icon icon-data-line-small size-14"></i>
+                </template>
+                매뉴얼AI
+              </UiBadge>
               <!-- 드롭다운 메뉴 -->
               <div
                 class="dropdown-wrapper"
                 :class="{ 'is-show': cardDropdownOpen[card] }"
+                @click.stop
               >
                 <button
                   class="btn btn-library-card-add type-white"
-                  @click="cardDropdownOpen[card] = !cardDropdownOpen[card]"
+                  @click.stop="cardDropdownOpen[card] = !cardDropdownOpen[card]"
                 >
                   <i class="icon icon-add-dot size-20"></i>
                 </button>
@@ -207,10 +216,23 @@
             class="inp inp-category"
             placeholder="카테고리명을 입력하세요"
           />
-          <UiButton size="md" class="btn-category-add w-57">추가</UiButton>
+          <UiButton
+            size="md"
+            class="btn-category-add w-57"
+          >
+            추가
+          </UiButton>
         </div>
       </div>
     </div>
+
+    <!-- 모달 -->
+    <LibraryDetailModal
+      :is-open="isModalOpen"
+      @close="isModalOpen = false"
+      @refresh="handleModalRefresh"
+      @delete="handleModalDelete"
+    />
   </div>
 </template>
 
@@ -236,4 +258,22 @@ const contentWrapperRef = ref<HTMLElement | null>(null)
 
 // 가로 스크롤 (library-content-wrapper)
 setupDragScroll(contentWrapperRef)
+
+// 모달 상태
+const isModalOpen = ref(false)
+
+// 모달 열기
+const openModal = (_cardId: number) => {
+  isModalOpen.value = true
+}
+
+// 모달 이벤트 핸들러
+const handleModalRefresh = () => {
+  // TODO: 새로고침 로직
+}
+
+const handleModalDelete = () => {
+  // TODO: 삭제 로직
+  isModalOpen.value = false
+}
 </script>
