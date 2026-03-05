@@ -63,7 +63,11 @@ textarea{
   }
 }
 
-.inp-search{
+.inp-search-grp{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
   width: 100%;
   height: 30px;
   padding: 0 8px;
@@ -76,5 +80,10 @@ textarea{
 
   &:focus{
     border-color: #B2D0FF;
+  }
+
+  .btn-search{
+    width: 20px;
+    height: 20px;
   }
 }
