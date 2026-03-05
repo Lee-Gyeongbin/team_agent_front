@@ -2,12 +2,12 @@
   <div class="library-index">
     <div class="library-header-wrapper flex justify-between items-center">
       <div class="left-grp flex items-end">
-        <h2 class="library-title">날리지</h2>
-        <p class="library-description">대화 중 마음에 드는 날리지를 저장하고 카테고리별로 관리하세요.</p>
+        <h2 class="library-title">내지식창고</h2>
+        <p class="library-description">대화 중 마음에 드는 지식을 저장하고 카테고리별로 관리하세요.</p>
       </div>
       <div class="right-grp flex items-center">
         <p class="total">총 <strong>7개</strong></p>
-        <div class="library-input-grp shrink-0 w-400">
+        <div class="library-input-grp shrink-0 grow-1 max-w-400">
           <div class="inp-search-grp">
             <input
               type="text"
@@ -17,7 +17,7 @@
             <button class="btn btn-search"><i class="icon icon-search size-20"></i></button>
           </div>
         </div>
-        <div class="library-select-grp shrink-0 w-140">
+        <div class="library-select-grp shrink-0 grow-1 max-w-140">
           <UiSelect
             id="sort-order"
             name="sort-order"
