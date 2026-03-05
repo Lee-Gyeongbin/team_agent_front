@@ -34,8 +34,8 @@
               >
               <span v-else>{{ item.location }}</span>
             </td>
-            <td :class="item.done ? 'status-done' : 'status-pending'">
-              {{ item.done ? '✅ 완료' : '⬜ 미완' }}
+            <td :class="`status-${item.status}`">
+              {{ item.status === 'done' ? '✅ 완료' : item.status === 'wip' ? '🔨 작업중' : '⬜ 미완' }}
             </td>
           </tr>
         </tbody>
@@ -230,14 +230,14 @@
 // 섹션 1: 작업 현황
 // url: 클릭 시 새 창으로 열 수 있는 경로 (동적 파라미터 포함 URL은 제외)
 const statusList = [
-  { category: '페이지', name: '채팅 메인', location: '/chat', url: '/chat', done: true },
-  { category: '페이지', name: '채팅 상세', location: '/chat/:id', url: '', done: false },
-  { category: '페이지', name: '라이브러리', location: '/library', url: '/library', done: false },
-  { category: '페이지', name: '에이전트 목록', location: '/agents', url: '/agents', done: false },
-  { category: '페이지', name: '에이전트 생성', location: '/agents/new', url: '/agents/new', done: false },
-  { category: '페이지', name: '에이전트 상세', location: '/agents/:id', url: '', done: false },
-  { category: '페이지', name: '엑셀 뷰어', location: '/excel', url: '/excel', done: true },
-  { category: '페이지', name: '로그인', location: '/login', url: '/login', done: false },
+  { category: '페이지', name: '채팅 메인', location: '/chat', url: '/chat', status: 'done' },
+  { category: '페이지', name: '채팅 상세', location: '/chat/:id', url: '', status: 'wip' },
+  { category: '페이지', name: '라이브러리', location: '/library', url: '/library', status: 'wip' },
+  { category: '페이지', name: '에이전트 목록', location: '/agents', url: '/agents', status: 'pending' },
+  { category: '페이지', name: '에이전트 생성', location: '/agents/new', url: '/agents/new', status: 'pending' },
+  { category: '페이지', name: '에이전트 상세', location: '/agents/:id', url: '', status: 'pending' },
+  { category: '페이지', name: '엑셀 뷰어', location: '/excel', url: '/excel', status: 'done' },
+  { category: '페이지', name: '로그인', location: '/login', url: '/login', status: 'pending' },
 ]
 
 // 섹션 2: 디자인 토큰 — 색상 (_variables.scss 기준)
