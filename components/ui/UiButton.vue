@@ -69,7 +69,7 @@ const emit = defineEmits<{
   justify-content: center;
   gap: 6px;
   border: 1px solid transparent;
-  border-radius: $border-radius-md;
+  border-radius: $border-radius-base;
   font-weight: $font-weight-semibold;
   cursor: pointer;
   transition: all $transition-base;

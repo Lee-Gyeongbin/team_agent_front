@@ -2,6 +2,7 @@
   <textarea
     ref="textareaRef"
     class="inp ui-textarea"
+    :class="[`radius-${radius}`]"
     :value="modelValue"
     :placeholder="placeholder"
     :disabled="disabled"
@@ -18,6 +19,7 @@ interface Props {
   rows?: number
   autoResize?: boolean
   maxRows?: number
+  radius?: 'sm' | 'base' | 'lg'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -27,6 +29,7 @@ const props = withDefaults(defineProps<Props>(), {
   rows: 1,
   autoResize: false,
   maxRows: undefined,
+  radius: 'base',
 })
 
 const emit = defineEmits<{
@@ -91,6 +94,18 @@ watch(
 <style lang="scss" scoped>
 .ui-textarea {
   resize: none;
+  border-radius: $border-radius-base;
+
+  // 라운드
+  &.radius-sm {
+    border-radius: $border-radius-sm;
+  }
+  &.radius-base {
+    border-radius: $border-radius-base;
+  }
+  &.radius-lg {
+    border-radius: $border-radius-lg;
+  }
   width: 100%;
   line-height: $line-height-base;
   font-size: $font-size-lg;

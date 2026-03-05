@@ -7,7 +7,7 @@
     >
       <SelectTrigger
         class="ui-select-trigger"
-        :class="[`size-${size}`, { 'is-disabled': disabled }]"
+        :class="[`size-${size}`, `radius-${radius}`, { 'is-disabled': disabled }]"
       >
         <SelectValue :placeholder="placeholder || '선택'" />
         <SelectIcon class="ui-select-icon">
@@ -76,6 +76,7 @@ interface Props {
   name?: string
   id?: string
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xlg'
+  radius?: 'sm' | 'base' | 'lg'
 }
 
 withDefaults(defineProps<Props>(), {
@@ -85,6 +86,7 @@ withDefaults(defineProps<Props>(), {
   name: undefined,
   id: undefined,
   size: 'md',
+  radius: 'base',
 })
 
 const emit = defineEmits<{
@@ -117,7 +119,18 @@ const onUpdate = (val: string) => {
   }
   background-color: #fff;
   border: 1px solid #c6d2db;
-  border-radius: $border-radius-md;
+  border-radius: $border-radius-base;
+
+  // 라운드
+  &.radius-sm {
+    border-radius: $border-radius-sm;
+  }
+  &.radius-base {
+    border-radius: $border-radius-base;
+  }
+  &.radius-lg {
+    border-radius: $border-radius-lg;
+  }
 
   cursor: pointer;
   outline: none;
@@ -184,7 +197,7 @@ const onUpdate = (val: string) => {
 
   background: #fff;
   border: 1px solid $color-border;
-  border-radius: $border-radius-md;
+  border-radius: $border-radius-base;
   box-shadow: $shadow-md;
   padding: $spacing-xs 0;
   z-index: $z-dropdown;

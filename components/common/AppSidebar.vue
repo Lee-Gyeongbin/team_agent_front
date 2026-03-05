@@ -67,7 +67,7 @@ const navItems = [
   height: 48px;
   padding: 10px;
   border: none;
-  border-radius: $border-radius-md;
+  border-radius: $border-radius-base;
   background: transparent;
   color: #4d5462;
   cursor: pointer;

@@ -194,7 +194,7 @@
   .swatch-box {
     width: 64px;
     height: 64px;
-    border-radius: $border-radius-md;
+    border-radius: $border-radius-base;
     border: 1px solid $color-border;
   }
 
@@ -294,7 +294,7 @@
     width: 100px;
     height: 64px;
     background: #fff;
-    border-radius: $border-radius-md;
+    border-radius: $border-radius-base;
   }
 
   .shadow-label {
@@ -318,7 +318,7 @@
   .demo-box {
     padding: $spacing-md;
     border: 1px solid $color-border;
-    border-radius: $border-radius-md;
+    border-radius: $border-radius-base;
     background: $color-background;
     margin-bottom: $spacing-sm;
   }
@@ -327,7 +327,7 @@
     padding: $spacing-md;
     background: #1e293b;
     color: #e2e8f0;
-    border-radius: $border-radius-md;
+    border-radius: $border-radius-base;
     font-family: $font-family-mono;
     font-size: $font-size-xs;
     line-height: $line-height-base;
@@ -349,7 +349,7 @@
     gap: $spacing-xs;
     padding: $spacing-md;
     border: 1px solid $color-border;
-    border-radius: $border-radius-md;
+    border-radius: $border-radius-base;
     min-width: 90px;
 
     .icon-name {

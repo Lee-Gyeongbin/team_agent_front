@@ -116,7 +116,7 @@ const onSubmit = async () => {
   .login-input {
     width: 100%;
     padding: $spacing-sm $spacing-md;
-    border-radius: $border-radius-md;
+    border-radius: $border-radius-base;
     border: 1px solid $color-border;
     font-size: $font-size-base;
   }

@@ -288,7 +288,7 @@ function imagePosition(img: ExcelImage): Record<string, string> {
   &__reset-btn {
     padding: $spacing-sm $spacing-md;
     border: 1px solid $color-border;
-    border-radius: $border-radius-md;
+    border-radius: $border-radius-base;
     background: $color-background;
     color: $color-text-primary;
     font-size: $font-size-sm;
@@ -396,7 +396,7 @@ function imagePosition(img: ExcelImage): Record<string, string> {
   &__retry-btn {
     padding: $spacing-sm $spacing-md;
     border: 1px solid $color-error;
-    border-radius: $border-radius-md;
+    border-radius: $border-radius-base;
     background: transparent;
     color: $color-error;
     font-size: $font-size-sm;
@@ -412,7 +412,7 @@ function imagePosition(img: ExcelImage): Record<string, string> {
 
 .excel-table-wrapper {
   border: 1px solid $color-border;
-  border-radius: $border-radius-md $border-radius-md 0 0;
+  border-radius: $border-radius-base $border-radius-base 0 0;
   overflow: auto;
   max-height: calc(100vh - 260px);
   @include custom-scrollbar(8px);
