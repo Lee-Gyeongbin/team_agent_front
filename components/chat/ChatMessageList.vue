@@ -1,18 +1,33 @@
 <template>
-  <div
-    ref="listRef"
-    class="chat-message-list"
-  >
-    <ChatMessageItem
-      v-for="msg in messages"
-      :key="msg.id"
-      :message="msg"
-      @on-copy="emit('on-copy', $event)"
-      @on-like="emit('on-like', $event)"
-      @on-dislike="emit('on-dislike', $event)"
-      @on-regenerate="emit('on-regenerate', $event)"
-      @on-view-source="emit('on-view-source', $event)"
-    />
+  <div class="chat-message-list-wrap">
+    <div
+      ref="listRef"
+      class="chat-message-list"
+      @scroll="onScroll"
+    >
+      <div class="chat-message-list-inner">
+        <ChatMessageItem
+          v-for="msg in messages"
+          :key="msg.id"
+          :message="msg"
+          @on-copy="emit('on-copy', $event)"
+          @on-like="emit('on-like', $event)"
+          @on-dislike="emit('on-dislike', $event)"
+          @on-regenerate="emit('on-regenerate', $event)"
+          @on-view-source="emit('on-view-source', $event)"
+          @on-view-visualization="emit('on-view-visualization', $event)"
+        />
+      </div>
+    </div>
+    <!-- 맨 아래로 이동 버튼 -->
+    <button
+      v-if="isScrolledUp"
+      class="btn-scroll-bottom"
+      title="마지막 메시지로 이동"
+      @click="scrollToBottom"
+    >
+      <i class="icon-arrow-down size-16"></i>
+    </button>
   </div>
 </template>
 
@@ -31,25 +46,59 @@ const emit = defineEmits<{
   'on-dislike': [id: string]
   'on-regenerate': [id: string]
   'on-view-source': [id: string]
+  'on-view-visualization': [id: string]
 }>()
 
 const listRef = ref<HTMLElement | null>(null)
+const innerRef = ref<HTMLElement | null>(null)
+const isScrolledUp = ref(false)
+const isUserScrolling = ref(false)
 
-// 메시지 추가 시 자동 스크롤
-const scrollToBottom = () => {
-  nextTick(() => {
-    if (listRef.value) {
-      listRef.value.scrollTop = listRef.value.scrollHeight
-    }
-  })
+// 스크롤 위치 감지
+const onScroll = () => {
+  if (!listRef.value) return
+  const { scrollTop, scrollHeight, clientHeight } = listRef.value
+  const distanceFromBottom = scrollHeight - scrollTop - clientHeight
+  isScrolledUp.value = distanceFromBottom > 200
+  // 사용자가 위로 스크롤했는지 판단 (하단 50px 이내면 자동 스크롤 허용)
+  isUserScrolling.value = distanceFromBottom > 50
 }
 
-watch(
-  () => props.messages.length,
-  () => scrollToBottom(),
-)
+// 맨 아래로 스크롤 (버튼 클릭용 — smooth)
+const scrollToBottom = () => {
+  if (listRef.value) {
+    listRef.value.scrollTo({ top: listRef.value.scrollHeight, behavior: 'smooth' })
+  }
+}
 
-onMounted(() => scrollToBottom())
+// 즉시 스크롤 (자동 추적용 — instant)
+const scrollToBottomInstant = () => {
+  if (listRef.value) {
+    listRef.value.scrollTop = listRef.value.scrollHeight
+  }
+}
+
+// ResizeObserver: inner 높이 변화 감지 → 자동 스크롤
+let resizeObserver: ResizeObserver | null = null
+
+onMounted(() => {
+  nextTick(() => {
+    innerRef.value = listRef.value?.querySelector('.chat-message-list-inner') as HTMLElement
+    if (innerRef.value) {
+      resizeObserver = new ResizeObserver(() => {
+        // 사용자가 위로 스크롤 중이면 자동 스크롤 안 함
+        if (!isUserScrolling.value) {
+          scrollToBottomInstant()
+        }
+      })
+      resizeObserver.observe(innerRef.value)
+    }
+  })
+})
+
+onUnmounted(() => {
+  resizeObserver?.disconnect()
+})
 
 defineExpose({ scrollToBottom })
 </script>

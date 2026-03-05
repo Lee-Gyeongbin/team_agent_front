@@ -93,7 +93,7 @@ watch(
   resize: none;
   width: 100%;
   line-height: $line-height-base;
-  font-size: $font-size-base;
+  font-size: $font-size-lg;
   color: $color-text-primary;
 
   &:focus {

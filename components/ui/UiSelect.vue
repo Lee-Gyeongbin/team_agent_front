@@ -102,9 +102,11 @@ const onUpdate = (val: string) => {
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
+  min-width: fit-content;
   width: 100%;
   padding: 0 16px;
   gap: 4px;
+  white-space: nowrap;
 
   font-weight: $font-weight-medium;
   color: #333;
@@ -133,27 +135,27 @@ const onUpdate = (val: string) => {
   // 사이즈
   &.size-xs {
     height: $height-xs;
-    font-size: $font-size-xs;
+    font-size: $font-size-sm;
   }
 
   &.size-sm {
     height: $height-sm;
-    font-size: $font-size-xs;
+    font-size: $font-size-sm;
   }
 
   &.size-md {
     height: $height-md;
-    font-size: $font-size-sm;
+    font-size: $font-size-base;
   }
 
   &.size-lg {
     height: $height-lg;
-    font-size: $font-size-sm;
+    font-size: $font-size-base;
   }
 
   &.size-xlg {
     height: $height-xlg;
-    font-size: $font-size-base;
+    font-size: $font-size-lg;
   }
 
   &.is-disabled {
@@ -192,7 +194,7 @@ const onUpdate = (val: string) => {
   display: flex;
   align-items: center;
   padding: $spacing-sm $spacing-md;
-  font-size: $font-size-sm;
+  font-size: $font-size-base;
   color: $color-text-primary;
   cursor: pointer;
   outline: none;

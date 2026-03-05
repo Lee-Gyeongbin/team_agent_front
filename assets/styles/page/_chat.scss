@@ -23,17 +23,54 @@
 // ===================================
 // 메시지 목록
 // ===================================
+.chat-message-list-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
 .chat-message-list {
+  height: 100%;
+  overflow-y: auto;
+  padding-right: 16px;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+// 맨 아래로 이동 버튼
+.btn-scroll-bottom {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  @include flex-center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid #e6e8ea;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: $shadow-md;
+  color: $color-text-dark;
+  cursor: pointer;
+  z-index: 1;
+  transition: all $transition-fast;
+
+  &:hover {
+    box-shadow: $shadow-lg;
+  }
+}
+
+// inner wrapper: 메시지 적으면 하단 정렬, 많으면 정상 스크롤
+.chat-message-list-inner {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  flex: 1;
-  overflow-y: auto;
-  padding: 0 16px 32px 0;
-  scrollbar-width: none; // Firefox
-  &::-webkit-scrollbar {
-    display: none; // Chrome, Safari
-  }
+  min-height: 100%;
+  justify-content: flex-end;
+  padding: 32px 0;
 }
 
 // ===================================
@@ -73,7 +110,7 @@
     .message-content {
       line-height: 1.5em;
       color: $color-text-dark;
-      font-size: $font-size-base;
+      font-size: $font-size-lg;
 
       // v-html 내부 요소 간격 (피그마 gap: 16px)
       p + p,
@@ -105,7 +142,7 @@
       border-radius: 50px;
       background: #ecf0f3;
       color: $color-text-dark;
-      font-size: $font-size-base;
+      font-size: $font-size-lg;
       line-height: 1.5em;
       word-break: break-word;
     }
@@ -123,10 +160,18 @@
 }
 
 // ===================================
-// 원문보기 버튼 (UiButton 오버라이드)
+// 메시지 하단 (액션 + 패널 버튼 한 줄)
 // ===================================
-.btn-view-source {
-  border-radius: 50px;
+.message-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.message-panel-buttons {
+  display: flex;
+  gap: $spacing-sm;
 }
 
 // ===================================
@@ -136,7 +181,6 @@
   display: flex;
   align-items: center;
   gap: $spacing-xs;
-  align-self: flex-start;
 
   .btn-action {
     width: 28px;
@@ -150,7 +194,13 @@
   }
 }
 
-// 기본: 액션 영역 숨김, hover 시 표시
+// 패널 버튼은 항상 표시
+.message-panel-buttons {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+// 액션 버튼만 hover 시 표시
 .chat-message-item .chat-message-actions {
   opacity: 0;
   pointer-events: none;
@@ -162,7 +212,7 @@
   pointer-events: auto;
 }
 
-// 마지막 메시지: 항상 표시
+// 마지막 메시지: 액션도 항상 표시
 .chat-message-item:last-child .chat-message-actions {
   opacity: 1;
   pointer-events: auto;
@@ -208,7 +258,7 @@
     .inp-chat-search {
       width: calc(100% - 32px);
       min-height: 24px;
-      font-size: $font-size-base;
+      font-size: $font-size-lg;
       color: #2d3139;
 
       &::placeholder {
@@ -223,10 +273,11 @@
 }
 
 // ===================================
-// 관련자료 사이드 패널
+// 사이드 패널 공통
 // ===================================
 
-.chat-ref-panel {
+// 패널 공통 레이아웃
+%chat-side-panel {
   display: none;
   flex-direction: column;
   position: fixed;
@@ -237,20 +288,20 @@
   border-left: 1px solid $color-border;
   background: #fff;
   z-index: $z-overlay;
+  transition: width $transition-base;
 
   &.is-open {
     display: flex;
   }
+
+  &.is-fullscreen {
+    width: 100%;
+    border-left: none;
+  }
 }
 
-// 패널 열릴 때 채팅 영역 축소
-.chat-detail.is-panel-open .chat-detail-main {
-  max-width: calc(50vw - #{$sidebar-width});
-  margin-left: 0;
-  margin-right: 0;
-}
-
-.chat-ref-header {
+// 패널 공통 헤더
+%chat-panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -259,12 +310,14 @@
   flex-shrink: 0;
 }
 
-.chat-ref-title {
-  @include typo($body-medium-bold);
+// 패널 공통 타이틀
+%chat-panel-title {
+  @include typo($body-large-bold);
   color: $color-text-dark;
 }
 
-.chat-ref-header-actions {
+// 패널 공통 헤더 액션
+%chat-panel-header-actions {
   display: flex;
   align-items: center;
   gap: $spacing-xs;
@@ -284,14 +337,209 @@
   }
 }
 
-.chat-ref-body {
+// 패널 열릴 때 채팅 영역 축소
+.chat-detail.is-panel-open .chat-detail-main {
+  max-width: calc(50vw - #{$sidebar-width});
+  margin-left: 0;
+  margin-right: 0;
+}
+
+// 전체화면일 때 채팅 영역 숨김
+.chat-detail.is-panel-fullscreen .chat-detail-main {
+  display: none;
+}
+
+// ===================================
+// PDF 패널
+// ===================================
+
+.chat-pdf-panel {
+  @extend %chat-side-panel;
+}
+
+.chat-pdf-header {
+  @extend %chat-panel-header;
+}
+
+.chat-pdf-title {
+  @extend %chat-panel-title;
+}
+
+.chat-pdf-header-actions {
+  @extend %chat-panel-header-actions;
+}
+
+// PDF 툴바 (나중에 마크업 교체)
+.chat-pdf-toolbar {
+  height: 48px;
+  border-bottom: 1px solid $color-border;
+  background: $color-background;
+  flex-shrink: 0;
+}
+
+.chat-pdf-body {
   flex: 1;
   overflow: hidden;
 }
 
 // PDF 플러그인 영역 (빈 여백)
-.chat-ref-pdf-area {
+.chat-pdf-area {
   width: 100%;
   height: 100%;
   background: #000;
+}
+
+// ===================================
+// 시각화 패널
+// ===================================
+
+.chat-vis-panel {
+  @extend %chat-side-panel;
+}
+
+.chat-vis-header {
+  @extend %chat-panel-header;
+}
+
+.chat-vis-title {
+  @extend %chat-panel-title;
+}
+
+.chat-vis-header-actions {
+  @extend %chat-panel-header-actions;
+}
+
+.chat-vis-body {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+// SQL 섹션
+.chat-vis-sql {
+  border-top: 1px solid $color-border;
+}
+
+.chat-vis-sql-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 20px;
+  border-bottom: 1px solid $color-border;
+}
+
+.chat-vis-sql-bar-left {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  color: $color-text-secondary;
+}
+
+.chat-vis-sql-label {
+  @include typo($body-large-bold);
+  color: $color-text-dark;
+}
+
+// SQL 토글 버튼 내 chevron 회전
+.icon-chevron-down {
+  transition: transform $transition-fast;
+
+  &.is-flipped {
+    transform: rotate(180deg);
+  }
+}
+
+.chat-vis-sql-content {
+  position: relative;
+  padding: 20px 20px;
+}
+
+.chat-vis-sql-code {
+  margin: 0;
+  padding: 12px 16px;
+  background: #1e1e2e;
+  border-radius: $border-radius-md;
+  overflow-x: auto;
+  @include custom-scrollbar;
+
+  code {
+    font-family: $font-family-mono;
+    font-size: $font-size-sm;
+    line-height: 1.6;
+    color: #cdd6f4;
+    white-space: pre;
+  }
+}
+
+.chat-vis-sql-copy {
+  position: absolute;
+  top: 33px;
+  right: 33px;
+  color: #94a3b8;
+  &:hover {
+    color: #fff;
+  }
+}
+
+// 차트 섹션
+.chat-vis-chart {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-vis-chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid $color-border;
+}
+
+.chat-vis-chart-header-left {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.chat-vis-chart-title {
+  @include typo($body-large-bold);
+  color: $color-text-dark;
+}
+
+.chat-vis-chart-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+
+  .btn-icon {
+    @include flex-center;
+    width: 28px;
+    height: 28px;
+    border-radius: $border-radius-sm;
+    color: $color-text-disabled;
+    transition: all $transition-fast;
+
+    &:hover {
+      color: $color-text-primary;
+      background: $color-background;
+    }
+
+    &.is-active {
+      color: $color-primary;
+    }
+  }
+}
+
+// 차트 플레이스홀더
+.chat-vis-chart-placeholder {
+  flex: 1;
+  @include flex-center;
+  flex-direction: column;
+  gap: $spacing-md;
+  color: $color-text-disabled;
+  @include typo($body-medium);
+  min-height: 300px;
+  background: $color-background;
 }

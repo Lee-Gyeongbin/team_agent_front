@@ -186,6 +186,11 @@
   @include icon-file-bg('expand');
 }
 
+// 전체화면 축소
+.icon-collapse {
+  @include icon-file-bg('collapse');
+}
+
 // 닫기
 .icon-close {
   @include icon-file-bg('close');
@@ -194,4 +199,42 @@
 // 오른쪽 화살표
 .icon-arrow-right {
   @include icon-file-bg('arrow-right');
+}
+
+// ===================================
+// 공통
+// ===================================
+
+// 아래 화살표
+.icon-arrow-down {
+  @include icon-file-bg('arrow-down');
+}
+
+// ===================================
+// 시각화 패널 아이콘
+// ===================================
+
+// AI 파일 아이콘
+.icon-file-ai {
+  @include icon-file-bg('file-ai');
+}
+
+// 막대 차트
+.icon-bar-chart {
+  @include icon-file-bg('bar-chart');
+}
+
+// 라인 차트
+.icon-line-chart {
+  @include icon-file-bg('line-chart');
+}
+
+// 파이 차트
+.icon-pie-chart {
+  @include icon-file-bg('pie-chart');
+}
+
+// 접기/펼치기 화살표
+.icon-chevron-down {
+  @include icon-file-bg('chevron-down');
 }
