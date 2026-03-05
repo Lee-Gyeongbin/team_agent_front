@@ -35,6 +35,8 @@ team-agent/
 - 한국어 주석 사용
 - 변경 사항은 명확하게 설명
 - 기존 코드 스타일 유지
+- 공통 유틸리티 함수는 `utils/global/` 하위의 기능별 ts 파일에 정의
+  - 예: validationUtil, numberUtil, byteUtil, stringUtil 등
 
 ## Commands
 - Dev: `npm run dev`
