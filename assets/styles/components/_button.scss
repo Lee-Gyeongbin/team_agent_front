@@ -248,3 +248,13 @@ button{
     }
   }
 }
+
+// 모달 닫기 btn
+.btn-modal-close {
+  width: 20px;
+  height: 20px;
+
+  .icon-close {
+    background-color: #828fa9;
+  }
+}

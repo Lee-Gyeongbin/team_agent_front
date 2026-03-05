@@ -312,12 +312,6 @@ const handleCopyCode = () => {
     position: absolute;
     top: $spacing-lg;
     right: $spacing-md;
-    width: 20px;
-    height: 20px;
-
-    .icon-close {
-      background-color: #828fa9;
-    }
   }
 
   // 탑 버튼

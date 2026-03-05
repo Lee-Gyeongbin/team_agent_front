@@ -14,30 +14,29 @@
     <div class="library-archive-modal-content">
       <!-- 상단 헤더 -->
       <div class="library-archive-modal-header">
-        <h2 class="library-archive-modal-title">보관함</h2>
-        
-        <!-- 닫기 버튼 -->
-        <button
-          class="btn btn-modal-close"
-          @click="handleClose"
-        >
-          <i class="icon icon-close-gray size-20"></i>
-        </button>
-      </div>
+        <div class="header-top-grp flex items-start justify-between">
+          <h2 class="library-archive-modal-title">보관함</h2>
+          
+          <!-- 닫기 버튼 -->
+          <button
+            class="btn btn-modal-close"
+            @click="handleClose"
+          >
+            <i class="icon icon-close-gray size-20"></i>
+          </button>
+        </div>
 
-      <!-- 검색바 -->
-      <div class="library-archive-modal-search">
-        <div class="inp-search-grp">
+        <!-- 검색바 -->
+        <div class="library-archive-modal-search inp-search-grp">
           <input
             type="text"
             class="inp inp-search w-full"
             placeholder="검색어를 입력하세요"
           />
-          <button class="btn btn-search">
-            <i class="icon icon-search size-20"></i>
-          </button>
+          <button class="btn btn-search"><i class="icon icon-search size-20"></i></button>
         </div>
       </div>
+
 
       <!-- 보관된 아이템 리스트 -->
       <div class="library-archive-modal-body">
@@ -178,8 +177,8 @@ const handleClose = () => {
     width: 100%;
     max-width: 680px;
     height: 100vh;
+    padding: 0;
     background: #fff;
-    border-left: 1px solid #DCE4E9;
     transform: translateX(20px);
     transition: transform $transition-base;
     overflow: hidden;
@@ -187,12 +186,11 @@ const handleClose = () => {
 
   // 헤더
   .library-archive-modal-header {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 24px 16px;
-    border-bottom: 1px solid #DCE4E9;
+    // height: 67px;
+    padding: 24px 16px 16px;
+    .header-top-grp{
+      padding-bottom: 16px;
+    }
 
     .library-archive-modal-title {
       color: #2D3139;
@@ -203,71 +201,22 @@ const handleClose = () => {
 
     // 닫기 버튼
     .btn-modal-close {
-      position: absolute;
-      top: 24px;
-      right: 16px;
       width: 20px;
       height: 20px;
-
-      .icon-close-gray {
-        background-color: #828FA9;
-      }
     }
   }
 
   // 검색바
   .library-archive-modal-search {
-    padding: 16px;
-
-    .inp-search-grp {
-      position: relative;
-      display: flex;
-      align-items: center;
-
-      .inp-search {
-        width: 100%;
-        padding: 10px 40px 10px 12px;
-        background: #F4F7F9;
-        border: 1px solid #DCE4E9;
-        border-radius: $border-radius-base;
-        font-size: $font-size-base;
-        color: #2D3139;
-
-        &::placeholder {
-          color: #94A3B8;
-        }
-
-        &:focus {
-          outline: none;
-          border-color: $color-primary;
-          background: #fff;
-        }
-      }
-
-      .btn-search {
-        position: absolute;
-        right: 8px;
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: transparent;
-        border: none;
-        cursor: pointer;
-
-        .icon-search {
-          background-color: #94A3B8;
-        }
-      }
-    }
+    width: 100%;
   }
 
   // 본문
   .library-archive-modal-body {
     flex: 1;
     overflow-y: auto;
-    padding: 16px;
+    height: calc(100vh - 113px);
+    padding: 0 16px 16px;
     @include custom-scrollbar;
   }
 
