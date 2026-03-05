@@ -33,7 +33,7 @@ export const removeComma = (val: string): string => {
 }
 
 /** 숫자 입력 제한 (음수, 소수점 포함) */
-export const numeric = (obj: HTMLInputElement, event: Event): string => {
+export const numeric = (obj: HTMLInputElement, _event: Event): string => {
   const text = obj.value
   const reg = /(^[-])?([0-9]*[.]?[0-9]*)/g
   const res = text.match(reg)
@@ -48,12 +48,12 @@ export const numericExt = (
   event: Event,
   negative: boolean = false,
   intLang?: number,
-  point?: number
+  point?: number,
 ): string => {
   let val = (event.target as HTMLInputElement).value
 
   if (negative) {
-      val = val.replace('-', '')
+    val = val.replace('-', '')
   }
 
   const intLangTxt = intLang ? `{1,${intLang}}` : '*'
@@ -68,25 +68,24 @@ export const numericExt = (
   return result
 }
 
-
 /** 소수점 이하 0 제거 */
 export const removePointZeros = (
-  val: any,
-  replaceIsNaN?: any,
-  removeZero?: boolean
-): any => {
+  val: number | string,
+  replaceIsNaN?: string | number,
+  removeZero?: boolean,
+): string | number => {
   if (removeZero === undefined) removeZero = true
   if (isNaN(val)) {
-      return replaceIsNaN
+    return replaceIsNaN
   } else {
-      if (removeZero) {
-          return val
-              .toString()
-              .replace(/\.0+$/, '')
-              .replace(/(\.\d*[1-9])0*/, '$1')
-      } else {
-          return val
-      }
+    if (removeZero) {
+      return val
+        .toString()
+        .replace(/\.0+$/, '')
+        .replace(/(\.\d*[1-9])0*/, '$1')
+    } else {
+      return val
+    }
   }
 }
 

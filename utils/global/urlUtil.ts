@@ -3,21 +3,19 @@
  */
 
 /** 객체를 URLSearchParams로 변환 */
-export const getUrlSearchParams = (obj: Record<string, any>): URLSearchParams => {
-    const params = new URLSearchParams()
-    Object.keys(obj).forEach(key => {
-        if (Array.isArray(obj[key])) {
-            obj[key].forEach((item: any, index: number) => {
-                Object.keys(item).forEach(subKey => {
-                    params.append(
-                        key + '[' + index + '].' + subKey,
-                        obj[key][index][subKey]
-                    )
-                })
-            })
-        } else {
-            params.append(key, nvl(obj[key], ''))
-        }
-    })
-    return params
+export const getUrlSearchParams = (obj: Record<string, unknown>): URLSearchParams => {
+  const params = new URLSearchParams()
+  Object.keys(obj).forEach((key) => {
+    const val = obj[key]
+    if (Array.isArray(val)) {
+      val.forEach((item: Record<string, unknown>, index: number) => {
+        Object.keys(item).forEach((subKey) => {
+          params.append(key + '[' + index + '].' + subKey, String(item[subKey] ?? ''))
+        })
+      })
+    } else {
+      params.append(key, nvl(val, ''))
+    }
+  })
+  return params
 }
