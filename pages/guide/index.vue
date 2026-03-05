@@ -176,22 +176,6 @@
       <h2 class="section-title">4. 아이콘</h2>
 
       <div class="guide-demo">
-        <p class="demo-label">등록된 아이콘</p>
-        <div class="demo-box">
-          <div class="guide-icon-grid">
-            <div
-              v-for="icon in iconList"
-              :key="icon.class"
-              class="icon-item"
-            >
-              <i :class="[icon.class, 'size-24']" />
-              <span class="icon-name">.{{ icon.class }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="guide-demo">
         <p class="demo-label">사이즈 클래스 비교</p>
         <div class="demo-box">
           <div style="display: flex; align-items: center; gap: 16px">
@@ -210,6 +194,29 @@
 &lt;i class="icon-ai-chat size-32" /&gt;
 &lt;i class="icon-ai-chat size-48" /&gt;</pre
         >
+      </div>
+
+      <div class="guide-demo">
+        <p class="demo-label">등록된 아이콘</p>
+        <div class="demo-box">
+          <div
+            v-for="group in iconGroups"
+            :key="group.title"
+            class="icon-group-section"
+          >
+            <h4 class="icon-group-title">{{ group.title }}</h4>
+            <div class="guide-icon-grid">
+              <div
+                v-for="icon in group.icons"
+                :key="icon.class"
+                class="icon-item"
+              >
+                <i :class="[icon.class, 'size-24']" />
+                <span class="icon-name">.{{ icon.class }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   </div>
@@ -313,22 +320,98 @@ const componentList = [
   },
 ]
 
-// 섹션 4: 아이콘 목록
-const iconList = [
-  { class: 'icon-menu' },
-  { class: 'icon-ai-chat' },
-  { class: 'icon-chart' },
-  { class: 'icon-system' },
-  { class: 'icon-group' },
-  { class: 'icon-settings' },
-  { class: 'icon-knowledge' },
-  { class: 'icon-database' },
-  { class: 'icon-sparkle' },
-  { class: 'icon-send' },
-  { class: 'icon-notification' },
-  { class: 'icon-user' },
-  { class: 'icon-expand' },
-  { class: 'icon-close' },
-  { class: 'icon-arrow-right' },
+// 섹션 4: 아이콘 목록 (그룹별로 구분)
+const iconGroups = [
+  {
+    title: '사이드바 아이콘',
+    icons: [
+      { class: 'icon-menu' },
+      { class: 'icon-ai-chat' },
+      { class: 'icon-chart' },
+      { class: 'icon-system' },
+      { class: 'icon-group' },
+      { class: 'icon-settings' },
+      { class: 'icon-knowledge' },
+      { class: 'icon-database' },
+    ],
+  },
+  {
+    title: 'chat 아이콘',
+    icons: [{ class: 'icon-sparkle' }, { class: 'icon-send' }],
+  },
+  {
+    title: '채팅 아이콘',
+    icons: [
+      { class: 'icon-bot' },
+      { class: 'icon-copy' },
+      { class: 'icon-thumbs-up' },
+      { class: 'icon-thumbs-down' },
+      { class: 'icon-refresh' },
+      { class: 'icon-more' },
+    ],
+  },
+  {
+    title: '헤더 아이콘',
+    icons: [{ class: 'icon-notification' }, { class: 'icon-user' }],
+  },
+  {
+    title: 'library 아이콘',
+    icons: [
+      { class: 'icon-search' },
+      { class: 'icon-archive' },
+      { class: 'icon-delete' },
+      { class: 'icon-delete-bg' },
+      { class: 'icon-add-dot' },
+      { class: 'icon-diamond' },
+      { class: 'icon-heart' },
+      { class: 'icon-plus' },
+      { class: 'icon-logout' },
+    ],
+  },
+  {
+    title: '드롭다운 아이콘',
+    icons: [
+      { class: 'icon-edit' },
+      { class: 'icon-trashcan' },
+      { class: 'icon-view' },
+      { class: 'icon-transfer' },
+      { class: 'icon-star-line' },
+      { class: 'icon-star-fill' },
+      { class: 'icon-copy-gray' },
+    ],
+  },
+  {
+    title: '관련자료 패널 아이콘',
+    icons: [
+      { class: 'icon-expand' },
+      { class: 'icon-collapse' },
+      { class: 'icon-close' },
+      { class: 'icon-arrow-right' },
+      { class: 'icon-close-gray' },
+    ],
+  },
+  {
+    title: '공통',
+    icons: [{ class: 'icon-arrow-down' }],
+  },
+  {
+    title: '시각화 패널 아이콘',
+    icons: [
+      { class: 'icon-file-ai' },
+      { class: 'icon-bar-chart' },
+      { class: 'icon-line-chart' },
+      { class: 'icon-pie-chart' },
+      { class: 'icon-chevron-down' },
+    ],
+  },
+  {
+    title: '뱃지 아이콘',
+    icons: [
+      { class: 'icon-data-line-small' },
+      { class: 'icon-comment-other' },
+      { class: 'icon-book' },
+      { class: 'icon-diamond-small' },
+    ],
+  },
 ]
 </script>

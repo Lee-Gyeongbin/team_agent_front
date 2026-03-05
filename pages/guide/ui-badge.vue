@@ -161,6 +161,14 @@
               <i class="icon icon-book size-14"></i>
             </template>
           </UiBadge>
+          <UiBadge
+            variant="default"
+            icon-only
+          >
+            <template #icon-left>
+              <i class="icon icon-diamond-small size-10"></i>
+            </template>
+          </UiBadge>
         </div>
         <pre class="demo-code">&lt;UiBadge variant="data-line" icon-only&gt;
   &lt;template #icon-left&gt;
