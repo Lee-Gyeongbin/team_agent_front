@@ -532,14 +532,9 @@
   }
 }
 
-// 차트 플레이스홀더
-.chat-vis-chart-placeholder {
+// 차트 영역
+.chat-vis-chart-area {
   flex: 1;
-  @include flex-center;
-  flex-direction: column;
-  gap: $spacing-md;
-  color: $color-text-disabled;
-  @include typo($body-medium);
   min-height: 300px;
-  background: $color-background;
+  padding: $spacing-md;
 }

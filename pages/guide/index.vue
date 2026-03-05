@@ -235,6 +235,7 @@ const statusList = [
   { category: 'UI', name: 'UiTextarea', location: 'components/ui/', url: '', done: true },
   { category: 'UI', name: 'UiSelect', location: 'components/ui/', url: '', done: true },
   { category: 'UI', name: 'UiButton', location: 'components/ui/', url: '', done: true },
+  { category: 'UI', name: 'UiChart', location: 'components/ui/', url: '/guide/ui-chart', done: true },
 ]
 
 // 섹션 2: 디자인 토큰 — 색상
@@ -308,6 +309,12 @@ const componentList = [
     to: '/guide/ui-button',
     description: 'variant / size / icon / iconOnly 지원 버튼 컴포넌트',
     tags: ['variant', 'size', 'icon-left', 'icon-right', 'iconOnly'],
+  },
+  {
+    name: 'UiChart',
+    to: '/guide/ui-chart',
+    description: 'Chart.js 기반 범용 차트 — bar, line, pie, mixed, horizontalBar 5종',
+    tags: ['type', 'config', 'showLegend'],
   },
 ]
 
