@@ -3,28 +3,9 @@
  * @module XBarChartModule
  */
 import { Chart } from 'chart.js/auto'
-import { ChartColors } from './chart-colors'
 import { ChartConfig } from './chart-config'
 
 export const XBarChartModule = {
-  /** 색상 가져오기 */
-  getColor(colorKey: string, colorIndex?: number): any {
-    if (!colorKey) return '#A0A5DE'
-
-    const keys = colorKey.split('.')
-    let color: any = ChartColors
-
-    for (const key of keys) {
-      color = color[key]
-      if (!color) return '#A0A5DE'
-    }
-
-    if (typeof colorIndex === 'number' && Array.isArray(color)) {
-      return color[colorIndex]
-    }
-
-    return color
-  },
 
   /** 범례 생성 */
   createLegend(legendId: string, categories: string[], colors: any) {
@@ -38,19 +19,8 @@ export const XBarChartModule = {
     legendContainer.classList.add('bar-chart__legend')
 
     categories.forEach((category, index) => {
-      const legendItem = document.createElement('div')
-      legendItem.className = 'legend-item'
-
-      const dot = document.createElement('span')
-      dot.className = 'legend-item__dot'
-      dot.style.backgroundColor = Array.isArray(colors) ? colors[index] || colors[0] : colors
-
-      const text = document.createElement('span')
-      text.className = 'legend-item__text'
-      text.textContent = category
-
-      legendItem.appendChild(dot)
-      legendItem.appendChild(text)
+      const color = Array.isArray(colors) ? colors[index] || colors[0] : colors
+      const legendItem = ChartConfig.createLegendItem({ label: category, color })
       legendContainer.appendChild(legendItem)
     })
   },
@@ -129,14 +99,14 @@ export const XBarChartModule = {
       ChartConfig.instances[id].destroy()
     }
 
-    const colors = this.getColor(colorKey, colorIndex)
-    const labelColor = this.getColor(labelColorKey, labelColorIndex) || '#6D7882'
-    const pointColor = this.getColor(pointColorKey, pointColorIndex)
+    const colors = ChartConfig.getColor(colorKey, colorIndex)
+    const labelColor = ChartConfig.getColor(labelColorKey, labelColorIndex) || '#6D7882'
+    const pointColor = ChartConfig.getColor(pointColorKey, pointColorIndex)
 
     if (showLegend && legendId) {
       const legendCategories = datasets ? datasets.map((d: any) => d.label) : categories
       const legendColors = datasets
-        ? datasets.map((d: any) => this.getColor(d.colorKey, d.colorIndex))
+        ? datasets.map((d: any) => ChartConfig.getColor(d.colorKey, d.colorIndex))
         : colors
       this.createLegend(legendId, legendCategories, legendColors)
     }
@@ -207,7 +177,7 @@ export const XBarChartModule = {
     const chartDatasets = datasets
       ? datasets.map((dataset: any) => ({
           ...dataset,
-          backgroundColor: this.getColor(dataset.colorKey, dataset.colorIndex),
+          backgroundColor: ChartConfig.getColor(dataset.colorKey, dataset.colorIndex),
           ...barStyle,
         }))
       : [{ data, backgroundColor: colors, ...barStyle }]

@@ -7,24 +7,6 @@ import { ChartColors } from './chart-colors'
 import { ChartConfig } from './chart-config'
 
 export const MixedChartModule = {
-  /** 색상 가져오기 */
-  getColor(colorKey: string, colorIndex?: number): any {
-    if (!colorKey) return '#A0A5DE'
-
-    const keys = colorKey.split('.')
-    let color: any = ChartColors
-
-    for (const key of keys) {
-      color = color[key]
-      if (!color) return '#A0A5DE'
-    }
-
-    if (typeof colorIndex === 'number' && Array.isArray(color)) {
-      return color[colorIndex]
-    }
-
-    return color
-  },
 
   /** 범례 생성 */
   createLegend(chartId: string, legendId: string, datasets: any[]) {
@@ -38,34 +20,19 @@ export const MixedChartModule = {
     legendContainer.classList.add('bar-chart__legend')
 
     datasets.forEach((dataset, datasetIndex) => {
-      const legendItem = document.createElement('div')
-      legendItem.className = 'legend-item'
-
-      const dot = document.createElement('span')
-      dot.className = 'legend-item__dot'
-
-      if (dataset.type === 'line') {
-        dot.style.borderRadius = '50%'
-        dot.style.backgroundColor = dataset.borderColor
-      } else {
-        dot.style.borderRadius = '3px'
-        dot.style.backgroundColor = dataset.backgroundColor
-      }
-
-      const text = document.createElement('span')
-      text.className = 'legend-item__text'
-      text.textContent = dataset.label
-
-      legendItem.appendChild(dot)
-      legendItem.appendChild(text)
-      legendContainer.appendChild(legendItem)
-
-      legendItem.addEventListener('click', () => {
-        const chart = ChartConfig.instances[chartId]
-        if (chart) {
-          ChartConfig.toggleLegend(legendItem, chart, datasetIndex, 'dataset')
-        }
+      const isLine = dataset.type === 'line'
+      const legendItem = ChartConfig.createLegendItem({
+        label: dataset.label,
+        color: isLine ? dataset.borderColor : dataset.backgroundColor,
+        dotStyle: isLine ? 'circle' : 'square',
+        onClick: () => {
+          const chart = ChartConfig.instances[chartId]
+          if (chart) {
+            ChartConfig.toggleLegend(legendItem, chart, datasetIndex, 'dataset')
+          }
+        },
       })
+      legendContainer.appendChild(legendItem)
     })
   },
 
@@ -116,7 +83,7 @@ export const MixedChartModule = {
 
       if (dataset.type === 'bar') {
         if (dataset.colorKey) {
-          newDataset.backgroundColor = this.getColor(dataset.colorKey, dataset.colorIndex)
+          newDataset.backgroundColor = ChartConfig.getColor(dataset.colorKey, dataset.colorIndex)
         }
         return {
           ...newDataset,
@@ -129,7 +96,7 @@ export const MixedChartModule = {
         }
       } else {
         if (dataset.colorKey && !dataset.borderColor) {
-          const color = this.getColor(dataset.colorKey, dataset.colorIndex)
+          const color = ChartConfig.getColor(dataset.colorKey, dataset.colorIndex)
           newDataset.borderColor = color
           newDataset.pointBackgroundColor = color
           newDataset.backgroundColor = `${color}1A`

@@ -4,42 +4,16 @@
  * @module LineChartModule
  */
 import { Chart } from 'chart.js/auto'
-import { ChartColors } from './chart-colors'
 import { ChartConfig } from './chart-config'
 
-/** hex to rgba 변환 함수 */
-function hexToRgba(hex: string, alpha: number): string {
-  let c: any
-  if (/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) {
-    c = hex.substring(1).split('')
-    if (c.length === 3) {
-      c = [c[0], c[0], c[1], c[1], c[2], c[2]]
-    }
-    c = '0x' + c.join('')
-    return 'rgba(' + [(c >> 16) & 255, (c >> 8) & 255, c & 255].join(',') + ',' + alpha + ')'
-  }
-  return hex
+/** 색상을 rgba 문자열로 변환 */
+function colorToRgba(color: string, alpha: number): string {
+  const rgb = ChartConfig.parseColorToRgb(color)
+  if (!rgb) return color
+  return `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${alpha})`
 }
 
 export const LineChartModule = {
-  /** 색상 가져오기 */
-  getColor(colorKey: string, colorIndex?: number): any {
-    if (!colorKey) return ChartColors.line.primary
-
-    const keys = colorKey.split('.')
-    let color: any = ChartColors
-
-    for (const key of keys) {
-      color = color[key]
-      if (!color) return ChartColors.line.primary
-    }
-
-    if (Array.isArray(color) && typeof colorIndex === 'number') {
-      return color[colorIndex] || color[0]
-    }
-
-    return color
-  },
 
   /** 그라데이션 배경 생성 */
   createGradient(ctx: CanvasRenderingContext2D, chartArea: any, color: string) {
@@ -58,28 +32,18 @@ export const LineChartModule = {
     legendContainer.classList.add('bar-chart__legend')
 
     datasets.forEach((dataset, datasetIndex) => {
-      const legendItem = document.createElement('div')
-      legendItem.className = 'legend-item'
-
-      const dot = document.createElement('span')
-      dot.className = 'legend-item__dot'
-      dot.style.borderRadius = '50%'
-      dot.style.backgroundColor = dataset.borderColor
-
-      const text = document.createElement('span')
-      text.className = 'legend-item__text'
-      text.textContent = dataset.label
-
-      legendItem.appendChild(dot)
-      legendItem.appendChild(text)
-      legendContainer.appendChild(legendItem)
-
-      legendItem.addEventListener('click', () => {
-        const chart = ChartConfig.instances[chartId]
-        if (chart) {
-          ChartConfig.toggleLegend(legendItem, chart, datasetIndex, 'dataset')
-        }
+      const legendItem = ChartConfig.createLegendItem({
+        label: dataset.label,
+        color: dataset.borderColor,
+        dotStyle: 'circle',
+        onClick: () => {
+          const chart = ChartConfig.instances[chartId]
+          if (chart) {
+            ChartConfig.toggleLegend(legendItem, chart, datasetIndex, 'dataset')
+          }
+        },
       })
+      legendContainer.appendChild(legendItem)
     })
   },
 
@@ -118,7 +82,7 @@ export const LineChartModule = {
             // 바깥 원
             ctx.beginPath()
             ctx.arc(p.x, p.y, 10 * scale, 0, Math.PI * 2)
-            ctx.fillStyle = hexToRgba(color, 0.25)
+            ctx.fillStyle = colorToRgba(color, 0.25)
             ctx.fill()
 
             // 중간 원
@@ -154,7 +118,7 @@ export const LineChartModule = {
 
     // 데이터셋에 색상 및 스타일 적용
     const styledDatasets = datasets.map((dataset: any) => {
-      const color = dataset.borderColor || this.getColor(dataset.colorKey, dataset.colorIndex)
+      const color = dataset.borderColor || ChartConfig.getColor(dataset.colorKey, dataset.colorIndex)
       const lineStyle = useGradient ? ChartConfig.lineStyles.filled : ChartConfig.lineStyles.default
 
       const newDataset: any = {

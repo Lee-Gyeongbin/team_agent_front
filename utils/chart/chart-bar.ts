@@ -3,31 +3,9 @@
  * @module BarChartModule
  */
 import { Chart } from 'chart.js/auto'
-import { ChartColors } from './chart-colors'
 import { ChartConfig } from './chart-config'
 
 export const BarChartModule = {
-  /**
-   * 색상 가져오기
-   * @param colorKey - 색상 키 (예: "bar.set1", "bar.single.quarterly1")
-   * @param colorIndex - 색상 인덱스 (선택사항)
-   */
-  getColor(colorKey: string, colorIndex?: number): any {
-    const keys = colorKey.split('.')
-    let color: any = ChartColors
-
-    for (const key of keys) {
-      color = color[key]
-      if (!color) return '#A0A5DE'
-    }
-
-    if (typeof colorIndex === 'number' && Array.isArray(color)) {
-      return color[colorIndex]
-    }
-
-    return color
-  },
-
   /** 범례 생성 */
   createLegend(legendId: string, categories: string[], colors: any, chartId: string) {
     const legendContainer = document.getElementById(legendId)
@@ -40,29 +18,19 @@ export const BarChartModule = {
     legendContainer.classList.add('bar-chart__legend')
 
     categories.forEach((category, index) => {
-      const legendItem = document.createElement('div')
-      legendItem.className = 'legend-item'
-
-      const dot = document.createElement('span')
-      dot.className = 'legend-item__dot'
-      dot.style.backgroundColor = Array.isArray(colors) ? colors[index] || colors[0] : colors
-
-      const text = document.createElement('span')
-      text.className = 'legend-item__text'
-      text.textContent = category
-
-      legendItem.appendChild(dot)
-      legendItem.appendChild(text)
-      legendContainer.appendChild(legendItem)
-
-      // 클릭 토글 이벤트
-      legendItem.addEventListener('click', () => {
-        const chart = ChartConfig.instances[chartId]
-        if (chart) {
-          const type = chart.data.datasets.length > 1 ? 'dataset' : 'single'
-          ChartConfig.toggleLegend(legendItem, chart, index, type)
-        }
+      const color = Array.isArray(colors) ? colors[index] || colors[0] : colors
+      const legendItem = ChartConfig.createLegendItem({
+        label: category,
+        color,
+        onClick: () => {
+          const chart = ChartConfig.instances[chartId]
+          if (chart) {
+            const type = chart.data.datasets.length > 1 ? 'dataset' : 'single'
+            ChartConfig.toggleLegend(legendItem, chart, index, type)
+          }
+        },
       })
+      legendContainer.appendChild(legendItem)
     })
   },
 
@@ -202,16 +170,16 @@ export const BarChartModule = {
     // 색상 적용
     let colors: any
     if (datasets) {
-      colors = datasets.map((d: any) => this.getColor(d.colorKey || 'bar.set1', d.colorIndex))
+      colors = datasets.map((d: any) => ChartConfig.getColor(d.colorKey || 'bar.set1', d.colorIndex))
     } else {
-      colors = this.getColor(colorKey || 'bar.set1')
+      colors = ChartConfig.getColor(colorKey || 'bar.set1')
     }
 
     // 범례 생성
     if (showLegend && legendId) {
       if (datasets) {
         const legendCategories = datasets.map((d: any) => d.label)
-        const legendColors = datasets.map((d: any) => this.getColor(d.colorKey || 'bar.set1', d.colorIndex))
+        const legendColors = datasets.map((d: any) => ChartConfig.getColor(d.colorKey || 'bar.set1', d.colorIndex))
         this.createLegend(legendId, legendCategories, legendColors, id)
       } else {
         this.createLegend(legendId, categories, colors, id)
@@ -327,7 +295,7 @@ export const BarChartModule = {
     const chartDatasets = datasets
       ? datasets.map((dataset: any) => ({
           ...dataset,
-          backgroundColor: this.getColor(dataset.colorKey || 'bar.set1', dataset.colorIndex),
+          backgroundColor: ChartConfig.getColor(dataset.colorKey || 'bar.set1', dataset.colorIndex),
           ...barStyle,
         }))
       : [{ data, backgroundColor: colors, ...barStyle }]

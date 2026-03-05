@@ -268,6 +268,56 @@ export const ChartConfig = {
 
   // ===== 유틸리티 함수 =====
 
+  /** 색상 키 경로로 ChartColors에서 색상 가져오기 */
+  getColor(colorKey: string, colorIndex?: number, defaultColor = '#A0A5DE'): any {
+    if (!colorKey) return defaultColor
+
+    const keys = colorKey.split('.')
+    let color: any = ChartColors
+
+    for (const key of keys) {
+      color = color[key]
+      if (!color) return defaultColor
+    }
+
+    if (typeof colorIndex === 'number' && Array.isArray(color)) {
+      return color[colorIndex] || color[0]
+    }
+
+    return color
+  },
+
+  /** 범례 아이템 DOM 생성 헬퍼 */
+  createLegendItem(opts: {
+    label: string
+    color: string
+    dotStyle?: 'square' | 'circle'
+    onClick?: () => void
+  }): HTMLElement {
+    const legendItem = document.createElement('div')
+    legendItem.className = 'legend-item'
+
+    const dot = document.createElement('span')
+    dot.className = 'legend-item__dot'
+    dot.style.backgroundColor = opts.color
+    if (opts.dotStyle === 'circle') {
+      dot.style.borderRadius = '50%'
+    }
+
+    const text = document.createElement('span')
+    text.className = 'legend-item__text'
+    text.textContent = opts.label
+
+    legendItem.appendChild(dot)
+    legendItem.appendChild(text)
+
+    if (opts.onClick) {
+      legendItem.addEventListener('click', opts.onClick)
+    }
+
+    return legendItem
+  },
+
   /** 숫자 포맷팅 (천 단위 콤마) */
   formatNumber(value: number): string {
     return value.toLocaleString()
