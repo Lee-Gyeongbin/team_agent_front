@@ -5,6 +5,7 @@
       'is-panel-open': activePanelType !== 'none',
       'is-panel-fullscreen': isPanelFullscreen,
     }"
+    :style="activePanelType !== 'none' ? { '--panel-width': panelWidthPercent + 'vw' } : undefined"
   >
     <div class="chat-detail-main flex flex-col m-center">
       <ChatMessageList
@@ -24,6 +25,12 @@
         @on-send="onSend"
       />
     </div>
+    <!-- 리사이즈 핸들 -->
+    <div
+      v-if="activePanelType !== 'none' && !isPanelFullscreen"
+      class="chat-panel-resizer"
+      @mousedown="onResizeStart"
+    ></div>
     <!-- PDF 사이드 패널 -->
     <ChatPdfPanel
       :open="activePanelType === 'pdf'"
@@ -66,5 +73,39 @@ const pdfTestFilePath = '/docs/test.pdf'
 const selectedPdfFilePath = computed(() => {
   const targetMessage = messages.value.find((message) => message.id === activePanelMessageId.value)
   return targetMessage?.sourceUrl || pdfTestFilePath
+})
+
+// 패널 리사이즈
+const panelWidthPercent = ref(50)
+const isResizing = ref(false)
+
+const onResizeStart = (e: MouseEvent) => {
+  e.preventDefault()
+  isResizing.value = true
+  document.body.classList.add('is-resizing')
+
+  const onMouseMove = (e: MouseEvent) => {
+    const vw = window.innerWidth
+    const percent = ((vw - e.clientX) / vw) * 100
+    // 패널: 최소 40%, 최대 60%
+    panelWidthPercent.value = Math.min(60, Math.max(45, percent))
+  }
+
+  const onMouseUp = () => {
+    isResizing.value = false
+    document.body.classList.remove('is-resizing')
+    document.removeEventListener('mousemove', onMouseMove)
+    document.removeEventListener('mouseup', onMouseUp)
+  }
+
+  document.addEventListener('mousemove', onMouseMove)
+  document.addEventListener('mouseup', onMouseUp)
+}
+
+// 패널 닫을 때 너비 초기화
+watch(activePanelType, (type) => {
+  if (type === 'none') {
+    panelWidthPercent.value = 50
+  }
 })
 </script>

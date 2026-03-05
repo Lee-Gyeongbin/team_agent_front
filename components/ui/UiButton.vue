@@ -68,7 +68,7 @@ const emit = defineEmits<{
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
   border: 1px solid transparent;
   border-radius: $border-radius-base;
   font-weight: $font-weight-semibold;
@@ -101,24 +101,28 @@ const emit = defineEmits<{
     @include typo($body-xsmall);
     height: $height-sm;
     padding: 0 10px;
+    padding-right: 7px;
   }
 
   &.size-btn-md {
     @include typo($body-medium);
     height: $height-md;
-    padding: 0 12px;
+    padding: 0 10px;
+    padding-right: 7px;
   }
 
   &.size-btn-lg {
     @include typo($body-medium);
-    height: $height-lg;
-    padding: 0 12px;
+    height: $height-xlg;
+    padding: 0 10px;
+    padding-right: 7px;
   }
 
   &.size-btn-xlg {
     @include typo($body-large);
     height: $height-xlg;
-    padding: 0 12px;
+    padding: 0 10px;
+    padding-right: 7px;
   }
 
   // ===================================

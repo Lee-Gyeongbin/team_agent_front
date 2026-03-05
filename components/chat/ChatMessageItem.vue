@@ -35,18 +35,18 @@
           >
             <UiButton
               v-if="message.hasSource"
-              size="xlg"
+              size="lg"
               variant="primary-dark"
               @click="emit('on-view-source', message.id)"
             >
-              원문보기
+              원본보기
               <template #icon-right>
                 <i class="icon-arrow-right size-20"></i>
               </template>
             </UiButton>
             <UiButton
               v-if="message.hasVisualization"
-              size="xlg"
+              size="lg"
               variant="primary-dark"
               @click="emit('on-view-visualization', message.id)"
             >

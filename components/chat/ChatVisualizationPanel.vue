@@ -27,9 +27,8 @@
       </div>
     </div>
 
-    <!-- 본문 -->
+    <!-- 본문 (차트만) -->
     <div class="chat-vis-body">
-      <!-- 차트 섹션 -->
       <div class="chat-vis-chart">
         <div class="chat-vis-chart-header">
           <div class="chat-vis-chart-header-left">
@@ -82,41 +81,41 @@
           />
         </div>
       </div>
+    </div>
 
-      <!-- SQL 섹션 -->
-      <div class="chat-vis-sql">
-        <div class="chat-vis-sql-bar">
-          <div class="chat-vis-sql-bar-left">
-            <i class="icon-copy size-16"></i>
-            <span class="chat-vis-sql-label">SQL</span>
-          </div>
-          <UiButton
-            size="xlg"
-            variant="primary"
-            @click="toggleSql"
-          >
-            SQL
-            <template #icon-right>
-              <i
-                class="icon-chevron-down size-12"
-                :class="{ 'is-flipped': isSqlOpen }"
-              ></i>
-            </template>
-          </UiButton>
+    <!-- SQL 섹션 (하단 고정) -->
+    <div class="chat-vis-sql">
+      <div class="chat-vis-sql-bar">
+        <div class="chat-vis-sql-bar-left">
+          <i class="icon-copy size-16"></i>
+          <span class="chat-vis-sql-label">SQL</span>
         </div>
-        <div
-          v-if="isSqlOpen"
-          class="chat-vis-sql-content"
+        <UiButton
+          size="xlg"
+          variant="primary"
+          @click="toggleSql"
         >
-          <pre class="chat-vis-sql-code"><code>{{ sqlQuery }}</code></pre>
-          <button
-            class="btn btn-icon chat-vis-sql-copy"
-            title="SQL 복사"
-            @click="onCopySql"
-          >
-            <i class="icon-copy size-16"></i>
-          </button>
-        </div>
+          SQL
+          <template #icon-right>
+            <i
+              class="icon-chevron-down size-12"
+              :class="{ 'is-flipped': isSqlOpen }"
+            ></i>
+          </template>
+        </UiButton>
+      </div>
+      <div
+        class="chat-vis-sql-content"
+        :class="{ 'is-open': isSqlOpen }"
+      >
+        <pre class="chat-vis-sql-code"><code>{{ sqlQuery }}</code></pre>
+        <button
+          class="btn btn-icon chat-vis-sql-copy"
+          title="SQL 복사"
+          @click="onCopySql"
+        >
+          <i class="icon-copy size-16"></i>
+        </button>
       </div>
     </div>
   </div>

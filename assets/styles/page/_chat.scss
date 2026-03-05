@@ -84,7 +84,7 @@
   // assistant — 좌측 정렬
   &.role-assistant {
     justify-content: flex-start;
-    padding: 12px 16px;
+    padding: 12px 6px;
     background: #fff;
     border-radius: 10px;
 
@@ -104,7 +104,8 @@
       display: flex;
       flex-direction: column;
       gap: 16px;
-      align-items: flex-end;
+      flex: 1;
+      align-items: flex-start;
     }
 
     .message-content {
@@ -283,7 +284,8 @@
   position: fixed;
   top: 0;
   right: 0;
-  width: 50%;
+  width: var(--panel-width, 50vw);
+  min-width: 45%;
   height: 100vh;
   border-left: 1px solid $color-border;
   background: #fff;
@@ -352,7 +354,7 @@
 
 // 패널 열릴 때 채팅 영역 축소
 .chat-detail.is-panel-open .chat-detail-main {
-  max-width: calc(50vw - #{$sidebar-width});
+  max-width: calc(100vw - #{$sidebar-width} - var(--panel-width, 50vw));
   margin-left: 0;
   margin-right: 0;
 }
@@ -360,6 +362,65 @@
 // 전체화면일 때 채팅 영역 숨김
 .chat-detail.is-panel-fullscreen .chat-detail-main {
   display: none;
+}
+
+// ===================================
+// 패널 리사이즈 핸들
+// ===================================
+.chat-panel-resizer {
+  position: fixed;
+  top: 0;
+  right: var(--panel-width, 50vw);
+  width: 6px;
+  height: 100vh;
+  margin-right: -3px;
+  z-index: $z-overlay + 1;
+  cursor: col-resize;
+  background: transparent;
+  transition: background $transition-fast;
+
+  &:hover {
+    background: rgba($color-primary, 0.3);
+  }
+
+  // 가운데 pill 그립
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 24px;
+    border-radius: 4px;
+    background: $color-border;
+    transition: background $transition-fast;
+  }
+
+  &:hover::after {
+    background: $color-primary;
+  }
+}
+
+// 리사이즈 중 (body에 클래스 추가)
+.is-resizing {
+  user-select: none;
+  cursor: col-resize;
+
+  .chat-panel-resizer {
+    background: rgba($color-primary, 0.3);
+
+    &::after {
+      opacity: 1;
+      background: $color-primary;
+    }
+  }
+
+  // 드래그 중 transition 비활성화
+  .chat-pdf-panel,
+  .chat-vis-panel {
+    transition: none;
+  }
 }
 
 // ===================================
@@ -531,14 +592,16 @@
 }
 
 .chat-vis-body {
-  flex: 1;
-  overflow-y: auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 // SQL 섹션
 .chat-vis-sql {
+  position: relative;
+  flex-shrink: 0;
   border-top: 1px solid $color-border;
 }
 
@@ -572,8 +635,29 @@
 }
 
 .chat-vis-sql-content {
-  position: relative;
-  padding: 20px 20px;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  padding: 20px;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(12px);
+  background: #fff;
+  transition:
+    max-height $transition-slow,
+    opacity $transition-slow,
+    transform $transition-slow;
+
+  &.is-open {
+    max-height: 300px;
+    opacity: 1;
+    transform: translateY(0);
+    overflow-y: auto;
+    @include custom-scrollbar;
+  }
 }
 
 .chat-vis-sql-code {
@@ -583,6 +667,7 @@
   border-radius: $border-radius-base;
   overflow-x: auto;
   @include custom-scrollbar;
+  min-height: 280px;
 
   code {
     font-family: $font-family-mono;
@@ -605,7 +690,7 @@
 
 // 차트 섹션
 .chat-vis-chart {
-  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }
@@ -655,9 +740,7 @@
 
 // 차트 영역
 .chat-vis-chart-area {
-  flex: 1;
-  min-height: 300px;
-  max-height: 475px;
+  height: calc(100vh - 480px);
   padding: $spacing-md;
 
   &.is-pie {
