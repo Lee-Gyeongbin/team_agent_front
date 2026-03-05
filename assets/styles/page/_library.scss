@@ -64,7 +64,7 @@
         border-radius: 8px;
         border: 1px dashed #CDD1D5;
         background: #FFF;
-        font-size: 14px;
+        font-size: $font-size-base;
         color: #8A949E;
         font-weight: 600;
 
@@ -81,7 +81,7 @@
       }
       .list-title{
         color: #2D3139;
-        font-size: 18px;
+        font-size: $font-size-xl;
         font-weight: 700;
         .icon-diamond{
           margin-right: 6px;
@@ -137,7 +137,7 @@
           align-items: center;
           justify-content: center;
           gap: 4px;
-          font-size: 12px;
+          font-size: $font-size-sm;
           color: #94A3B8;
         }
 
@@ -186,7 +186,7 @@
         .library-card-desc{
           min-height: 36px;
           color: #828FA9;
-          font-size: 12px;
+          font-size: $font-size-sm;
           margin: 4px 0 8px;
           @include ellipsis(2);
         }

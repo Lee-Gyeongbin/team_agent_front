@@ -220,11 +220,15 @@ button{
     }
   }
 
-  .btn-category-add{
+  .btn-category-add.ui-button {
     font-size: 14px;
-font-weight: 700;
-    background: #DCE4E9;
-    color: #AEBCCB;
+    background: #DCE4E9 !important;
+    color: #AEBCCB !important;
+
+    &:hover:not(:disabled) {
+      background: #DCE4E9 !important;
+      color: #AEBCCB !important;
+    }
   }
 
   // focus 상태
@@ -233,9 +237,14 @@ font-weight: 700;
       border-color: $color-primary;
     }
 
-    .btn-category-add {
-      background: #58616A;
-      color: #fff;
+    .btn-category-add.ui-button {
+      background: #58616A !important;
+      color: #fff !important;
+
+      &:hover:not(:disabled) {
+        background: #58616A !important;
+        color: #fff !important;
+      }
     }
   }
 }
