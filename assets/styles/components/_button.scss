@@ -34,9 +34,9 @@ button{
   border-radius: 50px;
   border: 1px solid #b2d0ff;
   background: #fff;
-  font-size: $font-size-sm;
+  font-size: $font-size-lg;
   color: #464c53;
-  font-weight: 500;
+  font-weight: $font-weight-semibold;
 
   .icon-circle {
     display: flex;

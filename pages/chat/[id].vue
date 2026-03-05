@@ -127,7 +127,8 @@ const onSend = () => {
 
 // 더미 스트리밍 시뮬레이션
 const simulateStreaming = () => {
-  const fullText = '안녕하세요! 해당 내용에 대해 안내해 드리겠습니다.\n\n확인 후 자세한 답변을 드리겠습니다. 추가 궁금한 점이 있으시면 말씀해 주세요.'
+  const fullText =
+    '안녕하세요! 해당 내용에 대해 안내해 드리겠습니다.\n\n확인 후 자세한 답변을 드리겠습니다. 추가 궁금한 점이 있으시면 말씀해 주세요.'
   const msgId = (Date.now() + 1).toString()
 
   // 스트리밍 시작 — 빈 메시지 추가

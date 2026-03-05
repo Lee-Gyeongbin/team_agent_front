@@ -16,42 +16,42 @@
           class="message-content"
           v-html="message.content"
         ></div>
-        <!-- 원문보기 / 시각화 보기 버튼 -->
+        <!-- 액션 + 패널 버튼 (한 줄) -->
         <div
           v-if="!message.isStreaming"
-          class="message-panel-buttons"
+          class="message-footer"
         >
-          <UiButton
-            size="xlg"
-            variant="primary-dark"
-            @click="emit('on-view-source', message.id)"
-          >
-            원문보기
-            <template #icon-right>
-              <i class="icon-arrow-right size-20"></i>
-            </template>
-          </UiButton>
-          <UiButton
-            size="xlg"
-            variant="primary-dark"
-            @click="emit('on-view-visualization', message.id)"
-          >
-            시각화 보기
-            <template #icon-right>
-              <i class="icon-arrow-right size-20"></i>
-            </template>
-          </UiButton>
+          <ChatMessageActions
+            :is-liked="message.isLiked"
+            :is-disliked="message.isDisliked"
+            @on-copy="emit('on-copy', message.id)"
+            @on-like="emit('on-like', message.id)"
+            @on-dislike="emit('on-dislike', message.id)"
+            @on-regenerate="emit('on-regenerate', message.id)"
+          />
+          <div class="message-panel-buttons">
+            <UiButton
+              size="xlg"
+              variant="primary-dark"
+              @click="emit('on-view-source', message.id)"
+            >
+              원문보기
+              <template #icon-right>
+                <i class="icon-arrow-right size-20"></i>
+              </template>
+            </UiButton>
+            <UiButton
+              size="xlg"
+              variant="primary-dark"
+              @click="emit('on-view-visualization', message.id)"
+            >
+              시각화 보기
+              <template #icon-right>
+                <i class="icon-arrow-right size-20"></i>
+              </template>
+            </UiButton>
+          </div>
         </div>
-        <!-- 스트리밍 중이면 액션 버튼 숨김 -->
-        <ChatMessageActions
-          v-if="!message.isStreaming"
-          :is-liked="message.isLiked"
-          :is-disliked="message.isDisliked"
-          @on-copy="emit('on-copy', message.id)"
-          @on-like="emit('on-like', message.id)"
-          @on-dislike="emit('on-dislike', message.id)"
-          @on-regenerate="emit('on-regenerate', message.id)"
-        />
       </div>
     </template>
 

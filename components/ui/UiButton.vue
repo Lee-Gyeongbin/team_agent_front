@@ -97,19 +97,19 @@ const emit = defineEmits<{
   }
 
   &.size-btn-md {
-    @include typo($body-small);
+    @include typo($body-medium);
     height: $height-md;
     padding: 0 12px;
   }
 
   &.size-btn-lg {
-    @include typo($body-small);
+    @include typo($body-medium);
     height: $height-lg;
     padding: 0 12px;
   }
 
   &.size-btn-xlg {
-    @include typo($body-medium);
+    @include typo($body-large);
     height: $height-xlg;
     padding: 0 12px;
   }
