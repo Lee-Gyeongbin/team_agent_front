@@ -35,7 +35,6 @@
           >
             <UiButton
               v-if="message.hasSource"
-              size="lg"
               variant="primary-dark"
               @click="emit('on-view-source', message.id)"
             >
@@ -46,7 +45,6 @@
             </UiButton>
             <UiButton
               v-if="message.hasVisualization"
-              size="lg"
               variant="primary-dark"
               @click="emit('on-view-visualization', message.id)"
             >

@@ -5,14 +5,17 @@
   font-family: 'Pretendard';
   font-weight: 45 920;
   font-style: normal;
-  font-display: swap;
-  src: url('/fonts/PretendardVariable.woff2') format('woff2-variations');
+  font-display: optional;
+  src:
+    url('/fonts/PretendardVariable.woff2') format('woff2-variations'),
+    url('/fonts/PretendardVariable.woff2') format('woff2');
 }
 
 body {
   font-family: $font-family-base;
   font-size: $font-size-base;
   line-height: $line-height-base;
+  letter-spacing: -0.01em;
   color: $color-text-primary;
 }
 
