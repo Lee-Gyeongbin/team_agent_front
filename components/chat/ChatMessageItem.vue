@@ -16,17 +16,32 @@
           class="message-content"
           v-html="message.content"
         ></div>
-        <!-- 원문보기 버튼 -->
-        <UiButton
+        <!-- 원문보기 / 시각화 보기 버튼 -->
+        <div
           v-if="!message.isStreaming"
-          size="xlg"
-          @click="emit('on-view-source', message.id)"
+          class="message-panel-buttons"
         >
-          원문보기
-          <template #icon-right>
-            <i class="icon-arrow-right size-20"></i>
-          </template>
-        </UiButton>
+          <UiButton
+            size="xlg"
+            variant="primary-dark"
+            @click="emit('on-view-source', message.id)"
+          >
+            원문보기
+            <template #icon-right>
+              <i class="icon-arrow-right size-20"></i>
+            </template>
+          </UiButton>
+          <UiButton
+            size="xlg"
+            variant="primary-dark"
+            @click="emit('on-view-visualization', message.id)"
+          >
+            시각화 보기
+            <template #icon-right>
+              <i class="icon-arrow-right size-20"></i>
+            </template>
+          </UiButton>
+        </div>
         <!-- 스트리밍 중이면 액션 버튼 숨김 -->
         <ChatMessageActions
           v-if="!message.isStreaming"
@@ -64,5 +79,6 @@ const emit = defineEmits<{
   'on-dislike': [id: string]
   'on-regenerate': [id: string]
   'on-view-source': [id: string]
+  'on-view-visualization': [id: string]
 }>()
 </script>

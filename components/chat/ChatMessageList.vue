@@ -12,6 +12,7 @@
       @on-dislike="emit('on-dislike', $event)"
       @on-regenerate="emit('on-regenerate', $event)"
       @on-view-source="emit('on-view-source', $event)"
+      @on-view-visualization="emit('on-view-visualization', $event)"
     />
   </div>
 </template>
@@ -31,6 +32,7 @@ const emit = defineEmits<{
   'on-dislike': [id: string]
   'on-regenerate': [id: string]
   'on-view-source': [id: string]
+  'on-view-visualization': [id: string]
 }>()
 
 const listRef = ref<HTMLElement | null>(null)

@@ -3,6 +3,8 @@
 // ===================================
 $color-primary: #3c69db;
 $color-primary-hover: #1d4ed8;
+$color-primary-dark: #2b43a2;
+$color-primary-dark-hover: #1d3589;
 $color-secondary: #64748b;
 $color-background: #f4f7f9;
 $color-surface: #f8fafc;
@@ -26,12 +28,12 @@ $font-family-base:
   -apple-system,
   sans-serif;
 $font-family-mono: 'JetBrains Mono', monospace;
-$font-size-xs: 0.75rem; // 12px — 캡션, 타임스탬프
-$font-size-sm: 0.875rem; // 14px — 본문 보조, 버튼
-$font-size-base: 1rem; // 16px — 본문 기본
-$font-size-lg: 1.125rem; // 18px — 소제목
-$font-size-xl: 1.25rem; // 20px — 섹션 제목
-$font-size-2xl: 1.5rem; // 24px — 페이지 제목
+$font-size-xs: 0.625rem; // 10px — 캡션
+$font-size-sm: 0.75rem; // 12px — 보조 텍스트
+$font-size-base: 0.875rem; // 14px — 본문 기본
+$font-size-lg: 1rem; // 16px — 소제목
+$font-size-xl: 1.125rem; // 18px — 섹션 제목
+$font-size-2xl: 1.25rem; // 20px — 페이지 제목
 $font-weight-normal: 400;
 $font-weight-medium: 500;
 $font-weight-semibold: 600;
@@ -52,9 +54,9 @@ $body-caption: (
   line-height: 150%,
 );
 $body-caption-bold: (
-  font-size: 10px,
+  font-size: 101px,
   font-weight: $font-weight-bold,
-  line-height: 150%,
+  line-height: 1250%,
 );
 
 // Body XSmall (12px)

@@ -40,7 +40,7 @@
 
 <script setup lang="ts">
 interface Props {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost'
+  variant?: 'primary' | 'primary-dark' | 'secondary' | 'outline' | 'ghost'
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xlg'
   disabled?: boolean
   loading?: boolean
@@ -74,6 +74,7 @@ const emit = defineEmits<{
   cursor: pointer;
   transition: all $transition-base;
   white-space: nowrap;
+  letter-spacing: -0.02em;
 
   &:focus-visible {
     outline: 2px solid $color-primary;
@@ -104,13 +105,13 @@ const emit = defineEmits<{
   &.size-btn-lg {
     @include typo($body-small);
     height: $height-lg;
-    padding: 0 14px;
+    padding: 0 12px;
   }
 
   &.size-btn-xlg {
     @include typo($body-medium);
     height: $height-xlg;
-    padding: 0 16px;
+    padding: 0 12px;
   }
 
   // ===================================
@@ -119,11 +120,21 @@ const emit = defineEmits<{
   &.is-icon-only {
     padding: 0;
 
-    &.size-btn-xs { width: $height-xs; }
-    &.size-btn-sm { width: $height-sm; }
-    &.size-btn-md { width: $height-md; }
-    &.size-btn-lg { width: $height-lg; }
-    &.size-btn-xlg { width: $height-xlg; }
+    &.size-btn-xs {
+      width: $height-xs;
+    }
+    &.size-btn-sm {
+      width: $height-sm;
+    }
+    &.size-btn-md {
+      width: $height-md;
+    }
+    &.size-btn-lg {
+      width: $height-lg;
+    }
+    &.size-btn-xlg {
+      width: $height-xlg;
+    }
   }
 
   // ===================================
@@ -135,6 +146,15 @@ const emit = defineEmits<{
 
     &:hover:not(:disabled) {
       background: $color-primary-hover;
+    }
+  }
+
+  &.variant-primary-dark {
+    background: $color-primary-dark;
+    color: #fff;
+
+    &:hover:not(:disabled) {
+      background: $color-primary-dark-hover;
     }
   }
 

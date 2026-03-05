@@ -1,7 +1,10 @@
 <template>
   <div
     class="chat-detail"
-    :class="{ 'is-panel-open': isRefPanelOpen }"
+    :class="{
+      'is-panel-open': activePanelType !== 'none',
+      'is-panel-fullscreen': isPanelFullscreen,
+    }"
   >
     <div class="chat-detail-main flex flex-col m-center">
       <ChatMessageList
@@ -11,16 +14,24 @@
         @on-dislike="onDislike"
         @on-regenerate="onRegenerate"
         @on-view-source="onViewSource"
+        @on-view-visualization="onViewVisualization"
       />
       <ChatInput
         v-model="chatMessage"
         @on-send="onSend"
       />
     </div>
-    <!-- 관련자료 사이드 패널 -->
-    <ChatReferencePanel
-      :open="isRefPanelOpen"
-      @update:open="isRefPanelOpen = $event"
+    <!-- PDF 사이드 패널 -->
+    <ChatPdfPanel
+      :open="activePanelType === 'pdf'"
+      @update:open="onPanelClose"
+      @update:fullscreen="isPanelFullscreen = $event"
+    />
+    <!-- 시각화 사이드 패널 -->
+    <ChatVisualizationPanel
+      :open="activePanelType === 'visualization'"
+      @update:open="onPanelClose"
+      @update:fullscreen="isPanelFullscreen = $event"
     />
   </div>
 </template>
@@ -30,7 +41,8 @@ import type { ChatMessage } from '~/types/chat'
 
 const route = useRoute()
 const chatMessage = ref('')
-const isRefPanelOpen = ref(false)
+const activePanelType = ref<'none' | 'pdf' | 'visualization'>('none')
+const isPanelFullscreen = ref(false)
 
 // 패널 열릴 때 부모 content-inner의 max-width 해제
 const parentEl = ref<HTMLElement | null>(null)
@@ -39,9 +51,9 @@ onMounted(() => {
   parentEl.value = document.querySelector('.content-inner')
 })
 
-watch(isRefPanelOpen, (open) => {
+watch(activePanelType, (type) => {
   if (parentEl.value) {
-    if (open) {
+    if (type !== 'none') {
       parentEl.value.style.maxWidth = 'none'
     } else {
       parentEl.value.style.maxWidth = ''
@@ -173,8 +185,23 @@ const onRegenerate = (id: string) => {
   console.warn('재생성 요청:', id)
 }
 
-// 관련자료 모달 열기
+// 패널 닫기 핸들러
+const onPanelClose = (value: boolean) => {
+  if (!value) {
+    activePanelType.value = 'none'
+    isPanelFullscreen.value = false
+  }
+}
+
+// PDF 패널 열기
 const onViewSource = (id: string) => {
-  isRefPanelOpen.value = true
+  isPanelFullscreen.value = false
+  activePanelType.value = 'pdf'
+}
+
+// 시각화 패널 열기
+const onViewVisualization = (id: string) => {
+  isPanelFullscreen.value = false
+  activePanelType.value = 'visualization'
 }
 </script>
