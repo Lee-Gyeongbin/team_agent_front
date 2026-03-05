@@ -3,7 +3,11 @@
     class="library-detail-modal"
     :class="{ 'is-show': isOpen }"
   >
-    <div class="library-detail-modal-content">
+    <div
+      ref="contentRef"
+      class="library-detail-modal-content"
+      @scroll="handleScroll"
+    >
       <!-- 상단 헤더 -->
       <div class="library-detail-modal-header">
         <!-- 닫기 -->
@@ -79,7 +83,7 @@
       <!-- 본문 -->
       <div class="library-detail-modal-body">
         <!-- 사용자 질문 -->
-        <div class="content-box">
+        <div class="content-box type-question">
           <p>2025년 우리회사 월별매출액은 얼마지? 단위를 억 단위로 알려줘</p>
         </div>
 
@@ -109,26 +113,35 @@
           </div>
         </div>
 
-      <div class="content-box type-sql">
-        <div class="sql-header flex items-center justify-end">
-          <div class=""></div>
-          <UiButton
-            variant="ghost"
-            size="xxs"
-            icon-only
-            class="btn-custom-gray"
-            @click="handleCopyResponse"
-          >
-            <template #icon-left>
-              <i class="icon icon-sql size-16"></i>
-            </template>
-          </UiButton>
-        </div>
+        <div class="content-box type-sql">
+          <div class="sql-header flex items-center justify-end gap-4">
+            <div class="regenerate"></div>
+            <UiButton
+              variant="ghost"
+              size="xxs"
+              icon-only
+              class="btn-custom-white"
+            >
+              <template #icon-left>
+                <i class="icon icon-regenerate size-16"></i>
+              </template>
+            </UiButton>
+            <UiButton
+              variant="ghost"
+              size="xxs"
+              icon-only
+              class="btn-custom-gray"
+            >
+              <template #icon-left>
+                <i class="icon icon-sql size-16"></i>
+              </template>
+            </UiButton>
+          </div>
 
-        <div class="content-box w-full">
+          <div class="content-box w-full sql-content">
 
+          </div>
         </div>
-      </div>
 
         <!-- SQL 코드 블록 -->
         <div class="library-detail-modal-code">
@@ -154,17 +167,25 @@
             ORDER BY month;
           </code></pre>
         </div>
-      </div>
 
-      <!-- 하단 태그 -->
-      <div class="library-detail-modal-footer">
+        <!-- 하단 태그 -->
         <div class="library-detail-modal-tags">
           <span class="library-detail-modal-tag">#매출</span>
           <span class="library-detail-modal-tag">#2025</span>
           <span class="library-detail-modal-tag">#월별통계</span>
         </div>
       </div>
+
     </div>
+
+    <!-- 탑 버튼 -->
+    <button
+      class="btn btn-modal-top"
+      :class="{ 'is-show': isScrolled }"
+      @click="handleScrollToTop"
+    >
+      <i class="icon icon-arrow-down size-20"></i>
+    </button>
   </div>
 </template>
 
@@ -198,6 +219,25 @@ const monthlyData = [
   { month: '11월', value: 68.5 },
   { month: '12월', value: 74.8 },
 ]
+
+// 스크롤 상태
+const contentRef = ref<HTMLElement | null>(null)
+const isScrolled = ref(false)
+
+// 스크롤 이벤트 핸들러
+const handleScroll = () => {
+  if (!contentRef.value) return
+  isScrolled.value = contentRef.value.scrollTop > 50
+}
+
+// 탑 버튼 클릭 핸들러
+const handleScrollToTop = () => {
+  if (!contentRef.value) return
+  contentRef.value.scrollTo({
+    top: 0,
+    behavior: 'smooth',
+  })
+}
 
 // 이벤트 핸들러
 const handleClose = () => {
@@ -264,6 +304,8 @@ const handleCopyCode = () => {
     border-left: 1px solid #DCE4E9;
     transform: translateX(20px);
     transition: transform $transition-base;
+    overflow-y: auto;
+    @include custom-scrollbar;
   }
 
   // 닫기 btn
@@ -276,6 +318,42 @@ const handleCopyCode = () => {
 
     .icon-close{
       background-color: #828FA9;
+    }
+  }
+
+  // 탑 버튼
+  .btn-modal-top {
+    position: fixed;
+    top: auto;
+    right: 16px;
+    bottom: 24px;
+    width: 40px;
+    height: 40px;
+    z-index: 11;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    border: 1px solid #DCE4E9;
+    border-radius: $border-radius-full;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition:
+      opacity $transition-base,
+      visibility $transition-base,
+      transform $transition-base;
+
+    &.is-show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .icon-arrow-down {
+      background-color: #828FA9;
+      transform: rotate(180deg);
     }
   }
 
@@ -324,29 +402,40 @@ const handleCopyCode = () => {
 
   // 본문
   .library-detail-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
     flex: 1;
-    padding: 16px 0;
-    overflow-y: auto;
-    @include custom-scrollbar;
+    padding: 16px 0 0;
 
     .content-box {
       position: relative;
-      margin-bottom: 12px;
       padding: 12px 16px;
-      background: $color-chat-user-bg;
+      background: #F4F7F9;
       border-radius: 8px;
       color: #2d3139;
       font-size: $font-size-base;
       line-height: $line-height-base;
 
+      &.type-question{
+        background: #F1F6FE;
+      }
+
       &.type-response {
-        margin-bottom: 12px;
-        background: #F4F7F9;
         color: #4D5462;
       }
 
       &.type-sql {
+        border: 1px solid #DCE4E9;
+        background: #FFF;
+      }
 
+      &.sql-content{
+        min-height: 240px;
+      }
+
+      .sql-header{
+        padding-bottom: 7px;
       }
 
       .btn-copy {
@@ -389,23 +478,19 @@ const handleCopyCode = () => {
   }
 
   // 푸터
-  .library-detail-modal-footer {
-    padding: 16px 20px;
-    border-top: 1px solid $color-border;
-    background: #fff;
+  .library-detail-modal-tags {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-top: 4px;
 
-    .library-detail-modal-tags {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-
-      .library-detail-modal-tag {
-        padding: 4px 12px;
-        background: $color-background;
-        color: $color-text-secondary;
-        font-size: $font-size-sm;
-        border-radius: $border-radius-full;
-      }
+    .library-detail-modal-tag {
+      padding: 0 7px;
+      background: #FFF;
+      color: #6F7A93;
+      font-size: $font-size-sm;
+      border-radius: $border-radius-full;
+      border: 1px solid #ECF0F3;
     }
   }
 }
