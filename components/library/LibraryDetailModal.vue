@@ -104,12 +104,13 @@
           <!-- 월별 데이터 -->
           <div>
             2025년 월별 매출액 조회 결과입니다.
-              <br>
-              <br>
-              (단위: 억원)1월: 42.3억 / 2월: 38.7억 / 3월: 51.2억 / 4월: 49.8억 / 5월: 55.1억 / 6월: 60.4억 / 7월: 58.9억 / 8월: 52.3억 / 9월: 63.7억 / 10월: 71.2억 / 11월: 68.5억 / 12월: 74.8억
-              <br>
-              <br>
-              연간 합계: 686.9억원
+            <br />
+            <br />
+            (단위: 억원)1월: 42.3억 / 2월: 38.7억 / 3월: 51.2억 / 4월: 49.8억 / 5월: 55.1억 / 6월: 60.4억 / 7월: 58.9억
+            / 8월: 52.3억 / 9월: 63.7억 / 10월: 71.2억 / 11월: 68.5억 / 12월: 74.8억
+            <br />
+            <br />
+            연간 합계: 686.9억원
           </div>
         </div>
 
@@ -138,9 +139,7 @@
             </UiButton>
           </div>
 
-          <div class="content-box w-full sql-content">
-
-          </div>
+          <div class="content-box w-full sql-content"></div>
         </div>
 
         <!-- SQL 코드 블록 -->
@@ -158,14 +157,14 @@
           </UiButton>
           
           <pre class="library-detail-modal-code-content"><code>
-            SELECT
-            TO_CHAR(sale_date, 'YYYY-MM') AS month,
-            ROUND(SUM(amount) / 100000000, 1) AS sales_억
-            FROM sales
-            WHERE EXTRACT (YEAR FROM sale_date) = 2025
-            GROUP BY TO_CHAR(sale_date, 'YYYY-MM')
-            ORDER BY month;
-          </code></pre>
+SELECT
+TO_CHAR(sale_date, 'YYYY-MM') AS month,
+ROUND(SUM(amount) / 100000000, 1) AS sales_억
+FROM sales
+WHERE EXTRACT (YEAR FROM sale_date) = 2025
+GROUP BY TO_CHAR(sale_date, 'YYYY-MM')
+ORDER BY month;
+</code></pre>
         </div>
 
         <!-- 하단 태그 -->
@@ -298,10 +297,10 @@ const handleCopyCode = () => {
     flex-direction: column;
     width: 680px;
     height: calc(100vh - 102px);
-    padding: 24px 16px;
+    padding: $spacing-lg $spacing-md;
     background: #fff;
-    border-top: 1px solid #DCE4E9;
-    border-left: 1px solid #DCE4E9;
+    border-top: 1px solid $color-border;
+    border-left: 1px solid $color-border;
     transform: translateX(20px);
     transition: transform $transition-base;
     overflow-y: auto;
@@ -309,15 +308,15 @@ const handleCopyCode = () => {
   }
 
   // 닫기 btn
-  .btn-modal-close{
+  .btn-modal-close {
     position: absolute;
-    top: 24px;
-    right: 16px;
+    top: $spacing-lg;
+    right: $spacing-md;
     width: 20px;
     height: 20px;
 
-    .icon-close{
-      background-color: #828FA9;
+    .icon-close {
+      background-color: #828fa9;
     }
   }
 
@@ -325,8 +324,8 @@ const handleCopyCode = () => {
   .btn-modal-top {
     position: fixed;
     top: auto;
-    right: 16px;
-    bottom: 24px;
+    right: $spacing-md;
+    bottom: $spacing-lg;
     width: 40px;
     height: 40px;
     z-index: 11;
@@ -334,9 +333,9 @@ const handleCopyCode = () => {
     align-items: center;
     justify-content: center;
     background: #fff;
-    border: 1px solid #DCE4E9;
+    border: 1px solid $color-border;
     border-radius: $border-radius-full;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: $shadow-sm;
     opacity: 0;
     visibility: hidden;
     transform: translateY(10px);
@@ -352,7 +351,7 @@ const handleCopyCode = () => {
     }
 
     .icon-arrow-down {
-      background-color: #828FA9;
+      background-color: #828fa9;
       transform: rotate(180deg);
     }
   }
@@ -363,37 +362,37 @@ const handleCopyCode = () => {
 
     .library-detail-modal-badge-wrapper {
       flex-wrap: wrap;
-      gap: 4px;
-      margin-bottom: 4px;
+      gap: $spacing-xs;
+      margin-bottom: $spacing-xs;
     }
 
     .library-detail-modal-title-section {
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
-      gap: 16px;
-      padding-right: 8px;
+      gap: $spacing-md;
+      padding-right: $spacing-sm;
 
       .library-detail-modal-title-grp {
         flex: 1;
 
         .library-detail-modal-title {
-          color: #2D3139;
+          color: $color-text-dark;
           font-size: $font-size-xl;
           font-weight: $font-weight-bold;
-          margin-bottom: 4px;
+          margin-bottom: $spacing-xs;
           line-height: 150%;
         }
 
         .library-detail-modal-date {
-          color: #94A3B8;
+          color: $color-text-disabled;
           font-size: $font-size-sm;
         }
       }
 
       .library-detail-modal-actions {
         display: flex;
-        gap: 4px;
+        gap: $spacing-xs;
         flex-shrink: 0;
       }
     }
@@ -406,35 +405,35 @@ const handleCopyCode = () => {
     flex-direction: column;
     gap: 12px;
     flex: 1;
-    padding: 16px 0 0;
+    padding: $spacing-md 0 0;
 
     .content-box {
       position: relative;
-      padding: 12px 16px;
-      background: #F4F7F9;
-      border-radius: 8px;
-      color: #2d3139;
+      padding: 12px $spacing-md;
+      background: $color-background;
+      border-radius: $border-radius-lg;
+      color: $color-text-dark;
       font-size: $font-size-base;
       line-height: $line-height-base;
 
-      &.type-question{
-        background: #F1F6FE;
+      &.type-question {
+        background: #f1f6fe;
       }
 
       &.type-response {
-        color: #4D5462;
+        color: $color-text-primary;
       }
 
       &.type-sql {
-        border: 1px solid #DCE4E9;
-        background: #FFF;
+        border: 1px solid $color-border;
+        background: #fff;
       }
 
-      &.sql-content{
+      &.sql-content {
         min-height: 240px;
       }
 
-      .sql-header{
+      .sql-header {
         padding-bottom: 7px;
       }
 
@@ -445,9 +444,8 @@ const handleCopyCode = () => {
       }
     }
 
-
     .library-detail-modal-code {
-      background: #2d3139;
+      background: $color-text-dark;
       border-radius: $border-radius-lg;
       overflow: hidden;
       position: relative;
@@ -480,17 +478,17 @@ const handleCopyCode = () => {
   // 푸터
   .library-detail-modal-tags {
     display: flex;
-    gap: 4px;
+    gap: $spacing-xs;
     flex-wrap: wrap;
-    margin-top: 4px;
+    margin-top: $spacing-xs;
 
     .library-detail-modal-tag {
       padding: 0 7px;
-      background: #FFF;
-      color: #6F7A93;
+      background: #fff;
+      color: $color-text-secondary;
       font-size: $font-size-sm;
       border-radius: $border-radius-full;
-      border: 1px solid #ECF0F3;
+      border: 1px solid #ecf0f3;
     }
   }
 }

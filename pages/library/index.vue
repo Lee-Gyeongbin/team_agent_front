@@ -26,7 +26,10 @@
           />
         </div>
         <div class="btn-grp">
-          <button class="btn btn-library btn-library-archive">
+          <button
+            class="btn btn-library btn-library-archive"
+            @click="isArchiveModalOpen = true"
+          >
             <i class="icon icon-archive size-16"></i>
             <span class="badge-num">23</span>
           </button>
@@ -233,6 +236,12 @@
       @refresh="handleModalRefresh"
       @delete="handleModalDelete"
     />
+
+    <!-- 보관함 모달 -->
+    <LibraryArchiveModal
+      :is-open="isArchiveModalOpen"
+      @close="isArchiveModalOpen = false"
+    />
   </div>
 </template>
 
@@ -261,6 +270,7 @@ setupDragScroll(contentWrapperRef)
 
 // 모달 상태
 const isModalOpen = ref(false)
+const isArchiveModalOpen = ref(false)
 
 // 모달 열기
 const openModal = (_cardId: number) => {
