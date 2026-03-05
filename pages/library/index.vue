@@ -7,14 +7,17 @@
       </div>
       <div class="right-grp flex items-center">
         <p class="total">총 <strong>7개</strong></p>
-        <div class="library-input-grp shrink-0">
-          <input
-            type="text"
-            class="inp inp-search"
-            placeholder="검색어를 입력하세요"
-          />
+        <div class="library-input-grp shrink-0 w-400">
+          <div class="inp-search-grp">
+            <input
+              type="text"
+              class="inp inp-search w-full"
+              placeholder="검색어를 입력하세요"
+            />
+            <button class="btn btn-search"><i class="icon icon-search size-20"></i></button>
+          </div>
         </div>
-        <div class="library-select-grp shrink-0">
+        <div class="library-select-grp shrink-0 w-140">
           <UiSelect
             id="sort-order"
             name="sort-order"
@@ -50,7 +53,7 @@
           </div>
           <!-- 드롭다운 메뉴 -->
           <div
-            class="dropdown-wrapper flex items-center"
+            class="dropdown-wrapper"
             :class="{ 'is-show': isDropdownOpen }"
           >
             <button
@@ -80,17 +83,66 @@
           >
             <!-- 상단 영역 -->
             <div class="library-card-top flex justify-between items-center">
-              <p class="library-card-badge flex items-center">데이터분석</p>
-              <button class="btn btn-library-card-add">
-                <i class="icon icon-add-dot size-20"></i>
-              </button>
+              <!-- 
+                TODO: 카테고리 타입에 따라 modifier 변경
+                data-line   → 데이터분석
+                basic-chat  → 기본대화
+                manual-ai   → 매뉴얼AI
+                class="library-card-badge badge--{type}"
+              -->
+              <p class="library-card-badge badge--data-line">
+                <i class="icon badge-icon size-14"></i>
+                <span>데이터분석</span>
+              </p>
+              <!-- 드롭다운 메뉴 -->
+              <div
+                class="dropdown-wrapper"
+                :class="{ 'is-show': cardDropdownOpen[card] }"
+              >
+                <button
+                  class="btn btn-library-card-add type-white"
+                  @click="cardDropdownOpen[card] = !cardDropdownOpen[card]"
+                >
+                  <i class="icon icon-add-dot size-20"></i>
+                </button>
+                <div class="dropdown-menu">
+                  <button class="dropdown-item">
+                    <i class="icon icon-view size-16"></i>
+                    <span>상세 보기</span>
+                  </button>
+                  <button class="dropdown-item">
+                    <i class="icon icon-transfer size-16"></i>
+                    <span>카테고리 이동</span>
+                  </button>
+                  <button class="dropdown-item">
+                    <i class="icon icon-star-line size-16"></i>
+                    <span>즐겨찾기 등록</span>
+                  </button>
+                  <button class="dropdown-item">
+                    <i class="icon icon-star-fill size-16"></i>
+                    <span>즐겨찾기 해제</span>
+                  </button>
+                  <button class="dropdown-item">
+                    <i class="icon icon-copy-gray size-16"></i>
+                    <span>답변 복사</span>
+                  </button>
+                  <button class="dropdown-item">
+                    <i class="icon icon-archive size-16"></i>
+                    <span>보관</span>
+                  </button>
+                  <button class="dropdown-item type-danger">
+                    <i class="icon icon-delete size-16"></i>
+                    <span>삭제</span>
+                  </button>
+                </div>
+              </div>
+              <!-- .END 드롭다운 메뉴 -->
             </div>
             <!-- 제목 -->
             <h3 class="library-card-title fw-600">2025년 우리회사 월별매출액 2025년 우리회사 월별매출액</h3>
             <!-- 설명 -->
             <p class="library-card-desc">
               전자결재가 반려된 경우 아래 절차로 재상신할 수 있습니다. 1. [전자결재] → [수신함] 메뉴에서 반려 글자테스트
-              글자테스트
             </p>
 
             <!-- 하단 메타 -->
@@ -115,7 +167,7 @@
           </div>
           <!-- 드롭다운 메뉴 -->
           <div
-            class="dropdown-wrapper flex items-center"
+            class="dropdown-wrapper"
             :class="{ 'is-show': isDropdownOpen }"
           >
             <button
@@ -149,23 +201,13 @@
 
       <!-- 카테고리 입력 -->
       <div class="library-list-grp">
-        <div
-          class="library-category-input-grp flex items-center"
-          :class="{ 'is-focused': isCategoryInputFocused }"
-        >
+        <div class="library-category-input-grp flex items-center">
           <input
             type="text"
             class="inp inp-category"
             placeholder="카테고리명을 입력하세요"
-            @focus="isCategoryInputFocused = true"
-            @blur="isCategoryInputFocused = false"
           />
-          <UiButton
-            :variant="isCategoryInputFocused ? 'primary' : 'secondary'"
-            size="md"
-          >
-            추가
-          </UiButton>
+          <UiButton size="md" class="btn-category-add">추가</UiButton>
         </div>
       </div>
     </div>
@@ -185,28 +227,13 @@ const searchOptions = [
 // 드롭다운 토글 상태
 const isDropdownOpen = ref(false)
 
-// 카테고리 입력 포커스 상태
-const isCategoryInputFocused = ref(false)
+// 카드별 드롭다운 토글 상태
+const cardDropdownOpen = ref<Record<number, boolean>>({})
 
 // 드래그 스크롤 적용
-const { setupDragScroll, setupDragScrollDirect } = useDragScroll()
+const { setupDragScroll } = useDragScroll()
 const contentWrapperRef = ref<HTMLElement | null>(null)
 
 // 가로 스크롤 (library-content-wrapper)
 setupDragScroll(contentWrapperRef)
-
-// 세로 스크롤 (library-card-grp) - 각 카드 그룹에 개별 적용
-onMounted(() => {
-  const cardGroups = document.querySelectorAll('.library-card-grp')
-  const cleanups: Array<() => void> = []
-
-  cardGroups.forEach((group) => {
-    const cleanup = setupDragScrollDirect(group as HTMLElement)
-    cleanups.push(cleanup)
-  })
-
-  onUnmounted(() => {
-    cleanups.forEach((cleanup) => cleanup())
-  })
-})
 </script>

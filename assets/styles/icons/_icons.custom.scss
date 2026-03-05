@@ -108,6 +108,10 @@
 // library 아이콘
 // ===================================
 
+.icon-search {
+  @include icon-file('icon-search');
+}
+
 // 보관함
 .icon-archive {
   @include icon-file('archive');
@@ -128,16 +132,6 @@
   @include icon-file('diamond');
 }
 
-// 편집/이름 변경
-.icon-edit {
-  @include icon-file('edit');
-}
-
-// 드롭다운 쓰레기통(각진ver)
-.icon-trashcan {
-  @include icon-file('trashcan');
-}
-
 // 하트(그레이)
 .icon-heart {
   @include icon-file('heart');
@@ -151,6 +145,37 @@
 .icon-logout {
   @include icon-file('logout');
 }
+
+// 드롭다운 편집/이름 변경
+.icon-edit {
+  @include icon-file('edit');
+}
+
+// 드롭다운 쓰레기통(각진ver)
+.icon-trashcan {
+  @include icon-file('trashcan');
+}
+
+.icon-view {
+  @include icon-file('view');
+}
+
+.icon-transfer {
+  @include icon-file('transfer');
+}
+
+.icon-star-line {
+  @include icon-file('star-line');
+}
+
+.icon-star-fill {
+  @include icon-file('star-fill');
+}
+
+.icon-copy-gray {
+  @include icon-file('copy-gray');
+}
+
 
 // ===================================
 // 관련자료 패널 아이콘

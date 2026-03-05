@@ -42,7 +42,6 @@ export const useDragScroll = () => {
       startY = e.pageY - rect.top
       scrollLeft = element.scrollLeft
       scrollTop = element.scrollTop
-      element.style.cursor = 'grabbing'
       element.style.userSelect = 'none'
     }
 
@@ -60,7 +59,6 @@ export const useDragScroll = () => {
 
     const handleMouseUp = () => {
       if (!isDragging) return
-      element.style.cursor = 'grab'
       element.style.userSelect = ''
       isDragging = false
       // 드래그 종료 시 전역 상태 초기화
@@ -71,7 +69,6 @@ export const useDragScroll = () => {
 
     const handleMouseLeave = () => {
       if (isDragging) {
-        element.style.cursor = 'grab'
         element.style.userSelect = ''
         isDragging = false
         // 드래그 종료 시 전역 상태 초기화
@@ -80,9 +77,6 @@ export const useDragScroll = () => {
         }
       }
     }
-
-    // 초기 커서 스타일 설정
-    element.style.cursor = 'grab'
 
     element.addEventListener('mousedown', handleMouseDown)
     document.addEventListener('mousemove', handleMouseMove)
@@ -95,7 +89,6 @@ export const useDragScroll = () => {
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
       element.removeEventListener('mouseleave', handleMouseLeave)
-      element.style.cursor = ''
       element.style.userSelect = ''
     }
   }

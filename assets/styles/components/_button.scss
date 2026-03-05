@@ -83,14 +83,19 @@ button{
   height: 30px;
   border-radius: 4px;
 
-  &.btn-library-archive{
-
-  }
-
   &.btn-library-trash{
     background: #ECF0F3;
     .badge-num{
       background: #94A3B8;
+    }
+  }
+
+  &:hover{
+    background: rgba(0, 0, 0, 0.05);
+    transition: background-color $transition-base;
+    
+    &.btn-library-trash{
+      background: #D1D9E0;
     }
   }
 
@@ -125,6 +130,8 @@ button{
 // 드롭다운 메뉴
 .dropdown-wrapper{
   position: relative;
+  display: flex;
+  align-items: center;
 
   .dropdown-menu{
     position: absolute;
@@ -179,37 +186,56 @@ button{
   &:hover{
     background-color: #F5F6F8;
   }
+
+  &.type-danger{
+    background-color: #F5F6F8;
+    
+    &:hover{
+      background-color: #E8EAED;
+    }
+  }
 }
 // END 드롭다운 메뉴
 
 // 카테고리 입력 그룹
-.library-category-input-grp{
+.library-category-input-grp {
+
   gap: 8px;
 
-  .inp-category{
+  .inp-category {
     flex: 1;
     min-width: 0;
     padding: 0 8px;
-    border: none;
-    outline: none;
-    height: 32px;
-    font-size: $font-size-sm;
-    background: transparent;
-    color: $color-text-dark;
     border: 1px solid $color-border;
     border-radius: $border-radius-base;
     background: #fff;
+    outline: none;
+    height: 32px;
+    font-size: $font-size-sm;
+    color: $color-text-dark;
     transition: border-color $transition-base;
 
-    &::placeholder{
-      color: #8A949E;
+    &::placeholder {
+      color: #8a949e;
     }
   }
 
+  .btn-category-add{
+    font-size: 14px;
+font-weight: 700;
+    background: #DCE4E9;
+    color: #AEBCCB;
+  }
+
   // focus 상태
-  &.is-focused{
-    .inp-category{
+  &:focus-within {
+    .inp-category {
       border-color: $color-primary;
+    }
+
+    .btn-category-add {
+      background: #58616A;
+      color: #fff;
     }
   }
 }
