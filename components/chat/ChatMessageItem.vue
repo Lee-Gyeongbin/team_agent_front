@@ -29,8 +29,12 @@
             @on-dislike="emit('on-dislike', message.id)"
             @on-regenerate="emit('on-regenerate', message.id)"
           />
-          <div class="message-panel-buttons">
+          <div
+            v-if="message.hasSource || message.hasVisualization"
+            class="message-panel-buttons"
+          >
             <UiButton
+              v-if="message.hasSource"
               size="xlg"
               variant="primary-dark"
               @click="emit('on-view-source', message.id)"
@@ -41,6 +45,7 @@
               </template>
             </UiButton>
             <UiButton
+              v-if="message.hasVisualization"
               size="xlg"
               variant="primary-dark"
               @click="emit('on-view-visualization', message.id)"

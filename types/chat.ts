@@ -6,6 +6,20 @@ export interface ChatMessage {
   isStreaming?: boolean
   isLiked?: boolean
   isDisliked?: boolean
+  hasSource?: boolean
+  hasVisualization?: boolean
+  sourceUrl?: string
+  visualizationData?: {
+    sql?: string
+    chartTitle?: string
+  }
+}
+
+export type PanelType = 'none' | 'pdf' | 'visualization'
+
+export interface ModelOption {
+  label: string
+  value: string
 }
 
 export interface ChatRoom {

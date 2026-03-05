@@ -40,6 +40,7 @@
 <script setup lang="ts">
 interface Props {
   open: boolean
+  messageId?: string | null
 }
 
 defineProps<Props>()

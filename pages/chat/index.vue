@@ -15,6 +15,9 @@
     >
       <ChatInput
         v-model="chatMessage"
+        :selected-model="selectedModel"
+        :model-options="modelOptions"
+        @update:selected-model="selectedModel = $event"
         @on-send="onSend"
       />
     </div>
@@ -38,6 +41,7 @@
 
 <script setup lang="ts">
 const chatMessage = ref('')
+const { selectedModel, modelOptions } = useChatStore()
 const { user } = useAuth()
 
 // 메시지 전송 → 채팅방 생성 후 이동

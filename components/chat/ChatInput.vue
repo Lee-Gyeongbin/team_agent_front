@@ -22,12 +22,13 @@
 
       <div class="chat-input-bottom flex justify-end items-center">
         <UiSelect
-          v-model="selectedModel"
+          :model-value="selectedModel"
           id="ai-model"
           class="w-180"
           name="ai-model"
           :options="modelOptions"
           size="xlg"
+          @update:model-value="emit('update:selectedModel', String($event))"
         />
         <UiButton
           variant="primary"
@@ -47,37 +48,26 @@
 </template>
 
 <script setup lang="ts">
+import type { ModelOption } from '~/types/chat'
+
 interface Props {
   modelValue: string
+  selectedModel?: string
+  modelOptions?: ModelOption[]
 }
 
-defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  selectedModel: 'auto',
+  modelOptions: () => [],
+})
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
+  'update:selectedModel': [value: string]
   'on-send': []
 }>()
-
-const selectedModel = ref('auto')
 
 const onSend = () => {
   emit('on-send')
 }
-
-// ============================================
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-// ============================================
-const modelOptions = [
-  { label: '자동', value: 'auto' },
-  { label: 'GPT-4o', value: 'gpt-4o' },
-  { label: 'GPT-4o mini', value: 'gpt-4o-mini' },
-  { label: 'Claude 3.5 Sonnet', value: 'claude-3-5-sonnet' },
-  { label: 'Claude 3 Opus', value: 'claude-3-opus' },
-  { label: 'Gemini 1.5 Pro', value: 'gemini-1.5-pro' },
-  { label: 'Gemini 1.5 Flash', value: 'gemini-1.5-flash' },
-  { label: 'Llama 3.1 405B', value: 'llama-3.1-405b' },
-  { label: 'Mixtral 8x22B', value: 'mixtral-8x22b' },
-  { label: 'DeepSeek V3', value: 'deepseek-v3' },
-  { label: 'Qwen 2.5 72B', value: 'qwen-2.5-72b' },
-]
 </script>
