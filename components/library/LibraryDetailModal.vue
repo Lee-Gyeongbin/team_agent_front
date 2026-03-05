@@ -3,7 +3,11 @@
     class="library-detail-modal"
     :class="{ 'is-show': isOpen }"
   >
-    <div class="library-detail-modal-content">
+    <div
+      ref="contentRef"
+      class="library-detail-modal-content"
+      @scroll="handleScroll"
+    >
       <!-- 상단 헤더 -->
       <div class="library-detail-modal-header">
         <!-- 닫기 -->
@@ -79,7 +83,7 @@
       <!-- 본문 -->
       <div class="library-detail-modal-body">
         <!-- 사용자 질문 -->
-        <div class="content-box">
+        <div class="content-box type-question">
           <p>2025년 우리회사 월별매출액은 얼마지? 단위를 억 단위로 알려줘</p>
         </div>
 
@@ -100,35 +104,43 @@
           <!-- 월별 데이터 -->
           <div>
             2025년 월별 매출액 조회 결과입니다.
-              <br>
-              <br>
-              (단위: 억원)1월: 42.3억 / 2월: 38.7억 / 3월: 51.2억 / 4월: 49.8억 / 5월: 55.1억 / 6월: 60.4억 / 7월: 58.9억 / 8월: 52.3억 / 9월: 63.7억 / 10월: 71.2억 / 11월: 68.5억 / 12월: 74.8억
-              <br>
-              <br>
-              연간 합계: 686.9억원
+            <br />
+            <br />
+            (단위: 억원)1월: 42.3억 / 2월: 38.7억 / 3월: 51.2억 / 4월: 49.8억 / 5월: 55.1억 / 6월: 60.4억 / 7월: 58.9억
+            / 8월: 52.3억 / 9월: 63.7억 / 10월: 71.2억 / 11월: 68.5억 / 12월: 74.8억
+            <br />
+            <br />
+            연간 합계: 686.9억원
           </div>
         </div>
 
-      <div class="content-box type-sql">
-        <div class="sql-header flex items-center justify-end">
-          <div class=""></div>
-          <UiButton
-            variant="ghost"
-            size="xxs"
-            icon-only
-            class="btn-custom-gray"
-            @click="handleCopyResponse"
-          >
-            <template #icon-left>
-              <i class="icon icon-sql size-16"></i>
-            </template>
-          </UiButton>
-        </div>
+        <div class="content-box type-sql">
+          <div class="sql-header flex items-center justify-end gap-4">
+            <div class="regenerate"></div>
+            <UiButton
+              variant="ghost"
+              size="xxs"
+              icon-only
+              class="btn-custom-white"
+            >
+              <template #icon-left>
+                <i class="icon icon-regenerate size-16"></i>
+              </template>
+            </UiButton>
+            <UiButton
+              variant="ghost"
+              size="xxs"
+              icon-only
+              class="btn-custom-gray"
+            >
+              <template #icon-left>
+                <i class="icon icon-sql size-16"></i>
+              </template>
+            </UiButton>
+          </div>
 
-        <div class="content-box w-full">
-
+          <div class="content-box w-full sql-content"></div>
         </div>
-      </div>
 
         <!-- SQL 코드 블록 -->
         <div class="library-detail-modal-code">
@@ -145,26 +157,34 @@
           </UiButton>
           
           <pre class="library-detail-modal-code-content"><code>
-            SELECT
-            TO_CHAR(sale_date, 'YYYY-MM') AS month,
-            ROUND(SUM(amount) / 100000000, 1) AS sales_억
-            FROM sales
-            WHERE EXTRACT (YEAR FROM sale_date) = 2025
-            GROUP BY TO_CHAR(sale_date, 'YYYY-MM')
-            ORDER BY month;
-          </code></pre>
+SELECT
+TO_CHAR(sale_date, 'YYYY-MM') AS month,
+ROUND(SUM(amount) / 100000000, 1) AS sales_억
+FROM sales
+WHERE EXTRACT (YEAR FROM sale_date) = 2025
+GROUP BY TO_CHAR(sale_date, 'YYYY-MM')
+ORDER BY month;
+</code></pre>
         </div>
-      </div>
 
-      <!-- 하단 태그 -->
-      <div class="library-detail-modal-footer">
+        <!-- 하단 태그 -->
         <div class="library-detail-modal-tags">
           <span class="library-detail-modal-tag">#매출</span>
           <span class="library-detail-modal-tag">#2025</span>
           <span class="library-detail-modal-tag">#월별통계</span>
         </div>
       </div>
+
     </div>
+
+    <!-- 탑 버튼 -->
+    <button
+      class="btn btn-modal-top"
+      :class="{ 'is-show': isScrolled }"
+      @click="handleScrollToTop"
+    >
+      <i class="icon icon-arrow-down size-20"></i>
+    </button>
   </div>
 </template>
 
@@ -198,6 +218,25 @@ const monthlyData = [
   { month: '11월', value: 68.5 },
   { month: '12월', value: 74.8 },
 ]
+
+// 스크롤 상태
+const contentRef = ref<HTMLElement | null>(null)
+const isScrolled = ref(false)
+
+// 스크롤 이벤트 핸들러
+const handleScroll = () => {
+  if (!contentRef.value) return
+  isScrolled.value = contentRef.value.scrollTop > 50
+}
+
+// 탑 버튼 클릭 핸들러
+const handleScrollToTop = () => {
+  if (!contentRef.value) return
+  contentRef.value.scrollTo({
+    top: 0,
+    behavior: 'smooth',
+  })
+}
 
 // 이벤트 핸들러
 const handleClose = () => {
@@ -258,24 +297,62 @@ const handleCopyCode = () => {
     flex-direction: column;
     width: 680px;
     height: calc(100vh - 102px);
-    padding: 24px 16px;
+    padding: $spacing-lg $spacing-md;
     background: #fff;
-    border-top: 1px solid #DCE4E9;
-    border-left: 1px solid #DCE4E9;
+    border-top: 1px solid $color-border;
+    border-left: 1px solid $color-border;
     transform: translateX(20px);
     transition: transform $transition-base;
+    overflow-y: auto;
+    @include custom-scrollbar;
   }
 
   // 닫기 btn
-  .btn-modal-close{
+  .btn-modal-close {
     position: absolute;
-    top: 24px;
-    right: 16px;
+    top: $spacing-lg;
+    right: $spacing-md;
     width: 20px;
     height: 20px;
 
-    .icon-close{
-      background-color: #828FA9;
+    .icon-close {
+      background-color: #828fa9;
+    }
+  }
+
+  // 탑 버튼
+  .btn-modal-top {
+    position: fixed;
+    top: auto;
+    right: $spacing-md;
+    bottom: $spacing-lg;
+    width: 40px;
+    height: 40px;
+    z-index: 11;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    border: 1px solid $color-border;
+    border-radius: $border-radius-full;
+    box-shadow: $shadow-sm;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition:
+      opacity $transition-base,
+      visibility $transition-base,
+      transform $transition-base;
+
+    &.is-show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .icon-arrow-down {
+      background-color: #828fa9;
+      transform: rotate(180deg);
     }
   }
 
@@ -285,37 +362,37 @@ const handleCopyCode = () => {
 
     .library-detail-modal-badge-wrapper {
       flex-wrap: wrap;
-      gap: 4px;
-      margin-bottom: 4px;
+      gap: $spacing-xs;
+      margin-bottom: $spacing-xs;
     }
 
     .library-detail-modal-title-section {
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
-      gap: 16px;
-      padding-right: 8px;
+      gap: $spacing-md;
+      padding-right: $spacing-sm;
 
       .library-detail-modal-title-grp {
         flex: 1;
 
         .library-detail-modal-title {
-          color: #2D3139;
+          color: $color-text-dark;
           font-size: $font-size-xl;
           font-weight: $font-weight-bold;
-          margin-bottom: 4px;
+          margin-bottom: $spacing-xs;
           line-height: 150%;
         }
 
         .library-detail-modal-date {
-          color: #94A3B8;
+          color: $color-text-disabled;
           font-size: $font-size-sm;
         }
       }
 
       .library-detail-modal-actions {
         display: flex;
-        gap: 4px;
+        gap: $spacing-xs;
         flex-shrink: 0;
       }
     }
@@ -324,29 +401,40 @@ const handleCopyCode = () => {
 
   // 본문
   .library-detail-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
     flex: 1;
-    padding: 16px 0;
-    overflow-y: auto;
-    @include custom-scrollbar;
+    padding: $spacing-md 0 0;
 
     .content-box {
       position: relative;
-      margin-bottom: 12px;
-      padding: 12px 16px;
-      background: $color-chat-user-bg;
-      border-radius: 8px;
-      color: #2d3139;
+      padding: 12px $spacing-md;
+      background: $color-background;
+      border-radius: $border-radius-lg;
+      color: $color-text-dark;
       font-size: $font-size-base;
       line-height: $line-height-base;
 
+      &.type-question {
+        background: #f1f6fe;
+      }
+
       &.type-response {
-        margin-bottom: 12px;
-        background: #F4F7F9;
-        color: #4D5462;
+        color: $color-text-primary;
       }
 
       &.type-sql {
+        border: 1px solid $color-border;
+        background: #fff;
+      }
 
+      &.sql-content {
+        min-height: 240px;
+      }
+
+      .sql-header {
+        padding-bottom: 7px;
       }
 
       .btn-copy {
@@ -356,9 +444,8 @@ const handleCopyCode = () => {
       }
     }
 
-
     .library-detail-modal-code {
-      background: #2d3139;
+      background: $color-text-dark;
       border-radius: $border-radius-lg;
       overflow: hidden;
       position: relative;
@@ -389,23 +476,19 @@ const handleCopyCode = () => {
   }
 
   // 푸터
-  .library-detail-modal-footer {
-    padding: 16px 20px;
-    border-top: 1px solid $color-border;
-    background: #fff;
+  .library-detail-modal-tags {
+    display: flex;
+    gap: $spacing-xs;
+    flex-wrap: wrap;
+    margin-top: $spacing-xs;
 
-    .library-detail-modal-tags {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-
-      .library-detail-modal-tag {
-        padding: 4px 12px;
-        background: $color-background;
-        color: $color-text-secondary;
-        font-size: $font-size-sm;
-        border-radius: $border-radius-full;
-      }
+    .library-detail-modal-tag {
+      padding: 0 7px;
+      background: #fff;
+      color: $color-text-secondary;
+      font-size: $font-size-sm;
+      border-radius: $border-radius-full;
+      border: 1px solid #ecf0f3;
     }
   }
 }
