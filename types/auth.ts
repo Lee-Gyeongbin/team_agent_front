@@ -15,4 +15,3 @@ export interface LoginResponse {
   message?: string
   user?: UserInfo
 }
-
