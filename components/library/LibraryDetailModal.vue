@@ -54,6 +54,7 @@
               variant="ghost"
               size="xxs"
               icon-only
+              class="btn-custom-white"
               @click="handleRefresh"
             >
               <template #icon-left>
@@ -64,6 +65,7 @@
               variant="ghost"
               size="xxs"
               icon-only
+              class="btn-custom-light-gray"
               @click="handleDelete"
             >
               <template #icon-left>
@@ -83,19 +85,17 @@
 
         <!-- 시스템 응답 -->
         <div class="content-box type-response">
-          <div class="library-detail-modal-response-header">
-            <UiButton
-              variant="ghost"
-              size="xxs"
-              icon-only
-              class="btn-copy"
-              @click="handleCopyResponse"
-            >
-              <template #icon-left>
-                <i class="icon icon-copy size-16"></i>
-              </template>
-            </UiButton>
-          </div>
+          <UiButton
+            variant="ghost"
+            size="xxs"
+            icon-only
+            class="btn-copy btn-copy-white"
+            @click="handleCopyResponse"
+          >
+            <template #icon-left>
+              <i class="icon icon-copy size-16"></i>
+            </template>
+          </UiButton>
 
           <!-- 월별 데이터 -->
           <div>
@@ -109,13 +109,34 @@
           </div>
         </div>
 
+      <div class="content-box type-sql">
+        <div class="sql-header flex items-center justify-end">
+          <div class=""></div>
+          <UiButton
+            variant="ghost"
+            size="xxs"
+            icon-only
+            class="btn-custom-gray"
+            @click="handleCopyResponse"
+          >
+            <template #icon-left>
+              <i class="icon icon-sql size-16"></i>
+            </template>
+          </UiButton>
+        </div>
+
+        <div class="content-box w-full">
+
+        </div>
+      </div>
+
         <!-- SQL 코드 블록 -->
         <div class="library-detail-modal-code">
           <UiButton
             variant="ghost"
             size="xxs"
             icon-only
-            class="btn-copy"
+            class="btn-copy btn-copy-dark"
             @click="handleCopyCode"
           >
             <template #icon-left>
@@ -225,7 +246,7 @@ const handleCopyCode = () => {
     visibility: visible;
 
     .library-detail-modal-content {
-      transform: translateY(0);
+      transform: translateX(0);
     }
   }
 
@@ -241,7 +262,7 @@ const handleCopyCode = () => {
     background: #fff;
     border-top: 1px solid #DCE4E9;
     border-left: 1px solid #DCE4E9;
-    transform: translateY(20px);
+    transform: translateX(20px);
     transition: transform $transition-base;
   }
 
@@ -301,22 +322,6 @@ const handleCopyCode = () => {
   }
 
 
-  // UiButton 커스텀 스타일 (24px 아이콘 버튼)
-  .library-detail-modal-actions {
-    :deep(.ui-button) {
-      background: #fff;
-      border-radius: 4px;
-
-      &:hover:not(:disabled) {
-        background: #ECF0F3;
-      }
-
-      .icon-delete-bg {
-        background-color: #6F7A93;
-      }
-    }
-  }
-
   // 본문
   .library-detail-modal-body {
     flex: 1;
@@ -340,19 +345,14 @@ const handleCopyCode = () => {
         color: #4D5462;
       }
 
+      &.type-sql {
+
+      }
+
       .btn-copy {
         position: absolute;
         top: 12px;
         right: 12px;
-
-        :deep(.ui-button) {
-          background: #fff;
-          border-radius: 4px;
-
-          &:hover:not(:disabled) {
-            background: #DCE4E9;
-          }
-        }
       }
     }
 
@@ -368,20 +368,6 @@ const handleCopyCode = () => {
         top: 12px;
         right: 12px;
         z-index: 1;
-
-        :deep(.ui-button) {
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: $border-radius-base;
-          color: #fff;
-
-          &:hover:not(:disabled) {
-            background: rgba(255, 255, 255, 0.2);
-          }
-
-          .icon {
-            background-color: #fff;
-          }
-        }
       }
 
       .library-detail-modal-code-content {

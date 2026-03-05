@@ -84,6 +84,13 @@
   }
 }
 
+// max-w-1 ~ max-w-500 (px 단위)
+@for $i from 1 through 500 {
+  .max-w-#{$i} {
+    max-width: #{$i}px;
+  }
+}
+
 /* content inner ======================== */
 .m-center {
   width: calc(100% - 40px);

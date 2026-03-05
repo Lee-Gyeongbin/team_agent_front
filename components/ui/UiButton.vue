@@ -213,6 +213,79 @@ const emit = defineEmits<{
   &.is-full {
     width: 100%;
   }
+
+  // ===================================
+  // 커스텀 색상 변형
+  // ===================================
+
+  // 1. 기본 흰색 배경, 호버 시 연한 회색
+  &.btn-custom-white {
+    background: #fff;
+    border-radius: 4px;
+
+    &:hover:not(:disabled) {
+      background: #ecf0f3;
+    }
+  }
+
+  // 2. 연한 회색 배경, 호버 시 더 어두운 회색
+  &.btn-custom-light-gray {
+    background: #ecf0f3;
+    border-radius: 4px;
+
+    &:hover:not(:disabled) {
+      background: #dce4e9;
+    }
+
+    .icon {
+      background-color: #6f7a93;
+    }
+  }
+
+  // 3. 흰색 배경, 호버 시 중간 회색
+  &.btn-copy-white {
+    background: #fff;
+    border-radius: 4px;
+
+    &:hover:not(:disabled) {
+      background: #dce4e9;
+    }
+  }
+
+  // 4. 어두운 배경, 호버 시 흰색
+  &.btn-copy-dark {
+    background: #4d5462;
+    border-radius: 4px;
+    color: #fff;
+
+    &:hover:not(:disabled) {
+      background: #fff;
+      color: #4d5462;
+    }
+
+    .icon {
+      background-color: #fff;
+    }
+
+    &:hover:not(:disabled) .icon {
+      background-color: #4d5462;
+    }
+  }
+
+  // 5. 중간 회색 배경, 호버 시 더 어두운 회색
+  &.btn-custom-gray {
+    background: #828fa9;
+    border-radius: 4px;
+    color: #fff;
+
+    &:hover:not(:disabled) {
+      background: #6f7a93;
+    }
+
+    .icon {
+      background-color: #fff;
+    }
+  }
 }
 
 .ui-button-icon {

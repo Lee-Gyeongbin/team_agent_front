@@ -107,7 +107,6 @@
 // ===================================
 // library 아이콘
 // ===================================
-
 .icon-search {
   @include icon-file('icon-search');
 }
@@ -148,6 +147,10 @@
 // 로그아웃
 .icon-logout {
   @include icon-file('logout');
+}
+
+.icon-sql {
+  @include icon-file('sql');
 }
 
 // ===================================
