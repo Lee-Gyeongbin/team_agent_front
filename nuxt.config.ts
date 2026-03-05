@@ -34,8 +34,8 @@ export default defineNuxtConfig({
   },
 
   nitro: {
-    // Netlify 배포 시 SPA 정적 빌드 강제 (서버 함수 불필요)
-    preset: 'static',
+    // Netlify 배포 시 SPA 정적 빌드 강제 (dev에서는 제외)
+    ...(process.env.NODE_ENV === 'production' ? { preset: 'static' } : {}),
     devProxy: {
       '/api': {
         target: 'http://localhost:8082',
