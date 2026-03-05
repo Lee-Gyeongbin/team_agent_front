@@ -225,17 +225,12 @@
 const statusList = [
   { category: '페이지', name: '채팅 메인', location: '/chat', url: '/chat', done: true },
   { category: '페이지', name: '채팅 상세', location: '/chat/:id', url: '', done: false },
+  { category: '페이지', name: '라이브러리', location: '/library', url: '/library', done: false },
   { category: '페이지', name: '에이전트 목록', location: '/agents', url: '/agents', done: false },
   { category: '페이지', name: '에이전트 생성', location: '/agents/new', url: '/agents/new', done: false },
   { category: '페이지', name: '에이전트 상세', location: '/agents/:id', url: '', done: false },
   { category: '페이지', name: '엑셀 뷰어', location: '/excel', url: '/excel', done: true },
   { category: '페이지', name: '로그인', location: '/login', url: '/login', done: false },
-  { category: '공통', name: 'AppHeader', location: 'components/common/', url: '', done: true },
-  { category: '공통', name: 'AppSidebar', location: 'components/common/', url: '', done: true },
-  { category: 'UI', name: 'UiTextarea', location: 'components/ui/', url: '', done: true },
-  { category: 'UI', name: 'UiSelect', location: 'components/ui/', url: '', done: true },
-  { category: 'UI', name: 'UiButton', location: 'components/ui/', url: '', done: true },
-  { category: 'UI', name: 'UiChart', location: 'components/ui/', url: '/guide/ui-chart', done: true },
 ]
 
 // 섹션 2: 디자인 토큰 — 색상
@@ -311,10 +306,10 @@ const componentList = [
     tags: ['variant', 'size', 'icon-left', 'icon-right', 'iconOnly'],
   },
   {
-    name: 'UiChart',
-    to: '/guide/ui-chart',
-    description: 'Chart.js 기반 범용 차트 — bar, line, pie, mixed, horizontalBar 5종',
-    tags: ['type', 'config', 'showLegend'],
+    name: 'UiBadge',
+    to: '/guide/ui-badge',
+    description: 'variant 4종 / icon-left / icon-right / iconOnly 지원 배지 컴포넌트',
+    tags: ['variant', 'icon-left', 'icon-right', 'iconOnly'],
   },
 ]
 

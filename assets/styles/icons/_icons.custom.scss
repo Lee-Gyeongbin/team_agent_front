@@ -112,6 +112,19 @@
   @include icon-file('icon-search');
 }
 
+// 배지 아이콘
+.icon-data-line-small {
+  @include icon-file('data-line-small');
+}
+
+.icon-comment-other {
+  @include icon-file('comment-other');
+}
+
+.icon-book {
+  @include icon-file('book');
+}
+
 // 보관함
 .icon-archive {
   @include icon-file('archive');
@@ -120,6 +133,10 @@
 // 쓰레기통
 .icon-delete {
   @include icon-file('delete');
+}
+// 쓰레기통(배경색)
+.icon-delete-bg {
+  @include icon-file-bg('delete');
 }
 
 // 점 3개
@@ -201,6 +218,10 @@
   @include icon-file-bg('arrow-right');
 }
 
+// 닫기
+.icon-close-gray {
+  @include icon-file('icon-close');
+}
 // ===================================
 // 공통
 // ===================================

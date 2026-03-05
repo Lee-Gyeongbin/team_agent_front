@@ -369,24 +369,132 @@
   @extend %chat-panel-header-actions;
 }
 
-// PDF 툴바 (나중에 마크업 교체)
 .chat-pdf-toolbar {
-  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 8px 12px;
   border-bottom: 1px solid $color-border;
   background: $color-background;
   flex-shrink: 0;
 }
 
+.chat-pdf-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-pdf-toolbar-btn {
+  padding: 4px 10px;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-sm;
+  background: #fff;
+  color: $color-text-dark;
+  cursor: pointer;
+  transition: background $transition-fast;
+
+  &:disabled {
+    color: $color-text-disabled;
+    cursor: not-allowed;
+    background: $color-background;
+  }
+}
+
+.chat-pdf-page-input {
+  width: 56px;
+  height: 30px;
+  padding: 0 6px;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-sm;
+  text-align: center;
+}
+
+.chat-pdf-page-total,
+.chat-pdf-zoom {
+  @include typo($body-medium);
+  color: $color-text-secondary;
+}
+
 .chat-pdf-body {
+  display: flex;
   flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: #3d4042;
+}
+
+.chat-pdf-status {
+  @include flex-center;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  color: #fff;
+
+  &.is-error {
+    color: #ffcdd2;
+  }
+}
+
+.chat-pdf-content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
-// PDF 플러그인 영역 (빈 여백)
-.chat-pdf-area {
+.chat-pdf-main {
+  @include flex-center;
+  flex: 1;
+  min-width: 0;
+  padding: 16px;
+  overflow: auto;
+  align-items: flex-start;
+}
+
+.chat-pdf-main-canvas {
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.chat-pdf-sidebar {
+  width: 128px;
+  min-width: 128px;
+  padding: 10px 8px;
+  border-left: 1px solid #4a4d50;
+  background: #2f3133;
+  overflow-y: auto;
+}
+
+.chat-pdf-thumb {
   width: 100%;
-  height: 100%;
-  background: #000;
+  margin-bottom: 10px;
+  padding: 6px;
+  border: 1px solid transparent;
+  border-radius: $border-radius-sm;
+  background: #3d4042;
+  cursor: pointer;
+
+  &.is-active {
+    border-color: #7aa2f7;
+  }
+}
+
+.chat-pdf-thumb-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #fff;
+}
+
+.chat-pdf-thumb-label {
+  display: block;
+  margin-top: 4px;
+  @include typo($body-small);
+  color: #d7dce5;
+  text-align: center;
 }
 
 // ===================================

@@ -28,6 +28,7 @@
     <ChatPdfPanel
       :open="activePanelType === 'pdf'"
       :message-id="activePanelMessageId"
+      :file-path="selectedPdfFilePath"
       @update:open="onPanelClose"
       @update:fullscreen="isPanelFullscreen = $event"
     />
@@ -59,4 +60,11 @@ const {
   onViewVisualization,
   onPanelClose,
 } = useChatStore()
+
+// 🔽 더미 데이터 — 백엔드 연결 시 API 데이터 경로로 교체
+const pdfTestFilePath = '/docs/test.pdf'
+const selectedPdfFilePath = computed(() => {
+  const targetMessage = messages.value.find((message) => message.id === activePanelMessageId.value)
+  return targetMessage?.sourceUrl || pdfTestFilePath
+})
 </script>
