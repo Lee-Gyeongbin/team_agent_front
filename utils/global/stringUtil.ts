@@ -16,7 +16,7 @@ export const makeBr = (content: string): string =>
 export const contains = (obj: unknown, checkVal: unknown): boolean => {
   if (obj == '' || obj == null || obj == undefined) {
     return false
-  } else if (typeof obj == 'object') {
+  } else if (Array.isArray(obj)) {
     return obj.includes(checkVal)
   } else if (typeof obj == 'string') {
     return obj == checkVal

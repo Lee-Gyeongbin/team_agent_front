@@ -14,7 +14,7 @@ export const getUrlSearchParams = (obj: Record<string, unknown>): URLSearchParam
         })
       })
     } else {
-      params.append(key, nvl(val, ''))
+      params.append(key, String(nvl(val, '')))
     }
   })
   return params

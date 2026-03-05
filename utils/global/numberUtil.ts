@@ -75,8 +75,8 @@ export const removePointZeros = (
   removeZero?: boolean,
 ): string | number => {
   if (removeZero === undefined) removeZero = true
-  if (isNaN(val)) {
-    return replaceIsNaN
+  if (Number.isNaN(Number(val))) {
+    return replaceIsNaN ?? ''
   } else {
     if (removeZero) {
       return val
