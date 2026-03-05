@@ -70,7 +70,10 @@
           </div>
         </div>
         <!-- 🔽 더미 데이터 — 백엔드 연결 시 API로 교체 -->
-        <div class="chat-vis-chart-area">
+        <div
+          class="chat-vis-chart-area"
+          :class="{ 'is-pie': chartType === 'pie' }"
+        >
           <UiChart
             :key="chartType"
             :type="chartType"
@@ -186,8 +189,8 @@ const chartConfig = computed(() => {
       { name: '영업팀', value: 12 },
       { name: '기타', value: 16 },
     ],
-    style: 'secondary',
-    textStyle: 'secondary',
+    style: 'regionRatio',
+    textStyle: 'primary',
   }
 })
 

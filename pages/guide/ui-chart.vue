@@ -540,9 +540,11 @@ const pieConfig = {
     { name: '개발팀', value: 35 },
     { name: '디자인팀', value: 25 },
     { name: '기획팀', value: 20 },
-    { name: '마케팅팀', value: 20 },
+    { name: '마케팅팀', value: 12 },
+    { name: '영업팀', value: 5 },
+    { name: '기타', value: 3 },
   ],
-  style: 'primary',
+  style: 'regionRatio',
   textStyle: 'primary',
 }
 
