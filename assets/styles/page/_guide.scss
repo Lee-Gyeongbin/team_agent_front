@@ -91,6 +91,10 @@
     color: $color-success;
   }
 
+  .status-wip {
+    color: $color-warning;
+  }
+
   .status-pending {
     color: $color-text-disabled;
   }

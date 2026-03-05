@@ -645,4 +645,9 @@
   flex: 1;
   min-height: 300px;
   padding: $spacing-md;
+
+  &.is-pie {
+    max-width: 360px;
+    margin: 0 auto;
+  }
 }

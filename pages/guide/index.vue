@@ -34,8 +34,8 @@
               >
               <span v-else>{{ item.location }}</span>
             </td>
-            <td :class="item.done ? 'status-done' : 'status-pending'">
-              {{ item.done ? '✅ 완료' : '⬜ 미완' }}
+            <td :class="`status-${item.status}`">
+              {{ item.status === 'done' ? '✅ 완료' : item.status === 'wip' ? '🔨 작업중' : '⬜ 미완' }}
             </td>
           </tr>
         </tbody>
@@ -230,31 +230,34 @@
 // 섹션 1: 작업 현황
 // url: 클릭 시 새 창으로 열 수 있는 경로 (동적 파라미터 포함 URL은 제외)
 const statusList = [
-  { category: '페이지', name: '채팅 메인', location: '/chat', url: '/chat', done: true },
-  { category: '페이지', name: '채팅 상세', location: '/chat/:id', url: '', done: false },
-  { category: '페이지', name: '라이브러리', location: '/library', url: '/library', done: false },
-  { category: '페이지', name: '에이전트 목록', location: '/agents', url: '/agents', done: false },
-  { category: '페이지', name: '에이전트 생성', location: '/agents/new', url: '/agents/new', done: false },
-  { category: '페이지', name: '에이전트 상세', location: '/agents/:id', url: '', done: false },
-  { category: '페이지', name: '엑셀 뷰어', location: '/excel', url: '/excel', done: true },
-  { category: '페이지', name: '로그인', location: '/login', url: '/login', done: false },
+  { category: '페이지', name: '채팅 메인', location: '/chat', url: '/chat', status: 'done' },
+  { category: '페이지', name: '채팅 상세', location: '/chat/:id', url: '', status: 'wip' },
+  { category: '페이지', name: '라이브러리', location: '/library', url: '/library', status: 'wip' },
+  { category: '페이지', name: '에이전트 목록', location: '/agents', url: '/agents', status: 'pending' },
+  { category: '페이지', name: '에이전트 생성', location: '/agents/new', url: '/agents/new', status: 'pending' },
+  { category: '페이지', name: '에이전트 상세', location: '/agents/:id', url: '', status: 'pending' },
+  { category: '페이지', name: '엑셀 뷰어', location: '/excel', url: '/excel', status: 'done' },
+  { category: '페이지', name: '로그인', location: '/login', url: '/login', status: 'pending' },
 ]
 
-// 섹션 2: 디자인 토큰 — 색상
+// 섹션 2: 디자인 토큰 — 색상 (_variables.scss 기준)
 const colorTokens = [
-  { name: 'Primary', value: '#2563eb' },
-  { name: 'Primary Hover', value: '#1d4ed8' },
-  { name: 'Secondary', value: '#64748b' },
-  { name: 'Background', value: '#F4F7F9' },
-  { name: 'Surface', value: '#f8fafc' },
-  { name: 'Border', value: '#DCE4E9' },
-  { name: 'Text Primary', value: '#4D5462' },
-  { name: 'Text Secondary', value: '#64748b' },
-  { name: 'Text Disabled', value: '#94a3b8' },
-  { name: 'Success', value: '#22c55e' },
-  { name: 'Error', value: '#ef4444' },
-  { name: 'Warning', value: '#f59e0b' },
-  { name: 'Info', value: '#3b82f6' },
+  { name: '$color-primary', value: '#3c69db' },
+  { name: '$color-primary-hover', value: '#1d4ed8' },
+  { name: '$color-primary-dark', value: '#2b43a2' },
+  { name: '$color-primary-dark-hover', value: '#1d3589' },
+  { name: '$color-secondary', value: '#64748b' },
+  { name: '$color-background', value: '#f4f7f9' },
+  { name: '$color-surface', value: '#f8fafc' },
+  { name: '$color-border', value: '#dce4e9' },
+  { name: '$color-text-dark', value: '#2d3139' },
+  { name: '$color-text-primary', value: '#4d5462' },
+  { name: '$color-text-secondary', value: '#64748b' },
+  { name: '$color-text-disabled', value: '#94a3b8' },
+  { name: '$color-success', value: '#22c55e' },
+  { name: '$color-error', value: '#ef4444' },
+  { name: '$color-warning', value: '#f59e0b' },
+  { name: '$color-info', value: '#3b82f6' },
 ]
 
 // 타이포그래피
@@ -277,11 +280,11 @@ const spacingTokens = [
   { name: '$spacing-2xl', value: '48px' },
 ]
 
-// 둥글기
+// 둥글기 (_variables.scss 기준)
 const radiusTokens = [
-  { name: '$border-radius-sm', value: '6px' },
-  { name: '$border-radius-md', value: '8px' },
-  { name: '$border-radius-lg', value: '12px' },
+  { name: '$border-radius-sm', value: '4px' },
+  { name: '$border-radius-base', value: '6px' },
+  { name: '$border-radius-lg', value: '8px' },
   { name: '$border-radius-full', value: '9999px' },
 ]
 
@@ -317,6 +320,12 @@ const componentList = [
     to: '/guide/ui-badge',
     description: 'variant 4종 / icon-left / icon-right / iconOnly 지원 배지 컴포넌트',
     tags: ['variant', 'icon-left', 'icon-right', 'iconOnly'],
+  },
+  {
+    name: 'UiChart',
+    to: '/guide/ui-chart',
+    description: 'Chart.js 기반 차트 — bar, line, pie, mixed, horizontalBar 5종',
+    tags: ['type', 'config', 'showLegend'],
   },
 ]
 

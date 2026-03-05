@@ -30,3 +30,38 @@ export interface ChatRoom {
   createdAt: string
   updatedAt: string
 }
+
+// PDF 뷰어 (ChatPdfPanel) 관련 타입
+export interface ChatPdfPanelProps {
+  open: boolean
+  messageId?: string | null
+  filePath?: string
+}
+
+export interface PdfViewport {
+  width: number
+  height: number
+}
+
+export interface PdfPageProxy {
+  getViewport: (params: { scale: number }) => PdfViewport
+  render: (params: { canvasContext: CanvasRenderingContext2D; viewport: PdfViewport }) => {
+    promise: Promise<void>
+  }
+}
+
+export interface PdfDocumentProxy {
+  numPages: number
+  getPage: (pageNum: number) => Promise<PdfPageProxy>
+}
+
+export interface PdfJsLib {
+  GlobalWorkerOptions: { workerSrc: string }
+  getDocument: (params: { url: string }) => { promise: Promise<PdfDocumentProxy> }
+}
+
+declare global {
+  interface Window {
+    pdfjsLib?: PdfJsLib
+  }
+}

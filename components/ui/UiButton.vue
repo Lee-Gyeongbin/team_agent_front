@@ -63,6 +63,7 @@ const emit = defineEmits<{
 </script>
 
 <style lang="scss" scoped>
+@use 'sass:color';
 .ui-button {
   display: inline-flex;
   align-items: center;
@@ -172,7 +173,7 @@ const emit = defineEmits<{
     color: $color-text-dark;
 
     &:hover:not(:disabled) {
-      background: darken($color-background, 4%);
+      background: color.adjust($color-background, $lightness: -4%);
     }
   }
 
