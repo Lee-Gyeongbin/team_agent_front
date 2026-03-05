@@ -644,7 +644,7 @@
 .chat-vis-chart-area {
   flex: 1;
   min-height: 300px;
-  max-height: 400px;
+  max-height: max-content;
   padding: $spacing-md;
 
   &.is-pie {
