@@ -9,7 +9,7 @@
     gap: 8px;
     .library-description{
       color: #6F7A93;
-      font-size: $font-size-sm;
+      font-size: $font-size-base;
     }
   }
 
@@ -17,7 +17,7 @@
     gap: 8px;
 
     .total{
-      font-size: $font-size-sm;
+      font-size: $font-size-base;
       color: #6F7A93;
       white-space: nowrap;
       strong{
@@ -179,7 +179,7 @@
 
         .library-card-title{
           color: #33363D;
-          font-size: $font-size-base;
+          font-size: $font-size-lg;
           @include ellipsis(1);
         }
 
