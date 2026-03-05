@@ -207,7 +207,7 @@
             class="inp inp-category"
             placeholder="카테고리명을 입력하세요"
           />
-          <UiButton size="md" class="btn-category-add">추가</UiButton>
+          <UiButton size="md" class="btn-category-add w-57">추가</UiButton>
         </div>
       </div>
     </div>
