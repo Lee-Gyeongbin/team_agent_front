@@ -1,5 +1,5 @@
 [build]
-  command = "NITRO_PRESET=static npm run generate"
+  command = "echo 'export default defineNuxtRouteMiddleware(() => {})' > middleware/auth.global.ts && NITRO_PRESET=static npm run generate"
   publish = ".output/public"
 
 # SPA 라우팅 — 모든 경로를 index.html로 리다이렉트
