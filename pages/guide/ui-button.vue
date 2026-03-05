@@ -35,14 +35,16 @@
       <div class="guide-demo">
         <div
           class="demo-box"
-          style="display: flex; gap: 12px; align-items: center"
+          style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap"
         >
+          <UiButton size="xxs">Extra Extra Small</UiButton>
           <UiButton size="xs">Extra Small</UiButton>
           <UiButton size="sm">Small</UiButton>
           <UiButton size="md">Medium</UiButton>
           <UiButton size="lg">Large</UiButton>
         </div>
-        <pre class="demo-code">&lt;UiButton size="xs"&gt;Extra Small&lt;/UiButton&gt;
+        <pre class="demo-code">&lt;UiButton size="xxs"&gt;Extra Extra Small&lt;/UiButton&gt;
+&lt;UiButton size="xs"&gt;Extra Small&lt;/UiButton&gt;
 &lt;UiButton size="sm"&gt;Small&lt;/UiButton&gt;
 &lt;UiButton size="md"&gt;Medium&lt;/UiButton&gt;
 &lt;UiButton size="lg"&gt;Large&lt;/UiButton&gt;</pre>
@@ -232,7 +234,7 @@
 <script setup lang="ts">
 const propList = [
   { name: 'variant', type: "'primary' | 'secondary' | 'outline' | 'ghost'", default: "'primary'", desc: '버튼 스타일' },
-  { name: 'size', type: "'xs' | 'sm' | 'md' | 'lg'", default: "'md'", desc: '버튼 크기 (28 / 30 / 40 / 48px)' },
+  { name: 'size', type: "'xxs' | 'xs' | 'sm' | 'md' | 'lg' | 'xlg'", default: "'md'", desc: '버튼 크기 (24 / 26 / 28 / 30 / 32 / 36px)' },
   { name: 'disabled', type: 'boolean', default: 'false', desc: '비활성 상태' },
   { name: 'loading', type: 'boolean', default: 'false', desc: '로딩 상태' },
   { name: 'fullWidth', type: 'boolean', default: 'false', desc: '전체 너비' },

@@ -112,19 +112,6 @@
   @include icon-file('icon-search');
 }
 
-// 배지 아이콘
-.icon-data-line-small {
-  @include icon-file('data-line-small');
-}
-
-.icon-comment-other {
-  @include icon-file('comment-other');
-}
-
-.icon-book {
-  @include icon-file('book');
-}
-
 // 보관함
 .icon-archive {
   @include icon-file('archive');
@@ -163,6 +150,10 @@
   @include icon-file('logout');
 }
 
+// ===================================
+// 드롭다운 아이콘
+// ===================================
+
 // 드롭다운 편집/이름 변경
 .icon-edit {
   @include icon-file('edit');
@@ -192,7 +183,6 @@
 .icon-copy-gray {
   @include icon-file('copy-gray');
 }
-
 
 // ===================================
 // 관련자료 패널 아이콘
@@ -258,4 +248,23 @@
 // 접기/펼치기 화살표
 .icon-chevron-down {
   @include icon-file-bg('chevron-down');
+}
+
+// ===================================
+// 뱃지 아이콘
+// ===================================
+.icon-data-line-small {
+  @include icon-file('data-line-small');
+}
+
+.icon-comment-other {
+  @include icon-file('comment-other');
+}
+
+.icon-book {
+  @include icon-file('book');
+}
+
+.icon-diamond-small {
+  @include icon-file('diamond-small');
 }

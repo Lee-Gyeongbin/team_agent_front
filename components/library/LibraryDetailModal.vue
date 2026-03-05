@@ -16,9 +16,9 @@
 
         <!-- 뱃지 -->
         <div class="library-detail-modal-badge-wrapper flex">
-          <UiBadge variant="data-line">
+          <UiBadge variant="default">
             <template #icon-left>
-              <i class="icon icon-data-line-small size-14"></i>
+              <i class="icon icon-diamond-small size-10"></i>
             </template>
             통계현황
           </UiBadge>
@@ -28,6 +28,18 @@
               <i class="icon icon-data-line-small size-14"></i>
             </template>
             데이터분석
+          </UiBadge>
+          <UiBadge variant="basic-chat">
+            <template #icon-left>
+              <i class="icon icon-comment-other size-14"></i>
+            </template>
+            기본대화
+          </UiBadge>
+          <UiBadge variant="manual-ai">
+            <template #icon-left>
+              <i class="icon icon-book size-14"></i>
+            </template>
+            매뉴얼AI
           </UiBadge>
         </div>
 

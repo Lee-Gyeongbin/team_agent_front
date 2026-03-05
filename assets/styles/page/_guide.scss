@@ -337,6 +337,23 @@
 }
 
 // 아이콘 그리드
+.icon-group-section {
+  margin-bottom: $spacing-md;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  .icon-group-title {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    color: $color-text-dark;
+    margin-bottom: $spacing-md;
+    padding-bottom: $spacing-xs;
+    border-bottom: 2px solid $color-border;
+  }
+}
+
 .guide-icon-grid {
   display: flex;
   flex-wrap: wrap;
