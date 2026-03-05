@@ -69,10 +69,14 @@
             </button>
           </div>
         </div>
-        <!-- 🔽 더미 데이터 — 백엔드 연결 시 차트 라이브러리로 교체 -->
-        <div class="chat-vis-chart-placeholder">
-          <i class="icon-chart size-48"></i>
-          <span>차트 영역 ({{ { bar: '막대', line: '라인', pie: '파이' }[chartType] }} 차트)</span>
+        <!-- 🔽 더미 데이터 — 백엔드 연결 시 API로 교체 -->
+        <div class="chat-vis-chart-area">
+          <UiChart
+            :key="chartType"
+            :type="chartType"
+            :config="chartConfig"
+            show-legend
+          />
         </div>
       </div>
 
@@ -147,6 +151,45 @@ ORDER BY avg_salary DESC
 LIMIT 10;`
 
 const chartTitle = '부서별 평균 급여 현황'
+
+// 차트 타입별 설정
+const chartConfig = computed(() => {
+  const categories = ['개발팀', '디자인팀', '기획팀', '마케팅팀', '영업팀', '인사팀', 'CS팀', '재무팀', '법무팀', '경영지원']
+
+  if (chartType.value === 'bar') {
+    return {
+      categories,
+      data: [850, 720, 680, 620, 580, 550, 520, 490, 470, 450],
+      colorKey: 'bar.set1',
+      maxValue: 1000,
+      showDataLabels: true,
+    }
+  }
+
+  if (chartType.value === 'line') {
+    return {
+      categories,
+      datasets: [
+        { label: '평균 급여', data: [850, 720, 680, 620, 580, 550, 520, 490, 470, 450], colorKey: 'line.primary' },
+      ],
+      maxValue: 1000,
+    }
+  }
+
+  // pie
+  return {
+    items: [
+      { name: '개발팀', value: 25 },
+      { name: '디자인팀', value: 18 },
+      { name: '기획팀', value: 15 },
+      { name: '마케팅팀', value: 14 },
+      { name: '영업팀', value: 12 },
+      { name: '기타', value: 16 },
+    ],
+    style: 'secondary',
+    textStyle: 'secondary',
+  }
+})
 
 const toggleFullscreen = () => {
   isFullscreen.value = !isFullscreen.value
