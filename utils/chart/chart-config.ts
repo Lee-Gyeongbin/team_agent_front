@@ -380,10 +380,14 @@ export const ChartConfig = {
   /** 데이터셋 개수에 따른 borderRadius 계산 */
   getBorderRadius(count: number): number {
     switch (count) {
-      case 1: return 15
-      case 2: return 12
-      case 3: return 8
-      default: return 6
+      case 1:
+        return 15
+      case 2:
+        return 12
+      case 3:
+        return 8
+      default:
+        return 6
     }
   },
 

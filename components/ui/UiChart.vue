@@ -41,7 +41,9 @@ const renderChart = () => {
 }
 
 onMounted(() => {
-  renderChart()
+  nextTick(() => {
+    renderChart()
+  })
 })
 
 // config 또는 type 변경 시 차트 재생성
@@ -66,6 +68,7 @@ watch(
 .ui-chart-legend {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: $spacing-sm;
   flex-shrink: 0;
 
