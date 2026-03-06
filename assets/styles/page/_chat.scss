@@ -185,11 +185,18 @@
   align-items: center;
   gap: $spacing-xs;
 
-  .btn-action {
-    width: 28px;
-    height: 28px;
+  .ui-button.variant-ghost.size-btn-xs.is-icon-only {
+    width: 36px;
+    height: 36px;
     padding: 0;
     color: $color-text-disabled;
+    border-radius: $border-radius-sm;
+    background: transparent;
+
+    &:hover {
+      background: #dce4e9;
+      color: $color-text-secondary;
+    }
 
     &.is-active {
       color: $color-primary;
@@ -261,7 +268,7 @@
     .inp-chat-search {
       width: calc(100% - 32px);
       min-height: 24px;
-      font-size: $font-size-lg;
+      @include typo($body-large);
       color: #2d3139;
 
       &::placeholder {
@@ -347,6 +354,12 @@
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
+
+  // chat/[id] 상세 페이지에서는 위로 열기
+  .chat-detail & {
+    top: auto;
+    bottom: calc(100% + 4px);
+  }
   display: flex;
   flex-direction: column;
   padding: 8px;

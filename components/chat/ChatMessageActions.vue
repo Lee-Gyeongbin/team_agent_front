@@ -8,7 +8,7 @@
       @click="emit('on-copy')"
     >
       <template #icon-left>
-        <i class="icon-copy size-16" />
+        <i class="icon-copy size-20" />
       </template>
     </UiButton>
     <UiButton
@@ -20,7 +20,7 @@
       @click="emit('on-like')"
     >
       <template #icon-left>
-        <i class="icon-thumbs-up size-16" />
+        <i class="icon-thumbs-up size-20" />
       </template>
     </UiButton>
     <UiButton
@@ -32,7 +32,7 @@
       @click="emit('on-dislike')"
     >
       <template #icon-left>
-        <i class="icon-thumbs-down size-16" />
+        <i class="icon-thumbs-down size-20" />
       </template>
     </UiButton>
     <UiButton
@@ -43,7 +43,7 @@
       @click="emit('on-regenerate')"
     >
       <template #icon-left>
-        <i class="icon-refresh size-16" />
+        <i class="icon-refresh size-20" />
       </template>
     </UiButton>
   </div>

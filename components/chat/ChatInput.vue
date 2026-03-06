@@ -27,7 +27,7 @@
             v-if="currentSubOptions.length > 0"
             :model-value="selectedSubOption"
             id="sub-option"
-            class="w-160"
+            class="w-170"
             name="sub-option"
             :options="currentSubOptions"
             size="xlg"
