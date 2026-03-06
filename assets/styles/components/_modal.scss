@@ -1,6 +1,63 @@
 @use '../utils/variables' as *;
 @use '../utils/mixins' as *;
 
+// ===================================
+// 모달 공통
+// ===================================
+
+// 오른쪽에서 나오는 사이드 모달 공통
+.modal-side {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: $z-modal;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity $transition-base,
+    visibility $transition-base;
+
+  &.is-show {
+    opacity: 1;
+    visibility: visible;
+
+    .modal-side-content {
+      transform: translateX(0);
+    }
+  }
+
+  // 오버레이 배경
+  .modal-side-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(45, 49, 57, 0.4);
+  }
+
+  // 모달 컨텐츠
+  .modal-side-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 680px;
+    height: 100vh;
+    padding: 0;
+    background: #fff;
+    transform: translateX(20px);
+    transition: transform $transition-base;
+    overflow: hidden;
+  }
+}
+
 // 탑 버튼
 .btn-modal-top {
   position: fixed;
@@ -232,54 +289,11 @@
 // 라이브러리 보관함 모달
 // ===================================
 .library-archive-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: $z-modal;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    opacity $transition-base,
-    visibility $transition-base;
-
-  &.is-show {
-    opacity: 1;
-    visibility: visible;
-
-    .library-archive-modal-content {
-      transform: translateX(0);
-    }
-  }
-
-  // 오버레이 배경
-  .library-archive-modal-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(45, 49, 57, 0.4);
-  }
+  @extend .modal-side;
 
   // 모달 컨텐츠
   .library-archive-modal-content {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    max-width: 680px;
-    height: 100vh;
-    padding: 0;
-    background: #fff;
-    transform: translateX(20px);
-    transition: transform $transition-base;
-    overflow: hidden;
+    @extend .modal-side-content;
   }
 
   // 헤더

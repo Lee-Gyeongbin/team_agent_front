@@ -1,17 +1,17 @@
 <template>
   <div
-    class="library-archive-modal"
+    class="modal-side library-archive-modal"
     :class="{ 'is-show': isOpen }"
     @click.self="handleClose"
   >
     <!-- 오버레이 배경 -->
     <div
-      class="library-archive-modal-overlay"
+      class="modal-side-overlay"
       @click="handleClose"
     ></div>
 
     <!-- 모달 컨텐츠 -->
-    <div class="library-archive-modal-content">
+    <div class="modal-side-content library-archive-modal-content">
       <!-- 상단 헤더 -->
       <div class="library-archive-modal-header">
         <div class="header-top-grp flex items-start justify-between">
