@@ -50,6 +50,7 @@
     flex-direction: column;
     width: 100%;
     max-width: 400px;
+    padding: 20px;
     background: #fff;
     border-radius: $border-radius-lg;
     box-shadow: $shadow-lg;
@@ -63,40 +64,50 @@
 
   // 헤더
   .modal-dialog-header {
-    position: relative;
-    padding: $spacing-lg $spacing-lg $spacing-md;
-    border-bottom: 1px solid $color-border;
+    padding-bottom: 15px;
+    padding-right: 26px;
+    border-bottom: 1px solid #AEBCCB;
 
     .modal-dialog-title {
       color: $color-text-dark;
       font-size: $font-size-xl;
       font-weight: $font-weight-bold;
-      line-height: 150%;
+      // line-height: 150%;
     }
 
     // 닫기 버튼
-    .btn-modal-close {
-      position: absolute;
-      top: $spacing-lg;
-      right: $spacing-lg;
-    }
+  }
+  .btn-modal-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
   }
 
   // 본문
   .modal-dialog-body {
-    padding: $spacing-lg;
-    color: $color-text-primary;
-    font-size: $font-size-base;
-    line-height: $line-height-base;
+    display: flex;
+    align-items: center;
+    min-height: 82px;
+    padding: 12px 0;
+    color: #5C6677;
+    font-size: 16px;
+    line-height: 150%;
   }
 
   // 푸터 (버튼 영역)
   .modal-dialog-footer {
     display: flex;
     justify-content: flex-end;
-    gap: $spacing-xs;
-    padding: $spacing-md $spacing-lg $spacing-lg;
+    gap: 8px;
   }
+}
+
+// 모달 다이얼로그 버튼 공통 클래스
+.btn-modal-dialog {
+  min-width: 80px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 700;
 }
 
 // 오른쪽에서 나오는 사이드 모달 공통
@@ -236,7 +247,7 @@
   }
 
   // 닫기 btn
-  .btn-modal-close {
+  .btn-modal-close.type-library-detail {
     position: absolute;
     top: $spacing-lg;
     right: $spacing-md;

@@ -87,40 +87,40 @@ const emit = defineEmits<{
   // ===================================
   &.size-btn-xxs {
     @include typo($body-xsmall);
-    height: 24px;
+    height: 24px; // 24px
     padding: 0;
   }
 
   &.size-btn-xs {
     @include typo($body-xsmall);
-    height: $height-xs;
+    height: $height-xs; // 26px
     padding: 0 8px;
   }
 
   &.size-btn-sm {
     @include typo($body-small);
-    height: $height-sm;
+    height: $height-sm; // 28px
     padding: 0 8px;
     padding-right: 7px;
   }
 
   &.size-btn-md {
     @include typo($body-medium);
-    height: $height-md;
+    height: $height-md; // 30px
     padding: 0 10px;
     padding-right: 7px;
   }
 
   &.size-btn-lg {
     @include typo($body-medium);
-    height: $height-xlg;
+    height: $height-xlg; // 36px
     padding: 0 10px;
     padding-right: 7px;
   }
 
   &.size-btn-xlg {
     @include typo($body-large);
-    height: $height-xlg;
+    height: $height-xlg; // 36px
     padding: 0 10px;
     padding-right: 7px;
   }
@@ -132,22 +132,22 @@ const emit = defineEmits<{
     padding: 0;
 
     &.size-btn-xs {
-      width: $height-xs;
+      width: $height-xs; // 26px
     }
     &.size-btn-sm {
-      width: $height-sm;
+      width: $height-sm; // 28px
     }
     &.size-btn-md {
-      width: $height-md;
+      width: $height-md; // 30px
     }
     &.size-btn-lg {
-      width: $height-lg;
+      width: $height-lg; // 32px
     }
     &.size-btn-xlg {
-      width: $height-xlg;
+      width: $height-xlg; // 36px
     }
     &.size-btn-xxs {
-      width: 24px;
+      width: 24px; // 24px
     }
   }
 
@@ -155,50 +155,50 @@ const emit = defineEmits<{
   // variant
   // ===================================
   &.variant-primary {
-    background: $color-primary;
-    color: #fff;
+    background: $color-primary; // #3c69db
+    color: #fff; // #fff
 
     &:hover:not(:disabled) {
-      background: $color-primary-hover;
+      background: $color-primary-hover; // #1d4ed8
     }
   }
 
   &.variant-primary-dark {
-    background: $color-primary-dark;
-    color: #fff;
+    background: $color-primary-dark; // #2b43a2
+    color: #fff; // #fff
 
     &:hover:not(:disabled) {
-      background: $color-primary-dark-hover;
+      background: $color-primary-dark-hover; // #1d3589
     }
   }
 
   &.variant-secondary {
-    background: $color-background;
-    color: $color-text-dark;
+    background: $color-background; // #f4f7f9
+    color: $color-text-dark; // #2d3139
 
     &:hover:not(:disabled) {
-      background: color.adjust($color-background, $lightness: -4%);
+      background: color.adjust($color-background, $lightness: -4%); // #f4f7f9에서 -4% 어둡게
     }
   }
 
   &.variant-outline {
-    background: #fff;
-    border-color: $color-border;
-    color: $color-text-dark;
+    background: #fff; // #fff
+    border-color: $color-border; // #dce4e9
+    color: $color-text-dark; // #2d3139
 
     &:hover:not(:disabled) {
-      border-color: $color-primary;
-      color: $color-primary;
+      border-color: $color-primary; // #3c69db
+      color: $color-primary; // #3c69db
     }
   }
 
   &.variant-ghost {
-    background: transparent;
-    color: $color-text-secondary;
+    background: transparent; // transparent
+    color: $color-text-secondary; // #64748b
 
     &:hover:not(:disabled) {
-      background: $color-background;
-      color: $color-text-dark;
+      background: $color-background; // #f4f7f9
+      color: $color-text-dark; // #2d3139
     }
   }
 
