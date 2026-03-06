@@ -1,21 +1,26 @@
 @use './utils/variables' as *;
 @use './utils/mixins' as *;
 
-@use './base/reset';
+// base
 @use './base/font';
 @use './base/helpers';
+@use './base/reset';
 @use './base/utilities';
 
+// components
 @use './components/button';
 @use './components/form';
 @use './components/icon';
+@use './components/modal';
 @use './icons/icons.custom';
 
+// layout
 @use './layout/header';
 @use './layout/sidebar';
 
+// page
+@use './page/chat';
 @use './page/guide';
 @use './page/home';
 @use './page/library';
-@use './page/chat';
 

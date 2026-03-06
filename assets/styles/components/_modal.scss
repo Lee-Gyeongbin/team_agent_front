@@ -1,0 +1,388 @@
+@use '../utils/variables' as *;
+@use '../utils/mixins' as *;
+
+// ===================================
+// 라이브러리 카드 모달
+// ===================================
+.library-detail-modal {
+  position: fixed;
+  top: auto;
+  left: auto;
+  right: 0;
+  bottom: 0;
+  z-index: $z-modal;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity $transition-base,
+    visibility $transition-base;
+
+  &.is-show {
+    opacity: 1;
+    visibility: visible;
+
+    .library-detail-modal-content {
+      transform: translateX(0);
+    }
+  }
+
+  .library-detail-modal-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    overflow: hidden;
+    flex-direction: column;
+    width: 100%;
+    max-width: 680px;
+    height: calc(100vh - 102px);
+    padding: $spacing-lg $spacing-md;
+    background: #fff;
+    border-top: 1px solid $color-border;
+    border-left: 1px solid $color-border;
+    transform: translateX(20px);
+    transition: transform $transition-base;
+    overflow-y: auto;
+    @include custom-scrollbar;
+  }
+
+  // 닫기 btn
+  .btn-modal-close {
+    position: absolute;
+    top: $spacing-lg;
+    right: $spacing-md;
+  }
+
+  // 탑 버튼
+  .btn-modal-top {
+    position: fixed;
+    top: auto;
+    right: $spacing-md;
+    bottom: $spacing-lg;
+    width: 40px;
+    height: 40px;
+    z-index: 11;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    border: 1px solid $color-border;
+    border-radius: $border-radius-full;
+    box-shadow: $shadow-sm;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition:
+      opacity $transition-base,
+      visibility $transition-base,
+      transform $transition-base;
+
+    &.is-show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .icon-arrow-down {
+      background-color: #828fa9;
+      transform: rotate(180deg);
+    }
+  }
+
+  // 헤더
+  .library-detail-modal-header {
+    background: #fff;
+
+    .library-detail-modal-badge-wrapper {
+      flex-wrap: wrap;
+      gap: $spacing-xs;
+      margin-bottom: $spacing-xs;
+    }
+
+    .library-detail-modal-title-section {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: $spacing-md;
+      padding-right: $spacing-sm;
+
+      .library-detail-modal-title-grp {
+        flex: 1;
+
+        .library-detail-modal-title {
+          color: $color-text-dark;
+          font-size: $font-size-xl;
+          font-weight: $font-weight-bold;
+          margin-bottom: $spacing-xs;
+          line-height: 150%;
+        }
+
+        .library-detail-modal-date {
+          color: $color-text-disabled;
+          font-size: $font-size-sm;
+        }
+      }
+
+      .library-detail-modal-actions {
+        display: flex;
+        gap: $spacing-xs;
+        flex-shrink: 0;
+      }
+    }
+  }
+
+
+  // 본문
+  .library-detail-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+    padding: $spacing-md 0 0;
+  }
+}
+
+.content-box {
+  position: relative;
+  padding: 12px $spacing-md;
+  background: $color-background;
+  border-radius: $border-radius-lg;
+  color: $color-text-dark;
+  font-size: $font-size-base;
+  line-height: $line-height-base;
+
+  &.type-question {
+    background: #f1f6fe;
+  }
+
+  &.type-response {
+    color: $color-text-primary;
+  }
+
+  &.type-sql {
+    border: 1px solid $color-border;
+    background: #fff;
+  }
+
+  &.sql-content {
+    min-height: 240px;
+  }
+
+  .sql-header {
+    padding-bottom: 7px;
+  }
+
+  .btn-copy {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+  }
+}
+
+.library-detail-modal-code {
+  background: $color-text-dark;
+  border-radius: $border-radius-lg;
+  overflow: hidden;
+  position: relative;
+
+  .btn-copy {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 1;
+  }
+
+  .library-detail-modal-code-content {
+    padding: 20px;
+    margin: 0;
+    overflow-x: auto;
+    @include custom-scrollbar;
+
+    code {
+      display: block;
+      color: #e2e8f0;
+      font-family: $font-family-mono;
+      font-size: $font-size-sm;
+      line-height: $line-height-base;
+      white-space: pre;
+    }
+  }
+}
+
+// 태그 뱃지
+.library-detail-modal-tags {
+  display: flex;
+  gap: $spacing-xs;
+  flex-wrap: wrap;
+  margin-top: $spacing-xs;
+
+  .library-detail-modal-tag {
+    padding: 0 7px;
+    background: #fff;
+    color: $color-text-secondary;
+    font-size: $font-size-sm;
+    border-radius: $border-radius-full;
+    border: 1px solid #ecf0f3;
+  }
+}
+
+// ===================================
+// 라이브러리 보관함 모달
+// ===================================
+.library-archive-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: $z-modal;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity $transition-base,
+    visibility $transition-base;
+
+  &.is-show {
+    opacity: 1;
+    visibility: visible;
+
+    .library-archive-modal-content {
+      transform: translateX(0);
+    }
+  }
+
+  // 오버레이 배경
+  .library-archive-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(45, 49, 57, 0.4);
+  }
+
+  // 모달 컨텐츠
+  .library-archive-modal-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 680px;
+    height: 100vh;
+    padding: 0;
+    background: #fff;
+    transform: translateX(20px);
+    transition: transform $transition-base;
+    overflow: hidden;
+  }
+
+  // 헤더
+  .library-archive-modal-header {
+    // height: 67px;
+    padding: 24px 16px 16px;
+    .header-top-grp{
+      padding-bottom: 16px;
+    }
+
+    .library-archive-modal-title {
+      color: #2D3139;
+      font-size: $font-size-xl;
+      font-weight: $font-weight-bold;
+      line-height: 150%;
+    }
+
+    // 닫기 버튼
+    .btn-modal-close {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  // 검색바
+  .library-archive-modal-search {
+    width: 100%;
+  }
+
+  // 본문
+  .library-archive-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    overflow-y: auto;
+    height: calc(100vh - 113px);
+    padding: 0 16px 16px;
+    @include custom-scrollbar;
+  }
+
+  // 보관된 아이템
+  .library-archive-card {
+    padding: 12px 16px;
+    background: #fff;
+    border: 1px solid #DCE4E9;
+    border-radius: 8px;
+    transition: border-color $transition-base;
+
+    &:hover {
+      border-color: #AEBCCB;
+    }
+
+    &.is-show {
+      border-color: #3c69db;
+    }
+
+    .library-archive-card-content {
+      cursor: pointer;
+      .library-archive-card-badges {
+        margin-bottom: 2px;
+      }
+  
+      .library-archive-card-title {
+        color: #4D5462;
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 150%;
+      }
+  
+      .library-archive-card-date {
+        color: #AEBCCB;
+        font-size: 10px;
+        margin-top: 2px;
+      }
+
+      .btn-library-archive-card-action {
+        flex-shrink: 0;
+        color: #6F7A93;
+        border: 1px solid #C6D2DB;
+      }
+    }
+
+
+
+    .library-archive-card-body {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      padding-top: 0;
+      transition:
+        max-height $transition-slow,
+        opacity $transition-base,
+        padding-top $transition-base;
+    }
+
+    &.is-show .library-archive-card-body {
+      max-height: 2000px;
+      opacity: 1;
+      padding-top: 8px;
+    }
+  }
+}
