@@ -83,6 +83,7 @@
             v-for="card in 7"
             :key="card"
             class="library-card"
+            :class="{ 'is-active': selectedCardId === card }"
             @click="openModal(card)"
           >
             <!-- 상단 영역 -->
@@ -232,7 +233,7 @@
     <!-- 모달 -->
     <LibraryDetailModal
       :is-open="isModalOpen"
-      @close="isModalOpen = false"
+      @close="handleModalClose"
       @refresh="handleModalRefresh"
       @delete="handleModalDelete"
     />
@@ -271,13 +272,20 @@ setupDragScroll(contentWrapperRef)
 // 모달 상태
 const isModalOpen = ref(false)
 const isArchiveModalOpen = ref(false)
+const selectedCardId = ref<number | null>(null)
 
 // 모달 열기
-const openModal = (_cardId: number) => {
+const openModal = (cardId: number) => {
+  selectedCardId.value = cardId
   isModalOpen.value = true
 }
 
 // 모달 이벤트 핸들러
+const handleModalClose = () => {
+  isModalOpen.value = false
+  selectedCardId.value = null
+}
+
 const handleModalRefresh = () => {
   // TODO: 새로고침 로직
 }
@@ -285,5 +293,6 @@ const handleModalRefresh = () => {
 const handleModalDelete = () => {
   // TODO: 삭제 로직
   isModalOpen.value = false
+  selectedCardId.value = null
 }
 </script>
