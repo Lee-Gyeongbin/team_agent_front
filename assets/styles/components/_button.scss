@@ -251,10 +251,15 @@ button{
 
 // 모달 닫기 btn
 .btn-modal-close {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
 
   .icon-close {
     background-color: #828fa9;
+  }
+  
+  &:hover:not(:disabled) {
+    background: $color-background;
+    color: $color-text-dark;
   }
 }

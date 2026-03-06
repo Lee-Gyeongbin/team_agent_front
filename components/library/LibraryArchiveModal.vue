@@ -46,33 +46,33 @@
           :key="index"
           class="library-archive-item"
         >
-          <!-- 태그 영역 -->
-          <div class="library-archive-item-badges flex flex-wrap gap-4">
-            <UiBadge :variant="item.badges[0].variant">
-              <template #icon-left>
-                <i :class="`icon ${item.badges[0].icon} size-14`"></i>
-              </template>
-              {{ item.badges[0].label }}
-            </UiBadge>
-            <UiBadge :variant="item.badges[1].variant">
-              <template #icon-left>
-                <i :class="`icon ${item.badges[1].icon} size-10`"></i>
-              </template>
-              {{ item.badges[1].label }}
-            </UiBadge>
+          <div>
+            <!-- 태그 영역 -->
+            <div class="library-archive-item-badges flex flex-wrap gap-4">
+              <UiBadge :variant="item.badges[0].variant">
+                <template #icon-left>
+                  <i :class="`icon ${item.badges[0].icon} size-14`"></i>
+                </template>
+                {{ item.badges[0].label }}
+              </UiBadge>
+              <UiBadge :variant="item.badges[1].variant">
+                <template #icon-left>
+                  <i :class="`icon ${item.badges[1].icon} size-10`"></i>
+                </template>
+                {{ item.badges[1].label }}
+              </UiBadge>
+            </div>
+            <!-- 제목 -->
+            <h3 class="library-archive-item-title">{{ item.title }}</h3>
+            <!-- 보관일 -->
+            <p class="library-archive-item-date">보관일 {{ item.archiveDate }}</p>
           </div>
-
-          <!-- 제목 -->
-          <h3 class="library-archive-item-title">{{ item.title }}</h3>
-
-          <!-- 보관일 -->
-          <p class="library-archive-item-date">보관일 {{ item.archiveDate }}</p>
 
           <!-- 카테고리 이동 버튼 -->
           <UiButton
-            variant="secondary"
+            variant="outline"
             size="sm"
-            class="library-archive-item-action"
+            class="btn-library-archive-item-action"
           >
             카테고리 이동
           </UiButton>
@@ -213,6 +213,9 @@ const handleClose = () => {
 
   // 본문
   .library-archive-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
     flex: 1;
     overflow-y: auto;
     height: calc(100vh - 113px);
@@ -222,44 +225,42 @@ const handleClose = () => {
 
   // 보관된 아이템
   .library-archive-item {
-    position: relative;
-    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
     background: #fff;
-    border: 1px solid #ECF0F3;
-    border-radius: $border-radius-base;
-    margin-bottom: 12px;
+    border: 1px solid #DCE4E9;
+    border-radius: 8px;
     transition: border-color $transition-base;
 
     &:hover {
       border-color: #DCE4E9;
     }
 
-    &:last-child {
-      margin-bottom: 0;
-    }
-
     .library-archive-item-badges {
-      margin-bottom: 12px;
+      margin-bottom: 2px;
     }
 
     .library-archive-item-title {
-      color: #2D3139;
-      font-size: $font-size-base;
-      font-weight: $font-weight-semibold;
+
+      color: #4D5462;
+      font-size: 14px;
+      font-weight: 500;
       line-height: 150%;
-      margin-bottom: 8px;
     }
 
     .library-archive-item-date {
-      color: #94A3B8;
-      font-size: $font-size-sm;
-      margin-bottom: 12px;
+      color: #AEBCCB;
+      font-size: 10px;
+      margin-top: 2px;
     }
 
-    .library-archive-item-action {
-      position: absolute;
-      top: 16px;
-      right: 16px;
+    .btn-library-archive-item-action {
+      flex-shrink: 0;
+      color: #6F7A93;
+      border: 1px solid #C6D2DB;
     }
   }
 }
