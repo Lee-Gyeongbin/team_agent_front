@@ -1,12 +1,9 @@
 export interface UserInfo {
   userId: string
-  userNm: string
-  compId: string
-  deptId: string
-  deptNm: string
+  userName: string
   email: string
-  jikgubNm: string
-  posNm: string
+  orgId: string
+  orgNm: string
 }
 
 export interface LoginResponse {

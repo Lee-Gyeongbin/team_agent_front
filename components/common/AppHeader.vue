@@ -15,7 +15,7 @@
       <!-- 유저 프로필 -->
       <button
         class="header-btn"
-        :title="user?.userNm + ' [' + user?.deptNm + ']' || '로그인'"
+        :title="user?.userName + ' [' + user?.orgNm + ']' || '로그인'"
         @click="onClickProfile"
       >
         <i class="icon-user size-20" />
