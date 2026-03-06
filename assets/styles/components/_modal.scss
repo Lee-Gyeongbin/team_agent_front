@@ -5,6 +5,100 @@
 // 모달 공통
 // ===================================
 
+// 중앙에 위치하는 다이얼로그 모달 공통
+.modal-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: $z-modal;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity $transition-base,
+    visibility $transition-base;
+
+  &.is-show {
+    opacity: 1;
+    visibility: visible;
+
+    .modal-dialog-content {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  // 오버레이 배경
+  .modal-dialog-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(45, 49, 57, 0.4);
+  }
+
+  // 모달 컨텐츠
+  .modal-dialog-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 400px;
+    background: #fff;
+    border-radius: $border-radius-lg;
+    box-shadow: $shadow-lg;
+    transform: scale(0.95);
+    opacity: 0;
+    transition:
+      transform $transition-base,
+      opacity $transition-base;
+    overflow: hidden;
+  }
+
+  // 헤더
+  .modal-dialog-header {
+    position: relative;
+    padding: $spacing-lg $spacing-lg $spacing-md;
+    border-bottom: 1px solid $color-border;
+
+    .modal-dialog-title {
+      color: $color-text-dark;
+      font-size: $font-size-xl;
+      font-weight: $font-weight-bold;
+      line-height: 150%;
+    }
+
+    // 닫기 버튼
+    .btn-modal-close {
+      position: absolute;
+      top: $spacing-lg;
+      right: $spacing-lg;
+    }
+  }
+
+  // 본문
+  .modal-dialog-body {
+    padding: $spacing-lg;
+    color: $color-text-primary;
+    font-size: $font-size-base;
+    line-height: $line-height-base;
+  }
+
+  // 푸터 (버튼 영역)
+  .modal-dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: $spacing-xs;
+    padding: $spacing-md $spacing-lg $spacing-lg;
+  }
+}
+
 // 오른쪽에서 나오는 사이드 모달 공통
 .modal-side {
   position: fixed;

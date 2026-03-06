@@ -54,6 +54,7 @@
             <p class="library-detail-modal-date">2026.02.16 09:20</p>
           </div>
           <div class="library-detail-modal-actions shrink-0">
+            <!-- 변경 btn -->
             <UiButton
               variant="ghost"
               size="xxs"
@@ -65,6 +66,7 @@
                 <i class="icon icon-transfer size-16"></i>
               </template>
             </UiButton>
+            <!-- 삭제 btn -->
             <UiButton
               variant="ghost"
               size="xxs"
@@ -184,6 +186,18 @@ ORDER BY month;
     >
       <i class="icon icon-arrow-down size-20"></i>
     </button>
+
+    <!-- 삭제 확인 모달 -->
+    <UiDialogModal
+      :is-open="isDeleteModalOpen"
+      title="항목 삭제"
+      message="이 항목을 라이브러리에서 삭제하시겠습니까?"
+      cancel-text="취소"
+      confirm-text="삭제"
+      @close="isDeleteModalOpen = false"
+      @cancel="isDeleteModalOpen = false"
+      @confirm="handleDeleteConfirm"
+    />
   </div>
 </template>
 
@@ -222,6 +236,9 @@ const monthlyData = [
 const contentRef = ref<HTMLElement | null>(null)
 const isScrolled = ref(false)
 
+// 삭제 모달 상태
+const isDeleteModalOpen = ref(false)
+
 // 스크롤 이벤트 핸들러
 const handleScroll = () => {
   if (!contentRef.value) return
@@ -247,7 +264,12 @@ const handleRefresh = () => {
 }
 
 const handleDelete = () => {
+  isDeleteModalOpen.value = true
+}
+
+const handleDeleteConfirm = () => {
   emit('delete')
+  isDeleteModalOpen.value = false
 }
 
 const handleCopyResponse = () => {
