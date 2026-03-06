@@ -22,6 +22,14 @@ export interface ModelOption {
   value: string
 }
 
+export type SearchModeValue = 'knowledge' | 'sql'
+
+export interface SearchModeOption {
+  label: string
+  value: SearchModeValue
+  icon: string
+}
+
 export interface ChatRoom {
   id: string
   title: string

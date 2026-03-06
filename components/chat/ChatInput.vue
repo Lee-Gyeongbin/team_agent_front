@@ -20,28 +20,31 @@
         />
       </div>
 
-      <div class="chat-input-bottom flex justify-end items-center">
-        <UiSelect
-          :model-value="selectedModel"
-          id="ai-model"
-          class="w-170"
-          name="ai-model"
-          :options="modelOptions"
-          size="xlg"
-          @update:model-value="emit('update:selectedModel', String($event))"
-        />
-        <UiButton
-          variant="primary"
-          size="xlg"
-          icon-only
-          class="btn-chat-send"
-          :disabled="!modelValue.trim()"
-          @click="onSend"
-        >
-          <template #icon-left>
-            <i class="icon-send size-16" />
-          </template>
-        </UiButton>
+      <div class="chat-input-bottom flex justify-between items-center">
+        <ChatSearchMode />
+        <div class="chat-input-bottom-right flex gap-8 items-center">
+          <UiSelect
+            :model-value="selectedModel"
+            id="ai-model"
+            class="w-170"
+            name="ai-model"
+            :options="modelOptions"
+            size="xlg"
+            @update:model-value="emit('update:selectedModel', String($event))"
+          />
+          <UiButton
+            variant="primary"
+            size="xlg"
+            icon-only
+            class="btn-chat-send"
+            :disabled="!modelValue.trim()"
+            @click="onSend"
+          >
+            <template #icon-left>
+              <i class="icon-send size-16" />
+            </template>
+          </UiButton>
+        </div>
       </div>
     </div>
   </div>

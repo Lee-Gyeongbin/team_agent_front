@@ -12,8 +12,8 @@
         <SelectValue :placeholder="placeholder || '선택'" />
         <SelectIcon class="ui-select-icon">
           <svg
-            width="12"
-            height="12"
+            width="20"
+            height="20"
             viewBox="0 0 12 12"
             fill="none"
           >

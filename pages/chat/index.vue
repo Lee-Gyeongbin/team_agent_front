@@ -27,11 +27,19 @@
       data-aos="fade-up"
       data-aos-delay="400"
     >
-      <button class="btn btn-chat-index">
+      <button
+        class="btn btn-chat-index"
+        :class="{ 'is-active': activeSearchModes.includes('knowledge') }"
+        @click="toggleSearchMode('knowledge')"
+      >
         <span class="icon-circle"><i class="icon-knowledge size-20"></i></span>
         <p>지식검색 (매뉴얼 AI)</p>
       </button>
-      <button class="btn btn-chat-index">
+      <button
+        class="btn btn-chat-index"
+        :class="{ 'is-active': activeSearchModes.includes('sql') }"
+        @click="toggleSearchMode('sql')"
+      >
         <span class="icon-circle"><i class="icon-database size-20"></i></span>
         <p>데이터분석 (SQL)</p>
       </button>
@@ -41,7 +49,7 @@
 
 <script setup lang="ts">
 const chatMessage = ref('')
-const { selectedModel, modelOptions } = useChatStore()
+const { selectedModel, modelOptions, activeSearchModes, toggleSearchMode } = useChatStore()
 const { user } = useAuth()
 
 // 메시지 전송 → 채팅방 생성 후 이동

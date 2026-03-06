@@ -1,4 +1,4 @@
-import type { ChatMessage, PanelType, ModelOption, PdfDocumentProxy, PdfJsLib } from '~/types/chat'
+import type { ChatMessage, PanelType, ModelOption, SearchModeValue, SearchModeOption, PdfDocumentProxy, PdfJsLib } from '~/types/chat'
 
 // ============================================
 // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
@@ -88,6 +88,15 @@ function getWebSocketUrl(): string {
   const host = import.meta.dev ? 'localhost:8082' : window.location.host
   return `${protocol}://${host}/ws/chat`
 }
+
+// 검색모드 옵션
+const searchModeOptions: SearchModeOption[] = [
+  { label: '지식검색(매뉴얼AI)', value: 'knowledge', icon: 'icon-knowledge' },
+  { label: '데이터분석(SQL)', value: 'sql', icon: 'icon-database' },
+]
+
+// 검색모드 상태 (앱 전역 공유)
+const activeSearchModes = ref<SearchModeValue[]>(['knowledge'])
 
 export const useChatStore = () => {
   // 상태
@@ -359,6 +368,19 @@ export const useChatStore = () => {
     }
   }
 
+  // 검색모드 토글
+  const toggleSearchMode = (mode: SearchModeValue) => {
+    const idx = activeSearchModes.value.indexOf(mode)
+    if (idx > -1) {
+      // 최소 1개는 선택 유지
+      if (activeSearchModes.value.length > 1) {
+        activeSearchModes.value.splice(idx, 1)
+      }
+    } else {
+      activeSearchModes.value.push(mode)
+    }
+  }
+
   return {
     // 상태
     messages,
@@ -368,12 +390,15 @@ export const useChatStore = () => {
     isPanelFullscreen,
     activePanelMessageId,
     modelOptions,
+    searchModeOptions,
+    activeSearchModes,
     // 액션
     onSend,
     onCopy,
     onLike,
     onDislike,
     onRegenerate,
+    toggleSearchMode,
     // 패널
     onViewSource,
     onViewVisualization,
