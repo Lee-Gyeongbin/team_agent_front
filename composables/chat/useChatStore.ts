@@ -1,4 +1,7 @@
-import type { ChatMessage, PanelType, ModelOption, SearchModeValue, SearchModeOption, SubOption, PdfDocumentProxy, PdfJsLib } from '~/types/chat'
+import type { ChatMessage, ChatRoom, PanelType, ModelOption, SearchModeValue, SearchModeOption, SubOption, PdfDocumentProxy, PdfJsLib } from '~/types/chat'
+import { EMPTY_CHAT_ROOM } from '~/types/chat'
+
+const { fetchCreateChatRoom } = useReportsApi()
 
 // ============================================
 // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
@@ -19,15 +22,17 @@ const modelOptions: ModelOption[] = [
 
 const dummyMessages: ChatMessage[] = [
   {
-    id: '1',
+    logId: '1',
     role: 'user',
-    content: '업무관리에서 칸반 보드는 어떻게 생성하지?',
+    qContent: '업무관리에서 칸반 보드는 어떻게 생성하지?',
+    rContent: '',
     createdAt: '2025-03-03T10:00:00',
   },
   {
-    id: '2',
+    logId: '2',
     role: 'assistant',
-    content: `<p>좋은 질문이에요 👍</p>
+    qContent: '',
+    rContent: `<p>좋은 질문이에요 👍</p>
 <p><strong>칸반 보드</strong>를 생성하는 방법을 안내해 드리겠습니다.</p>
 <ol>
 <li>업무관리 메뉴에 접속합니다.</li>
@@ -39,18 +44,20 @@ const dummyMessages: ChatMessage[] = [
 <p>추가로 칸반 보드에서는 카드를 드래그 앤 드롭으로 쉽게 이동할 수 있습니다.</p>`,
     createdAt: '2025-03-03T10:00:05',
     hasSource: true,
-    hasVisualization: false,
+    hasVisualization: true,
   },
   {
-    id: '3',
+    logId: '3',
     role: 'user',
-    content: '회의실 예약 절차 알려주세요',
+    qContent: '회의실 예약 절차 알려주세요',
+    rContent: '',
     createdAt: '2025-03-03T10:01:00',
   },
   {
-    id: '4',
+    logId: '4',
     role: 'assistant',
-    content: `<p>🏢 <strong>회의실 예약 절차</strong>를 안내해 드리겠습니다.</p>
+    qContent: '',
+    rContent: `<p>🏢 <strong>회의실 예약 절차</strong>를 안내해 드리겠습니다.</p>
 <ol>
 <li>그룹웨어 메인에서 "회의실 예약" 메뉴를 클릭합니다.</li>
 <li>예약하고 싶은 날짜와 시간대를 선택합니다.</li>
@@ -81,6 +88,17 @@ const WEBSOCKET_CONNECTING = 0
 
 // WebSocket은 앱 전역에서 단일 인스턴스로 공유
 const chatbotSocket = shallowRef<WebSocket | null>(null)
+
+// 채팅 store 상태 — 호출부 간 동기화를 위해 모듈 레벨로 공유
+const messages = ref<ChatMessage[]>([...dummyMessages])
+const chatMessage = ref('')
+const selectedModel = ref('auto')
+const activePanelType = ref<PanelType>('none')
+const isPanelFullscreen = ref(false)
+const activePanelMessageId = ref<string | null>(null)
+const pendingMessageId = ref<string | null>(null)
+const messageBufferMap = ref<Record<string, string>>({})
+const chatRoom = ref<ChatRoom>({ ...EMPTY_CHAT_ROOM })
 
 function getWebSocketUrl(): string {
   if (typeof window === 'undefined') return ''
@@ -120,16 +138,6 @@ const activeSearchModes = ref<SearchModeValue[]>([])
 const selectedSubOption = ref<string>('all')
 
 export const useChatStore = () => {
-  // 상태
-  const messages = ref<ChatMessage[]>([...dummyMessages])
-  const chatMessage = ref('')
-  const selectedModel = ref('auto')
-  const activePanelType = ref<PanelType>('none')
-  const isPanelFullscreen = ref(false)
-  const activePanelMessageId = ref<string | null>(null)
-  const pendingMessageId = ref<string | null>(null)
-  const messageBufferMap = ref<Record<string, string>>({})
-
   const escapeHtml = (value: string) =>
     value
       .replaceAll('&', '&amp;')
@@ -142,7 +150,7 @@ export const useChatStore = () => {
 
   const getStreamingMessage = () => {
     if (pendingMessageId.value) {
-      return messages.value.find((message) => message.id === pendingMessageId.value)
+      return messages.value.find((message) => message.logId === pendingMessageId.value)
     }
     const streamingMessages = messages.value.filter((message) => message.role === 'assistant' && message.isStreaming)
     return streamingMessages[streamingMessages.length - 1]
@@ -155,7 +163,9 @@ export const useChatStore = () => {
     // 스트리밍 메시지가 있으면 완료 처리
     if (streamingMessage) {
       streamingMessage.isStreaming = false
-      messageBufferMap.value[streamingMessage.id] = ''
+      streamingMessage.hasSource = true
+      streamingMessage.hasVisualization = true
+      messageBufferMap.value[streamingMessage.logId] = ''
     }
     pendingMessageId.value = null
   }
@@ -166,9 +176,11 @@ export const useChatStore = () => {
     const streamingMessage = getStreamingMessage()
     if (!streamingMessage) return
     // 스트리밍 메시지 오류 처리
-    streamingMessage.content = `<p>${errorText}</p>`
+    streamingMessage.rContent = `<p>${errorText}</p>`
     streamingMessage.isStreaming = false
-    messageBufferMap.value[streamingMessage.id] = ''
+    streamingMessage.hasSource = true
+    streamingMessage.hasVisualization = true
+    messageBufferMap.value[streamingMessage.logId] = ''
     pendingMessageId.value = null
   }
 
@@ -187,12 +199,14 @@ export const useChatStore = () => {
         // 다음 청크 내용 가져오기
         const nextChunk = payload.content ?? ''
         // 이전 버퍼 내용 가져오기
-        const prevBuffer = messageBufferMap.value[streamingMessage.id] || ''
+        const prevBuffer = messageBufferMap.value[streamingMessage.logId] || ''
         // 이전 버퍼와 다음 청크 내용 병합
         const mergedBuffer = `${prevBuffer}${nextChunk}`
-        messageBufferMap.value[streamingMessage.id] = mergedBuffer
-        streamingMessage.content = toHtmlContent(mergedBuffer)
+        messageBufferMap.value[streamingMessage.logId] = mergedBuffer
+        streamingMessage.rContent = toHtmlContent(mergedBuffer)
         streamingMessage.isStreaming = true
+        streamingMessage.hasSource = true
+        streamingMessage.hasVisualization = true
         // 스트리밍 메시지 업데이트
         break
       }
@@ -289,15 +303,87 @@ export const useChatStore = () => {
     disconnectWebSocket()
   }
 
+  // 채팅방 초기화 (roomId 등 리셋)
+  const resetChatRoom = () => {
+    chatRoom.value = { ...EMPTY_CHAT_ROOM }
+  }
+
+  // 채팅방 생성 (content: 호출부에서 전달 가능, 미전달 시 chatMessage 사용)
+  const createChatRoom = async (content?: string): Promise<ChatRoom> => {
+    // TODO: 서비스 타입 수정 필요
+    const svcTy = selectedModel.value
+    const qContent = (content ?? chatMessage.value).trim()
+    if (!svcTy || !qContent) {
+      chatRoom.value = { ...EMPTY_CHAT_ROOM, qContent: '' }
+      return chatRoom.value
+    }
+
+    const res = await fetchCreateChatRoom(svcTy, qContent)
+    chatRoom.value.roomId = res.data.roomId
+    chatRoom.value.title = qContent
+    chatRoom.value.svcTy = svcTy
+    chatRoom.value.qContent = qContent
+
+    // 새 채팅방: 메시지 초기화 후 user + assistant placeholder 추가
+    const userMessageId = Date.now().toString()
+    const assistantMessageId = (Date.now() + 1).toString()
+    pendingMessageId.value = assistantMessageId
+
+    messages.value = [
+      {
+        logId: userMessageId,
+        role: 'user',
+        qContent,
+        rContent: '',
+        createdAt: new Date().toISOString(),
+      },
+      {
+        logId: assistantMessageId,
+        role: 'assistant',
+        qContent: '',
+        rContent: '',
+        createdAt: new Date().toISOString(),
+        isStreaming: true,
+        hasSource: true,
+        hasVisualization: true,
+      },
+    ]
+    chatMessage.value = ''
+
+    // WebSocket 연결 확인 후 전송
+    if (!chatbotSocket.value || chatbotSocket.value.readyState !== WEBSOCKET_OPEN) {
+      await connectWebSocket()
+    }
+    if (chatbotSocket.value?.readyState === WEBSOCKET_OPEN) {
+      const payload: ChatSocketPayload = {
+        type: 'question',
+        query: qContent,
+        threadId: chatRoom.value.roomId,
+        svcTy: 'C',
+      }
+      try {
+        chatbotSocket.value.send(JSON.stringify(payload))
+      } catch (error) {
+        console.error('웹소켓 메시지 전송 실패:', error)
+        updateStreamingError('메시지 전송에 실패했습니다. 잠시 후 다시 시도해주세요.')
+      }
+    } else {
+      updateStreamingError('연결 오류가 발생했습니다. 다시 시도해주세요.')
+    }
+
+    navigateTo(`/chat/${chatRoom.value.roomId}`)
+    return chatRoom.value
+  }
   // 메시지 전송
   const onSend = async () => {
     const content = chatMessage.value.trim()
     if (!content) return
 
     messages.value.push({
-      id: Date.now().toString(),
+      logId: Date.now().toString(),
       role: 'user',
-      content,
+      qContent: content,
+      rContent: '',
       createdAt: new Date().toISOString(),
     })
 
@@ -307,16 +393,21 @@ export const useChatStore = () => {
     pendingMessageId.value = assistantMessageId
 
     messages.value.push({
-      id: assistantMessageId,
+      logId: assistantMessageId,
       role: 'assistant',
-      content: '',
+      qContent: '',
+      rContent: '',
       createdAt: new Date().toISOString(),
       isStreaming: true,
+      hasSource: true,
+      hasVisualization: true,
     })
 
     if (!chatbotSocket.value || chatbotSocket.value.readyState !== WEBSOCKET_OPEN) {
+      await connectWebSocket()
+    }
+    if (chatbotSocket.value?.readyState !== WEBSOCKET_OPEN) {
       updateStreamingError('연결 오류가 발생했습니다. 다시 시도해주세요.')
-      void connectWebSocket()
       return
     }
 
@@ -324,7 +415,7 @@ export const useChatStore = () => {
     const payload: ChatSocketPayload = {
       type: 'question',
       query: content,
-      threadId: '',
+      threadId: chatRoom.value.roomId || '',
       svcTy: 'C',
     }
 
@@ -339,15 +430,16 @@ export const useChatStore = () => {
 
   // 액션 핸들러
   const onCopy = (id: string) => {
-    const msg = messages.value.find((m) => m.id === id)
+    const msg = messages.value.find((m) => m.logId === id)
     if (msg) {
-      navigator.clipboard.writeText(msg.content.replace(/<[^>]*>/g, ''))
+      const text = (msg.role === 'user' ? msg.qContent : msg.rContent).replace(/<[^>]*>/g, '')
+      navigator.clipboard.writeText(text)
     }
   }
 
   // 좋아요 처리
   const onLike = (id: string) => {
-    const msg = messages.value.find((m) => m.id === id)
+    const msg = messages.value.find((m) => m.logId === id)
     if (msg) {
       msg.isLiked = !msg.isLiked
       if (msg.isLiked) msg.isDisliked = false
@@ -356,7 +448,7 @@ export const useChatStore = () => {
 
   // 싫어요 처리
   const onDislike = (id: string) => {
-    const msg = messages.value.find((m) => m.id === id)
+    const msg = messages.value.find((m) => m.logId === id)
     if (msg) {
       msg.isDisliked = !msg.isDisliked
       if (msg.isDisliked) msg.isLiked = false
@@ -412,6 +504,7 @@ export const useChatStore = () => {
     // 상태
     messages,
     chatMessage,
+    chatRoom,
     selectedModel,
     activePanelType,
     isPanelFullscreen,
@@ -422,6 +515,8 @@ export const useChatStore = () => {
     selectedSubOption,
     currentSubOptions,
     // 액션
+    createChatRoom,
+    resetChatRoom,
     onSend,
     onCopy,
     onLike,

@@ -1,14 +1,13 @@
 import { useApi } from '~/composables/com/useApi'
-import type { ChatMessage } from '~/types/chat'
+import type { ChatRoom } from '~/types/chat'
 
 export const useReportsApi = () => {
   const { post } = useApi()
-  const sendMessage = async (userId: string, password: string): Promise<ChatMessage> => {
-    const res = await post<ChatMessage>('/api/chat/sendMessage', { userId, password })
-    return res
+  const fetchCreateChatRoom = async (svcTy: string, content: string): Promise<{ data: ChatRoom }> => {
+    return post<{ data: ChatRoom }>('/api/ai/chatbot/createChatRoom.do', { svcTy, content })
   }
 
   return {
-    sendMessage,
+    fetchCreateChatRoom,
   }
 }

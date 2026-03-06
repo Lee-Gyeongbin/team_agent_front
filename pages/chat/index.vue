@@ -18,7 +18,6 @@
         :selected-model="selectedModel"
         :model-options="modelOptions"
         @update:selected-model="selectedModel = $event"
-        @on-send="onSend"
       />
     </div>
 
@@ -48,17 +47,17 @@
 </template>
 
 <script setup lang="ts">
-const chatMessage = ref('')
-const { selectedModel, modelOptions, activeSearchModes, toggleSearchMode } = useChatStore()
+const { selectedModel, modelOptions, chatMessage, activeSearchModes, toggleSearchMode, startChatSocket, stopChatSocket, resetChatRoom } = useChatStore()
 const { user } = useAuth()
 
-// 메시지 전송 → 채팅방 생성 후 이동
-const onSend = () => {
-  const content = chatMessage.value.trim()
-  if (!content) return
+onMounted(() => {
+  resetChatRoom()
+  startChatSocket()
+})
 
-  // 🔽 더미 — 백엔드 연결 시 API로 채팅방 생성 후 실제 ID 사용
-  const newRoomId = Date.now().toString()
-  navigateTo(`/chat/${newRoomId}`)
-}
+onBeforeRouteLeave((to) => {
+  if (!String(to.path).startsWith('/chat')) {
+    stopChatSocket()
+  }
+})
 </script>
