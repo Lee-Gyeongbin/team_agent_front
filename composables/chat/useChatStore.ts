@@ -64,6 +64,31 @@ const dummyMessages: ChatMessage[] = [
   },
 ]
 
+interface ChatSocketPayload {
+  type: string
+  query: string
+  threadId: string
+  svcTy: string
+}
+
+interface ChatSocketMessage {
+  type: string
+  content?: string
+}
+
+const WEBSOCKET_OPEN = 1
+const WEBSOCKET_CONNECTING = 0
+
+// WebSocket은 앱 전역에서 단일 인스턴스로 공유
+const chatbotSocket = shallowRef<WebSocket | null>(null)
+
+function getWebSocketUrl(): string {
+  if (typeof window === 'undefined') return ''
+  const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
+  const host = import.meta.dev ? 'localhost:8082' : window.location.host
+  return `${protocol}://${host}/ws/chat`
+}
+
 export const useChatStore = () => {
   // 상태
   const messages = ref<ChatMessage[]>([...dummyMessages])
@@ -72,9 +97,170 @@ export const useChatStore = () => {
   const activePanelType = ref<PanelType>('none')
   const isPanelFullscreen = ref(false)
   const activePanelMessageId = ref<string | null>(null)
+  const pendingMessageId = ref<string | null>(null)
+  const messageBufferMap = ref<Record<string, string>>({})
+
+  const escapeHtml = (value: string) =>
+    value
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;')
+
+  const toHtmlContent = (value: string) => `<p>${escapeHtml(value).replace(/\n/g, '<br>')}</p>`
+
+  const getStreamingMessage = () => {
+    if (pendingMessageId.value) {
+      return messages.value.find((message) => message.id === pendingMessageId.value)
+    }
+    const streamingMessages = messages.value.filter((message) => message.role === 'assistant' && message.isStreaming)
+    return streamingMessages[streamingMessages.length - 1]
+  }
+
+  // 스트리밍 메시지 완료 처리
+  const finalizeStreamingMessage = () => {
+    // 현재 스트리밍 메시지 찾기
+    const streamingMessage = getStreamingMessage()
+    // 스트리밍 메시지가 있으면 완료 처리
+    if (streamingMessage) {
+      streamingMessage.isStreaming = false
+      messageBufferMap.value[streamingMessage.id] = ''
+    }
+    pendingMessageId.value = null
+  }
+
+  // 스트리밍 오류 처리
+  const updateStreamingError = (errorText: string) => {
+    // 현재 스트리밍 메시지 찾기
+    const streamingMessage = getStreamingMessage()
+    if (!streamingMessage) return
+    // 스트리밍 메시지 오류 처리
+    streamingMessage.content = `<p>${errorText}</p>`
+    streamingMessage.isStreaming = false
+    messageBufferMap.value[streamingMessage.id] = ''
+    pendingMessageId.value = null
+  }
+
+  // WebSocket 메시지 처리
+  const handleWebSocketMessage = (payload: ChatSocketMessage) => {
+    // connected, question_received는 답변 메시지가 없어도 처리 가능
+    if (payload.type === 'connected' || payload.type === 'question_received') return
+    // 현재 스트리밍 메시지 찾기
+    const streamingMessage = getStreamingMessage()
+    if (!streamingMessage) return
+
+    // WebSocket 메시지 타입에 따라 처리
+    switch (payload.type) {
+      // 스트리밍 메시지 처리
+      case 'chunk': {
+        // 다음 청크 내용 가져오기
+        const nextChunk = payload.content ?? ''
+        // 이전 버퍼 내용 가져오기
+        const prevBuffer = messageBufferMap.value[streamingMessage.id] || ''
+        // 이전 버퍼와 다음 청크 내용 병합
+        const mergedBuffer = `${prevBuffer}${nextChunk}`
+        messageBufferMap.value[streamingMessage.id] = mergedBuffer
+        streamingMessage.content = toHtmlContent(mergedBuffer)
+        streamingMessage.isStreaming = true
+        // 스트리밍 메시지 업데이트
+        break
+      }
+      case 'complete':
+        // 스트리밍 메시지 완료 처리
+        finalizeStreamingMessage()
+        break
+      case 'error':
+        // 스트리밍 오류 처리
+        updateStreamingError(payload.content || '응답 처리 중 오류가 발생했습니다.')
+        break
+      default:
+        break
+    }
+  }
+
+  const disconnectWebSocket = () => {
+    if (chatbotSocket.value) {
+      chatbotSocket.value.close()
+      chatbotSocket.value = null
+    }
+  }
+
+  // WebSocket 연결
+  const connectWebSocket = (): Promise<void> => {
+    // WebSocket 연결 상태 확인
+    return new Promise((resolve) => {
+      if (typeof window === 'undefined') {
+        resolve()
+        return
+      }
+
+      // 현재 WebSocket 연결 상태 확인
+      const currentSocket = chatbotSocket.value
+      if (currentSocket?.readyState === WEBSOCKET_OPEN) {
+        resolve()
+        return
+      }
+      // WebSocket 연결 중인 경우
+      if (currentSocket?.readyState === WEBSOCKET_CONNECTING) {
+        const onOpen = () => {
+          currentSocket.removeEventListener('open', onOpen)
+          resolve()
+        }
+        currentSocket.addEventListener('open', onOpen)
+        return
+      }
+
+      // 기존 WebSocket 연결이 있으면 닫기
+      if (currentSocket) {
+        currentSocket.close()
+        chatbotSocket.value = null
+      }
+
+      try {
+        // WebSocket 연결 시도
+        const socket = new WebSocket(getWebSocketUrl())
+        chatbotSocket.value = socket
+
+        // WebSocket 연결 성공 시
+        socket.onopen = () => resolve()
+
+        // WebSocket 메시지 수신 시
+        socket.onmessage = (event) => {
+          try {
+            // WebSocket 메시지 파싱
+            const payload = JSON.parse(event.data) as ChatSocketMessage
+            // WebSocket 메시지 처리
+            handleWebSocketMessage(payload)
+          } catch (error) {
+            console.error('웹소켓 메시지 파싱 오류:', error)
+          }
+        }
+
+        socket.onerror = (error) => {
+          console.error('웹소켓 연결 오류:', error)
+        }
+
+        socket.onclose = () => {
+          chatbotSocket.value = null
+        }
+      } catch (error) {
+        console.error('WebSocket 초기화 실패:', error)
+        resolve()
+      }
+    })
+  }
+
+  const startChatSocket = () => {
+    void connectWebSocket()
+  }
+
+  const stopChatSocket = () => {
+    disconnectWebSocket()
+  }
 
   // 메시지 전송
-  const onSend = () => {
+  const onSend = async () => {
     const content = chatMessage.value.trim()
     if (!content) return
 
@@ -87,38 +273,38 @@ export const useChatStore = () => {
 
     chatMessage.value = ''
 
-    // 🔽 더미 — 백엔드 연결 시 API 스트리밍으로 교체
-    simulateStreaming()
-  }
-
-  // 🔽 더미 스트리밍 시뮬레이션 — 백엔드 연결 시 제거
-  const simulateStreaming = () => {
-    const fullText =
-      '안녕하세요! 해당 내용에 대해 안내해 드리겠습니다.\n\n확인 후 자세한 답변을 드리겠습니다. 추가 궁금한 점이 있으시면 말씀해 주세요.'
-    const msgId = (Date.now() + 1).toString()
+    const assistantMessageId = (Date.now() + 1).toString()
+    pendingMessageId.value = assistantMessageId
 
     messages.value.push({
-      id: msgId,
+      id: assistantMessageId,
       role: 'assistant',
       content: '',
       createdAt: new Date().toISOString(),
       isStreaming: true,
     })
 
-    const msg = messages.value.find((m) => m.id === msgId)
-    if (!msg) return
+    if (!chatbotSocket.value || chatbotSocket.value.readyState !== WEBSOCKET_OPEN) {
+      updateStreamingError('연결 오류가 발생했습니다. 다시 시도해주세요.')
+      void connectWebSocket()
+      return
+    }
 
-    let idx = 0
-    const interval = setInterval(() => {
-      const chunk = fullText.slice(idx, idx + Math.floor(Math.random() * 4) + 2)
-      msg.content = `<p>${fullText.slice(0, idx + chunk.length).replace(/\n/g, '<br>')}</p>`
-      idx += chunk.length
+    // TODO: 추후 서비스 타입 추가 필요
+    const payload: ChatSocketPayload = {
+      type: 'question',
+      query: content,
+      threadId: '',
+      svcTy: 'C',
+    }
 
-      if (idx >= fullText.length) {
-        clearInterval(interval)
-        msg.isStreaming = false
-      }
-    }, 30)
+    try {
+      // WebSocket 메시지 전송
+      chatbotSocket.value.send(JSON.stringify(payload))
+    } catch (error) {
+      console.error('웹소켓 메시지 전송 실패:', error)
+      updateStreamingError('메시지 전송에 실패했습니다. 잠시 후 다시 시도해주세요.')
+    }
   }
 
   // 액션 핸들러
@@ -129,6 +315,7 @@ export const useChatStore = () => {
     }
   }
 
+  // 좋아요 처리
   const onLike = (id: string) => {
     const msg = messages.value.find((m) => m.id === id)
     if (msg) {
@@ -137,6 +324,7 @@ export const useChatStore = () => {
     }
   }
 
+  // 싫어요 처리
   const onDislike = (id: string) => {
     const msg = messages.value.find((m) => m.id === id)
     if (msg) {
@@ -190,6 +378,8 @@ export const useChatStore = () => {
     onViewSource,
     onViewVisualization,
     onPanelClose,
+    startChatSocket,
+    stopChatSocket,
   }
 }
 

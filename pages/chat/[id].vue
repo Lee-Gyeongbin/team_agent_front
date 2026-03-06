@@ -66,6 +66,8 @@ const {
   onViewSource,
   onViewVisualization,
   onPanelClose,
+  startChatSocket,
+  stopChatSocket,
 } = useChatStore()
 
 // 🔽 더미 데이터 — 백엔드 연결 시 API 데이터 경로로 교체
@@ -107,5 +109,13 @@ watch(activePanelType, (type) => {
   if (type === 'none') {
     panelWidthPercent.value = 50
   }
+})
+
+onMounted(() => {
+  startChatSocket()
+})
+
+onUnmounted(() => {
+  stopChatSocket()
 })
 </script>
