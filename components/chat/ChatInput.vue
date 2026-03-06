@@ -24,7 +24,7 @@
         <UiSelect
           :model-value="selectedModel"
           id="ai-model"
-          class="w-180"
+          class="w-170"
           name="ai-model"
           :options="modelOptions"
           size="xlg"
