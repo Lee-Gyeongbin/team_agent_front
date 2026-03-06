@@ -35,15 +35,17 @@
       <!-- 푸터 -->
       <div class="modal-dialog-footer">
         <UiButton
-          :variant="cancelVariant"
-          :size="cancelSize"
+          class="btn-modal-dialog"
+          variant="outline"
+          size="lg"
           @click="handleCancel"
         >
           {{ cancelText }}
         </UiButton>
         <UiButton
-          :variant="confirmVariant"
-          :size="confirmSize"
+          class="btn-modal-dialog"
+          variant="primary-dark"
+          size="lg"
           @click="handleConfirm"
         >
           {{ confirmText }}
@@ -60,10 +62,6 @@ interface Props {
   message?: string
   cancelText?: string
   confirmText?: string
-  cancelVariant?: 'primary' | 'primary-dark' | 'secondary' | 'outline' | 'ghost'
-  confirmVariant?: 'primary' | 'primary-dark' | 'secondary' | 'outline' | 'ghost'
-  cancelSize?: 'xxs' | 'xs' | 'sm' | 'md' | 'lg' | 'xlg'
-  confirmSize?: 'xxs' | 'xs' | 'sm' | 'md' | 'lg' | 'xlg'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -72,10 +70,6 @@ const props = withDefaults(defineProps<Props>(), {
   message: '',
   cancelText: '취소',
   confirmText: '확인',
-  cancelVariant: 'outline',
-  confirmVariant: 'primary-dark',
-  cancelSize: 'md',
-  confirmSize: 'md',
 })
 
 const emit = defineEmits<{

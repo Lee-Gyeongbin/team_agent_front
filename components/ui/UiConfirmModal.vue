@@ -35,8 +35,9 @@
       <!-- 푸터 -->
       <div class="modal-dialog-footer">
         <UiButton
-          :variant="confirmVariant"
-          :size="confirmSize"
+          class="btn-modal-dialog"
+          variant="primary-dark"
+          size="lg"
           @click="handleConfirm"
         >
           {{ confirmText }}
@@ -52,8 +53,6 @@ interface Props {
   title?: string
   message?: string
   confirmText?: string
-  confirmVariant?: 'primary' | 'primary-dark' | 'secondary' | 'outline' | 'ghost'
-  confirmSize?: 'xxs' | 'xs' | 'sm' | 'md' | 'lg' | 'xlg'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -61,8 +60,6 @@ const props = withDefaults(defineProps<Props>(), {
   title: '확인',
   message: '',
   confirmText: '확인',
-  confirmVariant: 'primary',
-  confirmSize: 'md',
 })
 
 const emit = defineEmits<{

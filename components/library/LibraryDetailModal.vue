@@ -12,7 +12,7 @@
       <div class="library-detail-modal-header">
         <!-- 닫기 -->
         <button
-          class="btn btn-modal-close"
+          class="btn btn-modal-close type-library-detail"
           @click="handleClose"
         >
           <i class="icon icon-close-gray size-20"></i>
