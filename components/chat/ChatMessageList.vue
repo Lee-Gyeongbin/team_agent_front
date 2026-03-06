@@ -8,7 +8,7 @@
       <div class="chat-message-list-inner">
         <ChatMessageItem
           v-for="msg in messages"
-          :key="msg.id"
+          :key="msg.logId"
           :message="msg"
           @on-copy="emit('on-copy', $event)"
           @on-like="emit('on-like', $event)"

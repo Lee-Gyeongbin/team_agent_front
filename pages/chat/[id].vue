@@ -22,7 +22,6 @@
         :selected-model="selectedModel"
         :model-options="modelOptions"
         @update:selected-model="selectedModel = $event"
-        @on-send="onSend"
       />
     </div>
     <!-- 리사이즈 핸들 -->
@@ -58,7 +57,6 @@ const {
   isPanelFullscreen,
   activePanelMessageId,
   modelOptions,
-  onSend,
   onCopy,
   onLike,
   onDislike,
@@ -73,7 +71,7 @@ const {
 // 🔽 더미 데이터 — 백엔드 연결 시 API 데이터 경로로 교체
 const pdfTestFilePath = '/docs/test.pdf'
 const selectedPdfFilePath = computed(() => {
-  const targetMessage = messages.value.find((message) => message.id === activePanelMessageId.value)
+  const targetMessage = messages.value.find((message) => message.logId === activePanelMessageId.value)
   return targetMessage?.sourceUrl || pdfTestFilePath
 })
 
@@ -115,7 +113,9 @@ onMounted(() => {
   startChatSocket()
 })
 
-onUnmounted(() => {
-  stopChatSocket()
+onBeforeRouteLeave((to) => {
+  if (!String(to.path).startsWith('/chat')) {
+    stopChatSocket()
+  }
 })
 </script>
