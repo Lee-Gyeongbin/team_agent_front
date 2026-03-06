@@ -24,6 +24,17 @@
         <ChatSearchMode />
         <div class="chat-input-bottom-right flex gap-8 items-center">
           <UiSelect
+            v-if="currentSubOptions.length > 0"
+            :model-value="selectedSubOption"
+            id="sub-option"
+            class="w-160"
+            name="sub-option"
+            :options="currentSubOptions"
+            size="xlg"
+            @update:model-value="selectedSubOption = String($event)"
+          />
+          <UiSelect
+            v-else
             :model-value="selectedModel"
             id="ai-model"
             class="w-170"
@@ -69,6 +80,8 @@ const emit = defineEmits<{
   'update:selectedModel': [value: string]
   'on-send': []
 }>()
+
+const { currentSubOptions, selectedSubOption } = useChatStore()
 
 const onSend = () => {
   emit('on-send')

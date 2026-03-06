@@ -12,16 +12,17 @@
         <SelectValue :placeholder="placeholder || '선택'" />
         <SelectIcon class="ui-select-icon">
           <svg
-            width="20"
-            height="20"
-            viewBox="0 0 12 12"
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
             fill="none"
           >
             <path
-              fill-rule="evenodd"
-              clip-rule="evenodd"
-              d="M9.867 4.203a.4.4 0 0 1-.03.564L6.297 8.767a.4.4 0 0 1-.594 0L2.103 4.767a.4.4 0 1 1 .594-.535L6 7.902l3.302-3.67a.4.4 0 0 1 .565.03Z"
-              fill="currentColor"
+              d="M4 6l4 4 4-4"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
             />
           </svg>
         </SelectIcon>
@@ -179,7 +180,7 @@ const onUpdate = (val: string) => {
 
 .ui-select-icon {
   flex-shrink: 0;
-  color: $color-text-secondary;
+  color: rgba(92, 102, 119, 1);
   transition: transform $transition-base;
 
   [data-state='open'] & {

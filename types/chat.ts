@@ -30,6 +30,11 @@ export interface SearchModeOption {
   icon: string
 }
 
+export interface SubOption {
+  label: string
+  value: string
+}
+
 export interface ChatRoom {
   id: string
   title: string

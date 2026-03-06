@@ -89,6 +89,11 @@ $body-medium: (
   font-weight: $font-weight-normal,
   line-height: 150%,
 );
+$body-medium-medium: (
+  font-size: $font-size-base,
+  font-weight: $font-weight-medium,
+  line-height: 150%,
+);
 $body-medium-bold: (
   font-size: $font-size-base,
   font-weight: $font-weight-bold,

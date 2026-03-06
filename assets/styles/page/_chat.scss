@@ -280,6 +280,33 @@
 // ===================================
 .chat-search-mode {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chat-search-mode-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  padding: 4px 8px;
+  border: none;
+  border-radius: $border-radius-sm;
+  background: #ecf0f3;
+  color: #5c6677;
+  cursor: pointer;
+  transition: background $transition-fast;
+
+  span {
+    @include typo($body-large);
+    font-weight: $font-weight-medium;
+    color: #5c6677;
+  }
+
+  &:hover {
+    background: #dce4e9;
+  }
 }
 
 .chat-search-mode-trigger {
@@ -332,6 +359,7 @@
 .chat-search-mode-item {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 8px;
   width: 152px;
   height: 32px;
@@ -339,22 +367,28 @@
   border: none;
   border-radius: $border-radius-sm;
   background: transparent;
-  color: #2d3139;
-  font-size: $font-size-sm;
-  line-height: 1.5;
+  color: $color-text-dark;
+  @include typo($body-medium);
+  text-align: left;
   cursor: pointer;
   transition: background $transition-fast;
 
-  // 아이콘 색상 (텍스트와 다름)
-  i[class^='icon-'] {
+  // 아이콘을 mask 방식으로 오버라이드 (SVG에 파란색 하드코딩 대응)
+  .icon-knowledge,
+  .icon-database {
+    background-image: none;
     background-color: #6f7a93;
   }
 
-  &:hover {
-    background: #ecf0f3;
+  .icon-knowledge {
+    @include icon-file-bg('knowledge');
   }
 
-  &.is-active {
+  .icon-database {
+    @include icon-file-bg('database');
+  }
+
+  &:hover {
     background: #ecf0f3;
   }
 }

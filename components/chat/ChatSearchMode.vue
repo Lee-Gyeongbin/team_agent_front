@@ -3,7 +3,21 @@
     class="chat-search-mode"
     ref="dropdownRef"
   >
+    <!-- 선택된 모드 태그 -->
     <button
+      v-for="mode in selectedOptions"
+      :key="mode.value"
+      class="chat-search-mode-tag"
+      @click="onRemove(mode.value)"
+    >
+      <i class="icon-search size-20" />
+      <span>{{ mode.label }}</span>
+      <i class="icon-refund-back size-20" />
+    </button>
+
+    <!-- 트리거 버튼 (선택된 모드가 없을 때만 표시) -->
+    <button
+      v-if="activeSearchModes.length === 0"
       class="chat-search-mode-trigger"
       :class="{ 'is-open': isOpen }"
       @click="toggleDropdown"
@@ -16,6 +30,7 @@
       />
     </button>
 
+    <!-- 드롭다운 -->
     <div
       v-show="isOpen"
       class="chat-search-mode-dropdown"
@@ -24,7 +39,6 @@
         v-for="option in searchModeOptions"
         :key="option.value"
         class="chat-search-mode-item"
-        :class="{ 'is-active': activeSearchModes.includes(option.value) }"
         @click="onSelect(option.value)"
       >
         <i :class="[option.icon, 'size-20']" />
@@ -42,11 +56,23 @@ const { searchModeOptions, activeSearchModes, toggleSearchMode } = useChatStore(
 const isOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
 
+// 선택된 모드의 옵션 정보
+const selectedOptions = computed(() =>
+  searchModeOptions.filter((opt) => activeSearchModes.value.includes(opt.value)),
+)
+
 const toggleDropdown = () => {
   isOpen.value = !isOpen.value
 }
 
 const onSelect = (mode: SearchModeValue) => {
+  if (!activeSearchModes.value.includes(mode)) {
+    toggleSearchMode(mode)
+  }
+  isOpen.value = false
+}
+
+const onRemove = (mode: SearchModeValue) => {
   toggleSearchMode(mode)
 }
 

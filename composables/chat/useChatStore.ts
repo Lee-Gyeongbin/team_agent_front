@@ -1,4 +1,4 @@
-import type { ChatMessage, PanelType, ModelOption, SearchModeValue, SearchModeOption, PdfDocumentProxy, PdfJsLib } from '~/types/chat'
+import type { ChatMessage, PanelType, ModelOption, SearchModeValue, SearchModeOption, SubOption, PdfDocumentProxy, PdfJsLib } from '~/types/chat'
 
 // ============================================
 // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
@@ -95,8 +95,29 @@ const searchModeOptions: SearchModeOption[] = [
   { label: '데이터분석(SQL)', value: 'sql', icon: 'icon-database' },
 ]
 
+// ============================================
+// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
+// ============================================
+const subOptionsMap: Record<SearchModeValue, SubOption[]> = {
+  knowledge: [
+    { label: '전체', value: 'all' },
+    { label: 'ERP 지식베이스', value: 'erp' },
+    { label: '그룹웨어 지식베이스', value: 'groupware' },
+    { label: '인사관리 지식베이스', value: 'hr' },
+  ],
+  sql: [
+    { label: '전체', value: 'all' },
+    { label: '경영 통계 데이터마트', value: 'management' },
+    { label: '재무회계 데이터마트', value: 'finance' },
+    { label: '인사급여 데이터마트', value: 'payroll' },
+    { label: '영업실적 데이터마트', value: 'sales' },
+    { label: '구매자재 데이터마트', value: 'purchase' },
+  ],
+}
+
 // 검색모드 상태 (앱 전역 공유)
-const activeSearchModes = ref<SearchModeValue[]>(['knowledge'])
+const activeSearchModes = ref<SearchModeValue[]>([])
+const selectedSubOption = ref<string>('all')
 
 export const useChatStore = () => {
   // 상태
@@ -372,14 +393,20 @@ export const useChatStore = () => {
   const toggleSearchMode = (mode: SearchModeValue) => {
     const idx = activeSearchModes.value.indexOf(mode)
     if (idx > -1) {
-      // 최소 1개는 선택 유지
-      if (activeSearchModes.value.length > 1) {
-        activeSearchModes.value.splice(idx, 1)
-      }
+      activeSearchModes.value.splice(idx, 1)
     } else {
       activeSearchModes.value.push(mode)
     }
+    // 모드 변경 시 서브 옵션 리셋
+    selectedSubOption.value = 'all'
   }
+
+  // 현재 활성 모드의 서브 옵션 (마지막 선택된 모드 기준)
+  const currentSubOptions = computed<SubOption[]>(() => {
+    if (activeSearchModes.value.length === 0) return []
+    const lastMode = activeSearchModes.value[activeSearchModes.value.length - 1]
+    return subOptionsMap[lastMode] || []
+  })
 
   return {
     // 상태
@@ -392,6 +419,8 @@ export const useChatStore = () => {
     modelOptions,
     searchModeOptions,
     activeSearchModes,
+    selectedSubOption,
+    currentSubOptions,
     // 액션
     onSend,
     onCopy,
