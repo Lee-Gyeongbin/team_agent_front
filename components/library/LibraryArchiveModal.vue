@@ -38,7 +38,11 @@
       </div>
 
       <!-- 보관된 아이템 리스트 -->
-      <div class="library-archive-modal-body">
+      <div
+        ref="bodyRef"
+        class="library-archive-modal-body"
+        @scroll="handleScroll"
+      >
         <!-- 🔽 더미 데이터 — 백엔드 연결 시 API로 교체 -->
         <div
           v-for="(item, index) in archiveList"
@@ -183,6 +187,15 @@
         </div>
       </div>
     </div>
+
+    <!-- 탑 버튼 -->
+    <button
+      class="btn btn-modal-top"
+      :class="{ 'is-show': isScrolled }"
+      @click="handleScrollToTop"
+    >
+      <i class="icon icon-arrow-down size-20"></i>
+    </button>
   </div>
 </template>
 
@@ -229,6 +242,25 @@ const archiveList = [
 
 // 카드 확장 상태 관리
 const expandedCards = ref<Record<number, boolean>>({})
+
+// 스크롤 상태
+const bodyRef = ref<HTMLElement | null>(null)
+const isScrolled = ref(false)
+
+// 스크롤 이벤트 핸들러
+const handleScroll = () => {
+  if (!bodyRef.value) return
+  isScrolled.value = bodyRef.value.scrollTop > 50
+}
+
+// 탑 버튼 클릭 핸들러
+const handleScrollToTop = () => {
+  if (!bodyRef.value) return
+  bodyRef.value.scrollTo({
+    top: 0,
+    behavior: 'smooth',
+  })
+}
 
 // 카드 토글 핸들러
 const toggleCard = (index: number) => {

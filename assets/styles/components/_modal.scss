@@ -1,6 +1,42 @@
 @use '../utils/variables' as *;
 @use '../utils/mixins' as *;
 
+// 탑 버튼
+.btn-modal-top {
+  position: fixed;
+  top: auto;
+  right: $spacing-md;
+  bottom: $spacing-lg;
+  width: 40px;
+  height: 40px;
+  z-index: 11;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-full;
+  box-shadow: $shadow-sm;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition:
+    opacity $transition-base,
+    visibility $transition-base,
+    transform $transition-base;
+
+  &.is-show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  .icon-arrow-down {
+    background-color: #828fa9;
+    transform: rotate(180deg);
+  }
+}
+
 // ===================================
 // 라이브러리 카드 모달
 // ===================================
@@ -53,42 +89,6 @@
     position: absolute;
     top: $spacing-lg;
     right: $spacing-md;
-  }
-
-  // 탑 버튼
-  .btn-modal-top {
-    position: fixed;
-    top: auto;
-    right: $spacing-md;
-    bottom: $spacing-lg;
-    width: 40px;
-    height: 40px;
-    z-index: 11;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #fff;
-    border: 1px solid $color-border;
-    border-radius: $border-radius-full;
-    box-shadow: $shadow-sm;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(10px);
-    transition:
-      opacity $transition-base,
-      visibility $transition-base,
-      transform $transition-base;
-
-    &.is-show {
-      opacity: 1;
-      visibility: visible;
-      transform: translateY(0);
-    }
-
-    .icon-arrow-down {
-      background-color: #828fa9;
-      transform: rotate(180deg);
-    }
   }
 
   // 헤더
@@ -167,7 +167,7 @@
   }
 
   &.sql-content {
-    min-height: 240px;
+    min-height: 40px;
   }
 
   .sql-header {
@@ -323,7 +323,7 @@
 
   // 보관된 아이템
   .library-archive-card {
-    padding: 12px 16px;
+    padding-bottom: 4px;
     background: #fff;
     border: 1px solid #DCE4E9;
     border-radius: 8px;
@@ -338,6 +338,7 @@
     }
 
     .library-archive-card-content {
+      padding: 12px 16px 8px;
       cursor: pointer;
       .library-archive-card-badges {
         margin-bottom: 2px;
@@ -364,7 +365,6 @@
     }
 
 
-
     .library-archive-card-body {
       display: flex;
       flex-direction: column;
@@ -372,7 +372,7 @@
       max-height: 0;
       opacity: 0;
       overflow: hidden;
-      padding-top: 0;
+      padding: 0 16px;
       transition:
         max-height $transition-slow,
         opacity $transition-base,
@@ -382,7 +382,7 @@
     &.is-show .library-archive-card-body {
       max-height: 2000px;
       opacity: 1;
-      padding-top: 8px;
+      padding: 0 16px 8px;
     }
   }
 }
