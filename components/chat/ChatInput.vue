@@ -16,7 +16,7 @@
           :auto-resize="true"
           :max-rows="7"
           @update:model-value="emit('update:modelValue', $event)"
-          @keydown.enter.exact.prevent="onSend"
+          @keydown.enter.exact.prevent="handleSend"
         />
       </div>
 
@@ -49,7 +49,7 @@
             icon-only
             class="btn-chat-send"
             :disabled="!modelValue.trim()"
-            @click="onSend"
+            @click="handleSend"
           >
             <template #icon-left>
               <i class="icon-send size-16" />
@@ -63,6 +63,7 @@
 
 <script setup lang="ts">
 import type { ModelOption } from '~/types/chat'
+const { chatRoom, createChatRoom, onSend, currentSubOptions, selectedSubOption } = useChatStore()
 
 interface Props {
   modelValue: string
@@ -70,20 +71,21 @@ interface Props {
   modelOptions?: ModelOption[]
 }
 
+const emit = defineEmits<{
+  'update:modelValue': [value: string]
+  'update:selectedModel': [value: string]
+}>()
+
 const props = withDefaults(defineProps<Props>(), {
   selectedModel: 'auto',
   modelOptions: () => [],
 })
 
-const emit = defineEmits<{
-  'update:modelValue': [value: string]
-  'update:selectedModel': [value: string]
-  'on-send': []
-}>()
-
-const { currentSubOptions, selectedSubOption } = useChatStore()
-
-const onSend = () => {
-  emit('on-send')
+const handleSend = () => {
+  if (!chatRoom.value.roomId) {
+    void createChatRoom(props.modelValue)
+  } else {
+    onSend()
+  }
 }
 </script>

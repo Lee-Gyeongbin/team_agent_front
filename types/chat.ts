@@ -1,7 +1,8 @@
 export interface ChatMessage {
-  id: string
+  logId: string
   role: 'user' | 'assistant' | 'system'
-  content: string
+  qContent: string
+  rContent: string
   createdAt: string
   isStreaming?: boolean
   isLiked?: boolean
@@ -36,12 +37,20 @@ export interface SubOption {
 }
 
 export interface ChatRoom {
-  id: string
+  roomId: string
   title: string
-  model: string
-  messages: ChatMessage[]
+  svcTy: string
+  qContent: string
   createdAt: string
-  updatedAt: string
+}
+
+/** 빈 대화방 기본값 — 리셋, 초기화 시 재사용 */
+export const EMPTY_CHAT_ROOM: ChatRoom = {
+  roomId: '',
+  title: '',
+  svcTy: '',
+  qContent: '',
+  createdAt: '',
 }
 
 // PDF 뷰어 (ChatPdfPanel) 관련 타입

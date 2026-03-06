@@ -13,8 +13,15 @@
       </div>
       <div class="message-body">
         <div
+          v-if="message.isStreaming && !message.rContent"
+          class="message-loading"
+        >
+          <span class="typing-dot" /><span class="typing-dot" /><span class="typing-dot" />
+        </div>
+        <div
+          v-else
           class="message-content"
-          v-html="message.content"
+          v-html="message.rContent"
         ></div>
         <!-- 액션 + 패널 버튼 (한 줄) -->
         <div
@@ -24,10 +31,10 @@
           <ChatMessageActions
             :is-liked="message.isLiked"
             :is-disliked="message.isDisliked"
-            @on-copy="emit('on-copy', message.id)"
-            @on-like="emit('on-like', message.id)"
-            @on-dislike="emit('on-dislike', message.id)"
-            @on-regenerate="emit('on-regenerate', message.id)"
+            @on-copy="emit('on-copy', message.logId)"
+            @on-like="emit('on-like', message.logId)"
+            @on-dislike="emit('on-dislike', message.logId)"
+            @on-regenerate="emit('on-regenerate', message.logId)"
           />
           <div
             v-if="message.hasSource || message.hasVisualization"
@@ -36,7 +43,7 @@
             <UiButton
               v-if="message.hasSource"
               variant="primary-dark"
-              @click="emit('on-view-source', message.id)"
+              @click="emit('on-view-source', message.logId)"
             >
               원본보기
               <template #icon-right>
@@ -46,7 +53,7 @@
             <UiButton
               v-if="message.hasVisualization"
               variant="primary-dark"
-              @click="emit('on-view-visualization', message.id)"
+              @click="emit('on-view-visualization', message.logId)"
             >
               시각화 보기
               <template #icon-right>
@@ -61,7 +68,7 @@
     <!-- user 메시지 -->
     <template v-else-if="message.role === 'user'">
       <div class="message-body">
-        <div class="message-content">{{ message.content }}</div>
+        <div class="message-content">{{ message.qContent }}</div>
       </div>
     </template>
   </div>
