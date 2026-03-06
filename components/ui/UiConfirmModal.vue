@@ -36,8 +36,8 @@
       <div class="modal-dialog-footer">
         <UiButton
           class="btn-modal-dialog"
-          variant="primary-dark"
-          size="lg"
+          variant="dark"
+          size="xlg"
           @click="handleConfirm"
         >
           {{ confirmText }}

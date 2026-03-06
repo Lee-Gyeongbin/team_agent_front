@@ -155,6 +155,7 @@
         .library-card-title{
           color: $color-text-dark;
           font-size: $font-size-lg;
+          line-height: 150%;
           @include ellipsis(1);
         }
 
