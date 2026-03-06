@@ -1,28 +1,36 @@
 export const useApi = () => {
   const baseURL = '/api'
 
+  const clearSessionAndRedirect = () => {
+    if (typeof window === 'undefined') return
+    const cookie = useCookie('ta_user')
+    cookie.value = null
+    navigateTo('/login?expired=true')
+  }
+
   const request = async <T>(endpoint: string, options: RequestInit = {}): Promise<T> => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
     const url = endpoint.startsWith('/') ? `${baseURL}${endpoint}` : `${baseURL}/${endpoint}`
     const response = await fetch(url, {
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
       },
       ...options,
     })
 
     if (response.status === 401) {
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('token')
-        navigateTo('/login')
-      }
+      clearSessionAndRedirect()
       throw new Error('인증이 만료되었습니다')
     }
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}))
-      throw new Error((error as { message?: string }).message || '요청에 실패했습니다')
+      const errorData = error as { errorType?: string; message?: string }
+      if (errorData.errorType === 'sessionExpired') {
+        clearSessionAndRedirect()
+        throw new Error('로그인 세션이 만료되었습니다')
+      }
+      throw new Error(errorData.message || '요청에 실패했습니다')
     }
 
     return response.json()

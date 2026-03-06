@@ -38,6 +38,13 @@
         />
 
         <p
+          v-if="sessionExpiredMessage"
+          class="login-session-expired"
+        >
+          {{ sessionExpiredMessage }}
+        </p>
+
+        <p
           v-if="errorMessage"
           class="login-error"
         >
@@ -66,14 +73,21 @@
 definePageMeta({ layout: 'auth' })
 
 const { login } = useAuth()
+const route = useRoute()
 
 const loginId = ref('')
 const loginPassword = ref('')
 const errorMessage = ref('')
 const isLoading = ref(false)
+const sessionExpiredMessage = ref('')
+
+if (route.query.expired === 'true') {
+  sessionExpiredMessage.value = '세션이 만료되었습니다. 다시 로그인해주세요.'
+}
 
 const onSubmit = async () => {
   errorMessage.value = ''
+  sessionExpiredMessage.value = ''
 
   if (!loginId.value || !loginPassword.value) {
     errorMessage.value = '아이디와 비밀번호를 입력해주세요.'
@@ -119,6 +133,12 @@ const onSubmit = async () => {
     border-radius: $border-radius-base;
     border: 1px solid $color-border;
     font-size: $font-size-base;
+  }
+
+  .login-session-expired {
+    color: #dd6b20;
+    font-size: $font-size-sm;
+    margin-top: 4px;
   }
 
   .login-error {
