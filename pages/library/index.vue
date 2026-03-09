@@ -38,19 +38,43 @@
         </div>
       </div>
     </div>
+    <div class="library-content-area">
+      <!-- 좌측 화살표 -->
+      <button
+        v-show="canScrollLeft"
+        class="library-scroll-btn is-left"
+        @click="onScrollLeft"
+      >
+        <span class="scroll-chevron" />
+      </button>
+
+      <!-- 우측 화살표 -->
+      <button
+        v-show="canScrollRight"
+        class="library-scroll-btn is-right"
+        @click="onScrollRight"
+      >
+        <span class="scroll-chevron" />
+      </button>
+
     <div
       ref="contentWrapperRef"
       class="library-content-wrapper flex"
+      @scroll="onContentScroll"
     >
-      <div
-        v-for="item in 5"
-        :key="item"
-        class="library-list-grp"
+      <draggable
+        v-model="categoryList"
+        class="library-category-draggable flex"
+        item-key="id"
+        handle=".library-list-header"
+        animation="200"
       >
+        <template #item="{ element: category }">
+      <div class="library-list-grp">
         <div class="library-list-header flex justify-between items-center">
           <div class="left-grp flex items-center">
-            <p class="list-title"><i class="icon-diamond size-8"></i>인사이트</p>
-            <p class="card-count fw-700">3</p>
+            <p class="list-title"><i class="icon-diamond size-8"></i>{{ category.name }}</p>
+            <p class="card-count fw-700">{{ categoryCards[category.id]?.length || 0 }}</p>
           </div>
           <!-- 카테고리 드롭다운 메뉴 -->
           <UiDropdownMenu
@@ -66,13 +90,20 @@
           </UiDropdownMenu>
           <!-- .END 카테고리 드롭다운 메뉴 -->
         </div>
-        <div class="library-card-grp">
+        <draggable
+          v-model="categoryCards[category.id]"
+          class="library-card-grp"
+          :group="{ name: 'library-cards' }"
+          item-key="id"
+          animation="200"
+          :delay="0"
+          :delay-on-touch-only="true"
+        >
+          <template #item="{ element: card }">
           <div
-            v-for="card in 7"
-            :key="card"
             class="library-card"
-            :class="{ 'is-active': selectedCardId === card }"
-            @click="openModal(card)"
+            :class="{ 'is-active': selectedCardId === card.id }"
+            @click="openModal(card.id)"
           >
             <!-- 상단 영역 -->
             <div class="library-card-top flex justify-between items-center">
@@ -99,8 +130,8 @@
                   icon-only
                   variant="ghost"
                   class="btn-star"
-                  :class="{ 'is-active': favoriteCardIds.has(card) }"
-                  @click.stop="toggleFavorite(card)"
+                  :class="{ 'is-active': favoriteCardIds.has(card.id) }"
+                  @click.stop="toggleFavorite(card.id)"
                 >
                   <template #icon-left>
                     <i class="icon icon-star-fill size-12"></i>
@@ -115,7 +146,7 @@
                 <UiDropdownMenu
                   :items="cardMenuItems"
                   align="end"
-                  @select="handleCardMenuSelect(card, $event)"
+                  @select="handleCardMenuSelect(card.id, $event)"
                 >
                   <template #trigger>
                     <button class="btn btn-library-card-add type-white">
@@ -126,24 +157,28 @@
               </div>
             </div>
             <!-- 제목 -->
-            <h3 class="library-card-title fw-600">2025년 우리회사 월별매출액 2025년 우리회사 월별매출액</h3>
+            <h3 class="library-card-title fw-600">{{ card.title }}</h3>
             <!-- 설명 -->
-            <p class="library-card-desc">
-              전자결재가 반려된 경우 아래 절차로 재상신할 수 있습니다. 1. [전자결재] → [수신함] 메뉴에서 반려 글자테스트
-            </p>
+            <p class="library-card-desc">{{ card.desc }}</p>
 
             <!-- 하단 메타 -->
             <div class="library-card-meta flex items-center justify-between">
-              <p class="library-card-date ws-nowrap">2026.02.16 09:20</p>
+              <p class="library-card-date ws-nowrap">{{ card.date }}</p>
 
               <div class="library-card-tags flex items-center">
-                <span class="library-card-tag">#보고서</span>
-                <span class="library-card-tag">#임원</span>
+                <span
+                  v-for="tag in card.tags"
+                  :key="tag"
+                  class="library-card-tag"
+                >{{ tag }}</span>
               </div>
             </div>
           </div>
-        </div>
+          </template>
+        </draggable>
       </div>
+        </template>
+      </draggable>
 
       <!-- 새 카테고리 -->
       <div class="library-list-grp">
@@ -193,6 +228,7 @@
         </div>
       </div>
     </div>
+    </div>
 
     <!-- 모달 -->
     <LibraryDetailModal
@@ -223,11 +259,40 @@
 </template>
 
 <script setup lang="ts">
+import draggable from 'vuedraggable'
 import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
 
 // ============================================
 // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
 // ============================================
+
+// 카테고리 목록 (드래그 정렬용)
+const categoryList = ref([
+  { id: 1, name: '인사이트' },
+  { id: 2, name: '보고서' },
+  { id: 3, name: '매뉴얼' },
+  { id: 4, name: '데이터분석' },
+  { id: 5, name: '기타' },
+])
+
+// 카테고리별 카드 목록 (드래그 정렬용)
+const createCards = (categoryIndex: number, count: number) =>
+  Array.from({ length: count }, (_, i) => ({
+    id: `cat${categoryIndex}-card${i + 1}`,
+    title: '2025년 우리회사 월별매출액 2025년 우리회사 월별매출액',
+    desc: '전자결재가 반려된 경우 아래 절차로 재상신할 수 있습니다. 1. [전자결재] → [수신함] 메뉴에서 반려 글자테스트',
+    date: '2026.02.16 09:20',
+    tags: ['#보고서', '#임원'],
+  }))
+
+const categoryCards = ref<Record<number, { id: string; title: string; desc: string; date: string; tags: string[] }[]>>({
+  1: createCards(1, 7),
+  2: createCards(2, 7),
+  3: createCards(3, 7),
+  4: createCards(4, 7),
+  5: createCards(5, 7),
+})
+
 const searchOptions = [
   { label: '직접설정순', value: 'custom' },
   { label: '최신순', value: 'latest' },
@@ -258,29 +323,49 @@ const handleListMenuSelect = (value: string) => {
 }
 
 // 카드 드롭다운 선택 핸들러
-const handleCardMenuSelect = (card: number, value: string) => {
+const handleCardMenuSelect = (card: string, value: string) => {
   // TODO: 백엔드 연결 시 card ID와 value에 따라 API 호출로 교체
   console.warn('[TODO] 카드 메뉴 선택:', card, value)
 }
 
-// 드래그 스크롤 적용
-const { setupDragScroll } = useDragScroll()
 const contentWrapperRef = ref<HTMLElement | null>(null)
 
-// 가로 스크롤 (library-content-wrapper)
-setupDragScroll(contentWrapperRef)
+// 좌우 스크롤 화살표
+const canScrollLeft = ref(false)
+const canScrollRight = ref(false)
+
+const updateScrollState = () => {
+  const el = contentWrapperRef.value
+  if (!el) return
+  canScrollLeft.value = el.scrollLeft > 0
+  canScrollRight.value = el.scrollLeft + el.clientWidth < el.scrollWidth - 1
+}
+
+const onContentScroll = () => updateScrollState()
+
+const onScrollLeft = () => {
+  contentWrapperRef.value?.scrollBy({ left: -680, behavior: 'smooth' })
+}
+
+const onScrollRight = () => {
+  contentWrapperRef.value?.scrollBy({ left: 680, behavior: 'smooth' })
+}
+
+onMounted(() => {
+  nextTick(() => updateScrollState())
+})
 
 // 모달 상태
 const isModalOpen = ref(false)
 const isArchiveModalOpen = ref(false)
 const isTrashDeleteModalOpen = ref(false)
-const selectedCardId = ref<number | null>(null)
+const selectedCardId = ref<string | null>(null)
 
 // 즐겨찾기 상태 (카드 ID Set)
-const favoriteCardIds = ref<Set<number>>(new Set())
+const favoriteCardIds = ref<Set<string>>(new Set())
 
 // 즐겨찾기 토글
-const toggleFavorite = (cardId: number) => {
+const toggleFavorite = (cardId: string) => {
   if (favoriteCardIds.value.has(cardId)) {
     favoriteCardIds.value.delete(cardId)
   } else {
@@ -289,7 +374,7 @@ const toggleFavorite = (cardId: number) => {
 }
 
 // 모달 열기
-const openModal = (cardId: number) => {
+const openModal = (cardId: string) => {
   selectedCardId.value = cardId
   isModalOpen.value = true
 }

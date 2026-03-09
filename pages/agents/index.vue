@@ -7,20 +7,27 @@
       @add="openAddAgent"
     />
 
-    <!-- 에이전트 목록 -->
-    <div class="agent-list">
-      <AgentCard
-        v-for="agent in agentList"
-        :key="agent.id"
-        :agent="agent"
-        @setting="onClickSetting"
-        @toggle="onToggleActive"
-      />
-    </div>
+    <!-- 에이전트 목록 (드래그 정렬) -->
+    <draggable
+      v-model="agentList"
+      class="agent-list"
+      handle=".agent-card-drag"
+      item-key="id"
+      animation="200"
+    >
+      <template #item="{ element }">
+        <AgentCard
+          :agent="element"
+          @setting="onClickSetting"
+          @toggle="onToggleActive"
+        />
+      </template>
+    </draggable>
   </div>
 </template>
 
 <script setup lang="ts">
+import draggable from 'vuedraggable'
 import type { Agent } from '~/types/agent'
 
 // ============================================

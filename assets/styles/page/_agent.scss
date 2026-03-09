@@ -82,6 +82,15 @@
     height: 20px;
     cursor: grab;
     color: #b1b8be;
+
+    &:active {
+      cursor: grabbing;
+    }
+  }
+
+  // 드래그 중 고스트 스타일
+  &.sortable-ghost {
+    opacity: 0.4;
   }
 
   // 카드 본문
