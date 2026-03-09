@@ -267,9 +267,14 @@
 // 시각화 패널 아이콘
 // ===================================
 
-// AI 파일 아이콘
+// AI 데이터 표 아이콘
 .icon-file-ai {
-  @include icon-file-bg('file-ai');
+  @include icon-file-bg('ai-layout');
+}
+
+// AI 데이터 차트 아이콘
+.icon-chart-ai {
+  @include icon-file-bg('chart-box-ai');
 }
 
 // 막대 차트

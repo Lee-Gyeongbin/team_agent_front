@@ -52,7 +52,7 @@
         <!-- 차트 타이틀 -->
         <div class="chat-vis-chart-header">
           <div class="chat-vis-chart-header-left">
-            <i class="icon-file-ai size-16"></i>
+            <i class="icon-chart-ai size-16"></i>
             <span class="chat-vis-chart-title">데이터 차트</span>
           </div>
         </div>
@@ -67,6 +67,7 @@
                 name="chart-legend"
                 :options="legendOptions"
                 class="w-96"
+                size="sm"
               />
             </div>
             <div class="chat-vis-chart-filter">
@@ -77,6 +78,7 @@
                 name="chart-left-axis"
                 :options="axisOptions"
                 class="w-96"
+                size="sm"
               />
             </div>
             <div class="chat-vis-chart-filter">
@@ -87,6 +89,7 @@
                 name="chart-right-axis"
                 :options="axisOptions"
                 class="w-96"
+                size="sm"
               />
             </div>
           </div>
