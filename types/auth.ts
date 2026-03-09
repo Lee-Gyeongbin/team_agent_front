@@ -1,6 +1,6 @@
 export interface UserInfo {
   userId: string
-  userName: string
+  userNm: string
   email: string
   orgId: string
   orgNm: string
