@@ -1,10 +1,7 @@
 <template>
   <div class="library-index">
     <div class="library-header-wrapper flex justify-between items-center">
-      <div class="left-grp flex items-end">
-        <h2 class="library-title">내지식창고</h2>
-        <p class="library-description">대화 중 마음에 드는 지식을 저장하고 카테고리별로 관리하세요.</p>
-      </div>
+      <p class="library-description">대화 중 마음에 드는 지식을 저장하고 카테고리별로 관리하세요.</p>
       <div class="right-grp flex items-center">
         <p class="total">총 <strong>7개</strong></p>
         <div class="library-input-grp shrink-0 grow-1 max-w-400">
@@ -26,6 +23,7 @@
           />
         </div>
         <div class="btn-grp">
+          <!-- 보관함 btn -->
           <button
             class="btn btn-library btn-library-archive"
             @click="isArchiveModalOpen = true"
@@ -33,7 +31,11 @@
             <i class="icon icon-archive size-16"></i>
             <span class="badge-num">23</span>
           </button>
-          <button class="btn btn-library btn-library-trash">
+          <!-- 삭제 btn -->
+          <button
+            class="btn btn-library btn-library-trash"
+            @click="isTrashDeleteModalOpen = true"
+          >
             <i class="icon icon-delete size-16"></i>
             <span class="badge-num">9</span>
           </button>
@@ -196,6 +198,18 @@
       :is-open="isArchiveModalOpen"
       @close="isArchiveModalOpen = false"
     />
+
+    <!-- 휴지통 삭제 확인 모달 -->
+    <UiDialogModal
+      :is-open="isTrashDeleteModalOpen"
+      title="삭제"
+      message="삭제 대기 중인 항목을 모두 삭제하시겠습니까?"
+      cancel-text="취소"
+      confirm-text="삭제"
+      @close="isTrashDeleteModalOpen = false"
+      @cancel="isTrashDeleteModalOpen = false"
+      @confirm="handleTrashDeleteConfirm"
+    />
   </div>
 </template>
 
@@ -250,6 +264,7 @@ setupDragScroll(contentWrapperRef)
 // 모달 상태
 const isModalOpen = ref(false)
 const isArchiveModalOpen = ref(false)
+const isTrashDeleteModalOpen = ref(false)
 const selectedCardId = ref<number | null>(null)
 
 // 모달 열기
@@ -272,5 +287,10 @@ const handleModalDelete = () => {
   // TODO: 삭제 로직
   isModalOpen.value = false
   selectedCardId.value = null
+}
+
+const handleTrashDeleteConfirm = () => {
+  // TODO: 백엔드 연결 시 삭제 대기 항목 전체 삭제 API 호출로 교체
+  isTrashDeleteModalOpen.value = false
 }
 </script>

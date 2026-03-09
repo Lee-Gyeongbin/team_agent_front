@@ -5,12 +5,9 @@
   height: calc(100vh - #{$header-height});
   background-color: #fff;
 
-  .left-grp{
-    gap: $spacing-sm;
-    .library-description{
-      color: $color-text-secondary;
-      font-size: $font-size-base;
-    }
+  .library-description{
+    color: $color-text-secondary;
+    font-size: $font-size-base;
   }
 
   .right-grp{
