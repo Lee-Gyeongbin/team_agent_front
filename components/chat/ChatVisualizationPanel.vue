@@ -30,10 +30,49 @@
     <!-- 본문 (차트만) -->
     <div class="chat-vis-body">
       <div class="chat-vis-chart">
+        <!-- 차트 타이틀 -->
         <div class="chat-vis-chart-header">
           <div class="chat-vis-chart-header-left">
             <i class="icon-file-ai size-16"></i>
             <span class="chat-vis-chart-title">{{ chartTitle }}</span>
+          </div>
+        </div>
+        <!-- 차트 툴바: 범례/기준값 셀렉트 + 차트 타입 아이콘 -->
+        <div class="chat-vis-chart-toolbar">
+          <div class="chat-vis-chart-toolbar-left">
+            <div class="chat-vis-chart-filter">
+              <span class="chat-vis-chart-filter-label">범례</span>
+              <UiSelect
+                v-model="legendOption"
+                id="chart-legend"
+                name="chart-legend"
+                :options="legendOptions"
+                class="w-96"
+                size="sm"
+              />
+            </div>
+            <div class="chat-vis-chart-filter">
+              <span class="chat-vis-chart-filter-label">기준값(좌)</span>
+              <UiSelect
+                v-model="leftAxisOption"
+                id="chart-left-axis"
+                name="chart-left-axis"
+                :options="axisOptions"
+                class="w-96"
+                size="sm"
+              />
+            </div>
+            <div class="chat-vis-chart-filter">
+              <span class="chat-vis-chart-filter-label">기준값(우)</span>
+              <UiSelect
+                v-model="rightAxisOption"
+                id="chart-right-axis"
+                name="chart-right-axis"
+                :options="axisOptions"
+                class="w-96"
+                size="sm"
+              />
+            </div>
           </div>
           <div class="chat-vis-chart-actions">
             <button
@@ -152,7 +191,27 @@ GROUP BY department_name
 ORDER BY avg_salary DESC
 LIMIT 10;`
 
-const chartTitle = '부서별 평균 급여 현황'
+const chartTitle = '데이터 표'
+
+// ============================================
+// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
+// ============================================
+const legendOption = ref('department_name')
+const legendOptions = [
+  { label: '부서명', value: 'department_name' },
+  { label: '지역', value: 'region' },
+  { label: '직급', value: 'position' },
+]
+
+const leftAxisOption = ref('employee_count')
+const rightAxisOption = ref('avg_salary')
+const axisOptions = [
+  { label: '직원수', value: 'employee_count' },
+  { label: '평균급여', value: 'avg_salary' },
+  { label: '급여합계', value: 'total_salary' },
+  { label: '최고급여', value: 'max_salary' },
+  { label: '최저급여', value: 'min_salary' },
+]
 
 // 차트 타입별 설정
 const chartConfig = computed(() => {

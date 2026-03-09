@@ -461,7 +461,7 @@
 // 패널 공통 타이틀
 %chat-panel-title {
   @include typo($body-large-bold);
-  color: $color-text-dark;
+  color: $color-text-heading;
 }
 
 // 패널 공통 헤더 액션
@@ -564,7 +564,8 @@
   @extend %chat-side-panel;
 }
 
-.chat-pdf-header {
+// 타이틀 바 (관련자료 + 전체화면/닫기)
+.chat-pdf-title-bar {
   @extend %chat-panel-header;
 }
 
@@ -572,20 +573,39 @@
   @extend %chat-panel-title;
 }
 
-.chat-pdf-header-actions {
+.chat-pdf-title-actions {
   @extend %chat-panel-header-actions;
 }
 
+// 툴바 + 탭 (한 줄)
 .chat-pdf-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
   min-height: 48px;
-  padding: 8px 12px;
-  border-bottom: 1px solid $color-border;
-  background: $color-background;
+  position: relative;
+  padding: 0;
+  border-bottom: 1px solid #ecf0f3;
+  background: #fff;
   flex-shrink: 0;
+}
+
+// 가운데: 페이지 네비 + 줌 (absolute 중앙)
+.chat-pdf-toolbar-center {
+  position: absolute;
+  left: 44%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+// 우측: 프린트 + 탭
+.chat-pdf-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto;
 }
 
 .chat-pdf-toolbar-group {
@@ -594,35 +614,104 @@
   gap: 8px;
 }
 
-.chat-pdf-toolbar-btn {
-  padding: 4px 10px;
-  border: 1px solid $color-border;
-  border-radius: $border-radius-sm;
-  background: #fff;
-  color: $color-text-dark;
+.chat-pdf-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: none;
   cursor: pointer;
-  transition: background $transition-fast;
 
   &:disabled {
-    color: $color-text-disabled;
+    opacity: 0.4;
     cursor: not-allowed;
-    background: $color-background;
   }
 }
 
 .chat-pdf-page-input {
-  width: 56px;
-  height: 30px;
-  padding: 0 6px;
-  border: 1px solid $color-border;
-  border-radius: $border-radius-sm;
+  width: 44px;
+  height: 32px;
+  padding: 4px 8px;
+  border: 1px solid #c6d2db;
+  border-radius: 2px;
+  @include typo($body-small-bold);
+  color: #4d5462;
   text-align: center;
+  -moz-appearance: textfield;
+
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
 }
 
-.chat-pdf-page-total,
+.chat-pdf-page-total {
+  @include typo($body-medium);
+  color: #4d5462;
+}
+
 .chat-pdf-zoom {
   @include typo($body-medium);
-  color: $color-text-secondary;
+  color: #4d5462;
+}
+
+.chat-pdf-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.chat-pdf-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+
+  &:hover {
+    opacity: 0.7;
+  }
+}
+
+// 우측: 탭
+.chat-pdf-tab-group {
+  display: flex;
+  align-items: center;
+  border-left: 1px solid #ecf0f3;
+}
+
+.chat-pdf-tab {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 48px;
+  padding: 0 8px;
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: none;
+  @include typo($body-large-bold);
+  font-weight: 500;
+  color: #6d7882;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color $transition-fast,
+    border-color $transition-fast;
+  border-radius: 0;
+  position: relative;
+  top: 1px;
+
+  &.is-active {
+    font-weight: 600;
+    color: #3c69db;
+    border-bottom-color: #3c69db;
+  }
 }
 
 .chat-pdf-body {
@@ -667,40 +756,67 @@
 }
 
 .chat-pdf-sidebar {
-  width: 128px;
-  min-width: 128px;
-  padding: 10px 8px;
-  border-left: 1px solid #4a4d50;
-  background: #2f3133;
+  display: flex;
+  flex-direction: column;
+  width: 170px;
+  min-width: 170px;
+  border-left: 1px solid #ecf0f3;
+  background: #fff;
+}
+
+// 셀렉트 박스 영역
+.chat-pdf-sidebar-select {
+  padding: 12px 8px;
+  border-bottom: 1px solid #ecf0f3;
+}
+
+// 썸네일 리스트
+.chat-pdf-thumb-list {
+  flex: 1;
+  padding: 12px 12px 12px 12px;
   overflow-y: auto;
+  @include custom-scrollbar;
 }
 
 .chat-pdf-thumb {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   width: 100%;
-  margin-bottom: 10px;
-  padding: 6px;
-  border: 1px solid transparent;
+  gap: 4px;
+  padding: 8px;
+  border: none;
   border-radius: $border-radius-sm;
-  background: #3d4042;
   cursor: pointer;
 
+  & + & {
+    margin-top: 8px;
+  }
+
   &.is-active {
-    border-color: #7aa2f7;
+    outline: 2px solid #3c69db;
+    outline-offset: -2px;
+    background: #dee9fb;
+
+    .chat-pdf-thumb-label {
+      color: $color-primary-dark;
+      @include typo($body-medium-bold);
+    }
   }
 }
 
 .chat-pdf-thumb-canvas {
   display: block;
-  width: 100%;
+  width: 70px;
   height: auto;
+  border: 1px solid #aebccb;
+  border-radius: $border-radius-sm;
   background: #fff;
 }
 
 .chat-pdf-thumb-label {
-  display: block;
-  margin-top: 4px;
-  @include typo($body-small);
-  color: #d7dce5;
+  @include typo($body-medium);
+  color: #828fa9;
   text-align: center;
 }
 
@@ -831,20 +947,47 @@
 .chat-vis-chart-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
+  padding: 12px;
   border-bottom: 1px solid $color-border;
 }
 
 .chat-vis-chart-header-left {
   display: flex;
   align-items: center;
-  gap: $spacing-sm;
+  gap: $spacing-xs;
 }
 
 .chat-vis-chart-title {
   @include typo($body-large-bold);
-  color: $color-text-dark;
+  color: $color-text-heading;
+}
+
+// 차트 툴바 (범례/기준값 + 차트 타입 아이콘)
+.chat-vis-chart-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid $color-border;
+}
+
+.chat-vis-chart-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+}
+
+.chat-vis-chart-filter {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.chat-vis-chart-filter-label {
+  @include typo($body-medium-bold);
+  font-weight: 500;
+  color: $color-text-heading;
+  white-space: nowrap;
 }
 
 .chat-vis-chart-actions {
@@ -854,8 +997,8 @@
 
   .btn-icon {
     @include flex-center;
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
     border-radius: $border-radius-sm;
     color: $color-text-disabled;
     transition: all $transition-fast;
@@ -867,6 +1010,7 @@
 
     &.is-active {
       color: $color-primary;
+      background: #dee9fb;
     }
   }
 }

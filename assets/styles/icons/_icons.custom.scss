@@ -224,6 +224,36 @@
   @include icon-file-bg('arrow-right');
 }
 
+// 왼쪽 화살표 (소형)
+.icon-arrow-left-sm {
+  @include icon-file('arrow-left-sm');
+}
+
+// 오른쪽 화살표 (소형)
+.icon-arrow-right-sm {
+  @include icon-file('arrow-right-sm');
+}
+
+// 마이너스 (줌아웃)
+.icon-minus {
+  @include icon-file('icon-minus');
+}
+
+// 플러스 (줌인)
+.icon-plus-zoom {
+  @include icon-file('icon-plus-zoom');
+}
+
+// 다운로드
+.icon-download {
+  @include icon-file('download');
+}
+
+// 프린트
+.icon-print {
+  @include icon-file('print');
+}
+
 // ===================================
 // 공통
 // ===================================

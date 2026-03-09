@@ -9,7 +9,10 @@
         class="ui-select-trigger"
         :class="[`size-${size}`, `radius-${radius}`, { 'is-disabled': disabled }]"
       >
-        <SelectValue :placeholder="placeholder || '선택'" />
+        <SelectValue
+          :placeholder="placeholder || '선택'"
+          class="ui-select-value"
+        />
         <SelectIcon class="ui-select-icon">
           <svg
             width="16"
@@ -105,11 +108,10 @@ const onUpdate = (val: string) => {
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
-  min-width: fit-content;
+  min-width: 0;
   width: 100%;
-  padding: 0 16px;
+  padding: 0 10px;
   gap: 4px;
-  white-space: nowrap;
 
   font-weight: $font-weight-medium;
   color: #333;
@@ -178,6 +180,11 @@ const onUpdate = (val: string) => {
   }
 }
 
+.ui-select-value {
+  @include ellipsis(1);
+  min-width: 0;
+}
+
 .ui-select-icon {
   flex-shrink: 0;
   color: rgba(92, 102, 119, 1);
@@ -201,7 +208,7 @@ const onUpdate = (val: string) => {
   border-radius: $border-radius-base;
   box-shadow: $shadow-md;
   padding: $spacing-xs 0;
-  z-index: $z-dropdown;
+  z-index: $z-modal;
 }
 
 .ui-select-item {
