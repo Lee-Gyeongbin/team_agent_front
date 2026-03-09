@@ -98,7 +98,7 @@
                   </template>
                   데이터분석
                 </UiBadge>
-                <!-- <UiBadge variant="basic-chat">
+                <UiBadge variant="basic-chat">
                   <template #icon-left>
                     <i class="icon icon-comment-other size-14"></i>
                   </template>
@@ -109,7 +109,9 @@
                     <i class="icon icon-book size-14"></i>
                   </template>
                   매뉴얼AI
-                </UiBadge> -->
+                </UiBadge>
+
+                <!-- 즐겨찾기 버튼 -->
                 <UiButton
                   icon-only
                   variant="ghost"
@@ -122,10 +124,8 @@
                   </template>
                 </UiButton>
               </div>
-              <!--
-                카드 드롭다운: @click.stop 래퍼로 카드 클릭(openModal) 전파 차단.
-                UiDropdownMenu 내부는 Portal로 body에 렌더링 → overflow 이슈 없음.
-              -->
+
+              <!-- 카드 드롭다운 메뉴 -->
               <div @click.stop>
                 <UiDropdownMenu
                   :items="cardMenuItems"
@@ -146,6 +146,7 @@
                   </template>
                 </UiDropdownMenu>
               </div>
+              <!-- END 카드 드롭다운 메뉴 -->
             </div>
             <!-- 제목 -->
             <h3 class="library-card-title fw-600">2025년 우리회사 월별매출액 2025년 우리회사 월별매출액</h3>
