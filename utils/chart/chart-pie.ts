@@ -6,7 +6,7 @@
  */
 import { Chart } from 'chart.js/auto'
 import { ChartColors } from './chart-colors'
-import { ChartConfig } from './chart-config'
+import { ChartConfig, getContrastColor } from './chart-config'
 
 export const PieChartModule = {
   /** 색상 가져오기 */
@@ -98,6 +98,12 @@ export const PieChartModule = {
           ? { display: false }
           : {
               color(context: any) {
+                // 슬라이스 배경색 기반 자동 대비 색상
+                const bgColor = context.dataset.backgroundColor[context.dataIndex]
+                if (bgColor && bgColor.startsWith('#')) {
+                  return getContrastColor(bgColor)
+                }
+                // fallback: textStyle 색상
                 const index = context.dataIndex
                 if (txtStyle.colors && txtStyle.colors[index]) {
                   return txtStyle.colors[index]
@@ -247,8 +253,8 @@ export const PieChartModule = {
     const settings = {
       size: outerLabelConfig.size || 120,
       labelOffset: outerLabelConfig.labelOffset || 20,
-      labelFontSize: outerLabelConfig.labelFontSize || 11,
-      labelFontWeight: outerLabelConfig.labelFontWeight || 600,
+      labelFontSize: outerLabelConfig.labelFontSize || 14,
+      labelFontWeight: outerLabelConfig.labelFontWeight || 700,
     }
 
     const colors = labelColor || (style ? this.getColors(style) : ChartColors.pie.regionRatio)
@@ -276,7 +282,7 @@ export const PieChartModule = {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        layout: { padding: { top: 30, bottom: 30, left: 37, right: 37 } },
+        layout: { padding: { top: 36, bottom: 36, left: 50, right: 50 } },
         plugins: {
           legend: { display: false },
           tooltip: {

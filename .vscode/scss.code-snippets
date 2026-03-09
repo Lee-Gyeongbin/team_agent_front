@@ -3,17 +3,17 @@
     "scope": "scss,vue",
     "prefix": "typo",
     "body": [
-      "@include typo(\\$${1|body-caption,body-caption-bold,body-xsmall,body-xsmall-bold,body-small,body-small-bold,body-medium,body-medium-bold,body-large,body-large-bold,body-xlarge,body-xlarge-bold|});",
-      "color: \\$${2|color-text-dark,color-text-primary,color-text-secondary,color-text-tertiary,color-text-disabled,color-primary,color-white|};"
+      "@include typo(\\$${1|body-caption,body-caption-bold,body-xsmall,body-xsmall-bold,body-small,body-small-bold,body-medium,body-medium-bold,body-large,body-large-bold,body-xlarge,body-xlarge-bold,header-small,header-small-bold,header-medium,header-medium-bold,header-large,header-large-bold,header-xlarge,header-xlarge-bold|});",
+      "color: \\$${2|color-text-dark,color-text-primary,color-text-secondary,color-text-tertiary,color-text-disabled,color-primary,color-white|};",
     ],
-    "description": "typo mixin + color 변수"
+    "description": "typo mixin + color 변수",
   },
   "Typo only": {
     "scope": "scss,vue",
     "prefix": "typoo",
     "body": [
-      "@include typo(\\$${1|body-caption,body-caption-bold,body-xsmall,body-xsmall-bold,body-small,body-small-bold,body-medium,body-medium-bold,body-large,body-large-bold,body-xlarge,body-xlarge-bold|});"
+      "@include typo(\\$${1|body-caption,body-caption-bold,body-xsmall,body-xsmall-bold,body-small,body-small-bold,body-medium,body-medium-bold,body-large,body-large-bold,body-xlarge,body-xlarge-bold|});",
     ],
-    "description": "typo mixin만"
-  }
+    "description": "typo mixin만",
+  },
 }

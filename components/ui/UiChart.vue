@@ -78,7 +78,7 @@ watch(
     gap: 6px;
     cursor: pointer;
     user-select: none;
-    @include typo($body-xsmall);
+    @include typo($body-small);
     color: $color-text-secondary;
 
     &:hover {
