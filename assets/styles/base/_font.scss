@@ -1,14 +1,17 @@
 @use '../utils/variables' as *;
 
-// Pretendard 가변폰트 (로컬)
+// Pretendard 가변폰트 (로컬 우선 → CDN 폴백)
 @font-face {
   font-family: 'Pretendard';
   font-weight: 45 920;
   font-style: normal;
   font-display: swap;
   src:
+    local('Pretendard Variable'),
+    local('PretendardVariable'),
     url('/fonts/PretendardVariable.woff2') format('woff2-variations'),
-    url('/fonts/PretendardVariable.woff2') format('woff2');
+    url('/fonts/PretendardVariable.woff2') format('woff2'),
+    url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
 }
 
 body {
