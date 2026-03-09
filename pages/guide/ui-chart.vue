@@ -511,7 +511,69 @@ const chartConfig = {
           <li><code>showLegend</code> prop을 켜면 차트 위에 범례가 생성됩니다. 범례 클릭으로 데이터 토글 가능합니다.</li>
           <li>config가 변경되면 차트가 자동으로 재생성됩니다 (watch).</li>
           <li>컴포넌트 unmount 시 차트가 자동 파괴되어 메모리 누수가 없습니다.</li>
+          <li>파이 차트(outerLabel)는 외부 라벨 공간이 필요합니다. 부모에 <strong>max-height, max-width, padding</strong>을 충분히 확보하세요.</li>
         </ul>
+      </div>
+      <div class="guide-demo">
+        <p class="demo-label">차트 부모 높이 가이드</p>
+        <table class="guide-status-table">
+          <thead>
+            <tr>
+              <th>차트 타입</th>
+              <th>권장 높이</th>
+              <th>비고</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>bar / line / mixed</td>
+              <td><code>height: 300px</code></td>
+              <td>기본 권장값</td>
+            </tr>
+            <tr>
+              <td>horizontalBar</td>
+              <td><code>height: 300px</code></td>
+              <td>항목 수에 따라 조절</td>
+            </tr>
+            <tr>
+              <td>pie (내부 라벨)</td>
+              <td><code>height: 300px; max-width: 400px</code></td>
+              <td>라벨이 슬라이스 안에 표시</td>
+            </tr>
+            <tr>
+              <td>pie (outerLabel)</td>
+              <td><code>height: 480px; max-width: 480px</code></td>
+              <td>외부 라벨 + 연결선 공간 확보 필수</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="guide-demo">
+        <p class="demo-label">예시: outerLabel 파이 — 잘리지 않는 설정</p>
+        <pre class="demo-code">&lt;!-- 부모에 충분한 높이/너비 확보 --&gt;
+&lt;div style="height: 480px; max-width: 480px; margin: 0 auto"&gt;
+  &lt;UiChart
+    type="pie"
+    :config="{
+      items: [...],
+      type: 'outerLabel',
+      style: 'regionRatio',
+    }"
+    show-legend
+  /&gt;
+&lt;/div&gt;
+
+&lt;!-- SCSS에서 사용 시 --&gt;
+.chart-area {
+  min-height: 500px;
+  max-height: 500px;
+
+  &amp;.is-pie {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 20px 24px;
+  }
+}</pre>
       </div>
     </section>
   </div>
