@@ -175,6 +175,7 @@
       width: 100%;
       max-height: calc(100vh - 173px);
       overflow-y: auto;
+      padding-right: $spacing-sm;
       @include custom-scrollbar;
 
       .library-card{

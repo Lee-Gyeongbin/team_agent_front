@@ -112,7 +112,7 @@ withDefaults(defineProps<Props>(), {
   // ===================================
   &.variant-data-line {
     background: #f0f6fe;
-    color: var(--color-primary);
+    color: #4589e0;
   }
 
   &.variant-basic-chat {
