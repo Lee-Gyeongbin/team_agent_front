@@ -189,7 +189,7 @@
 }
 
 .icon-star-fill {
-  @include icon-file('star-fill');
+  @include icon-file-bg('star-fill');
 }
 
 .icon-copy-gray {
@@ -302,7 +302,7 @@
 // 뱃지 아이콘
 // ===================================
 .icon-data-line-small {
-  @include icon-file('data-line-small');
+  @include icon-file-bg('data-line-small');
 }
 
 .icon-comment-other {
