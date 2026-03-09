@@ -14,6 +14,8 @@
 }
 
 .chat-detail-main {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -225,6 +227,8 @@
 // 채팅 입력 영역
 // ===================================
 .chat-input {
+  position: relative;
+  z-index: $z-overlay;
   width: 100%;
   margin-bottom: 20px;
 
