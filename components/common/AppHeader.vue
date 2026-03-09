@@ -1,6 +1,10 @@
 <template>
   <header class="app-header">
-    <span class="header-logo">TeamAgent</span>
+    <span
+      class="header-logo"
+      @click="navigateTo('/')"
+      >TeamAgent</span
+    >
     <div class="header-actions">
       <!-- 테마 색상 -->
       <div class="theme-picker-wrap">
@@ -32,7 +36,7 @@
       <button
         class="header-btn"
         :title="user?.userNm + ' [' + user?.email + ']' || '로그인'"
-        @click="onClickProfile"
+        @click="navigateTo('/user/profile')"
       >
         <i class="icon-user size-20" />
       </button>
@@ -77,12 +81,6 @@ const onClickOutside = (e: MouseEvent) => {
 
 onMounted(() => document.addEventListener('click', onClickOutside))
 onUnmounted(() => document.removeEventListener('click', onClickOutside))
-
-const onClickProfile = () => {
-  if (!isLoggedIn.value) {
-    navigateTo('/login')
-  }
-}
 
 const onClickLogout = () => {
   logout()
