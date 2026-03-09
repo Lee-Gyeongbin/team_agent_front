@@ -54,29 +54,19 @@
             <p class="list-title"><i class="icon-diamond size-8"></i>인사이트</p>
             <p class="card-count fw-700">3</p>
           </div>
-          <!-- 드롭다운 메뉴 -->
-          <div
-            class="dropdown-wrapper"
-            :class="{ 'is-show': isDropdownOpen }"
+          <!-- 카테고리 드롭다운 메뉴 -->
+          <UiDropdownMenu
+            :items="listMenuItems"
+            align="end"
+            @select="handleListMenuSelect"
           >
-            <button
-              class="btn btn-library-card-add type-white"
-              @click="isDropdownOpen = !isDropdownOpen"
-            >
-              <i class="icon icon-add-dot size-20"></i>
-            </button>
-            <div class="dropdown-menu">
-              <button class="dropdown-item">
-                <i class="icon icon-edit size-16"></i>
-                <span>이름 변경</span>
+            <template #trigger>
+              <button class="btn btn-library-card-add type-white">
+                <i class="icon icon-add-dot size-20"></i>
               </button>
-              <button class="dropdown-item">
-                <i class="icon icon-trashcan size-16"></i>
-                <span>카테고리 삭제</span>
-              </button>
-            </div>
-          </div>
-          <!-- .END 드롭다운 메뉴 -->
+            </template>
+          </UiDropdownMenu>
+          <!-- .END 카테고리 드롭다운 메뉴 -->
         </div>
         <div class="library-card-grp">
           <div
@@ -106,50 +96,23 @@
                 </template>
                 매뉴얼AI
               </UiBadge>
-              <!-- 드롭다운 메뉴 -->
-              <div
-                class="dropdown-wrapper"
-                :class="{ 'is-show': cardDropdownOpen[card] }"
-                @click.stop
-              >
-                <button
-                  class="btn btn-library-card-add type-white"
-                  @click.stop="cardDropdownOpen[card] = !cardDropdownOpen[card]"
+              <!--
+                카드 드롭다운: @click.stop 래퍼로 카드 클릭(openModal) 전파 차단.
+                UiDropdownMenu 내부는 Portal로 body에 렌더링 → overflow 이슈 없음.
+              -->
+              <div @click.stop>
+                <UiDropdownMenu
+                  :items="cardMenuItems"
+                  align="end"
+                  @select="handleCardMenuSelect(card, $event)"
                 >
-                  <i class="icon icon-add-dot size-20"></i>
-                </button>
-                <div class="dropdown-menu">
-                  <button class="dropdown-item">
-                    <i class="icon icon-view size-16"></i>
-                    <span>상세 보기</span>
-                  </button>
-                  <button class="dropdown-item">
-                    <i class="icon icon-transfer size-16"></i>
-                    <span>카테고리 이동</span>
-                  </button>
-                  <button class="dropdown-item">
-                    <i class="icon icon-star-line size-16"></i>
-                    <span>즐겨찾기 등록</span>
-                  </button>
-                  <button class="dropdown-item">
-                    <i class="icon icon-star-fill size-16"></i>
-                    <span>즐겨찾기 해제</span>
-                  </button>
-                  <button class="dropdown-item">
-                    <i class="icon icon-copy-gray size-16"></i>
-                    <span>답변 복사</span>
-                  </button>
-                  <button class="dropdown-item">
-                    <i class="icon icon-archive size-16"></i>
-                    <span>보관</span>
-                  </button>
-                  <button class="dropdown-item type-danger">
-                    <i class="icon icon-delete size-16"></i>
-                    <span>삭제</span>
-                  </button>
-                </div>
+                  <template #trigger>
+                    <button class="btn btn-library-card-add type-white">
+                      <i class="icon icon-add-dot size-20"></i>
+                    </button>
+                  </template>
+                </UiDropdownMenu>
               </div>
-              <!-- .END 드롭다운 메뉴 -->
             </div>
             <!-- 제목 -->
             <h3 class="library-card-title fw-600">2025년 우리회사 월별매출액 2025년 우리회사 월별매출액</h3>
@@ -178,29 +141,19 @@
             <p class="list-title"><i class="icon-diamond size-8"></i>새 카테고리</p>
             <p class="card-count fw-700">0</p>
           </div>
-          <!-- 드롭다운 메뉴 -->
-          <div
-            class="dropdown-wrapper"
-            :class="{ 'is-show': isDropdownOpen }"
+          <!-- 카테고리 드롭다운 메뉴 -->
+          <UiDropdownMenu
+            :items="listMenuItems"
+            align="end"
+            @select="handleListMenuSelect"
           >
-            <button
-              class="btn btn-library-card-add type-white"
-              @click="isDropdownOpen = !isDropdownOpen"
-            >
-              <i class="icon icon-add-dot size-20"></i>
-            </button>
-            <div class="dropdown-menu">
-              <button class="dropdown-item">
-                <i class="icon icon-edit size-16"></i>
-                <span>이름 변경</span>
+            <template #trigger>
+              <button class="btn btn-library-card-add type-white">
+                <i class="icon icon-add-dot size-20"></i>
               </button>
-              <button class="dropdown-item">
-                <i class="icon icon-trashcan size-16"></i>
-                <span>카테고리 삭제</span>
-              </button>
-            </div>
-          </div>
-          <!-- .END 드롭다운 메뉴 -->
+            </template>
+          </UiDropdownMenu>
+          <!-- .END 카테고리 드롭다운 메뉴 -->
         </div>
         <div class="library-card-grp">
           <div class="library-card type-new-card">
@@ -247,6 +200,8 @@
 </template>
 
 <script setup lang="ts">
+import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
+
 // ============================================
 // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
 // ============================================
@@ -256,11 +211,34 @@ const searchOptions = [
   { label: '이름순', value: 'name' },
 ]
 
-// 드롭다운 토글 상태
-const isDropdownOpen = ref(false)
+// 카테고리 헤더 드롭다운 메뉴 아이템
+const listMenuItems: DropdownMenuItemDef[] = [
+  { label: '이름 변경', icon: 'icon-edit', value: 'rename' },
+  { label: '카테고리 삭제', icon: 'icon-trashcan', value: 'delete', color: 'danger' },
+]
 
-// 카드별 드롭다운 토글 상태
-const cardDropdownOpen = ref<Record<number, boolean>>({})
+// 카드 드롭다운 메뉴 아이템
+const cardMenuItems: DropdownMenuItemDef[] = [
+  { label: '상세 보기', icon: 'icon-view', value: 'view' },
+  { label: '카테고리 이동', icon: 'icon-transfer', value: 'move' },
+  { label: '즐겨찾기 등록', icon: 'icon-star-line', value: 'favorite-add' },
+  { label: '즐겨찾기 해제', icon: 'icon-star-fill', value: 'favorite-remove' },
+  { label: '답변 복사', icon: 'icon-copy-gray', value: 'copy' },
+  { label: '보관', icon: 'icon-archive', value: 'archive' },
+  { label: '삭제', icon: 'icon-delete', value: 'delete', color: 'danger' },
+]
+
+// 카테고리 헤더 드롭다운 선택 핸들러
+const handleListMenuSelect = (value: string) => {
+  // TODO: 백엔드 연결 시 value에 따라 API 호출로 교체
+  console.warn('[TODO] 카테고리 메뉴 선택:', value)
+}
+
+// 카드 드롭다운 선택 핸들러
+const handleCardMenuSelect = (card: number, value: string) => {
+  // TODO: 백엔드 연결 시 card ID와 value에 따라 API 호출로 교체
+  console.warn('[TODO] 카드 메뉴 선택:', card, value)
+}
 
 // 드래그 스크롤 적용
 const { setupDragScroll } = useDragScroll()

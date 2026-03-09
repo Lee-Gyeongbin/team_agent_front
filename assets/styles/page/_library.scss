@@ -111,7 +111,6 @@
       flex-direction: column;
       gap: $spacing-sm;
       width: 100%;
-      height: 100%;
       max-height: calc(100vh - 173px);
       overflow-y: auto;
       @include custom-scrollbar;
@@ -178,7 +177,7 @@
           .library-card-date{
             flex-shrink: 0;
             color: #C6D2DB;
-            font-size: $font-size-xs;
+            font-size: $font-size-sm;
           }
 
           .library-card-tags{
@@ -186,7 +185,7 @@
             min-width: 0;
             gap: $spacing-xs;
             color: #6D7882;
-            font-size: $font-size-xs;
+            font-size: $font-size-sm;
             overflow: hidden;
             
             .library-card-tag{
