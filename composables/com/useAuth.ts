@@ -1,4 +1,4 @@
-import type { LoginResponse, UserInfo } from '~/types/auth'
+import type { LoginResponse, SignupForm, SignupResponse, UserInfo } from '~/types/auth'
 
 const COOKIE_NAME = 'ta_user'
 
@@ -48,4 +48,13 @@ export const useAuth = () => {
   }
 
   return { user, isLoggedIn, login, logout, checkSession }
+}
+
+export const useSignup = () => {
+  const { post } = useApi()
+  const signup = async (form: SignupForm): Promise<SignupResponse> => {
+    const res = await post<SignupResponse>('/signup.do', form)
+    return res
+  }
+  return { signup }
 }

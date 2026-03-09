@@ -52,18 +52,26 @@
         </p>
       </div>
 
-      <div class="chat-index-input-bottom flex justify-end items-center w-full">
-        <button
-          class="btn btn-chat-index btn-login"
-          type="button"
-          :disabled="isLoading"
-          @click="onSubmit"
+      <div class="chat-index-input-bottom flex flex-col items-center w-full">
+        <div class="login-actions flex justify-end items-center w-full">
+          <button
+            class="btn btn-chat-index btn-login"
+            type="button"
+            :disabled="isLoading"
+            @click="onSubmit"
+          >
+            <span class="icon-circle">
+              <i class="icon-user size-20" />
+            </span>
+            <p>{{ isLoading ? '로그인 중...' : '로그인' }}</p>
+          </button>
+        </div>
+        <NuxtLink
+          to="/signup"
+          class="login-signup-link"
         >
-          <span class="icon-circle">
-            <i class="icon-user size-20" />
-          </span>
-          <p>{{ isLoading ? '로그인 중...' : '로그인' }}</p>
-        </button>
+          아직 계정이 없으신가요? <b>회원가입</b>
+        </NuxtLink>
       </div>
     </div>
   </div>
@@ -147,14 +155,33 @@ const onSubmit = async () => {
     margin-top: 4px;
   }
 
+  .chat-index-input-bottom {
+    gap: 16px;
+    margin-top: 4px;
+  }
+
+  .login-actions {
+    margin-top: 16px;
+  }
+
   .btn-login {
     width: 130px;
     height: 60px;
-    margin-top: 20px;
 
     &:disabled {
       opacity: 0.6;
       cursor: not-allowed;
+    }
+  }
+
+  .login-signup-link {
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+    text-decoration: none;
+    transition: color $transition-base;
+
+    &:hover {
+      color: var(--color-primary);
     }
   }
 }

@@ -31,7 +31,7 @@
       <!-- 유저 프로필 -->
       <button
         class="header-btn"
-        :title="user?.userNm + ' [' + user?.orgNm + ']' || '로그인'"
+        :title="user?.userNm + ' [' + user?.email + ']' || '로그인'"
         @click="onClickProfile"
       >
         <i class="icon-user size-20" />
