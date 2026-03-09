@@ -36,28 +36,9 @@ export const MixedChartModule = {
     })
   },
 
-  /** 막대 배경색 플러그인 */
-  backgroundBarPlugin: {
-    id: 'backgroundBars',
-    beforeDatasetsDraw(chart: any) {
-      const { ctx, chartArea, scales } = chart
-
-      ctx.save()
-      ctx.fillStyle = 'rgba(230, 232, 234, 0.3)'
-
-      chart.data.datasets.forEach((_dataset: any, datasetIndex: number) => {
-        const meta = chart.getDatasetMeta(datasetIndex)
-        meta.data.forEach((bar: any) => {
-          const barWidth = bar.width
-          const barX = bar.x
-          const barY = scales.y.getPixelForValue(scales.y.max)
-          const barHeight = chartArea.bottom - barY
-          ctx.fillRect(barX - barWidth / 2, barY, barWidth, barHeight)
-        })
-      })
-
-      ctx.restore()
-    },
+  /** 막대 배경색 플러그인 (공통 참조) */
+  get backgroundBarPlugin() {
+    return ChartConfig.plugins.backgroundBar
   },
 
   /** 혼합 차트 생성 */
@@ -214,7 +195,7 @@ export const MixedChartModule = {
       type: 'bar',
       data: { labels: categories, datasets: styledDatasets },
       options: mixedChartOptions,
-      plugins: [this.backgroundBarPlugin],
+      plugins: [this.backgroundBarPlugin, ChartConfig.plugins.averageLine],
     })
   },
 

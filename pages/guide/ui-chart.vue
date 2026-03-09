@@ -42,7 +42,7 @@
       <h2 class="section-title">Pie Chart (파이 차트)</h2>
       <div class="guide-demo">
         <div class="demo-box">
-          <div style="height: 300px; max-width: 400px; margin: 0 auto">
+          <div style="height: 480px; max-width: 480px; margin: 0 auto">
             <UiChart
               type="pie"
               :config="pieConfig"
@@ -297,15 +297,15 @@ const config = {
           </tr>
           <tr>
             <td>style</td>
-            <td><code>'primary' | 'secondary' | 'taskStatus' | 'empty'</code></td>
+            <td><code>'primary' | 'secondary' | 'regionRatio' | 'taskStatus' | 'empty'</code></td>
             <td>O</td>
-            <td>파이 스타일 (primary=테두리O, taskStatus=도넛)</td>
+            <td>파이 스타일 (primary=테두리O, regionRatio=지역비율, taskStatus=도넛)</td>
           </tr>
           <tr>
             <td>textStyle</td>
             <td><code>'primary' | 'secondary'</code></td>
             <td></td>
-            <td>데이터 라벨 텍스트 스타일</td>
+            <td>데이터 라벨 텍스트 스타일 (내부 라벨 시 슬라이스 색상 기반 자동 대비)</td>
           </tr>
           <tr>
             <td>labelColor</td>
@@ -334,7 +334,7 @@ const config = {
         </tbody>
       </table>
       <div class="guide-demo">
-        <pre class="demo-code">// 기본 파이
+        <pre class="demo-code">// 기본 파이 (내부 라벨 — 자동 대비 색상)
 const config = {
   items: [
     { name: '개발팀', value: 35 },
@@ -342,6 +342,16 @@ const config = {
   ],
   style: 'primary',
   textStyle: 'primary',
+}
+
+// 외부 라벨 파이 (연결선 + 바깥 %)
+const config = {
+  items: [
+    { name: '개발팀', value: 25 },
+    { name: '디자인팀', value: 18 },
+  ],
+  type: 'outerLabel',
+  style: 'regionRatio',
 }
 
 // 도넛 차트
@@ -537,15 +547,15 @@ const lineConfig = {
 // 파이 차트 설정
 const pieConfig = {
   items: [
-    { name: '개발팀', value: 35 },
-    { name: '디자인팀', value: 25 },
-    { name: '기획팀', value: 20 },
-    { name: '마케팅팀', value: 12 },
-    { name: '영업팀', value: 5 },
-    { name: '기타', value: 3 },
+    { name: '개발팀', value: 25 },
+    { name: '디자인팀', value: 18 },
+    { name: '기획팀', value: 15 },
+    { name: '마케팅팀', value: 14 },
+    { name: '영업팀', value: 12 },
+    { name: '기타', value: 16 },
   ],
+  type: 'outerLabel',
   style: 'regionRatio',
-  textStyle: 'primary',
 }
 
 // 혼합 차트 설정

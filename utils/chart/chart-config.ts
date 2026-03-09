@@ -250,10 +250,58 @@ export const ChartConfig = {
       hoverBorderWidth: 2,
       cutout: '48%',
     },
+    regionRatio: {
+      borderColor: '#FFFFFF',
+      borderWidth: 2,
+      hoverOffset: 6,
+      hoverBorderWidth: 3,
+    },
   } as Record<string, any>,
 
   // ===== 공통 플러그인 =====
   plugins: {
+    /** 세로 막대 배경색 플러그인 (bar, mixed 공통) */
+    backgroundBar: {
+      id: 'backgroundBarsCommon',
+      beforeDatasetsDraw(chart: any) {
+        const { ctx, chartArea, scales } = chart
+
+        ctx.save()
+        ctx.fillStyle = 'rgba(230, 232, 234, 0.3)'
+
+        chart.data.datasets.forEach((_dataset: any, datasetIndex: number) => {
+          const meta = chart.getDatasetMeta(datasetIndex)
+          meta.data.forEach((bar: any) => {
+            if (!bar.width) return // line 데이터셋은 skip
+            const barY = scales.y.getPixelForValue(scales.y.max)
+            const barHeight = chartArea.bottom - barY
+            ctx.fillRect(bar.x - bar.width / 2, barY, bar.width, barHeight)
+          })
+        })
+
+        ctx.restore()
+      },
+    },
+
+    /** 가로 막대 배경색 플러그인 */
+    backgroundBarHorizontal: {
+      id: 'backgroundBarsHori',
+      beforeDatasetsDraw(chart: any) {
+        const { ctx, chartArea } = chart
+
+        ctx.save()
+        ctx.fillStyle = 'rgba(230, 232, 234, 0.3)'
+
+        const meta = chart.getDatasetMeta(0)
+        meta.data.forEach((bar: any) => {
+          const barHeight = bar.height
+          ctx.fillRect(chartArea.left, bar.y - barHeight / 2, chartArea.right - chartArea.left, barHeight)
+        })
+
+        ctx.restore()
+      },
+    },
+
     /** 평균선(기준선) 플러그인 */
     averageLine: {
       id: 'averageLine',

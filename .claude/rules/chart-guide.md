@@ -133,7 +133,7 @@ const config = {
 ### 3. Pie (파이/도넛 차트)
 
 ```ts
-// 기본 파이
+// 기본 파이 (내부 라벨 — 슬라이스 색상 기반 자동 대비)
 const config = {
   items: [                                      // 항목 배열 (필수)
     { name: '개발팀', value: 35 },
@@ -143,6 +143,16 @@ const config = {
   textStyle: 'primary',                         // 데이터 라벨 스타일
 }
 
+// 외부 라벨 파이 (연결선 + 바깥 %)
+const config = {
+  items: [
+    { name: '개발팀', value: 25 },
+    { name: '디자인팀', value: 18 },
+  ],
+  type: 'outerLabel',                           // 외부 라벨 + 연결선
+  style: 'regionRatio',                         // 지역별 비율 색상
+}
+
 // 도넛 차트
 const config = {
   items: [
@@ -150,13 +160,6 @@ const config = {
     { name: '진행중', value: 30, count: 6 },
   ],
   style: 'taskStatus',                          // cutout이 있는 스타일 = 도넛
-}
-
-// 외부 라벨 파이
-const config = {
-  items: [...],
-  type: 'outerLabel',                           // 외부 라벨 + 연결선
-  outerLabelConfig: { size: 120, labelOffset: 20 },
 }
 
 // SVG 도넛 (커스텀 구현, 외부 라벨 + 연결선)
@@ -173,6 +176,7 @@ const config = {
 |-------|------|
 | `'primary'` | 테두리 O, 기본 파이 |
 | `'secondary'` | 테두리 X |
+| `'regionRatio'` | 지역별 비율 (8색 팔레트, 테두리 O) |
 | `'taskStatus'` | 도넛 (cutout: 48%) |
 | `'empty'` | 빈 상태 도넛 |
 

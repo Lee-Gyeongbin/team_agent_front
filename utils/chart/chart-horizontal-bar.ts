@@ -20,33 +20,23 @@ export const XBarChartModule = {
 
     categories.forEach((category, index) => {
       const color = Array.isArray(colors) ? colors[index] || colors[0] : colors
-      const legendItem = ChartConfig.createLegendItem({ label: category, color })
+      const legendItem = ChartConfig.createLegendItem({
+        label: category,
+        color,
+        onClick: () => {
+          const chart = ChartConfig.instances[legendId.replace('legend-', '')]
+          if (chart) {
+            ChartConfig.toggleLegend(legendItem, chart, index, 'bar')
+          }
+        },
+      })
       legendContainer.appendChild(legendItem)
     })
   },
 
-  /** 막대 배경색 플러그인 (가로 막대용) */
-  backgroundBarPlugin: {
-    id: 'backgroundBarsHori',
-    beforeDatasetsDraw(chart: any) {
-      const { ctx, chartArea } = chart
-
-      ctx.save()
-      ctx.fillStyle = 'rgba(230, 232, 234, 0.3)'
-
-      const meta = chart.getDatasetMeta(0)
-
-      meta.data.forEach((bar: any) => {
-        const barHeight = bar.height
-        const barY = bar.y
-        const startX = chartArea.left
-        const width = chartArea.right - chartArea.left
-
-        ctx.fillRect(startX, barY - barHeight / 2, width, barHeight)
-      })
-
-      ctx.restore()
-    },
+  /** 막대 배경색 플러그인 (공통 참조) */
+  get backgroundBarPlugin() {
+    return ChartConfig.plugins.backgroundBarHorizontal
   },
 
   /** 막대 끝에 포인트 색상 추가 플러그인 */
