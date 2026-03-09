@@ -104,13 +104,15 @@ button{
     position: absolute;
     top: -2px;
     right: -2px;
-    padding: 1px 3px;
+    height: 12px;
+    padding: 0px 3px;
     border-radius: 15px;
-    background: #3C69DB;
+    background: var(--color-primary);;
     color: #FFF;
     font-size: 8px;
     font-weight: 700;
     white-space: nowrap;
+    min-width: 12px;
   }
 }
 

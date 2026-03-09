@@ -80,24 +80,37 @@
           >
             <!-- 상단 영역 -->
             <div class="library-card-top flex justify-between items-center">
-              <UiBadge variant="data-line">
-                <template #icon-left>
-                  <i class="icon icon-data-line-small size-14"></i>
-                </template>
-                데이터분석
-              </UiBadge>
-              <UiBadge variant="basic-chat">
-                <template #icon-left>
-                  <i class="icon icon-comment-other size-14"></i>
-                </template>
-                기본대화
-              </UiBadge>
-              <UiBadge variant="manual-ai">
-                <template #icon-left>
-                  <i class="icon icon-book size-14"></i>
-                </template>
-                매뉴얼AI
-              </UiBadge>
+              <div class="flex items-center gap-4">
+                <UiBadge variant="data-line">
+                  <template #icon-left>
+                    <i class="icon icon-data-line-small size-14"></i>
+                  </template>
+                  데이터분석
+                </UiBadge>
+                <!-- <UiBadge variant="basic-chat">
+                  <template #icon-left>
+                    <i class="icon icon-comment-other size-14"></i>
+                  </template>
+                  기본대화
+                </UiBadge>
+                <UiBadge variant="manual-ai">
+                  <template #icon-left>
+                    <i class="icon icon-book size-14"></i>
+                  </template>
+                  매뉴얼AI
+                </UiBadge> -->
+                <UiButton
+                  icon-only
+                  variant="ghost"
+                  class="btn-star"
+                  :class="{ 'is-active': favoriteCardIds.has(card) }"
+                  @click.stop="toggleFavorite(card)"
+                >
+                  <template #icon-left>
+                    <i class="icon icon-star-fill size-12"></i>
+                  </template>
+                </UiButton>
+              </div>
               <!--
                 카드 드롭다운: @click.stop 래퍼로 카드 클릭(openModal) 전파 차단.
                 UiDropdownMenu 내부는 Portal로 body에 렌더링 → overflow 이슈 없음.
@@ -266,6 +279,18 @@ const isModalOpen = ref(false)
 const isArchiveModalOpen = ref(false)
 const isTrashDeleteModalOpen = ref(false)
 const selectedCardId = ref<number | null>(null)
+
+// 즐겨찾기 상태 (카드 ID Set)
+const favoriteCardIds = ref<Set<number>>(new Set())
+
+// 즐겨찾기 토글
+const toggleFavorite = (cardId: number) => {
+  if (favoriteCardIds.value.has(cardId)) {
+    favoriteCardIds.value.delete(cardId)
+  } else {
+    favoriteCardIds.value.add(cardId)
+  }
+}
 
 // 모달 열기
 const openModal = (cardId: number) => {

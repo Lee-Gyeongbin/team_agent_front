@@ -152,6 +152,25 @@
 
         .library-card-top{
           padding-bottom: $spacing-xs;
+
+          .btn-star{
+            flex-shrink: 0;
+            width: 16px;
+            height: 16px;
+            min-width: 12px;
+            padding: 0;
+            margin-left: -2px;
+
+            .icon{
+              background: #94A3B8;
+            }
+
+            &.is-active{
+              .icon{
+                background: #6F7A93;
+              }
+            }
+          }
         }
 
         .library-card-title{
