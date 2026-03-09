@@ -13,7 +13,7 @@ export const useAuth = () => {
   const isLoggedIn = computed(() => !!userCookie.value)
 
   const login = async (userId: string, password: string): Promise<LoginResponse> => {
-    const res = await post<LoginResponse>('/api/login.do', { userId, password })
+    const res = await post<LoginResponse>('/login.do', { userId, password })
 
     if (res.success && res.user) {
       userCookie.value = res.user
@@ -24,7 +24,7 @@ export const useAuth = () => {
 
   const logout = async () => {
     try {
-      await post<LoginResponse>('/api/logout.do', {})
+      await post<LoginResponse>('/logout.do', {})
     } catch {
       // 세션 만료 등으로 실패해도 로컬 쿠키는 정리
     }
@@ -34,7 +34,7 @@ export const useAuth = () => {
 
   const checkSession = async (): Promise<boolean> => {
     try {
-      const res = await get<LoginResponse>('/api/session/user.do')
+      const res = await get<LoginResponse>('/session/user.do')
       if (res.success && res.user) {
         userCookie.value = res.user
         return true

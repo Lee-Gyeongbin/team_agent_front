@@ -20,21 +20,29 @@
         </div>
         <div class="btn-grp">
           <!-- 보관함 btn -->
-          <button
+          <UiButton
+            variant="ghost"
+            size="md"
             class="btn btn-library btn-library-archive"
             @click="isArchiveModalOpen = true"
           >
-            <i class="icon icon-archive size-16"></i>
+            <template #icon-left>
+              <i class="icon icon-archive size-16"></i>
+            </template>
             <span class="badge-num">23</span>
-          </button>
+          </UiButton>
           <!-- 삭제 btn -->
-          <button
+          <UiButton
+            variant="ghost"
+            size="md"
             class="btn btn-library btn-library-trash"
             @click="isTrashDeleteModalOpen = true"
           >
-            <i class="icon icon-delete size-16"></i>
+            <template #icon-left>
+              <i class="icon icon-delete size-16"></i>
+            </template>
             <span class="badge-num">9</span>
-          </button>
+          </UiButton>
         </div>
       </div>
     </div>
@@ -83,9 +91,16 @@
             @select="handleListMenuSelect"
           >
             <template #trigger>
-              <button class="btn btn-library-card-add type-white">
-                <i class="icon icon-add-dot size-20"></i>
-              </button>
+              <UiButton
+                icon-only
+                variant="ghost"
+                size="md"
+                class="btn btn-library-card-add type-white"
+              >
+                <template #icon-left>
+                  <i class="icon icon-add-dot size-20"></i>
+                </template>
+              </UiButton>
             </template>
           </UiDropdownMenu>
           <!-- .END 카테고리 드롭다운 메뉴 -->
@@ -114,7 +129,7 @@
                   </template>
                   데이터분석
                 </UiBadge>
-                <!-- <UiBadge variant="basic-chat">
+                <UiBadge variant="basic-chat">
                   <template #icon-left>
                     <i class="icon icon-comment-other size-14"></i>
                   </template>
@@ -125,7 +140,9 @@
                     <i class="icon icon-book size-14"></i>
                   </template>
                   매뉴얼AI
-                </UiBadge> -->
+                </UiBadge>
+
+                <!-- 즐겨찾기 버튼 -->
                 <UiButton
                   icon-only
                   variant="ghost"
@@ -138,10 +155,8 @@
                   </template>
                 </UiButton>
               </div>
-              <!--
-                카드 드롭다운: @click.stop 래퍼로 카드 클릭(openModal) 전파 차단.
-                UiDropdownMenu 내부는 Portal로 body에 렌더링 → overflow 이슈 없음.
-              -->
+
+              <!-- 카드 드롭다운 메뉴 -->
               <div @click.stop>
                 <UiDropdownMenu
                   :items="cardMenuItems"
@@ -149,12 +164,20 @@
                   @select="handleCardMenuSelect(card.id, $event)"
                 >
                   <template #trigger>
-                    <button class="btn btn-library-card-add type-white">
-                      <i class="icon icon-add-dot size-20"></i>
-                    </button>
+                    <UiButton
+                      icon-only
+                      variant="ghost"
+                      size="md"
+                      class="btn btn-library-card-add type-white"
+                    >
+                      <template #icon-left>
+                        <i class="icon icon-add-dot size-20"></i>
+                      </template>
+                    </UiButton>
                   </template>
                 </UiDropdownMenu>
               </div>
+              <!-- END 카드 드롭다운 메뉴 -->
             </div>
             <!-- 제목 -->
             <h3 class="library-card-title fw-600">{{ card.title }}</h3>
@@ -194,9 +217,16 @@
             @select="handleListMenuSelect"
           >
             <template #trigger>
-              <button class="btn btn-library-card-add type-white">
-                <i class="icon icon-add-dot size-20"></i>
-              </button>
+              <UiButton
+                icon-only
+                variant="ghost"
+                size="md"
+                class="btn btn-library-card-add type-white"
+              >
+                <template #icon-left>
+                  <i class="icon icon-add-dot size-20"></i>
+                </template>
+              </UiButton>
             </template>
           </UiDropdownMenu>
           <!-- .END 카테고리 드롭다운 메뉴 -->
@@ -214,9 +244,9 @@
       <!-- 카테고리 입력 -->
       <div class="library-list-grp">
         <div class="library-category-input-grp flex items-center">
-          <input
+          <UiInput
             type="text"
-            class="inp inp-category"
+            class="inp-category"
             placeholder="카테고리명을 입력하세요"
           />
           <UiButton

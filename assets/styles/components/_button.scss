@@ -79,10 +79,11 @@ button{
 }
 
 .btn-library{
-  position: relative;
-  width: 30px;
-  height: 30px;
-  border-radius: 4px;
+  position: relative !important;
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 4px !important;
+  padding: 0 !important;
 
   &.btn-library-trash{
     background: #ECF0F3;
@@ -113,14 +114,17 @@ button{
     font-weight: 700;
     white-space: nowrap;
     min-width: 12px;
+    line-height: 12px;
+    white-space: nowrap;
   }
 }
 
 .btn-library-card-add{
-  width: 20px;
-  height: 20px;
-  position: relative;
-  border-radius: 4px;
+  width: 20px !important;
+  height: 20px !important;
+  position: relative !important;
+  border-radius: 4px !important;
+  padding: 0 !important;
 
   &:hover{
     background: #ECF0F3;
@@ -196,6 +200,11 @@ button{
     &:hover{
       background-color: #E8EAED;
     }
+  }
+
+  // 즐겨찾기 해제 아이콘 색상 지정
+  .icon-star-fill{
+    background-color: #6F7A93;
   }
 }
 // END 드롭다운 메뉴

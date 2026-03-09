@@ -26,7 +26,7 @@
             </template>
             통계현황
           </UiBadge>
-          
+
           <UiBadge variant="data-line">
             <template #icon-left>
               <i class="icon icon-data-line-small size-14"></i>
@@ -157,7 +157,7 @@
               <i class="icon icon-copy size-16"></i>
             </template>
           </UiButton>
-          
+
           <pre class="library-detail-modal-code-content"><code>
 SELECT
 TO_CHAR(sale_date, 'YYYY-MM') AS month,
@@ -215,22 +215,6 @@ const emit = defineEmits<{
   refresh: []
   delete: []
 }>()
-
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-const monthlyData = [
-  { month: '1월', value: 42.3 },
-  { month: '2월', value: 38.7 },
-  { month: '3월', value: 51.2 },
-  { month: '4월', value: 49.8 },
-  { month: '5월', value: 55.1 },
-  { month: '6월', value: 60.4 },
-  { month: '7월', value: 58.9 },
-  { month: '8월', value: 52.3 },
-  { month: '9월', value: 63.7 },
-  { month: '10월', value: 71.2 },
-  { month: '11월', value: 68.5 },
-  { month: '12월', value: 74.8 },
-]
 
 // 스크롤 상태
 const contentRef = ref<HTMLElement | null>(null)
