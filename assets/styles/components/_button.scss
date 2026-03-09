@@ -94,7 +94,7 @@ button{
   &:hover{
     background: rgba(0, 0, 0, 0.05);
     transition: background-color $transition-base;
-    
+
     &.btn-library-trash{
       background: #D1D9E0;
     }
@@ -145,7 +145,7 @@ button{
     border: 1px solid rgba(45, 49, 57, 0.20);
     box-shadow: 0 0 8px 0 rgba(0, 0, 0, 0.10);
     z-index: 2;
-    
+
     // 기본 상태 (숨김)
     opacity: 0;
     transform: translateY(-2px);
@@ -190,7 +190,7 @@ button{
 
   &.type-danger{
     background-color: #F5F6F8;
-    
+
     &:hover{
       background-color: #E8EAED;
     }
@@ -258,7 +258,7 @@ button{
   .icon-close {
     background-color: #828fa9;
   }
-  
+
   &:hover:not(:disabled) {
     background: $color-background;
     color: $color-text-dark;

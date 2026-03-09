@@ -149,7 +149,8 @@
 }
 
 .icon-plus {
-  @include icon-file('plus');
+  @include icon-file-bg('plus');
+  background-color: currentColor;
 }
 
 // 로그아웃
@@ -314,4 +315,33 @@
 
 .icon-diamond-small {
   @include icon-file('diamond-small');
+}
+
+// ===================================
+// 에이전트 아이콘
+// ===================================
+
+// 드래그 핸들
+.icon-move-handle {
+  @include icon-file('move-handle');
+}
+
+// 유형 (스파클)
+.icon-sparkle-agent {
+  @include icon-file-bg('sparkle-agent');
+}
+
+// 연결
+.icon-link-agent {
+  @include icon-file-bg('link-agent');
+}
+
+// 최종수정
+.icon-edit-agent {
+  @include icon-file-bg('edit-agent');
+}
+
+// 설정
+.icon-setting-agent {
+  @include icon-file-bg('setting-agent');
 }
