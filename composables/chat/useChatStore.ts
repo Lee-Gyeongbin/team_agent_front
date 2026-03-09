@@ -481,13 +481,12 @@ export const useChatStore = () => {
     }
   }
 
-  // 검색모드 토글
+  // 검색모드 토글 (라디오 방식 — 하나만 선택 가능)
   const toggleSearchMode = (mode: SearchModeValue) => {
-    const idx = activeSearchModes.value.indexOf(mode)
-    if (idx > -1) {
-      activeSearchModes.value.splice(idx, 1)
+    if (activeSearchModes.value.includes(mode)) {
+      activeSearchModes.value = []
     } else {
-      activeSearchModes.value.push(mode)
+      activeSearchModes.value = [mode]
     }
     // 모드 변경 시 서브 옵션 리셋
     selectedSubOption.value = 'all'
