@@ -5,7 +5,7 @@
       data-aos="fade-up"
     >
       <h1 class="chat-index-title f-center">TeamAgent</h1>
-      <p class="chat-index-description f-center">{{ user?.userName + '님, ' || '' }}어떤게 궁금하세요?</p>
+      <p class="chat-index-description f-center">{{ user?.userNm + '님, ' || '' }}어떤게 궁금하세요?</p>
     </div>
 
     <div
