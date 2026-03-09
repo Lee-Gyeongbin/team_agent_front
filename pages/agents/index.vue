@@ -14,6 +14,7 @@
       handle=".agent-card-drag"
       item-key="id"
       animation="200"
+      @end="onDragEnd"
     >
       <template #item="{ element }">
         <AgentCard
@@ -112,5 +113,11 @@ const onClickSetting = (agent: Agent) => {
 
 const onToggleActive = (agent: Agent) => {
   agent.isActive = !agent.isActive
+}
+
+// 🔽 드래그 정렬 — 백엔드 연결 시 API 호출로 교체
+const onDragEnd = () => {
+  const orderData = agentList.value.map((item, index) => ({ id: item.id, order: index }))
+  console.warn('[TODO] Agent 순서 변경:', orderData)
 }
 </script>

@@ -76,6 +76,7 @@
         item-key="id"
         handle=".library-list-header"
         animation="200"
+        @end="onCategoryDragEnd"
       >
         <template #item="{ element: category }">
       <div class="library-list-grp">
@@ -113,6 +114,7 @@
           animation="200"
           :delay="0"
           :delay-on-touch-only="true"
+          @end="onCardDragEnd"
         >
           <template #item="{ element: card }">
           <div
@@ -384,6 +386,20 @@ const onScrollRight = () => {
 onMounted(() => {
   nextTick(() => updateScrollState())
 })
+
+// 🔽 드래그 정렬 — 백엔드 연결 시 API 호출로 교체
+const onCategoryDragEnd = () => {
+  const orderData = categoryList.value.map((item, index) => ({ id: item.id, order: index }))
+  console.warn('[TODO] 카테고리 순서 변경:', orderData)
+}
+
+const onCardDragEnd = () => {
+  const allCards = categoryList.value.map((cat) => ({
+    categoryId: cat.id,
+    cards: (categoryCards.value[cat.id] || []).map((card, index) => ({ id: card.id, order: index })),
+  }))
+  console.warn('[TODO] 카드 순서 변경:', allCards)
+}
 
 // 모달 상태
 const isModalOpen = ref(false)
