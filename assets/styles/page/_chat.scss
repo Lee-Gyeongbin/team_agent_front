@@ -280,6 +280,7 @@
 // ===================================
 .chat-search-mode {
   position: relative;
+  z-index: $z-overlay;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -351,7 +352,7 @@
   background: #fff;
   border: 1px solid #c6d2db;
   border-radius: $border-radius-sm;
-  z-index: $z-dropdown;
+  z-index: $z-overlay;
 }
 
 .chat-search-mode-item {
