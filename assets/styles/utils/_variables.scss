@@ -1,10 +1,16 @@
 // ===================================
 // 색상 (피그마에서 추출)
 // ===================================
+// 테마 색상 — CSS 변수로 런타임 전환 (useTheme.ts에서 제어)
+// SCSS 변수는 폴백 & SCSS 함수용으로 유지
 $color-primary: #3c69db;
 $color-primary-hover: #1d4ed8;
 $color-primary-dark: #2b43a2;
 $color-primary-dark-hover: #1d3589;
+$color-orange: #ff7518;
+$color-orange-hover: #e5660f;
+$color-orange-dark: #C73E07;
+$color-orange-dark-hover: #a83306;
 $color-secondary: #64748b;
 $color-background: #f4f7f9;
 $color-surface: #f8fafc;

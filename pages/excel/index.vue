@@ -297,8 +297,8 @@ function imagePosition(img: ExcelImage): Record<string, string> {
 
     &:hover {
       background: $color-surface;
-      border-color: $color-primary;
-      color: $color-primary;
+      border-color: var(--color-primary);
+      color: var(--color-primary);
     }
   }
 
@@ -325,8 +325,8 @@ function imagePosition(img: ExcelImage): Record<string, string> {
 
   &:hover,
   &--drag-over {
-    border-color: $color-primary;
-    background: rgba($color-primary, 0.04);
+    border-color: var(--color-primary);
+    background: rgba(var(--color-primary-rgb), 0.04);
   }
 
   &__icon {
@@ -365,7 +365,7 @@ function imagePosition(img: ExcelImage): Record<string, string> {
     width: 36px;
     height: 36px;
     border: 3px solid $color-border;
-    border-top-color: $color-primary;
+    border-top-color: var(--color-primary);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
@@ -444,7 +444,7 @@ function imagePosition(img: ExcelImage): Record<string, string> {
 
     &--active {
       background: $color-background;
-      color: $color-primary;
+      color: var(--color-primary);
       font-weight: $font-weight-medium;
       border-top: 1px solid $color-background;
       position: relative;

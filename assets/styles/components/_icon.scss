@@ -17,7 +17,7 @@ $icon-sizes: 8, 10, 12, 14, 16, 20, 24, 28, 32, 36, 40, 48;
 // 아이콘 색상 유틸리티
 // ===================================
 .icon-primary {
-  background-color: $color-primary;
+  background-color: var(--color-primary);
 }
 
 .icon-white {

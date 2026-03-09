@@ -32,7 +32,7 @@
     color: $color-text-primary;
     margin-bottom: $spacing-md;
     padding-bottom: $spacing-sm;
-    border-bottom: 2px solid $color-primary;
+    border-bottom: 2px solid var(--color-primary);
   }
 
   .section-subtitle {
@@ -48,7 +48,7 @@
 .guide-back {
   display: inline-block;
   font-size: $font-size-sm;
-  color: $color-primary;
+  color: var(--color-primary);
   text-decoration: none;
   margin-bottom: $spacing-md;
 
@@ -100,7 +100,7 @@
   }
 
   .status-link {
-    color: $color-primary;
+    color: var(--color-primary);
     text-decoration: none;
 
     &:hover {
@@ -128,7 +128,7 @@
   cursor: pointer;
 
   &:hover {
-    border-color: $color-primary;
+    border-color: var(--color-primary);
     box-shadow: $shadow-md;
     transform: translateY(-2px);
   }
@@ -153,7 +153,7 @@
   }
 
   &:hover .component-card-arrow {
-    color: $color-primary;
+    color: var(--color-primary);
   }
 
   .component-card-desc {
@@ -171,8 +171,8 @@
 
   .component-card-tag {
     font-size: $font-size-xs;
-    color: $color-primary;
-    background: rgba($color-primary, 0.08);
+    color: var(--color-primary);
+    background: rgba(var(--color-primary-rgb), 0.08);
     padding: 2px $spacing-sm;
     border-radius: $border-radius-full;
   }
@@ -253,7 +253,7 @@
 
   .spacing-bar {
     height: 20px;
-    background: $color-primary;
+    background: var(--color-primary);
     border-radius: $border-radius-sm;
     opacity: 0.3;
   }
@@ -277,7 +277,7 @@
     width: 64px;
     height: 64px;
     background: $color-background;
-    border: 2px solid $color-primary;
+    border: 2px solid var(--color-primary);
   }
 
   .radius-label {

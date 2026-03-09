@@ -2,15 +2,31 @@
   <header class="app-header">
     <span class="header-logo">TeamAgent</span>
     <div class="header-actions">
-      <!-- 알림 -->
-      <button
-        class="header-btn"
-        title="알림"
-      >
-        <i class="icon-notification size-20" />
-        <!-- 🔽 더미 데이터 — 백엔드 연결 시 API로 교체 -->
-        <span class="status-dot" />
-      </button>
+      <!-- 테마 색상 -->
+      <div class="theme-picker-wrap">
+        <button
+          class="header-btn"
+          title="테마 색상"
+          @click="toggleThemePicker"
+        >
+          <i class="icon-notification size-20" />
+        </button>
+        <!-- 테마 팔레트 드롭다운 -->
+        <div
+          v-if="isThemePickerOpen"
+          class="theme-picker"
+        >
+          <button
+            v-for="theme in themeColors"
+            :key="theme.key"
+            class="theme-color-btn"
+            :class="{ 'is-active': currentThemeKey === theme.key }"
+            :style="{ backgroundColor: theme.primary }"
+            :title="theme.name"
+            @click="onSelectTheme(theme)"
+          />
+        </div>
+      </div>
 
       <!-- 유저 프로필 -->
       <button
@@ -35,14 +51,37 @@
 </template>
 
 <script setup lang="ts">
+import type { ThemeColor } from '~/composables/useTheme'
+
 const { user, isLoggedIn, logout } = useAuth()
+const { themeColors, currentThemeKey, applyTheme } = useTheme()
+
+const isThemePickerOpen = ref(false)
+
+const toggleThemePicker = () => {
+  isThemePickerOpen.value = !isThemePickerOpen.value
+}
+
+const onSelectTheme = (theme: ThemeColor) => {
+  applyTheme(theme)
+  isThemePickerOpen.value = false
+}
+
+// 외부 클릭 시 닫기
+const onClickOutside = (e: MouseEvent) => {
+  const wrap = document.querySelector('.theme-picker-wrap')
+  if (wrap && !wrap.contains(e.target as Node)) {
+    isThemePickerOpen.value = false
+  }
+}
+
+onMounted(() => document.addEventListener('click', onClickOutside))
+onUnmounted(() => document.removeEventListener('click', onClickOutside))
 
 const onClickProfile = () => {
-  // 세션에 사용자 정보가 있으면 현재 페이지(/chat 등) 유지, 없으면 로그인으로
   if (!isLoggedIn.value) {
     navigateTo('/login')
   }
-  // 로그인 상태일 때는 추후 프로필 메뉴/드롭다운 등으로 확장 가능
 }
 
 const onClickLogout = () => {

@@ -38,11 +38,11 @@
 }
 
 .icon-knowledge {
-  @include icon-file('knowledge');
+  @include icon-file-bg('knowledge');
 }
 
 .icon-database {
-  @include icon-file('database');
+  @include icon-file-bg('database');
 }
 
 .icon-refund-back {
