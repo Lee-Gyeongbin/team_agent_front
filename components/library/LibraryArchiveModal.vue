@@ -27,13 +27,11 @@
         </div>
 
         <!-- 검색바 -->
-        <div class="library-archive-modal-search inp-search-grp">
-          <input
-            type="text"
-            class="inp inp-search w-full"
+        <div class="library-archive-modal-search">
+          <UiInput
+            type="search"
             placeholder="검색어를 입력하세요"
           />
-          <button class="btn btn-search"><i class="icon icon-search size-20"></i></button>
         </div>
       </div>
 

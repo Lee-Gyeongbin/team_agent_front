@@ -5,14 +5,10 @@
       <div class="right-grp flex items-center">
         <p class="total">총 <strong>7개</strong></p>
         <div class="library-input-grp shrink-0 grow-1 max-w-400">
-          <div class="inp-search-grp">
-            <input
-              type="text"
-              class="inp inp-search w-full"
-              placeholder="검색어를 입력하세요"
-            />
-            <button class="btn btn-search"><i class="icon icon-search size-20"></i></button>
-          </div>
+          <UiInput
+            type="search"
+            placeholder="검색어를 입력하세요"
+          />
         </div>
         <div class="library-select-grp shrink-0 grow-1 max-w-140">
           <UiSelect

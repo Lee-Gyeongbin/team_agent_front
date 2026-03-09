@@ -237,6 +237,7 @@ const statusList = [
   { category: '페이지', name: '에이전트 생성', location: '/agents/new', url: '/agents/new', status: 'pending' },
   { category: '페이지', name: '에이전트 상세', location: '/agents/:id', url: '', status: 'pending' },
   { category: '페이지', name: '엑셀 뷰어', location: '/excel', url: '/excel', status: 'done' },
+  { category: 'UI 컴포넌트', name: 'UiInput', location: '/guide/ui-input', url: '/guide/ui-input', status: 'done' },
   { category: 'UI 컴포넌트', name: 'UiTable', location: '/guide/ui-table', url: '/guide/ui-table', status: 'done' },
   { category: '페이지', name: '로그인', location: '/login', url: '/login', status: 'pending' },
 ]
@@ -327,6 +328,12 @@ const componentList = [
     to: '/guide/ui-chart',
     description: 'Chart.js 기반 차트 — bar, line, pie, mixed, horizontalBar 5종',
     tags: ['type', 'config', 'showLegend'],
+  },
+  {
+    name: 'UiInput',
+    to: '/guide/ui-input',
+    description: 'v-model 지원 텍스트 입력 — size, 검색 타입, 아이콘 슬롯',
+    tags: ['v-model', 'type', 'size', 'icon-left', 'icon-right'],
   },
   {
     name: 'UiTable',
