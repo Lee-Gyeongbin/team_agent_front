@@ -453,7 +453,7 @@
     }
 
     &.is-show {
-      border-color: #3c69db;
+      border-color: var(--color-primary);
     }
 
     .library-archive-card-content {

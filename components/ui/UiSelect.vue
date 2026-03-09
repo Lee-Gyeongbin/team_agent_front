@@ -140,12 +140,12 @@ const onUpdate = (val: string) => {
   transition: border-color $transition-base;
 
   &:hover {
-    border-color: $color-primary;
+    border-color: var(--color-primary);
   }
 
   &:focus,
   &[data-state='open'] {
-    border-color: $color-primary;
+    border-color: var(--color-primary);
   }
 
   // 사이즈
@@ -226,7 +226,7 @@ const onUpdate = (val: string) => {
   }
 
   &[data-state='checked'] {
-    color: $color-primary;
+    color: var(--color-primary);
     font-weight: $font-weight-semibold;
   }
 }

@@ -32,7 +32,7 @@ button{
   width: 210px;
   height: 60px;
   border-radius: 50px;
-  border: 1px solid #b2d0ff;
+  border: 1px solid rgba(var(--color-primary-rgb), 0.4);
   background: #fff;
   font-size: $font-size-lg;
   color: #464c53;
@@ -47,14 +47,15 @@ button{
     aspect-ratio: 1/1;
     flex-shrink: 0;
     border-radius: 100%;
-    background: #e9f1fc;
-    transition: background 0.3s;
+    background: var(--color-primary-bg);
+    color: var(--color-primary);
+    transition: background 0.3s, color 0.3s;
   }
 
   &:hover {
-    background: #4b81e6;
+    background: var(--color-primary);
     box-shadow: 0 4px 16px 0 rgba(17, 17, 17, 0.12);
-    border-color: #4b81e6;
+    border-color: var(--color-primary);
     color: #fff;
     transform: translateY(-4px);
 
@@ -234,7 +235,7 @@ button{
   // focus 상태
   &:focus-within {
     .inp-category {
-      border-color: $color-primary;
+      border-color: var(--color-primary);
     }
 
     .btn-category-add.ui-button {

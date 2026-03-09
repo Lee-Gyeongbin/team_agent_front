@@ -1,0 +1,68 @@
+// 테마 색상 관리
+export interface ThemeColor {
+  name: string
+  key: string
+  primary: string
+  primaryHover: string
+  primaryDark: string
+  primaryDarkHover: string
+  primaryRgb: string
+  primaryBg: string
+}
+
+const themeColors: ThemeColor[] = [
+  {
+    name: '블루',
+    key: 'blue',
+    primary: '#3c69db',
+    primaryHover: '#1d4ed8',
+    primaryDark: '#2b43a2',
+    primaryDarkHover: '#1d3589',
+    primaryRgb: '60, 105, 219',
+    primaryBg: '#dee9fb',
+  },
+  {
+    name: '오렌지',
+    key: 'orange',
+    primary: '#ff7518',
+    primaryHover: '#e5660f',
+    primaryDark: '#C73E07',
+    primaryDarkHover: '#a83306',
+    primaryRgb: '255, 117, 24',
+    primaryBg: '#fff0e0',
+  },
+]
+
+const STORAGE_KEY = 'theme-color'
+
+const currentThemeKey = ref('blue')
+
+const applyTheme = (theme: ThemeColor) => {
+  const root = document.documentElement
+  root.style.setProperty('--color-primary', theme.primary)
+  root.style.setProperty('--color-primary-hover', theme.primaryHover)
+  root.style.setProperty('--color-primary-dark', theme.primaryDark)
+  root.style.setProperty('--color-primary-dark-hover', theme.primaryDarkHover)
+  root.style.setProperty('--color-primary-rgb', theme.primaryRgb)
+  root.style.setProperty('--color-primary-bg', theme.primaryBg)
+  currentThemeKey.value = theme.key
+  localStorage.setItem(STORAGE_KEY, theme.key)
+}
+
+// 저장된 테마 초기 적용
+const initTheme = () => {
+  const saved = localStorage.getItem(STORAGE_KEY)
+  if (saved) {
+    const theme = themeColors.find((t) => t.key === saved)
+    if (theme) applyTheme(theme)
+  }
+}
+
+export const useTheme = () => {
+  return {
+    themeColors,
+    currentThemeKey,
+    applyTheme,
+    initTheme,
+  }
+}

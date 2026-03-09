@@ -78,7 +78,7 @@ const emit = defineEmits<{
   letter-spacing: -0.02em;
 
   &:focus-visible {
-    outline: 2px solid $color-primary;
+    outline: 2px solid var(--color-primary);
     outline-offset: 2px;
   }
 
@@ -155,20 +155,20 @@ const emit = defineEmits<{
   // variant
   // ===================================
   &.variant-primary {
-    background: $color-primary; // #3c69db
+    background: var(--color-primary); // #3c69db
     color: #fff; // #fff
 
     &:hover:not(:disabled) {
-      background: $color-primary-hover; // #1d4ed8
+      background: var(--color-primary-hover); // #1d4ed8
     }
   }
 
   &.variant-primary-dark {
-    background: $color-primary-dark; // #2b43a2
+    background: var(--color-primary-dark); // #2b43a2
     color: #fff; // #fff
 
     &:hover:not(:disabled) {
-      background: $color-primary-dark-hover; // #1d3589
+      background: var(--color-primary-dark-hover); // #1d3589
     }
   }
 
@@ -187,8 +187,8 @@ const emit = defineEmits<{
     color: $color-text-dark; // #2d3139
 
     &:hover:not(:disabled) {
-      border-color: $color-primary; // #3c69db
-      color: $color-primary; // #3c69db
+      border-color: var(--color-primary); // #3c69db
+      color: var(--color-primary); // #3c69db
     }
   }
 
