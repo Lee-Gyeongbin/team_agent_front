@@ -67,7 +67,7 @@
 
 // 봇 아바타
 .icon-bot {
-  @include icon-file('bot');
+  @include icon-file-bg('bot');
 }
 
 // 복사
