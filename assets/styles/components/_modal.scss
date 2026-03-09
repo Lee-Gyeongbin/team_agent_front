@@ -66,7 +66,7 @@
   .modal-dialog-header {
     padding-bottom: 15px;
     padding-right: 26px;
-    border-bottom: 1px solid #AEBCCB;
+    border-bottom: 1px solid #aebccb;
 
     .modal-dialog-title {
       color: $color-text-dark;
@@ -89,7 +89,7 @@
     align-items: center;
     min-height: 82px;
     padding: 12px 0;
-    color: #5C6677;
+    color: #5c6677;
     font-size: 16px;
     line-height: 150%;
   }
@@ -327,7 +327,6 @@
     }
   }
 
-
   // 본문
   .library-detail-modal-body {
     display: flex;
@@ -437,12 +436,12 @@
   .library-archive-modal-header {
     // height: 67px;
     padding: 24px 16px 16px;
-    .header-top-grp{
+    .header-top-grp {
       padding-bottom: 16px;
     }
 
     .library-archive-modal-title {
-      color: #2D3139;
+      color: #2d3139;
       font-size: $font-size-xl;
       font-weight: $font-weight-bold;
       line-height: 150%;
@@ -468,7 +467,7 @@
     flex: 1;
     overflow-y: auto;
     height: calc(100vh - 113px);
-    padding: 0 16px 16px;
+    // padding: 0 16px 16px;
     @include custom-scrollbar;
   }
 
@@ -476,12 +475,12 @@
   .library-archive-card {
     padding-bottom: 4px;
     background: #fff;
-    border: 1px solid #DCE4E9;
+    border: 1px solid #dce4e9;
     border-radius: 8px;
     transition: border-color $transition-base;
 
     &:hover {
-      border-color: #AEBCCB;
+      border-color: #aebccb;
     }
 
     &.is-show {
@@ -494,27 +493,26 @@
       .library-archive-card-badges {
         margin-bottom: 2px;
       }
-  
+
       .library-archive-card-title {
-        color: #4D5462;
+        color: #4d5462;
         font-size: 14px;
         font-weight: 500;
         line-height: 150%;
       }
-  
+
       .library-archive-card-date {
-        color: #AEBCCB;
+        color: #aebccb;
         font-size: 10px;
         margin-top: 2px;
       }
 
       .btn-library-archive-card-action {
         flex-shrink: 0;
-        color: #6F7A93;
-        border: 1px solid #C6D2DB;
+        color: #6f7a93;
+        border: 1px solid #c6d2db;
       }
     }
-
 
     .library-archive-card-body {
       display: flex;
