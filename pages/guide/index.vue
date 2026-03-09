@@ -348,6 +348,12 @@ const componentList = [
     description: 'center/right 모달 공통 컴포넌트 — 오버레이, 닫기, 슬롯 지원',
     tags: ['position', 'title', 'showOverlay', 'slot'],
   },
+  {
+    name: 'UiDropdownMenu',
+    to: '/guide/ui-dropdown-menu',
+    description: 'Radix-vue 기반 드롭다운 메뉴 — 아이콘, danger 색상, 위치 조정 지원',
+    tags: ['items', 'trigger', 'icon', 'danger', 'side', 'align'],
+  },
 ]
 
 // 섹션 4: 아이콘 목록 (그룹별로 구분)
