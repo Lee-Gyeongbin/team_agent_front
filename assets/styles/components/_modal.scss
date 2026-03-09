@@ -161,6 +161,38 @@
     transition: transform $transition-base;
     overflow: hidden;
   }
+
+  // 헤더
+  .modal-side-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px $spacing-md $spacing-md;
+
+    .modal-side-title {
+      color: $color-text-dark;
+      font-size: $font-size-xl;
+      font-weight: $font-weight-bold;
+      line-height: 150%;
+    }
+
+    .btn-modal-close {
+      position: static;
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+  }
+
+  // 본문
+  .modal-side-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 $spacing-md $spacing-md;
+    @include custom-scrollbar;
+  }
 }
 
 // 탑 버튼

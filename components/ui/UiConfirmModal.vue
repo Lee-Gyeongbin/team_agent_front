@@ -1,38 +1,17 @@
 <template>
-  <div
-    class="modal-dialog"
-    :class="{ 'is-show': isOpen }"
-    @click.self="handleClose"
+  <UiModal
+    :is-open="isOpen"
+    :title="title"
+    position="center"
+    @close="handleClose"
   >
-    <!-- 오버레이 배경 -->
-    <div
-      class="modal-dialog-overlay"
-      @click="handleClose"
-    ></div>
+    <!-- 본문 -->
+    <slot>
+      {{ message }}
+    </slot>
 
-    <!-- 모달 컨텐츠 -->
-    <div class="modal-dialog-content">
-      <!-- 헤더 -->
-      <div class="modal-dialog-header">
-        <h2 class="modal-dialog-title">{{ title }}</h2>
-
-        <!-- 닫기 버튼 -->
-        <button
-          class="btn btn-modal-close"
-          @click="handleClose"
-        >
-          <i class="icon icon-close-gray size-20"></i>
-        </button>
-      </div>
-
-      <!-- 본문 -->
-      <div class="modal-dialog-body">
-        <slot>
-          {{ message }}
-        </slot>
-      </div>
-
-      <!-- 푸터 -->
+    <!-- 푸터 -->
+    <template #footer>
       <div class="modal-dialog-footer">
         <UiButton
           class="btn-modal-dialog"
@@ -43,8 +22,8 @@
           {{ confirmText }}
         </UiButton>
       </div>
-    </div>
-  </div>
+    </template>
+  </UiModal>
 </template>
 
 <script setup lang="ts">

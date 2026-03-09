@@ -232,13 +232,14 @@
 const statusList = [
   { category: '페이지', name: '채팅 메인', location: '/chat', url: '/chat', status: 'done' },
   { category: '페이지', name: '채팅 상세', location: '/chat/:id', url: '', status: 'wip' },
-  { category: '페이지', name: '라이브러리', location: '/library', url: '/library', status: 'wip' },
-  { category: '페이지', name: '에이전트 목록', location: '/agents', url: '/agents', status: 'pending' },
+  { category: '페이지', name: '라이브러리', location: '/library', url: '/library', status: 'done' },
+  { category: '페이지', name: '에이전트 목록', location: '/agents', url: '/agents', status: 'wip' },
   { category: '페이지', name: '에이전트 생성', location: '/agents/new', url: '/agents/new', status: 'pending' },
   { category: '페이지', name: '에이전트 상세', location: '/agents/:id', url: '', status: 'pending' },
   { category: '페이지', name: '엑셀 뷰어', location: '/excel', url: '/excel', status: 'done' },
   { category: 'UI 컴포넌트', name: 'UiInput', location: '/guide/ui-input', url: '/guide/ui-input', status: 'done' },
   { category: 'UI 컴포넌트', name: 'UiTable', location: '/guide/ui-table', url: '/guide/ui-table', status: 'done' },
+  { category: 'UI 컴포넌트', name: 'UiModal', location: '/guide/ui-modal', url: '/guide/ui-modal', status: 'done' },
   { category: '페이지', name: '로그인', location: '/login', url: '/login', status: 'pending' },
 ]
 
@@ -340,6 +341,12 @@ const componentList = [
     to: '/guide/ui-table',
     description: '컬럼 정의 기반 데이터 테이블 — 정렬, 고정 헤더, 셀 커스터마이징',
     tags: ['columns', 'data', 'stickyHeader', 'slot'],
+  },
+  {
+    name: 'UiModal',
+    to: '/guide/ui-modal',
+    description: 'center/right 모달 공통 컴포넌트 — 오버레이, 닫기, 슬롯 지원',
+    tags: ['position', 'title', 'showOverlay', 'slot'],
   },
 ]
 
