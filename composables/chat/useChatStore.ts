@@ -9,14 +9,14 @@ import type {
   PdfDocumentProxy,
   PdfJsLib,
 } from '~/types/chat'
-import { EMPTY_MODEL_OPTION, EMPTY_CHAT_ROOM } from '~/types/chat'
+import { EMPTY_CHAT_ROOM } from '~/types/chat'
 
 const { fetchSelectModelList, fetchCreateChatRoom } = useReportsApi()
 
 // ============================================
 // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
 // ============================================
-const modelOptions = ref<ModelOption>({ ...EMPTY_MODEL_OPTION })
+const modelOptions = ref<ModelOption[]>([])
 
 const dummyMessages: ChatMessage[] = [
   {
