@@ -37,6 +37,7 @@ const navItems = [
   { icon: 'icon-ai-chat', label: 'AI 채팅', path: '/chat' },
   { icon: 'icon-knowledge', label: '내지식창고', path: '/library' },
   { icon: 'icon-database', label: '로그인이력', path: '/login-history' },
+  { icon: 'icon-settings', label: '공통코드', path: '/codes' },
 ]
 
 // 현재 라우트 기준으로 active 판단 (URL 직접 입력, 뒤로가기 시에도 정확히 반영)
