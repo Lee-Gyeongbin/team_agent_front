@@ -12,13 +12,13 @@ export const useReportsApi = () => {
   const fetchSelectDmList = async (): Promise<{ subOptionList: SubOption[] }> => {
     return get<{ subOptionList: SubOption[] }>('/ai/chatbot/selectDmList.do')
   }
-  const fetchCreateChatRoom = async (svcTy: string, content: string): Promise<{ data: ChatRoom }> => {
-    return post<{ data: ChatRoom }>('/ai/chatbot/createChatRoom.do', { svcTy, content })
+  const fetchCreateChatRoom = async (content: string, refId: string, svcTy: string): Promise<{ data: ChatRoom }> => {
+    return post<{ data: ChatRoom }>('/ai/chatbot/createChatRoom.do', { content, refId, svcTy })
   }
 
   return {
     fetchSelectModelList,
-    fetchSelectRagDsList,
+    fetchSelectRagDsList, 
     fetchSelectDmList,
     fetchCreateChatRoom,
   }

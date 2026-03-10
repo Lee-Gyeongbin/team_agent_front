@@ -311,17 +311,22 @@ export const useChatStore = () => {
   // 채팅방 생성 (content: 호출부에서 전달 가능, 미전달 시 chatMessage 사용)
   const createChatRoom = async (content?: string): Promise<ChatRoom> => {
     // TODO: 서비스 타입 수정 필요
-    const svcTy = selectedModel.value
     const qContent = (content ?? chatMessage.value).trim()
-    if (!svcTy || !qContent) {
+    if (!qContent) {
       chatRoom.value = { ...EMPTY_CHAT_ROOM, qContent: '' }
       return chatRoom.value
     }
 
-    const res = await fetchCreateChatRoom(svcTy, qContent)
+    const refId = selectedSubOption.value
+    let svcTy = ''
+    if(isNotEmpty(activeSearchModes.value)) {
+      svcTy = activeSearchModes.value[0]
+    } else {
+      svcTy = selectedSubOption.value[0]
+    }
+    const res = await fetchCreateChatRoom(qContent, refId, svcTy)
     chatRoom.value.roomId = res.data.roomId
     chatRoom.value.title = qContent
-    chatRoom.value.svcTy = svcTy
     chatRoom.value.qContent = qContent
 
     // 새 채팅방: 메시지 초기화 후 user + assistant placeholder 추가
