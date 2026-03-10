@@ -8,7 +8,7 @@ export interface LoginHistoryItem {
   accessTp: string
   ipAddr: string
   userAgent: string
-  result: '성공' | '실패'
+  result: string
   failRson: string | null
   failCnt: number
   token: string | null
