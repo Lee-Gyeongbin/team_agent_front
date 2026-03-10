@@ -141,8 +141,8 @@
         <div class="chat-pdf-sidebar">
           <div class="chat-pdf-sidebar-select">
             <UiSelect
-              v-model="selectedDocument"
               id="pdf-doc-select"
+              v-model="selectedDocument"
               name="pdf-doc-select"
               :options="documentList"
               size="lg"

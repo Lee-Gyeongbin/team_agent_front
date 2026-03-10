@@ -1,24 +1,22 @@
-import type { ChatMessage, ChatRoom, PanelType, ModelOption, SearchModeValue, SearchModeOption, SubOption, PdfDocumentProxy, PdfJsLib } from '~/types/chat'
-import { EMPTY_CHAT_ROOM } from '~/types/chat'
+import type {
+  ChatMessage,
+  ChatRoom,
+  PanelType,
+  ModelOption,
+  SearchModeValue,
+  SearchModeOption,
+  SubOption,
+  PdfDocumentProxy,
+  PdfJsLib,
+} from '~/types/chat'
+import { EMPTY_MODEL_OPTION, EMPTY_CHAT_ROOM } from '~/types/chat'
 
-const { fetchCreateChatRoom } = useReportsApi()
+const { fetchSelectModelList, fetchCreateChatRoom } = useReportsApi()
 
 // ============================================
 // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
 // ============================================
-const modelOptions: ModelOption[] = [
-  { label: '자동', value: 'auto' },
-  { label: 'GPT-4o', value: 'gpt-4o' },
-  { label: 'GPT-4o mini', value: 'gpt-4o-mini' },
-  { label: 'Claude 3.5 Sonnet', value: 'claude-3-5-sonnet' },
-  { label: 'Claude 3 Opus', value: 'claude-3-opus' },
-  { label: 'Gemini 1.5 Pro', value: 'gemini-1.5-pro' },
-  { label: 'Gemini 1.5 Flash', value: 'gemini-1.5-flash' },
-  { label: 'Llama 3.1 405B', value: 'llama-3.1-405b' },
-  { label: 'Mixtral 8x22B', value: 'mixtral-8x22b' },
-  { label: 'DeepSeek V3', value: 'deepseek-v3' },
-  { label: 'Qwen 2.5 72B', value: 'qwen-2.5-72b' },
-]
+const modelOptions = ref<ModelOption>({ ...EMPTY_MODEL_OPTION })
 
 const dummyMessages: ChatMessage[] = [
   {
@@ -499,6 +497,13 @@ export const useChatStore = () => {
     return subOptionsMap[lastMode] || []
   })
 
+  // 모델 옵션 조회
+  const selectModelOptions = async () => {
+    const res = await fetchSelectModelList()
+    modelOptions.value = res.modelList.map((item: ModelOption) => ({ label: item.label, value: item.value }))
+    return modelOptions.value
+  }
+
   return {
     // 상태
     messages,
@@ -514,6 +519,7 @@ export const useChatStore = () => {
     selectedSubOption,
     currentSubOptions,
     // 액션
+    selectModelOptions,
     createChatRoom,
     resetChatRoom,
     onSend,

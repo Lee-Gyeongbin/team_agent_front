@@ -25,8 +25,8 @@
         <div class="chat-input-bottom-right flex gap-8 items-center">
           <UiSelect
             v-if="currentSubOptions.length > 0"
-            :model-value="selectedSubOption"
             id="sub-option"
+            :model-value="selectedSubOption"
             class="w-170"
             name="sub-option"
             :options="currentSubOptions"
@@ -35,8 +35,8 @@
           />
           <UiSelect
             v-else
-            :model-value="selectedModel"
             id="ai-model"
+            :model-value="selectedModel"
             class="w-170"
             name="ai-model"
             :options="modelOptions"

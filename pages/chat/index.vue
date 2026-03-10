@@ -53,15 +53,20 @@ const {
   chatMessage,
   activeSearchModes,
   toggleSearchMode,
+  selectModelOptions,
   startChatSocket,
   stopChatSocket,
   resetChatRoom,
 } = useChatStore()
 const { user } = useAuth()
 
-onMounted(() => {
+onMounted(async () => {
+  // 채팅방 초기화
   resetChatRoom()
+  // 채팅소켓 시작
   startChatSocket()
+  // 모델 옵션 조회
+  await selectModelOptions()
 })
 
 onBeforeRouteLeave((to) => {

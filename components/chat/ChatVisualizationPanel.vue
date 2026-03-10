@@ -62,8 +62,8 @@
             <div class="chat-vis-chart-filter">
               <span class="chat-vis-chart-filter-label">범례</span>
               <UiSelect
-                v-model="legendOption"
                 id="chart-legend"
+                v-model="legendOption"
                 name="chart-legend"
                 :options="legendOptions"
                 class="w-96"
@@ -73,8 +73,8 @@
             <div class="chat-vis-chart-filter">
               <span class="chat-vis-chart-filter-label">기준값(좌)</span>
               <UiSelect
-                v-model="leftAxisOption"
                 id="chart-left-axis"
+                v-model="leftAxisOption"
                 name="chart-left-axis"
                 :options="axisOptions"
                 class="w-96"
@@ -84,8 +84,8 @@
             <div class="chat-vis-chart-filter">
               <span class="chat-vis-chart-filter-label">기준값(우)</span>
               <UiSelect
-                v-model="rightAxisOption"
                 id="chart-right-axis"
+                v-model="rightAxisOption"
                 name="chart-right-axis"
                 :options="axisOptions"
                 class="w-96"
