@@ -1,49 +1,8 @@
 import type { CodeGroupItem, CodeItem } from '~/types/codes'
 import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
 import { useCodesApi } from '~/composables/codes/useCodesApi'
-const { fetchCodeGroupList, fetchSaveCodeGroup, fetchUpdateCodeSortOrder } = useCodesApi()
-
-/**
- *
- * @returns
- */
-const createDummyGroupList = (): CodeGroupItem[] => [
-  {
-    codeGrpId: 'USER_TYPE',
-    codeGrpNm: '사용자 유형',
-    description: '시스템 사용자 유형 구분',
-    useYn: 'Y',
-    createDt: '2026-01-01',
-  },
-  { codeGrpId: 'STATUS', codeGrpNm: '상태', description: '공통 상태 코드', useYn: 'Y', createDt: '2026-01-01' },
-  {
-    codeGrpId: 'NOTICE_TYPE',
-    codeGrpNm: '공지 유형',
-    description: '공지사항 유형 구분',
-    useYn: 'Y',
-    createDt: '2026-01-01',
-  },
-]
-
-const createDummyCodeList = (codeGrpId: string): CodeItem[] => {
-  const map: Record<string, CodeItem[]> = {
-    USER_TYPE: [
-      { codeId: '1', codeGrpId: 'USER_TYPE', codeNm: '관리자', sortOrd: 1, useYn: 'Y', description: '' },
-      { codeId: '2', codeGrpId: 'USER_TYPE', codeNm: '일반사용자', sortOrd: 2, useYn: 'Y', description: '' },
-      { codeId: '3', codeGrpId: 'USER_TYPE', codeNm: '게스트', sortOrd: 3, useYn: 'N', description: '비활성화 예정' },
-    ],
-    STATUS: [
-      { codeId: '4', codeGrpId: 'STATUS', codeNm: '활성', sortOrd: 1, useYn: 'Y', description: '' },
-      { codeId: '5', codeGrpId: 'STATUS', codeNm: '비활성', sortOrd: 2, useYn: 'Y', description: '' },
-      { codeId: '6', codeGrpId: 'STATUS', codeNm: '대기', sortOrd: 3, useYn: 'Y', description: '' },
-    ],
-    NOTICE_TYPE: [
-      { codeId: '7', codeGrpId: 'NOTICE_TYPE', codeNm: '일반', sortOrd: 1, useYn: 'Y', description: '' },
-      { codeId: '8', codeGrpId: 'NOTICE_TYPE', codeNm: '중요', sortOrd: 2, useYn: 'Y', description: '' },
-    ],
-  }
-  return map[codeGrpId] ?? []
-}
+import { isEmpty, isValidCodeFormat } from '~/utils/global/validationUtil'
+const { fetchCodeGroupList, fetchSaveCodeGroup, fetchCodeList, fetchSaveCode, fetchUpdateCodeSortOrder } = useCodesApi()
 
 /** 상세코드 행 액션 메뉴 아이템 */
 export const codesRowMenuItems: DropdownMenuItemDef[] = [
@@ -57,33 +16,37 @@ export const codeGroupRowMenuItems: DropdownMenuItemDef[] = [
   { label: '삭제', value: 'delete', icon: 'icon-trashcan', color: 'danger' },
 ]
 
+/** 사용여부 선택 옵션 */
+export const useYnOptions = [
+  { label: '사용', value: 'Y' },
+  { label: '미사용', value: 'N' },
+]
+
+// 호출부 간 동기화를 위해 모듈 레벨로 공유
+const codeGroupList = ref<CodeGroupItem[]>([])
+const codeList = ref<CodeItem[]>([])
+const selectedGroupCode = ref('')
+const searchKeyword = ref('')
+const searchKeywordGroup = ref('')
+const isLoading = ref(false)
+const errorMessage = ref('')
+const modalErrorMessage = ref('')
+
+const isModalOpen = ref(false)
+const isEditMode = ref(false)
+const editingCode = ref<CodeItem | null>(null)
+
+const isGroupModalOpen = ref(false)
+const isGroupEditMode = ref(false)
+const editingGroup = ref<CodeGroupItem | null>(null)
+
+const isGroupDeleteModalOpen = ref(false)
+const deletingGroup = ref<CodeGroupItem | null>(null)
+
+const isDeleteModalOpen = ref(false)
+const deletingCode = ref<CodeItem | null>(null)
+
 export const useCodesStore = () => {
-  const codeGroupList = ref<CodeGroupItem[]>(createDummyGroupList())
-  const codeList = ref<CodeItem[]>([])
-  const selectedGroupCode = ref('')
-  const searchKeyword = ref('')
-  const searchKeywordGroup = ref('')
-  const isLoading = ref(false)
-  const errorMessage = ref('')
-
-  // 모달 상태
-  const isModalOpen = ref(false)
-  const isEditMode = ref(false)
-  const editingCode = ref<CodeItem | null>(null)
-
-  // 그룹 추가/수정 모달
-  const isGroupModalOpen = ref(false)
-  const isGroupEditMode = ref(false)
-  const editingGroup = ref<CodeGroupItem | null>(null)
-
-  // 그룹 삭제 확인 모달
-  const isGroupDeleteModalOpen = ref(false)
-  const deletingGroup = ref<CodeGroupItem | null>(null)
-
-  // 삭제 확인 모달
-  const isDeleteModalOpen = ref(false)
-  const deletingCode = ref<CodeItem | null>(null)
-
   const filteredList = computed(() => {
     const keyword = searchKeyword.value.trim().toLowerCase()
     if (!keyword) return codeList.value
@@ -136,7 +99,7 @@ export const useCodesStore = () => {
       codeGroupList.value = response.dataList ?? []
       if (codeGroupList.value.length > 0 && !selectedGroupCode.value) {
         selectedGroupCode.value = codeGroupList.value[0].codeGrpId
-        // await handleFetchCodeList()
+        await handleFetchCodeList()
       }
     } catch {
       errorMessage.value = '그룹코드 목록을 불러오는데 실패했습니다.'
@@ -145,6 +108,7 @@ export const useCodesStore = () => {
     }
   }
 
+  /** 상세코드 목록 조회 */
   const handleFetchCodeList = async () => {
     if (!selectedGroupCode.value) {
       codeList.value = []
@@ -153,8 +117,8 @@ export const useCodesStore = () => {
     errorMessage.value = ''
     isLoading.value = true
     try {
-      // TODO: API 연결 시 fetchCodeList(selectedGroupCode) 호출
-      codeList.value = createDummyCodeList(selectedGroupCode.value)
+      const response = await fetchCodeList(selectedGroupCode.value as string)
+      codeList.value = response.dataList ?? []
     } catch {
       errorMessage.value = '상세코드 목록을 불러오는데 실패했습니다.'
     } finally {
@@ -162,6 +126,7 @@ export const useCodesStore = () => {
     }
   }
 
+  /** 그룹코드 변경 시 상세코드 목록 로드 */
   const handleGroupCodeChange = () => {
     handleFetchCodeList()
   }
@@ -172,58 +137,75 @@ export const useCodesStore = () => {
     handleFetchCodeList()
   }
 
+  /** 상세코드 추가 모달 열기 */
   const openAddModal = () => {
     isEditMode.value = false
     editingCode.value = null
     isModalOpen.value = true
   }
 
+  /** 그룹코드 추가 모달 열기 */
   const openAddGroupModal = () => {
     isGroupEditMode.value = false
     editingGroup.value = null
     isGroupModalOpen.value = true
   }
 
+  /** 그룹코드 수정 모달 열기 */
   const openEditGroupModal = (group: CodeGroupItem) => {
     isGroupEditMode.value = true
     editingGroup.value = { ...group }
     isGroupModalOpen.value = true
   }
 
+  /** 그룹코드 모달 닫기 */
   const handleGroupModalClose = () => {
     isGroupModalOpen.value = false
     editingGroup.value = null
+    modalErrorMessage.value = ''
   }
 
-  const handleSaveGroup = async (_form: Partial<CodeGroupItem>) => {
-    // TODO: API 연결 시 그룹 저장 API 호출
-    console.warn('[TODO] handleSaveGroup — API 연결 필요', _form)
-    if (isGroupEditMode.value && editingGroup.value) {
-      codeGroupList.value = codeGroupList.value.map((g) =>
-        g.codeGrpId === editingGroup.value!.codeGrpId
-          ? {
-              ...g,
-              codeGrpNm: _form.codeGrpNm ?? g.codeGrpNm,
-              description: _form.description ?? g.description,
-              useYn: _form.useYn ?? g.useYn,
-            }
-          : g,
-      )
-    } else {
-      const newGroup: CodeGroupItem = {
-        codeGrpId: _form.codeGrpId ?? '',
-        codeGrpNm: _form.codeGrpNm ?? '',
-        description: _form.description ?? '',
-        useYn: _form.useYn ?? 'Y',
-        createDt: new Date().toISOString().slice(0, 10),
-      }
-      codeGroupList.value = [...codeGroupList.value, newGroup]
+  /** 그룹코드 폼 유효성 검사 */
+  const validateGroupForm = (_form: Partial<CodeGroupItem>): boolean => {
+    if (isEmpty(_form.codeGrpId)) {
+      modalErrorMessage.value = '그룹코드를 입력해주세요.'
+      return false
     }
-    handleGroupModalClose()
+
+    if (!isValidCodeFormat(_form.codeGrpId)) {
+      modalErrorMessage.value =
+        '그룹코드 형식이 올바르지 않습니다.\n앞 2자리 대문자 영문 + 뒤 6자리 숫자로 입력해주세요.'
+      return false
+    }
+
+    if (isEmpty(_form.codeGrpNm)) {
+      modalErrorMessage.value = '그룹코드명을 입력해주세요.'
+      return false
+    }
+
+    return true
   }
 
-  const handleGroupRowMenuSelect = (row: Record<string, any>, value: string) => {
-    const group = row as CodeGroupItem
+  /** 그룹코드 저장 */
+  const handleSaveGroup = async (_form: Partial<CodeGroupItem>) => {
+    if (!validateGroupForm(_form)) return
+    modalErrorMessage.value = ''
+    try {
+      errorMessage.value = ''
+      isLoading.value = true
+      await fetchSaveCodeGroup(_form as CodeGroupItem)
+      await handleFetchCodeGroupList()
+    } catch {
+      errorMessage.value = '그룹코드 저장에 실패했습니다.'
+    } finally {
+      isLoading.value = false
+      handleGroupModalClose()
+    }
+  }
+
+  /** 그룹코드 행 메뉴 선택 */
+  const handleGroupRowMenuSelect = (row: CodeGroupItem, value: string) => {
+    const group = row
     if (value === 'edit') {
       openEditGroupModal(group)
     } else if (value === 'delete') {
@@ -259,17 +241,49 @@ export const useCodesStore = () => {
   const handleModalClose = () => {
     isModalOpen.value = false
     editingCode.value = null
+    modalErrorMessage.value = ''
   }
 
+  /** 상세코드 폼 유효성 검사 */
+  const validateCodeForm = (_form: Partial<CodeItem>): boolean => {
+    if (isEmpty(selectedGroupCode.value)) {
+      modalErrorMessage.value = '그룹코드를 선택해주세요.'
+      return false
+    }
+
+    if (isEmpty(_form.codeId)) {
+      modalErrorMessage.value = '코드를 입력해주세요.'
+      return false
+    }
+
+    if (isEmpty(_form.codeNm)) {
+      modalErrorMessage.value = '코드명을 입력해주세요.'
+      return false
+    }
+
+    return true
+  }
+
+  /** 상세코드 저장 */
   const handleSaveCode = async (_form: Partial<CodeItem>) => {
-    // TODO: API 연결 시 저장 API 호출
-    console.warn('[TODO] handleSaveCode — API 연결 필요', _form)
-    handleModalClose()
-    await handleFetchCodeList()
+    if (!validateCodeForm(_form)) return
+    modalErrorMessage.value = ''
+    try {
+      errorMessage.value = ''
+      isLoading.value = true
+      await fetchSaveCode({ ..._form, codeGrpId: selectedGroupCode.value as string } as CodeItem)
+      await handleFetchCodeList()
+    } catch {
+      errorMessage.value = '상세코드 저장에 실패했습니다.'
+    } finally {
+      isLoading.value = false
+      handleModalClose()
+    }
   }
 
-  const handleRowMenuSelect = (row: Record<string, any>, value: string) => {
-    const code = row as CodeItem
+  /** 상세코드 행 메뉴 선택 */
+  const handleRowMenuSelect = (row: CodeItem, value: string) => {
+    const code = row
     if (value === 'edit') {
       openEditModal(code)
     } else if (value === 'delete') {
@@ -320,6 +334,7 @@ export const useCodesStore = () => {
     searchKeywordGroup,
     isLoading,
     errorMessage,
+    modalErrorMessage,
     filteredList,
     filteredGroupList,
     codeGroupOptions,

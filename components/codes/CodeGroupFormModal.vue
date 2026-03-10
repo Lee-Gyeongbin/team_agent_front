@@ -5,7 +5,7 @@
         <label class="form-label">그룹코드</label>
         <UiInput
           v-model="form.codeGrpId"
-          placeholder="그룹코드 입력 (예: USER_TYPE)"
+          placeholder="그룹코드 입력 (예: CG000001)"
           :disabled="isEditMode"
         />
       </div>
@@ -32,6 +32,12 @@
         />
       </div>
     </div>
+    <div
+      v-if="modalErrorMessage"
+      class="code-group-form-error"
+    >
+      <p class="code-group-form-error__message">{{ modalErrorMessage }}</p>
+    </div>
     <div class="modal-dialog-footer">
       <UiButton
         class="btn-modal-dialog"
@@ -55,11 +61,10 @@
 
 <script setup lang="ts">
 import type { CodeGroupItem } from '~/types/codes'
+import { saveCodeGrpForm } from '~/types/codes'
+import { useCodesStore, useYnOptions } from '~/composables/codes/useCodesStore'
 
-const useYnOptions = [
-  { label: '사용', value: 'Y' },
-  { label: '미사용', value: 'N' },
-]
+const { modalErrorMessage } = useCodesStore()
 
 interface Props {
   editingGroup: CodeGroupItem | null
@@ -73,12 +78,7 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const form = reactive({
-  codeGrpId: '',
-  codeGrpNm: '',
-  description: '',
-  useYn: 'Y',
-})
+const form = reactive(saveCodeGrpForm())
 
 watch(
   () => props.editingGroup,
@@ -89,13 +89,17 @@ watch(
       form.description = group.description ?? ''
       form.useYn = group.useYn
     } else {
-      form.codeGrpId = ''
-      form.codeGrpNm = ''
-      form.description = ''
-      form.useYn = 'Y'
+      Object.assign(form, saveCodeGrpForm())
     }
   },
   { immediate: true },
+)
+
+watch(
+  () => [form.codeGrpId, form.codeGrpNm, form.description, form.useYn],
+  () => {
+    modalErrorMessage.value = ''
+  },
 )
 
 const onSubmit = () => {
@@ -119,6 +123,20 @@ const onSubmit = () => {
   flex-direction: column;
   gap: $spacing-md;
   width: 100%;
+}
+
+.code-group-form-error {
+  margin-top: $spacing-md;
+  padding: $spacing-md;
+  background: rgba($color-error, 0.06);
+  border-radius: $border-radius-base;
+
+  &__message {
+    font-size: $font-size-sm;
+    color: $color-error;
+    text-align: center;
+    white-space: pre-line;
+  }
 }
 
 .modal-dialog-footer {

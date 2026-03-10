@@ -17,14 +17,6 @@
         />
       </div>
       <div class="form-row">
-        <label class="form-label">정렬순서</label>
-        <UiInput
-          v-model="form.sortOrderStr"
-          type="number"
-          placeholder="0"
-        />
-      </div>
-      <div class="form-row">
         <label class="form-label">사용여부</label>
         <UiSelect
           v-model="form.useYn"
@@ -33,12 +25,18 @@
         />
       </div>
       <div class="form-row">
-        <label class="form-label">비고</label>
+        <label class="form-label">설명명</label>
         <UiInput
-          v-model="form.remark"
-          placeholder="비고 입력 (선택)"
+          v-model="form.description"
+          placeholder="설명 입력 (선택)"
         />
       </div>
+    </div>
+    <div
+      v-if="modalErrorMessage"
+      class="codes-form-error"
+    >
+      <p class="codes-form-error__message">{{ modalErrorMessage }}</p>
     </div>
     <div class="modal-dialog-footer">
       <UiButton
@@ -63,11 +61,10 @@
 
 <script setup lang="ts">
 import type { CodeItem } from '~/types/codes'
+import { saveCodeForm } from '~/types/codes'
+import { useCodesStore, useYnOptions } from '~/composables/codes/useCodesStore'
 
-const useYnOptions = [
-  { label: '사용', value: 'Y' },
-  { label: '미사용', value: 'N' },
-]
+const { modalErrorMessage } = useCodesStore()
 
 interface Props {
   editingCode: CodeItem | null
@@ -81,13 +78,7 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const form = reactive({
-  code: '',
-  codeName: '',
-  sortOrdStr: '0',
-  useYn: 'Y',
-  description: '',
-})
+const form = reactive(saveCodeForm())
 
 watch(
   () => props.editingCode,
@@ -99,14 +90,17 @@ watch(
       form.useYn = code.useYn
       form.description = code.description ?? ''
     } else {
-      form.code = ''
-      form.codeName = ''
-      form.sortOrdStr = '0'
-      form.useYn = 'Y'
-      form.description = ''
+      Object.assign(form, saveCodeForm())
     }
   },
   { immediate: true },
+)
+
+watch(
+  () => [form.code, form.codeName, form.sortOrdStr, form.useYn, form.description],
+  () => {
+    modalErrorMessage.value = ''
+  },
 )
 
 const onSubmit = () => {
@@ -132,6 +126,20 @@ const onSubmit = () => {
   flex-direction: column;
   gap: $spacing-md;
   width: 100%;
+}
+
+.codes-form-error {
+  margin-top: $spacing-md;
+  padding: $spacing-md;
+  background: rgba($color-error, 0.06);
+  border-radius: $border-radius-base;
+
+  &__message {
+    font-size: $font-size-sm;
+    color: $color-error;
+    text-align: center;
+    white-space: pre-line;
+  }
 }
 
 .modal-dialog-footer {

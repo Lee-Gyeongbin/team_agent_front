@@ -25,10 +25,44 @@ export interface CodeGroupOption {
   codeGrpNm: string
 }
 
+/** 그룹코드 폼 데이터 */
+export interface CodeGroupFormData {
+  codeGrpId: string
+  codeGrpNm: string
+  description: string
+  useYn: string
+}
+
+export const saveCodeGrpForm = (): CodeGroupFormData => ({
+  codeGrpId: '',
+  codeGrpNm: '',
+  description: '',
+  useYn: 'Y',
+})
+
+/** 상세코드 폼 데이터 */
+export interface CodeFormData {
+  codeGrpId: string
+  code: string
+  codeName: string
+  sortOrdStr: string
+  useYn: string
+  description: string
+}
+
+export const saveCodeForm = (): CodeFormData => ({
+  codeGrpId: '',
+  code: '',
+  codeName: '',
+  sortOrdStr: '0',
+  useYn: 'Y',
+  description: '',
+})
+
 /** 공통코드 그룹 테이블 컬럼 정의 */
 export const codeGroupColumns: TableColumn[] = [
-  { key: 'codeGrpId', label: '그룹코드', width: '35%', align: 'left', headerAlign: 'center' },
-  { key: 'codeGrpNm', label: '그룹명', width: '40%', align: 'left', headerAlign: 'center' },
+  { key: 'codeGrpId', label: '그룹코드', width: '35%', align: 'center', headerAlign: 'center' },
+  { key: 'codeGrpNm', label: '그룹명', width: '40%', align: 'center', headerAlign: 'center' },
   { key: 'useYn', label: '사용', width: '15%', align: 'center', headerAlign: 'center' },
   { key: 'actions', label: '', width: '10%', align: 'center', headerAlign: 'center' },
 ]

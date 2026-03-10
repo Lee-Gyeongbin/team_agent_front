@@ -93,23 +93,28 @@
               </span>
             </template>
             <template #cell-actions="{ row }">
-              <UiDropdownMenu
-                :items="codeGroupRowMenuItems"
-                align="end"
-                @select="(value) => handleGroupRowMenuSelect(row, value)"
+              <div
+                class="cell-actions-wrap"
+                @click.stop
               >
-                <template #trigger>
-                  <UiButton
-                    icon-only
-                    variant="ghost"
-                    size="xs"
-                  >
-                    <template #icon-left>
-                      <i class="icon icon-add-dot size-16" />
-                    </template>
-                  </UiButton>
-                </template>
-              </UiDropdownMenu>
+                <UiDropdownMenu
+                  :items="codeGroupRowMenuItems"
+                  align="end"
+                  @select="(value) => handleGroupRowMenuSelect(row as CodeGroupItem, value)"
+                >
+                  <template #trigger>
+                    <UiButton
+                      icon-only
+                      variant="ghost"
+                      size="xs"
+                    >
+                      <template #icon-left>
+                        <i class="icon icon-add-dot size-16" />
+                      </template>
+                    </UiButton>
+                  </template>
+                </UiDropdownMenu>
+              </div>
             </template>
           </UiTable>
         </div>
@@ -181,23 +186,28 @@
               </span>
             </template>
             <template #cell-actions="{ row }">
-              <UiDropdownMenu
-                :items="codesRowMenuItems"
-                align="end"
-                @select="(v) => handleRowMenuSelect(row, v)"
+              <div
+                class="cell-actions-wrap"
+                @click.stop
               >
-                <template #trigger>
-                  <UiButton
-                    icon-only
-                    variant="ghost"
-                    size="xs"
-                  >
-                    <template #icon-left>
-                      <i class="icon icon-add-dot size-16" />
-                    </template>
-                  </UiButton>
-                </template>
-              </UiDropdownMenu>
+                <UiDropdownMenu
+                  :items="codesRowMenuItems"
+                  align="end"
+                  @select="(v) => handleRowMenuSelect(row as CodeItem, v)"
+                >
+                  <template #trigger>
+                    <UiButton
+                      icon-only
+                      variant="ghost"
+                      size="xs"
+                    >
+                      <template #icon-left>
+                        <i class="icon icon-add-dot size-16" />
+                      </template>
+                    </UiButton>
+                  </template>
+                </UiDropdownMenu>
+              </div>
             </template>
           </UiDragTable>
 
@@ -219,23 +229,28 @@
               </span>
             </template>
             <template #cell-actions="{ row }">
-              <UiDropdownMenu
-                :items="codesRowMenuItems"
-                align="end"
-                @select="(v) => handleRowMenuSelect(row, v)"
+              <div
+                class="cell-actions-wrap"
+                @click.stop
               >
-                <template #trigger>
-                  <UiButton
-                    icon-only
-                    variant="ghost"
-                    size="xs"
-                  >
-                    <template #icon-left>
-                      <i class="icon icon-add-dot size-16" />
-                    </template>
-                  </UiButton>
-                </template>
-              </UiDropdownMenu>
+                <UiDropdownMenu
+                  :items="codesRowMenuItems"
+                  align="end"
+                  @select="(v) => handleRowMenuSelect(row as CodeItem, v)"
+                >
+                  <template #trigger>
+                    <UiButton
+                      icon-only
+                      variant="ghost"
+                      size="xs"
+                    >
+                      <template #icon-left>
+                        <i class="icon icon-add-dot size-16" />
+                      </template>
+                    </UiButton>
+                  </template>
+                </UiDropdownMenu>
+              </div>
             </template>
           </UiTable>
         </div>
@@ -301,7 +316,7 @@
 </template>
 
 <script setup lang="ts">
-import type { CodeGroupItem } from '~/types/codes'
+import type { CodeGroupItem, CodeItem } from '~/types/codes'
 import { codeGroupColumns, codesColumns, codesColumnsWithDrag } from '~/types/codes'
 import { codeGroupRowMenuItems, codesRowMenuItems, useCodesStore } from '~/composables/codes/useCodesStore'
 
@@ -413,6 +428,7 @@ onMounted(() => {
 // 좌우 분할
 .codes-split {
   display: flex;
+  align-items: flex-start;
   gap: $spacing-md;
   min-height: 0;
 }
