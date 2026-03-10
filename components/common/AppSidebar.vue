@@ -35,10 +35,7 @@ const route = useRoute()
 // ============================================
 const navItems = [
   { icon: 'icon-ai-chat', label: 'AI 채팅', path: '/chat' },
-  { icon: 'icon-settings', label: '설정', path: '/' },
-  { icon: 'icon-chart', label: '대시보드', path: '/' },
-  { icon: 'icon-system', label: '시스템', path: '/' },
-  { icon: 'icon-group', label: '팀/그룹', path: '/' },
+  { icon: 'icon-knowledge', label: '내지식창고', path: '/library' },
   { icon: 'icon-database', label: '로그인이력', path: '/login-history' },
 ]
 
