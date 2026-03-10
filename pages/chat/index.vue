@@ -13,12 +13,7 @@
       data-aos="fade-up"
       data-aos-delay="200"
     >
-      <ChatInput
-        v-model="chatMessage"
-        :selected-model="selectedModel"
-        :model-options="modelOptions"
-        @update:selected-model="selectedModel = $event"
-      />
+      <ChatInput v-model="chatMessage" />
     </div>
 
     <div
@@ -48,8 +43,6 @@
 
 <script setup lang="ts">
 const {
-  selectedModel,
-  modelOptions,
   chatMessage,
   activeSearchModes,
   toggleSearchMode,

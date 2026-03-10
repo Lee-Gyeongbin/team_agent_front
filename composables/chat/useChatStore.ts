@@ -1,3 +1,4 @@
+// 타입 선언
 import type {
   ChatMessage,
   ChatRoom,
@@ -11,11 +12,10 @@ import type {
 } from '~/types/chat'
 import { EMPTY_CHAT_ROOM } from '~/types/chat'
 
-const { fetchSelectModelList, fetchCreateChatRoom } = useReportsApi()
+// API 호출
+const { fetchSelectModelList, fetchSelectRagDsList, fetchSelectDmList, fetchCreateChatRoom } = useReportsApi()
 
-// ============================================
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-// ============================================
+// LLM 모델 옵션
 const modelOptions = ref<ModelOption[]>([])
 
 const dummyMessages: ChatMessage[] = [
@@ -134,6 +134,8 @@ const subOptionsMap: Record<SearchModeValue, SubOption[]> = {
 // 검색모드 상태 (앱 전역 공유)
 const activeSearchModes = ref<SearchModeValue[]>([])
 const selectedSubOption = ref<string>('all')
+// 서브 옵션 (모델/라그/데이터마트 목록) — 호출부 간 동기화를 위해 모듈 레벨 공유
+const subOptions = ref<SubOption[]>([])
 
 export const useChatStore = () => {
   const escapeHtml = (value: string) =>
@@ -480,14 +482,43 @@ export const useChatStore = () => {
   }
 
   // 검색모드 토글 (라디오 방식 — 하나만 선택 가능)
-  const toggleSearchMode = (mode: SearchModeValue) => {
+  const toggleSearchMode = async (mode: SearchModeValue) => {
     if (activeSearchModes.value.includes(mode)) {
+      // 모드 해제 → 디폴트(모델 옵션)로 복원
       activeSearchModes.value = []
+      await selectModelOptions()
+      selectedSubOption.value = subOptions.value[0]?.value ?? 'auto'
     } else {
       activeSearchModes.value = [mode]
+      if (mode === 'knowledge') {
+        await selectRagDsList()
+      } else {
+        await selectDmList()
+      }
     }
-    // 모드 변경 시 서브 옵션 리셋
-    selectedSubOption.value = 'all'
+  }
+
+  // 모델 옵션 조회
+  const selectModelOptions = async () => {
+    const res = await fetchSelectModelList()
+    subOptions.value = res.modelList.map((item: ModelOption) => ({ label: item.label, value: item.value }))
+    selectedSubOption.value = subOptions.value[0]?.value ?? 'auto'
+    return subOptions.value
+  }
+  // 라그 데이터셋 조회
+  const selectRagDsList = async () => {
+    const res = await fetchSelectRagDsList()
+    subOptions.value = res.subOptionList.map((item: SubOption) => ({ label: item.label, value: item.value }))
+    selectedSubOption.value = subOptions.value[0]?.value ?? 'all'
+    return subOptions.value
+  }
+
+  // 데이터마트 데이터셋 조회
+  const selectDmList = async () => {
+    const res = await fetchSelectDmList()
+    subOptions.value = res.subOptionList.map((item: SubOption) => ({ label: item.label, value: item.value }))
+    selectedSubOption.value = subOptions.value[0]?.value ?? 'all'
+    return subOptions.value
   }
 
   // 현재 활성 모드의 서브 옵션 (마지막 선택된 모드 기준)
@@ -496,13 +527,6 @@ export const useChatStore = () => {
     const lastMode = activeSearchModes.value[activeSearchModes.value.length - 1]
     return subOptionsMap[lastMode] || []
   })
-
-  // 모델 옵션 조회
-  const selectModelOptions = async () => {
-    const res = await fetchSelectModelList()
-    modelOptions.value = res.modelList.map((item: ModelOption) => ({ label: item.label, value: item.value }))
-    return modelOptions.value
-  }
 
   return {
     // 상태
@@ -516,6 +540,7 @@ export const useChatStore = () => {
     modelOptions,
     searchModeOptions,
     activeSearchModes,
+    subOptions,
     selectedSubOption,
     currentSubOptions,
     // 액션
