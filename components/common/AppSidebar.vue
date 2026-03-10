@@ -14,8 +14,9 @@
         v-for="item in navItems"
         :key="item.icon"
         class="sidebar-btn"
-        :class="{ 'is-active': item.isActive }"
+        :class="{ 'is-active': isNavItemActive(item) }"
         :title="item.label"
+        @click="onClickNavItem(item)"
       >
         <i
           class="size-20"
@@ -27,16 +28,30 @@
 </template>
 
 <script setup lang="ts">
+const route = useRoute()
+
 // ============================================
 // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
 // ============================================
 const navItems = [
-  { icon: 'icon-ai-chat', label: 'AI 채팅', isActive: true },
-  { icon: 'icon-settings', label: '설정', isActive: false },
-  { icon: 'icon-chart', label: '대시보드', isActive: false },
-  { icon: 'icon-system', label: '시스템', isActive: false },
-  { icon: 'icon-group', label: '팀/그룹', isActive: false },
+  { icon: 'icon-ai-chat', label: 'AI 채팅', path: '/chat' },
+  { icon: 'icon-settings', label: '설정', path: '/' },
+  { icon: 'icon-chart', label: '대시보드', path: '/' },
+  { icon: 'icon-system', label: '시스템', path: '/' },
+  { icon: 'icon-group', label: '팀/그룹', path: '/' },
+  { icon: 'icon-database', label: '로그인이력', path: '/login-history' },
 ]
+
+// 현재 라우트 기준으로 active 판단 (URL 직접 입력, 뒤로가기 시에도 정확히 반영)
+const isNavItemActive = (item: (typeof navItems)[number]) => {
+  const path = route.path
+  if (item.path === '/') return path === '/'
+  return path === item.path || path.startsWith(`${item.path}/`)
+}
+
+const onClickNavItem = (item: (typeof navItems)[number]) => {
+  navigateTo(item.path)
+}
 </script>
 
 <style lang="scss" scoped>
