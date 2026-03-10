@@ -103,7 +103,7 @@ export const useLoginHistoryStore = () => {
     isLoading.value = true
     try {
       const res = await fetchLoginHistoryList()
-      loginHistoryList.value = res.loginHistoryList
+      loginHistoryList.value = res.list
     } catch (error) {
       errorMessage.value = '로그인 이력을 불러오는데 실패했습니다.'
       console.error(error)
