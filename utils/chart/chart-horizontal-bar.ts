@@ -6,7 +6,6 @@ import { Chart } from 'chart.js/auto'
 import { ChartConfig } from './chart-config'
 
 export const XBarChartModule = {
-
   /** 범례 생성 */
   createLegend(legendId: string, categories: string[], colors: any) {
     const legendContainer = document.getElementById(legendId)
@@ -72,11 +71,24 @@ export const XBarChartModule = {
   /** 가로 막대 차트 생성 */
   create(config: any) {
     const {
-      id, legendId, categories, data, colorKey, colorIndex,
-      maxValue, yAxisStepSize, showDataLabels = false,
-      labelColorKey, labelColorIndex, showLegend = false,
-      datasets, unit = '', pointColorKey, pointColorIndex,
-      pointSize, showBackground = true,
+      id,
+      legendId,
+      categories,
+      data,
+      colorKey,
+      colorIndex,
+      maxValue,
+      yAxisStepSize,
+      showDataLabels = false,
+      labelColorKey,
+      labelColorIndex,
+      showLegend = false,
+      datasets,
+      unit = '',
+      pointColorKey,
+      pointColorIndex,
+      pointSize,
+      showBackground = true,
     } = config
 
     const canvas = document.getElementById(id) as HTMLCanvasElement | null
@@ -95,9 +107,7 @@ export const XBarChartModule = {
 
     if (showLegend && legendId) {
       const legendCategories = datasets ? datasets.map((d: any) => d.label) : categories
-      const legendColors = datasets
-        ? datasets.map((d: any) => ChartConfig.getColor(d.colorKey, d.colorIndex))
-        : colors
+      const legendColors = datasets ? datasets.map((d: any) => ChartConfig.getColor(d.colorKey, d.colorIndex)) : colors
       this.createLegend(legendId, legendCategories, legendColors)
     }
 

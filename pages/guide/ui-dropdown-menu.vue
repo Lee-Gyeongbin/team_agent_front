@@ -37,7 +37,8 @@
             선택된 값: {{ selectedValue }}
           </p>
         </div>
-        <pre class="demo-code">&lt;UiDropdownMenu
+        <pre class="demo-code">
+&lt;UiDropdownMenu
   :items="[
     { label: '보기', value: 'view', icon: 'icon-view' },
     { label: '수정', value: 'edit', icon: 'icon-edit' },
@@ -48,7 +49,8 @@
   &lt;template #trigger&gt;
     &lt;UiButton variant="outline"&gt;메뉴 열기&lt;/UiButton&gt;
   &lt;/template&gt;
-&lt;/UiDropdownMenu&gt;</pre>
+&lt;/UiDropdownMenu&gt;</pre
+        >
       </div>
     </section>
 
@@ -71,7 +73,8 @@
             </template>
           </UiDropdownMenu>
         </div>
-        <pre class="demo-code">&lt;UiDropdownMenu
+        <pre class="demo-code">
+&lt;UiDropdownMenu
   :items="[
     { label: '보기', value: 'view', icon: 'icon-view' },
     { label: '수정', value: 'edit', icon: 'icon-edit' },
@@ -81,7 +84,8 @@
   &lt;template #trigger&gt;
     &lt;UiButton&gt;아이콘 메뉴&lt;/UiButton&gt;
   &lt;/template&gt;
-&lt;/UiDropdownMenu&gt;</pre>
+&lt;/UiDropdownMenu&gt;</pre
+        >
       </div>
     </section>
 
@@ -103,7 +107,8 @@
             </template>
           </UiDropdownMenu>
         </div>
-        <pre class="demo-code">&lt;UiDropdownMenu
+        <pre class="demo-code">
+&lt;UiDropdownMenu
   :items="[
     { label: '수정', value: 'edit', icon: 'icon-edit' },
     { label: '삭제', value: 'delete', icon: 'icon-trashcan', color: 'danger' },
@@ -116,7 +121,8 @@
       &lt;/template&gt;
     &lt;/UiButton&gt;
   &lt;/template&gt;
-&lt;/UiDropdownMenu&gt;</pre>
+&lt;/UiDropdownMenu&gt;</pre
+        >
       </div>
     </section>
 
@@ -167,7 +173,8 @@
             </UiDropdownMenu>
           </div>
         </div>
-        <pre class="demo-code">&lt;UiDropdownMenu
+        <pre class="demo-code">
+&lt;UiDropdownMenu
   :items="items"
   side="bottom"
   align="start"
@@ -175,7 +182,8 @@
   &lt;template #trigger&gt;
     &lt;UiButton&gt;메뉴&lt;/UiButton&gt;
   &lt;/template&gt;
-&lt;/UiDropdownMenu&gt;</pre>
+&lt;/UiDropdownMenu&gt;</pre
+        >
       </div>
     </section>
 

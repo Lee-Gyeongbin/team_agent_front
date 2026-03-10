@@ -65,105 +65,31 @@
         <span class="scroll-chevron" />
       </button>
 
-    <div
-      ref="contentWrapperRef"
-      class="library-content-wrapper flex"
-      @scroll="onContentScroll"
-    >
-      <draggable
-        v-model="categoryList"
-        class="library-category-draggable flex"
-        item-key="id"
-        handle=".library-list-header"
-        animation="200"
-        @end="onCategoryDragEnd"
+      <div
+        ref="contentWrapperRef"
+        class="library-content-wrapper flex"
+        @scroll="onContentScroll"
       >
-        <template #item="{ element: category }">
-      <div class="library-list-grp">
-        <div class="library-list-header flex justify-between items-center">
-          <div class="left-grp flex items-center">
-            <p class="list-title"><i class="icon-diamond size-8"></i>{{ category.name }}</p>
-            <p class="card-count fw-700">{{ categoryCards[category.id]?.length || 0 }}</p>
-          </div>
-          <!-- 카테고리 드롭다운 메뉴 -->
-          <UiDropdownMenu
-            :items="listMenuItems"
-            align="end"
-            @select="handleListMenuSelect"
-          >
-            <template #trigger>
-              <UiButton
-                icon-only
-                variant="ghost"
-                size="md"
-                class="btn btn-library-card-add type-white"
-              >
-                <template #icon-left>
-                  <i class="icon icon-add-dot size-20"></i>
-                </template>
-              </UiButton>
-            </template>
-          </UiDropdownMenu>
-          <!-- .END 카테고리 드롭다운 메뉴 -->
-        </div>
         <draggable
-          v-model="categoryCards[category.id]"
-          class="library-card-grp"
-          :group="{ name: 'library-cards' }"
+          v-model="categoryList"
+          class="library-category-draggable flex"
           item-key="id"
+          handle=".library-list-header"
           animation="200"
-          :delay="0"
-          :delay-on-touch-only="true"
-          @end="onCardDragEnd"
+          @end="onCategoryDragEnd"
         >
-          <template #item="{ element: card }">
-          <div
-            class="library-card"
-            :class="{ 'is-active': selectedCardId === card.id }"
-            @click="openModal(card.id)"
-          >
-            <!-- 상단 영역 -->
-            <div class="library-card-top flex justify-between items-center">
-              <div class="flex items-center gap-4">
-                <UiBadge variant="data-line">
-                  <template #icon-left>
-                    <i class="icon icon-data-line-small size-14"></i>
-                  </template>
-                  데이터분석
-                </UiBadge>
-                <UiBadge variant="basic-chat">
-                  <template #icon-left>
-                    <i class="icon icon-comment-other size-14"></i>
-                  </template>
-                  기본대화
-                </UiBadge>
-                <UiBadge variant="manual-ai">
-                  <template #icon-left>
-                    <i class="icon icon-book size-14"></i>
-                  </template>
-                  매뉴얼AI
-                </UiBadge>
-
-                <!-- 즐겨찾기 버튼 -->
-                <UiButton
-                  icon-only
-                  variant="ghost"
-                  class="btn-star"
-                  :class="{ 'is-active': favoriteCardIds.has(card.id) }"
-                  @click.stop="toggleFavorite(card.id)"
-                >
-                  <template #icon-left>
-                    <i class="icon icon-star-fill size-12"></i>
-                  </template>
-                </UiButton>
-              </div>
-
-              <!-- 카드 드롭다운 메뉴 -->
-              <div @click.stop>
+          <template #item="{ element: category }">
+            <div class="library-list-grp">
+              <div class="library-list-header flex justify-between items-center">
+                <div class="left-grp flex items-center">
+                  <p class="list-title"><i class="icon-diamond size-8"></i>{{ category.name }}</p>
+                  <p class="card-count fw-700">{{ categoryCards[category.id]?.length || 0 }}</p>
+                </div>
+                <!-- 카테고리 드롭다운 메뉴 -->
                 <UiDropdownMenu
-                  :items="cardMenuItems"
+                  :items="listMenuItems"
                   align="end"
-                  @select="handleCardMenuSelect(card.id, $event)"
+                  @select="handleListMenuSelect"
                 >
                   <template #trigger>
                     <UiButton
@@ -178,88 +104,163 @@
                     </UiButton>
                   </template>
                 </UiDropdownMenu>
+                <!-- .END 카테고리 드롭다운 메뉴 -->
               </div>
-              <!-- END 카드 드롭다운 메뉴 -->
-            </div>
-            <!-- 제목 -->
-            <h3 class="library-card-title fw-600">{{ card.title }}</h3>
-            <!-- 설명 -->
-            <p class="library-card-desc">{{ card.desc }}</p>
+              <draggable
+                v-model="categoryCards[category.id]"
+                class="library-card-grp"
+                :group="{ name: 'library-cards' }"
+                item-key="id"
+                animation="200"
+                :delay="0"
+                :delay-on-touch-only="true"
+                @end="onCardDragEnd"
+              >
+                <template #item="{ element: card }">
+                  <div
+                    class="library-card"
+                    :class="{ 'is-active': selectedCardId === card.id }"
+                    @click="openModal(card.id)"
+                  >
+                    <!-- 상단 영역 -->
+                    <div class="library-card-top flex justify-between items-center">
+                      <div class="flex items-center gap-4">
+                        <UiBadge variant="data-line">
+                          <template #icon-left>
+                            <i class="icon icon-data-line-small size-14"></i>
+                          </template>
+                          데이터분석
+                        </UiBadge>
+                        <UiBadge variant="basic-chat">
+                          <template #icon-left>
+                            <i class="icon icon-comment-other size-14"></i>
+                          </template>
+                          기본대화
+                        </UiBadge>
+                        <UiBadge variant="manual-ai">
+                          <template #icon-left>
+                            <i class="icon icon-book size-14"></i>
+                          </template>
+                          매뉴얼AI
+                        </UiBadge>
 
-            <!-- 하단 메타 -->
-            <div class="library-card-meta flex items-center justify-between">
-              <p class="library-card-date ws-nowrap">{{ card.date }}</p>
+                        <!-- 즐겨찾기 버튼 -->
+                        <UiButton
+                          icon-only
+                          variant="ghost"
+                          class="btn-star"
+                          :class="{ 'is-active': favoriteCardIds.has(card.id) }"
+                          @click.stop="toggleFavorite(card.id)"
+                        >
+                          <template #icon-left>
+                            <i class="icon icon-star-fill size-12"></i>
+                          </template>
+                        </UiButton>
+                      </div>
 
-              <div class="library-card-tags flex items-center">
-                <span
-                  v-for="tag in card.tags"
-                  :key="tag"
-                  class="library-card-tag"
-                >{{ tag }}</span>
-              </div>
+                      <!-- 카드 드롭다운 메뉴 -->
+                      <div @click.stop>
+                        <UiDropdownMenu
+                          :items="cardMenuItems"
+                          align="end"
+                          @select="handleCardMenuSelect(card.id, $event)"
+                        >
+                          <template #trigger>
+                            <UiButton
+                              icon-only
+                              variant="ghost"
+                              size="md"
+                              class="btn btn-library-card-add type-white"
+                            >
+                              <template #icon-left>
+                                <i class="icon icon-add-dot size-20"></i>
+                              </template>
+                            </UiButton>
+                          </template>
+                        </UiDropdownMenu>
+                      </div>
+                      <!-- END 카드 드롭다운 메뉴 -->
+                    </div>
+                    <!-- 제목 -->
+                    <h3 class="library-card-title fw-600">{{ card.title }}</h3>
+                    <!-- 설명 -->
+                    <p class="library-card-desc">{{ card.desc }}</p>
+
+                    <!-- 하단 메타 -->
+                    <div class="library-card-meta flex items-center justify-between">
+                      <p class="library-card-date ws-nowrap">{{ card.date }}</p>
+
+                      <div class="library-card-tags flex items-center">
+                        <span
+                          v-for="tag in card.tags"
+                          :key="tag"
+                          class="library-card-tag"
+                          >{{ tag }}</span
+                        >
+                      </div>
+                    </div>
+                  </div>
+                </template>
+              </draggable>
             </div>
-          </div>
           </template>
         </draggable>
-      </div>
-        </template>
-      </draggable>
 
-      <!-- 새 카테고리 -->
-      <div class="library-list-grp">
-        <div class="library-list-header flex justify-between items-center">
-          <div class="left-grp flex items-center">
-            <p class="list-title"><i class="icon-diamond size-8"></i>새 카테고리</p>
-            <p class="card-count fw-700">0</p>
+        <!-- 새 카테고리 -->
+        <div class="library-list-grp">
+          <div class="library-list-header flex justify-between items-center">
+            <div class="left-grp flex items-center">
+              <p class="list-title"><i class="icon-diamond size-8"></i>새 카테고리</p>
+              <p class="card-count fw-700">0</p>
+            </div>
+            <!-- 카테고리 드롭다운 메뉴 -->
+            <UiDropdownMenu
+              :items="listMenuItems"
+              align="end"
+              @select="handleListMenuSelect"
+            >
+              <template #trigger>
+                <UiButton
+                  icon-only
+                  variant="ghost"
+                  size="md"
+                  class="btn btn-library-card-add type-white"
+                >
+                  <template #icon-left>
+                    <i class="icon icon-add-dot size-20"></i>
+                  </template>
+                </UiButton>
+              </template>
+            </UiDropdownMenu>
+            <!-- .END 카테고리 드롭다운 메뉴 -->
           </div>
-          <!-- 카테고리 드롭다운 메뉴 -->
-          <UiDropdownMenu
-            :items="listMenuItems"
-            align="end"
-            @select="handleListMenuSelect"
-          >
-            <template #trigger>
-              <UiButton
-                icon-only
-                variant="ghost"
-                size="md"
-                class="btn btn-library-card-add type-white"
-              >
-                <template #icon-left>
-                  <i class="icon icon-add-dot size-20"></i>
-                </template>
-              </UiButton>
-            </template>
-          </UiDropdownMenu>
-          <!-- .END 카테고리 드롭다운 메뉴 -->
-        </div>
-        <div class="library-card-grp">
-          <div class="library-card type-new-card">
-            <div class="library-card-new-card-content">
-              <i class="icon icon-heart size-24"></i>
-              <p>마음에 드는 날리지를 저장해주세요</p>
+          <div class="library-card-grp">
+            <div class="library-card type-new-card">
+              <div class="library-card-new-card-content">
+                <i class="icon icon-heart size-24"></i>
+                <p>마음에 드는 날리지를 저장해주세요</p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- 카테고리 입력 -->
-      <div class="library-list-grp">
-        <div class="library-category-input-grp flex items-center">
-          <UiInput
-            type="text"
-            class="inp-category"
-            placeholder="카테고리명을 입력하세요"
-          />
-          <UiButton
-            size="md"
-            class="btn-category-add w-57"
-          >
-            추가
-          </UiButton>
+        <!-- 카테고리 입력 -->
+        <div class="library-list-grp">
+          <div class="library-category-input-grp flex items-center">
+            <UiInput
+              type="text"
+              class="inp-category"
+              placeholder="카테고리명을 입력하세요"
+            />
+            <UiButton
+              size="md"
+              class="btn-category-add w-57"
+            >
+              추가
+            </UiButton>
+          </div>
         </div>
       </div>
-    </div>
     </div>
 
     <!-- 모달 -->

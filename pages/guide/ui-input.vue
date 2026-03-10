@@ -18,8 +18,7 @@
             />
           </div>
         </div>
-        <pre class="demo-code">
-&lt;UiInput v-model="value" placeholder="텍스트를 입력하세요" /&gt;</pre>
+        <pre class="demo-code">&lt;UiInput v-model="value" placeholder="텍스트를 입력하세요" /&gt;</pre>
       </div>
     </section>
 
@@ -54,7 +53,8 @@
   placeholder="검색어를 입력하세요"
   @search="onSearch"
   @enter="onSearch"
-/&gt;</pre>
+/&gt;</pre
+        >
       </div>
     </section>
 
@@ -80,7 +80,8 @@
 &lt;UiInput size="sm" placeholder="size=sm" /&gt;
 &lt;UiInput size="md" placeholder="size=md" /&gt;
 &lt;UiInput size="lg" placeholder="size=lg" /&gt;
-&lt;UiInput size="xlg" placeholder="size=xlg" /&gt;</pre>
+&lt;UiInput size="xlg" placeholder="size=xlg" /&gt;</pre
+        >
       </div>
     </section>
 
@@ -110,7 +111,8 @@
   &lt;template #icon-left&gt;
     &lt;i class="icon-search size-16" /&gt;
   &lt;/template&gt;
-&lt;/UiInput&gt;</pre>
+&lt;/UiInput&gt;</pre
+        >
       </div>
     </section>
 

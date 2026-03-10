@@ -135,14 +135,16 @@ export const PieChartModule = {
       type: 'pie',
       data: {
         labels: itemsWithColors.map((item: any) => item.name),
-        datasets: [{
-          data: itemsWithColors.map((item: any) => item.value),
-          backgroundColor: itemsWithColors.map((item: any) => item.color),
-          borderColor: pieStyle.borderColor,
-          borderWidth: pieStyle.borderWidth,
-          hoverOffset: pieStyle.hoverOffset,
-          hoverBorderWidth: pieStyle.hoverBorderWidth,
-        }],
+        datasets: [
+          {
+            data: itemsWithColors.map((item: any) => item.value),
+            backgroundColor: itemsWithColors.map((item: any) => item.color),
+            borderColor: pieStyle.borderColor,
+            borderWidth: pieStyle.borderWidth,
+            hoverOffset: pieStyle.hoverOffset,
+            hoverBorderWidth: pieStyle.hoverBorderWidth,
+          },
+        ],
       },
       options: chartOptions,
     })
@@ -230,9 +232,9 @@ export const PieChartModule = {
     const chart = ChartConfig.instances[chartId]
     if (!chart) return
 
-    chart.data.datasets[0].data = newData.map(item => item.value)
-    chart.data.labels = newData.map(item => item.name)
-    chart.data.datasets[0].backgroundColor = newData.map(item => item.color)
+    chart.data.datasets[0].data = newData.map((item) => item.value)
+    chart.data.labels = newData.map((item) => item.name)
+    chart.data.datasets[0].backgroundColor = newData.map((item) => item.color)
     chart.update()
   },
 
@@ -271,13 +273,15 @@ export const PieChartModule = {
       type: 'pie',
       data: {
         labels: itemsWithColors.map((item: any) => item.name),
-        datasets: [{
-          data: itemsWithColors.map((item: any) => item.value),
-          backgroundColor: itemsWithColors.map((item: any) => item.color),
-          borderColor: '#FFFFFF',
-          borderWidth: 2,
-          hoverOffset: 4,
-        }],
+        datasets: [
+          {
+            data: itemsWithColors.map((item: any) => item.value),
+            backgroundColor: itemsWithColors.map((item: any) => item.color),
+            borderColor: '#FFFFFF',
+            borderWidth: 2,
+            hoverOffset: 4,
+          },
+        ],
       },
       options: {
         responsive: true,
@@ -482,35 +486,59 @@ export const PieChartModule = {
     })
 
     const midPoint = ChartConfig.svgDonut.createSVGElement('circle', {
-      cx: pos.midPointX, cy: pos.midPointY, r: 4, fill: pos.lineColor,
-      class: 'label-midpoint', style: 'transition: cx 0.3s ease-out, cy 0.3s ease-out;',
+      cx: pos.midPointX,
+      cy: pos.midPointY,
+      r: 4,
+      fill: pos.lineColor,
+      class: 'label-midpoint',
+      style: 'transition: cx 0.3s ease-out, cy 0.3s ease-out;',
     })
     group.appendChild(midPoint)
 
     const diagonalLine = ChartConfig.svgDonut.createSVGElement('line', {
-      x1: pos.midPointX, y1: pos.midPointY, x2: pos.diagonalEndX, y2: pos.diagonalEndY,
-      stroke: pos.lineColor, 'stroke-width': 1.5, class: 'label-diagonal',
+      x1: pos.midPointX,
+      y1: pos.midPointY,
+      x2: pos.diagonalEndX,
+      y2: pos.diagonalEndY,
+      stroke: pos.lineColor,
+      'stroke-width': 1.5,
+      class: 'label-diagonal',
     })
     group.appendChild(diagonalLine)
 
     const horizontalLine = ChartConfig.svgDonut.createSVGElement('line', {
-      x1: pos.diagonalEndX, y1: pos.diagonalEndY, x2: pos.labelX, y2: pos.labelY,
-      stroke: pos.lineColor, 'stroke-width': 1.5, class: 'label-horizontal',
+      x1: pos.diagonalEndX,
+      y1: pos.diagonalEndY,
+      x2: pos.labelX,
+      y2: pos.labelY,
+      stroke: pos.lineColor,
+      'stroke-width': 1.5,
+      class: 'label-horizontal',
     })
     group.appendChild(horizontalLine)
 
     const nameText = ChartConfig.svgDonut.createSVGElement('text', {
-      x: pos.labelX, y: pos.labelY - 5,
-      'text-anchor': pos.textAnchor, 'font-size': '12', 'font-weight': '500',
-      fill: pos.lineColor, 'font-family': 'Pretendard, sans-serif', class: 'label-name',
+      x: pos.labelX,
+      y: pos.labelY - 5,
+      'text-anchor': pos.textAnchor,
+      'font-size': '12',
+      'font-weight': '500',
+      fill: pos.lineColor,
+      'font-family': 'Pretendard, sans-serif',
+      class: 'label-name',
     })
     nameText.textContent = pos.name
     group.appendChild(nameText)
 
     const valueText = ChartConfig.svgDonut.createSVGElement('text', {
-      x: pos.labelX, y: pos.labelY + 12,
-      'text-anchor': pos.textAnchor, 'font-size': '14', 'font-weight': '700',
-      fill: pos.lineColor, 'font-family': 'Pretendard, sans-serif', class: 'label-value',
+      x: pos.labelX,
+      y: pos.labelY + 12,
+      'text-anchor': pos.textAnchor,
+      'font-size': '14',
+      'font-weight': '700',
+      fill: pos.lineColor,
+      'font-family': 'Pretendard, sans-serif',
+      class: 'label-value',
     })
     valueText.textContent = `${pos.value}%`
     group.appendChild(valueText)

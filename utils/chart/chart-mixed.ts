@@ -7,7 +7,6 @@ import { ChartColors } from './chart-colors'
 import { ChartConfig } from './chart-config'
 
 export const MixedChartModule = {
-
   /** 범례 생성 */
   createLegend(chartId: string, legendId: string, datasets: any[]) {
     const legendContainer = document.getElementById(legendId)
@@ -44,8 +43,16 @@ export const MixedChartModule = {
   /** 혼합 차트 생성 */
   create(config: any) {
     const {
-      id, legendId, categories, datasets, maxValue, maxValue2,
-      yAxisStepSize, y1AxisStepSize, showLegend = false, hideDataLabels = false,
+      id,
+      legendId,
+      categories,
+      datasets,
+      maxValue,
+      maxValue2,
+      yAxisStepSize,
+      y1AxisStepSize,
+      showLegend = false,
+      hideDataLabels = false,
     } = config
 
     const canvas = document.getElementById(id) as HTMLCanvasElement | null

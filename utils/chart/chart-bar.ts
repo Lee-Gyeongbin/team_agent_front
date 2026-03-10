@@ -187,7 +187,7 @@ export const BarChartModule = {
     }
 
     const showXAxis = !!datasets
-    const tooltipValueSuffix = (typeof config.tooltipValueSuffix === 'string') ? config.tooltipValueSuffix : '명'
+    const tooltipValueSuffix = typeof config.tooltipValueSuffix === 'string' ? config.tooltipValueSuffix : '명'
 
     // 차트 옵션 설정
     const barChartOptions: any = {
