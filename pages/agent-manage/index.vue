@@ -104,11 +104,11 @@ const agentList = ref<Agent[]>([
 const activeCount = computed(() => agentList.value.filter((a) => a.isActive).length)
 
 const openAddAgent = () => {
-  navigateTo('/agents/new')
+  navigateTo('/agent-manage/new')
 }
 
 const onClickSetting = (agent: Agent) => {
-  navigateTo(`/agents/${agent.id}`)
+  navigateTo(`/agent-manage/${agent.id}`)
 }
 
 const onToggleActive = (agent: Agent) => {

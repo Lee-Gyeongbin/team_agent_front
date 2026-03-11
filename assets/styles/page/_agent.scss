@@ -65,11 +65,11 @@
   transition: box-shadow $transition-base;
 
   &:hover {
-    box-shadow: $shadow-sm;
+    background: #f8fafb;
   }
 
   &.is-inactive {
-    background: $color-background;
+    background: #f4f7f9;
   }
 
   // 드래그 핸들
