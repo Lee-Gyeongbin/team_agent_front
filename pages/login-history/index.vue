@@ -5,7 +5,7 @@
       <p class="login-history-description">로그인 이력을 조회하고 관리할 수 있습니다.</p>
       <div class="right-grp flex items-center">
         <p class="total">
-          총 <strong>{{ loginHistoryList.length }}건</strong>
+          총 <strong>{{ filteredList.length }}건</strong>
         </p>
         <div class="login-history-input-grp shrink-0 grow-1 max-w-280">
           <UiInput
