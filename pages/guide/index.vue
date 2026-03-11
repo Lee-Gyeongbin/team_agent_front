@@ -241,6 +241,7 @@ const statusList = [
   { category: 'UI 컴포넌트', name: 'UiTable', location: '/guide/ui-table', url: '/guide/ui-table', status: 'done' },
   { category: 'UI 컴포넌트', name: 'UiModal', location: '/guide/ui-modal', url: '/guide/ui-modal', status: 'done' },
   { category: '페이지', name: '로그인', location: '/login', url: '/login', status: 'pending' },
+  { category: 'UI 컴포넌트', name: 'UiCodeBlock', location: '/guide/ui-code-block', url: '/guide/ui-code-block', status: 'done' },
 ]
 
 // 섹션 2: 디자인 토큰 — 색상 (_variables.scss 기준)
@@ -353,6 +354,12 @@ const componentList = [
     to: '/guide/ui-dropdown-menu',
     description: 'Radix-vue 기반 드롭다운 메뉴 — 아이콘, danger 색상, 위치 조정 지원',
     tags: ['items', 'trigger', 'icon', 'danger', 'side', 'align'],
+  },
+  {
+    name: 'UiCodeBlock',
+    to: '/guide/ui-code-block',
+    description: '코드 표시 + 복사 버튼 내장 코드 블록 컴포넌트',
+    tags: ['code', 'copy', 'dark-theme'],
   },
 ]
 

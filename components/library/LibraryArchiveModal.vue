@@ -147,29 +147,7 @@
           </div>
 
           <!-- SQL 코드 블록 -->
-          <div class="library-detail-modal-code">
-            <UiButton
-              variant="ghost"
-              size="xxs"
-              icon-only
-              class="btn-copy btn-copy-dark"
-              @click="handleCopyCode"
-            >
-              <template #icon-left>
-                <i class="icon icon-copy size-16"></i>
-              </template>
-            </UiButton>
-
-            <pre class="library-detail-modal-code-content"><code>
-    SELECT
-    TO_CHAR(sale_date, 'YYYY-MM') AS month,
-    ROUND(SUM(amount) / 100000000, 1) AS sales_억
-    FROM sales
-    WHERE EXTRACT (YEAR FROM sale_date) = 2025
-    GROUP BY TO_CHAR(sale_date, 'YYYY-MM')
-    ORDER BY month;
-    </code></pre>
-          </div>
+          <UiCodeBlock :code="sqlCode" />
 
           <!-- 하단 태그 -->
           <div class="library-detail-modal-tags">
@@ -270,7 +248,12 @@ const handleCopyResponse = () => {
   // TODO: 응답 복사 기능 구현
 }
 
-const handleCopyCode = () => {
-  // TODO: 코드 복사 기능 구현
-}
+// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
+const sqlCode = `SELECT
+TO_CHAR(sale_date, 'YYYY-MM') AS month,
+ROUND(SUM(amount) / 100000000, 1) AS sales_억
+FROM sales
+WHERE EXTRACT (YEAR FROM sale_date) = 2025
+GROUP BY TO_CHAR(sale_date, 'YYYY-MM')
+ORDER BY month;`
 </script>

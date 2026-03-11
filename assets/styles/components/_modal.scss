@@ -374,35 +374,6 @@
   }
 }
 
-.library-detail-modal-code {
-  background: $color-text-dark;
-  border-radius: $border-radius-lg;
-  overflow: hidden;
-  position: relative;
-
-  .btn-copy {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    z-index: 1;
-  }
-
-  .library-detail-modal-code-content {
-    padding: 20px;
-    margin: 0;
-    overflow-x: auto;
-    @include custom-scrollbar;
-
-    code {
-      display: block;
-      color: #e2e8f0;
-      font-family: $font-family-mono;
-      font-size: $font-size-sm;
-      line-height: $line-height-base;
-      white-space: pre;
-    }
-  }
-}
 
 // 태그 뱃지
 .library-detail-modal-tags {

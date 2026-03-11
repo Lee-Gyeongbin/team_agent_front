@@ -175,14 +175,7 @@
             class="chat-vis-sql-content"
             :class="{ 'is-open': isSqlOpen }"
           >
-            <pre class="chat-vis-sql-code"><code>{{ sqlQuery }}</code></pre>
-            <button
-              class="btn btn-icon chat-vis-sql-copy"
-              title="SQL 복사"
-              @click="onCopySql"
-            >
-              <i class="icon-copy size-16"></i>
-            </button>
+            <UiCodeBlock :code="sqlQuery" />
           </div>
         </div>
       </div>
@@ -327,7 +320,4 @@ const toggleSql = () => {
   isSqlOpen.value = !isSqlOpen.value
 }
 
-const onCopySql = () => {
-  navigator.clipboard.writeText(sqlQuery)
-}
 </script>
