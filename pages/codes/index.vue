@@ -98,7 +98,7 @@
                 @click.stop
               >
                 <UiDropdownMenu
-                  :items="codeGroupRowMenuItems"
+                  :items="getCodeGroupRowMenuItems(row as CodeGroupItem)"
                   align="end"
                   @select="(value) => handleGroupRowMenuSelect(row as CodeGroupItem, value)"
                 >
@@ -191,7 +191,7 @@
                 @click.stop
               >
                 <UiDropdownMenu
-                  :items="codesRowMenuItems"
+                  :items="getCodesRowMenuItems(row as CodeItem)"
                   align="end"
                   @select="(v) => handleRowMenuSelect(row as CodeItem, v)"
                 >
@@ -234,7 +234,7 @@
                 @click.stop
               >
                 <UiDropdownMenu
-                  :items="codesRowMenuItems"
+                  :items="getCodesRowMenuItems(row as CodeItem)"
                   align="end"
                   @select="(v) => handleRowMenuSelect(row as CodeItem, v)"
                 >
@@ -289,28 +289,40 @@
       />
     </UiModal>
 
-    <!-- 그룹 삭제 확인 모달 -->
-    <UiDialogModal
-      :is-open="isGroupDeleteModalOpen"
-      title="삭제 확인"
-      :message="deletingGroup ? `'${deletingGroup.codeGrpNm}' 그룹을 삭제하시겠습니까?` : ''"
-      cancel-text="취소"
-      confirm-text="삭제"
-      @close="handleGroupDeleteModalClose"
-      @cancel="handleGroupDeleteModalClose"
-      @confirm="handleGroupDeleteConfirm"
-    />
-
-    <!-- 삭제 확인 모달 -->
+    <!-- 상세코드 삭제/복구 확인 모달 -->
     <UiDialogModal
       :is-open="isDeleteModalOpen"
-      title="삭제 확인"
-      :message="deletingCode ? `'${deletingCode.codeNm}' 코드를 삭제하시겠습니까?` : ''"
+      :title="pendingCodeUseYn === 'Y' ? '복구 확인' : '삭제 확인'"
+      :message="
+        deletingCode
+          ? pendingCodeUseYn === 'Y'
+            ? `'${deletingCode.codeNm}' 코드를 복구하시겠습니까?`
+            : `'${deletingCode.codeNm}' 코드를 삭제하시겠습니까?`
+          : ''
+      "
       cancel-text="취소"
-      confirm-text="삭제"
+      :confirm-text="pendingCodeUseYn === 'Y' ? '복구' : '삭제'"
       @close="handleDeleteModalClose"
       @cancel="handleDeleteModalClose"
-      @confirm="handleDeleteConfirm"
+      @confirm="doCodeUseYnUpdate"
+    />
+
+    <!-- 그룹코드 삭제/복구 확인 모달 -->
+    <UiDialogModal
+      :is-open="isGroupDeleteModalOpen"
+      :title="pendingGroupUseYn === 'Y' ? '복구 확인' : '삭제 확인'"
+      :message="
+        deletingGroup
+          ? pendingGroupUseYn === 'Y'
+            ? `'${deletingGroup.codeGrpNm}' 그룹코드를 복구하시겠습니까?`
+            : `'${deletingGroup.codeGrpNm}' 그룹코드를 삭제하시겠습니까?`
+          : ''
+      "
+      cancel-text="취소"
+      :confirm-text="pendingGroupUseYn === 'Y' ? '복구' : '삭제'"
+      @close="handleGroupDeleteModalClose"
+      @cancel="handleGroupDeleteModalClose"
+      @confirm="doGroupUseYnUpdate"
     />
   </div>
 </template>
@@ -318,7 +330,7 @@
 <script setup lang="ts">
 import type { CodeGroupItem, CodeItem } from '~/types/codes'
 import { codeGroupColumns, codesColumns, codesColumnsWithDrag } from '~/types/codes'
-import { codeGroupRowMenuItems, codesRowMenuItems, useCodesStore } from '~/composables/codes/useCodesStore'
+import { getCodeGroupRowMenuItems, getCodesRowMenuItems, useCodesStore } from '~/composables/codes/useCodesStore'
 
 const {
   selectedGroupCode,
@@ -338,13 +350,13 @@ const {
   isGroupModalOpen,
   isGroupEditMode,
   editingGroup,
-  isGroupDeleteModalOpen,
-  deletingGroup,
   handleGroupRowMenuSelect,
-  handleGroupDeleteConfirm,
-  handleGroupDeleteModalClose,
   isDeleteModalOpen,
   deletingCode,
+  pendingCodeUseYn,
+  isGroupDeleteModalOpen,
+  deletingGroup,
+  pendingGroupUseYn,
   handleFetchCodeGroupList,
   handleFetchCodeList,
   handleSelectGroup,
@@ -355,8 +367,10 @@ const {
   handleSaveCode,
   handleSaveGroup,
   handleRowMenuSelect,
-  handleDeleteConfirm,
   handleDeleteModalClose,
+  doCodeUseYnUpdate,
+  handleGroupDeleteModalClose,
+  doGroupUseYnUpdate,
   handleUpdateSortOrder,
 } = useCodesStore()
 
