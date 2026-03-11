@@ -7,49 +7,121 @@
 
     <!-- 네비게이션 아이콘 -->
     <nav class="sidebar-nav">
-      <!-- ============================================
-      🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-      ============================================ -->
-      <button
-        v-for="item in navItems"
-        :key="item.icon"
-        class="sidebar-btn"
-        :class="{ 'is-active': isNavItemActive(item) }"
-        :title="item.label"
-        @click="onClickNavItem(item)"
+      <!-- 상단: ME000003 제외한 일반 메뉴 -->
+      <div class="sidebar-nav-top">
+        <button
+          v-for="item in topNavItems"
+          :key="item.menuId"
+          class="sidebar-btn"
+          :class="{ 'is-active': isNavItemActive(item) }"
+          :title="item.label"
+          @click="onClickNavItem(item)"
+        >
+          <i
+            class="size-20"
+            :class="item.icon"
+          />
+        </button>
+      </div>
+
+      <!-- 하단: 설정 메뉴 드롭다운 (children 구조) -->
+      <div
+        v-if="bottomMenu"
+        class="sidebar-nav-bottom"
       >
-        <i
-          class="size-20"
-          :class="item.icon"
-        />
-      </button>
+        <SidebarMenuDropdown :items="bottomMenu.children ?? []">
+          <template #trigger>
+            <button
+              class="sidebar-btn"
+              :class="{ 'is-active': isBottomMenuActive }"
+              :title="bottomMenu.menuName"
+            >
+              <i
+                class="size-20"
+                :class="bottomMenu.icon"
+              />
+            </button>
+          </template>
+        </SidebarMenuDropdown>
+      </div>
     </nav>
   </aside>
 </template>
 
 <script setup lang="ts">
+import type { MenuItem } from '~/types/menu'
+
 const route = useRoute()
+const { menuList } = useMenu()
 
-// ============================================
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-// ============================================
-const navItems = [
-  { icon: 'icon-ai-chat', label: 'AI 채팅', path: '/chat' },
-  { icon: 'icon-knowledge', label: '내지식창고', path: '/library' },
-  { icon: 'icon-database', label: '로그인이력', path: '/login-history' },
-  { icon: 'icon-settings', label: '공통코드', path: '/codes' },
-  { icon: 'icon-user', label: '사용자관리', path: '/user' },
-]
+const SETTING_MENU_ID = 'ME000003'
 
-// 현재 라우트 기준으로 active 판단 (URL 직접 입력, 뒤로가기 시에도 정확히 반영)
-const isNavItemActive = (item: (typeof navItems)[number]) => {
-  const path = route.path
-  if (item.path === '/') return path === '/'
-  return path === item.path || path.startsWith(`${item.path}/`)
+const topNavItems = computed(() => {
+  return menuList.value
+    .filter((item) => item.menuId !== SETTING_MENU_ID)
+    .map((item) => ({
+      menuId: item.menuId,
+      icon: item.icon,
+      label: item.menuName,
+      path: item.srcPath,
+    }))
+})
+
+const bottomMenu = computed(() => {
+  return menuList.value.find((item) => item.menuId === SETTING_MENU_ID) ?? null
+})
+
+// 현재 라우트 기준으로 active 판단 (menuId 기반, srcPath로만 매칭)
+type NavItem = (typeof topNavItems)['value'][number]
+
+function findActiveMenuId(items: MenuItem[], path: string): { menuId: string; pathLen: number } | null {
+  let best: { menuId: string; pathLen: number } | null = null
+  for (const item of items) {
+    const p = item.srcPath
+    if (p) {
+      const isMatch = path === p || path.startsWith(`${p}/`)
+      if (isMatch && (!best || p.length > best.pathLen)) {
+        best = { menuId: item.menuId, pathLen: p.length }
+      }
+    }
+    if (item.children?.length) {
+      const childBest = findActiveMenuId(item.children, path)
+      if (childBest && (!best || childBest.pathLen > best.pathLen)) {
+        best = childBest
+      }
+    }
+  }
+  return best
 }
 
-const onClickNavItem = (item: (typeof navItems)[number]) => {
-  navigateTo(item.path)
+const activeMenuId = computed(() => {
+  const result = findActiveMenuId(menuList.value, route.path)
+  return result?.menuId ?? null
+})
+
+const isNavItemActive = (item: NavItem) => item.menuId === activeMenuId.value
+
+// ME000003 하위 메뉴(children/손자) 중 현재 경로와 매칭되면 active
+const isBottomMenuActive = computed(() => {
+  const menu = bottomMenu.value
+  const children = menu?.children
+  if (!children?.length) return false
+
+  const hasMatchingDescendant = (items: MenuItem[]): boolean => {
+    const path = route.path
+    for (const item of items) {
+      if (item.srcPath && (path === item.srcPath || path.startsWith(`${item.srcPath}/`))) {
+        return true
+      }
+      if (item.children?.length && hasMatchingDescendant(item.children)) return true
+    }
+    return false
+  }
+  return hasMatchingDescendant(children)
+})
+
+const onClickNavItem = (item: NavItem) => {
+  if (item.path) navigateTo(item.path)
 }
 </script>
 
@@ -67,10 +139,25 @@ const onClickNavItem = (item: (typeof navItems)[number]) => {
 }
 
 .sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sidebar-nav-top {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
+}
+
+.sidebar-nav-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .sidebar-btn {
