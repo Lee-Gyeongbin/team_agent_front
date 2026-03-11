@@ -1,16 +1,18 @@
 <template>
   <div class="ui-code-block">
     <pre class="ui-code-block-pre"><code>{{ code }}</code></pre>
-    <button
-      class="btn btn-icon ui-code-block-copy"
-      title="코드 복사"
-      @click="onCopy"
-    >
-      <i
-        :class="isCopied ? 'icon-check' : 'icon-copy'"
-        class="size-16"
-      ></i>
-    </button>
+    <div class="ui-code-block-action">
+      <button
+        class="ui-code-block-copy"
+        title="코드 복사"
+        @click="onCopy"
+      >
+        <i
+          :class="isCopied ? 'icon-copy' : 'icon-copy'"
+          class="size-20"
+        ></i>
+      </button>
+    </div>
   </div>
 </template>
 
@@ -40,35 +42,66 @@ const onCopy = async () => {
 
 <style lang="scss" scoped>
 .ui-code-block {
-  position: relative;
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  padding: 16px 16px 15px;
+  background: #2d3139;
+  border-radius: $border-radius-lg;
 }
 
 .ui-code-block-pre {
+  flex: 1;
+  min-width: 0;
   margin: 0;
-  padding: 12px 16px;
-  background: #1e1e2e;
-  border-radius: $border-radius-base;
   max-height: 260px;
   overflow: auto;
   @include custom-scrollbar;
 
   code {
     font-family: $font-family-mono;
-    font-size: $font-size-sm;
-    line-height: 1.6;
-    color: #cdd6f4;
+    font-size: $font-size-base;
+    line-height: 1.5;
+    color: #fff;
     white-space: pre;
   }
 }
 
-.ui-code-block-copy {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  color: #94a3b8;
+.ui-code-block-action {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
 
-  &:hover {
-    color: #fff;
+.ui-code-block-copy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: $border-radius-lg;
+  background: #4d5462;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  i {
+    background-color: #fff;
+  }
+
+  &:hover,
+  &:focus,
+  &:focus-visible,
+  &:active {
+    outline: none;
+    box-shadow: none;
+    background: #4d5462;
+
+    i {
+      background-color: #fff;
+    }
   }
 }
 </style>
