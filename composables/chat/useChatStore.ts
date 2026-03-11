@@ -2,6 +2,7 @@
 import type {
   ChatMessage,
   ChatRoom,
+  ChatRefRow,
   PanelType,
   ModelOption,
   SearchModeValue,
@@ -13,7 +14,14 @@ import type {
 import { EMPTY_CHAT_ROOM } from '~/types/chat'
 
 // API 호출
-const { fetchSelectModelList, fetchSelectRagDsList, fetchSelectDmList, fetchCreateChatRoom } = useReportsApi()
+const {
+  fetchSelectModelList,
+  fetchSelectRagDsList,
+  fetchSelectDmList,
+  fetchCreateChatRoom,
+  fetchSelectChatLogList,
+  fetchSelectChatRef,
+} = useReportsApi()
 
 // LLM 모델 옵션
 const modelOptions = ref<ModelOption[]>([])
@@ -80,6 +88,7 @@ interface ChatSocketPayload {
 interface ChatSocketMessage {
   type: string
   content?: string
+  filePath?: string
 }
 
 const WEBSOCKET_OPEN = 1
@@ -95,6 +104,7 @@ const selectedModel = ref('auto')
 const activePanelType = ref<PanelType>('none')
 const isPanelFullscreen = ref(false)
 const activePanelMessageId = ref<string | null>(null)
+const pdfRefList = ref<ChatRefRow[]>([])
 const pendingMessageId = ref<string | null>(null)
 const messageBufferMap = ref<Record<string, string>>({})
 const chatRoom = ref<ChatRoom>({ ...EMPTY_CHAT_ROOM })
@@ -158,13 +168,13 @@ export const useChatStore = () => {
   }
 
   // 스트리밍 메시지 완료 처리
-  const finalizeStreamingMessage = () => {
+  const finalizeStreamingMessage = (payload: ChatSocketMessage) => {
     // 현재 스트리밍 메시지 찾기
     const streamingMessage = getStreamingMessage()
     // 스트리밍 메시지가 있으면 완료 처리
     if (streamingMessage) {
       streamingMessage.isStreaming = false
-      streamingMessage.hasSource = true
+      streamingMessage.hasSource = payload.filePath !== '' ? true : false
       streamingMessage.hasVisualization = true
       messageBufferMap.value[streamingMessage.logId] = ''
     }
@@ -221,7 +231,7 @@ export const useChatStore = () => {
           streamingMessage.rContent = toHtmlContent(completeContent)
         }
         // 스트리밍 메시지 완료 처리
-        finalizeStreamingMessage()
+        finalizeStreamingMessage(payload)
         break
       }
       case 'error':
@@ -313,9 +323,70 @@ export const useChatStore = () => {
     disconnectWebSocket()
   }
 
-  // 채팅방 초기화 (roomId 등 리셋)
+  // 채팅방 초기화 (roomId 등 리셋, 검색모드 디폴트 C)
   const resetChatRoom = () => {
     chatRoom.value = { ...EMPTY_CHAT_ROOM }
+    activeSearchModes.value = []
+  }
+
+  // 채팅방 roomId 동기화 (/chat/[id] 진입 시 사용)
+  const handleSetChatRoom = (roomId: string) => {
+    chatRoom.value.roomId = roomId
+  }
+
+  // 채팅 로그 조회 (roomId 기준) — API VO(qcontent, rcontent, createDt) → ChatMessage 변환
+  const handleSelectChatLogList = async (roomId: string) => {
+    if (!roomId) {
+      messages.value = []
+      return
+    }
+    const res = await fetchSelectChatLogList(roomId)
+    const rawList = res.list ?? []
+    const flattened: ChatMessage[] = []
+    for (const item of rawList) {
+      const logId = String(item.logId ?? '')
+      const createdAt = item.createDt ?? ''
+      const docExist = item.docExist ?? 'N'
+      const docId = typeof item.docId === 'string' ? item.docId : ''
+      flattened.push({
+        logId: `${logId}`,
+        role: 'user',
+        qContent: item.qcontent ?? '',
+        rContent: '',
+        createdAt,
+      })
+      flattened.push({
+        logId: `${logId}`,
+        role: 'assistant',
+        qContent: '',
+        rContent: toHtmlContent(item.rcontent ?? ''),
+        docId,
+        createdAt,
+        hasSource: docExist === 'Y' ? true : false,
+      })
+    }
+    // API는 최신순일 수 있으므로 생성일시 기준 오름차순 정렬
+    flattened.sort((a, b) => (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0))
+    messages.value = flattened
+
+    // 방 서비스 타입에 맞춰 검색모드·서브옵션 동기화 (마지막 로그 기준): C=디폴트([]), M=지식검색, S=데이터분석
+    const lastRow = rawList[rawList.length - 1]
+    const svcTy = lastRow?.svcTy ?? 'C'
+    if (svcTy === 'M') {
+      activeSearchModes.value = ['M']
+      await selectRagDsList()
+    } else if (svcTy === 'S') {
+      activeSearchModes.value = ['S']
+      await selectDmList()
+    } else {
+      activeSearchModes.value = []
+      await selectModelOptions()
+    }
+    // 방에서 마지막으로 사용한 refId가 있으면 서브옵션 선택값 맞춤
+    const lastRefId = lastRow?.refId
+    if (typeof lastRefId === 'string' && lastRefId && subOptions.value.some((o) => o.value === lastRefId)) {
+      selectedSubOption.value = lastRefId
+    }
   }
 
   // 채팅방 생성 (content: 호출부에서 전달 가능, 미전달 시 chatMessage 사용)
@@ -482,10 +553,13 @@ export const useChatStore = () => {
   }
 
   // 패널 핸들러
-  const onViewSource = (id: string) => {
+  const onViewSource = async (id: string) => {
     isPanelFullscreen.value = false
     activePanelType.value = 'pdf'
     activePanelMessageId.value = id
+    pdfRefList.value = []
+    const res = await fetchSelectChatRef(id)
+    pdfRefList.value = res.list
   }
 
   const onViewVisualization = (id: string) => {
@@ -558,6 +632,7 @@ export const useChatStore = () => {
     activePanelType,
     isPanelFullscreen,
     activePanelMessageId,
+    pdfRefList,
     modelOptions,
     searchModeOptions,
     activeSearchModes,
@@ -568,6 +643,8 @@ export const useChatStore = () => {
     selectModelOptions,
     createChatRoom,
     resetChatRoom,
+    handleSetChatRoom,
+    handleSelectChatLogList,
     onSend,
     onCopy,
     onLike,
@@ -599,7 +676,7 @@ export const usePdfViewer = (options: {
   const loadError = ref('')
   const currentPage = ref(1)
   const totalPages = ref(0)
-  const scale = ref(1.25)
+  const scale = ref(1)
   const renderingToken = ref(0)
 
   const pageList = computed(() => Array.from({ length: totalPages.value }, (_, i) => i + 1))
@@ -688,7 +765,7 @@ export const usePdfViewer = (options: {
       pdfDoc.value = loadedPdf
       totalPages.value = loadedPdf.numPages
       currentPage.value = 1
-      scale.value = 1.25
+      scale.value = 1
       isLoading.value = false
       await nextTick()
       await renderMainPage()
