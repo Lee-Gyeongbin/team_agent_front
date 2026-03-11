@@ -20,7 +20,7 @@ export interface LoginHistoryItem {
 /** 기간 선택 옵션 */
 export interface LoginHistoryDateRangeOption {
   label: string
-  value: string
+  value: number
 }
 
 /** 로그인 이력 테이블 컬럼 정의 */
@@ -35,7 +35,7 @@ export const loginHistoryColumns: TableColumn[] = [
 
 /** 기간 선택 옵션 목록 */
 export const loginHistoryDateRangeOptions: LoginHistoryDateRangeOption[] = [
-  { label: '최근 7일', value: '7d' },
-  { label: '최근 30일', value: '30d' },
-  { label: '최근 90일', value: '90d' },
+  { label: '최근 7일', value: 7 },
+  { label: '최근 30일', value: 30 },
+  { label: '최근 90일', value: 90 },
 ]

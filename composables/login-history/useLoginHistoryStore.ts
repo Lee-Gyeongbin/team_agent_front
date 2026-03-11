@@ -5,16 +5,24 @@ export const useLoginHistoryStore = () => {
   const { fetchLoginHistoryList } = useLoginHistoryApi()
   const loginHistoryList = ref<LoginHistoryItem[]>([])
   const searchKeyword = ref('')
-  const dateRangeOption = ref('7d')
+  const dateRangeOption = ref<number>(7)
   const isLoading = ref(false)
   const errorMessage = ref('')
 
   const filteredList = computed(() => {
     const keyword = searchKeyword.value.trim().toLowerCase()
-    if (!keyword) return loginHistoryList.value
-    return loginHistoryList.value.filter(
-      (item) => item.ipAddr.toLowerCase().includes(keyword) || item.userId.toLowerCase().includes(keyword),
-    )
+    const now = new Date()
+    const dateRangeDays = dateRangeOption.value
+    const rangeStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (dateRangeDays - 1), 0, 0, 0, 0)
+    const rangeEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
+
+    return loginHistoryList.value.filter((item) => {
+      const itemDate = new Date(item.createDt)
+      if (Number.isNaN(itemDate.getTime())) return false
+      const inRange = itemDate >= rangeStart && itemDate <= rangeEnd
+      if (!inRange) return false
+      return item.ipAddr.toLowerCase().includes(keyword) || item.userId.toLowerCase().includes(keyword)
+    })
   })
 
   const handleFetchLoginHistory = async () => {

@@ -23,6 +23,7 @@
             name="date-range"
             :options="loginHistoryDateRangeOptions"
             size="md"
+            @change="handleFetchLoginHistory"
           />
         </div>
         <UiButton
