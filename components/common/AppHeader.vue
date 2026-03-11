@@ -36,7 +36,6 @@
       <button
         class="header-btn"
         :title="user?.userNm + ' [' + user?.email + ']' || '로그인'"
-        @click="navigateTo('/user/profile')"
       >
         <i class="icon-user size-20" />
       </button>

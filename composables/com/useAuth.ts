@@ -4,6 +4,7 @@ const COOKIE_NAME = 'ta_user'
 
 export const useAuth = () => {
   const { post, get } = useApi()
+  const { fetchMenuList, clearMenuList } = useMenu()
   const userCookie = useCookie<UserInfo | null>(COOKIE_NAME, {
     path: '/',
     default: () => null,
@@ -17,6 +18,7 @@ export const useAuth = () => {
 
     if (res.success && res.user) {
       userCookie.value = res.user
+      await fetchMenuList()
     }
 
     return res
@@ -29,6 +31,7 @@ export const useAuth = () => {
       // 세션 만료 등으로 실패해도 로컬 쿠키는 정리
     }
     userCookie.value = null
+    clearMenuList()
     navigateTo('/login')
   }
 
@@ -37,6 +40,7 @@ export const useAuth = () => {
       const res = await get<LoginResponse>('/session/user.do')
       if (res.success && res.user) {
         userCookie.value = res.user
+        await fetchMenuList()
         return true
       }
       userCookie.value = null

@@ -1,7 +1,7 @@
 <template>
   <div
-    class="chat-search-mode"
     ref="dropdownRef"
+    class="chat-search-mode"
   >
     <!-- 선택된 모드 태그 -->
     <button
@@ -57,9 +57,7 @@ const isOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
 
 // 선택된 모드의 옵션 정보
-const selectedOptions = computed(() =>
-  searchModeOptions.filter((opt) => activeSearchModes.value.includes(opt.value)),
-)
+const selectedOptions = computed(() => searchModeOptions.filter((opt) => activeSearchModes.value.includes(opt.value)))
 
 const toggleDropdown = () => {
   isOpen.value = !isOpen.value

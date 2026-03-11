@@ -14,7 +14,6 @@ function colorToRgba(color: string, alpha: number): string {
 }
 
 export const LineChartModule = {
-
   /** 그라데이션 배경 생성 */
   createGradient(ctx: CanvasRenderingContext2D, chartArea: any, color: string) {
     return ChartConfig.createGradient(ctx, chartArea, color)
@@ -103,7 +102,16 @@ export const LineChartModule = {
       },
     }
 
-    const { id, legendId, categories, datasets, maxValue, yAxisStepSize, showLegend = false, useGradient = false } = config
+    const {
+      id,
+      legendId,
+      categories,
+      datasets,
+      maxValue,
+      yAxisStepSize,
+      showLegend = false,
+      useGradient = false,
+    } = config
 
     const canvas = document.getElementById(id) as HTMLCanvasElement | null
     if (!canvas) {

@@ -70,10 +70,12 @@
             </div>
           </div>
         </div>
-        <pre class="demo-code">&lt;UiSelect :options="opts" size="xs" /&gt;
+        <pre class="demo-code">
+&lt;UiSelect :options="opts" size="xs" /&gt;
 &lt;UiSelect :options="opts" size="sm" /&gt;
 &lt;UiSelect :options="opts" size="md" /&gt;  &lt;!-- 기본 --&gt;
-&lt;UiSelect :options="opts" size="lg" /&gt;</pre>
+&lt;UiSelect :options="opts" size="lg" /&gt;</pre
+        >
       </div>
     </section>
 
@@ -108,9 +110,11 @@
             />
           </div>
         </div>
-        <pre class="demo-code">&lt;!-- hover: data-highlighted → 배경색 --&gt;
+        <pre class="demo-code">
+&lt;!-- hover: data-highlighted → 배경색 --&gt;
 &lt;!-- active: data-state="checked" → 파란색 + bold --&gt;
-&lt;UiSelect v-model="value" :options="options" /&gt;</pre>
+&lt;UiSelect v-model="value" :options="options" /&gt;</pre
+        >
       </div>
     </section>
 

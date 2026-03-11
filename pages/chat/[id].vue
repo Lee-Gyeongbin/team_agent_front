@@ -17,12 +17,7 @@
         @on-view-source="onViewSource"
         @on-view-visualization="onViewVisualization"
       />
-      <ChatInput
-        v-model="chatMessage"
-        :selected-model="selectedModel"
-        :model-options="modelOptions"
-        @update:selected-model="selectedModel = $event"
-      />
+      <ChatInput v-model="chatMessage" />
     </div>
     <!-- 리사이즈 핸들 -->
     <div
@@ -52,11 +47,9 @@
 const {
   messages,
   chatMessage,
-  selectedModel,
   activePanelType,
   isPanelFullscreen,
   activePanelMessageId,
-  modelOptions,
   onCopy,
   onLike,
   onDislike,

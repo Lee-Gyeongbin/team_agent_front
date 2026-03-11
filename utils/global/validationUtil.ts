@@ -33,3 +33,9 @@ export const validateDateFormat = (date: string | null | undefined): string | nu
   const datePattern = /^\d{4}\.(0[1-9]|1[0-2])$/
   return datePattern.test(date) ? date : null
 }
+
+/** 코드 형식 검증: 앞 2자리 대문자 영문 + 뒤 6자리 숫자 (예: TE000001) */
+export const isValidCodeFormat = (val: unknown): boolean => {
+  if (typeof val !== 'string') return false
+  return /^[A-Z]{2}\d{6}$/.test(val)
+}

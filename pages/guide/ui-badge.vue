@@ -22,10 +22,12 @@
           <UiBadge variant="manual-ai">매뉴얼AI</UiBadge>
           <UiBadge variant="default">기본</UiBadge>
         </div>
-        <pre class="demo-code">&lt;UiBadge variant="data-line"&gt;데이터분석&lt;/UiBadge&gt;
+        <pre class="demo-code">
+&lt;UiBadge variant="data-line"&gt;데이터분석&lt;/UiBadge&gt;
 &lt;UiBadge variant="basic-chat"&gt;기본대화&lt;/UiBadge&gt;
 &lt;UiBadge variant="manual-ai"&gt;매뉴얼AI&lt;/UiBadge&gt;
-&lt;UiBadge variant="default"&gt;기본&lt;/UiBadge&gt;</pre>
+&lt;UiBadge variant="default"&gt;기본&lt;/UiBadge&gt;</pre
+        >
       </div>
     </section>
 
@@ -62,10 +64,12 @@
             Large
           </UiBadge>
         </div>
-        <pre class="demo-code">&lt;UiBadge variant="data-line" size="xs"&gt;Extra Small&lt;/UiBadge&gt;
+        <pre class="demo-code">
+&lt;UiBadge variant="data-line" size="xs"&gt;Extra Small&lt;/UiBadge&gt;
 &lt;UiBadge variant="data-line" size="sm"&gt;Small&lt;/UiBadge&gt;
 &lt;UiBadge variant="data-line" size="md"&gt;Medium&lt;/UiBadge&gt;
-&lt;UiBadge variant="data-line" size="lg"&gt;Large&lt;/UiBadge&gt;</pre>
+&lt;UiBadge variant="data-line" size="lg"&gt;Large&lt;/UiBadge&gt;</pre
+        >
       </div>
     </section>
 
@@ -96,12 +100,14 @@
             매뉴얼AI
           </UiBadge>
         </div>
-        <pre class="demo-code">&lt;UiBadge variant="data-line"&gt;
+        <pre class="demo-code">
+&lt;UiBadge variant="data-line"&gt;
   &lt;template #icon-left&gt;
     &lt;i class="icon icon-data-line-small size-14"&gt;&lt;/i&gt;
   &lt;/template&gt;
   데이터분석
-&lt;/UiBadge&gt;</pre>
+&lt;/UiBadge&gt;</pre
+        >
       </div>
     </section>
 
@@ -120,12 +126,14 @@
             </template>
           </UiBadge>
         </div>
-        <pre class="demo-code">&lt;UiBadge variant="default"&gt;
+        <pre class="demo-code">
+&lt;UiBadge variant="default"&gt;
   카테고리
   &lt;template #icon-right&gt;
     &lt;i class="icon icon-arrow-down size-12"&gt;&lt;/i&gt;
   &lt;/template&gt;
-&lt;/UiBadge&gt;</pre>
+&lt;/UiBadge&gt;</pre
+        >
       </div>
     </section>
 
@@ -170,11 +178,13 @@
             </template>
           </UiBadge>
         </div>
-        <pre class="demo-code">&lt;UiBadge variant="data-line" icon-only&gt;
+        <pre class="demo-code">
+&lt;UiBadge variant="data-line" icon-only&gt;
   &lt;template #icon-left&gt;
     &lt;i class="icon icon-data-line-small size-14"&gt;&lt;/i&gt;
   &lt;/template&gt;
-&lt;/UiBadge&gt;</pre>
+&lt;/UiBadge&gt;</pre
+        >
       </div>
     </section>
 
@@ -195,9 +205,13 @@
             v-for="prop in propList"
             :key="prop.name"
           >
-            <td><code>{{ prop.name }}</code></td>
+            <td>
+              <code>{{ prop.name }}</code>
+            </td>
             <td>{{ prop.type }}</td>
-            <td><code>{{ prop.default }}</code></td>
+            <td>
+              <code>{{ prop.default }}</code>
+            </td>
             <td>{{ prop.desc }}</td>
           </tr>
         </tbody>
@@ -219,7 +233,9 @@
             v-for="slot in slotList"
             :key="slot.name"
           >
-            <td><code>{{ slot.name }}</code></td>
+            <td>
+              <code>{{ slot.name }}</code>
+            </td>
             <td>{{ slot.desc }}</td>
           </tr>
         </tbody>
@@ -230,7 +246,12 @@
 
 <script setup lang="ts">
 const propList = [
-  { name: 'variant', type: "'data-line' | 'basic-chat' | 'manual-ai' | 'default'", default: "'default'", desc: '배지 스타일 (색상 조합)' },
+  {
+    name: 'variant',
+    type: "'data-line' | 'basic-chat' | 'manual-ai' | 'default'",
+    default: "'default'",
+    desc: '배지 스타일 (색상 조합)',
+  },
   { name: 'size', type: "'xs' | 'sm' | 'md' | 'lg'", default: "'sm'", desc: '배지 크기 (20 / 22 / 24 / 26px)' },
   { name: 'iconOnly', type: 'boolean', default: 'false', desc: '아이콘만 표시 (정사각형)' },
 ]

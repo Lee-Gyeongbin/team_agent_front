@@ -195,7 +195,8 @@
         </tbody>
       </table>
       <div class="guide-demo">
-        <pre class="demo-code">// 단일 데이터셋
+        <pre class="demo-code">
+// 단일 데이터셋
 const config = {
   categories: ['서울', '부산', '대구'],
   data: [1200, 900, 750],
@@ -212,7 +213,8 @@ const config = {
   ],
   maxValue: 1500,
   showDataLabels: true,
-}</pre>
+}</pre
+        >
       </div>
 
       <!-- Line Config -->
@@ -266,7 +268,8 @@ const config = {
         </tbody>
       </table>
       <div class="guide-demo">
-        <pre class="demo-code">const config = {
+        <pre class="demo-code">
+const config = {
   categories: ['1월', '2월', '3월', '4월'],
   datasets: [
     { label: '매출', data: [650, 720, 800, 780], colorKey: 'line.primary' },
@@ -274,7 +277,8 @@ const config = {
   ],
   maxValue: 1000,
   useGradient: true,
-}</pre>
+}</pre
+        >
       </div>
 
       <!-- Pie Config -->
@@ -334,7 +338,8 @@ const config = {
         </tbody>
       </table>
       <div class="guide-demo">
-        <pre class="demo-code">// 기본 파이 (내부 라벨 — 자동 대비 색상)
+        <pre class="demo-code">
+// 기본 파이 (내부 라벨 — 자동 대비 색상)
 const config = {
   items: [
     { name: '개발팀', value: 35 },
@@ -361,7 +366,8 @@ const config = {
     { name: '진행중', value: 30, count: 6 },
   ],
   style: 'taskStatus',
-}</pre>
+}</pre
+        >
       </div>
 
       <!-- Mixed Config -->
@@ -403,7 +409,8 @@ const config = {
         </tbody>
       </table>
       <div class="guide-demo">
-        <pre class="demo-code">const config = {
+        <pre class="demo-code">
+const config = {
   categories: ['1분기', '2분기', '3분기', '4분기'],
   datasets: [
     { label: '매출', type: 'bar', data: [5000, 6200, 7100, 8500],
@@ -413,7 +420,8 @@ const config = {
   ],
   maxValue: 10000,
   maxValue2: 100,
-}</pre>
+}</pre
+        >
       </div>
 
       <!-- Horizontal Bar Config -->
@@ -467,7 +475,8 @@ const config = {
         </tbody>
       </table>
       <div class="guide-demo">
-        <pre class="demo-code">const config = {
+        <pre class="demo-code">
+const config = {
   categories: ['React', 'Vue', 'Angular'],
   data: [85, 72, 45],
   colorKey: 'bar.set1',
@@ -475,7 +484,8 @@ const config = {
   maxValue: 100,
   showDataLabels: true,
   unit: '%',
-}</pre>
+}</pre
+        >
       </div>
     </section>
 
@@ -483,7 +493,8 @@ const config = {
     <section class="guide-section">
       <h2 class="section-title">기본 사용법</h2>
       <div class="guide-demo">
-        <pre class="demo-code">&lt;template&gt;
+        <pre class="demo-code">
+&lt;template&gt;
   &lt;!-- 반드시 height가 있는 부모로 감싸야 함 --&gt;
   &lt;div style="height: 300px"&gt;
     &lt;UiChart
@@ -501,17 +512,26 @@ const chartConfig = {
   colorKey: 'bar.set1',
   maxValue: 250,
 }
-&lt;/script&gt;</pre>
+&lt;/script&gt;</pre
+        >
       </div>
       <div class="guide-demo">
         <p class="demo-label">주의사항</p>
         <ul style="padding: 16px 16px 16px 32px; line-height: 2">
           <li>UiChart의 부모 요소에 <strong>반드시 높이(height)</strong>를 지정해야 합니다.</li>
-          <li><code>colorKey</code>는 <code>utils/chart/chart-colors.ts</code>의 ChartColors 객체 경로입니다 (예: <code>'bar.set1'</code>, <code>'line.primary'</code>).</li>
-          <li><code>showLegend</code> prop을 켜면 차트 위에 범례가 생성됩니다. 범례 클릭으로 데이터 토글 가능합니다.</li>
+          <li>
+            <code>colorKey</code>는 <code>utils/chart/chart-colors.ts</code>의 ChartColors 객체 경로입니다 (예:
+            <code>'bar.set1'</code>, <code>'line.primary'</code>).
+          </li>
+          <li>
+            <code>showLegend</code> prop을 켜면 차트 위에 범례가 생성됩니다. 범례 클릭으로 데이터 토글 가능합니다.
+          </li>
           <li>config가 변경되면 차트가 자동으로 재생성됩니다 (watch).</li>
           <li>컴포넌트 unmount 시 차트가 자동 파괴되어 메모리 누수가 없습니다.</li>
-          <li>파이 차트(outerLabel)는 외부 라벨 공간이 필요합니다. 부모에 <strong>max-height, max-width, padding</strong>을 충분히 확보하세요.</li>
+          <li>
+            파이 차트(outerLabel)는 외부 라벨 공간이 필요합니다. 부모에
+            <strong>max-height, max-width, padding</strong>을 충분히 확보하세요.
+          </li>
         </ul>
       </div>
       <div class="guide-demo">
@@ -550,7 +570,8 @@ const chartConfig = {
       </div>
       <div class="guide-demo">
         <p class="demo-label">예시: outerLabel 파이 — 잘리지 않는 설정</p>
-        <pre class="demo-code">&lt;!-- 부모에 충분한 높이/너비 확보 --&gt;
+        <pre class="demo-code">
+&lt;!-- 부모에 충분한 높이/너비 확보 --&gt;
 &lt;div style="height: 480px; max-width: 480px; margin: 0 auto"&gt;
   &lt;UiChart
     type="pie"
@@ -573,7 +594,8 @@ const chartConfig = {
     margin: 0 auto;
     padding: 20px 24px;
   }
-}</pre>
+}</pre
+        >
       </div>
     </section>
   </div>

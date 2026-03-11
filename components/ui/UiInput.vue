@@ -21,6 +21,7 @@
     </span>
 
     <input
+      :id="id"
       ref="inputRef"
       class="ui-input"
       :type="type === 'search' ? 'text' : type"
@@ -29,7 +30,6 @@
       :disabled="disabled"
       :readonly="readonly"
       :name="name"
-      :id="id"
       @input="onInput"
       @focus="isFocused = true"
       @blur="isFocused = false"
@@ -82,8 +82,8 @@ withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
-  'enter': [value: string | number | undefined]
-  'search': [value: string | number | undefined]
+  enter: [value: string | number | undefined]
+  search: [value: string | number | undefined]
 }>()
 
 const inputRef = ref<HTMLInputElement>()

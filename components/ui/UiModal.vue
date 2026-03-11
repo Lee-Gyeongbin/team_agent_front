@@ -1,10 +1,6 @@
 <template>
   <div
-    :class="[
-      positionClass,
-      customClass,
-      { 'is-show': isOpen },
-    ]"
+    :class="[positionClass, customClass, { 'is-show': isOpen }]"
     @click.self="handleOverlayClick"
   >
     <!-- 오버레이 배경 -->

@@ -3,7 +3,8 @@
     <NuxtLink
       to="/guide"
       class="guide-back"
-    >← 가이드 목록</NuxtLink>
+      >← 가이드 목록</NuxtLink
+    >
     <h1 class="guide-title">UiModal</h1>
     <p class="guide-description">center(중앙) / right(사이드) 모달 공통 컴포넌트 — 오버레이, 닫기 버튼, 슬롯 지원</p>
 
@@ -20,7 +21,8 @@
             중앙 모달 열기
           </UiButton>
         </div>
-        <pre class="demo-code">&lt;UiModal
+        <pre class="demo-code">
+&lt;UiModal
   :is-open="isOpen"
   title="알림"
   position="center"
@@ -33,7 +35,8 @@
       &lt;UiButton variant="dark" size="xlg" @click="isOpen = false"&gt;확인&lt;/UiButton&gt;
     &lt;/div&gt;
   &lt;/template&gt;
-&lt;/UiModal&gt;</pre>
+&lt;/UiModal&gt;</pre
+        >
       </div>
 
       <UiModal
@@ -80,14 +83,16 @@
             사이드 모달 열기
           </UiButton>
         </div>
-        <pre class="demo-code">&lt;UiModal
+        <pre class="demo-code">
+&lt;UiModal
   :is-open="isOpen"
   title="사이드 패널"
   position="right"
   @close="isOpen = false"
 &gt;
   &lt;p&gt;사이드 모달 본문 내용&lt;/p&gt;
-&lt;/UiModal&gt;</pre>
+&lt;/UiModal&gt;</pre
+        >
       </div>
 
       <UiModal
@@ -116,7 +121,8 @@
             커스텀 헤더 모달 열기
           </UiButton>
         </div>
-        <pre class="demo-code">&lt;UiModal
+        <pre class="demo-code">
+&lt;UiModal
   :is-open="isOpen"
   position="right"
   :show-close="false"
@@ -126,7 +132,8 @@
     &lt;div&gt;커스텀 헤더 영역&lt;/div&gt;
   &lt;/template&gt;
   &lt;p&gt;본문&lt;/p&gt;
-&lt;/UiModal&gt;</pre>
+&lt;/UiModal&gt;</pre
+        >
       </div>
 
       <UiModal
@@ -176,8 +183,10 @@
             </UiButton>
           </div>
         </div>
-        <pre class="demo-code">&lt;UiModal position="center" max-width="600px" /&gt;
-&lt;UiModal position="right" max-width="400px" /&gt;</pre>
+        <pre class="demo-code">
+&lt;UiModal position="center" max-width="600px" /&gt;
+&lt;UiModal position="right" max-width="400px" /&gt;</pre
+        >
       </div>
 
       <UiModal
@@ -238,7 +247,8 @@
             </UiButton>
           </div>
         </div>
-        <pre class="demo-code">&lt;UiDialogModal
+        <pre class="demo-code">
+&lt;UiDialogModal
   :is-open="isOpen"
   title="삭제 확인"
   message="정말 삭제하시겠습니까?"
@@ -253,7 +263,8 @@
   title="완료"
   message="저장되었습니다."
   @close="isOpen = false"
-/&gt;</pre>
+/&gt;</pre
+        >
       </div>
 
       <UiDialogModal
@@ -290,9 +301,13 @@
             v-for="prop in propList"
             :key="prop.name"
           >
-            <td><code>{{ prop.name }}</code></td>
+            <td>
+              <code>{{ prop.name }}</code>
+            </td>
             <td>{{ prop.type }}</td>
-            <td><code>{{ prop.default }}</code></td>
+            <td>
+              <code>{{ prop.default }}</code>
+            </td>
             <td>{{ prop.desc }}</td>
           </tr>
         </tbody>
@@ -314,7 +329,9 @@
             v-for="slot in slotList"
             :key="slot.name"
           >
-            <td><code>{{ slot.name }}</code></td>
+            <td>
+              <code>{{ slot.name }}</code>
+            </td>
             <td>{{ slot.desc }}</td>
           </tr>
         </tbody>

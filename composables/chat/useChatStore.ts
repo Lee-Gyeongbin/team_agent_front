@@ -1,24 +1,22 @@
-import type { ChatMessage, ChatRoom, PanelType, ModelOption, SearchModeValue, SearchModeOption, SubOption, PdfDocumentProxy, PdfJsLib } from '~/types/chat'
+// 타입 선언
+import type {
+  ChatMessage,
+  ChatRoom,
+  PanelType,
+  ModelOption,
+  SearchModeValue,
+  SearchModeOption,
+  SubOption,
+  PdfDocumentProxy,
+  PdfJsLib,
+} from '~/types/chat'
 import { EMPTY_CHAT_ROOM } from '~/types/chat'
 
-const { fetchCreateChatRoom } = useReportsApi()
+// API 호출
+const { fetchSelectModelList, fetchSelectRagDsList, fetchSelectDmList, fetchCreateChatRoom } = useReportsApi()
 
-// ============================================
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-// ============================================
-const modelOptions: ModelOption[] = [
-  { label: '자동', value: 'auto' },
-  { label: 'GPT-4o', value: 'gpt-4o' },
-  { label: 'GPT-4o mini', value: 'gpt-4o-mini' },
-  { label: 'Claude 3.5 Sonnet', value: 'claude-3-5-sonnet' },
-  { label: 'Claude 3 Opus', value: 'claude-3-opus' },
-  { label: 'Gemini 1.5 Pro', value: 'gemini-1.5-pro' },
-  { label: 'Gemini 1.5 Flash', value: 'gemini-1.5-flash' },
-  { label: 'Llama 3.1 405B', value: 'llama-3.1-405b' },
-  { label: 'Mixtral 8x22B', value: 'mixtral-8x22b' },
-  { label: 'DeepSeek V3', value: 'deepseek-v3' },
-  { label: 'Qwen 2.5 72B', value: 'qwen-2.5-72b' },
-]
+// LLM 모델 옵션
+const modelOptions = ref<ModelOption[]>([])
 
 const dummyMessages: ChatMessage[] = [
   {
@@ -76,6 +74,7 @@ interface ChatSocketPayload {
   query: string
   threadId: string
   svcTy: string
+  refId: string
 }
 
 interface ChatSocketMessage {
@@ -109,21 +108,21 @@ function getWebSocketUrl(): string {
 
 // 검색모드 옵션
 const searchModeOptions: SearchModeOption[] = [
-  { label: '지식검색(매뉴얼AI)', value: 'knowledge', icon: 'icon-knowledge' },
-  { label: '데이터분석(SQL)', value: 'sql', icon: 'icon-database' },
+  { label: '지식검색(매뉴얼AI)', value: 'M', icon: 'icon-knowledge' },
+  { label: '데이터분석(SQL)', value: 'S', icon: 'icon-database' },
 ]
 
 // ============================================
 // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
 // ============================================
 const subOptionsMap: Record<SearchModeValue, SubOption[]> = {
-  knowledge: [
+  M: [
     { label: '전체', value: 'all' },
     { label: 'ERP 지식베이스', value: 'erp' },
     { label: '그룹웨어 지식베이스', value: 'groupware' },
     { label: '인사관리 지식베이스', value: 'hr' },
   ],
-  sql: [
+  S: [
     { label: '전체', value: 'all' },
     { label: '경영 통계 데이터마트', value: 'management' },
     { label: '재무회계 데이터마트', value: 'finance' },
@@ -136,6 +135,8 @@ const subOptionsMap: Record<SearchModeValue, SubOption[]> = {
 // 검색모드 상태 (앱 전역 공유)
 const activeSearchModes = ref<SearchModeValue[]>([])
 const selectedSubOption = ref<string>('all')
+// 서브 옵션 (모델/라그/데이터마트 목록) — 호출부 간 동기화를 위해 모듈 레벨 공유
+const subOptions = ref<SubOption[]>([])
 
 export const useChatStore = () => {
   const escapeHtml = (value: string) =>
@@ -210,10 +211,19 @@ export const useChatStore = () => {
         // 스트리밍 메시지 업데이트
         break
       }
-      case 'complete':
+      case 'complete': {
+        // chunk 없이 complete로만 응답이 온 경우를 대비해 최종 본문을 fallback 반영
+        const completeContent = payload.content ?? ''
+        const currentBuffer = messageBufferMap.value[streamingMessage.logId] || ''
+        const hasRenderedContent = Boolean(currentBuffer || streamingMessage.rContent)
+        if (completeContent && !hasRenderedContent) {
+          messageBufferMap.value[streamingMessage.logId] = completeContent
+          streamingMessage.rContent = toHtmlContent(completeContent)
+        }
         // 스트리밍 메시지 완료 처리
         finalizeStreamingMessage()
         break
+      }
       case 'error':
         // 스트리밍 오류 처리
         updateStreamingError(payload.content || '응답 처리 중 오류가 발생했습니다.')
@@ -310,18 +320,20 @@ export const useChatStore = () => {
 
   // 채팅방 생성 (content: 호출부에서 전달 가능, 미전달 시 chatMessage 사용)
   const createChatRoom = async (content?: string): Promise<ChatRoom> => {
-    // TODO: 서비스 타입 수정 필요
-    const svcTy = selectedModel.value
     const qContent = (content ?? chatMessage.value).trim()
-    if (!svcTy || !qContent) {
+    if (!qContent) {
       chatRoom.value = { ...EMPTY_CHAT_ROOM, qContent: '' }
       return chatRoom.value
     }
 
-    const res = await fetchCreateChatRoom(svcTy, qContent)
+    let svcTy = 'C'
+    // 검색모드 (C/M/D)
+    if (isNotEmpty(activeSearchModes.value)) {
+      svcTy = activeSearchModes.value[0] === 'M' ? 'M' : 'S'
+    }
+    const res = await fetchCreateChatRoom(qContent, svcTy)
     chatRoom.value.roomId = res.data.roomId
     chatRoom.value.title = qContent
-    chatRoom.value.svcTy = svcTy
     chatRoom.value.qContent = qContent
 
     // 새 채팅방: 메시지 초기화 후 user + assistant placeholder 추가
@@ -354,12 +366,16 @@ export const useChatStore = () => {
     if (!chatbotSocket.value || chatbotSocket.value.readyState !== WEBSOCKET_OPEN) {
       await connectWebSocket()
     }
+    // 서브 옵션(LLM/RAG/DM)
+    const refId = selectedSubOption.value
+
     if (chatbotSocket.value?.readyState === WEBSOCKET_OPEN) {
       const payload: ChatSocketPayload = {
         type: 'question',
         query: qContent,
         threadId: chatRoom.value.roomId,
-        svcTy: 'C',
+        svcTy: svcTy,
+        refId: refId,
       }
       try {
         chatbotSocket.value.send(JSON.stringify(payload))
@@ -411,12 +427,17 @@ export const useChatStore = () => {
       return
     }
 
-    // TODO: 추후 서비스 타입 추가 필요
+    let svcTy = 'C'
+    // 검색모드 (C/M/D)
+    if (isNotEmpty(activeSearchModes.value)) {
+      svcTy = activeSearchModes.value[0] === 'M' ? 'M' : 'S'
+    }
     const payload: ChatSocketPayload = {
       type: 'question',
       query: content,
       threadId: chatRoom.value.roomId || '',
-      svcTy: 'C',
+      svcTy: svcTy,
+      refId: selectedSubOption.value,
     }
 
     try {
@@ -482,14 +503,43 @@ export const useChatStore = () => {
   }
 
   // 검색모드 토글 (라디오 방식 — 하나만 선택 가능)
-  const toggleSearchMode = (mode: SearchModeValue) => {
+  const toggleSearchMode = async (mode: SearchModeValue) => {
     if (activeSearchModes.value.includes(mode)) {
+      // 모드 해제 → 디폴트(모델 옵션)로 복원
       activeSearchModes.value = []
+      await selectModelOptions()
+      selectedSubOption.value = subOptions.value[0]?.value ?? 'auto'
     } else {
       activeSearchModes.value = [mode]
+      if (mode === 'M') {
+        await selectRagDsList()
+      } else {
+        await selectDmList()
+      }
     }
-    // 모드 변경 시 서브 옵션 리셋
-    selectedSubOption.value = 'all'
+  }
+
+  // 모델 옵션 조회
+  const selectModelOptions = async () => {
+    const res = await fetchSelectModelList()
+    subOptions.value = res.modelList.map((item: ModelOption) => ({ label: item.label, value: item.value }))
+    selectedSubOption.value = subOptions.value[0]?.value ?? 'auto'
+    return subOptions.value
+  }
+  // 라그 데이터셋 조회
+  const selectRagDsList = async () => {
+    const res = await fetchSelectRagDsList()
+    subOptions.value = res.subOptionList.map((item: SubOption) => ({ label: item.label, value: item.value }))
+    selectedSubOption.value = subOptions.value[0]?.value ?? 'all'
+    return subOptions.value
+  }
+
+  // 데이터마트 데이터셋 조회
+  const selectDmList = async () => {
+    const res = await fetchSelectDmList()
+    subOptions.value = res.subOptionList.map((item: SubOption) => ({ label: item.label, value: item.value }))
+    selectedSubOption.value = subOptions.value[0]?.value ?? 'all'
+    return subOptions.value
   }
 
   // 현재 활성 모드의 서브 옵션 (마지막 선택된 모드 기준)
@@ -511,9 +561,11 @@ export const useChatStore = () => {
     modelOptions,
     searchModeOptions,
     activeSearchModes,
+    subOptions,
     selectedSubOption,
     currentSubOptions,
     // 액션
+    selectModelOptions,
     createChatRoom,
     resetChatRoom,
     onSend,

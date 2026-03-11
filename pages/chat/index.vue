@@ -13,12 +13,7 @@
       data-aos="fade-up"
       data-aos-delay="200"
     >
-      <ChatInput
-        v-model="chatMessage"
-        :selected-model="selectedModel"
-        :model-options="modelOptions"
-        @update:selected-model="selectedModel = $event"
-      />
+      <ChatInput v-model="chatMessage" />
     </div>
 
     <div
@@ -28,16 +23,16 @@
     >
       <button
         class="btn btn-chat-index"
-        :class="{ 'is-active': activeSearchModes.includes('knowledge') }"
-        @click="toggleSearchMode('knowledge')"
+        :class="{ 'is-active': activeSearchModes.includes('M') }"
+        @click="toggleSearchMode('M')"
       >
         <span class="icon-circle"><i class="icon-knowledge size-20"></i></span>
         <p>지식검색 (매뉴얼 AI)</p>
       </button>
       <button
         class="btn btn-chat-index"
-        :class="{ 'is-active': activeSearchModes.includes('sql') }"
-        @click="toggleSearchMode('sql')"
+        :class="{ 'is-active': activeSearchModes.includes('S') }"
+        @click="toggleSearchMode('S')"
       >
         <span class="icon-circle"><i class="icon-database size-20"></i></span>
         <p>데이터분석 (SQL)</p>
@@ -48,20 +43,23 @@
 
 <script setup lang="ts">
 const {
-  selectedModel,
-  modelOptions,
   chatMessage,
   activeSearchModes,
   toggleSearchMode,
+  selectModelOptions,
   startChatSocket,
   stopChatSocket,
   resetChatRoom,
 } = useChatStore()
 const { user } = useAuth()
 
-onMounted(() => {
+onMounted(async () => {
+  // 채팅방 초기화
   resetChatRoom()
+  // 채팅소켓 시작
   startChatSocket()
+  // 모델 옵션 조회
+  await selectModelOptions()
 })
 
 onBeforeRouteLeave((to) => {

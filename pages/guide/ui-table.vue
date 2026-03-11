@@ -25,7 +25,8 @@
     { key: 'average', label: '평균', align: 'right' },
   ]"
   :data="tableData"
-/&gt;</pre>
+/&gt;</pre
+        >
       </div>
     </section>
 
@@ -50,7 +51,8 @@
   :data="data"
   sticky-header
   max-height="200px"
-/&gt;</pre>
+/&gt;</pre
+        >
       </div>
     </section>
 
@@ -80,7 +82,8 @@
       &#123;&#123; value &#125;&#125;
     &lt;/UiBadge&gt;
   &lt;/template&gt;
-&lt;/UiTable&gt;</pre>
+&lt;/UiTable&gt;</pre
+        >
       </div>
     </section>
 
@@ -122,7 +125,8 @@
   :data="data"
   clickable
   @row-click="(row, index) =&gt; console.log(row, index)"
-/&gt;</pre>
+/&gt;</pre
+        >
       </div>
     </section>
 

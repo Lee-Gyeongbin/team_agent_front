@@ -47,7 +47,7 @@
           v-for="(row, rowIdx) in data"
           v-else
           :key="rowIdx"
-          :class="{ 'is-clickable': clickable }"
+          :class="{ 'is-clickable': clickable, 'is-selected': isRowSelected(row) }"
           @click="onRowClick(row, rowIdx)"
         >
           <td
@@ -81,14 +81,22 @@ interface Props {
   maxHeight?: string
   emptyText?: string
   clickable?: boolean
+  /** 선택 행 강조용: row[selectedRowKey] === selectedRowValue 일 때 is-selected 클래스 적용 */
+  selectedRowKey?: string
+  selectedRowValue?: string
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   stickyHeader: false,
   maxHeight: undefined,
   emptyText: '데이터가 없습니다.',
   clickable: false,
+  selectedRowKey: undefined,
+  selectedRowValue: undefined,
 })
+
+const isRowSelected = (row: Record<string, any>) =>
+  props.selectedRowKey != null && props.selectedRowValue != null && row[props.selectedRowKey] === props.selectedRowValue
 
 const emit = defineEmits<{
   'row-click': [row: Record<string, any>, index: number]
@@ -146,6 +154,10 @@ const onRowClick = (row: Record<string, any>, index: number) => {
         &:hover td {
           background: $color-background;
         }
+      }
+
+      &.is-selected td {
+        background: rgba(var(--color-primary-rgb, 59, 130, 246), 0.08);
       }
     }
 

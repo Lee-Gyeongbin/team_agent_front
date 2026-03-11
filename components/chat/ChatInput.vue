@@ -24,24 +24,13 @@
         <ChatSearchMode />
         <div class="chat-input-bottom-right flex gap-8 items-center">
           <UiSelect
-            v-if="currentSubOptions.length > 0"
-            :model-value="selectedSubOption"
             id="sub-option"
             class="w-170"
             name="sub-option"
-            :options="currentSubOptions"
+            :model-value="selectedSubOption"
+            :options="subOptions"
             size="xlg"
             @update:model-value="selectedSubOption = String($event)"
-          />
-          <UiSelect
-            v-else
-            :model-value="selectedModel"
-            id="ai-model"
-            class="w-170"
-            name="ai-model"
-            :options="modelOptions"
-            size="xlg"
-            @update:model-value="emit('update:selectedModel', String($event))"
           />
           <UiButton
             variant="primary"
@@ -62,24 +51,17 @@
 </template>
 
 <script setup lang="ts">
-import type { ModelOption } from '~/types/chat'
-const { chatRoom, createChatRoom, onSend, currentSubOptions, selectedSubOption } = useChatStore()
+const { chatRoom, createChatRoom, onSend, subOptions, selectedSubOption } = useChatStore()
 
 interface Props {
   modelValue: string
-  selectedModel?: string
-  modelOptions?: ModelOption[]
 }
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
-  'update:selectedModel': [value: string]
 }>()
 
-const props = withDefaults(defineProps<Props>(), {
-  selectedModel: 'auto',
-  modelOptions: () => [],
-})
+const props = defineProps<Props>()
 
 const handleSend = () => {
   if (!chatRoom.value.roomId) {

@@ -16,12 +16,18 @@ type ChartType = 'bar' | 'line' | 'pie' | 'mixed' | 'horizontalBar'
 /** 차트 타입에 맞는 모듈 반환 */
 function getModule(type: ChartType) {
   switch (type) {
-    case 'bar': return BarChartModule
-    case 'line': return LineChartModule
-    case 'pie': return PieChartModule
-    case 'mixed': return MixedChartModule
-    case 'horizontalBar': return XBarChartModule
-    default: return BarChartModule
+    case 'bar':
+      return BarChartModule
+    case 'line':
+      return LineChartModule
+    case 'pie':
+      return PieChartModule
+    case 'mixed':
+      return MixedChartModule
+    case 'horizontalBar':
+      return XBarChartModule
+    default:
+      return BarChartModule
   }
 }
 

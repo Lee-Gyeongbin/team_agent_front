@@ -22,10 +22,12 @@
           <UiButton variant="outline">Outline</UiButton>
           <UiButton variant="ghost">Ghost</UiButton>
         </div>
-        <pre class="demo-code">&lt;UiButton variant="primary"&gt;Primary&lt;/UiButton&gt;
+        <pre class="demo-code">
+&lt;UiButton variant="primary"&gt;Primary&lt;/UiButton&gt;
 &lt;UiButton variant="secondary"&gt;Secondary&lt;/UiButton&gt;
 &lt;UiButton variant="outline"&gt;Outline&lt;/UiButton&gt;
-&lt;UiButton variant="ghost"&gt;Ghost&lt;/UiButton&gt;</pre>
+&lt;UiButton variant="ghost"&gt;Ghost&lt;/UiButton&gt;</pre
+        >
       </div>
     </section>
 
@@ -43,11 +45,13 @@
           <UiButton size="md">Medium</UiButton>
           <UiButton size="lg">Large</UiButton>
         </div>
-        <pre class="demo-code">&lt;UiButton size="xxs"&gt;Extra Extra Small&lt;/UiButton&gt;
+        <pre class="demo-code">
+&lt;UiButton size="xxs"&gt;Extra Extra Small&lt;/UiButton&gt;
 &lt;UiButton size="xs"&gt;Extra Small&lt;/UiButton&gt;
 &lt;UiButton size="sm"&gt;Small&lt;/UiButton&gt;
 &lt;UiButton size="md"&gt;Medium&lt;/UiButton&gt;
-&lt;UiButton size="lg"&gt;Large&lt;/UiButton&gt;</pre>
+&lt;UiButton size="lg"&gt;Large&lt;/UiButton&gt;</pre
+        >
       </div>
     </section>
 
@@ -72,10 +76,12 @@
             새로고침
           </UiButton>
         </div>
-        <pre class="demo-code">&lt;UiButton variant="outline"&gt;
+        <pre class="demo-code">
+&lt;UiButton variant="outline"&gt;
   &lt;template #icon-left&gt;&lt;i class="icon-copy size-16" /&gt;&lt;/template&gt;
   복사
-&lt;/UiButton&gt;</pre>
+&lt;/UiButton&gt;</pre
+        >
       </div>
     </section>
 
@@ -94,10 +100,12 @@
             </template>
           </UiButton>
         </div>
-        <pre class="demo-code">&lt;UiButton variant="primary"&gt;
+        <pre class="demo-code">
+&lt;UiButton variant="primary"&gt;
   원문보기
   &lt;template #icon-right&gt;&lt;i class="icon-expand size-16" /&gt;&lt;/template&gt;
-&lt;/UiButton&gt;</pre>
+&lt;/UiButton&gt;</pre
+        >
       </div>
     </section>
 
@@ -136,9 +144,11 @@
             </template>
           </UiButton>
         </div>
-        <pre class="demo-code">&lt;UiButton variant="ghost" icon-only size="xs"&gt;
+        <pre class="demo-code">
+&lt;UiButton variant="ghost" icon-only size="xs"&gt;
   &lt;template #icon-left&gt;&lt;i class="icon-close size-16" /&gt;&lt;/template&gt;
-&lt;/UiButton&gt;</pre>
+&lt;/UiButton&gt;</pre
+        >
       </div>
     </section>
 
@@ -198,9 +208,13 @@
             v-for="prop in propList"
             :key="prop.name"
           >
-            <td><code>{{ prop.name }}</code></td>
+            <td>
+              <code>{{ prop.name }}</code>
+            </td>
             <td>{{ prop.type }}</td>
-            <td><code>{{ prop.default }}</code></td>
+            <td>
+              <code>{{ prop.default }}</code>
+            </td>
             <td>{{ prop.desc }}</td>
           </tr>
         </tbody>
@@ -222,7 +236,9 @@
             v-for="slot in slotList"
             :key="slot.name"
           >
-            <td><code>{{ slot.name }}</code></td>
+            <td>
+              <code>{{ slot.name }}</code>
+            </td>
             <td>{{ slot.desc }}</td>
           </tr>
         </tbody>
@@ -234,7 +250,12 @@
 <script setup lang="ts">
 const propList = [
   { name: 'variant', type: "'primary' | 'secondary' | 'outline' | 'ghost'", default: "'primary'", desc: '버튼 스타일' },
-  { name: 'size', type: "'xxs' | 'xs' | 'sm' | 'md' | 'lg' | 'xlg'", default: "'md'", desc: '버튼 크기 (24 / 26 / 28 / 30 / 32 / 36px)' },
+  {
+    name: 'size',
+    type: "'xxs' | 'xs' | 'sm' | 'md' | 'lg' | 'xlg'",
+    default: "'md'",
+    desc: '버튼 크기 (24 / 26 / 28 / 30 / 32 / 36px)',
+  },
   { name: 'disabled', type: 'boolean', default: 'false', desc: '비활성 상태' },
   { name: 'loading', type: 'boolean', default: 'false', desc: '로딩 상태' },
   { name: 'fullWidth', type: 'boolean', default: 'false', desc: '전체 너비' },
