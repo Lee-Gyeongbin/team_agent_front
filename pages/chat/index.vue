@@ -23,16 +23,16 @@
     >
       <button
         class="btn btn-chat-index"
-        :class="{ 'is-active': activeSearchModes.includes('knowledge') }"
-        @click="toggleSearchMode('knowledge')"
+        :class="{ 'is-active': activeSearchModes.includes('M') }"
+        @click="toggleSearchMode('M')"
       >
         <span class="icon-circle"><i class="icon-knowledge size-20"></i></span>
         <p>지식검색 (매뉴얼 AI)</p>
       </button>
       <button
         class="btn btn-chat-index"
-        :class="{ 'is-active': activeSearchModes.includes('sql') }"
-        @click="toggleSearchMode('sql')"
+        :class="{ 'is-active': activeSearchModes.includes('S') }"
+        @click="toggleSearchMode('S')"
       >
         <span class="icon-circle"><i class="icon-database size-20"></i></span>
         <p>데이터분석 (SQL)</p>

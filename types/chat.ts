@@ -27,7 +27,7 @@ export const EMPTY_MODEL_OPTION: ModelOption = {
   value: '',
 }
 
-export type SearchModeValue = 'knowledge' | 'sql'
+export type SearchModeValue = 'M' | 'S'
 
 export interface SearchModeOption {
   label: string

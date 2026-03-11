@@ -74,6 +74,7 @@ interface ChatSocketPayload {
   query: string
   threadId: string
   svcTy: string
+  refId: string
 }
 
 interface ChatSocketMessage {
@@ -107,21 +108,21 @@ function getWebSocketUrl(): string {
 
 // 검색모드 옵션
 const searchModeOptions: SearchModeOption[] = [
-  { label: '지식검색(매뉴얼AI)', value: 'knowledge', icon: 'icon-knowledge' },
-  { label: '데이터분석(SQL)', value: 'sql', icon: 'icon-database' },
+  { label: '지식검색(매뉴얼AI)', value: 'M', icon: 'icon-knowledge' },
+  { label: '데이터분석(SQL)', value: 'S', icon: 'icon-database' },
 ]
 
 // ============================================
 // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
 // ============================================
 const subOptionsMap: Record<SearchModeValue, SubOption[]> = {
-  knowledge: [
+  M: [
     { label: '전체', value: 'all' },
     { label: 'ERP 지식베이스', value: 'erp' },
     { label: '그룹웨어 지식베이스', value: 'groupware' },
     { label: '인사관리 지식베이스', value: 'hr' },
   ],
-  sql: [
+  S: [
     { label: '전체', value: 'all' },
     { label: '경영 통계 데이터마트', value: 'management' },
     { label: '재무회계 데이터마트', value: 'finance' },
@@ -210,10 +211,19 @@ export const useChatStore = () => {
         // 스트리밍 메시지 업데이트
         break
       }
-      case 'complete':
+      case 'complete': {
+        // chunk 없이 complete로만 응답이 온 경우를 대비해 최종 본문을 fallback 반영
+        const completeContent = payload.content ?? ''
+        const currentBuffer = messageBufferMap.value[streamingMessage.logId] || ''
+        const hasRenderedContent = Boolean(currentBuffer || streamingMessage.rContent)
+        if (completeContent && !hasRenderedContent) {
+          messageBufferMap.value[streamingMessage.logId] = completeContent
+          streamingMessage.rContent = toHtmlContent(completeContent)
+        }
         // 스트리밍 메시지 완료 처리
         finalizeStreamingMessage()
         break
+      }
       case 'error':
         // 스트리밍 오류 처리
         updateStreamingError(payload.content || '응답 처리 중 오류가 발생했습니다.')
@@ -310,21 +320,18 @@ export const useChatStore = () => {
 
   // 채팅방 생성 (content: 호출부에서 전달 가능, 미전달 시 chatMessage 사용)
   const createChatRoom = async (content?: string): Promise<ChatRoom> => {
-    // TODO: 서비스 타입 수정 필요
     const qContent = (content ?? chatMessage.value).trim()
     if (!qContent) {
       chatRoom.value = { ...EMPTY_CHAT_ROOM, qContent: '' }
       return chatRoom.value
     }
 
-    const refId = selectedSubOption.value
-    let svcTy = ''
-    if(isNotEmpty(activeSearchModes.value)) {
-      svcTy = activeSearchModes.value[0]
-    } else {
-      svcTy = selectedSubOption.value[0]
+    let svcTy = 'C'
+    // 검색모드 (C/M/D)
+    if (isNotEmpty(activeSearchModes.value)) {
+      svcTy = activeSearchModes.value[0] === 'M' ? 'M' : 'S'
     }
-    const res = await fetchCreateChatRoom(qContent, refId, svcTy)
+    const res = await fetchCreateChatRoom(qContent, svcTy)
     chatRoom.value.roomId = res.data.roomId
     chatRoom.value.title = qContent
     chatRoom.value.qContent = qContent
@@ -359,12 +366,16 @@ export const useChatStore = () => {
     if (!chatbotSocket.value || chatbotSocket.value.readyState !== WEBSOCKET_OPEN) {
       await connectWebSocket()
     }
+    // 서브 옵션(LLM/RAG/DM)
+    const refId = selectedSubOption.value
+
     if (chatbotSocket.value?.readyState === WEBSOCKET_OPEN) {
       const payload: ChatSocketPayload = {
         type: 'question',
         query: qContent,
         threadId: chatRoom.value.roomId,
-        svcTy: 'C',
+        svcTy: svcTy,
+        refId: refId,
       }
       try {
         chatbotSocket.value.send(JSON.stringify(payload))
@@ -416,12 +427,17 @@ export const useChatStore = () => {
       return
     }
 
-    // TODO: 추후 서비스 타입 추가 필요
+    let svcTy = 'C'
+    // 검색모드 (C/M/D)
+    if (isNotEmpty(activeSearchModes.value)) {
+      svcTy = activeSearchModes.value[0] === 'M' ? 'M' : 'S'
+    }
     const payload: ChatSocketPayload = {
       type: 'question',
       query: content,
       threadId: chatRoom.value.roomId || '',
-      svcTy: 'C',
+      svcTy: svcTy,
+      refId: selectedSubOption.value,
     }
 
     try {
@@ -495,7 +511,7 @@ export const useChatStore = () => {
       selectedSubOption.value = subOptions.value[0]?.value ?? 'auto'
     } else {
       activeSearchModes.value = [mode]
-      if (mode === 'knowledge') {
+      if (mode === 'M') {
         await selectRagDsList()
       } else {
         await selectDmList()
