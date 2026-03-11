@@ -30,7 +30,7 @@ export interface LibraryCard {
 }
 
 /** 카테고리별 카드 맵 (categoryId → cards) */
-export type CategoryCardsMap = Record<number, LibraryCard[]>
+export type CategoryCardsMap = Record<string, LibraryCard[]>
 
 /** 정렬 옵션 */
 export interface LibrarySearchOption {

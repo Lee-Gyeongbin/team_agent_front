@@ -15,6 +15,10 @@ export const useLibraryApi = () => {
     return get<{ dataList: LibraryCategory[] }>('/library/categoryList.do')
   }
 
+  const fetchCardList = async (): Promise<{ dataList: LibraryCard[] }> => {
+    return get<{ dataList: LibraryCard[] }>('/library/cardList.do')
+  }
+
   /** 카테고리별 카드 목록 조회 — 백엔드 연결 시 사용 */
   const fetchCategoryCards = async (): Promise<{ data: CategoryCardsMap }> => {
     return get<{ data: CategoryCardsMap }>('/library/selectCategoryCards.do')
@@ -37,6 +41,7 @@ export const useLibraryApi = () => {
 
   return {
     fetchCategoryList,
+    fetchCardList,
     fetchCategoryCards,
     fetchUpdateCategoryOrder,
     fetchUpdateCardOrder,

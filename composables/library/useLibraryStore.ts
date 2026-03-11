@@ -1,7 +1,7 @@
 import type { LibraryCategory, LibraryCard, CategoryCardsMap, LibrarySearchOption } from '~/types/library'
 import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
 import { useLibraryApi } from '~/composables/library/useLibraryApi'
-const { fetchCategoryList } = useLibraryApi()
+const { fetchCategoryList, fetchCardList } = useLibraryApi()
 
 /** 정렬 옵션 목록 */
 export const searchOptions: LibrarySearchOption[] = [
@@ -27,48 +27,9 @@ export const cardMenuItems: DropdownMenuItemDef[] = [
   { label: '삭제', icon: 'icon-delete', value: 'delete', color: 'danger' },
 ]
 
-/** 더미 카드 생성 헬퍼 */
-const createCards = (categoryId: number, count: number): LibraryCard[] =>
-  Array.from({ length: count }, (_, i) => ({
-    cardId: `cat${categoryId}-card${i + 1}`,
-    userId: '',
-    categoryId,
-    logId: '',
-    svcTy: '',
-    title: '2025년 우리회사 월별매출액 2025년 우리회사 월별매출액',
-    tags: '#보고서,#임원',
-    pinYn: 'N',
-    archiveYn: 'N',
-    sortOrd: i + 1,
-    srcDocs: '',
-    sqlCode: '',
-    chartCfg: '',
-    qryRslt:
-      '전자결재가 반려된 경우 아래 절차로 재상신할 수 있습니다. 1. [전자결재] → [수신함] 메뉴에서 반려 글자테스트',
-    useYn: 'Y',
-    createDt: '2026.02.16 09:20',
-    modifyDt: '',
-  }))
-
-// ============================================
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-// ============================================
-const categoryList = ref<LibraryCategory[]>([
-  { categoryId: 1, userId: '', categoryNm: '인사이트', color: '', sortOrd: 1, createDt: '' },
-  { categoryId: 2, userId: '', categoryNm: '보고서', color: '', sortOrd: 2, createDt: '' },
-  { categoryId: 3, userId: '', categoryNm: '매뉴얼', color: '', sortOrd: 3, createDt: '' },
-  { categoryId: 4, userId: '', categoryNm: '데이터분석', color: '', sortOrd: 4, createDt: '' },
-  { categoryId: 5, userId: '', categoryNm: '기타', color: '', sortOrd: 5, createDt: '' },
-])
-
-const categoryCards = ref<CategoryCardsMap>({
-  1: createCards(1, 7),
-  2: createCards(2, 7),
-  3: createCards(3, 7),
-  4: createCards(4, 7),
-  5: createCards(5, 7),
-})
-
+const categoryList = ref<LibraryCategory[]>([])
+const categoryCards = ref<CategoryCardsMap>({})
+const cardList = ref<LibraryCard[]>([])
 const isLoading = ref(false)
 const errorMessage = ref('')
 const isModalOpen = ref(false)
@@ -76,6 +37,15 @@ const isArchiveModalOpen = ref(false)
 const isTrashDeleteModalOpen = ref(false)
 const selectedCardId = ref<string | null>(null)
 const favoriteCardIds = ref<Set<string>>(new Set())
+
+/** cardList를 categoryId 기준으로 그룹핑하여 CategoryCardsMap 반환 */
+const mapCardListToCategoryCards = (cards: LibraryCard[]): CategoryCardsMap =>
+  cards.reduce<CategoryCardsMap>((acc, card) => {
+    const key = String(card.categoryId)
+    if (!acc[key]) acc[key] = []
+    acc[key].push(card)
+    return acc
+  }, {})
 
 export const useLibraryStore = () => {
   /** 카테고리 목록 조회 */
@@ -85,8 +55,25 @@ export const useLibraryStore = () => {
     try {
       const response = await fetchCategoryList()
       categoryList.value = response.dataList ?? []
+      await handleFetchCardList()
     } catch {
       errorMessage.value = '카테고리 목록을 불러오는데 실패했습니다.'
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  /** 카드 목록 조회 */
+  const handleFetchCardList = async () => {
+    errorMessage.value = ''
+    isLoading.value = true
+    try {
+      const response = await fetchCardList()
+      const list = response.dataList ?? []
+      cardList.value = list
+      categoryCards.value = mapCardListToCategoryCards(list)
+    } catch {
+      errorMessage.value = '카드 목록을 불러오는데 실패했습니다.'
     } finally {
       isLoading.value = false
     }
@@ -167,6 +154,7 @@ export const useLibraryStore = () => {
     selectedCardId,
     favoriteCardIds,
     handleFetchCategoryList,
+    handleFetchCardList,
     handleListMenuSelect,
     handleCardMenuSelect,
     onCategoryDragEnd,
