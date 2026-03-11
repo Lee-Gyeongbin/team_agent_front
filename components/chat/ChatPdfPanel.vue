@@ -142,7 +142,7 @@
           <div class="chat-pdf-sidebar-select">
             <UiSelect
               id="pdf-doc-select"
-              v-model="selectedDocument"
+              v-model="selectedDocId"
               name="pdf-doc-select"
               :options="documentList"
               size="lg"
@@ -150,7 +150,7 @@
           </div>
           <div class="chat-pdf-thumb-list">
             <button
-              v-for="pageNum in pageList"
+              v-for="pageNum in displayPageList"
               :key="pageNum"
               class="chat-pdf-thumb"
               :class="{ 'is-active': pageNum === currentPage }"
@@ -172,15 +172,48 @@
 <script setup lang="ts">
 import type { ChatPdfPanelProps } from '~/types/chat'
 
+const PDF_BASE_URL = '/ta-storage'
+
 const props = withDefaults(defineProps<ChatPdfPanelProps>(), {
   messageId: null,
-  filePath: '/docs/test.pdf',
+  refList: () => [],
 })
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
   'update:fullscreen': [value: boolean]
 }>()
+
+// RELATED_PAGES 파싱: "[63, 75, 88]" JSON 배열 또는 "1,3,5" 쉼표 구분 모두 대응
+const parseRelatedPages = (raw: string): number[] => {
+  try {
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) return parsed.map(Number).filter(Boolean)
+  } catch {
+    return raw.split(',').map(Number).filter(Boolean)
+  }
+  return []
+}
+
+// 선택된 문서 ID
+const selectedDocId = ref<string>('')
+
+// refList → UiSelect 옵션
+const documentList = computed(() => (props.refList ?? []).map((r) => ({ label: r.docTitle, value: r.docId })))
+
+// 현재 선택된 문서 row
+const selectedRef = computed(() => (props.refList ?? []).find((r) => r.docId === selectedDocId.value))
+
+// 현재 문서의 완성된 PDF URL
+const currentFilePath = computed(() => (selectedRef.value ? PDF_BASE_URL + selectedRef.value.filePath : ''))
+
+// 현재 문서의 주요 페이지 번호
+const currentMainPageNo = computed(() => selectedRef.value?.mainPageNo ?? 1)
+
+// 현재 문서의 관련 페이지 목록
+const currentRelatedPages = computed(() =>
+  selectedRef.value?.relatedPages ? parseRelatedPages(selectedRef.value.relatedPages) : [],
+)
 
 const mainCanvasRef = ref<HTMLCanvasElement | null>(null)
 const thumbCanvasMap = new Map<number, HTMLCanvasElement>()
@@ -195,33 +228,27 @@ const setThumbCanvasRef = (pageNum: number, el: HTMLCanvasElement | null) => {
 
 const { isLoading, loadError, currentPage, totalPages, scale, pageList, hasData, loadPdf, goToPage, zoomIn, zoomOut } =
   usePdfViewer({
-    filePath: toRef(() => props.filePath),
+    filePath: currentFilePath,
     open: toRef(() => props.open),
     mainCanvasRef,
     thumbCanvasMap,
   })
 
 const isFullscreen = ref(false)
-const activeTab = ref<'related' | 'all'>('all')
+const activeTab = ref<'related' | 'all'>('related')
 
-// ============================================
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-// ============================================
-const selectedDocument = ref('guide')
-const documentList = [
-  { value: 'guide', label: '협업 업무 관리 가이드' },
-  { value: 'report', label: '2024년 연간 보고서' },
-  { value: 'manual', label: '시스템 운영 매뉴얼' },
-  { value: 'security', label: '정보보안 정책 및 개인정보 보호 지침서' },
-  { value: 'onboard', label: '신규 입사자 온보딩 안내' },
-  { value: 'hr', label: '인사규정 개정안 (2024.12)' },
-  { value: 'infra', label: 'IT 인프라 구성도' },
-]
+// 탭에 따라 표시할 페이지 목록 결정
+const displayPageList = computed(() => {
+  if (activeTab.value === 'related' && currentRelatedPages.value.length > 0) {
+    return currentRelatedPages.value.filter((p) => p >= 1 && p <= totalPages.value)
+  }
+  return pageList.value
+})
 
 // PDF를 새 탭에서 열어 인쇄
 const onPrint = () => {
-  if (!props.filePath) return
-  const printWindow = window.open(props.filePath, '_blank')
+  if (!currentFilePath.value) return
+  const printWindow = window.open(currentFilePath.value, '_blank')
   printWindow?.addEventListener('load', () => {
     printWindow.print()
   })
@@ -244,19 +271,36 @@ const onClose = () => {
   emit('update:open', false)
 }
 
+// PDF 로드 후 mainPageNo로 이동하는 헬퍼
+const loadAndGoToMainPage = async () => {
+  activeTab.value = 'related'
+  await loadPdf()
+  if (currentMainPageNo.value > 1) {
+    await goToPage(currentMainPageNo.value)
+  }
+}
+
+// 패널이 열릴 때 PDF 로드
 watch(
   () => props.open,
   async (open) => {
     if (!open) return
-    await loadPdf()
+    await loadAndGoToMainPage()
   },
 )
 
+// 선택 문서가 바뀔 때 새 PDF 로드
+watch(selectedDocId, async () => {
+  if (!props.open) return
+  await loadAndGoToMainPage()
+})
+
+// refList가 바뀌면 첫 번째 문서로 초기화
 watch(
-  () => props.filePath,
-  async () => {
-    if (!props.open) return
-    await loadPdf()
+  () => props.refList,
+  (list) => {
+    selectedDocId.value = list?.[0]?.docId ?? ''
   },
+  { immediate: true },
 )
 </script>

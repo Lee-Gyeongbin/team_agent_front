@@ -29,7 +29,7 @@
     <ChatPdfPanel
       :open="activePanelType === 'pdf'"
       :message-id="activePanelMessageId"
-      :file-path="selectedPdfFilePath"
+      :ref-list="pdfRefList"
       @update:open="onPanelClose"
       @update:fullscreen="isPanelFullscreen = $event"
     />
@@ -47,9 +47,12 @@
 const {
   messages,
   chatMessage,
+  handleSetChatRoom,
+  handleSelectChatLogList,
   activePanelType,
   isPanelFullscreen,
   activePanelMessageId,
+  pdfRefList,
   onCopy,
   onLike,
   onDislike,
@@ -60,13 +63,7 @@ const {
   startChatSocket,
   stopChatSocket,
 } = useChatStore()
-
-// 🔽 더미 데이터 — 백엔드 연결 시 API 데이터 경로로 교체
-const pdfTestFilePath = '/docs/test.pdf'
-const selectedPdfFilePath = computed(() => {
-  const targetMessage = messages.value.find((message) => message.logId === activePanelMessageId.value)
-  return targetMessage?.sourceUrl || pdfTestFilePath
-})
+const route = useRoute()
 
 // 패널 리사이즈
 const panelWidthPercent = ref(50)
@@ -105,6 +102,17 @@ watch(activePanelType, (type) => {
 onMounted(() => {
   startChatSocket()
 })
+
+watch(
+  () => route.params.id,
+  async (id) => {
+    const roomId = String(id || '').trim()
+    if (!roomId) return
+    handleSetChatRoom(roomId)
+    await handleSelectChatLogList(roomId)
+  },
+  { immediate: true },
+)
 
 onBeforeRouteLeave((to) => {
   if (!String(to.path).startsWith('/chat')) {

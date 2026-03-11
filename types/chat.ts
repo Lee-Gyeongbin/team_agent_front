@@ -3,6 +3,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant' | 'system'
   qContent: string
   rContent: string
+  docId?: string
   createdAt: string
   isStreaming?: boolean
   isLiked?: boolean
@@ -57,11 +58,40 @@ export const EMPTY_CHAT_ROOM: ChatRoom = {
   createdAt: '',
 }
 
+/** 채팅 로그 목록 API 응답 한 건 (백엔드 VO — qcontent, rcontent, createDt, svcTy 등) */
+export interface ChatLogListRow {
+  logId?: number
+  qcontent?: string
+  rcontent?: string
+  createDt?: string
+  /** 서비스 타입: C=일반(디폴트), M=지식검색, S=데이터분석 */
+  svcTy?: string
+  /** 참조 ID (지식베이스/데이터마트 등) */
+  refId?: string
+  /** 출처 문서 ID */
+  docId?: string
+  /** 문서 존재 여부 (Y/N) */
+  docExist?: 'Y' | 'N'
+  [key: string]: unknown
+}
+
+/** TB_CHAT_REF JOIN TB_DOC API 응답 한 건 */
+export interface ChatRefRow {
+  logId: string
+  docId: string
+  mainPageNo: number
+  relatedPages: string // JSON 배열 "[63,75,88]" 또는 쉼표 구분 "1,3,5"
+  createDt: string
+  docTitle: string
+  fileName: string
+  filePath: string
+}
+
 // PDF 뷰어 (ChatPdfPanel) 관련 타입
 export interface ChatPdfPanelProps {
   open: boolean
   messageId?: string | null
-  filePath?: string
+  refList?: ChatRefRow[]
 }
 
 export interface PdfViewport {
