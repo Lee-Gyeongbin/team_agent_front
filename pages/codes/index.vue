@@ -288,42 +288,6 @@
         @close="handleGroupModalClose"
       />
     </UiModal>
-
-    <!-- 상세코드 삭제/복구 확인 모달 -->
-    <UiDialogModal
-      :is-open="isDeleteModalOpen"
-      :title="pendingCodeUseYn === 'Y' ? '복구 확인' : '삭제 확인'"
-      :message="
-        deletingCode
-          ? pendingCodeUseYn === 'Y'
-            ? `'${deletingCode.codeNm}' 코드를 복구하시겠습니까?`
-            : `'${deletingCode.codeNm}' 코드를 삭제하시겠습니까?`
-          : ''
-      "
-      cancel-text="취소"
-      :confirm-text="pendingCodeUseYn === 'Y' ? '복구' : '삭제'"
-      @close="handleDeleteModalClose"
-      @cancel="handleDeleteModalClose"
-      @confirm="doCodeUseYnUpdate"
-    />
-
-    <!-- 그룹코드 삭제/복구 확인 모달 -->
-    <UiDialogModal
-      :is-open="isGroupDeleteModalOpen"
-      :title="pendingGroupUseYn === 'Y' ? '복구 확인' : '삭제 확인'"
-      :message="
-        deletingGroup
-          ? pendingGroupUseYn === 'Y'
-            ? `'${deletingGroup.codeGrpNm}' 그룹코드를 복구하시겠습니까?`
-            : `'${deletingGroup.codeGrpNm}' 그룹코드를 삭제하시겠습니까?`
-          : ''
-      "
-      cancel-text="취소"
-      :confirm-text="pendingGroupUseYn === 'Y' ? '복구' : '삭제'"
-      @close="handleGroupDeleteModalClose"
-      @cancel="handleGroupDeleteModalClose"
-      @confirm="doGroupUseYnUpdate"
-    />
   </div>
 </template>
 
@@ -351,12 +315,6 @@ const {
   isGroupEditMode,
   editingGroup,
   handleGroupRowMenuSelect,
-  isDeleteModalOpen,
-  deletingCode,
-  pendingCodeUseYn,
-  isGroupDeleteModalOpen,
-  deletingGroup,
-  pendingGroupUseYn,
   handleFetchCodeGroupList,
   handleFetchCodeList,
   handleSelectGroup,
@@ -367,10 +325,6 @@ const {
   handleSaveCode,
   handleSaveGroup,
   handleRowMenuSelect,
-  handleDeleteModalClose,
-  doCodeUseYnUpdate,
-  handleGroupDeleteModalClose,
-  doGroupUseYnUpdate,
   handleUpdateSortOrder,
 } = useCodesStore()
 

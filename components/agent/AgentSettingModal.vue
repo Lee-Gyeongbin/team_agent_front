@@ -2,7 +2,7 @@
   <UiModal
     :is-open="isOpen"
     position="right"
-    title="Agent 설정"
+    :title="agent ? 'Agent 설정' : 'Agent 추가'"
     @close="$emit('close')"
   >
     <div class="agent-setting-form">
@@ -21,6 +21,14 @@
         @dataset-sync="onDatasetSync"
       />
     </div>
+
+    <!-- 데이터셋 추가/수정 모달 -->
+    <AgentSettingDatasetModal
+      :is-open="isDatasetModalOpen"
+      :dataset="editingDataset"
+      @close="isDatasetModalOpen = false"
+      @save="onSaveDataset"
+    />
 
     <!-- 푸터 -->
     <template #footer>
@@ -105,21 +113,30 @@ const datasetList = ref<AgentDataset[]>([
   },
 ])
 
-// agent prop 변경 시 폼 초기화
+// 모달 열릴 때 폼 초기화
 watch(
-  () => props.agent,
-  (agent) => {
-    if (agent) {
-      form.value.type = agent.type
+  () => props.isOpen,
+  (open) => {
+    if (!open) return
+    if (props.agent) {
+      form.value.type = props.agent.type
       basicForm.value = {
-        name: agent.name,
-        description: agent.description,
-        similarityThreshold: agent.similarityThreshold ?? 0.7,
-        maxSearchResults: agent.maxSearchResults ?? 5,
+        name: props.agent.name,
+        description: props.agent.description,
+        similarityThreshold: props.agent.similarityThreshold ?? 0.7,
+        maxSearchResults: props.agent.maxSearchResults ?? 5,
+      }
+    } else {
+      // 추가 모드: 폼 초기화
+      form.value.type = ''
+      basicForm.value = {
+        name: '',
+        description: '',
+        similarityThreshold: 0.7,
+        maxSearchResults: 5,
       }
     }
   },
-  { immediate: true },
 )
 
 const onSave = () => {
@@ -129,13 +146,30 @@ const onSave = () => {
   })
 }
 
-// 🔽 백엔드 연결 시 API 호출로 교체
+// 데이터셋 모달
+const isDatasetModalOpen = ref(false)
+const editingDataset = ref<AgentDataset | null>(null)
+
 const onAddDataset = () => {
-  console.warn('[TODO] 데이터셋 추가 모달 열기')
+  editingDataset.value = null
+  isDatasetModalOpen.value = true
 }
 
 const onDatasetSetting = (dataset: AgentDataset) => {
-  console.warn('[TODO] 데이터셋 설정:', dataset.id)
+  editingDataset.value = dataset
+  isDatasetModalOpen.value = true
+}
+
+// 🔽 백엔드 연결 시 API 호출로 교체
+const onSaveDataset = (dataset: AgentDataset) => {
+  const index = datasetList.value.findIndex((d) => d.id === dataset.id)
+  if (index > -1) {
+    // 수정
+    datasetList.value[index] = dataset
+  } else {
+    // 추가
+    datasetList.value.push(dataset)
+  }
 }
 
 const onDatasetSync = (dataset: AgentDataset) => {

@@ -25,7 +25,7 @@
         />
       </div>
       <div class="form-row">
-        <label class="form-label">설명명</label>
+        <label class="form-label">설명</label>
         <UiInput
           v-model="form.description"
           placeholder="설명 입력 (선택)"

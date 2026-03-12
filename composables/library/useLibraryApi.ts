@@ -20,6 +20,11 @@ export const useLibraryApi = () => {
     await post('/library/saveCategory.do', { category })
   }
 
+  /** 카테고리 삭제 API */
+  const fetchDeleteCategory = async (category: LibraryCategory): Promise<void> => {
+    await post('/library/deleteCategory.do', { category })
+  }
+
   /** 카드 목록 조회 API */
   const fetchCardList = async (): Promise<{ dataList: LibraryCard[] }> => {
     return get<{ dataList: LibraryCard[] }>('/library/cardList.do')
@@ -35,7 +40,7 @@ export const useLibraryApi = () => {
     await post('/library/updateCardPin.do', { cardId, pinYn })
   }
 
-  /** 카테고리 순서 변경 — 백엔드 연결 시 사용 */
+  /** 카테고리 순서 변경 API */
   const fetchUpdateCategoryOrder = async (items: LibraryCategoryOrderItem[]): Promise<void> => {
     await post('/library/updateCategoryOrder.do', { items })
   }
@@ -53,6 +58,7 @@ export const useLibraryApi = () => {
   return {
     fetchCategoryList,
     fetchSaveCategory,
+    fetchDeleteCategory,
     fetchCardList,
     fetchCardDetail,
     fetchUpdateCardPin,

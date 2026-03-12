@@ -109,7 +109,7 @@ watch(
     const roomId = String(id || '').trim()
     if (!roomId) return
     handleSetChatRoom(roomId)
-    await handleSelectChatLogList(roomId)
+    await handleSelectChatLogList(roomId, { preserveLocalWhenEmpty: true })
   },
   { immediate: true },
 )

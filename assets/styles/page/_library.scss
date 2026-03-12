@@ -178,6 +178,10 @@
       padding-right: $spacing-sm;
       @include custom-scrollbar;
 
+      .library-card-draggable{
+        gap: $spacing-sm;
+      }
+
       .library-card{
         width: 100%;
         padding: 12px;

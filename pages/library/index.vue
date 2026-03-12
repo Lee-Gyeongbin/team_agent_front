@@ -64,7 +64,7 @@
               variant="ghost"
               size="md"
               class="btn btn-library btn-library-trash"
-              @click="isTrashDeleteModalOpen = true"
+              @click="onTrashDeleteClick"
             >
               <template #icon-left>
                 <i class="icon icon-delete size-16"></i>
@@ -104,6 +104,7 @@
             item-key="categoryId"
             handle=".library-list-header"
             animation="200"
+            @start="onCategoryDragStart"
             @end="onCategoryDragEnd"
           >
             <template #item="{ element: category }">
@@ -117,7 +118,7 @@
                   <UiDropdownMenu
                     :items="listMenuItems"
                     align="end"
-                    @select="handleListMenuSelect"
+                    @select="(value) => handleListMenuSelect(category, value)"
                   >
                     <template #trigger>
                       <UiButton
@@ -136,7 +137,6 @@
                 </div>
                 <div class="library-card-grp">
                   <draggable
-                    v-if="(categoryCards[category.categoryId]?.length ?? 0) > 0"
                     v-model="categoryCards[category.categoryId]"
                     class="library-card-draggable flex flex-col"
                     :group="{ name: 'library-cards' }"
@@ -144,6 +144,7 @@
                     animation="200"
                     :delay="0"
                     :delay-on-touch-only="true"
+                    :empty-insert-threshold="80"
                     @end="onCardDragEnd"
                   >
                     <template #item="{ element: card }">
@@ -240,18 +241,20 @@
                         </div>
                       </div>
                     </template>
+                    <!-- 카드가 없을 때: drop 영역 확보 + 빈 상태 UI -->
+                    <template #footer>
+                      <div
+                        v-if="(categoryCards[category.categoryId]?.length ?? 0) === 0"
+                        class="library-card type-new-card"
+                        @click="handleAddCard(category.categoryId)"
+                      >
+                        <div class="library-card-new-card-content">
+                          <i class="icon icon-heart size-24"></i>
+                          <p>마음에 드는 날리지를 저장해주세요</p>
+                        </div>
+                      </div>
+                    </template>
                   </draggable>
-                  <!-- 카드가 없을 때: 날리지 저장 영역 -->
-                  <div
-                    v-else
-                    class="library-card type-new-card"
-                    @click="handleAddCard(category.categoryId)"
-                  >
-                    <div class="library-card-new-card-content">
-                      <i class="icon icon-heart size-24"></i>
-                      <p>마음에 드는 날리지를 저장해주세요</p>
-                    </div>
-                  </div>
                 </div>
               </div>
             </template>
@@ -293,17 +296,20 @@
         @close="isArchiveModalOpen = false"
       />
 
-      <!-- 휴지통 삭제 확인 모달 -->
-      <UiDialogModal
-        :is-open="isTrashDeleteModalOpen"
-        title="삭제"
-        message="삭제 대기 중인 항목을 모두 삭제하시겠습니까?"
-        cancel-text="취소"
-        confirm-text="삭제"
-        @close="isTrashDeleteModalOpen = false"
-        @cancel="isTrashDeleteModalOpen = false"
-        @confirm="handleTrashDeleteConfirm"
-      />
+      <!-- 카테고리명 변경 모달 -->
+      <UiModal
+        :is-open="isRenameModalOpen"
+        title="카테고리명 변경"
+        position="center"
+        max-width="420px"
+        @close="handleRenameModalClose"
+      >
+        <LibraryCategoryRenameModal
+          :category="renamingCategory"
+          @save="handleSaveRename"
+          @close="handleRenameModalClose"
+        />
+      </UiModal>
     </template>
   </div>
 </template>
@@ -323,13 +329,17 @@ const {
   errorMessage,
   isModalOpen,
   isArchiveModalOpen,
-  isTrashDeleteModalOpen,
+  isRenameModalOpen,
+  renamingCategory,
   selectedCardId,
   selectedCard,
   newCategoryNm,
   handleFetchCategoryList,
   handleListMenuSelect,
+  handleRenameModalClose,
+  handleSaveRename,
   handleCardMenuSelect,
+  onCategoryDragStart,
   onCategoryDragEnd,
   onCardDragEnd,
   handleCardPin,
@@ -341,6 +351,16 @@ const {
   handleAddCategory,
   handleAddCard,
 } = useLibraryStore()
+
+/** 휴지통 전체 삭제 클릭 */
+const onTrashDeleteClick = async () => {
+  const ok = await openConfirm({
+    title: '삭제',
+    message: '삭제 대기 중인 항목을 모두 삭제하시겠습니까?',
+    confirmText: '삭제',
+  })
+  if (ok) handleTrashDeleteConfirm()
+}
 
 const contentWrapperRef = ref<HTMLElement | null>(null)
 const canScrollLeft = ref(false)
