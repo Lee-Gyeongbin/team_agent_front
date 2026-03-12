@@ -9,7 +9,7 @@ $color-primary-dark: #2b43a2;
 $color-primary-dark-hover: #1d3589;
 $color-orange: #ff7518;
 $color-orange-hover: #e5660f;
-$color-orange-dark: #C73E07;
+$color-orange-dark: #c73e07;
 $color-orange-dark-hover: #a83306;
 $color-secondary: #64748b;
 $color-background: #f4f7f9;
@@ -148,8 +148,8 @@ $breakpoint-lg: 1024px; // 유일한 분기점: PC(1024~) / 모바일+태블릿(
 // ===================================
 // 레이아웃
 // ===================================
-$sidebar-width: 64px;
-$sidebar-width-collapsed: 64px;
+$sidebar-width: 260px;
+$sidebar-width-collapsed: 52px;
 $header-height: 48px;
 $chat-input-height: 64px;
 $chat-max-width: 768px;
@@ -167,7 +167,7 @@ $height-xlg: 36px;
 $border-radius-sm: 4px;
 $border-radius-base: 6px;
 $border-radius-lg: 8px;
-$border-radius-full: 9999px;
+$border-radius-full: 100%;
 // ===================================
 // 그림자
 // ===================================

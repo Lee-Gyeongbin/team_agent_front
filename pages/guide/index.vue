@@ -211,7 +211,7 @@
                 :key="icon.class"
                 class="icon-item"
               >
-                <i :class="[icon.class, 'size-24']" />
+                <i :class="[icon.class, 'size-20']" />
                 <span class="icon-name">.{{ icon.class }}</span>
               </div>
             </div>
@@ -234,14 +234,26 @@ const statusList = [
   { category: '페이지', name: '채팅 상세', location: '/chat/:id', url: '', status: 'wip' },
   { category: '페이지', name: '라이브러리', location: '/library', url: '/library', status: 'done' },
   { category: '페이지', name: '에이전트 목록', location: '/agent-manage', url: '/agent-manage', status: 'wip' },
-  { category: '페이지', name: '에이전트 생성', location: '/agent-manage/new', url: '/agent-manage/new', status: 'pending' },
+  {
+    category: '페이지',
+    name: '에이전트 생성',
+    location: '/agent-manage/new',
+    url: '/agent-manage/new',
+    status: 'pending',
+  },
   { category: '페이지', name: '에이전트 상세', location: '/agent-manage/:id', url: '', status: 'pending' },
   { category: '페이지', name: '엑셀 뷰어', location: '/excel', url: '/excel', status: 'done' },
   { category: 'UI 컴포넌트', name: 'UiInput', location: '/guide/ui-input', url: '/guide/ui-input', status: 'done' },
   { category: 'UI 컴포넌트', name: 'UiTable', location: '/guide/ui-table', url: '/guide/ui-table', status: 'done' },
   { category: 'UI 컴포넌트', name: 'UiModal', location: '/guide/ui-modal', url: '/guide/ui-modal', status: 'done' },
   { category: '페이지', name: '로그인', location: '/login', url: '/login', status: 'pending' },
-  { category: 'UI 컴포넌트', name: 'UiCodeBlock', location: '/guide/ui-code-block', url: '/guide/ui-code-block', status: 'done' },
+  {
+    category: 'UI 컴포넌트',
+    name: 'UiCodeBlock',
+    location: '/guide/ui-code-block',
+    url: '/guide/ui-code-block',
+    status: 'done',
+  },
 ]
 
 // 섹션 2: 디자인 토큰 — 색상 (_variables.scss 기준)
