@@ -24,17 +24,17 @@
 
     <!-- 푸터 -->
     <template #footer>
-      <div class="agent-setting-footer">
+      <div class="modal-side-footer">
         <UiButton
-          variant="outline"
-          size="lg"
+          variant="line-secondary"
+          size="md"
           @click="$emit('close')"
         >
           취소
         </UiButton>
         <UiButton
-          variant="dark"
-          size="lg"
+          variant="primary"
+          size="md"
           @click="onSave"
         >
           저장

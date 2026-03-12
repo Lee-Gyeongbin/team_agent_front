@@ -40,7 +40,7 @@
 
 <script setup lang="ts">
 interface Props {
-  variant?: 'primary' | 'primary-dark' | 'primary-line' | 'dark' | 'secondary' | 'outline' | 'ghost'
+  variant?: 'primary' | 'primary-dark' | 'primary-line' | 'line-secondary' | 'dark' | 'secondary' | 'outline' | 'ghost'
   size?: 'xxs' | 'xs' | 'sm' | 'md' | 'lg' | 'xlg'
   disabled?: boolean
   loading?: boolean
@@ -199,6 +199,17 @@ const emit = defineEmits<{
     &:hover:not(:disabled) {
       border-color: var(--color-primary); // #3c69db
       color: var(--color-primary); // #3c69db
+    }
+  }
+
+  &.variant-line-secondary {
+    background: #fff;
+    border-color: $color-text-secondary;
+    color: $color-text-secondary;
+    @include typo($body-medium-bold);
+
+    &:hover:not(:disabled) {
+      background: $color-background;
     }
   }
 

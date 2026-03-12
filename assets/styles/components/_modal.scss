@@ -184,6 +184,20 @@
     }
   }
 
+  // 푸터 (버튼 영역)
+  .modal-side-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    padding: 12px $spacing-md;
+    border-top: 1px solid $color-border;
+
+    .ui-button {
+      min-width: 88px;
+    }
+  }
+
   // 본문
   .modal-side-body {
     display: flex;
