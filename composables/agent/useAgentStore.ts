@@ -45,15 +45,15 @@ const handleSelectDatasetList = async (agentId: string) => {
 }
 
 // 데이터셋 추가/수정
-const handleSaveDataset = async (dataset: Partial<AgentDataset>) => {
+const handleSaveDataset = async (agentId: string, dataset: Partial<AgentDataset>) => {
   await fetchSaveDataset(dataset) // API 호출
-  await handleSelectDatasetList(dataset.agentId ?? '') // 추가/수정 후 목록 다시 조회
+  await handleSelectDatasetList(agentId) // 추가/수정 후 목록 다시 조회
 }
 
 // 데이터셋 동기화
-const handleSyncDataset = async (id: string) => {
+const handleSyncDataset = async (agentId: string, id: string) => {
   await fetchSyncDataset(id) // API 호출
-  await handleSelectDatasetList(id) // 동기화 후 목록 다시 조회
+  await handleSelectDatasetList(agentId) // 동기화 후 목록 다시 조회
 }
 
 export const useAgentStore = () => {
