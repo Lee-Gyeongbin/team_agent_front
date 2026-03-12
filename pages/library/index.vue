@@ -64,7 +64,7 @@
               variant="ghost"
               size="md"
               class="btn btn-library btn-library-trash"
-              @click="isTrashDeleteModalOpen = true"
+              @click="onTrashDeleteClick"
             >
               <template #icon-left>
                 <i class="icon icon-delete size-16"></i>
@@ -117,7 +117,7 @@
                   <UiDropdownMenu
                     :items="listMenuItems"
                     align="end"
-                    @select="handleListMenuSelect"
+                    @select="(value) => handleListMenuSelect(category, value)"
                   >
                     <template #trigger>
                       <UiButton
@@ -293,17 +293,20 @@
         @close="isArchiveModalOpen = false"
       />
 
-      <!-- 휴지통 삭제 확인 모달 -->
-      <UiDialogModal
-        :is-open="isTrashDeleteModalOpen"
-        title="삭제"
-        message="삭제 대기 중인 항목을 모두 삭제하시겠습니까?"
-        cancel-text="취소"
-        confirm-text="삭제"
-        @close="isTrashDeleteModalOpen = false"
-        @cancel="isTrashDeleteModalOpen = false"
-        @confirm="handleTrashDeleteConfirm"
-      />
+      <!-- 카테고리명 변경 모달 -->
+      <UiModal
+        :is-open="isRenameModalOpen"
+        title="카테고리명 변경"
+        position="center"
+        max-width="420px"
+        @close="handleRenameModalClose"
+      >
+        <LibraryCategoryRenameModal
+          :category="renamingCategory"
+          @save="handleSaveRename"
+          @close="handleRenameModalClose"
+        />
+      </UiModal>
     </template>
   </div>
 </template>
@@ -323,12 +326,15 @@ const {
   errorMessage,
   isModalOpen,
   isArchiveModalOpen,
-  isTrashDeleteModalOpen,
+  isRenameModalOpen,
+  renamingCategory,
   selectedCardId,
   selectedCard,
   newCategoryNm,
   handleFetchCategoryList,
   handleListMenuSelect,
+  handleRenameModalClose,
+  handleSaveRename,
   handleCardMenuSelect,
   onCategoryDragEnd,
   onCardDragEnd,
@@ -341,6 +347,16 @@ const {
   handleAddCategory,
   handleAddCard,
 } = useLibraryStore()
+
+/** 휴지통 전체 삭제 클릭 */
+const onTrashDeleteClick = async () => {
+  const ok = await openConfirm({
+    title: '삭제',
+    message: '삭제 대기 중인 항목을 모두 삭제하시겠습니까?',
+    confirmText: '삭제',
+  })
+  if (ok) handleTrashDeleteConfirm()
+}
 
 const contentWrapperRef = ref<HTMLElement | null>(null)
 const canScrollLeft = ref(false)

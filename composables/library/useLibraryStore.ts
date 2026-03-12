@@ -41,7 +41,8 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 const isModalOpen = ref(false)
 const isArchiveModalOpen = ref(false)
-const isTrashDeleteModalOpen = ref(false)
+const isRenameModalOpen = ref(false)
+const renamingCategory = ref<LibraryCategory | null>(null)
 const selectedCardId = ref<string | null>(null)
 const selectedCard = ref<LibraryCardDetail | null>(null)
 const newCategoryNm = ref('')
@@ -78,7 +79,7 @@ export const useLibraryStore = () => {
       categoryNm: newCategoryNm.value,
       userId: '',
       color: '',
-      sortOrd: 0,
+      sortOrd: 0, // 등록 시 0으로 설정
       createDt: '',
     }
     try {
@@ -87,8 +88,9 @@ export const useLibraryStore = () => {
       await fetchSaveCategory(newCategory)
       newCategoryNm.value = ''
       await handleFetchCategoryList()
+      openAlert({ message: '카테고리가 추가되었습니다.' })
     } catch {
-      errorMessage.value = '카테고리 추가를 실패했습니다.'
+      openAlert({ message: '카테고리 추가에 실패했습니다.' })
     } finally {
       isLoading.value = false
     }
@@ -102,7 +104,6 @@ export const useLibraryStore = () => {
 
   /** 카드 목록 조회 */
   const handleFetchCardList = async () => {
-    errorMessage.value = ''
     isLoading.value = true
     try {
       const response = await fetchCardList()
@@ -116,9 +117,39 @@ export const useLibraryStore = () => {
     }
   }
 
-  const handleListMenuSelect = (value: string) => {
-    // TODO: 백엔드 연결 시 value에 따라 API 호출로 교체
-    console.warn('[TODO] 카테고리 메뉴 선택:', value)
+  /** 카테고리 메뉴 선택 */
+  const handleListMenuSelect = (category: LibraryCategory, value: string) => {
+    if (value === 'rename') {
+      renamingCategory.value = { ...category }
+      isRenameModalOpen.value = true
+    } else if (value === 'delete') {
+      // TODO: 카테고리 삭제
+    }
+  }
+
+  /** 카테고리명 변경 모달 닫기 */
+  const handleRenameModalClose = () => {
+    isRenameModalOpen.value = false
+    renamingCategory.value = null
+  }
+
+  /** 카테고리명 변경 저장 */
+  const handleSaveRename = async (categoryNm: string) => {
+    if (!renamingCategory.value) return
+    try {
+      isLoading.value = true
+      await fetchSaveCategory({
+        ...renamingCategory.value,
+        categoryNm: categoryNm,
+      })
+      handleRenameModalClose()
+      await handleFetchCategoryList()
+      openAlert({ message: '카테고리명 변경되었습니다.' })
+    } catch {
+      openAlert({ message: '카테고리명 변경에 실패했습니다.' })
+    } finally {
+      isLoading.value = false
+    }
   }
 
   const handleCardMenuSelect = (cardId: string, value: string) => {
@@ -200,7 +231,6 @@ export const useLibraryStore = () => {
 
   const handleTrashDeleteConfirm = () => {
     // TODO: 백엔드 연결 시 fetchDeleteTrashAll 호출
-    isTrashDeleteModalOpen.value = false
   }
 
   return {
@@ -214,7 +244,8 @@ export const useLibraryStore = () => {
     cardMenuItems,
     isModalOpen,
     isArchiveModalOpen,
-    isTrashDeleteModalOpen,
+    isRenameModalOpen,
+    renamingCategory,
     selectedCardId,
     selectedCard,
     newCategoryNm,
@@ -223,6 +254,8 @@ export const useLibraryStore = () => {
     handleAddCategory,
     handleAddCard,
     handleListMenuSelect,
+    handleRenameModalClose,
+    handleSaveRename,
     handleCardMenuSelect,
     onCategoryDragEnd,
     onCardDragEnd,
