@@ -249,10 +249,19 @@ export const useChatStore = () => {
         finalizeStreamingMessage(payload)
         break
       }
-      case 'error':
-        // 스트리밍 오류 처리
-        updateStreamingError(payload.content || '응답 처리 중 오류가 발생했습니다.')
+      case 'error': {
+        // 이미 답변이 조금이라도 렌더링/버퍼링 된 상태면
+        // 사용자 경험상 "오류"로 덮어쓰지 말고 무시(또는 경고로만)
+        const currentBuffer = messageBufferMap.value[streamingMessage.logId] || ''
+        const hasRendered = Boolean(currentBuffer || streamingMessage.rContent)
+        if (!hasRendered) {
+          updateStreamingError(payload.content || '응답 처리 중 오류가 발생했습니다.')
+        } else {
+          // 필요하면 콘솔만 남기기
+          console.warn('[chat] streaming error after partial content:', payload.content)
+        }
         break
+      }
       default:
         break
     }

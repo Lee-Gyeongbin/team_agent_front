@@ -13,6 +13,7 @@ const {
   fetchCardList,
   fetchCardDetail,
   fetchUpdateCardPin,
+  fetchSaveCard,
   fetchSaveCategory,
   fetchDeleteCategory,
   fetchUpdateCategoryOrder,
@@ -41,12 +42,13 @@ export const listMenuItems: DropdownMenuItemDef[] = [
   { label: '카테고리 삭제', icon: 'icon-trashcan', value: 'delete', color: 'danger' },
 ]
 
-/** 카드 드롭다운 메뉴 아이템 */
-export const cardMenuItems: DropdownMenuItemDef[] = [
+/** 카드 드롭다운 메뉴 아이템 (pinYn에 따라 즐겨찾기 항목 변경) */
+export const getCardMenuItems = (card: LibraryCard): DropdownMenuItemDef[] => [
   { label: '상세 보기', icon: 'icon-view', value: 'view' },
   { label: '카테고리 이동', icon: 'icon-transfer', value: 'move' },
-  { label: '즐겨찾기 등록', icon: 'icon-star-line', value: 'favorite-add' },
-  { label: '즐겨찾기 해제', icon: 'icon-star-fill', value: 'favorite-remove' },
+  ...(card.pinYn === 'Y'
+    ? [{ label: '즐겨찾기 해제', icon: 'icon-star-fill', value: 'favorite-remove' as const }]
+    : [{ label: '즐겨찾기 등록', icon: 'icon-star-line', value: 'favorite-add' as const }]),
   { label: '답변 복사', icon: 'icon-copy-gray', value: 'copy' },
   { label: '보관', icon: 'icon-archive', value: 'archive' },
   { label: '삭제', icon: 'icon-delete', value: 'delete', color: 'danger' },
@@ -200,10 +202,9 @@ export const useLibraryStore = () => {
     movingCard.value = null
   }
 
-  /** 카드 이동 실행 (API 연결 예정) */
+  /** 카드 이동 실행 */
   const handleMoveCard = async (_targetCategoryId: string, _cardId: string) => {
     if (!movingCard.value) return
-    // TODO: API 연결 후 fetchMoveCard 등 호출
     openConfirm({
       message: '카드를 이동하시겠습니까?',
       onConfirm: async () => {
@@ -268,16 +269,47 @@ export const useLibraryStore = () => {
       movingCard.value = { ...card }
       isMoveModalOpen.value = true
     } else if (value === 'favorite-add') {
-      //TODO: 즐겨찾기 등록
+      handleCardPin({ ...card, pinYn: 'N' }) // 즐겨찾기 등록 -> pinYn 반대로 세팅
     } else if (value === 'favorite-remove') {
-      //TODO: 즐겨찾기 해제
+      handleCardPin({ ...card, pinYn: 'Y' }) // 즐겨찾기 해제 -> pinYn 반대로 세팅
     } else if (value === 'copy') {
-      //TODO: 답변 복사
+      handleCopyAnswer(card)
     } else if (value === 'archive') {
-      //TODO: 보관
+      handleArchiveCard(card)
     } else if (value === 'delete') {
-      //TODO: 삭제
+      handleDeleteCard(card)
     }
+  }
+
+  /** 카드 삭제 */
+  const handleDeleteCard = async (card: LibraryCard) => {
+    openConfirm({
+      message: '카드를 삭제하시겠습니까?',
+      onConfirm: async () => {
+        await fetchSaveCard({ ...card, useYn: 'N' })
+        await handleFetchCardList()
+        openAlert({ message: '카드가 삭제되었습니다.\n 삭제된 카드는 휴지통에서 확인할 수 있습니다.' })
+      },
+    })
+  }
+
+  /** 답변 복사 */
+  const handleCopyAnswer = async (card: LibraryCard) => {
+    const response = await fetchCardDetail(card.cardId)
+    navigator.clipboard.writeText(response.data.rcontent)
+    openToast({ message: '답변이 복사되었습니다.', duration: 1500 })
+  }
+
+  /** 카드 보관 */
+  const handleArchiveCard = async (card: LibraryCard) => {
+    openConfirm({
+      message: '카드를 보관하시겠습니까?',
+      onConfirm: async () => {
+        await fetchSaveCard({ ...card, archiveYn: 'Y' })
+        await handleFetchCardList()
+        openAlert({ message: '카드가 보관되었습니다.' })
+      },
+    })
   }
 
   /** 카드 드래그 시작 시 순서 저장 (취소 시 복원용) */
@@ -346,7 +378,7 @@ export const useLibraryStore = () => {
   const openModal = async (cardId: string) => {
     try {
       selectedCardId.value = cardId
-      const response = await fetchCardDetail(cardId, '')
+      const response = await fetchCardDetail(cardId)
       selectedCard.value = response.data
     } catch {
       errorMessage.value = '카드 상세를 불러오는데 실패했습니다.'
@@ -383,7 +415,7 @@ export const useLibraryStore = () => {
     isLoading,
     errorMessage,
     listMenuItems,
-    cardMenuItems,
+    getCardMenuItems,
     isModalOpen,
     isArchiveModalOpen,
     isRenameModalOpen,
