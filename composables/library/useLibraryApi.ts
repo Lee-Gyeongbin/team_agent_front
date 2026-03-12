@@ -3,7 +3,6 @@ import type {
   LibraryCategory,
   LibraryCard,
   LibraryCardDetail,
-  CategoryCardsMap,
   LibraryCategoryOrderItem,
   LibraryCardOrderPayload,
 } from '~/types/library'
@@ -14,6 +13,11 @@ export const useLibraryApi = () => {
   /** 카테고리 목록 조회 API */
   const fetchCategoryList = async (): Promise<{ dataList: LibraryCategory[] }> => {
     return get<{ dataList: LibraryCategory[] }>('/library/categoryList.do')
+  }
+
+  /** 카테고리 등록/수정 API */
+  const fetchSaveCategory = async (category: LibraryCategory): Promise<void> => {
+    await post('/library/saveCategory.do', { category })
   }
 
   /** 카드 목록 조회 API */
@@ -48,6 +52,7 @@ export const useLibraryApi = () => {
 
   return {
     fetchCategoryList,
+    fetchSaveCategory,
     fetchCardList,
     fetchCardDetail,
     fetchUpdateCardPin,
