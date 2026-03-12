@@ -392,13 +392,29 @@ export const useChatStore = () => {
   }
 
   // 채팅 로그 조회 (roomId 기준)
-  const handleSelectChatLogList = async (roomId: string) => {
+  // - 새 채팅 직후처럼 서버 로그가 아직 적재되기 전(0건)인 순간에 페이지 진입하면,
+  //   로컬에 이미 쌓아둔 placeholder 메시지까지 비워져 UI가 사라질 수 있어 보존 옵션을 둔다.
+  const handleSelectChatLogList = async (
+    roomId: string,
+    options?: {
+      /** 서버 로그가 0건일 때, 로컬 메시지가 있으면 유지할지 여부 (기본 true) */
+      preserveLocalWhenEmpty?: boolean
+    },
+  ) => {
     if (!roomId) {
       messages.value = []
       return
     }
     const res = await fetchSelectChatLogList(roomId)
     const rawList = res.list ?? []
+    if (rawList.length === 0) {
+      const preserve = options?.preserveLocalWhenEmpty ?? true
+      const hasLocalMessages = messages.value.length > 0
+      const isSameRoom = chatRoom.value.roomId === roomId
+      if (preserve && hasLocalMessages && isSameRoom) return
+      messages.value = []
+      return
+    }
     const flattened = rawList.flatMap(logRowToMessages)
     flattened.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
     messages.value = flattened
