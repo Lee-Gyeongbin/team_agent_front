@@ -63,12 +63,12 @@
   border-radius: $border-radius-lg;
   background: #fff;
   transition: box-shadow $transition-base;
-
-  &:hover {
-    background: #f8fafb;
+  background: var(--color-gray-5, #f4f7f9);
+  &.is-inactive {
+    background: #fff;
   }
 
-  &.is-inactive {
+  &:hover {
     background: #f4f7f9;
   }
 
@@ -191,6 +191,7 @@
     flex-shrink: 0;
   }
 
+  // 설정 버튼
   .agent-card-setting {
     display: flex;
     align-items: center;
@@ -206,5 +207,286 @@
     &:hover {
       color: $color-text-dark;
     }
+  }
+}
+
+// ===================================
+// Agent 설정 슬라이드 모달
+// ===================================
+.agent-setting-form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.agent-setting-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px $spacing-md;
+  background: #fff;
+  border: 1px solid #dce4e9;
+  border-radius: $border-radius-lg;
+}
+
+// 섹션 타이틀 (하단 border)
+.agent-setting-section-title {
+  color: #5c6677;
+  @include typo($body-large-bold);
+  color: $color-text-dark;
+  padding: 4px 0 10px;
+  border-bottom: 1px solid #aebccb;
+}
+
+// 라벨 (우측 정렬, 120px 고정)
+.agent-setting-label {
+  width: 120px;
+  flex-shrink: 0;
+  @include typo($body-medium);
+  color: $color-text-dark;
+  text-align: right;
+
+  .is-required {
+    color: #f24a2d;
+    margin-right: 2px;
+  }
+}
+
+// 유형 섹션 설명
+.agent-setting-desc {
+  margin-top: -6px;
+  @include typo($body-medium);
+  color: $color-text-dark;
+}
+
+// 가로 배치 필드 (라벨 좌 + 인풋 우)
+.agent-setting-field-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  // textarea 등 상단 정렬 필요 시
+  &.is-top {
+    align-items: flex-start;
+
+    .agent-setting-label {
+      padding-top: 6px;
+    }
+  }
+
+  // 인풋이 나머지 공간 채움
+  .ui-input-wrap,
+  .ui-textarea {
+    flex: 1;
+  }
+}
+
+// 세로 그룹 (유사도/최대검색 각각)
+.agent-setting-field-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+// 유사도/최대검색 가로 배치
+.agent-setting-row {
+  display: flex;
+  gap: 12px;
+}
+
+.agent-setting-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  .ui-input-wrap {
+    width: 80px;
+    flex-shrink: 0;
+  }
+}
+
+.agent-setting-unit {
+  color: #5c6677;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.agent-setting-hint {
+  margin-top: 5px;
+  color: #6f7a93;
+  font-size: 11px;
+  line-height: 1.5;
+  padding-left: 132px; // 라벨 120px + gap 12px
+}
+
+.agent-setting-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+  padding: $spacing-md;
+  border-top: 1px solid $color-border;
+}
+
+// ===================================
+// Agent 데이터셋 연결 섹션
+// ===================================
+.agent-setting-dataset {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  padding: 12px $spacing-md;
+  background: #fff;
+  border: 1px solid #dce4e9;
+  border-radius: $border-radius-lg;
+}
+
+// 데이터셋 헤더 (섹션 타이틀과 동일 패턴: 하단 border)
+.agent-setting-dataset-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  padding: 4px 0 10px;
+  border-bottom: 1px solid #aebccb;
+}
+
+.agent-setting-dataset-header-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+// 타이틀 인라인 (border 제거)
+.agent-setting-section-title.is-inline {
+  padding: 0;
+  border-bottom: none;
+}
+
+// 설명 (타이틀 옆 12px)
+.agent-setting-dataset-sub {
+  margin-left: 5px;
+  @include typo($body-small);
+  color: $color-text-dark;
+}
+
+.agent-setting-dataset-filter {
+  display: flex;
+  gap: $spacing-sm;
+
+  .ui-input-wrap {
+    flex: 1;
+  }
+
+  .ui-select-wrap {
+    width: 140px;
+    flex-shrink: 0;
+  }
+}
+
+.agent-setting-dataset-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.agent-setting-dataset-summary {
+  color: #5c6677;
+  font-size: 11px;
+  line-height: 1.5;
+
+  strong {
+    font-weight: 700;
+    color: $color-text-primary;
+  }
+}
+
+// ===================================
+// 데이터셋 카드
+// ===================================
+.agent-dataset-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+  padding: 12px $spacing-md;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  background: #fff;
+  transition: border-color $transition-base;
+
+  &:hover {
+    border-color: #aebccb;
+  }
+
+  &.is-connected {
+    border-color: var(--color-primary);
+  }
+}
+
+.agent-dataset-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.agent-dataset-card-title {
+  color: $color-text-dark;
+  font-size: $font-size-base;
+  font-weight: $font-weight-bold;
+  line-height: 1.5;
+}
+
+.agent-dataset-card-desc {
+  @include typo($body-medium);
+  color: $color-text-muted;
+  @include ellipsis(1);
+}
+
+.agent-dataset-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.agent-dataset-card-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: $color-text-disabled;
+
+  strong {
+    color: $color-text-dark;
+    font-weight: $font-weight-semibold;
+  }
+}
+
+.agent-dataset-card-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-shrink: 0;
+}
+
+.agent-dataset-card-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: $color-text-secondary;
+  cursor: pointer;
+  transition: color $transition-fast;
+
+  &:hover {
+    color: $color-text-dark;
   }
 }

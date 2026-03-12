@@ -57,9 +57,13 @@
 }
 
 // 타이포그래피 프리셋 적용 (SCSS Map → CSS 속성)
-@mixin typo($map) {
+// $color: 선택 인자 — 전달 시 color 속성도 함께 출력
+@mixin typo($map, $color: null) {
   @each $prop, $val in $map {
     #{$prop}: $val;
+  }
+  @if $color {
+    color: $color;
   }
 }
 

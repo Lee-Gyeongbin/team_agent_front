@@ -170,7 +170,7 @@
     padding: 24px $spacing-md $spacing-md;
 
     .modal-side-title {
-      color: $color-text-dark;
+      color: $color-text-heading;
       font-size: $font-size-xl;
       font-weight: $font-weight-bold;
       line-height: 150%;
@@ -373,7 +373,6 @@
     right: 12px;
   }
 }
-
 
 // 태그 뱃지
 .library-detail-modal-tags {

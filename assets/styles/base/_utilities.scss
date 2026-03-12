@@ -108,7 +108,7 @@
   max-width: 800px; // 760px
 }
 
-.wide-center{
+.wide-center {
   width: 100%;
   padding: 0 20px;
   margin-left: auto;
@@ -120,7 +120,7 @@
   padding: 0 16px;
   margin-left: auto;
   margin-right: auto;
-  max-width: 1064px; // 1024px
+  max-width: 1002px; // 1024px
 }
 
 /* typography =========================== */
@@ -153,9 +153,15 @@
   text-align: right;
 }
 
-.f-center { text-align: center; }
-.f-right  { text-align: right; }
-.ws-nowrap  { white-space: nowrap; }
+.f-center {
+  text-align: center;
+}
+.f-right {
+  text-align: right;
+}
+.ws-nowrap {
+  white-space: nowrap;
+}
 /* image ================================ */
 .img-contain {
   width: 100%;

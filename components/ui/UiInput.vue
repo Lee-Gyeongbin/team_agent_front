@@ -138,7 +138,7 @@ defineExpose({ focus })
   }
   &.size-inp-sm {
     height: $height-sm;
-    font-size: $font-size-sm;
+    font-size: $font-size-base;
   }
   &.size-inp-md {
     height: $height-md;

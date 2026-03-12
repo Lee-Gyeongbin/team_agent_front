@@ -30,6 +30,13 @@ assets/styles/page/
 └── _agent.scss     # components/agent/* + pages/agents/*
 ```
 
+## 공통 클래스 재사용 원칙
+
+- 같은 도메인 SCSS 파일 내에서 **동일한 스타일이 반복되면 공통 클래스로 통합** — 컴포넌트마다 별도 클래스 만들지 않음
+- 예: 섹션 타이틀이 Agent 유형/기본 설정/데이터셋에서 동일하면 `.agent-setting-section-title` 하나로 통일
+- 공통 클래스 목록: 타이틀(`-section-title`), 라벨(`-label`), 설명(`-desc`), 필드 행(`-field-row`), 힌트(`-hint`)
+- **새 컴포넌트 추가 시**: 기존 공통 클래스로 커버 가능한지 먼저 확인 → 불가능할 때만 새 클래스 생성
+
 ## 클래스 네이밍
 
 - 블록 (최상위): kebab-case → `.chat-message`, `.agent-card`
@@ -70,12 +77,17 @@ assets/styles/page/
 
 ```scss
 // 사용 예시
-.title { @include typo($body-medium-bold); color: $color-text-dark; }
-.desc  { @include typo($body-small); }
+.title { @include typo($body-medium-bold, $color-text-heading); }  // color 포함
+.desc  { @include typo($body-small, $color-text-muted); }          // color 포함
+.label { @include typo($body-small); color: #5c6677; }             // color 별도
 ```
 
 ## 믹스인 사용
 
+- **타이포 프리셋 필수**: `font-size`, `font-weight`, `line-height`를 개별 작성하지 않고 반드시 `@include typo($프리셋)` 사용
+  - `font-size: 18px; font-weight: 700; line-height: 1.5;` → `@include typo($body-large-bold);`
+  - 색상 포함: `@include typo($body-large-bold, $color-text-heading);` — 두 번째 인자로 color 전달 가능
+  - 색상 별도 작성도 가능: `@include typo($body-large-bold); color: $color-text-dark;`
 - 타이포 프리셋: `@include typo($body-medium-bold)` → font-size/weight/line-height 일괄 적용
 - 모바일/태블릿 전용: `@include mobile { ... }` → `@media (max-width: 1023px)`
 - 텍스트 말줄임: `@include ellipsis(1)` 또는 `@include ellipsis(2)`

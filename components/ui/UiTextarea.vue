@@ -2,7 +2,7 @@
   <textarea
     ref="textareaRef"
     class="inp ui-textarea"
-    :class="[`radius-${radius}`]"
+    :class="[`radius-${radius}`, `size-textarea-${size}`, { 'has-border': border }]"
     :value="modelValue"
     :placeholder="placeholder"
     :disabled="disabled"
@@ -20,6 +20,8 @@ interface Props {
   autoResize?: boolean
   maxRows?: number
   radius?: 'sm' | 'base' | 'lg'
+  border?: boolean
+  size?: 'sm' | 'md' | 'lg'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -30,6 +32,8 @@ const props = withDefaults(defineProps<Props>(), {
   autoResize: false,
   maxRows: undefined,
   radius: 'base',
+  border: false,
+  size: 'lg',
 })
 
 const emit = defineEmits<{
@@ -111,6 +115,21 @@ watch(
   font-size: $font-size-lg;
   color: $color-text-primary;
 
+  // 사이즈
+  &.size-textarea-sm {
+    font-size: $font-size-base;
+  }
+  &.size-textarea-md {
+    font-size: $font-size-base;
+  }
+  &.size-textarea-lg {
+    font-size: $font-size-lg;
+  }
+
+  &::placeholder {
+    color: var(--color-gray-50, #94a3b8);
+  }
+
   &:focus {
     outline: none;
   }
@@ -118,6 +137,21 @@ watch(
   &:disabled {
     color: $color-text-disabled;
     cursor: not-allowed;
+  }
+
+  // border 있는 스타일
+  &.has-border {
+    border: 1px solid #c6d2db;
+    padding: 6px 8px;
+    transition: border-color $transition-base;
+
+    &:hover:not(:disabled) {
+      border-color: var(--color-primary);
+    }
+
+    &:focus:not(:disabled) {
+      border-color: var(--color-primary);
+    }
   }
 }
 </style>

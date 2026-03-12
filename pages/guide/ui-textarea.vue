@@ -56,6 +56,23 @@
       </div>
     </section>
 
+    <!-- border -->
+    <section class="guide-section">
+      <h2 class="section-title">border</h2>
+      <p class="guide-demo-desc">테두리가 있는 Textarea. hover/focus 시 primary 색상으로 변경됩니다.</p>
+      <div class="guide-demo">
+        <div class="demo-box">
+          <UiTextarea
+            v-model="textareaBorder"
+            placeholder="테두리 있는 Textarea"
+            :rows="3"
+            :border="true"
+          />
+        </div>
+        <pre class="demo-code">&lt;UiTextarea v-model="value" placeholder="..." :rows="3" :border="true" /&gt;</pre>
+      </div>
+    </section>
+
     <!-- disabled -->
     <section class="guide-section">
       <h2 class="section-title">disabled</h2>
@@ -108,6 +125,7 @@
 const textareaDefault = ref('')
 const textareaAuto = ref('')
 const textareaMaxRows = ref('')
+const textareaBorder = ref('')
 
 const propList = [
   { name: 'modelValue', type: 'string', default: "''", desc: 'v-model 바인딩 값' },
@@ -116,5 +134,7 @@ const propList = [
   { name: 'rows', type: 'number', default: '1', desc: '기본 줄 수' },
   { name: 'autoResize', type: 'boolean', default: 'false', desc: '입력에 따라 높이 자동 조절' },
   { name: 'maxRows', type: 'number', default: 'undefined', desc: 'autoResize 시 최대 줄 수 제한' },
+  { name: 'border', type: 'boolean', default: 'false', desc: '테두리 표시 (hover/focus 시 primary 색상)' },
+  { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'lg'", desc: '폰트 크기 (sm: 16px, md: 16px, lg: 18px)' },
 ]
 </script>

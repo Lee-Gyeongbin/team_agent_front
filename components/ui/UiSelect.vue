@@ -156,7 +156,7 @@ const onUpdate = (val: string) => {
 
   &.size-sm {
     height: $height-sm;
-    font-size: $font-size-sm;
+    font-size: $font-size-base;
   }
 
   &.size-md {

@@ -345,3 +345,14 @@
 .icon-setting-agent {
   @include icon-file-bg('setting-agent');
 }
+
+// 데이터셋 카드 아이콘
+.icon-document {
+  @include icon-file-bg('icon-document');
+}
+.icon-chunk {
+  @include icon-file-bg('icon-chunk');
+}
+.icon-sync {
+  @include icon-file-bg('icon-sync');
+}

@@ -24,6 +24,13 @@
         />
       </template>
     </draggable>
+    <!-- 설정 슬라이드 모달 -->
+    <AgentSettingModal
+      :is-open="isSettingOpen"
+      :agent="selectedAgent"
+      @close="isSettingOpen = false"
+      @save="onSaveSetting"
+    />
   </div>
 </template>
 
@@ -48,6 +55,8 @@ const agentList = ref<Agent[]>([
     type: 'RAG',
     connectionCount: 2,
     datasetCount: 2,
+    similarityThreshold: 0.7,
+    maxSearchResults: 5,
     createdAt: '2026-02-29',
     updatedAt: '2026-02-29',
   },
@@ -64,6 +73,8 @@ const agentList = ref<Agent[]>([
     type: 'TextToSQL',
     connectionCount: 2,
     datasetCount: 2,
+    similarityThreshold: 0.7,
+    maxSearchResults: 5,
     createdAt: '2026-02-29',
     updatedAt: '2026-02-29',
   },
@@ -80,6 +91,8 @@ const agentList = ref<Agent[]>([
     type: 'TextToSQL',
     connectionCount: 15,
     datasetCount: 0,
+    similarityThreshold: 0.5,
+    maxSearchResults: 10,
     createdAt: '2026-02-29',
     updatedAt: '2026-02-29',
   },
@@ -96,6 +109,8 @@ const agentList = ref<Agent[]>([
     type: 'RAG',
     connectionCount: 2,
     datasetCount: 2,
+    similarityThreshold: 0.7,
+    maxSearchResults: 5,
     createdAt: '2026-02-29',
     updatedAt: '2026-02-29',
   },
@@ -107,8 +122,25 @@ const openAddAgent = () => {
   navigateTo('/agent-manage/new')
 }
 
+// 설정 모달
+const isSettingOpen = ref(false)
+const selectedAgent = ref<Agent | null>(null)
+
 const onClickSetting = (agent: Agent) => {
-  navigateTo(`/agent-manage/${agent.id}`)
+  selectedAgent.value = agent
+  isSettingOpen.value = true
+}
+
+const onSaveSetting = (form: { type: string; name: string; description: string; similarityThreshold: number; maxSearchResults: number }) => {
+  // 🔽 백엔드 연결 시 API 호출로 교체
+  if (selectedAgent.value) {
+    selectedAgent.value.type = form.type
+    selectedAgent.value.name = form.name
+    selectedAgent.value.description = form.description
+    selectedAgent.value.similarityThreshold = form.similarityThreshold
+    selectedAgent.value.maxSearchResults = form.maxSearchResults
+  }
+  isSettingOpen.value = false
 }
 
 const onToggleActive = (agent: Agent) => {
