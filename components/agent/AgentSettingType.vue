@@ -11,7 +11,12 @@
         size="sm"
       />
     </div>
-    <p class="agent-setting-desc">*{{ typeDescription }}</p>
+    <p
+      v-if="typeDescription"
+      class="agent-setting-desc"
+    >
+      *{{ typeDescription }}
+    </p>
   </div>
 </template>
 
