@@ -1,3 +1,317 @@
 @use '../utils/variables' as *;
 @use '../utils/mixins' as *;
 
+.app-sidebar {
+  width: $sidebar-width-collapsed;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 12px 8px;
+  background-color: $color-background;
+  border-right: 1px solid $color-border-light;
+  gap: 8px;
+  transition: width $transition-base;
+
+  &.is-expanded {
+    width: $sidebar-width;
+    align-items: stretch;
+  }
+}
+
+// 사이드바 버튼 공통 (호버는 고정, 액티브는 테마 CSS 변수 사용 → 헤더 테마 전환 시 자동 반영)
+$sidebar-btn-bg-hover: $color-border;
+
+/* 토글 버튼: 기본 + 호버만 (is-active 없음) */
+.sidebar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: $border-radius-full;
+  background: transparent;
+  color: $color-text-primary;
+  cursor: pointer;
+  transition: background-color $transition-fast;
+
+  &:hover {
+    background-color: $sidebar-btn-bg-hover;
+  }
+}
+
+.sidebar-toggle-btn {
+  flex-shrink: 0;
+}
+
+/* 버튼 내 아이콘: 부모 color 상속, is-active 시 테마 primary (mask 아이콘은 background-color 사용) */
+.sidebar-btn .sidebar-icon,
+.sidebar-nav-item .sidebar-icon {
+  color: inherit;
+}
+
+/* 네비 아이템: 기본 + 호버 + is-active (접힘 시 원형) */
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: $border-radius-full;
+  background: transparent;
+  color: $color-text-primary;
+  font-size: $font-size-base;
+  font-weight: $font-weight-normal;
+  cursor: pointer;
+  transition: background-color $transition-fast;
+
+  &:hover {
+    background-color: $sidebar-btn-bg-hover !important;
+  }
+
+  &.is-active {
+    background-color: var(--color-primary-bg) !important;
+    color: var(--color-primary);
+
+    .sidebar-icon {
+      background-color: var(--color-primary);
+    }
+  }
+
+  &.is-active .icon-sidebar-database {
+    font-size: 16px;
+  }
+}
+
+.sidebar-nav {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sidebar-nav-top,
+.sidebar-nav-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.sidebar-nav-icon {
+  flex-shrink: 0;
+}
+
+.sidebar-nav-label {
+  display: none;
+}
+
+.sidebar-settings-arrow {
+  display: none;
+}
+
+/* 펼침: 풀 너비 메뉴, 라벨·화살표 표시 */
+.app-sidebar.is-expanded {
+  .sidebar-nav {
+    align-items: stretch;
+  }
+
+  .sidebar-nav-top,
+  .sidebar-nav-bottom {
+    align-items: stretch;
+  }
+
+  .sidebar-nav-item {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 8px;
+    max-height: none;
+    border-radius: $border-radius-base;
+    gap: 8px;
+    text-align: left;
+
+    &:hover {
+      background-color: $color-border-light;
+    }
+
+    &.is-active {
+      background-color: var(--color-primary-bg);
+      color: var(--color-primary);
+    }
+  }
+
+  .sidebar-nav-label {
+    display: block;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: $font-size-base;
+    font-weight: $font-weight-semibold;
+  }
+
+  .sidebar-settings-trigger .sidebar-settings-arrow {
+    display: block;
+    flex-shrink: 0;
+    color: $color-text-secondary;
+    opacity: 0.8;
+  }
+
+  .sidebar-nav-bottom {
+    border-top: 1px solid $color-border-light;
+    padding-top: 8px;
+  }
+}
+
+.sidebar-section {
+  margin-top: 8px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.sidebar-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  width: 100%;
+  height: 32px;
+  padding: 7px 0;
+  border: none;
+  background: transparent;
+  color: $color-text-muted;
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  cursor: pointer;
+
+  .sidebar-section-title {
+    text-align: left;
+  }
+}
+
+.section-chevron {
+  flex-shrink: 0;
+  color: $color-text-secondary;
+  transition: transform $transition-fast;
+  transform: rotate(-90deg);
+
+  &.is-open {
+    transform: rotate(0);
+  }
+}
+
+.sidebar-section-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  @include custom-scrollbar;
+}
+
+.search-history-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  height: 32px;
+  padding: 4px 8px;
+  border: none;
+  border-radius: $border-radius-base;
+  background: transparent;
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  color: $color-text-heading;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color $transition-fast;
+
+  .search-history-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .search-history-more {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border-radius: $border-radius-base;
+    border: none;
+    background-color: transparent;
+    color: $color-text-secondary;
+    cursor: pointer;
+    opacity: 0;
+    transition:
+      opacity $transition-fast,
+      background-color $transition-fast;
+  }
+
+  .icon-sidebar-more {
+    background-color: $color-text-primary;
+  }
+
+  &:hover,
+  &.is-dropdown-open {
+    background-color: $color-border;
+    .search-history-more {
+      opacity: 1;
+      background-color: $color-background;
+    }
+  }
+
+  &.is-active {
+    background-color: var(--color-primary-bg);
+    color: var(--color-primary);
+
+    .search-history-more {
+      opacity: 1;
+      background-color: $color-surface;
+    }
+
+    .icon-sidebar-more {
+      background-color: var(--color-primary);
+    }
+  }
+}
+
+.search-history-context {
+  min-width: 140px;
+  padding: 6px;
+  border-radius: $border-radius-base;
+  background: $color-surface;
+  border: 1px solid $color-border;
+  box-shadow: $shadow-md;
+  z-index: $z-dropdown;
+}
+
+.context-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-base;
+  color: $color-text-primary;
+  cursor: pointer;
+  outline: none;
+
+  &:hover,
+  &[data-highlighted] {
+    background-color: $color-border-light;
+  }
+}

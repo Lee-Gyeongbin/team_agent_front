@@ -29,7 +29,7 @@ const themeColors: ThemeColor[] = [
     primaryDark: '#C73E07',
     primaryDarkHover: '#a83306',
     primaryRgb: '255, 117, 24',
-    primaryBg: '#fff0e0',
+    primaryBg: '#ffedd4',
   },
 ]
 
@@ -45,17 +45,16 @@ const applyTheme = (theme: ThemeColor) => {
   root.style.setProperty('--color-primary-dark-hover', theme.primaryDarkHover)
   root.style.setProperty('--color-primary-rgb', theme.primaryRgb)
   root.style.setProperty('--color-primary-bg', theme.primaryBg)
+  root.setAttribute('data-theme', theme.key)
   currentThemeKey.value = theme.key
   localStorage.setItem(STORAGE_KEY, theme.key)
 }
 
-// 저장된 테마 초기 적용
+// 저장된 테마 초기 적용 (미저장 시 기본 블루 적용 → CSS 변수 항상 설정)
 const initTheme = () => {
   const saved = localStorage.getItem(STORAGE_KEY)
-  if (saved) {
-    const theme = themeColors.find((t) => t.key === saved)
-    if (theme) applyTheme(theme)
-  }
+  const theme = saved ? themeColors.find((t) => t.key === saved) : themeColors[0]
+  if (theme) applyTheme(theme)
 }
 
 export const useTheme = () => {
