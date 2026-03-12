@@ -195,12 +195,12 @@ export const useCodesStore = () => {
     if (!validateGroupForm(_form)) return
     modalErrorMessage.value = ''
     try {
-      errorMessage.value = ''
       isLoading.value = true
       await fetchSaveCodeGroup(_form as CodeGroupItem)
       await handleFetchCodeGroupList()
+      openAlert({ message: '그룹코드가 저장되었습니다.' })
     } catch {
-      errorMessage.value = '그룹코드 저장에 실패했습니다.'
+      openAlert({ message: '그룹코드 저장에 실패했습니다.' })
     } finally {
       isLoading.value = false
       handleGroupModalClose()
@@ -219,9 +219,9 @@ export const useCodesStore = () => {
         title: pendingGroupUseYn.value === 'Y' ? '복구 확인' : '삭제 확인',
         message: `'${group.codeGrpNm}' 그룹코드를 ${pendingGroupUseYn.value === 'Y' ? '복구' : '삭제'}하시겠습니까?`,
         confirmText: pendingGroupUseYn.value === 'Y' ? '복구' : '삭제',
+        onConfirm: () => doGroupUseYnUpdate(),
       })
-      if (ok) await doGroupUseYnUpdate()
-      else {
+      if (!ok) {
         deletingGroup.value = null
         pendingGroupUseYn.value = null
       }
@@ -231,16 +231,22 @@ export const useCodesStore = () => {
   /** 그룹코드 삭제/복구 확인 후 실행 */
   const doGroupUseYnUpdate = async () => {
     if (!deletingGroup.value || pendingGroupUseYn.value === null) return
-    await handleGroupUseYnUpdate(deletingGroup.value, pendingGroupUseYn.value)
-    deletingGroup.value = null
-    pendingGroupUseYn.value = null
+    const actionLabel = pendingGroupUseYn.value === 'Y' ? '복구' : '삭제'
+    try {
+      await handleGroupUseYnUpdate(deletingGroup.value, pendingGroupUseYn.value)
+      openAlert({ message: `그룹코드가 ${actionLabel}되었습니다.` })
+    } catch {
+      openAlert({ message: `그룹코드 ${actionLabel}에 실패했습니다.` })
+    } finally {
+      deletingGroup.value = null
+      pendingGroupUseYn.value = null
+    }
   }
 
   /** 그룹코드 사용여부 변경 (삭제: N, 복구: Y) */
   const handleGroupUseYnUpdate = async (group: CodeGroupItem, useYn: 'Y' | 'N') => {
     const actionLabel = useYn === 'Y' ? '복구' : '삭제'
     try {
-      errorMessage.value = ''
       isLoading.value = true
       const _form: CodeGroupItem = {
         codeGrpId: group.codeGrpId,
@@ -250,8 +256,9 @@ export const useCodesStore = () => {
         createDt: group.createDt ?? '',
       }
       await fetchSaveCodeGroup(_form)
+      openAlert({ message: `그룹코드가 ${actionLabel}되었습니다.` })
     } catch {
-      errorMessage.value = `그룹코드 ${actionLabel}에 실패했습니다.`
+      openAlert({ message: `그룹코드 ${actionLabel}에 실패했습니다.` })
     } finally {
       await handleFetchCodeGroupList()
       isLoading.value = false
@@ -321,9 +328,9 @@ export const useCodesStore = () => {
         title: pendingCodeUseYn.value === 'Y' ? '복구 확인' : '삭제 확인',
         message: `'${code.codeNm}' 코드를 ${pendingCodeUseYn.value === 'Y' ? '복구' : '삭제'}하시겠습니까?`,
         confirmText: pendingCodeUseYn.value === 'Y' ? '복구' : '삭제',
+        onConfirm: () => doCodeUseYnUpdate(),
       })
-      if (ok) await doCodeUseYnUpdate()
-      else {
+      if (!ok) {
         deletingCode.value = null
         pendingCodeUseYn.value = null
       }
@@ -348,6 +355,7 @@ export const useCodesStore = () => {
       errorMessage.value = ''
       isLoading.value = true
       await fetchSaveCode(_form)
+      openAlert({ message: `상세코드가 ${actionLabel}되었습니다.` })
     } catch {
       errorMessage.value = `상세코드 ${actionLabel}에 실패했습니다.`
     } finally {
