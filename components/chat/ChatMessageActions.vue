@@ -46,6 +46,29 @@
         <i class="icon-refresh size-20" />
       </template>
     </UiButton>
+    <UiButton
+      variant="ghost"
+      size="xs"
+      icon-only
+      :class="{ 'is-active': isFavorited }"
+      title="즐겨찾기"
+      @click="emit('on-favorite')"
+    >
+      <template #icon-left>
+        <i class="icon-heart-line size-20" />
+      </template>
+    </UiButton>
+    <UiButton
+      variant="ghost"
+      size="xs"
+      icon-only
+      title="더보기"
+      @click="emit('on-more')"
+    >
+      <template #icon-left>
+        <i class="icon-more-line size-20" />
+      </template>
+    </UiButton>
   </div>
 </template>
 
@@ -53,6 +76,7 @@
 interface Props {
   isLiked?: boolean
   isDisliked?: boolean
+  isFavorited?: boolean
 }
 
 defineProps<Props>()
@@ -62,5 +86,7 @@ const emit = defineEmits<{
   'on-like': []
   'on-dislike': []
   'on-regenerate': []
+  'on-favorite': []
+  'on-more': []
 }>()
 </script>

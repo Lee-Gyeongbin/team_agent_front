@@ -356,3 +356,13 @@
 .icon-sync {
   @include icon-file-bg('icon-sync');
 }
+
+// 하트 아웃라인 (채팅 액션)
+.icon-heart-line {
+  @include icon-file-bg('heart-line');
+}
+
+// 가로 점 3개 (채팅 더보기)
+.icon-more-line {
+  @include icon-file-bg('more-line');
+}

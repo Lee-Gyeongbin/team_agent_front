@@ -19,8 +19,8 @@ export const useAgentApi = () => {
   }
 
   // TODO: Agent 추가/수정
-  const fetchSaveAgent = async (): Promise<{ list: Agent[] }> => {
-    return mockPost<{ data: Agent }>(`${MOCK_BASE}/save}`, agent)
+  const fetchSaveAgent = async (agent: Partial<Agent>): Promise<{ data: Agent }> => {
+    return mockPost<{ data: Agent }>(`${MOCK_BASE}/save`, agent)
   }
 
   // TODO: Agent 삭제
