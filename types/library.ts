@@ -71,11 +71,11 @@ export interface LibraryCategoryOrderItem {
 /** 카드 순서 변경 요청 항목 */
 export interface LibraryCardOrderItem {
   cardId: string
-  order: number
+  sortOrd: number
 }
 
 /** 카드 순서 변경 요청 (카테고리별) */
 export interface LibraryCardOrderPayload {
-  categoryId: number
+  categoryId: string
   cards: LibraryCardOrderItem[]
 }

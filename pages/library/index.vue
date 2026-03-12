@@ -142,9 +142,10 @@
                     :group="{ name: 'library-cards' }"
                     item-key="cardId"
                     animation="200"
-                    :delay="0"
-                    :delay-on-touch-only="true"
+                    :delay="20"
+                    :delay-on-touch-only="false"
                     :empty-insert-threshold="80"
+                    @start="onCardDragStart"
                     @end="onCardDragEnd"
                   >
                     <template #item="{ element: card }">
@@ -201,9 +202,9 @@
                           <!-- 카드 드롭다운 메뉴 -->
                           <div @click.stop>
                             <UiDropdownMenu
-                              :items="cardMenuItems"
+                              :items="getCardMenuItems(card)"
                               align="end"
-                              @select="handleCardMenuSelect(card.cardId, $event)"
+                              @select="handleCardMenuSelect(card, $event)"
                             >
                               <template #trigger>
                                 <UiButton
@@ -246,7 +247,6 @@
                       <div
                         v-if="(categoryCards[category.categoryId]?.length ?? 0) === 0"
                         class="library-card type-new-card"
-                        @click="handleAddCard(category.categoryId)"
                       >
                         <div class="library-card-new-card-content">
                           <i class="icon icon-heart size-24"></i>
@@ -310,6 +310,22 @@
           @close="handleRenameModalClose"
         />
       </UiModal>
+
+      <!-- 카드 이동 모달 -->
+      <UiModal
+        :is-open="isMoveModalOpen"
+        title="카테고리 이동"
+        position="center"
+        max-width="420px"
+        @close="handleMoveModalClose"
+      >
+        <LibraryCardMoveModal
+          :card="movingCard"
+          :move-target-options="moveTargetOptions"
+          @move="handleMoveCard"
+          @close="handleMoveModalClose"
+        />
+      </UiModal>
     </template>
   </div>
 </template>
@@ -323,14 +339,17 @@ const {
   categoryCards,
   searchOptions,
   listMenuItems,
-  cardMenuItems,
+  getCardMenuItems,
   cardList,
   isLoading,
   errorMessage,
   isModalOpen,
   isArchiveModalOpen,
   isRenameModalOpen,
+  isMoveModalOpen,
   renamingCategory,
+  movingCard,
+  moveTargetOptions,
   selectedCardId,
   selectedCard,
   newCategoryNm,
@@ -338,9 +357,12 @@ const {
   handleListMenuSelect,
   handleRenameModalClose,
   handleSaveRename,
+  handleMoveModalClose,
+  handleMoveCard,
   handleCardMenuSelect,
   onCategoryDragStart,
   onCategoryDragEnd,
+  onCardDragStart,
   onCardDragEnd,
   handleCardPin,
   openModal,
@@ -349,7 +371,6 @@ const {
   handleModalDelete,
   handleTrashDeleteConfirm,
   handleAddCategory,
-  handleAddCard,
 } = useLibraryStore()
 
 /** 휴지통 전체 삭제 클릭 */

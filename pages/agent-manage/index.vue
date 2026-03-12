@@ -37,8 +37,9 @@
 <script setup lang="ts">
 import draggable from 'vuedraggable'
 import { useAgentStore } from '~/composables/agent/useAgentStore'
+import type { Agent } from '~/types/agent'
 
-const { agentList, handleSelectAgentList, handleSaveAgent } = useAgentStore()
+const { agentList, handleSelectAgentList, handleSaveAgent, handleUpdateAgentOrder } = useAgentStore()
 
 onMounted(() => handleSelectAgentList())
 
@@ -74,13 +75,13 @@ const onSaveSetting = async (form: {
   isSettingOpen.value = false
 }
 
-const onToggleActive = (agent: Agent) => {
-  agent.isActive = !agent.isActive
+const onToggleActive = async (agent: Agent) => {
+  await handleSaveAgent({ id: agent.id, isActive: !agent.isActive })
 }
 
 // 🔽 드래그 정렬 — 백엔드 연결 시 API 호출로 교체
-const onDragEnd = () => {
+const onDragEnd = async () => {
   const orderData = agentList.value.map((item, index) => ({ id: item.id, order: index }))
-  console.warn('[TODO] Agent 순서 변경:', orderData)
+  await handleUpdateAgentOrder(orderData)
 }
 </script>

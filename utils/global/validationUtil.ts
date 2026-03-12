@@ -27,6 +27,12 @@ export const checkEmail = (email: string): boolean => {
   return emailRegex.test(email)
 }
 
+/** 전화번호 유효성 체크: 숫자만 + 자릿수 9~11자리 */
+export const checkPhone = (phone: string): boolean => {
+  if (!phone) return true
+  return /^\d{9,11}$/.test(phone)
+}
+
 /** YYYY.MM 형식 날짜 유효성 검증 및 변환 */
 export const validateDateFormat = (date: string | null | undefined): string | null => {
   if (!date) return null

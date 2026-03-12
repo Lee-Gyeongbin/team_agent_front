@@ -233,7 +233,7 @@ const statusList = [
   { category: '페이지', name: '채팅 메인', location: '/chat', url: '/chat', status: 'done' },
   { category: '페이지', name: '채팅 상세', location: '/chat/:id', url: '', status: 'wip' },
   { category: '페이지', name: '라이브러리', location: '/library', url: '/library', status: 'done' },
-  { category: '페이지', name: '에이전트 목록', location: '/agent-manage', url: '/agent-manage', status: 'wip' },
+  { category: '페이지', name: '에이전트 목록', location: '/agent-manage', url: '/agent-manage', status: 'done' },
   {
     category: '페이지',
     name: '에이전트 생성',

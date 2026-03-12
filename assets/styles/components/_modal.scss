@@ -278,6 +278,7 @@
     overflow: hidden;
     flex-direction: column;
     width: 100%;
+    min-width: 680px;
     max-width: 680px;
     height: calc(100vh - 102px);
     padding: $spacing-lg $spacing-md;
@@ -295,6 +296,7 @@
     position: absolute;
     top: $spacing-lg;
     right: $spacing-md;
+    z-index: 1;
   }
 
   // 헤더
@@ -402,6 +404,7 @@
     border: 1px solid #ecf0f3;
   }
 }
+
 
 // ===================================
 // 라이브러리 보관함 모달
