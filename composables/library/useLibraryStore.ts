@@ -74,21 +74,29 @@ export const useLibraryStore = () => {
 
   /** 카테고리 추가 */
   const handleAddCategory = async () => {
-    const newCategory: LibraryCategory = {
-      categoryId: '',
-      categoryNm: newCategoryNm.value,
-      userId: '',
-      color: '',
-      sortOrd: 0, // 등록 시 0으로 설정
-      createDt: '',
+    if (!newCategoryNm.value) {
+      openAlert({ message: '카테고리명을 입력해주세요.' })
+      return
     }
     try {
       isLoading.value = true
-      errorMessage.value = ''
-      await fetchSaveCategory(newCategory)
-      newCategoryNm.value = ''
-      await handleFetchCategoryList()
-      openAlert({ message: '카테고리가 추가되었습니다.' })
+      openConfirm({
+        message: '카테고리를 추가하시겠습니까?',
+        onConfirm: async () => {
+          const newCategory: LibraryCategory = {
+            categoryId: '',
+            categoryNm: newCategoryNm.value,
+            userId: '',
+            color: '',
+            sortOrd: 0, // 등록 시 0으로 설정
+            createDt: '',
+          }
+          await fetchSaveCategory(newCategory)
+          newCategoryNm.value = ''
+          await handleFetchCategoryList()
+          openAlert({ message: '카테고리가 추가되었습니다.' })
+        },
+      })
     } catch {
       openAlert({ message: '카테고리 추가에 실패했습니다.' })
     } finally {
@@ -135,16 +143,21 @@ export const useLibraryStore = () => {
 
   /** 카테고리명 변경 저장 */
   const handleSaveRename = async (categoryNm: string) => {
-    if (!renamingCategory.value) return
+    if (!renamingCategory.value) {
+      openAlert({ message: '카테고리를 선택해주세요.' })
+      return
+    }
     try {
-      isLoading.value = true
-      await fetchSaveCategory({
-        ...renamingCategory.value,
-        categoryNm: categoryNm,
+      openConfirm({
+        message: '카테고리명을 변경하시겠습니까?',
+        onConfirm: async () => {
+          isLoading.value = true
+          await fetchSaveCategory({ ...renamingCategory.value, categoryNm: categoryNm } as LibraryCategory)
+          await handleFetchCategoryList()
+          handleRenameModalClose()
+          openAlert({ message: '카테고리명 변경되었습니다.' })
+        },
       })
-      handleRenameModalClose()
-      await handleFetchCategoryList()
-      openAlert({ message: '카테고리명 변경되었습니다.' })
     } catch {
       openAlert({ message: '카테고리명 변경에 실패했습니다.' })
     } finally {

@@ -38,7 +38,7 @@ interface Props {
   messages: ChatMessage[]
 }
 
-const props = defineProps<Props>()
+defineProps<Props>()
 
 const emit = defineEmits<{
   'on-copy': [id: string]

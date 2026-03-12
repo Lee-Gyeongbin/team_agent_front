@@ -195,15 +195,20 @@ export const useCodesStore = () => {
     if (!validateGroupForm(_form)) return
     modalErrorMessage.value = ''
     try {
-      isLoading.value = true
-      await fetchSaveCodeGroup(_form as CodeGroupItem)
-      await handleFetchCodeGroupList()
-      openAlert({ message: '그룹코드가 저장되었습니다.' })
+      openConfirm({
+        message: '그룹코드를 저장하시겠습니까?',
+        onConfirm: async () => {
+          isLoading.value = true
+          await fetchSaveCodeGroup(_form as CodeGroupItem)
+          handleGroupModalClose()
+          await handleFetchCodeGroupList()
+          openAlert({ message: '그룹코드가 저장되었습니다.' })
+        },
+      })
     } catch {
       openAlert({ message: '그룹코드 저장에 실패했습니다.' })
     } finally {
       isLoading.value = false
-      handleGroupModalClose()
     }
   }
 
@@ -304,15 +309,20 @@ export const useCodesStore = () => {
     if (!validateCodeForm(_form)) return
     modalErrorMessage.value = ''
     try {
-      errorMessage.value = ''
-      isLoading.value = true
-      await fetchSaveCode({ ..._form, codeGrpId: selectedGroupCode.value as string } as CodeItem)
-      await handleFetchCodeList()
+      openConfirm({
+        message: '상세코드를 저장하시겠습니까?',
+        onConfirm: async () => {
+          isLoading.value = true
+          await fetchSaveCode({ ..._form, codeGrpId: selectedGroupCode.value as string } as CodeItem)
+          await handleFetchCodeList()
+          handleModalClose()
+          openAlert({ message: '상세코드가 저장되었습니다.' })
+        },
+      })
     } catch {
-      errorMessage.value = '상세코드 저장에 실패했습니다.'
+      openAlert({ message: '상세코드 저장에 실패했습니다.' })
     } finally {
       isLoading.value = false
-      handleModalClose()
     }
   }
 
