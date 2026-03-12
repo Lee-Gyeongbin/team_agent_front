@@ -7,7 +7,7 @@
 
     <!-- 네비게이션 아이콘 -->
     <nav class="sidebar-nav">
-      <!-- 상단: ME000003 제외한 일반 메뉴 -->
+      <!-- 상단: 설정 메뉴 제외한 일반 메뉴 -->
       <div class="sidebar-nav-top">
         <button
           v-for="item in topNavItems"
@@ -54,8 +54,9 @@ import type { MenuItem } from '~/types/menu'
 const route = useRoute()
 const { menuList } = useMenu()
 
-const SETTING_MENU_ID = 'ME000003'
+const SETTING_MENU_ID = 'ME000003' // 설정 메뉴 ID
 
+// 상단 메뉴 목록
 const topNavItems = computed(() => {
   return menuList.value
     .filter((item) => item.menuId !== SETTING_MENU_ID)
@@ -67,11 +68,12 @@ const topNavItems = computed(() => {
     }))
 })
 
+// 하단 메뉴 목록
 const bottomMenu = computed(() => {
   return menuList.value.find((item) => item.menuId === SETTING_MENU_ID) ?? null
 })
 
-// 현재 라우트 기준으로 active 판단 (menuId 기반, srcPath로만 매칭)
+// 현재 라우트 기준으로 active 판단
 type NavItem = (typeof topNavItems)['value'][number]
 
 function findActiveMenuId(items: MenuItem[], path: string): { menuId: string; pathLen: number } | null {
@@ -101,7 +103,7 @@ const activeMenuId = computed(() => {
 
 const isNavItemActive = (item: NavItem) => item.menuId === activeMenuId.value
 
-// ME000003 하위 메뉴(children/손자) 중 현재 경로와 매칭되면 active
+// 설정 메뉴 하위 메뉴(children/손자) 중 현재 경로와 매칭되면 active
 const isBottomMenuActive = computed(() => {
   const menu = bottomMenu.value
   const children = menu?.children
