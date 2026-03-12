@@ -45,9 +45,14 @@ export const useLibraryApi = () => {
     await post('/library/updateCategoryOrder.do', { items })
   }
 
-  /** 카드 순서 변경 — 백엔드 연결 시 사용 */
+  /** 카드 순서 변경 API */
   const fetchUpdateCardOrder = async (payload: LibraryCardOrderPayload[]): Promise<void> => {
     await post('/library/updateCardOrder.do', { payload })
+  }
+
+  /** 카드 이동 API */
+  const fetchMoveCard = async (targetCategoryId: string, cardId: string): Promise<void> => {
+    await post('/library/moveCard.do', { targetCategoryId, cardId })
   }
 
   /** 삭제 대기 항목 전체 삭제 — 백엔드 연결 시 사용 */
@@ -64,6 +69,7 @@ export const useLibraryApi = () => {
     fetchUpdateCardPin,
     fetchUpdateCategoryOrder,
     fetchUpdateCardOrder,
+    fetchMoveCard,
     fetchDeleteTrashAll,
   }
 }

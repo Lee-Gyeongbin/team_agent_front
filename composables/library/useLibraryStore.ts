@@ -4,6 +4,7 @@ import type {
   CategoryCardsMap,
   LibrarySearchOption,
   LibraryCardDetail,
+  LibraryCardOrderPayload,
 } from '~/types/library'
 import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
 import { useLibraryApi } from '~/composables/library/useLibraryApi'
@@ -15,6 +16,8 @@ const {
   fetchSaveCategory,
   fetchDeleteCategory,
   fetchUpdateCategoryOrder,
+  fetchUpdateCardOrder,
+  fetchMoveCard,
 } = useLibraryApi()
 
 const isLoading = ref(false)
@@ -23,6 +26,7 @@ const errorMessage = ref('')
 const isModalOpen = ref(false)
 const isArchiveModalOpen = ref(false)
 const isRenameModalOpen = ref(false)
+const isMoveModalOpen = ref(false)
 
 /** 정렬 옵션 목록 */
 export const searchOptions: LibrarySearchOption[] = [
@@ -53,10 +57,21 @@ const categoryCards = ref<CategoryCardsMap>({})
 const cardList = ref<LibraryCard[]>([])
 
 const categoryListBeforeDrag = ref<LibraryCategory[]>([]) // 카테고리 드래그 시작 시점 순서 (취소 시 복원용)
+const categoryCardsBeforeDrag = ref<CategoryCardsMap>({}) // 카드 드래그 시작 시점 순서 (취소 시 복원용)
 const renamingCategory = ref<LibraryCategory | null>(null)
+const movingCard = ref<LibraryCard | null>(null)
 const selectedCardId = ref<string | null>(null)
 const selectedCard = ref<LibraryCardDetail | null>(null)
 const newCategoryNm = ref('')
+
+/** cardId가 속한 카테고리를 제외한 카테고리 목록 (이동 모달용) */
+const moveTargetOptions = computed(() => {
+  const card = movingCard.value
+  if (!card) return []
+  return categoryList.value
+    .filter((cat) => String(cat.categoryId) !== String(card.categoryId))
+    .map((cat) => ({ label: cat.categoryNm, value: cat.categoryId }))
+})
 
 /** cardList를 categoryId 기준으로 그룹핑하여 CategoryCardsMap 반환 */
 const mapCardListToCategoryCards = (cards: LibraryCard[]): CategoryCardsMap =>
@@ -99,7 +114,7 @@ export const useLibraryStore = () => {
             categoryNm: newCategoryNm.value,
             userId: '',
             color: '',
-            sortOrd: 0, // 등록 시 0으로 설정
+            sortOrd: 0, // 등록 시 0으로 설정 (api에서 max+1 처리)
             createDt: '',
           }
           await fetchSaveCategory(newCategory)
@@ -113,12 +128,6 @@ export const useLibraryStore = () => {
     } finally {
       isLoading.value = false
     }
-  }
-
-  /** 해당 카테고리에 새 카드 추가 */
-  const handleAddCard = (categoryId: number) => {
-    // TODO: 백엔드 연결 시 해당 카테고리에 카드 추가 API 호출
-    console.warn('[TODO] 카드 추가:', categoryId)
   }
 
   /** 카드 목록 조회 */
@@ -185,6 +194,27 @@ export const useLibraryStore = () => {
     renamingCategory.value = null
   }
 
+  /** 카드 이동 모달 닫기 */
+  const handleMoveModalClose = () => {
+    isMoveModalOpen.value = false
+    movingCard.value = null
+  }
+
+  /** 카드 이동 실행 (API 연결 예정) */
+  const handleMoveCard = async (_targetCategoryId: string, _cardId: string) => {
+    if (!movingCard.value) return
+    // TODO: API 연결 후 fetchMoveCard 등 호출
+    openConfirm({
+      message: '카드를 이동하시겠습니까?',
+      onConfirm: async () => {
+        await fetchMoveCard(_targetCategoryId, _cardId)
+        await handleFetchCardList()
+        openAlert({ message: '카드가 이동되었습니다.' })
+        handleMoveModalClose()
+      },
+    })
+  }
+
   /** 카테고리명 변경 저장 */
   const handleSaveRename = async (categoryNm: string) => {
     if (!renamingCategory.value) {
@@ -230,22 +260,59 @@ export const useLibraryStore = () => {
     })
   }
 
-  const handleCardMenuSelect = (cardId: string, value: string) => {
-    // TODO: 백엔드 연결 시 cardId와 value에 따라 API 호출로 교체
-    console.warn('[TODO] 카드 메뉴 선택:', cardId, value)
+  /** 카드 메뉴 선택 */
+  const handleCardMenuSelect = (card: LibraryCard, value: string) => {
+    if (value === 'view') {
+      openModal(card.cardId)
+    } else if (value === 'move') {
+      movingCard.value = { ...card }
+      isMoveModalOpen.value = true
+    } else if (value === 'favorite-add') {
+      //TODO: 즐겨찾기 등록
+    } else if (value === 'favorite-remove') {
+      //TODO: 즐겨찾기 해제
+    } else if (value === 'copy') {
+      //TODO: 답변 복사
+    } else if (value === 'archive') {
+      //TODO: 보관
+    } else if (value === 'delete') {
+      //TODO: 삭제
+    }
+  }
+
+  /** 카드 드래그 시작 시 순서 저장 (취소 시 복원용) */
+  const onCardDragStart = () => {
+    const copy: CategoryCardsMap = {}
+    for (const [k, v] of Object.entries(categoryCards.value)) {
+      copy[k] = [...v]
+    }
+    categoryCardsBeforeDrag.value = copy
   }
 
   /** 카드 드래그 종료 시 순서 변경 */
   const onCardDragEnd = () => {
-    const allCards = categoryList.value.map((cat) => ({
-      categoryId: cat.categoryId,
-      cards: (categoryCards.value[cat.categoryId] || []).map((card, index) => ({
-        cardId: card.cardId,
-        sortOrd: index,
-      })),
-    }))
-    // TODO: 백엔드 연결 시 fetchUpdateCardOrder 호출
-    console.warn('[TODO] 카드 순서 변경:', allCards)
+    openConfirm({
+      message: '카드 순서를 변경하시겠습니까?',
+      onConfirm: async () => {
+        const payload = categoryList.value.map((cat) => ({
+          categoryId: cat.categoryId,
+          cards: (categoryCards.value[cat.categoryId] || []).map((card, index) => ({
+            cardId: card.cardId,
+            sortOrd: index + 1,
+          })),
+        }))
+        await fetchUpdateCardOrder(payload as LibraryCardOrderPayload[])
+        await handleFetchCardList()
+        openAlert({ message: '카드 순서가 변경되었습니다.' })
+      },
+      onCancel: () => {
+        const restored: CategoryCardsMap = {}
+        for (const [k, v] of Object.entries(categoryCardsBeforeDrag.value)) {
+          restored[k] = [...v]
+        }
+        categoryCards.value = restored
+      },
+    })
   }
 
   /** 즐겨찾기 등록/해제 */
@@ -269,8 +336,9 @@ export const useLibraryStore = () => {
       if (selectedCard.value?.cardId === card.cardId) {
         selectedCard.value.pinYn = nextPinYn
       }
+      openAlert({ message: `즐겨찾기가 ${nextPinYn === 'Y' ? '등록되었습니다.' : '해제되었습니다.'}` })
     } catch {
-      errorMessage.value = '즐겨찾기 등록/해제를 실패했습니다.'
+      openAlert({ message: '즐겨찾기 등록/해제를 실패했습니다. 다시 시도해주세요.' })
     }
   }
 
@@ -287,6 +355,7 @@ export const useLibraryStore = () => {
     isModalOpen.value = true
   }
 
+  /** 카드 상세 모달 닫기 */
   const handleModalClose = () => {
     isModalOpen.value = false
     selectedCardId.value = null
@@ -318,20 +387,25 @@ export const useLibraryStore = () => {
     isModalOpen,
     isArchiveModalOpen,
     isRenameModalOpen,
+    isMoveModalOpen,
     renamingCategory,
+    movingCard,
+    moveTargetOptions,
     selectedCardId,
     selectedCard,
     newCategoryNm,
     handleFetchCategoryList,
     handleFetchCardList,
     handleAddCategory,
-    handleAddCard,
     handleListMenuSelect,
     handleRenameModalClose,
     handleSaveRename,
+    handleMoveModalClose,
+    handleMoveCard,
     handleCardMenuSelect,
     onCategoryDragStart,
     onCategoryDragEnd,
+    onCardDragStart,
     onCardDragEnd,
     handleCardPin,
     openModal,
