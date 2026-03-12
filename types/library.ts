@@ -29,6 +29,30 @@ export interface LibraryCard {
   modifyDt: string
 }
 
+/** 카드 상세 */
+export interface LibraryCardDetail {
+  cardId: string
+  userId: string
+  categoryId: number
+  logId: string
+  svcTy: string
+  title: string
+  tags: string
+  pinYn: 'Y' | 'N'
+  archiveYn: 'Y' | 'N'
+  sortOrd: number
+  srcDocs: string
+  sqlCode: string
+  chartCfg: string
+  qryRslt: string
+  useYn: 'Y' | 'N'
+  createDt: string
+  modifyDt: string
+  qcontent: string
+  rcontent: string
+  ttsq: string
+}
+
 /** 카테고리별 카드 맵 (categoryId → cards) */
 export type CategoryCardsMap = Record<string, LibraryCard[]>
 

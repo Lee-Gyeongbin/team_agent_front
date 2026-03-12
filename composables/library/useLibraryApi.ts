@@ -2,6 +2,7 @@ import { useApi } from '~/composables/com/useApi'
 import type {
   LibraryCategory,
   LibraryCard,
+  LibraryCardDetail,
   CategoryCardsMap,
   LibraryCategoryOrderItem,
   LibraryCardOrderPayload,
@@ -10,18 +11,24 @@ import type {
 export const useLibraryApi = () => {
   const { get, post } = useApi()
 
-  /** 카테고리 목록 조회 — 백엔드 연결 시 사용 */
+  /** 카테고리 목록 조회 API */
   const fetchCategoryList = async (): Promise<{ dataList: LibraryCategory[] }> => {
     return get<{ dataList: LibraryCategory[] }>('/library/categoryList.do')
   }
 
+  /** 카드 목록 조회 API */
   const fetchCardList = async (): Promise<{ dataList: LibraryCard[] }> => {
     return get<{ dataList: LibraryCard[] }>('/library/cardList.do')
   }
 
-  /** 카테고리별 카드 목록 조회 — 백엔드 연결 시 사용 */
-  const fetchCategoryCards = async (): Promise<{ data: CategoryCardsMap }> => {
-    return get<{ data: CategoryCardsMap }>('/library/selectCategoryCards.do')
+  /** 카드 상세 조회 API */
+  const fetchCardDetail = async (cardId: string, pinYn: string): Promise<{ data: LibraryCardDetail }> => {
+    return post<{ data: LibraryCardDetail }>('/library/cardDetail.do', { cardId, pinYn })
+  }
+
+  /** 카드 즐겨찾기 등록/해제 API */
+  const fetchUpdateCardPin = async (cardId: string, pinYn: 'Y' | 'N'): Promise<void> => {
+    await post('/library/updateCardPin.do', { cardId, pinYn })
   }
 
   /** 카테고리 순서 변경 — 백엔드 연결 시 사용 */
@@ -42,7 +49,8 @@ export const useLibraryApi = () => {
   return {
     fetchCategoryList,
     fetchCardList,
-    fetchCategoryCards,
+    fetchCardDetail,
+    fetchUpdateCardPin,
     fetchUpdateCategoryOrder,
     fetchUpdateCardOrder,
     fetchDeleteTrashAll,

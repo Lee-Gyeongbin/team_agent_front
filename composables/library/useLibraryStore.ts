@@ -1,7 +1,13 @@
-import type { LibraryCategory, LibraryCard, CategoryCardsMap, LibrarySearchOption } from '~/types/library'
+import type {
+  LibraryCategory,
+  LibraryCard,
+  CategoryCardsMap,
+  LibrarySearchOption,
+  LibraryCardDetail,
+} from '~/types/library'
 import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
 import { useLibraryApi } from '~/composables/library/useLibraryApi'
-const { fetchCategoryList, fetchCardList } = useLibraryApi()
+const { fetchCategoryList, fetchCardList, fetchCardDetail, fetchUpdateCardPin } = useLibraryApi()
 
 /** 정렬 옵션 목록 */
 export const searchOptions: LibrarySearchOption[] = [
@@ -30,13 +36,14 @@ export const cardMenuItems: DropdownMenuItemDef[] = [
 const categoryList = ref<LibraryCategory[]>([])
 const categoryCards = ref<CategoryCardsMap>({})
 const cardList = ref<LibraryCard[]>([])
+
 const isLoading = ref(false)
 const errorMessage = ref('')
 const isModalOpen = ref(false)
 const isArchiveModalOpen = ref(false)
 const isTrashDeleteModalOpen = ref(false)
 const selectedCardId = ref<string | null>(null)
-const favoriteCardIds = ref<Set<string>>(new Set())
+const selectedCard = ref<LibraryCardDetail | null>(null)
 
 /** cardList를 categoryId 기준으로 그룹핑하여 CategoryCardsMap 반환 */
 const mapCardListToCategoryCards = (cards: LibraryCard[]): CategoryCardsMap =>
@@ -100,23 +107,49 @@ export const useLibraryStore = () => {
       categoryId: cat.categoryId,
       cards: (categoryCards.value[cat.categoryId] || []).map((card, index) => ({
         cardId: card.cardId,
-        order: index,
+        sortOrd: index,
       })),
     }))
     // TODO: 백엔드 연결 시 fetchUpdateCardOrder 호출
     console.warn('[TODO] 카드 순서 변경:', allCards)
   }
 
-  const toggleFavorite = (cardId: string) => {
-    if (favoriteCardIds.value.has(cardId)) {
-      favoriteCardIds.value.delete(cardId)
-    } else {
-      favoriteCardIds.value.add(cardId)
+  /** 즐겨찾기 등록/해제 */
+  const handleCardPin = async (card: LibraryCard | LibraryCardDetail) => {
+    try {
+      const nextPinYn = card.pinYn === 'Y' ? 'N' : 'Y'
+      await fetchUpdateCardPin(card.cardId, nextPinYn)
+      // cardList 업데이트
+      const idx = cardList.value.findIndex((c) => c.cardId === card.cardId)
+      if (idx !== -1) cardList.value[idx].pinYn = nextPinYn
+
+      // categoryCards 업데이트
+      const catKey = String(card.categoryId)
+      const catCards = categoryCards.value[catKey]
+      if (catCards) {
+        const cardIdx = catCards.findIndex((c) => c.cardId === card.cardId)
+        if (cardIdx !== -1) catCards[cardIdx].pinYn = nextPinYn
+      }
+
+      // 상세 모달에 열린 카드 업데이트
+      if (selectedCard.value?.cardId === card.cardId) {
+        selectedCard.value.pinYn = nextPinYn
+      }
+    } catch {
+      errorMessage.value = '즐겨찾기 등록/해제를 실패했습니다.'
     }
   }
 
-  const openModal = (cardId: string) => {
-    selectedCardId.value = cardId
+  /** 카드 상세 모달 열기 */
+  const openModal = async (cardId: string) => {
+    try {
+      selectedCardId.value = cardId
+      const response = await fetchCardDetail(cardId, '')
+      selectedCard.value = response.data
+    } catch {
+      errorMessage.value = '카드 상세를 불러오는데 실패했습니다.'
+    }
+
     isModalOpen.value = true
   }
 
@@ -143,6 +176,7 @@ export const useLibraryStore = () => {
   return {
     categoryList,
     categoryCards,
+    cardList,
     searchOptions,
     isLoading,
     errorMessage,
@@ -152,14 +186,14 @@ export const useLibraryStore = () => {
     isArchiveModalOpen,
     isTrashDeleteModalOpen,
     selectedCardId,
-    favoriteCardIds,
+    selectedCard,
     handleFetchCategoryList,
     handleFetchCardList,
     handleListMenuSelect,
     handleCardMenuSelect,
     onCategoryDragEnd,
     onCardDragEnd,
-    toggleFavorite,
+    handleCardPin,
     openModal,
     handleModalClose,
     handleModalRefresh,

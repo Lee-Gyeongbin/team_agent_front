@@ -20,38 +20,49 @@
 
         <!-- 뱃지 -->
         <div class="library-detail-modal-badge-wrapper flex">
-          <UiBadge variant="default">
-            <template #icon-left>
-              <i class="icon icon-diamond-small size-10"></i>
-            </template>
-            통계현황
-          </UiBadge>
-
-          <UiBadge variant="data-line">
+          <UiBadge
+            v-if="cardDetail?.svcTy === 'S'"
+            variant="data-line"
+          >
             <template #icon-left>
               <i class="icon icon-data-line-small size-14"></i>
             </template>
             데이터분석
           </UiBadge>
-          <UiBadge variant="basic-chat">
+          <UiBadge
+            v-else-if="cardDetail?.svcTy === 'C'"
+            variant="basic-chat"
+          >
             <template #icon-left>
               <i class="icon icon-comment-other size-14"></i>
             </template>
             기본대화
           </UiBadge>
-          <UiBadge variant="manual-ai">
+          <UiBadge
+            v-else-if="cardDetail?.svcTy === 'M'"
+            variant="manual-ai"
+          >
             <template #icon-left>
               <i class="icon icon-book size-14"></i>
             </template>
             매뉴얼AI
           </UiBadge>
+          <!-- 통계현황 뱃지 TODO -->
+          <!-- <UiBadge variant="default">
+            <template #icon-left>
+              <i class="icon icon-diamond-small size-10"></i>
+            </template>
+            통계현황
+          </UiBadge> -->
         </div>
 
         <!-- 제목 및 액션 -->
         <div class="library-detail-modal-title-section">
           <div class="library-detail-modal-title-grp">
-            <h2 class="library-detail-modal-title">2025년 우리회사 월별매출액</h2>
-            <p class="library-detail-modal-date">2026.02.16 09:20</p>
+            <h2 class="library-detail-modal-title">{{ cardDetail?.title }}</h2>
+            <p class="library-detail-modal-date">
+              {{ formatDateTimeDisplay(cardDetail?.createDt ?? '') }}
+            </p>
           </div>
           <div class="library-detail-modal-actions shrink-0">
             <!-- 변경 btn -->
@@ -86,7 +97,7 @@
       <div class="library-detail-modal-body">
         <!-- 사용자 질문 -->
         <div class="content-box type-question">
-          <p>2025년 우리회사 월별매출액은 얼마지? 단위를 억 단위로 알려줘</p>
+          <p>{{ cardDetail?.qcontent }}</p>
         </div>
 
         <!-- 시스템 응답 -->
@@ -105,18 +116,15 @@
 
           <!-- 월별 데이터 -->
           <div>
-            2025년 월별 매출액 조회 결과입니다.
-            <br />
-            <br />
-            (단위: 억원)1월: 42.3억 / 2월: 38.7억 / 3월: 51.2억 / 4월: 49.8억 / 5월: 55.1억 / 6월: 60.4억 / 7월: 58.9억
-            / 8월: 52.3억 / 9월: 63.7억 / 10월: 71.2억 / 11월: 68.5억 / 12월: 74.8억
-            <br />
-            <br />
-            연간 합계: 686.9억원
+            <p>{{ cardDetail?.rcontent }}</p>
           </div>
         </div>
 
-        <div class="content-box type-sql">
+        <!-- SQL 코드 블록 -->
+        <div
+          v-if="cardDetail?.svcTy === 'S'"
+          class="content-box type-sql"
+        >
           <div class="sql-header flex items-center justify-end gap-4">
             <div class="regenerate"></div>
             <UiButton
@@ -145,13 +153,20 @@
         </div>
 
         <!-- SQL 코드 블록 -->
-        <UiCodeBlock :code="sqlCode" />
+        <UiCodeBlock
+          v-if="cardDetail?.svcTy === 'S'"
+          :code="cardDetail?.ttsq"
+        />
 
         <!-- 하단 태그 -->
         <div class="library-detail-modal-tags">
-          <span class="library-detail-modal-tag">#매출</span>
-          <span class="library-detail-modal-tag">#2025</span>
-          <span class="library-detail-modal-tag">#월별통계</span>
+          <span
+            v-for="tag in cardDetail?.tags?.split(',')"
+            :key="tag"
+            class="library-detail-modal-tag"
+          >
+            #{{ tag }}
+          </span>
         </div>
       </div>
     </div>
@@ -180,13 +195,18 @@
 </template>
 
 <script setup lang="ts">
-interface Props {
-  isOpen?: boolean
-}
+import type { LibraryCardDetail } from '~/types/library'
 
-const props = withDefaults(defineProps<Props>(), {
-  isOpen: false,
-})
+const props = withDefaults(
+  defineProps<{
+    isOpen?: boolean
+    cardDetail?: LibraryCardDetail | null
+  }>(),
+  {
+    isOpen: false,
+    cardDetail: null,
+  },
+)
 
 const emit = defineEmits<{
   close: []
@@ -237,15 +257,4 @@ const handleDeleteConfirm = () => {
 const handleCopyResponse = () => {
   // TODO: 응답 내용 복사 로직
 }
-
-// ============================================
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-// ============================================
-const sqlCode = `SELECT
-TO_CHAR(sale_date, 'YYYY-MM') AS month,
-ROUND(SUM(amount) / 100000000, 1) AS sales_억
-FROM sales
-WHERE EXTRACT (YEAR FROM sale_date) = 2025
-GROUP BY TO_CHAR(sale_date, 'YYYY-MM')
-ORDER BY month;`
 </script>

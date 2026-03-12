@@ -29,7 +29,9 @@
       <div class="library-header-wrapper flex justify-between items-center">
         <p class="library-description">대화 중 마음에 드는 지식을 저장하고 카테고리별로 관리하세요.</p>
         <div class="right-grp flex items-center">
-          <p class="total">총 <strong>7개</strong></p>
+          <p class="total">
+            총 <strong>{{ cardList.length }}개</strong>
+          </p>
           <div class="library-input-grp shrink-0 grow-1 max-w-400">
             <UiInput
               type="search"
@@ -151,19 +153,28 @@
                       <!-- 상단 영역 -->
                       <div class="library-card-top flex justify-between items-center">
                         <div class="flex items-center gap-4">
-                          <UiBadge variant="data-line">
+                          <UiBadge
+                            v-if="card.svcTy === 'S'"
+                            variant="data-line"
+                          >
                             <template #icon-left>
                               <i class="icon icon-data-line-small size-14"></i>
                             </template>
                             데이터분석
                           </UiBadge>
-                          <UiBadge variant="basic-chat">
+                          <UiBadge
+                            v-if="card.svcTy === 'C'"
+                            variant="basic-chat"
+                          >
                             <template #icon-left>
                               <i class="icon icon-comment-other size-14"></i>
                             </template>
                             기본대화
                           </UiBadge>
-                          <UiBadge variant="manual-ai">
+                          <UiBadge
+                            v-if="card.svcTy === 'M'"
+                            variant="manual-ai"
+                          >
                             <template #icon-left>
                               <i class="icon icon-book size-14"></i>
                             </template>
@@ -175,8 +186,8 @@
                             icon-only
                             variant="ghost"
                             class="btn-star"
-                            :class="{ 'is-active': favoriteCardIds.has(card.cardId) }"
-                            @click.stop="toggleFavorite(card.cardId)"
+                            :class="{ 'is-active': card.pinYn === 'Y' }"
+                            @click.stop="handleCardPin(card)"
                           >
                             <template #icon-left>
                               <i class="icon icon-star-fill size-12"></i>
@@ -214,14 +225,14 @@
 
                       <!-- 하단 메타 -->
                       <div class="library-card-meta flex items-center justify-between">
-                        <p class="library-card-date ws-nowrap">{{ card.createDt }}</p>
+                        <p class="library-card-date ws-nowrap">{{ formatDateTimeDisplay(card.createDt) }}</p>
 
                         <div class="library-card-tags flex items-center">
                           <span
                             v-for="tag in (card.tags || '').split(',').filter(Boolean)"
                             :key="tag"
                             class="library-card-tag"
-                            >{{ tag }}</span
+                            >#{{ tag }}</span
                           >
                         </div>
                       </div>
@@ -289,9 +300,10 @@
         </div>
       </div>
 
-      <!-- 모달 -->
+      <!-- 카드 상세 모달 -->
       <LibraryDetailModal
         :is-open="isModalOpen"
+        :card-detail="selectedCard"
         @close="handleModalClose"
         @refresh="handleModalRefresh"
         @delete="handleModalDelete"
@@ -328,19 +340,20 @@ const {
   searchOptions,
   listMenuItems,
   cardMenuItems,
+  cardList,
   isLoading,
   errorMessage,
   isModalOpen,
   isArchiveModalOpen,
   isTrashDeleteModalOpen,
   selectedCardId,
-  favoriteCardIds,
+  selectedCard,
   handleFetchCategoryList,
   handleListMenuSelect,
   handleCardMenuSelect,
   onCategoryDragEnd,
   onCardDragEnd,
-  toggleFavorite,
+  handleCardPin,
   openModal,
   handleModalClose,
   handleModalRefresh,
@@ -352,6 +365,7 @@ const contentWrapperRef = ref<HTMLElement | null>(null)
 const canScrollLeft = ref(false)
 const canScrollRight = ref(false)
 
+/** 스크롤 상태 업데이트 */
 const updateScrollState = () => {
   const el = contentWrapperRef.value
   if (!el) return
@@ -361,10 +375,12 @@ const updateScrollState = () => {
 
 const onContentScroll = () => updateScrollState()
 
+/** 좌측 스크롤 */
 const onScrollLeft = () => {
   contentWrapperRef.value?.scrollBy({ left: -680, behavior: 'smooth' })
 }
 
+/** 우측 스크롤 */
 const onScrollRight = () => {
   contentWrapperRef.value?.scrollBy({ left: 680, behavior: 'smooth' })
 }
