@@ -1,10 +1,10 @@
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
 
-  // 🔽 더미 데이터 — 백엔드 연결 시 제거
+  // 🔽 더미 — 삭제 성공 응답
   return {
     result: 'SUCCESS',
-    data: null,
+    data: { id: body.id },
     message: '',
   }
 })

@@ -1,0 +1,15 @@
+import { useAgentApi } from '~/composables/agent/useAgentApi'
+import type { Agent } from '~/types/agent'
+
+const { fetchAgentList } = useAgentApi() // API 함수 가져오기
+
+const agentList = ref<Agent[]>([]) // 빈 배열
+
+const handleSelectAgentList = async () => {
+  const res = await fetchAgentList() // API 호출
+  agentList.value = res.list // 결과 저장
+}
+
+export const useAgentStore = () => {
+  return { agentList, handleSelectAgentList }
+}
