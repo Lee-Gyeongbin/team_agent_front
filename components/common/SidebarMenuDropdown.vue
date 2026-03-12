@@ -1,5 +1,5 @@
 <template>
-  <DropdownMenuRoot>
+  <DropdownMenuRoot v-model:open="open">
     <DropdownMenuTrigger as-child>
       <slot name="trigger" />
     </DropdownMenuTrigger>
@@ -86,6 +86,8 @@ interface Props {
 }
 
 defineProps<Props>()
+
+const open = defineModel<boolean>('open', { default: false })
 
 const hasChildren = (item: MenuItem) => Array.isArray(item.children) && item.children.length > 0
 
