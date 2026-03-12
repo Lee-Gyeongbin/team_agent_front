@@ -1,10 +1,10 @@
 <template>
   <div
     class="chat-message-item"
-    :class="`role-${message.role}`"
+    :class="message.type === 'answer' ? 'role-assistant' : 'role-user'"
   >
     <!-- assistant 메시지 -->
-    <template v-if="message.role === 'assistant'">
+    <template v-if="message.type === 'answer'">
       <div
         class="avatar"
         :class="{ 'is-streaming': message.isStreaming }"
@@ -66,7 +66,7 @@
     </template>
 
     <!-- user 메시지 -->
-    <template v-else-if="message.role === 'user'">
+    <template v-else-if="message.type === 'question'">
       <div class="message-body">
         <div class="message-content">{{ message.qContent }}</div>
       </div>

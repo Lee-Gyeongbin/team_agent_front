@@ -36,85 +36,12 @@
 
 <script setup lang="ts">
 import draggable from 'vuedraggable'
+import { useAgentStore } from '~/composables/agent/useAgentStore'
 import type { Agent } from '~/types/agent'
 
-// ============================================
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-// ============================================
-const agentList = ref<Agent[]>([
-  {
-    id: '1',
-    name: '지식검색 (매뉴얼AI)',
-    description: '등록된 매뉴얼과 문서를 기반으로 사용자 질문에 답변하는 Agent입니다.',
-    model: 'gpt-4',
-    systemPrompt: '',
-    temperature: 0.7,
-    status: 'active',
-    isActive: true,
-    priority: 1,
-    type: 'RAG',
-    connectionCount: 2,
-    datasetCount: 2,
-    similarityThreshold: 0.7,
-    maxSearchResults: 5,
-    createdAt: '2026-02-29',
-    updatedAt: '2026-02-29',
-  },
-  {
-    id: '2',
-    name: '데이터분석(SQL)',
-    description: '사용자의 자연어 질문을 SQL 쿼리로 변환하여 데이터베이스에서 정보를 조회하는 Agent입니다.',
-    model: 'gpt-4',
-    systemPrompt: '',
-    temperature: 0.7,
-    status: 'active',
-    isActive: true,
-    priority: 2,
-    type: 'TextToSQL',
-    connectionCount: 2,
-    datasetCount: 2,
-    similarityThreshold: 0.7,
-    maxSearchResults: 5,
-    createdAt: '2026-02-29',
-    updatedAt: '2026-02-29',
-  },
-  {
-    id: '3',
-    name: '번역 Agent',
-    description: '다국어 번역 및 언어 감지 Agent',
-    model: 'gpt-4',
-    systemPrompt: '',
-    temperature: 0.7,
-    status: 'draft',
-    isActive: false,
-    priority: 3,
-    type: 'TextToSQL',
-    connectionCount: 15,
-    datasetCount: 0,
-    similarityThreshold: 0.5,
-    maxSearchResults: 10,
-    createdAt: '2026-02-29',
-    updatedAt: '2026-02-29',
-  },
-  {
-    id: '4',
-    name: '지식검색 (매뉴얼AI)',
-    description: '등록된 매뉴얼과 문서를 기반으로 사용자 질문에 답변하는 Agent입니다.',
-    model: 'gpt-4',
-    systemPrompt: '',
-    temperature: 0.7,
-    status: 'draft',
-    isActive: false,
-    priority: 4,
-    type: 'RAG',
-    connectionCount: 2,
-    datasetCount: 2,
-    similarityThreshold: 0.7,
-    maxSearchResults: 5,
-    createdAt: '2026-02-29',
-    updatedAt: '2026-02-29',
-  },
-])
+const { agentList, handleSelectAgentList, handleSaveAgent, handleUpdateAgentOrder } = useAgentStore()
+
+onMounted(() => handleSelectAgentList())
 
 const activeCount = computed(() => agentList.value.filter((a) => a.isActive).length)
 
@@ -132,46 +59,29 @@ const onClickSetting = (agent: Agent) => {
   isSettingOpen.value = true
 }
 
-const onSaveSetting = (form: { type: string; name: string; description: string; similarityThreshold: number; maxSearchResults: number }) => {
-  // 🔽 백엔드 연결 시 API 호출로 교체
-  if (selectedAgent.value) {
-    // 수정
-    selectedAgent.value.type = form.type
-    selectedAgent.value.name = form.name
-    selectedAgent.value.description = form.description
-    selectedAgent.value.similarityThreshold = form.similarityThreshold
-    selectedAgent.value.maxSearchResults = form.maxSearchResults
-  } else {
-    // 추가
-    agentList.value.push({
-      id: `agent-${Date.now()}`,
-      name: form.name,
-      description: form.description,
-      model: 'gpt-4',
-      systemPrompt: '',
-      temperature: 0.7,
-      status: 'draft',
-      isActive: false,
-      priority: agentList.value.length + 1,
-      type: form.type,
-      connectionCount: 0,
-      datasetCount: 0,
-      similarityThreshold: form.similarityThreshold,
-      maxSearchResults: form.maxSearchResults,
-      createdAt: new Date().toISOString().slice(0, 10),
-      updatedAt: new Date().toISOString().slice(0, 10),
-    })
-  }
+// 설정 저장
+const onSaveSetting = async (form: {
+  type: string
+  name: string // 제목
+  description: string // 설명
+  similarityThreshold: number // 유사도 임계값
+  maxSearchResults: number // 최대 검색 결과 수
+}) => {
+  await handleSaveAgent({
+    id: selectedAgent.value?.id,
+    ...form,
+  })
+  // 모달 닫기
   isSettingOpen.value = false
 }
 
-const onToggleActive = (agent: Agent) => {
-  agent.isActive = !agent.isActive
+const onToggleActive = async (agent: Agent) => {
+  await handleSaveAgent({ id: agent.id, isActive: !agent.isActive })
 }
 
 // 🔽 드래그 정렬 — 백엔드 연결 시 API 호출로 교체
-const onDragEnd = () => {
+const onDragEnd = async () => {
   const orderData = agentList.value.map((item, index) => ({ id: item.id, order: index }))
-  console.warn('[TODO] Agent 순서 변경:', orderData)
+  await handleUpdateAgentOrder(orderData)
 }
 </script>

@@ -54,6 +54,7 @@
 
 <script setup lang="ts">
 import type { Agent, AgentDataset } from '~/types/agent'
+import { useAgentStore } from '~/composables/agent/useAgentStore'
 
 interface Props {
   isOpen: boolean
@@ -66,6 +67,8 @@ const emit = defineEmits<{
   close: []
   save: [form: { type: string; name: string; description: string; similarityThreshold: number; maxSearchResults: number }]
 }>()
+
+const { datasetList, handleSelectDatasetList, handleSaveDataset, handleSyncDataset } = useAgentStore()
 
 // 유형
 const form = ref({
@@ -80,43 +83,10 @@ const basicForm = ref({
   maxSearchResults: 5,
 })
 
-// ============================================
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-// ============================================
-const datasetList = ref<AgentDataset[]>([
-  {
-    id: 'ds-1',
-    name: '제품 매뉴얼 DB',
-    description: '전체 제품 매뉴얼과 사용자 가이드 문서',
-    documentCount: 248,
-    chunkCount: 12543,
-    isConnected: true,
-    updatedAt: '2026-02-29',
-  },
-  {
-    id: 'ds-2',
-    name: 'FAQ 데이터셋',
-    description: '전체 제품 매뉴얼과 사용자 가이드 문서',
-    documentCount: 248,
-    chunkCount: 12543,
-    isConnected: false,
-    updatedAt: '2026-02-29',
-  },
-  {
-    id: 'ds-3',
-    name: 'FAQ 데이터셋',
-    description: '전체 제품 매뉴얼과 사용자 가이드 문서',
-    documentCount: 248,
-    chunkCount: 12543,
-    isConnected: false,
-    updatedAt: '2026-02-29',
-  },
-])
-
-// 모달 열릴 때 폼 초기화
+// 모달 열릴 때 폼 초기화 + 데이터셋 조회
 watch(
   () => props.isOpen,
-  (open) => {
+  async (open) => {
     if (!open) return
     if (props.agent) {
       form.value.type = props.agent.type
@@ -126,6 +96,8 @@ watch(
         similarityThreshold: props.agent.similarityThreshold ?? 0.7,
         maxSearchResults: props.agent.maxSearchResults ?? 5,
       }
+      // 수정 모드: 데이터셋 목록 조회
+      await handleSelectDatasetList(props.agent.id)
     } else {
       // 추가 모드: 폼 초기화
       form.value.type = ''
@@ -135,6 +107,7 @@ watch(
         similarityThreshold: 0.7,
         maxSearchResults: 5,
       }
+      datasetList.value = []
     }
   },
 )
@@ -160,19 +133,15 @@ const onDatasetSetting = (dataset: AgentDataset) => {
   isDatasetModalOpen.value = true
 }
 
-// 🔽 백엔드 연결 시 API 호출로 교체
-const onSaveDataset = (dataset: AgentDataset) => {
-  const index = datasetList.value.findIndex((d) => d.id === dataset.id)
-  if (index > -1) {
-    // 수정
-    datasetList.value[index] = dataset
-  } else {
-    // 추가
-    datasetList.value.push(dataset)
-  }
+// 데이터셋 저장
+const onSaveDataset = async (dataset: AgentDataset) => {
+  const agentId = props.agent?.id ?? ''
+  await handleSaveDataset(agentId, dataset)
 }
 
-const onDatasetSync = (dataset: AgentDataset) => {
-  console.warn('[TODO] 데이터셋 동기화:', dataset.id)
+// 데이터셋 동기화
+const onDatasetSync = async (dataset: AgentDataset) => {
+  const agentId = props.agent?.id ?? ''
+  await handleSyncDataset(agentId, dataset.id)
 }
 </script>

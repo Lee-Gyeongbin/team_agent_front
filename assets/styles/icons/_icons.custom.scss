@@ -4,17 +4,33 @@
 // ===================================
 // 사이드바 아이콘
 // Figma에서 SVG export → assets/icons/svg/ 에 저장
-// @include icon-file('파일명')으로 사용
+// 버튼 색상 상속용 → icon-file-bg (mask + currentColor)
 // ===================================
 
 // 햄버거 메뉴
 .icon-menu {
-  @include icon-file('menu');
+  @include icon-file-bg('sidebar-menu');
 }
 
 // AI 채팅
 .icon-ai-chat {
-  @include icon-file('ai-chat');
+  @include icon-file-bg('sidebar-new-chat');
+}
+
+.icon-sidebar-database {
+  @include icon-file-bg('sidebar-database');
+}
+
+.icon-sidebar-settings {
+  @include icon-file-bg('sidebar-settings');
+}
+
+.icon-sidebar-arrow-down {
+  @include icon-file-bg('sidebar-arrow-down');
+}
+
+.icon-sidebar-more {
+  @include icon-file-bg('sidebar-more-dot');
 }
 
 // 차트/대시보드
@@ -34,7 +50,7 @@
 
 // 설정
 .icon-settings {
-  @include icon-file('settings');
+  @include icon-file-bg('settings');
 }
 
 .icon-knowledge {
@@ -355,4 +371,14 @@
 }
 .icon-sync {
   @include icon-file-bg('icon-sync');
+}
+
+// 하트 아웃라인 (채팅 액션)
+.icon-heart-line {
+  @include icon-file-bg('heart-line');
+}
+
+// 가로 점 3개 (채팅 더보기)
+.icon-more-line {
+  @include icon-file-bg('more-line');
 }

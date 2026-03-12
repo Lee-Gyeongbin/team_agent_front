@@ -1,7 +1,8 @@
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
 
-  // 🔽 더미 데이터 — 백엔드 연결 시 제거
+  mockAgentDb.updateOrder(body)
+
   return {
     result: 'SUCCESS',
     data: null,
