@@ -57,7 +57,7 @@
               <template #icon-left>
                 <i class="icon icon-archive size-16"></i>
               </template>
-              <span class="badge-num">23</span>
+              <span class="badge-num">{{ archiveCardList.length }}</span>
             </UiButton>
             <!-- 삭제 btn -->
             <UiButton
@@ -294,6 +294,7 @@
       <LibraryArchiveModal
         :is-open="isArchiveModalOpen"
         @close="isArchiveModalOpen = false"
+        @unarchive="handleUnarchiveCard"
       />
 
       <!-- 카테고리명 변경 모달 -->
@@ -341,6 +342,7 @@ const {
   listMenuItems,
   getCardMenuItems,
   cardList,
+  archiveCardList,
   isLoading,
   errorMessage,
   isModalOpen,
@@ -371,6 +373,7 @@ const {
   handleModalDelete,
   handleTrashDeleteConfirm,
   handleAddCategory,
+  handleUnarchiveCard,
 } = useLibraryStore()
 
 /** 휴지통 전체 삭제 클릭 */

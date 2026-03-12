@@ -39,7 +39,7 @@
     >
       <!-- 🔽 더미 데이터 — 백엔드 연결 시 API로 교체 -->
       <div
-        v-for="(item, index) in archiveList"
+        v-for="(item, index) in archiveCardList"
         :key="index"
         class="library-archive-card"
         :class="{ 'is-show': expandedCards[index] }"
@@ -51,33 +51,34 @@
           <div>
             <!-- 태그 영역 -->
             <div class="library-archive-card-badges flex flex-wrap gap-4">
-              <UiBadge :variant="item.badges[0].variant">
+              <UiBadge :variant="getBadgeInfo(item.svcTy)?.variant">
                 <template #icon-left>
-                  <i :class="`icon ${item.badges[0].icon} size-14`"></i>
+                  <i :class="`icon ${getBadgeInfo(item.svcTy)?.icon} size-14`"></i>
                 </template>
-                {{ item.badges[0].label }}
+                {{ getBadgeInfo(item.svcTy)?.label }}
               </UiBadge>
-              <UiBadge :variant="item.badges[1].variant">
+              <!-- <UiBadge :variant="item.badges[1].variant">
                 <template #icon-left>
                   <i :class="`icon ${item.badges[1].icon} size-10`"></i>
                 </template>
                 {{ item.badges[1].label }}
-              </UiBadge>
+              </UiBadge> -->
             </div>
             <!-- 제목 -->
             <h3 class="library-archive-card-title">{{ item.title }}</h3>
             <!-- 보관일 -->
-            <p class="library-archive-card-date">보관일 {{ item.archiveDate }}</p>
+            <p class="library-archive-card-date">보관일 {{ item.archiveDt }}</p>
           </div>
 
-          <!-- 카테고리 이동 버튼 -->
+          <!-- 보관해제 버튼 -->
           <UiButton
             variant="outline"
             size="sm"
             class="btn-library-archive-card-action"
             @click.stop
+            @click="emit('unarchive', item)"
           >
-            카테고리 이동
+            보관해제
           </UiButton>
         </div>
 
@@ -171,6 +172,9 @@
 </template>
 
 <script setup lang="ts">
+import type { LibraryCard } from '~/types/library'
+const { archiveCardList } = useLibraryStore()
+
 interface Props {
   isOpen?: boolean
 }
@@ -181,35 +185,19 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   close: []
+  unarchive: [card: LibraryCard]
 }>()
 
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-const archiveList = [
-  {
-    badges: [
-      { variant: 'manual-ai' as const, icon: 'icon-book', label: '매뉴얼AI' },
-      { variant: 'default' as const, icon: 'icon-diamond-small', label: '사내규정' },
-    ],
-    title: '인사규정 제 5장 복무관리',
-    archiveDate: '2026.02.09 16:00',
-  },
-  {
-    badges: [
-      { variant: 'basic-chat' as const, icon: 'icon-comment-other', label: '기본대화' },
-      { variant: 'default' as const, icon: 'icon-diamond-small', label: '인사이트' },
-    ],
-    title: '효과적인 보고서 작성 팁',
-    archiveDate: '2026.02.09 16:00',
-  },
-  {
-    badges: [
-      { variant: 'data-line' as const, icon: 'icon-data-line-small', label: '데이터분석' },
-      { variant: 'default' as const, icon: 'icon-diamond-small', label: '통계현황' },
-    ],
-    title: '2024년 분기별 매출 요약',
-    archiveDate: '2026.02.09 16:00',
-  },
-]
+const getBadgeInfo = (svcTy: string) => {
+  switch (svcTy) {
+    case 'M':
+      return { variant: 'manual-ai' as const, icon: 'icon-book', label: '매뉴얼AI' }
+    case 'C':
+      return { variant: 'basic-chat' as const, icon: 'icon-comment-other', label: '기본대화' }
+    case 'S':
+      return { variant: 'data-line' as const, icon: 'icon-data-line-small', label: '데이터분석' }
+  }
+}
 
 // 카드 확장 상태 관리
 const expandedCards = ref<Record<number, boolean>>({})

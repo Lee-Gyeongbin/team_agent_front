@@ -30,6 +30,11 @@ export const useLibraryApi = () => {
     return get<{ dataList: LibraryCard[] }>('/library/cardList.do')
   }
 
+  /** 보관된 카드 목록 조회 API */
+  const fetchArchiveCardList = async (): Promise<{ dataList: LibraryCard[] }> => {
+    return get<{ dataList: LibraryCard[] }>('/library/archiveCardList.do')
+  }
+
   /** 카드 상세 조회 API */
   const fetchCardDetail = async (cardId: string): Promise<{ data: LibraryCardDetail }> => {
     return post<{ data: LibraryCardDetail }>('/library/cardDetail.do', { cardId })
@@ -70,6 +75,7 @@ export const useLibraryApi = () => {
     fetchSaveCategory,
     fetchDeleteCategory,
     fetchCardList,
+    fetchArchiveCardList,
     fetchCardDetail,
     fetchSaveCard,
     fetchUpdateCardPin,

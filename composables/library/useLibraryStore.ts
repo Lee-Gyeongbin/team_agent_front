@@ -11,6 +11,7 @@ import { useLibraryApi } from '~/composables/library/useLibraryApi'
 const {
   fetchCategoryList,
   fetchCardList,
+  fetchArchiveCardList,
   fetchCardDetail,
   fetchUpdateCardPin,
   fetchSaveCard,
@@ -57,6 +58,7 @@ export const getCardMenuItems = (card: LibraryCard): DropdownMenuItemDef[] => [
 const categoryList = ref<LibraryCategory[]>([])
 const categoryCards = ref<CategoryCardsMap>({})
 const cardList = ref<LibraryCard[]>([])
+const archiveCardList = ref<LibraryCard[]>([])
 
 const categoryListBeforeDrag = ref<LibraryCategory[]>([]) // 카테고리 드래그 시작 시점 순서 (취소 시 복원용)
 const categoryCardsBeforeDrag = ref<CategoryCardsMap>({}) // 카드 드래그 시작 시점 순서 (취소 시 복원용)
@@ -92,7 +94,8 @@ export const useLibraryStore = () => {
     try {
       const response = await fetchCategoryList()
       categoryList.value = response.dataList ?? []
-      await handleFetchCardList()
+      await handleFetchCardList() // 카드 목록 조회
+      await handleFetchArchiveCardList() // 보관된 카드 목록 조회
     } catch {
       errorMessage.value = '카테고리 목록을 불러오는데 실패했습니다.'
     } finally {
@@ -140,7 +143,6 @@ export const useLibraryStore = () => {
       const list = response.dataList ?? []
       cardList.value = list
       const cardsByCategory = mapCardListToCategoryCards(list)
-      // 모든 카테고리에 배열 보장 (빈 카테고리도 drop 대상으로 사용)
       const merged: CategoryCardsMap = {}
       for (const cat of categoryList.value) {
         const key = String(cat.categoryId)
@@ -149,6 +151,19 @@ export const useLibraryStore = () => {
       categoryCards.value = merged
     } catch {
       errorMessage.value = '카드 목록을 불러오는데 실패했습니다.'
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  /** 보관된 카드 목록 조회 */
+  const handleFetchArchiveCardList = async () => {
+    isLoading.value = true
+    try {
+      const response = await fetchArchiveCardList()
+      archiveCardList.value = response.dataList ?? []
+    } catch {
+      errorMessage.value = '보관된 카드 목록을 불러오는데 실패했습니다.'
     } finally {
       isLoading.value = false
     }
@@ -306,8 +321,21 @@ export const useLibraryStore = () => {
       message: '카드를 보관하시겠습니까?',
       onConfirm: async () => {
         await fetchSaveCard({ ...card, archiveYn: 'Y' })
-        await handleFetchCardList()
-        openAlert({ message: '카드가 보관되었습니다.' })
+        await handleFetchCategoryList()
+        openToast({ message: '카드가 보관되었습니다.' })
+      },
+    })
+  }
+
+  /** 카드 보관해제 */
+  const handleUnarchiveCard = async (card: LibraryCard) => {
+    openConfirm({
+      message: '카드를 보관해제하시겠습니까?',
+      onConfirm: async () => {
+        await fetchSaveCard({ ...card, archiveYn: 'N' })
+        await handleFetchCategoryList()
+        openToast({ message: '카드가 보관해제되었습니다.' })
+        isArchiveModalOpen.value = false
       },
     })
   }
@@ -411,6 +439,7 @@ export const useLibraryStore = () => {
     categoryList,
     categoryCards,
     cardList,
+    archiveCardList,
     searchOptions,
     isLoading,
     errorMessage,
@@ -439,6 +468,7 @@ export const useLibraryStore = () => {
     onCategoryDragEnd,
     onCardDragStart,
     onCardDragEnd,
+    handleUnarchiveCard,
     handleCardPin,
     openModal,
     handleModalClose,

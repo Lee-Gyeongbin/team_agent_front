@@ -15,11 +15,11 @@ let timeoutId: ReturnType<typeof setTimeout> | null = null
 export function openToast(options: ToastOptions | string): void {
   const opts = typeof options === 'string' ? { message: options } : options
   if (timeoutId) clearTimeout(timeoutId)
-  currentToast.value = { ...opts, id: ++toastId, duration: opts.duration ?? 3000 }
+  currentToast.value = { ...opts, id: ++toastId, duration: opts.duration ?? 1500 }
   timeoutId = setTimeout(() => {
     currentToast.value = null
     timeoutId = null
-  }, opts.duration ?? 3000)
+  }, opts.duration ?? 1500)
 }
 
 /** app.vue Toast 렌더용 — 내부 전용 */

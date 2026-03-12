@@ -19,6 +19,7 @@ export interface LibraryCard {
   tags: string
   pinYn: 'Y' | 'N'
   archiveYn: 'Y' | 'N'
+  archiveDt: string
   sortOrd: number
   srcDocs: string
   sqlCode: string
@@ -40,6 +41,7 @@ export interface LibraryCardDetail {
   tags: string
   pinYn: 'Y' | 'N'
   archiveYn: 'Y' | 'N'
+  archiveDt: string
   sortOrd: number
   srcDocs: string
   sqlCode: string
