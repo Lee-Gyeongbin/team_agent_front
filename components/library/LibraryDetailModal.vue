@@ -1,27 +1,27 @@
 <template>
   <div
     class="library-detail-modal"
-    :class="{ 'is-show': isOpen }"
+    :class="{ 'is-show': isOpen && !isTransitioning }"
   >
     <div
       ref="contentRef"
       class="library-detail-modal-content"
       @scroll="handleScroll"
     >
+      <!-- 닫기 -->
+      <button
+        class="btn btn-modal-close type-library-detail"
+        @click="handleClose"
+      >
+        <i class="icon icon-close-gray size-20"></i>
+      </button>
+
       <!-- 상단 헤더 -->
       <div class="library-detail-modal-header">
-        <!-- 닫기 -->
-        <button
-          class="btn btn-modal-close type-library-detail"
-          @click="handleClose"
-        >
-          <i class="icon icon-close-gray size-20"></i>
-        </button>
-
         <!-- 뱃지 -->
         <div class="library-detail-modal-badge-wrapper flex">
           <UiBadge
-            v-if="cardDetail?.svcTy === 'S'"
+            v-if="displayData?.svcTy === 'S'"
             variant="data-line"
           >
             <template #icon-left>
@@ -30,7 +30,7 @@
             데이터분석
           </UiBadge>
           <UiBadge
-            v-else-if="cardDetail?.svcTy === 'C'"
+            v-else-if="displayData?.svcTy === 'C'"
             variant="basic-chat"
           >
             <template #icon-left>
@@ -39,7 +39,7 @@
             기본대화
           </UiBadge>
           <UiBadge
-            v-else-if="cardDetail?.svcTy === 'M'"
+            v-else-if="displayData?.svcTy === 'M'"
             variant="manual-ai"
           >
             <template #icon-left>
@@ -47,21 +47,14 @@
             </template>
             매뉴얼AI
           </UiBadge>
-          <!-- 통계현황 뱃지 TODO -->
-          <!-- <UiBadge variant="default">
-            <template #icon-left>
-              <i class="icon icon-diamond-small size-10"></i>
-            </template>
-            통계현황
-          </UiBadge> -->
         </div>
 
         <!-- 제목 및 액션 -->
         <div class="library-detail-modal-title-section">
           <div class="library-detail-modal-title-grp">
-            <h2 class="library-detail-modal-title">{{ cardDetail?.title }}</h2>
+            <h2 class="library-detail-modal-title">{{ displayData?.title }}</h2>
             <p class="library-detail-modal-date">
-              {{ formatDateTimeDisplay(cardDetail?.createDt ?? '') }}
+              {{ formatDateTimeDisplay(displayData?.createDt ?? '') }}
             </p>
           </div>
           <div class="library-detail-modal-actions shrink-0">
@@ -97,7 +90,7 @@
       <div class="library-detail-modal-body">
         <!-- 사용자 질문 -->
         <div class="content-box type-question">
-          <p>{{ cardDetail?.qcontent }}</p>
+          <p>{{ displayData?.qcontent }}</p>
         </div>
 
         <!-- 시스템 응답 -->
@@ -116,13 +109,13 @@
 
           <!-- 월별 데이터 -->
           <div>
-            <p>{{ cardDetail?.rcontent }}</p>
+            <p>{{ displayData?.rcontent }}</p>
           </div>
         </div>
 
         <!-- SQL 코드 블록 -->
         <div
-          v-if="cardDetail?.svcTy === 'S'"
+          v-if="displayData?.svcTy === 'S'"
           class="content-box type-sql"
         >
           <div class="sql-header flex items-center justify-end gap-4">
@@ -154,14 +147,14 @@
 
         <!-- SQL 코드 블록 -->
         <UiCodeBlock
-          v-if="cardDetail?.svcTy === 'S'"
-          :code="cardDetail?.ttsq"
+          v-if="displayData?.svcTy === 'S'"
+          :code="displayData?.ttsq"
         />
 
         <!-- 하단 태그 -->
         <div class="library-detail-modal-tags">
           <span
-            v-for="tag in cardDetail?.tags?.split(',')"
+            v-for="tag in displayData?.tags?.split(',')"
             :key="tag"
             class="library-detail-modal-tag"
           >
@@ -206,6 +199,12 @@ const emit = defineEmits<{
 const contentRef = ref<HTMLElement | null>(null)
 const isScrolled = ref(false)
 
+// 카드 전환 트랜지션 상태
+const isTransitioning = ref(false)
+
+// 내부 표시용 데이터 (트랜지션 타이밍 제어용)
+const displayData = ref<LibraryCardDetail | null>(props.cardDetail ?? null)
+
 // 스크롤 이벤트 핸들러
 const handleScroll = () => {
   if (!contentRef.value) return
@@ -220,6 +219,44 @@ const handleScrollToTop = () => {
     behavior: 'smooth',
   })
 }
+
+// 카드 변경 시 모달 전체 슬라이드 재실행 + 스크롤 리셋
+watch(
+  () => props.cardDetail?.cardId,
+  (newId, oldId) => {
+    // 최초 열기 — 바로 표시
+    if (!oldId) {
+      displayData.value = props.cardDetail ?? null
+      return
+    }
+    if (!newId || newId === oldId) return
+
+    // 1) is-show 제거 → 기존 데이터 상태로 오른쪽으로 나감
+    isTransitioning.value = true
+
+    // 2) 나간 후 → 데이터 교체 → 다시 들어옴
+    setTimeout(() => {
+      displayData.value = props.cardDetail ?? null
+      if (contentRef.value) {
+        contentRef.value.scrollTo({ top: 0 })
+        isScrolled.value = false
+      }
+      nextTick(() => {
+        isTransitioning.value = false
+      })
+    }, 250)
+  },
+)
+
+// 모달 닫힐 때 displayData도 초기화
+watch(
+  () => props.isOpen,
+  (open) => {
+    if (!open) {
+      displayData.value = null
+    }
+  },
+)
 
 // 이벤트 핸들러
 const handleClose = () => {

@@ -5,11 +5,12 @@
       <button
         class="ui-code-block-copy"
         title="코드 복사"
-        @click="onCopy"a
+        @click="onCopy"
+        a
       >
         <i
           :class="isCopied ? 'icon-copy' : 'icon-copy'"
-          class="size-20"
+          class="size-16"
         ></i>
       </button>
     </div>
@@ -79,8 +80,8 @@ const onCopy = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
+  width: 24px;
+  height: 24px;
   border: none;
   border-radius: $border-radius-lg;
   background: #4d5462;
