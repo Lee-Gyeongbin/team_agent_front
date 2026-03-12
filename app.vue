@@ -24,6 +24,9 @@
     @cancel="closeDialog(false)"
     @confirm="closeDialog(true)"
   />
+
+  <!-- 전역 Toast -->
+  <UiToast />
 </template>
 
 <script setup lang="ts">

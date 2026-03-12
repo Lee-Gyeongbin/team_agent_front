@@ -168,6 +168,7 @@ const onSubmit = async () => {
 
   const res = await signup(form)
   if (res.success) {
+    openAlert({ message: '회원가입이 완료되었습니다.\n 로그인 후 이용해주세요.' })
     navigateTo('/login')
   } else {
     errorMessage.value = res.message || '회원가입에 실패했습니다. 잠시 후 다시 시도해주세요.'

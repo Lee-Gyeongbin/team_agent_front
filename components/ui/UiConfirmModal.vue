@@ -7,7 +7,7 @@
   >
     <!-- 본문 -->
     <slot>
-      {{ message }}
+      <span class="modal-message">{{ message }}</span>
     </slot>
 
     <!-- 푸터 -->
@@ -58,5 +58,7 @@ const handleConfirm = () => {
 </script>
 
 <style lang="scss" scoped>
-// SCSS는 _modal.scss의 .modal-dialog 공통 클래스 사용
+.modal-message {
+  white-space: pre-line;
+}
 </style>

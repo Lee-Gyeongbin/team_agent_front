@@ -31,8 +31,13 @@ export const useLibraryApi = () => {
   }
 
   /** 카드 상세 조회 API */
-  const fetchCardDetail = async (cardId: string, pinYn: string): Promise<{ data: LibraryCardDetail }> => {
-    return post<{ data: LibraryCardDetail }>('/library/cardDetail.do', { cardId, pinYn })
+  const fetchCardDetail = async (cardId: string): Promise<{ data: LibraryCardDetail }> => {
+    return post<{ data: LibraryCardDetail }>('/library/cardDetail.do', { cardId })
+  }
+
+  /** 카드 수정 API */
+  const fetchSaveCard = async (card: LibraryCard): Promise<void> => {
+    await post('/library/saveCard.do', { card })
   }
 
   /** 카드 즐겨찾기 등록/해제 API */
@@ -66,6 +71,7 @@ export const useLibraryApi = () => {
     fetchDeleteCategory,
     fetchCardList,
     fetchCardDetail,
+    fetchSaveCard,
     fetchUpdateCardPin,
     fetchUpdateCategoryOrder,
     fetchUpdateCardOrder,

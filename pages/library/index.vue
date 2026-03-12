@@ -202,7 +202,7 @@
                           <!-- 카드 드롭다운 메뉴 -->
                           <div @click.stop>
                             <UiDropdownMenu
-                              :items="cardMenuItems"
+                              :items="getCardMenuItems(card)"
                               align="end"
                               @select="handleCardMenuSelect(card, $event)"
                             >
@@ -339,7 +339,7 @@ const {
   categoryCards,
   searchOptions,
   listMenuItems,
-  cardMenuItems,
+  getCardMenuItems,
   cardList,
   isLoading,
   errorMessage,
