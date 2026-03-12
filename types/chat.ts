@@ -1,9 +1,10 @@
+// 메세지
 export interface ChatMessage {
+  id?: string
   logId: string
-  role: 'user' | 'assistant' | 'system'
-  qContent: string
-  rContent: string
-  docId?: string
+  type: 'question' | 'answer'
+  qContent?: string
+  rContent?: string
   createdAt: string
   isStreaming?: boolean
   isLiked?: boolean
@@ -15,6 +16,39 @@ export interface ChatMessage {
     sql?: string
     chartTitle?: string
   }
+  /** 서비스 타입: C=일반(디폴트), M=지식검색, S=데이터분석 */
+  svcTy?: string
+  /** 참조 ID (지식베이스/데이터마트 등) */
+  refId?: string
+  /** 출처 문서 ID */
+  docId?: string
+  /** 문서 존재 여부 (Y/N) */
+  docExist?: 'Y' | 'N'
+  [key: string]: unknown
+}
+
+// 메세지 기본값
+export const EMPTY_CHAT_MESSAGE: ChatMessage = {
+  id: '',
+  logId: '',
+  type: 'question',
+  qContent: '',
+  rContent: '',
+  createdAt: '',
+  isStreaming: false,
+  isLiked: false,
+  isDisliked: false,
+  hasSource: false,
+  hasVisualization: false,
+  sourceUrl: '',
+  visualizationData: {
+    sql: '',
+    chartTitle: '',
+  },
+  svcTy: '',
+  refId: '',
+  docId: '',
+  docExist: 'N',
 }
 
 export type PanelType = 'none' | 'pdf' | 'visualization'

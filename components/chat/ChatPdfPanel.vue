@@ -226,13 +226,25 @@ const setThumbCanvasRef = (pageNum: number, el: HTMLCanvasElement | null) => {
   thumbCanvasMap.delete(pageNum)
 }
 
-const { isLoading, loadError, currentPage, totalPages, scale, pageList, hasData, loadPdf, goToPage, zoomIn, zoomOut } =
-  usePdfViewer({
-    filePath: currentFilePath,
-    open: toRef(() => props.open),
-    mainCanvasRef,
-    thumbCanvasMap,
-  })
+const {
+  isLoading,
+  loadError,
+  currentPage,
+  totalPages,
+  scale,
+  pageList,
+  hasData,
+  loadPdf,
+  goToPage,
+  zoomIn,
+  zoomOut,
+  renderAllThumbnails,
+} = usePdfViewer({
+  filePath: currentFilePath,
+  open: toRef(() => props.open),
+  mainCanvasRef,
+  thumbCanvasMap,
+})
 
 const isFullscreen = ref(false)
 const activeTab = ref<'related' | 'all'>('related')
@@ -303,4 +315,12 @@ watch(
   },
   { immediate: true },
 )
+
+// 전체페이지 탭으로 전환 시 새로 마운트된 캔버스에 썸네일 그리기 (관련페이지만 DOM에 있을 때는 1~N 캔버스가 없음)
+watch(activeTab, async (tab) => {
+  if (tab === 'all' && hasData.value) {
+    await nextTick()
+    await renderAllThumbnails()
+  }
+})
 </script>

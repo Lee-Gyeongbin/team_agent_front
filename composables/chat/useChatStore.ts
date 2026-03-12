@@ -1,17 +1,17 @@
 // 타입 선언
-import type {
-  ChatMessage,
-  ChatRoom,
-  ChatRefRow,
-  PanelType,
-  ModelOption,
-  SearchModeValue,
-  SearchModeOption,
-  SubOption,
-  PdfDocumentProxy,
-  PdfJsLib,
+import {
+  type ChatMessage,
+  EMPTY_CHAT_ROOM,
+  type ChatRefRow,
+  type ChatRoom,
+  type ModelOption,
+  type PanelType,
+  type PdfDocumentProxy,
+  type PdfJsLib,
+  type SearchModeOption,
+  type SearchModeValue,
+  type SubOption,
 } from '~/types/chat'
-import { EMPTY_CHAT_ROOM } from '~/types/chat'
 
 // API 호출
 const {
@@ -29,14 +29,14 @@ const modelOptions = ref<ModelOption[]>([])
 const dummyMessages: ChatMessage[] = [
   {
     logId: '1',
-    role: 'user',
+    type: 'question',
     qContent: '업무관리에서 칸반 보드는 어떻게 생성하지?',
     rContent: '',
     createdAt: '2025-03-03T10:00:00',
   },
   {
     logId: '2',
-    role: 'assistant',
+    type: 'answer',
     qContent: '',
     rContent: `<p>좋은 질문이에요 👍</p>
 <p><strong>칸반 보드</strong>를 생성하는 방법을 안내해 드리겠습니다.</p>
@@ -54,14 +54,14 @@ const dummyMessages: ChatMessage[] = [
   },
   {
     logId: '3',
-    role: 'user',
+    type: 'question',
     qContent: '회의실 예약 절차 알려주세요',
     rContent: '',
     createdAt: '2025-03-03T10:01:00',
   },
   {
     logId: '4',
-    role: 'assistant',
+    type: 'answer',
     qContent: '',
     rContent: `<p>🏢 <strong>회의실 예약 절차</strong>를 안내해 드리겠습니다.</p>
 <ol>
@@ -89,6 +89,8 @@ interface ChatSocketMessage {
   type: string
   content?: string
   filePath?: string
+  /** 완료 시 서버에서 내려주는 로그 ID (있으면 스트리밍 메시지에 반영) */
+  logId?: string
 }
 
 const WEBSOCKET_OPEN = 1
@@ -163,7 +165,7 @@ export const useChatStore = () => {
     if (pendingMessageId.value) {
       return messages.value.find((message) => message.logId === pendingMessageId.value)
     }
-    const streamingMessages = messages.value.filter((message) => message.role === 'assistant' && message.isStreaming)
+    const streamingMessages = messages.value.filter((message) => message.type === 'answer' && message.isStreaming)
     return streamingMessages[streamingMessages.length - 1]
   }
 
@@ -175,6 +177,7 @@ export const useChatStore = () => {
     if (streamingMessage) {
       streamingMessage.isStreaming = false
       streamingMessage.hasSource = payload.filePath !== '' ? true : false
+      if (payload.logId != null) streamingMessage.logId = payload.logId
       streamingMessage.hasVisualization = true
       messageBufferMap.value[streamingMessage.logId] = ''
     }
@@ -350,14 +353,14 @@ export const useChatStore = () => {
       const docId = typeof item.docId === 'string' ? item.docId : ''
       flattened.push({
         logId: `${logId}`,
-        role: 'user',
+        type: 'question',
         qContent: item.qcontent ?? '',
         rContent: '',
         createdAt,
       })
       flattened.push({
         logId: `${logId}`,
-        role: 'assistant',
+        type: 'answer',
         qContent: '',
         rContent: toHtmlContent(item.rcontent ?? ''),
         docId,
@@ -397,40 +400,43 @@ export const useChatStore = () => {
       return chatRoom.value
     }
 
+    // 디폴트 검색 모드로 설정
     let svcTy = 'C'
     // 검색모드 (C/M/D)
     if (isNotEmpty(activeSearchModes.value)) {
+      // 모드 세팅
       svcTy = activeSearchModes.value[0] === 'M' ? 'M' : 'S'
     }
+    // 채팅방 생성
     const res = await fetchCreateChatRoom(qContent, svcTy)
+    // response 생성
     chatRoom.value.roomId = res.data.roomId
     chatRoom.value.title = qContent
     chatRoom.value.qContent = qContent
 
-    // 새 채팅방: 메시지 초기화 후 user + assistant placeholder 추가
-    const userMessageId = Date.now().toString()
+    // 새 채팅방: 메시지 초기화 후 question + answer placeholder를 순차 적재
+    const questionLogId = Date.now().toString()
     const assistantMessageId = (Date.now() + 1).toString()
+    messages.value = []
+    messages.value.push({
+      id: questionLogId,
+      logId: questionLogId,
+      type: 'question',
+      qContent: qContent,
+      rContent: '',
+      createdAt: new Date().toISOString(),
+    })
+    messages.value.push({
+      id: assistantMessageId,
+      logId: assistantMessageId,
+      type: 'answer',
+      rContent: '',
+      createdAt: new Date().toISOString(),
+      isStreaming: true,
+      hasSource: true,
+      hasVisualization: true,
+    })
     pendingMessageId.value = assistantMessageId
-
-    messages.value = [
-      {
-        logId: userMessageId,
-        role: 'user',
-        qContent,
-        rContent: '',
-        createdAt: new Date().toISOString(),
-      },
-      {
-        logId: assistantMessageId,
-        role: 'assistant',
-        qContent: '',
-        rContent: '',
-        createdAt: new Date().toISOString(),
-        isStreaming: true,
-        hasSource: true,
-        hasVisualization: true,
-      },
-    ]
     chatMessage.value = ''
 
     // WebSocket 연결 확인 후 전송
@@ -466,9 +472,11 @@ export const useChatStore = () => {
     const content = chatMessage.value.trim()
     if (!content) return
 
+    const questionMessageId = Date.now().toString()
     messages.value.push({
-      logId: Date.now().toString(),
-      role: 'user',
+      id: questionMessageId,
+      logId: questionMessageId,
+      type: 'question',
       qContent: content,
       rContent: '',
       createdAt: new Date().toISOString(),
@@ -480,8 +488,9 @@ export const useChatStore = () => {
     pendingMessageId.value = assistantMessageId
 
     messages.value.push({
+      id: assistantMessageId,
       logId: assistantMessageId,
-      role: 'assistant',
+      type: 'answer',
       qContent: '',
       rContent: '',
       createdAt: new Date().toISOString(),
@@ -524,7 +533,7 @@ export const useChatStore = () => {
   const onCopy = (id: string) => {
     const msg = messages.value.find((m) => m.logId === id)
     if (msg) {
-      const text = (msg.role === 'user' ? msg.qContent : msg.rContent).replace(/<[^>]*>/g, '')
+      const text = (msg.type === 'question' ? (msg.qContent ?? '') : (msg.rContent ?? '')).replace(/<[^>]*>/g, '')
       navigator.clipboard.writeText(text)
     }
   }
@@ -812,5 +821,6 @@ export const usePdfViewer = (options: {
     goToPage,
     zoomIn,
     zoomOut,
+    renderAllThumbnails,
   }
 }
