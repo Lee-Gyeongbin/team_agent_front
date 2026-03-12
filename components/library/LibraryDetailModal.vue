@@ -179,18 +179,6 @@
     >
       <i class="icon icon-arrow-down size-20"></i>
     </button>
-
-    <!-- 삭제 확인 모달 -->
-    <UiDialogModal
-      :is-open="isDeleteModalOpen"
-      title="항목 삭제"
-      message="이 항목을 라이브러리에서 삭제하시겠습니까?"
-      cancel-text="취소"
-      confirm-text="삭제"
-      @close="isDeleteModalOpen = false"
-      @cancel="isDeleteModalOpen = false"
-      @confirm="handleDeleteConfirm"
-    />
   </div>
 </template>
 
@@ -218,9 +206,6 @@ const emit = defineEmits<{
 const contentRef = ref<HTMLElement | null>(null)
 const isScrolled = ref(false)
 
-// 삭제 모달 상태
-const isDeleteModalOpen = ref(false)
-
 // 스크롤 이벤트 핸들러
 const handleScroll = () => {
   if (!contentRef.value) return
@@ -245,13 +230,13 @@ const handleRefresh = () => {
   emit('refresh')
 }
 
-const handleDelete = () => {
-  isDeleteModalOpen.value = true
-}
-
-const handleDeleteConfirm = () => {
-  emit('delete')
-  isDeleteModalOpen.value = false
+const handleDelete = async () => {
+  const ok = await openConfirm({
+    title: '항목 삭제',
+    message: '이 항목을 라이브러리에서 삭제하시겠습니까?',
+    confirmText: '삭제',
+  })
+  if (ok) emit('delete')
 }
 
 const handleCopyResponse = () => {

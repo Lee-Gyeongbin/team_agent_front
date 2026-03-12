@@ -44,11 +44,9 @@ const isGroupModalOpen = ref(false)
 const isGroupEditMode = ref(false)
 const editingGroup = ref<CodeGroupItem | null>(null)
 
-const isDeleteModalOpen = ref(false)
 const deletingCode = ref<CodeItem | null>(null)
 const pendingCodeUseYn = ref<'Y' | 'N' | null>(null)
 
-const isGroupDeleteModalOpen = ref(false)
 const deletingGroup = ref<CodeGroupItem | null>(null)
 const pendingGroupUseYn = ref<'Y' | 'N' | null>(null)
 
@@ -210,29 +208,32 @@ export const useCodesStore = () => {
   }
 
   /** 그룹코드 드롭다운 메뉴 선택 */
-  const handleGroupRowMenuSelect = (row: CodeGroupItem, value: string) => {
+  const handleGroupRowMenuSelect = async (row: CodeGroupItem, value: string) => {
     const group = row
     if (value === 'edit') {
       openEditGroupModal(group)
     } else if (value === 'delete' || value === 'restore') {
       deletingGroup.value = group
       pendingGroupUseYn.value = value === 'delete' ? 'N' : 'Y'
-      isGroupDeleteModalOpen.value = true
+      const ok = await openConfirm({
+        title: pendingGroupUseYn.value === 'Y' ? '복구 확인' : '삭제 확인',
+        message: `'${group.codeGrpNm}' 그룹코드를 ${pendingGroupUseYn.value === 'Y' ? '복구' : '삭제'}하시겠습니까?`,
+        confirmText: pendingGroupUseYn.value === 'Y' ? '복구' : '삭제',
+      })
+      if (ok) await doGroupUseYnUpdate()
+      else {
+        deletingGroup.value = null
+        pendingGroupUseYn.value = null
+      }
     }
-  }
-
-  /** 그룹코드 삭제/복구 확인 모달 닫기 */
-  const handleGroupDeleteModalClose = () => {
-    isGroupDeleteModalOpen.value = false
-    deletingGroup.value = null
-    pendingGroupUseYn.value = null
   }
 
   /** 그룹코드 삭제/복구 확인 후 실행 */
   const doGroupUseYnUpdate = async () => {
     if (!deletingGroup.value || pendingGroupUseYn.value === null) return
     await handleGroupUseYnUpdate(deletingGroup.value, pendingGroupUseYn.value)
-    handleGroupDeleteModalClose()
+    deletingGroup.value = null
+    pendingGroupUseYn.value = null
   }
 
   /** 그룹코드 사용여부 변경 (삭제: N, 복구: Y) */
@@ -309,22 +310,24 @@ export const useCodesStore = () => {
   }
 
   /** 상세코드 드롭다운 메뉴 선택 */
-  const handleRowMenuSelect = (row: CodeItem, value: string) => {
+  const handleRowMenuSelect = async (row: CodeItem, value: string) => {
     const code = row
     if (value === 'edit') {
       openEditModal(code)
     } else if (value === 'delete' || value === 'restore') {
       deletingCode.value = code
       pendingCodeUseYn.value = value === 'delete' ? 'N' : 'Y'
-      isDeleteModalOpen.value = true
+      const ok = await openConfirm({
+        title: pendingCodeUseYn.value === 'Y' ? '복구 확인' : '삭제 확인',
+        message: `'${code.codeNm}' 코드를 ${pendingCodeUseYn.value === 'Y' ? '복구' : '삭제'}하시겠습니까?`,
+        confirmText: pendingCodeUseYn.value === 'Y' ? '복구' : '삭제',
+      })
+      if (ok) await doCodeUseYnUpdate()
+      else {
+        deletingCode.value = null
+        pendingCodeUseYn.value = null
+      }
     }
-  }
-
-  /** 상세코드 삭제/복구 확인 모달 닫기 */
-  const handleDeleteModalClose = () => {
-    isDeleteModalOpen.value = false
-    deletingCode.value = null
-    pendingCodeUseYn.value = null
   }
 
   /** 상세코드 삭제/복구 확인 후 실행 */
@@ -350,7 +353,8 @@ export const useCodesStore = () => {
     } finally {
       isLoading.value = false
       await handleFetchCodeList()
-      handleDeleteModalClose()
+      deletingCode.value = null
+      pendingCodeUseYn.value = null
     }
   }
 
@@ -393,12 +397,6 @@ export const useCodesStore = () => {
     isGroupModalOpen,
     isGroupEditMode,
     editingGroup,
-    isDeleteModalOpen,
-    deletingCode,
-    pendingCodeUseYn,
-    isGroupDeleteModalOpen,
-    deletingGroup,
-    pendingGroupUseYn,
     handleFetchCodeGroupList,
     handleFetchCodeList,
     handleGroupCodeChange,
@@ -413,9 +411,7 @@ export const useCodesStore = () => {
     handleSaveGroup,
     handleSaveCode,
     handleRowMenuSelect,
-    handleDeleteModalClose,
     doCodeUseYnUpdate,
-    handleGroupDeleteModalClose,
     doGroupUseYnUpdate,
     handleUpdateSortOrder,
   }
