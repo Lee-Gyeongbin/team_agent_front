@@ -38,7 +38,7 @@
 import draggable from 'vuedraggable'
 import { useAgentStore } from '~/composables/agent/useAgentStore'
 
-const { agentList, handleSelectAgentList } = useAgentStore()
+const { agentList, handleSelectAgentList, handleSaveAgent } = useAgentStore()
 
 onMounted(() => handleSelectAgentList())
 
@@ -58,42 +58,19 @@ const onClickSetting = (agent: Agent) => {
   isSettingOpen.value = true
 }
 
-const onSaveSetting = (form: {
+// 설정 저장
+const onSaveSetting = async (form: {
   type: string
-  name: string
-  description: string
-  similarityThreshold: number
-  maxSearchResults: number
+  name: string // 제목
+  description: string // 설명
+  similarityThreshold: number // 유사도 임계값
+  maxSearchResults: number // 최대 검색 결과 수
 }) => {
-  // 🔽 백엔드 연결 시 API 호출로 교체
-  if (selectedAgent.value) {
-    // 수정
-    selectedAgent.value.type = form.type
-    selectedAgent.value.name = form.name
-    selectedAgent.value.description = form.description
-    selectedAgent.value.similarityThreshold = form.similarityThreshold
-    selectedAgent.value.maxSearchResults = form.maxSearchResults
-  } else {
-    // 추가
-    agentList.value.push({
-      id: `agent-${Date.now()}`,
-      name: form.name,
-      description: form.description,
-      model: 'gpt-4',
-      systemPrompt: '',
-      temperature: 0.7,
-      status: 'draft',
-      isActive: false,
-      priority: agentList.value.length + 1,
-      type: form.type,
-      connectionCount: 0,
-      datasetCount: 0,
-      similarityThreshold: form.similarityThreshold,
-      maxSearchResults: form.maxSearchResults,
-      createdAt: new Date().toISOString().slice(0, 10),
-      updatedAt: new Date().toISOString().slice(0, 10),
-    })
-  }
+  await handleSaveAgent({
+    id: selectedAgent.value?.id,
+    ...form,
+  })
+  // 모달 닫기
   isSettingOpen.value = false
 }
 
