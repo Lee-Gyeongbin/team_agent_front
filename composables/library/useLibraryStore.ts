@@ -7,7 +7,7 @@ import type {
 } from '~/types/library'
 import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
 import { useLibraryApi } from '~/composables/library/useLibraryApi'
-const { fetchCategoryList, fetchCardList, fetchCardDetail, fetchUpdateCardPin } = useLibraryApi()
+const { fetchCategoryList, fetchCardList, fetchCardDetail, fetchUpdateCardPin, fetchSaveCategory } = useLibraryApi()
 
 /** 정렬 옵션 목록 */
 export const searchOptions: LibrarySearchOption[] = [
@@ -44,6 +44,7 @@ const isArchiveModalOpen = ref(false)
 const isTrashDeleteModalOpen = ref(false)
 const selectedCardId = ref<string | null>(null)
 const selectedCard = ref<LibraryCardDetail | null>(null)
+const newCategoryNm = ref('')
 
 /** cardList를 categoryId 기준으로 그룹핑하여 CategoryCardsMap 반환 */
 const mapCardListToCategoryCards = (cards: LibraryCard[]): CategoryCardsMap =>
@@ -68,6 +69,35 @@ export const useLibraryStore = () => {
     } finally {
       isLoading.value = false
     }
+  }
+
+  /** 카테고리 추가 */
+  const handleAddCategory = async () => {
+    const newCategory: LibraryCategory = {
+      categoryId: '',
+      categoryNm: newCategoryNm.value,
+      userId: '',
+      color: '',
+      sortOrd: 0,
+      createDt: '',
+    }
+    try {
+      isLoading.value = true
+      errorMessage.value = ''
+      await fetchSaveCategory(newCategory)
+      newCategoryNm.value = ''
+      await handleFetchCategoryList()
+    } catch {
+      errorMessage.value = '카테고리 추가를 실패했습니다.'
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  /** 해당 카테고리에 새 카드 추가 */
+  const handleAddCard = (categoryId: number) => {
+    // TODO: 백엔드 연결 시 해당 카테고리에 카드 추가 API 호출
+    console.warn('[TODO] 카드 추가:', categoryId)
   }
 
   /** 카드 목록 조회 */
@@ -187,8 +217,11 @@ export const useLibraryStore = () => {
     isTrashDeleteModalOpen,
     selectedCardId,
     selectedCard,
+    newCategoryNm,
     handleFetchCategoryList,
     handleFetchCardList,
+    handleAddCategory,
+    handleAddCard,
     handleListMenuSelect,
     handleCardMenuSelect,
     onCategoryDragEnd,

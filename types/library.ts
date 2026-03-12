@@ -1,6 +1,6 @@
 /** 라이브러리 카테고리 */
 export interface LibraryCategory {
-  categoryId: number
+  categoryId: string
   userId: string
   categoryNm: string
   color: string
