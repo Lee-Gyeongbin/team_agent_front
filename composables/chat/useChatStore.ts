@@ -1,6 +1,7 @@
 // 타입 선언
 import {
   type ChatMessage,
+  type ChatLogListRow,
   EMPTY_CHAT_ROOM,
   type ChatRefRow,
   type ChatRoom,
@@ -93,22 +94,24 @@ interface ChatSocketMessage {
   logId?: string
 }
 
+// 웹소켓 관련 (WebSocket은 앱 전역에서 단일 인스턴스로 공유)
 const WEBSOCKET_OPEN = 1
 const WEBSOCKET_CONNECTING = 0
-
-// WebSocket은 앱 전역에서 단일 인스턴스로 공유
 const chatbotSocket = shallowRef<WebSocket | null>(null)
 
 // 채팅 store 상태 — 호출부 간 동기화를 위해 모듈 레벨로 공유
 const messages = ref<ChatMessage[]>([...dummyMessages])
 const chatMessage = ref('')
-const selectedModel = ref('auto')
+// pdf 뷰어 or 시각화
 const activePanelType = ref<PanelType>('none')
 const isPanelFullscreen = ref(false)
 const activePanelMessageId = ref<string | null>(null)
 const pdfRefList = ref<ChatRefRow[]>([])
+// 스트리밍 메시지 관련
 const pendingMessageId = ref<string | null>(null)
+// 스트리밍 메시지 버퍼 관련
 const messageBufferMap = ref<Record<string, string>>({})
+// 채팅방 관련
 const chatRoom = ref<ChatRoom>({ ...EMPTY_CHAT_ROOM })
 
 function getWebSocketUrl(): string {
@@ -144,13 +147,15 @@ const subOptionsMap: Record<SearchModeValue, SubOption[]> = {
   ],
 }
 
-// 검색모드 상태 (앱 전역 공유)
+// 검색모드 상태 (앱 전역 공유C=일반(디폴트), M=지식검색, S=데이터분석)
 const activeSearchModes = ref<SearchModeValue[]>([])
-const selectedSubOption = ref<string>('all')
 // 서브 옵션 (모델/라그/데이터마트 목록) — 호출부 간 동기화를 위해 모듈 레벨 공유
 const subOptions = ref<SubOption[]>([])
+// 서브 옵션 선택값
+const selectedSubOption = ref<string>('all')
 
 export const useChatStore = () => {
+  // HTML 이스케이프 처리
   const escapeHtml = (value: string) =>
     value
       .replaceAll('&', '&amp;')
@@ -159,8 +164,10 @@ export const useChatStore = () => {
       .replaceAll('"', '&quot;')
       .replaceAll("'", '&#39;')
 
+  // HTML 콘텐츠 변환
   const toHtmlContent = (value: string) => `<p>${escapeHtml(value).replace(/\n/g, '<br>')}</p>`
 
+  // 스트리밍 메시지 찾기
   const getStreamingMessage = () => {
     if (pendingMessageId.value) {
       return messages.value.find((message) => message.logId === pendingMessageId.value)
@@ -173,7 +180,6 @@ export const useChatStore = () => {
   const finalizeStreamingMessage = (payload: ChatSocketMessage) => {
     // 현재 스트리밍 메시지 찾기
     const streamingMessage = getStreamingMessage()
-    // 스트리밍 메시지가 있으면 완료 처리
     if (streamingMessage) {
       streamingMessage.isStreaming = false
       streamingMessage.hasSource = payload.filePath !== '' ? true : false
@@ -216,21 +222,27 @@ export const useChatStore = () => {
         const prevBuffer = messageBufferMap.value[streamingMessage.logId] || ''
         // 이전 버퍼와 다음 청크 내용 병합
         const mergedBuffer = `${prevBuffer}${nextChunk}`
+        // 버퍼 업데이트
         messageBufferMap.value[streamingMessage.logId] = mergedBuffer
+        // 스트리밍 메시지 업데이트
         streamingMessage.rContent = toHtmlContent(mergedBuffer)
         streamingMessage.isStreaming = true
         streamingMessage.hasSource = true
         streamingMessage.hasVisualization = true
-        // 스트리밍 메시지 업데이트
         break
       }
       case 'complete': {
         // chunk 없이 complete로만 응답이 온 경우를 대비해 최종 본문을 fallback 반영
         const completeContent = payload.content ?? ''
+        // 현재 버퍼 내용 가져오기
         const currentBuffer = messageBufferMap.value[streamingMessage.logId] || ''
+        // 렌더링된 콘텐츠 여부 확인
         const hasRenderedContent = Boolean(currentBuffer || streamingMessage.rContent)
+        // 콘텐츠가 있고 렌더링되지 않은 경우 버퍼 업데이트
         if (completeContent && !hasRenderedContent) {
+          // 버퍼 업데이트
           messageBufferMap.value[streamingMessage.logId] = completeContent
+          // 스트리밍 메시지 업데이트
           streamingMessage.rContent = toHtmlContent(completeContent)
         }
         // 스트리밍 메시지 완료 처리
@@ -246,6 +258,7 @@ export const useChatStore = () => {
     }
   }
 
+  // WebSocket 연결 종료
   const disconnectWebSocket = () => {
     if (chatbotSocket.value) {
       chatbotSocket.value.close()
@@ -318,10 +331,12 @@ export const useChatStore = () => {
     })
   }
 
+  // WebSocket 연결 시작
   const startChatSocket = () => {
     void connectWebSocket()
   }
 
+  // WebSocket 연결 종료
   const stopChatSocket = () => {
     disconnectWebSocket()
   }
@@ -337,43 +352,28 @@ export const useChatStore = () => {
     chatRoom.value.roomId = roomId
   }
 
-  // 채팅 로그 조회 (roomId 기준) — API VO(qcontent, rcontent, createDt) → ChatMessage 변환
-  const handleSelectChatLogList = async (roomId: string) => {
-    if (!roomId) {
-      messages.value = []
-      return
-    }
-    const res = await fetchSelectChatLogList(roomId)
-    const rawList = res.list ?? []
-    const flattened: ChatMessage[] = []
-    for (const item of rawList) {
-      const logId = String(item.logId ?? '')
-      const createdAt = item.createDt ?? ''
-      const docExist = item.docExist ?? 'N'
-      const docId = typeof item.docId === 'string' ? item.docId : ''
-      flattened.push({
-        logId: `${logId}`,
-        type: 'question',
-        qContent: item.qcontent ?? '',
-        rContent: '',
-        createdAt,
-      })
-      flattened.push({
-        logId: `${logId}`,
+  // API 로그 한 건 → question + answer 메시지 쌍으로 변환
+  const logRowToMessages = (row: ChatLogListRow): ChatMessage[] => {
+    const logId = String(row.logId ?? '')
+    const createdAt = row.createDt ?? ''
+    const docId = typeof row.docId === 'string' ? row.docId : ''
+    const hasSource = row.docExist === 'Y'
+    return [
+      { logId, type: 'question', qContent: row.qcontent ?? '', rContent: '', createdAt },
+      {
+        logId,
         type: 'answer',
         qContent: '',
-        rContent: toHtmlContent(item.rcontent ?? ''),
+        rContent: toHtmlContent(row.rcontent ?? ''),
         docId,
         createdAt,
-        hasSource: docExist === 'Y' ? true : false,
-      })
-    }
-    // API는 최신순일 수 있으므로 생성일시 기준 오름차순 정렬
-    flattened.sort((a, b) => (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0))
-    messages.value = flattened
+        hasSource,
+      },
+    ]
+  }
 
-    // 방 서비스 타입에 맞춰 검색모드·서브옵션 동기화 (마지막 로그 기준): C=디폴트([]), M=지식검색, S=데이터분석
-    const lastRow = rawList[rawList.length - 1]
+  // 마지막 로그 기준 검색모드·서브옵션 동기화: C=디폴트([]), M=지식검색, S=데이터분석
+  const syncSearchModeFromLastLog = async (lastRow: ChatLogListRow | undefined) => {
     const svcTy = lastRow?.svcTy ?? 'C'
     if (svcTy === 'M') {
       activeSearchModes.value = ['M']
@@ -385,11 +385,24 @@ export const useChatStore = () => {
       activeSearchModes.value = []
       await selectModelOptions()
     }
-    // 방에서 마지막으로 사용한 refId가 있으면 서브옵션 선택값 맞춤
     const lastRefId = lastRow?.refId
     if (typeof lastRefId === 'string' && lastRefId && subOptions.value.some((o) => o.value === lastRefId)) {
       selectedSubOption.value = lastRefId
     }
+  }
+
+  // 채팅 로그 조회 (roomId 기준)
+  const handleSelectChatLogList = async (roomId: string) => {
+    if (!roomId) {
+      messages.value = []
+      return
+    }
+    const res = await fetchSelectChatLogList(roomId)
+    const rawList = res.list ?? []
+    const flattened = rawList.flatMap(logRowToMessages)
+    flattened.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    messages.value = flattened
+    await syncSearchModeFromLastLog(rawList[rawList.length - 1])
   }
 
   // 채팅방 생성 (content: 호출부에서 전달 가능, 미전달 시 chatMessage 사용)
@@ -436,7 +449,9 @@ export const useChatStore = () => {
       hasSource: true,
       hasVisualization: true,
     })
+    // 스트리밍 메시지 ID 설정
     pendingMessageId.value = assistantMessageId
+    // 채팅 메시지 초기화
     chatMessage.value = ''
 
     // WebSocket 연결 확인 후 전송
@@ -567,6 +582,7 @@ export const useChatStore = () => {
     activePanelType.value = 'pdf'
     activePanelMessageId.value = id
     pdfRefList.value = []
+    // 참조 문서 목록 조회
     const res = await fetchSelectChatRef(id)
     pdfRefList.value = res.list
   }
@@ -637,7 +653,6 @@ export const useChatStore = () => {
     messages,
     chatMessage,
     chatRoom,
-    selectedModel,
     activePanelType,
     isPanelFullscreen,
     activePanelMessageId,
