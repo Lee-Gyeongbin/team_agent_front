@@ -104,6 +104,7 @@
             item-key="categoryId"
             handle=".library-list-header"
             animation="200"
+            @start="onCategoryDragStart"
             @end="onCategoryDragEnd"
           >
             <template #item="{ element: category }">
@@ -136,7 +137,6 @@
                 </div>
                 <div class="library-card-grp">
                   <draggable
-                    v-if="(categoryCards[category.categoryId]?.length ?? 0) > 0"
                     v-model="categoryCards[category.categoryId]"
                     class="library-card-draggable flex flex-col"
                     :group="{ name: 'library-cards' }"
@@ -144,6 +144,7 @@
                     animation="200"
                     :delay="0"
                     :delay-on-touch-only="true"
+                    :empty-insert-threshold="80"
                     @end="onCardDragEnd"
                   >
                     <template #item="{ element: card }">
@@ -240,18 +241,20 @@
                         </div>
                       </div>
                     </template>
+                    <!-- 카드가 없을 때: drop 영역 확보 + 빈 상태 UI -->
+                    <template #footer>
+                      <div
+                        v-if="(categoryCards[category.categoryId]?.length ?? 0) === 0"
+                        class="library-card type-new-card"
+                        @click="handleAddCard(category.categoryId)"
+                      >
+                        <div class="library-card-new-card-content">
+                          <i class="icon icon-heart size-24"></i>
+                          <p>마음에 드는 날리지를 저장해주세요</p>
+                        </div>
+                      </div>
+                    </template>
                   </draggable>
-                  <!-- 카드가 없을 때: 날리지 저장 영역 -->
-                  <div
-                    v-else
-                    class="library-card type-new-card"
-                    @click="handleAddCard(category.categoryId)"
-                  >
-                    <div class="library-card-new-card-content">
-                      <i class="icon icon-heart size-24"></i>
-                      <p>마음에 드는 날리지를 저장해주세요</p>
-                    </div>
-                  </div>
                 </div>
               </div>
             </template>
@@ -336,6 +339,7 @@ const {
   handleRenameModalClose,
   handleSaveRename,
   handleCardMenuSelect,
+  onCategoryDragStart,
   onCategoryDragEnd,
   onCardDragEnd,
   handleCardPin,

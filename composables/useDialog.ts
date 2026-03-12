@@ -6,10 +6,12 @@ export interface DialogOptions {
   cancelText?: string
 }
 
-/** Confirm 전용 옵션 (onConfirm 콜백) */
+/** Confirm 전용 옵션 (onConfirm / onCancel 콜백) */
 export interface ConfirmOptions extends DialogOptions {
   /** 확인 클릭 시 실행할 콜백 (async 지원) */
   onConfirm?: () => void | Promise<void>
+  /** 취소/닫기 클릭 시 실행할 콜백 (async 지원) */
+  onCancel?: () => void | Promise<void>
 }
 
 type DialogType = 'alert' | 'confirm' | null
@@ -17,7 +19,9 @@ type ResolveFn = (value?: boolean) => void
 
 // 모듈 레벨 singleton 상태
 const dialogType = ref<DialogType>(null)
-const dialogOptions = ref<DialogOptions & { onConfirm?: () => void | Promise<void> }>({ message: '' })
+const dialogOptions = ref<
+  DialogOptions & { onConfirm?: () => void | Promise<void>; onCancel?: () => void | Promise<void> }
+>({ message: '' })
 const resolveRef = ref<ResolveFn | null>(null)
 
 /** 다이얼로그 닫기 (내부용) — confirm: true/false, alert: 호출만 하면 됨 */
@@ -27,8 +31,16 @@ async function closeDialog(value = false) {
 
   if (resolve) {
     resolveRef.value = null
-    if (value && opts.onConfirm) {
-      await opts.onConfirm()
+    try {
+      if (value && opts.onConfirm) {
+        await opts.onConfirm()
+      } else if (!value && opts.onCancel) {
+        await opts.onCancel()
+      }
+    } catch (err) {
+      openAlert({ message: err instanceof Error ? err.message : '처리 중 오류가 발생했습니다.' })
+      resolve(false)
+      return
     }
     resolve(value)
     // onConfirm 내부에서 openAlert 등 새 다이얼로그를 연 경우 닫지 않음
@@ -70,6 +82,7 @@ export function openConfirm(options: ConfirmOptions): Promise<boolean> {
     cancelText: options.cancelText ?? '취소',
     confirmText: options.confirmText ?? '확인',
     onConfirm: options.onConfirm,
+    onCancel: options.onCancel,
   }
   return new Promise<boolean>((resolve) => {
     resolveRef.value = (v) => resolve(v ?? false)
