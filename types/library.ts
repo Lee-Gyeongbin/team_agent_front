@@ -64,8 +64,8 @@ export interface LibrarySearchOption {
 
 /** 카테고리 순서 변경 요청 항목 */
 export interface LibraryCategoryOrderItem {
-  categoryId: number
-  order: number
+  categoryId: string
+  sortOrd: number
 }
 
 /** 카드 순서 변경 요청 항목 */

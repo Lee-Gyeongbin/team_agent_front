@@ -7,7 +7,22 @@ import type {
 } from '~/types/library'
 import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
 import { useLibraryApi } from '~/composables/library/useLibraryApi'
-const { fetchCategoryList, fetchCardList, fetchCardDetail, fetchUpdateCardPin, fetchSaveCategory } = useLibraryApi()
+const {
+  fetchCategoryList,
+  fetchCardList,
+  fetchCardDetail,
+  fetchUpdateCardPin,
+  fetchSaveCategory,
+  fetchDeleteCategory,
+  fetchUpdateCategoryOrder,
+} = useLibraryApi()
+
+const isLoading = ref(false)
+const errorMessage = ref('')
+
+const isModalOpen = ref(false)
+const isArchiveModalOpen = ref(false)
+const isRenameModalOpen = ref(false)
 
 /** 정렬 옵션 목록 */
 export const searchOptions: LibrarySearchOption[] = [
@@ -37,11 +52,7 @@ const categoryList = ref<LibraryCategory[]>([])
 const categoryCards = ref<CategoryCardsMap>({})
 const cardList = ref<LibraryCard[]>([])
 
-const isLoading = ref(false)
-const errorMessage = ref('')
-const isModalOpen = ref(false)
-const isArchiveModalOpen = ref(false)
-const isRenameModalOpen = ref(false)
+const categoryListBeforeDrag = ref<LibraryCategory[]>([]) // 카테고리 드래그 시작 시점 순서 (취소 시 복원용)
 const renamingCategory = ref<LibraryCategory | null>(null)
 const selectedCardId = ref<string | null>(null)
 const selectedCard = ref<LibraryCardDetail | null>(null)
@@ -117,7 +128,14 @@ export const useLibraryStore = () => {
       const response = await fetchCardList()
       const list = response.dataList ?? []
       cardList.value = list
-      categoryCards.value = mapCardListToCategoryCards(list)
+      const cardsByCategory = mapCardListToCategoryCards(list)
+      // 모든 카테고리에 배열 보장 (빈 카테고리도 drop 대상으로 사용)
+      const merged: CategoryCardsMap = {}
+      for (const cat of categoryList.value) {
+        const key = String(cat.categoryId)
+        merged[key] = cardsByCategory[key] ?? []
+      }
+      categoryCards.value = merged
     } catch {
       errorMessage.value = '카드 목록을 불러오는데 실패했습니다.'
     } finally {
@@ -131,8 +149,34 @@ export const useLibraryStore = () => {
       renamingCategory.value = { ...category }
       isRenameModalOpen.value = true
     } else if (value === 'delete') {
-      // TODO: 카테고리 삭제
+      handleDeleteCategory(category)
     }
+  }
+
+  /** 카테고리 삭제 */
+  const handleDeleteCategory = (category: LibraryCategory) => {
+    try {
+      openConfirm({
+        message: '카테고리를 삭제하시겠습니까?',
+        onConfirm: async () => {
+          if (!validateCategoryDelete(category)) return
+          await fetchDeleteCategory(category)
+          await handleFetchCategoryList()
+          openAlert({ message: '카테고리가 삭제되었습니다.' })
+        },
+      })
+    } catch {
+      openAlert({ message: '카테고리 삭제에 실패했습니다.' })
+    }
+  }
+
+  /** 카테고리 삭제 유효성 검사 */
+  const validateCategoryDelete = (category: LibraryCategory) => {
+    if (categoryCards.value[category.categoryId]?.length > 0) {
+      openAlert({ message: '하위 카드가 있는 카테고리는 삭제할 수 없습니다. 카드를 먼저 삭제해주세요.' })
+      return false
+    }
+    return true
   }
 
   /** 카테고리명 변경 모달 닫기 */
@@ -165,17 +209,33 @@ export const useLibraryStore = () => {
     }
   }
 
+  /** 카테고리 드래그 시작 시 순서 저장 (취소 시 복원용) */
+  const onCategoryDragStart = () => {
+    categoryListBeforeDrag.value = [...categoryList.value]
+  }
+
+  /** 카테고리 드래그 종료 시 순서 변경 */
+  const onCategoryDragEnd = () => {
+    openConfirm({
+      message: '카테고리 순서를 변경하시겠습니까?',
+      onConfirm: async () => {
+        const orderData = categoryList.value.map((item, index) => ({ categoryId: item.categoryId, sortOrd: index + 1 }))
+        await fetchUpdateCategoryOrder(orderData)
+        await handleFetchCategoryList()
+        openAlert({ message: '카테고리 순서가 변경되었습니다.' })
+      },
+      onCancel: () => {
+        categoryList.value = [...categoryListBeforeDrag.value]
+      },
+    })
+  }
+
   const handleCardMenuSelect = (cardId: string, value: string) => {
     // TODO: 백엔드 연결 시 cardId와 value에 따라 API 호출로 교체
     console.warn('[TODO] 카드 메뉴 선택:', cardId, value)
   }
 
-  const onCategoryDragEnd = () => {
-    const orderData = categoryList.value.map((item, index) => ({ categoryId: item.categoryId, order: index }))
-    // TODO: 백엔드 연결 시 fetchUpdateCategoryOrder 호출
-    console.warn('[TODO] 카테고리 순서 변경:', orderData)
-  }
-
+  /** 카드 드래그 종료 시 순서 변경 */
   const onCardDragEnd = () => {
     const allCards = categoryList.value.map((cat) => ({
       categoryId: cat.categoryId,
@@ -270,6 +330,7 @@ export const useLibraryStore = () => {
     handleRenameModalClose,
     handleSaveRename,
     handleCardMenuSelect,
+    onCategoryDragStart,
     onCategoryDragEnd,
     onCardDragEnd,
     handleCardPin,
