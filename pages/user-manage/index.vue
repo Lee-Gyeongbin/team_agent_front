@@ -88,6 +88,13 @@
               <UiButton
                 variant="outline"
                 size="xs"
+                @click="handleResetUserPassword(row as UserItem)"
+              >
+                비밀번호 초기화
+              </UiButton>
+              <UiButton
+                variant="outline"
+                size="xs"
                 @click="openUserManageEditModal(row as UserItem)"
               >
                 수정
@@ -134,6 +141,7 @@ const {
   handleUpdateUserManage,
   handleFetchUserManageList,
   handleFetchUserManageAcctStatusCodes,
+  handleResetUserPassword,
   getAcctStatusName,
   getAcctStatusClass,
   getOrgName,

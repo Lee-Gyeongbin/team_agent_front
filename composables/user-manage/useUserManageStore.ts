@@ -28,13 +28,15 @@ export const useUserManageStore = (): {
   handleUpdateUserManage: (payload: Partial<UserItem>) => Promise<void>
   handleFetchUserManageList: () => Promise<void>
   handleFetchUserManageAcctStatusCodes: () => Promise<void>
+  handleResetUserPassword: (user: UserItem) => Promise<void>
   getAcctStatusName: (codeId: string | undefined | null) => string
   getAcctStatusClass: (statusName: string) => string
   getOrgName: (orgId: string | undefined | null) => string
   formatPhone: (value: string | number | undefined | null) => string
   toPhoneDigits: (value: string | number | undefined | null) => string
 } => {
-  const { fetchUserList, fetchUpdateUser, fetchDeleteUser, fetchRestoreUser } = useUserManageApi()
+  const { fetchUserList, fetchUpdateUser, fetchDeleteUser, fetchRestoreUser, fetchResetUserPassword } =
+    useUserManageApi()
   const { orgList } = useOrgManageStore()
   const { fetchCodeList } = useCodesApi()
 
@@ -89,7 +91,7 @@ export const useUserManageStore = (): {
     const ok = await openConfirm({
       title: '수정 확인',
       message: `'${userId}' 사용자를 수정하시겠습니까?`,
-      confirmText: '수정',
+      confirmText: '저장',
     })
     if (!ok) return
 
@@ -115,6 +117,36 @@ export const useUserManageStore = (): {
       userManageErrorMessage.value = message
     } finally {
       userManageIsLoading.value = false
+    }
+  }
+
+  /** 사용자 비밀번호 초기화 */
+  const handleResetUserPassword = async (user: UserItem): Promise<void> => {
+    const userId = String(user.userId ?? '').trim()
+    const userNm = String(user.userNm ?? '').trim()
+    if (!userId) return
+
+    const ok = await openConfirm({
+      title: '비밀번호 초기화 확인',
+      message: `'${userNm}' 사용자의 비밀번호를 초기화하시겠습니까?`,
+      confirmText: '초기화',
+    })
+    if (!ok) return
+
+    try {
+      const res = await fetchResetUserPassword(userId)
+
+      await handleFetchUserManageList()
+
+      const tempPassword = res?.tempPassword ?? ''
+      const message = tempPassword
+        ? `사용자 비밀번호가 초기화되었습니다.\n임시 비밀번호: ${tempPassword}`
+        : '사용자 비밀번호가 초기화되었습니다.'
+
+      openAlert({ message })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '사용자 비밀번호 초기화 중 오류가 발생했습니다.'
+      openAlert({ message })
     }
   }
 
@@ -189,6 +221,7 @@ export const useUserManageStore = (): {
     handleUpdateUserManage,
     handleFetchUserManageList,
     handleFetchUserManageAcctStatusCodes,
+    handleResetUserPassword,
     getAcctStatusName,
     getAcctStatusClass,
     getOrgName,

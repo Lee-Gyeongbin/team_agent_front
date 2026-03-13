@@ -1,6 +1,12 @@
 import { useApi } from '~/composables/com/useApi'
 import type { UserItem } from '~/types/user-manage'
 
+interface ResetPasswordResponse {
+  successYn: boolean
+  data: number
+  tempPassword: string
+}
+
 export const useUserManageApi = () => {
   const { get, post } = useApi()
 
@@ -28,10 +34,20 @@ export const useUserManageApi = () => {
     await post('/usermanage/restoreUser.do', { userId })
   }
 
+  /** 사용자 비밀번호 초기화 */
+  const fetchResetUserPassword = async (userId: string): Promise<ResetPasswordResponse> => {
+    const res = await post<ResetPasswordResponse>('/usermanage/resetPassword.do', { userId })
+    if (!res.successYn) {
+      throw new Error('비밀번호 초기화에 실패했습니다.')
+    }
+    return res
+  }
+
   return {
     fetchUserList,
     fetchUpdateUser,
     fetchDeleteUser,
     fetchRestoreUser,
+    fetchResetUserPassword,
   }
 }

@@ -29,6 +29,7 @@
               <td>
                 <UiInput
                   v-model="form.userNm"
+                  placeholder="성명을 입력하세요."
                   size="sm"
                 />
               </td>
@@ -57,6 +58,7 @@
               <td colspan="3">
                 <UiInput
                   v-model="form.email"
+                  placeholder="이메일을 입력하세요."
                   size="sm"
                 />
               </td>
@@ -66,6 +68,7 @@
               <td colspan="3">
                 <UiInput
                   v-model="phoneDisplay"
+                  placeholder="'-' 없이 숫자만 입력하세요."
                   size="sm"
                 />
               </td>
