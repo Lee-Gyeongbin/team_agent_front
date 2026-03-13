@@ -31,8 +31,8 @@ export const useLibraryApi = () => {
   }
 
   /** 보관된 카드 목록 조회 API */
-  const fetchArchiveCardList = async (): Promise<{ dataList: LibraryCard[] }> => {
-    return get<{ dataList: LibraryCard[] }>('/library/archiveCardList.do')
+  const fetchArchiveCardList = async (): Promise<{ dataList: LibraryCardDetail[] }> => {
+    return get<{ dataList: LibraryCardDetail[] }>('/library/archiveCardList.do')
   }
 
   /** 카드 상세 조회 API */
