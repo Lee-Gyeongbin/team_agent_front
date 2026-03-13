@@ -35,6 +35,11 @@ export const useLibraryApi = () => {
     return get<{ dataList: LibraryCardDetail[] }>('/library/archiveCardList.do')
   }
 
+  /** 삭제 대기 카드 목록 조회 API */
+  const fetchTrashCardList = async (): Promise<{ dataList: LibraryCardDetail[] }> => {
+    return get<{ dataList: LibraryCardDetail[] }>('/library/trashCardList.do')
+  }
+
   /** 카드 상세 조회 API */
   const fetchCardDetail = async (cardId: string): Promise<{ data: LibraryCardDetail }> => {
     return post<{ data: LibraryCardDetail }>('/library/cardDetail.do', { cardId })
@@ -76,6 +81,7 @@ export const useLibraryApi = () => {
     fetchDeleteCategory,
     fetchCardList,
     fetchArchiveCardList,
+    fetchTrashCardList,
     fetchCardDetail,
     fetchSaveCard,
     fetchUpdateCardPin,

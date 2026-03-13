@@ -64,7 +64,7 @@
               size="xxs"
               icon-only
               class="btn-custom-white"
-              @click="handleRefresh"
+              @click="handleMove"
             >
               <template #icon-left>
                 <i class="icon icon-transfer size-16"></i>
@@ -191,8 +191,8 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   close: []
-  refresh: []
-  delete: []
+  move: [card: LibraryCardDetail]
+  delete: [card: LibraryCardDetail]
 }>()
 
 // 스크롤 상태
@@ -263,20 +263,18 @@ const handleClose = () => {
   emit('close')
 }
 
-const handleRefresh = () => {
-  emit('refresh')
+const handleMove = () => {
+  if (!displayData.value) return
+  emit('move', displayData.value)
 }
 
-const handleDelete = async () => {
-  const ok = await openConfirm({
-    title: '항목 삭제',
-    message: '이 항목을 라이브러리에서 삭제하시겠습니까?',
-    confirmText: '삭제',
-  })
-  if (ok) emit('delete')
+const handleDelete = () => {
+  if (!displayData.value) return
+  emit('delete', displayData.value)
 }
 
 const handleCopyResponse = () => {
-  // TODO: 응답 내용 복사 로직
+  navigator.clipboard.writeText(displayData.value?.rcontent ?? '')
+  openToast({ message: '답변이 복사되었습니다.', duration: 1500 })
 }
 </script>
