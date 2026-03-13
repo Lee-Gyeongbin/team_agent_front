@@ -25,10 +25,8 @@
   }
 
   .agent-list-title {
-    font-size: 18px;
-    font-weight: $font-weight-medium;
-    line-height: 1.5;
-    color: $color-text-primary;
+    @include typo($body-2xlarge-bold);
+    color: $color-text-heading;
   }
 
   .agent-list-count {
