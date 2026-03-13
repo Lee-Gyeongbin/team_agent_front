@@ -172,7 +172,8 @@
 <script setup lang="ts">
 import type { ChatPdfPanelProps } from '~/types/chat'
 
-const PDF_BASE_URL = '/ta-storage'
+const PDF_BASE_URL =
+  import.meta.env.MODE === 'development' ? '/ta-storage' : 'https://kr.object.ncloudstorage.com/ta-storage'
 
 const props = withDefaults(defineProps<ChatPdfPanelProps>(), {
   messageId: null,
