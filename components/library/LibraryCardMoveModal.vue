@@ -31,7 +31,7 @@
       </UiButton>
       <UiButton
         class="btn-modal-dialog"
-        variant="dark"
+        variant="primary"
         size="xlg"
         :disabled="!selectedCategoryId || moveTargetOptions.length === 0"
         @click="onMove"
@@ -99,11 +99,6 @@ const onMove = () => {
   color: $color-text-secondary;
 }
 
-.modal-dialog-footer {
-  margin-top: $spacing-lg;
-  display: flex;
-  gap: $spacing-sm;
-}
 
 .form-row {
   display: flex;

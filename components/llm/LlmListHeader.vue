@@ -1,7 +1,7 @@
 <template>
   <div class="com-list-header">
     <div class="com-list-header-left">
-      <h2 class="com-list-title">Agent List</h2>
+      <h2 class="com-list-title">Model List</h2>
       <span class="com-list-count">
         <span class="count-active">활성 : {{ activeCount }}</span>
         <span> / </span>
@@ -15,7 +15,7 @@
       <template #icon-left>
         <i class="icon-plus size-16" />
       </template>
-      Agent 추가
+      모델 추가
     </UiButton>
   </div>
 </template>

@@ -64,12 +64,12 @@
               variant="ghost"
               size="md"
               class="btn btn-library btn-library-trash"
-              @click="onTrashDeleteClick"
+              @click="isTrashModalOpen = true"
             >
               <template #icon-left>
                 <i class="icon icon-delete size-16"></i>
               </template>
-              <span class="badge-num">9</span>
+              <span class="badge-num">{{ trashCardList.length }}</span>
             </UiButton>
           </div>
         </div>
@@ -286,7 +286,7 @@
         :is-open="isModalOpen"
         :card-detail="selectedCard"
         @close="handleModalClose"
-        @refresh="handleModalRefresh"
+        @move="handleModalMove"
         @delete="handleModalDelete"
       />
 
@@ -295,6 +295,13 @@
         :is-open="isArchiveModalOpen"
         @close="isArchiveModalOpen = false"
         @unarchive="handleUnarchiveCard"
+      />
+
+      <!-- 휴지통 모달 -->
+      <LibraryTrashModal
+        :is-open="isTrashModalOpen"
+        @close="handleTrashModalClose"
+        @restore="handleRestoreCard"
       />
 
       <!-- 카테고리명 변경 모달 -->
@@ -343,10 +350,12 @@ const {
   getCardMenuItems,
   cardList,
   archiveCardList,
+  trashCardList,
   isLoading,
   errorMessage,
   isModalOpen,
   isArchiveModalOpen,
+  isTrashModalOpen,
   isRenameModalOpen,
   isMoveModalOpen,
   renamingCategory,
@@ -369,22 +378,13 @@ const {
   handleCardPin,
   openModal,
   handleModalClose,
-  handleModalRefresh,
+  handleModalMove,
   handleModalDelete,
-  handleTrashDeleteConfirm,
   handleAddCategory,
   handleUnarchiveCard,
+  handleTrashModalClose,
+  handleRestoreCard,
 } = useLibraryStore()
-
-/** 휴지통 전체 삭제 클릭 */
-const onTrashDeleteClick = async () => {
-  const ok = await openConfirm({
-    title: '삭제',
-    message: '삭제 대기 중인 항목을 모두 삭제하시겠습니까?',
-    confirmText: '삭제',
-  })
-  if (ok) handleTrashDeleteConfirm()
-}
 
 const contentWrapperRef = ref<HTMLElement | null>(null)
 const canScrollLeft = ref(false)

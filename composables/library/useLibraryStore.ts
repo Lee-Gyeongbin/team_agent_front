@@ -12,6 +12,7 @@ const {
   fetchCategoryList,
   fetchCardList,
   fetchArchiveCardList,
+  fetchTrashCardList,
   fetchCardDetail,
   fetchUpdateCardPin,
   fetchSaveCard,
@@ -29,7 +30,7 @@ const isModalOpen = ref(false)
 const isArchiveModalOpen = ref(false)
 const isRenameModalOpen = ref(false)
 const isMoveModalOpen = ref(false)
-
+const isTrashModalOpen = ref(false)
 /** 정렬 옵션 목록 */
 export const searchOptions: LibrarySearchOption[] = [
   { label: '직접설정순', value: 'custom' },
@@ -58,8 +59,8 @@ export const getCardMenuItems = (card: LibraryCard): DropdownMenuItemDef[] => [
 const categoryList = ref<LibraryCategory[]>([])
 const categoryCards = ref<CategoryCardsMap>({})
 const cardList = ref<LibraryCard[]>([])
-const archiveCardList = ref<LibraryCard[]>([])
-
+const archiveCardList = ref<LibraryCardDetail[]>([])
+const trashCardList = ref<LibraryCardDetail[]>([])
 const categoryListBeforeDrag = ref<LibraryCategory[]>([]) // 카테고리 드래그 시작 시점 순서 (취소 시 복원용)
 const categoryCardsBeforeDrag = ref<CategoryCardsMap>({}) // 카드 드래그 시작 시점 순서 (취소 시 복원용)
 const renamingCategory = ref<LibraryCategory | null>(null)
@@ -86,9 +87,23 @@ const mapCardListToCategoryCards = (cards: LibraryCard[]): CategoryCardsMap =>
     return acc
   }, {})
 
+/** 열려 있는 모든 모달을 닫고 모달 관련 상태 초기화 */
+const initModalStates = () => {
+  isModalOpen.value = false
+  isArchiveModalOpen.value = false
+  isRenameModalOpen.value = false
+  isMoveModalOpen.value = false
+  isTrashModalOpen.value = false
+  renamingCategory.value = null
+  movingCard.value = null
+  selectedCardId.value = null
+  selectedCard.value = null
+}
+
 export const useLibraryStore = () => {
   /** 카테고리 목록 조회 */
   const handleFetchCategoryList = async () => {
+    initModalStates()
     errorMessage.value = ''
     isLoading.value = true
     try {
@@ -96,6 +111,7 @@ export const useLibraryStore = () => {
       categoryList.value = response.dataList ?? []
       await handleFetchCardList() // 카드 목록 조회
       await handleFetchArchiveCardList() // 보관된 카드 목록 조회
+      await handleFetchTrashCardList() // 휴지통 카드 목록 조회
     } catch {
       errorMessage.value = '카테고리 목록을 불러오는데 실패했습니다.'
     } finally {
@@ -137,6 +153,7 @@ export const useLibraryStore = () => {
 
   /** 카드 목록 조회 */
   const handleFetchCardList = async () => {
+    initModalStates()
     isLoading.value = true
     try {
       const response = await fetchCardList()
@@ -169,6 +186,19 @@ export const useLibraryStore = () => {
     }
   }
 
+  /** 휴지통 카드 목록 조회 */
+  const handleFetchTrashCardList = async () => {
+    isLoading.value = true
+    try {
+      const response = await fetchTrashCardList()
+      trashCardList.value = response.dataList ?? []
+    } catch {
+      errorMessage.value = '휴지통 카드 목록을 불러오는데 실패했습니다.'
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   /** 카테고리 메뉴 선택 */
   const handleListMenuSelect = (category: LibraryCategory, value: string) => {
     if (value === 'rename') {
@@ -181,11 +211,15 @@ export const useLibraryStore = () => {
 
   /** 카테고리 삭제 */
   const handleDeleteCategory = (category: LibraryCategory) => {
+    const valid = validateCategoryDelete(category)
+    if (!valid.isValid) {
+      openAlert({ message: valid.message })
+      return
+    }
     try {
       openConfirm({
         message: '카테고리를 삭제하시겠습니까?',
         onConfirm: async () => {
-          if (!validateCategoryDelete(category)) return
           await fetchDeleteCategory(category)
           await handleFetchCategoryList()
           openAlert({ message: '카테고리가 삭제되었습니다.' })
@@ -198,11 +232,17 @@ export const useLibraryStore = () => {
 
   /** 카테고리 삭제 유효성 검사 */
   const validateCategoryDelete = (category: LibraryCategory) => {
-    if (categoryCards.value[category.categoryId]?.length > 0) {
-      openAlert({ message: '하위 카드가 있는 카테고리는 삭제할 수 없습니다. 카드를 먼저 삭제해주세요.' })
-      return false
+    let message = ''
+    let isValid = true
+    if (categoryList.value.length <= 1) {
+      message = '카테고리는 최소 1개 이상이어야 합니다.'
+      isValid = false
     }
-    return true
+    if (categoryCards.value[category.categoryId]?.length > 0) {
+      message = '카드가 있는 카테고리는 삭제할 수 없습니다. \n카드를 먼저 삭제해주세요.'
+      isValid = false
+    }
+    return { message: message ?? '', isValid: isValid }
   }
 
   /** 카테고리명 변경 모달 닫기 */
@@ -297,12 +337,12 @@ export const useLibraryStore = () => {
   }
 
   /** 카드 삭제 */
-  const handleDeleteCard = async (card: LibraryCard) => {
+  const handleDeleteCard = async (card: LibraryCard | LibraryCardDetail) => {
     openConfirm({
       message: '카드를 삭제하시겠습니까?',
       onConfirm: async () => {
         await fetchSaveCard({ ...card, useYn: 'N' })
-        await handleFetchCardList()
+        await handleFetchCategoryList()
         openAlert({ message: '카드가 삭제되었습니다.\n 삭제된 카드는 휴지통에서 확인할 수 있습니다.' })
       },
     })
@@ -396,9 +436,9 @@ export const useLibraryStore = () => {
       if (selectedCard.value?.cardId === card.cardId) {
         selectedCard.value.pinYn = nextPinYn
       }
-      openAlert({ message: `즐겨찾기가 ${nextPinYn === 'Y' ? '등록되었습니다.' : '해제되었습니다.'}` })
+      openToast({ message: `즐겨찾기가 ${nextPinYn === 'Y' ? '등록되었습니다.' : '해제되었습니다.'}` })
     } catch {
-      openAlert({ message: '즐겨찾기 등록/해제를 실패했습니다. 다시 시도해주세요.' })
+      openToast({ message: '즐겨찾기 등록/해제를 실패했습니다. 다시 시도해주세요.' })
     }
   }
 
@@ -408,31 +448,49 @@ export const useLibraryStore = () => {
       selectedCardId.value = cardId
       const response = await fetchCardDetail(cardId)
       selectedCard.value = response.data
+      isModalOpen.value = true
     } catch {
       errorMessage.value = '카드 상세를 불러오는데 실패했습니다.'
     }
-
-    isModalOpen.value = true
   }
 
   /** 카드 상세 모달 닫기 */
   const handleModalClose = () => {
     isModalOpen.value = false
     selectedCardId.value = null
+    selectedCard.value = null
   }
 
-  const handleModalRefresh = () => {
-    // TODO: 새로고침 로직
+  const handleModalMove = (card: LibraryCardDetail) => {
+    movingCard.value = { ...card }
+    isMoveModalOpen.value = true
   }
 
-  const handleModalDelete = () => {
-    // TODO: 삭제 로직
-    isModalOpen.value = false
-    selectedCardId.value = null
+  const handleModalDelete = (card: LibraryCardDetail | null) => {
+    if (!card) return
+    handleDeleteCard(card)
   }
 
   const handleTrashDeleteConfirm = () => {
     // TODO: 백엔드 연결 시 fetchDeleteTrashAll 호출
+  }
+
+  /** 휴지통 모달 닫기 */
+  const handleTrashModalClose = () => {
+    isTrashModalOpen.value = false
+  }
+
+  /** 휴지통에서 카드 복원 */
+  const handleRestoreCard = async (card: LibraryCardDetail) => {
+    openConfirm({
+      message: '카드를 복원하시겠습니까?',
+      onConfirm: async () => {
+        await fetchSaveCard({ ...card, useYn: 'Y' })
+        await handleFetchCategoryList()
+        openToast({ message: '카드가 복원되었습니다.' })
+        isTrashModalOpen.value = false
+      },
+    })
   }
 
   return {
@@ -440,6 +498,7 @@ export const useLibraryStore = () => {
     categoryCards,
     cardList,
     archiveCardList,
+    trashCardList,
     searchOptions,
     isLoading,
     errorMessage,
@@ -447,6 +506,7 @@ export const useLibraryStore = () => {
     getCardMenuItems,
     isModalOpen,
     isArchiveModalOpen,
+    isTrashModalOpen,
     isRenameModalOpen,
     isMoveModalOpen,
     renamingCategory,
@@ -472,8 +532,10 @@ export const useLibraryStore = () => {
     handleCardPin,
     openModal,
     handleModalClose,
-    handleModalRefresh,
     handleModalDelete,
+    handleModalMove,
     handleTrashDeleteConfirm,
+    handleTrashModalClose,
+    handleRestoreCard,
   }
 }

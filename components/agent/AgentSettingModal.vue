@@ -5,7 +5,7 @@
     :title="agent ? 'Agent 설정' : 'Agent 추가'"
     @close="$emit('close')"
   >
-    <div class="agent-setting-form">
+    <div class="com-setting-form">
       <!-- 섹션1: Agent 유형 -->
       <AgentSettingType v-model="form.type" />
 

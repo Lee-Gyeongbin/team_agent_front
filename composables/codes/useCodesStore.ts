@@ -77,6 +77,13 @@ export const useCodesStore = () => {
     codeGroupList.value.map((g) => ({ label: g.codeGrpNm + ' (' + g.codeGrpId + ')', value: g.codeGrpId })),
   )
 
+  /** 선택된 그룹명 */
+  const selectedGroupName = computed(() => {
+    if (!selectedGroupCode.value) return ''
+    const group = codeGroupList.value.find((g) => g.codeGrpId === selectedGroupCode.value)
+    return group?.codeGrpNm ?? ''
+  })
+
   /** 검색 중이 아닐 때만 드래그 정렬 가능 */
   const canDrag = computed(() => !searchKeyword.value.trim() && codeList.value.length > 0)
 
@@ -406,6 +413,7 @@ export const useCodesStore = () => {
     filteredList,
     filteredGroupList,
     codeGroupOptions,
+    selectedGroupName,
     canDrag,
     codeGroupTableDataWithActions,
     tableData,

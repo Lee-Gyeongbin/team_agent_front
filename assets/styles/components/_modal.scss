@@ -99,6 +99,9 @@
     display: flex;
     justify-content: flex-end;
     gap: 8px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid $color-border;
   }
 }
 
@@ -514,6 +517,114 @@
     }
 
     &.is-show .library-archive-card-body {
+      max-height: 2000px;
+      opacity: 1;
+      padding: 0 16px 8px;
+    }
+  }
+}
+
+
+// ===================================
+// 라이브러리 휴지통 모달
+// ===================================
+.library-trash-modal {
+  @extend .modal-side;
+
+  .library-trash-modal-content {
+    @extend .modal-side-content;
+  }
+
+  .library-trash-modal-header {
+    padding: 24px 16px 16px;
+    .header-top-grp {
+      padding-bottom: 16px;
+    }
+
+    .library-trash-modal-title {
+      color: #2d3139;
+      font-size: $font-size-xl;
+      font-weight: $font-weight-bold;
+      line-height: 150%;
+    }
+
+    .btn-modal-close {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .library-trash-modal-search {
+    width: 100%;
+  }
+
+  .library-trash-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    overflow-y: auto;
+    height: calc(100vh - 113px);
+    @include custom-scrollbar;
+  }
+
+  .library-trash-card {
+    padding-bottom: 4px;
+    background: #fff;
+    border: 1px solid #dce4e9;
+    border-radius: 8px;
+    transition: border-color $transition-base;
+
+    &:hover {
+      border-color: #aebccb;
+    }
+
+    &.is-show {
+      border-color: var(--color-primary);
+    }
+
+    .library-trash-card-content {
+      padding: 12px 16px 8px;
+      cursor: pointer;
+      .library-trash-card-badges {
+        margin-bottom: 2px;
+      }
+
+      .library-trash-card-title {
+        color: #4d5462;
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 150%;
+      }
+
+      .library-trash-card-date {
+        color: #aebccb;
+        font-size: 10px;
+        margin-top: 2px;
+      }
+
+      .btn-library-trash-card-action {
+        flex-shrink: 0;
+        color: #6f7a93;
+        border: 1px solid #c6d2db;
+      }
+    }
+
+    .library-trash-card-body {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      padding: 0 16px;
+      transition:
+        max-height $transition-slow,
+        opacity $transition-base,
+        padding-top $transition-base;
+    }
+
+    &.is-show .library-trash-card-body {
       max-height: 2000px;
       opacity: 1;
       padding: 0 16px 8px;

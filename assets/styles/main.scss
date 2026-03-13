@@ -9,6 +9,8 @@
 
 // components
 @use './components/button';
+@use './components/com-card-list';
+@use './components/com-setting-form';
 @use './components/form';
 @use './components/icon';
 @use './components/modal';
@@ -24,6 +26,8 @@
 @use './page/home';
 @use './page/library';
 @use './page/agent';
+@use './page/codes';
+@use './page/login-history';
 
 // ===================================
 // 테마 CSS 변수 (useTheme.ts에서 런타임 전환)

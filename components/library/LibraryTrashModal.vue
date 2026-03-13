@@ -3,14 +3,14 @@
     :is-open="isOpen"
     position="right"
     :show-close="false"
-    custom-class="library-archive-modal"
+    custom-class="library-trash-modal"
     @close="handleClose"
   >
     <!-- 커스텀 헤더 -->
     <template #header>
-      <div class="library-archive-modal-header">
+      <div class="library-trash-modal-header">
         <div class="header-top-grp flex items-start justify-between">
-          <h2 class="library-archive-modal-title">보관함</h2>
+          <h2 class="library-trash-modal-title">휴지통</h2>
 
           <!-- 닫기 버튼 -->
           <button
@@ -22,7 +22,7 @@
         </div>
 
         <!-- 검색바 -->
-        <div class="library-archive-modal-search">
+        <div class="library-trash-modal-search">
           <UiInput
             type="search"
             placeholder="검색어를 입력하세요"
@@ -31,25 +31,25 @@
       </div>
     </template>
 
-    <!-- 보관된 아이템 리스트 -->
+    <!-- 삭제된 아이템 리스트 -->
     <div
       ref="bodyRef"
-      class="library-archive-modal-body"
+      class="library-trash-modal-body"
       @scroll="handleScroll"
     >
       <div
-        v-for="(item, index) in archiveCardList"
+        v-for="(item, index) in trashCardList"
         :key="index"
-        class="library-archive-card"
+        class="library-trash-card"
         :class="{ 'is-show': expandedCards[index] }"
       >
         <div
-          class="library-archive-card-content flex justify-between items-center gap-8"
+          class="library-trash-card-content flex justify-between items-center gap-8"
           @click="toggleCard(index)"
         >
           <div>
             <!-- 태그 영역 -->
-            <div class="library-archive-card-badges flex flex-wrap gap-4">
+            <div class="library-trash-card-badges flex flex-wrap gap-4">
               <UiBadge :variant="getBadgeInfo(item.svcTy)?.variant">
                 <template #icon-left>
                   <i :class="`icon ${getBadgeInfo(item.svcTy)?.icon} size-14`"></i>
@@ -58,24 +58,24 @@
               </UiBadge>
             </div>
             <!-- 제목 -->
-            <h3 class="library-archive-card-title">{{ item.title }}</h3>
-            <!-- 보관일 -->
-            <p class="library-archive-card-date">보관일 {{ item.archiveDt }}</p>
+            <h3 class="library-trash-card-title">{{ item.title }}</h3>
+            <!-- 삭제일 -->
+            <p class="library-trash-card-date">삭제일 {{ item.modifyDt }}</p>
           </div>
 
-          <!-- 보관해제 버튼 -->
+          <!-- 복원 버튼 -->
           <UiButton
             variant="outline"
             size="sm"
-            class="btn-library-archive-card-action"
+            class="btn-library-trash-card-action"
             @click.stop
-            @click="emit('unarchive', item)"
+            @click="emit('restore', item)"
           >
-            보관해제
+            복원
           </UiButton>
         </div>
 
-        <div class="library-archive-card-body">
+        <div class="library-trash-card-body">
           <!-- 사용자 질문 -->
           <div class="content-box type-question">
             <p>{{ item.qcontent }}</p>
@@ -141,7 +141,7 @@
           <!-- 하단 태그 -->
           <div class="library-detail-modal-tags">
             <span
-              v-for="tag in item.tags.split(',')"
+              v-for="tag in (item.tags || '').split(',').filter(Boolean)"
               :key="tag"
               class="library-detail-modal-tag"
             >
@@ -165,7 +165,7 @@
 
 <script setup lang="ts">
 import type { LibraryCardDetail } from '~/types/library'
-const { archiveCardList } = useLibraryStore()
+const { trashCardList } = useLibraryStore()
 
 interface Props {
   isOpen?: boolean
@@ -177,7 +177,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   close: []
-  unarchive: [card: LibraryCardDetail]
+  restore: [card: LibraryCardDetail]
 }>()
 
 const getBadgeInfo = (svcTy: string) => {
@@ -227,13 +227,4 @@ const handleClose = () => {
 const handleCopyResponse = () => {
   // TODO: 응답 복사 기능 구현
 }
-
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-const sqlCode = `SELECT
-TO_CHAR(sale_date, 'YYYY-MM') AS month,
-ROUND(SUM(amount) / 100000000, 1) AS sales_억
-FROM sales
-WHERE EXTRACT (YEAR FROM sale_date) = 2025
-GROUP BY TO_CHAR(sale_date, 'YYYY-MM')
-ORDER BY month;`
 </script>

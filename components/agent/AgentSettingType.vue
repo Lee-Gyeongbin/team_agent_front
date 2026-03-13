@@ -1,19 +1,19 @@
 <template>
-  <div class="agent-setting-section">
-    <div class="agent-setting-section-title">Agent 유형</div>
+  <div class="com-setting-section">
+    <div class="com-setting-section-title">Agent 유형</div>
 
-    <div class="agent-setting-field-row">
+    <div class="com-setting-field-row">
       <UiSelect
         :model-value="modelValue"
         :options="agentTypeOptions"
         class="w-full"
-        @update:model-value="$emit('update:modelValue', $event)"
         size="sm"
+        @update:model-value="$emit('update:modelValue', $event)"
       />
     </div>
     <p
       v-if="typeDescription"
-      class="agent-setting-desc"
+      class="com-setting-desc"
     >
       *{{ typeDescription }}
     </p>

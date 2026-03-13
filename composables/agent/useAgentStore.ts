@@ -9,51 +9,50 @@ const {
   fetchDatasetList,
   fetchSaveDataset,
   fetchSyncDataset,
-} = useAgentApi() // API 함수 가져오기
+} = useAgentApi()
 
-const agentList = ref<Agent[]>([]) // 빈 배열
-const datasetList = ref<AgentDataset[]>([]) // 빈 배열
+// ===== 상태 변수 =====
+const agentList = ref<Agent[]>([])
+const datasetList = ref<AgentDataset[]>([])
 
-// Agent 목록 조회
+// ===== Agent 조회 =====
 const handleSelectAgentList = async () => {
-  const res = await fetchAgentList() // API 호출
-  agentList.value = res.list // 결과 저장
+  const res = await fetchAgentList()
+  agentList.value = res.list
 }
 
-// Agent 추가/수정
+// ===== Agent 추가/수정/삭제 =====
 const handleSaveAgent = async (agent: Partial<Agent>) => {
-  await fetchSaveAgent(agent) // API 호출
-  await handleSelectAgentList() // 저장 후 목록 다시 조회
+  await fetchSaveAgent(agent)
+  await handleSelectAgentList()
 }
 
-// Agent 삭제
 const handleDeleteAgent = async (id: string) => {
-  await fetchDeleteAgent(id) // API 호출
-  await handleSelectAgentList() // 삭제 후 목록 다시 조회
+  await fetchDeleteAgent(id)
+  await handleSelectAgentList()
 }
 
-// Agent 순서 변경
+// ===== Agent 순서 =====
 const handleUpdateAgentOrder = async (orderList: { id: string; order: number }[]) => {
-  await fetchUpdateAgentOrder(orderList) // API 호출
-  await handleSelectAgentList() // 순서 변경 후 목록 다시 조회
+  await fetchUpdateAgentOrder(orderList)
+  await handleSelectAgentList()
 }
 
-// 데이터셋 목록 조회
+// ===== Dataset 조회 =====
 const handleSelectDatasetList = async (agentId: string) => {
-  const res = await fetchDatasetList(agentId) // API 호출
-  datasetList.value = res.list // 결과 저장
+  const res = await fetchDatasetList(agentId)
+  datasetList.value = res.list
 }
 
-// 데이터셋 추가/수정
+// ===== Dataset 추가/수정/동기화 =====
 const handleSaveDataset = async (agentId: string, dataset: Partial<AgentDataset>) => {
-  await fetchSaveDataset(dataset) // API 호출
-  await handleSelectDatasetList(agentId) // 추가/수정 후 목록 다시 조회
+  await fetchSaveDataset(dataset)
+  await handleSelectDatasetList(agentId)
 }
 
-// 데이터셋 동기화
 const handleSyncDataset = async (agentId: string, id: string) => {
-  await fetchSyncDataset(id) // API 호출
-  await handleSelectDatasetList(agentId) // 동기화 후 목록 다시 조회
+  await fetchSyncDataset(id)
+  await handleSelectDatasetList(agentId)
 }
 
 export const useAgentStore = () => {
