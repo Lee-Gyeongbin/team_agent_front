@@ -4,6 +4,12 @@ import { useUserManageApi } from '~/composables/user-manage/useUserManageApi'
 import { useCodesApi } from '~/composables/codes/useCodesApi'
 
 const ACCT_STATUS_CODE_GRP_ID = 'CG000001'
+// TODO: 백엔드 연결 시 조직 코드 API로 교체
+const ORG_CODE_MAP: Record<string, string> = {
+  '': '조직 1',
+  '': '조직 2',
+  '': '조직 3',
+}
 const userManageList = ref<UserItem[]>([])
 const userManageSearchKeyword = ref('')
 const userManageIsLoading = ref(false)
@@ -28,6 +34,8 @@ export const useUserManageStore = (): {
   handleFetchUserManageList: () => Promise<void>
   handleFetchUserManageAcctStatusCodes: () => Promise<void>
   getAcctStatusName: (codeId: string | undefined | null) => string
+  getAcctStatusClass: (statusName: string) => string
+  getOrgName: (orgId: string | undefined | null) => string
   formatPhone: (value: string | number | undefined | null) => string
   toPhoneDigits: (value: string | number | undefined | null) => string
 } => {
@@ -135,6 +143,20 @@ export const useUserManageStore = (): {
     return acctStatusMap.value[codeId] ?? codeId
   }
 
+  /** 계정상태 표시명에 해당하는 뱃지 클래스 반환 */
+  const getAcctStatusClass = (statusName: string): string => {
+    if (statusName === '활성') return 'is-active'
+    if (statusName === '비활성') return 'is-inactive'
+    if (statusName === '잠금') return 'is-lock'
+    return ''
+  }
+
+  /** TODO: 백엔드 연결 시 조직 코드 API로 교체 */
+  const getOrgName = (orgId: string | undefined | null): string => {
+    if (orgId == null || orgId === '') return ''
+    return ORG_CODE_MAP[orgId] ?? orgId
+  }
+
   /** 전화번호 입력값에서 앞뒤 공백 제거 후 숫자만 추출 */
   const toPhoneDigits = (value: string | number | undefined | null): string =>
     String(value ?? '')
@@ -173,6 +195,8 @@ export const useUserManageStore = (): {
     handleFetchUserManageList,
     handleFetchUserManageAcctStatusCodes,
     getAcctStatusName,
+    getAcctStatusClass,
+    getOrgName,
     formatPhone,
     toPhoneDigits,
   }

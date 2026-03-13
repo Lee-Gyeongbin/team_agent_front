@@ -34,10 +34,12 @@
               </td>
             </tr>
             <tr class="user-modal__row-double">
-              <th scope="row">조직명</th>
+              <th scope="row">조직</th>
               <td>
-                <UiInput
+                <UiSelect
                   v-model="form.orgId"
+                  :options="orgOptions"
+                  placeholder="조직 선택"
                   size="sm"
                 />
               </td>
@@ -124,6 +126,7 @@
 </template>
 
 <script setup lang="ts">
+import type { SelectOption } from '~/components/ui/UiSelect.vue'
 import type { UserItem } from '~/types/user-manage'
 import { useUserManageStore } from '~/composables/user-manage/useUserManageStore'
 import { checkEmail, checkPhone, isEmpty } from '~/utils/global/validationUtil'
@@ -145,6 +148,13 @@ const emit = defineEmits<{
 }>()
 
 const { getAcctStatusName, formatPhone, toPhoneDigits } = useUserManageStore()
+
+// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
+const orgOptions = ref<SelectOption[]>([
+  { label: '조직 1', value: 'ORG001' },
+  { label: '조직 2', value: 'ORG002' },
+  { label: '조직 3', value: 'ORG003' },
+])
 
 /** 모달 내 편집용 로컬 폼 (user 변경 시 동기화) */
 const form = ref<Partial<UserItem>>({})
@@ -191,7 +201,7 @@ const checkSave = computed(() => {
   const phoneTrimmed = phone.trim()
 
   if (!checkEmail(emailTrimmed)) return false
-  if (phoneTrimmed && !checkPhone(phoneTrimmed)) return false
+  if (!checkPhone(phoneTrimmed)) return false
 
   return true
 })
@@ -252,7 +262,8 @@ const onConfirm = async () => {
     padding-right: $spacing-lg;
   }
 
-  :deep(.ui-input-wrap) {
+  :deep(.ui-input-wrap),
+  :deep(.ui-select-wrap) {
     width: 100%;
   }
 }

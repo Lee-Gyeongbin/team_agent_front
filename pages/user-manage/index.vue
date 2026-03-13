@@ -69,8 +69,16 @@
           <template #cell-phone="{ value }">
             {{ formatPhone(value) }}
           </template>
+          <template #cell-orgId="{ value }">
+            {{ getOrgName(value) }}
+          </template>
           <template #cell-acctStatusCd="{ value }">
-            {{ getAcctStatusName(value) }}
+            <span
+              class="user-manage-status"
+              :class="getAcctStatusClass(getAcctStatusName(value))"
+            >
+              {{ getAcctStatusName(value) }}
+            </span>
           </template>
           <template #cell-actions="{ row }">
             <div
@@ -126,6 +134,8 @@ const {
   handleFetchUserManageList,
   handleFetchUserManageAcctStatusCodes,
   getAcctStatusName,
+  getAcctStatusClass,
+  getOrgName,
   formatPhone,
 } = useUserManageStore()
 
@@ -213,6 +223,29 @@ onMounted(() => {
 @keyframes user-manage-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+.user-manage-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: $border-radius-full;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+
+  &.is-active {
+    background: rgba($color-success, 0.12);
+    color: $color-success;
+  }
+
+  &.is-inactive {
+    background: rgba($color-text-secondary, 0.12);
+    color: $color-text-secondary;
+  }
+
+  &.is-lock {
+    background: rgba($color-warning, 0.12);
+    color: $color-warning;
   }
 }
 
