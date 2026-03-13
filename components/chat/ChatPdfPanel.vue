@@ -180,6 +180,11 @@ const props = withDefaults(defineProps<ChatPdfPanelProps>(), {
   refList: () => [],
 })
 
+onMounted(() => {
+  console.log(import.meta.env.MODE)
+  console.log(PDF_BASE_URL)
+})
+
 const emit = defineEmits<{
   'update:open': [value: boolean]
   'update:fullscreen': [value: boolean]
