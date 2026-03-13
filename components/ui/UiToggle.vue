@@ -27,7 +27,7 @@ defineEmits<{
   width: 32px;
   height: 20px;
   border: none;
-  border-radius: $border-radius-full;
+  border-radius: 9999px;
   background: $color-border;
   cursor: pointer;
   transition: background $transition-fast;
@@ -43,7 +43,7 @@ defineEmits<{
     left: 2px;
     width: 16px;
     height: 16px;
-    border-radius: $border-radius-full;
+    border-radius: 9999px;
     background: #fff;
     transition: transform $transition-fast;
     box-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);

@@ -1,5 +1,5 @@
 <template>
-  <div class="agent-index l-center">
+  <div class="com-card-page l-center">
     <!-- 헤더 -->
     <AgentListHeader
       :active-count="activeCount"
@@ -10,8 +10,8 @@
     <!-- 에이전트 목록 (드래그 정렬) -->
     <draggable
       v-model="agentList"
-      class="agent-list"
-      handle=".agent-card-drag"
+      class="com-card-list"
+      handle=".com-card-drag"
       item-key="id"
       animation="200"
       @end="onDragEnd"
