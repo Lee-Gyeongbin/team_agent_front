@@ -97,6 +97,9 @@ watch(
 
 <style lang="scss" scoped>
 .ui-textarea {
+  font-family: inherit;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
   resize: none;
   border-radius: $border-radius-base;
 
@@ -111,9 +114,9 @@ watch(
     border-radius: $border-radius-lg;
   }
   width: 100%;
+  min-height: 84px;
   line-height: $line-height-base;
   font-size: $font-size-lg;
-  color: $color-text-primary;
 
   // 사이즈
   &.size-textarea-sm {

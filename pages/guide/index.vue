@@ -242,6 +242,7 @@ const statusList = [
     status: 'pending',
   },
   { category: '페이지', name: '에이전트 상세', location: '/agent-manage/:id', url: '', status: 'pending' },
+  { category: '페이지', name: 'LLM 관리', location: '/llm-manage', url: '/llm-manage', status: 'wip' },
   { category: '페이지', name: '엑셀 뷰어', location: '/excel', url: '/excel', status: 'done' },
   { category: 'UI 컴포넌트', name: 'UiInput', location: '/guide/ui-input', url: '/guide/ui-input', status: 'done' },
   { category: 'UI 컴포넌트', name: 'UiTable', location: '/guide/ui-table', url: '/guide/ui-table', status: 'done' },
@@ -372,6 +373,18 @@ const componentList = [
     to: '/guide/ui-code-block',
     description: '코드 표시 + 복사 버튼 내장 코드 블록 컴포넌트',
     tags: ['code', 'copy', 'dark-theme'],
+  },
+  {
+    name: 'UiCheckbox',
+    to: '/guide/ui-checkbox',
+    description: 'v-model 지원 체크박스 — label, disabled, 슬롯 지원',
+    tags: ['v-model', 'label', 'disabled', 'slot'],
+  },
+  {
+    name: 'UiToggle',
+    to: '/guide/ui-toggle',
+    description: 'v-model 지원 토글 스위치 컴포넌트',
+    tags: ['v-model', 'switch'],
   },
 ]
 

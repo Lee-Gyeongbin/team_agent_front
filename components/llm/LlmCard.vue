@@ -10,8 +10,8 @@
 
     <!-- 카드 본문 -->
     <div class="com-card-body">
-      <!-- 왼쪽: 정보 -->
-      <div class="com-card-info">
+      <!-- 왼쪽: 정보 (클릭 시 설정 모달) -->
+      <div class="com-card-info" style="cursor: pointer;" @click="$emit('setting', model)">
         <!-- 제목 + 순서 배지 -->
         <div class="com-card-title-row">
           <span class="com-card-title">{{ model.name }}</span>
@@ -28,10 +28,10 @@
             <i class="icon-edit-agent size-12" /> 버전 <strong>{{ model.version }}</strong>
           </span>
           <span class="com-card-meta-item">
-            입력 비용 <strong>{{ model.inputCost }}</strong>
+            입력 비용 <strong>${{ model.inputCost }}/1M</strong>
           </span>
           <span class="com-card-meta-item">
-            출력 비용 <strong>{{ model.outputCost }}</strong>
+            출력 비용 <strong>${{ model.outputCost }}/1M</strong>
           </span>
           <span class="com-card-meta-item">
             일일 제한 <strong>{{ formattedDailyLimit }}</strong>
@@ -72,11 +72,12 @@ interface Props {
 
 const props = defineProps<Props>()
 defineEmits<{
+  setting: [model: LlmModel]
   delete: [model: LlmModel]
   toggle: [model: LlmModel]
 }>()
 
 const formattedDailyLimit = computed(() => {
-  return props.model.dailyLimit.toLocaleString()
+  return props.model.dailyRequestLimit.toLocaleString()
 })
 </script>

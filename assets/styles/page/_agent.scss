@@ -2,117 +2,6 @@
 @use '../utils/mixins' as *;
 
 // ===================================
-// Agent 설정 슬라이드 모달
-// ===================================
-.agent-setting-form {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-md;
-}
-
-.agent-setting-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 12px $spacing-md;
-  background: #fff;
-  border: 1px solid #dce4e9;
-  border-radius: $border-radius-lg;
-}
-
-// 섹션 타이틀 (하단 border)
-.agent-setting-section-title {
-  color: #5c6677;
-  @include typo($body-large-bold);
-  color: $color-text-dark;
-  padding: 4px 0 10px;
-  border-bottom: 1px solid #aebccb;
-}
-
-// 라벨 (우측 정렬, 120px 고정)
-.agent-setting-label {
-  width: 120px;
-  flex-shrink: 0;
-  @include typo($body-medium);
-  color: $color-text-dark;
-  text-align: right;
-
-  .is-required {
-    color: #f24a2d;
-    margin-right: 2px;
-  }
-}
-
-// 유형 섹션 설명
-.agent-setting-desc {
-  margin-top: -6px;
-  @include typo($body-medium);
-  color: $color-text-dark;
-}
-
-// 가로 배치 필드 (라벨 좌 + 인풋 우)
-.agent-setting-field-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  // textarea 등 상단 정렬 필요 시
-  &.is-top {
-    align-items: flex-start;
-
-    .agent-setting-label {
-      padding-top: 6px;
-    }
-  }
-
-  // 인풋이 나머지 공간 채움
-  .ui-input-wrap,
-  .ui-textarea {
-    flex: 1;
-  }
-}
-
-// 세로 그룹 (유사도/최대검색 각각)
-.agent-setting-field-col {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-}
-
-// 유사도/최대검색 가로 배치
-.agent-setting-row {
-  display: flex;
-  gap: 12px;
-}
-
-.agent-setting-inline {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-
-  .ui-input-wrap {
-    width: 80px;
-    flex-shrink: 0;
-  }
-}
-
-.agent-setting-unit {
-  color: #5c6677;
-  font-size: 13px;
-  line-height: 1.5;
-  white-space: nowrap;
-}
-
-.agent-setting-hint {
-  margin-top: 5px;
-  color: #6f7a93;
-  font-size: 11px;
-  line-height: 1.5;
-  padding-left: 132px; // 라벨 120px + gap 12px
-}
-
-// ===================================
 // Agent 데이터셋 연결 섹션
 // ===================================
 .agent-setting-dataset {
@@ -126,7 +15,6 @@
   border-radius: $border-radius-lg;
 }
 
-// 데이터셋 헤더 (섹션 타이틀과 동일 패턴: 하단 border)
 .agent-setting-dataset-header {
   display: flex;
   align-items: center;
@@ -142,13 +30,6 @@
   gap: 4px;
 }
 
-// 타이틀 인라인 (border 제거)
-.agent-setting-section-title.is-inline {
-  padding: 0;
-  border-bottom: none;
-}
-
-// 설명 (타이틀 옆 12px)
 .agent-setting-dataset-sub {
   margin-left: 5px;
   @include typo($body-small);

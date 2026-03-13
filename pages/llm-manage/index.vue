@@ -19,11 +19,20 @@
       <template #item="{ element }">
         <LlmCard
           :model="element"
+          @setting="onClickSetting"
           @delete="onDeleteLlm"
           @toggle="onToggleActive"
         />
       </template>
     </draggable>
+
+    <!-- 설정 슬라이드 모달 -->
+    <LlmSettingModal
+      :is-open="isSettingOpen"
+      :model="selectedModel"
+      @close="isSettingOpen = false"
+      @save="onSaveSetting"
+    />
   </div>
 </template>
 
@@ -38,22 +47,36 @@ onMounted(() => handleSelectLlmList())
 
 const activeCount = computed(() => llmList.value.filter((m) => m.isActive).length)
 
-// 모델 추가 (TODO: 모달 연결)
+// ===== 설정 모달 =====
+const isSettingOpen = ref(false)
+const selectedModel = ref<LlmModel | null>(null)
+
 const openAddLlm = () => {
-  // TODO: 추가 모달 열기
+  selectedModel.value = null
+  isSettingOpen.value = true
 }
 
-// 모델 삭제
+const onClickSetting = (model: LlmModel) => {
+  selectedModel.value = model
+  isSettingOpen.value = true
+}
+
+const onSaveSetting = async (form: Partial<LlmModel>) => {
+  await handleSaveLlm({
+    id: selectedModel.value?.id,
+    ...form,
+  })
+  isSettingOpen.value = false
+}
+
 const onDeleteLlm = async (model: LlmModel) => {
   await handleDeleteLlm(model.id)
 }
 
-// 활성/비활성 토글
 const onToggleActive = async (model: LlmModel) => {
   await handleSaveLlm({ id: model.id, isActive: !model.isActive })
 }
 
-// 드래그 정렬
 const onDragEnd = async () => {
   const orderData = llmList.value.map((item, index) => ({ id: item.id, order: index }))
   await handleUpdateLlmOrder(orderData)

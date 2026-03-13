@@ -1,0 +1,171 @@
+@use '../utils/variables' as *;
+@use '../utils/mixins' as *;
+
+// ===================================
+// 공통 설정 폼 (agent, llm 등 공유)
+// ===================================
+
+.com-setting-form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+// 섹션 (아코디언 가능)
+.com-setting-section {
+  --label-width: 100px; // 기본 라벨 너비 (섹션별 오버라이드 가능)
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px $spacing-md;
+  background: #fff;
+  border: 1px solid #dce4e9;
+  border-radius: $border-radius-lg;
+
+  // 접힌 상태
+  &.is-collapsed {
+    .com-setting-section-body {
+      display: none;
+    }
+
+    .com-setting-section-arrow {
+      transform: rotate(0deg);
+    }
+  }
+}
+
+// 섹션 타이틀
+.com-setting-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0 10px;
+  border-bottom: 1px solid #aebccb;
+  cursor: pointer;
+  user-select: none;
+
+  // 접힌 상태에서 border 제거
+  .is-collapsed & {
+    border-bottom: none;
+    padding-bottom: 4px;
+  }
+}
+
+.com-setting-section-title {
+  @include typo($body-large-bold);
+  color: $color-text-dark;
+
+  // 인라인 (border 없이 타이틀만)
+  &.is-inline {
+    padding: 0;
+    border-bottom: none;
+  }
+}
+
+.com-setting-section-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: $color-text-muted;
+  transform: rotate(180deg);
+  transition: transform $transition-fast;
+}
+
+.com-setting-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+// 라벨 (우측 정렬, CSS 변수로 너비 제어)
+.com-setting-label {
+  width: var(--label-width);
+  flex-shrink: 0;
+  white-space: nowrap;
+  @include typo($body-medium);
+  color: $color-text-dark;
+  text-align: right;
+
+  .is-required {
+    color: #f24a2d;
+    margin-right: 2px;
+  }
+}
+
+// 가로 배치 필드 (라벨 좌 + 인풋 우)
+.com-setting-field-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  // textarea 등 상단 정렬 필요 시
+  &.is-top {
+    align-items: flex-start;
+
+    .com-setting-label {
+      padding-top: 6px;
+    }
+  }
+
+  // 인풋이 나머지 공간 채움
+  .ui-input-wrap,
+  .ui-textarea,
+  .ui-select-wrap {
+    flex: 1;
+  }
+}
+
+// 세로 그룹
+.com-setting-field-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+// 가로 배치 (2컬럼)
+.com-setting-row {
+  display: flex;
+  gap: 12px;
+}
+
+// 인라인 인풋 + 단위
+.com-setting-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  .ui-input-wrap {
+    width: 80px;
+    flex-shrink: 0;
+  }
+}
+
+.com-setting-unit {
+  color: #5c6677;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.com-setting-hint {
+  margin-top: 5px;
+  color: #6f7a93;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.com-setting-desc {
+  margin-top: -6px;
+  @include typo($body-medium);
+  color: $color-text-dark;
+}
+
+// 체크박스 가로 그룹
+.com-setting-checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}

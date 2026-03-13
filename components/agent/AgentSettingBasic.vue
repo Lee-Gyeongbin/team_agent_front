@@ -1,10 +1,10 @@
 <template>
-  <div class="agent-setting-section">
-    <div class="agent-setting-section-title">Agent 기본 설정</div>
+  <div class="com-setting-section">
+    <div class="com-setting-section-title">Agent 기본 설정</div>
 
     <!-- Agent 이름 -->
-    <div class="agent-setting-field-row">
-      <label class="agent-setting-label">Agent 이름</label>
+    <div class="com-setting-field-row">
+      <label class="com-setting-label">Agent 이름</label>
       <UiInput
         :model-value="modelValue.name"
         placeholder="예: GPT-4o"
@@ -14,8 +14,8 @@
     </div>
 
     <!-- Agent 설명 -->
-    <div class="agent-setting-field-row is-top">
-      <label class="agent-setting-label">
+    <div class="com-setting-field-row is-top">
+      <label class="com-setting-label">
         <span class="is-required">*</span>
         Agent 설명
       </label>
@@ -32,45 +32,45 @@
     </div>
 
     <!-- 유사도 임계값 / 최대 검색 결과 -->
-    <div class="agent-setting-row">
+    <div class="com-setting-row">
       <!-- 유사도 임계값 -->
-      <div class="agent-setting-field-col">
-        <div class="agent-setting-field-row">
-          <label class="agent-setting-label">
+      <div class="com-setting-field-col">
+        <div class="com-setting-field-row">
+          <label class="com-setting-label">
             <span class="is-required">*</span>
             유사도 임계값
           </label>
-          <div class="agent-setting-inline">
+          <div class="com-setting-inline">
             <UiInput
               :model-value="modelValue.similarityThreshold"
               type="number"
               size="sm"
               @update:model-value="onUpdate('similarityThreshold', $event)"
             />
-            <span class="agent-setting-unit">(0.0~1.0)</span>
+            <span class="com-setting-unit">(0.0~1.0)</span>
           </div>
         </div>
-        <p class="agent-setting-hint">이 값 이상의 유사도를 가진 문서만 검색</p>
+        <p class="com-setting-hint">이 값 이상의 유사도를 가진 문서만 검색</p>
       </div>
 
       <!-- 최대 검색 결과 -->
-      <div class="agent-setting-field-col">
-        <div class="agent-setting-field-row">
-          <label class="agent-setting-label">
+      <div class="com-setting-field-col">
+        <div class="com-setting-field-row">
+          <label class="com-setting-label">
             <span class="is-required">*</span>
             최대 검색 결과
           </label>
-          <div class="agent-setting-inline">
+          <div class="com-setting-inline">
             <UiInput
               :model-value="modelValue.maxSearchResults"
               type="number"
-              @update:model-value="onUpdate('maxSearchResults', $event)"
               size="sm"
+              @update:model-value="onUpdate('maxSearchResults', $event)"
             />
-            <span class="agent-setting-unit">개</span>
+            <span class="com-setting-unit">개</span>
           </div>
         </div>
-        <p class="agent-setting-hint">최대로 검색할 문서 청크 수</p>
+        <p class="com-setting-hint">최대로 검색할 문서 청크 수</p>
       </div>
     </div>
   </div>

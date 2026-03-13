@@ -1,57 +1,61 @@
 <template>
-  <div
-    class="ui-input-wrap"
-    :class="[
-      `size-inp-${size}`,
-      `radius-${radius}`,
-      {
-        'is-disabled': disabled,
-        'is-focused': isFocused,
-        'has-icon-left': !!$slots['icon-left'],
-        'has-icon-right': !!$slots['icon-right'] || type === 'search',
-      },
-    ]"
-  >
-    <!-- 왼쪽 아이콘 -->
-    <span
-      v-if="$slots['icon-left']"
-      class="ui-input-icon is-left"
+  <div class="ui-input-outer" :class="{ 'has-desc': !!desc }">
+    <div
+      class="ui-input-wrap"
+      :class="[
+        `size-inp-${size}`,
+        `radius-${radius}`,
+        {
+          'is-disabled': disabled,
+          'is-focused': isFocused,
+          'has-icon-left': !!$slots['icon-left'],
+          'has-icon-right': !!$slots['icon-right'] || type === 'search',
+        },
+      ]"
     >
-      <slot name="icon-left" />
-    </span>
+      <!-- 왼쪽 아이콘 -->
+      <span
+        v-if="$slots['icon-left']"
+        class="ui-input-icon is-left"
+      >
+        <slot name="icon-left" />
+      </span>
 
-    <input
-      :id="id"
-      ref="inputRef"
-      class="ui-input"
-      :type="type === 'search' ? 'text' : type"
-      :value="modelValue"
-      :placeholder="placeholder"
-      :disabled="disabled"
-      :readonly="readonly"
-      :name="name"
-      @input="onInput"
-      @focus="isFocused = true"
-      @blur="isFocused = false"
-      @keydown.enter="$emit('enter', modelValue)"
-    />
+      <input
+        :id="id"
+        ref="inputRef"
+        class="ui-input"
+        :type="type === 'search' ? 'text' : type"
+        :value="modelValue"
+        :placeholder="placeholder"
+        :disabled="disabled"
+        :readonly="readonly"
+        :name="name"
+        @input="onInput"
+        @focus="isFocused = true"
+        @blur="isFocused = false"
+        @keydown.enter="$emit('enter', modelValue)"
+      />
 
-    <!-- 우측 아이콘: search 타입이면 검색 아이콘 자동 표시 -->
-    <span
-      v-if="type === 'search'"
-      class="ui-input-icon is-right is-search"
-      @click="$emit('search', modelValue)"
-    >
-      <i class="icon-search size-20" />
-    </span>
+      <!-- 우측 아이콘: search 타입이면 검색 아이콘 자동 표시 -->
+      <span
+        v-if="type === 'search'"
+        class="ui-input-icon is-right is-search"
+        @click="$emit('search', modelValue)"
+      >
+        <i class="icon-search size-20" />
+      </span>
 
-    <!-- 우측 커스텀 아이콘 -->
-    <span
-      v-else-if="$slots['icon-right']"
-      class="ui-input-icon is-right"
-    >
-      <slot name="icon-right" />
-    </span>
+      <!-- 우측 커스텀 아이콘 -->
+      <span
+        v-else-if="$slots['icon-right']"
+        class="ui-input-icon is-right"
+      >
+        <slot name="icon-right" />
+      </span>
+    </div>
+    <!-- 설명 텍스트 -->
+    <p v-if="desc" class="ui-input-desc">{{ desc }}</p>
   </div>
 </template>
 
@@ -66,6 +70,7 @@ interface Props {
   id?: string
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xlg'
   radius?: 'sm' | 'base' | 'lg'
+  desc?: string
 }
 
 withDefaults(defineProps<Props>(), {
@@ -78,6 +83,7 @@ withDefaults(defineProps<Props>(), {
   id: undefined,
   size: 'md',
   radius: 'base',
+  desc: '',
 })
 
 const emit = defineEmits<{
@@ -100,6 +106,11 @@ defineExpose({ focus })
 </script>
 
 <style lang="scss" scoped>
+.ui-input-outer {
+  flex: 1;
+  min-width: 0;
+}
+
 .ui-input-wrap {
   display: inline-flex;
   align-items: center;
@@ -188,5 +199,12 @@ defineExpose({ focus })
   &.is-search {
     cursor: pointer;
   }
+}
+
+.ui-input-desc {
+  margin-top: 4px;
+  font-size: $font-size-xs;
+  color: $color-text-disabled;
+  line-height: 1.5;
 }
 </style>

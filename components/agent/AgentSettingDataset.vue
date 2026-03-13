@@ -3,7 +3,7 @@
     <!-- 헤더 -->
     <div class="agent-setting-dataset-header">
       <div class="agent-setting-dataset-header-title">
-        <span class="agent-setting-section-title is-inline">RAG 데이터셋 연결</span>
+        <span class="com-setting-section-title is-inline">RAG 데이터셋 연결</span>
         <span class="agent-setting-dataset-sub">Agent가 참조할 데이터셋(벡터DB)을 선택합니다.</span>
       </div>
       <UiButton

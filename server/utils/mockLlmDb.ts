@@ -3,27 +3,72 @@
 interface MockLlmModel {
   id: string
   name: string
+  modelId: string
   provider: string
   version: string
-  inputCost: string
-  outputCost: string
-  dailyLimit: number
+  status: string
+  description: string
+  apiEndpoint: string
+  apiKey: string
+  timeout: number
+  retryCount: number
+  extraHeaders: string
+  temperature: number
+  topP: number
+  maxTokens: number
+  contextWindow: number
+  frequencyPenalty: number
+  presencePenalty: number
+  supportStreaming: boolean
+  supportFunctionCall: boolean
+  supportVision: boolean
+  inputCost: number
+  outputCost: number
+  dailyRequestLimit: number
+  rpmLimit: number
+  tpmLimit: number
+  dailyCostLimit: number
+  accessAdmin: boolean
+  accessPremium: boolean
+  accessGeneral: boolean
   isActive: boolean
   priority: number
   createdAt: string
   updatedAt: string
 }
 
-// 초기 LLM 모델 데이터
 const llmList: MockLlmModel[] = [
   {
     id: '1',
     name: 'GPT-4o mini',
+    modelId: 'gpt-4o-mini',
     provider: 'OpenAI',
     version: '2024-07-18',
-    inputCost: '$0.15/1M',
-    outputCost: '$0.60/1M',
-    dailyLimit: 5000000,
+    status: '활성',
+    description: 'GPT-4o의 경량 버전으로 빠른 응답 속도와 낮은 비용이 특징',
+    apiEndpoint: 'https://api.openai.com/v1/chat/completions',
+    apiKey: 'sk-***',
+    timeout: 30,
+    retryCount: 3,
+    extraHeaders: '',
+    temperature: 0.7,
+    topP: 1,
+    maxTokens: 4096,
+    contextWindow: 128000,
+    frequencyPenalty: 0,
+    presencePenalty: 0,
+    supportStreaming: true,
+    supportFunctionCall: true,
+    supportVision: true,
+    inputCost: 0.15,
+    outputCost: 0.6,
+    dailyRequestLimit: 4096,
+    rpmLimit: 128000,
+    tpmLimit: 0,
+    dailyCostLimit: 0,
+    accessAdmin: true,
+    accessPremium: true,
+    accessGeneral: true,
     isActive: true,
     priority: 1,
     createdAt: '2026-02-29',
@@ -32,11 +77,34 @@ const llmList: MockLlmModel[] = [
   {
     id: '2',
     name: 'GPT-4o',
+    modelId: 'gpt-4o',
     provider: 'OpenAI',
     version: '2024-07-18',
-    inputCost: '$0.15/1M',
-    outputCost: '$10.00/1M',
-    dailyLimit: 1000000,
+    status: '활성',
+    description: 'OpenAI의 최신 플래그십 모델',
+    apiEndpoint: 'https://api.openai.com/v1/chat/completions',
+    apiKey: 'sk-***',
+    timeout: 30,
+    retryCount: 3,
+    extraHeaders: '',
+    temperature: 0.7,
+    topP: 1,
+    maxTokens: 4096,
+    contextWindow: 128000,
+    frequencyPenalty: 0,
+    presencePenalty: 0,
+    supportStreaming: true,
+    supportFunctionCall: true,
+    supportVision: true,
+    inputCost: 0.15,
+    outputCost: 10,
+    dailyRequestLimit: 4096,
+    rpmLimit: 128000,
+    tpmLimit: 0,
+    dailyCostLimit: 0,
+    accessAdmin: true,
+    accessPremium: true,
+    accessGeneral: false,
     isActive: true,
     priority: 2,
     createdAt: '2026-02-29',
@@ -45,11 +113,34 @@ const llmList: MockLlmModel[] = [
   {
     id: '3',
     name: 'Gemini 1.5 Pro',
+    modelId: 'gemini-1.5-pro',
     provider: 'Google',
     version: '2024-07-18',
-    inputCost: '$0.15/1M',
-    outputCost: '$5.00/1M',
-    dailyLimit: 2000000,
+    status: '비활성',
+    description: 'Google의 멀티모달 AI 모델',
+    apiEndpoint: 'https://generativelanguage.googleapis.com/v1',
+    apiKey: '',
+    timeout: 30,
+    retryCount: 3,
+    extraHeaders: '',
+    temperature: 0.7,
+    topP: 1,
+    maxTokens: 8192,
+    contextWindow: 128000,
+    frequencyPenalty: 0,
+    presencePenalty: 0,
+    supportStreaming: true,
+    supportFunctionCall: true,
+    supportVision: true,
+    inputCost: 0.15,
+    outputCost: 5,
+    dailyRequestLimit: 4096,
+    rpmLimit: 128000,
+    tpmLimit: 0,
+    dailyCostLimit: 0,
+    accessAdmin: true,
+    accessPremium: true,
+    accessGeneral: true,
     isActive: false,
     priority: 3,
     createdAt: '2026-02-29',
@@ -58,11 +149,34 @@ const llmList: MockLlmModel[] = [
   {
     id: '4',
     name: 'Claude 3.5 Sonnet',
+    modelId: 'claude-3-5-sonnet',
     provider: 'Anthropic',
     version: '2024-07-18',
-    inputCost: '$0.15/1M',
-    outputCost: '$15.00/1M',
-    dailyLimit: 800000,
+    status: '비활성',
+    description: 'Anthropic의 고성능 AI 모델',
+    apiEndpoint: 'https://api.anthropic.com/v1',
+    apiKey: '',
+    timeout: 30,
+    retryCount: 3,
+    extraHeaders: '',
+    temperature: 0.7,
+    topP: 1,
+    maxTokens: 4096,
+    contextWindow: 200000,
+    frequencyPenalty: 0,
+    presencePenalty: 0,
+    supportStreaming: true,
+    supportFunctionCall: true,
+    supportVision: true,
+    inputCost: 0.15,
+    outputCost: 15,
+    dailyRequestLimit: 4096,
+    rpmLimit: 128000,
+    tpmLimit: 0,
+    dailyCostLimit: 0,
+    accessAdmin: true,
+    accessPremium: false,
+    accessGeneral: false,
     isActive: false,
     priority: 4,
     createdAt: '2026-02-29',
@@ -72,12 +186,9 @@ const llmList: MockLlmModel[] = [
 
 const today = () => new Date().toISOString().slice(0, 10)
 
-// LLM Model CRUD
 export const mockLlmDb = {
-  // 목록 조회
   getList: () => [...llmList],
 
-  // 추가/수정
   save: (model: Partial<MockLlmModel>) => {
     const index = llmList.findIndex((m) => m.id === model.id)
     if (index > -1) {
@@ -87,11 +198,34 @@ export const mockLlmDb = {
       const newModel: MockLlmModel = {
         id: `llm-${Date.now()}`,
         name: '',
+        modelId: '',
         provider: '',
         version: today(),
-        inputCost: '$0.00/1M',
-        outputCost: '$0.00/1M',
-        dailyLimit: 1000000,
+        status: '활성',
+        description: '',
+        apiEndpoint: '',
+        apiKey: '',
+        timeout: 30,
+        retryCount: 3,
+        extraHeaders: '',
+        temperature: 0.7,
+        topP: 1,
+        maxTokens: 4096,
+        contextWindow: 128000,
+        frequencyPenalty: 0,
+        presencePenalty: 0,
+        supportStreaming: true,
+        supportFunctionCall: true,
+        supportVision: true,
+        inputCost: 0,
+        outputCost: 0,
+        dailyRequestLimit: 4096,
+        rpmLimit: 128000,
+        tpmLimit: 0,
+        dailyCostLimit: 0,
+        accessAdmin: true,
+        accessPremium: true,
+        accessGeneral: true,
         isActive: false,
         priority: llmList.length + 1,
         createdAt: today(),
@@ -103,14 +237,12 @@ export const mockLlmDb = {
     }
   },
 
-  // 삭제
   delete: (id: string) => {
     const index = llmList.findIndex((m) => m.id === id)
     if (index > -1) llmList.splice(index, 1)
     return { id }
   },
 
-  // 순서 변경
   updateOrder: (orderList: { id: string; order: number }[]) => {
     orderList.forEach(({ id, order }) => {
       const model = llmList.find((m) => m.id === id)
