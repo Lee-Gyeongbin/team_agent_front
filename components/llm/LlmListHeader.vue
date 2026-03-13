@@ -15,7 +15,7 @@
       <template #icon-left>
         <i class="icon-plus size-16" />
       </template>
-      + 모델 추가
+      모델 추가
     </UiButton>
   </div>
 </template>
