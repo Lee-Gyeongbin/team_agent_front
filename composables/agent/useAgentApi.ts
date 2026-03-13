@@ -13,37 +13,32 @@ const mockPost = async <T>(url: string, body: unknown = {}): Promise<T> => {
 }
 
 export const useAgentApi = () => {
-  // Agent 목록 조회
+  // ===== Agent =====
   const fetchAgentList = async (): Promise<{ list: Agent[] }> => {
     return mockPost<{ list: Agent[] }>(`${MOCK_BASE}/list`, {})
   }
 
-  // Agent 추가/수정
   const fetchSaveAgent = async (agent: Partial<Agent>): Promise<{ data: Agent }> => {
     return mockPost<{ data: Agent }>(`${MOCK_BASE}/save`, agent)
   }
 
-  // Agent 삭제
   const fetchDeleteAgent = async (id: string) => {
     return mockPost<{ data: { id: string } }>(`${MOCK_BASE}/delete`, { id })
   }
 
-  // Agent 순서 변경
   const fetchUpdateAgentOrder = async (orderList: { id: string; order: number }[]) => {
     return mockPost<{ data: null }>(`${MOCK_BASE}/order`, orderList)
   }
 
-  // 데이터셋 목록 조회
+  // ===== Dataset =====
   const fetchDatasetList = async (agentId: string) => {
     return mockPost<{ list: AgentDataset[] }>(`${MOCK_BASE}/dataset/list`, { agentId })
   }
 
-  // 데이터셋 추가/수정
   const fetchSaveDataset = async (dataset: Partial<AgentDataset>) => {
     return mockPost<{ data: AgentDataset }>(`${MOCK_BASE}/dataset/save`, dataset)
   }
 
-  // 데이터셋 동기화
   const fetchSyncDataset = async (id: string) => {
     return mockPost<{ data: { id: string }; message: string }>(`${MOCK_BASE}/dataset/sync`, { id })
   }
