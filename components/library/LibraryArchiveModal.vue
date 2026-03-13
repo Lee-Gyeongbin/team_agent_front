@@ -37,7 +37,6 @@
       class="library-archive-modal-body"
       @scroll="handleScroll"
     >
-      <!-- 🔽 더미 데이터 — 백엔드 연결 시 API로 교체 -->
       <div
         v-for="(item, index) in archiveCardList"
         :key="index"
@@ -57,12 +56,6 @@
                 </template>
                 {{ getBadgeInfo(item.svcTy)?.label }}
               </UiBadge>
-              <!-- <UiBadge :variant="item.badges[1].variant">
-                <template #icon-left>
-                  <i :class="`icon ${item.badges[1].icon} size-10`"></i>
-                </template>
-                {{ item.badges[1].label }}
-              </UiBadge> -->
             </div>
             <!-- 제목 -->
             <h3 class="library-archive-card-title">{{ item.title }}</h3>
@@ -85,7 +78,7 @@
         <div class="library-archive-card-body">
           <!-- 사용자 질문 -->
           <div class="content-box type-question">
-            <p>휴가 신청 방법이 뭐지?</p>
+            <p>{{ item.qcontent }}</p>
           </div>
 
           <!-- 시스템 응답 -->
@@ -104,22 +97,14 @@
 
             <!-- 월별 데이터 -->
             <div>
-              휴가 신청은 업무포털 [근태관리] 메뉴에서 진행합니다.
-              <br />
-              1. 업무포털 로그인 → [근태관리] → [휴가신청]<br />
-              2. 휴가 종류 선택 (연차/반차/병가/특별휴가)<br />
-              3. 기간 선택 및 사유 입력<br />
-              4. 대리인 지정 후 [상신]<br />
-              5. 팀장 승인 → 인사팀 최종 확인
-              <br />
-              주의사항
-              <br />
-              - 연차는 최소 3일 전 신청 원칙<br />
-              - 5일 이상 연속 휴가는 7일 전 신청 필요
+              <p>{{ item.rcontent }}</p>
             </div>
           </div>
 
-          <div class="content-box type-sql">
+          <div
+            v-if="item.svcTy === 'S'"
+            class="content-box type-sql"
+          >
             <div class="sql-header flex items-center justify-end gap-4">
               <div class="regenerate"></div>
               <UiButton
@@ -148,13 +133,20 @@
           </div>
 
           <!-- SQL 코드 블록 -->
-          <UiCodeBlock :code="sqlCode" />
+          <UiCodeBlock
+            v-if="item.svcTy === 'S'"
+            :code="item.sqlCode"
+          />
 
           <!-- 하단 태그 -->
           <div class="library-detail-modal-tags">
-            <span class="library-detail-modal-tag">#매출</span>
-            <span class="library-detail-modal-tag">#2025</span>
-            <span class="library-detail-modal-tag">#월별통계</span>
+            <span
+              v-for="tag in item.tags.split(',')"
+              :key="tag"
+              class="library-detail-modal-tag"
+            >
+              #{{ tag }}
+            </span>
           </div>
         </div>
       </div>
@@ -172,7 +164,7 @@
 </template>
 
 <script setup lang="ts">
-import type { LibraryCard } from '~/types/library'
+import type { LibraryCardDetail } from '~/types/library'
 const { archiveCardList } = useLibraryStore()
 
 interface Props {
@@ -185,7 +177,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   close: []
-  unarchive: [card: LibraryCard]
+  unarchive: [card: LibraryCardDetail]
 }>()
 
 const getBadgeInfo = (svcTy: string) => {

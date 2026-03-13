@@ -58,7 +58,7 @@ export const getCardMenuItems = (card: LibraryCard): DropdownMenuItemDef[] => [
 const categoryList = ref<LibraryCategory[]>([])
 const categoryCards = ref<CategoryCardsMap>({})
 const cardList = ref<LibraryCard[]>([])
-const archiveCardList = ref<LibraryCard[]>([])
+const archiveCardList = ref<LibraryCardDetail[]>([])
 
 const categoryListBeforeDrag = ref<LibraryCategory[]>([]) // 카테고리 드래그 시작 시점 순서 (취소 시 복원용)
 const categoryCardsBeforeDrag = ref<CategoryCardsMap>({}) // 카드 드래그 시작 시점 순서 (취소 시 복원용)
@@ -408,17 +408,17 @@ export const useLibraryStore = () => {
       selectedCardId.value = cardId
       const response = await fetchCardDetail(cardId)
       selectedCard.value = response.data
+      isModalOpen.value = true
     } catch {
       errorMessage.value = '카드 상세를 불러오는데 실패했습니다.'
     }
-
-    isModalOpen.value = true
   }
 
   /** 카드 상세 모달 닫기 */
   const handleModalClose = () => {
     isModalOpen.value = false
     selectedCardId.value = null
+    selectedCard.value = null
   }
 
   const handleModalRefresh = () => {
@@ -429,6 +429,7 @@ export const useLibraryStore = () => {
     // TODO: 삭제 로직
     isModalOpen.value = false
     selectedCardId.value = null
+    selectedCard.value = null
   }
 
   const handleTrashDeleteConfirm = () => {
