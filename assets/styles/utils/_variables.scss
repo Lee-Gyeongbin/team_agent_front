@@ -132,6 +132,18 @@ $body-xlarge-bold: (
   font-weight: $font-weight-bold,
   line-height: 150%,
 );
+
+$body-2xlarge: (
+  font-size: $font-size-2xl,
+  font-weight: $font-weight-normal,
+  line-height: 150%,
+);
+
+$body-2xlarge-bold: (
+  font-size: $font-size-2xl,
+  font-weight: $font-weight-bold,
+  line-height: 150%,
+);
 // ===================================
 // 간격 (4px 기준 그리드)
 // ===================================
