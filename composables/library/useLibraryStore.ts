@@ -86,9 +86,22 @@ const mapCardListToCategoryCards = (cards: LibraryCard[]): CategoryCardsMap =>
     return acc
   }, {})
 
+/** 열려 있는 모든 모달을 닫고 모달 관련 상태 초기화 */
+const initModalStates = () => {
+  isModalOpen.value = false
+  isArchiveModalOpen.value = false
+  isRenameModalOpen.value = false
+  isMoveModalOpen.value = false
+  renamingCategory.value = null
+  movingCard.value = null
+  selectedCardId.value = null
+  selectedCard.value = null
+}
+
 export const useLibraryStore = () => {
   /** 카테고리 목록 조회 */
   const handleFetchCategoryList = async () => {
+    initModalStates()
     errorMessage.value = ''
     isLoading.value = true
     try {
@@ -137,6 +150,7 @@ export const useLibraryStore = () => {
 
   /** 카드 목록 조회 */
   const handleFetchCardList = async () => {
+    initModalStates()
     isLoading.value = true
     try {
       const response = await fetchCardList()
@@ -181,11 +195,15 @@ export const useLibraryStore = () => {
 
   /** 카테고리 삭제 */
   const handleDeleteCategory = (category: LibraryCategory) => {
+    const valid = validateCategoryDelete(category)
+    if (!valid.isValid) {
+      openAlert({ message: valid.message })
+      return
+    }
     try {
       openConfirm({
         message: '카테고리를 삭제하시겠습니까?',
         onConfirm: async () => {
-          if (!validateCategoryDelete(category)) return
           await fetchDeleteCategory(category)
           await handleFetchCategoryList()
           openAlert({ message: '카테고리가 삭제되었습니다.' })
@@ -198,11 +216,17 @@ export const useLibraryStore = () => {
 
   /** 카테고리 삭제 유효성 검사 */
   const validateCategoryDelete = (category: LibraryCategory) => {
-    if (categoryCards.value[category.categoryId]?.length > 0) {
-      openAlert({ message: '하위 카드가 있는 카테고리는 삭제할 수 없습니다. 카드를 먼저 삭제해주세요.' })
-      return false
+    let message = ''
+    let isValid = true
+    if (categoryList.value.length <= 1) {
+      message = '카테고리는 최소 1개 이상이어야 합니다.'
+      isValid = false
     }
-    return true
+    if (categoryCards.value[category.categoryId]?.length > 0) {
+      message = '카드가 있는 카테고리는 삭제할 수 없습니다. \n카드를 먼저 삭제해주세요.'
+      isValid = false
+    }
+    return { message: message ?? '', isValid: isValid }
   }
 
   /** 카테고리명 변경 모달 닫기 */
