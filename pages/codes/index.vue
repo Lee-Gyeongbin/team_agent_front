@@ -123,9 +123,17 @@
       <!-- 오른쪽: 선택 그룹의 상세코드 목록 -->
       <div class="codes-right">
         <div class="codes-right-header flex justify-between items-center">
-          <p class="total">
-            총 <strong>{{ filteredList.length }}건</strong>
-          </p>
+          <div class="codes-right-title">
+            <p
+              v-if="selectedGroupName"
+              class="codes-right-group-name"
+            >
+              {{ selectedGroupName }}
+            </p>
+            <p class="total">
+              총 <strong>{{ filteredList.length }}건</strong>
+            </p>
+          </div>
           <div class="codes-right-grp flex items-center">
             <div class="codes-input-grp shrink-0 grow-1 max-w-200">
               <UiInput
@@ -160,9 +168,18 @@
           </div>
         </div>
         <div class="codes-right-table-wrap">
+          <!-- 그룹 미선택 상태 -->
+          <div
+            v-if="!selectedGroupCode"
+            class="codes-empty-state"
+          >
+            <i class="icon icon-arrow-right size-24" />
+            <p>좌측에서 그룹을 선택하세요</p>
+          </div>
+
           <!-- 드래그 정렬 가능 시 -->
           <UiDragTable
-            v-if="canDrag"
+            v-else-if="canDrag"
             v-model="codeList"
             :columns="codesColumnsWithDrag"
             item-key="codeId"
@@ -298,6 +315,7 @@ import { getCodeGroupRowMenuItems, getCodesRowMenuItems, useCodesStore } from '~
 
 const {
   selectedGroupCode,
+  selectedGroupName,
   searchKeyword,
   searchKeywordGroup,
   isLoading,
@@ -332,200 +350,3 @@ onMounted(() => {
   handleFetchCodeGroupList()
 })
 </script>
-
-<style lang="scss" scoped>
-.codes-index {
-  padding: $spacing-md;
-  min-height: calc(100vh - #{$header-height});
-  width: 100%;
-  max-width: none;
-  box-sizing: border-box;
-}
-
-.codes-description {
-  color: $color-text-secondary;
-  font-size: $font-size-base;
-}
-
-.codes-header {
-  padding: 12px 0;
-  margin-bottom: $spacing-md;
-}
-
-.codes-loading {
-  @include flex-center;
-  flex-direction: column;
-  padding: $spacing-2xl;
-  gap: $spacing-md;
-  min-height: 240px;
-
-  &__spinner {
-    width: 36px;
-    height: 36px;
-    border: 3px solid $color-border;
-    border-top-color: var(--color-primary);
-    border-radius: 50%;
-    animation: codes-spin 0.8s linear infinite;
-  }
-
-  &__text {
-    font-size: $font-size-sm;
-    color: $color-text-secondary;
-  }
-}
-
-@keyframes codes-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.codes-error {
-  @include flex-center;
-  flex-direction: column;
-  padding: $spacing-2xl;
-  gap: $spacing-md;
-  min-height: 240px;
-
-  &__message {
-    font-size: $font-size-sm;
-    color: $color-error;
-  }
-}
-
-// 좌우 분할
-.codes-split {
-  display: flex;
-  align-items: flex-start;
-  gap: $spacing-md;
-  min-height: 0;
-}
-
-.codes-left {
-  flex: 0 0 40%;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  background: #fff;
-  border: 1px solid $color-border;
-  border-radius: $border-radius-base;
-  overflow: hidden;
-}
-
-.codes-left-header {
-  padding: $spacing-sm $spacing-md;
-  border-bottom: 1px solid $color-border;
-  background: $color-background;
-  gap: $spacing-sm;
-  flex-wrap: wrap;
-
-  .total {
-    font-size: $font-size-sm;
-    color: $color-text-secondary;
-    white-space: nowrap;
-
-    strong {
-      color: $color-text-primary;
-    }
-  }
-}
-
-.codes-left-grp {
-  gap: $spacing-sm;
-  flex: 1;
-  justify-content: flex-end;
-  min-width: 0;
-}
-
-.codes-group-input-grp {
-  min-width: 0;
-}
-
-.codes-left-table-wrap {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.codes-right {
-  flex: 1 1 60%;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  background: #fff;
-  border: 1px solid $color-border;
-  border-radius: $border-radius-base;
-  overflow: hidden;
-}
-
-.codes-right-header {
-  padding: $spacing-sm $spacing-md;
-  border-bottom: 1px solid $color-border;
-  background: $color-background;
-  gap: $spacing-sm;
-  flex-wrap: wrap;
-
-  .total {
-    font-size: $font-size-sm;
-    color: $color-text-secondary;
-    white-space: nowrap;
-
-    strong {
-      color: $color-text-primary;
-    }
-  }
-}
-
-.codes-right-grp {
-  gap: $spacing-sm;
-  flex: 1;
-  justify-content: flex-end;
-  min-width: 0;
-}
-
-.codes-input-grp {
-  min-width: 0;
-}
-
-.codes-right-table-wrap {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.codes-status {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: $border-radius-full;
-  font-size: $font-size-sm;
-  font-weight: $font-weight-medium;
-
-  &.is-use {
-    background: rgba($color-success, 0.12);
-    color: $color-success;
-  }
-
-  &.is-unuse {
-    background: rgba($color-text-disabled, 0.2);
-    color: $color-text-disabled;
-  }
-}
-
-// 드래그 핸들
-.codes-drag-handle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: grab;
-  color: $color-text-muted;
-
-  &:active {
-    cursor: grabbing;
-  }
-}
-
-// 드래그 중 고스트
-:deep(.sortable-ghost) {
-  opacity: 0.4;
-}
-</style>

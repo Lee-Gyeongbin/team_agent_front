@@ -28,7 +28,7 @@
       </UiButton>
       <UiButton
         class="btn-modal-dialog"
-        variant="dark"
+        variant="primary"
         size="xlg"
         @click="onSubmit"
       >
@@ -111,11 +111,6 @@ const onSubmit = () => {
   }
 }
 
-.modal-dialog-footer {
-  margin-top: $spacing-lg;
-  display: flex;
-  gap: $spacing-sm;
-}
 
 .form-row {
   display: flex;

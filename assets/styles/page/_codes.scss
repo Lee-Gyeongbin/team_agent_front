@@ -1,0 +1,255 @@
+@use '../utils/variables' as *;
+@use '../utils/mixins' as *;
+
+.codes-index {
+  padding: $spacing-md;
+  min-height: calc(100vh - #{$header-height});
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+.codes-description {
+  color: $color-text-secondary;
+  font-size: $font-size-base;
+}
+
+.codes-header {
+  padding: 12px 0;
+  margin-bottom: $spacing-md;
+}
+
+.codes-loading {
+  @include flex-center;
+  flex-direction: column;
+  padding: $spacing-2xl;
+  gap: $spacing-md;
+  min-height: 240px;
+
+  &__spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid $color-border;
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: codes-spin 0.8s linear infinite;
+  }
+
+  &__text {
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+  }
+}
+
+@keyframes codes-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.codes-error {
+  @include flex-center;
+  flex-direction: column;
+  padding: $spacing-2xl;
+  gap: $spacing-md;
+  min-height: 240px;
+
+  &__message {
+    font-size: $font-size-sm;
+    color: $color-error;
+  }
+}
+
+// 좌우 분할
+.codes-split {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-md;
+  min-height: 0;
+}
+
+.codes-left {
+  flex: 0 0 40%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid $color-border;
+  overflow: hidden;
+}
+
+.codes-left-header {
+  padding: $spacing-sm $spacing-md;
+  border-bottom: 1px solid $color-border;
+  background: $color-background;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+
+  .total {
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+    white-space: nowrap;
+
+    strong {
+      color: $color-text-primary;
+    }
+  }
+}
+
+.codes-left-grp {
+  gap: $spacing-sm;
+  flex: 1;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.codes-group-input-grp {
+  min-width: 0;
+}
+
+.codes-left-table-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.codes-right {
+  flex: 1 1 60%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid $color-border;
+  overflow: hidden;
+}
+
+.codes-right-header {
+  padding: $spacing-sm $spacing-md;
+  border-bottom: 1px solid $color-border;
+  background: $color-background;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+
+  .total {
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+    white-space: nowrap;
+
+    strong {
+      color: $color-text-primary;
+    }
+  }
+}
+
+.codes-right-grp {
+  gap: $spacing-sm;
+  flex: 1;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.codes-input-grp {
+  min-width: 0;
+}
+
+.codes-right-table-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.codes-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: $border-radius-full;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+
+  &.is-use {
+    background: rgba($color-success, 0.12);
+    color: $color-success;
+  }
+
+  &.is-unuse {
+    background: rgba($color-text-disabled, 0.08);
+    color: $color-text-disabled;
+    opacity: 0.7;
+  }
+}
+
+// 오른쪽 그룹명 표시
+.codes-right-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.codes-right-group-name {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-bold;
+  color: $color-text-dark;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  &::after {
+    content: '>';
+    margin-left: 8px;
+    color: $color-text-disabled;
+    font-weight: $font-weight-normal;
+  }
+}
+
+// 그룹 미선택 빈 상태
+.codes-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 240px;
+  color: $color-text-disabled;
+
+  i {
+    opacity: 0.5;
+  }
+
+  p {
+    font-size: $font-size-sm;
+  }
+}
+
+// kebab 메뉴 버튼 hover
+.cell-actions-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .ui-btn {
+    border-radius: $border-radius-base;
+    transition: background-color 0.15s;
+
+    &:hover {
+      background: $color-background;
+    }
+  }
+}
+
+// 드래그 핸들
+.codes-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  color: $color-text-muted;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+// 드래그 중 고스트
+.sortable-ghost {
+  opacity: 0.4;
+}

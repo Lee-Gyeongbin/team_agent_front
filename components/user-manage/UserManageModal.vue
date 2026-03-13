@@ -111,12 +111,12 @@
         </UiButton>
         <UiButton
           class="btn-modal-dialog"
-          variant="dark"
+          variant="primary"
           size="xlg"
           :disabled="!checkSave"
           @click="onConfirm"
         >
-          수정
+          저장
         </UiButton>
       </div>
     </template>

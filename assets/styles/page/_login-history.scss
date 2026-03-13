@@ -1,0 +1,106 @@
+@use '../utils/variables' as *;
+@use '../utils/mixins' as *;
+
+.login-history-index {
+  padding: $spacing-md;
+  min-height: calc(100vh - #{$header-height});
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+.login-history-description {
+  color: $color-text-secondary;
+  font-size: $font-size-base;
+}
+
+.right-grp {
+  gap: $spacing-sm;
+  flex: 1;
+  justify-content: flex-end;
+  min-width: 0;
+
+  .total {
+    font-size: $font-size-base;
+    color: $color-text-secondary;
+    white-space: nowrap;
+
+    strong {
+      color: $color-text-primary;
+    }
+  }
+}
+
+.login-history-header {
+  padding: 12px 0;
+}
+
+.login-history-input-grp {
+  min-width: 0;
+}
+
+.login-history-table-wrap {
+  width: 100%;
+  background: #fff;
+  border: 1px solid $color-border;
+  overflow: hidden;
+}
+
+.login-history-loading {
+  @include flex-center;
+  flex-direction: column;
+  padding: $spacing-2xl;
+  gap: $spacing-md;
+  min-height: 240px;
+
+  &__spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid $color-border;
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: login-history-spin 0.8s linear infinite;
+  }
+
+  &__text {
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+  }
+}
+
+@keyframes login-history-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.login-history-error {
+  @include flex-center;
+  flex-direction: column;
+  padding: $spacing-2xl;
+  gap: $spacing-md;
+  min-height: 240px;
+
+  &__message {
+    font-size: $font-size-sm;
+    color: $color-error;
+  }
+}
+
+.login-history-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: $border-radius-full;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+
+  &.is-success {
+    background: rgba($color-success, 0.12);
+    color: $color-success;
+  }
+
+  &.is-fail {
+    background: rgba($color-error, 0.12);
+    color: $color-error;
+  }
+}

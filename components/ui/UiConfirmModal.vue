@@ -15,7 +15,7 @@
       <div class="modal-dialog-footer">
         <UiButton
           class="btn-modal-dialog"
-          variant="dark"
+          variant="primary"
           size="xlg"
           @click="handleConfirm"
         >

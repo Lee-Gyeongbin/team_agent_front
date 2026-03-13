@@ -49,11 +49,11 @@
       </UiButton>
       <UiButton
         class="btn-modal-dialog"
-        variant="dark"
+        variant="primary"
         size="xlg"
         @click="onSubmit"
       >
-        {{ isEditMode ? '수정' : '저장' }}
+        저장
       </UiButton>
     </div>
   </div>
@@ -142,11 +142,6 @@ const onSubmit = () => {
   }
 }
 
-.modal-dialog-footer {
-  margin-top: $spacing-lg;
-  display: flex;
-  gap: $spacing-sm;
-}
 
 .form-row {
   display: flex;

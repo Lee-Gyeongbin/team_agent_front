@@ -111,6 +111,7 @@ const onRowClick = (row: Record<string, any>, index: number) => {
 .ui-table-wrap {
   width: 100%;
   overflow: auto;
+  border-radius: 0;
   @include custom-scrollbar;
 }
 
@@ -135,8 +136,8 @@ const onRowClick = (row: Record<string, any>, index: number) => {
       @include typo($body-medium-bold);
       color: $color-text-muted;
       white-space: nowrap;
-      border-top: 1px solid $color-border;
-      border-bottom: 1px solid $color-border;
+      // border-top: 1px solid $color-border;
+      // border-bottom: 1px solid $color-border;
 
       // 컬럼 구분선 (마지막 제외)
       &:not(.is-last) {
@@ -148,16 +149,22 @@ const onRowClick = (row: Record<string, any>, index: number) => {
   // 바디
   tbody {
     tr {
+      transition: background-color 0.15s;
+
+      &:hover td {
+        background: $color-background;
+      }
+
       &.is-clickable {
         cursor: pointer;
-
-        &:hover td {
-          background: $color-background;
-        }
       }
 
       &.is-selected td {
         background: rgba(var(--color-primary-rgb, 59, 130, 246), 0.08);
+      }
+
+      &.is-selected:hover td {
+        background: rgba(var(--color-primary-rgb, 59, 130, 246), 0.12);
       }
     }
 
@@ -170,7 +177,7 @@ const onRowClick = (row: Record<string, any>, index: number) => {
       color: $color-text-primary;
 
       // 컬럼 구분선 (마지막 제외)
-      &:not(.is-last) {
+      &:not(:last-of-type) {
         border-right: 1px solid $color-border-light;
       }
     }
