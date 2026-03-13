@@ -1,15 +1,10 @@
-import type { ComputedRef, Ref } from 'vue'
+import { computed, type ComputedRef, type Ref } from 'vue'
 import type { UserItem } from '~/types/user-manage'
 import { useUserManageApi } from '~/composables/user-manage/useUserManageApi'
 import { useCodesApi } from '~/composables/codes/useCodesApi'
+import { useOrgManageStore } from '~/composables/org-manage/useOrgManageStore'
 
 const ACCT_STATUS_CODE_GRP_ID = 'CG000001'
-// TODO: 백엔드 연결 시 조직 코드 API로 교체
-const ORG_CODE_MAP: Record<string, string> = {
-  '': '조직 1',
-  '': '조직 2',
-  '': '조직 3',
-}
 const userManageList = ref<UserItem[]>([])
 const userManageSearchKeyword = ref('')
 const userManageIsLoading = ref(false)
@@ -40,6 +35,7 @@ export const useUserManageStore = (): {
   toPhoneDigits: (value: string | number | undefined | null) => string
 } => {
   const { fetchUserList, fetchUpdateUser, fetchDeleteUser, fetchRestoreUser } = useUserManageApi()
+  const { orgList } = useOrgManageStore()
   const { fetchCodeList } = useCodesApi()
 
   const userManageFilteredList = computed(() => {
@@ -151,10 +147,9 @@ export const useUserManageStore = (): {
     return ''
   }
 
-  /** TODO: 백엔드 연결 시 조직 코드 API로 교체 */
   const getOrgName = (orgId: string | undefined | null): string => {
     if (orgId == null || orgId === '') return ''
-    return ORG_CODE_MAP[orgId] ?? orgId
+    return orgList.value.find((item) => item.orgId === orgId)?.orgNm ?? orgId
   }
 
   /** 전화번호 입력값에서 앞뒤 공백 제거 후 숫자만 추출 */

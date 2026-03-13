@@ -119,6 +119,7 @@
 <script setup lang="ts">
 import { userColumns, type UserItem } from '~/types/user-manage'
 import { useUserManageStore } from '~/composables/user-manage/useUserManageStore'
+import { useOrgManageStore } from '~/composables/org-manage/useOrgManageStore'
 
 const {
   userManageSearchKeyword,
@@ -139,6 +140,8 @@ const {
   formatPhone,
 } = useUserManageStore()
 
+const { handleFetchOrgList } = useOrgManageStore()
+
 const onUserModalConfirm = async (payload: Partial<UserItem> | undefined) => {
   if (!payload) return
   await handleUpdateUserManage(payload)
@@ -147,6 +150,7 @@ const onUserModalConfirm = async (payload: Partial<UserItem> | undefined) => {
 onMounted(() => {
   handleFetchUserManageAcctStatusCodes()
   handleFetchUserManageList()
+  handleFetchOrgList()
 })
 </script>
 

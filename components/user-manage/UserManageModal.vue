@@ -113,12 +113,12 @@
         </UiButton>
         <UiButton
           class="btn-modal-dialog"
-          variant="dark"
+          variant="primary"
           size="xlg"
           :disabled="!checkSave"
           @click="onConfirm"
         >
-          수정
+          저장
         </UiButton>
       </div>
     </template>
@@ -126,9 +126,9 @@
 </template>
 
 <script setup lang="ts">
-import type { SelectOption } from '~/components/ui/UiSelect.vue'
 import type { UserItem } from '~/types/user-manage'
 import { useUserManageStore } from '~/composables/user-manage/useUserManageStore'
+import { useOrgManageStore } from '~/composables/org-manage/useOrgManageStore'
 import { checkEmail, checkPhone, isEmpty } from '~/utils/global/validationUtil'
 
 interface Props {
@@ -148,13 +148,7 @@ const emit = defineEmits<{
 }>()
 
 const { getAcctStatusName, formatPhone, toPhoneDigits } = useUserManageStore()
-
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-const orgOptions = ref<SelectOption[]>([
-  { label: '조직 1', value: 'ORG001' },
-  { label: '조직 2', value: 'ORG002' },
-  { label: '조직 3', value: 'ORG003' },
-])
+const { orgOptions } = useOrgManageStore()
 
 /** 모달 내 편집용 로컬 폼 (user 변경 시 동기화) */
 const form = ref<Partial<UserItem>>({})
@@ -188,7 +182,7 @@ watch(
   },
 )
 
-/** 사용자 ID, 사용자명, 이메일이 모두 있고, 값이 모두 유효할 때만 저장(수정) 가능 */
+/** 사용자 ID, 사용자명, 이메일이 모두 있고, 값이 모두 유효할 때만 수정 가능 */
 const checkSave = computed(() => {
   const userId = String(form.value.userId ?? '')
   const userNm = String(form.value.userNm ?? '')
