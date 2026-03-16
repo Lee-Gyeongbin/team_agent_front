@@ -36,21 +36,16 @@
   color: $color-text-dark;
 }
 
-.agent-setting-dataset-filter {
+.agent-setting-dataset-toolbar {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
   gap: $spacing-sm;
 
   .ui-select-wrap {
     width: 140px;
     flex-shrink: 0;
   }
-}
-
-.agent-setting-dataset-list {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
 }
 
 .agent-setting-dataset-summary {
@@ -60,8 +55,14 @@
 
   strong {
     font-weight: 700;
-    color: $color-text-primary;
+    color: $color-primary;
   }
+}
+
+.agent-setting-dataset-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
 }
 
 // ===================================

@@ -8,16 +8,14 @@
       </div>
     </div>
 
-    <!-- 요약 -->
-    <div class="agent-setting-dataset-summary">
-      전체 데이터셋 <strong>{{ datasets.length }}</strong> · 연결된 데이터셋
-      <strong>{{ connectedCount }}</strong> · 총 문서
-      <strong>{{ totalDocuments.toLocaleString() }}</strong> · 총 청크
-      <strong>{{ totalChunks.toLocaleString() }}</strong>
-    </div>
-
-    <!-- 필터 -->
-    <div class="agent-setting-dataset-filter">
+    <!-- 요약 + 필터 -->
+    <div class="agent-setting-dataset-toolbar">
+      <div class="agent-setting-dataset-summary">
+        전체 데이터셋 <strong>{{ datasets.length }}</strong> · 연결된 데이터셋
+        <strong>{{ connectedCount }}</strong> · 총 문서
+        <strong>{{ totalDocuments.toLocaleString() }}</strong> · 총 청크
+        <strong>{{ totalChunks.toLocaleString() }}</strong>
+      </div>
       <UiSelect
         v-model="statusFilter"
         :options="statusOptions"

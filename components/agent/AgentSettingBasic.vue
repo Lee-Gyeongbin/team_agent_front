@@ -40,17 +40,19 @@
             <span class="is-required">*</span>
             유사도 임계값
           </label>
-          <div class="com-setting-inline">
-            <UiInput
-              :model-value="modelValue.similarityThreshold"
-              type="number"
-              size="sm"
-              @update:model-value="onUpdate('similarityThreshold', $event)"
-            />
-            <span class="com-setting-unit">(0.0~1.0)</span>
+          <div class="com-setting-field-input">
+            <div class="com-setting-inline">
+              <UiInput
+                :model-value="modelValue.similarityThreshold"
+                type="number"
+                size="sm"
+                @update:model-value="onUpdate('similarityThreshold', $event)"
+              />
+              <span class="com-setting-unit">(0.0~1.0)</span>
+            </div>
+            <p class="com-setting-hint">이 값 이상의 유사도를 가진 문서만 검색</p>
           </div>
         </div>
-        <p class="com-setting-hint">이 값 이상의 유사도를 가진 문서만 검색</p>
       </div>
 
       <!-- 최대 검색 결과 -->
@@ -60,17 +62,19 @@
             <span class="is-required">*</span>
             최대 검색 결과
           </label>
-          <div class="com-setting-inline">
-            <UiInput
-              :model-value="modelValue.maxSearchResults"
-              type="number"
-              size="sm"
-              @update:model-value="onUpdate('maxSearchResults', $event)"
-            />
-            <span class="com-setting-unit">개</span>
+          <div class="com-setting-field-input">
+            <div class="com-setting-inline">
+              <UiInput
+                :model-value="modelValue.maxSearchResults"
+                type="number"
+                size="sm"
+                @update:model-value="onUpdate('maxSearchResults', $event)"
+              />
+              <span class="com-setting-unit">개</span>
+            </div>
+            <p class="com-setting-hint">최대로 검색할 문서 청크 수</p>
           </div>
         </div>
-        <p class="com-setting-hint">최대로 검색할 문서 청크 수</p>
       </div>
     </div>
   </div>
