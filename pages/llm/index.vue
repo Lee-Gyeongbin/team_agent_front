@@ -14,6 +14,7 @@
       handle=".com-card-drag"
       item-key="modelId"
       animation="200"
+      @start="onLlmDragStart"
       @end="onDragEnd"
     >
       <template #item="{ element }">
@@ -41,7 +42,8 @@ import draggable from 'vuedraggable'
 import { useLlmStore } from '~/composables/llm/useLlmStore'
 import type { LlmModel } from '~/types/llm'
 
-const { llmList, handleSelectLlmList, handleSaveLlm, handleDeleteLlm, handleUpdateLlmOrder } = useLlmStore()
+const { llmList, handleSelectLlmList, handleSaveLlm, handleDeleteLlm, handleUpdateLlmOrder, onLlmDragStart } =
+  useLlmStore()
 
 onMounted(() => handleSelectLlmList())
 
@@ -74,11 +76,11 @@ const onDeleteLlm = async (model: LlmModel) => {
 }
 
 const onToggleActive = async (model: LlmModel) => {
-  await handleSaveLlm({ modelId: model.modelId, useYn: !model.useYn })
+  await handleSaveLlm({ modelId: model.modelId, modelUseYn: model.modelUseYn === 'Y' ? 'N' : 'Y' })
 }
 
 const onDragEnd = async () => {
-  const orderData = llmList.value.map((item, index) => ({ modelId: item.modelId, sortOrder: index }))
+  const orderData = llmList.value.map((item, index) => ({ modelId: item.modelId, sortOrder: index + 1 }))
   await handleUpdateLlmOrder(orderData)
 }
 </script>

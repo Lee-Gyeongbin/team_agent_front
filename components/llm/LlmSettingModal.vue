@@ -78,10 +78,10 @@ const defaultAccessControlList = (modelId: string) => [
 const defaultUsage = () => ({
   inputCost: 0,
   outputCost: 0,
-  dailyRequestLimit: 4096,
+  dayReqLmt: 4096,
   rpmLimit: 128000,
   tpmLimit: 0,
-  dailyCostLimit: 0,
+  dayCostLmt: 0,
   accessControlList: defaultAccessControlList(''),
 })
 
@@ -127,10 +127,10 @@ watch(
       usageForm.value = {
         inputCost: m.inputCost,
         outputCost: m.outputCost,
-        dailyRequestLimit: m.dailyRequestLimit,
+        dayReqLmt: m.dayReqLmt,
         rpmLimit: m.rpmLimit,
         tpmLimit: m.tpmLimit,
-        dailyCostLimit: m.dailyCostLimit,
+        dayCostLmt: m.dayCostLmt,
         accessControlList: m.accessControlList ?? defaultAccessControlList(m.modelId),
       }
     } else {

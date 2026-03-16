@@ -106,6 +106,7 @@ const emit = defineEmits<{
   &.size-btn-md {
     @include typo($body-medium);
     height: $height-md; // 30px
+    min-width: 68px;
     padding: 0 10px;
     padding-right: 7px;
   }
@@ -129,6 +130,7 @@ const emit = defineEmits<{
   // ===================================
   &.is-icon-only {
     padding: 0;
+    min-width: auto;
 
     &.size-btn-xs {
       width: $height-xs; // 26px
@@ -183,18 +185,18 @@ const emit = defineEmits<{
   }
 
   &.variant-secondary {
-    background: $color-background; // #f4f7f9
-    color: $color-text-dark; // #2d3139
+    background: #6f7a93;
+    color: #fff;
 
     &:hover:not(:disabled) {
-      background: color.adjust($color-background, $lightness: -4%); // #f4f7f9에서 -4% 어둡게
+      background: color.adjust(#6f7a93, $lightness: -4%); // #f4f7f9에서 -4% 어둡게
     }
   }
 
   &.variant-outline {
     background: #fff; // #fff
-    border-color: $color-border; // #dce4e9
-    color: $color-text-dark; // #2d3139
+    border-color: #dce4e9; // #dce4e9
+    color: #2d3139; // #2d3139
 
     &:hover:not(:disabled) {
       border-color: var(--color-primary); // #3c69db
@@ -204,12 +206,12 @@ const emit = defineEmits<{
 
   &.variant-line-secondary {
     background: #fff;
-    border-color: $color-text-secondary;
-    color: $color-text-secondary;
+    border-color: #64748b;
+    color: #64748b;
     @include typo($body-medium-bold);
 
     &:hover:not(:disabled) {
-      background: $color-background;
+      background: #f4f7f9;
     }
   }
 
@@ -224,11 +226,12 @@ const emit = defineEmits<{
 
   &.variant-ghost {
     background: transparent; // transparent
-    color: $color-text-secondary; // #64748b
+    color: #64748b; // #64748b
+    min-width: auto;
 
     &:hover:not(:disabled) {
-      background: $color-background; // #f4f7f9
-      color: $color-text-dark; // #2d3139
+      background: #f4f7f9; // #f4f7f9
+      color: #2d3139; // #2d3139
     }
   }
 

@@ -24,10 +24,10 @@ export interface LlmModelParams {
 
 /** 사용량 제한 */
 export interface LlmUsageLimit {
-  dailyRequestLimit: number // 일일 요청 제한
-  rpmLimit: number // 분당 요청 제한 (RPM)
-  tpmLimit: number // 분당 토큰 제한 (TPM)
-  dailyCostLimit: number // 일일 비용 제한 ($)
+  dayReqLmt: number // 일일 요청 제한 (DAY_REQ_LMT)
+  rpmLimit: number // 분당 요청 제한 (RPM_LIMIT)
+  tpmLimit: number // 분당 토큰 제한 (TPM_LIMIT)
+  dayCostLmt: number // 일일 비용 제한 (DAY_COST_LMT)
 }
 
 /** 접근 제어 (역할별) */
@@ -57,14 +57,14 @@ export interface LlmBaseInfo {
   version: string // 버전 (예: 2024-11-20)
   inputCost: number // 입력 비용($/1M토큰)
   outputCost: number // 출력 비용($/1M토큰)
-  useYn: boolean // 사용여부 (Y/N)
-  description: string // 설명
+  modelUseYn: 'Y' | 'N' // 사용여부 (Y/N)
+  modelDescription: string // 설명
   sortOrder: number // 표시순서 (드래그 정렬)
-  createDt: string // 생성일시
-  modifyDt: string // 수정일시
+  modelCreateDt: string // 생성일시
+  modelModifyDt: string // 수정일시
 }
 
 /** 마스터 모델 인터페이스 */
-export interface LlmModel extends LlmBaseInfo, LlmApiConfig, LlmModelParams, LlmUsageLimit {
+export interface LlmModel extends LlmBaseInfo, LlmApiConfig, LlmModelParams, LlmUsageLimit, LlmProvider {
   accessControlList: LlmAccessControl[] // 역할별 접근 제어 목록
 }
