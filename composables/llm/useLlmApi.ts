@@ -16,21 +16,23 @@ const mockPost = async <T>(url: string, body: unknown = {}): Promise<T> => {
 export const useLlmApi = () => {
   const { get, post } = useApi()
 
-  // ===== LLM 모델 =====
+  /** 모델 목록 조회 */
   const fetchLlmList = async (): Promise<{ dataList: LlmModel[] }> => {
     return get<{ dataList: LlmModel[] }>('/llm/list.do')
   }
 
+  /** 모델 저장 */
   const fetchSaveLlm = async (model: Partial<LlmModel>) => {
-    return mockPost<{ data: LlmModel }>(`${MOCK_BASE}/save`, model)
+    return post<{ data: LlmModel }>(`/llm/save.do`, model)
   }
 
   const fetchDeleteLlm = async (modelId: string) => {
     return mockPost<{ data: { modelId: string } }>(`${MOCK_BASE}/delete`, { modelId })
   }
 
+  /** 모델 순서 업데이트 */
   const fetchUpdateLlmOrder = async (orderList: { modelId: string; sortOrder: number }[]) => {
-    return mockPost<{ data: null }>(`${MOCK_BASE}/order`, orderList)
+    return post<{ data: null }>(`/llm/order.do`, orderList)
   }
 
   return {

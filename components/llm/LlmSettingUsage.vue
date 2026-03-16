@@ -64,10 +64,10 @@
         >
           <label class="com-setting-label">일일 요청 제한</label>
           <UiInput
-            :model-value="modelValue.dailyRequestLimit"
+            :model-value="modelValue.dayReqLmt"
             type="number"
             size="sm"
-            @update:model-value="onUpdate('dailyRequestLimit', $event)"
+            @update:model-value="onUpdate('dayReqLmt', $event)"
           />
         </div>
         <div
@@ -104,10 +104,10 @@
         >
           <label class="com-setting-label">일일 비용 제한 ($)</label>
           <UiInput
-            :model-value="modelValue.dailyCostLimit"
+            :model-value="modelValue.dayCostLmt"
             type="number"
             size="sm"
-            @update:model-value="onUpdate('dailyCostLimit', $event)"
+            @update:model-value="onUpdate('dayCostLmt', $event)"
           />
         </div>
       </div>
@@ -143,10 +143,10 @@ import type { LlmAccessControl } from '~/types/llm'
 interface UsageForm {
   inputCost: number
   outputCost: number
-  dailyRequestLimit: number
+  dayReqLmt: number
   rpmLimit: number
   tpmLimit: number
-  dailyCostLimit: number
+  dayCostLmt: number
   accessControlList: LlmAccessControl[]
 }
 
