@@ -130,6 +130,7 @@ const emit = defineEmits<{
   // ===================================
   &.is-icon-only {
     padding: 0;
+    min-width: auto;
 
     &.size-btn-xs {
       width: $height-xs; // 26px
@@ -226,6 +227,7 @@ const emit = defineEmits<{
   &.variant-ghost {
     background: transparent; // transparent
     color: #64748b; // #64748b
+    min-width: auto;
 
     &:hover:not(:disabled) {
       background: #f4f7f9; // #f4f7f9
