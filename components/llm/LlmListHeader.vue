@@ -1,5 +1,8 @@
 <template>
-  <div class="com-list-header">
+  <div
+    class="com-list-header"
+    :class="{ 'is-scrolled': isScrolled }"
+  >
     <div class="com-list-header-left">
       <h2 class="com-list-title">Model List</h2>
       <span class="com-list-count">
@@ -21,6 +24,8 @@
 </template>
 
 <script setup lang="ts">
+const isScrolled = inject('isScrolled', ref(false))
+
 interface Props {
   activeCount: number
   totalCount: number

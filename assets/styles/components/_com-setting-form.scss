@@ -122,13 +122,23 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  flex: 1;
 }
 
 // 가로 배치 (2컬럼)
 .com-setting-row {
   display: flex;
   gap: 12px;
+}
+
+// 인풋 + 힌트 세로 묶음 (인풋 아래 hint 바로 붙임)
+.com-setting-field-input {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  .com-setting-hint {
+    margin-top: 0;
+  }
 }
 
 // 인라인 인풋 + 단위

@@ -3,6 +3,11 @@
     class="agent-dataset-card"
     :class="{ 'is-connected': dataset.isConnected }"
   >
+    <!-- 드래그 핸들 -->
+    <div class="agent-dataset-card-drag">
+      <i class="icon-move-handle size-20" />
+    </div>
+
     <div class="agent-dataset-card-info">
       <!-- 이름 -->
       <div class="agent-dataset-card-title">{{ dataset.name }}</div>
@@ -24,20 +29,6 @@
 
     <!-- 액션 -->
     <div class="agent-dataset-card-actions">
-      <button
-        class="agent-dataset-card-btn"
-        title="설정"
-        @click="$emit('setting', dataset)"
-      >
-        <i class="icon-setting-agent size-16" />
-      </button>
-      <button
-        class="agent-dataset-card-btn"
-        title="동기화"
-        @click="$emit('sync', dataset)"
-      >
-        <i class="icon-sync size-16" />
-      </button>
       <UiToggle
         :model-value="dataset.isConnected"
         @update:model-value="$emit('toggle', dataset)"
@@ -55,8 +46,6 @@ interface Props {
 
 defineProps<Props>()
 defineEmits<{
-  setting: [dataset: AgentDataset]
-  sync: [dataset: AgentDataset]
   toggle: [dataset: AgentDataset]
 }>()
 </script>

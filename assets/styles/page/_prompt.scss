@@ -1,0 +1,196 @@
+@use '../utils/variables' as *;
+@use '../utils/mixins' as *;
+
+// ===================================
+// 프롬프트 관리 페이지
+// ===================================
+.prompt-page {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - #{$header-height});
+  padding: 12px $spacing-md $spacing-md;
+}
+
+.prompt-page-header {
+  position: sticky;
+  z-index: $z-sticky;
+  background: #fff;
+}
+
+.prompt-page-body {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  flex: 1;
+  padding-top: $spacing-md;
+}
+
+// ===================================
+// 시스템 프롬프트 설정
+// ===================================
+.prompt-system {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+// 전체 감싸는 박스 (Figma: padding 24px, gap 16px, radius 16px, border #DCE4E9)
+.prompt-system-box {
+  --label-width: 121px;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  padding: $spacing-lg;
+  background: #fff;
+  border: 1px solid #dce4e9;
+  border-radius: 16px;
+}
+
+.prompt-system-setting {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+// 헤더 (Figma: space-between, padding-bottom 16px, border-bottom #AEBCCB)
+.prompt-system-setting-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding-bottom: $spacing-md;
+  border-bottom: 1px solid #aebccb;
+}
+
+.prompt-system-setting-title {
+  display: flex;
+  align-items: flex-end;
+  gap: $spacing-sm;
+}
+
+// Figma: 20px/bold/#2D3139
+.prompt-system-setting-name {
+  @include typo($body-xlarge-bold);
+  color: $color-text-dark;
+}
+
+// Figma: 12px/400/#5C6677
+.prompt-system-setting-sub {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #5c6677;
+}
+
+// 본문 (Figma: gap 16px)
+.prompt-system-setting-body {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+// 푸터 (Figma: gap 4px, 우측 정렬)
+.prompt-system-setting-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+// 구분선 (Figma: 1px #ECF0F3)
+.prompt-system-divider {
+  height: 1px;
+  background: #ecf0f3;
+}
+
+// ===================================
+// 저장된 프롬프트 목록
+// ===================================
+.prompt-saved-section {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+// Figma: 18px/bold/#2D3139
+.prompt-saved-title {
+  @include typo($body-large-bold);
+  color: $color-text-dark;
+}
+
+.prompt-saved-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+// 카드 (Figma: padding 12px 16px, border #DCE4E9, radius 8px)
+.prompt-saved-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+  padding: 12px $spacing-md;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  background: #fff;
+  transition: border-color $transition-base;
+
+  &:hover {
+    border-color: #aebccb;
+  }
+}
+
+.prompt-saved-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.prompt-saved-card-name {
+  @include typo($body-medium-bold);
+  color: $color-text-dark;
+}
+
+.prompt-saved-card-meta {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+}
+
+.prompt-saved-card-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: $color-text-disabled;
+
+  strong {
+    color: $color-text-dark;
+    font-weight: $font-weight-semibold;
+  }
+}
+
+.prompt-saved-card-actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.prompt-saved-card-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: $color-text-secondary;
+  cursor: pointer;
+  transition: color $transition-fast;
+
+  &:hover {
+    color: $color-text-dark;
+  }
+}

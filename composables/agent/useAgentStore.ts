@@ -9,6 +9,7 @@ const {
   fetchDatasetList,
   fetchSaveDataset,
   fetchSyncDataset,
+  fetchUpdateDatasetOrder,
 } = useAgentApi()
 
 // ===== 상태 변수 =====
@@ -55,6 +56,11 @@ const handleSyncDataset = async (agentId: string, id: string) => {
   await handleSelectDatasetList(agentId)
 }
 
+// ===== Dataset 순서 =====
+const handleUpdateDatasetOrder = async (orderList: { id: string; order: number }[]) => {
+  await fetchUpdateDatasetOrder(orderList)
+}
+
 export const useAgentStore = () => {
   return {
     agentList,
@@ -66,5 +72,6 @@ export const useAgentStore = () => {
     handleSelectDatasetList,
     handleSaveDataset,
     handleSyncDataset,
+    handleUpdateDatasetOrder,
   }
 }

@@ -43,6 +43,10 @@ export const useAgentApi = () => {
     return mockPost<{ data: { id: string }; message: string }>(`${MOCK_BASE}/dataset/sync`, { id })
   }
 
+  const fetchUpdateDatasetOrder = async (orderList: { id: string; order: number }[]) => {
+    return mockPost<{ data: null }>(`${MOCK_BASE}/dataset/order`, orderList)
+  }
+
   return {
     fetchAgentList,
     fetchSaveAgent,
@@ -51,5 +55,6 @@ export const useAgentApi = () => {
     fetchDatasetList,
     fetchSaveDataset,
     fetchSyncDataset,
+    fetchUpdateDatasetOrder,
   }
 }
