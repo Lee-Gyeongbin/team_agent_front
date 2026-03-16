@@ -110,6 +110,7 @@ const onDelete = (template: PromptTemplate) => {
 const doDelete = async () => {
   if (!deletingTemplate.value) return
   await handleDeleteTemplate(deletingTemplate.value.id)
+  isDeleteModalOpen.value = false
   deletingTemplate.value = null
 }
 </script>

@@ -91,6 +91,7 @@ const onSave = () => {
 
 const doSave = async () => {
   await handleSaveLimit(localData.value)
+  isSaveModalOpen.value = false
 }
 
 // 기본값 복원

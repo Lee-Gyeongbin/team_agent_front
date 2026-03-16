@@ -48,7 +48,13 @@ assets/styles/page/
 
 ## 디자인 토큰 사용 필수
 
-- 색상: `$color-primary`, `$color-text-primary`, `$color-border` 등
+- **테마 색상은 CSS 변수 사용 필수**: 테마 변경 시 동적 반영을 위해 `$color-primary`(SCSS 변수) 대신 `var(--color-primary)`(CSS 변수) 사용
+  - `$color-primary` → `var(--color-primary)`
+  - `$color-primary-hover` → `var(--color-primary-hover)`
+  - `$color-primary-dark` → `var(--color-primary-dark)`
+  - `$color-primary-bg` → `var(--color-primary-bg)`
+  - SCSS 변수는 컴파일 시 고정값으로 변환되어 테마 변경이 반영되지 않음
+- 색상: `var(--color-primary)`, `$color-text-primary`, `$color-border` 등
 - 간격: `$spacing-xs(4px)`, `$spacing-sm(8px)`, `$spacing-md(16px)`, `$spacing-lg(24px)`, `$spacing-xl(32px)`
 - 폰트: `$font-size-sm(14px)`, `$font-size-base(16px)`, `$font-size-lg(18px)`
 - 둥글기: `$border-radius-sm(6px)`, `$border-radius-md(8px)`, `$border-radius-lg(12px)`

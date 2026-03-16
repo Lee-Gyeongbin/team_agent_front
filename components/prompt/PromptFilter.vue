@@ -91,5 +91,6 @@ const onSave = () => {
 
 const doSave = async () => {
   await handleSaveFilter(localData.value)
+  isSaveModalOpen.value = false
 }
 </script>

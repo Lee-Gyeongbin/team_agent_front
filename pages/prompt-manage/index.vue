@@ -36,6 +36,4 @@ const tabs = [
   { label: '토큰/응답 제한', value: 'limit' },
   { label: '버전 관리', value: 'version' },
 ]
-
-const activeTabLabel = computed(() => tabs.find((t) => t.value === activeTab.value)?.label ?? '')
 </script>

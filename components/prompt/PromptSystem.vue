@@ -79,6 +79,7 @@ const onSave = (form: Partial<SystemPrompt>) => {
 
 const doSave = async () => {
   await handleSaveSystemPrompt(savingForm.value)
+  isSaveModalOpen.value = false
 }
 
 // 테스트
@@ -103,6 +104,7 @@ const onDelete = (prompt: SystemPrompt) => {
 const doDelete = async () => {
   if (!deletingPrompt.value) return
   await handleDeleteSystemPrompt(deletingPrompt.value.id)
+  isDeleteModalOpen.value = false
   deletingPrompt.value = null
 }
 

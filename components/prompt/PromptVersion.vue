@@ -98,6 +98,7 @@ const onRestore = (version: PromptVersion) => {
 const doRestore = async () => {
   if (!restoringVersion.value) return
   await handleRestoreVersion(restoringVersion.value.id)
+  isRestoreModalOpen.value = false
   restoringVersion.value = null
 }
 </script>
