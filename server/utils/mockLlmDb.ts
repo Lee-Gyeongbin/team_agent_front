@@ -24,10 +24,10 @@ interface MockLlmModel {
   supportVision: boolean
   inputCost: number
   outputCost: number
-  dailyRequestLimit: number
+  dayReqLmt: number
   rpmLimit: number
   tpmLimit: number
-  dailyCostLimit: number
+  dayCostLmt: number
   accessAdmin: boolean
   accessPremium: boolean
   accessGeneral: boolean
@@ -62,10 +62,10 @@ const llmList: MockLlmModel[] = [
     supportVision: true,
     inputCost: 0.15,
     outputCost: 0.6,
-    dailyRequestLimit: 4096,
+    dayReqLmt: 4096,
     rpmLimit: 128000,
     tpmLimit: 0,
-    dailyCostLimit: 0,
+    dayCostLmt: 0,
     accessAdmin: true,
     accessPremium: true,
     accessGeneral: true,
@@ -98,10 +98,10 @@ const llmList: MockLlmModel[] = [
     supportVision: true,
     inputCost: 0.15,
     outputCost: 10,
-    dailyRequestLimit: 4096,
+    dayReqLmt: 4096,
     rpmLimit: 128000,
     tpmLimit: 0,
-    dailyCostLimit: 0,
+    dayCostLmt: 0,
     accessAdmin: true,
     accessPremium: true,
     accessGeneral: false,
@@ -134,10 +134,10 @@ const llmList: MockLlmModel[] = [
     supportVision: true,
     inputCost: 0.15,
     outputCost: 5,
-    dailyRequestLimit: 4096,
+    dayReqLmt: 4096,
     rpmLimit: 128000,
     tpmLimit: 0,
-    dailyCostLimit: 0,
+    dayCostLmt: 0,
     accessAdmin: true,
     accessPremium: true,
     accessGeneral: true,
@@ -170,10 +170,10 @@ const llmList: MockLlmModel[] = [
     supportVision: true,
     inputCost: 0.15,
     outputCost: 15,
-    dailyRequestLimit: 4096,
+    dayReqLmt: 4096,
     rpmLimit: 128000,
     tpmLimit: 0,
-    dailyCostLimit: 0,
+    dayCostLmt: 0,
     accessAdmin: true,
     accessPremium: false,
     accessGeneral: false,
@@ -219,10 +219,10 @@ export const mockLlmDb = {
         supportVision: true,
         inputCost: 0,
         outputCost: 0,
-        dailyRequestLimit: 4096,
+        dayReqLmt: 4096,
         rpmLimit: 128000,
         tpmLimit: 0,
-        dailyCostLimit: 0,
+        dayCostLmt: 0,
         accessAdmin: true,
         accessPremium: true,
         accessGeneral: true,

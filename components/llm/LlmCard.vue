@@ -25,7 +25,7 @@
           </span>
         </div>
         <!-- Provider -->
-        <p class="com-card-desc">Provider : {{ model.providerId }}</p>
+        <p class="com-card-desc">Provider : {{ model.providerName }}</p>
         <!-- 메타 -->
         <div class="com-card-meta">
           <span class="com-card-meta-item">
@@ -59,7 +59,7 @@
           <i class="icon-trash size-16" />
         </button>
         <UiToggle
-          :model-value="model.useYn"
+          :model-value="model.modelUseYn === 'Y'"
           @update:model-value="$emit('toggle', model)"
         />
       </div>
@@ -82,7 +82,7 @@ defineEmits<{
 }>()
 
 const formattedDailyLimit = computed(() => {
-  const val = props.model.dailyRequestLimit
+  const val = props.model.dayReqLmt
   return val != null && typeof val === 'number' ? val.toLocaleString() : '-'
 })
 </script>
