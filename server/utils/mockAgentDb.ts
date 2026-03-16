@@ -226,4 +226,13 @@ export const mockDatasetDb = {
     if (dataset) dataset.updatedAt = today()
     return { id }
   },
+
+  // 순서 변경
+  updateOrder: (orderList: { id: string; order: number }[]) => {
+    orderList.forEach(({ id, order }) => {
+      const dataset = datasetList.find((d) => d.id === id)
+      if (dataset) (dataset as any).priority = order
+    })
+    datasetList.sort((a, b) => ((a as any).priority ?? 0) - ((b as any).priority ?? 0))
+  },
 }

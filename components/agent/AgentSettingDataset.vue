@@ -6,41 +6,6 @@
         <span class="com-setting-section-title is-inline">RAG 데이터셋 연결</span>
         <span class="agent-setting-dataset-sub">Agent가 참조할 데이터셋(벡터DB)을 선택합니다.</span>
       </div>
-      <UiButton
-        variant="primary"
-        size="sm"
-        @click="$emit('add')"
-      >
-        + 데이터셋 추가
-      </UiButton>
-    </div>
-
-    <!-- 필터 -->
-    <div class="agent-setting-dataset-filter">
-      <UiInput
-        v-model="searchKeyword"
-        type="search"
-        placeholder="검색어를 입력하세요"
-        size="sm"
-      />
-      <UiSelect
-        v-model="statusFilter"
-        :options="statusOptions"
-        size="sm"
-        placeholder="전체 상태"
-      />
-    </div>
-
-    <!-- 데이터셋 목록 -->
-    <div class="agent-setting-dataset-list">
-      <AgentSettingDatasetCard
-        v-for="item in filteredDatasets"
-        :key="item.id"
-        :dataset="item"
-        @setting="$emit('datasetSetting', $event)"
-        @sync="$emit('datasetSync', $event)"
-        @toggle="onToggleDataset"
-      />
     </div>
 
     <!-- 요약 -->
@@ -50,11 +15,40 @@
       <strong>{{ totalDocuments.toLocaleString() }}</strong> · 총 청크
       <strong>{{ totalChunks.toLocaleString() }}</strong>
     </div>
+
+    <!-- 필터 -->
+    <div class="agent-setting-dataset-filter">
+      <UiSelect
+        v-model="statusFilter"
+        :options="statusOptions"
+        size="sm"
+        placeholder="전체 상태"
+      />
+    </div>
+
+    <!-- 데이터셋 목록 -->
+    <draggable
+      v-model="draggableList"
+      class="agent-setting-dataset-list"
+      handle=".agent-dataset-card-drag"
+      item-key="id"
+      animation="200"
+      @end="onDragEnd"
+    >
+      <template #item="{ element }">
+        <AgentSettingDatasetCard
+          :dataset="element"
+          @toggle="onToggleDataset"
+        />
+      </template>
+    </draggable>
   </div>
 </template>
 
 <script setup lang="ts">
+import draggable from 'vuedraggable'
 import type { AgentDataset } from '~/types/agent'
+import { useAgentStore } from '~/composables/agent/useAgentStore'
 
 interface Props {
   datasets: AgentDataset[]
@@ -63,14 +57,12 @@ interface Props {
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  add: []
-  datasetSetting: [dataset: AgentDataset]
-  datasetSync: [dataset: AgentDataset]
   'update:datasets': [datasets: AgentDataset[]]
 }>()
 
+const { handleUpdateDatasetOrder } = useAgentStore()
+
 // 필터
-const searchKeyword = ref('')
 const statusFilter = ref('all')
 
 const statusOptions = [
@@ -81,12 +73,6 @@ const statusOptions = [
 
 const filteredDatasets = computed(() => {
   let list = props.datasets
-
-  // 검색어 필터
-  if (searchKeyword.value) {
-    const keyword = searchKeyword.value.toLowerCase()
-    list = list.filter((d) => d.name.toLowerCase().includes(keyword) || d.description.toLowerCase().includes(keyword))
-  }
 
   // 상태 필터
   if (statusFilter.value === 'connected') {
@@ -102,6 +88,20 @@ const filteredDatasets = computed(() => {
 const connectedCount = computed(() => props.datasets.filter((d) => d.isConnected).length)
 const totalDocuments = computed(() => props.datasets.reduce((sum, d) => sum + d.documentCount, 0))
 const totalChunks = computed(() => props.datasets.reduce((sum, d) => sum + d.chunkCount, 0))
+
+// 드래그 정렬용 로컬 리스트
+const draggableList = computed({
+  get: () => filteredDatasets.value,
+  set: (val: AgentDataset[]) => {
+    emit('update:datasets', val)
+  },
+})
+
+// 드래그 순서 변경
+const onDragEnd = () => {
+  const orderList = draggableList.value.map((item, i) => ({ id: item.id, order: i }))
+  handleUpdateDatasetOrder(orderList)
+}
 
 // 토글
 const onToggleDataset = (dataset: AgentDataset) => {

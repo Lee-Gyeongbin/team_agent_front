@@ -38,11 +38,8 @@
 
 .agent-setting-dataset-filter {
   display: flex;
+  justify-content: flex-end;
   gap: $spacing-sm;
-
-  .ui-input-wrap {
-    flex: 1;
-  }
 
   .ui-select-wrap {
     width: 140px;
@@ -84,7 +81,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: $spacing-md;
+  gap: $spacing-sm;
   padding: 12px $spacing-md;
   border: 1px solid $color-border;
   border-radius: $border-radius-lg;
@@ -97,6 +94,19 @@
 
   &.is-connected {
     border-color: var(--color-primary);
+  }
+}
+
+.agent-dataset-card-drag {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: $color-text-disabled;
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
   }
 }
 
@@ -146,21 +156,4 @@
   align-items: center;
   gap: $spacing-sm;
   flex-shrink: 0;
-}
-
-.agent-dataset-card-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border: none;
-  background: transparent;
-  color: $color-text-secondary;
-  cursor: pointer;
-  transition: color $transition-fast;
-
-  &:hover {
-    color: $color-text-dark;
-  }
 }

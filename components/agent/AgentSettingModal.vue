@@ -16,19 +16,8 @@
       <AgentSettingDataset
         :datasets="datasetList"
         @update:datasets="datasetList = $event"
-        @add="onAddDataset"
-        @dataset-setting="onDatasetSetting"
-        @dataset-sync="onDatasetSync"
       />
     </div>
-
-    <!-- 데이터셋 추가/수정 모달 -->
-    <AgentSettingDatasetModal
-      :is-open="isDatasetModalOpen"
-      :dataset="editingDataset"
-      @close="isDatasetModalOpen = false"
-      @save="onSaveDataset"
-    />
 
     <!-- 푸터 -->
     <template #footer>
@@ -53,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Agent, AgentDataset } from '~/types/agent'
+import type { Agent } from '~/types/agent'
 import { useAgentStore } from '~/composables/agent/useAgentStore'
 
 interface Props {
@@ -68,7 +57,7 @@ const emit = defineEmits<{
   save: [form: { type: string; name: string; description: string; similarityThreshold: number; maxSearchResults: number }]
 }>()
 
-const { datasetList, handleSelectDatasetList, handleSaveDataset, handleSyncDataset } = useAgentStore()
+const { datasetList, handleSelectDatasetList } = useAgentStore()
 
 // 유형
 const form = ref({
@@ -119,29 +108,4 @@ const onSave = () => {
   })
 }
 
-// 데이터셋 모달
-const isDatasetModalOpen = ref(false)
-const editingDataset = ref<AgentDataset | null>(null)
-
-const onAddDataset = () => {
-  editingDataset.value = null
-  isDatasetModalOpen.value = true
-}
-
-const onDatasetSetting = (dataset: AgentDataset) => {
-  editingDataset.value = dataset
-  isDatasetModalOpen.value = true
-}
-
-// 데이터셋 저장
-const onSaveDataset = async (dataset: AgentDataset) => {
-  const agentId = props.agent?.id ?? ''
-  await handleSaveDataset(agentId, dataset)
-}
-
-// 데이터셋 동기화
-const onDatasetSync = async (dataset: AgentDataset) => {
-  const agentId = props.agent?.id ?? ''
-  await handleSyncDataset(agentId, dataset.id)
-}
 </script>
