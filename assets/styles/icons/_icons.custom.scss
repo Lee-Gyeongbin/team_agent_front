@@ -184,7 +184,7 @@
 
 // 드롭다운 편집/이름 변경
 .icon-edit {
-  @include icon-file('edit');
+  @include icon-file-bg('edit');
 }
 
 // 드롭다운 쓰레기통(각진ver)

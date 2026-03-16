@@ -215,14 +215,14 @@
   border-radius: $border-radius-100;
   background: #fff;
   cursor: pointer;
-  font-size: $font-size-sm;
-  font-weight: $font-weight-semibold;
+  @include typo($body-medium-bold);
   line-height: 1.5;
   color: $color-text-dark;
   transition: all $transition-fast;
 
   &.is-active {
     background: $color-background;
+    font-weight: $font-weight-bold;
   }
 
   &:hover:not(.is-active) {
@@ -231,8 +231,8 @@
 
   // Figma: 14px/400/#3C69DB
   strong {
-    font-weight: $font-weight-normal;
-    color: $color-primary;
+    font-weight: $font-weight-semibold;
+    color: var(--color-primary);
   }
 }
 
@@ -376,7 +376,7 @@
   color: $color-text-primary;
 
   strong {
-    color: $color-primary;
+    color: var(--color-primary);
     font-weight: $font-weight-bold;
   }
 }
@@ -551,7 +551,7 @@
 
   // Figma: 현재 사용량 라벨 (15px/bold/#3C69DB)
   &.is-primary {
-    color: $color-primary;
+    color: var(--color-primary);
     font-weight: $font-weight-bold;
     margin-top: 3px;
   }
@@ -593,7 +593,7 @@
   &.is-blue {
     background: #f1f6fe;
     border: 1px solid #6da2ed;
-    color: $color-primary;
+    color: var(--color-primary);
   }
 }
 
@@ -728,7 +728,7 @@
   // Figma: 총 버전 수 (bg #F1F6FE, icon 파란)
   &.is-blue {
     background: #f1f6fe;
-    color: $color-primary;
+    color: var(--color-primary);
   }
 
   // Figma: 이번달 업데이트 (bg #FFEDD4, icon 주황)
@@ -842,7 +842,7 @@
   background: #c6d2db;
 
   &.is-active {
-    background: $color-primary;
+    background: var(--color-primary);
   }
 }
 

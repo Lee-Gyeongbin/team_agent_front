@@ -50,7 +50,7 @@ defineEmits<{
   border: none;
   background: transparent;
   cursor: pointer;
-  @include typo($body-medium);
+  @include typo($body-large);
   color: $color-text-secondary;
   transition: color $transition-fast;
 

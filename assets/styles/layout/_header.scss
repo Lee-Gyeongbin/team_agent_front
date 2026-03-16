@@ -8,6 +8,7 @@
   flex-shrink: 0;
   height: $header-height;
   padding: 0 $spacing-md;
+  z-index: $z-overlay;
 
   .header-logo {
     @include typo($body-large-bold);
