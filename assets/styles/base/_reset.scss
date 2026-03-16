@@ -13,10 +13,13 @@ html {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   height: 100%;
+  overflow: hidden;
 }
 
 body {
   line-height: 1.5;
+  height: 100%;
+  overflow: hidden;
 }
 
 img,

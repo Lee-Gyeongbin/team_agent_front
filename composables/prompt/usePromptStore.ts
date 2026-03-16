@@ -1,5 +1,5 @@
 import { usePromptApi } from '~/composables/prompt/usePromptApi'
-import type { SystemPrompt, PromptTemplate } from '~/types/prompt'
+import type { SystemPrompt, PromptTemplate, PromptFilterData, PromptFilterPolicy, PromptLimitData, PromptVersion, PromptVersionStats } from '~/types/prompt'
 
 const {
   fetchSystemPromptList,
@@ -8,11 +8,22 @@ const {
   fetchTemplateList,
   fetchSaveTemplate,
   fetchDeleteTemplate,
+  fetchFilterData,
+  fetchSaveFilter,
+  fetchLimitData,
+  fetchSaveLimit,
+  fetchVersionList,
+  fetchRestoreVersion,
 } = usePromptApi()
 
 // ===== 상태 변수 =====
 const systemPromptList = ref<SystemPrompt[]>([])
 const templateList = ref<PromptTemplate[]>([])
+const filterData = ref<PromptFilterData>({
+  inputKeywords: [],
+  outputKeywords: [],
+  policies: [],
+})
 
 // ===== 시스템 프롬프트 조회 =====
 const handleSelectSystemPromptList = async () => {
@@ -48,6 +59,61 @@ const handleDeleteTemplate = async (id: string) => {
   await handleSelectTemplateList()
 }
 
+// ===== 금지어/필터링 조회 =====
+const handleSelectFilterData = async () => {
+  const res = await fetchFilterData()
+  filterData.value = res.data
+}
+
+// ===== 금지어/필터링 저장 =====
+const handleSaveFilter = async (data: Partial<PromptFilterData>) => {
+  const res = await fetchSaveFilter(data)
+  filterData.value = res.data
+}
+
+// ===== 토큰/응답 제한 조회 =====
+const limitData = ref<PromptLimitData>({
+  maxInputTokens: 0,
+  maxOutputTokens: 0,
+  contextWindow: 0,
+  dailyRequestLimit: 0,
+  monthlyOrgLimit: 0,
+  rateLimit: 0,
+  todayUsage: 0,
+  monthUsage: 0,
+  monthLimit: 0,
+  minResponseLength: 0,
+  responseTimeout: 0,
+  retryCount: 0,
+  streamingEnabled: false,
+})
+
+const handleSelectLimitData = async () => {
+  const res = await fetchLimitData()
+  limitData.value = res.data
+}
+
+// ===== 토큰/응답 제한 저장 =====
+const handleSaveLimit = async (data: Partial<PromptLimitData>) => {
+  const res = await fetchSaveLimit(data)
+  limitData.value = res.data
+}
+
+// ===== 버전 관리 =====
+const versionList = ref<PromptVersion[]>([])
+const versionStats = ref<PromptVersionStats>({ totalVersions: 0, monthlyUpdates: 0, lastChangeDays: 0 })
+
+const handleSelectVersionList = async () => {
+  const res = await fetchVersionList()
+  versionList.value = res.list
+  versionStats.value = res.stats
+}
+
+const handleRestoreVersion = async (id: string) => {
+  await fetchRestoreVersion(id)
+  await handleSelectVersionList()
+}
+
 export const usePromptStore = () => {
   return {
     systemPromptList,
@@ -58,5 +124,15 @@ export const usePromptStore = () => {
     handleSelectTemplateList,
     handleSaveTemplate,
     handleDeleteTemplate,
+    filterData,
+    handleSelectFilterData,
+    handleSaveFilter,
+    limitData,
+    handleSelectLimitData,
+    handleSaveLimit,
+    versionList,
+    versionStats,
+    handleSelectVersionList,
+    handleRestoreVersion,
   }
 }

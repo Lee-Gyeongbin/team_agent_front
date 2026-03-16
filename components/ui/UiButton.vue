@@ -94,6 +94,7 @@ const emit = defineEmits<{
   &.size-btn-xs {
     @include typo($body-xsmall);
     height: $height-xs; // 26px
+    min-width: 50px;
     padding: 0 8px;
   }
 

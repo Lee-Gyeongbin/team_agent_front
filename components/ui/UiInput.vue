@@ -1,5 +1,8 @@
 <template>
-  <div class="ui-input-outer" :class="{ 'has-desc': !!desc }">
+  <div
+    class="ui-input-outer"
+    :class="{ 'has-desc': !!desc }"
+  >
     <div
       class="ui-input-wrap"
       :class="[
@@ -55,7 +58,12 @@
       </span>
     </div>
     <!-- 설명 텍스트 -->
-    <p v-if="desc" class="ui-input-desc">{{ desc }}</p>
+    <p
+      v-if="desc"
+      class="ui-input-desc"
+    >
+      {{ desc }}
+    </p>
   </div>
 </template>
 
@@ -203,7 +211,7 @@ defineExpose({ focus })
 
 .ui-input-desc {
   margin-top: 4px;
-  font-size: $font-size-xs;
+  @include typo($body-small);
   color: $color-text-disabled;
   line-height: 1.5;
 }

@@ -1,4 +1,4 @@
-import type { SystemPrompt, PromptTemplate } from '~/types/prompt'
+import type { SystemPrompt, PromptTemplate, PromptFilterData, PromptLimitData, PromptVersion, PromptVersionStats } from '~/types/prompt'
 
 // 🔽 Mock — 백엔드 API 완성 시 useApi 패턴으로 교체
 const MOCK_BASE = '/mock/prompt'
@@ -39,6 +39,33 @@ export const usePromptApi = () => {
     return mockPost<{ data: { id: string } }>(`${MOCK_BASE}/template/delete`, { id })
   }
 
+  // ===== 금지어/필터링 =====
+  const fetchFilterData = async () => {
+    return mockPost<{ data: PromptFilterData }>(`${MOCK_BASE}/filter/data`, {})
+  }
+
+  const fetchSaveFilter = async (data: Partial<PromptFilterData>) => {
+    return mockPost<{ data: PromptFilterData }>(`${MOCK_BASE}/filter/save`, data)
+  }
+
+  // ===== 토큰/응답 제한 =====
+  const fetchLimitData = async () => {
+    return mockPost<{ data: PromptLimitData }>(`${MOCK_BASE}/limit/data`, {})
+  }
+
+  const fetchSaveLimit = async (data: Partial<PromptLimitData>) => {
+    return mockPost<{ data: PromptLimitData }>(`${MOCK_BASE}/limit/save`, data)
+  }
+
+  // ===== 버전 관리 =====
+  const fetchVersionList = async () => {
+    return mockPost<{ list: PromptVersion[]; stats: PromptVersionStats }>(`${MOCK_BASE}/version/list`, {})
+  }
+
+  const fetchRestoreVersion = async (id: string) => {
+    return mockPost<{ data: PromptVersion }>(`${MOCK_BASE}/version/restore`, { id })
+  }
+
   return {
     fetchSystemPromptList,
     fetchSaveSystemPrompt,
@@ -46,5 +73,11 @@ export const usePromptApi = () => {
     fetchTemplateList,
     fetchSaveTemplate,
     fetchDeleteTemplate,
+    fetchFilterData,
+    fetchSaveFilter,
+    fetchLimitData,
+    fetchSaveLimit,
+    fetchVersionList,
+    fetchRestoreVersion,
   }
 }

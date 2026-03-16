@@ -382,3 +382,28 @@
 .icon-more-line {
   @include icon-file-bg('more-line');
 }
+
+// 시계 (배포일)
+.icon-time {
+  @include icon-file-bg('time');
+}
+
+// 달력 (마지막 변경)
+.icon-calendar {
+  @include icon-file-bg('calendar');
+}
+
+// 버전 (총 버전 수)
+.icon-version {
+  @include icon-file-bg('version');
+}
+
+// 순환 새로고침 (이번달 업데이트)
+.icon-refresh-version {
+  @include icon-file-bg('refresh-version');
+}
+
+// 연필 (작성자 - 버전 관리)
+.icon-edit-version {
+  @include icon-file-bg('edit-version');
+}

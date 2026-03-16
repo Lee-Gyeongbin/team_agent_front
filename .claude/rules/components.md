@@ -10,6 +10,15 @@
   ```
 - 상태별 UI 모두 구현: 로딩(Skeleton), 빈 상태(Empty), 에러, 데이터 있음
 - TypeScript 타입 정의 필수 (`types/` 디렉토리)
+- **Input 설명 텍스트**: `<p class="hint">` 등 별도 태그 사용 금지 → `UiInput`의 `desc` prop 사용
+  ```vue
+  <!-- ❌ 금지 -->
+  <UiInput v-model="value" />
+  <p class="com-setting-hint">설명 텍스트</p>
+
+  <!-- ✅ 올바른 사용 -->
+  <UiInput v-model="value" desc="설명 텍스트" />
+  ```
 
 ## 컴포넌트 분류
 

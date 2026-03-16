@@ -208,3 +208,158 @@ export const mockTemplateDb = {
     return { id }
   },
 }
+
+// ===== 금지어/필터링 =====
+interface MockFilterPolicy {
+  id: string
+  label: string
+  description: string
+  isEnabled: boolean
+}
+
+const filterData = {
+  inputKeywords: ['비속어', '부적절한단어', '금지키워드'],
+  outputKeywords: ['경쟁사명', '민감정보', '언급금지그회사'],
+  policies: [
+    { id: 'p-1', label: '개인정보 감지', description: '주민등록번호, 전화번호, 이메일 등을 자동 감지하여 필터링', isEnabled: true },
+    { id: 'p-2', label: '비즈니스 정보 보호', description: '계약서, 재무정보 등 민감한 비즈니스 정보 필터링', isEnabled: true },
+    { id: 'p-3', label: '욕설/비속어 차단', description: '부적절한 언어 사용 감지 및 차단', isEnabled: true },
+    { id: 'p-4', label: '악의적 프롬프트 탐지', description: '프롬프트 인젝션, 탈옥 시도 등을 감지', isEnabled: true },
+  ] as MockFilterPolicy[],
+}
+
+export const mockFilterDb = {
+  // 조회
+  getData: () => ({
+    inputKeywords: [...filterData.inputKeywords],
+    outputKeywords: [...filterData.outputKeywords],
+    policies: filterData.policies.map((p) => ({ ...p })),
+  }),
+
+  // 저장 (전체 덮어쓰기)
+  save: (data: { inputKeywords?: string[]; outputKeywords?: string[]; policies?: MockFilterPolicy[] }) => {
+    if (data.inputKeywords) filterData.inputKeywords = [...data.inputKeywords]
+    if (data.outputKeywords) filterData.outputKeywords = [...data.outputKeywords]
+    if (data.policies) filterData.policies = data.policies.map((p) => ({ ...p }))
+    return mockFilterDb.getData()
+  },
+}
+
+// ===== 토큰/응답 제한 =====
+const limitData = {
+  maxInputTokens: 4000,
+  maxOutputTokens: 2000,
+  contextWindow: 8000,
+  dailyRequestLimit: 100,
+  monthlyOrgLimit: 50000,
+  rateLimit: 20,
+  todayUsage: 1234,
+  monthUsage: 28450,
+  monthLimit: 50000,
+  minResponseLength: 50,
+  responseTimeout: 30,
+  retryCount: 3,
+  streamingEnabled: true,
+}
+
+export const mockLimitDb = {
+  getData: () => ({ ...limitData }),
+
+  save: (data: Partial<typeof limitData>) => {
+    Object.assign(limitData, data)
+    return { ...limitData }
+  },
+}
+
+// ===== 버전 관리 =====
+interface MockPromptVersion {
+  id: string
+  version: string
+  promptName: string
+  description: string
+  changes: string[]
+  status: 'active' | 'inactive'
+  author: string
+  createdAt: string
+}
+
+const versionList: MockPromptVersion[] = [
+  {
+    id: 'v-1',
+    version: '3.2.0',
+    promptName: '기본 프롬프트 (전체 공통)',
+    description: 'Temperature 값 조정 및 응답 톤 개선',
+    changes: ['Temperature: 0.7 → 0.8', '친근한 톤 추가'],
+    status: 'active',
+    author: '관리자',
+    createdAt: '2026.03.02 14:32',
+  },
+  {
+    id: 'v-2',
+    version: '3.1.5',
+    promptName: '기본 프롬프트 (전체 공통)',
+    description: '보안 정책 관련 지침 추가',
+    changes: [],
+    status: 'inactive',
+    author: '관리자',
+    createdAt: '2026.03.02 14:32',
+  },
+  {
+    id: 'v-3',
+    version: '3.1.0',
+    promptName: '기본 프롬프트 (전체 공통)',
+    description: '영업부 전용 프롬프트 분리',
+    changes: [],
+    status: 'inactive',
+    author: '관리자',
+    createdAt: '2026.03.02 14:32',
+  },
+  {
+    id: 'v-4',
+    version: '3.0.0',
+    promptName: '기본 프롬프트 (전체 공통)',
+    description: '전체 프롬프트 구조 개편',
+    changes: [],
+    status: 'inactive',
+    author: '관리자',
+    createdAt: '2026.03.02 14:32',
+  },
+  {
+    id: 'v-5',
+    version: '3.0.0',
+    promptName: '기본 프롬프트 (전체 공통)',
+    description: '전체 프롬프트 구조 개편',
+    changes: [],
+    status: 'inactive',
+    author: '관리자',
+    createdAt: '2026.03.02 14:32',
+  },
+  {
+    id: 'v-6',
+    version: '3.0.0',
+    promptName: '기본 프롬프트 (전체 공통)',
+    description: '전체 프롬프트 구조 개편',
+    changes: [],
+    status: 'inactive',
+    author: '관리자',
+    createdAt: '2026.03.02 14:32',
+  },
+]
+
+export const mockVersionDb = {
+  getList: () => [...versionList].map((v) => ({ ...v })),
+
+  getStats: () => ({
+    totalVersions: versionList.length,
+    monthlyUpdates: 3,
+    lastChangeDays: 5,
+  }),
+
+  restore: (id: string) => {
+    // 모든 버전 비활성 후 대상만 활성화
+    versionList.forEach((v) => (v.status = 'inactive'))
+    const target = versionList.find((v) => v.id === id)
+    if (target) target.status = 'active'
+    return target ?? null
+  },
+}

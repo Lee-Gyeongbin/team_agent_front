@@ -53,34 +53,26 @@
         <div class="com-setting-field-col">
           <div class="com-setting-field-row">
             <label class="com-setting-label">Temperature (창의성)</label>
-            <div class="com-setting-field-input">
-              <div class="com-setting-inline">
-                <UiInput
+            <UiInput
                   :model-value="form.temperature"
                   type="number"
                   size="sm"
+                  desc="0: 일관적, 2: 창의적"
                   @update:model-value="onUpdateForm('temperature', $event)"
                 />
-              </div>
-              <p class="com-setting-hint">0: 일관적, 2: 창의적</p>
-            </div>
           </div>
         </div>
 
         <div class="com-setting-field-col">
           <div class="com-setting-field-row">
             <label class="com-setting-label">Top P (샘플링)</label>
-            <div class="com-setting-field-input">
-              <div class="com-setting-inline">
-                <UiInput
+            <UiInput
                   :model-value="form.topP"
                   type="number"
                   size="sm"
+                  desc="0.1~1.0 사이 값"
                   @update:model-value="onUpdateForm('topP', $event)"
                 />
-              </div>
-              <p class="com-setting-hint">0.1~1.0 사이 값</p>
-            </div>
           </div>
         </div>
       </div>
