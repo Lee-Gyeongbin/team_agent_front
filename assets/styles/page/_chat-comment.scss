@@ -1,0 +1,307 @@
+@use '../utils/variables' as *;
+@use '../utils/mixins' as *;
+
+// ===================================
+// 챗봇가이드 페이지
+// ===================================
+.chat-comment-page {
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-comment-page-title {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+  padding: $spacing-lg 20px $spacing-md;
+}
+
+.chat-comment-page-name {
+  @include typo($body-xlarge-bold);
+  color: $color-text-heading;
+}
+
+.chat-comment-page-desc {
+  @include typo($body-medium);
+  color: $color-text-secondary;
+}
+
+.chat-comment-page-header {
+  position: sticky;
+  top: 0;
+  z-index: $z-sticky;
+  background: #fff;
+}
+
+.chat-comment-page-body {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  flex: 1;
+  padding: $spacing-md $spacing-md $spacing-md;
+}
+
+// ===================================
+// 섹션 헤더 (타이틀 + 버튼)
+// ===================================
+.chat-comment-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: $spacing-md;
+  border-bottom: 1px solid #aebccb;
+}
+
+.chat-comment-section-title {
+  @include typo($body-xlarge-bold);
+  color: $color-text-heading;
+}
+
+// ===================================
+// 콘텐츠 (좌측 설정 + 우측 미리보기)
+// ===================================
+.chat-comment-content {
+  display: flex;
+  gap: $spacing-lg;
+  margin-top: $spacing-md;
+}
+
+// ===================================
+// 좌측: 설정 영역
+// ===================================
+.chat-comment-setting {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-comment-setting-item {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.chat-comment-setting-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chat-comment-setting-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chat-comment-setting-name {
+  @include typo($body-large-bold);
+  color: $color-text-dark;
+}
+
+.chat-comment-setting-desc {
+  @include typo($body-small);
+  color: $color-text-secondary;
+}
+
+.chat-comment-setting-body {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.chat-comment-setting-label {
+  @include typo($body-medium-bold);
+  color: var(--color-primary);
+}
+
+.chat-comment-setting-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+}
+
+.chat-comment-setting-footer {
+  display: flex;
+  gap: $spacing-sm;
+  padding-top: $spacing-sm;
+}
+
+// ===================================
+// 우측: 미리보기 영역
+// ===================================
+.chat-comment-preview {
+  width: 320px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  overflow: hidden;
+}
+
+.chat-comment-preview-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px $spacing-md;
+  border-bottom: 1px solid $color-border;
+  @include typo($body-medium-bold);
+  color: $color-text-dark;
+}
+
+.chat-comment-preview-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  background: #f8f9fb;
+}
+
+// 봇 프로필
+.chat-comment-preview-bot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px $spacing-md;
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.chat-comment-preview-bot-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  @include typo($body-medium-bold);
+  color: #fff;
+}
+
+.chat-comment-preview-bot-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-comment-preview-bot-name {
+  @include typo($body-medium-bold);
+  color: #fff;
+}
+
+.chat-comment-preview-bot-status {
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.8);
+
+  &.is-maintenance {
+    color: #fbbf24;
+  }
+}
+
+// 메시지 영역
+.chat-comment-preview-messages {
+  flex: 1;
+  padding: $spacing-md;
+  min-height: 200px;
+}
+
+.chat-comment-preview-message {
+  padding: 12px $spacing-md;
+  background: #fff;
+  border-radius: 4px 12px 12px 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  @include typo($body-small);
+  color: $color-text-primary;
+  white-space: pre-line;
+  line-height: 1.6;
+
+  &.is-error {
+    background: #fef2f2;
+    color: #dc2626;
+  }
+
+  &.is-warning {
+    background: #fffbeb;
+    color: #b45309;
+  }
+}
+
+.chat-comment-preview-notice {
+  padding: 10px 12px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: $border-radius-base;
+  @include typo($body-xsmall);
+  color: #0369a1;
+  white-space: pre-line;
+  line-height: 1.5;
+}
+
+// 입력 영역
+.chat-comment-preview-input {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px $spacing-md;
+  margin: 0 $spacing-md $spacing-md;
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+
+  &.is-disabled {
+    background: #f4f4f5;
+    opacity: 0.7;
+  }
+}
+
+.chat-comment-preview-input-placeholder {
+  font-size: 13px;
+  color: $color-text-disabled;
+}
+
+// ===================================
+// 안내멘트 블록 리스트
+// ===================================
+.chat-comment-notice-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+  margin-top: $spacing-md;
+}
+
+.chat-comment-notice-block {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  padding: $spacing-lg;
+  border: 1px solid #dce4e9;
+  border-radius: $border-radius-lg;
+  background: #fff;
+}
+
+.chat-comment-notice-condition {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.chat-comment-notice-condition-label {
+  @include typo($body-medium);
+  color: $color-text-dark;
+  white-space: nowrap;
+}
+
+// ===================================
+// 공통 그리팅 래퍼
+// ===================================
+.chat-comment-greeting {
+  display: flex;
+  flex-direction: column;
+  padding: $spacing-lg;
+  background: #fff;
+  border: 1px solid #dce4e9;
+  border-radius: 16px;
+}
