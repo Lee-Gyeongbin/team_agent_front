@@ -171,24 +171,24 @@
 
 <script setup lang="ts">
 import type { ChatPdfPanelProps } from '~/types/chat'
+import { useFileStore } from '~/composables/com/useFileStore'
 
-const PDF_BASE_URL =
-  import.meta.env.MODE === 'development' ? '/ta-storage' : 'https://kr.object.ncloudstorage.com/ta-storage'
+const { handleViewFileUrl } = useFileStore()
 
 const props = withDefaults(defineProps<ChatPdfPanelProps>(), {
   messageId: null,
   refList: () => [],
 })
 
-onMounted(() => {
-  console.log(import.meta.env.MODE)
-  console.log(PDF_BASE_URL)
-})
-
 const emit = defineEmits<{
   'update:open': [value: boolean]
   'update:fullscreen': [value: boolean]
 }>()
+
+// 선택된 문서 ID
+const selectedDocId = ref<string>('')
+// 현재 PDF 실제 URL (viewFile.do → presigned URL)
+const currentFilePath = ref('')
 
 // RELATED_PAGES 파싱: "[63, 75, 88]" JSON 배열 또는 "1,3,5" 쉼표 구분 모두 대응
 const parseRelatedPages = (raw: string): number[] => {
@@ -201,17 +201,11 @@ const parseRelatedPages = (raw: string): number[] => {
   return []
 }
 
-// 선택된 문서 ID
-const selectedDocId = ref<string>('')
-
 // refList → UiSelect 옵션
 const documentList = computed(() => (props.refList ?? []).map((r) => ({ label: r.docTitle, value: r.docId })))
 
 // 현재 선택된 문서 row
 const selectedRef = computed(() => (props.refList ?? []).find((r) => r.docId === selectedDocId.value))
-
-// 현재 문서의 완성된 PDF URL
-const currentFilePath = computed(() => (selectedRef.value ? PDF_BASE_URL + selectedRef.value.filePath : ''))
 
 // 현재 문서의 주요 페이지 번호
 const currentMainPageNo = computed(() => selectedRef.value?.mainPageNo ?? 1)
@@ -289,8 +283,16 @@ const onClose = () => {
   emit('update:open', false)
 }
 
-// PDF 로드 후 mainPageNo로 이동하는 헬퍼
+// presigned URL 조회 + PDF 로드 후 mainPageNo로 이동하는 헬퍼
 const loadAndGoToMainPage = async () => {
+  if (!props.open || !selectedDocId.value) return
+
+  // 1) /com/file/viewFile.do 로 presigned URL 조회
+  const url = await handleViewFileUrl(selectedDocId.value)
+  currentFilePath.value = url || ''
+  if (!currentFilePath.value) return
+
+  // 2) PDF 로드 + mainPageNo로 이동
   activeTab.value = 'related'
   await loadPdf()
   if (currentMainPageNo.value > 1) {
