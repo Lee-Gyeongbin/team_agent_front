@@ -31,8 +31,9 @@ export const useLlmApi = () => {
     return post<{ data: LlmModel }>(`/llm/save.do`, model)
   }
 
+  /** 모델 삭제 */
   const fetchDeleteLlm = async (modelId: string) => {
-    return mockPost<{ data: { modelId: string } }>(`${MOCK_BASE}/delete`, { modelId })
+    return post<{ data: { modelId: string } }>(`/llm/delete.do`, { modelId })
   }
 
   /** 모델 순서 업데이트 */

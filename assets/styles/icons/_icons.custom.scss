@@ -101,6 +101,16 @@
   @include icon-file-bg('thumbs-down');
 }
 
+// 재생/테스트 실행
+.icon-play {
+  @include icon-file-bg('play');
+}
+
+// 원 안 재생 (테스트 버튼용)
+.icon-play-circle {
+  @include icon-file-bg('play-circle');
+}
+
 // 재생성
 .icon-refresh {
   @include icon-file-bg('refresh');

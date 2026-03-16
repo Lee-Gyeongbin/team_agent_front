@@ -48,15 +48,16 @@
         <button
           class="com-card-btn"
           title="테스트"
+          @click.stop="$emit('test', model)"
         >
-          <i class="icon-play size-16" />
+          <i class="icon-play-circle size-16" />
         </button>
         <button
           class="com-card-btn"
           title="삭제"
           @click="$emit('delete', model)"
         >
-          <i class="icon-trash size-16" />
+          <i class="icon-trashcan size-16" />
         </button>
         <UiToggle
           :model-value="model.useYn === 'Y'"
@@ -77,6 +78,7 @@ interface Props {
 const props = defineProps<Props>()
 defineEmits<{
   setting: [model: LlmModel]
+  test: [model: LlmModel]
   delete: [model: LlmModel]
   toggle: [model: LlmModel]
 }>()

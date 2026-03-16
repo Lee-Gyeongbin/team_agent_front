@@ -31,8 +31,8 @@ const handleFetchProviderOptions = async () => {
   }
 }
 
-/** 모델 저장 유효성 검사 */
-const validateSaveLlm = (model: Partial<LlmModel>) => {
+/** 모델 저장 유효성 검사 (editingModelId: 수정 시 제외할 모델의 modelId) */
+const validateSaveLlm = (model: Partial<LlmModel>, editingModelId?: string) => {
   const valid = { valid: true, message: '' }
   if (!model.modelName) {
     valid.valid = false
@@ -42,6 +42,12 @@ const validateSaveLlm = (model: Partial<LlmModel>) => {
   if (!model.modelId) {
     valid.valid = false
     valid.message = '모델ID를 입력해주세요.'
+    return valid
+  }
+  const isDuplicate = llmList.value.some((m) => m.modelId === model.modelId && m.modelId !== editingModelId)
+  if (isDuplicate) {
+    valid.valid = false
+    valid.message = '이미 존재하는 모델ID입니다.'
     return valid
   }
   if (!model.providerId) {
@@ -62,9 +68,9 @@ const validateSaveLlm = (model: Partial<LlmModel>) => {
   return valid
 }
 
-/** 모델 저장 */
-const handleSaveLlm = async (model: Partial<LlmModel>) => {
-  const { valid, message } = validateSaveLlm(model)
+/** 모델 저장 (editingModelId: 수정 시 현재 모델의 modelId, 추가 시 생략) */
+const handleSaveLlm = async (model: Partial<LlmModel>, editingModelId?: string) => {
+  const { valid, message } = validateSaveLlm(model, editingModelId)
   if (!valid) {
     openToast({ message })
     return
@@ -84,9 +90,20 @@ const handleSaveLlm = async (model: Partial<LlmModel>) => {
   })
 }
 
+/** 모델 완전 삭제 */
 const handleDeleteLlm = async (modelId: string) => {
-  await fetchDeleteLlm(modelId)
-  await handleSelectLlmList()
+  openConfirm({
+    message: '모델을 삭제하시겠습니까?',
+    onConfirm: async () => {
+      try {
+        await fetchDeleteLlm(modelId)
+        await handleSelectLlmList()
+        openAlert({ message: '모델이 삭제되었습니다.' })
+      } catch {
+        openAlert({ message: '모델 삭제 실패' })
+      }
+    },
+  })
 }
 
 /** 모델 드래그 시작 시 순서 저장 (취소 시 복원용) */
@@ -111,6 +128,11 @@ const handleUpdateLlmOrder = async (orderList: { modelId: string; sortOrder: num
 
 /** 모델 활성화 상태 변경 */
 const handleToggleActive = async (model: Partial<LlmModel>) => {
+  const { valid, message } = validateSaveLlm(model, model.modelId)
+  if (!valid) {
+    openToast({ message })
+    return
+  }
   try {
     await fetchSaveLlm(model)
     await handleSelectLlmList()

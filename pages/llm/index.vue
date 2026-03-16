@@ -22,6 +22,7 @@
           <LlmCard
             :model="element"
             @setting="onClickSetting"
+            @test="onClickTest"
             @delete="onDeleteLlm"
             @toggle="onToggleActive"
           />
@@ -35,6 +36,13 @@
       :model="selectedModel"
       @close="isSettingOpen = false"
       @save="onSaveSetting"
+    />
+
+    <!-- 모델 테스트 모달 -->
+    <LlmTestModal
+      :is-open="isTestOpen"
+      :model="selectedModelForTest"
+      @close="isTestOpen = false"
     />
   </div>
 </template>
@@ -60,6 +68,8 @@ onMounted(() => handleSelectLlmList())
 const activeCount = computed(() => llmList.value.filter((m) => m.useYn === 'Y').length)
 
 const selectedModel = ref<LlmModel | null>(null)
+const isTestOpen = ref(false)
+const selectedModelForTest = ref<LlmModel | null>(null)
 
 const openAddLlm = () => {
   selectedModel.value = null
@@ -71,13 +81,15 @@ const onClickSetting = (model: LlmModel) => {
   isSettingOpen.value = true
 }
 
+const onClickTest = (model: LlmModel) => {
+  selectedModelForTest.value = model
+  isTestOpen.value = true
+}
+
 const onSaveSetting = async (form: Partial<LlmModel>) => {
   const model = selectedModel.value
   const sortOrder = model?.sortOrder ?? Math.max(0, ...llmList.value.map((m) => m.sortOrder ?? 0)) + 1
-  await handleSaveLlm({
-    ...form,
-    sortOrder,
-  })
+  await handleSaveLlm({ ...form, sortOrder }, model?.modelId)
 }
 
 const onDeleteLlm = async (model: LlmModel) => {

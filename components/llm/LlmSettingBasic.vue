@@ -52,6 +52,7 @@
           :model-value="modelValue.modelId"
           placeholder="예: GPT-4o"
           size="sm"
+          :disabled="modelIdDisabled"
           @update:model-value="onUpdate('modelId', $event)"
         />
       </div>
@@ -127,9 +128,10 @@ interface BasicForm {
 
 interface Props {
   modelValue: BasicForm
+  modelIdDisabled?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), { modelIdDisabled: false })
 
 const emit = defineEmits<{
   'update:modelValue': [value: BasicForm]

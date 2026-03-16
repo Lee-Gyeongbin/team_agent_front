@@ -12,6 +12,7 @@
       <LlmSettingBasic
         :key="sectionKey"
         v-model="basicForm"
+        :model-id-disabled="!!model"
       />
       <LlmSettingApi
         :key="sectionKey"
@@ -182,12 +183,11 @@ watch(
 )
 
 const onSave = () => {
-  const usage = usageForm.value
   emit('save', {
     ...basicForm.value,
     ...apiForm.value,
     ...paramForm.value,
-    ...usage,
+    ...usageForm.value,
   })
 }
 </script>
