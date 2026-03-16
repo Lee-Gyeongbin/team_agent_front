@@ -99,3 +99,24 @@ export const inputNumeric = (event: Event): string => {
   target.value = result
   return result
 }
+
+/** 전화번호 입력값에서 앞뒤 공백 제거 후 숫자만 추출 */
+export const toPhoneDigits = (value: string | undefined | null): string =>
+  String(value ?? '')
+    .trim()
+    .replace(/\D/g, '')
+
+/** 전화번호 형식 포맷 */
+export const formatPhone = (value: string | undefined | null): string => {
+  const digits = toPhoneDigits(value)
+  if (!digits) return ''
+
+  if (digits.length < 9 || digits.length > 11) return digits
+
+  const headLength = digits.length === 9 ? 2 : 3
+  const head = digits.slice(0, headLength)
+  const middle = digits.slice(headLength, -4)
+  const tail = digits.slice(-4)
+
+  return `${head}-${middle}-${tail}`
+}

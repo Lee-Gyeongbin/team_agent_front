@@ -3,6 +3,7 @@ import type { UserItem } from '~/types/user-manage'
 import { useUserManageApi } from '~/composables/user-manage/useUserManageApi'
 import { useCodesApi } from '~/composables/codes/useCodesApi'
 import { useOrgManageStore } from '~/composables/org-manage/useOrgManageStore'
+import { formatPhone, toPhoneDigits } from '~/utils/global/numberUtil'
 
 const ACCT_STATUS_CODE_GRP_ID = 'CG000001'
 const userManageList = ref<UserItem[]>([])
@@ -32,8 +33,8 @@ export const useUserManageStore = (): {
   getAcctStatusName: (codeId: string | undefined | null) => string
   getAcctStatusClass: (statusName: string) => string
   getOrgName: (orgId: string | undefined | null) => string
-  formatPhone: (value: string | number | undefined | null) => string
-  toPhoneDigits: (value: string | number | undefined | null) => string
+  formatPhone: (value: string | undefined | null) => string
+  toPhoneDigits: (value: string | undefined | null) => string
 } => {
   const { fetchUserList, fetchUpdateUser, fetchDeleteUser, fetchRestoreUser, fetchResetUserPassword } =
     useUserManageApi()
@@ -182,28 +183,6 @@ export const useUserManageStore = (): {
   const getOrgName = (orgId: string | undefined | null): string => {
     if (orgId == null || orgId === '') return ''
     return orgList.value.find((item) => item.orgId === orgId)?.orgNm ?? orgId
-  }
-
-  /** 전화번호 입력값에서 앞뒤 공백 제거 후 숫자만 추출 */
-  const toPhoneDigits = (value: string | number | undefined | null): string =>
-    String(value ?? '')
-      .trim()
-      .replace(/\D/g, '')
-
-  /** 전화번호 형식 포맷 */
-  const formatPhone = (value: string | number | undefined | null): string => {
-    const digits = toPhoneDigits(value)
-    if (!digits) return ''
-
-    if (digits.length < 9 || digits.length > 11) return digits
-
-    const headLength = digits.length === 9 ? 2 : 3
-    const head = digits.slice(0, headLength)
-    const rest = digits.slice(headLength)
-    const middle = rest.slice(0, rest.length - 4)
-    const tail = rest.slice(rest.length - 4)
-
-    return `${head}-${middle}-${tail}`
   }
 
   return {
