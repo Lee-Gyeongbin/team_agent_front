@@ -39,7 +39,7 @@
             :model-value="modelValue.temperature"
             type="number"
             size="sm"
-            @update:model-value="onUpdate('temperature', $event)"
+            @update:model-value="onUpdate('temperature', Number($event))"
           />
         </div>
         <div
@@ -51,7 +51,7 @@
             :model-value="modelValue.topP"
             type="number"
             size="sm"
-            @update:model-value="onUpdate('topP', $event)"
+            @update:model-value="onUpdate('topP', Number($event))"
           />
         </div>
       </div>
@@ -67,7 +67,7 @@
             :model-value="modelValue.maxTokens"
             type="number"
             size="sm"
-            @update:model-value="onUpdate('maxTokens', $event)"
+            @update:model-value="onUpdate('maxTokens', Number($event))"
           />
         </div>
         <div
@@ -79,7 +79,7 @@
             :model-value="modelValue.ctxtWin"
             type="number"
             size="sm"
-            @update:model-value="onUpdate('ctxtWin', $event)"
+            @update:model-value="onUpdate('ctxtWin', Number($event))"
           />
         </div>
       </div>
@@ -95,7 +95,7 @@
             :model-value="modelValue.freqPenalty"
             type="number"
             size="sm"
-            @update:model-value="onUpdate('freqPenalty', $event)"
+            @update:model-value="onUpdate('freqPenalty', Number($event))"
           />
         </div>
         <div
@@ -107,7 +107,7 @@
             :model-value="modelValue.presPenalty"
             type="number"
             size="sm"
-            @update:model-value="onUpdate('presPenalty', $event)"
+            @update:model-value="onUpdate('presPenalty', Number($event))"
           />
         </div>
       </div>
@@ -117,17 +117,17 @@
         <label class="com-setting-label">지원여부</label>
         <div class="com-setting-checkbox-group">
           <UiCheckbox
-            :model-value="modelValue.streamYn"
+            :model-value="modelValue.streamYn === 'Y'"
             label="스트리밍"
             @update:model-value="onUpdate('streamYn', $event)"
           />
           <UiCheckbox
-            :model-value="modelValue.fnCallYn"
+            :model-value="modelValue.fnCallYn === 'Y'"
             label="함수 호출 (Tool)"
             @update:model-value="onUpdate('fnCallYn', $event)"
           />
           <UiCheckbox
-            :model-value="modelValue.visionYn"
+            :model-value="modelValue.visionYn === 'Y'"
             label="비전(이미지)"
             @update:model-value="onUpdate('visionYn', $event)"
           />
@@ -146,9 +146,9 @@ interface ParamForm {
   ctxtWin: number
   freqPenalty: number
   presPenalty: number
-  streamYn: boolean
-  fnCallYn: boolean
-  visionYn: boolean
+  streamYn: 'Y' | 'N'
+  fnCallYn: 'Y' | 'N'
+  visionYn: 'Y' | 'N'
 }
 
 interface Props {
@@ -163,7 +163,10 @@ const emit = defineEmits<{
 
 const isCollapsed = ref(true)
 
+const YN_KEYS: (keyof ParamForm)[] = ['streamYn', 'fnCallYn', 'visionYn']
+
 const onUpdate = (key: keyof ParamForm, value: number | boolean) => {
-  emit('update:modelValue', { ...props.modelValue, [key]: value })
+  const parsed = YN_KEYS.includes(key) && typeof value === 'boolean' ? (value ? 'Y' : 'N') : (value as number)
+  emit('update:modelValue', { ...props.modelValue, [key]: parsed })
 }
 </script>

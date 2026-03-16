@@ -91,8 +91,8 @@
         >
           <label class="com-setting-label">사용 여부</label>
           <UiToggle
-            :model-value="modelValue.useYn"
-            @update:model-value="onUpdate('useYn', $event)"
+            :model-value="modelValue.useYn === 'Y'"
+            @update:model-value="onUpdate('useYn', $event ? 'Y' : 'N')"
           />
         </div>
       </div>
@@ -121,7 +121,7 @@ interface BasicForm {
   modelId: string
   providerId: string
   version: string
-  useYn: boolean
+  useYn: 'Y' | 'N'
   description: string
 }
 
@@ -141,10 +141,5 @@ const onUpdate = (key: keyof BasicForm, value: string | number | boolean) => {
   emit('update:modelValue', { ...props.modelValue, [key]: value })
 }
 
-const providerOptions = [
-  { label: 'OpenAI', value: 'OpenAI' },
-  { label: 'Google', value: 'Google' },
-  { label: 'Anthropic', value: 'Anthropic' },
-  { label: 'Meta', value: 'Meta' },
-]
+const { providerOptions } = useLlmStore()
 </script>

@@ -59,7 +59,7 @@
           <i class="icon-trash size-16" />
         </button>
         <UiToggle
-          :model-value="model.modelUseYn === 'Y'"
+          :model-value="model.useYn === 'Y'"
           @update:model-value="$emit('toggle', model)"
         />
       </div>
