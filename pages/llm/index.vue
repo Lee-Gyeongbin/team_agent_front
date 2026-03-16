@@ -12,7 +12,7 @@
       v-model="llmList"
       class="com-card-list"
       handle=".com-card-drag"
-      item-key="id"
+      item-key="modelId"
       animation="200"
       @end="onDragEnd"
     >
@@ -45,7 +45,7 @@ const { llmList, handleSelectLlmList, handleSaveLlm, handleDeleteLlm, handleUpda
 
 onMounted(() => handleSelectLlmList())
 
-const activeCount = computed(() => llmList.value.filter((m) => m.isActive).length)
+const activeCount = computed(() => llmList.value.filter((m) => m.useYn).length)
 
 // ===== 설정 모달 =====
 const isSettingOpen = ref(false)
@@ -63,22 +63,22 @@ const onClickSetting = (model: LlmModel) => {
 
 const onSaveSetting = async (form: Partial<LlmModel>) => {
   await handleSaveLlm({
-    id: selectedModel.value?.id,
+    modelId: selectedModel.value?.modelId,
     ...form,
   })
   isSettingOpen.value = false
 }
 
 const onDeleteLlm = async (model: LlmModel) => {
-  await handleDeleteLlm(model.id)
+  await handleDeleteLlm(model.modelId)
 }
 
 const onToggleActive = async (model: LlmModel) => {
-  await handleSaveLlm({ id: model.id, isActive: !model.isActive })
+  await handleSaveLlm({ modelId: model.modelId, useYn: !model.useYn })
 }
 
 const onDragEnd = async () => {
-  const orderData = llmList.value.map((item, index) => ({ id: item.id, order: index }))
+  const orderData = llmList.value.map((item, index) => ({ modelId: item.modelId, sortOrder: index }))
   await handleUpdateLlmOrder(orderData)
 }
 </script>

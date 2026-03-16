@@ -8,8 +8,12 @@ const llmList = ref<LlmModel[]>([])
 
 // ===== 조회 =====
 const handleSelectLlmList = async () => {
-  const res = await fetchLlmList()
-  llmList.value = res.list
+  try {
+    const response = await fetchLlmList()
+    llmList.value = response.dataList ?? []
+  } catch {
+    openAlert({ message: '모델 목록 조회 실패' })
+  }
 }
 
 // ===== 추가/수정/삭제 =====
@@ -18,13 +22,13 @@ const handleSaveLlm = async (model: Partial<LlmModel>) => {
   await handleSelectLlmList()
 }
 
-const handleDeleteLlm = async (id: string) => {
-  await fetchDeleteLlm(id)
+const handleDeleteLlm = async (modelId: string) => {
+  await fetchDeleteLlm(modelId)
   await handleSelectLlmList()
 }
 
 // ===== 순서 =====
-const handleUpdateLlmOrder = async (orderList: { id: string; order: number }[]) => {
+const handleUpdateLlmOrder = async (orderList: { modelId: string; sortOrder: number }[]) => {
   await fetchUpdateLlmOrder(orderList)
   await handleSelectLlmList()
 }

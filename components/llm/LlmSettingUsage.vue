@@ -2,7 +2,7 @@
   <div
     class="com-setting-section"
     :class="{ 'is-collapsed': isCollapsed }"
-    style="--label-width: 140px;"
+    style="--label-width: 140px"
   >
     <div
       class="com-setting-section-header"
@@ -10,8 +10,19 @@
     >
       <span class="com-setting-section-title">사용량 제한</span>
       <span class="com-setting-section-arrow">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M4 10l4-4 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+        >
+          <path
+            d="M4 10l4-4 4 4"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
         </svg>
       </span>
     </div>
@@ -19,7 +30,10 @@
     <div class="com-setting-section-body">
       <!-- 입력 비용 / 출력 비용 -->
       <div class="com-setting-row">
-        <div class="com-setting-field-row" style="flex: 1;">
+        <div
+          class="com-setting-field-row"
+          style="flex: 1"
+        >
           <label class="com-setting-label">입력 비용 ($/1M 토큰)</label>
           <UiInput
             :model-value="modelValue.inputCost"
@@ -28,7 +42,10 @@
             @update:model-value="onUpdate('inputCost', $event)"
           />
         </div>
-        <div class="com-setting-field-row" style="flex: 1;">
+        <div
+          class="com-setting-field-row"
+          style="flex: 1"
+        >
           <label class="com-setting-label">출력 비용 ($/1M 토큰)</label>
           <UiInput
             :model-value="modelValue.outputCost"
@@ -41,7 +58,10 @@
 
       <!-- 일일 요청 제한 / 분당 요청 제한 -->
       <div class="com-setting-row">
-        <div class="com-setting-field-row" style="flex: 1;">
+        <div
+          class="com-setting-field-row"
+          style="flex: 1"
+        >
           <label class="com-setting-label">일일 요청 제한</label>
           <UiInput
             :model-value="modelValue.dailyRequestLimit"
@@ -50,7 +70,10 @@
             @update:model-value="onUpdate('dailyRequestLimit', $event)"
           />
         </div>
-        <div class="com-setting-field-row" style="flex: 1;">
+        <div
+          class="com-setting-field-row"
+          style="flex: 1"
+        >
           <label class="com-setting-label">분당 요청 제한 (RPM)</label>
           <UiInput
             :model-value="modelValue.rpmLimit"
@@ -63,7 +86,10 @@
 
       <!-- 분당 토큰 제한 / 일일 비용 제한 -->
       <div class="com-setting-row">
-        <div class="com-setting-field-row" style="flex: 1;">
+        <div
+          class="com-setting-field-row"
+          style="flex: 1"
+        >
           <label class="com-setting-label">분당 토큰 제한 (TPM)</label>
           <UiInput
             :model-value="modelValue.tpmLimit"
@@ -72,7 +98,10 @@
             @update:model-value="onUpdate('tpmLimit', $event)"
           />
         </div>
-        <div class="com-setting-field-row" style="flex: 1;">
+        <div
+          class="com-setting-field-row"
+          style="flex: 1"
+        >
           <label class="com-setting-label">일일 비용 제한 ($)</label>
           <UiInput
             :model-value="modelValue.dailyCostLimit"
@@ -88,19 +117,19 @@
         <label class="com-setting-label">사용자 그룹별 접근 제어</label>
         <div class="com-setting-checkbox-group">
           <UiCheckbox
-            :model-value="modelValue.accessAdmin"
+            :model-value="getAccessByRole('admin')"
             label="관리자"
-            @update:model-value="onUpdate('accessAdmin', $event)"
+            @update:model-value="onUpdateAccess('admin', $event)"
           />
           <UiCheckbox
-            :model-value="modelValue.accessPremium"
+            :model-value="getAccessByRole('premium')"
             label="프리미엄 사용자"
-            @update:model-value="onUpdate('accessPremium', $event)"
+            @update:model-value="onUpdateAccess('premium', $event)"
           />
           <UiCheckbox
-            :model-value="modelValue.accessGeneral"
+            :model-value="getAccessByRole('general')"
             label="일반 사용자"
-            @update:model-value="onUpdate('accessGeneral', $event)"
+            @update:model-value="onUpdateAccess('general', $event)"
           />
         </div>
       </div>
@@ -109,6 +138,8 @@
 </template>
 
 <script setup lang="ts">
+import type { LlmAccessControl } from '~/types/llm'
+
 interface UsageForm {
   inputCost: number
   outputCost: number
@@ -116,9 +147,7 @@ interface UsageForm {
   rpmLimit: number
   tpmLimit: number
   dailyCostLimit: number
-  accessAdmin: boolean
-  accessPremium: boolean
-  accessGeneral: boolean
+  accessControlList: LlmAccessControl[]
 }
 
 interface Props {
@@ -133,7 +162,22 @@ const emit = defineEmits<{
 
 const isCollapsed = ref(true)
 
-const onUpdate = (key: keyof UsageForm, value: number | boolean) => {
+const getAccessByRole = (roleId: string) => {
+  return props.modelValue.accessControlList.find((a) => a.roleId === roleId)?.allowedYn ?? false
+}
+
+const onUpdateAccess = (roleId: string, allowedYn: boolean) => {
+  const list = [...props.modelValue.accessControlList]
+  const idx = list.findIndex((a) => a.roleId === roleId)
+  if (idx > -1) {
+    list[idx] = { ...list[idx], allowedYn }
+  } else {
+    list.push({ modelId: props.modelValue.accessControlList[0]?.modelId ?? '', roleId, allowedYn })
+  }
+  emit('update:modelValue', { ...props.modelValue, accessControlList: list })
+}
+
+const onUpdate = (key: keyof Omit<UsageForm, 'accessControlList'>, value: number) => {
   emit('update:modelValue', { ...props.modelValue, [key]: value })
 }
 </script>

@@ -1,7 +1,7 @@
 <template>
   <div
     class="com-card"
-    :class="{ 'is-inactive': !model.isActive }"
+    :class="{ 'is-inactive': !model.useYn }"
   >
     <!-- 드래그 핸들 -->
     <div class="com-card-drag">
@@ -11,17 +11,21 @@
     <!-- 카드 본문 -->
     <div class="com-card-body">
       <!-- 왼쪽: 정보 (클릭 시 설정 모달) -->
-      <div class="com-card-info" style="cursor: pointer;" @click="$emit('setting', model)">
+      <div
+        class="com-card-info"
+        style="cursor: pointer"
+        @click="$emit('setting', model)"
+      >
         <!-- 제목 + 순서 배지 -->
         <div class="com-card-title-row">
-          <span class="com-card-title">{{ model.name }}</span>
+          <span class="com-card-title">{{ model.modelName }}</span>
           <span class="com-card-badge">
             순서
-            <span class="badge-num">{{ model.priority }}</span>
+            <span class="badge-num">{{ model.sortOrder }}</span>
           </span>
         </div>
         <!-- Provider -->
-        <p class="com-card-desc">Provider : {{ model.provider }}</p>
+        <p class="com-card-desc">Provider : {{ model.providerId }}</p>
         <!-- 메타 -->
         <div class="com-card-meta">
           <span class="com-card-meta-item">
@@ -55,7 +59,7 @@
           <i class="icon-trash size-16" />
         </button>
         <UiToggle
-          :model-value="model.isActive"
+          :model-value="model.useYn"
           @update:model-value="$emit('toggle', model)"
         />
       </div>
@@ -78,6 +82,7 @@ defineEmits<{
 }>()
 
 const formattedDailyLimit = computed(() => {
-  return props.model.dailyRequestLimit.toLocaleString()
+  const val = props.model.dailyRequestLimit
+  return val != null && typeof val === 'number' ? val.toLocaleString() : '-'
 })
 </script>

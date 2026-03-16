@@ -49,10 +49,41 @@ const emit = defineEmits<{
 }>()
 
 // ===== 초기값 =====
-const defaultBasic = () => ({ name: '', modelId: '', provider: '', version: '', status: '활성', description: '' })
-const defaultApi = () => ({ apiEndpoint: '', apiKey: '', timeout: 30, retryCount: 3, extraHeaders: '' })
-const defaultParam = () => ({ temperature: 0.7, topP: 1, maxTokens: 4096, contextWindow: 128000, frequencyPenalty: 0, presencePenalty: 0, supportStreaming: true, supportFunctionCall: true, supportVision: true })
-const defaultUsage = () => ({ inputCost: 0, outputCost: 0, dailyRequestLimit: 4096, rpmLimit: 128000, tpmLimit: 0, dailyCostLimit: 0, accessAdmin: true, accessPremium: true, accessGeneral: true })
+const defaultBasic = () => ({
+  modelName: '',
+  modelId: '',
+  providerId: '',
+  version: '',
+  useYn: true,
+  description: '',
+})
+const defaultApi = () => ({ apiUrl: '', apiKey: '', tmoSec: 30, retryCnt: 3, custHeaders: '' })
+const defaultParam = () => ({
+  temperature: 0.7,
+  topP: 1,
+  maxTokens: 4096,
+  ctxtWin: 128000,
+  freqPenalty: 0,
+  presPenalty: 0,
+  streamYn: true,
+  fnCallYn: true,
+  visionYn: true,
+})
+const defaultAccessControlList = (modelId: string) => [
+  { modelId, roleId: 'admin', allowedYn: true },
+  { modelId, roleId: 'premium', allowedYn: true },
+  { modelId, roleId: 'general', allowedYn: true },
+]
+
+const defaultUsage = () => ({
+  inputCost: 0,
+  outputCost: 0,
+  dailyRequestLimit: 4096,
+  rpmLimit: 128000,
+  tpmLimit: 0,
+  dailyCostLimit: 0,
+  accessControlList: defaultAccessControlList(''),
+})
 
 // ===== 폼 상태 =====
 const basicForm = ref(defaultBasic())
@@ -67,10 +98,41 @@ watch(
     if (!open) return
     if (props.model) {
       const m = props.model
-      basicForm.value = { name: m.name, modelId: m.modelId, provider: m.provider, version: m.version, status: m.status, description: m.description }
-      apiForm.value = { apiEndpoint: m.apiEndpoint, apiKey: m.apiKey, timeout: m.timeout, retryCount: m.retryCount, extraHeaders: m.extraHeaders }
-      paramForm.value = { temperature: m.temperature, topP: m.topP, maxTokens: m.maxTokens, contextWindow: m.contextWindow, frequencyPenalty: m.frequencyPenalty, presencePenalty: m.presencePenalty, supportStreaming: m.supportStreaming, supportFunctionCall: m.supportFunctionCall, supportVision: m.supportVision }
-      usageForm.value = { inputCost: m.inputCost, outputCost: m.outputCost, dailyRequestLimit: m.dailyRequestLimit, rpmLimit: m.rpmLimit, tpmLimit: m.tpmLimit, dailyCostLimit: m.dailyCostLimit, accessAdmin: m.accessAdmin, accessPremium: m.accessPremium, accessGeneral: m.accessGeneral }
+      basicForm.value = {
+        modelName: m.modelName,
+        modelId: m.modelId,
+        providerId: m.providerId,
+        version: m.version,
+        useYn: m.useYn,
+        description: m.description,
+      }
+      apiForm.value = {
+        apiUrl: m.apiUrl,
+        apiKey: m.apiKey,
+        tmoSec: m.tmoSec,
+        retryCnt: m.retryCnt,
+        custHeaders: m.custHeaders,
+      }
+      paramForm.value = {
+        temperature: m.temperature,
+        topP: m.topP,
+        maxTokens: m.maxTokens,
+        ctxtWin: m.ctxtWin,
+        freqPenalty: m.freqPenalty,
+        presPenalty: m.presPenalty,
+        streamYn: m.streamYn,
+        fnCallYn: m.fnCallYn,
+        visionYn: m.visionYn,
+      }
+      usageForm.value = {
+        inputCost: m.inputCost,
+        outputCost: m.outputCost,
+        dailyRequestLimit: m.dailyRequestLimit,
+        rpmLimit: m.rpmLimit,
+        tpmLimit: m.tpmLimit,
+        dailyCostLimit: m.dailyCostLimit,
+        accessControlList: m.accessControlList ?? defaultAccessControlList(m.modelId),
+      }
     } else {
       basicForm.value = defaultBasic()
       apiForm.value = defaultApi()
@@ -81,11 +143,18 @@ watch(
 )
 
 const onSave = () => {
+  const modelId = basicForm.value.modelId
+  const usage = usageForm.value
+  const accessControlList = usage.accessControlList.map((a) => ({
+    ...a,
+    modelId: a.modelId || modelId,
+  }))
   emit('save', {
     ...basicForm.value,
     ...apiForm.value,
     ...paramForm.value,
-    ...usageForm.value,
+    ...usage,
+    accessControlList,
   })
 }
 </script>

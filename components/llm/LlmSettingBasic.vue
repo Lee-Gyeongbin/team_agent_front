@@ -2,7 +2,7 @@
   <div
     class="com-setting-section"
     :class="{ 'is-collapsed': isCollapsed }"
-    style="--label-width: 80px;"
+    style="--label-width: 80px"
   >
     <div
       class="com-setting-section-header"
@@ -10,8 +10,19 @@
     >
       <span class="com-setting-section-title">기본 정보</span>
       <span class="com-setting-section-arrow">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M4 10l4-4 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+        >
+          <path
+            d="M4 10l4-4 4 4"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
         </svg>
       </span>
     </div>
@@ -24,10 +35,10 @@
           모델명
         </label>
         <UiInput
-          :model-value="modelValue.name"
+          :model-value="modelValue.modelName"
           placeholder="예: GPT-4o"
           size="sm"
-          @update:model-value="onUpdate('name', $event)"
+          @update:model-value="onUpdate('modelName', $event)"
         />
       </div>
 
@@ -52,17 +63,20 @@
           Provider
         </label>
         <UiSelect
-          :model-value="modelValue.provider"
+          :model-value="modelValue.providerId"
           :options="providerOptions"
           placeholder="선택하세요"
           size="sm"
-          @update:model-value="onUpdate('provider', $event)"
+          @update:model-value="onUpdate('providerId', $event)"
         />
       </div>
 
-      <!-- 버전 / 상태 -->
+      <!-- 버전 / 사용 여부 -->
       <div class="com-setting-row">
-        <div class="com-setting-field-row" style="flex: 1;">
+        <div
+          class="com-setting-field-row"
+          style="flex: 1"
+        >
           <label class="com-setting-label">버전</label>
           <UiInput
             :model-value="modelValue.version"
@@ -71,16 +85,14 @@
             @update:model-value="onUpdate('version', $event)"
           />
         </div>
-        <div class="com-setting-field-row" style="flex: 1;">
-          <label class="com-setting-label">
-            <span class="is-required">*</span>
-            상태
-          </label>
-          <UiSelect
-            :model-value="modelValue.status"
-            :options="statusOptions"
-            size="sm"
-            @update:model-value="onUpdate('status', $event)"
+        <div
+          class="com-setting-field-row"
+          style="flex: 1"
+        >
+          <label class="com-setting-label">사용 여부</label>
+          <UiToggle
+            :model-value="modelValue.useYn"
+            @update:model-value="onUpdate('useYn', $event)"
           />
         </div>
       </div>
@@ -105,11 +117,11 @@
 
 <script setup lang="ts">
 interface BasicForm {
-  name: string
+  modelName: string
   modelId: string
-  provider: string
+  providerId: string
   version: string
-  status: string
+  useYn: boolean
   description: string
 }
 
@@ -125,7 +137,7 @@ const emit = defineEmits<{
 
 const isCollapsed = ref(false)
 
-const onUpdate = (key: keyof BasicForm, value: string | number) => {
+const onUpdate = (key: keyof BasicForm, value: string | number | boolean) => {
   emit('update:modelValue', { ...props.modelValue, [key]: value })
 }
 
@@ -134,10 +146,5 @@ const providerOptions = [
   { label: 'Google', value: 'Google' },
   { label: 'Anthropic', value: 'Anthropic' },
   { label: 'Meta', value: 'Meta' },
-]
-
-const statusOptions = [
-  { label: '활성', value: '활성' },
-  { label: '비활성', value: '비활성' },
 ]
 </script>
