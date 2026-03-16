@@ -8,11 +8,11 @@
   display: flex;
   flex-direction: column;
   min-height: calc(100vh - #{$header-height});
-  padding: 12px $spacing-md $spacing-md;
 }
 
 .prompt-page-header {
   position: sticky;
+  top: 0;
   z-index: $z-sticky;
   background: #fff;
 }
@@ -22,7 +22,7 @@
   flex-direction: column;
   gap: $spacing-md;
   flex: 1;
-  padding-top: $spacing-md;
+  padding: $spacing-md $spacing-md $spacing-md;
 }
 
 // ===================================
@@ -71,7 +71,7 @@
 // Figma: 20px/bold/#2D3139
 .prompt-system-setting-name {
   @include typo($body-xlarge-bold);
-  color: $color-text-dark;
+  color: $color-text-heading;
 }
 
 // Figma: 12px/400/#5C6677

@@ -21,10 +21,31 @@
             :prompt="item"
             @edit="onEdit"
             @copy="onCopy"
+            @delete="onDelete"
           />
         </div>
       </div>
     </div>
+
+    <!-- 저장 확인 모달 -->
+    <UiDialogModal
+      :is-open="isSaveModalOpen"
+      title="프롬프트 저장"
+      message="프롬프트를 저장하시겠습니까?"
+      confirm-text="저장"
+      @close="isSaveModalOpen = false"
+      @confirm="doSave"
+    />
+
+    <!-- 삭제 확인 모달 -->
+    <UiDialogModal
+      :is-open="isDeleteModalOpen"
+      title="프롬프트 삭제"
+      :message="`'${deletingPrompt?.name}' 프롬프트를 삭제하시겠습니까?`"
+      confirm-text="삭제"
+      @close="isDeleteModalOpen = false"
+      @confirm="doDelete"
+    />
   </div>
 </template>
 
@@ -32,7 +53,7 @@
 import type { SystemPrompt } from '~/types/prompt'
 import { usePromptStore } from '~/composables/prompt/usePromptStore'
 
-const { systemPromptList, handleSelectSystemPromptList, handleSaveSystemPrompt } = usePromptStore()
+const { systemPromptList, handleSelectSystemPromptList, handleSaveSystemPrompt, handleDeleteSystemPrompt } = usePromptStore()
 
 // 설정 폼
 const settingForm = ref<Partial<SystemPrompt>>({
@@ -48,8 +69,16 @@ const settingForm = ref<Partial<SystemPrompt>>({
 onMounted(() => handleSelectSystemPromptList())
 
 // 저장
-const onSave = async (form: Partial<SystemPrompt>) => {
-  await handleSaveSystemPrompt(form)
+const isSaveModalOpen = ref(false)
+const savingForm = ref<Partial<SystemPrompt>>({})
+
+const onSave = (form: Partial<SystemPrompt>) => {
+  savingForm.value = form
+  isSaveModalOpen.value = true
+}
+
+const doSave = async () => {
+  await handleSaveSystemPrompt(savingForm.value)
 }
 
 // 테스트
@@ -60,6 +89,21 @@ const onTest = () => {
 // 수정 — 폼에 로드
 const onEdit = (prompt: SystemPrompt) => {
   settingForm.value = { ...prompt }
+}
+
+// 삭제
+const isDeleteModalOpen = ref(false)
+const deletingPrompt = ref<SystemPrompt | null>(null)
+
+const onDelete = (prompt: SystemPrompt) => {
+  deletingPrompt.value = prompt
+  isDeleteModalOpen.value = true
+}
+
+const doDelete = async () => {
+  if (!deletingPrompt.value) return
+  await handleDeleteSystemPrompt(deletingPrompt.value.id)
+  deletingPrompt.value = null
 }
 
 // 복사 — id 제거 후 폼에 로드

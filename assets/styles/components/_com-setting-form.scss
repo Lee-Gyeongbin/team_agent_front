@@ -53,7 +53,7 @@
 
 .com-setting-section-title {
   @include typo($body-large-bold);
-  color: $color-text-dark;
+  color: $color-text-heading;
 
   // 인라인 (border 없이 타이틀만)
   &.is-inline {

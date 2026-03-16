@@ -106,6 +106,7 @@ const emit = defineEmits<{
   &.size-btn-md {
     @include typo($body-medium);
     height: $height-md; // 30px
+    min-width: 68px;
     padding: 0 10px;
     padding-right: 7px;
   }

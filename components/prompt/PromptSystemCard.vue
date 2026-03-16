@@ -26,6 +26,13 @@
       >
         <i class="icon-copy-gray size-16" />
       </button>
+      <button
+        class="prompt-saved-card-btn"
+        title="삭제"
+        @click="$emit('delete', prompt)"
+      >
+        <i class="icon-trashcan size-16" />
+      </button>
     </div>
   </div>
 </template>
@@ -41,5 +48,6 @@ defineProps<Props>()
 defineEmits<{
   edit: [prompt: SystemPrompt]
   copy: [prompt: SystemPrompt]
+  delete: [prompt: SystemPrompt]
 }>()
 </script>
