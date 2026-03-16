@@ -11,6 +11,9 @@
       <!-- 시스템 프롬프트 -->
       <PromptSystem v-if="activeTab === 'system'" />
 
+      <!-- 템플릿 -->
+      <PromptTemplate v-else-if="activeTab === 'template'" />
+
       <!-- 추후 탭 -->
       <div v-else style="padding: 24px; color: #94a3b8;">
         {{ activeTabLabel }} 탭은 준비 중입니다.

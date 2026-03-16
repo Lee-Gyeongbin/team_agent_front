@@ -101,3 +101,110 @@ export const mockSystemPromptDb = {
     return { id }
   },
 }
+
+// ===== 프롬프트 템플릿 =====
+interface MockPromptTemplate {
+  id: string
+  name: string
+  category: string
+  description: string
+  content: string
+  usageCount: number
+  createdAt: string
+  updatedAt: string
+}
+
+const templateList: MockPromptTemplate[] = [
+  {
+    id: 'tpl-1',
+    name: '제품 소개 요청',
+    category: '영업/마케팅',
+    description: '고객이 제품 정보를 요청 할 때 사용하는 템플릿입니다.',
+    content: '"{{제품명}}"에 대해 간단히 소개해드리겠습니다. {{제품명}}은 {{핵심가치}}를 제공하는 솔루션으로...',
+    usageCount: 156,
+    createdAt: '2026-02-05',
+    updatedAt: '2026-02-05',
+  },
+  {
+    id: 'tpl-2',
+    name: '장애 대응 안내',
+    category: '고객지원',
+    description: '시스템 장애 발생 시 고객에게 안내하는 템플릿입니다.',
+    content: '현재 {{서비스명}}에서 {{장애유형}} 이슈가 확인되었습니다. 복구 예상 시간은 {{예상시간}}입니다.',
+    usageCount: 89,
+    createdAt: '2026-02-05',
+    updatedAt: '2026-02-05',
+  },
+  {
+    id: 'tpl-3',
+    name: 'API 연동 가이드',
+    category: '개발/기술',
+    description: 'API 연동 방법을 안내하는 템플릿입니다.',
+    content: '{{API명}} 연동을 위해 다음 단계를 따라주세요. 1. {{엔드포인트}}로 요청 2. {{인증방식}} 인증 적용',
+    usageCount: 234,
+    createdAt: '2026-02-05',
+    updatedAt: '2026-02-05',
+  },
+  {
+    id: 'tpl-4',
+    name: '견적 요청 응대',
+    category: '영업/마케팅',
+    description: '견적 요청에 대한 응대 템플릿입니다.',
+    content: '{{고객사명}} 담당자님, {{제품명}} 견적을 안내드립니다. 기본 플랜은 {{가격}}부터 시작합니다.',
+    usageCount: 67,
+    createdAt: '2026-02-05',
+    updatedAt: '2026-02-05',
+  },
+  {
+    id: 'tpl-5',
+    name: 'FAQ 응답',
+    category: '고객지원',
+    description: '자주 묻는 질문에 대한 응답 템플릿입니다.',
+    content: '{{질문주제}}에 대해 안내드립니다. {{답변내용}} 추가 문의사항이 있으시면 말씀해주세요.',
+    usageCount: 312,
+    createdAt: '2026-02-05',
+    updatedAt: '2026-02-05',
+  },
+  {
+    id: 'tpl-6',
+    name: '배포 절차 안내',
+    category: '개발/기술',
+    description: '배포 절차를 안내하는 템플릿입니다.',
+    content: '{{서비스명}} {{버전}} 배포를 진행합니다. 배포 시간: {{배포시간}}, 영향 범위: {{영향범위}}',
+    usageCount: 45,
+    createdAt: '2026-02-05',
+    updatedAt: '2026-02-05',
+  },
+]
+
+export const mockTemplateDb = {
+  getList: () => [...templateList],
+
+  save: (template: Partial<MockPromptTemplate>) => {
+    const index = templateList.findIndex((t) => t.id === template.id)
+    if (index > -1) {
+      templateList[index] = { ...templateList[index], ...template, updatedAt: today() }
+      return templateList[index]
+    } else {
+      const newTemplate: MockPromptTemplate = {
+        id: `tpl-${Date.now()}`,
+        name: '',
+        category: '',
+        description: '',
+        content: '',
+        usageCount: 0,
+        createdAt: today(),
+        updatedAt: today(),
+        ...template,
+      }
+      templateList.push(newTemplate)
+      return newTemplate
+    }
+  },
+
+  delete: (id: string) => {
+    const index = templateList.findIndex((t) => t.id === id)
+    if (index > -1) templateList.splice(index, 1)
+    return { id }
+  },
+}

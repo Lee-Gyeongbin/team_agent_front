@@ -1,9 +1,9 @@
 <template>
   <div class="prompt-system-setting">
-    <div class="prompt-system-setting-header">
-      <div class="prompt-system-setting-title">
-        <span class="prompt-system-setting-name">시스템 프롬프트 설정</span>
-        <span class="prompt-system-setting-sub">부서별, 역할별로 다른 시스템 프롬프트를 설정할 수 있습니다.</span>
+    <div class="prompt-box-header">
+      <div class="prompt-box-title">
+        <span class="prompt-box-name">시스템 프롬프트 설정</span>
+        <span class="prompt-box-sub">부서별, 역할별로 다른 시스템 프롬프트를 설정할 수 있습니다.</span>
       </div>
       <UiButton
         variant="secondary"

@@ -26,16 +26,9 @@
 }
 
 // ===================================
-// 시스템 프롬프트 설정
+// 공통 박스 (시스템 프롬프트, 템플릿 등 공유)
 // ===================================
-.prompt-system {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-md;
-}
-
-// 전체 감싸는 박스 (Figma: padding 24px, gap 16px, radius 16px, border #DCE4E9)
-.prompt-system-box {
+.prompt-box {
   --label-width: 121px;
   display: flex;
   flex-direction: column;
@@ -46,14 +39,7 @@
   border-radius: 16px;
 }
 
-.prompt-system-setting {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-md;
-}
-
-// 헤더 (Figma: space-between, padding-bottom 16px, border-bottom #AEBCCB)
-.prompt-system-setting-header {
+.prompt-box-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -62,43 +48,53 @@
   border-bottom: 1px solid #aebccb;
 }
 
-.prompt-system-setting-title {
+.prompt-box-title {
   display: flex;
   align-items: flex-end;
   gap: $spacing-sm;
 }
 
-// Figma: 20px/bold/#2D3139
-.prompt-system-setting-name {
+.prompt-box-name {
   @include typo($body-xlarge-bold);
   color: $color-text-heading;
 }
 
-// Figma: 12px/400/#5C6677
-.prompt-system-setting-sub {
+.prompt-box-sub {
   font-size: 12px;
   line-height: 1.5;
   color: #5c6677;
 }
 
-// 본문 (Figma: gap 16px)
+.prompt-box-divider {
+  height: 1px;
+  background: #ecf0f3;
+}
+
+// ===================================
+// 시스템 프롬프트 설정
+// ===================================
+.prompt-system {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.prompt-system-setting {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
 .prompt-system-setting-body {
   display: flex;
   flex-direction: column;
   gap: $spacing-md;
 }
 
-// 푸터 (Figma: gap 4px, 우측 정렬)
 .prompt-system-setting-footer {
   display: flex;
   justify-content: flex-end;
   gap: 4px;
-}
-
-// 구분선 (Figma: 1px #ECF0F3)
-.prompt-system-divider {
-  height: 1px;
-  background: #ecf0f3;
 }
 
 // ===================================
@@ -110,7 +106,6 @@
   gap: $spacing-md;
 }
 
-// Figma: 18px/bold/#2D3139
 .prompt-saved-title {
   @include typo($body-large-bold);
   color: $color-text-dark;
@@ -122,7 +117,6 @@
   gap: $spacing-sm;
 }
 
-// 카드 (Figma: padding 12px 16px, border #DCE4E9, radius 8px)
 .prompt-saved-card {
   display: flex;
   align-items: center;
@@ -186,11 +180,164 @@
   height: 24px;
   border: none;
   background: transparent;
-  color: $color-text-secondary;
+  color: $color-text-disabled;
   cursor: pointer;
   transition: color $transition-fast;
 
   &:hover {
-    color: $color-text-dark;
+    color: $color-text-secondary;
   }
+}
+
+// ===================================
+// 템플릿
+// ===================================
+.prompt-template {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+// 카테고리 필터 (Figma: gap 8px)
+.prompt-template-filter {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+}
+
+// Figma: padding 6px 16px, border #DCE4E9, radius 100px, 14px/600/#2D3139
+.prompt-template-filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px $spacing-md;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-100;
+  background: #fff;
+  cursor: pointer;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  line-height: 1.5;
+  color: $color-text-dark;
+  transition: all $transition-fast;
+
+  &.is-active {
+    background: $color-background;
+  }
+
+  &:hover:not(.is-active) {
+    border-color: #aebccb;
+  }
+
+  // Figma: 14px/400/#3C69DB
+  strong {
+    font-weight: $font-weight-normal;
+    color: $color-primary;
+  }
+}
+
+// 템플릿 카드 목록 (Figma: gap 8px)
+.prompt-template-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+// 카드 (Figma: padding 12px 16px, gap 3px, border #DCE4E9, radius 8px, column)
+.prompt-template-card {
+  display: flex;
+  align-items: stretch;
+  gap: $spacing-md;
+  padding: 12px $spacing-md;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  background: #fff;
+  transition: border-color $transition-base;
+
+  &:hover {
+    border-color: #aebccb;
+  }
+}
+
+// 좌측: 콘텐츠 영역
+.prompt-template-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+// 제목 + 카테고리 배지 행
+.prompt-template-card-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+// Figma: 16px/bold/#4D5462
+.prompt-template-card-name {
+  @include typo($body-medium-bold);
+  color: $color-text-primary;
+}
+
+// Figma: 12px/400/#5C6677, bg #F4F7F9, border #DCE4E9, radius 24px, height 22px
+.prompt-template-card-category {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  padding: 0 $spacing-sm;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-full;
+  background: $color-background;
+  font-size: 12px;
+  line-height: 1.2;
+  color: #5c6677;
+}
+
+// Figma: 14px/400/#4D5462
+.prompt-template-card-desc {
+  @include typo($body-small);
+  color: $color-text-primary;
+}
+
+// 인용 블록 (Figma: 14px/400/#5C6677, bg #F4F7F9, padding 8px 12px, radius 6px)
+.prompt-template-card-content {
+  padding: $spacing-sm 12px;
+  background: $color-background;
+  border-radius: $border-radius-base;
+  @include typo($body-small);
+  color: #5c6677;
+  @include ellipsis(2);
+}
+
+// 메타 (Figma: 11px, gap 12px)
+.prompt-template-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.prompt-template-card-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: $color-text-disabled;
+
+  // Figma: 11px/600/#5C6677
+  strong {
+    color: #5c6677;
+    font-weight: $font-weight-semibold;
+  }
+}
+
+// 우측: 액션 버튼
+.prompt-template-card-actions {
+  display: flex;
+  align-items: baseline;
+  flex-shrink: 0;
 }

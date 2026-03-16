@@ -1,6 +1,6 @@
 <template>
   <div class="prompt-system">
-    <div class="prompt-system-box">
+    <div class="prompt-box">
       <!-- 설정 영역 -->
       <PromptSystemSetting
         v-model="settingForm"
@@ -9,7 +9,7 @@
       />
 
       <!-- 구분선 -->
-      <div class="prompt-system-divider" />
+      <div class="prompt-box-divider" />
 
       <!-- 저장된 프롬프트 목록 -->
       <div class="prompt-saved-section">

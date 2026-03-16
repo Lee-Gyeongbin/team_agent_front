@@ -10,3 +10,15 @@ export interface SystemPrompt {
   createdAt: string
   updatedAt: string
 }
+
+// 프롬프트 템플릿
+export interface PromptTemplate {
+  id: string
+  name: string // 템플릿 이름
+  category: string // 카테고리 (영업/마케팅, 고객지원, 개발/기술)
+  description: string // 설명
+  content: string // 템플릿 내용 ({{변수}} 포함)
+  usageCount: number // 사용 횟수
+  createdAt: string
+  updatedAt: string
+}
