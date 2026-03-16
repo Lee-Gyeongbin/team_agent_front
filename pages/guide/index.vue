@@ -234,7 +234,8 @@ const statusList = [
   { category: '페이지', name: '채팅 상세', location: '/chat/:id', url: '', status: 'wip' },
   { category: '페이지', name: '라이브러리', location: '/library', url: '/library', status: 'done' },
   { category: '페이지', name: '에이전트 목록', location: '/agent-manage', url: '/agent-manage', status: 'done' },
-  { category: '페이지', name: 'LLM 관리', location: '/llm-manage', url: '/llm-manage', status: 'done' },
+  { category: '페이지', name: 'LLM 관리', location: '/llm', url: '/llm', status: 'done' },
+  { category: '페이지', name: '프롬프트 관리', location: '/prompt-manage', url: '/prompt-manage', status: 'wip' },
   { category: '페이지', name: '로그인', location: '/login', url: '/login', status: 'pending' },
 ]
 
@@ -360,6 +361,12 @@ const componentList = [
     to: '/guide/ui-checkbox',
     description: 'v-model 지원 체크박스 — label, disabled, 슬롯 지원',
     tags: ['v-model', 'label', 'disabled', 'slot'],
+  },
+  {
+    name: 'UiTab',
+    to: '/guide/ui-tab',
+    description: 'v-model 지원 탭 컴포넌트 — 밑줄 스타일',
+    tags: ['v-model', 'tabs'],
   },
   {
     name: 'UiToggle',

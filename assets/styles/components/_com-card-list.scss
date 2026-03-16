@@ -10,8 +10,6 @@
   height: calc(100vh - #{$header-height});
   padding-top: 12px;
   padding-bottom: $spacing-md;
-  overflow-y: auto;
-  @include custom-scrollbar;
 }
 
 // 헤더
@@ -21,11 +19,21 @@
   justify-content: space-between;
   padding: 12px 0;
   margin-bottom: 0;
+  position: sticky;
+  top: 0;
+  z-index: $z-sticky;
+  background: #fff;
+  border-bottom: 1px solid transparent;
+  transition: border-color $transition-fast;
+
+  &.is-scrolled {
+    border-bottom-color: $color-border;
+  }
 
   .com-list-header-left {
     display: flex;
-    align-items: flex-end;
-    gap: $spacing-sm;
+    flex-direction: column;
+    gap: 2px;
   }
 
   .com-list-title {
@@ -44,6 +52,7 @@
 
     .count-active {
       color: var(--color-primary);
+      @include typo($body-small-bold);
     }
   }
 }
@@ -60,11 +69,11 @@
   display: flex;
   align-items: center;
   gap: 3px;
-  padding: 12px 16px 12px 6px;
   border: 1px solid #c6d2db;
   border-radius: $border-radius-lg;
   background: var(--color-gray-5, #f4f7f9);
   transition: box-shadow $transition-base;
+  padding-left: 6px;
 
   &.is-inactive {
     background: #fff;
@@ -102,6 +111,7 @@
     align-items: center;
     justify-content: space-between;
     gap: $spacing-md;
+    padding: 12px 16px 12px 6px;
     min-width: 0;
   }
 
@@ -111,6 +121,7 @@
     flex-direction: column;
     gap: 4px;
     min-width: 0;
+    flex: 1;
   }
 
   // 제목 + 배지 행
