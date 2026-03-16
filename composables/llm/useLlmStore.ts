@@ -3,10 +3,9 @@ import type { LlmModel } from '~/types/llm'
 
 const { fetchLlmList, fetchSaveLlm, fetchDeleteLlm, fetchUpdateLlmOrder } = useLlmApi()
 
-// ===== 상태 변수 =====
 const llmList = ref<LlmModel[]>([])
 
-// ===== 조회 =====
+/** 모델 목록 조회 */
 const handleSelectLlmList = async () => {
   try {
     const response = await fetchLlmList()
@@ -16,7 +15,7 @@ const handleSelectLlmList = async () => {
   }
 }
 
-// ===== 추가/수정/삭제 =====
+/** 모델 저장 */
 const handleSaveLlm = async (model: Partial<LlmModel>) => {
   await fetchSaveLlm(model)
   await handleSelectLlmList()
