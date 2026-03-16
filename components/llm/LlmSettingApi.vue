@@ -36,7 +36,7 @@
         </label>
         <UiInput
           :model-value="modelValue.apiUrl"
-          placeholder="https://api.openai.com/v1/chat/completions"
+          placeholder="API URL을 입력하세요"
           size="sm"
           @update:model-value="onUpdate('apiUrl', $event)"
         />
@@ -92,7 +92,7 @@
         <label class="com-setting-label">추가 헤더 (JSON)</label>
         <UiTextarea
           :model-value="modelValue.custHeaders"
-          placeholder='{"X-Custom-Header" : "Value"}'
+          placeholder="추가 헤더를 입력하세요"
           :rows="3"
           size="sm"
           :border="true"

@@ -39,7 +39,7 @@
             :model-value="modelValue.inputCost"
             type="number"
             size="sm"
-            @update:model-value="onUpdate('inputCost', $event)"
+            @update:model-value="onUpdate('inputCost', Number($event))"
           />
         </div>
         <div
@@ -51,7 +51,7 @@
             :model-value="modelValue.outputCost"
             type="number"
             size="sm"
-            @update:model-value="onUpdate('outputCost', $event)"
+            @update:model-value="onUpdate('outputCost', Number($event))"
           />
         </div>
       </div>
@@ -67,7 +67,7 @@
             :model-value="modelValue.dayReqLmt"
             type="number"
             size="sm"
-            @update:model-value="onUpdate('dayReqLmt', $event)"
+            @update:model-value="onUpdate('dayReqLmt', Number($event))"
           />
         </div>
         <div
@@ -79,7 +79,7 @@
             :model-value="modelValue.rpmLimit"
             type="number"
             size="sm"
-            @update:model-value="onUpdate('rpmLimit', $event)"
+            @update:model-value="onUpdate('rpmLimit', Number($event))"
           />
         </div>
       </div>
@@ -95,7 +95,7 @@
             :model-value="modelValue.tpmLimit"
             type="number"
             size="sm"
-            @update:model-value="onUpdate('tpmLimit', $event)"
+            @update:model-value="onUpdate('tpmLimit', Number($event))"
           />
         </div>
         <div
@@ -107,7 +107,7 @@
             :model-value="modelValue.dayCostLmt"
             type="number"
             size="sm"
-            @update:model-value="onUpdate('dayCostLmt', $event)"
+            @update:model-value="onUpdate('dayCostLmt', Number($event))"
           />
         </div>
       </div>
@@ -138,7 +138,7 @@
 </template>
 
 <script setup lang="ts">
-import type { LlmAccessControl } from '~/types/llm'
+const ROLE_MAP: Record<string, string> = { admin: 'ROLE_ADMIN', premium: 'ROLE_PREMIUM', general: 'ROLE_USER' }
 
 interface UsageForm {
   inputCost: number
@@ -147,7 +147,7 @@ interface UsageForm {
   rpmLimit: number
   tpmLimit: number
   dayCostLmt: number
-  accessControlList: LlmAccessControl[]
+  roleIdArr: string
 }
 
 interface Props {
@@ -162,19 +162,21 @@ const emit = defineEmits<{
 
 const isCollapsed = ref(true)
 
-const getAccessByRole = (roleId: string) => {
-  return props.modelValue.accessControlList.find((a) => a.roleId === roleId)?.allowedYn ?? false
-}
+const parseRoleIdArr = (s: string) =>
+  (s || '')
+    .split(',')
+    .map((r) => r.trim())
+    .filter(Boolean)
+
+const getAccessByRole = (roleId: string) => parseRoleIdArr(props.modelValue.roleIdArr).includes(ROLE_MAP[roleId])
 
 const onUpdateAccess = (roleId: string, allowedYn: boolean) => {
-  const list = [...props.modelValue.accessControlList]
-  const idx = list.findIndex((a) => a.roleId === roleId)
-  if (idx > -1) {
-    list[idx] = { ...list[idx], allowedYn }
-  } else {
-    list.push({ modelId: props.modelValue.accessControlList[0]?.modelId ?? '', roleId, allowedYn })
-  }
-  emit('update:modelValue', { ...props.modelValue, accessControlList: list })
+  const apiRole = ROLE_MAP[roleId]
+  const arr = parseRoleIdArr(props.modelValue.roleIdArr)
+  const idx = arr.indexOf(apiRole)
+  if (allowedYn && idx === -1) arr.push(apiRole)
+  else if (!allowedYn && idx > -1) arr.splice(idx, 1)
+  emit('update:modelValue', { ...props.modelValue, roleIdArr: arr.join(',') })
 }
 
 const onUpdate = (key: keyof Omit<UsageForm, 'accessControlList'>, value: number) => {

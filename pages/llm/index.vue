@@ -8,24 +8,26 @@
     />
 
     <!-- LLM 모델 목록 (드래그 정렬) -->
-    <draggable
-      v-model="llmList"
-      class="com-card-list"
-      handle=".com-card-drag"
-      item-key="modelId"
-      animation="200"
-      @start="onLlmDragStart"
-      @end="onDragEnd"
-    >
-      <template #item="{ element }">
-        <LlmCard
-          :model="element"
-          @setting="onClickSetting"
-          @delete="onDeleteLlm"
-          @toggle="onToggleActive"
-        />
-      </template>
-    </draggable>
+    <div class="com-card-list-wrap">
+      <draggable
+        v-model="llmList"
+        class="com-card-list"
+        handle=".com-card-drag"
+        item-key="modelId"
+        animation="200"
+        @start="onLlmDragStart"
+        @end="onDragEnd"
+      >
+        <template #item="{ element }">
+          <LlmCard
+            :model="element"
+            @setting="onClickSetting"
+            @delete="onDeleteLlm"
+            @toggle="onToggleActive"
+          />
+        </template>
+      </draggable>
+    </div>
 
     <!-- 설정 슬라이드 모달 -->
     <LlmSettingModal
@@ -42,15 +44,21 @@ import draggable from 'vuedraggable'
 import { useLlmStore } from '~/composables/llm/useLlmStore'
 import type { LlmModel } from '~/types/llm'
 
-const { llmList, handleSelectLlmList, handleSaveLlm, handleDeleteLlm, handleUpdateLlmOrder, onLlmDragStart } =
-  useLlmStore()
+const {
+  llmList,
+  isSettingOpen,
+  handleSelectLlmList,
+  handleSaveLlm,
+  handleDeleteLlm,
+  handleUpdateLlmOrder,
+  handleToggleActive,
+  onLlmDragStart,
+} = useLlmStore()
 
 onMounted(() => handleSelectLlmList())
 
-const activeCount = computed(() => llmList.value.filter((m) => m.useYn).length)
+const activeCount = computed(() => llmList.value.filter((m) => m.useYn === 'Y').length)
 
-// ===== 설정 모달 =====
-const isSettingOpen = ref(false)
 const selectedModel = ref<LlmModel | null>(null)
 
 const openAddLlm = () => {
@@ -64,11 +72,12 @@ const onClickSetting = (model: LlmModel) => {
 }
 
 const onSaveSetting = async (form: Partial<LlmModel>) => {
+  const model = selectedModel.value
+  const sortOrder = model?.sortOrder ?? Math.max(0, ...llmList.value.map((m) => m.sortOrder ?? 0)) + 1
   await handleSaveLlm({
-    modelId: selectedModel.value?.modelId,
     ...form,
+    sortOrder,
   })
-  isSettingOpen.value = false
 }
 
 const onDeleteLlm = async (model: LlmModel) => {
@@ -76,7 +85,7 @@ const onDeleteLlm = async (model: LlmModel) => {
 }
 
 const onToggleActive = async (model: LlmModel) => {
-  await handleSaveLlm({ modelId: model.modelId, modelUseYn: model.modelUseYn === 'Y' ? 'N' : 'Y' })
+  await handleToggleActive({ ...model, useYn: model.useYn === 'Y' ? 'N' : 'Y' })
 }
 
 const onDragEnd = async () => {
@@ -84,3 +93,9 @@ const onDragEnd = async () => {
   await handleUpdateLlmOrder(orderData)
 }
 </script>
+
+<style lang="scss" scoped>
+.com-card-list-wrap {
+  padding-bottom: $spacing-xl;
+}
+</style>

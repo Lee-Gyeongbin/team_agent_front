@@ -17,9 +17,9 @@ export interface LlmModelParams {
   ctxtWin: number // 컨텍스트 윈도우
   freqPenalty: number
   presPenalty: number
-  streamYn: boolean // 스트리밍 지원
-  fnCallYn: boolean // 함수 호출 (Tool) 지원
-  visionYn: boolean // 비전(이미지) 지원
+  streamYn: string // 스트리밍 지원
+  fnCallYn: string // 함수 호출 (Tool) 지원
+  visionYn: string // 비전(이미지) 지원
 }
 
 /** 사용량 제한 */
@@ -43,10 +43,10 @@ export interface LlmProvider {
   providerName: string // 프로바이더명
   baseUrl: string // 기본 URL
   authType: string // 인증 타입
-  description: string // 설명
-  useYn: boolean // 사용여부
-  createDt: string // 생성일시
-  modifyDt: string // 수정일시
+  providerUseYn: 'Y' | 'N' // 사용여부
+  providerDescription: string // 설명
+  providerCreateDt: string // 생성일시
+  providerModifyDt: string // 수정일시
 }
 
 /** 기본 정보 (DB 필드 매핑) */
@@ -57,8 +57,8 @@ export interface LlmBaseInfo {
   version: string // 버전 (예: 2024-11-20)
   inputCost: number // 입력 비용($/1M토큰)
   outputCost: number // 출력 비용($/1M토큰)
-  modelUseYn: 'Y' | 'N' // 사용여부 (Y/N)
-  modelDescription: string // 설명
+  useYn: 'Y' | 'N' // 사용여부 (Y/N)
+  description: string // 설명
   sortOrder: number // 표시순서 (드래그 정렬)
   modelCreateDt: string // 생성일시
   modelModifyDt: string // 수정일시
@@ -66,5 +66,6 @@ export interface LlmBaseInfo {
 
 /** 마스터 모델 인터페이스 */
 export interface LlmModel extends LlmBaseInfo, LlmApiConfig, LlmModelParams, LlmUsageLimit, LlmProvider {
-  accessControlList: LlmAccessControl[] // 역할별 접근 제어 목록
+  accessControlList?: LlmAccessControl[] // 역할별 접근 제어 목록 (레거시)
+  roleIdArr?: string // 역할 ID 배열 (쉼표 구분, 예: ROLE_ADMIN,ROLE_PREMIUM,ROLE_USER)
 }
