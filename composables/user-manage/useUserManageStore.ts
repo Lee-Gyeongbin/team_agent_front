@@ -1,18 +1,15 @@
 import { computed, type ComputedRef, type Ref } from 'vue'
 import type { UserItem } from '~/types/user-manage'
 import { useUserManageApi } from '~/composables/user-manage/useUserManageApi'
-import { useCodesApi } from '~/composables/codes/useCodesApi'
 import { useOrgManageStore } from '~/composables/org-manage/useOrgManageStore'
 import { formatPhone, toPhoneDigits } from '~/utils/global/numberUtil'
 
-const ACCT_STATUS_CODE_GRP_ID = 'CG000001'
 const userManageList = ref<UserItem[]>([])
 const userManageSearchKeyword = ref('')
 const userManageIsLoading = ref(false)
 const userManageErrorMessage = ref('')
 const isUserManageModalOpen = ref(false)
 const editingUserManage = ref<UserItem | null>(null)
-const acctStatusMap = ref<Record<string, string>>({})
 
 export const useUserManageStore = (): {
   userManageList: Ref<UserItem[]>
@@ -22,24 +19,19 @@ export const useUserManageStore = (): {
   userManageErrorMessage: Ref<string>
   isUserManageModalOpen: Ref<boolean>
   editingUserManage: Ref<UserItem | null>
-  openUserManageEditModal: (row: UserItem) => void
+  openUserManageEditModal: (row: UserItem | null) => void
   closeUserManageModal: () => void
-  updateEditingUserManage: (payload: Partial<UserItem>) => void
   handleToggleUserManageStatus: (row: UserItem) => Promise<void>
   handleUpdateUserManage: (payload: Partial<UserItem>) => Promise<void>
   handleFetchUserManageList: () => Promise<void>
-  handleFetchUserManageAcctStatusCodes: () => Promise<void>
   handleResetUserPassword: (user: UserItem) => Promise<void>
-  getAcctStatusName: (codeId: string | undefined | null) => string
-  getAcctStatusClass: (statusName: string) => string
   getOrgName: (orgId: string | undefined | null) => string
   formatPhone: (value: string | undefined | null) => string
   toPhoneDigits: (value: string | undefined | null) => string
 } => {
-  const { fetchUserList, fetchUpdateUser, fetchDeleteUser, fetchRestoreUser, fetchResetUserPassword } =
+  const { fetchUserList, fetchInsertUser, fetchUpdateUser, fetchDeleteUser, fetchRestoreUser, fetchResetUserPassword } =
     useUserManageApi()
   const { orgList } = useOrgManageStore()
-  const { fetchCodeList } = useCodesApi()
 
   const userManageFilteredList = computed(() => {
     const keyword = userManageSearchKeyword.value.trim().toLowerCase()
@@ -49,8 +41,8 @@ export const useUserManageStore = (): {
     )
   })
 
-  const openUserManageEditModal = (row: UserItem): void => {
-    editingUserManage.value = row
+  const openUserManageEditModal = (row: UserItem | null): void => {
+    editingUserManage.value = row ?? null
     isUserManageModalOpen.value = true
   }
 
@@ -59,12 +51,9 @@ export const useUserManageStore = (): {
     editingUserManage.value = null
   }
 
-  const updateEditingUserManage = (payload: Partial<UserItem>): void => {
-    if (editingUserManage.value) Object.assign(editingUserManage.value, payload)
-  }
-
   const handleToggleUserManageStatus = async (row: UserItem): Promise<void> => {
-    const isInactive = getAcctStatusName(row.acctStatusCd) === '비활성'
+    const statusDesc = row.acctStatusDesc ?? ''
+    const isInactive = statusDesc === '비활성'
     const actionLabel = isInactive ? '복구' : '삭제'
 
     const ok = await openConfirm({
@@ -89,20 +78,33 @@ export const useUserManageStore = (): {
     const userId = String(payload.userId ?? '').trim()
     if (!userId) return
 
+    const isEdit = !!editingUserManage.value?.userId
+
     const ok = await openConfirm({
-      title: '수정 확인',
-      message: `'${userId}' 사용자를 수정하시겠습니까?`,
+      title: isEdit ? '수정 확인' : '생성 확인',
+      message: `'${userId}' 사용자를 ${isEdit ? '수정' : '생성'}하시겠습니까?`,
       confirmText: '저장',
     })
     if (!ok) return
 
     try {
-      await fetchUpdateUser(payload)
-      await handleFetchUserManageList()
-      openAlert({ message: '사용자가 수정되었습니다.' })
+      if (isEdit) {
+        await fetchUpdateUser(payload)
+        await handleFetchUserManageList()
+        openAlert({ message: '사용자가 수정되었습니다.' })
+      } else {
+        const res = await fetchInsertUser(payload as UserItem)
+        await handleFetchUserManageList()
+        const tempPassword = res?.tempPassword ?? ''
+        const message = tempPassword
+          ? `사용자가 생성되었습니다.\n임시 비밀번호: ${tempPassword}`
+          : '사용자가 생성되었습니다.'
+        openAlert({ message })
+      }
       closeUserManageModal()
     } catch (error) {
-      const message = error instanceof Error ? error.message : '사용자 수정 중 오류가 발생했습니다.'
+      const fallback = isEdit ? '사용자 수정 중 오류가 발생했습니다.' : '사용자 생성 중 오류가 발생했습니다.'
+      const message = error instanceof Error ? error.message : fallback
       openAlert({ message })
     }
   }
@@ -151,35 +153,6 @@ export const useUserManageStore = (): {
     }
   }
 
-  /** 계정상태 코드 조회 후 codeId -> 표시명 맵 */
-  const handleFetchUserManageAcctStatusCodes = async (): Promise<void> => {
-    try {
-      const res = await fetchCodeList(ACCT_STATUS_CODE_GRP_ID)
-      const list = res?.dataList ?? []
-      const map: Record<string, string> = {}
-      list.forEach((item) => {
-        map[item.codeId] = item.description?.trim() || item.codeNm || item.codeId
-      })
-      acctStatusMap.value = map
-    } catch {
-      acctStatusMap.value = {}
-    }
-  }
-
-  /** 계정상태 코드에 해당하는 표시명 반환 */
-  const getAcctStatusName = (codeId: string | undefined | null): string => {
-    if (codeId == null || codeId === '') return ''
-    return acctStatusMap.value[codeId] ?? codeId
-  }
-
-  /** 계정상태 표시명에 해당하는 뱃지 클래스 반환 */
-  const getAcctStatusClass = (statusName: string): string => {
-    if (statusName === '활성') return 'is-active'
-    if (statusName === '비활성') return 'is-inactive'
-    if (statusName === '잠금') return 'is-lock'
-    return ''
-  }
-
   const getOrgName = (orgId: string | undefined | null): string => {
     if (orgId == null || orgId === '') return ''
     return orgList.value.find((item) => item.orgId === orgId)?.orgNm ?? orgId
@@ -195,14 +168,10 @@ export const useUserManageStore = (): {
     editingUserManage,
     openUserManageEditModal,
     closeUserManageModal,
-    updateEditingUserManage,
     handleToggleUserManageStatus,
     handleUpdateUserManage,
     handleFetchUserManageList,
-    handleFetchUserManageAcctStatusCodes,
     handleResetUserPassword,
-    getAcctStatusName,
-    getAcctStatusClass,
     getOrgName,
     formatPhone,
     toPhoneDigits,

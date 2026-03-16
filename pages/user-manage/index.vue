@@ -26,6 +26,16 @@
           </template>
           새로고침
         </UiButton>
+        <UiButton
+          variant="primary"
+          size="md"
+          @click="openUserManageEditModal(null)"
+        >
+          <template #icon-left>
+            <i class="icon icon-plus size-16" />
+          </template>
+          사용자 추가
+        </UiButton>
       </div>
     </div>
 
@@ -72,12 +82,18 @@
           <template #cell-orgId="{ value }">
             {{ getOrgName(value) }}
           </template>
-          <template #cell-acctStatusCd="{ value }">
+          <template #cell-acctStatusDesc="{ row }">
             <span
               class="user-manage-status"
-              :class="getAcctStatusClass(getAcctStatusName(value))"
+              :class="
+                (row as UserItem).acctStatusDesc === '잠금'
+                  ? 'is-lock'
+                  : (row as UserItem).acctStatusDesc === '비활성'
+                    ? 'is-inactive'
+                    : 'is-active'
+              "
             >
-              {{ getAcctStatusName(value) }}
+              {{ (row as UserItem).acctStatusDesc }}
             </span>
           </template>
           <template #cell-actions="{ row }">
@@ -104,7 +120,7 @@
                 size="xs"
                 @click="handleToggleUserManageStatus(row as UserItem)"
               >
-                {{ getAcctStatusName((row as UserItem).acctStatusCd) === '비활성' ? '복구' : '삭제' }}
+                {{ (row as UserItem).acctStatusDesc === '비활성' ? '복구' : '삭제' }}
               </UiButton>
             </div>
           </template>
@@ -112,10 +128,10 @@
       </div>
     </div>
 
-    <!-- 사용자 수정 모달 -->
+    <!-- 사용자 추가/수정 모달 -->
     <UserManageModal
       :is-open="isUserManageModalOpen"
-      title="사용자 수정"
+      :title="editingUserManage?.userId ? '사용자 수정' : '사용자 생성'"
       :user="editingUserManage"
       @close="closeUserManageModal"
       @confirm="onUserModalConfirm"
@@ -140,10 +156,7 @@ const {
   handleToggleUserManageStatus,
   handleUpdateUserManage,
   handleFetchUserManageList,
-  handleFetchUserManageAcctStatusCodes,
   handleResetUserPassword,
-  getAcctStatusName,
-  getAcctStatusClass,
   getOrgName,
   formatPhone,
 } = useUserManageStore()
@@ -156,7 +169,6 @@ const onUserModalConfirm = async (payload: Partial<UserItem> | undefined) => {
 }
 
 onMounted(() => {
-  handleFetchUserManageAcctStatusCodes()
   handleFetchUserManageList()
   handleFetchOrgList()
 })

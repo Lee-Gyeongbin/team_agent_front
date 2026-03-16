@@ -7,6 +7,12 @@ interface ResetPasswordResponse {
   tempPassword: string
 }
 
+interface InsertUserResponse {
+  successYn: boolean
+  returnMsg: string
+  tempPassword: string
+}
+
 export const useUserManageApi = () => {
   const { get, post } = useApi()
 
@@ -14,6 +20,15 @@ export const useUserManageApi = () => {
   const fetchUserList = async (): Promise<UserItem[]> => {
     const res = await get<{ list: UserItem[] }>('/usermanage/selectUserList.do')
     return res.list
+  }
+
+  /** 사용자 추가 */
+  const fetchInsertUser = async (user: UserItem): Promise<InsertUserResponse> => {
+    const res = await post<InsertUserResponse>('/usermanage/insertUser.do', user)
+    if (res?.successYn === false) {
+      throw new Error(String(res?.returnMsg ?? '사용자 생성을 실패했습니다.'))
+    }
+    return res
   }
 
   /** 사용자 수정 */
@@ -45,6 +60,7 @@ export const useUserManageApi = () => {
 
   return {
     fetchUserList,
+    fetchInsertUser,
     fetchUpdateUser,
     fetchDeleteUser,
     fetchRestoreUser,

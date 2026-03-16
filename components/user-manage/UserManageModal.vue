@@ -6,103 +6,97 @@
     max-width="600px"
     @close="onClose"
   >
-    <div class="user-modal__body">
-      <div
-        v-if="modalErrorMessage"
-        class="user-modal__error"
-      >
-        <p class="user-modal__error-message">{{ modalErrorMessage }}</p>
-      </div>
-      <template v-if="form.userId">
-        <table class="user-modal__table">
-          <tbody>
-            <tr class="user-modal__row-double">
-              <th scope="row">아이디<span class="user-modal__required">*</span></th>
-              <td>
-                <UiInput
-                  v-model="form.userId"
-                  size="sm"
-                  disabled
-                />
-              </td>
-              <th scope="row">성명<span class="user-modal__required">*</span></th>
-              <td>
-                <UiInput
-                  v-model="form.userNm"
-                  placeholder="성명을 입력하세요."
-                  size="sm"
-                />
-              </td>
-            </tr>
-            <tr class="user-modal__row-double">
-              <th scope="row">조직</th>
-              <td>
-                <UiSelect
-                  v-model="form.orgId"
-                  :options="orgOptions"
-                  placeholder="조직 선택"
-                  size="sm"
-                />
-              </td>
-              <th scope="row">계정 상태</th>
-              <td>
-                <UiInput
-                  :model-value="getAcctStatusName(form.acctStatusCd)"
-                  size="sm"
-                  disabled
-                />
-              </td>
-            </tr>
-            <tr>
-              <th scope="row">이메일<span class="user-modal__required">*</span></th>
-              <td colspan="3">
-                <UiInput
-                  v-model="form.email"
-                  placeholder="이메일을 입력하세요."
-                  size="sm"
-                />
-              </td>
-            </tr>
-            <tr>
-              <th scope="row">전화번호<span class="user-modal__required">*</span></th>
-              <td colspan="3">
-                <UiInput
-                  v-model="phoneDisplay"
-                  placeholder="'-' 없이 숫자만 입력하세요."
-                  size="sm"
-                />
-              </td>
-            </tr>
-            <tr>
-              <th scope="row">마지막 로그인 일시</th>
-              <td colspan="3">
-                <UiInput
-                  :model-value="form.lastLoginDt"
-                  size="sm"
-                  disabled
-                />
-              </td>
-            </tr>
-            <tr>
-              <th scope="row">비밀번호 변경 일시</th>
-              <td colspan="3">
-                <UiInput
-                  :model-value="form.pwdChgDt"
-                  size="sm"
-                  disabled
-                />
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </template>
-      <p
-        v-else
-        class="user-modal__empty"
-      >
-        선택된 사용자 정보가 없습니다.
-      </p>
-    </div>
+    <table
+      v-if="!isEditMode || form.userId"
+      class="user-modal__table"
+    >
+      <tbody>
+        <tr class="user-modal__row-double">
+          <th scope="row">아이디<span class="user-modal__required">*</span></th>
+          <td>
+            <UiInput
+              v-model="form.userId"
+              placeholder="아이디를 입력하세요."
+              size="sm"
+              :disabled="isEditMode"
+            />
+          </td>
+          <th scope="row">성명<span class="user-modal__required">*</span></th>
+          <td>
+            <UiInput
+              v-model="form.userNm"
+              placeholder="성명을 입력하세요."
+              size="sm"
+            />
+          </td>
+        </tr>
+        <tr class="user-modal__row-double">
+          <th scope="row">조직</th>
+          <td>
+            <UiSelect
+              v-model="form.orgId"
+              :options="orgOptions"
+              placeholder="조직 선택"
+              size="sm"
+            />
+          </td>
+          <th scope="row">계정 상태</th>
+          <td>
+            <UiInput
+              :model-value="form.acctStatusDesc"
+              size="sm"
+              disabled
+            />
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">이메일<span class="user-modal__required">*</span></th>
+          <td colspan="3">
+            <UiInput
+              v-model="form.email"
+              placeholder="이메일을 입력하세요."
+              size="sm"
+            />
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">전화번호<span class="user-modal__required">*</span></th>
+          <td colspan="3">
+            <UiInput
+              v-model="phoneDisplay"
+              placeholder="'-' 없이 숫자만 입력하세요."
+              size="sm"
+            />
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">마지막 로그인 일시</th>
+          <td colspan="3">
+            <UiInput
+              :model-value="form.lastLoginDt"
+              size="sm"
+              disabled
+            />
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">비밀번호 변경 일시</th>
+          <td colspan="3">
+            <UiInput
+              :model-value="form.pwdChgDt"
+              size="sm"
+              disabled
+            />
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <p
+      v-else
+      class="user-modal__empty"
+    >
+      선택된 사용자 정보가 없습니다.
+    </p>
 
     <template #footer>
       <div class="modal-dialog-footer">
@@ -150,8 +144,9 @@ const emit = defineEmits<{
   confirm: [payload: Partial<UserItem>]
 }>()
 
-const { getAcctStatusName, formatPhone, toPhoneDigits } = useUserManageStore()
+const { formatPhone, toPhoneDigits } = useUserManageStore()
 const { orgOptions } = useOrgManageStore()
+const isEditMode = computed(() => !!props.user?.userId)
 
 /** 모달 내 편집용 로컬 폼 (user 변경 시 동기화) */
 const form = ref<Partial<UserItem>>({})
@@ -185,7 +180,7 @@ watch(
   },
 )
 
-/** 사용자 ID, 사용자명, 이메일이 모두 있고, 값이 모두 유효할 때만 수정 가능 */
+/** 사용자 ID(3자 이상), 사용자명, 이메일이 모두 있고, 값이 모두 유효할 때만 수정 가능 */
 const checkSave = computed(() => {
   const userId = String(form.value.userId ?? '')
   const userNm = String(form.value.userNm ?? '')
@@ -194,9 +189,11 @@ const checkSave = computed(() => {
 
   if (isEmpty(userId) || isEmpty(userNm) || isEmpty(email)) return false
 
+  const userIdTrimmed = userId.trim()
   const emailTrimmed = email.trim()
   const phoneTrimmed = phone.trim()
 
+  if (userIdTrimmed.length < 3) return false
   if (!checkEmail(emailTrimmed)) return false
   if (!checkPhone(phoneTrimmed)) return false
 
@@ -215,19 +212,6 @@ const onConfirm = async () => {
 </script>
 
 <style lang="scss" scoped>
-.user-modal__body {
-  padding: $spacing-md 0;
-}
-
-.user-modal__content {
-  display: flex;
-  gap: $spacing-lg;
-}
-
-.user-modal__col {
-  flex: 1;
-}
-
 .user-modal__table {
   width: 100%;
   border-collapse: collapse;
@@ -268,17 +252,5 @@ const onConfirm = async () => {
 .user-modal__empty {
   font-size: $font-size-sm;
   color: $color-text-secondary;
-}
-
-.user-modal__error {
-  margin-bottom: $spacing-md;
-  padding: $spacing-md;
-  background: rgba($color-error, 0.06);
-  border-radius: $border-radius-base;
-
-  &-message {
-    font-size: $font-size-sm;
-    color: $color-error;
-  }
 }
 </style>
