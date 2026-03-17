@@ -1,5 +1,5 @@
 import { useApi } from '~/composables/com/useApi'
-import type { ModelOption, SubOption, ChatRoom, ChatLogListRow, ChatRefRow } from '~/types/chat'
+import type { ModelOption, SubOption, ChatRoom, ChatLogListRow, ChatRefRow, VisualizationDataRow } from '~/types/chat'
 
 export const useReportsApi = () => {
   const { get, post } = useApi()
@@ -27,7 +27,10 @@ export const useReportsApi = () => {
   const fetchSelectChatRef = async (logId: string): Promise<{ list: ChatRefRow[] }> => {
     return get<{ list: ChatRefRow[] }>(`/ai/chatbot/selectChatDocList.do?logId=${encodeURIComponent(logId)}`)
   }
-
+  // 시각화 데이터 목록 조회
+  const fetchSelectTableDataList = async (logId: string): Promise<{ list: VisualizationDataRow[] }> => {
+    return get<{ list: VisualizationDataRow[] }>(`/ai/chatbot/selectTableDataList.do?logId=${encodeURIComponent(logId)}`)
+  }
   return {
     fetchSelectModelList,
     fetchSelectRagDsList,
@@ -35,5 +38,6 @@ export const useReportsApi = () => {
     fetchCreateChatRoom,
     fetchSelectChatLogList,
     fetchSelectChatRef,
+    fetchSelectTableDataList,
   }
 }
