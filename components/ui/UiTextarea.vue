@@ -120,10 +120,10 @@ watch(
 
   // 사이즈
   &.size-textarea-sm {
-    font-size: $font-size-sm;
+    font-size: $font-size-base;
   }
   &.size-textarea-md {
-    font-size: $font-size-base;
+    font-size: $font-size-lg;
   }
   &.size-textarea-lg {
     font-size: $font-size-lg;

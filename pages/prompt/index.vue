@@ -20,9 +20,6 @@
       <!-- 토큰/응답 제한 -->
       <PromptLimit v-else-if="activeTab === 'limit'" />
 
-      <!-- 오류메시지 -->
-      <PromptErrorMessage v-else-if="activeTab === 'error'" />
-
       <!-- 버전 관리 -->
       <!-- <PromptVersion v-else-if="activeTab === 'version'" /> -->
     </div>
@@ -38,7 +35,6 @@ const tabs = [
   // { label: '템플릿', value: 'template' },
   { label: '금지어/필터링', value: 'filter' },
   { label: '토큰/응답 제한', value: 'limit' },
-  { label: '오류메시지', value: 'error' },
   // { label: '버전 관리', value: 'version' },
 ]
 </script>
