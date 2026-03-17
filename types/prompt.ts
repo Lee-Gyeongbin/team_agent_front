@@ -1,14 +1,18 @@
 // 시스템 프롬프트
 export interface SystemPrompt {
-  id: string
-  name: string // 프롬프트 유형 이름
-  content: string // 시스템 프롬프트 내용
-  temperature: number
-  topP: number
-  targets: string[] // 적용 대상 (LLM, RAG, TextToSQL)
-  isActive: boolean // 활성 여부
-  createdAt: string
-  updatedAt: string
+  promptId: string // PROMPT_ID
+  promptName: string // PROMPT_NAME
+  promptTypeCd: string // PROMPT_TYPE_CD
+  content: string // CONTENT
+  temperature: number // TEMPERATURE
+  topP: number // TOP_P
+  applyLlmYn: 'Y' | 'N' // APPLY_LLM_YN
+  applyRagYn: 'Y' | 'N' // APPLY_RAG_YN
+  applySqlYn: 'Y' | 'N' // APPLY_SQL_YN
+  version: string // VERSION
+  useYn: 'Y' | 'N' // USE_YN
+  createDt: string // CREATE_DT
+  modifyDt: string // MODIFY_DT
 }
 
 // 프롬프트 템플릿

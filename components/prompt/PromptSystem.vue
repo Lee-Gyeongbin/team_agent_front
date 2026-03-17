@@ -3,7 +3,7 @@
     <div class="prompt-box">
       <!-- 설정 영역 -->
       <PromptSystemSetting
-        v-model="settingForm"
+        v-model="settingFormModel"
         @save="onSave"
         @test="onTest"
       />
@@ -17,7 +17,7 @@
         <div class="prompt-saved-list">
           <PromptSystemCard
             v-for="item in systemPromptList"
-            :key="item.id"
+            :key="item.promptId"
             :prompt="item"
             @edit="onEdit"
             @copy="onCopy"
@@ -41,7 +41,7 @@
     <UiDialogModal
       :is-open="isDeleteModalOpen"
       title="프롬프트 삭제"
-      :message="`'${deletingPrompt?.name}' 프롬프트를 삭제하시겠습니까?`"
+      :message="`'${deletingPrompt?.promptName}' 프롬프트를 삭제하시겠습니까?`"
       confirm-text="삭제"
       @close="isDeleteModalOpen = false"
       @confirm="doDelete"
@@ -53,16 +53,19 @@
 import type { SystemPrompt } from '~/types/prompt'
 import { usePromptStore } from '~/composables/prompt/usePromptStore'
 
-const { systemPromptList, handleSelectSystemPromptList, handleSaveSystemPrompt, handleDeleteSystemPrompt } = usePromptStore()
+const {
+  systemPromptList,
+  settingForm,
+  handleSelectSystemPromptList,
+  handleSaveSystemPrompt,
+  handleDeleteSystemPrompt,
+} = usePromptStore()
 
-// 설정 폼
-const settingForm = ref<Partial<SystemPrompt>>({
-  name: '기본 프롬프트 (전체 공통)',
-  content:
-    '당신은 전문적이고 친절한 B2B 업무 지원 AI 어시스턴트입니다.\n\n다음 지침을 따라주세요:\n- 사용자의 질문에 정확하고 간결하게 답변하세요\n- 업무 관련 정보는 공식 매뉴얼과 데이터베이스를 우선 참고하세요\n- 불확실한 정보는 추측하지 말고 확인이 필요함을 알려주세요\n- 개인정보와 민감한 업무 정보는 보안 규정에 따라 처리하세요\n- 항상 예의바르고 전문적인 톤을 유지하세요',
-  temperature: 0.7,
-  topP: 0.9,
-  targets: ['LLM', 'RAG', 'TextToSQL'],
+const settingFormModel = computed({
+  get: () => settingForm.value,
+  set: (value: Partial<SystemPrompt>) => {
+    settingForm.value = value
+  },
 })
 
 // 초기 조회
@@ -103,14 +106,15 @@ const onDelete = (prompt: SystemPrompt) => {
 
 const doDelete = async () => {
   if (!deletingPrompt.value) return
-  await handleDeleteSystemPrompt(deletingPrompt.value.id)
+  await handleDeleteSystemPrompt(deletingPrompt.value.promptId)
   isDeleteModalOpen.value = false
   deletingPrompt.value = null
 }
 
 // 복사 — id 제거 후 폼에 로드
 const onCopy = (prompt: SystemPrompt) => {
-  const { id, ...rest } = prompt
-  settingForm.value = { ...rest, name: `${rest.name} (복사)` }
+  const { promptId, ...rest } = prompt
+  const baseName = rest.promptName ?? '새 프롬프트'
+  settingForm.value = { ...rest, promptName: `${baseName} (복사)` }
 }
 </script>

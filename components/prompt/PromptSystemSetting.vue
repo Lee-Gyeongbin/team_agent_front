@@ -25,11 +25,11 @@
       <div class="com-setting-field-row">
         <label class="com-setting-label">프롬프트 유형</label>
         <UiSelect
-          :model-value="form.name"
+          :model-value="form.promptTypeCd"
           :options="typeOptions"
           size="sm"
           placeholder="프롬프트 유형 선택"
-          @update:model-value="onUpdateForm('name', $event)"
+          @update:model-value="onUpdateForm('promptTypeCd', $event)"
         />
       </div>
 
@@ -54,12 +54,12 @@
           <div class="com-setting-field-row">
             <label class="com-setting-label">Temperature (창의성)</label>
             <UiInput
-                  :model-value="form.temperature"
-                  type="number"
-                  size="sm"
-                  desc="0: 일관적, 2: 창의적"
-                  @update:model-value="onUpdateForm('temperature', $event)"
-                />
+              :model-value="form.temperature"
+              type="number"
+              size="sm"
+              desc="0: 일관적, 2: 창의적"
+              @update:model-value="onUpdateForm('temperature', $event)"
+            />
           </div>
         </div>
 
@@ -67,12 +67,12 @@
           <div class="com-setting-field-row">
             <label class="com-setting-label">Top P (샘플링)</label>
             <UiInput
-                  :model-value="form.topP"
-                  type="number"
-                  size="sm"
-                  desc="0.1~1.0 사이 값"
-                  @update:model-value="onUpdateForm('topP', $event)"
-                />
+              :model-value="form.topP"
+              type="number"
+              size="sm"
+              desc="0.1~1.0 사이 값"
+              @update:model-value="onUpdateForm('topP', $event)"
+            />
           </div>
         </div>
       </div>
@@ -82,11 +82,19 @@
         <label class="com-setting-label">적용 대상</label>
         <div class="com-setting-checkbox-group">
           <UiCheckbox
-            v-for="target in targetOptions"
-            :key="target.value"
-            :model-value="form.targets.includes(target.value)"
-            :label="target.label"
-            @update:model-value="onToggleTarget(target.value, $event)"
+            :model-value="form.applyLlmYn === 'Y'"
+            label="LLM 질의"
+            @update:model-value="onToggleApply('applyLlmYn', $event)"
+          />
+          <UiCheckbox
+            :model-value="form.applyRagYn === 'Y'"
+            label="매뉴얼 질의 (RAG)"
+            @update:model-value="onToggleApply('applyRagYn', $event)"
+          />
+          <UiCheckbox
+            :model-value="form.applySqlYn === 'Y'"
+            label="데이터 질의 (TextToSQL)"
+            @update:model-value="onToggleApply('applySqlYn', $event)"
           />
         </div>
       </div>
@@ -136,36 +144,23 @@ const typeOptions = [
   { label: 'SQL 전용 프롬프트', value: 'SQL 전용 프롬프트' },
 ]
 
-// 적용 대상 옵션
-const targetOptions = [
-  { label: 'LLM 질의', value: 'LLM' },
-  { label: '매뉴얼 질의 (RAG)', value: 'RAG' },
-  { label: '데이터 질의 (TextToSQL)', value: 'TextToSQL' },
-]
-
 const onUpdateForm = (key: string, value: string | number) => {
   emit('update:modelValue', { ...props.modelValue, [key]: value })
 }
 
-const onToggleTarget = (target: string, checked: boolean) => {
-  const current = [...(props.modelValue.targets ?? [])]
-  if (checked) {
-    current.push(target)
-  } else {
-    const idx = current.indexOf(target)
-    if (idx > -1) current.splice(idx, 1)
-  }
-  emit('update:modelValue', { ...props.modelValue, targets: current })
+const onToggleApply = (key: 'applyLlmYn' | 'applyRagYn' | 'applySqlYn', checked: boolean) => {
+  emit('update:modelValue', { ...props.modelValue, [key]: checked ? 'Y' : 'N' })
 }
 
 const onNewPrompt = () => {
   emit('update:modelValue', {
-    name: '',
+    promptTypeCd: '',
     content: '',
     temperature: 0.7,
     topP: 0.9,
-    targets: [],
-    isActive: false,
+    applyLlmYn: 'Y',
+    applyRagYn: 'Y',
+    applySqlYn: 'Y',
   })
 }
 </script>

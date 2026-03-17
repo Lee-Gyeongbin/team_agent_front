@@ -1,13 +1,14 @@
 <template>
   <div class="prompt-saved-card">
     <div class="prompt-saved-card-info">
-      <div class="prompt-saved-card-name">{{ prompt.name }}</div>
+      <div class="prompt-saved-card-name">{{ prompt.promptName }}</div>
       <div class="prompt-saved-card-meta">
         <span class="prompt-saved-card-meta-item">
-          <i class="icon-edit size-12" /> 최종 수정 <strong>{{ prompt.updatedAt }}</strong>
+          <i class="icon-edit size-12" /> 최종 수정 <strong>{{ prompt.modifyDt }}</strong>
         </span>
         <span class="prompt-saved-card-meta-item">
-          ▷ 활성 여부 <strong>{{ prompt.isActive ? '활성화 중' : '비활성' }}</strong>
+          ▷ 활성 여부
+          <strong>{{ prompt.useYn === 'Y' ? '활성화 중' : '비활성' }}</strong>
         </span>
       </div>
     </div>

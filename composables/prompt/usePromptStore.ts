@@ -1,5 +1,13 @@
 import { usePromptApi } from '~/composables/prompt/usePromptApi'
-import type { SystemPrompt, PromptTemplate, PromptFilterData, PromptFilterPolicy, PromptLimitData, PromptVersion, PromptVersionStats } from '~/types/prompt'
+import type {
+  SystemPrompt,
+  PromptTemplate,
+  PromptFilterData,
+  PromptFilterPolicy,
+  PromptLimitData,
+  PromptVersion,
+  PromptVersionStats,
+} from '~/types/prompt'
 
 const {
   fetchSystemPromptList,
@@ -25,10 +33,21 @@ const filterData = ref<PromptFilterData>({
   policies: [],
 })
 
-// ===== 시스템 프롬프트 조회 =====
+const settingForm = ref<Partial<SystemPrompt>>({})
+
+/** 시스템 프롬프트 목록 조회 */
 const handleSelectSystemPromptList = async () => {
-  const res = await fetchSystemPromptList()
-  systemPromptList.value = res.list
+  try {
+    const response = await fetchSystemPromptList()
+    systemPromptList.value = response.dataList ?? []
+    // if (systemPromptList.value.length > 0) {
+    //   settingForm.value = { ...systemPromptList.value[0] }
+    // }
+  } catch (error) {
+    openToast({
+      message: '시스템 프롬프트 조회 실패',
+    })
+  }
 }
 
 // ===== 시스템 프롬프트 추가/수정/삭제 =====
@@ -117,6 +136,7 @@ const handleRestoreVersion = async (id: string) => {
 export const usePromptStore = () => {
   return {
     systemPromptList,
+    settingForm,
     handleSelectSystemPromptList,
     handleSaveSystemPrompt,
     handleDeleteSystemPrompt,
