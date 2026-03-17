@@ -100,6 +100,7 @@ watch(
   font-family: inherit;
   font-weight: $font-weight-medium;
   color: $color-text-primary;
+  background-color: #fff;
   resize: none;
   border-radius: $border-radius-base;
 
@@ -123,14 +124,14 @@ watch(
     font-size: $font-size-base;
   }
   &.size-textarea-md {
-    font-size: $font-size-lg;
+    font-size: $font-size-base;
   }
   &.size-textarea-lg {
-    font-size: $font-size-lg;
+    font-size: $font-size-base;
   }
 
   &::placeholder {
-    color: var(--color-gray-50, #94a3b8);
+    color: #aebccb;
   }
 
   &:focus {

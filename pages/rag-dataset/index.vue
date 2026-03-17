@@ -1,0 +1,114 @@
+<template>
+  <div class="doc-dataset-page l-center">
+    <!-- 페이지 헤더 -->
+    <div class="doc-dataset-page-header">
+      <p class="doc-dataset-page-desc">
+        컨텐츠저장소의 데이터를 활용하여 RAG 데이터셋과 벡터 DB를 생성하고 관리합니다.
+      </p>
+      <UiButton
+        variant="secondary"
+        size="md"
+        @click="openCreateModal"
+      >
+        <template #icon-left>
+          <i class="icon-plus size-16" />
+        </template>
+        새 데이터셋 생성
+      </UiButton>
+    </div>
+
+    <!-- 요약 통계 -->
+    <DocDatasetSummary :summary="summary" />
+
+    <!-- 카드 그리드 -->
+    <div class="doc-dataset-grid">
+      <DocDatasetCard
+        v-for="dataset in datasetList"
+        :key="dataset.id"
+        :dataset="dataset"
+        @toggle-active="handleToggleActiveDocDataset"
+        @test="onTest"
+        @edit="onEdit"
+        @delete="onDelete"
+        @stop-build="onStopBuild"
+      />
+
+      <!-- 빈 상태 -->
+      <div
+        v-if="datasetList.length === 0"
+        class="doc-dataset-grid-empty"
+      >
+        <UiEmpty
+          icon="icon-database"
+          title="등록된 데이터셋이 없습니다."
+          description="새 데이터셋을 생성하여 RAG 검색을 시작하세요."
+        >
+          <UiButton
+            variant="primary"
+            size="sm"
+            @click="openCreateModal"
+          >
+            새 데이터셋 생성
+          </UiButton>
+        </UiEmpty>
+      </div>
+    </div>
+
+    <!-- 삭제 확인 모달 -->
+    <UiDialogModal
+      :is-open="isDeleteModalOpen"
+      title="데이터셋 삭제"
+      :message="'이 데이터셋을 삭제하시겠습니까?\n벡터 인덱스가 함께 삭제됩니다.'"
+      confirm-text="삭제"
+      @close="isDeleteModalOpen = false"
+      @confirm="doDelete"
+    />
+  </div>
+</template>
+
+<script setup lang="ts">
+import DocDatasetSummary from '~/components/doc-dataset/DocDatasetSummary.vue'
+import DocDatasetCard from '~/components/doc-dataset/DocDatasetCard.vue'
+import { useDocDatasetStore } from '~/composables/doc-dataset/useDocDatasetStore'
+import type { DocDataset } from '~/types/doc-dataset'
+
+const { datasetList, summary, handleSelectAll, handleDeleteDocDataset, handleToggleActiveDocDataset } =
+  useDocDatasetStore()
+
+// 초기 조회
+onMounted(() => handleSelectAll())
+
+// 생성 모달
+const openCreateModal = () => {
+  console.warn('[TODO] 새 데이터셋 생성 모달')
+}
+
+// 테스트
+const onTest = (id: string) => {
+  console.warn('[TODO] 데이터셋 테스트:', id)
+}
+
+// 수정
+const onEdit = (dataset: DocDataset) => {
+  console.warn('[TODO] 데이터셋 수정:', dataset)
+}
+
+// 삭제
+const isDeleteModalOpen = ref(false)
+const deleteTargetId = ref('')
+
+const onDelete = (id: string) => {
+  deleteTargetId.value = id
+  isDeleteModalOpen.value = true
+}
+
+const doDelete = async () => {
+  await handleDeleteDocDataset(deleteTargetId.value)
+  isDeleteModalOpen.value = false
+}
+
+// 구축 중지
+const onStopBuild = (id: string) => {
+  console.warn('[TODO] 구축 중지:', id)
+}
+</script>
