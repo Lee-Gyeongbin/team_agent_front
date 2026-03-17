@@ -11,7 +11,9 @@
       <!-- 기본 정보 -->
       <DocDatasetBasicInfo
         :model-value="formData"
+        :collapsed="sectionCollapsed[0]"
         @update:model-value="Object.assign(formData, $event)"
+        @update:collapsed="sectionCollapsed[0] = $event"
       />
 
       <!-- 데이터 소스 선택 -->
@@ -19,19 +21,25 @@
         :model-value="formData"
         :doc-list="docList"
         :url-list="urlList"
+        :collapsed="sectionCollapsed[1]"
         @update:model-value="Object.assign(formData, $event)"
+        @update:collapsed="sectionCollapsed[1] = $event"
       />
 
       <!-- 전처리 옵션 설정 -->
       <DocDatasetPreprocess
         :model-value="formData"
+        :collapsed="sectionCollapsed[2]"
         @update:model-value="Object.assign(formData, $event)"
+        @update:collapsed="sectionCollapsed[2] = $event"
       />
 
       <!-- 임베딩 및 벡터DB -->
       <DocDatasetEmbedding
         :model-value="formData"
+        :collapsed="sectionCollapsed[3]"
         @update:model-value="Object.assign(formData, $event)"
+        @update:collapsed="sectionCollapsed[3] = $event"
       />
     </div>
 
@@ -115,6 +123,9 @@ const getDefaultForm = (): DocDatasetForm => ({
 
 const formData = reactive<DocDatasetForm>(getDefaultForm())
 
+// ===== 섹션 접기 상태 (기본정보만 열림) =====
+const sectionCollapsed = reactive([false, true, true, true])
+
 // ===== 데이터 소스 목록 =====
 const docList = ref<DocFile[]>([])
 const urlList = ref<DocUrl[]>([])
@@ -131,6 +142,7 @@ watch(
   (open) => {
     if (open) {
       Object.assign(formData, getDefaultForm())
+      Object.assign(sectionCollapsed, [false, true, true, true])
       handleSelectSources()
     }
   },

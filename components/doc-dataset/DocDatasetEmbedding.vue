@@ -6,7 +6,7 @@
   >
     <div
       class="com-setting-section-header"
-      @click="isCollapsed = !isCollapsed"
+      @click="toggleCollapse"
     >
       <span class="com-setting-section-title">임베딩 및 벡터DB</span>
       <span class="com-setting-section-arrow">
@@ -106,15 +106,24 @@ import type { DocDatasetForm } from '~/types/doc-dataset'
 
 interface Props {
   modelValue: DocDatasetForm
+  collapsed?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), { collapsed: true })
 
 const emit = defineEmits<{
   'update:modelValue': [value: DocDatasetForm]
+  'update:collapsed': [value: boolean]
 }>()
 
-const isCollapsed = ref(false)
+const isCollapsed = ref(props.collapsed)
+
+watch(() => props.collapsed, (v) => { isCollapsed.value = v })
+
+const toggleCollapse = () => {
+  isCollapsed.value = !isCollapsed.value
+  emit('update:collapsed', isCollapsed.value)
+}
 
 const onUpdate = (key: keyof DocDatasetForm, value: string) => {
   emit('update:modelValue', { ...props.modelValue, [key]: value })

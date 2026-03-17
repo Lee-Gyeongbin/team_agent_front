@@ -5,7 +5,7 @@
   >
     <div
       class="com-setting-section-header"
-      @click="isCollapsed = !isCollapsed"
+      @click="toggleCollapse"
     >
       <span class="com-setting-section-title">데이터 소스 선택</span>
       <span class="com-setting-section-arrow">
@@ -57,15 +57,24 @@ interface Props {
   modelValue: DocDatasetForm
   docList: DocFile[]
   urlList: DocUrl[]
+  collapsed?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), { collapsed: true })
 
 const emit = defineEmits<{
   'update:modelValue': [value: DocDatasetForm]
+  'update:collapsed': [value: boolean]
 }>()
 
-const isCollapsed = ref(false)
+const isCollapsed = ref(props.collapsed)
+
+watch(() => props.collapsed, (v) => { isCollapsed.value = v })
+
+const toggleCollapse = () => {
+  isCollapsed.value = !isCollapsed.value
+  emit('update:collapsed', isCollapsed.value)
+}
 
 const onUpdate = (key: keyof DocDatasetForm, value: unknown) => {
   emit('update:modelValue', { ...props.modelValue, [key]: value })
