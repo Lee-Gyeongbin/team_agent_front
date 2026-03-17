@@ -55,8 +55,9 @@ export const usePromptApi = () => {
     return get<{ data: PromptFilterData }>(`/prompt/filter/data.do`)
   }
 
+  /** 금지어/필터링 저장 */
   const fetchSaveFilter = async (data: Partial<PromptFilterData>) => {
-    return mockPost<{ data: PromptFilterData }>(`${MOCK_BASE}/filter/save`, data)
+    return post<{ data: PromptFilterData }>(`/prompt/filter/save.do`, data)
   }
 
   // ===== 토큰/응답 제한 =====

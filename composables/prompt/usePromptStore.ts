@@ -28,7 +28,7 @@ const {
   fetchSaveErrorMessage,
 } = usePromptApi()
 
-// ===== 상태 변수 =====
+/** 시스템 프롬프트 상태 변수 */
 const systemPromptList = ref<SystemPrompt[]>([])
 const templateList = ref<PromptTemplate[]>([])
 const filterData = ref<PromptFilterData>({
@@ -181,19 +181,34 @@ const handleDeleteTemplate = async (id: string) => {
 
 /** 금지어/필터링 조회 */
 const handleSelectFilterData = async () => {
-  const response = await fetchFilterData()
-  const data = response.data ?? {}
-  filterData.value = {
-    inputBanWords: data.inputBanWords ?? [],
-    outputBanWords: data.outputBanWords ?? [],
-    policies: data.policies ?? [],
+  try {
+    const response = await fetchFilterData()
+    const data = response.data ?? {}
+    filterData.value = {
+      inputBanWords: data.inputBanWords ?? [],
+      outputBanWords: data.outputBanWords ?? [],
+      policies: data.policies ?? [],
+    }
+  } catch {
+    openToast({ message: '금지어/필터링 조회 실패' })
   }
 }
 
-// ===== 금지어/필터링 저장 =====
+/** 금지어/필터링 저장 */
 const handleSaveFilter = async (data: Partial<PromptFilterData>) => {
-  const res = await fetchSaveFilter(data)
-  filterData.value = res.data
+  openConfirm({
+    title: '금지어/필터링 저장',
+    message: '금지어/필터링 정책을 저장하시겠습니까?',
+    onConfirm: async () => {
+      try {
+        await fetchSaveFilter(data)
+        handleSelectFilterData()
+        openAlert({ message: '금지어/필터링이 저장되었습니다.' })
+      } catch {
+        openToast({ message: '금지어/필터링 저장 실패' })
+      }
+    },
+  })
 }
 
 // ===== 토큰/응답 제한 조회 =====

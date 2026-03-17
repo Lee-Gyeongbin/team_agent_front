@@ -59,16 +59,6 @@
         </UiButton>
       </div>
     </div>
-
-    <!-- 저장 확인 모달 -->
-    <UiDialogModal
-      :is-open="isSaveModalOpen"
-      title="필터링 설정 저장"
-      message="금지어 및 필터링 설정을 저장하시겠습니까?"
-      confirm-text="저장"
-      @close="isSaveModalOpen = false"
-      @confirm="doSave"
-    />
   </div>
 </template>
 
@@ -105,14 +95,7 @@ const onCancel = () => {
 }
 
 // 저장
-const isSaveModalOpen = ref(false)
-
 const onSave = () => {
-  isSaveModalOpen.value = true
-}
-
-const doSave = async () => {
-  await handleSaveFilter(localData.value)
-  isSaveModalOpen.value = false
+  handleSaveFilter(localData.value)
 }
 </script>
