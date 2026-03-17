@@ -98,6 +98,7 @@ assets/styles/page/
 - 모바일/태블릿 전용: `@include mobile { ... }` → `@media (max-width: 1023px)`
 - 텍스트 말줄임: `@include ellipsis(1)` 또는 `@include ellipsis(2)`
 - 커스텀 스크롤바: `@include custom-scrollbar`
+- 스크롤바 오른쪽 띄우기: 스크롤 영역에 `width: calc(100% + 6px); padding-right: 6px;` 추가 — 스크롤바가 컨텐츠 바깥 오른쪽에 위치
 - 중앙 정렬: `@include flex-center`
 
 ## 반응형 전략 (2분할)
