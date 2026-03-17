@@ -1,0 +1,333 @@
+@use '../utils/variables' as *;
+@use '../utils/mixins' as *;
+
+// ===================================
+// 문서 데이터셋 페이지
+// ===================================
+.doc-dataset-page {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  padding-top: $spacing-md;
+  padding-bottom: $spacing-lg;
+}
+
+.doc-dataset-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+}
+
+.doc-dataset-page-desc {
+  @include typo($body-small);
+  color: #5c6677;
+}
+
+// ===================================
+// 요약 통계
+// ===================================
+.doc-dataset-summary {
+  display: flex;
+  gap: 32px;
+  padding: 0 $spacing-md;
+  border: 1px solid $color-border;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.doc-dataset-summary-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  padding: $spacing-md 0;
+}
+
+.doc-dataset-summary-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  flex-shrink: 0;
+
+  &.is-blue {
+    background: #f1f6fe;
+    color: var(--color-primary);
+  }
+
+  &.is-purple {
+    background: #ffedd4;
+    color: #ff7518;
+  }
+
+  &.is-green {
+    background: #d4f5dd;
+    color: #009f4d;
+  }
+
+  &.is-orange {
+    background: #f4ebff;
+    color: #8f4fdf;
+  }
+}
+
+.doc-dataset-summary-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.doc-dataset-summary-label {
+  @include typo($body-medium);
+  color: #6f7a93;
+}
+
+.doc-dataset-summary-value {
+  @include typo($body-xlarge-bold);
+  color: #2d3139;
+}
+
+.doc-dataset-summary-sub {
+  @include typo($body-small);
+  color: #5c6677;
+
+  strong {
+    font-weight: 700;
+  }
+}
+
+// ===================================
+// 카드 그리드
+// ===================================
+.doc-dataset-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $spacing-md;
+}
+
+.doc-dataset-grid-empty {
+  grid-column: 1 / -1;
+  min-height: 240px;
+}
+
+// ===================================
+// 카드
+// ===================================
+.doc-dataset-card {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  padding: $spacing-md;
+  border: 1px solid $color-border;
+  border-radius: 16px;
+  background: #fff;
+  min-width: 0;
+  transition: border-color $transition-base;
+
+  &:hover {
+    border-color: #aebccb;
+  }
+
+  &.is-inactive {
+    opacity: 0.8;
+  }
+}
+
+.doc-dataset-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+}
+
+.doc-dataset-card-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.doc-dataset-card-name {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: #2d3139;
+}
+
+.doc-dataset-card-version {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #828fa9;
+}
+
+.doc-dataset-card-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-shrink: 0;
+}
+
+// 구축중 뱃지
+.doc-dataset-card-badge-building {
+  font-size: 13px;
+  line-height: 1.2;
+  color: #3c69db;
+  background-color: #f1f6fe;
+  height: 22px;
+  padding: 0 $spacing-sm;
+  border-radius: 24px;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.doc-dataset-card-kebab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: $color-text-disabled;
+  cursor: pointer;
+  border-radius: $border-radius-base;
+  transition: background-color $transition-fast;
+
+  &:hover {
+    background: $color-background;
+    color: $color-text-secondary;
+  }
+}
+
+// ===================================
+// 통계 3칸 (Figma: row, bg #F4F7F9, radius 8px, height 48px)
+// ===================================
+.doc-dataset-card-stats {
+  display: flex;
+  gap: $spacing-sm;
+}
+
+.doc-dataset-card-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex: 1;
+  height: 48px;
+  padding: $spacing-sm 12px;
+  background: #f4f7f9;
+  border-radius: $border-radius-lg;
+}
+
+.doc-dataset-card-stat-label {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #5c6677;
+}
+
+.doc-dataset-card-stat-value {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #6f7a93;
+}
+
+// ===================================
+// 구축중 프로그레스바
+// ===================================
+.doc-dataset-card-build {
+  display: flex;
+  flex-direction: column;
+}
+
+.doc-dataset-card-build-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.doc-dataset-card-build-label {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #4d5462;
+}
+
+.doc-dataset-card-build-percent {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--color-primary);
+}
+
+.doc-dataset-card-progress {
+  height: 12px;
+  background: #ecf0f3;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.doc-dataset-card-progress-bar {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 6px;
+  transition: width $transition-base;
+}
+
+.doc-dataset-card-build-detail {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #5c6677;
+}
+
+// ===================================
+// 메타 정보 (Figma: 11px, gap 12px)
+// ===================================
+.doc-dataset-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-bottom: $spacing-md;
+  border-bottom: 1px solid #ecf0f3;
+}
+
+.doc-dataset-card-meta-row {
+  display: flex;
+  gap: 12px;
+}
+
+.doc-dataset-card-meta-item {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #94a3b8;
+
+  strong {
+    font-weight: 600;
+    color: #2d3139;
+  }
+}
+
+// ===================================
+// 하단 버튼 (Figma: justify flex-end, gap 8px)
+// ===================================
+.doc-dataset-card-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+}
+
+// 수정/삭제 버튼 고정 너비 (Figma: 68px)
+.doc-dataset-card-btn-fixed {
+  min-width: 68px;
+}
+
+// 구축 중지 버튼 고정 너비
+.doc-dataset-card-btn-stop {
+  min-width: 88px;
+}

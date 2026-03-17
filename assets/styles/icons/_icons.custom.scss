@@ -121,6 +121,11 @@
   @include icon-file-bg('more');
 }
 
+// 더보기 (세로)
+.icon-more-vertical {
+  @include icon-file-bg('icon-more-vertical');
+}
+
 .icon-regenerate {
   @include icon-file-bg('regenerate');
 }
@@ -416,4 +421,28 @@
 // 연필 (작성자 - 버전 관리)
 .icon-edit-version {
   @include icon-file-bg('edit-version');
+}
+
+// ===================================
+// 문서 데이터셋 아이콘
+// ===================================
+
+// 데이터셋 (레이어 아이콘, 파랑)
+.icon-dataset {
+  @include icon-file('icon-dataset');
+}
+
+// 벡터 인덱스 (레이어 아이콘, 주황)
+.icon-vector {
+  @include icon-file('icon-vector');
+}
+
+// 검색 품질 (돋보기, 초록)
+.icon-search-quality {
+  @include icon-file('icon-search-quality');
+}
+
+// 데이터 소스 (코드, 보라)
+.icon-datasource {
+  @include icon-file('icon-datasource');
 }
