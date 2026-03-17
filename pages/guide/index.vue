@@ -374,6 +374,12 @@ const componentList = [
     description: 'v-model 지원 토글 스위치 컴포넌트',
     tags: ['v-model', 'switch'],
   },
+  {
+    name: 'UiEmpty',
+    to: '/guide/ui-empty',
+    description: '빈 상태 공통 컴포넌트 — 아이콘, 텍스트, 설명, 액션 슬롯',
+    tags: ['icon', 'title', 'description', 'slot'],
+  },
 ]
 
 // 섹션 4: 아이콘 목록 (그룹별로 구분)

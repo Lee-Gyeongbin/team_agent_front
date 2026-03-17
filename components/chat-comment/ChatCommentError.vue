@@ -1,7 +1,7 @@
 <template>
   <div class="chat-comment-greeting">
     <div class="chat-comment-section-header">
-      <h3 class="chat-comment-section-title">오류메시지 설정</h3>
+      <h3 class="chat-comment-section-title">오류 메시지 설정</h3>
       <div class="chat-comment-setting-footer">
         <UiButton
           variant="primary"
@@ -18,89 +18,139 @@
       </div>
     </div>
 
-    <div class="chat-comment-content">
-      <!-- 좌측: 설정 -->
-      <div class="chat-comment-setting">
-        <div class="chat-comment-setting-item">
-          <div class="chat-comment-setting-header">
-            <div class="chat-comment-setting-info">
-              <span class="chat-comment-setting-name">오류 메시지</span>
-              <UiToggle v-model="errorForm.isEnabled" />
+    <div class="chat-comment-error-body">
+      <!-- 응답 생성 오류 -->
+      <section class="chat-comment-error-section">
+        <h4 class="chat-comment-error-section-title">응답 생성 오류</h4>
+        <div class="chat-comment-error-items">
+          <div
+            v-for="item in localData.responseErrors"
+            :key="item.key"
+            class="chat-comment-error-item"
+            :style="{ '--error-color': item.color }"
+          >
+            <div class="chat-comment-error-item-header">
+              <span class="chat-comment-error-item-label">{{ item.label }}</span>
+              <UiToggle v-model="item.isEnabled" />
             </div>
-            <p class="chat-comment-setting-desc">챗봇 응답 실패 시 사용자에게 표시할 오류 메시지를 설정합니다</p>
-          </div>
-
-          <div class="chat-comment-setting-body">
-            <label class="chat-comment-setting-label">메시지 내용</label>
             <UiTextarea
-              v-model="errorForm.message"
-              :rows="5"
+              v-model="item.message"
+              :rows="3"
               border
               size="sm"
               auto-resize
-              :max-rows="10"
-              placeholder="오류 메시지를 입력하세요"
+              :max-rows="6"
             />
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- 우측: 미리보기 -->
-      <div class="chat-comment-preview">
-        <div class="chat-comment-preview-header">
-          <i class="icon-view size-16" />
-          <span>미리보기</span>
-        </div>
-
-        <div class="chat-comment-preview-body">
-          <div class="chat-comment-preview-bot">
-            <div class="chat-comment-preview-bot-avatar">T</div>
-            <div class="chat-comment-preview-bot-info">
-              <span class="chat-comment-preview-bot-name">TeamAgent</span>
-              <span class="chat-comment-preview-bot-status">온라인</span>
+      <!-- 입력 오류 메시지 -->
+      <section class="chat-comment-error-section">
+        <h4 class="chat-comment-error-section-title">입력 오류 메시지</h4>
+        <div class="chat-comment-error-items">
+          <div
+            v-for="item in localData.inputErrors"
+            :key="item.key"
+            class="chat-comment-error-item"
+            :style="{ '--error-color': item.color }"
+          >
+            <div class="chat-comment-error-item-header">
+              <span class="chat-comment-error-item-label">{{ item.label }}</span>
+              <UiToggle v-model="item.isEnabled" />
             </div>
-          </div>
-
-          <div class="chat-comment-preview-messages">
-            <div class="chat-comment-preview-message is-error">
-              <p>{{ errorForm.message }}</p>
+            <!-- 메시지 길이 초과: 최대 글자 수 입력 -->
+            <div
+              v-if="item.maxLength !== undefined"
+              class="chat-comment-error-item-option"
+            >
+              <span class="chat-comment-error-item-option-label">최대 글자 수</span>
+              <UiInput
+                v-model="item.maxLength"
+                type="number"
+                size="sm"
+                style="width: 120px"
+              />
             </div>
-          </div>
-
-          <div class="chat-comment-preview-input">
-            <span class="chat-comment-preview-input-placeholder">메시지를 입력하세요...</span>
-            <i class="icon-send size-20" />
+            <UiTextarea
+              v-model="item.message"
+              :rows="3"
+              border
+              size="sm"
+              auto-resize
+              :max-rows="6"
+            />
           </div>
         </div>
-      </div>
+      </section>
+
+      <!-- API 오류 메시지 -->
+      <section class="chat-comment-error-section">
+        <h4 class="chat-comment-error-section-title">API 오류 메시지</h4>
+        <div class="chat-comment-error-items">
+          <div
+            v-for="item in localData.apiErrors"
+            :key="item.key"
+            class="chat-comment-error-item"
+            :style="{ '--error-color': item.color }"
+          >
+            <div class="chat-comment-error-item-header">
+              <span class="chat-comment-error-item-label">{{ item.label }}</span>
+              <UiToggle v-model="item.isEnabled" />
+            </div>
+            <UiTextarea
+              v-model="item.message"
+              :rows="3"
+              border
+              size="sm"
+              auto-resize
+              :max-rows="6"
+            />
+          </div>
+        </div>
+      </section>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-// ============================================
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-// ============================================
-const defaultMessage = '죄송합니다. 일시적인 오류가 발생했습니다.\n잠시 후 다시 시도해 주세요.'
+import type { ErrorMessageData, ErrorMessageItem } from '~/types/prompt'
+import { usePromptStore } from '~/composables/prompt/usePromptStore'
 
-interface ErrorForm {
-  isEnabled: boolean
-  message: string
-}
+const { errorMessageData, handleSelectErrorMessageData, handleSaveErrorMessage } = usePromptStore()
 
-const errorForm = ref<ErrorForm>({
-  isEnabled: true,
-  message: defaultMessage,
+// 로컬 편집용 데이터
+const localData = ref<ErrorMessageData>({
+  responseErrors: [],
+  inputErrors: [],
+  apiErrors: [],
 })
 
-const onSave = () => {
-  console.warn('[TODO] 오류메시지 저장:', errorForm.value)
+// 깊은 복사 헬퍼
+const cloneItems = (items: ErrorMessageItem[]) => items.map((e) => ({ ...e }))
+
+const syncLocalData = () => {
+  localData.value = {
+    responseErrors: cloneItems(errorMessageData.value.responseErrors),
+    inputErrors: cloneItems(errorMessageData.value.inputErrors),
+    apiErrors: cloneItems(errorMessageData.value.apiErrors),
+  }
 }
 
-const onReset = () => {
-  errorForm.value = {
-    isEnabled: true,
-    message: defaultMessage,
-  }
+// 초기 조회
+onMounted(async () => {
+  await handleSelectErrorMessageData()
+  syncLocalData()
+})
+
+// 저장
+const onSave = async () => {
+  await handleSaveErrorMessage(localData.value)
+}
+
+// 초기화
+const onReset = async () => {
+  await handleSelectErrorMessageData()
+  syncLocalData()
 }
 </script>

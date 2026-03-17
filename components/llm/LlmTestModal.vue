@@ -7,29 +7,47 @@
     @close="$emit('close')"
   >
     <div class="llm-test-modal-body">
+      <!-- 모델 정보 -->
+      <div
+        v-if="model"
+        class="llm-test-model-info"
+      >
+        <span class="llm-test-model-name">{{ model.modelName }}</span>
+        <span
+          v-if="model.version"
+          class="llm-test-model-badge"
+        >
+          v{{ model.version }}
+        </span>
+        <span
+          v-if="model.providerName"
+          class="llm-test-model-provider"
+        >
+          {{ model.providerName }}
+        </span>
+      </div>
+
       <!-- 테스트 프롬프트 -->
       <div class="llm-test-form-row">
-        <label class="llm-test-label">테스트 프롬프트</label>
         <UiTextarea
           v-model="testPrompt"
           placeholder="테스트할 프롬프트를 입력하세요"
           :rows="4"
           border
-          size="lg"
         />
       </div>
 
       <!-- 테스트 실행 버튼 -->
-      <UiButton
-        class="llm-test-run-btn"
-        variant="primary"
-        size="xlg"
-        full-width
-        :disabled="isTestStreaming || !testPrompt.trim()"
-        @click="onRunTest"
-      >
-        {{ isTestStreaming ? '응답 대기 중...' : '테스트 실행' }}
-      </UiButton>
+      <div class="llm-test-action">
+        <UiButton
+          variant="primary"
+          size="md"
+          :disabled="isTestStreaming || !testPrompt.trim()"
+          @click="onRunTest"
+        >
+          {{ isTestStreaming ? '응답 대기 중...' : '테스트 실행' }}
+        </UiButton>
+      </div>
 
       <!-- 응답 결과 (테스트 실행 후에만 노출) -->
       <div
@@ -38,7 +56,7 @@
       >
         <label class="llm-test-label">응답 결과</label>
         <div class="llm-test-response-box">
-          <!-- 스트리밍 로딩 (아직 텍스트 없을 때) -->
+          <!-- 스트리밍 로딩 -->
           <div
             v-if="isTestStreaming && !testResponseText"
             class="llm-test-loading"
@@ -52,10 +70,21 @@
           >
             {{ testErrorText }}
           </div>
-          <!-- 응답 텍스트 (스트리밍 중 + 완료 후) -->
+          <!-- 응답 텍스트 -->
           <template v-else>
             {{ testResponseText }}
           </template>
+        </div>
+
+        <!-- 성능 지표 -->
+        <div
+          v-if="!isTestStreaming && testResponseText && elapsedTime > 0"
+          class="llm-test-stats"
+        >
+          <span class="llm-test-stat-item">
+            <i class="icon-time size-14" />
+            응답시간: {{ formattedElapsedTime }}
+          </span>
         </div>
       </div>
     </div>
@@ -80,6 +109,20 @@ const { testResponseText, isTestStreaming, testErrorText, sendTestMessage, disco
 
 const testPrompt = ref('')
 const hasRunTest = ref(false)
+const startTime = ref(0)
+const elapsedTime = ref(0)
+
+const formattedElapsedTime = computed(() => {
+  if (elapsedTime.value < 1000) return `${elapsedTime.value}ms`
+  return `${(elapsedTime.value / 1000).toFixed(1)}s`
+})
+
+// 스트리밍 완료 시 경과 시간 기록
+watch(isTestStreaming, (streaming, wasStreaming) => {
+  if (wasStreaming && !streaming && startTime.value > 0) {
+    elapsedTime.value = Date.now() - startTime.value
+  }
+})
 
 // 모달 열릴/닫힐 때 초기화
 watch(
@@ -88,6 +131,8 @@ watch(
     if (open) {
       testPrompt.value = ''
       hasRunTest.value = false
+      startTime.value = 0
+      elapsedTime.value = 0
     } else {
       disconnectTestSocket()
     }
@@ -97,6 +142,8 @@ watch(
 const onRunTest = () => {
   if (!props.model?.modelId || !testPrompt.value.trim()) return
   hasRunTest.value = true
+  elapsedTime.value = 0
+  startTime.value = Date.now()
   sendTestMessage(testPrompt.value.trim(), props.model.modelId)
 }
 </script>
@@ -112,6 +159,35 @@ const onRunTest = () => {
   width: 100%;
 }
 
+.llm-test-model-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: $color-background;
+  border-radius: $border-radius-base;
+}
+
+.llm-test-model-name {
+  @include typo($body-medium-bold);
+  color: var(--color-primary);
+}
+
+.llm-test-model-badge {
+  @include typo($body-xsmall);
+  color: $color-text-muted;
+  padding: 2px 8px;
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-sm;
+}
+
+.llm-test-model-provider {
+  @include typo($body-small);
+  color: $color-text-secondary;
+  margin-left: auto;
+}
+
 .llm-test-form-row {
   display: flex;
   flex-direction: column;
@@ -123,15 +199,15 @@ const onRunTest = () => {
   color: $color-text-primary;
 }
 
-.llm-test-run-btn {
-  margin-top: $spacing-xs;
+.llm-test-action {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .llm-test-result {
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
-  margin-top: $spacing-md;
   padding-top: $spacing-md;
   border-top: 1px solid $color-border;
 }
@@ -145,8 +221,11 @@ const onRunTest = () => {
   font-size: $font-size-base;
   line-height: $line-height-base;
   min-height: 60px;
+  max-height: 300px;
+  overflow-y: auto;
   white-space: pre-wrap;
   word-break: break-word;
+  @include custom-scrollbar;
 }
 
 .llm-test-loading {
@@ -188,5 +267,22 @@ const onRunTest = () => {
 
 .llm-test-error {
   color: $color-error;
+}
+
+.llm-test-stats {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: 8px 12px;
+  background: $color-background;
+  border-radius: $border-radius-base;
+}
+
+.llm-test-stat-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  @include typo($body-small);
+  color: $color-text-muted;
 }
 </style>

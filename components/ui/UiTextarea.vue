@@ -29,8 +29,8 @@ const props = withDefaults(defineProps<Props>(), {
   placeholder: '',
   disabled: false,
   rows: 1,
-  autoResize: false,
-  maxRows: undefined,
+  autoResize: true,
+  maxRows: 10,
   radius: 'base',
   border: false,
   size: 'lg',
@@ -116,14 +116,14 @@ watch(
   width: 100%;
   min-height: 84px;
   line-height: $line-height-base;
-  font-size: $font-size-lg;
+  font-size: $font-size-base;
 
   // 사이즈
   &.size-textarea-sm {
     font-size: $font-size-base;
   }
   &.size-textarea-md {
-    font-size: $font-size-base;
+    font-size: $font-size-lg;
   }
   &.size-textarea-lg {
     font-size: $font-size-lg;
