@@ -121,6 +121,7 @@
 </template>
 
 <script setup lang="ts">
+import type { CodeItem } from '~/types/codes'
 import type { SystemPrompt } from '~/types/prompt'
 
 interface Props {
@@ -137,12 +138,19 @@ const emit = defineEmits<{
 
 const form = computed(() => props.modelValue)
 
-// 유형 옵션
-const typeOptions = [
-  { label: '기본 프롬프트 (전체 공통)', value: '기본 프롬프트 (전체 공통)' },
-  { label: 'RAG 전용 프롬프트', value: 'RAG 전용 프롬프트' },
-  { label: 'SQL 전용 프롬프트', value: 'SQL 전용 프롬프트' },
-]
+const typeOptions = ref<{ label: string; value: string }[]>([])
+const initTypeOptions = async () => {
+  const codes = await getCodes('PR000001')
+  typeOptions.value = codes.map((item: CodeItem) => ({
+    label: item.codeNm,
+    value: item.codeId,
+  }))
+}
+
+onMounted(() => {
+  initTypeOptions()
+  onNewPrompt()
+})
 
 const onUpdateForm = (key: string, value: string | number) => {
   emit('update:modelValue', { ...props.modelValue, [key]: value })
@@ -156,8 +164,8 @@ const onNewPrompt = () => {
   emit('update:modelValue', {
     promptTypeCd: '',
     content: '',
-    temperature: 0.7,
-    topP: 0.9,
+    temperature: 0,
+    topP: 0,
     applyLlmYn: 'Y',
     applyRagYn: 'Y',
     applySqlYn: 'Y',

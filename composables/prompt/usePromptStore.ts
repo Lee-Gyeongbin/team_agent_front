@@ -40,9 +40,6 @@ const handleSelectSystemPromptList = async () => {
   try {
     const response = await fetchSystemPromptList()
     systemPromptList.value = response.dataList ?? []
-    // if (systemPromptList.value.length > 0) {
-    //   settingForm.value = { ...systemPromptList.value[0] }
-    // }
   } catch (error) {
     openToast({
       message: '시스템 프롬프트 조회 실패',

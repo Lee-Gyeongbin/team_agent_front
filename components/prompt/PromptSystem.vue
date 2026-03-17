@@ -69,7 +69,9 @@ const settingFormModel = computed({
 })
 
 // 초기 조회
-onMounted(() => handleSelectSystemPromptList())
+onMounted(() => {
+  handleSelectSystemPromptList()
+})
 
 // 저장
 const isSaveModalOpen = ref(false)
