@@ -106,6 +106,12 @@ export interface ChatLogListRow {
   docId?: string
   /** 문서 존재 여부 (Y/N) */
   docExist?: 'Y' | 'N'
+  /** 시각화 데이터 존재 여부 (Y/N) */
+  tableExist?: 'Y' | 'N'
+  /** 시각화 SQL */
+  ttsq?: string
+  /** 시각화 테이블 원본(JSON 문자열) */
+  tableData?: string
   [key: string]: unknown
 }
 
@@ -119,6 +125,48 @@ export interface ChatRefRow {
   docTitle: string
   fileName: string
   filePath: string
+}
+
+/** 시각화 데이터 목록 API 응답 한 건 */
+export interface VisualizationDataRow {
+  logId: string
+  ttsq?: string
+  tableData?: string
+}
+export const EMPTY_VISUALIZATION_DATA_ROW: VisualizationDataRow = {
+  logId: '',
+  ttsq: '',
+  tableData: '',
+}
+
+export type VisualizationStatus = 'idle' | 'loading' | 'success' | 'empty' | 'error'
+export type VisualizationChartType = 'bar' | 'line' | 'pie'
+
+export interface VisualizationSelectOption {
+  label: string
+  value: string
+}
+
+export interface VisualizationSchema {
+  columns: string[]
+  dimensionKeys: string[]
+  metricKeys: string[]
+  xAxisKey: string
+  defaultLegendKey: string
+  defaultMetricKey: string
+  isTimeAxis: boolean
+  hasYearMonth: boolean
+  hasYearQuarter: boolean
+}
+
+export interface VisualizationViewModel {
+  messageId: string
+  status: VisualizationStatus
+  sql: string
+  rawTableData: string
+  rows: Array<Record<string, unknown>>
+  schema: VisualizationSchema | null
+  errorMessage?: string
 }
 
 // PDF 뷰어 (ChatPdfPanel) 관련 타입

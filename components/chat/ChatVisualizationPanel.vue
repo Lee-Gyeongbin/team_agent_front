@@ -39,7 +39,33 @@
           <span class="chat-vis-table-subtitle">{{ tableSubtitle }}</span>
         </div>
         <div class="chat-vis-table-body">
+          <div
+            v-if="isLoading"
+            class="chat-vis-status"
+          >
+            시각화 데이터를 불러오는 중입니다.
+          </div>
+          <div
+            v-else-if="isError"
+            class="chat-vis-status is-error"
+          >
+            <p>{{ errorMessage }}</p>
+            <UiButton
+              size="sm"
+              variant="secondary"
+              @click="onRefresh"
+            >
+              다시 시도
+            </UiButton>
+          </div>
+          <div
+            v-else-if="isEmpty"
+            class="chat-vis-status"
+          >
+            표시할 데이터가 없습니다.
+          </div>
           <UiTable
+            v-else
             :columns="tableColumns"
             :data="tableData"
             sticky-header
@@ -98,6 +124,7 @@
               variant="ghost"
               icon-only
               title="새로고침"
+              @click="onRefresh"
             >
               <template #icon-left>
                 <i class="icon-refresh size-16"></i>
@@ -140,6 +167,25 @@
         </div>
         <!-- 🔽 더미 데이터 — 백엔드 연결 시 API로 교체 -->
         <div
+          v-if="isLoading"
+          class="chat-vis-status"
+        >
+          차트를 생성하는 중입니다.
+        </div>
+        <div
+          v-else-if="isError"
+          class="chat-vis-status is-error"
+        >
+          차트 데이터 로딩 중 오류가 발생했습니다.
+        </div>
+        <div
+          v-else-if="!hasChartData"
+          class="chat-vis-status"
+        >
+          차트로 표시할 수 있는 수치 데이터가 없습니다.
+        </div>
+        <div
+          v-else
           class="chat-vis-chart-area"
           :class="{ 'is-pie': chartType === 'pie' }"
         >
@@ -185,125 +231,79 @@
 
 <script setup lang="ts">
 import type { TableColumn } from '~/types/table'
+import {
+  buildChartModel,
+  buildLegendOptions,
+  buildMetricOptions,
+  buildTableModel,
+  getDefaultChartType,
+} from '~/utils/chat/visualizationUtil'
 
 interface Props {
   open: boolean
   messageId?: string | null
 }
 
-defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  messageId: null,
+})
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
   'update:fullscreen': [value: boolean]
 }>()
 
+const { visualizationViewMap, handleSelectVisualizationData } = useChatStore()
+
 const isFullscreen = ref(false)
 const isSqlOpen = ref(true)
 const chartType = ref<'bar' | 'line' | 'pie'>('bar')
+const legendOption = ref('')
+const leftAxisOption = ref('')
+const rightAxisOption = ref('')
 
-// ============================================
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-// ============================================
-
-// 데이터 표
-const tableSubtitle = 'BF.총매출액.케이블플랫폼매출액(총 8건)'
-const tableColumns: TableColumn[] = [
-  { key: 'statName', label: '통계명', width: '320px' },
-  { key: 'region', label: '지역', width: '150px' },
-  { key: 'total', label: '합계', align: 'right', headerAlign: 'center' },
-  { key: 'average', label: '평균', align: 'right', headerAlign: 'center' },
-]
-const tableData = [
-  { statName: 'BF.총매출액.케이블플랫폼매출액', region: '대전', total: '44,865,368,290', average: '3,738,780,690.83' },
-  { statName: 'BF.총매출액.케이블플랫폼매출액', region: '충청', total: '13,332,726,992', average: '1,111,060,582.67' },
-  { statName: 'BF.총매출액.케이블플랫폼매출액', region: '세종', total: '1,074,601,827', average: '89,550,152.25' },
-  { statName: 'BF.총매출액.케이블플랫폼매출액', region: '광주', total: '33,910,931,382', average: '2,825,910,948.50' },
-  { statName: 'BF.총매출액.케이블플랫폼매출액', region: '전남', total: '9,927,838,771', average: '827,319,897.58' },
-  { statName: 'BF.총매출액.케이블플랫폼매출액', region: '영등포', total: '10,915,703,515', average: '909,641,959.58' },
-  { statName: 'BF.총매출액.케이블플랫폼매출액', region: '동대문', total: '5,405,915,010', average: '450,492,917.50' },
-  { statName: 'BF.총매출액.케이블플랫폼매출액', region: '대구', total: '8,602,288,731', average: '716,857,394.25' },
-]
-const sqlQuery = `SELECT
-  department_name,
-  COUNT(*) AS employee_count,
-  AVG(salary) AS avg_salary
-FROM employees e
-JOIN departments d ON e.dept_id = d.id
-WHERE e.status = 'active'
-GROUP BY department_name
-ORDER BY avg_salary DESC
-LIMIT 10;`
-
-// ============================================
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-// ============================================
-const legendOption = ref('department_name')
-const legendOptions = [
-  { label: '부서명', value: 'department_name' },
-  { label: '지역', value: 'region' },
-  { label: '직급', value: 'position' },
-]
-
-const leftAxisOption = ref('employee_count')
-const rightAxisOption = ref('avg_salary')
-const axisOptions = [
-  { label: '직원수', value: 'employee_count' },
-  { label: '평균급여', value: 'avg_salary' },
-  { label: '급여합계', value: 'total_salary' },
-  { label: '최고급여', value: 'max_salary' },
-  { label: '최저급여', value: 'min_salary' },
-]
-
-// 차트 타입별 설정
-const chartConfig = computed(() => {
-  const categories = [
-    '개발팀',
-    '디자인팀',
-    '기획팀',
-    '마케팅팀',
-    '영업팀',
-    '인사팀',
-    'CS팀',
-    '재무팀',
-    '법무팀',
-    '경영지원',
-  ]
-
-  if (chartType.value === 'bar') {
-    return {
-      categories,
-      data: [850, 720, 680, 620, 580, 550, 520, 490, 470, 450],
-      colorKey: 'bar.set1',
-      maxValue: 1000,
-      showDataLabels: true,
-    }
-  }
-
-  if (chartType.value === 'line') {
-    return {
-      categories,
-      datasets: [
-        { label: '평균 급여', data: [850, 720, 680, 620, 580, 550, 520, 490, 470, 450], colorKey: 'line.primary' },
-      ],
-      maxValue: 1000,
-    }
-  }
-
-  // pie
-  return {
-    items: [
-      { name: '개발팀', value: 25 },
-      { name: '디자인팀', value: 18 },
-      { name: '기획팀', value: 15 },
-      { name: '마케팅팀', value: 14 },
-      { name: '영업팀', value: 12 },
-      { name: '기타', value: 16 },
-    ],
-    type: 'outerLabel',
-    style: 'regionRatio',
-  }
+const currentVisualizationView = computed(() => {
+  if (!props.messageId) return null
+  return visualizationViewMap.value[props.messageId] ?? null
 })
+
+const isLoading = computed(() => currentVisualizationView.value?.status === 'loading')
+const isError = computed(() => currentVisualizationView.value?.status === 'error')
+const isEmpty = computed(() => currentVisualizationView.value?.status === 'empty')
+
+const errorMessage = computed(
+  () => currentVisualizationView.value?.errorMessage ?? '시각화 데이터를 불러오지 못했습니다.',
+)
+const sqlQuery = computed(() => currentVisualizationView.value?.sql ?? '')
+
+const tableModel = computed(() => {
+  if (!currentVisualizationView.value) {
+    return { columns: [] as TableColumn[], data: [] as Array<Record<string, unknown>> }
+  }
+  return buildTableModel(currentVisualizationView.value)
+})
+
+const tableSubtitle = computed(() => {
+  const rowCount = currentVisualizationView.value?.rows.length ?? 0
+  return `총 ${rowCount.toLocaleString('ko-KR')}건`
+})
+const tableColumns = computed(() => tableModel.value.columns)
+const tableData = computed(() => tableModel.value.data)
+
+const axisOptions = computed(() => buildMetricOptions(currentVisualizationView.value?.schema ?? null))
+const legendOptions = computed(() => buildLegendOptions(currentVisualizationView.value?.schema ?? null))
+
+const chartConfig = computed<Record<string, unknown>>(() => {
+  if (!currentVisualizationView.value) return {}
+  return (
+    buildChartModel(currentVisualizationView.value, {
+      chartType: chartType.value,
+      metricKey: leftAxisOption.value,
+      legendKey: legendOption.value,
+    }) ?? {}
+  )
+})
+const hasChartData = computed(() => Object.keys(chartConfig.value).length > 0)
 
 const toggleFullscreen = () => {
   isFullscreen.value = !isFullscreen.value
@@ -320,4 +320,49 @@ const toggleSql = () => {
   isSqlOpen.value = !isSqlOpen.value
 }
 
+const syncChartOptions = () => {
+  const schema = currentVisualizationView.value?.schema
+  if (!schema) {
+    legendOption.value = ''
+    leftAxisOption.value = ''
+    rightAxisOption.value = ''
+    chartType.value = 'bar'
+    return
+  }
+
+  const metricFallback = axisOptions.value[0]?.value ?? ''
+  const legendFallback = legendOptions.value[0]?.value ?? ''
+  const defaultType = getDefaultChartType(schema)
+
+  if (!axisOptions.value.some((option) => option.value === leftAxisOption.value)) {
+    leftAxisOption.value = schema.defaultMetricKey || metricFallback
+  }
+  if (!axisOptions.value.some((option) => option.value === rightAxisOption.value)) {
+    rightAxisOption.value = schema.defaultMetricKey || metricFallback
+  }
+  if (!legendOptions.value.some((option) => option.value === legendOption.value)) {
+    legendOption.value = schema.defaultLegendKey || legendFallback
+  }
+  chartType.value = defaultType
+}
+
+const onRefresh = async () => {
+  if (!props.messageId) return
+  await handleSelectVisualizationData(props.messageId)
+}
+
+watch(
+  () => [props.open, props.messageId] as const,
+  async ([open, messageId]) => {
+    if (!open || !messageId) return
+    if (!visualizationViewMap.value[messageId]) {
+      await handleSelectVisualizationData(messageId)
+    }
+  },
+  { immediate: true },
+)
+
+watch(currentVisualizationView, () => {
+  syncChartOptions()
+})
 </script>
