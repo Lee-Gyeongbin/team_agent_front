@@ -77,10 +77,33 @@
 
     // 닫기 버튼
   }
-  .btn-modal-close {
+  // 헤더 우측 버튼 그룹 (전체화면 + 닫기)
+  .btn-modal-header-actions {
     position: absolute;
     top: 20px;
     right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .btn-modal-fullscreen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    color: #828fa9;
+    border-radius: $border-radius-sm;
+    transition: color $transition-fast;
+
+    &:hover {
+      color: $color-text-primary;
+    }
+  }
+
+  .btn-modal-close {
+    // position 제거 — btn-modal-header-actions 내부에서 flow 배치
   }
 
   // 본문
@@ -102,6 +125,23 @@
     margin-top: 20px;
     padding-top: 16px;
     border-top: 1px solid $color-border;
+  }
+}
+
+// 전체화면 상태
+.modal-dialog.is-fullscreen {
+  .modal-dialog-content {
+    max-width: calc(100vw - 40px);
+    max-height: calc(100vh - 40px);
+    width: calc(100vw - 40px);
+    height: calc(100vh - 40px);
+    transition:
+      max-width $transition-base,
+      max-height $transition-base,
+      width $transition-base,
+      height $transition-base,
+      transform $transition-base,
+      opacity $transition-base;
   }
 }
 

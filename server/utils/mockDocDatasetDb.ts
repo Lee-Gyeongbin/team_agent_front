@@ -97,6 +97,44 @@ const datasetList: MockDocDataset[] = [
   },
 ]
 
+// ===== 문서 파일 목록 =====
+interface MockDocFile {
+  id: string
+  name: string
+  size: string
+  categoryId: string
+}
+
+const docFileList: MockDocFile[] = [
+  { id: 'doc-1', name: 'ERP시스템_사용자매뉴얼.pdf', size: '2.4 MB', categoryId: 'cat-1-1' },
+  { id: 'doc-2', name: '인사관리_정책문서_2025.docx', size: '2.4 MB', categoryId: 'cat-1-1' },
+  { id: 'doc-3', name: '전자결재_업무가이드.pdf', size: '2.4 MB', categoryId: 'cat-1-2' },
+  { id: 'doc-4', name: 'ERP시스템_사용자매뉴얼.pdf', size: '2.4 MB', categoryId: 'cat-1-2' },
+  { id: 'doc-5', name: '이 영역은 고정높이, 목록 6개부터 스크롤.pdf', size: '2.4 MB', categoryId: 'cat-2' },
+  { id: 'doc-6', name: '급여관리_매뉴얼.pdf', size: '1.8 MB', categoryId: 'cat-2' },
+  { id: 'doc-7', name: '근태관리_시스템_가이드.pdf', size: '3.1 MB', categoryId: 'cat-2' },
+  { id: 'doc-8', name: '복리후생_안내서.docx', size: '1.2 MB', categoryId: 'cat-3' },
+  { id: 'doc-9', name: '채용프로세스_매뉴얼.pdf', size: '2.0 MB', categoryId: 'cat-3' },
+  { id: 'doc-10', name: '조직관리_정책.pdf', size: '1.5 MB', categoryId: 'cat-3' },
+]
+
+// ===== URL 목록 =====
+interface MockDocUrl {
+  id: string
+  name: string
+  url: string
+  category: string
+}
+
+const urlList: MockDocUrl[] = [
+  { id: 'url-1', name: '공식 블로그', url: 'https://blog.example.com', category: '블로그' },
+  { id: 'url-2', name: '기술 문서', url: 'https://docs.example.com', category: '문서' },
+  { id: 'url-3', name: '기술 문서', url: 'https://docs.example.com', category: '문서' },
+  { id: 'url-4', name: '기술 문서', url: 'https://docs.example.com', category: '문서' },
+  { id: 'url-5', name: '기술 문서', url: 'https://docs.example.com', category: '문서' },
+  { id: 'url-6', name: '기술 문서', url: 'https://docs.example.com', category: '문서' },
+]
+
 export const mockDocDatasetDb = {
   getList: () => datasetList.map((d) => ({ ...d })),
 
@@ -170,6 +208,12 @@ export const mockDocDatasetDb = {
     if (index > -1) datasetList.splice(index, 1)
     return { id }
   },
+
+  // 문서 파일 목록
+  getDocFiles: () => docFileList.map((d) => ({ ...d })),
+
+  // URL 목록
+  getUrls: () => urlList.map((u) => ({ ...u })),
 
   toggleActive: (id: string) => {
     const item = datasetList.find((d) => d.id === id)

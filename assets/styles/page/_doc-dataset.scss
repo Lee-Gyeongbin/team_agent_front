@@ -331,3 +331,311 @@
 .doc-dataset-card-btn-stop {
   min-width: 88px;
 }
+
+// ===================================
+// 생성 모달
+// ===================================
+.doc-dataset-create-modal {
+  // 모달 컨텐츠 오버라이드 (기본: 400px, overflow hidden)
+  .modal-dialog-content {
+    overflow: hidden;
+  }
+
+  // 본문 레이아웃 오버라이드 (기본: 다이얼로그 중앙 정렬)
+  .modal-dialog-body {
+    display: block;
+    align-items: stretch;
+    min-height: auto;
+    padding: $spacing-md 0 0;
+  }
+
+  // 전체화면일 때 컨텐츠가 높이를 채우도록
+  &.is-fullscreen {
+    .modal-dialog-content {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-dialog-body {
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .doc-dataset-create-form {
+      max-height: none;
+      height: 100%;
+    }
+  }
+}
+
+.doc-dataset-create-form {
+  max-height: 70vh;
+  overflow-y: auto;
+  width: 100%;
+  @include custom-scrollbar;
+}
+
+.doc-dataset-create-footer {
+  margin-top: $spacing-md;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-md $spacing-lg;
+  padding-left: 0;
+  padding-right: 0;
+  padding-bottom: 0;
+  border-top: 1px solid $color-border;
+}
+
+.doc-dataset-create-footer-right {
+  display: flex;
+  gap: $spacing-sm;
+}
+
+// ===================================
+// 서브섹션 (청킹 옵션, 텍스트 전처리)
+// ===================================
+.doc-dataset-subsection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.doc-dataset-subsection-header {
+  display: flex;
+  align-items: baseline;
+  gap: $spacing-sm;
+}
+
+.doc-dataset-subsection-title {
+  @include typo($body-medium-bold);
+  color: $color-text-heading;
+  white-space: nowrap;
+}
+
+.doc-dataset-subsection-desc {
+  @include typo($body-small);
+  color: #6f7a93;
+}
+
+// 체크박스 2열 그리드
+.doc-dataset-checkbox-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 24px;
+  flex: 1;
+}
+
+// ===================================
+// 데이터 소스 패널 (문서 / URL)
+// ===================================
+.doc-dataset-source-panel {
+  border: 1px solid #dce4e9;
+  border-radius: $border-radius-base;
+  overflow: hidden;
+}
+
+.doc-dataset-source-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px $spacing-md;
+  background: #f8fafc;
+  cursor: pointer;
+  user-select: none;
+}
+
+.doc-dataset-source-panel-label {
+  @include typo($body-medium-bold);
+  color: $color-text-heading;
+}
+
+.doc-dataset-source-panel-count {
+  @include typo($body-small);
+  color: #6f7a93;
+  font-weight: 400;
+
+  strong {
+    color: var(--color-primary);
+    font-weight: 700;
+  }
+}
+
+.doc-dataset-source-panel-arrow {
+  display: flex;
+  align-items: center;
+  color: $color-text-muted;
+  transform: rotate(0deg);
+  transition: transform $transition-fast;
+
+  &.is-expanded {
+    transform: rotate(180deg);
+  }
+}
+
+.doc-dataset-source-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: $spacing-md;
+  border-top: 1px solid #dce4e9;
+}
+
+// 검색 행
+.doc-dataset-source-search-row {
+  display: flex;
+  gap: $spacing-sm;
+}
+
+.doc-dataset-source-search-wrap {
+  position: relative;
+  flex: 1;
+}
+
+.doc-dataset-source-search-input {
+  flex: 1;
+}
+
+.doc-dataset-source-search-badge {
+  position: absolute;
+  right: 36px;
+  top: 50%;
+  transform: translateY(-50%);
+  @include typo($body-xsmall-bold);
+  color: #fff;
+  background: #ef4444;
+  padding: 0 6px;
+  border-radius: 10px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.doc-dataset-source-category-select {
+  width: 160px;
+  flex-shrink: 0;
+}
+
+// 문서 2분할
+.doc-dataset-source-doc-split {
+  display: flex;
+  gap: 0;
+  border: 1px solid #dce4e9;
+  border-radius: $border-radius-base;
+  height: 240px;
+  overflow: hidden;
+}
+
+.doc-dataset-source-doc-tree {
+  width: 200px;
+  flex-shrink: 0;
+  border-right: 1px solid #dce4e9;
+  background: #f8fafc;
+  overflow-y: auto;
+  @include custom-scrollbar;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.doc-dataset-source-doc-tree-placeholder {
+  @include typo($body-small);
+  color: #aebccb;
+}
+
+.doc-dataset-source-doc-files {
+  flex: 1;
+  overflow-y: auto;
+  @include custom-scrollbar;
+}
+
+.doc-dataset-source-doc-file-item,
+.doc-dataset-source-url-item {
+  // 인라인 체크박스 스타일 (UiCheckbox scoped 대체)
+  .ui-checkbox {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .ui-checkbox-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid #c6d2db;
+    border-radius: 4px;
+    background: #fff;
+    flex-shrink: 0;
+    transition: all $transition-fast;
+    color: #fff;
+  }
+
+  .is-checked .ui-checkbox-box {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+  }
+}
+
+.doc-dataset-source-doc-file-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color $transition-fast;
+
+  &:hover {
+    background: #f8fafc;
+  }
+}
+
+.doc-dataset-source-doc-file-name {
+  @include typo($body-small);
+  color: $color-text-primary;
+  flex: 1;
+  @include ellipsis(1);
+}
+
+.doc-dataset-source-doc-file-size {
+  @include typo($body-small);
+  color: #aebccb;
+  flex-shrink: 0;
+}
+
+// URL 리스트
+.doc-dataset-source-url-list {
+  border: 1px solid #dce4e9;
+  border-radius: $border-radius-base;
+  max-height: 240px;
+  overflow-y: auto;
+  @include custom-scrollbar;
+}
+
+.doc-dataset-source-url-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color $transition-fast;
+
+  &:hover {
+    background: #f8fafc;
+  }
+}
+
+.doc-dataset-source-url-name {
+  @include typo($body-small);
+  color: $color-text-primary;
+  flex-shrink: 0;
+}
+
+.doc-dataset-source-url-link {
+  @include typo($body-small);
+  color: #aebccb;
+  flex: 1;
+  text-align: right;
+  @include ellipsis(1);
+}

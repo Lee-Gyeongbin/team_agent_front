@@ -1,6 +1,6 @@
 <template>
   <div
-    :class="[positionClass, customClass, { 'is-show': isOpen }]"
+    :class="[positionClass, customClass, { 'is-show': isOpen, 'is-fullscreen': isFullscreen }]"
     @click.self="handleOverlayClick"
   >
     <!-- 오버레이 배경 -->
@@ -23,13 +23,26 @@
         >
           <h2 :class="titleClass">{{ title }}</h2>
 
-          <button
-            v-if="showClose"
-            class="btn btn-modal-close"
-            @click="handleClose"
-          >
-            <i class="icon icon-close-gray size-20"></i>
-          </button>
+          <div class="btn-modal-header-actions">
+            <button
+              v-if="showFullscreen"
+              class="btn btn-modal-fullscreen"
+              :title="isFullscreen ? '축소' : '전체화면'"
+              @click="toggleFullscreen"
+            >
+              <i
+                :class="isFullscreen ? 'icon-collapse' : 'icon-expand'"
+                class="size-20"
+              />
+            </button>
+            <button
+              v-if="showClose"
+              class="btn btn-modal-close"
+              @click="handleClose"
+            >
+              <i class="icon icon-close-gray size-20"></i>
+            </button>
+          </div>
         </div>
       </slot>
 
@@ -53,6 +66,7 @@ interface Props {
   title?: string
   showOverlay?: boolean
   showClose?: boolean
+  showFullscreen?: boolean
   maxWidth?: string
   customClass?: string
 }
@@ -63,6 +77,7 @@ const props = withDefaults(defineProps<Props>(), {
   title: '',
   showOverlay: true,
   showClose: true,
+  showFullscreen: false,
   maxWidth: '',
   customClass: '',
 })
@@ -70,6 +85,21 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   close: []
 }>()
+
+// 전체화면
+const isFullscreen = ref(false)
+
+const toggleFullscreen = () => {
+  isFullscreen.value = !isFullscreen.value
+}
+
+// 닫을 때 전체화면 해제
+watch(
+  () => props.isOpen,
+  (open) => {
+    if (!open) isFullscreen.value = false
+  },
+)
 
 // position에 따른 클래스 매핑
 const positionClass = computed(() => {
@@ -96,9 +126,9 @@ const bodyClass = computed(() => {
   return props.position === 'right' ? 'modal-side-body' : 'modal-dialog-body'
 })
 
-// maxWidth 커스텀 스타일
+// maxWidth 커스텀 스타일 (전체화면일 때 무시)
 const contentStyle = computed(() => {
-  if (!props.maxWidth) return {}
+  if (isFullscreen.value || !props.maxWidth) return {}
   return { maxWidth: props.maxWidth }
 })
 

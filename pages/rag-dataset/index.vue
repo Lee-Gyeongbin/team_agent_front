@@ -54,6 +54,13 @@
       </div>
     </div>
 
+    <!-- 생성 모달 -->
+    <DocDatasetCreateModal
+      :is-open="isCreateModalOpen"
+      @close="isCreateModalOpen = false"
+      @save="onSaveCreate"
+    />
+
     <!-- 삭제 확인 모달 -->
     <UiDialogModal
       :is-open="isDeleteModalOpen"
@@ -69,8 +76,9 @@
 <script setup lang="ts">
 import DocDatasetSummary from '~/components/doc-dataset/DocDatasetSummary.vue'
 import DocDatasetCard from '~/components/doc-dataset/DocDatasetCard.vue'
+import DocDatasetCreateModal from '~/components/doc-dataset/DocDatasetCreateModal.vue'
 import { useDocDatasetStore } from '~/composables/doc-dataset/useDocDatasetStore'
-import type { DocDataset } from '~/types/doc-dataset'
+import type { DocDataset, DocDatasetForm } from '~/types/doc-dataset'
 
 const { datasetList, summary, handleSelectAll, handleDeleteDocDataset, handleToggleActiveDocDataset } =
   useDocDatasetStore()
@@ -79,8 +87,19 @@ const { datasetList, summary, handleSelectAll, handleDeleteDocDataset, handleTog
 onMounted(() => handleSelectAll())
 
 // 생성 모달
+const isCreateModalOpen = ref(false)
+
 const openCreateModal = () => {
-  console.warn('[TODO] 새 데이터셋 생성 모달')
+  isCreateModalOpen.value = true
+}
+
+const onSaveCreate = async (data: DocDatasetForm, startBuild: boolean) => {
+  await handleSaveDocDataset({
+    name: data.name,
+    version: data.version,
+    isBuilding: startBuild,
+  })
+  isCreateModalOpen.value = false
 }
 
 // 테스트
