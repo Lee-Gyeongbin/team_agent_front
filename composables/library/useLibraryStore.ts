@@ -351,7 +351,7 @@ export const useLibraryStore = () => {
   /** 답변 복사 */
   const handleCopyAnswer = async (card: LibraryCard) => {
     const response = await fetchCardDetail(card.cardId)
-    navigator.clipboard.writeText(response.data.rcontent)
+    await copyToClipboard(response.data.rcontent)
     openToast({ message: '답변이 복사되었습니다.', duration: 1500 })
   }
 

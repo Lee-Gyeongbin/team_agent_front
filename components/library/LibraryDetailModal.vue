@@ -273,8 +273,8 @@ const handleDelete = () => {
   emit('delete', displayData.value)
 }
 
-const handleCopyResponse = () => {
-  navigator.clipboard.writeText(displayData.value?.rcontent ?? '')
+const handleCopyResponse = async () => {
+  await copyToClipboard(displayData.value?.rcontent ?? '')
   openToast({ message: '답변이 복사되었습니다.', duration: 1500 })
 }
 </script>
