@@ -119,7 +119,7 @@ const messageBufferMap = ref<Record<string, string>>({})
 // 채팅방 관련
 const chatRoom = ref<ChatRoom>({ ...EMPTY_CHAT_ROOM })
 
-// 테스트 전용 소켓 + 상태 (LlmTestModal에서 사용)
+// 모델 테스트 전용 소켓 + 상태 (LlmTestModal에서 사용)
 const testSocket = shallowRef<WebSocket | null>(null)
 const testResponseText = ref('')
 const isTestStreaming = ref(false)
@@ -749,8 +749,7 @@ export const useChatStore = () => {
     return visualizationViewMap.value[messageId] ?? getEmptyVisualizationViewModel(messageId)
   })
 
-  // ─── 테스트 전용 소켓 통신 (LlmTestModal) ───
-
+  /** 모델 테스트 소켓 메시지 처리 TODO : api url payload 필드 추가 */
   const handleTestSocketMessage = (payload: ChatSocketMessage) => {
     if (payload.type === 'connected' || payload.type === 'question_received') return
 
@@ -802,8 +801,8 @@ export const useChatStore = () => {
     disconnectTestSocket()
     isTestStreaming.value = true
 
-    // 테스트용 — 로그 저장 없이 임시 threadId만 사용
-    const threadId = `test-${Date.now()}`
+    // 모델 테스트용 — 임시 threadId만 사용
+    const threadId = `modelTest-${Date.now()}`
 
     try {
       const socket = new WebSocket(getWebSocketUrl())
@@ -881,7 +880,7 @@ export const useChatStore = () => {
     onPanelClose,
     startChatSocket,
     stopChatSocket,
-    // 테스트 전용 (LlmTestModal)
+    // 모델 테스트 전용 (LlmTestModal)
     testResponseText,
     isTestStreaming,
     testErrorText,
