@@ -352,7 +352,7 @@
     font-size: $font-size-lg;
     font-weight: $font-weight-semibold;
     color: $color-text-dark;
-    margin-bottom: $spacing-md;
+    margin-bottom: $spacing-sm;
     padding-bottom: $spacing-xs;
     border-bottom: 2px solid $color-border;
   }
@@ -361,14 +361,14 @@
 .guide-icon-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: $spacing-md;
+  gap: $spacing-sm;
 
   .icon-item {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: $spacing-xs;
-    padding: $spacing-md;
+    padding: $spacing-sm;
     border: 1px solid $color-border;
     border-radius: $border-radius-base;
     min-width: 90px;
