@@ -9,6 +9,22 @@
   // ============================================
   ```
 - 상태별 UI 모두 구현: 로딩(Skeleton), 빈 상태(Empty), 에러, 데이터 있음
+- **빈 상태(Empty)**: 개별 HTML 작성 금지 → `UiEmpty` 컴포넌트 사용
+  ```vue
+  <!-- ❌ 금지 — 개별 empty 마크업 -->
+  <div class="xxx-empty">
+    <i class="icon-search size-24" />
+    <p>데이터가 없습니다.</p>
+  </div>
+
+  <!-- ✅ 올바른 사용 -->
+  <UiEmpty />
+  <UiEmpty icon="icon-search" title="검색 결과가 없습니다." />
+  <UiEmpty icon="icon-arrow-right" title="좌측에서 그룹을 선택하세요" />
+  ```
+  - 넓은 영역 (페이지, 패널): `icon` + `title` 권장 (시각적 인지)
+  - 좁은 영역 (모달, 카드): `title`만 사용 가능
+  - 하단 액션 필요 시 default 슬롯 활용
 - TypeScript 타입 정의 필수 (`types/` 디렉토리)
 - **Input 설명 텍스트**: `<p class="hint">` 등 별도 태그 사용 금지 → `UiInput`의 `desc` prop 사용
   ```vue
