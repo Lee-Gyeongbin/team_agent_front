@@ -1,5 +1,5 @@
 <template>
-  <div class="com-card-page l-center">
+  <div class="com-card-page m-center">
     <!-- 헤더 -->
     <LlmListHeader
       :active-count="activeCount"

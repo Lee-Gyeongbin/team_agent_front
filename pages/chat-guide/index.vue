@@ -7,7 +7,7 @@
       />
     </div>
 
-    <div class="chat-comment-page-body m-center">
+    <div class="chat-comment-page-body s-center">
       <!-- 인사멘트 -->
       <ChatCommentGreeting v-if="activeTab === 'greeting'" />
 

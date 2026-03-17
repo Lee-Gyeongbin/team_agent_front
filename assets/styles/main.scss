@@ -31,6 +31,7 @@
 @use './page/prompt';
 @use './page/chat-comment';
 @use './page/doc-dataset';
+@use './page/repository';
 
 // ===================================
 // 테마 CSS 변수 (useTheme.ts에서 런타임 전환)

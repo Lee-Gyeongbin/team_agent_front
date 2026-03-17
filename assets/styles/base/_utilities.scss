@@ -100,19 +100,20 @@
 }
 
 /* content inner ======================== */
-.m-center {
+.s-center {
   width: 100%;
-  padding: 0 20px;
+  padding: 0 16px;
   margin-left: auto;
   margin-right: auto;
-  max-width: 800px; // 760px
+  max-width: 792px; // 760px
 }
 
-.wide-center {
+.m-center {
   width: 100%;
-  padding: 0 20px;
+  padding: 0 16px;
   margin-left: auto;
   margin-right: auto;
+  max-width: 1056px; // 1024px
 }
 
 .l-center {
@@ -120,7 +121,14 @@
   padding: 0 16px;
   margin-left: auto;
   margin-right: auto;
-  max-width: 1002px; // 1024px
+  max-width: 1292px; // 1260px
+}
+
+.wide-center {
+  width: 100%;
+  padding: 0 20px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* typography =========================== */

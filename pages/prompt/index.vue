@@ -7,7 +7,7 @@
       />
     </div>
 
-    <div class="prompt-page-body m-center">
+    <div class="prompt-page-body s-center">
       <!-- 시스템 프롬프트 -->
       <PromptSystem v-if="activeTab === 'system'" />
 

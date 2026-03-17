@@ -39,27 +39,127 @@ const filterData = ref<PromptFilterData>({
 
 const settingForm = ref<Partial<SystemPrompt>>({})
 
+const emptySettingForm: Partial<SystemPrompt> = {
+  promptId: '',
+  promptName: '',
+  promptTypeCd: '',
+  content: '',
+  temperature: 0.7,
+  topP: 0.8,
+  applyLlmYn: 'Y',
+  applyRagYn: 'Y',
+  applySqlYn: 'Y',
+}
+
+/** settingForm 초기화 */
+const resetSettingForm = () => {
+  settingForm.value = { ...emptySettingForm }
+}
+
 /** 시스템 프롬프트 목록 조회 */
 const handleSelectSystemPromptList = async () => {
   try {
     const response = await fetchSystemPromptList()
     systemPromptList.value = response.dataList ?? []
-  } catch (error) {
+    resetSettingForm()
+  } catch {
     openToast({
       message: '시스템 프롬프트 조회 실패',
     })
   }
 }
 
-// ===== 시스템 프롬프트 추가/수정/삭제 =====
+/** 시스템 프롬프트 저장 */
 const handleSaveSystemPrompt = async (prompt: Partial<SystemPrompt>) => {
-  await fetchSaveSystemPrompt(prompt)
-  await handleSelectSystemPromptList()
+  const valid = validateSystemPrompt(prompt)
+  if (!valid.valid) {
+    openToast({
+      message: valid.message,
+    })
+    return
+  }
+  openConfirm({
+    title: '프롬프트 저장',
+    message: '프롬프트를 저장하시겠습니까?',
+    onConfirm: async () => {
+      try {
+        await fetchSaveSystemPrompt(prompt)
+        await handleSelectSystemPromptList()
+        openAlert({
+          message: '시스템 프롬프트가 저장되었습니다.',
+        })
+      } catch {
+        openToast({
+          message: '시스템 프롬프트 저장 실패',
+        })
+      }
+    },
+  })
 }
 
-const handleDeleteSystemPrompt = async (id: string) => {
-  await fetchDeleteSystemPrompt(id)
-  await handleSelectSystemPromptList()
+/** 시스템 프롬프트 유효성 검사 */
+const validateSystemPrompt = (prompt: Partial<SystemPrompt>) => {
+  if (isEmpty(prompt.promptName)) {
+    return { valid: false, message: '프롬프트 명을 입력해주세요.' }
+  }
+  if (isEmpty(prompt.promptTypeCd)) {
+    return { valid: false, message: '프롬프트 유형을 선택해주세요.' }
+  }
+  if (isEmpty(prompt.content)) {
+    return { valid: false, message: '시스템 프롬프트를 입력해주세요.' }
+  }
+  if (isEmpty(prompt.temperature)) {
+    return { valid: false, message: '창의성을 입력해주세요.' }
+  }
+  if (Number(prompt.temperature) < 0 || Number(prompt.temperature) > 2) {
+    return { valid: false, message: '창의성은 0~2 사이의 값을 입력해주세요.' }
+  }
+  if (isEmpty(prompt.topP)) {
+    return { valid: false, message: '샘플링값을 입력해주세요.' }
+  }
+  if (Number(prompt.topP) < 0.1 || Number(prompt.topP) > 1) {
+    return { valid: false, message: '샘플링값은 0.1~1.0 사이의 값을 입력해주세요.' }
+  }
+  if (isEmpty(prompt.applyLlmYn)) {
+    return { valid: false, message: 'LLM 적용 여부를 선택해주세요.' }
+  }
+  if (isEmpty(prompt.applyRagYn)) {
+    return { valid: false, message: 'RAG 적용 여부를 선택해주세요.' }
+  }
+  if (isEmpty(prompt.applySqlYn)) {
+    return { valid: false, message: 'SQL 적용 여부를 선택해주세요.' }
+  }
+  return { valid: true, message: '' }
+}
+
+/** 시스템 프롬프트 삭제 */
+const handleDeleteSystemPrompt = async (prompt: SystemPrompt) => {
+  openConfirm({
+    title: '프롬프트 삭제',
+    message: '프롬프트를 삭제하시겠습니까?',
+    onConfirm: async () => {
+      try {
+        await fetchDeleteSystemPrompt(prompt)
+        await handleSelectSystemPromptList()
+        openAlert({
+          message: '프롬프트가 삭제되었습니다.',
+        })
+      } catch {
+        openToast({ message: '시스템 프롬프트 삭제 실패' })
+      }
+    },
+  })
+}
+
+/** 시스템 프롬프트 활성/비활성 토글 */
+const handleToggleSystemPrompt = async (prompt: Partial<SystemPrompt>) => {
+  try {
+    await fetchSaveSystemPrompt(prompt)
+    await handleSelectSystemPromptList()
+    openToast({ message: '프롬프트 활성화 상태가 변경되었습니다.' })
+  } catch {
+    openToast({ message: '프롬프트 활성화 상태 변경 실패' })
+  }
 }
 
 // ===== 템플릿 조회 =====
@@ -155,9 +255,11 @@ export const usePromptStore = () => {
   return {
     systemPromptList,
     settingForm,
+    resetSettingForm,
     handleSelectSystemPromptList,
     handleSaveSystemPrompt,
     handleDeleteSystemPrompt,
+    handleToggleSystemPrompt,
     templateList,
     handleSelectTemplateList,
     handleSaveTemplate,
