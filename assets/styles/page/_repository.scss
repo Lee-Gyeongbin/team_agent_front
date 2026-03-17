@@ -212,6 +212,30 @@
     border: 1px solid $color-border;
     border-radius: $border-radius-base;
     overflow: hidden;
+
+    // 정렬 가능 헤더 버튼 (문서명, 파일크기, 등록일) — 호버 시 배경
+    .ui-table th .table-header-sort-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      margin: -4px -8px;
+      border: none;
+      border-radius: $border-radius-sm;
+      background: transparent;
+      cursor: pointer;
+      @include typo($body-medium-bold);
+      color: $color-text-muted;
+      transition: background-color 0.15s;
+
+      &:hover {
+        background: rgba($color-text-muted, 0.08);
+      }
+
+      .icon {
+        flex-shrink: 0;
+      }
+    }
   }
 
   .cell-document {
@@ -219,8 +243,8 @@
 
     .doc-icon {
       flex-shrink: 0;
-      width: 24px;
-      height: 24px;
+      width: 20px;
+      height: 20px;
       border-radius: $border-radius-sm;
       display: flex;
       align-items: center;
@@ -231,20 +255,21 @@
       }
     }
 
-    .doc-icon-pdf {
-      background: #e53935;
+    // 파일 타입별 아이콘 자체 색상 (배경 없음)
+    .doc-icon-pdf .icon {
+      color: #db3b76;
     }
 
-    .doc-icon-txt {
-      background: $color-success;
+    .doc-icon-txt .icon {
+      color: #4d5462;
     }
 
-    .doc-icon-doc {
-      background: $color-info;
+    .doc-icon-doc .icon {
+      color: #3c69db;
     }
 
-    .doc-icon-default {
-      background: $color-text-muted;
+    .doc-icon-default .icon {
+      color: $color-text-muted;
     }
 
     .doc-name {

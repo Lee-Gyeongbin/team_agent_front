@@ -62,7 +62,7 @@
               variant="ghost"
               size="sm"
               class="btn-add-category"
-              @click="toggleCategoryInput"
+              @click="openCategorySelectModal"
             >
               <template #icon-left>
                 <i class="icon icon-plus size-16" />
@@ -200,7 +200,7 @@
           <div class="document-table-wrap">
             <UiTable
               :columns="tableColumns"
-              :data="documentList"
+              :data="sortedDocumentList"
               sticky-header
               max-height="calc(100vh - 380px)"
               empty-text="등록된 문서가 없습니다."
@@ -210,6 +210,36 @@
                   :model-value="isAllSelected"
                   @update:model-value="toggleSelectAll"
                 />
+              </template>
+              <template #header-documentName>
+                <button
+                  type="button"
+                  class="table-header-sort-btn"
+                  @click="onSort('documentName')"
+                >
+                  문서명
+                  <i class="icon icon-sync size-16" />
+                </button>
+              </template>
+              <template #header-fileSize>
+                <button
+                  type="button"
+                  class="table-header-sort-btn"
+                  @click="onSort('fileSize')"
+                >
+                  파일크기
+                  <i class="icon icon-sync size-16" />
+                </button>
+              </template>
+              <template #header-registerDate>
+                <button
+                  type="button"
+                  class="table-header-sort-btn"
+                  @click="onSort('registerDate')"
+                >
+                  등록일
+                  <i class="icon icon-sync size-16" />
+                </button>
               </template>
               <template #cell-select="{ row }">
                 <UiCheckbox
@@ -304,6 +334,13 @@
         </section>
       </div>
     </div>
+
+    <!-- 카테고리 선택 모달 (components/repository/CategorySelectModal.vue, pathPrefix: false → CategorySelectModal) -->
+    <CategorySelectModal
+      :is-open="isCategorySelectModalOpen"
+      @close="isCategorySelectModalOpen = false"
+      @confirm="onCategorySelectConfirm"
+    />
   </div>
 </template>
 
@@ -321,6 +358,7 @@ const tabItems = [
 
 // 카테고리 (퍼블/토글용)
 const isCategoryInputVisible = ref(false)
+const isCategorySelectModalOpen = ref(false)
 const categoryInputValue = ref('')
 const categoryList = ref([
   {
@@ -353,7 +391,7 @@ const statusFilterOptions = [
   { label: '비활성', value: 'inactive' },
 ]
 
-// 테이블 컬럼
+// 테이블 컬럼 (헤더는 상단 슬롯에서 버튼으로 렌더)
 const tableColumns: TableColumn[] = [
   { key: 'select', label: '', width: '48px', align: 'center', headerAlign: 'center' },
   { key: 'documentName', label: '문서명', width: 'auto', align: 'left', headerAlign: 'left' },
@@ -363,6 +401,30 @@ const tableColumns: TableColumn[] = [
   { key: 'ragCount', label: 'RAG 사용', width: '100px', align: 'center', headerAlign: 'center' },
   { key: 'actions', label: '', width: '56px', align: 'center', headerAlign: 'center' },
 ]
+
+// 정렬 (문서명, 파일크기, 등록일 버튼 클릭 시 오름차순/내림차순 전환)
+type SortKey = 'documentName' | 'fileSize' | 'registerDate'
+const sortKey = ref<SortKey | null>(null)
+const sortOrder = ref<'asc' | 'desc'>('asc')
+const onSort = (key: SortKey) => {
+  if (sortKey.value === key) {
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortKey.value = key
+    sortOrder.value = 'asc'
+  }
+}
+const sortedDocumentList = computed(() => {
+  const list = [...documentList.value]
+  const key = sortKey.value
+  if (!key) return list
+  const dir = sortOrder.value === 'asc' ? 1 : -1
+  return list.sort((a, b) => {
+    const va = a[key] as string
+    const vb = b[key] as string
+    return dir * (va === vb ? 0 : va < vb ? -1 : 1)
+  })
+})
 
 // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
 const documentList = ref([
@@ -448,9 +510,11 @@ const toggleCategoryExpand = (idx: number) => {
   const cat = categoryList.value[idx]
   if (cat?.children?.length) cat.expanded = !cat.expanded
 }
-const toggleCategoryInput = () => {
-  isCategoryInputVisible.value = !isCategoryInputVisible.value
-  if (!isCategoryInputVisible.value) categoryInputValue.value = ''
+const openCategorySelectModal = () => {
+  isCategorySelectModalOpen.value = true
+}
+const onCategorySelectConfirm = () => {
+  // 모달에서 선택한 카테고리 반영 — 추후 API 연동 시 구현
 }
 const onCategoryInputEnter = () => {
   if (categoryInputValue.value.trim()) {
@@ -472,9 +536,9 @@ const getDocIconClass = (fileType: string) => {
   return 'doc-icon-default'
 }
 const getDocIconName = (fileType: string) => {
-  if (fileType === 'pdf') return 'icon-document'
-  if (fileType === 'txt') return 'icon-document'
-  if (fileType === 'doc') return 'icon-document'
+  if (fileType === 'pdf') return 'icon-file-pdf'
+  if (fileType === 'txt') return 'icon-file-txt'
+  if (fileType === 'doc') return 'icon-file-doc'
   return 'icon-document'
 }
 
