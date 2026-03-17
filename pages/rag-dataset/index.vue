@@ -58,7 +58,7 @@
     <UiDialogModal
       :is-open="isDeleteModalOpen"
       title="데이터셋 삭제"
-      message="이 데이터셋을 삭제하시겠습니까? 벡터 인덱스가 함께 삭제됩니다."
+      :message="'이 데이터셋을 삭제하시겠습니까?\n벡터 인덱스가 함께 삭제됩니다.'"
       confirm-text="삭제"
       @close="isDeleteModalOpen = false"
       @confirm="doDelete"
