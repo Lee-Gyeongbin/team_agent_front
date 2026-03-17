@@ -21,30 +21,18 @@
             :prompt="item"
             @edit="onEdit"
             @copy="onCopy"
+            @toggle="onToggle"
             @delete="onDelete"
           />
         </div>
       </div>
     </div>
 
-    <!-- 저장 확인 모달 -->
-    <UiDialogModal
-      :is-open="isSaveModalOpen"
-      title="프롬프트 저장"
-      message="프롬프트를 저장하시겠습니까?"
-      confirm-text="저장"
-      @close="isSaveModalOpen = false"
-      @confirm="doSave"
-    />
-
-    <!-- 삭제 확인 모달 -->
-    <UiDialogModal
-      :is-open="isDeleteModalOpen"
-      title="프롬프트 삭제"
-      :message="`'${deletingPrompt?.promptName}' 프롬프트를 삭제하시겠습니까?`"
-      confirm-text="삭제"
-      @close="isDeleteModalOpen = false"
-      @confirm="doDelete"
+    <!-- 프롬프트 테스트 모달 -->
+    <PromptTestModal
+      :is-open="isTestOpen"
+      :prompt-content="settingForm.content ?? ''"
+      @close="isTestOpen = false"
     />
   </div>
 </template>
@@ -57,8 +45,9 @@ const {
   systemPromptList,
   settingForm,
   handleSelectSystemPromptList,
-  handleSaveSystemPrompt,
+  handleToggleSystemPrompt,
   handleDeleteSystemPrompt,
+  handleSaveSystemPrompt,
 } = usePromptStore()
 
 const settingFormModel = computed({
@@ -68,55 +57,46 @@ const settingFormModel = computed({
   },
 })
 
-// 초기 조회
 onMounted(() => {
   handleSelectSystemPromptList()
 })
 
-// 저장
-const isSaveModalOpen = ref(false)
-const savingForm = ref<Partial<SystemPrompt>>({})
-
-const onSave = (form: Partial<SystemPrompt>) => {
-  savingForm.value = form
-  isSaveModalOpen.value = true
-}
-
-const doSave = async () => {
-  await handleSaveSystemPrompt(savingForm.value)
-  isSaveModalOpen.value = false
-}
-
-// 테스트
+/** 프롬프트 테스트 */
+const isTestOpen = ref(false)
 const onTest = () => {
-  console.warn('[TODO] 프롬프트 테스트')
+  if (isEmpty(settingForm.value.content)) {
+    openToast({ message: '프롬프트 내용을 입력해주세요.' })
+    return
+  }
+  isTestOpen.value = true
 }
 
-// 수정 — 폼에 로드
+/** 프롬프트 저장 */
+const onSave = async (prompt: Partial<SystemPrompt>) => {
+  await handleSaveSystemPrompt(prompt)
+}
+
+/** 프롬프트 수정 */
 const onEdit = (prompt: SystemPrompt) => {
   settingForm.value = { ...prompt }
 }
 
-// 삭제
-const isDeleteModalOpen = ref(false)
-const deletingPrompt = ref<SystemPrompt | null>(null)
-
-const onDelete = (prompt: SystemPrompt) => {
-  deletingPrompt.value = prompt
-  isDeleteModalOpen.value = true
+/** 프롬프트 활성/비활성 토글 */
+const onToggle = async (prompt: SystemPrompt) => {
+  await handleToggleSystemPrompt({
+    ...prompt,
+    useYn: prompt.useYn === 'Y' ? 'N' : 'Y',
+  })
 }
 
-const doDelete = async () => {
-  if (!deletingPrompt.value) return
-  await handleDeleteSystemPrompt(deletingPrompt.value.promptId)
-  isDeleteModalOpen.value = false
-  deletingPrompt.value = null
+/** 프롬프트 삭제 */
+const onDelete = async (prompt: SystemPrompt) => {
+  await handleDeleteSystemPrompt(prompt)
 }
 
-// 복사 — id 제거 후 폼에 로드
-const onCopy = (prompt: SystemPrompt) => {
-  const { promptId, ...rest } = prompt
-  const baseName = rest.promptName ?? '새 프롬프트'
-  settingForm.value = { ...rest, promptName: `${baseName} (복사)` }
+/** 프롬프트 복사 */
+const onCopy = async (prompt: SystemPrompt) => {
+  await copyToClipboard(prompt.content)
+  openToast({ message: '프롬프트가 복사되었습니다.' })
 }
 </script>

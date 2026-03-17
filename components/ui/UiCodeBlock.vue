@@ -29,7 +29,7 @@ let copyTimer: ReturnType<typeof setTimeout> | null = null
 
 const onCopy = async () => {
   try {
-    await navigator.clipboard.writeText(props.code)
+    await copyToClipboard(props.code)
     isCopied.value = true
     if (copyTimer) clearTimeout(copyTimer)
     copyTimer = setTimeout(() => {

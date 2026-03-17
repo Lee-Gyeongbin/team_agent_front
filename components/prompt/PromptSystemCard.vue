@@ -13,6 +13,11 @@
       </div>
     </div>
     <div class="prompt-saved-card-actions">
+      <UiToggle
+        class="prompt-saved-card-toggle"
+        :model-value="prompt.useYn === 'Y'"
+        @update:model-value="$emit('toggle', prompt)"
+      />
       <button
         class="prompt-saved-card-btn"
         title="수정"
@@ -22,7 +27,7 @@
       </button>
       <button
         class="prompt-saved-card-btn"
-        title="복사"
+        title="프롬프트 복사"
         @click="$emit('copy', prompt)"
       >
         <i class="icon-copy-gray size-16" />
@@ -49,6 +54,7 @@ defineProps<Props>()
 defineEmits<{
   edit: [prompt: SystemPrompt]
   copy: [prompt: SystemPrompt]
+  toggle: [prompt: SystemPrompt]
   delete: [prompt: SystemPrompt]
 }>()
 </script>
