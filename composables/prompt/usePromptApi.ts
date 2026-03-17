@@ -27,12 +27,14 @@ export const usePromptApi = () => {
     return get<{ dataList: SystemPrompt[] }>(`/prompt/system/list.do`)
   }
 
+  /** 시스템 프롬프트 저장 */
   const fetchSaveSystemPrompt = async (prompt: Partial<SystemPrompt>) => {
-    return mockPost<{ data: SystemPrompt }>(`${MOCK_BASE}/save`, prompt)
+    return post<{ data: SystemPrompt }>(`/prompt/system/save.do`, prompt)
   }
 
-  const fetchDeleteSystemPrompt = async (id: string) => {
-    return mockPost<{ data: { id: string } }>(`${MOCK_BASE}/delete`, { id })
+  /** 시스템 프롬프트 삭제 */
+  const fetchDeleteSystemPrompt = async (prompt: SystemPrompt) => {
+    return post<{ data: SystemPrompt }>(`/prompt/system/delete.do`, prompt)
   }
 
   // ===== 템플릿 =====

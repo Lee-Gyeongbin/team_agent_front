@@ -8,7 +8,7 @@
       <UiButton
         variant="secondary"
         size="sm"
-        @click="onNewPrompt"
+        @click="resetSettingForm"
       >
         <template #icon-left>
           <i class="icon-plus size-16" />
@@ -20,6 +20,17 @@
     <div class="prompt-system-setting-body">
       <!-- 상세 설정 타이틀 -->
       <div class="com-setting-section-title is-inline">상세 설정</div>
+
+      <!-- 프롬프트 명 -->
+      <div class="com-setting-field-row">
+        <label class="com-setting-label">프롬프트 명</label>
+        <UiInput
+          :model-value="form.promptName"
+          size="sm"
+          placeholder="프롬프트 명을 입력하세요"
+          @update:model-value="onUpdateForm('promptName', $event)"
+        />
+      </div>
 
       <!-- 프롬프트 유형 -->
       <div class="com-setting-field-row">
@@ -123,6 +134,7 @@
 <script setup lang="ts">
 import type { CodeItem } from '~/types/codes'
 import type { SystemPrompt } from '~/types/prompt'
+import { usePromptStore } from '~/composables/prompt/usePromptStore'
 
 interface Props {
   modelValue: Partial<SystemPrompt>
@@ -135,6 +147,8 @@ const emit = defineEmits<{
   save: [form: Partial<SystemPrompt>]
   test: []
 }>()
+
+const { resetSettingForm } = usePromptStore()
 
 const form = computed(() => props.modelValue)
 
@@ -149,7 +163,6 @@ const initTypeOptions = async () => {
 
 onMounted(() => {
   initTypeOptions()
-  onNewPrompt()
 })
 
 const onUpdateForm = (key: string, value: string | number) => {
@@ -158,17 +171,5 @@ const onUpdateForm = (key: string, value: string | number) => {
 
 const onToggleApply = (key: 'applyLlmYn' | 'applyRagYn' | 'applySqlYn', checked: boolean) => {
   emit('update:modelValue', { ...props.modelValue, [key]: checked ? 'Y' : 'N' })
-}
-
-const onNewPrompt = () => {
-  emit('update:modelValue', {
-    promptTypeCd: '',
-    content: '',
-    temperature: 0,
-    topP: 0,
-    applyLlmYn: 'Y',
-    applyRagYn: 'Y',
-    applySqlYn: 'Y',
-  })
 }
 </script>

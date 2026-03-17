@@ -9,7 +9,6 @@ export interface SystemPrompt {
   applyLlmYn: 'Y' | 'N' // APPLY_LLM_YN
   applyRagYn: 'Y' | 'N' // APPLY_RAG_YN
   applySqlYn: 'Y' | 'N' // APPLY_SQL_YN
-  version: string // VERSION
   useYn: 'Y' | 'N' // USE_YN
   createDt: string // CREATE_DT
   modifyDt: string // MODIFY_DT
