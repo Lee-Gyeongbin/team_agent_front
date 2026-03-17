@@ -383,19 +383,24 @@ const componentList = [
   },
 ]
 
-// 섹션 4: 아이콘 목록 (그룹별로 구분)
+// 섹션 4: 아이콘 목록 (그룹별로 구분) — _icons.custom.scss와 동기화
 const iconGroups = [
   {
     title: '사이드바 아이콘',
     icons: [
       { class: 'icon-menu' },
       { class: 'icon-ai-chat' },
+      { class: 'icon-sidebar-database' },
+      { class: 'icon-sidebar-settings' },
+      { class: 'icon-sidebar-arrow-down' },
+      { class: 'icon-sidebar-more' },
       { class: 'icon-chart' },
       { class: 'icon-system' },
       { class: 'icon-group' },
       { class: 'icon-settings' },
       { class: 'icon-knowledge' },
       { class: 'icon-database' },
+      { class: 'icon-refund-back' },
     ],
   },
   {
@@ -409,8 +414,11 @@ const iconGroups = [
       { class: 'icon-copy' },
       { class: 'icon-thumbs-up' },
       { class: 'icon-thumbs-down' },
+      { class: 'icon-play' },
+      { class: 'icon-play-circle' },
       { class: 'icon-refresh' },
       { class: 'icon-more' },
+      { class: 'icon-regenerate' },
     ],
   },
   {
@@ -429,6 +437,7 @@ const iconGroups = [
       { class: 'icon-heart' },
       { class: 'icon-plus' },
       { class: 'icon-logout' },
+      { class: 'icon-sql' },
     ],
   },
   {
@@ -449,8 +458,14 @@ const iconGroups = [
       { class: 'icon-expand' },
       { class: 'icon-collapse' },
       { class: 'icon-close' },
-      { class: 'icon-arrow-right' },
       { class: 'icon-close-gray' },
+      { class: 'icon-arrow-right' },
+      { class: 'icon-arrow-left-sm' },
+      { class: 'icon-arrow-right-sm' },
+      { class: 'icon-minus' },
+      { class: 'icon-plus-zoom' },
+      { class: 'icon-download' },
+      { class: 'icon-print' },
     ],
   },
   {
@@ -461,6 +476,7 @@ const iconGroups = [
     title: '시각화 패널 아이콘',
     icons: [
       { class: 'icon-file-ai' },
+      { class: 'icon-chart-ai' },
       { class: 'icon-bar-chart' },
       { class: 'icon-line-chart' },
       { class: 'icon-pie-chart' },
@@ -474,6 +490,26 @@ const iconGroups = [
       { class: 'icon-comment-other' },
       { class: 'icon-book' },
       { class: 'icon-diamond-small' },
+    ],
+  },
+  {
+    title: '에이전트 아이콘',
+    icons: [
+      { class: 'icon-move-handle' },
+      { class: 'icon-sparkle-agent' },
+      { class: 'icon-link-agent' },
+      { class: 'icon-edit-agent' },
+      { class: 'icon-setting-agent' },
+      { class: 'icon-document' },
+      { class: 'icon-chunk' },
+      { class: 'icon-sync' },
+      { class: 'icon-heart-line' },
+      { class: 'icon-more-line' },
+      { class: 'icon-time' },
+      { class: 'icon-calendar' },
+      { class: 'icon-version' },
+      { class: 'icon-refresh-version' },
+      { class: 'icon-edit-version' },
     ],
   },
 ]
