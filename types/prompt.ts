@@ -28,16 +28,27 @@ export interface PromptTemplate {
 
 // 금지어/필터링
 export interface PromptFilterData {
-  inputKeywords: string[] // 입력 금지어
-  outputKeywords: string[] // 출력 금지어
+  inputBanWords: banWordItem[] // 입력 금지어
+  outputBanWords: banWordItem[] // 출력 금지어
   policies: PromptFilterPolicy[] // 컨텐츠 필터링 정책
 }
 
+export interface banWordItem {
+  wordId: string // WORD_ID
+  word: string // WORD
+  wordType: string // WORD_TYPE (input / output)
+  useYn: 'Y' | 'N' // USE_YN
+  createDt: string // CREATE_DT
+}
+
 export interface PromptFilterPolicy {
-  id: string
-  label: string // 정책 이름
-  description: string // 정책 설명
-  isEnabled: boolean // 활성 여부
+  filterCd: string // FILTER_CD
+  filterName: string // FILTER_NAME (CODE_NM)
+  filterDesc: string // FILTER_DESC (DESCRIPTION)
+  applyYn: 'Y' | 'N' // APPLY_YN
+  useYn: 'Y' | 'N' // USE_YN
+  createDt: string // CREATE_DT
+  modifyDt: string // MODIFY_DT
 }
 
 // 토큰/응답 제한

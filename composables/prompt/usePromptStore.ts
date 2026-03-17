@@ -32,8 +32,8 @@ const {
 const systemPromptList = ref<SystemPrompt[]>([])
 const templateList = ref<PromptTemplate[]>([])
 const filterData = ref<PromptFilterData>({
-  inputKeywords: [],
-  outputKeywords: [],
+  inputBanWords: [],
+  outputBanWords: [],
   policies: [],
 })
 
@@ -162,13 +162,12 @@ const handleToggleSystemPrompt = async (prompt: Partial<SystemPrompt>) => {
   }
 }
 
-// ===== 템플릿 조회 =====
+/** START 템플릿 조회 TODO  : 기획 확정 뒤 구현 필요 */
 const handleSelectTemplateList = async () => {
   const res = await fetchTemplateList()
   templateList.value = res.list
 }
 
-// ===== 템플릿 추가/수정/삭제 =====
 const handleSaveTemplate = async (template: Partial<PromptTemplate>) => {
   await fetchSaveTemplate(template)
   await handleSelectTemplateList()
@@ -178,11 +177,17 @@ const handleDeleteTemplate = async (id: string) => {
   await fetchDeleteTemplate(id)
   await handleSelectTemplateList()
 }
+/** END 템플릿 조회 TODO  : 기획 확정 뒤 구현 필요 */
 
-// ===== 금지어/필터링 조회 =====
+/** 금지어/필터링 조회 */
 const handleSelectFilterData = async () => {
-  const res = await fetchFilterData()
-  filterData.value = res.data
+  const response = await fetchFilterData()
+  const data = response.data ?? {}
+  filterData.value = {
+    inputBanWords: data.inputBanWords ?? [],
+    outputBanWords: data.outputBanWords ?? [],
+    policies: data.policies ?? [],
+  }
 }
 
 // ===== 금지어/필터링 저장 =====

@@ -211,20 +211,23 @@ export const mockTemplateDb = {
 
 // ===== 금지어/필터링 =====
 interface MockFilterPolicy {
-  id: string
-  label: string
-  description: string
-  isEnabled: boolean
+  filterCd: string
+  filterName: string
+  filterDesc: string
+  applyYn: 'Y' | 'N'
+  useYn: 'Y' | 'N'
+  createDt: string
+  modifyDt: string
 }
 
 const filterData = {
   inputKeywords: ['비속어', '부적절한단어', '금지키워드'],
   outputKeywords: ['경쟁사명', '민감정보', '언급금지그회사'],
   policies: [
-    { id: 'p-1', label: '개인정보 감지', description: '주민등록번호, 전화번호, 이메일 등을 자동 감지하여 필터링', isEnabled: true },
-    { id: 'p-2', label: '비즈니스 정보 보호', description: '계약서, 재무정보 등 민감한 비즈니스 정보 필터링', isEnabled: true },
-    { id: 'p-3', label: '욕설/비속어 차단', description: '부적절한 언어 사용 감지 및 차단', isEnabled: true },
-    { id: 'p-4', label: '악의적 프롬프트 탐지', description: '프롬프트 인젝션, 탈옥 시도 등을 감지', isEnabled: true },
+    { filterCd: 'p-1', filterName: '개인정보 감지', filterDesc: '주민등록번호, 전화번호, 이메일 등을 자동 감지하여 필터링', applyYn: 'Y', useYn: 'Y', createDt: '2026-03-01', modifyDt: '2026-03-01' },
+    { filterCd: 'p-2', filterName: '비즈니스 정보 보호', filterDesc: '계약서, 재무정보 등 민감한 비즈니스 정보 필터링', applyYn: 'Y', useYn: 'Y', createDt: '2026-03-01', modifyDt: '2026-03-01' },
+    { filterCd: 'p-3', filterName: '욕설/비속어 차단', filterDesc: '부적절한 언어 사용 감지 및 차단', applyYn: 'Y', useYn: 'Y', createDt: '2026-03-01', modifyDt: '2026-03-01' },
+    { filterCd: 'p-4', filterName: '악의적 프롬프트 탐지', filterDesc: '프롬프트 인젝션, 탈옥 시도 등을 감지', applyYn: 'Y', useYn: 'Y', createDt: '2026-03-01', modifyDt: '2026-03-01' },
   ] as MockFilterPolicy[],
 }
 

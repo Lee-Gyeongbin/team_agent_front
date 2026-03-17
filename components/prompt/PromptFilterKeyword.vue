@@ -30,11 +30,11 @@
         class="prompt-filter-keyword-tags"
       >
         <span
-          v-for="(keyword, index) in keywords"
-          :key="index"
+          v-for="(item, index) in keywords"
+          :key="item.wordId"
           class="prompt-filter-tag"
         >
-          {{ keyword }}
+          {{ item.word }}
           <button
             class="prompt-filter-tag-close"
             @click="onRemove(index)"
@@ -48,10 +48,13 @@
 </template>
 
 <script setup lang="ts">
+import type { banWordItem } from '~/types/prompt'
+
 interface Props {
   title: string
-  keywords: string[]
+  keywords: banWordItem[]
   placeholder?: string
+  wordType: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -59,7 +62,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  'update:keywords': [keywords: string[]]
+  'update:keywords': [keywords: banWordItem[]]
 }>()
 
 const inputValue = ref('')
@@ -67,8 +70,16 @@ const inputValue = ref('')
 const onAdd = () => {
   const value = inputValue.value.trim()
   if (!value) return
-  if (props.keywords.includes(value)) return
-  emit('update:keywords', [...props.keywords, value])
+  if (props.keywords.some((item) => item.word === value)) return
+
+  const newItem: banWordItem = {
+    wordId: '',
+    word: value,
+    wordType: props.wordType,
+    useYn: 'Y',
+    createDt: '',
+  }
+  emit('update:keywords', [...props.keywords, newItem])
   inputValue.value = ''
 }
 

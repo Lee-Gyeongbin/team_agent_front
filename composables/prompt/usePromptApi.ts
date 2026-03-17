@@ -37,7 +37,7 @@ export const usePromptApi = () => {
     return post<{ data: SystemPrompt }>(`/prompt/system/delete.do`, prompt)
   }
 
-  // ===== 템플릿 =====
+  /** 템플릿 조회 TODO : 기획 확정 뒤 구현 필요 */
   const fetchTemplateList = async () => {
     return mockPost<{ list: PromptTemplate[] }>(`${MOCK_BASE}/template/list`, {})
   }
@@ -50,9 +50,9 @@ export const usePromptApi = () => {
     return mockPost<{ data: { id: string } }>(`${MOCK_BASE}/template/delete`, { id })
   }
 
-  // ===== 금지어/필터링 =====
-  const fetchFilterData = async () => {
-    return mockPost<{ data: PromptFilterData }>(`${MOCK_BASE}/filter/data`, {})
+  /** 금지어/필터링 조회 */
+  const fetchFilterData = async (): Promise<{ data: PromptFilterData }> => {
+    return get<{ data: PromptFilterData }>(`/prompt/filter/data.do`)
   }
 
   const fetchSaveFilter = async (data: Partial<PromptFilterData>) => {

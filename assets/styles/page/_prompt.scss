@@ -70,6 +70,14 @@
   background: #ecf0f3;
 }
 
+.prompt-box-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+  padding-top: $spacing-md;
+  border-top: 1px solid #ecf0f3;
+}
+
 // ===================================
 // 시스템 프롬프트 설정
 // ===================================
