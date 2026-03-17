@@ -25,9 +25,10 @@
         variant="primary"
         size="xlg"
         full-width
+        :disabled="isTestStreaming || !testPrompt.trim()"
         @click="onRunTest"
       >
-        테스트 실행
+        {{ isTestStreaming ? '응답 대기 중...' : '테스트 실행' }}
       </UiButton>
 
       <!-- 응답 결과 (테스트 실행 후에만 노출) -->
@@ -37,21 +38,24 @@
       >
         <label class="llm-test-label">응답 결과</label>
         <div class="llm-test-response-box">
-          {{ responseText }}
-        </div>
-        <div class="llm-test-metrics">
-          <div class="llm-test-metric-card">
-            <span class="llm-test-metric-label">응답 시간</span>
-            <strong class="llm-test-metric-value">{{ responseTime }}</strong>
+          <!-- 스트리밍 로딩 (아직 텍스트 없을 때) -->
+          <div
+            v-if="isTestStreaming && !testResponseText"
+            class="llm-test-loading"
+          >
+            <span class="typing-dot" /><span class="typing-dot" /><span class="typing-dot" />
           </div>
-          <div class="llm-test-metric-card">
-            <span class="llm-test-metric-label">입력 토큰</span>
-            <strong class="llm-test-metric-value">{{ inputTokens }}</strong>
+          <!-- 오류 -->
+          <div
+            v-else-if="testErrorText"
+            class="llm-test-error"
+          >
+            {{ testErrorText }}
           </div>
-          <div class="llm-test-metric-card">
-            <span class="llm-test-metric-label">출력 토큰</span>
-            <strong class="llm-test-metric-value">{{ outputTokens }}</strong>
-          </div>
+          <!-- 응답 텍스트 (스트리밍 중 + 완료 후) -->
+          <template v-else>
+            {{ testResponseText }}
+          </template>
         </div>
       </div>
     </div>
@@ -72,37 +76,28 @@ defineEmits<{
   close: []
 }>()
 
+const { testResponseText, isTestStreaming, testErrorText, sendTestMessage, disconnectTestSocket } = useChatStore()
+
 const testPrompt = ref('')
 const hasRunTest = ref(false)
 
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-const responseText = ref('')
-const responseTime = ref('')
-const inputTokens = ref('')
-const outputTokens = ref('')
-
-// 모달 열릴 때 초기화
+// 모달 열릴/닫힐 때 초기화
 watch(
   () => props.isOpen,
   (open) => {
-    if (!open) return
-    testPrompt.value = ''
-    hasRunTest.value = false
-    responseText.value = ''
-    responseTime.value = ''
-    inputTokens.value = ''
-    outputTokens.value = ''
+    if (open) {
+      testPrompt.value = ''
+      hasRunTest.value = false
+    } else {
+      disconnectTestSocket()
+    }
   },
 )
 
 const onRunTest = () => {
+  if (!props.model?.modelId || !testPrompt.value.trim()) return
   hasRunTest.value = true
-  // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-  responseText.value =
-    '안녕하세요! 저는 GPT-4o 모델입니다. 저는 OpenAI가 개발한 대규모 언어 모델로, 다양한 주제에 대해 대화하고 질문에 답변할 수 있습니다.'
-  responseTime.value = '1.23초'
-  inputTokens.value = '23'
-  outputTokens.value = '67'
+  sendTestMessage(testPrompt.value.trim(), props.model.modelId)
 }
 </script>
 
@@ -150,31 +145,48 @@ const onRunTest = () => {
   font-size: $font-size-base;
   line-height: $line-height-base;
   min-height: 60px;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
-.llm-test-metrics {
+.llm-test-loading {
   display: flex;
-  gap: $spacing-sm;
+  align-items: center;
+  gap: 4px;
+
+  .typing-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: $color-text-secondary;
+    animation: typingBounce 1.2s infinite ease-in-out;
+
+    &:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    &:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+  }
 }
 
-.llm-test-metric-card {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-xs;
-  padding: $spacing-md;
-  background: $color-background;
-  border: 1px solid $color-border;
-  border-radius: $border-radius-lg;
+@keyframes typingBounce {
+  0%,
+  80%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
-.llm-test-metric-label {
-  @include typo($body-small);
-  color: $color-text-secondary;
-}
-
-.llm-test-metric-value {
-  @include typo($body-medium-bold);
-  color: $color-text-heading;
+.llm-test-error {
+  color: $color-error;
 }
 </style>
