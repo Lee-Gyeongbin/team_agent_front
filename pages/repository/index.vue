@@ -8,301 +8,301 @@
 
     <!-- 메인: 카테고리 + 문서 영역 -->
     <div class="repository-main l-center">
-      <!-- 좌측 카테고리 패널 -->
-      <aside class="category-panel">
-        <div class="category-panel-header flex justify-between items-center">
-          <span class="category-panel-title">카테고리</span>
-          <UiButton
-            icon-only
-            variant="ghost"
-            size="sm"
-            class="btn-add-category"
-            @click="toggleCategoryInput"
-          >
-            <template #icon-left>
-              <i class="icon icon-plus size-16" />
-            </template>
-          </UiButton>
-        </div>
-        <div class="category-tree-wrap">
-          <ul class="category-tree">
-            <li
-              v-for="(cat, idx) in categoryList"
-              :key="idx"
-              class="category-item"
-              :class="{ 'has-children': cat.children?.length }"
+      <!-- 검색·필터·문서 등록 -->
+      <div class="document-toolbar flex flex-wrap items-center">
+        <UiInput
+          v-model="searchKeyword"
+          type="search"
+          placeholder="문서명, 내용으로 검색..."
+          class="document-search-input"
+          @search="onSearch"
+          @enter="onSearch"
+        />
+        <UiSelect
+          v-model="selectedCategoryFilter"
+          :options="categoryFilterOptions"
+          placeholder="전체 카테고리"
+          size="md"
+          class="document-filter-select"
+        />
+        <UiSelect
+          v-model="selectedStatusFilter"
+          :options="statusFilterOptions"
+          placeholder="전체 상태"
+          size="md"
+          class="document-filter-select"
+        />
+        <UiButton
+          variant="primary"
+          size="md"
+          @click="onSearch"
+        >
+          검색
+        </UiButton>
+        <UiButton
+          variant="outline"
+          size="md"
+          class="btn-register-document"
+          @click="onRegisterDocument"
+        >
+          <template #icon-left>
+            <i class="icon icon-plus size-16" />
+          </template>
+          문서 등록
+        </UiButton>
+      </div>
+
+      <div class="repository-content-wrapper flex">
+        <!-- 좌측 카테고리 패널 -->
+        <aside class="category-panel">
+          <div class="category-panel-header flex justify-between items-center">
+            <span class="category-panel-title">카테고리</span>
+            <UiButton
+              icon-only
+              variant="ghost"
+              size="sm"
+              class="btn-add-category"
+              @click="toggleCategoryInput"
             >
-              <div class="category-row flex items-center">
-                <button
-                  v-if="cat.children?.length"
-                  type="button"
-                  class="category-toggle"
-                  :aria-expanded="cat.expanded"
-                  @click="toggleCategoryExpand(idx)"
-                >
-                  <i
-                    class="icon icon-chevron-down size-16"
-                    :class="{ 'is-expanded': cat.expanded }"
-                  />
-                </button>
-                <span
-                  v-else
-                  class="category-toggle-placeholder"
-                />
-                <UiCheckbox
-                  v-model="cat.checked"
-                  class="category-checkbox"
-                />
-                <span class="category-name">{{ cat.name }}</span>
-                <UiDropdownMenu
-                  :items="categoryMenuItems"
-                  align="end"
-                  @select="(value) => onCategoryMenuSelect(value, cat)"
-                >
-                  <template #trigger>
-                    <UiButton
-                      icon-only
-                      variant="ghost"
-                      size="xs"
-                      class="btn-category-more"
-                      @click.stop
-                    >
-                      <template #icon-left>
-                        <i class="icon icon-add-dot size-16" />
-                      </template>
-                    </UiButton>
-                  </template>
-                </UiDropdownMenu>
-              </div>
-              <ul
-                v-if="cat.children?.length && cat.expanded"
-                class="category-children"
+              <template #icon-left>
+                <i class="icon icon-plus size-16" />
+              </template>
+            </UiButton>
+          </div>
+          <div class="category-tree-wrap">
+            <ul class="category-tree">
+              <li
+                v-for="(cat, idx) in categoryList"
+                :key="idx"
+                class="category-item"
+                :class="{ 'has-children': cat.children?.length }"
               >
-                <li
-                  v-for="(child, cIdx) in cat.children"
-                  :key="cIdx"
-                  class="category-item"
-                >
-                  <div class="category-row flex items-center">
-                    <span class="category-toggle-placeholder" />
-                    <UiCheckbox
-                      v-model="child.checked"
-                      class="category-checkbox"
+                <div class="category-row flex items-center">
+                  <button
+                    v-if="cat.children?.length"
+                    type="button"
+                    class="category-toggle"
+                    :aria-expanded="cat.expanded"
+                    @click="toggleCategoryExpand(idx)"
+                  >
+                    <i
+                      class="icon icon-chevron-down size-16"
+                      :class="{ 'is-expanded': cat.expanded }"
                     />
-                    <span class="category-name">{{ child.name }}</span>
-                    <UiDropdownMenu
-                      :items="categoryMenuItems"
-                      align="end"
-                      @select="(value) => onCategoryMenuSelect(value, child)"
-                    >
-                      <template #trigger>
-                        <UiButton
-                          icon-only
-                          variant="ghost"
-                          size="xs"
-                          class="btn-category-more"
-                          @click.stop
-                        >
-                          <template #icon-left>
-                            <i class="icon icon-add-dot size-16" />
-                          </template>
-                        </UiButton>
-                      </template>
-                    </UiDropdownMenu>
-                  </div>
-                </li>
-              </ul>
-            </li>
-          </ul>
-        </div>
-        <div
-          v-if="isCategoryInputVisible"
-          class="category-input-wrap"
-        >
-          <UiInput
-            v-model="categoryInputValue"
-            placeholder="카테고리명 입력(엔터)"
-            size="sm"
-            @keydown.enter="onCategoryInputEnter"
-          />
-        </div>
-      </aside>
-
-      <!-- 우측 문서 관리 패널 -->
-      <section class="document-panel">
-        <!-- 검색·필터·문서 등록 -->
-        <div class="document-toolbar flex flex-wrap items-center">
-          <UiInput
-            v-model="searchKeyword"
-            type="search"
-            placeholder="문서명, 내용으로 검색..."
-            class="document-search-input"
-            @search="onSearch"
-            @enter="onSearch"
-          />
-          <UiSelect
-            v-model="selectedCategoryFilter"
-            :options="categoryFilterOptions"
-            placeholder="전체 카테고리"
-            size="md"
-            class="document-filter-select"
-          />
-          <UiSelect
-            v-model="selectedStatusFilter"
-            :options="statusFilterOptions"
-            placeholder="전체 상태"
-            size="md"
-            class="document-filter-select"
-          />
-          <UiButton
-            variant="primary"
-            size="md"
-            @click="onSearch"
-          >
-            검색
-          </UiButton>
-          <UiButton
-            variant="outline"
-            size="md"
-            class="btn-register-document"
-            @click="onRegisterDocument"
-          >
-            <template #icon-left>
-              <i class="icon icon-plus size-16" />
-            </template>
-            문서 등록
-          </UiButton>
-        </div>
-
-        <!-- 선택 시 일괄 처리 바 -->
-        <div
-          v-if="selectedIds.length > 0"
-          class="document-batch-bar flex items-center"
-        >
-          <span class="batch-count">{{ selectedIds.length }}개 선택됨</span>
-          <UiButton
-            variant="outline"
-            size="sm"
-            @click="onBatchDownload"
-          >
-            일괄 다운로드
-          </UiButton>
-          <UiButton
-            variant="outline"
-            size="sm"
-            class="type-danger"
-            @click="onBatchDelete"
-          >
-            일괄 삭제
-          </UiButton>
-        </div>
-
-        <!-- 문서 테이블 -->
-        <div class="document-table-wrap">
-          <UiTable
-            :columns="tableColumns"
-            :data="documentList"
-            sticky-header
-            max-height="calc(100vh - 380px)"
-            empty-text="등록된 문서가 없습니다."
-          >
-            <template #header-select>
-              <UiCheckbox
-                :model-value="isAllSelected"
-                @update:model-value="toggleSelectAll"
-              />
-            </template>
-            <template #cell-select="{ row }">
-              <UiCheckbox
-                :model-value="selectedIds.includes(row.id)"
-                @update:model-value="(v) => toggleSelectRow(row.id, v)"
-              />
-            </template>
-            <template #cell-documentName="{ row }">
-              <div class="cell-document flex items-center">
-                <span
-                  class="doc-icon"
-                  :class="getDocIconClass(row.fileType)"
+                  </button>
+                  <span
+                    v-else
+                    class="category-toggle-placeholder"
+                  />
+                  <UiCheckbox
+                    v-model="cat.checked"
+                    class="category-checkbox"
+                  />
+                  <span class="category-name">{{ cat.name }}</span>
+                  <UiDropdownMenu
+                    :items="categoryMenuItems"
+                    align="end"
+                    @select="(value) => onCategoryMenuSelect(value, cat)"
+                  >
+                    <template #trigger>
+                      <UiButton
+                        icon-only
+                        variant="ghost"
+                        size="xs"
+                        class="btn-category-more"
+                        @click.stop
+                      >
+                        <template #icon-left>
+                          <i class="icon icon-add-dot size-16" />
+                        </template>
+                      </UiButton>
+                    </template>
+                  </UiDropdownMenu>
+                </div>
+                <ul
+                  v-if="cat.children?.length && cat.expanded"
+                  class="category-children"
                 >
-                  <i :class="['icon', getDocIconName(row.fileType), 'size-20']" />
-                </span>
-                <span class="doc-name">{{ row.documentName }}</span>
-              </div>
-            </template>
-            <template #cell-status="{ value }">
-              <UiBadge
-                variant="default"
-                size="sm"
-                class="badge-status is-active"
-              >
-                {{ value }}
-              </UiBadge>
-            </template>
-            <template #cell-ragCount="{ value }"> {{ value }}개 RAG </template>
-            <template #cell-actions="{ row }">
-              <div
-                class="cell-actions"
-                @click.stop
-              >
-                <UiDropdownMenu
-                  :items="rowActionItems"
-                  align="end"
-                  @select="(value) => onRowActionSelect(value, row)"
-                >
-                  <template #trigger>
-                    <UiButton
-                      icon-only
-                      variant="ghost"
-                      size="xs"
-                      class="btn-row-more"
-                    >
-                      <template #icon-left>
-                        <i class="icon icon-add-dot size-16" />
-                      </template>
-                    </UiButton>
-                  </template>
-                </UiDropdownMenu>
-              </div>
-            </template>
-          </UiTable>
-        </div>
+                  <li
+                    v-for="(child, cIdx) in cat.children"
+                    :key="cIdx"
+                    class="category-item"
+                  >
+                    <div class="category-row flex items-center">
+                      <span class="category-toggle-placeholder" />
+                      <UiCheckbox
+                        v-model="child.checked"
+                        class="category-checkbox"
+                      />
+                      <span class="category-name">{{ child.name }}</span>
+                      <UiDropdownMenu
+                        :items="categoryMenuItems"
+                        align="end"
+                        @select="(value) => onCategoryMenuSelect(value, child)"
+                      >
+                        <template #trigger>
+                          <UiButton
+                            icon-only
+                            variant="ghost"
+                            size="xs"
+                            class="btn-category-more"
+                            @click.stop
+                          >
+                            <template #icon-left>
+                              <i class="icon icon-add-dot size-16" />
+                            </template>
+                          </UiButton>
+                        </template>
+                      </UiDropdownMenu>
+                    </div>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+          <div
+            v-if="isCategoryInputVisible"
+            class="category-input-wrap"
+          >
+            <UiInput
+              v-model="categoryInputValue"
+              placeholder="카테고리명 입력(엔터)"
+              size="sm"
+              @keydown.enter="onCategoryInputEnter"
+            />
+          </div>
+        </aside>
 
-        <!-- 페이지네이션 -->
-        <div class="document-pagination flex items-center justify-between">
-          <span class="pagination-total">총 {{ totalCount }}개 문서</span>
-          <div class="pagination-controls flex items-center">
-            <button
-              type="button"
-              class="pagination-btn"
-              :disabled="currentPage <= 1"
-              @click="currentPage = Math.max(1, currentPage - 1)"
+        <!-- 우측 문서 관리 패널 -->
+        <section class="document-panel">
+          <!-- 일괄 처리 바 -->
+          <div class="document-batch-bar flex items-center">
+            <span class="batch-count">{{ selectedIds.length }}개 선택됨</span>
+            <UiButton
+              variant="outline"
+              size="xxs"
+              class="batch-bar-btn"
+              @click="onBatchDownload"
             >
-              이전
-            </button>
-            <div class="pagination-pages flex items-center">
+              일괄 다운로드
+            </UiButton>
+            <UiButton
+              variant="outline"
+              size="xxs"
+              class="batch-bar-btn type-danger"
+              @click="onBatchDelete"
+            >
+              일괄 삭제
+            </UiButton>
+          </div>
+
+          <!-- 문서 테이블 -->
+          <div class="document-table-wrap">
+            <UiTable
+              :columns="tableColumns"
+              :data="documentList"
+              sticky-header
+              max-height="calc(100vh - 380px)"
+              empty-text="등록된 문서가 없습니다."
+            >
+              <template #header-select>
+                <UiCheckbox
+                  :model-value="isAllSelected"
+                  @update:model-value="toggleSelectAll"
+                />
+              </template>
+              <template #cell-select="{ row }">
+                <UiCheckbox
+                  :model-value="selectedIds.includes(row.id)"
+                  @update:model-value="(v) => toggleSelectRow(row.id, v)"
+                />
+              </template>
+              <template #cell-documentName="{ row }">
+                <div class="cell-document flex items-center">
+                  <span
+                    class="doc-icon"
+                    :class="getDocIconClass(row.fileType)"
+                  >
+                    <i :class="['icon', getDocIconName(row.fileType), 'size-20']" />
+                  </span>
+                  <span class="doc-name">{{ row.documentName }}</span>
+                </div>
+              </template>
+              <template #cell-status="{ value }">
+                <UiBadge
+                  variant="default"
+                  size="sm"
+                  class="badge-status is-active"
+                >
+                  {{ value }}
+                </UiBadge>
+              </template>
+              <template #cell-ragCount="{ value }"> {{ value }}개 RAG </template>
+              <template #cell-actions="{ row }">
+                <div
+                  class="cell-actions"
+                  @click.stop
+                >
+                  <UiDropdownMenu
+                    :items="rowActionItems"
+                    align="end"
+                    @select="(value) => onRowActionSelect(value, row)"
+                  >
+                    <template #trigger>
+                      <UiButton
+                        icon-only
+                        variant="ghost"
+                        size="xs"
+                        class="btn-row-more"
+                      >
+                        <template #icon-left>
+                          <i class="icon icon-add-dot size-16" />
+                        </template>
+                      </UiButton>
+                    </template>
+                  </UiDropdownMenu>
+                </div>
+              </template>
+            </UiTable>
+          </div>
+
+          <!-- 페이지네이션 -->
+          <div class="document-pagination flex items-center justify-between">
+            <span class="pagination-total">총 {{ totalCount }}개 문서</span>
+            <div class="pagination-controls flex items-center">
               <button
-                v-for="p in visiblePages"
-                :key="p"
                 type="button"
-                class="pagination-page"
-                :class="{ 'is-active': p === currentPage }"
-                @click="currentPage = p"
+                class="pagination-btn"
+                :disabled="currentPage <= 1"
+                @click="currentPage = Math.max(1, currentPage - 1)"
               >
-                {{ p }}
+                이전
+              </button>
+              <div class="pagination-pages flex items-center">
+                <button
+                  v-for="p in visiblePages"
+                  :key="p"
+                  type="button"
+                  class="pagination-page"
+                  :class="{ 'is-active': p === currentPage }"
+                  @click="currentPage = p"
+                >
+                  {{ p }}
+                </button>
+              </div>
+              <button
+                type="button"
+                class="pagination-btn"
+                :disabled="currentPage >= totalPages"
+                @click="currentPage = Math.min(totalPages, currentPage + 1)"
+              >
+                다음
               </button>
             </div>
-            <button
-              type="button"
-              class="pagination-btn"
-              :disabled="currentPage >= totalPages"
-              @click="currentPage = Math.min(totalPages, currentPage + 1)"
-            >
-              다음
-            </button>
+            <span class="pagination-range">{{ pageStart }}-{{ pageEnd }}/{{ totalCount }}</span>
           </div>
-          <span class="pagination-range">{{ pageStart }}-{{ pageEnd }}/{{ totalCount }}</span>
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
   </div>
 </template>

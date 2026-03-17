@@ -95,8 +95,8 @@ const onDelete = async (prompt: SystemPrompt) => {
 }
 
 /** 프롬프트 복사 */
-const onCopy = (prompt: SystemPrompt) => {
-  navigator.clipboard.writeText(prompt.content)
+const onCopy = async (prompt: SystemPrompt) => {
+  await copyToClipboard(prompt.content)
   openToast({ message: '프롬프트가 복사되었습니다.' })
 }
 </script>

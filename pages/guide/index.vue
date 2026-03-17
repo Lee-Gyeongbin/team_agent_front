@@ -236,6 +236,7 @@ const statusList = [
   { category: '페이지', name: '에이전트 목록', location: '/agent-manage', url: '/agent-manage', status: 'done' },
   { category: '페이지', name: 'LLM 관리', location: '/llm', url: '/llm', status: 'done' },
   { category: '페이지', name: '프롬프트 관리', location: '/prompt-manage', url: '/prompt-manage', status: 'wip' },
+  { category: '페이지', name: '컨텐츠저장소', location: '/repository', url: '/repository', status: 'wip' },
   { category: '페이지', name: '로그인', location: '/login', url: '/login', status: 'pending' },
 ]
 
