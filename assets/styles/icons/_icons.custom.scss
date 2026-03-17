@@ -446,3 +446,35 @@
 .icon-datasource {
   @include icon-file('icon-datasource');
 }
+
+// ===================================
+// 파일 아이콘 (문서 타입별, 리포지토리 등) — 아이콘 자체 색상
+// ===================================
+
+// PDF 문서 (아이콘 색상 #DB3B76)
+.icon-file-pdf {
+  @include icon-file-bg('file-pdf');
+  color: #db3b76;
+}
+
+// 텍스트 파일 (아이콘 색상 #4D5462)
+.icon-file-txt {
+  @include icon-file-bg('file-txt');
+  color: #4d5462;
+}
+
+// 워드 문서 (아이콘 색상 #3C69DB)
+.icon-file-doc {
+  @include icon-file-bg('file-doc');
+  color: #3c69db;
+}
+
+// 폴더 닫힘
+.icon-folder-close {
+  @include icon-file-bg('folder-close');
+}
+
+// 폴더 열림
+.icon-folder-open {
+  @include icon-file-bg('folder-open');
+}

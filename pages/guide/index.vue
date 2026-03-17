@@ -512,5 +512,15 @@ const iconGroups = [
       { class: 'icon-edit-version' },
     ],
   },
+  {
+    title: '파일 아이콘',
+    icons: [
+      { class: 'icon-file-pdf' },
+      { class: 'icon-file-txt' },
+      { class: 'icon-file-doc' },
+      { class: 'icon-folder-close' },
+      { class: 'icon-folder-open' },
+    ],
+  },
 ]
 </script>
