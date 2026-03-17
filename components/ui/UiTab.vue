@@ -69,7 +69,7 @@ defineEmits<{
       left: 0;
       right: 0;
       height: 2px;
-      background: $color-primary;
+      background: var(--color-primary);
     }
   }
 }

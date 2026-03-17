@@ -7,6 +7,8 @@ import type {
   PromptLimitData,
   PromptVersion,
   PromptVersionStats,
+  ErrorMessageData,
+  ErrorMessageItem,
 } from '~/types/prompt'
 
 const {
@@ -22,6 +24,8 @@ const {
   fetchSaveLimit,
   fetchVersionList,
   fetchRestoreVersion,
+  fetchErrorMessageData,
+  fetchSaveErrorMessage,
 } = usePromptApi()
 
 // ===== 상태 변수 =====
@@ -130,6 +134,23 @@ const handleRestoreVersion = async (id: string) => {
   await handleSelectVersionList()
 }
 
+// ===== 오류 메시지 =====
+const errorMessageData = ref<ErrorMessageData>({
+  responseErrors: [],
+  inputErrors: [],
+  apiErrors: [],
+})
+
+const handleSelectErrorMessageData = async () => {
+  const res = await fetchErrorMessageData()
+  errorMessageData.value = res.data
+}
+
+const handleSaveErrorMessage = async (data: Partial<ErrorMessageData>) => {
+  const res = await fetchSaveErrorMessage(data)
+  errorMessageData.value = res.data
+}
+
 export const usePromptStore = () => {
   return {
     systemPromptList,
@@ -151,5 +172,8 @@ export const usePromptStore = () => {
     versionStats,
     handleSelectVersionList,
     handleRestoreVersion,
+    errorMessageData,
+    handleSelectErrorMessageData,
+    handleSaveErrorMessage,
   }
 }

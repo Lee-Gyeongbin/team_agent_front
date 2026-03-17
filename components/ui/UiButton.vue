@@ -109,21 +109,18 @@ const emit = defineEmits<{
     height: $height-md; // 30px
     min-width: 68px;
     padding: 0 10px;
-    padding-right: 7px;
   }
 
   &.size-btn-lg {
     @include typo($body-medium);
     height: $height-xlg; // 36px
     padding: 0 10px;
-    padding-right: 7px;
   }
 
   &.size-btn-xlg {
     @include typo($body-large);
     height: $height-xlg; // 36px
     padding: 0 10px;
-    padding-right: 7px;
   }
 
   // ===================================

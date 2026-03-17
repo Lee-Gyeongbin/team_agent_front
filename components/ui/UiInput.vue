@@ -123,8 +123,9 @@ defineExpose({ focus })
   display: inline-flex;
   align-items: center;
   width: 100%;
-  padding: 0 10px;
-  gap: 4px;
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
 
   background-color: #fff;
   border: 1px solid #c6d2db;
@@ -185,6 +186,7 @@ defineExpose({ focus })
   min-width: 0;
   width: 100%;
   height: 100%;
+  padding: 0 10px;
   font-size: inherit;
   font-weight: $font-weight-medium;
   color: $color-text-primary;
@@ -203,6 +205,18 @@ defineExpose({ focus })
   align-items: center;
   flex-shrink: 0;
   color: $color-text-muted;
+
+  &.is-left {
+    padding-left: 10px;
+
+    & + .ui-input {
+      padding-left: 4px;
+    }
+  }
+
+  &.is-right {
+    padding-right: 10px;
+  }
 
   &.is-search {
     cursor: pointer;

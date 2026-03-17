@@ -79,3 +79,19 @@ export interface PromptVersionStats {
   monthlyUpdates: number // 이번달 업데이트
   lastChangeDays: number // 마지막 변경 (일)
 }
+
+// 오류 메시지 설정
+export interface ErrorMessageItem {
+  key: string // 고유 키
+  label: string // 표시 라벨
+  message: string // 오류 메시지 내용
+  isEnabled: boolean // 활성 여부
+  color: string // 왼쪽 보더 색상
+  maxLength?: number // 최대 글자 수 (메시지 길이 초과 전용)
+}
+
+export interface ErrorMessageData {
+  responseErrors: ErrorMessageItem[] // 응답 생성 오류
+  inputErrors: ErrorMessageItem[] // 입력 오류 메시지
+  apiErrors: ErrorMessageItem[] // API 오류 메시지
+}

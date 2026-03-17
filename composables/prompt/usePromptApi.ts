@@ -5,6 +5,7 @@ import type {
   PromptLimitData,
   PromptVersion,
   PromptVersionStats,
+  ErrorMessageData,
 } from '~/types/prompt'
 import { useApi } from '~/composables/com/useApi'
 const MOCK_BASE = '/mock/prompt'
@@ -74,6 +75,15 @@ export const usePromptApi = () => {
     return mockPost<{ data: PromptVersion }>(`${MOCK_BASE}/version/restore`, { id })
   }
 
+  // ===== 오류 메시지 =====
+  const fetchErrorMessageData = async () => {
+    return mockPost<{ data: ErrorMessageData }>(`${MOCK_BASE}/error/data`, {})
+  }
+
+  const fetchSaveErrorMessage = async (data: Partial<ErrorMessageData>) => {
+    return mockPost<{ data: ErrorMessageData }>(`${MOCK_BASE}/error/save`, data)
+  }
+
   return {
     fetchSystemPromptList,
     fetchSaveSystemPrompt,
@@ -87,5 +97,7 @@ export const usePromptApi = () => {
     fetchSaveLimit,
     fetchVersionList,
     fetchRestoreVersion,
+    fetchErrorMessageData,
+    fetchSaveErrorMessage,
   }
 }

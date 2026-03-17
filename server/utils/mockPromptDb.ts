@@ -346,6 +346,108 @@ const versionList: MockPromptVersion[] = [
   },
 ]
 
+// ===== 오류 메시지 =====
+interface MockErrorMessageItem {
+  key: string
+  label: string
+  message: string
+  isEnabled: boolean
+  color: string
+  maxLength?: number
+}
+
+const errorMessageData = {
+  responseErrors: [
+    {
+      key: 'generate-fail',
+      label: '답변 생성 실패',
+      message: '죄송합니다. 답변을 생성하는 중 오류가 발생했습니다.\n\n• 질문을 다시 작성해보시거나\n• 더 구체적으로 질문해주시면 도움이 됩니다.',
+      isEnabled: true,
+      color: '#ef4444',
+    },
+    {
+      key: 'no-search-result',
+      label: '검색 결과 없음',
+      message: '요청하신 정보를 찾을 수 없습니다. 🔍\n\n• 다른 키워드로 다시 검색해보세요\n• 관리자에게 문의하시면 도움을 받으실 수 있습니다.',
+      isEnabled: true,
+      color: '#ef4444',
+    },
+  ] as MockErrorMessageItem[],
+  inputErrors: [
+    {
+      key: 'empty-message',
+      label: '빈 메시지 입력',
+      message: '메시지를 입력해주세요.\n무엇을 도와드릴까요?',
+      isEnabled: true,
+      color: '#3b82f6',
+    },
+    {
+      key: 'message-length',
+      label: '메시지 길이 초과',
+      message: '입력하신 메시지가 너무 깁니다. (최대 2,000자)\n내용을 나누어서 질문해주세요.',
+      isEnabled: true,
+      color: '#3b82f6',
+      maxLength: 2000,
+    },
+    {
+      key: 'file-upload-fail',
+      label: '파일 업로드 실패',
+      message: '파일 업로드에 실패했습니다. 🗂\n파일 형식과 크기를 확인해주세요. (지원: PDF, DOCX, TXT / 최대 10MB)',
+      isEnabled: true,
+      color: '#3b82f6',
+    },
+  ] as MockErrorMessageItem[],
+  apiErrors: [
+    {
+      key: '500',
+      label: '500 Internal Server Error',
+      message: '죄송합니다. 일시적인 서버 오류가 발생했습니다.\n잠시 후 다시 시도해주세요. 문제가 계속되면 관리자에게 문의해주세요.',
+      isEnabled: true,
+      color: '#ef4444',
+    },
+    {
+      key: '429',
+      label: '429 Too Many Requests',
+      message: '요청이 너무 많습니다. ⏳\n잠시 후 다시 시도해주세요. (대기 시간: 약 1분)',
+      isEnabled: true,
+      color: '#f97316',
+    },
+    {
+      key: '408',
+      label: '408 Request Timeout',
+      message: '요청 시간이 초과되었습니다.\n네트워크 상태를 확인하시고 다시 시도해주세요.',
+      isEnabled: true,
+      color: '#eab308',
+    },
+    {
+      key: '401',
+      label: '401/403 Unauthorized',
+      message: '접근 권한이 없습니다. 🔒\n로그인 상태를 확인하거나 관리자에게 권한을 요청해주세요.',
+      isEnabled: true,
+      color: '#f97316',
+    },
+  ] as MockErrorMessageItem[],
+}
+
+export const mockErrorMessageDb = {
+  getData: () => ({
+    responseErrors: errorMessageData.responseErrors.map((e) => ({ ...e })),
+    inputErrors: errorMessageData.inputErrors.map((e) => ({ ...e })),
+    apiErrors: errorMessageData.apiErrors.map((e) => ({ ...e })),
+  }),
+
+  save: (data: {
+    responseErrors?: MockErrorMessageItem[]
+    inputErrors?: MockErrorMessageItem[]
+    apiErrors?: MockErrorMessageItem[]
+  }) => {
+    if (data.responseErrors) errorMessageData.responseErrors = data.responseErrors.map((e) => ({ ...e }))
+    if (data.inputErrors) errorMessageData.inputErrors = data.inputErrors.map((e) => ({ ...e }))
+    if (data.apiErrors) errorMessageData.apiErrors = data.apiErrors.map((e) => ({ ...e }))
+    return mockErrorMessageDb.getData()
+  },
+}
+
 export const mockVersionDb = {
   getList: () => [...versionList].map((v) => ({ ...v })),
 
