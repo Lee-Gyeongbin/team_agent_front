@@ -6,7 +6,7 @@
 
     <DropdownMenuPortal>
       <DropdownMenuContent
-        class="sidebar-menu-dropdown"
+        class="sidebar-dropdown-content sidebar-settings-dropdown"
         side="right"
         align="start"
         :side-offset="8"
@@ -18,7 +18,7 @@
         >
           <!-- 자식이 있는 항목: SubTrigger로 서브메뉴 펼침 -->
           <DropdownMenuSub v-if="hasChildren(item)">
-            <DropdownMenuSubTrigger class="sidebar-menu-sub-trigger">
+            <DropdownMenuSubTrigger class="sidebar-dropdown-item sidebar-menu-sub-trigger">
               <span>{{ item.menuName }}</span>
               <i class="icon-arrow-right size-16" />
             </DropdownMenuSubTrigger>
@@ -35,7 +35,7 @@
                 <DropdownMenuItem
                   v-for="child in item.children"
                   :key="child.menuId"
-                  class="sidebar-menu-item"
+                  class="sidebar-dropdown-item"
                   @select="(e) => onSelectItem(e, child)"
                 >
                   <i
@@ -50,7 +50,7 @@
           <!-- 자식 없음: 레이블만 표시 (srcPath 있으면 클릭 시 이동) -->
           <DropdownMenuItem
             v-else
-            class="sidebar-menu-item"
+            class="sidebar-dropdown-item"
             :class="{ 'is-disabled': !item.srcPath }"
             @select="(e) => onSelectItem(e, item)"
           >
@@ -100,31 +100,15 @@ const onSelectItem = (e: Event, item: MenuItem) => {
 }
 </script>
 
-<!-- Portal로 body에 렌더링되므로 scoped 미적용 -->
+<!-- Portal로 body에 렌더링되므로 scoped 미적용. 콘텐츠/아이템 공통 스타일은 layout/_sidebar.scss .sidebar-dropdown-content, .sidebar-dropdown-item 사용 -->
 <style lang="scss">
-.sidebar-menu-dropdown {
-  min-width: 180px;
-  padding: 8px;
-  border-radius: $border-radius-base;
-  background: #fff;
-  border: 1px solid $color-border;
-  box-shadow: $shadow-md;
-  z-index: $z-dropdown;
-
-  &[data-state='open'] {
-    animation: sidebar-menu-in 0.15s ease;
-  }
-
-  &[data-state='closed'] {
-    animation: sidebar-menu-out 0.1s ease forwards;
-  }
-}
+@use '~/assets/styles/utils/variables' as *;
 
 .sidebar-menu-sub-content {
   min-width: 180px;
   padding: 8px;
   border-radius: $border-radius-base;
-  background: #fff;
+  background: $color-surface;
   border: 1px solid $color-border;
   box-shadow: $shadow-md;
   z-index: $z-dropdown;
@@ -137,62 +121,12 @@ const onSelectItem = (e: Event, item: MenuItem) => {
   color: $color-text-heading;
 }
 
-.sidebar-menu-sub-trigger,
-.sidebar-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: $border-radius-sm;
-  font-size: $font-size-base;
-  color: $color-text-primary;
-  cursor: pointer;
-  outline: none;
-
-  &:hover,
-  &[data-highlighted] {
-    background-color: $color-border-light;
-  }
-
-  &.is-disabled {
-    color: $color-text-disabled;
-    cursor: not-allowed;
-
-    &:hover,
-    &[data-highlighted] {
-      background-color: transparent;
-    }
-  }
-}
-
 .sidebar-menu-sub-trigger {
   justify-content: space-between;
 
   .icon-arrow-right {
     flex-shrink: 0;
     color: $color-text-secondary;
-  }
-}
-
-@keyframes sidebar-menu-in {
-  from {
-    opacity: 0;
-    transform: translateX(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes sidebar-menu-out {
-  from {
-    opacity: 1;
-    transform: translateX(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(-4px);
   }
 }
 </style>

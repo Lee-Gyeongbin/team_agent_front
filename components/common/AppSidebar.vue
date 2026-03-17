@@ -76,35 +76,35 @@
               </DropdownMenuTrigger>
               <DropdownMenuPortal>
                 <DropdownMenuContent
-                  class="search-history-context"
+                  class="sidebar-dropdown-content"
                   side="right"
-                  align="end"
+                  align="start"
                   :side-offset="4"
                   :collision-padding="8"
                 >
                   <DropdownMenuItem
-                    class="context-item"
+                    class="sidebar-dropdown-item"
                     @select="onContextShare(entry)"
                   >
                     <i class="icon-transfer size-16" />
                     <span>대화공유</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    class="context-item"
+                    class="sidebar-dropdown-item"
                     @select="onContextPin(entry)"
                   >
                     <i class="icon-star-line size-16" />
                     <span>고정</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    class="context-item"
+                    class="sidebar-dropdown-item"
                     @select="onContextRename(entry)"
                   >
                     <i class="icon-edit size-16" />
                     <span>이름변경</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    class="context-item"
+                    class="sidebar-dropdown-item"
                     @select="onContextDelete(entry)"
                   >
                     <i class="icon-trashcan size-16" />

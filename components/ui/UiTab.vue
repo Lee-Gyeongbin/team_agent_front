@@ -41,7 +41,7 @@ defineEmits<{
   align-items: center;
   max-width: 800px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 16px;
 }
 
 .ui-tab-item {

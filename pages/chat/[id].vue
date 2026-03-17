@@ -7,7 +7,7 @@
     }"
     :style="activePanelType !== 'none' ? { '--panel-width': panelWidthPercent + 'vw' } : undefined"
   >
-    <div class="chat-detail-main flex flex-col m-center">
+    <div class="chat-detail-main flex flex-col s-center">
       <ChatMessageList
         :messages="messages"
         @on-copy="onCopy"

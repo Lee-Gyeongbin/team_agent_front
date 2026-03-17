@@ -289,17 +289,26 @@ $sidebar-btn-bg-hover: $color-border;
   }
 }
 
-.search-history-context {
-  min-width: 140px;
-  padding: 6px;
+/* 사이드바 드롭다운 공통 (검색기록 더보기, 설정 메뉴 등) */
+.sidebar-dropdown-content {
+  min-width: 130px;
+  padding: 8px;
   border-radius: $border-radius-base;
-  background: $color-surface;
-  border: 1px solid $color-border;
-  box-shadow: $shadow-md;
+  background: #fff;
+  border: 1px solid #dce4e9;
+  box-shadow: 0 0 12px 0 rgba(0, 0, 0, 0.1);
   z-index: $z-dropdown;
+
+  &[data-state='open'] {
+    animation: sidebar-dropdown-in 0.15s ease;
+  }
+
+  &[data-state='closed'] {
+    animation: sidebar-dropdown-out 0.1s ease forwards;
+  }
 }
 
-.context-item {
+.sidebar-dropdown-item {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -314,4 +323,38 @@ $sidebar-btn-bg-hover: $color-border;
   &[data-highlighted] {
     background-color: $color-border-light;
   }
+
+  &.is-disabled {
+    color: $color-text-disabled;
+    cursor: not-allowed;
+
+    &:hover,
+    &[data-highlighted] {
+      background-color: transparent;
+    }
+  }
 }
+
+@keyframes sidebar-dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes sidebar-dropdown-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+}
+
+/* 설정 버튼 드롭다운 전용: 공통 .sidebar-dropdown-content + .sidebar-settings-dropdown. 필요 시 .sidebar-settings-dropdown에 오버라이드 추가 */
