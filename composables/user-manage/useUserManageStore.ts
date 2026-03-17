@@ -1,4 +1,4 @@
-import { computed, type ComputedRef, type Ref } from 'vue'
+import { computed, ref, type ComputedRef, type Ref } from 'vue'
 import type { UserItem } from '~/types/user-manage'
 import { useUserManageApi } from '~/composables/user-manage/useUserManageApi'
 import { useOrgManageStore } from '~/composables/org-manage/useOrgManageStore'
@@ -81,8 +81,8 @@ export const useUserManageStore = (): {
     const isEdit = !!editingUserManage.value?.userId
 
     const ok = await openConfirm({
-      title: isEdit ? '수정 확인' : '생성 확인',
-      message: `'${userId}' 사용자를 ${isEdit ? '수정' : '생성'}하시겠습니까?`,
+      title: isEdit ? '수정 확인' : '추가 확인',
+      message: `'${userId}' 사용자를 ${isEdit ? '수정' : '추가'}하시겠습니까?`,
       confirmText: '저장',
     })
     if (!ok) return
@@ -97,13 +97,13 @@ export const useUserManageStore = (): {
         await handleFetchUserManageList()
         const tempPassword = res?.tempPassword ?? ''
         const message = tempPassword
-          ? `사용자가 생성되었습니다.\n임시 비밀번호: ${tempPassword}`
-          : '사용자가 생성되었습니다.'
+          ? `사용자가 추가되었습니다.\n임시 비밀번호: ${tempPassword}`
+          : '사용자가 추가되었습니다.'
         openAlert({ message })
       }
       closeUserManageModal()
     } catch (error) {
-      const fallback = isEdit ? '사용자 수정 중 오류가 발생했습니다.' : '사용자 생성 중 오류가 발생했습니다.'
+      const fallback = isEdit ? '사용자 수정 중 오류가 발생했습니다.' : '사용자 추가 중 오류가 발생했습니다.'
       const message = error instanceof Error ? error.message : fallback
       openAlert({ message })
     }

@@ -26,7 +26,7 @@ export const useUserManageApi = () => {
   const fetchInsertUser = async (user: UserItem): Promise<InsertUserResponse> => {
     const res = await post<InsertUserResponse>('/usermanage/insertUser.do', user)
     if (res?.successYn === false) {
-      throw new Error(String(res?.returnMsg ?? '사용자 생성을 실패했습니다.'))
+      throw new Error(String(res?.returnMsg ?? '사용자 추가에 실패했습니다.'))
     }
     return res
   }

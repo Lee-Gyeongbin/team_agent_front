@@ -130,8 +130,9 @@
 
     <!-- 사용자 추가/수정 모달 -->
     <UserManageModal
+      :key="editingUserManage?.userId || (isUserManageModalOpen ? 'create' : 'closed')"
       :is-open="isUserManageModalOpen"
-      :title="editingUserManage?.userId ? '사용자 수정' : '사용자 생성'"
+      :title="editingUserManage?.userId ? '사용자 수정' : '사용자 추가'"
       :user="editingUserManage"
       @close="closeUserManageModal"
       @confirm="onUserModalConfirm"

@@ -30,8 +30,8 @@ export const userColumns: TableColumn[] = [
   { key: 'email', label: '이메일', width: '200px', align: 'center', headerAlign: 'center' },
   { key: 'phone', label: '전화번호', width: '100px', align: 'center', headerAlign: 'center' },
   { key: 'orgId', label: '조직', width: '100px', align: 'center', headerAlign: 'center' },
-  { key: 'lastLoginDt', label: '마지막 로그인 일시', width: '160px', align: 'center', headerAlign: 'center' },
-  { key: 'pwdChgDt', label: '비밀번호 변경 일시', width: '160px', align: 'center', headerAlign: 'center' },
-  { key: 'acctStatusDesc', label: '계정 상태', width: '90px', align: 'center', headerAlign: 'center' },
-  { key: 'actions', label: '관리', width: '120px', align: 'center', headerAlign: 'center' },
+  { key: 'lastLoginDt', label: '마지막 로그인 일시', width: '150px', align: 'center', headerAlign: 'center' },
+  { key: 'pwdChgDt', label: '비밀번호 변경 일시', width: '150px', align: 'center', headerAlign: 'center' },
+  { key: 'acctStatusDesc', label: '계정 상태', width: '80px', align: 'center', headerAlign: 'center' },
+  { key: 'actions', label: '관리', width: '160px', align: 'center', headerAlign: 'center' },
 ]

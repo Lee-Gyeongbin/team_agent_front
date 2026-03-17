@@ -148,11 +148,8 @@ const { formatPhone, toPhoneDigits } = useUserManageStore()
 const { orgOptions } = useOrgManageStore()
 const isEditMode = computed(() => !!props.user?.userId)
 
-/** 모달 내 편집용 로컬 폼 (user 변경 시 동기화) */
-const form = ref<Partial<UserItem>>({})
-
-/** 모달 내 API/유효성 오류 메시지 */
-const modalErrorMessage = ref('')
+/** 모달 내 편집용 로컬 폼 */
+const form = ref<Partial<UserItem>>(props.user ? { ...props.user } : {})
 
 /** 모달 내 전화번호 표시용 */
 const phoneDisplay = computed({
@@ -162,23 +159,6 @@ const phoneDisplay = computed({
     form.value.phone = digits
   },
 })
-
-watch(
-  () => props.user,
-  (user) => {
-    form.value = user ? { ...user } : {}
-    modalErrorMessage.value = ''
-  },
-  { immediate: true },
-)
-
-/** 입력 값 변경 시 에러 메시지 클리어 */
-watch(
-  () => [form.value.userNm, form.value.email, form.value.phone],
-  () => {
-    modalErrorMessage.value = ''
-  },
-)
 
 /** 사용자 ID(3자 이상), 사용자명, 이메일이 모두 있고, 값이 모두 유효할 때만 수정 가능 */
 const checkSave = computed(() => {
@@ -201,12 +181,10 @@ const checkSave = computed(() => {
 })
 
 const onClose = () => {
-  modalErrorMessage.value = ''
   emit('close')
 }
 
 const onConfirm = async () => {
-  modalErrorMessage.value = ''
   emit('confirm', form.value)
 }
 </script>
