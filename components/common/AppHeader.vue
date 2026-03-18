@@ -1,10 +1,16 @@
 <template>
   <header class="app-header">
-    <span
-      class="header-logo"
-      @click="navigateTo('/')"
-      >TeamAgent</span
-    >
+    <div class="header-title-wrap">
+      <span
+        class="header-logo"
+        @click="navigateTo('/')"
+        >TeamAgent</span
+      >
+      <span
+        v-if="currentPageTitle"
+        class="header-page-title"
+      >{{ currentPageTitle }}</span>
+    </div>
     <div class="header-actions">
       <!-- 테마 색상 -->
       <div class="theme-picker-wrap">
@@ -55,9 +61,34 @@
 
 <script setup lang="ts">
 import type { ThemeColor } from '~/composables/useTheme'
+import type { MenuItem } from '~/types/menu'
 
+const route = useRoute()
 const { user, isLoggedIn, logout } = useAuth()
+const { menuList } = useMenu()
 const { themeColors, currentThemeKey, applyTheme } = useTheme()
+
+// 헤더 타이틀 제외 목록 (검색하기 등 별도 헤더를 가진 페이지)
+const EXCLUDE_TITLES = ['검색하기']
+
+// 현재 라우트에 매칭되는 메뉴명 추출
+const currentPageTitle = computed(() => {
+  const path = route.path
+  let best: { name: string; pathLen: number } | null = null
+  const search = (items: MenuItem[]) => {
+    for (const item of items) {
+      if (item.srcPath && (path === item.srcPath || path.startsWith(`${item.srcPath}/`))) {
+        if (!best || item.srcPath.length > best.pathLen) {
+          best = { name: item.menuName, pathLen: item.srcPath.length }
+        }
+      }
+      if (item.children?.length) search(item.children)
+    }
+  }
+  search(menuList.value)
+  if (best && EXCLUDE_TITLES.includes(best.name)) return ''
+  return best?.name ?? ''
+})
 
 const isThemePickerOpen = ref(false)
 
