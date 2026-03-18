@@ -94,7 +94,9 @@
       <!-- 우측 문서 관리 패널 -->
       <section class="document-panel">
         <div class="document-batch-bar flex items-center">
-          <span class="batch-count">{{ selectedIds.length }}개 선택됨</span>
+          <p class="batch-count">
+            <span class="point-color">{{ selectedIds.length }}개</span> 선택됨
+          </p>
           <UiButton
             variant="line-secondary"
             size="xxs"
@@ -124,7 +126,7 @@
             :columns="tableColumns"
             :data="sortedDocumentList"
             sticky-header
-            max-height="calc(100vh - 380px)"
+            max-height="calc(100vh - 303px)"
             empty-text="등록된 문서가 없습니다."
           >
             <template #header-select>
@@ -163,6 +165,9 @@
                 <i class="icon icon-sync size-16" />
               </button>
             </template>
+            <template #header-actions>
+              <i class="icon icon-add-dot size-20" />
+            </template>
             <template #cell-select="{ row }">
               <UiCheckbox
                 :model-value="selectedIds.includes(row.id)"
@@ -184,7 +189,13 @@
               <UiBadge
                 variant="default"
                 size="sm"
-                class="badge-status is-active"
+                :class="[
+                  'badge-status',
+                  {
+                    'is-active': value === '활성',
+                    'is-inactive': value === '비활성',
+                  },
+                ]"
               >
                 {{ value }}
               </UiBadge>
@@ -208,7 +219,7 @@
                       class="btn-row-more"
                     >
                       <template #icon-left>
-                        <i class="icon icon-add-dot size-16" />
+                        <i class="icon icon-add-dot size-20" />
                       </template>
                     </UiButton>
                   </template>
