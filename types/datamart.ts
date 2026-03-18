@@ -1,15 +1,26 @@
 /** 데이터마트 */
 export interface Datamart {
-  id: string
-  name: string
+  datamartId: string
+  dmNm: string
+  description: string
+  useYn: boolean
   dbType: string
   dbVersion: string
-  isActive: boolean
   host: string
-  analysisUrl: string
-  dbName: string
-  tableCount: number
-  updatedAt: string
+  port: number
+  dbNm: string
+  username: string
+  pwdEnc: string
+  schNm: string
+  connOpt: string
+  readonlyYn: boolean
+  ipWlistYn: boolean
+  sslYn: boolean
+  tblCnt: number
+  lastVerifyDt: string
+  sortOrd: number
+  createDt: string
+  modifyDt: string
 }
 
 /** 데이터마트 생성/수정 폼 */

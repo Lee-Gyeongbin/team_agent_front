@@ -1,10 +1,16 @@
 import { useDatamartApi } from '~/composables/datamart/useDatamartApi'
 import type { Datamart, DatamartSummary } from '~/types/datamart'
 
-const { fetchDatamartList, fetchDatamartSummary, fetchSaveDatamart, fetchDeleteDatamart, fetchToggleActiveDatamart, fetchTestConnection } =
-  useDatamartApi()
+const {
+  fetchDatamartList,
+  fetchDatamartSummary,
+  fetchSaveDatamart,
+  fetchDeleteDatamart,
+  fetchToggleActiveDatamart,
+  fetchTestConnection,
+} = useDatamartApi()
 
-// ===== 상태 변수 =====
+/** 상태 변수 */
 const datamartList = ref<Datamart[]>([])
 const summary = ref<DatamartSummary>({
   totalCount: 0,
@@ -15,10 +21,14 @@ const summary = ref<DatamartSummary>({
   connectedSystems: '',
 })
 
-// ===== 조회 =====
+/** 조회 */
 const handleSelectDatamartList = async () => {
-  const res = await fetchDatamartList()
-  datamartList.value = res.list
+  try {
+    const res = await fetchDatamartList()
+    datamartList.value = res.dataList
+  } catch (error) {
+    console.error(error)
+  }
 }
 
 const handleSelectDatamartSummary = async () => {
@@ -46,9 +56,18 @@ const handleToggleActiveDatamart = async (id: string) => {
   await handleSelectAll()
 }
 
-const handleTestConnection = async (id: string) => {
-  const res = await fetchTestConnection(id)
-  return res.data
+/** 데이터마트 연결 테스트 */
+const handleTestConnection = async (datamart: Datamart) => {
+  try {
+    const response = await fetchTestConnection(datamart)
+    const isSuccess = response.result === 'SUCCESS'
+    openToast({
+      message: response.msg,
+      type: isSuccess ? 'success' : 'error',
+    })
+  } catch {
+    openToast({ message: '연결 테스트에 실패했습니다.', type: 'error' })
+  }
 }
 
 export const useDatamartStore = () => {

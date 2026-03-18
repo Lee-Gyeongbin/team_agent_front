@@ -30,7 +30,7 @@
       <div class="card-grid">
         <DatamartCard
           v-for="dm in datamartList"
-          :key="dm.id"
+          :key="dm.datamartId"
           :datamart="dm"
           @toggle-active="handleToggleActiveDatamart"
           @test="onTest"
@@ -112,22 +112,30 @@ const openCreateModal = () => {
 
 const onSaveCreate = async (data: DatamartForm) => {
   await handleSaveDatamart({
-    name: data.name,
+    dmNm: data.name,
+    description: data.description,
+    useYn: data.status === 'active',
     dbType: data.dbType || 'MySQL',
     dbVersion: data.dbVersion,
-    isActive: data.status === 'active',
     host: data.host,
-    analysisUrl: data.dbName,
-    dbName: data.dbName,
-    tableCount: 0,
+    port: typeof data.port === 'number' ? data.port : 3306,
+    dbNm: data.dbName,
+    username: data.username,
+    pwdEnc: data.password,
+    schNm: data.schema,
+    connOpt: data.connectionOptions,
+    readonlyYn: data.readOnly,
+    ipWlistYn: data.ipWhitelist,
+    sslYn: data.useSsl,
+    tblCnt: 0,
+    sortOrd: data.sortOrder,
   })
   isCreateModalOpen.value = false
 }
 
 // 연결 테스트
-const onTest = async (id: string) => {
-  const result = await handleTestConnection(id)
-  console.warn('[연결 테스트]', result.message)
+const onTest = async (datamart: Datamart) => {
+  await handleTestConnection(datamart)
 }
 
 // 수정

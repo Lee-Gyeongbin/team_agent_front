@@ -1,13 +1,13 @@
 <template>
   <div
     class="card-grid-card"
-    :class="{ 'is-inactive': !datamart.isActive }"
+    :class="{ 'is-inactive': !datamart.useYn }"
   >
     <!-- 헤더: 이름 + DB뱃지 + 토글 -->
     <div class="card-grid-card-header">
       <div class="card-grid-card-title">
         <div class="datamart-card-name-row">
-          <span class="card-grid-card-name">{{ datamart.name }}</span>
+          <span class="card-grid-card-name">{{ datamart.dmNm }}</span>
           <span
             class="datamart-card-db-badge"
             :class="dbBadgeClass"
@@ -18,8 +18,8 @@
       </div>
       <div class="card-grid-card-actions">
         <UiToggle
-          :model-value="datamart.isActive"
-          @update:model-value="emit('toggle-active', datamart.id)"
+          :model-value="datamart.useYn"
+          @update:model-value="emit('toggle-active', datamart.datamartId)"
         />
       </div>
     </div>
@@ -42,7 +42,7 @@
           </div>
           <span class="datamart-card-info-label">문서/URL</span>
         </div>
-        <span class="datamart-card-info-value">{{ datamart.analysisUrl }} / 테이블 {{ datamart.tableCount }}개</span>
+        <span class="datamart-card-info-value">{{ datamart.schNm }} / 테이블 {{ datamart.tblCnt }}개</span>
       </div>
     </div>
 
@@ -52,7 +52,7 @@
         variant="primary-line"
         size="sm"
         class="datamart-card-btn-test"
-        @click="emit('test', datamart.id)"
+        @click="emit('test', datamart)"
       >
         연결 테스트
       </UiButton>
@@ -68,7 +68,7 @@
         variant="line-secondary"
         size="sm"
         class="card-grid-card-btn-fixed"
-        @click="emit('delete', datamart.id)"
+        @click="emit('delete', datamart.datamartId)"
       >
         삭제
       </UiButton>
@@ -85,9 +85,9 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'toggle-active': [id: string]
-  'test': [id: string]
-  'edit': [datamart: Datamart]
-  'delete': [id: string]
+  test: [datamart: Datamart]
+  edit: [datamart: Datamart]
+  delete: [id: string]
 }>()
 
 const dbBadgeClass = computed(() => {
