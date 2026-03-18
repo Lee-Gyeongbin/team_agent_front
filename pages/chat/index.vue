@@ -46,6 +46,7 @@ const {
   chatMessage,
   activeSearchModes,
   toggleSearchMode,
+  selectChatRoomList,
   selectModelOptions,
   startChatSocket,
   stopChatSocket,
@@ -54,6 +55,8 @@ const {
 const { user } = useAuth()
 
 onMounted(async () => {
+  // 채팅방 목록 조회
+  await selectChatRoomList()
   // 채팅방 초기화
   resetChatRoom()
   // 채팅소켓 시작

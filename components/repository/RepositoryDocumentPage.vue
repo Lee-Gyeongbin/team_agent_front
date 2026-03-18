@@ -63,93 +63,19 @@
         </div>
         <div class="category-tree-wrap">
           <ul class="category-tree">
-            <li
-              v-for="(cat, idx) in categoryList"
+            <CategoryTreeNode
+              v-for="cat in categoryList"
               :key="cat.id"
-              class="category-item"
-              :class="{ 'has-children': cat.children?.length }"
-            >
-              <div class="category-row flex items-center">
-                <button
-                  v-if="cat.children?.length"
-                  type="button"
-                  class="category-toggle"
-                  :aria-expanded="cat.expanded"
-                  @click="toggleCategoryExpand(idx)"
-                >
-                  <i
-                    class="icon icon-chevron-down size-16"
-                    :class="{ 'is-expanded': cat.expanded }"
-                  />
-                </button>
-                <span
-                  v-else
-                  class="category-toggle-placeholder"
-                />
-                <UiCheckbox
-                  v-model="cat.checked"
-                  class="category-checkbox"
-                />
-                <span class="category-name">{{ cat.name }}</span>
-                <UiDropdownMenu
-                  :items="categoryMenuItems"
-                  align="end"
-                  @select="(value) => onCategoryMenuSelect(value, cat)"
-                >
-                  <template #trigger>
-                    <UiButton
-                      icon-only
-                      variant="ghost"
-                      size="xs"
-                      class="btn-category-more"
-                      @click.stop
-                    >
-                      <template #icon-left>
-                        <i class="icon icon-add-dot size-16" />
-                      </template>
-                    </UiButton>
-                  </template>
-                </UiDropdownMenu>
-              </div>
-              <ul
-                v-if="cat.children?.length && cat.expanded"
-                class="category-children"
-              >
-                <li
-                  v-for="child in cat.children"
-                  :key="child.id"
-                  class="category-item"
-                >
-                  <div class="category-row flex items-center">
-                    <span class="category-toggle-placeholder" />
-                    <UiCheckbox
-                      v-model="child.checked"
-                      class="category-checkbox"
-                    />
-                    <span class="category-name">{{ child.name }}</span>
-                    <UiDropdownMenu
-                      :items="categoryMenuItems"
-                      align="end"
-                      @select="(value) => onCategoryMenuSelect(value, child)"
-                    >
-                      <template #trigger>
-                        <UiButton
-                          icon-only
-                          variant="ghost"
-                          size="xs"
-                          class="btn-category-more"
-                          @click.stop
-                        >
-                          <template #icon-left>
-                            <i class="icon icon-add-dot size-16" />
-                          </template>
-                        </UiButton>
-                      </template>
-                    </UiDropdownMenu>
-                  </div>
-                </li>
-              </ul>
-            </li>
+              :item="cat"
+              :depth="1"
+              :editing-category-id="editingCategoryId"
+              :editing-name="editingName"
+              :menu-items="categoryMenuItems"
+              @toggle="toggleExpand"
+              @menu-select="onCategoryMenuSelect"
+              @update:editing-name="editingName = $event"
+              @save-rename="saveCategoryRename"
+            />
           </ul>
         </div>
         <div
@@ -341,13 +267,12 @@
 import type { TableColumn } from '~/types/table'
 import CategorySelectModal from '~/components/repository/CategorySelectModal.vue'
 
-/** 카테고리 항목: id, name, children — 모달과 구조 통일 */
+/** 카테고리 항목: id, name, children (4depth 퍼블용 재귀 구조) */
 interface CategoryItem {
   id: string
   name: string
-  checked: boolean
   expanded?: boolean
-  children?: { id: string; name: string; checked: boolean }[]
+  children?: CategoryItem[]
 }
 
 // 문서 검색·필터 (SelectItem value는 빈 문자열 불가 — 'all' 사용)
@@ -363,17 +288,48 @@ const statusFilterOptions = [
 const isCategoryInputVisible = ref(false)
 const isCategorySelectModalOpen = ref(false)
 const categoryInputValue = ref('')
-// 🔽 퍼블용 더미 — 백엔드 연결 시 API로 교체. 구조: id, name, children
+// 카테고리 이름 인라인 수정
+const editingCategoryId = ref<string | null>(null)
+const editingName = ref('')
+
+function getCategoryById(id: string, items?: CategoryItem[]): CategoryItem | undefined {
+  const list = items ?? categoryList.value
+  for (const item of list) {
+    if (item.id === id) return item
+    const found = getCategoryById(id, item.children)
+    if (found) return found
+  }
+  return undefined
+}
+
+function saveCategoryRename() {
+  if (editingCategoryId.value) {
+    const target = getCategoryById(editingCategoryId.value)
+    if (target && editingName.value.trim()) target.name = editingName.value.trim()
+    editingCategoryId.value = null
+  }
+}
+
+// 🔽 퍼블용 더미 — 4depth 시안 구조. 백엔드 연결 시 API로 교체
 const categoryList = ref<CategoryItem[]>([
   {
     id: 'cat-doc-1',
-    name: '1depth 카테고리명임',
-    checked: false,
-    expanded: true,
+    name: '1depth 카테고리명 길이 테스트 테스트 테스트',
+    expanded: false,
     children: [
-      { id: 'cat-doc-1-1', name: '2depth 카테고리명임', checked: false },
-      { id: 'cat-doc-1-2', name: '3depth 카테고...', checked: false },
-      { id: 'cat-doc-1-3', name: '4depth 카테고...', checked: false },
+      {
+        id: 'cat-doc-1-1',
+        name: '2depth 카테고리명 길이 테스트 테스트 테스트',
+        expanded: false,
+        children: [
+          {
+            id: 'cat-doc-1-1-1',
+            name: '3depth 카테고리명 길이 테스트 테스트 테스트',
+            expanded: false,
+            children: [{ id: 'cat-doc-1-1-1-1', name: '4depth 카테고리명 길이 테스트 테스트 테스트' }],
+          },
+        ],
+      },
     ],
   },
 ])
@@ -498,11 +454,15 @@ const visiblePages = computed(() => {
   return pages
 })
 
-// 카테고리 토글
-const toggleCategoryExpand = (idx: number) => {
-  const cat = categoryList.value[idx]
-  if (cat?.children?.length) cat.expanded = !cat.expanded
+const toggleExpand = (item: CategoryItem) => {
+  if (item?.children?.length) item.expanded = !item.expanded
 }
+
+const startCategoryRename = (item: CategoryItem) => {
+  editingCategoryId.value = item.id
+  editingName.value = item.name
+}
+
 const openCategorySelectModal = () => {
   isCategorySelectModalOpen.value = true
 }
@@ -513,8 +473,6 @@ const onCategoryInputEnter = () => {
     categoryList.value.push({
       id: `cat-doc-new-${Date.now()}`,
       name: categoryInputValue.value.trim(),
-      checked: false,
-      expanded: false,
       children: [],
     })
     categoryInputValue.value = ''
@@ -536,7 +494,9 @@ const getDocIconName = (fileType: string) => {
 }
 
 // 액션 핸들러 — 퍼블용 placeholder. 추후 API/라우팅 연결
-const onCategoryMenuSelect = (_value: string, _cat: { name: string }) => {}
+const onCategoryMenuSelect = (value: string, cat: CategoryItem) => {
+  if (value === 'rename') startCategoryRename(cat)
+}
 const onSearch = () => {}
 const onRegisterDocument = () => {}
 const onBatchDownload = () => {}

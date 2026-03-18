@@ -9,25 +9,27 @@
 
     <div class="chat-comment-page-body s-center">
       <!-- 인사멘트 -->
-      <ChatCommentGreeting v-if="activeTab === 'greeting'" />
+      <ChatGuideGreeting v-if="activeTab === 'greeting'" />
 
       <!-- 안내멘트 -->
-      <ChatCommentNotice v-else-if="activeTab === 'notice'" />
+      <ChatGuideNotice v-else-if="activeTab === 'notice'" />
 
       <!-- 오류메시지 -->
-      <ChatCommentError v-else-if="activeTab === 'error'" />
+      <ChatGuideError v-else-if="activeTab === 'error'" />
 
       <!-- 점검/장애 -->
-      <ChatCommentMaintenance v-else-if="activeTab === 'maintenance'" />
+      <ChatGuideMaintenance v-else-if="activeTab === 'maintenance'" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import ChatCommentGreeting from '~/components/chat-comment/ChatCommentGreeting.vue'
-import ChatCommentNotice from '~/components/chat-comment/ChatCommentNotice.vue'
-import ChatCommentError from '~/components/chat-comment/ChatCommentError.vue'
-import ChatCommentMaintenance from '~/components/chat-comment/ChatCommentMaintenance.vue'
+import { onMounted } from 'vue'
+import ChatGuideGreeting from '~/components/chat-guide/ChatGuideGreeting.vue'
+import ChatGuideNotice from '~/components/chat-guide/ChatGuideNotice.vue'
+import ChatGuideError from '~/components/chat-guide/ChatGuideError.vue'
+import ChatGuideMaintenance from '~/components/chat-guide/ChatGuideMaintenance.vue'
+import { useChatGuideStore } from '~/composables/chat-guide/useChatGuideStore'
 
 const activeTab = ref('greeting')
 
@@ -37,4 +39,14 @@ const tabs = [
   { label: '오류메시지', value: 'error' },
   { label: '점검/장애', value: 'maintenance' },
 ]
+
+const { handleSelectGreeting, handleSelectNotice, handleSelectMaintenance, handleSelectErrorMessage } =
+  useChatGuideStore()
+
+onMounted(() => {
+  handleSelectGreeting()
+  handleSelectNotice()
+  handleSelectErrorMessage()
+  handleSelectMaintenance()
+})
 </script>

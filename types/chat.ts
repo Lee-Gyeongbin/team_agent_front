@@ -128,10 +128,29 @@ export interface ChatRefRow {
 }
 
 /** 시각화 데이터 목록 API 응답 한 건 */
+export interface VisualizationStatItem {
+  /** 통계 ID */
+  statId?: string
+  /** 통계명 */
+  statNm?: string
+}
+
+export interface VisualizationStatDetailItem {
+  /** 상세항목 코드 */
+  detailItemCd?: string
+  /** 상세항목명 */
+  detailItemNm?: string
+}
+
+/** 시각화 데이터 목록 API 응답 한 건 */
 export interface VisualizationDataRow {
   logId: string
   ttsq?: string
   tableData?: string
+  /** 통계 ID - 명칭 매핑 정보 */
+  statList?: VisualizationStatItem[]
+  /** 상세항목 코드 - 명칭 매핑 정보 */
+  statDetailList?: VisualizationStatDetailItem[]
 }
 export const EMPTY_VISUALIZATION_DATA_ROW: VisualizationDataRow = {
   logId: '',
@@ -147,16 +166,44 @@ export interface VisualizationSelectOption {
   value: string
 }
 
+export interface VisualizationColumnProfile {
+  key: string
+  uniqueCount: number
+  nonEmptyCount: number
+  uniqueRatio: number
+  isNumeric: boolean
+  isTimeLike: boolean
+  isCodeLike: boolean
+  isLikelyMetric: boolean
+}
+
+export interface VisualizationSelectableOptions {
+  chartTargetKeys: string[]
+  yAxisKeys: string[]
+  /** 시리즈 분리에 사용할 수 있는 dimension 키 목록 (유니크값 2~20개) */
+  seriesKeys: string[]
+  chartTypes: VisualizationChartType[]
+  canStack: boolean
+  canDualAxis: boolean
+}
+
+export interface VisualizationChartSelection {
+  chartType: VisualizationChartType
+  chartTargetKey: string
+  yAxisKeys: string[]
+  /** 행 기반 시리즈 분리 키 (빈 문자열 = 미사용) */
+  seriesKey: string
+  stack: boolean
+  dualAxis: boolean
+}
+
 export interface VisualizationSchema {
-  columns: string[]
-  dimensionKeys: string[]
-  metricKeys: string[]
-  xAxisKey: string
-  defaultLegendKey: string
-  defaultMetricKey: string
-  isTimeAxis: boolean
-  hasYearMonth: boolean
-  hasYearQuarter: boolean
+  columns: string[] // 전체 컬럼
+  dimensionKeys: string[] // 범주형 컬럼
+  metricKeys: string[] // 통계값(Y축) 컬럼
+  profiles: VisualizationColumnProfile[] // 컬럼 프로파일
+  selectableOptions: VisualizationSelectableOptions // 선택 가능한 옵션
+  defaultSelection: VisualizationChartSelection // 초기 추천 선택값
 }
 
 export interface VisualizationViewModel {
@@ -167,6 +214,10 @@ export interface VisualizationViewModel {
   rows: Array<Record<string, unknown>>
   schema: VisualizationSchema | null
   errorMessage?: string
+  /** 통계 ID → 명칭 매핑 (API 응답 원본) */
+  statList?: VisualizationStatItem[]
+  /** 상세항목 코드 → 명칭 매핑 (API 응답 원본) */
+  statDetailList?: VisualizationStatDetailItem[]
 }
 
 // PDF 뷰어 (ChatPdfPanel) 관련 타입

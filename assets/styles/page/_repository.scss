@@ -85,8 +85,8 @@
   padding-bottom: 16px;
 
   .document-search-input {
-    min-width: 200px;
-    max-width: 280px;
+    min-width: 150px;
+    max-width: 400px;
   }
 
   .document-filter-select {
@@ -146,70 +146,84 @@
   }
 
   .category-row {
-    padding: 6px 8px;
+    padding: 0 4px 0 0;
     border-radius: $border-radius-sm;
-    gap: 6px;
-    min-height: 32px;
+    gap: 0;
+    min-height: 40px;
 
     &:hover .btn-category-more {
-      opacity: 1;
+      display: inline-flex;
     }
-  }
 
-  .category-toggle {
-    width: 24px;
-    height: 24px;
-    padding: 0;
-    border: none;
-    background: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: $color-text-secondary;
+    .category-item-file-icon {
+      flex-shrink: 0;
+      margin-right: 2.5px;
+      color: #aebccb;
+    }
 
-    .icon {
+    .category-name {
+      flex: 1;
+      min-width: 0;
+      @include typo($body-medium);
+      color: $color-text-primary;
+      @include ellipsis(1);
+    }
+
+    // UiInput 인라인 편집 — 옵션(size=sm, radius=base) + 레이아웃/높이/플레이스홀더만 SCSS 오버라이드
+    .category-name-input.ui-input-outer {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .category-name-input .ui-input-wrap {
+      height: 28px;
+    }
+
+    .category-name-input .ui-input::placeholder {
+      color: #94a3b8;
+    }
+
+    .category-toggle-placeholder {
+      width: 0;
+      flex-shrink: 0;
+    }
+
+    .btn-category-more {
+      display: none;
+      flex-shrink: 0;
+      padding: 2px;
+
+      /* 드롭다운 열림 중에는 호버 해제되어도 버튼 유지 — 앵커 손실 방지 */
+      &.is-active {
+        display: inline-flex;
+      }
+    }
+
+    .btn-category-arrow-down {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .icon-arrow-down-gray {
       transition: transform $transition-fast;
+
+      &.is-expanded {
+        transform: rotate(180deg);
+      }
     }
 
-    .icon.is-expanded {
-      transform: rotate(-90deg);
+    .category-children {
+      list-style: none;
+      padding-left: 24px;
+      margin: 0;
     }
-  }
 
-  .category-toggle-placeholder {
-    width: 24px;
-    flex-shrink: 0;
-  }
-
-  .category-checkbox {
-    flex-shrink: 0;
-  }
-
-  .category-name {
-    flex: 1;
-    min-width: 0;
-    @include typo($body-medium);
-    color: $color-text-primary;
-    @include ellipsis(1);
-  }
-
-  .btn-category-more {
-    opacity: 0;
-    flex-shrink: 0;
-    padding: 2px;
-  }
-
-  .category-children {
-    list-style: none;
-    padding-left: 24px;
-    margin: 0;
-  }
-
-  .category-input-wrap {
-    margin-top: $spacing-sm;
-    padding-top: $spacing-sm;
-    border-top: 1px solid $color-border-light;
+    .category-input-wrap {
+      margin-top: $spacing-sm;
+      padding-top: $spacing-sm;
+      border-top: 1px solid $color-border-light;
+    }
   }
 }
 
@@ -218,7 +232,6 @@
   flex: 1 0 0;
   display: flex;
   flex-direction: column;
-  gap: $spacing-md;
   padding: 16px;
   border-radius: 16px;
   border: 1px solid #dce4e9;
@@ -227,6 +240,7 @@
   .document-batch-bar {
     gap: $spacing-sm;
     border-radius: $border-radius-base;
+    padding-bottom: 16px;
 
     .batch-count {
       @include typo($body-medium);

@@ -1,20 +1,39 @@
 import type {
+  VisualizationChartSelection,
   VisualizationChartType,
+  VisualizationColumnProfile,
   VisualizationSchema,
+  VisualizationSelectableOptions,
   VisualizationSelectOption,
+  VisualizationStatDetailItem,
+  VisualizationStatItem,
   VisualizationViewModel,
 } from '~/types/chat'
 import type { TableColumn } from '~/types/table'
-import { resolveColumnLabel, resolveDisplayValue } from '~/utils/chat/visualizationLabelMap'
+import { registerDynamicMappings, resolveColumnLabel, resolveDisplayValue } from '~/utils/chat/visualizationLabelMap'
 
-const TIME_AXIS_KEY = '__TIME_AXIS__'
+const TIME_AXIS_YEAR_MONTH = '__TIME_AXIS_YEAR_MONTH__'
+const TIME_AXIS_YEAR_QUARTER = '__TIME_AXIS_YEAR_QUARTER__'
 const EMPTY_VALUE = '-'
+const DEFAULT_CHART_TYPE: VisualizationChartType = 'bar'
+const CHART_TYPES: VisualizationChartType[] = ['bar', 'line', 'pie']
 
-interface ChartBuildOptions {
-  chartType: VisualizationChartType
-  metricKey?: string
-  legendKey?: string
-}
+const METRIC_HINT_PATTERNS = [
+  'TOTAL_VAL',
+  'AVG_VAL',
+  'RATIO_PERCENT',
+  'ALL_TOTAL',
+  'DIFF_VAL',
+  'GROWTH_RATE',
+  'MAX',
+  'MIN',
+  'STAT_VAL',
+  'MON_VAL',
+  'SUM_TOTAL',
+]
+
+const TIME_HINT_PATTERNS = ['YEAR', 'MON', 'MONTH', 'QUARTER', 'QTR', 'DATE', 'DAY', 'YM', 'YMD']
+const CODE_HINT_PATTERNS = ['_CD', '_ID', 'CODE', 'SEQ', 'ORDER_NO', 'ORDER', 'NO']
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -29,21 +48,6 @@ const toNumber = (value: unknown) => {
   return null
 }
 
-const isNumericColumn = (rows: Array<Record<string, unknown>>, key: string) => {
-  let numericCount = 0
-  let valueCount = 0
-  rows.forEach((row) => {
-    const current = row[key]
-    if (current == null || current === '') return
-    valueCount += 1
-    if (toNumber(current) !== null) {
-      numericCount += 1
-    }
-  })
-  if (valueCount === 0) return false
-  return numericCount === valueCount
-}
-
 const getColumnKeys = (rows: Array<Record<string, unknown>>) => {
   const keySet = new Set<string>()
   rows.forEach((row) => {
@@ -52,47 +56,147 @@ const getColumnKeys = (rows: Array<Record<string, unknown>>) => {
   return Array.from(keySet)
 }
 
-const getPreferredDimension = (dimensionKeys: string[]) => {
-  const priority = ['MON', 'QUARTER', 'REGN_CD', 'DETAIL_ITEM_CD', 'RESULT', 'STAT_ID']
-  return priority.find((key) => dimensionKeys.includes(key)) ?? dimensionKeys[0] ?? ''
+const normalizeKey = (key: string) => key.trim().toUpperCase()
+
+const includesAnyPattern = (value: string, patterns: string[]) => {
+  return patterns.some((pattern) => value.includes(pattern))
 }
 
-const getPreferredLegend = (dimensionKeys: string[], xAxisKey: string) => {
-  const priority = ['STAT_ID', 'REGN_CD', 'DETAIL_ITEM_CD', 'RESULT', 'YEAR', 'MON', 'QUARTER']
-  return priority.find((key) => key !== xAxisKey && dimensionKeys.includes(key)) ?? ''
+const isLikelyTimeKey = (key: string, label: string) => {
+  const upper = normalizeKey(key)
+  const upperLabel = label.toUpperCase()
+  return includesAnyPattern(upper, TIME_HINT_PATTERNS) || /(년|월|분기|일자|날짜)/.test(upperLabel)
+}
+
+const isLikelyCodeKey = (key: string, label: string) => {
+  const upper = normalizeKey(key)
+  const upperLabel = label.toUpperCase()
+  const isCodePattern =
+    includesAnyPattern(upper, CODE_HINT_PATTERNS) || upper.endsWith('_CD') || upper.endsWith('_ID') || upper === 'ID'
+  return isCodePattern || /(코드|식별|순번|번호|ID)/.test(upperLabel)
+}
+
+const isLikelyMetricKey = (key: string, label: string) => {
+  const upper = normalizeKey(key)
+  const upperLabel = label.toUpperCase()
+  return (
+    includesAnyPattern(upper, METRIC_HINT_PATTERNS) ||
+    /(금액|매출|비율|건수|점수|수량|총계|합계|평균|통계|지표)/.test(upperLabel)
+  )
+}
+
+const getColumnProfile = (rows: Array<Record<string, unknown>>, key: string): VisualizationColumnProfile => {
+  const label = resolveColumnLabel(key)
+  const uniqueSet = new Set<string>()
+  let nonEmptyCount = 0
+  let numericCount = 0
+
+  rows.forEach((row) => {
+    const raw = row[key]
+    if (raw == null || raw === '') return
+    nonEmptyCount += 1
+    uniqueSet.add(String(raw))
+    if (toNumber(raw) !== null) {
+      numericCount += 1
+    }
+  })
+
+  const isNumeric = nonEmptyCount > 0 && numericCount === nonEmptyCount
+  const uniqueCount = uniqueSet.size
+  const uniqueRatio = nonEmptyCount > 0 ? uniqueCount / nonEmptyCount : 0
+  const isTimeLike = isLikelyTimeKey(key, label)
+  const isCodeLike = isLikelyCodeKey(key, label)
+  const metricHint = isLikelyMetricKey(key, label)
+  const idLikeHighCardinality = uniqueRatio >= 0.9 && nonEmptyCount >= 12
+  const isLikelyMetric = isNumeric && !isTimeLike && !isCodeLike && (metricHint || !idLikeHighCardinality)
+
+  return {
+    key,
+    uniqueCount,
+    nonEmptyCount,
+    uniqueRatio,
+    isNumeric,
+    isTimeLike,
+    isCodeLike,
+    isLikelyMetric,
+  }
+}
+
+const hasYearMonthAxis = (rows: Array<Record<string, unknown>>, columns: string[]) => {
+  if (!columns.includes('YEAR') || !columns.includes('MON')) return false
+  const uniqueAxis = new Set<string>()
+  rows.forEach((row) => {
+    const year = String(row.YEAR ?? '').trim()
+    const month = String(row.MON ?? '').trim()
+    if (!year || !month) return
+    uniqueAxis.add(`${year}-${month}`)
+  })
+  return uniqueAxis.size > 1
+}
+
+const hasYearQuarterAxis = (rows: Array<Record<string, unknown>>, columns: string[]) => {
+  if (!columns.includes('YEAR') || !columns.includes('QUARTER')) return false
+  const uniqueAxis = new Set<string>()
+  rows.forEach((row) => {
+    const year = String(row.YEAR ?? '').trim()
+    const quarter = String(row.QUARTER ?? '').trim()
+    if (!year || !quarter) return
+    uniqueAxis.add(`${year}-Q${quarter}`)
+  })
+  return uniqueAxis.size > 1
+}
+
+const getPreferredChartTargetKey = (keys: string[]) => {
+  const priority = ['STAT_ID', 'REGN_CD', 'DETAIL_ITEM_CD', 'RESULT']
+  return priority.find((key) => keys.includes(key)) ?? keys[0] ?? ''
+}
+
+const getDefaultSelection = (options: VisualizationSelectableOptions): VisualizationChartSelection => {
+  const chartTargetKey = options.chartTargetKeys[0] ?? ''
+  return {
+    chartType:
+      chartTargetKey === TIME_AXIS_YEAR_MONTH || chartTargetKey === TIME_AXIS_YEAR_QUARTER
+        ? 'line'
+        : DEFAULT_CHART_TYPE,
+    chartTargetKey,
+    yAxisKeys: options.yAxisKeys.slice(0, options.yAxisKeys.length > 1 ? 2 : 1),
+    seriesKey: '',
+    stack: false,
+    dualAxis: false,
+  }
 }
 
 const padMonth = (value: unknown) => String(value ?? '').padStart(2, '0')
 
-const getTimeAxisLabel = (row: Record<string, unknown>, schema: VisualizationSchema) => {
-  if (schema.hasYearMonth) {
+const getTimeAxisLabel = (row: Record<string, unknown>, xAxisKey: string) => {
+  if (xAxisKey === TIME_AXIS_YEAR_MONTH) {
     return `${row.YEAR ?? ''}-${padMonth(row.MON)}`
   }
-  if (schema.hasYearQuarter) {
+  if (xAxisKey === TIME_AXIS_YEAR_QUARTER) {
     return `${row.YEAR ?? ''}-Q${row.QUARTER ?? ''}`
   }
   return ''
 }
 
-const getTimeAxisSortValue = (row: Record<string, unknown>, schema: VisualizationSchema) => {
-  if (schema.hasYearMonth) {
+const getXAxisValue = (row: Record<string, unknown>, xAxisKey: string) => {
+  if (xAxisKey === TIME_AXIS_YEAR_MONTH || xAxisKey === TIME_AXIS_YEAR_QUARTER) {
+    return getTimeAxisLabel(row, xAxisKey)
+  }
+  return resolveDisplayValue(xAxisKey, row[xAxisKey])
+}
+
+const getXAxisSortValue = (row: Record<string, unknown>, xAxisKey: string) => {
+  if (xAxisKey === TIME_AXIS_YEAR_MONTH) {
     const year = Number(row.YEAR ?? 0)
     const month = Number(row.MON ?? 0)
     return year * 100 + month
   }
-  if (schema.hasYearQuarter) {
+  if (xAxisKey === TIME_AXIS_YEAR_QUARTER) {
     const year = Number(row.YEAR ?? 0)
     const quarter = Number(row.QUARTER ?? 0)
     return year * 10 + quarter
   }
   return 0
-}
-
-const getXAxisValue = (row: Record<string, unknown>, schema: VisualizationSchema) => {
-  if (schema.xAxisKey === TIME_AXIS_KEY) {
-    return getTimeAxisLabel(row, schema)
-  }
-  return resolveDisplayValue(schema.xAxisKey, row[schema.xAxisKey])
 }
 
 const formatTableMetric = (value: unknown) => {
@@ -161,26 +265,58 @@ export const inferSchema = (rows: Array<Record<string, unknown>>): Visualization
   if (rows.length === 0) return null
 
   const columns = getColumnKeys(rows)
-  const metricKeys = columns.filter((key) => isNumericColumn(rows, key))
+  const profiles = columns.map((key) => getColumnProfile(rows, key))
+  const metricKeys = profiles.filter((profile) => profile.isLikelyMetric).map((profile) => profile.key)
   const dimensionKeys = columns.filter((key) => !metricKeys.includes(key))
 
-  const hasYearMonth = columns.includes('YEAR') && columns.includes('MON')
-  const hasYearQuarter = columns.includes('YEAR') && columns.includes('QUARTER')
-  const isTimeAxis = hasYearMonth || hasYearQuarter
-  const xAxisKey = isTimeAxis ? TIME_AXIS_KEY : getPreferredDimension(dimensionKeys)
-  const defaultLegendKey = getPreferredLegend(dimensionKeys, xAxisKey)
-  const defaultMetricKey = metricKeys[0] ?? ''
+  const rawChartTargetKeys = profiles
+    .filter((profile) => !profile.isLikelyMetric && profile.uniqueCount > 1)
+    .map((profile) => profile.key)
+
+  const sortedChartTargetKeys: string[] = []
+  if (hasYearMonthAxis(rows, columns)) {
+    sortedChartTargetKeys.push(TIME_AXIS_YEAR_MONTH)
+  } else if (hasYearQuarterAxis(rows, columns)) {
+    sortedChartTargetKeys.push(TIME_AXIS_YEAR_QUARTER)
+  }
+  const preferredChartTarget = getPreferredChartTargetKey(rawChartTargetKeys)
+  const orderedDimensionKeys = [
+    preferredChartTarget,
+    ...rawChartTargetKeys.filter((key) => key !== preferredChartTarget),
+  ].filter(Boolean)
+  orderedDimensionKeys.forEach((key) => {
+    if (!sortedChartTargetKeys.includes(key)) sortedChartTargetKeys.push(key)
+  })
+
+  // 시리즈 키 후보: 비수치, 비시간형, 유니크값 2~20개인 dimension
+  const seriesKeys = profiles
+    .filter(
+      (profile) =>
+        !profile.isLikelyMetric &&
+        !profile.isTimeLike &&
+        profile.uniqueCount >= 2 &&
+        profile.uniqueCount <= 20 &&
+        profile.nonEmptyCount > 0,
+    )
+    .map((profile) => profile.key)
+
+  const selectableOptions: VisualizationSelectableOptions = {
+    chartTargetKeys: sortedChartTargetKeys,
+    yAxisKeys: metricKeys,
+    seriesKeys,
+    chartTypes: metricKeys.length > 0 ? CHART_TYPES : [],
+    canStack: true,
+    canDualAxis: metricKeys.length >= 2,
+  }
+  const defaultSelection = getDefaultSelection(selectableOptions)
 
   return {
     columns,
     dimensionKeys,
     metricKeys,
-    xAxisKey,
-    defaultLegendKey,
-    defaultMetricKey,
-    isTimeAxis,
-    hasYearMonth,
-    hasYearQuarter,
+    profiles,
+    selectableOptions,
+    defaultSelection,
   }
 }
 
@@ -188,6 +324,8 @@ export const buildVisualizationViewModel = (params: {
   messageId: string
   sql?: string
   tableData?: string
+  statList?: VisualizationStatItem[]
+  statDetailList?: VisualizationStatDetailItem[]
 }): VisualizationViewModel => {
   const parsed = parseTableData(params.tableData ?? '')
   const rows = buildRowsFromColumnarJson(parsed)
@@ -222,10 +360,13 @@ export const buildVisualizationViewModel = (params: {
     rawTableData: params.tableData ?? '',
     rows,
     schema,
+    statList: params.statList,
+    statDetailList: params.statDetailList,
   }
 }
 
 export const buildTableModel = (viewModel: VisualizationViewModel) => {
+  registerDynamicMappings(viewModel.statList, viewModel.statDetailList)
   const schema = viewModel.schema
   if (!schema) {
     return { columns: [] as TableColumn[], data: [] as Array<Record<string, unknown>> }
@@ -251,39 +392,133 @@ export const buildTableModel = (viewModel: VisualizationViewModel) => {
 
 export const buildMetricOptions = (schema: VisualizationSchema | null): VisualizationSelectOption[] => {
   if (!schema) return []
-  return schema.metricKeys.map((key) => ({
+  return schema.selectableOptions.yAxisKeys.map((key) => ({
     label: resolveColumnLabel(key),
     value: key,
   }))
 }
 
-export const buildLegendOptions = (schema: VisualizationSchema | null): VisualizationSelectOption[] => {
+export const buildSeriesKeyOptions = (schema: VisualizationSchema | null): VisualizationSelectOption[] => {
   if (!schema) return []
-  return schema.dimensionKeys.map((key) => ({
+  return schema.selectableOptions.seriesKeys.map((key) => ({
     label: resolveColumnLabel(key),
     value: key,
   }))
+}
+
+export const buildChartTargetOptions = (schema: VisualizationSchema | null): VisualizationSelectOption[] => {
+  if (!schema) return []
+  return schema.selectableOptions.chartTargetKeys.map((key) => {
+    const label =
+      key === TIME_AXIS_YEAR_MONTH ? '년-월' : key === TIME_AXIS_YEAR_QUARTER ? '년-분기' : resolveColumnLabel(key)
+    return { label, value: key }
+  })
 }
 
 export const getDefaultChartType = (schema: VisualizationSchema | null): VisualizationChartType => {
   if (!schema) return 'bar'
-  return schema.isTimeAxis ? 'line' : 'bar'
+  return schema.defaultSelection.chartType
+}
+
+export const buildDefaultChartSelection = (schema: VisualizationSchema | null): VisualizationChartSelection => {
+  if (!schema) {
+    return {
+      chartType: 'bar',
+      chartTargetKey: '',
+      yAxisKeys: [],
+      seriesKey: '',
+      stack: false,
+      dualAxis: false,
+    }
+  }
+  return { ...schema.defaultSelection, yAxisKeys: [...schema.defaultSelection.yAxisKeys] }
+}
+
+const sanitizeSelection = (
+  schema: VisualizationSchema,
+  selection: VisualizationChartSelection,
+): VisualizationChartSelection => {
+  const chartType = schema.selectableOptions.chartTypes.includes(selection.chartType)
+    ? selection.chartType
+    : schema.defaultSelection.chartType
+  const chartTargetKey = schema.selectableOptions.chartTargetKeys.includes(selection.chartTargetKey)
+    ? selection.chartTargetKey
+    : schema.defaultSelection.chartTargetKey
+
+  // seriesKey 유효성 검증 (pie에서는 미사용, chartTargetKey와 중복 불가)
+  const seriesKey =
+    selection.seriesKey &&
+    chartType !== 'pie' &&
+    selection.seriesKey !== chartTargetKey &&
+    schema.selectableOptions.seriesKeys.includes(selection.seriesKey)
+      ? selection.seriesKey
+      : ''
+
+  const filteredYKeys = selection.yAxisKeys.filter((key) => schema.selectableOptions.yAxisKeys.includes(key))
+  // seriesKey 활성 시 Y축은 1개만 사용 (시리즈가 이미 다차원 분리 역할)
+  const maxYKeys = seriesKey ? 1 : 2
+  const yAxisKeys = filteredYKeys.slice(0, maxYKeys)
+  const validYAxisKeys = yAxisKeys.length > 0 ? yAxisKeys : [schema.defaultSelection.yAxisKeys[0]].filter(Boolean)
+  // seriesKey 활성 시 dualAxis 비활성
+  const dualAxis = !seriesKey && selection.dualAxis && validYAxisKeys.length >= 2 && chartType !== 'pie'
+  const stack = selection.stack && chartType === 'bar' && !dualAxis
+
+  return {
+    chartType,
+    chartTargetKey,
+    yAxisKeys: validYAxisKeys,
+    seriesKey,
+    dualAxis,
+    stack,
+  }
+}
+
+const buildCategories = (rows: Array<Record<string, unknown>>, xAxisKey: string) => {
+  const categories: string[] = []
+  const categorySet = new Set<string>()
+  rows.forEach((row) => {
+    const xValue = getXAxisValue(row, xAxisKey)
+    if (!xValue || categorySet.has(xValue)) return
+    categorySet.add(xValue)
+    categories.push(xValue)
+  })
+  return categories
+}
+
+const buildSingleMetricValueMap = (rows: Array<Record<string, unknown>>, xAxisKey: string, yKey: string) => {
+  const valueMap = new Map<string, number>()
+  rows.forEach((row) => {
+    const category = getXAxisValue(row, xAxisKey)
+    if (!category) return
+    const value = toNumber(row[yKey]) ?? 0
+    valueMap.set(category, (valueMap.get(category) ?? 0) + value)
+  })
+  return valueMap
+}
+
+const resolveYAxisMax = (datasets: Array<{ data: number[] }>) => {
+  const max = Math.max(0, ...datasets.flatMap((dataset) => dataset.data))
+  return max === 0 ? 1 : Math.ceil(max * 1.1)
 }
 
 export const buildChartModel = (
   viewModel: VisualizationViewModel,
-  options: ChartBuildOptions,
+  selectionInput: VisualizationChartSelection,
 ): Record<string, unknown> | null => {
+  registerDynamicMappings(viewModel.statList, viewModel.statDetailList)
   const schema = viewModel.schema
-  if (!schema || !options.metricKey) return null
+  if (!schema) return null
 
-  const metricKey = options.metricKey
-  const legendKey = options.legendKey ?? ''
+  const selection = sanitizeSelection(schema, selectionInput)
+  const yAxisKeys = selection.yAxisKeys.slice(0, 2)
+  if (!selection.chartTargetKey || yAxisKeys.length === 0) return null
 
-  if (options.chartType === 'pie') {
+  if (selection.chartType === 'pie') {
+    const metricKey = yAxisKeys[0]
     const pieMap = new Map<string, number>()
     viewModel.rows.forEach((row) => {
-      const key = legendKey ? resolveDisplayValue(legendKey, row[legendKey]) : getXAxisValue(row, schema)
+      const key = getXAxisValue(row, selection.chartTargetKey)
+      if (!key) return
       const value = toNumber(row[metricKey]) ?? 0
       pieMap.set(key, (pieMap.get(key) ?? 0) + value)
     })
@@ -293,68 +528,104 @@ export const buildChartModel = (
   }
 
   const rowList = [...viewModel.rows]
-  if (schema.isTimeAxis) {
-    rowList.sort((a, b) => getTimeAxisSortValue(a, schema) - getTimeAxisSortValue(b, schema))
+  if (selection.chartTargetKey === TIME_AXIS_YEAR_MONTH || selection.chartTargetKey === TIME_AXIS_YEAR_QUARTER) {
+    rowList.sort(
+      (a, b) => getXAxisSortValue(a, selection.chartTargetKey) - getXAxisSortValue(b, selection.chartTargetKey),
+    )
+  }
+  const categories = buildCategories(rowList, selection.chartTargetKey)
+  if (categories.length === 0) return null
+
+  // seriesKey 피벗: 행의 dimension 값을 시리즈로 분리해 다중 데이터셋 생성
+  if (selection.seriesKey) {
+    const metricKey = yAxisKeys[0]
+    const seriesValueSet = new Set<string>()
+    rowList.forEach((row) => {
+      const sv = resolveDisplayValue(selection.seriesKey, row[selection.seriesKey])
+      if (sv) seriesValueSet.add(sv)
+    })
+    const seriesValues = Array.from(seriesValueSet)
+
+    const datasets = seriesValues.map((seriesValue, index) => {
+      const filtered = rowList.filter(
+        (row) => resolveDisplayValue(selection.seriesKey, row[selection.seriesKey]) === seriesValue,
+      )
+      const valueMap = buildSingleMetricValueMap(filtered, selection.chartTargetKey, metricKey)
+      return {
+        label: seriesValue,
+        data: categories.map((cat) => valueMap.get(cat) ?? 0),
+        colorKey: selection.chartType === 'line' ? 'line.analystatSet' : 'bar.analystatSet',
+        colorIndex: index,
+        yAxisID: 'y',
+        ...(selection.stack ? { stack: 'total' } : {}),
+      }
+    })
+
+    const config: Record<string, unknown> = { categories, datasets }
+    if (selection.stack) {
+      config.scales = { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
+    }
+    if (selection.chartType === 'bar') config.showDataLabels = true
+    return config
   }
 
-  const categories: string[] = []
-  const categorySet = new Set<string>()
-  rowList.forEach((row) => {
-    const xValue = getXAxisValue(row, schema)
-    if (!categorySet.has(xValue)) {
-      categorySet.add(xValue)
-      categories.push(xValue)
-    }
-  })
-
-  const useSeries = Boolean(legendKey) && legendKey !== schema.xAxisKey
-  if (!useSeries) {
-    const valueMap = new Map<string, number>()
-    rowList.forEach((row) => {
-      const category = getXAxisValue(row, schema)
-      const value = toNumber(row[metricKey]) ?? 0
-      valueMap.set(category, (valueMap.get(category) ?? 0) + value)
-    })
-    const data = categories.map((category) => valueMap.get(category) ?? 0)
-    if (options.chartType === 'line') {
+  if (yAxisKeys.length >= 2) {
+    const datasets = yAxisKeys.slice(0, 2).map((yKey, index) => {
+      const valueMap = buildSingleMetricValueMap(rowList, selection.chartTargetKey, yKey)
       return {
-        categories,
-        datasets: [{ label: resolveColumnLabel(metricKey), data, colorKey: 'line.primary' }],
+        label: resolveColumnLabel(yKey),
+        data: categories.map((category) => valueMap.get(category) ?? 0),
+        colorKey: selection.chartType === 'line' ? 'line.analystatSet' : 'bar.analystatSet',
+        colorIndex: index,
+        yAxisID: selection.dualAxis ? (index === 0 ? 'y' : 'y1') : 'y',
+        ...(selection.stack ? { stack: 'total' } : {}),
+      }
+    })
+    const config: Record<string, unknown> = { categories, datasets }
+    if (selection.dualAxis) {
+      const leftMax = resolveYAxisMax([datasets[0]])
+      const rightMax = resolveYAxisMax([datasets[1]])
+      config.scales = {
+        y: { beginAtZero: true, max: leftMax, position: 'left' },
+        y1: { beginAtZero: true, max: rightMax, position: 'right', grid: { drawOnChartArea: false } },
+      }
+    } else if (selection.stack) {
+      config.scales = {
+        x: { stacked: true },
+        y: { stacked: true, beginAtZero: true },
       }
     }
-    return {
-      categories,
-      data,
-      colorKey: 'bar.set1',
-      showDataLabels: true,
+    if (selection.chartType === 'bar') {
+      config.showDataLabels = true
     }
+    return config
   }
 
-  const seriesMap = new Map<string, Map<string, number>>()
-  const seriesOrder: string[] = []
-  rowList.forEach((row) => {
-    const seriesName = resolveDisplayValue(legendKey, row[legendKey])
-    const category = getXAxisValue(row, schema)
-    const value = toNumber(row[metricKey]) ?? 0
-    if (!seriesMap.has(seriesName)) {
-      seriesMap.set(seriesName, new Map<string, number>())
-      seriesOrder.push(seriesName)
-    }
-    const categoryMap = seriesMap.get(seriesName)!
-    categoryMap.set(category, (categoryMap.get(category) ?? 0) + value)
-  })
-
-  const datasets = seriesOrder.map((seriesName, index) => {
-    const categoryMap = seriesMap.get(seriesName)!
+  const metricKey = yAxisKeys[0]
+  const valueMap = buildSingleMetricValueMap(rowList, selection.chartTargetKey, metricKey)
+  const data = categories.map((category) => valueMap.get(category) ?? 0)
+  if (selection.chartType === 'line') {
     return {
-      label: seriesName,
-      data: categories.map((category) => categoryMap.get(category) ?? 0),
-      colorKey: options.chartType === 'line' ? 'line.set2' : 'bar.set2',
-      colorIndex: index,
+      categories,
+      datasets: [{ label: resolveColumnLabel(metricKey), data, colorKey: 'line.primary' }],
     }
-  })
-
-  return { categories, datasets }
+  }
+  const config: Record<string, unknown> = {
+    categories,
+    data,
+    colorKey: 'bar.set1',
+    showDataLabels: true,
+  }
+  if (selection.stack) {
+    config.scales = {
+      x: { stacked: true },
+      y: { stacked: true, beginAtZero: true },
+    }
+  }
+  return config
 }
 
-export const getTimeAxisKey = () => TIME_AXIS_KEY
+export const getTimeAxisKeys = () => ({
+  yearMonth: TIME_AXIS_YEAR_MONTH,
+  yearQuarter: TIME_AXIS_YEAR_QUARTER,
+})

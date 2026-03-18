@@ -37,9 +37,7 @@
 
         <template v-if="form.emergency.isEnabled">
           <!-- 경고 배너 -->
-          <div class="maint-alert-banner">
-            ⚠️ 긴급 공지가 활성화되면 사용자가 챗봇에 접속할 때 가장 먼저 표시됩니다
-          </div>
+          <div class="maint-alert-banner">⚠️ 긴급 공지가 활성화되면 사용자가 챗봇에 접속할 때 가장 먼저 표시됩니다</div>
 
           <div class="maint-field">
             <label class="maint-label">공지 제목</label>
@@ -198,17 +196,8 @@
 
 <script setup lang="ts">
 import type { DateValue } from '@internationalized/date'
-
-// ============================================
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-// ============================================
-
-interface IncidentType {
-  key: string
-  icon: string
-  label: string
-  message: string
-}
+import { useChatGuideStore } from '~/composables/chat-guide/useChatGuideStore'
+import type { ChatMaintenanceForm } from '~/types/chat-guide'
 
 interface MaintenanceForm {
   emergency: {
@@ -225,77 +214,16 @@ interface MaintenanceForm {
     message: string
     advanceNotice: string
   }
-  incident: {
-    isEnabled: boolean
-    types: IncidentType[]
-  }
-  recovery: {
-    isEnabled: boolean
-    message: string
-    autoDisplay: boolean
-  }
+  incident: ChatMaintenanceForm['incident']
+  recovery: ChatMaintenanceForm['recovery']
 }
 
-const getDefaultForm = (): MaintenanceForm => ({
-  emergency: {
-    isEnabled: false,
-    title: '',
-    message: '',
-    startDate: undefined,
-    endDate: undefined,
-  },
-  scheduled: {
-    isEnabled: false,
-    startDate: undefined,
-    endDate: undefined,
-    message: '🔧 정기 점검 안내\n\n일시: 2024년 2월 15일 (목) 02:00 - 04:00\n내용: 시스템 성능 개선 및 보안 업데이트',
-    advanceNotice: '24h',
-  },
-  incident: {
-    isEnabled: false,
-    types: [
-      {
-        key: 'partial',
-        icon: '⚡',
-        label: '일부 기능 장애',
-        message: '현재 일부 기능에 장애가 발생했습니다.\n불편을 드려 죄송하며, 빠른 시간 내에 복구하겠습니다.',
-      },
-      {
-        key: 'full',
-        icon: '🔥',
-        label: '전체 서비스 장애',
-        message: '현재 전체 서비스에 장애가 발생하여 이용이 제한됩니다.\n\n복구 작업이 진행 중이며, 완료 시 공지드리겠습니다.\n불편을 드려 대단히 죄송합니다.',
-      },
-      {
-        key: 'network',
-        icon: '🌐',
-        label: '네트워크 장애',
-        message: '네트워크 연결에 문제가 있습니다.\n인터넷 연결 상태를 확인해주세요.',
-      },
-    ],
-  },
-  recovery: {
-    isEnabled: true,
-    message: '✅ 서비스가 정상적으로 복구되었습니다!\n\n이용에 불편을 드려 죄송했습니다.\n안정적인 서비스를 위해 최선을 다하겠습니다.',
-    autoDisplay: true,
-  },
-})
+const {
+  maintenanceForm,
+  advanceNoticeOptions,
+  handleSaveMaintenance: onSave,
+  handleResetMaintenance: onReset,
+} = useChatGuideStore()
 
-const advanceNoticeOptions = [
-  { label: '점검 1시간 전부터', value: '1h' },
-  { label: '점검 6시간 전부터', value: '6h' },
-  { label: '점검 12시간 전부터', value: '12h' },
-  { label: '점검 24시간 전부터', value: '24h' },
-  { label: '점검 48시간 전부터', value: '48h' },
-]
-
-const form = ref<MaintenanceForm>(getDefaultForm())
-
-const onSave = () => {
-  console.warn('[TODO] 점검/장애 저장:', form.value)
-}
-
-const onReset = () => {
-  form.value = getDefaultForm()
-}
+const form = maintenanceForm as unknown as MaintenanceForm
 </script>
