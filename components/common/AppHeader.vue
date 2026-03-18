@@ -1,10 +1,11 @@
 <template>
   <header class="app-header">
     <div class="header-title-wrap">
-      <span
+      <img
         class="header-logo"
+        src="~/assets/icons/svg/logo-teamagent.svg"
+        alt="TeamAgent"
         @click="navigateTo('/')"
-        >TeamAgent</span
       >
       <span
         v-if="currentPageTitle"

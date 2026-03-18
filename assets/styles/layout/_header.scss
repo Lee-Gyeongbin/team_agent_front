@@ -18,8 +18,8 @@
   }
 
   .header-logo {
-    @include typo($body-xlarge-bold);
-    color: $color-text-heading;
+    height: 22px;
+    width: auto;
   }
 
   .header-page-title {
