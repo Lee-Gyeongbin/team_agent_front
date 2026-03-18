@@ -7,6 +7,22 @@
           <span class="prompt-box-name">금지어 및 필터링 설정</span>
           <span class="prompt-box-sub">챗봇이 사용하지 말아야 할 단어나 민감한 키워드를 관리합니다.</span>
         </div>
+        <div class="prompt-limit-header-actions">
+          <UiButton
+            variant="outline"
+            size="md"
+            @click="onCancel"
+          >
+            취소
+          </UiButton>
+          <UiButton
+            variant="primary"
+            size="md"
+            @click="onSave"
+          >
+            저장
+          </UiButton>
+        </div>
       </div>
 
       <div class="prompt-filter-body">
@@ -39,24 +55,6 @@
           :policies="localData.policies"
           @update:policies="localData.policies = $event"
         />
-      </div>
-
-      <!-- 하단 버튼 -->
-      <div class="prompt-box-footer">
-        <UiButton
-          variant="outline"
-          size="md"
-          @click="onCancel"
-        >
-          취소
-        </UiButton>
-        <UiButton
-          variant="primary"
-          size="md"
-          @click="onSave"
-        >
-          저장
-        </UiButton>
       </div>
     </div>
   </div>

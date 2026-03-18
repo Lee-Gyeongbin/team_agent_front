@@ -40,16 +40,6 @@
       <!-- 응답 품질 제어 -->
       <PromptLimitQuality v-model="localData" />
     </div>
-
-    <!-- 저장 확인 모달 -->
-    <UiDialogModal
-      :is-open="isSaveModalOpen"
-      title="설정 저장"
-      message="토큰 및 응답 제한 설정을 저장하시겠습니까?"
-      confirm-text="저장"
-      @close="isSaveModalOpen = false"
-      @confirm="doSave"
-    />
   </div>
 </template>
 
@@ -61,19 +51,18 @@ const { limitData, handleSelectLimitData, handleSaveLimit } = usePromptStore()
 
 // 로컬 편집용 데이터
 const localData = ref<PromptLimitData>({
-  maxInputTokens: 0,
-  maxOutputTokens: 0,
-  contextWindow: 0,
-  dailyRequestLimit: 0,
-  monthlyOrgLimit: 0,
-  rateLimit: 0,
-  todayUsage: 0,
-  monthUsage: 0,
-  monthLimit: 0,
-  minResponseLength: 0,
-  responseTimeout: 0,
-  retryCount: 0,
-  streamingEnabled: false,
+  limitId: '',
+  maxInTokens: 0,
+  maxOutTokens: 0,
+  ctxtWin: 0,
+  dayUserLmt: 0,
+  monOrgLmt: 0,
+  rateLmtRpm: 0,
+  minRespLen: 0,
+  respTmo: 0,
+  retryCnt: 0,
+  streamYn: 'N',
+  modifyDt: '',
 })
 
 // 초기 조회
@@ -83,33 +72,24 @@ onMounted(async () => {
 })
 
 // 저장
-const isSaveModalOpen = ref(false)
-
-const onSave = () => {
-  isSaveModalOpen.value = true
-}
-
-const doSave = async () => {
+const onSave = async () => {
   await handleSaveLimit(localData.value)
-  isSaveModalOpen.value = false
 }
 
 // 기본값 복원
 const onReset = () => {
   localData.value = {
-    maxInputTokens: 4000,
-    maxOutputTokens: 2000,
-    contextWindow: 8000,
-    dailyRequestLimit: 100,
-    monthlyOrgLimit: 50000,
-    rateLimit: 20,
-    todayUsage: localData.value.todayUsage,
-    monthUsage: localData.value.monthUsage,
-    monthLimit: 50000,
-    minResponseLength: 50,
-    responseTimeout: 30,
-    retryCount: 3,
-    streamingEnabled: true,
+    ...localData.value,
+    maxInTokens: 4000,
+    maxOutTokens: 2000,
+    ctxtWin: 8000,
+    dayUserLmt: 100,
+    monOrgLmt: 50000,
+    rateLmtRpm: 20,
+    minRespLen: 50,
+    respTmo: 30,
+    retryCnt: 3,
+    streamYn: 'Y',
   }
 }
 </script>

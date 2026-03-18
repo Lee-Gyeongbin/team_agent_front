@@ -33,6 +33,7 @@ export interface PromptFilterData {
   policies: PromptFilterPolicy[] // 컨텐츠 필터링 정책
 }
 
+// 금지어
 export interface banWordItem {
   wordId: string // WORD_ID
   word: string // WORD
@@ -41,6 +42,7 @@ export interface banWordItem {
   createDt: string // CREATE_DT
 }
 
+// 컨텐츠 필터링 정책
 export interface PromptFilterPolicy {
   filterCd: string // FILTER_CD
   filterName: string // FILTER_NAME (CODE_NM)
@@ -53,23 +55,21 @@ export interface PromptFilterPolicy {
 
 // 토큰/응답 제한
 export interface PromptLimitData {
+  limitId: string // LIMIT_ID
   // 토큰 제한
-  maxInputTokens: number // 최대 입력 토큰
-  maxOutputTokens: number // 최대 출력 토큰
-  contextWindow: number // 컨텍스트 윈도우
+  maxInTokens: number // MAX_IN_TOKENS
+  maxOutTokens: number // MAX_OUT_TOKENS
+  ctxtWin: number // CTXT_WIN
   // 사용량 제한
-  dailyRequestLimit: number // 사용자당 일일 요청 한도
-  monthlyOrgLimit: number // 조직 전체 월간 한도
-  rateLimit: number // Rate Limit (분당 요청)
-  // 현재 사용량
-  todayUsage: number // 오늘 사용량
-  monthUsage: number // 이번 달 사용량
-  monthLimit: number // 이번 달 한도
+  dayUserLmt: number // DAY_USER_LMT
+  monOrgLmt: number // MON_ORG_LMT
+  rateLmtRpm: number // RATE_LMT_RPM
   // 응답 품질 제어
-  minResponseLength: number // 최소 응답 길이 (토큰 수)
-  responseTimeout: number // 응답 타임아웃 (초)
-  retryCount: number // 재시도 횟수
-  streamingEnabled: boolean // 스트리밍 응답
+  minRespLen: number // MIN_RESP_LEN
+  respTmo: number // RESP_TMO
+  retryCnt: number // RETRY_CNT
+  streamYn: 'Y' | 'N' // STREAM_YN
+  modifyDt: string // MODIFY_DT
 }
 
 // 버전 관리
