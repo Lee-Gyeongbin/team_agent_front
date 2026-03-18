@@ -152,10 +152,12 @@ const { toastList } = useToastState()
 .ui-toast-container {
   position: fixed;
   top: calc($header-height + $spacing-sm);
-  right: $spacing-lg;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: $z-toast;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: $spacing-sm;
   pointer-events: none;
 }
@@ -234,12 +236,12 @@ const { toastList } = useToastState()
 
 .toast-enter-from {
   opacity: 0;
-  transform: translateX(30px);
+  transform: translateY(-20px);
 }
 
 .toast-leave-to {
   opacity: 0;
-  transform: translateX(30px);
+  transform: translateY(-20px);
 }
 
 .toast-move {
