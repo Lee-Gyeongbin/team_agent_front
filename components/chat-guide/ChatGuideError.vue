@@ -114,20 +114,19 @@
 </template>
 
 <script setup lang="ts">
-import type { ErrorMessageData, ErrorMessageItem } from '~/types/prompt'
-import { usePromptStore } from '~/composables/prompt/usePromptStore'
+import type { ChatGuideErrorMessageData, ChatGuideErrorMessageItem } from '~/types/chat-guide'
+import { useChatGuideStore } from '~/composables/chat-guide/useChatGuideStore'
 
-const { errorMessageData, handleSelectErrorMessageData, handleSaveErrorMessage } = usePromptStore()
+const { errorMessageData, handleSelectErrorMessage, handleSaveErrorMessage, handleResetErrorMessage } =
+  useChatGuideStore()
 
-// 로컬 편집용 데이터
-const localData = ref<ErrorMessageData>({
+const localData = ref<ChatGuideErrorMessageData>({
   responseErrors: [],
   inputErrors: [],
   apiErrors: [],
 })
 
-// 깊은 복사 헬퍼
-const cloneItems = (items: ErrorMessageItem[]) => items.map((e) => ({ ...e }))
+const cloneItems = (items: ChatGuideErrorMessageItem[]) => items.map((e) => ({ ...e }))
 
 const syncLocalData = () => {
   localData.value = {
@@ -137,20 +136,17 @@ const syncLocalData = () => {
   }
 }
 
-// 초기 조회
 onMounted(async () => {
-  await handleSelectErrorMessageData()
+  await handleSelectErrorMessage()
   syncLocalData()
 })
 
-// 저장
 const onSave = async () => {
   await handleSaveErrorMessage(localData.value)
 }
 
-// 초기화
 const onReset = async () => {
-  await handleSelectErrorMessageData()
+  await handleResetErrorMessage()
   syncLocalData()
 }
 </script>

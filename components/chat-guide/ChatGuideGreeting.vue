@@ -96,48 +96,13 @@
 </template>
 
 <script setup lang="ts">
-// ============================================
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-// ============================================
-const defaultMessage = '안녕하세요! TeamAgent AI 어시스턴트입니다. 😊\n\n무엇을 도와드릴까요?\n업무 관련 질문, 문서 검색, 데이터 분석 등\n다양한 기능을 제공합니다.'
+import { useChatGuideStore } from '~/composables/chat-guide/useChatGuideStore'
 
-interface GreetingForm {
-  isEnabled: boolean
-  message: string
-  isAutoName: boolean
-}
-
-const greetingForm = ref<GreetingForm>({
-  isEnabled: false,
-  message: defaultMessage,
-  isAutoName: true,
-})
-
-// 미리보기 메시지 (변수 치환)
-const previewMessage = computed(() => {
-  let msg = greetingForm.value.message
-  if (greetingForm.value.isAutoName) {
-    msg = msg.replace(/\{\{userName\}\}/g, '홍길동')
-  }
-  return msg
-})
-
-// 변수 삽입
-const onInsertVariable = () => {
-  greetingForm.value.message += '{{userName}}'
-}
-
-// 저장
-const onSave = () => {
-  console.warn('[TODO] 인사멘트 저장:', greetingForm.value)
-}
-
-// 초기화
-const onReset = () => {
-  greetingForm.value = {
-    isEnabled: false,
-    message: defaultMessage,
-    isAutoName: true,
-  }
-}
+const {
+  greetingForm,
+  previewGreetingMessage: previewMessage,
+  handleSaveGreeting: onSave,
+  handleResetGreeting: onReset,
+  handleInsertGreetingVariable: onInsertVariable,
+} = useChatGuideStore()
 </script>
