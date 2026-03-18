@@ -60,13 +60,14 @@ export const usePromptApi = () => {
     return post<{ data: PromptFilterData }>(`/prompt/filter/save.do`, data)
   }
 
-  // ===== 토큰/응답 제한 =====
-  const fetchLimitData = async () => {
-    return mockPost<{ data: PromptLimitData }>(`${MOCK_BASE}/limit/data`, {})
+  /** 토큰/응답 제한 조회 */
+  const fetchLimitData = async (): Promise<{ data: PromptLimitData }> => {
+    return get<{ data: PromptLimitData }>(`/prompt/limit/data.do`)
   }
 
+  /** 토큰/응답 제한 저장 */
   const fetchSaveLimit = async (data: Partial<PromptLimitData>) => {
-    return mockPost<{ data: PromptLimitData }>(`${MOCK_BASE}/limit/save`, data)
+    return post<{ data: PromptLimitData }>(`/prompt/limit/save.do`, data)
   }
 
   // ===== 버전 관리 =====

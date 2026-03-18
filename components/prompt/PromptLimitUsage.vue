@@ -7,11 +7,11 @@
     <div class="prompt-limit-field">
       <label class="prompt-limit-label">사용자당 일일 요청 한도</label>
       <UiInput
-        :model-value="modelValue.dailyRequestLimit"
+        :model-value="modelValue.dayUserLmt"
         type="number"
         size="sm"
         desc="0 = 무제한"
-        @update:model-value="onUpdate('dailyRequestLimit', $event)"
+        @update:model-value="onUpdate('dayUserLmt', $event)"
       />
     </div>
 
@@ -19,11 +19,11 @@
     <div class="prompt-limit-field">
       <label class="prompt-limit-label">조직 전체 월간 한도</label>
       <UiInput
-        :model-value="modelValue.monthlyOrgLimit"
+        :model-value="modelValue.monOrgLmt"
         type="number"
         size="sm"
         desc="전체 조직의 월간 API 호출 제한"
-        @update:model-value="onUpdate('monthlyOrgLimit', $event)"
+        @update:model-value="onUpdate('monOrgLmt', $event)"
       />
     </div>
 
@@ -31,22 +31,14 @@
     <div class="prompt-limit-field">
       <label class="prompt-limit-label">Rate Limit (분당 요청)</label>
       <UiInput
-        :model-value="modelValue.rateLimit"
+        :model-value="modelValue.rateLmtRpm"
         type="number"
         size="sm"
         desc="남용 방지를 위한 속도 제한"
-        @update:model-value="onUpdate('rateLimit', $event)"
+        @update:model-value="onUpdate('rateLmtRpm', $event)"
       />
     </div>
 
-    <!-- 현재 사용량 -->
-    <div class="prompt-limit-field">
-      <label class="prompt-limit-label is-primary">📈 현재 사용량</label>
-      <div class="prompt-limit-highlight is-blue">
-        오늘: <strong>{{ modelValue.todayUsage.toLocaleString() }}</strong> / 일일한도 없음<br>
-        이번 달: <strong>{{ modelValue.monthUsage.toLocaleString() }}</strong> / <strong>{{ modelValue.monthLimit.toLocaleString() }}</strong>
-      </div>
-    </div>
     </div>
   </div>
 </template>

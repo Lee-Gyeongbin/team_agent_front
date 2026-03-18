@@ -211,32 +211,47 @@ const handleSaveFilter = async (data: Partial<PromptFilterData>) => {
   })
 }
 
-// ===== 토큰/응답 제한 조회 =====
+/** 토큰/응답 제한 */
 const limitData = ref<PromptLimitData>({
-  maxInputTokens: 0,
-  maxOutputTokens: 0,
-  contextWindow: 0,
-  dailyRequestLimit: 0,
-  monthlyOrgLimit: 0,
-  rateLimit: 0,
-  todayUsage: 0,
-  monthUsage: 0,
-  monthLimit: 0,
-  minResponseLength: 0,
-  responseTimeout: 0,
-  retryCount: 0,
-  streamingEnabled: false,
+  limitId: '',
+  maxInTokens: 0,
+  maxOutTokens: 0,
+  ctxtWin: 0,
+  dayUserLmt: 0,
+  monOrgLmt: 0,
+  rateLmtRpm: 0,
+  minRespLen: 0,
+  respTmo: 0,
+  retryCnt: 0,
+  streamYn: 'N',
+  modifyDt: '',
 })
 
+/** 토큰/응답 제한 조회 */
 const handleSelectLimitData = async () => {
-  const res = await fetchLimitData()
-  limitData.value = res.data
+  try {
+    const response = await fetchLimitData()
+    limitData.value = response.data ?? {}
+  } catch {
+    openToast({ message: '토큰/응답 제한 조회 실패' })
+  }
 }
 
-// ===== 토큰/응답 제한 저장 =====
+/** 토큰/응답 제한 저장 */
 const handleSaveLimit = async (data: Partial<PromptLimitData>) => {
-  const res = await fetchSaveLimit(data)
-  limitData.value = res.data
+  openConfirm({
+    title: '토큰/응답 제한 저장',
+    message: '토큰/응답 제한 설정을 저장하시겠습니까?',
+    onConfirm: async () => {
+      try {
+        await fetchSaveLimit(data)
+        await handleSelectLimitData()
+        openAlert({ message: '토큰/응답 제한 설정이 저장되었습니다.' })
+      } catch {
+        openToast({ message: '토큰/응답 제한 설정 저장 실패' })
+      }
+    },
+  })
 }
 
 // ===== 버전 관리 =====

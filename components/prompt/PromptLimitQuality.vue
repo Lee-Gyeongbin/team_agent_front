@@ -7,11 +7,11 @@
     <div class="prompt-limit-field">
       <label class="prompt-limit-label">최소 응답 길이</label>
       <UiInput
-        :model-value="modelValue.minResponseLength"
+        :model-value="modelValue.minRespLen"
         type="number"
         size="sm"
         desc="너무 짧은 응답 방지 (토큰 수)"
-        @update:model-value="onUpdate('minResponseLength', $event)"
+        @update:model-value="onUpdate('minRespLen', $event)"
       />
     </div>
 
@@ -19,11 +19,11 @@
     <div class="prompt-limit-field">
       <label class="prompt-limit-label">응답 타임아웃</label>
       <UiInput
-        :model-value="modelValue.responseTimeout"
+        :model-value="modelValue.respTmo"
         type="number"
         size="sm"
         desc="최대 대기 시간 (초)"
-        @update:model-value="onUpdate('responseTimeout', $event)"
+        @update:model-value="onUpdate('respTmo', $event)"
       />
     </div>
 
@@ -32,10 +32,10 @@
       <label class="prompt-limit-label">재시도 횟수</label>
       <div class="prompt-limit-field-input">
         <UiSelect
-          :model-value="String(modelValue.retryCount)"
+          :model-value="String(modelValue.retryCnt)"
           :options="retryOptions"
           size="sm"
-          @update:model-value="onUpdate('retryCount', Number($event))"
+          @update:model-value="onUpdate('retryCnt', Number($event))"
         />
         <p class="prompt-limit-hint">오류 발생 시 재시도 횟수</p>
       </div>
@@ -46,10 +46,10 @@
       <label class="prompt-limit-label">스트리밍 응답</label>
       <div class="prompt-limit-field-input">
         <UiSelect
-          :model-value="modelValue.streamingEnabled ? 'true' : 'false'"
+          :model-value="modelValue.streamYn === 'Y' ? 'true' : 'false'"
           :options="streamingOptions"
           size="sm"
-          @update:model-value="onUpdateStreaming($event)"
+          @update:model-value="onUpdateStreamYn($event)"
         />
         <p class="prompt-limit-hint">실시간 응답 스트리밍</p>
       </div>
@@ -87,7 +87,7 @@ const onUpdate = (key: keyof PromptLimitData, value: number) => {
   emit('update:modelValue', { ...props.modelValue, [key]: value })
 }
 
-const onUpdateStreaming = (value: string) => {
-  emit('update:modelValue', { ...props.modelValue, streamingEnabled: value === 'true' })
+const onUpdateStreamYn = (value: string) => {
+  emit('update:modelValue', { ...props.modelValue, streamYn: value === 'true' ? 'Y' : 'N' })
 }
 </script>
