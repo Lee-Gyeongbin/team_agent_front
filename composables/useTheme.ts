@@ -57,15 +57,29 @@ const STORAGE_KEY = 'theme-color'
 
 const currentThemeKey = ref('blue')
 
+// CSS 변수 설정 (대상 요소에만 적용)
+const setThemeVars = (el: HTMLElement, theme: ThemeColor) => {
+  el.style.setProperty('--color-primary', theme.primary)
+  el.style.setProperty('--color-primary-hover', theme.primaryHover)
+  el.style.setProperty('--color-primary-dark', theme.primaryDark)
+  el.style.setProperty('--color-primary-dark-hover', theme.primaryDarkHover)
+  el.style.setProperty('--color-primary-rgb', theme.primaryRgb)
+  el.style.setProperty('--color-primary-bg', theme.primaryBg)
+}
+
+// 미리보기용 — 특정 요소에만 CSS 변수 적용 (저장 X)
+const previewTheme = (theme: ThemeColor, el?: HTMLElement | null) => {
+  const target = el || document.documentElement
+  setThemeVars(target, theme)
+  if (!el) {
+    document.documentElement.setAttribute('data-theme', theme.key)
+  }
+}
+
+// CSS 변수 변경 + localStorage 저장 (전역 적용)
 const applyTheme = (theme: ThemeColor) => {
-  const root = document.documentElement
-  root.style.setProperty('--color-primary', theme.primary)
-  root.style.setProperty('--color-primary-hover', theme.primaryHover)
-  root.style.setProperty('--color-primary-dark', theme.primaryDark)
-  root.style.setProperty('--color-primary-dark-hover', theme.primaryDarkHover)
-  root.style.setProperty('--color-primary-rgb', theme.primaryRgb)
-  root.style.setProperty('--color-primary-bg', theme.primaryBg)
-  root.setAttribute('data-theme', theme.key)
+  setThemeVars(document.documentElement, theme)
+  document.documentElement.setAttribute('data-theme', theme.key)
   currentThemeKey.value = theme.key
   localStorage.setItem(STORAGE_KEY, theme.key)
 }
@@ -81,6 +95,7 @@ export const useTheme = () => {
   return {
     themeColors,
     currentThemeKey,
+    previewTheme,
     applyTheme,
     initTheme,
   }

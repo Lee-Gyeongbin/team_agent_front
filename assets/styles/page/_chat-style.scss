@@ -108,61 +108,6 @@
 }
 
 // ===================================
-// 레이아웃 카드
-// ===================================
-.chat-style-layout-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.chat-style-layout-card {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
-  border: 2px solid $color-border;
-  border-radius: $border-radius-lg;
-  background: #fff;
-  cursor: pointer;
-  transition: all $transition-fast;
-
-  &:hover {
-    border-color: #aebccb;
-  }
-
-  &.is-active {
-    border-color: var(--color-primary);
-    background: var(--color-primary-bg);
-  }
-}
-
-.chat-style-layout-icon {
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  @include flex-center;
-  color: $color-text-dark;
-}
-
-.chat-style-layout-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.chat-style-layout-name {
-  @include typo($body-large-bold);
-  color: $color-text-heading;
-}
-
-.chat-style-layout-desc {
-  @include typo($body-small);
-  color: $color-text-dark;
-  line-height: 1.5;
-}
-
-// ===================================
 // 하단 버튼
 // ===================================
 .chat-style-actions {

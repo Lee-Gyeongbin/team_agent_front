@@ -1,5 +1,5 @@
 <template>
-  <div class="chat-style">
+  <div class="chat-style l-center">
     <!-- 좌측: 설정 패널 -->
     <div class="chat-style-settings">
       <div>
@@ -16,6 +16,7 @@
             :key="theme.key"
             class="chat-style-color-card"
             :class="{ 'is-active': selectedThemeKey === theme.key }"
+            :style="selectedThemeKey === theme.key ? { borderColor: theme.primary, backgroundColor: theme.primaryBg } : {}"
             @click="onSelectTheme(theme)"
           >
             <span
@@ -30,40 +31,20 @@
         </div>
       </div>
 
-      <!-- 레이아웃 -->
-      <div class="chat-style-section">
-        <h2 class="chat-style-section-title">레이아웃</h2>
-        <div class="chat-style-layout-list">
-          <button
-            v-for="layout in layoutOptions"
-            :key="layout.key"
-            class="chat-style-layout-card"
-            :class="{ 'is-active': selectedLayout === layout.key }"
-            @click="selectedLayout = layout.key"
-          >
-            <div
-              class="chat-style-layout-icon"
-              v-html="layout.icon"
-            />
-            <div class="chat-style-layout-info">
-              <span class="chat-style-layout-name">{{ layout.name }}</span>
-              <span class="chat-style-layout-desc">{{ layout.desc }}</span>
-            </div>
-          </button>
-        </div>
-      </div>
-
       <!-- 하단 버튼 -->
       <div class="chat-style-actions">
         <UiButton
           variant="outline"
           size="lg"
+          @click="onReset"
         >
-          취소
+          <i class="icon-refresh size-16" />
+          초기화
         </UiButton>
         <UiButton
           variant="primary"
           size="lg"
+          @click="onSave"
         >
           저장
         </UiButton>
@@ -71,7 +52,10 @@
     </div>
 
     <!-- 우측: 미리보기 -->
-    <div class="chat-style-preview">
+    <div
+      ref="previewRef"
+      class="chat-style-preview"
+    >
       <h2 class="chat-style-preview-title">미리보기</h2>
 
       <div class="chat-style-preview-messages">
@@ -114,11 +98,15 @@
 <script setup lang="ts">
 import { useTheme } from '~/composables/useTheme'
 import type { ThemeColor } from '~/composables/useTheme'
+import { openConfirm } from '~/composables/useDialog'
 
-const { themeColors, currentThemeKey, applyTheme } = useTheme()
+const { themeColors, currentThemeKey, previewTheme, applyTheme } = useTheme()
 
+const previewRef = ref<HTMLElement | null>(null)
+
+// 페이지 진입 시 저장된 테마 기억 (취소용)
+const savedThemeKey = ref(currentThemeKey.value)
 const selectedThemeKey = ref(currentThemeKey.value)
-const selectedLayout = ref<'default' | 'compact' | 'wide'>('default')
 
 // 테마 설명
 const themeDescriptions: Record<string, string> = {
@@ -128,33 +116,35 @@ const themeDescriptions: Record<string, string> = {
   orange: '밝기차고 따뜻한',
 }
 
-// 테마 선택 시 미리보기에 즉시 반영
+// 테마 선택 → 미리보기 영역에만 반영 (전역 X, localStorage X)
 const onSelectTheme = (theme: ThemeColor) => {
   selectedThemeKey.value = theme.key
-  applyTheme(theme)
+  previewTheme(theme, previewRef.value)
 }
 
-// 레이아웃 옵션
-const layoutOptions = [
-  {
-    key: 'default' as const,
-    name: '기본 레이아웃',
-    desc: '일반적인 대화형 인터페이스로 메시지가 위에서 아래로 쌓입니다.',
-    icon: '<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="6" width="18" height="3" rx="1.5" fill="currentColor" opacity="0.6"/><rect x="10" y="12" width="18" height="3" rx="1.5" fill="currentColor" opacity="0.4"/><rect x="4" y="18" width="18" height="3" rx="1.5" fill="currentColor" opacity="0.6"/><rect x="10" y="24" width="18" height="3" rx="1.5" fill="currentColor" opacity="0.4"/></svg>',
-  },
-  {
-    key: 'compact' as const,
-    name: '컴팩트 레이아웃',
-    desc: '여백을 줄여 더 많은 대화를 한 화면에 표시합니다.',
-    icon: '<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="5" width="16" height="2.5" rx="1.25" fill="currentColor" opacity="0.6"/><rect x="12" y="10" width="16" height="2.5" rx="1.25" fill="currentColor" opacity="0.4"/><rect x="4" y="15" width="16" height="2.5" rx="1.25" fill="currentColor" opacity="0.6"/><rect x="12" y="20" width="16" height="2.5" rx="1.25" fill="currentColor" opacity="0.4"/><rect x="4" y="25" width="16" height="2.5" rx="1.25" fill="currentColor" opacity="0.6"/></svg>',
-  },
-  {
-    key: 'wide' as const,
-    name: '넓은 레이아웃',
-    desc: '여유로운 여백으로 가독성을 높인 레이아웃입니다.',
-    icon: '<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="7" width="22" height="3" rx="1.5" fill="currentColor" opacity="0.6"/><rect x="8" y="15" width="22" height="3" rx="1.5" fill="currentColor" opacity="0.4"/><rect x="2" y="23" width="22" height="3" rx="1.5" fill="currentColor" opacity="0.6"/></svg>',
-  },
-]
+// 저장 → confirm 후 localStorage에 확정
+const onSave = async () => {
+  const confirmed = await openConfirm({
+    title: '테마 저장',
+    message: '선택한 색상 테마를 저장하시겠습니까?',
+  })
+  if (!confirmed) return
+
+  const theme = themeColors.find((t) => t.key === selectedThemeKey.value)
+  if (theme) {
+    applyTheme(theme)
+    savedThemeKey.value = theme.key
+  }
+}
+
+// 초기화 → 저장된 테마로 미리보기 복원
+const onReset = () => {
+  const theme = themeColors.find((t) => t.key === savedThemeKey.value)
+  if (theme) {
+    selectedThemeKey.value = theme.key
+    previewTheme(theme, previewRef.value)
+  }
+}
 
 // ============================================
 // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
@@ -162,8 +152,17 @@ const layoutOptions = [
 const previewMessages = [
   { id: '1', role: 'assistant', content: '안녕하세요! 무엇을 도와드릴까요?' },
   { id: '2', role: 'user', content: '챗봇 스타일을 변경하고 싶어요' },
-  { id: '3', role: 'assistant', content: '좋습니다! 좌측에서 원하시는 색상과 레이아웃을 선택하시면 실시간으로 미리보기가 적용됩니다. 다양한 조합을 시도해보세요!' },
+  {
+    id: '3',
+    role: 'assistant',
+    content:
+      '좋습니다! 좌측에서 원하시는 색상과 레이아웃을 선택하시면 실시간으로 미리보기가 적용됩니다. 다양한 조합을 시도해보세요!',
+  },
   { id: '4', role: 'user', content: '여러 색상과 레이아웃을 테스트 해볼게요' },
-  { id: '5', role: 'assistant', content: '네, 천천히 확인해보시고 마음에 드는 스타일을 선택하신 후 저장 버튼을 눌러주세요.' },
+  {
+    id: '5',
+    role: 'assistant',
+    content: '네, 천천히 확인해보시고 마음에 드는 스타일을 선택하신 후 저장 버튼을 눌러주세요.',
+  },
 ]
 </script>
