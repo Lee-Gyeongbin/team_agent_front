@@ -10,13 +10,14 @@
         @search="onUrlSearch"
         @enter="onUrlSearch"
       />
-      <UiSelect
-        v-model="urlCategoryFilter"
-        :options="urlCategoryFilterOptions"
-        placeholder="전체 카테고리"
+      <UiButton
+        variant="line-secondary"
         size="md"
-        class="url-filter-select"
-      />
+        class="ui-button-outline-muted url-filter-select"
+        @click="openCategorySelectModal"
+      >
+        전체 카테고리
+      </UiButton>
       <UiSelect
         v-model="urlStatusFilter"
         :options="urlStatusFilterOptions"
@@ -48,35 +49,46 @@
     <div class="url-batch-bar flex items-center flex-wrap">
       <span class="batch-count">{{ selectedUrlIds.length }}개 선택됨</span>
       <UiButton
-        variant="outline"
+        variant="line-secondary"
         size="xxs"
-        class="batch-bar-btn type-danger"
+        class="batch-bar-btn"
         @click="onBatchDelete"
       >
+        <template #icon-left>
+          <i class="icon icon-trashcan size-12" />
+        </template>
         일괄 삭제
       </UiButton>
       <div class="url-scraping-info flex items-center">
         <span class="scraping-text">마지막 실행 : {{ lastScrapingAt }}</span>
         <span class="scraping-text">다음 예정: {{ nextScrapingAt }}</span>
-        <span
+        <div
           class="scraping-tooltip-trigger"
           :title="scrapingTooltipText"
-        >i</span>
+        >
+          <i class="icon icon-info size-16" />
+        </div>
       </div>
       <UiButton
-        variant="outline"
+        variant="line-secondary"
         size="xxs"
         class="batch-bar-btn"
         @click="onBatchLog"
       >
+        <template #icon-left>
+          <i class="icon icon-mini-time size-12" />
+        </template>
         배치 로그
       </UiButton>
       <UiButton
-        variant="outline"
+        variant="line-secondary"
         size="xxs"
         class="batch-bar-btn"
         @click="onBatchScraping"
       >
+        <template #icon-left>
+          <i class="icon icon-version size-12" />
+        </template>
         배치 스크래핑
       </UiButton>
     </div>
@@ -186,25 +198,31 @@
       </div>
       <span class="pagination-range">{{ urlPageStart }}-{{ urlPageEnd }}/{{ urlTotalCount }}</span>
     </div>
+
+    <CategorySelectModal
+      :is-open="isCategorySelectModalOpen"
+      @close="isCategorySelectModalOpen = false"
+      @confirm="onCategorySelectConfirm"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import type { TableColumn } from '~/types/table'
+import CategorySelectModal from '~/components/repository/CategorySelectModal.vue'
 
-const scrapingTooltipText =
-  '등록된 모든 활성 URL에 대해 데이터 수집(스크래핑)을 실행합니다.'
+const scrapingTooltipText = '등록된 모든 활성 URL에 대해 데이터 수집(스크래핑)을 실행합니다.'
 
 // URL 검색·필터
 const urlSearchKeyword = ref('')
-const urlCategoryFilter = ref('all')
 const urlStatusFilter = ref('all')
-const urlCategoryFilterOptions = [
-  { label: '전체 카테고리', value: 'all' },
-  { label: '블로그', value: 'blog' },
-  { label: '문서', value: 'doc' },
-  { label: '지원센터', value: 'support' },
-]
+
+// 카테고리 선택 모달 (퍼블 연결)
+const isCategorySelectModalOpen = ref(false)
+const openCategorySelectModal = () => {
+  isCategorySelectModalOpen.value = true
+}
+const onCategorySelectConfirm = () => {}
 const urlStatusFilterOptions = [
   { label: '전체 상태', value: 'all' },
   { label: '활성', value: 'active' },
@@ -292,9 +310,7 @@ const urlCurrentPage = ref(1)
 const urlPageSize = 10
 const urlTotalPages = computed(() => Math.max(1, Math.ceil(urlTotalCount.value / urlPageSize)))
 const urlPageStart = computed(() => (urlCurrentPage.value - 1) * urlPageSize + 1)
-const urlPageEnd = computed(() =>
-  Math.min(urlCurrentPage.value * urlPageSize, urlTotalCount.value),
-)
+const urlPageEnd = computed(() => Math.min(urlCurrentPage.value * urlPageSize, urlTotalCount.value))
 const urlVisiblePages = computed(() => {
   const total = urlTotalPages.value
   const cur = urlCurrentPage.value
@@ -328,12 +344,6 @@ const onUrlRowActionSelect = (_value: string, _row: Record<string, unknown>) => 
 @use '~/assets/styles/utils/variables' as *;
 @use '~/assets/styles/utils/mixins' as *;
 
-.repository-url-tab {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-md;
-}
-
 .url-toolbar {
   gap: $spacing-sm;
   padding-bottom: 16px;
@@ -341,10 +351,6 @@ const onUrlRowActionSelect = (_value: string, _row: Record<string, unknown>) => 
   .url-search-input {
     min-width: 200px;
     max-width: 280px;
-  }
-
-  .url-filter-select {
-    min-width: 120px;
   }
 
   .btn-register-url {
@@ -365,29 +371,6 @@ const onUrlRowActionSelect = (_value: string, _row: Record<string, unknown>) => 
     margin-right: $spacing-sm;
   }
 
-  .batch-bar-btn {
-    height: 24px;
-    border-radius: 6px;
-
-    .ui-button-text {
-      font-size: 12px;
-      color: #6f7a93;
-      font-weight: 700;
-    }
-
-    &:hover .ui-button-text {
-      color: $color-primary;
-    }
-
-    &.type-danger:hover {
-      border-color: $color-error !important;
-
-      .ui-button-text {
-        color: $color-error;
-      }
-    }
-  }
-
   .url-scraping-info {
     gap: $spacing-sm;
     margin-left: $spacing-md;
@@ -403,13 +386,8 @@ const onUrlRowActionSelect = (_value: string, _row: Record<string, unknown>) => 
       justify-content: center;
       width: 16px;
       height: 16px;
-      border-radius: 50%;
-      border: 1px solid $color-text-muted;
-      color: $color-text-muted;
-      font-size: 11px;
-      font-weight: 700;
-      font-style: italic;
       cursor: help;
+      color: #5c6677;
     }
   }
 }

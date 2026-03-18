@@ -488,3 +488,11 @@
 .icon-arrow-down-gray {
   @include icon-file-bg('arrow-down-gray');
 }
+
+.icon-info {
+  @include icon-file('info');
+}
+
+.icon-mini-time {
+  @include icon-file-bg('mini-time');
+}

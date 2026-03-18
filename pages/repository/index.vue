@@ -8,11 +8,11 @@
 
     <!-- 메인: 탭별 컨텐츠 연결 -->
     <div class="repository-main l-center">
-      <DocumentTab
+      <RepositoryDocumentPage
         v-if="activeTab === 'document'"
         key="document"
       />
-      <UrlTab
+      <RepositoryUrlPage
         v-else-if="activeTab === 'url'"
         key="url"
       />
@@ -21,8 +21,8 @@
 </template>
 
 <script setup lang="ts">
-import DocumentTab from '~/components/repository/DocumentTab.vue'
-import UrlTab from '~/components/repository/UrlTab.vue'
+import RepositoryDocumentPage from '~/components/repository/RepositoryDocumentPage.vue'
+import RepositoryUrlPage from '~/components/repository/RepositoryUrlPage.vue'
 
 definePageMeta({ layout: 'default' })
 
