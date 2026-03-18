@@ -30,7 +30,7 @@ defineEmits<{
   border-radius: 9999px;
   background: $color-border;
   cursor: pointer;
-  transition: background $transition-fast;
+  transition: background 0.2s ease;
   flex-shrink: 0;
 
   &.is-active {
@@ -45,7 +45,7 @@ defineEmits<{
     height: 16px;
     border-radius: 9999px;
     background: #fff;
-    transition: transform $transition-fast;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
   }
 

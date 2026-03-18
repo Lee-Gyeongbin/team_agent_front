@@ -1,15 +1,15 @@
 <template>
   <div
-    class="doc-dataset-card"
+    class="card-grid-card"
     :class="{ 'is-inactive': !dataset.isActive }"
   >
     <!-- 헤더: 이름 + 토글 + kebab -->
-    <div class="doc-dataset-card-header">
-      <div class="doc-dataset-card-title">
-        <span class="doc-dataset-card-name">{{ dataset.name }}</span>
-        <span class="doc-dataset-card-version">{{ dataset.version }} • {{ dataset.updatedAt }} 업데이트</span>
+    <div class="card-grid-card-header">
+      <div class="card-grid-card-title">
+        <span class="card-grid-card-name">{{ dataset.name }}</span>
+        <span class="card-grid-card-sub">{{ dataset.version }} • {{ dataset.updatedAt }} 업데이트</span>
       </div>
-      <div class="doc-dataset-card-actions">
+      <div class="card-grid-card-actions">
         <!-- 구축중: 뱃지 / 완료: 토글 -->
         <span
           v-if="dataset.isBuilding"
@@ -27,7 +27,7 @@
           @select="onMenuSelect"
         >
           <template #trigger>
-            <button class="doc-dataset-card-kebab">
+            <button class="card-grid-card-kebab">
               <i class="icon-more-vertical size-20" />
             </button>
           </template>
@@ -75,30 +75,30 @@
     </div>
 
     <!-- 메타 정보 -->
-    <div class="doc-dataset-card-meta">
-      <div class="doc-dataset-card-meta-row">
-        <span class="doc-dataset-card-meta-item">
+    <div class="card-grid-card-meta">
+      <div class="card-grid-card-meta-row">
+        <span class="card-grid-card-meta-item">
           임베딩 <strong>{{ dataset.embeddingModel }}</strong>
         </span>
-        <span class="doc-dataset-card-meta-item">
+        <span class="card-grid-card-meta-item">
           벡터DB <strong>{{ dataset.vectorDb }}</strong>
         </span>
       </div>
-      <div class="doc-dataset-card-meta-row">
-        <span class="doc-dataset-card-meta-item">
+      <div class="card-grid-card-meta-row">
+        <span class="card-grid-card-meta-item">
           청킹 <strong>{{ dataset.chunkSize }} 토큰 / {{ dataset.chunkOverlap }} 오버랩</strong>
         </span>
-        <span class="doc-dataset-card-meta-item"><strong>{{ dataset.chunkStrategy }}</strong></span>
+        <span class="card-grid-card-meta-item"><strong>{{ dataset.chunkStrategy }}</strong></span>
       </div>
     </div>
 
     <!-- 하단 버튼 -->
-    <div class="doc-dataset-card-footer">
+    <div class="card-grid-card-footer">
       <template v-if="dataset.isBuilding">
         <UiButton
           variant="line-secondary"
           size="sm"
-          class="doc-dataset-card-btn-fixed doc-dataset-card-btn-stop"
+          class="card-grid-card-btn-fixed doc-dataset-card-btn-stop"
           @click="emit('stop-build', dataset.id)"
         >
           구축 중지
@@ -108,7 +108,7 @@
         <UiButton
           variant="primary-line"
           size="sm"
-          class="doc-dataset-card-btn-fixed"
+          class="card-grid-card-btn-fixed"
           @click="emit('test', dataset.id)"
         >
           테스트
@@ -116,7 +116,7 @@
         <UiButton
           variant="line-secondary"
           size="sm"
-          class="doc-dataset-card-btn-fixed"
+          class="card-grid-card-btn-fixed"
           @click="emit('edit', dataset)"
         >
           수정
@@ -124,7 +124,7 @@
         <UiButton
           variant="line-secondary"
           size="sm"
-          class="doc-dataset-card-btn-fixed"
+          class="card-grid-card-btn-fixed"
           @click="emit('delete', dataset.id)"
         >
           삭제

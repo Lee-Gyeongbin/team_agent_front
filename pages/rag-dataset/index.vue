@@ -1,8 +1,8 @@
 <template>
-  <div class="doc-dataset-page l-center">
+  <div class="card-grid-page m-center">
     <!-- 페이지 헤더 -->
-    <div class="doc-dataset-page-header">
-      <p class="doc-dataset-page-desc">문서데이터셋 목록</p>
+    <div class="card-grid-page-header">
+      <p class="card-grid-page-title">문서데이터셋 목록</p>
       <UiButton
         variant="primary"
         size="md"
@@ -19,7 +19,7 @@
     <DocDatasetSummary :summary="summary" />
 
     <!-- 카드 그리드 -->
-    <div class="doc-dataset-grid">
+    <div class="card-grid">
       <DocDatasetCard
         v-for="dataset in datasetList"
         :key="dataset.id"
@@ -34,7 +34,7 @@
       <!-- 빈 상태 -->
       <div
         v-if="datasetList.length === 0"
-        class="doc-dataset-grid-empty"
+        class="card-grid-empty"
       >
         <UiEmpty
           icon="icon-database"
