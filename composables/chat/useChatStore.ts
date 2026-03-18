@@ -15,9 +15,11 @@ import {
   type VisualizationViewModel,
 } from '~/types/chat'
 import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
+const { user } = useAuth()
 
 // API 호출
 const {
+  fetchSelectChatRoomList,
   fetchSelectModelList,
   fetchSelectRagDsList,
   fetchSelectDmList,
@@ -118,6 +120,7 @@ const pendingMessageId = ref<string | null>(null)
 const messageBufferMap = ref<Record<string, string>>({})
 // 채팅방 관련
 const chatRoom = ref<ChatRoom>({ ...EMPTY_CHAT_ROOM })
+const chatRoomList = ref<ChatRoom[]>([])
 
 // 모델 테스트 전용 소켓 + 상태 (LlmTestModal에서 사용)
 const testSocket = shallowRef<WebSocket | null>(null)
@@ -638,7 +641,7 @@ export const useChatStore = () => {
     }
 
     try {
-      const res = await fetchSelectTableDataList(logId)
+      const res = await fetchSelectTableDataList({ logId })
       const row = (res.list ?? [])[0]
       if (!row) {
         visualizationViewMap.value[logId] = getEmptyVisualizationViewModel(logId)
@@ -649,6 +652,8 @@ export const useChatStore = () => {
         messageId: logId,
         sql: row.ttsq,
         tableData: row.tableData,
+        statList: res.statList ?? row.statList,
+        statDetailList: res.statDetailList ?? row.statDetailList,
       })
       visualizationViewMap.value[logId] = viewModel
       return viewModel
@@ -683,13 +688,17 @@ export const useChatStore = () => {
     isPanelFullscreen.value = false
     activePanelType.value = 'visualization'
     activePanelMessageId.value = id
-    // 같은 메시지를 다시 열 때는 기존 결과를 재사용
-    if (visualizationViewMap.value[id]?.status === 'success') return
     await handleSelectVisualizationData(id)
   }
 
   const onPanelClose = (value: boolean) => {
     if (!value) {
+      if (activePanelType.value === 'visualization' && activePanelMessageId.value) {
+        const removeId = activePanelMessageId.value
+        visualizationViewMap.value = Object.fromEntries(
+          Object.entries(visualizationViewMap.value).filter(([k]) => k !== removeId),
+        )
+      }
       activePanelType.value = 'none'
       isPanelFullscreen.value = false
       activePanelMessageId.value = null
@@ -710,6 +719,20 @@ export const useChatStore = () => {
       } else {
         await selectDmList()
       }
+    }
+  }
+
+  // 채팅방 목록 조회
+  const selectChatRoomList = async () => {
+    try {
+      const userId = user.value?.userId
+      if (!userId) return []
+      const res = await fetchSelectChatRoomList(userId)
+      chatRoomList.value = res.list
+      return chatRoomList.value
+    } catch (error) {
+      console.error('채팅방 목록 조회 실패:', error)
+      return []
     }
   }
 
@@ -846,6 +869,7 @@ export const useChatStore = () => {
 
   return {
     // 상태
+    chatRoomList,
     messages,
     chatMessage,
     chatRoom,
@@ -862,6 +886,7 @@ export const useChatStore = () => {
     selectedSubOption,
     currentSubOptions,
     // 액션
+    selectChatRoomList,
     selectModelOptions,
     createChatRoom,
     resetChatRoom,

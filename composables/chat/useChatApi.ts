@@ -1,8 +1,21 @@
 import { useApi } from '~/composables/com/useApi'
-import type { ModelOption, SubOption, ChatRoom, ChatLogListRow, ChatRefRow, VisualizationDataRow } from '~/types/chat'
+import type {
+  ModelOption,
+  SubOption,
+  ChatRoom,
+  ChatLogListRow,
+  ChatRefRow,
+  VisualizationDataRow,
+  VisualizationStatDetailItem,
+  VisualizationStatItem,
+} from '~/types/chat'
 
 export const useReportsApi = () => {
   const { get, post } = useApi()
+  // 채팅방 목록 조회
+  const fetchSelectChatRoomList = async (userId: string): Promise<{ list: ChatRoom[] }> => {
+    return get<{ list: ChatRoom[] }>(`/ai/chatbot/selectChatRoomList.do?userId=${encodeURIComponent(userId)}`)
+  }
   // 모델 목록 조회
   const fetchSelectModelList = async (): Promise<{ modelList: ModelOption[] }> => {
     return get<{ modelList: ModelOption[] }>('/ai/chatbot/selectModelList.do')
@@ -28,10 +41,24 @@ export const useReportsApi = () => {
     return get<{ list: ChatRefRow[] }>(`/ai/chatbot/selectChatDocList.do?logId=${encodeURIComponent(logId)}`)
   }
   // 시각화 데이터 목록 조회
-  const fetchSelectTableDataList = async (logId: string): Promise<{ list: VisualizationDataRow[] }> => {
-    return get<{ list: VisualizationDataRow[] }>(`/ai/chatbot/selectTableDataList.do?logId=${encodeURIComponent(logId)}`)
+  const fetchSelectTableDataList = async ({
+    logId,
+  }: {
+    logId: string
+  }): Promise<{
+    list: VisualizationDataRow[]
+    statList?: VisualizationStatItem[]
+    statDetailList?: VisualizationStatDetailItem[]
+  }> => {
+    return get<{
+      list: VisualizationDataRow[]
+      statList?: VisualizationStatItem[]
+      statDetailList?: VisualizationStatDetailItem[]
+    }>(`/ai/chatbot/selectTableDataList.do?logId=${encodeURIComponent(logId)}`)
   }
+
   return {
+    fetchSelectChatRoomList,
     fetchSelectModelList,
     fetchSelectRagDsList,
     fetchSelectDmList,
