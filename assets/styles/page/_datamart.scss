@@ -137,3 +137,53 @@
 .datamart-card-btn-test {
   min-width: 88px;
 }
+
+// ===================================
+// 생성 모달
+// ===================================
+.datamart-create-modal {
+  .modal-dialog-content {
+    overflow: hidden;
+  }
+
+  .modal-dialog-body {
+    display: block;
+    align-items: stretch;
+    min-height: auto;
+    padding: $spacing-md 0 0;
+  }
+
+  &.is-fullscreen {
+    .modal-dialog-content {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-dialog-body {
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .datamart-create-form {
+      max-height: none;
+      height: 100%;
+    }
+  }
+}
+
+.datamart-create-form {
+  max-height: 70vh;
+  overflow-y: auto;
+  width: calc(100% + 6px);
+  padding-right: 6px;
+  @include custom-scrollbar;
+}
+
+.datamart-create-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+  padding: $spacing-md 0 0;
+  border-top: 1px solid $color-border;
+}
