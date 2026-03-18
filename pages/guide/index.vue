@@ -387,6 +387,12 @@ const componentList = [
     description: '로딩 스피너 + 텍스트 공통 컴포넌트',
     tags: ['text', 'spinner'],
   },
+  {
+    name: 'UiToast',
+    to: '/guide/ui-toast',
+    description: '우측 상단 토스트 알림 — 타입별 색상/아이콘, 다중 스택, 자동 닫기',
+    tags: ['openToast', 'type', 'duration', 'stack'],
+  },
 ]
 
 // 섹션 4: 아이콘 목록 (그룹별로 구분) — _icons.custom.scss와 동기화
