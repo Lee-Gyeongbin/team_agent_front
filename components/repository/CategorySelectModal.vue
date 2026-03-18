@@ -20,12 +20,12 @@
         />
       </div>
 
-      <!-- 카테고리 트리 (더미) -->
+      <!-- 카테고리 트리 (id, name, children 구조 — 탭과 동일) -->
       <div class="modal-category-select__tree-wrap">
         <ul class="modal-category-select__tree">
           <li
-            v-for="(node, idx) in categoryTree"
-            :key="idx"
+            v-for="node in categoryTree"
+            :key="node.id"
             class="tree-item"
             :class="{ 'has-children': node.children?.length }"
           >
@@ -68,8 +68,8 @@
             </div>
             <template v-if="node.children?.length && node.expanded">
               <li
-                v-for="(child, cIdx) in node.children"
-                :key="`${idx}-${cIdx}`"
+                v-for="child in node.children"
+                :key="child.id"
                 class="tree-item"
               >
                 <div
@@ -114,8 +114,8 @@
                   class="tree-children"
                 >
                   <li
-                    v-for="(sub, sIdx) in child.children"
-                    :key="`${idx}-${cIdx}-${sIdx}`"
+                    v-for="sub in child.children"
+                    :key="sub.id"
                     class="tree-item"
                   >
                     <div
@@ -174,7 +174,9 @@
 </template>
 
 <script setup lang="ts">
-interface CategoryNode {
+/** 카테고리 노드: 문서 탭 좌측/모달과 구조 통일 (id, name, children) */
+export interface CategoryNode {
+  id: string
   name: string
   checked: boolean
   expanded?: boolean
@@ -182,7 +184,7 @@ interface CategoryNode {
   children?: CategoryNode[]
 }
 
-const props = defineProps<{
+defineProps<{
   isOpen: boolean
 }>()
 
@@ -191,41 +193,50 @@ const emit = defineEmits<{
   confirm: []
 }>()
 
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
+// 🔽 퍼블용 더미 데이터 — 백엔드 연결 시 API로 교체
 const searchKeyword = ref('')
 const categoryTree = ref<CategoryNode[]>([
   {
+    id: 'cat-modal-1',
     name: '1depth',
     checked: true,
     expanded: true,
     depth: 0,
     children: [
       {
+        id: 'cat-modal-1-1',
         name: '2depth 카테고리명임',
         checked: true,
         expanded: true,
         depth: 1,
         children: [
           {
+            id: 'cat-modal-1-1-1',
             name: '3depth 카테고리명임',
             checked: true,
             expanded: true,
             depth: 2,
-            children: [{ name: '4depth', checked: false, depth: 3 }],
+            children: [
+              { id: 'cat-modal-1-1-1-1', name: '4depth', checked: false, depth: 3 },
+            ],
           },
         ],
       },
     ],
   },
   {
+    id: 'cat-modal-2',
     name: '1depth',
     checked: true,
     expanded: false,
     depth: 0,
-    children: [{ name: '2depth 카테고리명임', checked: false, depth: 1 }],
+    children: [
+      { id: 'cat-modal-2-1', name: '2depth 카테고리명임', checked: false, depth: 1 },
+    ],
   },
 ])
 
+// 퍼블용 — 추후 API 연동 시 검색 요청으로 교체
 const onSearch = () => {}
 const toggleExpand = (node: CategoryNode) => {
   if (node.children?.length) node.expanded = !node.expanded
@@ -244,7 +255,6 @@ const onConfirm = () => {
 @use '~/assets/styles/utils/variables' as *;
 @use '~/assets/styles/utils/mixins' as *;
 
-// 모달 크기·모서리 (UiModal content에 적용)
 :deep(.modal-dialog-content) {
   max-width: 720px;
   border-radius: 12px;

@@ -111,28 +111,6 @@
           />
         </div>
       </div>
-
-      <!-- 사용자 그룹별 접근 제어 -->
-      <div class="com-setting-field-row">
-        <label class="com-setting-label">사용자 그룹별 접근 제어</label>
-        <div class="com-setting-checkbox-group">
-          <UiCheckbox
-            :model-value="getAccessByRole('admin')"
-            label="관리자"
-            @update:model-value="onUpdateAccess('admin', $event)"
-          />
-          <UiCheckbox
-            :model-value="getAccessByRole('premium')"
-            label="프리미엄 사용자"
-            @update:model-value="onUpdateAccess('premium', $event)"
-          />
-          <UiCheckbox
-            :model-value="getAccessByRole('general')"
-            label="일반 사용자"
-            @update:model-value="onUpdateAccess('general', $event)"
-          />
-        </div>
-      </div>
     </div>
   </div>
 </template>

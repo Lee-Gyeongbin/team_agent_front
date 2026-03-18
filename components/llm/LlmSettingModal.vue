@@ -14,13 +14,9 @@
         v-model="basicForm"
         :model-id-disabled="!!model"
       />
-      <LlmSettingApi
+      <LlmSettingApiParam
         :key="sectionKey"
-        v-model="apiForm"
-      />
-      <LlmSettingParam
-        :key="sectionKey"
-        v-model="paramForm"
+        v-model="apiParamForm"
       />
       <LlmSettingUsage
         :key="sectionKey"
@@ -82,27 +78,14 @@ const defaultBasic = (): {
   useYn: 'Y',
   description: '',
 })
-const defaultApi = () => ({ apiUrl: '', apiKey: '', tmoSec: 0, retryCnt: 0, custHeaders: '' })
-const defaultParam = (): {
-  temperature: number
-  topP: number
-  maxTokens: number
-  ctxtWin: number
-  freqPenalty: number
-  presPenalty: number
-  streamYn: 'Y' | 'N'
-  fnCallYn: 'Y' | 'N'
-  visionYn: 'Y' | 'N'
-} => ({
+const defaultApiParam = () => ({
+  apiUrl: '',
+  apiKey: '',
+  tmoSec: 0,
+  retryCnt: 0,
   temperature: 0,
-  topP: 0,
   maxTokens: 0,
-  ctxtWin: 0,
-  freqPenalty: 0,
-  presPenalty: 0,
-  streamYn: 'N',
-  fnCallYn: 'N',
-  visionYn: 'N',
+  custHeaders: '',
 })
 const defaultUsage = () => ({
   inputCost: 0,
@@ -117,8 +100,7 @@ const defaultUsage = () => ({
 const formRef = ref<HTMLElement | null>(null)
 const sectionKey = ref(0)
 const basicForm = ref(defaultBasic())
-const apiForm = ref(defaultApi())
-const paramForm = ref(defaultParam())
+const apiParamForm = ref(defaultApiParam())
 const usageForm = ref(defaultUsage())
 
 // 모달 열릴 때 폼 초기화 및 Provider 옵션 fetch
@@ -137,23 +119,14 @@ watch(
         useYn: m.useYn === 'Y' ? 'Y' : 'N',
         description: m.description,
       }
-      apiForm.value = {
+      apiParamForm.value = {
         apiUrl: m.apiUrl,
         apiKey: m.apiKey,
         tmoSec: m.tmoSec,
         retryCnt: m.retryCnt,
-        custHeaders: m.custHeaders,
-      }
-      paramForm.value = {
         temperature: m.temperature,
-        topP: m.topP,
         maxTokens: m.maxTokens,
-        ctxtWin: m.ctxtWin,
-        freqPenalty: m.freqPenalty,
-        presPenalty: m.presPenalty,
-        streamYn: m.streamYn === 'Y' ? 'Y' : 'N',
-        fnCallYn: m.fnCallYn === 'Y' ? 'Y' : 'N',
-        visionYn: m.visionYn === 'Y' ? 'Y' : 'N',
+        custHeaders: m.custHeaders,
       }
       usageForm.value = {
         inputCost: m.inputCost,
@@ -174,8 +147,7 @@ watch(
     } else {
       sectionKey.value += 1
       basicForm.value = defaultBasic()
-      apiForm.value = defaultApi()
-      paramForm.value = defaultParam()
+      apiParamForm.value = defaultApiParam()
       usageForm.value = defaultUsage()
       nextTick(() => formRef.value?.closest('.modal-side-body')?.scrollTo(0, 0))
     }
@@ -185,8 +157,7 @@ watch(
 const onSave = () => {
   emit('save', {
     ...basicForm.value,
-    ...apiForm.value,
-    ...paramForm.value,
+    ...apiParamForm.value,
     ...usageForm.value,
   })
 }

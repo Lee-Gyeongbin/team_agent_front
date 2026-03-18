@@ -29,6 +29,14 @@
   min-height: calc(100vh - #{$header-height} - 45px);
 }
 
+// 문서 관리 탭 루트 (툴바 + 카테고리·문서 영역)
+.repository-document-tab {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+  width: 100%;
+}
+
 // ========== 상단 toolbar 패널 ==========
 .document-toolbar {
   gap: $spacing-sm;
