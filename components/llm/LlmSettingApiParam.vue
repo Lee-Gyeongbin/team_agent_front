@@ -68,7 +68,7 @@
           <UiInput
             :model-value="modelValue.tmoSec"
             placeholder="30"
-            type="number"
+            number-only
             size="sm"
             @update:model-value="onUpdate('tmoSec', $event)"
           />
@@ -80,7 +80,7 @@
           <label class="com-setting-label">재시도 횟수</label>
           <UiInput
             :model-value="modelValue.retryCnt"
-            type="number"
+            number-only
             size="sm"
             @update:model-value="onUpdate('retryCnt', $event)"
           />
@@ -96,7 +96,8 @@
           <label class="com-setting-label">Temperature</label>
           <UiInput
             :model-value="modelValue.temperature"
-            type="number"
+            number-only
+            allow-decimal
             size="sm"
             desc="0 (결정적) ~ 2 (창의적)"
             @update:model-value="onUpdate('temperature', Number($event))"
@@ -109,7 +110,7 @@
           <label class="com-setting-label">Max Tokens</label>
           <UiInput
             :model-value="modelValue.maxTokens"
-            type="number"
+            number-only
             size="sm"
             @update:model-value="onUpdate('maxTokens', Number($event))"
           />

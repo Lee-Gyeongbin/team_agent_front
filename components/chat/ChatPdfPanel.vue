@@ -41,12 +41,12 @@
           </button>
           <input
             class="chat-pdf-page-input"
-            type="number"
-            :min="1"
-            :max="totalPages"
+            type="text"
+            inputmode="numeric"
             :value="currentPage"
             :disabled="!hasData"
             @change="onPageInputChange"
+            @input="$event.target.value = $event.target.value.replace(/[^0-9]/g, '')"
           />
           <span class="chat-pdf-page-total">/ {{ totalPages || 0 }}</span>
           <button

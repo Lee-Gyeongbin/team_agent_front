@@ -55,6 +55,23 @@ if (!confirmed) return
   <UiInput v-model="value" desc="설명 텍스트" />
   ```
 
+## 숫자 입력 규칙
+
+- **`type="number"` 사용 금지** — 한글 IME 환경에서 자음이 깜빡이는 브라우저 버그 발생
+- 숫자 입력이 필요하면 `UiInput`의 `number-only` prop 사용
+- `number-only`: 정수만 허용
+- `number-only allow-decimal`: 소수점 포함 허용 (temperature, cost 등)
+- `number-only allow-negative`: 음수 포함 허용
+
+```vue
+<!-- ❌ 금지 -->
+<UiInput v-model="value" type="number" />
+
+<!-- ✅ 올바른 사용 -->
+<UiInput v-model="value" number-only />
+<UiInput v-model="value" number-only allow-decimal />
+```
+
 ## 컴포넌트 분류
 
 ### Radix-vue 사용 (접근성 복잡한 것)

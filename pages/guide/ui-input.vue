@@ -117,6 +117,49 @@
     </section>
 
     <!-- ============================================ -->
+    <!-- 숫자 전용 (number-only) -->
+    <!-- ============================================ -->
+    <section class="guide-section">
+      <h2 class="section-title">숫자 전용 (number-only)</h2>
+      <div class="guide-demo">
+        <p class="demo-label">한글 IME 환경에서도 숫자만 입력 — type="number" 대체</p>
+        <div class="demo-box">
+          <div style="display: flex; flex-direction: column; gap: 8px; max-width: 320px">
+            <p style="font-size: 13px; color: #64748b">정수만: "{{ numberValue }}"</p>
+            <UiInput
+              v-model="numberValue"
+              number-only
+              placeholder="정수만 입력"
+            />
+            <p style="font-size: 13px; color: #64748b">소수점 허용: "{{ decimalValue }}"</p>
+            <UiInput
+              v-model="decimalValue"
+              number-only
+              allow-decimal
+              placeholder="소수점 허용 (예: 0.85)"
+            />
+            <p style="font-size: 13px; color: #64748b">음수 허용: "{{ negativeValue }}"</p>
+            <UiInput
+              v-model="negativeValue"
+              number-only
+              allow-negative
+              placeholder="음수 허용 (예: -100)"
+            />
+          </div>
+        </div>
+        <pre class="demo-code">
+&lt;!-- 정수만 --&gt;
+&lt;UiInput v-model="value" number-only /&gt;
+
+&lt;!-- 소수점 허용 --&gt;
+&lt;UiInput v-model="value" number-only allow-decimal /&gt;
+
+&lt;!-- 음수 허용 --&gt;
+&lt;UiInput v-model="value" number-only allow-negative /&gt;</pre>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
     <!-- 상태 -->
     <!-- ============================================ -->
     <section class="guide-section">
@@ -161,7 +204,7 @@
           </tr>
           <tr>
             <td>type</td>
-            <td>'text' | 'search' | 'password' | 'number'</td>
+            <td>'text' | 'search' | 'password'</td>
             <td>'text'</td>
             <td>입력 타입 (search 시 검색 아이콘 자동 표시)</td>
           </tr>
@@ -182,6 +225,24 @@
             <td>'sm' | 'base' | 'lg'</td>
             <td>'base'</td>
             <td>둥글기</td>
+          </tr>
+          <tr>
+            <td>numberOnly</td>
+            <td>boolean</td>
+            <td>false</td>
+            <td>숫자만 입력 허용 (한글 IME 안전, type="number" 대체)</td>
+          </tr>
+          <tr>
+            <td>allowDecimal</td>
+            <td>boolean</td>
+            <td>false</td>
+            <td>numberOnly 시 소수점(.) 허용</td>
+          </tr>
+          <tr>
+            <td>allowNegative</td>
+            <td>boolean</td>
+            <td>false</td>
+            <td>numberOnly 시 음수(-) 허용</td>
           </tr>
           <tr>
             <td>disabled</td>
@@ -279,6 +340,9 @@
 const basicValue = ref('')
 const searchValue = ref('')
 const searchResult = ref('')
+const numberValue = ref('')
+const decimalValue = ref('')
+const negativeValue = ref('')
 
 const sizes = ['xs', 'sm', 'md', 'lg', 'xlg'] as const
 

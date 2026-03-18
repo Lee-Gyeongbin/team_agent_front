@@ -57,7 +57,7 @@
             <label class="com-setting-label">정렬 순서</label>
             <UiInput
               v-model="formData.sortOrder"
-              type="number"
+              number-only
               size="sm"
             />
           </div>
@@ -119,7 +119,7 @@
               </label>
               <UiInput
                 v-model="formData.port"
-                type="number"
+                number-only
                 placeholder="예: 3306, 5432, 1521"
                 size="sm"
               />

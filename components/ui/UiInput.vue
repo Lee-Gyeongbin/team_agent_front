@@ -29,12 +29,14 @@
         ref="inputRef"
         class="ui-input"
         :type="type === 'search' ? 'text' : type"
+        :inputmode="numberOnly ? 'numeric' : undefined"
         :value="modelValue"
         :placeholder="placeholder"
         :disabled="disabled"
         :readonly="readonly"
         :name="name"
         @input="onInput"
+        @compositionupdate="onCompositionUpdate"
         @focus="isFocused = true"
         @blur="isFocused = false"
         @keydown.enter="$emit('enter', modelValue)"
@@ -70,7 +72,7 @@
 <script setup lang="ts">
 interface Props {
   modelValue?: string | number
-  type?: 'text' | 'search' | 'password' | 'number'
+  type?: 'text' | 'search' | 'password'
   placeholder?: string
   disabled?: boolean
   readonly?: boolean
@@ -79,9 +81,12 @@ interface Props {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xlg'
   radius?: 'sm' | 'base' | 'lg'
   desc?: string
+  numberOnly?: boolean
+  allowDecimal?: boolean
+  allowNegative?: boolean
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   modelValue: '',
   type: 'text',
   placeholder: '',
@@ -92,6 +97,9 @@ withDefaults(defineProps<Props>(), {
   size: 'md',
   radius: 'base',
   desc: '',
+  numberOnly: false,
+  allowDecimal: false,
+  allowNegative: false,
 })
 
 const emit = defineEmits<{
@@ -103,8 +111,34 @@ const emit = defineEmits<{
 const inputRef = ref<HTMLInputElement>()
 const isFocused = ref(false)
 
+// 숫자 외 문자 제거
+const stripNonNumeric = (val: string): string => {
+  let pattern = '0-9'
+  if (props.allowDecimal) pattern += '.'
+  if (props.allowNegative) pattern += '-'
+  const regex = new RegExp(`[^${pattern}]`, 'g')
+  return val.replace(regex, '')
+}
+
 const onInput = (e: Event) => {
-  emit('update:modelValue', (e.target as HTMLInputElement).value)
+  const input = e.target as HTMLInputElement
+  if (props.numberOnly) {
+    const cleaned = stripNonNumeric(input.value)
+    input.value = cleaned
+    emit('update:modelValue', cleaned)
+  } else {
+    emit('update:modelValue', input.value)
+  }
+}
+
+// 한글 IME 조합 중 즉시 제거
+const onCompositionUpdate = (e: CompositionEvent) => {
+  if (props.numberOnly) {
+    const input = e.target as HTMLInputElement
+    const cleaned = stripNonNumeric(input.value)
+    input.value = cleaned
+    emit('update:modelValue', cleaned)
+  }
 }
 
 // 외부에서 focus 호출용

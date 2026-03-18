@@ -37,7 +37,8 @@
           <label class="com-setting-label">입력 비용 ($/1M 토큰)</label>
           <UiInput
             :model-value="modelValue.inputCost"
-            type="number"
+            number-only
+            allow-decimal
             size="sm"
             @update:model-value="onUpdate('inputCost', Number($event))"
           />
@@ -49,7 +50,8 @@
           <label class="com-setting-label">출력 비용 ($/1M 토큰)</label>
           <UiInput
             :model-value="modelValue.outputCost"
-            type="number"
+            number-only
+            allow-decimal
             size="sm"
             @update:model-value="onUpdate('outputCost', Number($event))"
           />
@@ -65,7 +67,7 @@
           <label class="com-setting-label">일일 요청 제한</label>
           <UiInput
             :model-value="modelValue.dayReqLmt"
-            type="number"
+            number-only
             size="sm"
             @update:model-value="onUpdate('dayReqLmt', Number($event))"
           />
@@ -77,7 +79,7 @@
           <label class="com-setting-label">분당 요청 제한 (RPM)</label>
           <UiInput
             :model-value="modelValue.rpmLimit"
-            type="number"
+            number-only
             size="sm"
             @update:model-value="onUpdate('rpmLimit', Number($event))"
           />
@@ -93,7 +95,7 @@
           <label class="com-setting-label">분당 토큰 제한 (TPM)</label>
           <UiInput
             :model-value="modelValue.tpmLimit"
-            type="number"
+            number-only
             size="sm"
             @update:model-value="onUpdate('tpmLimit', Number($event))"
           />
@@ -105,7 +107,8 @@
           <label class="com-setting-label">일일 비용 제한 ($)</label>
           <UiInput
             :model-value="modelValue.dayCostLmt"
-            type="number"
+            number-only
+            allow-decimal
             size="sm"
             @update:model-value="onUpdate('dayCostLmt', Number($event))"
           />

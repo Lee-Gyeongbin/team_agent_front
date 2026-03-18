@@ -67,7 +67,7 @@
               <span class="chat-comment-error-item-option-label">최대 글자 수</span>
               <UiInput
                 v-model="item.maxLength"
-                type="number"
+                number-only
                 size="sm"
                 style="width: 120px"
               />

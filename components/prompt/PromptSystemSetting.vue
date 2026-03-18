@@ -66,7 +66,8 @@
             <label class="com-setting-label">Temperature (창의성)</label>
             <UiInput
               :model-value="form.temperature"
-              type="number"
+              number-only
+              allow-decimal
               size="sm"
               desc="0: 일관적, 2: 창의적"
               @update:model-value="onUpdateForm('temperature', $event)"
@@ -79,7 +80,8 @@
             <label class="com-setting-label">Top P (샘플링)</label>
             <UiInput
               :model-value="form.topP"
-              type="number"
+              number-only
+              allow-decimal
               size="sm"
               desc="0.1~1.0 사이 값"
               @update:model-value="onUpdateForm('topP', $event)"

@@ -8,7 +8,7 @@
         <label class="prompt-limit-label">최대 입력 토큰</label>
         <UiInput
           :model-value="modelValue.maxInTokens"
-          type="number"
+          number-only
           size="sm"
           desc="사용자 입력 + 시스템 프롬프트 합산"
           @update:model-value="onUpdate('maxInTokens', $event)"
@@ -20,7 +20,7 @@
         <label class="prompt-limit-label">최대 출력 토큰</label>
         <UiInput
           :model-value="modelValue.maxOutTokens"
-          type="number"
+          number-only
           size="sm"
           desc="챗봇 응답 최대 길이"
           @update:model-value="onUpdate('maxOutTokens', $event)"
@@ -32,7 +32,7 @@
         <label class="prompt-limit-label">컨텍스트 윈도우</label>
         <UiInput
           :model-value="modelValue.ctxtWin"
-          type="number"
+          number-only
           size="sm"
           desc="대화 이력 유지 범위"
           @update:model-value="onUpdate('ctxtWin', $event)"

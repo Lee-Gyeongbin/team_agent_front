@@ -8,7 +8,7 @@
       <label class="prompt-limit-label">최소 응답 길이</label>
       <UiInput
         :model-value="modelValue.minRespLen"
-        type="number"
+        number-only
         size="sm"
         desc="너무 짧은 응답 방지 (토큰 수)"
         @update:model-value="onUpdate('minRespLen', $event)"
@@ -20,7 +20,7 @@
       <label class="prompt-limit-label">응답 타임아웃</label>
       <UiInput
         :model-value="modelValue.respTmo"
-        type="number"
+        number-only
         size="sm"
         desc="최대 대기 시간 (초)"
         @update:model-value="onUpdate('respTmo', $event)"

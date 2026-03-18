@@ -8,7 +8,7 @@
       <label class="prompt-limit-label">사용자당 일일 요청 한도</label>
       <UiInput
         :model-value="modelValue.dayUserLmt"
-        type="number"
+        number-only
         size="sm"
         desc="0 = 무제한"
         @update:model-value="onUpdate('dayUserLmt', $event)"
@@ -20,7 +20,7 @@
       <label class="prompt-limit-label">조직 전체 월간 한도</label>
       <UiInput
         :model-value="modelValue.monOrgLmt"
-        type="number"
+        number-only
         size="sm"
         desc="전체 조직의 월간 API 호출 제한"
         @update:model-value="onUpdate('monOrgLmt', $event)"
@@ -32,7 +32,7 @@
       <label class="prompt-limit-label">Rate Limit (분당 요청)</label>
       <UiInput
         :model-value="modelValue.rateLmtRpm"
-        type="number"
+        number-only
         size="sm"
         desc="남용 방지를 위한 속도 제한"
         @update:model-value="onUpdate('rateLmtRpm', $event)"

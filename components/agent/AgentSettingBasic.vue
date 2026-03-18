@@ -44,7 +44,8 @@
             <div class="com-setting-inline">
               <UiInput
                 :model-value="modelValue.similarityThreshold"
-                type="number"
+                number-only
+                allow-decimal
                 size="sm"
                 @update:model-value="onUpdate('similarityThreshold', $event)"
               />
@@ -66,7 +67,7 @@
             <div class="com-setting-inline">
               <UiInput
                 :model-value="modelValue.maxSearchResults"
-                type="number"
+                number-only
                 size="sm"
                 @update:model-value="onUpdate('maxSearchResults', $event)"
               />
