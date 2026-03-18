@@ -126,7 +126,7 @@
             :columns="tableColumns"
             :data="sortedDocumentList"
             sticky-header
-            max-height="calc(100vh - 380px)"
+            max-height="calc(100vh - 303px)"
             empty-text="등록된 문서가 없습니다."
           >
             <template #header-select>
