@@ -41,7 +41,7 @@
             class="message-panel-buttons"
           >
             <UiButton
-              v-if="message.hasSource"
+              v-show="message.hasSource"
               variant="primary-dark"
               @click="emit('on-view-source', message.logId)"
             >
@@ -51,7 +51,7 @@
               </template>
             </UiButton>
             <UiButton
-              v-if="message.hasVisualization"
+              v-show="message.hasVisualization"
               variant="primary-dark"
               @click="emit('on-view-visualization', message.logId)"
             >

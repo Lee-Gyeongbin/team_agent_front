@@ -98,7 +98,6 @@ watch(activePanelType, (type) => {
     panelWidthPercent.value = 50
   }
 })
-
 onMounted(() => {
   startChatSocket()
 })

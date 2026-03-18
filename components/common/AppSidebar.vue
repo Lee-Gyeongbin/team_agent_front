@@ -152,6 +152,7 @@ import {
   DropdownMenuTrigger,
 } from 'radix-vue'
 import type { MenuItem } from '~/types/menu'
+import type { ChatRoom } from '~/types/chat'
 const { selectChatRoomList, chatRoomList } = useChatStore()
 const route = useRoute()
 const { menuList } = useMenu()
@@ -167,14 +168,28 @@ const openMoreDropdownId = ref<string | null>(null)
 const selectedHistoryId = ref<string | null>(null)
 
 // 사이드바 너비를 CSS 변수로 전달 (채팅 패널 레이아웃 계산용)
-watch(isExpanded, (val) => {
-  document.documentElement.style.setProperty('--sidebar-width', val ? `${260}px` : `${64}px`)
-}, { immediate: true })
+watch(
+  isExpanded,
+  (val) => {
+    document.documentElement.style.setProperty('--sidebar-width', val ? `${260}px` : `${64}px`)
+  },
+  { immediate: true },
+)
 
 // 검색기록 항목 클릭 시 해당 채팅방으로 이동
 watch(selectedHistoryId, (id) => {
   if (id) navigateTo(`/chat/${id}`)
 })
+
+// 현재 라우트(/chat/:id)와 사이드바 active 항목 동기화
+watch(
+  () => route.params.id,
+  (id) => {
+    const roomId = String(id ?? '').trim()
+    selectedHistoryId.value = roomId || null
+  },
+  { immediate: true },
+)
 
 function toggleExpanded() {
   isExpanded.value = !isExpanded.value
@@ -246,10 +261,10 @@ function onClickNavItem(item: NavItem) {
 }
 
 // 검색기록 컨텍스트 메뉴 액션 (더미 — 추후 연동)
-function onContextShare(_entry: { id: string; query: string }) {}
-function onContextPin(_entry: { id: string; query: string }) {}
-function onContextRename(_entry: { id: string; query: string }) {}
-function onContextDelete(_entry: { id: string; query: string }) {}
+function onContextShare(_entry: ChatRoom) {}
+function onContextPin(_entry: ChatRoom) {}
+function onContextRename(_entry: ChatRoom) {}
+function onContextDelete(_entry: ChatRoom) {}
 
 onMounted(async () => {
   // 채팅방 목록 조회

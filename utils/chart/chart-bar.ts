@@ -193,6 +193,10 @@ export const BarChartModule = {
     const barChartOptions: any = {
       responsive: true,
       maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false,
+      },
       useCenterBars,
       thinBars,
       averageLine: config.averageLine || null,
@@ -202,6 +206,8 @@ export const BarChartModule = {
         legend: { display: false },
         tooltip: {
           ...ChartConfig.tooltipConfig,
+          mode: 'index',
+          intersect: false,
           callbacks: {
             label(context: any) {
               const datasetLabel = context.dataset.label ? `${context.dataset.label}: ` : ''

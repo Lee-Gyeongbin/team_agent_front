@@ -1,4 +1,6 @@
 const COLUMN_LABEL_MAP: Record<string, string> = {
+  __TIME_AXIS_YEAR_MONTH__: '연-월',
+  __TIME_AXIS_YEAR_QUARTER__: '연-분기',
   STAT_ID: '통계ID',
   YEAR: '연도',
   MON: '월',
