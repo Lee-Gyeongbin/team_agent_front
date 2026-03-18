@@ -478,3 +478,13 @@
 .icon-folder-open {
   @include icon-file-bg('folder-open');
 }
+
+// 플러스 아이콘 두꺼운 ver
+.icon-plus-medium {
+  @include icon-file-bg('plus-medium');
+}
+
+// 하단 아이콘 그레이, 끝부분이 각진 ver
+.icon-arrow-down-gray {
+  @include icon-file-bg('arrow-down-gray');
+}

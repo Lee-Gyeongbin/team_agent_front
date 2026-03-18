@@ -71,8 +71,8 @@
   }
 
   .category-panel-title {
-    @include typo($body-medium-bold);
-    color: $color-text-heading;
+    @include typo($body-xlarge-bold);
+    color: $color-text-heading-sub;
   }
 
   .btn-add-category {

@@ -65,7 +65,7 @@
               @click="openCategorySelectModal"
             >
               <template #icon-left>
-                <i class="icon icon-plus size-16" />
+                <i class="icon icon-plus-medium size-16" />
               </template>
             </UiButton>
           </div>
