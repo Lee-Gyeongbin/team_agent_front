@@ -1,13 +1,13 @@
 <template>
   <UiModal
     :is-open="isOpen"
-    title="데이터마트 추가"
+    :title="isEditMode ? '데이터마트 수정' : '데이터마트 추가'"
     max-width="720px"
-    custom-class="datamart-create-modal"
+    custom-class="datamart-save-modal"
     show-fullscreen
     @close="$emit('close')"
   >
-    <div class="datamart-create-form com-setting-form">
+    <div class="datamart-save-form com-setting-form">
       <!-- 기본 정보 -->
       <div
         class="com-setting-section"
@@ -28,7 +28,7 @@
               데이터마트명
             </label>
             <UiInput
-              v-model="formData.name"
+              v-model="formData.dmNm"
               placeholder="예: 경영 통계 데이터마트"
               size="sm"
             />
@@ -48,7 +48,7 @@
           <div class="com-setting-field-row">
             <label class="com-setting-label">상태</label>
             <UiSelect
-              v-model="formData.status"
+              v-model="formData.useYn"
               :options="statusOptions"
               size="sm"
             />
@@ -56,7 +56,7 @@
           <div class="com-setting-field-row">
             <label class="com-setting-label">정렬 순서</label>
             <UiInput
-              v-model="formData.sortOrder"
+              v-model="formData.sortOrd"
               number-only
               size="sm"
             />
@@ -130,7 +130,7 @@
                 DB명
               </label>
               <UiInput
-                v-model="formData.dbName"
+                v-model="formData.dbNm"
                 placeholder="예: analytics_db"
                 size="sm"
               />
@@ -154,7 +154,7 @@
                 비밀번호
               </label>
               <UiInput
-                v-model="formData.password"
+                v-model="formData.pwdEnc"
                 type="password"
                 placeholder="••••••••"
                 size="sm"
@@ -164,7 +164,7 @@
           <div class="com-setting-field-row">
             <label class="com-setting-label">스키마</label>
             <UiInput
-              v-model="formData.schema"
+              v-model="formData.schNm"
               placeholder="예: public (PostgreSQL의 경우)"
               size="sm"
             />
@@ -172,7 +172,7 @@
           <div class="com-setting-field-row is-top">
             <label class="com-setting-label">연결 옵션</label>
             <UiTextarea
-              v-model="formData.connectionOptions"
+              v-model="formData.connOpt"
               :rows="2"
               :border="true"
               size="sm"
@@ -210,26 +210,29 @@
         </div>
         <div class="com-setting-section-body">
           <UiCheckbox
-            v-model="formData.readOnly"
+            :model-value="formData.readonlyYn === 'Y'"
             label="읽기 전용 모드"
             desc="데이터 조회만 가능하고 수정/삭제는 불가능합니다."
+            @update:model-value="formData.readonlyYn = $event ? 'Y' : 'N'"
           />
           <UiCheckbox
-            v-model="formData.ipWhitelist"
+            :model-value="formData.ipWlistYn === 'Y'"
             label="IP 화이트리스트 사용"
             desc="특정 IP 주소에서만 접근을 허용합니다."
+            @update:model-value="formData.ipWlistYn = $event ? 'Y' : 'N'"
           />
           <UiCheckbox
-            v-model="formData.useSsl"
+            :model-value="formData.sslYn === 'Y'"
             label="SSL/TLS 암호화 연결"
             desc="데이터베이스 연결 시 암호화된 통신을 사용합니다."
+            @update:model-value="formData.sslYn = $event ? 'Y' : 'N'"
           />
         </div>
       </div>
     </div>
 
     <template #footer>
-      <div class="datamart-create-footer">
+      <div class="datamart-save-footer">
         <UiButton
           variant="line-secondary"
           size="md"
@@ -250,10 +253,14 @@
 </template>
 
 <script setup lang="ts">
-import type { DatamartForm } from '~/types/datamart'
+import type { Datamart, DatamartForm } from '~/types/datamart'
+import { useDatamartStore } from '~/composables/datamart/useDatamartStore'
+
+const { handleTestConnection } = useDatamartStore()
 
 const props = defineProps<{
   isOpen: boolean
+  editData?: Datamart | null
 }>()
 
 const emit = defineEmits<{
@@ -262,59 +269,93 @@ const emit = defineEmits<{
 }>()
 
 const getDefaultForm = (): DatamartForm => ({
-  name: '',
+  dmNm: '',
   description: '',
-  status: 'active',
-  sortOrder: 0,
+  useYn: 'Y',
+  sortOrd: 0,
   dbType: '',
   dbVersion: '',
   host: '',
-  port: '',
-  dbName: '',
+  port: 3306,
+  dbNm: '',
   username: '',
-  password: '',
-  schema: '',
-  connectionOptions: '',
-  readOnly: false,
-  ipWhitelist: false,
-  useSsl: false,
+  pwdEnc: '',
+  schNm: '',
+  connOpt: '',
+  readonlyYn: 'N',
+  ipWlistYn: 'N',
+  sslYn: 'N',
 })
 
 const formData = reactive<DatamartForm>(getDefaultForm())
-const sectionCollapsed = reactive([false, false, true])
+const sectionCollapsed = reactive([false, false, false])
 
 const statusOptions = [
-  { label: '활성', value: 'active' },
-  { label: '비활성', value: 'inactive' },
+  { label: '활성', value: 'Y' },
+  { label: '비활성', value: 'N' },
 ]
 
-const dbTypeOptions = [
-  { label: 'MySQL', value: 'mysql' },
-  { label: 'PostgreSQL', value: 'postgresql' },
-  { label: 'Oracle', value: 'oracle' },
-  { label: 'MS SQL Server', value: 'mssql' },
-  { label: 'MariaDB', value: 'mariadb' },
-]
+const dbTypeOptions = [{ label: 'MySQL', value: 'MySQL' }]
 
-// 모달 열릴 때 폼 초기화
+const isEditMode = computed(() => !!props.editData)
+
+const mapToForm = (data: Datamart): DatamartForm => ({
+  dmNm: data.dmNm,
+  description: data.description,
+  useYn: data.useYn,
+  sortOrd: data.sortOrd,
+  dbType: data.dbType,
+  dbVersion: data.dbVersion,
+  host: data.host,
+  port: data.port,
+  dbNm: data.dbNm,
+  username: data.username,
+  pwdEnc: data.pwdEnc,
+  schNm: data.schNm,
+  connOpt: data.connOpt,
+  readonlyYn: data.readonlyYn,
+  ipWlistYn: data.ipWlistYn,
+  sslYn: data.sslYn,
+})
+
+const formToMap = (form: DatamartForm): Datamart => ({
+  datamartId: props.editData?.datamartId ?? '',
+  dmNm: form.dmNm,
+  description: form.description,
+  useYn: form.useYn,
+  sortOrd: form.sortOrd,
+  dbType: form.dbType,
+  dbVersion: form.dbVersion,
+  host: form.host,
+  port: form.port,
+  dbNm: form.dbNm,
+  username: form.username,
+  pwdEnc: form.pwdEnc,
+  schNm: form.schNm,
+  connOpt: form.connOpt,
+  readonlyYn: form.readonlyYn,
+  ipWlistYn: form.ipWlistYn,
+  sslYn: form.sslYn,
+  tblCnt: props.editData?.tblCnt ?? 0,
+  lastVerifyDt: props.editData?.lastVerifyDt ?? '',
+  createDt: props.editData?.createDt ?? '',
+  modifyDt: props.editData?.modifyDt ?? '',
+  testType: 'form',
+})
+
 watch(
   () => props.isOpen,
   (open) => {
     if (open) {
-      Object.assign(formData, getDefaultForm())
-      Object.assign(sectionCollapsed, [false, false, true])
+      Object.assign(formData, props.editData ? mapToForm(props.editData) : getDefaultForm())
+      Object.assign(sectionCollapsed, [false, false, false])
     }
   },
 )
 
-const onTestConnection = () => {
-  console.warn('[TODO] 연결 테스트:', {
-    dbType: formData.dbType,
-    host: formData.host,
-    port: formData.port,
-    dbName: formData.dbName,
-    username: formData.username,
-  })
+const onTestConnection = async () => {
+  const datamart = formToMap(formData)
+  await handleTestConnection(datamart)
 }
 
 const onSave = () => {
