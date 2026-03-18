@@ -10,13 +10,14 @@
         @search="onSearch"
         @enter="onSearch"
       />
-      <UiSelect
-        v-model="selectedCategoryFilter"
-        :options="categoryFilterOptions"
-        placeholder="전체 카테고리"
+      <UiButton
+        variant="line-secondary"
         size="md"
-        class="document-filter-select"
-      />
+        class="ui-button-outline-muted document-filter-select"
+        @click="openCategorySelectModal"
+      >
+        전체 카테고리
+      </UiButton>
       <UiSelect
         v-model="selectedStatusFilter"
         :options="statusFilterOptions"
@@ -54,7 +55,6 @@
             variant="ghost"
             size="sm"
             class="btn-add-category"
-            @click="openCategorySelectModal"
           >
             <template #icon-left>
               <i class="icon icon-plus-medium size-16" />
@@ -170,19 +170,25 @@
         <div class="document-batch-bar flex items-center">
           <span class="batch-count">{{ selectedIds.length }}개 선택됨</span>
           <UiButton
-            variant="outline"
+            variant="line-secondary"
             size="xxs"
             class="batch-bar-btn"
             @click="onBatchDownload"
           >
+            <template #icon-left>
+              <i class="icon icon-download size-12" />
+            </template>
             일괄 다운로드
           </UiButton>
           <UiButton
-            variant="outline"
+            variant="line-secondary"
             size="xxs"
             class="batch-bar-btn type-danger"
             @click="onBatchDelete"
           >
+            <template #icon-left>
+              <i class="icon icon-trashcan size-12" />
+            </template>
             일괄 삭제
           </UiButton>
         </div>
@@ -346,12 +352,7 @@ interface CategoryItem {
 
 // 문서 검색·필터 (SelectItem value는 빈 문자열 불가 — 'all' 사용)
 const searchKeyword = ref('')
-const selectedCategoryFilter = ref('all')
 const selectedStatusFilter = ref('all')
-const categoryFilterOptions = [
-  { label: '전체 카테고리', value: 'all' },
-  { label: '1depth 카테고리명임', value: 'cat1' },
-]
 const statusFilterOptions = [
   { label: '전체 상태', value: 'all' },
   { label: '활성', value: 'active' },

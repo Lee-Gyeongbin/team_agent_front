@@ -1,6 +1,56 @@
 @use '../utils/variables' as *;
 @use '../utils/mixins' as *;
 
+// ===================================
+// 공통
+// ===================================
+// 공통: 회색 아웃라인 버튼 (border·텍스트 #6F7A93)
+.ui-button-outline-muted {
+  border-color: $color-text-muted;
+  color: $color-text-muted;
+
+  .ui-button-text {
+    color: $color-text-muted;
+  }
+
+  &:hover:not(:disabled) {
+    border-color: $color-text-muted;
+    color: $color-text-muted;
+
+    .ui-button-text {
+      color: $color-text-muted;
+    }
+  }
+}
+
+.batch-bar-btn {
+  min-width: 88px;
+  height: 24px;
+  border-radius: 6px;
+  .ui-button-text {
+    font-size: 12px;
+    // color: #6f7a93;
+    font-weight: 700;
+  }
+
+  // &:hover {
+  //   .ui-button-text {
+  //     color: $color-primary;
+  //   }
+  // }
+
+  // &.type-danger:hover {
+  //   border-color: $color-error !important;
+  //   .ui-button-text {
+  //     color: $color-error;
+  //   }
+  // }
+}
+
+// ===================================
+// 문서관리리
+// ===================================
+
 .repository-index {
   min-height: calc(100vh - #{$header-height});
   box-sizing: border-box;
@@ -27,14 +77,6 @@
   gap: $spacing-lg;
   padding: 16px;
   min-height: calc(100vh - #{$header-height} - 45px);
-}
-
-// 문서 관리 탭 루트 (툴바 + 카테고리·문서 영역)
-.repository-document-tab {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-lg;
-  width: 100%;
 }
 
 // ========== 상단 toolbar 패널 ==========
@@ -191,28 +233,6 @@
       color: $color-text-primary;
       margin-right: $spacing-sm;
     }
-
-    .batch-bar-btn {
-      height: 24px;
-      border-radius: 6px;
-      .ui-button-text {
-        font-size: 12px;
-        color: #6f7a93;
-        font-weight: 700;
-      }
-      &:hover {
-        .ui-button-text {
-          color: $color-primary;
-        }
-      }
-
-      &.type-danger:hover {
-        border-color: $color-error !important;
-        .ui-button-text {
-          color: $color-error;
-        }
-      }
-    }
   }
 
   .document-table-wrap {
@@ -360,3 +380,7 @@
   @include typo($body-small);
   color: $color-text-muted;
 }
+
+// ===================================
+// URL 관리
+// ===================================
