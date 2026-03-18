@@ -1,5 +1,24 @@
 # Component Rules
 
+## Alert/Confirm 다이얼로그 규칙
+
+- **네이티브 `alert()`, `confirm()` 사용 금지** → 공통 다이얼로그 함수 사용
+- `openAlert()` — 단순 알림 (확인 버튼만)
+- `openConfirm()` — 확인/취소 선택 (Promise\<boolean\> 반환)
+- import 경로: `import { openAlert, openConfirm } from '~/composables/useDialog'`
+
+```ts
+// ❌ 금지
+if (!confirm('삭제하시겠습니까?')) return
+
+// ✅ 올바른 사용
+const confirmed = await openConfirm({
+  title: '삭제',
+  message: '삭제하시겠습니까?',
+})
+if (!confirmed) return
+```
+
 ## 퍼블리싱 단계 원칙
 
 - 더미 데이터에는 반드시 주석 표기:

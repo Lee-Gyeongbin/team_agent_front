@@ -35,6 +35,22 @@
 - ref: 명사 → `const count = ref(0)`
 - computed: 형용사/명사 → `const isEmpty = computed(...)`
 
+## 공통 액션 아이콘 규칙
+
+카드/리스트/드롭다운에서 수정·삭제 등 액션에 사용하는 아이콘을 통일한다.
+
+| 액션 | 아이콘 클래스 | 비고 |
+|------|-------------|------|
+| 수정 | `icon-edit` | 연필 아이콘 |
+| 삭제 | `icon-trashcan` | 각진 휴지통 (버튼, 드롭다운 공통) |
+| 보기 | `icon-view` | 눈 아이콘 |
+| 다운로드 | `icon-download` | |
+| 복구 | `icon-refresh` | |
+| 보관 | `icon-archive` | |
+
+- **삭제 버튼/드롭다운**: `icon-trashcan` 통일 (`icon-delete`는 배경색 필요 시에만 `icon-delete-bg`로 사용)
+- 드롭다운 메뉴 항목에서 삭제는 반드시 `color: 'danger'` 지정
+
 ## Props 순서
 
 1. 식별자 (id, name)

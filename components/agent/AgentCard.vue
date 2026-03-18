@@ -37,13 +37,16 @@
       </div>
 
       <!-- 오른쪽: 액션 -->
-      <div class="com-card-actions">
+      <div
+        class="com-card-actions"
+        @click.stop
+      >
         <button
           class="com-card-btn"
-          title="설정"
-          @click="$emit('setting', agent)"
+          title="삭제"
+          @click="$emit('delete', agent)"
         >
-          <i class="icon-setting-agent size-16" />
+          <i class="icon-trashcan size-16" />
         </button>
         <UiToggle
           :model-value="agent.isActive"
@@ -63,7 +66,7 @@ interface Props {
 
 defineProps<Props>()
 defineEmits<{
-  setting: [agent: Agent]
+  delete: [agent: Agent]
   toggle: [agent: Agent]
 }>()
 </script>

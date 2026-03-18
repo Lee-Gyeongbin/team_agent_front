@@ -1,0 +1,310 @@
+@use '../utils/variables' as *;
+@use '../utils/mixins' as *;
+
+// ===================================
+// 챗봇스타일 페이지
+// ===================================
+
+.chat-style {
+  display: flex;
+  gap: $spacing-lg;
+  height: calc(100vh - #{$header-height});
+  padding: $spacing-lg;
+  overflow: hidden;
+}
+
+// ===================================
+// 페이지 타이틀
+// ===================================
+.chat-style-title {
+  @include typo($body-2xlarge-bold);
+  color: $color-text-heading;
+}
+
+.chat-style-subtitle {
+  margin-top: 4px;
+  @include typo($body-medium);
+  color: $color-text-dark;
+}
+
+// ===================================
+// 좌측 설정 패널
+// ===================================
+.chat-style-settings {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+  width: 460px;
+  min-width: 460px;
+  overflow-y: auto;
+  @include custom-scrollbar;
+}
+
+// 섹션 공통
+.chat-style-section {
+  padding: $spacing-lg;
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+}
+
+.chat-style-section-title {
+  @include typo($body-xlarge-bold);
+  color: $color-text-heading;
+  margin-bottom: $spacing-md;
+}
+
+// ===================================
+// 색상 테마 카드
+// ===================================
+.chat-style-color-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.chat-style-color-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 2px solid $color-border;
+  border-radius: $border-radius-lg;
+  background: #fff;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    border-color: #aebccb;
+  }
+
+  &.is-active {
+    border-color: var(--color-primary);
+    background: var(--color-primary-bg);
+  }
+}
+
+.chat-style-color-dot {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: $border-radius-full;
+}
+
+.chat-style-color-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chat-style-color-name {
+  @include typo($body-large-bold);
+  color: $color-text-heading;
+}
+
+.chat-style-color-desc {
+  @include typo($body-small);
+  color: $color-text-dark;
+}
+
+// ===================================
+// 레이아웃 카드
+// ===================================
+.chat-style-layout-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chat-style-layout-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border: 2px solid $color-border;
+  border-radius: $border-radius-lg;
+  background: #fff;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    border-color: #aebccb;
+  }
+
+  &.is-active {
+    border-color: var(--color-primary);
+    background: var(--color-primary-bg);
+  }
+}
+
+.chat-style-layout-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  @include flex-center;
+  color: $color-text-dark;
+}
+
+.chat-style-layout-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chat-style-layout-name {
+  @include typo($body-large-bold);
+  color: $color-text-heading;
+}
+
+.chat-style-layout-desc {
+  @include typo($body-small);
+  color: $color-text-dark;
+  line-height: 1.5;
+}
+
+// ===================================
+// 하단 버튼
+// ===================================
+.chat-style-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  padding-top: $spacing-sm;
+
+  .ui-button {
+    min-width: 100px;
+  }
+}
+
+// ===================================
+// 우측 미리보기
+// ===================================
+.chat-style-preview {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: $spacing-lg;
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  overflow: hidden;
+}
+
+.chat-style-preview-title {
+  @include typo($body-xlarge-bold);
+  color: $color-text-heading;
+  margin-bottom: $spacing-md;
+  flex-shrink: 0;
+}
+
+// 미리보기 메시지 영역
+.chat-style-preview-messages {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  padding-bottom: $spacing-md;
+  @include custom-scrollbar;
+}
+
+// 메시지 아이템
+.chat-style-msg {
+  display: flex;
+  gap: 12px;
+  max-width: 80%;
+
+  // assistant — 좌측
+  &.role-assistant {
+    align-self: flex-start;
+  }
+
+  // user — 우측
+  &.role-user {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+  }
+}
+
+.chat-style-msg-avatar {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  @include flex-center;
+  color: var(--color-primary);
+}
+
+.chat-style-msg-bubble {
+  padding: 12px 16px;
+  border-radius: $border-radius-lg;
+  @include typo($body-medium);
+  line-height: 1.6;
+  color: $color-text-heading;
+  word-break: break-word;
+
+  // assistant 스타일
+  .role-assistant & {
+    background: #f8f9fa;
+    border: 1px solid #ecf0f3;
+  }
+
+  // user 스타일
+  .role-user & {
+    background: var(--color-primary);
+    color: #fff;
+  }
+}
+
+// 미리보기 입력 영역
+.chat-style-preview-input {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid $color-border;
+  border-radius: 16px;
+  background: #fff;
+  margin-top: $spacing-md;
+}
+
+.chat-style-preview-input-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: $color-text-disabled;
+}
+
+.chat-style-preview-input-placeholder {
+  @include typo($body-medium);
+  color: #828fa9;
+}
+
+.chat-style-preview-input-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.chat-style-preview-model {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-sm;
+  @include typo($body-small);
+  color: $color-text-dark;
+}
+
+.chat-style-preview-send {
+  @include flex-center;
+  width: 32px;
+  height: 32px;
+  border-radius: $border-radius-full;
+  background: var(--color-primary);
+  color: #fff;
+  flex-shrink: 0;
+}

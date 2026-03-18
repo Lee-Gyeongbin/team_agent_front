@@ -26,7 +26,8 @@
       <template #item="{ element }">
         <AgentCard
           :agent="element"
-          @setting="onClickSetting"
+          @click="onClickSetting(element)"
+          @delete="doDeleteAgent"
           @toggle="onToggleActive"
         />
       </template>
@@ -44,9 +45,10 @@
 <script setup lang="ts">
 import draggable from 'vuedraggable'
 import { useAgentStore } from '~/composables/agent/useAgentStore'
+import { openConfirm } from '~/composables/useDialog'
 import type { Agent } from '~/types/agent'
 
-const { agentList, handleSelectAgentList, handleSaveAgent, handleUpdateAgentOrder } = useAgentStore()
+const { agentList, handleSelectAgentList, handleSaveAgent, handleDeleteAgent, handleUpdateAgentOrder } = useAgentStore()
 
 const isLoading = ref(true)
 
@@ -85,6 +87,15 @@ const onSaveSetting = async (form: {
   })
   // 모달 닫기
   isSettingOpen.value = false
+}
+
+const doDeleteAgent = async (agent: Agent) => {
+  const confirmed = await openConfirm({
+    title: '에이전트 삭제',
+    message: `"${agent.name}" 에이전트를 삭제하시겠습니까?`,
+  })
+  if (!confirmed) return
+  await handleDeleteAgent(agent.id)
 }
 
 const onToggleActive = async (agent: Agent) => {
