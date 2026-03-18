@@ -86,18 +86,7 @@
             @update:model-value="onUpdate('version', $event)"
           />
         </div>
-        <div
-          class="com-setting-field-row"
-          style="flex: 1"
-        >
-          <label class="com-setting-label">사용 여부</label>
-          <UiToggle
-            :model-value="modelValue.useYn === 'Y'"
-            @update:model-value="onUpdate('useYn', $event ? 'Y' : 'N')"
-          />
-        </div>
       </div>
-
       <!-- 설명 -->
       <div class="com-setting-field-row is-top">
         <label class="com-setting-label">설명</label>
