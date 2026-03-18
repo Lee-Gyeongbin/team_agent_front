@@ -74,20 +74,21 @@ const EXCLUDE_TITLES = ['검색하기']
 // 현재 라우트에 매칭되는 메뉴명 추출
 const currentPageTitle = computed(() => {
   const path = route.path
-  let best: { name: string; pathLen: number } | null = null
+  const result = { name: '', pathLen: 0 }
   const search = (items: MenuItem[]) => {
     for (const item of items) {
       if (item.srcPath && (path === item.srcPath || path.startsWith(`${item.srcPath}/`))) {
-        if (!best || item.srcPath.length > best.pathLen) {
-          best = { name: item.menuName, pathLen: item.srcPath.length }
+        if (item.srcPath.length > result.pathLen) {
+          result.name = item.menuName
+          result.pathLen = item.srcPath.length
         }
       }
       if (item.children?.length) search(item.children)
     }
   }
   search(menuList.value)
-  if (best && EXCLUDE_TITLES.includes(best.name)) return ''
-  return best?.name ?? ''
+  if (!result.name || EXCLUDE_TITLES.includes(result.name)) return ''
+  return result.name
 })
 
 const isThemePickerOpen = ref(false)

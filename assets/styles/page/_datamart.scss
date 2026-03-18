@@ -1,0 +1,189 @@
+@use '../utils/variables' as *;
+@use '../utils/mixins' as *;
+
+// ===================================
+// 데이터마트 전용 스타일
+// 공통 카드 그리드 스타일은 _com-card-grid.scss 참조
+// ===================================
+
+// 요약 통계 내부 래퍼 (4개 항목 + 하단 부가정보)
+.datamart-summary-inner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+  flex: 1;
+  padding: 12px 0;
+
+  // inner 안의 summary-item은 padding 제거 (inner에서 관리)
+  .card-grid-summary-item {
+    padding: 0;
+  }
+}
+
+// 하단 부가정보 행
+.datamart-summary-sub-row {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-md;
+}
+
+.datamart-summary-sub-item {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #94a3b8;
+
+  strong {
+    font-weight: 600;
+    color: #5c6677;
+  }
+}
+
+// DB 타입 뱃지
+.datamart-card-db-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 $spacing-sm;
+  border-radius: 24px;
+  font-size: 13px;
+  line-height: 1.2;
+  white-space: nowrap;
+
+  &.is-mysql {
+    color: #0072c6;
+    background: #e8f4fd;
+  }
+
+  &.is-postgresql {
+    color: #8f4fdf;
+    background: #f4ebff;
+  }
+
+  &.is-oracle {
+    color: rgba(255, 144, 55, 1);
+    background: rgba(255, 237, 212, 1);
+  }
+
+  &.is-default {
+    color: #5c6677;
+    background: #f4f7f9;
+  }
+}
+
+// 카드 이름 + DB 뱃지 가로 배치
+.datamart-card-name-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+// 카드 정보 영역 (HOST, 문서/URL — 가로 2칸)
+.datamart-card-info {
+  display: flex;
+  gap: $spacing-sm;
+}
+
+.datamart-card-info-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: $spacing-sm 12px;
+  background: #f4f7f9;
+  border: 1px solid #ecf0f3;
+  border-radius: $border-radius-base;
+}
+
+.datamart-card-info-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.datamart-card-info-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  background: #c6d2db;
+  border-radius: 10px;
+  color: #4d5462;
+}
+
+.datamart-card-info-label {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #5c6677;
+}
+
+.datamart-card-info-value {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #6f7a93;
+  padding-left: 24px;
+  @include ellipsis(1);
+}
+
+// 연결 테스트 버튼 (약간 넓게)
+.datamart-card-btn-test {
+  min-width: 88px;
+}
+
+// ===================================
+// 생성 모달
+// ===================================
+.datamart-create-modal {
+  .modal-dialog-content {
+    overflow: hidden;
+  }
+
+  .modal-dialog-body {
+    display: block;
+    align-items: stretch;
+    min-height: auto;
+    padding: $spacing-md 0 0;
+  }
+
+  &.is-fullscreen {
+    .modal-dialog-content {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-dialog-body {
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .datamart-create-form {
+      max-height: none;
+      height: 100%;
+    }
+  }
+}
+
+.datamart-create-form {
+  max-height: 70vh;
+  overflow-y: auto;
+  width: calc(100% + 6px);
+  padding-right: 6px;
+  @include custom-scrollbar;
+}
+
+.datamart-create-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+  padding: $spacing-md 0 0;
+  border-top: 1px solid $color-border;
+}

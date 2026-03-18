@@ -1,0 +1,231 @@
+@use '../utils/variables' as *;
+@use '../utils/mixins' as *;
+
+// ===================================
+// 공통 카드 그리드 레이아웃
+// doc-dataset, datamart 등 2열 카드 페이지 공유
+// ===================================
+
+// 페이지 컨테이너
+.card-grid-page {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  padding-top: $spacing-md;
+  padding-bottom: $spacing-lg;
+}
+
+// 페이지 헤더 (타이틀 + 액션 버튼)
+.card-grid-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+}
+
+.card-grid-page-title {
+  @include typo($body-2xlarge-bold);
+  color: $color-text-heading;
+}
+
+// ===================================
+// 요약 통계
+// ===================================
+.card-grid-summary {
+  display: flex;
+  gap: 32px;
+  padding: 0 $spacing-md;
+  border: 1px solid $color-border;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.card-grid-summary-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  padding: $spacing-md 0;
+}
+
+.card-grid-summary-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  flex-shrink: 0;
+
+  &.is-blue {
+    background: #f1f6fe;
+    color: var(--color-primary);
+  }
+
+  &.is-purple {
+    background: #ffedd4;
+    color: #ff7518;
+  }
+
+  &.is-green {
+    background: #d4f5dd;
+    color: #009f4d;
+  }
+
+  &.is-orange {
+    background: #f4ebff;
+    color: #8f4fdf;
+  }
+}
+
+.card-grid-summary-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.card-grid-summary-label {
+  @include typo($body-medium);
+  color: #6f7a93;
+}
+
+.card-grid-summary-value {
+  @include typo($body-xlarge-bold);
+  color: #2d3139;
+}
+
+.card-grid-summary-sub {
+  @include typo($body-small);
+  color: #5c6677;
+
+  strong {
+    font-weight: 700;
+  }
+}
+
+// ===================================
+// 카드 그리드
+// ===================================
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $spacing-md;
+}
+
+.card-grid-empty {
+  grid-column: 1 / -1;
+  min-height: 240px;
+}
+
+// ===================================
+// 카드
+// ===================================
+.card-grid-card {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  padding: $spacing-md;
+  border: 1px solid $color-border;
+  border-radius: 16px;
+  background: #fff;
+  min-width: 0;
+  transition: border-color $transition-base;
+
+  &:hover {
+    border-color: #aebccb;
+  }
+
+  &.is-inactive {
+    opacity: 0.8;
+  }
+}
+
+.card-grid-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+}
+
+.card-grid-card-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.card-grid-card-name {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: #2d3139;
+}
+
+.card-grid-card-sub {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #828fa9;
+}
+
+.card-grid-card-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-shrink: 0;
+}
+
+// 카드 하단 버튼
+.card-grid-card-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+}
+
+.card-grid-card-btn-fixed {
+  min-width: 68px;
+}
+
+// 카드 메타 정보
+.card-grid-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-bottom: $spacing-md;
+  border-bottom: 1px solid #ecf0f3;
+}
+
+.card-grid-card-meta-row {
+  display: flex;
+  gap: 12px;
+}
+
+.card-grid-card-meta-item {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: $color-text-muted;
+  strong {
+    font-weight: 600;
+    color: $color-text-disabled;
+  }
+}
+
+// kebab 버튼
+.card-grid-card-kebab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: $color-text-disabled;
+  cursor: pointer;
+  border-radius: $border-radius-base;
+  transition: background-color $transition-fast;
+
+  &:hover {
+    background: $color-background;
+    color: $color-text-secondary;
+  }
+}
