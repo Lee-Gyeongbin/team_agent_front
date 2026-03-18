@@ -46,33 +46,6 @@
   overflow: hidden;
 }
 
-.login-history-loading {
-  @include flex-center;
-  flex-direction: column;
-  padding: $spacing-2xl;
-  gap: $spacing-md;
-  min-height: 240px;
-
-  &__spinner {
-    width: 36px;
-    height: 36px;
-    border: 3px solid $color-border;
-    border-top-color: var(--color-primary);
-    border-radius: 50%;
-    animation: login-history-spin 0.8s linear infinite;
-  }
-
-  &__text {
-    font-size: $font-size-sm;
-    color: $color-text-secondary;
-  }
-}
-
-@keyframes login-history-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
 
 .login-history-error {
   @include flex-center;

@@ -15,11 +15,18 @@
       </UiButton>
     </div>
 
-    <!-- 요약 통계 -->
-    <DocDatasetSummary :summary="summary" />
+    <!-- 로딩 -->
+    <UiLoading
+      v-if="isLoading"
+      text="데이터셋을 불러오는 중..."
+    />
 
-    <!-- 카드 그리드 -->
-    <div class="card-grid">
+    <!-- 요약 통계 -->
+    <template v-else>
+      <DocDatasetSummary :summary="summary" />
+
+      <!-- 카드 그리드 -->
+      <div class="card-grid">
       <DocDatasetCard
         v-for="dataset in datasetList"
         :key="dataset.id"
@@ -51,6 +58,7 @@
         </UiEmpty>
       </div>
     </div>
+    </template>
 
     <!-- 생성 모달 -->
     <DocDatasetCreateModal
@@ -82,7 +90,12 @@ const { datasetList, summary, handleSelectAll, handleDeleteDocDataset, handleTog
   useDocDatasetStore()
 
 // 초기 조회
-onMounted(() => handleSelectAll())
+const isLoading = ref(true)
+
+onMounted(async () => {
+  await handleSelectAll()
+  isLoading.value = false
+})
 
 // 생성 모달
 const isCreateModalOpen = ref(false)

@@ -1,13 +1,10 @@
 <template>
   <div class="library-index">
     <!-- 로딩 -->
-    <div
+    <UiLoading
       v-if="isLoading"
-      class="library-loading"
-    >
-      <div class="library-loading__spinner" />
-      <p class="library-loading__text">라이브러리를 불러오는 중...</p>
-    </div>
+      text="라이브러리를 불러오는 중..."
+    />
 
     <!-- 에러 -->
     <div

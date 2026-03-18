@@ -381,6 +381,12 @@ const componentList = [
     description: '빈 상태 공통 컴포넌트 — 아이콘, 텍스트, 설명, 액션 슬롯',
     tags: ['icon', 'title', 'description', 'slot'],
   },
+  {
+    name: 'UiLoading',
+    to: '/guide/ui-loading',
+    description: '로딩 스피너 + 텍스트 공통 컴포넌트',
+    tags: ['text', 'spinner'],
+  },
 ]
 
 // 섹션 4: 아이콘 목록 (그룹별로 구분) — _icons.custom.scss와 동기화

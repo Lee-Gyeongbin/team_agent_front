@@ -10,6 +10,7 @@ export const useApi = () => {
 
   const request = async <T>(endpoint: string, options: RequestInit = {}): Promise<T> => {
     const url = endpoint.startsWith('/') ? `${baseURL}${endpoint}` : `${baseURL}/${endpoint}`
+
     const response = await fetch(url, {
       credentials: 'include',
       headers: {

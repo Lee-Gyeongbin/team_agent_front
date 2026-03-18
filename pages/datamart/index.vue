@@ -15,40 +15,49 @@
       </UiButton>
     </div>
 
-    <!-- 요약 통계 -->
-    <DatamartSummary :summary="summary" />
+    <!-- 로딩 -->
+    <UiLoading
+      v-if="isLoading"
+      text="데이터마트를 불러오는 중..."
+    />
 
-    <!-- 카드 그리드 -->
-    <div class="card-grid">
-      <DatamartCard
-        v-for="dm in datamartList"
-        :key="dm.id"
-        :datamart="dm"
-        @toggle-active="handleToggleActiveDatamart"
-        @test="onTest"
-        @edit="onEdit"
-        @delete="onDelete"
-      />
+    <!-- 콘텐츠 -->
+    <template v-else>
+      <!-- 요약 통계 -->
+      <DatamartSummary :summary="summary" />
 
-      <!-- 빈 상태 -->
-      <div
-        v-if="datamartList.length === 0"
-        class="card-grid-empty"
-      >
-        <UiEmpty
-          icon="icon-database"
-          title="등록된 데이터마트가 없습니다."
+      <!-- 카드 그리드 -->
+      <div class="card-grid">
+        <DatamartCard
+          v-for="dm in datamartList"
+          :key="dm.id"
+          :datamart="dm"
+          @toggle-active="handleToggleActiveDatamart"
+          @test="onTest"
+          @edit="onEdit"
+          @delete="onDelete"
+        />
+
+        <!-- 빈 상태 -->
+        <div
+          v-if="datamartList.length === 0"
+          class="card-grid-empty"
         >
-          <UiButton
-            variant="primary"
-            size="sm"
-            @click="openCreateModal"
+          <UiEmpty
+            icon="icon-database"
+            title="등록된 데이터마트가 없습니다."
           >
-            데이터마트 추가
-          </UiButton>
-        </UiEmpty>
+            <UiButton
+              variant="primary"
+              size="sm"
+              @click="openCreateModal"
+            >
+              데이터마트 추가
+            </UiButton>
+          </UiEmpty>
+        </div>
       </div>
-    </div>
+    </template>
 
     <!-- 생성 모달 -->
     <DatamartCreateModal
@@ -87,7 +96,12 @@ const {
 } = useDatamartStore()
 
 // 초기 조회
-onMounted(() => handleSelectAll())
+const isLoading = ref(true)
+
+onMounted(async () => {
+  await handleSelectAll()
+  isLoading.value = false
+})
 
 // 생성 모달
 const isCreateModalOpen = ref(false)

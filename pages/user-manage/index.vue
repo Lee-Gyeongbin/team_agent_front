@@ -40,13 +40,10 @@
     </div>
 
     <!-- 로딩 -->
-    <div
+    <UiLoading
       v-if="userManageIsLoading"
-      class="user-manage-loading"
-    >
-      <div class="user-loading__spinner" />
-      <p class="user-loading__text">사용자 리스트를 불러오는 중...</p>
-    </div>
+      text="사용자 리스트를 불러오는 중..."
+    />
 
     <!-- 에러 -->
     <div
@@ -223,33 +220,7 @@ onMounted(() => {
   overflow: hidden;
 }
 
-.user-manage-loading {
-  @include flex-center;
-  flex-direction: column;
-  padding: $spacing-2xl;
-  gap: $spacing-md;
-  min-height: 240px;
 
-  &__spinner {
-    width: 36px;
-    height: 36px;
-    border: 3px solid $color-border;
-    border-top-color: var(--color-primary);
-    border-radius: 50%;
-    animation: user-manage-spin 0.8s linear infinite;
-  }
-
-  &__text {
-    font-size: $font-size-sm;
-    color: $color-text-secondary;
-  }
-}
-
-@keyframes user-manage-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
 
 .user-manage-status {
   display: inline-block;

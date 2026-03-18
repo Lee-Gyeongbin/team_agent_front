@@ -182,3 +182,21 @@
   height: 100%;
   object-fit: cover;
 }
+
+/* page transition ===================== */
+.page-enter-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.page-leave-active {
+  transition: opacity 0.15s ease;
+}
+
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.page-leave-to {
+  opacity: 0;
+}

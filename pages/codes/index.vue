@@ -6,13 +6,10 @@
     </div>
 
     <!-- 로딩 -->
-    <div
+    <UiLoading
       v-if="isLoading"
-      class="codes-loading"
-    >
-      <div class="codes-loading__spinner" />
-      <p class="codes-loading__text">공통코드를 불러오는 중...</p>
-    </div>
+      text="공통코드를 불러오는 중..."
+    />
 
     <!-- 에러 -->
     <div

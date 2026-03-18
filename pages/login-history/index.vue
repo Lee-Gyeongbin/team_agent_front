@@ -40,13 +40,10 @@
     </div>
 
     <!-- 로딩 -->
-    <div
+    <UiLoading
       v-if="isLoading"
-      class="login-history-loading"
-    >
-      <div class="login-history-loading__spinner" />
-      <p class="login-history-loading__text">로그인 이력을 불러오는 중...</p>
-    </div>
+      text="로그인 이력을 불러오는 중..."
+    />
 
     <!-- 에러 -->
     <div

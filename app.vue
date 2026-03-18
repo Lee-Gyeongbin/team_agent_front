@@ -1,6 +1,6 @@
 <template>
   <NuxtLayout>
-    <NuxtPage />
+    <NuxtPage :transition="{ name: 'page', mode: 'out-in' }" />
   </NuxtLayout>
 
   <!-- 전역 Alert/Confirm 다이얼로그 -->

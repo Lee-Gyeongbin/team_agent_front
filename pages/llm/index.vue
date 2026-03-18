@@ -7,8 +7,17 @@
       @add="openAddLlm"
     />
 
+    <!-- 로딩 -->
+    <UiLoading
+      v-if="isLoading"
+      text="모델 목록을 불러오는 중..."
+    />
+
     <!-- LLM 모델 목록 (드래그 정렬) -->
-    <div class="com-card-list-wrap">
+    <div
+      v-else
+      class="com-card-list-wrap"
+    >
       <draggable
         v-model="llmList"
         class="com-card-list"
@@ -63,7 +72,12 @@ const {
   onLlmDragStart,
 } = useLlmStore()
 
-onMounted(() => handleSelectLlmList())
+const isLoading = ref(true)
+
+onMounted(async () => {
+  await handleSelectLlmList()
+  isLoading.value = false
+})
 
 const activeCount = computed(() => llmList.value.filter((m) => m.useYn === 'Y').length)
 

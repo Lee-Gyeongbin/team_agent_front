@@ -7,8 +7,15 @@
       @add="openAddAgent"
     />
 
+    <!-- 로딩 -->
+    <UiLoading
+      v-if="isLoading"
+      text="에이전트를 불러오는 중..."
+    />
+
     <!-- 에이전트 목록 (드래그 정렬) -->
     <draggable
+      v-else
       v-model="agentList"
       class="com-card-list"
       handle=".com-card-drag"
@@ -41,7 +48,12 @@ import type { Agent } from '~/types/agent'
 
 const { agentList, handleSelectAgentList, handleSaveAgent, handleUpdateAgentOrder } = useAgentStore()
 
-onMounted(() => handleSelectAgentList())
+const isLoading = ref(true)
+
+onMounted(async () => {
+  await handleSelectAgentList()
+  isLoading.value = false
+})
 
 const activeCount = computed(() => agentList.value.filter((a) => a.isActive).length)
 
