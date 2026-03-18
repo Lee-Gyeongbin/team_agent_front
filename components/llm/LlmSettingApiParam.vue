@@ -2,13 +2,13 @@
   <div
     class="com-setting-section"
     :class="{ 'is-collapsed': isCollapsed }"
-    style="--label-width: 100px"
+    style="--label-width: 120px"
   >
     <div
       class="com-setting-section-header"
       @click="isCollapsed = !isCollapsed"
     >
-      <span class="com-setting-section-title">API 설정</span>
+      <span class="com-setting-section-title">API 및 파라미터 설정</span>
       <span class="com-setting-section-arrow">
         <svg
           width="16"
@@ -28,15 +28,15 @@
     </div>
 
     <div class="com-setting-section-body">
-      <!-- API URL -->
+      <!-- API 엔드포인트 -->
       <div class="com-setting-field-row">
         <label class="com-setting-label">
           <span class="is-required">*</span>
-          API URL
+          API 엔드포인트
         </label>
         <UiInput
           :model-value="modelValue.apiUrl"
-          placeholder="API URL을 입력하세요"
+          placeholder="https://api.openai.com/v1/chat/completions"
           size="sm"
           @update:model-value="onUpdate('apiUrl', $event)"
         />
@@ -50,7 +50,7 @@
         </label>
         <UiInput
           :model-value="modelValue.apiKey"
-          placeholder="API 키를 입력하세요"
+          placeholder="sk-..."
           size="sm"
           type="password"
           desc="API 키는 암호화되어 저장됩니다"
@@ -87,12 +87,41 @@
         </div>
       </div>
 
+      <!-- Temperature / Max Tokens -->
+      <div class="com-setting-row">
+        <div
+          class="com-setting-field-row"
+          style="flex: 1"
+        >
+          <label class="com-setting-label">Temperature</label>
+          <UiInput
+            :model-value="modelValue.temperature"
+            type="number"
+            size="sm"
+            desc="0 (결정적) ~ 2 (창의적)"
+            @update:model-value="onUpdate('temperature', Number($event))"
+          />
+        </div>
+        <div
+          class="com-setting-field-row"
+          style="flex: 1"
+        >
+          <label class="com-setting-label">Max Tokens</label>
+          <UiInput
+            :model-value="modelValue.maxTokens"
+            type="number"
+            size="sm"
+            @update:model-value="onUpdate('maxTokens', Number($event))"
+          />
+        </div>
+      </div>
+
       <!-- 추가 헤더 (JSON) -->
       <div class="com-setting-field-row is-top">
         <label class="com-setting-label">추가 헤더 (JSON)</label>
         <UiTextarea
           :model-value="modelValue.custHeaders"
-          placeholder="추가 헤더를 입력하세요"
+          placeholder='{"X-Custom-Header": "value"}'
           :rows="3"
           size="sm"
           :border="true"
@@ -106,28 +135,30 @@
 </template>
 
 <script setup lang="ts">
-/** API 설정 폼 (modelId는 기본 정보에서 관리) */
-interface ApiForm {
+/** API 및 파라미터 통합 폼 */
+interface ApiParamForm {
   apiUrl: string
   apiKey: string
   tmoSec: number
   retryCnt: number
+  temperature: number
+  maxTokens: number
   custHeaders: string
 }
 
 interface Props {
-  modelValue: ApiForm
+  modelValue: ApiParamForm
 }
 
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: ApiForm]
+  'update:modelValue': [value: ApiParamForm]
 }>()
 
 const isCollapsed = ref(true)
 
-const onUpdate = (key: keyof ApiForm, value: string | number) => {
+const onUpdate = (key: keyof ApiParamForm, value: string | number) => {
   emit('update:modelValue', { ...props.modelValue, [key]: value })
 }
 </script>
