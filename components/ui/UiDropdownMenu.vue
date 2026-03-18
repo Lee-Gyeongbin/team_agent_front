@@ -1,5 +1,5 @@
 <template>
-  <DropdownMenuRoot>
+  <DropdownMenuRoot v-model:open="openState">
     <DropdownMenuTrigger as-child>
       <slot name="trigger" />
     </DropdownMenuTrigger>
@@ -31,6 +31,7 @@
 </template>
 
 <script setup lang="ts">
+import { watch, ref } from 'vue'
 import {
   DropdownMenuContent,
   DropdownMenuItem,
@@ -51,6 +52,8 @@ export interface DropdownMenuItemDef {
 
 interface Props {
   items: DropdownMenuItemDef[]
+  /** 제어 모드: 열림 상태 (v-model:open 사용 시) */
+  open?: boolean
   /** 메뉴가 열리는 방향 */
   side?: 'top' | 'bottom' | 'left' | 'right'
   /** 트리거 기준 정렬 */
@@ -61,21 +64,27 @@ interface Props {
   collisionPadding?: number
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   side: 'bottom',
   align: 'end',
   sideOffset: 5,
   collisionPadding: 8,
 })
 
-/**
- * select: 아이템 선택 시 해당 item.value를 부모로 전달.
- * Radix DropdownMenuItem의 select 이벤트 payload(Event)는 노출하지 않고
- * string value만 re-emit — 메뉴 닫힘 기본 동작은 유지됨.
- */
 const emit = defineEmits<{
   select: [value: string]
+  'update:open': [value: boolean]
 }>()
+
+const openState = ref(props.open ?? false)
+watch(
+  () => props.open,
+  (v: boolean | undefined) => {
+    if (v !== undefined) openState.value = v
+  },
+  { immediate: true },
+)
+watch(openState, (v: boolean) => emit('update:open', v))
 </script>
 
 <!--

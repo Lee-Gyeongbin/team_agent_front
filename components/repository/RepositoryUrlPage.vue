@@ -13,7 +13,7 @@
       <UiButton
         variant="line-secondary"
         size="md"
-        class="ui-button-outline-muted url-filter-select"
+        class="ui-button-outline-muted"
         @click="openCategorySelectModal"
       >
         전체 카테고리
@@ -349,8 +349,12 @@ const onUrlRowActionSelect = (_value: string, _row: Record<string, unknown>) => 
   padding-bottom: 16px;
 
   .url-search-input {
-    min-width: 200px;
-    max-width: 280px;
+    min-width: 150px;
+    max-width: 400px;
+  }
+
+  .url-filter-select {
+    min-width: 120px;
   }
 
   .btn-register-url {
