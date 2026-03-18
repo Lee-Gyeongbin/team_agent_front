@@ -2,11 +2,9 @@
   <div class="doc-dataset-page l-center">
     <!-- 페이지 헤더 -->
     <div class="doc-dataset-page-header">
-      <p class="doc-dataset-page-desc">
-        컨텐츠저장소의 데이터를 활용하여 RAG 데이터셋과 벡터 DB를 생성하고 관리합니다.
-      </p>
+      <p class="doc-dataset-page-desc">문서데이터셋 목록</p>
       <UiButton
-        variant="secondary"
+        variant="primary"
         size="md"
         @click="openCreateModal"
       >

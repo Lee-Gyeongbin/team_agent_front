@@ -173,6 +173,11 @@ const searchHistoryDummy = ref([
   { id: '3', query: '휴가 신청 방법이 뭐지?' },
 ])
 
+// 사이드바 너비를 CSS 변수로 전달 (채팅 패널 레이아웃 계산용)
+watch(isExpanded, (val) => {
+  document.documentElement.style.setProperty('--sidebar-width', val ? `${260}px` : `${64}px`)
+}, { immediate: true })
+
 function toggleExpanded() {
   isExpanded.value = !isExpanded.value
 }

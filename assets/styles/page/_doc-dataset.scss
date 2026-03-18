@@ -20,8 +20,8 @@
 }
 
 .doc-dataset-page-desc {
-  @include typo($body-small);
-  color: #5c6677;
+  @include typo($body-2xlarge-bold);
+  color: $color-text-heading;
 }
 
 // ===================================
