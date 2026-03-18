@@ -50,19 +50,19 @@
           class="sidebar-section-body"
         >
           <div
-            v-for="(entry, idx) in searchHistoryDummy"
+            v-for="(entry, idx) in chatRoomList"
             :key="idx"
             class="search-history-item"
             :class="{
-              'is-active': selectedHistoryId === entry.id,
-              'is-dropdown-open': openMoreDropdownId === entry.id,
+              'is-active': selectedHistoryId === entry.roomId,
+              'is-dropdown-open': openMoreDropdownId === entry.roomId,
             }"
-            @click="selectedHistoryId = entry.id"
+            @click="selectedHistoryId = entry.roomId"
           >
-            <span class="search-history-text">{{ entry.query }}</span>
+            <span class="search-history-text">{{ entry.title }}</span>
             <DropdownMenuRoot
-              :open="openMoreDropdownId === entry.id"
-              @update:open="(open) => (openMoreDropdownId = open ? entry.id : null)"
+              :open="openMoreDropdownId === entry.roomId"
+              @update:open="(open) => (openMoreDropdownId = open ? entry.roomId : null)"
             >
               <DropdownMenuTrigger as-child>
                 <button
@@ -152,7 +152,7 @@ import {
   DropdownMenuTrigger,
 } from 'radix-vue'
 import type { MenuItem } from '~/types/menu'
-
+const { selectChatRoomList, chatRoomList } = useChatStore()
 const route = useRoute()
 const { menuList } = useMenu()
 
@@ -166,17 +166,15 @@ const isSettingsDropdownOpen = ref(false)
 const openMoreDropdownId = ref<string | null>(null)
 const selectedHistoryId = ref<string | null>(null)
 
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-const searchHistoryDummy = ref([
-  { id: '1', query: '업무관리에서 칸반 보드는 어떻게 하나요?' },
-  { id: '2', query: '회의실 예약 절차 알려주세요' },
-  { id: '3', query: '휴가 신청 방법이 뭐지?' },
-])
-
 // 사이드바 너비를 CSS 변수로 전달 (채팅 패널 레이아웃 계산용)
 watch(isExpanded, (val) => {
   document.documentElement.style.setProperty('--sidebar-width', val ? `${260}px` : `${64}px`)
 }, { immediate: true })
+
+// 검색기록 항목 클릭 시 해당 채팅방으로 이동
+watch(selectedHistoryId, (id) => {
+  if (id) navigateTo(`/chat/${id}`)
+})
 
 function toggleExpanded() {
   isExpanded.value = !isExpanded.value
@@ -252,4 +250,9 @@ function onContextShare(_entry: { id: string; query: string }) {}
 function onContextPin(_entry: { id: string; query: string }) {}
 function onContextRename(_entry: { id: string; query: string }) {}
 function onContextDelete(_entry: { id: string; query: string }) {}
+
+onMounted(async () => {
+  // 채팅방 목록 조회
+  await selectChatRoomList()
+})
 </script>
