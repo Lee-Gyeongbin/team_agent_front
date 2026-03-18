@@ -106,7 +106,7 @@
                       size="xs"
                     >
                       <template #icon-left>
-                        <i class="icon icon-add-dot size-16" />
+                        <i class="icon icon-add-dot size-20" />
                       </template>
                     </UiButton>
                   </template>
@@ -216,7 +216,7 @@
                       size="xs"
                     >
                       <template #icon-left>
-                        <i class="icon icon-add-dot size-16" />
+                        <i class="icon icon-add-dot size-20" />
                       </template>
                     </UiButton>
                   </template>
@@ -259,7 +259,7 @@
                       size="xs"
                     >
                       <template #icon-left>
-                        <i class="icon icon-add-dot size-16" />
+                        <i class="icon icon-add-dot size-20" />
                       </template>
                     </UiButton>
                   </template>

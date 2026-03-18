@@ -27,6 +27,7 @@
   min-width: 88px;
   height: 24px;
   border-radius: 6px;
+  padding: 0 8px;
   .ui-button-text {
     font-size: 12px;
     // color: #6f7a93;
@@ -48,7 +49,7 @@
 }
 
 // ===================================
-// 문서관리리
+// 문서관리
 // ===================================
 
 .repository-index {
@@ -246,27 +247,32 @@
       @include typo($body-medium);
       color: $color-text-primary;
       margin-right: $spacing-sm;
+      font-weight: 500;
+
+      .point-color {
+        color: $color-primary;
+      }
     }
   }
 
   .document-table-wrap {
     background: #fff;
-    border: 1px solid $color-border;
-    border-radius: $border-radius-base;
-    overflow: hidden;
+    border-top: 1px solid #ecf0f3;
+    border-bottom: 1px solid #ecf0f3;
 
     // 정렬 가능 헤더 버튼 (문서명, 파일크기, 등록일) — 호버 시 배경
     .ui-table th .table-header-sort-btn {
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      padding: 4px 8px;
-      margin: -4px -8px;
+      height: 25px;
+      padding: 2px 4.5px 2px 6px;
       border: none;
-      border-radius: $border-radius-sm;
+      border-radius: 4px;
       background: transparent;
       cursor: pointer;
       @include typo($body-medium-bold);
+      font-size: 14px;
       color: $color-text-muted;
       transition: background-color 0.15s;
 
@@ -277,6 +283,25 @@
       .icon {
         flex-shrink: 0;
       }
+    }
+
+    // table-cell(th, td)에는 min-height가 동작하지 않음 → height로 최소 행 높이 확보
+    .ui-table tr th,
+    .ui-table tr td {
+      height: 42px;
+      box-sizing: border-box;
+    }
+    .ui-table thead th {
+      border-bottom: 1px solid #ecf0f3;
+      border-color: #ecf0f3 !important;
+    }
+
+    // 이 테이블에서는 행 호버 배경 미적용
+    .ui-table tbody tr:hover td {
+      background: #fff;
+    }
+    .ui-table tbody tr.is-selected:hover td {
+      background: rgba(var(--color-primary-rgb, 59, 130, 246), 0.08);
     }
   }
 
@@ -320,9 +345,18 @@
     }
   }
 
-  .badge-status.is-active {
-    background: rgba($color-success, 0.12);
-    color: $color-success;
+  // UiBadge(스코프드) 기본 스타일(.ui-badge.variant-default[data-v-...])보다
+  // 특이성이 높아야 오버라이드됨
+  .ui-badge.variant-default.badge-status {
+    &.is-active {
+      background: #d7fade;
+      color: #009f4d;
+    }
+
+    &.is-inactive {
+      background: #f4f7f9;
+      color: #5c6677;
+    }
   }
 
   .cell-actions {
@@ -336,7 +370,7 @@
 
 // 페이지네이션
 .document-pagination {
-  padding: $spacing-sm 0;
+  padding: 21px 0 4px;
   flex-wrap: wrap;
   gap: $spacing-sm;
 }

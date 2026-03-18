@@ -181,6 +181,20 @@ const onRowClick = (row: Record<string, any>, index: number) => {
         border-right: 1px solid $color-border-light;
       }
     }
+
+    // 마지막 행 하단 보더 제거
+    tr:last-child td {
+      border-bottom: none;
+    }
+  }
+
+  // 첫 번째 셀(체크박스 등) 가운데 정렬
+  th:first-child,
+  td:first-child {
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }
 
