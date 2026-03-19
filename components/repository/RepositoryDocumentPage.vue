@@ -230,7 +230,10 @@
         </div>
 
         <div class="document-pagination flex items-center justify-between">
-          <span class="pagination-total">총 {{ totalCount }}개 문서</span>
+          <p class="pagination-total type-absolute">
+            총 <strong class="point-color">{{ totalCount }}</strong
+            >개 문서
+          </p>
           <div class="pagination-controls flex items-center">
             <button
               type="button"
@@ -261,7 +264,7 @@
               다음
             </button>
           </div>
-          <span class="pagination-range">{{ pageStart }}-{{ pageEnd }}/{{ totalCount }}</span>
+          <span class="pagination-range type-absolute">{{ pageStart }}-{{ pageEnd }}/{{ totalCount }}</span>
         </div>
       </section>
     </div>
