@@ -58,21 +58,32 @@
         <i class="icon-heart-line size-20" />
       </template>
     </UiButton>
-    <UiButton
-      variant="ghost"
-      size="xs"
-      icon-only
-      title="더보기"
-      @click="emit('on-more')"
+    <!-- 답변 → 라이브러리 카테고리 선택 UI (저장 API는 개발자가 페이지/스토어에서 @on-select-category 로 연결) -->
+    <UiDropdownMenu
+      title="카테고리 선택"
+      :items="categoryMenuItems"
+      align="end"
+      @select="onSelectCategory"
     >
-      <template #icon-left>
-        <i class="icon-more-line size-20" />
+      <template #trigger>
+        <UiButton
+          variant="ghost"
+          size="xs"
+          icon-only
+          title="카테고리 선택"
+        >
+          <template #icon-left>
+            <i class="icon-more-line size-20" />
+          </template>
+        </UiButton>
       </template>
-    </UiButton>
+    </UiDropdownMenu>
   </div>
 </template>
 
 <script setup lang="ts">
+import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
+
 interface Props {
   isLiked?: boolean
   isDisliked?: boolean
@@ -87,6 +98,20 @@ const emit = defineEmits<{
   'on-dislike': []
   'on-regenerate': []
   'on-favorite': []
-  'on-more': []
+  /** 라이브러리 카테고리 선택 — value만 전달 (어느 메시지인지는 상위 ChatMessageItem에서 logId와 합침) */
+  'on-select-category': [value: string]
 }>()
+
+// 🔽 더미 데이터 — 백엔드 연결 시 API 또는 useChatStore 등에서 목록 주입으로 교체 권장
+const categoryMenuItems: DropdownMenuItemDef[] = [
+  { label: '기본 카테고리', value: 'default', icon: 'icon-menu' },
+  { label: '업무관리', value: 'task', icon: 'icon-document' },
+  { label: '인사관리', value: 'hr', icon: 'icon-group' },
+  { label: '회계관리', value: 'accounting', icon: 'icon-chart' },
+  { label: '시스템관리', value: 'system', icon: 'icon-settings' },
+]
+
+const onSelectCategory = (value: string) => {
+  emit('on-select-category', value)
+}
 </script>

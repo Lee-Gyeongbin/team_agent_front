@@ -28,6 +28,7 @@
           v-if="!message.isStreaming"
           class="message-footer"
         >
+          <!-- 라이브러리 카테고리: Actions는 value만 알 수 있어 logId는 여기서 묶어 상위로 전달 -->
           <ChatMessageActions
             :is-liked="message.isLiked"
             :is-disliked="message.isDisliked"
@@ -35,6 +36,7 @@
             @on-like="emit('on-like', message.logId)"
             @on-dislike="emit('on-dislike', message.logId)"
             @on-regenerate="emit('on-regenerate', message.logId)"
+            @on-select-category="emit('on-select-category', message.logId, $event)"
           />
           <div
             v-if="message.hasSource || message.hasVisualization"
@@ -88,6 +90,8 @@ const emit = defineEmits<{
   'on-like': [id: string]
   'on-dislike': [id: string]
   'on-regenerate': [id: string]
+  /** [답변 logId, 카테고리 value] — 라이브러리 저장 API 연동 시 사용 */
+  'on-select-category': [id: string, categoryValue: string]
   'on-view-source': [id: string]
   'on-view-visualization': [id: string]
 }>()
