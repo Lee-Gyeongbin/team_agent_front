@@ -10,7 +10,7 @@
   >
     <div
       class="category-row flex items-center"
-      :class="{ 'is-selected': selectable && selectedIds.includes(item.id) }"
+      :class="{ 'is-selected': selectable && !item.children?.length && selectedIds.includes(item.id) }"
       :style="{ paddingLeft: `${(depth - 1) * 20}px` }"
       @click="selectable ? $emit('select', item) : undefined"
     >
@@ -25,8 +25,8 @@
         />
       </span>
 
-      <!-- 이름 수정 모드 (selectable이 아닐 때만) -->
-      <template v-if="!selectable && editingCategoryId === item.id">
+      <!-- 이름 수정 모드 -->
+      <template v-if="editingCategoryId === item.id">
         <UiInput
           ref="inputRef"
           v-model="localEditingName"
@@ -47,14 +47,14 @@
         {{ item.name }}
       </span>
 
-      <!-- selectable 모드: 선택 체크 표시 -->
+      <!-- selectable 모드: 리프 카테고리만 체크 표시 -->
       <i
-        v-if="selectable && selectedIds.includes(item.id)"
+        v-if="selectable && !item.children?.length && selectedIds.includes(item.id)"
         class="icon icon-check size-16 category-check"
       />
 
-      <!-- 일반 모드: 더보기 메뉴 -->
-      <template v-if="!selectable">
+      <!-- 더보기 메뉴 (menuItems가 있을 때 표시) -->
+      <template v-if="menuItems.length > 0">
         <UiDropdownMenu
           v-model:open="isDropdownOpen"
           :items="menuItems"
@@ -122,7 +122,7 @@
         :menu-items="menuItems"
         @toggle="$emit('toggle', $event)"
         @select="$emit('select', $event)"
-        @menu-select="$emit('menu-select', $event[0], $event[1])"
+        @menu-select="(value, item) => $emit('menu-select', value, item)"
         @update:editing-name="$emit('update:editing-name', $event)"
         @save-rename="$emit('save-rename')"
       />

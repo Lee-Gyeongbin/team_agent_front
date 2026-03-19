@@ -4,7 +4,8 @@
 // ===================================
 // 공통
 // ===================================
-// 공통: 회색 아웃라인 버튼 (border·텍스트 #6F7A93)
+
+// 회색 아웃라인 버튼 (border·텍스트 #6F7A93)
 .ui-button-outline-muted {
   border-color: $color-text-muted;
   color: $color-text-muted;
@@ -23,33 +24,59 @@
   }
 }
 
+// 배치 바 버튼
 .batch-bar-btn {
   min-width: 88px;
   height: 24px;
   border-radius: 6px;
   padding: 0 8px;
+
   .ui-button-text {
     font-size: 12px;
-    // color: #6f7a93;
     font-weight: 700;
   }
+}
 
-  // &:hover {
-  //   .ui-button-text {
-  //     color: $color-primary;
-  //   }
-  // }
+// 테이블 셀 액션 (문서·URL 공통)
+.cell-actions {
+  display: inline-flex;
+}
 
-  // &.type-danger:hover {
-  //   border-color: $color-error !important;
-  //   .ui-button-text {
-  //     color: $color-error;
-  //   }
-  // }
+.btn-row-more {
+  padding: 2px;
+}
+
+// 페이지네이션 여백 (문서·URL 공통)
+.document-pagination,
+.url-pagination {
+  padding: 21px 0 4px;
+}
+
+// 상단 toolbar 패턴 (문서·URL 공통)
+.document-toolbar,
+.url-toolbar {
+  gap: $spacing-sm;
+  padding-bottom: 16px;
+}
+
+.document-search-input,
+.url-search-input {
+  min-width: 150px;
+  max-width: 400px;
+}
+
+.document-filter-select,
+.url-filter-select {
+  min-width: 120px;
+}
+
+.btn-register-document,
+.btn-register-url {
+  margin-left: auto;
 }
 
 // ===================================
-// 문서관리
+// 레이아웃
 // ===================================
 
 .repository-index {
@@ -80,38 +107,23 @@
   min-height: calc(100vh - #{$header-height} - 45px);
 }
 
-// ========== 상단 toolbar 패널 ==========
-.document-toolbar {
-  gap: $spacing-sm;
-  padding-bottom: 16px;
-
-  .document-search-input {
-    min-width: 150px;
-    max-width: 400px;
-  }
-
-  .document-filter-select {
-    min-width: 120px;
-  }
-
-  .btn-register-document {
-    margin-left: auto;
-  }
-}
-
 .repository-content-wrapper {
   display: flex;
   gap: 12px;
   align-items: flex-start;
 }
 
-// ========== 좌측 카테고리 패널 ==========
+// ===================================
+// 좌측 카테고리 패널
+// ===================================
+
 .category-panel {
   width: 260px;
   flex-shrink: 0;
   background: #fff;
   border: 1px solid #dce4e9;
   padding: 16px;
+  border-radius: 16px;
   display: flex;
   flex-direction: column;
   height: calc(100vh - #{$header-height} - 123px);
@@ -187,7 +199,7 @@
       @include ellipsis(1);
     }
 
-    // UiInput 인라인 편집 — 옵션(size=sm, radius=base) + 레이아웃/높이/플레이스홀더만 SCSS 오버라이드
+    // UiInput 인라인 편집
     .category-name-input.ui-input-outer {
       flex: 1;
       min-width: 0;
@@ -213,7 +225,6 @@
       flex-shrink: 0;
       padding: 2px;
 
-      /* 드롭다운 열림 중에는 호버 해제되어도 버튼 유지 — 앵커 손실 방지 + 호버와 동일한 배경/글자색 */
       &.is-active {
         opacity: 1;
         pointer-events: auto;
@@ -254,7 +265,10 @@
   }
 }
 
-// ========== 우측 문서 패널 ==========
+// ===================================
+// 우측 문서 패널
+// ===================================
+
 .document-panel {
   flex: 1 0 0;
   display: flex;
@@ -286,7 +300,6 @@
     border-top: 1px solid #ecf0f3;
     border-bottom: 1px solid #ecf0f3;
 
-    // 정렬 가능 헤더 버튼 (문서명, 파일크기, 등록일) — 호버 시 배경
     .ui-table th .table-header-sort-btn {
       display: inline-flex;
       align-items: center;
@@ -316,10 +329,10 @@
       border-color: #ecf0f3 !important;
     }
 
-    // 이 테이블에서는 행 호버 배경 미적용
     .ui-table tbody tr:hover td {
       background: #fff;
     }
+
     .ui-table tbody tr.is-selected:hover td {
       background: rgba(var(--color-primary-rgb, 59, 130, 246), 0.08);
     }
@@ -342,7 +355,6 @@
       }
     }
 
-    // 파일 타입별 아이콘 자체 색상 (배경 없음)
     .doc-icon-pdf .icon {
       color: #db3b76;
     }
@@ -365,8 +377,6 @@
     }
   }
 
-  // UiBadge(스코프드) 기본 스타일(.ui-badge.variant-default[data-v-...])보다
-  // 특이성이 높아야 오버라이드됨
   .ui-badge.variant-default.badge-status {
     &.is-active {
       background: #d7fade;
@@ -378,21 +388,172 @@
       color: #5c6677;
     }
   }
-
-  .cell-actions {
-    display: inline-flex;
-  }
-
-  .btn-row-more {
-    padding: 2px;
-  }
-}
-
-// 페이지네이션 — UiPagination 컴포넌트 사용, 여백만 커스텀
-.document-pagination {
-  padding: 21px 0 4px;
 }
 
 // ===================================
 // URL 관리
 // ===================================
+
+// 배치바 + 테이블 + 페이지네이션 통합 wrapper
+.url-content-panel {
+  border: 1px solid #dce4e9;
+  border-radius: 16px;
+  background: #fff;
+  padding: 16px;
+}
+
+.url-batch-bar {
+  gap: $spacing-sm;
+  padding-bottom: 16px;
+
+  .batch-count {
+    @include typo($body-medium);
+    color: $color-text-primary;
+    margin-right: $spacing-sm;
+
+    .point-color {
+      color: var(--color-primary);
+    }
+  }
+
+  .url-scraping-info {
+    gap: $spacing-sm;
+    margin-left: auto;
+
+    .scraping-text {
+      @include typo($body-small);
+      color: $color-text-secondary;
+
+      .scraping-date {
+        color: var(--color-primary);
+      }
+    }
+
+    .scraping-tooltip-trigger {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      cursor: help;
+      color: #5c6677;
+    }
+  }
+}
+
+.cell-url-address {
+  max-width: 240px;
+  @include ellipsis(1);
+}
+
+// 마지막 수집일 폰트 축소
+.cell-last-collected {
+  @include typo($body-small);
+  color: $color-text-primary;
+}
+
+// ===================================
+// 카테고리 선택 모달
+// ===================================
+
+.modal-category-select {
+  .modal-dialog-content {
+    max-width: 720px;
+    border-radius: 12px;
+  }
+
+  .modal-dialog-body {
+    display: block;
+    min-height: 0;
+    padding: 0;
+  }
+}
+
+.modal-category-select__body {
+  padding: 0;
+}
+
+.modal-category-select__search {
+  margin-top: 12px;
+  margin-bottom: 12px;
+
+  .search-input {
+    width: 100%;
+  }
+}
+
+.modal-category-select__tree-wrap {
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 4px;
+  border: none;
+  padding: 0;
+  width: 100%;
+  height: auto;
+}
+
+.modal-category-select__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid $color-border;
+}
+
+// ===================================
+// URL 등록 패널 (오른쪽 슬라이드)
+// ===================================
+
+.url-reg-field {
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.url-reg-label {
+  display: block;
+  @include typo($body-large-bold);
+  color: $color-text-primary;
+  margin-bottom: 6px;
+
+  .required {
+    color: $color-error;
+  }
+}
+
+.url-reg-desc {
+  @include typo($body-small);
+  color: $color-text-muted;
+  margin-top: 2px;
+}
+
+.url-reg-status-field {
+  padding: 12px 0;
+  border-bottom: 1px solid $color-border-light;
+  margin-bottom: 20px;
+}
+
+.url-reg-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.url-reg-col {
+  display: flex;
+  flex-direction: column;
+}
+
+// ===================================
+// 문서 등록 패널
+// ===================================
+
+.doc-reg-category-row {
+  gap: 8px;
+
+  .doc-reg-category-input {
+    flex: 1;
+  }
+}
+

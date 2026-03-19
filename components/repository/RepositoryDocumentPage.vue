@@ -3,7 +3,7 @@
     <!-- 검색·필터·문서 등록 (문서 관리 탭용) -->
     <div class="document-toolbar flex flex-wrap items-center">
       <UiInput
-        v-model="searchKeyword"
+        v-model="docSearchKeyword"
         type="search"
         placeholder="문서명, 내용으로 검색..."
         class="document-search-input"
@@ -19,11 +19,12 @@
         전체 카테고리
       </UiButton>
       <UiSelect
-        v-model="selectedStatusFilter"
+        v-model="docStatusFilter"
         :options="statusFilterOptions"
         placeholder="전체 상태"
         size="md"
         class="document-filter-select"
+        @update:model-value="onSearch"
       />
       <UiButton
         variant="primary"
@@ -55,6 +56,7 @@
             variant="ghost"
             size="sm"
             class="btn-add-category"
+            @click="toggleCategoryInput"
           >
             <template #icon-left>
               <i class="icon icon-plus-medium size-16" />
@@ -64,14 +66,17 @@
         <div class="category-tree-wrap">
           <ul class="category-tree">
             <CategoryTreeNode
-              v-for="cat in categoryList"
+              v-for="cat in filteredCategoryList"
               :key="cat.id"
               :item="cat"
               :depth="1"
+              selectable
+              :selected-ids="selectedCategoryIds"
               :editing-category-id="editingCategoryId"
               :editing-name="editingName"
               :menu-items="categoryMenuItems"
               @toggle="toggleExpand"
+              @select="onCategorySelect"
               @menu-select="onCategoryMenuSelect"
               @update:editing-name="editingName = $event"
               @save-rename="saveCategoryRename"
@@ -230,9 +235,9 @@
         </div>
 
         <UiPagination
-          v-model="currentPage"
-          :total-count="totalCount"
-          :page-size="pageSize"
+          v-model="docCurrentPage"
+          :total-count="docTotalCount"
+          :page-size="docPageSize"
           total-label="개 문서"
           class="document-pagination"
         />
@@ -244,6 +249,12 @@
       @close="isCategorySelectModalOpen = false"
       @confirm="onCategorySelectConfirm"
     />
+
+    <DocRegisterPanel
+      :is-open="isDocRegisterOpen"
+      @close="isDocRegisterOpen = false"
+      @save="onSaveDocument"
+    />
   </div>
 </template>
 
@@ -251,71 +262,138 @@
 import type { TableColumn } from '~/types/table'
 import type { CategoryItem } from '~/types/repository'
 import CategorySelectModal from '~/components/repository/CategorySelectModal.vue'
+import DocRegisterPanel from '~/components/repository/DocRegisterPanel.vue'
+import { useRepositoryStore } from '~/composables/repository/useRepositoryStore'
+import { openAlert, openConfirm } from '~/composables/useDialog'
 
-// 문서 검색·필터 (SelectItem value는 빈 문자열 불가 — 'all' 사용)
-const searchKeyword = ref('')
-const selectedStatusFilter = ref('all')
+const {
+  categoryList,
+  filteredCategoryList,
+  visibleCategoryIds,
+  handleSelectCategoryList,
+  handleSaveCategory,
+  handleRenameCategory,
+  handleDeleteCategory,
+  documentList,
+  docTotalCount,
+  docSearchKeyword,
+  docStatusFilter,
+  docSelectedCategoryId,
+  docCurrentPage,
+  docPageSize,
+  handleSelectDocumentList,
+  handleDeleteDocument,
+} = useRepositoryStore()
+
+// 초기 로딩
+onMounted(async () => {
+  await handleSelectCategoryList()
+  await handleSelectDocumentList()
+})
+
+// 페이지 변경 시 재조회
+watch(docCurrentPage, () => handleSelectDocumentList())
+
+// 검색·필터
 const statusFilterOptions = [
   { label: '전체 상태', value: 'all' },
   { label: '활성', value: 'active' },
   { label: '비활성', value: 'inactive' },
 ]
 
-// 카테고리 (퍼블/토글용)
+const onSearch = () => {
+  // docCurrentPage watch가 handleSelectDocumentList를 호출하므로, 페이지가 1이 아닐 때만 변경
+  if (docCurrentPage.value !== 1) {
+    docCurrentPage.value = 1 // watch에서 재조회
+  } else {
+    handleSelectDocumentList()
+  }
+}
+
+// ===== 카테고리 =====
 const isCategoryInputVisible = ref(false)
 const isCategorySelectModalOpen = ref(false)
 const categoryInputValue = ref('')
-// 카테고리 이름 인라인 수정
 const editingCategoryId = ref<string | null>(null)
 const editingName = ref('')
 
-function getCategoryById(id: string, items?: CategoryItem[]): CategoryItem | undefined {
-  const list = items ?? categoryList.value
-  for (const item of list) {
-    if (item.id === id) return item
-    const found = getCategoryById(id, item.children)
-    if (found) return found
-  }
-  return undefined
-}
-
-function saveCategoryRename() {
-  if (editingCategoryId.value) {
-    const target = getCategoryById(editingCategoryId.value)
-    if (target && editingName.value.trim()) target.name = editingName.value.trim()
-    editingCategoryId.value = null
-  }
-}
-
-// 🔽 퍼블용 더미 — 4depth 시안 구조. 백엔드 연결 시 API로 교체
-const categoryList = ref<CategoryItem[]>([
-  {
-    id: 'cat-doc-1',
-    name: '1depth 카테고리명 길이 테스트 테스트 테스트',
-    expanded: false,
-    children: [
-      {
-        id: 'cat-doc-1-1',
-        name: '2depth 카테고리명 길이 테스트 테스트 테스트',
-        expanded: false,
-        children: [
-          {
-            id: 'cat-doc-1-1-1',
-            name: '3depth 카테고리명 길이 테스트 테스트 테스트',
-            expanded: false,
-            children: [{ id: 'cat-doc-1-1-1-1', name: '4depth 카테고리명 길이 테스트 테스트 테스트' }],
-          },
-        ],
-      },
-    ],
-  },
-])
 const categoryMenuItems = [
   { label: '이름 수정', value: 'rename', icon: 'icon-edit' },
   { label: '카테고리 삭제', value: 'delete', icon: 'icon-trashcan', color: 'danger' as const },
 ]
 
-// 테이블 컬럼
+// 카테고리 선택 → 문서 필터링
+const selectedCategoryIds = computed(() =>
+  docSelectedCategoryId.value ? [docSelectedCategoryId.value] : [],
+)
+
+const onCategorySelect = (item: CategoryItem) => {
+  // 자식 있는 카테고리 → 펼치기/접기만
+  if (item.children?.length) {
+    item.expanded = !item.expanded
+    return
+  }
+  // 리프 카테고리 → 선택 토글 (같은 거 다시 클릭하면 해제)
+  if (docSelectedCategoryId.value === item.id) {
+    docSelectedCategoryId.value = ''
+  } else {
+    docSelectedCategoryId.value = item.id
+  }
+  docCurrentPage.value = 1
+  handleSelectDocumentList()
+}
+
+const toggleExpand = (item: CategoryItem) => {
+  if (item?.children?.length) item.expanded = !item.expanded
+}
+
+const toggleCategoryInput = () => {
+  isCategoryInputVisible.value = !isCategoryInputVisible.value
+  if (!isCategoryInputVisible.value) categoryInputValue.value = ''
+}
+
+const onCategoryInputEnter = async () => {
+  if (categoryInputValue.value.trim()) {
+    await handleSaveCategory({ name: categoryInputValue.value.trim(), parentId: null })
+    categoryInputValue.value = ''
+  }
+}
+
+const startCategoryRename = (item: CategoryItem) => {
+  editingCategoryId.value = item.id
+  editingName.value = item.name
+}
+
+const saveCategoryRename = async () => {
+  if (editingCategoryId.value && editingName.value.trim()) {
+    await handleRenameCategory(editingCategoryId.value, editingName.value.trim())
+  }
+  editingCategoryId.value = null
+}
+
+const onCategoryMenuSelect = async (value: string, cat: CategoryItem) => {
+  if (value === 'rename') {
+    startCategoryRename(cat)
+  } else if (value === 'delete') {
+    const confirmed = await openConfirm({ title: '카테고리 삭제', message: `'${cat.name}' 카테고리를 삭제하시겠습니까?\n하위 카테고리도 함께 삭제됩니다.` })
+    if (confirmed) await handleDeleteCategory(cat.id)
+  }
+}
+
+const openCategorySelectModal = () => {
+  isCategorySelectModalOpen.value = true
+}
+const onCategorySelectConfirm = (selectedIds: string[]) => {
+  visibleCategoryIds.value = selectedIds
+  // 선택 중이던 카테고리가 필터에서 빠졌으면 해제
+  if (docSelectedCategoryId.value && !selectedIds.includes(docSelectedCategoryId.value) && selectedIds.length > 0) {
+    docSelectedCategoryId.value = ''
+    docCurrentPage.value = 1
+    handleSelectDocumentList()
+  }
+}
+
+// ===== 테이블 =====
 const tableColumns: TableColumn[] = [
   { key: 'select', label: '', width: '48px', align: 'center', headerAlign: 'center' },
   { key: 'documentName', label: '문서명', width: 'auto', align: 'left', headerAlign: 'left' },
@@ -326,7 +404,7 @@ const tableColumns: TableColumn[] = [
   { key: 'actions', label: '', width: '56px', align: 'center', headerAlign: 'center' },
 ]
 
-// 정렬
+// 정렬 (프론트 정렬)
 type SortKey = 'documentName' | 'fileSize' | 'registerDate'
 const sortKey = ref<SortKey | null>(null)
 const sortOrder = ref<'asc' | 'desc'>('asc')
@@ -339,46 +417,14 @@ const onSort = (key: SortKey) => {
   }
 }
 
-// 🔽 퍼블용 더미 데이터 — 백엔드 연결 시 API로 교체
-const documentList = ref([
-  {
-    id: '1',
-    documentName: 'ERP시스템_사용자매뉴얼.pdf',
-    fileType: 'pdf',
-    fileSize: '2.4MB',
-    registerDate: '2025.01.02',
-    status: '활성',
-    ragCount: 5,
-  },
-  {
-    id: '2',
-    documentName: '개인정보처리방침.txt',
-    fileType: 'txt',
-    fileSize: '128KB',
-    registerDate: '2025.01.01',
-    status: '활성',
-    ragCount: 2,
-  },
-  {
-    id: '3',
-    documentName: '제안서_초안.doc',
-    fileType: 'doc',
-    fileSize: '1.1MB',
-    registerDate: '2024.12.28',
-    status: '활성',
-    ragCount: 1,
-  },
-])
-
-// 퍼블용 문자열 정렬입니다. 실제 연동 시 fileSize/registerDate는 원시값(숫자·Date) 기준 정렬 필요
 const sortedDocumentList = computed(() => {
   const list = [...documentList.value]
   const key = sortKey.value
   if (!key) return list
   const dir = sortOrder.value === 'asc' ? 1 : -1
   return list.sort((a, b) => {
-    const va = a[key] as string
-    const vb = b[key] as string
+    const va = (a as any)[key] as string
+    const vb = (b as any)[key] as string
     return dir * (va === vb ? 0 : va < vb ? -1 : 1)
   })
 })
@@ -389,7 +435,7 @@ const rowActionItems = [
   { label: '삭제', value: 'delete', icon: 'icon-trashcan', color: 'danger' as const },
 ]
 
-// 선택 — 퍼블용: 현재 보이는 목록(전체 documentList) 기준 전체 선택/해제. 실제 연동 시 페이지네이션 적용 시 '현재 페이지' vs '전체' 정책 결정 필요
+// ===== 선택 =====
 const selectedIds = ref<string[]>([])
 const isAllSelected = computed(
   () => documentList.value.length > 0 && selectedIds.value.length === documentList.value.length,
@@ -398,48 +444,63 @@ const toggleSelectAll = () => {
   if (isAllSelected.value) {
     selectedIds.value = []
   } else {
-    selectedIds.value = documentList.value.map((r: { id: string }) => r.id)
+    selectedIds.value = documentList.value.map((r) => r.id)
   }
 }
 const toggleSelectRow = (id: string, checked: boolean) => {
   if (checked) {
     if (!selectedIds.value.includes(id)) selectedIds.value = [...selectedIds.value, id]
   } else {
-    selectedIds.value = selectedIds.value.filter((x: string) => x !== id)
+    selectedIds.value = selectedIds.value.filter((x) => x !== id)
   }
 }
 
-// 페이지네이션 (🔽 퍼블용 — API 연동 시 totalCount/currentPage는 서버 기준으로 교체)
-const totalCount = ref(166)
-const currentPage = ref(1)
-const pageSize = 10
-
-const toggleExpand = (item: CategoryItem) => {
-  if (item?.children?.length) item.expanded = !item.expanded
+// ===== 문서 등록 패널 =====
+const isDocRegisterOpen = ref(false)
+const onRegisterDocument = () => {
+  isDocRegisterOpen.value = true
+}
+const onSaveDocument = (data: Record<string, any>) => {
+  // 추후 API 연동 시 handleSaveDocument 호출
+  openAlert({ title: '문서 등록', message: `'${data.title}' 문서가 등록되었습니다.` })
+  handleSelectDocumentList()
 }
 
-const startCategoryRename = (item: CategoryItem) => {
-  editingCategoryId.value = item.id
-  editingName.value = item.name
+const onBatchDownload = () => {
+  if (selectedIds.value.length === 0) {
+    openAlert({ title: '알림', message: '다운로드할 문서를 선택해주세요.' })
+    return
+  }
+  openAlert({ title: '일괄 다운로드', message: `${selectedIds.value.length}개 문서 다운로드 기능은 추후 구현 예정입니다.` })
 }
 
-const openCategorySelectModal = () => {
-  isCategorySelectModalOpen.value = true
-}
-// 추후 API 연동: 모달에서 선택한 카테고리 반영
-const onCategorySelectConfirm = () => {}
-const onCategoryInputEnter = () => {
-  if (categoryInputValue.value.trim()) {
-    categoryList.value.push({
-      id: `cat-doc-new-${Date.now()}`,
-      name: categoryInputValue.value.trim(),
-      children: [],
-    })
-    categoryInputValue.value = ''
+const onBatchDelete = async () => {
+  if (selectedIds.value.length === 0) {
+    openAlert({ title: '알림', message: '삭제할 문서를 선택해주세요.' })
+    return
+  }
+  const confirmed = await openConfirm({ title: '일괄 삭제', message: `선택한 ${selectedIds.value.length}개 문서를 삭제하시겠습니까?` })
+  if (confirmed) {
+    await handleDeleteDocument(selectedIds.value)
+    selectedIds.value = []
   }
 }
 
-// 문서 아이콘 (퍼블용)
+const onRowActionSelect = async (value: string, row: Record<string, any>) => {
+  if (value === 'delete') {
+    const confirmed = await openConfirm({ title: '문서 삭제', message: `'${row.documentName}'을(를) 삭제하시겠습니까?` })
+    if (confirmed) {
+      await handleDeleteDocument([row.id])
+      selectedIds.value = selectedIds.value.filter((id) => id !== row.id)
+    }
+  } else if (value === 'preview') {
+    openAlert({ title: '미리보기', message: '미리보기 기능은 추후 구현 예정입니다.' })
+  } else if (value === 'download') {
+    openAlert({ title: '다운로드', message: '다운로드 기능은 추후 구현 예정입니다.' })
+  }
+}
+
+// 문서 아이콘
 const getDocIconClass = (fileType: string) => {
   if (fileType === 'pdf') return 'doc-icon-pdf'
   if (fileType === 'txt') return 'doc-icon-txt'
@@ -452,14 +513,4 @@ const getDocIconName = (fileType: string) => {
   if (fileType === 'doc') return 'icon-file-doc'
   return 'icon-document'
 }
-
-// 액션 핸들러 — 퍼블용 placeholder. 추후 API/라우팅 연결
-const onCategoryMenuSelect = (value: string, cat: CategoryItem) => {
-  if (value === 'rename') startCategoryRename(cat)
-}
-const onSearch = () => {}
-const onRegisterDocument = () => {}
-const onBatchDownload = () => {}
-const onBatchDelete = () => {}
-const onRowActionSelect = (_value: string, _row: Record<string, unknown>) => {}
 </script>

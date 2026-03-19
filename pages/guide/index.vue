@@ -435,6 +435,12 @@ const componentList = [
     description: '상태 표시 뱃지 — active/inactive/draft 등 자동 라벨',
     tags: ['status', 'label', 'size'],
   },
+  {
+    name: 'UiFileUpload',
+    to: '/guide/ui-file-upload',
+    description: '파일 업로드 — 드래그앤드롭, 다중 파일, 파일 목록, 크기 표시',
+    tags: ['v-model', 'multiple', 'accept', 'hint', 'maxSize'],
+  },
 ]
 
 // 섹션 4: 아이콘 목록 (그룹별로 구분) — _icons.custom.scss와 동기화

@@ -109,6 +109,38 @@
   }
 }
 
+// Props 테이블 (가이드 상세 페이지 공통)
+.guide-props-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: $font-size-sm;
+
+  th,
+  td {
+    padding: $spacing-sm $spacing-md;
+    text-align: left;
+    border-bottom: 1px solid $color-border;
+  }
+
+  th {
+    font-weight: $font-weight-semibold;
+    color: $color-text-secondary;
+    background: $color-background;
+  }
+
+  td {
+    color: $color-text-primary;
+  }
+
+  code {
+    padding: 2px 6px;
+    border-radius: $border-radius-sm;
+    background: $color-background;
+    font-size: 12px;
+    color: $color-text-dark;
+  }
+}
+
 // 섹션 3: 컴포넌트 카드 그리드
 .guide-component-grid {
   display: grid;
@@ -309,6 +341,32 @@
 }
 
 // 섹션 3, 4: 컴포넌트 데모
+.guide-note {
+  @include typo($body-small);
+  color: $color-text-muted;
+  margin-bottom: $spacing-md;
+}
+
+.guide-code {
+  padding: $spacing-md;
+  background: #1e293b;
+  color: #e2e8f0;
+  border-radius: $border-radius-base;
+  font-family: $font-family-mono;
+  font-size: $font-size-sm;
+  line-height: $line-height-base;
+  overflow-x: auto;
+  white-space: pre;
+  margin-top: $spacing-sm;
+  margin-bottom: $spacing-md;
+
+  code {
+    background: none;
+    padding: 0;
+    color: inherit;
+  }
+}
+
 .guide-demo {
   margin-bottom: $spacing-lg;
 

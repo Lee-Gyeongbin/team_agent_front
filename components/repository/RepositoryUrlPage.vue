@@ -1,6 +1,6 @@
 <template>
   <div class="repository-url-tab">
-    <!-- 검색·필터·URL 등록 (URL 관리 탭용) -->
+    <!-- 검색·필터·URL 등록 -->
     <div class="url-toolbar flex flex-wrap items-center">
       <UiInput
         v-model="urlSearchKeyword"
@@ -10,20 +10,21 @@
         @search="onUrlSearch"
         @enter="onUrlSearch"
       />
-      <UiButton
-        variant="line-secondary"
+      <UiSelect
+        v-model="urlCategoryFilter"
+        :options="categoryFilterOptions"
+        placeholder="전체 카테고리"
         size="md"
-        class="ui-button-outline-muted"
-        @click="openCategorySelectModal"
-      >
-        전체 카테고리
-      </UiButton>
+        class="url-filter-select"
+        @update:model-value="onUrlSearch"
+      />
       <UiSelect
         v-model="urlStatusFilter"
         :options="urlStatusFilterOptions"
         placeholder="전체 상태"
         size="md"
         class="url-filter-select"
+        @update:model-value="onUrlSearch"
       />
       <UiButton
         variant="primary"
@@ -45,59 +46,60 @@
       </UiButton>
     </div>
 
-    <!-- 일괄 처리·스크래핑 정보 바 -->
-    <div class="url-batch-bar flex items-center flex-wrap">
-      <span class="batch-count">{{ selectedUrlIds.length }}개 선택됨</span>
-      <UiButton
-        variant="line-secondary"
-        size="xxs"
-        class="batch-bar-btn"
-        @click="onBatchDelete"
-      >
-        <template #icon-left>
-          <i class="icon icon-trashcan size-12" />
-        </template>
-        일괄 삭제
-      </UiButton>
-      <div class="url-scraping-info flex items-center">
-        <span class="scraping-text">마지막 실행 : {{ lastScrapingAt }}</span>
-        <span class="scraping-text">다음 예정: {{ nextScrapingAt }}</span>
-        <div
-          class="scraping-tooltip-trigger"
-          :title="scrapingTooltipText"
+    <!-- 배치바 + 테이블 + 페이지네이션 통합 wrapper -->
+    <div class="url-content-panel">
+      <!-- 일괄 처리·스크래핑 정보 바 -->
+      <div class="url-batch-bar flex items-center flex-wrap">
+        <span class="batch-count"><span class="point-color">{{ selectedUrlIds.length }}개</span> 선택됨</span>
+        <UiButton
+          variant="line-secondary"
+          size="xxs"
+          class="batch-bar-btn"
+          @click="onBatchDelete"
         >
-          <i class="icon icon-info size-16" />
+          <template #icon-left>
+            <i class="icon icon-trashcan size-12" />
+          </template>
+          일괄 삭제
+        </UiButton>
+        <div class="url-scraping-info flex items-center">
+          <span class="scraping-text">마지막 실행 : <span class="scraping-date">{{ lastScrapingAt }}</span></span>
+          <span class="scraping-text">다음 예정: <span class="scraping-date">{{ nextScrapingAt }}</span></span>
+          <div
+            class="scraping-tooltip-trigger"
+            :title="scrapingTooltipText"
+          >
+            <i class="icon icon-info size-16" />
+          </div>
         </div>
+        <UiButton
+          variant="line-secondary"
+          size="xxs"
+          class="batch-bar-btn"
+          @click="onBatchLog"
+        >
+          <template #icon-left>
+            <i class="icon icon-mini-time size-12" />
+          </template>
+          배치 로그
+        </UiButton>
+        <UiButton
+          variant="line-secondary"
+          size="xxs"
+          class="batch-bar-btn"
+          @click="onBatchScraping"
+        >
+          <template #icon-left>
+            <i class="icon icon-version size-12" />
+          </template>
+          배치 스크래핑
+        </UiButton>
       </div>
-      <UiButton
-        variant="line-secondary"
-        size="xxs"
-        class="batch-bar-btn"
-        @click="onBatchLog"
-      >
-        <template #icon-left>
-          <i class="icon icon-mini-time size-12" />
-        </template>
-        배치 로그
-      </UiButton>
-      <UiButton
-        variant="line-secondary"
-        size="xxs"
-        class="batch-bar-btn"
-        @click="onBatchScraping"
-      >
-        <template #icon-left>
-          <i class="icon icon-version size-12" />
-        </template>
-        배치 스크래핑
-      </UiButton>
-    </div>
 
-    <!-- URL 테이블 -->
-    <div class="url-table-wrap">
+      <!-- URL 테이블 -->
       <UiTable
         :columns="urlTableColumns"
-        :data="sortedUrlList"
+        :data="urlList"
         sticky-header
         max-height="calc(100vh - 380px)"
         empty-text="등록된 URL이 없습니다."
@@ -127,7 +129,7 @@
           {{ value }}
         </template>
         <template #cell-lastCollectedAt="{ value }">
-          {{ value }}
+          <span class="cell-last-collected">{{ value }}</span>
         </template>
         <template #cell-status="{ row }">
           <UiToggle
@@ -161,50 +163,71 @@
           </div>
         </template>
       </UiTable>
+
+      <!-- 페이지네이션 -->
+      <UiPagination
+        v-model="urlCurrentPage"
+        :total-count="urlTotalCount"
+        :page-size="urlPageSize"
+        total-label="개 URL"
+        class="url-pagination"
+      />
     </div>
 
-    <!-- 페이지네이션 -->
-    <UiPagination
-      v-model="urlCurrentPage"
-      :total-count="urlTotalCount"
-      :page-size="urlPageSize"
-      total-label="개 URL"
-      class="url-pagination"
-    />
-
-    <CategorySelectModal
-      :is-open="isCategorySelectModalOpen"
-      @close="isCategorySelectModalOpen = false"
-      @confirm="onCategorySelectConfirm"
+    <UrlRegisterPanel
+      :is-open="isUrlRegisterOpen"
+      @close="isUrlRegisterOpen = false"
+      @save="onSaveUrl"
     />
   </div>
 </template>
 
 <script setup lang="ts">
 import type { TableColumn } from '~/types/table'
-import CategorySelectModal from '~/components/repository/CategorySelectModal.vue'
+import UrlRegisterPanel from '~/components/repository/UrlRegisterPanel.vue'
+import { useRepositoryStore } from '~/composables/repository/useRepositoryStore'
+import { openAlert, openConfirm } from '~/composables/useDialog'
 
 const scrapingTooltipText = '등록된 모든 활성 URL에 대해 데이터 수집(스크래핑)을 실행합니다.'
 
-// URL 검색·필터
-const urlSearchKeyword = ref('')
-const urlStatusFilter = ref('all')
+const {
+  urlList,
+  urlTotalCount,
+  urlSearchKeyword,
+  urlStatusFilter,
+  urlCategoryFilter,
+  urlCurrentPage,
+  urlPageSize,
+  handleSelectUrlList,
+  handleSaveUrl,
+  handleDeleteUrl,
+  handleToggleUrlStatus,
+} = useRepositoryStore()
 
-// 카테고리 선택 모달 (퍼블 연결)
-const isCategorySelectModalOpen = ref(false)
-const openCategorySelectModal = () => {
-  isCategorySelectModalOpen.value = true
-}
-const onCategorySelectConfirm = () => {}
+// 초기 로딩
+onMounted(() => handleSelectUrlList())
+
+// 페이지 변경 시 재조회
+watch(urlCurrentPage, () => handleSelectUrlList())
+
+// 스크래핑 정보 (추후 API 연동)
+const lastScrapingAt = ref('2025-02-11 08:30')
+const nextScrapingAt = ref('2025-02-12 00:00')
+
+// 카테고리 필터 (store의 urlCategoryFilter 사용)
+const categoryFilterOptions = [
+  { label: '전체 카테고리', value: 'all' },
+  { label: '블로그', value: '블로그' },
+  { label: '문서', value: '문서' },
+  { label: '뉴스', value: '뉴스' },
+  { label: '지원센터', value: '지원센터' },
+]
+
 const urlStatusFilterOptions = [
   { label: '전체 상태', value: 'all' },
   { label: '활성', value: 'active' },
   { label: '비활성', value: 'inactive' },
 ]
-
-// 🔽 퍼블용 더미 데이터 — 백엔드 연결 시 API로 교체
-const lastScrapingAt = ref('2025-02-11 08:30')
-const nextScrapingAt = ref('2025-02-12 00:00')
 
 const urlTableColumns: TableColumn[] = [
   { key: 'select', label: '', width: '48px', align: 'center', headerAlign: 'center' },
@@ -217,39 +240,6 @@ const urlTableColumns: TableColumn[] = [
   { key: 'actions', label: '', width: '56px', align: 'center', headerAlign: 'center' },
 ]
 
-// 🔽 퍼블용 더미 데이터 — 백엔드 연결 시 API로 교체
-const urlList = ref([
-  {
-    id: '1',
-    category: '블로그',
-    urlAddress: 'https://blog.example.com',
-    urlName: '공식블로그',
-    collectionCycle: '매일',
-    lastCollectedAt: '2025-02-11 00:15',
-    active: true,
-  },
-  {
-    id: '2',
-    category: '문서',
-    urlAddress: 'https://docs.example.com/',
-    urlName: '기술 문서',
-    collectionCycle: '매일',
-    lastCollectedAt: '2025-02-11 00:15',
-    active: true,
-  },
-  {
-    id: '3',
-    category: '지원센터',
-    urlAddress: 'https://support.example.com/',
-    urlName: '지원센터',
-    collectionCycle: '매일',
-    lastCollectedAt: '2025-02-11 00:15',
-    active: false,
-  },
-])
-
-const sortedUrlList = computed(() => [...urlList.value])
-
 const urlRowActionItems = [
   { label: '즉시 수집', value: 'collect', icon: 'icon-refresh' },
   { label: '수집 내역', value: 'history', icon: 'icon-view' },
@@ -257,7 +247,7 @@ const urlRowActionItems = [
   { label: '삭제', value: 'delete', icon: 'icon-trashcan', color: 'danger' as const },
 ]
 
-// 선택 — 퍼블용: 현재 보이는 목록(전체 urlList) 기준 전체 선택/해제. 실제 연동 시 페이지네이션 적용 시 '현재 페이지' vs '전체' 정책 결정 필요
+// ===== 선택 =====
 const selectedUrlIds = ref<string[]>([])
 const isAllUrlSelected = computed(
   () => urlList.value.length > 0 && selectedUrlIds.value.length === urlList.value.length,
@@ -266,114 +256,82 @@ const toggleSelectAllUrl = () => {
   if (isAllUrlSelected.value) {
     selectedUrlIds.value = []
   } else {
-    selectedUrlIds.value = urlList.value.map((r: { id: string }) => r.id)
+    selectedUrlIds.value = urlList.value.map((r) => r.id)
   }
 }
 const toggleSelectRowUrl = (id: string, checked: boolean) => {
   if (checked) {
     if (!selectedUrlIds.value.includes(id)) selectedUrlIds.value = [...selectedUrlIds.value, id]
   } else {
-    selectedUrlIds.value = selectedUrlIds.value.filter((x: string) => x !== id)
+    selectedUrlIds.value = selectedUrlIds.value.filter((x) => x !== id)
   }
 }
 
-// 페이지네이션 (🔽 퍼블용 — API 연동 시 urlTotalCount/urlCurrentPage는 서버 기준으로 교체)
-const urlTotalCount = ref(24)
-const urlCurrentPage = ref(1)
-const urlPageSize = 10
-
-// 상태 토글 — 퍼블용: 더미 데이터에서 active 즉시 반영. 추후 API 연동 시 서버 요청 후 반영
-const onUrlStatusToggle = (id: string, active: boolean) => {
-  const row = urlList.value.find((r: { id: string; active?: boolean }) => r.id === id)
-  if (row) row.active = active
+// ===== 액션 핸들러 =====
+const onUrlSearch = () => {
+  if (urlCurrentPage.value !== 1) {
+    urlCurrentPage.value = 1
+  } else {
+    handleSelectUrlList()
+  }
 }
-// 액션 핸들러 — 퍼블용 placeholder. 추후 API 연동
-const onUrlSearch = () => {}
-const onRegisterUrl = () => {}
-const onBatchDelete = () => {}
-const onBatchLog = () => {}
-const onBatchScraping = () => {}
-const onUrlRowActionSelect = (_value: string, _row: Record<string, unknown>) => {}
+
+const onUrlStatusToggle = async (id: string, active: boolean) => {
+  await handleToggleUrlStatus(id, active)
+}
+
+// URL 등록 패널
+const isUrlRegisterOpen = ref(false)
+const onRegisterUrl = () => {
+  isUrlRegisterOpen.value = true
+}
+const onSaveUrl = async (data: Record<string, any>) => {
+  const cycleMap: Record<string, string> = { daily: '매일', weekly: '매주', monthly: '매월', manual: '수동' }
+  await handleSaveUrl({
+    urlName: data.urlName,
+    urlAddress: data.urlAddress,
+    category: data.category,
+    collectionCycle: cycleMap[data.collectionCycle] || data.collectionCycle,
+    active: data.active,
+  })
+}
+
+const onBatchDelete = async () => {
+  if (selectedUrlIds.value.length === 0) {
+    openAlert({ title: '알림', message: '삭제할 URL을 선택해주세요.' })
+    return
+  }
+  const confirmed = await openConfirm({ title: '일괄 삭제', message: `선택한 ${selectedUrlIds.value.length}개 URL을 삭제하시겠습니까?` })
+  if (confirmed) {
+    await handleDeleteUrl(selectedUrlIds.value)
+    selectedUrlIds.value = []
+  }
+}
+
+const onBatchLog = () => {
+  openAlert({ title: '배치 로그', message: '배치 로그 기능은 추후 구현 예정입니다.' })
+}
+
+const onBatchScraping = async () => {
+  const confirmed = await openConfirm({ title: '배치 스크래핑', message: '활성 상태인 모든 URL에 대해 스크래핑을 실행하시겠습니까?' })
+  if (confirmed) {
+    openAlert({ title: '배치 스크래핑', message: '스크래핑이 시작되었습니다.' })
+  }
+}
+
+const onUrlRowActionSelect = async (value: string, row: Record<string, any>) => {
+  if (value === 'delete') {
+    const confirmed = await openConfirm({ title: 'URL 삭제', message: `'${row.urlName}'을(를) 삭제하시겠습니까?` })
+    if (confirmed) {
+      await handleDeleteUrl([row.id])
+      selectedUrlIds.value = selectedUrlIds.value.filter((id) => id !== row.id)
+    }
+  } else if (value === 'collect') {
+    openAlert({ title: '즉시 수집', message: `'${row.urlName}' 수집 기능은 추후 구현 예정입니다.` })
+  } else if (value === 'history') {
+    openAlert({ title: '수집 내역', message: '수집 내역 기능은 추후 구현 예정입니다.' })
+  } else if (value === 'edit') {
+    openAlert({ title: 'URL 수정', message: 'URL 수정 기능은 추후 구현 예정입니다.' })
+  }
+}
 </script>
-
-<style lang="scss" scoped>
-@use '~/assets/styles/utils/variables' as *;
-@use '~/assets/styles/utils/mixins' as *;
-
-.url-toolbar {
-  gap: $spacing-sm;
-  padding-bottom: 16px;
-
-  .url-search-input {
-    min-width: 150px;
-    max-width: 400px;
-  }
-
-  .url-filter-select {
-    min-width: 120px;
-  }
-
-  .btn-register-url {
-    margin-left: auto;
-  }
-}
-
-.url-batch-bar {
-  gap: $spacing-sm;
-  padding: 16px;
-  border-radius: 16px;
-  border: 1px solid #dce4e9;
-  background: #fff;
-
-  .batch-count {
-    @include typo($body-medium);
-    color: $color-text-primary;
-    margin-right: $spacing-sm;
-  }
-
-  .url-scraping-info {
-    gap: $spacing-sm;
-    margin-left: $spacing-md;
-
-    .scraping-text {
-      @include typo($body-small);
-      color: $color-text-secondary;
-    }
-
-    .scraping-tooltip-trigger {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 16px;
-      height: 16px;
-      cursor: help;
-      color: #5c6677;
-    }
-  }
-}
-
-.url-table-wrap {
-  padding: 0 16px;
-  background: #fff;
-  border: 1px solid $color-border;
-  border-radius: $border-radius-base;
-  overflow: hidden;
-}
-
-.cell-url-address {
-  max-width: 240px;
-  @include ellipsis(1);
-}
-
-.cell-actions {
-  display: inline-flex;
-}
-
-.btn-row-more {
-  padding: 2px;
-}
-
-.url-pagination {
-  padding: 21px 0 4px;
-}
-</style>

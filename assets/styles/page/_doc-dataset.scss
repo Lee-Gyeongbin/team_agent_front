@@ -342,6 +342,7 @@
     flex-shrink: 0;
     transition: all $transition-fast;
     color: #fff;
+    vertical-align: middle;
   }
 
   .is-checked .ui-checkbox-box {

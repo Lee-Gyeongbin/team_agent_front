@@ -5,3 +5,27 @@ export interface CategoryItem {
   expanded?: boolean
   children?: CategoryItem[]
 }
+
+/** 문서 항목 */
+export interface Document {
+  id: string
+  documentName: string
+  fileType: string
+  fileSize: string
+  registerDate: string
+  status: string
+  ragCount: number
+  categoryId?: string
+}
+
+/** URL 항목 */
+export interface UrlItem {
+  id: string
+  category: string
+  urlAddress: string
+  urlName: string
+  collectionCycle: string
+  lastCollectedAt: string
+  active: boolean
+  categoryId?: string
+}
