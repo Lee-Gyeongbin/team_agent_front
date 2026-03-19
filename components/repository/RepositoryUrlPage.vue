@@ -164,40 +164,13 @@
     </div>
 
     <!-- 페이지네이션 -->
-    <div class="url-pagination flex items-center justify-between">
-      <span class="pagination-total">총 {{ urlTotalCount }}개 URL</span>
-      <div class="pagination-controls flex items-center">
-        <button
-          type="button"
-          class="pagination-btn"
-          :disabled="urlCurrentPage <= 1"
-          @click="urlCurrentPage = Math.max(1, urlCurrentPage - 1)"
-        >
-          이전
-        </button>
-        <div class="pagination-pages flex items-center">
-          <button
-            v-for="p in urlVisiblePages"
-            :key="p"
-            type="button"
-            class="pagination-page"
-            :class="{ 'is-active': p === urlCurrentPage }"
-            @click="urlCurrentPage = p"
-          >
-            {{ p }}
-          </button>
-        </div>
-        <button
-          type="button"
-          class="pagination-btn"
-          :disabled="urlCurrentPage >= urlTotalPages"
-          @click="urlCurrentPage = Math.min(urlTotalPages, urlCurrentPage + 1)"
-        >
-          다음
-        </button>
-      </div>
-      <span class="pagination-range">{{ urlPageStart }}-{{ urlPageEnd }}/{{ urlTotalCount }}</span>
-    </div>
+    <UiPagination
+      v-model="urlCurrentPage"
+      :total-count="urlTotalCount"
+      :page-size="urlPageSize"
+      total-label="개 URL"
+      class="url-pagination"
+    />
 
     <CategorySelectModal
       :is-open="isCategorySelectModalOpen"
@@ -308,23 +281,6 @@ const toggleSelectRowUrl = (id: string, checked: boolean) => {
 const urlTotalCount = ref(24)
 const urlCurrentPage = ref(1)
 const urlPageSize = 10
-const urlTotalPages = computed(() => Math.max(1, Math.ceil(urlTotalCount.value / urlPageSize)))
-const urlPageStart = computed(() => (urlCurrentPage.value - 1) * urlPageSize + 1)
-const urlPageEnd = computed(() => Math.min(urlCurrentPage.value * urlPageSize, urlTotalCount.value))
-const urlVisiblePages = computed(() => {
-  const total = urlTotalPages.value
-  const cur = urlCurrentPage.value
-  const pages: number[] = []
-  let start = Math.max(1, cur - 2)
-  let end = Math.min(total, cur + 2)
-  if (end - start < 4) {
-    if (start === 1) end = Math.min(total, 5)
-    else end = Math.min(total, start + 4)
-    start = Math.max(1, end - 4)
-  }
-  for (let i = start; i <= end; i++) pages.push(i)
-  return pages
-})
 
 // 상태 토글 — 퍼블용: 더미 데이터에서 active 즉시 반영. 추후 API 연동 시 서버 요청 후 반영
 const onUrlStatusToggle = (id: string, active: boolean) => {
@@ -418,8 +374,6 @@ const onUrlRowActionSelect = (_value: string, _row: Record<string, unknown>) => 
 }
 
 .url-pagination {
-  padding: $spacing-sm 16px;
-  flex-wrap: wrap;
-  gap: $spacing-sm;
+  padding: 21px 0 4px;
 }
 </style>

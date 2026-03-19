@@ -93,32 +93,20 @@
             </DatePickerPrev>
 
             <div class="ui-datepicker-selects">
-              <select
+              <UiSelect
                 class="ui-datepicker-select"
-                :value="calendarPlaceholder?.year"
-                @change="onYearChange"
-              >
-                <option
-                  v-for="y in yearOptions"
-                  :key="y"
-                  :value="y"
-                >
-                  {{ y }}년
-                </option>
-              </select>
-              <select
+                :model-value="String(calendarPlaceholder?.year)"
+                :options="yearSelectOptions"
+                size="xs"
+                @update:model-value="onYearSelect"
+              />
+              <UiSelect
                 class="ui-datepicker-select"
-                :value="calendarPlaceholder?.month"
-                @change="onMonthChange"
-              >
-                <option
-                  v-for="m in 12"
-                  :key="m"
-                  :value="m"
-                >
-                  {{ m }}월
-                </option>
-              </select>
+                :model-value="String(calendarPlaceholder?.month)"
+                :options="monthSelectOptions"
+                size="xs"
+                @update:model-value="onMonthSelect"
+              />
             </div>
 
             <DatePickerNext class="ui-datepicker-nav">
@@ -248,14 +236,23 @@ const yearOptions = computed(() => {
   return years
 })
 
-const onYearChange = (e: Event) => {
-  const year = Number((e.target as HTMLSelectElement).value)
+// UiSelect용 옵션
+const yearSelectOptions = computed(() =>
+  yearOptions.value.map((y) => ({ label: `${y}년`, value: String(y) })),
+)
+
+const monthSelectOptions = computed(() =>
+  Array.from({ length: 12 }, (_, i) => ({ label: `${i + 1}월`, value: String(i + 1) })),
+)
+
+const onYearSelect = (val: string | number) => {
+  const year = Number(val)
   const month = calendarPlaceholder.value?.month ?? 1
   calendarPlaceholder.value = new CalendarDate(year, month, 1)
 }
 
-const onMonthChange = (e: Event) => {
-  const month = Number((e.target as HTMLSelectElement).value)
+const onMonthSelect = (val: string | number) => {
+  const month = Number(val)
   const year = calendarPlaceholder.value?.year ?? now.getFullYear()
   calendarPlaceholder.value = new CalendarDate(year, month, 1)
 }
@@ -384,22 +381,20 @@ const onMonthChange = (e: Event) => {
   gap: 4px;
 }
 
+// UiSelect 래퍼 — 캘린더 내부 셀렉트 스타일 오버라이드
 .ui-datepicker-select {
-  @include typo($body-medium-bold);
-  color: $color-text-heading;
-  border: none;
-  background: none;
-  cursor: pointer;
-  outline: none;
-  padding: 2px 4px;
-  border-radius: $border-radius-sm;
+  .ui-select-wrap {
+    border: none;
+    background: none;
+    @include typo($body-medium-bold);
+    color: $color-text-heading;
+    height: auto;
+    padding: 2px 4px;
 
-  &:hover {
-    background: $color-background;
-  }
-
-  &:focus {
-    background: $color-background;
+    &:hover {
+      background: $color-background;
+      border-radius: $border-radius-sm;
+    }
   }
 }
 
