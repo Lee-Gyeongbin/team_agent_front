@@ -1,26 +1,117 @@
 // 문서 데이터셋
 export interface DocDataset {
-  id: string
-  name: string
+  datasetId: string
+  dsNm: string
+  description: string
   version: string
-  isActive: boolean // 활성/비활성 토글
-  isBuilding: boolean // 구축중 여부
-  updatedAt: string
+  datasetBuildStatusCd: string
+  useYn: string
+  modifyDt: string
   // 통계
-  chunkCount: number
-  documentCount: number
-  urlCount: number
-  searchQuality: number
+  chunkCnt: number
+  docCnt: number
+  urlCnt: number
+  srchQual: number
   // 메타
-  embeddingModel: string
-  vectorDb: string
+  embedModelNm: string
+  vectorDbNm: string
   chunkSize: number
   chunkOverlap: number
-  chunkStrategy: string
-  // 구축중 전용
-  buildProgress?: number // 퍼센트 (0~100)
-  buildTotal?: number // 전체 청크 수
-  buildCompleted?: number // 완료 청크 수
+  minChunkSz: number
+  chunkAlgoNm: string
+  hdrInclNm: string
+}
+
+// 데이터셋 단건 상세
+export interface DocDatasetDetail {
+  datasetId: string
+  dsNm: string
+  description: string
+  version: string
+  chunkAlgoCd: string
+  chunkSize: number
+  chunkOverlap: number
+  minChunkSz: number
+  hdrInclCd: string
+  datasetBuildStatusCd: string
+  embedModelCd: string
+  vectorDbCd: string
+  embedNormCd: string
+  poolStratCd: string
+  dimReducCd: string
+  chunkCnt: number
+  srchQual: number
+  useYn: string
+  modifyDt: string
+  lowercaseYn: string
+  wspNormYn: string
+  specChrRmYn: string
+  htmlRmYn: string
+  stopwordRmYn: string
+  codeKeepYn: string
+  sentSplitAlgoCd: string
+  langDetectCd: string
+}
+
+export interface CategoryItem {
+  categoryId: string
+  categoryName: string
+}
+
+export interface DocDatasetSelectedDoc {
+  docId: string
+  datasetId: string
+  selYn: string
+  docTitle: string
+  size: string
+  categoryId: string
+  categoryName: string
+}
+
+export interface DocDatasetSelectedUrl {
+  urlId: string
+  datasetId: string
+  selYn: string
+  urlName: string
+  urlAddr: string
+  categoryId: string
+}
+
+export interface DocDatasetSelectResponse {
+  data: DocDatasetDetail
+  categoryList: CategoryItem[]
+  docList: DocDatasetSelectedDoc[]
+  urlList: DocDatasetSelectedUrl[]
+}
+
+// 데이터셋 저장 요청
+export interface DocDatasetSavePayload {
+  datasetId?: string
+  dsNm: string
+  description: string
+  version: string
+  chunkAlgoCd: string
+  chunkSize: number
+  chunkOverlap: number
+  minChunkSz: number
+  hdrInclCd: string
+  datasetBuildStatusCd: string
+  embedModelCd: string
+  vectorDbCd: string
+  embedNormCd: string
+  poolStratCd: string
+  dimReducCd: string
+  chunkCnt: number
+  srchQual: number
+  useYn: string
+  lowercaseYn: string
+  wspNormYn: string
+  specChrRmYn: string
+  htmlRmYn: string
+  stopwordRmYn: string
+  codeKeepYn: string
+  sentSplitAlgoCd: string
+  langDetectCd: string
 }
 
 // 생성 폼
@@ -57,22 +148,6 @@ export interface DocDatasetForm {
   dimensionReduction: string
 }
 
-// 문서 파일 아이템
-export interface DocFile {
-  id: string
-  name: string
-  size: string
-  categoryId: string
-}
-
-// URL 아이템
-export interface DocUrl {
-  id: string
-  name: string
-  url: string
-  category: string
-}
-
 // 변경이력
 export interface DocDatasetHistory {
   id: string
@@ -98,11 +173,12 @@ export interface DocDatasetSearchSummary {
 
 // 요약 통계
 export interface DocDatasetSummary {
-  totalCount: number // 전체 데이터셋
-  activeCount: number // 활성
-  inactiveCount: number // 비활성
-  totalVectors: string // 벡터 인덱스 (예: '3.2M')
+  totalDatasetCount: number // 전체 데이터셋
+  activeDatasetCount: number // 활성
+  inactiveDatasetCount: number // 비활성
+  totalVectorCount: number // 벡터 인덱스 수
   avgSearchQuality: number // 평균 검색 품질 (%)
-  totalDocuments: number // 문서 수
-  totalUrls: number // URL 수
+  totalSourceCount: number // 총 소스 수
+  totalDocCount: number // 문서 수
+  totalUrlCount: number // URL 수
 }

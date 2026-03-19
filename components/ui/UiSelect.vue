@@ -1,7 +1,7 @@
 <template>
   <div class="ui-select-wrap">
     <SelectRoot
-      :model-value="String(modelValue ?? options[0]?.value ?? '')"
+      :model-value="resolvedModelValue"
       :disabled="disabled"
       @update:model-value="onUpdate"
     >
@@ -42,7 +42,7 @@
             <SelectItem
               v-for="opt in options"
               :key="opt.value"
-              :value="String(opt.value)"
+              :value="normalizeValue(opt.value)"
               class="ui-select-item"
             >
               <SelectItemText>{{ opt.label }}</SelectItemText>
@@ -55,6 +55,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import {
   SelectContent,
   SelectIcon,
@@ -83,7 +84,7 @@ interface Props {
   radius?: 'sm' | 'base' | 'lg'
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   modelValue: undefined,
   placeholder: '',
   disabled: false,
@@ -97,8 +98,22 @@ const emit = defineEmits<{
   'update:modelValue': [value: string | number]
 }>()
 
+const EMPTY_VALUE_TOKEN = '__ui_select_empty__'
+
+const normalizeValue = (value: string | number | undefined) => {
+  if (value === '') return EMPTY_VALUE_TOKEN
+  return String(value ?? '')
+}
+
+const denormalizeValue = (value: string) => {
+  if (value === EMPTY_VALUE_TOKEN) return ''
+  return value
+}
+
+const resolvedModelValue = computed(() => normalizeValue(props.modelValue ?? props.options[0]?.value ?? ''))
+
 const onUpdate = (val: string) => {
-  emit('update:modelValue', val)
+  emit('update:modelValue', denormalizeValue(val))
 }
 </script>
 

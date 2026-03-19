@@ -34,7 +34,7 @@
         <div class="com-setting-field-input" style="flex: 1">
           <UiSelect
             :model-value="modelValue.embeddingModel"
-            :options="embeddingModelOptions"
+            :options="props.embeddingModelOptions"
             size="sm"
             @update:model-value="onUpdate('embeddingModel', $event)"
           />
@@ -51,7 +51,7 @@
           <label class="com-setting-label">벡터 DB</label>
           <UiSelect
             :model-value="modelValue.vectorDb"
-            :options="vectorDbOptions"
+            :options="props.vectorDbOptions"
             size="sm"
             @update:model-value="onUpdate('vectorDb', $event)"
           />
@@ -63,7 +63,7 @@
           <label class="com-setting-label">임베딩 정규화</label>
           <UiSelect
             :model-value="modelValue.embeddingNormalization"
-            :options="normalizationOptions"
+            :options="props.normalizationOptions"
             size="sm"
             @update:model-value="onUpdate('embeddingNormalization', $event)"
           />
@@ -79,7 +79,7 @@
           <label class="com-setting-label">Pooling 전략</label>
           <UiSelect
             :model-value="modelValue.poolingStrategy"
-            :options="poolingOptions"
+            :options="props.poolingOptions"
             size="sm"
             @update:model-value="onUpdate('poolingStrategy', $event)"
           />
@@ -91,7 +91,7 @@
           <label class="com-setting-label">차수 축소 (선택)</label>
           <UiSelect
             :model-value="modelValue.dimensionReduction"
-            :options="dimensionOptions"
+            :options="props.dimensionOptions"
             size="sm"
             @update:model-value="onUpdate('dimensionReduction', $event)"
           />
@@ -107,9 +107,21 @@ import type { DocDatasetForm } from '~/types/doc-dataset'
 interface Props {
   modelValue: DocDatasetForm
   collapsed?: boolean
+  embeddingModelOptions: { label: string; value: string }[]
+  vectorDbOptions: { label: string; value: string }[]
+  normalizationOptions: { label: string; value: string }[]
+  poolingOptions: { label: string; value: string }[]
+  dimensionOptions: { label: string; value: string }[]
 }
 
-const props = withDefaults(defineProps<Props>(), { collapsed: true })
+const props = withDefaults(defineProps<Props>(), {
+  collapsed: true,
+  embeddingModelOptions: () => [],
+  vectorDbOptions: () => [],
+  normalizationOptions: () => [],
+  poolingOptions: () => [],
+  dimensionOptions: () => [],
+})
 
 const emit = defineEmits<{
   'update:modelValue': [value: DocDatasetForm]
@@ -129,36 +141,4 @@ const onUpdate = (key: keyof DocDatasetForm, value: string) => {
   emit('update:modelValue', { ...props.modelValue, [key]: value })
 }
 
-// ===== 셀렉트 옵션 =====
-const embeddingModelOptions = [
-  { label: 'text-embedding-3-large (OpenAI)', value: 'text-embedding-3-large' },
-  { label: 'text-embedding-3-small (OpenAI)', value: 'text-embedding-3-small' },
-  { label: 'voyage-3 (Anthropic)', value: 'voyage-3' },
-  { label: 'bge-m3 (BAAI)', value: 'bge-m3' },
-]
-
-const vectorDbOptions = [
-  { label: 'Pinecone', value: 'pinecone' },
-  { label: 'Weaviate', value: 'weaviate' },
-  { label: 'Milvus', value: 'milvus' },
-  { label: 'ChromaDB', value: 'chromadb' },
-]
-
-const normalizationOptions = [
-  { label: 'L2 정규화 (권장)', value: 'l2' },
-  { label: '정규화 없음', value: 'none' },
-  { label: 'Min-Max', value: 'minmax' },
-]
-
-const poolingOptions = [
-  { label: 'Mean pooling', value: 'mean' },
-  { label: 'CLS pooling', value: 'cls' },
-  { label: 'Max pooling', value: 'max' },
-]
-
-const dimensionOptions = [
-  { label: '사용 안 함', value: 'none' },
-  { label: 'PCA', value: 'pca' },
-  { label: 'UMAP', value: 'umap' },
-]
 </script>

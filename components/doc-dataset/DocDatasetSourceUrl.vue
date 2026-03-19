@@ -67,17 +67,17 @@
       <div class="doc-dataset-source-url-list">
         <div
           v-for="item in filteredList"
-          :key="item.id"
+          :key="item.urlId"
           class="doc-dataset-source-url-item"
-          @click="toggleSelect(item.id)"
+          @click="toggleSelect(item.urlId)"
         >
           <span
             class="ui-checkbox"
-            :class="{ 'is-checked': selectedUrlIds.includes(item.id) }"
+            :class="{ 'is-checked': selectedUrlIds.includes(item.urlId) }"
           >
             <span class="ui-checkbox-box">
               <svg
-                v-if="selectedUrlIds.includes(item.id)"
+                v-if="selectedUrlIds.includes(item.urlId)"
                 class="ui-checkbox-icon"
                 width="12"
                 height="12"
@@ -94,8 +94,8 @@
               </svg>
             </span>
           </span>
-          <span class="doc-dataset-source-url-name">{{ item.name }}</span>
-          <span class="doc-dataset-source-url-link">{{ item.url }}</span>
+          <span class="doc-dataset-source-url-name">{{ item.urlName }}</span>
+          <span class="doc-dataset-source-url-link">{{ item.urlAddr }}</span>
         </div>
 
         <UiEmpty
@@ -108,12 +108,13 @@
 </template>
 
 <script setup lang="ts">
-import type { DocUrl } from '~/types/doc-dataset'
+import type { CategoryItem, DocDatasetSelectedUrl } from '~/types/doc-dataset'
 
 interface Props {
   useUrl: boolean
   selectedUrlIds: string[]
-  urlList: DocUrl[]
+  urlList: DocDatasetSelectedUrl[]
+  categoryList: CategoryItem[]
 }
 
 const props = defineProps<Props>()
@@ -129,22 +130,21 @@ const selectedCategory = ref('all')
 
 // 카테고리 필터 옵션
 const categoryOptions = computed(() => {
-  const categories = [...new Set(props.urlList.map((u) => u.category))]
   return [
     { label: '전체 카테고리', value: 'all' },
-    ...categories.map((c) => ({ label: c, value: c })),
-  ]
+    ...props.categoryList.map((c) => ({ label: c.categoryName, value: c.categoryId })),
+  ].sort((a, b) => a.label.localeCompare(b.label))
 })
 
 // 필터링된 리스트
 const filteredList = computed(() => {
   let list = props.urlList
   if (selectedCategory.value !== 'all') {
-    list = list.filter((u) => u.category === selectedCategory.value)
+    list = list.filter((u) => u.categoryId === selectedCategory.value)
   }
   if (searchKeyword.value) {
     const keyword = searchKeyword.value.toLowerCase()
-    list = list.filter((u) => u.name.toLowerCase().includes(keyword) || u.url.toLowerCase().includes(keyword))
+    list = list.filter((u) => u.urlName.toLowerCase().includes(keyword) || u.urlAddr.toLowerCase().includes(keyword))
   }
   return list
 })

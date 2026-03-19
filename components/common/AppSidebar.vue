@@ -169,7 +169,6 @@ const openMoreDropdownId = ref<string | null>(null)
 // route.params.id를 단일 진실 원천으로 사용
 const activeRoomId = computed(() => {
   const id = route.params.id
-  console.log('id', id)
   return typeof id === 'string' ? id : ''
 })
 

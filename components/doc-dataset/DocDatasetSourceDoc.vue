@@ -76,17 +76,17 @@
         <div class="doc-dataset-source-doc-files">
           <div
             v-for="item in filteredList"
-            :key="item.id"
+            :key="item.docId"
             class="doc-dataset-source-doc-file-item"
-            @click="toggleSelect(item.id)"
+            @click="toggleSelect(item.docId)"
           >
             <span
               class="ui-checkbox"
-              :class="{ 'is-checked': selectedDocIds.includes(item.id) }"
+              :class="{ 'is-checked': selectedDocIds.includes(item.docId) }"
             >
               <span class="ui-checkbox-box">
                 <svg
-                  v-if="selectedDocIds.includes(item.id)"
+                  v-if="selectedDocIds.includes(item.docId)"
                   class="ui-checkbox-icon"
                   width="12"
                   height="12"
@@ -103,7 +103,7 @@
                 </svg>
               </span>
             </span>
-            <span class="doc-dataset-source-doc-file-name">{{ item.name }}</span>
+            <span class="doc-dataset-source-doc-file-name">{{ item.docTitle }}</span>
             <span class="doc-dataset-source-doc-file-size">{{ item.size }}</span>
           </div>
 
@@ -118,12 +118,12 @@
 </template>
 
 <script setup lang="ts">
-import type { DocFile } from '~/types/doc-dataset'
+import type { DocDatasetSelectedDoc } from '~/types/doc-dataset'
 
 interface Props {
   useDocument: boolean
   selectedDocIds: string[]
-  docList: DocFile[]
+  docList: DocDatasetSelectedDoc[]
 }
 
 const props = defineProps<Props>()
@@ -140,7 +140,7 @@ const searchKeyword = ref('')
 const filteredList = computed(() => {
   if (!searchKeyword.value) return props.docList
   const keyword = searchKeyword.value.toLowerCase()
-  return props.docList.filter((d) => d.name.toLowerCase().includes(keyword))
+  return props.docList.filter((d) => d.docTitle.toLowerCase().includes(keyword))
 })
 
 // 선택 토글

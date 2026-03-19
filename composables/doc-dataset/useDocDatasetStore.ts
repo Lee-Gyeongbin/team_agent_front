@@ -1,6 +1,9 @@
 import { useDocDatasetApi } from '~/composables/doc-dataset/useDocDatasetApi'
 import type {
   DocDataset,
+  DocDatasetDetail,
+  DocDatasetSelectResponse,
+  DocDatasetSavePayload,
   DocDatasetSummary,
   DocDatasetHistory,
   DocDatasetSearchResult,
@@ -10,6 +13,7 @@ import type {
 const {
   fetchDocDatasetList,
   fetchDocDatasetSummary,
+  fetchDocDataset,
   fetchSaveDocDataset,
   fetchDeleteDocDataset,
   fetchToggleActiveDocDataset,
@@ -22,21 +26,27 @@ const {
 // ===== 상태 변수 =====
 const datasetList = ref<DocDataset[]>([])
 const summary = ref<DocDatasetSummary>({
-  totalCount: 0,
-  activeCount: 0,
-  inactiveCount: 0,
-  totalVectors: '0',
+  totalDatasetCount: 0,
+  activeDatasetCount: 0,
+  inactiveDatasetCount: 0,
+  totalVectorCount: 0,
   avgSearchQuality: 0,
-  totalDocuments: 0,
-  totalUrls: 0,
+  totalSourceCount: 0,
+  totalDocCount: 0,
+  totalUrlCount: 0,
 })
+const selectedDatasetDetail = ref<DocDatasetDetail | null>(null)
+const selectedDatasetCategoryList = ref<DocDatasetSelectResponse['categoryList']>([])
+const selectedDatasetDocList = ref<DocDatasetSelectResponse['docList']>([])
+const selectedDatasetUrlList = ref<DocDatasetSelectResponse['urlList']>([])
 
-// ===== 조회 =====
+/** 목록 조회 */
 const handleSelectDocDatasetList = async () => {
   const res = await fetchDocDatasetList()
-  datasetList.value = res.list
+  datasetList.value = res.dataList
 }
 
+/** 요약 조회 */
 const handleSelectDocDatasetSummary = async () => {
   const res = await fetchDocDatasetSummary()
   summary.value = res.data
@@ -48,7 +58,16 @@ const handleSelectAll = async () => {
 }
 
 // ===== 추가/수정/삭제 =====
-const handleSaveDocDataset = async (dataset: Partial<DocDataset>) => {
+const handleSelectDocDataset = async (datasetId: string) => {
+  const res = await fetchDocDataset(datasetId)
+  selectedDatasetDetail.value = res.data
+  selectedDatasetCategoryList.value = res.categoryList ?? []
+  selectedDatasetDocList.value = res.docList ?? []
+  selectedDatasetUrlList.value = res.urlList ?? []
+  return res
+}
+
+const handleSaveDocDataset = async (dataset: DocDatasetSavePayload) => {
   await fetchSaveDocDataset(dataset)
   await handleSelectAll()
 }
@@ -120,7 +139,10 @@ export const useDocDatasetStore = () => {
   return {
     datasetList,
     summary,
+    selectedDatasetDetail,
+    selectedDatasetCategoryList,
     handleSelectAll,
+    handleSelectDocDataset,
     handleSaveDocDataset,
     handleDeleteDocDataset,
     handleToggleActiveDocDataset,
@@ -138,5 +160,7 @@ export const useDocDatasetStore = () => {
     isSearching,
     handleSearchDocDataset,
     resetSearchResults,
+    selectedDatasetDocList,
+    selectedDatasetUrlList,
   }
 }

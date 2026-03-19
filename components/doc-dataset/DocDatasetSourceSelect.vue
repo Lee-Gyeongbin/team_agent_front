@@ -41,6 +41,7 @@
         :use-url="modelValue.useUrl"
         :selected-url-ids="modelValue.selectedUrlIds"
         :url-list="urlList"
+        :category-list="categoryList"
         @update:use-url="onUpdate('useUrl', $event)"
         @update:selected-url-ids="onUpdate('selectedUrlIds', $event)"
       />
@@ -51,12 +52,13 @@
 <script setup lang="ts">
 import DocDatasetSourceDoc from '~/components/doc-dataset/DocDatasetSourceDoc.vue'
 import DocDatasetSourceUrl from '~/components/doc-dataset/DocDatasetSourceUrl.vue'
-import type { DocDatasetForm, DocFile, DocUrl } from '~/types/doc-dataset'
+import type { CategoryItem, DocDatasetForm, DocDatasetSelectedDoc, DocDatasetSelectedUrl } from '~/types/doc-dataset'
 
 interface Props {
   modelValue: DocDatasetForm
-  docList: DocFile[]
-  urlList: DocUrl[]
+  categoryList: CategoryItem[]
+  docList: DocDatasetSelectedDoc[]
+  urlList: DocDatasetSelectedUrl[]
   collapsed?: boolean
 }
 
@@ -69,7 +71,12 @@ const emit = defineEmits<{
 
 const isCollapsed = ref(props.collapsed)
 
-watch(() => props.collapsed, (v) => { isCollapsed.value = v })
+watch(
+  () => props.collapsed,
+  (v) => {
+    isCollapsed.value = v
+  },
+)
 
 const toggleCollapse = () => {
   isCollapsed.value = !isCollapsed.value

@@ -1,12 +1,14 @@
 import type {
   DocDataset,
+  DocDatasetDetail,
+  DocDatasetSelectResponse,
+  DocDatasetSavePayload,
   DocDatasetSummary,
   DocDatasetHistory,
   DocDatasetSearchResult,
   DocDatasetSearchSummary,
-  DocFile,
-  DocUrl,
 } from '~/types/doc-dataset'
+import { useApi } from '~/composables/com/useApi'
 
 // 🔽 Mock — 백엔드 API 완성 시 useApi 패턴으로 교체
 const MOCK_BASE = '/mock/doc-dataset'
@@ -21,17 +23,23 @@ const mockPost = async <T>(url: string, body: unknown = {}): Promise<T> => {
 }
 
 export const useDocDatasetApi = () => {
+  const { post } = useApi()
+
   // ===== 문서 데이터셋 =====
   const fetchDocDatasetList = async () => {
-    return mockPost<{ list: DocDataset[] }>(`${MOCK_BASE}/list`, {})
+    return post<{ dataList: DocDataset[] }>('/dataset/selectDatasetList.do', {})
   }
 
   const fetchDocDatasetSummary = async () => {
-    return mockPost<{ data: DocDatasetSummary }>(`${MOCK_BASE}/summary`, {})
+    return post<{ data: DocDatasetSummary }>('/dataset/selectDatasetSummary.do', {})
   }
 
-  const fetchSaveDocDataset = async (dataset: Partial<DocDataset>) => {
-    return mockPost<{ data: DocDataset }>(`${MOCK_BASE}/save`, dataset)
+  const fetchDocDataset = async (datasetId: string) => {
+    return post<DocDatasetSelectResponse>('/dataset/selectDataset.do', { datasetId })
+  }
+
+  const fetchSaveDocDataset = async (dataset: DocDatasetSavePayload) => {
+    return post<{ data: DocDatasetDetail }>('/dataset/save.do', dataset)
   }
 
   const fetchDeleteDocDataset = async (id: string) => {
@@ -72,18 +80,10 @@ export const useDocDatasetApi = () => {
     }>(`${MOCK_BASE}/search`, params)
   }
 
-  // ===== 데이터 소스 =====
-  const fetchDocFileList = async () => {
-    return mockPost<{ list: DocFile[]; totalCount: number }>(`${MOCK_BASE}/source/doc-list`, {})
-  }
-
-  const fetchUrlList = async () => {
-    return mockPost<{ list: DocUrl[]; totalCount: number }>(`${MOCK_BASE}/source/url-list`, {})
-  }
-
   return {
     fetchDocDatasetList,
     fetchDocDatasetSummary,
+    fetchDocDataset,
     fetchSaveDocDataset,
     fetchDeleteDocDataset,
     fetchToggleActiveDocDataset,
@@ -91,7 +91,5 @@ export const useDocDatasetApi = () => {
     fetchSaveDocDatasetHistory,
     fetchDeleteDocDatasetHistory,
     fetchSearchDocDataset,
-    fetchDocFileList,
-    fetchUrlList,
   }
 }

@@ -9,7 +9,7 @@ const MENU_STATE_KEY = 'ta_menuList'
  */
 const MENU_NAME_TO_PATH: Record<string, string> = {
   컨텐츠저장소: '/repository',
-  '문서데이터셋(RAG)': '/rag-dataset',
+  '문서데이터셋(RAG)': '/doc-dataset',
 }
 
 /** 메뉴 트리에서 매핑된 메뉴명 항목의 srcPath를 위 경로로 보정 */

@@ -44,7 +44,7 @@
             <label class="com-setting-label">청킹 알고리즘</label>
             <UiSelect
               :model-value="modelValue.chunkAlgorithm"
-              :options="chunkAlgorithmOptions"
+              :options="props.chunkAlgorithmOptions"
               size="sm"
               @update:model-value="onUpdate('chunkAlgorithm', $event)"
             />
@@ -93,7 +93,7 @@
           <label class="com-setting-label">제목/헤더 포함 여부</label>
           <UiSelect
             :model-value="modelValue.headerInclusion"
-            :options="headerInclusionOptions"
+            :options="props.headerInclusionOptions"
             size="sm"
             @update:model-value="onUpdate('headerInclusion', $event)"
           />
@@ -149,7 +149,7 @@
           <label class="com-setting-label">문장 분리 알고리즘</label>
           <UiSelect
             :model-value="modelValue.sentenceSplitAlgorithm"
-            :options="sentenceSplitOptions"
+            :options="props.sentenceSplitOptions"
             size="sm"
             @update:model-value="onUpdate('sentenceSplitAlgorithm', $event)"
           />
@@ -160,7 +160,7 @@
           <label class="com-setting-label">언어 감지</label>
           <UiSelect
             :model-value="modelValue.languageDetection"
-            :options="languageDetectionOptions"
+            :options="props.languageDetectionOptions"
             size="sm"
             @update:model-value="onUpdate('languageDetection', $event)"
           />
@@ -176,9 +176,19 @@ import type { DocDatasetForm } from '~/types/doc-dataset'
 interface Props {
   modelValue: DocDatasetForm
   collapsed?: boolean
+  chunkAlgorithmOptions?: { label: string; value: string }[]
+  headerInclusionOptions?: { label: string; value: string }[]
+  sentenceSplitOptions?: { label: string; value: string }[]
+  languageDetectionOptions?: { label: string; value: string }[]
 }
 
-const props = withDefaults(defineProps<Props>(), { collapsed: true })
+const props = withDefaults(defineProps<Props>(), {
+  collapsed: true,
+  chunkAlgorithmOptions: () => [],
+  headerInclusionOptions: () => [],
+  sentenceSplitOptions: () => [],
+  languageDetectionOptions: () => [],
+})
 
 const emit = defineEmits<{
   'update:modelValue': [value: DocDatasetForm]
@@ -187,7 +197,12 @@ const emit = defineEmits<{
 
 const isCollapsed = ref(props.collapsed)
 
-watch(() => props.collapsed, (v) => { isCollapsed.value = v })
+watch(
+  () => props.collapsed,
+  (v) => {
+    isCollapsed.value = v
+  },
+)
 
 const toggleCollapse = () => {
   isCollapsed.value = !isCollapsed.value
@@ -197,31 +212,4 @@ const toggleCollapse = () => {
 const onUpdate = (key: keyof DocDatasetForm, value: string | number | boolean) => {
   emit('update:modelValue', { ...props.modelValue, [key]: value })
 }
-
-// ===== 셀렉트 옵션 =====
-const chunkAlgorithmOptions = [
-  { label: 'Recursive (재귀적 분할)', value: 'recursive' },
-  { label: 'Character (문자 기반)', value: 'character' },
-  { label: 'Token (토큰 기반)', value: 'token' },
-  { label: 'Semantic (의미 기반)', value: 'semantic' },
-]
-
-const headerInclusionOptions = [
-  { label: '상위 제목을 각 청크 앞에 포함', value: 'prepend' },
-  { label: '포함하지 않음', value: 'none' },
-  { label: '메타데이터로 저장', value: 'metadata' },
-]
-
-const sentenceSplitOptions = [
-  { label: '규칙 기반 (마침표/문장부호)', value: 'rule' },
-  { label: 'NLP 기반 (spaCy)', value: 'nlp' },
-  { label: '줄바꿈 기반', value: 'newline' },
-]
-
-const languageDetectionOptions = [
-  { label: '자동 감지 (권장)', value: 'auto' },
-  { label: '한국어', value: 'ko' },
-  { label: '영어', value: 'en' },
-  { label: '일본어', value: 'ja' },
-]
 </script>

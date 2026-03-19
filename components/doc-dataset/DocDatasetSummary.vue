@@ -6,8 +6,8 @@
       </div>
       <div class="card-grid-summary-info">
         <span class="card-grid-summary-label">전체 데이터셋</span>
-        <span class="card-grid-summary-value">{{ summary.totalCount }}</span>
-        <span class="card-grid-summary-sub">활성: <strong>{{ summary.activeCount }}</strong>개, 비활성: <strong>{{ summary.inactiveCount }}</strong>개</span>
+        <span class="card-grid-summary-value">{{ summary.totalDatasetCount }}</span>
+        <span class="card-grid-summary-sub">활성: <strong>{{ summary.activeDatasetCount }}</strong>개, 비활성: <strong>{{ summary.inactiveDatasetCount }}</strong>개</span>
       </div>
     </div>
 
@@ -17,7 +17,7 @@
       </div>
       <div class="card-grid-summary-info">
         <span class="card-grid-summary-label">벡터 인덱스</span>
-        <span class="card-grid-summary-value">{{ summary.totalVectors }}</span>
+        <span class="card-grid-summary-value">{{ summary.totalVectorCount }}</span>
         <span class="card-grid-summary-sub">총 벡터 수</span>
       </div>
     </div>
@@ -39,8 +39,8 @@
       </div>
       <div class="card-grid-summary-info">
         <span class="card-grid-summary-label">데이터 소스</span>
-        <span class="card-grid-summary-value">{{ summary.totalDocuments + summary.totalUrls }}</span>
-        <span class="card-grid-summary-sub">문서 <strong>{{ summary.totalDocuments }}</strong>개, URL <strong>{{ summary.totalUrls }}</strong>개</span>
+        <span class="card-grid-summary-value">{{ summary.totalSourceCount }}</span>
+        <span class="card-grid-summary-sub">문서 <strong>{{ summary.totalDocCount }}</strong>개, URL <strong>{{ summary.totalUrlCount }}</strong>개</span>
       </div>
     </div>
   </div>
