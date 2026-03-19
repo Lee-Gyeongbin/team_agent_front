@@ -54,10 +54,10 @@
             :key="idx"
             class="search-history-item"
             :class="{
-              'is-active': selectedHistoryId === entry.roomId,
+              'is-active': activeRoomId === String(entry.roomId),
               'is-dropdown-open': openMoreDropdownId === entry.roomId,
             }"
-            @click="selectedHistoryId = entry.roomId"
+            @click="onClickHistory(entry)"
           >
             <span class="search-history-text">{{ entry.title }}</span>
             <DropdownMenuRoot
@@ -165,7 +165,13 @@ const isSearchHistoryOpen = ref(true)
 const isSettingsDropdownOpen = ref(false)
 /** 검색기록 항목 중 '더보기' 드롭다운이 열린 entry.id (열려 있으면 호버 배경 유지) */
 const openMoreDropdownId = ref<string | null>(null)
-const selectedHistoryId = ref<string | null>(null)
+
+// route.params.id를 단일 진실 원천으로 사용
+const activeRoomId = computed(() => {
+  const id = route.params.id
+  console.log('id', id)
+  return typeof id === 'string' ? id : ''
+})
 
 // 사이드바 너비를 CSS 변수로 전달 (채팅 패널 레이아웃 계산용)
 watch(
@@ -176,20 +182,9 @@ watch(
   { immediate: true },
 )
 
-// 검색기록 항목 클릭 시 해당 채팅방으로 이동
-watch(selectedHistoryId, (id) => {
-  if (id) navigateTo(`/chat/${id}`)
-})
-
-// 현재 라우트(/chat/:id)와 사이드바 active 항목 동기화
-watch(
-  () => route.params.id,
-  (id) => {
-    const roomId = String(id ?? '').trim()
-    selectedHistoryId.value = roomId || null
-  },
-  { immediate: true },
-)
+function onClickHistory(entry: ChatRoom) {
+  navigateTo(`/chat/${entry.roomId}`)
+}
 
 function toggleExpanded() {
   isExpanded.value = !isExpanded.value
