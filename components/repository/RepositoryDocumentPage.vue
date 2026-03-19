@@ -13,7 +13,7 @@
       <UiButton
         variant="line-secondary"
         size="md"
-        class="ui-button-outline-muted document-filter-select w-full"
+        class="ui-button-outline-muted document-filter-select"
         @click="openCategorySelectModal"
       >
         전체 카테고리
