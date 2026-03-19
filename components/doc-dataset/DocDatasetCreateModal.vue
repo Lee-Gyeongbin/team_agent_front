@@ -79,6 +79,7 @@ import DocDatasetSourceSelect from '~/components/doc-dataset/DocDatasetSourceSel
 import DocDatasetPreprocess from '~/components/doc-dataset/DocDatasetPreprocess.vue'
 import DocDatasetEmbedding from '~/components/doc-dataset/DocDatasetEmbedding.vue'
 import { useDocDatasetApi } from '~/composables/doc-dataset/useDocDatasetApi'
+import { openToast } from '~/composables/useToast'
 import type { DocDatasetForm, DocFile, DocUrl } from '~/types/doc-dataset'
 
 const props = defineProps<{
@@ -148,12 +149,24 @@ watch(
   },
 )
 
+// ===== 유효성 검사 =====
+const validate = (): boolean => {
+  if (!formData.name.trim()) {
+    openToast({ message: '데이터셋 이름을 입력해주세요.', type: 'warning' })
+    sectionCollapsed[0] = false
+    return false
+  }
+  return true
+}
+
 // ===== 액션 =====
 const onSaveLater = () => {
+  if (!validate()) return
   emit('save', { ...formData }, false)
 }
 
 const onBuildStart = () => {
+  if (!validate()) return
   emit('save', { ...formData }, true)
 }
 </script>

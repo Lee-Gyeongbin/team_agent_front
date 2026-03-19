@@ -19,6 +19,32 @@ const confirmed = await openConfirm({
 if (!confirmed) return
 ```
 
+## 폼 유효성 검사 + 포커스 이동 규칙
+
+- 필수 필드 미입력 시 `openToast` (warning) + 해당 필드로 **스크롤 이동 + 포커스**
+- 모달(`openAlert`) 대신 **토스트(`openToast`)** 사용 — 모달은 포커스를 뺏으므로 토스트로 통일
+- `scrollIntoView({ behavior: 'smooth', block: 'center' })` + `focus()` 조합 사용
+- UiInput 컴포넌트는 template ref로 접근, `$el.querySelector('input').focus()`
+- 저장 성공 시 `openToast({ message: '...' })` 사용
+
+```ts
+// ❌ 금지 — openAlert 사용 (모달이 포커스 뺏음)
+if (!form.value.name.trim()) {
+  openAlert({ title: '알림', message: '이름을 입력해주세요.' })
+  return
+}
+
+// ✅ 올바른 사용 — 토스트 + 포커스 이동
+if (!form.value.name.trim()) {
+  openToast({ message: '이름을 입력해주세요.', type: 'warning' })
+  focusField(nameRef)
+  return
+}
+
+// ✅ 저장 성공 시 토스트
+openToast({ message: '저장되었습니다.' })
+```
+
 ## 퍼블리싱 단계 원칙
 
 - 더미 데이터에는 반드시 주석 표기:

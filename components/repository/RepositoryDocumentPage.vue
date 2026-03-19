@@ -265,6 +265,7 @@ import CategorySelectModal from '~/components/repository/CategorySelectModal.vue
 import DocRegisterPanel from '~/components/repository/DocRegisterPanel.vue'
 import { useRepositoryStore } from '~/composables/repository/useRepositoryStore'
 import { openAlert, openConfirm } from '~/composables/useDialog'
+import { openToast } from '~/composables/useToast'
 
 const {
   categoryList,
@@ -282,6 +283,7 @@ const {
   docCurrentPage,
   docPageSize,
   handleSelectDocumentList,
+  handleSaveDocument,
   handleDeleteDocument,
 } = useRepositoryStore()
 
@@ -460,10 +462,12 @@ const isDocRegisterOpen = ref(false)
 const onRegisterDocument = () => {
   isDocRegisterOpen.value = true
 }
-const onSaveDocument = (data: Record<string, any>) => {
-  // 추후 API 연동 시 handleSaveDocument 호출
-  openAlert({ title: '문서 등록', message: `'${data.title}' 문서가 등록되었습니다.` })
-  handleSelectDocumentList()
+const onSaveDocument = async (data: Record<string, any>) => {
+  await handleSaveDocument({
+    documentName: data.title,
+    categoryId: data.categoryId,
+  })
+  openToast({ message: `'${data.title}' 문서가 등록되었습니다.` })
 }
 
 const onBatchDownload = () => {

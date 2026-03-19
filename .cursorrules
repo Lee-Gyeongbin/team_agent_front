@@ -78,3 +78,11 @@ git commit -m "fix(chat): 메시지 전송 후 스크롤 미동작 수정
 # 단순 작업 (본문 생략)
 git commit -m "style(ui): 사이드바 active 상태 색상 수정"
 ```
+
+## 폼 유효성 검사 규칙
+
+- 필수 필드 미입력 시 `openToast({ message, type: 'warning' })` + 해당 필드로 **스크롤 이동 + 포커스**
+- 유효성 검사에 `openAlert` 사용 금지 — 모달이 포커스를 뺏으므로 **토스트로 통일**
+- `scrollIntoView({ behavior: 'smooth', block: 'center' })` + `focus()` 조합
+- 저장 성공 시 `openToast({ message: '...' })` 사용
+- 네이티브 `alert()`, `confirm()` 사용 금지 → `openAlert()`, `openConfirm()` 사용

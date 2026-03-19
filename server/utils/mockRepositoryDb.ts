@@ -133,6 +133,24 @@ export const mockDocumentDb = {
     return { list, total }
   },
 
+  save: (item: Partial<MockDocument>) => {
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '.')
+    const ext = item.documentName?.split('.').pop()?.toLowerCase() || 'txt'
+    const newDoc: MockDocument = {
+      id: `doc-${Date.now()}`,
+      documentName: item.documentName || '새 문서',
+      fileType: ext,
+      fileSize: '0KB',
+      registerDate: today,
+      status: '활성',
+      ragCount: 0,
+      categoryId: item.categoryId || '',
+      ...item,
+    }
+    documentList.push(newDoc)
+    return newDoc
+  },
+
   delete: (ids: string[]) => {
     for (let i = documentList.length - 1; i >= 0; i--) {
       if (ids.includes(documentList[i].id)) documentList.splice(i, 1)

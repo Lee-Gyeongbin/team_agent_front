@@ -35,6 +35,10 @@ export const useRepositoryApi = () => {
     return mockPost<{ list: Document[]; total: number }>(`${MOCK_BASE}/document/list`, params)
   }
 
+  const fetchSaveDocument = async (data: Partial<Document>) => {
+    return mockPost<{ data: Document }>(`${MOCK_BASE}/document/save`, data)
+  }
+
   const fetchDeleteDocument = async (ids: string[]) => {
     return mockPost<{ data: { ids: string[] } }>(`${MOCK_BASE}/document/delete`, { ids })
   }
@@ -62,6 +66,7 @@ export const useRepositoryApi = () => {
     fetchRenameCategory,
     fetchDeleteCategory,
     fetchDocumentList,
+    fetchSaveDocument,
     fetchDeleteDocument,
     fetchUrlList,
     fetchSaveUrl,

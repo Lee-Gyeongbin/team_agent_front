@@ -187,6 +187,7 @@ import type { TableColumn } from '~/types/table'
 import UrlRegisterPanel from '~/components/repository/UrlRegisterPanel.vue'
 import { useRepositoryStore } from '~/composables/repository/useRepositoryStore'
 import { openAlert, openConfirm } from '~/composables/useDialog'
+import { openToast } from '~/composables/useToast'
 
 const scrapingTooltipText = '등록된 모든 활성 URL에 대해 데이터 수집(스크래핑)을 실행합니다.'
 
@@ -294,6 +295,7 @@ const onSaveUrl = async (data: Record<string, any>) => {
     collectionCycle: cycleMap[data.collectionCycle] || data.collectionCycle,
     active: data.active,
   })
+  openToast({ message: `'${data.urlName}' URL이 등록되었습니다.` })
 }
 
 const onBatchDelete = async () => {

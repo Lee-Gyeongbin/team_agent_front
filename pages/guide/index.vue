@@ -170,6 +170,86 @@
     </section>
 
     <!-- ============================================ -->
+    <!-- 섹션 3.5: 폼 유효성 검사 패턴 -->
+    <!-- ============================================ -->
+    <section class="guide-section">
+      <h2 class="section-title">폼 유효성 검사 패턴</h2>
+      <p class="guide-description">필수 필드 미입력 시 토스트 알림 + 해당 필드로 스크롤 이동 + 포커스</p>
+
+      <div class="guide-demo">
+        <p class="demo-label">라이브 데모</p>
+        <div class="demo-box">
+          <div style="display: flex; flex-direction: column; gap: 12px; max-width: 400px">
+            <div>
+              <label style="display: block; font-size: 14px; font-weight: 700; margin-bottom: 4px">이름 <span style="color: #ef4444">*</span></label>
+              <UiInput
+                ref="demoNameRef"
+                v-model="demoName"
+                placeholder="이름을 입력하세요"
+                size="md"
+              />
+            </div>
+            <div>
+              <label style="display: block; font-size: 14px; font-weight: 700; margin-bottom: 4px">이메일 <span style="color: #ef4444">*</span></label>
+              <UiInput
+                ref="demoEmailRef"
+                v-model="demoEmail"
+                placeholder="이메일을 입력하세요"
+                size="md"
+              />
+            </div>
+            <UiButton
+              variant="primary"
+              size="md"
+              @click="onDemoSave"
+            >
+              저장 테스트
+            </UiButton>
+          </div>
+        </div>
+      </div>
+
+      <h3 style="margin: 16px 0 8px; font-size: 15px; font-weight: 700">사용법</h3>
+      <pre
+        class="guide-code"
+        v-text="validationCodeExample"
+      />
+
+      <h3 style="margin: 16px 0 8px; font-size: 15px; font-weight: 700">규칙</h3>
+      <table class="guide-props-table">
+        <thead>
+          <tr>
+            <th>상황</th>
+            <th>사용</th>
+            <th>비고</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>필수 필드 미입력</td>
+            <td><code>openToast({ type: 'warning' })</code> + <code>focusField()</code></td>
+            <td>모달(openAlert) 사용 금지 — 포커스 뺏김</td>
+          </tr>
+          <tr>
+            <td>저장 성공</td>
+            <td><code>openToast({ message })</code></td>
+            <td>기본 type (info)</td>
+          </tr>
+          <tr>
+            <td>삭제 확인</td>
+            <td><code>openConfirm({ title, message })</code></td>
+            <td>Promise&lt;boolean&gt; 반환</td>
+          </tr>
+          <tr>
+            <td>접힌 섹션 안의 필드</td>
+            <td><code>sectionCollapsed[n] = false</code> 후 <code>focusField()</code></td>
+            <td>섹션 펼침 → 포커스</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ============================================ -->
     <!-- 섹션 4: 아이콘 -->
     <!-- ============================================ -->
     <section class="guide-section">
@@ -226,6 +306,74 @@
 // ============================================
 // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
 // ============================================
+
+// 폼 유효성 검사 코드 예시
+const validationCodeExample = [
+  '<!-- 1. template: ref 추가 -->',
+  '<UiInput ref="nameRef" v-model="form.name" />',
+  '',
+  '<!-- 2. script -->',
+  "import { openToast } from '~/composables/useToast'",
+  '',
+  '// ref 선언',
+  'const nameRef = ref<{ $el?: HTMLElement } | null>(null)',
+  '',
+  '// 포커스 헬퍼 (복붙해서 사용)',
+  'const focusField = (fieldRef: { value: any }) => {',
+  '  nextTick(() => {',
+  '    const el = fieldRef.value?.$el || fieldRef.value',
+  '    if (el instanceof HTMLElement) {',
+  "      el.scrollIntoView({ behavior: 'smooth', block: 'center' })",
+  "      const input = el.querySelector('input, select, textarea') || el",
+  "      if ('focus' in input) (input as HTMLElement).focus()",
+  '    }',
+  '  })',
+  '}',
+  '',
+  '// 저장 시 유효성 검사',
+  'const onSave = () => {',
+  '  if (!form.value.name.trim()) {',
+  "    openToast({ message: '이름을 입력해주세요.', type: 'warning' })",
+  '    focusField(nameRef)',
+  '    return',
+  '  }',
+  '  // 저장 로직...',
+  "  openToast({ message: '저장되었습니다.' })",
+  '}',
+].join('\n')
+
+// 폼 유효성 검사 데모
+const demoName = ref('')
+const demoEmail = ref('')
+const demoNameRef = ref<{ $el?: HTMLElement } | null>(null)
+const demoEmailRef = ref<{ $el?: HTMLElement } | null>(null)
+
+const focusField = (fieldRef: { value: any }) => {
+  nextTick(() => {
+    const el = fieldRef.value?.$el || fieldRef.value
+    if (el instanceof HTMLElement) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      const input = el.querySelector('input, select, textarea') || el
+      if ('focus' in input) (input as HTMLElement).focus()
+    }
+  })
+}
+
+const onDemoSave = () => {
+  if (!demoName.value.trim()) {
+    openToast({ message: '이름을 입력해주세요.', type: 'warning' })
+    focusField(demoNameRef)
+    return
+  }
+  if (!demoEmail.value.trim()) {
+    openToast({ message: '이메일을 입력해주세요.', type: 'warning' })
+    focusField(demoEmailRef)
+    return
+  }
+  openToast({ message: '저장되었습니다.' })
+  demoName.value = ''
+  demoEmail.value = ''
+}
 
 // 섹션 1: 작업 현황
 // url: 클릭 시 새 창으로 열 수 있는 경로 (동적 파라미터 포함 URL은 제외)

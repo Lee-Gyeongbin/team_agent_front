@@ -10,6 +10,7 @@
       <div class="url-reg-field">
         <label class="url-reg-label">문서 제목 <span class="required">*</span></label>
         <UiInput
+          ref="titleRef"
           v-model="form.title"
           placeholder="문서 제목을 입력하세요"
           size="md"
@@ -17,7 +18,10 @@
       </div>
 
       <!-- 카테고리 -->
-      <div class="url-reg-field">
+      <div
+        ref="categoryFieldRef"
+        class="url-reg-field"
+      >
         <label class="url-reg-label">카테고리 <span class="required">*</span></label>
         <div class="doc-reg-category-row flex items-center">
           <UiInput
@@ -128,7 +132,7 @@
 <script setup lang="ts">
 import type { CategoryItem } from '~/types/repository'
 import CategorySelectModal from '~/components/repository/CategorySelectModal.vue'
-import { openAlert } from '~/composables/useDialog'
+import { openToast } from '~/composables/useToast'
 import { useRepositoryStore } from '~/composables/repository/useRepositoryStore'
 
 defineProps<{
@@ -141,6 +145,20 @@ const emit = defineEmits<{
 }>()
 
 const { categoryList } = useRepositoryStore()
+
+const titleRef = ref<{ focus?: () => void; $el?: HTMLElement } | null>(null)
+const categoryFieldRef = ref<HTMLElement | null>(null)
+
+const focusField = (fieldRef: { value: any }) => {
+  nextTick(() => {
+    const el = fieldRef.value?.$el || fieldRef.value
+    if (el instanceof HTMLElement) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      const input = el.querySelector('input') || el
+      if ('focus' in input) (input as HTMLElement).focus()
+    }
+  })
+}
 
 const isCategoryModalOpen = ref(false)
 
@@ -198,11 +216,13 @@ const resetForm = () => {
 
 const onSave = () => {
   if (!form.value.title.trim()) {
-    openAlert({ title: '알림', message: '문서 제목을 입력해주세요.' })
+    openToast({ message: '문서 제목을 입력해주세요.', type: 'warning' })
+    focusField(titleRef)
     return
   }
   if (!form.value.categoryId) {
-    openAlert({ title: '알림', message: '카테고리를 선택해주세요.' })
+    openToast({ message: '카테고리를 선택해주세요.', type: 'warning' })
+    focusField(categoryFieldRef)
     return
   }
   emit('save', { ...form.value })

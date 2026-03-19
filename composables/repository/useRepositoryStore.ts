@@ -7,6 +7,7 @@ const {
   fetchRenameCategory,
   fetchDeleteCategory,
   fetchDocumentList,
+  fetchSaveDocument,
   fetchDeleteDocument,
   fetchUrlList,
   fetchSaveUrl,
@@ -125,6 +126,11 @@ const handleSelectDocumentList = async () => {
   docTotalCount.value = res.total
 }
 
+const handleSaveDocument = async (data: Partial<Document>) => {
+  await fetchSaveDocument(data)
+  await handleSelectDocumentList()
+}
+
 const handleDeleteDocument = async (ids: string[]) => {
   await fetchDeleteDocument(ids)
   await handleSelectDocumentList()
@@ -177,6 +183,7 @@ export const useRepositoryStore = () => {
     docCurrentPage,
     docPageSize,
     handleSelectDocumentList,
+    handleSaveDocument,
     handleDeleteDocument,
     // URL
     urlList,

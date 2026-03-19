@@ -28,6 +28,7 @@
               데이터마트명
             </label>
             <UiInput
+              ref="dmNmRef"
               v-model="formData.dmNm"
               placeholder="예: 경영 통계 데이터마트"
               size="sm"
@@ -85,6 +86,7 @@
                 DB 타입
               </label>
               <UiSelect
+                ref="dbTypeRef"
                 v-model="formData.dbType"
                 :options="dbTypeOptions"
                 placeholder="선택하세요"
@@ -106,6 +108,7 @@
               호스트
             </label>
             <UiInput
+              ref="hostRef"
               v-model="formData.host"
               placeholder="예: db-server-01.internal 또는 192.168.1.100"
               size="sm"
@@ -118,6 +121,7 @@
                 포트
               </label>
               <UiInput
+                ref="portRef"
                 v-model="formData.port"
                 number-only
                 placeholder="예: 3306, 5432, 1521"
@@ -130,6 +134,7 @@
                 DB명
               </label>
               <UiInput
+                ref="dbNmRef"
                 v-model="formData.dbNm"
                 placeholder="예: analytics_db"
                 size="sm"
@@ -143,6 +148,7 @@
                 사용자명
               </label>
               <UiInput
+                ref="usernameRef"
                 v-model="formData.username"
                 placeholder="예: dbuser"
                 size="sm"
@@ -154,6 +160,7 @@
                 비밀번호
               </label>
               <UiInput
+                ref="pwdRef"
                 v-model="formData.pwdEnc"
                 type="password"
                 placeholder="••••••••"
@@ -255,8 +262,29 @@
 <script setup lang="ts">
 import type { Datamart, DatamartForm } from '~/types/datamart'
 import { useDatamartStore } from '~/composables/datamart/useDatamartStore'
+import { openToast } from '~/composables/useToast'
 
 const { handleTestConnection } = useDatamartStore()
+
+type FieldRef = { focus?: () => void; $el?: HTMLElement } | null
+const dmNmRef = ref<FieldRef>(null)
+const dbTypeRef = ref<FieldRef>(null)
+const hostRef = ref<FieldRef>(null)
+const portRef = ref<FieldRef>(null)
+const dbNmRef = ref<FieldRef>(null)
+const usernameRef = ref<FieldRef>(null)
+const pwdRef = ref<FieldRef>(null)
+
+const focusField = (fieldRef: { value: any }) => {
+  nextTick(() => {
+    const el = fieldRef.value?.$el || fieldRef.value
+    if (el instanceof HTMLElement) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      const input = el.querySelector('input, select') || el
+      if ('focus' in input) (input as HTMLElement).focus()
+    }
+  })
+}
 
 const props = defineProps<{
   isOpen: boolean
@@ -359,6 +387,47 @@ const onTestConnection = async () => {
 }
 
 const onSave = () => {
+  if (!formData.dmNm.trim()) {
+    openToast({ message: '데이터마트명을 입력해주세요.', type: 'warning' })
+    focusField(dmNmRef)
+    return
+  }
+  if (!formData.dbType) {
+    openToast({ message: 'DB 타입을 선택해주세요.', type: 'warning' })
+    focusField(dbTypeRef)
+    sectionCollapsed[1] = false
+    return
+  }
+  if (!formData.host.trim()) {
+    openToast({ message: '호스트를 입력해주세요.', type: 'warning' })
+    focusField(hostRef)
+    sectionCollapsed[1] = false
+    return
+  }
+  if (!formData.port) {
+    openToast({ message: '포트를 입력해주세요.', type: 'warning' })
+    focusField(portRef)
+    sectionCollapsed[1] = false
+    return
+  }
+  if (!formData.dbNm.trim()) {
+    openToast({ message: 'DB명을 입력해주세요.', type: 'warning' })
+    focusField(dbNmRef)
+    sectionCollapsed[1] = false
+    return
+  }
+  if (!formData.username.trim()) {
+    openToast({ message: '사용자명을 입력해주세요.', type: 'warning' })
+    focusField(usernameRef)
+    sectionCollapsed[1] = false
+    return
+  }
+  if (!formData.pwdEnc.trim()) {
+    openToast({ message: '비밀번호를 입력해주세요.', type: 'warning' })
+    focusField(pwdRef)
+    sectionCollapsed[1] = false
+    return
+  }
   emit('save', { ...formData })
 }
 </script>

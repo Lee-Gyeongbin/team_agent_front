@@ -30,6 +30,7 @@
       <div class="url-reg-field">
         <label class="url-reg-label">URL 이름 <span class="required">*</span></label>
         <UiInput
+          ref="urlNameRef"
           v-model="form.urlName"
           placeholder="예: 공식 블로그"
           size="md"
@@ -40,6 +41,7 @@
       <div class="url-reg-field">
         <label class="url-reg-label">URL 주소 <span class="required">*</span></label>
         <UiInput
+          ref="urlAddressRef"
           v-model="form.urlAddress"
           placeholder="https://example.com"
           size="md"
@@ -89,7 +91,7 @@
 </template>
 
 <script setup lang="ts">
-import { openAlert } from '~/composables/useDialog'
+import { openToast } from '~/composables/useToast'
 
 defineProps<{
   isOpen: boolean
@@ -99,6 +101,20 @@ const emit = defineEmits<{
   close: []
   save: [data: Record<string, any>]
 }>()
+
+const urlNameRef = ref<{ focus?: () => void; $el?: HTMLElement } | null>(null)
+const urlAddressRef = ref<{ focus?: () => void; $el?: HTMLElement } | null>(null)
+
+const focusField = (fieldRef: typeof urlNameRef) => {
+  nextTick(() => {
+    const el = fieldRef.value?.$el || fieldRef.value
+    if (el instanceof HTMLElement) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      const input = el.querySelector('input') || el
+      if ('focus' in input) (input as HTMLElement).focus()
+    }
+  })
+}
 
 const form = ref({
   active: true,
@@ -143,11 +159,13 @@ const resetForm = () => {
 
 const onSave = () => {
   if (!form.value.urlName.trim()) {
-    openAlert({ title: '알림', message: 'URL 이름을 입력해주세요.' })
+    openToast({ message: 'URL 이름을 입력해주세요.', type: 'warning' })
+    focusField(urlNameRef)
     return
   }
   if (!form.value.urlAddress.trim()) {
-    openAlert({ title: '알림', message: 'URL 주소를 입력해주세요.' })
+    openToast({ message: 'URL 주소를 입력해주세요.', type: 'warning' })
+    focusField(urlAddressRef)
     return
   }
   emit('save', { ...form.value })
