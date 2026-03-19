@@ -138,6 +138,7 @@ const onRowClick = (row: Record<string, any>, index: number) => {
       white-space: nowrap;
       // border-top: 1px solid $color-border;
       // border-bottom: 1px solid $color-border;
+      vertical-align: middle;
 
       // 컬럼 구분선 (마지막 제외)
       &:not(.is-last) {
@@ -175,16 +176,12 @@ const onRowClick = (row: Record<string, any>, index: number) => {
       border-bottom: 1px solid $color-border-light;
       @include typo($body-medium);
       color: $color-text-primary;
+      vertical-align: middle;
 
       // 컬럼 구분선 (마지막 제외)
       &:not(:last-of-type) {
         border-right: 1px solid $color-border-light;
       }
-    }
-
-    // 마지막 행 하단 보더 제거
-    tr:last-child td {
-      border-bottom: none;
     }
   }
 
@@ -192,9 +189,7 @@ const onRowClick = (row: Record<string, any>, index: number) => {
   th:first-child,
   td:first-child {
     text-align: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    vertical-align: middle;
   }
 }
 

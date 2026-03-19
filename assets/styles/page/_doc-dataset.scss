@@ -522,37 +522,34 @@
     overflow-y: auto;
   }
 
-  // 헤더 셀
+  // 헤더 셀 — 상하 구분선 #DCE4E9, 컬럼 구분선 #DCE4E9
   .ui-table thead th {
     height: auto;
     padding: 10px 16px;
     @include typo($body-small-bold);
     color: #6f7a93;
+    border-top: 1px solid #dce4e9;
+    border-bottom: 1px solid #dce4e9;
+
+    &:not(.is-last) {
+      border-right: 1px solid #dce4e9;
+    }
   }
 
-  // 바디 셀
+  // 바디 셀 — 행 구분선 #ECF0F3, 컬럼 구분선 #ECF0F3
   .ui-table tbody td {
     height: auto;
     padding: 10px 16px;
     @include typo($body-small);
     color: #4d5462;
     vertical-align: top;
+    border-bottom: 1px solid #ecf0f3;
+
+    &:not(:last-of-type) {
+      border-right: 1px solid #ecf0f3;
+    }
   }
 
-  // 컬럼 구분선 제거 (Figma에 없음)
-  .ui-table thead th {
-    border-right: none !important;
-  }
-
-  .ui-table tbody td {
-    border-right: none !important;
-  }
-
-  // 첫 번째 셀 flex 해제 (테이블 레이아웃 깨짐 방지)
-  .ui-table th:first-child,
-  .ui-table td:first-child {
-    display: table-cell;
-  }
 }
 
 .doc-dataset-history-content-cell {
