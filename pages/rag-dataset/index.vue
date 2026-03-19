@@ -103,8 +103,14 @@ import DocDatasetTestModal from '~/components/doc-dataset/DocDatasetTestModal.vu
 import { useDocDatasetStore } from '~/composables/doc-dataset/useDocDatasetStore'
 import type { DocDataset, DocDatasetForm } from '~/types/doc-dataset'
 
-const { datasetList, summary, handleSelectAll, handleDeleteDocDataset, handleToggleActiveDocDataset } =
-  useDocDatasetStore()
+const {
+  datasetList,
+  summary,
+  handleSelectAll,
+  handleSaveDocDataset,
+  handleDeleteDocDataset,
+  handleToggleActiveDocDataset,
+} = useDocDatasetStore()
 
 // 초기 조회
 const isLoading = ref(true)
