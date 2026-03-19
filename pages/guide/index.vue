@@ -399,6 +399,42 @@ const componentList = [
     description: 'v-model 지원 페이지네이션 — 총 건수, 이전/다음, 페이지 번호, 말줄임',
     tags: ['v-model', 'totalCount', 'pageSize', 'totalLabel'],
   },
+  {
+    name: 'UiSettingSection',
+    to: '/guide/ui-setting-section',
+    description: '접기/펼치기 설정 섹션 — collapsible, 라벨 너비 제어',
+    tags: ['title', 'collapsible', 'defaultCollapsed', 'labelWidth'],
+  },
+  {
+    name: 'UiFormField',
+    to: '/guide/ui-form-field',
+    description: '설정 폼 필드 — 라벨 + 필수표시 + 힌트 + 단위',
+    tags: ['label', 'required', 'hint', 'unit', 'alignTop'],
+  },
+  {
+    name: 'UiTooltip',
+    to: '/guide/ui-tooltip',
+    description: 'Radix-vue 기반 툴팁 — 방향, 딜레이, 화살표, 커스텀 콘텐츠',
+    tags: ['content', 'side', 'delayDuration', 'showArrow'],
+  },
+  {
+    name: 'UiTag',
+    to: '/guide/ui-tag',
+    description: '태그/칩 컴포넌트 — variant 6종, 닫기 버튼, 크기',
+    tags: ['label', 'variant', 'closable', 'size'],
+  },
+  {
+    name: 'UiStatCard',
+    to: '/guide/ui-stat-card',
+    description: '요약 통계 카드 — 아이콘 + 라벨 + 값 + 부가 정보',
+    tags: ['icon', 'label', 'value', 'sub', 'color'],
+  },
+  {
+    name: 'UiStatusBadge',
+    to: '/guide/ui-status-badge',
+    description: '상태 표시 뱃지 — active/inactive/draft 등 자동 라벨',
+    tags: ['status', 'label', 'size'],
+  },
 ]
 
 // 섹션 4: 아이콘 목록 (그룹별로 구분) — _icons.custom.scss와 동기화
