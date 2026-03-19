@@ -5,13 +5,21 @@
     </DropdownMenuTrigger>
 
     <DropdownMenuPortal>
+      <!-- title 있으면 Radix Label로 상단 안내 문구만 표시(클릭 불가, 스크린리더용 구역 라벨 역할) -->
       <DropdownMenuContent
         class="ui-dropdown-content"
+        :class="{ 'ui-dropdown-content--titled': Boolean(title) }"
         :side="side"
         :side-offset="sideOffset"
         :align="align"
         :collision-padding="collisionPadding"
       >
+        <DropdownMenuLabel
+          v-if="title"
+          class="ui-dropdown-title"
+        >
+          {{ title }}
+        </DropdownMenuLabel>
         <DropdownMenuItem
           v-for="item in items"
           :key="item.value"
@@ -35,6 +43,7 @@ import { watch, ref } from 'vue'
 import {
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuPortal,
   DropdownMenuRoot,
   DropdownMenuTrigger,
@@ -52,6 +61,8 @@ export interface DropdownMenuItemDef {
 
 interface Props {
   items: DropdownMenuItemDef[]
+  /** 상단 비클릭 라벨(타이틀) — 예: 카테고리 선택 */
+  title?: string
   /** 제어 모드: 열림 상태 (v-model:open 사용 시) */
   open?: boolean
   /** 메뉴가 열리는 방향 */
@@ -65,6 +76,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  title: '',
   side: 'bottom',
   align: 'end',
   sideOffset: 5,
@@ -111,6 +123,17 @@ watch(openState, (v: boolean) => emit('update:open', v))
   &[data-state='closed'] {
     animation: ui-dropdown-out 0.1s ease forwards;
   }
+}
+
+/* DropdownMenuLabel — 메뉴 항목과 구분되는 보조 타이틀 스타일 */
+.ui-dropdown-title {
+  padding: 6px 8px 4px;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.3;
+  color: #8b95a8;
+  cursor: default;
+  user-select: none;
 }
 
 @keyframes ui-dropdown-in {
