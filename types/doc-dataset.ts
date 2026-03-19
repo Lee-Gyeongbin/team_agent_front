@@ -82,6 +82,20 @@ export interface DocDatasetHistory {
   updatedAt: string
 }
 
+// 검색 테스트 결과
+export interface DocDatasetSearchResult {
+  chunkId: string
+  content: string
+  source: string
+  page: number
+  similarity: number
+}
+
+export interface DocDatasetSearchSummary {
+  totalChunks: number
+  avgSimilarity: number
+}
+
 // 요약 통계
 export interface DocDatasetSummary {
   totalCount: number // 전체 데이터셋

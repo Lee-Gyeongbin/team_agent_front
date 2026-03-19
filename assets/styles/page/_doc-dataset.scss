@@ -522,6 +522,11 @@
     overflow-y: auto;
   }
 
+  // auto 컬럼 너비가 정상 동작하도록 table-layout 해제
+  .ui-table {
+    table-layout: auto;
+  }
+
   // 헤더 셀 — 상하 구분선 #DCE4E9, 컬럼 구분선 #DCE4E9
   .ui-table thead th {
     height: auto;
@@ -549,11 +554,11 @@
       border-right: 1px solid #ecf0f3;
     }
   }
-
 }
 
 .doc-dataset-history-content-cell {
   white-space: pre-line;
+  word-break: break-all;
 }
 
 .doc-dataset-history-delete-btn {
@@ -585,6 +590,219 @@
 
 // 푸터
 .doc-dataset-history-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 12px;
+}
+
+// ===================================
+// RAG 검색 테스트 모달 (Figma: 720×700)
+// ===================================
+.doc-dataset-test-modal {
+  .modal-dialog-content {
+    height: 700px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .modal-dialog-header {
+    padding-bottom: $spacing-md;
+    border-bottom: 1px solid #aebccb;
+  }
+
+  .modal-dialog-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-top: 12px;
+    flex: 1;
+    overflow: hidden;
+  }
+}
+
+// 섹션 공통
+.doc-dataset-test-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.doc-dataset-test-section-title {
+  @include typo($body-medium-bold);
+  color: #5c6677;
+}
+
+// 검색 파라미터
+.doc-dataset-test-params {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.doc-dataset-test-param {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 30px;
+
+  // Top k, 유사도 임계값 — 고정 너비
+  &:nth-child(1) {
+    width: 160px;
+    flex-shrink: 0;
+  }
+
+  &:nth-child(2) {
+    width: 199px;
+    flex-shrink: 0;
+  }
+
+  // 재순위 적용, 전체 카테고리 — fill
+  &:nth-child(3) {
+    flex: 0 0 auto;
+  }
+  &:nth-child(4) {
+    flex: 1;
+  }
+}
+
+.doc-dataset-test-param-label {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #5c6677;
+  white-space: nowrap;
+}
+
+// 검색 결과
+.doc-dataset-test-results {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  overflow: hidden;
+  width: 100%;
+}
+
+.doc-dataset-test-results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.doc-dataset-test-results-summary {
+  @include typo($body-small);
+  color: #5c6677;
+
+  strong {
+    color: var(--color-primary);
+  }
+}
+
+.doc-dataset-test-results-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  @include typo($body-small);
+  color: #94a3b8;
+}
+
+// 결과 카드 리스트
+.doc-dataset-test-results-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  flex: 1;
+  overflow-y: auto;
+  width: calc(100% + 6px);
+  padding-right: 6px;
+  @include custom-scrollbar;
+}
+
+// 결과 카드
+.doc-dataset-test-result-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px 16px;
+  background: #f4f7f9;
+  border: 1px solid #dce4e9;
+  border-radius: $border-radius-lg;
+  flex-shrink: 0;
+}
+
+.doc-dataset-test-result-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+}
+
+.doc-dataset-test-result-chunk {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 $spacing-sm;
+  background: #fff;
+  border: 1px solid #dce4e9;
+  border-radius: 24px;
+  font-size: 12px;
+  line-height: 1.2;
+  color: #5c6677;
+}
+
+.doc-dataset-test-result-similarity {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  .doc-dataset-test-result-similarity-label {
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #5c6677;
+  }
+
+  strong {
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--color-primary);
+  }
+}
+
+.doc-dataset-test-result-content {
+  @include typo($body-small);
+  color: #4d5462;
+  line-height: 1.5;
+}
+
+.doc-dataset-test-result-meta {
+  display: flex;
+  gap: 12px;
+}
+
+.doc-dataset-test-result-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #5c6677;
+}
+
+.doc-dataset-test-result-meta-label {
+  font-size: 11px;
+  font-weight: 400;
+  color: #94a3b8;
+}
+
+// 푸터
+.doc-dataset-test-footer {
   display: flex;
   justify-content: flex-end;
   padding-top: 12px;

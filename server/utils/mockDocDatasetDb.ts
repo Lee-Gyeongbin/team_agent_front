@@ -280,4 +280,23 @@ export const mockDocDatasetDb = {
     if (item) item.isActive = !item.isActive
     return item ?? null
   },
+
+  // 검색 테스트 (더미 결과)
+  search: (_datasetId: string, _query: string, topK: number = 5) => {
+    const mockResults = [
+      { chunkId: '1247', content: 'ERP 시스템의 구매 발주 기능은 구매 > 발주 관리 메뉴에서 접근할 수 있습니다. 신규 발주를 생성하려면 \'신규 발주\' 버튼을 클릭하고 공급업체를 선택한 후...', source: 'ERP시스템_사용자매뉴얼.pdf', page: 45, similarity: 0.92 },
+      { chunkId: '1248', content: '발주 승인 프로세스는 금액에 따라 결재 라인이 달라집니다. 100만원 미만은 팀장 승인, 100만원 이상은 부서장 승인이 필요합니다.', source: 'ERP시스템_사용자매뉴얼.pdf', page: 46, similarity: 0.89 },
+      { chunkId: '2103', content: '재고 관리 모듈에서 입출고 내역을 확인하려면 재고 > 입출고 현황 메뉴로 이동하세요. 기간별, 품목별 필터링이 가능합니다.', source: 'ERP시스템_사용자매뉴얼.pdf', page: 78, similarity: 0.85 },
+      { chunkId: '3056', content: '전자결재 시스템에서 구매 요청서를 작성할 때는 반드시 예산 코드를 입력해야 합니다. 예산 코드가 없으면 결재가 반려됩니다.', source: '전자결재_업무가이드.pdf', page: 23, similarity: 0.82 },
+      { chunkId: '1590', content: '공급업체 등록은 구매 > 공급업체 관리에서 할 수 있습니다. 사업자등록번호, 대표자명, 거래 조건 등을 입력합니다.', source: 'ERP시스템_사용자매뉴얼.pdf', page: 52, similarity: 0.78 },
+      { chunkId: '4201', content: '월별 구매 실적 리포트는 구매 > 리포트 > 월별 실적에서 확인할 수 있습니다. Excel 다운로드도 지원됩니다.', source: 'ERP시스템_사용자매뉴얼.pdf', page: 95, similarity: 0.75 },
+      { chunkId: '2890', content: '납품 검수 절차는 입고 등록 후 품질 검사를 진행하고, 합격 시 입고 확정 처리합니다.', source: '전자결재_업무가이드.pdf', page: 31, similarity: 0.72 },
+    ]
+    const results = mockResults.slice(0, topK)
+    const avgSimilarity = Math.round((results.reduce((sum, r) => sum + r.similarity, 0) / results.length) * 100) / 100
+    return {
+      results,
+      summary: { totalChunks: results.length, avgSimilarity },
+    }
+  },
 }
