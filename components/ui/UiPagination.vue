@@ -113,6 +113,7 @@ const onPageChange = (page: number) => {
   margin: 0 auto;
   flex-wrap: wrap;
   gap: $spacing-sm;
+  width: 100%;
 }
 
 .ui-pagination-total {

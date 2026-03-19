@@ -130,7 +130,7 @@ const onRowClick = (row: Record<string, any>, index: number) => {
     }
 
     th {
-      height: $height-lg;
+      height: 42px;
       padding: 0 12px;
       background: $color-background;
       @include typo($body-medium-bold);
@@ -170,7 +170,7 @@ const onRowClick = (row: Record<string, any>, index: number) => {
     }
 
     td {
-      height: $height-lg;
+      height: 42px;
       padding: 0 12px;
       background: #fff;
       border-bottom: 1px solid $color-border-light;

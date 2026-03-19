@@ -112,7 +112,6 @@
   background: #fff;
   border: 1px solid #dce4e9;
   padding: 16px;
-  border-radius: 16px;
   display: flex;
   flex-direction: column;
   height: calc(100vh - #{$header-height} - 123px);
@@ -143,7 +142,11 @@
   }
 
   .category-item {
-    margin: 0;
+    margin-bottom: 4px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
   }
 
   .category-row {
@@ -151,6 +154,19 @@
     border-radius: $border-radius-sm;
     gap: 0;
     min-height: 40px;
+    cursor: pointer;
+
+    // selectable 모드: 선택된 행 배경 + 체크 아이콘
+    &.is-selected {
+      background-color: #f1f6fe;
+      border-radius: 4px;
+    }
+
+    .category-check {
+      flex-shrink: 0;
+      color: $color-primary;
+      margin-right: 4px;
+    }
 
     &:hover .btn-category-more {
       opacity: 1;
@@ -295,12 +311,6 @@
       }
     }
 
-    // table-cell(th, td)에는 min-height가 동작하지 않음 → height로 최소 행 높이 확보
-    .ui-table tr th,
-    .ui-table tr td {
-      height: 42px;
-      box-sizing: border-box;
-    }
     .ui-table thead th {
       border-bottom: 1px solid #ecf0f3;
       border-color: #ecf0f3 !important;

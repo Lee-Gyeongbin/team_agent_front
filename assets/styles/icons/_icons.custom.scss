@@ -510,3 +510,8 @@
 .icon-mini-time {
   @include icon-file-bg('mini-time');
 }
+
+// 체크 (카테고리 선택 등)
+.icon-check {
+  @include icon-file-bg('check');
+}

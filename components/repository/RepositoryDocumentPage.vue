@@ -249,15 +249,8 @@
 
 <script setup lang="ts">
 import type { TableColumn } from '~/types/table'
+import type { CategoryItem } from '~/types/repository'
 import CategorySelectModal from '~/components/repository/CategorySelectModal.vue'
-
-/** 카테고리 항목: id, name, children (4depth 퍼블용 재귀 구조) */
-interface CategoryItem {
-  id: string
-  name: string
-  expanded?: boolean
-  children?: CategoryItem[]
-}
 
 // 문서 검색·필터 (SelectItem value는 빈 문자열 불가 — 'all' 사용)
 const searchKeyword = ref('')

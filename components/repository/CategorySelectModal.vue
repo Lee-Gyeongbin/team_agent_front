@@ -20,131 +20,19 @@
         />
       </div>
 
-      <!-- 카테고리 트리 (id, name, children 구조 — 탭과 동일) -->
-      <div class="modal-category-select__tree-wrap">
-        <ul class="modal-category-select__tree">
-          <li
-            v-for="node in categoryTree"
-            :key="node.id"
-            class="tree-item"
-            :class="{ 'has-children': node.children?.length }"
-          >
-            <div
-              class="tree-row flex items-center"
-              :class="{ 'is-selected': node.checked }"
-              :style="{ paddingLeft: `${(node.depth || 0) * 16 + 8}px` }"
-              @click="toggleCheck(node)"
-            >
-              <button
-                v-if="node.children?.length"
-                type="button"
-                class="tree-toggle"
-                :aria-expanded="node.expanded"
-                @click.stop="toggleExpand(node)"
-              >
-                <i
-                  class="icon icon-chevron-down size-16"
-                  :class="{ 'is-expanded': node.expanded }"
-                />
-              </button>
-              <span
-                v-else
-                class="tree-toggle-placeholder"
-              />
-              <i class="icon icon-document size-16 tree-icon-folder" />
-              <UiCheckbox
-                :model-value="node.checked"
-                class="tree-checkbox"
-                @update:model-value="node.checked = $event"
-                @click.stop
-              />
-              <span class="tree-name">{{ node.name }}</span>
-              <span
-                v-if="node.checked"
-                class="tree-icon-check"
-                aria-hidden="true"
-                >✓</span
-              >
-            </div>
-            <template v-if="node.children?.length && node.expanded">
-              <li
-                v-for="child in node.children"
-                :key="child.id"
-                class="tree-item"
-              >
-                <div
-                  class="tree-row flex items-center"
-                  :class="{ 'is-selected': child.checked }"
-                  :style="{ paddingLeft: `${((child.depth ?? node.depth ?? 0) + 1) * 16 + 8}px` }"
-                  @click="toggleCheck(child)"
-                >
-                  <button
-                    v-if="child.children?.length"
-                    type="button"
-                    class="tree-toggle"
-                    :aria-expanded="child.expanded"
-                    @click.stop="toggleExpand(child)"
-                  >
-                    <i
-                      class="icon icon-chevron-down size-16"
-                      :class="{ 'is-expanded': child.expanded }"
-                    />
-                  </button>
-                  <span
-                    v-else
-                    class="tree-toggle-placeholder"
-                  />
-                  <i class="icon icon-document size-16 tree-icon-folder" />
-                  <UiCheckbox
-                    :model-value="child.checked"
-                    class="tree-checkbox"
-                    @update:model-value="child.checked = $event"
-                    @click.stop
-                  />
-                  <span class="tree-name">{{ child.name }}</span>
-                  <span
-                    v-if="child.checked"
-                    class="tree-icon-check"
-                    aria-hidden="true"
-                    >✓</span
-                  >
-                </div>
-                <ul
-                  v-if="child.children?.length && child.expanded"
-                  class="tree-children"
-                >
-                  <li
-                    v-for="sub in child.children"
-                    :key="sub.id"
-                    class="tree-item"
-                  >
-                    <div
-                      class="tree-row flex items-center"
-                      :class="{ 'is-selected': sub.checked }"
-                      :style="{ paddingLeft: `${((sub.depth ?? 0) + 2) * 16 + 8}px` }"
-                      @click="toggleCheck(sub)"
-                    >
-                      <span class="tree-toggle-placeholder" />
-                      <i class="icon icon-document size-16 tree-icon-folder" />
-                      <UiCheckbox
-                        :model-value="sub.checked"
-                        class="tree-checkbox"
-                        @update:model-value="sub.checked = $event"
-                        @click.stop
-                      />
-                      <span class="tree-name">{{ sub.name }}</span>
-                      <span
-                        v-if="sub.checked"
-                        class="tree-icon-check"
-                        aria-hidden="true"
-                        >✓</span
-                      >
-                    </div>
-                  </li>
-                </ul>
-              </li>
-            </template>
-          </li>
+      <!-- 카테고리 트리 (CategoryTreeNode selectable 모드 재사용) -->
+      <div class="modal-category-select__tree-wrap category-panel">
+        <ul class="category-tree">
+          <CategoryTreeNode
+            v-for="cat in categoryTree"
+            :key="cat.id"
+            :item="cat"
+            :depth="1"
+            selectable
+            :selected-ids="selectedIds"
+            @toggle="toggleExpand"
+            @select="toggleSelect"
+          />
         </ul>
       </div>
     </div>
@@ -174,15 +62,8 @@
 </template>
 
 <script setup lang="ts">
-/** 카테고리 노드: 문서 탭 좌측/모달과 구조 통일 (id, name, children) */
-export interface CategoryNode {
-  id: string
-  name: string
-  checked: boolean
-  expanded?: boolean
-  depth?: number
-  children?: CategoryNode[]
-}
+import type { CategoryItem } from '~/types/repository'
+import CategoryTreeNode from '~/components/repository/CategoryTreeNode.vue'
 
 defineProps<{
   isOpen: boolean
@@ -195,30 +76,23 @@ const emit = defineEmits<{
 
 // 🔽 퍼블용 더미 데이터 — 백엔드 연결 시 API로 교체
 const searchKeyword = ref('')
-const categoryTree = ref<CategoryNode[]>([
+const selectedIds = ref<string[]>(['cat-modal-1', 'cat-modal-1-1', 'cat-modal-1-1-1'])
+const categoryTree = ref<CategoryItem[]>([
   {
     id: 'cat-modal-1',
-    name: '1depth',
-    checked: true,
+    name: '1depth 카테고리명임',
     expanded: true,
-    depth: 0,
     children: [
       {
         id: 'cat-modal-1-1',
         name: '2depth 카테고리명임',
-        checked: true,
         expanded: true,
-        depth: 1,
         children: [
           {
             id: 'cat-modal-1-1-1',
             name: '3depth 카테고리명임',
-            checked: true,
             expanded: true,
-            depth: 2,
-            children: [
-              { id: 'cat-modal-1-1-1-1', name: '4depth', checked: false, depth: 3 },
-            ],
+            children: [{ id: 'cat-modal-1-1-1-1', name: '4depth 카테고리명' }],
           },
         ],
       },
@@ -226,23 +100,33 @@ const categoryTree = ref<CategoryNode[]>([
   },
   {
     id: 'cat-modal-2',
-    name: '1depth',
-    checked: true,
+    name: '1depth 카테고리명임',
     expanded: false,
-    depth: 0,
-    children: [
-      { id: 'cat-modal-2-1', name: '2depth 카테고리명임', checked: false, depth: 1 },
-    ],
+    children: [{ id: 'cat-modal-2-1', name: '2depth 카테고리명임' }],
+  },
+  { id: 'cat-modal-3', name: '1depth 카테고리명임' },
+  { id: 'cat-modal-4', name: '1depth 카테고리명임' },
+  { id: 'cat-modal-5', name: '1depth 카테고리명임' },
+  {
+    id: 'cat-modal-6',
+    name: '1depth 카테고리명임',
+    expanded: true,
+    children: [{ id: 'cat-modal-6-1', name: '2depth 카테 고리명임' }],
   },
 ])
 
 // 퍼블용 — 추후 API 연동 시 검색 요청으로 교체
 const onSearch = () => {}
-const toggleExpand = (node: CategoryNode) => {
-  if (node.children?.length) node.expanded = !node.expanded
+const toggleExpand = (item: CategoryItem) => {
+  if (item?.children?.length) item.expanded = !item.expanded
 }
-const toggleCheck = (node: CategoryNode) => {
-  node.checked = !node.checked
+const toggleSelect = (item: CategoryItem) => {
+  const idx = selectedIds.value.indexOf(item.id)
+  if (idx > -1) {
+    selectedIds.value = selectedIds.value.filter((id) => id !== item.id)
+  } else {
+    selectedIds.value = [...selectedIds.value, item.id]
+  }
 }
 const onClose = () => emit('close')
 const onConfirm = () => {
@@ -271,7 +155,8 @@ const onConfirm = () => {
 }
 
 .modal-category-select__search {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+  margin-top: 12px;
 
   .search-input {
     width: 100%;
@@ -282,81 +167,11 @@ const onConfirm = () => {
   max-height: 360px;
   overflow-y: auto;
   padding-right: 4px;
-}
-
-.modal-category-select__tree {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.tree-item {
-  margin: 0;
-}
-
-.tree-row {
-  min-height: 40px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.15s;
-
-  &:hover {
-    background-color: rgba(99, 102, 241, 0.08);
-  }
-
-  &.is-selected {
-    background-color: rgba(99, 102, 241, 0.12);
-  }
-}
-
-.tree-toggle,
-.tree-toggle-placeholder {
-  width: 24px;
-  height: 24px;
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.tree-toggle {
+  // category-panel 스타일 상속 + 모달 전용 오버라이드
   border: none;
-  background: none;
-  cursor: pointer;
   padding: 0;
-  color: $color-text-secondary;
-}
-.tree-toggle-placeholder {
-  flex-shrink: 0;
-}
-.tree-icon-folder {
-  flex-shrink: 0;
-  margin-right: 8px;
-  color: $color-text-secondary;
-}
-.tree-checkbox {
-  margin-right: 8px;
-}
-.tree-name {
-  flex: 1;
-  font-size: $font-size-base;
-  color: $color-text-dark;
-}
-.tree-icon-check {
-  flex-shrink: 0;
-  color: $color-primary;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.icon-chevron-down.is-expanded {
-  transform: rotate(-180deg);
-}
-
-.tree-children {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+  width: 100%;
+  height: auto;
 }
 
 .modal-category-select__footer {

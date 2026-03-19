@@ -1,16 +1,18 @@
 <!--
   카테고리 트리 노드 (재귀 컴포넌트)
   - depth로 들여쓰기, 자식 있으면 펼치기/접기 + 하위 노드 자기 자신으로 렌더
+  - selectable 모드: 드롭다운 대신 ✓ 체크 표시, 클릭 시 선택 토글
 -->
 <template>
   <li
     class="category-item"
     :class="{ 'has-children': item.children?.length }"
   >
-    <!-- 한 행: 들여쓰기(depth) + 폴더 아이콘 + 이름(또는 인라인 수정) + 더보기 메뉴 + 펼침 화살표 -->
     <div
       class="category-row flex items-center"
+      :class="{ 'is-selected': selectable && selectedIds.includes(item.id) }"
       :style="{ paddingLeft: `${(depth - 1) * 20}px` }"
+      @click="selectable ? $emit('select', item) : undefined"
     >
       <!-- 폴더 아이콘: 펼침 시 열림, 아니면 닫힘 -->
       <span class="category-item-file-icon">
@@ -23,8 +25,8 @@
         />
       </span>
 
-      <!-- 이름 수정 모드: 인풋 표시, 엔터 시 저장 emit -->
-      <template v-if="editingCategoryId === item.id">
+      <!-- 이름 수정 모드 (selectable이 아닐 때만) -->
+      <template v-if="!selectable && editingCategoryId === item.id">
         <UiInput
           ref="inputRef"
           v-model="localEditingName"
@@ -37,7 +39,7 @@
         />
       </template>
 
-      <!-- 일반 모드: 카테고리명 텍스트 -->
+      <!-- 카테고리명 텍스트 -->
       <span
         v-else
         class="category-name"
@@ -45,32 +47,40 @@
         {{ item.name }}
       </span>
 
-      <!-- 더보기 메뉴 (이름 수정 / 카테고리 삭제) — 열림 중에는 버튼이 사라지지 않도록 is-active 유지 -->
-      <UiDropdownMenu
-        v-model:open="isDropdownOpen"
-        :items="menuItems"
-        side="bottom"
-        align="end"
-        :side-offset="4"
-        @select="(value) => $emit('menu-select', value, item)"
-      >
-        <template #trigger>
-          <UiButton
-            icon-only
-            variant="ghost"
-            size="xs"
-            class="btn-category-more"
-            :class="{ 'is-active': isDropdownOpen }"
-            @click.stop
-          >
-            <template #icon-left>
-              <i class="icon icon-add-dot size-20" />
-            </template>
-          </UiButton>
-        </template>
-      </UiDropdownMenu>
+      <!-- selectable 모드: 선택 체크 표시 -->
+      <i
+        v-if="selectable && selectedIds.includes(item.id)"
+        class="icon icon-check size-16 category-check"
+      />
 
-      <!-- 자식이 있을 때만: 펼침/접기 버튼 (클릭 시 toggle emit) -->
+      <!-- 일반 모드: 더보기 메뉴 -->
+      <template v-if="!selectable">
+        <UiDropdownMenu
+          v-model:open="isDropdownOpen"
+          :items="menuItems"
+          side="bottom"
+          align="end"
+          :side-offset="4"
+          @select="(value) => $emit('menu-select', value, item)"
+        >
+          <template #trigger>
+            <UiButton
+              icon-only
+              variant="ghost"
+              size="xs"
+              class="btn-category-more"
+              :class="{ 'is-active': isDropdownOpen }"
+              @click.stop
+            >
+              <template #icon-left>
+                <i class="icon icon-add-dot size-20" />
+              </template>
+            </UiButton>
+          </template>
+        </UiDropdownMenu>
+      </template>
+
+      <!-- 자식이 있을 때만: 펼침/접기 버튼 -->
       <UiButton
         v-if="item.children?.length"
         icon-only
@@ -78,7 +88,7 @@
         size="xs"
         class="btn-category-arrow-down"
         :aria-expanded="item.expanded"
-        @click="$emit('toggle', item)"
+        @click.stop="$emit('toggle', item)"
       >
         <template #icon-left>
           <i
@@ -105,10 +115,13 @@
         :key="child.id"
         :item="child"
         :depth="depth + 1"
+        :selectable="selectable"
+        :selected-ids="selectedIds"
         :editing-category-id="editingCategoryId"
         :editing-name="editingName"
         :menu-items="menuItems"
         @toggle="$emit('toggle', $event)"
+        @select="$emit('select', $event)"
         @menu-select="$emit('menu-select', $event[0], $event[1])"
         @update:editing-name="$emit('update:editing-name', $event)"
         @save-rename="$emit('save-rename')"
@@ -119,25 +132,30 @@
 
 <script setup lang="ts">
 import { computed, watch, nextTick, ref } from 'vue'
+import type { CategoryItem } from '~/types/repository'
 
-/** 카테고리 항목 (재귀 구조) */
-export interface CategoryItem {
-  id: string
-  name: string
-  expanded?: boolean
-  children?: CategoryItem[]
-}
-
-const props = defineProps<{
-  item: CategoryItem
-  depth: number
-  editingCategoryId: string | null
-  editingName: string
-  menuItems: { label: string; value: string; icon?: string; color?: 'danger' }[]
-}>()
+const props = withDefaults(
+  defineProps<{
+    item: CategoryItem
+    depth: number
+    selectable?: boolean
+    selectedIds?: string[]
+    editingCategoryId?: string | null
+    editingName?: string
+    menuItems?: { label: string; value: string; icon?: string; color?: 'danger' }[]
+  }>(),
+  {
+    selectable: false,
+    selectedIds: () => [],
+    editingCategoryId: null,
+    editingName: '',
+    menuItems: () => [],
+  },
+)
 
 const emit = defineEmits<{
   toggle: [item: CategoryItem]
+  select: [item: CategoryItem]
   'menu-select': [value: string, item: CategoryItem]
   'update:editing-name': [value: string]
   'save-rename': []
