@@ -1,0 +1,93 @@
+// UiPagination.vue — 페이지네이션 UI
+@use '../utils/variables' as *;
+@use '../utils/mixins' as *;
+
+.ui-pagination {
+  width: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.ui-pagination-total {
+  @include typo($body-medium);
+  color: #4d5462;
+  position: absolute;
+  left: 0;
+
+  .point-color {
+    color: #2d3139;
+  }
+}
+
+.ui-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ui-pagination-btn {
+  padding: 5px 8px;
+  height: 32px;
+  border-radius: $border-radius-sm;
+  @include typo($body-medium);
+  color: #4d5462;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: $color-background;
+  }
+
+  &:disabled {
+    color: #94a3b8;
+    cursor: not-allowed;
+  }
+}
+
+.ui-pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ui-pagination-page {
+  min-width: 32px;
+  height: 32px;
+  padding: 5px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  @include typo($body-medium);
+  color: #5c6677;
+  cursor: pointer;
+
+  &.is-active {
+    font-weight: 700;
+    background: #4d5462;
+    color: #fff;
+  }
+
+  &:hover:not(.is-active) {
+    background: $color-background;
+  }
+}
+
+.ui-pagination-ellipsis {
+  min-width: 32px;
+  padding: 6px 8px;
+  @include typo($body-small);
+  color: $color-text-muted;
+  text-align: center;
+}
+
+.ui-pagination-range {
+  @include typo($body-medium);
+  color: #5c6677;
+  text-align: right;
+  position: absolute;
+  right: 0;
+}
