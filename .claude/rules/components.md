@@ -28,13 +28,17 @@ if (!confirmed) return
   // ============================================
   ```
 - 상태별 UI 모두 구현: 로딩(Skeleton), 빈 상태(Empty), 에러, 데이터 있음
-- **빈 상태(Empty)**: 개별 HTML 작성 금지 → `UiEmpty` 컴포넌트 사용
+- **빈 상태(Empty)**: 모든 빈 상태 UI는 반드시 `UiEmpty` 컴포넌트 사용 — 개별 empty 마크업, 인라인 텍스트, 조건부 메시지 등 직접 작성 금지
   ```vue
   <!-- ❌ 금지 — 개별 empty 마크업 -->
   <div class="xxx-empty">
     <i class="icon-search size-24" />
     <p>데이터가 없습니다.</p>
   </div>
+
+  <!-- ❌ 금지 — 인라인 빈 상태 텍스트 -->
+  <p v-if="list.length === 0">검색 결과가 없습니다.</p>
+  <div v-if="!data" class="no-data">데이터가 없습니다</div>
 
   <!-- ✅ 올바른 사용 -->
   <UiEmpty />
@@ -44,6 +48,7 @@ if (!confirmed) return
   - 넓은 영역 (페이지, 패널): `icon` + `title` 권장 (시각적 인지)
   - 좁은 영역 (모달, 카드): `title`만 사용 가능
   - 하단 액션 필요 시 default 슬롯 활용
+  - **UiTable 빈 상태도 포함**: 테이블에 데이터가 없을 때 `emptyText` prop 대신, 데이터 0건이면 테이블 자체를 숨기고 `UiEmpty`를 표시하는 것을 우선 고려
 - TypeScript 타입 정의 필수 (`types/` 디렉토리)
 - **Input 설명 텍스트**: `<p class="hint">` 등 별도 태그 사용 금지 → `UiInput`의 `desc` prop 사용
   ```vue

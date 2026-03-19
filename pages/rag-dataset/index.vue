@@ -68,6 +68,13 @@
       @save="onSaveCreate"
     />
 
+    <!-- 검색 테스트 모달 -->
+    <DocDatasetTestModal
+      :is-open="isTestModalOpen"
+      :dataset-id="testTargetId"
+      @close="isTestModalOpen = false"
+    />
+
     <!-- 변경이력 모달 -->
     <DocDatasetHistoryModal
       :is-open="isHistoryModalOpen"
@@ -92,11 +99,18 @@ import DocDatasetSummary from '~/components/doc-dataset/DocDatasetSummary.vue'
 import DocDatasetCard from '~/components/doc-dataset/DocDatasetCard.vue'
 import DocDatasetCreateModal from '~/components/doc-dataset/DocDatasetCreateModal.vue'
 import DocDatasetHistoryModal from '~/components/doc-dataset/DocDatasetHistoryModal.vue'
+import DocDatasetTestModal from '~/components/doc-dataset/DocDatasetTestModal.vue'
 import { useDocDatasetStore } from '~/composables/doc-dataset/useDocDatasetStore'
 import type { DocDataset, DocDatasetForm } from '~/types/doc-dataset'
 
-const { datasetList, summary, handleSelectAll, handleDeleteDocDataset, handleToggleActiveDocDataset } =
-  useDocDatasetStore()
+const {
+  datasetList,
+  summary,
+  handleSelectAll,
+  handleSaveDocDataset,
+  handleDeleteDocDataset,
+  handleToggleActiveDocDataset,
+} = useDocDatasetStore()
 
 // 초기 조회
 const isLoading = ref(true)
@@ -123,8 +137,12 @@ const onSaveCreate = async (data: DocDatasetForm, startBuild: boolean) => {
 }
 
 // 테스트
+const isTestModalOpen = ref(false)
+const testTargetId = ref('')
+
 const onTest = (id: string) => {
-  console.warn('[TODO] 데이터셋 테스트:', id)
+  testTargetId.value = id
+  isTestModalOpen.value = true
 }
 
 // 변경이력

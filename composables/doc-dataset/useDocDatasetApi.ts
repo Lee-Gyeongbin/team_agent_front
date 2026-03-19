@@ -1,4 +1,12 @@
-import type { DocDataset, DocDatasetSummary, DocDatasetHistory, DocFile, DocUrl } from '~/types/doc-dataset'
+import type {
+  DocDataset,
+  DocDatasetSummary,
+  DocDatasetHistory,
+  DocDatasetSearchResult,
+  DocDatasetSearchSummary,
+  DocFile,
+  DocUrl,
+} from '~/types/doc-dataset'
 
 // 🔽 Mock — 백엔드 API 완성 시 useApi 패턴으로 교체
 const MOCK_BASE = '/mock/doc-dataset'
@@ -51,6 +59,19 @@ export const useDocDatasetApi = () => {
     return mockPost<{ data: { id: string } }>(`${MOCK_BASE}/history/delete`, { id })
   }
 
+  // ===== 검색 테스트 =====
+  const fetchSearchDocDataset = async (params: {
+    datasetId: string
+    query: string
+    topK?: number
+    threshold?: number
+    rerank?: string
+  }) => {
+    return mockPost<{
+      data: { results: DocDatasetSearchResult[]; summary: DocDatasetSearchSummary }
+    }>(`${MOCK_BASE}/search`, params)
+  }
+
   // ===== 데이터 소스 =====
   const fetchDocFileList = async () => {
     return mockPost<{ list: DocFile[]; totalCount: number }>(`${MOCK_BASE}/source/doc-list`, {})
@@ -69,6 +90,7 @@ export const useDocDatasetApi = () => {
     fetchDocDatasetHistoryList,
     fetchSaveDocDatasetHistory,
     fetchDeleteDocDatasetHistory,
+    fetchSearchDocDataset,
     fetchDocFileList,
     fetchUrlList,
   }

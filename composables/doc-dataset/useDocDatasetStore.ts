@@ -1,5 +1,11 @@
 import { useDocDatasetApi } from '~/composables/doc-dataset/useDocDatasetApi'
-import type { DocDataset, DocDatasetSummary, DocDatasetHistory } from '~/types/doc-dataset'
+import type {
+  DocDataset,
+  DocDatasetSummary,
+  DocDatasetHistory,
+  DocDatasetSearchResult,
+  DocDatasetSearchSummary,
+} from '~/types/doc-dataset'
 
 const {
   fetchDocDatasetList,
@@ -10,6 +16,7 @@ const {
   fetchDocDatasetHistoryList,
   fetchSaveDocDatasetHistory,
   fetchDeleteDocDatasetHistory,
+  fetchSearchDocDataset,
 } = useDocDatasetApi()
 
 // ===== 상태 변수 =====
@@ -80,6 +87,35 @@ const handleDeleteDocDatasetHistory = async (id: string, datasetId: string) => {
   await handleSelectDocDatasetHistoryList(datasetId, historyPage.value)
 }
 
+// ===== 검색 테스트 =====
+const searchResults = ref<DocDatasetSearchResult[]>([])
+const searchSummary = ref<DocDatasetSearchSummary>({ totalChunks: 0, avgSimilarity: 0 })
+const isSearching = ref(false)
+
+const handleSearchDocDataset = async (params: {
+  datasetId: string
+  query: string
+  topK?: number
+  threshold?: number
+  rerank?: string
+}) => {
+  isSearching.value = true
+  searchResults.value = []
+  searchSummary.value = { totalChunks: 0, avgSimilarity: 0 }
+  try {
+    const res = await fetchSearchDocDataset(params)
+    searchResults.value = res.data.results
+    searchSummary.value = res.data.summary
+  } finally {
+    isSearching.value = false
+  }
+}
+
+const resetSearchResults = () => {
+  searchResults.value = []
+  searchSummary.value = { totalChunks: 0, avgSimilarity: 0 }
+}
+
 export const useDocDatasetStore = () => {
   return {
     datasetList,
@@ -96,5 +132,11 @@ export const useDocDatasetStore = () => {
     handleSelectDocDatasetHistoryList,
     handleSaveDocDatasetHistory,
     handleDeleteDocDatasetHistory,
+    // 검색 테스트
+    searchResults,
+    searchSummary,
+    isSearching,
+    handleSearchDocDataset,
+    resetSearchResults,
   }
 }
