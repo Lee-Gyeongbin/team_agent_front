@@ -1,6 +1,9 @@
 <template>
   <div class="ui-pagination">
-    <span class="ui-pagination-total">총 {{ totalCount }}{{ totalLabel }}</span>
+    <p class="ui-pagination-total">
+      총 <strong class="point-color">{{ totalCount }}</strong
+      >{{ totalLabel }}
+    </p>
     <div class="ui-pagination-controls">
       <button
         type="button"
@@ -18,7 +21,8 @@
           <span
             v-if="item === '...'"
             class="ui-pagination-ellipsis"
-          >…</span>
+            >…</span
+          >
           <button
             v-else
             type="button"
@@ -102,16 +106,24 @@ const onPageChange = (page: number) => {
 @use '~/assets/styles/utils/mixins' as *;
 
 .ui-pagination {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  margin: 0 auto;
   flex-wrap: wrap;
   gap: $spacing-sm;
 }
 
 .ui-pagination-total {
-  @include typo($body-small);
-  color: $color-text-secondary;
+  @include typo($body-medium);
+  color: #4d5462;
+  position: absolute;
+  left: 0;
+
+  .point-color {
+    color: #2d3139;
+  }
 }
 
 .ui-pagination-controls {
@@ -121,21 +133,19 @@ const onPageChange = (page: number) => {
 }
 
 .ui-pagination-btn {
-  padding: 6px 12px;
-  border: 1px solid $color-border;
+  padding: 5px 8px;
+  height: 32px;
   border-radius: $border-radius-sm;
-  background: #fff;
-  @include typo($body-small);
-  color: $color-text-primary;
+  @include typo($body-medium);
+  color: #4d5462;
   cursor: pointer;
 
   &:hover:not(:disabled) {
-    border-color: $color-primary;
-    color: $color-primary;
+    background: $color-background;
   }
 
   &:disabled {
-    opacity: 0.5;
+    color: #94a3b8;
     cursor: not-allowed;
   }
 }
@@ -143,20 +153,23 @@ const onPageChange = (page: number) => {
 .ui-pagination-pages {
   display: flex;
   align-items: center;
+  gap: 8px;
 }
 
 .ui-pagination-page {
   min-width: 32px;
-  padding: 6px 8px;
+  height: 32px;
+  padding: 5px 8px;
   border: none;
-  border-radius: $border-radius-sm;
+  border-radius: 6px;
   background: transparent;
-  @include typo($body-small);
-  color: $color-text-primary;
+  @include typo($body-medium);
+  color: #5c6677;
   cursor: pointer;
 
   &.is-active {
-    background: $color-primary;
+    font-weight: 700;
+    background: #4d5462;
     color: #fff;
   }
 
@@ -174,7 +187,10 @@ const onPageChange = (page: number) => {
 }
 
 .ui-pagination-range {
-  @include typo($body-small);
-  color: $color-text-muted;
+  @include typo($body-medium);
+  color: #5c6677;
+  text-align: right;
+  position: absolute;
+  right: 0;
 }
 </style>
