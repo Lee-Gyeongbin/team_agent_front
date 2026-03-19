@@ -393,6 +393,12 @@ const componentList = [
     description: '우측 상단 토스트 알림 — 타입별 색상/아이콘, 다중 스택, 자동 닫기',
     tags: ['openToast', 'type', 'duration', 'stack'],
   },
+  {
+    name: 'UiPagination',
+    to: '/guide/ui-pagination',
+    description: 'v-model 지원 페이지네이션 — 총 건수, 이전/다음, 페이지 번호, 말줄임',
+    tags: ['v-model', 'totalCount', 'pageSize', 'totalLabel'],
+  },
 ]
 
 // 섹션 4: 아이콘 목록 (그룹별로 구분) — _icons.custom.scss와 동기화

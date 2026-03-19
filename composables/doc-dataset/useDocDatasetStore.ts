@@ -1,5 +1,5 @@
 import { useDocDatasetApi } from '~/composables/doc-dataset/useDocDatasetApi'
-import type { DocDataset, DocDatasetSummary } from '~/types/doc-dataset'
+import type { DocDataset, DocDatasetSummary, DocDatasetHistory } from '~/types/doc-dataset'
 
 const {
   fetchDocDatasetList,
@@ -7,6 +7,9 @@ const {
   fetchSaveDocDataset,
   fetchDeleteDocDataset,
   fetchToggleActiveDocDataset,
+  fetchDocDatasetHistoryList,
+  fetchSaveDocDatasetHistory,
+  fetchDeleteDocDatasetHistory,
 } = useDocDatasetApi()
 
 // ===== 상태 변수 =====
@@ -53,6 +56,30 @@ const handleToggleActiveDocDataset = async (id: string) => {
   await handleSelectAll()
 }
 
+// ===== 변경이력 =====
+const historyList = ref<DocDatasetHistory[]>([])
+const historyTotalCount = ref(0)
+const historyPage = ref(1)
+const historyPageSize = 5
+
+const handleSelectDocDatasetHistoryList = async (datasetId: string, page: number = 1) => {
+  historyPage.value = page
+  const res = await fetchDocDatasetHistoryList(datasetId, page, historyPageSize)
+  historyList.value = res.list
+  historyTotalCount.value = res.totalCount
+}
+
+const handleSaveDocDatasetHistory = async (history: { datasetId: string; version: string; content: string }) => {
+  await fetchSaveDocDatasetHistory(history)
+  // 저장 후 첫 페이지로 이동하여 새 이력 표시
+  await handleSelectDocDatasetHistoryList(history.datasetId, 1)
+}
+
+const handleDeleteDocDatasetHistory = async (id: string, datasetId: string) => {
+  await fetchDeleteDocDatasetHistory(id)
+  await handleSelectDocDatasetHistoryList(datasetId, historyPage.value)
+}
+
 export const useDocDatasetStore = () => {
   return {
     datasetList,
@@ -61,5 +88,13 @@ export const useDocDatasetStore = () => {
     handleSaveDocDataset,
     handleDeleteDocDataset,
     handleToggleActiveDocDataset,
+    // 변경이력
+    historyList,
+    historyTotalCount,
+    historyPage,
+    historyPageSize,
+    handleSelectDocDatasetHistoryList,
+    handleSaveDocDatasetHistory,
+    handleDeleteDocDatasetHistory,
   }
 }

@@ -117,6 +117,14 @@
           variant="line-secondary"
           size="sm"
           class="card-grid-card-btn-fixed"
+          @click="emit('history', dataset.id)"
+        >
+          변경이력
+        </UiButton>
+        <UiButton
+          variant="line-secondary"
+          size="sm"
+          class="card-grid-card-btn-fixed"
           @click="emit('edit', dataset)"
         >
           수정
@@ -144,6 +152,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'toggle-active': [id: string]
   'test': [id: string]
+  'history': [id: string]
   'edit': [dataset: DocDataset]
   'delete': [id: string]
   'stop-build': [id: string]

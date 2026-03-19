@@ -33,6 +33,7 @@
         :dataset="dataset"
         @toggle-active="handleToggleActiveDocDataset"
         @test="onTest"
+        @history="onHistory"
         @edit="onEdit"
         @delete="onDelete"
         @stop-build="onStopBuild"
@@ -67,6 +68,13 @@
       @save="onSaveCreate"
     />
 
+    <!-- 변경이력 모달 -->
+    <DocDatasetHistoryModal
+      :is-open="isHistoryModalOpen"
+      :dataset-id="historyTargetId"
+      @close="isHistoryModalOpen = false"
+    />
+
     <!-- 삭제 확인 모달 -->
     <UiDialogModal
       :is-open="isDeleteModalOpen"
@@ -83,6 +91,7 @@
 import DocDatasetSummary from '~/components/doc-dataset/DocDatasetSummary.vue'
 import DocDatasetCard from '~/components/doc-dataset/DocDatasetCard.vue'
 import DocDatasetCreateModal from '~/components/doc-dataset/DocDatasetCreateModal.vue'
+import DocDatasetHistoryModal from '~/components/doc-dataset/DocDatasetHistoryModal.vue'
 import { useDocDatasetStore } from '~/composables/doc-dataset/useDocDatasetStore'
 import type { DocDataset, DocDatasetForm } from '~/types/doc-dataset'
 
@@ -116,6 +125,15 @@ const onSaveCreate = async (data: DocDatasetForm, startBuild: boolean) => {
 // 테스트
 const onTest = (id: string) => {
   console.warn('[TODO] 데이터셋 테스트:', id)
+}
+
+// 변경이력
+const isHistoryModalOpen = ref(false)
+const historyTargetId = ref('')
+
+const onHistory = (id: string) => {
+  historyTargetId.value = id
+  isHistoryModalOpen.value = true
 }
 
 // 수정

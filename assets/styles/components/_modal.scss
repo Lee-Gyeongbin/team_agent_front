@@ -69,7 +69,7 @@
     border-bottom: 1px solid #aebccb;
 
     .modal-dialog-title {
-      color: $color-text-dark;
+      color: $color-text-heading;
       font-size: $font-size-xl;
       font-weight: $font-weight-bold;
       // line-height: 150%;
@@ -448,7 +448,6 @@
   }
 }
 
-
 // ===================================
 // 라이브러리 보관함 모달
 // ===================================
@@ -563,7 +562,6 @@
     }
   }
 }
-
 
 // ===================================
 // 라이브러리 휴지통 모달
