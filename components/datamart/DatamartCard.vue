@@ -1,7 +1,7 @@
 <template>
   <div
     class="card-grid-card"
-    :class="{ 'is-inactive': !datamart.useYn }"
+    :class="{ 'is-inactive': datamart.useYn === 'N' }"
   >
     <!-- 헤더: 이름 + DB뱃지 + 토글 -->
     <div class="card-grid-card-header">
@@ -18,13 +18,13 @@
       </div>
       <div class="card-grid-card-actions">
         <UiToggle
-          :model-value="datamart.useYn"
-          @update:model-value="emit('toggle-active', datamart.datamartId)"
+          :model-value="datamart.useYn === 'Y'"
+          @update:model-value="handleToggleActiveDatamart"
         />
       </div>
     </div>
 
-    <!-- 정보: HOST + 문서/URL (가로 2칸) -->
+    <!-- 정보: HOST + SCHEMA / TABLES (가로 2칸) -->
     <div class="datamart-card-info">
       <div class="datamart-card-info-box">
         <div class="datamart-card-info-header">
@@ -40,7 +40,7 @@
           <div class="datamart-card-info-icon">
             <i class="icon-schema size-12" />
           </div>
-          <span class="datamart-card-info-label">문서/URL</span>
+          <span class="datamart-card-info-label">SCHEMA / TABLES</span>
         </div>
         <span class="datamart-card-info-value">{{ datamart.schNm }} / 테이블 {{ datamart.tblCnt }}개</span>
       </div>
@@ -52,7 +52,7 @@
         variant="primary-line"
         size="sm"
         class="datamart-card-btn-test"
-        @click="emit('test', datamart)"
+        @click="emit('test', { ...datamart, testType: 'saved' })"
       >
         연결 테스트
       </UiButton>
@@ -84,11 +84,15 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  'toggle-active': [id: string]
+  'toggle-active': [datamart: Datamart]
   test: [datamart: Datamart]
   edit: [datamart: Datamart]
   delete: [id: string]
 }>()
+
+const handleToggleActiveDatamart = () => {
+  emit('toggle-active', props.datamart)
+}
 
 const dbBadgeClass = computed(() => {
   const type = props.datamart.dbType.toLowerCase()

@@ -60,8 +60,9 @@
     </template>
 
     <!-- 생성 모달 -->
-    <DatamartCreateModal
+    <DatamartSaveModal
       :is-open="isCreateModalOpen"
+      :edit-data="editTarget"
       @close="isCreateModalOpen = false"
       @save="onSaveCreate"
     />
@@ -81,7 +82,7 @@
 <script setup lang="ts">
 import DatamartSummary from '~/components/datamart/DatamartSummary.vue'
 import DatamartCard from '~/components/datamart/DatamartCard.vue'
-import DatamartCreateModal from '~/components/datamart/DatamartCreateModal.vue'
+import DatamartSaveModal from '~/components/datamart/DatamartSaveModal.vue'
 import { useDatamartStore } from '~/composables/datamart/useDatamartStore'
 import type { Datamart, DatamartForm } from '~/types/datamart'
 
@@ -103,32 +104,21 @@ onMounted(async () => {
   isLoading.value = false
 })
 
-// 생성 모달
+// 생성/수정 모달
 const isCreateModalOpen = ref(false)
+const editTarget = ref<Datamart | null>(null)
 
 const openCreateModal = () => {
+  editTarget.value = null
   isCreateModalOpen.value = true
 }
 
 const onSaveCreate = async (data: DatamartForm) => {
   await handleSaveDatamart({
-    dmNm: data.name,
-    description: data.description,
-    useYn: data.status === 'active',
-    dbType: data.dbType || 'MySQL',
-    dbVersion: data.dbVersion,
-    host: data.host,
+    ...data,
+    ...(editTarget.value ? { datamartId: editTarget.value.datamartId } : {}),
     port: typeof data.port === 'number' ? data.port : 3306,
-    dbNm: data.dbName,
-    username: data.username,
-    pwdEnc: data.password,
-    schNm: data.schema,
-    connOpt: data.connectionOptions,
-    readonlyYn: data.readOnly,
-    ipWlistYn: data.ipWhitelist,
-    sslYn: data.useSsl,
-    tblCnt: 0,
-    sortOrd: data.sortOrder,
+    tblCnt: editTarget.value?.tblCnt ?? 0,
   })
   isCreateModalOpen.value = false
 }
@@ -140,7 +130,8 @@ const onTest = async (datamart: Datamart) => {
 
 // 수정
 const onEdit = (datamart: Datamart) => {
-  console.warn('[TODO] 데이터마트 수정:', datamart)
+  editTarget.value = datamart
+  isCreateModalOpen.value = true
 }
 
 // 삭제

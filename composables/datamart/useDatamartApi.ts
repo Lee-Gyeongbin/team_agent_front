@@ -20,12 +20,14 @@ export const useDatamartApi = () => {
     return get<{ dataList: Datamart[] }>('/datamart/list.do')
   }
 
-  const fetchDatamartSummary = async () => {
-    return mockPost<{ data: DatamartSummary }>(`${MOCK_BASE}/summary`, {})
+  /** 데이터마트 요약 정보 조회 API */
+  const fetchDatamartSummary = async (): Promise<{ data: DatamartSummary }> => {
+    return get<{ data: DatamartSummary }>('/datamart/summary.do')
   }
 
-  const fetchSaveDatamart = async (datamart: Partial<Datamart>) => {
-    return mockPost<{ data: Datamart }>(`${MOCK_BASE}/save`, datamart)
+  /** 데이터마트 저장 API */
+  const fetchSaveDatamart = async (datamart: Partial<Datamart>): Promise<{ data: Datamart }> => {
+    return post<{ data: Datamart }>('/datamart/save.do', datamart)
   }
 
   const fetchDeleteDatamart = async (datamartId: string) => {

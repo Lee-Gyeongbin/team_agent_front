@@ -73,6 +73,15 @@ export interface DocUrl {
   category: string
 }
 
+// 변경이력
+export interface DocDatasetHistory {
+  id: string
+  datasetId: string
+  version: string
+  content: string
+  updatedAt: string
+}
+
 // 요약 통계
 export interface DocDatasetSummary {
   totalCount: number // 전체 데이터셋

@@ -1,14 +1,8 @@
 import { useDatamartApi } from '~/composables/datamart/useDatamartApi'
 import type { Datamart, DatamartSummary } from '~/types/datamart'
 
-const {
-  fetchDatamartList,
-  fetchDatamartSummary,
-  fetchSaveDatamart,
-  fetchDeleteDatamart,
-  fetchToggleActiveDatamart,
-  fetchTestConnection,
-} = useDatamartApi()
+const { fetchDatamartList, fetchDatamartSummary, fetchSaveDatamart, fetchDeleteDatamart, fetchTestConnection } =
+  useDatamartApi()
 
 /** 상태 변수 */
 const datamartList = ref<Datamart[]>([])
@@ -21,29 +15,40 @@ const summary = ref<DatamartSummary>({
   connectedSystems: '',
 })
 
-/** 조회 */
+/** 데이터마트 목록 조회 */
 const handleSelectDatamartList = async () => {
   try {
-    const res = await fetchDatamartList()
-    datamartList.value = res.dataList
-  } catch (error) {
-    console.error(error)
+    const response = await fetchDatamartList()
+    datamartList.value = response.dataList
+  } catch {
+    openToast({ message: '데이터마트 목록 조회에 실패했습니다.', type: 'error' })
   }
 }
 
+/** 데이터마트 요약 정보 조회 */
 const handleSelectDatamartSummary = async () => {
-  const res = await fetchDatamartSummary()
-  summary.value = res.data
+  try {
+    const response = await fetchDatamartSummary()
+    summary.value = response.data
+  } catch {
+    openToast({ message: '데이터마트 요약 정보 조회에 실패했습니다.', type: 'error' })
+  }
 }
 
+/** 데이터마트 목록 및 요약 정보 조회 */
 const handleSelectAll = async () => {
   await Promise.all([handleSelectDatamartList(), handleSelectDatamartSummary()])
 }
 
-// ===== 추가/수정/삭제 =====
+/** 데이터마트 저장 */
 const handleSaveDatamart = async (datamart: Partial<Datamart>) => {
-  await fetchSaveDatamart(datamart)
-  await handleSelectAll()
+  try {
+    await fetchSaveDatamart(datamart)
+    await handleSelectAll()
+    openToast({ message: '데이터마트가 저장되었습니다.', type: 'success' })
+  } catch {
+    openToast({ message: '데이터마트 저장에 실패했습니다.', type: 'error' })
+  }
 }
 
 const handleDeleteDatamart = async (id: string) => {
@@ -51,9 +56,16 @@ const handleDeleteDatamart = async (id: string) => {
   await handleSelectAll()
 }
 
-const handleToggleActiveDatamart = async (id: string) => {
-  await fetchToggleActiveDatamart(id)
-  await handleSelectAll()
+/** 데이터마트 활성화 상태 변경 */
+const handleToggleActiveDatamart = async (datamart: Datamart) => {
+  const saveData: Partial<Datamart> = { ...datamart, useYn: datamart.useYn === 'Y' ? 'N' : 'Y' }
+  try {
+    await fetchSaveDatamart(saveData)
+    await handleSelectAll()
+    openToast({ message: '활성화 상태가 변경되었습니다.' })
+  } catch {
+    openToast({ message: '활성화 상태 변경에 실패했습니다.', type: 'error' })
+  }
 }
 
 /** 데이터마트 연결 테스트 */
@@ -65,6 +77,7 @@ const handleTestConnection = async (datamart: Datamart) => {
       message: response.msg,
       type: isSuccess ? 'success' : 'error',
     })
+    await handleSelectAll()
   } catch {
     openToast({ message: '연결 테스트에 실패했습니다.', type: 'error' })
   }

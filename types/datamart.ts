@@ -3,7 +3,6 @@ export interface Datamart {
   datamartId: string
   dmNm: string
   description: string
-  useYn: boolean
   dbType: string
   dbVersion: string
   host: string
@@ -13,37 +12,39 @@ export interface Datamart {
   pwdEnc: string
   schNm: string
   connOpt: string
-  readonlyYn: boolean
-  ipWlistYn: boolean
-  sslYn: boolean
+  readonlyYn: 'Y' | 'N'
+  ipWlistYn: 'Y' | 'N'
+  sslYn: 'Y' | 'N'
   tblCnt: number
   lastVerifyDt: string
   sortOrd: number
+  useYn: 'Y' | 'N'
   createDt: string
   modifyDt: string
+  testType: string
 }
 
 /** 데이터마트 생성/수정 폼 */
 export interface DatamartForm {
   // 기본 정보
-  name: string
+  dmNm: string
   description: string
-  status: 'active' | 'inactive'
-  sortOrder: number
+  useYn: 'Y' | 'N'
+  sortOrd: number
   // DB 연결 정보
   dbType: string
   dbVersion: string
   host: string
-  port: number | ''
-  dbName: string
+  port: number
+  dbNm: string
   username: string
-  password: string
-  schema: string
-  connectionOptions: string
+  pwdEnc: string
+  schNm: string
+  connOpt: string
   // 액세스 제어
-  readOnly: boolean
-  ipWhitelist: boolean
-  useSsl: boolean
+  readonlyYn: 'Y' | 'N'
+  ipWlistYn: 'Y' | 'N'
+  sslYn: 'Y' | 'N'
 }
 
 /** 데이터마트 요약 통계 */

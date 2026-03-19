@@ -57,7 +57,7 @@ assets/styles/page/
 - 색상: `var(--color-primary)`, `$color-text-primary`, `$color-border` 등
 - 간격: `$spacing-xs(4px)`, `$spacing-sm(8px)`, `$spacing-md(16px)`, `$spacing-lg(24px)`, `$spacing-xl(32px)`
 - 폰트: `$font-size-sm(14px)`, `$font-size-base(16px)`, `$font-size-lg(18px)`
-- 둥글기: `$border-radius-sm(6px)`, `$border-radius-md(8px)`, `$border-radius-lg(12px)`
+- 둥글기: `$border-radius-sm(4px)`, `$border-radius-base(6px)`, `$border-radius-lg(8px)` — ⚠️ `$border-radius-md`는 존재하지 않음, `$border-radius-base` 사용
 - 그림자: `$shadow-sm`, `$shadow-md`, `$shadow-lg`
 - 트랜지션: `$transition-fast(150ms)`, `$transition-base(200ms)`, `$transition-slow(300ms)`
 - z-index: `$z-dropdown(100)`, `$z-sticky(200)`, `$z-overlay(300)`, `$z-modal(400)`, `$z-toast(500)`

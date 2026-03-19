@@ -411,3 +411,184 @@
   text-align: right;
   @include ellipsis(1);
 }
+
+// ===================================
+// 변경이력 모달 (Figma: 720×700, padding 20px, radius 12px)
+// ===================================
+.doc-dataset-history-modal {
+  .modal-dialog-content {
+    height: 700px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .modal-dialog-header {
+    padding-bottom: $spacing-md;
+    border-bottom: 1px solid #aebccb;
+  }
+
+  .modal-dialog-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 12px;
+    flex: 1;
+    overflow: hidden;
+  }
+}
+
+// 이력 추가 영역
+.doc-dataset-history-add {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.doc-dataset-history-add-title {
+  @include typo($body-medium-bold);
+  color: #5c6677;
+}
+
+.doc-dataset-history-add-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-end;
+  border: 1px solid #dce4e9;
+  border-radius: $border-radius-lg;
+  padding: $spacing-md;
+}
+
+.doc-dataset-history-add-fields {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  align-items: flex-start;
+}
+
+.doc-dataset-history-label {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #5c6677;
+  margin-bottom: 4px;
+  display: block;
+
+  .is-required {
+    color: #f24a2d;
+    margin-right: 2px;
+  }
+}
+
+.doc-dataset-history-add-version {
+  width: 110px;
+  flex-shrink: 0;
+}
+
+.doc-dataset-history-add-content {
+  flex: 1;
+}
+
+.doc-dataset-history-add-btn {
+  width: 88px;
+}
+
+// 이력 목록 영역
+.doc-dataset-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.doc-dataset-history-list-title {
+  @include typo($body-medium-bold);
+  color: #5c6677;
+  flex-shrink: 0;
+}
+
+// 테이블 (UiTable 기반 커스텀)
+.doc-dataset-history-table-wrap {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  .ui-table-wrap {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  // 헤더 셀
+  .ui-table thead th {
+    height: auto;
+    padding: 10px 16px;
+    @include typo($body-small-bold);
+    color: #6f7a93;
+  }
+
+  // 바디 셀
+  .ui-table tbody td {
+    height: auto;
+    padding: 10px 16px;
+    @include typo($body-small);
+    color: #4d5462;
+    vertical-align: top;
+  }
+
+  // 컬럼 구분선 제거 (Figma에 없음)
+  .ui-table thead th {
+    border-right: none !important;
+  }
+
+  .ui-table tbody td {
+    border-right: none !important;
+  }
+
+  // 첫 번째 셀 flex 해제 (테이블 레이아웃 깨짐 방지)
+  .ui-table th:first-child,
+  .ui-table td:first-child {
+    display: table-cell;
+  }
+}
+
+.doc-dataset-history-content-cell {
+  white-space: pre-line;
+}
+
+.doc-dataset-history-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: $border-radius-sm;
+  background: transparent;
+  color: #aebccb;
+  cursor: pointer;
+
+  &:hover {
+    background: #f4f7f9;
+    color: #ef4444;
+  }
+}
+
+.doc-dataset-history-date {
+  color: #4d5462;
+}
+
+.doc-dataset-history-pagination {
+  padding-top: 12px;
+  flex-shrink: 0;
+}
+
+// 푸터
+.doc-dataset-history-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 12px;
+}

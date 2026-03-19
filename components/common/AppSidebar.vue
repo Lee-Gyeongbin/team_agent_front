@@ -54,10 +54,10 @@
             :key="idx"
             class="search-history-item"
             :class="{
-              'is-active': selectedHistoryId === entry.roomId,
+              'is-active': activeRoomId === String(entry.roomId),
               'is-dropdown-open': openMoreDropdownId === entry.roomId,
             }"
-            @click="selectedHistoryId = entry.roomId"
+            @click="onClickHistory(entry)"
           >
             <span class="search-history-text">{{ entry.title }}</span>
             <DropdownMenuRoot
@@ -152,6 +152,7 @@ import {
   DropdownMenuTrigger,
 } from 'radix-vue'
 import type { MenuItem } from '~/types/menu'
+import type { ChatRoom } from '~/types/chat'
 const { selectChatRoomList, chatRoomList } = useChatStore()
 const route = useRoute()
 const { menuList } = useMenu()
@@ -164,17 +165,26 @@ const isSearchHistoryOpen = ref(true)
 const isSettingsDropdownOpen = ref(false)
 /** 검색기록 항목 중 '더보기' 드롭다운이 열린 entry.id (열려 있으면 호버 배경 유지) */
 const openMoreDropdownId = ref<string | null>(null)
-const selectedHistoryId = ref<string | null>(null)
+
+// route.params.id를 단일 진실 원천으로 사용
+const activeRoomId = computed(() => {
+  const id = route.params.id
+  console.log('id', id)
+  return typeof id === 'string' ? id : ''
+})
 
 // 사이드바 너비를 CSS 변수로 전달 (채팅 패널 레이아웃 계산용)
-watch(isExpanded, (val) => {
-  document.documentElement.style.setProperty('--sidebar-width', val ? `${260}px` : `${64}px`)
-}, { immediate: true })
+watch(
+  isExpanded,
+  (val) => {
+    document.documentElement.style.setProperty('--sidebar-width', val ? `${260}px` : `${64}px`)
+  },
+  { immediate: true },
+)
 
-// 검색기록 항목 클릭 시 해당 채팅방으로 이동
-watch(selectedHistoryId, (id) => {
-  if (id) navigateTo(`/chat/${id}`)
-})
+function onClickHistory(entry: ChatRoom) {
+  navigateTo(`/chat/${entry.roomId}`)
+}
 
 function toggleExpanded() {
   isExpanded.value = !isExpanded.value
@@ -246,10 +256,10 @@ function onClickNavItem(item: NavItem) {
 }
 
 // 검색기록 컨텍스트 메뉴 액션 (더미 — 추후 연동)
-function onContextShare(_entry: { id: string; query: string }) {}
-function onContextPin(_entry: { id: string; query: string }) {}
-function onContextRename(_entry: { id: string; query: string }) {}
-function onContextDelete(_entry: { id: string; query: string }) {}
+function onContextShare(_entry: ChatRoom) {}
+function onContextPin(_entry: ChatRoom) {}
+function onContextRename(_entry: ChatRoom) {}
+function onContextDelete(_entry: ChatRoom) {}
 
 onMounted(async () => {
   // 채팅방 목록 조회

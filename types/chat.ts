@@ -1,3 +1,7 @@
+// ============================================
+// 타입 정의
+// ============================================
+
 // 메세지
 export interface ChatMessage {
   id?: string
@@ -199,13 +203,14 @@ export interface VisualizationChartSelection {
 
 export interface VisualizationSchema {
   columns: string[] // 전체 컬럼
-  dimensionKeys: string[] // 범주형 컬럼
+  dimensionKeys: string[] // X축 컬럼
   metricKeys: string[] // 통계값(Y축) 컬럼
   profiles: VisualizationColumnProfile[] // 컬럼 프로파일
   selectableOptions: VisualizationSelectableOptions // 선택 가능한 옵션
   defaultSelection: VisualizationChartSelection // 초기 추천 선택값
 }
 
+// 시각화 뷰 모델
 export interface VisualizationViewModel {
   messageId: string
   status: VisualizationStatus

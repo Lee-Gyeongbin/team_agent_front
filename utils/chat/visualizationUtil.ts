@@ -11,6 +11,7 @@ import type {
 } from '~/types/chat'
 import type { TableColumn } from '~/types/table'
 import { registerDynamicMappings, resolveColumnLabel, resolveDisplayValue } from '~/utils/chat/visualizationLabelMap'
+import { calculateChartScale } from '~/utils/chat/visualizationChartUtil'
 
 const TIME_AXIS_YEAR_MONTH = '__TIME_AXIS_YEAR_MONTH__'
 const TIME_AXIS_YEAR_QUARTER = '__TIME_AXIS_YEAR_QUARTER__'
@@ -151,16 +152,22 @@ const getPreferredChartTargetKey = (keys: string[]) => {
   return priority.find((key) => keys.includes(key)) ?? keys[0] ?? ''
 }
 
+const isTimeAxisKey = (key: string) => key === TIME_AXIS_YEAR_MONTH || key === TIME_AXIS_YEAR_QUARTER
+
+/** 시리즈 후보: X축 옵션 중 시간축(년-월, 년-분기) 제외 */
+const getAvailableSeriesKeys = (options: VisualizationSelectableOptions): string[] => {
+  return options.chartTargetKeys.filter((key) => !isTimeAxisKey(key))
+}
+
 const getDefaultSelection = (options: VisualizationSelectableOptions): VisualizationChartSelection => {
   const chartTargetKey = options.chartTargetKeys[0] ?? ''
+  const availableSeries = getAvailableSeriesKeys(options).filter((key) => key !== chartTargetKey)
+  const seriesKey = availableSeries.length === 1 ? availableSeries[0] : ''
   return {
-    chartType:
-      chartTargetKey === TIME_AXIS_YEAR_MONTH || chartTargetKey === TIME_AXIS_YEAR_QUARTER
-        ? 'line'
-        : DEFAULT_CHART_TYPE,
+    chartType: isTimeAxisKey(chartTargetKey) ? 'line' : DEFAULT_CHART_TYPE,
     chartTargetKey,
-    yAxisKeys: options.yAxisKeys.slice(0, options.yAxisKeys.length > 1 ? 2 : 1),
-    seriesKey: '',
+    yAxisKeys: options.yAxisKeys.slice(0, seriesKey ? 1 : options.yAxisKeys.length > 1 ? 2 : 1),
+    seriesKey,
     stack: false,
     dualAxis: false,
   }
@@ -264,22 +271,29 @@ export const buildRowsFromColumnarJson = (raw: unknown): Array<Record<string, un
 export const inferSchema = (rows: Array<Record<string, unknown>>): VisualizationSchema | null => {
   if (rows.length === 0) return null
 
+  // 모든 컬럼
   const columns = getColumnKeys(rows)
+  // 컬럼 프로파일
   const profiles = columns.map((key) => getColumnProfile(rows, key))
+  // 통계값(Y축) 컬럼
   const metricKeys = profiles.filter((profile) => profile.isLikelyMetric).map((profile) => profile.key)
+  // X축 컬럼
   const dimensionKeys = columns.filter((key) => !metricKeys.includes(key))
-
+  // X축 컬럼 후보
   const rawChartTargetKeys = profiles
     .filter((profile) => !profile.isLikelyMetric && profile.uniqueCount > 1)
     .map((profile) => profile.key)
 
+  // X축 컬럼 정렬
   const sortedChartTargetKeys: string[] = []
   if (hasYearMonthAxis(rows, columns)) {
     sortedChartTargetKeys.push(TIME_AXIS_YEAR_MONTH)
   } else if (hasYearQuarterAxis(rows, columns)) {
     sortedChartTargetKeys.push(TIME_AXIS_YEAR_QUARTER)
   }
+  // 선호하는 X축 컬럼
   const preferredChartTarget = getPreferredChartTargetKey(rawChartTargetKeys)
+  // X축 컬럼 정렬
   const orderedDimensionKeys = [
     preferredChartTarget,
     ...rawChartTargetKeys.filter((key) => key !== preferredChartTarget),
@@ -327,8 +341,11 @@ export const buildVisualizationViewModel = (params: {
   statList?: VisualizationStatItem[]
   statDetailList?: VisualizationStatDetailItem[]
 }): VisualizationViewModel => {
+  // 테이블 데이터 파싱
   const parsed = parseTableData(params.tableData ?? '')
+  // 테이블 데이터 파싱 결과를 행 데이터로 변환
   const rows = buildRowsFromColumnarJson(parsed)
+  // 스키마 추론
   const schema = inferSchema(rows)
 
   if (!params.tableData) {
@@ -365,6 +382,7 @@ export const buildVisualizationViewModel = (params: {
   }
 }
 
+// 테이블 모델 생성
 export const buildTableModel = (viewModel: VisualizationViewModel) => {
   registerDynamicMappings(viewModel.statList, viewModel.statDetailList)
   const schema = viewModel.schema
@@ -390,6 +408,7 @@ export const buildTableModel = (viewModel: VisualizationViewModel) => {
   return { columns, data }
 }
 
+// 통계값(Y축) 컬럼 옵션 생성
 export const buildMetricOptions = (schema: VisualizationSchema | null): VisualizationSelectOption[] => {
   if (!schema) return []
   return schema.selectableOptions.yAxisKeys.map((key) => ({
@@ -398,28 +417,36 @@ export const buildMetricOptions = (schema: VisualizationSchema | null): Visualiz
   }))
 }
 
-export const buildSeriesKeyOptions = (schema: VisualizationSchema | null): VisualizationSelectOption[] => {
+// 시리즈 키 옵션 생성
+export const buildSeriesKeyOptions = (
+  schema: VisualizationSchema | null,
+  selectedChartTargetKey?: string,
+): VisualizationSelectOption[] => {
   if (!schema) return []
-  return schema.selectableOptions.seriesKeys.map((key) => ({
-    label: resolveColumnLabel(key),
-    value: key,
-  }))
+  return getAvailableSeriesKeys(schema.selectableOptions)
+    .filter((key) => key !== selectedChartTargetKey)
+    .map((key) => ({
+      label: resolveColumnLabel(key),
+      value: key,
+    }))
 }
 
+// X축 컬럼 옵션 생성
 export const buildChartTargetOptions = (schema: VisualizationSchema | null): VisualizationSelectOption[] => {
   if (!schema) return []
   return schema.selectableOptions.chartTargetKeys.map((key) => {
-    const label =
-      key === TIME_AXIS_YEAR_MONTH ? '년-월' : key === TIME_AXIS_YEAR_QUARTER ? '년-분기' : resolveColumnLabel(key)
+    const label = resolveColumnLabel(key)
     return { label, value: key }
   })
 }
 
+// 기본 차트 타입 생성
 export const getDefaultChartType = (schema: VisualizationSchema | null): VisualizationChartType => {
   if (!schema) return 'bar'
   return schema.defaultSelection.chartType
 }
 
+// 기본 차트 선택 생성
 export const buildDefaultChartSelection = (schema: VisualizationSchema | null): VisualizationChartSelection => {
   if (!schema) {
     return {
@@ -434,6 +461,7 @@ export const buildDefaultChartSelection = (schema: VisualizationSchema | null): 
   return { ...schema.defaultSelection, yAxisKeys: [...schema.defaultSelection.yAxisKeys] }
 }
 
+// 차트 선택 유효성 검증
 const sanitizeSelection = (
   schema: VisualizationSchema,
   selection: VisualizationChartSelection,
@@ -446,11 +474,12 @@ const sanitizeSelection = (
     : schema.defaultSelection.chartTargetKey
 
   // seriesKey 유효성 검증 (pie에서는 미사용, chartTargetKey와 중복 불가)
+  const availableSeries = getAvailableSeriesKeys(schema.selectableOptions)
   const seriesKey =
     selection.seriesKey &&
     chartType !== 'pie' &&
     selection.seriesKey !== chartTargetKey &&
-    schema.selectableOptions.seriesKeys.includes(selection.seriesKey)
+    availableSeries.includes(selection.seriesKey)
       ? selection.seriesKey
       : ''
 
@@ -496,9 +525,9 @@ const buildSingleMetricValueMap = (rows: Array<Record<string, unknown>>, xAxisKe
   return valueMap
 }
 
-const resolveYAxisMax = (datasets: Array<{ data: number[] }>) => {
-  const max = Math.max(0, ...datasets.flatMap((dataset) => dataset.data))
-  return max === 0 ? 1 : Math.ceil(max * 1.1)
+const resolveYAxisScale = (datasets: Array<{ data: number[] }>) => {
+  const values = datasets.flatMap((dataset) => dataset.data).filter((value) => Number.isFinite(value))
+  return calculateChartScale(values, 0.1, true)
 }
 
 export const buildChartModel = (
@@ -523,7 +552,11 @@ export const buildChartModel = (
       pieMap.set(key, (pieMap.get(key) ?? 0) + value)
     })
 
-    const items = Array.from(pieMap.entries()).map(([name, value]) => ({ name, value }))
+    const total = Array.from(pieMap.values()).reduce((sum, v) => sum + v, 0)
+    const items = Array.from(pieMap.entries()).map(([name, value]) => ({
+      name,
+      value: total > 0 ? Math.round((value / total) * 1000) / 10 : 0,
+    }))
     return { items, type: 'outerLabel', style: 'regionRatio' }
   }
 
@@ -565,7 +598,6 @@ export const buildChartModel = (
     if (selection.stack) {
       config.scales = { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
     }
-    if (selection.chartType === 'bar') config.showDataLabels = true
     return config
   }
 
@@ -583,20 +615,28 @@ export const buildChartModel = (
     })
     const config: Record<string, unknown> = { categories, datasets }
     if (selection.dualAxis) {
-      const leftMax = resolveYAxisMax([datasets[0]])
-      const rightMax = resolveYAxisMax([datasets[1]])
+      const leftScale = resolveYAxisScale([datasets[0]])
+      const rightScale = resolveYAxisScale([datasets[1]])
       config.scales = {
-        y: { beginAtZero: true, max: leftMax, position: 'left' },
-        y1: { beginAtZero: true, max: rightMax, position: 'right', grid: { drawOnChartArea: false } },
+        y: {
+          min: leftScale.min,
+          max: leftScale.max,
+          ticks: { stepSize: leftScale.stepSize },
+          position: 'left',
+        },
+        y1: {
+          min: rightScale.min,
+          max: rightScale.max,
+          ticks: { stepSize: rightScale.stepSize },
+          position: 'right',
+          grid: { drawOnChartArea: false },
+        },
       }
     } else if (selection.stack) {
       config.scales = {
         x: { stacked: true },
         y: { stacked: true, beginAtZero: true },
       }
-    }
-    if (selection.chartType === 'bar') {
-      config.showDataLabels = true
     }
     return config
   }
@@ -614,7 +654,6 @@ export const buildChartModel = (
     categories,
     data,
     colorKey: 'bar.set1',
-    showDataLabels: true,
   }
   if (selection.stack) {
     config.scales = {

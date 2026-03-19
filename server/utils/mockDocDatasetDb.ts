@@ -135,6 +135,66 @@ const urlList: MockDocUrl[] = [
   { id: 'url-6', name: '기술 문서', url: 'https://docs.example.com', category: '문서' },
 ]
 
+// ===== 변경이력 =====
+interface MockDocDatasetHistory {
+  id: string
+  datasetId: string
+  version: string
+  content: string
+  updatedAt: string
+}
+
+const historyList: MockDocDatasetHistory[] = [
+  { id: 'h-1', datasetId: 'ds-1', version: 'v.2.1', content: '청크 크기 512 → 768 변경\n청크 크기 512 → 768 변경\n한 페이지에 목록 다섯개까지\n한 목록의 세로가 길어지면 그리드 영역 안에서 스크롤', updatedAt: '2026-03-12 14:22' },
+  { id: 'h-2', datasetId: 'ds-1', version: 'v.2.1', content: '청크 크기 512 → 768 변경', updatedAt: '2026-03-12 14:22' },
+  { id: 'h-3', datasetId: 'ds-1', version: 'v.2.1', content: '청크 크기 512 → 768 변경', updatedAt: '2026-03-12 14:22' },
+  { id: 'h-4', datasetId: 'ds-1', version: 'v.2.1', content: '청크 크기 512 → 768 변경', updatedAt: '2026-03-12 14:22' },
+  { id: 'h-5', datasetId: 'ds-1', version: 'v.2.1', content: '청크 크기 512 → 768 변경', updatedAt: '2026-03-12 14:22' },
+  { id: 'h-6', datasetId: 'ds-1', version: 'v.2.0', content: '임베딩 모델 변경', updatedAt: '2026-03-10 09:30' },
+  { id: 'h-7', datasetId: 'ds-1', version: 'v.2.0', content: '벡터DB Weaviate → Pinecone 교체', updatedAt: '2026-03-10 09:15' },
+  { id: 'h-8', datasetId: 'ds-1', version: 'v.1.5', content: '문서 15건 추가', updatedAt: '2026-03-08 16:40' },
+  { id: 'h-9', datasetId: 'ds-1', version: 'v.1.5', content: 'URL 소스 3건 추가', updatedAt: '2026-03-08 16:35' },
+  { id: 'h-10', datasetId: 'ds-1', version: 'v.1.4', content: '전처리 옵션 수정 — 불용어 제거 활성화', updatedAt: '2026-03-05 11:00' },
+  { id: 'h-11', datasetId: 'ds-1', version: 'v.1.4', content: '오버랩 토큰 50 → 100 변경', updatedAt: '2026-03-05 10:50' },
+  { id: 'h-12', datasetId: 'ds-1', version: 'v.1.3', content: '청킹 알고리즘 Character → Recursive 변경', updatedAt: '2026-03-01 14:00' },
+  { id: 'h-13', datasetId: 'ds-1', version: 'v.1.2', content: '문서 8건 추가', updatedAt: '2026-02-28 09:00' },
+  { id: 'h-14', datasetId: 'ds-1', version: 'v.1.2', content: 'HTML 태그 제거 옵션 활성화', updatedAt: '2026-02-28 08:50' },
+  { id: 'h-15', datasetId: 'ds-1', version: 'v.1.1', content: '초기 문서 세트 업로드', updatedAt: '2026-02-25 10:00' },
+  { id: 'h-16', datasetId: 'ds-1', version: 'v.1.1', content: '데이터셋 설명 수정', updatedAt: '2026-02-25 09:55' },
+  { id: 'h-17', datasetId: 'ds-1', version: 'v.1.0', content: '데이터셋 최초 생성', updatedAt: '2026-02-20 15:00' },
+  { id: 'h-18', datasetId: 'ds-2', version: 'v.1.3', content: 'HR 정책 문서 업데이트', updatedAt: '2026-03-11 10:00' },
+  { id: 'h-19', datasetId: 'ds-2', version: 'v.1.2', content: '급여 관련 문서 추가', updatedAt: '2026-03-05 14:00' },
+  { id: 'h-20', datasetId: 'ds-2', version: 'v.1.0', content: 'HR 데이터셋 최초 생성', updatedAt: '2026-02-20 10:00' },
+]
+
+export const mockDocDatasetHistoryDb = {
+  getList: (datasetId: string, page: number = 1, pageSize: number = 5) => {
+    const filtered = historyList.filter((h) => h.datasetId === datasetId)
+    const totalCount = filtered.length
+    const start = (page - 1) * pageSize
+    const list = filtered.slice(start, start + pageSize)
+    return { list, totalCount }
+  },
+
+  save: (item: { datasetId: string; version: string; content: string }) => {
+    const newItem: MockDocDatasetHistory = {
+      id: `h-${Date.now()}`,
+      datasetId: item.datasetId,
+      version: item.version,
+      content: item.content,
+      updatedAt: new Date().toISOString().replace('T', ' ').slice(0, 16),
+    }
+    historyList.unshift(newItem)
+    return newItem
+  },
+
+  delete: (id: string) => {
+    const index = historyList.findIndex((h) => h.id === id)
+    if (index > -1) historyList.splice(index, 1)
+    return { id }
+  },
+}
+
 export const mockDocDatasetDb = {
   getList: () => datasetList.map((d) => ({ ...d })),
 

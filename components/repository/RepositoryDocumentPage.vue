@@ -229,43 +229,13 @@
           </UiTable>
         </div>
 
-        <div class="document-pagination flex items-center justify-between">
-          <p class="pagination-total type-absolute">
-            총 <strong class="point-color">{{ totalCount }}</strong
-            >개 문서
-          </p>
-          <div class="pagination-controls flex items-center">
-            <button
-              type="button"
-              class="pagination-btn"
-              :disabled="currentPage <= 1"
-              @click="currentPage = Math.max(1, currentPage - 1)"
-            >
-              이전
-            </button>
-            <div class="pagination-pages flex items-center">
-              <button
-                v-for="p in visiblePages"
-                :key="p"
-                type="button"
-                class="pagination-page"
-                :class="{ 'is-active': p === currentPage }"
-                @click="currentPage = p"
-              >
-                {{ p }}
-              </button>
-            </div>
-            <button
-              type="button"
-              class="pagination-btn"
-              :disabled="currentPage >= totalPages"
-              @click="currentPage = Math.min(totalPages, currentPage + 1)"
-            >
-              다음
-            </button>
-          </div>
-          <span class="pagination-range type-absolute">{{ pageStart }}-{{ pageEnd }}/{{ totalCount }}</span>
-        </div>
+        <UiPagination
+          v-model="currentPage"
+          :total-count="totalCount"
+          :page-size="pageSize"
+          total-label="개 문서"
+          class="document-pagination"
+        />
       </section>
     </div>
 
@@ -450,23 +420,6 @@ const toggleSelectRow = (id: string, checked: boolean) => {
 const totalCount = ref(166)
 const currentPage = ref(1)
 const pageSize = 10
-const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / pageSize)))
-const pageStart = computed(() => (currentPage.value - 1) * pageSize + 1)
-const pageEnd = computed(() => Math.min(currentPage.value * pageSize, totalCount.value))
-const visiblePages = computed(() => {
-  const total = totalPages.value
-  const cur = currentPage.value
-  const pages: number[] = []
-  let start = Math.max(1, cur - 2)
-  let end = Math.min(total, cur + 2)
-  if (end - start < 4) {
-    if (start === 1) end = Math.min(total, 5)
-    else end = Math.min(total, start + 4)
-    start = Math.max(1, end - 4)
-  }
-  for (let i = start; i <= end; i++) pages.push(i)
-  return pages
-})
 
 const toggleExpand = (item: CategoryItem) => {
   if (item?.children?.length) item.expanded = !item.expanded

@@ -15,6 +15,7 @@ import {
   type VisualizationViewModel,
 } from '~/types/chat'
 import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
+import { clearBodyChartFullscreen } from '~/utils/chat/visualizationChartUtil'
 const { user } = useAuth()
 
 // API 호출
@@ -31,57 +32,6 @@ const {
 
 // LLM 모델 옵션
 const modelOptions = ref<ModelOption[]>([])
-
-const dummyMessages: ChatMessage[] = [
-  {
-    logId: '1',
-    type: 'question',
-    qContent: '업무관리에서 칸반 보드는 어떻게 생성하지?',
-    rContent: '',
-    createdAt: '2025-03-03T10:00:00',
-  },
-  {
-    logId: '2',
-    type: 'answer',
-    qContent: '',
-    rContent: `<p>좋은 질문이에요 👍</p>
-<p><strong>칸반 보드</strong>를 생성하는 방법을 안내해 드리겠습니다.</p>
-<ol>
-<li>업무관리 메뉴에 접속합니다.</li>
-<li>상단의 "새 보드" 버튼을 클릭합니다.</li>
-<li>보드 이름을 입력하고 템플릿으로 "칸반"을 선택합니다.</li>
-<li>기본 컬럼(To Do, In Progress, Done)이 자동으로 생성됩니다.</li>
-<li>필요에 따라 컬럼을 추가하거나 수정할 수 있습니다.</li>
-</ol>
-<p>추가로 칸반 보드에서는 카드를 드래그 앤 드롭으로 쉽게 이동할 수 있습니다.</p>`,
-    createdAt: '2025-03-03T10:00:05',
-    hasSource: true,
-    hasVisualization: true,
-  },
-  {
-    logId: '3',
-    type: 'question',
-    qContent: '회의실 예약 절차 알려주세요',
-    rContent: '',
-    createdAt: '2025-03-03T10:01:00',
-  },
-  {
-    logId: '4',
-    type: 'answer',
-    qContent: '',
-    rContent: `<p>🏢 <strong>회의실 예약 절차</strong>를 안내해 드리겠습니다.</p>
-<ol>
-<li>그룹웨어 메인에서 "회의실 예약" 메뉴를 클릭합니다.</li>
-<li>예약하고 싶은 날짜와 시간대를 선택합니다.</li>
-<li>사용 가능한 회의실 목록에서 원하는 회의실을 선택합니다.</li>
-<li>회의 제목, 참석자를 입력한 뒤 "예약 신청" 버튼을 클릭합니다.</li>
-<li>승인 후 예약이 확정되면 알림을 받을 수 있습니다.</li>
-</ol>`,
-    createdAt: '2025-03-03T10:01:10',
-    hasSource: true,
-    hasVisualization: true,
-  },
-]
 
 interface ChatSocketPayload {
   type: string
@@ -106,7 +56,7 @@ const WEBSOCKET_CONNECTING = 0
 const chatbotSocket = shallowRef<WebSocket | null>(null)
 
 // 채팅 store 상태 — 호출부 간 동기화를 위해 모듈 레벨로 공유
-const messages = ref<ChatMessage[]>([...dummyMessages])
+const messages = ref<ChatMessage[]>([])
 const chatMessage = ref('')
 // pdf 뷰어 or 시각화
 const activePanelType = ref<PanelType>('none')
@@ -181,23 +131,17 @@ export const useChatStore = () => {
   // 스트리밍 메시지 찾기
   const getStreamingMessage = () => {
     if (pendingMessageId.value) {
-      return messages.value.find((message) => message.logId === pendingMessageId.value)
+      return messages.value.find((message) => message.type === 'answer' && message.logId === pendingMessageId.value)
     }
     const streamingMessages = messages.value.filter((message) => message.type === 'answer' && message.isStreaming)
     return streamingMessages[streamingMessages.length - 1]
   }
 
   // 스트리밍 메시지 완료 처리
-  const finalizeStreamingMessage = (payload: ChatSocketMessage) => {
-    // 현재 스트리밍 메시지 찾기
+  const finalizeStreamingMessage = () => {
     const streamingMessage = getStreamingMessage()
     if (streamingMessage) {
-      // 스트리밍 메시지 완료 처리
       streamingMessage.isStreaming = false
-      // 소스 데이터 처리
-      streamingMessage.hasSource = payload.filePath !== '' ? true : false
-      // 시각화 데이터 처리
-      streamingMessage.hasVisualization = true
       messageBufferMap.value[streamingMessage.logId] = ''
     }
     pendingMessageId.value = null
@@ -211,8 +155,8 @@ export const useChatStore = () => {
     // 스트리밍 메시지 오류 처리
     streamingMessage.rContent = `<p>${errorText}</p>`
     streamingMessage.isStreaming = false
-    streamingMessage.hasSource = true
-    streamingMessage.hasVisualization = true
+    streamingMessage.hasSource = false
+    streamingMessage.hasVisualization = false
     messageBufferMap.value[streamingMessage.logId] = ''
     pendingMessageId.value = null
   }
@@ -256,13 +200,26 @@ export const useChatStore = () => {
           // 스트리밍 메시지 업데이트
           streamingMessage.rContent = toHtmlContent(completeContent)
         }
-        if (payload.filePath !== '') {
-          streamingMessage.hasSource = true
-        } else if (payload.tableData !== '') {
-          streamingMessage.hasVisualization = true
+        // 서버 logId가 있으면 question + answer 메시지에 반영
+        if (payload.logId) {
+          const oldLogId = streamingMessage.logId
+          // 버퍼 키를 서버 logId로 마이그레이션
+          messageBufferMap.value[payload.logId] = messageBufferMap.value[oldLogId] || ''
+          messageBufferMap.value[oldLogId] = ''
+          // answer 메시지 logId 갱신
+          streamingMessage.logId = payload.logId
+          // 직전 question 메시지 logId 갱신
+          const idx = messages.value.indexOf(streamingMessage)
+          if (idx > 0 && messages.value[idx - 1].type === 'question') {
+            messages.value[idx - 1].logId = payload.logId
+          }
+          // pendingMessageId도 서버 logId로 갱신 (finalizeStreamingMessage에서 조회 가능하도록)
+          pendingMessageId.value = payload.logId
         }
+        streamingMessage.hasSource = !!payload.filePath
+        streamingMessage.hasVisualization = !!payload.tableData
         // 스트리밍 메시지 완료 처리
-        finalizeStreamingMessage(payload)
+        finalizeStreamingMessage()
         break
       }
       case 'error': {
@@ -434,18 +391,87 @@ export const useChatStore = () => {
     }
     const res = await fetchSelectChatLogList(roomId)
     const rawList = res.list ?? []
+    // 채팅 로그 목록이 0건인 경우
     if (rawList.length === 0) {
+      // 로컬 메시지 보존 옵션 확인
       const preserve = options?.preserveLocalWhenEmpty ?? true
+      // 로컬 메시지 존재 여부 확인
       const hasLocalMessages = messages.value.length > 0
+      // 채팅방 동일 여부 확인
       const isSameRoom = chatRoom.value.roomId === roomId
+      // 로컬 메시지 보존 옵션 확인
       if (preserve && hasLocalMessages && isSameRoom) return
+      // 로컬 메시지 초기화
       messages.value = []
       return
     }
+    // 채팅 로그 목록 → 메시지 리스트 변환
     const flattened = rawList.flatMap(logRowToMessages)
+    // 메시지 정렬
     flattened.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    // 메시지 설정
     messages.value = flattened
+    // 검색모드·서브옵션 동기화
     await syncSearchModeFromLastLog(rawList[rawList.length - 1])
+  }
+
+  // 검색모드 기반 svcTy 결정 (C=일반, M=지식검색, S=데이터분석)
+  const resolveSvcTy = (): string => {
+    if (isNotEmpty(activeSearchModes.value)) {
+      return activeSearchModes.value[0] === 'M' ? 'M' : 'S'
+    }
+    return 'C'
+  }
+
+  // question 메시지 생성 + push
+  const pushQuestionMessage = (content: string): string => {
+    const logId = Date.now().toString()
+    messages.value.push({
+      id: logId,
+      logId,
+      type: 'question',
+      qContent: content,
+      rContent: '',
+      createdAt: new Date().toISOString(),
+    })
+    return logId
+  }
+
+  // answer placeholder 생성 + push + pendingMessageId 설정
+  const pushAnswerPlaceholder = (): string => {
+    const logId = (Date.now() + 1).toString()
+    pendingMessageId.value = logId
+    messages.value.push({
+      id: logId,
+      logId,
+      type: 'answer',
+      qContent: '',
+      rContent: '',
+      createdAt: new Date().toISOString(),
+      isStreaming: true,
+      hasSource: false,
+      hasVisualization: false,
+    })
+    return logId
+  }
+
+  // WebSocket 연결 확인 + 페이로드 전송 (실패 시 false 반환)
+  const ensureWebSocketAndSend = async (payload: ChatSocketPayload): Promise<boolean> => {
+    if (!chatbotSocket.value || chatbotSocket.value.readyState !== WEBSOCKET_OPEN) {
+      await connectWebSocket()
+    }
+    if (chatbotSocket.value?.readyState !== WEBSOCKET_OPEN) {
+      updateStreamingError('연결 오류가 발생했습니다. 다시 시도해주세요.')
+      return false
+    }
+    try {
+      chatbotSocket.value.send(JSON.stringify(payload))
+      return true
+    } catch (error) {
+      console.error('웹소켓 메시지 전송 실패:', error)
+      updateStreamingError('메시지 전송에 실패했습니다. 잠시 후 다시 시도해주세요.')
+      return false
+    }
   }
 
   // 채팅방 생성 (content: 호출부에서 전달 가능, 미전달 시 chatMessage 사용)
@@ -456,135 +482,52 @@ export const useChatStore = () => {
       return chatRoom.value
     }
 
-    // 디폴트 검색 모드로 설정
-    let svcTy = 'C'
-    // 검색모드 (C/M/D)
-    if (isNotEmpty(activeSearchModes.value)) {
-      // 모드 세팅
-      svcTy = activeSearchModes.value[0] === 'M' ? 'M' : 'S'
-    }
-    // 채팅방 생성
+    const svcTy = resolveSvcTy()
     const res = await fetchCreateChatRoom(qContent, svcTy)
-    // response 생성
-    chatRoom.value.roomId = res.data.roomId
-    chatRoom.value.title = qContent
-    chatRoom.value.qContent = qContent
+    const createdRoom: ChatRoom = {
+      roomId: res.data.roomId,
+      title: qContent,
+      qContent,
+      createdAt: res.data.createdAt,
+      svcTy,
+    }
+    chatRoom.value = createdRoom
+    chatRoomList.value = [createdRoom, ...chatRoomList.value.filter((room) => room.roomId !== createdRoom.roomId)]
 
-    // 새 채팅방: 메시지 초기화 후 question + answer placeholder를 순차 적재
-    const questionLogId = Date.now().toString()
-    const assistantMessageId = (Date.now() + 1).toString()
     messages.value = []
-    messages.value.push({
-      id: questionLogId,
-      logId: questionLogId,
-      type: 'question',
-      qContent: qContent,
-      rContent: '',
-      createdAt: new Date().toISOString(),
-    })
-    messages.value.push({
-      id: assistantMessageId,
-      logId: assistantMessageId,
-      type: 'answer',
-      rContent: '',
-      createdAt: new Date().toISOString(),
-      isStreaming: true,
-      hasSource: true,
-      hasVisualization: true,
-    })
-    // 스트리밍 메시지 ID 설정
-    pendingMessageId.value = assistantMessageId
-    // 채팅 메시지 초기화
+    pushQuestionMessage(qContent)
+    pushAnswerPlaceholder()
     chatMessage.value = ''
 
-    // WebSocket 연결 확인 후 전송
-    if (!chatbotSocket.value || chatbotSocket.value.readyState !== WEBSOCKET_OPEN) {
-      await connectWebSocket()
-    }
-    // 서브 옵션(LLM/RAG/DM)
-    const refId = selectedSubOption.value
-
-    if (chatbotSocket.value?.readyState === WEBSOCKET_OPEN) {
-      const payload: ChatSocketPayload = {
-        type: 'question',
-        query: qContent,
-        threadId: chatRoom.value.roomId,
-        svcTy: svcTy,
-        refId: refId,
-      }
-      try {
-        chatbotSocket.value.send(JSON.stringify(payload))
-      } catch (error) {
-        console.error('웹소켓 메시지 전송 실패:', error)
-        updateStreamingError('메시지 전송에 실패했습니다. 잠시 후 다시 시도해주세요.')
-      }
-    } else {
-      updateStreamingError('연결 오류가 발생했습니다. 다시 시도해주세요.')
-    }
+    const sent = await ensureWebSocketAndSend({
+      type: 'question',
+      query: qContent,
+      threadId: chatRoom.value.roomId,
+      svcTy,
+      refId: selectedSubOption.value,
+    })
+    if (!sent) return chatRoom.value
 
     navigateTo(`/chat/${chatRoom.value.roomId}`)
     return chatRoom.value
   }
+
   // 메시지 전송
   const onSend = async () => {
     const content = chatMessage.value.trim()
     if (!content) return
 
-    const questionMessageId = Date.now().toString()
-    messages.value.push({
-      id: questionMessageId,
-      logId: questionMessageId,
-      type: 'question',
-      qContent: content,
-      rContent: '',
-      createdAt: new Date().toISOString(),
-    })
-
+    pushQuestionMessage(content)
+    pushAnswerPlaceholder()
     chatMessage.value = ''
 
-    const assistantMessageId = (Date.now() + 1).toString()
-    pendingMessageId.value = assistantMessageId
-
-    messages.value.push({
-      id: assistantMessageId,
-      logId: assistantMessageId,
-      type: 'answer',
-      qContent: '',
-      rContent: '',
-      createdAt: new Date().toISOString(),
-      isStreaming: true,
-      hasSource: true,
-      hasVisualization: true,
-    })
-
-    if (!chatbotSocket.value || chatbotSocket.value.readyState !== WEBSOCKET_OPEN) {
-      await connectWebSocket()
-    }
-    if (chatbotSocket.value?.readyState !== WEBSOCKET_OPEN) {
-      updateStreamingError('연결 오류가 발생했습니다. 다시 시도해주세요.')
-      return
-    }
-
-    let svcTy = 'C'
-    // 검색모드 (C/M/D)
-    if (isNotEmpty(activeSearchModes.value)) {
-      svcTy = activeSearchModes.value[0] === 'M' ? 'M' : 'S'
-    }
-    const payload: ChatSocketPayload = {
+    await ensureWebSocketAndSend({
       type: 'question',
       query: content,
       threadId: chatRoom.value.roomId || '',
-      svcTy: svcTy,
+      svcTy: resolveSvcTy(),
       refId: selectedSubOption.value,
-    }
-
-    try {
-      // WebSocket 메시지 전송
-      chatbotSocket.value.send(JSON.stringify(payload))
-    } catch (error) {
-      console.error('웹소켓 메시지 전송 실패:', error)
-      updateStreamingError('메시지 전송에 실패했습니다. 잠시 후 다시 시도해주세요.')
-    }
+    })
   }
 
   // 액션 핸들러
@@ -631,6 +574,7 @@ export const useChatStore = () => {
   const handleSelectVisualizationData = async (logId: string) => {
     if (!logId) return getEmptyVisualizationViewModel('')
 
+    // 시각화 데이터 조회 중
     visualizationViewMap.value[logId] = {
       messageId: logId,
       status: 'loading',
@@ -641,13 +585,16 @@ export const useChatStore = () => {
     }
 
     try {
+      // 시각화 데이터 조회
       const res = await fetchSelectTableDataList({ logId })
       const row = (res.list ?? [])[0]
+      // 시각화 데이터 조회 결과가 없으면 빈 뷰 모델 반환
       if (!row) {
         visualizationViewMap.value[logId] = getEmptyVisualizationViewModel(logId)
         return visualizationViewMap.value[logId]
       }
 
+      // 시각화 데이터 조회 결과 → 뷰 모델 생성
       const viewModel = buildVisualizationViewModel({
         messageId: logId,
         sql: row.ttsq,
@@ -655,6 +602,7 @@ export const useChatStore = () => {
         statList: res.statList ?? row.statList,
         statDetailList: res.statDetailList ?? row.statDetailList,
       })
+      // 뷰 모델 설정
       visualizationViewMap.value[logId] = viewModel
       return viewModel
     } catch (error) {
@@ -673,7 +621,7 @@ export const useChatStore = () => {
     }
   }
 
-  // 패널 핸들러
+  // 원본 보기 버튼 클릭 시(pdf 패널 열기)
   const onViewSource = async (id: string) => {
     isPanelFullscreen.value = false
     activePanelType.value = 'pdf'
@@ -684,6 +632,7 @@ export const useChatStore = () => {
     pdfRefList.value = res.list
   }
 
+  // 시각화 보기 버튼 클릭 시(시각화 패널 열기)
   const onViewVisualization = async (id: string) => {
     isPanelFullscreen.value = false
     activePanelType.value = 'visualization'
@@ -693,6 +642,7 @@ export const useChatStore = () => {
 
   const onPanelClose = (value: boolean) => {
     if (!value) {
+      clearBodyChartFullscreen()
       if (activePanelType.value === 'visualization' && activePanelMessageId.value) {
         const removeId = activePanelMessageId.value
         visualizationViewMap.value = Object.fromEntries(
