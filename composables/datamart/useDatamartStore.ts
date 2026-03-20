@@ -51,9 +51,20 @@ const handleSaveDatamart = async (datamart: Partial<Datamart>) => {
   }
 }
 
+/** 데이터마트 삭제 */
 const handleDeleteDatamart = async (id: string) => {
-  await fetchDeleteDatamart(id)
-  await handleSelectAll()
+  openConfirm({
+    message: '데이터마트를 삭제하시겠습니까?',
+    onConfirm: async () => {
+      try {
+        await fetchDeleteDatamart(id)
+        await handleSelectAll()
+        openToast({ message: '데이터마트가 삭제되었습니다.', type: 'success' })
+      } catch {
+        openToast({ message: '데이터마트 삭제에 실패했습니다.', type: 'error' })
+      }
+    },
+  })
 }
 
 /** 데이터마트 활성화 상태 변경 */
