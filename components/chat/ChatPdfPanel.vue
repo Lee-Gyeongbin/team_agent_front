@@ -148,7 +148,11 @@
               size="lg"
             />
           </div>
-          <div class="chat-pdf-thumb-list">
+          <div
+            ref="thumbListRef"
+            class="chat-pdf-thumb-list"
+            @scroll="onThumbListScroll"
+          >
             <button
               v-for="pageNum in displayPageList"
               :key="pageNum"
@@ -164,6 +168,15 @@
               <span class="chat-pdf-thumb-label">
                 <em>{{ pageNum }}</em> / {{ totalPages }}
               </span>
+            </button>
+            <!-- 맨 위로 버튼 -->
+            <button
+              v-show="showScrollTopBtn"
+              class="chat-pdf-thumb-top-btn"
+              title="맨 위로"
+              @click="scrollThumbListToTop"
+            >
+              <i class="icon-arrow-down size-16" />
             </button>
           </div>
         </div>
@@ -217,6 +230,18 @@ const currentMainPageNo = computed(() => selectedRef.value?.mainPageNo ?? 1)
 const currentRelatedPages = computed(() =>
   selectedRef.value?.relatedPages ? parseRelatedPages(selectedRef.value.relatedPages) : [],
 )
+
+const thumbListRef = ref<HTMLElement | null>(null)
+const showScrollTopBtn = ref(false)
+
+const onThumbListScroll = () => {
+  if (!thumbListRef.value) return
+  showScrollTopBtn.value = thumbListRef.value.scrollTop > 200
+}
+
+const scrollThumbListToTop = () => {
+  thumbListRef.value?.scrollTo({ top: 0, behavior: 'smooth' })
+}
 
 const mainCanvasRef = ref<HTMLCanvasElement | null>(null)
 const thumbCanvasMap = new Map<number, HTMLCanvasElement>()
