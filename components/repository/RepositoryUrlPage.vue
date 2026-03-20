@@ -100,7 +100,6 @@
         :columns="urlTableColumns"
         :data="urlList"
         sticky-header
-        max-height="calc(100vh - 380px)"
         empty-text="등록된 URL이 없습니다."
       >
         <template #header-select>

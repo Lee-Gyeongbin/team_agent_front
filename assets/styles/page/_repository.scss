@@ -400,10 +400,17 @@
 
 // 배치바 + 테이블 + 페이지네이션 통합 wrapper
 .url-content-panel {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - #{$header-height} - 123px);
   border: 1px solid #dce4e9;
   border-radius: 16px;
   background: #fff;
   padding: 16px;
+
+  .ui-table-wrap {
+    flex: 1;
+  }
 }
 
 .url-batch-bar {
