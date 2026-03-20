@@ -72,6 +72,7 @@
 </template>
 
 <script setup lang="ts">
+import { toRaw } from 'vue'
 import type { DocDatasetForm } from '~/types/doc-dataset'
 
 interface Props {
@@ -101,6 +102,6 @@ const toggleCollapse = () => {
 }
 
 const onUpdate = (key: keyof DocDatasetForm, value: string) => {
-  emit('update:modelValue', { ...props.modelValue, [key]: value })
+  emit('update:modelValue', { ...toRaw(props.modelValue), [key]: value } as DocDatasetForm)
 }
 </script>

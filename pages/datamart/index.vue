@@ -66,16 +66,6 @@
       @close="isSaveModalOpen = false"
       @save="onSave"
     />
-
-    <!-- 삭제 확인 모달 -->
-    <UiDialogModal
-      :is-open="isDeleteModalOpen"
-      title="데이터마트 삭제"
-      :message="'이 데이터마트를 삭제하시겠습니까?\n연결된 데이터 소스 정보가 함께 삭제됩니다.'"
-      confirm-text="삭제"
-      @close="isDeleteModalOpen = false"
-      @confirm="doDelete"
-    />
   </div>
 </template>
 
@@ -114,6 +104,11 @@ const openCreateModal = () => {
 }
 
 const onSave = async (data: DatamartForm) => {
+  if (data.dbType !== 'MySQL') {
+    openAlert({ message: '현재 DB타입은 MySQL 만 지원됩니다.' })
+    return
+  }
+
   await handleSaveDatamart({
     ...data,
     ...(editTarget.value ? { datamartId: editTarget.value.datamartId } : {}),
@@ -134,16 +129,7 @@ const onEdit = (datamart: Datamart) => {
 }
 
 // 삭제
-const isDeleteModalOpen = ref(false)
-const deleteTargetId = ref('')
-
-const onDelete = (id: string) => {
-  deleteTargetId.value = id
-  isDeleteModalOpen.value = true
-}
-
-const doDelete = async () => {
-  await handleDeleteDatamart(deleteTargetId.value)
-  isDeleteModalOpen.value = false
+const onDelete = async (id: string) => {
+  await handleDeleteDatamart(id)
 }
 </script>

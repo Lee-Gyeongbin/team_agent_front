@@ -116,7 +116,6 @@
 // ===================================
 // 좌측 카테고리 패널
 // ===================================
-
 .category-panel {
   width: 260px;
   flex-shrink: 0;
@@ -141,6 +140,14 @@
     padding: 4px;
   }
 
+  // 카테고리 추가 입력(헤더 + 버튼 아래, 트리 위)
+  .category-input-wrap {
+    margin-top: $spacing-sm;
+    padding-top: $spacing-sm;
+    margin-bottom: $spacing-sm;
+    border-top: 1px solid $color-border-light;
+  }
+
   .category-tree-wrap {
     flex: 1;
     overflow-y: auto;
@@ -162,7 +169,7 @@
   }
 
   .category-row {
-    padding: 0 4px 0 0;
+    padding: 0 2px 0 0;
     border-radius: $border-radius-sm;
     gap: 0;
     min-height: 40px;
@@ -244,6 +251,7 @@
     }
 
     .icon-arrow-down-gray {
+      color: #aebccb;
       transition: transform $transition-fast;
 
       &.is-expanded {
@@ -255,12 +263,6 @@
       list-style: none;
       padding-left: 24px;
       margin: 0;
-    }
-
-    .category-input-wrap {
-      margin-top: $spacing-sm;
-      padding-top: $spacing-sm;
-      border-top: 1px solid $color-border-light;
     }
   }
 }
@@ -277,6 +279,7 @@
   border-radius: 16px;
   border: 1px solid #dce4e9;
   background: #fff;
+  height: calc(100vh - #{$header-height} - 123px);
 
   .document-batch-bar {
     gap: $spacing-sm;
@@ -285,6 +288,7 @@
 
     .batch-count {
       @include typo($body-medium);
+      min-width: 65px;
       color: $color-text-primary;
       margin-right: $spacing-sm;
       font-weight: 500;
@@ -296,9 +300,17 @@
   }
 
   .document-table-wrap {
+    flex: 1;
     background: #fff;
     border-top: 1px solid #ecf0f3;
-    border-bottom: 1px solid #ecf0f3;
+
+    // 첫 번째 컬럼(체크박스): th/td 모두 가운데 정렬
+    .ui-table thead th:first-child,
+    .ui-table tbody td:first-child:not(.ui-table-empty) {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
     .ui-table th .table-header-sort-btn {
       display: inline-flex;
@@ -396,10 +408,35 @@
 
 // 배치바 + 테이블 + 페이지네이션 통합 wrapper
 .url-content-panel {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - #{$header-height} - 123px);
   border: 1px solid #dce4e9;
   border-radius: 16px;
   background: #fff;
   padding: 16px;
+
+  // URL 테이블의 첫 번째 컬럼(체크박스): th/td 모두 가운데 정렬
+  .ui-table thead th:first-child,
+  .ui-table tbody td:first-child:not(.ui-table-empty) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ui-table-wrap {
+    flex: 1;
+    border-top: 1px solid #ecf0f3;
+
+    .ui-table thead th {
+      border-bottom: 1px solid #ecf0f3;
+      border-color: #ecf0f3 !important;
+    }
+
+    .ui-table tbody tr:hover td {
+      background: #fff;
+    }
+  }
 }
 
 .url-batch-bar {
@@ -556,4 +593,3 @@
     flex: 1;
   }
 }
-

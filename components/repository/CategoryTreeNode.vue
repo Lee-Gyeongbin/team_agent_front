@@ -11,7 +11,7 @@
     <div
       class="category-row flex items-center"
       :class="{ 'is-selected': selectable && !item.children?.length && selectedIds.includes(item.id) }"
-      :style="{ paddingLeft: `${(depth - 1) * 20}px` }"
+      :style="{ paddingLeft: `${(depth - 1) * 12}px` }"
       @click="selectable ? $emit('select', item) : undefined"
     >
       <!-- 폴더 아이콘: 펼침 시 열림, 아니면 닫힘 -->
@@ -49,7 +49,7 @@
 
       <!-- selectable 모드: 리프 카테고리만 체크 표시 -->
       <i
-        v-if="selectable && !item.children?.length && selectedIds.includes(item.id)"
+        v-if="showCheckIcon && selectable && !item.children?.length && selectedIds.includes(item.id)"
         class="icon icon-check size-16 category-check"
       />
 
@@ -117,6 +117,7 @@
         :depth="depth + 1"
         :selectable="selectable"
         :selected-ids="selectedIds"
+        :show-check-icon="showCheckIcon"
         :editing-category-id="editingCategoryId"
         :editing-name="editingName"
         :menu-items="menuItems"
@@ -140,6 +141,8 @@ const props = withDefaults(
     depth: number
     selectable?: boolean
     selectedIds?: string[]
+    /** 모달에서는 체크 아이콘 표시, 문서 페이지에서는 선택 배경만 사용 */
+    showCheckIcon?: boolean
     editingCategoryId?: string | null
     editingName?: string
     menuItems?: { label: string; value: string; icon?: string; color?: 'danger' }[]
@@ -147,6 +150,7 @@ const props = withDefaults(
   {
     selectable: false,
     selectedIds: () => [],
+    showCheckIcon: true,
     editingCategoryId: null,
     editingName: '',
     menuItems: () => [],

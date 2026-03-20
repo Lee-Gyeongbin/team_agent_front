@@ -108,34 +108,41 @@
         <UiButton
           variant="primary-line"
           size="sm"
-          class="card-grid-card-btn-fixed"
           @click="emit('test', dataset.datasetId)"
         >
+          <template #icon-left>
+            <i class="icon-ai-stars size-12" />
+          </template>
           테스트
         </UiButton>
         <UiButton
           variant="line-secondary"
           size="sm"
-          class="card-grid-card-btn-fixed"
-          type="button"
           @click="emit('history', dataset.datasetId)"
         >
+          <template #icon-left>
+            <i class="icon-time size-12" />
+          </template>
           변경이력
         </UiButton>
         <UiButton
           variant="line-secondary"
           size="sm"
-          class="card-grid-card-btn-fixed"
           @click="emit('edit', dataset)"
         >
+          <template #icon-left>
+            <i class="icon-edit size-12" />
+          </template>
           수정
         </UiButton>
         <UiButton
           variant="line-secondary"
           size="sm"
-          class="card-grid-card-btn-fixed"
           @click="emit('delete', dataset.datasetId)"
         >
+          <template #icon-left>
+            <i class="icon-trashcan size-12" />
+          </template>
           삭제
         </UiButton>
       </template>

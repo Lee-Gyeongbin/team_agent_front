@@ -451,6 +451,11 @@
 // 데이터마트 아이콘
 // ===================================
 
+// AI 별 (테스트 버튼)
+.icon-ai-stars {
+  @include icon-file-bg('ai-stars');
+}
+
 // 서버 (HOST)
 .icon-server {
   @include icon-file-bg('server-line');
@@ -514,4 +519,8 @@
 // 체크 (카테고리 선택 등)
 .icon-check {
   @include icon-file-bg('check');
+}
+
+.icon-sliders {
+  @include icon-file-bg('sliders');
 }

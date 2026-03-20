@@ -946,6 +946,7 @@ export const usePdfViewer = (options: {
 
     canvas.width = Math.floor(viewport.width)
     canvas.height = Math.floor(viewport.height)
+    canvas.style.aspectRatio = `${baseViewport.width} / ${baseViewport.height}`
     await page.render({ canvasContext: ctx, viewport }).promise
   }
 
@@ -969,7 +970,18 @@ export const usePdfViewer = (options: {
       pdfDoc.value = loadedPdf
       totalPages.value = loadedPdf.numPages
       currentPage.value = 1
-      scale.value = 1
+
+      // 컨테이너 너비에 맞게 초기 스케일 계산
+      const firstPage = await loadedPdf.getPage(1)
+      const baseViewport = firstPage.getViewport({ scale: 1 })
+      const container = mainCanvasRef.value?.parentElement
+      const containerWidth = container ? container.clientWidth - 32 : 0 // padding 16px * 2
+      if (containerWidth > 0 && baseViewport.width > containerWidth) {
+        scale.value = Math.floor((containerWidth / baseViewport.width) * 4) / 4 // 0.25 단위
+      } else {
+        scale.value = 1
+      }
+
       isLoading.value = false
       await nextTick()
       await renderMainPage()

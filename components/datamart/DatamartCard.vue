@@ -51,25 +51,31 @@
       <UiButton
         variant="primary-line"
         size="sm"
-        class="datamart-card-btn-test"
         @click="emit('test', { ...datamart, testType: 'saved' })"
       >
+        <template #icon-left>
+          <i class="icon-ai-stars size-12" />
+        </template>
         연결 테스트
       </UiButton>
       <UiButton
         variant="line-secondary"
         size="sm"
-        class="card-grid-card-btn-fixed"
         @click="emit('edit', datamart)"
       >
+        <template #icon-left>
+          <i class="icon-edit size-12" />
+        </template>
         수정
       </UiButton>
       <UiButton
         variant="line-secondary"
         size="sm"
-        class="card-grid-card-btn-fixed"
         @click="emit('delete', datamart.datamartId)"
       >
+        <template #icon-left>
+          <i class="icon-trashcan size-12" />
+        </template>
         삭제
       </UiButton>
     </div>
@@ -86,6 +92,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'toggle-active': [datamart: Datamart]
   test: [datamart: Datamart]
+  history: [datamart: Datamart]
   edit: [datamart: Datamart]
   delete: [id: string]
 }>()
