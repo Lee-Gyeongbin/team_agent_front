@@ -237,7 +237,7 @@ const onSaveCreate = async (data: DocDatasetForm, startBuild: boolean) => {
     chunkOverlap: data.chunkOverlap,
     minChunkSz: data.minChunkSize,
     hdrInclCd: data.headerInclusion,
-    datasetBuildStatusCd: startBuild ? 'BUILDING' : 'READY',
+    datasetBuildStatusCd: startBuild ? 'READY' : 'BUILDING',
     embedModelCd: data.embeddingModel,
     vectorDbCd: data.vectorDb,
     embedNormCd: data.embeddingNormalization,
@@ -254,6 +254,8 @@ const onSaveCreate = async (data: DocDatasetForm, startBuild: boolean) => {
     codeKeepYn: data.useCodeBlockPreserve ? 'Y' : 'N',
     sentSplitAlgoCd: data.sentenceSplitAlgorithm,
     langDetectCd: data.languageDetection,
+    docIdList: data.selectedDocIds.map((id) => ({ docId: id, datasetId: editingDatasetId.value ?? '' })),
+    urlIdList: data.selectedUrlIds.map((id) => ({ urlId: id, datasetId: editingDatasetId.value ?? '' })),
   }
   // 데이터셋 저장
   await handleSaveDocDataset(payload)
@@ -271,10 +273,10 @@ const mapDetailToForm = (
   name: detail.dsNm,
   description: detail.description ?? '',
   version: detail.version ?? '',
-  useDocument: docList.some((item) => item.selYn === 'Y'),
-  selectedDocIds: docList.filter((item) => item.selYn === 'Y').map((item) => item.docId),
-  useUrl: urlList.some((item) => item.selYn === 'Y'),
-  selectedUrlIds: urlList.filter((item) => item.selYn === 'Y').map((item) => item.urlId),
+  useDocument: docList.some((item) => item.datasetId === detail.datasetId),
+  selectedDocIds: docList.filter((item) => item.datasetId === detail.datasetId).map((item) => item.docId),
+  useUrl: urlList.some((item) => item.datasetId === detail.datasetId),
+  selectedUrlIds: urlList.filter((item) => item.datasetId === detail.datasetId).map((item) => item.urlId),
   chunkAlgorithm: detail.chunkAlgoCd ?? '',
   chunkSize: detail.chunkSize ?? 0,
   chunkOverlap: detail.chunkOverlap ?? 0,

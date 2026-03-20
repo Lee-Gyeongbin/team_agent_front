@@ -61,20 +61,18 @@ export interface CategoryItem {
 export interface DocDatasetSelectedDoc {
   docId: string
   datasetId: string
-  selYn: string
-  docTitle: string
-  size: string
-  categoryId: string
-  categoryName: string
+  docTitle?: string
+  size?: string
+  categoryId?: string
+  categoryName?: string
 }
 
 export interface DocDatasetSelectedUrl {
   urlId: string
   datasetId: string
-  selYn: string
-  urlName: string
-  urlAddr: string
-  categoryId: string
+  urlName?: string
+  urlAddr?: string
+  categoryId?: string
 }
 
 export interface DocDatasetSelectResponse {
@@ -112,6 +110,8 @@ export interface DocDatasetSavePayload {
   codeKeepYn: string
   sentSplitAlgoCd: string
   langDetectCd: string
+  docIdList: DocDatasetSelectedDoc[]
+  urlIdList: DocDatasetSelectedUrl[]
 }
 
 // 생성 폼
