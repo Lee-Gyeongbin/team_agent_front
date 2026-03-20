@@ -88,7 +88,12 @@ const emit = defineEmits<{
 
 const isCollapsed = ref(props.collapsed)
 
-watch(() => props.collapsed, (v) => { isCollapsed.value = v })
+watch(
+  () => props.collapsed,
+  (v) => {
+    isCollapsed.value = v
+  },
+)
 
 const toggleCollapse = () => {
   isCollapsed.value = !isCollapsed.value

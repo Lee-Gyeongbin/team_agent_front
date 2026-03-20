@@ -86,139 +86,31 @@ import DocDatasetSummary from '~/components/doc-dataset/DocDatasetSummary.vue'
 import DocDatasetCard from '~/components/doc-dataset/DocDatasetCard.vue'
 import DocDatasetCreateModal from '~/components/doc-dataset/DocDatasetCreateModal.vue'
 import { useDocDatasetStore } from '~/composables/doc-dataset/useDocDatasetStore'
-import type {
-  DocDataset,
-  DocDatasetDetail,
-  DocDatasetForm,
-  DocDatasetSavePayload,
-  DocDatasetSelectedDoc,
-  DocDatasetSelectedUrl,
-  CategoryItem,
-} from '~/types/doc-dataset'
-
+import type { DocDatasetForm } from '~/types/doc-dataset'
 const {
+  isLoading,
+  isDeleteModalOpen,
+  openCreateModal,
+  isCreateModalOpen,
+  modalMode,
+  editFormData,
   datasetList,
   summary,
   handleSelectAll,
-  handleSelectDocDataset,
-  handleSaveDocDataset,
-  handleDeleteDocDataset,
+  onSaveCreate,
+  onDelete,
+  doDelete,
   handleToggleActiveDocDataset,
+  onEdit,
 } = useDocDatasetStore()
-
-// 초기 조회
-const isLoading = ref(true)
 
 onMounted(async () => {
   await handleSelectAll()
   isLoading.value = false
 })
-
-// 생성 모달
-const isCreateModalOpen = ref(false)
-const modalMode = ref<'create' | 'edit'>('create')
-const editingDatasetId = ref('')
-const editFormData = ref<Partial<DocDatasetForm> | undefined>(undefined)
-
-const openCreateModal = () => {
-  modalMode.value = 'create'
-  editingDatasetId.value = ''
-  editFormData.value = undefined
-  isCreateModalOpen.value = true
-}
-
-const onSaveCreate = async (data: DocDatasetForm, startBuild: boolean) => {
-  const payload: DocDatasetSavePayload = {
-    datasetId: editingDatasetId.value || undefined,
-    dsNm: data.name,
-    description: data.description,
-    version: data.version,
-    chunkAlgoCd: data.chunkAlgorithm,
-    chunkSize: data.chunkSize,
-    chunkOverlap: data.chunkOverlap,
-    minChunkSz: data.minChunkSize,
-    hdrInclCd: data.headerInclusion,
-    datasetBuildStatusCd: startBuild ? 'BUILDING' : 'READY',
-    embedModelCd: data.embeddingModel,
-    vectorDbCd: data.vectorDb,
-    embedNormCd: data.embeddingNormalization,
-    poolStratCd: data.poolingStrategy,
-    dimReducCd: data.dimensionReduction,
-    chunkCnt: 0,
-    srchQual: 0,
-    useYn: 'Y',
-    lowercaseYn: data.useLowercasing ? 'Y' : 'N',
-    wspNormYn: data.useWhitespaceNorm ? 'Y' : 'N',
-    specChrRmYn: data.useSpecialCharRemoval ? 'Y' : 'N',
-    htmlRmYn: data.useHtmlTagRemoval ? 'Y' : 'N',
-    stopwordRmYn: data.useStopwordRemoval ? 'Y' : 'N',
-    codeKeepYn: data.useCodeBlockPreserve ? 'Y' : 'N',
-    sentSplitAlgoCd: data.sentenceSplitAlgorithm,
-    langDetectCd: data.languageDetection,
-  }
-  await handleSaveDocDataset(payload)
-  isCreateModalOpen.value = false
-}
-
 // 테스트
 const onTest = (id: string) => {
   console.warn('[TODO] 데이터셋 테스트:', id)
-}
-
-// 수정
-const mapDetailToForm = (
-  detail: DocDatasetDetail,
-  _categoryList: CategoryItem[],
-  docList: DocDatasetSelectedDoc[],
-  urlList: DocDatasetSelectedUrl[],
-): DocDatasetForm => ({
-  name: detail.dsNm,
-  description: detail.description ?? '',
-  version: detail.version ?? '',
-  useDocument: docList.some((item) => item.selYn === 'Y'),
-  selectedDocIds: docList.filter((item) => item.selYn === 'Y').map((item) => item.docId),
-  useUrl: urlList.some((item) => item.selYn === 'Y'),
-  selectedUrlIds: urlList.filter((item) => item.selYn === 'Y').map((item) => item.urlId),
-  chunkAlgorithm: detail.chunkAlgoCd ?? '',
-  chunkSize: detail.chunkSize ?? 0,
-  chunkOverlap: detail.chunkOverlap ?? 0,
-  minChunkSize: detail.minChunkSz ?? 0,
-  headerInclusion: detail.hdrInclCd ?? '',
-  useLowercasing: detail.lowercaseYn === 'Y',
-  useWhitespaceNorm: detail.wspNormYn === 'Y',
-  useSpecialCharRemoval: detail.specChrRmYn === 'Y',
-  useHtmlTagRemoval: detail.htmlRmYn === 'Y',
-  useStopwordRemoval: detail.stopwordRmYn === 'Y',
-  useCodeBlockPreserve: detail.codeKeepYn === 'Y',
-  sentenceSplitAlgorithm: detail.sentSplitAlgoCd ?? '',
-  languageDetection: detail.langDetectCd ?? '',
-  embeddingModel: detail.embedModelCd ?? '',
-  vectorDb: detail.vectorDbCd ?? '',
-  embeddingNormalization: detail.embedNormCd ?? '',
-  poolingStrategy: detail.poolStratCd ?? '',
-  dimensionReduction: detail.dimReducCd ?? '',
-})
-
-const onEdit = async (dataset: DocDataset) => {
-  const { data, categoryList, docList, urlList } = await handleSelectDocDataset(dataset.datasetId)
-  modalMode.value = 'edit'
-  editingDatasetId.value = dataset.datasetId
-  editFormData.value = mapDetailToForm(data, categoryList, docList, urlList)
-  isCreateModalOpen.value = true
-}
-
-// 삭제
-const isDeleteModalOpen = ref(false)
-const deleteTargetId = ref('')
-
-const onDelete = (id: string) => {
-  deleteTargetId.value = id
-  isDeleteModalOpen.value = true
-}
-
-const doDelete = async () => {
-  await handleDeleteDocDataset(deleteTargetId.value)
-  isDeleteModalOpen.value = false
 }
 
 // 구축 중지

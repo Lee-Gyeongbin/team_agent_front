@@ -38,6 +38,10 @@ export const useDocDatasetApi = () => {
     return post<DocDatasetSelectResponse>('/dataset/selectDataset.do', { datasetId })
   }
 
+  const fetchDatasetSrcList = async (datasetId: string) => {
+    return post<DocDatasetSelectResponse>('/dataset/selectDatasetSrcList.do', { datasetId })
+  }
+
   const fetchSaveDocDataset = async (dataset: DocDatasetSavePayload) => {
     return post<{ data: DocDatasetDetail }>('/dataset/save.do', dataset)
   }
@@ -84,6 +88,7 @@ export const useDocDatasetApi = () => {
     fetchDocDatasetList,
     fetchDocDatasetSummary,
     fetchDocDataset,
+    fetchDatasetSrcList,
     fetchSaveDocDataset,
     fetchDeleteDocDataset,
     fetchToggleActiveDocDataset,

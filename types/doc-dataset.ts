@@ -78,10 +78,10 @@ export interface DocDatasetSelectedUrl {
 }
 
 export interface DocDatasetSelectResponse {
-  data: DocDatasetDetail
-  categoryList: CategoryItem[]
-  docList: DocDatasetSelectedDoc[]
-  urlList: DocDatasetSelectedUrl[]
+  data?: DocDatasetDetail
+  categoryList?: CategoryItem[]
+  docList?: DocDatasetSelectedDoc[]
+  urlList?: DocDatasetSelectedUrl[]
 }
 
 // 데이터셋 저장 요청
