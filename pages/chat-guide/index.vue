@@ -24,12 +24,10 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
 import ChatGuideGreeting from '~/components/chat-guide/ChatGuideGreeting.vue'
 import ChatGuideNotice from '~/components/chat-guide/ChatGuideNotice.vue'
 import ChatGuideError from '~/components/chat-guide/ChatGuideError.vue'
 import ChatGuideMaintenance from '~/components/chat-guide/ChatGuideMaintenance.vue'
-import { useChatGuideStore } from '~/composables/chat-guide/useChatGuideStore'
 
 const activeTab = ref('greeting')
 
@@ -39,14 +37,4 @@ const tabs = [
   { label: '오류메시지', value: 'error' },
   { label: '점검/장애', value: 'maintenance' },
 ]
-
-const { handleSelectGreeting, handleSelectNotice, handleSelectMaintenance, handleSelectErrorMessage } =
-  useChatGuideStore()
-
-onMounted(() => {
-  handleSelectGreeting()
-  handleSelectNotice()
-  handleSelectErrorMessage()
-  handleSelectMaintenance()
-})
 </script>
