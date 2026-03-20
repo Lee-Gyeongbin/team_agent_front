@@ -10,14 +10,6 @@
         @search="onSearch"
         @enter="onSearch"
       />
-      <UiButton
-        variant="line-secondary"
-        size="md"
-        class="ui-button-outline-muted document-filter-select"
-        @click="openCategorySelectModal"
-      >
-        전체 카테고리
-      </UiButton>
       <UiSelect
         v-model="docStatusFilter"
         :options="statusFilterOptions"
@@ -28,13 +20,6 @@
       />
       <UiButton
         variant="primary"
-        size="md"
-        @click="onSearch"
-      >
-        검색
-      </UiButton>
-      <UiButton
-        variant="outline"
         size="md"
         class="btn-register-document"
         @click="onRegisterDocument"
@@ -50,11 +35,25 @@
       <!-- 좌측 카테고리 패널 -->
       <aside class="category-panel">
         <div class="category-panel-header flex justify-between items-center">
-          <span class="category-panel-title">카테고리</span>
+          <div class="flex items-center gap-2">
+            <span class="category-panel-title">카테고리</span>
+            <!--  전체 카테고리 버튼 -->
+            <UiButton
+              icon-only
+              variant="ghost"
+              size="xxs"
+              class="btn-add-category"
+              @click="openCategorySelectModal"
+            >
+              <template #icon-left>
+                <i class="icon icon-sliders size-16" />
+              </template>
+            </UiButton>
+          </div>
           <UiButton
             icon-only
             variant="ghost"
-            size="sm"
+            size="xxs"
             class="btn-add-category"
             @click="toggleCategoryInput"
           >
@@ -62,6 +61,17 @@
               <i class="icon icon-plus-medium size-16" />
             </template>
           </UiButton>
+        </div>
+        <div
+          v-if="isCategoryInputVisible"
+          class="category-input-wrap"
+        >
+          <UiInput
+            v-model="categoryInputValue"
+            placeholder="카테고리명 입력(엔터)"
+            size="sm"
+            @keydown.enter="onCategoryInputEnter"
+          />
         </div>
         <div class="category-tree-wrap">
           <ul class="category-tree">
@@ -82,17 +92,6 @@
               @save-rename="saveCategoryRename"
             />
           </ul>
-        </div>
-        <div
-          v-if="isCategoryInputVisible"
-          class="category-input-wrap"
-        >
-          <UiInput
-            v-model="categoryInputValue"
-            placeholder="카테고리명 입력(엔터)"
-            size="sm"
-            @keydown.enter="onCategoryInputEnter"
-          />
         </div>
       </aside>
 
@@ -325,9 +324,7 @@ const categoryMenuItems = [
 ]
 
 // 카테고리 선택 → 문서 필터링
-const selectedCategoryIds = computed(() =>
-  docSelectedCategoryId.value ? [docSelectedCategoryId.value] : [],
-)
+const selectedCategoryIds = computed(() => (docSelectedCategoryId.value ? [docSelectedCategoryId.value] : []))
 
 const onCategorySelect = (item: CategoryItem) => {
   // 자식 있는 카테고리 → 펼치기/접기만
@@ -377,7 +374,10 @@ const onCategoryMenuSelect = async (value: string, cat: CategoryItem) => {
   if (value === 'rename') {
     startCategoryRename(cat)
   } else if (value === 'delete') {
-    const confirmed = await openConfirm({ title: '카테고리 삭제', message: `'${cat.name}' 카테고리를 삭제하시겠습니까?\n하위 카테고리도 함께 삭제됩니다.` })
+    const confirmed = await openConfirm({
+      title: '카테고리 삭제',
+      message: `'${cat.name}' 카테고리를 삭제하시겠습니까?\n하위 카테고리도 함께 삭제됩니다.`,
+    })
     if (confirmed) await handleDeleteCategory(cat.id)
   }
 }
@@ -475,7 +475,10 @@ const onBatchDownload = () => {
     openAlert({ title: '알림', message: '다운로드할 문서를 선택해주세요.' })
     return
   }
-  openAlert({ title: '일괄 다운로드', message: `${selectedIds.value.length}개 문서 다운로드 기능은 추후 구현 예정입니다.` })
+  openAlert({
+    title: '일괄 다운로드',
+    message: `${selectedIds.value.length}개 문서 다운로드 기능은 추후 구현 예정입니다.`,
+  })
 }
 
 const onBatchDelete = async () => {
@@ -483,7 +486,10 @@ const onBatchDelete = async () => {
     openAlert({ title: '알림', message: '삭제할 문서를 선택해주세요.' })
     return
   }
-  const confirmed = await openConfirm({ title: '일괄 삭제', message: `선택한 ${selectedIds.value.length}개 문서를 삭제하시겠습니까?` })
+  const confirmed = await openConfirm({
+    title: '일괄 삭제',
+    message: `선택한 ${selectedIds.value.length}개 문서를 삭제하시겠습니까?`,
+  })
   if (confirmed) {
     await handleDeleteDocument(selectedIds.value)
     selectedIds.value = []
@@ -492,7 +498,10 @@ const onBatchDelete = async () => {
 
 const onRowActionSelect = async (value: string, row: Record<string, any>) => {
   if (value === 'delete') {
-    const confirmed = await openConfirm({ title: '문서 삭제', message: `'${row.documentName}'을(를) 삭제하시겠습니까?` })
+    const confirmed = await openConfirm({
+      title: '문서 삭제',
+      message: `'${row.documentName}'을(를) 삭제하시겠습니까?`,
+    })
     if (confirmed) {
       await handleDeleteDocument([row.id])
       selectedIds.value = selectedIds.value.filter((id) => id !== row.id)

@@ -29,13 +29,6 @@
       <UiButton
         variant="primary"
         size="md"
-        @click="onUrlSearch"
-      >
-        검색
-      </UiButton>
-      <UiButton
-        variant="outline"
-        size="md"
         class="btn-register-url"
         @click="onRegisterUrl"
       >
@@ -50,7 +43,9 @@
     <div class="url-content-panel">
       <!-- 일괄 처리·스크래핑 정보 바 -->
       <div class="url-batch-bar flex items-center flex-wrap">
-        <span class="batch-count"><span class="point-color">{{ selectedUrlIds.length }}개</span> 선택됨</span>
+        <span class="batch-count"
+          ><span class="point-color">{{ selectedUrlIds.length }}개</span> 선택됨</span
+        >
         <UiButton
           variant="line-secondary"
           size="xxs"
@@ -63,8 +58,12 @@
           일괄 삭제
         </UiButton>
         <div class="url-scraping-info flex items-center">
-          <span class="scraping-text">마지막 실행 : <span class="scraping-date">{{ lastScrapingAt }}</span></span>
-          <span class="scraping-text">다음 예정: <span class="scraping-date">{{ nextScrapingAt }}</span></span>
+          <span class="scraping-text"
+            >마지막 실행 : <span class="scraping-date">{{ lastScrapingAt }}</span></span
+          >
+          <span class="scraping-text"
+            >다음 예정: <span class="scraping-date">{{ nextScrapingAt }}</span></span
+          >
           <div
             class="scraping-tooltip-trigger"
             :title="scrapingTooltipText"
@@ -303,7 +302,10 @@ const onBatchDelete = async () => {
     openAlert({ title: '알림', message: '삭제할 URL을 선택해주세요.' })
     return
   }
-  const confirmed = await openConfirm({ title: '일괄 삭제', message: `선택한 ${selectedUrlIds.value.length}개 URL을 삭제하시겠습니까?` })
+  const confirmed = await openConfirm({
+    title: '일괄 삭제',
+    message: `선택한 ${selectedUrlIds.value.length}개 URL을 삭제하시겠습니까?`,
+  })
   if (confirmed) {
     await handleDeleteUrl(selectedUrlIds.value)
     selectedUrlIds.value = []
@@ -315,7 +317,10 @@ const onBatchLog = () => {
 }
 
 const onBatchScraping = async () => {
-  const confirmed = await openConfirm({ title: '배치 스크래핑', message: '활성 상태인 모든 URL에 대해 스크래핑을 실행하시겠습니까?' })
+  const confirmed = await openConfirm({
+    title: '배치 스크래핑',
+    message: '활성 상태인 모든 URL에 대해 스크래핑을 실행하시겠습니까?',
+  })
   if (confirmed) {
     openAlert({ title: '배치 스크래핑', message: '스크래핑이 시작되었습니다.' })
   }

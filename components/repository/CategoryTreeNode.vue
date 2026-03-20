@@ -11,7 +11,7 @@
     <div
       class="category-row flex items-center"
       :class="{ 'is-selected': selectable && !item.children?.length && selectedIds.includes(item.id) }"
-      :style="{ paddingLeft: `${(depth - 1) * 20}px` }"
+      :style="{ paddingLeft: `${(depth - 1) * 12}px` }"
       @click="selectable ? $emit('select', item) : undefined"
     >
       <!-- 폴더 아이콘: 펼침 시 열림, 아니면 닫힘 -->
