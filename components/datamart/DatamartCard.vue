@@ -56,17 +56,7 @@
         <template #icon-left>
           <i class="icon-ai-stars size-12" />
         </template>
-        테스트
-      </UiButton>
-      <UiButton
-        variant="line-secondary"
-        size="sm"
-        @click="emit('history', datamart)"
-      >
-        <template #icon-left>
-          <i class="icon-time size-12" />
-        </template>
-        변경이력
+        연결 테스트
       </UiButton>
       <UiButton
         variant="line-secondary"
