@@ -31,7 +31,7 @@
           v-for="dataset in datasetList"
           :key="dataset.datasetId"
           :dataset="dataset"
-          @toggle-active="handleToggleActiveDocDataset"
+          @toggle-active="handleToggleActiveDocDataset(dataset.datasetId, dataset.useYn)"
           @test="onTest(dataset.datasetId)"
           @history="onHistory(dataset.datasetId)"
           @edit="onEdit"

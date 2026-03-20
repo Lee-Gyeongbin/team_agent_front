@@ -352,8 +352,19 @@ const handleDeleteDocDataset = async (id: string) => {
 }
 
 // 데이터셋 활성화 토글
-const handleToggleActiveDocDataset = async (id: string) => {
-  await fetchToggleActiveDocDataset(id)
+const handleToggleActiveDocDataset = async (id: string, useYn: string) => {
+  if (useYn === 'Y') {
+    useYn = 'N'
+  } else {
+    useYn = 'Y'
+  }
+  const res = await fetchToggleActiveDocDataset(id, useYn)
+  const affected = typeof res.data === 'number' ? res.data : 0
+  if (affected > 0) {
+    openToast({ message: '활성화 상태가 변경되었습니다.', type: 'success' })
+  } else {
+    openToast({ message: '활성화 상태 변경에 실패했습니다.', type: 'error' })
+  }
   // 목록 + 요약 동시 조회
   await handleSelectAll()
 }

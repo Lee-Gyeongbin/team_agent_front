@@ -55,9 +55,9 @@ export const useDocDatasetApi = () => {
     return mockPost<{ data: { id: string } }>(`${MOCK_BASE}/delete`, { id })
   }
 
-  // ===== 데이터셋 활성화 토글 =====
-  const fetchToggleActiveDocDataset = async (id: string) => {
-    return mockPost<{ data: DocDataset }>(`${MOCK_BASE}/toggle-active`, { id })
+  // ===== 데이터셋 사용 여부(updateUseYn) — 응답 data는 DAO 영향 행 수(int) =====
+  const fetchToggleActiveDocDataset = async (datasetId: string, useYn: string) => {
+    return post<{ data: number }>('/dataset/updateUseYn.do', { datasetId, useYn })
   }
 
   // ===== 데이터셋 변경이력 목록 조회 =====
