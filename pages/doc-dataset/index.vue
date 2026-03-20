@@ -117,6 +117,7 @@ const {
   doDelete,
   handleToggleActiveDocDataset,
   onEdit,
+  onStopBuild,
   onHistory,
   onTest,
 } = useDocDatasetStore()
@@ -125,9 +126,4 @@ onMounted(async () => {
   await handleSelectAll()
   isLoading.value = false
 })
-
-// 구축 중지
-const onStopBuild = (id: string) => {
-  console.warn('[TODO] 구축 중지:', id)
-}
 </script>

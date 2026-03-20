@@ -58,7 +58,8 @@ export interface CategoryItem {
 
 export interface DocDatasetSelectedDoc {
   docId: string
-  datasetId: string
+  // 백엔드 "전체 문서 목록" 응답에는 datasetId가 포함되지 않을 수 있어 optional 처리
+  datasetId?: string
   docTitle?: string
   size?: string
   categoryId?: string
@@ -67,14 +68,30 @@ export interface DocDatasetSelectedDoc {
 
 export interface DocDatasetSelectedUrl {
   urlId: string
-  datasetId: string
+  // 백엔드 "전체 URL 목록" 응답에는 datasetId가 포함되지 않을 수 있어 optional 처리
+  datasetId?: string
   urlName?: string
   urlAddr?: string
   categoryId?: string
 }
 
+// 데이터셋-문서 매핑 목록 아이템
+export interface DocIdItem {
+  datasetId: string
+  docId: string
+}
+
+// 데이터셋-URL 매핑 목록 아이템
+export interface UrlIdItem {
+  datasetId: string
+  urlId: string
+}
+
 export interface DocDatasetSelectResponse {
   data?: DocDatasetDetail
+  // 데이터셋 매핑 문서/URL (edit 시 selectedDocIds/selectedUrlIds 세팅용)
+  dsDocList?: DocIdItem[]
+  dsUrlList?: UrlIdItem[]
   categoryList?: CategoryItem[]
   docList?: DocDatasetSelectedDoc[]
   urlList?: DocDatasetSelectedUrl[]
@@ -144,11 +161,15 @@ export interface DocDatasetForm {
 
 // 변경이력
 export interface DocDatasetHistory {
-  id: string
+  histId: string
   datasetId: string
-  version: string
-  content: string
-  updatedAt: string
+  verNo: string
+  chgContent: string
+  delYn: string
+  createUserId: string
+  createDt: string
+  modifyUserId: string
+  modifyDt: string
 }
 
 // 검색 테스트 결과

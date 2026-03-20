@@ -9,9 +9,6 @@ import type {
   DocDatasetHistory,
   DocDatasetSearchResult,
   DocDatasetSearchSummary,
-  CategoryItem,
-  DocDatasetSelectedDoc,
-  DocDatasetSelectedUrl,
 } from '~/types/doc-dataset'
 import type { CodeItem } from '~/types/codes'
 import { openToast } from '~/composables/useToast'
@@ -132,20 +129,23 @@ const historyDatasetId = ref('')
 const openCreateModal = async () => {
   modalMode.value = 'create'
   editingDatasetId.value = ''
-  // 데이터소스 목록 조회
+  selectedDatasetDetail.value = null
+  editFormData.value = undefined
+  // 데이터소스 목록(전체 문서/URL + 카테고리) 조회
   await handleSelectDatasetSrcList()
-  // 상세 데이터를 폼 데이터로 변환
-  editFormData.value = mapDetailToForm(
-    selectedDatasetDetail.value ?? null,
-    selectedDatasetCategoryList.value ?? [],
-    selectedDatasetDocList.value ?? [],
-    selectedDatasetUrlList.value ?? [],
-  )
   isCreateModalOpen.value = true
 }
 // 테스트
-const onTest = (id: string) => {
+const onTest = async (id: string) => {
   console.warn('[TODO] 데이터셋 테스트:', id)
+
+  // 카드에서는 datasetId만 넘기므로, 클릭 시점에 dsNm을 확정하기 위해 상세 조회 후 메시지 생성
+  const res = await handleSelectDocDataset(id)
+  const datasetNm = res.data?.dsNm ?? selectedDatasetDetail.value?.dsNm ?? ''
+
+  const message = `'${datasetNm}' 데이터셋의 테스트 모드를 시작하겠습니다`
+  openToast({ message, type: 'success' })
+
   isTestModalOpen.value = true
   testDatasetId.value = id
 }
@@ -243,7 +243,7 @@ const onSaveCreate = async (data: DocDatasetForm, startBuild: boolean) => {
     chunkOverlap: data.chunkOverlap,
     minChunkSz: data.minChunkSize,
     hdrInclCd: data.headerInclusion,
-    datasetBuildStatusCd: startBuild ? 'BUILDING' : 'READY',
+    datasetBuildStatusCd: startBuild ? '002' : '001',
     embedModelCd: data.embeddingModel,
     vectorDbCd: data.vectorDb,
     embedNormCd: data.embeddingNormalization,
@@ -270,17 +270,16 @@ const onSaveCreate = async (data: DocDatasetForm, startBuild: boolean) => {
 // 상세 데이터를 폼 데이터로 변환
 const mapDetailToForm = (
   detail: DocDatasetDetail | null,
-  _categoryList: CategoryItem[],
-  docList: DocDatasetSelectedDoc[],
-  urlList: DocDatasetSelectedUrl[],
+  selectedDocIds: string[],
+  selectedUrlIds: string[],
 ): DocDatasetForm => ({
   name: detail?.dsNm ?? '',
   description: detail?.description ?? '',
   version: detail?.version ?? '',
-  useDocument: docList.some((item) => item.datasetId === detail?.datasetId),
-  selectedDocIds: docList.filter((item) => item.datasetId === detail?.datasetId).map((item) => item.docId),
-  useUrl: urlList.some((item) => item.datasetId === detail?.datasetId),
-  selectedUrlIds: urlList.filter((item) => item.datasetId === detail?.datasetId).map((item) => item.urlId),
+  useDocument: detail ? selectedDocIds.length > 0 : true,
+  selectedDocIds,
+  useUrl: detail ? selectedUrlIds.length > 0 : true,
+  selectedUrlIds,
   chunkAlgorithm: detail?.chunkAlgoCd ?? '',
   chunkSize: detail?.chunkSize ?? 0,
   chunkOverlap: detail?.chunkOverlap ?? 0,
@@ -301,23 +300,23 @@ const mapDetailToForm = (
 
 /** 데이터셋 수정 */
 const onEdit = async (dataset: DocDataset) => {
-  // 데이터셋 상세 조회
+  // 데이터셋 상세 조회 (데이터셋, 문서, URL 목록 조회)
   const res = await handleSelectDocDataset(dataset.datasetId)
-  // 데이터소스 목록 조회
-  await handleSelectDatasetSrcList()
   const data = res.data
   if (!data) return
+
+  // 카테고리, 문서, url 전체 목록 조회
+  await handleSelectDatasetSrcList()
+
+  // 데이터셋과 매핑된 문서, URL ID 목록 세팅
+  const dsDocIds = (res.dsDocList ?? []).map((item) => String(item.docId))
+  const dsUrlIds = (res.dsUrlList ?? []).map((item) => String(item.urlId))
   // 모달 모드 세팅
   modalMode.value = 'edit'
   // 수정 데이터셋 ID 세팅
   editingDatasetId.value = dataset.datasetId
   // 상세 데이터를 폼 데이터로 변환
-  editFormData.value = mapDetailToForm(
-    data,
-    selectedDatasetCategoryList.value ?? [],
-    selectedDatasetDocList.value ?? [],
-    selectedDatasetUrlList.value ?? [],
-  )
+  editFormData.value = mapDetailToForm(data, dsDocIds, dsUrlIds)
   isCreateModalOpen.value = true
 }
 
@@ -331,6 +330,29 @@ const onDelete = (id: string) => {
 const onHistory = (id: string) => {
   historyDatasetId.value = id
   isHistoryModalOpen.value = true
+}
+
+// 이력 삭제
+const onDeleteHistory = async (id: string) => {
+  const confirmed = await openConfirm({
+    title: '이력 삭제',
+    message: '이 변경이력을 삭제하시겠습니까?',
+  })
+  if (!confirmed) return
+  await handleDeleteDocDatasetHistory(id, historyDatasetId.value ?? '')
+}
+
+// 구축 중지
+const onStopBuild = async (id: string) => {
+  const res = await fetchToggleActiveDocDataset(id, '', '001')
+  const affected = typeof res.data === 'number' ? res.data : 0
+  if (affected > 0) {
+    openToast({ message: '구축 중지되었습니다.', type: 'success' })
+  } else {
+    openToast({ message: '구축 중지에 실패했습니다.', type: 'error' })
+  }
+  // 목록 + 요약 동시 조회
+  await handleSelectAll()
 }
 
 // 삭제 버튼 클릭 시 실행(삭제 모달 확인 후 실행)
@@ -372,7 +394,7 @@ const handleToggleActiveDocDataset = async (id: string, useYn: string) => {
   } else {
     useYn = 'Y'
   }
-  const res = await fetchToggleActiveDocDataset(id, useYn)
+  const res = await fetchToggleActiveDocDataset(id, useYn, '')
   const affected = typeof res.data === 'number' ? res.data : 0
   if (affected > 0) {
     openToast({ message: '활성화 상태가 변경되었습니다.', type: 'success' })
@@ -389,21 +411,41 @@ const historyTotalCount = ref(0)
 const historyPage = ref(1)
 const historyPageSize = 5
 
+// 변경이력 목록 조회
 const handleSelectDocDatasetHistoryList = async (datasetId: string, page: number = 1) => {
   historyPage.value = page
   const res = await fetchDocDatasetHistoryList(datasetId, page, historyPageSize)
-  historyList.value = res.list
-  historyTotalCount.value = res.totalCount
+  historyTotalCount.value = res?.totalCnt ?? 0
+
+  historyList.value = res?.dataList ?? []
 }
 
+// 변경이력 저장
 const handleSaveDocDatasetHistory = async (history: { datasetId: string; version: string; content: string }) => {
-  await fetchSaveDocDatasetHistory(history)
+  const res = await fetchSaveDocDatasetHistory({
+    datasetId: history.datasetId,
+    verNo: history.version,
+    chgContent: history.content,
+  })
+  const affected = typeof res.data === 'number' ? res.data : 0
+  if (affected > 0) {
+    openToast({ message: '이력이 저장되었습니다.', type: 'success' })
+  } else {
+    openToast({ message: '이력 저장에 실패했습니다.', type: 'error' })
+  }
   // 저장 후 첫 페이지로 이동하여 새 이력 표시
   await handleSelectDocDatasetHistoryList(history.datasetId, 1)
 }
 
+// 변경이력 삭제
 const handleDeleteDocDatasetHistory = async (id: string, datasetId: string) => {
-  await fetchDeleteDocDatasetHistory(id)
+  const res = await fetchDeleteDocDatasetHistory(id)
+  const affected = typeof res.data === 'number' ? res.data : 0
+  if (affected > 0) {
+    openToast({ message: '이력이 삭제되었습니다.', type: 'success' })
+  } else {
+    openToast({ message: '이력 삭제에 실패했습니다.', type: 'error' })
+  }
   await handleSelectDocDatasetHistoryList(datasetId, historyPage.value)
 }
 
@@ -453,6 +495,7 @@ export const useDocDatasetStore = () => {
     isTestModalOpen,
     getDefaultForm,
     isDeleteModalOpen,
+    onDeleteHistory,
     // 생성 모달
     isCreateModalOpen,
     modalMode,
@@ -509,5 +552,6 @@ export const useDocDatasetStore = () => {
     isHistoryModalOpen,
     historyDatasetId,
     testDatasetId,
+    onStopBuild,
   }
 }
