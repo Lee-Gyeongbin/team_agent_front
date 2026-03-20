@@ -306,7 +306,7 @@
 
     // 첫 번째 컬럼(체크박스): th/td 모두 가운데 정렬
     .ui-table thead th:first-child,
-    .ui-table tbody td:first-child {
+    .ui-table tbody td:first-child:not(.ui-table-empty) {
       display: flex;
       align-items: center;
       justify-content: center;
@@ -418,7 +418,7 @@
 
   // URL 테이블의 첫 번째 컬럼(체크박스): th/td 모두 가운데 정렬
   .ui-table thead th:first-child,
-  .ui-table tbody td:first-child {
+  .ui-table tbody td:first-child:not(.ui-table-empty) {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -427,7 +427,7 @@
   .ui-table-wrap {
     flex: 1;
     border-top: 1px solid #ecf0f3;
-    
+
     .ui-table thead th {
       border-bottom: 1px solid #ecf0f3;
       border-color: #ecf0f3 !important;

@@ -82,6 +82,7 @@
               :depth="1"
               selectable
               :selected-ids="selectedCategoryIds"
+              :show-check-icon="false"
               :editing-category-id="editingCategoryId"
               :editing-name="editingName"
               :menu-items="categoryMenuItems"
