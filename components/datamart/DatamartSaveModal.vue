@@ -176,6 +176,15 @@
               size="sm"
             />
           </div>
+          <div class="com-setting-field-row">
+            <label class="com-setting-label">테이블 개수</label>
+            <UiInput
+              v-model="formData.tblCnt"
+              placeholder="0"
+              size="sm"
+              disabled
+            />
+          </div>
           <div class="com-setting-field-row is-top">
             <label class="com-setting-label">연결 옵션</label>
             <UiTextarea
@@ -309,6 +318,7 @@ const getDefaultForm = (): DatamartForm => ({
   username: '',
   pwdEnc: '',
   schNm: '',
+  tblCnt: 0,
   connOpt: '',
   readonlyYn: 'N',
   ipWlistYn: 'N',
@@ -340,6 +350,7 @@ const mapToForm = (data: Datamart): DatamartForm => ({
   username: data.username,
   pwdEnc: data.pwdEnc,
   schNm: data.schNm,
+  tblCnt: data.tblCnt,
   connOpt: data.connOpt,
   readonlyYn: data.readonlyYn,
   ipWlistYn: data.ipWlistYn,
@@ -364,7 +375,7 @@ const formToMap = (form: DatamartForm): Datamart => ({
   readonlyYn: form.readonlyYn,
   ipWlistYn: form.ipWlistYn,
   sslYn: form.sslYn,
-  tblCnt: props.editData?.tblCnt ?? 0,
+  tblCnt: form.tblCnt,
   lastVerifyDt: props.editData?.lastVerifyDt ?? '',
   createDt: props.editData?.createDt ?? '',
   modifyDt: props.editData?.modifyDt ?? '',
@@ -383,7 +394,10 @@ watch(
 
 const onTestConnection = async () => {
   const datamart = formToMap(formData)
-  await handleTestConnection(datamart)
+  const response = await handleTestConnection(datamart, 'form')
+  if (response?.result === 'SUCCESS') {
+    formData.tblCnt = response?.tblCnt ?? 0
+  }
 }
 
 const onSave = () => {

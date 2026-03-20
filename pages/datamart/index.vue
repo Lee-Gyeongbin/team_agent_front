@@ -61,10 +61,10 @@
 
     <!-- 생성 모달 -->
     <DatamartSaveModal
-      :is-open="isCreateModalOpen"
+      :is-open="isSaveModalOpen"
       :edit-data="editTarget"
-      @close="isCreateModalOpen = false"
-      @save="onSaveCreate"
+      @close="isSaveModalOpen = false"
+      @save="onSave"
     />
 
     <!-- 삭제 확인 모달 -->
@@ -105,33 +105,32 @@ onMounted(async () => {
 })
 
 // 생성/수정 모달
-const isCreateModalOpen = ref(false)
+const isSaveModalOpen = ref(false)
 const editTarget = ref<Datamart | null>(null)
 
 const openCreateModal = () => {
   editTarget.value = null
-  isCreateModalOpen.value = true
+  isSaveModalOpen.value = true
 }
 
-const onSaveCreate = async (data: DatamartForm) => {
+const onSave = async (data: DatamartForm) => {
   await handleSaveDatamart({
     ...data,
     ...(editTarget.value ? { datamartId: editTarget.value.datamartId } : {}),
     port: typeof data.port === 'number' ? data.port : 3306,
-    tblCnt: editTarget.value?.tblCnt ?? 0,
   })
-  isCreateModalOpen.value = false
+  isSaveModalOpen.value = false
 }
 
 // 연결 테스트
 const onTest = async (datamart: Datamart) => {
-  await handleTestConnection(datamart)
+  await handleTestConnection(datamart, 'saved')
 }
 
 // 수정
 const onEdit = (datamart: Datamart) => {
   editTarget.value = datamart
-  isCreateModalOpen.value = true
+  isSaveModalOpen.value = true
 }
 
 // 삭제
