@@ -25,36 +25,42 @@ const mockPost = async <T>(url: string, body: unknown = {}): Promise<T> => {
 export const useDocDatasetApi = () => {
   const { post } = useApi()
 
-  // ===== 문서 데이터셋 =====
+  // ===== 데이터셋 목록 조회 =====
   const fetchDocDatasetList = async () => {
     return post<{ dataList: DocDataset[] }>('/dataset/selectDatasetList.do', {})
   }
 
+  // ===== 데이터셋 요약 정보 조회 =====
   const fetchDocDatasetSummary = async () => {
     return post<{ data: DocDatasetSummary }>('/dataset/selectDatasetSummary.do', {})
   }
 
+  // ===== 데이터셋 상세 조회 =====
   const fetchDocDataset = async (datasetId: string) => {
     return post<DocDatasetSelectResponse>('/dataset/selectDataset.do', { datasetId })
   }
 
+  // ===== 데이터소스 목록 조회 =====
   const fetchDatasetSrcList = async (datasetId: string) => {
     return post<DocDatasetSelectResponse>('/dataset/selectDatasetSrcList.do', { datasetId })
   }
 
+  // ===== 데이터셋 저장 =====
   const fetchSaveDocDataset = async (dataset: DocDatasetSavePayload) => {
     return post<{ data: DocDatasetDetail }>('/dataset/save.do', dataset)
   }
 
+  // ===== 데이터셋 삭제 =====
   const fetchDeleteDocDataset = async (id: string) => {
     return mockPost<{ data: { id: string } }>(`${MOCK_BASE}/delete`, { id })
   }
 
+  // ===== 데이터셋 활성화 토글 =====
   const fetchToggleActiveDocDataset = async (id: string) => {
     return mockPost<{ data: DocDataset }>(`${MOCK_BASE}/toggle-active`, { id })
   }
 
-  // ===== 변경이력 =====
+  // ===== 데이터셋 변경이력 목록 조회 =====
   const fetchDocDatasetHistoryList = async (datasetId: string, page: number = 1, pageSize: number = 5) => {
     return mockPost<{ list: DocDatasetHistory[]; totalCount: number }>(`${MOCK_BASE}/history/list`, {
       datasetId,
@@ -63,10 +69,12 @@ export const useDocDatasetApi = () => {
     })
   }
 
+  // ===== 데이터셋 변경이력 저장 =====
   const fetchSaveDocDatasetHistory = async (history: { datasetId: string; version: string; content: string }) => {
     return mockPost<{ data: DocDatasetHistory }>(`${MOCK_BASE}/history/save`, history)
   }
 
+  // ===== 데이터셋 변경이력 삭제 =====
   const fetchDeleteDocDatasetHistory = async (id: string) => {
     return mockPost<{ data: { id: string } }>(`${MOCK_BASE}/history/delete`, { id })
   }

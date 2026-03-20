@@ -30,9 +30,25 @@ const {
 } = useDocDatasetApi()
 
 // ===== 상태 변수 =====
+// 로딩
 const isLoading = ref(true)
+// 생성 모달
+const isCreateModalOpen = ref(false)
+// 모달 상태(생성/수정)
+const modalMode = ref<'create' | 'edit'>('create')
+// 삭제 모달
+const isDeleteModalOpen = ref(false)
+// 섹션 접기 상태 (기본정보만 열림)
+const sectionCollapsed = reactive([false, true, true, true])
+// 테스트 모달
+const isTestModalOpen = ref(false)
+// 변경 이력 모달
+const isHistoryModalOpen = ref(false)
 
+// ===== 변수 목록 =====
+// 데이터셋 목록
 const datasetList = ref<DocDataset[]>([])
+// 데이터셋 요약
 const summary = ref<DocDatasetSummary>({
   totalDatasetCount: 0,
   activeDatasetCount: 0,
@@ -43,6 +59,7 @@ const summary = ref<DocDatasetSummary>({
   totalDocCount: 0,
   totalUrlCount: 0,
 })
+// 기본 폼
 const getDefaultForm = (): DocDatasetForm => ({
   name: '',
   description: '',
@@ -71,35 +88,47 @@ const getDefaultForm = (): DocDatasetForm => ({
   dimensionReduction: '',
 })
 
-// 데이터 소스 목록
+// 코드 옵션 목록
+// 청킹 알고리즘 옵션
 const chunkAlgorithmOptions = ref<{ label: string; value: string }[]>([])
+// 헤더 포함 옵션
 const headerInclusionOptions = ref<{ label: string; value: string }[]>([])
+// 임베딩 모델 옵션
 const embeddingModelOptions = ref<{ label: string; value: string }[]>([])
+// 벡터 DB 옵션
 const vectorDbOptions = ref<{ label: string; value: string }[]>([])
+// 정규화 옵션
 const normalizationOptions = ref<{ label: string; value: string }[]>([])
+// 풀링 전략 옵션
 const poolingOptions = ref<{ label: string; value: string }[]>([])
+// 차수 축소 옵션
 const dimensionOptions = ref<{ label: string; value: string }[]>([])
+// 문장 분리 알고리즘 옵션
 const sentenceSplitOptions = ref<{ label: string; value: string }[]>([])
+// 언어 감지 옵션
 const languageDetectionOptions = ref<{ label: string; value: string }[]>([])
 
+// 선택 데이터셋 상세
 const selectedDatasetDetail = ref<DocDatasetDetail | null>(null)
+// 선택 데이터셋 카테고리 목록
 const selectedDatasetCategoryList = ref<DocDatasetSelectResponse['categoryList']>([])
+// 선택 데이터셋 문서 목록
 const selectedDatasetDocList = ref<DocDatasetSelectResponse['docList']>([])
+// 선택 데이터셋 URL 목록
 const selectedDatasetUrlList = ref<DocDatasetSelectResponse['urlList']>([])
+// 폼 데이터
 const formData = reactive<DocDatasetForm>(getDefaultForm())
 
-// 생성 모달
-const isCreateModalOpen = ref(false)
-const modalMode = ref<'create' | 'edit'>('create')
+// 수정 데이터셋 ID
 const editingDatasetId = ref('')
+// 수정 데이터셋 폼 데이터
 const editFormData = ref<Partial<DocDatasetForm> | undefined>(undefined)
-
-// ===== 섹션 접기 상태 (기본정보만 열림) =====
-const sectionCollapsed = reactive([false, true, true, true])
-
-// 삭제
-const isDeleteModalOpen = ref(false)
+// 삭제 데이터셋 ID
 const deleteTargetId = ref('')
+// 테스트 데이터셋 ID
+const testDatasetId = ref('')
+// 변경 이력 데이터셋 ID
+const historyDatasetId = ref('')
 
 // ===== 상태 변경 METHODS =====
 const openCreateModal = () => {
@@ -107,6 +136,12 @@ const openCreateModal = () => {
   editingDatasetId.value = ''
   editFormData.value = undefined
   isCreateModalOpen.value = true
+}
+// 테스트
+const onTest = (id: string) => {
+  console.warn('[TODO] 데이터셋 테스트:', id)
+  isTestModalOpen.value = true
+  testDatasetId.value = id
 }
 
 // ===== 기능 METHODS =====
@@ -127,20 +162,25 @@ const handleSelectAll = async () => {
   await Promise.all([handleSelectDocDatasetList(), handleSelectDocDatasetSummary()])
 }
 
-// ===== 추가/수정/삭제 =====
+/** 데이터셋 상세 조회 */
 const handleSelectDocDataset = async (datasetId: string) => {
   const res = await fetchDocDataset(datasetId)
   selectedDatasetDetail.value = res.data ?? null
   return res
 }
 
+/** 데이터소스 목록 조회 */
 const handleSelectDatasetSrcList = async (datasetId: string) => {
   const res = await fetchDatasetSrcList(datasetId)
+  // 카테고리 목록 세팅
   selectedDatasetCategoryList.value = res.categoryList ?? []
+  // 문서 목록 세팅
   selectedDatasetDocList.value = res.docList ?? []
+  // URL 목록 세팅
   selectedDatasetUrlList.value = res.urlList ?? []
 }
 
+/** 코드 옵션 목록 조회 */
 const handleSelectCodeOptions = async () => {
   const [
     chunkCodes,
@@ -163,7 +203,7 @@ const handleSelectCodeOptions = async () => {
     getCodes('RG000009'),
     getCodes('RG000010'),
   ])
-
+  // 코드 옵션 세팅
   chunkAlgorithmOptions.value = mapCodeOptions(chunkCodes)
   headerInclusionOptions.value = mapCodeOptions(headerCodes)
   embeddingModelOptions.value = mapCodeOptions(embedModelCodes)
@@ -174,6 +214,8 @@ const handleSelectCodeOptions = async () => {
   sentenceSplitOptions.value = mapCodeOptions(sentenceSplitCodes)
   languageDetectionOptions.value = mapCodeOptions(languageCodes)
 }
+
+/** 코드 옵션 매핑 */
 const mapCodeOptions = (codes: CodeItem[]) => [
   { label: '선택', value: '' },
   ...codes.map((item: CodeItem) => ({
@@ -182,7 +224,9 @@ const mapCodeOptions = (codes: CodeItem[]) => [
   })),
 ]
 
+/** 저장 시 데이터셋 생성 */
 const onSaveCreate = async (data: DocDatasetForm, startBuild: boolean) => {
+  // 저장 요청 데이터 생성
   const payload: DocDatasetSavePayload = {
     datasetId: editingDatasetId.value || undefined,
     dsNm: data.name,
@@ -211,11 +255,13 @@ const onSaveCreate = async (data: DocDatasetForm, startBuild: boolean) => {
     sentSplitAlgoCd: data.sentenceSplitAlgorithm,
     langDetectCd: data.languageDetection,
   }
+  // 데이터셋 저장
   await handleSaveDocDataset(payload)
+  // 생성 모달 닫기
   isCreateModalOpen.value = false
 }
 
-// 수정
+// 상세 데이터를 폼 데이터로 변환
 const mapDetailToForm = (
   detail: DocDatasetDetail,
   _categoryList: CategoryItem[],
@@ -249,13 +295,19 @@ const mapDetailToForm = (
   dimensionReduction: detail.dimReducCd ?? '',
 })
 
+/** 데이터셋 수정 */
 const onEdit = async (dataset: DocDataset) => {
+  // 데이터셋 상세 조회
   const res = await handleSelectDocDataset(dataset.datasetId)
+  // 데이터소스 목록 조회
   await handleSelectDatasetSrcList(dataset.datasetId)
   const data = res.data
   if (!data) return
+  // 모달 모드 세팅
   modalMode.value = 'edit'
+  // 수정 데이터셋 ID 세팅
   editingDatasetId.value = dataset.datasetId
+  // 상세 데이터를 폼 데이터로 변환
   editFormData.value = mapDetailToForm(
     data,
     selectedDatasetCategoryList.value ?? [],
@@ -265,38 +317,42 @@ const onEdit = async (dataset: DocDataset) => {
   isCreateModalOpen.value = true
 }
 
-// ===== 유효성 검사 =====
-const validate = (): boolean => {
-  if (!formData.name.trim()) {
-    openToast({ message: '데이터셋 이름을 입력해주세요.', type: 'warning' })
-    sectionCollapsed[0] = false
-    return false
-  }
-  return true
-}
-
+// 삭제 버튼 클릭
 const onDelete = (id: string) => {
   deleteTargetId.value = id
   isDeleteModalOpen.value = true
 }
 
+// 변경 이력 버튼 클릭
+const onHistory = (id: string) => {
+  historyDatasetId.value = id
+  isHistoryModalOpen.value = true
+}
+
+// 삭제 버튼 클릭 시 실행(삭제 모달 확인 후 실행)
 const doDelete = async () => {
   await handleDeleteDocDataset(deleteTargetId.value)
   isDeleteModalOpen.value = false
 }
 
+// 데이터셋 저장
 const handleSaveDocDataset = async (dataset: DocDatasetSavePayload) => {
   await fetchSaveDocDataset(dataset)
+  // 목록 + 요약 동시 조회
   await handleSelectAll()
 }
 
+// 데이터셋 삭제 실행
 const handleDeleteDocDataset = async (id: string) => {
   await fetchDeleteDocDataset(id)
+  // 목록 + 요약 동시 조회
   await handleSelectAll()
 }
 
+// 데이터셋 활성화 토글
 const handleToggleActiveDocDataset = async (id: string) => {
   await fetchToggleActiveDocDataset(id)
+  // 목록 + 요약 동시 조회
   await handleSelectAll()
 }
 
@@ -322,6 +378,16 @@ const handleSaveDocDatasetHistory = async (history: { datasetId: string; version
 const handleDeleteDocDatasetHistory = async (id: string, datasetId: string) => {
   await fetchDeleteDocDatasetHistory(id)
   await handleSelectDocDatasetHistoryList(datasetId, historyPage.value)
+}
+
+// ===== 유효성 검사 =====
+const validate = (): boolean => {
+  if (!formData.name.trim()) {
+    openToast({ message: '데이터셋 이름을 입력해주세요.', type: 'warning' })
+    sectionCollapsed[0] = false
+    return false
+  }
+  return true
 }
 
 // ===== 검색 테스트 =====
@@ -357,6 +423,7 @@ export const useDocDatasetStore = () => {
   return {
     // 초기 조회
     isLoading,
+    isTestModalOpen,
     getDefaultForm,
     isDeleteModalOpen,
     // 생성 모달
@@ -366,9 +433,11 @@ export const useDocDatasetStore = () => {
     formData,
     openCreateModal,
     onEdit,
+    onTest,
     onSaveCreate,
     onDelete,
     doDelete,
+    onHistory,
     // 데이터셋 목록
     datasetList,
     summary,
@@ -409,5 +478,9 @@ export const useDocDatasetStore = () => {
     selectedDatasetUrlList,
     sectionCollapsed,
     validate,
+    // 변경 이력 모달
+    isHistoryModalOpen,
+    historyDatasetId,
+    testDatasetId,
   }
 }

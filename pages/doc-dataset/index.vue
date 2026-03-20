@@ -32,7 +32,8 @@
           :key="dataset.datasetId"
           :dataset="dataset"
           @toggle-active="handleToggleActiveDocDataset"
-          @test="onTest"
+          @test="onTest(dataset.datasetId)"
+          @history="onHistory(dataset.datasetId)"
           @edit="onEdit"
           @delete="onDelete"
           @stop-build="onStopBuild"
@@ -68,7 +69,17 @@
       @close="isCreateModalOpen = false"
       @save="onSaveCreate"
     />
-
+    <!-- 테스트 모달 -->
+    <DocDatasetTestModal
+      :dataset-id="testDatasetId"
+      @close="isTestModalOpen = false"
+    />
+    <!-- 변경 이력 모달 -->
+    <DocDatasetHistoryModal
+      :is-open="isHistoryModalOpen"
+      :dataset-id="historyDatasetId"
+      @close="isHistoryModalOpen = false"
+    />
     <!-- 삭제 확인 모달 -->
     <UiDialogModal
       :is-open="isDeleteModalOpen"
@@ -90,6 +101,10 @@ import type { DocDatasetForm } from '~/types/doc-dataset'
 const {
   isLoading,
   isDeleteModalOpen,
+  isTestModalOpen,
+  isHistoryModalOpen,
+  testDatasetId,
+  historyDatasetId,
   openCreateModal,
   isCreateModalOpen,
   modalMode,
@@ -102,16 +117,14 @@ const {
   doDelete,
   handleToggleActiveDocDataset,
   onEdit,
+  onHistory,
+  onTest,
 } = useDocDatasetStore()
 
 onMounted(async () => {
   await handleSelectAll()
   isLoading.value = false
 })
-// 테스트
-const onTest = (id: string) => {
-  console.warn('[TODO] 데이터셋 테스트:', id)
-}
 
 // 구축 중지
 const onStopBuild = (id: string) => {
