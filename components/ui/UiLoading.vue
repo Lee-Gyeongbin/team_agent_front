@@ -28,7 +28,8 @@ withDefaults(defineProps<Props>(), {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  padding: $spacing-xl 0;
+  flex: 1;
+  min-height: 200px;
   width: 100%;
 }
 
