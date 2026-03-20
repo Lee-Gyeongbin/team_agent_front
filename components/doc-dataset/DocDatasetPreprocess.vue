@@ -127,19 +127,9 @@
               @update:model-value="onUpdate('useSpecialCharRemoval', $event)"
             />
             <UiCheckbox
-              :model-value="modelValue.useHtmlTagRemoval"
-              label="HTML 태그 제거 & 디코딩"
-              @update:model-value="onUpdate('useHtmlTagRemoval', $event)"
-            />
-            <UiCheckbox
-              :model-value="modelValue.useStopwordRemoval"
-              label="불용어(Stop words) 제거"
-              @update:model-value="onUpdate('useStopwordRemoval', $event)"
-            />
-            <UiCheckbox
-              :model-value="modelValue.useCodeBlockPreserve"
-              label="숫자/코드 블록 유지 (개발 문서 보존)"
-              @update:model-value="onUpdate('useCodeBlockPreserve', $event)"
+              :model-value="modelValue.useSingleCellText"
+              label="단일 셀 테이블 텍스트화"
+              @update:model-value="onUpdate('useSingleCellText', $event)"
             />
           </div>
         </div>
@@ -171,6 +161,7 @@
 </template>
 
 <script setup lang="ts">
+import { toRaw } from 'vue'
 import type { DocDatasetForm } from '~/types/doc-dataset'
 
 interface Props {
@@ -210,6 +201,6 @@ const toggleCollapse = () => {
 }
 
 const onUpdate = (key: keyof DocDatasetForm, value: string | number | boolean) => {
-  emit('update:modelValue', { ...props.modelValue, [key]: value })
+  emit('update:modelValue', { ...toRaw(props.modelValue), [key]: value } as DocDatasetForm)
 }
 </script>

@@ -80,11 +80,11 @@
           >
             <span
               class="ui-checkbox"
-              :class="{ 'is-checked': selectedDocIds.includes(item.docId) }"
+              :class="{ 'is-checked': isDocSelected(item.docId) }"
             >
               <span class="ui-checkbox-box">
                 <svg
-                  v-if="selectedDocIds.includes(item.docId)"
+                  v-if="isDocSelected(item.docId)"
                   class="ui-checkbox-icon"
                   width="12"
                   height="12"
@@ -150,9 +150,16 @@ const filteredList = computed(() => {
   return props.docList.filter((d) => d.docTitle?.toLowerCase().includes(keyword))
 })
 
-// 선택 토글
-const toggleSelect = (id: string) => {
-  const ids = [...props.selectedDocIds]
+const isDocSelected = (docId: string | number) => {
+  const id = String(docId)
+  return (props.selectedDocIds ?? []).map(String).includes(id)
+}
+
+// 선택 토글 (API docId가 number로 올 수 있어 문자열로 통일)
+const toggleSelect = (rawId: string | number) => {
+  const id = String(rawId)
+  const current = props.selectedDocIds ?? []
+  const ids = current.map(String)
   const index = ids.indexOf(id)
   if (index > -1) {
     ids.splice(index, 1)

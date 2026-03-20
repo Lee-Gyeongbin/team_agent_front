@@ -79,7 +79,7 @@
           <i class="icon-chevron-down size-16 com-setting-section-arrow" />
         </div>
         <div class="com-setting-section-body">
-          <div class="com-setting-row">
+          <div class="com-setting-row db-type-version-row">
             <div class="com-setting-field-row">
               <label class="com-setting-label">
                 <span class="is-required">*</span>
@@ -310,7 +310,7 @@ const getDefaultForm = (): DatamartForm => ({
   description: '',
   useYn: 'Y',
   sortOrd: 0,
-  dbType: '',
+  dbType: 'MySQL',
   dbVersion: '',
   host: '',
   port: 3306,
@@ -333,7 +333,13 @@ const statusOptions = [
   { label: '비활성', value: 'N' },
 ]
 
-const dbTypeOptions = [{ label: 'MySQL', value: 'MySQL' }]
+const dbTypeOptions = [
+  { label: 'MySQL', value: 'MySQL' },
+  { label: 'PostgreSQL', value: 'PostgreSQL' },
+  { label: 'Oracle', value: 'Oracle' },
+  { label: 'MS SQL Server', value: 'MSSQLServer' },
+  { label: 'MariaDB', value: 'MariaDB' },
+]
 
 const isEditMode = computed(() => !!props.editData)
 
@@ -445,3 +451,12 @@ const onSave = () => {
   emit('save', { ...formData })
 }
 </script>
+
+<style lang="scss" scoped>
+.db-type-version-row {
+  > .com-setting-field-row {
+    flex: 1;
+    min-width: 0;
+  }
+}
+</style>
