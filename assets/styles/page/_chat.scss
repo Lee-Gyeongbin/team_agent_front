@@ -726,16 +726,16 @@
 }
 
 .chat-pdf-main {
-  @include flex-center;
   flex: 1;
   min-width: 0;
   padding: 16px;
   overflow: auto;
-  align-items: flex-start;
   background: #fff;
 }
 
 .chat-pdf-main-canvas {
+  display: block;
+  margin: auto;
   background: #fff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
@@ -778,21 +778,25 @@
     margin-top: 8px;
   }
 
+  &:hover:not(.is-active) {
+    background: $color-background;
+  }
+
   &.is-active {
     outline: 2px solid var(--color-primary);
     outline-offset: -2px;
     background: var(--color-primary-bg);
 
-    .chat-pdf-thumb-label {
+    .chat-pdf-thumb-label,
+    .chat-pdf-thumb-label em {
       color: var(--color-primary-dark);
-      @include typo($body-medium-bold);
     }
   }
 }
 
 .chat-pdf-thumb-canvas {
   display: block;
-  width: 70px;
+  width: 100%;
   height: auto;
   border: 1px solid #aebccb;
   border-radius: $border-radius-sm;
@@ -800,9 +804,15 @@
 }
 
 .chat-pdf-thumb-label {
-  @include typo($body-medium);
+  @include typo($body-small);
   color: #828fa9;
   text-align: center;
+
+  em {
+    font-style: normal;
+    @include typo($body-small-bold);
+    color: $color-text-secondary;
+  }
 }
 
 // ===================================

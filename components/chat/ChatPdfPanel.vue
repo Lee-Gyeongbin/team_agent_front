@@ -152,6 +152,7 @@
             <button
               v-for="pageNum in displayPageList"
               :key="pageNum"
+              :ref="(el) => setThumbBtnRef(pageNum, el as HTMLElement | null)"
               class="chat-pdf-thumb"
               :class="{ 'is-active': pageNum === currentPage }"
               @click="goToPage(pageNum)"
@@ -160,7 +161,9 @@
                 :ref="(el) => setThumbCanvasRef(pageNum, el as HTMLCanvasElement | null)"
                 class="chat-pdf-thumb-canvas"
               ></canvas>
-              <span class="chat-pdf-thumb-label">{{ pageNum }} / {{ totalPages }}</span>
+              <span class="chat-pdf-thumb-label">
+                <em>{{ pageNum }}</em> / {{ totalPages }}
+              </span>
             </button>
           </div>
         </div>
@@ -217,6 +220,7 @@ const currentRelatedPages = computed(() =>
 
 const mainCanvasRef = ref<HTMLCanvasElement | null>(null)
 const thumbCanvasMap = new Map<number, HTMLCanvasElement>()
+const thumbBtnMap = new Map<number, HTMLElement>()
 
 const setThumbCanvasRef = (pageNum: number, el: HTMLCanvasElement | null) => {
   if (el) {
@@ -224,6 +228,14 @@ const setThumbCanvasRef = (pageNum: number, el: HTMLCanvasElement | null) => {
     return
   }
   thumbCanvasMap.delete(pageNum)
+}
+
+const setThumbBtnRef = (pageNum: number, el: HTMLElement | null) => {
+  if (el) {
+    thumbBtnMap.set(pageNum, el)
+    return
+  }
+  thumbBtnMap.delete(pageNum)
 }
 
 const {
@@ -330,5 +342,12 @@ watch(activeTab, async (tab) => {
     await nextTick()
     await renderAllThumbnails()
   }
+})
+
+// 페이지 변경 시 해당 썸네일로 자동 스크롤
+watch(currentPage, async (page) => {
+  await nextTick()
+  const btn = thumbBtnMap.get(page)
+  btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
 })
 </script>
