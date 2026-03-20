@@ -69,7 +69,7 @@ const handleToggleActiveDatamart = async (datamart: Datamart) => {
 }
 
 /** 데이터마트 연결 테스트 */
-const handleTestConnection = async (datamart: Datamart) => {
+const handleTestConnection = async (datamart: Datamart, testType: 'saved' | 'form') => {
   try {
     const response = await fetchTestConnection(datamart)
     const isSuccess = response.result === 'SUCCESS'
@@ -78,6 +78,9 @@ const handleTestConnection = async (datamart: Datamart) => {
       type: isSuccess ? 'success' : 'error',
     })
     await handleSelectAll()
+    if (testType === 'form') {
+      return response
+    }
   } catch {
     openToast({ message: '연결 테스트에 실패했습니다.', type: 'error' })
   }

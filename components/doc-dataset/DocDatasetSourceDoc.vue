@@ -45,24 +45,22 @@
     >
       <!-- 검색 + 결과 수 뱃지 -->
       <div class="doc-dataset-source-search-row">
-        <div class="doc-dataset-source-search-wrap">
-          <UiInput
-            v-model="searchKeyword"
-            placeholder="문서명으로 검색..."
-            size="sm"
-            class="doc-dataset-source-search-input"
-          >
-            <template #icon-right>
-              <i class="icon-search size-16" />
-            </template>
-          </UiInput>
-          <span
-            v-if="searchKeyword"
-            class="doc-dataset-source-search-badge"
-          >
-            {{ filteredList.length }}
-          </span>
-        </div>
+        <UiInput
+          v-model="searchKeyword"
+          placeholder="문서명으로 검색..."
+          size="sm"
+          class="doc-dataset-source-search-input"
+        >
+          <template #icon-right>
+            <i class="icon-search size-16" />
+          </template>
+        </UiInput>
+        <UiSelect
+          v-model="selectedCategory"
+          :options="categoryOptions"
+          size="sm"
+          class="doc-dataset-source-category-select"
+        />
       </div>
 
       <!-- 2분할: 트리뷰(좌) + 파일리스트(우) -->
@@ -118,12 +116,13 @@
 </template>
 
 <script setup lang="ts">
-import type { DocDatasetSelectedDoc } from '~/types/doc-dataset'
+import type { CategoryItem, DocDatasetSelectedDoc } from '~/types/doc-dataset'
 
 interface Props {
   useDocument: boolean
   selectedDocIds: string[]
   docList: DocDatasetSelectedDoc[]
+  categoryList: CategoryItem[]
 }
 
 const props = defineProps<Props>()
@@ -135,12 +134,20 @@ const emit = defineEmits<{
 
 const isExpanded = ref(true)
 const searchKeyword = ref('')
+const selectedCategory = ref('all')
 
+// 카테고리 필터 옵션
+const categoryOptions = computed(() => {
+  return [
+    { label: '전체 카테고리', value: 'all' },
+    ...props.categoryList.map((c) => ({ label: c.categoryName, value: c.categoryId })),
+  ].sort((a, b) => a.label.localeCompare(b.label))
+})
 // 필터링된 리스트
 const filteredList = computed(() => {
   if (!searchKeyword.value) return props.docList
   const keyword = searchKeyword.value.toLowerCase()
-  return props.docList.filter((d) => d.docTitle.toLowerCase().includes(keyword))
+  return props.docList.filter((d) => d.docTitle?.toLowerCase().includes(keyword))
 })
 
 // 선택 토글

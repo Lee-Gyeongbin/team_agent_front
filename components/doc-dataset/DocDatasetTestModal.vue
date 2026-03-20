@@ -1,6 +1,6 @@
 <template>
   <UiModal
-    :is-open="isOpen"
+    :is-open="isTestModalOpen"
     title="RAG 검색 테스트"
     max-width="720px"
     custom-class="doc-dataset-test-modal"
@@ -143,14 +143,14 @@
 import { useDocDatasetStore } from '~/composables/doc-dataset/useDocDatasetStore'
 
 interface Props {
-  isOpen: boolean
   datasetId: string
 }
 
 const props = defineProps<Props>()
 const emit = defineEmits<{ close: [] }>()
 
-const { searchResults, searchSummary, isSearching, handleSearchDocDataset, resetSearchResults } = useDocDatasetStore()
+const { isTestModalOpen, searchResults, searchSummary, isSearching, handleSearchDocDataset, resetSearchResults } =
+  useDocDatasetStore()
 
 // 폼
 const query = ref('')
@@ -162,7 +162,7 @@ const categoryOptions = [{ label: '전체 카테고리', value: 'all' }]
 
 // 모달 열릴 때 초기화
 watch(
-  () => props.isOpen,
+  () => isTestModalOpen.value,
   (open) => {
     if (open) {
       query.value = ''

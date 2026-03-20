@@ -32,6 +32,7 @@
         :use-document="modelValue.useDocument"
         :selected-doc-ids="modelValue.selectedDocIds"
         :doc-list="docList"
+        :category-list="categoryList"
         @update:use-document="onUpdate('useDocument', $event)"
         @update:selected-doc-ids="onUpdate('selectedDocIds', $event)"
       />

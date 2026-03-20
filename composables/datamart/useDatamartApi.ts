@@ -39,8 +39,8 @@ export const useDatamartApi = () => {
   }
 
   /** 데이터마트 연결 테스트 API */
-  const fetchTestConnection = async (datamart: Datamart): Promise<{ result: string; msg: string }> => {
-    return post<{ result: string; msg: string }>('/datamart/connTest.do', datamart)
+  const fetchTestConnection = async (datamart: Datamart): Promise<{ result: string; msg: string; tblCnt: number }> => {
+    return post<{ result: string; msg: string; tblCnt: number }>('/datamart/connTest.do', datamart)
   }
 
   return {

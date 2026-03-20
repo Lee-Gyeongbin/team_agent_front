@@ -144,7 +144,7 @@ const filteredList = computed(() => {
   }
   if (searchKeyword.value) {
     const keyword = searchKeyword.value.toLowerCase()
-    list = list.filter((u) => u.urlName.toLowerCase().includes(keyword) || u.urlAddr.toLowerCase().includes(keyword))
+    list = list.filter((u) => u.urlName?.toLowerCase().includes(keyword) || u.urlAddr?.toLowerCase().includes(keyword))
   }
   return list
 })

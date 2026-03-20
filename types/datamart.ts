@@ -40,6 +40,7 @@ export interface DatamartForm {
   username: string
   pwdEnc: string
   schNm: string
+  tblCnt: number
   connOpt: string
   // 액세스 제어
   readonlyYn: 'Y' | 'N'
