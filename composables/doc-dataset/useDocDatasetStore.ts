@@ -76,9 +76,7 @@ const getDefaultForm = (): DocDatasetForm => ({
   useLowercasing: true,
   useWhitespaceNorm: false,
   useSpecialCharRemoval: false,
-  useHtmlTagRemoval: true,
-  useStopwordRemoval: true,
-  useCodeBlockPreserve: true,
+  useSingleCellText: true,
   sentenceSplitAlgorithm: '',
   languageDetection: '',
   embeddingModel: '',
@@ -131,10 +129,18 @@ const testDatasetId = ref('')
 const historyDatasetId = ref('')
 
 // ===== 상태 변경 METHODS =====
-const openCreateModal = () => {
+const openCreateModal = async () => {
   modalMode.value = 'create'
   editingDatasetId.value = ''
-  editFormData.value = undefined
+  // 데이터소스 목록 조회
+  await handleSelectDatasetSrcList()
+  // 상세 데이터를 폼 데이터로 변환
+  editFormData.value = mapDetailToForm(
+    selectedDatasetDetail.value ?? null,
+    selectedDatasetCategoryList.value ?? [],
+    selectedDatasetDocList.value ?? [],
+    selectedDatasetUrlList.value ?? [],
+  )
   isCreateModalOpen.value = true
 }
 // 테스트
@@ -170,8 +176,8 @@ const handleSelectDocDataset = async (datasetId: string) => {
 }
 
 /** 데이터소스 목록 조회 */
-const handleSelectDatasetSrcList = async (datasetId: string) => {
-  const res = await fetchDatasetSrcList(datasetId)
+const handleSelectDatasetSrcList = async () => {
+  const res = await fetchDatasetSrcList()
   // 카테고리 목록 세팅
   selectedDatasetCategoryList.value = res.categoryList ?? []
   // 문서 목록 세팅
@@ -237,7 +243,7 @@ const onSaveCreate = async (data: DocDatasetForm, startBuild: boolean) => {
     chunkOverlap: data.chunkOverlap,
     minChunkSz: data.minChunkSize,
     hdrInclCd: data.headerInclusion,
-    datasetBuildStatusCd: startBuild ? 'READY' : 'BUILDING',
+    datasetBuildStatusCd: startBuild ? 'BUILDING' : 'READY',
     embedModelCd: data.embeddingModel,
     vectorDbCd: data.vectorDb,
     embedNormCd: data.embeddingNormalization,
@@ -249,9 +255,7 @@ const onSaveCreate = async (data: DocDatasetForm, startBuild: boolean) => {
     lowercaseYn: data.useLowercasing ? 'Y' : 'N',
     wspNormYn: data.useWhitespaceNorm ? 'Y' : 'N',
     specChrRmYn: data.useSpecialCharRemoval ? 'Y' : 'N',
-    htmlRmYn: data.useHtmlTagRemoval ? 'Y' : 'N',
-    stopwordRmYn: data.useStopwordRemoval ? 'Y' : 'N',
-    codeKeepYn: data.useCodeBlockPreserve ? 'Y' : 'N',
+    singleCellText: data.useSingleCellText ? 'Y' : 'N',
     sentSplitAlgoCd: data.sentenceSplitAlgorithm,
     langDetectCd: data.languageDetection,
     docIdList: data.selectedDocIds.map((id) => ({ docId: id, datasetId: editingDatasetId.value ?? '' })),
@@ -265,36 +269,34 @@ const onSaveCreate = async (data: DocDatasetForm, startBuild: boolean) => {
 
 // 상세 데이터를 폼 데이터로 변환
 const mapDetailToForm = (
-  detail: DocDatasetDetail,
+  detail: DocDatasetDetail | null,
   _categoryList: CategoryItem[],
   docList: DocDatasetSelectedDoc[],
   urlList: DocDatasetSelectedUrl[],
 ): DocDatasetForm => ({
-  name: detail.dsNm,
-  description: detail.description ?? '',
-  version: detail.version ?? '',
-  useDocument: docList.some((item) => item.datasetId === detail.datasetId),
-  selectedDocIds: docList.filter((item) => item.datasetId === detail.datasetId).map((item) => item.docId),
-  useUrl: urlList.some((item) => item.datasetId === detail.datasetId),
-  selectedUrlIds: urlList.filter((item) => item.datasetId === detail.datasetId).map((item) => item.urlId),
-  chunkAlgorithm: detail.chunkAlgoCd ?? '',
-  chunkSize: detail.chunkSize ?? 0,
-  chunkOverlap: detail.chunkOverlap ?? 0,
-  minChunkSize: detail.minChunkSz ?? 0,
-  headerInclusion: detail.hdrInclCd ?? '',
-  useLowercasing: detail.lowercaseYn === 'Y',
-  useWhitespaceNorm: detail.wspNormYn === 'Y',
-  useSpecialCharRemoval: detail.specChrRmYn === 'Y',
-  useHtmlTagRemoval: detail.htmlRmYn === 'Y',
-  useStopwordRemoval: detail.stopwordRmYn === 'Y',
-  useCodeBlockPreserve: detail.codeKeepYn === 'Y',
-  sentenceSplitAlgorithm: detail.sentSplitAlgoCd ?? '',
-  languageDetection: detail.langDetectCd ?? '',
-  embeddingModel: detail.embedModelCd ?? '',
-  vectorDb: detail.vectorDbCd ?? '',
-  embeddingNormalization: detail.embedNormCd ?? '',
-  poolingStrategy: detail.poolStratCd ?? '',
-  dimensionReduction: detail.dimReducCd ?? '',
+  name: detail?.dsNm ?? '',
+  description: detail?.description ?? '',
+  version: detail?.version ?? '',
+  useDocument: docList.some((item) => item.datasetId === detail?.datasetId),
+  selectedDocIds: docList.filter((item) => item.datasetId === detail?.datasetId).map((item) => item.docId),
+  useUrl: urlList.some((item) => item.datasetId === detail?.datasetId),
+  selectedUrlIds: urlList.filter((item) => item.datasetId === detail?.datasetId).map((item) => item.urlId),
+  chunkAlgorithm: detail?.chunkAlgoCd ?? '',
+  chunkSize: detail?.chunkSize ?? 0,
+  chunkOverlap: detail?.chunkOverlap ?? 0,
+  minChunkSize: detail?.minChunkSz ?? 0,
+  headerInclusion: detail?.hdrInclCd ?? '',
+  useLowercasing: detail?.lowercaseYn === 'Y',
+  useWhitespaceNorm: detail?.wspNormYn === 'Y',
+  useSpecialCharRemoval: detail?.specChrRmYn === 'Y',
+  useSingleCellText: detail?.singleCellText === 'Y',
+  sentenceSplitAlgorithm: detail?.sentSplitAlgoCd ?? '',
+  languageDetection: detail?.langDetectCd ?? '',
+  embeddingModel: detail?.embedModelCd ?? '',
+  vectorDb: detail?.vectorDbCd ?? '',
+  embeddingNormalization: detail?.embedNormCd ?? '',
+  poolingStrategy: detail?.poolStratCd ?? '',
+  dimensionReduction: detail?.dimReducCd ?? '',
 })
 
 /** 데이터셋 수정 */
@@ -302,7 +304,7 @@ const onEdit = async (dataset: DocDataset) => {
   // 데이터셋 상세 조회
   const res = await handleSelectDocDataset(dataset.datasetId)
   // 데이터소스 목록 조회
-  await handleSelectDatasetSrcList(dataset.datasetId)
+  await handleSelectDatasetSrcList()
   const data = res.data
   if (!data) return
   // 모달 모드 세팅
@@ -334,19 +336,31 @@ const onHistory = (id: string) => {
 // 삭제 버튼 클릭 시 실행(삭제 모달 확인 후 실행)
 const doDelete = async () => {
   await handleDeleteDocDataset(deleteTargetId.value)
-  isDeleteModalOpen.value = false
 }
 
 // 데이터셋 저장
 const handleSaveDocDataset = async (dataset: DocDatasetSavePayload) => {
-  await fetchSaveDocDataset(dataset)
+  const res = await fetchSaveDocDataset(dataset)
+  const affected = typeof res.data === 'number' ? res.data : 0
+  if (affected > 0) {
+    openToast({ message: '데이터셋이 저장되었습니다.', type: 'success' })
+  } else {
+    openToast({ message: '데이터셋 저장에 실패했습니다.', type: 'error' })
+  }
   // 목록 + 요약 동시 조회
   await handleSelectAll()
 }
 
 // 데이터셋 삭제 실행
 const handleDeleteDocDataset = async (id: string) => {
-  await fetchDeleteDocDataset(id)
+  const res = await fetchDeleteDocDataset(id)
+  const affected = typeof res.data === 'number' ? res.data : 0
+  if (affected > 0) {
+    openToast({ message: '데이터셋이 삭제되었습니다.', type: 'success' })
+  } else {
+    openToast({ message: '데이터셋 삭제에 실패했습니다.', type: 'error' })
+  }
+  isDeleteModalOpen.value = false
   // 목록 + 요약 동시 조회
   await handleSelectAll()
 }

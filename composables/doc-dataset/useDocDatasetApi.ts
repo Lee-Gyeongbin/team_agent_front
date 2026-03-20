@@ -41,18 +41,18 @@ export const useDocDatasetApi = () => {
   }
 
   // ===== 데이터소스 목록 조회 =====
-  const fetchDatasetSrcList = async (datasetId: string) => {
-    return post<DocDatasetSelectResponse>('/dataset/selectDatasetSrcList.do', { datasetId })
+  const fetchDatasetSrcList = async () => {
+    return post<DocDatasetSelectResponse>('/dataset/selectDatasetSrcList.do', {})
   }
 
   // ===== 데이터셋 저장 =====
   const fetchSaveDocDataset = async (dataset: DocDatasetSavePayload) => {
-    return post<{ data: DocDatasetDetail }>('/dataset/save.do', dataset)
+    return post<{ data: number }>('/dataset/save.do', dataset)
   }
 
-  // ===== 데이터셋 삭제 =====
-  const fetchDeleteDocDataset = async (id: string) => {
-    return mockPost<{ data: { id: string } }>(`${MOCK_BASE}/delete`, { id })
+  // ===== 데이터셋 삭제 (@RequestBody DatasetVO — datasetId 필수) =====
+  const fetchDeleteDocDataset = async (datasetId: string) => {
+    return post<{ data: number }>('/dataset/deleteDataset.do', { datasetId })
   }
 
   // ===== 데이터셋 사용 여부(updateUseYn) — 응답 data는 DAO 영향 행 수(int) =====

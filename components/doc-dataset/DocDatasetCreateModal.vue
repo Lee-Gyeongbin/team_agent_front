@@ -84,6 +84,7 @@
 </template>
 
 <script setup lang="ts">
+import { toRaw } from 'vue'
 import DocDatasetBasicInfo from '~/components/doc-dataset/DocDatasetBasicInfo.vue'
 import DocDatasetSourceSelect from '~/components/doc-dataset/DocDatasetSourceSelect.vue'
 import DocDatasetPreprocess from '~/components/doc-dataset/DocDatasetPreprocess.vue'
@@ -138,14 +139,24 @@ onMounted(() => {
   handleSelectCodeOptions()
 })
 
+// 저장 스냅샷 — reactive spread 시 selectedDocIds 등 배열이 비는 이슈 방지
+const snapshotFormData = (): DocDatasetForm => {
+  const raw = toRaw(formData)
+  return {
+    ...raw,
+    selectedDocIds: [...(raw.selectedDocIds ?? [])],
+    selectedUrlIds: [...(raw.selectedUrlIds ?? [])],
+  }
+}
+
 // ===== 액션 =====
 const onSaveLater = () => {
   if (!validate()) return
-  emit('save', { ...formData }, false)
+  emit('save', snapshotFormData(), false)
 }
 
 const onBuildStart = () => {
   if (!validate()) return
-  emit('save', { ...formData }, true)
+  emit('save', snapshotFormData(), true)
 }
 </script>

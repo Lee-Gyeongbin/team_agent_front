@@ -46,9 +46,7 @@ export interface DocDatasetDetail {
   lowercaseYn: string
   wspNormYn: string
   specChrRmYn: string
-  htmlRmYn: string
-  stopwordRmYn: string
-  codeKeepYn: string
+  singleCellText: string
   sentSplitAlgoCd: string
   langDetectCd: string
 }
@@ -105,9 +103,7 @@ export interface DocDatasetSavePayload {
   lowercaseYn: string
   wspNormYn: string
   specChrRmYn: string
-  htmlRmYn: string
-  stopwordRmYn: string
-  codeKeepYn: string
+  singleCellText: string
   sentSplitAlgoCd: string
   langDetectCd: string
   docIdList: DocDatasetSelectedDoc[]
@@ -135,9 +131,7 @@ export interface DocDatasetForm {
   useLowercasing: boolean
   useWhitespaceNorm: boolean
   useSpecialCharRemoval: boolean
-  useHtmlTagRemoval: boolean
-  useStopwordRemoval: boolean
-  useCodeBlockPreserve: boolean
+  useSingleCellText: boolean
   sentenceSplitAlgorithm: string
   languageDetection: string
   // 임베딩 및 벡터DB

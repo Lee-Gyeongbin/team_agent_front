@@ -38,21 +38,21 @@
       />
 
       <!-- URL 패널 -->
-      <DocDatasetSourceUrl
+      <!-- <DocDatasetSourceUrl
         :use-url="modelValue.useUrl"
         :selected-url-ids="modelValue.selectedUrlIds"
         :url-list="urlList"
         :category-list="categoryList"
         @update:use-url="onUpdate('useUrl', $event)"
         @update:selected-url-ids="onUpdate('selectedUrlIds', $event)"
-      />
+      /> -->
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { toRaw } from 'vue'
 import DocDatasetSourceDoc from '~/components/doc-dataset/DocDatasetSourceDoc.vue'
-import DocDatasetSourceUrl from '~/components/doc-dataset/DocDatasetSourceUrl.vue'
 import type { CategoryItem, DocDatasetForm, DocDatasetSelectedDoc, DocDatasetSelectedUrl } from '~/types/doc-dataset'
 
 interface Props {
@@ -85,6 +85,7 @@ const toggleCollapse = () => {
 }
 
 const onUpdate = (key: keyof DocDatasetForm, value: unknown) => {
-  emit('update:modelValue', { ...props.modelValue, [key]: value })
+  // reactive(modelValue) spread 시 배열 필드가 누락·참조 꼬임 나는 경우 방지
+  emit('update:modelValue', { ...toRaw(props.modelValue), [key]: value } as DocDatasetForm)
 }
 </script>
