@@ -53,17 +53,20 @@
           sticky-header
           max-height="100%"
         >
-          <template #cell-content="{ row }">
-            <div class="doc-dataset-history-content-cell">{{ row.content }}</div>
+          <template #cell-version="{ row }">
+            <span class="doc-dataset-history-version">{{ row.verNo }}</span>
           </template>
-          <template #cell-updatedAt="{ value }">
-            <span class="doc-dataset-history-date">{{ value }}</span>
+          <template #cell-content="{ row }">
+            <div class="doc-dataset-history-content-cell">{{ row.chgContent }}</div>
+          </template>
+          <template #cell-updatedAt="{ row }">
+            <span class="doc-dataset-history-date">{{ row.modifyDt }}</span>
           </template>
           <template #cell-delete="{ row }">
             <button
               type="button"
               class="doc-dataset-history-delete-btn"
-              @click="onDeleteHistory(row.id)"
+              @click="onDeleteHistory(row.histId)"
             >
               <i class="icon-trashcan size-16" />
             </button>
@@ -98,7 +101,6 @@
 
 <script setup lang="ts">
 import { useDocDatasetStore } from '~/composables/doc-dataset/useDocDatasetStore'
-import { openConfirm } from '~/composables/useDialog'
 import type { TableColumn } from '~/types/table'
 
 interface Props {
@@ -116,7 +118,7 @@ const {
   historyPageSize,
   handleSelectDocDatasetHistoryList,
   handleSaveDocDatasetHistory,
-  handleDeleteDocDatasetHistory,
+  onDeleteHistory,
 } = useDocDatasetStore()
 
 // 테이블 컬럼 정의 (Figma 기준)
@@ -162,15 +164,5 @@ const onAddHistory = async () => {
   })
   formVersion.value = ''
   formContent.value = ''
-}
-
-// 이력 삭제
-const onDeleteHistory = async (id: string) => {
-  const confirmed = await openConfirm({
-    title: '이력 삭제',
-    message: '이 변경이력을 삭제하시겠습니까?',
-  })
-  if (!confirmed) return
-  await handleDeleteDocDatasetHistory(id, props.datasetId)
 }
 </script>

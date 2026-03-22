@@ -1,6 +1,5 @@
 import type {
   DocDataset,
-  DocDatasetDetail,
   DocDatasetSelectResponse,
   DocDatasetSavePayload,
   DocDatasetSummary,
@@ -50,19 +49,22 @@ export const useDocDatasetApi = () => {
     return post<{ data: number }>('/dataset/save.do', dataset)
   }
 
-  // ===== 데이터셋 삭제 (@RequestBody DatasetVO — datasetId 필수) =====
+  // ===== 데이터셋 삭제 =====
   const fetchDeleteDocDataset = async (datasetId: string) => {
     return post<{ data: number }>('/dataset/deleteDataset.do', { datasetId })
   }
 
-  // ===== 데이터셋 사용 여부(updateUseYn) — 응답 data는 DAO 영향 행 수(int) =====
-  const fetchToggleActiveDocDataset = async (datasetId: string, useYn: string) => {
-    return post<{ data: number }>('/dataset/updateUseYn.do', { datasetId, useYn })
+  // ===== 데이터셋 사용 여부(updateUseYn) =====
+  const fetchToggleActiveDocDataset = async (datasetId: string, useYn: string, datasetBuildStatusCd: string) => {
+    return post<{ data: number }>('/dataset/updateDataSetStatus.do', { datasetId, useYn, datasetBuildStatusCd })
   }
 
   // ===== 데이터셋 변경이력 목록 조회 =====
   const fetchDocDatasetHistoryList = async (datasetId: string, page: number = 1, pageSize: number = 5) => {
-    return mockPost<{ list: DocDatasetHistory[]; totalCount: number }>(`${MOCK_BASE}/history/list`, {
+    return await post<{
+      dataList?: DocDatasetHistory[]
+      totalCnt?: number
+    }>('/dataset/selectDsHistList.do', {
       datasetId,
       page,
       pageSize,
@@ -70,13 +72,13 @@ export const useDocDatasetApi = () => {
   }
 
   // ===== 데이터셋 변경이력 저장 =====
-  const fetchSaveDocDatasetHistory = async (history: { datasetId: string; version: string; content: string }) => {
-    return mockPost<{ data: DocDatasetHistory }>(`${MOCK_BASE}/history/save`, history)
+  const fetchSaveDocDatasetHistory = async (history: { datasetId: string; verNo: string; chgContent: string }) => {
+    return post<{ data: number }>('/dataset/saveDocDatasetHistory.do', history)
   }
 
   // ===== 데이터셋 변경이력 삭제 =====
-  const fetchDeleteDocDatasetHistory = async (id: string) => {
-    return mockPost<{ data: { id: string } }>(`${MOCK_BASE}/history/delete`, { id })
+  const fetchDeleteDocDatasetHistory = async (histId: string) => {
+    return post<{ data: number }>('/dataset/deleteDocDatasetHistory.do', { histId })
   }
 
   // ===== 검색 테스트 =====
