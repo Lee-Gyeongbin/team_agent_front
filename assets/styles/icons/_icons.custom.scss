@@ -33,19 +33,19 @@
   @include icon-file-bg('sidebar-more-dot');
 }
 
-// 차트/대시보드
+// 차트/대시보드 — mask + currentColor (부모 color로 틴트)
 .icon-chart {
-  @include icon-file('chart');
+  @include icon-file-bg('chart');
 }
 
 // 시스템
 .icon-system {
-  @include icon-file('system');
+  @include icon-file-bg('system');
 }
 
 // 팀/그룹
 .icon-group {
-  @include icon-file('group');
+  @include icon-file-bg('group');
 }
 
 // 설정
@@ -65,7 +65,7 @@
   @include icon-file('refund-back');
 }
 
-// 사이드바 드롭다운 아이콘
+// 사이드바 드롭다운 아이콘 ======================
 .icon-sidebar-community {
   @include icon-file-bg('sidebar-community');
 }
@@ -92,6 +92,10 @@
 
 .icon-sidebar-un-pin {
   @include icon-file-bg('sidebar-un-pin');
+}
+
+.icon-sidebar-arrow-right {
+  @include icon-file-bg('sidebar-arrow-right');
 }
 
 // ===================================
