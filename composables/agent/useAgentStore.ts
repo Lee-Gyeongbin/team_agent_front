@@ -5,6 +5,7 @@ const {
   fetchAgentList,
   fetchSaveAgent,
   fetchDeleteAgent,
+  fetchToggleAgent,
   fetchUpdateAgentOrder,
   fetchDatasetList,
   fetchSaveDataset,
@@ -16,25 +17,49 @@ const {
 const agentList = ref<Agent[]>([])
 const datasetList = ref<AgentDataset[]>([])
 
-// ===== Agent 조회 =====
+/** 에이전트 목록 조회 */
 const handleSelectAgentList = async () => {
-  const res = await fetchAgentList()
-  agentList.value = res.list
+  try {
+    const response = await fetchAgentList()
+    agentList.value = response?.dataList ?? []
+  } catch {
+    openToast({
+      message: '에이전트 목록 조회 실패',
+      type: 'error',
+    })
+  }
 }
 
-// ===== Agent 추가/수정/삭제 =====
+/** 에이전트 활성화/비활성화 */
+const handleToggleAgent = async (agentId: string, useYn: 'Y' | 'N') => {
+  try {
+    await fetchToggleAgent(agentId, useYn)
+    openToast({
+      message: '에이전트 활성화 상태가 변경되었습니다.',
+      type: 'success',
+    })
+    await handleSelectAgentList()
+  } catch {
+    openToast({
+      message: '에이전트 활성화/비활성화 실패',
+      type: 'error',
+    })
+  }
+}
+
+/** 에이전트 추가/수정 */
 const handleSaveAgent = async (agent: Partial<Agent>) => {
   await fetchSaveAgent(agent)
   await handleSelectAgentList()
 }
 
-const handleDeleteAgent = async (id: string) => {
-  await fetchDeleteAgent(id)
+const handleDeleteAgent = async (agentId: string) => {
+  await fetchDeleteAgent(agentId)
   await handleSelectAgentList()
 }
 
 // ===== Agent 순서 =====
-const handleUpdateAgentOrder = async (orderList: { id: string; order: number }[]) => {
+const handleUpdateAgentOrder = async (orderList: { agentId: string; sortOrd: number }[]) => {
   await fetchUpdateAgentOrder(orderList)
   await handleSelectAgentList()
 }
@@ -66,6 +91,7 @@ export const useAgentStore = () => {
     agentList,
     datasetList,
     handleSelectAgentList,
+    handleToggleAgent,
     handleSaveAgent,
     handleDeleteAgent,
     handleUpdateAgentOrder,
