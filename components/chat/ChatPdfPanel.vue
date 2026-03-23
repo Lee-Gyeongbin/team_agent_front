@@ -104,12 +104,12 @@
     </div>
 
     <div class="chat-pdf-body">
-      <div
+      <!-- 로딩 -->
+      <UiLoading
         v-if="isLoading"
-        class="chat-pdf-status"
-      >
-        PDF를 불러오는 중입니다.
-      </div>
+        text="PDF를 불러오는 중..."
+      />
+
       <div
         v-else-if="loadError"
         class="chat-pdf-status is-error"
@@ -147,6 +147,17 @@
               :options="documentList"
               size="lg"
             />
+            <UiButton
+              variant="ghost"
+              size="xs"
+              icon-only
+              title="다운로드"
+              @click="onDownloadFile(selectedDocId)"
+            >
+              <template #icon-left>
+                <i class="icon-copy size-20" />
+              </template>
+            </UiButton>
           </div>
           <div
             ref="thumbListRef"
@@ -189,7 +200,7 @@
 import type { ChatPdfPanelProps } from '~/types/chat'
 import { useFileStore } from '~/composables/com/useFileStore'
 
-const { handleViewFileUrl } = useFileStore()
+const { handleViewFileUrl, onDownloadFile } = useFileStore()
 
 const props = withDefaults(defineProps<ChatPdfPanelProps>(), {
   messageId: null,
