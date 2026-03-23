@@ -255,7 +255,7 @@
             <!-- 카드 헤더: ⭐ 차트 N + 뱃지 + 삭제 -->
             <div class="chat-vis-card-header">
               <div class="chat-vis-card-header-left">
-                <i class="icon-star size-16 chat-vis-card-star"></i>
+                <i class="icon-star-fill size-16 chat-vis-card-star"></i>
                 <strong>차트 {{ index + 1 }}</strong>
                 <span
                   v-for="badge in getChartBadges(card)"
@@ -315,14 +315,6 @@
                         YR
                       </button>
                     </div>
-                    <button
-                      type="button"
-                      class="chat-vis-axis-reset"
-                      title="축 해제"
-                      @click="onResetCardAxisRole(card, col.key)"
-                    >
-                      <i class="icon-subtract size-12"></i>
-                    </button>
                   </div>
                 </div>
               </div>
@@ -582,7 +574,7 @@ const onCreateChart = () => {
   const newCard: ChartCardState = {
     id: createCardId(),
     chartType: 'bar',
-    axisSettings: addAxisSettings.value.map((s) => ({ ...s })),
+    axisSettings: addAxisSettings.value.filter((s) => s.role !== '').map((s) => ({ ...s })),
     configVersion: 0,
   }
   chartCards.value.push(newCard)
@@ -679,6 +671,12 @@ const buildDummyVisualizationView = (): VisualizationViewModel => {
     { 통계명: '4월', '매출액(억)': 155, '매출이익(억)': 108, '영업이익(억)': 31 },
     { 통계명: '5월', '매출액(억)': 162, '매출이익(억)': 113, '영업이익(억)': 32 },
     { 통계명: '6월', '매출액(억)': 170, '매출이익(억)': 119, '영업이익(억)': 34 },
+    { 통계명: '7월', '매출액(억)': 178, '매출이익(억)': 124, '영업이익(억)': 36 },
+    { 통계명: '8월', '매출액(억)': 185, '매출이익(억)': 129, '영업이익(억)': 38 },
+    { 통계명: '9월', '매출액(억)': 192, '매출이익(억)': 134, '영업이익(억)': 40 },
+    { 통계명: '10월', '매출액(억)': 201, '매출이익(억)': 140, '영업이익(억)': 42 },
+    { 통계명: '11월', '매출액(억)': 215, '매출이익(억)': 150, '영업이익(억)': 45 },
+    { 통계명: '12월', '매출액(억)': 237, '매출이익(억)': 166, '영업이익(억)': 50 },
   ]
   const tableData = JSON.stringify(rows)
   const sql = `SELECT\n  TO_CHAR(sale_date, 'YYYY-MM') AS month,\n  ROUND(SUM(amount) / 100000000, 1) AS sales_억\nFROM sales\nWHERE EXTRACT(YEAR FROM sale_date) = 2025\nGROUP BY TO_CHAR(sale_date, 'YYYY-MM')\nORDER BY month;`

@@ -33,7 +33,7 @@ export const ChartColors = {
   // ===== 막대 차트 색상 =====
   bar: {
     // 기본 세트
-    set1: ['#A0A5DE', '#FFB4A1', '#A0E5BC', '#FFCA80'], // 보라, 연주황, 민트, 주황
+    set1: ['#9CC3F4', '#FFB4A1', '#A0E5BC', '#FFCA80'], // 소프트블루, 연주황, 민트, 주황
     set2: ['#FFB4A1', '#9DF'], // 연주황, 연하늘
     set3: ['#FFCA80', '#99DDFF', '#A0E5BC', '#CDD1D5'], // 주황, 하늘, 민트, 회색
 

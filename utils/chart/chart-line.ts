@@ -30,18 +30,24 @@ export const LineChartModule = {
     legendContainer.innerHTML = ''
     legendContainer.classList.add('bar-chart__legend')
 
+    const isSingle = datasets.length <= 1
     datasets.forEach((dataset, datasetIndex) => {
       const legendItem = ChartConfig.createLegendItem({
         label: dataset.label,
         color: dataset.borderColor,
         dotStyle: 'circle',
-        onClick: () => {
-          const chart = ChartConfig.instances[chartId]
-          if (chart) {
-            ChartConfig.toggleLegend(legendItem, chart, datasetIndex, 'dataset')
-          }
-        },
+        onClick: isSingle
+          ? undefined
+          : () => {
+              const chart = ChartConfig.instances[chartId]
+              if (chart) {
+                ChartConfig.toggleLegend(legendItem, chart, datasetIndex, 'dataset')
+              }
+            },
       })
+      if (isSingle) {
+        legendItem.style.cursor = 'default'
+      }
       legendContainer.appendChild(legendItem)
     })
   },
@@ -163,6 +169,7 @@ export const LineChartModule = {
       responsive: true,
       maintainAspectRatio: false,
       averageLine: config.averageLine || null,
+      dottedGridVertical: true,
       interaction: { mode: 'index', intersect: false },
       layout: { padding: { top: 20 } },
       plugins: {
@@ -184,9 +191,10 @@ export const LineChartModule = {
           display: true,
           ticks: {
             font: { size: ChartConfig.font.size.small, family: ChartConfig.font.family },
-            color: '#6D7882',
+            color: '#5C6677',
           },
-          grid: { display: true, drawBorder: false, color: '#E0E0E0', borderDash: [4, 4] },
+          grid: { display: false },
+          border: { color: 'rgba(0, 0, 26, 0.3)' },
         },
         y: {
           beginAtZero: false,
@@ -196,15 +204,9 @@ export const LineChartModule = {
             stepSize: yAxisStepSize || Math.floor((maxValue - (config.minValue || 0)) / 9) || 1,
             callback: (value: number) => value.toLocaleString(),
             font: { size: ChartConfig.font.size.small, family: ChartConfig.font.family },
-            color: '#6D7882',
+            color: '#5C6677',
           },
-          grid: {
-            color: 'rgba(0, 0, 0, 0.1)',
-            drawBorder: true,
-            borderDash: [5, 5],
-            borderWidth: 1,
-            borderColor: '#E0E0E0',
-          },
+          grid: { display: false },
         },
       },
       elements: {
@@ -226,7 +228,7 @@ export const LineChartModule = {
       type: 'line',
       data: { labels: categories, datasets: styledDatasets },
       options: lineChartOptions,
-      plugins: [customPointPlugin, ChartConfig.plugins.averageLine],
+      plugins: [customPointPlugin, ChartConfig.plugins.dottedGrid, ChartConfig.plugins.averageLine],
     })
   },
 
