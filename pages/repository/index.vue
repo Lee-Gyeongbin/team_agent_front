@@ -24,6 +24,6 @@ definePageMeta({ layout: 'default' })
 const activeTab = ref('document')
 const tabItems = [
   { label: '문서 관리', value: 'document' },
-  { label: 'URL 관리', value: 'url' },
+  // { label: 'URL 관리', value: 'url' },
 ]
 </script>

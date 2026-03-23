@@ -4,18 +4,7 @@
       variant="ghost"
       size="xs"
       icon-only
-      title="복사"
-      @click="emit('on-copy')"
-    >
-      <template #icon-left>
-        <i class="icon-copy size-20" />
-      </template>
-    </UiButton>
-    <UiButton
-      variant="ghost"
-      size="xs"
-      icon-only
-      :class="{ 'is-active': isLiked }"
+      :class="{ 'is-active': chatLogReaction?.satisYn === 'Y' }"
       title="좋아요"
       @click="emit('on-like')"
     >
@@ -27,7 +16,7 @@
       variant="ghost"
       size="xs"
       icon-only
-      :class="{ 'is-active': isDisliked }"
+      :class="{ 'is-active': chatLogReaction?.satisYn === 'N' }"
       title="싫어요"
       @click="emit('on-dislike')"
     >
@@ -50,12 +39,11 @@
       variant="ghost"
       size="xs"
       icon-only
-      :class="{ 'is-active': isFavorited }"
-      title="즐겨찾기"
-      @click="emit('on-favorite')"
+      title="복사"
+      @click="emit('on-copy')"
     >
       <template #icon-left>
-        <i class="icon-heart-line size-20" />
+        <i class="icon-copy size-20" />
       </template>
     </UiButton>
     <!-- 답변 → 라이브러리 카테고리 선택 UI (저장 API는 개발자가 페이지/스토어에서 @on-select-category 로 연결) -->
@@ -73,7 +61,7 @@
           title="카테고리 선택"
         >
           <template #icon-left>
-            <i class="icon-more-line size-20" />
+            <i class="icon-book size-20" />
           </template>
         </UiButton>
       </template>
@@ -83,11 +71,9 @@
 
 <script setup lang="ts">
 import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
-
+import type { ChatLogReaction } from '~/types/chat'
 interface Props {
-  isLiked?: boolean
-  isDisliked?: boolean
-  isFavorited?: boolean
+  chatLogReaction?: ChatLogReaction
 }
 
 defineProps<Props>()

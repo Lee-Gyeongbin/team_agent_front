@@ -393,7 +393,7 @@ export const buildTableModel = (viewModel: VisualizationViewModel) => {
   const columns: TableColumn[] = schema.columns.map((key) => ({
     key,
     label: resolveColumnLabel(key),
-    align: schema.metricKeys.includes(key) ? 'right' : 'left',
+    align: schema.metricKeys.includes(key) ? 'right' : 'center',
     headerAlign: 'center',
   }))
 
@@ -650,10 +650,20 @@ export const buildChartModel = (
       datasets: [{ label: resolveColumnLabel(metricKey), data, colorKey: 'line.primary' }],
     }
   }
+  const { max: autoMax, stepSize: autoStep } = calculateChartScale(data, 0.1, true)
   const config: Record<string, unknown> = {
     categories,
-    data,
-    colorKey: 'bar.set1',
+    datasets: [
+      {
+        label: resolveColumnLabel(metricKey),
+        data,
+        colorKey: 'bar.set1',
+        colorIndex: 0,
+        yAxisID: 'y',
+      },
+    ],
+    maxValue: autoMax,
+    yAxisStepSize: autoStep,
   }
   if (selection.stack) {
     config.scales = {

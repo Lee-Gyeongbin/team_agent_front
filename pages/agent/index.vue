@@ -50,7 +50,10 @@ import type { Agent } from '~/types/agent'
 
 const {
   agentList,
+  isSettingOpen,
+  selectedAgent,
   handleSelectAgentList,
+  handleFetchAgentDetail,
   handleSaveAgent,
   handleDeleteAgent,
   handleUpdateAgentOrder,
@@ -66,22 +69,18 @@ onMounted(async () => {
 
 const activeCount = computed(() => agentList.value.filter((a) => a.useYn === 'Y').length)
 
+/** 에이전트 추가 */
 const openAddAgent = () => {
   selectedAgent.value = null
   isSettingOpen.value = true
 }
 
-// 설정 모달
-const isSettingOpen = ref(false)
-const selectedAgent = ref<Agent | null>(null)
-
-const onClickSetting = (agent: Agent) => {
-  selectedAgent.value = agent
-  isSettingOpen.value = true
+const onClickSetting = async (agent: Agent) => {
+  await handleFetchAgentDetail(agent)
 }
 
 // 설정 저장
-const onSaveSetting = async (form: { agentTypeCd: string; agentNm: string; description: string }) => {
+const onSaveSetting = async (form: Partial<Agent>) => {
   await handleSaveAgent({
     agentId: selectedAgent.value?.agentId,
     ...form,

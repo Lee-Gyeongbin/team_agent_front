@@ -17,19 +17,26 @@ export const BarChartModule = {
     legendContainer.innerHTML = ''
     legendContainer.classList.add('bar-chart__legend')
 
+    const isSingle = categories.length <= 1
     categories.forEach((category, index) => {
       const color = Array.isArray(colors) ? colors[index] || colors[0] : colors
       const legendItem = ChartConfig.createLegendItem({
         label: category,
         color,
-        onClick: () => {
-          const chart = ChartConfig.instances[chartId]
-          if (chart) {
-            const type = chart.data.datasets.length > 1 ? 'dataset' : 'single'
-            ChartConfig.toggleLegend(legendItem, chart, index, type)
-          }
-        },
+        // 단일 데이터셋이면 클릭 비활성화
+        onClick: isSingle
+          ? undefined
+          : () => {
+              const chart = ChartConfig.instances[chartId]
+              if (chart) {
+                const type = chart.data.datasets.length > 1 ? 'dataset' : 'single'
+                ChartConfig.toggleLegend(legendItem, chart, index, type)
+              }
+            },
       })
+      if (isSingle) {
+        legendItem.style.cursor = 'default'
+      }
       legendContainer.appendChild(legendItem)
     })
   },
@@ -43,7 +50,7 @@ export const BarChartModule = {
       const thinBars = chart.config.options.thinBars
 
       ctx.save()
-      ctx.fillStyle = 'rgba(230, 232, 234, 0.3)'
+      ctx.fillStyle = 'rgba(236, 240, 243, 0.8)'
 
       const barY = scales.y.getPixelForValue(scales.y.max)
       const barHeight = chartArea.bottom - barY
@@ -144,6 +151,7 @@ export const BarChartModule = {
       categories,
       data,
       colorKey,
+      colorIndex,
       maxValue,
       yAxisStepSize,
       showDataLabels = false,
@@ -172,7 +180,7 @@ export const BarChartModule = {
     if (datasets) {
       colors = datasets.map((d: any) => ChartConfig.getColor(d.colorKey || 'bar.set1', d.colorIndex))
     } else {
-      colors = ChartConfig.getColor(colorKey || 'bar.set1')
+      colors = ChartConfig.getColor(colorKey || 'bar.set1', colorIndex)
     }
 
     // 범례 생성
@@ -201,7 +209,7 @@ export const BarChartModule = {
       thinBars,
       averageLine: config.averageLine || null,
       animation: ChartConfig.animationConfig,
-      layout: { padding: { top: 20 } },
+      layout: { padding: { top: 4 } },
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -243,9 +251,10 @@ export const BarChartModule = {
               weight: boldXAxis ? 'bold' : 'normal',
               family: ChartConfig.font.family,
             },
-            color: boldXAxis ? '#5C6268' : '#6D7882',
+            color: boldXAxis ? '#5C6268' : '#5C6677',
           },
           grid: { display: false, drawBorder: false },
+          border: { color: 'rgba(0, 0, 26, 0.3)' },
         },
         y: {
           beginAtZero: true,
@@ -258,9 +267,9 @@ export const BarChartModule = {
               size: ChartConfig.font.size.small,
               family: ChartConfig.font.family,
             },
-            color: '#6D7882',
+            color: '#5C6677',
           },
-          grid: { color: 'rgba(0, 0, 0, 0.1)', drawBorder: true },
+          grid: { display: false },
         },
       },
     }
@@ -311,7 +320,7 @@ export const BarChartModule = {
       type: 'bar',
       data: { labels: categories, datasets: chartDatasets },
       options: barChartOptions,
-      plugins: [this.backgroundBarPlugin, this.centerBarsPlugin, ChartConfig.plugins.averageLine],
+      plugins: [this.backgroundBarPlugin, this.centerBarsPlugin, ChartConfig.plugins.dottedGrid, ChartConfig.plugins.averageLine],
     })
   },
 

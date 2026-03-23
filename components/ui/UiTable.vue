@@ -1,7 +1,7 @@
 <template>
   <div
     class="ui-table-wrap"
-    :class="{ 'is-scrollable': !!maxHeight }"
+    :class="[{ 'is-scrollable': !!maxHeight }, size === 'sm' ? 'is-sm' : '']"
     :style="maxHeight ? { maxHeight } : undefined"
   >
     <table class="ui-table">
@@ -81,6 +81,8 @@ interface Props {
   maxHeight?: string
   emptyText?: string
   clickable?: boolean
+  /** 테이블 크기: 'md'(기본) | 'sm'(컴팩트) */
+  size?: 'md' | 'sm'
   /** 선택 행 강조용: row[selectedRowKey] === selectedRowValue 일 때 is-selected 클래스 적용 */
   selectedRowKey?: string
   selectedRowValue?: string
@@ -91,6 +93,7 @@ const props = withDefaults(defineProps<Props>(), {
   maxHeight: undefined,
   emptyText: '데이터가 없습니다.',
   clickable: false,
+  size: 'md',
   selectedRowKey: undefined,
   selectedRowValue: undefined,
 })
@@ -199,5 +202,38 @@ const onRowClick = (row: Record<string, any>, index: number) => {
   text-align: center !important;
   color: $color-text-disabled;
   @include typo($body-medium);
+}
+
+// ===== sm 사이즈 (컴팩트) =====
+.ui-table-wrap.is-sm {
+  .ui-table {
+    thead th {
+      height: auto;
+      padding: 6px 8px;
+      @include typo($body-medium-bold);
+      font-weight: 500;
+      color: #4d5462;
+      background: #f4f7f9;
+      border-right-color: #dce4e9;
+    }
+
+    tbody td {
+      height: 28px;
+      padding: 0 12px;
+      @include typo($body-medium);
+      color: #4d5462;
+      border-bottom-color: #ecf0f3;
+
+      &:not(:last-of-type) {
+        border-right-color: #ecf0f3;
+      }
+    }
+  }
+
+  // 헤더/바디 상하 구분선
+  .ui-table thead th {
+    border-top: 1px solid #dce4e9;
+    border-bottom: 1px solid #dce4e9;
+  }
 }
 </style>

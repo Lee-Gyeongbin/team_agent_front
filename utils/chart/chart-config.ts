@@ -93,13 +93,13 @@ export const ChartConfig = {
   // ===== 공통 범례 스타일 =====
   legendConfig: {
     position: 'top' as const,
-    align: 'start' as const,
+    align: 'center' as const,
     labels: {
-      color: '#464C53',
+      color: '#5C6677',
       font: {
         family: 'Pretendard',
         size: 12,
-        weight: 500,
+        weight: 400,
       },
       usePointStyle: true,
       padding: 16,
@@ -115,11 +115,14 @@ export const ChartConfig = {
           family: 'Pretendard',
           size: 12,
         },
-        color: '#6D7882',
+        color: '#5C6677',
       },
       grid: {
         display: false,
         drawBorder: false,
+      },
+      border: {
+        color: 'rgba(0, 0, 26, 0.3)',
       },
     },
     y: {
@@ -130,11 +133,10 @@ export const ChartConfig = {
           family: 'Pretendard',
           size: 12,
         },
-        color: '#6D7882',
+        color: '#5C6677',
       },
       grid: {
-        color: 'rgba(0, 0, 0, 0.1)',
-        drawBorder: true,
+        display: false,
       },
     },
   },
@@ -163,8 +165,8 @@ export const ChartConfig = {
   barStyles: {
     single: {
       borderRadius: {
-        topLeft: 15,
-        topRight: 15,
+        topLeft: 30,
+        topRight: 30,
         bottomLeft: 0,
         bottomRight: 0,
       },
@@ -176,8 +178,8 @@ export const ChartConfig = {
     },
     group: {
       borderRadius: {
-        topLeft: 10,
-        topRight: 10,
+        topLeft: 12,
+        topRight: 12,
         bottomLeft: 0,
         bottomRight: 0,
       },
@@ -187,8 +189,8 @@ export const ChartConfig = {
     },
     quarterly: {
       borderRadius: {
-        topLeft: 10,
-        topRight: 10,
+        topLeft: 15,
+        topRight: 15,
         bottomLeft: 0,
         bottomRight: 0,
       },
@@ -267,7 +269,7 @@ export const ChartConfig = {
         const { ctx, chartArea, scales } = chart
 
         ctx.save()
-        ctx.fillStyle = 'rgba(230, 232, 234, 0.3)'
+        ctx.fillStyle = 'rgba(236, 240, 243, 0.8)'
 
         chart.data.datasets.forEach((_dataset: any, datasetIndex: number) => {
           const meta = chart.getDatasetMeta(datasetIndex)
@@ -290,13 +292,60 @@ export const ChartConfig = {
         const { ctx, chartArea } = chart
 
         ctx.save()
-        ctx.fillStyle = 'rgba(230, 232, 234, 0.3)'
+        ctx.fillStyle = 'rgba(236, 240, 243, 0.8)'
 
         const meta = chart.getDatasetMeta(0)
         meta.data.forEach((bar: any) => {
           const barHeight = bar.height
           ctx.fillRect(chartArea.left, bar.y - barHeight / 2, chartArea.right - chartArea.left, barHeight)
         })
+
+        ctx.restore()
+      },
+    },
+
+    /** 도트 그리드 플러그인 (수평/수직 점선) */
+    dottedGrid: {
+      id: 'dottedGrid',
+      beforeDatasetsDraw(chart: any) {
+        const { ctx, chartArea, scales } = chart
+        const yScale = scales.y || scales['y-axis-0']
+        const xScale = scales.x || scales['x-axis-0']
+        const drawVertical = chart.config.options.dottedGridVertical ?? false
+
+        ctx.save()
+        ctx.fillStyle = 'rgba(0, 0, 26, 0.15)'
+
+        const dotRadius = 0.6
+        const dotGap = 5
+
+        // 수평 도트 (Y축 tick 위치)
+        if (yScale) {
+          yScale.ticks.forEach((_tick: any, index: number) => {
+            const y = yScale.getPixelForTick(index)
+            if (y < chartArea.top || y > chartArea.bottom) return
+
+            for (let x = chartArea.left; x <= chartArea.right; x += dotGap) {
+              ctx.beginPath()
+              ctx.arc(x, y, dotRadius, 0, Math.PI * 2)
+              ctx.fill()
+            }
+          })
+        }
+
+        // 수직 도트 (X축 tick 위치)
+        if (drawVertical && xScale) {
+          xScale.ticks.forEach((_tick: any, index: number) => {
+            const x = xScale.getPixelForTick(index)
+            if (x < chartArea.left || x > chartArea.right) return
+
+            for (let y = chartArea.top; y <= chartArea.bottom; y += dotGap) {
+              ctx.beginPath()
+              ctx.arc(x, y, dotRadius, 0, Math.PI * 2)
+              ctx.fill()
+            }
+          })
+        }
 
         ctx.restore()
       },
@@ -440,7 +489,7 @@ export const ChartConfig = {
   getBorderRadius(count: number): number {
     switch (count) {
       case 1:
-        return 15
+        return 30
       case 2:
         return 12
       case 3:

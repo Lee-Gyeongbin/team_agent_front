@@ -342,6 +342,16 @@
   @include icon-file-bg('chart-box-ai');
 }
 
+// 축 설정 아이콘
+.icon-axis-arrow {
+  @include icon-file-bg('axis-arrow');
+}
+
+// 마이너스 (축 해제)
+.icon-subtract {
+  @include icon-file-bg('subtract');
+}
+
 // 막대 차트
 .icon-bar-chart {
   @include icon-file-bg('bar-chart');

@@ -86,7 +86,7 @@ const emit = defineEmits<{
   // 사이즈 (width: auto, padding으로 좌우 여백 조절)
   // ===================================
   &.size-btn-xxs {
-    @include typo($body-xsmall);
+    @include typo($body-small-bold);
     height: 24px; // 24px
     padding: 0 6px;
   }

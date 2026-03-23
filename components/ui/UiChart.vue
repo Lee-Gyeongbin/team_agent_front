@@ -46,13 +46,21 @@ onMounted(() => {
   })
 })
 
-// config 또는 type 변경 시 차트 재생성
+// config 또는 type 변경 시 차트 재생성 (참조 비교 — key 변경으로 재생성 처리)
 watch(
-  () => [props.type, props.config],
+  () => props.config,
+  (newConfig, oldConfig) => {
+    if (newConfig !== oldConfig) {
+      renderChart()
+    }
+  },
+)
+
+watch(
+  () => props.type,
   () => {
     renderChart()
   },
-  { deep: true },
 )
 </script>
 
@@ -62,20 +70,21 @@ watch(
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: $spacing-sm;
+  gap: 0;
 }
 
 .ui-chart-legend {
   display: flex;
-  flex-wrap: wrap;
+  // flex-wrap: wrap;
   justify-content: center;
-  gap: $spacing-sm;
+  gap: 4px 8px;
   flex-shrink: 0;
+  margin-bottom: 10px;
 
   :deep(.legend-item) {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
     cursor: pointer;
     user-select: none;
     @include typo($body-small);
@@ -87,9 +96,9 @@ watch(
   }
 
   :deep(.legend-item__dot) {
-    width: 10px;
-    height: 10px;
-    border-radius: 3px;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
     flex-shrink: 0;
   }
 

@@ -1,21 +1,13 @@
 import { useAgentApi } from '~/composables/agent/useAgentApi'
-import type { Agent, AgentDataset } from '~/types/agent'
+import type { Agent } from '~/types/agent'
 
-const {
-  fetchAgentList,
-  fetchSaveAgent,
-  fetchDeleteAgent,
-  fetchToggleAgent,
-  fetchUpdateAgentOrder,
-  fetchDatasetList,
-  fetchSaveDataset,
-  fetchSyncDataset,
-  fetchUpdateDatasetOrder,
-} = useAgentApi()
+const { fetchAgentList, fetchSaveAgent, fetchAgentDetail, fetchDeleteAgent, fetchToggleAgent, fetchUpdateAgentOrder } =
+  useAgentApi()
 
-// ===== 상태 변수 =====
 const agentList = ref<Agent[]>([])
-const datasetList = ref<AgentDataset[]>([])
+/** 에이전트 상세 모달 */
+const isSettingOpen = ref(false)
+const selectedAgent = ref<Agent | null>(null)
 
 /** 에이전트 목록 조회 */
 const handleSelectAgentList = async () => {
@@ -47,7 +39,20 @@ const handleToggleAgent = async (agentId: string, useYn: 'Y' | 'N') => {
   }
 }
 
-/** 에이전트 추가/수정 */
+/** 에이전트 상세 조회 */
+const handleFetchAgentDetail = async (agent: Agent) => {
+  try {
+    const response = await fetchAgentDetail(agent)
+    selectedAgent.value = response?.data ?? null
+    isSettingOpen.value = true
+  } catch {
+    openToast({
+      message: '에이전트 상세 조회 실패',
+      type: 'error',
+    })
+  }
+}
+
 const handleSaveAgent = async (agent: Partial<Agent>) => {
   await fetchSaveAgent(agent)
   await handleSelectAgentList()
@@ -64,40 +69,16 @@ const handleUpdateAgentOrder = async (orderList: { agentId: string; sortOrd: num
   await handleSelectAgentList()
 }
 
-// ===== Dataset 조회 =====
-const handleSelectDatasetList = async (agentId: string) => {
-  const res = await fetchDatasetList(agentId)
-  datasetList.value = res.list
-}
-
-// ===== Dataset 추가/수정/동기화 =====
-const handleSaveDataset = async (agentId: string, dataset: Partial<AgentDataset>) => {
-  await fetchSaveDataset(dataset)
-  await handleSelectDatasetList(agentId)
-}
-
-const handleSyncDataset = async (agentId: string, id: string) => {
-  await fetchSyncDataset(id)
-  await handleSelectDatasetList(agentId)
-}
-
-// ===== Dataset 순서 =====
-const handleUpdateDatasetOrder = async (orderList: { id: string; order: number }[]) => {
-  await fetchUpdateDatasetOrder(orderList)
-}
-
 export const useAgentStore = () => {
   return {
     agentList,
-    datasetList,
+    isSettingOpen,
+    selectedAgent,
     handleSelectAgentList,
     handleToggleAgent,
+    handleFetchAgentDetail,
     handleSaveAgent,
     handleDeleteAgent,
     handleUpdateAgentOrder,
-    handleSelectDatasetList,
-    handleSaveDataset,
-    handleSyncDataset,
-    handleUpdateDatasetOrder,
   }
 }

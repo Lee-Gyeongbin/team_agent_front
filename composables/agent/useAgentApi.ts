@@ -1,4 +1,4 @@
-import type { Agent, AgentDataset } from '~/types/agent'
+import type { Agent } from '~/types/agent'
 import { useApi } from '~/composables/com/useApi'
 const { get, post } = useApi()
 
@@ -25,6 +25,11 @@ export const useAgentApi = () => {
     return post('/agent/toggle.do', { agentId, useYn })
   }
 
+  /** 에이전트 상세 조회 */
+  const fetchAgentDetail = async (agent: Agent): Promise<{ data: Agent }> => {
+    return post<{ data: Agent }>(`/agent/detail.do`, agent)
+  }
+
   const fetchSaveAgent = async (agent: Partial<Agent>): Promise<{ data: Agent }> => {
     return mockPost<{ data: Agent }>(`${MOCK_BASE}/save`, agent)
   }
@@ -37,32 +42,12 @@ export const useAgentApi = () => {
     return mockPost<{ data: null }>(`${MOCK_BASE}/order`, orderList)
   }
 
-  // ===== Dataset =====
-  const fetchDatasetList = async (agentId: string) => {
-    return mockPost<{ list: AgentDataset[] }>(`${MOCK_BASE}/dataset/list`, { agentId })
-  }
-
-  const fetchSaveDataset = async (dataset: Partial<AgentDataset>) => {
-    return mockPost<{ data: AgentDataset }>(`${MOCK_BASE}/dataset/save`, dataset)
-  }
-
-  const fetchSyncDataset = async (id: string) => {
-    return mockPost<{ data: { id: string }; message: string }>(`${MOCK_BASE}/dataset/sync`, { id })
-  }
-
-  const fetchUpdateDatasetOrder = async (orderList: { id: string; order: number }[]) => {
-    return mockPost<{ data: null }>(`${MOCK_BASE}/dataset/order`, orderList)
-  }
-
   return {
     fetchAgentList,
     fetchToggleAgent,
+    fetchAgentDetail,
     fetchSaveAgent,
     fetchDeleteAgent,
     fetchUpdateAgentOrder,
-    fetchDatasetList,
-    fetchSaveDataset,
-    fetchSyncDataset,
-    fetchUpdateDatasetOrder,
   }
 }

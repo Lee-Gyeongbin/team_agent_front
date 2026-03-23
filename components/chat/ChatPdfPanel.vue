@@ -104,12 +104,12 @@
     </div>
 
     <div class="chat-pdf-body">
-      <div
+      <!-- 로딩 -->
+      <UiLoading
         v-if="isLoading"
-        class="chat-pdf-status"
-      >
-        PDF를 불러오는 중입니다.
-      </div>
+        text="PDF를 불러오는 중..."
+      />
+
       <div
         v-else-if="loadError"
         class="chat-pdf-status is-error"
