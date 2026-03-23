@@ -308,20 +308,44 @@ $sidebar-btn-bg-hover: $color-border;
   }
 }
 
+/* 검색기록 ⋮ 메뉴: 트리거 아래 + 오른쪽 정렬 — 열림 애니는 세로 슬라이드 */
+.sidebar-dropdown-content.sidebar-history-context-menu {
+  &[data-state='open'] {
+    animation: sidebar-history-dropdown-in 0.15s ease;
+  }
+
+  &[data-state='closed'] {
+    animation: sidebar-history-dropdown-out 0.1s ease forwards;
+  }
+}
+
+/* 설정 사이드바 메뉴 드롭다운(1depth·서브) — 검색기록 더보기(130px)보다 넓게 */
+.sidebar-dropdown-content.sidebar-settings-dropdown {
+  min-width: 160px;
+}
+
 .sidebar-dropdown-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: 4px;
+  height: 32px;
+  padding: 4px 8px;
   border-radius: $border-radius-sm;
   font-size: $font-size-base;
-  color: $color-text-primary;
+  font-weight: 500;
+  color: #6f7a93;
   cursor: pointer;
   outline: none;
+
+  /* mask 아이콘은 currentColor 사용 */
+  i {
+    color: $color-text-muted;
+  }
 
   &:hover,
   &[data-highlighted] {
     background-color: $color-border-light;
+    color: #4d5462;
   }
 
   &.is-disabled {
@@ -332,6 +356,28 @@ $sidebar-btn-bg-hover: $color-border;
     &[data-highlighted] {
       background-color: transparent;
     }
+  }
+}
+
+/* 서브 패널: 트리거 행 오른쪽에 간격 없이 붙임 (border 1px 겹쳐 한 줄로 보이게) */
+.sidebar-menu-sub-content {
+  min-width: 200px;
+}
+
+.sidebar-menu-sub-trigger {
+  justify-content: space-between;
+  gap: 8px;
+
+  &__start {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .icon-sidebar-arrow-right {
+    flex-shrink: 0;
+    color: $color-text-muted;
   }
 }
 
@@ -354,6 +400,28 @@ $sidebar-btn-bg-hover: $color-border;
   to {
     opacity: 0;
     transform: translateX(-4px);
+  }
+}
+
+@keyframes sidebar-history-dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sidebar-history-dropdown-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
   }
 }
 

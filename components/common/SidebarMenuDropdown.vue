@@ -19,19 +19,23 @@
           <!-- 자식이 있는 항목: SubTrigger로 서브메뉴 펼침 -->
           <DropdownMenuSub v-if="hasChildren(item)">
             <DropdownMenuSubTrigger class="sidebar-dropdown-item sidebar-menu-sub-trigger">
-              <span>{{ item.menuName }}</span>
-              <i class="icon-arrow-right size-16" />
+              <span class="sidebar-menu-sub-trigger__start">
+                <i
+                  v-if="subTriggerIconClass(item)"
+                  :class="['icon', subTriggerIconClass(item), 'size-20']"
+                />
+                <span>{{ item.menuName }}</span>
+              </span>
+              <i class="icon-sidebar-arrow-right size-20" />
             </DropdownMenuSubTrigger>
             <DropdownMenuPortal>
               <DropdownMenuSubContent
-                class="sidebar-menu-sub-content"
-                :side-offset="4"
-                :align-offset="-4"
+                class="sidebar-dropdown-content sidebar-menu-sub-content"
+                side="right"
+                align="end"
+                :side-offset="8"
+                :align-offset="0"
               >
-                <DropdownMenuLabel class="sidebar-menu-label">
-                  {{ item.menuName }}
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   v-for="child in item.children"
                   :key="child.menuId"
@@ -70,10 +74,8 @@
 import {
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuPortal,
   DropdownMenuRoot,
-  DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
@@ -89,6 +91,24 @@ defineProps<Props>()
 
 const open = defineModel<boolean>('open', { default: false })
 
+/** 서브 트리거(1depth) 전용: API icon 우선, 없으면 메뉴명별 폴백 */
+const SUB_TRIGGER_ICON_BY_MENU_NAME: Record<string, string> = {
+  AI운영: 'icon-sidebar-magic-wand',
+  통계리포트: 'icon-chart',
+  시스템: 'icon-system',
+  커뮤니티: 'icon-group',
+}
+
+const subTriggerIconClass = (item: MenuItem): string | undefined => {
+  const fromApi = item.icon?.trim()
+  if (fromApi) return fromApi
+  const name = item.menuName?.trim()
+  if (name && SUB_TRIGGER_ICON_BY_MENU_NAME[name]) {
+    return SUB_TRIGGER_ICON_BY_MENU_NAME[name]
+  }
+  return undefined
+}
+
 const hasChildren = (item: MenuItem) => Array.isArray(item.children) && item.children.length > 0
 
 const onSelectItem = (e: Event, item: MenuItem) => {
@@ -99,34 +119,3 @@ const onSelectItem = (e: Event, item: MenuItem) => {
   navigateTo(item.srcPath)
 }
 </script>
-
-<!-- Portal로 body에 렌더링되므로 scoped 미적용. 콘텐츠/아이템 공통 스타일은 layout/_sidebar.scss .sidebar-dropdown-content, .sidebar-dropdown-item 사용 -->
-<style lang="scss">
-@use '~/assets/styles/utils/variables' as *;
-
-.sidebar-menu-sub-content {
-  min-width: 180px;
-  padding: 8px;
-  border-radius: $border-radius-base;
-  background: $color-surface;
-  border: 1px solid $color-border;
-  box-shadow: $shadow-md;
-  z-index: $z-dropdown;
-}
-
-.sidebar-menu-label {
-  padding: 8px 12px;
-  font-size: $font-size-base;
-  font-weight: $font-weight-semibold;
-  color: $color-text-heading;
-}
-
-.sidebar-menu-sub-trigger {
-  justify-content: space-between;
-
-  .icon-arrow-right {
-    flex-shrink: 0;
-    color: $color-text-secondary;
-  }
-}
-</style>

@@ -41,6 +41,41 @@
       @update:open="onPanelClose"
       @update:fullscreen="isPanelFullscreen = $event"
     />
+    <UiModal
+      :is-open="isModalOpen"
+      :title="modalTitle"
+      position="center"
+      @close="isModalOpen = false"
+    >
+      <UiTextarea
+        v-model="modalMessage"
+        :placeholder="modalPlaceholder"
+        :rows="2"
+        size="sm"
+        :border="true"
+        :auto-resize="true"
+        :max-rows="5"
+      />
+      <template #footer>
+        <div class="modal-dialog-footer">
+          <UiButton
+            variant="line-secondary"
+            size="md"
+            @click="handleModalClose"
+          >
+            취소
+          </UiButton>
+          <UiButton
+            class="btn-modal-dialog"
+            variant="dark"
+            size="md"
+            @click="handleReactionSubmit"
+          >
+            확인
+          </UiButton>
+        </div>
+      </template>
+    </UiModal>
   </div>
 </template>
 
@@ -63,6 +98,12 @@ const {
   onPanelClose,
   startChatSocket,
   stopChatSocket,
+  isModalOpen,
+  modalMessage,
+  handleReactionSubmit,
+  handleModalClose,
+  modalTitle,
+  modalPlaceholder,
 } = useChatStore()
 const route = useRoute()
 

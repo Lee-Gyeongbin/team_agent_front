@@ -255,7 +255,7 @@
             <!-- 카드 헤더: ⭐ 차트 N + 뱃지 + 삭제 -->
             <div class="chat-vis-card-header">
               <div class="chat-vis-card-header-left">
-                <i class="icon-star size-16 chat-vis-card-star"></i>
+                <i class="icon-star-fill size-16 chat-vis-card-star"></i>
                 <strong>차트 {{ index + 1 }}</strong>
                 <span
                   v-for="badge in getChartBadges(card)"
@@ -315,14 +315,6 @@
                         YR
                       </button>
                     </div>
-                    <button
-                      type="button"
-                      class="chat-vis-axis-reset"
-                      title="축 해제"
-                      @click="onResetCardAxisRole(card, col.key)"
-                    >
-                      <i class="icon-subtract size-12"></i>
-                    </button>
                   </div>
                 </div>
               </div>
@@ -335,7 +327,7 @@
                   title="막대 차트"
                   @click="onChangeCardChartType(card, 'bar')"
                 >
-                  <i class="icon-bar-chart size-16"></i>
+                  <i class="icon-bar-chart size-20"></i>
                 </button>
                 <button
                   type="button"
@@ -344,7 +336,7 @@
                   title="라인 차트"
                   @click="onChangeCardChartType(card, 'line')"
                 >
-                  <i class="icon-line-chart size-16"></i>
+                  <i class="icon-line-chart size-20"></i>
                 </button>
                 <button
                   type="button"
@@ -353,7 +345,7 @@
                   title="파이 차트"
                   @click="onChangeCardChartType(card, 'pie')"
                 >
-                  <i class="icon-pie-chart size-16"></i>
+                  <i class="icon-pie-chart size-20"></i>
                 </button>
               </div>
             </div>
@@ -464,7 +456,6 @@ const buildAxisSettingsFromSchema = (): ColumnAxisSetting[] => {
   if (!schema) return []
 
   const metricKeySet = new Set(schema.metricKeys)
-  const targetKeySet = new Set(schema.selectableOptions.chartTargetKeys)
   const defaultSel = schema.defaultSelection
 
   // 표시할 컬럼: X축 후보 + Y축 후보 (중복 제거, 순서 유지)
@@ -531,12 +522,6 @@ const onToggleCardAxisRole = (card: ChartCardState, key: string, role: AxisRole)
   card.configVersion++
 }
 
-// ===== 차트 카드 축 해제 =====
-const onResetCardAxisRole = (card: ChartCardState, key: string) => {
-  onResetAxisRole(card.axisSettings, key)
-  card.configVersion++
-}
-
 // ===== 차트 카드 타입 변경 =====
 const onChangeCardChartType = (card: ChartCardState, chartType: VisualizationChartType) => {
   card.chartType = chartType
@@ -582,7 +567,7 @@ const onCreateChart = () => {
   const newCard: ChartCardState = {
     id: createCardId(),
     chartType: 'bar',
-    axisSettings: addAxisSettings.value.map((s) => ({ ...s })),
+    axisSettings: JSON.parse(JSON.stringify(addAxisSettings.value)) as ColumnAxisSetting[],
     configVersion: 0,
   }
   chartCards.value.push(newCard)
@@ -606,18 +591,30 @@ const getChartBadges = (card: ChartCardState): string[] => {
   })
 }
 
-// ===== 차트 config 생성 =====
+// ===== 차트 config 생성 (카드별 캐싱) =====
+const configCache = new Map<string, { version: number; config: Record<string, unknown> }>()
+
 const chartConfigMap = computed<Record<string, Record<string, unknown>>>(() => {
   if (!currentVisualizationView.value) return {}
   const mapped: Record<string, Record<string, unknown>> = {}
   chartCards.value.forEach((card) => {
-    // configVersion 참조하여 반응성 트리거
-    void card.configVersion
+    const cached = configCache.get(card.id)
+    // configVersion이 변경되지 않았으면 캐시된 config 재사용
+    if (cached && cached.version === card.configVersion) {
+      mapped[card.id] = cached.config
+      return
+    }
     const selection = axisSettingsToSelection(card.axisSettings, card.chartType)
     const config = buildChartModel(currentVisualizationView.value!, selection)
     if (config) {
+      configCache.set(card.id, { version: card.configVersion, config })
       mapped[card.id] = config
     }
+  })
+  // 삭제된 카드 캐시 정리
+  const cardIds = new Set(chartCards.value.map((c) => c.id))
+  configCache.forEach((_, key) => {
+    if (!cardIds.has(key)) configCache.delete(key)
   })
   return mapped
 })
@@ -645,6 +642,7 @@ const onClose = () => {
   isFullscreen.value = false
   clearBodyChartFullscreen()
   chartCards.value = []
+  configCache.clear()
   emit('update:fullscreen', false)
   emit('update:open', false)
 }
@@ -679,6 +677,12 @@ const buildDummyVisualizationView = (): VisualizationViewModel => {
     { 통계명: '4월', '매출액(억)': 155, '매출이익(억)': 108, '영업이익(억)': 31 },
     { 통계명: '5월', '매출액(억)': 162, '매출이익(억)': 113, '영업이익(억)': 32 },
     { 통계명: '6월', '매출액(억)': 170, '매출이익(억)': 119, '영업이익(억)': 34 },
+    { 통계명: '7월', '매출액(억)': 178, '매출이익(억)': 124, '영업이익(억)': 36 },
+    { 통계명: '8월', '매출액(억)': 185, '매출이익(억)': 129, '영업이익(억)': 38 },
+    { 통계명: '9월', '매출액(억)': 192, '매출이익(억)': 134, '영업이익(억)': 40 },
+    { 통계명: '10월', '매출액(억)': 201, '매출이익(억)': 140, '영업이익(억)': 42 },
+    { 통계명: '11월', '매출액(억)': 215, '매출이익(억)': 150, '영업이익(억)': 45 },
+    { 통계명: '12월', '매출액(억)': 237, '매출이익(억)': 166, '영업이익(억)': 50 },
   ]
   const tableData = JSON.stringify(rows)
   const sql = `SELECT\n  TO_CHAR(sale_date, 'YYYY-MM') AS month,\n  ROUND(SUM(amount) / 100000000, 1) AS sales_억\nFROM sales\nWHERE EXTRACT(YEAR FROM sale_date) = 2025\nGROUP BY TO_CHAR(sale_date, 'YYYY-MM')\nORDER BY month;`
@@ -712,10 +716,19 @@ watch(
   { immediate: true },
 )
 
+// messageId 또는 패널 열림 시에만 축 설정 초기화 (카드 조작 시 재초기화 방지)
+const axisInitialized = ref(false)
 watch(
-  currentVisualizationView,
+  () => [props.messageId, props.open, currentVisualizationView.value?.status] as const,
   () => {
-    initAxisSettings()
+    if (!currentVisualizationView.value || currentVisualizationView.value.status !== 'success') {
+      axisInitialized.value = false
+      return
+    }
+    if (!axisInitialized.value) {
+      initAxisSettings()
+      axisInitialized.value = true
+    }
   },
   { immediate: true },
 )

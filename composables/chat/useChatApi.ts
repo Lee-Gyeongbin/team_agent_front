@@ -8,6 +8,7 @@ import type {
   VisualizationDataRow,
   VisualizationStatDetailItem,
   VisualizationStatItem,
+  SaveChatLogReactionResponse,
 } from '~/types/chat'
 
 export const useReportsApi = () => {
@@ -40,6 +41,14 @@ export const useReportsApi = () => {
   const fetchSelectChatRef = async (logId: string): Promise<{ list: ChatRefRow[] }> => {
     return get<{ list: ChatRefRow[] }>(`/ai/chatbot/selectChatDocList.do?logId=${encodeURIComponent(logId)}`)
   }
+  // 좋아요/싫어요 등록
+  const fetchCreateChatLogReaction = async (
+    logId: string,
+    satisYn: string,
+    satisContent?: string,
+  ): Promise<SaveChatLogReactionResponse> => {
+    return post<SaveChatLogReactionResponse>('/ai/chatbot/saveSatisYn.do', { logId, satisYn, satisContent })
+  }
   // 시각화 데이터 목록 조회
   const fetchSelectTableDataList = async ({
     logId,
@@ -66,5 +75,6 @@ export const useReportsApi = () => {
     fetchSelectChatLogList,
     fetchSelectChatRef,
     fetchSelectTableDataList,
+    fetchCreateChatLogReaction,
   }
 }

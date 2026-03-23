@@ -30,8 +30,7 @@
         >
           <!-- 라이브러리 카테고리: Actions는 value만 알 수 있어 logId는 여기서 묶어 상위로 전달 -->
           <ChatMessageActions
-            :is-liked="message.isLiked"
-            :is-disliked="message.isDisliked"
+            :chat-log-reaction="message.chatLogReaction"
             @on-copy="emit('on-copy', message.logId)"
             @on-like="emit('on-like', message.logId)"
             @on-dislike="emit('on-dislike', message.logId)"
