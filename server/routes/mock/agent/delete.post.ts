@@ -3,7 +3,7 @@ export default defineEventHandler(async (event) => {
 
   return {
     result: 'SUCCESS',
-    data: mockAgentDb.delete(body.id),
+    data: mockAgentDb.delete(body.agentId),
     message: '',
   }
 })

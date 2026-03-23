@@ -67,10 +67,11 @@
           class="category-input-wrap"
         >
           <UiInput
+            ref="categoryInputRef"
             v-model="categoryInputValue"
-            placeholder="카테고리명 입력(엔터)"
+            :placeholder="categoryInputPlaceholder"
             size="sm"
-            @keydown.enter="onCategoryInputEnter"
+            @enter="onCategoryInputEnter"
           />
         </div>
         <div class="category-tree-wrap">
@@ -81,6 +82,7 @@
               :item="cat"
               :depth="1"
               selectable
+              :max-category-depth="5"
               :selected-ids="selectedCategoryIds"
               :show-check-icon="false"
               :editing-category-id="editingCategoryId"
@@ -315,21 +317,42 @@ const onSearch = () => {
 const isCategoryInputVisible = ref(false)
 const isCategorySelectModalOpen = ref(false)
 const categoryInputValue = ref('')
+const categoryInputRef = ref<{ focus: () => void } | null>(null)
+/** 상단 입력으로 추가할 때 부모 카테고리 ID (null이면 최상위) */
+const categoryInputParentId = ref<string | null>(null)
 const editingCategoryId = ref<string | null>(null)
 const editingName = ref('')
 
+const categoryInputPlaceholder = computed(() =>
+  categoryInputParentId.value ? '하위 카테고리명 입력(엔터)' : '카테고리명 입력(엔터)',
+)
+
 const categoryMenuItems = [
   { label: '이름 수정', value: 'rename', icon: 'icon-edit' },
+  { label: '하위 카테고리 추가', value: 'addSubcategory', icon: 'icon-folder-close' },
   { label: '카테고리 삭제', value: 'delete', icon: 'icon-trashcan', color: 'danger' as const },
 ]
 
 // 카테고리 선택 → 문서 필터링
 const selectedCategoryIds = computed(() => (docSelectedCategoryId.value ? [docSelectedCategoryId.value] : []))
 
+/** id로 categoryList 원본 노드 찾기 — 필터 트리와 참조가 달라도 펼침 상태가 스토어에만 반영되도록 */
+const findCategoryNodeById = (items: CategoryItem[], id: string): CategoryItem | null => {
+  for (const item of items) {
+    if (item.id === id) return item
+    if (item.children?.length) {
+      const found = findCategoryNodeById(item.children, id)
+      if (found) return found
+    }
+  }
+  return null
+}
+
 const onCategorySelect = (item: CategoryItem) => {
   // 자식 있는 카테고리 → 펼치기/접기만
   if (item.children?.length) {
-    item.expanded = !item.expanded
+    const node = findCategoryNodeById(categoryList.value, item.id)
+    if (node?.children?.length) node.expanded = !node.expanded
     return
   }
   // 리프 카테고리 → 선택 토글 (같은 거 다시 클릭하면 해제)
@@ -343,19 +366,42 @@ const onCategorySelect = (item: CategoryItem) => {
 }
 
 const toggleExpand = (item: CategoryItem) => {
-  if (item?.children?.length) item.expanded = !item.expanded
+  if (!item?.children?.length) return
+  const node = findCategoryNodeById(categoryList.value, item.id)
+  if (node?.children?.length) node.expanded = !node.expanded
+}
+
+/** 카테고리 입력란에 포커스 (드롭다운 닫힌 뒤 DOM 갱신 이후 실행 권장) */
+const focusCategoryInputField = () => {
+  nextTick(() => {
+    nextTick(() => categoryInputRef.value?.focus())
+  })
 }
 
 const toggleCategoryInput = () => {
   isCategoryInputVisible.value = !isCategoryInputVisible.value
-  if (!isCategoryInputVisible.value) categoryInputValue.value = ''
+  if (!isCategoryInputVisible.value) {
+    categoryInputValue.value = ''
+    categoryInputParentId.value = null
+  } else {
+    categoryInputParentId.value = null
+    focusCategoryInputField()
+  }
 }
 
 const onCategoryInputEnter = async () => {
-  if (categoryInputValue.value.trim()) {
-    await handleSaveCategory({ name: categoryInputValue.value.trim(), parentId: null })
-    categoryInputValue.value = ''
-  }
+  if (!categoryInputValue.value.trim()) return
+  const name = categoryInputValue.value.trim()
+  const parentId = categoryInputParentId.value
+  const wasSubcategory = parentId != null
+  await handleSaveCategory({
+    name,
+    parentId: parentId ?? null,
+  })
+  categoryInputValue.value = ''
+  categoryInputParentId.value = null
+  // 하위 추가 플로우만 입력란 닫기 (+ 버튼으로 연 최상위 추가는 연속 입력 가능)
+  if (wasSubcategory) isCategoryInputVisible.value = false
 }
 
 const startCategoryRename = (item: CategoryItem) => {
@@ -373,6 +419,11 @@ const saveCategoryRename = async () => {
 const onCategoryMenuSelect = async (value: string, cat: CategoryItem) => {
   if (value === 'rename') {
     startCategoryRename(cat)
+  } else if (value === 'addSubcategory') {
+    categoryInputParentId.value = cat.id
+    isCategoryInputVisible.value = true
+    categoryInputValue.value = ''
+    focusCategoryInputField()
   } else if (value === 'delete') {
     const confirmed = await openConfirm({
       title: '카테고리 삭제',

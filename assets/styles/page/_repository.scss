@@ -478,6 +478,25 @@
   }
 }
 
+// URL 탭 — 배치 스크래핑 안내 툴팁 (UiTooltip 포탈, 전역 선택자)
+.ui-tooltip-content.scraping-batch-tooltip {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #2d3139;
+  color: #fff;
+  text-align: left;
+
+  .scraping-batch-tooltip__line {
+    display: block;
+    @include typo($body-small);
+    line-height: 1.45;
+
+    & + .scraping-batch-tooltip__line {
+      margin-top: 2px;
+    }
+  }
+}
+
 .cell-url-address {
   max-width: 240px;
   @include ellipsis(1);

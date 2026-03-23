@@ -1,22 +1,16 @@
 // Mock DB — 서버 메모리에 저장 (서버 재시작 시 초기화)
 
 interface MockAgent {
-  id: string
-  name: string
+  agentId: string
+  agentNm: string
+  agentTypeCd: string
   description: string
-  model: string
-  systemPrompt: string
-  temperature: number
-  status: string
-  isActive: boolean
-  priority: number
-  type: string
-  connectionCount: number
-  datasetCount: number
-  similarityThreshold: number
-  maxSearchResults: number
-  createdAt: string
-  updatedAt: string
+  sortOrd: number
+  useYn: 'Y' | 'N'
+  lastMdfDt: string
+  createDt: string
+  modifyDt: string
+  connCount: number
 }
 
 interface MockDataset {
@@ -29,79 +23,57 @@ interface MockDataset {
   updatedAt: string
 }
 
+const today = () => new Date().toISOString().slice(0, 10)
+
 // 초기 Agent 데이터
 const agentList: MockAgent[] = [
   {
-    id: '1',
-    name: '지식검색 (매뉴얼AI)22',
+    agentId: '1',
+    agentNm: '지식검색 (매뉴얼AI)22',
     description: '등록된 매뉴얼과 문서를 기반으로 사용자 질문에 답변하는 Agent입니다.',
-    model: 'gpt-4',
-    systemPrompt: '',
-    temperature: 0.7,
-    status: 'active',
-    isActive: true,
-    priority: 1,
-    type: 'RAG',
-    connectionCount: 2,
-    datasetCount: 2,
-    similarityThreshold: 0.7,
-    maxSearchResults: 5,
-    createdAt: '2026-02-29',
-    updatedAt: '2026-02-29',
+    agentTypeCd: 'RAG',
+    sortOrd: 1,
+    useYn: 'Y',
+    lastMdfDt: '2026-02-29',
+    createDt: '2026-02-29',
+    modifyDt: '2026-02-29',
+    connCount: 2,
   },
   {
-    id: '2',
-    name: '데이터분석(SQL)',
+    agentId: '2',
+    agentNm: '데이터분석(SQL)',
     description: '사용자의 자연어 질문을 SQL 쿼리로 변환하여 데이터베이스에서 정보를 조회하는 Agent입니다.',
-    model: 'gpt-4',
-    systemPrompt: '',
-    temperature: 0.7,
-    status: 'active',
-    isActive: true,
-    priority: 2,
-    type: 'TextToSQL',
-    connectionCount: 2,
-    datasetCount: 2,
-    similarityThreshold: 0.7,
-    maxSearchResults: 5,
-    createdAt: '2026-02-29',
-    updatedAt: '2026-02-29',
+    agentTypeCd: 'TextToSQL',
+    sortOrd: 2,
+    useYn: 'Y',
+    lastMdfDt: '2026-02-29',
+    createDt: '2026-02-29',
+    modifyDt: '2026-02-29',
+    connCount: 2,
   },
   {
-    id: '3',
-    name: '번역 Agent',
+    agentId: '3',
+    agentNm: '번역 Agent',
     description: '다국어 번역 및 언어 감지 Agent',
-    model: 'gpt-4',
-    systemPrompt: '',
-    temperature: 0.7,
-    status: 'draft',
-    isActive: false,
-    priority: 3,
-    type: 'TextToSQL',
-    connectionCount: 15,
-    datasetCount: 0,
-    similarityThreshold: 0.5,
-    maxSearchResults: 10,
-    createdAt: '2026-02-29',
-    updatedAt: '2026-02-29',
+    agentTypeCd: 'TextToSQL',
+    sortOrd: 3,
+    useYn: 'N',
+    lastMdfDt: '2026-02-29',
+    createDt: '2026-02-29',
+    modifyDt: '2026-02-29',
+    connCount: 15,
   },
   {
-    id: '4',
-    name: '지식검색 (매뉴얼AI)',
+    agentId: '4',
+    agentNm: '지식검색 (매뉴얼AI)',
     description: '등록된 매뉴얼과 문서를 기반으로 사용자 질문에 답변하는 Agent입니다.',
-    model: 'gpt-4',
-    systemPrompt: '',
-    temperature: 0.7,
-    status: 'draft',
-    isActive: false,
-    priority: 4,
-    type: 'RAG',
-    connectionCount: 2,
-    datasetCount: 2,
-    similarityThreshold: 0.7,
-    maxSearchResults: 5,
-    createdAt: '2026-02-29',
-    updatedAt: '2026-02-29',
+    agentTypeCd: 'RAG',
+    sortOrd: 4,
+    useYn: 'N',
+    lastMdfDt: '2026-02-29',
+    createDt: '2026-02-29',
+    modifyDt: '2026-02-29',
+    connCount: 2,
   },
 ]
 
@@ -136,8 +108,6 @@ const datasetList: MockDataset[] = [
   },
 ]
 
-const today = () => new Date().toISOString().slice(0, 10)
-
 // Agent CRUD
 export const mockAgentDb = {
   // 목록 조회
@@ -145,30 +115,31 @@ export const mockAgentDb = {
 
   // 추가/수정
   save: (agent: Partial<MockAgent>) => {
-    const index = agentList.findIndex((a) => a.id === agent.id)
+    const index = agent.agentId ? agentList.findIndex((a) => a.agentId === agent.agentId) : -1
     if (index > -1) {
       // 수정
-      agentList[index] = { ...agentList[index], ...agent, updatedAt: today() }
+      const now = today()
+      agentList[index] = {
+        ...agentList[index],
+        ...agent,
+        lastMdfDt: now,
+        modifyDt: now,
+      }
       return agentList[index]
     } else {
       // 추가
+      const now = today()
       const newAgent: MockAgent = {
-        id: `agent-${Date.now()}`,
-        name: '',
+        agentId: `agent-${Date.now()}`,
+        agentNm: '',
         description: '',
-        model: 'gpt-4',
-        systemPrompt: '',
-        temperature: 0.7,
-        status: 'draft',
-        isActive: false,
-        priority: agentList.length + 1,
-        type: '',
-        connectionCount: 0,
-        datasetCount: 0,
-        similarityThreshold: 0.7,
-        maxSearchResults: 5,
-        createdAt: today(),
-        updatedAt: today(),
+        agentTypeCd: '',
+        sortOrd: agentList.length + 1,
+        useYn: 'N',
+        lastMdfDt: now,
+        createDt: now,
+        modifyDt: now,
+        connCount: 0,
         ...agent,
       }
       agentList.push(newAgent)
@@ -177,19 +148,19 @@ export const mockAgentDb = {
   },
 
   // 삭제
-  delete: (id: string) => {
-    const index = agentList.findIndex((a) => a.id === id)
+  delete: (agentId: string) => {
+    const index = agentList.findIndex((a) => a.agentId === agentId)
     if (index > -1) agentList.splice(index, 1)
-    return { id }
+    return { agentId }
   },
 
   // 순서 변경
-  updateOrder: (orderList: { id: string; order: number }[]) => {
-    orderList.forEach(({ id, order }) => {
-      const agent = agentList.find((a) => a.id === id)
-      if (agent) agent.priority = order
+  updateOrder: (orderList: { agentId: string; sortOrd: number }[]) => {
+    orderList.forEach(({ agentId, sortOrd }) => {
+      const ag = agentList.find((a) => a.agentId === agentId)
+      if (ag) ag.sortOrd = sortOrd
     })
-    agentList.sort((a, b) => a.priority - b.priority)
+    agentList.sort((a, b) => a.sortOrd - b.sortOrd)
   },
 }
 
