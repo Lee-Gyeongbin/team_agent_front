@@ -147,17 +147,6 @@
               :options="documentList"
               size="lg"
             />
-            <UiButton
-              variant="ghost"
-              size="xs"
-              icon-only
-              title="다운로드"
-              @click="onDownloadFile(selectedDocId)"
-            >
-              <template #icon-left>
-                <i class="icon-copy size-20" />
-              </template>
-            </UiButton>
           </div>
           <div
             ref="thumbListRef"
@@ -200,7 +189,7 @@
 import type { ChatPdfPanelProps } from '~/types/chat'
 import { useFileStore } from '~/composables/com/useFileStore'
 
-const { handleViewFileUrl, onDownloadFile } = useFileStore()
+const { handleViewFileUrl } = useFileStore()
 
 const props = withDefaults(defineProps<ChatPdfPanelProps>(), {
   messageId: null,
