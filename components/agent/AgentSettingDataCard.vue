@@ -19,7 +19,7 @@
             <i class="icon-chunk size-12" /> 청크 <strong>{{ ds.chunkSize?.toLocaleString() }}개</strong>
           </span>
           <span class="agent-data-card-meta-item">
-            최종업데이트 <strong>{{ ds.modifyDt }}</strong>
+            최종 업데이트 <strong>{{ ds.modifyDt }}</strong>
           </span>
         </div>
       </div>
@@ -38,13 +38,13 @@
         <p class="agent-data-card-desc">{{ dm.description }}</p>
         <div class="agent-data-card-meta">
           <span class="agent-data-card-meta-item">
-            <i class="icon-document size-12" /> DB <strong>{{ dm.dbType }}</strong>
+            <i class="icon-database size-12" /> DB <strong>{{ dm.dbType }}</strong>
           </span>
           <span class="agent-data-card-meta-item">
-            <i class="icon-chunk size-12" /> 테이블 <strong>{{ dm.tblCnt.toLocaleString() }}개</strong>
+            <i class="icon-chart size-12" /> 테이블 <strong>{{ dm.tblCnt.toLocaleString() }}개</strong>
           </span>
           <span class="agent-data-card-meta-item">
-            최종업데이트 <strong>{{ dm.lastVerifyDt }}</strong>
+            최종 동기화 <strong>{{ dm.lastVerifyDt }}</strong>
           </span>
         </div>
       </div>
