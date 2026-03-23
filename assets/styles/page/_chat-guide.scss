@@ -343,6 +343,23 @@
   background: color-mix(in srgb, var(--error-color, $color-border) 6%, #fff);
 }
 
+// 오류 메시지 행 톤 (ChatGuideError.vue — _variables.scss 토큰)
+.chat-comment-error-item--error {
+  --error-color: #{$color-error};
+}
+
+.chat-comment-error-item--info {
+  --error-color: #{$color-info};
+}
+
+.chat-comment-error-item--warning {
+  --error-color: #{$color-warning};
+}
+
+.chat-comment-error-item--orange {
+  --error-color: #{$color-orange};
+}
+
 .chat-comment-error-item-header {
   display: flex;
   align-items: center;
