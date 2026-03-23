@@ -294,7 +294,7 @@
       font-weight: 500;
 
       .point-color {
-        color: $color-primary;
+        color: var(--color-primary);
       }
     }
   }
