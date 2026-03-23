@@ -26,7 +26,7 @@
         :class="{ 'is-active': activeSearchModes.includes('M') }"
         @click="toggleSearchMode('M')"
       >
-        <span class="icon-circle"><i class="icon-knowledge size-20"></i></span>
+        <span class="icfon-circle"><i class="icon-knowledge size-20"></i></span>
         <p>지식검색 (매뉴얼 AI)</p>
       </button>
       <button
@@ -42,16 +42,9 @@
 </template>
 
 <script setup lang="ts">
-const {
-  chatMessage,
-  activeSearchModes,
-  toggleSearchMode,
-  selectChatRoomList,
-  selectModelOptions,
-  startChatSocket,
-  stopChatSocket,
-  resetChatRoom,
-} = useChatStore()
+const { chatMessage, activeSearchModes, toggleSearchMode, selectChatRoomList, selectModelOptions, resetChatRoom } =
+  useChatStore()
+const { startChatSocket, stopChatSocket } = useChatSocket()
 const { user } = useAuth()
 
 onMounted(async () => {

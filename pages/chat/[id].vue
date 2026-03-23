@@ -93,9 +93,8 @@ const {
   onViewSource,
   onViewVisualization,
   onPanelClose,
-  startChatSocket,
-  stopChatSocket,
 } = useChatStore()
+const { startChatSocket, stopChatSocket } = useChatSocket()
 const route = useRoute()
 const {
   onLike,
