@@ -116,6 +116,32 @@
   line-height: 1.5;
 }
 
+.agent-data-card-desc {
+  @include typo($body-medium);
+  color: $color-text-muted;
+  @include ellipsis(1);
+}
+
+.agent-data-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.agent-data-card-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: $color-text-disabled;
+
+  strong {
+    color: $color-text-dark;
+    font-weight: $font-weight-semibold;
+  }
+}
+
 .agent-data-card-actions {
   display: flex;
   align-items: center;

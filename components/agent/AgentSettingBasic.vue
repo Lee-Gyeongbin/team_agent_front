@@ -139,16 +139,10 @@ interface Props {
   agentTypeCd: string
   ragForm: RagForm
   sqlForm: SqlForm
+  sqlModelOptions: { value: string; label: string }[]
 }
 
 const props = defineProps<Props>()
-
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-const sqlModelOptions = [
-  { value: 'claude-3.5-sonnet', label: 'Claude 3.5 Sonnet' },
-  { value: 'gpt-4o', label: 'GPT-4o' },
-  { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
-]
 
 const emit = defineEmits<{
   'update:modelValue': [value: BasicForm]

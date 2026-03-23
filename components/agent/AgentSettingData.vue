@@ -75,14 +75,10 @@ const emit = defineEmits<{
 }>()
 
 // 현재 타입에 맞는 아이템 목록
-const items = computed(() =>
-  props.agentTypeCd === '001' ? props.datasetList : props.datamartList,
-)
+const items = computed(() => (props.agentTypeCd === '001' ? props.datasetList : props.datamartList))
 
 // 섹션 텍스트
-const sectionTitle = computed(() =>
-  props.agentTypeCd === '001' ? 'RAG 데이터셋 연결' : '데이터마트 연결',
-)
+const sectionTitle = computed(() => (props.agentTypeCd === '001' ? 'RAG 데이터셋 연결' : '데이터마트 연결'))
 const sectionDesc = computed(() =>
   props.agentTypeCd === '001'
     ? 'Agent가 참조할 데이터셋(벡터DB)을 선택합니다.'
@@ -99,11 +95,11 @@ const statusOptions = [
 ]
 
 const filteredItems = computed(() => {
-  let list = items.value
+  const list = items.value
   if (statusFilter.value === 'connected') {
-    list = list.filter((d) => d.connYn === 'Y')
+    return list.filter((d) => d.connYn === 'Y')
   } else if (statusFilter.value === 'disconnected') {
-    list = list.filter((d) => d.connYn === 'N')
+    return list.filter((d) => d.connYn === 'N')
   }
   return list
 })
@@ -133,12 +129,12 @@ const onToggleItem = (target: AgtDs | AgtDm) => {
 
   if (props.agentTypeCd === '001') {
     const updated = props.datasetList.map((d) =>
-      d.datasetId === (target as AgtDs).datasetId ? { ...d, connYn: newConnYn } as AgtDs : d,
+      d.datasetId === (target as AgtDs).datasetId ? ({ ...d, connYn: newConnYn } as AgtDs) : d,
     )
     emit('update:datasetList', updated)
   } else {
     const updated = props.datamartList.map((d) =>
-      d.datamartId === (target as AgtDm).datamartId ? { ...d, connYn: newConnYn } as AgtDm : d,
+      d.datamartId === (target as AgtDm).datamartId ? ({ ...d, connYn: newConnYn } as AgtDm) : d,
     )
     emit('update:datamartList', updated)
   }
