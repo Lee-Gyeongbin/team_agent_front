@@ -105,7 +105,7 @@ defineEmits<{
   close: []
 }>()
 
-const { testResponseText, isTestStreaming, testErrorText, sendTestMessage, disconnectTestSocket } = useChatStore()
+const { testResponseText, isTestStreaming, testErrorText, sendTestMessage, disconnectTestSocket } = useChatTestSocket()
 
 const testPrompt = ref('')
 const hasRunTest = ref(false)
