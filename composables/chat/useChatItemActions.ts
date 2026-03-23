@@ -1,6 +1,7 @@
 import type { ChatMessage } from '~/types/chat'
 import { useChatStore } from '~/composables/chat/useChatStore'
-const { messages, chatRoom } = useChatStore()
+const { messages } = useChatStore()
+const { chatRoom } = useChatRooms()
 const { fetchCreateChatLogReaction } = useReportsApi()
 const { selectedSubOption, resolveSvcTy, pushQuestionMessage, pushAnswerPlaceholder, ensureWebSocketAndSend } =
   useChatStore()
@@ -82,6 +83,19 @@ export const useChatItemActions = () => {
     })
   }
 
+  const onCopy = async (id: string) => {
+    // question·answer가 동일 logId로 쌍을 이루므로 반드시 답변만 조회
+    const msg = messages.value.find((m) => m.logId === id && m.type === 'answer')
+    if (!msg) return
+    const text = (msg.rContent ?? '').replace(/<[^>]*>/g, '')
+    try {
+      await navigator.clipboard.writeText(text)
+      openToast({ message: '클립보드에 복사되었습니다.', type: 'success' })
+    } catch {
+      openToast({ message: '클립보드에 복사하지 못했습니다.', type: 'error' })
+    }
+  }
+
   const handleModalClose = () => {
     isModalOpen.value = false
   }
@@ -89,6 +103,7 @@ export const useChatItemActions = () => {
   return {
     onLike,
     onDislike,
+    onCopy,
     onRegenerate,
     handleReactionSubmit,
     handleModalClose,

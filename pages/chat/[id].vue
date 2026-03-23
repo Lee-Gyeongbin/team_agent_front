@@ -87,7 +87,6 @@ const {
   isPanelFullscreen,
   activePanelMessageId,
   pdfRefList,
-  onCopy,
   onViewSource,
   onViewVisualization,
   onPanelClose,
@@ -98,6 +97,7 @@ const route = useRoute()
 const {
   onLike,
   onDislike,
+  onCopy,
   onRegenerate,
   handleReactionSubmit,
   isModalOpen,

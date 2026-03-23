@@ -128,20 +128,6 @@ export const useChatStore = () => {
     })
   }
 
-  // 액션 핸들러
-  const onCopy = async (id: string) => {
-    // question·answer가 동일 logId로 쌍을 이루므로 반드시 답변만 조회
-    const msg = messages.value.find((m) => m.logId === id && m.type === 'answer')
-    if (!msg) return
-    const text = (msg.rContent ?? '').replace(/<[^>]*>/g, '')
-    try {
-      await navigator.clipboard.writeText(text)
-      openToast({ message: '클립보드에 복사되었습니다.', type: 'success' })
-    } catch {
-      openToast({ message: '클립보드에 복사하지 못했습니다.', type: 'error' })
-    }
-  }
-
   const getEmptyVisualizationViewModel = (messageId: string): VisualizationViewModel => ({
     messageId,
     status: 'empty',
@@ -283,7 +269,6 @@ export const useChatStore = () => {
     // 액션
     handleSelectChatLogList,
     onSend,
-    onCopy,
     toggleSearchMode,
     // 패널
     onViewSource,
