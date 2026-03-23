@@ -1,7 +1,22 @@
 // ============================================
 // 타입 정의
 // ============================================
+export interface ChatSocketPayload {
+  type: string
+  query: string
+  threadId: string
+  svcTy: string
+  refId: string
+}
 
+export interface ChatSocketMessage {
+  type: string
+  content?: string
+  filePath?: string
+  /** 완료 시 서버에서 내려주는 로그 ID (있으면 스트리밍 메시지에 반영) */
+  logId?: string
+  tableData?: string
+}
 // 메세지
 export interface ChatMessage {
   id?: string

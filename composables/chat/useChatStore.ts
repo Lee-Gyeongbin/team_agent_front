@@ -7,11 +7,11 @@ import {
   type ChatRoom,
   type ModelOption,
   type PanelType,
-  type PdfDocumentProxy,
-  type PdfJsLib,
   type SearchModeOption,
   type SearchModeValue,
   type SubOption,
+  type ChatSocketMessage,
+  type ChatSocketPayload,
   type VisualizationViewModel,
 } from '~/types/chat'
 import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
@@ -33,23 +33,6 @@ const {
 
 // LLM 모델 옵션
 const modelOptions = ref<ModelOption[]>([])
-
-interface ChatSocketPayload {
-  type: string
-  query: string
-  threadId: string
-  svcTy: string
-  refId: string
-}
-
-interface ChatSocketMessage {
-  type: string
-  content?: string
-  filePath?: string
-  /** 완료 시 서버에서 내려주는 로그 ID (있으면 스트리밍 메시지에 반영) */
-  logId?: string
-  tableData?: string
-}
 
 // 웹소켓 관련 (WebSocket은 앱 전역에서 단일 인스턴스로 공유)
 const WEBSOCKET_OPEN = 1
@@ -79,12 +62,6 @@ const modalMessage = ref('')
 const modalTitle = ref('')
 const modalPlaceholder = ref('')
 const satisYn = ref('')
-// 모델 테스트 전용 소켓 + 상태 (LlmTestModal에서 사용)
-const testSocket = shallowRef<WebSocket | null>(null)
-const testResponseText = ref('')
-const isTestStreaming = ref(false)
-const testErrorText = ref('')
-const testBuffer = ref('')
 
 function getWebSocketUrl(): string {
   if (typeof window === 'undefined') return ''
@@ -218,7 +195,11 @@ export const useChatStore = () => {
           // 직전 question 메시지 logId 갱신
           const idx = messages.value.indexOf(streamingMessage)
           if (idx > 0 && messages.value[idx - 1].type === 'question') {
-            messages.value[idx - 1].logId = payload.logId
+            const pairedQuestion = messages.value[idx - 1]
+            pairedQuestion.logId = payload.logId
+            // 재생성 시 질문 기준으로 전송할 수 있도록 질문 메타를 보정
+            pairedQuestion.svcTy = pairedQuestion.svcTy ?? streamingMessage.svcTy ?? resolveSvcTy()
+            pairedQuestion.refId = pairedQuestion.refId ?? streamingMessage.refId ?? selectedSubOption.value
           }
           // pendingMessageId도 서버 logId로 갱신 (finalizeStreamingMessage에서 조회 가능하도록)
           pendingMessageId.value = payload.logId
@@ -345,18 +326,22 @@ export const useChatStore = () => {
   const logRowToMessages = (row: ChatLogListRow): ChatMessage[] => {
     const logId = String(row.logId ?? '')
     const createdAt = row.createDt ?? ''
+    const svcTy = row.svcTy ?? 'C'
+    const refId = row.refId ?? 'all'
     const docId = typeof row.docId === 'string' ? row.docId : ''
     const hasSource = row.docExist === 'Y'
     const hasVisualization = row.tableExist === 'Y'
     const satisYnVal = typeof row.satisYn === 'string' ? row.satisYn : ''
     const satisContentVal = typeof row.satisContent === 'string' ? row.satisContent : ''
     return [
-      { logId, type: 'question', qContent: row.qcontent ?? '', rContent: '', createdAt },
+      { logId, type: 'question', qContent: row.qcontent ?? '', rContent: '', createdAt, svcTy, refId },
       {
         logId,
         type: 'answer',
         qContent: '',
         rContent: toHtmlContent(row.rcontent ?? ''),
+        svcTy,
+        refId,
         docId,
         createdAt,
         hasSource,
@@ -438,7 +423,7 @@ export const useChatStore = () => {
   }
 
   // question 메시지 생성 + push
-  const pushQuestionMessage = (content: string): string => {
+  const pushQuestionMessage = (content: string, svcTy: string, refId: string): string => {
     const logId = Date.now().toString()
     messages.value.push({
       id: logId,
@@ -446,13 +431,15 @@ export const useChatStore = () => {
       type: 'question',
       qContent: content,
       rContent: '',
+      svcTy,
+      refId,
       createdAt: new Date().toISOString(),
     })
     return logId
   }
 
   // answer placeholder 생성 + push + pendingMessageId 설정
-  const pushAnswerPlaceholder = (): string => {
+  const pushAnswerPlaceholder = (svcTy: string, refId: string): string => {
     const logId = (Date.now() + 1).toString()
     pendingMessageId.value = logId
     messages.value.push({
@@ -461,6 +448,8 @@ export const useChatStore = () => {
       type: 'answer',
       qContent: '',
       rContent: '',
+      svcTy,
+      refId,
       createdAt: new Date().toISOString(),
       isStreaming: true,
       hasSource: false,
@@ -497,6 +486,7 @@ export const useChatStore = () => {
     }
 
     const svcTy = resolveSvcTy()
+    const refId = selectedSubOption.value
     const res = await fetchCreateChatRoom(qContent, svcTy)
     const createdRoom: ChatRoom = {
       roomId: res.data.roomId,
@@ -509,8 +499,8 @@ export const useChatStore = () => {
     chatRoomList.value = [createdRoom, ...chatRoomList.value.filter((room) => room.roomId !== createdRoom.roomId)]
 
     messages.value = []
-    pushQuestionMessage(qContent)
-    pushAnswerPlaceholder()
+    pushQuestionMessage(qContent, svcTy, refId)
+    pushAnswerPlaceholder(svcTy, refId)
     chatMessage.value = ''
 
     const sent = await ensureWebSocketAndSend({
@@ -518,7 +508,7 @@ export const useChatStore = () => {
       query: qContent,
       threadId: chatRoom.value.roomId,
       svcTy,
-      refId: selectedSubOption.value,
+      refId,
     })
     if (!sent) return chatRoom.value
 
@@ -531,25 +521,32 @@ export const useChatStore = () => {
     const content = chatMessage.value.trim()
     if (!content) return
 
-    pushQuestionMessage(content)
-    pushAnswerPlaceholder()
+    const svcTy = resolveSvcTy()
+    const refId = selectedSubOption.value
+    pushQuestionMessage(content, svcTy, refId)
+    pushAnswerPlaceholder(svcTy, refId)
     chatMessage.value = ''
 
     await ensureWebSocketAndSend({
       type: 'question',
       query: content,
       threadId: chatRoom.value.roomId || '',
-      svcTy: resolveSvcTy(),
-      refId: selectedSubOption.value,
+      svcTy,
+      refId,
     })
   }
 
   // 액션 핸들러
-  const onCopy = (id: string) => {
-    const msg = messages.value.find((m) => m.logId === id)
-    if (msg) {
-      const text = (msg.type === 'question' ? (msg.qContent ?? '') : (msg.rContent ?? '')).replace(/<[^>]*>/g, '')
-      navigator.clipboard.writeText(text)
+  const onCopy = async (id: string) => {
+    // question·answer가 동일 logId로 쌍을 이루므로 반드시 답변만 조회
+    const msg = messages.value.find((m) => m.logId === id && m.type === 'answer')
+    if (!msg) return
+    const text = (msg.rContent ?? '').replace(/<[^>]*>/g, '')
+    try {
+      await navigator.clipboard.writeText(text)
+      openToast({ message: '클립보드에 복사되었습니다.', type: 'success' })
+    } catch {
+      openToast({ message: '클립보드에 복사하지 못했습니다.', type: 'error' })
     }
   }
 
@@ -603,9 +600,24 @@ export const useChatStore = () => {
     }
   }
 
-  const onRegenerate = (id: string) => {
-    // 🔽 더미 — 백엔드 연결 시 API 호출로 교체
-    console.warn('재생성 요청:', id)
+  /** 동일 질문으로 답변만 다시 받기 — onSend와 동일 파이프라인 (새 logId 쌍 생성) */
+  const onRegenerate = async (id: string) => {
+    const question = messages.value.find((m) => m.logId === id && m.type === 'question')
+    const content = (question?.qContent ?? '').trim()
+    if (!content) return
+    if (!chatRoom.value.roomId) return
+    const svcTy = question?.svcTy ?? resolveSvcTy()
+    const refId = question?.refId ?? selectedSubOption.value
+
+    pushQuestionMessage(content, svcTy, refId)
+    pushAnswerPlaceholder(svcTy, refId)
+    await ensureWebSocketAndSend({
+      type: 'question',
+      query: content,
+      threadId: chatRoom.value.roomId,
+      svcTy,
+      refId,
+    })
   }
 
   const getEmptyVisualizationViewModel = (messageId: string): VisualizationViewModel => ({
@@ -772,101 +784,6 @@ export const useChatStore = () => {
     return visualizationViewMap.value[messageId] ?? getEmptyVisualizationViewModel(messageId)
   })
 
-  /** 모델 테스트 소켓 메시지 처리 TODO : api url payload 필드 추가 */
-  const handleTestSocketMessage = (payload: ChatSocketMessage) => {
-    if (payload.type === 'connected' || payload.type === 'question_received') return
-
-    switch (payload.type) {
-      case 'chunk': {
-        const nextChunk = payload.content ?? ''
-        testBuffer.value = `${testBuffer.value}${nextChunk}`
-        testResponseText.value = testBuffer.value
-        break
-      }
-      case 'complete': {
-        const completeContent = payload.content ?? ''
-        if (completeContent && !testBuffer.value) {
-          testBuffer.value = completeContent
-          testResponseText.value = completeContent
-        }
-        isTestStreaming.value = false
-        break
-      }
-      case 'error': {
-        if (!testBuffer.value) {
-          testErrorText.value = payload.content || '응답 처리 중 오류가 발생했습니다.'
-        }
-        isTestStreaming.value = false
-        break
-      }
-      default:
-        break
-    }
-  }
-
-  const disconnectTestSocket = () => {
-    if (testSocket.value) {
-      testSocket.value.close()
-      testSocket.value = null
-    }
-    testResponseText.value = ''
-    isTestStreaming.value = false
-    testErrorText.value = ''
-    testBuffer.value = ''
-  }
-
-  const sendTestMessage = async (query: string, modelId: string) => {
-    testResponseText.value = ''
-    testErrorText.value = ''
-    testBuffer.value = ''
-    isTestStreaming.value = true
-
-    disconnectTestSocket()
-    isTestStreaming.value = true
-
-    // 모델 테스트용 — 임시 threadId만 사용
-    const threadId = `modelTest-${Date.now()}`
-
-    try {
-      const socket = new WebSocket(getWebSocketUrl())
-      testSocket.value = socket
-
-      socket.onmessage = (event) => {
-        try {
-          const payload = JSON.parse(event.data) as ChatSocketMessage
-          handleTestSocketMessage(payload)
-        } catch (error) {
-          console.error('[test] 웹소켓 메시지 파싱 오류:', error)
-        }
-      }
-
-      socket.onerror = (error) => {
-        console.error('[test] 웹소켓 연결 오류:', error)
-        testErrorText.value = '연결 오류가 발생했습니다.'
-        isTestStreaming.value = false
-      }
-
-      socket.onclose = () => {
-        testSocket.value = null
-      }
-
-      socket.onopen = () => {
-        const socketPayload: ChatSocketPayload = {
-          type: 'question',
-          query,
-          threadId,
-          svcTy: 'llmTest',
-          refId: modelId,
-        }
-        socket.send(JSON.stringify(socketPayload))
-      }
-    } catch (error) {
-      console.error('[test] 테스트 메시지 전송 실패:', error)
-      testErrorText.value = '메시지 전송에 실패했습니다.'
-      isTestStreaming.value = false
-    }
-  }
-
   return {
     // 상태
     chatRoomList,
@@ -905,185 +822,11 @@ export const useChatStore = () => {
     onPanelClose,
     startChatSocket,
     stopChatSocket,
-    // 모델 테스트 전용 (LlmTestModal)
-    testResponseText,
-    isTestStreaming,
-    testErrorText,
-    sendTestMessage,
-    disconnectTestSocket,
     isModalOpen,
     modalMessage,
     handleModalClose,
     handleReactionSubmit,
     modalTitle,
     modalPlaceholder,
-  }
-}
-
-/** ChatPdfPanel용 PDF 뷰어 기능 */
-export const usePdfViewer = (options: {
-  filePath: MaybeRef<string | undefined>
-  open: MaybeRef<boolean>
-  mainCanvasRef: Ref<HTMLCanvasElement | null>
-  thumbCanvasMap: Map<number, HTMLCanvasElement>
-}) => {
-  const { mainCanvasRef, thumbCanvasMap } = options
-  const filePath = computed(() => unref(options.filePath))
-  const open = computed(() => unref(options.open))
-
-  const pdfDoc = shallowRef<PdfDocumentProxy | null>(null)
-  const isLoading = ref(false)
-  const loadError = ref('')
-  const currentPage = ref(1)
-  const totalPages = ref(0)
-  const scale = ref(1)
-  const renderingToken = ref(0)
-
-  const pageList = computed(() => Array.from({ length: totalPages.value }, (_, i) => i + 1))
-  const hasData = computed(() => totalPages.value > 0 && !!pdfDoc.value)
-
-  let pdfjsLib: PdfJsLib | null = null
-
-  const loadPdfJs = async (): Promise<PdfJsLib> => {
-    if (typeof window === 'undefined') {
-      throw new Error('브라우저 환경에서만 PDF를 렌더링할 수 있습니다.')
-    }
-    if (pdfjsLib) return pdfjsLib
-
-    const loaded = window.pdfjsLib
-    if (loaded) {
-      pdfjsLib = loaded
-      return pdfjsLib
-    }
-
-    await new Promise<void>((resolve, reject) => {
-      const script = document.createElement('script')
-      script.src = '/pdfjs/build/pdf.js'
-      script.onload = () => resolve()
-      script.onerror = () => reject(new Error('PDF.js 스크립트를 불러오지 못했습니다.'))
-      document.head.appendChild(script)
-    })
-
-    pdfjsLib = window.pdfjsLib || null
-    if (!pdfjsLib) {
-      throw new Error('PDF.js 라이브러리를 찾을 수 없습니다.')
-    }
-    return pdfjsLib
-  }
-
-  const renderMainPage = async () => {
-    if (!pdfDoc.value || !mainCanvasRef.value) return
-
-    const token = ++renderingToken.value
-    const page = await pdfDoc.value.getPage(currentPage.value)
-    const viewport = page.getViewport({ scale: scale.value })
-    const canvas = mainCanvasRef.value
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    canvas.width = Math.floor(viewport.width)
-    canvas.height = Math.floor(viewport.height)
-
-    await page.render({ canvasContext: ctx, viewport }).promise
-    if (token !== renderingToken.value) return
-  }
-
-  const renderThumbnail = async (pageNum: number) => {
-    if (!pdfDoc.value) return
-    const canvas = thumbCanvasMap.get(pageNum)
-    if (!canvas) return
-
-    const page = await pdfDoc.value.getPage(pageNum)
-    const baseViewport = page.getViewport({ scale: 1 })
-    const thumbScale = Math.min(108 / baseViewport.width, 140 / baseViewport.height)
-    const viewport = page.getViewport({ scale: thumbScale })
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    canvas.width = Math.floor(viewport.width)
-    canvas.height = Math.floor(viewport.height)
-    canvas.style.aspectRatio = `${baseViewport.width} / ${baseViewport.height}`
-    await page.render({ canvasContext: ctx, viewport }).promise
-  }
-
-  const renderAllThumbnails = async () => {
-    if (!pdfDoc.value) return
-    await nextTick()
-    await Promise.all(pageList.value.map((pageNum) => renderThumbnail(pageNum)))
-  }
-
-  const loadPdf = async () => {
-    if (!filePath.value || !open.value) return
-    isLoading.value = true
-    loadError.value = ''
-
-    try {
-      const lib = await loadPdfJs()
-      lib.GlobalWorkerOptions.workerSrc = '/pdfjs/build/pdf.worker.js'
-
-      const loadingTask = lib.getDocument({ url: filePath.value })
-      const loadedPdf = await loadingTask.promise
-      pdfDoc.value = loadedPdf
-      totalPages.value = loadedPdf.numPages
-      currentPage.value = 1
-
-      // 컨테이너 너비에 맞게 초기 스케일 계산
-      const firstPage = await loadedPdf.getPage(1)
-      const baseViewport = firstPage.getViewport({ scale: 1 })
-      const container = mainCanvasRef.value?.parentElement
-      const containerWidth = container ? container.clientWidth - 32 : 0 // padding 16px * 2
-      if (containerWidth > 0 && baseViewport.width > containerWidth) {
-        scale.value = Math.floor((containerWidth / baseViewport.width) * 4) / 4 // 0.25 단위
-      } else {
-        scale.value = 1
-      }
-
-      isLoading.value = false
-      await nextTick()
-      await renderMainPage()
-      await renderAllThumbnails()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : '알 수 없는 오류'
-      loadError.value = `PDF 로드 실패: ${message}`
-      pdfDoc.value = null
-      totalPages.value = 0
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  const goToPage = async (page: number) => {
-    if (!pdfDoc.value) return
-    const target = Math.max(1, Math.min(page, totalPages.value))
-    currentPage.value = target
-    await renderMainPage()
-  }
-
-  const zoomIn = async () => {
-    if (!hasData.value) return
-    scale.value = Math.min(4, scale.value + 0.25)
-    await renderMainPage()
-  }
-
-  const zoomOut = async () => {
-    if (!hasData.value) return
-    scale.value = Math.max(0.75, scale.value - 0.25)
-    await renderMainPage()
-  }
-
-  return {
-    pdfDoc,
-    isLoading,
-    loadError,
-    currentPage,
-    totalPages,
-    scale,
-    pageList,
-    hasData,
-    loadPdf,
-    goToPage,
-    zoomIn,
-    zoomOut,
-    renderAllThumbnails,
   }
 }
