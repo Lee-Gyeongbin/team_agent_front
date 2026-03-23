@@ -1004,21 +1004,22 @@
 
 // ===== 차트 추가 섹션 =====
 .chat-vis-add-chart {
-  border: 1px solid $color-border;
+  border: 1px solid #dce4e9;
   border-radius: $border-radius-lg;
-  padding: $spacing-md;
+  padding: 12px 16px;
 }
 
 .chat-vis-add-chart-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: $spacing-md;
+  padding-bottom: $spacing-md;
+  border-bottom: 1px solid #ecf0f3;
 }
 
 .chat-vis-add-chart-label {
-  @include typo($body-medium-bold);
-  color: $color-text-heading;
+  @include typo($body-large-bold);
+  color: #4d5462;
 }
 
 .chat-vis-add-chart-error {
@@ -1030,9 +1031,10 @@
 
 // ===== 축 설정 행 (공통 — 차트 추가 + 차트 카드) =====
 .chat-vis-axis-row {
+  margin-top: 16px;
   display: flex;
   align-items: center;
-  gap: $spacing-sm;
+  gap: 20px;
   flex-wrap: wrap;
 }
 
@@ -1040,7 +1042,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  @include typo($body-small-bold);
+  @include typo($body-medium-bold);
   color: $color-text-secondary;
   flex-shrink: 0;
   white-space: nowrap;
@@ -1049,7 +1051,7 @@
 .chat-vis-axis-columns {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
@@ -1061,38 +1063,50 @@
 
 .chat-vis-axis-col-name {
   @include typo($body-small);
-  color: $color-text-primary;
+  color: $color-text-secondary;
   white-space: nowrap;
 }
 
 .chat-vis-axis-buttons {
   display: flex;
   align-items: center;
-  gap: 2px;
 }
 
 .chat-vis-axis-btn {
   @include flex-center;
-  min-width: 24px;
-  height: 22px;
-  padding: 0 4px;
-  border: 1px solid $color-border;
-  border-radius: $border-radius-sm;
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  border: 1px solid #dce4e9;
+  margin-left: -1px;
   background: #fff;
-  @include typo($body-caption-bold);
-  color: $color-text-secondary;
+  @include typo($body-small);
+  font-weight: $font-weight-medium;
+  color: #6f7a93;
   cursor: pointer;
   transition: all $transition-fast;
+  border-radius: 0px;
 
-  &:hover:not(:disabled) {
+  &:first-child {
+    border-radius: 6px 0 0 6px;
+    margin-left: 0;
+  }
+
+  &:last-child {
+    border-radius: 0 6px 6px 0;
+  }
+
+  &:hover:not(:disabled):not(.is-active) {
     border-color: var(--color-primary);
     color: var(--color-primary);
+    z-index: 1;
   }
 
   &.is-active {
-    background: var(--color-primary);
-    border-color: var(--color-primary);
-    color: #fff;
+    background: #dee9fb;
+    border-color: #dee9fb;
+    color: #3c69db;
+    z-index: 1;
   }
 
   &:disabled {
@@ -1101,10 +1115,23 @@
   }
 }
 
-.chat-vis-axis-sep {
-  color: $color-text-disabled;
-  @include typo($body-small);
-  flex-shrink: 0;
+// 컬럼 축 해제 버튼
+.chat-vis-axis-reset {
+  @include flex-center;
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  border: 1px solid #dce4e9;
+  border-radius: 0;
+  background: #ecf0f3;
+  color: $color-text-secondary;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    background: #dce4e9;
+    color: $color-text-primary;
+  }
 }
 
 // ===== 차트 카드 =====

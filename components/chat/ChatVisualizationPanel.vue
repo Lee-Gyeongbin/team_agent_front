@@ -161,51 +161,53 @@
             <!-- 축 설정 행 -->
             <div class="chat-vis-axis-row">
               <div class="chat-vis-axis-icon">
-                <i class="icon-chart-ai size-16"></i>
+                <i class="icon-axis-arrow size-16"></i>
                 <span>축 설정</span>
               </div>
               <div class="chat-vis-axis-columns">
-                <template
-                  v-for="(col, idx) in addAxisSettings"
+                <div
+                  v-for="col in addAxisSettings"
                   :key="col.key"
+                  class="chat-vis-axis-col"
                 >
-                  <div class="chat-vis-axis-col">
-                    <span class="chat-vis-axis-col-name">{{ col.label }}</span>
-                    <div class="chat-vis-axis-buttons">
-                      <button
-                        type="button"
-                        class="chat-vis-axis-btn"
-                        :class="{ 'is-active': col.role === 'X' }"
-                        @click="onToggleAxisRole(addAxisSettings, col.key, 'X')"
-                      >
-                        X
-                      </button>
-                      <button
-                        type="button"
-                        class="chat-vis-axis-btn"
-                        :class="{ 'is-active': col.role === 'YL' }"
-                        :disabled="!col.canMetric"
-                        @click="onToggleAxisRole(addAxisSettings, col.key, 'YL')"
-                      >
-                        YL
-                      </button>
-                      <button
-                        type="button"
-                        class="chat-vis-axis-btn"
-                        :class="{ 'is-active': col.role === 'YR' }"
-                        :disabled="!col.canMetric"
-                        @click="onToggleAxisRole(addAxisSettings, col.key, 'YR')"
-                      >
-                        YR
-                      </button>
-                    </div>
+                  <span class="chat-vis-axis-col-name">{{ col.label }}</span>
+                  <div class="chat-vis-axis-buttons">
+                    <button
+                      type="button"
+                      class="chat-vis-axis-btn"
+                      :class="{ 'is-active': col.role === 'X' }"
+                      @click="onToggleAxisRole(addAxisSettings, col.key, 'X')"
+                    >
+                      X
+                    </button>
+                    <button
+                      type="button"
+                      class="chat-vis-axis-btn"
+                      :class="{ 'is-active': col.role === 'YL' }"
+                      :disabled="!col.canMetric"
+                      @click="onToggleAxisRole(addAxisSettings, col.key, 'YL')"
+                    >
+                      YL
+                    </button>
+                    <button
+                      type="button"
+                      class="chat-vis-axis-btn"
+                      :class="{ 'is-active': col.role === 'YR' }"
+                      :disabled="!col.canMetric"
+                      @click="onToggleAxisRole(addAxisSettings, col.key, 'YR')"
+                    >
+                      YR
+                    </button>
                   </div>
-                  <span
-                    v-if="idx < addAxisSettings.length - 1"
-                    class="chat-vis-axis-sep"
-                    >—</span
+                  <button
+                    type="button"
+                    class="chat-vis-axis-reset"
+                    title="축 해제"
+                    @click="onResetAxisRole(addAxisSettings, col.key)"
                   >
-                </template>
+                    <i class="icon-subtract size-12"></i>
+                  </button>
+                </div>
               </div>
             </div>
             <!-- 유효성 에러 -->
@@ -275,51 +277,53 @@
             <div class="chat-vis-card-toolbar">
               <div class="chat-vis-axis-row">
                 <div class="chat-vis-axis-icon">
-                  <i class="icon-chart-ai size-14"></i>
+                  <i class="icon-axis-arrow size-14"></i>
                   <span>축 설정</span>
                 </div>
                 <div class="chat-vis-axis-columns">
-                  <template
-                    v-for="(col, idx) in card.axisSettings"
+                  <div
+                    v-for="col in card.axisSettings"
                     :key="col.key"
+                    class="chat-vis-axis-col"
                   >
-                    <div class="chat-vis-axis-col">
-                      <span class="chat-vis-axis-col-name">{{ col.label }}</span>
-                      <div class="chat-vis-axis-buttons">
-                        <button
-                          type="button"
-                          class="chat-vis-axis-btn"
-                          :class="{ 'is-active': col.role === 'X' }"
-                          @click="onToggleCardAxisRole(card, col.key, 'X')"
-                        >
-                          X
-                        </button>
-                        <button
-                          type="button"
-                          class="chat-vis-axis-btn"
-                          :class="{ 'is-active': col.role === 'YL' }"
-                          :disabled="!col.canMetric"
-                          @click="onToggleCardAxisRole(card, col.key, 'YL')"
-                        >
-                          YL
-                        </button>
-                        <button
-                          type="button"
-                          class="chat-vis-axis-btn"
-                          :class="{ 'is-active': col.role === 'YR' }"
-                          :disabled="!col.canMetric"
-                          @click="onToggleCardAxisRole(card, col.key, 'YR')"
-                        >
-                          YR
-                        </button>
-                      </div>
+                    <span class="chat-vis-axis-col-name">{{ col.label }}</span>
+                    <div class="chat-vis-axis-buttons">
+                      <button
+                        type="button"
+                        class="chat-vis-axis-btn"
+                        :class="{ 'is-active': col.role === 'X' }"
+                        @click="onToggleCardAxisRole(card, col.key, 'X')"
+                      >
+                        X
+                      </button>
+                      <button
+                        type="button"
+                        class="chat-vis-axis-btn"
+                        :class="{ 'is-active': col.role === 'YL' }"
+                        :disabled="!col.canMetric"
+                        @click="onToggleCardAxisRole(card, col.key, 'YL')"
+                      >
+                        YL
+                      </button>
+                      <button
+                        type="button"
+                        class="chat-vis-axis-btn"
+                        :class="{ 'is-active': col.role === 'YR' }"
+                        :disabled="!col.canMetric"
+                        @click="onToggleCardAxisRole(card, col.key, 'YR')"
+                      >
+                        YR
+                      </button>
                     </div>
-                    <span
-                      v-if="idx < card.axisSettings.length - 1"
-                      class="chat-vis-axis-sep"
-                      >—</span
+                    <button
+                      type="button"
+                      class="chat-vis-axis-reset"
+                      title="축 해제"
+                      @click="onResetCardAxisRole(card, col.key)"
                     >
-                  </template>
+                      <i class="icon-subtract size-12"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
               <!-- 차트 타입 아이콘 -->
@@ -515,9 +519,21 @@ const onToggleAxisRole = (settings: ColumnAxisSetting[], key: string, role: Axis
   setting.role = role
 }
 
+// ===== 축 해제 =====
+const onResetAxisRole = (settings: ColumnAxisSetting[], key: string) => {
+  const setting = settings.find((s) => s.key === key)
+  if (setting) setting.role = ''
+}
+
 // ===== 차트 카드 축 토글 =====
 const onToggleCardAxisRole = (card: ChartCardState, key: string, role: AxisRole) => {
   onToggleAxisRole(card.axisSettings, key, role)
+  card.configVersion++
+}
+
+// ===== 차트 카드 축 해제 =====
+const onResetCardAxisRole = (card: ChartCardState, key: string) => {
+  onResetAxisRole(card.axisSettings, key)
   card.configVersion++
 }
 
