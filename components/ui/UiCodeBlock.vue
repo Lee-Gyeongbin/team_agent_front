@@ -60,9 +60,7 @@ const onCopy = async () => {
   @include custom-scrollbar;
 
   code {
-    font-family: $font-family-mono;
-    font-size: $font-size-base;
-    line-height: 1.5;
+    @include typo($body-small);
     color: #fff;
     white-space: pre;
   }
@@ -80,8 +78,8 @@ const onCopy = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   border: none;
   border-radius: $border-radius-lg;
   background: #4d5462;
@@ -89,7 +87,7 @@ const onCopy = async () => {
   -webkit-tap-highlight-color: transparent;
 
   i {
-    background-color: #fff;
+    background-color: #ecf0f3;
   }
 
   &:hover,
@@ -98,7 +96,7 @@ const onCopy = async () => {
   &:active {
     outline: none;
     box-shadow: none;
-    background: #4d5462;
+    background: #5c6677;
 
     i {
       background-color: #fff;

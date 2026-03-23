@@ -99,8 +99,16 @@ watch(activePanelType, (type) => {
     panelWidthPercent.value = 50
   }
 })
+// 🔽 더미 — 시각화 패널 테스트용 (개발 완료 후 제거)
+const openDummyVisualization = () => {
+  activePanelType.value = 'visualization'
+  activePanelMessageId.value = '__dummy_vis__'
+}
+
 onMounted(() => {
   startChatSocket()
+  // 🔽 더미 — 자동으로 시각화 패널 열기 (개발 완료 후 제거)
+  openDummyVisualization()
 })
 
 watch(

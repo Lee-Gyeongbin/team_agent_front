@@ -393,7 +393,7 @@ export const buildTableModel = (viewModel: VisualizationViewModel) => {
   const columns: TableColumn[] = schema.columns.map((key) => ({
     key,
     label: resolveColumnLabel(key),
-    align: schema.metricKeys.includes(key) ? 'right' : 'left',
+    align: schema.metricKeys.includes(key) ? 'right' : 'center',
     headerAlign: 'center',
   }))
 
