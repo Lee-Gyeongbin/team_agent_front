@@ -85,10 +85,9 @@ const onClickSetting = async (agent: Agent) => {
 const onSaveSetting = async (form: Partial<Agent>) => {
   await handleSaveAgent({
     agentId: selectedAgent.value?.agentId,
+    sortOrd: selectedAgent.value?.sortOrd,
     ...form,
   })
-  // 모달 닫기
-  isSettingOpen.value = false
 }
 
 const doDeleteAgent = async (agent: Agent) => {

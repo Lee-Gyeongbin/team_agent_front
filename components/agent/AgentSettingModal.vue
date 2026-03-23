@@ -82,6 +82,7 @@ const form = ref({
 const basicForm = ref({
   agentNm: '',
   description: '',
+  sortOrd: 0,
 })
 
 // RAG 설정 (001)
@@ -113,6 +114,7 @@ watch(
       basicForm.value = {
         agentNm: props.agent.agentNm,
         description: props.agent.description,
+        sortOrd: props.agent.sortOrd ?? 0,
       }
       ragForm.value = {
         simThresh: props.agent.simThresh ?? 0,
@@ -129,7 +131,7 @@ watch(
       localDatamartList.value = [...(props.agent.datamartList ?? [])]
     } else {
       form.value.agentTypeCd = ''
-      basicForm.value = { agentNm: '', description: '' }
+      basicForm.value = { agentNm: '', description: '', sortOrd: 0 }
       ragForm.value = { simThresh: 0, maxSrchRslt: 0 }
       sqlForm.value = { modelId: '', maxQrySec: 0, sqlValidYn: 'N', readonlyYn: 'Y', userCfrmYn: 'N' }
       localDatasetList.value = []

@@ -40,8 +40,9 @@ export const useAgentApi = () => {
     return post<{ dataList: AgtDs[] | AgtDm[] }>(`/agent/detailDataList.do`, agent)
   }
 
+  /** 에이전트 저장 */
   const fetchSaveAgent = async (agent: Partial<Agent>): Promise<{ data: Agent }> => {
-    return mockPost<{ data: Agent }>(`${MOCK_BASE}/save`, agent)
+    return post<{ data: Agent }>('/agent/save.do', agent)
   }
 
   const fetchDeleteAgent = async (agentId: string) => {

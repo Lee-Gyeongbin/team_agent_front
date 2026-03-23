@@ -96,9 +96,24 @@ const handleFetchAgentDetailDataList = async (agent: Agent) => {
   }
 }
 
+/** 에이전트 저장 */
 const handleSaveAgent = async (agent: Partial<Agent>) => {
-  await fetchSaveAgent(agent)
-  await handleSelectAgentList()
+  openConfirm({
+    message: '에이전트를 저장하시겠습니까?',
+    onConfirm: async () => {
+      try {
+        await fetchSaveAgent(agent)
+        await handleSelectAgentList()
+        openAlert({ message: '에이전트 정보가 저장되었습니다.' })
+        isSettingOpen.value = false
+      } catch {
+        openToast({
+          message: '에이전트 저장 실패',
+          type: 'error',
+        })
+      }
+    },
+  })
 }
 
 const handleDeleteAgent = async (agentId: string) => {
