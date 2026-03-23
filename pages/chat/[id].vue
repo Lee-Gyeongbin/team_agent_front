@@ -90,23 +90,24 @@ const {
   activePanelMessageId,
   pdfRefList,
   onCopy,
-  onLike,
-  onDislike,
-  onRegenerate,
   onViewSource,
   onViewVisualization,
   onPanelClose,
   startChatSocket,
   stopChatSocket,
-  isModalOpen,
-  modalMessage,
-  handleReactionSubmit,
-  handleModalClose,
-  modalTitle,
-  modalPlaceholder,
 } = useChatStore()
 const route = useRoute()
-
+const {
+  onLike,
+  onDislike,
+  onRegenerate,
+  handleReactionSubmit,
+  isModalOpen,
+  modalMessage,
+  modalTitle,
+  modalPlaceholder,
+  handleModalClose,
+} = useChatItemActions()
 // 패널 리사이즈
 const panelWidthPercent = ref(50)
 const isResizing = ref(false)
