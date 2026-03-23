@@ -1,13 +1,22 @@
 import { useAgentApi } from '~/composables/agent/useAgentApi'
-import type { Agent } from '~/types/agent'
+import type { Agent, AgtDs, AgtDm } from '~/types/agent'
 
-const { fetchAgentList, fetchSaveAgent, fetchAgentDetail, fetchDeleteAgent, fetchToggleAgent, fetchUpdateAgentOrder } =
-  useAgentApi()
+const {
+  fetchAgentList,
+  fetchModelOptions,
+  fetchSaveAgent,
+  fetchAgentDetail,
+  fetchAgentDetailDataList,
+  fetchDeleteAgent,
+  fetchToggleAgent,
+  fetchUpdateAgentOrder,
+} = useAgentApi()
 
 const agentList = ref<Agent[]>([])
 /** 에이전트 상세 모달 */
 const isSettingOpen = ref(false)
 const selectedAgent = ref<Agent | null>(null)
+const modelOptions = ref<{ modelId: string; modelName: string }[]>([])
 
 /** 에이전트 목록 조회 */
 const handleSelectAgentList = async () => {
@@ -17,6 +26,19 @@ const handleSelectAgentList = async () => {
   } catch {
     openToast({
       message: '에이전트 목록 조회 실패',
+      type: 'error',
+    })
+  }
+}
+
+/** 모델 옵션 조회 */
+const handleFetchModelOptions = async () => {
+  try {
+    const response = await fetchModelOptions()
+    modelOptions.value = response?.dataList ?? []
+  } catch {
+    openToast({
+      message: '모델 옵션 조회 실패',
       type: 'error',
     })
   }
@@ -44,10 +66,31 @@ const handleFetchAgentDetail = async (agent: Agent) => {
   try {
     const response = await fetchAgentDetail(agent)
     selectedAgent.value = response?.data ?? null
+    if (isNotEmpty(agent.connCount) && agent.connCount > 0) {
+      await handleFetchAgentDetailDataList(agent)
+    }
     isSettingOpen.value = true
   } catch {
     openToast({
       message: '에이전트 상세 조회 실패',
+      type: 'error',
+    })
+  }
+}
+
+/** 에이전트 상세 데이터 목록 조회 */
+const handleFetchAgentDetailDataList = async (agent: Agent) => {
+  try {
+    const response = await fetchAgentDetailDataList(agent)
+    if (!selectedAgent.value) return
+    if (agent.agentTypeCd === '001') {
+      selectedAgent.value.datasetList = (response?.dataList as AgtDs[]) ?? []
+    } else if (agent.agentTypeCd === '002') {
+      selectedAgent.value.datamartList = (response?.dataList as AgtDm[]) ?? []
+    }
+  } catch {
+    openToast({
+      message: '데이터 목록 조회 실패',
       type: 'error',
     })
   }
@@ -74,7 +117,9 @@ export const useAgentStore = () => {
     agentList,
     isSettingOpen,
     selectedAgent,
+    modelOptions,
     handleSelectAgentList,
+    handleFetchModelOptions,
     handleToggleAgent,
     handleFetchAgentDetail,
     handleSaveAgent,

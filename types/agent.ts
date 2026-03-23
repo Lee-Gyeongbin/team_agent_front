@@ -25,8 +25,13 @@ export interface AgtRagCfg {
 export interface AgtDs {
   agentId: string // AGENT_ID
   datasetId: string // DATASET_ID
+  dsNm: string // DS_NM
+  description: string // DESCRIPTION
   connYn: 'Y' | 'N' // CONN_YN
   sortOrd: number // SORT_ORD
+  docCount: number // DOC_COUNT
+  chunkSize: number // CHUNK_SIZE
+  modifyDt: string // MODIFY_DT
 }
 
 /** SQL 설정 */
@@ -43,5 +48,10 @@ export interface AgtSqlCfg {
 export interface AgtDm {
   agentId: string // AGENT_ID
   datamartId: string // DATAMART_ID
+  dmNm: string // DM_NM
+  description: string // DESCRIPTION
   connYn: 'Y' | 'N' // CONN_YN
+  dbType: string // DB_TYPE
+  tblCnt: number // TBL_CNT
+  lastVerifyDt: string // LAST_VERIFY_DT
 }

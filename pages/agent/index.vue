@@ -53,6 +53,7 @@ const {
   isSettingOpen,
   selectedAgent,
   handleSelectAgentList,
+  handleFetchModelOptions,
   handleFetchAgentDetail,
   handleSaveAgent,
   handleDeleteAgent,
@@ -64,6 +65,7 @@ const isLoading = ref(true)
 
 onMounted(async () => {
   await handleSelectAgentList()
+  await handleFetchModelOptions()
   isLoading.value = false
 })
 
