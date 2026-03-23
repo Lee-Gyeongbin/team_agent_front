@@ -1,17 +1,17 @@
 <template>
-  <div class="chat-comment-greeting">
+  <div class="chat-comment-panel">
     <div class="chat-comment-section-header">
       <h3 class="chat-comment-section-title">인사멘트 설정</h3>
       <div class="chat-comment-setting-footer">
         <UiButton
           variant="primary"
-          @click="onSaveGreeting"
+          @click="onSaveWithConfirm"
         >
           저장
         </UiButton>
         <UiButton
           variant="outline"
-          @click="onResetGreeting"
+          @click="handleResetGreeting"
         >
           초기화
         </UiButton>
@@ -27,8 +27,8 @@
             <div class="chat-comment-setting-info">
               <span class="chat-comment-setting-name">방문 인사</span>
               <UiToggle
-                :model-value="localGreetingForm.enblYn === 'Y'"
-                @update:model-value="onToggleGreeting"
+                :model-value="greetingForm.enblYn === 'Y'"
+                @update:model-value="(v) => handleToggleEnblYn(greetingForm, v)"
               />
             </div>
             <p class="chat-comment-setting-desc">사용자가 챗봇에 진입했을 때 표시되는 기본 메시지</p>
@@ -37,7 +37,7 @@
           <div class="chat-comment-setting-body">
             <label class="chat-comment-setting-label">메시지 내용</label>
             <UiTextarea
-              v-model="localGreetingForm.content"
+              v-model="greetingForm.content"
               :rows="5"
               border
               size="sm"
@@ -48,13 +48,14 @@
 
             <div class="chat-comment-setting-options">
               <UiCheckbox
-                v-model="isAutoDetect"
+                :model-value="greetingForm.autoNameYn === 'Y'"
                 label="이름 자동 삽입 ({{userName}})"
+                @update:model-value="(v) => onToggleAutoName(v)"
               />
               <UiButton
                 size="sm"
                 variant="outline"
-                @click="onInsertGreetingVariable"
+                @click="handleInsertGreetingVariable"
               >
                 변수 삽입
               </UiButton>
@@ -99,40 +100,30 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { cloneChatGreetingForm, getEmptyChatGreetingForm, type ChatGreetingForm } from '~/types/chat-guide'
+import { onMounted } from 'vue'
 import { useChatGuideStore } from '~/composables/chat-guide/useChatGuideStore'
 
-const { greetingForm, handleSelectGreeting, handleSaveGreeting, handleToggleEnblYn } = useChatGuideStore()
+const {
+  greetingForm,
+  previewGreetingMessage,
+  handleSelectGreeting,
+  handleSaveGreeting,
+  handleResetGreeting,
+  handleInsertGreetingVariable,
+  handleToggleEnblYn,
+} = useChatGuideStore()
 
-const localGreetingForm = ref<ChatGreetingForm>(getEmptyChatGreetingForm())
-const isAutoDetect = ref(true)
-
-const previewGreetingMessage = computed(() => {
-  let msg = localGreetingForm.value.content
-  if (isAutoDetect.value) {
-    msg = msg.replace(/\{\{userName\}\}/g, '홍길동')
-  }
-  return msg
-})
-
-const syncLocalGreeting = () => {
-  if (!greetingForm.value) return
-  localGreetingForm.value = cloneChatGreetingForm(greetingForm.value)
+const onToggleAutoName = (v: boolean) => {
+  greetingForm.value.autoNameYn = v ? 'Y' : 'N'
 }
 
-onMounted(async () => {
-  await handleSelectGreeting()
-  syncLocalGreeting()
-})
-
-const onSaveGreeting = async () => {
+const onSaveWithConfirm = () => {
   openConfirm({
     title: '인사멘트 저장',
     message: '변경된 인사멘트 내용을 저장하시겠습니까?',
     onConfirm: async () => {
       try {
-        await handleSaveGreeting(localGreetingForm.value)
+        await handleSaveGreeting()
         openToast({ message: '저장되었습니다.', type: 'success' })
       } catch {
         openToast({ message: '인사멘트 설정 저장 실패', type: 'error' })
@@ -141,24 +132,7 @@ const onSaveGreeting = async () => {
   })
 }
 
-const onResetGreeting = async () => {
-  openConfirm({
-    title: '인사멘트 초기화',
-    message: '초기화 시 변경된 인사멘트 내용은 저장되지 않고, 이전에 저장된 값으로 다시 불러옵니다. 계속하시겠습니까?',
-    onConfirm: async () => {
-      await handleSelectGreeting()
-      syncLocalGreeting()
-      openToast({ message: '인사멘트 설정이 초기화되었습니다.', type: 'info' })
-    },
-  })
-}
-
-const onInsertGreetingVariable = () => {
-  const token = '{{userName}}'
-  localGreetingForm.value.content += token
-}
-
-const onToggleGreeting = (value: boolean) => {
-  handleToggleEnblYn(localGreetingForm.value, value)
-}
+onMounted(() => {
+  handleSelectGreeting()
+})
 </script>

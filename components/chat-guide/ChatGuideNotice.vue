@@ -1,5 +1,5 @@
 <template>
-  <div class="chat-comment-greeting">
+  <div class="chat-comment-panel">
     <div class="chat-comment-section-header">
       <h3 class="chat-comment-section-title">안내멘트 설정</h3>
       <div class="chat-comment-setting-footer">

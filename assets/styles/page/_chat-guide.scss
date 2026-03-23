@@ -295,9 +295,9 @@
 }
 
 // ===================================
-// 공통 그리팅 래퍼
+// 챗가이드 탭 공통 패널 (인사/안내/오류/점검 동일 셸)
 // ===================================
-.chat-comment-greeting {
+.chat-comment-panel {
   display: flex;
   flex-direction: column;
   padding: $spacing-lg;
