@@ -1,7 +1,13 @@
 <template>
   <DropdownMenuRoot v-model:open="openState">
     <DropdownMenuTrigger as-child>
-      <slot name="trigger" />
+      <span
+        class="ui-dropdown-trigger-wrap"
+        @mouseenter="onTriggerMouseEnter"
+        @mouseleave="onTriggerMouseLeave"
+      >
+        <slot name="trigger" />
+      </span>
     </DropdownMenuTrigger>
 
     <DropdownMenuPortal>
@@ -13,6 +19,8 @@
         :side-offset="sideOffset"
         :align="align"
         :collision-padding="collisionPadding"
+        @mouseenter="onContentMouseEnter"
+        @mouseleave="onContentMouseLeave"
       >
         <DropdownMenuLabel
           v-if="title"
@@ -73,6 +81,10 @@ interface Props {
   sideOffset?: number
   /** 뷰포트 경계와의 최소 여백 — flip 기준 (px) */
   collisionPadding?: number
+  /** 트리거 hover 시 메뉴 오픈 */
+  openOnHover?: boolean
+  /** hover 해제 후 닫힘 지연(ms) */
+  hoverCloseDelay?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -81,6 +93,8 @@ const props = withDefaults(defineProps<Props>(), {
   align: 'end',
   sideOffset: 5,
   collisionPadding: 8,
+  openOnHover: false,
+  hoverCloseDelay: 120,
 })
 
 const emit = defineEmits<{
@@ -89,6 +103,41 @@ const emit = defineEmits<{
 }>()
 
 const openState = ref(props.open ?? false)
+let hoverCloseTimeoutId: ReturnType<typeof setTimeout> | null = null
+
+const clearHoverCloseTimeout = () => {
+  if (!hoverCloseTimeoutId) return
+  clearTimeout(hoverCloseTimeoutId)
+  hoverCloseTimeoutId = null
+}
+
+const scheduleHoverClose = () => {
+  clearHoverCloseTimeout()
+  hoverCloseTimeoutId = setTimeout(() => {
+    openState.value = false
+  }, props.hoverCloseDelay)
+}
+
+const onTriggerMouseEnter = () => {
+  if (!props.openOnHover) return
+  clearHoverCloseTimeout()
+  openState.value = true
+}
+
+const onTriggerMouseLeave = () => {
+  if (!props.openOnHover) return
+  scheduleHoverClose()
+}
+
+const onContentMouseEnter = () => {
+  if (!props.openOnHover) return
+  clearHoverCloseTimeout()
+}
+
+const onContentMouseLeave = () => {
+  if (!props.openOnHover) return
+  scheduleHoverClose()
+}
 watch(
   () => props.open,
   (v: boolean | undefined) => {

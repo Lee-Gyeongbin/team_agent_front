@@ -51,6 +51,7 @@
       title="카테고리 선택"
       :items="categoryMenuItems"
       align="end"
+      open-on-hover
       @select="onSelectCategory"
     >
       <template #trigger>
