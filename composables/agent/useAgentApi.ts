@@ -1,4 +1,4 @@
-import type { Agent } from '~/types/agent'
+import type { Agent, AgtDm, AgtDs } from '~/types/agent'
 import { useApi } from '~/composables/com/useApi'
 const { get, post } = useApi()
 
@@ -20,6 +20,11 @@ export const useAgentApi = () => {
     return get<{ dataList: Agent[] }>('/agent/list.do')
   }
 
+  /** 모델 옵션 조회 */
+  const fetchModelOptions = async (): Promise<{ dataList: { modelId: string; modelName: string }[] }> => {
+    return get<{ dataList: { modelId: string; modelName: string }[] }>('/agent/modelList.do')
+  }
+
   /** 에이전트 활성화/비활성화 */
   const fetchToggleAgent = async (agentId: string, useYn: 'Y' | 'N'): Promise<void> => {
     return post('/agent/toggle.do', { agentId, useYn })
@@ -28,6 +33,11 @@ export const useAgentApi = () => {
   /** 에이전트 상세 조회 */
   const fetchAgentDetail = async (agent: Agent): Promise<{ data: Agent }> => {
     return post<{ data: Agent }>(`/agent/detail.do`, agent)
+  }
+
+  /** 에이전트 상세 데이터 목록 조회 */
+  const fetchAgentDetailDataList = async (agent: Agent): Promise<{ dataList: AgtDs[] | AgtDm[] }> => {
+    return post<{ dataList: AgtDs[] | AgtDm[] }>(`/agent/detailDataList.do`, agent)
   }
 
   const fetchSaveAgent = async (agent: Partial<Agent>): Promise<{ data: Agent }> => {
@@ -44,8 +54,10 @@ export const useAgentApi = () => {
 
   return {
     fetchAgentList,
+    fetchModelOptions,
     fetchToggleAgent,
     fetchAgentDetail,
+    fetchAgentDetailDataList,
     fetchSaveAgent,
     fetchDeleteAgent,
     fetchUpdateAgentOrder,

@@ -15,6 +15,7 @@
         :agent-type-cd="form.agentTypeCd"
         :rag-form="ragForm"
         :sql-form="sqlForm"
+        :sql-model-options="sqlModelOptions"
         @update:rag-form="ragForm = $event"
         @update:sql-form="sqlForm = $event"
       />
@@ -54,6 +55,7 @@
 
 <script setup lang="ts">
 import type { Agent, AgtDs, AgtDm } from '~/types/agent'
+import { useAgentStore } from '~/composables/agent/useAgentStore'
 
 interface Props {
   isOpen: boolean
@@ -61,6 +63,10 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+
+const { modelOptions } = useAgentStore()
+
+const sqlModelOptions = computed(() => modelOptions.value.map((m) => ({ value: m.modelId, label: m.modelName })))
 
 const emit = defineEmits<{
   close: []
