@@ -327,7 +327,7 @@
                   title="막대 차트"
                   @click="onChangeCardChartType(card, 'bar')"
                 >
-                  <i class="icon-bar-chart size-16"></i>
+                  <i class="icon-bar-chart size-20"></i>
                 </button>
                 <button
                   type="button"
@@ -336,7 +336,7 @@
                   title="라인 차트"
                   @click="onChangeCardChartType(card, 'line')"
                 >
-                  <i class="icon-line-chart size-16"></i>
+                  <i class="icon-line-chart size-20"></i>
                 </button>
                 <button
                   type="button"
@@ -345,7 +345,7 @@
                   title="파이 차트"
                   @click="onChangeCardChartType(card, 'pie')"
                 >
-                  <i class="icon-pie-chart size-16"></i>
+                  <i class="icon-pie-chart size-20"></i>
                 </button>
               </div>
             </div>
@@ -456,7 +456,6 @@ const buildAxisSettingsFromSchema = (): ColumnAxisSetting[] => {
   if (!schema) return []
 
   const metricKeySet = new Set(schema.metricKeys)
-  const targetKeySet = new Set(schema.selectableOptions.chartTargetKeys)
   const defaultSel = schema.defaultSelection
 
   // 표시할 컬럼: X축 후보 + Y축 후보 (중복 제거, 순서 유지)
@@ -523,12 +522,6 @@ const onToggleCardAxisRole = (card: ChartCardState, key: string, role: AxisRole)
   card.configVersion++
 }
 
-// ===== 차트 카드 축 해제 =====
-const onResetCardAxisRole = (card: ChartCardState, key: string) => {
-  onResetAxisRole(card.axisSettings, key)
-  card.configVersion++
-}
-
 // ===== 차트 카드 타입 변경 =====
 const onChangeCardChartType = (card: ChartCardState, chartType: VisualizationChartType) => {
   card.chartType = chartType
@@ -574,7 +567,7 @@ const onCreateChart = () => {
   const newCard: ChartCardState = {
     id: createCardId(),
     chartType: 'bar',
-    axisSettings: addAxisSettings.value.filter((s) => s.role !== '').map((s) => ({ ...s })),
+    axisSettings: JSON.parse(JSON.stringify(addAxisSettings.value)) as ColumnAxisSetting[],
     configVersion: 0,
   }
   chartCards.value.push(newCard)
@@ -598,18 +591,30 @@ const getChartBadges = (card: ChartCardState): string[] => {
   })
 }
 
-// ===== 차트 config 생성 =====
+// ===== 차트 config 생성 (카드별 캐싱) =====
+const configCache = new Map<string, { version: number; config: Record<string, unknown> }>()
+
 const chartConfigMap = computed<Record<string, Record<string, unknown>>>(() => {
   if (!currentVisualizationView.value) return {}
   const mapped: Record<string, Record<string, unknown>> = {}
   chartCards.value.forEach((card) => {
-    // configVersion 참조하여 반응성 트리거
-    void card.configVersion
+    const cached = configCache.get(card.id)
+    // configVersion이 변경되지 않았으면 캐시된 config 재사용
+    if (cached && cached.version === card.configVersion) {
+      mapped[card.id] = cached.config
+      return
+    }
     const selection = axisSettingsToSelection(card.axisSettings, card.chartType)
     const config = buildChartModel(currentVisualizationView.value!, selection)
     if (config) {
+      configCache.set(card.id, { version: card.configVersion, config })
       mapped[card.id] = config
     }
+  })
+  // 삭제된 카드 캐시 정리
+  const cardIds = new Set(chartCards.value.map((c) => c.id))
+  configCache.forEach((_, key) => {
+    if (!cardIds.has(key)) configCache.delete(key)
   })
   return mapped
 })
@@ -637,6 +642,7 @@ const onClose = () => {
   isFullscreen.value = false
   clearBodyChartFullscreen()
   chartCards.value = []
+  configCache.clear()
   emit('update:fullscreen', false)
   emit('update:open', false)
 }
@@ -710,10 +716,19 @@ watch(
   { immediate: true },
 )
 
+// messageId 또는 패널 열림 시에만 축 설정 초기화 (카드 조작 시 재초기화 방지)
+const axisInitialized = ref(false)
 watch(
-  currentVisualizationView,
+  () => [props.messageId, props.open, currentVisualizationView.value?.status] as const,
   () => {
-    initAxisSettings()
+    if (!currentVisualizationView.value || currentVisualizationView.value.status !== 'success') {
+      axisInitialized.value = false
+      return
+    }
+    if (!axisInitialized.value) {
+      initAxisSettings()
+      axisInitialized.value = true
+    }
   },
   { immediate: true },
 )

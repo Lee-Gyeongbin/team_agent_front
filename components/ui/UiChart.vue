@@ -46,13 +46,21 @@ onMounted(() => {
   })
 })
 
-// config 또는 type 변경 시 차트 재생성
+// config 또는 type 변경 시 차트 재생성 (참조 비교 — key 변경으로 재생성 처리)
 watch(
-  () => [props.type, props.config],
+  () => props.config,
+  (newConfig, oldConfig) => {
+    if (newConfig !== oldConfig) {
+      renderChart()
+    }
+  },
+)
+
+watch(
+  () => props.type,
   () => {
     renderChart()
   },
-  { deep: true },
 )
 </script>
 
