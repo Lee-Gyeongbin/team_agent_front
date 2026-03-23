@@ -181,7 +181,9 @@
         <div class="demo-box">
           <div style="display: flex; flex-direction: column; gap: 12px; max-width: 400px">
             <div>
-              <label style="display: block; font-size: 14px; font-weight: 700; margin-bottom: 4px">이름 <span style="color: #ef4444">*</span></label>
+              <label style="display: block; font-size: 14px; font-weight: 700; margin-bottom: 4px"
+                >이름 <span style="color: #ef4444">*</span></label
+              >
               <UiInput
                 ref="demoNameRef"
                 v-model="demoName"
@@ -190,7 +192,9 @@
               />
             </div>
             <div>
-              <label style="display: block; font-size: 14px; font-weight: 700; margin-bottom: 4px">이메일 <span style="color: #ef4444">*</span></label>
+              <label style="display: block; font-size: 14px; font-weight: 700; margin-bottom: 4px"
+                >이메일 <span style="color: #ef4444">*</span></label
+              >
               <UiInput
                 ref="demoEmailRef"
                 v-model="demoEmail"
@@ -609,6 +613,13 @@ const iconGroups = [
       { class: 'icon-knowledge' },
       { class: 'icon-database' },
       { class: 'icon-refund-back' },
+      { class: 'icon-sidebar-community' },
+      { class: 'icon-sidebar-delete' },
+      { class: 'icon-sidebar-edit' },
+      { class: 'icon-sidebar-magic-wand' },
+      { class: 'icon-sidebar-pin' },
+      { class: 'icon-sidebar-un-pin' },
+      { class: 'icon-sidebar-share' },
     ],
   },
   {
@@ -626,6 +637,7 @@ const iconGroups = [
       { class: 'icon-play-circle' },
       { class: 'icon-refresh' },
       { class: 'icon-more' },
+      { class: 'icon-more-vertical' },
       { class: 'icon-regenerate' },
     ],
   },
@@ -721,6 +733,19 @@ const iconGroups = [
     ],
   },
   {
+    title: '문서 데이터셋 아이콘',
+    icons: [
+      { class: 'icon-dataset' },
+      { class: 'icon-vector' },
+      { class: 'icon-search-quality' },
+      { class: 'icon-datasource' },
+    ],
+  },
+  {
+    title: '데이터마트 아이콘',
+    icons: [{ class: 'icon-ai-stars' }, { class: 'icon-server' }, { class: 'icon-schema' }],
+  },
+  {
     title: '파일 아이콘',
     icons: [
       { class: 'icon-file-pdf' },
@@ -728,6 +753,17 @@ const iconGroups = [
       { class: 'icon-file-doc' },
       { class: 'icon-folder-close' },
       { class: 'icon-folder-open' },
+    ],
+  },
+  {
+    title: '기타 아이콘',
+    icons: [
+      { class: 'icon-plus-medium' },
+      { class: 'icon-arrow-down-gray' },
+      { class: 'icon-info' },
+      { class: 'icon-mini-time' },
+      { class: 'icon-check' },
+      { class: 'icon-sliders' },
     ],
   },
 ]

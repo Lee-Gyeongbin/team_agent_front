@@ -65,6 +65,35 @@
   @include icon-file('refund-back');
 }
 
+// 사이드바 드롭다운 아이콘
+.icon-sidebar-community {
+  @include icon-file-bg('sidebar-community');
+}
+
+.icon-sidebar-delete {
+  @include icon-file-bg('sidebar-delete');
+}
+
+.icon-sidebar-edit {
+  @include icon-file-bg('sidebar-edit');
+}
+
+.icon-sidebar-magic-wand {
+  @include icon-file-bg('sidebar-magic-wand');
+}
+
+.icon-sidebar-pin {
+  @include icon-file-bg('sidebar-pin');
+}
+
+.icon-sidebar-share {
+  @include icon-file-bg('sidebar-share');
+}
+
+.icon-sidebar-un-pin {
+  @include icon-file-bg('sidebar-un-pin');
+}
+
 // ===================================
 // chat 아이콘
 // ===================================

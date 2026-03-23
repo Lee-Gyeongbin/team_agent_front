@@ -53,11 +53,11 @@
         class="icon icon-check size-16 category-check"
       />
 
-      <!-- 더보기 메뉴 (menuItems가 있을 때 표시) -->
-      <template v-if="menuItems.length > 0">
+      <!-- 더보기 메뉴 (표시할 항목이 있을 때만) -->
+      <template v-if="displayedMenuItems.length > 0">
         <UiDropdownMenu
           v-model:open="isDropdownOpen"
-          :items="menuItems"
+          :items="displayedMenuItems"
           side="bottom"
           align="end"
           :side-offset="4"
@@ -121,6 +121,7 @@
         :editing-category-id="editingCategoryId"
         :editing-name="editingName"
         :menu-items="menuItems"
+        :max-category-depth="maxCategoryDepth"
         @toggle="$emit('toggle', $event)"
         @select="$emit('select', $event)"
         @menu-select="(value, item) => $emit('menu-select', value, item)"
@@ -146,6 +147,8 @@ const props = withDefaults(
     editingCategoryId?: string | null
     editingName?: string
     menuItems?: { label: string; value: string; icon?: string; color?: 'danger' }[]
+    /** 설정 시 depth가 이 값 이상인 노드에서 '하위 카테고리 추가'(addSubcategory) 메뉴 숨김 */
+    maxCategoryDepth?: number
   }>(),
   {
     selectable: false,
@@ -154,6 +157,7 @@ const props = withDefaults(
     editingCategoryId: null,
     editingName: '',
     menuItems: () => [],
+    maxCategoryDepth: undefined,
   },
 )
 
@@ -164,6 +168,16 @@ const emit = defineEmits<{
   'update:editing-name': [value: string]
   'save-rename': []
 }>()
+
+/** 최대 허용 깊이(루트=1) — maxCategoryDepth 이상이면 하위 추가 메뉴 제외 */
+const displayedMenuItems = computed(() => {
+  const items = props.menuItems
+  const maxDepth = props.maxCategoryDepth
+  if (maxDepth == null) return items
+  return items.filter(
+    (row: (typeof items)[number]) => row.value !== 'addSubcategory' || props.depth < maxDepth,
+  )
+})
 
 const inputRef = ref<{ focus: () => void } | null>(null)
 /** 드롭다운 열림 상태 — 호버 해제 시에도 트리거 버튼이 사라지지 않도록 is-active 유지용 */

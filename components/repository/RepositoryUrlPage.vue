@@ -64,12 +64,20 @@
           <span class="scraping-text"
             >다음 예정: <span class="scraping-date">{{ nextScrapingAt }}</span></span
           >
-          <div
-            class="scraping-tooltip-trigger"
-            :title="scrapingTooltipText"
+          <UiTooltip
+            side="bottom"
+            align="end"
+            :show-arrow="false"
+            content-class="scraping-batch-tooltip"
           >
-            <i class="icon icon-info size-16" />
-          </div>
+            <div class="scraping-tooltip-trigger">
+              <i class="icon icon-info size-16" />
+            </div>
+            <template #content>
+              <span class="scraping-batch-tooltip__line">등록된 모든 활성 URL에 대해</span>
+              <span class="scraping-batch-tooltip__line">데이터 수집(스크래핑)을 실행합니다.</span>
+            </template>
+          </UiTooltip>
         </div>
         <UiButton
           variant="line-secondary"
@@ -186,8 +194,6 @@ import UrlRegisterPanel from '~/components/repository/UrlRegisterPanel.vue'
 import { useRepositoryStore } from '~/composables/repository/useRepositoryStore'
 import { openAlert, openConfirm } from '~/composables/useDialog'
 import { openToast } from '~/composables/useToast'
-
-const scrapingTooltipText = '등록된 모든 활성 URL에 대해 데이터 수집(스크래핑)을 실행합니다.'
 
 const {
   urlList,
