@@ -9,13 +9,24 @@
       <!-- 섹션1: Agent 유형 -->
       <AgentSettingType v-model="form.agentTypeCd" />
 
-      <!-- 섹션2: Agent 기본 설정 -->
-      <AgentSettingBasic v-model="basicForm" />
+      <!-- 섹션2: Agent 기본 설정 + 유형별 상세 설정 -->
+      <AgentSettingBasic
+        v-model="basicForm"
+        :agent-type-cd="form.agentTypeCd"
+        :rag-form="ragForm"
+        :sql-form="sqlForm"
+        @update:rag-form="ragForm = $event"
+        @update:sql-form="sqlForm = $event"
+      />
 
-      <!-- 섹션3: RAG 데이터셋 연결 -->
-      <AgentSettingDataset
-        :datasets="datasetList"
-        @update:datasets="datasetList = $event"
+      <!-- 섹션3: 데이터 연결 (agentTypeCd 기반 분기) -->
+      <AgentSettingData
+        v-if="form.agentTypeCd"
+        :agent-type-cd="form.agentTypeCd"
+        :dataset-list="localDatasetList"
+        :datamart-list="localDatamartList"
+        @update:dataset-list="localDatasetList = $event"
+        @update:datamart-list="localDatamartList = $event"
       />
     </div>
 
@@ -42,8 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Agent } from '~/types/agent'
-import { useAgentStore } from '~/composables/agent/useAgentStore'
+import type { Agent, AgtDs, AgtDm } from '~/types/agent'
 
 interface Props {
   isOpen: boolean
@@ -54,10 +64,8 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   close: []
-  save: [form: { agentTypeCd: string; agentNm: string; description: string }]
+  save: [form: Partial<Agent>]
 }>()
-
-const { datasetList, handleSelectDatasetList } = useAgentStore()
 
 // 유형
 const form = ref({
@@ -70,10 +78,29 @@ const basicForm = ref({
   description: '',
 })
 
-// 모달 열릴 때 폼 초기화 + 데이터셋 조회
+// RAG 설정 (001)
+const ragForm = ref({
+  simThresh: 0,
+  maxSrchRslt: 0,
+})
+
+// SQL 설정 (002)
+const sqlForm = ref({
+  modelId: '',
+  maxQrySec: 0,
+  sqlValidYn: 'N' as 'Y' | 'N',
+  readonlyYn: 'Y' as 'Y' | 'N',
+  userCfrmYn: 'N' as 'Y' | 'N',
+})
+
+// 데이터 연결 (agent 객체에서 직접 가져옴)
+const localDatasetList = ref<AgtDs[]>([])
+const localDatamartList = ref<AgtDm[]>([])
+
+// 모달 열릴 때 폼 초기화
 watch(
   () => props.isOpen,
-  async (open) => {
+  (open) => {
     if (!open) return
     if (props.agent) {
       form.value.agentTypeCd = props.agent.agentTypeCd
@@ -81,25 +108,42 @@ watch(
         agentNm: props.agent.agentNm,
         description: props.agent.description,
       }
-      // 수정 모드: 데이터셋 목록 조회
-      await handleSelectDatasetList(props.agent.agentId)
-    } else {
-      // 추가 모드: 폼 초기화
-      form.value.agentTypeCd = ''
-      basicForm.value = {
-        agentNm: '',
-        description: '',
+      ragForm.value = {
+        simThresh: props.agent.simThresh ?? 0,
+        maxSrchRslt: props.agent.maxSrchRslt ?? 0,
       }
-      datasetList.value = []
+      sqlForm.value = {
+        modelId: props.agent.modelId ?? '',
+        maxQrySec: props.agent.maxQrySec ?? 0,
+        sqlValidYn: props.agent.sqlValidYn ?? 'N',
+        readonlyYn: props.agent.readonlyYn ?? 'Y',
+        userCfrmYn: props.agent.userCfrmYn ?? 'N',
+      }
+      localDatasetList.value = [...(props.agent.datasetList ?? [])]
+      localDatamartList.value = [...(props.agent.datamartList ?? [])]
+    } else {
+      form.value.agentTypeCd = ''
+      basicForm.value = { agentNm: '', description: '' }
+      ragForm.value = { simThresh: 0, maxSrchRslt: 0 }
+      sqlForm.value = { modelId: '', maxQrySec: 0, sqlValidYn: 'N', readonlyYn: 'Y', userCfrmYn: 'N' }
+      localDatasetList.value = []
+      localDatamartList.value = []
     }
   },
 )
 
 const onSave = () => {
-  emit('save', {
+  const base: Partial<Agent> = {
     agentTypeCd: form.value.agentTypeCd,
     ...basicForm.value,
-  })
-}
+  }
 
+  if (form.value.agentTypeCd === '001') {
+    Object.assign(base, ragForm.value, { datasetList: localDatasetList.value })
+  } else if (form.value.agentTypeCd === '002') {
+    Object.assign(base, sqlForm.value, { datamartList: localDatamartList.value })
+  }
+
+  emit('save', base)
+}
 </script>

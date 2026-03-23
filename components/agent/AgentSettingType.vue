@@ -8,6 +8,7 @@
         :options="agentTypeOptions"
         class="w-full"
         size="sm"
+        :disabled="isNotEmpty(modelValue)"
         @update:model-value="$emit('update:modelValue', $event)"
       />
     </div>
@@ -31,17 +32,12 @@ defineEmits<{
   'update:modelValue': [value: string | number]
 }>()
 
-// ============================================
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-// ============================================
-const agentTypeOptions = [
-  { label: '매뉴얼질의 (RAG)', value: 'RAG' },
-  { label: '데이터분석 (TextToSQL)', value: 'TextToSQL' },
-]
+const codes = await getCodes('AT000001')
+const agentTypeOptions = codes.map((c) => ({ label: c.codeNm, value: c.codeId }))
 
 const typeDescriptions: Record<string, string> = {
-  RAG: '매뉴얼질의(RAG) Agent에서 사용할 데이터셋과 검색 옵션을 설정합니다.',
-  TextToSQL: '데이터분석(TextToSQL) Agent에서 사용할 DB 연결과 쿼리 옵션을 설정합니다.',
+  '001': '매뉴얼질의(RAG) Agent에서 사용할 데이터셋과 검색 옵션을 설정합니다.',
+  '002': '데이터분석(TextToSQL) Agent에서 사용할 DB 연결과 쿼리 옵션을 설정합니다.',
 }
 
 const typeDescription = computed(() => typeDescriptions[props.modelValue] || '')
