@@ -2,9 +2,9 @@
 @use '../utils/mixins' as *;
 
 // ===================================
-// Agent 데이터셋 연결 섹션
+// Agent 데이터 연결 섹션
 // ===================================
-.agent-setting-dataset {
+.agent-setting-data {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -15,7 +15,7 @@
   border-radius: $border-radius-lg;
 }
 
-.agent-setting-dataset-header {
+.agent-setting-data-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -24,19 +24,19 @@
   border-bottom: 1px solid #aebccb;
 }
 
-.agent-setting-dataset-header-title {
+.agent-setting-data-header-title {
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
-.agent-setting-dataset-sub {
+.agent-setting-data-sub {
   margin-left: 5px;
   @include typo($body-small);
   color: $color-text-dark;
 }
 
-.agent-setting-dataset-toolbar {
+.agent-setting-data-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -48,7 +48,7 @@
   }
 }
 
-.agent-setting-dataset-summary {
+.agent-setting-data-summary {
   color: #5c6677;
   font-size: 11px;
   line-height: 1.5;
@@ -59,16 +59,16 @@
   }
 }
 
-.agent-setting-dataset-list {
+.agent-setting-data-list {
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
 }
 
 // ===================================
-// 데이터셋 카드
+// 데이터 카드
 // ===================================
-.agent-dataset-card {
+.agent-data-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -88,7 +88,7 @@
   }
 }
 
-.agent-dataset-card-drag {
+.agent-data-card-drag {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -101,7 +101,7 @@
   }
 }
 
-.agent-dataset-card-info {
+.agent-data-card-info {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -109,40 +109,14 @@
   flex: 1;
 }
 
-.agent-dataset-card-title {
+.agent-data-card-title {
   color: $color-text-dark;
   font-size: $font-size-base;
   font-weight: $font-weight-bold;
   line-height: 1.5;
 }
 
-.agent-dataset-card-desc {
-  @include typo($body-medium);
-  color: $color-text-muted;
-  @include ellipsis(1);
-}
-
-.agent-dataset-card-meta {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.agent-dataset-card-meta-item {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  font-size: 11px;
-  line-height: 1.5;
-  color: $color-text-disabled;
-
-  strong {
-    color: $color-text-dark;
-    font-weight: $font-weight-semibold;
-  }
-}
-
-.agent-dataset-card-actions {
+.agent-data-card-actions {
   display: flex;
   align-items: center;
   gap: $spacing-sm;
