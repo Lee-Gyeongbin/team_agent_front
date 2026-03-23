@@ -19,7 +19,7 @@
       v-model="agentList"
       class="com-card-list"
       handle=".com-card-drag"
-      item-key="id"
+      item-key="agentId"
       animation="200"
       @end="onDragEnd"
     >
@@ -48,7 +48,14 @@ import { useAgentStore } from '~/composables/agent/useAgentStore'
 import { openConfirm } from '~/composables/useDialog'
 import type { Agent } from '~/types/agent'
 
-const { agentList, handleSelectAgentList, handleSaveAgent, handleDeleteAgent, handleUpdateAgentOrder } = useAgentStore()
+const {
+  agentList,
+  handleSelectAgentList,
+  handleSaveAgent,
+  handleDeleteAgent,
+  handleUpdateAgentOrder,
+  handleToggleAgent,
+} = useAgentStore()
 
 const isLoading = ref(true)
 
@@ -57,7 +64,7 @@ onMounted(async () => {
   isLoading.value = false
 })
 
-const activeCount = computed(() => agentList.value.filter((a) => a.isActive).length)
+const activeCount = computed(() => agentList.value.filter((a) => a.useYn === 'Y').length)
 
 const openAddAgent = () => {
   selectedAgent.value = null
@@ -74,15 +81,9 @@ const onClickSetting = (agent: Agent) => {
 }
 
 // 설정 저장
-const onSaveSetting = async (form: {
-  type: string
-  name: string // 제목
-  description: string // 설명
-  similarityThreshold: number // 유사도 임계값
-  maxSearchResults: number // 최대 검색 결과 수
-}) => {
+const onSaveSetting = async (form: { agentTypeCd: string; agentNm: string; description: string }) => {
   await handleSaveAgent({
-    id: selectedAgent.value?.id,
+    agentId: selectedAgent.value?.agentId,
     ...form,
   })
   // 모달 닫기
@@ -92,19 +93,19 @@ const onSaveSetting = async (form: {
 const doDeleteAgent = async (agent: Agent) => {
   const confirmed = await openConfirm({
     title: '에이전트 삭제',
-    message: `"${agent.name}" 에이전트를 삭제하시겠습니까?`,
+    message: `"${agent.agentNm}" 에이전트를 삭제하시겠습니까?`,
   })
   if (!confirmed) return
-  await handleDeleteAgent(agent.id)
+  await handleDeleteAgent(agent.agentId)
 }
 
 const onToggleActive = async (agent: Agent) => {
-  await handleSaveAgent({ id: agent.id, isActive: !agent.isActive })
+  await handleToggleAgent(agent.agentId, agent.useYn === 'Y' ? 'N' : 'Y')
 }
 
 // 🔽 드래그 정렬 — 백엔드 연결 시 API 호출로 교체
 const onDragEnd = async () => {
-  const orderData = agentList.value.map((item, index) => ({ id: item.id, order: index }))
+  const orderData = agentList.value.map((item, index) => ({ agentId: item.agentId, sortOrd: index }))
   await handleUpdateAgentOrder(orderData)
 }
 </script>

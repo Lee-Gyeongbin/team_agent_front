@@ -23,6 +23,24 @@ const visibleCategoryIds = ref<string[]>([])
 // 좌측 패널에 표시할 카테고리 (ref로 유지 — 객체 참조 보존하여 expanded 토글 가능)
 const filteredCategoryList = ref<CategoryItem[]>([])
 
+/** 트리에서 expanded === true 인 카테고리 id 수집 (재조회 시 펼침 유지용) */
+function collectExpandedCategoryIds(items: CategoryItem[], acc: Set<string> = new Set()): Set<string> {
+  for (const item of items) {
+    if (item.expanded) acc.add(item.id)
+    if (item.children?.length) collectExpandedCategoryIds(item.children, acc)
+  }
+  return acc
+}
+
+/** API 응답 트리에 펼침 id 집합 적용 */
+function mergeCategoryExpandedState(items: CategoryItem[], expandedIds: Set<string>): CategoryItem[] {
+  return items.map((item) => ({
+    ...item,
+    expanded: expandedIds.has(item.id),
+    children: item.children?.length ? mergeCategoryExpandedState(item.children, expandedIds) : item.children,
+  }))
+}
+
 function buildFilteredTree(items: CategoryItem[], ids: string[]): CategoryItem[] {
   return items.reduce<CategoryItem[]>((acc, item) => {
     const filteredChildren = item.children ? buildFilteredTree(item.children, ids) : []
@@ -41,8 +59,8 @@ function updateFilteredCategoryList() {
   }
 }
 
-// categoryList 또는 visibleCategoryIds 변경 시 갱신
-watch([categoryList, visibleCategoryIds], () => updateFilteredCategoryList(), { immediate: true })
+// categoryList 또는 visibleCategoryIds 변경 시 갱신 (expanded 등 중첩 변경 시 필터 트리 동기화)
+watch([categoryList, visibleCategoryIds], () => updateFilteredCategoryList(), { immediate: true, deep: true })
 
 // ===== 문서 상태 =====
 const documentList = ref<Document[]>([])
@@ -63,14 +81,19 @@ const urlCurrentPage = ref(1)
 const urlPageSize = 10
 
 // ===== 카테고리 액션 =====
-const handleSelectCategoryList = async () => {
+const handleSelectCategoryList = async (options?: { forceExpandIds?: string[] }) => {
+  const expandedIds = collectExpandedCategoryIds(categoryList.value)
+  for (const id of options?.forceExpandIds ?? []) {
+    if (id) expandedIds.add(id)
+  }
   const res = await fetchCategoryList()
-  categoryList.value = res.list
+  categoryList.value = mergeCategoryExpandedState(res.list, expandedIds)
 }
 
 const handleSaveCategory = async (data: { id?: string; name: string; parentId?: string | null }) => {
   await fetchSaveCategory(data)
-  await handleSelectCategoryList()
+  const forceExpandIds = data.parentId ? [data.parentId] : []
+  await handleSelectCategoryList({ forceExpandIds })
 }
 
 const handleRenameCategory = async (id: string, name: string) => {
