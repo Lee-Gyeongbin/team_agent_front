@@ -42,8 +42,8 @@
 </template>
 
 <script setup lang="ts">
-const { chatMessage, activeSearchModes, toggleSearchMode, selectChatRoomList, selectModelOptions, resetChatRoom } =
-  useChatStore()
+const { chatMessage, selectChatRoomList, selectModelOptions, resetChatRoom } = useChatRooms()
+const { activeSearchModes, toggleSearchMode } = useChatStore()
 const { startChatSocket, stopChatSocket } = useChatSocket()
 const { user } = useAuth()
 

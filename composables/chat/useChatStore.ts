@@ -1,43 +1,33 @@
 // 타입 선언
-import {
-  type ChatLogListRow,
-  EMPTY_CHAT_ROOM,
-  type ChatRefRow,
-  type ChatRoom,
-  type ModelOption,
-  type PanelType,
-  type SearchModeOption,
-  type SearchModeValue,
-  type SubOption,
-  type VisualizationViewModel,
+import type {
+  ChatRefRow,
+  ModelOption,
+  PanelType,
+  SearchModeOption,
+  SearchModeValue,
+  SubOption,
+  VisualizationViewModel,
 } from '~/types/chat'
 import { useChatSocket } from '~/composables/chat/useChatSocket'
 import { useChatMessages } from '~/composables/chat/useChatMessages'
+import { useChatSearchState } from '~/composables/chat/useChatSearchState'
 import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
 import { clearBodyChartFullscreen } from '~/utils/chat/visualizationChartUtil'
 const { messages } = useChatSocket()
 const { logRowToMessages, pushQuestionMessage, pushAnswerPlaceholder } = useChatMessages()
+const { activeSearchModes, subOptions, selectedSubOption, resolveSvcTy } = useChatSearchState()
+const { chatRoom, chatMessage, syncSearchModeFromLastLog, selectModelOptions, selectRagDsList, selectDmList } =
+  useChatRooms()
 const { ensureWebSocketAndSend } = useChatSocket()
-const { user } = useAuth()
 
 // API 호출
-const {
-  fetchSelectChatRoomList,
-  fetchSelectModelList,
-  fetchSelectRagDsList,
-  fetchSelectDmList,
-  fetchCreateChatRoom,
-  fetchSelectChatLogList,
-  fetchSelectChatRef,
-  fetchSelectTableDataList,
-  fetchCreateChatLogReaction,
-} = useReportsApi()
+const { fetchSelectChatLogList, fetchSelectChatRef, fetchSelectTableDataList, fetchCreateChatLogReaction } =
+  useReportsApi()
 
 // LLM 모델 옵션
 const modelOptions = ref<ModelOption[]>([])
 
 const selectedLogId = ref<string | null>(null)
-const chatMessage = ref('')
 // pdf 뷰어 or 시각화
 const activePanelType = ref<PanelType>('none')
 const isPanelFullscreen = ref(false)
@@ -45,9 +35,6 @@ const activePanelMessageId = ref<string | null>(null)
 const pdfRefList = ref<ChatRefRow[]>([])
 const visualizationViewMap = ref<Record<string, VisualizationViewModel>>({})
 
-// 채팅방 관련
-const chatRoom = ref<ChatRoom>({ ...EMPTY_CHAT_ROOM })
-const chatRoomList = ref<ChatRoom[]>([])
 // 좋아요/싫어요 모달 상태
 const isModalOpen = ref(false)
 const modalMessage = ref('')
@@ -80,44 +67,7 @@ const subOptionsMap: Record<SearchModeValue, SubOption[]> = {
   ],
 }
 
-// 검색모드 상태 (앱 전역 공유C=일반(디폴트), M=지식검색, S=데이터분석)
-const activeSearchModes = ref<SearchModeValue[]>([])
-// 서브 옵션 (모델/라그/데이터마트 목록) — 호출부 간 동기화를 위해 모듈 레벨 공유
-const subOptions = ref<SubOption[]>([])
-// 서브 옵션 선택값
-const selectedSubOption = ref<string>('all')
-
 export const useChatStore = () => {
-  // 채팅방 초기화 (roomId 등 리셋, 검색모드 디폴트 C)
-  const resetChatRoom = () => {
-    chatRoom.value = { ...EMPTY_CHAT_ROOM }
-    activeSearchModes.value = []
-  }
-
-  // 채팅방 roomId 동기화 (/chat/[id] 진입 시 사용)
-  const handleSetChatRoom = (roomId: string) => {
-    chatRoom.value.roomId = roomId
-  }
-
-  // 마지막 로그 기준 검색모드·서브옵션 동기화: C=디폴트([]), M=지식검색, S=데이터분석
-  const syncSearchModeFromLastLog = async (lastRow: ChatLogListRow | undefined) => {
-    const svcTy = lastRow?.svcTy ?? 'C'
-    if (svcTy === 'M') {
-      activeSearchModes.value = ['M']
-      await selectRagDsList()
-    } else if (svcTy === 'S') {
-      activeSearchModes.value = ['S']
-      await selectDmList()
-    } else {
-      activeSearchModes.value = []
-      await selectModelOptions()
-    }
-    const lastRefId = lastRow?.refId
-    if (typeof lastRefId === 'string' && lastRefId && subOptions.value.some((o) => o.value === lastRefId)) {
-      selectedSubOption.value = lastRefId
-    }
-  }
-
   // 채팅 로그 조회 (roomId 기준)
   // - 새 채팅 직후처럼 서버 로그가 아직 적재되기 전(0건)인 순간에 페이지 진입하면,
   //   로컬에 이미 쌓아둔 placeholder 메시지까지 비워져 UI가 사라질 수 있어 보존 옵션을 둔다.
@@ -156,53 +106,6 @@ export const useChatStore = () => {
     messages.value = flattened
     // 검색모드·서브옵션 동기화
     await syncSearchModeFromLastLog(rawList[rawList.length - 1])
-  }
-
-  // 검색모드 기반 svcTy 결정 (C=일반, M=지식검색, S=데이터분석)
-  const resolveSvcTy = (): string => {
-    if (isNotEmpty(activeSearchModes.value)) {
-      return activeSearchModes.value[0] === 'M' ? 'M' : 'S'
-    }
-    return 'C'
-  }
-
-  // 채팅방 생성 (content: 호출부에서 전달 가능, 미전달 시 chatMessage 사용)
-  const createChatRoom = async (content?: string): Promise<ChatRoom> => {
-    const qContent = (content ?? chatMessage.value).trim()
-    if (!qContent) {
-      chatRoom.value = { ...EMPTY_CHAT_ROOM, qContent: '' }
-      return chatRoom.value
-    }
-
-    const svcTy = resolveSvcTy()
-    const refId = selectedSubOption.value
-    const res = await fetchCreateChatRoom(qContent, svcTy)
-    const createdRoom: ChatRoom = {
-      roomId: res.data.roomId,
-      title: qContent,
-      qContent,
-      createdAt: res.data.createdAt,
-      svcTy,
-    }
-    chatRoom.value = createdRoom
-    chatRoomList.value = [createdRoom, ...chatRoomList.value.filter((room) => room.roomId !== createdRoom.roomId)]
-
-    messages.value = []
-    pushQuestionMessage(qContent, svcTy, refId)
-    pushAnswerPlaceholder(svcTy, refId)
-    chatMessage.value = ''
-
-    const sent = await ensureWebSocketAndSend({
-      type: 'question',
-      query: qContent,
-      threadId: chatRoom.value.roomId,
-      svcTy,
-      refId,
-    })
-    if (!sent) return chatRoom.value
-
-    navigateTo(`/chat/${chatRoom.value.roomId}`)
-    return chatRoom.value
   }
 
   // 메시지 전송
@@ -349,43 +252,6 @@ export const useChatStore = () => {
     }
   }
 
-  // 채팅방 목록 조회
-  const selectChatRoomList = async () => {
-    try {
-      const userId = user.value?.userId
-      if (!userId) return []
-      const res = await fetchSelectChatRoomList(userId)
-      chatRoomList.value = res.list
-      return chatRoomList.value
-    } catch (error) {
-      console.error('채팅방 목록 조회 실패:', error)
-      return []
-    }
-  }
-
-  // 모델 옵션 조회
-  const selectModelOptions = async () => {
-    const res = await fetchSelectModelList()
-    subOptions.value = res.modelList.map((item: ModelOption) => ({ label: item.label, value: item.value }))
-    selectedSubOption.value = subOptions.value[0]?.value ?? 'auto'
-    return subOptions.value
-  }
-  // 라그 데이터셋 조회
-  const selectRagDsList = async () => {
-    const res = await fetchSelectRagDsList()
-    subOptions.value = res.subOptionList.map((item: SubOption) => ({ label: item.label, value: item.value }))
-    selectedSubOption.value = subOptions.value[0]?.value ?? 'all'
-    return subOptions.value
-  }
-
-  // 데이터마트 데이터셋 조회
-  const selectDmList = async () => {
-    const res = await fetchSelectDmList()
-    subOptions.value = res.subOptionList.map((item: SubOption) => ({ label: item.label, value: item.value }))
-    selectedSubOption.value = subOptions.value[0]?.value ?? 'all'
-    return subOptions.value
-  }
-
   // 현재 활성 모드의 서브 옵션 (마지막 선택된 모드 기준)
   const currentSubOptions = computed<SubOption[]>(() => {
     if (activeSearchModes.value.length === 0) return []
@@ -401,10 +267,7 @@ export const useChatStore = () => {
 
   return {
     // 상태
-    chatRoomList,
     messages,
-    chatMessage,
-    chatRoom,
     activePanelType,
     isPanelFullscreen,
     activePanelMessageId,
@@ -418,11 +281,6 @@ export const useChatStore = () => {
     selectedSubOption,
     currentSubOptions,
     // 액션
-    selectChatRoomList,
-    selectModelOptions,
-    createChatRoom,
-    resetChatRoom,
-    handleSetChatRoom,
     handleSelectChatLogList,
     onSend,
     onCopy,

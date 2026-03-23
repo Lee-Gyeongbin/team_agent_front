@@ -153,7 +153,7 @@ import {
 } from 'radix-vue'
 import type { MenuItem } from '~/types/menu'
 import type { ChatRoom } from '~/types/chat'
-const { selectChatRoomList, chatRoomList } = useChatStore()
+const { chatRoomList, selectChatRoomList } = useChatRooms()
 const route = useRoute()
 const { menuList } = useMenu()
 

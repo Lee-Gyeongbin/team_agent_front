@@ -82,8 +82,6 @@
 <script setup lang="ts">
 const {
   messages,
-  chatMessage,
-  handleSetChatRoom,
   handleSelectChatLogList,
   activePanelType,
   isPanelFullscreen,
@@ -94,6 +92,7 @@ const {
   onViewVisualization,
   onPanelClose,
 } = useChatStore()
+const { chatMessage, handleSetChatRoom } = useChatRooms()
 const { startChatSocket, stopChatSocket } = useChatSocket()
 const route = useRoute()
 const {
