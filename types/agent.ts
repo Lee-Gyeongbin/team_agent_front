@@ -1,21 +1,15 @@
 export interface Agent {
-  id: string
-  name: string
-  description: string
-  avatar?: string
-  model: string
-  systemPrompt: string
-  temperature: number
-  status: 'active' | 'draft' | 'archived'
-  isActive: boolean
-  priority: number
-  type: string // 유형 (RAG, TextToSQL 등)
-  connectionCount: number // 연결 수
-  datasetCount: number // 데이터셋 수
-  similarityThreshold: number // 유사도 임계값 (0.0~1.0)
-  maxSearchResults: number // 최대 검색 결과 수
-  createdAt: string
-  updatedAt: string
+  agentId: string // AGENT_ID
+  agentNm: string // AGENT_NM
+  agentTypeCd: string // AGENT_TYPE_CD
+  agentTypeCdNm: string // AGENT_TYPE_CD_NM
+  description: string // DESCRIPTION
+  sortOrd: number // SORT_ORD
+  useYn: 'Y' | 'N' // USE_YN
+  lastMdfDt: string // LAST_MDF_DT
+  createDt: string // CREATE_DT
+  modifyDt: string // MODIFY_DT
+  connCount: number // CONN_COUNT
 }
 
 // 데이터셋

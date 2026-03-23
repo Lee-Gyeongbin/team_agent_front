@@ -7,7 +7,7 @@
   >
     <div class="com-setting-form">
       <!-- 섹션1: Agent 유형 -->
-      <AgentSettingType v-model="form.type" />
+      <AgentSettingType v-model="form.agentTypeCd" />
 
       <!-- 섹션2: Agent 기본 설정 -->
       <AgentSettingBasic v-model="basicForm" />
@@ -54,22 +54,20 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   close: []
-  save: [form: { type: string; name: string; description: string; similarityThreshold: number; maxSearchResults: number }]
+  save: [form: { agentTypeCd: string; agentNm: string; description: string }]
 }>()
 
 const { datasetList, handleSelectDatasetList } = useAgentStore()
 
 // 유형
 const form = ref({
-  type: '',
+  agentTypeCd: '',
 })
 
 // 기본 설정 폼
 const basicForm = ref({
-  name: '',
+  agentNm: '',
   description: '',
-  similarityThreshold: 0.7,
-  maxSearchResults: 5,
 })
 
 // 모달 열릴 때 폼 초기화 + 데이터셋 조회
@@ -78,23 +76,19 @@ watch(
   async (open) => {
     if (!open) return
     if (props.agent) {
-      form.value.type = props.agent.type
+      form.value.agentTypeCd = props.agent.agentTypeCd
       basicForm.value = {
-        name: props.agent.name,
+        agentNm: props.agent.agentNm,
         description: props.agent.description,
-        similarityThreshold: props.agent.similarityThreshold ?? 0.7,
-        maxSearchResults: props.agent.maxSearchResults ?? 5,
       }
       // 수정 모드: 데이터셋 목록 조회
-      await handleSelectDatasetList(props.agent.id)
+      await handleSelectDatasetList(props.agent.agentId)
     } else {
       // 추가 모드: 폼 초기화
-      form.value.type = ''
+      form.value.agentTypeCd = ''
       basicForm.value = {
-        name: '',
+        agentNm: '',
         description: '',
-        similarityThreshold: 0.7,
-        maxSearchResults: 5,
       }
       datasetList.value = []
     }
@@ -103,7 +97,7 @@ watch(
 
 const onSave = () => {
   emit('save', {
-    type: form.value.type,
+    agentTypeCd: form.value.agentTypeCd,
     ...basicForm.value,
   })
 }
