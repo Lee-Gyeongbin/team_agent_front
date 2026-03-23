@@ -28,8 +28,7 @@ export const useFileApi = () => {
    * - @RequestParam 기반이지만, 프론트에서는 쿼리스트링 GET 형태로 호출
    */
   const fetchDownloadFileUrl = async (docId: string) => {
-    const encoded = encodeURIComponent(docId)
-    return get<FileUrlResponse>(`/com/file/downloadFile.do?docId=${encoded}`)
+    return post<FileUrlResponse>('/com/file/downloadFile.do', { docId })
   }
   return {
     fetchUploadFileUrl,

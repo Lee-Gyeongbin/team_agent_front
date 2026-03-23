@@ -10,6 +10,14 @@
         <button
           class="btn btn-icon"
           type="button"
+          title="새로고침"
+          @click="onRefresh"
+        >
+          <i class="icon-refresh size-16"></i>
+        </button>
+        <button
+          class="btn btn-icon"
+          type="button"
           :title="isFullscreen ? '축소' : '전체화면'"
           @click="toggleFullscreen"
         >
@@ -31,27 +39,46 @@
 
     <!-- 본문 -->
     <div class="chat-vis-body">
-      <!-- 데이터 표 섹션 -->
-      <div class="chat-vis-table">
-        <div class="chat-vis-table-header">
-          <div class="chat-vis-table-header-left">
-            <i class="icon-file-ai size-16"></i>
-            <span class="chat-vis-table-title">데이터 표</span>
+      <!-- ===== 섹션 1: 조회결과 ===== -->
+      <div class="chat-vis-section">
+        <div
+          class="chat-vis-section-header"
+          :class="{ 'is-open': sectionOpen.result }"
+          @click="toggleSection('result')"
+        >
+          <div class="chat-vis-section-header-left">
+            <span class="chat-vis-section-title">조회결과</span>
+            <span class="chat-vis-section-subtitle">조회결과 데이터를 표로 보기</span>
           </div>
-          <span class="chat-vis-table-subtitle">{{ tableSubtitle }}</span>
+          <div class="chat-vis-section-header-right">
+            <UiButton
+              v-if="sqlQuery"
+              size="xxs"
+              variant="secondary"
+              class="chat-vis-sql-btn"
+              @click.stop="toggleSql"
+            >
+              SQL
+            </UiButton>
+            <i
+              class="icon-chevron-down size-24 chat-vis-section-arrow"
+              :class="{ 'is-flipped': sectionOpen.result }"
+            ></i>
+          </div>
         </div>
-        <div class="chat-vis-table-body">
-          <div
+        <div
+          v-if="sectionOpen.result"
+          class="chat-vis-section-body"
+        >
+          <!-- 로딩/에러/빈 상태 -->
+          <UiEmpty
             v-if="isLoading"
-            class="chat-vis-status"
-          >
-            시각화 데이터를 불러오는 중입니다.
-          </div>
-          <div
+            title="시각화 데이터를 불러오는 중입니다."
+          />
+          <UiEmpty
             v-else-if="isError"
-            class="chat-vis-status is-error"
+            :title="errorMessage"
           >
-            <p>{{ errorMessage }}</p>
             <UiButton
               size="sm"
               variant="secondary"
@@ -59,263 +86,294 @@
             >
               다시 시도
             </UiButton>
-          </div>
-          <div
+          </UiEmpty>
+          <UiEmpty
             v-else-if="isEmpty"
-            class="chat-vis-status"
-          >
-            표시할 데이터가 없습니다.
-          </div>
-          <UiTable
-            v-else
-            :columns="tableColumns"
-            :data="tableData"
-            :max-height="'300px'"
-            sticky-header
+            title="표시할 데이터가 없습니다."
           />
-        </div>
-      </div>
-
-      <!-- 데이터 차트 섹션 -->
-      <div class="chat-vis-chart">
-        <!-- 차트 타이틀 -->
-        <div class="chat-vis-chart-header">
-          <div class="chat-vis-chart-header-left">
-            <i class="icon-chart-ai size-16"></i>
-            <span class="chat-vis-chart-title">데이터 차트</span>
-          </div>
-        </div>
-        <!-- 차트 툴바: 범례/기준값 셀렉트 + 차트 타입 아이콘 -->
-        <div class="chat-vis-chart-toolbar">
-          <div class="chat-vis-chart-actions">
-            <UiButton
-              variant="ghost"
-              icon-only
-              title="새로고침"
-              @click="onRefresh"
-            >
-              <template #icon-left>
-                <i class="icon-refresh size-16"></i>
-              </template>
-            </UiButton>
-            <UiButton
-              variant="secondary"
-              size="sm"
-              :disabled="!canAddChart"
-              title="차트 추가"
-              @click="onAddChart"
-            >
-              차트 추가
-            </UiButton>
-          </div>
-        </div>
-        <!-- 🔽 더미 데이터 — 백엔드 연결 시 API로 교체 -->
-        <div
-          v-if="isLoading"
-          class="chat-vis-status"
-        >
-          차트를 생성하는 중입니다.
-        </div>
-        <div
-          v-else-if="isError"
-          class="chat-vis-status is-error"
-        >
-          차트 데이터 로딩 중 오류가 발생했습니다.
-        </div>
-        <div
-          v-else-if="!hasChartData"
-          class="chat-vis-status"
-        >
-          {{ emptyChartMessage }}
-        </div>
-        <div v-else>
-          <div
-            v-for="(card, index) in chartCards"
-            :key="card.id"
-            class="chat-vis-card"
-          >
-            <div class="chat-vis-card-header">
-              <strong>차트 {{ index + 1 }}</strong>
-              <div class="chat-vis-card-actions">
-                <UiButton
-                  variant="ghost"
-                  size="sm"
-                  @click="(event) => onCaptureChart(event, card)"
-                >
-                  캡처
-                </UiButton>
-                <UiButton
-                  variant="ghost"
-                  size="sm"
-                  :disabled="chartCards.length === 1"
-                  @click="onRemoveChart(card.id)"
-                >
-                  삭제
-                </UiButton>
-              </div>
-            </div>
-            <div class="chat-vis-card-controls">
-              <div class="chat-vis-card-filters">
-                <div class="chat-vis-chart-filter">
-                  <span class="chat-vis-chart-filter-label">X축</span>
-                  <UiSelect
-                    :id="`chart-target-${card.id}`"
-                    v-model="card.selection.chartTargetKey"
-                    :name="`chart-target-${card.id}`"
-                    :options="chartTargetOptions"
-                    class="w-130"
-                    size="sm"
-                    @update:model-value="() => syncChartCard(card)"
-                  />
-                </div>
-                <div class="chat-vis-chart-filter">
-                  <span class="chat-vis-chart-filter-label">차트 타입</span>
-                  <div class="chat-vis-chart-actions">
-                    <UiButton
-                      variant="ghost"
-                      icon-only
-                      :class="{ 'is-active': card.selection.chartType === 'bar' }"
-                      title="막대 차트"
-                      @click="onChangeChartType(card, 'bar')"
-                    >
-                      <template #icon-left>
-                        <i class="icon-bar-chart size-16"></i>
-                      </template>
-                    </UiButton>
-                    <UiButton
-                      variant="ghost"
-                      icon-only
-                      :class="{ 'is-active': card.selection.chartType === 'line' }"
-                      title="라인 차트"
-                      @click="onChangeChartType(card, 'line')"
-                    >
-                      <template #icon-left>
-                        <i class="icon-line-chart size-16"></i>
-                      </template>
-                    </UiButton>
-                    <UiButton
-                      variant="ghost"
-                      icon-only
-                      :class="{ 'is-active': card.selection.chartType === 'pie' }"
-                      title="파이 차트"
-                      @click="onChangeChartType(card, 'pie')"
-                    >
-                      <template #icon-left>
-                        <i class="icon-pie-chart size-16"></i>
-                      </template>
-                    </UiButton>
-                  </div>
-                </div>
-                <div class="chat-vis-chart-filter">
-                  <span class="chat-vis-chart-filter-label">Y축(좌)</span>
-                  <UiSelect
-                    :id="`chart-y-left-${card.id}`"
-                    :model-value="card.selection.yAxisKeys[0] ?? ''"
-                    :name="`chart-y-left-${card.id}`"
-                    :options="yAxisOptions"
-                    class="w-130"
-                    size="sm"
-                    @update:model-value="(value) => onChangePrimaryYAxis(card, String(value))"
-                  />
-                </div>
-                <div class="chat-vis-chart-filter">
-                  <span class="chat-vis-chart-filter-label">Y축(우)</span>
-                  <UiSelect
-                    :id="`chart-y-right-${card.id}`"
-                    :model-value="card.selection.yAxisKeys[1] ?? ''"
-                    :name="`chart-y-right-${card.id}`"
-                    :options="yAxisRightOptions"
-                    class="w-130"
-                    size="sm"
-                    :disabled="card.selection.chartType === 'pie' || !!card.selection.seriesKey"
-                    @update:model-value="(value) => onChangeSecondaryYAxis(card, String(value))"
-                  />
-                </div>
-                <div class="chat-vis-chart-filter">
-                  <span class="chat-vis-chart-filter-label">시리즈</span>
-                  <UiSelect
-                    :id="`chart-series-${card.id}`"
-                    v-model="card.selection.seriesKey"
-                    :name="`chart-series-${card.id}`"
-                    :options="seriesKeyOptionsMap[card.id] ?? []"
-                    class="w-130"
-                    size="sm"
-                    :disabled="card.selection.chartType === 'pie' || (seriesKeyOptionsMap[card.id]?.length ?? 0) < 1"
-                    @update:model-value="() => syncChartCard(card)"
-                  />
-                </div>
-                <div class="chat-vis-chart-flags">
-                  <UiCheckbox
-                    v-model="card.selection.stack"
-                    label="누적(stack)"
-                    :disabled="card.selection.chartType !== 'bar' || card.selection.dualAxis"
-                    @update:model-value="() => syncChartCard(card)"
-                  />
-                  <UiCheckbox
-                    v-model="card.selection.dualAxis"
-                    label="양축(dualAxis)"
-                    :disabled="
-                      !canUseDualAxis(card) || card.selection.chartType === 'pie' || !!card.selection.seriesKey
-                    "
-                    @update:model-value="() => syncChartCard(card)"
-                  />
-                </div>
-              </div>
-              <div class="chat-vis-card-submit">
-                <UiButton
-                  variant="primary-dark"
-                  @click="onGenerateChart(card)"
-                >
-                  차트 생성
-                </UiButton>
-              </div>
-            </div>
-            <div
-              v-if="chartConfigMap[card.id]"
-              class="chat-vis-chart-area"
-              :class="{ 'is-pie': card.selection.chartType === 'pie' }"
-            >
-              <UiChart
-                :key="`${card.id}-${card.selection.chartType}`"
-                :type="card.selection.chartType"
-                :config="chartConfigMap[card.id] ?? {}"
-                show-legend
+          <template v-else>
+            <div class="chat-vis-table-body">
+              <UiTable
+                :columns="tableColumns"
+                :data="tableData"
+                :max-height="'300px'"
+                size="sm"
+                sticky-header
               />
             </div>
+            <!-- SQL 코드블록 -->
             <div
-              v-else
-              class="chat-vis-status"
+              v-if="sqlQuery"
+              class="chat-vis-sql-area"
+              :class="{ 'is-open': isSqlOpen }"
             >
-              선택한 조건으로 생성 가능한 차트 데이터가 없습니다.
-            </div>
-          </div>
-        </div>
-        <!-- SQL 섹션 -->
-        <div class="chat-vis-sql">
-          <div class="chat-vis-sql-bar">
-            <div class="chat-vis-sql-bar-left">
-              <i class="icon-copy size-16"></i>
-              <span class="chat-vis-sql-label">SQL</span>
-            </div>
-            <UiButton
-              size="xlg"
-              variant="primary"
-              @click="toggleSql"
-            >
-              SQL
-              <template #icon-right>
+              <UiCodeBlock :code="sqlQuery" />
+              <button
+                class="chat-vis-sql-toggle"
+                type="button"
+                @click="toggleSql"
+              >
                 <i
                   class="icon-chevron-down size-12"
                   :class="{ 'is-flipped': isSqlOpen }"
                 ></i>
-              </template>
-            </UiButton>
+              </button>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- ===== 섹션 2: 차트 추가 ===== -->
+      <div class="chat-vis-section">
+        <div
+          class="chat-vis-section-header"
+          :class="{ 'is-open': sectionOpen.addChart && hasSchema }"
+          @click="toggleSection('addChart')"
+        >
+          <div class="chat-vis-section-header-left">
+            <span class="chat-vis-section-title">차트 추가</span>
+            <span class="chat-vis-section-subtitle">조회결과 컬럼을 축으로 지정해 새 차트 만들기</span>
           </div>
+          <i
+            class="icon-chevron-down size-24 chat-vis-section-arrow"
+            :class="{ 'is-flipped': sectionOpen.addChart }"
+          ></i>
+        </div>
+        <div
+          v-if="sectionOpen.addChart && hasSchema"
+          class="chat-vis-section-body"
+        >
+          <div class="chat-vis-add-chart">
+            <div class="chat-vis-add-chart-header">
+              <span class="chat-vis-add-chart-label">표 컬럼 선택으로 차트 구성</span>
+              <UiButton
+                variant="primary"
+                size="sm"
+                :disabled="!canCreateChart"
+                @click="onCreateChart"
+              >
+                <template #icon-left>
+                  <i class="icon-plus size-12"></i>
+                </template>
+                차트 생성
+              </UiButton>
+            </div>
+            <!-- 축 설정 행 -->
+            <div class="chat-vis-axis-row">
+              <div class="chat-vis-axis-icon">
+                <i class="icon-axis-arrow size-16"></i>
+                <span>축 설정</span>
+              </div>
+              <div class="chat-vis-axis-columns">
+                <div
+                  v-for="col in addAxisSettings"
+                  :key="col.key"
+                  class="chat-vis-axis-col"
+                >
+                  <span class="chat-vis-axis-col-name">{{ col.label }}</span>
+                  <div class="chat-vis-axis-buttons">
+                    <button
+                      type="button"
+                      class="chat-vis-axis-btn"
+                      :class="{ 'is-active': col.role === 'X' }"
+                      @click="onToggleAxisRole(addAxisSettings, col.key, 'X')"
+                    >
+                      X
+                    </button>
+                    <button
+                      type="button"
+                      class="chat-vis-axis-btn"
+                      :class="{ 'is-active': col.role === 'YL' }"
+                      :disabled="!col.canMetric"
+                      @click="onToggleAxisRole(addAxisSettings, col.key, 'YL')"
+                    >
+                      YL
+                    </button>
+                    <button
+                      type="button"
+                      class="chat-vis-axis-btn"
+                      :class="{ 'is-active': col.role === 'YR' }"
+                      :disabled="!col.canMetric"
+                      @click="onToggleAxisRole(addAxisSettings, col.key, 'YR')"
+                    >
+                      YR
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    class="chat-vis-axis-reset"
+                    title="축 해제"
+                    @click="onResetAxisRole(addAxisSettings, col.key)"
+                  >
+                    <i class="icon-subtract size-12"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <!-- 유효성 에러 -->
+            <div
+              v-if="addChartError"
+              class="chat-vis-add-chart-error"
+            >
+              {{ addChartError }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== 섹션 3: 차트 ===== -->
+      <div class="chat-vis-section">
+        <div
+          class="chat-vis-section-header"
+          :class="{ 'is-open': sectionOpen.charts }"
+          @click="toggleSection('charts')"
+        >
+          <div class="chat-vis-section-header-left">
+            <span class="chat-vis-section-title">차트</span>
+            <span class="chat-vis-section-subtitle">생성된 차트 축을 바꾸거나 차트 유형을 변경하여 볼 수 있습니다</span>
+          </div>
+          <i
+            class="icon-chevron-down size-24 chat-vis-section-arrow"
+            :class="{ 'is-flipped': sectionOpen.charts }"
+          ></i>
+        </div>
+        <div
+          v-if="sectionOpen.charts"
+          class="chat-vis-section-body"
+        >
+          <UiEmpty
+            v-if="chartCards.length === 0"
+            icon="icon-chart-ai"
+            :title="emptyChartMessage"
+          />
           <div
-            class="chat-vis-sql-content"
-            :class="{ 'is-open': isSqlOpen }"
+            v-for="(card, index) in chartCards"
+            v-else
+            :key="card.id"
+            class="chat-vis-card"
           >
-            <UiCodeBlock :code="sqlQuery" />
+            <!-- 카드 헤더: ⭐ 차트 N + 뱃지 + 삭제 -->
+            <div class="chat-vis-card-header">
+              <div class="chat-vis-card-header-left">
+                <i class="icon-star size-16 chat-vis-card-star"></i>
+                <strong>차트 {{ index + 1 }}</strong>
+                <span
+                  v-for="badge in getChartBadges(card)"
+                  :key="badge"
+                  class="chat-vis-card-badge"
+                  >{{ badge }}</span
+                >
+              </div>
+              <button
+                type="button"
+                class="chat-vis-card-close"
+                title="삭제"
+                @click="onRemoveChart(card.id)"
+              >
+                <i class="icon-close size-14"></i>
+              </button>
+            </div>
+            <!-- 축 설정 + 차트 타입 -->
+            <div class="chat-vis-card-toolbar">
+              <div class="chat-vis-axis-row">
+                <div class="chat-vis-axis-icon">
+                  <i class="icon-axis-arrow size-14"></i>
+                  <span>축 설정</span>
+                </div>
+                <div class="chat-vis-axis-columns">
+                  <div
+                    v-for="col in card.axisSettings"
+                    :key="col.key"
+                    class="chat-vis-axis-col"
+                  >
+                    <span class="chat-vis-axis-col-name">{{ col.label }}</span>
+                    <div class="chat-vis-axis-buttons">
+                      <button
+                        type="button"
+                        class="chat-vis-axis-btn"
+                        :class="{ 'is-active': col.role === 'X' }"
+                        @click="onToggleCardAxisRole(card, col.key, 'X')"
+                      >
+                        X
+                      </button>
+                      <button
+                        type="button"
+                        class="chat-vis-axis-btn"
+                        :class="{ 'is-active': col.role === 'YL' }"
+                        :disabled="!col.canMetric"
+                        @click="onToggleCardAxisRole(card, col.key, 'YL')"
+                      >
+                        YL
+                      </button>
+                      <button
+                        type="button"
+                        class="chat-vis-axis-btn"
+                        :class="{ 'is-active': col.role === 'YR' }"
+                        :disabled="!col.canMetric"
+                        @click="onToggleCardAxisRole(card, col.key, 'YR')"
+                      >
+                        YR
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      class="chat-vis-axis-reset"
+                      title="축 해제"
+                      @click="onResetCardAxisRole(card, col.key)"
+                    >
+                      <i class="icon-subtract size-12"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <!-- 차트 타입 아이콘 -->
+              <div class="chat-vis-chart-type-buttons">
+                <button
+                  type="button"
+                  class="chat-vis-type-btn"
+                  :class="{ 'is-active': card.chartType === 'bar' }"
+                  title="막대 차트"
+                  @click="onChangeCardChartType(card, 'bar')"
+                >
+                  <i class="icon-bar-chart size-16"></i>
+                </button>
+                <button
+                  type="button"
+                  class="chat-vis-type-btn"
+                  :class="{ 'is-active': card.chartType === 'line' }"
+                  title="라인 차트"
+                  @click="onChangeCardChartType(card, 'line')"
+                >
+                  <i class="icon-line-chart size-16"></i>
+                </button>
+                <button
+                  type="button"
+                  class="chat-vis-type-btn"
+                  :class="{ 'is-active': card.chartType === 'pie' }"
+                  title="파이 차트"
+                  @click="onChangeCardChartType(card, 'pie')"
+                >
+                  <i class="icon-pie-chart size-16"></i>
+                </button>
+              </div>
+            </div>
+            <!-- 차트 영역 -->
+            <div
+              v-if="chartConfigMap[card.id]"
+              class="chat-vis-chart-area"
+              :class="{ 'is-pie': card.chartType === 'pie' }"
+            >
+              <UiChart
+                :key="`${card.id}-${card.chartType}-${card.configVersion}`"
+                :type="card.chartType"
+                :config="chartConfigMap[card.id] ?? {}"
+                show-legend
+              />
+            </div>
+            <UiEmpty
+              v-else
+              title="선택한 조건으로 생성 가능한 차트 데이터가 없습니다."
+            />
           </div>
         </div>
       </div>
@@ -324,21 +382,11 @@
 </template>
 
 <script setup lang="ts">
-import type { VisualizationChartSelection, VisualizationChartType } from '~/types/chat'
+import type { VisualizationChartSelection, VisualizationChartType, VisualizationViewModel } from '~/types/chat'
 import type { TableColumn } from '~/types/table'
-import {
-  buildChartTargetOptions,
-  buildChartModel,
-  buildDefaultChartSelection,
-  buildMetricOptions,
-  buildSeriesKeyOptions,
-  buildTableModel,
-} from '~/utils/chat/visualizationUtil'
-import {
-  captureChartCanvasAsPng,
-  clearBodyChartFullscreen,
-  toggleBodyChartFullscreen,
-} from '~/utils/chat/visualizationChartUtil'
+import { buildChartModel, buildTableModel, buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
+import { clearBodyChartFullscreen, toggleBodyChartFullscreen } from '~/utils/chat/visualizationChartUtil'
+import { resolveColumnLabel } from '~/utils/chat/visualizationLabelMap'
 
 interface Props {
   open: boolean
@@ -356,77 +404,224 @@ const emit = defineEmits<{
 
 const { visualizationViewMap, handleSelectVisualizationData } = useChatStore()
 
+// 🔽 더미 키 — 백엔드 연결 시 제거
+const DUMMY_MESSAGE_ID = '__dummy_vis__'
+
+// ===== 상태 변수 =====
 const isFullscreen = ref(false)
-const isSqlOpen = ref(true)
+const isSqlOpen = ref(false)
+const sectionOpen = reactive({ result: true, addChart: true, charts: true })
+
+type AxisRole = 'X' | 'YL' | 'YR' | ''
+
+interface ColumnAxisSetting {
+  key: string
+  label: string
+  role: AxisRole
+  canMetric: boolean // Y축 후보 여부
+}
 
 interface ChartCardState {
   id: string
-  selection: VisualizationChartSelection
+  chartType: VisualizationChartType
+  axisSettings: ColumnAxisSetting[]
+  configVersion: number // 변경 추적용
 }
 
+const addAxisSettings = ref<ColumnAxisSetting[]>([])
+const addChartError = ref('')
 const chartCards = ref<ChartCardState[]>([])
 
+// ===== 뷰 모델 =====
 const currentVisualizationView = computed(() => {
-  if (!props.messageId) return null
-  return visualizationViewMap.value[props.messageId] ?? null
+  const id = props.messageId ?? DUMMY_MESSAGE_ID
+  return visualizationViewMap.value[id] ?? null
 })
 
 const isLoading = computed(() => currentVisualizationView.value?.status === 'loading')
 const isError = computed(() => currentVisualizationView.value?.status === 'error')
 const isEmpty = computed(() => currentVisualizationView.value?.status === 'empty')
+const hasSchema = computed(() => !!currentVisualizationView.value?.schema)
 
 const errorMessage = computed(
   () => currentVisualizationView.value?.errorMessage ?? '시각화 데이터를 불러오지 못했습니다.',
 )
 const sqlQuery = computed(() => currentVisualizationView.value?.sql ?? '')
 
+// ===== 테이블 =====
 const tableModel = computed(() => {
   if (!currentVisualizationView.value) {
     return { columns: [] as TableColumn[], data: [] as Array<Record<string, unknown>> }
   }
   return buildTableModel(currentVisualizationView.value)
 })
-
-const tableSubtitle = computed(() => {
-  const rowCount = currentVisualizationView.value?.rows.length ?? 0
-  return `총 ${rowCount.toLocaleString('ko-KR')}건`
-})
 const tableColumns = computed(() => tableModel.value.columns)
 const tableData = computed(() => tableModel.value.data)
 
-const yAxisOptions = computed(() => buildMetricOptions(currentVisualizationView.value?.schema ?? null))
-const yAxisRightOptions = computed(() => [{ label: '미사용', value: '' }, ...yAxisOptions.value])
-const chartTargetOptions = computed(() => buildChartTargetOptions(currentVisualizationView.value?.schema ?? null))
-const seriesKeyOptionsMap = computed(() => {
-  const schema = currentVisualizationView.value?.schema ?? null
-  const mapped: Record<string, Array<{ label: string; value: string }>> = {}
-  chartCards.value.forEach((card) => {
-    mapped[card.id] = [...buildSeriesKeyOptions(schema, card.selection.chartTargetKey)]
+// ===== 축 설정 헬퍼 =====
+const buildAxisSettingsFromSchema = (): ColumnAxisSetting[] => {
+  const schema = currentVisualizationView.value?.schema
+  if (!schema) return []
+
+  const metricKeySet = new Set(schema.metricKeys)
+  const targetKeySet = new Set(schema.selectableOptions.chartTargetKeys)
+  const defaultSel = schema.defaultSelection
+
+  // 표시할 컬럼: X축 후보 + Y축 후보 (중복 제거, 순서 유지)
+  const displayKeys: string[] = []
+  const added = new Set<string>()
+  // X축 후보 먼저
+  schema.selectableOptions.chartTargetKeys.forEach((key) => {
+    if (!added.has(key)) {
+      displayKeys.push(key)
+      added.add(key)
+    }
   })
-  return mapped
+  // Y축 후보
+  schema.selectableOptions.yAxisKeys.forEach((key) => {
+    if (!added.has(key)) {
+      displayKeys.push(key)
+      added.add(key)
+    }
+  })
+
+  return displayKeys.map((key) => {
+    let role: AxisRole = ''
+    if (key === defaultSel.chartTargetKey) role = 'X'
+    else if (defaultSel.yAxisKeys.includes(key)) role = 'YL'
+    return {
+      key,
+      label: resolveColumnLabel(key),
+      role,
+      canMetric: metricKeySet.has(key),
+    }
+  })
+}
+
+// ===== 축 토글 =====
+const onToggleAxisRole = (settings: ColumnAxisSetting[], key: string, role: AxisRole) => {
+  const setting = settings.find((s) => s.key === key)
+  if (!setting) return
+
+  // 같은 역할 클릭 → 해제
+  if (setting.role === role) {
+    setting.role = ''
+    return
+  }
+
+  // X 선택 → 기존 X 해제 (하나만 가능)
+  if (role === 'X') {
+    settings.forEach((s) => {
+      if (s.role === 'X') s.role = ''
+    })
+  }
+
+  setting.role = role
+}
+
+// ===== 축 해제 =====
+const onResetAxisRole = (settings: ColumnAxisSetting[], key: string) => {
+  const setting = settings.find((s) => s.key === key)
+  if (setting) setting.role = ''
+}
+
+// ===== 차트 카드 축 토글 =====
+const onToggleCardAxisRole = (card: ChartCardState, key: string, role: AxisRole) => {
+  onToggleAxisRole(card.axisSettings, key, role)
+  card.configVersion++
+}
+
+// ===== 차트 카드 축 해제 =====
+const onResetCardAxisRole = (card: ChartCardState, key: string) => {
+  onResetAxisRole(card.axisSettings, key)
+  card.configVersion++
+}
+
+// ===== 차트 카드 타입 변경 =====
+const onChangeCardChartType = (card: ChartCardState, chartType: VisualizationChartType) => {
+  card.chartType = chartType
+  card.configVersion++
+}
+
+// ===== axisSettings → VisualizationChartSelection 변환 =====
+const axisSettingsToSelection = (
+  settings: ColumnAxisSetting[],
+  chartType: VisualizationChartType,
+): VisualizationChartSelection => {
+  const xCol = settings.find((s) => s.role === 'X')
+  const ylCols = settings.filter((s) => s.role === 'YL')
+  const yrCols = settings.filter((s) => s.role === 'YR')
+
+  return {
+    chartType,
+    chartTargetKey: xCol?.key ?? '',
+    yAxisKeys: [...ylCols.map((c) => c.key), ...yrCols.map((c) => c.key)],
+    seriesKey: '',
+    stack: false,
+    dualAxis: yrCols.length > 0,
+  }
+}
+
+// ===== 차트 생성 가능 여부 =====
+const canCreateChart = computed(() => {
+  const hasX = addAxisSettings.value.some((s) => s.role === 'X')
+  const hasY = addAxisSettings.value.some((s) => s.role === 'YL' || s.role === 'YR')
+  return hasX && hasY
 })
 
+// ===== 차트 생성 =====
+const createCardId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+
+const onCreateChart = () => {
+  if (!canCreateChart.value) {
+    addChartError.value = 'X축과 Y축을 각각 1개 이상 선택해주세요.'
+    return
+  }
+  addChartError.value = ''
+
+  const newCard: ChartCardState = {
+    id: createCardId(),
+    chartType: 'bar',
+    axisSettings: addAxisSettings.value.map((s) => ({ ...s })),
+    configVersion: 0,
+  }
+  chartCards.value.push(newCard)
+}
+
+// ===== 차트 삭제 =====
+const onRemoveChart = (id: string) => {
+  chartCards.value = chartCards.value.filter((card) => card.id !== id)
+}
+
+// ===== 차트 뱃지 텍스트 =====
+const getChartBadges = (card: ChartCardState): string[] => {
+  const xCol = card.axisSettings.find((s) => s.role === 'X')
+  const yCols = card.axisSettings.filter((s) => s.role === 'YL' || s.role === 'YR')
+
+  if (yCols.length === 0) return ['사용자 정의 차트']
+
+  return yCols.map((col, i) => {
+    if (i === 0 && xCol) return `${xCol.label}별 ${col.label}`
+    return col.label
+  })
+}
+
+// ===== 차트 config 생성 =====
 const chartConfigMap = computed<Record<string, Record<string, unknown>>>(() => {
   if (!currentVisualizationView.value) return {}
   const mapped: Record<string, Record<string, unknown>> = {}
   chartCards.value.forEach((card) => {
-    const config = buildChartModel(currentVisualizationView.value!, card.selection)
+    // configVersion 참조하여 반응성 트리거
+    void card.configVersion
+    const selection = axisSettingsToSelection(card.axisSettings, card.chartType)
+    const config = buildChartModel(currentVisualizationView.value!, selection)
     if (config) {
       mapped[card.id] = config
     }
   })
   return mapped
 })
-const hasChartData = computed(() => {
-  if (isLoading.value || isError.value || isEmpty.value) return false
-  return chartCards.value.length > 0
-})
-const canAddChart = computed(() => {
-  const schema = currentVisualizationView.value?.schema
-  return Boolean(
-    schema && schema.selectableOptions.yAxisKeys.length > 0 && schema.selectableOptions.chartTargetKeys.length > 0,
-  )
-})
+
 const emptyChartMessage = computed(() => {
   const schema = currentVisualizationView.value?.schema
   if (!schema) return '차트로 표시할 수 있는 데이터가 없습니다.'
@@ -436,9 +631,10 @@ const emptyChartMessage = computed(() => {
   if (schema.selectableOptions.chartTargetKeys.length === 0) {
     return 'X축으로 사용할 수 있는 컬럼이 없습니다.'
   }
-  return '차트로 표시할 수 있는 수치 데이터가 없습니다.'
+  return '위 "차트 추가" 영역에서 축을 설정한 뒤 차트를 생성하세요.'
 })
 
+// ===== 헤더 액션 =====
 const toggleFullscreen = () => {
   isFullscreen.value = !isFullscreen.value
   toggleBodyChartFullscreen(isFullscreen.value)
@@ -453,160 +649,48 @@ const onClose = () => {
   emit('update:open', false)
 }
 
+const toggleSection = (section: 'result' | 'addChart' | 'charts') => {
+  sectionOpen[section] = !sectionOpen[section]
+}
+
 const toggleSql = () => {
   isSqlOpen.value = !isSqlOpen.value
-}
-
-const createCardId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-
-const createDefaultChartCard = (): ChartCardState => {
-  const schema = currentVisualizationView.value?.schema
-  return {
-    id: createCardId(),
-    selection: buildDefaultChartSelection(schema ?? null),
-  }
-}
-const syncChartCard = (card: ChartCardState) => {
-  const schema = currentVisualizationView.value?.schema
-  if (!schema) return
-
-  const validYKeys = new Set(schema.selectableOptions.yAxisKeys)
-  const validTargetKeys = new Set(schema.selectableOptions.chartTargetKeys)
-
-  if (!validTargetKeys.has(card.selection.chartTargetKey)) {
-    card.selection.chartTargetKey = schema.defaultSelection.chartTargetKey
-  }
-
-  const seriesOptions = buildSeriesKeyOptions(schema, card.selection.chartTargetKey)
-  const availableSeriesKeys = seriesOptions.map((option) => String(option.value))
-  const validSeriesKeys = new Set(availableSeriesKeys)
-
-  if (
-    card.selection.seriesKey &&
-    (card.selection.chartType === 'pie' || !validSeriesKeys.has(card.selection.seriesKey))
-  ) {
-    card.selection.seriesKey = ''
-  }
-
-  if (card.selection.chartType === 'pie') {
-    card.selection.seriesKey = ''
-  } else {
-    // 후보가 1개일 때 자동 선택
-    if (!card.selection.seriesKey && availableSeriesKeys.length === 1) {
-      card.selection.seriesKey = availableSeriesKeys[0]
-    }
-  }
-
-  const maxYKeys = card.selection.seriesKey ? 1 : 2
-  card.selection.yAxisKeys = card.selection.yAxisKeys.filter((key) => validYKeys.has(key)).slice(0, maxYKeys)
-
-  if (card.selection.yAxisKeys.length === 0 && schema.defaultSelection.yAxisKeys.length > 0) {
-    card.selection.yAxisKeys = [schema.defaultSelection.yAxisKeys[0]]
-  }
-
-  if (card.selection.chartType === 'pie') {
-    card.selection.stack = false
-    card.selection.dualAxis = false
-    if (card.selection.yAxisKeys.length > 1) {
-      card.selection.yAxisKeys = [card.selection.yAxisKeys[0]]
-    }
-  }
-
-  if (card.selection.seriesKey) {
-    card.selection.dualAxis = false
-  }
-
-  if (card.selection.dualAxis && card.selection.yAxisKeys.length < 2) {
-    card.selection.dualAxis = false
-  }
-
-  if (card.selection.dualAxis) {
-    card.selection.stack = false
-  }
-
-  if (card.selection.chartType !== 'bar') {
-    card.selection.stack = false
-  }
-}
-
-const syncChartCards = () => {
-  const schema = currentVisualizationView.value?.schema
-  if (
-    !schema ||
-    schema.selectableOptions.yAxisKeys.length === 0 ||
-    schema.selectableOptions.chartTargetKeys.length === 0
-  ) {
-    chartCards.value = []
-    return
-  }
-  if (chartCards.value.length === 0) {
-    chartCards.value = [createDefaultChartCard()]
-    return
-  }
-  chartCards.value.forEach((card) => syncChartCard(card))
-}
-
-const onAddChart = () => {
-  if (!canAddChart.value) return
-  chartCards.value.push(createDefaultChartCard())
-}
-
-const onRemoveChart = (id: string) => {
-  if (chartCards.value.length <= 1) return
-  chartCards.value = chartCards.value.filter((card) => card.id !== id)
-}
-
-const onGenerateChart = (card: ChartCardState) => {
-  syncChartCard(card)
-}
-
-const onCaptureChart = (event: MouseEvent, card: ChartCardState) => {
-  const trigger = event.currentTarget as HTMLElement | null
-  const chartCard = trigger?.closest('.chat-vis-card')
-  const canvas = chartCard?.querySelector('canvas') as HTMLCanvasElement | null
-  if (!canvas) {
-    console.warn('[chat] 캡처할 차트 캔버스를 찾지 못했습니다.')
-    return
-  }
-  captureChartCanvasAsPng(canvas, card.selection.chartType)
-}
-
-const onChangeChartType = (card: ChartCardState, chartType: VisualizationChartType) => {
-  card.selection.chartType = chartType
-  syncChartCard(card)
-}
-
-const onChangePrimaryYAxis = (card: ChartCardState, value: string) => {
-  const secondary = card.selection.yAxisKeys[1] ?? ''
-  card.selection.yAxisKeys = [value]
-  if (secondary && secondary !== value) {
-    card.selection.yAxisKeys.push(secondary)
-  }
-  syncChartCard(card)
-}
-
-const onChangeSecondaryYAxis = (card: ChartCardState, value: string) => {
-  const primary = card.selection.yAxisKeys[0] ?? ''
-  if (!value || value === primary) {
-    card.selection.yAxisKeys = primary ? [primary] : []
-    card.selection.dualAxis = false
-    syncChartCard(card)
-    return
-  }
-  card.selection.yAxisKeys = primary ? [primary, value] : [value]
-  syncChartCard(card)
-}
-
-const canUseDualAxis = (card: ChartCardState) => {
-  const schema = currentVisualizationView.value?.schema
-  if (!schema) return false
-  if (card.selection.seriesKey) return false
-  return schema.selectableOptions.canDualAxis && card.selection.yAxisKeys.length >= 2
 }
 
 const onRefresh = async () => {
   if (!props.messageId) return
   await handleSelectVisualizationData(props.messageId)
+}
+
+// ===== 초기화 =====
+const initAxisSettings = () => {
+  addAxisSettings.value = buildAxisSettingsFromSchema()
+  addChartError.value = ''
+}
+
+// ============================================
+// 🔽 더미 데이터 — 백엔드 연결 시 제거
+// ============================================
+const buildDummyVisualizationView = (): VisualizationViewModel => {
+  const rows = [
+    { 통계명: '1월', '매출액(억)': 125, '매출이익(억)': 87, '영업이익(억)': 25 },
+    { 통계명: '2월', '매출액(억)': 132, '매출이익(억)': 92, '영업이익(억)': 26 },
+    { 통계명: '3월', '매출액(억)': 148, '매출이익(억)': 103, '영업이익(억)': 30 },
+    { 통계명: '4월', '매출액(억)': 155, '매출이익(억)': 108, '영업이익(억)': 31 },
+    { 통계명: '5월', '매출액(억)': 162, '매출이익(억)': 113, '영업이익(억)': 32 },
+    { 통계명: '6월', '매출액(억)': 170, '매출이익(억)': 119, '영업이익(억)': 34 },
+  ]
+  const tableData = JSON.stringify(rows)
+  const sql = `SELECT\n  TO_CHAR(sale_date, 'YYYY-MM') AS month,\n  ROUND(SUM(amount) / 100000000, 1) AS sales_억\nFROM sales\nWHERE EXTRACT(YEAR FROM sale_date) = 2025\nGROUP BY TO_CHAR(sale_date, 'YYYY-MM')\nORDER BY month;`
+  return buildVisualizationViewModel({ messageId: DUMMY_MESSAGE_ID, sql, tableData })
+}
+
+const loadDummyData = () => {
+  const messageId = props.messageId ?? DUMMY_MESSAGE_ID
+  if (!visualizationViewMap.value[messageId]) {
+    visualizationViewMap.value[messageId] = buildDummyVisualizationView()
+    visualizationViewMap.value[messageId].messageId = messageId
+  }
 }
 
 watch(
@@ -617,86 +701,26 @@ watch(
       isFullscreen.value = false
       clearBodyChartFullscreen()
     }
-    if (!open) return
+    // 🔽 더미 — 패널 열릴 때 데이터 없으면 더미 로드
+    if (open) {
+      const id = props.messageId
+      if (!id || !visualizationViewMap.value[id]) {
+        loadDummyData()
+      }
+    }
   },
+  { immediate: true },
 )
 
-watch(currentVisualizationView, () => {
-  syncChartCards()
-})
+watch(
+  currentVisualizationView,
+  () => {
+    initAxisSettings()
+  },
+  { immediate: true },
+)
 
 onUnmounted(() => {
   clearBodyChartFullscreen()
 })
 </script>
-
-<style lang="scss" scoped>
-.chat-vis-card {
-  border: 1px solid #e4e9ee;
-  border-radius: $border-radius-base;
-  padding: $spacing-md;
-  margin-top: $spacing-md;
-  background-color: #fff;
-}
-
-.chat-vis-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: $spacing-sm;
-}
-
-.chat-vis-card-actions {
-  display: flex;
-  align-items: center;
-  gap: $spacing-xs;
-}
-
-.chat-vis-card-controls {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: $spacing-md;
-  align-items: start;
-  margin-bottom: $spacing-md;
-}
-
-.chat-vis-card-filters {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: $spacing-sm;
-}
-
-.chat-vis-chart-filter-label {
-  min-width: 64px;
-  display: inline-flex;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-.chat-vis-card-submit {
-  display: flex;
-  align-items: flex-end;
-}
-
-@media (max-width: 1024px) {
-  .chat-vis-card-controls {
-    grid-template-columns: 1fr;
-  }
-
-  .chat-vis-card-submit {
-    justify-content: flex-end;
-  }
-}
-
-.chat-vis-type-buttons {
-  display: flex;
-  align-items: center;
-  gap: $spacing-xs;
-}
-
-.chat-vis-chart-flags {
-  display: flex;
-  align-items: center;
-  gap: $spacing-md;
-}
-</style>

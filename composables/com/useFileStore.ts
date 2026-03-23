@@ -83,6 +83,21 @@ export const useFileStore = () => {
   }
 
   /**
+   * 파일 다운로드
+   * - 반환된 URL을 a 태그 클릭 등으로 바로 다운로드 트리거.
+   */
+  const onDownloadFile = async (docId: string) => {
+    const url = await handleDownloadFile(docId)
+    if (!url) return
+    const a = document.createElement('a')
+    a.href = url
+    a.download = ''
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+  }
+
+  /**
    * 파일 다운로드용 URL 조회
    * - 반환된 URL을 a 태그 클릭 등으로 바로 다운로드 트리거.
    */
@@ -109,6 +124,7 @@ export const useFileStore = () => {
     downloadUrl,
     fileError,
     // 액션
+    onDownloadFile,
     handleUploadFile,
     handleViewFileUrl,
     handleDownloadFile,
