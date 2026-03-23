@@ -4,7 +4,7 @@
       variant="ghost"
       size="xs"
       icon-only
-      :class="{ 'is-active': isLiked }"
+      :class="{ 'is-active': chatLogReaction?.satisYn === 'Y' }"
       title="좋아요"
       @click="emit('on-like')"
     >
@@ -16,7 +16,7 @@
       variant="ghost"
       size="xs"
       icon-only
-      :class="{ 'is-active': isDisliked }"
+      :class="{ 'is-active': chatLogReaction?.satisYn === 'N' }"
       title="싫어요"
       @click="emit('on-dislike')"
     >
@@ -71,11 +71,9 @@
 
 <script setup lang="ts">
 import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
-
+import type { ChatLogReaction } from '~/types/chat'
 interface Props {
-  isLiked?: boolean
-  isDisliked?: boolean
-  isFavorited?: boolean
+  chatLogReaction?: ChatLogReaction
 }
 
 defineProps<Props>()

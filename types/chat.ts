@@ -11,8 +11,7 @@ export interface ChatMessage {
   rContent?: string
   createdAt: string
   isStreaming?: boolean
-  isLiked?: boolean
-  isDisliked?: boolean
+  chatLogReaction?: ChatLogReaction
   hasSource?: boolean
   hasVisualization?: boolean
   sourceUrl?: string
@@ -40,8 +39,7 @@ export const EMPTY_CHAT_MESSAGE: ChatMessage = {
   rContent: '',
   createdAt: '',
   isStreaming: false,
-  isLiked: false,
-  isDisliked: false,
+  chatLogReaction: undefined,
   hasSource: false,
   hasVisualization: false,
   sourceUrl: '',
@@ -116,6 +114,9 @@ export interface ChatLogListRow {
   ttsq?: string
   /** 시각화 테이블 원본(JSON 문자열) */
   tableData?: string
+  /** 만족도 Y/N (목록 조회 시) */
+  satisYn?: string
+  satisContent?: string
   [key: string]: unknown
 }
 
@@ -129,6 +130,19 @@ export interface ChatRefRow {
   docTitle: string
   fileName: string
   filePath: string
+}
+
+/** 좋아요/싫어요 등록 API 응답 한 건 */
+export interface ChatLogReaction {
+  logId?: string
+  satisYn: string
+  satisContent?: string
+}
+
+/** saveSatisYn.do 응답 (공통 successYn + data) */
+export interface SaveChatLogReactionResponse {
+  successYn?: boolean
+  data?: ChatLogReaction
 }
 
 /** 시각화 데이터 목록 API 응답 한 건 */
