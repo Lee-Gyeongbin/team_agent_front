@@ -180,11 +180,15 @@
 .chat-message-actions {
   display: flex;
   align-items: center;
-  gap: $spacing-xs;
+  gap: 0;
+
+  i {
+    color: #94a3b8;
+  }
 
   .ui-button.variant-ghost.size-btn-xs.is-icon-only {
-    width: 36px;
-    height: 36px;
+    width: 30px;
+    height: 30px;
     padding: 0;
     color: $color-text-disabled;
     border-radius: $border-radius-sm;
@@ -193,6 +197,10 @@
     &:hover {
       background: #dce4e9;
       color: $color-text-secondary;
+
+      i {
+        color: #6f7a93;
+      }
     }
 
     &.is-active {
