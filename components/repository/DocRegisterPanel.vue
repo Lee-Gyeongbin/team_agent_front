@@ -10,8 +10,8 @@
       <div class="url-reg-field">
         <label class="url-reg-label">문서 제목 <span class="required">*</span></label>
         <UiInput
-          ref="titleRef"
-          v-model="form.title"
+          ref="docTitleRef"
+          v-model="form.docTitle"
           placeholder="문서 제목을 입력하세요"
           size="md"
         />
@@ -55,8 +55,8 @@
       <div class="url-reg-field">
         <label class="url-reg-label">보안등급</label>
         <UiSelect
-          v-model="form.security"
-          :options="securityOptions"
+          v-model="form.secLvl"
+          :options="secLvlOptions"
           placeholder="선택"
           size="md"
         />
@@ -145,7 +145,7 @@ const emit = defineEmits<{
 
 const { categoryList } = useCategoryStore()
 
-const titleRef = ref<{ focus?: () => void; $el?: HTMLElement } | null>(null)
+const docTitleRef = ref<{ focus?: () => void; $el?: HTMLElement } | null>(null)
 const categoryFieldRef = ref<HTMLElement | null>(null)
 
 const focusField = (fieldRef: { value: any }) => {
@@ -162,10 +162,10 @@ const focusField = (fieldRef: { value: any }) => {
 const isCategoryModalOpen = ref(false)
 
 const form = ref({
-  title: '',
+  docTitle: '',
   categoryId: '',
   author: '',
-  security: '',
+  secLvl: '',
   content: '',
   files: [] as File[],
   keywords: '',
@@ -188,24 +188,23 @@ const selectedCategoryName = computed(() => {
   return findName(categoryList.value)
 })
 
-const securityOptions = [
+const secLvlOptions = [
   { label: '일반(공개)', value: 'public' },
   { label: '내부', value: 'internal' },
   { label: '대외비', value: 'confidential' },
   { label: '기밀', value: 'secret' },
 ]
 
-const onCategoryConfirm = (selectedIds: string[]) => {
-  // 마지막 선택된 카테고리 사용
-  form.value.categoryId = selectedIds.length > 0 ? selectedIds[selectedIds.length - 1] : ''
+const onCategoryConfirm = (selectedId: string) => {
+  form.value.categoryId = selectedId || ''
 }
 
 const resetForm = () => {
   form.value = {
-    title: '',
+    docTitle: '',
     categoryId: '',
     author: '',
-    security: '',
+    secLvl: '',
     content: '',
     files: [],
     keywords: '',
@@ -214,9 +213,9 @@ const resetForm = () => {
 }
 
 const onSave = () => {
-  if (!form.value.title.trim()) {
+  if (!form.value.docTitle.trim()) {
     openToast({ message: '문서 제목을 입력해주세요.', type: 'warning' })
-    focusField(titleRef)
+    focusField(docTitleRef)
     return
   }
   if (!form.value.categoryId) {
