@@ -5,9 +5,6 @@
   >
     <!-- RAG 데이터셋 (001) -->
     <template v-if="isRag">
-      <div class="agent-data-card-drag">
-        <i class="icon-move-handle size-20" />
-      </div>
       <div class="agent-data-card-info">
         <div class="agent-data-card-title">{{ ds.dsNm }}</div>
         <p class="agent-data-card-desc">{{ ds.description }}</p>

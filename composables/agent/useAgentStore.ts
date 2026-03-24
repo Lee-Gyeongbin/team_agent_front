@@ -17,6 +17,8 @@ const agentList = ref<Agent[]>([])
 const isSettingOpen = ref(false)
 const selectedAgent = ref<Agent | null>(null)
 const modelOptions = ref<{ modelId: string; modelName: string }[]>([])
+/** 드래그 시작 전 원본 순서 스냅샷 */
+const agentListBeforeDrag = ref<Agent[]>([])
 
 /** 에이전트 목록 조회 */
 const handleSelectAgentList = async () => {
@@ -213,15 +215,36 @@ const handleChangeAgentType = async (agentTypeCd: string) => {
   }
 }
 
-const handleDeleteAgent = async (agentId: string) => {
-  await fetchDeleteAgent(agentId)
-  await handleSelectAgentList()
+/** 에이전트 삭제 */
+const handleDeleteAgent = async (agent: Agent) => {
+  openConfirm({
+    message: '에이전트를 삭제하시겠습니까?',
+    onConfirm: async () => {
+      await fetchDeleteAgent(agent)
+      openToast({ message: '에이전트가 삭제되었습니다.', type: 'success' })
+      await handleSelectAgentList()
+    },
+  })
 }
 
-// ===== Agent 순서 =====
+/** 에이전트 드래그 시작 시 순서 저장 (취소 시 복원용) */
+const onAgentDragStart = () => {
+  agentListBeforeDrag.value = [...agentList.value]
+}
+
+/** 에이전트 순서 변경 */
 const handleUpdateAgentOrder = async (orderList: { agentId: string; sortOrd: number }[]) => {
-  await fetchUpdateAgentOrder(orderList)
-  await handleSelectAgentList()
+  openConfirm({
+    message: '에이전트 순서를 변경하시겠습니까?',
+    onConfirm: async () => {
+      await fetchUpdateAgentOrder(orderList)
+      await handleSelectAgentList()
+      openToast({ message: '에이전트 순서가 변경되었습니다.', type: 'info' })
+    },
+    onCancel: () => {
+      agentList.value = [...agentListBeforeDrag.value]
+    },
+  })
 }
 
 export const useAgentStore = () => {
@@ -237,6 +260,7 @@ export const useAgentStore = () => {
     handleSaveAgent,
     handleChangeAgentType,
     handleDeleteAgent,
+    onAgentDragStart,
     handleUpdateAgentOrder,
   }
 }

@@ -90,18 +90,14 @@ const statusFilter = ref('all')
 
 const statusOptions = [
   { label: '전체 상태', value: 'all' },
-  { label: '연결됨', value: 'connected' },
-  { label: '미연결', value: 'disconnected' },
+  { label: '연결됨', value: 'Y' },
+  { label: '미연결', value: 'N' },
 ]
 
 const filteredItems = computed(() => {
   const list = items.value
-  if (statusFilter.value === 'connected') {
-    return list.filter((d) => d.connYn === 'Y')
-  } else if (statusFilter.value === 'disconnected') {
-    return list.filter((d) => d.connYn === 'N')
-  }
-  return list
+  if (statusFilter.value === 'all') return list
+  return list.filter((d) => d.connYn === statusFilter.value)
 })
 
 // 요약

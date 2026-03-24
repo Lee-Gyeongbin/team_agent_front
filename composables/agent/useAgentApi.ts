@@ -45,12 +45,14 @@ export const useAgentApi = () => {
     return post<{ data: Agent }>('/agent/save.do', agent)
   }
 
-  const fetchDeleteAgent = async (agentId: string) => {
-    return mockPost<{ data: { agentId: string } }>(`${MOCK_BASE}/delete`, { agentId })
+  /** 에이전트 삭제 */
+  const fetchDeleteAgent = async (agent: Agent): Promise<void> => {
+    return post(`/agent/delete.do`, agent)
   }
 
-  const fetchUpdateAgentOrder = async (orderList: { agentId: string; sortOrd: number }[]) => {
-    return mockPost<{ data: null }>(`${MOCK_BASE}/order`, orderList)
+  /** 에이전트 순서 변경 */
+  const fetchUpdateAgentOrder = async (orderList: { agentId: string; sortOrd: number }[]): Promise<{ data: null }> => {
+    return post<{ data: null }>(`/agent/order.do`, orderList)
   }
 
   return {

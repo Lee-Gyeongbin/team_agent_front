@@ -21,6 +21,7 @@
       handle=".com-card-drag"
       item-key="agentId"
       animation="200"
+      @start="onAgentDragStart"
       @end="onDragEnd"
     >
       <template #item="{ element }">
@@ -57,6 +58,7 @@ const {
   handleFetchAgentDetail,
   handleSaveAgent,
   handleDeleteAgent,
+  onAgentDragStart,
   handleUpdateAgentOrder,
   handleToggleAgent,
 } = useAgentStore()
@@ -91,21 +93,15 @@ const onSaveSetting = async (form: Partial<Agent>) => {
 }
 
 const doDeleteAgent = async (agent: Agent) => {
-  const confirmed = await openConfirm({
-    title: '에이전트 삭제',
-    message: `"${agent.agentNm}" 에이전트를 삭제하시겠습니까?`,
-  })
-  if (!confirmed) return
-  await handleDeleteAgent(agent.agentId)
+  await handleDeleteAgent(agent)
 }
 
 const onToggleActive = async (agent: Agent) => {
   await handleToggleAgent(agent.agentId, agent.useYn === 'Y' ? 'N' : 'Y')
 }
 
-// 🔽 드래그 정렬 — 백엔드 연결 시 API 호출로 교체
 const onDragEnd = async () => {
-  const orderData = agentList.value.map((item, index) => ({ agentId: item.agentId, sortOrd: index }))
+  const orderData = agentList.value.map((item, index) => ({ agentId: item.agentId, sortOrd: index + 1 }))
   await handleUpdateAgentOrder(orderData)
 }
 </script>
