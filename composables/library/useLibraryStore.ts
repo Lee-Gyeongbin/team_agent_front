@@ -68,6 +68,8 @@ const movingCard = ref<LibraryCard | null>(null)
 const selectedCardId = ref<string | null>(null)
 const selectedCard = ref<LibraryCardDetail | null>(null)
 const newCategoryNm = ref('')
+const searchTitle = ref('')
+const searchSort = ref('custom')
 
 /** cardId가 속한 카테고리를 제외한 카테고리 목록 (이동 모달용) */
 const moveTargetOptions = computed(() => {
@@ -156,7 +158,7 @@ export const useLibraryStore = () => {
     initModalStates()
     isLoading.value = true
     try {
-      const response = await fetchCardList()
+      const response = await fetchCardList(searchTitle.value, searchSort.value)
       const list = response.dataList ?? []
       cardList.value = list
       const cardsByCategory = mapCardListToCategoryCards(list)
@@ -515,6 +517,8 @@ export const useLibraryStore = () => {
     selectedCardId,
     selectedCard,
     newCategoryNm,
+    searchTitle,
+    searchSort,
     handleFetchCategoryList,
     handleFetchCardList,
     handleAddCategory,
