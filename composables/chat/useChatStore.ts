@@ -16,8 +16,15 @@ import { clearBodyChartFullscreen } from '~/utils/chat/visualizationChartUtil'
 const { messages } = useChatSocket()
 const { logRowToMessages, pushQuestionMessage, pushAnswerPlaceholder } = useChatMessages()
 const { activeSearchModes, subOptions, selectedSubOption, resolveSvcTy } = useChatSearchState()
-const { chatRoom, chatMessage, syncSearchModeFromLastLog, selectModelOptions, selectRagDsList, selectDmList } =
-  useChatRooms()
+const {
+  chatRoom,
+  chatMessage,
+  createChatRoom,
+  syncSearchModeFromLastLog,
+  selectModelOptions,
+  selectRagDsList,
+  selectDmList,
+} = useChatRooms()
 const { ensureWebSocketAndSend } = useChatSocket()
 
 // API 호출
@@ -253,6 +260,7 @@ export const useChatStore = () => {
 
   return {
     // 상태
+    chatRoom,
     messages,
     activePanelType,
     isPanelFullscreen,
@@ -267,6 +275,7 @@ export const useChatStore = () => {
     selectedSubOption,
     currentSubOptions,
     // 액션
+    createChatRoom,
     handleSelectChatLogList,
     onSend,
     toggleSearchMode,
