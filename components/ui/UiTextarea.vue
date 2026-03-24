@@ -127,7 +127,7 @@ watch(
     font-size: $font-size-base;
   }
   &.size-textarea-lg {
-    font-size: $font-size-base;
+    font-size: $font-size-lg;
   }
 
   &::placeholder {

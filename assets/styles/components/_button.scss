@@ -1,11 +1,11 @@
 @use '../utils/variables' as *;
 @use '../utils/mixins' as *;
 
-button{
+button {
   @include btn-base;
 }
 
-button{
+button {
   @include btn-base;
 }
 
@@ -27,30 +27,32 @@ button{
 // chat-index btn
 .btn-chat-index {
   justify-content: flex-start;
-  gap: 12px;
-  padding: 10px 12px;
-  min-width: 210px;
-  height: 60px;
+  gap: 8px;
+  padding: 10px 15px 10px 10px;
+  min-width: 200px;
+  height: 56px;
   white-space: nowrap;
   border-radius: 50px;
-  border: 1px solid rgba(var(--color-primary-rgb), 0.4);
+  border: 1px solid rgba(var(--color-primary-rgb), 0.3);
   background: #fff;
   font-size: $font-size-lg;
-  color: #464c53;
+  color: #2d3139;
   font-weight: $font-weight-semibold;
 
   .icon-circle {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     aspect-ratio: 1/1;
     flex-shrink: 0;
     border-radius: 100%;
     background: var(--color-primary-bg);
     color: var(--color-primary);
-    transition: background 0.3s, color 0.3s;
+    transition:
+      background 0.3s,
+      color 0.3s;
   }
 
   &:hover {
@@ -79,38 +81,38 @@ button{
   }
 }
 
-.btn-library{
+.btn-library {
   position: relative !important;
   width: 30px !important;
   height: 30px !important;
   border-radius: 4px !important;
   padding: 0 !important;
 
-  &.btn-library-trash{
-    background: #ECF0F3;
-    .badge-num{
-      background: #94A3B8;
+  &.btn-library-trash {
+    background: #ecf0f3;
+    .badge-num {
+      background: #94a3b8;
     }
   }
 
-  &:hover{
+  &:hover {
     background: rgba(0, 0, 0, 0.05);
     transition: background-color $transition-base;
 
-    &.btn-library-trash{
-      background: #D1D9E0;
+    &.btn-library-trash {
+      background: #d1d9e0;
     }
   }
 
-  .badge-num{
+  .badge-num {
     position: absolute;
     top: -2px;
     right: -2px;
     height: 12px;
     padding: 0px 3px;
     border-radius: 15px;
-    background: var(--color-primary);;
-    color: #FFF;
+    background: var(--color-primary);
+    color: #fff;
     font-size: 8px;
     font-weight: 700;
     white-space: nowrap;
@@ -120,60 +122,62 @@ button{
   }
 }
 
-.btn-library-card-add{
+.btn-library-card-add {
   width: 20px !important;
   height: 20px !important;
   position: relative !important;
   border-radius: 4px !important;
   padding: 0 !important;
 
-  &:hover{
-    background: #ECF0F3;
+  &:hover {
+    background: #ecf0f3;
   }
-  &.type-white:hover{
+  &.type-white:hover {
     background: #fff;
   }
 }
 
 // 드롭다운 메뉴
-.dropdown-wrapper{
+.dropdown-wrapper {
   position: relative;
   display: flex;
   align-items: center;
 
-  .dropdown-menu{
+  .dropdown-menu {
     position: absolute;
     top: calc(100% + 1px);
     right: 0;
     min-width: 131px;
     padding: 4px;
     border-radius: 4px;
-    background: #FFF;
-    border: 1px solid rgba(45, 49, 57, 0.20);
-    box-shadow: 0 0 8px 0 rgba(0, 0, 0, 0.10);
+    background: #fff;
+    border: 1px solid rgba(45, 49, 57, 0.2);
+    box-shadow: 0 0 8px 0 rgba(0, 0, 0, 0.1);
     z-index: 2;
 
     // 기본 상태 (숨김)
     opacity: 0;
     transform: translateY(-2px);
     pointer-events: none;
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    transition:
+      opacity 0.2s ease,
+      transform 0.2s ease;
   }
 
   // 보이는 상태
-  &.is-show{
-    .dropdown-menu{
+  &.is-show {
+    .dropdown-menu {
       opacity: 1;
       transform: translateY(0);
       pointer-events: auto;
     }
-    .btn-library-card-add.type-white{
+    .btn-library-card-add.type-white {
       background: #fff;
     }
   }
 }
 
-.dropdown-item{
+.dropdown-item {
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -183,36 +187,35 @@ button{
   border-radius: 4px;
   background: transparent;
   font-size: 12px;
-  color: #5C6677;
+  color: #5c6677;
   cursor: pointer;
   transition: background-color 0.2s;
 
-  span{
+  span {
     white-space: nowrap;
   }
 
-  &:hover{
-    background-color: #F5F6F8;
+  &:hover {
+    background-color: #f5f6f8;
   }
 
-  &.type-danger{
-    background-color: #F5F6F8;
+  &.type-danger {
+    background-color: #f5f6f8;
 
-    &:hover{
-      background-color: #E8EAED;
+    &:hover {
+      background-color: #e8eaed;
     }
   }
 
   // 즐겨찾기 해제 아이콘 색상 지정
-  .icon-star-fill{
-    background-color: #6F7A93;
+  .icon-star-fill {
+    background-color: #6f7a93;
   }
 }
 // END 드롭다운 메뉴
 
 // 카테고리 입력 그룹
 .library-category-input-grp {
-
   gap: 8px;
 
   .inp-category {
@@ -228,12 +231,12 @@ button{
 
   .btn-category-add.ui-button {
     font-size: 14px;
-    background: #DCE4E9 !important;
-    color: #AEBCCB !important;
+    background: #dce4e9 !important;
+    color: #aebccb !important;
 
     &:hover:not(:disabled) {
-      background: #DCE4E9 !important;
-      color: #AEBCCB !important;
+      background: #dce4e9 !important;
+      color: #aebccb !important;
     }
   }
 
@@ -244,11 +247,11 @@ button{
     }
 
     .btn-category-add.ui-button {
-      background: #58616A !important;
+      background: #58616a !important;
       color: #fff !important;
 
       &:hover:not(:disabled) {
-        background: #58616A !important;
+        background: #58616a !important;
         color: #fff !important;
       }
     }

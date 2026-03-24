@@ -293,11 +293,11 @@
 .chat-search-mode-tag {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   height: 36px;
-  padding: 4px 8px;
+  padding: 8px 12px;
   border: none;
-  border-radius: $border-radius-sm;
+  border-radius: $border-radius-base;
   background: #ecf0f3;
   color: #5c6677;
   cursor: pointer;

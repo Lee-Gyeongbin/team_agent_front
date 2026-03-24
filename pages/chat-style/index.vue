@@ -16,7 +16,9 @@
             :key="theme.key"
             class="chat-style-color-card"
             :class="{ 'is-active': selectedThemeKey === theme.key }"
-            :style="selectedThemeKey === theme.key ? { borderColor: theme.primary, backgroundColor: theme.primaryBg } : {}"
+            :style="
+              selectedThemeKey === theme.key ? { borderColor: theme.primary, backgroundColor: theme.primaryBg } : {}
+            "
             @click="onSelectTheme(theme)"
           >
             <span
@@ -87,7 +89,7 @@
             <i class="icon-chevron-down size-16" />
           </span>
           <span class="chat-style-preview-send">
-            <i class="icon-send size-16" />
+            <i class="icon-send size-20" />
           </span>
         </div>
       </div>
