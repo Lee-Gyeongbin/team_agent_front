@@ -1,7 +1,7 @@
 <!--
   카테고리 트리 노드 (재귀 컴포넌트)
   - depth로 들여쓰기, 자식 있으면 펼치기/접기 + 하위 노드 자기 자신으로 렌더
-  - selectable 모드: 드롭다운 대신 ✓ 체크 표시, 클릭 시 선택 토글
+  - selectable 모드: 드롭다운 대신 ✓ 체크 표시, 클릭 시 선택 토글(리프·중간 노드 공통, 모달에서 사용)
 -->
 <template>
   <li
@@ -10,7 +10,7 @@
   >
     <div
       class="category-row flex items-center"
-      :class="{ 'is-selected': selectable && !item.children?.length && selectedIds.includes(item.categoryId) }"
+      :class="{ 'is-selected': selectable && selectedIds.includes(item.categoryId) }"
       :style="{ paddingLeft: `${(depth - 1) * 12}px` }"
       @click="selectable ? $emit('select', item) : undefined"
     >
@@ -47,9 +47,9 @@
         {{ item.categoryName }}
       </span>
 
-      <!-- selectable 모드: 리프 카테고리만 체크 표시 -->
+      <!-- selectable 모드: 선택된 노드(리프·중간) 체크 표시 -->
       <i
-        v-if="showCheckIcon && selectable && !item.children?.length && selectedIds.includes(item.categoryId)"
+        v-if="showCheckIcon && selectable && selectedIds.includes(item.categoryId)"
         class="icon icon-check size-16 category-check"
       />
 

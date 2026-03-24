@@ -32,7 +32,7 @@
       @click="emit('on-regenerate')"
     >
       <template #icon-left>
-        <i class="icon-refresh size-20" />
+        <i class="icon-chat-refresh size-20" />
       </template>
     </UiButton>
     <UiButton
@@ -43,7 +43,7 @@
       @click="emit('on-copy')"
     >
       <template #icon-left>
-        <i class="icon-copy size-20" />
+        <i class="icon-chat-copy size-20" />
       </template>
     </UiButton>
     <!-- 답변 → 라이브러리 카테고리 선택 UI (저장 API는 개발자가 페이지/스토어에서 @on-select-category 로 연결) -->
@@ -62,7 +62,7 @@
           title="카테고리 선택"
         >
           <template #icon-left>
-            <i class="icon-book size-20" />
+            <i class="icon-chat-open-book size-20" />
           </template>
         </UiButton>
       </template>

@@ -26,7 +26,7 @@
         :class="{ 'is-active': activeSearchModes.includes('M') }"
         @click="toggleSearchMode('M')"
       >
-        <span class="icfon-circle"><i class="icon-knowledge size-20"></i></span>
+        <span class="icon-circle"><i class="icon-knowledge size-20"></i></span>
         <p>지식검색 (매뉴얼 AI)</p>
       </button>
       <button

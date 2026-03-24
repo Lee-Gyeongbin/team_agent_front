@@ -32,15 +32,19 @@ export const useRepositoryApi = () => {
   }
 
   // ===== 문서 =====
-  const fetchDocumentList = async (findContent?: string, categoryId?: string) => {
-    return post<{ dataList: Document[]; totalCount: number }>('/repository/selectDocRepositoryList.do', { findContent, categoryId })
+  const fetchDocumentList = async (findContent?: string, categoryId?: string, useYn?: string) => {
+    return post<{ dataList: Document[]; totalCount: number }>('/repository/selectDocRepositoryList.do', {
+      findContent,
+      categoryId,
+      useYn,
+    })
   }
   const fetchSaveDocument = async (data: Partial<Document>) => {
-    return mockPost<{ data: Document }>(`${MOCK_BASE}/document/save`, data)
+    return post<{ successYn: boolean }>('/repository/saveDocument.do', data)
   }
 
-  const fetchDeleteDocument = async (ids: string[]) => {
-    return mockPost<{ data: { ids: string[] } }>(`${MOCK_BASE}/document/delete`, { ids })
+  const fetchDeleteDocument = async (id: string) => {
+    return post<{ data: number }>('/repository/deleteDocument.do', { id })
   }
 
   // ===== URL =====

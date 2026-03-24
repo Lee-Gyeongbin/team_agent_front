@@ -134,6 +134,18 @@
   @include icon-file-bg('thumbs-down');
 }
 
+.icon-chat-copy {
+  @include icon-file-bg('chat-copy');
+}
+
+.icon-chat-open-book {
+  @include icon-file-bg('chat-open-book');
+}
+
+.icon-chat-refresh {
+  @include icon-file-bg('chat-refresh');
+}
+
 // 재생/테스트 실행
 .icon-play {
   @include icon-file-bg('play');

@@ -8,12 +8,12 @@ const { fetchCategoryList, fetchSaveCategory, fetchRenameCategory, fetchDeleteCa
 /** 스토어 간 공유 — useRepositoryStore가 순환 없이 트리 참조 */
 export const categoryList = ref<CategoryTreeItem[]>([])
 export const filteredCategoryList = ref<CategoryTreeItem[]>([])
-const visibleCategoryIds = ref<string[]>([])
+const visibleCategoryId = ref('')
 
-function buildFilteredTree(items: CategoryTreeItem[], ids: string[]): CategoryTreeItem[] {
+function buildFilteredTree(items: CategoryTreeItem[], id: string): CategoryTreeItem[] {
   return items.reduce<CategoryTreeItem[]>((acc, item) => {
-    const filteredChildren = item.children ? buildFilteredTree(item.children, ids) : []
-    if (ids.includes(item.categoryId) || filteredChildren.length > 0) {
+    const filteredChildren = item.children ? buildFilteredTree(item.children, id) : []
+    if (item.categoryId === id || filteredChildren.length > 0) {
       acc.push({ ...item, children: filteredChildren.length > 0 ? filteredChildren : item.children })
     }
     return acc
@@ -21,14 +21,14 @@ function buildFilteredTree(items: CategoryTreeItem[], ids: string[]): CategoryTr
 }
 
 function updateFilteredCategoryList() {
-  if (visibleCategoryIds.value.length === 0) {
+  if (!visibleCategoryId.value) {
     filteredCategoryList.value = categoryList.value
   } else {
-    filteredCategoryList.value = buildFilteredTree(categoryList.value, visibleCategoryIds.value)
+    filteredCategoryList.value = buildFilteredTree(categoryList.value, visibleCategoryId.value)
   }
 }
 
-watch([categoryList, visibleCategoryIds], () => updateFilteredCategoryList(), { immediate: true, deep: true })
+watch([categoryList, visibleCategoryId], () => updateFilteredCategoryList(), { immediate: true, deep: true })
 
 /** 루트 여부 (TB_CONTENT_CAT 루트는 PARN_CAT_ID IS NULL) */
 function isRootParnCat(parnCatId: string | null | undefined): boolean {
@@ -192,10 +192,10 @@ export const useCategoryStore = () => {
   const openCategorySelectModal = () => {
     isCategorySelectModalOpen.value = true
   }
-  const onCategorySelectConfirm = (selectedIds: string[]) => {
-    visibleCategoryIds.value = selectedIds
+  const onCategorySelectConfirm = (selectedId: string) => {
+    visibleCategoryId.value = selectedId
     // 선택 중이던 카테고리가 필터에서 빠졌으면 해제
-    if (docSelectedCategoryId.value && !selectedIds.includes(docSelectedCategoryId.value) && selectedIds.length > 0) {
+    if (docSelectedCategoryId.value && selectedId && docSelectedCategoryId.value !== selectedId) {
       docSelectedCategoryId.value = ''
       docCurrentPage.value = 1
       handleSelectDocumentList()
@@ -270,6 +270,6 @@ export const useCategoryStore = () => {
     handleDeleteCategory,
     collectDescendantIds,
     categoryList,
-    visibleCategoryIds,
+    visibleCategoryId,
   }
 }
