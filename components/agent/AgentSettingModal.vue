@@ -7,7 +7,11 @@
   >
     <div class="com-setting-form">
       <!-- 섹션1: Agent 유형 -->
-      <AgentSettingType v-model="form.agentTypeCd" />
+      <AgentSettingType
+        v-model="form.agentTypeCd"
+        :is-edit="isEmpty(agent?.agentId)"
+        @change="onChangeAgentType"
+      />
 
       <!-- 섹션2: Agent 기본 설정 + 유형별 상세 설정 -->
       <AgentSettingBasic
@@ -64,9 +68,15 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const { modelOptions } = useAgentStore()
+const { modelOptions, handleChangeAgentType } = useAgentStore()
 
 const sqlModelOptions = computed(() => modelOptions.value.map((m) => ({ value: m.modelId, label: m.modelName })))
+
+const onChangeAgentType = async (agentTypeCd: string) => {
+  const result = await handleChangeAgentType(agentTypeCd)
+  localDatasetList.value = result.datasetList
+  localDatamartList.value = result.datamartList
+}
 
 const emit = defineEmits<{
   close: []

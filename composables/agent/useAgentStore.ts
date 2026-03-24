@@ -66,9 +66,7 @@ const handleFetchAgentDetail = async (agent: Agent) => {
   try {
     const response = await fetchAgentDetail(agent)
     selectedAgent.value = response?.data ?? null
-    if (isNotEmpty(agent.connCount) && agent.connCount > 0) {
-      await handleFetchAgentDetailDataList(agent)
-    }
+    await handleFetchAgentDetailDataList(agent)
     isSettingOpen.value = true
   } catch {
     openToast({
@@ -98,6 +96,14 @@ const handleFetchAgentDetailDataList = async (agent: Agent) => {
 
 /** 에이전트 저장 */
 const handleSaveAgent = async (agent: Partial<Agent>) => {
+  const valid = validateAgentSave(agent)
+  if (!valid.valid) {
+    openToast({
+      message: valid.msg,
+      type: 'warning',
+    })
+    return
+  }
   openConfirm({
     message: '에이전트를 저장하시겠습니까?',
     onConfirm: async () => {
@@ -114,6 +120,97 @@ const handleSaveAgent = async (agent: Partial<Agent>) => {
       }
     },
   })
+}
+
+/** 에이전트 저장 검증 */
+const validateAgentSave = (agent: Partial<Agent>) => {
+  let valid = true
+  let msg = ''
+  if (isEmpty(agent.agentTypeCd)) {
+    valid = false
+    msg = '에이전트 유형을 선택해주세요.'
+    return { valid, msg }
+  }
+  if (isEmpty(agent.agentNm)) {
+    valid = false
+    msg = '에이전트 이름을 입력해주세요.'
+    return { valid, msg }
+  }
+  if (isEmpty(agent.description)) {
+    valid = false
+    msg = '에이전트 설명을 입력해주세요.'
+    return { valid, msg }
+  }
+
+  if (agent.agentTypeCd === '001') {
+    // RAG Agent 설정 검증
+    if (isEmpty(agent.simThresh)) {
+      valid = false
+      msg = '유사도 임계치를 입력해주세요.'
+      return { valid, msg }
+    }
+    if (Number(agent.simThresh) < 0 || Number(agent.simThresh) > 1) {
+      valid = false
+      msg = '유사도 임계값은 0~1 사이의 값이어야 합니다.'
+      return { valid, msg }
+    }
+    if (isEmpty(agent.maxSrchRslt)) {
+      valid = false
+      msg = '최대 검색 결과 수를 입력해주세요.'
+      return { valid, msg }
+    }
+  } else if (agent.agentTypeCd === '002') {
+    // TextToSQL Agent 설정 검증
+    if (isEmpty(agent.datamartList)) {
+      valid = false
+      msg = '데이터마트를 선택해주세요.'
+      return { valid, msg }
+    }
+    if (isEmpty(agent.modelId)) {
+      valid = false
+      msg = 'SQL 생성 모델을 선택해주세요.'
+      return { valid, msg }
+    }
+    if (isEmpty(agent.maxQrySec)) {
+      valid = false
+      msg = '최대 쿼리 실행 시간을 입력해주세요.'
+      return { valid, msg }
+    }
+    if (isEmpty(agent.sqlValidYn)) {
+      valid = false
+      msg = 'SQL 유효성 검사 여부를 선택해주세요.'
+      return { valid, msg }
+    }
+    if (isEmpty(agent.readonlyYn)) {
+      valid = false
+      msg = '읽기 전용 여부를 선택해주세요.'
+      return { valid, msg }
+    }
+    if (isEmpty(agent.userCfrmYn)) {
+      valid = false
+      msg = '사용자 확인 여부를 선택해주세요.'
+      return { valid, msg }
+    }
+  }
+
+  return { valid, msg }
+}
+
+/** 에이전트 유형 변경 → 해당 유형의 데이터 목록 반환 */
+const handleChangeAgentType = async (agentTypeCd: string) => {
+  try {
+    const response = await fetchAgentDetailDataList({ agentTypeCd } as Agent)
+    return {
+      datasetList: agentTypeCd === '001' ? ((response?.dataList as AgtDs[]) ?? []) : [],
+      datamartList: agentTypeCd === '002' ? ((response?.dataList as AgtDm[]) ?? []) : [],
+    }
+  } catch {
+    openToast({
+      message: '에이전트 상세 데이터 목록 조회 실패',
+      type: 'error',
+    })
+    return { datasetList: [], datamartList: [] }
+  }
 }
 
 const handleDeleteAgent = async (agentId: string) => {
@@ -138,6 +235,7 @@ export const useAgentStore = () => {
     handleToggleAgent,
     handleFetchAgentDetail,
     handleSaveAgent,
+    handleChangeAgentType,
     handleDeleteAgent,
     handleUpdateAgentOrder,
   }

@@ -8,8 +8,8 @@
         :options="agentTypeOptions"
         class="w-full"
         size="sm"
-        :disabled="isNotEmpty(modelValue)"
-        @update:model-value="$emit('update:modelValue', $event)"
+        :disabled="!isEdit"
+        @update:model-value="onChange"
       />
     </div>
     <p
@@ -24,16 +24,18 @@
 <script setup lang="ts">
 interface Props {
   modelValue: string
+  isEdit: boolean
 }
 
 const props = defineProps<Props>()
 
-defineEmits<{
+const emit = defineEmits<{
   'update:modelValue': [value: string | number]
+  change: [value: string]
 }>()
 
 const codes = await getCodes('AT000001')
-const agentTypeOptions = codes.map((c) => ({ label: c.codeNm, value: c.codeId }))
+const agentTypeOptions = [{ label: '선택', value: '' }, ...codes.map((c) => ({ label: c.codeNm, value: c.codeId }))]
 
 const typeDescriptions: Record<string, string> = {
   '001': '매뉴얼질의(RAG) Agent에서 사용할 데이터셋과 검색 옵션을 설정합니다.',
@@ -41,4 +43,9 @@ const typeDescriptions: Record<string, string> = {
 }
 
 const typeDescription = computed(() => typeDescriptions[props.modelValue] || '')
+
+const onChange = (value: string | number) => {
+  emit('update:modelValue', value)
+  emit('change', String(value))
+}
 </script>

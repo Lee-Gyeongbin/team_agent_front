@@ -72,7 +72,7 @@ onMounted(async () => {
 const activeCount = computed(() => agentList.value.filter((a) => a.useYn === 'Y').length)
 
 /** 에이전트 추가 */
-const openAddAgent = () => {
+const openAddAgent = async () => {
   selectedAgent.value = null
   isSettingOpen.value = true
 }
