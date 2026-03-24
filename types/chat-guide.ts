@@ -1,6 +1,6 @@
 import { toRaw } from 'vue'
 
-/** noticeList.do — dataList 한 행이 폼 슬롯(ChatNoticeItem)과 동일 */
+/** noticeList.do — 안내멘트 행 배열 */
 export interface ChatNoticeListResponse {
   dataList: ChatNoticeItem[]
 }
@@ -14,8 +14,6 @@ export interface ChatGreetingForm {
   guideKey: string
   enblYn: 'Y' | 'N'
   content: string
-  /** 이름 자동 삽입 ({{userName}}) — 백엔드 컬럼명에 맞출 것 */
-  autoNameYn?: 'Y' | 'N'
   modifyDt: string
 }
 
@@ -58,9 +56,7 @@ export const CHAT_NOTICE_DEFAULT_GUIDE_KEYS = {
  *  ========================= */
 
 /**
- * 점검/장애 목록 조회 한 행 — maintenanceList.do SELECT
- * (GUIDE_ID, GUIDE_TP_CD, GUIDE_KEY, TITLE, ENBL_YN, CONTENT, START_DT, END_DT,
- *  ADVANCE_NOTICE_CD, ADVANCE_NOTICE_NM, MODIFY_DT, AUTO_DSPL_YN)
+ * 점검/장애 목록 조회
  */
 export interface ChatMaintenanceItem {
   guideId: string
@@ -118,18 +114,6 @@ export const getEmptyChatMaintenanceList = (): ChatMaintenanceItem[] =>
     getEmptyChatMaintenanceItem(guideKey),
   )
 
-/**
- * 조회 dataList를 기본 guideKey 행에 병합
- */
-export const mergeChatMaintenanceDataList = (incoming: ChatMaintenanceItem[]): ChatMaintenanceItem[] => {
-  const defaults = getEmptyChatMaintenanceList()
-  const byKey = new Map(incoming.map((r) => [r.guideKey, r]))
-  return defaults.map((d) => {
-    const hit = byKey.get(d.guideKey)
-    return hit ? { ...d, ...hit } : d
-  })
-}
-
 export const cloneChatMaintenanceList = (src: ChatMaintenanceItem[]): ChatMaintenanceItem[] =>
   structuredClone(toRaw(src))
 
@@ -182,7 +166,6 @@ export const getEmptyChatGreetingForm = (): ChatGreetingForm => ({
   guideKey: '',
   enblYn: 'N',
   content: '',
-  autoNameYn: 'N',
   modifyDt: '',
 })
 
@@ -257,6 +240,24 @@ export const getChatGuideErrorDefaults = (): ChatGuideErrorData => ({
   apiErrors: ['API_500', 'API_429', 'API_408', 'API_401_403'].map((k) => buildChatGuideErrorRow(k)),
 })
 
+export const CHAT_GUIDE_ERROR_CATALOG = {
+  responseErrors: [
+    { guideKey: 'RESP_FAIL', label: '응답 생성 실패' },
+    { guideKey: 'RESP_NO_RESULT', label: '검색 결과 없음' },
+  ],
+  inputErrors: [
+    { guideKey: 'INPUT_EMPTY', label: '입력값 없음' },
+    { guideKey: 'INPUT_LENGTH', label: '입력 길이 초과' },
+    { guideKey: 'INPUT_UPLOAD_FAIL', label: '파일 업로드 실패' },
+  ],
+  apiErrors: [
+    { guideKey: 'API_500', label: '서버 내부 오류' },
+    { guideKey: 'API_429', label: '요청 한도 초과' },
+    { guideKey: 'API_408', label: '요청 시간 초과' },
+    { guideKey: 'API_401_403', label: '인증/권한 오류' },
+  ],
+} as const
+
 const cloneErrorRows = (items: ChatGuideErrorRow[]) => items.map((e) => ({ ...e }))
 
 export const cloneChatGuideErrorData = (src: ChatGuideErrorData): ChatGuideErrorData => ({
@@ -264,30 +265,3 @@ export const cloneChatGuideErrorData = (src: ChatGuideErrorData): ChatGuideError
   inputErrors: cloneErrorRows(src.inputErrors),
   apiErrors: cloneErrorRows(src.apiErrors),
 })
-
-export const resolveNoticeFormSlot = (guideKey: string): keyof ChatNoticeForm | null => {
-  const k = guideKey.toLowerCase()
-  const def = CHAT_NOTICE_DEFAULT_GUIDE_KEYS
-
-  if (k === def.feature.toLowerCase() || k.includes('feature')) return 'feature'
-  if (k === def.guide.toLowerCase() || k.includes('input') || k.includes('guide') || k.includes('prompt')) {
-    return 'guide'
-  }
-  if (k === def.privacy.toLowerCase() || k.includes('privacy')) return 'privacy'
-  if (k === def.limitation.toLowerCase() || k.includes('limit')) return 'limitation'
-
-  return null
-}
-
-export const mapNoticeDataListToForm = (dataList: ChatNoticeItem[]): ChatNoticeForm => {
-  const form = getEmptyChatNoticeForm()
-
-  dataList.forEach((item) => {
-    const slot = resolveNoticeFormSlot(item.guideKey)
-    if (slot) {
-      form[slot] = { ...item, dsplCond: item.dsplCond ?? '' }
-    }
-  })
-
-  return form
-}

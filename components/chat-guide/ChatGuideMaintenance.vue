@@ -34,7 +34,7 @@
           </div>
           <UiToggle
             :model-value="emergencyRow.enblYn === 'Y'"
-            @update:model-value="(v) => handleToggleEnblYn(emergencyRow, v)"
+            @update:model-value="(v) => (emergencyRow.enblYn = toYn(v))"
           />
         </div>
 
@@ -91,7 +91,7 @@
           </div>
           <UiToggle
             :model-value="scheduledRow.enblYn === 'Y'"
-            @update:model-value="(v) => handleToggleEnblYn(scheduledRow, v)"
+            @update:model-value="(v) => (scheduledRow.enblYn = toYn(v))"
           />
         </div>
 
@@ -178,7 +178,7 @@
           </div>
           <UiToggle
             :model-value="recoveryRow.enblYn === 'Y'"
-            @update:model-value="(v) => handleToggleEnblYn(recoveryRow, v)"
+            @update:model-value="(v) => (recoveryRow.enblYn = toYn(v))"
           />
         </div>
 
@@ -207,17 +207,12 @@
 import type { DateValue } from '@internationalized/date'
 import type { CodeItem } from '~/types/codes'
 import type { ChatMaintenanceItem } from '~/types/chat-guide'
-import {
-  CHAT_MAINTENANCE_DEFAULT_GUIDE_KEYS,
-  CHAT_MAINTENANCE_INCIDENT_UI_SLOTS,
-  cloneChatMaintenanceList,
-  getEmptyChatMaintenanceList,
-} from '~/types/chat-guide'
+import { CHAT_MAINTENANCE_DEFAULT_GUIDE_KEYS, CHAT_MAINTENANCE_INCIDENT_UI_SLOTS } from '~/types/chat-guide'
 import { computed, onMounted, ref, type ComputedRef } from 'vue'
 import { apiStringFromDateValue, dateValueFromApiString } from '~/utils/global/dateUtil'
-import { useChatGuideStore } from '~/composables/chat-guide/useChatGuideStore'
+import { toYn, useChatGuideStore } from '~/composables/chat-guide/useChatGuideStore'
 
-const { maintenanceList, handleSelectMaintenance, handleSaveMaintenance, handleToggleEnblYn } = useChatGuideStore()
+const { localMaintenanceList, handleSelectMaintenance, handleSaveMaintenance } = useChatGuideStore()
 
 /** 정기 점검 — 사전 안내 기간 (공통코드) */
 const advanceNoticeOptions = ref<{ label: string; value: string }[]>([])
@@ -228,8 +223,6 @@ const initAdvanceNoticeOptions = async () => {
     value: item.codeId,
   }))
 }
-
-const localMaintenanceList = ref<ChatMaintenanceItem[]>(getEmptyChatMaintenanceList())
 
 const rowByGuideKey = (guideKey: string): ChatMaintenanceItem => {
   const r = localMaintenanceList.value.find((x) => x.guideKey === guideKey)
@@ -261,22 +254,16 @@ const scheduledEndDt = maintenanceDateComputed(scheduledRow, 'endDt')
 const incidentSectionOn = computed({
   get: () => rowByGuideKey(CHAT_MAINTENANCE_DEFAULT_GUIDE_KEYS.incidentSystem).enblYn === 'Y',
   set: (v) => {
-    const yn: 'Y' | 'N' = v ? 'Y' : 'N'
+    const yn = toYn(v)
     for (const slot of CHAT_MAINTENANCE_INCIDENT_UI_SLOTS) {
       rowByGuideKey(slot.guideKey).enblYn = yn
     }
   },
 })
 
-const syncLocalMaintenance = () => {
-  if (!maintenanceList.value) return
-  localMaintenanceList.value = cloneChatMaintenanceList(maintenanceList.value)
-}
-
 onMounted(async () => {
   await initAdvanceNoticeOptions()
   await handleSelectMaintenance()
-  syncLocalMaintenance()
 })
 
 const onSaveMaintenance = async () => {
@@ -301,7 +288,6 @@ const onResetMaintenance = async () => {
       '초기화 시 변경된 점검/장애 안내 내용은 저장되지 않고, 이전에 저장된 값으로 다시 불러옵니다. 계속하시겠습니까?',
     onConfirm: async () => {
       await handleSelectMaintenance()
-      syncLocalMaintenance()
       openToast({ message: '점검/장애 안내 설정이 초기화되었습니다.', type: 'info' })
     },
   })

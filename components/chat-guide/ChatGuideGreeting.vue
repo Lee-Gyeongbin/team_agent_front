@@ -11,7 +11,7 @@
         </UiButton>
         <UiButton
           variant="outline"
-          @click="handleResetGreeting"
+          @click="onResetGreeting"
         >
           초기화
         </UiButton>
@@ -28,7 +28,7 @@
               <span class="chat-comment-setting-name">방문 인사</span>
               <UiToggle
                 :model-value="greetingForm.enblYn === 'Y'"
-                @update:model-value="(v) => handleToggleEnblYn(greetingForm, v)"
+                @update:model-value="(v) => (greetingForm.enblYn = toYn(v))"
               />
             </div>
             <p class="chat-comment-setting-desc">사용자가 챗봇에 진입했을 때 표시되는 기본 메시지</p>
@@ -48,9 +48,9 @@
 
             <div class="chat-comment-setting-options">
               <UiCheckbox
-                :model-value="greetingForm.autoNameYn === 'Y'"
+                :model-value="greetingPreviewAutoNameYn === 'Y'"
                 label="이름 자동 삽입 ({{userName}})"
-                @update:model-value="(v) => onToggleAutoName(v)"
+                @update:model-value="onTogglePreviewAutoName"
               />
               <UiButton
                 size="sm"
@@ -101,20 +101,19 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import { useChatGuideStore } from '~/composables/chat-guide/useChatGuideStore'
+import { toYn, useChatGuideStore } from '~/composables/chat-guide/useChatGuideStore'
 
 const {
   greetingForm,
+  greetingPreviewAutoNameYn,
   previewGreetingMessage,
   handleSelectGreeting,
   handleSaveGreeting,
-  handleResetGreeting,
   handleInsertGreetingVariable,
-  handleToggleEnblYn,
 } = useChatGuideStore()
 
-const onToggleAutoName = (v: boolean) => {
-  greetingForm.value.autoNameYn = v ? 'Y' : 'N'
+const onTogglePreviewAutoName = (v: boolean) => {
+  greetingPreviewAutoNameYn.value = toYn(v)
 }
 
 const onSaveWithConfirm = () => {
@@ -128,6 +127,17 @@ const onSaveWithConfirm = () => {
       } catch {
         openToast({ message: '인사멘트 설정 저장 실패', type: 'error' })
       }
+    },
+  })
+}
+
+const onResetGreeting = () => {
+  openConfirm({
+    title: '인사멘트 초기화',
+    message: '초기화 시 변경된 인사멘트 내용은 저장되지 않고, 이전에 저장된 값으로 다시 불러옵니다. 계속하시겠습니까?',
+    onConfirm: async () => {
+      await handleSelectGreeting()
+      openToast({ message: '인사멘트 설정이 초기화되었습니다.', type: 'info' })
     },
   })
 }

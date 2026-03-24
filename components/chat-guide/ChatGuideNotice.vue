@@ -26,7 +26,7 @@
             <span class="chat-comment-setting-name">사용 가능 기능 안내</span>
             <UiToggle
               :model-value="localNoticeForm.feature.enblYn === 'Y'"
-              @update:model-value="(v) => handleToggleEnblYn(localNoticeForm.feature, v)"
+              @update:model-value="(v) => (localNoticeForm.feature.enblYn = toYn(v))"
             />
           </div>
           <p class="chat-comment-setting-desc">챗봇이 제공하는 주요 기능 설명</p>
@@ -62,7 +62,7 @@
             <span class="chat-comment-setting-name">입력 방법 가이드</span>
             <UiToggle
               :model-value="localNoticeForm.guide.enblYn === 'Y'"
-              @update:model-value="(v) => handleToggleEnblYn(localNoticeForm.guide, v)"
+              @update:model-value="(v) => (localNoticeForm.guide.enblYn = toYn(v))"
             />
           </div>
           <p class="chat-comment-setting-desc">사용자가 효과적으로 질문하는 방법 안내</p>
@@ -89,7 +89,7 @@
             <span class="chat-comment-setting-name">개인정보 보호 안내</span>
             <UiToggle
               :model-value="localNoticeForm.privacy.enblYn === 'Y'"
-              @update:model-value="(v) => handleToggleEnblYn(localNoticeForm.privacy, v)"
+              @update:model-value="(v) => (localNoticeForm.privacy.enblYn = toYn(v))"
             />
           </div>
           <p class="chat-comment-setting-desc">민감 정보 입력 주의 안내</p>
@@ -111,7 +111,7 @@
         <UiCheckbox
           :model-value="localNoticeForm.privacy.autoDetectYn === 'Y'"
           label="민감정보 패턴 감지 시 자동 표시"
-          @update:model-value="(v) => handleToggleAutoDetectYn(localNoticeForm.privacy, v)"
+          @update:model-value="(v) => (localNoticeForm.privacy.autoDetectYn = toYn(v))"
         />
       </div>
 
@@ -122,7 +122,7 @@
             <span class="chat-comment-setting-name">서비스 제한 안내</span>
             <UiToggle
               :model-value="localNoticeForm.limitation.enblYn === 'Y'"
-              @update:model-value="(v) => handleToggleEnblYn(localNoticeForm.limitation, v)"
+              @update:model-value="(v) => (localNoticeForm.limitation.enblYn = toYn(v))"
             />
           </div>
           <p class="chat-comment-setting-desc">AI의 한계 및 제한사항 설명</p>
@@ -146,29 +146,13 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { cloneChatNoticeForm, getEmptyChatNoticeForm, type ChatNoticeForm } from '~/types/chat-guide'
-import { useChatGuideStore } from '~/composables/chat-guide/useChatGuideStore'
+import { onMounted } from 'vue'
+import { toYn, useChatGuideStore } from '~/composables/chat-guide/useChatGuideStore'
 
-const {
-  noticeForm,
-  conditionOptions,
-  handleSelectNotice,
-  handleSaveNotice,
-  handleToggleEnblYn,
-  handleToggleAutoDetectYn,
-} = useChatGuideStore()
-
-const localNoticeForm = ref<ChatNoticeForm>(getEmptyChatNoticeForm())
-
-const syncLocalNotice = () => {
-  if (!noticeForm.value) return
-  localNoticeForm.value = cloneChatNoticeForm(noticeForm.value)
-}
+const { localNoticeForm, conditionOptions, handleSelectNotice, handleSaveNotice } = useChatGuideStore()
 
 onMounted(async () => {
   await handleSelectNotice()
-  syncLocalNotice()
 })
 
 const onSaveNotice = async () => {
@@ -192,7 +176,6 @@ const onResetNotice = async () => {
     message: '초기화 시 변경된 안내멘트 내용은 저장되지 않고, 이전에 저장된 값으로 다시 불러옵니다. 계속하시겠습니까?',
     onConfirm: async () => {
       await handleSelectNotice()
-      syncLocalNotice()
       openToast({ message: '안내멘트 설정이 초기화되었습니다.', type: 'info' })
     },
   })
