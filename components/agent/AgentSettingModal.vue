@@ -27,6 +27,7 @@
       <!-- 섹션3: 데이터 연결 (agentTypeCd 기반 분기) -->
       <AgentSettingData
         v-if="form.agentTypeCd"
+        ref="settingDataRef"
         :agent-type-cd="form.agentTypeCd"
         :dataset-list="localDatasetList"
         :datamart-list="localDatamartList"
@@ -70,6 +71,8 @@ const props = defineProps<Props>()
 
 const { modelOptions, handleChangeAgentType } = useAgentStore()
 
+const settingDataRef = ref<{ resetFilter: () => void } | null>(null)
+
 const sqlModelOptions = computed(() => [
   { label: '선택', value: '' },
   ...modelOptions.value.map((m) => ({ value: m.modelId, label: m.modelName })),
@@ -79,6 +82,7 @@ const onChangeAgentType = async (agentTypeCd: string) => {
   const result = await handleChangeAgentType(agentTypeCd)
   localDatasetList.value = result.datasetList
   localDatamartList.value = result.datamartList
+  nextTick(() => settingDataRef.value?.resetFilter())
 }
 
 const emit = defineEmits<{
@@ -142,6 +146,7 @@ watch(
       }
       localDatasetList.value = [...(props.agent.datasetList ?? [])]
       localDatamartList.value = [...(props.agent.datamartList ?? [])]
+      nextTick(() => settingDataRef.value?.resetFilter())
     } else {
       form.value.agentTypeCd = ''
       basicForm.value = { agentNm: '', description: '', sortOrd: 0 }

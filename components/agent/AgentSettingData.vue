@@ -88,6 +88,12 @@ const sectionDesc = computed(() =>
 // 필터
 const statusFilter = ref('all')
 
+const resetFilter = () => {
+  statusFilter.value = 'all'
+}
+
+defineExpose({ resetFilter })
+
 const statusOptions = [
   { label: '전체 상태', value: 'all' },
   { label: '연결됨', value: 'Y' },
