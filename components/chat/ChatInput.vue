@@ -41,7 +41,7 @@
             @click="handleSend"
           >
             <template #icon-left>
-              <i class="icon-send size-16" />
+              <i class="icon-send size-20" />
             </template>
           </UiButton>
         </div>
