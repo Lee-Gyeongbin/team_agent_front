@@ -70,7 +70,10 @@ const props = defineProps<Props>()
 
 const { modelOptions, handleChangeAgentType } = useAgentStore()
 
-const sqlModelOptions = computed(() => modelOptions.value.map((m) => ({ value: m.modelId, label: m.modelName })))
+const sqlModelOptions = computed(() => [
+  { label: '선택', value: '' },
+  ...modelOptions.value.map((m) => ({ value: m.modelId, label: m.modelName })),
+])
 
 const onChangeAgentType = async (agentTypeCd: string) => {
   const result = await handleChangeAgentType(agentTypeCd)
@@ -127,14 +130,14 @@ watch(
         sortOrd: props.agent.sortOrd ?? 0,
       }
       ragForm.value = {
-        simThresh: props.agent.simThresh ?? 0,
-        maxSrchRslt: props.agent.maxSrchRslt ?? 0,
+        simThresh: props.agent.simThresh ?? 0.7,
+        maxSrchRslt: props.agent.maxSrchRslt ?? 10,
       }
       sqlForm.value = {
         modelId: props.agent.modelId ?? '',
-        maxQrySec: props.agent.maxQrySec ?? 0,
+        maxQrySec: props.agent.maxQrySec ?? 60,
         sqlValidYn: props.agent.sqlValidYn ?? 'N',
-        readonlyYn: props.agent.readonlyYn ?? 'Y',
+        readonlyYn: props.agent.readonlyYn ?? 'N',
         userCfrmYn: props.agent.userCfrmYn ?? 'N',
       }
       localDatasetList.value = [...(props.agent.datasetList ?? [])]
@@ -142,8 +145,8 @@ watch(
     } else {
       form.value.agentTypeCd = ''
       basicForm.value = { agentNm: '', description: '', sortOrd: 0 }
-      ragForm.value = { simThresh: 0, maxSrchRslt: 0 }
-      sqlForm.value = { modelId: '', maxQrySec: 0, sqlValidYn: 'N', readonlyYn: 'Y', userCfrmYn: 'N' }
+      ragForm.value = { simThresh: 0.7, maxSrchRslt: 10 }
+      sqlForm.value = { modelId: '', maxQrySec: 60, sqlValidYn: 'N', readonlyYn: 'N', userCfrmYn: 'N' }
       localDatasetList.value = []
       localDatamartList.value = []
     }
