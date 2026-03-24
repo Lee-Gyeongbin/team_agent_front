@@ -78,7 +78,7 @@
           <ul class="category-tree">
             <CategoryTreeNode
               v-for="cat in filteredCategoryList"
-              :key="cat.id"
+              :key="cat.categoryId"
               :item="cat"
               :depth="1"
               selectable
@@ -141,11 +141,11 @@
                 @update:model-value="toggleSelectAll"
               />
             </template>
-            <template #header-documentName>
+            <template #header-docTitle>
               <button
                 type="button"
                 class="table-header-sort-btn"
-                @click="onSort('documentName')"
+                @click="onSort('docTitle')"
               >
                 문서명
                 <i class="icon icon-sync size-16" />
@@ -161,11 +161,11 @@
                 <i class="icon icon-sync size-16" />
               </button>
             </template>
-            <template #header-registerDate>
+            <template #header-createDt>
               <button
                 type="button"
                 class="table-header-sort-btn"
-                @click="onSort('registerDate')"
+                @click="onSort('createDt')"
               >
                 등록일
                 <i class="icon icon-sync size-16" />
@@ -176,11 +176,11 @@
             </template>
             <template #cell-select="{ row }">
               <UiCheckbox
-                :model-value="selectedIds.includes(row.id)"
-                @update:model-value="(v) => toggleSelectRow(row.id, v)"
+                :model-value="selectedIds.includes(row.docId)"
+                @update:model-value="(v) => toggleSelectRow(row.docId, v)"
               />
             </template>
-            <template #cell-documentName="{ row }">
+            <template #cell-docTitle="{ row }">
               <div class="cell-document flex items-center">
                 <span
                   class="doc-icon"
@@ -188,25 +188,25 @@
                 >
                   <i :class="['icon', getDocIconName(row.fileType), 'size-20']" />
                 </span>
-                <span class="doc-name">{{ row.documentName }}</span>
+                <span class="doc-name">{{ row.docTitle }}</span>
               </div>
             </template>
-            <template #cell-status="{ value }">
+            <template #cell-useYn="{ value }">
               <UiBadge
                 variant="default"
                 size="sm"
                 :class="[
                   'badge-status',
                   {
-                    'is-active': value === '활성',
-                    'is-inactive': value === '비활성',
+                    'is-active': value === 'Y' || value === '활성',
+                    'is-inactive': value === 'N' || value === '비활성',
                   },
                 ]"
               >
-                {{ value }}
+                {{ formatUseYnLabel(value) }}
               </UiBadge>
             </template>
-            <template #cell-ragCount="{ value }"> {{ value }}개 RAG </template>
+            <template #cell-dsDocCnt="{ value }"> {{ value }}개 RAG </template>
             <template #cell-actions="{ row }">
               <div
                 class="cell-actions"
@@ -215,7 +215,7 @@
                 <UiDropdownMenu
                   :items="rowActionItems"
                   align="end"
-                  @select="(value) => onRowActionSelect(value, row)"
+                  @select="(value) => onRowActionSelect(value, row as Document)"
                 >
                   <template #trigger>
                     <UiButton
@@ -261,7 +261,7 @@
 
 <script setup lang="ts">
 import type { TableColumn } from '~/types/table'
-import type { CategoryItem } from '~/types/repository'
+import type { Document } from '~/types/repository'
 import CategorySelectModal from '~/components/repository/CategorySelectModal.vue'
 import DocRegisterPanel from '~/components/repository/DocRegisterPanel.vue'
 import { useRepositoryStore } from '~/composables/repository/useRepositoryStore'
@@ -273,7 +273,6 @@ const {
   docTotalCount,
   docSearchKeyword,
   docStatusFilter,
-  docSelectedCategoryId,
   docCurrentPage,
   docPageSize,
   handleSelectDocumentList,
@@ -282,12 +281,23 @@ const {
 } = useRepositoryStore()
 const {
   filteredCategoryList,
+  isCategoryInputVisible,
+  categoryInputValue,
+  editingCategoryId,
+  editingName,
+  categoryInputPlaceholder,
+  categoryMenuItems,
+  selectedCategoryIds,
+  isCategorySelectModalOpen,
   handleSelectCategoryList,
-  handleSaveCategory,
-  handleRenameCategory,
-  handleDeleteCategory,
-  categoryList,
-  visibleCategoryIds,
+  onCategorySelectConfirm,
+  toggleExpand,
+  onCategorySelect,
+  onCategoryMenuSelect,
+  saveCategoryRename,
+  openCategorySelectModal,
+  toggleCategoryInput,
+  onCategoryInputEnter,
 } = useCategoryStore()
 // 초기 로딩
 onMounted(async () => {
@@ -314,152 +324,19 @@ const onSearch = () => {
   }
 }
 
-// ===== 카테고리 =====
-const isCategoryInputVisible = ref(false)
-const isCategorySelectModalOpen = ref(false)
-const categoryInputValue = ref('')
-const categoryInputRef = ref<{ focus: () => void } | null>(null)
-/** 상단 입력으로 추가할 때 부모 카테고리 ID (null이면 최상위) */
-const categoryInputParentId = ref<string | null>(null)
-const editingCategoryId = ref<string | null>(null)
-const editingName = ref('')
-
-const categoryInputPlaceholder = computed(() =>
-  categoryInputParentId.value ? '하위 카테고리명 입력(엔터)' : '카테고리명 입력(엔터)',
-)
-
-const categoryMenuItems = [
-  { label: '이름 수정', value: 'rename', icon: 'icon-edit' },
-  { label: '하위 카테고리 추가', value: 'addSubcategory', icon: 'icon-folder-close' },
-  { label: '카테고리 삭제', value: 'delete', icon: 'icon-trashcan', color: 'danger' as const },
-]
-
-// 카테고리 선택 → 문서 필터링
-const selectedCategoryIds = computed(() => (docSelectedCategoryId.value ? [docSelectedCategoryId.value] : []))
-
-/** id로 categoryList 원본 노드 찾기 — 필터 트리와 참조가 달라도 펼침 상태가 스토어에만 반영되도록 */
-const findCategoryNodeById = (items: CategoryItem[], id: string): CategoryItem | null => {
-  for (const item of items) {
-    if (item.id === id) return item
-    if (item.children?.length) {
-      const found = findCategoryNodeById(item.children, id)
-      if (found) return found
-    }
-  }
-  return null
-}
-
-const onCategorySelect = (item: CategoryItem) => {
-  // 자식 있는 카테고리 → 펼치기/접기만
-  if (item.children?.length) {
-    const node = findCategoryNodeById(categoryList.value, item.id)
-    if (node?.children?.length) node.expanded = !node.expanded
-    return
-  }
-  // 리프 카테고리 → 선택 토글 (같은 거 다시 클릭하면 해제)
-  if (docSelectedCategoryId.value === item.id) {
-    docSelectedCategoryId.value = ''
-  } else {
-    docSelectedCategoryId.value = item.id
-  }
-  docCurrentPage.value = 1
-  handleSelectDocumentList()
-}
-
-const toggleExpand = (item: CategoryItem) => {
-  if (!item?.children?.length) return
-  const node = findCategoryNodeById(categoryList.value, item.id)
-  if (node?.children?.length) node.expanded = !node.expanded
-}
-
-/** 카테고리 입력란에 포커스 (드롭다운 닫힌 뒤 DOM 갱신 이후 실행 권장) */
-const focusCategoryInputField = () => {
-  nextTick(() => {
-    nextTick(() => categoryInputRef.value?.focus())
-  })
-}
-
-const toggleCategoryInput = () => {
-  isCategoryInputVisible.value = !isCategoryInputVisible.value
-  if (!isCategoryInputVisible.value) {
-    categoryInputValue.value = ''
-    categoryInputParentId.value = null
-  } else {
-    categoryInputParentId.value = null
-    focusCategoryInputField()
-  }
-}
-
-const onCategoryInputEnter = async () => {
-  if (!categoryInputValue.value.trim()) return
-  const name = categoryInputValue.value.trim()
-  const parentId = categoryInputParentId.value
-  const wasSubcategory = parentId != null
-  await handleSaveCategory({
-    name,
-    parentId: parentId ?? null,
-  })
-  categoryInputValue.value = ''
-  categoryInputParentId.value = null
-  // 하위 추가 플로우만 입력란 닫기 (+ 버튼으로 연 최상위 추가는 연속 입력 가능)
-  if (wasSubcategory) isCategoryInputVisible.value = false
-}
-
-const startCategoryRename = (item: CategoryItem) => {
-  editingCategoryId.value = item.id
-  editingName.value = item.name
-}
-
-const saveCategoryRename = async () => {
-  if (editingCategoryId.value && editingName.value.trim()) {
-    await handleRenameCategory(editingCategoryId.value, editingName.value.trim())
-  }
-  editingCategoryId.value = null
-}
-
-const onCategoryMenuSelect = async (value: string, cat: CategoryItem) => {
-  if (value === 'rename') {
-    startCategoryRename(cat)
-  } else if (value === 'addSubcategory') {
-    categoryInputParentId.value = cat.id
-    isCategoryInputVisible.value = true
-    categoryInputValue.value = ''
-    focusCategoryInputField()
-  } else if (value === 'delete') {
-    const confirmed = await openConfirm({
-      title: '카테고리 삭제',
-      message: `'${cat.name}' 카테고리를 삭제하시겠습니까?\n하위 카테고리도 함께 삭제됩니다.`,
-    })
-    if (confirmed) await handleDeleteCategory(cat.id)
-  }
-}
-
-const openCategorySelectModal = () => {
-  isCategorySelectModalOpen.value = true
-}
-const onCategorySelectConfirm = (selectedIds: string[]) => {
-  visibleCategoryIds.value = selectedIds
-  // 선택 중이던 카테고리가 필터에서 빠졌으면 해제
-  if (docSelectedCategoryId.value && !selectedIds.includes(docSelectedCategoryId.value) && selectedIds.length > 0) {
-    docSelectedCategoryId.value = ''
-    docCurrentPage.value = 1
-    handleSelectDocumentList()
-  }
-}
-
 // ===== 테이블 =====
 const tableColumns: TableColumn[] = [
   { key: 'select', label: '', width: '48px', align: 'center', headerAlign: 'center' },
-  { key: 'documentName', label: '문서명', width: 'auto', align: 'left', headerAlign: 'left' },
+  { key: 'docTitle', label: '문서명', width: 'auto', align: 'left', headerAlign: 'left' },
   { key: 'fileSize', label: '파일크기', width: '100px', align: 'center', headerAlign: 'center' },
-  { key: 'registerDate', label: '등록일', width: '120px', align: 'center', headerAlign: 'center' },
-  { key: 'status', label: '상태', width: '80px', align: 'center', headerAlign: 'center' },
-  { key: 'ragCount', label: 'RAG 사용', width: '100px', align: 'center', headerAlign: 'center' },
+  { key: 'createDt', label: '등록일', width: '120px', align: 'center', headerAlign: 'center' },
+  { key: 'useYn', label: '상태', width: '80px', align: 'center', headerAlign: 'center' },
+  { key: 'dsDocCnt', label: 'RAG 사용', width: '100px', align: 'center', headerAlign: 'center' },
   { key: 'actions', label: '', width: '56px', align: 'center', headerAlign: 'center' },
 ]
 
 // 정렬 (프론트 정렬)
-type SortKey = 'documentName' | 'fileSize' | 'registerDate'
+type SortKey = keyof Pick<Document, 'docTitle' | 'fileSize' | 'createDt'>
 const sortKey = ref<SortKey | null>(null)
 const sortOrder = ref<'asc' | 'desc'>('asc')
 const onSort = (key: SortKey) => {
@@ -477,11 +354,18 @@ const sortedDocumentList = computed(() => {
   if (!key) return list
   const dir = sortOrder.value === 'asc' ? 1 : -1
   return list.sort((a, b) => {
-    const va = (a as any)[key] as string
-    const vb = (b as any)[key] as string
+    const va = a[key]
+    const vb = b[key]
     return dir * (va === vb ? 0 : va < vb ? -1 : 1)
   })
 })
+
+/** useYn 표시 (Y/N 또는 레거시 한글) */
+const formatUseYnLabel = (value: string) => {
+  if (value === 'Y') return '활성'
+  if (value === 'N') return '비활성'
+  return value
+}
 
 const rowActionItems = [
   { label: '미리보기', value: 'preview', icon: 'icon-view' },
@@ -498,7 +382,7 @@ const toggleSelectAll = () => {
   if (isAllSelected.value) {
     selectedIds.value = []
   } else {
-    selectedIds.value = documentList.value.map((r) => r.id)
+    selectedIds.value = documentList.value.map((r) => r.docId)
   }
 }
 const toggleSelectRow = (id: string, checked: boolean) => {
@@ -514,12 +398,13 @@ const isDocRegisterOpen = ref(false)
 const onRegisterDocument = () => {
   isDocRegisterOpen.value = true
 }
-const onSaveDocument = async (data: Record<string, any>) => {
+const onSaveDocument = async (data: Record<string, unknown>) => {
+  const title = String(data.title ?? '')
   await handleSaveDocument({
-    documentName: data.title,
-    categoryId: data.categoryId,
+    docTitle: title,
+    categoryId: String(data.categoryId ?? ''),
   })
-  openToast({ message: `'${data.title}' 문서가 등록되었습니다.` })
+  openToast({ message: `'${title}' 문서가 등록되었습니다.` })
 }
 
 const onBatchDownload = () => {
@@ -548,15 +433,15 @@ const onBatchDelete = async () => {
   }
 }
 
-const onRowActionSelect = async (value: string, row: Record<string, any>) => {
+const onRowActionSelect = async (value: string, row: Document) => {
   if (value === 'delete') {
     const confirmed = await openConfirm({
       title: '문서 삭제',
-      message: `'${row.documentName}'을(를) 삭제하시겠습니까?`,
+      message: `'${row.docTitle}'을(를) 삭제하시겠습니까?`,
     })
     if (confirmed) {
-      await handleDeleteDocument([row.id])
-      selectedIds.value = selectedIds.value.filter((id) => id !== row.id)
+      await handleDeleteDocument([row.docId])
+      selectedIds.value = selectedIds.value.filter((id) => id !== row.docId)
     }
   } else if (value === 'preview') {
     openAlert({ title: '미리보기', message: '미리보기 기능은 추후 구현 예정입니다.' })

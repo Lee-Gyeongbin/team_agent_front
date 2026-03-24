@@ -1,7 +1,6 @@
 import { useRepositoryApi } from '~/composables/repository/useRepositoryApi'
 import type { Document, UrlItem } from '~/types/repository'
-import { useCategoryStore } from '~/composables/repository/useCategoryStore'
-const { collectDescendantIds, categoryList } = useCategoryStore()
+
 const {
   fetchDocumentList,
   fetchSaveDocument,
@@ -32,20 +31,11 @@ const urlPageSize = 10
 
 // ===== 문서 액션 =====
 const handleSelectDocumentList = async () => {
-  // 선택한 카테고리의 하위 카테고리까지 포함
-  let categoryIds: string[] | undefined
-  if (docSelectedCategoryId.value) {
-    categoryIds = collectDescendantIds(categoryList.value, docSelectedCategoryId.value)
-  }
-  const res = await fetchDocumentList({
-    keyword: docSearchKeyword.value || undefined,
-    status: docStatusFilter.value,
-    categoryIds,
-    page: docCurrentPage.value,
-    pageSize: docPageSize,
-  })
-  documentList.value = res.list
-  docTotalCount.value = res.total
+  const findContent = docSearchKeyword.value || undefined
+  const categoryId = docSelectedCategoryId.value || undefined
+  const res = await fetchDocumentList(findContent, categoryId)
+  documentList.value = res.dataList
+  docTotalCount.value = res.totalCount
 }
 
 const handleSaveDocument = async (data: Partial<Document>) => {

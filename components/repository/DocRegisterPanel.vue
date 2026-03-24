@@ -130,7 +130,7 @@
 </template>
 
 <script setup lang="ts">
-import type { CategoryItem } from '~/types/repository'
+import type { CategoryTreeItem } from '~/types/repository'
 import CategorySelectModal from '~/components/repository/CategorySelectModal.vue'
 import { openToast } from '~/composables/useToast'
 import { useCategoryStore } from '~/composables/repository/useCategoryStore'
@@ -175,9 +175,9 @@ const form = ref({
 // 선택된 카테고리명 표시
 const selectedCategoryName = computed(() => {
   if (!form.value.categoryId) return ''
-  const findName = (items: CategoryItem[]): string => {
+  const findName = (items: CategoryTreeItem[]): string => {
     for (const item of items) {
-      if (item.id === form.value.categoryId) return item.name
+      if (item.categoryId === form.value.categoryId) return item.categoryName
       if (item.children?.length) {
         const found = findName(item.children)
         if (found) return found

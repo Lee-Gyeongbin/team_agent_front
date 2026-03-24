@@ -1,21 +1,39 @@
-/** 카테고리 트리 항목 (재귀 구조 — 문서 탭 좌측 패널, 카테고리 선택 모달 공용) */
+/** 카테고리 한 행 (selectCategoryList WITH RECURSIVE 결과 — 평면 리스트, SORT_PATH 순) */
 export interface CategoryItem {
-  id: string
-  name: string
+  categoryId: string
+  categoryName: string
+  /** 루트는 null 또는 빈 문자열 */
+  parnCatId: string | null
+  catLvl: string
+  sortOrd: string
+  sortPath: string
+  depth: string
+}
+
+/** 화면용 트리 노드 (API 행 + 자식·펼침 상태) */
+export interface CategoryTreeItem extends CategoryItem {
+  children?: CategoryTreeItem[]
   expanded?: boolean
-  children?: CategoryItem[]
 }
 
 /** 문서 항목 */
 export interface Document {
-  id: string
-  documentName: string
-  fileType: string
+  docId: string
+  docTitle: string
+  categoryId: string
+  categoryName: string
+  author: string
+  secLvl: string
+  content: string
+  fileName: string
+  filePath: string
   fileSize: string
-  registerDate: string
-  status: string
-  ragCount: number
-  categoryId?: string
+  fileType: string
+  keywords: string
+  refUrl: string
+  useYn: string
+  dsDocCnt: string
+  createDt: string
 }
 
 /** URL 항목 */

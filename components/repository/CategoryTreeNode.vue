@@ -10,7 +10,7 @@
   >
     <div
       class="category-row flex items-center"
-      :class="{ 'is-selected': selectable && !item.children?.length && selectedIds.includes(item.id) }"
+      :class="{ 'is-selected': selectable && !item.children?.length && selectedIds.includes(item.categoryId) }"
       :style="{ paddingLeft: `${(depth - 1) * 12}px` }"
       @click="selectable ? $emit('select', item) : undefined"
     >
@@ -26,7 +26,7 @@
       </span>
 
       <!-- 이름 수정 모드 -->
-      <template v-if="editingCategoryId === item.id">
+      <template v-if="editingCategoryId === item.categoryId">
         <UiInput
           ref="inputRef"
           v-model="localEditingName"
@@ -44,40 +44,45 @@
         v-else
         class="category-name"
       >
-        {{ item.name }}
+        {{ item.categoryName }}
       </span>
 
       <!-- selectable 모드: 리프 카테고리만 체크 표시 -->
       <i
-        v-if="showCheckIcon && selectable && !item.children?.length && selectedIds.includes(item.id)"
+        v-if="showCheckIcon && selectable && !item.children?.length && selectedIds.includes(item.categoryId)"
         class="icon icon-check size-16 category-check"
       />
 
       <!-- 더보기 메뉴 (표시할 항목이 있을 때만) -->
+      <!-- @click.stop은 트리거 래퍼에만: 버튼에 .stop 두면 Radix Trigger(span)까지 버블이 안 가서 메뉴가 안 열림 -->
       <template v-if="displayedMenuItems.length > 0">
-        <UiDropdownMenu
-          v-model:open="isDropdownOpen"
-          :items="displayedMenuItems"
-          side="bottom"
-          align="end"
-          :side-offset="4"
-          @select="(value) => $emit('menu-select', value, item)"
+        <div
+          class="category-more-wrap"
+          @click.stop
         >
-          <template #trigger>
-            <UiButton
-              icon-only
-              variant="ghost"
-              size="xs"
-              class="btn-category-more"
-              :class="{ 'is-active': isDropdownOpen }"
-              @click.stop
-            >
-              <template #icon-left>
-                <i class="icon icon-add-dot size-20" />
-              </template>
-            </UiButton>
-          </template>
-        </UiDropdownMenu>
+          <UiDropdownMenu
+            v-model:open="isDropdownOpen"
+            :items="displayedMenuItems"
+            side="bottom"
+            align="end"
+            :side-offset="4"
+            @select="(value) => $emit('menu-select', value, item)"
+          >
+            <template #trigger>
+              <UiButton
+                icon-only
+                variant="ghost"
+                size="xs"
+                class="btn-category-more"
+                :class="{ 'is-active': isDropdownOpen }"
+              >
+                <template #icon-left>
+                  <i class="icon icon-add-dot size-20" />
+                </template>
+              </UiButton>
+            </template>
+          </UiDropdownMenu>
+        </div>
       </template>
 
       <!-- 자식이 있을 때만: 펼침/접기 버튼 -->
@@ -112,7 +117,7 @@
     >
       <CategoryTreeNode
         v-for="child in item.children"
-        :key="child.id"
+        :key="child.categoryId"
         :item="child"
         :depth="depth + 1"
         :selectable="selectable"
@@ -134,11 +139,11 @@
 
 <script setup lang="ts">
 import { computed, watch, nextTick, ref } from 'vue'
-import type { CategoryItem } from '~/types/repository'
+import type { CategoryTreeItem } from '~/types/repository'
 
 const props = withDefaults(
   defineProps<{
-    item: CategoryItem
+    item: CategoryTreeItem
     depth: number
     selectable?: boolean
     selectedIds?: string[]
@@ -162,9 +167,9 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  toggle: [item: CategoryItem]
-  select: [item: CategoryItem]
-  'menu-select': [value: string, item: CategoryItem]
+  toggle: [item: CategoryTreeItem]
+  select: [item: CategoryTreeItem]
+  'menu-select': [value: string, item: CategoryTreeItem]
   'update:editing-name': [value: string]
   'save-rename': []
 }>()
@@ -194,7 +199,7 @@ const onSaveRename = () => {
 
 /** 이 노드가 편집 대상이 되면 인풋에 포커스 */
 watch(
-  () => props.editingCategoryId === props.item.id,
+  () => props.editingCategoryId === props.item.categoryId,
   (isEditing: boolean) => {
     if (isEditing) nextTick(() => inputRef.value?.focus())
   },

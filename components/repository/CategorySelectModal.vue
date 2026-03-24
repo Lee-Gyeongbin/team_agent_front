@@ -25,7 +25,7 @@
         <ul class="category-tree">
           <CategoryTreeNode
             v-for="cat in filteredCategoryList"
-            :key="cat.id"
+            :key="cat.categoryId"
             :item="cat"
             :depth="1"
             selectable
@@ -62,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import type { CategoryItem } from '~/types/repository'
+import type { CategoryTreeItem } from '~/types/repository'
 import CategoryTreeNode from '~/components/repository/CategoryTreeNode.vue'
 import { useCategoryStore } from '~/composables/repository/useCategoryStore'
 const emit = defineEmits<{
@@ -79,10 +79,10 @@ const { categoryList, visibleCategoryIds, handleSelectCategoryList } = useCatego
 const searchKeyword = ref('')
 const localSelectedIds = ref<string[]>([])
 // 모달 전용 로컬 복사본 (store 원본에 영향 안 줌)
-const localCategoryList = ref<CategoryItem[]>([])
+const localCategoryList = ref<CategoryTreeItem[]>([])
 
 // 트리 deep copy
-function deepCopyTree(items: CategoryItem[]): CategoryItem[] {
+function deepCopyTree(items: CategoryTreeItem[]): CategoryTreeItem[] {
   return items.map((item) => ({
     ...item,
     expanded: false,
@@ -106,10 +106,10 @@ watch(
 const filteredCategoryList = computed(() => {
   if (!searchKeyword.value.trim()) return localCategoryList.value
   const kw = searchKeyword.value.toLowerCase()
-  const filterTree = (items: CategoryItem[]): CategoryItem[] => {
-    return items.reduce<CategoryItem[]>((acc, item) => {
+  const filterTree = (items: CategoryTreeItem[]): CategoryTreeItem[] => {
+    return items.reduce<CategoryTreeItem[]>((acc, item) => {
       const childMatches = item.children ? filterTree(item.children) : []
-      if (item.name.toLowerCase().includes(kw) || childMatches.length > 0) {
+      if (item.categoryName.toLowerCase().includes(kw) || childMatches.length > 0) {
         acc.push({ ...item, expanded: true, children: childMatches.length > 0 ? childMatches : item.children })
       }
       return acc
@@ -120,22 +120,22 @@ const filteredCategoryList = computed(() => {
 
 const onSearch = () => {}
 
-const toggleExpand = (item: CategoryItem) => {
+const toggleExpand = (item: CategoryTreeItem) => {
   if (item?.children?.length) item.expanded = !item.expanded
 }
 
-const toggleSelect = (item: CategoryItem) => {
+const toggleSelect = (item: CategoryTreeItem) => {
   // 자식 있는 카테고리 → 펼치기/접기만
   if (item.children?.length) {
     item.expanded = !item.expanded
     return
   }
   // 리프 카테고리만 체크 토글
-  const idx = localSelectedIds.value.indexOf(item.id)
+  const idx = localSelectedIds.value.indexOf(item.categoryId)
   if (idx > -1) {
-    localSelectedIds.value = localSelectedIds.value.filter((id) => id !== item.id)
+    localSelectedIds.value = localSelectedIds.value.filter((id) => id !== item.categoryId)
   } else {
-    localSelectedIds.value = [...localSelectedIds.value, item.id]
+    localSelectedIds.value = [...localSelectedIds.value, item.categoryId]
   }
 }
 

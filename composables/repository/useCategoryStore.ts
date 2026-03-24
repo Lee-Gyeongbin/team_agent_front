@@ -1,62 +1,231 @@
-import type { CategoryItem } from '~/types/repository'
+import { ref, watch } from 'vue'
+import type { CategoryItem, CategoryTreeItem } from '~/types/repository'
 import { useRepositoryApi } from '~/composables/repository/useRepositoryApi'
+import { collectDescendantIds } from '~/utils/repository/categoryTreeUtil'
 
 const { fetchCategoryList, fetchSaveCategory, fetchRenameCategory, fetchDeleteCategory } = useRepositoryApi()
 
-export const useCategoryStore = () => {
-  // 좌측 패널에 표시할 카테고리 (ref로 유지 — 객체 참조 보존하여 expanded 토글 가능)
-  const filteredCategoryList = ref<CategoryItem[]>([])
-  const categoryList = ref<CategoryItem[]>([])
-  // 모달에서 선택한 카테고리 ID 목록 (빈 배열 = 전체 표시)
-  const visibleCategoryIds = ref<string[]>([])
+/** 스토어 간 공유 — useRepositoryStore가 순환 없이 트리 참조 */
+export const categoryList = ref<CategoryTreeItem[]>([])
+export const filteredCategoryList = ref<CategoryTreeItem[]>([])
+const visibleCategoryIds = ref<string[]>([])
 
-  /** 트리에서 expanded === true 인 카테고리 id 수집 (재조회 시 펼침 유지용) */
-  function collectExpandedCategoryIds(items: CategoryItem[], acc: Set<string> = new Set()): Set<string> {
+function buildFilteredTree(items: CategoryTreeItem[], ids: string[]): CategoryTreeItem[] {
+  return items.reduce<CategoryTreeItem[]>((acc, item) => {
+    const filteredChildren = item.children ? buildFilteredTree(item.children, ids) : []
+    if (ids.includes(item.categoryId) || filteredChildren.length > 0) {
+      acc.push({ ...item, children: filteredChildren.length > 0 ? filteredChildren : item.children })
+    }
+    return acc
+  }, [])
+}
+
+function updateFilteredCategoryList() {
+  if (visibleCategoryIds.value.length === 0) {
+    filteredCategoryList.value = categoryList.value
+  } else {
+    filteredCategoryList.value = buildFilteredTree(categoryList.value, visibleCategoryIds.value)
+  }
+}
+
+watch([categoryList, visibleCategoryIds], () => updateFilteredCategoryList(), { immediate: true, deep: true })
+
+/** 루트 여부 (TB_CONTENT_CAT 루트는 PARN_CAT_ID IS NULL) */
+function isRootParnCat(parnCatId: string | null | undefined): boolean {
+  return parnCatId == null || parnCatId === ''
+}
+
+/**
+ * 평면 카테고리 리스트 → 부모-자식 트리 (SORT_ORD / SORT_PATH 기준 정렬)
+ */
+function buildCategoryTreeFromFlat(flat: CategoryItem[]): CategoryTreeItem[] {
+  if (!flat.length) return []
+  const byId = new Map<string, CategoryTreeItem>()
+  for (const row of flat) {
+    byId.set(row.categoryId, { ...row, children: [] })
+  }
+  const roots: CategoryTreeItem[] = []
+  for (const row of flat) {
+    const node = byId.get(row.categoryId)
+    if (!node) continue
+    const parentId = row.parnCatId
+    if (isRootParnCat(parentId)) {
+      roots.push(node)
+    } else if (parentId && byId.has(parentId)) {
+      byId.get(parentId)!.children!.push(node)
+    } else {
+      roots.push(node)
+    }
+  }
+  const sortSiblings = (nodes: CategoryTreeItem[]) => {
+    nodes.sort((a, b) => {
+      const ao = Number(a.sortOrd) || 0
+      const bo = Number(b.sortOrd) || 0
+      if (ao !== bo) return ao - bo
+      return String(a.sortPath).localeCompare(String(b.sortPath), undefined, { numeric: true })
+    })
+    for (const n of nodes) {
+      if (n.children?.length) sortSiblings(n.children)
+    }
+  }
+  sortSiblings(roots)
+
+  const pruneLeaves = (nodes: CategoryTreeItem[]): CategoryTreeItem[] =>
+    nodes.map((n) => {
+      const ch = n.children?.length ? pruneLeaves(n.children) : undefined
+      return { ...n, children: ch }
+    })
+  return pruneLeaves(roots)
+}
+
+export const useCategoryStore = () => {
+  const { docSelectedCategoryId, docCurrentPage, handleSelectDocumentList } = useRepositoryStore()
+  // ===== 카테고리 =====
+  const isCategoryInputVisible = ref(false)
+  const isCategorySelectModalOpen = ref(false)
+  const categoryInputValue = ref('')
+  const categoryInputRef = ref<{ focus: () => void } | null>(null)
+  /** 상단 입력으로 추가할 때 부모 카테고리 ID (null이면 최상위) */
+  const categoryInputParentId = ref<string | null>(null)
+  const editingCategoryId = ref<string | null>(null)
+  const editingName = ref('')
+
+  const categoryInputPlaceholder = computed(() =>
+    categoryInputParentId.value ? '하위 카테고리명 입력(엔터)' : '카테고리명 입력(엔터)',
+  )
+  const categoryMenuItems = [
+    { label: '이름 수정', value: 'rename', icon: 'icon-edit' },
+    { label: '하위 카테고리 추가', value: 'addSubcategory', icon: 'icon-folder-close' },
+    { label: '카테고리 삭제', value: 'delete', icon: 'icon-trashcan', color: 'danger' as const },
+  ]
+  // 카테고리 선택 → 문서 필터링
+  const selectedCategoryIds = computed(() => (docSelectedCategoryId.value ? [docSelectedCategoryId.value] : []))
+  /** id로 categoryList 원본 노드 찾기 — 필터 트리와 참조가 달라도 펼침 상태가 스토어에만 반영되도록 */
+  const findCategoryNodeById = (items: CategoryTreeItem[], id: string): CategoryTreeItem | null => {
     for (const item of items) {
-      if (item.expanded) acc.add(item.id)
+      if (item.categoryId === id) return item
+      if (item.children?.length) {
+        const found = findCategoryNodeById(item.children, id)
+        if (found) return found
+      }
+    }
+    return null
+  }
+  const onCategorySelect = (item: CategoryTreeItem) => {
+    // 자식 있는 카테고리(최상위 루트 포함) → 펼침/접기 + 해당 카테고리 기준 문서 목록 조회 (같은 항목 재클릭 시에도 해제하지 않음)
+    if (item.children?.length) {
+      const node = findCategoryNodeById(categoryList.value, item.categoryId)
+      if (node?.children?.length) node.expanded = !node.expanded
+      docSelectedCategoryId.value = item.categoryId
+      docCurrentPage.value = 1
+      handleSelectDocumentList()
+      return
+    }
+    // 리프 카테고리 → 선택 유지 후 조회 (재클릭해도 필터 해제하지 않음)
+    docSelectedCategoryId.value = item.categoryId
+    docCurrentPage.value = 1
+    handleSelectDocumentList()
+  }
+  // 카테고리 펼침 토글
+  const toggleExpand = (item: CategoryTreeItem) => {
+    if (!item?.children?.length) return
+    const node = findCategoryNodeById(categoryList.value, item.categoryId)
+    // 자식 있는 카테고리 → 펼치기/접기만
+    if (node?.children?.length) node.expanded = !node.expanded
+  }
+  /** 카테고리 입력란에 포커스 (드롭다운 닫힌 뒤 DOM 갱신 이후 실행 권장) */
+  const focusCategoryInputField = () => {
+    nextTick(() => {
+      nextTick(() => categoryInputRef.value?.focus())
+    })
+  }
+  const toggleCategoryInput = () => {
+    isCategoryInputVisible.value = !isCategoryInputVisible.value
+    if (!isCategoryInputVisible.value) {
+      categoryInputValue.value = ''
+      categoryInputParentId.value = null
+    } else {
+      categoryInputParentId.value = null
+      focusCategoryInputField()
+    }
+  }
+  const onCategoryInputEnter = async () => {
+    if (!categoryInputValue.value.trim()) return
+    const name = categoryInputValue.value.trim()
+    const parentId = categoryInputParentId.value
+    const wasSubcategory = parentId != null
+    await handleSaveCategory({
+      name,
+      parentId: parentId ?? null,
+    })
+    categoryInputValue.value = ''
+    categoryInputParentId.value = null
+    // 하위 추가 플로우만 입력란 닫기 (+ 버튼으로 연 최상위 추가는 연속 입력 가능)
+    if (wasSubcategory) isCategoryInputVisible.value = false
+  }
+  const startCategoryRename = (item: CategoryTreeItem) => {
+    editingCategoryId.value = item.categoryId
+    editingName.value = item.categoryName
+  }
+  const saveCategoryRename = async () => {
+    if (editingCategoryId.value && editingName.value.trim()) {
+      await handleRenameCategory(editingCategoryId.value, editingName.value.trim())
+    }
+    editingCategoryId.value = null
+  }
+  const onCategoryMenuSelect = async (value: string, cat: CategoryTreeItem) => {
+    if (value === 'rename') {
+      startCategoryRename(cat)
+    } else if (value === 'addSubcategory') {
+      categoryInputParentId.value = cat.categoryId
+      isCategoryInputVisible.value = true
+      categoryInputValue.value = ''
+      focusCategoryInputField()
+    } else if (value === 'delete') {
+      const confirmed = await openConfirm({
+        title: '카테고리 삭제',
+        message: `'${cat.categoryName}' 카테고리를 삭제하시겠습니까?\n하위 카테고리도 함께 삭제됩니다.`,
+      })
+      if (confirmed) await handleDeleteCategory(cat.categoryId)
+    }
+  }
+  const openCategorySelectModal = () => {
+    isCategorySelectModalOpen.value = true
+  }
+  const onCategorySelectConfirm = (selectedIds: string[]) => {
+    visibleCategoryIds.value = selectedIds
+    // 선택 중이던 카테고리가 필터에서 빠졌으면 해제
+    if (docSelectedCategoryId.value && !selectedIds.includes(docSelectedCategoryId.value) && selectedIds.length > 0) {
+      docSelectedCategoryId.value = ''
+      docCurrentPage.value = 1
+      handleSelectDocumentList()
+    }
+  }
+
+  function collectExpandedCategoryIds(items: CategoryTreeItem[], acc: Set<string> = new Set()): Set<string> {
+    for (const item of items) {
+      if (item.expanded) acc.add(item.categoryId)
       if (item.children?.length) collectExpandedCategoryIds(item.children, acc)
     }
     return acc
   }
 
-  /** API 응답 트리에 펼침 id 집합 적용 */
-  function mergeCategoryExpandedState(items: CategoryItem[], expandedIds: Set<string>): CategoryItem[] {
+  function mergeCategoryExpandedState(items: CategoryTreeItem[], expandedIds: Set<string>): CategoryTreeItem[] {
     return items.map((item) => ({
       ...item,
-      expanded: expandedIds.has(item.id),
+      expanded: expandedIds.has(item.categoryId),
       children: item.children?.length ? mergeCategoryExpandedState(item.children, expandedIds) : item.children,
     }))
   }
 
-  function buildFilteredTree(items: CategoryItem[], ids: string[]): CategoryItem[] {
-    return items.reduce<CategoryItem[]>((acc, item) => {
-      const filteredChildren = item.children ? buildFilteredTree(item.children, ids) : []
-      if (ids.includes(item.id) || filteredChildren.length > 0) {
-        acc.push({ ...item, children: filteredChildren.length > 0 ? filteredChildren : item.children })
-      }
-      return acc
-    }, [])
-  }
-
-  function updateFilteredCategoryList() {
-    if (visibleCategoryIds.value.length === 0) {
-      filteredCategoryList.value = categoryList.value
-    } else {
-      filteredCategoryList.value = buildFilteredTree(categoryList.value, visibleCategoryIds.value)
-    }
-  }
-
-  // categoryList 또는 visibleCategoryIds 변경 시 갱신 (expanded 등 중첩 변경 시 필터 트리 동기화)
-  watch([categoryList, visibleCategoryIds], () => updateFilteredCategoryList(), { immediate: true, deep: true })
-
-  // ===== 카테고리 액션 =====
   const handleSelectCategoryList = async (options?: { forceExpandIds?: string[] }) => {
     const expandedIds = collectExpandedCategoryIds(categoryList.value)
     for (const id of options?.forceExpandIds ?? []) {
       if (id) expandedIds.add(id)
     }
     const res = await fetchCategoryList()
-    categoryList.value = mergeCategoryExpandedState(res.list, expandedIds)
+    const tree = buildCategoryTreeFromFlat(res.dataList ?? [])
+    categoryList.value = mergeCategoryExpandedState(tree, expandedIds)
   }
 
   const handleSaveCategory = async (data: { id?: string; name: string; parentId?: string | null }) => {
@@ -75,34 +244,27 @@ export const useCategoryStore = () => {
     await handleSelectCategoryList()
   }
 
-  // 선택한 카테고리 + 모든 자손 ID 수집
-  function collectDescendantIds(items: CategoryItem[], targetId: string): string[] {
-    const ids: string[] = []
-    const collect = (list: CategoryItem[]) => {
-      for (const item of list) {
-        ids.push(item.id)
-        if (item.children?.length) collect(item.children)
-      }
-    }
-    // targetId에 해당하는 노드 찾기
-    const findAndCollect = (list: CategoryItem[]): boolean => {
-      for (const item of list) {
-        if (item.id === targetId) {
-          ids.push(item.id)
-          if (item.children?.length) collect(item.children)
-          return true
-        }
-        if (item.children?.length && findAndCollect(item.children)) return true
-      }
-      return false
-    }
-    findAndCollect(items)
-    return ids
-  }
-
   return {
+    isCategoryInputVisible,
+    isCategorySelectModalOpen,
+    categoryInputValue,
+    categoryInputRef,
+    categoryInputParentId,
+    editingCategoryId,
+    editingName,
+    categoryInputPlaceholder,
+    categoryMenuItems,
     filteredCategoryList,
+    selectedCategoryIds,
+    onCategorySelectConfirm,
     handleSelectCategoryList,
+    toggleExpand,
+    onCategorySelect,
+    onCategoryMenuSelect,
+    saveCategoryRename,
+    openCategorySelectModal,
+    toggleCategoryInput,
+    onCategoryInputEnter,
     handleSaveCategory,
     handleRenameCategory,
     handleDeleteCategory,

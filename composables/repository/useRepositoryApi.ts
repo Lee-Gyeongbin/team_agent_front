@@ -13,9 +13,10 @@ const mockPost = async <T>(url: string, body: unknown = {}): Promise<T> => {
 }
 
 export const useRepositoryApi = () => {
+  const { post } = useApi()
   // ===== 카테고리 =====
   const fetchCategoryList = async () => {
-    return mockPost<{ list: CategoryItem[] }>(`${MOCK_BASE}/category/list`, {})
+    return post<{ dataList: CategoryItem[] }>('/repository/selectCategoryList.do', {})
   }
 
   const fetchSaveCategory = async (data: { id?: string; name: string; parentId?: string | null }) => {
@@ -31,16 +32,9 @@ export const useRepositoryApi = () => {
   }
 
   // ===== 문서 =====
-  const fetchDocumentList = async (params: {
-    keyword?: string
-    status?: string
-    categoryIds?: string[]
-    page?: number
-    pageSize?: number
-  }) => {
-    return mockPost<{ list: Document[]; total: number }>(`${MOCK_BASE}/document/list`, params)
+  const fetchDocumentList = async (findContent?: string, categoryId?: string) => {
+    return post<{ dataList: Document[]; totalCount: number }>('/repository/selectDocRepositoryList.do', { findContent, categoryId })
   }
-
   const fetchSaveDocument = async (data: Partial<Document>) => {
     return mockPost<{ data: Document }>(`${MOCK_BASE}/document/save`, data)
   }
