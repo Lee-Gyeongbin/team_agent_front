@@ -29,7 +29,7 @@
             :item="cat"
             :depth="1"
             selectable
-            :selected-ids="localSelectedIds"
+            :selected-ids="localSelectedId ? [localSelectedId] : []"
             @toggle="toggleExpand"
             @select="toggleSelect"
           />
@@ -67,17 +67,17 @@ import CategoryTreeNode from '~/components/repository/CategoryTreeNode.vue'
 import { useCategoryStore } from '~/composables/repository/useCategoryStore'
 const emit = defineEmits<{
   close: []
-  confirm: [selectedIds: string[]]
+  confirm: [selectedId: string]
 }>()
 
 const props = defineProps<{
   isOpen: boolean
 }>()
 
-const { categoryList, visibleCategoryIds, handleSelectCategoryList } = useCategoryStore()
+const { categoryList, visibleCategoryId, handleSelectCategoryList } = useCategoryStore()
 
 const searchKeyword = ref('')
-const localSelectedIds = ref<string[]>([])
+const localSelectedId = ref('')
 // 모달 전용 로컬 복사본 (store 원본에 영향 안 줌)
 const localCategoryList = ref<CategoryTreeItem[]>([])
 
@@ -95,7 +95,7 @@ watch(
   () => props.isOpen,
   (open) => {
     if (open) {
-      localSelectedIds.value = [...visibleCategoryIds.value]
+      localSelectedId.value = visibleCategoryId.value
       localCategoryList.value = deepCopyTree(categoryList.value)
       if (!categoryList.value.length) handleSelectCategoryList()
     }
@@ -125,23 +125,17 @@ const toggleExpand = (item: CategoryTreeItem) => {
 }
 
 const toggleSelect = (item: CategoryTreeItem) => {
-  // 자식 있는 카테고리 → 펼치기/접기만
-  if (item.children?.length) {
-    item.expanded = !item.expanded
-    return
-  }
-  // 리프 카테고리만 체크 토글
-  const idx = localSelectedIds.value.indexOf(item.categoryId)
-  if (idx > -1) {
-    localSelectedIds.value = localSelectedIds.value.filter((id) => id !== item.categoryId)
+  // 단일 선택: 항상 하나만 유지 (같은 항목 재클릭 시 해제)
+  if (localSelectedId.value === item.categoryId) {
+    localSelectedId.value = ''
   } else {
-    localSelectedIds.value = [...localSelectedIds.value, item.categoryId]
+    localSelectedId.value = item.categoryId
   }
 }
 
 const onClose = () => emit('close')
 const onConfirm = () => {
-  emit('confirm', localSelectedIds.value)
+  emit('confirm', localSelectedId.value)
   emit('close')
 }
 </script>

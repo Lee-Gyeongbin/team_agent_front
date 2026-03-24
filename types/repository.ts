@@ -34,6 +34,7 @@ export interface Document {
   useYn: string
   dsDocCnt: string
   createDt: string
+  files: File[]
 }
 
 /** URL 항목 */
