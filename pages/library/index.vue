@@ -31,16 +31,21 @@
           </p>
           <div class="library-input-grp shrink-0 grow-1 max-w-400">
             <UiInput
+              v-model="searchTitle"
               type="search"
               placeholder="검색어를 입력하세요"
+              @keyup.enter="handleFetchCardList"
+              @search="handleFetchCardList"
             />
           </div>
           <div class="library-select-grp shrink-0 grow-1 max-w-140">
             <UiSelect
               id="sort-order"
+              v-model="searchSort"
               name="sort-order"
               :options="searchOptions"
               size="md"
+              @update:model-value="handleFetchCardList"
             />
           </div>
           <div class="btn-grp">
@@ -361,7 +366,10 @@ const {
   selectedCardId,
   selectedCard,
   newCategoryNm,
+  searchTitle,
+  searchSort,
   handleFetchCategoryList,
+  handleFetchCardList,
   handleListMenuSelect,
   handleRenameModalClose,
   handleSaveRename,
