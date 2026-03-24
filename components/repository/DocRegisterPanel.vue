@@ -133,8 +133,7 @@
 import type { CategoryItem } from '~/types/repository'
 import CategorySelectModal from '~/components/repository/CategorySelectModal.vue'
 import { openToast } from '~/composables/useToast'
-import { useRepositoryStore } from '~/composables/repository/useRepositoryStore'
-
+import { useCategoryStore } from '~/composables/repository/useCategoryStore'
 defineProps<{
   isOpen: boolean
 }>()
@@ -144,7 +143,7 @@ const emit = defineEmits<{
   save: [data: Record<string, any>]
 }>()
 
-const { categoryList } = useRepositoryStore()
+const { categoryList } = useCategoryStore()
 
 const titleRef = ref<{ focus?: () => void; $el?: HTMLElement } | null>(null)
 const categoryFieldRef = ref<HTMLElement | null>(null)

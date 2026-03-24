@@ -64,8 +64,7 @@
 <script setup lang="ts">
 import type { CategoryItem } from '~/types/repository'
 import CategoryTreeNode from '~/components/repository/CategoryTreeNode.vue'
-import { useRepositoryStore } from '~/composables/repository/useRepositoryStore'
-
+import { useCategoryStore } from '~/composables/repository/useCategoryStore'
 const emit = defineEmits<{
   close: []
   confirm: [selectedIds: string[]]
@@ -75,7 +74,7 @@ const props = defineProps<{
   isOpen: boolean
 }>()
 
-const { categoryList, visibleCategoryIds, handleSelectCategoryList } = useRepositoryStore()
+const { categoryList, visibleCategoryIds, handleSelectCategoryList } = useCategoryStore()
 
 const searchKeyword = ref('')
 const localSelectedIds = ref<string[]>([])

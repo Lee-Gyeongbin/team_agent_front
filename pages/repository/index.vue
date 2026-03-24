@@ -9,7 +9,7 @@
     <!-- 메인: 탭별 컨텐츠 연결 (v-show로 DOM 유지 — 탭 전환 시 깜박임 방지) -->
     <div class="repository-main l-center">
       <RepositoryDocumentPage v-show="activeTab === 'document'" />
-      <RepositoryUrlPage v-show="activeTab === 'url'" />
+      <!-- <RepositoryUrlPage v-show="activeTab === 'url'" /> -->
     </div>
   </div>
 </template>

@@ -174,9 +174,7 @@ const displayedMenuItems = computed(() => {
   const items = props.menuItems
   const maxDepth = props.maxCategoryDepth
   if (maxDepth == null) return items
-  return items.filter(
-    (row: (typeof items)[number]) => row.value !== 'addSubcategory' || props.depth < maxDepth,
-  )
+  return items.filter((row: (typeof items)[number]) => row.value !== 'addSubcategory' || props.depth < maxDepth)
 })
 
 const inputRef = ref<{ focus: () => void } | null>(null)

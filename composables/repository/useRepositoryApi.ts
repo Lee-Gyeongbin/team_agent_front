@@ -31,7 +31,13 @@ export const useRepositoryApi = () => {
   }
 
   // ===== 문서 =====
-  const fetchDocumentList = async (params: { keyword?: string; status?: string; categoryIds?: string[]; page?: number; pageSize?: number }) => {
+  const fetchDocumentList = async (params: {
+    keyword?: string
+    status?: string
+    categoryIds?: string[]
+    page?: number
+    pageSize?: number
+  }) => {
     return mockPost<{ list: Document[]; total: number }>(`${MOCK_BASE}/document/list`, params)
   }
 
@@ -44,7 +50,13 @@ export const useRepositoryApi = () => {
   }
 
   // ===== URL =====
-  const fetchUrlList = async (params: { keyword?: string; status?: string; category?: string; page?: number; pageSize?: number }) => {
+  const fetchUrlList = async (params: {
+    keyword?: string
+    status?: string
+    category?: string
+    page?: number
+    pageSize?: number
+  }) => {
     return mockPost<{ list: UrlItem[]; total: number }>(`${MOCK_BASE}/url/list`, params)
   }
 

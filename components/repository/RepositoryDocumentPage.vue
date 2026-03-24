@@ -269,13 +269,6 @@ import { openAlert, openConfirm } from '~/composables/useDialog'
 import { openToast } from '~/composables/useToast'
 
 const {
-  categoryList,
-  filteredCategoryList,
-  visibleCategoryIds,
-  handleSelectCategoryList,
-  handleSaveCategory,
-  handleRenameCategory,
-  handleDeleteCategory,
   documentList,
   docTotalCount,
   docSearchKeyword,
@@ -287,7 +280,15 @@ const {
   handleSaveDocument,
   handleDeleteDocument,
 } = useRepositoryStore()
-
+const {
+  filteredCategoryList,
+  handleSelectCategoryList,
+  handleSaveCategory,
+  handleRenameCategory,
+  handleDeleteCategory,
+  categoryList,
+  visibleCategoryIds,
+} = useCategoryStore()
 // 초기 로딩
 onMounted(async () => {
   await handleSelectCategoryList()
