@@ -24,6 +24,13 @@
   padding: $spacing-md $spacing-md $spacing-md;
 }
 
+// 탭 본문 래퍼 (AOS fade-up 대상, 너비만 본문에 맞춤)
+.prompt-tab-panel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
 // ===================================
 // 공통 박스 (시스템 프롬프트, 템플릿 등 공유)
 // ===================================

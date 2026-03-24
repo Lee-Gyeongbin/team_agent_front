@@ -35,6 +35,10 @@ const onCopy = async () => {
     copyTimer = setTimeout(() => {
       isCopied.value = false
     }, 2000)
+    openToast({
+      message: '코드가 복사되었습니다.',
+      type: 'success',
+    })
   } catch {
     // 복사 실패 시 무시
   }
