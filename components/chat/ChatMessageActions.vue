@@ -50,6 +50,7 @@
     <UiDropdownMenu
       title="카테고리 선택"
       :items="categoryMenuItems"
+      content-class="type-large-icons type-title"
       align="end"
       open-on-hover
       @select="onSelectCategory"
@@ -91,11 +92,11 @@ const emit = defineEmits<{
 
 // 🔽 더미 데이터 — 백엔드 연결 시 API 또는 useChatStore 등에서 목록 주입으로 교체 권장
 const categoryMenuItems: DropdownMenuItemDef[] = [
-  { label: '기본 카테고리', value: 'default', icon: 'icon-menu' },
-  { label: '업무관리', value: 'task', icon: 'icon-document' },
-  { label: '인사관리', value: 'hr', icon: 'icon-group' },
-  { label: '회계관리', value: 'accounting', icon: 'icon-chart' },
-  { label: '시스템관리', value: 'system', icon: 'icon-settings' },
+  { label: '기본 카테고리', value: 'default', icon: 'icon-dropdown-category' },
+  { label: '업무관리', value: 'task', icon: 'icon-dropdown-document' },
+  { label: '인사관리', value: 'hr', icon: 'icon-dropdown-department-line' },
+  { label: '회계관리', value: 'accounting', icon: 'icon-dropdown-calculator' },
+  { label: '시스템관리', value: 'system', icon: 'icon-dropdown-system' },
 ]
 
 const onSelectCategory = (value: string) => {

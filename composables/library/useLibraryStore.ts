@@ -3,6 +3,7 @@ import type {
   LibraryCard,
   CategoryCardsMap,
   LibrarySearchOption,
+  DocItem,
   LibraryCardDetail,
   LibraryCardOrderPayload,
 } from '~/types/library'
@@ -21,6 +22,7 @@ const {
   fetchUpdateCategoryOrder,
   fetchUpdateCardOrder,
   fetchMoveCard,
+  fetchDocList,
 } = useLibraryApi()
 
 const isLoading = ref(false)
@@ -67,6 +69,7 @@ const renamingCategory = ref<LibraryCategory | null>(null)
 const movingCard = ref<LibraryCard | null>(null)
 const selectedCardId = ref<string | null>(null)
 const selectedCard = ref<LibraryCardDetail | null>(null)
+const refItems = ref<DocItem[]>([]) // 참조 매뉴얼 목록
 const newCategoryNm = ref('')
 const searchTitle = ref('')
 const searchSort = ref('custom')
@@ -450,6 +453,10 @@ export const useLibraryStore = () => {
       selectedCardId.value = cardId
       const response = await fetchCardDetail(cardId)
       selectedCard.value = response.data
+      if (selectedCard.value?.svcTy === 'M') {
+        const response = await fetchDocList(selectedCard.value)
+        refItems.value = response.dataList ?? []
+      }
       isModalOpen.value = true
     } catch {
       errorMessage.value = '카드 상세를 불러오는데 실패했습니다.'
@@ -519,6 +526,7 @@ export const useLibraryStore = () => {
     newCategoryNm,
     searchTitle,
     searchSort,
+    refItems,
     handleFetchCategoryList,
     handleFetchCardList,
     handleAddCategory,

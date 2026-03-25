@@ -21,6 +21,12 @@
       >
         {{ hint }}
       </p>
+      <p
+        v-if="maxFiles"
+        class="ui-file-upload-hint"
+      >
+        {{ maxFiles }}개까지 첨부 가능합니다.
+      </p>
     </div>
 
     <input
@@ -75,7 +81,10 @@ interface Props {
   multiple?: boolean
   accept?: string
   hint?: string
+  /** 파일당 최대 크기(바이트) */
   maxSize?: number
+  /** 첨부 가능한 최대 파일 개수 (미설정 시 개수 제한 없음) */
+  maxFiles?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -83,6 +92,7 @@ const props = withDefaults(defineProps<Props>(), {
   accept: '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.hwp,.csv,.txt',
   hint: 'PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, HWP, CSV, TXT (최대 50MB)',
   maxSize: 50 * 1024 * 1024,
+  maxFiles: 1,
 })
 
 const emit = defineEmits<{
@@ -97,10 +107,43 @@ const openFilePicker = () => {
 }
 
 const addFiles = (newFiles: FileList | File[]) => {
-  const arr = Array.from(newFiles)
+  let arr = Array.from(newFiles)
+
+  // 파일당 용량 제한
+  const overSize = arr.filter((f) => f.size > props.maxSize)
+  arr = arr.filter((f) => f.size <= props.maxSize)
+  if (overSize.length > 0) {
+    openToast({
+      message: `파일당 최대 ${formatSize(props.maxSize)}까지 첨부할 수 있습니다.`,
+      type: 'error',
+    })
+  }
+  if (arr.length === 0) return
+
   // 단일 파일 모드: 마지막 선택한 파일로 교체
-  const updated = props.multiple ? [...props.modelValue, ...arr] : [arr[0]]
-  emit('update:modelValue', updated)
+  if (!props.multiple) {
+    emit('update:modelValue', [arr[0]])
+    return
+  }
+
+  // 최대 개수 제한
+  const cap = props.maxFiles
+  if (typeof cap === 'number' && cap >= 1) {
+    const room = cap - props.modelValue.length
+    if (room <= 0) {
+      openToast({ message: `최대 ${cap}개까지 첨부할 수 있습니다.`, type: 'error' })
+      return
+    }
+    if (arr.length > room) {
+      openToast({
+        message: `최대 ${cap}개까지 첨부 가능합니다. ${room}개만 추가했습니다.`,
+        type: 'warning',
+      })
+      arr = arr.slice(0, room)
+    }
+  }
+
+  emit('update:modelValue', [...props.modelValue, ...arr])
 }
 
 const onFileChange = (e: Event) => {

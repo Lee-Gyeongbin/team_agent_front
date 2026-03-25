@@ -89,3 +89,10 @@ table {
     }
   }
 }
+
+/* 카드 ⋯ 드롭다운만 — Portal(body)이라 .library-index 밖; contentClass로 유일 지정 */
+.library-card-menu-content {
+  .dropdown-item:not(.type-danger) > i.icon {
+    color: #6f7a93;
+  }
+}
