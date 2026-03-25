@@ -107,10 +107,10 @@
             </template>
           </UiButton>
 
-          <!-- 월별 데이터 -->
-          <div>
-            <p>{{ displayData?.rcontent }}</p>
-          </div>
+          <div
+            v-html="toHtmlContent(displayData?.rcontent ?? '')"
+            class="message-content"
+          ></div>
         </div>
 
         <!-- SQL 코드 블록 -->
@@ -176,6 +176,7 @@
 </template>
 
 <script setup lang="ts">
+import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import type { LibraryCardDetail } from '~/types/library'
 
 const props = withDefaults(
@@ -274,7 +275,9 @@ const handleDelete = () => {
 }
 
 const handleCopyResponse = async () => {
-  await copyToClipboard(displayData.value?.rcontent ?? '')
+  // 채팅 onCopy와 동일 — 태그 제거 후 클립보드
+  const text = (displayData.value?.rcontent ?? '').replace(/<[^>]*>/g, '')
+  await copyToClipboard(text)
   openToast({ message: '답변이 복사되었습니다.', duration: 1500 })
 }
 </script>
