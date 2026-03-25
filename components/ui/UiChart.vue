@@ -117,6 +117,6 @@ watch(
   position: relative;
   width: 100%;
   flex: 1;
-  min-height: 350px;
+  min-height: 260px;
 }
 </style>

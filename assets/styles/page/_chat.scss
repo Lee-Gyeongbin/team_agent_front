@@ -1205,7 +1205,7 @@
   color: $color-text-secondary;
   cursor: pointer;
   flex-shrink: 0;
-
+https://www.tossinvest.com/stocks/A005935/order#%EB%82%B4%20%ED%88%AC%EC%9E%90
   &:hover {
     background: $color-background;
     color: $color-text-primary;
@@ -1216,7 +1216,7 @@
   display: flex;
   align-items: center;
   gap: $spacing-md;
-  padding-bottom: $spacing-sm;
+  padding-bottom: 12px;
   border-bottom: 1px solid $color-border;
   flex-wrap: wrap;
 
@@ -1271,6 +1271,7 @@
 
     .ui-chart {
       gap: 40px;
+      justify-content: center;
     }
   }
 }
