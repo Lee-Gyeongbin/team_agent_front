@@ -95,10 +95,13 @@
               </template>
             </UiButton>
 
-            <!-- 월별 데이터 -->
-            <div>
-              <p>{{ item.rcontent }}</p>
-            </div>
+            <!-- 답변 본문 — utils/chat/html toHtmlContent + v-html -->
+            <!-- eslint-disable vue/no-v-html -- 채팅 답변과 동일(서버 저장 HTML/개행) -->
+            <div
+              class="message-content"
+              v-html="toHtmlContent(item.rcontent ?? '')"
+            ></div>
+            <!-- eslint-enable vue/no-v-html -->
           </div>
 
           <div
@@ -164,6 +167,7 @@
 </template>
 
 <script setup lang="ts">
+import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import type { LibraryCardDetail } from '~/types/library'
 const { archiveCardList } = useLibraryStore()
 
