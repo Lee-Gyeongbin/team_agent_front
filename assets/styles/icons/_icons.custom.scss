@@ -98,6 +98,27 @@
   @include icon-file-bg('sidebar-arrow-right');
 }
 
+// 채팅 답변 → 카테고리 선택 드롭다운 (line SVG, mask + currentColor)
+.icon-dropdown-category {
+  @include icon-file-bg('dropdown-category');
+}
+
+.icon-dropdown-document {
+  @include icon-file-bg('dropdown-document');
+}
+
+.icon-dropdown-department-line {
+  @include icon-file-bg('dropdown-department-line');
+}
+
+.icon-dropdown-calculator {
+  @include icon-file-bg('dropdown-calculator');
+}
+
+.icon-dropdown-system {
+  @include icon-file-bg('dropdown-system');
+}
+
 // ===================================
 // chat 아이콘
 // ===================================

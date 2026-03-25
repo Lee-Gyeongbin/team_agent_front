@@ -220,6 +220,7 @@ watch(openState, (v: boolean) => emit('update:open', v))
   cursor: default;
   user-select: none;
   background: #f4f7f9;
+  border-bottom: 1px solid #dce4e9;
 }
 
 .ui-dropdown-content-list {
