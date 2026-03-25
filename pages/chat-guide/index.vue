@@ -1,13 +1,13 @@
 <template>
-  <div class="chat-comment-page">
-    <div class="chat-comment-page-header">
+  <div class="chat-guide-page">
+    <div class="chat-guide-page-header">
       <UiTab
         v-model="activeTab"
         :tabs="tabs"
       />
     </div>
 
-    <div class="chat-comment-page-body s-center">
+    <div class="chat-guide-page-body s-center">
       <!-- 인사멘트 -->
       <ChatGuideGreeting v-if="activeTab === 'greeting'" />
 

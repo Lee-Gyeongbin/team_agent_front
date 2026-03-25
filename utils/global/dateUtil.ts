@@ -3,14 +3,20 @@
  */
 
 import type { CalendarDate, CalendarDateTime, DateValue, ZonedDateTime } from '@internationalized/date'
-import { getLocalTimeZone, parseAbsoluteToLocal, parseDateTime, toZoned } from '@internationalized/date'
+import {
+  getLocalTimeZone,
+  parseAbsoluteToLocal,
+  parseDateTime,
+  toCalendarDateTime,
+  toZoned,
+} from '@internationalized/date'
 
 /** API/서버 datetime 문자열 → UiDatePicker용 DateValue */
 export const dateValueFromApiString = (s: string): DateValue | undefined => {
   if (!s?.trim()) return undefined
   const t = s.trim()
   try {
-    return parseAbsoluteToLocal(t)
+    return toCalendarDateTime(parseAbsoluteToLocal(t))
   } catch {
     try {
       const isoLike = t.includes('T') ? t : t.replace(/^(\d{4}-\d{2}-\d{2})\s+/, '$1T')
@@ -24,10 +30,8 @@ export const dateValueFromApiString = (s: string): DateValue | undefined => {
 /** DatePicker DateValue → API 저장용 절대 시각 문자열 */
 export const apiStringFromDateValue = (v: DateValue | undefined): string => {
   if (!v) return ''
-  const zoned = v as ZonedDateTime
-  if (typeof zoned.toAbsoluteString === 'function') return zoned.toAbsoluteString()
   try {
-    return toZoned(v as CalendarDate | CalendarDateTime, getLocalTimeZone()).toAbsoluteString()
+    return toZoned(v as CalendarDate | CalendarDateTime | ZonedDateTime, getLocalTimeZone()).toAbsoluteString()
   } catch {
     return ''
   }

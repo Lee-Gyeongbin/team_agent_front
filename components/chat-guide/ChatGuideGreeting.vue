@@ -1,41 +1,41 @@
 <template>
-  <div class="chat-comment-panel">
-    <div class="chat-comment-section-header">
-      <h3 class="chat-comment-section-title">인사멘트 설정</h3>
-      <div class="chat-comment-setting-footer">
+  <div class="chat-guide-panel">
+    <div class="chat-guide-section-header">
+      <h3 class="chat-guide-section-title">인사멘트 설정</h3>
+      <div class="chat-guide-setting-footer">
         <UiButton
           variant="primary"
-          @click="onSaveWithConfirm"
+          @click="handleConfirmSaveGreeting"
         >
           저장
         </UiButton>
         <UiButton
           variant="outline"
-          @click="onResetGreeting"
+          @click="handleConfirmResetGreeting"
         >
           초기화
         </UiButton>
       </div>
     </div>
 
-    <div class="chat-comment-content">
+    <div class="chat-guide-content">
       <!-- 좌측: 설정 -->
-      <div class="chat-comment-setting">
+      <div class="chat-guide-setting">
         <!-- 방문 인사 -->
-        <div class="chat-comment-setting-item">
-          <div class="chat-comment-setting-header">
-            <div class="chat-comment-setting-info">
-              <span class="chat-comment-setting-name">방문 인사</span>
+        <div class="chat-guide-setting-item">
+          <div class="chat-guide-setting-header">
+            <div class="chat-guide-setting-info">
+              <span class="chat-guide-setting-name">방문 인사</span>
               <UiToggle
                 :model-value="greetingForm.enblYn === 'Y'"
                 @update:model-value="(v) => (greetingForm.enblYn = toYn(v))"
               />
             </div>
-            <p class="chat-comment-setting-desc">사용자가 챗봇에 진입했을 때 표시되는 기본 메시지</p>
+            <p class="chat-guide-setting-desc">사용자가 챗봇에 진입했을 때 표시되는 기본 메시지</p>
           </div>
 
-          <div class="chat-comment-setting-body">
-            <label class="chat-comment-setting-label">메시지 내용</label>
+          <div class="chat-guide-setting-body">
+            <label class="chat-guide-setting-label">메시지 내용</label>
             <UiTextarea
               v-model="greetingForm.content"
               :rows="5"
@@ -46,11 +46,11 @@
               placeholder="인사 메시지를 입력하세요"
             />
 
-            <div class="chat-comment-setting-options">
+            <div class="chat-guide-setting-options">
               <UiCheckbox
                 :model-value="greetingPreviewAutoNameYn === 'Y'"
                 label="이름 자동 삽입 ({{userName}})"
-                @update:model-value="onTogglePreviewAutoName"
+                @update:model-value="handleToggleGreetingPreviewAutoName"
               />
               <UiButton
                 size="sm"
@@ -65,32 +65,32 @@
       </div>
 
       <!-- 우측: 미리보기 -->
-      <div class="chat-comment-preview">
-        <div class="chat-comment-preview-header">
+      <div class="chat-guide-preview">
+        <div class="chat-guide-preview-header">
           <i class="icon-view size-16" />
           <span>미리보기</span>
         </div>
 
-        <div class="chat-comment-preview-body">
+        <div class="chat-guide-preview-body">
           <!-- 봇 헤더 -->
-          <div class="chat-comment-preview-bot">
-            <div class="chat-comment-preview-bot-avatar">T</div>
-            <div class="chat-comment-preview-bot-info">
-              <span class="chat-comment-preview-bot-name">TeamAgent</span>
-              <span class="chat-comment-preview-bot-status">온라인</span>
+          <div class="chat-guide-preview-bot">
+            <div class="chat-guide-preview-bot-avatar">T</div>
+            <div class="chat-guide-preview-bot-info">
+              <span class="chat-guide-preview-bot-name">TeamAgent</span>
+              <span class="chat-guide-preview-bot-status">온라인</span>
             </div>
           </div>
 
           <!-- 메시지 영역 -->
-          <div class="chat-comment-preview-messages">
-            <div class="chat-comment-preview-message">
+          <div class="chat-guide-preview-messages">
+            <div class="chat-guide-preview-message">
               <p>{{ previewGreetingMessage }}</p>
             </div>
           </div>
 
           <!-- 입력 영역 -->
-          <div class="chat-comment-preview-input">
-            <span class="chat-comment-preview-input-placeholder">메시지를 입력하세요...</span>
+          <div class="chat-guide-preview-input">
+            <span class="chat-guide-preview-input-placeholder">메시지를 입력하세요...</span>
             <i class="icon-send size-20" />
           </div>
         </div>
@@ -108,39 +108,11 @@ const {
   greetingPreviewAutoNameYn,
   previewGreetingMessage,
   handleSelectGreeting,
-  handleSaveGreeting,
+  handleConfirmSaveGreeting,
+  handleConfirmResetGreeting,
+  handleToggleGreetingPreviewAutoName,
   handleInsertGreetingVariable,
 } = useChatGuideStore()
-
-const onTogglePreviewAutoName = (v: boolean) => {
-  greetingPreviewAutoNameYn.value = toYn(v)
-}
-
-const onSaveWithConfirm = () => {
-  openConfirm({
-    title: '인사멘트 저장',
-    message: '변경된 인사멘트 내용을 저장하시겠습니까?',
-    onConfirm: async () => {
-      try {
-        await handleSaveGreeting()
-        openToast({ message: '저장되었습니다.', type: 'success' })
-      } catch {
-        openToast({ message: '인사멘트 설정 저장 실패', type: 'error' })
-      }
-    },
-  })
-}
-
-const onResetGreeting = () => {
-  openConfirm({
-    title: '인사멘트 초기화',
-    message: '초기화 시 변경된 인사멘트 내용은 저장되지 않고, 이전에 저장된 값으로 다시 불러옵니다. 계속하시겠습니까?',
-    onConfirm: async () => {
-      await handleSelectGreeting()
-      openToast({ message: '인사멘트 설정이 초기화되었습니다.', type: 'info' })
-    },
-  })
-}
 
 onMounted(() => {
   handleSelectGreeting()

@@ -1,14 +1,14 @@
 import { toRaw } from 'vue'
 
 /** noticeList.do — 안내멘트 행 배열 */
-export interface ChatNoticeListResponse {
-  dataList: ChatNoticeItem[]
+export interface ChatGuideNoticeListResponse {
+  dataList: ChatGuideNoticeItem[]
 }
 
 /** =========================
  *  인사멘트 타입
  *  ========================= */
-export interface ChatGreetingForm {
+export interface ChatGuideGreetingForm {
   guideId: string
   guideTpCd: string
   guideKey: string
@@ -18,14 +18,14 @@ export interface ChatGreetingForm {
 }
 
 /** greetingList.do */
-export interface ChatGreetingListResponse {
-  dataList: ChatGreetingForm[]
+export interface ChatGuideGreetingListResponse {
+  dataList: ChatGuideGreetingForm[]
 }
 
 /** =========================
  *  안내멘트 타입
  *  ========================= */
-export interface ChatNoticeItem {
+export interface ChatGuideNoticeItem {
   guideId: string
   guideTpCd: string
   guideKey: string
@@ -36,20 +36,20 @@ export interface ChatNoticeItem {
   autoDetectYn: 'Y' | 'N'
 }
 
-export interface ChatNoticeForm {
-  feature: ChatNoticeItem
-  guide: ChatNoticeItem
-  privacy: ChatNoticeItem
-  limitation: ChatNoticeItem
+export interface ChatGuideNoticeForm {
+  feature: ChatGuideNoticeItem
+  guide: ChatGuideNoticeItem
+  privacy: ChatGuideNoticeItem
+  limitation: ChatGuideNoticeItem
 }
 
 /** 안내멘트 블록별 guideKey 기본값 */
-export const CHAT_NOTICE_DEFAULT_GUIDE_KEYS = {
+export const CHAT_GUIDE_NOTICE_DEFAULT_GUIDE_KEYS = {
   feature: 'NOTICE_FEATURE',
   guide: 'NOTICE_INPUT',
   privacy: 'NOTICE_PRIVACY',
   limitation: 'NOTICE_LIMIT',
-} as const satisfies Record<keyof ChatNoticeForm, string>
+} as const satisfies Record<keyof ChatGuideNoticeForm, string>
 
 /** =========================
  *  점검/장애 타입
@@ -58,7 +58,7 @@ export const CHAT_NOTICE_DEFAULT_GUIDE_KEYS = {
 /**
  * 점검/장애 목록 조회
  */
-export interface ChatMaintenanceItem {
+export interface ChatGuideMaintenanceItem {
   guideId: string
   guideTpCd: string
   guideKey: string
@@ -74,7 +74,7 @@ export interface ChatMaintenanceItem {
 }
 
 /** 점검/장애 블록별 guideKey 기본값 — 백엔드와 동일하게 맞출 것 */
-export const CHAT_MAINTENANCE_DEFAULT_GUIDE_KEYS = {
+export const CHAT_GUIDE_MAINTENANCE_DEFAULT_GUIDE_KEYS = {
   emergency: 'MAINT_EMERGENCY',
   scheduled: 'MAINT_SCHEDULED',
   incidentSystem: 'MAINT_INCIDENT_SYSTEM',
@@ -84,14 +84,14 @@ export const CHAT_MAINTENANCE_DEFAULT_GUIDE_KEYS = {
 } as const
 
 /** 장애 유형 블록 UI (아이콘/라벨만 — 서버 컬럼 아님) */
-export const CHAT_MAINTENANCE_INCIDENT_UI_SLOTS = [
-  { guideKey: CHAT_MAINTENANCE_DEFAULT_GUIDE_KEYS.incidentSystem, icon: '⚙️', label: '시스템 장애' },
-  { guideKey: CHAT_MAINTENANCE_DEFAULT_GUIDE_KEYS.incidentNetwork, icon: '🌐', label: '네트워크 장애' },
-  { guideKey: CHAT_MAINTENANCE_DEFAULT_GUIDE_KEYS.incidentDb, icon: '🗄️', label: 'DB 장애' },
+export const CHAT_GUIDE_MAINTENANCE_INCIDENT_UI_SLOTS = [
+  { guideKey: CHAT_GUIDE_MAINTENANCE_DEFAULT_GUIDE_KEYS.incidentSystem, icon: '⚙️', label: '시스템 장애' },
+  { guideKey: CHAT_GUIDE_MAINTENANCE_DEFAULT_GUIDE_KEYS.incidentNetwork, icon: '🌐', label: '네트워크 장애' },
+  { guideKey: CHAT_GUIDE_MAINTENANCE_DEFAULT_GUIDE_KEYS.incidentDb, icon: '🗄️', label: 'DB 장애' },
 ] as const
 
-/** ChatMaintenanceItem 필드 기본값으로 1행 */
-export const getEmptyChatMaintenanceItem = (guideKey: string): ChatMaintenanceItem => ({
+/** ChatGuideMaintenanceItem 필드 기본값으로 1행 */
+export const getEmptyChatGuideMaintenanceItem = (guideKey: string): ChatGuideMaintenanceItem => ({
   guideId: '',
   guideTpCd: '',
   guideKey,
@@ -106,15 +106,14 @@ export const getEmptyChatMaintenanceItem = (guideKey: string): ChatMaintenanceIt
 })
 
 /**
- * 화면·merge 기본 스켈레톤 — guideKey 목록은 `CHAT_MAINTENANCE_DEFAULT_GUIDE_KEYS` 한 곳만 유지
- * (`getEmptyChatMaintenanceItem`은 1행 팩토리, 본 함수는 그걸 키 순서대로 묶은 것)
+ * 화면·merge 기본 틀
  */
-export const getEmptyChatMaintenanceList = (): ChatMaintenanceItem[] =>
-  (Object.values(CHAT_MAINTENANCE_DEFAULT_GUIDE_KEYS) as string[]).map((guideKey) =>
-    getEmptyChatMaintenanceItem(guideKey),
+export const getEmptyChatGuideMaintenanceList = (): ChatGuideMaintenanceItem[] =>
+  (Object.values(CHAT_GUIDE_MAINTENANCE_DEFAULT_GUIDE_KEYS) as string[]).map((guideKey) =>
+    getEmptyChatGuideMaintenanceItem(guideKey),
   )
 
-export const cloneChatMaintenanceList = (src: ChatMaintenanceItem[]): ChatMaintenanceItem[] =>
+export const cloneChatGuideMaintenanceList = (src: ChatGuideMaintenanceItem[]): ChatGuideMaintenanceItem[] =>
   structuredClone(toRaw(src))
 
 /** =========================
@@ -133,14 +132,14 @@ export interface ChatGuideErrorData {
   apiErrors: ChatGuideErrorRow[]
 }
 
-/** errorMessageList.do — dataList[0]에 responseErrors/inputErrors/apiErrors 묶음 1건 */
+/** errorMessageList.do — data.responseErrors/inputErrors/apiErrors */
 export interface ChatGuideErrorListRes {
-  dataList: ChatGuideErrorData[]
+  data: ChatGuideErrorData
 }
 
 /** maintenanceList.do */
-export interface ChatMaintenanceListResponse {
-  dataList: ChatMaintenanceItem[]
+export interface ChatGuideMaintenanceListResponse {
+  dataList: ChatGuideMaintenanceItem[]
 }
 
 /** =========================
@@ -151,7 +150,7 @@ export interface ChatGuideSelectOption {
   value: string
 }
 
-export const conditionOptions: ChatGuideSelectOption[] = [
+export const CHAT_GUIDE_NOTICE_CONDITION_OPTIONS: ChatGuideSelectOption[] = [
   { label: '사용자가 "기능" 또는 "도움말" 입력 시', value: 'keyword' },
   { label: '첫 방문 시 자동 표시', value: 'first_visit' },
   { label: '항상 표시', value: 'always' },
@@ -160,7 +159,7 @@ export const conditionOptions: ChatGuideSelectOption[] = [
 /** =========================
  *  빈 폼·기본값·복제·맵핑
  *  ========================= */
-export const getEmptyChatGreetingForm = (): ChatGreetingForm => ({
+export const getEmptyChatGuideGreetingForm = (): ChatGuideGreetingForm => ({
   guideId: '',
   guideTpCd: '',
   guideKey: '',
@@ -169,11 +168,11 @@ export const getEmptyChatGreetingForm = (): ChatGreetingForm => ({
   modifyDt: '',
 })
 
-export const getEmptyChatNoticeForm = (): ChatNoticeForm => ({
+export const getEmptyChatGuideNoticeForm = (): ChatGuideNoticeForm => ({
   feature: {
     guideId: '',
     guideTpCd: '',
-    guideKey: CHAT_NOTICE_DEFAULT_GUIDE_KEYS.feature,
+    guideKey: CHAT_GUIDE_NOTICE_DEFAULT_GUIDE_KEYS.feature,
     enblYn: 'N',
     content: '',
     dsplCond: '',
@@ -183,7 +182,7 @@ export const getEmptyChatNoticeForm = (): ChatNoticeForm => ({
   guide: {
     guideId: '',
     guideTpCd: '',
-    guideKey: CHAT_NOTICE_DEFAULT_GUIDE_KEYS.guide,
+    guideKey: CHAT_GUIDE_NOTICE_DEFAULT_GUIDE_KEYS.guide,
     enblYn: 'N',
     content: '',
     dsplCond: '',
@@ -193,7 +192,7 @@ export const getEmptyChatNoticeForm = (): ChatNoticeForm => ({
   privacy: {
     guideId: '',
     guideTpCd: '',
-    guideKey: CHAT_NOTICE_DEFAULT_GUIDE_KEYS.privacy,
+    guideKey: CHAT_GUIDE_NOTICE_DEFAULT_GUIDE_KEYS.privacy,
     enblYn: 'N',
     content: '',
     dsplCond: '',
@@ -203,7 +202,7 @@ export const getEmptyChatNoticeForm = (): ChatNoticeForm => ({
   limitation: {
     guideId: '',
     guideTpCd: '',
-    guideKey: CHAT_NOTICE_DEFAULT_GUIDE_KEYS.limitation,
+    guideKey: CHAT_GUIDE_NOTICE_DEFAULT_GUIDE_KEYS.limitation,
     enblYn: 'N',
     content: '',
     dsplCond: '',
@@ -212,11 +211,9 @@ export const getEmptyChatNoticeForm = (): ChatNoticeForm => ({
   },
 })
 
-export function cloneChatGuideForm<T extends ChatNoticeForm>(src: T): T {
+export function cloneChatGuideNoticeForm<T extends ChatGuideNoticeForm>(src: T): T {
   return structuredClone(toRaw(src) as T)
 }
-
-export const cloneChatNoticeForm = (src: ChatNoticeForm): ChatNoticeForm => cloneChatGuideForm(src)
 
 const buildChatGuideErrorRow = (guideKey: string, maxChars?: number): ChatGuideErrorRow => {
   const row: ChatGuideErrorRow = {
