@@ -287,6 +287,7 @@
       <LibraryDetailModal
         :is-open="isModalOpen"
         :card-detail="selectedCard"
+        :ref-items="refItems"
         @close="handleModalClose"
         @move="handleModalMove"
         @delete="handleModalDelete"
@@ -368,6 +369,7 @@ const {
   newCategoryNm,
   searchTitle,
   searchSort,
+  refItems,
   handleFetchCategoryList,
   handleFetchCardList,
   handleListMenuSelect,

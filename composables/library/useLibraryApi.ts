@@ -5,6 +5,7 @@ import type {
   LibraryCardDetail,
   LibraryCategoryOrderItem,
   LibraryCardOrderPayload,
+  DocItem,
 } from '~/types/library'
 
 export const useLibraryApi = () => {
@@ -78,6 +79,11 @@ export const useLibraryApi = () => {
     await post('/library/deleteTrashAll.do', {})
   }
 
+  /** 참조 매뉴얼 목록 조회 API */
+  const fetchDocList = async (card: LibraryCardDetail): Promise<{ dataList: DocItem[] }> => {
+    return post<{ dataList: DocItem[] }>('/library/docList.do', { card })
+  }
+
   return {
     fetchCategoryList,
     fetchSaveCategory,
@@ -92,5 +98,6 @@ export const useLibraryApi = () => {
     fetchUpdateCardOrder,
     fetchMoveCard,
     fetchDeleteTrashAll,
+    fetchDocList,
   }
 }

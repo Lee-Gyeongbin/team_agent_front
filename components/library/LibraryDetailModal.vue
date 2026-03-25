@@ -113,6 +113,36 @@
           ></div>
         </div>
 
+        <!-- 참조 매뉴얼 (매뉴얼AI 타입) -->
+        <div
+          v-if="displayData?.svcTy === 'M'"
+          class="content-box type-reference"
+        >
+          <div class="reference-header">
+            <span class="reference-title">참조 매뉴얼</span>
+          </div>
+          <ul class="reference-list">
+            <!-- 🔽 더미 데이터 — 백엔드 연결 시 API로 교체 -->
+            <li
+              v-for="item in refItems"
+              :key="item.docId"
+              class="reference-item"
+            >
+              <i class="icon icon-document size-20 reference-doc-icon"></i>
+              <div class="reference-item-info">
+                <span class="reference-item-title">{{ item.docTitle }}</span>
+                <span class="reference-item-page">{{ item.relatedPages ? `p.${item.relatedPages}` : '' }}</span>
+              </div>
+              <button
+                class="btn-reference-link"
+                @click="onReferenceLink(item)"
+              >
+                <i class="icon icon-link-agent size-16"></i>
+              </button>
+            </li>
+          </ul>
+        </div>
+
         <!-- SQL 코드 블록 -->
         <div
           v-if="displayData?.svcTy === 'S'"
@@ -135,6 +165,8 @@
               size="xxs"
               icon-only
               class="btn-custom-gray"
+              :aria-pressed="isSqlCodeVisible"
+              @click="toggleSqlCodeVisible"
             >
               <template #icon-left>
                 <i class="icon icon-sql size-16"></i>
@@ -147,7 +179,7 @@
 
         <!-- SQL 코드 블록 -->
         <UiCodeBlock
-          v-if="displayData?.svcTy === 'S'"
+          v-if="displayData?.svcTy === 'S' && isSqlCodeVisible"
           :code="displayData?.ttsq"
         />
 
@@ -177,16 +209,18 @@
 
 <script setup lang="ts">
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
-import type { LibraryCardDetail } from '~/types/library'
+import type { LibraryCardDetail, DocItem } from '~/types/library'
 
 const props = withDefaults(
   defineProps<{
     isOpen?: boolean
     cardDetail?: LibraryCardDetail | null
+    refItems?: DocItem[]
   }>(),
   {
     isOpen: false,
     cardDetail: null,
+    refItems: () => [] as DocItem[],
   },
 )
 
@@ -202,6 +236,14 @@ const isScrolled = ref(false)
 
 // 카드 전환 트랜지션 상태
 const isTransitioning = ref(false)
+
+// SQL 코드 블록 표시 (데이터분석 타입에서 SQL 버튼으로 토글, 초기 숨김)
+const isSqlCodeVisible = ref(false)
+
+const toggleSqlCodeVisible = () => {
+  if (displayData.value?.svcTy !== 'S') return
+  isSqlCodeVisible.value = !isSqlCodeVisible.value
+}
 
 // 내부 표시용 데이터 (트랜지션 타이밍 제어용)
 const displayData = ref<LibraryCardDetail | null>(props.cardDetail ?? null)
@@ -228,6 +270,7 @@ watch(
     // 최초 열기 — 바로 표시
     if (!oldId) {
       displayData.value = props.cardDetail ?? null
+      isSqlCodeVisible.value = false
       return
     }
     if (!newId || newId === oldId) return
@@ -238,6 +281,7 @@ watch(
     // 2) 나간 후 → 데이터 교체 → 다시 들어옴
     setTimeout(() => {
       displayData.value = props.cardDetail ?? null
+      isSqlCodeVisible.value = false
       if (contentRef.value) {
         contentRef.value.scrollTo({ top: 0 })
         isScrolled.value = false
@@ -255,6 +299,7 @@ watch(
   (open) => {
     if (!open) {
       displayData.value = null
+      isSqlCodeVisible.value = false
     }
   },
 )
@@ -272,6 +317,11 @@ const handleMove = () => {
 const handleDelete = () => {
   if (!displayData.value) return
   emit('delete', displayData.value)
+}
+
+const onReferenceLink = async (item: DocItem) => {
+  await copyToClipboard(item.filePath)
+  openToast({ message: '매뉴얼이 링크가 복사되었습니다.', duration: 1500 })
 }
 
 const handleCopyResponse = async () => {
