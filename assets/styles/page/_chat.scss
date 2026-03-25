@@ -885,7 +885,7 @@
 
 // ===== 아코디언 섹션 공통 =====
 .chat-vis-section {
-  border: 1px solid #c6d2db;
+  border: 1px solid #dce4e9;
   border-radius: 12px;
   background: #fff;
   flex-shrink: 0;
@@ -1261,17 +1261,14 @@
 .chat-vis-chart-area {
   min-height: 320px;
   // max-height: 320px;
-  padding: 20px 32px 16px;
+  padding: 8px 16px 16px;
 
   &.is-pie {
-    max-width: 480px;
-    min-height: 500px;
-    max-height: 500px;
     margin: 0 auto;
     padding: 20px 24px;
 
     .ui-chart {
-      gap: 40px;
+      gap: 20px;
       justify-content: center;
     }
   }
