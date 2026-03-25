@@ -13,6 +13,7 @@
           ref="docTitleRef"
           v-model="form.docTitle"
           placeholder="문서 제목을 입력하세요"
+          :max-length="300"
           size="md"
         />
       </div>
@@ -48,6 +49,7 @@
           v-model="form.author"
           placeholder="작성자명"
           size="md"
+          :max-length="100"
         />
       </div>
 
@@ -68,6 +70,7 @@
         <UiTextarea
           v-model="form.content"
           placeholder="문서 내용을 입력하세요"
+          :max-length="500"
           :rows="5"
           border
           :auto-resize="false"
@@ -90,6 +93,7 @@
           v-model="form.keywords"
           placeholder="쉼표로 구분하여 입력 (예: 매뉴얼, ERP, 사용법)"
           size="md"
+          :max-length="500"
         />
       </div>
 
@@ -100,6 +104,7 @@
           v-model="form.refUrl"
           placeholder="https://"
           size="md"
+          :max-length="500"
         />
       </div>
     </div>
@@ -146,17 +151,21 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
-  save: [data: Record<string, any>]
 }>()
 
 const { categoryList } = useCategoryStore()
-const { secLvlOptions } = useRepositoryStore()
+const { secLvlOptions, onSaveDocument } = useRepositoryStore()
 const docTitleRef = ref<{ focus?: () => void; $el?: HTMLElement } | null>(null)
 const categoryFieldRef = ref<HTMLElement | null>(null)
 
-const focusField = (fieldRef: { value: any }) => {
+type FocusFieldValue = { $el?: HTMLElement } | HTMLElement | null | undefined
+const isVueComponentLike = (value: FocusFieldValue): value is { $el?: HTMLElement } =>
+  !!value && typeof value === 'object' && '$el' in value
+
+const focusField = (fieldRef: { value: FocusFieldValue }) => {
   nextTick(() => {
-    const el = fieldRef.value?.$el || fieldRef.value
+    const raw = fieldRef.value
+    const el = raw && isVueComponentLike(raw) ? raw.$el : raw
     if (el instanceof HTMLElement) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' })
       const input = el.querySelector('input') || el
@@ -208,7 +217,7 @@ const applyInitialFromDocument = (src: Partial<Document>) => {
     categoryId: String(src.categoryId ?? ''),
     author: String(src.author ?? ''),
     secLvl: String(src.secLvl ?? ''),
-    content: String(src.content ?? ''),
+    content: String(src.content ?? '').slice(0, 500),
     files: [],
     keywords: String(src.keywords ?? ''),
     refUrl: String(src.refUrl ?? ''),
@@ -245,7 +254,7 @@ watch(
   },
 )
 
-const onSave = () => {
+const onSave = async () => {
   if (!form.value.docTitle.trim()) {
     openToast({ message: '문서 제목을 입력해주세요.', type: 'warning' })
     focusField(docTitleRef)
@@ -256,7 +265,13 @@ const onSave = () => {
     focusField(categoryFieldRef)
     return
   }
-  emit('save', { ...form.value })
+  const payload = {
+    ...form.value,
+    // longtext -> varchar(500) 변경 대응: 저장 전 안전하게 최대 길이 보장
+    content: String(form.value.content ?? '').slice(0, 500),
+  }
+  const ok = await onSaveDocument(payload)
+  if (!ok) return
   resetForm()
   emit('close')
 }

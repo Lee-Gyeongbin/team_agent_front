@@ -13,6 +13,7 @@ import type { TableColumn } from '~/types/table'
 const { handleViewFileUrl, handleUploadFile, handleDeleteNcpFile, fileError } = useFileStore()
 const {
   fetchSelectDocExistCnt,
+  fetchSelectDocumentExistCnt,
   fetchDocumentList,
   fetchSelectDocRepositoryDetail,
   fetchSaveDocument,
@@ -44,7 +45,7 @@ const statusFilterOptions = [
 // ===== 테이블 =====
 const tableColumns: TableColumn[] = [
   { key: 'select', label: '', width: '48px', align: 'center', headerAlign: 'center' },
-  { key: 'fileName', label: '문서명', width: 'auto', align: 'left', headerAlign: 'left' },
+  { key: 'docTitle', label: '문서제목', width: 'auto', align: 'left', headerAlign: 'left' },
   { key: 'categoryName', label: '카테고리', width: '200px', align: 'left', headerAlign: 'left' },
   { key: 'fileSize', label: '파일크기', width: '100px', align: 'center', headerAlign: 'center' },
   { key: 'createDt', label: '등록일', width: '120px', align: 'center', headerAlign: 'center' },
@@ -54,7 +55,7 @@ const tableColumns: TableColumn[] = [
 ]
 
 // 정렬 (프론트 정렬)
-type SortKey = keyof Pick<Document, 'fileName' | 'fileSize' | 'createDt'>
+type SortKey = keyof Pick<Document, 'docTitle' | 'fileSize' | 'createDt'>
 const sortKey = ref<SortKey | null>(null)
 const sortOrder = ref<'asc' | 'desc'>('asc')
 const onSort = (key: SortKey) => {
@@ -148,13 +149,13 @@ const handleSelectDocumentList = async () => {
     const findContent = docSearchKeyword.value || undefined
     const categoryId = docSelectedCategoryId.value || undefined
     const useYn = docStatusFilter.value
-    const res = await fetchDocumentList(findContent, categoryId, useYn)
+    const res = await fetchDocumentList(findContent, categoryId, useYn, docCurrentPage.value, docPageSize)
     documentList.value = res.dataList
     documentList.value.forEach((doc) => {
       // 파일 사이즈 포맷팅
       doc.fileSize = formatFileSize(Number(doc.fileSize))
     })
-    docTotalCount.value = res.totalCount
+    docTotalCount.value = res.totalCnt
   } finally {
     isLoading.value = false
   }
@@ -186,11 +187,11 @@ const buildUploadedFileMetaList = async (data: Partial<Document>): Promise<Docum
 }
 
 /** 문서 저장 (DB) — file 은 업로드 완료 메타 배열 */
-const performDocumentSave = async (data: Partial<Document>) => {
+const performDocumentSave = async (data: Partial<Document>): Promise<boolean> => {
   const fileMeta = await buildUploadedFileMetaList(data)
   if (fileMeta === null) {
     openToast({ message: '파일 업로드에 실패했습니다.', type: 'error' })
-    return
+    return false
   }
   const payload: DocumentSavePayload = {
     docTitle: String(data.docTitle ?? ''),
@@ -205,16 +206,18 @@ const performDocumentSave = async (data: Partial<Document>) => {
   const id = String(data.docId ?? '').trim()
   if (id) payload.docId = id
   const res = await fetchSaveDocument(payload)
-  if (res.successYn) {
+  if (res.data.successYn) {
     openToast({ message: `'${data.docTitle}' 문서가 등록되었습니다.` })
+    await handleSelectDocumentList()
+    return true
   } else {
     openToast({ message: '문서 등록에 실패했습니다.', type: 'error' })
+    return false
   }
-  await handleSelectDocumentList()
 }
 
 // 문서 저장
-const handleSaveDocument = async (data: Partial<Document>) => {
+const handleSaveDocument = async (data: Partial<Document>): Promise<boolean> => {
   const files = Array.isArray(data.files) ? data.files.filter((f): f is File => f instanceof File) : []
   const categoryId = String(data.categoryId ?? '')
   const docIdList: DocExistCheckItem[] = files.map((file) => {
@@ -235,16 +238,17 @@ const handleSaveDocument = async (data: Partial<Document>) => {
     const ok = await openConfirm({
       message: '이미 존재하는 문서입니다. 덮어씌우시겠습니까?',
     })
-    if (!ok) return
+    if (!ok) return false
   }
 
   try {
-    await performDocumentSave(data)
+    return await performDocumentSave(data)
   } catch {
     openToast({
       message: '문서 저장 실패',
       type: 'error',
     })
+    return false
   }
 }
 
@@ -304,12 +308,9 @@ const handleFileView = async (row: Document) => {
 }
 
 const onSearch = () => {
-  // docCurrentPage watch가 handleSelectDocumentList를 호출하므로, 페이지가 1이 아닐 때만 변경
-  if (docCurrentPage.value !== 1) {
-    docCurrentPage.value = 1 // watch에서 재조회
-  } else {
-    handleSelectDocumentList()
-  }
+  // 검색 시 1페이지로 이동 후 재조회
+  if (docCurrentPage.value !== 1) docCurrentPage.value = 1
+  handleSelectDocumentList()
 }
 
 // ===== 문서 등록 패널 =====
@@ -347,6 +348,7 @@ const onDocumentTableRowClick = async (row: Record<string, unknown>) => {
   if (!docId) return
   isLoading.value = true
   try {
+    await handleSelectCodeOptions()
     const res = await fetchSelectDocRepositoryDetail(docId)
     docRegisterInitialData.value = mapDocDetailResponseToInitial(res.data)
   } catch {
@@ -366,12 +368,23 @@ const onCloseDocRegister = () => {
 }
 
 // 문서 저장 버튼 클릭 시
-const onSaveDocument = async (data: Record<string, unknown>) => {
+const onSaveDocument = async (data: Record<string, unknown>): Promise<boolean> => {
   const title = String(data.docTitle ?? '')
+  const docId = String(data.docId ?? '').trim()
   isLoading.value = true
   try {
-    await handleSaveDocument({
-      docId: data.docId != null && String(data.docId).trim() !== '' ? String(data.docId) : undefined,
+    // 수정 모드(docId 존재)에서는 중복 체크를 스킵
+    if (!docId) {
+      const res = await fetchSelectDocumentExistCnt(String(data.categoryId ?? ''), title)
+      const existCnt = res.data
+      if (existCnt > 0) {
+        openAlert({ title: '알림', message: '같은 카테고리에 같은 제목의 문서가 존재합니다.' })
+        return false
+      }
+    }
+
+    return await handleSaveDocument({
+      docId: docId ? docId : undefined,
       docTitle: title,
       categoryId: String(data.categoryId ?? ''),
       author: String(data.author ?? ''),
@@ -381,6 +394,12 @@ const onSaveDocument = async (data: Record<string, unknown>) => {
       keywords: String(data.keywords ?? ''),
       refUrl: String(data.refUrl ?? ''),
     })
+  } catch (error) {
+    openToast({
+      message: error instanceof Error ? error.message : '문서 저장 처리 중 오류가 발생했습니다.',
+      type: 'error',
+    })
+    return false
   } finally {
     isLoading.value = false
   }
@@ -446,9 +465,6 @@ const getDocIconName = (fileType: string) => {
   if (fileType === 'doc') return 'icon-file-doc'
   return 'icon-document'
 }
-// 페이지 변경 시 재조회
-watch(docCurrentPage, () => handleSelectDocumentList())
-
 export const useRepositoryStore = () => {
   return {
     isLoading,

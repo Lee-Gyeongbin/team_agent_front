@@ -55,12 +55,24 @@ export const useRepositoryApi = () => {
   }
 
   // ===== 문서 =====
-  const fetchDocumentList = async (findContent?: string, categoryId?: string, useYn?: string) => {
+  const fetchDocumentList = async (
+    findContent?: string,
+    categoryId?: string,
+    useYn?: string,
+    page?: number,
+    pageSize?: number,
+  ) => {
     return post<{ dataList: Document[]; totalCount: number }>('/repository/selectDocRepositoryList.do', {
       findContent,
       categoryId,
       useYn,
+      page,
+      pageSize,
     })
+  }
+
+  const fetchSelectDocumentExistCnt = async (categoryId: string, docTitle: string) => {
+    return post<{ data: number }>('/repository/selectDocumentExistCnt.do', { categoryId, docTitle })
   }
 
   /** 문서 상세 — docId 기준, 응답은 루트에 문서 필드( `data` 래핑 없음 ) */
@@ -74,7 +86,7 @@ export const useRepositoryApi = () => {
   }
 
   const fetchSaveDocument = async (data: DocumentSavePayload) => {
-    return unwrapData(await post<{ data: CategoryActionResponse }>('/repository/saveDocument.do', data))
+    return await post<{ data: CategoryActionResponse }>('/repository/saveDocument.do', data)
   }
 
   /**
@@ -123,5 +135,6 @@ export const useRepositoryApi = () => {
     fetchSaveUrl,
     fetchDeleteUrl,
     fetchToggleUrlStatus,
+    fetchSelectDocumentExistCnt,
   }
 }

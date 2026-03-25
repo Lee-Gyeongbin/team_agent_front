@@ -145,11 +145,11 @@
                 @update:model-value="toggleSelectAll"
               />
             </template>
-            <template #header-fileName>
+            <template #header-docTitle>
               <button
                 type="button"
                 class="table-header-sort-btn"
-                @click="onSort('fileName')"
+                @click="onSort('docTitle')"
               >
                 문서명
                 <i class="icon icon-sync size-16" />
@@ -198,7 +198,7 @@
                 />
               </div>
             </template>
-            <template #cell-fileName="{ row }">
+            <template #cell-docTitle="{ row }">
               <div class="cell-document flex items-center">
                 <span
                   class="doc-icon"
@@ -206,7 +206,7 @@
                 >
                   <i :class="['icon', getDocIconName(row.fileType), 'size-20']" />
                 </span>
-                <span class="doc-name">{{ row.fileName }}</span>
+                <span class="doc-name">{{ row.docTitle }}</span>
               </div>
             </template>
             <template #cell-useYn="{ value }">
@@ -254,7 +254,8 @@
         </div>
 
         <UiPagination
-          v-model="docCurrentPage"
+          v-if="docTotalCount > 0"
+          v-model="currentPage"
           :total-count="docTotalCount"
           :page-size="docPageSize"
           total-label="개 문서"
@@ -273,7 +274,6 @@
       :is-open="isDocRegisterOpen"
       :initial-data="docRegisterInitialData"
       @close="onCloseDocRegister"
-      @save="onSaveDocument"
     />
   </div>
 </template>
@@ -300,7 +300,6 @@ const {
   handleSelectDocumentList,
   onSearch,
   onRegisterDocument,
-  onSaveDocument,
   onBatchDownload,
   onBatchDelete,
   tableColumns,
@@ -335,6 +334,15 @@ const {
   toggleCategoryInput,
   onCategoryInputEnter,
 } = useCategoryStore()
+
+// 페이지 변경 → store의 핸들러 호출 (변경이력 모달 패턴과 동일)
+const currentPage = computed({
+  get: () => docCurrentPage.value,
+  set: (page: number) => {
+    docCurrentPage.value = page
+    handleSelectDocumentList()
+  },
+})
 
 // 초기 로딩
 onMounted(async () => {

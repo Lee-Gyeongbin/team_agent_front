@@ -154,11 +154,12 @@ export const useCategoryStore = () => {
     const name = categoryInputValue.value.trim()
     const parentId = categoryInputParentId.value
     const wasSubcategory = parentId != null
-    await handleSaveCategory({
+    const ok = await handleSaveCategory({
       categoryId: '',
       categoryName: name,
       parnCatId: parentId ?? null,
     })
+    if (!ok) return
     categoryInputValue.value = ''
     categoryInputParentId.value = null
     // 하위 추가 플로우만 입력란 닫기 (+ 버튼으로 연 최상위 추가는 연속 입력 가능)
@@ -170,9 +171,11 @@ export const useCategoryStore = () => {
   }
   const saveCategoryRename = async () => {
     if (editingCategoryId.value && editingName.value.trim()) {
-      await handleRenameCategory(editingCategoryId.value, editingName.value.trim())
+      const ok = await handleRenameCategory(editingCategoryId.value, editingName.value.trim())
+      if (ok) editingCategoryId.value = null
+    } else {
+      editingCategoryId.value = null
     }
-    editingCategoryId.value = null
   }
   const onCategoryMenuSelect = async (value: string, cat: CategoryTreeItem) => {
     if (value === 'rename') {
@@ -230,29 +233,54 @@ export const useCategoryStore = () => {
   }
 
   const handleSaveCategory = async (data: { categoryId?: string; categoryName: string; parnCatId?: string | null }) => {
-    const res = await fetchSaveCategory(data)
-    if (res.successYn) {
-      openToast({ message: '카테고리가 저장되었습니다.', type: 'success' })
-      const forceExpandIds = data.parnCatId ? [data.parnCatId] : []
-      await handleSelectCategoryList({ forceExpandIds })
-    } else {
+    try {
+      const res = await fetchSaveCategory(data)
+      if (res.successYn) {
+        openToast({ message: '카테고리가 저장되었습니다.', type: 'success' })
+        const forceExpandIds = data.parnCatId ? [data.parnCatId] : []
+        await handleSelectCategoryList({ forceExpandIds })
+        return true
+      }
       openToast({ message: '카테고리 저장에 실패했습니다.', type: 'error' })
+      return false
+    } catch (error) {
+      openToast({
+        message: error instanceof Error ? error.message : '카테고리 저장에 실패했습니다.',
+        type: 'error',
+      })
+      return false
     }
   }
 
   const handleRenameCategory = async (categoryId: string, categoryName: string) => {
-    const res = await fetchRenameCategory(categoryId, categoryName)
-    if (res.successYn) {
-      openToast({ message: '카테고리가 수정되었습니다.', type: 'success' })
-    } else {
+    try {
+      const res = await fetchRenameCategory(categoryId, categoryName)
+      if (res.successYn) {
+        openToast({ message: '카테고리가 수정되었습니다.', type: 'success' })
+        await handleSelectCategoryList()
+        return true
+      }
       openToast({ message: '카테고리 수정에 실패했습니다.', type: 'error' })
+      return false
+    } catch (error) {
+      openToast({
+        message: error instanceof Error ? error.message : '카테고리 수정에 실패했습니다.',
+        type: 'error',
+      })
+      return false
     }
-    await handleSelectCategoryList()
   }
 
   const handleDeleteCategory = async (id: string) => {
-    await fetchDeleteCategory(id)
-    await handleSelectCategoryList()
+    try {
+      await fetchDeleteCategory(id)
+      await handleSelectCategoryList()
+    } catch (error) {
+      openToast({
+        message: error instanceof Error ? error.message : '카테고리 삭제에 실패했습니다.',
+        type: 'error',
+      })
+    }
   }
 
   return {
