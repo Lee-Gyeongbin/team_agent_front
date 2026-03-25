@@ -76,6 +76,8 @@
 </template>
 
 <script setup lang="ts">
+import { openToast } from '~/composables/useToast'
+
 interface Props {
   modelValue: File[]
   multiple?: boolean
@@ -102,6 +104,9 @@ const emit = defineEmits<{
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const isDragging = ref(false)
 
+/** 이름·크기·수정시각으로 동일 파일 여부 판별 */
+const isSameFile = (a: File, b: File) => a.name === b.name && a.size === b.size && a.lastModified === b.lastModified
+
 const openFilePicker = () => {
   fileInputRef.value?.click()
 }
@@ -119,6 +124,19 @@ const addFiles = (newFiles: FileList | File[]) => {
     })
   }
   if (arr.length === 0) return
+
+  // 이미 목록에 있거나, 이번에 선택한 파일끼리 동일한 경우
+  for (let i = 0; i < arr.length; i++) {
+    const f = arr[i]
+    if (props.modelValue.some((existing) => isSameFile(f, existing))) {
+      openToast({ message: '동일한 파일이 이미 첨부되어 있습니다.', type: 'error' })
+      return
+    }
+    if (arr.slice(0, i).some((prev) => isSameFile(prev, f))) {
+      openToast({ message: '동일한 파일이 이미 첨부되어 있습니다.', type: 'error' })
+      return
+    }
+  }
 
   // 단일 파일 모드: 마지막 선택한 파일로 교체
   if (!props.multiple) {

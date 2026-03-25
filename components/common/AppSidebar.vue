@@ -104,7 +104,7 @@
                     <span>이름변경</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    class="sidebar-dropdown-item"
+                    class="sidebar-dropdown-item type-red"
                     @select="onContextDelete(entry)"
                   >
                     <i class="icon-sidebar-delete size-20" />
