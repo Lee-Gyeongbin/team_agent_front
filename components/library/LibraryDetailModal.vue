@@ -210,6 +210,8 @@
 <script setup lang="ts">
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import type { LibraryCardDetail, DocItem } from '~/types/library'
+import { useFileStore } from '~/composables/com/useFileStore'
+const { handleViewFileUrl } = useFileStore()
 
 const props = withDefaults(
   defineProps<{
@@ -320,8 +322,10 @@ const handleDelete = () => {
 }
 
 const onReferenceLink = async (item: DocItem) => {
-  await copyToClipboard(item.filePath)
-  openToast({ message: '매뉴얼이 링크가 복사되었습니다.', duration: 1500 })
+  const url = await handleViewFileUrl(item.docId)
+  if (!url) return
+  await copyToClipboard(url)
+  openToast({ message: '매뉴얼이 링크가 복사되었습니다.' })
 }
 
 const handleCopyResponse = async () => {
