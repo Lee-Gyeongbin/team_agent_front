@@ -337,6 +337,22 @@ $sidebar-btn-bg-hover: $color-border;
   cursor: pointer;
   outline: none;
 
+  &.type-red {
+    color: #db3c69;
+    i {
+      color: #db3c69;
+    }
+
+    /* 삭제 등: 포커스/하이라이트 시에도 경고색 유지 */
+    &:hover,
+    &[data-highlighted] {
+      color: #db3c69;
+      i {
+        color: #db3c69;
+      }
+    }
+  }
+
   /* mask 아이콘은 currentColor 사용 */
   i {
     color: $color-text-muted;
