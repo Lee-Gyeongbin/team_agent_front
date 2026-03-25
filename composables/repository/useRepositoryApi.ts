@@ -62,7 +62,7 @@ export const useRepositoryApi = () => {
     page?: number,
     pageSize?: number,
   ) => {
-    return post<{ dataList: Document[]; totalCount: number }>('/repository/selectDocRepositoryList.do', {
+    return post<{ dataList: Document[]; totalCnt: number }>('/repository/selectDocRepositoryList.do', {
       findContent,
       categoryId,
       useYn,
