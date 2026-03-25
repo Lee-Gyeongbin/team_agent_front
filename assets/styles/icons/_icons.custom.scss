@@ -192,18 +192,19 @@
 // library 아이콘
 // ===================================
 .icon-search {
-  @include icon-file('icon-search');
+  @include icon-file-bg('icon-search');
 }
 
 // 보관함
 .icon-archive {
-  @include icon-file('archive');
+  @include icon-file-bg('archive');
 }
 
 // 쓰레기통
 .icon-delete {
-  @include icon-file('delete');
+  @include icon-file-bg('delete');
 }
+
 // 쓰레기통(배경색)
 .icon-delete-bg {
   @include icon-file-bg('delete');

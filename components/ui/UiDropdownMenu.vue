@@ -13,8 +13,7 @@
     <DropdownMenuPortal>
       <!-- title 있으면 Radix Label로 상단 안내 문구만 표시(클릭 불가, 스크린리더용 구역 라벨 역할) -->
       <DropdownMenuContent
-        class="ui-dropdown-content"
-        :class="{ 'ui-dropdown-content--titled': Boolean(title) }"
+        :class="['ui-dropdown-content', { 'ui-dropdown-content--titled': Boolean(title) }, contentClass || undefined]"
         :side="side"
         :side-offset="sideOffset"
         :align="align"
@@ -28,19 +27,21 @@
         >
           {{ title }}
         </DropdownMenuLabel>
-        <DropdownMenuItem
-          v-for="item in items"
-          :key="item.value"
-          class="dropdown-item"
-          :class="{ 'type-danger': item.color === 'danger' }"
-          @select="emit('select', item.value)"
-        >
-          <i
-            v-if="item.icon"
-            :class="['icon', item.icon, 'size-16']"
-          />
-          <span>{{ item.label }}</span>
-        </DropdownMenuItem>
+        <div class="ui-dropdown-content-list">
+          <DropdownMenuItem
+            v-for="item in items"
+            :key="item.value"
+            class="dropdown-item"
+            :class="{ 'type-danger': item.color === 'danger' }"
+            @select="emit('select', item.value)"
+          >
+            <i
+              v-if="item.icon"
+              :class="['icon', item.icon, 'size-16']"
+            />
+            <span>{{ item.label }}</span>
+          </DropdownMenuItem>
+        </div>
       </DropdownMenuContent>
     </DropdownMenuPortal>
   </DropdownMenuRoot>
@@ -85,6 +86,8 @@ interface Props {
   openOnHover?: boolean
   /** hover 해제 후 닫힘 지연(ms) */
   hoverCloseDelay?: number
+  /** 포털 메뉴 패널에 추가 클래스(전역 SCSS에서 변형·오버라이드용, 예: sidebar-dropdown-content) */
+  contentClass?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -95,6 +98,7 @@ const props = withDefaults(defineProps<Props>(), {
   collisionPadding: 8,
   openOnHover: false,
   hoverCloseDelay: 120,
+  contentClass: '',
 })
 
 const emit = defineEmits<{
@@ -157,7 +161,6 @@ watch(openState, (v: boolean) => emit('update:open', v))
 /* Portal 콘텐츠 스타일 — 전역 블록 필수 */
 .ui-dropdown-content {
   min-width: 131px;
-  padding: 4px;
   border-radius: 4px;
   background: #fff;
   border: 1px solid rgba(45, 49, 57, 0.2);
@@ -172,17 +175,55 @@ watch(openState, (v: boolean) => emit('update:open', v))
   &[data-state='closed'] {
     animation: ui-dropdown-out 0.1s ease forwards;
   }
+
+  &.type-large-icons {
+    min-width: 136px;
+
+    .ui-dropdown-content-list {
+      padding: 8px;
+    }
+
+    .dropdown-item {
+      height: 32px;
+      padding: 6px 8px;
+      border-radius: $border-radius-sm;
+      font-size: $font-size-base;
+      font-weight: 500;
+      color: #4d5462;
+      &:hover {
+        background: #ecf0f3;
+      }
+    }
+
+    .icon {
+      width: 20px;
+      height: 20px;
+      color: #6f7a93;
+    }
+  }
+
+  &.type-title {
+    border-radius: 6px;
+  }
 }
 
 /* DropdownMenuLabel — 메뉴 항목과 구분되는 보조 타이틀 스타일 */
 .ui-dropdown-title {
-  padding: 6px 8px 4px;
+  border-radius: 6px 6px 0 0;
+  padding: 8px 12px;
   font-size: 11px;
   font-weight: 400;
+  font-weight: 700;
   line-height: 1.3;
-  color: #8b95a8;
+  font-size: 14px;
+  color: #4d5462;
   cursor: default;
   user-select: none;
+  background: #f4f7f9;
+}
+
+.ui-dropdown-content-list {
+  padding: 4px;
 }
 
 @keyframes ui-dropdown-in {

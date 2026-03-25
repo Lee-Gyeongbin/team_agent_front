@@ -50,6 +50,7 @@
     <UiDropdownMenu
       title="카테고리 선택"
       :items="categoryMenuItems"
+      content-class="type-large-icons type-title"
       align="end"
       open-on-hover
       @select="onSelectCategory"
