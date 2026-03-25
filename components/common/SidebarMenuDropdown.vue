@@ -26,7 +26,7 @@
                 />
                 <span>{{ item.menuName }}</span>
               </span>
-              <i class="icon-sidebar-arrow-right size-20" />
+              <i class="icon-sidebar-arrow-right size-16" />
             </DropdownMenuSubTrigger>
             <DropdownMenuPortal>
               <DropdownMenuSubContent
