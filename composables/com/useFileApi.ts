@@ -1,5 +1,5 @@
 import { useApi } from '~/composables/com/useApi'
-import type { FileMeta, FileUploadResponse, FileUrlResponse } from '~/types/file'
+import type { FileDeleteResponse, FileMeta, FileUploadResponse, FileUrlResponse } from '~/types/file'
 
 export const useFileApi = () => {
   const { get, post } = useApi()
@@ -30,9 +30,20 @@ export const useFileApi = () => {
   const fetchDownloadFileUrl = async (docId: string) => {
     return post<FileUrlResponse>('/com/file/downloadFile.do', { docId })
   }
+
+  /**
+   * NCP Object Storage 객체 삭제
+   * - FileController.deleteFile(FileVO) 등에 매핑
+   * - deleteDocument.do(DB) 전에 호출해 저장소와 DB를 맞추는 용도
+   */
+  const fetchDeleteFile = async (docIdList: string[]) => {
+    return post<FileDeleteResponse>('/com/file/deleteFile.do', { docIdList })
+  }
+
   return {
     fetchUploadFileUrl,
     fetchViewFileUrl,
     fetchDownloadFileUrl,
+    fetchDeleteFile,
   }
 }

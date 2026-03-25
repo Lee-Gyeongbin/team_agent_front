@@ -1,4 +1,13 @@
-import type { CategoryItem, Document, UrlItem } from '~/types/repository'
+import type {
+  CategoryItem,
+  DocRepositoryDetailResponse,
+  Document,
+  DocumentDeleteItem,
+  DocumentSavePayload,
+  DocExistCheckItem,
+  UrlItem,
+  CategoryActionResponse,
+} from '~/types/repository'
 
 // 🔽 Mock — 백엔드 API 완성 시 useApi 패턴으로 교체
 const MOCK_BASE = '/mock/repository'
@@ -14,21 +23,35 @@ const mockPost = async <T>(url: string, body: unknown = {}): Promise<T> => {
 
 export const useRepositoryApi = () => {
   const { post } = useApi()
+  /**
+   * 백엔드 응답이 `{ returnMsg, successYn, data: {...} }` 형태일 때,
+   * 프론트에서는 `data`만 사용하도록 정리.
+   */
+  const unwrapData = <T>(res: unknown): T => {
+    const maybe = res as { data?: T }
+    return maybe?.data ?? (res as T)
+  }
   // ===== 카테고리 =====
   const fetchCategoryList = async () => {
     return post<{ dataList: CategoryItem[] }>('/repository/selectCategoryList.do', {})
   }
 
-  const fetchSaveCategory = async (data: { id?: string; name: string; parentId?: string | null }) => {
-    return mockPost<{ data: CategoryItem }>(`${MOCK_BASE}/category/save`, data)
+  const fetchSaveCategory = async (data: {
+    categoryId?: string
+    categoryName: string
+    parnCatId?: string | null
+  }): Promise<CategoryActionResponse> => {
+    return unwrapData(await post<{ data: CategoryActionResponse }>('/repository/saveCategory.do', data))
   }
 
-  const fetchRenameCategory = async (id: string, name: string) => {
-    return mockPost<{ data: CategoryItem }>(`${MOCK_BASE}/category/rename`, { id, name })
+  const fetchRenameCategory = async (categoryId: string, categoryName: string): Promise<CategoryActionResponse> => {
+    return unwrapData(
+      await post<{ data: CategoryActionResponse }>('/repository/renameCategory.do', { categoryId, categoryName }),
+    )
   }
 
   const fetchDeleteCategory = async (id: string) => {
-    return mockPost<{ data: { id: string } }>(`${MOCK_BASE}/category/delete`, { id })
+    return post<{ data: { id: string } }>(`${MOCK_BASE}/category/delete`, { id })
   }
 
   // ===== 문서 =====
@@ -39,12 +62,28 @@ export const useRepositoryApi = () => {
       useYn,
     })
   }
-  const fetchSaveDocument = async (data: Partial<Document>) => {
-    return post<{ successYn: boolean }>('/repository/saveDocument.do', data)
+
+  /** 문서 상세 — docId 기준, 응답은 루트에 문서 필드( `data` 래핑 없음 ) */
+  const fetchSelectDocRepositoryDetail = async (docId: string) => {
+    return post<{ data: DocRepositoryDetailResponse }>('/repository/selectDocRepositoryDetail.do', { docId })
   }
 
-  const fetchDeleteDocument = async (id: string) => {
-    return post<{ data: number }>('/repository/deleteDocument.do', { id })
+  /** TB_DOC (CATEGORY_ID, FILE_NAME, FILE_TYPE) IN 조건 건수 — selectDocExistCnt */
+  const fetchSelectDocExistCnt = async (docIdList: DocExistCheckItem[]) => {
+    return post<{ data: number }>('/repository/selectDocExistCnt.do', { docIdList })
+  }
+
+  const fetchSaveDocument = async (data: DocumentSavePayload) => {
+    return unwrapData(await post<{ data: CategoryActionResponse }>('/repository/saveDocument.do', data))
+  }
+
+  /**
+   * 문서 삭제 — RepositoryVO.docIdList: { docId } 객체 배열 (MyBatis #{item.docId})
+   * JSON 예: `{ "docIdList": [ { "docId": "DOC001" } ] }`
+   * 백엔드 400 시: VO가 `List<String>`이면 Jackson 역직렬화 실패 → `List<DocIdBean>` 등 객체 리스트로 변경
+   */
+  const fetchDeleteDocument = async (docIdList: DocumentDeleteItem[]) => {
+    return post<{ data: number }>('/repository/deleteDocument.do', { docIdList })
   }
 
   // ===== URL =====
@@ -72,10 +111,12 @@ export const useRepositoryApi = () => {
 
   return {
     fetchCategoryList,
+    fetchSelectDocExistCnt,
     fetchSaveCategory,
     fetchRenameCategory,
     fetchDeleteCategory,
     fetchDocumentList,
+    fetchSelectDocRepositoryDetail,
     fetchSaveDocument,
     fetchDeleteDocument,
     fetchUrlList,

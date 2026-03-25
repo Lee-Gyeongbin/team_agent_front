@@ -133,7 +133,11 @@
             :columns="tableColumns"
             :data="sortedDocumentList"
             sticky-header
+            clickable
+            selected-row-key="docId"
+            :selected-row-value="docTableHighlightedDocId ?? undefined"
             empty-text="등록된 문서가 없습니다."
+            @row-click="onDocumentTableRowClick"
           >
             <template #header-select>
               <UiCheckbox
@@ -141,13 +145,22 @@
                 @update:model-value="toggleSelectAll"
               />
             </template>
-            <template #header-docTitle>
+            <template #header-fileName>
               <button
                 type="button"
                 class="table-header-sort-btn"
-                @click="onSort('docTitle')"
+                @click="onSort('fileName')"
               >
                 문서명
+                <i class="icon icon-sync size-16" />
+              </button>
+            </template>
+            <template #header-categoryName>
+              <button
+                type="button"
+                class="table-header-sort-btn"
+              >
+                카테고리
                 <i class="icon icon-sync size-16" />
               </button>
             </template>
@@ -175,12 +188,17 @@
               <i class="icon icon-add-dot size-20" />
             </template>
             <template #cell-select="{ row }">
-              <UiCheckbox
-                :model-value="selectedIds.includes(row.docId)"
-                @update:model-value="(v) => toggleSelectRow(row.docId, v)"
-              />
+              <div
+                class="cell-select-stop"
+                @click.stop
+              >
+                <UiCheckbox
+                  :model-value="selectedIds.includes(row.docId)"
+                  @update:model-value="(v) => toggleSelectRow(row.docId, v)"
+                />
+              </div>
             </template>
-            <template #cell-docTitle="{ row }">
+            <template #cell-fileName="{ row }">
               <div class="cell-document flex items-center">
                 <span
                   class="doc-icon"
@@ -188,7 +206,7 @@
                 >
                   <i :class="['icon', getDocIconName(row.fileType), 'size-20']" />
                 </span>
-                <span class="doc-name">{{ row.docTitle }}</span>
+                <span class="doc-name">{{ row.fileName }}</span>
               </div>
             </template>
             <template #cell-useYn="{ value }">
@@ -253,7 +271,8 @@
 
     <DocRegisterPanel
       :is-open="isDocRegisterOpen"
-      @close="isDocRegisterOpen = false"
+      :initial-data="docRegisterInitialData"
+      @close="onCloseDocRegister"
       @save="onSaveDocument"
     />
   </div>
@@ -289,6 +308,10 @@ const {
   formatUseYnLabel,
   rowActionItems,
   isDocRegisterOpen,
+  docRegisterInitialData,
+  docTableHighlightedDocId,
+  onDocumentTableRowClick,
+  onCloseDocRegister,
   onRowActionSelect,
   statusFilterOptions,
 } = useRepositoryStore()

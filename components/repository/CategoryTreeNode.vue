@@ -35,6 +35,7 @@
           placeholder="카테고리명 입력 (엔터키로 저장)"
           size="sm"
           radius="base"
+          @click.stop
           @enter="onSaveRename"
         />
       </template>

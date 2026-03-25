@@ -94,7 +94,13 @@
             <td><code>maxSize</code></td>
             <td><code>number</code></td>
             <td><code>52428800</code> (50MB)</td>
-            <td>최대 파일 크기 (바이트)</td>
+            <td>파일당 최대 크기 (바이트)</td>
+          </tr>
+          <tr>
+            <td><code>maxFiles</code></td>
+            <td><code>number</code></td>
+            <td>—</td>
+            <td>첨부 가능한 최대 파일 개수 (미설정 시 제한 없음, <code>multiple</code>이 true일 때만 적용)</td>
           </tr>
         </tbody>
       </table>

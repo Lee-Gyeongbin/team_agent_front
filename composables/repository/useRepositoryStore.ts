@@ -1,9 +1,20 @@
 import { useRepositoryApi } from '~/composables/repository/useRepositoryApi'
-import type { Document, UrlItem } from '~/types/repository'
+import type { CodeItem } from '~/types/codes'
+import type {
+  DocRepositoryDetailResponse,
+  Document,
+  DocumentDeleteItem,
+  DocumentSaveFileItem,
+  DocumentSavePayload,
+  DocExistCheckItem,
+  UrlItem,
+} from '~/types/repository'
 import type { TableColumn } from '~/types/table'
-const { handleViewFileUrl, handleUploadFile } = useFileStore()
+const { handleViewFileUrl, handleUploadFile, handleDeleteNcpFile, fileError } = useFileStore()
 const {
+  fetchSelectDocExistCnt,
   fetchDocumentList,
+  fetchSelectDocRepositoryDetail,
   fetchSaveDocument,
   fetchDeleteDocument,
   fetchUrlList,
@@ -11,7 +22,9 @@ const {
   fetchDeleteUrl,
   fetchToggleUrlStatus,
 } = useRepositoryApi()
+const isLoading = ref(false)
 
+const secLvlOptions = ref<{ label: string; value: string }[]>([])
 // ===== 문서 상태 =====
 const documentList = ref<Document[]>([])
 const docTotalCount = ref(0)
@@ -31,7 +44,8 @@ const statusFilterOptions = [
 // ===== 테이블 =====
 const tableColumns: TableColumn[] = [
   { key: 'select', label: '', width: '48px', align: 'center', headerAlign: 'center' },
-  { key: 'docTitle', label: '문서명', width: 'auto', align: 'left', headerAlign: 'left' },
+  { key: 'fileName', label: '문서명', width: 'auto', align: 'left', headerAlign: 'left' },
+  { key: 'categoryName', label: '카테고리', width: '200px', align: 'left', headerAlign: 'left' },
   { key: 'fileSize', label: '파일크기', width: '100px', align: 'center', headerAlign: 'center' },
   { key: 'createDt', label: '등록일', width: '120px', align: 'center', headerAlign: 'center' },
   { key: 'useYn', label: '상태', width: '80px', align: 'center', headerAlign: 'center' },
@@ -40,7 +54,7 @@ const tableColumns: TableColumn[] = [
 ]
 
 // 정렬 (프론트 정렬)
-type SortKey = keyof Pick<Document, 'docTitle' | 'fileSize' | 'createDt'>
+type SortKey = keyof Pick<Document, 'fileName' | 'fileSize' | 'createDt'>
 const sortKey = ref<SortKey | null>(null)
 const sortOrder = ref<'asc' | 'desc'>('asc')
 const onSort = (key: SortKey) => {
@@ -70,6 +84,27 @@ const formatUseYnLabel = (value: string) => {
   if (value === 'N') return '비활성'
   return value
 }
+
+/** 상세 API 평면 응답 → 패널용 Document 일부 */
+const mapDocDetailResponseToInitial = (res: DocRepositoryDetailResponse): Partial<Document> => ({
+  docId: String(res.docId ?? ''),
+  docTitle: String(res.docTitle ?? ''),
+  categoryId: String(res.categoryId ?? ''),
+  categoryName: String(res.categoryName ?? ''),
+  author: String(res.author ?? ''),
+  secLvl: String(res.secLvl ?? ''),
+  content: String(res.content ?? ''),
+  fileName: String(res.fileName ?? ''),
+  filePath: String(res.filePath ?? ''),
+  fileSize: String(res.fileSize ?? ''),
+  fileType: String(res.fileType ?? ''),
+  keywords: String(res.keywords ?? ''),
+  refUrl: String(res.refUrl ?? ''),
+  useYn: String(res.useYn ?? ''),
+  dsDocCnt: String(res.dsDocCnt ?? ''),
+  createDt: String(res.createDt ?? ''),
+  files: [],
+})
 
 const rowActionItems = [
   { label: '미리보기', value: 'preview', icon: 'icon-view' },
@@ -108,22 +143,28 @@ const urlPageSize = 10
 
 // ===== 문서 액션 =====
 const handleSelectDocumentList = async () => {
-  const findContent = docSearchKeyword.value || undefined
-  const categoryId = docSelectedCategoryId.value || undefined
-  const useYn = docStatusFilter.value
-  const res = await fetchDocumentList(findContent, categoryId, useYn)
-  documentList.value = res.dataList
-  docTotalCount.value = res.totalCount
+  isLoading.value = true
+  try {
+    const findContent = docSearchKeyword.value || undefined
+    const categoryId = docSelectedCategoryId.value || undefined
+    const useYn = docStatusFilter.value
+    const res = await fetchDocumentList(findContent, categoryId, useYn)
+    documentList.value = res.dataList
+    documentList.value.forEach((doc) => {
+      // 파일 사이즈 포맷팅
+      doc.fileSize = formatFileSize(Number(doc.fileSize))
+    })
+    docTotalCount.value = res.totalCount
+  } finally {
+    isLoading.value = false
+  }
 }
 
-// 문서 저장
-const handleSaveDocument = async (data: Partial<Document>) => {
-  const files = Array.isArray(data.files) ? data.files.filter((file): file is File => file instanceof File) : []
-  let fileMeta: Partial<Document> = {}
-
-  if (files.length > 0) {
-    const file = files[0]
-    // NCP에 파일 업로드
+/** 업로드된 파일마다 NCP 업로드 후 DB 저장용 file 배열 생성 */
+const buildUploadedFileMetaList = async (data: Partial<Document>): Promise<DocumentSaveFileItem[] | null> => {
+  const files = Array.isArray(data.files) ? data.files.filter((f): f is File => f instanceof File) : []
+  const fileMeta: DocumentSaveFileItem[] = []
+  for (const file of files) {
     const uploadedFilePath = await handleUploadFile({
       file,
       docTitle: String(data.docTitle ?? ''),
@@ -131,25 +172,39 @@ const handleSaveDocument = async (data: Partial<Document>) => {
       secLvl: String(data.secLvl ?? ''),
       keywords: String(data.keywords ?? ''),
     })
-
     if (!uploadedFilePath) {
-      openToast({ message: '파일 업로드에 실패했습니다.', type: 'error' })
-      return
+      return null
     }
-
-    fileMeta = {
+    fileMeta.push({
       fileName: file.name,
       filePath: uploadedFilePath,
       fileSize: String(file.size),
-      fileType: file.type || 'application/octet-stream',
-    }
+      fileType: file.type,
+    })
   }
+  return fileMeta
+}
 
-  // DB에 저장
-  const res = await fetchSaveDocument({
-    ...data,
-    ...fileMeta,
-  })
+/** 문서 저장 (DB) — file 은 업로드 완료 메타 배열 */
+const performDocumentSave = async (data: Partial<Document>) => {
+  const fileMeta = await buildUploadedFileMetaList(data)
+  if (fileMeta === null) {
+    openToast({ message: '파일 업로드에 실패했습니다.', type: 'error' })
+    return
+  }
+  const payload: DocumentSavePayload = {
+    docTitle: String(data.docTitle ?? ''),
+    categoryId: String(data.categoryId ?? ''),
+    author: String(data.author ?? ''),
+    secLvl: String(data.secLvl ?? ''),
+    content: String(data.content ?? ''),
+    keywords: String(data.keywords ?? ''),
+    refUrl: String(data.refUrl ?? ''),
+    file: fileMeta,
+  }
+  const id = String(data.docId ?? '').trim()
+  if (id) payload.docId = id
+  const res = await fetchSaveDocument(payload)
   if (res.successYn) {
     openToast({ message: `'${data.docTitle}' 문서가 등록되었습니다.` })
   } else {
@@ -158,9 +213,52 @@ const handleSaveDocument = async (data: Partial<Document>) => {
   await handleSelectDocumentList()
 }
 
-// 문서 삭제
-const handleDeleteDocument = async (id: string) => {
-  await fetchDeleteDocument(id)
+// 문서 저장
+const handleSaveDocument = async (data: Partial<Document>) => {
+  const files = Array.isArray(data.files) ? data.files.filter((f): f is File => f instanceof File) : []
+  const categoryId = String(data.categoryId ?? '')
+  const docIdList: DocExistCheckItem[] = files.map((file) => {
+    return {
+      categoryId,
+      fileName: file.name,
+      fileType: file.type,
+    }
+  })
+
+  let existCnt = 0
+  if (docIdList.length > 0) {
+    const exists = await fetchSelectDocExistCnt(docIdList)
+    existCnt = exists.data
+  }
+
+  if (existCnt > 0) {
+    const ok = await openConfirm({
+      message: '이미 존재하는 문서입니다. 덮어씌우시겠습니까?',
+    })
+    if (!ok) return
+  }
+
+  try {
+    await performDocumentSave(data)
+  } catch {
+    openToast({
+      message: '문서 저장 실패',
+      type: 'error',
+    })
+  }
+}
+
+// 문서 삭제 (NCP 객체 삭제 후 DB 행 삭제)
+const handleDeleteDocument = async (docIdList: DocumentDeleteItem[]) => {
+  const valid = docIdList.filter((item) => String(item.docId ?? '').trim() !== '')
+  if (valid.length === 0) return
+  const ids = valid.map((item) => item.docId)
+  const ncpOk = await handleDeleteNcpFile(ids)
+  if (!ncpOk) {
+    openToast({ message: fileError.value || '저장소에서 파일 삭제에 실패했습니다.', type: 'error' })
+    return
+  }
+  await fetchDeleteDocument(valid)
   await handleSelectDocumentList()
 }
 
@@ -216,22 +314,76 @@ const onSearch = () => {
 
 // ===== 문서 등록 패널 =====
 const isDocRegisterOpen = ref(false)
-const onRegisterDocument = () => {
+/** 행 클릭·상세 조회 후 패널에 넘길 초기값 (신규 등록은 null) */
+const docRegisterInitialData = ref<Partial<Document> | null>(null)
+/** 테이블에서 선택된 행 강조용 docId */
+const docTableHighlightedDocId = ref<string | null>(null)
+
+const onRegisterDocument = async () => {
+  docRegisterInitialData.value = null
+  docTableHighlightedDocId.value = null
+  await handleSelectCodeOptions()
   isDocRegisterOpen.value = true
 }
+
+const handleSelectCodeOptions = async () => {
+  const secLvlCodes = await getCodes('DC000001')
+  // 코드 옵션 세팅
+  secLvlOptions.value = mapCodeOptions(secLvlCodes)
+}
+
+/** 코드 옵션 매핑 */
+const mapCodeOptions = (codes: CodeItem[]) => [
+  { label: '선택', value: '' },
+  ...codes.map((item: CodeItem) => ({
+    label: item.codeNm,
+    value: item.codeId,
+  })),
+]
+
+/** 테이블 행 클릭 — 상세 조회 후 등록 패널 오픈 */
+const onDocumentTableRowClick = async (row: Record<string, unknown>) => {
+  const docId = String(row.docId ?? '').trim()
+  if (!docId) return
+  isLoading.value = true
+  try {
+    const res = await fetchSelectDocRepositoryDetail(docId)
+    docRegisterInitialData.value = mapDocDetailResponseToInitial(res.data)
+  } catch {
+    const fromList = documentList.value.find((d) => d.docId === docId)
+    docRegisterInitialData.value = fromList ? { ...fromList } : { ...(row as unknown as Document) }
+  } finally {
+    isLoading.value = false
+    docTableHighlightedDocId.value = docId
+    isDocRegisterOpen.value = true
+  }
+}
+
+const onCloseDocRegister = () => {
+  isDocRegisterOpen.value = false
+  docRegisterInitialData.value = null
+  docTableHighlightedDocId.value = null
+}
+
+// 문서 저장 버튼 클릭 시
 const onSaveDocument = async (data: Record<string, unknown>) => {
   const title = String(data.docTitle ?? '')
-  await handleSaveDocument({
-    docTitle: title,
-    categoryId: String(data.categoryId ?? ''),
-    author: String(data.author ?? ''),
-    secLvl: String(data.secLvl ?? ''),
-    content: String(data.content ?? ''),
-    files: data.files as File[],
-    keywords: String(data.keywords ?? ''),
-    refUrl: String(data.refUrl ?? ''),
-  })
-  openToast({ message: `'${title}' 문서가 등록되었습니다.` })
+  isLoading.value = true
+  try {
+    await handleSaveDocument({
+      docId: data.docId != null && String(data.docId).trim() !== '' ? String(data.docId) : undefined,
+      docTitle: title,
+      categoryId: String(data.categoryId ?? ''),
+      author: String(data.author ?? ''),
+      secLvl: String(data.secLvl ?? ''),
+      content: String(data.content ?? ''),
+      files: data.files as File[],
+      keywords: String(data.keywords ?? ''),
+      refUrl: String(data.refUrl ?? ''),
+    })
+  } finally {
+    isLoading.value = false
+  }
 }
 
 const onBatchDownload = () => {
@@ -255,7 +407,7 @@ const onBatchDelete = async () => {
     message: `선택한 ${selectedIds.value.length}개 문서를 삭제하시겠습니까?`,
   })
   if (confirmed) {
-    await Promise.all(selectedIds.value.map((id) => handleDeleteDocument(id)))
+    await handleDeleteDocument(selectedIds.value.map((docId) => ({ docId })))
     selectedIds.value = []
   }
 }
@@ -271,7 +423,7 @@ const onRowActionSelect = async (value: string, row: Document) => {
       message: `'${row.docTitle}'을(를) 삭제하시겠습니까?`,
     })
     if (confirmed) {
-      await handleDeleteDocument(row.docId)
+      await handleDeleteDocument([{ docId: row.docId }])
       selectedIds.value = selectedIds.value.filter((id) => id !== row.docId)
     }
   } else if (value === 'preview') {
@@ -299,6 +451,7 @@ watch(docCurrentPage, () => handleSelectDocumentList())
 
 export const useRepositoryStore = () => {
   return {
+    isLoading,
     // 문서
     documentList,
     docTotalCount,
@@ -336,9 +489,14 @@ export const useRepositoryStore = () => {
     handleFileView,
     onSearch,
     onRegisterDocument,
+    onDocumentTableRowClick,
+    onCloseDocRegister,
+    docRegisterInitialData,
+    docTableHighlightedDocId,
     getDocIconClass,
     getDocIconName,
     isDocRegisterOpen,
     statusFilterOptions,
+    secLvlOptions,
   }
 }

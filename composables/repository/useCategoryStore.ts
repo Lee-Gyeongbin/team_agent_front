@@ -155,8 +155,9 @@ export const useCategoryStore = () => {
     const parentId = categoryInputParentId.value
     const wasSubcategory = parentId != null
     await handleSaveCategory({
-      name,
-      parentId: parentId ?? null,
+      categoryId: '',
+      categoryName: name,
+      parnCatId: parentId ?? null,
     })
     categoryInputValue.value = ''
     categoryInputParentId.value = null
@@ -228,14 +229,24 @@ export const useCategoryStore = () => {
     categoryList.value = mergeCategoryExpandedState(tree, expandedIds)
   }
 
-  const handleSaveCategory = async (data: { id?: string; name: string; parentId?: string | null }) => {
-    await fetchSaveCategory(data)
-    const forceExpandIds = data.parentId ? [data.parentId] : []
-    await handleSelectCategoryList({ forceExpandIds })
+  const handleSaveCategory = async (data: { categoryId?: string; categoryName: string; parnCatId?: string | null }) => {
+    const res = await fetchSaveCategory(data)
+    if (res.successYn) {
+      openToast({ message: '카테고리가 저장되었습니다.', type: 'success' })
+      const forceExpandIds = data.parnCatId ? [data.parnCatId] : []
+      await handleSelectCategoryList({ forceExpandIds })
+    } else {
+      openToast({ message: '카테고리 저장에 실패했습니다.', type: 'error' })
+    }
   }
 
-  const handleRenameCategory = async (id: string, name: string) => {
-    await fetchRenameCategory(id, name)
+  const handleRenameCategory = async (categoryId: string, categoryName: string) => {
+    const res = await fetchRenameCategory(categoryId, categoryName)
+    if (res.successYn) {
+      openToast({ message: '카테고리가 수정되었습니다.', type: 'success' })
+    } else {
+      openToast({ message: '카테고리 수정에 실패했습니다.', type: 'error' })
+    }
     await handleSelectCategoryList()
   }
 

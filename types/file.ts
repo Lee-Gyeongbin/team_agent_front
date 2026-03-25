@@ -43,3 +43,8 @@ export interface FileUploadResponse {
 export interface FileUrlResponse {
   url: string
 }
+
+// /com/file/deleteFile.do 응답 — NCP Object Storage 객체 삭제 결과
+export interface FileDeleteResponse {
+  successYn?: boolean
+}

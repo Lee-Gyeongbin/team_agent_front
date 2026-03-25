@@ -1,7 +1,7 @@
 import type { FileUploadRequest } from '~/types/file'
 import { useFileApi } from '~/composables/com/useFileApi'
 
-const { fetchUploadFileUrl, fetchViewFileUrl, fetchDownloadFileUrl } = useFileApi()
+const { fetchUploadFileUrl, fetchViewFileUrl, fetchDownloadFileUrl, fetchDeleteFile } = useFileApi()
 
 const isUploading = ref(false)
 const uploadError = ref('')
@@ -57,6 +57,7 @@ export const useFileStore = () => {
       return filePath
     } catch (error) {
       const message = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.'
+      openToast({ message: message, type: 'error' })
       uploadError.value = message
       return null
     } finally {
@@ -115,6 +116,28 @@ export const useFileStore = () => {
     }
   }
 
+  /**
+   * NCP(객체 저장소)에 올라간 파일 객체 삭제
+   * - docId 목록으로 백엔드가 버킷 객체 삭제 처리
+   * - 성공 시 true, 실패 시 false (fileError에 사유)
+   */
+  const handleDeleteNcpFile = async (docIds: string[]): Promise<boolean> => {
+    if (docIds.length === 0) return true
+    fileError.value = ''
+    try {
+      const res = await fetchDeleteFile(docIds)
+      if (res.successYn === false) {
+        fileError.value = '저장소에서 파일 삭제에 실패했습니다.'
+        return false
+      }
+      return true
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '저장소 파일 삭제 중 오류가 발생했습니다.'
+      fileError.value = message
+      return false
+    }
+  }
+
   return {
     // 상태
     isUploading,
@@ -128,5 +151,6 @@ export const useFileStore = () => {
     handleUploadFile,
     handleViewFileUrl,
     handleDownloadFile,
+    handleDeleteNcpFile,
   }
 }

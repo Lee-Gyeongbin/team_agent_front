@@ -2,7 +2,7 @@
   <UiModal
     :is-open="isOpen"
     position="right"
-    title="문서 등록"
+    :title="modalTitle"
     @close="$emit('close')"
   >
     <div class="com-setting-form">
@@ -77,7 +77,10 @@
       <!-- 파일첨부 -->
       <div class="url-reg-field">
         <label class="url-reg-label">파일첨부</label>
-        <UiFileUpload v-model="form.files" />
+        <UiFileUpload
+          v-model="form.files"
+          :max-files="5"
+        />
       </div>
 
       <!-- 키워드 -->
@@ -130,12 +133,15 @@
 </template>
 
 <script setup lang="ts">
-import type { CategoryTreeItem } from '~/types/repository'
+import type { CategoryTreeItem, Document } from '~/types/repository'
 import CategorySelectModal from '~/components/repository/CategorySelectModal.vue'
 import { openToast } from '~/composables/useToast'
 import { useCategoryStore } from '~/composables/repository/useCategoryStore'
-defineProps<{
+
+const props = defineProps<{
   isOpen: boolean
+  /** 행 클릭·상세 조회로 열 때 채울 데이터 (신규 등록은 null) */
+  initialData?: Partial<Document> | null
 }>()
 
 const emit = defineEmits<{
@@ -144,7 +150,7 @@ const emit = defineEmits<{
 }>()
 
 const { categoryList } = useCategoryStore()
-
+const { secLvlOptions } = useRepositoryStore()
 const docTitleRef = ref<{ focus?: () => void; $el?: HTMLElement } | null>(null)
 const categoryFieldRef = ref<HTMLElement | null>(null)
 
@@ -162,6 +168,7 @@ const focusField = (fieldRef: { value: any }) => {
 const isCategoryModalOpen = ref(false)
 
 const form = ref({
+  docId: '',
   docTitle: '',
   categoryId: '',
   author: '',
@@ -171,6 +178,8 @@ const form = ref({
   keywords: '',
   refUrl: '',
 })
+
+const modalTitle = computed(() => (form.value.docId ? '문서 수정' : '문서 등록'))
 
 // 선택된 카테고리명 표시
 const selectedCategoryName = computed(() => {
@@ -188,19 +197,27 @@ const selectedCategoryName = computed(() => {
   return findName(categoryList.value)
 })
 
-const secLvlOptions = [
-  { label: '일반(공개)', value: 'public' },
-  { label: '내부', value: 'internal' },
-  { label: '대외비', value: 'confidential' },
-  { label: '기밀', value: 'secret' },
-]
-
 const onCategoryConfirm = (selectedId: string) => {
   form.value.categoryId = selectedId || ''
 }
 
+const applyInitialFromDocument = (src: Partial<Document>) => {
+  form.value = {
+    docId: String(src.docId ?? '').trim(),
+    docTitle: String(src.docTitle ?? ''),
+    categoryId: String(src.categoryId ?? ''),
+    author: String(src.author ?? ''),
+    secLvl: String(src.secLvl ?? ''),
+    content: String(src.content ?? ''),
+    files: [],
+    keywords: String(src.keywords ?? ''),
+    refUrl: String(src.refUrl ?? ''),
+  }
+}
+
 const resetForm = () => {
   form.value = {
+    docId: '',
     docTitle: '',
     categoryId: '',
     author: '',
@@ -211,6 +228,22 @@ const resetForm = () => {
     refUrl: '',
   }
 }
+
+// 패널이 열릴 때·같은 세션에서 다른 행 선택 시: 상세 데이터 또는 빈 폼
+watch(
+  () => [props.isOpen, props.initialData?.docId ?? ''] as const,
+  ([open]) => {
+    if (!open) return
+    nextTick(() => {
+      const init = props.initialData
+      if (init && String(init.docId ?? '').trim()) {
+        applyInitialFromDocument(init)
+      } else {
+        resetForm()
+      }
+    })
+  },
+)
 
 const onSave = () => {
   if (!form.value.docTitle.trim()) {
