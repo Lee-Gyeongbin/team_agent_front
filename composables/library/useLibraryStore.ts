@@ -6,6 +6,9 @@ import type {
   DocItem,
   LibraryCardDetail,
   LibraryCardOrderPayload,
+  TableDataItem,
+  ChartStatItem,
+  ChartDetailCdItem,
 } from '~/types/library'
 import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
 import { useLibraryApi } from '~/composables/library/useLibraryApi'
@@ -23,8 +26,9 @@ const {
   fetchUpdateCardOrder,
   fetchMoveCard,
   fetchDocList,
+  fetchTableData,
+  fetchChartLabel,
 } = useLibraryApi()
-
 const isLoading = ref(false)
 const errorMessage = ref('')
 
@@ -70,6 +74,9 @@ const movingCard = ref<LibraryCard | null>(null)
 const selectedCardId = ref<string | null>(null)
 const selectedCard = ref<LibraryCardDetail | null>(null)
 const refItems = ref<DocItem[]>([]) // 참조 매뉴얼 목록
+const tableData = ref<TableDataItem | null>(null) // 테이블 데이터 목록
+const chartStatItems = ref<ChartStatItem[]>([]) // 차트 통계 항목 목록 TODO : 프로토타입 시연용
+const chartDetailCdItems = ref<ChartDetailCdItem[]>([]) // 차트 상세 코드 항목 목록 TODO : 프로토타입 시연용
 const newCategoryNm = ref('')
 const searchTitle = ref('')
 const searchSort = ref('custom')
@@ -453,6 +460,14 @@ export const useLibraryStore = () => {
       selectedCardId.value = cardId
       const response = await fetchCardDetail(cardId)
       selectedCard.value = response.data
+      if (selectedCard.value?.svcTy === 'S') {
+        const response = await fetchTableData(selectedCard.value)
+        tableData.value = response.data ?? null
+        // TODO : 프로토타입 시연용
+        const chartResponse = await fetchChartLabel(selectedCard.value.logId)
+        chartStatItems.value = chartResponse.statList ?? []
+        chartDetailCdItems.value = chartResponse.detailCdList ?? []
+      }
       if (selectedCard.value?.svcTy === 'M') {
         const response = await fetchDocList(selectedCard.value)
         refItems.value = response.dataList ?? []
@@ -527,6 +542,9 @@ export const useLibraryStore = () => {
     searchTitle,
     searchSort,
     refItems,
+    tableData,
+    chartStatItems,
+    chartDetailCdItems,
     handleFetchCategoryList,
     handleFetchCardList,
     handleAddCategory,

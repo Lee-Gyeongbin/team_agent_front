@@ -6,6 +6,9 @@ import type {
   LibraryCategoryOrderItem,
   LibraryCardOrderPayload,
   DocItem,
+  TableDataItem,
+  ChartStatItem,
+  ChartDetailCdItem,
 } from '~/types/library'
 
 export const useLibraryApi = () => {
@@ -84,6 +87,18 @@ export const useLibraryApi = () => {
     return post<{ dataList: DocItem[] }>('/library/docList.do', { card })
   }
 
+  /** 테이블 데이터 조회 API */
+  const fetchTableData = async (card: LibraryCardDetail): Promise<{ data: TableDataItem }> => {
+    return post<{ data: TableDataItem }>('/library/tableData.do', { card })
+  }
+
+  /** 차트 라벨 목록 조회 API TODO : 프로토타입 시연용 */
+  const fetchChartLabel = async (
+    logId: string,
+  ): Promise<{ statList: ChartStatItem[]; detailCdList: ChartDetailCdItem[] }> => {
+    return post<{ statList: ChartStatItem[]; detailCdList: ChartDetailCdItem[] }>('/library/chartLabel.do', { logId })
+  }
+
   return {
     fetchCategoryList,
     fetchSaveCategory,
@@ -99,5 +114,7 @@ export const useLibraryApi = () => {
     fetchMoveCard,
     fetchDeleteTrashAll,
     fetchDocList,
+    fetchTableData,
+    fetchChartLabel,
   }
 }

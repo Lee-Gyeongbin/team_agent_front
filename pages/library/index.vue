@@ -289,6 +289,9 @@
         :is-open="isModalOpen"
         :card-detail="selectedCard"
         :ref-items="refItems"
+        :table-data="tableData"
+        :chart-stat-items="chartStatItems"
+        :chart-detail-cd-items="chartDetailCdItems"
         @close="handleModalClose"
         @move="handleModalMove"
         @delete="handleModalDelete"
@@ -371,6 +374,9 @@ const {
   searchTitle,
   searchSort,
   refItems,
+  tableData,
+  chartStatItems,
+  chartDetailCdItems,
   handleFetchCategoryList,
   handleFetchCardList,
   handleListMenuSelect,

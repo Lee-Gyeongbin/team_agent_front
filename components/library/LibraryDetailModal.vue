@@ -122,7 +122,6 @@
             <span class="reference-title">참조 매뉴얼</span>
           </div>
           <ul class="reference-list">
-            <!-- 🔽 더미 데이터 — 백엔드 연결 시 API로 교체 -->
             <li
               v-for="item in refItems"
               :key="item.docId"
@@ -148,6 +147,9 @@
           v-if="displayData?.svcTy === 'S'"
           class="content-box type-sql"
         >
+          <div class="sql-section-header">
+            <span class="sql-section-title">차트</span>
+          </div>
           <div class="sql-header flex items-center justify-end gap-4">
             <div class="regenerate"></div>
             <UiButton
@@ -155,6 +157,7 @@
               size="xxs"
               icon-only
               class="btn-custom-white"
+              @click="onReloadChart"
             >
               <template #icon-left>
                 <i class="icon icon-regenerate size-16"></i>
@@ -174,7 +177,50 @@
             </UiButton>
           </div>
 
-          <div class="content-box w-full sql-content"></div>
+          <div class="sql-chart-type-buttons">
+            <button
+              type="button"
+              class="chat-vis-type-btn"
+              :class="{ 'is-active': selectedChartType === 'bar' }"
+              title="막대 차트"
+              @click="onSelectChartType('bar')"
+            >
+              <i class="icon-bar-chart size-12"></i>
+            </button>
+            <button
+              type="button"
+              class="chat-vis-type-btn"
+              :class="{ 'is-active': selectedChartType === 'line' }"
+              title="라인 차트"
+              @click="onSelectChartType('line')"
+            >
+              <i class="icon-line-chart size-12"></i>
+            </button>
+            <button
+              type="button"
+              class="chat-vis-type-btn"
+              :class="{ 'is-active': selectedChartType === 'pie' }"
+              title="파이 차트"
+              @click="onSelectChartType('pie')"
+            >
+              <i class="icon-pie-chart size-12"></i>
+            </button>
+          </div>
+
+          <!-- 차트 -->
+          <div class="content-box w-full sql-content">
+            <UiChart
+              v-if="chartConfig"
+              :key="`library-chart-${selectedChartType}-${chartVersion}`"
+              :type="selectedChartType"
+              :config="chartConfig"
+              show-legend
+            />
+            <UiEmpty
+              v-else
+              title="차트로 표시할 수 있는 데이터가 없습니다."
+            />
+          </div>
         </div>
 
         <!-- SQL 코드 블록 -->
@@ -209,7 +255,13 @@
 
 <script setup lang="ts">
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
-import type { LibraryCardDetail, DocItem } from '~/types/library'
+import type { LibraryCardDetail, DocItem, TableDataItem, ChartStatItem, ChartDetailCdItem } from '~/types/library'
+import type { VisualizationChartType, VisualizationViewModel } from '~/types/chat'
+import {
+  buildVisualizationViewModel,
+  buildChartModel,
+  buildDefaultChartSelection,
+} from '~/utils/chat/visualizationUtil'
 import { useFileStore } from '~/composables/com/useFileStore'
 const { handleViewFileUrl } = useFileStore()
 
@@ -218,11 +270,17 @@ const props = withDefaults(
     isOpen?: boolean
     cardDetail?: LibraryCardDetail | null
     refItems?: DocItem[]
+    tableData?: TableDataItem | null
+    chartStatItems?: ChartStatItem[]
+    chartDetailCdItems?: ChartDetailCdItem[]
   }>(),
   {
     isOpen: false,
     cardDetail: null,
     refItems: () => [] as DocItem[],
+    tableData: null,
+    chartStatItems: () => [] as ChartStatItem[],
+    chartDetailCdItems: () => [] as ChartDetailCdItem[],
   },
 )
 
@@ -245,6 +303,38 @@ const isSqlCodeVisible = ref(false)
 const toggleSqlCodeVisible = () => {
   if (displayData.value?.svcTy !== 'S') return
   isSqlCodeVisible.value = !isSqlCodeVisible.value
+}
+
+// 차트 타입 상태
+const selectedChartType = ref<VisualizationChartType>('bar')
+const chartVersion = ref(0)
+
+// tableData → VisualizationViewModel 변환 (스키마 추론 포함)
+const visualizationView = computed<VisualizationViewModel | null>(() => {
+  if (!props.tableData?.tableData) return null
+  return buildVisualizationViewModel({
+    messageId: props.tableData.logId,
+    tableData: props.tableData.tableData,
+    statList: props.chartStatItems,
+    statDetailList: props.chartDetailCdItems,
+  })
+})
+
+// 선택된 차트 타입에 맞는 차트 config 생성
+const chartConfig = computed<Record<string, unknown> | null>(() => {
+  if (!visualizationView.value?.schema) return null
+  const defaultSel = buildDefaultChartSelection(visualizationView.value.schema)
+  const selection = { ...defaultSel, chartType: selectedChartType.value }
+  return buildChartModel(visualizationView.value, selection)
+})
+
+const onSelectChartType = (type: VisualizationChartType) => {
+  selectedChartType.value = type
+  chartVersion.value++
+}
+
+const onReloadChart = () => {
+  chartVersion.value++
 }
 
 // 내부 표시용 데이터 (트랜지션 타이밍 제어용)
@@ -273,6 +363,7 @@ watch(
     if (!oldId) {
       displayData.value = props.cardDetail ?? null
       isSqlCodeVisible.value = false
+      selectedChartType.value = 'bar'
       return
     }
     if (!newId || newId === oldId) return
@@ -284,6 +375,7 @@ watch(
     setTimeout(() => {
       displayData.value = props.cardDetail ?? null
       isSqlCodeVisible.value = false
+      selectedChartType.value = 'bar'
       if (contentRef.value) {
         contentRef.value.scrollTo({ top: 0 })
         isScrolled.value = false
@@ -302,6 +394,7 @@ watch(
     if (!open) {
       displayData.value = null
       isSqlCodeVisible.value = false
+      selectedChartType.value = 'bar'
     }
   },
 )

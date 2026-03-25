@@ -101,3 +101,21 @@ export interface LibraryCardOrderPayload {
   categoryId: string
   cards: LibraryCardOrderItem[]
 }
+
+/** 테이블 데이터 */
+export interface TableDataItem {
+  logId: string
+  tableData: string
+}
+
+/** 차트 라벨 항목 TODO : 프로토타입 시연용*/
+
+export interface ChartStatItem {
+  statId: string
+  statNm: string
+}
+
+export interface ChartDetailCdItem {
+  detailItemCd: string
+  detailItemNm: string
+}
