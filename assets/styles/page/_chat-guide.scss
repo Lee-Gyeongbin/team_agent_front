@@ -4,12 +4,12 @@
 // ===================================
 // 챗봇가이드 페이지
 // ===================================
-.chat-comment-page {
+.chat-guide-page {
   display: flex;
   flex-direction: column;
 }
 
-.chat-comment-page-title {
+.chat-guide-page-title {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -19,24 +19,24 @@
   padding: $spacing-lg 20px $spacing-md;
 }
 
-.chat-comment-page-name {
+.chat-guide-page-name {
   @include typo($body-xlarge-bold);
   color: $color-text-heading;
 }
 
-.chat-comment-page-desc {
+.chat-guide-page-desc {
   @include typo($body-medium);
   color: $color-text-secondary;
 }
 
-.chat-comment-page-header {
+.chat-guide-page-header {
   position: sticky;
   top: 0;
   z-index: $z-sticky;
   background: #fff;
 }
 
-.chat-comment-page-body {
+.chat-guide-page-body {
   display: flex;
   flex-direction: column;
   gap: $spacing-md;
@@ -47,7 +47,7 @@
 // ===================================
 // 섹션 헤더 (타이틀 + 버튼)
 // ===================================
-.chat-comment-section-header {
+.chat-guide-section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -55,7 +55,7 @@
   border-bottom: 1px solid #aebccb;
 }
 
-.chat-comment-section-title {
+.chat-guide-section-title {
   @include typo($body-xlarge-bold);
   color: $color-text-heading;
 }
@@ -63,7 +63,7 @@
 // ===================================
 // 콘텐츠 (좌측 설정 + 우측 미리보기)
 // ===================================
-.chat-comment-content {
+.chat-guide-content {
   display: flex;
   gap: $spacing-lg;
   margin-top: $spacing-md;
@@ -72,58 +72,58 @@
 // ===================================
 // 좌측: 설정 영역
 // ===================================
-.chat-comment-setting {
+.chat-guide-setting {
   flex: 1;
   min-width: 0;
 }
 
-.chat-comment-setting-item {
+.chat-guide-setting-item {
   display: flex;
   flex-direction: column;
   gap: $spacing-md;
 }
 
-.chat-comment-setting-header {
+.chat-guide-setting-header {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.chat-comment-setting-info {
+.chat-guide-setting-info {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.chat-comment-setting-name {
+.chat-guide-setting-name {
   @include typo($body-xlarge-bold);
   color: $color-text-dark;
 }
 
-.chat-comment-setting-desc {
+.chat-guide-setting-desc {
   @include typo($body-medium);
   color: $color-text-secondary;
 }
 
-.chat-comment-setting-body {
+.chat-guide-setting-body {
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
 }
 
-.chat-comment-setting-label {
+.chat-guide-setting-label {
   @include typo($body-medium-bold);
   color: var(--color-primary);
 }
 
-.chat-comment-setting-options {
+.chat-guide-setting-options {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: $spacing-sm;
 }
 
-.chat-comment-setting-footer {
+.chat-guide-setting-footer {
   display: flex;
   gap: $spacing-sm;
   padding-top: $spacing-sm;
@@ -132,7 +132,7 @@
 // ===================================
 // 우측: 미리보기 영역
 // ===================================
-.chat-comment-preview {
+.chat-guide-preview {
   width: 320px;
   flex-shrink: 0;
   display: flex;
@@ -142,7 +142,7 @@
   overflow: hidden;
 }
 
-.chat-comment-preview-header {
+.chat-guide-preview-header {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -152,7 +152,7 @@
   color: $color-text-dark;
 }
 
-.chat-comment-preview-body {
+.chat-guide-preview-body {
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -160,7 +160,7 @@
 }
 
 // 봇 프로필
-.chat-comment-preview-bot {
+.chat-guide-preview-bot {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -169,7 +169,7 @@
   color: #fff;
 }
 
-.chat-comment-preview-bot-avatar {
+.chat-guide-preview-bot-avatar {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -181,17 +181,17 @@
   color: #fff;
 }
 
-.chat-comment-preview-bot-info {
+.chat-guide-preview-bot-info {
   display: flex;
   flex-direction: column;
 }
 
-.chat-comment-preview-bot-name {
+.chat-guide-preview-bot-name {
   @include typo($body-medium-bold);
   color: #fff;
 }
 
-.chat-comment-preview-bot-status {
+.chat-guide-preview-bot-status {
   font-size: 12px;
   line-height: 1.4;
   color: rgba(255, 255, 255, 0.8);
@@ -202,13 +202,13 @@
 }
 
 // 메시지 영역
-.chat-comment-preview-messages {
+.chat-guide-preview-messages {
   flex: 1;
   padding: $spacing-md;
   min-height: 200px;
 }
 
-.chat-comment-preview-message {
+.chat-guide-preview-message {
   padding: 12px $spacing-md;
   background: #fff;
   border-radius: 4px 12px 12px 12px;
@@ -229,7 +229,7 @@
   }
 }
 
-.chat-comment-preview-notice {
+.chat-guide-preview-notice {
   padding: 10px 12px;
   background: #f0f9ff;
   border: 1px solid #bae6fd;
@@ -241,7 +241,7 @@
 }
 
 // 입력 영역
-.chat-comment-preview-input {
+.chat-guide-preview-input {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -257,7 +257,7 @@
   }
 }
 
-.chat-comment-preview-input-placeholder {
+.chat-guide-preview-input-placeholder {
   font-size: 13px;
   color: $color-text-disabled;
 }
@@ -265,14 +265,14 @@
 // ===================================
 // 안내멘트 블록 리스트
 // ===================================
-.chat-comment-notice-list {
+.chat-guide-notice-list {
   display: flex;
   flex-direction: column;
   gap: $spacing-lg;
   margin-top: $spacing-md;
 }
 
-.chat-comment-notice-block {
+.chat-guide-notice-block {
   display: flex;
   flex-direction: column;
   gap: $spacing-md;
@@ -282,13 +282,17 @@
   background: #fff;
 }
 
-.chat-comment-notice-condition {
+.chat-guide-notice-condition {
   display: flex;
   align-items: center;
   gap: $spacing-sm;
+  .ui-select-wrap {
+    flex-shrink: 0;
+    width: 260px;
+  }
 }
 
-.chat-comment-notice-condition-label {
+.chat-guide-notice-condition-label {
   @include typo($body-medium);
   color: $color-text-dark;
   white-space: nowrap;
@@ -297,7 +301,7 @@
 // ===================================
 // 챗가이드 탭 공통 패널 (인사/안내/오류/점검 동일 셸)
 // ===================================
-.chat-comment-panel {
+.chat-guide-panel {
   display: flex;
   flex-direction: column;
   padding: $spacing-lg;
@@ -309,31 +313,31 @@
 // ===================================
 // 오류메시지 탭
 // ===================================
-.chat-comment-error-body {
+.chat-guide-error-body {
   display: flex;
   flex-direction: column;
   gap: $spacing-xl;
   margin-top: $spacing-lg;
 }
 
-.chat-comment-error-section {
+.chat-guide-error-section {
   display: flex;
   flex-direction: column;
   gap: $spacing-md;
 }
 
-.chat-comment-error-section-title {
+.chat-guide-error-section-title {
   @include typo($body-large-bold);
   color: $color-text-dark;
 }
 
-.chat-comment-error-items {
+.chat-guide-error-items {
   display: flex;
   flex-direction: column;
   gap: $spacing-md;
 }
 
-.chat-comment-error-item {
+.chat-guide-error-item {
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
@@ -344,40 +348,40 @@
 }
 
 // 오류 메시지 행 톤 (ChatGuideError.vue — _variables.scss 토큰)
-.chat-comment-error-item--error {
+.chat-guide-error-item--error {
   --error-color: #{$color-error};
 }
 
-.chat-comment-error-item--info {
+.chat-guide-error-item--info {
   --error-color: #{$color-info};
 }
 
-.chat-comment-error-item--warning {
+.chat-guide-error-item--warning {
   --error-color: #{$color-warning};
 }
 
-.chat-comment-error-item--orange {
+.chat-guide-error-item--orange {
   --error-color: #{$color-orange};
 }
 
-.chat-comment-error-item-header {
+.chat-guide-error-item-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.chat-comment-error-item-label {
+.chat-guide-error-item-label {
   @include typo($body-medium-bold);
   color: var(--error-color, $color-text-dark);
 }
 
-.chat-comment-error-item-option {
+.chat-guide-error-item-option {
   display: flex;
   align-items: center;
   gap: $spacing-sm;
 }
 
-.chat-comment-error-item-option-label {
+.chat-guide-error-item-option-label {
   @include typo($body-small);
   color: $color-text-secondary;
 }

@@ -95,10 +95,10 @@
               </template>
             </UiButton>
 
-            <!-- 월별 데이터 -->
-            <div>
-              <p>{{ item.rcontent }}</p>
-            </div>
+            <div
+              class="message-content"
+              v-html="toHtmlContent(item.rcontent ?? '')"
+            ></div>
           </div>
 
           <div
@@ -164,6 +164,7 @@
 </template>
 
 <script setup lang="ts">
+import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import type { LibraryCardDetail } from '~/types/library'
 const { trashCardList } = useLibraryStore()
 
