@@ -288,3 +288,12 @@ declare global {
     pdfjsLib?: PdfJsLib
   }
 }
+
+export interface KnowledgeItem {
+  categoryId: string
+  userId: string
+  categoryNm: string
+  color: string
+  sortOrd: number
+  createDt: string
+}

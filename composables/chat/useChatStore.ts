@@ -7,6 +7,7 @@ import type {
   SearchModeValue,
   SubOption,
   VisualizationViewModel,
+  KnowledgeItem,
 } from '~/types/chat'
 import { useChatSocket } from '~/composables/chat/useChatSocket'
 import { useChatMessages } from '~/composables/chat/useChatMessages'
@@ -28,8 +29,14 @@ const {
 const { ensureWebSocketAndSend } = useChatSocket()
 
 // API 호출
-const { fetchSelectChatLogList, fetchSelectChatRef, fetchSelectTableDataList, fetchCreateChatLogReaction } =
-  useReportsApi()
+const {
+  fetchSelectChatLogList,
+  fetchSelectChatRef,
+  fetchSelectTableDataList,
+  fetchCreateChatLogReaction,
+  fetchSelectKnowledgeList,
+  fetchCreateKnowledge,
+} = useReportsApi()
 
 // LLM 모델 옵션
 const modelOptions = ref<ModelOption[]>([])
@@ -47,6 +54,9 @@ const isModalOpen = ref(false)
 const modalMessage = ref('')
 const modalTitle = ref('')
 const modalPlaceholder = ref('')
+
+// 카테고리 목록
+const knowledgeList = ref<KnowledgeItem[]>([])
 
 // 검색모드 옵션
 const searchModeOptions: SearchModeOption[] = [
@@ -258,6 +268,23 @@ export const useChatStore = () => {
     return visualizationViewMap.value[messageId] ?? getEmptyVisualizationViewModel(messageId)
   })
 
+  /** 카테고리 목록 조회 */
+  const handleSelectKnowledge = async () => {
+    const res = await fetchSelectKnowledgeList()
+    knowledgeList.value = res.dataList ?? []
+  }
+
+  /** 지식창고 저장 */
+  const handleCreateKnowledge = async (logId: string, categoryId: string) => {
+    try {
+      await fetchCreateKnowledge(logId, categoryId)
+      openToast({ message: '지식창고에 저장되었습니다', type: 'success' })
+    } catch (error) {
+      console.error(error)
+      openToast({ message: '지식창고 저장에 실패했습니다', type: 'error' })
+    }
+  }
+
   return {
     // 상태
     chatRoom,
@@ -274,6 +301,7 @@ export const useChatStore = () => {
     subOptions,
     selectedSubOption,
     currentSubOptions,
+    knowledgeList,
     // 액션
     createChatRoom,
     handleSelectChatLogList,
@@ -294,5 +322,7 @@ export const useChatStore = () => {
     pushAnswerPlaceholder,
     ensureWebSocketAndSend,
     fetchCreateChatLogReaction,
+    handleSelectKnowledge,
+    handleCreateKnowledge,
   }
 }

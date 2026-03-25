@@ -10,6 +10,7 @@
           v-for="msg in messages"
           :key="msg.logId"
           :message="msg"
+          :knowledge-list="knowledgeList"
           @on-copy="emit('on-copy', $event)"
           @on-like="emit('on-like', $event)"
           @on-dislike="emit('on-dislike', $event)"
@@ -33,10 +34,11 @@
 </template>
 
 <script setup lang="ts">
-import type { ChatMessage } from '~/types/chat'
+import type { ChatMessage, KnowledgeItem } from '~/types/chat'
 
 interface Props {
   messages: ChatMessage[]
+  knowledgeList?: KnowledgeItem[]
 }
 
 defineProps<Props>()
