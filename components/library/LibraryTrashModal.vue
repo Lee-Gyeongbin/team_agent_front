@@ -83,70 +83,10 @@
 
           <!-- 시스템 응답 -->
           <div class="content-box type-response">
-            <UiButton
-              variant="ghost"
-              size="xxs"
-              icon-only
-              class="btn-copy btn-copy-white"
-              @click="handleCopyResponse"
-            >
-              <template #icon-left>
-                <i class="icon icon-copy size-16"></i>
-              </template>
-            </UiButton>
-
             <div
               class="message-content"
               v-html="toHtmlContent(item.rcontent ?? '')"
             ></div>
-          </div>
-
-          <div
-            v-if="item.svcTy === 'S'"
-            class="content-box type-sql"
-          >
-            <div class="sql-header flex items-center justify-end gap-4">
-              <div class="regenerate"></div>
-              <UiButton
-                variant="ghost"
-                size="xxs"
-                icon-only
-                class="btn-custom-white"
-              >
-                <template #icon-left>
-                  <i class="icon icon-regenerate size-16"></i>
-                </template>
-              </UiButton>
-              <UiButton
-                variant="ghost"
-                size="xxs"
-                icon-only
-                class="btn-custom-gray"
-              >
-                <template #icon-left>
-                  <i class="icon icon-sql size-16"></i>
-                </template>
-              </UiButton>
-            </div>
-
-            <div class="content-box w-full sql-content"></div>
-          </div>
-
-          <!-- SQL 코드 블록 -->
-          <UiCodeBlock
-            v-if="item.svcTy === 'S'"
-            :code="item.sqlCode"
-          />
-
-          <!-- 하단 태그 -->
-          <div class="library-detail-modal-tags">
-            <span
-              v-for="tag in (item.tags || '').split(',').filter(Boolean)"
-              :key="tag"
-              class="library-detail-modal-tag"
-            >
-              #{{ tag }}
-            </span>
           </div>
         </div>
       </div>
@@ -222,10 +162,5 @@ const toggleCard = (index: number) => {
 // 이벤트 핸들러
 const handleClose = () => {
   emit('close')
-}
-
-// 복사 핸들러 (더미)
-const handleCopyResponse = () => {
-  // TODO: 응답 복사 기능 구현
 }
 </script>

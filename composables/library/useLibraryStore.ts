@@ -495,10 +495,6 @@ export const useLibraryStore = () => {
     handleDeleteCard(card)
   }
 
-  const handleTrashDeleteConfirm = () => {
-    // TODO: 백엔드 연결 시 fetchDeleteTrashAll 호출
-  }
-
   /** 휴지통 모달 닫기 */
   const handleTrashModalClose = () => {
     isTrashModalOpen.value = false
@@ -564,7 +560,6 @@ export const useLibraryStore = () => {
     handleModalClose,
     handleModalDelete,
     handleModalMove,
-    handleTrashDeleteConfirm,
     handleTrashModalClose,
     handleRestoreCard,
   }
