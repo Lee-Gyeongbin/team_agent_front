@@ -35,6 +35,7 @@
         :disabled="disabled"
         :readonly="readonly"
         :name="name"
+        :maxlength="maxLength"
         @input="onInput"
         @compositionupdate="onCompositionUpdate"
         @focus="isFocused = true"
@@ -78,6 +79,7 @@ interface Props {
   readonly?: boolean
   name?: string
   id?: string
+  maxLength?: number
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xlg'
   radius?: 'sm' | 'base' | 'lg'
   desc?: string
@@ -94,6 +96,7 @@ const props = withDefaults(defineProps<Props>(), {
   readonly: false,
   name: undefined,
   id: undefined,
+  maxLength: undefined,
   size: 'md',
   radius: 'base',
   desc: '',

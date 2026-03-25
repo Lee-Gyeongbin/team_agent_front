@@ -7,6 +7,7 @@
     :placeholder="placeholder"
     :disabled="disabled"
     :rows="rows"
+    :maxlength="maxLength"
     @input="onInput"
   />
 </template>
@@ -18,6 +19,7 @@ interface Props {
   disabled?: boolean
   rows?: number
   autoResize?: boolean
+  maxLength?: number
   maxRows?: number
   radius?: 'sm' | 'base' | 'lg'
   border?: boolean
@@ -30,6 +32,7 @@ const props = withDefaults(defineProps<Props>(), {
   disabled: false,
   rows: 1,
   autoResize: true,
+  maxLength: undefined,
   maxRows: 10,
   radius: 'base',
   border: false,
