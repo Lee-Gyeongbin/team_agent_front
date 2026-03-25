@@ -195,7 +195,7 @@
           <UiCheckbox
             :model-value="recoveryRow.autoDsplYn === 'Y'"
             label="복구 완료 후 자동으로 표시 (24시간)"
-            @update:model-value="(v) => (recoveryRow.autoDsplYn = v ? 'Y' : 'N')"
+            @update:model-value="(v) => (recoveryRow.autoDsplYn = toYn(v))"
           />
         </template>
       </section>

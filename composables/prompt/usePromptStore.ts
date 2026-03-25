@@ -3,12 +3,10 @@ import type {
   SystemPrompt,
   PromptTemplate,
   PromptFilterData,
-  PromptFilterPolicy,
   PromptLimitData,
   PromptVersion,
   PromptVersionStats,
   ErrorMessageData,
-  ErrorMessageItem,
 } from '~/types/prompt'
 
 const {

@@ -24,7 +24,7 @@
         <h4 class="chat-guide-error-section-title">응답 생성 오류</h4>
         <div class="chat-guide-error-items">
           <div
-            v-for="(item, idx) in localData.responseErrors"
+            v-for="(item, idx) in errorMessageData.responseErrors"
             :key="item.guideKey"
             class="chat-guide-error-item chat-guide-error-item--error"
           >
@@ -34,7 +34,7 @@
               </span>
               <UiToggle
                 :model-value="item.enblYn === 'Y'"
-                @update:model-value="(v) => (item.enblYn = v ? 'Y' : 'N')"
+                @update:model-value="(v) => (item.enblYn = toYn(v))"
               />
             </div>
             <UiTextarea
@@ -54,7 +54,7 @@
         <h4 class="chat-guide-error-section-title">입력 오류 메시지</h4>
         <div class="chat-guide-error-items">
           <div
-            v-for="(item, idx) in localData.inputErrors"
+            v-for="(item, idx) in errorMessageData.inputErrors"
             :key="item.guideKey"
             class="chat-guide-error-item chat-guide-error-item--info"
           >
@@ -64,7 +64,7 @@
               </span>
               <UiToggle
                 :model-value="item.enblYn === 'Y'"
-                @update:model-value="(v) => (item.enblYn = v ? 'Y' : 'N')"
+                @update:model-value="(v) => (item.enblYn = toYn(v))"
               />
             </div>
             <div
@@ -96,7 +96,7 @@
         <h4 class="chat-guide-error-section-title">API 오류 메시지</h4>
         <div class="chat-guide-error-items">
           <div
-            v-for="(item, idx) in localData.apiErrors"
+            v-for="(item, idx) in errorMessageData.apiErrors"
             :key="item.guideKey"
             class="chat-guide-error-item chat-guide-error-item--error"
           >
@@ -106,7 +106,7 @@
               </span>
               <UiToggle
                 :model-value="item.enblYn === 'Y'"
-                @update:model-value="(v) => (item.enblYn = v ? 'Y' : 'N')"
+                @update:model-value="(v) => (item.enblYn = toYn(v))"
               />
             </div>
             <UiTextarea
@@ -126,16 +126,16 @@
 
 <script setup lang="ts">
 import { CHAT_GUIDE_ERROR_CATALOG } from '~/types/chat-guide'
-import { useChatGuideStore } from '~/composables/chat-guide/useChatGuideStore'
+import { toYn, useChatGuideStore } from '~/composables/chat-guide/useChatGuideStore'
 
 const {
-  localErrorMessageData: localData,
-  handleSelectErrorMessage,
+  errorMessageData,
+  handleSelectErrorMessageData,
   handleConfirmSaveErrorMessage,
   handleConfirmResetErrorMessage,
 } = useChatGuideStore()
 
 onMounted(async () => {
-  await handleSelectErrorMessage()
+  await handleSelectErrorMessageData()
 })
 </script>

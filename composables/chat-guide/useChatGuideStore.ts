@@ -27,9 +27,7 @@ const maintenanceList = ref<ChatGuideMaintenanceItem[]>(getEmptyChatGuideMainten
 const errorMessageData = ref<ChatGuideErrorData>(getChatGuideErrorDefaults())
 const localNoticeForm = ref<ChatGuideNoticeForm>(getEmptyChatGuideNoticeForm())
 const localMaintenanceList = ref<ChatGuideMaintenanceItem[]>(getEmptyChatGuideMaintenanceList())
-const localErrorMessageData = ref<ChatGuideErrorData>(getChatGuideErrorDefaults())
 
-/** UiToggle/Checkbox `boolean` ↔ API `Y|N` — 스토어·컴포넌트 공통 */
 export const toYn = (value: boolean): 'Y' | 'N' => (value ? 'Y' : 'N')
 
 const previewGreetingMessage = computed(() => {
@@ -58,10 +56,6 @@ const syncLocalNoticeForm = () => {
 
 const syncLocalMaintenanceList = () => {
   localMaintenanceList.value = cloneChatGuideMaintenanceList(maintenanceList.value)
-}
-
-const syncLocalErrorMessageData = () => {
-  localErrorMessageData.value = cloneChatGuideErrorData(errorMessageData.value)
 }
 
 export const useChatGuideStore = () => {
@@ -112,22 +106,19 @@ export const useChatGuideStore = () => {
     syncLocalNoticeForm()
   }
 
-  const handleSelectErrorMessage = async () => {
+  const handleSelectErrorMessageData = async () => {
     try {
       const data = await fetchChatGuideErrorMessage()
       errorMessageData.value = data ? cloneChatGuideErrorData(data) : getChatGuideErrorDefaults()
-      syncLocalErrorMessageData()
     } catch {
       openToast({ message: '오류 메시지 설정 조회 실패', type: 'error' })
       errorMessageData.value = getChatGuideErrorDefaults()
-      syncLocalErrorMessageData()
     }
   }
 
-  const handleSaveErrorMessage = async (payload: ChatGuideErrorData) => {
-    await fetchSaveChatGuideErrorMessage(payload)
-    errorMessageData.value = cloneChatGuideErrorData(payload)
-    syncLocalErrorMessageData()
+  const handleSaveErrorMessage = async (data: ChatGuideErrorData) => {
+    await fetchSaveChatGuideErrorMessage(data)
+    await handleSelectErrorMessageData()
   }
 
   const handleSelectMaintenance = async () => {
@@ -214,7 +205,7 @@ export const useChatGuideStore = () => {
       message: '변경된 오류 메시지 내용을 저장하시겠습니까?',
       onConfirm: async () => {
         try {
-          await handleSaveErrorMessage(localErrorMessageData.value)
+          await handleSaveErrorMessage(errorMessageData.value)
           openToast({ message: '저장되었습니다.', type: 'success' })
         } catch {
           openToast({ message: '오류 메시지 설정 저장 실패', type: 'error' })
@@ -229,7 +220,7 @@ export const useChatGuideStore = () => {
       message:
         '초기화 시 변경된 오류 메시지 내용은 저장되지 않고, 이전에 저장된 값으로 다시 불러옵니다. 계속하시겠습니까?',
       onConfirm: async () => {
-        await handleSelectErrorMessage()
+        await handleSelectErrorMessageData()
         openToast({ message: '오류 메시지 설정이 초기화되었습니다.', type: 'info' })
       },
     })
@@ -265,34 +256,25 @@ export const useChatGuideStore = () => {
   return {
     greetingForm,
     greetingPreviewAutoNameYn,
-    noticeForm,
-    maintenanceList,
-    errorMessageData,
     localNoticeForm,
     localMaintenanceList,
-    localErrorMessageData,
+    errorMessageData,
     chatGuideNoticeConditionOptions: CHAT_GUIDE_NOTICE_CONDITION_OPTIONS,
     previewGreetingMessage,
     handleSelectGreeting,
-    handleSaveGreeting,
     handleInsertGreetingVariable,
     handleToggleGreetingPreviewAutoName,
     handleConfirmSaveGreeting,
     handleConfirmResetGreeting,
     handleSelectNotice,
-    handleSaveNotice,
     handleConfirmSaveNotice,
     handleConfirmResetNotice,
     handleSelectMaintenance,
-    handleSaveMaintenance,
     handleConfirmSaveMaintenance,
     handleConfirmResetMaintenance,
-    handleSelectErrorMessage,
+    handleSelectErrorMessageData,
     handleSaveErrorMessage,
     handleConfirmSaveErrorMessage,
     handleConfirmResetErrorMessage,
-    syncLocalNoticeForm,
-    syncLocalMaintenanceList,
-    syncLocalErrorMessageData,
   }
 }
