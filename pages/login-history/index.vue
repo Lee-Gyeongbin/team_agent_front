@@ -42,6 +42,7 @@
     <!-- 로딩 -->
     <UiLoading
       v-if="isLoading"
+      overlay
       text="로그인 이력을 불러오는 중..."
     />
 

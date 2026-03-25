@@ -8,6 +8,7 @@
     <!-- 로딩 -->
     <UiLoading
       v-if="isLoading"
+      overlay
       text="공통코드를 불러오는 중..."
     />
 

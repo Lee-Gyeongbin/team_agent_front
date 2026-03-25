@@ -536,8 +536,8 @@ const componentList = [
   {
     name: 'UiLoading',
     to: '/guide/ui-loading',
-    description: '로딩 스피너 + 텍스트 공통 컴포넌트',
-    tags: ['text', 'spinner'],
+    description: '로딩 스피너 + 텍스트 공통 컴포넌트 (오버레이 dim 모드 지원)',
+    tags: ['text', 'spinner', 'overlay', 'dim'],
   },
   {
     name: 'UiToast',
