@@ -10,6 +10,7 @@
     <!-- 로딩 -->
     <UiLoading
       v-if="isLoading"
+      overlay
       text="모델 목록을 불러오는 중..."
     />
 

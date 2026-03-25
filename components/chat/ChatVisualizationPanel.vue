@@ -39,6 +39,13 @@
 
     <!-- 본문 -->
     <div class="chat-vis-body">
+      <!-- 전체 로딩 오버레이 -->
+      <UiLoading
+        v-if="isLoading"
+        overlay
+        text="시각화 데이터를 불러오는 중..."
+      />
+
       <!-- ===== 섹션 1: 조회결과 ===== -->
       <div class="chat-vis-section">
         <div
@@ -70,13 +77,9 @@
           v-if="sectionOpen.result"
           class="chat-vis-section-body"
         >
-          <!-- 로딩/에러/빈 상태 -->
+          <!-- 에러/빈 상태 -->
           <UiEmpty
-            v-if="isLoading"
-            title="시각화 데이터를 불러오는 중입니다."
-          />
-          <UiEmpty
-            v-else-if="isError"
+            v-if="isError"
             :title="errorMessage"
           >
             <UiButton
@@ -91,7 +94,7 @@
             v-else-if="isEmpty"
             title="표시할 데이터가 없습니다."
           />
-          <template v-else>
+          <template v-else-if="!isLoading">
             <div class="chat-vis-table-body">
               <UiTable
                 :columns="tableColumns"

@@ -42,6 +42,7 @@
     <!-- 로딩 -->
     <UiLoading
       v-if="userManageIsLoading"
+      overlay
       text="사용자 리스트를 불러오는 중..."
     />
 

@@ -3,6 +3,7 @@
     <!-- 로딩 -->
     <UiLoading
       v-if="isLoading"
+      overlay
       text="라이브러리를 불러오는 중..."
     />
 

@@ -107,6 +107,7 @@
       <!-- 로딩 -->
       <UiLoading
         v-if="isLoading"
+        overlay
         text="PDF를 불러오는 중..."
       />
 

@@ -10,6 +10,7 @@
     <!-- 로딩 -->
     <UiLoading
       v-if="isLoading"
+      overlay
       text="에이전트를 불러오는 중..."
     />
 
