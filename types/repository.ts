@@ -112,6 +112,8 @@ export interface DocumentSavePayload {
   content?: string
   keywords?: string
   refUrl?: string
+  /** 수정 시 기존 파일 중 삭제할 대상 docFileId 목록 */
+  deleteFileIds?: string[]
   file: DocumentSaveFileItem[]
 }
 

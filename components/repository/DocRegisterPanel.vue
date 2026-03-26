@@ -85,6 +85,7 @@
           :attached-file-list="form.attachedFileList"
           :is-downloadable="true"
           :max-files="5"
+          @remove-attached-file="onRemoveAttachedFile"
         />
       </div>
 
@@ -187,6 +188,8 @@ const form = ref({
   content: '',
   files: [] as File[],
   attachedFileList: [] as FileItem[],
+  /** 수정 시 기존 파일 중 사용자가 삭제한 대상 docFileId 목록 */
+  deleteFileIds: [] as string[],
   keywords: '',
   refUrl: '',
 })
@@ -224,6 +227,7 @@ const applyInitialFromDocument = (src: Partial<Document>) => {
     content: String(src.content ?? '').slice(0, 500),
     files: [],
     attachedFileList: Array.isArray(src.attachedFileList) ? src.attachedFileList : [],
+    deleteFileIds: [],
     keywords: String(src.keywords ?? ''),
     refUrl: String(src.refUrl ?? ''),
   }
@@ -239,6 +243,7 @@ const resetForm = () => {
     content: '',
     files: [],
     attachedFileList: [],
+    deleteFileIds: [],
     keywords: '',
     refUrl: '',
   }
@@ -281,5 +286,15 @@ const onSave = async () => {
   if (!ok) return
   resetForm()
   emit('close')
+}
+
+const onRemoveAttachedFile = (file: FileItem, index: number) => {
+  const docFileId = String(file.docFileId ?? '').trim()
+  if (docFileId) {
+    if (!form.value.deleteFileIds.includes(docFileId)) {
+      form.value.deleteFileIds = [...form.value.deleteFileIds, docFileId]
+    }
+  }
+  form.value.attachedFileList = form.value.attachedFileList.filter((_, i) => i !== index)
 }
 </script>

@@ -74,6 +74,13 @@
             {{ file.fileName }}
           </span>
           <span class="ui-file-upload-item-size">{{ formatSize(Number(file.fileSize || 0)) }}</span>
+          <button
+            type="button"
+            class="ui-file-upload-item-remove"
+            @click="onRemoveAttachedFile(file, idx)"
+          >
+            <i class="icon icon-close size-14" />
+          </button>
         </li>
         <li
           v-for="(file, idx) in modelValue"
@@ -126,6 +133,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   'update:modelValue': [files: File[]]
+  'remove-attached-file': [file: FileItem, index: number]
 }>()
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
@@ -238,6 +246,10 @@ const onDownloadAttachedFile = async (file: FileItem) => {
   }
   const docFileId = String(file.docFileId ?? '').trim()
   await onDownloadFile(docId, docFileId)
+}
+
+const onRemoveAttachedFile = (file: FileItem, index: number) => {
+  emit('remove-attached-file', file, index)
 }
 </script>
 
@@ -364,7 +376,7 @@ const onDownloadAttachedFile = async (file: FileItem) => {
   text-align: left;
   cursor: pointer;
   display: block;
-  width: 100%;
+  width: auto;
 
   &:hover {
     color: var(--color-primary);

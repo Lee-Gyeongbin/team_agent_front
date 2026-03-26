@@ -196,7 +196,7 @@ const buildUploadedFileMetaList = async (data: Partial<Document>): Promise<Docum
 }
 
 /** 문서 저장 (DB) — file 은 업로드 완료 메타 배열 */
-const performDocumentSave = async (data: Partial<Document>): Promise<boolean> => {
+const performDocumentSave = async (data: Partial<Document> & { deleteFileIds?: string[] }): Promise<boolean> => {
   const fileMeta = await buildUploadedFileMetaList(data)
   if (fileMeta === null) {
     openToast({ message: '파일 업로드에 실패했습니다.', type: 'error' })
@@ -212,6 +212,10 @@ const performDocumentSave = async (data: Partial<Document>): Promise<boolean> =>
     refUrl: String(data.refUrl ?? ''),
     file: fileMeta,
   }
+  const deleteFileIds = Array.isArray(data.deleteFileIds)
+    ? data.deleteFileIds.map((id) => String(id ?? '').trim()).filter(Boolean)
+    : []
+  if (deleteFileIds.length > 0) payload.deleteFileIds = deleteFileIds
   const id = String(data.docId ?? '').trim()
   if (id) payload.docId = id
   const res = await fetchSaveDocument(payload)
@@ -226,7 +230,7 @@ const performDocumentSave = async (data: Partial<Document>): Promise<boolean> =>
 }
 
 // 문서 저장
-const handleSaveDocument = async (data: Partial<Document>): Promise<boolean> => {
+const handleSaveDocument = async (data: Partial<Document> & { deleteFileIds?: string[] }): Promise<boolean> => {
   const files = Array.isArray(data.files) ? data.files.filter((f): f is File => f instanceof File) : []
   const categoryId = String(data.categoryId ?? '')
   const docIdList: DocExistCheckItem[] = files.map((file) => {
@@ -245,7 +249,7 @@ const handleSaveDocument = async (data: Partial<Document>): Promise<boolean> => 
 
   if (existCnt > 0) {
     const ok = await openConfirm({
-      message: '이미 존재하는 문서입니다. 덮어씌우시겠습니까?',
+      message: '이미 존재하는 문서가 있습니다. 덮어씌우시겠습니까?',
     })
     if (!ok) return false
   }
@@ -409,6 +413,12 @@ const onSaveDocument = async (data: Record<string, unknown>): Promise<boolean> =
       files: data.files as File[],
       keywords: String(data.keywords ?? ''),
       refUrl: String(data.refUrl ?? ''),
+      deleteFileIds: Array.isArray(data.deleteFileIds)
+        ? (data.deleteFileIds as unknown[])
+            .map(String)
+            .map((id) => id.trim())
+            .filter(Boolean)
+        : undefined,
     })
   } catch (error) {
     openToast({
@@ -444,10 +454,21 @@ const onBatchDelete = async () => {
     openAlert({ title: '알림', message: '삭제할 문서를 선택해주세요.' })
     return
   }
+  const hasRagUsingDoc = selectedIds.value.some((docId) => {
+    const row = documentList.value.find((d) => d.docId === docId)
+    return !!row && Number(row.dsDocCnt) > 0
+  })
+
+  if (hasRagUsingDoc) {
+    openAlert({ title: '알림', message: '선택한 문서 중 RAG 사용 중인 문서가 포함되어 삭제할 수 없습니다.' })
+    return
+  }
+
   const confirmed = await openConfirm({
     title: '일괄 삭제',
     message: `선택한 ${selectedIds.value.length}개 문서를 삭제하시겠습니까?`,
   })
+
   if (confirmed) {
     await handleDeleteDocument(selectedIds.value.map((docId) => ({ docId })))
     selectedIds.value = []
