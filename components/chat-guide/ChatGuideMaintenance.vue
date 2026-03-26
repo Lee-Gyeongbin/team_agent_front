@@ -63,45 +63,43 @@
           />
         </div>
 
-        <template v-if="emergencyRow.enblYn === 'Y'">
-          <div class="maint-alert-banner">⚠️ 긴급 공지가 활성화되면 사용자가 챗봇에 접속할 때 가장 먼저 표시됩니다</div>
+        <div class="maint-alert-banner">⚠️ 긴급 공지가 활성화되면 사용자가 챗봇에 접속할 때 가장 먼저 표시됩니다</div>
 
+        <div class="maint-field">
+          <label class="maint-label">공지 제목</label>
+          <UiInput
+            v-model="emergencyRow.title"
+            placeholder="예: 긴급 점검 안내"
+            size="sm"
+          />
+        </div>
+
+        <div class="maint-field">
+          <label class="maint-label">공지 내용</label>
+          <UiTextarea
+            v-model="emergencyRow.content"
+            :rows="4"
+            border
+            placeholder="긴급 공지 내용을 입력하세요"
+          />
+        </div>
+
+        <div class="maint-field-row">
           <div class="maint-field">
-            <label class="maint-label">공지 제목</label>
-            <UiInput
-              v-model="emergencyRow.title"
-              placeholder="예: 긴급 점검 안내"
-              size="sm"
+            <label class="maint-label">표시 시작</label>
+            <UiDatePicker
+              v-model="emergencyStartDt"
+              type="datetime"
             />
           </div>
-
           <div class="maint-field">
-            <label class="maint-label">공지 내용</label>
-            <UiTextarea
-              v-model="emergencyRow.content"
-              :rows="4"
-              border
-              placeholder="긴급 공지 내용을 입력하세요"
+            <label class="maint-label">표시 종료</label>
+            <UiDatePicker
+              v-model="emergencyEndDt"
+              type="datetime"
             />
           </div>
-
-          <div class="maint-field-row">
-            <div class="maint-field">
-              <label class="maint-label">표시 시작</label>
-              <UiDatePicker
-                v-model="emergencyStartDt"
-                type="datetime"
-              />
-            </div>
-            <div class="maint-field">
-              <label class="maint-label">표시 종료</label>
-              <UiDatePicker
-                v-model="emergencyEndDt"
-                type="datetime"
-              />
-            </div>
-          </div>
-        </template>
+        </div>
       </section>
 
       <!-- 정기 점검 안내 -->
@@ -120,39 +118,37 @@
           />
         </div>
 
-        <template v-if="scheduledRow.enblYn === 'Y'">
-          <div class="maint-field">
-            <label class="maint-label">점검 일시</label>
-            <div class="maint-field-row">
-              <UiDatePicker
-                v-model="scheduledStartDt"
-                type="datetime"
-              />
-              <UiDatePicker
-                v-model="scheduledEndDt"
-                type="datetime"
-              />
-            </div>
-          </div>
-
-          <div class="maint-field">
-            <label class="maint-label">안내 메시지</label>
-            <UiTextarea
-              v-model="scheduledRow.content"
-              :rows="4"
-              border
+        <div class="maint-field">
+          <label class="maint-label">점검 일시</label>
+          <div class="maint-field-row">
+            <UiDatePicker
+              v-model="scheduledStartDt"
+              type="datetime"
+            />
+            <UiDatePicker
+              v-model="scheduledEndDt"
+              type="datetime"
             />
           </div>
+        </div>
 
-          <div class="maint-field">
-            <label class="maint-label">사전 안내 기간</label>
-            <UiSelect
-              v-model="scheduledRow.advanceNoticeCd"
-              :options="advanceNoticeOptions"
-              size="sm"
-            />
-          </div>
-        </template>
+        <div class="maint-field">
+          <label class="maint-label">안내 메시지</label>
+          <UiTextarea
+            v-model="scheduledRow.content"
+            :rows="4"
+            border
+          />
+        </div>
+
+        <div class="maint-field">
+          <label class="maint-label">사전 안내 기간</label>
+          <UiSelect
+            v-model="scheduledRow.advanceNoticeCd"
+            :options="advanceNoticeOptions"
+            size="sm"
+          />
+        </div>
       </section>
 
       <!-- 장애 발생 안내 -->
@@ -168,27 +164,25 @@
           <UiToggle v-model="incidentSectionOn" />
         </div>
 
-        <template v-if="incidentSectionOn">
-          <div class="maint-field">
-            <label class="maint-label">장애 유형별 메시지</label>
-          </div>
+        <div class="maint-field">
+          <label class="maint-label">장애 유형별 메시지</label>
+        </div>
 
-          <div
-            v-for="slot in CHAT_GUIDE_MAINTENANCE_INCIDENT_UI_SLOTS"
-            :key="slot.guideKey"
-            class="maint-incident-item"
-          >
-            <h5 class="maint-incident-item-title">
-              <span>{{ slot.icon }}</span>
-              {{ slot.label }}
-            </h5>
-            <UiTextarea
-              v-model="rowByGuideKey(slot.guideKey).content"
-              :rows="3"
-              border
-            />
-          </div>
-        </template>
+        <div
+          v-for="slot in CHAT_GUIDE_MAINTENANCE_INCIDENT_UI_SLOTS"
+          :key="slot.guideKey"
+          class="maint-incident-item"
+        >
+          <h5 class="maint-incident-item-title">
+            <span>{{ slot.icon }}</span>
+            {{ slot.label }}
+          </h5>
+          <UiTextarea
+            v-model="rowByGuideKey(slot.guideKey).content"
+            :rows="3"
+            border
+          />
+        </div>
       </section>
 
       <!-- 서비스 복구 안내 -->
@@ -207,22 +201,20 @@
           />
         </div>
 
-        <template v-if="recoveryRow.enblYn === 'Y'">
-          <div class="maint-field">
-            <label class="maint-label">복구 완료 메시지</label>
-            <UiTextarea
-              v-model="recoveryRow.content"
-              :rows="4"
-              border
-            />
-          </div>
-
-          <UiCheckbox
-            :model-value="recoveryRow.autoDsplYn === 'Y'"
-            label="복구 완료 후 자동으로 표시 (24시간)"
-            @update:model-value="(v) => (recoveryRow.autoDsplYn = toYn(v))"
+        <div class="maint-field">
+          <label class="maint-label">복구 완료 메시지</label>
+          <UiTextarea
+            v-model="recoveryRow.content"
+            :rows="4"
+            border
           />
-        </template>
+        </div>
+
+        <UiCheckbox
+          :model-value="recoveryRow.autoDsplYn === 'Y'"
+          label="복구 완료 후 자동으로 표시 (24시간)"
+          @update:model-value="(v) => (recoveryRow.autoDsplYn = toYn(v))"
+        />
       </section>
     </div>
   </div>
