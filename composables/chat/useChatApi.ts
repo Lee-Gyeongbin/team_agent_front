@@ -86,6 +86,18 @@ export const useReportsApi = () => {
   const fetchDeleteChatRoom = async (roomId: string): Promise<void> => {
     return post('/ai/chatbot/deleteChatRoom.do', { roomId })
   }
+  // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
+  // 공유 채팅 로그 조회 (타 사용자 채팅방 접근용)
+  const fetchSelectSharedChatLogList = async (roomId: string): Promise<{ list: ChatLogListRow[] }> => {
+    return get<{ list: ChatLogListRow[] }>(
+      `/ai/chatbot/selectSharedChatLogList.do?roomId=${encodeURIComponent(roomId)}`,
+    )
+  }
+  // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
+  // 공유 채팅방 복제 (대화 이어가기)
+  const fetchCloneChatRoom = async (sourceRoomId: string): Promise<{ data: ChatRoom }> => {
+    return post<{ data: ChatRoom }>('/ai/chatbot/cloneChatRoom.do', { sourceRoomId })
+  }
   return {
     fetchSelectChatRoomList,
     fetchSelectModelList,
@@ -101,5 +113,7 @@ export const useReportsApi = () => {
     fetchPinChatRoom,
     fetchRenameChatRoom,
     fetchDeleteChatRoom,
+    fetchSelectSharedChatLogList,
+    fetchCloneChatRoom,
   }
 }

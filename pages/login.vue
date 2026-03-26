@@ -107,7 +107,8 @@ const onSubmit = async () => {
     const res = await login(loginId.value, loginPassword.value)
 
     if (res.success) {
-      navigateTo('/chat')
+      const redirect = (route.query.redirect as string) || '/chat'
+      navigateTo(redirect)
     } else {
       errorMessage.value = res.message || '로그인에 실패했습니다.'
     }

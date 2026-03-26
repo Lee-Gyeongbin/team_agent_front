@@ -147,6 +147,20 @@
     </nav>
   </aside>
 
+  <!-- 대화 공유 모달 -->
+  <UiModal
+    :is-open="isShareModalOpen"
+    title="공유 가능한 공개 링크"
+    position="center"
+    max-width="480px"
+    @close="handleShareModalClose"
+  >
+    <ChatRoomShareModal
+      :room="sharingRoom"
+      @close="handleShareModalClose"
+    />
+  </UiModal>
+
   <!-- 검색기록 타이틀 변경 모달 -->
   <UiModal
     :is-open="isRenameModalOpen"
@@ -288,8 +302,20 @@ async function handleSaveRename(roomTitle: string) {
   handleRenameModalClose()
 }
 
+// 대화 공유 모달
+const isShareModalOpen = ref(false)
+const sharingRoom = ref<ChatRoom | null>(null)
+
+function handleShareModalClose() {
+  isShareModalOpen.value = false
+  sharingRoom.value = null
+}
+
 // 검색기록 컨텍스트 메뉴 액션
-function onContextShare(_entry: ChatRoom) {}
+function onContextShare(entry: ChatRoom) {
+  sharingRoom.value = entry
+  isShareModalOpen.value = true
+}
 async function onContextPin(_entry: ChatRoom) {
   await handlePinChatRoom(_entry)
 }
