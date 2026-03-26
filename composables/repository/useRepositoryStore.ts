@@ -7,10 +7,11 @@ import type {
   DocumentSaveFileItem,
   DocumentSavePayload,
   DocExistCheckItem,
+  FileItem,
   UrlItem,
 } from '~/types/repository'
 import type { TableColumn } from '~/types/table'
-const { handleViewFileUrl, handleUploadFile, handleDeleteNcpFile, fileError } = useFileStore()
+const { handleViewFileUrl, handleUploadFile, onDownloadFile, handleDeleteNcpFile, fileError } = useFileStore()
 const {
   fetchSelectDocExistCnt,
   fetchSelectDocumentExistCnt,
@@ -87,25 +88,33 @@ const formatUseYnLabel = (value: string) => {
 }
 
 /** 상세 API 평면 응답 → 패널용 Document 일부 */
-const mapDocDetailResponseToInitial = (res: DocRepositoryDetailResponse): Partial<Document> => ({
-  docId: String(res.docId ?? ''),
-  docTitle: String(res.docTitle ?? ''),
-  categoryId: String(res.categoryId ?? ''),
-  categoryName: String(res.categoryName ?? ''),
-  author: String(res.author ?? ''),
-  secLvl: String(res.secLvl ?? ''),
-  content: String(res.content ?? ''),
-  fileName: String(res.fileName ?? ''),
-  filePath: String(res.filePath ?? ''),
-  fileSize: String(res.fileSize ?? ''),
-  fileType: String(res.fileType ?? ''),
-  keywords: String(res.keywords ?? ''),
-  refUrl: String(res.refUrl ?? ''),
-  useYn: String(res.useYn ?? ''),
-  dsDocCnt: String(res.dsDocCnt ?? ''),
-  createDt: String(res.createDt ?? ''),
-  files: [],
-})
+const mapDocDetailResponseToInitial = (
+  res: DocRepositoryDetailResponse,
+  fileList: FileItem[] = [],
+): Partial<Document> => {
+  const firstFile = fileList[0]
+  return {
+    docId: String(res.docId ?? ''),
+    docTitle: String(res.docTitle ?? ''),
+    categoryId: String(res.categoryId ?? ''),
+    categoryName: String(res.categoryName ?? ''),
+    author: String(res.author ?? ''),
+    secLvl: String(res.secLvl ?? ''),
+    content: String(res.content ?? ''),
+    docFileId: String(firstFile?.docFileId ?? ''),
+    fileName: String(firstFile?.fileName ?? ''),
+    filePath: String(firstFile?.filePath ?? ''),
+    fileSize: String(firstFile?.fileSize ?? ''),
+    fileType: String(firstFile?.fileType ?? ''),
+    keywords: String(res.keywords ?? ''),
+    refUrl: String(res.refUrl ?? ''),
+    useYn: String(res.useYn ?? ''),
+    dsDocCnt: String(res.dsDocCnt ?? ''),
+    createDt: String(res.createDt ?? ''),
+    files: [],
+    attachedFileList: fileList,
+  }
+}
 
 const rowActionItems = [
   { label: '미리보기', value: 'preview', icon: 'icon-view' },
@@ -206,7 +215,7 @@ const performDocumentSave = async (data: Partial<Document>): Promise<boolean> =>
   const id = String(data.docId ?? '').trim()
   if (id) payload.docId = id
   const res = await fetchSaveDocument(payload)
-  if (res.data.successYn) {
+  if (res.successYn) {
     openToast({ message: `'${data.docTitle}' 문서가 등록되었습니다.` })
     await handleSelectDocumentList()
     return true
@@ -302,7 +311,12 @@ const handleToggleUrlStatus = async (id: string, active: boolean) => {
 
 const handleFileView = async (row: Document) => {
   const docId = row.docId
-  const url = await handleViewFileUrl(docId)
+  const docFileId = String(row.docFileId ?? row.attachedFileList?.[0]?.docFileId ?? '').trim()
+  if (!docFileId) {
+    openToast({ message: '미리보기할 파일이 없습니다.', type: 'warning' })
+    return
+  }
+  const url = await handleViewFileUrl(docId, docFileId)
   if (!url) return
   window.open(url, '_blank')
 }
@@ -350,7 +364,7 @@ const onDocumentTableRowClick = async (row: Record<string, unknown>) => {
   try {
     await handleSelectCodeOptions()
     const res = await fetchSelectDocRepositoryDetail(docId)
-    docRegisterInitialData.value = mapDocDetailResponseToInitial(res.data)
+    docRegisterInitialData.value = mapDocDetailResponseToInitial(res.data, res.fileList ?? [])
   } catch {
     const fromList = documentList.value.find((d) => d.docId === docId)
     docRegisterInitialData.value = fromList ? { ...fromList } : { ...(row as unknown as Document) }
@@ -371,11 +385,13 @@ const onCloseDocRegister = () => {
 const onSaveDocument = async (data: Record<string, unknown>): Promise<boolean> => {
   const title = String(data.docTitle ?? '')
   const docId = String(data.docId ?? '').trim()
+  /** 좌측 트리에서 선택한 카테고리 우선 — useCategoryStore.onCategorySelect와 동일 ref */
+  const categoryId = docSelectedCategoryId.value.trim() || String(data.categoryId ?? '')
   isLoading.value = true
   try {
     // 수정 모드(docId 존재)에서는 중복 체크를 스킵
     if (!docId) {
-      const res = await fetchSelectDocumentExistCnt(String(data.categoryId ?? ''), title)
+      const res = await fetchSelectDocumentExistCnt(categoryId, title)
       const existCnt = res.data
       if (existCnt > 0) {
         openAlert({ title: '알림', message: '같은 카테고리에 같은 제목의 문서가 존재합니다.' })
@@ -386,7 +402,7 @@ const onSaveDocument = async (data: Record<string, unknown>): Promise<boolean> =
     return await handleSaveDocument({
       docId: docId ? docId : undefined,
       docTitle: title,
-      categoryId: String(data.categoryId ?? ''),
+      categoryId,
       author: String(data.author ?? ''),
       secLvl: String(data.secLvl ?? ''),
       content: String(data.content ?? ''),
@@ -405,15 +421,22 @@ const onSaveDocument = async (data: Record<string, unknown>): Promise<boolean> =
   }
 }
 
-const onBatchDownload = () => {
+const onBatchDownload = async () => {
   if (selectedIds.value.length === 0) {
     openAlert({ title: '알림', message: '다운로드할 문서를 선택해주세요.' })
     return
   }
-  openAlert({
-    title: '일괄 다운로드',
-    message: `${selectedIds.value.length}개 문서 다운로드 기능은 추후 구현 예정입니다.`,
-  })
+  // window.open 연속 호출은 브라우저 팝업 차단으로 대부분 첫 번째만 열림 → <a download> 트리거(onDownloadFile) 사용
+  const ids = [...selectedIds.value]
+  for (let i = 0; i < ids.length; i++) {
+    const docId = ids[i]
+    const row = documentList.value.find((d) => d.docId === docId)
+    const docFileId = String(row?.docFileId ?? '').trim()
+    await onDownloadFile(docId, docFileId)
+    if (i < ids.length - 1) {
+      await new Promise((r) => setTimeout(r, 200))
+    }
+  }
 }
 
 const onBatchDelete = async () => {
@@ -448,7 +471,9 @@ const onRowActionSelect = async (value: string, row: Document) => {
   } else if (value === 'preview') {
     await handleFileView(row)
   } else if (value === 'download') {
-    openAlert({ title: '다운로드', message: '다운로드 기능은 추후 구현 예정입니다.' })
+    const docId = row.docId ?? ''
+    const docFileId = String(row.docFileId ?? row.attachedFileList?.[0]?.docFileId ?? '').trim()
+    await onDownloadFile(docId, docFileId)
   }
 }
 

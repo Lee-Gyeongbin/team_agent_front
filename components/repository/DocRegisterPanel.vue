@@ -82,6 +82,8 @@
         <label class="url-reg-label">파일첨부</label>
         <UiFileUpload
           v-model="form.files"
+          :attached-file-list="form.attachedFileList"
+          :is-downloadable="true"
           :max-files="5"
         />
       </div>
@@ -138,7 +140,7 @@
 </template>
 
 <script setup lang="ts">
-import type { CategoryTreeItem, Document } from '~/types/repository'
+import type { CategoryTreeItem, Document, FileItem } from '~/types/repository'
 import CategorySelectModal from '~/components/repository/CategorySelectModal.vue'
 import { openToast } from '~/composables/useToast'
 import { useCategoryStore } from '~/composables/repository/useCategoryStore'
@@ -154,7 +156,7 @@ const emit = defineEmits<{
 }>()
 
 const { categoryList } = useCategoryStore()
-const { secLvlOptions, onSaveDocument } = useRepositoryStore()
+const { secLvlOptions, onSaveDocument, docSelectedCategoryId } = useRepositoryStore()
 const docTitleRef = ref<{ focus?: () => void; $el?: HTMLElement } | null>(null)
 const categoryFieldRef = ref<HTMLElement | null>(null)
 
@@ -184,18 +186,20 @@ const form = ref({
   secLvl: '',
   content: '',
   files: [] as File[],
+  attachedFileList: [] as FileItem[],
   keywords: '',
   refUrl: '',
 })
 
 const modalTitle = computed(() => (form.value.docId ? '문서 수정' : '문서 등록'))
 
-// 선택된 카테고리명 표시
+// 선택된 카테고리명 표시 (트리 선택 docSelectedCategoryId 우선, 없으면 모달에서 고른 form.categoryId)
 const selectedCategoryName = computed(() => {
-  if (!form.value.categoryId) return ''
+  const id = docSelectedCategoryId.value.trim() || form.value.categoryId
+  if (!id) return ''
   const findName = (items: CategoryTreeItem[]): string => {
     for (const item of items) {
-      if (item.categoryId === form.value.categoryId) return item.categoryName
+      if (item.categoryId === id) return item.categoryName
       if (item.children?.length) {
         const found = findName(item.children)
         if (found) return found
@@ -219,6 +223,7 @@ const applyInitialFromDocument = (src: Partial<Document>) => {
     secLvl: String(src.secLvl ?? ''),
     content: String(src.content ?? '').slice(0, 500),
     files: [],
+    attachedFileList: Array.isArray(src.attachedFileList) ? src.attachedFileList : [],
     keywords: String(src.keywords ?? ''),
     refUrl: String(src.refUrl ?? ''),
   }
@@ -233,6 +238,7 @@ const resetForm = () => {
     secLvl: '',
     content: '',
     files: [],
+    attachedFileList: [],
     keywords: '',
     refUrl: '',
   }
@@ -260,7 +266,8 @@ const onSave = async () => {
     focusField(docTitleRef)
     return
   }
-  if (!form.value.categoryId) {
+  const resolvedCategoryId = docSelectedCategoryId.value.trim() || form.value.categoryId.trim()
+  if (!resolvedCategoryId) {
     openToast({ message: '카테고리를 선택해주세요.', type: 'warning' })
     focusField(categoryFieldRef)
     return

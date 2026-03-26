@@ -49,6 +49,7 @@ export interface DocDatasetDetail {
   singleCellText: string
   sentSplitAlgoCd: string
   langDetectCd: string
+  llmCd?: string
 }
 
 export interface CategoryItem {
@@ -123,6 +124,8 @@ export interface DocDatasetSavePayload {
   singleCellText: string
   sentSplitAlgoCd: string
   langDetectCd: string
+  promptId: string
+  llmCd: string
   docIdList: DocDatasetSelectedDoc[]
   urlIdList: DocDatasetSelectedUrl[]
 }
@@ -151,6 +154,10 @@ export interface DocDatasetForm {
   useSingleCellText: boolean
   sentenceSplitAlgorithm: string
   languageDetection: string
+  // RAG용 시스템 프롬프트
+  promptId: string
+  // LLM (코드 RG000011)
+  llmCd: string
   // 임베딩 및 벡터DB
   embeddingModel: string
   vectorDb: string
@@ -196,4 +203,9 @@ export interface DocDatasetSummary {
   totalSourceCount: number // 총 소스 수
   totalDocCount: number // 문서 수
   totalUrlCount: number // URL 수
+}
+
+export interface Prompt {
+  promptId: string
+  promptName: string
 }

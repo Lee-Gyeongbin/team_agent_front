@@ -46,7 +46,7 @@
             :value="currentPage"
             :disabled="!hasData"
             @change="onPageInputChange"
-            @input="$event.target.value = $event.target.value.replace(/[^0-9]/g, '')"
+            @input="onPageInput"
           />
           <span class="chat-pdf-page-total">/ {{ totalPages || 0 }}</span>
           <button
@@ -143,7 +143,7 @@
           <div class="chat-pdf-sidebar-select">
             <UiSelect
               id="pdf-doc-select"
-              v-model="selectedDocId"
+              v-model="selectedDocKey"
               name="pdf-doc-select"
               :options="documentList"
               size="lg"
@@ -202,8 +202,8 @@ const emit = defineEmits<{
   'update:fullscreen': [value: boolean]
 }>()
 
-// 선택된 문서 ID
-const selectedDocId = ref<string>('')
+// 선택된 문서 키(docId + docFileId)
+const selectedDocKey = ref<string>('')
 // 현재 PDF 실제 URL (viewFile.do → presigned URL)
 const currentFilePath = ref('')
 
@@ -218,11 +218,20 @@ const parseRelatedPages = (raw: string): number[] => {
   return []
 }
 
+const buildDocKey = (docId: string, docFileId: string) => `${docId}::${docFileId}`
+
 // refList → UiSelect 옵션
-const documentList = computed(() => (props.refList ?? []).map((r) => ({ label: r.docTitle, value: r.docId })))
+const documentList = computed(() =>
+  (props.refList ?? []).map((r) => ({
+    label: r.docTitle || r.fileName,
+    value: buildDocKey(r.docId, r.docFileId),
+  })),
+)
 
 // 현재 선택된 문서 row
-const selectedRef = computed(() => (props.refList ?? []).find((r) => r.docId === selectedDocId.value))
+const selectedRef = computed(() =>
+  (props.refList ?? []).find((r) => buildDocKey(r.docId, r.docFileId) === selectedDocKey.value),
+)
 
 // 현재 문서의 주요 페이지 번호
 const currentMainPageNo = computed(() => selectedRef.value?.mainPageNo ?? 1)
@@ -309,6 +318,12 @@ const onPageInputChange = async (event: Event) => {
   await goToPage(Number(target.value))
 }
 
+const onPageInput = (event: Event) => {
+  const target = event.target as HTMLInputElement | null
+  if (!target) return
+  target.value = target.value.replace(/[^0-9]/g, '')
+}
+
 const toggleFullscreen = () => {
   isFullscreen.value = !isFullscreen.value
   emit('update:fullscreen', isFullscreen.value)
@@ -323,10 +338,10 @@ const onClose = () => {
 
 // presigned URL 조회 + PDF 로드 후 mainPageNo로 이동하는 헬퍼
 const loadAndGoToMainPage = async () => {
-  if (!props.open || !selectedDocId.value) return
+  if (!props.open || !selectedRef.value) return
 
   // 1) /com/file/viewFile.do 로 presigned URL 조회
-  const url = await handleViewFileUrl(selectedDocId.value)
+  const url = await handleViewFileUrl(selectedRef.value.docId, selectedRef.value.docFileId)
   currentFilePath.value = url || ''
   if (!currentFilePath.value) return
 
@@ -348,7 +363,7 @@ watch(
 )
 
 // 선택 문서가 바뀔 때 새 PDF 로드
-watch(selectedDocId, async () => {
+watch(selectedDocKey, async () => {
   if (!props.open) return
   await loadAndGoToMainPage()
 })
@@ -357,7 +372,8 @@ watch(selectedDocId, async () => {
 watch(
   () => props.refList,
   (list) => {
-    selectedDocId.value = list?.[0]?.docId ?? ''
+    const firstRow = list?.[0]
+    selectedDocKey.value = firstRow ? buildDocKey(firstRow.docId, firstRow.docFileId) : ''
   },
   { immediate: true },
 )

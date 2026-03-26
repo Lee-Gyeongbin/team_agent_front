@@ -13,7 +13,10 @@
         v-if="isLoading"
         class="repository-loading-overlay"
       >
-        <UiLoading text="불러오는 중..." />
+        <UiLoading
+          overlay
+          text="불러오는 중..."
+        />
       </div>
       <RepositoryDocumentPage v-show="activeTab === 'document' && !isLoading" />
       <!-- <RepositoryUrlPage v-show="activeTab === 'url'" /> -->
