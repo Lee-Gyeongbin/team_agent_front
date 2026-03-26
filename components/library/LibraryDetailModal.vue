@@ -129,7 +129,7 @@
             >
               <i class="icon icon-document size-20 reference-doc-icon"></i>
               <div class="reference-item-info">
-                <span class="reference-item-title">{{ item.docTitle }}</span>
+                <span class="reference-item-title">{{ item.fileName }}</span>
                 <span class="reference-item-page">{{ item.relatedPages ? `p.${item.relatedPages}` : '' }}</span>
               </div>
               <button
@@ -415,7 +415,7 @@ const handleDelete = () => {
 }
 
 const onReferenceLink = async (item: DocItem) => {
-  const url = await handleViewFileUrl(item.docId)
+  const url = await handleViewFileUrl(item.docId, item.docFileId)
   if (!url) return
   await copyToClipboard(url)
   openToast({ message: '매뉴얼이 링크가 복사되었습니다.' })

@@ -1,4 +1,4 @@
-import type { FileUploadRequest } from '~/types/file'
+import type { FileDownloadResponse, FileUploadRequest } from '~/types/file'
 import { useFileApi } from '~/composables/com/useFileApi'
 
 const { fetchUploadFileUrl, fetchViewFileUrl, fetchDownloadFileUrl, fetchDeleteFile } = useFileApi()
@@ -69,11 +69,11 @@ export const useFileStore = () => {
    * 파일 보기용 URL 조회 (PDF 뷰어 등에서 사용)
    * - ChatPdfPanel.vue에서는 docId 기준으로 호출 후, 반환된 URL을 그대로 사용하면 됨.
    */
-  const handleViewFileUrl = async (docId: string): Promise<string | null> => {
+  const handleViewFileUrl = async (docId: string, docFileId: string): Promise<string | null> => {
     fileError.value = ''
     viewUrl.value = null
     try {
-      const { url } = await fetchViewFileUrl(docId)
+      const { url } = await fetchViewFileUrl(docId, docFileId)
       viewUrl.value = url
       return url
     } catch (error) {
@@ -87,28 +87,49 @@ export const useFileStore = () => {
    * 파일 다운로드
    * - 반환된 URL을 a 태그 클릭 등으로 바로 다운로드 트리거.
    */
-  const onDownloadFile = async (docId: string) => {
-    const url = await handleDownloadFile(docId)
-    if (!url) return
-    const a = document.createElement('a')
-    a.href = url
-    a.download = ''
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
+  const triggerDownloadByUrl = (url: string) => {
+    // 연속 다운로드 시 a.click()은 브라우저 정책(자동 다운로드/사용자 제스처 제한)으로 누락될 수 있어
+    // iframe src 교체 방식으로 다운로드 트리거를 안정화한다.
+    const iframe = document.createElement('iframe')
+    iframe.style.display = 'none'
+    iframe.src = url
+    document.body.appendChild(iframe)
+    window.setTimeout(() => {
+      iframe.remove()
+    }, 3000)
+  }
+
+  const onDownloadFile = async (docId: string, docFileId?: string) => {
+    const res = await handleDownloadFile(docId, docFileId)
+    if (!res) return
+    const singleUrl = String(res.url ?? '').trim()
+    if (singleUrl) {
+      triggerDownloadByUrl(singleUrl)
+      return
+    }
+
+    const list = Array.isArray(res.downloadList) ? res.downloadList : []
+    for (let i = 0; i < list.length; i++) {
+      const url = String(list[i]?.url ?? '').trim()
+      if (!url) continue
+      triggerDownloadByUrl(url)
+      if (i < list.length - 1) {
+        await new Promise((r) => setTimeout(r, 500))
+      }
+    }
   }
 
   /**
    * 파일 다운로드용 URL 조회
    * - 반환된 URL을 a 태그 클릭 등으로 바로 다운로드 트리거.
    */
-  const handleDownloadFile = async (docId: string): Promise<string | null> => {
+  const handleDownloadFile = async (docId: string, docFileId?: string): Promise<FileDownloadResponse | null> => {
     fileError.value = ''
     downloadUrl.value = null
     try {
-      const { url } = await fetchDownloadFileUrl(docId)
-      downloadUrl.value = url
-      return url
+      const res = await fetchDownloadFileUrl(docId, docFileId)
+      if (res.url) downloadUrl.value = res.url
+      return res
     } catch (error) {
       const message = error instanceof Error ? error.message : '파일 다운로드 URL을 가져오는데 실패했습니다.'
       fileError.value = message

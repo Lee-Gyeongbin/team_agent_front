@@ -3,7 +3,8 @@ import type { CategoryItem, CategoryTreeItem } from '~/types/repository'
 import { useRepositoryApi } from '~/composables/repository/useRepositoryApi'
 import { collectDescendantIds } from '~/utils/repository/categoryTreeUtil'
 
-const { fetchCategoryList, fetchSaveCategory, fetchRenameCategory, fetchDeleteCategory } = useRepositoryApi()
+const { fetchCategoryList, fetchSaveCategory, fetchRenameCategory, fetchDeleteCategory, fetchDocumentList } =
+  useRepositoryApi()
 
 /** 스토어 간 공유 — useRepositoryStore가 순환 없이 트리 참조 */
 export const categoryList = ref<CategoryTreeItem[]>([])
@@ -79,7 +80,14 @@ function buildCategoryTreeFromFlat(flat: CategoryItem[]): CategoryTreeItem[] {
 }
 
 export const useCategoryStore = () => {
-  const { docSelectedCategoryId, docCurrentPage, handleSelectDocumentList } = useRepositoryStore()
+  const {
+    docSelectedCategoryId,
+    docCurrentPage,
+    docTotalCount,
+    docSearchKeyword,
+    docStatusFilter,
+    handleSelectDocumentList,
+  } = useRepositoryStore()
   // ===== 카테고리 =====
   const isCategoryInputVisible = ref(false)
   const isCategorySelectModalOpen = ref(false)
@@ -186,6 +194,23 @@ export const useCategoryStore = () => {
       categoryInputValue.value = ''
       focusCategoryInputField()
     } else if (value === 'delete') {
+      // 삭제 대상 = 현재 목록 카테고리이고 필터 없음 → docTotalCount로 판단
+      if (docSelectedCategoryId.value === cat.categoryId && docTotalCount.value > 0) {
+        openToast({ message: '문서가 등록된 카테고리는 삭제할 수 없습니다.', type: 'warning' })
+        return
+      }
+      // 다른 카테고리 삭제이거나 검색·상태 필터 적용 중 → 해당 카테고리 전체 건수만 조회
+      if (
+        docSelectedCategoryId.value !== cat.categoryId ||
+        docSearchKeyword.value.trim() !== '' ||
+        docStatusFilter.value !== ''
+      ) {
+        const res = await fetchDocumentList(undefined, cat.categoryId, '', 1, 1)
+        if (res.totalCnt > 0) {
+          openToast({ message: '문서가 등록된 카테고리는 삭제할 수 없습니다.', type: 'warning' })
+          return
+        }
+      }
       const confirmed = await openConfirm({
         title: '카테고리 삭제',
         message: `'${cat.categoryName}' 카테고리를 삭제하시겠습니까?\n하위 카테고리도 함께 삭제됩니다.`,
@@ -273,8 +298,14 @@ export const useCategoryStore = () => {
 
   const handleDeleteCategory = async (id: string) => {
     try {
-      await fetchDeleteCategory(id)
-      await handleSelectCategoryList()
+      const res = await fetchDeleteCategory(id)
+      if (res.successYn) {
+        openToast({ message: '카테고리가 삭제되었습니다.', type: 'success' })
+        await handleSelectCategoryList()
+        return true
+      }
+      openToast({ message: '카테고리 삭제에 실패했습니다.', type: 'error' })
+      return false
     } catch (error) {
       openToast({
         message: error instanceof Error ? error.message : '카테고리 삭제에 실패했습니다.',

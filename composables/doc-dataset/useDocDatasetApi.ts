@@ -6,6 +6,7 @@ import type {
   DocDatasetHistory,
   DocDatasetSearchResult,
   DocDatasetSearchSummary,
+  Prompt,
 } from '~/types/doc-dataset'
 import { useApi } from '~/composables/com/useApi'
 
@@ -81,6 +82,10 @@ export const useDocDatasetApi = () => {
     return post<{ data: number }>('/dataset/deleteDocDatasetHistory.do', { histId })
   }
 
+  const fetchSelectPromptList = async () => {
+    return post<{ dataList: Prompt[] }>('/dataset/selectPromptList.do', {})
+  }
+
   // ===== 검색 테스트 =====
   const fetchSearchDocDataset = async (params: {
     datasetId: string
@@ -106,5 +111,6 @@ export const useDocDatasetApi = () => {
     fetchSaveDocDatasetHistory,
     fetchDeleteDocDatasetHistory,
     fetchSearchDocDataset,
+    fetchSelectPromptList,
   }
 }

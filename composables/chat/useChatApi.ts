@@ -74,6 +74,10 @@ export const useReportsApi = () => {
   const fetchCreateKnowledge = async (logId: string, categoryId: string): Promise<void> => {
     return post('/ai/chatbot/saveKnowledge.do', { logId, categoryId })
   }
+  // 채팅방 고정
+  const fetchPinChatRoom = async (room: ChatRoom): Promise<void> => {
+    return post('/ai/chatbot/pinChatRoom.do', { roomId: room.roomId })
+  }
   return {
     fetchSelectChatRoomList,
     fetchSelectModelList,
@@ -86,5 +90,6 @@ export const useReportsApi = () => {
     fetchCreateChatLogReaction,
     fetchSelectKnowledgeList,
     fetchCreateKnowledge,
+    fetchPinChatRoom,
   }
 }

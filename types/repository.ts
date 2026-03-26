@@ -16,10 +16,16 @@ export interface CategoryTreeItem extends CategoryItem {
   expanded?: boolean
 }
 
-export interface CategoryActionResponse {
-  successYn: boolean
+export interface FileItem {
+  docId: string
+  docFileId: string
+  fileName: string
+  filePath: string
+  fileSize: string
+  fileType: string
+  fileOrder: string
+  useYn: string
 }
-
 /**
  * selectDocRepositoryDetail.do 응답 — `data` 래핑 없이 루트에 문서·검색 VO 필드가 함께 내려옴
  */
@@ -38,10 +44,6 @@ export interface DocRepositoryDetailResponse {
   author?: string
   secLvl?: string
   content?: string
-  fileName?: string
-  filePath?: string
-  fileSize?: string
-  fileType?: string
   keywords?: string
   refUrl?: string
   useYn?: string
@@ -49,13 +51,19 @@ export interface DocRepositoryDetailResponse {
   modifyDt?: string
   dsDocCnt?: string
   docIdList?: string
-  /** 백엔드 VO 잔여 필드(문자열 등) */
-  file?: string
+  fileList?: FileItem[]
+}
+
+/** 문서 상세 조회 API 응답 (data + fileList 분리 구조) */
+export interface DocRepositoryDetailApiResponse {
+  data: DocRepositoryDetailResponse
+  fileList?: FileItem[]
 }
 
 /** 문서 항목 */
 export interface Document {
   docId: string
+  docFileId?: string
   docTitle: string
   categoryId: string
   categoryName: string
@@ -72,6 +80,7 @@ export interface Document {
   dsDocCnt: string
   createDt: string
   files: File[]
+  attachedFileList?: FileItem[]
 }
 
 /** 중복 검사용 — (CATEGORY_ID, FILE_NAME, FILE_TYPE) 튜플 목록 */

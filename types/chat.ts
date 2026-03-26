@@ -99,6 +99,7 @@ export interface ChatRoom {
   qContent: string
   createdAt: string
   roomTitle: string
+  fixYn: 'Y' | 'N'
 }
 
 /** 빈 대화방 기본값 — 리셋, 초기화 시 재사용 */
@@ -109,6 +110,7 @@ export const EMPTY_CHAT_ROOM: ChatRoom = {
   qContent: '',
   createdAt: '',
   roomTitle: '',
+  fixYn: 'N',
 }
 
 /** 채팅 로그 목록 API 응답 한 건 (백엔드 VO — qcontent, rcontent, createDt, svcTy 등) */
@@ -140,6 +142,7 @@ export interface ChatLogListRow {
 /** TB_CHAT_REF JOIN TB_DOC API 응답 한 건 */
 export interface ChatRefRow {
   logId: string
+  docFileId: string
   docId: string
   mainPageNo: number
   relatedPages: string // JSON 배열 "[63,75,88]" 또는 쉼표 구분 "1,3,5"

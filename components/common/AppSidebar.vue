@@ -56,9 +56,14 @@
             :class="{
               'is-active': activeRoomId === String(entry.roomId),
               'is-dropdown-open': openMoreDropdownId === entry.roomId,
+              'is-pinned': entry.fixYn === 'Y',
             }"
             @click="onClickHistory(entry)"
           >
+            <i
+              v-if="entry.fixYn === 'Y'"
+              class="icon-sidebar-pin size-16"
+            />
             <span class="search-history-text">{{ entry.title }}</span>
             <DropdownMenuRoot
               :open="openMoreDropdownId === entry.roomId"
@@ -94,7 +99,7 @@
                     @select="onContextPin(entry)"
                   >
                     <i class="icon-sidebar-pin size-20" />
-                    <span>고정</span>
+                    <span>{{ entry.fixYn === 'Y' ? '고정 해제' : '고정' }}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     class="sidebar-dropdown-item"
@@ -156,7 +161,7 @@ import type { ChatRoom } from '~/types/chat'
 const { chatRoomList, selectChatRoomList } = useChatRooms()
 const route = useRoute()
 const { menuList } = useMenu()
-
+const { handlePinChatRoom } = useChatRooms()
 const SETTING_MENU_ID = 'ME000003'
 
 const isExpanded = ref(false)
@@ -255,7 +260,9 @@ function onClickNavItem(item: NavItem) {
 
 // 검색기록 컨텍스트 메뉴 액션 (더미 — 추후 연동)
 function onContextShare(_entry: ChatRoom) {}
-function onContextPin(_entry: ChatRoom) {}
+async function onContextPin(_entry: ChatRoom) {
+  await handlePinChatRoom(_entry)
+}
 function onContextRename(_entry: ChatRoom) {}
 function onContextDelete(_entry: ChatRoom) {}
 
