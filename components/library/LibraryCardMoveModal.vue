@@ -99,6 +99,9 @@ const onMove = () => {
   color: $color-text-secondary;
 }
 
+.modal-dialog-footer {
+  border-top: none;
+}
 
 .form-row {
   display: flex;

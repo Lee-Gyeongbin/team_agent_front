@@ -61,6 +61,8 @@
           size="xs"
           icon-only
           title="카테고리 선택"
+          @pointerdown.stop.prevent
+          @click="onClickCategory"
         >
           <template #icon-left>
             <i class="icon-chat-open-book size-20" />
@@ -103,5 +105,11 @@ const categoryMenuItems = computed<DropdownMenuItemDef[]>(() =>
 
 const onSelectCategory = (value: string) => {
   emit('on-select-category', value)
+}
+
+const onClickCategory = () => {
+  if (categoryMenuItems.value.length > 0) {
+    onSelectCategory(categoryMenuItems.value[0].value)
+  }
 }
 </script>

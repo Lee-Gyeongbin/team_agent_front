@@ -21,10 +21,7 @@ export interface LibraryCard {
   archiveYn: 'Y' | 'N'
   archiveDt: string
   sortOrd: number
-  srcDocs: string
   sqlCode: string
-  chartCfg: string
-  qryRslt: string
   useYn: 'Y' | 'N'
   createDt: string
   modifyDt: string
@@ -43,10 +40,7 @@ export interface LibraryCardDetail {
   archiveYn: 'Y' | 'N'
   archiveDt: string
   sortOrd: number
-  srcDocs: string
   sqlCode: string
-  chartCfg: string
-  qryRslt: string
   useYn: 'Y' | 'N'
   createDt: string
   modifyDt: string

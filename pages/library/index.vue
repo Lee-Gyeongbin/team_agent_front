@@ -1,15 +1,8 @@
 <template>
   <div class="library-index">
-    <!-- 로딩 -->
-    <UiLoading
-      v-if="isLoading"
-      overlay
-      text="라이브러리를 불러오는 중..."
-    />
-
     <!-- 에러 -->
     <div
-      v-else-if="errorMessage"
+      v-if="errorMessage"
       class="library-error"
     >
       <p class="library-error__message">{{ errorMessage }}</p>
@@ -358,7 +351,6 @@ const {
   cardList,
   archiveCardList,
   trashCardList,
-  isLoading,
   errorMessage,
   isModalOpen,
   isArchiveModalOpen,
