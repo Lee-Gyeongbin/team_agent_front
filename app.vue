@@ -27,11 +27,19 @@
 
   <!-- 전역 Toast -->
   <UiToast />
+
+  <!-- 전역 로딩 오버레이 -->
+  <UiLoading
+    v-if="isGlobalLoading"
+    overlay
+    :text="globalLoadingText"
+  />
 </template>
 
 <script setup lang="ts">
 const { initTheme } = useTheme()
 const { dialogType, dialogOptions, closeDialog } = useDialogState()
+const { isLoading: isGlobalLoading, loadingText: globalLoadingText } = useLoadingState()
 
 onMounted(() => initTheme())
 </script>

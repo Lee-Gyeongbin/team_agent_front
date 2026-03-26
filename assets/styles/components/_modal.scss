@@ -720,7 +720,34 @@
   }
 
   .library-trash-modal-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     width: 100%;
+
+    .ui-input-wrap {
+      flex: 1;
+    }
+
+    .btn-empty-trash {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+      padding: 6px 10px;
+      border: 1px solid $color-border;
+      border-radius: $border-radius-sm;
+      background: #fff;
+      color: #5c6677;
+      font-size: $font-size-xs;
+      white-space: nowrap;
+      transition: all $transition-fast;
+
+      &:hover {
+        border-color: #aebccb;
+        color: $color-text-primary;
+      }
+    }
   }
 
   .library-trash-modal-body {

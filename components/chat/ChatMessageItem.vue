@@ -31,6 +31,7 @@
           <!-- 라이브러리 카테고리: Actions는 value만 알 수 있어 logId는 여기서 묶어 상위로 전달 -->
           <ChatMessageActions
             :chat-log-reaction="message.chatLogReaction"
+            :knowledge-list="knowledgeList"
             @on-copy="emit('on-copy', message.logId)"
             @on-like="emit('on-like', message.logId)"
             @on-dislike="emit('on-dislike', message.logId)"
@@ -76,10 +77,11 @@
 </template>
 
 <script setup lang="ts">
-import type { ChatMessage } from '~/types/chat'
+import type { ChatMessage, KnowledgeItem } from '~/types/chat'
 
 interface Props {
   message: ChatMessage
+  knowledgeList?: KnowledgeItem[]
 }
 
 defineProps<Props>()

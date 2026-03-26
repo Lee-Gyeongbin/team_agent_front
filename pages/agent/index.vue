@@ -47,7 +47,6 @@
 <script setup lang="ts">
 import draggable from 'vuedraggable'
 import { useAgentStore } from '~/composables/agent/useAgentStore'
-import { openConfirm } from '~/composables/useDialog'
 import type { Agent } from '~/types/agent'
 
 const {

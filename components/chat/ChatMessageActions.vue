@@ -61,6 +61,8 @@
           size="xs"
           icon-only
           title="카테고리 선택"
+          @pointerdown.stop.prevent
+          @click="onClickCategory"
         >
           <template #icon-left>
             <i class="icon-chat-open-book size-20" />
@@ -73,12 +75,15 @@
 
 <script setup lang="ts">
 import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
-import type { ChatLogReaction } from '~/types/chat'
+import type { ChatLogReaction, KnowledgeItem } from '~/types/chat'
 interface Props {
   chatLogReaction?: ChatLogReaction
+  knowledgeList?: KnowledgeItem[]
 }
 
-defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  knowledgeList: () => [],
+})
 
 const emit = defineEmits<{
   'on-copy': []
@@ -90,16 +95,21 @@ const emit = defineEmits<{
   'on-select-category': [value: string]
 }>()
 
-// 🔽 더미 데이터 — 백엔드 연결 시 API 또는 useChatStore 등에서 목록 주입으로 교체 권장
-const categoryMenuItems: DropdownMenuItemDef[] = [
-  { label: '기본 카테고리', value: 'default', icon: 'icon-dropdown-category' },
-  { label: '업무관리', value: 'task', icon: 'icon-dropdown-document' },
-  { label: '인사관리', value: 'hr', icon: 'icon-dropdown-department-line' },
-  { label: '회계관리', value: 'accounting', icon: 'icon-dropdown-calculator' },
-  { label: '시스템관리', value: 'system', icon: 'icon-dropdown-system' },
-]
+const categoryMenuItems = computed<DropdownMenuItemDef[]>(() =>
+  props.knowledgeList.map((item) => ({
+    label: item.categoryNm,
+    value: item.categoryId,
+    icon: 'icon-dropdown-category',
+  })),
+)
 
 const onSelectCategory = (value: string) => {
   emit('on-select-category', value)
+}
+
+const onClickCategory = () => {
+  if (categoryMenuItems.value.length > 0) {
+    onSelectCategory(categoryMenuItems.value[0].value)
+  }
 }
 </script>

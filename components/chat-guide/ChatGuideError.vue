@@ -5,32 +5,57 @@
       <div class="chat-guide-setting-footer">
         <UiButton
           variant="primary"
-          @click="handleConfirmSaveErrorMessage"
+          :disabled="isLoading"
+          @click="onSave"
         >
           저장
         </UiButton>
         <UiButton
           variant="outline"
-          @click="handleConfirmResetErrorMessage"
+          :disabled="isLoading"
+          @click="onReset"
         >
           초기화
         </UiButton>
       </div>
     </div>
 
-    <div class="chat-guide-error-body">
+    <UiLoading
+      v-if="isLoading"
+      overlay
+      :text="loadingText"
+    />
+
+    <UiEmpty
+      v-else-if="isError"
+      :title="errorTitle"
+      :description="errorMessage"
+    >
+      <UiButton
+        size="sm"
+        variant="secondary"
+        @click="handleLoad"
+      >
+        다시 시도
+      </UiButton>
+    </UiEmpty>
+
+    <div
+      v-else
+      class="chat-guide-error-body"
+    >
       <!-- 응답 생성 오류 -->
       <section class="chat-guide-error-section">
         <h4 class="chat-guide-error-section-title">응답 생성 오류</h4>
         <div class="chat-guide-error-items">
           <div
-            v-for="(item, idx) in errorMessageData.responseErrors"
+            v-for="item in errorMessageData.responseErrors"
             :key="item.guideKey"
             class="chat-guide-error-item chat-guide-error-item--error"
           >
             <div class="chat-guide-error-item-header">
               <span class="chat-guide-error-item-label">
-                {{ CHAT_GUIDE_ERROR_CATALOG.responseErrors[idx]?.label ?? item.guideKey }}
+                {{ getChatGuideErrorLabel(item.guideKey) ?? item.guideKey }}
               </span>
               <UiToggle
                 :model-value="item.enblYn === 'Y'"
@@ -54,13 +79,13 @@
         <h4 class="chat-guide-error-section-title">입력 오류 메시지</h4>
         <div class="chat-guide-error-items">
           <div
-            v-for="(item, idx) in errorMessageData.inputErrors"
+            v-for="item in errorMessageData.inputErrors"
             :key="item.guideKey"
             class="chat-guide-error-item chat-guide-error-item--info"
           >
             <div class="chat-guide-error-item-header">
               <span class="chat-guide-error-item-label">
-                {{ CHAT_GUIDE_ERROR_CATALOG.inputErrors[idx]?.label ?? item.guideKey }}
+                {{ getChatGuideErrorLabel(item.guideKey) ?? item.guideKey }}
               </span>
               <UiToggle
                 :model-value="item.enblYn === 'Y'"
@@ -96,13 +121,13 @@
         <h4 class="chat-guide-error-section-title">API 오류 메시지</h4>
         <div class="chat-guide-error-items">
           <div
-            v-for="(item, idx) in errorMessageData.apiErrors"
+            v-for="item in errorMessageData.apiErrors"
             :key="item.guideKey"
             class="chat-guide-error-item chat-guide-error-item--error"
           >
             <div class="chat-guide-error-item-header">
               <span class="chat-guide-error-item-label">
-                {{ CHAT_GUIDE_ERROR_CATALOG.apiErrors[idx]?.label ?? item.guideKey }}
+                {{ getChatGuideErrorLabel(item.guideKey) ?? item.guideKey }}
               </span>
               <UiToggle
                 :model-value="item.enblYn === 'Y'"
@@ -125,17 +150,72 @@
 </template>
 
 <script setup lang="ts">
-import { CHAT_GUIDE_ERROR_CATALOG } from '~/types/chat-guide'
+import { onMounted, ref } from 'vue'
+import { getChatGuideErrorLabel } from '~/types/chat-guide'
 import { toYn, useChatGuideStore } from '~/composables/chat-guide/useChatGuideStore'
 
-const {
-  errorMessageData,
-  handleSelectErrorMessageData,
-  handleConfirmSaveErrorMessage,
-  handleConfirmResetErrorMessage,
-} = useChatGuideStore()
+const { errorMessageData, handleSelectErrorMessageData, handleSaveErrorMessage } = useChatGuideStore()
 
-onMounted(async () => {
-  await handleSelectErrorMessageData()
+const { isLoading, loadingText } = useLoadingState()
+const isError = ref(false)
+const errorMessage = ref('')
+const errorTitle = ref('불러오기 실패')
+
+const handleLoad = async () => {
+  openLoading({ text: '오류 메시지를 불러오는 중...' })
+  isError.value = false
+  errorMessage.value = ''
+  try {
+    await handleSelectErrorMessageData()
+  } catch (err) {
+    isError.value = true
+    errorMessage.value =
+      err instanceof Error && err.message
+        ? `오류 메시지 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요. (${err.message})`
+        : '오류 메시지 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'
+  } finally {
+    closeLoading()
+  }
+}
+
+const onSave = async () => {
+  const confirmed = await openConfirm({
+    title: '오류 메시지 저장',
+    message: '변경된 오류 메시지 내용을 저장하시겠습니까?',
+  })
+  if (!confirmed) return
+
+  try {
+    await handleSaveErrorMessage(errorMessageData.value)
+    openToast({ message: '저장되었습니다.', type: 'success' })
+  } catch (err) {
+    openToast({
+      message:
+        err instanceof Error && err.message
+          ? `오류 메시지 설정 저장에 실패했습니다. 잠시 후 다시 시도해 주세요. (${err.message})`
+          : '오류 메시지 설정 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.',
+      type: 'error',
+    })
+  }
+}
+
+const onReset = async () => {
+  const confirmed = await openConfirm({
+    title: '오류 메시지 초기화',
+    message:
+      '초기화 시 변경된 오류 메시지 내용은 저장되지 않고, 이전에 저장된 값으로 다시 불러옵니다. 계속하시겠습니까?',
+  })
+  if (!confirmed) return
+
+  try {
+    await handleLoad()
+    openToast({ message: '오류 메시지가 초기화되었습니다.', type: 'info' })
+  } catch {
+    // handleLoad에서 UI로 에러 처리
+  }
+}
+
+onMounted(() => {
+  handleLoad()
 })
 </script>

@@ -9,6 +9,7 @@ import type {
   VisualizationStatDetailItem,
   VisualizationStatItem,
   SaveChatLogReactionResponse,
+  KnowledgeItem,
 } from '~/types/chat'
 
 export const useReportsApi = () => {
@@ -65,7 +66,14 @@ export const useReportsApi = () => {
       statDetailList?: VisualizationStatDetailItem[]
     }>(`/ai/chatbot/selectTableDataList.do?logId=${encodeURIComponent(logId)}`)
   }
-
+  // 카테고리 목록 조회
+  const fetchSelectKnowledgeList = async (): Promise<{ dataList: KnowledgeItem[] }> => {
+    return get<{ dataList: KnowledgeItem[] }>('/ai/chatbot/selectKnowledgeList.do')
+  }
+  // 지식창고 저장
+  const fetchCreateKnowledge = async (logId: string, categoryId: string): Promise<void> => {
+    return post('/ai/chatbot/saveKnowledge.do', { logId, categoryId })
+  }
   return {
     fetchSelectChatRoomList,
     fetchSelectModelList,
@@ -76,5 +84,7 @@ export const useReportsApi = () => {
     fetchSelectChatRef,
     fetchSelectTableDataList,
     fetchCreateChatLogReaction,
+    fetchSelectKnowledgeList,
+    fetchCreateKnowledge,
   }
 }

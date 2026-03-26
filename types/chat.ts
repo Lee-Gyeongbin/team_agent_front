@@ -98,6 +98,7 @@ export interface ChatRoom {
   svcTy: string
   qContent: string
   createdAt: string
+  roomTitle: string
 }
 
 /** 빈 대화방 기본값 — 리셋, 초기화 시 재사용 */
@@ -107,6 +108,7 @@ export const EMPTY_CHAT_ROOM: ChatRoom = {
   svcTy: '',
   qContent: '',
   createdAt: '',
+  roomTitle: '',
 }
 
 /** 채팅 로그 목록 API 응답 한 건 (백엔드 VO — qcontent, rcontent, createDt, svcTy 등) */
@@ -288,4 +290,13 @@ declare global {
   interface Window {
     pdfjsLib?: PdfJsLib
   }
+}
+
+export interface KnowledgeItem {
+  categoryId: string
+  userId: string
+  categoryNm: string
+  color: string
+  sortOrd: number
+  createDt: string
 }

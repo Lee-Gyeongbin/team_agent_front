@@ -601,3 +601,8 @@
 .icon-sliders {
   @include icon-file-bg('sliders');
 }
+
+// 휴지통 비우기 (완전삭제)
+.icon-trash-reset {
+  @include icon-file-bg('trash-reset');
+}

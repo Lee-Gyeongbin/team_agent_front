@@ -3,13 +3,7 @@
  */
 
 import type { CalendarDate, CalendarDateTime, DateValue, ZonedDateTime } from '@internationalized/date'
-import {
-  getLocalTimeZone,
-  parseAbsoluteToLocal,
-  parseDateTime,
-  toCalendarDateTime,
-  toZoned,
-} from '@internationalized/date'
+import { parseAbsoluteToLocal, parseDateTime, toCalendarDateTime } from '@internationalized/date'
 
 /** API/서버 datetime 문자열 → UiDatePicker용 DateValue */
 export const dateValueFromApiString = (s: string): DateValue | undefined => {
@@ -27,11 +21,18 @@ export const dateValueFromApiString = (s: string): DateValue | undefined => {
   }
 }
 
-/** DatePicker DateValue → API 저장용 절대 시각 문자열 */
+/** DatePicker DateValue → API 저장용 MySQL DATETIME 문자열 */
 export const apiStringFromDateValue = (v: DateValue | undefined): string => {
   if (!v) return ''
   try {
-    return toZoned(v as CalendarDate | CalendarDateTime | ZonedDateTime, getLocalTimeZone()).toAbsoluteString()
+    const dateTime = toCalendarDateTime(v as CalendarDate | CalendarDateTime | ZonedDateTime)
+    const year = String(dateTime.year).padStart(4, '0')
+    const month = String(dateTime.month).padStart(2, '0')
+    const day = String(dateTime.day).padStart(2, '0')
+    const hour = String(dateTime.hour).padStart(2, '0')
+    const minute = String(dateTime.minute).padStart(2, '0')
+    const second = String(dateTime.second ?? 0).padStart(2, '0')
+    return `${year}-${month}-${day} ${hour}:${minute}:${second}`
   } catch {
     return ''
   }

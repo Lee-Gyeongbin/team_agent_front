@@ -158,7 +158,6 @@ const route = useRoute()
 const { menuList } = useMenu()
 
 const SETTING_MENU_ID = 'ME000003'
-const KNOWLEDGE_MENU_LABEL = '내 지식창고'
 
 const isExpanded = ref(false)
 const isSearchHistoryOpen = ref(true)
@@ -194,7 +193,7 @@ const topNavItems = computed(() => {
     .filter((item: MenuItem) => item.menuId !== SETTING_MENU_ID)
     .map((item: MenuItem) => ({
       menuId: item.menuId,
-      icon: item.menuName === KNOWLEDGE_MENU_LABEL ? 'icon-sidebar-database' : item.icon,
+      icon: item.icon,
       label: item.menuName,
       path: item.srcPath,
     }))

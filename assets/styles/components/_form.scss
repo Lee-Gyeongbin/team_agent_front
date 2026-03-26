@@ -1,16 +1,16 @@
 @use '../utils/variables' as *;
 @use '../utils/mixins' as *;
 
-.inp{
+.inp {
   @include input-reset;
   transition: all 0.3s;
 
-  &::placeholder{
-    color: #AEBCCB;
+  &::placeholder {
+    color: #aebccb;
   }
 }
 
-textarea{
+textarea {
   resize: none;
 }
 
@@ -37,7 +37,7 @@ textarea{
   opacity: 0.6;
 }
 
-.inp-select{
+.inp-select {
   height: 32px;
   line-height: 32px;
   padding: 0 28px 0 8px;
@@ -51,19 +51,21 @@ textarea{
 
   cursor: pointer;
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 
   background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M9.86718 4.20252C10.0314 4.3503 10.0447 4.60321 9.89694 4.76743L6.29734 8.76743C6.22148 8.85172 6.11341 8.89985 6.00001 8.89986C5.88662 8.89986 5.77855 8.85173 5.70269 8.76744L2.10269 4.76744C1.9549 4.60324 1.96821 4.35032 2.13242 4.20254C2.29662 4.05476 2.54954 4.06807 2.69732 4.23227L5.99999 7.9019L9.30228 4.23229C9.45006 4.06808 9.70297 4.05475 9.86718 4.20252Z' fill='%23666666' stroke='%23666666' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E%0A");
   background-size: 12px;
   background-repeat: no-repeat;
   background-position: right 8px center;
 
-  &:focus{
-    border-color: #B2D0FF;
+  &:focus {
+    border-color: #b2d0ff;
   }
 }
 
-.inp-search-grp{
+.inp-search-grp {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -78,12 +80,20 @@ textarea{
   border: 1px solid #dcdfe4;
   border-radius: 6px;
 
-  &:focus{
-    border-color: #B2D0FF;
+  &:focus {
+    border-color: #b2d0ff;
   }
 
-  .btn-search{
+  .btn-search {
     width: 20px;
     height: 20px;
+  }
+}
+
+.library-error {
+  padding: 16px;
+
+  &__message {
+    margin-bottom: 10px;
   }
 }

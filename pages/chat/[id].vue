@@ -11,12 +11,14 @@
       <!-- 🔽 개발: 라이브러리 저장 API — @on-select-category="(logId, v) => { ... }" 또는 스토어 액션 연결 (payload: logId, categoryValue) -->
       <ChatMessageList
         :messages="messages"
+        :knowledge-list="knowledgeList"
         @on-copy="onCopy"
         @on-like="onLike"
         @on-dislike="onDislike"
         @on-regenerate="onRegenerate"
         @on-view-source="onViewSource"
         @on-view-visualization="onViewVisualization"
+        @on-select-category="onSelectCategory"
       />
       <ChatInput v-model="chatMessage" />
     </div>
@@ -87,9 +89,12 @@ const {
   isPanelFullscreen,
   activePanelMessageId,
   pdfRefList,
+  knowledgeList,
   onViewSource,
   onViewVisualization,
   onPanelClose,
+  handleSelectKnowledge,
+  handleCreateKnowledge,
 } = useChatStore()
 const { chatMessage, handleSetChatRoom } = useChatRooms()
 const { startChatSocket, stopChatSocket } = useChatSocket()
@@ -146,6 +151,7 @@ const openDummyVisualization = () => {
 }
 
 onMounted(() => {
+  handleSelectKnowledge()
   startChatSocket()
   // 🔽 더미 — 자동으로 시각화 패널 열기 (개발 완료 후 제거)
   openDummyVisualization()
@@ -167,4 +173,8 @@ onBeforeRouteLeave((to) => {
     stopChatSocket()
   }
 })
+
+const onSelectCategory = async (logId: string, categoryValue: string) => {
+  await handleCreateKnowledge(logId, categoryValue)
+}
 </script>

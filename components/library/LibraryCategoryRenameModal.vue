@@ -128,4 +128,8 @@ const onSubmit = () => {
     min-width: 0;
   }
 }
+
+.modal-dialog-footer {
+  border-top: none;
+}
 </style>

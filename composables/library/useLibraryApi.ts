@@ -25,8 +25,8 @@ export const useLibraryApi = () => {
   }
 
   /** 카테고리 삭제 API */
-  const fetchDeleteCategory = async (category: LibraryCategory): Promise<void> => {
-    await post('/library/deleteCategory.do', { category })
+  const fetchDeleteCategory = async (category: LibraryCategory): Promise<{ result: string; msg: string }> => {
+    return post<{ result: string; msg: string }>('/library/deleteCategory.do', { category })
   }
 
   /** 카드 목록 조회 API */
@@ -99,6 +99,11 @@ export const useLibraryApi = () => {
     return post<{ statList: ChartStatItem[]; detailCdList: ChartDetailCdItem[] }>('/library/chartLabel.do', { logId })
   }
 
+  /** 휴지통 비우기 API */
+  const fetchDeleteTrashCard = async (): Promise<void> => {
+    await post('/library/deleteTrashCard.do', {})
+  }
+
   return {
     fetchCategoryList,
     fetchSaveCategory,
@@ -116,5 +121,6 @@ export const useLibraryApi = () => {
     fetchDocList,
     fetchTableData,
     fetchChartLabel,
+    fetchDeleteTrashCard,
   }
 }

@@ -1,14 +1,16 @@
 <template>
-  <div class="ui-datepicker-wrap">
+  <div
+    class="ui-datepicker-wrap"
+    :class="{ 'has-time': type === 'datetime' }"
+  >
     <DatePickerRoot
-      v-model="dateValue"
+      v-model="internalDate"
       v-model:placeholder="calendarPlaceholder"
       :locale="locale"
-      :granularity="granularity"
+      granularity="day"
       :disabled="disabled"
       :min-value="minValue"
       :max-value="maxValue"
-      :hour-cycle="24"
     >
       <DatePickerField
         v-slot="{ segments }"
@@ -167,6 +169,35 @@
         </DatePickerCalendar>
       </DatePickerContent>
     </DatePickerRoot>
+
+    <!-- 시간 입력 (datetime 전용) -->
+    <div
+      v-if="type === 'datetime'"
+      class="ui-datepicker-time"
+      :class="[`size-dp-${size}`, { 'is-disabled': disabled }]"
+    >
+      <input
+        :value="timeHourDisplay"
+        class="ui-datepicker-time-input"
+        maxlength="2"
+        placeholder="00"
+        :disabled="disabled"
+        @focus="($event.target as HTMLInputElement).select()"
+        @blur="onTimeBlur($event, 'hour')"
+        @keydown="onTimeKeydown($event, 'hour')"
+      />
+      <span class="ui-datepicker-time-sep">:</span>
+      <input
+        :value="timeMinuteDisplay"
+        class="ui-datepicker-time-input"
+        maxlength="2"
+        placeholder="00"
+        :disabled="disabled"
+        @focus="($event.target as HTMLInputElement).select()"
+        @blur="onTimeBlur($event, 'minute')"
+        @keydown="onTimeKeydown($event, 'minute')"
+      />
+    </div>
   </div>
 </template>
 
@@ -188,7 +219,7 @@ import {
   DatePickerRoot,
   DatePickerTrigger,
 } from 'radix-vue'
-import { CalendarDate, type DateValue } from '@internationalized/date'
+import { CalendarDate, CalendarDateTime, type DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
 
 interface Props {
@@ -215,11 +246,93 @@ const emit = defineEmits<{
   'update:modelValue': [value: DateValue | undefined]
 }>()
 
-const granularity = computed(() => (props.type === 'datetime' ? 'minute' : 'day'))
+// ===== 시간 입력 (datetime 전용) =====
+const timeHour = ref(0)
+const timeMinute = ref(0)
 
-const dateValue = computed({
-  get: () => props.modelValue,
-  set: (val) => emit('update:modelValue', val),
+// modelValue 변경 시 시간 동기화
+watch(
+  () => props.modelValue,
+  (v) => {
+    if (v && 'hour' in v) {
+      const dt = v as CalendarDateTime
+      timeHour.value = dt.hour
+      timeMinute.value = dt.minute
+    }
+  },
+  { immediate: true },
+)
+
+const timeHourDisplay = computed(() => String(timeHour.value).padStart(2, '0'))
+const timeMinuteDisplay = computed(() => String(timeMinute.value).padStart(2, '0'))
+
+const emitDateTime = () => {
+  const v = props.modelValue
+  if (!v) return
+  emit('update:modelValue', new CalendarDateTime(v.year, v.month, v.day, timeHour.value, timeMinute.value))
+}
+
+const onTimeBlur = (e: Event, field: 'hour' | 'minute') => {
+  const input = e.target as HTMLInputElement
+  const n = parseInt(input.value, 10)
+  if (field === 'hour' && !isNaN(n) && n >= 0 && n <= 23) {
+    timeHour.value = n
+  } else if (field === 'minute' && !isNaN(n) && n >= 0 && n <= 59) {
+    timeMinute.value = n
+  }
+  // 포맷 복원
+  input.value = field === 'hour' ? timeHourDisplay.value : timeMinuteDisplay.value
+  emitDateTime()
+}
+
+const onTimeKeydown = (e: KeyboardEvent, field: 'hour' | 'minute') => {
+  const input = e.target as HTMLInputElement
+  // 화살표 키로 증감
+  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+    e.preventDefault()
+    const delta = e.key === 'ArrowUp' ? 1 : -1
+    if (field === 'hour') {
+      timeHour.value = (timeHour.value + delta + 24) % 24
+    } else {
+      timeMinute.value = (timeMinute.value + delta + 60) % 60
+    }
+    input.value = field === 'hour' ? timeHourDisplay.value : timeMinuteDisplay.value
+    input.select()
+    emitDateTime()
+  }
+  // Enter 키로 확정
+  if (e.key === 'Enter') {
+    input.blur()
+  }
+  // 숫자, 백스페이스, Tab, 화살표 외 입력 차단
+  if (!/^\d$/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+    e.preventDefault()
+  }
+}
+
+// ===== DatePicker (날짜만) =====
+const internalDate = computed({
+  get: () => {
+    const v = props.modelValue
+    if (!v) return undefined
+    // datetime 모드에서는 날짜만 추출
+    if (props.type === 'datetime') {
+      return new CalendarDate(v.year, v.month, v.day)
+    }
+    return v
+  },
+  set: (val) => {
+    if (!val) {
+      emit('update:modelValue', undefined)
+      return
+    }
+    // datetime 모드에서는 시간 값과 결합
+    if (props.type === 'datetime') {
+      emit('update:modelValue', new CalendarDateTime(val.year, val.month, val.day, timeHour.value, timeMinute.value))
+    } else {
+      emit('update:modelValue', val)
+    }
+  },
 })
 
 // 캘린더에 표시되는 현재 월 (placeholder)
@@ -351,6 +464,87 @@ const onMonthSelect = (val: string | number) => {
   &:hover {
     color: var(--color-primary);
   }
+}
+
+// datetime 모드 — 날짜 + 시간 가로 배치
+.ui-datepicker-wrap.has-time {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+// 시간 입력
+.ui-datepicker-time {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 8px;
+  background-color: #fff;
+  border: 1px solid #c6d2db;
+  border-radius: $border-radius-base;
+  transition: border-color $transition-base;
+  flex-shrink: 0;
+
+  &:hover:not(.is-disabled) {
+    border-color: var(--color-primary);
+  }
+
+  &:focus-within:not(.is-disabled) {
+    border-color: var(--color-primary);
+  }
+
+  // 사이즈
+  &.size-dp-xs {
+    height: $height-xs;
+    font-size: $font-size-sm;
+  }
+
+  &.size-dp-sm {
+    height: $height-sm;
+    font-size: $font-size-base;
+  }
+
+  &.size-dp-md {
+    height: $height-md;
+    font-size: $font-size-base;
+  }
+
+  &.size-dp-lg {
+    height: $height-lg;
+    font-size: $font-size-base;
+  }
+
+  &.is-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.ui-datepicker-time-input {
+  width: 24px;
+  border: none;
+  outline: none;
+  background: none;
+  text-align: center;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+  font-size: inherit;
+  padding: 0;
+
+  &:focus {
+    background: var(--color-primary);
+    color: #fff;
+    border-radius: 2px;
+  }
+
+  &::placeholder {
+    color: #aebccb;
+  }
+}
+
+.ui-datepicker-time-sep {
+  color: $color-text-muted;
+  font-weight: $font-weight-medium;
 }
 
 // 캘린더 팝오버

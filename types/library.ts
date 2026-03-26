@@ -21,10 +21,7 @@ export interface LibraryCard {
   archiveYn: 'Y' | 'N'
   archiveDt: string
   sortOrd: number
-  srcDocs: string
   sqlCode: string
-  chartCfg: string
-  qryRslt: string
   useYn: 'Y' | 'N'
   createDt: string
   modifyDt: string
@@ -43,10 +40,7 @@ export interface LibraryCardDetail {
   archiveYn: 'Y' | 'N'
   archiveDt: string
   sortOrd: number
-  srcDocs: string
   sqlCode: string
-  chartCfg: string
-  qryRslt: string
   useYn: 'Y' | 'N'
   createDt: string
   modifyDt: string
@@ -58,20 +52,11 @@ export interface LibraryCardDetail {
 /** 문서 항목 */
 export interface DocItem {
   docId: string
-  docTitle: string
-  categoryId: string
-  author: string
-  secLvl: string
-  content: string
+  docFileId: string
   fileName: string
   filePath: string
   fileSize: number
   fileType: string
-  keywords: string
-  refUrl: string
-  useYn: 'Y' | 'N'
-  createDt: string
-  modifyDt: string
   relatedPages: string
 }
 

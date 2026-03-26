@@ -1,15 +1,8 @@
 <template>
   <div class="library-index">
-    <!-- 로딩 -->
-    <UiLoading
-      v-if="isLoading"
-      overlay
-      text="라이브러리를 불러오는 중..."
-    />
-
     <!-- 에러 -->
     <div
-      v-else-if="errorMessage"
+      v-if="errorMessage"
       class="library-error"
     >
       <p class="library-error__message">{{ errorMessage }}</p>
@@ -309,6 +302,7 @@
         :is-open="isTrashModalOpen"
         @close="handleTrashModalClose"
         @restore="handleRestoreCard"
+        @empty-trash="handleEmptyTrash"
       />
 
       <!-- 카테고리명 변경 모달 -->
@@ -358,7 +352,6 @@ const {
   cardList,
   archiveCardList,
   trashCardList,
-  isLoading,
   errorMessage,
   isModalOpen,
   isArchiveModalOpen,
@@ -398,6 +391,7 @@ const {
   handleUnarchiveCard,
   handleTrashModalClose,
   handleRestoreCard,
+  handleEmptyTrash,
 } = useLibraryStore()
 
 const contentWrapperRef = ref<HTMLElement | null>(null)

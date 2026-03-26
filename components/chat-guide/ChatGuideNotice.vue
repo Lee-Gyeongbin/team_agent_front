@@ -5,20 +5,45 @@
       <div class="chat-guide-setting-footer">
         <UiButton
           variant="primary"
-          @click="handleConfirmSaveNotice"
+          :disabled="isLoading"
+          @click="onSave"
         >
           저장
         </UiButton>
         <UiButton
           variant="outline"
-          @click="handleConfirmResetNotice"
+          :disabled="isLoading"
+          @click="onReset"
         >
           초기화
         </UiButton>
       </div>
     </div>
 
-    <div class="chat-guide-notice-list">
+    <UiLoading
+      v-if="isLoading"
+      overlay
+      :text="loadingText"
+    />
+
+    <UiEmpty
+      v-else-if="isError"
+      :title="errorTitle"
+      :description="errorMessage"
+    >
+      <UiButton
+        size="sm"
+        variant="secondary"
+        @click="handleLoad"
+      >
+        다시 시도
+      </UiButton>
+    </UiEmpty>
+
+    <div
+      v-else
+      class="chat-guide-notice-list"
+    >
       <!-- 사용 가능 기능 안내 -->
       <div class="chat-guide-notice-block">
         <div class="chat-guide-setting-header">
@@ -146,18 +171,70 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { toYn, useChatGuideStore } from '~/composables/chat-guide/useChatGuideStore'
 
-const {
-  localNoticeForm,
-  chatGuideNoticeConditionOptions,
-  handleSelectNotice,
-  handleConfirmSaveNotice,
-  handleConfirmResetNotice,
-} = useChatGuideStore()
+const { localNoticeForm, chatGuideNoticeConditionOptions, handleSelectNotice, handleSaveNotice } = useChatGuideStore()
 
-onMounted(async () => {
-  await handleSelectNotice()
+const { isLoading, loadingText } = useLoadingState()
+const isError = ref(false)
+const errorMessage = ref('')
+const errorTitle = ref('불러오기 실패')
+
+const handleLoad = async () => {
+  openLoading({ text: '안내멘트를 불러오는 중...' })
+  isError.value = false
+  errorMessage.value = ''
+  try {
+    await handleSelectNotice()
+  } catch (err) {
+    isError.value = true
+    errorMessage.value =
+      err instanceof Error && err.message
+        ? `안내멘트를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요. (${err.message})`
+        : '안내멘트를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'
+  } finally {
+    closeLoading()
+  }
+}
+
+const onSave = async () => {
+  const confirmed = await openConfirm({
+    title: '안내멘트 저장',
+    message: '변경된 안내멘트 내용을 저장하시겠습니까?',
+  })
+  if (!confirmed) return
+
+  try {
+    await handleSaveNotice(localNoticeForm.value)
+    openToast({ message: '저장되었습니다.', type: 'success' })
+  } catch (err) {
+    openToast({
+      message:
+        err instanceof Error && err.message
+          ? `안내멘트 설정 저장에 실패했습니다. 잠시 후 다시 시도해 주세요. (${err.message})`
+          : '안내멘트 설정 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.',
+      type: 'error',
+    })
+  }
+}
+
+const onReset = async () => {
+  const confirmed = await openConfirm({
+    title: '안내멘트 초기화',
+    message: '초기화 시 변경된 안내멘트 내용은 저장되지 않고, 이전에 저장된 값으로 다시 불러옵니다. 계속하시겠습니까?',
+  })
+  if (!confirmed) return
+
+  try {
+    await handleLoad()
+    openToast({ message: '안내멘트 설정이 초기화되었습니다.', type: 'info' })
+  } catch {
+    // handleLoad에서 UI로 에러 처리
+  }
+}
+
+onMounted(() => {
+  handleLoad()
 })
 </script>
