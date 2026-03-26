@@ -101,7 +101,7 @@ export const CHAT_GUIDE_NOTICE_DEFAULT_GUIDE_KEYS = {
   guide: 'NOTICE_INPUT',
   privacy: 'NOTICE_PRIVACY',
   limitation: 'NOTICE_LIMIT',
-} as const satisfies Record<keyof ChatGuideNoticeForm, string>
+} as const
 
 /** 점검/장애 블록별 guideKey (백엔드와 동일하게 유지) */
 export const CHAT_GUIDE_MAINTENANCE_DEFAULT_GUIDE_KEYS = {
