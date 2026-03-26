@@ -23,7 +23,7 @@
     <UiLoading
       v-if="isLoading"
       overlay
-      text="인사멘트를 불러오는 중..."
+      :text="loadingText"
     />
 
     <UiEmpty
@@ -34,7 +34,7 @@
       <UiButton
         size="sm"
         variant="secondary"
-        @click="load"
+        @click="handleLoad"
       >
         다시 시도
       </UiButton>
@@ -138,13 +138,13 @@ const {
   handleInsertGreetingVariable,
 } = useChatGuideStore()
 
-const isLoading = ref(false)
+const { isLoading, loadingText } = useLoadingState()
 const isError = ref(false)
 const errorMessage = ref('')
 const errorTitle = ref('불러오기 실패')
 
-const load = async () => {
-  isLoading.value = true
+const handleLoad = async () => {
+  openLoading({ text: '인사멘트를 불러오는 중...' })
   isError.value = false
   errorMessage.value = ''
   try {
@@ -156,7 +156,7 @@ const load = async () => {
         ? `인사멘트를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요. (${err.message})`
         : '인사멘트를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'
   } finally {
-    isLoading.value = false
+    closeLoading()
   }
 }
 
@@ -189,14 +189,14 @@ const onReset = async () => {
   if (!confirmed) return
 
   try {
-    await load()
+    await handleLoad()
     openToast({ message: '인사멘트 설정이 초기화되었습니다.', type: 'info' })
   } catch {
-    // load에서 UI로 에러 처리
+    // handleLoad에서 UI로 에러 처리
   }
 }
 
 onMounted(() => {
-  load()
+  handleLoad()
 })
 </script>

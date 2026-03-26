@@ -10,7 +10,6 @@ import {
   CHAT_GUIDE_NOTICE_CONDITION_OPTIONS,
   CHAT_GUIDE_NOTICE_DEFAULT_GUIDE_KEYS,
   cloneChatGuideMaintenanceList,
-  cloneChatGuideNoticeForm,
   getChatGuideErrorDefaults,
   getEmptyChatGuideGreetingForm,
   getEmptyChatGuideMaintenanceList,
@@ -18,17 +17,20 @@ import {
 } from '~/types/chat-guide'
 import { useChatGuideApi } from '~/composables/chat-guide/useChatGuideApi'
 
-/** 챗가이드 상태·서비스 — API 호출 조합·토스트·UI 토글 */
+// ============================================
+// 챗가이드 상태 (composable store)
+// ============================================
+
+/** 챗가이드 모듈 상태 (composable store 패턴, 모듈 레벨 공유) */
 const greetingForm = ref<ChatGuideGreetingForm>(getEmptyChatGuideGreetingForm())
 const greetingPreviewAutoNameYn = ref<'Y' | 'N'>('Y')
-const noticeForm = ref<ChatGuideNoticeForm | null>(null)
-const maintenanceList = ref<ChatGuideMaintenanceItem[]>(getEmptyChatGuideMaintenanceList())
-const errorMessageData = ref<ChatGuideErrorData>(getChatGuideErrorDefaults())
 const localNoticeForm = ref<ChatGuideNoticeForm>(getEmptyChatGuideNoticeForm())
 const localMaintenanceList = ref<ChatGuideMaintenanceItem[]>(getEmptyChatGuideMaintenanceList())
+const errorMessageData = ref<ChatGuideErrorData>(getChatGuideErrorDefaults())
 
 export const toYn = (value: boolean): 'Y' | 'N' => (value ? 'Y' : 'N')
 
+// API 응답과 기본 템플릿 병합 (빈 배열이면 기본값 유지)
 const normalizeChatGuideErrorData = (apiData: ChatGuideErrorData | null): ChatGuideErrorData => {
   const base = getChatGuideErrorDefaults()
   if (!apiData) return base
@@ -56,6 +58,7 @@ const previewGreetingMessage = computed(() => {
   return msg
 })
 
+// noticeList 행 배열 → 블록별 폼 (guideKey 매핑)
 const buildNoticeFormFromRows = (items: ChatGuideNoticeItem[]): ChatGuideNoticeForm => {
   const base = getEmptyChatGuideNoticeForm()
   const byGuideKey = new Map(items.map((item) => [item.guideKey, item]))
@@ -66,14 +69,6 @@ const buildNoticeFormFromRows = (items: ChatGuideNoticeItem[]): ChatGuideNoticeF
     privacy: byGuideKey.get(CHAT_GUIDE_NOTICE_DEFAULT_GUIDE_KEYS.privacy) ?? base.privacy,
     limitation: byGuideKey.get(CHAT_GUIDE_NOTICE_DEFAULT_GUIDE_KEYS.limitation) ?? base.limitation,
   }
-}
-
-const syncLocalNoticeForm = () => {
-  localNoticeForm.value = noticeForm.value ? cloneChatGuideNoticeForm(noticeForm.value) : getEmptyChatGuideNoticeForm()
-}
-
-const syncLocalMaintenanceList = () => {
-  localMaintenanceList.value = cloneChatGuideMaintenanceList(maintenanceList.value)
 }
 
 export const useChatGuideStore = () => {
@@ -101,6 +96,7 @@ export const useChatGuideStore = () => {
 
   const handleSaveGreeting = async () => {
     await fetchSaveChatGuideGreeting(greetingForm.value)
+    await handleSelectGreeting()
   }
 
   const handleInsertGreetingVariable = () => {
@@ -110,19 +106,16 @@ export const useChatGuideStore = () => {
   const handleSelectNotice = async (): Promise<void> => {
     try {
       const dataList = await fetchChatGuideNoticeList()
-      noticeForm.value = buildNoticeFormFromRows(dataList ?? [])
-      syncLocalNoticeForm()
+      localNoticeForm.value = buildNoticeFormFromRows(dataList ?? [])
     } catch (err) {
-      noticeForm.value = null
-      syncLocalNoticeForm()
+      localNoticeForm.value = getEmptyChatGuideNoticeForm()
       throw err
     }
   }
 
   const handleSaveNotice = async (payload: ChatGuideNoticeForm) => {
     await fetchSaveChatGuideNotice(payload)
-    noticeForm.value = cloneChatGuideNoticeForm(payload)
-    syncLocalNoticeForm()
+    await handleSelectNotice()
   }
 
   const handleSelectErrorMessageData = async (): Promise<void> => {
@@ -143,22 +136,20 @@ export const useChatGuideStore = () => {
   const handleSelectMaintenance = async (): Promise<void> => {
     try {
       const res = await fetchChatGuideMaintenanceList()
-      maintenanceList.value = res.length === 0 ? getEmptyChatGuideMaintenanceList() : cloneChatGuideMaintenanceList(res)
-      syncLocalMaintenanceList()
+      localMaintenanceList.value =
+        res.length === 0 ? getEmptyChatGuideMaintenanceList() : cloneChatGuideMaintenanceList(res)
     } catch (err) {
-      maintenanceList.value = getEmptyChatGuideMaintenanceList()
-      syncLocalMaintenanceList()
+      localMaintenanceList.value = getEmptyChatGuideMaintenanceList()
       throw err
     }
   }
 
   const handleSaveMaintenance = async (payload: ChatGuideMaintenanceItem[]) => {
     await fetchSaveChatGuideMaintenance(payload)
-    maintenanceList.value = cloneChatGuideMaintenanceList(payload)
-    syncLocalMaintenanceList()
+    await handleSelectMaintenance()
   }
 
-  /** 인사멘트 — 미리보기 이름 자동 치환 토글 */
+  /** 인사멘트 미리보기 — 이름 자동 치환 토글 */
   const handleToggleGreetingPreviewAutoName = (v: boolean) => {
     greetingPreviewAutoNameYn.value = toYn(v)
   }

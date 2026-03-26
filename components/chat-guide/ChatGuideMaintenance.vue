@@ -23,7 +23,7 @@
     <UiLoading
       v-if="isLoading"
       overlay
-      text="점검/장애 안내를 불러오는 중..."
+      :text="loadingText"
     />
 
     <UiEmpty
@@ -34,7 +34,7 @@
       <UiButton
         size="sm"
         variant="secondary"
-        @click="load"
+        @click="handleLoad"
       >
         다시 시도
       </UiButton>
@@ -44,7 +44,7 @@
       v-else
       class="maint-body"
     >
-      <!-- ===== 긴급 공지 ===== -->
+      <!-- 긴급 공지 -->
       <section
         class="maint-section"
         :class="{ 'is-emergency': emergencyRow.enblYn === 'Y' }"
@@ -104,7 +104,7 @@
         </template>
       </section>
 
-      <!-- ===== 정기 점검 안내 ===== -->
+      <!-- 정기 점검 안내 -->
       <section class="maint-section">
         <div class="maint-section-header">
           <div class="maint-section-title-area">
@@ -155,7 +155,7 @@
         </template>
       </section>
 
-      <!-- ===== 장애 발생 안내 ===== -->
+      <!-- 장애 발생 안내 -->
       <section class="maint-section">
         <div class="maint-section-header">
           <div class="maint-section-title-area">
@@ -191,7 +191,7 @@
         </template>
       </section>
 
-      <!-- ===== 서비스 복구 안내 ===== -->
+      <!-- 서비스 복구 안내 -->
       <section class="maint-section">
         <div class="maint-section-header">
           <div class="maint-section-title-area">
@@ -239,7 +239,7 @@ import { toYn, useChatGuideStore } from '~/composables/chat-guide/useChatGuideSt
 
 const { localMaintenanceList, handleSelectMaintenance, handleSaveMaintenance } = useChatGuideStore()
 
-/** 정기 점검 — 사전 안내 기간 (공통코드) */
+/** 사전 안내 기간 셀렉트 옵션 (공통코드 GI000002) */
 const advanceNoticeOptions = ref<{ label: string; value: string }[]>([])
 const initAdvanceNoticeOptions = async () => {
   const codes = await getCodes('GI000002')
@@ -249,6 +249,7 @@ const initAdvanceNoticeOptions = async () => {
   }))
 }
 
+/** guideKey로 점검/장애 행 조회 */
 const rowByGuideKey = (guideKey: string): ChatGuideMaintenanceItem => {
   const row = localMaintenanceList.value.find((row) => row.guideKey === guideKey)
   if (!row) {
@@ -261,7 +262,7 @@ const emergencyRow = computed(() => rowByGuideKey(CHAT_GUIDE_MAINTENANCE_DEFAULT
 const scheduledRow = computed(() => rowByGuideKey(CHAT_GUIDE_MAINTENANCE_DEFAULT_GUIDE_KEYS.scheduled))
 const recoveryRow = computed(() => rowByGuideKey(CHAT_GUIDE_MAINTENANCE_DEFAULT_GUIDE_KEYS.recovery))
 
-/** 점검 행의 startDt/endDt ↔ DatePicker 값 동기화 */
+/** 점검 행 startDt/endDt ↔ DatePicker 바인딩 */
 const maintenanceDateComputed = (row: ComputedRef<ChatGuideMaintenanceItem>, field: 'startDt' | 'endDt') =>
   computed({
     get: () => dateValueFromApiString(row.value[field]),
@@ -275,7 +276,7 @@ const emergencyEndDt = maintenanceDateComputed(emergencyRow, 'endDt')
 const scheduledStartDt = maintenanceDateComputed(scheduledRow, 'startDt')
 const scheduledEndDt = maintenanceDateComputed(scheduledRow, 'endDt')
 
-/** 장애 섹션 토글 — 세 장애 행 enblYn 동기화 */
+/** 장애 유형 섹션 토글 (동일 enblYn 유지) */
 const incidentSectionOn = computed({
   get: () => rowByGuideKey(CHAT_GUIDE_MAINTENANCE_DEFAULT_GUIDE_KEYS.incidentSystem).enblYn === 'Y',
   set: (v) => {
@@ -286,20 +287,19 @@ const incidentSectionOn = computed({
   },
 })
 
-const isLoading = ref(false)
+const { isLoading, loadingText } = useLoadingState()
 const isError = ref(false)
 const errorMessage = ref('')
 const errorTitle = ref('불러오기 실패')
 
-const load = async () => {
-  isLoading.value = true
+const handleLoad = async () => {
+  openLoading({ text: '점검/장애 안내를 불러오는 중...' })
   isError.value = false
   errorMessage.value = ''
   try {
     await initAdvanceNoticeOptions()
     await handleSelectMaintenance()
 
-    // "사전 안내 기간" 기본값은 옵션 1번의 value로 맞춰 둠
     const defaultAdvanceNotice = advanceNoticeOptions.value[0]?.value
     if (defaultAdvanceNotice && !scheduledRow.value.advanceNoticeCd) {
       scheduledRow.value.advanceNoticeCd = defaultAdvanceNotice
@@ -311,7 +311,7 @@ const load = async () => {
         ? `점검/장애 안내를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요. (${err.message})`
         : '점검/장애 안내를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'
   } finally {
-    isLoading.value = false
+    closeLoading()
   }
 }
 
@@ -345,14 +345,14 @@ const onReset = async () => {
   if (!confirmed) return
 
   try {
-    await load()
+    await handleLoad()
     openToast({ message: '점검/장애 안내가 초기화되었습니다.', type: 'info' })
   } catch {
-    // load에서 UI로 에러 처리
+    // handleLoad에서 UI로 에러 처리
   }
 }
 
 onMounted(() => {
-  load()
+  handleLoad()
 })
 </script>

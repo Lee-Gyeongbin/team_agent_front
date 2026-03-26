@@ -23,7 +23,7 @@
     <UiLoading
       v-if="isLoading"
       overlay
-      text="오류 메시지를 불러오는 중..."
+      :text="loadingText"
     />
 
     <UiEmpty
@@ -34,7 +34,7 @@
       <UiButton
         size="sm"
         variant="secondary"
-        @click="load"
+        @click="handleLoad"
       >
         다시 시도
       </UiButton>
@@ -49,13 +49,13 @@
         <h4 class="chat-guide-error-section-title">응답 생성 오류</h4>
         <div class="chat-guide-error-items">
           <div
-            v-for="(item, idx) in errorMessageData.responseErrors"
+            v-for="item in errorMessageData.responseErrors"
             :key="item.guideKey"
             class="chat-guide-error-item chat-guide-error-item--error"
           >
             <div class="chat-guide-error-item-header">
               <span class="chat-guide-error-item-label">
-                {{ CHAT_GUIDE_ERROR_CATALOG.responseErrors[idx]?.label ?? item.guideKey }}
+                {{ getChatGuideErrorLabel(item.guideKey) ?? item.guideKey }}
               </span>
               <UiToggle
                 :model-value="item.enblYn === 'Y'"
@@ -79,13 +79,13 @@
         <h4 class="chat-guide-error-section-title">입력 오류 메시지</h4>
         <div class="chat-guide-error-items">
           <div
-            v-for="(item, idx) in errorMessageData.inputErrors"
+            v-for="item in errorMessageData.inputErrors"
             :key="item.guideKey"
             class="chat-guide-error-item chat-guide-error-item--info"
           >
             <div class="chat-guide-error-item-header">
               <span class="chat-guide-error-item-label">
-                {{ CHAT_GUIDE_ERROR_CATALOG.inputErrors[idx]?.label ?? item.guideKey }}
+                {{ getChatGuideErrorLabel(item.guideKey) ?? item.guideKey }}
               </span>
               <UiToggle
                 :model-value="item.enblYn === 'Y'"
@@ -121,13 +121,13 @@
         <h4 class="chat-guide-error-section-title">API 오류 메시지</h4>
         <div class="chat-guide-error-items">
           <div
-            v-for="(item, idx) in errorMessageData.apiErrors"
+            v-for="item in errorMessageData.apiErrors"
             :key="item.guideKey"
             class="chat-guide-error-item chat-guide-error-item--error"
           >
             <div class="chat-guide-error-item-header">
               <span class="chat-guide-error-item-label">
-                {{ CHAT_GUIDE_ERROR_CATALOG.apiErrors[idx]?.label ?? item.guideKey }}
+                {{ getChatGuideErrorLabel(item.guideKey) ?? item.guideKey }}
               </span>
               <UiToggle
                 :model-value="item.enblYn === 'Y'"
@@ -151,18 +151,18 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { CHAT_GUIDE_ERROR_CATALOG } from '~/types/chat-guide'
+import { getChatGuideErrorLabel } from '~/types/chat-guide'
 import { toYn, useChatGuideStore } from '~/composables/chat-guide/useChatGuideStore'
 
 const { errorMessageData, handleSelectErrorMessageData, handleSaveErrorMessage } = useChatGuideStore()
 
-const isLoading = ref(false)
+const { isLoading, loadingText } = useLoadingState()
 const isError = ref(false)
 const errorMessage = ref('')
 const errorTitle = ref('불러오기 실패')
 
-const load = async () => {
-  isLoading.value = true
+const handleLoad = async () => {
+  openLoading({ text: '오류 메시지를 불러오는 중...' })
   isError.value = false
   errorMessage.value = ''
   try {
@@ -174,7 +174,7 @@ const load = async () => {
         ? `오류 메시지 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요. (${err.message})`
         : '오류 메시지 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'
   } finally {
-    isLoading.value = false
+    closeLoading()
   }
 }
 
@@ -208,14 +208,14 @@ const onReset = async () => {
   if (!confirmed) return
 
   try {
-    await load()
+    await handleLoad()
     openToast({ message: '오류 메시지가 초기화되었습니다.', type: 'info' })
   } catch {
-    // load에서 UI로 에러 처리
+    // handleLoad에서 UI로 에러 처리
   }
 }
 
 onMounted(() => {
-  load()
+  handleLoad()
 })
 </script>

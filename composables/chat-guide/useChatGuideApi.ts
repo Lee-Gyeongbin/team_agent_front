@@ -10,6 +10,10 @@ import type {
   ChatGuideNoticeListResponse,
 } from '~/types/chat-guide'
 
+// ============================================
+// 챗가이드 API (/chatguide/*.do)
+// ============================================
+
 export const useChatGuideApi = () => {
   const { get, post } = useApi()
 
