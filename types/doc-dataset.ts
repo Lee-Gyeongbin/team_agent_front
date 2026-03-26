@@ -55,25 +55,32 @@ export interface DocDatasetDetail {
 export interface CategoryItem {
   categoryId: string
   categoryName: string
+  parnCatId?: string
+  catLvl?: number
+  sortOrd?: number
+  createDt?: string
 }
 
 export interface DocDatasetSelectedDoc {
   docId: string
-  // 백엔드 "전체 문서 목록" 응답에는 datasetId가 포함되지 않을 수 있어 optional 처리
-  datasetId?: string
-  docTitle?: string
-  size?: string
+  docTitle: string
   categoryId?: string
-  categoryName?: string
+  author?: string
+  secLvl?: string
+  content?: string
+  keywords?: string
+  refUrl?: string
+  fileCount?: number
+  useYn?: string
+  createDt?: string
+  modifyDt?: string
 }
 
 export interface DocDatasetSelectedUrl {
-  urlId: string
-  // 백엔드 "전체 URL 목록" 응답에는 datasetId가 포함되지 않을 수 있어 optional 처리
-  datasetId?: string
-  urlName?: string
-  urlAddr?: string
   categoryId?: string
+  urlId: string
+  urlName: string
+  urlAddr: string
 }
 
 // 데이터셋-문서 매핑 목록 아이템
@@ -93,6 +100,9 @@ export interface DocDatasetSelectResponse {
   // 데이터셋 매핑 문서/URL (edit 시 selectedDocIds/selectedUrlIds 세팅용)
   dsDocList?: DocIdItem[]
   dsUrlList?: UrlIdItem[]
+}
+
+export interface DocDatasetSourceListResponse {
   categoryList?: CategoryItem[]
   docList?: DocDatasetSelectedDoc[]
   urlList?: DocDatasetSelectedUrl[]
@@ -126,8 +136,8 @@ export interface DocDatasetSavePayload {
   langDetectCd: string
   promptId: string
   llmCd: string
-  docIdList: DocDatasetSelectedDoc[]
-  urlIdList: DocDatasetSelectedUrl[]
+  docIdList: DocIdItem[]
+  urlIdList: UrlIdItem[]
 }
 
 // 생성 폼

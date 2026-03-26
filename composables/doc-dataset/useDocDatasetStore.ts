@@ -10,7 +10,7 @@ import type {
   DocDatasetSearchResult,
   DocDatasetSearchSummary,
   Prompt,
-  DocDatasetSelectResponse,
+  DocDatasetSourceListResponse,
   DocDatasetSummary,
 } from '~/types/doc-dataset'
 const {
@@ -113,11 +113,11 @@ const llmOptions = ref<{ label: string; value: string }[]>([])
 // 선택 데이터셋 상세
 const selectedDatasetDetail = ref<DocDatasetDetail | null>(null)
 // 선택 데이터셋 카테고리 목록
-const selectedDatasetCategoryList = ref<DocDatasetSelectResponse['categoryList']>([])
+const selectedDatasetCategoryList = ref<DocDatasetSourceListResponse['categoryList']>([])
 // 선택 데이터셋 문서 목록
-const selectedDatasetDocList = ref<DocDatasetSelectResponse['docList']>([])
+const selectedDatasetDocList = ref<DocDatasetSourceListResponse['docList']>([])
 // 선택 데이터셋 URL 목록
-const selectedDatasetUrlList = ref<DocDatasetSelectResponse['urlList']>([])
+const selectedDatasetUrlList = ref<DocDatasetSourceListResponse['urlList']>([])
 // 폼 데이터
 const formData = reactive<DocDatasetForm>(getDefaultForm())
 

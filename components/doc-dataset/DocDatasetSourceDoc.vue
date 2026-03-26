@@ -102,7 +102,7 @@
               </span>
             </span>
             <span class="doc-dataset-source-doc-file-name">{{ item.docTitle }}</span>
-            <span class="doc-dataset-source-doc-file-size">{{ item.size }}</span>
+            <span class="doc-dataset-source-doc-file-size">{{ item.fileCount ?? 0 }}개</span>
           </div>
 
           <UiEmpty

@@ -1,6 +1,7 @@
 import type {
   DocDataset,
   DocDatasetSelectResponse,
+  DocDatasetSourceListResponse,
   DocDatasetSavePayload,
   DocDatasetSummary,
   DocDatasetHistory,
@@ -42,7 +43,7 @@ export const useDocDatasetApi = () => {
 
   // ===== 데이터소스 목록 조회 =====
   const fetchDatasetSrcList = async () => {
-    return post<DocDatasetSelectResponse>('/dataset/selectDatasetSrcList.do', {})
+    return post<DocDatasetSourceListResponse>('/dataset/selectDatasetSrcList.do', {})
   }
 
   // ===== 데이터셋 저장 =====
