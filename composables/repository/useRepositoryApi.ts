@@ -1,13 +1,13 @@
 import type {
   CategoryItem,
-  DocRepositoryDetailResponse,
+  DocRepositoryDetailApiResponse,
   Document,
   DocumentDeleteItem,
   DocumentSavePayload,
   DocExistCheckItem,
   UrlItem,
-  CategoryActionResponse,
 } from '~/types/repository'
+import type { ActionResponse } from '~/types/global'
 
 // 🔽 Mock — 백엔드 API 완성 시 useApi 패턴으로 교체
 const MOCK_BASE = '/mock/repository'
@@ -40,18 +40,18 @@ export const useRepositoryApi = () => {
     categoryId?: string
     categoryName: string
     parnCatId?: string | null
-  }): Promise<CategoryActionResponse> => {
-    return unwrapData(await post<{ data: CategoryActionResponse }>('/repository/saveCategory.do', data))
+  }): Promise<ActionResponse> => {
+    return unwrapData(await post<{ data: ActionResponse }>('/repository/saveCategory.do', data))
   }
 
-  const fetchRenameCategory = async (categoryId: string, categoryName: string): Promise<CategoryActionResponse> => {
+  const fetchRenameCategory = async (categoryId: string, categoryName: string): Promise<ActionResponse> => {
     return unwrapData(
-      await post<{ data: CategoryActionResponse }>('/repository/renameCategory.do', { categoryId, categoryName }),
+      await post<{ data: ActionResponse }>('/repository/renameCategory.do', { categoryId, categoryName }),
     )
   }
 
-  const fetchDeleteCategory = async (id: string) => {
-    return post<{ data: { id: string } }>(`${MOCK_BASE}/category/delete`, { id })
+  const fetchDeleteCategory = async (categoryId: string): Promise<ActionResponse> => {
+    return post<ActionResponse>('/repository/deleteCategory.do', { categoryId })
   }
 
   // ===== 문서 =====
@@ -75,9 +75,9 @@ export const useRepositoryApi = () => {
     return post<{ data: number }>('/repository/selectDocumentExistCnt.do', { categoryId, docTitle })
   }
 
-  /** 문서 상세 — docId 기준, 응답은 루트에 문서 필드( `data` 래핑 없음 ) */
+  /** 문서 상세 — docId 기준, 응답은 { data, fileList } 구조 */
   const fetchSelectDocRepositoryDetail = async (docId: string) => {
-    return post<{ data: DocRepositoryDetailResponse }>('/repository/selectDocRepositoryDetail.do', { docId })
+    return post<DocRepositoryDetailApiResponse>('/repository/selectDocRepositoryDetail.do', { docId })
   }
 
   /** TB_DOC (CATEGORY_ID, FILE_NAME, FILE_TYPE) IN 조건 건수 — selectDocExistCnt */
@@ -85,8 +85,8 @@ export const useRepositoryApi = () => {
     return post<{ data: number }>('/repository/selectDocExistCnt.do', { docIdList })
   }
 
-  const fetchSaveDocument = async (data: DocumentSavePayload) => {
-    return await post<{ data: CategoryActionResponse }>('/repository/saveDocument.do', data)
+  const fetchSaveDocument = async (data: DocumentSavePayload): Promise<ActionResponse> => {
+    return unwrapData<ActionResponse>(await post<{ data: ActionResponse }>('/repository/saveDocument.do', data))
   }
 
   /**

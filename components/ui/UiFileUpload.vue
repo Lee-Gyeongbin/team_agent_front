@@ -12,9 +12,7 @@
       <div class="ui-file-upload-icon-wrap">
         <i class="icon icon-arrow-down-gray size-24 ui-file-upload-icon" />
       </div>
-      <p class="ui-file-upload-text">
-        <span class="ui-file-upload-highlight">파일 선택</span> 또는 여기에 드래그
-      </p>
+      <p class="ui-file-upload-text"><span class="ui-file-upload-highlight">파일 선택</span> 또는 여기에 드래그</p>
       <p
         v-if="hint"
         class="ui-file-upload-hint"
@@ -40,12 +38,13 @@
 
     <!-- 파일 목록 -->
     <div
-      v-if="modelValue.length > 0"
+      v-if="totalFileCount > 0"
       class="ui-file-upload-list"
     >
       <div class="ui-file-upload-list-header">
-        <span class="ui-file-upload-list-count">첨부파일 {{ modelValue.length }}개</span>
+        <span class="ui-file-upload-list-count">첨부파일 {{ totalFileCount }}개</span>
         <button
+          v-if="modelValue.length > 0"
           type="button"
           class="ui-file-upload-clear"
           @click="$emit('update:modelValue', [])"
@@ -55,8 +54,30 @@
       </div>
       <ul class="ui-file-upload-items">
         <li
+          v-for="(file, idx) in attachedFileList"
+          :key="`attached-${file.docFileId || idx}`"
+          class="ui-file-upload-item"
+        >
+          <i :class="['icon', 'size-16', getFileIcon(file.fileName)]" />
+          <button
+            v-if="isDownloadable"
+            type="button"
+            class="ui-file-upload-item-name ui-file-upload-item-download"
+            @click="onDownloadAttachedFile(file)"
+          >
+            {{ file.fileName }}
+          </button>
+          <span
+            v-else
+            class="ui-file-upload-item-name"
+          >
+            {{ file.fileName }}
+          </span>
+          <span class="ui-file-upload-item-size">{{ formatSize(Number(file.fileSize || 0)) }}</span>
+        </li>
+        <li
           v-for="(file, idx) in modelValue"
-          :key="idx"
+          :key="`new-${idx}`"
           class="ui-file-upload-item"
         >
           <i :class="['icon', 'size-16', getFileIcon(file.name)]" />
@@ -76,10 +97,14 @@
 </template>
 
 <script setup lang="ts">
+import { useFileStore } from '~/composables/com/useFileStore'
 import { openToast } from '~/composables/useToast'
+import type { FileItem } from '~/types/repository'
 
 interface Props {
   modelValue: File[]
+  attachedFileList?: FileItem[]
+  isDownloadable?: boolean
   multiple?: boolean
   accept?: string
   hint?: string
@@ -95,6 +120,8 @@ const props = withDefaults(defineProps<Props>(), {
   hint: 'PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, HWP, CSV, TXT (최대 50MB)',
   maxSize: 50 * 1024 * 1024,
   maxFiles: 1,
+  attachedFileList: () => [],
+  isDownloadable: false,
 })
 
 const emit = defineEmits<{
@@ -103,6 +130,7 @@ const emit = defineEmits<{
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const isDragging = ref(false)
+const { onDownloadFile } = useFileStore()
 
 /** 이름·크기·수정시각으로 동일 파일 여부 판별 */
 const isSameFile = (a: File, b: File) => a.name === b.name && a.size === b.size && a.lastModified === b.lastModified
@@ -198,6 +226,19 @@ const getFileIcon = (name: string): string => {
   if (ext === 'txt' || ext === 'csv') return 'icon-file-txt'
   return 'icon-document'
 }
+
+const totalFileCount = computed(() => props.attachedFileList.length + props.modelValue.length)
+
+const onDownloadAttachedFile = async (file: FileItem) => {
+  if (!props.isDownloadable) return
+  const docId = String(file.docId ?? '').trim()
+  if (!docId) {
+    openToast({ message: '다운로드할 파일 정보가 없습니다.', type: 'warning' })
+    return
+  }
+  const docFileId = String(file.docFileId ?? '').trim()
+  await onDownloadFile(docId, docFileId)
+}
 </script>
 
 <style lang="scss" scoped>
@@ -211,7 +252,9 @@ const getFileIcon = (name: string): string => {
   padding: 24px 16px;
   text-align: center;
   cursor: pointer;
-  transition: border-color $transition-fast, background-color $transition-fast;
+  transition:
+    border-color $transition-fast,
+    background-color $transition-fast;
 
   &:hover,
   &.is-dragging {
@@ -315,6 +358,20 @@ const getFileIcon = (name: string): string => {
   min-width: 0;
 }
 
+.ui-file-upload-item-download {
+  background: none;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+
+  &:hover {
+    color: var(--color-primary);
+    text-decoration: underline;
+  }
+}
+
 .ui-file-upload-item-size {
   @include typo($body-xsmall);
   color: $color-text-muted;
@@ -329,7 +386,9 @@ const getFileIcon = (name: string): string => {
   padding: 2px;
   flex-shrink: 0;
   border-radius: $border-radius-sm;
-  transition: color $transition-fast, background-color $transition-fast;
+  transition:
+    color $transition-fast,
+    background-color $transition-fast;
 
   &:hover {
     color: $color-error;

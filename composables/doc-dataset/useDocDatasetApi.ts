@@ -1,11 +1,13 @@
 import type {
   DocDataset,
   DocDatasetSelectResponse,
+  DocDatasetSourceListResponse,
   DocDatasetSavePayload,
   DocDatasetSummary,
   DocDatasetHistory,
   DocDatasetSearchResult,
   DocDatasetSearchSummary,
+  Prompt,
 } from '~/types/doc-dataset'
 import { useApi } from '~/composables/com/useApi'
 
@@ -41,7 +43,7 @@ export const useDocDatasetApi = () => {
 
   // ===== 데이터소스 목록 조회 =====
   const fetchDatasetSrcList = async () => {
-    return post<DocDatasetSelectResponse>('/dataset/selectDatasetSrcList.do', {})
+    return post<DocDatasetSourceListResponse>('/dataset/selectDatasetSrcList.do', {})
   }
 
   // ===== 데이터셋 저장 =====
@@ -81,6 +83,10 @@ export const useDocDatasetApi = () => {
     return post<{ data: number }>('/dataset/deleteDocDatasetHistory.do', { histId })
   }
 
+  const fetchSelectPromptList = async () => {
+    return post<{ dataList: Prompt[] }>('/dataset/selectPromptList.do', {})
+  }
+
   // ===== 검색 테스트 =====
   const fetchSearchDocDataset = async (params: {
     datasetId: string
@@ -106,5 +112,6 @@ export const useDocDatasetApi = () => {
     fetchSaveDocDatasetHistory,
     fetchDeleteDocDatasetHistory,
     fetchSearchDocDataset,
+    fetchSelectPromptList,
   }
 }

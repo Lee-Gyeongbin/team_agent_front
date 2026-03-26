@@ -53,6 +53,7 @@
 <script setup lang="ts">
 import { toRaw } from 'vue'
 import DocDatasetSourceDoc from '~/components/doc-dataset/DocDatasetSourceDoc.vue'
+import DocDatasetSourceUrl from '~/components/doc-dataset/DocDatasetSourceUrl.vue'
 import type { CategoryItem, DocDatasetForm, DocDatasetSelectedDoc, DocDatasetSelectedUrl } from '~/types/doc-dataset'
 
 interface Props {

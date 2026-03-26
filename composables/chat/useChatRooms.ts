@@ -1,8 +1,16 @@
 import { useAuth } from '~/composables/com/useAuth'
 import { EMPTY_CHAT_ROOM, type ChatRoom, type ChatLogListRow, type SubOption, type ModelOption } from '~/types/chat'
 const { user } = useAuth()
-const { fetchSelectChatRoomList, fetchCreateChatRoom, fetchSelectModelList, fetchSelectRagDsList, fetchSelectDmList } =
-  useReportsApi()
+const {
+  fetchSelectChatRoomList,
+  fetchCreateChatRoom,
+  fetchSelectModelList,
+  fetchSelectRagDsList,
+  fetchSelectDmList,
+  fetchPinChatRoom,
+  fetchRenameChatRoom,
+  fetchDeleteChatRoom,
+} = useReportsApi()
 const { resolveSvcTy, activeSearchModes, subOptions, selectedSubOption } = useChatSearchState()
 const { messages, pushQuestionMessage, pushAnswerPlaceholder } = useChatMessages()
 const { ensureWebSocketAndSend } = useChatSocket()
@@ -77,6 +85,7 @@ export const useChatRooms = () => {
       createdAt: res.data.createdAt,
       svcTy,
       roomTitle: res.data.roomTitle,
+      fixYn: 'N',
     }
     chatRoom.value = createdRoom
     chatRoomList.value = [createdRoom, ...chatRoomList.value.filter((room) => room.roomId !== createdRoom.roomId)]
@@ -122,6 +131,48 @@ export const useChatRooms = () => {
     return subOptions.value
   }
 
+  /** 채팅방 고정 */
+  const handlePinChatRoom = async (room: ChatRoom) => {
+    try {
+      const res = await fetchPinChatRoom(room)
+      openToast({ message: '채팅방 고정되었습니다.', type: 'success' })
+      selectChatRoomList()
+    } catch {
+      openToast({ message: '채팅방 고정에 실패했습니다.', type: 'error' })
+    }
+  }
+
+  /** 채팅방 이름 변경 */
+  const handleRenameChatRoom = async (room: ChatRoom, roomTitle: string) => {
+    try {
+      await fetchRenameChatRoom(room.roomId, roomTitle)
+      openToast({ message: '검색기록 타이틀이 변경되었습니다.', type: 'success' })
+      await selectChatRoomList()
+    } catch {
+      openToast({ message: '검색기록 타이틀 변경에 실패했습니다.', type: 'error' })
+    }
+  }
+
+  /** 검색기록 삭제 */
+  const handleDeleteChatRoom = async (room: ChatRoom) => {
+    openConfirm({
+      title: '검색기록 삭제',
+      message: '검색기록을 삭제하시겠습니까?',
+      onConfirm: async () => {
+        try {
+          await fetchDeleteChatRoom(room.roomId)
+          openToast({ message: '검색기록이 삭제되었습니다.', type: 'success' })
+          await selectChatRoomList()
+        } catch {
+          openToast({ message: '검색기록 삭제에 실패했습니다.', type: 'error' })
+        }
+      },
+    })
+  }
+
+  /** 검색기록 공유 */
+  const handleShareChatRoom = async (room: ChatRoom) => {}
+
   return {
     chatRoom,
     chatMessage,
@@ -134,5 +185,9 @@ export const useChatRooms = () => {
     syncSearchModeFromLastLog,
     resetChatRoom,
     handleSetChatRoom,
+    handlePinChatRoom,
+    handleRenameChatRoom,
+    handleDeleteChatRoom,
+    handleShareChatRoom,
   }
 }

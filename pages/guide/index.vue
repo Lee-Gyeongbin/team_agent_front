@@ -382,6 +382,7 @@ const onDemoSave = () => {
 // 섹션 1: 작업 현황
 // url: 클릭 시 새 창으로 열 수 있는 경로 (동적 파라미터 포함 URL은 제외)
 const statusList = [
+  { category: '페이지', name: '대시보드', location: '/stats', url: '/stats', status: 'done' },
   { category: '페이지', name: '채팅 메인', location: '/chat', url: '/chat', status: 'done' },
   { category: '페이지', name: '채팅 상세', location: '/chat/:id', url: '', status: 'wip' },
   { category: '페이지', name: '라이브러리', location: '/library', url: '/library', status: 'done' },

@@ -74,6 +74,18 @@ export const useReportsApi = () => {
   const fetchCreateKnowledge = async (logId: string, categoryId: string): Promise<void> => {
     return post('/ai/chatbot/saveKnowledge.do', { logId, categoryId })
   }
+  // 채팅방 고정
+  const fetchPinChatRoom = async (room: ChatRoom): Promise<void> => {
+    return post('/ai/chatbot/pinChatRoom.do', { roomId: room.roomId })
+  }
+  // 채팅방 이름 변경
+  const fetchRenameChatRoom = async (roomId: string, roomTitle: string): Promise<void> => {
+    return post('/ai/chatbot/renameChatRoom.do', { roomId, roomTitle })
+  }
+  // 채팅방 삭제
+  const fetchDeleteChatRoom = async (roomId: string): Promise<void> => {
+    return post('/ai/chatbot/deleteChatRoom.do', { roomId })
+  }
   return {
     fetchSelectChatRoomList,
     fetchSelectModelList,
@@ -86,5 +98,8 @@ export const useReportsApi = () => {
     fetchCreateChatLogReaction,
     fetchSelectKnowledgeList,
     fetchCreateKnowledge,
+    fetchPinChatRoom,
+    fetchRenameChatRoom,
+    fetchDeleteChatRoom,
   }
 }

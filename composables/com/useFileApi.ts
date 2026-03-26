@@ -1,5 +1,5 @@
 import { useApi } from '~/composables/com/useApi'
-import type { FileDeleteResponse, FileMeta, FileUploadResponse, FileUrlResponse } from '~/types/file'
+import type { FileDeleteResponse, FileDownloadResponse, FileMeta, FileUploadResponse, FileUrlResponse } from '~/types/file'
 
 export const useFileApi = () => {
   const { get, post } = useApi()
@@ -18,8 +18,8 @@ export const useFileApi = () => {
    * - FileController.viewFile(FileVO dataVO)에 매핑
    * - 보통 docId 기준으로 호출
    */
-  const fetchViewFileUrl = async (docId: string) => {
-    return post<FileUrlResponse>('/com/file/viewFile.do', { docId })
+  const fetchViewFileUrl = async (docId: string, docFileId: string) => {
+    return post<FileUrlResponse>('/com/file/viewFile.do', { docId, docFileId })
   }
 
   /**
@@ -27,8 +27,11 @@ export const useFileApi = () => {
    * - FileController.downloadFile(FileVO dataVO)에 매핑
    * - @RequestParam 기반이지만, 프론트에서는 쿼리스트링 GET 형태로 호출
    */
-  const fetchDownloadFileUrl = async (docId: string) => {
-    return post<FileUrlResponse>('/com/file/downloadFile.do', { docId })
+  const fetchDownloadFileUrl = async (docId: string, docFileId?: string) => {
+    return post<FileDownloadResponse>('/com/file/downloadFile.do', {
+      docId,
+      docFileId: docFileId ?? '',
+    })
   }
 
   /**

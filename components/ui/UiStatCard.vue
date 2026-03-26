@@ -1,25 +1,30 @@
 <template>
   <div class="ui-stat-card">
-    <div
-      class="ui-stat-card-icon"
-      :class="`is-${color}`"
-    >
-      <i
-        :class="[icon, `size-${iconSize}`]"
-      />
-    </div>
-    <div class="ui-stat-card-info">
+    <div class="ui-stat-card-top">
+      <div
+        class="ui-stat-card-icon"
+        :class="`is-${color}`"
+      >
+        <i :class="[icon, `size-${iconSize}`]" />
+      </div>
       <span class="ui-stat-card-label">{{ label }}</span>
+    </div>
+    <div class="ui-stat-card-bottom">
       <span class="ui-stat-card-value">
         <slot>{{ value }}</slot>
       </span>
       <span
-        v-if="sub || $slots.sub"
-        class="ui-stat-card-sub"
+        v-if="unit"
+        class="ui-stat-card-unit"
+        >{{ unit }}</span
       >
-        <slot name="sub">{{ sub }}</slot>
-      </span>
     </div>
+    <span
+      v-if="sub || $slots.sub"
+      class="ui-stat-card-sub"
+    >
+      <slot name="sub">{{ sub }}</slot>
+    </span>
   </div>
 </template>
 
@@ -28,6 +33,7 @@ interface Props {
   icon: string
   label: string
   value?: string | number
+  unit?: string
   sub?: string
   color?: 'blue' | 'purple' | 'green' | 'orange' | 'red' | 'gray'
   iconSize?: number
@@ -35,6 +41,7 @@ interface Props {
 
 withDefaults(defineProps<Props>(), {
   value: '',
+  unit: '',
   sub: '',
   color: 'blue',
   iconSize: 24,
@@ -44,26 +51,33 @@ withDefaults(defineProps<Props>(), {
 <style lang="scss" scoped>
 .ui-stat-card {
   display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 13px 16px;
+  background: #fff;
+  border: 1px solid #dce4e9;
+  border-radius: 16px;
+  height: 138px;
+}
+
+.ui-stat-card-top {
+  display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px;
-  background: #fff;
-  border: 1px solid $color-border;
-  border-radius: $border-radius-lg;
 }
 
 .ui-stat-card-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: $border-radius-lg;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
   flex-shrink: 0;
 
   &.is-blue {
-    background: #eef3ff;
-    color: #3b82f6;
+    background: #dee9fb;
+    color: #3c69db;
   }
 
   &.is-purple {
@@ -72,8 +86,8 @@ withDefaults(defineProps<Props>(), {
   }
 
   &.is-green {
-    background: #ecfdf5;
-    color: #22c55e;
+    background: #d4f5dd;
+    color: #009f4d;
   }
 
   &.is-orange {
@@ -92,21 +106,33 @@ withDefaults(defineProps<Props>(), {
   }
 }
 
-.ui-stat-card-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
+.ui-stat-card-label {
+  font-family: 'Pretendard', sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 1.5;
+  color: #2d3139;
 }
 
-.ui-stat-card-label {
-  @include typo($body-small);
-  color: $color-text-secondary;
+.ui-stat-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
 }
 
 .ui-stat-card-value {
+  font-family: 'Pretendard', sans-serif;
+  font-weight: 700;
+  font-size: 27px;
+  line-height: 1.5;
+  color: #2d3139;
+}
+
+.ui-stat-card-unit {
   @include typo($body-large-bold);
-  color: $color-text-heading;
+  color: #464c53;
+  margin-top: 4px;
 }
 
 .ui-stat-card-sub {

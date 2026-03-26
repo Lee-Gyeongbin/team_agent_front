@@ -39,15 +39,16 @@
 &lt;UiStatCard icon="icon-vector" label="활성" value="18건" color="purple" /&gt;</pre>
     </div>
 
-    <!-- 데모 2: sub 텍스트 -->
+    <!-- 데모 2: unit + sub 텍스트 -->
     <div class="guide-demo">
-      <p class="demo-label">부가 정보 (sub)</p>
+      <p class="demo-label">단위 (unit) + 부가 정보 (sub)</p>
       <div class="demo-box">
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px">
           <UiStatCard
             icon="icon-dataset"
             label="전체 데이터셋"
-            value="15"
+            value="1,624,906"
+            unit="명"
             sub="활성: 12개, 비활성: 3개"
             color="blue"
           />
@@ -55,7 +56,7 @@
             icon="icon-vector"
             label="벡터 인덱스"
             value="1,240,000"
-            sub="총 벡터 수"
+            unit="건"
             color="purple"
           />
           <UiStatCard
@@ -154,6 +155,12 @@
             <td>string | number</td>
             <td>''</td>
             <td>값 (슬롯으로 대체 가능)</td>
+          </tr>
+          <tr>
+            <td>unit</td>
+            <td>string</td>
+            <td>''</td>
+            <td>값 우측 단위 텍스트 (명, 건 등)</td>
           </tr>
           <tr>
             <td>sub</td>

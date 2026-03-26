@@ -1,17 +1,18 @@
 import { useDocDatasetApi } from '~/composables/doc-dataset/useDocDatasetApi'
+import { openToast } from '~/composables/useToast'
+import type { CodeItem } from '~/types/codes'
 import type {
   DocDataset,
-  DocDatasetForm,
   DocDatasetDetail,
-  DocDatasetSelectResponse,
-  DocDatasetSavePayload,
-  DocDatasetSummary,
+  DocDatasetForm,
   DocDatasetHistory,
+  DocDatasetSavePayload,
   DocDatasetSearchResult,
   DocDatasetSearchSummary,
+  Prompt,
+  DocDatasetSourceListResponse,
+  DocDatasetSummary,
 } from '~/types/doc-dataset'
-import type { CodeItem } from '~/types/codes'
-import { openToast } from '~/composables/useToast'
 const {
   fetchDocDatasetList,
   fetchDocDatasetSummary,
@@ -24,6 +25,7 @@ const {
   fetchSaveDocDatasetHistory,
   fetchDeleteDocDatasetHistory,
   fetchSearchDocDataset,
+  fetchSelectPromptList,
 } = useDocDatasetApi()
 
 // ===== 상태 변수 =====
@@ -36,12 +38,13 @@ const modalMode = ref<'create' | 'edit'>('create')
 // 삭제 모달
 const isDeleteModalOpen = ref(false)
 // 섹션 접기 상태 (기본정보만 열림)
-const sectionCollapsed = reactive([false, true, true, true])
+const sectionCollapsed = reactive([false, true, true, true, true, true])
 // 테스트 모달
 const isTestModalOpen = ref(false)
 // 변경 이력 모달
 const isHistoryModalOpen = ref(false)
-
+// 프롬프트 목록
+const promptList = ref<Prompt[]>([])
 // ===== 변수 목록 =====
 // 데이터셋 목록
 const datasetList = ref<DocDataset[]>([])
@@ -76,6 +79,8 @@ const getDefaultForm = (): DocDatasetForm => ({
   useSingleCellText: true,
   sentenceSplitAlgorithm: '',
   languageDetection: '',
+  promptId: '',
+  llmCd: '',
   embeddingModel: '',
   vectorDb: '',
   embeddingNormalization: '',
@@ -102,15 +107,17 @@ const dimensionOptions = ref<{ label: string; value: string }[]>([])
 const sentenceSplitOptions = ref<{ label: string; value: string }[]>([])
 // 언어 감지 옵션
 const languageDetectionOptions = ref<{ label: string; value: string }[]>([])
+// LLM 옵션
+const llmOptions = ref<{ label: string; value: string }[]>([])
 
 // 선택 데이터셋 상세
 const selectedDatasetDetail = ref<DocDatasetDetail | null>(null)
 // 선택 데이터셋 카테고리 목록
-const selectedDatasetCategoryList = ref<DocDatasetSelectResponse['categoryList']>([])
+const selectedDatasetCategoryList = ref<DocDatasetSourceListResponse['categoryList']>([])
 // 선택 데이터셋 문서 목록
-const selectedDatasetDocList = ref<DocDatasetSelectResponse['docList']>([])
+const selectedDatasetDocList = ref<DocDatasetSourceListResponse['docList']>([])
 // 선택 데이터셋 URL 목록
-const selectedDatasetUrlList = ref<DocDatasetSelectResponse['urlList']>([])
+const selectedDatasetUrlList = ref<DocDatasetSourceListResponse['urlList']>([])
 // 폼 데이터
 const formData = reactive<DocDatasetForm>(getDefaultForm())
 
@@ -198,6 +205,7 @@ const handleSelectCodeOptions = async () => {
     dimensionCodes,
     sentenceSplitCodes,
     languageCodes,
+    llmCodes,
   ] = await Promise.all([
     getCodes('RG000002'),
     getCodes('RG000003'),
@@ -208,6 +216,7 @@ const handleSelectCodeOptions = async () => {
     getCodes('RG000008'),
     getCodes('RG000009'),
     getCodes('RG000010'),
+    getCodes('RG000011'),
   ])
   // 코드 옵션 세팅
   chunkAlgorithmOptions.value = mapCodeOptions(chunkCodes)
@@ -219,6 +228,13 @@ const handleSelectCodeOptions = async () => {
   dimensionOptions.value = mapCodeOptions(dimensionCodes)
   sentenceSplitOptions.value = mapCodeOptions(sentenceSplitCodes)
   languageDetectionOptions.value = mapCodeOptions(languageCodes)
+  llmOptions.value = mapCodeOptions(llmCodes)
+}
+
+/** 프롬프트 목록 조회 */
+const handleSelectPromptList = async () => {
+  const res = await fetchSelectPromptList()
+  promptList.value = res.dataList ?? []
 }
 
 /** 코드 옵션 매핑 */
@@ -244,6 +260,8 @@ const onSaveCreate = async (data: DocDatasetForm, startBuild: boolean) => {
     minChunkSz: data.minChunkSize,
     hdrInclCd: data.headerInclusion,
     datasetBuildStatusCd: startBuild ? '002' : '001',
+    promptId: data.promptId,
+    llmCd: data.llmCd,
     embedModelCd: data.embeddingModel,
     vectorDbCd: data.vectorDb,
     embedNormCd: data.embeddingNormalization,
@@ -291,6 +309,8 @@ const mapDetailToForm = (
   useSingleCellText: detail?.singleCellText === 'Y',
   sentenceSplitAlgorithm: detail?.sentSplitAlgoCd ?? '',
   languageDetection: detail?.langDetectCd ?? '',
+  promptId: '',
+  llmCd: detail?.llmCd ?? '',
   embeddingModel: detail?.embedModelCd ?? '',
   vectorDb: detail?.vectorDbCd ?? '',
   embeddingNormalization: detail?.embedNormCd ?? '',
@@ -538,6 +558,7 @@ export const useDocDatasetStore = () => {
     dimensionOptions,
     sentenceSplitOptions,
     languageDetectionOptions,
+    llmOptions,
     // 검색 테스트
     searchResults,
     searchSummary,
@@ -553,5 +574,7 @@ export const useDocDatasetStore = () => {
     historyDatasetId,
     testDatasetId,
     onStopBuild,
+    promptList,
+    handleSelectPromptList,
   }
 }

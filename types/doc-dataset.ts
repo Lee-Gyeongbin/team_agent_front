@@ -49,30 +49,38 @@ export interface DocDatasetDetail {
   singleCellText: string
   sentSplitAlgoCd: string
   langDetectCd: string
+  llmCd?: string
 }
 
 export interface CategoryItem {
   categoryId: string
   categoryName: string
+  parnCatId?: string
+  catLvl?: number
+  sortOrd?: number
+  createDt?: string
 }
 
 export interface DocDatasetSelectedDoc {
   docId: string
-  // 백엔드 "전체 문서 목록" 응답에는 datasetId가 포함되지 않을 수 있어 optional 처리
-  datasetId?: string
-  docTitle?: string
-  size?: string
+  docTitle: string
   categoryId?: string
-  categoryName?: string
+  author?: string
+  secLvl?: string
+  content?: string
+  keywords?: string
+  refUrl?: string
+  fileCount?: number
+  useYn?: string
+  createDt?: string
+  modifyDt?: string
 }
 
 export interface DocDatasetSelectedUrl {
-  urlId: string
-  // 백엔드 "전체 URL 목록" 응답에는 datasetId가 포함되지 않을 수 있어 optional 처리
-  datasetId?: string
-  urlName?: string
-  urlAddr?: string
   categoryId?: string
+  urlId: string
+  urlName: string
+  urlAddr: string
 }
 
 // 데이터셋-문서 매핑 목록 아이템
@@ -92,6 +100,9 @@ export interface DocDatasetSelectResponse {
   // 데이터셋 매핑 문서/URL (edit 시 selectedDocIds/selectedUrlIds 세팅용)
   dsDocList?: DocIdItem[]
   dsUrlList?: UrlIdItem[]
+}
+
+export interface DocDatasetSourceListResponse {
   categoryList?: CategoryItem[]
   docList?: DocDatasetSelectedDoc[]
   urlList?: DocDatasetSelectedUrl[]
@@ -123,8 +134,10 @@ export interface DocDatasetSavePayload {
   singleCellText: string
   sentSplitAlgoCd: string
   langDetectCd: string
-  docIdList: DocDatasetSelectedDoc[]
-  urlIdList: DocDatasetSelectedUrl[]
+  promptId: string
+  llmCd: string
+  docIdList: DocIdItem[]
+  urlIdList: UrlIdItem[]
 }
 
 // 생성 폼
@@ -151,6 +164,10 @@ export interface DocDatasetForm {
   useSingleCellText: boolean
   sentenceSplitAlgorithm: string
   languageDetection: string
+  // RAG용 시스템 프롬프트
+  promptId: string
+  // LLM (코드 RG000011)
+  llmCd: string
   // 임베딩 및 벡터DB
   embeddingModel: string
   vectorDb: string
@@ -196,4 +213,9 @@ export interface DocDatasetSummary {
   totalSourceCount: number // 총 소스 수
   totalDocCount: number // 문서 수
   totalUrlCount: number // URL 수
+}
+
+export interface Prompt {
+  promptId: string
+  promptName: string
 }

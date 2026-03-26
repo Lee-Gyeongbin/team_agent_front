@@ -39,9 +39,22 @@ export interface FileUploadResponse {
   filePath: string
 }
 
-// /com/file/viewFile.do, /com/file/downloadFile.do 응답
+// /com/file/viewFile.do 응답
 export interface FileUrlResponse {
   url: string
+}
+
+// /com/file/downloadFile.do 응답 항목 (docFileId 미지정 시 다건)
+export interface FileDownloadItem {
+  docFileId: string
+  fileName: string
+  url: string
+}
+
+// /com/file/downloadFile.do 응답
+export interface FileDownloadResponse {
+  url?: string
+  downloadList?: FileDownloadItem[]
 }
 
 // /com/file/deleteFile.do 응답 — NCP Object Storage 객체 삭제 결과
