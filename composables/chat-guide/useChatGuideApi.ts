@@ -14,9 +14,9 @@ export const useChatGuideApi = () => {
   const { get, post } = useApi()
 
   /** 인사멘트 조회 */
-  const fetchChatGuideGreeting = async (): Promise<ChatGuideGreetingForm> => {
+  const fetchChatGuideGreeting = async (): Promise<ChatGuideGreetingForm | null> => {
     const res = await get<ChatGuideGreetingListResponse>('/chatguide/greetingList.do')
-    return res.dataList[0]
+    return res.dataList[0] ?? null
   }
 
   /** 인사멘트 저장 */
@@ -38,7 +38,7 @@ export const useChatGuideApi = () => {
   /** 오류 메시지 조회 — data.responseErrors/inputErrors/apiErrors 묶음 */
   const fetchChatGuideErrorMessage = async (): Promise<ChatGuideErrorData | null> => {
     const res = await get<ChatGuideErrorListRes>('/chatguide/errorMessageList.do')
-    return res?.data ?? null
+    return res?.dataList ?? null
   }
 
   /** 오류 메시지 저장 */

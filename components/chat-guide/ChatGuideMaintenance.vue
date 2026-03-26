@@ -5,20 +5,45 @@
       <div class="chat-guide-setting-footer">
         <UiButton
           variant="primary"
-          @click="handleConfirmSaveMaintenance"
+          :disabled="isLoading"
+          @click="onSave"
         >
           저장
         </UiButton>
         <UiButton
           variant="outline"
-          @click="handleConfirmResetMaintenance"
+          :disabled="isLoading"
+          @click="onReset"
         >
           초기화
         </UiButton>
       </div>
     </div>
 
-    <div class="maint-body">
+    <UiLoading
+      v-if="isLoading"
+      overlay
+      text="점검/장애 안내를 불러오는 중..."
+    />
+
+    <UiEmpty
+      v-else-if="isError"
+      :title="errorTitle"
+      :description="errorMessage"
+    >
+      <UiButton
+        size="sm"
+        variant="secondary"
+        @click="load"
+      >
+        다시 시도
+      </UiButton>
+    </UiEmpty>
+
+    <div
+      v-else
+      class="maint-body"
+    >
       <!-- ===== 긴급 공지 ===== -->
       <section
         class="maint-section"
@@ -212,8 +237,7 @@ import { computed, onMounted, ref, type ComputedRef } from 'vue'
 import { apiStringFromDateValue, dateValueFromApiString } from '~/utils/global/dateUtil'
 import { toYn, useChatGuideStore } from '~/composables/chat-guide/useChatGuideStore'
 
-const { localMaintenanceList, handleSelectMaintenance, handleConfirmSaveMaintenance, handleConfirmResetMaintenance } =
-  useChatGuideStore()
+const { localMaintenanceList, handleSelectMaintenance, handleSaveMaintenance } = useChatGuideStore()
 
 /** 정기 점검 — 사전 안내 기간 (공통코드) */
 const advanceNoticeOptions = ref<{ label: string; value: string }[]>([])
@@ -226,11 +250,11 @@ const initAdvanceNoticeOptions = async () => {
 }
 
 const rowByGuideKey = (guideKey: string): ChatGuideMaintenanceItem => {
-  const r = localMaintenanceList.value.find((x) => x.guideKey === guideKey)
-  if (!r) {
+  const row = localMaintenanceList.value.find((row) => row.guideKey === guideKey)
+  if (!row) {
     throw new Error(`점검/장애 guideKey 행이 없습니다: ${guideKey}`)
   }
-  return r
+  return row
 }
 
 const emergencyRow = computed(() => rowByGuideKey(CHAT_GUIDE_MAINTENANCE_DEFAULT_GUIDE_KEYS.emergency))
@@ -262,8 +286,73 @@ const incidentSectionOn = computed({
   },
 })
 
-onMounted(async () => {
-  await initAdvanceNoticeOptions()
-  await handleSelectMaintenance()
+const isLoading = ref(false)
+const isError = ref(false)
+const errorMessage = ref('')
+const errorTitle = ref('불러오기 실패')
+
+const load = async () => {
+  isLoading.value = true
+  isError.value = false
+  errorMessage.value = ''
+  try {
+    await initAdvanceNoticeOptions()
+    await handleSelectMaintenance()
+
+    // "사전 안내 기간" 기본값은 옵션 1번의 value로 맞춰 둠
+    const defaultAdvanceNotice = advanceNoticeOptions.value[0]?.value
+    if (defaultAdvanceNotice && !scheduledRow.value.advanceNoticeCd) {
+      scheduledRow.value.advanceNoticeCd = defaultAdvanceNotice
+    }
+  } catch (err) {
+    isError.value = true
+    errorMessage.value =
+      err instanceof Error && err.message
+        ? `점검/장애 안내를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요. (${err.message})`
+        : '점검/장애 안내를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const onSave = async () => {
+  const confirmed = await openConfirm({
+    title: '점검/장애 안내 저장',
+    message: '변경된 점검/장애 안내 내용을 저장하시겠습니까?',
+  })
+  if (!confirmed) return
+
+  try {
+    await handleSaveMaintenance(localMaintenanceList.value)
+    openToast({ message: '저장되었습니다.', type: 'success' })
+  } catch (err) {
+    openToast({
+      message:
+        err instanceof Error && err.message
+          ? `점검/장애 안내 저장에 실패했습니다. 잠시 후 다시 시도해 주세요. (${err.message})`
+          : '점검/장애 안내 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.',
+      type: 'error',
+    })
+  }
+}
+
+const onReset = async () => {
+  const confirmed = await openConfirm({
+    title: '점검/장애 안내 초기화',
+    message:
+      '초기화 시 변경된 점검/장애 안내 내용은 저장되지 않고, 이전에 저장된 값으로 다시 불러옵니다. 계속하시겠습니까?',
+  })
+  if (!confirmed) return
+
+  try {
+    await load()
+    openToast({ message: '점검/장애 안내가 초기화되었습니다.', type: 'info' })
+  } catch {
+    // load에서 UI로 에러 처리
+  }
+}
+
+onMounted(() => {
+  load()
 })
 </script>

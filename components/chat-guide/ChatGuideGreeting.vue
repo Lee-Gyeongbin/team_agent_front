@@ -5,20 +5,45 @@
       <div class="chat-guide-setting-footer">
         <UiButton
           variant="primary"
-          @click="handleConfirmSaveGreeting"
+          :disabled="isLoading"
+          @click="onSave"
         >
           저장
         </UiButton>
         <UiButton
           variant="outline"
-          @click="handleConfirmResetGreeting"
+          :disabled="isLoading"
+          @click="onReset"
         >
           초기화
         </UiButton>
       </div>
     </div>
 
-    <div class="chat-guide-content">
+    <UiLoading
+      v-if="isLoading"
+      overlay
+      text="인사멘트를 불러오는 중..."
+    />
+
+    <UiEmpty
+      v-else-if="isError"
+      :title="errorTitle"
+      :description="errorMessage"
+    >
+      <UiButton
+        size="sm"
+        variant="secondary"
+        @click="load"
+      >
+        다시 시도
+      </UiButton>
+    </UiEmpty>
+
+    <div
+      v-else
+      class="chat-guide-content"
+    >
       <!-- 좌측: 설정 -->
       <div class="chat-guide-setting">
         <!-- 방문 인사 -->
@@ -100,7 +125,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { toYn, useChatGuideStore } from '~/composables/chat-guide/useChatGuideStore'
 
 const {
@@ -108,13 +133,70 @@ const {
   greetingPreviewAutoNameYn,
   previewGreetingMessage,
   handleSelectGreeting,
-  handleConfirmSaveGreeting,
-  handleConfirmResetGreeting,
+  handleSaveGreeting,
   handleToggleGreetingPreviewAutoName,
   handleInsertGreetingVariable,
 } = useChatGuideStore()
 
+const isLoading = ref(false)
+const isError = ref(false)
+const errorMessage = ref('')
+const errorTitle = ref('불러오기 실패')
+
+const load = async () => {
+  isLoading.value = true
+  isError.value = false
+  errorMessage.value = ''
+  try {
+    await handleSelectGreeting()
+  } catch (err) {
+    isError.value = true
+    errorMessage.value =
+      err instanceof Error && err.message
+        ? `인사멘트를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요. (${err.message})`
+        : '인사멘트를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const onSave = async () => {
+  const confirmed = await openConfirm({
+    title: '인사멘트 저장',
+    message: '변경된 인사멘트 내용을 저장하시겠습니까?',
+  })
+  if (!confirmed) return
+
+  try {
+    await handleSaveGreeting()
+    openToast({ message: '저장되었습니다.', type: 'success' })
+  } catch (err) {
+    openToast({
+      message:
+        err instanceof Error && err.message
+          ? `인사멘트 설정 저장에 실패했습니다. 잠시 후 다시 시도해 주세요. (${err.message})`
+          : '인사멘트 설정 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.',
+      type: 'error',
+    })
+  }
+}
+
+const onReset = async () => {
+  const confirmed = await openConfirm({
+    title: '인사멘트 초기화',
+    message: '초기화 시 변경된 인사멘트 내용은 저장되지 않고, 이전에 저장된 값으로 다시 불러옵니다. 계속하시겠습니까?',
+  })
+  if (!confirmed) return
+
+  try {
+    await load()
+    openToast({ message: '인사멘트 설정이 초기화되었습니다.', type: 'info' })
+  } catch {
+    // load에서 UI로 에러 처리
+  }
+}
+
 onMounted(() => {
-  handleSelectGreeting()
+  load()
 })
 </script>

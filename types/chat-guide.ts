@@ -134,7 +134,7 @@ export interface ChatGuideErrorData {
 
 /** errorMessageList.do — data.responseErrors/inputErrors/apiErrors */
 export interface ChatGuideErrorListRes {
-  data: ChatGuideErrorData
+  dataList: ChatGuideErrorData
 }
 
 /** maintenanceList.do */
@@ -175,7 +175,7 @@ export const getEmptyChatGuideNoticeForm = (): ChatGuideNoticeForm => ({
     guideKey: CHAT_GUIDE_NOTICE_DEFAULT_GUIDE_KEYS.feature,
     enblYn: 'N',
     content: '',
-    dsplCond: '',
+    dsplCond: CHAT_GUIDE_NOTICE_CONDITION_OPTIONS[0]?.value ?? '',
     autoDetectYn: 'N',
     modifyDt: '',
   },
@@ -248,10 +248,10 @@ export const CHAT_GUIDE_ERROR_CATALOG = {
     { guideKey: 'INPUT_UPLOAD_FAIL', label: '파일 업로드 실패' },
   ],
   apiErrors: [
-    { guideKey: 'API_500', label: '서버 내부 오류' },
-    { guideKey: 'API_429', label: '요청 한도 초과' },
-    { guideKey: 'API_408', label: '요청 시간 초과' },
-    { guideKey: 'API_401_403', label: '인증/권한 오류' },
+    { guideKey: 'API_500', label: '500 Internal Server Error' },
+    { guideKey: 'API_429', label: '429 Too Many Requests' },
+    { guideKey: 'API_408', label: '408 Request Timeout' },
+    { guideKey: 'API_401_403', label: '401/403 Unauthorized' },
   ],
 } as const
 
