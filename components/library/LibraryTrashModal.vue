@@ -11,7 +11,6 @@
       <div class="library-trash-modal-header">
         <div class="header-top-grp flex items-start justify-between">
           <h2 class="library-trash-modal-title">휴지통</h2>
-
           <!-- 닫기 버튼 -->
           <button
             class="btn btn-modal-close"
@@ -21,12 +20,19 @@
           </button>
         </div>
 
-        <!-- 검색바 -->
+        <!-- 검색바 + 휴지통 비우기 -->
         <div class="library-trash-modal-search">
           <UiInput
             type="search"
             placeholder="검색어를 입력하세요"
           />
+          <button
+            class="btn btn-empty-trash"
+            @click="emit('emptyTrash')"
+          >
+            <i class="icon icon-trash-reset size-16"></i>
+            <span>휴지통 비우기</span>
+          </button>
         </div>
       </div>
     </template>
@@ -119,6 +125,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   close: []
   restore: [card: LibraryCardDetail]
+  emptyTrash: []
 }>()
 
 const getBadgeInfo = (svcTy: string) => {

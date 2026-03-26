@@ -302,6 +302,7 @@
         :is-open="isTrashModalOpen"
         @close="handleTrashModalClose"
         @restore="handleRestoreCard"
+        @empty-trash="handleEmptyTrash"
       />
 
       <!-- 카테고리명 변경 모달 -->
@@ -390,6 +391,7 @@ const {
   handleUnarchiveCard,
   handleTrashModalClose,
   handleRestoreCard,
+  handleEmptyTrash,
 } = useLibraryStore()
 
 const contentWrapperRef = ref<HTMLElement | null>(null)

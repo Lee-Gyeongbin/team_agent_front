@@ -764,6 +764,7 @@ const iconGroups = [
       { class: 'icon-mini-time' },
       { class: 'icon-check' },
       { class: 'icon-sliders' },
+      { class: 'icon-trash-reset' },
     ],
   },
 ]
