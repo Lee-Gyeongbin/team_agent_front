@@ -28,6 +28,7 @@ const {
   fetchDocList,
   fetchTableData,
   fetchChartLabel,
+  fetchDeleteTrashCard,
 } = useLibraryApi()
 const errorMessage = ref('')
 
@@ -507,6 +508,26 @@ export const useLibraryStore = () => {
     })
   }
 
+  /** 휴지통 비우기 */
+  const handleEmptyTrash = async () => {
+    if (trashCardList.value.length === 0) {
+      openToast({ message: '휴지통이 비어있습니다.', type: 'warning' })
+      return
+    }
+    openConfirm({
+      message: '휴지통을 비우시겠습니까?',
+      onConfirm: async () => {
+        try {
+          await fetchDeleteTrashCard()
+          await handleFetchCategoryList()
+          openToast({ message: '휴지통을 비웠습니다.' })
+        } catch {
+          openToast({ message: '휴지통 비우기에 실패했습니다.' })
+        }
+      },
+    })
+  }
+
   return {
     categoryList,
     categoryCards,
@@ -555,5 +576,6 @@ export const useLibraryStore = () => {
     handleModalMove,
     handleTrashModalClose,
     handleRestoreCard,
+    handleEmptyTrash,
   }
 }

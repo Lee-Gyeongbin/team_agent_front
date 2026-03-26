@@ -99,6 +99,11 @@ export const useLibraryApi = () => {
     return post<{ statList: ChartStatItem[]; detailCdList: ChartDetailCdItem[] }>('/library/chartLabel.do', { logId })
   }
 
+  /** 휴지통 비우기 API */
+  const fetchDeleteTrashCard = async (): Promise<void> => {
+    await post('/library/deleteTrashCard.do', {})
+  }
+
   return {
     fetchCategoryList,
     fetchSaveCategory,
@@ -116,5 +121,6 @@ export const useLibraryApi = () => {
     fetchDocList,
     fetchTableData,
     fetchChartLabel,
+    fetchDeleteTrashCard,
   }
 }
