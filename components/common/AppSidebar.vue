@@ -158,7 +158,6 @@ const route = useRoute()
 const { menuList } = useMenu()
 
 const SETTING_MENU_ID = 'ME000003'
-const KNOWLEDGE_MENU_LABEL = '내 지식창고'
 
 const isExpanded = ref(false)
 const isSearchHistoryOpen = ref(true)

@@ -72,10 +72,11 @@ export const useChatRooms = () => {
     const res = await fetchCreateChatRoom(qContent, svcTy)
     const createdRoom: ChatRoom = {
       roomId: res.data.roomId,
-      title: qContent,
+      title: res.data.roomTitle,
       qContent,
       createdAt: res.data.createdAt,
       svcTy,
+      roomTitle: res.data.roomTitle,
     }
     chatRoom.value = createdRoom
     chatRoomList.value = [createdRoom, ...chatRoomList.value.filter((room) => room.roomId !== createdRoom.roomId)]
