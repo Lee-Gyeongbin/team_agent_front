@@ -29,7 +29,6 @@ const {
   fetchTableData,
   fetchChartLabel,
 } = useLibraryApi()
-const isLoading = ref(false)
 const errorMessage = ref('')
 
 const isModalOpen = ref(false)
@@ -85,9 +84,12 @@ const searchSort = ref('custom')
 const moveTargetOptions = computed(() => {
   const card = movingCard.value
   if (!card) return []
-  return categoryList.value
-    .filter((cat) => String(cat.categoryId) !== String(card.categoryId))
-    .map((cat) => ({ label: cat.categoryNm, value: cat.categoryId }))
+  return [
+    { label: '선택', value: '' },
+    ...categoryList.value
+      .filter((cat) => String(cat.categoryId) !== String(card.categoryId))
+      .map((cat) => ({ label: cat.categoryNm, value: cat.categoryId })),
+  ]
 })
 
 /** cardList를 categoryId 기준으로 그룹핑하여 CategoryCardsMap 반환 */
@@ -117,8 +119,8 @@ export const useLibraryStore = () => {
   const handleFetchCategoryList = async () => {
     initModalStates()
     errorMessage.value = ''
-    isLoading.value = true
     try {
+      openLoading({ text: '내 지식창고를 불러오는 중...' })
       const response = await fetchCategoryList()
       categoryList.value = response.dataList ?? []
       await handleFetchCardList() // 카드 목록 조회
@@ -127,7 +129,7 @@ export const useLibraryStore = () => {
     } catch {
       errorMessage.value = '카테고리 목록을 불러오는데 실패했습니다.'
     } finally {
-      isLoading.value = false
+      closeLoading()
     }
   }
 
@@ -138,7 +140,6 @@ export const useLibraryStore = () => {
       return
     }
     try {
-      isLoading.value = true
       openConfirm({
         message: '카테고리를 추가하시겠습니까?',
         onConfirm: async () => {
@@ -158,15 +159,12 @@ export const useLibraryStore = () => {
       })
     } catch {
       openAlert({ message: '카테고리 추가에 실패했습니다.' })
-    } finally {
-      isLoading.value = false
     }
   }
 
   /** 카드 목록 조회 */
   const handleFetchCardList = async () => {
     initModalStates()
-    isLoading.value = true
     try {
       const response = await fetchCardList(searchTitle.value, searchSort.value)
       const list = response.dataList ?? []
@@ -180,34 +178,26 @@ export const useLibraryStore = () => {
       categoryCards.value = merged
     } catch {
       errorMessage.value = '카드 목록을 불러오는데 실패했습니다.'
-    } finally {
-      isLoading.value = false
     }
   }
 
   /** 보관된 카드 목록 조회 */
   const handleFetchArchiveCardList = async () => {
-    isLoading.value = true
     try {
       const response = await fetchArchiveCardList()
       archiveCardList.value = response.dataList ?? []
     } catch {
       errorMessage.value = '보관된 카드 목록을 불러오는데 실패했습니다.'
-    } finally {
-      isLoading.value = false
     }
   }
 
   /** 휴지통 카드 목록 조회 */
   const handleFetchTrashCardList = async () => {
-    isLoading.value = true
     try {
       const response = await fetchTrashCardList()
       trashCardList.value = response.dataList ?? []
     } catch {
       errorMessage.value = '휴지통 카드 목록을 불러오는데 실패했습니다.'
-    } finally {
-      isLoading.value = false
     }
   }
 
@@ -293,7 +283,6 @@ export const useLibraryStore = () => {
       openConfirm({
         message: '카테고리명을 변경하시겠습니까?',
         onConfirm: async () => {
-          isLoading.value = true
           await fetchSaveCategory({ ...renamingCategory.value, categoryNm: categoryNm } as LibraryCategory)
           await handleFetchCategoryList()
           handleRenameModalClose()
@@ -302,8 +291,6 @@ export const useLibraryStore = () => {
       })
     } catch {
       openAlert({ message: '카테고리명 변경에 실패했습니다.' })
-    } finally {
-      isLoading.value = false
     }
   }
 
@@ -520,7 +507,6 @@ export const useLibraryStore = () => {
     archiveCardList,
     trashCardList,
     searchOptions,
-    isLoading,
     errorMessage,
     listMenuItems,
     getCardMenuItems,
