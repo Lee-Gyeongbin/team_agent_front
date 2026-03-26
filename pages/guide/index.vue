@@ -620,6 +620,7 @@ const iconGroups = [
       { class: 'icon-sidebar-pin' },
       { class: 'icon-sidebar-un-pin' },
       { class: 'icon-sidebar-share' },
+      { class: 'icon-sidebar-arrow-right' },
     ],
   },
   {
@@ -633,6 +634,9 @@ const iconGroups = [
       { class: 'icon-copy' },
       { class: 'icon-thumbs-up' },
       { class: 'icon-thumbs-down' },
+      { class: 'icon-chat-copy' },
+      { class: 'icon-chat-open-book' },
+      { class: 'icon-chat-refresh' },
       { class: 'icon-play' },
       { class: 'icon-play-circle' },
       { class: 'icon-refresh' },
@@ -663,6 +667,11 @@ const iconGroups = [
   {
     title: '드롭다운 아이콘',
     icons: [
+      { class: 'icon-dropdown-category' },
+      { class: 'icon-dropdown-document' },
+      { class: 'icon-dropdown-department-line' },
+      { class: 'icon-dropdown-calculator' },
+      { class: 'icon-dropdown-system' },
       { class: 'icon-edit' },
       { class: 'icon-trashcan' },
       { class: 'icon-view' },
@@ -697,6 +706,8 @@ const iconGroups = [
     icons: [
       { class: 'icon-file-ai' },
       { class: 'icon-chart-ai' },
+      { class: 'icon-axis-arrow' },
+      { class: 'icon-subtract' },
       { class: 'icon-bar-chart' },
       { class: 'icon-line-chart' },
       { class: 'icon-pie-chart' },
