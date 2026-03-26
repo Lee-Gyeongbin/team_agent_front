@@ -194,7 +194,7 @@ const topNavItems = computed(() => {
     .filter((item: MenuItem) => item.menuId !== SETTING_MENU_ID)
     .map((item: MenuItem) => ({
       menuId: item.menuId,
-      icon: item.menuName === KNOWLEDGE_MENU_LABEL ? 'icon-sidebar-database' : item.icon,
+      icon: item.icon,
       label: item.menuName,
       path: item.srcPath,
     }))

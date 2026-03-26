@@ -25,8 +25,8 @@ export const useLibraryApi = () => {
   }
 
   /** 카테고리 삭제 API */
-  const fetchDeleteCategory = async (category: LibraryCategory): Promise<void> => {
-    await post('/library/deleteCategory.do', { category })
+  const fetchDeleteCategory = async (category: LibraryCategory): Promise<{ result: string; msg: string }> => {
+    return post<{ result: string; msg: string }>('/library/deleteCategory.do', { category })
   }
 
   /** 카드 목록 조회 API */

@@ -222,9 +222,13 @@ export const useLibraryStore = () => {
       openConfirm({
         message: '카테고리를 삭제하시겠습니까?',
         onConfirm: async () => {
-          await fetchDeleteCategory(category)
-          await handleFetchCategoryList()
-          openAlert({ message: '카테고리가 삭제되었습니다.' })
+          const response = await fetchDeleteCategory(category)
+          if (response.result === 'SUCCESS') {
+            openAlert({ message: '카테고리가 삭제되었습니다.' })
+            await handleFetchCategoryList()
+          } else {
+            openAlert({ message: response.msg })
+          }
         },
       })
     } catch {
@@ -444,6 +448,7 @@ export const useLibraryStore = () => {
   /** 카드 상세 모달 열기 */
   const openModal = async (cardId: string) => {
     try {
+      openLoading({ text: '카드 상세정보를 불러오는 중...' })
       selectedCardId.value = cardId
       const response = await fetchCardDetail(cardId)
       selectedCard.value = response.data
@@ -462,6 +467,8 @@ export const useLibraryStore = () => {
       isModalOpen.value = true
     } catch {
       errorMessage.value = '카드 상세를 불러오는데 실패했습니다.'
+    } finally {
+      closeLoading()
     }
   }
 
