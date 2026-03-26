@@ -606,3 +606,37 @@
 .icon-trash-reset {
   @include icon-file-bg('trash-reset');
 }
+
+// ===================================
+// 대시보드 아이콘
+// ===================================
+
+// 피드백 수 (클립보드)
+.icon-dash-feedback {
+  @include icon-file-bg('dash-feedback');
+}
+
+// 오늘 질의 수 (파랑 원형 배경)
+.icon-dash-query {
+  @include icon-file('dash-query');
+}
+
+// 질의 만족도 (별+좋아요, 보라색)
+.icon-dash-satisfaction {
+  @include icon-file('dash-satisfaction');
+}
+
+// 만족 (웃는 얼굴, 보라색)
+.icon-dash-satisfied {
+  @include icon-file('dash-satisfied');
+}
+
+// 불만족 (찡그린 얼굴, 회색)
+.icon-dash-dissatisfied {
+  @include icon-file('dash-dissatisfied');
+}
+
+// 공지사항 (달력+체크)
+.icon-dash-notice {
+  @include icon-file-bg('dash-notice');
+}

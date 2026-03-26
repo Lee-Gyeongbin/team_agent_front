@@ -45,29 +45,32 @@
     <!-- 프론트 저장 사용법 -->
     <section class="guide-section">
       <h2 class="section-title">프론트 저장 사용법</h2>
+
       <div class="guide-demo">
-        <div class="demo-box">
-          <p class="demo-label">1. API 문자열 → DateValue (조회 시)</p>
-          <pre class="demo-code">import { dateValueFromApiString } from '~/utils/global/dateUtil'
+        <p class="demo-label">1. API 문자열 → DateValue (조회 시)</p>
+        <pre class="demo-code">import { dateValueFromApiString } from '~/utils/global/dateUtil'
 
 const startDt = dateValueFromApiString('2026-03-16 09:30:00')
 // → CalendarDateTime { year: 2026, month: 3, day: 16, hour: 9, minute: 30 }</pre>
+      </div>
 
-          <p class="demo-label">2. DateValue → API 문자열 (저장 시)</p>
-          <pre class="demo-code">import { apiStringFromDateValue } from '~/utils/global/dateUtil'
+      <div class="guide-demo">
+        <p class="demo-label">2. DateValue → API 문자열 (저장 시)</p>
+        <pre class="demo-code">import { apiStringFromDateValue } from '~/utils/global/dateUtil'
 
 const apiStr = apiStringFromDateValue(startDt)
 // → '2026-03-16 09:30:00'</pre>
+      </div>
 
-          <p class="demo-label">3. 실제 사용 패턴 (Store에서)</p>
-          <pre class="demo-code">// computed로 DatePicker ↔ API 문자열 양방향 바인딩
+      <div class="guide-demo">
+        <p class="demo-label">3. 실제 사용 패턴 (Store에서)</p>
+        <pre class="demo-code">// computed로 DatePicker ↔ API 문자열 양방향 바인딩
 const startDt = computed({
   get: () => dateValueFromApiString(row.value.startDt),
   set: (v: DateValue | undefined) => {
     row.value.startDt = apiStringFromDateValue(v)
   },
 })</pre>
-        </div>
       </div>
     </section>
 
@@ -157,7 +160,7 @@ const startDt = computed({
     <!-- Props -->
     <section class="guide-section">
       <h2 class="section-title">Props</h2>
-      <table class="guide-table">
+      <table class="guide-status-table">
         <thead>
           <tr>
             <th>Prop</th>

@@ -1,0 +1,395 @@
+@use '../utils/variables' as *;
+@use '../utils/mixins' as *;
+
+// ===== 대시보드 페이지 =====
+.dashboard-page {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  padding: $spacing-md;
+  max-width: 1366px;
+}
+
+// ===== 상단 통계 카드 =====
+.dashboard-stat-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr;
+  gap: $spacing-md;
+}
+
+// 질의 만족도 카드 (커스텀)
+.dashboard-satisfaction-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 13px 16px;
+  background: #fff;
+  border: 1px solid #dce4e9;
+  border-radius: 16px;
+  min-height: 138px;
+  gap: 8px;
+
+  // 상단: 아이콘+타이틀 / 레전드
+  .satisfaction-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .satisfaction-title-area {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .satisfaction-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: #f4ebff;
+    color: #8f4fdf;
+  }
+
+  .satisfaction-label {
+    font-family: 'Pretendard', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 1.5;
+    color: #2d3139;
+  }
+
+  // 레전드
+  .satisfaction-legend {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+
+    &.is-positive {
+      background: #d4bbf3;
+    }
+
+    &.is-negative {
+      background: #dce4e9;
+    }
+  }
+
+  .legend-text {
+    font-size: 12px;
+    line-height: 1.2;
+    color: rgba(0, 0, 0, 0.7);
+  }
+
+  .satisfaction-bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 32px;
+  }
+
+  // 프로그레스 바
+  .satisfaction-bar {
+    display: flex;
+    height: 12px;
+    border-radius: 30px;
+    overflow: hidden;
+
+    .bar-positive {
+      background: #d4bbf3;
+    }
+
+    .bar-negative {
+      background: #dce4e9;
+    }
+  }
+
+  // 하단 만족/불만족 값
+  .satisfaction-values {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .satisfaction-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    .value {
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 700;
+      font-size: 22px;
+      line-height: 1.5;
+    }
+
+    // 만족/불만족 아이콘 (icon-file은 background-image 방식이라 size 클래스 대신 직접 지정)
+    [class^='icon-dash-satisfied'],
+    [class^='icon-dash-dissatisfied'] {
+      width: 26px;
+      height: 26px;
+    }
+
+    &.is-positive .value {
+      color: #8f4fdf;
+    }
+
+    &.is-negative .value {
+      color: #828fa9;
+    }
+  }
+}
+
+// ===== 대시보드 카드 공통 =====
+.dashboard-card {
+  background: #fff;
+  border: 1px solid #dce4e9;
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+
+  .dashboard-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: $spacing-md;
+
+    .card-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      @include typo($body-2xlarge-bold);
+      color: #2d3139;
+    }
+
+    .notice-more {
+      font-size: 14px;
+      font-weight: 500;
+      color: #828fa9;
+      cursor: pointer;
+
+      &:hover {
+        color: $color-text-primary;
+      }
+    }
+
+    .card-badge {
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.5;
+      color: #3c69db;
+      background: #f4f7f9;
+      padding: 4px 16px;
+      border-radius: 100px;
+    }
+  }
+}
+
+// ===== 중단 2열 =====
+.dashboard-middle-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $spacing-md;
+}
+
+// ===== 하단 2열 =====
+.dashboard-bottom-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $spacing-md;
+}
+
+// ===== 공지사항 =====
+.dashboard-notice {
+  gap: 10px;
+
+  .notice-list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .notice-item {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+
+    &.is-main {
+      .notice-date .date-day {
+        font-size: 24px;
+        font-weight: 700;
+        line-height: 1.5;
+        color: #2d3139;
+      }
+    }
+  }
+
+  .notice-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: #ecf0f3;
+    color: #4d5462;
+  }
+
+  .notice-date {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    min-width: 49px;
+    position: relative;
+    top: -1px;
+
+    .date-month {
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.5;
+      color: #4d5462;
+      position: relative;
+      top: 3px;
+    }
+
+    .date-day {
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 1.5;
+      color: #2d3139;
+      margin-left: 9px;
+    }
+  }
+
+  .notice-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .notice-title {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.625;
+    color: #2d3139;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .notice-desc {
+    @include typo($body-xsmall);
+    color: $color-text-muted;
+    @include ellipsis(2);
+  }
+
+  .notice-sub-list {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid #dce4e9;
+    padding: 18px 12px 0;
+
+    .notice-sub-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 17px 0;
+      border-bottom: 1px solid #ecf0f3;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .sub-text {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 16px;
+        font-weight: 500;
+        line-height: 0.875em;
+        color: #2d3139;
+        @include ellipsis(1);
+        flex: 1;
+        min-width: 0;
+
+        &::before {
+          content: '';
+          display: inline-block;
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #4d5462;
+          flex-shrink: 0;
+        }
+      }
+
+      .sub-date {
+        font-size: 16px;
+        font-weight: 500;
+        line-height: 0.875em;
+        color: #828fa9;
+        flex-shrink: 0;
+        margin-left: $spacing-sm;
+        text-align: right;
+      }
+    }
+  }
+}
+
+// ===== 차트 영역 =====
+.dashboard-chart-area {
+  flex: 1;
+  min-height: 0;
+}
+
+// ===== LLM/RAG/TextToSQL 비율 차트 — 범례 우측 세로 배치 =====
+// UiChart가 scoped이므로 !important로 오버라이드
+.query-ratio-chart {
+  .ui-chart {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 16px !important;
+  }
+
+  .ui-chart-legend {
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+    align-self: flex-start !important;
+    gap: 8px !important;
+    margin-bottom: 0 !important;
+    order: 1 !important;
+    flex-shrink: 0 !important;
+    margin-top: 20px;
+
+    .legend-item__dot {
+      width: 10px !important;
+      height: 10px !important;
+      border-radius: 50% !important;
+    }
+  }
+
+  .ui-chart-canvas-wrap {
+    min-height: 200px !important;
+    flex: 1 !important;
+  }
+}
