@@ -343,6 +343,8 @@ export const PieChartModule = {
       diagonalLength: svgConfig.diagonalLength || 12,
       horizontalLineLength: svgConfig.horizontalLineLength || 140,
       showCenterText: svgConfig.showCenterText,
+      nameFontSize: svgConfig.nameFontSize,
+      valueFontSize: svgConfig.valueFontSize,
     }
 
     const data = items.map((item: any, index: number) => ({
@@ -419,6 +421,8 @@ export const PieChartModule = {
         isLeftSide,
         textAnchor: isLeftSide ? 'end' : 'start',
         lineColor: ChartConfig.svgDonut.darkenColor(item.color, 25),
+        nameFontSize: settings.nameFontSize,
+        valueFontSize: settings.valueFontSize,
       }
     })
   },
@@ -517,14 +521,17 @@ export const PieChartModule = {
     })
     group.appendChild(horizontalLine)
 
+    const nameFontSize = pos.nameFontSize || 12
+    const valueFontSize = pos.valueFontSize || 14
+
     const nameText = ChartConfig.svgDonut.createSVGElement('text', {
       x: pos.labelX,
-      y: pos.labelY - 5,
+      y: pos.labelY - (valueFontSize * 0.4),
       'text-anchor': pos.textAnchor,
-      'font-size': '12',
-      'font-weight': '500',
-      fill: pos.lineColor,
-      'font-family': 'Pretendard, sans-serif',
+      'font-size': String(nameFontSize),
+      'font-weight': '400',
+      fill: 'rgba(0, 0, 0, 0.7)',
+      'font-family': 'Inter, Pretendard, sans-serif',
       class: 'label-name',
     })
     nameText.textContent = pos.name
@@ -532,12 +539,12 @@ export const PieChartModule = {
 
     const valueText = ChartConfig.svgDonut.createSVGElement('text', {
       x: pos.labelX,
-      y: pos.labelY + 12,
+      y: pos.labelY + (valueFontSize * 0.8),
       'text-anchor': pos.textAnchor,
-      'font-size': '14',
-      'font-weight': '700',
+      'font-size': String(valueFontSize),
+      'font-weight': '600',
       fill: pos.lineColor,
-      'font-family': 'Pretendard, sans-serif',
+      'font-family': 'Inter, Pretendard, sans-serif',
       class: 'label-value',
     })
     valueText.textContent = `${pos.value}%`

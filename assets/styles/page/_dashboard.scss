@@ -364,6 +364,9 @@
 // ===== LLM/RAG/TextToSQL 비율 차트 — 범례 우측 세로 배치 =====
 // UiChart가 scoped이므로 !important로 오버라이드
 .query-ratio-chart {
+  min-width: 520px;
+  overflow: hidden;
+
   .ui-chart {
     flex-direction: row !important;
     align-items: center !important;
