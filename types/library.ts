@@ -32,6 +32,7 @@ export interface LibraryCardDetail {
   cardId: string
   userId: string
   categoryId: number
+  categoryNm: string
   logId: string
   svcTy: string
   title: string

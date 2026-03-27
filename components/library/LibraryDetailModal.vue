@@ -12,6 +12,22 @@
       <div class="library-detail-modal-header">
         <!-- 뱃지 -->
         <div class="library-detail-modal-badge-wrapper flex">
+          <UiButton
+            v-if="displayData?.pinYn === 'Y'"
+            icon-only
+            variant="ghost"
+            class="btn-star is-active"
+          >
+            <template #icon-left>
+              <i class="icon icon-star-fill size-12"></i>
+            </template>
+          </UiButton>
+          <UiBadge variant="category">
+            <template #icon-left>
+              <i class="icon icon-dropdown-category size-14"></i>
+            </template>
+            {{ displayData?.categoryNm }}
+          </UiBadge>
           <UiBadge
             v-if="displayData?.svcTy === 'S'"
             variant="data-line"

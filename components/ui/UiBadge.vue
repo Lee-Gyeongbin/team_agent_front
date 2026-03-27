@@ -35,7 +35,7 @@
 
 <script setup lang="ts">
 interface Props {
-  variant?: 'data-line' | 'basic-chat' | 'manual-ai' | 'default'
+  variant?: 'data-line' | 'basic-chat' | 'manual-ai' | 'category' | 'default'
   size?: 'xs' | 'sm' | 'md' | 'lg'
   iconOnly?: boolean
 }
@@ -123,6 +123,11 @@ withDefaults(defineProps<Props>(), {
   &.variant-manual-ai {
     background: #f4ebff;
     color: #8f4fdf;
+  }
+
+  &.variant-category {
+    background: #eef3f8;
+    color: #556377;
   }
 
   &.variant-default {

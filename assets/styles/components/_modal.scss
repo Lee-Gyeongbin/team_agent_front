@@ -359,6 +359,28 @@
       flex-wrap: wrap;
       gap: $spacing-xs;
       margin-bottom: $spacing-xs;
+
+      .btn-star {
+        flex-shrink: 0;
+        width: 14px;
+        height: 14px;
+        min-width: 12px;
+        padding: 0;
+        margin-left: 0;
+        margin-right: -4px;
+        pointer-events: none;
+
+        .icon {
+          background: #94a3b8;
+          transform: translateY(4px);
+        }
+
+        &.is-active {
+          .icon {
+            background: #6f7a93;
+          }
+        }
+      }
     }
 
     .library-detail-modal-title-section {
