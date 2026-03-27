@@ -136,6 +136,8 @@ const historyDatasetId = ref('')
 const buildProgressMap = ref<Record<string, number>>({})
 const buildMessageMap = ref<Record<string, string>>({})
 const buildStreamMap = new Map<string, EventSource>()
+const buildProgressTargetMap = ref<Record<string, number>>({})
+const buildProgressTimerMap = new Map<string, ReturnType<typeof setInterval>>()
 
 interface DatasetBuildEventData {
   status?: string
@@ -144,7 +146,47 @@ interface DatasetBuildEventData {
 }
 
 const clampProgress = (progress: number) => Math.min(100, Math.max(0, progress))
+const clampInProgress = (progress: number) => Math.min(99, Math.max(0, progress))
+const PROGRESS_ANIMATE_INTERVAL_MS = 120
+const PROGRESS_ANIMATE_STEP = 2
+const BUILD_COMPLETE_HOLD_MS = 400
 
+// 데이터셋 구축 진행 진행률 애니메이션 중지
+const handleStopBuildProgressAnimation = (datasetId: string) => {
+  const timer = buildProgressTimerMap.get(datasetId)
+  if (!timer) return
+  clearInterval(timer)
+  buildProgressTimerMap.delete(datasetId)
+}
+
+// 데이터셋 구축 진행 진행률 애니메이션 시작
+const handleAnimateBuildProgress = (datasetId: string) => {
+  if (buildProgressTimerMap.has(datasetId)) return
+
+  const timer = setInterval(() => {
+    const current = buildProgressMap.value[datasetId] ?? 0
+    const target = buildProgressTargetMap.value[datasetId] ?? current
+
+    if (target <= current) {
+      if (target < current) {
+        buildProgressMap.value[datasetId] = target
+      }
+      handleStopBuildProgressAnimation(datasetId)
+      return
+    }
+
+    // 다음 진행률 계산
+    const next = Math.min(current + PROGRESS_ANIMATE_STEP, target)
+    buildProgressMap.value[datasetId] = next
+    if (next >= target) {
+      handleStopBuildProgressAnimation(datasetId)
+    }
+  }, PROGRESS_ANIMATE_INTERVAL_MS)
+
+  buildProgressTimerMap.set(datasetId, timer)
+}
+
+// 데이터셋 구축 진행 이벤트 데이터 파싱
 const parseBuildEventData = (rawData: string): DatasetBuildEventData | null => {
   if (!rawData) return null
   try {
@@ -154,64 +196,109 @@ const parseBuildEventData = (rawData: string): DatasetBuildEventData | null => {
   }
 }
 
+// 데이터셋 구축 진행 스트림 종료
 const handleCloseBuildStream = (datasetId: string) => {
+  // 데이터셋 구축 진행 스트림 조회
   const stream = buildStreamMap.get(datasetId)
+  // 데이터셋 구축 진행 스트림 조회 실패 시 종료
   if (!stream) return
+  // 데이터셋 구축 진행 스트림 종료
   stream.close()
+  // 데이터셋 구축 진행 스트림 맵에서 삭제
   buildStreamMap.delete(datasetId)
 }
 
+// 모든 데이터셋 구축 진행 스트림 종료
 const handleCloseAllBuildStreams = () => {
   buildStreamMap.forEach((stream) => stream.close())
   buildStreamMap.clear()
+  // 모든 데이터셋 구축 진행 진행률 타이머 초기화
+  buildProgressTimerMap.forEach((timer) => clearInterval(timer))
+  // 모든 데이터셋 구축 진행 진행률 타이머 맵 초기화
+  buildProgressTimerMap.clear()
 }
-
+// 데이터셋 구축 진행 상태 업데이트
 const handleUpdateBuildProgress = (datasetId: string, rawData: string) => {
+  // 이벤트 데이터 파싱
   const eventData = parseBuildEventData(rawData)
   if (!eventData) return
 
+  // 진행률 업데이트
   if (typeof eventData.progress === 'number') {
-    buildProgressMap.value[datasetId] = clampProgress(eventData.progress)
-  }
-  if (eventData.message) {
-    buildMessageMap.value[datasetId] = eventData.message
+    // 진행률 타겟 업데이트
+    const current = buildProgressMap.value[datasetId] ?? 0
+    const nextTarget = clampInProgress(eventData.progress)
+    if (nextTarget <= current) return
+    // 진행률 타겟 업데이트
+    buildProgressTargetMap.value[datasetId] = nextTarget
+    // 진행률 애니메이션 시작
+    handleAnimateBuildProgress(datasetId)
   }
 }
 
+// 데이터셋 구축 진행 상태 초기화
 const handleClearBuildState = (datasetId: string) => {
+  // 진행률 애니메이션 중지
+  handleStopBuildProgressAnimation(datasetId)
+  // 진행률 맵 초기화
   buildProgressMap.value = Object.fromEntries(Object.entries(buildProgressMap.value).filter(([id]) => id !== datasetId))
+  // 메시지 맵 초기화
   buildMessageMap.value = Object.fromEntries(Object.entries(buildMessageMap.value).filter(([id]) => id !== datasetId))
+  // 진행률 타겟 맵 초기화
+  buildProgressTargetMap.value = Object.fromEntries(
+    Object.entries(buildProgressTargetMap.value).filter(([id]) => id !== datasetId),
+  )
 }
 
+// 데이터셋 구축 진행 스트림 시작
 const handleStartBuildStream = (datasetId: string) => {
   if (typeof window === 'undefined') return
   if (!datasetId) return
 
+  // 데이터셋 구축 진행 스트림 종료
   handleCloseBuildStream(datasetId)
+  // 진행률 맵 초기화
   buildProgressMap.value[datasetId] = 0
+  // 진행률 타겟 맵 초기화
+  buildProgressTargetMap.value[datasetId] = 0
+  // 메시지 맵 초기화
   buildMessageMap.value[datasetId] = '벡터 생성 작업이 진행 중입니다.'
-
   const dataset = datasetList.value.find((item) => item.datasetId === datasetId)
+  // 데이터셋 구축 진행 상태 업데이트
   if (dataset) {
     dataset.datasetBuildStatusCd = 'BUILDING'
   }
 
+  // 데이터셋 구축 진행 스트림 중계
   const stream = new EventSource(`/api/dataset/buildStream.do?datasetId=${encodeURIComponent(datasetId)}`)
   buildStreamMap.set(datasetId, stream)
 
+  // 이벤트 리스너 등록
   const eventNames = ['start', 'pipe1', 'pipe2', 'pipe3', 'pipe4', 'pipe5', 'pipe6', 'done', 'error']
   eventNames.forEach((eventName) => {
+    // 이벤트 발생 시 처리 (emitter.send()에서 받는 이벤트 리스너)
     stream.addEventListener(eventName, (event) => {
       const messageEvent = event as MessageEvent
+      // 이벤트 데이터 파싱
       const eventData = parseBuildEventData(messageEvent.data)
+      // 진행 상태 업데이트
       handleUpdateBuildProgress(datasetId, messageEvent.data)
 
+      // 에러 이벤트 처리
       if (eventName === 'error' && eventData?.message) {
         openToast({ message: eventData.message, type: 'error' })
       }
+      // 완료 이벤트 처리
       if (eventName === 'done' || eventName === 'error' || eventData?.status === 'error') {
+        // 완료 시 100%를 먼저 보여준 뒤 스트림 종료
+        handleStopBuildProgressAnimation(datasetId)
+        buildProgressTargetMap.value[datasetId] = 100
+        buildProgressMap.value[datasetId] = clampProgress(100)
+        // 스트림 종료 및 완료 토스트 표시 후 목록 새로고침
         handleCloseBuildStream(datasetId)
-        void handleSelectAll()
+        window.setTimeout(() => {
+          void handleSelectAll()
+        }, BUILD_COMPLETE_HOLD_MS)
       }
     })
   })
@@ -371,6 +458,7 @@ const onSaveCreate = async (data: DocDatasetForm, startBuild: boolean) => {
   }
   // 데이터셋 저장
   const { affected, datasetId } = await handleSaveDocDataset(payload)
+  // 데이터셋 구축 진행 스트림 시작
   if (startBuild && affected > 0 && datasetId) {
     handleStartBuildStream(datasetId)
   }
