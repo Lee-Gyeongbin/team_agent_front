@@ -82,6 +82,7 @@
 
 <script setup lang="ts">
 import type { ChatMessage, KnowledgeItem } from '~/types/chat'
+import { setMessagesForVisualizationGetter } from '~/composables/chat/useChatMessages'
 
 const {
   activePanelType,
@@ -209,6 +210,14 @@ watch(
   },
   { immediate: true },
 )
+
+// 공유 페이지는 전역 messages 대신 sharedMessages에서 시각화 데이터를 찾도록 연결
+onMounted(() => {
+  setMessagesForVisualizationGetter(() => sharedMessages.value)
+})
+onUnmounted(() => {
+  setMessagesForVisualizationGetter(null)
+})
 </script>
 
 <style lang="scss" scoped>

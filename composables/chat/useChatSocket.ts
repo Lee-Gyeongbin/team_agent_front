@@ -102,6 +102,9 @@ export const useChatSocket = () => {
         }
         streamingMessage.hasSource = !!payload.filePath
         streamingMessage.hasVisualization = !!payload.tableData
+        if (payload.tableData !== undefined && payload.tableData !== '') {
+          streamingMessage.tableData = payload.tableData
+        }
         // 스트리밍 메시지 완료 처리
         finalizeStreamingMessage()
         break

@@ -5,6 +5,17 @@ const messages = ref<ChatMessage[]>([])
 const pendingMessageId = ref<string | null>(null)
 const messageBufferMap = ref<Record<string, string>>({})
 
+/** 공유 채팅 등 메인 `messages` 외에 시각화를 띄울 때 조회할 로그 소스 (null이면 messages 사용) */
+let messagesForVisualizationGetter: (() => ChatMessage[]) | null = null
+
+export const setMessagesForVisualizationGetter = (fn: (() => ChatMessage[]) | null) => {
+  messagesForVisualizationGetter = fn
+}
+
+const getMessagesForVisualization = () => {
+  return messagesForVisualizationGetter?.() ?? messages.value
+}
+
 export const useChatMessages = () => {
   // HTML 콘텐츠 변환
   const toHtmlContent = (value: string) => {
@@ -38,6 +49,11 @@ export const useChatMessages = () => {
         createdAt,
         hasSource,
         hasVisualization,
+        visualizationData: {
+          sql: row.ttsq ?? '',
+          chartTitle: '',
+        },
+        tableData: typeof row.tableData === 'string' ? row.tableData : undefined,
         chatLogReaction: {
           logId,
           satisYn: satisYnVal,
@@ -117,6 +133,7 @@ export const useChatMessages = () => {
     messages,
     pendingMessageId,
     messageBufferMap,
+    getMessagesForVisualization,
     toHtmlContent,
     logRowToMessages,
     pushQuestionMessage,

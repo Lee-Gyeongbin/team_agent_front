@@ -15,7 +15,7 @@ import { useChatSearchState } from '~/composables/chat/useChatSearchState'
 import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
 import { clearBodyChartFullscreen } from '~/utils/chat/visualizationChartUtil'
 const { messages } = useChatSocket()
-const { logRowToMessages, pushQuestionMessage, pushAnswerPlaceholder } = useChatMessages()
+const { logRowToMessages, pushQuestionMessage, pushAnswerPlaceholder, getMessagesForVisualization } = useChatMessages()
 const { activeSearchModes, subOptions, selectedSubOption, resolveSvcTy } = useChatSearchState()
 const {
   chatRoom,
@@ -101,8 +101,13 @@ export const useChatStore = () => {
     }
     const res = await fetchSelectChatLogList(roomId)
     const rawList = res.list ?? []
-    // 채팅 로그 목록이 0건인 경우
     if (rawList.length === 0) {
+      /**
+       * 채팅 로그 목록이 0건인 경우
+       * ( 첫 채팅 시 messages 에 넣었지만 서버에는 아직 반영이 안 된 경우
+       * 또는 채팅방 이동 시 채팅 로그가 아직 없는 경우 등
+       * 로그는 0건이 맞지만 화면에는 보여줄 메시지가 있어야 하는 상황에서 로컬 메시지를 보존하기 위함. )
+       */
       // 로컬 메시지 보존 옵션 확인
       const preserve = options?.preserveLocalWhenEmpty ?? true
       // 로컬 메시지 존재 여부 확인
@@ -116,6 +121,10 @@ export const useChatStore = () => {
       return
     }
     // 채팅 로그 목록 → 메시지 리스트 변환
+    /**
+     * rawList.flateMap의 인자는 콜백 함수임.
+     * rawList.flatMap(logRowToMessages) : 각 row에 대해 logRowToMessages 함수를 호출하고 그 결과를 배열로 반환.
+     */
     const flattened = rawList.flatMap(logRowToMessages)
     // 메시지 정렬
     flattened.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
@@ -154,10 +163,24 @@ export const useChatStore = () => {
     schema: null,
   })
 
+  /**
+   * 테이블 본문은 메시지의 tableData(selectChatLogList·스트리밍) 사용.
+   * ID/코드 → 한글명 매핑(statList, statDetailList)은 selectTableDataList로만 조회해 registerDynamicMappings에 반영.
+   */
   const handleSelectVisualizationData = async (logId: string) => {
     if (!logId) return getEmptyVisualizationViewModel('')
 
-    // 시각화 데이터 조회 중
+    const source = getMessagesForVisualization()
+    const answerMsg = source.find((m) => m.logId === logId && m.type === 'answer')
+    const tableData = typeof answerMsg?.tableData === 'string' ? answerMsg.tableData : ''
+    const sql = typeof answerMsg?.visualizationData?.sql === 'string' ? answerMsg.visualizationData.sql : ''
+
+    if (!tableData.trim()) {
+      const empty = getEmptyVisualizationViewModel(logId)
+      visualizationViewMap.value[logId] = empty
+      return empty
+    }
+
     visualizationViewMap.value[logId] = {
       messageId: logId,
       status: 'loading',
@@ -167,41 +190,25 @@ export const useChatStore = () => {
       schema: null,
     }
 
+    let statList: VisualizationViewModel['statList']
+    let statDetailList: VisualizationViewModel['statDetailList']
     try {
-      // 시각화 데이터 조회
       const res = await fetchSelectTableDataList({ logId })
-      const row = (res.list ?? [])[0]
-      // 시각화 데이터 조회 결과가 없으면 빈 뷰 모델 반환
-      if (!row) {
-        visualizationViewMap.value[logId] = getEmptyVisualizationViewModel(logId)
-        return visualizationViewMap.value[logId]
-      }
-
-      // 시각화 데이터 조회 결과 → 뷰 모델 생성
-      const viewModel = buildVisualizationViewModel({
-        messageId: logId,
-        sql: row.ttsq,
-        tableData: row.tableData,
-        statList: res.statList ?? row.statList,
-        statDetailList: res.statDetailList ?? row.statDetailList,
-      })
-      // 뷰 모델 설정
-      visualizationViewMap.value[logId] = viewModel
-      return viewModel
-    } catch (error) {
-      const message = error instanceof Error ? error.message : '시각화 데이터를 불러오지 못했습니다.'
-      const fallbackModel: VisualizationViewModel = {
-        messageId: logId,
-        status: 'error',
-        sql: '',
-        rawTableData: '',
-        rows: [],
-        schema: null,
-        errorMessage: message,
-      }
-      visualizationViewMap.value[logId] = fallbackModel
-      return fallbackModel
+      statList = res.statList
+      statDetailList = res.statDetailList
+    } catch {
+      // 매핑 API 실패 시 표/차트는 컬럼 키 기준 라벨로 표시
     }
+
+    const viewModel = buildVisualizationViewModel({
+      messageId: logId,
+      sql,
+      tableData,
+      statList,
+      statDetailList,
+    })
+    visualizationViewMap.value[logId] = viewModel
+    return viewModel
   }
 
   // 원본 보기 버튼 클릭 시(pdf 패널 열기)

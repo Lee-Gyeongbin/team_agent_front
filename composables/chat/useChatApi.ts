@@ -56,12 +56,10 @@ export const useReportsApi = () => {
   }: {
     logId: string
   }): Promise<{
-    list: VisualizationDataRow[]
     statList?: VisualizationStatItem[]
     statDetailList?: VisualizationStatDetailItem[]
   }> => {
     return get<{
-      list: VisualizationDataRow[]
       statList?: VisualizationStatItem[]
       statDetailList?: VisualizationStatDetailItem[]
     }>(`/ai/chatbot/selectTableDataList.do?logId=${encodeURIComponent(logId)}`)

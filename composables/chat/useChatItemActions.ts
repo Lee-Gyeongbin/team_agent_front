@@ -42,6 +42,7 @@ export const useChatItemActions = () => {
     isModalOpen.value = true
   }
 
+  // 만족도 저장
   const handleReactionSubmit = async () => {
     isModalOpen.value = false
     if (!selectedLogId.value) return
@@ -83,6 +84,7 @@ export const useChatItemActions = () => {
     })
   }
 
+  // 답변 복사
   const onCopy = async (id: string) => {
     console.log('onCopy', id)
     // question·answer가 동일 logId로 쌍을 이루므로 반드시 답변만 조회

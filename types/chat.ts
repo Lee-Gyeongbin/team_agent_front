@@ -42,6 +42,8 @@ export interface ChatMessage {
   docId?: string
   /** 문서 존재 여부 (Y/N) */
   docExist?: 'Y' | 'N'
+  /** 시각화 테이블 원본 JSON (로그 목록 조회·스트리밍 완료 시) */
+  tableData?: string
   [key: string]: unknown
 }
 
