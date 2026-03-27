@@ -32,6 +32,8 @@
           v-for="dataset in datasetList"
           :key="dataset.datasetId"
           :dataset="dataset"
+          :build-progress="buildProgressMap[dataset.datasetId]"
+          :build-message="buildMessageMap[dataset.datasetId]"
           @toggle-active="handleToggleActiveDocDataset(dataset.datasetId, dataset.useYn)"
           @test="onTest(dataset.datasetId)"
           @history="onHistory(dataset.datasetId)"
@@ -98,7 +100,6 @@ import DocDatasetSummary from '~/components/doc-dataset/DocDatasetSummary.vue'
 import DocDatasetCard from '~/components/doc-dataset/DocDatasetCard.vue'
 import DocDatasetCreateModal from '~/components/doc-dataset/DocDatasetCreateModal.vue'
 import { useDocDatasetStore } from '~/composables/doc-dataset/useDocDatasetStore'
-import type { DocDatasetForm } from '~/types/doc-dataset'
 const {
   isLoading,
   isDeleteModalOpen,
@@ -112,7 +113,10 @@ const {
   editFormData,
   datasetList,
   summary,
+  buildProgressMap,
+  buildMessageMap,
   handleSelectAll,
+  handleCloseAllBuildStreams,
   onSaveCreate,
   onDelete,
   doDelete,
@@ -126,5 +130,9 @@ const {
 onMounted(async () => {
   await handleSelectAll()
   isLoading.value = false
+})
+
+onBeforeUnmount(() => {
+  handleCloseAllBuildStreams()
 })
 </script>

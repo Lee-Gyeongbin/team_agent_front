@@ -132,6 +132,96 @@ const testDatasetId = ref('')
 // 변경 이력 데이터셋 ID
 const historyDatasetId = ref('')
 
+// 데이터셋 구축 진행률/메시지
+const buildProgressMap = ref<Record<string, number>>({})
+const buildMessageMap = ref<Record<string, string>>({})
+const buildStreamMap = new Map<string, EventSource>()
+
+interface DatasetBuildEventData {
+  status?: string
+  progress?: number
+  message?: string
+}
+
+const clampProgress = (progress: number) => Math.min(100, Math.max(0, progress))
+
+const parseBuildEventData = (rawData: string): DatasetBuildEventData | null => {
+  if (!rawData) return null
+  try {
+    return JSON.parse(rawData) as DatasetBuildEventData
+  } catch {
+    return null
+  }
+}
+
+const handleCloseBuildStream = (datasetId: string) => {
+  const stream = buildStreamMap.get(datasetId)
+  if (!stream) return
+  stream.close()
+  buildStreamMap.delete(datasetId)
+}
+
+const handleCloseAllBuildStreams = () => {
+  buildStreamMap.forEach((stream) => stream.close())
+  buildStreamMap.clear()
+}
+
+const handleUpdateBuildProgress = (datasetId: string, rawData: string) => {
+  const eventData = parseBuildEventData(rawData)
+  if (!eventData) return
+
+  if (typeof eventData.progress === 'number') {
+    buildProgressMap.value[datasetId] = clampProgress(eventData.progress)
+  }
+  if (eventData.message) {
+    buildMessageMap.value[datasetId] = eventData.message
+  }
+}
+
+const handleClearBuildState = (datasetId: string) => {
+  buildProgressMap.value = Object.fromEntries(Object.entries(buildProgressMap.value).filter(([id]) => id !== datasetId))
+  buildMessageMap.value = Object.fromEntries(Object.entries(buildMessageMap.value).filter(([id]) => id !== datasetId))
+}
+
+const handleStartBuildStream = (datasetId: string) => {
+  if (typeof window === 'undefined') return
+  if (!datasetId) return
+
+  handleCloseBuildStream(datasetId)
+  buildProgressMap.value[datasetId] = 0
+  buildMessageMap.value[datasetId] = '벡터 생성 작업이 진행 중입니다.'
+
+  const dataset = datasetList.value.find((item) => item.datasetId === datasetId)
+  if (dataset) {
+    dataset.datasetBuildStatusCd = 'BUILDING'
+  }
+
+  const stream = new EventSource(`/api/dataset/buildStream.do?datasetId=${encodeURIComponent(datasetId)}`)
+  buildStreamMap.set(datasetId, stream)
+
+  const eventNames = ['start', 'pipe1', 'pipe2', 'pipe3', 'pipe4', 'pipe5', 'pipe6', 'done', 'error']
+  eventNames.forEach((eventName) => {
+    stream.addEventListener(eventName, (event) => {
+      const messageEvent = event as MessageEvent
+      const eventData = parseBuildEventData(messageEvent.data)
+      handleUpdateBuildProgress(datasetId, messageEvent.data)
+
+      if (eventName === 'error' && eventData?.message) {
+        openToast({ message: eventData.message, type: 'error' })
+      }
+      if (eventName === 'done' || eventName === 'error' || eventData?.status === 'error') {
+        handleCloseBuildStream(datasetId)
+        void handleSelectAll()
+      }
+    })
+  })
+
+  stream.onerror = () => {
+    openToast({ message: '데이터셋 구축 진행 정보를 가져오지 못했습니다.', type: 'error' })
+    handleCloseBuildStream(datasetId)
+  }
+}
+
 // ===== 상태 변경 METHODS =====
 const openCreateModal = async () => {
   modalMode.value = 'create'
@@ -280,7 +370,10 @@ const onSaveCreate = async (data: DocDatasetForm, startBuild: boolean) => {
     urlIdList: data.selectedUrlIds.map((id) => ({ urlId: id, datasetId: editingDatasetId.value ?? '' })),
   }
   // 데이터셋 저장
-  await handleSaveDocDataset(payload)
+  const { affected, datasetId } = await handleSaveDocDataset(payload)
+  if (startBuild && affected > 0 && datasetId) {
+    handleStartBuildStream(datasetId)
+  }
   // 생성 모달 닫기
   isCreateModalOpen.value = false
 }
@@ -364,6 +457,8 @@ const onDeleteHistory = async (id: string) => {
 
 // 구축 중지
 const onStopBuild = async (id: string) => {
+  handleCloseBuildStream(id)
+  handleClearBuildState(id)
   const res = await fetchToggleActiveDocDataset(id, '', '001')
   const affected = typeof res.data === 'number' ? res.data : 0
   if (affected > 0) {
@@ -384,6 +479,7 @@ const doDelete = async () => {
 const handleSaveDocDataset = async (dataset: DocDatasetSavePayload) => {
   const res = await fetchSaveDocDataset(dataset)
   const affected = typeof res.data === 'number' ? res.data : 0
+  const datasetId = res.datasetId ?? dataset.datasetId ?? ''
   if (affected > 0) {
     openToast({ message: '데이터셋이 저장되었습니다.', type: 'success' })
   } else {
@@ -391,6 +487,7 @@ const handleSaveDocDataset = async (dataset: DocDatasetSavePayload) => {
   }
   // 목록 + 요약 동시 조회
   await handleSelectAll()
+  return { affected, datasetId }
 }
 
 // 데이터셋 삭제 실행
@@ -537,6 +634,9 @@ export const useDocDatasetStore = () => {
     handleSelectDocDataset,
     handleSelectDatasetSrcList,
     handleSaveDocDataset,
+    buildProgressMap,
+    buildMessageMap,
+    handleCloseAllBuildStreams,
     handleDeleteDocDataset,
     handleToggleActiveDocDataset,
     // 변경이력

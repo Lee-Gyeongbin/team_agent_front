@@ -105,6 +105,7 @@
 
 <script setup lang="ts">
 import { useFileStore } from '~/composables/com/useFileStore'
+import { openAlert } from '~/composables/useDialog'
 import { openToast } from '~/composables/useToast'
 import type { FileItem } from '~/types/repository'
 
@@ -143,11 +144,17 @@ const { onDownloadFile } = useFileStore()
 /** 이름·크기·수정시각으로 동일 파일 여부 판별 */
 const isSameFile = (a: File, b: File) => a.name === b.name && a.size === b.size && a.lastModified === b.lastModified
 
+/** 이미 등록된 첨부(서버 목록)와 파일명이 같은지 — 대소문자 무시 */
+const isDuplicateAttachedFileName = (file: File) => {
+  const name = file.name.trim().toLowerCase()
+  return props.attachedFileList.some((item) => (item.fileName ?? '').trim().toLowerCase() === name)
+}
+
 const openFilePicker = () => {
   fileInputRef.value?.click()
 }
 
-const addFiles = (newFiles: FileList | File[]) => {
+const addFiles = async (newFiles: FileList | File[]) => {
   let arr = Array.from(newFiles)
 
   // 파일당 용량 제한
@@ -160,6 +167,17 @@ const addFiles = (newFiles: FileList | File[]) => {
     })
   }
   if (arr.length === 0) return
+
+  // 이미 등록된 첨부 목록과 파일명이 겹치는 경우
+  for (const f of arr) {
+    if (isDuplicateAttachedFileName(f)) {
+      await openAlert({
+        title: '알림',
+        message: '동일한 파일명의 파일이 이미 등록되어 있습니다.',
+      })
+      return
+    }
+  }
 
   // 이미 목록에 있거나, 이번에 선택한 파일끼리 동일한 경우
   for (let i = 0; i < arr.length; i++) {

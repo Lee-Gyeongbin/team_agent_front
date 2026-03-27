@@ -48,7 +48,7 @@ export const useDocDatasetApi = () => {
 
   // ===== 데이터셋 저장 =====
   const fetchSaveDocDataset = async (dataset: DocDatasetSavePayload) => {
-    return post<{ data: number }>('/dataset/save.do', dataset)
+    return post<{ data: number; datasetId?: string }>('/dataset/save.do', dataset)
   }
 
   // ===== 데이터셋 삭제 =====

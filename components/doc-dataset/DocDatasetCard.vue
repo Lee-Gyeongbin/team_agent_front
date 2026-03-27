@@ -12,7 +12,7 @@
       <div class="card-grid-card-actions">
         <!-- 구축중: 뱃지 / 완료: 토글 -->
         <span
-          v-if="dataset.datasetBuildStatusCd === 'BUILDING'"
+          v-if="isBuilding"
           class="doc-dataset-card-badge-building"
         >
           구축중
@@ -37,20 +37,20 @@
 
     <!-- 구축중: 프로그레스바 -->
     <div
-      v-if="dataset.datasetBuildStatusCd === 'BUILDING'"
+      v-if="isBuilding"
       class="doc-dataset-card-build"
     >
       <div class="doc-dataset-card-build-header">
         <span class="doc-dataset-card-build-label">벡터 생성 진행</span>
-        <span class="doc-dataset-card-build-percent">진행중</span>
+        <span class="doc-dataset-card-build-percent">{{ progressText }}</span>
       </div>
       <div class="doc-dataset-card-progress">
         <div
           class="doc-dataset-card-progress-bar"
-          :style="{ width: '100%' }"
+          :style="{ width: `${buildProgress}%` }"
         />
       </div>
-      <span class="doc-dataset-card-build-detail">벡터 생성 작업이 진행 중입니다.</span>
+      <span class="doc-dataset-card-build-detail">{{ buildMessageText }}</span>
     </div>
 
     <!-- 완료: 통계 3칸 -->
@@ -94,7 +94,7 @@
 
     <!-- 하단 버튼 -->
     <div class="card-grid-card-footer">
-      <template v-if="dataset.datasetBuildStatusCd === 'BUILDING'">
+      <template v-if="isBuilding">
         <UiButton
           variant="line-secondary"
           size="sm"
@@ -151,10 +151,13 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { DocDataset } from '~/types/doc-dataset'
 
 const props = defineProps<{
   dataset: DocDataset
+  buildProgress?: number
+  buildMessage?: string
 }>()
 
 const emit = defineEmits<{
@@ -175,4 +178,15 @@ const onMenuSelect = (key: string) => {
   if (key === 'edit') emit('edit', props.dataset)
   if (key === 'delete') emit('delete', props.dataset.datasetId)
 }
+
+const isBuilding = computed(() => ['BUILDING', '002'].includes(props.dataset.datasetBuildStatusCd))
+
+const buildProgress = computed(() => {
+  const progress = Number(props.buildProgress)
+  if (!Number.isFinite(progress)) return 0
+  return Math.min(100, Math.max(0, progress))
+})
+
+const progressText = computed(() => `${buildProgress.value}%`)
+const buildMessageText = computed(() => props.buildMessage || '벡터 생성 작업이 진행 중입니다.')
 </script>
