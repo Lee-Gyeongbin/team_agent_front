@@ -16,16 +16,28 @@
             @enter="handleFetchNoticeList"
           />
         </div>
-        <UiButton
-          variant="ghost"
-          size="md"
-          @click="handleFetchNoticeList"
-        >
-          <template #icon-left>
-            <i class="icon icon-refresh size-16" />
-          </template>
-          새로고침
-        </UiButton>
+        <div class="notice-btn-grp flex items-center shrink-0 gap-2">
+          <UiButton
+            variant="primary"
+            size="md"
+            @click="onRegisterNotice"
+          >
+            <template #icon-left>
+              <i class="icon icon-plus size-16" />
+            </template>
+            등록
+          </UiButton>
+          <UiButton
+            variant="outline"
+            size="md"
+            @click="handleFetchNoticeList"
+          >
+            <template #icon-left>
+              <i class="icon icon-refresh size-16" />
+            </template>
+            새로고침
+          </UiButton>
+        </div>
       </div>
     </div>
 
@@ -59,34 +71,85 @@
       <UiTable
         :columns="noticeColumns"
         :data="pagedNoticeList"
+        :row-class="getNoticeRowClassName"
         sticky-header
         max-height="calc(100vh - 200px)"
-        empty-text="조회된 공지사항이 없습니다."
-      />
+        empty-text="새로운 공지사항을 등록해주세요"
+      >
+        <template #cell-title="{ row }">
+          <button
+            class="notice-title-btn"
+            @click.stop="onOpenNoticeDetail(row as NoticeRow)"
+          >
+            {{ getDisplayNoticeTitle(row.title) }}
+          </button>
+        </template>
+        <template #cell-noticeId="{ row }">
+          {{ getNoticeOrderLabel(row as NoticeRow) }}
+        </template>
+        <template #cell-modifyDt="{ row }">
+          {{ getNoticeDateLabel((row as NoticeRow).modifyDt) }}
+        </template>
+      </UiTable>
     </div>
     <div class="notice-pagination-wrap">
       <UiPagination
+        v-if="filteredList.length > 0"
         v-model="currentPage"
         :total-count="filteredList.length"
         :page-size="pageSize"
-        total-label="공지사항"
+        total-label="개 공지사항"
       />
     </div>
+
+    <NoticeFormPanel
+      :is-open="isNoticePanelOpen"
+      :form-data="noticeForm"
+      :panel-action-label="panelActionLabel"
+      @update-form-data="(payload) => (noticeForm = payload)"
+      @save="onSaveNoticeForm"
+      @close="onCloseNoticeForm"
+    />
+    <NoticeDetailPanel
+      :is-open="isNoticeDetailPanelOpen"
+      :notice="selectedNotice"
+      @edit="onEditNotice"
+      @delete="onDeleteNotice"
+      @close="closeNoticeDetailPanel"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+import type { NoticeRow } from '~/types/notice'
 import { noticeColumns } from '~/types/notice'
 
-const { searchKeyword, isLoading, errorMessage, filteredList, handleFetchNoticeList } = useNoticeStore()
-const currentPage = ref(1)
-const pageSize = 10
-
-const pagedNoticeList = computed(() => {
-  const startIndex = (currentPage.value - 1) * pageSize
-  return filteredList.value.slice(startIndex, startIndex + pageSize)
-})
-
+const {
+  searchKeyword,
+  isLoading,
+  errorMessage,
+  currentPage,
+  pageSize,
+  isNoticePanelOpen,
+  isNoticeDetailPanelOpen,
+  selectedNotice,
+  noticeForm,
+  panelActionLabel,
+  filteredList,
+  pagedNoticeList,
+  handleFetchNoticeList,
+  getDisplayNoticeTitle,
+  onRegisterNotice,
+  onSaveNoticeForm,
+  onCloseNoticeForm,
+  onOpenNoticeDetail,
+  onEditNotice,
+  onDeleteNotice,
+  closeNoticeDetailPanel,
+  getNoticeRowClassName,
+  getNoticeOrderLabel,
+  getNoticeDateLabel,
+} = useNoticeStore()
 watch(searchKeyword, () => {
   currentPage.value = 1
 })

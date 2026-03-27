@@ -50,6 +50,19 @@
   margin-top: $spacing-md;
 }
 
+.notice-title-btn {
+  display: inline-block;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: $color-text-primary;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
 .notice-error {
   @include flex-center;
   flex-direction: column;
@@ -63,20 +76,83 @@
   }
 }
 
-.notice-status {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: $border-radius-full;
-  font-size: $font-size-sm;
-  font-weight: $font-weight-medium;
+.notice-option-box {
+  margin-top: $spacing-sm;
+  padding: 12px;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  background: $color-background;
+}
 
-  &.is-success {
-    background: rgba($color-success, 0.12);
-    color: $color-success;
+.notice-option-group {
+  flex-wrap: wrap;
+  gap: $spacing-md;
+
+  .notice-option-item {
+    color: $color-text-primary;
+    font-size: $font-size-sm;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+}
+
+.notice-detail-panel {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+
+  .notice-detail-header {
+    padding-bottom: $spacing-sm;
+    border-bottom: 1px solid $color-border-light;
   }
 
-  &.is-fail {
-    background: rgba($color-error, 0.12);
-    color: $color-error;
+  .notice-detail-meta {
+    gap: $spacing-xs;
+    margin-top: $spacing-xs;
+    color: $color-text-secondary;
+    font-size: $font-size-sm;
+  }
+
+  .notice-detail-divider {
+    color: $color-text-disabled;
+    line-height: 1;
+  }
+
+  .notice-detail-flag-group {
+    flex-wrap: wrap;
+    gap: $spacing-xs;
+  }
+
+  .notice-detail-body {
+    min-width: 0;
+  }
+
+  .notice-content-box {
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 180px;
+    padding: 12px;
+    border: 1px solid $color-border;
+    border-radius: $border-radius-base;
+    background: $color-background;
+    color: $color-text-primary;
+    font-size: $font-size-sm;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    overflow-y: auto;
+  }
+}
+
+.notice-detail-modal {
+  .modal-side-header {
+    .modal-side-title {
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
   }
 }
