@@ -7,7 +7,7 @@
           :model-value="shareLink"
           :placeholder="isLoading ? '링크 생성 중...' : ''"
           type="text"
-          readonly
+          disabled
           @focus="($event.target as HTMLInputElement).select()"
         />
       </div>
