@@ -81,7 +81,12 @@
             class="notice-title-btn"
             @click.stop="onOpenNoticeDetail(row as NoticeRow)"
           >
-            {{ getDisplayNoticeTitle(row.title) }}
+            <i
+              v-if="(row as NoticeRow).pinYn === 'Y'"
+              class="icon-sidebar-pin size-16"
+              aria-hidden="true"
+            />
+            <span class="notice-title-text">{{ getDisplayNoticeTitle(row.title) }}</span>
           </button>
         </template>
         <template #cell-noticeId="{ row }">

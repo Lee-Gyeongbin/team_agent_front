@@ -51,16 +51,21 @@
 }
 
 .notice-title-btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
   max-width: 100%;
   padding: 0;
   border: 0;
   background: transparent;
   color: $color-text-primary;
   text-align: left;
-  text-decoration: underline;
-  text-underline-offset: 2px;
   cursor: pointer;
+
+  .notice-title-text {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
 }
 
 .notice-error {
@@ -78,7 +83,7 @@
 
 .notice-option-box {
   margin-top: $spacing-sm;
-  padding: 12px;
+  padding: $spacing-sm;
   border: 1px solid $color-border;
   border-radius: $border-radius-base;
   background: $color-background;
@@ -133,13 +138,13 @@
     min-width: 0;
     max-width: 100%;
     min-height: 180px;
-    padding: 12px;
+    padding: $spacing-sm;
     border: 1px solid $color-border;
     border-radius: $border-radius-base;
     background: $color-background;
     color: $color-text-primary;
     font-size: $font-size-sm;
-    line-height: 1.6;
+    line-height: $line-height-base;
     white-space: pre-wrap;
     word-break: break-word;
     overflow-wrap: anywhere;
