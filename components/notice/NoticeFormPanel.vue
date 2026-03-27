@@ -25,14 +25,14 @@
             <label class="notice-option-item flex items-center gap-2">
               <UiCheckbox
                 :model-value="isDashboardTitle"
-                @update:model-value="(value) => onFieldChange('useYn', value ? 'Y' : 'N')"
+                @update:model-value="(value) => onFieldChange('featuredYn', value ? 'Y' : null)"
               />
               <span>대시보드 타이틀로 표시하기</span>
             </label>
             <label class="notice-option-item flex items-center gap-2">
               <UiCheckbox
                 :model-value="isTopFixed"
-                @update:model-value="(value) => onFieldChange('pinYn', value ? 'Y' : 'N')"
+                @update:model-value="(value) => onFieldChange('pinYn', value ? 'Y' : null)"
               />
               <span>공지사항 상단에 고정하기</span>
             </label>
@@ -95,7 +95,7 @@ const emit = defineEmits<{
 }>()
 
 const noticeTitleRef = ref<{ focus?: () => void; $el?: HTMLElement } | null>(null)
-const isDashboardTitle = computed(() => props.formData.useYn === 'Y')
+const isDashboardTitle = computed(() => props.formData.featuredYn === 'Y')
 const isTopFixed = computed(() => props.formData.pinYn === 'Y')
 const onFieldChange = <K extends keyof NoticeFormData>(key: K, value: NoticeFormData[K]) => {
   emit('updateFormData', {
@@ -114,13 +114,6 @@ const onSaveNotice = () => {
     openToast({ message: '공지 내용을 입력해주세요.', type: 'warning' })
     return
   }
-  // 🔽 더미 로직 — 백엔드 연결 시 API 저장 결과(성공/실패) 기반으로 후처리
-  // TO-DO: 저장 API 응답값으로 목록 갱신/상세 갱신 분기 처리
-  emit('save', {
-    ...props.formData,
-    noticeId: String(props.formData.noticeId ?? ''),
-    useYn: props.formData.useYn === 'Y' ? 'Y' : 'N',
-    pinYn: props.formData.pinYn === 'Y' ? 'Y' : 'N',
-  })
+  emit('save', props.formData)
 }
 </script>

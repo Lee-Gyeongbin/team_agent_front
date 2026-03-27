@@ -6,6 +6,7 @@ import type {
   DashboardTokenUsage,
   DashboardVisitorTrend,
 } from '~/types/dashboard'
+import { calculateChartScale } from '~/utils/chat/visualizationChartUtil'
 
 const {
   fetchDashboardStatSummary,
@@ -17,9 +18,97 @@ const {
 
 const statSummary = ref<DashboardStatSummary | null>(null)
 const queryRatio = ref<DashboardQueryRatio | null>(null)
+const queryRatioChartConfig = computed(() => ({
+  items: [
+    { name: 'LLM', value: queryRatio.value?.llm },
+    { name: 'RAG', value: queryRatio.value?.rag },
+    { name: 'TextToSQL', value: queryRatio.value?.textToSql },
+  ],
+  useSvgDonut: true,
+  labelColor: ['#FF9037', '#73BDE7', '#3C69DB'],
+  svgConfig: {
+    width: 510,
+    height: 220,
+    centerX: 280,
+    centerY: 110,
+    radius: 68,
+    strokeWidth: 30,
+    diagonalLength: 12,
+    horizontalLineLength: 80,
+    showCenterText: false,
+    nameFontSize: 12,
+    valueFontSize: 20,
+  },
+}))
 const noticeList = ref<DashboardNoticeItem[]>([])
-const tokenUsage = ref<DashboardTokenUsage | null>(null)
-const visitorTrend = ref<DashboardVisitorTrend | null>(null)
+const mainNotice = ref<DashboardNoticeItem | null>(null)
+const subNotices = ref<DashboardNoticeItem[]>([])
+
+const tokenUsage = ref<DashboardTokenUsage[] | null>(null)
+const monthlyUsage = ref<number>(0)
+const tokenUsageChartConfig = computed(() => {
+  const list = tokenUsage.value ?? []
+  const barValues = list.map((item) => item.tokenUsage)
+  const rateValues = list.map((item) => item.usageRate)
+  const scaleY = calculateChartScale(barValues, 0.1, false)
+  const scaleY1 = calculateChartScale(rateValues, 0.1, false)
+
+  return {
+    categories: list.map((item) => item.ym),
+    datasets: [
+      {
+        label: '토큰 사용량',
+        type: 'bar',
+        data: barValues,
+        colorKey: 'bar.set1',
+        colorIndex: 0,
+        yAxisID: 'y',
+        tooltipValueSuffix: '토큰',
+      },
+      {
+        label: '월한도 대비 사용량(%)',
+        type: 'line',
+        data: rateValues,
+        borderColor: '#22c55e',
+        yAxisID: 'y1',
+        tooltipValueSuffix: '%',
+      },
+    ],
+    maxValue: scaleY.max,
+    maxValue2: scaleY1.max,
+    yAxisStepSize: scaleY.stepSize,
+    y1AxisStepSize: scaleY1.stepSize,
+    showDataLabels: true,
+  }
+})
+const visitorTrend = ref<DashboardVisitorTrend[]>([])
+const visitorTrendChartConfig = computed(() => {
+  const list = visitorTrend.value ?? []
+  const values = list.map((item) => item.successCnt)
+  const scale = calculateChartScale(values, 0.1, false)
+
+  return {
+    categories: list.map((item) => item.statDate),
+    datasets: [
+      {
+        label: '로그인 사용자',
+        data: values,
+        colorKey: 'line.primary',
+        tooltipValueSuffix: '명',
+      },
+    ],
+    minValue: scale.min,
+    maxValue: scale.max,
+    yAxisStepSize: scale.stepSize,
+    scales: {
+      y: {
+        ticks: {
+          callback: (value: number) => `${value.toLocaleString()}`,
+        },
+      },
+    },
+  }
+})
 
 /** 상단 통계 카드 */
 const handleSelectDashboardStatSummary = async () => {
@@ -46,6 +135,8 @@ const handleSelectDashboardNoticeList = async () => {
   try {
     const res = await fetchDashboardNoticeList()
     noticeList.value = res.dataList ?? []
+    mainNotice.value = noticeList.value.filter((item) => item.featuredYn === 'Y')[0] ?? null
+    subNotices.value = noticeList.value.filter((item) => item.featuredYn === 'N').slice(0, 3) ?? []
   } catch {
     openToast({ message: '공지 목록 조회에 실패했습니다.', type: 'error' })
   }
@@ -55,7 +146,8 @@ const handleSelectDashboardNoticeList = async () => {
 const handleSelectDashboardTokenUsage = async () => {
   try {
     const res = await fetchDashboardTokenUsage()
-    tokenUsage.value = res.data ?? null
+    tokenUsage.value = res.dataList ?? null
+    monthlyUsage.value = res.dataList?.[res.dataList.length - 1].tokenUsage ?? 0
   } catch {
     openToast({ message: '토큰 사용량 조회에 실패했습니다.', type: 'error' })
   }
@@ -65,7 +157,7 @@ const handleSelectDashboardTokenUsage = async () => {
 const handleSelectDashboardVisitorTrend = async () => {
   try {
     const res = await fetchDashboardVisitorTrend()
-    visitorTrend.value = res.data ?? null
+    visitorTrend.value = res.dataList ?? []
   } catch {
     openToast({ message: '사용자 추이 조회에 실패했습니다.', type: 'error' })
   }
@@ -86,9 +178,15 @@ export const useDashboardStore = () => {
   return {
     statSummary,
     queryRatio,
+    queryRatioChartConfig,
     noticeList,
+    mainNotice,
+    subNotices,
     tokenUsage,
+    monthlyUsage,
+    tokenUsageChartConfig,
     visitorTrend,
+    visitorTrendChartConfig,
     handleSelectDashboardStatSummary,
     handleSelectDashboardQueryRatio,
     handleSelectDashboardNoticeList,

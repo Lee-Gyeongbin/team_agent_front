@@ -106,6 +106,20 @@
               <i class="icon icon-copy size-16"></i>
             </template>
           </UiButton>
+          <UiButton
+            v-if="displayData?.svcTy === 'S'"
+            variant="ghost"
+            size="xxs"
+            icon-only
+            class="btn-copy btn-custom-gray"
+            style="right: 44px"
+            :aria-pressed="isSqlCodeVisible"
+            @click="toggleSqlCodeVisible"
+          >
+            <template #icon-left>
+              <i class="icon icon-sql size-16"></i>
+            </template>
+          </UiButton>
 
           <div
             class="message-content"
@@ -141,7 +155,11 @@
             </li>
           </ul>
         </div>
-
+        <!-- SQL 코드 블록 -->
+        <UiCodeBlock
+          v-if="displayData?.svcTy === 'S' && isSqlCodeVisible"
+          :code="displayData?.ttsq"
+        />
         <!-- 데이터 시각화 (데이터분석 타입) -->
         <div
           v-if="displayData?.svcTy === 'S'"
@@ -230,7 +248,12 @@ const visualizationView = computed<VisualizationViewModel | null>(() => {
 
 // 내부 표시용 데이터 (트랜지션 타이밍 제어용)
 const displayData = ref<LibraryCardDetail | null>(props.cardDetail ?? null)
-
+// SQL 코드 블록 표시 (데이터분석 타입에서 SQL 버튼으로 토글, 초기 숨김)
+const isSqlCodeVisible = ref(false)
+const toggleSqlCodeVisible = () => {
+  if (displayData.value?.svcTy !== 'S') return
+  isSqlCodeVisible.value = !isSqlCodeVisible.value
+}
 // 스크롤 이벤트 핸들러
 const handleScroll = () => {
   if (!contentRef.value) return
@@ -253,6 +276,7 @@ watch(
     // 최초 열기 — 바로 표시
     if (!oldId) {
       displayData.value = props.cardDetail ?? null
+      isSqlCodeVisible.value = false
       return
     }
     if (!newId || newId === oldId) return
@@ -263,6 +287,7 @@ watch(
     // 2) 나간 후 → 데이터 교체 → 다시 들어옴
     setTimeout(() => {
       displayData.value = props.cardDetail ?? null
+      isSqlCodeVisible.value = false
       if (contentRef.value) {
         contentRef.value.scrollTo({ top: 0 })
         isScrolled.value = false
@@ -280,6 +305,7 @@ watch(
   (open) => {
     if (!open) {
       displayData.value = null
+      isSqlCodeVisible.value = false
     }
   },
 )

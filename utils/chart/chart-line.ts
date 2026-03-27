@@ -177,10 +177,25 @@ export const LineChartModule = {
         tooltip: {
           ...ChartConfig.tooltipConfig,
           callbacks: {
+            labelColor(context: any) {
+              const color = context.dataset.borderColor || context.dataset.backgroundColor
+              return {
+                borderColor: color,
+                backgroundColor: color,
+                borderWidth: 1,
+                borderRadius: 2,
+              }
+            },
             label(context: any) {
               const label = context.dataset.label || ''
               const value = context.parsed.y
-              return `${label}: ${value.toLocaleString()}`
+              const tooltipValueSuffix =
+                typeof context.dataset.tooltipValueSuffix === 'string'
+                  ? context.dataset.tooltipValueSuffix
+                  : typeof config.tooltipValueSuffix === 'string'
+                    ? config.tooltipValueSuffix
+                    : ''
+              return `${label}: ${value.toLocaleString()}${tooltipValueSuffix}`
             },
           },
         },

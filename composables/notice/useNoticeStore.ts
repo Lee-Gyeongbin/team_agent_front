@@ -1,5 +1,8 @@
-import { noticeDummyData } from '~/composables/notice/dummydata'
-import type { NoticeFormData, NoticeItem, NoticeRow } from '~/types/notice'
+import type { NoticeDetailResponse, NoticeFormData, NoticeItem, NoticeRow } from '~/types/notice'
+import { useNoticeApi } from '~/composables/notice/useNoticeApi'
+
+const { fetchSelectNoticeList, fetchSelectNoticeDetail, fetchInsertNotice, fetchUpdateNotice, fetchDeleteNotice } =
+  useNoticeApi()
 
 export const useNoticeStore = () => {
   const noticeList = ref<NoticeItem[]>([])
@@ -29,9 +32,8 @@ export const useNoticeStore = () => {
     isLoading.value = true
 
     try {
-      // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-      // TO-DO: useNoticeApi의 목록 조회 API 호출 후 응답 데이터로 noticeList 세팅
-      noticeList.value = noticeDummyData
+      const res = await fetchSelectNoticeList()
+      noticeList.value = Array.isArray(res.list) ? res.list : []
     } catch (error) {
       errorMessage.value = '공지사항 조회 중 오류가 발생했습니다.'
       console.error(error)
@@ -40,82 +42,39 @@ export const useNoticeStore = () => {
     }
   }
 
-  const handleDeleteNoticeById = async (noticeId: string) => {
-    if (!noticeId.trim()) return false
+  const normalizeNoticeFormData = (payload: NoticeFormData): NoticeFormData => ({
+    ...payload,
+    title: String(payload.title ?? '').trim(),
+    content: String(payload.content ?? '').trim(),
+  })
 
-    const target = noticeList.value.find((item) => item.noticeId === noticeId)
-    const title = target?.title ?? '선택한 공지사항'
-    const confirmed = await openConfirm({
-      title: '공지 삭제',
-      message: `'${title}'을(를) 삭제하시겠습니까?`,
-    })
-
-    if (!confirmed) return false
-
-    // 🔽 더미 로직 — 백엔드 연결 시 API로 교체
-    // TO-DO: 단건 삭제 API 호출 후 성공 시 목록 재조회(handleFetchNoticeList)
-    noticeList.value = noticeList.value.filter((item) => item.noticeId !== noticeId)
-    openToast({ message: '공지사항을 삭제했습니다.' })
-    return true
-  }
-
-  /**
-   * TO-DO: 공지 저장
-   * - 백엔드 연결 시 useNoticeApi 저장 API 호출로 교체
-   */
-  const { user } = useAuth()
-  const formatNow = () => {
-    const now = new Date()
-    const pad = (value: number) => String(value).padStart(2, '0')
-    const yyyy = now.getFullYear()
-    const mm = pad(now.getMonth() + 1)
-    const dd = pad(now.getDate())
-    const hh = pad(now.getHours())
-    const mi = pad(now.getMinutes())
-    return `${yyyy}-${mm}-${dd} ${hh}:${mi}`
-  }
-
-  const handleSaveNotice = (payload: NoticeFormData) => {
-    const targetId = String(payload.noticeId ?? '').trim()
+  const handleSaveNotice = async (payload: NoticeFormData): Promise<boolean> => {
+    const normalizedPayload = normalizeNoticeFormData(payload)
+    const targetId = String(normalizedPayload.noticeId ?? '').trim()
 
     if (targetId) {
-      // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-      // TO-DO: 수정 API 호출(단건) 후 성공 시 목록 재조회(handleFetchNoticeList)
-      noticeList.value = noticeList.value.map((item) =>
-        item.noticeId === targetId
-          ? {
-              ...item,
-              title: payload.title.trim(),
-              content: payload.content.trim(),
-              pinYn: payload.pinYn,
-              useYn: payload.useYn,
-              modifyDt: formatNow(),
-            }
-          : item,
-      )
-      openToast({ message: '공지사항을 수정했습니다.' })
-      return
+      try {
+        await fetchUpdateNotice(normalizedPayload)
+        await handleFetchNoticeList()
+        openToast({ message: '공지사항을 수정했습니다.' })
+        return true
+      } catch (error) {
+        openToast({ message: '공지사항 수정 중 오류가 발생했습니다.', type: 'error' })
+        console.error(error)
+        return false
+      }
     }
 
-    // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-    // TO-DO: 등록 API 호출 후 성공 시 목록 재조회(handleFetchNoticeList)
-    const nextId = noticeList.value.reduce((max, item) => Math.max(max, Number(item.noticeId) || 0), 0) + 1
-    const currentDateTime = formatNow()
-    noticeList.value = [
-      {
-        noticeId: String(nextId),
-        title: payload.title.trim(),
-        content: payload.content.trim(),
-        viewCnt: 0,
-        pinYn: payload.pinYn,
-        useYn: payload.useYn,
-        crtrId: String(user.value?.userNm ?? '관리자'),
-        createDt: currentDateTime,
-        modifyDt: currentDateTime,
-      },
-      ...noticeList.value,
-    ]
-    openToast({ message: '공지사항을 등록했습니다.' })
+    try {
+      await fetchInsertNotice(normalizedPayload)
+      await handleFetchNoticeList()
+      openToast({ message: '공지사항을 등록했습니다.' })
+      return true
+    } catch (error) {
+      openToast({ message: '공지사항 등록 중 오류가 발생했습니다.', type: 'error' })
+      console.error(error)
+      return false
+    }
   }
 
   const getDisplayNoticeTitle = (title: string) => {
@@ -125,11 +84,16 @@ export const useNoticeStore = () => {
   }
 
   const getDefaultNoticeForm = (): NoticeFormData => ({ ...defaultNoticeForm.value })
+  const resetNoticeFormState = () => {
+    noticeForm.value = getDefaultNoticeForm()
+    isEditFromDetail.value = false
+  }
 
   const mapNoticeItemToFormData = (notice: NoticeItem): NoticeFormData => ({
     noticeId: notice.noticeId,
     title: notice.title,
     content: notice.content,
+    featuredYn: notice.featuredYn,
     pinYn: notice.pinYn,
     useYn: notice.useYn,
     crtrId: notice.crtrId,
@@ -137,19 +101,31 @@ export const useNoticeStore = () => {
     modifyDt: notice.modifyDt,
   })
 
+  const mapNoticeDetailToItem = (detail: NoticeDetailResponse): NoticeItem => ({
+    noticeId: String(detail.noticeId ?? ''),
+    title: String(detail.title ?? ''),
+    content: String(detail.content ?? ''),
+    featuredYn: detail.featuredYn === 'Y' ? 'Y' : 'N',
+    pinYn: detail.pinYn === 'Y' ? 'Y' : 'N',
+    useYn: detail.useYn === 'Y' ? 'Y' : 'N',
+    crtrId: String(detail.crtrId ?? ''),
+    createDt: String(detail.createDt ?? ''),
+    modifyDt: String(detail.modifyDt ?? ''),
+    viewCnt: Number(detail.viewCnt ?? 0),
+  })
+
   const panelActionLabel = computed<'등록' | '수정'>(() => (noticeForm.value.noticeId ? '수정' : '등록'))
 
   const onRegisterNotice = () => {
-    noticeForm.value = getDefaultNoticeForm()
-    isEditFromDetail.value = false
+    resetNoticeFormState()
     isNoticePanelOpen.value = true
   }
 
-  const onSaveNoticeForm = (payload: NoticeFormData) => {
-    handleSaveNotice(payload)
+  const onSaveNoticeForm = async (payload: NoticeFormData) => {
+    const saved = await handleSaveNotice(payload)
+    if (!saved) return
     isNoticePanelOpen.value = false
-    noticeForm.value = getDefaultNoticeForm()
-    isEditFromDetail.value = false
+    resetNoticeFormState()
   }
 
   const onCloseNoticeForm = () => {
@@ -157,21 +133,25 @@ export const useNoticeStore = () => {
     if (isEditFromDetail.value && selectedNotice.value) {
       isNoticeDetailPanelOpen.value = true
     }
-    noticeForm.value = getDefaultNoticeForm()
-    isEditFromDetail.value = false
+    resetNoticeFormState()
   }
 
   const onOpenNoticeDetail = (notice: NoticeRow) => {
-    // 🔽 더미 로직 — 백엔드 연결 시 상세 조회 API(단건)로 교체
-    // TO-DO: noticeId로 상세 조회 후 selectedNotice 세팅
-    const targetNotice = noticeList.value.find((item) => item.noticeId === notice.noticeId)
-    selectedNotice.value = targetNotice ?? null
-    isNoticeDetailPanelOpen.value = true
+    void (async () => {
+      try {
+        const detail = await fetchSelectNoticeDetail(notice.noticeId)
+        const resolvedDetail = (detail as { dataVO?: NoticeDetailResponse })?.dataVO ?? (detail as NoticeDetailResponse)
+        selectedNotice.value = mapNoticeDetailToItem(resolvedDetail)
+        isNoticeDetailPanelOpen.value = true
+      } catch (error) {
+        openToast({ message: '공지사항 상세 조회 중 오류가 발생했습니다.', type: 'error' })
+        console.error(error)
+      }
+    })()
   }
 
   const onEditNotice = () => {
     if (!selectedNotice.value) return
-    // 🔽 더미 로직 — 백엔드 연결 시 수정 폼 초기값은 상세 API 응답 기준으로 세팅
     noticeForm.value = mapNoticeItemToFormData(selectedNotice.value)
     isEditFromDetail.value = true
     isNoticeDetailPanelOpen.value = false
@@ -180,11 +160,24 @@ export const useNoticeStore = () => {
 
   const onDeleteNotice = async () => {
     if (!selectedNotice.value) return
-    const deleted = await handleDeleteNoticeById(selectedNotice.value.noticeId)
-    if (!deleted) return
+    const targetNoticeId = selectedNotice.value.noticeId
+    const targetTitle = selectedNotice.value.title
+    const confirmed = await openConfirm({
+      title: '공지 삭제',
+      message: `'${targetTitle}'을(를) 삭제하시겠습니까?`,
+    })
+    if (!confirmed) return
 
-    isNoticeDetailPanelOpen.value = false
-    selectedNotice.value = null
+    try {
+      await fetchDeleteNotice(targetNoticeId)
+      await handleFetchNoticeList()
+      isNoticeDetailPanelOpen.value = false
+      selectedNotice.value = null
+      openToast({ message: '공지사항을 삭제했습니다.' })
+    } catch (error) {
+      openToast({ message: '공지사항 삭제 중 오류가 발생했습니다.', type: 'error' })
+      console.error(error)
+    }
   }
 
   const closeNoticeDetailPanel = () => {
@@ -252,7 +245,6 @@ export const useNoticeStore = () => {
     filteredList,
     pagedNoticeList,
     handleFetchNoticeList,
-    handleDeleteNoticeById,
     handleSaveNotice,
     onRegisterNotice,
     onSaveNoticeForm,
