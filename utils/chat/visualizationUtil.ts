@@ -783,8 +783,11 @@ export const buildChartModel = (
     })
     const config: Record<string, unknown> = { categories, datasets }
     if (selection.dualAxis) {
-      const leftScale = resolveYAxisScale([datasets[0]])
-      const rightScale = resolveYAxisScale([datasets[1]])
+      // bar 이축은 음수 존재 시에만 음수축 허용, line 이축은 기존 스케일(항상 allowNegative) 유지
+      const leftScale =
+        selection.chartType === 'bar' ? resolveYAxisScaleForBar([datasets[0]]) : resolveYAxisScale([datasets[0]])
+      const rightScale =
+        selection.chartType === 'bar' ? resolveYAxisScaleForBar([datasets[1]]) : resolveYAxisScale([datasets[1]])
       config.scales = {
         y: {
           min: leftScale.min,
