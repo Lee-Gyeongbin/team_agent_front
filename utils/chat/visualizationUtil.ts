@@ -10,7 +10,12 @@ import type {
   VisualizationViewModel,
 } from '~/types/chat'
 import type { TableColumn } from '~/types/table'
-import { registerDynamicMappings, resolveColumnLabel, resolveDisplayValue } from '~/utils/chat/visualizationLabelMap'
+import {
+  normalizeColumnKeyForMapping,
+  registerDynamicMappings,
+  resolveColumnLabel,
+  resolveDisplayValue,
+} from '~/utils/chat/visualizationLabelMap'
 import { calculateChartScale } from '~/utils/chat/visualizationChartUtil'
 
 const TIME_AXIS_YEAR_MONTH = '__TIME_AXIS_YEAR_MONTH__'
@@ -86,6 +91,7 @@ const isLikelyMetricKey = (key: string, label: string) => {
   )
 }
 
+// 차트의 x축, y축, 시리즈 컬럼 추론을 위한 컬럼 프로파일 조회
 const getColumnProfile = (rows: Array<Record<string, unknown>>, key: string): VisualizationColumnProfile => {
   const label = resolveColumnLabel(key)
   const uniqueSet = new Set<string>()
@@ -102,13 +108,21 @@ const getColumnProfile = (rows: Array<Record<string, unknown>>, key: string): Vi
     }
   })
 
+  // 숫자형인지 여부 확인
   const isNumeric = nonEmptyCount > 0 && numericCount === nonEmptyCount
+  // 유니크 값 개수 조회
   const uniqueCount = uniqueSet.size
+  // 유니크 값 비율 조회
   const uniqueRatio = nonEmptyCount > 0 ? uniqueCount / nonEmptyCount : 0
+  // 시간형인지 여부 확인
   const isTimeLike = isLikelyTimeKey(key, label)
+  // 코드형인지 여부 확인
   const isCodeLike = isLikelyCodeKey(key, label)
+  // 통계값 힌트 여부 확인
   const metricHint = isLikelyMetricKey(key, label)
+  // 숫자 컬럼이지만 ID처럼 행마다 거의 다른 값(고유값 비율 높은)인 컬럼을 걸러내기 위함 - 이런 컬럼을 y축으로 쓰면 차트가 깨짐
   const idLikeHighCardinality = uniqueRatio >= 0.9 && nonEmptyCount >= 12
+  // 차트의 y축으로 쓸 만한 컬럼인지 최종 판정. 숫자형이고 시간형이나 코드형이 아니며 통계값 힌트가 있거나 고유도 값 비율이 90% 이상이고 비어있지 않은 값이 12개 이상인 컬럼은 통계값 힌트가 있는지 여부에 따라 판정.
   const isLikelyMetric = isNumeric && !isTimeLike && !isCodeLike && (metricHint || !idLikeHighCardinality)
 
   return {
@@ -123,33 +137,9 @@ const getColumnProfile = (rows: Array<Record<string, unknown>>, key: string): Vi
   }
 }
 
-const hasYearMonthAxis = (rows: Array<Record<string, unknown>>, columns: string[]) => {
-  if (!columns.includes('YEAR') || !columns.includes('MON')) return false
-  const uniqueAxis = new Set<string>()
-  rows.forEach((row) => {
-    const year = String(row.YEAR ?? '').trim()
-    const month = String(row.MON ?? '').trim()
-    if (!year || !month) return
-    uniqueAxis.add(`${year}-${month}`)
-  })
-  return uniqueAxis.size > 1
-}
-
-const hasYearQuarterAxis = (rows: Array<Record<string, unknown>>, columns: string[]) => {
-  if (!columns.includes('YEAR') || !columns.includes('QUARTER')) return false
-  const uniqueAxis = new Set<string>()
-  rows.forEach((row) => {
-    const year = String(row.YEAR ?? '').trim()
-    const quarter = String(row.QUARTER ?? '').trim()
-    if (!year || !quarter) return
-    uniqueAxis.add(`${year}-Q${quarter}`)
-  })
-  return uniqueAxis.size > 1
-}
-
 const getPreferredChartTargetKey = (keys: string[]) => {
   const priority = ['STAT_ID', 'REGN_CD', 'DETAIL_ITEM_CD', 'RESULT']
-  return priority.find((key) => keys.includes(key)) ?? keys[0] ?? ''
+  return priority.find((p) => keys.some((k) => normalizeColumnKeyForMapping(k) === p)) ?? keys[0] ?? ''
 }
 
 const isTimeAxisKey = (key: string) => key === TIME_AXIS_YEAR_MONTH || key === TIME_AXIS_YEAR_QUARTER
@@ -157,6 +147,15 @@ const isTimeAxisKey = (key: string) => key === TIME_AXIS_YEAR_MONTH || key === T
 /** 시리즈 후보: X축 옵션 중 시간축(년-월, 년-분기) 제외 */
 const getAvailableSeriesKeys = (options: VisualizationSelectableOptions): string[] => {
   return options.chartTargetKeys.filter((key) => !isTimeAxisKey(key))
+}
+
+/**
+ * 선택한 X축을 제외한 나머지 X축 후보(시간축 제외)가 정확히 1개일 때 그 컬럼을 시리즈로 사용 (그룹 막대).
+ * getDefaultSelection과 동일 규칙.
+ */
+export const inferSeriesKeyFromChartTargets = (chartTargetKeys: string[], selectedChartTargetKey: string): string => {
+  const available = chartTargetKeys.filter((key) => !isTimeAxisKey(key) && key !== selectedChartTargetKey)
+  return available.length === 1 ? available[0] : ''
 }
 
 const getDefaultSelection = (options: VisualizationSelectableOptions): VisualizationChartSelection => {
@@ -170,7 +169,18 @@ const getDefaultSelection = (options: VisualizationSelectableOptions): Visualiza
     seriesKey,
     stack: false,
     dualAxis: false,
+    statIdFilter: '',
   }
+}
+
+/** 통계ID 컬럼 기준 유니크 값 목록 (차트 통계 지정 UI) */
+export const getUniqueStatIdsFromRows = (rows: Array<Record<string, unknown>>, statIdColumnKey: string): string[] => {
+  const set = new Set<string>()
+  rows.forEach((row) => {
+    const v = row[statIdColumnKey]
+    if (v != null && String(v).trim() !== '') set.add(String(v))
+  })
+  return Array.from(set).sort((a, b) => a.localeCompare(b, 'ko'))
 }
 
 const padMonth = (value: unknown) => String(value ?? '').padStart(2, '0')
@@ -218,6 +228,49 @@ const formatTableValue = (key: string, value: unknown, metricKeys: string[]) => 
   }
   const text = resolveDisplayValue(key, value)
   return text || EMPTY_VALUE
+}
+
+/** 표에 나열할 컬럼 우선순위 (canonical 키 기준, stat_id 등은 normalizeColumnKeyForMapping으로 매칭) */
+const TABLE_COLUMN_DISPLAY_PRIORITY = [
+  'STAT_ID',
+  'YEAR',
+  'MON',
+  'QUARTER',
+  'REGN_CD',
+  'DETAIL_ITEM_CD',
+  'RESULT',
+] as const
+
+const orderColumnsForTableDisplay = (keys: string[]): string[] => {
+  const used = new Set<string>()
+  const priorityKeys: string[] = []
+  for (const canon of TABLE_COLUMN_DISPLAY_PRIORITY) {
+    const match = keys.find((k) => normalizeColumnKeyForMapping(k) === canon)
+    if (match && !used.has(match)) {
+      used.add(match)
+      priorityKeys.push(match)
+    }
+  }
+  const rest = keys.filter((k) => !used.has(k))
+  return [...priorityKeys, ...rest]
+}
+
+const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n))
+
+/** 헤더·셀 표시 문자열 길이 기준 col 너비 (UiTable colgroup) */
+const estimateTableColumnWidthPx = (headerLabel: string, cellTexts: string[]): string => {
+  const samples = [headerLabel, ...cellTexts].map((s) => String(s ?? ''))
+  const maxLen = samples.reduce((m, s) => Math.max(m, [...s].length), 0)
+  const looksNumericColumn =
+    cellTexts.length > 0 &&
+    cellTexts.every((t) => {
+      const s = String(t ?? '').trim()
+      return s === '' || s === '-' || /^-?[\d,.\s]+$/.test(s)
+    })
+  const perChar = looksNumericColumn ? 10 : 13
+  const padding = 44
+  const px = clamp(Math.ceil(maxLen * perChar + padding), 72, 520)
+  return `${px}px`
 }
 
 export const parseTableData = (tableData: string) => {
@@ -268,6 +321,17 @@ export const buildRowsFromColumnarJson = (raw: unknown): Array<Record<string, un
   })
 }
 
+/** x축, y축, 시리즈 컬럼 추론
+ * 1. 모든 컬럼 조회
+ * 2. 컬럼 프로파일 조회
+ * 3. 통계값(Y축) 컬럼 조회
+ * 4. X축 컬럼 조회
+ * 5. X축 컬럼 후보 조회
+ * 6. X축 컬럼 정렬
+ * 7. 선호하는 X축 컬럼 조회
+ * 8. X축 컬럼 정렬 후 선호하는 X축 컬럼 제외 나머지 X축 컬럼 추가
+ * 9. 시리즈 키 후보 조회
+ */
 export const inferSchema = (rows: Array<Record<string, unknown>>): VisualizationSchema | null => {
   if (rows.length === 0) return null
 
@@ -279,18 +343,15 @@ export const inferSchema = (rows: Array<Record<string, unknown>>): Visualization
   const metricKeys = profiles.filter((profile) => profile.isLikelyMetric).map((profile) => profile.key)
   // X축 컬럼
   const dimensionKeys = columns.filter((key) => !metricKeys.includes(key))
-  // X축 컬럼 후보
-  const rawChartTargetKeys = profiles
-    .filter((profile) => !profile.isLikelyMetric && profile.uniqueCount > 1)
-    .map((profile) => profile.key)
+  // 통계ID 컬럼 — 서로 다른 통계가 섞인 조회 시 축/시리즈 후보에서 제외하고 별도 통계 지정 UI로 선택
+  const statIdColumnKey = columns.find((k) => normalizeColumnKeyForMapping(k) === 'STAT_ID')
+  const isStatIdColumn = (key: string) => !!statIdColumnKey && key === statIdColumnKey
 
-  // X축 컬럼 정렬
+  // X축 컬럼 후보 (통계ID 제외 — 가상 연·월/연·분기 축은 선택지에서 제외, YEAR/MON 등 원본 컬럼으로만 구성)
+  const rawChartTargetKeys = profiles
+    .filter((profile) => !profile.isLikelyMetric && profile.uniqueCount > 1 && !isStatIdColumn(profile.key))
+    .map((profile) => profile.key)
   const sortedChartTargetKeys: string[] = []
-  if (hasYearMonthAxis(rows, columns)) {
-    sortedChartTargetKeys.push(TIME_AXIS_YEAR_MONTH)
-  } else if (hasYearQuarterAxis(rows, columns)) {
-    sortedChartTargetKeys.push(TIME_AXIS_YEAR_QUARTER)
-  }
   // 선호하는 X축 컬럼
   const preferredChartTarget = getPreferredChartTargetKey(rawChartTargetKeys)
   // X축 컬럼 정렬
@@ -302,12 +363,13 @@ export const inferSchema = (rows: Array<Record<string, unknown>>): Visualization
     if (!sortedChartTargetKeys.includes(key)) sortedChartTargetKeys.push(key)
   })
 
-  // 시리즈 키 후보: 비수치, 비시간형, 유니크값 2~20개인 dimension
+  // 시리즈 키 후보: 비수치, 비시간형, 유니크값 2~20개인 dimension (통계ID 제외)
   const seriesKeys = profiles
     .filter(
       (profile) =>
         !profile.isLikelyMetric &&
         !profile.isTimeLike &&
+        !isStatIdColumn(profile.key) &&
         profile.uniqueCount >= 2 &&
         profile.uniqueCount <= 20 &&
         profile.nonEmptyCount > 0,
@@ -322,7 +384,14 @@ export const inferSchema = (rows: Array<Record<string, unknown>>): Visualization
     canStack: true,
     canDualAxis: metricKeys.length >= 2,
   }
-  const defaultSelection = getDefaultSelection(selectableOptions)
+
+  const statIdValues = statIdColumnKey ? getUniqueStatIdsFromRows(rows, statIdColumnKey) : []
+  const defaultStatIdFilter = statIdValues.length > 0 ? statIdValues[0] : ''
+
+  const defaultSelection: VisualizationChartSelection = {
+    ...getDefaultSelection(selectableOptions),
+    statIdFilter: defaultStatIdFilter,
+  }
 
   return {
     columns,
@@ -331,9 +400,11 @@ export const inferSchema = (rows: Array<Record<string, unknown>>): Visualization
     profiles,
     selectableOptions,
     defaultSelection,
+    statIdColumnKey,
   }
 }
 
+// 시각화 뷰 모델 생성
 export const buildVisualizationViewModel = (params: {
   messageId: string
   sql?: string
@@ -345,9 +416,10 @@ export const buildVisualizationViewModel = (params: {
   const parsed = parseTableData(params.tableData ?? '')
   // 테이블 데이터 파싱 결과를 행 데이터로 변환
   const rows = buildRowsFromColumnarJson(parsed)
-  // 스키마 추론
+  // x축, y축, 시리즈 컬럼 추론
   const schema = inferSchema(rows)
 
+  // 테이블 데이터가 없으면 빈 뷰 모델 반환
   if (!params.tableData) {
     return {
       messageId: params.messageId,
@@ -359,6 +431,7 @@ export const buildVisualizationViewModel = (params: {
     }
   }
 
+  // 행 데이터가 0건이면 빈 뷰 모델 반환
   if (rows.length === 0) {
     return {
       messageId: params.messageId,
@@ -370,6 +443,7 @@ export const buildVisualizationViewModel = (params: {
     }
   }
 
+  // 성공 뷰 모델 반환
   return {
     messageId: params.messageId,
     status: 'success',
@@ -390,16 +464,23 @@ export const buildTableModel = (viewModel: VisualizationViewModel) => {
     return { columns: [] as TableColumn[], data: [] as Array<Record<string, unknown>> }
   }
 
-  const columns: TableColumn[] = schema.columns.map((key) => ({
-    key,
-    label: resolveColumnLabel(key),
-    align: schema.metricKeys.includes(key) ? 'right' : 'center',
-    headerAlign: 'center',
-  }))
+  const orderedKeys = orderColumnsForTableDisplay(schema.columns)
+
+  const columns: TableColumn[] = orderedKeys.map((key) => {
+    const label = resolveColumnLabel(key)
+    const cellTexts = viewModel.rows.map((row) => formatTableValue(key, row[key], schema.metricKeys))
+    return {
+      key,
+      label,
+      width: estimateTableColumnWidthPx(label, cellTexts),
+      align: schema.metricKeys.includes(key) ? 'right' : 'center',
+      headerAlign: 'center',
+    }
+  })
 
   const data = viewModel.rows.map((row) => {
     const mapped: Record<string, unknown> = {}
-    schema.columns.forEach((key) => {
+    orderedKeys.forEach((key) => {
       mapped[key] = formatTableValue(key, row[key], schema.metricKeys)
     })
     return mapped
@@ -456,9 +537,14 @@ export const buildDefaultChartSelection = (schema: VisualizationSchema | null): 
       seriesKey: '',
       stack: false,
       dualAxis: false,
+      statIdFilter: '',
     }
   }
-  return { ...schema.defaultSelection, yAxisKeys: [...schema.defaultSelection.yAxisKeys] }
+  return {
+    ...schema.defaultSelection,
+    yAxisKeys: [...schema.defaultSelection.yAxisKeys],
+    statIdFilter: schema.defaultSelection.statIdFilter ?? '',
+  }
 }
 
 // 차트 선택 유효성 검증
@@ -488,9 +574,19 @@ const sanitizeSelection = (
   const maxYKeys = seriesKey ? 1 : 2
   const yAxisKeys = filteredYKeys.slice(0, maxYKeys)
   const validYAxisKeys = yAxisKeys.length > 0 ? yAxisKeys : [schema.defaultSelection.yAxisKeys[0]].filter(Boolean)
-  // seriesKey 활성 시 dualAxis 비활성
-  const dualAxis = !seriesKey && selection.dualAxis && validYAxisKeys.length >= 2 && chartType !== 'pie'
+  // seriesKey 활성 시 dualAxis 비활성 / 이축은 통계값 2개 이상일 때만 가능
+  const dualAxis =
+    !seriesKey &&
+    selection.dualAxis &&
+    validYAxisKeys.length >= 2 &&
+    chartType !== 'pie' &&
+    schema.selectableOptions.canDualAxis
   const stack = selection.stack && chartType === 'bar' && !dualAxis
+
+  let statIdFilter = ''
+  if (schema.statIdColumnKey && selection.statIdFilter?.trim()) {
+    statIdFilter = selection.statIdFilter.trim()
+  }
 
   return {
     chartType,
@@ -499,7 +595,52 @@ const sanitizeSelection = (
     seriesKey,
     dualAxis,
     stack,
+    statIdFilter,
   }
+}
+
+/** 파이 차트: X축 카테고리별 Y값 합산 (buildChartModel 파이와 동일 규칙) */
+const buildPieValueMap = (chartRows: Array<Record<string, unknown>>, chartTargetKey: string, metricKey: string) => {
+  const pieMap = new Map<string, number>()
+  chartRows.forEach((row) => {
+    const key = getXAxisValue(row, chartTargetKey)
+    if (!key) return
+    const value = toNumber(row[metricKey]) ?? 0
+    pieMap.set(key, (pieMap.get(key) ?? 0) + value)
+  })
+  return pieMap
+}
+
+/**
+ * 파이 차트로 그릴 수 없는 데이터인지 (음수 조각 포함 또는 전체 합 ≤ 0)
+ * — ChatVisualizationPanel 등에서 안내 문구 표시용
+ */
+export const isPieChartUnavailable = (
+  viewModel: VisualizationViewModel,
+  selectionInput: VisualizationChartSelection,
+): boolean => {
+  const schema = viewModel.schema
+  if (!schema) return false
+
+  const selection = sanitizeSelection(schema, selectionInput)
+  if (selection.chartType !== 'pie') return false
+
+  const yAxisKeys = selection.yAxisKeys.slice(0, 2)
+  if (!selection.chartTargetKey || yAxisKeys.length === 0) return false
+  if (schema.statIdColumnKey && !selection.statIdFilter) return false
+
+  const chartRows =
+    schema.statIdColumnKey && selection.statIdFilter
+      ? viewModel.rows.filter((row) => String(row[schema.statIdColumnKey!] ?? '') === selection.statIdFilter)
+      : viewModel.rows
+
+  const metricKey = yAxisKeys[0]
+  const pieMap = buildPieValueMap(chartRows, selection.chartTargetKey, metricKey)
+  const values = Array.from(pieMap.values())
+  const total = values.reduce((sum, v) => sum + v, 0)
+  if (values.some((v) => v < 0)) return true
+  if (total <= 0) return true
+  return false
 }
 
 const buildCategories = (rows: Array<Record<string, unknown>>, xAxisKey: string) => {
@@ -530,6 +671,14 @@ const resolveYAxisScale = (datasets: Array<{ data: number[] }>) => {
   return calculateChartScale(values, 0.1, true)
 }
 
+/** 막대 차트: 음수가 하나라도 있으면 Y축 음수 구간 포함, 전부 양수면 min 0 기준 */
+const resolveYAxisScaleForBar = (datasets: Array<{ data: number[] }>) => {
+  const values = datasets.flatMap((dataset) => dataset.data).filter((value) => Number.isFinite(value))
+  if (values.length === 0) return { min: 0, max: 100, stepSize: 20 }
+  const hasNegative = values.some((v) => v < 0)
+  return calculateChartScale(values, 0.1, hasNegative)
+}
+
 export const buildChartModel = (
   viewModel: VisualizationViewModel,
   selectionInput: VisualizationChartSelection,
@@ -542,25 +691,28 @@ export const buildChartModel = (
   const yAxisKeys = selection.yAxisKeys.slice(0, 2)
   if (!selection.chartTargetKey || yAxisKeys.length === 0) return null
 
+  if (schema.statIdColumnKey && !selection.statIdFilter) return null
+
+  const chartRows =
+    schema.statIdColumnKey && selection.statIdFilter
+      ? viewModel.rows.filter((row) => String(row[schema.statIdColumnKey!] ?? '') === selection.statIdFilter)
+      : viewModel.rows
+
   if (selection.chartType === 'pie') {
     const metricKey = yAxisKeys[0]
-    const pieMap = new Map<string, number>()
-    viewModel.rows.forEach((row) => {
-      const key = getXAxisValue(row, selection.chartTargetKey)
-      if (!key) return
-      const value = toNumber(row[metricKey]) ?? 0
-      pieMap.set(key, (pieMap.get(key) ?? 0) + value)
-    })
+    const pieMap = buildPieValueMap(chartRows, selection.chartTargetKey, metricKey)
+    const values = Array.from(pieMap.values())
+    const total = values.reduce((sum, v) => sum + v, 0)
+    if (values.some((v) => v < 0) || total <= 0) return null
 
-    const total = Array.from(pieMap.values()).reduce((sum, v) => sum + v, 0)
     const items = Array.from(pieMap.entries()).map(([name, value]) => ({
       name,
-      value: total > 0 ? Math.round((value / total) * 1000) / 10 : 0,
+      value: Math.round((value / total) * 1000) / 10,
     }))
-    return { items, type: 'outerLabel', style: 'regionRatio' }
+    return { items, type: 'outerLabel', style: 'analystatSet' }
   }
 
-  const rowList = [...viewModel.rows]
+  const rowList = [...chartRows]
   if (selection.chartTargetKey === TIME_AXIS_YEAR_MONTH || selection.chartTargetKey === TIME_AXIS_YEAR_QUARTER) {
     rowList.sort(
       (a, b) => getXAxisSortValue(a, selection.chartTargetKey) - getXAxisSortValue(b, selection.chartTargetKey),
@@ -594,9 +746,25 @@ export const buildChartModel = (
       }
     })
 
-    const config: Record<string, unknown> = { categories, datasets }
+    const yScale = resolveYAxisScaleForBar(datasets)
+    const config: Record<string, unknown> = {
+      categories,
+      datasets,
+      minValue: yScale.min,
+      maxValue: yScale.max,
+      yAxisStepSize: yScale.stepSize,
+    }
     if (selection.stack) {
-      config.scales = { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
+      config.scales = {
+        x: { stacked: true },
+        y: {
+          stacked: true,
+          min: yScale.min,
+          max: yScale.max,
+          ticks: { stepSize: yScale.stepSize },
+          beginAtZero: yScale.min >= 0,
+        },
+      }
     }
     return config
   }
@@ -623,6 +791,7 @@ export const buildChartModel = (
           max: leftScale.max,
           ticks: { stepSize: leftScale.stepSize },
           position: 'left',
+          beginAtZero: leftScale.min >= 0,
         },
         y1: {
           min: rightScale.min,
@@ -630,12 +799,23 @@ export const buildChartModel = (
           ticks: { stepSize: rightScale.stepSize },
           position: 'right',
           grid: { drawOnChartArea: false },
+          beginAtZero: rightScale.min >= 0,
         },
       }
     } else if (selection.stack) {
+      const yScale = resolveYAxisScaleForBar(datasets)
+      config.minValue = yScale.min
+      config.maxValue = yScale.max
+      config.yAxisStepSize = yScale.stepSize
       config.scales = {
         x: { stacked: true },
-        y: { stacked: true, beginAtZero: true },
+        y: {
+          stacked: true,
+          min: yScale.min,
+          max: yScale.max,
+          ticks: { stepSize: yScale.stepSize },
+          beginAtZero: yScale.min >= 0,
+        },
       }
     }
     return config
@@ -647,28 +827,35 @@ export const buildChartModel = (
   if (selection.chartType === 'line') {
     return {
       categories,
-      datasets: [{ label: resolveColumnLabel(metricKey), data, colorKey: 'line.primary' }],
+      datasets: [{ label: resolveColumnLabel(metricKey), data, colorKey: 'line.analystatSet', colorIndex: 0 }],
     }
   }
-  const { max: autoMax, stepSize: autoStep } = calculateChartScale(data, 0.1, true)
+  const hasNegative = data.some((v) => Number.isFinite(v) && v < 0)
+  const yScale = calculateChartScale(data, 0.1, hasNegative)
   const config: Record<string, unknown> = {
     categories,
     datasets: [
       {
         label: resolveColumnLabel(metricKey),
         data,
-        colorKey: 'bar.set1',
-        colorIndex: 0,
+        colorKey: 'bar.analystatSet',
         yAxisID: 'y',
       },
     ],
-    maxValue: autoMax,
-    yAxisStepSize: autoStep,
+    minValue: yScale.min,
+    maxValue: yScale.max,
+    yAxisStepSize: yScale.stepSize,
   }
   if (selection.stack) {
     config.scales = {
       x: { stacked: true },
-      y: { stacked: true, beginAtZero: true },
+      y: {
+        stacked: true,
+        min: yScale.min,
+        max: yScale.max,
+        ticks: { stepSize: yScale.stepSize },
+        beginAtZero: yScale.min >= 0,
+      },
     }
   }
   return config

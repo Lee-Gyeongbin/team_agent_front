@@ -30,7 +30,10 @@
     <div class="com-setting-section-body">
       <div class="com-setting-field-row">
         <label class="com-setting-label">LLM</label>
-        <div class="com-setting-field-input" style="flex: 1">
+        <div
+          class="com-setting-field-input"
+          style="flex: 1"
+        >
           <UiSelect
             :model-value="modelValue.llmCd"
             :options="llmOptions"

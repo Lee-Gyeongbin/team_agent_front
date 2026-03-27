@@ -169,17 +169,20 @@ export const useChatStore = () => {
   const handleSelectVisualizationData = async (logId: string) => {
     if (!logId) return getEmptyVisualizationViewModel('')
 
+    // 시각화를 띄울 때 조회할 메시지 조회
     const source = getMessagesForVisualization()
     const answerMsg = source.find((m) => m.logId === logId && m.type === 'answer')
+    // 답변 메시지의 tableData 조회
     const tableData = typeof answerMsg?.tableData === 'string' ? answerMsg.tableData : ''
+    // 답변 메시지의 sql 조회
     const sql = typeof answerMsg?.visualizationData?.sql === 'string' ? answerMsg.visualizationData.sql : ''
-
+    // 테이블 데이터가 없으면 빈 뷰 모델 반환
     if (!tableData.trim()) {
       const empty = getEmptyVisualizationViewModel(logId)
       visualizationViewMap.value[logId] = empty
       return empty
     }
-
+    // 시각화 뷰 모델 생성
     visualizationViewMap.value[logId] = {
       messageId: logId,
       status: 'loading',
@@ -189,7 +192,9 @@ export const useChatStore = () => {
       schema: null,
     }
 
+    // 통계 ID → 명칭 매핑 정보 조회
     let statList: VisualizationViewModel['statList']
+    // 상세항목 코드 → 명칭 매핑 정보 조회
     let statDetailList: VisualizationViewModel['statDetailList']
     try {
       const res = await fetchSelectTableDataList({ logId })

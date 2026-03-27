@@ -235,6 +235,8 @@ export interface VisualizationChartSelection {
   seriesKey: string
   stack: boolean
   dualAxis: boolean
+  /** STAT_ID 컬럼이 있을 때 필터할 통계 ID (없으면 미사용) */
+  statIdFilter?: string
 }
 
 export interface VisualizationSchema {
@@ -244,6 +246,8 @@ export interface VisualizationSchema {
   profiles: VisualizationColumnProfile[] // 컬럼 프로파일
   selectableOptions: VisualizationSelectableOptions // 선택 가능한 옵션
   defaultSelection: VisualizationChartSelection // 초기 추천 선택값
+  /** 행 데이터에 통계ID 컬럼이 있으면 실제 키명 (축 선택·시리즈에서 제외하고 통계 지정 UI에 사용) */
+  statIdColumnKey?: string
 }
 
 // 시각화 뷰 모델

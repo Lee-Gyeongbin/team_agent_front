@@ -1040,6 +1040,59 @@
   text-align: center;
 }
 
+// 통계 ID 지정 (차트 추가 / 차트 카드)
+.chat-vis-stat-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #ecf0f3;
+
+  &--card {
+    margin-bottom: 12px;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+}
+
+.chat-vis-stat-label {
+  flex-shrink: 0;
+  @include typo($body-medium-bold);
+  color: $color-text-secondary;
+  white-space: nowrap;
+  padding-top: 4px;
+}
+
+.chat-vis-stat-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chat-vis-stat-chip {
+  @include typo($body-small);
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #dce4e9;
+  background: #fff;
+  color: $color-text-secondary;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover:not(.is-active) {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  &.is-active {
+    background: #dee9fb;
+    border-color: #dee9fb;
+    color: #3c69db;
+  }
+}
+
 // ===== 축 설정 행 (공통 — 차트 추가 + 차트 카드) =====
 .chat-vis-axis-row {
   display: flex;
@@ -1069,6 +1122,22 @@
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.chat-vis-axis-col-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.chat-vis-axis-series-badge {
+  @include typo($body-small);
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(60, 105, 219, 0.12);
+  color: #3c69db;
+  white-space: nowrap;
 }
 
 .chat-vis-axis-col-name {
@@ -1271,6 +1340,18 @@
     .ui-chart {
       gap: 20px;
       justify-content: center;
+    }
+  }
+
+  // 파이 차트 불가 안내 (UiEmpty description 줄바꿈)
+  &.chat-vis-empty-pie {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    :deep(.ui-empty-desc) {
+      white-space: pre-line;
+      text-align: center;
     }
   }
 }

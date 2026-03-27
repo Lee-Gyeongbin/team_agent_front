@@ -8,10 +8,11 @@ const messageBufferMap = ref<Record<string, string>>({})
 /** 공유 채팅 등 메인 `messages` 외에 시각화를 띄울 때 조회할 로그 소스 (null이면 messages 사용) */
 let messagesForVisualizationGetter: (() => ChatMessage[]) | null = null
 
+// 시각화를 띄울 때 조회할 메시지 설정
 export const setMessagesForVisualizationGetter = (fn: (() => ChatMessage[]) | null) => {
   messagesForVisualizationGetter = fn
 }
-
+// 시각화를 띄울 때 조회할 메시지 조회
 const getMessagesForVisualization = () => {
   return messagesForVisualizationGetter?.() ?? messages.value
 }

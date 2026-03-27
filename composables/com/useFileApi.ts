@@ -1,5 +1,11 @@
 import { useApi } from '~/composables/com/useApi'
-import type { FileDeleteResponse, FileDownloadResponse, FileMeta, FileUploadResponse, FileUrlResponse } from '~/types/file'
+import type {
+  FileDeleteResponse,
+  FileDownloadResponse,
+  FileMeta,
+  FileUploadResponse,
+  FileUrlResponse,
+} from '~/types/file'
 
 export const useFileApi = () => {
   const { get, post } = useApi()

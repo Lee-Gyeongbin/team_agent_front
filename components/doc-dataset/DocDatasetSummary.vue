@@ -7,7 +7,11 @@
       <div class="card-grid-summary-info">
         <span class="card-grid-summary-label">전체 데이터셋</span>
         <span class="card-grid-summary-value">{{ summary.totalDatasetCount }}</span>
-        <span class="card-grid-summary-sub">활성: <strong>{{ summary.activeDatasetCount }}</strong>개, 비활성: <strong>{{ summary.inactiveDatasetCount }}</strong>개</span>
+        <span class="card-grid-summary-sub"
+          >활성: <strong>{{ summary.activeDatasetCount }}</strong
+          >개, 비활성: <strong>{{ summary.inactiveDatasetCount }}</strong
+          >개</span
+        >
       </div>
     </div>
 
@@ -40,7 +44,11 @@
       <div class="card-grid-summary-info">
         <span class="card-grid-summary-label">데이터 소스</span>
         <span class="card-grid-summary-value">{{ summary.totalSourceCount }}</span>
-        <span class="card-grid-summary-sub">문서 <strong>{{ summary.totalDocCount }}</strong>개, URL <strong>{{ summary.totalUrlCount }}</strong>개</span>
+        <span class="card-grid-summary-sub"
+          >문서 <strong>{{ summary.totalDocCount }}</strong
+          >개, URL <strong>{{ summary.totalUrlCount }}</strong
+          >개</span
+        >
       </div>
     </div>
   </div>

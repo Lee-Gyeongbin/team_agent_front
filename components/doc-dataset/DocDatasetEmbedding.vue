@@ -31,7 +31,10 @@
       <!-- 임베딩 모델 -->
       <div class="com-setting-field-row">
         <label class="com-setting-label">임베딩 모델</label>
-        <div class="com-setting-field-input" style="flex: 1">
+        <div
+          class="com-setting-field-input"
+          style="flex: 1"
+        >
           <UiSelect
             :model-value="modelValue.embeddingModel"
             :options="props.embeddingModelOptions"
@@ -131,7 +134,12 @@ const emit = defineEmits<{
 
 const isCollapsed = ref(props.collapsed)
 
-watch(() => props.collapsed, (v) => { isCollapsed.value = v })
+watch(
+  () => props.collapsed,
+  (v) => {
+    isCollapsed.value = v
+  },
+)
 
 const toggleCollapse = () => {
   isCollapsed.value = !isCollapsed.value
@@ -141,5 +149,4 @@ const toggleCollapse = () => {
 const onUpdate = (key: keyof DocDatasetForm, value: string) => {
   emit('update:modelValue', { ...toRaw(props.modelValue), [key]: value } as DocDatasetForm)
 }
-
 </script>

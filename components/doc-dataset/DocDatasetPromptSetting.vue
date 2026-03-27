@@ -30,7 +30,10 @@
     <div class="com-setting-section-body">
       <div class="com-setting-field-row">
         <label class="com-setting-label">시스템 프롬프트</label>
-        <div class="com-setting-field-input" style="flex: 1">
+        <div
+          class="com-setting-field-input"
+          style="flex: 1"
+        >
           <UiSelect
             :model-value="modelValue.promptId"
             :options="promptOptions"
@@ -89,4 +92,3 @@ const onUpdate = (key: keyof DocDatasetForm, value: string) => {
   emit('update:modelValue', { ...toRaw(props.modelValue), [key]: value } as DocDatasetForm)
 }
 </script>
-
