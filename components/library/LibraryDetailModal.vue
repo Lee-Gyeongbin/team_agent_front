@@ -8,14 +8,6 @@
       class="library-detail-modal-content"
       @scroll="handleScroll"
     >
-      <!-- 닫기 -->
-      <button
-        class="btn btn-modal-close type-library-detail"
-        @click="handleClose"
-      >
-        <i class="icon icon-close-gray size-20"></i>
-      </button>
-
       <!-- 상단 헤더 -->
       <div class="library-detail-modal-header">
         <!-- 뱃지 -->
@@ -47,6 +39,15 @@
             </template>
             매뉴얼AI
           </UiBadge>
+          <div class="library-detail-modal-tags">
+            <span
+              v-for="tag in displayData?.tags?.split(',')"
+              :key="tag"
+              class="library-detail-modal-tag"
+            >
+              #{{ tag }}
+            </span>
+          </div>
         </div>
 
         <!-- 제목 및 액션 -->
@@ -84,6 +85,13 @@
             </UiButton>
           </div>
         </div>
+        <!-- 닫기 -->
+        <button
+          class="btn btn-modal-close type-library-detail"
+          @click="handleClose"
+        >
+          <i class="icon icon-close-gray size-20"></i>
+        </button>
       </div>
 
       <!-- 본문 -->
@@ -169,17 +177,6 @@
             :open="isOpen"
             :view-model="visualizationView"
           />
-        </div>
-
-        <!-- 하단 태그 -->
-        <div class="library-detail-modal-tags">
-          <span
-            v-for="tag in displayData?.tags?.split(',')"
-            :key="tag"
-            class="library-detail-modal-tag"
-          >
-            #{{ tag }}
-          </span>
         </div>
       </div>
     </div>

@@ -323,7 +323,7 @@
     min-width: 680px;
     max-width: 680px;
     height: calc(100vh - 102px);
-    padding: $spacing-lg $spacing-md;
+    padding: 0 $spacing-md $spacing-lg;
     background: #fff;
     border-top: 1px solid $color-border;
     border-left: 1px solid $color-border;
@@ -336,14 +336,24 @@
   // 닫기 btn
   .btn-modal-close.type-library-detail {
     position: absolute;
-    top: $spacing-lg;
+    top: $spacing-sm;
     right: $spacing-md;
-    z-index: 1;
+    z-index: 5;
   }
 
   // 헤더
   .library-detail-modal-header {
     background: #fff;
+    position: -webkit-sticky;
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    padding-top: $spacing-lg;
+    padding-bottom: $spacing-sm;
+    margin: 0 (-$spacing-md);
+    padding-left: $spacing-md;
+    padding-right: $spacing-md;
+    border-bottom: 1px solid $color-border;
 
     .library-detail-modal-badge-wrapper {
       flex-wrap: wrap;
@@ -537,14 +547,18 @@
   display: flex;
   gap: $spacing-xs;
   flex-wrap: wrap;
-  margin-top: $spacing-xs;
+  margin-top: 0;
+  margin-left: $spacing-xs;
 
   .library-detail-modal-tag {
-    padding: 0 7px;
+    display: inline-flex;
+    align-items: center;
+    height: 22px;
+    padding: 0 8px;
     background: #fff;
     color: $color-text-secondary;
     font-size: $font-size-sm;
-    border-radius: $border-radius-full;
+    border-radius: 24px;
     border: 1px solid #ecf0f3;
   }
 }
