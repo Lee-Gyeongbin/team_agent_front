@@ -1,7 +1,7 @@
 <template>
   <div class="dashboard-card">
     <div class="dashboard-card-header">
-      <span class="card-title">방문자추이</span>
+      <span class="card-title">사용자 추이</span>
     </div>
     <div
       class="dashboard-chart-area"
@@ -25,7 +25,9 @@ const chartConfig = computed(() => ({
   datasets: [
     {
       label: '가입자',
-      data: [1624000, 1624800, 1624900, 1624950, 1625000, 1625050, 1625100, 1625200, 1625250, 1625300, 1625400, 1625500],
+      data: [
+        1624000, 1624800, 1624900, 1624950, 1625000, 1625050, 1625100, 1625200, 1625250, 1625300, 1625400, 1625500,
+      ],
       colorKey: 'line.primary',
     },
   ],

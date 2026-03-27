@@ -1,9 +1,7 @@
 <template>
   <div class="dashboard-page l-center">
     <!-- 상단 통계 카드 -->
-    <div
-      data-aos="fade-up"
-    >
+    <div data-aos="fade-up">
       <DashboardStatCards />
     </div>
 
