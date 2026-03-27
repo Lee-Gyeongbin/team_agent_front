@@ -2,7 +2,7 @@ import type { ChatMessage } from '~/types/chat'
 import { useChatStore } from '~/composables/chat/useChatStore'
 const { messages } = useChatStore()
 const { chatRoom } = useChatRooms()
-const { fetchCreateChatLogReaction } = useReportsApi()
+const { fetchCreateChatLogReaction, fetchCreateKnowledge } = useReportsApi()
 const { selectedSubOption, resolveSvcTy, pushQuestionMessage, pushAnswerPlaceholder, ensureWebSocketAndSend } =
   useChatStore()
 export const useChatItemActions = () => {
@@ -103,6 +103,19 @@ export const useChatItemActions = () => {
     isModalOpen.value = false
   }
 
+  /** 지식창고 저장 */
+  const handleCreateKnowledge = async (logId: string, categoryId: string) => {
+    openLoading({ text: '지식창고에 저장 중...' })
+    try {
+      await fetchCreateKnowledge(logId, categoryId)
+      openToast({ message: '지식창고에 저장되었습니다', type: 'success' })
+    } catch {
+      openToast({ message: '지식창고 저장에 실패했습니다', type: 'error' })
+    } finally {
+      closeLoading()
+    }
+  }
+
   return {
     onLike,
     onDislike,
@@ -116,5 +129,6 @@ export const useChatItemActions = () => {
     selectedLogId,
     satisYn,
     modalMessage,
+    handleCreateKnowledge,
   }
 }

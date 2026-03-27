@@ -35,7 +35,6 @@ const {
   fetchSelectTableDataList,
   fetchCreateChatLogReaction,
   fetchSelectKnowledgeList,
-  fetchCreateKnowledge,
 } = useReportsApi()
 
 // LLM 모델 옵션
@@ -281,20 +280,6 @@ export const useChatStore = () => {
     knowledgeList.value = res.dataList ?? []
   }
 
-  /** 지식창고 저장 */
-  const handleCreateKnowledge = async (logId: string, categoryId: string) => {
-    openLoading({ text: '지식창고에 저장 중...' })
-    try {
-      await fetchCreateKnowledge(logId, categoryId)
-      openToast({ message: '지식창고에 저장되었습니다', type: 'success' })
-    } catch (error) {
-      console.error(error)
-      openToast({ message: '지식창고 저장에 실패했습니다', type: 'error' })
-    } finally {
-      closeLoading()
-    }
-  }
-
   return {
     // 상태
     chatRoom,
@@ -333,6 +318,5 @@ export const useChatStore = () => {
     ensureWebSocketAndSend,
     fetchCreateChatLogReaction,
     handleSelectKnowledge,
-    handleCreateKnowledge,
   }
 }

@@ -1,5 +1,13 @@
 import { useAuth } from '~/composables/com/useAuth'
-import { EMPTY_CHAT_ROOM, type ChatRoom, type ChatLogListRow, type SubOption, type ModelOption } from '~/types/chat'
+import {
+  EMPTY_CHAT_ROOM,
+  type ChatRoom,
+  type ChatLogListRow,
+  type SubOption,
+  type ModelOption,
+  type ChatMessage,
+  type KnowledgeItem,
+} from '~/types/chat'
 const { user } = useAuth()
 const {
   fetchSelectChatRoomList,
@@ -10,15 +18,21 @@ const {
   fetchPinChatRoom,
   fetchRenameChatRoom,
   fetchDeleteChatRoom,
+  fetchSelectSharedChatLogList,
+  fetchSelectKnowledgeList,
 } = useReportsApi()
 const { resolveSvcTy, activeSearchModes, subOptions, selectedSubOption } = useChatSearchState()
-const { messages, pushQuestionMessage, pushAnswerPlaceholder } = useChatMessages()
+const { messages, pushQuestionMessage, pushAnswerPlaceholder, logRowToMessages } = useChatMessages()
 const { ensureWebSocketAndSend } = useChatSocket()
 
 // 채팅방 관련
 const chatRoom = ref<ChatRoom>({ ...EMPTY_CHAT_ROOM })
 const chatRoomList = ref<ChatRoom[]>([])
 const chatMessage = ref('')
+const sharedMessages = ref<ChatMessage[]>([])
+const shareTxt = ref('공유된 대화입니다.')
+const isExpired = ref(false)
+const knowledgeList = ref<KnowledgeItem[]>([])
 
 export const useChatRooms = () => {
   // 채팅방 초기화 (roomId 등 리셋, 검색모드 디폴트 C)
@@ -170,11 +184,57 @@ export const useChatRooms = () => {
     })
   }
 
-  /** 검색기록 공유 */
-  const handleShareChatRoom = async (room: ChatRoom) => {}
+  /** 공유 대화 로드 */
+  const loadSharedChatLog = async (shareToken: string) => {
+    if (!shareToken) return
+    isExpired.value = false
+    openLoading()
+    try {
+      const res = await fetchSelectSharedChatLogList(shareToken)
+      if (!res.successYn) {
+        shareTxt.value = res.returnMsg
+        isExpired.value = true
+        openToast({ message: res.returnMsg, type: 'error' })
+        sharedMessages.value = []
+        return
+      }
+      const rawList = res.list ?? []
+      if (rawList.length === 0) {
+        sharedMessages.value = []
+        return
+      }
+      const flattened = rawList.flatMap(logRowToMessages)
+      flattened.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+      sharedMessages.value = flattened
+    } catch {
+      openToast({ message: '대화를 불러올 수 없습니다. 접근 권한이 없거나 존재하지 않는 대화입니다.', type: 'error' })
+      sharedMessages.value = []
+    } finally {
+      closeLoading()
+    }
+  }
+
+  /** 답변 복사 */
+  const onCopy = (id: string) => {
+    copyToClipboard(sharedMessages.value.find((m) => m.logId === id && m.type === 'answer')?.rContent ?? '')
+    openToast({ message: '클립보드에 복사되었습니다.', type: 'success' })
+  }
+
+  /** 카테고리 목록 (일반 채팅방과 동일 API) */
+  const loadKnowledgeList = async () => {
+    try {
+      const res = await fetchSelectKnowledgeList()
+      knowledgeList.value = res.dataList ?? []
+    } catch {
+      knowledgeList.value = []
+    }
+  }
 
   return {
     chatRoom,
+    sharedMessages,
+    isExpired,
+    shareTxt,
     chatMessage,
     chatRoomList,
     selectChatRoomList,
@@ -188,6 +248,9 @@ export const useChatRooms = () => {
     handlePinChatRoom,
     handleRenameChatRoom,
     handleDeleteChatRoom,
-    handleShareChatRoom,
+    loadSharedChatLog,
+    onCopy,
+    loadKnowledgeList,
+    knowledgeList,
   }
 }

@@ -17,26 +17,13 @@
         @on-copy="onCopy"
         @on-view-source="onViewSource"
         @on-view-visualization="onViewVisualization"
-        @on-select-category="onSelectCategory"
+        @on-select-category="handleCreateKnowledge"
       />
       <div
-        v-else-if="isLoading"
+        v-if="!isExpired && sharedMessages.length === 0"
         class="chat-share-status"
       >
-        <UiSpinner />
-        <p>대화를 불러오는 중입니다...</p>
-      </div>
-      <div
-        v-else-if="errorMessage"
-        class="chat-share-status is-error"
-      >
-        <p>{{ errorMessage }}</p>
-      </div>
-      <div
-        v-else
-        class="chat-share-status"
-      >
-        <p v-if="!isExpired">대화 내용이 없습니다.</p>
+        <p>대화 내용이 없습니다.</p>
       </div>
 
       <!-- 공유 안내 배너 (하단 — ChatInput 자리) -->
@@ -81,9 +68,10 @@
 </template>
 
 <script setup lang="ts">
-import type { ChatMessage, KnowledgeItem } from '~/types/chat'
 import { setMessagesForVisualizationGetter } from '~/composables/chat/useChatMessages'
-
+const { sharedMessages, knowledgeList, loadSharedChatLog, onCopy, loadKnowledgeList, isExpired, shareTxt } =
+  useChatRooms()
+const { handleCreateKnowledge } = useChatItemActions()
 const {
   activePanelType,
   isPanelFullscreen,
@@ -94,19 +82,9 @@ const {
   onPanelClose,
 } = useChatStore()
 const route = useRoute()
-const { fetchSelectSharedChatLogList, fetchSelectKnowledgeList, fetchCreateKnowledge } = useReportsApi()
-const { logRowToMessages } = useChatMessages()
-
-const sharedMessages = ref<ChatMessage[]>([])
-const knowledgeList = ref<KnowledgeItem[]>([])
-const isLoading = ref(false)
-const errorMessage = ref('')
 
 // 패널 리사이즈
 const panelWidthPercent = ref(50)
-
-const shareTxt = ref('공유된 대화입니다.')
-const isExpired = ref(false)
 
 const onResizeStart = (e: MouseEvent) => {
   e.preventDefault()
@@ -133,64 +111,6 @@ watch(activePanelType, (type) => {
     panelWidthPercent.value = 50
   }
 })
-
-const loadSharedChatLog = async (shareToken: string) => {
-  if (!shareToken) return
-  isExpired.value = false
-  openLoading()
-  try {
-    const res = await fetchSelectSharedChatLogList(shareToken)
-    if (!res.successYn) {
-      shareTxt.value = res.returnMsg
-      isExpired.value = true
-      openToast({ message: res.returnMsg, type: 'error' })
-      sharedMessages.value = []
-      return
-    }
-    const rawList = res.list ?? []
-    if (rawList.length === 0) {
-      sharedMessages.value = []
-      return
-    }
-    const flattened = rawList.flatMap(logRowToMessages)
-    flattened.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-    sharedMessages.value = flattened
-  } catch {
-    openToast({ message: '대화를 불러올 수 없습니다. 접근 권한이 없거나 존재하지 않는 대화입니다.', type: 'error' })
-    sharedMessages.value = []
-  } finally {
-    closeLoading()
-  }
-}
-
-/** 카테고리 목록 (일반 채팅방과 동일 API) */
-const loadKnowledgeList = async () => {
-  try {
-    const res = await fetchSelectKnowledgeList()
-    knowledgeList.value = res.dataList ?? []
-  } catch {
-    knowledgeList.value = []
-  }
-}
-
-/** 답변 복사 */
-const onCopy = (id: string) => {
-  copyToClipboard(sharedMessages.value.find((m) => m.logId === id && m.type === 'answer')?.rContent ?? '')
-  openToast({ message: '클립보드에 복사되었습니다.', type: 'success' })
-}
-
-/** 지식창고 저장 */
-const onSelectCategory = async (logId: string, categoryId: string) => {
-  openLoading({ text: '지식창고에 저장 중...' })
-  try {
-    await fetchCreateKnowledge(logId, categoryId)
-    openToast({ message: '지식창고에 저장되었습니다', type: 'success' })
-  } catch {
-    openToast({ message: '지식창고 저장에 실패했습니다', type: 'error' })
-  } finally {
-    closeLoading()
-  }
-}
 
 // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
 const onForkChat = () => {

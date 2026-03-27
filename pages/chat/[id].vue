@@ -94,7 +94,6 @@ const {
   onViewVisualization,
   onPanelClose,
   handleSelectKnowledge,
-  handleCreateKnowledge,
 } = useChatStore()
 const { chatMessage, handleSetChatRoom } = useChatRooms()
 const { startChatSocket, stopChatSocket } = useChatSocket()
@@ -110,6 +109,7 @@ const {
   modalTitle,
   modalPlaceholder,
   handleModalClose,
+  handleCreateKnowledge,
 } = useChatItemActions()
 // 패널 리사이즈
 const panelWidthPercent = ref(50)
