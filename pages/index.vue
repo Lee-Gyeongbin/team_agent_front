@@ -1,6 +1,6 @@
 <script setup lang="ts">
 onMounted(() => {
-  navigateTo('/stats', { replace: true })
+  navigateTo('/chat', { replace: true })
 })
 </script>
 
