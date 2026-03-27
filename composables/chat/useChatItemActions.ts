@@ -86,7 +86,6 @@ export const useChatItemActions = () => {
 
   // 답변 복사
   const onCopy = async (id: string) => {
-    console.log('onCopy', id)
     // question·answer가 동일 logId로 쌍을 이루므로 반드시 답변만 조회
     const msg = messages.value.find((m) => m.logId === id && m.type === 'answer')
     if (!msg) return
