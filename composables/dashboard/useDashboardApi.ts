@@ -28,14 +28,14 @@ export const useDashboardApi = () => {
     return get<{ dataList: DashboardNoticeItem[] }>('/dashboard/notice-list.do')
   }
 
-  /** 토큰 사용량 */
-  const fetchDashboardTokenUsage = async (): Promise<{ data: DashboardTokenUsage }> => {
-    return get<{ data: DashboardTokenUsage }>('/dashboard/token-usage.do')
+  /** 토큰 사용량 (월별 목록) */
+  const fetchDashboardTokenUsage = async (): Promise<{ dataList: DashboardTokenUsage[] }> => {
+    return get<{ dataList: DashboardTokenUsage[] }>('/dashboard/token-usage.do')
   }
 
   /** 사용자 추이 (기간 조건 필요 시 POST body 객체로 별도 메서드 추가) */
-  const fetchDashboardVisitorTrend = async (): Promise<{ data: DashboardVisitorTrend }> => {
-    return get<{ data: DashboardVisitorTrend }>('/dashboard/visitor-trend.do')
+  const fetchDashboardVisitorTrend = async (): Promise<{ dataList: DashboardVisitorTrend[] }> => {
+    return get<{ dataList: DashboardVisitorTrend[] }>('/dashboard/visitor-trend.do')
   }
 
   return {

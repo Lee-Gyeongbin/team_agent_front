@@ -410,37 +410,11 @@
     color: $color-text-primary;
   }
 
-  &.type-sql {
+  &.type-visualization {
     border: 1px solid $color-border;
     background: #fff;
-
-    .sql-section-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-    }
-
-    .sql-section-title {
-      color: $color-text-primary;
-      font-size: $font-size-sm;
-      font-weight: $font-weight-medium;
-    }
-  }
-
-  &.sql-content {
-    min-height: 40px;
-  }
-
-  .sql-header {
-    padding-bottom: 7px;
-  }
-
-  .sql-chart-type-buttons {
-    display: flex;
-    justify-content: flex-end;
-    gap: 4px;
-    margin-bottom: 8px;
+    padding: 0;
+    overflow: hidden;
   }
 
   .btn-copy {

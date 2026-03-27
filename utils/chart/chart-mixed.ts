@@ -113,9 +113,28 @@ export const MixedChartModule = {
         tooltip: {
           ...ChartConfig.tooltipConfig,
           callbacks: {
+            labelColor(context: any) {
+              const isLine = context.dataset.type === 'line'
+              const color = isLine ? context.dataset.borderColor : context.dataset.backgroundColor
+              return {
+                borderColor: color,
+                backgroundColor: color,
+                borderWidth: 1,
+                borderRadius: 2,
+              }
+            },
             label(context: any) {
               const datasetLabel = context.dataset.label || ''
               const value = context.parsed.y
+              const tooltipValueSuffix =
+                typeof context.dataset.tooltipValueSuffix === 'string'
+                  ? context.dataset.tooltipValueSuffix
+                  : typeof config.tooltipValueSuffix === 'string'
+                    ? config.tooltipValueSuffix
+                    : ''
+              if (tooltipValueSuffix) {
+                return `${datasetLabel}: ${value.toLocaleString()}${tooltipValueSuffix}`
+              }
               const unit = context.dataset.unit || ''
 
               if (context.dataset.type === 'line') {

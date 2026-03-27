@@ -526,7 +526,7 @@ export const PieChartModule = {
 
     const nameText = ChartConfig.svgDonut.createSVGElement('text', {
       x: pos.labelX,
-      y: pos.labelY - (valueFontSize * 0.4),
+      y: pos.labelY - valueFontSize * 0.4,
       'text-anchor': pos.textAnchor,
       'font-size': String(nameFontSize),
       'font-weight': '400',
@@ -539,7 +539,7 @@ export const PieChartModule = {
 
     const valueText = ChartConfig.svgDonut.createSVGElement('text', {
       x: pos.labelX,
-      y: pos.labelY + (valueFontSize * 0.8),
+      y: pos.labelY + valueFontSize * 0.8,
       'text-anchor': pos.textAnchor,
       'font-size': String(valueFontSize),
       'font-weight': '600',

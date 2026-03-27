@@ -5,6 +5,25 @@
 import { Chart } from 'chart.js/auto'
 import { ChartConfig } from './chart-config'
 
+/**
+ * 단일 데이터셋·카테고리 다건 → bar.* 팔레트를 막대 인덱스마다 순환
+ * (colorIndex가 있으면 시리즈별 단색 유지 — 다중 데이터셋/이축 등)
+ */
+const resolveBarDatasetBackground = (dataset: any, allDatasets: any[]) => {
+  const key = dataset.colorKey || 'bar.set1'
+  const palette = ChartConfig.getColor(key)
+  if (
+    allDatasets.length === 1 &&
+    Array.isArray(dataset.data) &&
+    dataset.data.length > 1 &&
+    Array.isArray(palette) &&
+    dataset.colorIndex == null
+  ) {
+    return dataset.data.map((_: unknown, i: number) => palette[i % palette.length])
+  }
+  return ChartConfig.getColor(key, dataset.colorIndex)
+}
+
 export const BarChartModule = {
   /** 범례 생성 */
   createLegend(legendId: string, categories: string[], colors: any, chartId: string) {
@@ -153,6 +172,7 @@ export const BarChartModule = {
       colorKey,
       colorIndex,
       maxValue,
+      minValue,
       yAxisStepSize,
       showDataLabels = false,
       labelColor = '#6D7882',
@@ -163,6 +183,14 @@ export const BarChartModule = {
       thinBars = false,
       boldXAxis = false,
     } = config
+
+    const yMinResolved = typeof minValue === 'number' && Number.isFinite(minValue) ? minValue : 0
+    const yMaxResolved = typeof maxValue === 'number' && Number.isFinite(maxValue) ? maxValue : undefined
+    const yRange = yMaxResolved != null ? Math.max(yMaxResolved - yMinResolved, 1) : Math.max(maxValue ?? 0, 1)
+    const yStepResolved =
+      typeof yAxisStepSize === 'number' && Number.isFinite(yAxisStepSize)
+        ? yAxisStepSize
+        : Math.max(1, Math.floor(yRange / 9))
 
     const canvas = document.getElementById(id) as HTMLCanvasElement | null
     if (!canvas) {
@@ -175,19 +203,31 @@ export const BarChartModule = {
       ChartConfig.instances[id].destroy()
     }
 
-    // 색상 적용
+    // 색상 적용 (단일 데이터셋·막대 여러 개 → 팔레트 순환)
     let colors: any
     if (datasets) {
-      colors = datasets.map((d: any) => ChartConfig.getColor(d.colorKey || 'bar.set1', d.colorIndex))
+      colors = datasets.map((d: any) => {
+        const bg = resolveBarDatasetBackground(d, datasets)
+        return Array.isArray(bg) ? bg[0] : bg
+      })
     } else {
-      colors = ChartConfig.getColor(colorKey || 'bar.set1', colorIndex)
+      const key = colorKey || 'bar.set1'
+      const palette = ChartConfig.getColor(key)
+      if (Array.isArray(data) && data.length > 1 && Array.isArray(palette) && colorIndex == null) {
+        colors = data.map((_: unknown, i: number) => palette[i % palette.length])
+      } else {
+        colors = ChartConfig.getColor(key, colorIndex)
+      }
     }
 
     // 범례 생성
     if (showLegend && legendId) {
       if (datasets) {
         const legendCategories = datasets.map((d: any) => d.label)
-        const legendColors = datasets.map((d: any) => ChartConfig.getColor(d.colorKey || 'bar.set1', d.colorIndex))
+        const legendColors = datasets.map((d: any) => {
+          const bg = resolveBarDatasetBackground(d, datasets)
+          return Array.isArray(bg) ? bg[0] : bg
+        })
         this.createLegend(legendId, legendCategories, legendColors, id)
       } else {
         this.createLegend(legendId, categories, colors, id)
@@ -257,11 +297,11 @@ export const BarChartModule = {
           border: { color: 'rgba(0, 0, 26, 0.3)' },
         },
         y: {
-          beginAtZero: true,
-          min: config.minValue || 0,
-          max: maxValue,
+          beginAtZero: yMinResolved >= 0,
+          min: yMinResolved,
+          max: yMaxResolved,
           ticks: {
-            stepSize: yAxisStepSize || Math.floor(maxValue / 9),
+            stepSize: yStepResolved,
             callback: (value: number) => value.toLocaleString(),
             font: {
               size: ChartConfig.font.size.small,
@@ -274,9 +314,32 @@ export const BarChartModule = {
       },
     }
 
-    // 외부 scales override 병합
+    /** scales 축 병합 (ticks 등 중첩 필드 유지) */
+    const mergeAxisScale = (base: Record<string, unknown> | undefined, incoming: Record<string, unknown>) => {
+      if (!base) return incoming
+      return {
+        ...base,
+        ...incoming,
+        ticks: {
+          ...((base.ticks as object) || {}),
+          ...((incoming.ticks as object) || {}),
+        },
+      }
+    }
+
+    // 외부 scales override 병합 (y/y1 부분 덮어쓰기 시 min·ticks 유실 방지)
     if (config.scales && typeof config.scales === 'object') {
-      barChartOptions.scales = { ...(barChartOptions.scales || {}), ...config.scales }
+      const baseScales = barChartOptions.scales || {}
+      const merged: Record<string, unknown> = { ...baseScales }
+      Object.keys(config.scales).forEach((key) => {
+        const inc = (config.scales as Record<string, unknown>)[key]
+        if (typeof inc === 'object' && inc !== null && typeof merged[key] === 'object' && merged[key] !== null) {
+          merged[key] = mergeAxisScale(merged[key] as Record<string, unknown>, inc as Record<string, unknown>)
+        } else {
+          merged[key] = inc
+        }
+      })
+      barChartOptions.scales = merged
     }
 
     // 데이터셋 개수에 따른 스타일 결정
@@ -299,18 +362,29 @@ export const BarChartModule = {
       barStyle.categoryPercentage = 0.8
     }
 
-    barStyle.borderRadius = {
-      topLeft: radius,
-      topRight: radius,
-      bottomLeft: 0,
-      bottomRight: 0,
+    // 양수: 0축에서 맞닿는 쪽(아래) 평평·값 끝(위) 둥글게 / 음수: 0축(위) 평평·극단(아래) 둥글게
+    barStyle.borderRadius = (ctx: {
+      parsed?: { y?: number }
+      raw?: unknown
+      dataIndex?: number
+      dataset?: { data?: unknown[] }
+    }) => {
+      const fromParsed = ctx.parsed?.y
+      const fromRaw = ctx.raw
+      const fromData = typeof ctx.dataIndex === 'number' ? ctx.dataset?.data?.[ctx.dataIndex] : undefined
+      const n = fromParsed ?? fromRaw ?? fromData
+      const v = typeof n === 'number' ? n : Number(n)
+      if (Number.isFinite(v) && v < 0) {
+        return { topLeft: 0, topRight: 0, bottomLeft: radius, bottomRight: radius }
+      }
+      return { topLeft: radius, topRight: radius, bottomLeft: 0, bottomRight: 0 }
     }
 
     // 데이터셋 구성
     const chartDatasets = datasets
       ? datasets.map((dataset: any) => ({
           ...dataset,
-          backgroundColor: ChartConfig.getColor(dataset.colorKey || 'bar.set1', dataset.colorIndex),
+          backgroundColor: resolveBarDatasetBackground(dataset, datasets),
           ...barStyle,
         }))
       : [{ data, backgroundColor: colors, ...barStyle }]
@@ -320,7 +394,12 @@ export const BarChartModule = {
       type: 'bar',
       data: { labels: categories, datasets: chartDatasets },
       options: barChartOptions,
-      plugins: [this.backgroundBarPlugin, this.centerBarsPlugin, ChartConfig.plugins.dottedGrid, ChartConfig.plugins.averageLine],
+      plugins: [
+        this.backgroundBarPlugin,
+        this.centerBarsPlugin,
+        ChartConfig.plugins.dottedGrid,
+        ChartConfig.plugins.averageLine,
+      ],
     })
   },
 

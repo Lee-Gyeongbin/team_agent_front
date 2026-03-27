@@ -6,11 +6,12 @@
         src="~/assets/icons/svg/logo-teamagent.svg"
         alt="TeamAgent"
         @click="navigateTo('/')"
-      >
+      />
       <span
         v-if="currentPageTitle"
         class="header-page-title"
-      >{{ currentPageTitle }}</span>
+        >{{ currentPageTitle }}</span
+      >
     </div>
     <div class="header-actions">
       <!-- 테마 색상 -->

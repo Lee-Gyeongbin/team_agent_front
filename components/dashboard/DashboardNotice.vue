@@ -10,85 +10,97 @@
       </span>
     </div>
 
-    <!-- 메인 공지 -->
+    <!-- 메인 공지 구역 -->
     <div class="notice-list">
-      <div class="notice-item is-main">
+      <template v-if="mainNotice">
+        <div class="notice-item is-main">
+          <div class="notice-icon">
+            <i class="icon-dash-notice size-24" />
+          </div>
+          <div class="notice-date">
+            <span class="date-month"
+              >{{ mainNotice.createDt.split(' ')[0].split('-')[0] }}.{{
+                mainNotice.createDt.split(' ')[0].split('-')[1]
+              }}</span
+            >
+            <span class="date-day">{{ mainNotice.createDt.split(' ')[0].split('-')[2] }}</span>
+          </div>
+          <div class="notice-content">
+            <span class="notice-title">{{ mainNotice.title }}</span>
+          </div>
+        </div>
+      </template>
+      <div
+        v-else
+        class="notice-item is-main notice-item--empty"
+      >
         <div class="notice-icon">
           <i class="icon-dash-notice size-24" />
         </div>
-        <div class="notice-date">
-          <span class="date-month">{{ mainNotice.year }}.{{ mainNotice.month }}</span>
-          <span class="date-day">{{ mainNotice.day }}</span>
-        </div>
         <div class="notice-content">
-          <span class="notice-title">{{ mainNotice.title }}</span>
+          <span class="notice-desc">대표 공지가 없습니다.</span>
         </div>
       </div>
     </div>
 
-    <!-- 하위 공지 목록 -->
+    <!-- 하위 공지 구역 -->
     <div class="notice-sub-list">
+      <template v-if="subNotices.length">
+        <div
+          v-for="item in subNotices"
+          :key="item.noticeId"
+          class="notice-sub-item"
+        >
+          <span class="sub-text">{{ item.title }}</span>
+          <span class="sub-date"
+            >{{ item.createDt.split(' ')[0].split('-')[0] }}.{{ item.createDt.split(' ')[0].split('-')[1] }}</span
+          >
+        </div>
+      </template>
       <div
-        v-for="item in subNotices"
-        :key="item.id"
-        class="notice-sub-item"
+        v-else
+        class="notice-sub-empty"
       >
-        <span class="sub-text">{{ item.title }}</span>
-        <span class="sub-date">{{ item.date }}</span>
+        <span class="notice-sub-empty-text">공지사항이 없습니다.</span>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-interface Notice {
-  id: string
-  year: string
-  month: string
-  day: string
-  title: string
-  description: string
-}
+const { mainNotice, subNotices } = useDashboardStore()
 
-interface SubNotice {
-  id: string
-  title: string
-  date: string
-}
-
-// 🔽 더보기 — 백엔드 연결 시 공지사항 페이지 이동으로 교체
 const onClickMore = () => {
-  console.warn('[TODO] 공지사항 더보기 페이지 이동')
+  navigateTo('/notice')
 }
-
-// ============================================
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-// ============================================
-const mainNotice: Notice = {
-  id: '1',
-  year: '2026',
-  month: '03',
-  day: '27',
-  title:
-    '연간 방문자 수 최고치 갱신! 162만 명의 이용량 급증에 대비하여 데이터 처리 엔진의 대규모 스케일업(Scale-up) 및 최적화가 완료되었습니다연간 방문자 수 최고치 갱신! 162만 명의 이용량 급증에 대비하여 데이터 처리 엔진의 대규모 스케일업(Scale-up) 및 최적화가 완료되었습니다연간 방문자 수 최고치 갱신! 162만 명의 이용량 급증에 대비하여 데이터 처리 엔진의 대규모 스케일업(Scale-up) 및 최적화가 완료되었습니다연간 방문자 수 최고치 갱신! 162만 명의 이용량 급증에 대비하여 데이터 처리 엔진의 대규모 스케일업(Scale-up) 및 최적화가 완료되었습니다.',
-  description: '',
-}
-
-const subNotices: SubNotice[] = [
-  {
-    id: '2',
-    title: 'TextToSQL 활용 비중 76% 돌파 데이터 분석 효율성을 극대화하기 위한 엔진...',
-    date: '03.26',
-  },
-  {
-    id: '3',
-    title: '누적 피드백 162만 건 돌파! 현재 질의 만족도 85.4%에 안주하지 않고, 사용자...',
-    date: '03.25',
-  },
-  {
-    id: '4',
-    title: '최근 토큰 사용량 급증에 따른 서버 자원 확충 안내: 더 빠른 질의 응답 속도와 안정...',
-    date: '03.24',
-  },
-]
 </script>
+
+<style lang="scss" scoped>
+/* 메인 빈 상태: 아이콘은 왼쪽, 문구만 남은 영역 가운데 */
+.notice-item--empty {
+  .notice-content {
+    flex: 1;
+    min-width: 0;
+    align-items: center;
+    text-align: center;
+    min-height: 50px;
+    justify-content: center;
+  }
+
+  .notice-desc {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* 하위 구역 빈 상태 — sub-date 톤과 맞춤 */
+.notice-sub-empty {
+  padding: 20px 12px 4px;
+  text-align: center;
+}
+
+.notice-sub-empty-text {
+  @include typo($body-small);
+  color: $color-text-disabled;
+}
+</style>

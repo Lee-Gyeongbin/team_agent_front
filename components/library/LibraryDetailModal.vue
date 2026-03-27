@@ -106,10 +106,24 @@
               <i class="icon icon-copy size-16"></i>
             </template>
           </UiButton>
+          <UiButton
+            v-if="displayData?.svcTy === 'S'"
+            variant="ghost"
+            size="xxs"
+            icon-only
+            class="btn-copy btn-custom-gray"
+            style="right: 44px"
+            :aria-pressed="isSqlCodeVisible"
+            @click="toggleSqlCodeVisible"
+          >
+            <template #icon-left>
+              <i class="icon icon-sql size-16"></i>
+            </template>
+          </UiButton>
 
           <div
-            v-html="toHtmlContent(displayData?.rcontent ?? '')"
             class="message-content"
+            v-html="toHtmlContent(displayData?.rcontent ?? '')"
           ></div>
         </div>
 
@@ -141,93 +155,21 @@
             </li>
           </ul>
         </div>
-
-        <!-- SQL 코드 블록 -->
-        <div
-          v-if="displayData?.svcTy === 'S'"
-          class="content-box type-sql"
-        >
-          <div class="sql-section-header">
-            <span class="sql-section-title">차트</span>
-          </div>
-          <div class="sql-header flex items-center justify-end gap-4">
-            <div class="regenerate"></div>
-            <UiButton
-              variant="ghost"
-              size="xxs"
-              icon-only
-              class="btn-custom-white"
-              @click="onReloadChart"
-            >
-              <template #icon-left>
-                <i class="icon icon-regenerate size-16"></i>
-              </template>
-            </UiButton>
-            <UiButton
-              variant="ghost"
-              size="xxs"
-              icon-only
-              class="btn-custom-gray"
-              :aria-pressed="isSqlCodeVisible"
-              @click="toggleSqlCodeVisible"
-            >
-              <template #icon-left>
-                <i class="icon icon-sql size-16"></i>
-              </template>
-            </UiButton>
-          </div>
-
-          <div class="sql-chart-type-buttons">
-            <button
-              type="button"
-              class="chat-vis-type-btn"
-              :class="{ 'is-active': selectedChartType === 'bar' }"
-              title="막대 차트"
-              @click="onSelectChartType('bar')"
-            >
-              <i class="icon-bar-chart size-12"></i>
-            </button>
-            <button
-              type="button"
-              class="chat-vis-type-btn"
-              :class="{ 'is-active': selectedChartType === 'line' }"
-              title="라인 차트"
-              @click="onSelectChartType('line')"
-            >
-              <i class="icon-line-chart size-12"></i>
-            </button>
-            <button
-              type="button"
-              class="chat-vis-type-btn"
-              :class="{ 'is-active': selectedChartType === 'pie' }"
-              title="파이 차트"
-              @click="onSelectChartType('pie')"
-            >
-              <i class="icon-pie-chart size-12"></i>
-            </button>
-          </div>
-
-          <!-- 차트 -->
-          <div class="content-box w-full sql-content">
-            <UiChart
-              v-if="chartConfig"
-              :key="`library-chart-${selectedChartType}-${chartVersion}`"
-              :type="selectedChartType"
-              :config="chartConfig"
-              show-legend
-            />
-            <UiEmpty
-              v-else
-              title="차트로 표시할 수 있는 데이터가 없습니다."
-            />
-          </div>
-        </div>
-
         <!-- SQL 코드 블록 -->
         <UiCodeBlock
           v-if="displayData?.svcTy === 'S' && isSqlCodeVisible"
           :code="displayData?.ttsq"
         />
+        <!-- 데이터 시각화 (데이터분석 타입) -->
+        <div
+          v-if="displayData?.svcTy === 'S'"
+          class="content-box type-visualization"
+        >
+          <ChatVisualizationContent
+            :open="isOpen"
+            :view-model="visualizationView"
+          />
+        </div>
 
         <!-- 하단 태그 -->
         <div class="library-detail-modal-tags">
@@ -256,12 +198,8 @@
 <script setup lang="ts">
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import type { LibraryCardDetail, DocItem, TableDataItem, ChartStatItem, ChartDetailCdItem } from '~/types/library'
-import type { VisualizationChartType, VisualizationViewModel } from '~/types/chat'
-import {
-  buildVisualizationViewModel,
-  buildChartModel,
-  buildDefaultChartSelection,
-} from '~/utils/chat/visualizationUtil'
+import type { VisualizationViewModel } from '~/types/chat'
+import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
 import { useFileStore } from '~/composables/com/useFileStore'
 const { handleViewFileUrl } = useFileStore()
 
@@ -297,18 +235,6 @@ const isScrolled = ref(false)
 // 카드 전환 트랜지션 상태
 const isTransitioning = ref(false)
 
-// SQL 코드 블록 표시 (데이터분석 타입에서 SQL 버튼으로 토글, 초기 숨김)
-const isSqlCodeVisible = ref(false)
-
-const toggleSqlCodeVisible = () => {
-  if (displayData.value?.svcTy !== 'S') return
-  isSqlCodeVisible.value = !isSqlCodeVisible.value
-}
-
-// 차트 타입 상태
-const selectedChartType = ref<VisualizationChartType>('bar')
-const chartVersion = ref(0)
-
 // tableData → VisualizationViewModel 변환 (스키마 추론 포함)
 const visualizationView = computed<VisualizationViewModel | null>(() => {
   if (!props.tableData?.tableData) return null
@@ -320,26 +246,14 @@ const visualizationView = computed<VisualizationViewModel | null>(() => {
   })
 })
 
-// 선택된 차트 타입에 맞는 차트 config 생성
-const chartConfig = computed<Record<string, unknown> | null>(() => {
-  if (!visualizationView.value?.schema) return null
-  const defaultSel = buildDefaultChartSelection(visualizationView.value.schema)
-  const selection = { ...defaultSel, chartType: selectedChartType.value }
-  return buildChartModel(visualizationView.value, selection)
-})
-
-const onSelectChartType = (type: VisualizationChartType) => {
-  selectedChartType.value = type
-  chartVersion.value++
-}
-
-const onReloadChart = () => {
-  chartVersion.value++
-}
-
 // 내부 표시용 데이터 (트랜지션 타이밍 제어용)
 const displayData = ref<LibraryCardDetail | null>(props.cardDetail ?? null)
-
+// SQL 코드 블록 표시 (데이터분석 타입에서 SQL 버튼으로 토글, 초기 숨김)
+const isSqlCodeVisible = ref(false)
+const toggleSqlCodeVisible = () => {
+  if (displayData.value?.svcTy !== 'S') return
+  isSqlCodeVisible.value = !isSqlCodeVisible.value
+}
 // 스크롤 이벤트 핸들러
 const handleScroll = () => {
   if (!contentRef.value) return
@@ -363,7 +277,6 @@ watch(
     if (!oldId) {
       displayData.value = props.cardDetail ?? null
       isSqlCodeVisible.value = false
-      selectedChartType.value = 'bar'
       return
     }
     if (!newId || newId === oldId) return
@@ -375,7 +288,6 @@ watch(
     setTimeout(() => {
       displayData.value = props.cardDetail ?? null
       isSqlCodeVisible.value = false
-      selectedChartType.value = 'bar'
       if (contentRef.value) {
         contentRef.value.scrollTo({ top: 0 })
         isScrolled.value = false
@@ -394,7 +306,6 @@ watch(
     if (!open) {
       displayData.value = null
       isSqlCodeVisible.value = false
-      selectedChartType.value = 'bar'
     }
   },
 )

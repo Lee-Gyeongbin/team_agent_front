@@ -1,6 +1,4 @@
 const COLUMN_LABEL_MAP: Record<string, string> = {
-  __TIME_AXIS_YEAR_MONTH__: '연-월',
-  __TIME_AXIS_YEAR_QUARTER__: '연-분기',
   STAT_ID: '통계ID',
   YEAR: '연도',
   MON: '월',
@@ -52,16 +50,32 @@ export const clearDynamicMappings = () => {
   delete dynamicValueMap.DETAIL_ITEM_CD
 }
 
+/**
+ * COLUMN_LABEL_MAP / dynamicValueMap 조회용으로 컬럼 키를 canonical 형태로 통일
+ * (예: stat_id, STAT_ID → STAT_ID / statId → STAT_ID / detail_item_cd, detailItemCd → DETAIL_ITEM_CD)
+ */
+export const normalizeColumnKeyForMapping = (key: string): string => {
+  const t = key.trim()
+  if (!t) return t
+  const upper = t.toUpperCase()
+  // camelCase API 키: statId → STATID, detailItemCd → DETAILITEMCD
+  if (upper === 'STATID') return 'STAT_ID'
+  if (upper === 'DETAILITEMCD') return 'DETAIL_ITEM_CD'
+  return upper
+}
+
 export const resolveColumnLabel = (key: string) => {
-  return COLUMN_LABEL_MAP[key] ?? key
+  const canon = normalizeColumnKeyForMapping(key)
+  return COLUMN_LABEL_MAP[canon] ?? key
 }
 
 export const resolveDisplayValue = (key: string, value: unknown) => {
   const text = value == null ? '' : String(value)
-  if (dynamicValueMap[key]?.[text]) {
-    return dynamicValueMap[key][text]
+  const canon = normalizeColumnKeyForMapping(key)
+  if (dynamicValueMap[canon]?.[text]) {
+    return dynamicValueMap[canon][text]
   }
-  if (key === 'REGN_CD') {
+  if (canon === 'REGN_CD') {
     return REGION_CODE_MAP[text] ?? text
   }
   return text
