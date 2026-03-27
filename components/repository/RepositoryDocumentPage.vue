@@ -170,10 +170,11 @@
                 class="table-header-sort-btn"
                 @click="onSort('fileSize')"
               >
-                파일크기
+                파일 총 크기
                 <i class="icon icon-sync size-16" />
               </button>
             </template>
+            <template #cell-fileCnt="{ value }"> {{ value }}개 </template>
             <template #header-createDt>
               <button
                 type="button"

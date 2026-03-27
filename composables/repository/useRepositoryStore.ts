@@ -46,9 +46,10 @@ const statusFilterOptions = [
 // ===== 테이블 =====
 const tableColumns: TableColumn[] = [
   { key: 'select', label: '', width: '48px', align: 'center', headerAlign: 'center' },
-  { key: 'docTitle', label: '문서제목', width: 'auto', align: 'left', headerAlign: 'left' },
+  { key: 'docTitle', label: '문서명', width: 'auto', align: 'left', headerAlign: 'left' },
   { key: 'categoryName', label: '카테고리', width: '200px', align: 'left', headerAlign: 'left' },
-  { key: 'fileSize', label: '파일크기', width: '100px', align: 'center', headerAlign: 'center' },
+  { key: 'fileSize', label: '파일 총 크기', width: '100px', align: 'center', headerAlign: 'center' },
+  { key: 'fileCnt', label: '파일 개수', width: '100px', align: 'center', headerAlign: 'center' },
   { key: 'createDt', label: '등록일', width: '120px', align: 'center', headerAlign: 'center' },
   { key: 'useYn', label: '상태', width: '80px', align: 'center', headerAlign: 'center' },
   { key: 'dsDocCnt', label: 'RAG 사용', width: '100px', align: 'center', headerAlign: 'center' },

@@ -78,6 +78,7 @@ export interface Document {
   refUrl: string
   useYn: string
   dsDocCnt: string
+  fileCnt: string
   createDt: string
   files: File[]
   attachedFileList?: FileItem[]
