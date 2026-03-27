@@ -3,6 +3,7 @@ import type { TableColumn } from '~/types/table'
 export interface NoticeRow {
   noticeId: string
   title: string
+  featuredYn: 'Y' | 'N'
   pinYn: 'Y' | 'N'
   useYn: 'Y' | 'N'
   crtrId: string
@@ -19,11 +20,25 @@ export interface NoticeFormData {
   noticeId: string
   title: string
   content: string
-  pinYn: 'Y' | 'N'
-  useYn: 'Y' | 'N'
+  featuredYn: 'Y' | 'N' | null
+  pinYn: 'Y' | 'N' | null
+  useYn: 'Y' | 'N' | null
   crtrId: string
   createDt: string
   modifyDt: string
+}
+
+export interface NoticeDetailResponse {
+  noticeId?: string
+  title?: string
+  content?: string
+  featuredYn?: 'Y' | 'N' | null
+  pinYn?: 'Y' | 'N' | null
+  useYn?: 'Y' | 'N' | null
+  crtrId?: string
+  createDt?: string
+  modifyDt?: string
+  viewCnt?: number
 }
 
 /** 공지사항 테이블 컬럼 정의 */
