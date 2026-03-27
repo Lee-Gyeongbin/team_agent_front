@@ -32,6 +32,7 @@
           <ChatMessageActions
             :chat-log-reaction="message.chatLogReaction"
             :knowledge-list="knowledgeList"
+            :is-share="isShare"
             @on-copy="emit('on-copy', message.logId)"
             @on-like="emit('on-like', message.logId)"
             @on-dislike="emit('on-dislike', message.logId)"
@@ -82,9 +83,13 @@ import type { ChatMessage, KnowledgeItem } from '~/types/chat'
 interface Props {
   message: ChatMessage
   knowledgeList?: KnowledgeItem[]
+  /** 공유 페이지 등: 액션 영역은 복사·카테고리만 */
+  isShare?: boolean
 }
 
-defineProps<Props>()
+withDefaults(defineProps<Props>(), {
+  isShare: false,
+})
 
 const emit = defineEmits<{
   'on-copy': [id: string]

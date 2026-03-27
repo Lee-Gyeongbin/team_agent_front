@@ -12,9 +12,12 @@
       <ChatMessageList
         v-if="sharedMessages.length > 0"
         :messages="sharedMessages"
+        :knowledge-list="knowledgeList"
+        is-share
         @on-copy="onCopy"
         @on-view-source="onViewSource"
         @on-view-visualization="onViewVisualization"
+        @on-select-category="onSelectCategory"
       />
       <div
         v-else-if="isLoading"
@@ -33,16 +36,17 @@
         v-else
         class="chat-share-status"
       >
-        <p>대화 내용이 없습니다.</p>
+        <p v-if="!isExpired">대화 내용이 없습니다.</p>
       </div>
 
       <!-- 공유 안내 배너 (하단 — ChatInput 자리) -->
       <div class="chat-share-banner">
         <div class="chat-share-banner-info">
           <i class="icon-share size-20"></i>
-          <span>공유된 대화입니다.</span>
+          <span>{{ shareTxt }}</span>
         </div>
         <UiButton
+          v-if="!isExpired"
           variant="primary"
           size="md"
           @click="onForkChat"
@@ -77,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ChatMessage } from '~/types/chat'
+import type { ChatMessage, KnowledgeItem } from '~/types/chat'
 
 const {
   activePanelType,
@@ -88,17 +92,20 @@ const {
   onViewVisualization,
   onPanelClose,
 } = useChatStore()
-const { onCopy } = useChatItemActions()
 const route = useRoute()
-const { fetchSelectChatLogList } = useReportsApi()
+const { fetchSelectSharedChatLogList, fetchSelectKnowledgeList, fetchCreateKnowledge } = useReportsApi()
 const { logRowToMessages } = useChatMessages()
 
 const sharedMessages = ref<ChatMessage[]>([])
+const knowledgeList = ref<KnowledgeItem[]>([])
 const isLoading = ref(false)
 const errorMessage = ref('')
 
 // 패널 리사이즈
 const panelWidthPercent = ref(50)
+
+const shareTxt = ref('공유된 대화입니다.')
+const isExpired = ref(false)
 
 const onResizeStart = (e: MouseEvent) => {
   e.preventDefault()
@@ -126,12 +133,19 @@ watch(activePanelType, (type) => {
   }
 })
 
-const loadSharedChatLog = async (roomId: string) => {
-  if (!roomId) return
-  isLoading.value = true
-  errorMessage.value = ''
+const loadSharedChatLog = async (shareToken: string) => {
+  if (!shareToken) return
+  isExpired.value = false
+  openLoading()
   try {
-    const res = await fetchSelectChatLogList(roomId)
+    const res = await fetchSelectSharedChatLogList(shareToken)
+    if (!res.successYn) {
+      shareTxt.value = res.returnMsg
+      isExpired.value = true
+      openToast({ message: res.returnMsg, type: 'error' })
+      sharedMessages.value = []
+      return
+    }
     const rawList = res.list ?? []
     if (rawList.length === 0) {
       sharedMessages.value = []
@@ -141,23 +155,57 @@ const loadSharedChatLog = async (roomId: string) => {
     flattened.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
     sharedMessages.value = flattened
   } catch {
-    errorMessage.value = '대화를 불러올 수 없습니다. 접근 권한이 없거나 존재하지 않는 대화입니다.'
+    openToast({ message: '대화를 불러올 수 없습니다. 접근 권한이 없거나 존재하지 않는 대화입니다.', type: 'error' })
+    sharedMessages.value = []
   } finally {
-    isLoading.value = false
+    closeLoading()
+  }
+}
+
+/** 카테고리 목록 (일반 채팅방과 동일 API) */
+const loadKnowledgeList = async () => {
+  try {
+    const res = await fetchSelectKnowledgeList()
+    knowledgeList.value = res.dataList ?? []
+  } catch {
+    knowledgeList.value = []
+  }
+}
+
+/** 답변 복사 */
+const onCopy = (id: string) => {
+  copyToClipboard(sharedMessages.value.find((m) => m.logId === id && m.type === 'answer')?.rContent ?? '')
+  openToast({ message: '클립보드에 복사되었습니다.', type: 'success' })
+}
+
+/** 지식창고 저장 */
+const onSelectCategory = async (logId: string, categoryId: string) => {
+  openLoading({ text: '지식창고에 저장 중...' })
+  try {
+    await fetchCreateKnowledge(logId, categoryId)
+    openToast({ message: '지식창고에 저장되었습니다', type: 'success' })
+  } catch {
+    openToast({ message: '지식창고 저장에 실패했습니다', type: 'error' })
+  } finally {
+    closeLoading()
   }
 }
 
 // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
 const onForkChat = () => {
-  openToast({ message: '대화 이어가기 기능은 준비 중입니다.', type: 'info' })
+  openToast({ message: '대화 이어가기 기능은 준비 중입니다.', type: 'warning' })
 }
+
+onMounted(() => {
+  loadKnowledgeList()
+})
 
 watch(
   () => route.params.id,
   (id) => {
-    const roomId = String(id || '').trim()
-    if (!roomId) return
-    loadSharedChatLog(roomId)
+    const shareToken = String(id || '').trim()
+    if (!shareToken) return
+    loadSharedChatLog(shareToken)
   },
   { immediate: true },
 )

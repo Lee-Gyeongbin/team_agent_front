@@ -11,6 +11,7 @@
           :key="msg.logId"
           :message="msg"
           :knowledge-list="knowledgeList"
+          :is-share="isShare"
           @on-copy="emit('on-copy', $event)"
           @on-like="emit('on-like', $event)"
           @on-dislike="emit('on-dislike', $event)"
@@ -39,9 +40,13 @@ import type { ChatMessage, KnowledgeItem } from '~/types/chat'
 interface Props {
   messages: ChatMessage[]
   knowledgeList?: KnowledgeItem[]
+  /** 공유 보기 페이지 등 */
+  isShare?: boolean
 }
 
-defineProps<Props>()
+withDefaults(defineProps<Props>(), {
+  isShare: false,
+})
 
 const emit = defineEmits<{
   'on-copy': [id: string]

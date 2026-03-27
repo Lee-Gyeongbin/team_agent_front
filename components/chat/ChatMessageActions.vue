@@ -1,6 +1,7 @@
 <template>
   <div class="chat-message-actions">
     <UiButton
+      v-if="!isShare"
       variant="ghost"
       size="xs"
       icon-only
@@ -13,6 +14,7 @@
       </template>
     </UiButton>
     <UiButton
+      v-if="!isShare"
       variant="ghost"
       size="xs"
       icon-only
@@ -25,6 +27,7 @@
       </template>
     </UiButton>
     <UiButton
+      v-if="!isShare"
       variant="ghost"
       size="xs"
       icon-only
@@ -79,10 +82,13 @@ import type { ChatLogReaction, KnowledgeItem } from '~/types/chat'
 interface Props {
   chatLogReaction?: ChatLogReaction
   knowledgeList?: KnowledgeItem[]
+  /** 공유 보기 페이지: 복사·카테고리만 표시 (원본/시각화는 ChatMessageItem 패널 버튼) */
+  isShare?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   knowledgeList: () => [],
+  isShare: false,
 })
 
 const emit = defineEmits<{

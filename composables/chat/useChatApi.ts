@@ -86,15 +86,19 @@ export const useReportsApi = () => {
   const fetchDeleteChatRoom = async (roomId: string): Promise<void> => {
     return post('/ai/chatbot/deleteChatRoom.do', { roomId })
   }
-  // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-  // 공유 채팅 로그 조회 (타 사용자 채팅방 접근용)
-  const fetchSelectSharedChatLogList = async (roomId: string): Promise<{ list: ChatLogListRow[] }> => {
-    return get<{ list: ChatLogListRow[] }>(
-      `/ai/chatbot/selectSharedChatLogList.do?roomId=${encodeURIComponent(roomId)}`,
+  // 공유 토큰 발급 (roomId → UUID share token)
+  const fetchCreateShareToken = async (roomId: string): Promise<{ shareToken: string }> => {
+    return post<{ shareToken: string }>('/ai/chatbot/createShareToken.do', { roomId })
+  }
+  // 공유 토큰으로 채팅 로그 조회
+  const fetchSelectSharedChatLogList = async (
+    shareToken: string,
+  ): Promise<{ list: ChatLogListRow[]; successYn: boolean; returnMsg: string }> => {
+    return get<{ list: ChatLogListRow[]; successYn: boolean; returnMsg: string }>(
+      `/ai/chatbot/selectSharedChatLogList.do?shareToken=${encodeURIComponent(shareToken)}`,
     )
   }
-  // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-  // 공유 채팅방 복제 (대화 이어가기)
+  // 공유 채팅방 복제 (대화 이어가기) TODO (프로토타입)
   const fetchCloneChatRoom = async (sourceRoomId: string): Promise<{ data: ChatRoom }> => {
     return post<{ data: ChatRoom }>('/ai/chatbot/cloneChatRoom.do', { sourceRoomId })
   }
@@ -113,6 +117,7 @@ export const useReportsApi = () => {
     fetchPinChatRoom,
     fetchRenameChatRoom,
     fetchDeleteChatRoom,
+    fetchCreateShareToken,
     fetchSelectSharedChatLogList,
     fetchCloneChatRoom,
   }

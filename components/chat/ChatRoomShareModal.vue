@@ -5,6 +5,7 @@
         <label class="form-label">공유 링크</label>
         <UiInput
           :model-value="shareLink"
+          :placeholder="isLoading ? '링크 생성 중...' : ''"
           type="text"
           readonly
           @focus="($event.target as HTMLInputElement).select()"
@@ -24,6 +25,7 @@
         class="btn-modal-dialog"
         variant="primary"
         size="xlg"
+        :disabled="!shareLink"
         @click="onCopyLink"
       >
         링크 복사
@@ -45,11 +47,37 @@ const emit = defineEmits<{
   close: []
 }>()
 
+const { fetchCreateShareToken } = useReportsApi()
+
+const shareToken = ref('')
+const isLoading = ref(false)
+
 const shareLink = computed(() => {
-  if (!props.room?.roomId) return ''
+  if (!shareToken.value) return ''
   const origin = import.meta.client ? window.location.origin : ''
-  return `${origin}/chat/share/${props.room.roomId}`
+  return `${origin}/chat/share/${shareToken.value}`
 })
+
+const loadShareToken = async () => {
+  if (!props.room?.roomId) return
+  isLoading.value = true
+  try {
+    const res = await fetchCreateShareToken(props.room.roomId)
+    shareToken.value = res.shareToken
+  } catch {
+    openToast({ message: '공유 링크 생성에 실패했습니다.', type: 'error' })
+  } finally {
+    isLoading.value = false
+  }
+}
+
+watch(
+  () => props.room?.roomId,
+  (roomId) => {
+    if (roomId) loadShareToken()
+  },
+  { immediate: true },
+)
 
 const onCopyLink = async () => {
   if (!shareLink.value) return
