@@ -53,7 +53,7 @@
         >
           <span class="sub-text">{{ item.title }}</span>
           <span class="sub-date"
-            >{{ item.createDt.split(' ')[0].split('-')[0] }}.{{ item.createDt.split(' ')[0].split('-')[1] }}</span
+            >{{ item.createDt.split(' ')[0].split('-')[1] }}.{{ item.createDt.split(' ')[0].split('-')[2] }}</span
           >
         </div>
       </template>
