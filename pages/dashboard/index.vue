@@ -32,5 +32,9 @@
 </template>
 
 <script setup lang="ts">
+const { handleSelectDashboardAll } = useDashboardStore()
 definePageMeta({ layout: 'default' })
+onMounted(() => {
+  handleSelectDashboardAll()
+})
 </script>
