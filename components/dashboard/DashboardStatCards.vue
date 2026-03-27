@@ -4,8 +4,8 @@
     <UiStatCard
       icon="icon-dash-feedback"
       label="피드백 수"
-      :value="feedbackCount"
-      unit="명"
+      :value="statSummary?.feedbackCount"
+      unit="건"
       color="green"
     />
 
@@ -13,8 +13,8 @@
     <UiStatCard
       icon="icon-dash-query"
       label="오늘 질의 수"
-      :value="todayQueryCount"
-      unit="명"
+      :value="statSummary?.todayQueryCount"
+      unit="건"
       color="blue"
     />
 
@@ -42,20 +42,20 @@
         <div class="satisfaction-bar">
           <div
             class="bar-positive"
-            :style="{ width: `${satisfactionRate}%` }"
+            :style="{ width: `${statSummary?.satisfactionRate}%` }"
           />
           <div
             class="bar-negative"
-            :style="{ width: `${dissatisfactionRate}%` }"
+            :style="{ width: `${statSummary?.dissatisfactionRate}%` }"
           />
         </div>
         <div class="satisfaction-values">
           <span class="satisfaction-item is-positive">
             <i class="icon-dash-satisfied size-24" />
-            <span class="value">{{ satisfactionRate }}%</span>
+            <span class="value">{{ statSummary?.satisfactionRate }}%</span>
           </span>
           <span class="satisfaction-item is-negative">
-            <span class="value">{{ dissatisfactionRate }}%</span>
+            <span class="value">{{ statSummary?.dissatisfactionRate }}%</span>
             <i class="icon-dash-dissatisfied size-24" />
           </span>
         </div>
@@ -65,11 +65,5 @@
 </template>
 
 <script setup lang="ts">
-// ============================================
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-// ============================================
-const feedbackCount = '1,624,906'
-const todayQueryCount = '1,624,906'
-const satisfactionRate = 60.4
-const dissatisfactionRate = 39.6
+const { statSummary } = useDashboardStore()
 </script>
