@@ -116,7 +116,7 @@
     gap: $spacing-xs;
     margin-top: $spacing-xs;
     color: $color-text-secondary;
-    font-size: $font-size-sm;
+    font-size: $font-size-base;
   }
 
   .notice-detail-divider {
@@ -143,7 +143,7 @@
     border-radius: $border-radius-base;
     background: $color-background;
     color: $color-text-primary;
-    font-size: $font-size-sm;
+    font-size: $font-size-lg;
     line-height: $line-height-base;
     white-space: pre-wrap;
     word-break: break-word;

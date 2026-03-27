@@ -12,8 +12,6 @@
             v-model="searchKeyword"
             type="search"
             placeholder="제목 또는 작성자 검색"
-            @search="handleFetchNoticeList"
-            @enter="handleFetchNoticeList"
           />
         </div>
         <div class="notice-btn-grp flex items-center shrink-0 gap-2">

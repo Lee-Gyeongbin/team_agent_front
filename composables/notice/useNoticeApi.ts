@@ -1,16 +1,17 @@
 import { useApi } from '~/composables/com/useApi'
-import type { NoticeFormData, NoticeItem } from '~/types/notice'
+import type { NoticeDetailResponse, NoticeFormData, NoticeItem } from '~/types/notice'
 export const useNoticeApi = () => {
   const { get, post } = useApi()
 
   /** 공지사항 목록 조회 */
-  const fetchSelectNoticeList = async (): Promise<{ list: NoticeItem[] }> => {
-    return get<{ list: NoticeItem[] }>('/notice/list.do')
+  const fetchSelectNoticeList = async (): Promise<{ dataList: NoticeItem[] }> => {
+    return get<{ dataList: NoticeItem[] }>('/notice/list.do')
   }
 
   /** 공지사항 상세 조회 */
-  const fetchSelectNoticeDetail = async (noticeId: string): Promise<NoticeItem> => {
-    return post<NoticeItem>('/notice/detail.do', { noticeId })
+  const fetchSelectNoticeDetail = async (noticeId: string): Promise<NoticeDetailResponse> => {
+    const res = await post<{ data: NoticeDetailResponse }>('/notice/detail.do', { noticeId })
+    return res.data
   }
 
   /** 공지사항 등록 */

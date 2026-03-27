@@ -43,6 +43,7 @@
       <div class="url-reg-field">
         <label class="url-reg-label">공지 내용 <span class="required">*</span></label>
         <UiTextarea
+          ref="noticeContentRef"
           :model-value="formData.content"
           placeholder="공지 내용을 입력하세요"
           :max-length="500"
@@ -95,6 +96,19 @@ const emit = defineEmits<{
 }>()
 
 const noticeTitleRef = ref<{ focus?: () => void; $el?: HTMLElement } | null>(null)
+const noticeContentRef = ref<{ focus?: () => void; $el?: HTMLElement } | null>(null)
+
+const focusField = (fieldRef: typeof noticeTitleRef) => {
+  nextTick(() => {
+    const el = fieldRef.value?.$el || fieldRef.value
+    if (el instanceof HTMLElement) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      const input = el.querySelector('input, textarea') || el
+      if ('focus' in input) (input as HTMLElement).focus()
+    }
+  })
+}
+
 const isDashboardTitle = computed(() => props.formData.featuredYn === 'Y')
 const isTopFixed = computed(() => props.formData.pinYn === 'Y')
 const onFieldChange = <K extends keyof NoticeFormData>(key: K, value: NoticeFormData[K]) => {
@@ -107,11 +121,12 @@ const onFieldChange = <K extends keyof NoticeFormData>(key: K, value: NoticeForm
 const onSaveNotice = () => {
   if (!props.formData.title.trim()) {
     openToast({ message: '공지 제목을 입력해주세요.', type: 'warning' })
-    noticeTitleRef.value?.focus?.()
+    focusField(noticeTitleRef)
     return
   }
   if (!props.formData.content.trim()) {
     openToast({ message: '공지 내용을 입력해주세요.', type: 'warning' })
+    focusField(noticeContentRef)
     return
   }
   emit('save', props.formData)
