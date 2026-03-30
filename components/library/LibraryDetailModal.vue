@@ -3,9 +3,16 @@
     class="library-detail-modal"
     :class="{ 'is-show': isOpen && !isTransitioning }"
   >
+    <!-- 왼쪽 리사이즈 핸들 -->
+    <div
+      class="library-detail-modal-resize-handle"
+      :class="{ 'is-dragging': isResizing }"
+      @mousedown="onResizeStart"
+    ></div>
     <div
       ref="contentRef"
       class="library-detail-modal-content"
+      :style="{ maxWidth: modalWidth + 'px' }"
       @scroll="handleScroll"
     >
       <!-- 상단 헤더 -->
@@ -244,6 +251,35 @@ const emit = defineEmits<{
 // 스크롤 상태
 const contentRef = ref<HTMLElement | null>(null)
 const isScrolled = ref(false)
+
+// 리사이즈 상태
+const MIN_WIDTH = 680
+const MAX_WIDTH_RATIO = 0.8
+const modalWidth = ref(MIN_WIDTH)
+const isResizing = ref(false)
+
+const onResizeStart = (e: MouseEvent) => {
+  e.preventDefault()
+  isResizing.value = true
+  const startX = e.clientX
+  const startWidth = modalWidth.value
+
+  const onMouseMove = (moveEvent: MouseEvent) => {
+    // 오른쪽 고정, 왼쪽으로 드래그 → width 증가
+    const delta = startX - moveEvent.clientX
+    const maxWidth = window.innerWidth * MAX_WIDTH_RATIO
+    modalWidth.value = Math.min(Math.max(startWidth + delta, MIN_WIDTH), maxWidth)
+  }
+
+  const onMouseUp = () => {
+    isResizing.value = false
+    document.removeEventListener('mousemove', onMouseMove)
+    document.removeEventListener('mouseup', onMouseUp)
+  }
+
+  document.addEventListener('mousemove', onMouseMove)
+  document.addEventListener('mouseup', onMouseUp)
+}
 
 // 카드 전환 트랜지션 상태
 const isTransitioning = ref(false)
