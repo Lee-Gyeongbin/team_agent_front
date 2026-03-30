@@ -39,70 +39,81 @@
       </div>
     </div>
 
-    <!-- 로딩 -->
-    <UiLoading
-      v-if="isLoading"
-      overlay
-      text="공지사항을 불러오는 중..."
-    />
-
-    <!-- 에러 -->
     <div
-      v-else-if="errorMessage"
-      class="notice-error"
+      class="notice-list-panel"
+      :class="{ 'is-short-page': isShortNoticePage }"
     >
-      <p class="notice-error__message">{{ errorMessage }}</p>
-      <UiButton
-        variant="outline"
-        size="md"
-        @click="handleFetchNoticeList"
-      >
-        다시 시도
-      </UiButton>
-    </div>
+      <div class="notice-content">
+        <!-- 로딩 -->
+        <UiLoading
+          v-if="isLoading"
+          overlay
+          text="공지사항을 불러오는 중..."
+        />
 
-    <!-- 테이블 -->
-    <div
-      v-else
-      class="notice-table-wrap"
-    >
-      <UiTable
-        :columns="noticeColumns"
-        :data="pagedNoticeList"
-        :row-class="getNoticeRowClassName"
-        sticky-header
-        max-height="calc(100vh - 200px)"
-        empty-text="새로운 공지사항을 등록해주세요"
-      >
-        <template #cell-title="{ row }">
-          <button
-            class="notice-title-btn"
-            @click.stop="onOpenNoticeDetail(row as NoticeRow)"
+        <!-- 에러 -->
+        <div
+          v-else-if="errorMessage"
+          class="notice-error"
+        >
+          <p class="notice-error__message">{{ errorMessage }}</p>
+          <UiButton
+            variant="outline"
+            size="md"
+            @click="handleFetchNoticeList"
           >
-            <i
-              v-if="(row as NoticeRow).pinYn === 'Y'"
-              class="icon-sidebar-pin size-16"
-              aria-hidden="true"
-            />
-            <span class="notice-title-text">{{ getDisplayNoticeTitle(row.title) }}</span>
-          </button>
-        </template>
-        <template #cell-noticeId="{ row }">
-          {{ getNoticeOrderLabel(row as NoticeRow) }}
-        </template>
-        <template #cell-modifyDt="{ row }">
-          {{ getNoticeDateLabel((row as NoticeRow).modifyDt) }}
-        </template>
-      </UiTable>
-    </div>
-    <div class="notice-pagination-wrap">
-      <UiPagination
-        v-if="filteredList.length > 0"
-        v-model="currentPage"
-        :total-count="filteredList.length"
-        :page-size="pageSize"
-        total-label="개 공지사항"
-      />
+            다시 시도
+          </UiButton>
+        </div>
+
+        <!-- 테이블 -->
+        <div
+          v-else
+          class="notice-table-wrap"
+        >
+          <UiTable
+            :columns="noticeColumns"
+            :data="pagedNoticeList"
+            sticky-header
+            empty-text="새로운 공지사항을 등록해주세요"
+          >
+            <template #cell-title="{ row }">
+              <button
+                type="button"
+                class="notice-title-btn"
+                :class="{ 'is-pinned-notice-title': isPinnedNotice(row as NoticeRow) }"
+                @click.stop="onOpenNoticeDetail(row as NoticeRow)"
+              >
+                <span class="notice-title-text">{{ getDisplayNoticeTitle(row.title) }}</span>
+              </button>
+            </template>
+            <template #cell-noticeId="{ row }">
+              <i
+                v-if="isPinnedNotice(row as NoticeRow)"
+                class="icon-sidebar-pin size-16 notice-order-pin"
+                aria-label="중요 공지"
+              />
+              <template v-else>
+                {{ getNoticeOrderLabel(row as NoticeRow) }}
+              </template>
+            </template>
+            <template #cell-modifyDt="{ row }">
+              {{ getNoticeDateLabel((row as NoticeRow).modifyDt) }}
+            </template>
+          </UiTable>
+        </div>
+      </div>
+
+      <div class="notice-pagination-wrap">
+        <UiPagination
+          v-if="filteredList.length > 0"
+          v-model="currentPage"
+          :total-count="filteredList.length"
+          :page-size="pageSize"
+          total-label="개 공지사항"
+          class="notice-pagination"
+        />
+      </div>
     </div>
 
     <NoticeFormPanel
@@ -118,7 +129,7 @@
       :notice="selectedNotice"
       @edit="onEditNotice"
       @delete="onDeleteNotice"
-      @close="closeNoticeDetailPanel"
+      @close="isNoticeDetailPanelOpen = false"
     />
   </div>
 </template>
@@ -148,11 +159,13 @@ const {
   onOpenNoticeDetail,
   onEditNotice,
   onDeleteNotice,
-  closeNoticeDetailPanel,
-  getNoticeRowClassName,
+  isPinnedNotice,
   getNoticeOrderLabel,
   getNoticeDateLabel,
 } = useNoticeStore()
+
+const isShortNoticePage = computed(() => pagedNoticeList.value.length < pageSize)
+
 watch(searchKeyword, () => {
   currentPage.value = 1
 })

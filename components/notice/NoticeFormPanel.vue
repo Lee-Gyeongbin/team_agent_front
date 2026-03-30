@@ -21,7 +21,7 @@
       <div class="url-reg-field">
         <label class="url-reg-label">옵션</label>
         <div class="notice-option-box">
-          <div class="notice-option-group flex items-center gap-8">
+          <div class="flex flex-wrap items-center gap-8">
             <label class="notice-option-item flex items-center gap-2">
               <UiCheckbox
                 :model-value="isDashboardTitle"

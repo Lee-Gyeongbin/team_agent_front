@@ -1,97 +1,127 @@
 @use '../utils/variables' as *;
 @use '../utils/mixins' as *;
 
+// 공지 페이지(`pages/notice/index.vue`) — 모달·폼은 동일 페이지 트리 하위 DOM
+// 페이지 셸: `codes-index` · `login-history-index` · `user-manage-index` 와 동일 토큰
 .notice-index {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
   padding: $spacing-md;
-  min-height: calc(100vh - #{$header-height});
   width: 100%;
   max-width: none;
-  box-sizing: border-box;
-}
+  min-height: calc(100vh - #{$header-height});
 
-.notice-description {
-  color: $color-text-secondary;
-  font-size: $font-size-base;
-}
-
-.right-grp {
-  gap: $spacing-sm;
-  flex: 1;
-  justify-content: flex-end;
-  min-width: 0;
-
-  .total {
-    font-size: $font-size-base;
+  .notice-description {
     color: $color-text-secondary;
-    white-space: nowrap;
+    font-size: $font-size-base;
+  }
 
-    strong {
-      color: $color-text-primary;
+  .notice-header {
+    flex-shrink: 0;
+    padding: 12px 0;
+    margin-bottom: $spacing-md;
+  }
+
+  .notice-input-grp {
+    min-width: 0;
+  }
+
+  .right-grp {
+    gap: $spacing-sm;
+    flex: 1;
+    justify-content: flex-end;
+    min-width: 0;
+
+    .total {
+      font-size: $font-size-base;
+      color: $color-text-secondary;
+      white-space: nowrap;
+
+      strong {
+        color: $color-text-primary;
+      }
     }
   }
-}
 
-.notice-header {
-  padding: 12px 0;
-}
-
-.notice-input-grp {
-  min-width: 0;
-}
-
-.notice-table-wrap {
-  width: 100%;
-  background: #fff;
-  border: 1px solid $color-border;
-  overflow: hidden;
-}
-
-.notice-pagination-wrap {
-  margin-top: $spacing-md;
-}
-
-.notice-title-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: $spacing-xs;
-  max-width: 100%;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: $color-text-primary;
-  text-align: left;
-  cursor: pointer;
-
-  .notice-title-text {
-    text-decoration: underline;
-    text-underline-offset: 2px;
+  .notice-list-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 auto;
+    border: 1px solid $color-border;
+    border-radius: $border-radius-base;
+    background: #fff;
+    overflow: hidden;
   }
-}
 
-.notice-error {
-  @include flex-center;
-  flex-direction: column;
-  padding: $spacing-2xl;
-  gap: $spacing-md;
-  min-height: 240px;
-
-  &__message {
-    font-size: $font-size-sm;
-    color: $color-error;
+  .notice-content {
+    flex: 0 0 auto;
+    min-width: 0;
   }
-}
 
-.notice-option-box {
-  margin-top: $spacing-sm;
-  padding: $spacing-sm;
-  border: 1px solid $color-border;
-  border-radius: $border-radius-base;
-  background: $color-background;
-}
+  // UiTable md: thead 42px + data 15행×42px — 페이지네이션 세로 위치 고정
+  .notice-table-wrap {
+    width: 100%;
+    min-height: calc(42px + 15 * 42px);
+    overflow: hidden;
+  }
 
-.notice-option-group {
-  flex-wrap: wrap;
-  gap: $spacing-md;
+  .notice-pagination-wrap {
+    flex-shrink: 0;
+    padding: 0 $spacing-md $spacing-md;
+  }
+
+  .notice-pagination {
+    padding: $spacing-md 0 0;
+  }
+
+  .notice-order-pin {
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  .notice-title-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-xs;
+    max-width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: $color-text-primary;
+    text-align: left;
+    cursor: pointer;
+
+    .notice-title-text {
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    &.is-pinned-notice-title {
+      font-weight: $font-weight-bold;
+    }
+  }
+
+  .notice-error {
+    @include flex-center;
+    flex-direction: column;
+    padding: $spacing-2xl;
+    gap: $spacing-md;
+    min-height: 240px;
+
+    &__message {
+      font-size: $font-size-sm;
+      color: $color-error;
+    }
+  }
+
+  .notice-option-box {
+    margin-top: $spacing-sm;
+    padding: $spacing-sm;
+    border: 1px solid $color-border;
+    border-radius: $border-radius-base;
+    background: $color-background;
+  }
 
   .notice-option-item {
     color: $color-text-primary;
@@ -100,64 +130,63 @@
     user-select: none;
     white-space: nowrap;
   }
-}
 
-.notice-detail-panel {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-md;
+  .notice-detail-panel {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
 
-  .notice-detail-header {
-    padding-bottom: $spacing-sm;
-    border-bottom: 1px solid $color-border-light;
-  }
+    .notice-detail-header {
+      padding-bottom: $spacing-sm;
+      border-bottom: 1px solid $color-border-light;
+    }
 
-  .notice-detail-meta {
-    gap: $spacing-xs;
-    margin-top: $spacing-xs;
-    color: $color-text-secondary;
-    font-size: $font-size-base;
-  }
+    .notice-detail-meta {
+      gap: $spacing-xs;
+      margin-top: $spacing-xs;
+      color: $color-text-secondary;
+      font-size: $font-size-base;
+    }
 
-  .notice-detail-divider {
-    color: $color-text-disabled;
-    line-height: 1;
-  }
+    .notice-detail-divider {
+      color: $color-text-disabled;
+      line-height: 1;
+    }
 
-  .notice-detail-flag-group {
-    flex-wrap: wrap;
-    gap: $spacing-xs;
-  }
+    .notice-detail-flag-group {
+      flex-wrap: wrap;
+      gap: $spacing-xs;
+    }
 
-  .notice-detail-body {
-    min-width: 0;
-  }
+    .notice-detail-body {
+      min-width: 0;
+    }
 
-  .notice-content-box {
-    box-sizing: border-box;
-    min-width: 0;
-    max-width: 100%;
-    min-height: 180px;
-    padding: $spacing-sm;
-    border: 1px solid $color-border;
-    border-radius: $border-radius-base;
-    background: $color-background;
-    color: $color-text-primary;
-    font-size: $font-size-lg;
-    line-height: $line-height-base;
-    white-space: pre-wrap;
-    word-break: break-word;
-    overflow-wrap: anywhere;
-    overflow-y: auto;
-  }
-}
-
-.notice-detail-modal {
-  .modal-side-header {
-    .modal-side-title {
-      white-space: normal;
+    .notice-content-box {
+      min-width: 0;
+      max-width: 100%;
+      min-height: 180px;
+      padding: $spacing-sm;
+      border: 1px solid $color-border;
+      border-radius: $border-radius-base;
+      background: $color-background;
+      color: $color-text-primary;
+      font-size: $font-size-lg;
+      line-height: $line-height-base;
+      white-space: pre-wrap;
       word-break: break-word;
       overflow-wrap: anywhere;
+      overflow-y: auto;
+    }
+  }
+
+  .notice-detail-modal {
+    .modal-side-header {
+      .modal-side-title {
+        white-space: normal;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+      }
     }
   }
 }

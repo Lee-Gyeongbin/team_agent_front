@@ -225,10 +225,6 @@ export const useNoticeStore = () => {
     }
   }
 
-  const closeNoticeDetailPanel = () => {
-    isNoticeDetailPanelOpen.value = false
-  }
-
   // ==============================
   // UI 표시용 헬퍼
   // ==============================
@@ -238,10 +234,9 @@ export const useNoticeStore = () => {
     return `${trimmedTitle.slice(0, 50)}...`
   }
 
-  const getNoticeRowClassName = (row: Record<string, unknown>) => (row.pinYn === 'Y' ? 'is-pinned-notice' : '')
+  const isPinnedNotice = (notice: NoticeRow) => String(notice.pinYn ?? '').toUpperCase() === 'Y'
 
   const getNoticeOrderLabel = (notice: NoticeRow) => {
-    if (notice.pinYn === 'Y') return '[중요]'
     return noticeOrderMap.value.get(notice.noticeId) ?? '-'
   }
 
@@ -271,8 +266,7 @@ export const useNoticeStore = () => {
     onOpenNoticeDetail,
     onEditNotice,
     onDeleteNotice,
-    closeNoticeDetailPanel,
-    getNoticeRowClassName,
+    isPinnedNotice,
     getNoticeOrderLabel,
     getNoticeDateLabel,
     getDisplayNoticeTitle,
