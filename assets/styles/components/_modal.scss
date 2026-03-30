@@ -425,6 +425,11 @@
     padding: $spacing-md 0 0;
   }
 
+  // 응답 영역 — 우상단 복사/SQL 버튼과 텍스트 겹침 방지
+  .content-box.type-response .message-content {
+    padding-right: 70px;
+  }
+
   .chat-vis-stat-row--card {
     margin-bottom: 6px;
   }

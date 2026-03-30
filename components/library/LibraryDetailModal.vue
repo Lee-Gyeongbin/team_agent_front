@@ -24,7 +24,7 @@
           </UiButton>
           <UiBadge variant="category">
             <template #icon-left>
-              <i class="icon icon-dropdown-category size-14"></i>
+              <i class="icon icon-diamond-small size-12"></i>
             </template>
             {{ displayData?.categoryNm }}
           </UiBadge>

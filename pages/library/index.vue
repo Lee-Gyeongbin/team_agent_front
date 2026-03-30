@@ -225,15 +225,17 @@
 
                         <!-- 하단 메타 -->
                         <div class="library-card-meta flex items-center justify-between">
-                          <p class="library-card-date ws-nowrap">{{ formatDateTimeDisplay(card.createDt) }}</p>
+                          <p class="library-card-date">{{ formatDateTimeDisplay(card.createDt) }}</p>
 
-                          <div class="library-card-tags flex items-center">
-                            <span
-                              v-for="tag in (card.tags || '').split(',').filter(Boolean)"
-                              :key="tag"
-                              class="library-card-tag"
-                              >#{{ tag }}</span
-                            >
+                          <div class="library-card-tags">
+                            <div class="library-card-tags-inner">
+                              <span
+                                v-for="tag in (card.tags || '').split(',').filter(Boolean)"
+                                :key="tag"
+                                class="library-card-tag"
+                                >#{{ tag }}</span
+                              >
+                            </div>
                           </div>
                         </div>
                       </div>
