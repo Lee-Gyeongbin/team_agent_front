@@ -361,9 +361,8 @@ const currentPage = computed({
   },
 })
 
-// 초기 로딩
+// 초기 로딩 (카테고리 목록 후 첫 카테고리 기준 문서 목록은 handleSelectCategoryList 내부에서 조회)
 onMounted(async () => {
   await handleSelectCategoryList()
-  await handleSelectDocumentList()
 })
 </script>

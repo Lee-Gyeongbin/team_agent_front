@@ -247,7 +247,10 @@ export const useCategoryStore = () => {
     }))
   }
 
-  const handleSelectCategoryList = async (options?: { forceExpandIds?: string[] }) => {
+  const handleSelectCategoryList = async (options?: {
+    forceExpandIds?: string[]
+    preserveDocumentSelection?: boolean
+  }) => {
     const expandedIds = collectExpandedCategoryIds(categoryList.value)
     for (const id of options?.forceExpandIds ?? []) {
       if (id) expandedIds.add(id)
@@ -255,6 +258,15 @@ export const useCategoryStore = () => {
     const res = await fetchCategoryList()
     const tree = buildCategoryTreeFromFlat(res.dataList ?? [])
     categoryList.value = mergeCategoryExpandedState(tree, expandedIds)
+
+    if (options?.preserveDocumentSelection) {
+      await handleSelectDocumentList()
+      return
+    }
+    const firstCategoryId = categoryList.value[0]?.categoryId ?? ''
+    docSelectedCategoryId.value = firstCategoryId
+    docCurrentPage.value = 1
+    await handleSelectDocumentList()
   }
 
   const handleSaveCategory = async (data: { categoryId?: string; categoryName: string; parnCatId?: string | null }) => {
@@ -263,7 +275,7 @@ export const useCategoryStore = () => {
       if (res.successYn) {
         openToast({ message: '카테고리가 저장되었습니다.', type: 'success' })
         const forceExpandIds = data.parnCatId ? [data.parnCatId] : []
-        await handleSelectCategoryList({ forceExpandIds })
+        await handleSelectCategoryList({ forceExpandIds, preserveDocumentSelection: true })
         return true
       }
       openToast({ message: '카테고리 저장에 실패했습니다.', type: 'error' })
@@ -282,7 +294,7 @@ export const useCategoryStore = () => {
       const res = await fetchRenameCategory(categoryId, categoryName)
       if (res.successYn) {
         openToast({ message: '카테고리가 수정되었습니다.', type: 'success' })
-        await handleSelectCategoryList()
+        await handleSelectCategoryList({ preserveDocumentSelection: true })
         return true
       }
       openToast({ message: '카테고리 수정에 실패했습니다.', type: 'error' })
@@ -301,7 +313,7 @@ export const useCategoryStore = () => {
       const res = await fetchDeleteCategory(id)
       if (res.successYn) {
         openToast({ message: '카테고리가 삭제되었습니다.', type: 'success' })
-        await handleSelectCategoryList()
+        await handleSelectCategoryList({ preserveDocumentSelection: true })
         return true
       }
       openToast({ message: '카테고리 삭제에 실패했습니다.', type: 'error' })

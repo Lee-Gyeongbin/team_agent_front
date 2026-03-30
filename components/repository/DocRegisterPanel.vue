@@ -85,6 +85,10 @@
           :attached-file-list="form.attachedFileList"
           :is-downloadable="true"
           :max-files="5"
+          accept=".txt,.pptx,.pdf,.docx,.hwp"
+          :max-size="DOC_ATTACH_MAX_BYTES"
+          :allowed-extensions="DOC_ATTACH_ALLOWED_EXT"
+          hint="TXT, PPTX, PDF, DOCX, HWP만 첨부 가능 (파일당 최대 50MB)"
           @remove-attached-file="onRemoveAttachedFile"
         />
       </div>
@@ -158,6 +162,18 @@ const emit = defineEmits<{
 
 const { categoryList } = useCategoryStore()
 const { secLvlOptions, onSaveDocument, docSelectedCategoryId } = useRepositoryStore()
+
+/** 문서 등록 패널 첨부: 허용 확장자·용량 (UiFileUpload·저장 시 동일 기준) */
+const DOC_ATTACH_MAX_BYTES = 50 * 1024 * 1024
+const DOC_ATTACH_ALLOWED_EXT = ['txt', 'pptx', 'pdf', 'docx', 'hwp']
+const DOC_ATTACH_EXT_SET = new Set(DOC_ATTACH_ALLOWED_EXT)
+
+const getFileExtensionLower = (fileName: string): string => {
+  const t = fileName.trim()
+  const lastDot = t.lastIndexOf('.')
+  if (lastDot < 0 || lastDot === t.length - 1) return ''
+  return t.slice(lastDot + 1).toLowerCase()
+}
 const docTitleRef = ref<{ focus?: () => void; $el?: HTMLElement } | null>(null)
 const categoryFieldRef = ref<HTMLElement | null>(null)
 
@@ -276,6 +292,21 @@ const onSave = async () => {
     openToast({ message: '카테고리를 선택해주세요.', type: 'warning' })
     focusField(categoryFieldRef)
     return
+  }
+  // 신규 첨부 파일: 확장자·용량 재검증 (비정상 상태·직접 조작 대비)
+  for (const f of form.value.files) {
+    if (f.size > DOC_ATTACH_MAX_BYTES) {
+      openToast({ message: '파일당 최대 50MB까지 첨부할 수 있습니다.', type: 'warning' })
+      return
+    }
+    const ext = getFileExtensionLower(f.name)
+    if (!ext || !DOC_ATTACH_EXT_SET.has(ext)) {
+      openToast({
+        message: '허용 형식만 첨부할 수 있습니다. (txt, pptx, pdf, docx, hwp)',
+        type: 'warning',
+      })
+      return
+    }
   }
   const payload = {
     ...form.value,

@@ -310,22 +310,39 @@ const handleStartBuildStream = (datasetId: string) => {
       if ((eventName === 'error' || eventData?.status === 'failed') && buildErrMsg) {
         openToast({ message: buildErrMsg, type: 'error' })
       }
-      // 완료 이벤트 처리 (실패 시 status: failed 도 스트림 종료)
+
+      const isBuildFailed = eventName === 'error' || eventData?.status === 'error' || eventData?.status === 'failed'
+
+      // 완료/실패 터미널 이벤트 (실패 시 status: failed 로 스트림 종료되는 경우 포함)
       if (
         eventName === 'done' ||
         eventName === 'error' ||
         eventData?.status === 'error' ||
         eventData?.status === 'failed'
       ) {
-        // 완료 시 100%를 먼저 보여준 뒤 스트림 종료
-        handleStopBuildProgressAnimation(datasetId)
-        buildProgressTargetMap.value[datasetId] = 100
-        buildProgressMap.value[datasetId] = clampProgress(100)
-        // 스트림 종료 및 완료 토스트 표시 후 목록 새로고침
-        handleCloseBuildStream(datasetId)
-        window.setTimeout(() => {
-          void handleSelectAll()
-        }, BUILD_COMPLETE_HOLD_MS)
+        if (isBuildFailed) {
+          // 실패: 진행률 100%로 올리지 않음, 구축 UI·스트림 종료 후 서버 구축 상태 동기화
+          handleStopBuildProgressAnimation(datasetId)
+          handleClearBuildState(datasetId)
+          const ds = datasetList.value.find((item) => item.datasetId === datasetId)
+          if (ds) {
+            ds.datasetBuildStatusCd = '001'
+          }
+          handleCloseBuildStream(datasetId)
+          void (async () => {
+            await fetchToggleActiveDocDataset(datasetId, '', '001')
+            await handleSelectAll()
+          })()
+        } else {
+          // 성공 완료: 100% 표시 후 스트림 종료 및 목록 새로고침
+          handleStopBuildProgressAnimation(datasetId)
+          buildProgressTargetMap.value[datasetId] = 100
+          buildProgressMap.value[datasetId] = clampProgress(100)
+          handleCloseBuildStream(datasetId)
+          window.setTimeout(() => {
+            void handleSelectAll()
+          }, BUILD_COMPLETE_HOLD_MS)
+        }
       }
     })
   })

@@ -120,6 +120,11 @@ interface Props {
   maxSize?: number
   /** 첨부 가능한 최대 파일 개수 (미설정 시 개수 제한 없음) */
   maxFiles?: number
+  /**
+   * 허용 확장자(소문자, 점 없음). 예: ['pdf','docx']
+   * 설정 시 파일 선택·드래그 모두에서 확장자 검사 (accept만으로는 드래그 우회 가능)
+   */
+  allowedExtensions?: string[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -130,6 +135,8 @@ const props = withDefaults(defineProps<Props>(), {
   maxFiles: 1,
   attachedFileList: () => [],
   isDownloadable: false,
+  /** 미설정 시 확장자 제한 없음 */
+  allowedExtensions: undefined,
 })
 
 const emit = defineEmits<{
@@ -154,6 +161,14 @@ const openFilePicker = () => {
   fileInputRef.value?.click()
 }
 
+/** 파일명에서 확장자 추출 (소문자, 점 없음) */
+const getFileExtension = (fileName: string): string => {
+  const trimmed = fileName.trim()
+  const lastDot = trimmed.lastIndexOf('.')
+  if (lastDot < 0 || lastDot === trimmed.length - 1) return ''
+  return trimmed.slice(lastDot + 1).toLowerCase()
+}
+
 const addFiles = async (newFiles: FileList | File[]) => {
   let arr = Array.from(newFiles)
 
@@ -167,6 +182,21 @@ const addFiles = async (newFiles: FileList | File[]) => {
     })
   }
   if (arr.length === 0) return
+
+  // 허용 확장자 (드래그 등으로 accept 우회 방지)
+  const allowed = props.allowedExtensions
+  if (allowed && allowed.length > 0) {
+    const allowSet = new Set(allowed.map((e) => e.toLowerCase().replace(/^\./, '')))
+    const invalidExt = arr.filter((f) => !allowSet.has(getFileExtension(f.name)))
+    arr = arr.filter((f) => allowSet.has(getFileExtension(f.name)))
+    if (invalidExt.length > 0) {
+      openToast({
+        message: `허용 형식만 첨부할 수 있습니다. (${[...allowSet].join(', ')})`,
+        type: 'error',
+      })
+    }
+    if (arr.length === 0) return
+  }
 
   // 이미 등록된 첨부 목록과 파일명이 겹치는 경우
   for (const f of arr) {
