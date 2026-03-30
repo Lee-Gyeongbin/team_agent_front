@@ -504,7 +504,8 @@ const buildChunkOptJson = (data: DocDatasetForm): Record<string, unknown> | unde
     return { header_path_separator: data.chunkOptHeaderPathSeparator || '/' }
   }
   if (data.chunkAlgorithm === CHUNK_ALGO_CODE.paging) {
-    return { min_tokens: data.chunkOptMinTokens || data.minChunkSize }
+    // MIN_CHUNK_SZ — 컬럼 대신 CHUNK_OPT_JSON에만 담아 전송 (VO String → DB JSON)
+    return { min_chunk_sz: data.chunkOptMinTokens || data.minChunkSize }
   }
   return undefined
 }
@@ -513,8 +514,8 @@ const buildChunkOptJson = (data: DocDatasetForm): Record<string, unknown> | unde
 const onSaveCreate = async (data: DocDatasetForm, startBuild: boolean) => {
   const chunkOptObj = buildChunkOptJson(data)
   const chunkOptJson = chunkOptObj !== undefined ? JSON.stringify(chunkOptObj) : undefined
-  const minChunkSize =
-    data.chunkAlgorithm === CHUNK_ALGO_CODE.paging ? data.chunkOptMinTokens || data.minChunkSize : data.minChunkSize
+  // 007(PAGING): 최소 청크는 chunkOptJson.min_chunk_sz 만 사용 — 상위 MIN_CHUNK_SZ 컬럼은 0
+  const minChunkSz = data.chunkAlgorithm === CHUNK_ALGO_CODE.paging ? 0 : data.minChunkSize
   // 저장 요청 데이터 생성
   const payload: DocDatasetSavePayload = {
     datasetId: editingDatasetId.value || undefined,
@@ -524,7 +525,7 @@ const onSaveCreate = async (data: DocDatasetForm, startBuild: boolean) => {
     chunkAlgoCd: data.chunkAlgorithm,
     chunkSize: data.chunkSize,
     chunkOverlap: data.chunkOverlap,
-    minChunkSz: minChunkSize,
+    minChunkSz,
     ...(chunkOptJson !== undefined ? { chunkOptJson } : {}),
     hdrInclCd: data.headerInclusion,
     datasetBuildStatusCd: startBuild ? '002' : '001',
@@ -568,6 +569,8 @@ const mapDetailToForm = (
   const sentenceSeparator = String(chunkOptJson.separator ?? '')
   const paragraphSeparator = String(chunkOptJson.paragraph_separator ?? '')
   const headerPathSeparator = String(chunkOptJson.header_path_separator ?? '')
+  const isPagingAlgo = detail?.chunkAlgoCd === CHUNK_ALGO_CODE.paging
+  const pagingMinFromJson = toNumberOr(chunkOptJson.min_chunk_sz ?? chunkOptJson.min_tokens, detail?.minChunkSz ?? 300)
 
   return {
     name: detail?.dsNm ?? '',
@@ -580,7 +583,7 @@ const mapDetailToForm = (
     chunkAlgorithm: detail?.chunkAlgoCd ?? '',
     chunkSize: detail?.chunkSize ?? 0,
     chunkOverlap: detail?.chunkOverlap ?? 0,
-    minChunkSize: detail?.minChunkSz ?? 0,
+    minChunkSize: isPagingAlgo ? pagingMinFromJson : (detail?.minChunkSz ?? 0),
     chunkOptSeparatorsText: stringifyCommaSeparatedText(chunkOptJson.separators),
     chunkOptSeparator: sentenceSeparator ? encodeChunkEscapedText(sentenceSeparator) : '',
     chunkOptParagraphSeparator: paragraphSeparator ? encodeChunkEscapedText(paragraphSeparator) : '',
@@ -589,7 +592,9 @@ const mapDetailToForm = (
     chunkOptBreakpointPercentileThreshold: toNumberOr(chunkOptJson.breakpoint_percentile_threshold, 95),
     chunkOptHtmlTagsText: stringifyCommaSeparatedText(chunkOptJson.tag),
     chunkOptHeaderPathSeparator: headerPathSeparator || '/',
-    chunkOptMinTokens: toNumberOr(chunkOptJson.min_tokens, detail?.minChunkSz ?? 300),
+    chunkOptMinTokens: isPagingAlgo
+      ? pagingMinFromJson
+      : toNumberOr(chunkOptJson.min_chunk_sz ?? chunkOptJson.min_tokens, 300),
     headerInclusion: detail?.hdrInclCd ?? '',
     useLowercasing: detail?.lowercaseYn === 'Y',
     useWhitespaceNorm: detail?.wspNormYn === 'Y',
