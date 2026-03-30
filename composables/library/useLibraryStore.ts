@@ -42,6 +42,7 @@ export const searchOptions: LibrarySearchOption[] = [
   { label: '직접설정순', value: 'custom' },
   { label: '최신순', value: 'latest' },
   { label: '이름순', value: 'name' },
+  { label: '즐겨찾기순', value: 'pin' },
 ]
 
 /** 카테고리 헤더 드롭다운 메뉴 아이템 */

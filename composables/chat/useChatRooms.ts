@@ -149,7 +149,13 @@ export const useChatRooms = () => {
   const handlePinChatRoom = async (room: ChatRoom) => {
     try {
       const res = await fetchPinChatRoom(room)
-      openToast({ message: '채팅방 고정되었습니다.', type: 'success' })
+      let msg = ''
+      if (room.fixYn === 'Y') {
+        msg = '채팅방 고정이 해제되었습니다.'
+      } else {
+        msg = '채팅방이 고정되었습니다.'
+      }
+      openToast({ message: msg, type: 'success' })
       selectChatRoomList()
     } catch {
       openToast({ message: '채팅방 고정에 실패했습니다.', type: 'error' })
