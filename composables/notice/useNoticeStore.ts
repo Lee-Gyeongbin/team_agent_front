@@ -2,8 +2,14 @@ import type { NoticeDetailResponse, NoticeFormData, NoticeItem, NoticeRow } from
 import { useNoticeApi } from '~/composables/notice/useNoticeApi'
 import { formatDate } from '~/utils/global/dateUtil'
 
-const { fetchSelectNoticeList, fetchSelectNoticeDetail, fetchInsertNotice, fetchUpdateNotice, fetchDeleteNotice } =
-  useNoticeApi()
+const {
+  fetchSelectNoticePinnedList,
+  fetchSelectNoticeList,
+  fetchSelectNoticeDetail,
+  fetchInsertNotice,
+  fetchUpdateNotice,
+  fetchDeleteNotice,
+} = useNoticeApi()
 
 export const useNoticeStore = () => {
   // ==============================
@@ -65,7 +71,13 @@ export const useNoticeStore = () => {
   // ==============================
   // 상태
   // ==============================
-  const noticeList = ref<NoticeItem[]>([])
+  const pinnedNoticeList = ref<NoticeItem[]>([])
+  const normalNoticeList = ref<NoticeItem[]>([])
+
+  /** 고정 + 일반 병합 */
+  const noticeList = computed(() => {
+    return [...pinnedNoticeList.value, ...normalNoticeList.value]
+  })
   const searchKeyword = ref('')
   const isLoading = ref(false)
   const errorMessage = ref('')
@@ -88,6 +100,8 @@ export const useNoticeStore = () => {
       return item.title.toLowerCase().includes(keyword) || item.crtrId.toLowerCase().includes(keyword)
     })
   })
+  const filteredPinnedList = computed(() => filteredList.value.filter((notice) => notice.pinYn === 'Y'))
+  const filteredNormalList = computed(() => filteredList.value.filter((notice) => notice.pinYn !== 'Y'))
 
   const panelActionLabel = computed<'등록' | '수정'>(() => (noticeForm.value.noticeId ? '수정' : '등록'))
 
@@ -104,9 +118,21 @@ export const useNoticeStore = () => {
     return orderMap
   })
 
+  const noticePaginationCount = computed(() => filteredNormalList.value.length)
+  const noticeNormalPageSize = computed(() => {
+    return Math.max(1, pageSize - filteredPinnedList.value.length)
+  })
+  const noticePaginationTotalPages = computed(() =>
+    Math.max(1, Math.ceil(noticePaginationCount.value / noticeNormalPageSize.value)),
+  )
+
   const pagedNoticeList = computed(() => {
-    const startIndex = (currentPage.value - 1) * pageSize
-    return filteredList.value.slice(startIndex, startIndex + pageSize)
+    const pinnedList = filteredPinnedList.value
+    const normalList = filteredNormalList.value
+    const currentPageNumber = currentPage.value
+    const startIndex = (currentPageNumber - 1) * noticeNormalPageSize.value
+    const pagedNormalList = normalList.slice(startIndex, startIndex + noticeNormalPageSize.value)
+    return [...pinnedList, ...pagedNormalList]
   })
 
   // ==============================
@@ -122,14 +148,10 @@ export const useNoticeStore = () => {
     isLoading.value = true
 
     try {
-      const res = await fetchSelectNoticeList()
-      noticeList.value = Array.isArray(res.dataList)
-        ? res.dataList.map((item) => ({
-            ...item,
-            createDt: formatNoticeDateOnly(item.createDt),
-            modifyDt: formatNoticeDateOnly(item.modifyDt),
-          }))
-        : []
+      const [pinnedRes, normalRes] = await Promise.all([fetchSelectNoticePinnedList(), fetchSelectNoticeList()])
+      const pinnedList = Array.isArray(pinnedRes.dataList) ? pinnedRes.dataList.map(mapNoticeDetailToItem) : []
+      pinnedNoticeList.value = pinnedList
+      normalNoticeList.value = Array.isArray(normalRes.dataList) ? normalRes.dataList.map(mapNoticeDetailToItem) : []
     } catch (error) {
       errorMessage.value = '공지사항 조회 중 오류가 발생했습니다.'
       console.error(error)
@@ -248,6 +270,7 @@ export const useNoticeStore = () => {
   return {
     noticeList,
     searchKeyword,
+    filteredList,
     isLoading,
     errorMessage,
     currentPage,
@@ -257,7 +280,9 @@ export const useNoticeStore = () => {
     selectedNotice,
     noticeForm,
     panelActionLabel,
-    filteredList,
+    noticePaginationCount,
+    noticeNormalPageSize,
+    noticePaginationTotalPages,
     pagedNoticeList,
     handleFetchNoticeList,
     onRegisterNotice,

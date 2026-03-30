@@ -39,10 +39,7 @@
       </div>
     </div>
 
-    <div
-      class="notice-list-panel"
-      :class="{ 'is-short-page': isShortNoticePage }"
-    >
+    <div class="notice-list-panel">
       <div class="notice-content">
         <!-- 로딩 -->
         <UiLoading
@@ -104,12 +101,12 @@
         </div>
       </div>
 
-      <div class="notice-pagination-wrap">
+      <div class="notice-pagination-stack">
         <UiPagination
-          v-if="filteredList.length > 0"
+          v-if="filteredList.length > pageSize"
           v-model="currentPage"
-          :total-count="filteredList.length"
-          :page-size="pageSize"
+          :total-count="noticePaginationCount"
+          :page-size="noticeNormalPageSize"
           total-label="개 공지사항"
           class="notice-pagination"
         />
@@ -140,6 +137,7 @@ import { noticeColumns } from '~/types/notice'
 
 const {
   searchKeyword,
+  filteredList,
   isLoading,
   errorMessage,
   currentPage,
@@ -149,7 +147,9 @@ const {
   selectedNotice,
   noticeForm,
   panelActionLabel,
-  filteredList,
+  noticePaginationCount,
+  noticeNormalPageSize,
+  noticePaginationTotalPages,
   pagedNoticeList,
   handleFetchNoticeList,
   getDisplayNoticeTitle,
@@ -164,14 +164,12 @@ const {
   getNoticeDateLabel,
 } = useNoticeStore()
 
-const isShortNoticePage = computed(() => pagedNoticeList.value.length < pageSize)
-
 watch(searchKeyword, () => {
   currentPage.value = 1
 })
 
 watch(filteredList, () => {
-  const totalPage = Math.max(1, Math.ceil(filteredList.value.length / pageSize))
+  const totalPage = noticePaginationTotalPages.value
   if (currentPage.value > totalPage) {
     currentPage.value = totalPage
   }

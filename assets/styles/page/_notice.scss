@@ -66,9 +66,10 @@
     overflow: hidden;
   }
 
-  .notice-pagination-wrap {
+  .notice-pagination-stack {
     flex-shrink: 0;
     padding: 0 $spacing-md $spacing-md;
+    position: relative;
   }
 
   .notice-pagination {

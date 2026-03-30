@@ -28,6 +28,11 @@ export interface NoticeFormData {
   modifyDt: string
 }
 
+/** 공지 목록 API 공통 응답 */
+export interface NoticeListResponse {
+  dataList: NoticeItem[]
+}
+
 export interface NoticeDetailResponse {
   noticeId?: string
   title?: string
