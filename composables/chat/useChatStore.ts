@@ -264,6 +264,16 @@ export const useChatStore = () => {
     }
   }
 
+  // /chat(index)로 복귀할 때, 이전에 열어봤던 시각화/테이블 상태가 남지 않도록 초기화
+  const handleResetChatPanels = () => {
+    clearBodyChartFullscreen()
+    activePanelType.value = 'none'
+    isPanelFullscreen.value = false
+    activePanelMessageId.value = null
+    pdfRefList.value = []
+    visualizationViewMap.value = {}
+  }
+
   // 검색모드 토글 (라디오 방식 — 하나만 선택 가능)
   const toggleSearchMode = async (mode: SearchModeValue) => {
     if (activeSearchModes.value.includes(mode)) {
@@ -333,6 +343,7 @@ export const useChatStore = () => {
     onViewVisualization,
     handleSelectVisualizationData,
     onPanelClose,
+    handleResetChatPanels,
     isModalOpen,
     modalMessage,
     selectedLogId,

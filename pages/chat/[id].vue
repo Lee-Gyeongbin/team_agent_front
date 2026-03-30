@@ -93,6 +93,7 @@ const {
   onViewSource,
   onViewVisualization,
   onPanelClose,
+  handleResetChatPanels,
   handleSelectKnowledge,
 } = useChatStore()
 const { chatMessage, handleSetChatRoom } = useChatRooms()
@@ -155,6 +156,8 @@ watch(
   async (id) => {
     const roomId = String(id || '').trim()
     if (!roomId) return
+    // 채팅방/로그 id가 바뀌면 이전에 열어둔 시각화/테이블 상태를 닫는다.
+    handleResetChatPanels()
     handleSetChatRoom(roomId)
     await handleSelectChatLogList(roomId, { preserveLocalWhenEmpty: true })
   },
@@ -162,6 +165,11 @@ watch(
 )
 
 onBeforeRouteLeave((to) => {
+  // /chat(index)로 복귀할 때는 패널 상태/테이블 데이터가 남지 않게 초기화
+  if (String(to.path) === '/chat') {
+    handleResetChatPanels()
+  }
+
   if (!String(to.path).startsWith('/chat')) {
     stopChatSocket()
   }
