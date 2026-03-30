@@ -11,7 +11,7 @@ import type {
   UrlItem,
 } from '~/types/repository'
 import type { TableColumn } from '~/types/table'
-const { handleViewFileUrl, handleUploadFile, onDownloadFile, handleDeleteNcpFile, fileError } = useFileStore()
+const { handleUploadFile, onDownloadFile, handleDeleteNcpFile, fileError } = useFileStore()
 const {
   fetchSelectDocExistCnt,
   fetchSelectDocumentExistCnt,
@@ -370,6 +370,29 @@ const handleToggleUrlStatus = async (id: string, active: boolean) => {
   await handleSelectUrlList()
 }
 
+/** 문서 미리보기 모달 (FilePreviewModal) — PDF.js 뷰어 */
+const isFilePreviewOpen = ref(false)
+const filePreviewDocId = ref('')
+const filePreviewDocFileId = ref('')
+const filePreviewTitle = ref('')
+const filePreviewDocFileOptions = ref<{ label: string; value: string }[]>([])
+
+/** 미리보기 셀렉트 라벨 — 상세 fileList 우선, 없으면 목록 행 fileName(단일)·attachedFileList */
+const buildFilePreviewOptions = (fileIds: string[], row: Document, fileList: FileItem[]) => {
+  const nameById = new Map<string, string>()
+  for (const f of fileList) {
+    const id = String(f.docFileId ?? '').trim()
+    if (id) nameById.set(id, String(f.fileName ?? '').trim())
+  }
+  return fileIds.map((id, idx) => {
+    const fromDetail = nameById.get(id)
+    const fromAttached = row.attachedFileList?.find((f) => f.docFileId === id)?.fileName?.trim()
+    const fromListRow = fileIds.length === 1 && idx === 0 ? String(row.fileName ?? '').trim() : ''
+    const label = fromDetail || fromAttached || fromListRow || `파일 ${idx + 1}`
+    return { label, value: id }
+  })
+}
+
 const handleFileView = async (row: Document) => {
   const docId = row.docId
   const fileIds = resolveAllDocFileIds(row)
@@ -377,29 +400,28 @@ const handleFileView = async (row: Document) => {
     openToast({ message: '미리보기할 파일이 없습니다.', type: 'warning' })
     return
   }
-  let opened = 0
-  let missingUrlCnt = 0
-  for (let i = 0; i < fileIds.length; i++) {
-    const url = await handleViewFileUrl(docId, fileIds[i])
-    if (!url) {
-      missingUrlCnt += 1
-      continue
-    }
-    window.open(url, '_blank', 'noopener,noreferrer')
-    opened += 1
-    // 연속 window.open — 사용자 제스처가 끊겨 2번째 탭부터 팝업 차단될 수 있음
-    if (i < fileIds.length - 1) {
-      await new Promise((r) => setTimeout(r, 250))
-    }
+
+  let fileList: FileItem[] = []
+  try {
+    const res = await fetchSelectDocRepositoryDetail(docId)
+    fileList = res.fileList ?? []
+  } catch {
+    // 상세 조회 실패 시 목록 행 메타만으로 라벨 구성
   }
-  if (opened === 0) {
-    openToast({ message: fileError.value || '미리보기 URL을 가져오지 못했습니다.', type: 'error' })
-  } else if (missingUrlCnt > 0) {
-    openToast({
-      message: `첨부 ${fileIds.length}개 중 ${missingUrlCnt}개는 미리보기 URL을 받지 못했습니다.`,
-      type: 'warning',
-    })
-  }
+
+  filePreviewDocId.value = docId
+  filePreviewDocFileId.value = fileIds[0]
+  filePreviewTitle.value = row.docTitle?.trim() || '파일 미리보기'
+  filePreviewDocFileOptions.value = buildFilePreviewOptions(fileIds, row, fileList)
+  isFilePreviewOpen.value = true
+}
+
+/** 모달 @close 시 상태 정리 (닫힘은 v-model:is-open으로 반영됨) */
+const onCloseFilePreview = () => {
+  filePreviewDocFileOptions.value = []
+  filePreviewDocId.value = ''
+  filePreviewDocFileId.value = ''
+  filePreviewTitle.value = ''
 }
 
 const onSearch = () => {
@@ -626,6 +648,12 @@ export const useRepositoryStore = () => {
     handleDeleteUrl,
     handleToggleUrlStatus,
     handleFileView,
+    isFilePreviewOpen,
+    filePreviewDocId,
+    filePreviewDocFileId,
+    filePreviewTitle,
+    filePreviewDocFileOptions,
+    onCloseFilePreview,
     onSearch,
     onRegisterDocument,
     onDocumentTableRowClick,

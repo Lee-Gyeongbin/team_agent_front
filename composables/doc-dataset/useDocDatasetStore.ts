@@ -152,6 +152,10 @@ interface DatasetBuildEventData {
   status?: string
   progress?: number
   message?: string
+  /** 파이프라인 실패 시 상세 메시지 (SSE error 이벤트 등) */
+  error?: string
+  jobId?: string
+  pipeline?: string
 }
 
 const clampProgress = (progress: number) => Math.min(100, Math.max(0, progress))
@@ -203,6 +207,14 @@ const parseBuildEventData = (rawData: string): DatasetBuildEventData | null => {
   } catch {
     return null
   }
+}
+
+/** SSE 구축 이벤트에서 사용자에게 보여줄 에러 문구 (error 우선, 없으면 message) */
+const getBuildStreamErrorMessage = (eventData: DatasetBuildEventData | null): string | undefined => {
+  if (!eventData) return undefined
+  const fromError = typeof eventData.error === 'string' ? eventData.error.trim() : ''
+  const fromMessage = typeof eventData.message === 'string' ? eventData.message.trim() : ''
+  return fromError || fromMessage || undefined
 }
 
 // 데이터셋 구축 진행 스트림 종료
@@ -293,12 +305,18 @@ const handleStartBuildStream = (datasetId: string) => {
       // 진행 상태 업데이트
       handleUpdateBuildProgress(datasetId, messageEvent.data)
 
-      // 에러 이벤트 처리
-      if (eventName === 'error' && eventData?.message) {
-        openToast({ message: eventData.message, type: 'error' })
+      // 에러 이벤트 처리 — data.error 또는 data.message
+      const buildErrMsg = getBuildStreamErrorMessage(eventData)
+      if ((eventName === 'error' || eventData?.status === 'failed') && buildErrMsg) {
+        openToast({ message: buildErrMsg, type: 'error' })
       }
-      // 완료 이벤트 처리
-      if (eventName === 'done' || eventName === 'error' || eventData?.status === 'error') {
+      // 완료 이벤트 처리 (실패 시 status: failed 도 스트림 종료)
+      if (
+        eventName === 'done' ||
+        eventName === 'error' ||
+        eventData?.status === 'error' ||
+        eventData?.status === 'failed'
+      ) {
         // 완료 시 100%를 먼저 보여준 뒤 스트림 종료
         handleStopBuildProgressAnimation(datasetId)
         buildProgressTargetMap.value[datasetId] = 100

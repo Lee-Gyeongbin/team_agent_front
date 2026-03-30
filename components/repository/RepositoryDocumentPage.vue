@@ -276,11 +276,21 @@
       :initial-data="docRegisterInitialData"
       @close="onCloseDocRegister"
     />
+
+    <FilePreviewModal
+      v-model:is-open="isFilePreviewOpen"
+      v-model:doc-file-id="filePreviewDocFileId"
+      :doc-id="filePreviewDocId"
+      :title="filePreviewTitle"
+      :doc-file-options="filePreviewDocFileOptions"
+      @close="onCloseFilePreview"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import type { Document } from '~/types/repository'
+import FilePreviewModal from '~/components/file/FilePreviewModal.vue'
 import CategorySelectModal from '~/components/repository/CategorySelectModal.vue'
 import DocRegisterPanel from '~/components/repository/DocRegisterPanel.vue'
 import { useRepositoryStore } from '~/composables/repository/useRepositoryStore'
@@ -314,6 +324,12 @@ const {
   onCloseDocRegister,
   onRowActionSelect,
   statusFilterOptions,
+  isFilePreviewOpen,
+  filePreviewDocId,
+  filePreviewDocFileId,
+  filePreviewTitle,
+  filePreviewDocFileOptions,
+  onCloseFilePreview,
 } = useRepositoryStore()
 const {
   filteredCategoryList,
