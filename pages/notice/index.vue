@@ -133,6 +133,7 @@
       @close="onCloseNoticeForm"
     />
     <NoticeDetailPanel
+      v-if="selectedNotice"
       :is-open="isNoticeDetailPanelOpen"
       :notice="selectedNotice"
       :notice-title="`[${getNoticeTypeLabel(selectedNotice as NoticeRow)}] ${(selectedNotice as NoticeRow).title}`"
