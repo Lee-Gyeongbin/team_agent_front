@@ -69,7 +69,7 @@ const getDefaultForm = (): DocDatasetForm => ({
   useUrl: true,
   selectedUrlIds: [],
   chunkAlgorithm: '',
-  chunkSize: 128000,
+  chunkSize: 0,
   chunkOverlap: 0,
   minChunkSize: 0,
   headerInclusion: '',
