@@ -584,8 +584,7 @@ const onBatchDownload = async () => {
   for (let i = 0; i < ids.length; i++) {
     const docId = ids[i]
     const row = documentList.value.find((d) => d.docId === docId)
-    const docFileId = row ? resolvePrimaryDocFileId(row) : ''
-    await onDownloadFile(docId, docFileId)
+    await onDownloadFile(docId)
     if (i < ids.length - 1) {
       await new Promise((r) => setTimeout(r, 200))
     }
@@ -636,8 +635,7 @@ const onRowActionSelect = async (value: string, row: Document) => {
     await handleFileView(row)
   } else if (value === 'download') {
     const docId = row.docId ?? ''
-    const docFileId = resolvePrimaryDocFileId(row)
-    await onDownloadFile(docId, docFileId)
+    await onDownloadFile(docId)
   }
 }
 

@@ -55,7 +55,7 @@
           >
             <label class="com-setting-label">청크 크기 (토큰)</label>
             <UiInput
-              :model-value="String(modelValue.chunkSize)"
+              :model-value="modelValue.chunkSize === null ? '' : String(modelValue.chunkSize)"
               size="sm"
               :disabled="isChunkSizeDisabled"
               @update:model-value="onUpdate('chunkSize', Number($event))"
@@ -71,7 +71,7 @@
           >
             <label class="com-setting-label">오버랩 (토큰)</label>
             <UiInput
-              :model-value="String(modelValue.chunkOverlap)"
+              :model-value="modelValue.chunkOverlap === null ? '' : String(modelValue.chunkOverlap)"
               size="sm"
               :disabled="isChunkOverlapDisabled"
               @update:model-value="onUpdate('chunkOverlap', Number($event))"
@@ -83,7 +83,7 @@
           >
             <label class="com-setting-label">최소 청크 크기</label>
             <UiInput
-              :model-value="String(modelValue.minChunkSize)"
+              :model-value="modelValue.minChunkSize === null ? '' : String(modelValue.minChunkSize)"
               size="sm"
               :disabled="isMinChunkSizeDisabled"
               @update:model-value="onUpdate('minChunkSize', Number($event))"
@@ -107,7 +107,7 @@
           >
             <label class="com-setting-label">분리자 목록</label>
             <UiInput
-              :model-value="modelValue.chunkOptSeparatorsText"
+              :model-value="modelValue.chunkOptSeparatorsText ?? ''"
               placeholder="\n\n,\n, ,"
               size="sm"
               @update:model-value="onUpdate('chunkOptSeparatorsText', $event)"
@@ -120,7 +120,7 @@
           >
             <label class="com-setting-label">문장 구분 함수</label>
             <UiInput
-              :model-value="modelValue.chunkOptSentenceSep"
+              :model-value="modelValue.chunkOptSentenceSep ?? ''"
               placeholder="nltk"
               size="sm"
               @update:model-value="onUpdate('chunkOptSentenceSep', $event)"
@@ -133,7 +133,7 @@
           >
             <label class="com-setting-label">문자 구분자</label>
             <UiInput
-              :model-value="modelValue.chunkOptSeparator"
+              :model-value="modelValue.chunkOptSeparator ?? ''"
               placeholder=" "
               size="sm"
               @update:model-value="onUpdate('chunkOptSeparator', $event)"
@@ -146,7 +146,7 @@
           >
             <label class="com-setting-label">문단 구분자</label>
             <UiInput
-              :model-value="modelValue.chunkOptParagraphSeparator"
+              :model-value="modelValue.chunkOptParagraphSeparator ?? ''"
               placeholder="\n\n\n"
               size="sm"
               @update:model-value="onUpdate('chunkOptParagraphSeparator', $event)"
@@ -159,7 +159,7 @@
           >
             <label class="com-setting-label">버퍼 크기</label>
             <UiInput
-              :model-value="String(modelValue.chunkOptBufferSize)"
+              :model-value="modelValue.chunkOptBufferSize === null ? '' : String(modelValue.chunkOptBufferSize)"
               size="sm"
               number-only
               @update:model-value="onUpdate('chunkOptBufferSize', Number($event))"
@@ -172,7 +172,11 @@
           >
             <label class="com-setting-label">의미 분할 임계값</label>
             <UiInput
-              :model-value="String(modelValue.chunkOptBreakpointPercentileThreshold)"
+              :model-value="
+                modelValue.chunkOptBreakpointPercentileThreshold === null
+                  ? ''
+                  : String(modelValue.chunkOptBreakpointPercentileThreshold)
+              "
               size="sm"
               number-only
               @update:model-value="onUpdate('chunkOptBreakpointPercentileThreshold', Number($event))"
@@ -185,7 +189,7 @@
           >
             <label class="com-setting-label">분리 태그</label>
             <UiInput
-              :model-value="modelValue.chunkOptHtmlTagsText"
+              :model-value="modelValue.chunkOptHtmlTagsText ?? ''"
               placeholder="p,h1,h2,h3,h4,h5,h6,li,b,i,u,section"
               size="sm"
               @update:model-value="onUpdate('chunkOptHtmlTagsText', $event)"
@@ -198,7 +202,7 @@
           >
             <label class="com-setting-label">헤더 경로 구분자</label>
             <UiInput
-              :model-value="modelValue.chunkOptHeaderPathSeparator"
+              :model-value="modelValue.chunkOptHeaderPathSeparator ?? ''"
               placeholder="/"
               size="sm"
               @update:model-value="onUpdate('chunkOptHeaderPathSeparator', $event)"
@@ -211,7 +215,7 @@
           >
             <label class="com-setting-label">페이지 최소 토큰 수</label>
             <UiInput
-              :model-value="String(modelValue.chunkOptMinTokens)"
+              :model-value="modelValue.chunkOptMinTokens === null ? '' : String(modelValue.chunkOptMinTokens)"
               size="sm"
               number-only
               @update:model-value="onUpdate('chunkOptMinTokens', Number($event))"
@@ -368,7 +372,22 @@ const onUpdate = (key: keyof DocDatasetForm, value: string | number | boolean) =
 
 const onChunkAlgorithmChange = (value: string | number) => {
   const algoCode = String(value)
-  const patch: Partial<DocDatasetForm> = { chunkAlgorithm: algoCode }
+  // 알고리즘별로 비활성화/숨김되는 필드는 값이 남아있지 않도록 `null`로 초기화합니다.
+  const patch: Partial<DocDatasetForm> = {
+    chunkAlgorithm: algoCode,
+    chunkSize: null,
+    chunkOverlap: null,
+    minChunkSize: null,
+    chunkOptSeparatorsText: null,
+    chunkOptSeparator: null,
+    chunkOptParagraphSeparator: null,
+    chunkOptSentenceSep: null,
+    chunkOptBufferSize: null,
+    chunkOptBreakpointPercentileThreshold: null,
+    chunkOptHtmlTagsText: null,
+    chunkOptHeaderPathSeparator: null,
+    chunkOptMinTokens: null,
+  }
 
   if (algoCode === CHUNK_ALGO_CODE.recursive) {
     patch.chunkSize = 4000

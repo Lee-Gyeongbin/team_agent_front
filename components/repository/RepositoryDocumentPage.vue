@@ -201,12 +201,12 @@
             </template>
             <template #cell-docTitle="{ row }">
               <div class="cell-document flex items-center">
-                <span
+                <!-- <span
                   class="doc-icon"
                   :class="getDocIconClass(row.fileType)"
                 >
                   <i :class="['icon', getDocIconName(row.fileType), 'size-20']" />
-                </span>
+                </span> -->
                 <span class="doc-name">{{ row.docTitle }}</span>
               </div>
             </template>

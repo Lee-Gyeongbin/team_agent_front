@@ -507,11 +507,45 @@ const CHUNK_ALGO_CODE = {
   paging: '007',
 } as const
 
-const decodeChunkEscapedText = (value: string) => value.replace(/\\n/g, '\n').replace(/\\t/g, '\t')
+// 청킹 알고리즘별로 비활성/숨김되는 항목 값은 `null`로 정리
+// (생성/수정 모드 진입 시에도 이전 값이 남아 혼동되는 것을 방지)
+const normalizeChunkAlgorithmForm = (form: DocDatasetForm): DocDatasetForm => {
+  const chunkSizeEnabledCodes: string[] = [CHUNK_ALGO_CODE.recursive, CHUNK_ALGO_CODE.fixed, CHUNK_ALGO_CODE.sentence]
+  const algo = form.chunkAlgorithm
+  const hasChunkSize = chunkSizeEnabledCodes.includes(algo)
+  const isPagingAlgo = algo === CHUNK_ALGO_CODE.paging
+  const isRecursiveAlgo = algo === CHUNK_ALGO_CODE.recursive
+  const isSemanticAlgo = algo === CHUNK_ALGO_CODE.semantic
+  const isSentenceAlgo = algo === CHUNK_ALGO_CODE.sentence
+  const isHtmlAlgo = algo === CHUNK_ALGO_CODE.html
+  const isMarkdownAlgo = algo === CHUNK_ALGO_CODE.markdown
+
+  return {
+    ...form,
+    chunkSize: hasChunkSize ? form.chunkSize : null,
+    chunkOverlap: hasChunkSize ? form.chunkOverlap : null,
+    minChunkSize: isPagingAlgo ? form.minChunkSize : null,
+    chunkOptSeparatorsText: isRecursiveAlgo ? form.chunkOptSeparatorsText : null,
+    chunkOptSentenceSep: isSemanticAlgo ? form.chunkOptSentenceSep : null,
+    chunkOptBufferSize: isSemanticAlgo ? form.chunkOptBufferSize : null,
+    chunkOptBreakpointPercentileThreshold: isSemanticAlgo ? form.chunkOptBreakpointPercentileThreshold : null,
+    chunkOptSeparator: isSentenceAlgo ? form.chunkOptSeparator : null,
+    chunkOptParagraphSeparator: isSentenceAlgo ? form.chunkOptParagraphSeparator : null,
+    chunkOptHtmlTagsText: isHtmlAlgo ? form.chunkOptHtmlTagsText : null,
+    chunkOptHeaderPathSeparator: isMarkdownAlgo ? form.chunkOptHeaderPathSeparator : null,
+    chunkOptMinTokens: isPagingAlgo ? form.chunkOptMinTokens : null,
+  }
+}
+
+const decodeChunkEscapedText = (value: string | null | undefined) => {
+  return String(value ?? '')
+    .replace(/\\n/g, '\n')
+    .replace(/\\t/g, '\t')
+}
 const encodeChunkEscapedText = (value: string) => value.replace(/\n/g, '\\n').replace(/\t/g, '\\t')
 
-const parseCommaSeparatedText = (value: string) =>
-  value
+const parseCommaSeparatedText = (value: string | null | undefined) =>
+  String(value ?? '')
     .split(',')
     .map((item) => decodeChunkEscapedText(item.trim()))
     .filter((item) => item !== '')
@@ -551,9 +585,9 @@ const buildChunkOptJson = (data: DocDatasetForm): Record<string, unknown> | unde
   }
   if (data.chunkAlgorithm === CHUNK_ALGO_CODE.semantic) {
     return {
-      sentence_sep: data.chunkOptSentenceSep.trim() || 'nltk',
-      buffer_size: data.chunkOptBufferSize,
-      breakpoint_percentile_threshold: data.chunkOptBreakpointPercentileThreshold,
+      sentence_sep: (data.chunkOptSentenceSep ?? '').trim() || 'nltk',
+      buffer_size: data.chunkOptBufferSize ?? 1,
+      breakpoint_percentile_threshold: data.chunkOptBreakpointPercentileThreshold ?? 95,
     }
   }
   if (data.chunkAlgorithm === CHUNK_ALGO_CODE.sentence) {
@@ -566,11 +600,11 @@ const buildChunkOptJson = (data: DocDatasetForm): Record<string, unknown> | unde
     return { tag: parseCommaSeparatedText(data.chunkOptHtmlTagsText) }
   }
   if (data.chunkAlgorithm === CHUNK_ALGO_CODE.markdown) {
-    return { header_path_separator: data.chunkOptHeaderPathSeparator || '/' }
+    return { header_path_separator: data.chunkOptHeaderPathSeparator ?? '/' }
   }
   if (data.chunkAlgorithm === CHUNK_ALGO_CODE.paging) {
     // MIN_CHUNK_SZ — 컬럼 대신 CHUNK_OPT_JSON에만 담아 전송 (VO String → DB JSON)
-    return { min_chunk_sz: data.chunkOptMinTokens || data.minChunkSize }
+    return { min_chunk_sz: data.chunkOptMinTokens ?? data.minChunkSize ?? 0 }
   }
   return undefined
 }
@@ -580,7 +614,7 @@ const onSaveCreate = async (data: DocDatasetForm, startBuild: boolean) => {
   const chunkOptObj = buildChunkOptJson(data)
   const chunkOptJson = chunkOptObj !== undefined ? JSON.stringify(chunkOptObj) : undefined
   // 007(PAGING): 최소 청크는 chunkOptJson.min_chunk_sz 만 사용 — 상위 MIN_CHUNK_SZ 컬럼은 0
-  const minChunkSz = data.chunkAlgorithm === CHUNK_ALGO_CODE.paging ? 0 : data.minChunkSize
+  const minChunkSz = data.chunkAlgorithm === CHUNK_ALGO_CODE.paging ? 0 : (data.minChunkSize ?? 0)
   // 저장 요청 데이터 생성
   const payload: DocDatasetSavePayload = {
     datasetId: editingDatasetId.value || undefined,
@@ -588,8 +622,8 @@ const onSaveCreate = async (data: DocDatasetForm, startBuild: boolean) => {
     description: data.description,
     version: data.version,
     chunkAlgoCd: data.chunkAlgorithm,
-    chunkSize: data.chunkSize,
-    chunkOverlap: data.chunkOverlap,
+    chunkSize: data.chunkSize ?? 0,
+    chunkOverlap: data.chunkOverlap ?? 0,
     minChunkSz,
     ...(chunkOptJson !== undefined ? { chunkOptJson } : {}),
     hdrInclCd: data.headerInclusion,
@@ -637,7 +671,7 @@ const mapDetailToForm = (
   const isPagingAlgo = detail?.chunkAlgoCd === CHUNK_ALGO_CODE.paging
   const pagingMinFromJson = toNumberOr(chunkOptJson.min_chunk_sz ?? chunkOptJson.min_tokens, detail?.minChunkSz ?? 300)
 
-  return {
+  return normalizeChunkAlgorithmForm({
     name: detail?.dsNm ?? '',
     description: detail?.description ?? '',
     version: detail?.version ?? '',
@@ -674,7 +708,7 @@ const mapDetailToForm = (
     embeddingNormalization: detail?.embedNormCd ?? '',
     poolingStrategy: detail?.poolStratCd ?? '',
     dimensionReduction: detail?.dimReducCd ?? '',
-  }
+  })
 }
 
 /** 데이터셋 수정 */

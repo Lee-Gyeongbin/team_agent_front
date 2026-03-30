@@ -156,18 +156,18 @@ export interface DocDatasetForm {
   selectedUrlIds: string[]
   // 청킹 옵션
   chunkAlgorithm: string
-  chunkSize: number
-  chunkOverlap: number
-  minChunkSize: number
-  chunkOptSeparatorsText: string
-  chunkOptSeparator: string
-  chunkOptParagraphSeparator: string
-  chunkOptSentenceSep: string
-  chunkOptBufferSize: number
-  chunkOptBreakpointPercentileThreshold: number
-  chunkOptHtmlTagsText: string
-  chunkOptHeaderPathSeparator: string
-  chunkOptMinTokens: number
+  chunkSize: number | null
+  chunkOverlap: number | null
+  minChunkSize: number | null
+  chunkOptSeparatorsText: string | null
+  chunkOptSeparator: string | null
+  chunkOptParagraphSeparator: string | null
+  chunkOptSentenceSep: string | null
+  chunkOptBufferSize: number | null
+  chunkOptBreakpointPercentileThreshold: number | null
+  chunkOptHtmlTagsText: string | null
+  chunkOptHeaderPathSeparator: string | null
+  chunkOptMinTokens: number | null
   headerInclusion: string
   // 텍스트 전처리 옵션
   useLowercasing: boolean

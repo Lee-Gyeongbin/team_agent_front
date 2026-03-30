@@ -68,16 +68,6 @@
             </button>
           </div>
         </div>
-        <div class="chat-pdf-toolbar-right">
-          <button
-            class="chat-pdf-action-btn"
-            title="인쇄"
-            type="button"
-            @click="onPrint"
-          >
-            <i class="icon-print size-20"></i>
-          </button>
-        </div>
       </div>
 
       <div class="chat-pdf-body">
@@ -232,14 +222,6 @@ const { isLoading, loadError, currentPage, totalPages, scale, pageList, hasData,
     thumbCanvasMap,
   })
 
-const onPrint = () => {
-  if (!currentFilePath.value) return
-  const printWindow = window.open(currentFilePath.value, '_blank')
-  printWindow?.addEventListener('load', () => {
-    printWindow.print()
-  })
-}
-
 const onPageInputChange = async (event: Event) => {
   const target = event.target as HTMLInputElement
   await goToPage(Number(target.value))
@@ -295,9 +277,11 @@ watch(currentPage, async (page) => {
 .file-preview-modal__viewer {
   display: flex;
   flex-direction: column;
-  min-height: min(72vh, 720px);
-  max-height: min(72vh, 720px);
-  margin: -12px -20px -20px;
+  min-height: min(84vh, 900px);
+  max-height: min(84vh, 900px);
+  // 모달 컨텐츠의 padding(20px) + overflow hidden 조합에서
+  // 가로 음수 마진(-20px)이 썸네일(옆 파일 목록) 영역을 잘라 보이게 만들 수 있음
+  margin: -12px 0 -20px;
   overflow: hidden;
   border-radius: 0 0 $border-radius-lg $border-radius-lg;
 }
@@ -307,6 +291,7 @@ watch(currentPage, async (page) => {
   padding: 12px 16px;
   border-bottom: 1px solid #ecf0f3;
   background: #fff;
+  margin-top: 10px;
 }
 
 // UiModal 본문 — PDF 뷰어가 세로로 꽉 차도록
@@ -315,7 +300,7 @@ watch(currentPage, async (page) => {
   flex: 1;
   flex-direction: column;
   align-items: stretch;
-  min-height: min(72vh, 720px);
+  min-height: min(84vh, 900px);
   padding: 0;
   overflow: hidden;
 }
