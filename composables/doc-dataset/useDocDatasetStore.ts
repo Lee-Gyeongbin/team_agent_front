@@ -72,6 +72,15 @@ const getDefaultForm = (): DocDatasetForm => ({
   chunkSize: 0,
   chunkOverlap: 0,
   minChunkSize: 0,
+  chunkOptSeparatorsText: '',
+  chunkOptSeparator: '',
+  chunkOptParagraphSeparator: '',
+  chunkOptSentenceSep: '',
+  chunkOptBufferSize: 1,
+  chunkOptBreakpointPercentileThreshold: 95,
+  chunkOptHtmlTagsText: '',
+  chunkOptHeaderPathSeparator: '/',
+  chunkOptMinTokens: 300,
   headerInclusion: '',
   useLowercasing: true,
   useWhitespaceNorm: false,
@@ -143,6 +152,10 @@ interface DatasetBuildEventData {
   status?: string
   progress?: number
   message?: string
+  /** 파이프라인 실패 시 상세 메시지 (SSE error 이벤트 등) */
+  error?: string
+  jobId?: string
+  pipeline?: string
 }
 
 const clampProgress = (progress: number) => Math.min(100, Math.max(0, progress))
@@ -194,6 +207,14 @@ const parseBuildEventData = (rawData: string): DatasetBuildEventData | null => {
   } catch {
     return null
   }
+}
+
+/** SSE 구축 이벤트에서 사용자에게 보여줄 에러 문구 (error 우선, 없으면 message) */
+const getBuildStreamErrorMessage = (eventData: DatasetBuildEventData | null): string | undefined => {
+  if (!eventData) return undefined
+  const fromError = typeof eventData.error === 'string' ? eventData.error.trim() : ''
+  const fromMessage = typeof eventData.message === 'string' ? eventData.message.trim() : ''
+  return fromError || fromMessage || undefined
 }
 
 // 데이터셋 구축 진행 스트림 종료
@@ -284,21 +305,49 @@ const handleStartBuildStream = (datasetId: string) => {
       // 진행 상태 업데이트
       handleUpdateBuildProgress(datasetId, messageEvent.data)
 
-      // 에러 이벤트 처리
-      if (eventName === 'error' && eventData?.message) {
-        openToast({ message: eventData.message, type: 'error' })
+      // 에러 이벤트 처리 — data.error 또는 data.message
+      const buildErrMsg = getBuildStreamErrorMessage(eventData)
+      if ((eventName === 'error' || eventData?.status === 'failed') && buildErrMsg) {
+        openToast({ message: buildErrMsg, type: 'error' })
       }
-      // 완료 이벤트 처리
-      if (eventName === 'done' || eventName === 'error' || eventData?.status === 'error') {
-        // 완료 시 100%를 먼저 보여준 뒤 스트림 종료
-        handleStopBuildProgressAnimation(datasetId)
-        buildProgressTargetMap.value[datasetId] = 100
-        buildProgressMap.value[datasetId] = clampProgress(100)
-        // 스트림 종료 및 완료 토스트 표시 후 목록 새로고침
-        handleCloseBuildStream(datasetId)
-        window.setTimeout(() => {
-          void handleSelectAll()
-        }, BUILD_COMPLETE_HOLD_MS)
+
+      const isBuildFailed = eventName === 'error' || eventData?.status === 'error' || eventData?.status === 'failed'
+
+      // 완료/실패 터미널 이벤트 (실패 시 status: failed 로 스트림 종료되는 경우 포함)
+      if (
+        eventName === 'done' ||
+        eventName === 'error' ||
+        eventData?.status === 'error' ||
+        eventData?.status === 'failed'
+      ) {
+        if (isBuildFailed) {
+          // 실패: 진행률 100%로 올리지 않음, 구축 UI·스트림 종료 후 서버 구축 상태 동기화
+          handleStopBuildProgressAnimation(datasetId)
+          handleClearBuildState(datasetId)
+          const ds = datasetList.value.find((item) => item.datasetId === datasetId)
+          if (ds) {
+            ds.datasetBuildStatusCd = '001'
+          }
+          handleCloseBuildStream(datasetId)
+          void (async () => {
+            openLoading({ text: '구축 상태를 동기화하는 중...' })
+            try {
+              await fetchToggleActiveDocDataset(datasetId, '', '001')
+            } finally {
+              closeLoading()
+            }
+            await handleSelectAll()
+          })()
+        } else {
+          // 성공 완료: 100% 표시 후 스트림 종료 및 목록 새로고침
+          handleStopBuildProgressAnimation(datasetId)
+          buildProgressTargetMap.value[datasetId] = 100
+          buildProgressMap.value[datasetId] = clampProgress(100)
+          handleCloseBuildStream(datasetId)
+          window.setTimeout(() => {
+            void handleSelectAll()
+          }, BUILD_COMPLETE_HOLD_MS)
+        }
       }
     })
   })
@@ -337,14 +386,24 @@ const onTest = async (id: string) => {
 // ===== 기능 METHODS =====
 /** 목록 조회 */
 const handleSelectDocDatasetList = async () => {
-  const res = await fetchDocDatasetList()
-  datasetList.value = res.dataList
+  openLoading({ text: '데이터셋 정보를 불러오는 중...' })
+  try {
+    const res = await fetchDocDatasetList()
+    datasetList.value = res.dataList
+  } finally {
+    closeLoading()
+  }
 }
 
 /** 요약 조회 */
 const handleSelectDocDatasetSummary = async () => {
-  const res = await fetchDocDatasetSummary()
-  summary.value = res.data
+  openLoading({ text: '데이터셋 정보를 불러오는 중...' })
+  try {
+    const res = await fetchDocDatasetSummary()
+    summary.value = res.data
+  } finally {
+    closeLoading()
+  }
 }
 
 /** 목록 + 요약 동시 조회 */
@@ -354,20 +413,30 @@ const handleSelectAll = async () => {
 
 /** 데이터셋 상세 조회 */
 const handleSelectDocDataset = async (datasetId: string) => {
-  const res = await fetchDocDataset(datasetId)
-  selectedDatasetDetail.value = res.data ?? null
-  return res
+  openLoading({ text: '데이터셋 상세를 불러오는 중...' })
+  try {
+    const res = await fetchDocDataset(datasetId)
+    selectedDatasetDetail.value = res.data ?? null
+    return res
+  } finally {
+    closeLoading()
+  }
 }
 
 /** 데이터소스 목록 조회 */
 const handleSelectDatasetSrcList = async () => {
-  const res = await fetchDatasetSrcList()
-  // 카테고리 목록 세팅
-  selectedDatasetCategoryList.value = res.categoryList ?? []
-  // 문서 목록 세팅
-  selectedDatasetDocList.value = res.docList ?? []
-  // URL 목록 세팅
-  selectedDatasetUrlList.value = res.urlList ?? []
+  openLoading({ text: '데이터소스를 불러오는 중...' })
+  try {
+    const res = await fetchDatasetSrcList()
+    // 카테고리 목록 세팅
+    selectedDatasetCategoryList.value = res.categoryList ?? []
+    // 문서 목록 세팅
+    selectedDatasetDocList.value = res.docList ?? []
+    // URL 목록 세팅
+    selectedDatasetUrlList.value = res.urlList ?? []
+  } finally {
+    closeLoading()
+  }
 }
 
 /** 코드 옵션 목록 조회 */
@@ -410,8 +479,13 @@ const handleSelectCodeOptions = async () => {
 
 /** 프롬프트 목록 조회 */
 const handleSelectPromptList = async () => {
-  const res = await fetchSelectPromptList()
-  promptList.value = res.dataList ?? []
+  openLoading({ text: '프롬프트 목록을 불러오는 중...' })
+  try {
+    const res = await fetchSelectPromptList()
+    promptList.value = res.dataList ?? []
+  } finally {
+    closeLoading()
+  }
 }
 
 /** 코드 옵션 매핑 */
@@ -423,8 +497,124 @@ const mapCodeOptions = (codes: CodeItem[]) => [
   })),
 ]
 
+const CHUNK_ALGO_CODE = {
+  recursive: '001',
+  semantic: '002',
+  fixed: '003',
+  sentence: '004',
+  html: '005',
+  markdown: '006',
+  paging: '007',
+} as const
+
+// 청킹 알고리즘별로 비활성/숨김되는 항목 값은 `null`로 정리
+// (생성/수정 모드 진입 시에도 이전 값이 남아 혼동되는 것을 방지)
+const normalizeChunkAlgorithmForm = (form: DocDatasetForm): DocDatasetForm => {
+  const chunkSizeEnabledCodes: string[] = [CHUNK_ALGO_CODE.recursive, CHUNK_ALGO_CODE.fixed, CHUNK_ALGO_CODE.sentence]
+  const algo = form.chunkAlgorithm
+  const hasChunkSize = chunkSizeEnabledCodes.includes(algo)
+  const isPagingAlgo = algo === CHUNK_ALGO_CODE.paging
+  const isRecursiveAlgo = algo === CHUNK_ALGO_CODE.recursive
+  const isSemanticAlgo = algo === CHUNK_ALGO_CODE.semantic
+  const isSentenceAlgo = algo === CHUNK_ALGO_CODE.sentence
+  const isHtmlAlgo = algo === CHUNK_ALGO_CODE.html
+  const isMarkdownAlgo = algo === CHUNK_ALGO_CODE.markdown
+
+  return {
+    ...form,
+    chunkSize: hasChunkSize ? form.chunkSize : null,
+    chunkOverlap: hasChunkSize ? form.chunkOverlap : null,
+    minChunkSize: isPagingAlgo ? form.minChunkSize : null,
+    chunkOptSeparatorsText: isRecursiveAlgo ? form.chunkOptSeparatorsText : null,
+    chunkOptSentenceSep: isSemanticAlgo ? form.chunkOptSentenceSep : null,
+    chunkOptBufferSize: isSemanticAlgo ? form.chunkOptBufferSize : null,
+    chunkOptBreakpointPercentileThreshold: isSemanticAlgo ? form.chunkOptBreakpointPercentileThreshold : null,
+    chunkOptSeparator: isSentenceAlgo ? form.chunkOptSeparator : null,
+    chunkOptParagraphSeparator: isSentenceAlgo ? form.chunkOptParagraphSeparator : null,
+    chunkOptHtmlTagsText: isHtmlAlgo ? form.chunkOptHtmlTagsText : null,
+    chunkOptHeaderPathSeparator: isMarkdownAlgo ? form.chunkOptHeaderPathSeparator : null,
+    chunkOptMinTokens: isPagingAlgo ? form.chunkOptMinTokens : null,
+  }
+}
+
+const decodeChunkEscapedText = (value: string | null | undefined) => {
+  return String(value ?? '')
+    .replace(/\\n/g, '\n')
+    .replace(/\\t/g, '\t')
+}
+const encodeChunkEscapedText = (value: string) => value.replace(/\n/g, '\\n').replace(/\t/g, '\\t')
+
+const parseCommaSeparatedText = (value: string | null | undefined) =>
+  String(value ?? '')
+    .split(',')
+    .map((item) => decodeChunkEscapedText(item.trim()))
+    .filter((item) => item !== '')
+
+const stringifyCommaSeparatedText = (values: unknown) => {
+  if (!Array.isArray(values)) return ''
+  return values
+    .map((value) => encodeChunkEscapedText(String(value ?? '')))
+    .filter((value) => value !== '')
+    .join(',')
+}
+
+const parseChunkOptJson = (value: unknown): Record<string, unknown> => {
+  if (!value) return {}
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value)
+      return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : {}
+    } catch {
+      return {}
+    }
+  }
+  if (typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>
+  }
+  return {}
+}
+
+const toNumberOr = (value: unknown, fallback: number) => {
+  const num = Number(value)
+  return Number.isFinite(num) ? num : fallback
+}
+
+const buildChunkOptJson = (data: DocDatasetForm): Record<string, unknown> | undefined => {
+  if (data.chunkAlgorithm === CHUNK_ALGO_CODE.recursive) {
+    return { separators: parseCommaSeparatedText(data.chunkOptSeparatorsText) }
+  }
+  if (data.chunkAlgorithm === CHUNK_ALGO_CODE.semantic) {
+    return {
+      sentence_sep: (data.chunkOptSentenceSep ?? '').trim() || 'nltk',
+      buffer_size: data.chunkOptBufferSize ?? 1,
+      breakpoint_percentile_threshold: data.chunkOptBreakpointPercentileThreshold ?? 95,
+    }
+  }
+  if (data.chunkAlgorithm === CHUNK_ALGO_CODE.sentence) {
+    return {
+      separator: decodeChunkEscapedText(data.chunkOptSeparator),
+      paragraph_separator: decodeChunkEscapedText(data.chunkOptParagraphSeparator),
+    }
+  }
+  if (data.chunkAlgorithm === CHUNK_ALGO_CODE.html) {
+    return { tag: parseCommaSeparatedText(data.chunkOptHtmlTagsText) }
+  }
+  if (data.chunkAlgorithm === CHUNK_ALGO_CODE.markdown) {
+    return { header_path_separator: data.chunkOptHeaderPathSeparator ?? '/' }
+  }
+  if (data.chunkAlgorithm === CHUNK_ALGO_CODE.paging) {
+    // MIN_CHUNK_SZ — 컬럼 대신 CHUNK_OPT_JSON에만 담아 전송 (VO String → DB JSON)
+    return { min_chunk_sz: data.chunkOptMinTokens ?? data.minChunkSize ?? 0 }
+  }
+  return undefined
+}
+
 /** 저장 시 데이터셋 생성 */
 const onSaveCreate = async (data: DocDatasetForm, startBuild: boolean) => {
+  const chunkOptObj = buildChunkOptJson(data)
+  const chunkOptJson = chunkOptObj !== undefined ? JSON.stringify(chunkOptObj) : undefined
+  // 007(PAGING): 최소 청크는 chunkOptJson.min_chunk_sz 만 사용 — 상위 MIN_CHUNK_SZ 컬럼은 0
+  const minChunkSz = data.chunkAlgorithm === CHUNK_ALGO_CODE.paging ? 0 : (data.minChunkSize ?? 0)
   // 저장 요청 데이터 생성
   const payload: DocDatasetSavePayload = {
     datasetId: editingDatasetId.value || undefined,
@@ -432,9 +622,10 @@ const onSaveCreate = async (data: DocDatasetForm, startBuild: boolean) => {
     description: data.description,
     version: data.version,
     chunkAlgoCd: data.chunkAlgorithm,
-    chunkSize: data.chunkSize,
-    chunkOverlap: data.chunkOverlap,
-    minChunkSz: data.minChunkSize,
+    chunkSize: data.chunkSize ?? 0,
+    chunkOverlap: data.chunkOverlap ?? 0,
+    minChunkSz,
+    ...(chunkOptJson !== undefined ? { chunkOptJson } : {}),
     hdrInclCd: data.headerInclusion,
     datasetBuildStatusCd: startBuild ? '002' : '001',
     promptId: data.promptId,
@@ -471,33 +662,54 @@ const mapDetailToForm = (
   detail: DocDatasetDetail | null,
   selectedDocIds: string[],
   selectedUrlIds: string[],
-): DocDatasetForm => ({
-  name: detail?.dsNm ?? '',
-  description: detail?.description ?? '',
-  version: detail?.version ?? '',
-  useDocument: detail ? selectedDocIds.length > 0 : true,
-  selectedDocIds,
-  useUrl: detail ? selectedUrlIds.length > 0 : true,
-  selectedUrlIds,
-  chunkAlgorithm: detail?.chunkAlgoCd ?? '',
-  chunkSize: detail?.chunkSize ?? 0,
-  chunkOverlap: detail?.chunkOverlap ?? 0,
-  minChunkSize: detail?.minChunkSz ?? 0,
-  headerInclusion: detail?.hdrInclCd ?? '',
-  useLowercasing: detail?.lowercaseYn === 'Y',
-  useWhitespaceNorm: detail?.wspNormYn === 'Y',
-  useSpecialCharRemoval: detail?.specChrRmYn === 'Y',
-  useSingleCellText: detail?.singleCellText === 'Y',
-  sentenceSplitAlgorithm: detail?.sentSplitAlgoCd ?? '',
-  languageDetection: detail?.langDetectCd ?? '',
-  promptId: '',
-  llmCd: detail?.llmCd ?? '',
-  embeddingModel: detail?.embedModelCd ?? '',
-  vectorDb: detail?.vectorDbCd ?? '',
-  embeddingNormalization: detail?.embedNormCd ?? '',
-  poolingStrategy: detail?.poolStratCd ?? '',
-  dimensionReduction: detail?.dimReducCd ?? '',
-})
+): DocDatasetForm => {
+  const chunkOptJson = parseChunkOptJson(detail?.chunkOptJson)
+  const semanticSentenceSep = String(chunkOptJson.sentence_sep ?? '')
+  const sentenceSeparator = String(chunkOptJson.separator ?? '')
+  const paragraphSeparator = String(chunkOptJson.paragraph_separator ?? '')
+  const headerPathSeparator = String(chunkOptJson.header_path_separator ?? '')
+  const isPagingAlgo = detail?.chunkAlgoCd === CHUNK_ALGO_CODE.paging
+  const pagingMinFromJson = toNumberOr(chunkOptJson.min_chunk_sz ?? chunkOptJson.min_tokens, detail?.minChunkSz ?? 300)
+
+  return normalizeChunkAlgorithmForm({
+    name: detail?.dsNm ?? '',
+    description: detail?.description ?? '',
+    version: detail?.version ?? '',
+    useDocument: detail ? selectedDocIds.length > 0 : true,
+    selectedDocIds,
+    useUrl: detail ? selectedUrlIds.length > 0 : true,
+    selectedUrlIds,
+    chunkAlgorithm: detail?.chunkAlgoCd ?? '',
+    chunkSize: detail?.chunkSize ?? 0,
+    chunkOverlap: detail?.chunkOverlap ?? 0,
+    minChunkSize: isPagingAlgo ? pagingMinFromJson : (detail?.minChunkSz ?? 0),
+    chunkOptSeparatorsText: stringifyCommaSeparatedText(chunkOptJson.separators),
+    chunkOptSeparator: sentenceSeparator ? encodeChunkEscapedText(sentenceSeparator) : '',
+    chunkOptParagraphSeparator: paragraphSeparator ? encodeChunkEscapedText(paragraphSeparator) : '',
+    chunkOptSentenceSep: semanticSentenceSep || 'nltk',
+    chunkOptBufferSize: toNumberOr(chunkOptJson.buffer_size, 1),
+    chunkOptBreakpointPercentileThreshold: toNumberOr(chunkOptJson.breakpoint_percentile_threshold, 95),
+    chunkOptHtmlTagsText: stringifyCommaSeparatedText(chunkOptJson.tag),
+    chunkOptHeaderPathSeparator: headerPathSeparator || '/',
+    chunkOptMinTokens: isPagingAlgo
+      ? pagingMinFromJson
+      : toNumberOr(chunkOptJson.min_chunk_sz ?? chunkOptJson.min_tokens, 300),
+    headerInclusion: detail?.hdrInclCd ?? '',
+    useLowercasing: detail?.lowercaseYn === 'Y',
+    useWhitespaceNorm: detail?.wspNormYn === 'Y',
+    useSpecialCharRemoval: detail?.specChrRmYn === 'Y',
+    useSingleCellText: detail?.singleCellText === 'Y',
+    sentenceSplitAlgorithm: detail?.sentSplitAlgoCd ?? '',
+    languageDetection: detail?.langDetectCd ?? '',
+    promptId: '',
+    llmCd: detail?.llmCd ?? '',
+    embeddingModel: detail?.embedModelCd ?? '',
+    vectorDb: detail?.vectorDbCd ?? '',
+    embeddingNormalization: detail?.embedNormCd ?? '',
+    poolingStrategy: detail?.poolStratCd ?? '',
+    dimensionReduction: detail?.dimReducCd ?? '',
+  })
+}
 
 /** 데이터셋 수정 */
 const onEdit = async (dataset: DocDataset) => {
@@ -547,12 +759,17 @@ const onDeleteHistory = async (id: string) => {
 const onStopBuild = async (id: string) => {
   handleCloseBuildStream(id)
   handleClearBuildState(id)
-  const res = await fetchToggleActiveDocDataset(id, '', '001')
-  const affected = typeof res.data === 'number' ? res.data : 0
-  if (affected > 0) {
-    openToast({ message: '구축 중지되었습니다.', type: 'success' })
-  } else {
-    openToast({ message: '구축 중지에 실패했습니다.', type: 'error' })
+  openLoading({ text: '구축 중지를 처리하는 중...' })
+  try {
+    const res = await fetchToggleActiveDocDataset(id, '', '001')
+    const affected = typeof res.data === 'number' ? res.data : 0
+    if (affected > 0) {
+      openToast({ message: '구축 중지되었습니다.', type: 'success' })
+    } else {
+      openToast({ message: '구축 중지에 실패했습니다.', type: 'error' })
+    }
+  } finally {
+    closeLoading()
   }
   // 목록 + 요약 동시 조회
   await handleSelectAll()
@@ -565,13 +782,20 @@ const doDelete = async () => {
 
 // 데이터셋 저장
 const handleSaveDocDataset = async (dataset: DocDatasetSavePayload) => {
-  const res = await fetchSaveDocDataset(dataset)
-  const affected = typeof res.data === 'number' ? res.data : 0
-  const datasetId = res.datasetId ?? dataset.datasetId ?? ''
-  if (affected > 0) {
-    openToast({ message: '데이터셋이 저장되었습니다.', type: 'success' })
-  } else {
-    openToast({ message: '데이터셋 저장에 실패했습니다.', type: 'error' })
+  openLoading({ text: '데이터셋을 저장하는 중...' })
+  let affected = 0
+  let datasetId = ''
+  try {
+    const res = await fetchSaveDocDataset(dataset)
+    affected = typeof res.data === 'number' ? res.data : 0
+    datasetId = res.datasetId ?? dataset.datasetId ?? ''
+    if (affected > 0) {
+      openToast({ message: '데이터셋이 저장되었습니다.', type: 'success' })
+    } else {
+      openToast({ message: '데이터셋 저장에 실패했습니다.', type: 'error' })
+    }
+  } finally {
+    closeLoading()
   }
   // 목록 + 요약 동시 조회
   await handleSelectAll()
@@ -580,12 +804,17 @@ const handleSaveDocDataset = async (dataset: DocDatasetSavePayload) => {
 
 // 데이터셋 삭제 실행
 const handleDeleteDocDataset = async (id: string) => {
-  const res = await fetchDeleteDocDataset(id)
-  const affected = typeof res.data === 'number' ? res.data : 0
-  if (affected > 0) {
-    openToast({ message: '데이터셋이 삭제되었습니다.', type: 'success' })
-  } else {
-    openToast({ message: '데이터셋 삭제에 실패했습니다.', type: 'error' })
+  openLoading({ text: '데이터셋을 삭제하는 중...' })
+  try {
+    const res = await fetchDeleteDocDataset(id)
+    const affected = typeof res.data === 'number' ? res.data : 0
+    if (affected > 0) {
+      openToast({ message: '데이터셋이 삭제되었습니다.', type: 'success' })
+    } else {
+      openToast({ message: '데이터셋 삭제에 실패했습니다.', type: 'error' })
+    }
+  } finally {
+    closeLoading()
   }
   isDeleteModalOpen.value = false
   // 목록 + 요약 동시 조회
@@ -599,12 +828,17 @@ const handleToggleActiveDocDataset = async (id: string, useYn: string) => {
   } else {
     useYn = 'Y'
   }
-  const res = await fetchToggleActiveDocDataset(id, useYn, '')
-  const affected = typeof res.data === 'number' ? res.data : 0
-  if (affected > 0) {
-    openToast({ message: '활성화 상태가 변경되었습니다.', type: 'success' })
-  } else {
-    openToast({ message: '활성화 상태 변경에 실패했습니다.', type: 'error' })
+  openLoading({ text: '활성화 상태를 변경하는 중...' })
+  try {
+    const res = await fetchToggleActiveDocDataset(id, useYn, '')
+    const affected = typeof res.data === 'number' ? res.data : 0
+    if (affected > 0) {
+      openToast({ message: '활성화 상태가 변경되었습니다.', type: 'success' })
+    } else {
+      openToast({ message: '활성화 상태 변경에 실패했습니다.', type: 'error' })
+    }
+  } finally {
+    closeLoading()
   }
   // 목록 + 요약 동시 조회
   await handleSelectAll()
@@ -619,24 +853,33 @@ const historyPageSize = 5
 // 변경이력 목록 조회
 const handleSelectDocDatasetHistoryList = async (datasetId: string, page: number = 1) => {
   historyPage.value = page
-  const res = await fetchDocDatasetHistoryList(datasetId, page, historyPageSize)
-  historyTotalCount.value = res?.totalCnt ?? 0
-
-  historyList.value = res?.dataList ?? []
+  openLoading({ text: '이력 목록을 불러오는 중...' })
+  try {
+    const res = await fetchDocDatasetHistoryList(datasetId, page, historyPageSize)
+    historyTotalCount.value = res?.totalCnt ?? 0
+    historyList.value = res?.dataList ?? []
+  } finally {
+    closeLoading()
+  }
 }
 
 // 변경이력 저장
 const handleSaveDocDatasetHistory = async (history: { datasetId: string; version: string; content: string }) => {
-  const res = await fetchSaveDocDatasetHistory({
-    datasetId: history.datasetId,
-    verNo: history.version,
-    chgContent: history.content,
-  })
-  const affected = typeof res.data === 'number' ? res.data : 0
-  if (affected > 0) {
-    openToast({ message: '이력이 저장되었습니다.', type: 'success' })
-  } else {
-    openToast({ message: '이력 저장에 실패했습니다.', type: 'error' })
+  openLoading({ text: '이력을 저장하는 중...' })
+  try {
+    const res = await fetchSaveDocDatasetHistory({
+      datasetId: history.datasetId,
+      verNo: history.version,
+      chgContent: history.content,
+    })
+    const affected = typeof res.data === 'number' ? res.data : 0
+    if (affected > 0) {
+      openToast({ message: '이력이 저장되었습니다.', type: 'success' })
+    } else {
+      openToast({ message: '이력 저장에 실패했습니다.', type: 'error' })
+    }
+  } finally {
+    closeLoading()
   }
   // 저장 후 첫 페이지로 이동하여 새 이력 표시
   await handleSelectDocDatasetHistoryList(history.datasetId, 1)
@@ -644,12 +887,17 @@ const handleSaveDocDatasetHistory = async (history: { datasetId: string; version
 
 // 변경이력 삭제
 const handleDeleteDocDatasetHistory = async (id: string, datasetId: string) => {
-  const res = await fetchDeleteDocDatasetHistory(id)
-  const affected = typeof res.data === 'number' ? res.data : 0
-  if (affected > 0) {
-    openToast({ message: '이력이 삭제되었습니다.', type: 'success' })
-  } else {
-    openToast({ message: '이력 삭제에 실패했습니다.', type: 'error' })
+  openLoading({ text: '이력을 삭제하는 중...' })
+  try {
+    const res = await fetchDeleteDocDatasetHistory(id)
+    const affected = typeof res.data === 'number' ? res.data : 0
+    if (affected > 0) {
+      openToast({ message: '이력이 삭제되었습니다.', type: 'success' })
+    } else {
+      openToast({ message: '이력 삭제에 실패했습니다.', type: 'error' })
+    }
+  } finally {
+    closeLoading()
   }
   await handleSelectDocDatasetHistoryList(datasetId, historyPage.value)
 }
@@ -679,12 +927,14 @@ const handleSearchDocDataset = async (params: {
   isSearching.value = true
   searchResults.value = []
   searchSummary.value = { totalChunks: 0, avgSimilarity: 0 }
+  openLoading({ text: '데이터셋을 검색하는 중...' })
   try {
     const res = await fetchSearchDocDataset(params)
     searchResults.value = res.data.results
     searchSummary.value = res.data.summary
   } finally {
     isSearching.value = false
+    closeLoading()
   }
 }
 

@@ -43,11 +43,13 @@
 
 <script setup lang="ts">
 const { chatMessage, selectChatRoomList, selectModelOptions, resetChatRoom } = useChatRooms()
-const { activeSearchModes, toggleSearchMode } = useChatStore()
+const { activeSearchModes, toggleSearchMode, handleResetChatPanels } = useChatStore()
 const { startChatSocket, stopChatSocket } = useChatSocket()
 const { user } = useAuth()
 
 onMounted(async () => {
+  // 시각화 패널에서 나와 다시 일반 채팅으로 들어올 때 이전 tableData가 남지 않게 초기화
+  handleResetChatPanels()
   // 채팅방 목록 조회
   await selectChatRoomList()
   // 채팅방 초기화

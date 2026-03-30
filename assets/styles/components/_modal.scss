@@ -322,7 +322,7 @@
     flex-direction: column;
     width: 100%;
     min-width: 680px;
-    max-width: 680px;
+    max-width: 80vw;
     height: calc(100vh - 102px);
     padding: 0 $spacing-md $spacing-lg;
     background: #fff;
@@ -332,6 +332,43 @@
     transition: transform $transition-base;
     overflow-y: auto;
     @include custom-scrollbar;
+  }
+
+  // 왼쪽 리사이즈 핸들
+  .library-detail-modal-resize-handle {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 10;
+    width: 6px;
+    height: 100%;
+    cursor: col-resize;
+    background: transparent;
+    transition: background $transition-fast;
+
+    // 가운데 드래그 인디케이터
+    &::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: -3px;
+      transform: translateY(-50%);
+      width: 4px;
+      height: 32px;
+      border-radius: 2px;
+      background: $color-border;
+      transition: background $transition-fast;
+    }
+
+    &:hover,
+    &.is-dragging {
+      background: transparent;
+      border-left: 1px solid var(--color-primary);
+
+      &::after {
+        background: var(--color-primary);
+      }
+    }
   }
 
   // 닫기 btn
@@ -423,6 +460,11 @@
     gap: 12px;
     flex: 1;
     padding: $spacing-md 0 0;
+  }
+
+  // 응답 영역 — 우상단 복사/SQL 버튼과 텍스트 겹침 방지
+  .content-box.type-response .message-content {
+    padding-right: 70px;
   }
 
   .chat-vis-stat-row--card {

@@ -23,7 +23,7 @@ const {
 } = useReportsApi()
 const { resolveSvcTy, activeSearchModes, subOptions, selectedSubOption } = useChatSearchState()
 const { messages, pushQuestionMessage, pushAnswerPlaceholder, logRowToMessages } = useChatMessages()
-const { ensureWebSocketAndSend } = useChatSocket()
+const { ensureWebSocketAndSend, stopChatSocket } = useChatSocket()
 
 // 채팅방 관련
 const chatRoom = ref<ChatRoom>({ ...EMPTY_CHAT_ROOM })
@@ -35,6 +35,8 @@ const isExpired = ref(false)
 const knowledgeList = ref<KnowledgeItem[]>([])
 
 export const useChatRooms = () => {
+  const route = useRoute()
+
   // 채팅방 초기화 (roomId 등 리셋, 검색모드 디폴트 C)
   const resetChatRoom = () => {
     chatRoom.value = { ...EMPTY_CHAT_ROOM }
@@ -72,7 +74,13 @@ export const useChatRooms = () => {
     try {
       const userId = user.value?.userId
       if (!userId) return []
-      const res = await fetchSelectChatRoomList(userId)
+      openLoading({ text: '채팅방 목록을 불러오는 중...' })
+      let res: { list: ChatRoom[] }
+      try {
+        res = await fetchSelectChatRoomList(userId)
+      } finally {
+        closeLoading()
+      }
       chatRoomList.value = res.list
       return chatRoomList.value
     } catch (error) {
@@ -91,7 +99,13 @@ export const useChatRooms = () => {
 
     const svcTy = resolveSvcTy()
     const refId = selectedSubOption.value
-    const res = await fetchCreateChatRoom(qContent, svcTy)
+    openLoading({ text: '채팅방을 생성하는 중...' })
+    let res: { data: ChatRoom }
+    try {
+      res = await fetchCreateChatRoom(qContent, svcTy)
+    } finally {
+      closeLoading()
+    }
     const createdRoom: ChatRoom = {
       roomId: res.data.roomId,
       title: res.data.roomTitle,
@@ -124,14 +138,26 @@ export const useChatRooms = () => {
 
   // 모델 옵션 조회
   const selectModelOptions = async () => {
-    const res = await fetchSelectModelList()
+    openLoading({ text: '모델 옵션을 불러오는 중...' })
+    let res: { modelList: ModelOption[] }
+    try {
+      res = await fetchSelectModelList()
+    } finally {
+      closeLoading()
+    }
     subOptions.value = res.modelList.map((item: ModelOption) => ({ label: item.label, value: item.value }))
     selectedSubOption.value = subOptions.value[0]?.value ?? 'auto'
     return subOptions.value
   }
   // 라그 데이터셋 조회
   const selectRagDsList = async () => {
-    const res = await fetchSelectRagDsList()
+    openLoading({ text: '지식 검색 옵션을 불러오는 중...' })
+    let res: { subOptionList: SubOption[] }
+    try {
+      res = await fetchSelectRagDsList()
+    } finally {
+      closeLoading()
+    }
     subOptions.value = res.subOptionList.map((item: SubOption) => ({ label: item.label, value: item.value }))
     selectedSubOption.value = subOptions.value[0]?.value ?? 'all'
     return subOptions.value
@@ -139,7 +165,13 @@ export const useChatRooms = () => {
 
   // 데이터마트 데이터셋 조회
   const selectDmList = async () => {
-    const res = await fetchSelectDmList()
+    openLoading({ text: '데이터마트 옵션을 불러오는 중...' })
+    let res: { subOptionList: SubOption[] }
+    try {
+      res = await fetchSelectDmList()
+    } finally {
+      closeLoading()
+    }
     subOptions.value = res.subOptionList.map((item: SubOption) => ({ label: item.label, value: item.value }))
     selectedSubOption.value = subOptions.value[0]?.value ?? 'all'
     return subOptions.value
@@ -148,8 +180,19 @@ export const useChatRooms = () => {
   /** 채팅방 고정 */
   const handlePinChatRoom = async (room: ChatRoom) => {
     try {
-      const res = await fetchPinChatRoom(room)
-      openToast({ message: '채팅방 고정되었습니다.', type: 'success' })
+      openLoading({ text: '채팅방 고정 상태를 변경하는 중...' })
+      try {
+        await fetchPinChatRoom(room)
+      } finally {
+        closeLoading()
+      }
+      let msg = ''
+      if (room.fixYn === 'Y') {
+        msg = '채팅방 고정이 해제되었습니다.'
+      } else {
+        msg = '채팅방이 고정되었습니다.'
+      }
+      openToast({ message: msg, type: 'success' })
       selectChatRoomList()
     } catch {
       openToast({ message: '채팅방 고정에 실패했습니다.', type: 'error' })
@@ -159,7 +202,12 @@ export const useChatRooms = () => {
   /** 채팅방 이름 변경 */
   const handleRenameChatRoom = async (room: ChatRoom, roomTitle: string) => {
     try {
-      await fetchRenameChatRoom(room.roomId, roomTitle)
+      openLoading({ text: '채팅방 이름을 변경하는 중...' })
+      try {
+        await fetchRenameChatRoom(room.roomId, roomTitle)
+      } finally {
+        closeLoading()
+      }
       openToast({ message: '검색기록 타이틀이 변경되었습니다.', type: 'success' })
       await selectChatRoomList()
     } catch {
@@ -173,12 +221,21 @@ export const useChatRooms = () => {
       title: '검색기록 삭제',
       message: '검색기록을 삭제하시겠습니까?',
       onConfirm: async () => {
+        openLoading({ text: '검색기록을 삭제하는 중...' })
         try {
           await fetchDeleteChatRoom(room.roomId)
-          openToast({ message: '검색기록이 삭제되었습니다.', type: 'success' })
-          await selectChatRoomList()
-        } catch {
-          openToast({ message: '검색기록 삭제에 실패했습니다.', type: 'error' })
+        } finally {
+          closeLoading()
+        }
+
+        openToast({ message: '검색기록이 삭제되었습니다.', type: 'success' })
+        await selectChatRoomList()
+
+        // 현재 보고 있는 채팅방이 삭제되면 /chat(index)로 이동
+        const currentRoomId = String(route.params.id ?? '').trim()
+        if (currentRoomId && currentRoomId === String(room.roomId ?? '').trim()) {
+          stopChatSocket()
+          await navigateTo('/chat')
         }
       },
     })
@@ -188,7 +245,7 @@ export const useChatRooms = () => {
   const loadSharedChatLog = async (shareToken: string) => {
     if (!shareToken) return
     isExpired.value = false
-    openLoading()
+    openLoading({ text: '공유 대화를 불러오는 중...' })
     try {
       const res = await fetchSelectSharedChatLogList(shareToken)
       if (!res.successYn) {
@@ -223,7 +280,13 @@ export const useChatRooms = () => {
   /** 카테고리 목록 (일반 채팅방과 동일 API) */
   const loadKnowledgeList = async () => {
     try {
-      const res = await fetchSelectKnowledgeList()
+      openLoading({ text: '카테고리 목록을 불러오는 중...' })
+      let res: { dataList: KnowledgeItem[] }
+      try {
+        res = await fetchSelectKnowledgeList()
+      } finally {
+        closeLoading()
+      }
       knowledgeList.value = res.dataList ?? []
     } catch {
       knowledgeList.value = []

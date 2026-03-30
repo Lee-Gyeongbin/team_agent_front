@@ -12,7 +12,7 @@ export interface ChatSocketPayload {
 export interface ChatSocketMessage {
   type: string
   content?: string
-  filePath?: string
+  docFileId?: string
   /** 완료 시 서버에서 내려주는 로그 ID (있으면 스트리밍 메시지에 반영) */
   logId?: string
   tableData?: string

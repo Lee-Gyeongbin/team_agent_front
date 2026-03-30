@@ -61,3 +61,22 @@ export interface FileDownloadResponse {
 export interface FileDeleteResponse {
   successYn?: boolean
 }
+
+/** 첨부 파일 선택 (복수 첨부 시 FilePreviewModal 셀렉트) */
+export interface FilePreviewDocFileOption {
+  label: string
+  value: string
+}
+
+/** FilePreviewModal — PDF 미리보기 팝업 (viewFile.do presigned URL) */
+export interface FilePreviewModalProps {
+  isOpen: boolean
+  docId: string
+  docFileId: string
+  /** 모달 헤더 제목 (미지정 시 기본 문구) */
+  title?: string
+  /** PDF 로드 후 이동할 페이지 (1부터) */
+  initialPage?: number
+  /** 2개 이상이면 상단에 파일 선택 표시 */
+  docFileOptions?: FilePreviewDocFileOption[]
+}

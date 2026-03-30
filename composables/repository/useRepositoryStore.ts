@@ -11,7 +11,7 @@ import type {
   UrlItem,
 } from '~/types/repository'
 import type { TableColumn } from '~/types/table'
-const { handleViewFileUrl, handleUploadFile, onDownloadFile, handleDeleteNcpFile, fileError } = useFileStore()
+const { handleUploadFile, onDownloadFile, handleDeleteNcpFile, fileError } = useFileStore()
 const {
   fetchSelectDocExistCnt,
   fetchSelectDocumentExistCnt,
@@ -88,6 +88,60 @@ const formatUseYnLabel = (value: string) => {
   return value
 }
 
+/** 목록/상세 응답에서 DOC_FILE_ID_LIST(문자열·배열) → docFileId[] */
+const parseDocFileIdListFromRow = (row: Record<string, unknown>): string[] => {
+  const raw = row.docFileIdList ?? row.DOC_FILE_ID_LIST ?? row.doc_file_id_list
+  if (Array.isArray(raw)) {
+    return raw.map((x) => String(x).trim()).filter(Boolean)
+  }
+  if (typeof raw === 'string') {
+    return raw
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+  }
+  return []
+}
+
+/** 첨부 파일별 viewFile API 호출용 — docFileIdList 우선, 없으면 docFileId·attachedFileList (중복 제거) */
+const resolveAllDocFileIds = (row: Document): string[] => {
+  const seen = new Set<string>()
+  const out: string[] = []
+  const add = (id: unknown) => {
+    const s = String(id ?? '').trim()
+    if (!s || seen.has(s)) return
+    seen.add(s)
+    out.push(s)
+  }
+  if (Array.isArray(row.docFileIdList) && row.docFileIdList.length > 0) {
+    for (const id of row.docFileIdList) add(id)
+    return out
+  }
+  add(row.docFileId)
+  if (Array.isArray(row.attachedFileList)) {
+    for (const f of row.attachedFileList) add(f?.docFileId)
+  }
+  return out
+}
+
+/** 미리보기·단건 다운로드용 대표 파일 ID (단일 필드 → 목록 첫 항 → 상세 첨부) */
+const resolvePrimaryDocFileId = (row: Document): string => {
+  const all = resolveAllDocFileIds(row)
+  if (all.length > 0) return all[0]
+  return ''
+}
+
+const normalizeDocumentListRow = (doc: Document): Document => {
+  const extra = doc as Document & Record<string, unknown>
+  const ids = parseDocFileIdListFromRow(extra)
+  const mergedDocFileId = String(doc.docFileId ?? '').trim() || (ids[0] ?? '')
+  return {
+    ...doc,
+    docFileIdList: ids.length > 0 ? ids : doc.docFileIdList,
+    docFileId: mergedDocFileId || doc.docFileId,
+  }
+}
+
 /** 상세 API 평면 응답 → 패널용 Document 일부 */
 const mapDocDetailResponseToInitial = (
   res: DocRepositoryDetailResponse,
@@ -159,15 +213,19 @@ const handleSelectDocumentList = async () => {
     const findContent = docSearchKeyword.value || undefined
     const categoryId = docSelectedCategoryId.value || undefined
     const useYn = docStatusFilter.value
+    openLoading({ text: '문서 목록을 불러오는 중...' })
     const res = await fetchDocumentList(findContent, categoryId, useYn, docCurrentPage.value, docPageSize)
-    documentList.value = res.dataList
-    documentList.value.forEach((doc) => {
-      // 파일 사이즈 포맷팅
-      doc.fileSize = formatFileSize(Number(doc.fileSize))
+    documentList.value = res.dataList.map((doc) => {
+      const normalized = normalizeDocumentListRow(doc)
+      // 파일 사이즈 포맷팅 (목록에 콤마 포함 숫자 문자열 대비)
+      const sizeRaw = String(normalized.fileSize ?? '').replace(/,/g, '')
+      normalized.fileSize = formatFileSize(Number(sizeRaw) || 0)
+      return normalized
     })
     docTotalCount.value = res.totalCnt
   } finally {
     isLoading.value = false
+    closeLoading()
   }
 }
 
@@ -219,7 +277,13 @@ const performDocumentSave = async (data: Partial<Document> & { deleteFileIds?: s
   if (deleteFileIds.length > 0) payload.deleteFileIds = deleteFileIds
   const id = String(data.docId ?? '').trim()
   if (id) payload.docId = id
-  const res = await fetchSaveDocument(payload)
+  openLoading({ text: '문서를 저장하는 중...' })
+  let res: { successYn: boolean }
+  try {
+    res = await fetchSaveDocument(payload)
+  } finally {
+    closeLoading()
+  }
   if (res.successYn) {
     openToast({ message: `'${data.docTitle}' 문서가 등록되었습니다.` })
     await handleSelectDocumentList()
@@ -244,8 +308,13 @@ const handleSaveDocument = async (data: Partial<Document> & { deleteFileIds?: st
 
   let existCnt = 0
   if (docIdList.length > 0) {
-    const exists = await fetchSelectDocExistCnt(docIdList)
-    existCnt = exists.data
+    openLoading({ text: '문서 중복 여부를 확인하는 중...' })
+    try {
+      const exists = await fetchSelectDocExistCnt(docIdList)
+      existCnt = exists.data
+    } finally {
+      closeLoading()
+    }
   }
 
   if (existCnt > 0) {
@@ -276,54 +345,125 @@ const handleDeleteDocument = async (docIdList: DocumentDeleteItem[]) => {
     openToast({ message: fileError.value || '저장소에서 파일 삭제에 실패했습니다.', type: 'error' })
     return
   }
-  await fetchDeleteDocument(valid)
+  openLoading({ text: '문서를 삭제하는 중...' })
+  try {
+    await fetchDeleteDocument(valid)
+  } finally {
+    closeLoading()
+  }
   await handleSelectDocumentList()
 }
 
 // ===== URL 액션 =====
 const handleSelectUrlList = async () => {
-  const res = await fetchUrlList({
-    keyword: urlSearchKeyword.value || undefined,
-    status: urlStatusFilter.value,
-    category: urlCategoryFilter.value,
-    page: urlCurrentPage.value,
-    pageSize: urlPageSize,
-  })
-  urlList.value = res.list
-  urlTotalCount.value = res.total
+  openLoading({ text: 'URL 목록을 불러오는 중...' })
+  let res: { list: UrlItem[]; total: number }
+  try {
+    res = await fetchUrlList({
+      keyword: urlSearchKeyword.value || undefined,
+      status: urlStatusFilter.value,
+      category: urlCategoryFilter.value,
+      page: urlCurrentPage.value,
+      pageSize: urlPageSize,
+    })
+    urlList.value = res.list
+    urlTotalCount.value = res.total
+  } finally {
+    closeLoading()
+  }
 }
 
 const handleSaveUrl = async (data: Partial<UrlItem>) => {
-  await fetchSaveUrl(data)
+  openLoading({ text: 'URL을 저장하는 중...' })
+  try {
+    await fetchSaveUrl(data)
+  } finally {
+    closeLoading()
+  }
   await handleSelectUrlList()
 }
 
 const handleDeleteUrl = async (ids: string[]) => {
-  const res = await fetchDeleteUrl(ids)
-  const affected = typeof res.data === 'number' ? res.data : 0
-  if (affected > 0) {
-    openToast({ message: '문서가 삭제되었습니다.', type: 'success' })
-  } else {
-    openToast({ message: '문서 삭제에 실패했습니다.', type: 'error' })
+  openLoading({ text: 'URL을 삭제하는 중...' })
+  try {
+    const res = await fetchDeleteUrl(ids)
+    const affected = typeof res.data === 'number' ? res.data : 0
+    if (affected > 0) {
+      openToast({ message: '문서가 삭제되었습니다.', type: 'success' })
+    } else {
+      openToast({ message: '문서 삭제에 실패했습니다.', type: 'error' })
+    }
+  } finally {
+    closeLoading()
   }
   await handleSelectUrlList()
 }
 
 const handleToggleUrlStatus = async (id: string, active: boolean) => {
-  await fetchToggleUrlStatus(id, active)
+  openLoading({ text: 'URL 상태를 변경하는 중...' })
+  try {
+    await fetchToggleUrlStatus(id, active)
+  } finally {
+    closeLoading()
+  }
   await handleSelectUrlList()
+}
+
+/** 문서 미리보기 모달 (FilePreviewModal) — PDF.js 뷰어 */
+const isFilePreviewOpen = ref(false)
+const filePreviewDocId = ref('')
+const filePreviewDocFileId = ref('')
+const filePreviewTitle = ref('')
+const filePreviewDocFileOptions = ref<{ label: string; value: string }[]>([])
+
+/** 미리보기 셀렉트 라벨 — 상세 fileList 우선, 없으면 목록 행 fileName(단일)·attachedFileList */
+const buildFilePreviewOptions = (fileIds: string[], row: Document, fileList: FileItem[]) => {
+  const nameById = new Map<string, string>()
+  for (const f of fileList) {
+    const id = String(f.docFileId ?? '').trim()
+    if (id) nameById.set(id, String(f.fileName ?? '').trim())
+  }
+  return fileIds.map((id, idx) => {
+    const fromDetail = nameById.get(id)
+    const fromAttached = row.attachedFileList?.find((f) => f.docFileId === id)?.fileName?.trim()
+    const fromListRow = fileIds.length === 1 && idx === 0 ? String(row.fileName ?? '').trim() : ''
+    const label = fromDetail || fromAttached || fromListRow || `파일 ${idx + 1}`
+    return { label, value: id }
+  })
 }
 
 const handleFileView = async (row: Document) => {
   const docId = row.docId
-  const docFileId = String(row.docFileId ?? row.attachedFileList?.[0]?.docFileId ?? '').trim()
-  if (!docFileId) {
+  const fileIds = resolveAllDocFileIds(row)
+  if (fileIds.length === 0) {
     openToast({ message: '미리보기할 파일이 없습니다.', type: 'warning' })
     return
   }
-  const url = await handleViewFileUrl(docId, docFileId)
-  if (!url) return
-  window.open(url, '_blank')
+
+  let fileList: FileItem[] = []
+  try {
+    openLoading({ text: '문서 상세 정보를 불러오는 중...' })
+    const res = await fetchSelectDocRepositoryDetail(docId)
+    fileList = res.fileList ?? []
+  } catch {
+    // 상세 조회 실패 시 목록 행 메타만으로 라벨 구성
+  } finally {
+    closeLoading()
+  }
+
+  filePreviewDocId.value = docId
+  filePreviewDocFileId.value = fileIds[0]
+  filePreviewTitle.value = row.docTitle?.trim() || '파일 미리보기'
+  filePreviewDocFileOptions.value = buildFilePreviewOptions(fileIds, row, fileList)
+  isFilePreviewOpen.value = true
+}
+
+/** 모달 @close 시 상태 정리 (닫힘은 v-model:is-open으로 반영됨) */
+const onCloseFilePreview = () => {
+  filePreviewDocFileOptions.value = []
+  filePreviewDocId.value = ''
+  filePreviewDocFileId.value = ''
+  filePreviewTitle.value = ''
 }
 
 const onSearch = () => {
@@ -368,6 +508,7 @@ const onDocumentTableRowClick = async (row: Record<string, unknown>) => {
   isLoading.value = true
   try {
     await handleSelectCodeOptions()
+    openLoading({ text: '문서 상세 정보를 불러오는 중...' })
     const res = await fetchSelectDocRepositoryDetail(docId)
     docRegisterInitialData.value = mapDocDetailResponseToInitial(res.data, res.fileList ?? [])
   } catch {
@@ -375,6 +516,7 @@ const onDocumentTableRowClick = async (row: Record<string, unknown>) => {
     docRegisterInitialData.value = fromList ? { ...fromList } : { ...(row as unknown as Document) }
   } finally {
     isLoading.value = false
+    closeLoading()
     docTableHighlightedDocId.value = docId
     isDocRegisterOpen.value = true
   }
@@ -442,8 +584,7 @@ const onBatchDownload = async () => {
   for (let i = 0; i < ids.length; i++) {
     const docId = ids[i]
     const row = documentList.value.find((d) => d.docId === docId)
-    const docFileId = String(row?.docFileId ?? '').trim()
-    await onDownloadFile(docId, docFileId)
+    await onDownloadFile(docId)
     if (i < ids.length - 1) {
       await new Promise((r) => setTimeout(r, 200))
     }
@@ -494,8 +635,7 @@ const onRowActionSelect = async (value: string, row: Document) => {
     await handleFileView(row)
   } else if (value === 'download') {
     const docId = row.docId ?? ''
-    const docFileId = String(row.docFileId ?? row.attachedFileList?.[0]?.docFileId ?? '').trim()
-    await onDownloadFile(docId, docFileId)
+    await onDownloadFile(docId)
   }
 }
 
@@ -550,6 +690,12 @@ export const useRepositoryStore = () => {
     handleDeleteUrl,
     handleToggleUrlStatus,
     handleFileView,
+    isFilePreviewOpen,
+    filePreviewDocId,
+    filePreviewDocFileId,
+    filePreviewTitle,
+    filePreviewDocFileOptions,
+    onCloseFilePreview,
     onSearch,
     onRegisterDocument,
     onDocumentTableRowClick,

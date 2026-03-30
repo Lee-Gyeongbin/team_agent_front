@@ -47,20 +47,27 @@ export const useChatItemActions = () => {
     isModalOpen.value = false
     if (!selectedLogId.value) return
     const logId = selectedLogId.value
-    const res = await fetchCreateChatLogReaction(logId, satisYn.value, modalMessage.value)
-    if (res.successYn === false) {
+    openLoading({ text: '만족도를 저장하는 중...' })
+    try {
+      const res = await fetchCreateChatLogReaction(logId, satisYn.value, modalMessage.value)
+      if (res.successYn === false) {
+        openToast({ message: '만족도 저장에 실패했습니다.', type: 'error' })
+        return
+      }
+      const reactionLabel = satisYn.value === 'Y' ? '좋아요' : '싫어요'
+      openToast({ message: `${reactionLabel}가 등록되었습니다.`, type: 'success' })
+      const answer = messages.value.find((m) => m.logId === logId && m.type === 'answer')
+      if (!answer) return
+      const next = res.data
+      answer.chatLogReaction = {
+        logId,
+        satisYn: next?.satisYn ?? satisYn.value,
+        satisContent: next?.satisContent ?? modalMessage.value,
+      }
+    } catch {
       openToast({ message: '만족도 저장에 실패했습니다.', type: 'error' })
-      return
-    }
-    const reactionLabel = satisYn.value === 'Y' ? '좋아요' : '싫어요'
-    openToast({ message: `${reactionLabel}가 등록되었습니다.`, type: 'success' })
-    const answer = messages.value.find((m) => m.logId === logId && m.type === 'answer')
-    if (!answer) return
-    const next = res.data
-    answer.chatLogReaction = {
-      logId,
-      satisYn: next?.satisYn ?? satisYn.value,
-      satisContent: next?.satisContent ?? modalMessage.value,
+    } finally {
+      closeLoading()
     }
   }
 

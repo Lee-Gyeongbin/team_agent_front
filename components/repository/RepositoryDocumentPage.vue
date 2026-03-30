@@ -201,12 +201,12 @@
             </template>
             <template #cell-docTitle="{ row }">
               <div class="cell-document flex items-center">
-                <span
+                <!-- <span
                   class="doc-icon"
                   :class="getDocIconClass(row.fileType)"
                 >
                   <i :class="['icon', getDocIconName(row.fileType), 'size-20']" />
-                </span>
+                </span> -->
                 <span class="doc-name">{{ row.docTitle }}</span>
               </div>
             </template>
@@ -276,11 +276,21 @@
       :initial-data="docRegisterInitialData"
       @close="onCloseDocRegister"
     />
+
+    <FilePreviewModal
+      v-model:is-open="isFilePreviewOpen"
+      v-model:doc-file-id="filePreviewDocFileId"
+      :doc-id="filePreviewDocId"
+      :title="filePreviewTitle"
+      :doc-file-options="filePreviewDocFileOptions"
+      @close="onCloseFilePreview"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import type { Document } from '~/types/repository'
+import FilePreviewModal from '~/components/file/FilePreviewModal.vue'
 import CategorySelectModal from '~/components/repository/CategorySelectModal.vue'
 import DocRegisterPanel from '~/components/repository/DocRegisterPanel.vue'
 import { useRepositoryStore } from '~/composables/repository/useRepositoryStore'
@@ -314,6 +324,12 @@ const {
   onCloseDocRegister,
   onRowActionSelect,
   statusFilterOptions,
+  isFilePreviewOpen,
+  filePreviewDocId,
+  filePreviewDocFileId,
+  filePreviewTitle,
+  filePreviewDocFileOptions,
+  onCloseFilePreview,
 } = useRepositoryStore()
 const {
   filteredCategoryList,
@@ -345,9 +361,8 @@ const currentPage = computed({
   },
 })
 
-// 초기 로딩
+// 초기 로딩 (카테고리 목록 후 첫 카테고리 기준 문서 목록은 handleSelectCategoryList 내부에서 조회)
 onMounted(async () => {
   await handleSelectCategoryList()
-  await handleSelectDocumentList()
 })
 </script>
