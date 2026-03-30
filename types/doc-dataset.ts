@@ -50,6 +50,7 @@ export interface DocDatasetDetail {
   sentSplitAlgoCd: string
   langDetectCd: string
   llmCd?: string
+  chunkOptJson?: string | Record<string, unknown> | null
 }
 
 export interface CategoryItem {
@@ -136,6 +137,8 @@ export interface DocDatasetSavePayload {
   langDetectCd: string
   promptId: string
   llmCd: string
+  /** CHUNK_OPT_JSON — VO·DB는 문자열로 받고 MySQL JSON 컬럼에 저장 */
+  chunkOptJson?: string
   docIdList: DocIdItem[]
   urlIdList: UrlIdItem[]
 }
@@ -156,6 +159,15 @@ export interface DocDatasetForm {
   chunkSize: number
   chunkOverlap: number
   minChunkSize: number
+  chunkOptSeparatorsText: string
+  chunkOptSeparator: string
+  chunkOptParagraphSeparator: string
+  chunkOptSentenceSep: string
+  chunkOptBufferSize: number
+  chunkOptBreakpointPercentileThreshold: number
+  chunkOptHtmlTagsText: string
+  chunkOptHeaderPathSeparator: string
+  chunkOptMinTokens: number
   headerInclusion: string
   // 텍스트 전처리 옵션
   useLowercasing: boolean

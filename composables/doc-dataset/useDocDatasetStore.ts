@@ -72,6 +72,15 @@ const getDefaultForm = (): DocDatasetForm => ({
   chunkSize: 0,
   chunkOverlap: 0,
   minChunkSize: 0,
+  chunkOptSeparatorsText: '',
+  chunkOptSeparator: '',
+  chunkOptParagraphSeparator: '',
+  chunkOptSentenceSep: '',
+  chunkOptBufferSize: 1,
+  chunkOptBreakpointPercentileThreshold: 95,
+  chunkOptHtmlTagsText: '',
+  chunkOptHeaderPathSeparator: '/',
+  chunkOptMinTokens: 300,
   headerInclusion: '',
   useLowercasing: true,
   useWhitespaceNorm: false,
@@ -423,8 +432,89 @@ const mapCodeOptions = (codes: CodeItem[]) => [
   })),
 ]
 
+const CHUNK_ALGO_CODE = {
+  recursive: '001',
+  semantic: '002',
+  fixed: '003',
+  sentence: '004',
+  html: '005',
+  markdown: '006',
+  paging: '007',
+} as const
+
+const decodeChunkEscapedText = (value: string) => value.replace(/\\n/g, '\n').replace(/\\t/g, '\t')
+const encodeChunkEscapedText = (value: string) => value.replace(/\n/g, '\\n').replace(/\t/g, '\\t')
+
+const parseCommaSeparatedText = (value: string) =>
+  value
+    .split(',')
+    .map((item) => decodeChunkEscapedText(item.trim()))
+    .filter((item) => item !== '')
+
+const stringifyCommaSeparatedText = (values: unknown) => {
+  if (!Array.isArray(values)) return ''
+  return values
+    .map((value) => encodeChunkEscapedText(String(value ?? '')))
+    .filter((value) => value !== '')
+    .join(',')
+}
+
+const parseChunkOptJson = (value: unknown): Record<string, unknown> => {
+  if (!value) return {}
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value)
+      return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : {}
+    } catch {
+      return {}
+    }
+  }
+  if (typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>
+  }
+  return {}
+}
+
+const toNumberOr = (value: unknown, fallback: number) => {
+  const num = Number(value)
+  return Number.isFinite(num) ? num : fallback
+}
+
+const buildChunkOptJson = (data: DocDatasetForm): Record<string, unknown> | undefined => {
+  if (data.chunkAlgorithm === CHUNK_ALGO_CODE.recursive) {
+    return { separators: parseCommaSeparatedText(data.chunkOptSeparatorsText) }
+  }
+  if (data.chunkAlgorithm === CHUNK_ALGO_CODE.semantic) {
+    return {
+      sentence_sep: data.chunkOptSentenceSep.trim() || 'nltk',
+      buffer_size: data.chunkOptBufferSize,
+      breakpoint_percentile_threshold: data.chunkOptBreakpointPercentileThreshold,
+    }
+  }
+  if (data.chunkAlgorithm === CHUNK_ALGO_CODE.sentence) {
+    return {
+      separator: decodeChunkEscapedText(data.chunkOptSeparator),
+      paragraph_separator: decodeChunkEscapedText(data.chunkOptParagraphSeparator),
+    }
+  }
+  if (data.chunkAlgorithm === CHUNK_ALGO_CODE.html) {
+    return { tag: parseCommaSeparatedText(data.chunkOptHtmlTagsText) }
+  }
+  if (data.chunkAlgorithm === CHUNK_ALGO_CODE.markdown) {
+    return { header_path_separator: data.chunkOptHeaderPathSeparator || '/' }
+  }
+  if (data.chunkAlgorithm === CHUNK_ALGO_CODE.paging) {
+    return { min_tokens: data.chunkOptMinTokens || data.minChunkSize }
+  }
+  return undefined
+}
+
 /** 저장 시 데이터셋 생성 */
 const onSaveCreate = async (data: DocDatasetForm, startBuild: boolean) => {
+  const chunkOptObj = buildChunkOptJson(data)
+  const chunkOptJson = chunkOptObj !== undefined ? JSON.stringify(chunkOptObj) : undefined
+  const minChunkSize =
+    data.chunkAlgorithm === CHUNK_ALGO_CODE.paging ? data.chunkOptMinTokens || data.minChunkSize : data.minChunkSize
   // 저장 요청 데이터 생성
   const payload: DocDatasetSavePayload = {
     datasetId: editingDatasetId.value || undefined,
@@ -434,7 +524,8 @@ const onSaveCreate = async (data: DocDatasetForm, startBuild: boolean) => {
     chunkAlgoCd: data.chunkAlgorithm,
     chunkSize: data.chunkSize,
     chunkOverlap: data.chunkOverlap,
-    minChunkSz: data.minChunkSize,
+    minChunkSz: minChunkSize,
+    ...(chunkOptJson !== undefined ? { chunkOptJson } : {}),
     hdrInclCd: data.headerInclusion,
     datasetBuildStatusCd: startBuild ? '002' : '001',
     promptId: data.promptId,
@@ -471,33 +562,50 @@ const mapDetailToForm = (
   detail: DocDatasetDetail | null,
   selectedDocIds: string[],
   selectedUrlIds: string[],
-): DocDatasetForm => ({
-  name: detail?.dsNm ?? '',
-  description: detail?.description ?? '',
-  version: detail?.version ?? '',
-  useDocument: detail ? selectedDocIds.length > 0 : true,
-  selectedDocIds,
-  useUrl: detail ? selectedUrlIds.length > 0 : true,
-  selectedUrlIds,
-  chunkAlgorithm: detail?.chunkAlgoCd ?? '',
-  chunkSize: detail?.chunkSize ?? 0,
-  chunkOverlap: detail?.chunkOverlap ?? 0,
-  minChunkSize: detail?.minChunkSz ?? 0,
-  headerInclusion: detail?.hdrInclCd ?? '',
-  useLowercasing: detail?.lowercaseYn === 'Y',
-  useWhitespaceNorm: detail?.wspNormYn === 'Y',
-  useSpecialCharRemoval: detail?.specChrRmYn === 'Y',
-  useSingleCellText: detail?.singleCellText === 'Y',
-  sentenceSplitAlgorithm: detail?.sentSplitAlgoCd ?? '',
-  languageDetection: detail?.langDetectCd ?? '',
-  promptId: '',
-  llmCd: detail?.llmCd ?? '',
-  embeddingModel: detail?.embedModelCd ?? '',
-  vectorDb: detail?.vectorDbCd ?? '',
-  embeddingNormalization: detail?.embedNormCd ?? '',
-  poolingStrategy: detail?.poolStratCd ?? '',
-  dimensionReduction: detail?.dimReducCd ?? '',
-})
+): DocDatasetForm => {
+  const chunkOptJson = parseChunkOptJson(detail?.chunkOptJson)
+  const semanticSentenceSep = String(chunkOptJson.sentence_sep ?? '')
+  const sentenceSeparator = String(chunkOptJson.separator ?? '')
+  const paragraphSeparator = String(chunkOptJson.paragraph_separator ?? '')
+  const headerPathSeparator = String(chunkOptJson.header_path_separator ?? '')
+
+  return {
+    name: detail?.dsNm ?? '',
+    description: detail?.description ?? '',
+    version: detail?.version ?? '',
+    useDocument: detail ? selectedDocIds.length > 0 : true,
+    selectedDocIds,
+    useUrl: detail ? selectedUrlIds.length > 0 : true,
+    selectedUrlIds,
+    chunkAlgorithm: detail?.chunkAlgoCd ?? '',
+    chunkSize: detail?.chunkSize ?? 0,
+    chunkOverlap: detail?.chunkOverlap ?? 0,
+    minChunkSize: detail?.minChunkSz ?? 0,
+    chunkOptSeparatorsText: stringifyCommaSeparatedText(chunkOptJson.separators),
+    chunkOptSeparator: sentenceSeparator ? encodeChunkEscapedText(sentenceSeparator) : '',
+    chunkOptParagraphSeparator: paragraphSeparator ? encodeChunkEscapedText(paragraphSeparator) : '',
+    chunkOptSentenceSep: semanticSentenceSep || 'nltk',
+    chunkOptBufferSize: toNumberOr(chunkOptJson.buffer_size, 1),
+    chunkOptBreakpointPercentileThreshold: toNumberOr(chunkOptJson.breakpoint_percentile_threshold, 95),
+    chunkOptHtmlTagsText: stringifyCommaSeparatedText(chunkOptJson.tag),
+    chunkOptHeaderPathSeparator: headerPathSeparator || '/',
+    chunkOptMinTokens: toNumberOr(chunkOptJson.min_tokens, detail?.minChunkSz ?? 300),
+    headerInclusion: detail?.hdrInclCd ?? '',
+    useLowercasing: detail?.lowercaseYn === 'Y',
+    useWhitespaceNorm: detail?.wspNormYn === 'Y',
+    useSpecialCharRemoval: detail?.specChrRmYn === 'Y',
+    useSingleCellText: detail?.singleCellText === 'Y',
+    sentenceSplitAlgorithm: detail?.sentSplitAlgoCd ?? '',
+    languageDetection: detail?.langDetectCd ?? '',
+    promptId: '',
+    llmCd: detail?.llmCd ?? '',
+    embeddingModel: detail?.embedModelCd ?? '',
+    vectorDb: detail?.vectorDbCd ?? '',
+    embeddingNormalization: detail?.embedNormCd ?? '',
+    poolingStrategy: detail?.poolStratCd ?? '',
+    dimensionReduction: detail?.dimReducCd ?? '',
+  }
+}
 
 /** 데이터셋 수정 */
 const onEdit = async (dataset: DocDataset) => {
