@@ -221,8 +221,6 @@ onMounted(() => {
   overflow: hidden;
 }
 
-
-
 .user-manage-status {
   display: inline-block;
   padding: 2px 8px;
