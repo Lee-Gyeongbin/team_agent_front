@@ -282,6 +282,15 @@ export const useCategoryStore = () => {
   }
 
   const handleSaveCategory = async (data: { categoryId?: string; categoryName: string; parnCatId?: string | null }) => {
+    const categoryName = String(data.categoryName ?? '').trim()
+    const actionTitle = data.categoryId ? '카테고리 수정' : '카테고리 등록'
+    const actionVerb = data.categoryId ? '수정' : '등록'
+    const confirmed = await openConfirm({
+      title: actionTitle,
+      message: `${categoryName ? `'${categoryName}' ` : ''}카테고리를 ${actionVerb}하시겠습니까?`,
+    })
+    if (!confirmed) return false
+
     try {
       openLoading({ text: '카테고리를 저장하는 중...' })
       let res: { successYn: boolean }
@@ -308,6 +317,12 @@ export const useCategoryStore = () => {
   }
 
   const handleRenameCategory = async (categoryId: string, categoryName: string) => {
+    const confirmed = await openConfirm({
+      title: '카테고리 이름 수정',
+      message: `'${String(categoryName ?? '').trim()}'을(를) 수정하시겠습니까?`,
+    })
+    if (!confirmed) return false
+
     try {
       openLoading({ text: '카테고리 이름을 변경하는 중...' })
       let res: { successYn: boolean }

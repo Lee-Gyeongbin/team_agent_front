@@ -124,13 +124,6 @@ const resolveAllDocFileIds = (row: Document): string[] => {
   return out
 }
 
-/** 미리보기·단건 다운로드용 대표 파일 ID (단일 필드 → 목록 첫 항 → 상세 첨부) */
-const resolvePrimaryDocFileId = (row: Document): string => {
-  const all = resolveAllDocFileIds(row)
-  if (all.length > 0) return all[0]
-  return ''
-}
-
 const normalizeDocumentListRow = (doc: Document): Document => {
   const extra = doc as Document & Record<string, unknown>
   const ids = parseDocFileIdListFromRow(extra)
@@ -317,12 +310,20 @@ const handleSaveDocument = async (data: Partial<Document> & { deleteFileIds?: st
     }
   }
 
-  if (existCnt > 0) {
-    const ok = await openConfirm({
-      message: '이미 존재하는 문서가 있습니다. 덮어씌우시겠습니까?',
-    })
-    if (!ok) return false
-  }
+  const docTitle = String(data.docTitle ?? '').trim()
+  const targetName = docTitle ? `'${docTitle}'` : '이 문서'
+  const isEditMode = Boolean(String(data.docId ?? '').trim())
+  const title = isEditMode ? '문서 수정' : '문서 등록'
+  const message =
+    existCnt > 0
+      ? `${targetName} 문서가 이미 존재합니다. 덮어씌우시겠습니까?`
+      : `${targetName} 문서를 ${isEditMode ? '수정' : '등록'}하시겠습니까?`
+
+  const confirmed = await openConfirm({
+    title,
+    message,
+  })
+  if (!confirmed) return false
 
   try {
     return await performDocumentSave(data)
@@ -374,6 +375,14 @@ const handleSelectUrlList = async () => {
 }
 
 const handleSaveUrl = async (data: Partial<UrlItem>) => {
+  const urlName = String(data.urlName ?? '').trim()
+  const targetName = urlName ? `'${urlName}'` : '이 URL'
+  const confirmed = await openConfirm({
+    title: 'URL 저장',
+    message: `${targetName}을(를) 저장하시겠습니까?`,
+  })
+  if (!confirmed) return false
+
   openLoading({ text: 'URL을 저장하는 중...' })
   try {
     await fetchSaveUrl(data)
@@ -381,12 +390,22 @@ const handleSaveUrl = async (data: Partial<UrlItem>) => {
     closeLoading()
   }
   await handleSelectUrlList()
+  return true
 }
 
 const handleDeleteUrl = async (ids: string[]) => {
+  const validIds = (Array.isArray(ids) ? ids : []).map((id) => String(id ?? '').trim()).filter(Boolean)
+  if (validIds.length === 0) return false
+
+  const confirmed = await openConfirm({
+    title: 'URL 삭제',
+    message: `선택한 ${validIds.length}개 URL을 삭제하시겠습니까?`,
+  })
+  if (!confirmed) return false
+
   openLoading({ text: 'URL을 삭제하는 중...' })
   try {
-    const res = await fetchDeleteUrl(ids)
+    const res = await fetchDeleteUrl(validIds)
     const affected = typeof res.data === 'number' ? res.data : 0
     if (affected > 0) {
       openToast({ message: '문서가 삭제되었습니다.', type: 'success' })
@@ -397,9 +416,17 @@ const handleDeleteUrl = async (ids: string[]) => {
     closeLoading()
   }
   await handleSelectUrlList()
+  return true
 }
 
 const handleToggleUrlStatus = async (id: string, active: boolean) => {
+  const nextLabel = active ? '활성화' : '비활성화'
+  const confirmed = await openConfirm({
+    title: 'URL 상태 변경',
+    message: `URL의 상태를 ${nextLabel}로 변경하시겠습니까?`,
+  })
+  if (!confirmed) return false
+
   openLoading({ text: 'URL 상태를 변경하는 중...' })
   try {
     await fetchToggleUrlStatus(id, active)
@@ -407,6 +434,7 @@ const handleToggleUrlStatus = async (id: string, active: boolean) => {
     closeLoading()
   }
   await handleSelectUrlList()
+  return true
 }
 
 /** 문서 미리보기 모달 (FilePreviewModal) — PDF.js 뷰어 */
@@ -583,7 +611,6 @@ const onBatchDownload = async () => {
   const ids = [...selectedIds.value]
   for (let i = 0; i < ids.length; i++) {
     const docId = ids[i]
-    const row = documentList.value.find((d) => d.docId === docId)
     await onDownloadFile(docId)
     if (i < ids.length - 1) {
       await new Promise((r) => setTimeout(r, 200))

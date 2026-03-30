@@ -610,51 +610,64 @@ const buildChunkOptJson = (data: DocDatasetForm): Record<string, unknown> | unde
 }
 
 /** 저장 시 데이터셋 생성 */
-const onSaveCreate = async (data: DocDatasetForm, startBuild: boolean) => {
-  const chunkOptObj = buildChunkOptJson(data)
-  const chunkOptJson = chunkOptObj !== undefined ? JSON.stringify(chunkOptObj) : undefined
-  // 007(PAGING): 최소 청크는 chunkOptJson.min_chunk_sz 만 사용 — 상위 MIN_CHUNK_SZ 컬럼은 0
-  const minChunkSz = data.chunkAlgorithm === CHUNK_ALGO_CODE.paging ? 0 : (data.minChunkSize ?? 0)
-  // 저장 요청 데이터 생성
-  const payload: DocDatasetSavePayload = {
-    datasetId: editingDatasetId.value || undefined,
-    dsNm: data.name,
-    description: data.description,
-    version: data.version,
-    chunkAlgoCd: data.chunkAlgorithm,
-    chunkSize: data.chunkSize ?? 0,
-    chunkOverlap: data.chunkOverlap ?? 0,
-    minChunkSz,
-    ...(chunkOptJson !== undefined ? { chunkOptJson } : {}),
-    hdrInclCd: data.headerInclusion,
-    datasetBuildStatusCd: startBuild ? '002' : '001',
-    promptId: data.promptId,
-    llmCd: data.llmCd,
-    embedModelCd: data.embeddingModel,
-    vectorDbCd: data.vectorDb,
-    embedNormCd: data.embeddingNormalization,
-    poolStratCd: data.poolingStrategy,
-    dimReducCd: data.dimensionReduction,
-    chunkCnt: 0,
-    srchQual: 0,
-    useYn: 'Y',
-    lowercaseYn: data.useLowercasing ? 'Y' : 'N',
-    wspNormYn: data.useWhitespaceNorm ? 'Y' : 'N',
-    specChrRmYn: data.useSpecialCharRemoval ? 'Y' : 'N',
-    singleCellText: data.useSingleCellText ? 'Y' : 'N',
-    sentSplitAlgoCd: data.sentenceSplitAlgorithm,
-    langDetectCd: data.languageDetection,
-    docIdList: data.selectedDocIds.map((id) => ({ docId: id, datasetId: editingDatasetId.value ?? '' })),
-    urlIdList: data.selectedUrlIds.map((id) => ({ urlId: id, datasetId: editingDatasetId.value ?? '' })),
-  }
-  // 데이터셋 저장
-  const { affected, datasetId } = await handleSaveDocDataset(payload)
-  // 데이터셋 구축 진행 스트림 시작
-  if (startBuild && affected > 0 && datasetId) {
-    handleStartBuildStream(datasetId)
-  }
-  // 생성 모달 닫기
-  isCreateModalOpen.value = false
+const onSaveCreate = (data: DocDatasetForm, startBuild: boolean) => {
+  const datasetName = data.name?.trim()
+  const targetName = datasetName ? `'${datasetName}'` : '이 데이터셋'
+  const modeText = modalMode.value === 'edit' ? '수정' : '생성'
+
+  openConfirm({
+    title: `데이터셋 ${modeText}`,
+    message: startBuild
+      ? `${targetName}을(를) 저장하고 구축을 시작하시겠습니까?`
+      : `${targetName}을(를) 저장하시겠습니까?`,
+    onConfirm: async () => {
+      const chunkOptObj = buildChunkOptJson(data)
+      const chunkOptJson = chunkOptObj !== undefined ? JSON.stringify(chunkOptObj) : undefined
+      // 007(PAGING): 최소 청크는 chunkOptJson.min_chunk_sz 만 사용 — 상위 MIN_CHUNK_SZ 컬럼은 0
+      const minChunkSz = data.chunkAlgorithm === CHUNK_ALGO_CODE.paging ? 0 : (data.minChunkSize ?? 0)
+      // 저장 요청 데이터 생성
+      const payload: DocDatasetSavePayload = {
+        datasetId: editingDatasetId.value || undefined,
+        dsNm: data.name,
+        description: data.description,
+        version: data.version,
+        chunkAlgoCd: data.chunkAlgorithm,
+        chunkSize: data.chunkSize ?? 0,
+        chunkOverlap: data.chunkOverlap ?? 0,
+        minChunkSz,
+        ...(chunkOptJson !== undefined ? { chunkOptJson } : {}),
+        hdrInclCd: data.headerInclusion,
+        datasetBuildStatusCd: startBuild ? '002' : '001',
+        promptId: data.promptId,
+        llmCd: data.llmCd,
+        embedModelCd: data.embeddingModel,
+        vectorDbCd: data.vectorDb,
+        embedNormCd: data.embeddingNormalization,
+        poolStratCd: data.poolingStrategy,
+        dimReducCd: data.dimensionReduction,
+        chunkCnt: 0,
+        srchQual: 0,
+        useYn: 'Y',
+        lowercaseYn: data.useLowercasing ? 'Y' : 'N',
+        wspNormYn: data.useWhitespaceNorm ? 'Y' : 'N',
+        specChrRmYn: data.useSpecialCharRemoval ? 'Y' : 'N',
+        singleCellText: data.useSingleCellText ? 'Y' : 'N',
+        sentSplitAlgoCd: data.sentenceSplitAlgorithm,
+        langDetectCd: data.languageDetection,
+        docIdList: data.selectedDocIds.map((id) => ({ docId: id, datasetId: editingDatasetId.value ?? '' })),
+        urlIdList: data.selectedUrlIds.map((id) => ({ urlId: id, datasetId: editingDatasetId.value ?? '' })),
+      }
+
+      // 데이터셋 저장
+      const { affected, datasetId } = await handleSaveDocDataset(payload)
+      // 데이터셋 구축 진행 스트림 시작
+      if (startBuild && affected > 0 && datasetId) {
+        handleStartBuildStream(datasetId)
+      }
+      // 생성/수정 모달 닫기
+      isCreateModalOpen.value = false
+    },
+  })
 }
 
 // 상세 데이터를 폼 데이터로 변환
@@ -736,7 +749,16 @@ const onEdit = async (dataset: DocDataset) => {
 // 삭제 버튼 클릭
 const onDelete = (id: string) => {
   deleteTargetId.value = id
-  isDeleteModalOpen.value = true
+  const datasetNm = datasetList.value.find((item) => item.datasetId === id)?.dsNm ?? ''
+  const targetName = datasetNm ? `'${datasetNm}'` : '이 데이터셋'
+
+  openConfirm({
+    title: '데이터셋 삭제',
+    message: `${targetName}을(를) 삭제하시겠습니까?\n벡터 인덱스가 함께 삭제됩니다.`,
+    onConfirm: async () => {
+      await handleDeleteDocDataset(id)
+    },
+  })
 }
 
 // 변경 이력 버튼 클릭
@@ -756,23 +778,34 @@ const onDeleteHistory = async (id: string) => {
 }
 
 // 구축 중지
-const onStopBuild = async (id: string) => {
-  handleCloseBuildStream(id)
-  handleClearBuildState(id)
-  openLoading({ text: '구축 중지를 처리하는 중...' })
-  try {
-    const res = await fetchToggleActiveDocDataset(id, '', '001')
-    const affected = typeof res.data === 'number' ? res.data : 0
-    if (affected > 0) {
-      openToast({ message: '구축 중지되었습니다.', type: 'success' })
-    } else {
-      openToast({ message: '구축 중지에 실패했습니다.', type: 'error' })
-    }
-  } finally {
-    closeLoading()
-  }
-  // 목록 + 요약 동시 조회
-  await handleSelectAll()
+const onStopBuild = (id: string) => {
+  const datasetNm = datasetList.value.find((item) => item.datasetId === id)?.dsNm ?? ''
+  const targetName = datasetNm ? `'${datasetNm}'` : '이 데이터셋'
+
+  openConfirm({
+    title: '구축 중지',
+    message: `${targetName}의 구축을 중지하시겠습니까?`,
+    onConfirm: async () => {
+      handleCloseBuildStream(id)
+      handleClearBuildState(id)
+
+      openLoading({ text: '구축 중지를 처리하는 중...' })
+      try {
+        const res = await fetchToggleActiveDocDataset(id, '', '001')
+        const affected = typeof res.data === 'number' ? res.data : 0
+        if (affected > 0) {
+          openToast({ message: '구축 중지되었습니다.', type: 'success' })
+        } else {
+          openToast({ message: '구축 중지에 실패했습니다.', type: 'error' })
+        }
+      } finally {
+        closeLoading()
+      }
+
+      // 목록 + 요약 동시 조회
+      await handleSelectAll()
+    },
+  })
 }
 
 // 삭제 버튼 클릭 시 실행(삭제 모달 확인 후 실행)
@@ -822,26 +855,33 @@ const handleDeleteDocDataset = async (id: string) => {
 }
 
 // 데이터셋 활성화 토글
-const handleToggleActiveDocDataset = async (id: string, useYn: string) => {
-  if (useYn === 'Y') {
-    useYn = 'N'
-  } else {
-    useYn = 'Y'
-  }
-  openLoading({ text: '활성화 상태를 변경하는 중...' })
-  try {
-    const res = await fetchToggleActiveDocDataset(id, useYn, '')
-    const affected = typeof res.data === 'number' ? res.data : 0
-    if (affected > 0) {
-      openToast({ message: '활성화 상태가 변경되었습니다.', type: 'success' })
-    } else {
-      openToast({ message: '활성화 상태 변경에 실패했습니다.', type: 'error' })
-    }
-  } finally {
-    closeLoading()
-  }
-  // 목록 + 요약 동시 조회
-  await handleSelectAll()
+const handleToggleActiveDocDataset = (id: string, useYn: string) => {
+  const nextUseYn = useYn === 'Y' ? 'N' : 'Y'
+  const nextUseLabel = nextUseYn === 'Y' ? '활성화' : '비활성화'
+  const datasetNm = datasetList.value.find((item) => item.datasetId === id)?.dsNm ?? ''
+  const targetName = datasetNm ? `'${datasetNm}'` : '이 데이터셋'
+
+  openConfirm({
+    title: '활성화 상태 변경',
+    message: `${targetName}의 활성화 상태를 ${nextUseLabel}하시겠습니까?`,
+    onConfirm: async () => {
+      openLoading({ text: '활성화 상태를 변경하는 중...' })
+      try {
+        const res = await fetchToggleActiveDocDataset(id, nextUseYn, '')
+        const affected = typeof res.data === 'number' ? res.data : 0
+        if (affected > 0) {
+          openToast({ message: '활성화 상태가 변경되었습니다.', type: 'success' })
+        } else {
+          openToast({ message: '활성화 상태 변경에 실패했습니다.', type: 'error' })
+        }
+      } finally {
+        closeLoading()
+      }
+
+      // 목록 + 요약 동시 조회
+      await handleSelectAll()
+    },
+  })
 }
 
 // ===== 변경이력 =====
