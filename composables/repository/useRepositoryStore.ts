@@ -213,6 +213,7 @@ const handleSelectDocumentList = async () => {
     const findContent = docSearchKeyword.value || undefined
     const categoryId = docSelectedCategoryId.value || undefined
     const useYn = docStatusFilter.value
+    openLoading({ text: '문서 목록을 불러오는 중...' })
     const res = await fetchDocumentList(findContent, categoryId, useYn, docCurrentPage.value, docPageSize)
     documentList.value = res.dataList.map((doc) => {
       const normalized = normalizeDocumentListRow(doc)
@@ -224,6 +225,7 @@ const handleSelectDocumentList = async () => {
     docTotalCount.value = res.totalCnt
   } finally {
     isLoading.value = false
+    closeLoading()
   }
 }
 
@@ -275,7 +277,13 @@ const performDocumentSave = async (data: Partial<Document> & { deleteFileIds?: s
   if (deleteFileIds.length > 0) payload.deleteFileIds = deleteFileIds
   const id = String(data.docId ?? '').trim()
   if (id) payload.docId = id
-  const res = await fetchSaveDocument(payload)
+  openLoading({ text: '문서를 저장하는 중...' })
+  let res: { successYn: boolean }
+  try {
+    res = await fetchSaveDocument(payload)
+  } finally {
+    closeLoading()
+  }
   if (res.successYn) {
     openToast({ message: `'${data.docTitle}' 문서가 등록되었습니다.` })
     await handleSelectDocumentList()
@@ -300,8 +308,13 @@ const handleSaveDocument = async (data: Partial<Document> & { deleteFileIds?: st
 
   let existCnt = 0
   if (docIdList.length > 0) {
-    const exists = await fetchSelectDocExistCnt(docIdList)
-    existCnt = exists.data
+    openLoading({ text: '문서 중복 여부를 확인하는 중...' })
+    try {
+      const exists = await fetchSelectDocExistCnt(docIdList)
+      existCnt = exists.data
+    } finally {
+      closeLoading()
+    }
   }
 
   if (existCnt > 0) {
@@ -332,41 +345,67 @@ const handleDeleteDocument = async (docIdList: DocumentDeleteItem[]) => {
     openToast({ message: fileError.value || '저장소에서 파일 삭제에 실패했습니다.', type: 'error' })
     return
   }
-  await fetchDeleteDocument(valid)
+  openLoading({ text: '문서를 삭제하는 중...' })
+  try {
+    await fetchDeleteDocument(valid)
+  } finally {
+    closeLoading()
+  }
   await handleSelectDocumentList()
 }
 
 // ===== URL 액션 =====
 const handleSelectUrlList = async () => {
-  const res = await fetchUrlList({
-    keyword: urlSearchKeyword.value || undefined,
-    status: urlStatusFilter.value,
-    category: urlCategoryFilter.value,
-    page: urlCurrentPage.value,
-    pageSize: urlPageSize,
-  })
-  urlList.value = res.list
-  urlTotalCount.value = res.total
+  openLoading({ text: 'URL 목록을 불러오는 중...' })
+  let res: { list: UrlItem[]; total: number }
+  try {
+    res = await fetchUrlList({
+      keyword: urlSearchKeyword.value || undefined,
+      status: urlStatusFilter.value,
+      category: urlCategoryFilter.value,
+      page: urlCurrentPage.value,
+      pageSize: urlPageSize,
+    })
+    urlList.value = res.list
+    urlTotalCount.value = res.total
+  } finally {
+    closeLoading()
+  }
 }
 
 const handleSaveUrl = async (data: Partial<UrlItem>) => {
-  await fetchSaveUrl(data)
+  openLoading({ text: 'URL을 저장하는 중...' })
+  try {
+    await fetchSaveUrl(data)
+  } finally {
+    closeLoading()
+  }
   await handleSelectUrlList()
 }
 
 const handleDeleteUrl = async (ids: string[]) => {
-  const res = await fetchDeleteUrl(ids)
-  const affected = typeof res.data === 'number' ? res.data : 0
-  if (affected > 0) {
-    openToast({ message: '문서가 삭제되었습니다.', type: 'success' })
-  } else {
-    openToast({ message: '문서 삭제에 실패했습니다.', type: 'error' })
+  openLoading({ text: 'URL을 삭제하는 중...' })
+  try {
+    const res = await fetchDeleteUrl(ids)
+    const affected = typeof res.data === 'number' ? res.data : 0
+    if (affected > 0) {
+      openToast({ message: '문서가 삭제되었습니다.', type: 'success' })
+    } else {
+      openToast({ message: '문서 삭제에 실패했습니다.', type: 'error' })
+    }
+  } finally {
+    closeLoading()
   }
   await handleSelectUrlList()
 }
 
 const handleToggleUrlStatus = async (id: string, active: boolean) => {
-  await fetchToggleUrlStatus(id, active)
+  openLoading({ text: 'URL 상태를 변경하는 중...' })
+  try {
+    await fetchToggleUrlStatus(id, active)
+  } finally {
+    closeLoading()
+  }
   await handleSelectUrlList()
 }
 
@@ -403,10 +442,13 @@ const handleFileView = async (row: Document) => {
 
   let fileList: FileItem[] = []
   try {
+    openLoading({ text: '문서 상세 정보를 불러오는 중...' })
     const res = await fetchSelectDocRepositoryDetail(docId)
     fileList = res.fileList ?? []
   } catch {
     // 상세 조회 실패 시 목록 행 메타만으로 라벨 구성
+  } finally {
+    closeLoading()
   }
 
   filePreviewDocId.value = docId
@@ -466,6 +508,7 @@ const onDocumentTableRowClick = async (row: Record<string, unknown>) => {
   isLoading.value = true
   try {
     await handleSelectCodeOptions()
+    openLoading({ text: '문서 상세 정보를 불러오는 중...' })
     const res = await fetchSelectDocRepositoryDetail(docId)
     docRegisterInitialData.value = mapDocDetailResponseToInitial(res.data, res.fileList ?? [])
   } catch {
@@ -473,6 +516,7 @@ const onDocumentTableRowClick = async (row: Record<string, unknown>) => {
     docRegisterInitialData.value = fromList ? { ...fromList } : { ...(row as unknown as Document) }
   } finally {
     isLoading.value = false
+    closeLoading()
     docTableHighlightedDocId.value = docId
     isDocRegisterOpen.value = true
   }

@@ -330,7 +330,12 @@ const handleStartBuildStream = (datasetId: string) => {
           }
           handleCloseBuildStream(datasetId)
           void (async () => {
-            await fetchToggleActiveDocDataset(datasetId, '', '001')
+            openLoading({ text: '구축 상태를 동기화하는 중...' })
+            try {
+              await fetchToggleActiveDocDataset(datasetId, '', '001')
+            } finally {
+              closeLoading()
+            }
             await handleSelectAll()
           })()
         } else {
@@ -381,14 +386,24 @@ const onTest = async (id: string) => {
 // ===== 기능 METHODS =====
 /** 목록 조회 */
 const handleSelectDocDatasetList = async () => {
-  const res = await fetchDocDatasetList()
-  datasetList.value = res.dataList
+  openLoading({ text: '데이터셋 정보를 불러오는 중...' })
+  try {
+    const res = await fetchDocDatasetList()
+    datasetList.value = res.dataList
+  } finally {
+    closeLoading()
+  }
 }
 
 /** 요약 조회 */
 const handleSelectDocDatasetSummary = async () => {
-  const res = await fetchDocDatasetSummary()
-  summary.value = res.data
+  openLoading({ text: '데이터셋 정보를 불러오는 중...' })
+  try {
+    const res = await fetchDocDatasetSummary()
+    summary.value = res.data
+  } finally {
+    closeLoading()
+  }
 }
 
 /** 목록 + 요약 동시 조회 */
@@ -398,20 +413,30 @@ const handleSelectAll = async () => {
 
 /** 데이터셋 상세 조회 */
 const handleSelectDocDataset = async (datasetId: string) => {
-  const res = await fetchDocDataset(datasetId)
-  selectedDatasetDetail.value = res.data ?? null
-  return res
+  openLoading({ text: '데이터셋 상세를 불러오는 중...' })
+  try {
+    const res = await fetchDocDataset(datasetId)
+    selectedDatasetDetail.value = res.data ?? null
+    return res
+  } finally {
+    closeLoading()
+  }
 }
 
 /** 데이터소스 목록 조회 */
 const handleSelectDatasetSrcList = async () => {
-  const res = await fetchDatasetSrcList()
-  // 카테고리 목록 세팅
-  selectedDatasetCategoryList.value = res.categoryList ?? []
-  // 문서 목록 세팅
-  selectedDatasetDocList.value = res.docList ?? []
-  // URL 목록 세팅
-  selectedDatasetUrlList.value = res.urlList ?? []
+  openLoading({ text: '데이터소스를 불러오는 중...' })
+  try {
+    const res = await fetchDatasetSrcList()
+    // 카테고리 목록 세팅
+    selectedDatasetCategoryList.value = res.categoryList ?? []
+    // 문서 목록 세팅
+    selectedDatasetDocList.value = res.docList ?? []
+    // URL 목록 세팅
+    selectedDatasetUrlList.value = res.urlList ?? []
+  } finally {
+    closeLoading()
+  }
 }
 
 /** 코드 옵션 목록 조회 */
@@ -454,8 +479,13 @@ const handleSelectCodeOptions = async () => {
 
 /** 프롬프트 목록 조회 */
 const handleSelectPromptList = async () => {
-  const res = await fetchSelectPromptList()
-  promptList.value = res.dataList ?? []
+  openLoading({ text: '프롬프트 목록을 불러오는 중...' })
+  try {
+    const res = await fetchSelectPromptList()
+    promptList.value = res.dataList ?? []
+  } finally {
+    closeLoading()
+  }
 }
 
 /** 코드 옵션 매핑 */
@@ -695,12 +725,17 @@ const onDeleteHistory = async (id: string) => {
 const onStopBuild = async (id: string) => {
   handleCloseBuildStream(id)
   handleClearBuildState(id)
-  const res = await fetchToggleActiveDocDataset(id, '', '001')
-  const affected = typeof res.data === 'number' ? res.data : 0
-  if (affected > 0) {
-    openToast({ message: '구축 중지되었습니다.', type: 'success' })
-  } else {
-    openToast({ message: '구축 중지에 실패했습니다.', type: 'error' })
+  openLoading({ text: '구축 중지를 처리하는 중...' })
+  try {
+    const res = await fetchToggleActiveDocDataset(id, '', '001')
+    const affected = typeof res.data === 'number' ? res.data : 0
+    if (affected > 0) {
+      openToast({ message: '구축 중지되었습니다.', type: 'success' })
+    } else {
+      openToast({ message: '구축 중지에 실패했습니다.', type: 'error' })
+    }
+  } finally {
+    closeLoading()
   }
   // 목록 + 요약 동시 조회
   await handleSelectAll()
@@ -713,13 +748,20 @@ const doDelete = async () => {
 
 // 데이터셋 저장
 const handleSaveDocDataset = async (dataset: DocDatasetSavePayload) => {
-  const res = await fetchSaveDocDataset(dataset)
-  const affected = typeof res.data === 'number' ? res.data : 0
-  const datasetId = res.datasetId ?? dataset.datasetId ?? ''
-  if (affected > 0) {
-    openToast({ message: '데이터셋이 저장되었습니다.', type: 'success' })
-  } else {
-    openToast({ message: '데이터셋 저장에 실패했습니다.', type: 'error' })
+  openLoading({ text: '데이터셋을 저장하는 중...' })
+  let affected = 0
+  let datasetId = ''
+  try {
+    const res = await fetchSaveDocDataset(dataset)
+    affected = typeof res.data === 'number' ? res.data : 0
+    datasetId = res.datasetId ?? dataset.datasetId ?? ''
+    if (affected > 0) {
+      openToast({ message: '데이터셋이 저장되었습니다.', type: 'success' })
+    } else {
+      openToast({ message: '데이터셋 저장에 실패했습니다.', type: 'error' })
+    }
+  } finally {
+    closeLoading()
   }
   // 목록 + 요약 동시 조회
   await handleSelectAll()
@@ -728,12 +770,17 @@ const handleSaveDocDataset = async (dataset: DocDatasetSavePayload) => {
 
 // 데이터셋 삭제 실행
 const handleDeleteDocDataset = async (id: string) => {
-  const res = await fetchDeleteDocDataset(id)
-  const affected = typeof res.data === 'number' ? res.data : 0
-  if (affected > 0) {
-    openToast({ message: '데이터셋이 삭제되었습니다.', type: 'success' })
-  } else {
-    openToast({ message: '데이터셋 삭제에 실패했습니다.', type: 'error' })
+  openLoading({ text: '데이터셋을 삭제하는 중...' })
+  try {
+    const res = await fetchDeleteDocDataset(id)
+    const affected = typeof res.data === 'number' ? res.data : 0
+    if (affected > 0) {
+      openToast({ message: '데이터셋이 삭제되었습니다.', type: 'success' })
+    } else {
+      openToast({ message: '데이터셋 삭제에 실패했습니다.', type: 'error' })
+    }
+  } finally {
+    closeLoading()
   }
   isDeleteModalOpen.value = false
   // 목록 + 요약 동시 조회
@@ -747,12 +794,17 @@ const handleToggleActiveDocDataset = async (id: string, useYn: string) => {
   } else {
     useYn = 'Y'
   }
-  const res = await fetchToggleActiveDocDataset(id, useYn, '')
-  const affected = typeof res.data === 'number' ? res.data : 0
-  if (affected > 0) {
-    openToast({ message: '활성화 상태가 변경되었습니다.', type: 'success' })
-  } else {
-    openToast({ message: '활성화 상태 변경에 실패했습니다.', type: 'error' })
+  openLoading({ text: '활성화 상태를 변경하는 중...' })
+  try {
+    const res = await fetchToggleActiveDocDataset(id, useYn, '')
+    const affected = typeof res.data === 'number' ? res.data : 0
+    if (affected > 0) {
+      openToast({ message: '활성화 상태가 변경되었습니다.', type: 'success' })
+    } else {
+      openToast({ message: '활성화 상태 변경에 실패했습니다.', type: 'error' })
+    }
+  } finally {
+    closeLoading()
   }
   // 목록 + 요약 동시 조회
   await handleSelectAll()
@@ -767,24 +819,33 @@ const historyPageSize = 5
 // 변경이력 목록 조회
 const handleSelectDocDatasetHistoryList = async (datasetId: string, page: number = 1) => {
   historyPage.value = page
-  const res = await fetchDocDatasetHistoryList(datasetId, page, historyPageSize)
-  historyTotalCount.value = res?.totalCnt ?? 0
-
-  historyList.value = res?.dataList ?? []
+  openLoading({ text: '이력 목록을 불러오는 중...' })
+  try {
+    const res = await fetchDocDatasetHistoryList(datasetId, page, historyPageSize)
+    historyTotalCount.value = res?.totalCnt ?? 0
+    historyList.value = res?.dataList ?? []
+  } finally {
+    closeLoading()
+  }
 }
 
 // 변경이력 저장
 const handleSaveDocDatasetHistory = async (history: { datasetId: string; version: string; content: string }) => {
-  const res = await fetchSaveDocDatasetHistory({
-    datasetId: history.datasetId,
-    verNo: history.version,
-    chgContent: history.content,
-  })
-  const affected = typeof res.data === 'number' ? res.data : 0
-  if (affected > 0) {
-    openToast({ message: '이력이 저장되었습니다.', type: 'success' })
-  } else {
-    openToast({ message: '이력 저장에 실패했습니다.', type: 'error' })
+  openLoading({ text: '이력을 저장하는 중...' })
+  try {
+    const res = await fetchSaveDocDatasetHistory({
+      datasetId: history.datasetId,
+      verNo: history.version,
+      chgContent: history.content,
+    })
+    const affected = typeof res.data === 'number' ? res.data : 0
+    if (affected > 0) {
+      openToast({ message: '이력이 저장되었습니다.', type: 'success' })
+    } else {
+      openToast({ message: '이력 저장에 실패했습니다.', type: 'error' })
+    }
+  } finally {
+    closeLoading()
   }
   // 저장 후 첫 페이지로 이동하여 새 이력 표시
   await handleSelectDocDatasetHistoryList(history.datasetId, 1)
@@ -792,12 +853,17 @@ const handleSaveDocDatasetHistory = async (history: { datasetId: string; version
 
 // 변경이력 삭제
 const handleDeleteDocDatasetHistory = async (id: string, datasetId: string) => {
-  const res = await fetchDeleteDocDatasetHistory(id)
-  const affected = typeof res.data === 'number' ? res.data : 0
-  if (affected > 0) {
-    openToast({ message: '이력이 삭제되었습니다.', type: 'success' })
-  } else {
-    openToast({ message: '이력 삭제에 실패했습니다.', type: 'error' })
+  openLoading({ text: '이력을 삭제하는 중...' })
+  try {
+    const res = await fetchDeleteDocDatasetHistory(id)
+    const affected = typeof res.data === 'number' ? res.data : 0
+    if (affected > 0) {
+      openToast({ message: '이력이 삭제되었습니다.', type: 'success' })
+    } else {
+      openToast({ message: '이력 삭제에 실패했습니다.', type: 'error' })
+    }
+  } finally {
+    closeLoading()
   }
   await handleSelectDocDatasetHistoryList(datasetId, historyPage.value)
 }
@@ -827,12 +893,14 @@ const handleSearchDocDataset = async (params: {
   isSearching.value = true
   searchResults.value = []
   searchSummary.value = { totalChunks: 0, avgSimilarity: 0 }
+  openLoading({ text: '데이터셋을 검색하는 중...' })
   try {
     const res = await fetchSearchDocDataset(params)
     searchResults.value = res.data.results
     searchSummary.value = res.data.summary
   } finally {
     isSearching.value = false
+    closeLoading()
   }
 }
 

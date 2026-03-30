@@ -1,5 +1,6 @@
 // 타입 선언
 import type {
+  ChatLogListRow,
   ChatRefRow,
   ModelOption,
   PanelType,
@@ -98,8 +99,13 @@ export const useChatStore = () => {
       messages.value = []
       return
     }
-    const res = await fetchSelectChatLogList(roomId)
-    const rawList = res.list ?? []
+    openLoading({ text: '채팅 기록을 불러오는 중...' })
+    let rawList: ChatLogListRow[]
+    try {
+      rawList = (await fetchSelectChatLogList(roomId)).list ?? []
+    } finally {
+      closeLoading()
+    }
     if (rawList.length === 0) {
       /**
        * 채팅 로그 목록이 0건인 경우
@@ -196,12 +202,15 @@ export const useChatStore = () => {
     let statList: VisualizationViewModel['statList']
     // 상세항목 코드 → 명칭 매핑 정보 조회
     let statDetailList: VisualizationViewModel['statDetailList']
+    openLoading({ text: '시각화 데이터를 불러오는 중...' })
     try {
       const res = await fetchSelectTableDataList({ logId })
       statList = res.statList
       statDetailList = res.statDetailList
     } catch {
       // 매핑 API 실패 시 표/차트는 컬럼 키 기준 라벨로 표시
+    } finally {
+      closeLoading()
     }
 
     const viewModel = buildVisualizationViewModel({
@@ -222,7 +231,13 @@ export const useChatStore = () => {
     activePanelMessageId.value = id
     pdfRefList.value = []
     // 참조 문서 목록 조회
-    const res = await fetchSelectChatRef(id)
+    openLoading({ text: '참조 문서를 불러오는 중...' })
+    let res: { list: ChatRefRow[] }
+    try {
+      res = await fetchSelectChatRef(id)
+    } finally {
+      closeLoading()
+    }
     pdfRefList.value = res.list
   }
 
@@ -281,7 +296,13 @@ export const useChatStore = () => {
 
   /** 카테고리 목록 조회 */
   const handleSelectKnowledge = async () => {
-    const res = await fetchSelectKnowledgeList()
+    openLoading({ text: '카테고리 목록을 불러오는 중...' })
+    let res: { dataList: KnowledgeItem[] }
+    try {
+      res = await fetchSelectKnowledgeList()
+    } finally {
+      closeLoading()
+    }
     knowledgeList.value = res.dataList ?? []
   }
 

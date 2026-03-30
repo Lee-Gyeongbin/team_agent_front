@@ -205,7 +205,13 @@ export const useCategoryStore = () => {
         docSearchKeyword.value.trim() !== '' ||
         docStatusFilter.value !== ''
       ) {
-        const res = await fetchDocumentList(undefined, cat.categoryId, '', 1, 1)
+        openLoading({ text: '카테고리 삭제 가능 여부를 확인하는 중...' })
+        let res: { totalCnt: number }
+        try {
+          res = await fetchDocumentList(undefined, cat.categoryId, '', 1, 1)
+        } finally {
+          closeLoading()
+        }
         if (res.totalCnt > 0) {
           openToast({ message: '문서가 등록된 카테고리는 삭제할 수 없습니다.', type: 'warning' })
           return
@@ -255,7 +261,13 @@ export const useCategoryStore = () => {
     for (const id of options?.forceExpandIds ?? []) {
       if (id) expandedIds.add(id)
     }
-    const res = await fetchCategoryList()
+    openLoading({ text: '카테고리 목록을 불러오는 중...' })
+    let res: { dataList: CategoryItem[] }
+    try {
+      res = await fetchCategoryList()
+    } finally {
+      closeLoading()
+    }
     const tree = buildCategoryTreeFromFlat(res.dataList ?? [])
     categoryList.value = mergeCategoryExpandedState(tree, expandedIds)
 
@@ -271,7 +283,13 @@ export const useCategoryStore = () => {
 
   const handleSaveCategory = async (data: { categoryId?: string; categoryName: string; parnCatId?: string | null }) => {
     try {
-      const res = await fetchSaveCategory(data)
+      openLoading({ text: '카테고리를 저장하는 중...' })
+      let res: { successYn: boolean }
+      try {
+        res = await fetchSaveCategory(data)
+      } finally {
+        closeLoading()
+      }
       if (res.successYn) {
         openToast({ message: '카테고리가 저장되었습니다.', type: 'success' })
         const forceExpandIds = data.parnCatId ? [data.parnCatId] : []
@@ -291,7 +309,13 @@ export const useCategoryStore = () => {
 
   const handleRenameCategory = async (categoryId: string, categoryName: string) => {
     try {
-      const res = await fetchRenameCategory(categoryId, categoryName)
+      openLoading({ text: '카테고리 이름을 변경하는 중...' })
+      let res: { successYn: boolean }
+      try {
+        res = await fetchRenameCategory(categoryId, categoryName)
+      } finally {
+        closeLoading()
+      }
       if (res.successYn) {
         openToast({ message: '카테고리가 수정되었습니다.', type: 'success' })
         await handleSelectCategoryList({ preserveDocumentSelection: true })
@@ -310,7 +334,13 @@ export const useCategoryStore = () => {
 
   const handleDeleteCategory = async (id: string) => {
     try {
-      const res = await fetchDeleteCategory(id)
+      openLoading({ text: '카테고리를 삭제하는 중...' })
+      let res: { successYn: boolean }
+      try {
+        res = await fetchDeleteCategory(id)
+      } finally {
+        closeLoading()
+      }
       if (res.successYn) {
         openToast({ message: '카테고리가 삭제되었습니다.', type: 'success' })
         await handleSelectCategoryList({ preserveDocumentSelection: true })

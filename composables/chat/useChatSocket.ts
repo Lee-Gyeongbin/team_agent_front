@@ -26,7 +26,12 @@ export const useChatSocket = () => {
   // WebSocket 연결 확인 + 페이로드 전송 (실패 시 false 반환)
   const ensureWebSocketAndSend = async (payload: ChatSocketPayload): Promise<boolean> => {
     if (!chatbotSocket.value || chatbotSocket.value.readyState !== WEBSOCKET_OPEN) {
-      await connectWebSocket()
+      openLoading({ text: '서버에 연결하는 중...' })
+      try {
+        await connectWebSocket()
+      } finally {
+        closeLoading()
+      }
     }
     if (chatbotSocket.value?.readyState !== WEBSOCKET_OPEN) {
       updateStreamingError('연결 오류가 발생했습니다. 다시 시도해주세요.')
