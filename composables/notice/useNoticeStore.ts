@@ -1,6 +1,7 @@
 import type { NoticeDetailResponse, NoticeFormData, NoticeItem, NoticeRow } from '~/types/notice'
 import { useNoticeApi } from '~/composables/notice/useNoticeApi'
 import { formatDate } from '~/utils/global/dateUtil'
+import { getCodes } from '~/utils/global/comCodesUtil'
 
 const {
   fetchSelectNoticePinnedList,
@@ -27,6 +28,7 @@ export const useNoticeStore = () => {
 
   const createDefaultNoticeForm = (): NoticeFormData => ({
     noticeId: '',
+    noticeTypeCd: '',
     title: '',
     content: '',
     featuredYn: null,
@@ -39,12 +41,14 @@ export const useNoticeStore = () => {
 
   const normalizeNoticeFormData = (payload: NoticeFormData): NoticeFormData => ({
     ...payload,
+    noticeTypeCd: String(payload.noticeTypeCd ?? '').trim(),
     title: String(payload.title ?? '').trim(),
     content: String(payload.content ?? '').trim(),
   })
 
   const mapNoticeItemToFormData = (notice: NoticeItem): NoticeFormData => ({
     noticeId: notice.noticeId,
+    noticeTypeCd: notice.noticeTypeCd,
     title: notice.title,
     content: notice.content,
     featuredYn: notice.featuredYn,
@@ -57,6 +61,7 @@ export const useNoticeStore = () => {
 
   const mapNoticeDetailToItem = (detail: NoticeDetailResponse): NoticeItem => ({
     noticeId: String(detail.noticeId ?? ''),
+    noticeTypeCd: String(detail.noticeTypeCd ?? ''),
     title: String(detail.title ?? ''),
     content: String(detail.content ?? ''),
     featuredYn: detail.featuredYn === 'Y' ? 'Y' : 'N',
@@ -74,10 +79,6 @@ export const useNoticeStore = () => {
   const pinnedNoticeList = ref<NoticeItem[]>([])
   const normalNoticeList = ref<NoticeItem[]>([])
 
-  /** 고정 + 일반 병합 */
-  const noticeList = computed(() => {
-    return [...pinnedNoticeList.value, ...normalNoticeList.value]
-  })
   const searchKeyword = ref('')
   const isLoading = ref(false)
   const errorMessage = ref('')
@@ -88,29 +89,50 @@ export const useNoticeStore = () => {
   const selectedNotice = ref<NoticeItem | null>(null)
   const isEditFromDetail = ref(false)
   const noticeForm = ref<NoticeFormData>(createDefaultNoticeForm())
+  const noticeTypeOptions = ref<{ label: string; value: string }[]>([])
+  const searchCategory = ref<string>('')
+  const categoryOptions = computed(() => {
+    const allOption = { label: '전체', value: '' }
+    return [allOption, ...noticeTypeOptions.value]
+  })
 
   // ==============================
   // 계산값
   // ==============================
-  const filteredList = computed(() => {
-    const keyword = searchKeyword.value.trim().toLowerCase()
-    if (!keyword) return noticeList.value
+  const isMatchedNotice = (item: NoticeItem, keyword: string, selectedCategory: string) => {
+    const isCategoryMatched = !selectedCategory || String(item.noticeTypeCd ?? '').trim() === selectedCategory
+    if (!isCategoryMatched) return false
+    if (!keyword) return true
 
-    return noticeList.value.filter((item) => {
-      return item.title.toLowerCase().includes(keyword) || item.crtrId.toLowerCase().includes(keyword)
-    })
+    return item.title.toLowerCase().includes(keyword) || item.crtrId.toLowerCase().includes(keyword)
+  }
+
+  const noticeFilterState = computed(() => {
+    const keyword = searchKeyword.value.trim().toLowerCase()
+    const selectedCategory = String(searchCategory.value ?? '').trim()
+    return { keyword, selectedCategory }
   })
-  const filteredPinnedList = computed(() => filteredList.value.filter((notice) => notice.pinYn === 'Y'))
-  const filteredNormalList = computed(() => filteredList.value.filter((notice) => notice.pinYn !== 'Y'))
+
+  const filterNoticeList = (list: NoticeItem[]) => {
+    const { keyword, selectedCategory } = noticeFilterState.value
+    return list.filter((item) => isMatchedNotice(item, keyword, selectedCategory))
+  }
+
+  const filteredPinnedList = computed(() => {
+    return filterNoticeList(pinnedNoticeList.value)
+  })
+  const filteredNormalList = computed(() => {
+    return filterNoticeList(normalNoticeList.value)
+  })
+  const filteredList = computed(() => [...filteredPinnedList.value, ...filteredNormalList.value])
 
   const panelActionLabel = computed<'등록' | '수정'>(() => (noticeForm.value.noticeId ? '수정' : '등록'))
 
   const noticeOrderMap = computed(() => {
     const orderMap = new Map<string, number>()
-    let order = filteredList.value.filter((notice) => notice.pinYn !== 'Y').length
+    let order = filteredNormalList.value.length
 
-    filteredList.value.forEach((notice) => {
-      if (notice.pinYn === 'Y') return
+    filteredNormalList.value.forEach((notice) => {
       orderMap.set(notice.noticeId, order)
       order -= 1
     })
@@ -160,6 +182,19 @@ export const useNoticeStore = () => {
     }
   }
 
+  const handleFetchNoticeTypeOptions = async () => {
+    try {
+      const codes = await getCodes('NT000001')
+      noticeTypeOptions.value = codes.map((item) => ({
+        label: item.codeNm,
+        value: item.codeId,
+      }))
+    } catch (error) {
+      noticeTypeOptions.value = []
+      console.error(error)
+    }
+  }
+
   const handleSaveNotice = async (payload: NoticeFormData): Promise<boolean> => {
     const normalizedPayload = normalizeNoticeFormData(payload)
     const targetId = String(normalizedPayload.noticeId ?? '').trim()
@@ -188,6 +223,9 @@ export const useNoticeStore = () => {
 
   const onRegisterNotice = () => {
     resetNoticeFormState()
+    if (!noticeForm.value.noticeTypeCd && noticeTypeOptions.value.length > 0) {
+      noticeForm.value.noticeTypeCd = noticeTypeOptions.value[0].value
+    }
     isNoticePanelOpen.value = true
   }
 
@@ -256,7 +294,11 @@ export const useNoticeStore = () => {
     return `${trimmedTitle.slice(0, 50)}...`
   }
 
-  const isPinnedNotice = (notice: NoticeRow) => String(notice.pinYn ?? '').toUpperCase() === 'Y'
+  const getNoticeTypeLabel = (notice: NoticeRow) => {
+    const noticeTypeCd = String(notice.noticeTypeCd ?? '').trim()
+    const matchedOption = noticeTypeOptions.value.find((option) => option.value === noticeTypeCd)
+    return matchedOption?.label ?? noticeTypeCd
+  }
 
   const getNoticeOrderLabel = (notice: NoticeRow) => {
     return noticeOrderMap.value.get(notice.noticeId) ?? '-'
@@ -268,7 +310,6 @@ export const useNoticeStore = () => {
   }
 
   return {
-    noticeList,
     searchKeyword,
     filteredList,
     isLoading,
@@ -279,19 +320,23 @@ export const useNoticeStore = () => {
     isNoticeDetailPanelOpen,
     selectedNotice,
     noticeForm,
+    noticeTypeOptions,
+    searchCategory,
+    categoryOptions,
     panelActionLabel,
     noticePaginationCount,
     noticeNormalPageSize,
     noticePaginationTotalPages,
     pagedNoticeList,
     handleFetchNoticeList,
+    handleFetchNoticeTypeOptions,
     onRegisterNotice,
     onSaveNoticeForm,
     onCloseNoticeForm,
     onOpenNoticeDetail,
     onEditNotice,
     onDeleteNotice,
-    isPinnedNotice,
+    getNoticeTypeLabel,
     getNoticeOrderLabel,
     getNoticeDateLabel,
     getDisplayNoticeTitle,

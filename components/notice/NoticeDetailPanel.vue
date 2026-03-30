@@ -1,7 +1,7 @@
 <template>
   <UiModal
     :is-open="isOpen"
-    :title="displayValue(notice?.title)"
+    :title="displayValue(noticeTitle)"
     position="right"
     custom-class="notice-detail-modal"
     @close="$emit('close')"
@@ -74,6 +74,7 @@ import type { NoticeItem } from '~/types/notice'
 interface Props {
   isOpen: boolean
   notice?: NoticeItem | null
+  noticeTitle: string
 }
 
 const props = defineProps<Props>()

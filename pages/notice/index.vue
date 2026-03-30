@@ -14,6 +14,14 @@
             placeholder="제목 또는 작성자 검색"
           />
         </div>
+        <div class="notice-select-grp shrink-0 grow-1 max-w-140">
+          <UiSelect
+            v-model="searchCategory"
+            :options="categoryOptions"
+            placeholder="카테고리 선택"
+            size="md"
+          />
+        </div>
         <div class="notice-btn-grp flex items-center shrink-0 gap-2">
           <UiButton
             variant="primary"
@@ -78,15 +86,17 @@
               <button
                 type="button"
                 class="notice-title-btn"
-                :class="{ 'is-pinned-notice-title': isPinnedNotice(row as NoticeRow) }"
+                :class="{ 'is-pinned-notice-title': (row as NoticeRow).pinYn === 'Y' }"
                 @click.stop="onOpenNoticeDetail(row as NoticeRow)"
               >
-                <span class="notice-title-text">{{ getDisplayNoticeTitle(row.title) }}</span>
+                <span class="notice-title-text"
+                  >[{{ getNoticeTypeLabel(row as NoticeRow) }}] {{ getDisplayNoticeTitle(row.title) }}</span
+                >
               </button>
             </template>
             <template #cell-noticeId="{ row }">
               <i
-                v-if="isPinnedNotice(row as NoticeRow)"
+                v-if="(row as NoticeRow).pinYn === 'Y'"
                 class="icon-sidebar-pin size-16 notice-order-pin"
                 aria-label="중요 공지"
               />
@@ -116,6 +126,7 @@
     <NoticeFormPanel
       :is-open="isNoticePanelOpen"
       :form-data="noticeForm"
+      :notice-type-options="noticeTypeOptions"
       :panel-action-label="panelActionLabel"
       @update-form-data="(payload) => (noticeForm = payload)"
       @save="onSaveNoticeForm"
@@ -124,6 +135,7 @@
     <NoticeDetailPanel
       :is-open="isNoticeDetailPanelOpen"
       :notice="selectedNotice"
+      :notice-title="`[${getNoticeTypeLabel(selectedNotice as NoticeRow)}] ${(selectedNotice as NoticeRow).title}`"
       @edit="onEditNotice"
       @delete="onDeleteNotice"
       @close="isNoticeDetailPanelOpen = false"
@@ -137,6 +149,7 @@ import { noticeColumns } from '~/types/notice'
 
 const {
   searchKeyword,
+  searchCategory,
   filteredList,
   isLoading,
   errorMessage,
@@ -146,12 +159,15 @@ const {
   isNoticeDetailPanelOpen,
   selectedNotice,
   noticeForm,
+  noticeTypeOptions,
+  categoryOptions,
   panelActionLabel,
   noticePaginationCount,
   noticeNormalPageSize,
   noticePaginationTotalPages,
   pagedNoticeList,
   handleFetchNoticeList,
+  handleFetchNoticeTypeOptions,
   getDisplayNoticeTitle,
   onRegisterNotice,
   onSaveNoticeForm,
@@ -159,23 +175,24 @@ const {
   onOpenNoticeDetail,
   onEditNotice,
   onDeleteNotice,
-  isPinnedNotice,
+  getNoticeTypeLabel,
   getNoticeOrderLabel,
   getNoticeDateLabel,
 } = useNoticeStore()
 
-watch(searchKeyword, () => {
-  currentPage.value = 1
-})
-
-watch(filteredList, () => {
+watch([searchKeyword, searchCategory, filteredList], () => {
   const totalPage = noticePaginationTotalPages.value
+  if (currentPage.value !== 1) {
+    currentPage.value = 1
+    return
+  }
   if (currentPage.value > totalPage) {
     currentPage.value = totalPage
   }
 })
 
 onMounted(() => {
+  handleFetchNoticeTypeOptions()
   handleFetchNoticeList()
 })
 </script>

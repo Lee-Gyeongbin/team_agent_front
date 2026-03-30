@@ -19,6 +19,18 @@
       </div>
 
       <div class="url-reg-field">
+        <label class="url-reg-label">카테고리 <span class="required">*</span></label>
+        <UiSelect
+          ref="noticeTypeRef"
+          :model-value="formData.noticeTypeCd"
+          :options="noticeTypeOptions"
+          placeholder="카테고리를 선택하세요"
+          size="md"
+          @update:model-value="(value) => onNoticeTypeChange(String(value ?? ''))"
+        />
+      </div>
+
+      <div class="url-reg-field">
         <label class="url-reg-label">옵션</label>
         <div class="notice-option-box">
           <div class="flex flex-wrap items-center gap-8">
@@ -84,6 +96,7 @@ import type { NoticeFormData } from '~/types/notice'
 interface Props {
   isOpen: boolean
   formData: NoticeFormData
+  noticeTypeOptions: { label: string; value: string }[]
   panelActionLabel: '등록' | '수정'
 }
 
@@ -97,6 +110,7 @@ const emit = defineEmits<{
 
 const noticeTitleRef = ref<{ focus?: () => void; $el?: HTMLElement } | null>(null)
 const noticeContentRef = ref<{ focus?: () => void; $el?: HTMLElement } | null>(null)
+const noticeTypeRef = ref<{ focus?: () => void; $el?: HTMLElement } | null>(null)
 
 const focusField = (fieldRef: typeof noticeTitleRef) => {
   nextTick(() => {
@@ -117,8 +131,16 @@ const onFieldChange = <K extends keyof NoticeFormData>(key: K, value: NoticeForm
     [key]: value,
   })
 }
+const onNoticeTypeChange = (value: string) => {
+  onFieldChange('noticeTypeCd', value)
+}
 
 const onSaveNotice = () => {
+  if (!String(props.formData.noticeTypeCd ?? '').trim()) {
+    openToast({ message: '카테고리를 선택해주세요.', type: 'warning' })
+    focusField(noticeTypeRef)
+    return
+  }
   if (!props.formData.title.trim()) {
     openToast({ message: '공지 제목을 입력해주세요.', type: 'warning' })
     focusField(noticeTitleRef)
