@@ -64,6 +64,8 @@ export interface DocRepositoryDetailApiResponse {
 export interface Document {
   docId: string
   docFileId?: string
+  /** 목록 API DOC_FILE_ID_LIST 파싱 결과 — 미리보기·다운로드 시 첫 ID 우선 */
+  docFileIdList?: string[]
   docTitle: string
   categoryId: string
   categoryName: string

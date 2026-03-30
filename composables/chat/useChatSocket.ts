@@ -100,7 +100,7 @@ export const useChatSocket = () => {
           // pendingMessageId도 서버 logId로 갱신 (finalizeStreamingMessage에서 조회 가능하도록)
           pendingMessageId.value = payload.logId
         }
-        streamingMessage.hasSource = !!payload.filePath
+        streamingMessage.hasSource = !!payload.docFileId
         streamingMessage.hasVisualization = !!payload.tableData
         if (payload.tableData !== undefined && payload.tableData !== '') {
           streamingMessage.tableData = payload.tableData

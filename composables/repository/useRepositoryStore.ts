@@ -88,6 +88,60 @@ const formatUseYnLabel = (value: string) => {
   return value
 }
 
+/** 목록/상세 응답에서 DOC_FILE_ID_LIST(문자열·배열) → docFileId[] */
+const parseDocFileIdListFromRow = (row: Record<string, unknown>): string[] => {
+  const raw = row.docFileIdList ?? row.DOC_FILE_ID_LIST ?? row.doc_file_id_list
+  if (Array.isArray(raw)) {
+    return raw.map((x) => String(x).trim()).filter(Boolean)
+  }
+  if (typeof raw === 'string') {
+    return raw
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+  }
+  return []
+}
+
+/** 첨부 파일별 viewFile API 호출용 — docFileIdList 우선, 없으면 docFileId·attachedFileList (중복 제거) */
+const resolveAllDocFileIds = (row: Document): string[] => {
+  const seen = new Set<string>()
+  const out: string[] = []
+  const add = (id: unknown) => {
+    const s = String(id ?? '').trim()
+    if (!s || seen.has(s)) return
+    seen.add(s)
+    out.push(s)
+  }
+  if (Array.isArray(row.docFileIdList) && row.docFileIdList.length > 0) {
+    for (const id of row.docFileIdList) add(id)
+    return out
+  }
+  add(row.docFileId)
+  if (Array.isArray(row.attachedFileList)) {
+    for (const f of row.attachedFileList) add(f?.docFileId)
+  }
+  return out
+}
+
+/** 미리보기·단건 다운로드용 대표 파일 ID (단일 필드 → 목록 첫 항 → 상세 첨부) */
+const resolvePrimaryDocFileId = (row: Document): string => {
+  const all = resolveAllDocFileIds(row)
+  if (all.length > 0) return all[0]
+  return ''
+}
+
+const normalizeDocumentListRow = (doc: Document): Document => {
+  const extra = doc as Document & Record<string, unknown>
+  const ids = parseDocFileIdListFromRow(extra)
+  const mergedDocFileId = String(doc.docFileId ?? '').trim() || (ids[0] ?? '')
+  return {
+    ...doc,
+    docFileIdList: ids.length > 0 ? ids : doc.docFileIdList,
+    docFileId: mergedDocFileId || doc.docFileId,
+  }
+}
+
 /** 상세 API 평면 응답 → 패널용 Document 일부 */
 const mapDocDetailResponseToInitial = (
   res: DocRepositoryDetailResponse,
@@ -160,10 +214,12 @@ const handleSelectDocumentList = async () => {
     const categoryId = docSelectedCategoryId.value || undefined
     const useYn = docStatusFilter.value
     const res = await fetchDocumentList(findContent, categoryId, useYn, docCurrentPage.value, docPageSize)
-    documentList.value = res.dataList
-    documentList.value.forEach((doc) => {
-      // 파일 사이즈 포맷팅
-      doc.fileSize = formatFileSize(Number(doc.fileSize))
+    documentList.value = res.dataList.map((doc) => {
+      const normalized = normalizeDocumentListRow(doc)
+      // 파일 사이즈 포맷팅 (목록에 콤마 포함 숫자 문자열 대비)
+      const sizeRaw = String(normalized.fileSize ?? '').replace(/,/g, '')
+      normalized.fileSize = formatFileSize(Number(sizeRaw) || 0)
+      return normalized
     })
     docTotalCount.value = res.totalCnt
   } finally {
@@ -316,14 +372,34 @@ const handleToggleUrlStatus = async (id: string, active: boolean) => {
 
 const handleFileView = async (row: Document) => {
   const docId = row.docId
-  const docFileId = String(row.docFileId ?? row.attachedFileList?.[0]?.docFileId ?? '').trim()
-  if (!docFileId) {
+  const fileIds = resolveAllDocFileIds(row)
+  if (fileIds.length === 0) {
     openToast({ message: '미리보기할 파일이 없습니다.', type: 'warning' })
     return
   }
-  const url = await handleViewFileUrl(docId, docFileId)
-  if (!url) return
-  window.open(url, '_blank')
+  let opened = 0
+  let missingUrlCnt = 0
+  for (let i = 0; i < fileIds.length; i++) {
+    const url = await handleViewFileUrl(docId, fileIds[i])
+    if (!url) {
+      missingUrlCnt += 1
+      continue
+    }
+    window.open(url, '_blank', 'noopener,noreferrer')
+    opened += 1
+    // 연속 window.open — 사용자 제스처가 끊겨 2번째 탭부터 팝업 차단될 수 있음
+    if (i < fileIds.length - 1) {
+      await new Promise((r) => setTimeout(r, 250))
+    }
+  }
+  if (opened === 0) {
+    openToast({ message: fileError.value || '미리보기 URL을 가져오지 못했습니다.', type: 'error' })
+  } else if (missingUrlCnt > 0) {
+    openToast({
+      message: `첨부 ${fileIds.length}개 중 ${missingUrlCnt}개는 미리보기 URL을 받지 못했습니다.`,
+      type: 'warning',
+    })
+  }
 }
 
 const onSearch = () => {
@@ -442,7 +518,7 @@ const onBatchDownload = async () => {
   for (let i = 0; i < ids.length; i++) {
     const docId = ids[i]
     const row = documentList.value.find((d) => d.docId === docId)
-    const docFileId = String(row?.docFileId ?? '').trim()
+    const docFileId = row ? resolvePrimaryDocFileId(row) : ''
     await onDownloadFile(docId, docFileId)
     if (i < ids.length - 1) {
       await new Promise((r) => setTimeout(r, 200))
@@ -494,7 +570,7 @@ const onRowActionSelect = async (value: string, row: Document) => {
     await handleFileView(row)
   } else if (value === 'download') {
     const docId = row.docId ?? ''
-    const docFileId = String(row.docFileId ?? row.attachedFileList?.[0]?.docFileId ?? '').trim()
+    const docFileId = resolvePrimaryDocFileId(row)
     await onDownloadFile(docId, docFileId)
   }
 }
