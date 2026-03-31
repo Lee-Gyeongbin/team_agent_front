@@ -164,7 +164,7 @@
   <!-- 검색기록 타이틀 변경 모달 -->
   <UiModal
     :is-open="isRenameModalOpen"
-    title="검색기록 타이틀 변경"
+    title="검색기록 이름 변경"
     position="center"
     max-width="420px"
     @close="handleRenameModalClose"
