@@ -195,11 +195,12 @@ const {
   getNoticeDateLabel,
 } = useNoticeStore()
 
-watch([searchKeyword, searchCategory], () => {
-  currentPage.value = 1
-})
+watch([searchKeyword, searchCategory, noticeTotalPages], ([prevKeyword, prevCategory, totalPage]) => {
+  if (searchKeyword.value !== prevKeyword || searchCategory.value !== prevCategory) {
+    currentPage.value = 1
+    return
+  }
 
-watch(noticeTotalPages, (totalPage) => {
   if (currentPage.value > totalPage) {
     currentPage.value = Math.max(1, totalPage)
   }
