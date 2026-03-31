@@ -89,10 +89,9 @@ const { user } = useAuth()
 
 const isNoticeAuthor = computed(() => {
   const writer = String(props.notice?.crtrId ?? '').trim()
-  const userName = String(user.value?.userNm ?? '').trim()
   const userId = String(user.value?.userId ?? '').trim()
   if (!writer) return false
-  return writer === userName || writer === userId
+  return writer === userId
 })
 
 const hasModifyDt = computed(() => String(props.notice?.modifyDt ?? '').trim().length > 0)

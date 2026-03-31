@@ -22,9 +22,9 @@ export interface NoticeFormData {
   noticeTypeCd: string
   title: string
   content: string
-  featuredYn: 'Y' | 'N' | null
-  pinYn: 'Y' | 'N' | null
-  useYn: 'Y' | 'N' | null
+  featuredYn: 'Y' | 'N'
+  pinYn: 'Y' | 'N'
+  useYn: 'Y' | 'N'
   crtrId: string
   createDt: string
   modifyDt: string
@@ -40,9 +40,9 @@ export interface NoticeDetailResponse {
   noticeTypeCd: string
   title: string
   content: string
-  featuredYn: 'Y' | 'N' | null
-  pinYn: 'Y' | 'N' | null
-  useYn: 'Y' | 'N' | null
+  featuredYn: 'Y' | 'N'
+  pinYn: 'Y' | 'N'
+  useYn: 'Y' | 'N'
   crtrId: string
   createDt: string
   modifyDt: string

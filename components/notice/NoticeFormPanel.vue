@@ -37,14 +37,14 @@
             <label class="notice-option-item flex items-center gap-2">
               <UiCheckbox
                 :model-value="isDashboardTitle"
-                @update:model-value="(value) => onFieldChange('featuredYn', value ? 'Y' : null)"
+                @update:model-value="(value) => onFieldChange('featuredYn', value ? 'Y' : 'N')"
               />
               <span>대시보드 타이틀로 표시하기</span>
             </label>
             <label class="notice-option-item flex items-center gap-2">
               <UiCheckbox
                 :model-value="isTopFixed"
-                @update:model-value="(value) => onFieldChange('pinYn', value ? 'Y' : null)"
+                @update:model-value="(value) => onFieldChange('pinYn', value ? 'Y' : 'N')"
               />
               <span>공지사항 상단에 고정하기</span>
             </label>
