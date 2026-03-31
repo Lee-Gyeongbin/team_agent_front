@@ -396,7 +396,7 @@
     .library-detail-modal-badge-wrapper {
       flex-wrap: wrap;
       gap: $spacing-xs;
-      margin-bottom: $spacing-xs;
+      margin-bottom: 15px;
 
       .btn-star {
         flex-shrink: 0;
@@ -427,6 +427,7 @@
       align-items: flex-end;
       gap: $spacing-md;
       padding-right: $spacing-sm;
+      margin-bottom: 5px;
 
       .library-detail-modal-title-grp {
         flex: 1;
