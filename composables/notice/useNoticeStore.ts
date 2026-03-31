@@ -59,14 +59,16 @@ export const useNoticeStore = () => {
     modifyDt: notice.modifyDt,
   })
 
+  const toYn = (value: 'Y' | 'N' | null | undefined): 'Y' | 'N' => (value === 'Y' ? 'Y' : 'N')
+
   const mapNoticeDetailToItem = (detail: NoticeDetailResponse): NoticeItem => ({
     noticeId: String(detail.noticeId ?? ''),
     noticeTypeCd: String(detail.noticeTypeCd ?? ''),
     title: String(detail.title ?? ''),
     content: String(detail.content ?? ''),
-    featuredYn: detail.featuredYn === 'Y' ? 'Y' : 'N',
-    pinYn: detail.pinYn === 'Y' ? 'Y' : 'N',
-    useYn: detail.useYn === 'Y' ? 'Y' : 'N',
+    featuredYn: toYn(detail.featuredYn),
+    pinYn: toYn(detail.pinYn),
+    useYn: toYn(detail.useYn),
     crtrId: String(detail.crtrId ?? ''),
     createDt: formatNoticeDateOnly(detail.createDt),
     modifyDt: formatNoticeDateOnly(detail.modifyDt),
@@ -107,24 +109,17 @@ export const useNoticeStore = () => {
     return item.title.toLowerCase().includes(keyword) || item.crtrId.toLowerCase().includes(keyword)
   }
 
-  const noticeFilterState = computed(() => {
+  const filterNoticeList = (list: NoticeItem[]) => {
     const keyword = searchKeyword.value.trim().toLowerCase()
     const selectedCategory = String(searchCategory.value ?? '').trim()
-    return { keyword, selectedCategory }
-  })
-
-  const filterNoticeList = (list: NoticeItem[]) => {
-    const { keyword, selectedCategory } = noticeFilterState.value
     return list.filter((item) => isMatchedNotice(item, keyword, selectedCategory))
   }
 
-  const filteredPinnedList = computed(() => {
-    return filterNoticeList(pinnedNoticeList.value)
-  })
-  const filteredNormalList = computed(() => {
-    return filterNoticeList(normalNoticeList.value)
-  })
+  const filteredPinnedList = computed(() => filterNoticeList(pinnedNoticeList.value))
+  const filteredNormalList = computed(() => filterNoticeList(normalNoticeList.value))
   const filteredList = computed(() => [...filteredPinnedList.value, ...filteredNormalList.value])
+
+  const noticeNormalPageSize = computed(() => Math.max(1, pageSize - filteredPinnedList.value.length))
 
   const panelActionLabel = computed<'등록' | '수정'>(() => (noticeForm.value.noticeId ? '수정' : '등록'))
 
@@ -140,21 +135,17 @@ export const useNoticeStore = () => {
     return orderMap
   })
 
-  const noticePaginationCount = computed(() => filteredNormalList.value.length)
-  const noticeNormalPageSize = computed(() => {
-    return Math.max(1, pageSize - filteredPinnedList.value.length)
-  })
-  const noticePaginationTotalPages = computed(() =>
-    Math.max(1, Math.ceil(noticePaginationCount.value / noticeNormalPageSize.value)),
+  const noticeTotalPages = computed(() =>
+    Math.max(1, Math.ceil(filteredNormalList.value.length / noticeNormalPageSize.value)),
   )
 
+  /** 페이지 사이즈 단위 슬라이싱 */
   const pagedNoticeList = computed(() => {
-    const pinnedList = filteredPinnedList.value
-    const normalList = filteredNormalList.value
-    const currentPageNumber = currentPage.value
-    const startIndex = (currentPageNumber - 1) * noticeNormalPageSize.value
-    const pagedNormalList = normalList.slice(startIndex, startIndex + noticeNormalPageSize.value)
-    return [...pinnedList, ...pagedNormalList]
+    const pinned = filteredPinnedList.value
+    const normal = filteredNormalList.value
+    const sliceSize = noticeNormalPageSize.value
+    const startIndex = (currentPage.value - 1) * sliceSize
+    return [...pinned, ...normal.slice(startIndex, startIndex + sliceSize)]
   })
 
   // ==============================
@@ -165,7 +156,7 @@ export const useNoticeStore = () => {
     isEditFromDetail.value = false
   }
 
-  const handleFetchNoticeList = async () => {
+  const handleSelectNoticeList = async () => {
     errorMessage.value = ''
     isLoading.value = true
 
@@ -182,7 +173,7 @@ export const useNoticeStore = () => {
     }
   }
 
-  const handleFetchNoticeTypeOptions = async () => {
+  const handleSelectNoticeTypeOptions = async () => {
     try {
       const codes = await getCodes('NT000001')
       noticeTypeOptions.value = codes.map((item) => ({
@@ -195,7 +186,8 @@ export const useNoticeStore = () => {
     }
   }
 
-  const handleSaveNotice = async (payload: NoticeFormData): Promise<boolean> => {
+  /** 성공 시 저장된 공지 ID, 실패 시 null */
+  const handleSaveNotice = async (payload: NoticeFormData): Promise<string | null> => {
     const normalizedPayload = normalizeNoticeFormData(payload)
     const targetId = String(normalizedPayload.noticeId ?? '').trim()
     const isEditMode = Boolean(targetId)
@@ -206,14 +198,28 @@ export const useNoticeStore = () => {
       : '공지사항 등록 중 오류가 발생했습니다.'
 
     try {
-      await request(normalizedPayload)
-      await handleFetchNoticeList()
+      const res = (await request(normalizedPayload)) as NoticeItem
+      await handleSelectNoticeList()
+
+      const savedNoticeId = isEditMode ? targetId : String(res.noticeId ?? '').trim()
+
       openToast({ message: successMessage })
-      return true
+      return savedNoticeId || null
     } catch (error) {
       openToast({ message: saveErrorMessage, type: 'error' })
       console.error(error)
-      return false
+      return null
+    }
+  }
+
+  const handleSelectNoticeDetail = async (noticeId: string) => {
+    try {
+      const detail = await fetchSelectNoticeDetail(noticeId)
+      selectedNotice.value = mapNoticeDetailToItem(detail)
+      isNoticeDetailPanelOpen.value = true
+    } catch (error) {
+      openToast({ message: '공지사항 상세 조회 중 오류가 발생했습니다.', type: 'error' })
+      console.error(error)
     }
   }
 
@@ -230,10 +236,11 @@ export const useNoticeStore = () => {
   }
 
   const onSaveNoticeForm = async (payload: NoticeFormData) => {
-    const saved = await handleSaveNotice(payload)
-    if (!saved) return
+    const savedNoticeId = await handleSaveNotice(payload)
+    if (!savedNoticeId) return
     isNoticePanelOpen.value = false
     resetNoticeFormState()
+    await handleSelectNoticeDetail(savedNoticeId)
   }
 
   const onCloseNoticeForm = () => {
@@ -245,14 +252,7 @@ export const useNoticeStore = () => {
   }
 
   const onOpenNoticeDetail = async (notice: NoticeRow) => {
-    try {
-      const detail = await fetchSelectNoticeDetail(notice.noticeId)
-      selectedNotice.value = mapNoticeDetailToItem(detail)
-      isNoticeDetailPanelOpen.value = true
-    } catch (error) {
-      openToast({ message: '공지사항 상세 조회 중 오류가 발생했습니다.', type: 'error' })
-      console.error(error)
-    }
+    await handleSelectNoticeDetail(notice.noticeId)
   }
 
   const onEditNotice = () => {
@@ -275,7 +275,7 @@ export const useNoticeStore = () => {
 
     try {
       await fetchDeleteNotice(targetNoticeId)
-      await handleFetchNoticeList()
+      await handleSelectNoticeList()
       isNoticeDetailPanelOpen.value = false
       selectedNotice.value = null
       openToast({ message: '공지사항을 삭제했습니다.' })
@@ -315,7 +315,6 @@ export const useNoticeStore = () => {
     isLoading,
     errorMessage,
     currentPage,
-    pageSize,
     isNoticePanelOpen,
     isNoticeDetailPanelOpen,
     selectedNotice,
@@ -324,12 +323,12 @@ export const useNoticeStore = () => {
     searchCategory,
     categoryOptions,
     panelActionLabel,
-    noticePaginationCount,
+    filteredNormalList,
     noticeNormalPageSize,
-    noticePaginationTotalPages,
+    noticeTotalPages,
     pagedNoticeList,
-    handleFetchNoticeList,
-    handleFetchNoticeTypeOptions,
+    handleSelectNoticeList,
+    handleSelectNoticeTypeOptions,
     onRegisterNotice,
     onSaveNoticeForm,
     onCloseNoticeForm,

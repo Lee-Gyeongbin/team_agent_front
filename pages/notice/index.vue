@@ -36,7 +36,7 @@
           <UiButton
             variant="outline"
             size="md"
-            @click="handleFetchNoticeList"
+            @click="handleSelectNoticeList"
           >
             <template #icon-left>
               <i class="icon icon-refresh size-16" />
@@ -65,7 +65,7 @@
           <UiButton
             variant="outline"
             size="md"
-            @click="handleFetchNoticeList"
+            @click="handleSelectNoticeList"
           >
             다시 시도
           </UiButton>
@@ -74,52 +74,67 @@
         <!-- 테이블 -->
         <div
           v-else
-          class="notice-table-wrap"
+          class="notice-table-stack"
         >
-          <UiTable
-            :columns="noticeColumns"
-            :data="pagedNoticeList"
-            sticky-header
-            empty-text="새로운 공지사항을 등록해주세요"
-          >
-            <template #cell-title="{ row }">
-              <button
-                type="button"
-                class="notice-title-btn"
-                :class="{ 'is-pinned-notice-title': (row as NoticeRow).pinYn === 'Y' }"
-                @click.stop="onOpenNoticeDetail(row as NoticeRow)"
-              >
-                <span class="notice-title-text"
-                  >[{{ getNoticeTypeLabel(row as NoticeRow) }}] {{ getDisplayNoticeTitle(row.title) }}</span
-                >
-              </button>
-            </template>
-            <template #cell-noticeId="{ row }">
-              <i
-                v-if="(row as NoticeRow).pinYn === 'Y'"
-                class="icon-sidebar-pin size-16 notice-order-pin"
-                aria-label="중요 공지"
-              />
-              <template v-else>
-                {{ getNoticeOrderLabel(row as NoticeRow) }}
+          <div class="notice-table-wrap">
+            <UiTable
+              :columns="noticeColumns"
+              :data="pagedNoticeList"
+              sticky-header
+              empty-text="새로운 공지사항을 등록해주세요"
+            >
+              <template #cell-title="{ row }">
+                <template v-if="(row as NoticeRow).pinYn === 'Y'">
+                  <button
+                    type="button"
+                    class="notice-title-btn is-pinned-notice-title"
+                    @click.stop="onOpenNoticeDetail(row as NoticeRow)"
+                  >
+                    <span class="notice-title-text"
+                      >[{{ getNoticeTypeLabel(row as NoticeRow) }}] {{ getDisplayNoticeTitle(row.title) }}</span
+                    >
+                  </button>
+                </template>
+                <template v-else>
+                  <button
+                    type="button"
+                    class="notice-title-btn"
+                    @click.stop="onOpenNoticeDetail(row as NoticeRow)"
+                  >
+                    <span class="notice-title-text"
+                      >[{{ getNoticeTypeLabel(row as NoticeRow) }}] {{ getDisplayNoticeTitle(row.title) }}</span
+                    >
+                  </button>
+                </template>
               </template>
-            </template>
-            <template #cell-modifyDt="{ row }">
-              {{ getNoticeDateLabel((row as NoticeRow).modifyDt) }}
-            </template>
-          </UiTable>
-        </div>
-      </div>
+              <template #cell-noticeId="{ row }">
+                <template v-if="(row as NoticeRow).pinYn === 'Y'">
+                  <i
+                    class="icon-sidebar-pin size-16 notice-order-pin"
+                    aria-label="중요 공지"
+                  />
+                </template>
+                <template v-else>
+                  {{ getNoticeOrderLabel(row as NoticeRow) }}
+                </template>
+              </template>
+              <template #cell-modifyDt="{ row }">
+                {{ getNoticeDateLabel((row as NoticeRow).modifyDt) }}
+              </template>
+            </UiTable>
+          </div>
 
-      <div class="notice-pagination-stack">
-        <UiPagination
-          v-if="filteredList.length > pageSize"
-          v-model="currentPage"
-          :total-count="noticePaginationCount"
-          :page-size="noticeNormalPageSize"
-          total-label="개 공지사항"
-          class="notice-pagination"
-        />
+          <div class="notice-pagination-stack">
+            <UiPagination
+              v-if="noticeTotalPages > 1"
+              v-model="currentPage"
+              :total-count="filteredNormalList.length"
+              :page-size="noticeNormalPageSize"
+              total-label="개 공지사항"
+              class="notice-pagination"
+            />
+          </div>
+        </div>
       </div>
     </div>
 
@@ -155,7 +170,6 @@ const {
   isLoading,
   errorMessage,
   currentPage,
-  pageSize,
   isNoticePanelOpen,
   isNoticeDetailPanelOpen,
   selectedNotice,
@@ -163,12 +177,12 @@ const {
   noticeTypeOptions,
   categoryOptions,
   panelActionLabel,
-  noticePaginationCount,
+  filteredNormalList,
   noticeNormalPageSize,
-  noticePaginationTotalPages,
+  noticeTotalPages,
   pagedNoticeList,
-  handleFetchNoticeList,
-  handleFetchNoticeTypeOptions,
+  handleSelectNoticeList,
+  handleSelectNoticeTypeOptions,
   getDisplayNoticeTitle,
   onRegisterNotice,
   onSaveNoticeForm,
@@ -181,19 +195,18 @@ const {
   getNoticeDateLabel,
 } = useNoticeStore()
 
-watch([searchKeyword, searchCategory, filteredList], () => {
-  const totalPage = noticePaginationTotalPages.value
-  if (currentPage.value !== 1) {
-    currentPage.value = 1
-    return
-  }
+watch([searchKeyword, searchCategory], () => {
+  currentPage.value = 1
+})
+
+watch(noticeTotalPages, (totalPage) => {
   if (currentPage.value > totalPage) {
-    currentPage.value = totalPage
+    currentPage.value = Math.max(1, totalPage)
   }
 })
 
 onMounted(() => {
-  handleFetchNoticeTypeOptions()
-  handleFetchNoticeList()
+  handleSelectNoticeTypeOptions()
+  handleSelectNoticeList()
 })
 </script>
