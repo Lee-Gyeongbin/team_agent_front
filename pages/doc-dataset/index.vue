@@ -34,7 +34,7 @@
           :dataset="dataset"
           :build-progress="buildProgressMap[dataset.datasetId]"
           :build-message="buildMessageMap[dataset.datasetId]"
-          @toggle-active="handleToggleActiveDocDataset(dataset.datasetId, dataset.useYn)"
+          @toggle-active="handleToggleActiveDocDataset(dataset.datasetId, dataset.useYn, dataset.datasetBuildStatusCd)"
           @test="onTest(dataset.datasetId)"
           @history="onHistory(dataset.datasetId)"
           @edit="onEdit"
