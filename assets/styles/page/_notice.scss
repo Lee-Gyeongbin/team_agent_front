@@ -81,6 +81,11 @@
 
   .notice-pagination {
     padding: $spacing-md 0 0;
+
+    .ui-pagination-total,
+    .ui-pagination-range {
+      display: none;
+    }
   }
 
   .notice-order-pin {
