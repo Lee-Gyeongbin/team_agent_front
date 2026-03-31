@@ -1,5 +1,6 @@
 import type { ChatMessage } from '~/types/chat'
 import { useChatStore } from '~/composables/chat/useChatStore'
+import { copyToClipboard } from '~/utils/global/clipboardUtil'
 const { messages } = useChatStore()
 const { chatRoom } = useChatRooms()
 const { fetchCreateChatLogReaction, fetchCreateKnowledge } = useReportsApi()
@@ -98,7 +99,7 @@ export const useChatItemActions = () => {
     if (!msg) return
     const text = (msg.rContent ?? '').replace(/<[^>]*>/g, '')
     try {
-      await navigator.clipboard.writeText(text)
+      await copyToClipboard(text)
       openToast({ message: '클립보드에 복사되었습니다.', type: 'success' })
     } catch (error) {
       console.error(error)
