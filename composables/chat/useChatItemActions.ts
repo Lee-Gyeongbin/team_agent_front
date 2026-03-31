@@ -100,7 +100,8 @@ export const useChatItemActions = () => {
     try {
       await navigator.clipboard.writeText(text)
       openToast({ message: '클립보드에 복사되었습니다.', type: 'success' })
-    } catch {
+    } catch (error) {
+      console.error(error)
       openToast({ message: '클립보드에 복사하지 못했습니다.', type: 'error' })
     }
   }
