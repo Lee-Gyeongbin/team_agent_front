@@ -855,33 +855,38 @@ const handleDeleteDocDataset = async (id: string) => {
 }
 
 // 데이터셋 활성화 토글
-const handleToggleActiveDocDataset = (id: string, useYn: string) => {
+const handleToggleActiveDocDataset = (id: string, useYn: string, datasetBuildStatusCd: string) => {
   const nextUseYn = useYn === 'Y' ? 'N' : 'Y'
-  const nextUseLabel = nextUseYn === 'Y' ? '활성화' : '비활성화'
-  const datasetNm = datasetList.value.find((item) => item.datasetId === id)?.dsNm ?? ''
-  const targetName = datasetNm ? `'${datasetNm}'` : '이 데이터셋'
+  if (datasetBuildStatusCd !== '003' && nextUseYn === 'Y') {
+    openToast({ message: '구축이 완료된 데이터셋만 활성화할 수 있습니다.', type: 'warning' })
+    return false
+  } else {
+    const nextUseLabel = nextUseYn === 'Y' ? '활성화' : '비활성화'
+    const datasetNm = datasetList.value.find((item) => item.datasetId === id)?.dsNm ?? ''
+    const targetName = datasetNm ? `'${datasetNm}'` : '이 데이터셋'
 
-  openConfirm({
-    title: '활성화 상태 변경',
-    message: `${targetName}의 활성화 상태를 ${nextUseLabel}하시겠습니까?`,
-    onConfirm: async () => {
-      openLoading({ text: '활성화 상태를 변경하는 중...' })
-      try {
-        const res = await fetchToggleActiveDocDataset(id, nextUseYn, '')
-        const affected = typeof res.data === 'number' ? res.data : 0
-        if (affected > 0) {
-          openToast({ message: '활성화 상태가 변경되었습니다.', type: 'success' })
-        } else {
-          openToast({ message: '활성화 상태 변경에 실패했습니다.', type: 'error' })
+    openConfirm({
+      title: '활성화 상태 변경',
+      message: `${targetName}의 활성화 상태를 ${nextUseLabel}하시겠습니까?`,
+      onConfirm: async () => {
+        openLoading({ text: '활성화 상태를 변경하는 중...' })
+        try {
+          const res = await fetchToggleActiveDocDataset(id, nextUseYn, '')
+          const affected = typeof res.data === 'number' ? res.data : 0
+          if (affected > 0) {
+            openToast({ message: '활성화 상태가 변경되었습니다.', type: 'success' })
+          } else {
+            openToast({ message: '활성화 상태 변경에 실패했습니다.', type: 'error' })
+          }
+        } finally {
+          closeLoading()
         }
-      } finally {
-        closeLoading()
-      }
 
-      // 목록 + 요약 동시 조회
-      await handleSelectAll()
-    },
-  })
+        // 목록 + 요약 동시 조회
+        await handleSelectAll()
+      },
+    })
+  }
 }
 
 // ===== 변경이력 =====

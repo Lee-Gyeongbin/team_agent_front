@@ -292,13 +292,14 @@ const onRegisterUrl = () => {
 }
 const onSaveUrl = async (data: Record<string, any>) => {
   const cycleMap: Record<string, string> = { daily: '매일', weekly: '매주', monthly: '매월', manual: '수동' }
-  await handleSaveUrl({
+  const ok = await handleSaveUrl({
     urlName: data.urlName,
     urlAddress: data.urlAddress,
     category: data.category,
     collectionCycle: cycleMap[data.collectionCycle] || data.collectionCycle,
     active: data.active,
   })
+  if (!ok) return
   openToast({ message: `'${data.urlName}' URL이 등록되었습니다.` })
 }
 
@@ -307,12 +308,8 @@ const onBatchDelete = async () => {
     openAlert({ title: '알림', message: '삭제할 URL을 선택해주세요.' })
     return
   }
-  const confirmed = await openConfirm({
-    title: '일괄 삭제',
-    message: `선택한 ${selectedUrlIds.value.length}개 URL을 삭제하시겠습니까?`,
-  })
-  if (confirmed) {
-    await handleDeleteUrl(selectedUrlIds.value)
+  const ok = await handleDeleteUrl(selectedUrlIds.value)
+  if (ok) {
     selectedUrlIds.value = []
   }
 }
@@ -333,9 +330,8 @@ const onBatchScraping = async () => {
 
 const onUrlRowActionSelect = async (value: string, row: Record<string, any>) => {
   if (value === 'delete') {
-    const confirmed = await openConfirm({ title: 'URL 삭제', message: `'${row.urlName}'을(를) 삭제하시겠습니까?` })
-    if (confirmed) {
-      await handleDeleteUrl([row.id])
+    const ok = await handleDeleteUrl([row.id])
+    if (ok) {
       selectedUrlIds.value = selectedUrlIds.value.filter((id) => id !== row.id)
     }
   } else if (value === 'collect') {

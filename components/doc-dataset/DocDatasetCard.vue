@@ -20,7 +20,7 @@
         <UiToggle
           v-else
           :model-value="dataset.useYn === 'Y'"
-          @update:model-value="emit('toggle-active', dataset.datasetId, dataset.useYn)"
+          @update:model-value="emit('toggle-active', dataset.datasetId, dataset.useYn, dataset.datasetBuildStatusCd)"
         />
         <UiDropdownMenu
           :items="menuItems"
@@ -161,7 +161,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  'toggle-active': [id: string, useYn: string]
+  'toggle-active': [id: string, useYn: string, datasetBuildStatusCd: string]
   test: [id: string]
   history: [id: string]
   edit: [dataset: DocDataset]
