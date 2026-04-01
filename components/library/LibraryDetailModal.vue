@@ -62,50 +62,52 @@
             </template>
             매뉴얼AI
           </UiBadge>
-          <div class="library-detail-modal-tags">
-            <span
-              v-for="tag in displayData?.tags?.split(',')"
-              :key="tag"
-              class="library-detail-modal-tag"
-            >
-              #{{ tag }}
-            </span>
-          </div>
         </div>
 
-        <!-- 제목 및 액션 -->
+        <!-- 제목 행(제목+날짜) + 태그 + 액션 행 — 한 블록 -->
         <div class="library-detail-modal-title-section">
-          <div class="library-detail-modal-title-grp">
+          <div class="library-detail-modal-title-row">
             <h2 class="library-detail-modal-title">{{ displayData?.title }}</h2>
             <p class="library-detail-modal-date">
               {{ formatDateTimeDisplay(displayData?.createDt ?? '') }}
             </p>
           </div>
-          <div class="library-detail-modal-actions shrink-0">
-            <!-- 변경 btn -->
-            <UiButton
-              variant="ghost"
-              size="xxs"
-              icon-only
-              class="btn-custom-white"
-              @click="handleMove"
-            >
-              <template #icon-left>
-                <i class="icon icon-transfer size-16"></i>
-              </template>
-            </UiButton>
-            <!-- 삭제 btn -->
-            <UiButton
-              variant="ghost"
-              size="xxs"
-              icon-only
-              class="btn-custom-light-gray"
-              @click="handleDelete"
-            >
-              <template #icon-left>
-                <i class="icon icon-delete-bg size-16"></i>
-              </template>
-            </UiButton>
+          <div class="library-detail-modal-tags-actions-row">
+            <div class="library-detail-modal-tags">
+              <span
+                v-for="tag in displayData?.tags?.split(',')"
+                :key="tag"
+                class="library-detail-modal-tag"
+              >
+                #{{ tag }}
+              </span>
+            </div>
+            <div class="library-detail-modal-actions">
+              <!-- 변경 btn -->
+              <UiButton
+                variant="ghost"
+                size="xxs"
+                icon-only
+                class="btn-custom-white"
+                @click="handleMove"
+              >
+                <template #icon-left>
+                  <i class="icon icon-transfer size-16"></i>
+                </template>
+              </UiButton>
+              <!-- 삭제 btn -->
+              <UiButton
+                variant="ghost"
+                size="xxs"
+                icon-only
+                class="btn-custom-light-gray"
+                @click="handleDelete"
+              >
+                <template #icon-left>
+                  <i class="icon icon-delete-bg size-16"></i>
+                </template>
+              </UiButton>
+            </div>
           </div>
         </div>
         <!-- 닫기 -->

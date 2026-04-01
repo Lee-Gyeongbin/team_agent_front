@@ -423,33 +423,57 @@
 
     .library-detail-modal-title-section {
       display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      gap: $spacing-md;
+      flex-direction: column;
+      gap: 0;
       padding-right: $spacing-sm;
       margin-bottom: 5px;
 
-      .library-detail-modal-title-grp {
+      // 제목 · 날짜 — 한 줄, 날짜는 행 오른쪽
+      .library-detail-modal-title-row {
+        display: flex;
+        align-items: center;
+        gap: $spacing-md;
+        min-width: 0;
+      }
+
+      .library-detail-modal-title {
         flex: 1;
+        min-width: 0;
+        margin: 0;
+        color: $color-text-dark;
+        font-size: $font-size-xl;
+        font-weight: $font-weight-bold;
+        line-height: 150%;
+      }
 
-        .library-detail-modal-title {
-          color: $color-text-dark;
-          font-size: $font-size-xl;
-          font-weight: $font-weight-bold;
-          margin-bottom: $spacing-xs;
-          line-height: 150%;
-        }
+      .library-detail-modal-date {
+        flex-shrink: 0;
+        margin: 0;
+        text-align: right;
+        color: $color-text-disabled;
+        font-size: $font-size-sm;
+        line-height: 150%;
+        white-space: nowrap;
+      }
 
-        .library-detail-modal-date {
-          color: $color-text-disabled;
-          font-size: $font-size-sm;
-        }
+      // 태그 + 액션 — 한 줄(태그 왼쪽, 버튼 오른쪽), 타이틀 행과 간격·시작선 정렬
+      .library-detail-modal-tags-actions-row {
+        display: flex;
+        align-items: center;
+        gap: $spacing-md;
+        min-width: 0;
+        margin-top: $spacing-md;
+      }
+
+      .library-detail-modal-tags {
+        flex: 1;
+        min-width: 0;
       }
 
       .library-detail-modal-actions {
         display: flex;
-        gap: $spacing-xs;
         flex-shrink: 0;
+        gap: $spacing-xs;
       }
     }
   }
@@ -642,13 +666,13 @@
   }
 }
 
-// 태그 뱃지
+// 태그 뱃지 (타이틀 텍스트 시작선과 동일하게 왼쪽 여백 없음)
 .library-detail-modal-tags {
   display: flex;
   gap: $spacing-xs;
   flex-wrap: wrap;
-  margin-top: 0;
-  margin-left: $spacing-xs;
+  margin: 0;
+  padding: 0;
 
   .library-detail-modal-tag {
     display: inline-flex;
