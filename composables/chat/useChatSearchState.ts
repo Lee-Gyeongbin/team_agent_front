@@ -1,9 +1,11 @@
-import type { SearchModeValue, SubOption } from '~/types/chat'
+import type { ModelOption, SearchModeValue, SubOption } from '~/types/chat'
 
 // 채팅의 검색모드 상태는 `useChatStore`, `useChatRooms`에서 함께 사용하므로 모듈 단일 인스턴스로 공유한다.
 const activeSearchModes = ref<SearchModeValue[]>([])
 const subOptions = ref<SubOption[]>([])
 const selectedSubOption = ref<string>('all')
+const modelOptions = ref<ModelOption[]>([])
+const selectedModelOption = ref<string>('all')
 
 // 검색모드 기반 svcTy 결정 (C=일반, M=지식검색, S=데이터분석)
 const resolveSvcTy = (): string => {
@@ -16,6 +18,8 @@ export const useChatSearchState = () => {
     activeSearchModes,
     subOptions,
     selectedSubOption,
+    modelOptions,
+    selectedModelOption,
     resolveSvcTy,
   }
 }

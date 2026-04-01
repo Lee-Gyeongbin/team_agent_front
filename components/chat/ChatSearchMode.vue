@@ -23,12 +23,22 @@
       @click="toggleDropdown"
     >
       <i class="icon-search size-20" />
-      <span>검색모드</span>
+      <span>모드</span>
       <i
         class="icon-chevron-down size-20"
         :class="{ 'is-flipped': isOpen }"
       />
     </button>
+    <UiSelect
+      v-if="isSearchModeActive && subOptions.length > 0"
+      id="sub-option"
+      class="w-200 ref-select"
+      name="sub-option"
+      :model-value="selectedSubOption"
+      :options="subOptions"
+      size="xlg"
+      @update:model-value="selectedSubOption = String($event)"
+    />
 
     <!-- 드롭다운 -->
     <div
@@ -51,13 +61,14 @@
 <script setup lang="ts">
 import type { SearchModeValue } from '~/types/chat'
 
-const { searchModeOptions, activeSearchModes, toggleSearchMode } = useChatStore()
+const { searchModeOptions, activeSearchModes, toggleSearchMode, subOptions, selectedSubOption } = useChatStore()
 
 const isOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
 
 // 선택된 모드의 옵션 정보
 const selectedOptions = computed(() => searchModeOptions.filter((opt) => activeSearchModes.value.includes(opt.value)))
+const isSearchModeActive = computed(() => activeSearchModes.value.length > 0)
 
 const toggleDropdown = () => {
   isOpen.value = !isOpen.value
@@ -89,3 +100,8 @@ onUnmounted(() => {
   document.removeEventListener('click', onClickOutside)
 })
 </script>
+<style scoped lang="scss">
+.ref-select {
+  margin-left: 5px;
+}
+</style>

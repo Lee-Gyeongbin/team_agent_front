@@ -31,20 +31,22 @@ export const useChatMessages = () => {
     const logId = String(row.logId ?? '')
     const createdAt = row.createDt ?? ''
     const svcTy = row.svcTy ?? 'C'
-    const refId = row.refId ?? 'all'
+    const modelId = row.modelId ?? 'all'
+    const refId = row.refId ?? ''
     const docId = typeof row.docId === 'string' ? row.docId : ''
     const hasSource = row.docExist === 'Y'
     const hasVisualization = row.tableExist === 'Y'
     const satisYnVal = typeof row.satisYn === 'string' ? row.satisYn : ''
     const satisContentVal = typeof row.satisContent === 'string' ? row.satisContent : ''
     return [
-      { logId, type: 'question', qContent: row.qcontent ?? '', rContent: '', createdAt, svcTy, refId },
+      { logId, type: 'question', qContent: row.qcontent ?? '', rContent: '', createdAt, svcTy, modelId, refId },
       {
         logId,
         type: 'answer',
         qContent: '',
         rContent: toHtmlContent(row.rcontent ?? ''),
         svcTy,
+        modelId,
         refId,
         docId,
         createdAt,
@@ -65,7 +67,7 @@ export const useChatMessages = () => {
   }
 
   // question 메시지 생성 + push
-  const pushQuestionMessage = (content: string, svcTy: string, refId: string): string => {
+  const pushQuestionMessage = (content: string, svcTy: string, modelId: string, refId: string): string => {
     const logId = Date.now().toString()
     messages.value.push({
       id: logId,
@@ -74,13 +76,14 @@ export const useChatMessages = () => {
       qContent: content,
       rContent: '',
       svcTy,
+      modelId,
       refId,
       createdAt: new Date().toISOString(),
     })
     return logId
   }
   // answer placeholder 생성 + push + pendingMessageId 설정
-  const pushAnswerPlaceholder = (svcTy: string, refId: string): string => {
+  const pushAnswerPlaceholder = (svcTy: string, modelId: string, refId: string): string => {
     const logId = (Date.now() + 1).toString()
     pendingMessageId.value = logId
     messages.value.push({
@@ -90,6 +93,7 @@ export const useChatMessages = () => {
       qContent: '',
       rContent: '',
       svcTy,
+      modelId,
       refId,
       createdAt: new Date().toISOString(),
       isStreaming: true,

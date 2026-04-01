@@ -224,7 +224,9 @@ export const useLibraryStore = () => {
       openConfirm({
         message: '카테고리를 삭제하시겠습니까?',
         onConfirm: async () => {
+          openLoading({ text: '카테고리를 삭제하는 중...' })
           const response = await fetchDeleteCategory(category)
+          closeLoading()
           if (response.result === 'SUCCESS') {
             openAlert({ message: '카테고리가 삭제되었습니다.' })
             await handleFetchCategoryList()

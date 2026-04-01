@@ -21,7 +21,8 @@ const {
   fetchSelectSharedChatLogList,
   fetchSelectKnowledgeList,
 } = useReportsApi()
-const { resolveSvcTy, activeSearchModes, subOptions, selectedSubOption } = useChatSearchState()
+const { resolveSvcTy, activeSearchModes, subOptions, selectedSubOption, modelOptions, selectedModelOption } =
+  useChatSearchState()
 const { messages, pushQuestionMessage, pushAnswerPlaceholder, logRowToMessages } = useChatMessages()
 const { ensureWebSocketAndSend, stopChatSocket } = useChatSocket()
 
@@ -98,6 +99,7 @@ export const useChatRooms = () => {
     }
 
     const svcTy = resolveSvcTy()
+    const modelId = selectedModelOption.value
     const refId = selectedSubOption.value
     openLoading({ text: '채팅방을 생성하는 중...' })
     let res: { data: ChatRoom }
@@ -119,8 +121,8 @@ export const useChatRooms = () => {
     chatRoomList.value = [createdRoom, ...chatRoomList.value.filter((room) => room.roomId !== createdRoom.roomId)]
 
     messages.value = []
-    pushQuestionMessage(qContent, svcTy, refId)
-    pushAnswerPlaceholder(svcTy, refId)
+    pushQuestionMessage(qContent, svcTy, modelId, refId)
+    pushAnswerPlaceholder(svcTy, modelId, refId)
     chatMessage.value = ''
 
     const sent = await ensureWebSocketAndSend({
@@ -128,6 +130,7 @@ export const useChatRooms = () => {
       query: qContent,
       threadId: chatRoom.value.roomId,
       svcTy,
+      modelId,
       refId,
     })
     if (!sent) return chatRoom.value
@@ -145,9 +148,9 @@ export const useChatRooms = () => {
     } finally {
       closeLoading()
     }
-    subOptions.value = res.modelList.map((item: ModelOption) => ({ label: item.label, value: item.value }))
-    selectedSubOption.value = subOptions.value[0]?.value ?? 'auto'
-    return subOptions.value
+    modelOptions.value = res.modelList.map((item: ModelOption) => ({ label: item.label, value: item.value }))
+    selectedModelOption.value = modelOptions.value[0]?.value ?? ''
+    return modelOptions.value
   }
   // 라그 데이터셋 조회
   const selectRagDsList = async () => {

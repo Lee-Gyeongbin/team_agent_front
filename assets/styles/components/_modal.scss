@@ -423,33 +423,57 @@
 
     .library-detail-modal-title-section {
       display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      gap: $spacing-md;
+      flex-direction: column;
+      gap: 0;
       padding-right: $spacing-sm;
       margin-bottom: 5px;
 
-      .library-detail-modal-title-grp {
+      // 제목 · 날짜 — 한 줄, 날짜는 행 오른쪽
+      .library-detail-modal-title-row {
+        display: flex;
+        align-items: center;
+        gap: $spacing-md;
+        min-width: 0;
+      }
+
+      .library-detail-modal-title {
         flex: 1;
+        min-width: 0;
+        margin: 0;
+        color: $color-text-dark;
+        font-size: $font-size-xl;
+        font-weight: $font-weight-bold;
+        line-height: 150%;
+      }
 
-        .library-detail-modal-title {
-          color: $color-text-dark;
-          font-size: $font-size-xl;
-          font-weight: $font-weight-bold;
-          margin-bottom: $spacing-xs;
-          line-height: 150%;
-        }
+      .library-detail-modal-date {
+        flex-shrink: 0;
+        margin: 0;
+        text-align: right;
+        color: $color-text-disabled;
+        font-size: $font-size-sm;
+        line-height: 150%;
+        white-space: nowrap;
+      }
 
-        .library-detail-modal-date {
-          color: $color-text-disabled;
-          font-size: $font-size-sm;
-        }
+      // 태그 + 액션 — 한 줄(태그 왼쪽, 버튼 오른쪽), 타이틀 행과 간격·시작선 정렬
+      .library-detail-modal-tags-actions-row {
+        display: flex;
+        align-items: center;
+        gap: $spacing-md;
+        min-width: 0;
+        margin-top: $spacing-md;
+      }
+
+      .library-detail-modal-tags {
+        flex: 1;
+        min-width: 0;
       }
 
       .library-detail-modal-actions {
         display: flex;
-        gap: $spacing-xs;
         flex-shrink: 0;
+        gap: $spacing-xs;
       }
     }
   }
@@ -536,7 +560,7 @@
 
 // 참조 매뉴얼 영역 (매뉴얼AI 타입)
 .content-box.type-reference {
-  padding: 12px $spacing-md 8px;
+  padding: 12px $spacing-md $spacing-md;
   background: #fff;
   border: 1px solid $color-border;
 
@@ -590,18 +614,42 @@
     margin: 0;
   }
 
+  .reference-list-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    list-style: none;
+  }
+
+  // 라이브러리 목록 카드(.library-card)와 동일한 선택 강조 톤
   .reference-item {
     display: flex;
     align-items: center;
     gap: 10px;
     padding: 10px 12px;
-    background: $color-background;
+    border: 1px solid #c6d2db;
     border-radius: $border-radius-lg;
+    background: #fff;
     cursor: pointer;
-    transition: background $transition-fast;
+    transition:
+      border-color $transition-slow,
+      box-shadow $transition-slow,
+      background $transition-fast;
+    box-shadow: 4px 4px 4px 0 rgba(30, 50, 77, 0.08);
 
-    &:hover {
-      background: color.adjust($color-background, $lightness: -2%);
+    &:hover:not(.is-active) {
+      border-color: #94a3b8;
+    }
+
+    &.is-active {
+      border-color: #94a3b8;
+      box-shadow:
+        4px 4px 4px 0 rgba(30, 50, 77, 0.08),
+        inset 0 0 0 1px #94a3b8;
+
+      &:hover {
+        border-color: #94a3b8;
+      }
     }
   }
 
@@ -642,13 +690,13 @@
   }
 }
 
-// 태그 뱃지
+// 태그 뱃지 (타이틀 텍스트 시작선과 동일하게 왼쪽 여백 없음)
 .library-detail-modal-tags {
   display: flex;
   gap: $spacing-xs;
   flex-wrap: wrap;
-  margin-top: 0;
-  margin-left: $spacing-xs;
+  margin: 0;
+  padding: 0;
 
   .library-detail-modal-tag {
     display: inline-flex;

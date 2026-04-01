@@ -6,6 +6,7 @@ export interface ChatSocketPayload {
   query: string
   threadId: string
   svcTy: string
+  modelId: string
   refId: string
 }
 

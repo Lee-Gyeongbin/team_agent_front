@@ -2,7 +2,6 @@
 import type {
   ChatLogListRow,
   ChatRefRow,
-  ModelOption,
   PanelType,
   SearchModeOption,
   SearchModeValue,
@@ -17,7 +16,8 @@ import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
 import { clearBodyChartFullscreen } from '~/utils/chat/visualizationChartUtil'
 const { messages } = useChatSocket()
 const { logRowToMessages, pushQuestionMessage, pushAnswerPlaceholder, getMessagesForVisualization } = useChatMessages()
-const { activeSearchModes, subOptions, selectedSubOption, resolveSvcTy } = useChatSearchState()
+const { activeSearchModes, subOptions, selectedSubOption, resolveSvcTy, modelOptions, selectedModelOption } =
+  useChatSearchState()
 const {
   chatRoom,
   chatMessage,
@@ -37,9 +37,6 @@ const {
   fetchCreateChatLogReaction,
   fetchSelectKnowledgeList,
 } = useReportsApi()
-
-// LLM 모델 옵션
-const modelOptions = ref<ModelOption[]>([])
 
 const selectedLogId = ref<string | null>(null)
 // pdf 뷰어 or 시각화
@@ -146,8 +143,9 @@ export const useChatStore = () => {
 
     const svcTy = resolveSvcTy()
     const refId = selectedSubOption.value
-    pushQuestionMessage(content, svcTy, refId)
-    pushAnswerPlaceholder(svcTy, refId)
+    const modelId = selectedModelOption.value
+    pushQuestionMessage(content, svcTy, modelId, refId)
+    pushAnswerPlaceholder(svcTy, modelId, refId)
     chatMessage.value = ''
 
     await ensureWebSocketAndSend({
@@ -155,6 +153,7 @@ export const useChatStore = () => {
       query: content,
       threadId: chatRoom.value.roomId || '',
       svcTy,
+      modelId,
       refId,
     })
   }
@@ -279,8 +278,8 @@ export const useChatStore = () => {
     if (activeSearchModes.value.includes(mode)) {
       // 모드 해제 → 디폴트(모델 옵션)로 복원
       activeSearchModes.value = []
+      subOptions.value = []
       await selectModelOptions()
-      selectedSubOption.value = subOptions.value[0]?.value ?? 'auto'
     } else {
       activeSearchModes.value = [mode]
       if (mode === 'M') {
@@ -331,6 +330,7 @@ export const useChatStore = () => {
     activeSearchModes,
     subOptions,
     selectedSubOption,
+    selectedModelOption,
     currentSubOptions,
     knowledgeList,
     // 액션

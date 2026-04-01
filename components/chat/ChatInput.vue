@@ -25,12 +25,12 @@
         <div class="chat-input-bottom-right flex gap-8 items-center">
           <UiSelect
             id="sub-option"
-            class="w-170"
+            class="w-200"
             name="sub-option"
-            :model-value="selectedSubOption"
-            :options="subOptions"
+            :model-value="selectedModelOption"
+            :options="modelOptions"
             size="xlg"
-            @update:model-value="selectedSubOption = String($event)"
+            @update:model-value="selectedModelOption = String($event)"
           />
           <UiButton
             variant="primary"
@@ -51,7 +51,7 @@
 </template>
 
 <script setup lang="ts">
-const { chatRoom, createChatRoom, onSend, subOptions, selectedSubOption } = useChatStore()
+const { chatRoom, createChatRoom, onSend, modelOptions, selectedModelOption } = useChatStore()
 
 interface Props {
   modelValue: string

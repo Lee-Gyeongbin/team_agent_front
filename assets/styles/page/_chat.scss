@@ -65,13 +65,13 @@
   }
 }
 
-// inner wrapper: 메시지 적으면 하단 정렬, 많으면 정상 스크롤
+// inner wrapper: 메시지를 항상 상단부터 쌓이도록 정렬
 .chat-message-list-inner {
   display: flex;
   flex-direction: column;
   gap: 20px;
   min-height: 100%;
-  justify-content: flex-end;
+  justify-content: flex-start;
   padding: 20px 0 22px;
 }
 
@@ -776,6 +776,107 @@
   padding: 12px;
   overflow-y: auto;
   @include custom-scrollbar;
+}
+
+.chat-pdf-empty-related {
+  @include typo($body-small);
+  padding: 8px;
+  color: $color-text-secondary;
+  text-align: center;
+}
+
+.chat-pdf-related-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+  padding: 8px;
+  border: none;
+  border-radius: $border-radius-sm;
+  background: transparent;
+  cursor: pointer;
+  text-align: center;
+  transition:
+    outline-color $transition-fast,
+    background $transition-fast;
+
+  & + & {
+    margin-top: 8px;
+  }
+
+  &:hover:not(.is-active) {
+    background: $color-background;
+  }
+
+  &.is-active {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px;
+    background: var(--color-primary-bg);
+
+    .chat-pdf-related-doc {
+      color: var(--color-primary-dark);
+    }
+    .chat-pdf-related-page,
+    .chat-pdf-related-page em {
+      color: var(--color-primary-dark);
+    }
+  }
+}
+
+.chat-pdf-related-thumb-wrap {
+  width: 100%;
+  min-height: 120px;
+  border: 1px solid #aebccb;
+  border-radius: $border-radius-sm;
+  overflow: hidden;
+  background: #fff;
+}
+
+.chat-pdf-related-thumb-image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.chat-pdf-related-thumb-empty {
+  @include typo($body-small);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 120px;
+  padding: 4px;
+  color: $color-text-secondary;
+  text-align: center;
+  background: #f7f9fb;
+}
+
+.chat-pdf-related-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: 4px;
+}
+
+.chat-pdf-related-doc {
+  @include typo($body-small-bold);
+  color: $color-text-primary;
+  max-width: 100%;
+  word-break: break-all;
+  text-align: center;
+}
+
+.chat-pdf-related-page {
+  @include typo($body-small);
+  color: $color-text-secondary;
+
+  em {
+    @include typo($body-small-bold);
+    font-style: normal;
+    color: var(--color-primary);
+  }
 }
 
 .chat-pdf-thumb-top-btn {
