@@ -23,7 +23,7 @@
       @click="toggleDropdown"
     >
       <i class="icon-search size-20" />
-      <span>검색모드</span>
+      <span>모드</span>
       <i
         class="icon-chevron-down size-20"
         :class="{ 'is-flipped': isOpen }"

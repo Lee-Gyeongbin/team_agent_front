@@ -2,11 +2,11 @@
   <div class="chat-room-rename-modal">
     <div class="chat-room-rename-body">
       <div class="form-row">
-        <label class="form-label">검색기록 타이틀</label>
+        <label class="form-label">이름</label>
         <UiInput
           v-model="roomTitle"
           type="text"
-          placeholder="검색기록 타이틀 입력"
+          placeholder="검색기록 이름 입력"
           @keydown.enter="onSubmit"
         />
       </div>
@@ -75,7 +75,7 @@ watch(roomTitle, () => {
 const onSubmit = () => {
   const trimmed = roomTitle.value.trim()
   if (!trimmed) {
-    modalErrorMessage.value = '검색기록 타이틀을 입력해주세요.'
+    modalErrorMessage.value = '검색기록 이름을 입력해주세요.'
     return
   }
   emit('save', trimmed)

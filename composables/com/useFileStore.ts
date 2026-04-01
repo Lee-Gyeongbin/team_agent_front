@@ -73,7 +73,11 @@ export const useFileStore = () => {
     fileError.value = ''
     viewUrl.value = null
     try {
-      const { url } = await fetchViewFileUrl(docId, docFileId)
+      const { url, reason } = await fetchViewFileUrl(docId, docFileId)
+      if (reason) {
+        fileError.value = reason
+        return null
+      }
       viewUrl.value = url
       return url
     } catch (error) {

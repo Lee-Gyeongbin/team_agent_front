@@ -62,50 +62,52 @@
             </template>
             매뉴얼AI
           </UiBadge>
-          <div class="library-detail-modal-tags">
-            <span
-              v-for="tag in displayData?.tags?.split(',')"
-              :key="tag"
-              class="library-detail-modal-tag"
-            >
-              #{{ tag }}
-            </span>
-          </div>
         </div>
 
-        <!-- 제목 및 액션 -->
+        <!-- 제목 행(제목+날짜) + 태그 + 액션 행 — 한 블록 -->
         <div class="library-detail-modal-title-section">
-          <div class="library-detail-modal-title-grp">
+          <div class="library-detail-modal-title-row">
             <h2 class="library-detail-modal-title">{{ displayData?.title }}</h2>
             <p class="library-detail-modal-date">
               {{ formatDateTimeDisplay(displayData?.createDt ?? '') }}
             </p>
           </div>
-          <div class="library-detail-modal-actions shrink-0">
-            <!-- 변경 btn -->
-            <UiButton
-              variant="ghost"
-              size="xxs"
-              icon-only
-              class="btn-custom-white"
-              @click="handleMove"
-            >
-              <template #icon-left>
-                <i class="icon icon-transfer size-16"></i>
-              </template>
-            </UiButton>
-            <!-- 삭제 btn -->
-            <UiButton
-              variant="ghost"
-              size="xxs"
-              icon-only
-              class="btn-custom-light-gray"
-              @click="handleDelete"
-            >
-              <template #icon-left>
-                <i class="icon icon-delete-bg size-16"></i>
-              </template>
-            </UiButton>
+          <div class="library-detail-modal-tags-actions-row">
+            <div class="library-detail-modal-tags">
+              <span
+                v-for="tag in displayData?.tags?.split(',')"
+                :key="tag"
+                class="library-detail-modal-tag"
+              >
+                #{{ tag }}
+              </span>
+            </div>
+            <div class="library-detail-modal-actions">
+              <!-- 변경 btn -->
+              <UiButton
+                variant="ghost"
+                size="xxs"
+                icon-only
+                class="btn-custom-white"
+                @click="handleMove"
+              >
+                <template #icon-left>
+                  <i class="icon icon-transfer size-16"></i>
+                </template>
+              </UiButton>
+              <!-- 삭제 btn -->
+              <UiButton
+                variant="ghost"
+                size="xxs"
+                icon-only
+                class="btn-custom-light-gray"
+                @click="handleDelete"
+              >
+                <template #icon-left>
+                  <i class="icon icon-delete-bg size-16"></i>
+                </template>
+              </UiButton>
+            </div>
           </div>
         </div>
         <!-- 닫기 -->
@@ -169,20 +171,36 @@
           <ul class="reference-list">
             <li
               v-for="item in refItems"
-              :key="item.docId"
-              class="reference-item"
+              :key="`${item.docId}::${item.docFileId}`"
+              class="reference-list-item"
             >
-              <i class="icon icon-document size-20 reference-doc-icon"></i>
-              <div class="reference-item-info">
-                <span class="reference-item-title">{{ item.fileName }}</span>
-                <span class="reference-item-page">{{ item.relatedPages ? `p.${item.relatedPages}` : '' }}</span>
-              </div>
-              <button
-                class="btn-reference-link"
-                @click="onReferenceLink(item)"
+              <div
+                class="reference-item"
+                role="button"
+                tabindex="0"
+                @click="onReferenceRowClick(item)"
+                @keydown.enter.prevent="onReferenceRowClick(item)"
+                @keydown.space.prevent="onReferenceRowClick(item)"
               >
-                <i class="icon icon-link-agent size-16"></i>
-              </button>
+                <i class="icon icon-document size-20 reference-doc-icon"></i>
+                <div class="reference-item-info">
+                  <span class="reference-item-title">{{ item.fileName }}</span>
+                  <span class="reference-item-page">{{ item.relatedPages ? `p.${item.relatedPages}` : '' }}</span>
+                </div>
+                <button
+                  class="btn-reference-link"
+                  type="button"
+                  @click.stop="onReferenceLink(item)"
+                >
+                  <i class="icon icon-link-agent size-16"></i>
+                </button>
+              </div>
+              <LibraryReferencePdfViewer
+                v-if="expandedRefKey === refDocKey(item)"
+                :key="refDocKey(item)"
+                :item="item"
+                :open="true"
+              />
             </li>
           </ul>
         </div>
@@ -247,6 +265,14 @@ const emit = defineEmits<{
   move: [card: LibraryCardDetail]
   delete: [card: LibraryCardDetail]
 }>()
+
+// 참조 매뉴얼 PDF 아코디언 (한 행만 펼침)
+const expandedRefKey = ref<string | null>(null)
+const refDocKey = (item: DocItem) => `${item.docId}::${item.docFileId}`
+const onReferenceRowClick = (item: DocItem) => {
+  const key = refDocKey(item)
+  expandedRefKey.value = expandedRefKey.value === key ? null : key
+}
 
 // 스크롤 상태
 const contentRef = ref<HTMLElement | null>(null)
@@ -326,6 +352,7 @@ watch(
     if (!oldId) {
       displayData.value = props.cardDetail ?? null
       isSqlCodeVisible.value = false
+      expandedRefKey.value = null
       return
     }
     if (!newId || newId === oldId) return
@@ -337,6 +364,7 @@ watch(
     setTimeout(() => {
       displayData.value = props.cardDetail ?? null
       isSqlCodeVisible.value = false
+      expandedRefKey.value = null
       if (contentRef.value) {
         contentRef.value.scrollTo({ top: 0 })
         isScrolled.value = false
@@ -355,6 +383,7 @@ watch(
     if (!open) {
       displayData.value = null
       isSqlCodeVisible.value = false
+      expandedRefKey.value = null
     }
   },
 )
@@ -376,9 +405,12 @@ const handleDelete = () => {
 
 const onReferenceLink = async (item: DocItem) => {
   const url = await handleViewFileUrl(item.docId, item.docFileId)
-  if (!url) return
+  if (!url) {
+    openToast({ message: '참조 매뉴얼 파일을 찾을 수 없습니다.', type: 'error' })
+    return
+  }
   await copyToClipboard(url)
-  openToast({ message: '매뉴얼이 링크가 복사되었습니다.' })
+  openToast({ message: '참조 매뉴얼 링크가 복사되었습니다.', type: 'success' })
 }
 
 const handleCopyResponse = async () => {
