@@ -614,6 +614,13 @@
     margin: 0;
   }
 
+  .reference-list-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    list-style: none;
+  }
+
   .reference-item {
     display: flex;
     align-items: center;
