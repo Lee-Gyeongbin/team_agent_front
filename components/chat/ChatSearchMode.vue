@@ -29,6 +29,16 @@
         :class="{ 'is-flipped': isOpen }"
       />
     </button>
+    <UiSelect
+      v-if="subOptions.length > 0"
+      id="sub-option"
+      class="w-200 ref-select"
+      name="sub-option"
+      :model-value="selectedSubOption"
+      :options="subOptions"
+      size="xlg"
+      @update:model-value="selectedSubOption = String($event)"
+    />
 
     <!-- 드롭다운 -->
     <div
@@ -51,7 +61,7 @@
 <script setup lang="ts">
 import type { SearchModeValue } from '~/types/chat'
 
-const { searchModeOptions, activeSearchModes, toggleSearchMode } = useChatStore()
+const { searchModeOptions, activeSearchModes, toggleSearchMode, subOptions, selectedSubOption } = useChatStore()
 
 const isOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
@@ -89,3 +99,8 @@ onUnmounted(() => {
   document.removeEventListener('click', onClickOutside)
 })
 </script>
+<style scoped lang="scss">
+.ref-select {
+  margin-left: 5px;
+}
+</style>

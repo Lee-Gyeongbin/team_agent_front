@@ -4,8 +4,14 @@ import { copyToClipboard } from '~/utils/global/clipboardUtil'
 const { messages } = useChatStore()
 const { chatRoom } = useChatRooms()
 const { fetchCreateChatLogReaction, fetchCreateKnowledge } = useReportsApi()
-const { selectedSubOption, resolveSvcTy, pushQuestionMessage, pushAnswerPlaceholder, ensureWebSocketAndSend } =
-  useChatStore()
+const {
+  selectedSubOption,
+  selectedModelOption,
+  resolveSvcTy,
+  pushQuestionMessage,
+  pushAnswerPlaceholder,
+  ensureWebSocketAndSend,
+} = useChatStore()
 export const useChatItemActions = () => {
   const modalTitle = ref('')
   const modalPlaceholder = ref('')
@@ -79,15 +85,17 @@ export const useChatItemActions = () => {
     if (!content) return
     if (!chatRoom.value.roomId) return
     const svcTy = question?.svcTy ?? resolveSvcTy()
+    const modelId = typeof question?.modelId === 'string' ? question.modelId : selectedModelOption.value
     const refId = question?.refId ?? selectedSubOption.value
 
-    pushQuestionMessage(content, svcTy, refId)
-    pushAnswerPlaceholder(svcTy, refId)
+    pushQuestionMessage(content, svcTy, modelId, refId)
+    pushAnswerPlaceholder(svcTy, modelId, refId)
     await ensureWebSocketAndSend({
       type: 'question',
       query: content,
       threadId: chatRoom.value.roomId,
       svcTy,
+      modelId,
       refId,
     })
   }
