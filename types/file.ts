@@ -42,6 +42,7 @@ export interface FileUploadResponse {
 // /com/file/viewFile.do 응답
 export interface FileUrlResponse {
   url: string
+  reason: string
 }
 
 // /com/file/downloadFile.do 응답 항목 (docFileId 미지정 시 다건)

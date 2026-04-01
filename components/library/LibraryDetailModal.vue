@@ -378,9 +378,12 @@ const handleDelete = () => {
 
 const onReferenceLink = async (item: DocItem) => {
   const url = await handleViewFileUrl(item.docId, item.docFileId)
-  if (!url) return
+  if (!url) {
+    openToast({ message: '참조 매뉴얼 파일을 찾을 수 없습니다.', type: 'error' })
+    return
+  }
   await copyToClipboard(url)
-  openToast({ message: '매뉴얼이 링크가 복사되었습니다.' })
+  openToast({ message: '참조 매뉴얼 링크가 복사되었습니다.', type: 'success' })
 }
 
 const handleCopyResponse = async () => {
