@@ -46,40 +46,39 @@ const statusFilterOptions = [
 // ===== 테이블 =====
 const tableColumns: TableColumn[] = [
   { key: 'select', label: '', width: '48px', align: 'center', headerAlign: 'center' },
-  { key: 'docTitle', label: '문서명', width: 'auto', align: 'left', headerAlign: 'left' },
+  {
+    key: 'docTitle',
+    label: '문서명',
+    width: 'auto',
+    align: 'left',
+    headerAlign: 'left',
+    sortable: true,
+    sortType: 'string',
+  },
   { key: 'categoryName', label: '카테고리', width: '200px', align: 'left', headerAlign: 'left' },
-  { key: 'fileSize', label: '파일 총 크기', width: '100px', align: 'center', headerAlign: 'center' },
+  {
+    key: 'fileSize',
+    label: '파일 총 크기',
+    width: '110px',
+    align: 'center',
+    headerAlign: 'center',
+    sortable: true,
+    sortType: 'number',
+  },
   { key: 'fileCnt', label: '파일 개수', width: '100px', align: 'center', headerAlign: 'center' },
-  { key: 'createDt', label: '등록일', width: '120px', align: 'center', headerAlign: 'center' },
+  {
+    key: 'createDt',
+    label: '등록일',
+    width: '120px',
+    align: 'center',
+    headerAlign: 'center',
+    sortable: true,
+    sortType: 'date',
+  },
   { key: 'useYn', label: '상태', width: '80px', align: 'center', headerAlign: 'center' },
   { key: 'dsDocCnt', label: 'RAG 사용', width: '100px', align: 'center', headerAlign: 'center' },
   { key: 'actions', label: '', width: '56px', align: 'center', headerAlign: 'center' },
 ]
-
-// 정렬 (프론트 정렬)
-type SortKey = keyof Pick<Document, 'docTitle' | 'fileSize' | 'createDt'>
-const sortKey = ref<SortKey | null>(null)
-const sortOrder = ref<'asc' | 'desc'>('asc')
-const onSort = (key: SortKey) => {
-  if (sortKey.value === key) {
-    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
-  } else {
-    sortKey.value = key
-    sortOrder.value = 'asc'
-  }
-}
-
-const sortedDocumentList = computed(() => {
-  const list = [...documentList.value]
-  const key = sortKey.value
-  if (!key) return list
-  const dir = sortOrder.value === 'asc' ? 1 : -1
-  return list.sort((a, b) => {
-    const va = a[key]
-    const vb = b[key]
-    return dir * (va === vb ? 0 : va < vb ? -1 : 1)
-  })
-})
 
 /** useYn 표시 (Y/N 또는 레거시 한글) */
 const formatUseYnLabel = (value: string) => {
@@ -691,8 +690,6 @@ export const useRepositoryStore = () => {
     docCurrentPage,
     docPageSize,
     tableColumns,
-    onSort,
-    sortedDocumentList,
     formatUseYnLabel,
     rowActionItems,
     selectedIds,

@@ -64,7 +64,29 @@
               :max-height="'300px'"
               size="sm"
               sticky-header
-            />
+            >
+              <template
+                v-for="col in tableColumns"
+                :key="`header-${col.key}`"
+                #[`header-${col.key}`]="{ onSort, isSortable }"
+              >
+                <button
+                  v-if="isSortable"
+                  type="button"
+                  class="chat-vis-table-sort-btn"
+                  @click="onSort()"
+                >
+                  {{ col.label }}
+                  <i class="icon icon-sync size-16" />
+                </button>
+                <span
+                  v-else
+                  class="chat-vis-table-header-label"
+                >
+                  {{ col.label }}
+                </span>
+              </template>
+            </UiTable>
           </div>
           <!-- SQL 코드블록 -->
           <div
@@ -149,6 +171,19 @@
             <div class="chat-vis-axis-icon">
               <i class="icon-axis-arrow size-16"></i>
               <span>축 설정</span>
+              <UiTooltip
+                side="bottom"
+                align="start"
+                :show-arrow="false"
+                content-class="chat-vis-axis-tooltip"
+              >
+                <div class="chat-vis-axis-tooltip-trigger">
+                  <i class="icon icon-info size-16" />
+                </div>
+                <template #content>
+                  <span>※ 결과값이 모두 동일한 컬럼은 축 후보에서 제외됩니다.</span>
+                </template>
+              </UiTooltip>
             </div>
             <div class="chat-vis-axis-columns">
               <div
@@ -463,7 +498,9 @@ const isEmpty = computed(() => currentVisualizationView.value?.status === 'empty
 const hasSchema = computed(() => !!currentVisualizationView.value?.schema)
 
 const showAxisYRButton = computed(() => currentVisualizationView.value?.schema?.selectableOptions?.canDualAxis === true)
-const chartTargetKeysFromSchema = computed(() => currentVisualizationView.value?.schema?.selectableOptions.chartTargetKeys ?? [])
+const chartTargetKeysFromSchema = computed(
+  () => currentVisualizationView.value?.schema?.selectableOptions.chartTargetKeys ?? [],
+)
 const hasStatIdColumn = computed(() => !!currentVisualizationView.value?.schema?.statIdColumnKey)
 
 const uniqueStatIdsForChart = computed(() => {
@@ -515,7 +552,21 @@ const tableModel = computed(() => {
   }
   return buildTableModel(currentVisualizationView.value)
 })
-const tableColumns = computed(() => tableModel.value.columns)
+const tableColumns = computed(() => {
+  const profiles = currentVisualizationView.value?.schema?.profiles ?? []
+  const uniqueCountByKey = new Map(profiles.map((profile) => [profile.key, profile.uniqueCount]))
+
+  return tableModel.value.columns.map((column) => {
+    const uniqueCount = uniqueCountByKey.get(column.key)
+    const isSortable = typeof uniqueCount === 'number' ? uniqueCount > 1 : true
+
+    return {
+      ...column,
+      sortable: isSortable,
+      sortType: 'auto' as const,
+    }
+  })
+})
 const tableData = computed(() => tableModel.value.data)
 
 const buildAxisSettingsFromSchema = (): ColumnAxisSetting[] => {
@@ -800,7 +851,35 @@ watch(
 )
 </script>
 
-<style
-  lang="scss"
-  scoped
-></style>
+<style lang="scss" scoped>
+.chat-vis-axis-icon {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chat-vis-axis-tooltip-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-vis-table-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.chat-vis-table-header-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+</style>

@@ -131,7 +131,7 @@
         <div class="document-table-wrap">
           <UiTable
             :columns="tableColumns"
-            :data="sortedDocumentList"
+            :data="documentList"
             sticky-header
             clickable
             selected-row-key="docId"
@@ -145,11 +145,11 @@
                 @update:model-value="toggleSelectAll"
               />
             </template>
-            <template #header-docTitle>
+            <template #header-docTitle="{ onSort }">
               <button
                 type="button"
                 class="table-header-sort-btn"
-                @click="onSort('docTitle')"
+                @click="onSort()"
               >
                 문서명
                 <i class="icon icon-sync size-16" />
@@ -164,22 +164,22 @@
                 <i class="icon icon-sync size-16" />
               </button>
             </template>
-            <template #header-fileSize>
+            <template #header-fileSize="{ onSort }">
               <button
                 type="button"
                 class="table-header-sort-btn"
-                @click="onSort('fileSize')"
+                @click="onSort()"
               >
                 파일 총 크기
                 <i class="icon icon-sync size-16" />
               </button>
             </template>
             <template #cell-fileCnt="{ value }"> {{ value }}개 </template>
-            <template #header-createDt>
+            <template #header-createDt="{ onSort }">
               <button
                 type="button"
                 class="table-header-sort-btn"
-                @click="onSort('createDt')"
+                @click="onSort()"
               >
                 등록일
                 <i class="icon icon-sync size-16" />
@@ -194,8 +194,8 @@
                 @click.stop
               >
                 <UiCheckbox
-                  :model-value="selectedIds.includes(row.docId)"
-                  @update:model-value="(v) => toggleSelectRow(row.docId, v)"
+                  :model-value="selectedIds.includes(String(row.docId ?? ''))"
+                  @update:model-value="(v) => toggleSelectRow(String(row.docId ?? ''), v)"
                 />
               </div>
             </template>
@@ -222,7 +222,7 @@
                   },
                 ]"
               >
-                {{ formatUseYnLabel(value) }}
+                {{ formatUseYnLabel(String(value ?? '')) }}
               </UiBadge>
             </template>
             <template #cell-dsDocCnt="{ value }"> {{ value }}개 RAG </template>
@@ -234,7 +234,7 @@
                 <UiDropdownMenu
                   :items="rowActionItems"
                   align="end"
-                  @select="(value) => onRowActionSelect(value, row as Document)"
+                  @select="(value) => onRowActionSelect(value, row as unknown as Document)"
                 >
                   <template #trigger>
                     <UiButton
@@ -299,10 +299,7 @@ const {
   selectedIds,
   isAllSelected,
   toggleSelectAll,
-  onSort,
   toggleSelectRow,
-  getDocIconClass,
-  getDocIconName,
   docTotalCount,
   docSearchKeyword,
   docStatusFilter,
@@ -314,7 +311,7 @@ const {
   onBatchDownload,
   onBatchDelete,
   tableColumns,
-  sortedDocumentList,
+  documentList,
   formatUseYnLabel,
   rowActionItems,
   isDocRegisterOpen,
