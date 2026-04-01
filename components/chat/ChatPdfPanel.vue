@@ -140,7 +140,10 @@
           ></canvas>
         </div>
         <div class="chat-pdf-sidebar">
-          <div class="chat-pdf-sidebar-select">
+          <div
+            v-if="activeTab === 'all'"
+            class="chat-pdf-sidebar-select"
+          >
             <UiSelect
               id="pdf-doc-select"
               v-model="selectedDocKey"
@@ -154,22 +157,62 @@
             class="chat-pdf-thumb-list"
             @scroll="onThumbListScroll"
           >
-            <button
-              v-for="pageNum in displayPageList"
-              :key="pageNum"
-              :ref="(el) => setThumbBtnRef(pageNum, el as HTMLElement | null)"
-              class="chat-pdf-thumb"
-              :class="{ 'is-active': pageNum === currentPage }"
-              @click="goToPage(pageNum)"
-            >
-              <canvas
-                :ref="(el) => setThumbCanvasRef(pageNum, el as HTMLCanvasElement | null)"
-                class="chat-pdf-thumb-canvas"
-              ></canvas>
-              <span class="chat-pdf-thumb-label">
-                <em>{{ pageNum }}</em> / {{ totalPages }}
-              </span>
-            </button>
+            <template v-if="activeTab === 'related'">
+              <div
+                v-if="relatedPageEntries.length === 0"
+                class="chat-pdf-empty-related"
+              >
+                관련 페이지가 없습니다.
+              </div>
+              <button
+                v-for="entry in relatedPageEntries"
+                :key="entry.listKey"
+                :ref="(el) => setRelatedBtnRef(entry.activeKey, el as HTMLElement | null)"
+                class="chat-pdf-related-item"
+                :class="{ 'is-active': isRelatedEntryActive(entry) }"
+                @click="onClickRelatedEntry(entry)"
+              >
+                <div class="chat-pdf-related-thumb-wrap">
+                  <img
+                    v-if="getRelatedThumbSrc(entry)"
+                    :src="getRelatedThumbSrc(entry)"
+                    :alt="`${entry.docLabel} ${entry.pageNum}페이지 썸네일`"
+                    class="chat-pdf-related-thumb-image"
+                  />
+                  <div
+                    v-else
+                    class="chat-pdf-related-thumb-empty"
+                  >
+                    {{ isRelatedThumbLoading(entry) ? '로딩 중...' : '미리보기 없음' }}
+                  </div>
+                </div>
+                <div class="chat-pdf-related-meta">
+                  <span class="chat-pdf-related-doc">{{ entry.docLabel }}</span>
+                  <span class="chat-pdf-related-page">
+                    <em>{{ entry.pageNum }}</em
+                    >페이지
+                  </span>
+                </div>
+              </button>
+            </template>
+            <template v-else>
+              <button
+                v-for="pageNum in displayPageList"
+                :key="pageNum"
+                :ref="(el) => setThumbBtnRef(pageNum, el as HTMLElement | null)"
+                class="chat-pdf-thumb"
+                :class="{ 'is-active': pageNum === currentPage }"
+                @click="goToPage(pageNum)"
+              >
+                <canvas
+                  :ref="(el) => setThumbCanvasRef(pageNum, el as HTMLCanvasElement | null)"
+                  class="chat-pdf-thumb-canvas"
+                ></canvas>
+                <span class="chat-pdf-thumb-label">
+                  <em>{{ pageNum }}</em> / {{ totalPages }}
+                </span>
+              </button>
+            </template>
             <!-- 맨 위로 버튼 -->
             <button
               v-show="showScrollTopBtn"
@@ -187,7 +230,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ChatPdfPanelProps } from '~/types/chat'
+import type { ChatPdfPanelProps, PdfDocumentProxy, PdfJsLib } from '~/types/chat'
 import { useFileStore } from '~/composables/com/useFileStore'
 
 const { handleViewFileUrl } = useFileStore()
@@ -209,16 +252,28 @@ const currentFilePath = ref('')
 
 // RELATED_PAGES 파싱: "[63, 75, 88]" JSON 배열 또는 "1,3,5" 쉼표 구분 모두 대응
 const parseRelatedPages = (raw: string): number[] => {
+  if (!raw) return []
   try {
     const parsed = JSON.parse(raw)
-    if (Array.isArray(parsed)) return parsed.map(Number).filter(Boolean)
+    if (Array.isArray(parsed)) return parsed.map(Number).filter((n) => Number.isFinite(n) && n > 0)
   } catch {
-    return raw.split(',').map(Number).filter(Boolean)
+    return raw
+      .split(',')
+      .map((v) => Number(v.trim()))
+      .filter((n) => Number.isFinite(n) && n > 0)
   }
   return []
 }
 
 const buildDocKey = (docId: string, docFileId: string) => `${docId}::${docFileId}`
+
+interface RelatedPageEntry {
+  listKey: string
+  activeKey: string
+  docKey: string
+  docLabel: string
+  pageNum: number
+}
 
 // refList → UiSelect 옵션
 const documentList = computed(() =>
@@ -236,9 +291,19 @@ const selectedRef = computed(() =>
 // 현재 문서의 주요 페이지 번호
 const currentMainPageNo = computed(() => selectedRef.value?.mainPageNo ?? 1)
 
-// 현재 문서의 관련 페이지 목록
-const currentRelatedPages = computed(() =>
-  selectedRef.value?.relatedPages ? parseRelatedPages(selectedRef.value.relatedPages) : [],
+// 관련페이지 탭에서 사용할 전체 파일 기준 페이지 목록
+const relatedPageEntries = computed<RelatedPageEntry[]>(() =>
+  (props.refList ?? []).flatMap((row) => {
+    const docKey = buildDocKey(row.docId, row.docFileId)
+    const docLabel = row.docTitle || row.fileName
+    return parseRelatedPages(row.relatedPages).map((pageNum, index) => ({
+      listKey: `${docKey}:${pageNum}:${index}`,
+      activeKey: `${docKey}:${pageNum}`,
+      docKey,
+      docLabel,
+      pageNum,
+    }))
+  }),
 )
 
 const thumbListRef = ref<HTMLElement | null>(null)
@@ -256,6 +321,13 @@ const scrollThumbListToTop = () => {
 const mainCanvasRef = ref<HTMLCanvasElement | null>(null)
 const thumbCanvasMap = new Map<number, HTMLCanvasElement>()
 const thumbBtnMap = new Map<number, HTMLElement>()
+const relatedBtnMap = new Map<string, HTMLElement>()
+const pendingTargetPage = ref<number | null>(null)
+const relatedThumbSrcMap = ref<Record<string, string>>({})
+const relatedThumbLoadingMap = ref<Record<string, boolean>>({})
+const relatedDocUrlMap = new Map<string, string>()
+const relatedPdfDocMap = new Map<string, PdfDocumentProxy>()
+let relatedPdfJsLib: PdfJsLib | null = null
 
 const setThumbCanvasRef = (pageNum: number, el: HTMLCanvasElement | null) => {
   if (el) {
@@ -271,6 +343,112 @@ const setThumbBtnRef = (pageNum: number, el: HTMLElement | null) => {
     return
   }
   thumbBtnMap.delete(pageNum)
+}
+
+const setRelatedBtnRef = (activeKey: string, el: HTMLElement | null) => {
+  if (el) {
+    relatedBtnMap.set(activeKey, el)
+    return
+  }
+  relatedBtnMap.delete(activeKey)
+}
+
+const setRelatedThumbSrc = (activeKey: string, src: string) => {
+  relatedThumbSrcMap.value = {
+    ...relatedThumbSrcMap.value,
+    [activeKey]: src,
+  }
+}
+
+const setRelatedThumbLoading = (activeKey: string, isLoading: boolean) => {
+  relatedThumbLoadingMap.value = {
+    ...relatedThumbLoadingMap.value,
+    [activeKey]: isLoading,
+  }
+}
+
+const getRelatedThumbSrc = (entry: RelatedPageEntry) => relatedThumbSrcMap.value[entry.activeKey] ?? ''
+const isRelatedThumbLoading = (entry: RelatedPageEntry) => relatedThumbLoadingMap.value[entry.activeKey] === true
+
+const loadRelatedPdfJs = async (): Promise<PdfJsLib> => {
+  if (typeof window === 'undefined') {
+    throw new Error('브라우저 환경에서만 PDF 썸네일을 렌더링할 수 있습니다.')
+  }
+  if (relatedPdfJsLib) return relatedPdfJsLib
+
+  if (window.pdfjsLib) {
+    relatedPdfJsLib = window.pdfjsLib
+    return relatedPdfJsLib
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    const script = document.createElement('script')
+    script.src = '/pdfjs/build/pdf.js'
+    script.onload = () => resolve()
+    script.onerror = () => reject(new Error('PDF.js 스크립트를 불러오지 못했습니다.'))
+    document.head.appendChild(script)
+  })
+
+  relatedPdfJsLib = window.pdfjsLib || null
+  if (!relatedPdfJsLib) {
+    throw new Error('PDF.js 라이브러리를 찾을 수 없습니다.')
+  }
+  return relatedPdfJsLib
+}
+
+const getDocRowByKey = (docKey: string) =>
+  (props.refList ?? []).find((r) => buildDocKey(r.docId, r.docFileId) === docKey)
+
+const ensureRelatedDocUrl = async (docKey: string): Promise<string | null> => {
+  const cachedUrl = relatedDocUrlMap.get(docKey)
+  if (cachedUrl) return cachedUrl
+  const row = getDocRowByKey(docKey)
+  if (!row) return null
+  const url = await handleViewFileUrl(row.docId, row.docFileId)
+  if (!url) return null
+  relatedDocUrlMap.set(docKey, url)
+  return url
+}
+
+const ensureRelatedPdfDoc = async (docKey: string): Promise<PdfDocumentProxy | null> => {
+  const cached = relatedPdfDocMap.get(docKey)
+  if (cached) return cached
+  const url = await ensureRelatedDocUrl(docKey)
+  if (!url) return null
+  const lib = await loadRelatedPdfJs()
+  lib.GlobalWorkerOptions.workerSrc = '/pdfjs/build/pdf.worker.js'
+  const loadedPdf = await lib.getDocument({ url }).promise
+  relatedPdfDocMap.set(docKey, loadedPdf)
+  return loadedPdf
+}
+
+const renderRelatedThumbnail = async (entry: RelatedPageEntry) => {
+  if (getRelatedThumbSrc(entry) || isRelatedThumbLoading(entry)) return
+  setRelatedThumbLoading(entry.activeKey, true)
+  try {
+    const pdfDoc = await ensureRelatedPdfDoc(entry.docKey)
+    if (!pdfDoc || entry.pageNum > pdfDoc.numPages) return
+    const page = await pdfDoc.getPage(entry.pageNum)
+    const baseViewport = page.getViewport({ scale: 1 })
+    const thumbScale = Math.min(84 / baseViewport.width, 112 / baseViewport.height)
+    const viewport = page.getViewport({ scale: thumbScale })
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.floor(viewport.width)
+    canvas.height = Math.floor(viewport.height)
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    await page.render({ canvasContext: ctx, viewport }).promise
+    setRelatedThumbSrc(entry.activeKey, canvas.toDataURL('image/png'))
+  } catch {
+    // 썸네일 생성 실패 시 텍스트 플레이스홀더 유지
+  } finally {
+    setRelatedThumbLoading(entry.activeKey, false)
+  }
+}
+
+const ensureRelatedThumbnails = async () => {
+  const tasks = relatedPageEntries.value.map((entry) => renderRelatedThumbnail(entry))
+  await Promise.all(tasks)
 }
 
 const {
@@ -297,12 +475,26 @@ const isFullscreen = ref(false)
 const activeTab = ref<'related' | 'all'>('related')
 
 // 탭에 따라 표시할 페이지 목록 결정
-const displayPageList = computed(() => {
-  if (activeTab.value === 'related' && currentRelatedPages.value.length > 0) {
-    return currentRelatedPages.value.filter((p) => p >= 1 && p <= totalPages.value)
+const displayPageList = computed(() => pageList.value)
+
+const buildRelatedActiveKey = (docKey: string, pageNum: number) => `${docKey}:${pageNum}`
+
+const isRelatedEntryActive = (entry: RelatedPageEntry) =>
+  entry.docKey === selectedDocKey.value && entry.pageNum === currentPage.value
+
+const onClickRelatedEntry = async (entry: RelatedPageEntry) => {
+  pendingTargetPage.value = entry.pageNum
+  if (selectedDocKey.value !== entry.docKey) {
+    selectedDocKey.value = entry.docKey
+    return
   }
-  return pageList.value
-})
+  if (!props.open) return
+  if (!hasData.value) {
+    await loadAndGoToTargetPage()
+    return
+  }
+  await goToPage(entry.pageNum)
+}
 
 // PDF를 새 탭에서 열어 인쇄
 const onPrint = () => {
@@ -336,8 +528,8 @@ const onClose = () => {
   emit('update:open', false)
 }
 
-// presigned URL 조회 + PDF 로드 후 mainPageNo로 이동하는 헬퍼
-const loadAndGoToMainPage = async () => {
+// presigned URL 조회 + PDF 로드 후 목표 페이지로 이동하는 헬퍼
+const loadAndGoToTargetPage = async () => {
   if (!props.open || !selectedRef.value) return
 
   // 1) /com/file/viewFile.do 로 presigned URL 조회
@@ -345,11 +537,12 @@ const loadAndGoToMainPage = async () => {
   currentFilePath.value = url || ''
   if (!currentFilePath.value) return
 
-  // 2) PDF 로드 + mainPageNo로 이동
-  activeTab.value = 'related'
+  // 2) PDF 로드 + 목표 페이지(mainPageNo 또는 관련페이지 클릭 대상)로 이동
   await loadPdf()
-  if (currentMainPageNo.value > 1) {
-    await goToPage(currentMainPageNo.value)
+  const targetPage = pendingTargetPage.value ?? currentMainPageNo.value
+  pendingTargetPage.value = null
+  if (targetPage >= 1) {
+    await goToPage(targetPage)
   }
 }
 
@@ -358,14 +551,14 @@ watch(
   () => props.open,
   async (open) => {
     if (!open) return
-    await loadAndGoToMainPage()
+    await loadAndGoToTargetPage()
   },
 )
 
 // 선택 문서가 바뀔 때 새 PDF 로드
 watch(selectedDocKey, async () => {
   if (!props.open) return
-  await loadAndGoToMainPage()
+  await loadAndGoToTargetPage()
 })
 
 // refList가 바뀌면 첫 번째 문서로 초기화
@@ -380,15 +573,33 @@ watch(
 
 // 전체페이지 탭으로 전환 시 새로 마운트된 캔버스에 썸네일 그리기 (관련페이지만 DOM에 있을 때는 1~N 캔버스가 없음)
 watch(activeTab, async (tab) => {
+  if (tab === 'related' && props.open) {
+    await nextTick()
+    void ensureRelatedThumbnails()
+  }
   if (tab === 'all' && hasData.value) {
     await nextTick()
     await renderAllThumbnails()
   }
 })
 
+watch(
+  () => props.refList,
+  () => {
+    if (activeTab.value !== 'related' || !props.open) return
+    void ensureRelatedThumbnails()
+  },
+  { deep: true },
+)
+
 // 페이지 변경 시 해당 썸네일로 자동 스크롤
-watch(currentPage, async (page) => {
+watch([currentPage, selectedDocKey, activeTab], async ([page, docKey, tab]) => {
   await nextTick()
+  if (tab === 'related') {
+    const relatedBtn = relatedBtnMap.get(buildRelatedActiveKey(docKey, page))
+    relatedBtn?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    return
+  }
   const btn = thumbBtnMap.get(page)
   btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
 })
