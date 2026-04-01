@@ -85,7 +85,8 @@ export const useNoticeStore = () => {
   const isLoading = ref(false)
   const errorMessage = ref('')
   const currentPage = ref(1)
-  const pageSize = 15
+  const pageSizeTotal = 15
+  const normalTotalCount = ref(0)
   const isNoticePanelOpen = ref(false)
   const isNoticeDetailPanelOpen = ref(false)
   const selectedNotice = ref<NoticeItem | null>(null)
@@ -101,51 +102,35 @@ export const useNoticeStore = () => {
   // ==============================
   // 계산값
   // ==============================
-  const isMatchedNotice = (item: NoticeItem, keyword: string, selectedCategory: string) => {
-    const isCategoryMatched = !selectedCategory || String(item.noticeTypeCd ?? '').trim() === selectedCategory
-    if (!isCategoryMatched) return false
-    if (!keyword) return true
 
-    return item.title.toLowerCase().includes(keyword) || item.crtrId.toLowerCase().includes(keyword)
-  }
-
-  const filterNoticeList = (list: NoticeItem[]) => {
-    const keyword = searchKeyword.value.trim().toLowerCase()
-    const selectedCategory = String(searchCategory.value ?? '').trim()
-    return list.filter((item) => isMatchedNotice(item, keyword, selectedCategory))
-  }
-
-  const filteredPinnedList = computed(() => filterNoticeList(pinnedNoticeList.value))
-  const filteredNormalList = computed(() => filterNoticeList(normalNoticeList.value))
-  const filteredList = computed(() => [...filteredPinnedList.value, ...filteredNormalList.value])
-
-  const noticeNormalPageSize = computed(() => Math.max(1, pageSize - filteredPinnedList.value.length))
+  const filteredPinnedList = computed(() => pinnedNoticeList.value)
+  const filteredNormalList = computed(() => normalNoticeList.value)
+  const totalNoticeCount = computed(() => normalTotalCount.value + pinnedNoticeList.value.length)
+  const noticeNormalPageSize = computed(() => Math.max(1, pageSizeTotal - filteredPinnedList.value.length))
 
   const panelActionLabel = computed<'등록' | '수정'>(() => (noticeForm.value.noticeId ? '수정' : '등록'))
 
   const noticeOrderMap = computed(() => {
     const orderMap = new Map<string, number>()
-    let order = filteredNormalList.value.length
+    const pageSize = noticeNormalPageSize.value
+    const total = normalTotalCount.value
+    const pageIndex = currentPage.value
 
-    filteredNormalList.value.forEach((notice) => {
-      orderMap.set(notice.noticeId, order)
-      order -= 1
+    filteredNormalList.value.forEach((notice, idx) => {
+      const number = total - (pageIndex - 1) * pageSize - idx
+      orderMap.set(notice.noticeId, number)
     })
 
     return orderMap
   })
 
-  const noticeTotalPages = computed(() =>
-    Math.max(1, Math.ceil(filteredNormalList.value.length / noticeNormalPageSize.value)),
-  )
+  const noticeTotalPages = computed(() => Math.max(1, Math.ceil(normalTotalCount.value / noticeNormalPageSize.value)))
 
-  /** 페이지 사이즈 단위 슬라이싱 */
+  /** 테이블 렌더링용 목록 */
   const pagedNoticeList = computed(() => {
     const pinned = filteredPinnedList.value
     const normal = filteredNormalList.value
-    const sliceSize = noticeNormalPageSize.value
-    const startIndex = (currentPage.value - 1) * sliceSize
-    return [...pinned, ...normal.slice(startIndex, startIndex + sliceSize)]
+    return [...pinned, ...normal]
   })
 
   // ==============================
@@ -161,10 +146,20 @@ export const useNoticeStore = () => {
     isLoading.value = true
 
     try {
-      const [pinnedRes, normalRes] = await Promise.all([fetchSelectNoticePinnedList(), fetchSelectNoticeList()])
+      const params = {
+        pageIndex: currentPage.value,
+        searchKeyword: searchKeyword.value.trim() || undefined,
+        noticeTypeCd: String(searchCategory.value ?? '').trim() || undefined,
+      }
+
+      const [pinnedRes, normalRes] = await Promise.all([
+        fetchSelectNoticePinnedList(params),
+        fetchSelectNoticeList(params),
+      ])
       const pinnedList = Array.isArray(pinnedRes.dataList) ? pinnedRes.dataList.map(mapNoticeDetailToItem) : []
       pinnedNoticeList.value = pinnedList
       normalNoticeList.value = Array.isArray(normalRes.dataList) ? normalRes.dataList.map(mapNoticeDetailToItem) : []
+      normalTotalCount.value = Number((normalRes as { totalCnt?: number }).totalCnt ?? 0)
     } catch (error) {
       errorMessage.value = '공지사항 조회 중 오류가 발생했습니다.'
       console.error(error)
@@ -237,10 +232,11 @@ export const useNoticeStore = () => {
 
   const onSaveNoticeForm = async (payload: NoticeFormData) => {
     const savedNoticeId = await handleSaveNotice(payload)
-    if (!savedNoticeId) return
     isNoticePanelOpen.value = false
     resetNoticeFormState()
-    await handleSelectNoticeDetail(savedNoticeId)
+    if (savedNoticeId) {
+      await handleSelectNoticeDetail(savedNoticeId)
+    }
   }
 
   const onCloseNoticeForm = () => {
@@ -311,7 +307,6 @@ export const useNoticeStore = () => {
 
   return {
     searchKeyword,
-    filteredList,
     isLoading,
     errorMessage,
     currentPage,
@@ -324,6 +319,8 @@ export const useNoticeStore = () => {
     categoryOptions,
     panelActionLabel,
     filteredNormalList,
+    totalNoticeCount,
+    normalTotalCount,
     noticeNormalPageSize,
     noticeTotalPages,
     pagedNoticeList,

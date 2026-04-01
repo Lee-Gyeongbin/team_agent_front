@@ -33,6 +33,7 @@ export interface NoticeFormData {
 /** 공지 목록 API 공통 응답 */
 export interface NoticeListResponse {
   dataList: NoticeItem[]
+  totalCnt: number
 }
 
 export interface NoticeDetailResponse {

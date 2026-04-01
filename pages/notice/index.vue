@@ -5,13 +5,15 @@
       <p class="notice-description">공지사항을 조회하고 관리할 수 있습니다.</p>
       <div class="right-grp flex items-center">
         <p class="total">
-          총 <strong>{{ filteredList.length }}건</strong>
+          총 <strong>{{ totalNoticeCount }}건</strong>
         </p>
         <div class="notice-input-grp shrink-0 grow-1 max-w-280">
           <UiInput
             v-model="searchKeyword"
             type="search"
             placeholder="제목 또는 작성자 검색"
+            @search="onSearch"
+            @enter="onSearch"
           />
         </div>
         <div class="notice-select-grp shrink-0 grow-1 max-w-140">
@@ -127,8 +129,8 @@
           <div class="notice-pagination-stack">
             <UiPagination
               v-if="noticeTotalPages > 1"
-              v-model="currentPage"
-              :total-count="filteredNormalList.length"
+              v-model="page"
+              :total-count="normalTotalCount"
               :page-size="noticeNormalPageSize"
               total-label="개 공지사항"
               class="notice-pagination"
@@ -166,7 +168,6 @@ import { noticeColumns } from '~/types/notice'
 const {
   searchKeyword,
   searchCategory,
-  filteredList,
   isLoading,
   errorMessage,
   currentPage,
@@ -177,7 +178,8 @@ const {
   noticeTypeOptions,
   categoryOptions,
   panelActionLabel,
-  filteredNormalList,
+  normalTotalCount,
+  totalNoticeCount,
   noticeNormalPageSize,
   noticeTotalPages,
   pagedNoticeList,
@@ -195,16 +197,40 @@ const {
   getNoticeDateLabel,
 } = useNoticeStore()
 
-watch([searchKeyword, searchCategory, noticeTotalPages], ([prevKeyword, prevCategory, totalPage]) => {
-  if (searchKeyword.value !== prevKeyword || searchCategory.value !== prevCategory) {
-    currentPage.value = 1
-    return
-  }
-
-  if (currentPage.value > totalPage) {
-    currentPage.value = Math.max(1, totalPage)
-  }
+// 페이지 변경 시 서버에 해당 페이지 데이터 재조회
+const page = computed({
+  get: () => currentPage.value,
+  set: (value: number) => {
+    currentPage.value = value
+    handleSelectNoticeList()
+  },
 })
+
+// 검색 버튼/엔터로 검색 수행
+const onSearch = () => {
+  currentPage.value = 1
+  handleSelectNoticeList()
+}
+
+// 카테고리 변경 및 전체 페이지 수 변경 시 페이지/데이터 보정
+watch(
+  () => ({ category: searchCategory.value, totalPages: noticeTotalPages.value }),
+  (next, prev) => {
+    // 카테고리 변경 시 1페이지로 이동 후 재조회
+    if (!prev || next.category !== prev.category) {
+      currentPage.value = 1
+      handleSelectNoticeList()
+      return
+    }
+
+    // 전체 페이지 수가 줄어들었을 때 현재 페이지 보정
+    const totalPage = next.totalPages
+    if (currentPage.value > totalPage) {
+      currentPage.value = Math.max(1, totalPage)
+    }
+  },
+  { flush: 'post' },
+)
 
 onMounted(() => {
   handleSelectNoticeTypeOptions()
