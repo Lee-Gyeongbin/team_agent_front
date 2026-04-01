@@ -120,13 +120,13 @@ export const useChatItemActions = () => {
   }
 
   /** 지식창고 저장 */
-  const handleCreateKnowledge = async (logId: string, categoryId: string) => {
+  const handleCreateKnowledge = async (logId: string, categoryId: string, categoryNm: string) => {
     openLoading({ text: '지식창고에 저장 중...' })
     try {
       await fetchCreateKnowledge(logId, categoryId)
-      openToast({ message: '지식창고에 저장되었습니다', type: 'success' })
+      openToast({ message: '지식창고에 저장되었습니다. [' + categoryNm + ']', type: 'success' })
     } catch {
-      openToast({ message: '지식창고 저장에 실패했습니다', type: 'error' })
+      openToast({ message: '지식창고 저장에 실패했습니다.', type: 'error' })
     } finally {
       closeLoading()
     }
