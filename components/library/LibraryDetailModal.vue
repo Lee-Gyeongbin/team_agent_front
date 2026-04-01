@@ -176,6 +176,7 @@
             >
               <div
                 class="reference-item"
+                :class="{ 'is-active': expandedRefKey === refDocKey(item) }"
                 role="button"
                 tabindex="0"
                 @click="onReferenceRowClick(item)"

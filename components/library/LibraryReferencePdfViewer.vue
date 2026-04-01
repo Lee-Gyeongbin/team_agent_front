@@ -286,14 +286,6 @@ const onPageInput = (event: Event) => {
   target.value = target.value.replace(/[^0-9]/g, '')
 }
 
-const onPrint = () => {
-  if (!currentFilePath.value) return
-  const printWindow = window.open(currentFilePath.value, '_blank')
-  printWindow?.addEventListener('load', () => {
-    printWindow.print()
-  })
-}
-
 const loadPdfFromItem = async () => {
   if (!props.open) return
 

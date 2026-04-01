@@ -560,7 +560,7 @@
 
 // 참조 매뉴얼 영역 (매뉴얼AI 타입)
 .content-box.type-reference {
-  padding: 12px $spacing-md 8px;
+  padding: 12px $spacing-md $spacing-md;
   background: #fff;
   border: 1px solid $color-border;
 
@@ -621,18 +621,35 @@
     list-style: none;
   }
 
+  // 라이브러리 목록 카드(.library-card)와 동일한 선택 강조 톤
   .reference-item {
     display: flex;
     align-items: center;
     gap: 10px;
     padding: 10px 12px;
-    background: $color-background;
+    border: 1px solid #c6d2db;
     border-radius: $border-radius-lg;
+    background: #fff;
     cursor: pointer;
-    transition: background $transition-fast;
+    transition:
+      border-color $transition-slow,
+      box-shadow $transition-slow,
+      background $transition-fast;
+    box-shadow: 4px 4px 4px 0 rgba(30, 50, 77, 0.08);
 
-    &:hover {
-      background: color.adjust($color-background, $lightness: -2%);
+    &:hover:not(.is-active) {
+      border-color: #94a3b8;
+    }
+
+    &.is-active {
+      border-color: #94a3b8;
+      box-shadow:
+        4px 4px 4px 0 rgba(30, 50, 77, 0.08),
+        inset 0 0 0 1px #94a3b8;
+
+      &:hover {
+        border-color: #94a3b8;
+      }
     }
   }
 
