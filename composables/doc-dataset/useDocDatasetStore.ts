@@ -147,6 +147,14 @@ const buildMessageMap = ref<Record<string, string>>({})
 const buildStreamMap = new Map<string, EventSource>()
 const buildProgressTargetMap = ref<Record<string, number>>({})
 const buildProgressTimerMap = new Map<string, ReturnType<typeof setInterval>>()
+const initialSelectedDocIds = ref<string[]>([])
+
+type BuildUpdateType = 'init' | 'add' | 'replace_all' | 'delete_some'
+interface BuildStreamStartParams {
+  updateType: BuildUpdateType
+  addDocIds: string[]
+  deleteDocIds: string[]
+}
 
 interface DatasetBuildEventData {
   status?: string
@@ -271,8 +279,54 @@ const handleClearBuildState = (datasetId: string) => {
   )
 }
 
+// 데이터셋 구축 진행 스트림 시작 쿼리 스트링 생성
+const buildStartQueryString = (datasetId: string, params?: BuildStreamStartParams) => {
+  const query = new URLSearchParams()
+  query.append('datasetId', datasetId)
+  if (!params) return query.toString()
+  query.append('update_type', params.updateType)
+  params.addDocIds.forEach((docId) => {
+    query.append('add_doc_ids', docId)
+  })
+  params.deleteDocIds.forEach((docId) => {
+    query.append('delete_doc_ids', docId)
+  })
+  return query.toString()
+}
+
+// 데이터셋 구축 진행 스트림 시작 파라미터 생성
+const createBuildStreamStartParams = (currentDocIds: string[]): BuildStreamStartParams => {
+  const prevSet = new Set((initialSelectedDocIds.value ?? []).map(String))
+  const currentSet = new Set((currentDocIds ?? []).map(String))
+  const addDocIds = [...currentSet].filter((docId) => !prevSet.has(docId))
+  const deleteDocIds = [...prevSet].filter((docId) => !currentSet.has(docId))
+
+  if (prevSet.size === 0) {
+    return {
+      updateType: 'init',
+      addDocIds: [],
+      deleteDocIds: [],
+    }
+  }
+  if (addDocIds.length > 0 && deleteDocIds.length > 0) {
+    return { updateType: 'replace_all', addDocIds, deleteDocIds }
+  }
+  if (addDocIds.length > 0) {
+    return { updateType: 'add', addDocIds, deleteDocIds: [] }
+  }
+  if (deleteDocIds.length > 0) {
+    return { updateType: 'delete_some', addDocIds: [], deleteDocIds }
+  }
+
+  return {
+    updateType: 'replace_all',
+    addDocIds: [],
+    deleteDocIds: [],
+  }
+}
+
 // 데이터셋 구축 진행 스트림 시작
-const handleStartBuildStream = (datasetId: string) => {
+const handleStartBuildStream = (datasetId: string, params?: BuildStreamStartParams) => {
   if (typeof window === 'undefined') return
   if (!datasetId) return
 
@@ -291,7 +345,8 @@ const handleStartBuildStream = (datasetId: string) => {
   }
 
   // 데이터셋 구축 진행 스트림 중계
-  const stream = new EventSource(`/api/dataset/buildStream.do?datasetId=${encodeURIComponent(datasetId)}`)
+  const queryString = buildStartQueryString(datasetId, params)
+  const stream = new EventSource(`/api/dataset/buildStream.do?${queryString}`)
   buildStreamMap.set(datasetId, stream)
 
   // 이벤트 리스너 등록
@@ -363,6 +418,7 @@ const openCreateModal = async () => {
   modalMode.value = 'create'
   editingDatasetId.value = ''
   selectedDatasetDetail.value = null
+  initialSelectedDocIds.value = []
   editFormData.value = undefined
   // 데이터소스 목록(전체 문서/URL + 카테고리) 조회
   await handleSelectDatasetSrcList()
@@ -662,7 +718,8 @@ const onSaveCreate = (data: DocDatasetForm, startBuild: boolean) => {
       const { affected, datasetId } = await handleSaveDocDataset(payload)
       // 데이터셋 구축 진행 스트림 시작
       if (startBuild && affected > 0 && datasetId) {
-        handleStartBuildStream(datasetId)
+        const buildStartParams = createBuildStreamStartParams(data.selectedDocIds ?? [])
+        handleStartBuildStream(datasetId, buildStartParams)
       }
       // 생성/수정 모달 닫기
       isCreateModalOpen.value = false
@@ -737,6 +794,7 @@ const onEdit = async (dataset: DocDataset) => {
   // 데이터셋과 매핑된 문서, URL ID 목록 세팅
   const dsDocIds = (res.dsDocList ?? []).map((item) => String(item.docId))
   const dsUrlIds = (res.dsUrlList ?? []).map((item) => String(item.urlId))
+  initialSelectedDocIds.value = [...dsDocIds]
   // 모달 모드 세팅
   modalMode.value = 'edit'
   // 수정 데이터셋 ID 세팅
