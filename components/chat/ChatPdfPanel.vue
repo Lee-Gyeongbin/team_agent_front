@@ -288,9 +288,6 @@ const selectedRef = computed(() =>
   (props.refList ?? []).find((r) => buildDocKey(r.docId, r.docFileId) === selectedDocKey.value),
 )
 
-// 현재 문서의 주요 페이지 번호
-const currentMainPageNo = computed(() => selectedRef.value?.mainPageNo ?? 1)
-
 // 관련페이지 탭에서 사용할 전체 파일 기준 페이지 목록
 const relatedPageEntries = computed<RelatedPageEntry[]>(() =>
   (props.refList ?? []).flatMap((row) => {
@@ -422,6 +419,10 @@ const ensureRelatedPdfDoc = async (docKey: string): Promise<PdfDocumentProxy | n
   return loadedPdf
 }
 
+/**
+ * 관련 페이지 썸네일 렌더링 (서버는 문서 URL만 주고 썸네일 생성은 브라우저에서 pdf.js+canvas로 처리)
+ * @param entry 관련 페이지 엔트리
+ */
 const renderRelatedThumbnail = async (entry: RelatedPageEntry) => {
   if (getRelatedThumbSrc(entry) || isRelatedThumbLoading(entry)) return
   setRelatedThumbLoading(entry.activeKey, true)
@@ -537,9 +538,9 @@ const loadAndGoToTargetPage = async () => {
   currentFilePath.value = url || ''
   if (!currentFilePath.value) return
 
-  // 2) PDF 로드 + 목표 페이지(mainPageNo 또는 관련페이지 클릭 대상)로 이동
+  // 2) PDF 로드 + 목표 페이지(관련페이지 클릭 대상 또는 첫 페이지)로 이동
   await loadPdf()
-  const targetPage = pendingTargetPage.value ?? currentMainPageNo.value
+  const targetPage = pendingTargetPage.value ?? 1
   pendingTargetPage.value = null
   if (targetPage >= 1) {
     await goToPage(targetPage)
@@ -558,6 +559,10 @@ watch(
 // 선택 문서가 바뀔 때 새 PDF 로드
 watch(selectedDocKey, async () => {
   if (!props.open) return
+  // 전체페이지 탭에서 파일 선택 시 항상 첫 페이지부터 시작
+  if (activeTab.value === 'all' && pendingTargetPage.value === null) {
+    pendingTargetPage.value = 1
+  }
   await loadAndGoToTargetPage()
 })
 
