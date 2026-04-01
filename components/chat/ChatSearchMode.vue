@@ -30,7 +30,7 @@
       />
     </button>
     <UiSelect
-      v-if="subOptions.length > 0"
+      v-if="isSearchModeActive && subOptions.length > 0"
       id="sub-option"
       class="w-200 ref-select"
       name="sub-option"
@@ -68,6 +68,7 @@ const dropdownRef = ref<HTMLElement | null>(null)
 
 // 선택된 모드의 옵션 정보
 const selectedOptions = computed(() => searchModeOptions.filter((opt) => activeSearchModes.value.includes(opt.value)))
+const isSearchModeActive = computed(() => activeSearchModes.value.length > 0)
 
 const toggleDropdown = () => {
   isOpen.value = !isOpen.value
