@@ -154,6 +154,15 @@
   }
 }
 
+.my-page-password-button-wrap {
+  margin-top: $spacing-lg;
+}
+
+.my-page-password-button {
+  width: 100%;
+  justify-content: center;
+}
+
 .my-page-field-text {
   display: inline-flex;
   align-items: center;
@@ -229,6 +238,29 @@
   font-size: $font-size-sm;
   color: $color-text-secondary;
   text-align: center;
+}
+
+.my-page-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: $border-radius-full;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+
+  &.is-active {
+    background: rgba($color-success, 0.12);
+    color: $color-success;
+  }
+
+  &.is-inactive {
+    background: rgba($color-text-secondary, 0.12);
+    color: $color-text-secondary;
+  }
+
+  &.is-lock {
+    background: rgba($color-warning, 0.12);
+    color: $color-warning;
+  }
 }
 
 .password-field {

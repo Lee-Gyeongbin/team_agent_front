@@ -5,6 +5,7 @@ export interface MyPageItem {
   email: string
   phone: string
   orgId: string
+  acctStatusCd: string
   acctStatusDesc: string
   lastLoginDt: string
   pwdChgDt: string

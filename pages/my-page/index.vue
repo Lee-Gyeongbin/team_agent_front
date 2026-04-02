@@ -88,6 +88,17 @@
                 <dd>{{ currentOrgLabel || '-' }}</dd>
               </div>
             </dl>
+
+            <div class="my-page-password-button-wrap">
+              <UiButton
+                variant="outline"
+                size="md"
+                class="my-page-password-button"
+                @click="handleOpenPasswordModal"
+              >
+                비밀번호 변경
+              </UiButton>
+            </div>
           </section>
 
           <!-- 우측: 확인 / 수정 폼 -->
@@ -140,16 +151,19 @@
                   </td>
                   <th scope="row">계정 상태</th>
                   <td>
-                    <template v-if="isEditMode">
-                      <UiInput
-                        :model-value="form.acctStatusDesc || ''"
-                        size="sm"
-                        disabled
-                      />
-                    </template>
-                    <template v-else>
-                      <span class="my-page-field-text">{{ form.acctStatusDesc || '-' }}</span>
-                    </template>
+                    <span
+                      v-if="acctStatusLabel"
+                      class="my-page-status"
+                      :class="acctStatusClass"
+                    >
+                      {{ acctStatusLabel }}
+                    </span>
+                    <span
+                      v-else
+                      class="my-page-field-text"
+                    >
+                      -
+                    </span>
                   </td>
                 </tr>
                 <tr>
@@ -217,13 +231,6 @@
 
             <div class="my-page-actions">
               <template v-if="isEditMode">
-                <UiButton
-                  variant="outline"
-                  size="md"
-                  @click="handleOpenPasswordModal"
-                >
-                  비밀번호 변경
-                </UiButton>
                 <UiButton
                   variant="primary"
                   size="md"
@@ -305,6 +312,15 @@ const currentOrgLabel = computed(() => {
   if (!form.value.orgId) return ''
   const found = orgOptions.value?.find((opt) => opt.value === form.value.orgId)
   return found?.label ?? ''
+})
+
+const acctStatusLabel = computed(() => form.value.acctStatusDesc?.trim() || '')
+
+const acctStatusClass = computed(() => {
+  const label = acctStatusLabel.value
+  if (label === '잠금') return 'is-lock'
+  if (label === '비활성') return 'is-inactive'
+  return 'is-active'
 })
 
 const onClickChangePhoto = () => {
