@@ -36,10 +36,13 @@
         :readonly="readonly"
         :name="name"
         :maxlength="maxLength"
+        :min="min"
+        :max="max"
+        :step="step"
         @input="onInput"
         @compositionupdate="onCompositionUpdate"
-        @focus="isFocused = true"
-        @blur="isFocused = false"
+        @focus="onFocus"
+        @blur="onBlur"
         @keydown.enter="$emit('enter', modelValue)"
       />
 
@@ -80,6 +83,10 @@ interface Props {
   name?: string
   id?: string
   maxLength?: number
+  /** number/range 등 네이티브 제약과 동일한 의미. `number-only`는 type=text라 blur 시 아래 로직으로 보정 */
+  min?: string | number
+  max?: string | number
+  step?: string | number
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xlg'
   radius?: 'sm' | 'base' | 'lg'
   desc?: string
@@ -97,6 +104,9 @@ const props = withDefaults(defineProps<Props>(), {
   name: undefined,
   id: undefined,
   maxLength: undefined,
+  min: undefined,
+  max: undefined,
+  step: undefined,
   size: 'md',
   radius: 'base',
   desc: '',
@@ -121,6 +131,52 @@ const stripNonNumeric = (val: string): string => {
   if (props.allowNegative) pattern += '-'
   const regex = new RegExp(`[^${pattern}]`, 'g')
   return val.replace(regex, '')
+}
+
+/** number-only + min/max/step: type=text라 네이티브 제약이 없어 blur 시 보정 */
+const applyNumericConstraints = (raw: string): string => {
+  const trimmed = raw.trim()
+  if (trimmed === '') return ''
+  const cleaned = stripNonNumeric(trimmed)
+  if (cleaned === '' || cleaned === '-') return cleaned
+
+  let num = parseFloat(cleaned)
+  if (Number.isNaN(num)) return cleaned
+
+  const minV = props.min !== undefined ? Number(props.min) : undefined
+  const maxV = props.max !== undefined ? Number(props.max) : undefined
+  const stepV = props.step !== undefined ? Number(props.step) : undefined
+
+  if (minV !== undefined && !Number.isNaN(minV)) num = Math.max(num, minV)
+  if (maxV !== undefined && !Number.isNaN(maxV)) num = Math.min(num, maxV)
+
+  if (stepV !== undefined && stepV > 0 && !Number.isNaN(stepV)) {
+    const base = minV !== undefined && !Number.isNaN(minV) ? minV : 0
+    num = base + Math.round((num - base) / stepV) * stepV
+    const stepDecimals = (String(props.step).split('.')[1] || '').length
+    const minDecimals = (String(props.min ?? '').split('.')[1] || '').length
+    const decimals = Math.max(stepDecimals, minDecimals, props.allowDecimal ? 2 : 0)
+    num = Number(num.toFixed(decimals))
+  }
+
+  return String(num)
+}
+
+const onFocus = () => {
+  isFocused.value = true
+}
+
+const onBlur = (e: FocusEvent) => {
+  isFocused.value = false
+  const input = e.target as HTMLInputElement
+  if (!props.numberOnly) return
+  if (props.min === undefined && props.max === undefined && props.step === undefined) return
+
+  const next = applyNumericConstraints(input.value)
+  if (next !== input.value) {
+    input.value = next
+    emit('update:modelValue', next)
+  }
 }
 
 const onInput = (e: Event) => {
