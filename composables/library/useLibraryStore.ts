@@ -116,6 +116,14 @@ const initModalStates = () => {
   selectedCard.value = null
 }
 
+/** cardList·categoryCards에 있는 동일 카드의 newYn만 동기화 */
+const patchCardNewYnInLists = (id: string, categoryId: number, newYn: 'Y' | 'N') => {
+  const row = cardList.value.find((c) => c.cardId === id)
+  if (row) row.newYn = newYn
+  const rowInCat = categoryCards.value[String(categoryId)]?.find((c) => c.cardId === id)
+  if (rowInCat) rowInCat.newYn = newYn
+}
+
 export const useLibraryStore = () => {
   /** 카테고리 목록 조회 */
   const handleFetchCategoryList = async () => {
@@ -456,14 +464,23 @@ export const useLibraryStore = () => {
       selectedCardId.value = cardId
       const response = await fetchCardDetail(cardId)
       selectedCard.value = response.data
+
+      // 조회 시 카드 newYn → 'N' (목록·그리드 카드와 동기화)
+      if (selectedCard.value?.newYn === 'Y') {
+        await fetchSaveCard({ ...selectedCard.value, newYn: 'N' })
+        selectedCard.value = { ...selectedCard.value, newYn: 'N' }
+        patchCardNewYnInLists(cardId, selectedCard.value.categoryId, 'N')
+      }
+
+      // 통계 데이터 조회
       if (selectedCard.value?.svcTy === 'S') {
         const response = await fetchTableData(selectedCard.value)
         tableData.value = response.data ?? null
-        // TODO : 프로토타입 시연용
         const chartResponse = await fetchChartLabel(selectedCard.value.logId)
         chartStatItems.value = chartResponse.statList ?? []
         chartDetailCdItems.value = chartResponse.detailCdList ?? []
       }
+      // 매뉴얼 참조 문서 조회
       if (selectedCard.value?.svcTy === 'M') {
         const response = await fetchDocList(selectedCard.value)
         refItems.value = response.dataList ?? []

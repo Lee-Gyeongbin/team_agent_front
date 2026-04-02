@@ -22,6 +22,7 @@ export interface LibraryCard {
   archiveDt: string
   sortOrd: number
   sqlCode: string
+  newYn: 'Y' | 'N'
   useYn: 'Y' | 'N'
   createDt: string
   modifyDt: string
@@ -42,6 +43,7 @@ export interface LibraryCardDetail {
   archiveDt: string
   sortOrd: number
   sqlCode: string
+  newYn: 'Y' | 'N'
   useYn: 'Y' | 'N'
   createDt: string
   modifyDt: string
