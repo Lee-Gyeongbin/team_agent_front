@@ -38,6 +38,7 @@ export const useChatMessages = () => {
     const hasVisualization = row.tableExist === 'Y'
     const satisYnVal = typeof row.satisYn === 'string' ? row.satisYn : ''
     const satisContentVal = typeof row.satisContent === 'string' ? row.satisContent : ''
+    const satisCdVal = typeof row.satisCd === 'string' ? row.satisCd : undefined
     return [
       { logId, type: 'question', qContent: row.qcontent ?? '', rContent: '', createdAt, svcTy, modelId, refId },
       {
@@ -61,6 +62,7 @@ export const useChatMessages = () => {
           logId,
           satisYn: satisYnVal,
           satisContent: satisContentVal,
+          satisCd: satisCdVal,
         },
       },
     ]
