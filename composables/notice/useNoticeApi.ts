@@ -28,13 +28,9 @@ export const useNoticeApi = () => {
   }
 
   /** 공지사항 등록 */
-  const fetchInsertNotice = async (notice: NoticeFormData) => {
-    return post<NoticeItem>('/notice/insert.do', notice)
-  }
-
-  /** 공지사항 수정 */
-  const fetchUpdateNotice = async (notice: NoticeFormData) => {
-    return post<NoticeItem>('/notice/update.do', notice)
+  /** 공지사항 등록/수정 (단일 저장 API) */
+  const fetchSaveNotice = async (notice: NoticeFormData) => {
+    return post<NoticeItem>('/notice/save.do', notice)
   }
 
   /** 공지사항 삭제 */
@@ -46,8 +42,7 @@ export const useNoticeApi = () => {
     fetchSelectNoticeList,
     fetchSelectNoticePinnedList,
     fetchSelectNoticeDetail,
-    fetchInsertNotice,
-    fetchUpdateNotice,
+    fetchSaveNotice,
     fetchDeleteNotice,
   }
 }

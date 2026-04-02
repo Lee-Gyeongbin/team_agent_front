@@ -7,8 +7,7 @@ const {
   fetchSelectNoticePinnedList,
   fetchSelectNoticeList,
   fetchSelectNoticeDetail,
-  fetchInsertNotice,
-  fetchUpdateNotice,
+  fetchSaveNotice,
   fetchDeleteNotice,
 } = useNoticeApi()
 
@@ -186,14 +185,13 @@ export const useNoticeStore = () => {
     const normalizedPayload = normalizeNoticeFormData(payload)
     const targetId = String(normalizedPayload.noticeId ?? '').trim()
     const isEditMode = Boolean(targetId)
-    const request = isEditMode ? fetchUpdateNotice : fetchInsertNotice
     const successMessage = isEditMode ? '공지사항을 수정했습니다.' : '공지사항을 등록했습니다.'
     const saveErrorMessage = isEditMode
       ? '공지사항 수정 중 오류가 발생했습니다.'
       : '공지사항 등록 중 오류가 발생했습니다.'
 
     try {
-      const res = (await request(normalizedPayload)) as NoticeItem
+      const res = (await fetchSaveNotice(normalizedPayload)) as NoticeItem
       await handleSelectNoticeList()
 
       const savedNoticeId = isEditMode ? targetId : String(res.noticeId ?? '').trim()
