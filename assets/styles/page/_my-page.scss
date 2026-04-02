@@ -12,7 +12,6 @@
 .my-page-header {
   max-width: 70%;
   margin: 0 auto;
-  padding: 12px 0;
   margin-bottom: $spacing-lg;
 }
 
@@ -46,8 +45,24 @@
   margin: 0 auto;
 }
 
+.my-page-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  order: 2;
+}
+
+.my-page-tab-panel {
+  width: 100%;
+}
+
 .my-page-left {
   flex: 0 0 300px;
+  width: 300px;
+  order: 1;
+}
+
+.my-page-right,
+.my-page-left {
   min-width: 0;
   padding: $spacing-lg;
   border: 1px solid $color-border;
@@ -57,23 +72,33 @@
 }
 
 .my-page-right {
-  flex: 1 1 auto;
-  min-width: 0;
-  padding: $spacing-lg;
-  border: 1px solid $color-border;
-  border-radius: $border-radius-lg;
-  background: #fff;
-  box-shadow: $shadow-sm;
+  .ui-tab {
+    margin: (-$spacing-lg) (-$spacing-lg) $spacing-md;
+
+    .ui-tab-inner {
+      max-width: none;
+      margin: 0;
+      padding: 0 $spacing-md;
+      gap: $spacing-xs;
+    }
+
+    .ui-tab-item {
+      flex: 1 1 0;
+      padding: 12px $spacing-md;
+      text-align: center;
+      font-size: $font-size-lg;
+    }
+  }
 }
 
 .my-page-view-title {
-  font-size: $font-size-lg;
+  font-size: $font-size-xl;
   font-weight: $font-weight-bold;
   color: $color-text-primary;
 }
 
 .my-page-view-text {
-  font-size: $font-size-sm;
+  font-size: $font-size-base;
   color: $color-text-secondary;
   margin-bottom: $spacing-md;
 }
@@ -167,7 +192,7 @@
   display: inline-flex;
   align-items: center;
   min-height: $height-sm;
-  font-size: $font-size-base;
+  font-size: $font-size-lg;
   color: $color-text-primary;
 }
 
@@ -179,7 +204,7 @@
   th,
   td {
     padding: 10px 0;
-    font-size: $font-size-sm;
+    font-size: $font-size-base;
     text-align: left;
     border-bottom: 1px solid $color-border-light;
     vertical-align: middle;
@@ -244,7 +269,7 @@
   display: inline-block;
   padding: 2px 8px;
   border-radius: $border-radius-full;
-  font-size: $font-size-sm;
+  font-size: $font-size-base;
   font-weight: $font-weight-medium;
 
   &.is-active {
@@ -286,5 +311,114 @@
 .password-field__helper {
   font-size: $font-size-sm;
   color: $color-text-secondary;
+}
+
+.my-page-security-auth-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  width: 100%;
+}
+
+.my-page-security-auth-head {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  width: 100%;
+}
+
+.my-page-security-auth-options {
+  display: flex;
+  align-items: center;
+  gap: $spacing-lg;
+  width: 100%;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.my-page-security-auth-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: $font-size-lg;
+  color: $color-text-primary;
+  cursor: pointer;
+
+  &.is-disabled {
+    color: $color-text-secondary;
+    cursor: not-allowed;
+  }
+}
+
+.my-page-security-auth-radio {
+  margin: 0;
+}
+
+.my-page-security-device-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  width: 100%;
+}
+
+.my-page-security-device-item {
+  display: flex;
+  justify-content: space-between;
+  gap: $spacing-lg;
+  width: 100%;
+}
+
+.my-page-security-device-name {
+  color: $color-text-primary;
+  font-weight: $font-weight-medium;
+}
+
+.my-page-security-device-meta {
+  color: $color-text-secondary;
+  font-size: $font-size-lg;
+}
+
+.my-page-security-tab {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  .my-page-table {
+    th,
+    td {
+      font-size: $font-size-lg;
+    }
+
+    th {
+      font-size: $font-size-base;
+    }
+  }
+}
+
+.my-page-security-actions {
+  margin-top: auto;
+  padding-top: $spacing-lg;
+}
+
+.my-page-security-table-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+
+.my-page-security-tab {
+  .my-page-table tbody tr:last-child {
+    th,
+    td {
+      border-bottom: none;
+    }
+  }
+}
+
+.my-page-security-table-wrap .my-page-table {
+  width: 100%;
 }
 
