@@ -275,11 +275,17 @@ $sidebar-btn-bg-hover: $color-border;
   }
 
   &.is-pinned {
-    background-color: rgba(var(--color-primary-rgb, 59, 130, 246), 0.04);
-    font-weight: $font-weight-semibold;
+    // background-color: rgba(var(--color-primary-rgb, 59, 130, 246), 0.04);
+    // font-weight: $font-weight-semibold;
 
     .icon-sidebar-pin {
-      background-color: var(--color-primary);
+      background-color: #5c6677;
+    }
+
+    &.is-active {
+      .icon-sidebar-pin {
+        background-color: var(--color-primary);
+      }
     }
   }
 
