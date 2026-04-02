@@ -47,8 +47,15 @@ export const useReportsApi = () => {
     logId: string,
     satisYn: string,
     satisContent?: string,
+    /** 싫어요 시 공통코드(CD000001) 선택 사유 코드 */
+    satisCd?: string,
   ): Promise<SaveChatLogReactionResponse> => {
-    return post<SaveChatLogReactionResponse>('/ai/chatbot/saveSatisYn.do', { logId, satisYn, satisContent })
+    return post<SaveChatLogReactionResponse>('/ai/chatbot/saveSatisYn.do', {
+      logId,
+      satisYn,
+      satisContent,
+      ...(satisCd ? { satisCd } : {}),
+    })
   }
   // 시각화 데이터 목록 조회
   const fetchSelectTableDataList = async ({

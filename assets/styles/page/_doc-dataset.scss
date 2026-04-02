@@ -635,6 +635,24 @@
   color: #5c6677;
 }
 
+// 검색 파라미터: 섹션 제목 + Top k / 임계값 한 줄 정렬
+.doc-dataset-test-section--params-inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 20px;
+
+  .doc-dataset-test-section-title {
+    flex-shrink: 0;
+    margin: 0;
+  }
+
+  .doc-dataset-test-params {
+    flex: 1;
+    min-width: 0;
+    align-items: center;
+  }
+}
+
 // 검색 파라미터
 .doc-dataset-test-params {
   display: flex;

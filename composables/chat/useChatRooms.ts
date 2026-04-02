@@ -56,10 +56,12 @@ export const useChatRooms = () => {
       activeSearchModes.value = ['M']
       // 지식검색 시 라그 데이터셋 조회
       await selectRagDsList()
+      await selectModelOptions()
     } else if (svcTy === 'S') {
       // 통계 질의 시 데이터마트 조회
       activeSearchModes.value = ['S']
       await selectDmList()
+      await selectModelOptions()
     } else {
       activeSearchModes.value = []
       // 일반 질의 시 모델 옵션 조회

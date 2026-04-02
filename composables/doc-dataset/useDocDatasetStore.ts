@@ -25,7 +25,6 @@ const {
   fetchSaveDocDatasetHistory,
   fetchDeleteDocDatasetHistory,
   fetchSearchDocDataset,
-  fetchSelectPromptList,
 } = useDocDatasetApi()
 
 // ===== 상태 변수 =====
@@ -130,12 +129,16 @@ const buildStreamMap = new Map<string, EventSource>()
 const buildProgressTargetMap = ref<Record<string, number>>({})
 const buildProgressTimerMap = new Map<string, ReturnType<typeof setInterval>>()
 const initialSelectedDocIds = ref<string[]>([])
+const initialPreprocessSignature = ref('')
+const initialEmbeddingModelCd = ref('')
+const initialVectorDbCd = ref('')
 
 type BuildUpdateType = 'init' | 'add' | 'replace_all' | 'delete_some'
 interface BuildStreamStartParams {
   updateType: BuildUpdateType
   addDocIds: string[]
   deleteDocIds: string[]
+  vectorDiffYn: 'Y' | 'N'
 }
 
 interface DatasetBuildEventData {
@@ -267,6 +270,7 @@ const buildStartQueryString = (datasetId: string, params?: BuildStreamStartParam
   query.append('datasetId', datasetId)
   if (!params) return query.toString()
   query.append('update_type', params.updateType)
+  query.append('vector_diff_yn', params.vectorDiffYn)
   params.addDocIds.forEach((docId) => {
     query.append('add_doc_ids', docId)
   })
@@ -276,34 +280,89 @@ const buildStartQueryString = (datasetId: string, params?: BuildStreamStartParam
   return query.toString()
 }
 
+const buildPreprocessSignature = (form: DocDatasetForm): string => {
+  return JSON.stringify({
+    chunkAlgorithm: form.chunkAlgorithm ?? '',
+    chunkSize: form.chunkSize ?? null,
+    chunkOverlap: form.chunkOverlap ?? null,
+    minChunkSize: form.minChunkSize ?? null,
+    chunkOptSeparatorsText: form.chunkOptSeparatorsText ?? '',
+    chunkOptSeparator: form.chunkOptSeparator ?? '',
+    chunkOptParagraphSeparator: form.chunkOptParagraphSeparator ?? '',
+    chunkOptSentenceSep: form.chunkOptSentenceSep ?? '',
+    chunkOptBufferSize: form.chunkOptBufferSize ?? null,
+    chunkOptBreakpointPercentileThreshold: form.chunkOptBreakpointPercentileThreshold ?? null,
+    chunkOptHtmlTagsText: form.chunkOptHtmlTagsText ?? '',
+    chunkOptHeaderPathSeparator: form.chunkOptHeaderPathSeparator ?? '',
+    chunkOptMinTokens: form.chunkOptMinTokens ?? null,
+    useLowercasing: form.useLowercasing,
+    useWhitespaceNorm: form.useWhitespaceNorm,
+    useSpecialCharRemoval: form.useSpecialCharRemoval,
+    useSingleCellText: form.useSingleCellText,
+  })
+}
+
+const toSortedDocIds = (docIds: string[]) => [...new Set((docIds ?? []).map(String))].sort()
+
+const hasDocSourceChanged = (currentDocIds: string[]): boolean => {
+  if (modalMode.value !== 'edit') return true
+  const prev = toSortedDocIds(initialSelectedDocIds.value)
+  const current = toSortedDocIds(currentDocIds)
+  if (prev.length !== current.length) return true
+  return prev.some((docId, idx) => docId !== current[idx])
+}
+
+const hasPreprocessChanged = (form: DocDatasetForm): boolean => {
+  if (modalMode.value !== 'edit') return true
+  return initialPreprocessSignature.value !== buildPreprocessSignature(form)
+}
+
+const hasEmbeddingChanged = (form: DocDatasetForm): boolean => {
+  if (modalMode.value !== 'edit') return true
+  return (
+    initialEmbeddingModelCd.value !== String(form.embeddingModel ?? '') ||
+    initialVectorDbCd.value !== String(form.vectorDb ?? '')
+  )
+}
+
+const hasBuildConfigChanges = (form: DocDatasetForm): boolean => {
+  return hasDocSourceChanged(form.selectedDocIds ?? []) || hasPreprocessChanged(form) || hasEmbeddingChanged(form)
+}
+
 // 데이터셋 구축 진행 스트림 시작 파라미터 생성
-const createBuildStreamStartParams = (currentDocIds: string[]): BuildStreamStartParams => {
+const createBuildStreamStartParams = (form: DocDatasetForm): BuildStreamStartParams => {
+  const currentDocIds = form.selectedDocIds ?? []
   const prevSet = new Set((initialSelectedDocIds.value ?? []).map(String))
   const currentSet = new Set((currentDocIds ?? []).map(String))
   const addDocIds = [...currentSet].filter((docId) => !prevSet.has(docId))
   const deleteDocIds = [...prevSet].filter((docId) => !currentSet.has(docId))
+  const isPreprocessChanged = hasPreprocessChanged(form)
+  const vectorDiffYn: 'Y' | 'N' =
+    modalMode.value === 'edit' && initialVectorDbCd.value !== String(form.vectorDb ?? '') ? 'Y' : 'N'
 
-  if (prevSet.size === 0) {
+  if (isPreprocessChanged || prevSet.size === 0) {
     return {
       updateType: 'init',
       addDocIds: [],
       deleteDocIds: [],
+      vectorDiffYn,
     }
   }
   if (addDocIds.length > 0 && deleteDocIds.length > 0) {
-    return { updateType: 'replace_all', addDocIds, deleteDocIds }
+    return { updateType: 'replace_all', addDocIds, deleteDocIds, vectorDiffYn }
   }
   if (addDocIds.length > 0) {
-    return { updateType: 'add', addDocIds, deleteDocIds: [] }
+    return { updateType: 'add', addDocIds, deleteDocIds: [], vectorDiffYn }
   }
   if (deleteDocIds.length > 0) {
-    return { updateType: 'delete_some', addDocIds: [], deleteDocIds }
+    return { updateType: 'delete_some', addDocIds: [], deleteDocIds, vectorDiffYn }
   }
 
   return {
-    updateType: 'replace_all',
+    updateType: 'init',
     addDocIds: [],
     deleteDocIds: [],
+    vectorDiffYn,
   }
 }
 
@@ -401,6 +460,9 @@ const openCreateModal = async () => {
   editingDatasetId.value = ''
   selectedDatasetDetail.value = null
   initialSelectedDocIds.value = []
+  initialPreprocessSignature.value = ''
+  initialEmbeddingModelCd.value = ''
+  initialVectorDbCd.value = ''
   editFormData.value = undefined
   // 데이터소스 목록(전체 문서/URL + 카테고리) 조회
   await handleSelectDatasetSrcList()
@@ -490,17 +552,6 @@ const handleSelectCodeOptions = async () => {
   embeddingModelOptions.value = mapCodeOptions(embedModelCodes)
   vectorDbOptions.value = mapCodeOptions(vectorDbCodes)
   llmOptions.value = mapCodeOptions(llmCodes)
-}
-
-/** 프롬프트 목록 조회 */
-const handleSelectPromptList = async () => {
-  openLoading({ text: '프롬프트 목록을 불러오는 중...' })
-  try {
-    const res = await fetchSelectPromptList()
-    promptList.value = res.dataList ?? []
-  } finally {
-    closeLoading()
-  }
 }
 
 /** 코드 옵션 매핑 */
@@ -671,7 +722,7 @@ const onSaveCreate = (data: DocDatasetForm, startBuild: boolean) => {
       const { affected, datasetId } = await handleSaveDocDataset(payload)
       // 데이터셋 구축 진행 스트림 시작
       if (startBuild && affected > 0 && datasetId) {
-        const buildStartParams = createBuildStreamStartParams(data.selectedDocIds ?? [])
+        const buildStartParams = createBuildStreamStartParams(data)
         handleStartBuildStream(datasetId, buildStartParams)
       }
       // 생성/수정 모달 닫기
@@ -742,12 +793,16 @@ const onEdit = async (dataset: DocDataset) => {
   const dsDocIds = (res.dsDocList ?? []).map((item) => String(item.docId))
   const dsUrlIds = (res.dsUrlList ?? []).map((item) => String(item.urlId))
   initialSelectedDocIds.value = [...dsDocIds]
+  const mappedForm = mapDetailToForm(data, dsDocIds, dsUrlIds)
+  initialPreprocessSignature.value = buildPreprocessSignature(mappedForm)
+  initialEmbeddingModelCd.value = mappedForm.embeddingModel ?? ''
+  initialVectorDbCd.value = mappedForm.vectorDb ?? ''
   // 모달 모드 세팅
   modalMode.value = 'edit'
   // 수정 데이터셋 ID 세팅
   editingDatasetId.value = dataset.datasetId
   // 상세 데이터를 폼 데이터로 변환
-  editFormData.value = mapDetailToForm(data, dsDocIds, dsUrlIds)
+  editFormData.value = mappedForm
   isCreateModalOpen.value = true
 }
 
@@ -967,6 +1022,60 @@ const searchResults = ref<DocDatasetSearchResult[]>([])
 const searchSummary = ref<DocDatasetSearchSummary>({ totalChunks: 0, avgSimilarity: 0 })
 const isSearching = ref(false)
 
+/** RAG 응답 예: { sort, score, text, metadata: { page, file_path, docFileId, chunk_id } } */
+const mapDocDatasetTestSearchRow = (row: Record<string, unknown>): DocDatasetSearchResult => {
+  const meta =
+    typeof row.metadata === 'object' && row.metadata !== null ? (row.metadata as Record<string, unknown>) : {}
+
+  const pickStr = (keys: string[]): string => {
+    for (const src of [row, meta]) {
+      for (const k of keys) {
+        const v = src[k]
+        if (v != null && v !== '') return String(v)
+      }
+    }
+    return ''
+  }
+  const pickNum = (keys: string[]): number => {
+    for (const src of [row, meta]) {
+      for (const k of keys) {
+        const v = src[k]
+        if (typeof v === 'number' && !Number.isNaN(v)) return v
+        if (typeof v === 'string' && v.trim() !== '') {
+          const n = Number(v)
+          if (!Number.isNaN(n)) return n
+        }
+      }
+    }
+    return 0
+  }
+
+  let source = pickStr(['source', 'doc_title', 'filename', 'file_name', 'document', 'doc_nm', 'file_path'])
+  if (source) {
+    const normalized = source.replace(/\\/g, '/')
+    const base = normalized.split('/').pop()
+    if (base) source = base
+  }
+
+  return {
+    chunkId: pickStr(['chunkId', 'chunk_id', 'id']),
+    content: pickStr(['content', 'text', 'chunk_text', 'chunk']),
+    source,
+    page: Math.max(0, Math.floor(pickNum(['page', 'page_no', 'pageNum', 'page_number']))),
+    similarity: pickNum(['similarity', 'score', 'sml', 'sml_score', 'cosine_similarity']),
+  }
+}
+
+const buildDocDatasetSearchSummary = (results: DocDatasetSearchResult[]): DocDatasetSearchSummary => {
+  const n = results.length
+  if (n === 0) return { totalChunks: 0, avgSimilarity: 0 }
+  const sum = results.reduce((s, r) => s + r.similarity, 0)
+  return {
+    totalChunks: n,
+    avgSimilarity: Math.round((sum / n) * 100) / 100,
+  }
+}
+
 const handleSearchDocDataset = async (params: {
   datasetId: string
   query: string
@@ -980,8 +1089,17 @@ const handleSearchDocDataset = async (params: {
   openLoading({ text: '데이터셋을 검색하는 중...' })
   try {
     const res = await fetchSearchDocDataset(params)
-    searchResults.value = res.data.results
-    searchSummary.value = res.data.summary
+    const rawList = Array.isArray(res.data) ? res.data : []
+    const mapped = rawList.map((item) =>
+      mapDocDatasetTestSearchRow(typeof item === 'object' && item !== null ? (item as Record<string, unknown>) : {}),
+    )
+    searchResults.value = mapped
+    searchSummary.value = buildDocDatasetSearchSummary(mapped)
+  } catch (e) {
+    openToast({
+      message: e instanceof Error ? e.message : '데이터셋 검색에 실패했습니다.',
+      type: 'error',
+    })
   } finally {
     isSearching.value = false
     closeLoading()
@@ -1057,6 +1175,6 @@ export const useDocDatasetStore = () => {
     testDatasetId,
     onStopBuild,
     promptList,
-    handleSelectPromptList,
+    hasBuildConfigChanges,
   }
 }

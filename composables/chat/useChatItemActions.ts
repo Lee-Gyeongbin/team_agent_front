@@ -20,6 +20,15 @@ export const useChatItemActions = () => {
   const modalMessage = ref('')
   const isModalOpen = ref(false)
 
+  /** 싫어요 모달: 공통코드 CD000001 기준 라디오 옵션 */
+  const dislikeReasonOptions = ref<{ label: string; value: string }[]>([])
+  const selectedDislikeReasonId = ref<string | undefined>(undefined)
+
+  const resetDislikeReasonModalState = () => {
+    dislikeReasonOptions.value = []
+    selectedDislikeReasonId.value = undefined
+  }
+
   /** 모달에 넣을 만족도 코멘트: 이미 같은 유형(Y/N)으로 저장된 내용만 재사용 */
   const getReactionModalPrefill = (answer: ChatMessage | undefined, kind: 'Y' | 'N'): string => {
     const r = answer?.chatLogReaction
@@ -29,6 +38,7 @@ export const useChatItemActions = () => {
 
   // 좋아요 처리
   const onLike = (id: string) => {
+    resetDislikeReasonModalState()
     modalTitle.value = '답변이 마음에 들어요'
     modalPlaceholder.value = '답변이 마음에 드는 이유를 입력해주세요.'
     selectedLogId.value = id
@@ -39,24 +49,40 @@ export const useChatItemActions = () => {
   }
 
   // 싫어요 처리
-  const onDislike = (id: string) => {
+  const onDislike = async (id: string) => {
+    const dislikeCodes = await getCodes('CD000001')
+    dislikeReasonOptions.value = dislikeCodes.map((code) => ({
+      label: code.codeNm,
+      value: code.codeId,
+    }))
+
+    const answer = messages.value.find((m) => m.logId === id && m.type === 'answer')
+    const savedCd = answer?.chatLogReaction?.satisYn === 'N' ? answer?.chatLogReaction?.satisCd : undefined
+    selectedDislikeReasonId.value =
+      dislikeReasonOptions.value.find((opt) => opt.value === savedCd)?.value ?? dislikeReasonOptions.value[0]?.value
+
     modalTitle.value = '답변이 마음에 들지 않아요'
     modalPlaceholder.value = '답변이 마음에 들지 않는 이유를 입력해주세요.'
     selectedLogId.value = id
     satisYn.value = 'N'
-    const answer = messages.value.find((m) => m.logId === id && m.type === 'answer')
     modalMessage.value = getReactionModalPrefill(answer, 'N')
     isModalOpen.value = true
   }
 
   // 만족도 저장
   const handleReactionSubmit = async () => {
-    isModalOpen.value = false
     if (!selectedLogId.value) return
+    if (satisYn.value === 'N' && dislikeReasonOptions.value.length > 0 && !selectedDislikeReasonId.value) {
+      openToast({ message: '싫어요 사유를 선택해주세요.', type: 'error' })
+      return
+    }
+    const satisCd = satisYn.value === 'N' ? selectedDislikeReasonId.value : undefined
+    isModalOpen.value = false
+    resetDislikeReasonModalState()
     const logId = selectedLogId.value
     openLoading({ text: '만족도를 저장하는 중...' })
     try {
-      const res = await fetchCreateChatLogReaction(logId, satisYn.value, modalMessage.value)
+      const res = await fetchCreateChatLogReaction(logId, satisYn.value, modalMessage.value, satisCd)
       if (res.successYn === false) {
         openToast({ message: '만족도 저장에 실패했습니다.', type: 'error' })
         return
@@ -70,6 +96,7 @@ export const useChatItemActions = () => {
         logId,
         satisYn: next?.satisYn ?? satisYn.value,
         satisContent: next?.satisContent ?? modalMessage.value,
+        satisCd: next?.satisCd ?? satisCd,
       }
     } catch {
       openToast({ message: '만족도 저장에 실패했습니다.', type: 'error' })
@@ -117,6 +144,7 @@ export const useChatItemActions = () => {
 
   const handleModalClose = () => {
     isModalOpen.value = false
+    resetDislikeReasonModalState()
   }
 
   /** 지식창고 저장 */
@@ -145,6 +173,8 @@ export const useChatItemActions = () => {
     selectedLogId,
     satisYn,
     modalMessage,
+    dislikeReasonOptions,
+    selectedDislikeReasonId,
     handleCreateKnowledge,
   }
 }

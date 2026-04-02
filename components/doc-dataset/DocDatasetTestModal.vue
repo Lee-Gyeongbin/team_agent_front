@@ -25,8 +25,8 @@
       </UiInput>
     </div>
 
-    <!-- 검색 파라미터 -->
-    <div class="doc-dataset-test-section">
+    <!-- 검색 파라미터 (제목 + 입력 한 줄) -->
+    <div class="doc-dataset-test-section doc-dataset-test-section--params-inline">
       <p class="doc-dataset-test-section-title">검색 파라미터</p>
       <div class="doc-dataset-test-params">
         <div class="doc-dataset-test-param">
@@ -36,6 +36,8 @@
             placeholder="예: v1.0"
             size="sm"
             number-only
+            min="1"
+            max="10"
           />
         </div>
         <div class="doc-dataset-test-param">
@@ -44,19 +46,11 @@
             v-model="threshold"
             placeholder="예: v1.0"
             size="sm"
+            min="0"
+            max="1"
+            step="0.01"
             number-only
             allow-decimal
-          />
-        </div>
-        <div class="doc-dataset-test-param">
-          <label class="doc-dataset-test-param-label">재순위 적용</label>
-        </div>
-        <div class="doc-dataset-test-param">
-          <UiSelect
-            v-model="category"
-            :options="categoryOptions"
-            size="sm"
-            class="w-full"
           />
         </div>
       </div>

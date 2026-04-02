@@ -8,19 +8,14 @@
 
     <!-- 메인: 탭별 컨텐츠 연결 (v-show로 DOM 유지 — 탭 전환 시 깜박임 방지) -->
     <div class="repository-main l-center">
-      <!-- DOM 순상 메인 블록 뒤에 두면 풀뷰포트 높이 아래로 밀림 → 메인 안 오버레이로 덮음 -->
-      <div
-        v-if="isLoading"
-        class="repository-loading-overlay"
-      >
-        <UiLoading
-          overlay
-          text="불러오는 중..."
-        />
-      </div>
-      <RepositoryDocumentPage v-show="activeTab === 'document' && !isLoading" />
+      <RepositoryDocumentPage v-show="activeTab === 'document'" />
       <!-- <RepositoryUrlPage v-show="activeTab === 'url'" /> -->
     </div>
+    <UiLoading
+      v-if="isLoading"
+      overlay
+      text="불러오는 중..."
+    />
   </div>
 </template>
 

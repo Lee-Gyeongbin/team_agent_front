@@ -139,6 +139,7 @@ export interface ChatLogListRow {
   /** 만족도 Y/N (목록 조회 시) */
   satisYn?: string
   satisContent?: string
+  satisCd?: string
   [key: string]: unknown
 }
 
@@ -160,6 +161,8 @@ export interface ChatLogReaction {
   logId?: string
   satisYn: string
   satisContent?: string
+  /** 싫어요 사유 공통코드 */
+  satisCd?: string
 }
 
 /** saveSatisYn.do 응답 (공통 successYn + data) */

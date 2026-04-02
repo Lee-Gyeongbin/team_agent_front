@@ -67,6 +67,7 @@
           <UiButton
             variant="primary"
             size="md"
+            :disabled="isBuildStartDisabled"
             @click="onBuildStart"
           >
             데이터셋 구축 시작
@@ -96,7 +97,7 @@ const {
   handleSelectCodeOptions,
   sectionCollapsed,
   validate,
-  handleSelectPromptList,
+  hasBuildConfigChanges,
 } = useDocDatasetStore()
 
 const props = defineProps<{
@@ -126,7 +127,6 @@ watch(
 
 onMounted(() => {
   handleSelectCodeOptions()
-  handleSelectPromptList()
 })
 
 // 저장 스냅샷 — reactive spread 시 selectedDocIds 등 배열이 비는 이슈 방지
@@ -139,6 +139,11 @@ const snapshotFormData = (): DocDatasetForm => {
   }
 }
 
+const isBuildStartDisabled = computed(() => {
+  if (props.mode !== 'edit') return false
+  return !hasBuildConfigChanges(formData)
+})
+
 // ===== 액션 =====
 const onSaveLater = () => {
   if (!validate()) return
@@ -146,6 +151,7 @@ const onSaveLater = () => {
 }
 
 const onBuildStart = () => {
+  if (isBuildStartDisabled.value) return
   if (!validate()) return
   emit('save', snapshotFormData(), true)
 }

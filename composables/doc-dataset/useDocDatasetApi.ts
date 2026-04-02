@@ -5,22 +5,12 @@ import type {
   DocDatasetSavePayload,
   DocDatasetSummary,
   DocDatasetHistory,
-  DocDatasetSearchResult,
-  DocDatasetSearchSummary,
-  Prompt,
 } from '~/types/doc-dataset'
 import { useApi } from '~/composables/com/useApi'
 
-// 🔽 Mock — 백엔드 API 완성 시 useApi 패턴으로 교체
-const MOCK_BASE = '/mock/doc-dataset'
-
-const mockPost = async <T>(url: string, body: unknown = {}): Promise<T> => {
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  return res.json()
+/** /dataset/testDataSet.do — Spring jsonView `data` = 외부 RAG API JSON 배열 */
+export interface DocDatasetTestSearchResponse {
+  data?: unknown[]
 }
 
 export const useDocDatasetApi = () => {
@@ -83,21 +73,20 @@ export const useDocDatasetApi = () => {
     return post<{ data: number }>('/dataset/deleteDocDatasetHistory.do', { histId })
   }
 
-  const fetchSelectPromptList = async () => {
-    return post<{ dataList: Prompt[] }>('/dataset/selectPromptList.do', {})
-  }
-
-  // ===== 검색 테스트 =====
+  // ===== 검색 테스트 (DatasetVO: datasetId, query, topK, smlThreshold) =====
   const fetchSearchDocDataset = async (params: {
     datasetId: string
     query: string
     topK?: number
     threshold?: number
-    rerank?: string
   }) => {
-    return mockPost<{
-      data: { results: DocDatasetSearchResult[]; summary: DocDatasetSearchSummary }
-    }>(`${MOCK_BASE}/search`, params)
+    const { datasetId, query, topK, threshold } = params
+    return post<DocDatasetTestSearchResponse>('/dataset/testDataSet.do', {
+      datasetId,
+      query,
+      topK,
+      smlThreshold: threshold,
+    })
   }
 
   return {
@@ -112,6 +101,5 @@ export const useDocDatasetApi = () => {
     fetchSaveDocDatasetHistory,
     fetchDeleteDocDatasetHistory,
     fetchSearchDocDataset,
-    fetchSelectPromptList,
   }
 }

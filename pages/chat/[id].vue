@@ -46,17 +46,48 @@
       :is-open="isModalOpen"
       :title="modalTitle"
       position="center"
-      @close="isModalOpen = false"
+      @close="handleModalClose"
     >
-      <UiTextarea
-        v-model="modalMessage"
-        :placeholder="modalPlaceholder"
-        :rows="2"
-        size="sm"
-        :border="true"
-        :auto-resize="true"
-        :max-rows="5"
-      />
+      <div class="chat-reaction-modal-body">
+        <div
+          v-if="satisYn === 'N' && dislikeReasonOptions.length > 0"
+          class="chat-reaction-dislike-reasons"
+        >
+          <p class="chat-reaction-dislike-reasons__title">답변이 마음에 들지 않은 이유를 알려주세요</p>
+          <RadioGroupRoot
+            v-model="selectedDislikeReasonId"
+            class="chat-reaction-dislike-group"
+            orientation="vertical"
+            name="chat-dislike-reason"
+          >
+            <label
+              v-for="opt in dislikeReasonOptions"
+              :key="opt.value"
+              class="chat-reaction-dislike-row"
+            >
+              <RadioGroupItem
+                class="chat-reaction-dislike-item"
+                :value="opt.value"
+              >
+                <RadioGroupIndicator class="chat-reaction-dislike-indicator" />
+              </RadioGroupItem>
+              <span class="chat-reaction-dislike-label">{{ opt.label }}</span>
+            </label>
+          </RadioGroupRoot>
+        </div>
+
+        <div class="chat-reaction-textarea-wrap">
+          <UiTextarea
+            v-model="modalMessage"
+            :placeholder="modalPlaceholder"
+            :rows="2"
+            size="sm"
+            :border="true"
+            :auto-resize="true"
+            :max-rows="5"
+          />
+        </div>
+      </div>
       <template #footer>
         <div class="modal-dialog-footer">
           <UiButton
@@ -81,6 +112,8 @@
 </template>
 
 <script setup lang="ts">
+import { RadioGroupIndicator, RadioGroupItem, RadioGroupRoot } from 'radix-vue'
+
 const {
   messages,
   handleSelectChatLogList,
@@ -110,6 +143,9 @@ const {
   modalPlaceholder,
   handleModalClose,
   handleCreateKnowledge,
+  satisYn,
+  dislikeReasonOptions,
+  selectedDislikeReasonId,
 } = useChatItemActions()
 // 패널 리사이즈
 const panelWidthPercent = ref(50)
@@ -178,3 +214,91 @@ const onSelectCategory = async (logId: string, categoryValue: string, categoryNm
   await handleCreateKnowledge(logId, categoryValue, categoryNm)
 }
 </script>
+
+<style lang="scss" scoped>
+.chat-reaction-dislike-reasons {
+  margin-bottom: $spacing-md;
+
+  &__title {
+    margin: 0 0 $spacing-sm;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-text-primary;
+  }
+}
+
+.chat-reaction-dislike-group {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.chat-reaction-dislike-row {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-sm;
+  cursor: pointer;
+}
+
+.chat-reaction-dislike-item {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  padding: 0;
+  border: 1px solid $color-border;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: none;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid $color-primary;
+    outline-offset: 2px;
+  }
+
+  &[data-state='checked'] {
+    border-color: $color-primary;
+  }
+}
+
+.chat-reaction-dislike-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+
+  &::after {
+    content: '';
+    display: block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: $color-primary;
+  }
+}
+
+.chat-reaction-dislike-label {
+  flex: 1;
+  font-size: $font-size-sm;
+  line-height: 1.45;
+  color: $color-text-dark;
+}
+
+.chat-reaction-modal-body {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-reaction-textarea-wrap {
+  width: 100%;
+  margin-top: $spacing-xs;
+
+  :deep(.ui-textarea.has-border) {
+    padding: 10px 12px;
+    min-height: 72px;
+  }
+}
+</style>
