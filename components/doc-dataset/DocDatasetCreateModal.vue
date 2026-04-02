@@ -36,24 +36,6 @@
         @update:collapsed="sectionCollapsed[2] = $event"
       />
 
-      <!-- 프롬프트 설정 -->
-      <!-- <DocDatasetPromptSetting
-        :model-value="formData"
-        :prompt-list="promptList"
-        :collapsed="sectionCollapsed[3]"
-        @update:model-value="Object.assign(formData, $event)"
-        @update:collapsed="sectionCollapsed[3] = $event"
-      /> -->
-
-      <!-- LLM 설정 -->
-      <!-- <DocDatasetLlmSetting
-        :model-value="formData"
-        :llm-options="llmOptions"
-        :collapsed="sectionCollapsed[4]"
-        @update:model-value="Object.assign(formData, $event)"
-        @update:collapsed="sectionCollapsed[4] = $event"
-      /> -->
-
       <!-- 임베딩 및 벡터DB -->
       <DocDatasetEmbedding
         :model-value="formData"
