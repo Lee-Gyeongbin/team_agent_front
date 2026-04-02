@@ -25,7 +25,7 @@
         <div class="chat-input-bottom-right flex gap-8 items-center">
           <UiSelect
             id="sub-option"
-            class="w-200"
+            class="w-170"
             name="sub-option"
             :model-value="selectedModelOption"
             :options="modelOptions"

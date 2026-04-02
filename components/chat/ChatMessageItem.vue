@@ -37,7 +37,7 @@
             @on-like="emit('on-like', message.logId)"
             @on-dislike="emit('on-dislike', message.logId)"
             @on-regenerate="emit('on-regenerate', message.logId)"
-            @on-select-category="emit('on-select-category', message.logId, $event)"
+            @on-select-category="onSelectCategoryFromActions"
           />
           <div
             v-if="message.hasSource || message.hasVisualization"
@@ -87,7 +87,7 @@ interface Props {
   isShare?: boolean
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   isShare: false,
 })
 
@@ -96,9 +96,15 @@ const emit = defineEmits<{
   'on-like': [id: string]
   'on-dislike': [id: string]
   'on-regenerate': [id: string]
-  /** [답변 logId, 카테고리 value] — 라이브러리 저장 API 연동 시 사용 */
-  'on-select-category': [id: string, categoryValue: string]
+  /** [답변 logId, categoryId, categoryNm] — Actions는 value만 알 수 있어 여기서 knowledgeList로 이름 조회 */
+  'on-select-category': [id: string, categoryValue: string, categoryNm: string]
   'on-view-source': [id: string]
   'on-view-visualization': [id: string]
 }>()
+
+/** 카테고리 id만 전달되므로 표시명은 knowledgeList에서 매칭 */
+const onSelectCategoryFromActions = (categoryId: string) => {
+  const categoryNm = props.knowledgeList?.find((k) => k.categoryId === categoryId)?.categoryNm ?? ''
+  emit('on-select-category', props.message.logId, categoryId, categoryNm)
+}
 </script>

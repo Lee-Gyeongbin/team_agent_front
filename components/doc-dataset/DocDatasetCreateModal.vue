@@ -31,40 +31,16 @@
       <DocDatasetPreprocess
         :model-value="formData"
         :chunk-algorithm-options="chunkAlgorithmOptions"
-        :header-inclusion-options="headerInclusionOptions"
-        :sentence-split-options="sentenceSplitOptions"
-        :language-detection-options="languageDetectionOptions"
         :collapsed="sectionCollapsed[2]"
         @update:model-value="Object.assign(formData, $event)"
         @update:collapsed="sectionCollapsed[2] = $event"
       />
-
-      <!-- 프롬프트 설정 -->
-      <!-- <DocDatasetPromptSetting
-        :model-value="formData"
-        :prompt-list="promptList"
-        :collapsed="sectionCollapsed[3]"
-        @update:model-value="Object.assign(formData, $event)"
-        @update:collapsed="sectionCollapsed[3] = $event"
-      /> -->
-
-      <!-- LLM 설정 -->
-      <!-- <DocDatasetLlmSetting
-        :model-value="formData"
-        :llm-options="llmOptions"
-        :collapsed="sectionCollapsed[4]"
-        @update:model-value="Object.assign(formData, $event)"
-        @update:collapsed="sectionCollapsed[4] = $event"
-      /> -->
 
       <!-- 임베딩 및 벡터DB -->
       <DocDatasetEmbedding
         :model-value="formData"
         :embedding-model-options="embeddingModelOptions"
         :vector-db-options="vectorDbOptions"
-        :normalization-options="normalizationOptions"
-        :pooling-options="poolingOptions"
-        :dimension-options="dimensionOptions"
         :collapsed="sectionCollapsed[5]"
         @update:model-value="Object.assign(formData, $event)"
         @update:collapsed="sectionCollapsed[5] = $event"
@@ -107,8 +83,6 @@ import DocDatasetBasicInfo from '~/components/doc-dataset/DocDatasetBasicInfo.vu
 import DocDatasetSourceSelect from '~/components/doc-dataset/DocDatasetSourceSelect.vue'
 import DocDatasetPreprocess from '~/components/doc-dataset/DocDatasetPreprocess.vue'
 import DocDatasetEmbedding from '~/components/doc-dataset/DocDatasetEmbedding.vue'
-import DocDatasetPromptSetting from '~/components/doc-dataset/DocDatasetPromptSetting.vue'
-import DocDatasetLlmSetting from '~/components/doc-dataset/DocDatasetLlmSetting.vue'
 import type { DocDatasetForm } from '~/types/doc-dataset'
 const {
   selectedDatasetCategoryList,
@@ -117,20 +91,12 @@ const {
   formData,
   getDefaultForm,
   chunkAlgorithmOptions,
-  headerInclusionOptions,
   embeddingModelOptions,
   vectorDbOptions,
-  normalizationOptions,
-  poolingOptions,
-  dimensionOptions,
-  sentenceSplitOptions,
-  languageDetectionOptions,
-  llmOptions,
   handleSelectCodeOptions,
   sectionCollapsed,
   validate,
   handleSelectPromptList,
-  promptList,
 } = useDocDatasetStore()
 
 const props = defineProps<{

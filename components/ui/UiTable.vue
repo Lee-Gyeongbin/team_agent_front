@@ -18,14 +18,35 @@
           <th
             v-for="(col, idx) in columns"
             :key="col.key"
-            :class="{ 'is-last': idx === columns.length - 1 }"
+            :class="{ 'is-last': idx === columns.length - 1, 'is-sortable': isColumnSortable(col) }"
             :style="{ textAlign: col.headerAlign || 'center' }"
           >
             <slot
               :name="`header-${col.key}`"
               :column="col"
+              :is-sortable="isColumnSortable(col)"
+              :sort-order="getSortOrder(col.key)"
+              :on-sort="() => onSortColumn(col)"
             >
-              {{ col.label }}
+              <button
+                v-if="isColumnSortable(col)"
+                type="button"
+                class="ui-table-sort-btn"
+                @click="onSortColumn(col)"
+              >
+                <span>{{ col.label }}</span>
+                <span
+                  class="ui-table-sort-mark"
+                  :class="{
+                    'is-active': !!getSortOrder(col.key),
+                    'is-desc': getSortOrder(col.key) === 'desc',
+                  }"
+                  >▲</span
+                >
+              </button>
+              <template v-else>
+                {{ col.label }}
+              </template>
             </slot>
           </th>
         </tr>
@@ -44,7 +65,7 @@
 
         <!-- 데이터 행 -->
         <tr
-          v-for="(row, rowIdx) in data"
+          v-for="(row, rowIdx) in displayedData"
           v-else
           :key="rowIdx"
           :class="{ 'is-clickable': clickable, 'is-selected': isRowSelected(row) }"
@@ -101,6 +122,75 @@ const props = withDefaults(defineProps<Props>(), {
 const isRowSelected = (row: Record<string, any>) =>
   props.selectedRowKey != null && props.selectedRowValue != null && row[props.selectedRowKey] === props.selectedRowValue
 
+type SortOrder = 'asc' | 'desc' | ''
+const sortState = ref<{ key: string; order: SortOrder }>({ key: '', order: '' })
+
+const isColumnSortable = (col: TableColumn) => col.sortable === true
+
+const getSortOrder = (key: string): SortOrder => (sortState.value.key === key ? sortState.value.order : '')
+
+const onSortColumn = (col: TableColumn) => {
+  if (!isColumnSortable(col)) return
+  if (sortState.value.key !== col.key) {
+    sortState.value = { key: col.key, order: 'asc' }
+    return
+  }
+  if (sortState.value.order === 'asc') {
+    sortState.value.order = 'desc'
+    return
+  }
+  sortState.value = { key: '', order: '' }
+}
+
+const getComparableValue = (value: unknown, sortType: TableColumn['sortType']) => {
+  const raw = value ?? ''
+  if (sortType === 'string') return String(raw)
+  if (sortType === 'number') {
+    const num = Number(String(raw).replaceAll(',', ''))
+    return Number.isNaN(num) ? Number.NEGATIVE_INFINITY : num
+  }
+  if (sortType === 'date') {
+    const ts = Date.parse(String(raw))
+    return Number.isNaN(ts) ? Number.NEGATIVE_INFINITY : ts
+  }
+  const maybeNum = Number(String(raw).replaceAll(',', ''))
+  if (!Number.isNaN(maybeNum)) return maybeNum
+  const maybeDate = Date.parse(String(raw))
+  if (!Number.isNaN(maybeDate)) return maybeDate
+  return String(raw)
+}
+
+const displayedData = computed(() => {
+  const rows = [...props.data]
+  const { key, order } = sortState.value
+  if (!key || !order) return rows
+  const col = props.columns.find((item) => item.key === key)
+  if (!col) return rows
+
+  return rows.sort((a, b) => {
+    const va = getComparableValue(a[key], col.sortType ?? 'auto')
+    const vb = getComparableValue(b[key], col.sortType ?? 'auto')
+    const direction = order === 'asc' ? 1 : -1
+
+    if (typeof va === 'string' && typeof vb === 'string') {
+      return direction * va.localeCompare(vb, 'ko')
+    }
+    if (va === vb) return 0
+    return direction * (va > vb ? 1 : -1)
+  })
+})
+
+watch(
+  () => props.columns,
+  (columns) => {
+    const key = sortState.value.key
+    if (!key) return
+    const target = columns.find((col) => col.key === key)
+    if (!target || !isColumnSortable(target)) sortState.value = { key: '', order: '' }
+  },
+  { deep: true },
+)
+
 const emit = defineEmits<{
   'row-click': [row: Record<string, any>, index: number]
 }>()
@@ -146,6 +236,10 @@ const onRowClick = (row: Record<string, any>, index: number) => {
       // 컬럼 구분선 (마지막 제외)
       &:not(.is-last) {
         border-right: 1px solid $color-border;
+      }
+
+      &.is-sortable {
+        padding: 0 8px;
       }
     }
   }
@@ -193,6 +287,31 @@ const onRowClick = (row: Record<string, any>, index: number) => {
   td:first-child {
     text-align: center;
     vertical-align: middle;
+  }
+}
+
+.ui-table-sort-btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.ui-table-sort-mark {
+  font-size: 10px;
+  color: $color-text-disabled;
+
+  &.is-active {
+    color: $color-primary;
+  }
+
+  &.is-desc {
+    transform: rotate(180deg);
   }
 }
 

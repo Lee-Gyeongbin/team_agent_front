@@ -81,41 +81,23 @@ const getDefaultForm = (): DocDatasetForm => ({
   chunkOptHtmlTagsText: '',
   chunkOptHeaderPathSeparator: '/',
   chunkOptMinTokens: 300,
-  headerInclusion: '',
   useLowercasing: true,
   useWhitespaceNorm: false,
   useSpecialCharRemoval: false,
   useSingleCellText: true,
-  sentenceSplitAlgorithm: '',
-  languageDetection: '',
   promptId: '',
   llmCd: '',
   embeddingModel: '',
   vectorDb: '',
-  embeddingNormalization: '',
-  poolingStrategy: '',
-  dimensionReduction: '',
 })
 
 // 코드 옵션 목록
 // 청킹 알고리즘 옵션
 const chunkAlgorithmOptions = ref<{ label: string; value: string }[]>([])
-// 헤더 포함 옵션
-const headerInclusionOptions = ref<{ label: string; value: string }[]>([])
 // 임베딩 모델 옵션
 const embeddingModelOptions = ref<{ label: string; value: string }[]>([])
 // 벡터 DB 옵션
 const vectorDbOptions = ref<{ label: string; value: string }[]>([])
-// 정규화 옵션
-const normalizationOptions = ref<{ label: string; value: string }[]>([])
-// 풀링 전략 옵션
-const poolingOptions = ref<{ label: string; value: string }[]>([])
-// 차수 축소 옵션
-const dimensionOptions = ref<{ label: string; value: string }[]>([])
-// 문장 분리 알고리즘 옵션
-const sentenceSplitOptions = ref<{ label: string; value: string }[]>([])
-// 언어 감지 옵션
-const languageDetectionOptions = ref<{ label: string; value: string }[]>([])
 // LLM 옵션
 const llmOptions = ref<{ label: string; value: string }[]>([])
 
@@ -497,39 +479,16 @@ const handleSelectDatasetSrcList = async () => {
 
 /** 코드 옵션 목록 조회 */
 const handleSelectCodeOptions = async () => {
-  const [
-    chunkCodes,
-    headerCodes,
-    embedModelCodes,
-    vectorDbCodes,
-    normalizationCodes,
-    poolingCodes,
-    dimensionCodes,
-    sentenceSplitCodes,
-    languageCodes,
-    llmCodes,
-  ] = await Promise.all([
+  const [chunkCodes, embedModelCodes, vectorDbCodes, llmCodes] = await Promise.all([
     getCodes('RG000002'),
-    getCodes('RG000003'),
     getCodes('RG000004'),
     getCodes('RG000005'),
-    getCodes('RG000006'),
-    getCodes('RG000007'),
-    getCodes('RG000008'),
-    getCodes('RG000009'),
-    getCodes('RG000010'),
     getCodes('RG000011'),
   ])
   // 코드 옵션 세팅
   chunkAlgorithmOptions.value = mapCodeOptions(chunkCodes)
-  headerInclusionOptions.value = mapCodeOptions(headerCodes)
   embeddingModelOptions.value = mapCodeOptions(embedModelCodes)
   vectorDbOptions.value = mapCodeOptions(vectorDbCodes)
-  normalizationOptions.value = mapCodeOptions(normalizationCodes)
-  poolingOptions.value = mapCodeOptions(poolingCodes)
-  dimensionOptions.value = mapCodeOptions(dimensionCodes)
-  sentenceSplitOptions.value = mapCodeOptions(sentenceSplitCodes)
-  languageDetectionOptions.value = mapCodeOptions(languageCodes)
   llmOptions.value = mapCodeOptions(llmCodes)
 }
 
@@ -692,15 +651,11 @@ const onSaveCreate = (data: DocDatasetForm, startBuild: boolean) => {
         chunkOverlap: data.chunkOverlap ?? 0,
         minChunkSz,
         ...(chunkOptJson !== undefined ? { chunkOptJson } : {}),
-        hdrInclCd: data.headerInclusion,
         datasetBuildStatusCd: startBuild ? '002' : '001',
         promptId: data.promptId,
         llmCd: data.llmCd,
         embedModelCd: data.embeddingModel,
         vectorDbCd: data.vectorDb,
-        embedNormCd: data.embeddingNormalization,
-        poolStratCd: data.poolingStrategy,
-        dimReducCd: data.dimensionReduction,
         chunkCnt: 0,
         srchQual: 0,
         useYn: 'Y',
@@ -708,8 +663,6 @@ const onSaveCreate = (data: DocDatasetForm, startBuild: boolean) => {
         wspNormYn: data.useWhitespaceNorm ? 'Y' : 'N',
         specChrRmYn: data.useSpecialCharRemoval ? 'Y' : 'N',
         singleCellText: data.useSingleCellText ? 'Y' : 'N',
-        sentSplitAlgoCd: data.sentenceSplitAlgorithm,
-        langDetectCd: data.languageDetection,
         docIdList: data.selectedDocIds.map((id) => ({ docId: id, datasetId: editingDatasetId.value ?? '' })),
         urlIdList: data.selectedUrlIds.map((id) => ({ urlId: id, datasetId: editingDatasetId.value ?? '' })),
       }
@@ -764,20 +717,14 @@ const mapDetailToForm = (
     chunkOptMinTokens: isPagingAlgo
       ? pagingMinFromJson
       : toNumberOr(chunkOptJson.min_chunk_sz ?? chunkOptJson.min_tokens, 300),
-    headerInclusion: detail?.hdrInclCd ?? '',
     useLowercasing: detail?.lowercaseYn === 'Y',
     useWhitespaceNorm: detail?.wspNormYn === 'Y',
     useSpecialCharRemoval: detail?.specChrRmYn === 'Y',
     useSingleCellText: detail?.singleCellText === 'Y',
-    sentenceSplitAlgorithm: detail?.sentSplitAlgoCd ?? '',
-    languageDetection: detail?.langDetectCd ?? '',
     promptId: '',
     llmCd: detail?.llmCd ?? '',
     embeddingModel: detail?.embedModelCd ?? '',
     vectorDb: detail?.vectorDbCd ?? '',
-    embeddingNormalization: detail?.embedNormCd ?? '',
-    poolingStrategy: detail?.poolStratCd ?? '',
-    dimensionReduction: detail?.dimReducCd ?? '',
   })
 }
 
@@ -1091,14 +1038,8 @@ export const useDocDatasetStore = () => {
     // 코드 조회
     handleSelectCodeOptions,
     chunkAlgorithmOptions,
-    headerInclusionOptions,
     embeddingModelOptions,
     vectorDbOptions,
-    normalizationOptions,
-    poolingOptions,
-    dimensionOptions,
-    sentenceSplitOptions,
-    languageDetectionOptions,
     llmOptions,
     // 검색 테스트
     searchResults,

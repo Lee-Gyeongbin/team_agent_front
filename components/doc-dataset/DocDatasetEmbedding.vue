@@ -45,7 +45,7 @@
         </div>
       </div>
 
-      <!-- 벡터 DB / 임베딩 정규화 -->
+      <!-- 벡터 DB -->
       <div class="com-setting-row">
         <div
           class="com-setting-field-row"
@@ -57,46 +57,6 @@
             :options="props.vectorDbOptions"
             size="sm"
             @update:model-value="onUpdate('vectorDb', $event)"
-          />
-        </div>
-        <div
-          class="com-setting-field-row"
-          style="flex: 1"
-        >
-          <label class="com-setting-label">임베딩 정규화</label>
-          <UiSelect
-            :model-value="modelValue.embeddingNormalization"
-            :options="props.normalizationOptions"
-            size="sm"
-            @update:model-value="onUpdate('embeddingNormalization', $event)"
-          />
-        </div>
-      </div>
-
-      <!-- Pooling 전략 / 차수 축소 -->
-      <div class="com-setting-row">
-        <div
-          class="com-setting-field-row"
-          style="flex: 1"
-        >
-          <label class="com-setting-label">Pooling 전략</label>
-          <UiSelect
-            :model-value="modelValue.poolingStrategy"
-            :options="props.poolingOptions"
-            size="sm"
-            @update:model-value="onUpdate('poolingStrategy', $event)"
-          />
-        </div>
-        <div
-          class="com-setting-field-row"
-          style="flex: 1"
-        >
-          <label class="com-setting-label">차수 축소 (선택)</label>
-          <UiSelect
-            :model-value="modelValue.dimensionReduction"
-            :options="props.dimensionOptions"
-            size="sm"
-            @update:model-value="onUpdate('dimensionReduction', $event)"
           />
         </div>
       </div>
@@ -111,20 +71,14 @@ import type { DocDatasetForm } from '~/types/doc-dataset'
 interface Props {
   modelValue: DocDatasetForm
   collapsed?: boolean
-  embeddingModelOptions: { label: string; value: string }[]
-  vectorDbOptions: { label: string; value: string }[]
-  normalizationOptions: { label: string; value: string }[]
-  poolingOptions: { label: string; value: string }[]
-  dimensionOptions: { label: string; value: string }[]
+  embeddingModelOptions?: { label: string; value: string }[]
+  vectorDbOptions?: { label: string; value: string }[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
   collapsed: true,
   embeddingModelOptions: () => [],
   vectorDbOptions: () => [],
-  normalizationOptions: () => [],
-  poolingOptions: () => [],
-  dimensionOptions: () => [],
 })
 
 const emit = defineEmits<{
@@ -146,7 +100,7 @@ const toggleCollapse = () => {
   emit('update:collapsed', isCollapsed.value)
 }
 
-const onUpdate = (key: keyof DocDatasetForm, value: string) => {
+const onUpdate = (key: keyof DocDatasetForm, value: string | number) => {
   emit('update:modelValue', { ...toRaw(props.modelValue), [key]: value } as DocDatasetForm)
 }
 </script>

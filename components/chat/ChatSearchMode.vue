@@ -11,7 +11,7 @@
       @click="onRemove(mode.value)"
     >
       <i class="icon-search size-20" />
-      <span>{{ mode.label }}</span>
+      <span class="ws-nowrap">{{ mode.label }}</span>
       <i class="icon-refund-back size-20" />
     </button>
 

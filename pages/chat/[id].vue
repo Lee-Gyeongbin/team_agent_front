@@ -8,7 +8,6 @@
     :style="activePanelType !== 'none' ? { '--panel-width': panelWidthPercent + 'vw' } : undefined"
   >
     <div class="chat-detail-main flex flex-col s-center">
-      <!-- 🔽 개발: 라이브러리 저장 API — @on-select-category="(logId, v) => { ... }" 또는 스토어 액션 연결 (payload: logId, categoryValue) -->
       <ChatMessageList
         :messages="messages"
         :knowledge-list="knowledgeList"
@@ -175,7 +174,7 @@ onBeforeRouteLeave((to) => {
   }
 })
 
-const onSelectCategory = async (logId: string, categoryValue: string) => {
-  await handleCreateKnowledge(logId, categoryValue)
+const onSelectCategory = async (logId: string, categoryValue: string, categoryNm: string) => {
+  await handleCreateKnowledge(logId, categoryValue, categoryNm)
 }
 </script>

@@ -18,7 +18,10 @@
           @on-regenerate="emit('on-regenerate', $event)"
           @on-view-source="emit('on-view-source', $event)"
           @on-view-visualization="emit('on-view-visualization', $event)"
-          @on-select-category="(logId, categoryValue) => emit('on-select-category', logId, categoryValue)"
+          @on-select-category="
+            (logId: string, categoryValue: string, categoryNm: string) =>
+              emit('on-select-category', logId, categoryValue, categoryNm)
+          "
         />
       </div>
     </div>
@@ -53,8 +56,8 @@ const emit = defineEmits<{
   'on-like': [id: string]
   'on-dislike': [id: string]
   'on-regenerate': [id: string]
-  /** (logId, categoryValue) — 라이브러리 저장 시 pages/chat 등에서 @on-select-category 로 수신 */
-  'on-select-category': [logId: string, categoryValue: string]
+  /** (logId, categoryId, categoryNm) — 라이브러리 저장 시 pages/chat 등에서 @on-select-category 로 수신 */
+  'on-select-category': [logId: string, categoryValue: string, categoryNm: string]
   'on-view-source': [id: string]
   'on-view-visualization': [id: string]
 }>()
