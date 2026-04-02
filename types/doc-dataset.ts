@@ -32,13 +32,9 @@ export interface DocDatasetDetail {
   chunkSize: number
   chunkOverlap: number
   minChunkSz: number
-  hdrInclCd: string
   datasetBuildStatusCd: string
   embedModelCd: string
   vectorDbCd: string
-  embedNormCd: string
-  poolStratCd: string
-  dimReducCd: string
   chunkCnt: number
   srchQual: number
   useYn: string
@@ -47,8 +43,6 @@ export interface DocDatasetDetail {
   wspNormYn: string
   specChrRmYn: string
   singleCellText: string
-  sentSplitAlgoCd: string
-  langDetectCd: string
   llmCd?: string
   chunkOptJson?: string | Record<string, unknown> | null
 }
@@ -119,13 +113,9 @@ export interface DocDatasetSavePayload {
   chunkSize: number
   chunkOverlap: number
   minChunkSz: number
-  hdrInclCd: string
   datasetBuildStatusCd: string
   embedModelCd: string
   vectorDbCd: string
-  embedNormCd: string
-  poolStratCd: string
-  dimReducCd: string
   chunkCnt: number
   srchQual: number
   useYn: string
@@ -133,8 +123,6 @@ export interface DocDatasetSavePayload {
   wspNormYn: string
   specChrRmYn: string
   singleCellText: string
-  sentSplitAlgoCd: string
-  langDetectCd: string
   promptId: string
   llmCd: string
   /** CHUNK_OPT_JSON — VO·DB는 문자열로 받고 MySQL JSON 컬럼에 저장 */
@@ -168,14 +156,11 @@ export interface DocDatasetForm {
   chunkOptHtmlTagsText: string | null
   chunkOptHeaderPathSeparator: string | null
   chunkOptMinTokens: number | null
-  headerInclusion: string
   // 텍스트 전처리 옵션
   useLowercasing: boolean
   useWhitespaceNorm: boolean
   useSpecialCharRemoval: boolean
   useSingleCellText: boolean
-  sentenceSplitAlgorithm: string
-  languageDetection: string
   // RAG용 시스템 프롬프트
   promptId: string
   // LLM (코드 RG000011)
@@ -183,9 +168,6 @@ export interface DocDatasetForm {
   // 임베딩 및 벡터DB
   embeddingModel: string
   vectorDb: string
-  embeddingNormalization: string
-  poolingStrategy: string
-  dimensionReduction: string
 }
 
 // 변경이력

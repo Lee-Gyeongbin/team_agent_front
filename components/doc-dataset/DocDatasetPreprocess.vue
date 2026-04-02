@@ -222,17 +222,6 @@
             />
           </div>
         </div>
-
-        <!-- 제목/헤더 포함 여부 -->
-        <div class="com-setting-field-row">
-          <label class="com-setting-label">제목/헤더 포함 여부</label>
-          <UiSelect
-            :model-value="modelValue.headerInclusion"
-            :options="props.headerInclusionOptions"
-            size="sm"
-            @update:model-value="onUpdate('headerInclusion', $event)"
-          />
-        </div>
       </div>
 
       <!-- 텍스트 전처리 옵션 -->
@@ -268,28 +257,6 @@
             />
           </div>
         </div>
-
-        <!-- 문장 분리 알고리즘 -->
-        <div class="com-setting-field-row">
-          <label class="com-setting-label">문장 분리 알고리즘</label>
-          <UiSelect
-            :model-value="modelValue.sentenceSplitAlgorithm"
-            :options="props.sentenceSplitOptions"
-            size="sm"
-            @update:model-value="onUpdate('sentenceSplitAlgorithm', $event)"
-          />
-        </div>
-
-        <!-- 언어 감지 -->
-        <div class="com-setting-field-row">
-          <label class="com-setting-label">언어 감지</label>
-          <UiSelect
-            :model-value="modelValue.languageDetection"
-            :options="props.languageDetectionOptions"
-            size="sm"
-            @update:model-value="onUpdate('languageDetection', $event)"
-          />
-        </div>
       </div>
     </div>
   </div>
@@ -303,17 +270,11 @@ interface Props {
   modelValue: DocDatasetForm
   collapsed?: boolean
   chunkAlgorithmOptions?: { label: string; value: string }[]
-  headerInclusionOptions?: { label: string; value: string }[]
-  sentenceSplitOptions?: { label: string; value: string }[]
-  languageDetectionOptions?: { label: string; value: string }[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
   collapsed: true,
   chunkAlgorithmOptions: () => [],
-  headerInclusionOptions: () => [],
-  sentenceSplitOptions: () => [],
-  languageDetectionOptions: () => [],
 })
 
 const emit = defineEmits<{
