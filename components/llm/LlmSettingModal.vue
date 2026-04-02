@@ -85,6 +85,7 @@ const defaultApiParam = () => ({
   retryCnt: 0,
   temperature: 0,
   maxTokens: 0,
+  topP: 0.9,
   custHeaders: '',
 })
 const defaultUsage = () => ({
@@ -126,6 +127,7 @@ watch(
         retryCnt: m.retryCnt,
         temperature: m.temperature,
         maxTokens: m.maxTokens,
+        topP: m.topP,
         custHeaders: m.custHeaders,
       }
       usageForm.value = {

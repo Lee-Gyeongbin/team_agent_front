@@ -107,6 +107,22 @@
           class="com-setting-field-row"
           style="flex: 1"
         >
+          <label class="com-setting-label">Top P</label>
+          <UiInput
+            :model-value="modelValue.topP"
+            number-only
+            allow-decimal
+            size="sm"
+            desc="0 (다양성 없음) ~ 1 (최대 다양성)"
+            @update:model-value="onUpdate('topP', Number($event))"
+          />
+        </div>
+      </div>
+      <div class="com-setting-row">
+        <div
+          class="com-setting-field-row"
+          style="flex: 1"
+        >
           <label class="com-setting-label">Max Tokens</label>
           <UiInput
             :model-value="modelValue.maxTokens"
@@ -115,6 +131,11 @@
             @update:model-value="onUpdate('maxTokens', Number($event))"
           />
         </div>
+        <div
+          class="com-setting-field-row"
+          style="flex: 1; visibility: hidden"
+          aria-hidden="true"
+        />
       </div>
 
       <!-- 추가 헤더 (JSON) -->
@@ -144,6 +165,7 @@ interface ApiParamForm {
   retryCnt: number
   temperature: number
   maxTokens: number
+  topP: number
   custHeaders: string
 }
 

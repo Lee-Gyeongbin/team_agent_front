@@ -4,11 +4,7 @@ export interface SystemPrompt {
   promptName: string // PROMPT_NAME
   promptTypeCd: string // PROMPT_TYPE_CD
   content: string // CONTENT
-  temperature: number // TEMPERATURE
-  topP: number // TOP_P
   applyLlmYn: 'Y' | 'N' // APPLY_LLM_YN
-  applyRagYn: 'Y' | 'N' // APPLY_RAG_YN
-  applySqlYn: 'Y' | 'N' // APPLY_SQL_YN
   useYn: 'Y' | 'N' // USE_YN
   createDt: string // CREATE_DT
   modifyDt: string // MODIFY_DT
@@ -104,4 +100,15 @@ export interface ErrorMessageData {
   responseErrors: ErrorMessageItem[] // 응답 생성 오류
   inputErrors: ErrorMessageItem[] // 입력 오류 메시지
   apiErrors: ErrorMessageItem[] // API 오류 메시지
+}
+
+export interface PromptAgent {
+  agentId: string // AGENT_ID
+  agentNm: string // AGENT_NM
+}
+
+export interface PromptAppAgt {
+  promptId: string // PROMPT_ID
+  agentId: string // AGENT_ID
+  applyYn: 'Y' | 'N' // APPLY_YN
 }

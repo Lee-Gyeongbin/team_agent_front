@@ -100,6 +100,10 @@ const basicForm = ref({
   agentNm: '',
   description: '',
   sortOrd: 0,
+  temperature: 0.7,
+  tempDefaultYn: 'N' as 'Y' | 'N',
+  topP: 0.9,
+  topPDefaultYn: 'N' as 'Y' | 'N',
 })
 
 // RAG 설정 (001)
@@ -132,6 +136,10 @@ watch(
         agentNm: props.agent.agentNm,
         description: props.agent.description,
         sortOrd: props.agent.sortOrd ?? 0,
+        temperature: props.agent.temperature ?? 0.7,
+        tempDefaultYn: props.agent.tempDefaultYn ?? 'Y',
+        topP: props.agent.topP ?? 0.9,
+        topPDefaultYn: props.agent.topPDefaultYn ?? 'Y',
       }
       ragForm.value = {
         simThresh: props.agent.simThresh ?? 0.7,
@@ -149,7 +157,15 @@ watch(
       nextTick(() => settingDataRef.value?.resetFilter())
     } else {
       form.value.agentTypeCd = ''
-      basicForm.value = { agentNm: '', description: '', sortOrd: 0 }
+      basicForm.value = {
+        agentNm: '',
+        description: '',
+        sortOrd: 0,
+        temperature: 0.7,
+        tempDefaultYn: 'Y',
+        topP: 0.9,
+        topPDefaultYn: 'Y',
+      }
       ragForm.value = { simThresh: 0.7, maxSrchRslt: 10 }
       sqlForm.value = { modelId: '', maxQrySec: 60, sqlValidYn: 'N', readonlyYn: 'N', userCfrmYn: 'N' }
       localDatasetList.value = []

@@ -7,6 +7,8 @@ import type {
   PromptVersion,
   PromptVersionStats,
   ErrorMessageData,
+  PromptAgent,
+  PromptAppAgt,
 } from '~/types/prompt'
 
 const {
@@ -28,6 +30,8 @@ const {
 
 /** 시스템 프롬프트 상태 변수 */
 const systemPromptList = ref<SystemPrompt[]>([])
+const agentList = ref<PromptAgent[]>([])
+const promptAppAgtList = ref<PromptAppAgt[]>([])
 const templateList = ref<PromptTemplate[]>([])
 const filterData = ref<PromptFilterData>({
   inputBanWords: [],
@@ -42,11 +46,7 @@ const emptySettingForm: Partial<SystemPrompt> = {
   promptName: '',
   promptTypeCd: '',
   content: '',
-  temperature: 0.7,
-  topP: 0.8,
   applyLlmYn: 'Y',
-  applyRagYn: 'Y',
-  applySqlYn: 'Y',
 }
 
 /** settingForm 초기화 */
@@ -59,6 +59,8 @@ const handleSelectSystemPromptList = async () => {
   try {
     const response = await fetchSystemPromptList()
     systemPromptList.value = response.dataList ?? []
+    agentList.value = response.agentList ?? []
+    promptAppAgtList.value = response.promptAppAgtList ?? []
     resetSettingForm()
   } catch {
     openToast({
@@ -81,7 +83,9 @@ const handleSaveSystemPrompt = async (prompt: Partial<SystemPrompt>) => {
     message: '프롬프트를 저장하시겠습니까?',
     onConfirm: async () => {
       try {
-        await fetchSaveSystemPrompt(prompt)
+        const targetPromptId = prompt.promptId ?? ''
+        const payloadPromptAppAgtList = promptAppAgtList.value.filter((item) => item.promptId === targetPromptId)
+        await fetchSaveSystemPrompt(prompt, payloadPromptAppAgtList)
         await handleSelectSystemPromptList()
         openAlert({
           message: '시스템 프롬프트가 저장되었습니다.',
@@ -106,26 +110,8 @@ const validateSystemPrompt = (prompt: Partial<SystemPrompt>) => {
   if (isEmpty(prompt.content)) {
     return { valid: false, message: '시스템 프롬프트를 입력해주세요.' }
   }
-  if (isEmpty(prompt.temperature)) {
-    return { valid: false, message: '창의성을 입력해주세요.' }
-  }
-  if (Number(prompt.temperature) < 0 || Number(prompt.temperature) > 2) {
-    return { valid: false, message: '창의성은 0~2 사이의 값을 입력해주세요.' }
-  }
-  if (isEmpty(prompt.topP)) {
-    return { valid: false, message: '샘플링값을 입력해주세요.' }
-  }
-  if (Number(prompt.topP) < 0.1 || Number(prompt.topP) > 1) {
-    return { valid: false, message: '샘플링값은 0.1~1.0 사이의 값을 입력해주세요.' }
-  }
   if (isEmpty(prompt.applyLlmYn)) {
     return { valid: false, message: 'LLM 적용 여부를 선택해주세요.' }
-  }
-  if (isEmpty(prompt.applyRagYn)) {
-    return { valid: false, message: 'RAG 적용 여부를 선택해주세요.' }
-  }
-  if (isEmpty(prompt.applySqlYn)) {
-    return { valid: false, message: 'SQL 적용 여부를 선택해주세요.' }
   }
   return { valid: true, message: '' }
 }
@@ -152,7 +138,9 @@ const handleDeleteSystemPrompt = async (prompt: SystemPrompt) => {
 /** 시스템 프롬프트 활성/비활성 토글 */
 const handleToggleSystemPrompt = async (prompt: Partial<SystemPrompt>) => {
   try {
-    await fetchSaveSystemPrompt(prompt)
+    const targetPromptId = prompt.promptId ?? ''
+    const payloadPromptAppAgtList = promptAppAgtList.value.filter((item) => item.promptId === targetPromptId)
+    await fetchSaveSystemPrompt(prompt, payloadPromptAppAgtList)
     await handleSelectSystemPromptList()
     openToast({ message: '프롬프트 활성화 상태가 변경되었습니다.' })
   } catch {
@@ -288,6 +276,8 @@ export const usePromptStore = () => {
   return {
     systemPromptList,
     settingForm,
+    agentList,
+    promptAppAgtList,
     resetSettingForm,
     handleSelectSystemPromptList,
     handleSaveSystemPrompt,

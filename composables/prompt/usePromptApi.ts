@@ -6,6 +6,8 @@ import type {
   PromptVersion,
   PromptVersionStats,
   ErrorMessageData,
+  PromptAgent,
+  PromptAppAgt,
 } from '~/types/prompt'
 import { useApi } from '~/composables/com/useApi'
 const MOCK_BASE = '/mock/prompt'
@@ -23,13 +25,19 @@ export const usePromptApi = () => {
   const { get, post } = useApi()
 
   /** 시스템 프롬프트 목록 조회 */
-  const fetchSystemPromptList = async (): Promise<{ dataList: SystemPrompt[] }> => {
-    return get<{ dataList: SystemPrompt[] }>(`/prompt/system/list.do`)
+  const fetchSystemPromptList = async (): Promise<{
+    dataList: SystemPrompt[]
+    agentList: PromptAgent[]
+    promptAppAgtList: PromptAppAgt[]
+  }> => {
+    return get<{ dataList: SystemPrompt[]; agentList: PromptAgent[]; promptAppAgtList: PromptAppAgt[] }>(
+      `/prompt/system/list.do`,
+    )
   }
 
   /** 시스템 프롬프트 저장 */
-  const fetchSaveSystemPrompt = async (prompt: Partial<SystemPrompt>) => {
-    return post<{ data: SystemPrompt }>(`/prompt/system/save.do`, prompt)
+  const fetchSaveSystemPrompt = async (prompt: Partial<SystemPrompt>, promptAppAgtList: PromptAppAgt[]) => {
+    return post<{ data: SystemPrompt }>(`/prompt/system/save.do`, { ...prompt, promptAppAgtList })
   }
 
   /** 시스템 프롬프트 삭제 */

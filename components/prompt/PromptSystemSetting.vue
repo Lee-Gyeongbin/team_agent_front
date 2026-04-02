@@ -59,37 +59,6 @@
         />
       </div>
 
-      <!-- Temperature / Top P -->
-      <div class="com-setting-row">
-        <div class="com-setting-field-col">
-          <div class="com-setting-field-row">
-            <label class="com-setting-label">Temperature (창의성)</label>
-            <UiInput
-              :model-value="form.temperature"
-              number-only
-              allow-decimal
-              size="sm"
-              desc="0: 일관적, 2: 창의적"
-              @update:model-value="onUpdateForm('temperature', $event)"
-            />
-          </div>
-        </div>
-
-        <div class="com-setting-field-col">
-          <div class="com-setting-field-row">
-            <label class="com-setting-label">Top P (샘플링)</label>
-            <UiInput
-              :model-value="form.topP"
-              number-only
-              allow-decimal
-              size="sm"
-              desc="0.1~1.0 사이 값"
-              @update:model-value="onUpdateForm('topP', $event)"
-            />
-          </div>
-        </div>
-      </div>
-
       <!-- 적용 대상 -->
       <div class="com-setting-field-row">
         <label class="com-setting-label">적용 대상</label>
@@ -100,14 +69,11 @@
             @update:model-value="onToggleApply('applyLlmYn', $event)"
           />
           <UiCheckbox
-            :model-value="form.applyRagYn === 'Y'"
-            label="매뉴얼 질의 (RAG)"
-            @update:model-value="onToggleApply('applyRagYn', $event)"
-          />
-          <UiCheckbox
-            :model-value="form.applySqlYn === 'Y'"
-            label="데이터 질의 (TextToSQL)"
-            @update:model-value="onToggleApply('applySqlYn', $event)"
+            v-for="agent in agentList"
+            :key="agent.agentId"
+            :model-value="isAgentApplied(agent.agentId)"
+            :label="agent.agentNm"
+            @update:model-value="onToggleAgentApply(agent.agentId, $event)"
           />
         </div>
       </div>
@@ -150,7 +116,7 @@ const emit = defineEmits<{
   test: []
 }>()
 
-const { resetSettingForm } = usePromptStore()
+const { resetSettingForm, agentList, promptAppAgtList } = usePromptStore()
 
 const form = computed(() => props.modelValue)
 
@@ -171,7 +137,36 @@ const onUpdateForm = (key: string, value: string | number) => {
   emit('update:modelValue', { ...props.modelValue, [key]: value })
 }
 
-const onToggleApply = (key: 'applyLlmYn' | 'applyRagYn' | 'applySqlYn', checked: boolean) => {
+const onToggleApply = (key: 'applyLlmYn', checked: boolean) => {
   emit('update:modelValue', { ...props.modelValue, [key]: checked ? 'Y' : 'N' })
+}
+
+const agentApplyYnMap = computed(() => {
+  const map = new Map<string, boolean>()
+  const currentPromptId = form.value?.promptId ?? ''
+  for (const item of promptAppAgtList.value) {
+    if (item.promptId === currentPromptId) {
+      map.set(item.agentId, item.applyYn === 'Y')
+    }
+  }
+  return map
+})
+
+const isAgentApplied = (agentId: string) => agentApplyYnMap.value.get(agentId) ?? false
+
+const onToggleAgentApply = (agentId: string, checked: boolean) => {
+  const currentPromptId = form.value?.promptId ?? ''
+
+  const nextApplyYn: 'Y' | 'N' = checked ? 'Y' : 'N'
+  const exists = promptAppAgtList.value.some((item) => item.promptId === currentPromptId && item.agentId === agentId)
+
+  promptAppAgtList.value = exists
+    ? promptAppAgtList.value.map((item) => {
+        if (item.promptId === currentPromptId && item.agentId === agentId) {
+          return { ...item, applyYn: nextApplyYn }
+        }
+        return item
+      })
+    : [...promptAppAgtList.value, { promptId: currentPromptId, agentId, applyYn: nextApplyYn }]
 }
 </script>

@@ -31,6 +31,65 @@
       />
     </div>
 
+    <div class="com-setting-row type-config-row">
+      <div class="type-config-col">
+        <label class="com-setting-label">Temperature</label>
+        <div class="type-config-option">
+          <div class="com-setting-inline">
+            <UiInput
+              :model-value="modelValue.temperature"
+              placeholder="0.7"
+              size="sm"
+              number-only
+              allow-decimal
+              @update:model-value="onUpdate('temperature', Number($event))"
+            />
+            <span class="com-setting-unit">(0.0 ~ 2.0)</span>
+          </div>
+          <UiCheckbox
+            :model-value="modelValue.tempDefaultYn === 'Y'"
+            label="모델 기본값 사용"
+            @update:model-value="onUpdate('tempDefaultYn', $event ? 'Y' : 'N')"
+          />
+        </div>
+        <span class="com-setting-hint">
+          {{
+            modelValue.tempDefaultYn === 'Y'
+              ? '모델에 설정된 기본 Temperature를 사용합니다.'
+              : '출력의 창의성과 무작위성을 조절합니다.'
+          }}
+        </span>
+      </div>
+      <div class="type-config-col">
+        <label class="com-setting-label">Top P (샘플링)</label>
+        <div class="type-config-option">
+          <div class="com-setting-inline">
+            <UiInput
+              :model-value="modelValue.topP"
+              placeholder="0.9"
+              size="sm"
+              number-only
+              allow-decimal
+              @update:model-value="onUpdate('topP', Number($event))"
+            />
+            <span class="com-setting-unit">(0.0 ~ 1.0)</span>
+          </div>
+          <UiCheckbox
+            :model-value="modelValue.topPDefaultYn === 'Y'"
+            label="모델 기본값 사용"
+            @update:model-value="onUpdate('topPDefaultYn', $event ? 'Y' : 'N')"
+          />
+        </div>
+        <span class="com-setting-hint">
+          {{
+            modelValue.topPDefaultYn === 'Y'
+              ? '모델에 설정된 기본 Top P를 사용합니다.'
+              : '후보 토큰의 다양성 범위를 조절합니다.'
+          }}
+        </span>
+      </div>
+    </div>
+
     <!-- RAG 설정 (001) -->
     <div
       v-if="agentTypeCd === '001'"
@@ -119,6 +178,10 @@
 interface BasicForm {
   agentNm: string
   description: string
+  temperature: number
+  tempDefaultYn: 'Y' | 'N'
+  topP: number
+  topPDefaultYn: 'Y' | 'N'
 }
 
 interface RagForm {
@@ -150,7 +213,7 @@ const emit = defineEmits<{
   'update:sqlForm': [value: SqlForm]
 }>()
 
-const onUpdate = (key: keyof BasicForm, value: string | number) => {
+const onUpdate = (key: keyof BasicForm, value: string | number | 'Y' | 'N') => {
   emit('update:modelValue', { ...props.modelValue, [key]: value })
 }
 
@@ -186,6 +249,16 @@ const onSqlUpdate = (key: keyof SqlForm, value: string | number | 'Y' | 'N') => 
   .ui-select-wrap {
     width: 100%;
   }
+}
+
+.type-config-option {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #dce4e9;
+  border-radius: $border-radius-base;
+  background: #f8fafc;
 }
 
 .sql-checkbox-col {

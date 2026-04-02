@@ -3,6 +3,10 @@ export interface Agent extends AgtRagCfg, AgtDs, AgtSqlCfg, AgtDm {
   agentNm: string // AGENT_NM
   agentTypeCd: string // AGENT_TYPE_CD
   agentTypeCdNm: string // AGENT_TYPE_CD_NM
+  temperature: number // TEMPERATURE
+  tempDefaultYn: 'Y' | 'N' // TEMP_DEFAULT_YN
+  topP: number // TOP_P
+  topPDefaultYn: 'Y' | 'N' // TOP_P_DEFAULT_YN
   description: string // DESCRIPTION
   sortOrd: number // SORT_ORD
   useYn: 'Y' | 'N' // USE_YN
