@@ -1,28 +1,32 @@
-import type { UserItem } from '~/types/user-manage'
+import { useApi } from '~/composables/com/useApi'
+import type { MyPageItem, ChangePasswordResponse } from '~/types/my-page'
 
 export const useMyPageApi = () => {
-  // 🔽 더미 데이터 — 백엔드 연결 시 실제 마이페이지 조회 API로 교체
-  const fetchMyPageInfo = async (): Promise<Partial<UserItem>> => {
-    return Promise.resolve({
-      userId: 'teamagent',
-      userNm: '팀에이전트',
-      email: 'teamagent@example.com',
-      phone: '01012345678',
-      orgId: '',
-      acctStatusDesc: '정상',
-      lastLoginDt: '2026-04-01 10:00:00',
-      pwdChgDt: '2026-03-20 09:00:00',
-    })
+  const { post } = useApi()
+
+  /** 마이페이지 정보 조회 */
+  const fetchMyPageInfo = async (userId: string): Promise<Partial<MyPageItem>> => {
+    const res = await post<{ dataList?: MyPageItem[] }>('/mypage/list.do', { userId })
+    return res.dataList?.[0] ?? {}
   }
 
-  // 🔽 더미 로직 — 백엔드 연결 시 마이페이지 저장 API로 교체
-  const saveMyPageInfo = async (_payload: Partial<UserItem>) => {
-    return Promise.resolve(true)
+  /** 마이페이지 정보 수정 */
+  const saveMyPageInfo = async (payload: Partial<MyPageItem>): Promise<void> => {
+    await post('/mypage/update.do', payload)
   }
 
-  // 🔽 더미 로직 — 백엔드 연결 시 비밀번호 변경 API로 교체
-  const changeMyPagePassword = async (_payload: { userId: string; newPassword: string }) => {
-    return Promise.resolve(true)
+  /** 마이페이지 비밀번호 변경 */
+  const changeMyPagePassword = async (payload: {
+    userId: string
+    oldPassword: string
+    newPassword: string
+  }): Promise<void> => {
+    const res = await post<ChangePasswordResponse>('/mypage/changePassword.do', payload)
+
+    if (res?.successYn === false) {
+      const message = res.returnMsg && res.returnMsg.trim().length > 0 ? res.returnMsg : '비밀번호 변경에 실패했습니다.'
+      throw new Error(message)
+    }
   }
 
   return {

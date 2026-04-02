@@ -3,6 +3,7 @@ import { useMyPageApi } from '~/composables/my-page/useMyPageApi'
 import { openAlert, openConfirm } from '~/composables/useDialog'
 import { openToast } from '~/composables/useToast'
 import { checkEmail, checkPhone, isEmpty } from '~/utils/global/validationUtil'
+import { useAuth } from '~/composables/com/useAuth'
 
 const isLoading = ref(false)
 const errorMessage = ref('')
@@ -13,13 +14,14 @@ const isPasswordModalOpen = ref(false)
 
 export const useMyPageStore = () => {
   const { fetchMyPageInfo, saveMyPageInfo, changeMyPagePassword } = useMyPageApi()
+  const { user } = useAuth()
 
   const handleLoadMyPage = async () => {
     isLoading.value = true
     errorMessage.value = ''
     try {
-      // 🔽 더미 데이터 — 백엔드 연결 시 실제 조회 API 호출로 교체
-      const data = await fetchMyPageInfo()
+      const currentUserId = user.value?.userId ?? ''
+      const data = await fetchMyPageInfo(currentUserId)
       form.value = data
       hasData.value = !!data
     } catch (error) {
@@ -67,7 +69,6 @@ export const useMyPageStore = () => {
     isPasswordModalOpen.value = false
   }
 
-  /** 계정 정보 저장 + 확인/알림 처리 (성공 시 편집 모드 종료, true 반환) */
   const handleSaveMyPage = async (): Promise<boolean> => {
     const confirmed = await openConfirm({
       title: '계정 정보 저장',
@@ -76,14 +77,13 @@ export const useMyPageStore = () => {
     if (!confirmed) return false
 
     try {
-      // 🔽 더미 로직 — 백엔드 연결 시 실제 저장 API 호출로 교체
       await saveMyPageInfo(form.value)
       openAlert({
         message: '계정 정보가 저장되었습니다.',
       })
       isEditMode.value = false
       return true
-    } catch (error) {
+    } catch {
       openToast({
         message: '계정 정보를 저장하는 중 오류가 발생했습니다.',
         type: 'error',
@@ -93,7 +93,6 @@ export const useMyPageStore = () => {
   }
 
   const handleSubmitPasswordChange = async (payload: { userId: string; oldPassword: string; newPassword: string }) => {
-    // 🔽 더미 로직 — 백엔드 연결 시 실제 비밀번호 변경 API 호출로 교체
     try {
       await changeMyPagePassword(payload)
       openAlert({

@@ -9,3 +9,8 @@ export interface MyPageItem {
   lastLoginDt: string
   pwdChgDt: string
 }
+
+export interface ChangePasswordResponse {
+  successYn?: boolean
+  returnMsg?: string
+}

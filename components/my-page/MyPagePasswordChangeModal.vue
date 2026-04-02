@@ -26,15 +26,19 @@
           class="password-field__input"
         />
       </div>
-      <div class="url-reg-field password-field">
-        <label class="url-reg-label password-field__label">새 비밀번호 확인 <span class="required">*</span></label>
-        <UiInput
-          v-model="newPasswordConfirm"
-          type="password"
-          placeholder="새 비밀번호를 다시 입력하세요"
-          size="sm"
-          class="password-field__input"
-        />
+      <div class="password-field-group">
+        <div class="url-reg-field password-field">
+          <label class="url-reg-label password-field__label">새 비밀번호 확인 <span class="required">*</span></label>
+          <UiInput
+            v-model="newPasswordConfirm"
+            type="password"
+            placeholder="새 비밀번호를 다시 입력하세요"
+            size="sm"
+            class="password-field__input"
+          />
+        </div>
+
+        <p class="password-field__helper">비밀번호는 6자 이상 입력해 주세요.</p>
       </div>
     </div>
 
@@ -82,9 +86,15 @@ const newPasswordConfirm = ref('')
 const oldPassword = ref('')
 
 const canSubmit = computed(() => {
-  return Boolean(oldPassword.value.trim() && newPassword.value.trim() && newPasswordConfirm.value.trim())
+  return !!(
+    oldPassword.value.trim() &&
+    newPassword.value.trim() &&
+    newPasswordConfirm.value.trim() &&
+    oldPassword.value.length >= 6 &&
+    newPassword.value.length >= 6 &&
+    newPasswordConfirm.value.length >= 6
+  )
 })
-
 const resetForm = () => {
   newPassword.value = ''
   newPasswordConfirm.value = ''

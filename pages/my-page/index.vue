@@ -48,7 +48,17 @@
           <section class="my-page-left">
             <div class="my-page-profile">
               <div class="my-page-avatar">
-                <i class="icon-user size-32" />
+                <div class="my-page-avatar-icon">
+                  <i class="icon-user size-32" />
+                </div>
+                <UiButton
+                  variant="ghost"
+                  size="xs"
+                  class="my-page-avatar-change-button"
+                  @click="onClickChangePhoto"
+                >
+                  사진 변경
+                </UiButton>
               </div>
               <div class="my-page-profile-text">
                 <p class="my-page-profile-name">{{ form.userNm || '-' }}</p>
@@ -256,6 +266,7 @@
 
 <script setup lang="ts">
 import MyPagePasswordChangeModal from '~/components/my-page/MyPagePasswordChangeModal.vue'
+import { openToast } from '~/composables/useToast'
 import { useUserManageStore } from '~/composables/user-manage/useUserManageStore'
 import { useOrgManageStore } from '~/composables/org-manage/useOrgManageStore'
 import { useMyPageStore } from '~/composables/my-page/useMyPageStore'
@@ -263,7 +274,7 @@ import { useMyPageStore } from '~/composables/my-page/useMyPageStore'
 definePageMeta({ layout: 'default' })
 
 const { formatPhone, toPhoneDigits } = useUserManageStore()
-const { orgOptions } = useOrgManageStore()
+const { orgOptions, handleFetchOrgList } = useOrgManageStore()
 const {
   isLoading,
   errorMessage,
@@ -296,11 +307,19 @@ const currentOrgLabel = computed(() => {
   return found?.label ?? ''
 })
 
+const onClickChangePhoto = () => {
+  openToast({
+    message: 'to-do : 개발진행예정입니다.',
+    type: 'info',
+  })
+}
+
 const onReload = () => {
   handleReloadMyPage()
 }
 
-onMounted(() => {
-  handleLoadMyPage()
+onMounted(async () => {
+  await handleFetchOrgList()
+  await handleLoadMyPage()
 })
 </script>
