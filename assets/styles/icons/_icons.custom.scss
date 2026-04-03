@@ -640,3 +640,7 @@
 .icon-dash-notice {
   @include icon-file-bg('dash-notice');
 }
+
+.icon-attach-file{
+  @include icon-file-bg('attach-file');
+}

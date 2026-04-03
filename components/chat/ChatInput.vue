@@ -23,7 +23,7 @@
 
       <div class="chat-input-bottom flex justify-between items-center">
         <div class="chat-input-bottom-left flex gap-8 items-center">
-          <!-- TODO: 파일첨부 버튼 추가가 -->
+          <!-- TODO: 파일첨부 버튼 추가 -->
           <UiButton
             type="button"
             variant="ghost"
@@ -33,7 +33,7 @@
             aria-label="파일 첨부"
           >
             <template #icon-left>
-              <i class="icon-document size-20" />
+              <i class="icon-attach-file size-24" />
             </template>
           </UiButton>
           <ChatSearchMode />
