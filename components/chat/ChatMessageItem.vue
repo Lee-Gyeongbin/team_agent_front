@@ -18,22 +18,19 @@
         >
           <span class="typing-dot" /><span class="typing-dot" /><span class="typing-dot" />
         </div>
-        <div
-          v-else
-          class="message-content-wrap"
-        >
-          <!-- eslint-disable vue/no-v-html — toHtmlContent 내 DOMPurify.sanitize 적용 -->
+        <template v-else>
+          <!-- eslint-disable vue/no-v-html — toHtmlContent/toRawTextHtml 내 안전 처리 적용 -->
           <div
             v-if="!showRaw"
             class="message-content markdown-body"
             v-html="renderedHtml"
           />
-          <!-- eslint-enable vue/no-v-html -->
-          <pre
+          <div
             v-else
-            class="message-content message-content--raw raw-text"
-            v-text="message.rContent"
+            class="message-content"
+            v-html="rawTextHtml"
           />
+          <!-- eslint-enable vue/no-v-html -->
           <div
             v-if="!message.isStreaming && message.rContent"
             class="message-render-toggle"
@@ -46,7 +43,7 @@
               <span>원본 텍스트 보기</span>
             </label>
           </div>
-        </div>
+        </template>
         <!-- 액션 + 패널 버튼 (한 줄) -->
         <div
           v-if="!message.isStreaming"
@@ -103,7 +100,7 @@
 
 <script setup lang="ts">
 import type { ChatMessage, KnowledgeItem } from '~/types/chat'
-import { toHtmlContent } from '~/utils/chat/htmlUtil'
+import { toHtmlContent, toRawTextHtml } from '~/utils/chat/htmlUtil'
 
 interface Props {
   message: ChatMessage
@@ -119,6 +116,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 /** 마크다운 렌더 결과 — v-html */
 const renderedHtml = computed(() => toHtmlContent(props.message.rContent ?? ''))
+/** 원본(마크다운) 렌더 결과 — v-html (줄바꿈만 `<br>`로 변환) */
+const rawTextHtml = computed(() => toRawTextHtml(props.message.rContent ?? ''))
 /** 원본(마크다운) / 렌더링 전환 */
 const showRaw = ref(false)
 
