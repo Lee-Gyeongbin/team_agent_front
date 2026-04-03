@@ -21,8 +21,16 @@ const {
   fetchSelectSharedChatLogList,
   fetchSelectKnowledgeList,
 } = useReportsApi()
-const { resolveSvcTy, activeSearchModes, subOptions, selectedSubOption, modelOptions, selectedModelOption } =
-  useChatSearchState()
+const {
+  resolveSvcTy,
+  activeSearchModes,
+  subOptions,
+  selectedSubOption,
+  modelOptions,
+  selectedModelOption,
+  isSearchModeMissingSubOptions,
+  searchModeSubOptionsEmptyMessage,
+} = useChatSearchState()
 const { messages, pushQuestionMessage, pushAnswerPlaceholder, logRowToMessages } = useChatMessages()
 const { ensureWebSocketAndSend, stopChatSocket } = useChatSocket()
 
@@ -97,6 +105,11 @@ export const useChatRooms = () => {
     const qContent = (content ?? chatMessage.value).trim()
     if (!qContent) {
       chatRoom.value = { ...EMPTY_CHAT_ROOM, qContent: '' }
+      return chatRoom.value
+    }
+
+    if (isSearchModeMissingSubOptions.value) {
+      openToast({ message: searchModeSubOptionsEmptyMessage.value, type: 'warning' })
       return chatRoom.value
     }
 

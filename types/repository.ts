@@ -84,6 +84,7 @@ export interface Document {
   createDt: string
   files: File[]
   attachedFileList?: FileItem[]
+  dsNmList?: string
 }
 
 /** 중복 검사용 — (CATEGORY_ID, FILE_NAME, FILE_TYPE) 튜플 목록 */

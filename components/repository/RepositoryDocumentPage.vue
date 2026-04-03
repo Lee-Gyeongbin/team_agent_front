@@ -225,7 +225,21 @@
                 {{ formatUseYnLabel(String(value ?? '')) }}
               </UiBadge>
             </template>
-            <template #cell-dsDocCnt="{ value }"> {{ value }}개 RAG </template>
+            <template #cell-dsDocCnt="{ row, value }">
+              <UiTooltip
+                v-if="row.dsNmList"
+                side="bottom"
+                align="start"
+                :show-arrow="false"
+                content-class="repository-doc-ds-nm-tooltip"
+              >
+                <span>{{ value }}개 RAG</span>
+                <template #content>
+                  <span>{{ row.dsNmList }}</span>
+                </template>
+              </UiTooltip>
+              <span v-else>{{ value }}개 RAG</span>
+            </template>
             <template #cell-actions="{ row }">
               <div
                 class="cell-actions"
@@ -363,3 +377,11 @@ onMounted(async () => {
   await handleSelectCategoryList()
 })
 </script>
+
+<!-- Radix Tooltip 포탈 — 콘텐츠 박스 폭 -->
+<style lang="scss">
+.repository-doc-ds-nm-tooltip {
+  max-width: min(480px, 90vw);
+  word-break: break-word;
+}
+</style>
