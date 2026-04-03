@@ -150,78 +150,39 @@
                         :class="{ 'is-active': selectedCardId === card.cardId }"
                         @click="openModal(card.cardId)"
                       >
-                        <!-- 상단 영역 -->
-                        <div class="library-card-top flex justify-between items-center">
-                          <div class="flex items-center gap-4">
-                            <UiBadge
-                              v-if="card.svcTy === 'S'"
-                              variant="data-line"
-                            >
-                              <template #icon-left>
-                                <i class="icon icon-data-line-small size-14"></i>
-                              </template>
-                              데이터분석
-                            </UiBadge>
-                            <UiBadge
-                              v-if="card.svcTy === 'C'"
-                              variant="basic-chat"
-                            >
-                              <template #icon-left>
-                                <i class="icon icon-comment-other size-14"></i>
-                              </template>
-                              기본대화
-                            </UiBadge>
-                            <UiBadge
-                              v-if="card.svcTy === 'M'"
-                              variant="manual-ai"
-                            >
-                              <template #icon-left>
-                                <i class="icon icon-book size-14"></i>
-                              </template>
-                              매뉴얼AI
-                            </UiBadge>
-
-                            <!-- 즐겨찾기 버튼 -->
-                            <UiButton
-                              icon-only
-                              variant="ghost"
-                              class="btn-star"
-                              :class="{ 'is-active': card.pinYn === 'Y' }"
-                              @click.stop="handleCardPin(card)"
-                            >
-                              <template #icon-left>
-                                <i class="icon icon-star-fill size-12"></i>
-                              </template>
-                            </UiButton>
-                          </div>
-
-                          <!-- 카드 드롭다운 메뉴 -->
-                          <div @click.stop>
-                            <UiDropdownMenu
-                              :items="getCardMenuItems(card)"
-                              align="end"
-                              @select="handleCardMenuSelect(card, $event)"
-                            >
-                              <template #trigger>
-                                <UiButton
-                                  icon-only
-                                  variant="ghost"
-                                  size="md"
-                                  class="btn btn-library-card-add type-white"
-                                >
-                                  <template #icon-left>
-                                    <i class="icon icon-add-dot size-20"></i>
-                                  </template>
-                                </UiButton>
-                              </template>
-                            </UiDropdownMenu>
-                          </div>
-                          <!-- END 카드 드롭다운 메뉴 -->
-                        </div>
-                        <!-- 제목 -->
-                        <h3 class="library-card-title fw-600">{{ card.title }}</h3>
+                        <!-- TODO: 이미지 -->
+                        <div class="library-card-img-grp"></div>
                         <!-- 설명 -->
                         <div class="library-card-desc">
+                          <!-- 상단 영역 -->
+                          <div class="library-card-top flex justify-between items-center">
+                            <!-- 제목 -->
+                            <h3 class="library-card-title">{{ card.title }}</h3>
+
+                            <!-- 카드 드롭다운 메뉴 -->
+                            <div @click.stop>
+                              <UiDropdownMenu
+                                :items="getCardMenuItems(card)"
+                                align="end"
+                                @select="handleCardMenuSelect(card, $event)"
+                              >
+                                <template #trigger>
+                                  <UiButton
+                                    icon-only
+                                    variant="ghost"
+                                    size="md"
+                                    class="btn btn-library-card-add type-white"
+                                  >
+                                    <template #icon-left>
+                                      <i class="icon icon-add-dot size-20"></i>
+                                    </template>
+                                  </UiButton>
+                                </template>
+                              </UiDropdownMenu>
+                            </div>
+                            <!-- END 카드 드롭다운 메뉴 -->
+                          </div>
+
                           <div class="library-card-tags">
                             <div class="library-card-tags-inner">
                               <span
@@ -237,6 +198,51 @@
                         <!-- 하단 메타 -->
                         <div class="library-card-meta flex items-center justify-between">
                           <p class="library-card-date">{{ formatDateTimeDisplay(card.createDt) }}</p>
+
+                          <div class="flex items-center gap-6">
+                            <!-- <div class="flex items-center gap-4">
+                              <UiBadge
+                                v-if="card.svcTy === 'S'"
+                                variant="data-line"
+                              >
+                                <template #icon-left>
+                                  <i class="icon icon-data-line-small size-14"></i>
+                                </template>
+                                데이터분석
+                              </UiBadge>
+                              <UiBadge
+                                v-if="card.svcTy === 'C'"
+                                variant="basic-chat"
+                              >
+                                <template #icon-left>
+                                  <i class="icon icon-comment-other size-14"></i>
+                                </template>
+                                기본대화
+                              </UiBadge>
+                              <UiBadge
+                                v-if="card.svcTy === 'M'"
+                                variant="manual-ai"
+                              >
+                                <template #icon-left>
+                                  <i class="icon icon-book size-14"></i>
+                                </template>
+                                매뉴얼AI
+                              </UiBadge>
+                            </div> -->
+
+                            <!-- 즐겨찾기 버튼 -->
+                            <UiButton
+                              icon-only
+                              variant="ghost"
+                              class="btn-star"
+                              :class="{ 'is-active': card.pinYn === 'Y' }"
+                              @click.stop="handleCardPin(card)"
+                            >
+                              <template #icon-left>
+                                <i class="icon icon-star-fill size-14"></i>
+                              </template>
+                            </UiButton>
+                          </div>
                         </div>
                       </div>
                     </template>

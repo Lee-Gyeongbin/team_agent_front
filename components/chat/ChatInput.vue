@@ -21,7 +21,22 @@
       </div>
 
       <div class="chat-input-bottom flex justify-between items-center">
-        <ChatSearchMode />
+        <div class="chat-input-bottom-left flex gap-8 items-center">
+          <!-- TODO: 파일첨부 버튼 추가가 -->
+          <UiButton
+            type="button"
+            variant="ghost"
+            size="xlg"
+            icon-only
+            class="btn-chat-attach"
+            aria-label="파일 첨부"
+          >
+            <template #icon-left>
+              <i class="icon-document size-20" />
+            </template>
+          </UiButton>
+          <ChatSearchMode />
+        </div>
         <div class="chat-input-bottom-right flex gap-8 items-center">
           <UiSelect
             id="sub-option"

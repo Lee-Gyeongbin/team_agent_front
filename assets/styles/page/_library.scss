@@ -1,38 +1,38 @@
 @use '../utils/variables' as *;
 @use '../utils/mixins' as *;
 
-.library-index{
+.library-index {
   height: calc(100vh - #{$header-height});
   background-color: #fff;
 
-  .library-description{
+  .library-description {
     color: $color-text-secondary;
     font-size: $font-size-base;
   }
 
-  .right-grp{
+  .right-grp {
     gap: $spacing-sm;
     flex: 1;
     justify-content: flex-end;
     min-width: 0;
 
-    .total{
+    .total {
       font-size: $font-size-base;
       color: $color-text-secondary;
       white-space: nowrap;
-      strong{
+      strong {
         color: $color-text-primary;
       }
     }
 
-    .library-input-grp{
+    .library-input-grp {
       min-width: 0;
     }
   }
 
-  .library-header-wrapper{
+  .library-header-wrapper {
     padding: 12px $spacing-md;
-    .btn-grp{
+    .btn-grp {
       gap: $spacing-xs;
     }
   }
@@ -89,7 +89,7 @@
   }
 
   // library-content-wrapper ============================
-  .library-content-wrapper{
+  .library-content-wrapper {
     gap: 12px;
     height: calc(100vh - 102px);
     padding: 0 $spacing-md 6px;
@@ -104,7 +104,7 @@
       align-items: flex-start;
     }
 
-    .library-list-grp{
+    .library-list-grp {
       // 카테고리 드래그 고스트
       &.sortable-ghost {
         opacity: 0.4;
@@ -114,61 +114,61 @@
       max-height: calc(100vh - 114px);
       padding: 12px;
       border-radius: $border-radius-lg;
-      background: #ECF0F3;
+      background: #ecf0f3;
     }
 
-    .library-list-add{
+    .library-list-add {
       flex-shrink: 0;
       width: 304px;
-      
-      .btn-library-list-add{
+
+      .btn-library-list-add {
         gap: $spacing-xs;
         width: 100%;
         height: 40px;
         border-radius: $border-radius-lg;
-        border: 1px dashed #CDD1D5;
-        background: #FFF;
+        border: 1px dashed #cdd1d5;
+        background: #fff;
         font-size: $font-size-base;
-        color: #8A949E;
+        color: #8a949e;
         font-weight: $font-weight-semibold;
 
-        &:hover{
-          background: #F5F5F5;
+        &:hover {
+          background: #f5f5f5;
         }
       }
     }
 
-    .library-list-header{
+    .library-list-header {
       padding-bottom: $spacing-sm;
       cursor: grab;
 
       &:active {
         cursor: grabbing;
       }
-      .left-grp{
+      .left-grp {
         gap: $spacing-xs;
       }
-      .list-title{
+      .list-title {
         color: $color-text-dark;
         font-size: $font-size-xl;
         font-weight: $font-weight-bold;
-        .icon-diamond{
+        .icon-diamond {
           margin-right: 6px;
         }
       }
-      .card-count{
+      .card-count {
         height: 24px;
         line-height: 24px;
         white-space: nowrap;
         padding: 0 $spacing-sm;
-        color: #828FA9;                
+        color: #828fa9;
         font-size: $font-size-sm;
         border-radius: 24px;
         background: $color-border;
       }
     }
 
-    .library-card-grp{
+    .library-card-grp {
       display: flex;
       flex-direction: column;
       gap: $spacing-sm;
@@ -178,43 +178,55 @@
       padding-right: $spacing-sm;
       @include custom-scrollbar;
 
-      .library-card-draggable{
+      .library-card-draggable {
         gap: $spacing-sm;
       }
 
-      .library-card{
+      .library-card {
         width: 100%;
-        padding: 12px;
+        padding: 12px 12px 7px;
         border-radius: $border-radius-lg;
-        border: 1px solid #C6D2DB;
-        background: #FFF;
-        transition: border-color $transition-slow, box-shadow $transition-slow;
+        border: 1px solid #c6d2db;
+        background: #fff;
+        transition:
+          border-color $transition-slow,
+          box-shadow $transition-slow;
         box-shadow: 4px 4px 4px 0 rgba(30, 50, 77, 0.08);
         // 드래그 중 고스트
         &.sortable-ghost {
           opacity: 0.4;
         }
 
-        &.type-new-card{
+        &.type-new-card {
           display: flex;
           align-items: center;
           justify-content: center;
           border: 1px solid $color-border;
-          background: #ECF0F3;
+          background: #ecf0f3;
           height: 142px;
         }
 
-        &:hover{
+        &:hover {
           cursor: pointer;
-          border-color: #94A3B8;
+          border-color: #94a3b8;
         }
 
-        &.is-active{
-          border-color: #94A3B8;
-          box-shadow: 4px 4px 4px 0 rgba(30, 50, 77, 0.08), inset 0 0 0 1px #94A3B8;
+        &.is-active {
+          border-color: #94a3b8;
+          box-shadow:
+            4px 4px 4px 0 rgba(30, 50, 77, 0.08),
+            inset 0 0 0 1px #94a3b8;
         }
 
-        .library-card-new-card-content{
+        .library-card-img-grp {
+          width: 100%;
+          height: 78px;
+          background: #dce4e9;
+          border-radius: 4px;
+          overflow: hidden;
+        }
+
+        .library-card-new-card-content {
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -224,72 +236,73 @@
           color: $color-text-disabled;
         }
 
-        .library-card-top{
-          padding-bottom: $spacing-xs;
+        .library-card-top {
+          .ui-dropdown-trigger-wrap {
+            display: flex;
+          }
+        }
 
-          .btn-star{
-            flex-shrink: 0;
-            width: 16px;
-            height: 16px;
-            min-width: 12px;
-            padding: 0;
-            margin-left: -2px;
+        .btn-star {
+          flex-shrink: 0;
+          width: 20px;
+          height: 20px;
 
-            .icon{
-              background: #94A3B8;
-            }
+          .icon {
+            background: #94a3b8;
+          }
 
-            &.is-active{
-              .icon{
-                background: #6F7A93;
-              }
+          &.is-active {
+            .icon {
+              background: #ffb970;
             }
           }
         }
 
-        .library-card-title{
-          color: $color-text-dark;
-          font-size: $font-size-lg;
+        .library-card-title {
+          color: #33363d;
+          font-size: 14px;
+          font-weight: 700;
           line-height: 150%;
           @include ellipsis(1);
         }
 
-        .library-card-desc{
-          min-height: 36px;
-          color: #828FA9;
+        .library-card-desc {
+          color: #aebccb;
           font-size: $font-size-sm;
-          margin: $spacing-xs 0 $spacing-sm;
+          margin-top: 8px;
           @include ellipsis(2);
+          min-height: 39px;
         }
 
-        .library-card-meta{
+        .library-card-meta {
           gap: $spacing-xs;
           min-width: 0;
+          min-height: 20px;
 
-          .library-card-date{
+          .library-card-date {
             flex: 0 1 auto;
             min-width: 0;
             max-width: 48%;
-            color: #C6D2DB;
+            color: #94a3b8;
             font-size: $font-size-sm;
             @include ellipsis(1);
           }
 
-          .library-card-tags{
+          .library-card-tags {
             flex: 1;
             min-width: 0;
-            color: #6D7882;
+            color: #6d7882;
             font-size: $font-size-sm;
 
-            .library-card-tags-inner{
+            .library-card-tags-inner {
               @include ellipsis(1);
               text-align: right;
             }
 
-            .library-card-tag{
+            .library-card-tag {
               display: inline;
 
-              & + .library-card-tag{
+              & + .library-card-tag {
                 margin-left: $spacing-xs;
               }
             }
@@ -300,33 +313,33 @@
   }
 }
 
-.library-card-badge{
+.library-card-badge {
   display: flex;
   align-items: center;
   gap: $spacing-xs;
   height: 22px;
   padding: 0 $spacing-sm;
   border-radius: 24px;
-  background: #F0F6FE;
+  background: #f0f6fe;
   color: var(--color-primary);
   font-size: $font-size-sm;
 
-  &.badge--data-line{
-    .badge-icon{
+  &.badge--data-line {
+    .badge-icon {
       @include icon-file('data-line-small');
     }
   }
-  &.badge--basic-chat{
-    background: #F8F4D6;
-    color: #AC5E00;
-    .badge-icon{
+  &.badge--basic-chat {
+    background: #f8f4d6;
+    color: #ac5e00;
+    .badge-icon {
       @include icon-file('comment-other');
     }
   }
-  &.badge--manual-ai{
-    background: #F4EBFF;
-    color: #8F4FDF;
-    .badge-icon{
+  &.badge--manual-ai {
+    background: #f4ebff;
+    color: #8f4fdf;
+    .badge-icon {
       @include icon-file('book');
     }
   }
