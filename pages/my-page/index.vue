@@ -50,10 +50,16 @@
                 v-model="activeTab"
                 :tabs="myPageTabItems"
               />
-              <div :style="fixedTabPanelStyle">
+              <div class="my-page-tab-panel__body">
                 <MyPageInfo v-if="activeTab === 'account'" />
                 <MyPageSec v-else-if="activeTab === 'security'" />
-                <MyPageLoginHistory v-else-if="activeTab === 'login-history'" />
+                <MyPageLoginHistory
+                  v-else-if="activeTab === 'login-history'"
+                  :list="loginHistoryList"
+                  :is-loading="loginHistoryLoading"
+                  :error-message="loginHistoryError"
+                  @reload="handleLoadLoginHistory"
+                />
               </div>
             </section>
           </section>
@@ -62,8 +68,24 @@
           <section class="my-page-left">
             <div class="my-page-profile">
               <div class="my-page-avatar">
+                <input
+                  ref="avatarFileInputRef"
+                  type="file"
+                  class="my-page-avatar-file-input"
+                  accept="image/*"
+                  @change="onAvatarFileChange"
+                />
                 <div class="my-page-avatar-icon">
-                  <i class="icon-user size-32" />
+                  <img
+                    v-if="avatarPreviewUrl"
+                    :src="avatarPreviewUrl"
+                    alt=""
+                    class="my-page-avatar-preview"
+                  />
+                  <i
+                    v-else
+                    class="icon-user size-32"
+                  />
                 </div>
                 <UiButton
                   variant="ghost"
@@ -117,7 +139,6 @@
         </div>
         <MyPagePasswordChangeModal
           :is-open="isPasswordModalOpen"
-          :user-id="String(form.userId ?? '')"
           @close="handleClosePasswordModal"
           @submit="handleSubmitPasswordChange"
         />
@@ -137,24 +158,23 @@ import { useMyPageStore } from '~/composables/my-page/useMyPageStore'
 
 definePageMeta({ layout: 'default' })
 
-const { orgOptions } = useOrgManageStore()
+const { orgOptions, handleFetchOrgList } = useOrgManageStore()
 const {
   isLoading,
   errorMessage,
   hasData,
   form,
+  currentOrgLabel,
   isPasswordModalOpen,
-  handleReloadMyPage,
+  loginHistoryList,
+  loginHistoryLoading,
+  loginHistoryError,
+  handleLoadMyPage,
+  handleLoadLoginHistory,
   handleOpenPasswordModal,
   handleClosePasswordModal,
   handleSubmitPasswordChange,
 } = useMyPageStore()
-
-const currentOrgLabel = computed(() => {
-  if (!form.value.orgId) return ''
-  const found = orgOptions.value?.find((opt) => opt.value === form.value.orgId)
-  return found?.label ?? ''
-})
 
 const activeTab = ref('account')
 const myPageTabItems = [
@@ -162,16 +182,66 @@ const myPageTabItems = [
   { label: '보안', value: 'security' },
   { label: '로그인 이력', value: 'login-history' },
 ]
-const fixedTabPanelStyle = { height: '350px', overflowY: 'auto' as const, overflowX: 'hidden' as const }
+
+watch(activeTab, (tab) => {
+  if (tab === 'login-history') {
+    handleLoadLoginHistory()
+  }
+})
+
+/** 프로필 사진 미리보기(blob URL). 새로고침 시 초기화 — 서버 업로드 API 연동 시 교체 */
+const avatarFileInputRef = ref<HTMLInputElement | null>(null)
+const avatarPreviewUrl = ref<string | null>(null)
 
 const onClickChangePhoto = () => {
-  openToast({
-    message: 'to-do : 개발진행예정입니다.',
-    type: 'info',
-  })
+  avatarFileInputRef.value?.click()
 }
 
-const onReload = () => {
-  handleReloadMyPage()
+const onAvatarFileChange = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  if (!file.type.startsWith('image/')) {
+    openToast({
+      message: '이미지 파일만 선택할 수 있습니다.',
+      type: 'warning',
+    })
+    input.value = ''
+    return
+  }
+
+  if (avatarPreviewUrl.value) {
+    URL.revokeObjectURL(avatarPreviewUrl.value)
+  }
+  avatarPreviewUrl.value = URL.createObjectURL(file)
+
+  openToast({
+    message: '저장이 완료되었습니다.',
+    type: 'success',
+  })
+  openToast({
+    message: 'TODO : 개발 진행 예정입니다.',
+    type: 'info',
+  })
+
+  input.value = ''
 }
+
+onUnmounted(() => {
+  if (avatarPreviewUrl.value) {
+    URL.revokeObjectURL(avatarPreviewUrl.value)
+  }
+})
+
+const onReload = () => {
+  void handleLoadMyPage()
+}
+
+onMounted(async () => {
+  if (!orgOptions.value.length) {
+    await handleFetchOrgList()
+  }
+  await handleLoadMyPage()
+})
 </script>

@@ -3,7 +3,7 @@
     :is-open="isOpen"
     title="비밀번호 변경"
     position="center"
-    @close="$emit('close')"
+    @close="onModalClose"
   >
     <div class="com-setting-form">
       <div class="url-reg-field password-field">
@@ -38,7 +38,7 @@
           />
         </div>
 
-        <p class="password-field__helper">비밀번호는 6자 이상 입력해 주세요.</p>
+        <p class="password-field__helper">비밀번호는 8자 이상 입력해 주세요.</p>
       </div>
     </div>
 
@@ -48,7 +48,7 @@
           class="btn-modal-dialog"
           variant="outline"
           size="xlg"
-          @click="$emit('close')"
+          @click="onModalClose"
         >
           취소
         </UiButton>
@@ -71,14 +71,13 @@ import { openToast } from '~/composables/useToast'
 
 interface Props {
   isOpen: boolean
-  userId: string
 }
 
-const props = defineProps<Props>()
+defineProps<Props>()
 
 const emit = defineEmits<{
   close: []
-  submit: [payload: { userId: string; oldPassword: string; newPassword: string }]
+  submit: [payload: { oldPassword: string; newPassword: string }]
 }>()
 
 const newPassword = ref('')
@@ -90,9 +89,9 @@ const canSubmit = computed(() => {
     oldPassword.value.trim() &&
     newPassword.value.trim() &&
     newPasswordConfirm.value.trim() &&
-    oldPassword.value.length >= 6 &&
-    newPassword.value.length >= 6 &&
-    newPasswordConfirm.value.length >= 6
+    oldPassword.value.length >= 8 &&
+    newPassword.value.length >= 8 &&
+    newPasswordConfirm.value.length >= 8
   )
 })
 const resetForm = () => {
@@ -107,16 +106,12 @@ const onSubmit = () => {
     return
   }
 
-  emit('submit', { userId: props.userId, oldPassword: oldPassword.value, newPassword: newPassword.value })
+  emit('submit', { oldPassword: oldPassword.value, newPassword: newPassword.value })
   resetForm()
 }
 
-watch(
-  () => props.isOpen,
-  (isOpen) => {
-    if (!isOpen) {
-      resetForm()
-    }
-  },
-)
+const onModalClose = () => {
+  resetForm()
+  emit('close')
+}
 </script>
