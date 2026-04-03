@@ -20,9 +20,33 @@
         </div>
         <div
           v-else
-          class="message-content"
-          v-html="message.rContent"
-        ></div>
+          class="message-content-wrap"
+        >
+          <!-- eslint-disable vue/no-v-html — toHtmlContent 내 DOMPurify.sanitize 적용 -->
+          <div
+            v-if="!showRaw"
+            class="message-content markdown-body"
+            v-html="renderedHtml"
+          />
+          <!-- eslint-enable vue/no-v-html -->
+          <pre
+            v-else
+            class="message-content message-content--raw raw-text"
+            v-text="message.rContent"
+          />
+          <div
+            v-if="!message.isStreaming && message.rContent"
+            class="message-render-toggle"
+          >
+            <label class="raw-toggle">
+              <input
+                v-model="showRaw"
+                type="checkbox"
+              />
+              <span>원본 텍스트 보기</span>
+            </label>
+          </div>
+        </div>
         <!-- 액션 + 패널 버튼 (한 줄) -->
         <div
           v-if="!message.isStreaming"
@@ -79,6 +103,7 @@
 
 <script setup lang="ts">
 import type { ChatMessage, KnowledgeItem } from '~/types/chat'
+import { toHtmlContent } from '~/utils/chat/htmlUtil'
 
 interface Props {
   message: ChatMessage
@@ -88,8 +113,14 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  knowledgeList: undefined,
   isShare: false,
 })
+
+/** 마크다운 렌더 결과 — v-html */
+const renderedHtml = computed(() => toHtmlContent(props.message.rContent ?? ''))
+/** 원본(마크다운) / 렌더링 전환 */
+const showRaw = ref(false)
 
 const emit = defineEmits<{
   'on-copy': [id: string]

@@ -7,7 +7,6 @@ const {
   getStreamingMessage,
   finalizeStreamingMessage,
   updateStreamingError,
-  toHtmlContent,
 } = useChatMessages()
 
 function getWebSocketUrl(): string {
@@ -67,7 +66,7 @@ export const useChatSocket = () => {
         // 버퍼 업데이트
         messageBufferMap.value[streamingMessage.logId] = mergedBuffer
         // 스트리밍 메시지 업데이트
-        streamingMessage.rContent = toHtmlContent(mergedBuffer)
+        streamingMessage.rContent = mergedBuffer
         streamingMessage.isStreaming = true
         break
       }
@@ -83,7 +82,7 @@ export const useChatSocket = () => {
           // 버퍼 업데이트
           messageBufferMap.value[streamingMessage.logId] = completeContent
           // 스트리밍 메시지 업데이트
-          streamingMessage.rContent = toHtmlContent(completeContent)
+          streamingMessage.rContent = completeContent
         }
         // 서버 logId가 있으면 question + answer 메시지에 반영
         if (payload.logId) {

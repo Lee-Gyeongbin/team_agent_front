@@ -1,4 +1,5 @@
 import type { ChatLogListRow, ChatMessage } from '~/types/chat'
+import { toHtmlContent } from '~/utils/chat/htmlUtil'
 
 // 채팅 메시지/스트리밍 상태는 모듈 레벨에서 단일 인스턴스로 공유
 const messages = ref<ChatMessage[]>([])
@@ -18,14 +19,6 @@ const getMessagesForVisualization = () => {
 }
 
 export const useChatMessages = () => {
-  // HTML 콘텐츠 변환
-  const toHtmlContent = (value: string) => {
-    // 서버에서 내려주는 내용을 최대한 그대로 사용하되
-    // 개행 코드(\r\n, \n, 문자열 "\n")만 <br>로 치환해서 줄바꿈만 처리
-    const normalized = value.replace(/\r\n/g, '\n').replace(/\\n/g, '\n')
-    return normalized.replace(/\n/g, '<br>')
-  }
-
   // API 로그 한 건 → question + answer 메시지 쌍으로 변환
   const logRowToMessages = (row: ChatLogListRow): ChatMessage[] => {
     const logId = String(row.logId ?? '')
@@ -45,7 +38,8 @@ export const useChatMessages = () => {
         logId,
         type: 'answer',
         qContent: '',
-        rContent: toHtmlContent(row.rcontent ?? ''),
+        /** 마크다운 원문 — 화면에서는 ChatMessageItem에서 toHtmlContent로 렌더 */
+        rContent: row.rcontent ?? '',
         svcTy,
         modelId,
         refId,
@@ -129,7 +123,7 @@ export const useChatMessages = () => {
     const streamingMessage = getStreamingMessage()
     if (!streamingMessage) return
     // 스트리밍 메시지 오류 처리
-    streamingMessage.rContent = `<p>${errorText}</p>`
+    streamingMessage.rContent = errorText
     streamingMessage.isStreaming = false
     streamingMessage.hasSource = false
     streamingMessage.hasVisualization = false
