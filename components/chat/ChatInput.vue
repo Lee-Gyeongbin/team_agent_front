@@ -12,7 +12,8 @@
         <UiTextarea
           :model-value="modelValue"
           class="inp-chat-search"
-          placeholder="궁금하신 내용을 입력하세요."
+          :placeholder="inputPlaceholder"
+          :disabled="isSearchModeMissingSubOptions"
           :auto-resize="true"
           :max-rows="6"
           @update:model-value="emit('update:modelValue', $event)"
@@ -52,7 +53,7 @@
             size="xlg"
             icon-only
             class="btn-chat-send"
-            :disabled="!modelValue.trim()"
+            :disabled="!modelValue.trim() || isSearchModeMissingSubOptions"
             @click="handleSend"
           >
             <template #icon-left>
@@ -66,7 +67,21 @@
 </template>
 
 <script setup lang="ts">
-const { chatRoom, createChatRoom, onSend, modelOptions, selectedModelOption } = useChatStore()
+const {
+  chatRoom,
+  createChatRoom,
+  onSend,
+  modelOptions,
+  selectedModelOption,
+  isSearchModeMissingSubOptions,
+  searchModeSubOptionsEmptyMessage,
+} = useChatStore()
+
+const DEFAULT_INPUT_PLACEHOLDER = '궁금하신 내용을 입력하세요.'
+
+const inputPlaceholder = computed(() =>
+  isSearchModeMissingSubOptions.value ? searchModeSubOptionsEmptyMessage.value : DEFAULT_INPUT_PLACEHOLDER,
+)
 
 interface Props {
   modelValue: string
@@ -79,6 +94,7 @@ const emit = defineEmits<{
 const props = defineProps<Props>()
 
 const handleSend = () => {
+  if (isSearchModeMissingSubOptions.value) return
   if (!chatRoom.value.roomId) {
     void createChatRoom(props.modelValue)
   } else {

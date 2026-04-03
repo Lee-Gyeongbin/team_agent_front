@@ -16,8 +16,16 @@ import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
 import { clearBodyChartFullscreen } from '~/utils/chat/visualizationChartUtil'
 const { messages } = useChatSocket()
 const { logRowToMessages, pushQuestionMessage, pushAnswerPlaceholder, getMessagesForVisualization } = useChatMessages()
-const { activeSearchModes, subOptions, selectedSubOption, resolveSvcTy, modelOptions, selectedModelOption } =
-  useChatSearchState()
+const {
+  activeSearchModes,
+  subOptions,
+  selectedSubOption,
+  resolveSvcTy,
+  modelOptions,
+  selectedModelOption,
+  isSearchModeMissingSubOptions,
+  searchModeSubOptionsEmptyMessage,
+} = useChatSearchState()
 const {
   chatRoom,
   chatMessage,
@@ -140,6 +148,7 @@ export const useChatStore = () => {
   const onSend = async () => {
     const content = chatMessage.value.trim()
     if (!content) return
+    if (isSearchModeMissingSubOptions.value) return
 
     const svcTy = resolveSvcTy()
     const refId = selectedSubOption.value
@@ -333,6 +342,8 @@ export const useChatStore = () => {
     selectedModelOption,
     currentSubOptions,
     knowledgeList,
+    isSearchModeMissingSubOptions,
+    searchModeSubOptionsEmptyMessage,
     // 액션
     createChatRoom,
     handleSelectChatLogList,
