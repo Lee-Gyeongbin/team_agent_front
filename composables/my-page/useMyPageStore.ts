@@ -19,7 +19,7 @@ const loginHistoryError = ref('')
 export const useMyPageStore = () => {
   const { fetchMyPageInfo, fetchUpdateMyPageInfo, fetchChangeMyPagePassword, fetchMyPageLoginHistory } = useMyPageApi()
   const { orgOptions } = useOrgManageStore()
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
 
   const currentOrgLabel = computed(() => {
     if (!form.value.orgId) return ''
@@ -125,10 +125,11 @@ export const useMyPageStore = () => {
   const handleSubmitPasswordChange = async (payload: { oldPassword: string; newPassword: string }) => {
     try {
       await fetchChangeMyPagePassword(payload)
-      openAlert({
-        message: '비밀번호가 변경되었습니다.',
-      })
       isPasswordModalOpen.value = false
+      await openAlert({
+        message: '비밀번호가 변경되었습니다.\n보안을 위해 다시 로그인해 주세요.',
+      })
+      await logout()
     } catch (error) {
       const message = error instanceof Error && error.message ? error.message : '기존 비밀번호가 일치하지 않습니다.'
       openToast({
