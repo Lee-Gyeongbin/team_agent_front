@@ -6,7 +6,6 @@
         class="ui-code-block-copy"
         title="코드 복사"
         @click="onCopy"
-        a
       >
         <i
           :class="isCopied ? 'icon-copy' : 'icon-copy'"
