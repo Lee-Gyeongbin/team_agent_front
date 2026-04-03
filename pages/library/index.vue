@@ -18,7 +18,7 @@
     <!-- 메인 콘텐츠 -->
     <template v-else>
       <div class="library-header-wrapper flex justify-between items-center">
-        <p class="library-description">대화 중 마음에 드는 지식을 저장하고 카테고리별로 관리하세요.</p>
+        <p class="library-top-title">나의 지식 목록</p>
         <div class="right-grp flex items-center">
           <p class="total">
             총 <strong>{{ cardList.length }}개</strong>
@@ -150,8 +150,15 @@
                         :class="{ 'is-active': selectedCardId === card.cardId }"
                         @click="openModal(card.cardId)"
                       >
-                        <!-- TODO: 이미지 -->
-                        <div class="library-card-img-grp"></div>
+                        <!-- TODO: 더미 이미지 -->
+                        <div class="library-card-img-grp">
+                          <img
+                            src="~/assets/images/test_images.png"
+                            alt="카드 이미지"
+                            class="img"
+                          />
+                        </div>
+
                         <!-- 설명 -->
                         <div class="library-card-desc">
                           <!-- 상단 영역 -->
@@ -184,51 +191,35 @@
                           </div>
 
                           <div class="library-card-tags">
-                            <div class="library-card-tags-inner">
-                              <span
-                                v-for="tag in (card.tags || '').split(',').filter(Boolean)"
-                                :key="tag"
-                                class="library-card-tag"
-                                >#{{ tag }}&nbsp;
-                              </span>
-                            </div>
+                            <span
+                              v-for="tag in (card.tags || '').split(',').filter(Boolean)"
+                              :key="tag"
+                              class="library-card-tag"
+                              >#{{ tag }}&nbsp;
+                            </span>
                           </div>
                         </div>
 
                         <!-- 하단 메타 -->
                         <div class="library-card-meta flex items-center justify-between">
-                          <p class="library-card-date">{{ formatDateTimeDisplay(card.createDt) }}</p>
+                          <div class="flex items-center gap-4">
+                            <p class="library-card-date">{{ formatDateTimeDisplay(card.createDt) }}</p>
+                            <!-- TODO: NEW 태그 추가 -->
+                            <span class="library-card-new-tag">NEW</span>
+                          </div>
 
-                          <div class="flex items-center gap-6">
-                            <!-- <div class="flex items-center gap-4">
-                              <UiBadge
-                                v-if="card.svcTy === 'S'"
-                                variant="data-line"
-                              >
-                                <template #icon-left>
-                                  <i class="icon icon-data-line-small size-14"></i>
-                                </template>
-                                데이터분석
-                              </UiBadge>
-                              <UiBadge
-                                v-if="card.svcTy === 'C'"
-                                variant="basic-chat"
-                              >
-                                <template #icon-left>
-                                  <i class="icon icon-comment-other size-14"></i>
-                                </template>
-                                기본대화
-                              </UiBadge>
-                              <UiBadge
-                                v-if="card.svcTy === 'M'"
-                                variant="manual-ai"
-                              >
-                                <template #icon-left>
-                                  <i class="icon icon-book size-14"></i>
-                                </template>
-                                매뉴얼AI
-                              </UiBadge>
-                            </div> -->
+                          <div class="flex items-center">
+                            <!-- 데이터분석(S): 배지 없이 아이콘만 (다른 svcTy는 표시 없음) — 히트영역은 즐겨찾기 버튼과 동일 20×20 -->
+                            <div
+                              v-if="card.svcTy === 'S'"
+                              class="library-card-svc-data"
+                            >
+                              <i
+                                class="icon icon-data-line-small size-14 library-card-svc-data-icon"
+                                role="img"
+                                aria-label="데이터 분석"
+                              />
+                            </div>
 
                             <!-- 즐겨찾기 버튼 -->
                             <UiButton
@@ -253,8 +244,8 @@
                         class="library-card type-new-card"
                       >
                         <div class="library-card-new-card-content">
-                          <i class="icon icon-heart size-24"></i>
-                          <p>마음에 드는 날리지를 저장해주세요</p>
+                          <i class="icon-sidebar-book size-36"></i>
+                          <p>마음에 드는 지식을 저장해주세요</p>
                         </div>
                       </div>
                     </template>

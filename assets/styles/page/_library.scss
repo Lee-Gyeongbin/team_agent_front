@@ -5,9 +5,10 @@
   height: calc(100vh - #{$header-height});
   background-color: #fff;
 
-  .library-description {
-    color: $color-text-secondary;
-    font-size: $font-size-base;
+  .library-top-title {
+    font-size: $font-size-2xl;
+    font-weight: $font-weight-bold;
+    color: $color-text-heading-sub;
   }
 
   .right-grp {
@@ -224,6 +225,14 @@
           background: #dce4e9;
           border-radius: 4px;
           overflow: hidden;
+
+          img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+          }
         }
 
         .library-card-new-card-content {
@@ -233,7 +242,7 @@
           justify-content: center;
           gap: $spacing-xs;
           font-size: $font-size-sm;
-          color: $color-text-disabled;
+          color: #94a3b8;
         }
 
         .library-card-top {
@@ -242,16 +251,25 @@
           }
         }
 
+        // 즐겨찾기 등록(pinYn Y) 시에만 표시
         .btn-star {
           flex-shrink: 0;
           width: 20px;
           height: 20px;
+          align-items: center;
+          justify-content: center;
+
+          &:not(.is-active) {
+            display: none;
+          }
 
           .icon {
             background: #94a3b8;
           }
 
           &.is-active {
+            display: flex;
+
             .icon {
               background: #ffb970;
             }
@@ -279,34 +297,51 @@
           min-width: 0;
           min-height: 20px;
 
-          .library-card-date {
-            flex: 0 1 auto;
-            min-width: 0;
-            max-width: 48%;
-            color: #94a3b8;
-            font-size: $font-size-sm;
-            @include ellipsis(1);
-          }
+          // 데이터분석: 아이콘은 14px, 래퍼는 즐겨찾기(.btn-star)와 동일 20×20 정렬
+          .library-card-svc-data {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
 
-          .library-card-tags {
-            flex: 1;
-            min-width: 0;
-            color: #6d7882;
-            font-size: $font-size-sm;
-
-            .library-card-tags-inner {
-              @include ellipsis(1);
-              text-align: right;
-            }
-
-            .library-card-tag {
-              display: inline;
-
-              & + .library-card-tag {
-                margin-left: $spacing-xs;
-              }
+            .library-card-svc-data-icon {
+              flex-shrink: 0;
+              color: #6f7a93;
             }
           }
+        }
+
+        .library-card-tags {
+          flex: 1;
+          display: flex;
+          gap: 4px;
+          color: #aebccb;
+          font-size: $font-size-sm;
+
+          .library-card-tag {
+            display: inline;
+          }
+        }
+
+        .library-card-date {
+          flex-shrink: 0;
+          color: #94a3b8;
+          font-size: $font-size-sm;
+          white-space: nowrap;
+        }
+
+        .library-card-new-tag {
+          border-radius: 32px;
+          background: #ffd2d2;
+          padding: 0 4px;
+          color: #f64848;
+          font-family: Pretendard;
+          font-size: 8px;
+          font-style: normal;
+          font-weight: 700;
+          height: 12px;
         }
       }
     }
