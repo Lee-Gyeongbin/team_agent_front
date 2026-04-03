@@ -44,6 +44,7 @@
       <button
         class="header-btn"
         :title="user?.userNm + ' [' + user?.email + ']' || '로그인'"
+        @click="navigateTo('/my-page')"
       >
         <i class="icon-user size-20" />
       </button>

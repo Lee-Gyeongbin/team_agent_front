@@ -12,13 +12,6 @@
         class="my-page-error"
       >
         <p class="my-page-error__message">{{ loginHistoryError }}</p>
-        <UiButton
-          variant="outline"
-          size="md"
-          @click="onReload"
-        >
-          다시 시도
-        </UiButton>
       </div>
 
       <div
@@ -41,14 +34,5 @@
 <script setup lang="ts">
 import { myPageColumns } from '~/types/my-page'
 
-/** v-if로 탭 진입 시에만 마운트되므로, 마운트 시점에 로그인 이력 조회 */
-const { loginHistoryList, loginHistoryLoading, loginHistoryError, handleLoadLoginHistory } = useMyPageStore()
-
-onMounted(() => {
-  void handleLoadLoginHistory()
-})
-
-const onReload = () => {
-  void handleLoadLoginHistory()
-}
+const { loginHistoryList, loginHistoryLoading, loginHistoryError } = useMyPageStore()
 </script>

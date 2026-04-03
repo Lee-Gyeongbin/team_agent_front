@@ -124,6 +124,7 @@ export const useMyPageStore = () => {
       await handleFetchOrgList()
     }
     await handleLoadMyPage()
+    await handleLoadLoginHistory()
   }
 
   /** 사용자명, 이메일, 전화번호가 모두 있고, 값이 모두 유효할 때만 저장 가능 (아이디는 수정 불가) */
