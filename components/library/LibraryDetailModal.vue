@@ -89,10 +89,24 @@
                 size="xxs"
                 icon-only
                 class="btn-custom-white"
+                title="카테고리 이동"
                 @click="handleMove"
               >
                 <template #icon-left>
                   <i class="icon icon-transfer size-16"></i>
+                </template>
+              </UiButton>
+              <!-- 문서만들기 -->
+              <UiButton
+                variant="ghost"
+                size="xxs"
+                icon-only
+                class="btn-custom-white"
+                title="문서만들기"
+                @click="handleCreateDoc"
+              >
+                <template #icon-left>
+                  <i class="icon icon-dropdown-document size-16"></i>
                 </template>
               </UiButton>
               <!-- 삭제 btn -->
@@ -101,6 +115,7 @@
                 size="xxs"
                 icon-only
                 class="btn-custom-light-gray"
+                title="삭제"
                 @click="handleDelete"
               >
                 <template #icon-left>
@@ -412,6 +427,10 @@ const onReferenceLink = async (item: DocItem) => {
   }
   await copyToClipboard(url)
   openToast({ message: '참조 매뉴얼 링크가 복사되었습니다.', type: 'success' })
+}
+
+const handleCreateDoc = () => {
+  console.log('handleCreateDoc')
 }
 
 const handleCopyResponse = async () => {

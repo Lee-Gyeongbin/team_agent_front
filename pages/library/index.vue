@@ -204,8 +204,11 @@
                         <div class="library-card-meta flex items-center justify-between">
                           <div class="flex items-center gap-4">
                             <p class="library-card-date">{{ formatDateTimeDisplay(card.createDt) }}</p>
-                            <!-- TODO: NEW 태그 추가 -->
-                            <span class="library-card-new-tag">NEW</span>
+                            <span
+                              v-if="card.newYn === 'Y'"
+                              class="library-card-new-tag"
+                              >NEW</span
+                            >
                           </div>
 
                           <div class="flex items-center">
