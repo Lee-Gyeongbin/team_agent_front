@@ -24,7 +24,7 @@
         <UiButton
           variant="outline"
           size="md"
-          @click="onReload"
+          @click="handleReloadMyPage"
         >
           다시 시도
         </UiButton>
@@ -53,13 +53,7 @@
               <div class="my-page-tab-panel__body">
                 <MyPageInfo v-if="activeTab === 'account'" />
                 <MyPageSec v-else-if="activeTab === 'security'" />
-                <MyPageLoginHistory
-                  v-else-if="activeTab === 'login-history'"
-                  :list="loginHistoryList"
-                  :is-loading="loginHistoryLoading"
-                  :error-message="loginHistoryError"
-                  @reload="handleLoadLoginHistory"
-                />
+                <MyPageLoginHistory v-else-if="activeTab === 'login-history'" />
               </div>
             </section>
           </section>
@@ -130,7 +124,7 @@
                 variant="outline"
                 size="md"
                 class="my-page-password-button"
-                @click="handleOpenPasswordModal"
+                @click="openPasswordModal"
               >
                 비밀번호 변경
               </UiButton>
@@ -139,7 +133,7 @@
         </div>
         <MyPagePasswordChangeModal
           :is-open="isPasswordModalOpen"
-          @close="handleClosePasswordModal"
+          @close="closePasswordModal"
           @submit="handleSubmitPasswordChange"
         />
       </div>
@@ -148,17 +142,16 @@
 </template>
 
 <script setup lang="ts">
-import MyPagePasswordChangeModal from '~/components/my-page/MyPagePasswordChangeModal.vue'
-import MyPageInfo from '~/components/my-page/MyPageInfo.vue'
-import MyPageLoginHistory from '~/components/my-page/MyPageLoginHistory.vue'
-import MyPageSec from '~/components/my-page/MyPageSec.vue'
-import { openToast } from '~/composables/useToast'
-import { useOrgManageStore } from '~/composables/org-manage/useOrgManageStore'
-import { useMyPageStore } from '~/composables/my-page/useMyPageStore'
-
 definePageMeta({ layout: 'default' })
 
-const { orgOptions, handleFetchOrgList } = useOrgManageStore()
+const activeTab = ref('account')
+
+const myPageTabItems = [
+  { label: '내 계정 정보', value: 'account' },
+  { label: '보안', value: 'security' },
+  { label: '로그인 이력', value: 'login-history' },
+]
+
 const {
   isLoading,
   errorMessage,
@@ -166,82 +159,23 @@ const {
   form,
   currentOrgLabel,
   isPasswordModalOpen,
-  loginHistoryList,
-  loginHistoryLoading,
-  loginHistoryError,
-  handleLoadMyPage,
-  handleLoadLoginHistory,
-  handleOpenPasswordModal,
-  handleClosePasswordModal,
+  avatarFileInputRef,
+  avatarPreviewUrl,
+  openPasswordModal,
+  closePasswordModal,
   handleSubmitPasswordChange,
+  onClickChangePhoto,
+  onAvatarFileChange,
+  handleReloadMyPage,
+  handleInitializeMyPage,
+  cleanupAvatarPreview,
 } = useMyPageStore()
 
-const activeTab = ref('account')
-const myPageTabItems = [
-  { label: '내 계정 정보', value: 'account' },
-  { label: '보안', value: 'security' },
-  { label: '로그인 이력', value: 'login-history' },
-]
-
-watch(activeTab, (tab) => {
-  if (tab === 'login-history') {
-    handleLoadLoginHistory()
-  }
+onMounted(() => {
+  void handleInitializeMyPage()
 })
-
-/** 프로필 사진 미리보기(blob URL). 새로고침 시 초기화 — 서버 업로드 API 연동 시 교체 */
-const avatarFileInputRef = ref<HTMLInputElement | null>(null)
-const avatarPreviewUrl = ref<string | null>(null)
-
-const onClickChangePhoto = () => {
-  avatarFileInputRef.value?.click()
-}
-
-const onAvatarFileChange = (event: Event) => {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (!file) return
-
-  if (!file.type.startsWith('image/')) {
-    openToast({
-      message: '이미지 파일만 선택할 수 있습니다.',
-      type: 'warning',
-    })
-    input.value = ''
-    return
-  }
-
-  if (avatarPreviewUrl.value) {
-    URL.revokeObjectURL(avatarPreviewUrl.value)
-  }
-  avatarPreviewUrl.value = URL.createObjectURL(file)
-
-  openToast({
-    message: '저장이 완료되었습니다.',
-    type: 'success',
-  })
-  openToast({
-    message: 'TODO : 개발 진행 예정입니다.',
-    type: 'info',
-  })
-
-  input.value = ''
-}
 
 onUnmounted(() => {
-  if (avatarPreviewUrl.value) {
-    URL.revokeObjectURL(avatarPreviewUrl.value)
-  }
-})
-
-const onReload = () => {
-  void handleLoadMyPage()
-}
-
-onMounted(async () => {
-  if (!orgOptions.value.length) {
-    await handleFetchOrgList()
-  }
-  await handleLoadMyPage()
+  cleanupAvatarPreview()
 })
 </script>

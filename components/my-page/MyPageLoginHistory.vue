@@ -2,16 +2,16 @@
   <section class="my-page-sub-tab">
     <div class="my-page-sub-tab__scroll">
       <UiLoading
-        v-if="isLoading"
+        v-if="loginHistoryLoading"
         overlay
         text="로그인 이력을 불러오는 중..."
       />
 
       <div
-        v-else-if="errorMessage"
+        v-else-if="loginHistoryError"
         class="my-page-error"
       >
-        <p class="my-page-error__message">{{ errorMessage }}</p>
+        <p class="my-page-error__message">{{ loginHistoryError }}</p>
         <UiButton
           variant="outline"
           size="md"
@@ -22,7 +22,7 @@
       </div>
 
       <div
-        v-else-if="!list.length"
+        v-else-if="!loginHistoryList.length"
         class="my-page-empty"
       >
         <p>로그인 이력이 없습니다.</p>
@@ -31,7 +31,7 @@
       <UiTable
         v-else
         :columns="myPageColumns"
-        :data="list"
+        :data="loginHistoryList"
         empty-text="로그인 이력이 없습니다."
       />
     </div>
@@ -39,19 +39,16 @@
 </template>
 
 <script setup lang="ts">
-import { myPageColumns, type MyPageLoginHistoryItem } from '~/types/my-page'
+import { myPageColumns } from '~/types/my-page'
 
-defineProps<{
-  list: MyPageLoginHistoryItem[]
-  isLoading: boolean
-  errorMessage: string
-}>()
+/** v-if로 탭 진입 시에만 마운트되므로, 마운트 시점에 로그인 이력 조회 */
+const { loginHistoryList, loginHistoryLoading, loginHistoryError, handleLoadLoginHistory } = useMyPageStore()
 
-const emit = defineEmits<{
-  reload: []
-}>()
+onMounted(() => {
+  void handleLoadLoginHistory()
+})
 
 const onReload = () => {
-  emit('reload')
+  void handleLoadLoginHistory()
 }
 </script>

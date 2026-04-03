@@ -11,10 +11,13 @@ const hasData = ref(true)
 const form = ref<Partial<MyPageItem>>({})
 const isEditMode = ref(false)
 const isPasswordModalOpen = ref(false)
-
 const loginHistoryList = ref<MyPageLoginHistoryItem[]>([])
 const loginHistoryLoading = ref(false)
 const loginHistoryError = ref('')
+
+/** 프로필 사진 미리보기(blob URL). 새로고침 시 초기화 — 서버 업로드 API 연동 시 교체 */
+const avatarFileInputRef = ref<HTMLInputElement | null>(null)
+const avatarPreviewUrl = ref<string | null>(null)
 
 export const useMyPageStore = () => {
   const { fetchMyPageInfo, fetchUpdateMyPageInfo, fetchChangeMyPagePassword, fetchMyPageLoginHistory } = useMyPageApi()
@@ -66,6 +69,63 @@ export const useMyPageStore = () => {
     }
   }
 
+  /** 프로필 사진: 파일 선택 트리거 */
+  const onClickChangePhoto = () => {
+    avatarFileInputRef.value?.click()
+  }
+
+  /** 프로필 사진: 로컬 미리보기 (업로드 API 연동 전) */
+  const onAvatarFileChange = (event: Event) => {
+    const input = event.target as HTMLInputElement
+    const file = input.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      openToast({
+        message: '이미지 파일만 선택할 수 있습니다.',
+        type: 'warning',
+      })
+      input.value = ''
+      return
+    }
+
+    if (avatarPreviewUrl.value) {
+      URL.revokeObjectURL(avatarPreviewUrl.value)
+    }
+    avatarPreviewUrl.value = URL.createObjectURL(file)
+
+    openToast({
+      message: '저장이 완료되었습니다.',
+      type: 'success',
+    })
+    openToast({
+      message: 'TODO : 개발 진행 예정입니다.',
+      type: 'info',
+    })
+
+    input.value = ''
+  }
+
+  /** blob URL 해제 — 페이지 이탈 시 호출 */
+  const cleanupAvatarPreview = () => {
+    if (avatarPreviewUrl.value) {
+      URL.revokeObjectURL(avatarPreviewUrl.value)
+      avatarPreviewUrl.value = null
+    }
+  }
+
+  const handleReloadMyPage = () => {
+    void handleLoadMyPage()
+  }
+
+  const handleInitializeMyPage = async () => {
+    const { orgOptions, handleFetchOrgList } = useOrgManageStore()
+    if (!orgOptions.value.length) {
+      await handleFetchOrgList()
+    }
+    await handleLoadMyPage()
+  }
+
   /** 사용자명, 이메일, 전화번호가 모두 있고, 값이 모두 유효할 때만 저장 가능 (아이디는 수정 불가) */
   const checkSave = computed(() => {
     const userNm = String(form.value.userNm ?? '')
@@ -91,11 +151,11 @@ export const useMyPageStore = () => {
     isEditMode.value = false
   }
 
-  const handleOpenPasswordModal = () => {
+  const openPasswordModal = () => {
     isPasswordModalOpen.value = true
   }
 
-  const handleClosePasswordModal = () => {
+  const closePasswordModal = () => {
     isPasswordModalOpen.value = false
   }
 
@@ -150,14 +210,21 @@ export const useMyPageStore = () => {
     loginHistoryList,
     loginHistoryLoading,
     loginHistoryError,
+    avatarFileInputRef,
+    avatarPreviewUrl,
     checkSave,
     handleLoadMyPage,
     handleLoadLoginHistory,
     handleStartEdit,
     handleCancelEdit,
-    handleOpenPasswordModal,
-    handleClosePasswordModal,
+    openPasswordModal,
+    closePasswordModal,
     handleSaveMyPage,
     handleSubmitPasswordChange,
+    onClickChangePhoto,
+    onAvatarFileChange,
+    cleanupAvatarPreview,
+    handleReloadMyPage,
+    handleInitializeMyPage,
   }
 }

@@ -159,7 +159,8 @@
 </template>
 
 <script setup lang="ts">
-const { formatPhone, toPhoneDigits } = useUserManageStore()
+import { formatPhone, toPhoneDigits } from '~/utils/global/numberUtil'
+
 const { orgOptions } = useOrgManageStore()
 const { form, currentOrgLabel, isEditMode, checkSave, handleStartEdit, handleCancelEdit, handleSaveMyPage } =
   useMyPageStore()
