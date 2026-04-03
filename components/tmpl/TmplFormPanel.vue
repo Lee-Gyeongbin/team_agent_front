@@ -20,10 +20,10 @@
           required
         >
           <UiInput
-            :model-value="templateName"
+            :model-value="tmplNm"
             placeholder="예: 주간업무보고, 품의서, 제안서 등"
             size="sm"
-            @update:model-value="templateName = $event"
+            @update:model-value="tmplNm = $event"
           />
         </UiFormField>
 
@@ -37,12 +37,12 @@
             aria-label="문서 유형"
           >
             <label
-              v-for="opt in docTypeOptions"
+              v-for="opt in tmplTypeOptions"
               :key="opt.value"
               class="tmpl-doc-type-row"
             >
               <input
-                v-model="docType"
+                v-model="tmplType"
                 type="radio"
                 class="tmpl-doc-type-radio"
                 :value="opt.value"
@@ -67,7 +67,7 @@
 
       <!-- 항목 정의 (템플릿형만) -->
       <UiSettingSection
-        v-show="docType === 'TEMPLATE'"
+        v-show="tmplType === 'T'"
         title="항목 정의"
         label-width="132px"
         collapsible
@@ -96,10 +96,10 @@
           </div>
 
           <draggable
-            v-model="fieldRows"
+            v-model="fields"
             class="tmpl-field-table__body"
             handle=".tmpl-field-row__drag"
-            item-key="rowId"
+            item-key="fieldId"
             animation="200"
           >
             <template #item="{ element: row }">
@@ -120,19 +120,19 @@
                   @update:model-value="row.jsonKey = $event"
                 />
                 <UiInput
-                  :model-value="row.itemLabel"
+                  :model-value="row.fieldNm"
                   placeholder="항목명"
                   size="sm"
                   class="tmpl-field-table__input"
-                  @update:model-value="row.itemLabel = $event"
+                  @update:model-value="row.fieldNm = $event"
                 />
                 <div
                   class="tmpl-field-table__check"
                   title="여러 줄 입력 허용"
                 >
                   <UiCheckbox
-                    :model-value="row.multiline"
-                    @update:model-value="row.multiline = $event"
+                    :model-value="row.multilineYn === 'Y'"
+                    @update:model-value="row.multilineYn = $event ? 'Y' : 'N'"
                   />
                 </div>
                 <button
@@ -140,7 +140,7 @@
                   class="tmpl-field-row__delete"
                   title="항목 삭제"
                   aria-label="항목 삭제"
-                  @click="onRemoveFieldRow(row.rowId)"
+                  @click="onRemoveFieldRow(row.fieldId)"
                 >
                   <i class="icon-trashcan size-16" />
                 </button>
@@ -157,6 +157,14 @@
         label-width="132px"
         collapsible
       >
+        <UiFormField label="프롬프트 요약">
+          <UiInput
+            :model-value="llmPromptSmry"
+            placeholder="목록·카드에 표시할 한 줄 요약 (비우면 본문 앞부분을 사용)"
+            size="sm"
+            @update:model-value="llmPromptSmry = $event"
+          />
+        </UiFormField>
         <div class="tmpl-prompt-toolbar">
           <span />
           <button
@@ -168,12 +176,12 @@
           </button>
         </div>
         <UiTextarea
-          :model-value="promptTemplate"
+          :model-value="llmPrompt"
           placeholder="LLM에게 보낼 프롬프트를 작성하세요. {{content}} 위치에 지식창고 내용이 삽입됩니다."
           :rows="10"
           border
           :auto-resize="false"
-          @update:model-value="promptTemplate = $event"
+          @update:model-value="llmPrompt = $event"
         />
         <div class="tmpl-prompt-legend">
           <span class="tmpl-prompt-legend__label">템플릿 변수</span>
@@ -219,13 +227,29 @@
 <script setup lang="ts">
 import draggable from 'vuedraggable'
 import { openToast } from '~/composables/useToast'
-import type { DocumentTemplateUser, TmplDocType, TmplFieldRow, TmplFormSavePayload } from '~/types/tmpl'
+import type { TmplBaseInfo, TmplDocType, TmplField, TmplFormSavePayload } from '~/types/tmpl'
 
-const genRowId = () => `row_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
+const genFieldId = () => `fld_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
 
-const DEFAULT_FIELD_ROWS = (): TmplFieldRow[] => [
-  { rowId: genRowId(), jsonKey: 'title', itemLabel: '제목', multiline: false },
-  { rowId: genRowId(), jsonKey: 'content', itemLabel: '본문내용', multiline: true },
+const emptyDt = ''
+
+const createTmplField = (
+  partial: Partial<TmplField> & Pick<TmplField, 'jsonKey' | 'fieldNm' | 'multilineYn' | 'sortOrd'>,
+): TmplField => ({
+  fieldId: partial.fieldId ?? genFieldId(),
+  tmplId: partial.tmplId ?? '',
+  jsonKey: partial.jsonKey,
+  fieldNm: partial.fieldNm,
+  multilineYn: partial.multilineYn,
+  sortOrd: partial.sortOrd,
+  useYn: partial.useYn ?? 'Y',
+  createDt: partial.createDt ?? emptyDt,
+  modifyDt: partial.modifyDt ?? emptyDt,
+})
+
+const DEFAULT_FIELDS = (): TmplField[] => [
+  createTmplField({ jsonKey: 'title', fieldNm: '제목', multilineYn: 'N', sortOrd: 1 }),
+  createTmplField({ jsonKey: 'content', fieldNm: '본문내용', multilineYn: 'Y', sortOrd: 2 }),
 ]
 
 const DEFAULT_PROMPT_TEXT = `다음 지침에 따라 문서를 작성하세요.
@@ -238,14 +262,14 @@ const DEFAULT_PROMPT_TEXT = `다음 지침에 따라 문서를 작성하세요.
 
 위 정보를 반영하여 요청된 형식으로 출력해 주세요.`
 
-const docTypeOptions: { value: TmplDocType; title: string; desc: string }[] = [
+const tmplTypeOptions: { value: TmplDocType; title: string; desc: string }[] = [
   {
-    value: 'TEMPLATE',
+    value: 'T',
     title: '템플릿형 (고정 항목 구조)',
     desc: 'JSON 키와 항목명을 미리 정의합니다.',
   },
   {
-    value: 'FREE',
+    value: 'F',
     title: '자유형식 (LLM이 항목 자유 생성)',
     desc: 'LLM이 문맥에 맞게 항목을 구성합니다.',
   },
@@ -254,7 +278,7 @@ const docTypeOptions: { value: TmplDocType; title: string; desc: string }[] = [
 interface Props {
   isOpen: boolean
   /** null이면 신규 추가, 값이 있으면 수정 */
-  template: DocumentTemplateUser | null
+  template: TmplBaseInfo | null
 }
 
 const props = defineProps<Props>()
@@ -265,39 +289,52 @@ const emit = defineEmits<{
 }>()
 
 const formRef = ref<HTMLElement | null>(null)
-const templateName = ref('')
-const docType = ref<TmplDocType>('TEMPLATE')
+const tmplNm = ref('')
+const tmplType = ref<TmplDocType>('T')
 const description = ref('')
-const fieldRows = ref<TmplFieldRow[]>(DEFAULT_FIELD_ROWS())
-const promptTemplate = ref('')
+const fields = ref<TmplField[]>(DEFAULT_FIELDS())
+const llmPromptSmry = ref('')
+const llmPrompt = ref('')
 
 const modalTitle = computed(() => (props.template ? '템플릿 수정' : '새 템플릿 추가'))
 
 const resetForm = () => {
-  templateName.value = ''
-  docType.value = 'TEMPLATE'
+  tmplNm.value = ''
+  tmplType.value = 'T'
   description.value = ''
-  fieldRows.value = DEFAULT_FIELD_ROWS()
-  promptTemplate.value = ''
+  fields.value = DEFAULT_FIELDS()
+  llmPromptSmry.value = ''
+  llmPrompt.value = ''
 }
 
-const loadFromTemplate = (t: DocumentTemplateUser) => {
-  templateName.value = t.templateName
-  docType.value = t.docType
+const normalizeField = (r: TmplField, tmplId: string): TmplField => ({
+  ...r,
+  fieldId: r.fieldId || genFieldId(),
+  tmplId: r.tmplId || tmplId,
+  multilineYn: r.multilineYn === 'Y' ? 'Y' : 'N',
+  useYn: r.useYn || 'Y',
+  createDt: r.createDt ?? emptyDt,
+  modifyDt: r.modifyDt ?? emptyDt,
+})
+
+const loadFromTemplate = (t: TmplBaseInfo) => {
+  tmplNm.value = t.tmplNm
+  tmplType.value = t.tmplType
   description.value = t.description
-  if (t.docType === 'FREE') {
-    fieldRows.value = t.fieldRows.map((r) => ({ ...r, rowId: r.rowId || genRowId() }))
-  } else if (t.fieldRows.length > 0) {
-    fieldRows.value = t.fieldRows.map((r) => ({ ...r, rowId: r.rowId || genRowId() }))
+  llmPromptSmry.value = t.llmPromptSmry
+  if (t.tmplType === 'F') {
+    fields.value = t.fields.length > 0 ? t.fields.map((r) => normalizeField(r, t.tmplId)) : []
+  } else if (t.fields.length > 0) {
+    fields.value = [...t.fields].sort((a, b) => a.sortOrd - b.sortOrd).map((r) => normalizeField(r, t.tmplId))
   } else {
-    fieldRows.value = DEFAULT_FIELD_ROWS()
+    fields.value = DEFAULT_FIELDS()
   }
-  promptTemplate.value = t.promptTemplate
+  llmPrompt.value = t.llmPrompt
 }
 
-watch(docType, (v) => {
-  if (v === 'TEMPLATE' && fieldRows.value.length === 0) {
-    fieldRows.value = DEFAULT_FIELD_ROWS()
+watch(tmplType, (v) => {
+  if (v === 'T' && fields.value.length === 0) {
+    fields.value = DEFAULT_FIELDS()
   }
 })
 
@@ -315,61 +352,76 @@ watch(
 )
 
 const onAddFieldRow = () => {
-  fieldRows.value.push({
-    rowId: genRowId(),
-    jsonKey: '',
-    itemLabel: '',
-    multiline: false,
-  })
+  const parentId = props.template?.tmplId ?? ''
+  const nextOrd = fields.value.length ? Math.max(...fields.value.map((f) => f.sortOrd)) + 1 : 1
+  fields.value.push(
+    createTmplField({
+      tmplId: parentId,
+      jsonKey: '',
+      fieldNm: '',
+      multilineYn: 'N',
+      sortOrd: nextOrd,
+    }),
+  )
 }
 
-const onRemoveFieldRow = (rowId: string) => {
-  if (fieldRows.value.length <= 1) {
+const onRemoveFieldRow = (fieldId: string) => {
+  if (fields.value.length <= 1) {
     openToast({ message: '최소 1개의 항목이 필요합니다.', type: 'warning' })
     return
   }
-  const idx = fieldRows.value.findIndex((r) => r.rowId === rowId)
-  if (idx !== -1) fieldRows.value.splice(idx, 1)
+  const idx = fields.value.findIndex((r) => r.fieldId === fieldId)
+  if (idx !== -1) fields.value.splice(idx, 1)
 }
 
 const onInsertDefaultPrompt = () => {
-  promptTemplate.value = DEFAULT_PROMPT_TEXT
+  llmPrompt.value = DEFAULT_PROMPT_TEXT
 }
 
 const onSave = () => {
-  const name = templateName.value.trim()
+  const name = tmplNm.value.trim()
   if (!name) {
     openToast({ message: '템플릿 이름을 입력해 주세요.', type: 'error' })
     return
   }
 
-  let rows: TmplFieldRow[] = []
-  if (docType.value === 'TEMPLATE') {
-    rows = fieldRows.value.map((r) => ({
-      rowId: r.rowId,
+  const parentTmplId = props.template?.tmplId ?? ''
+  let outFields: TmplField[] = []
+  if (tmplType.value === 'T') {
+    outFields = fields.value.map((r, i) => ({
+      ...r,
+      tmplId: parentTmplId,
       jsonKey: r.jsonKey.trim(),
-      itemLabel: r.itemLabel.trim(),
-      multiline: r.multiline,
+      fieldNm: r.fieldNm.trim(),
+      multilineYn: r.multilineYn === 'Y' ? 'Y' : 'N',
+      sortOrd: i + 1,
+      useYn: r.useYn || 'Y',
+      createDt: r.createDt ?? emptyDt,
+      modifyDt: r.modifyDt ?? emptyDt,
     }))
-    const empty = rows.some((r) => !r.jsonKey || !r.itemLabel)
+    const empty = outFields.some((r) => !r.jsonKey || !r.fieldNm)
     if (empty) {
       openToast({ message: 'JSON 키와 항목명을 모두 입력해 주세요.', type: 'error' })
       return
     }
-    const keys = rows.map((r) => r.jsonKey)
+    const keys = outFields.map((r) => r.jsonKey)
     if (new Set(keys).size !== keys.length) {
       openToast({ message: 'JSON 키가 중복되었습니다.', type: 'error' })
       return
     }
   }
 
+  const promptBody = llmPrompt.value
+  const smry = llmPromptSmry.value.trim() || promptBody.trim().slice(0, 200)
+
   const payload: TmplFormSavePayload = {
-    templateId: props.template?.templateId,
-    templateName: name,
-    docType: docType.value,
+    tmplId: props.template?.tmplId,
+    tmplNm: name,
+    tmplType: tmplType.value,
     description: description.value.trim(),
-    fieldRows: rows,
-    promptTemplate: promptTemplate.value,
+    llmPromptSmry: smry,
+    llmPrompt: promptBody,
+    fields: outFields,
   }
   emit('save', payload)
 }
