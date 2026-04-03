@@ -1,30 +1,42 @@
-/** 문서 유형 — 템플릿형: 고정 항목, 자유형식: LLM이 항목 생성 */
-export type TmplDocType = 'TEMPLATE' | 'FREE'
+/** 문서 유형 — TMPL_TYPE (DB: T=템플릿형, F=자유형식) */
+export type TmplDocType = 'T' | 'F'
 
-/** 항목 정의 행 (JSON 키 ↔ 표시명) */
-export interface TmplFieldRow {
-  rowId: string
+/** 템플릿 항목(FIELD_*) — DB 컬럼 camelCase */
+export interface TmplField {
+  fieldId: string
+  tmplId: string
   jsonKey: string
-  itemLabel: string
-  multiline: boolean
+  fieldNm: string
+  multilineYn: string
+  sortOrd: number
+  useYn: string
+  createDt: string
+  modifyDt: string
 }
 
-/** 사용자 정의 문서 템플릿 (목록/편집용) */
-export interface DocumentTemplateUser {
-  templateId: string
-  templateName: string
-  docType: TmplDocType
+/** 문서 템플릿 기본 정보 — DB 컬럼 camelCase (사용자 정의·내장 동일 구조) */
+export interface TmplBaseInfo {
+  tmplId: string
+  tmplNm: string
+  tmplType: TmplDocType
   description: string
-  fieldRows: TmplFieldRow[]
-  promptTemplate: string
+  llmPromptSmry: string
+  llmPrompt: string
+  sysTmplYn: string
+  useYn: string
+  createDt: string
+  modifyDt: string
+  fields: TmplField[]
 }
 
-/** 폼 저장 시 emit — 신규는 templateId 없음 */
+/** 템플릿 저장 요청 — 등록/수정 시 (일반적으로 createDt·modifyDt는 서버에서 세팅) */
 export interface TmplFormSavePayload {
-  templateId?: string
-  templateName: string
-  docType: TmplDocType
+  tmplId?: string
+  tmplNm: string
+  tmplType: TmplDocType
   description: string
-  fieldRows: TmplFieldRow[]
-  promptTemplate: string
+  llmPromptSmry: string
+  llmPrompt: string
+  useYn?: string
+  fields: TmplField[]
 }
