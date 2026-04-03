@@ -251,16 +251,25 @@
           }
         }
 
+        // 즐겨찾기 등록(pinYn Y) 시에만 표시
         .btn-star {
           flex-shrink: 0;
           width: 20px;
           height: 20px;
+          align-items: center;
+          justify-content: center;
+
+          &:not(.is-active) {
+            display: none;
+          }
 
           .icon {
             background: #94a3b8;
           }
 
           &.is-active {
+            display: flex;
+
             .icon {
               background: #ffb970;
             }
