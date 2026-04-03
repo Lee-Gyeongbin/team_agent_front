@@ -18,9 +18,19 @@ export interface ChangePasswordResponse {
   returnMsg?: string
 }
 
+/** 로그인 이력 행 */
+export interface MyPageLoginHistoryItem {
+  userId: string
+  ipAddr: string
+  userAgent: string
+  result: string
+  failRson: string
+  createDt: string
+}
+
 /** 로그인 이력 테이블 컬럼 정의 */
-export const myPageLoginHistoryColumns: TableColumn[] = [
-  { key: 'ipAddr', label: 'IP 주소', width: '140px', align: 'center', headerAlign: 'center' },
+export const myPageColumns: TableColumn[] = [
+  { key: 'ipAddr', label: 'IP 주소', width: '100px', align: 'center', headerAlign: 'center' },
   { key: 'userAgent', label: '브라우저', width: '200px', align: 'left', headerAlign: 'center' },
   { key: 'result', label: '결과', width: '80px', align: 'center', headerAlign: 'center' },
   { key: 'failRson', label: '실패 사유', width: '140px', align: 'center', headerAlign: 'center' },

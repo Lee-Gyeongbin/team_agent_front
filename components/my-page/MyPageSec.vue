@@ -8,7 +8,10 @@
             <td>
               <div class="my-page-security-auth-wrap">
                 <div class="my-page-security-auth-head">
-                  <UiToggle v-model="isTwoFactorEnabled" />
+                  <UiToggle
+                    :model-value="isTwoFactorEnabled"
+                    @update:model-value="onTwoFactorEnabledUpdate"
+                  />
                   <span class="my-page-field-text">{{ isTwoFactorEnabled ? '사용' : '미사용' }}</span>
                 </div>
                 <div class="my-page-security-auth-options">
@@ -62,7 +65,7 @@
       </table>
     </div>
 
-    <div class="my-page-actions my-page-security-actions">
+    <div class="my-page-actions">
       <UiButton
         variant="primary"
         size="md"
@@ -93,12 +96,14 @@ const linkedDevices = ref([
   { id: 'tb-1', name: 'iPad Safari', lastLogin: '최근 접속: 2026-03-31 11:02' },
 ])
 
-watch(isTwoFactorEnabled, (enabled) => {
-  if (!enabled) return
-  if (!selectedTwoFactorMethod.value) {
+const onTwoFactorEnabledUpdate = (enabled: boolean) => {
+  isTwoFactorEnabled.value = enabled
+  if (enabled && !selectedTwoFactorMethod.value) {
     selectedTwoFactorMethod.value = 'totp'
   }
-})
+}
+
+const { logout } = useAuth()
 
 const onClickLogoutAll = async () => {
   const confirmed = await openConfirm({
@@ -108,13 +113,23 @@ const onClickLogoutAll = async () => {
   if (!confirmed) return
 
   openToast({
-    message: '전체 로그아웃 요청이 처리되었습니다.',
+    message: '모든 기기에서 로그아웃 처리 되었습니다.',
     type: 'success',
   })
+
+  await nextTick()
+  // 토스트가 잠시 보인 뒤 세션 종료(서버 로그아웃 + 쿠키 제거) 및 로그인 화면 이동
+  // TODO: 전체 기기 세션 무효화 API 연동 시 logout 전에 해당 API 호출
+  setTimeout(() => {
+    void (async () => {
+      await logout()
+      await navigateTo('/login')
+    })()
+  }, 600)
 }
 
 const onClickSaveSecurity = async () => {
-  // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
+  // TODO: 보안 설정은 DB 개발 후 API 연결
   const confirmed = await openConfirm({
     title: '보안 설정 저장',
     message: '보안 설정을 저장하시겠습니까?',
@@ -122,8 +137,8 @@ const onClickSaveSecurity = async () => {
   if (!confirmed) return
 
   openToast({
-    message: '보안 설정이 저장되었습니다.',
-    type: 'success',
+    message: 'TODO : 보안 설정은 DB 개발 후 연결 예정입니다.',
+    type: 'info',
   })
 }
 </script>
