@@ -208,7 +208,22 @@
                 >
                   <i :class="['icon', getDocIconName(row.fileType), 'size-20']" />
                 </span> -->
-                <span class="doc-name">{{ row.docTitle }}</span>
+                <UiTooltip
+                  v-if="String(row.docTitle ?? '').trim()"
+                  font-size="11px"
+                  side="bottom"
+                  align="start"
+                  :content="String(row.docTitle ?? '')"
+                  content-class="repository-doc-title-tooltip"
+                >
+                  <span class="doc-name">{{ row.docTitle }}</span>
+                </UiTooltip>
+                <span
+                  v-else
+                  class="doc-name"
+                >
+                  {{ row.docTitle }}
+                </span>
                 <button
                   type="button"
                   class="btn-doc-title"
@@ -381,6 +396,11 @@ onMounted(async () => {
 <!-- Radix Tooltip 포탈 — 콘텐츠 박스 폭 -->
 <style lang="scss">
 .repository-doc-ds-nm-tooltip {
+  max-width: min(480px, 90vw);
+  word-break: break-word;
+}
+
+.repository-doc-title-tooltip {
   max-width: min(480px, 90vw);
   word-break: break-word;
 }

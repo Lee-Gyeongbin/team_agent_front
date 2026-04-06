@@ -154,6 +154,12 @@
             <td>툴팁 텍스트 (#content 슬롯으로 대체 가능)</td>
           </tr>
           <tr>
+            <td>fontSize</td>
+            <td>string</td>
+            <td>''</td>
+            <td>본문 font-size (예: 11px). 비우면 기본 10px 토큰</td>
+          </tr>
+          <tr>
             <td>side</td>
             <td>'top' | 'right' | 'bottom' | 'left'</td>
             <td>'top'</td>
