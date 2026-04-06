@@ -71,6 +71,7 @@
           v-model="form.content"
           placeholder="문서 내용을 입력하세요"
           :max-length="500"
+          size="md"
           :rows="5"
           border
           :auto-resize="false"

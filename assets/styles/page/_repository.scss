@@ -26,10 +26,10 @@
 
 // 배치 바 버튼
 .batch-bar-btn {
-  min-width: 88px;
+  // min-width: 88px;
   height: 24px;
   border-radius: 6px;
-  padding: 0 8px;
+  padding: 0 12px 0 8px !important;
 
   .ui-button-text {
     font-size: 12px;
@@ -307,11 +307,12 @@
 
     .ui-table thead th,
     .ui-table tbody td {
+      padding: 4px;
       letter-spacing: -0.4px;
-      padding: 0 4px;
+      line-height: 1.24;
     }
     .ui-table tbody td {
-      padding: 0 10px;
+      padding: 4px 10px;
     }
 
     // 첫 번째 컬럼(체크박스): th/td 모두 가운데 정렬

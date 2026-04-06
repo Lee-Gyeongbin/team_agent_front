@@ -8,6 +8,7 @@
         <TooltipContent
           class="ui-tooltip-content"
           :class="contentClass"
+          :style="fontSize ? { fontSize } : undefined"
           :side="side"
           :side-offset="sideOffset"
           :align="align"
@@ -39,6 +40,8 @@ interface Props {
   content?: string
   /** Radix 포탈용 — 콘텐츠 박스에 추가 클래스 (페이지별 스타일 오버라이드) */
   contentClass?: string
+  /** 툴팁 본문 글자 크기 (예: '11px'). 비우면 SCSS 기본($font-size-xs) */
+  fontSize?: string
   side?: 'top' | 'right' | 'bottom' | 'left'
   sideOffset?: number
   align?: 'start' | 'center' | 'end'
@@ -49,6 +52,7 @@ interface Props {
 withDefaults(defineProps<Props>(), {
   content: '',
   contentClass: '',
+  fontSize: '',
   side: 'top',
   sideOffset: 6,
   align: 'center',
