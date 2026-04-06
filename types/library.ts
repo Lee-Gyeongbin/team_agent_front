@@ -83,6 +83,16 @@ export interface LibraryCreateDocTypeItem {
   tags: string[]
 }
 
+/** AI 생성 보고서 JSON 필드 (키 매핑용) */
+export interface LibraryGeneratedReport {
+  title: string
+  overview: string
+  date: string
+  author: string
+  content: string
+  conclusion: string
+}
+
 /** 카테고리 순서 변경 요청 항목 */
 export interface LibraryCategoryOrderItem {
   categoryId: string
