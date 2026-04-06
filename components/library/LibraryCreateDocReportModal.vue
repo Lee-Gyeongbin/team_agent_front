@@ -397,24 +397,21 @@ const onSendRefine = () => {
   vertical-align: middle;
 }
 
-// 표준 table-cell — flex td 는 열 정렬이 깨짐. 포커스/호버는 셀 한 겹만 (내부 입력 이중 테두리 제거)
+// 표준 table-cell — UiInput / UiTextarea(has-border) 와 동일: 호버·포커스 시 테두리만 primary, 배경은 유지
 .library-create-doc-report-cell {
   box-sizing: border-box;
   padding: 0;
   vertical-align: middle;
   background: #fff;
   border-bottom: 1px solid #e2e8f0;
-  transition:
-    background-color $transition-base,
-    box-shadow $transition-base;
+  transition: box-shadow $transition-base;
 
   &:hover:not(:focus-within) {
-    background: #fafbfc;
+    box-shadow: inset 0 0 0 1px var(--color-primary);
   }
 
   &:focus-within {
-    background: rgba(var(--color-primary-rgb, 60, 105, 219), 0.06);
-    box-shadow: inset 0 0 0 1px rgba(var(--color-primary-rgb, 60, 105, 219), 0.4);
+    box-shadow: inset 0 0 0 1px var(--color-primary);
   }
 }
 
