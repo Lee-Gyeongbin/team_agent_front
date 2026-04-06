@@ -219,6 +219,7 @@ export const useMyPageStore = () => {
     errorMessage,
     hasData,
     form,
+    orgOptions,
     currentOrgLabel,
     isEditMode,
     checkSave,

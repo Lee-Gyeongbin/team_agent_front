@@ -120,7 +120,6 @@ const onClickLogoutAll = async () => {
   setTimeout(() => {
     void (async () => {
       await logout()
-      await navigateTo('/login')
     })()
   }, 600)
 }
