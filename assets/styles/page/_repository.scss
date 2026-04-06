@@ -84,7 +84,7 @@
   box-sizing: border-box;
 
   .ui-tab .ui-tab-inner {
-    max-width: 1292px;
+    max-width: 1366px;
     margin: 0 auto;
   }
 }
@@ -105,6 +105,7 @@
   gap: $spacing-lg;
   padding: 16px;
   min-height: calc(100vh - #{$header-height} - 45px);
+  max-width: 1366px;
 }
 
 .repository-content-wrapper {
@@ -306,7 +307,11 @@
 
     .ui-table thead th,
     .ui-table tbody td {
-      padding: 0 6px;
+      letter-spacing: -0.4px;
+      padding: 0 4px;
+    }
+    .ui-table tbody td {
+      padding: 0 10px;
     }
 
     // 첫 번째 컬럼(체크박스): th/td 모두 가운데 정렬
