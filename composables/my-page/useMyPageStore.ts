@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, ref, toRaw } from 'vue'
 import type { MyPageHistoryParams, MyPageItem, MyPageLoginHistoryItem } from '~/types/my-page'
 import { useMyPageApi } from '~/composables/my-page/useMyPageApi'
 import { useOrgManageStore } from '~/composables/org-manage/useOrgManageStore'
@@ -10,6 +10,7 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 const hasData = ref(true)
 const form = ref<Partial<MyPageItem>>({})
+const formSnapshot = ref<Partial<MyPageItem> | null>(null)
 const isEditMode = ref(false)
 const isPasswordModalOpen = ref(false)
 const loginHistoryList = ref<MyPageLoginHistoryItem[]>([])
@@ -22,6 +23,9 @@ export const useMyPageStore = () => {
   const { fetchInfo, fetchUpdateInfo, fetchChangePassword, fetchLoginHistory } = useMyPageApi()
   const { orgOptions, handleFetchOrgList } = useOrgManageStore()
   const { user, logout } = useAuth()
+
+  const cloneForm = (src: Partial<MyPageItem>): Partial<MyPageItem> =>
+    structuredClone(toRaw(src) as Partial<MyPageItem>)
 
   const currentOrgLabel = computed(() => {
     if (!form.value.orgId) return ''
@@ -58,6 +62,8 @@ export const useMyPageStore = () => {
       const data = await fetchInfo()
       form.value = data ?? {}
       hasData.value = Boolean(data && String(data.userId ?? '').trim())
+      isEditMode.value = false
+      formSnapshot.value = null
     } catch (error) {
       errorMessage.value = error instanceof Error ? error.message : '내 정보를 불러오는 중 오류가 발생했습니다.'
       hasData.value = false
@@ -95,10 +101,23 @@ export const useMyPageStore = () => {
   }
 
   const handleStartEdit = () => {
+    formSnapshot.value = cloneForm(form.value)
     isEditMode.value = true
   }
 
-  const handleCancelEdit = () => {
+  const handleCancelEdit = async () => {
+    const confirmed = await openConfirm({
+      title: '수정 취소',
+      message: '작성 중인 내용이 저장되지 않고 모두 사라집니다.\n수정을 취소하시겠습니까?',
+      confirmText: '확인',
+      cancelText: '취소',
+    })
+    if (!confirmed) return
+
+    if (formSnapshot.value !== null) {
+      form.value = cloneForm(formSnapshot.value)
+    }
+    formSnapshot.value = null
     isEditMode.value = false
   }
 
@@ -115,6 +134,7 @@ export const useMyPageStore = () => {
         message: '계정 정보가 저장되었습니다.',
       })
       isEditMode.value = false
+      formSnapshot.value = null
       return true
     } catch {
       openToast({
