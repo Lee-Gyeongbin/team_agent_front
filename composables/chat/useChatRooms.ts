@@ -7,7 +7,10 @@ import {
   type ModelOption,
   type ChatMessage,
   type KnowledgeItem,
+  type ChatAttachmentMeta,
 } from '~/types/chat'
+import { useChatAttachmentStore } from '~/composables/chat/useChatAttachmentStore'
+import { buildQuestionPayload } from '~/utils/chat/chatSocketPayloadUtil'
 const { user } = useAuth()
 const {
   fetchSelectChatRoomList,
@@ -33,6 +36,7 @@ const {
 } = useChatSearchState()
 const { messages, pushQuestionMessage, pushAnswerPlaceholder, logRowToMessages } = useChatMessages()
 const { ensureWebSocketAndSend, stopChatSocket } = useChatSocket()
+const { handleUploadChatAttachments, handleMarkChatAttachmentsOrphan } = useChatAttachmentStore()
 
 // 채팅방 관련
 const chatRoom = ref<ChatRoom>({ ...EMPTY_CHAT_ROOM })
@@ -101,16 +105,16 @@ export const useChatRooms = () => {
   }
 
   // 채팅방 생성 (content: 호출부에서 전달 가능, 미전달 시 chatMessage 사용)
-  const createChatRoom = async (content?: string): Promise<ChatRoom> => {
+  const createChatRoom = async (content?: string, files: File[] = []): Promise<boolean> => {
     const qContent = (content ?? chatMessage.value).trim()
     if (!qContent) {
       chatRoom.value = { ...EMPTY_CHAT_ROOM, qContent: '' }
-      return chatRoom.value
+      return false
     }
 
     if (isSearchModeMissingSubOptions.value) {
       openToast({ message: searchModeSubOptionsEmptyMessage.value, type: 'warning' })
-      return chatRoom.value
+      return false
     }
 
     const svcTy = resolveSvcTy()
@@ -135,23 +139,37 @@ export const useChatRooms = () => {
     chatRoom.value = createdRoom
     chatRoomList.value = [createdRoom, ...chatRoomList.value.filter((room) => room.roomId !== createdRoom.roomId)]
 
+    let attachments: ChatAttachmentMeta[] = []
+    if (files.length > 0) {
+      const uploaded = await handleUploadChatAttachments(files, createdRoom.roomId)
+      if (uploaded === null) return false
+      attachments = uploaded
+    }
+
     messages.value = []
     pushQuestionMessage(qContent, svcTy, modelId, refId)
     pushAnswerPlaceholder(svcTy, modelId, refId)
     chatMessage.value = ''
 
-    const sent = await ensureWebSocketAndSend({
-      type: 'question',
-      query: qContent,
-      threadId: chatRoom.value.roomId,
-      svcTy,
-      modelId,
-      refId,
-    })
-    if (!sent) return chatRoom.value
+    const sent = await ensureWebSocketAndSend(
+      buildQuestionPayload({
+        query: qContent,
+        threadId: chatRoom.value.roomId,
+        svcTy,
+        modelId,
+        refId,
+        attachments,
+      }),
+    )
+    if (!sent) {
+      if (attachments.length > 0) {
+        await handleMarkChatAttachmentsOrphan(attachments)
+      }
+      return false
+    }
 
     navigateTo(`/chat/${chatRoom.value.roomId}`)
-    return chatRoom.value
+    return true
   }
 
   // 모델 옵션 조회

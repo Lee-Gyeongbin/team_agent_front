@@ -8,6 +8,35 @@ export interface ChatSocketPayload {
   svcTy: string
   modelId: string
   refId: string
+  attachments?: ChatAttachmentMeta[]
+}
+
+/** 질문 전송 시 AI API에 전달할 첨부 메타 */
+export interface ChatAttachmentMeta {
+  chatFileId: string
+  fileName: string
+  filePath: string
+  mimeType: string
+}
+
+/** 채팅 첨부파일 메타 저장 요청 */
+export interface ChatFileSavePayload {
+  roomId: string
+  fileName: string
+  storeFileName: string
+  filePath: string
+  fileSize: number
+  fileType: string
+  mimeType: string
+}
+
+/** 채팅 첨부파일 메타 저장 응답 */
+export interface ChatFileSaveResponse {
+  /** 백엔드에 따라 숫자로 내려올 수 있음 */
+  chatFileId?: string | number
+  fileName?: string
+  filePath?: string
+  mimeType?: string
 }
 
 export interface ChatSocketMessage {
@@ -154,6 +183,8 @@ export interface ChatRefRow {
   docTitle: string
   fileName: string
   filePath: string
+  showDocFileId: string
+  showPageNo: string
 }
 
 /** 좋아요/싫어요 등록 API 응답 한 건 */

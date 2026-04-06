@@ -8,11 +8,14 @@ import type {
   SubOption,
   VisualizationViewModel,
   KnowledgeItem,
+  ChatAttachmentMeta,
 } from '~/types/chat'
 import { useChatSocket } from '~/composables/chat/useChatSocket'
 import { useChatMessages } from '~/composables/chat/useChatMessages'
 import { useChatSearchState } from '~/composables/chat/useChatSearchState'
+import { useChatAttachmentStore } from '~/composables/chat/useChatAttachmentStore'
 import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
+import { buildQuestionPayload } from '~/utils/chat/chatSocketPayloadUtil'
 import { clearBodyChartFullscreen } from '~/utils/chat/visualizationChartUtil'
 const { messages } = useChatSocket()
 const { logRowToMessages, pushQuestionMessage, pushAnswerPlaceholder, getMessagesForVisualization } = useChatMessages()
@@ -36,6 +39,7 @@ const {
   selectDmList,
 } = useChatRooms()
 const { ensureWebSocketAndSend } = useChatSocket()
+const { handleUploadChatAttachments, handleMarkChatAttachmentsOrphan } = useChatAttachmentStore()
 
 // API 호출
 const {
@@ -145,26 +149,39 @@ export const useChatStore = () => {
   }
 
   // 메시지 전송
-  const onSend = async () => {
+  const onSend = async (files: File[] = []): Promise<boolean> => {
     const content = chatMessage.value.trim()
-    if (!content) return
-    if (isSearchModeMissingSubOptions.value) return
+    if (!content) return false
+    if (isSearchModeMissingSubOptions.value) return false
+    if (!chatRoom.value.roomId) return false
 
     const svcTy = resolveSvcTy()
     const refId = selectedSubOption.value
     const modelId = selectedModelOption.value
+    let attachments: ChatAttachmentMeta[] = []
+    if (files.length > 0) {
+      const uploaded = await handleUploadChatAttachments(files, chatRoom.value.roomId)
+      if (uploaded === null) return false
+      attachments = uploaded
+    }
     pushQuestionMessage(content, svcTy, modelId, refId)
     pushAnswerPlaceholder(svcTy, modelId, refId)
     chatMessage.value = ''
 
-    await ensureWebSocketAndSend({
-      type: 'question',
-      query: content,
-      threadId: chatRoom.value.roomId || '',
-      svcTy,
-      modelId,
-      refId,
-    })
+    const sent = await ensureWebSocketAndSend(
+      buildQuestionPayload({
+        query: content,
+        threadId: chatRoom.value.roomId || '',
+        svcTy,
+        modelId,
+        refId,
+        attachments,
+      }),
+    )
+    if (!sent && attachments.length > 0) {
+      await handleMarkChatAttachmentsOrphan(attachments)
+    }
+    return sent
   }
 
   const getEmptyVisualizationViewModel = (messageId: string): VisualizationViewModel => ({

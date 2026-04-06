@@ -230,7 +230,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ChatPdfPanelProps, PdfDocumentProxy, PdfJsLib } from '~/types/chat'
+import type { ChatPdfPanelProps, ChatRefRow, PdfDocumentProxy, PdfJsLib } from '~/types/chat'
 import { useFileStore } from '~/composables/com/useFileStore'
 
 const { handleViewFileUrl } = useFileStore()
@@ -245,7 +245,7 @@ const emit = defineEmits<{
   'update:fullscreen': [value: boolean]
 }>()
 
-// 선택된 문서 키(docId + docFileId)
+// 선택된 문서 키(docId + 보기용 파일 ID)
 const selectedDocKey = ref<string>('')
 // 현재 PDF 실제 URL (viewFile.do → presigned URL)
 const currentFilePath = ref('')
@@ -267,6 +267,19 @@ const parseRelatedPages = (raw: string): number[] => {
 
 const buildDocKey = (docId: string, docFileId: string) => `${docId}::${docFileId}`
 
+/** viewFile.do에 넘길 파일 ID — 서버가 주면 showDocFileId 우선 */
+const effectiveDocFileId = (row: ChatRefRow) => {
+  const s = row.showDocFileId?.trim()
+  return s || row.docFileId
+}
+
+/** 참조 목록 첫 행의 초기 페이지 (showPageNo) */
+const parseInitialShowPageNo = (raw: string | undefined) => {
+  if (!raw?.trim()) return 1
+  const n = Number(raw.trim())
+  return Number.isFinite(n) && n >= 1 ? Math.floor(n) : 1
+}
+
 interface RelatedPageEntry {
   listKey: string
   activeKey: string
@@ -279,19 +292,19 @@ interface RelatedPageEntry {
 const documentList = computed(() =>
   (props.refList ?? []).map((r) => ({
     label: r.docTitle || r.fileName,
-    value: buildDocKey(r.docId, r.docFileId),
+    value: buildDocKey(r.docId, effectiveDocFileId(r)),
   })),
 )
 
 // 현재 선택된 문서 row
 const selectedRef = computed(() =>
-  (props.refList ?? []).find((r) => buildDocKey(r.docId, r.docFileId) === selectedDocKey.value),
+  (props.refList ?? []).find((r) => buildDocKey(r.docId, effectiveDocFileId(r)) === selectedDocKey.value),
 )
 
 // 관련페이지 탭에서 사용할 전체 파일 기준 페이지 목록
 const relatedPageEntries = computed<RelatedPageEntry[]>(() =>
   (props.refList ?? []).flatMap((row) => {
-    const docKey = buildDocKey(row.docId, row.docFileId)
+    const docKey = buildDocKey(row.docId, effectiveDocFileId(row))
     const docLabel = row.docTitle || row.fileName
     return parseRelatedPages(row.relatedPages).map((pageNum, index) => ({
       listKey: `${docKey}:${pageNum}:${index}`,
@@ -394,14 +407,14 @@ const loadRelatedPdfJs = async (): Promise<PdfJsLib> => {
 }
 
 const getDocRowByKey = (docKey: string) =>
-  (props.refList ?? []).find((r) => buildDocKey(r.docId, r.docFileId) === docKey)
+  (props.refList ?? []).find((r) => buildDocKey(r.docId, effectiveDocFileId(r)) === docKey)
 
 const ensureRelatedDocUrl = async (docKey: string): Promise<string | null> => {
   const cachedUrl = relatedDocUrlMap.get(docKey)
   if (cachedUrl) return cachedUrl
   const row = getDocRowByKey(docKey)
   if (!row) return null
-  const url = await handleViewFileUrl(row.docId, row.docFileId)
+  const url = await handleViewFileUrl(row.docId, effectiveDocFileId(row))
   if (!url) return null
   relatedDocUrlMap.set(docKey, url)
   return url
@@ -534,7 +547,7 @@ const loadAndGoToTargetPage = async () => {
   if (!props.open || !selectedRef.value) return
 
   // 1) /com/file/viewFile.do 로 presigned URL 조회
-  const url = await handleViewFileUrl(selectedRef.value.docId, selectedRef.value.docFileId)
+  const url = await handleViewFileUrl(selectedRef.value.docId, effectiveDocFileId(selectedRef.value))
   currentFilePath.value = url || ''
   if (!currentFilePath.value) return
 
@@ -566,12 +579,13 @@ watch(selectedDocKey, async () => {
   await loadAndGoToTargetPage()
 })
 
-// refList가 바뀌면 첫 번째 문서로 초기화
+// refList가 바뀌면 첫 번째 문서(showDocFileId)·초기 페이지(showPageNo)로 맞춤
 watch(
   () => props.refList,
   (list) => {
     const firstRow = list?.[0]
-    selectedDocKey.value = firstRow ? buildDocKey(firstRow.docId, firstRow.docFileId) : ''
+    selectedDocKey.value = firstRow ? buildDocKey(firstRow.docId, effectiveDocFileId(firstRow)) : ''
+    pendingTargetPage.value = firstRow ? parseInitialShowPageNo(firstRow.showPageNo) : null
   },
   { immediate: true },
 )
