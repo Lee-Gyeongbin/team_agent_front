@@ -26,10 +26,10 @@
 
 // 배치 바 버튼
 .batch-bar-btn {
-  min-width: 88px;
+  // min-width: 88px;
   height: 24px;
   border-radius: 6px;
-  padding: 0 8px;
+  padding: 0 12px 0 8px !important;
 
   .ui-button-text {
     font-size: 12px;
@@ -84,7 +84,7 @@
   box-sizing: border-box;
 
   .ui-tab .ui-tab-inner {
-    max-width: 1292px;
+    max-width: 1366px;
     margin: 0 auto;
   }
 }
@@ -105,6 +105,7 @@
   gap: $spacing-lg;
   padding: 16px;
   min-height: calc(100vh - #{$header-height} - 45px);
+  max-width: 1366px;
 }
 
 .repository-content-wrapper {
@@ -304,12 +305,35 @@
     background: #fff;
     border-top: 1px solid #ecf0f3;
 
+    .ui-table thead th,
+    .ui-table tbody td {
+      padding: 4px;
+      letter-spacing: -0.4px;
+      line-height: 1.24;
+    }
+    .ui-table tbody td {
+      padding: 4px 10px;
+    }
+
     // 첫 번째 컬럼(체크박스): th/td 모두 가운데 정렬
     .ui-table thead th:first-child,
     .ui-table tbody td:first-child:not(.ui-table-empty) {
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: 0;
+    }
+
+    // 체크박스 셀: td가 display:flex면 자식은 기본 flex-grow:0 → 체크박스 너비만 씀.
+    // flex:1 로 가로로 셀(content box) 전체를 클릭 영역으로 채움
+    .cell-select-stop {
+      flex: 1 1 0;
+      min-width: 0;
+      align-self: stretch;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-sizing: border-box;
     }
 
     .ui-table th .table-header-sort-btn {
@@ -317,7 +341,7 @@
       align-items: center;
       gap: 4px;
       height: 25px;
-      padding: 2px 4.5px 2px 6px;
+      padding: 2px 6px;
       border: none;
       border-radius: 4px;
       background: transparent;
@@ -383,9 +407,40 @@
       color: $color-text-muted;
     }
 
+    &.doc-name-grp {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+
+      &:hover .btn-doc-title,
+      &:focus-within .btn-doc-title {
+        opacity: 1;
+        pointer-events: auto;
+        color: $color-text-primary;
+      }
+    }
+
     .doc-name {
       min-width: 0;
       @include ellipsis(1);
+    }
+
+    .btn-doc-title {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+      color: $color-text-dark;
+      opacity: 0;
+      pointer-events: none;
+      border-radius: 4px;
+      transition:
+        opacity $transition-fast,
+        color $transition-fast;
+      &:hover,
+      &:focus-visible {
+        background-color: #f1f6fe;
+        color: $color-text-heading-sub;
+      }
     }
   }
 

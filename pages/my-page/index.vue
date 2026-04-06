@@ -24,7 +24,7 @@
         <UiButton
           variant="outline"
           size="md"
-          @click="handleReloadMyPage"
+          @click="handleLoadMyPage"
         >
           다시 시도
         </UiButton>
@@ -166,7 +166,7 @@ const {
   handleSubmitPasswordChange,
   onClickChangePhoto,
   onAvatarFileChange,
-  handleReloadMyPage,
+  handleLoadMyPage,
   handleInitializeMyPage,
   cleanupAvatarPreview,
 } = useMyPageStore()

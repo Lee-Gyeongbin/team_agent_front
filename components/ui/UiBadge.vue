@@ -35,7 +35,7 @@
 
 <script setup lang="ts">
 interface Props {
-  variant?: 'data-line' | 'basic-chat' | 'manual-ai' | 'category' | 'default'
+  variant?: 'data-line' | 'basic-chat' | 'manual-ai' | 'category' | 'default' | 'success'
   size?: 'xs' | 'sm' | 'md' | 'lg'
   iconOnly?: boolean
 }
@@ -133,6 +133,12 @@ withDefaults(defineProps<Props>(), {
   &.variant-default {
     background: #f4f7f9;
     color: #5c6677;
+  }
+
+  // 완료·성공 (AI 생성 완료 등)
+  &.variant-success {
+    background: #e6f7f0;
+    color: #0d8a5b;
   }
 }
 

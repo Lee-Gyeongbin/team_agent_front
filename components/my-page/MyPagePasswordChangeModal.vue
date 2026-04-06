@@ -69,11 +69,7 @@
 <script setup lang="ts">
 import { openToast } from '~/composables/useToast'
 
-interface Props {
-  isOpen: boolean
-}
-
-defineProps<Props>()
+defineProps<{ isOpen: boolean }>()
 
 const emit = defineEmits<{
   close: []

@@ -1,22 +1,22 @@
 import { useApi } from '~/composables/com/useApi'
-import type { ChangePasswordResponse, MyPageItem, MyPageLoginHistoryItem } from '~/types/my-page'
+import type { ChangePasswordResponse, MyPageHistoryParams, MyPageHistoryResponse, MyPageItem } from '~/types/my-page'
 
 export const useMyPageApi = () => {
   const { get, post } = useApi()
 
   /** 마이페이지 정보 조회 (세션 기준) */
-  const fetchMyPageInfo = async (): Promise<Partial<MyPageItem> | undefined> => {
+  const fetchInfo = async () => {
     const res = await get<{ dataList?: MyPageItem[] }>('/mypage/list.do')
     return res.dataList?.[0]
   }
 
   /** 마이페이지 정보 수정 */
-  const fetchUpdateMyPageInfo = async (payload: Partial<MyPageItem>): Promise<void> => {
+  const fetchUpdateInfo = async (payload: Partial<MyPageItem>) => {
     await post('/mypage/update.do', payload)
   }
 
   /** 마이페이지 비밀번호 변경 (세션 기준) */
-  const fetchChangeMyPagePassword = async (payload: { oldPassword: string; newPassword: string }): Promise<void> => {
+  const fetchChangePassword = async (payload: { oldPassword: string; newPassword: string }) => {
     const res = await post<ChangePasswordResponse>('/mypage/changePassword.do', payload)
 
     if (res?.successYn === false) {
@@ -25,16 +25,15 @@ export const useMyPageApi = () => {
     }
   }
 
-  /** 마이페이지 로그인 이력 조회 (세션 기준) */
-  const fetchMyPageLoginHistory = async (): Promise<MyPageLoginHistoryItem[]> => {
-    const res = await get<{ dataList?: MyPageLoginHistoryItem[] }>('/mypage/selectUserLoginHistory.do')
-    return res.dataList ?? []
+  /** 마이페이지 로그인 이력 조회 */
+  const fetchLoginHistory = async (body: MyPageHistoryParams) => {
+    return post<MyPageHistoryResponse>('/mypage/selectUserLoginHistory.do', body)
   }
 
   return {
-    fetchMyPageInfo,
-    fetchUpdateMyPageInfo,
-    fetchChangeMyPagePassword,
-    fetchMyPageLoginHistory,
+    fetchInfo,
+    fetchUpdateInfo,
+    fetchChangePassword,
+    fetchLoginHistory,
   }
 }

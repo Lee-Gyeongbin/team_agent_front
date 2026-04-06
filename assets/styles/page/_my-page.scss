@@ -1,6 +1,31 @@
 @use '../utils/variables' as *;
 @use '../utils/mixins' as *;
 
+/* 앱 헤더 외: 페이지 타이틀·탭바·마이페이지 패딩 등 — 탭 본문이 뷰포트 하단을 넘지 않도록 차감 */
+$my-page-tab-body-viewport-gap: 260px;
+
+@mixin my-page--flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+@mixin my-page--flex-fill {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+%my-page-narrow {
+  max-width: 70%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+%my-page-state-panel {
+  @include flex-center;
+  padding: $spacing-2xl;
+  min-height: 240px;
+}
+
 .my-page {
   padding: $spacing-lg;
   min-height: calc(100vh - #{$header-height});
@@ -10,8 +35,7 @@
 }
 
 .my-page-header {
-  max-width: 70%;
-  margin: 0 auto;
+  @extend %my-page-narrow;
   margin-bottom: $spacing-lg;
 }
 
@@ -38,11 +62,10 @@
 }
 
 .my-page-layout {
+  @extend %my-page-narrow;
   display: flex;
   align-items: flex-start;
   gap: $spacing-lg;
-  max-width: 70%;
-  margin: 0 auto;
 }
 
 .my-page-main {
@@ -52,40 +75,59 @@
 }
 
 .my-page-tab-panel {
+  @include my-page--flex-column;
   width: 100%;
 }
 
 .my-page-tab-panel__body {
-  height: 360px;
+  @include my-page--flex-column;
+  min-height: 360px;
+  max-height: calc(100vh - #{$header-height} - #{$my-page-tab-body-viewport-gap});
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
 
-.my-page-tab-panel__body > .my-page-sub-tab {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
+  > .my-page-sub-tab {
+    @include my-page--flex-fill;
+    @include my-page--flex-column;
+    width: 100%;
+  }
 
-.my-page-tab-panel__body .my-page-sub-tab__scroll,
-.my-page-tab-panel__body .my-page-security-table-wrap {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-}
+  .my-page-sub-tab__scroll,
+  .my-page-security-table-wrap {
+    @include my-page--flex-fill;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
 
-.my-page-tab-panel__body .my-page-actions {
-  margin-top: auto;
-  flex-shrink: 0;
+  .my-page-sub-tab--login-history {
+    .my-page-sub-tab__scroll {
+      @include my-page--flex-column;
+      overflow: hidden;
+    }
 
-  .ui-button {
+    .my-page-login-history-body {
+      @include my-page--flex-fill;
+    }
+
+    .my-page-login-history-table-wrap {
+      @include my-page--flex-fill;
+      @include my-page--flex-column;
+
+      .ui-table-wrap {
+        @include my-page--flex-fill;
+        overflow: auto;
+      }
+    }
+  }
+
+  .my-page-actions {
+    margin-top: auto;
     flex-shrink: 0;
-    width: 68px;
-    box-sizing: border-box;
+
+    .ui-button {
+      flex-shrink: 0;
+      width: 68px;
+      box-sizing: border-box;
+    }
   }
 }
 
@@ -266,7 +308,6 @@
     width: 100%;
   }
 
-  /* MyPageInfo: 비밀번호 변경 일시 ↔ 정보 수정 버튼 사이 구분선 제거 */
   .my-page-info__row--pwd-last th,
   .my-page-info__row--pwd-last td {
     border-bottom: none;
@@ -286,11 +327,9 @@
 }
 
 .my-page-error {
-  @include flex-center;
+  @extend %my-page-state-panel;
   flex-direction: column;
-  padding: $spacing-2xl;
   gap: $spacing-md;
-  min-height: 240px;
 
   &__message {
     font-size: $font-size-sm;
@@ -299,9 +338,7 @@
 }
 
 .my-page-empty {
-  @include flex-center;
-  padding: $spacing-2xl;
-  min-height: 240px;
+  @extend %my-page-state-panel;
   font-size: $font-size-sm;
   color: $color-text-secondary;
   text-align: center;
@@ -356,8 +393,7 @@
 }
 
 .my-page-security-auth-wrap {
-  display: flex;
-  flex-direction: column;
+  @include my-page--flex-column;
   gap: $spacing-md;
   width: 100%;
 }
@@ -400,8 +436,7 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  display: flex;
-  flex-direction: column;
+  @include my-page--flex-column;
   gap: $spacing-md;
   width: 100%;
 }
@@ -424,8 +459,7 @@
 }
 
 .my-page-security-tab {
-  display: flex;
-  flex-direction: column;
+  @include my-page--flex-column;
 
   .my-page-table {
     th,
@@ -448,9 +482,44 @@
 
 .my-page-security-table-wrap {
   display: flex;
+
+  .my-page-table {
+    width: 100%;
+  }
 }
 
-.my-page-security-table-wrap .my-page-table {
-  width: 100%;
-}
+.my-page-login-history {
+  &-body {
+    @include my-page--flex-column;
+    gap: $spacing-md;
+  }
 
+  &-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px $spacing-md;
+  }
+
+  &-filter-item {
+    @include my-page--flex-column;
+    gap: 6px;
+    min-width: 140px;
+
+    &--grow {
+      flex: 1;
+      min-width: 180px;
+    }
+  }
+
+  &-filter-label {
+    @include typo($body-small);
+    color: $color-text-muted;
+  }
+
+  &-filter-actions {
+    display: flex;
+    align-items: flex-end;
+    padding-bottom: 1px;
+  }
+}

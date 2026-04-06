@@ -23,6 +23,7 @@ export interface LibraryCard {
   sortOrd: number
   sqlCode: string
   newYn: 'Y' | 'N'
+  thumbImg: string
   useYn: 'Y' | 'N'
   createDt: string
   modifyDt: string
@@ -44,6 +45,7 @@ export interface LibraryCardDetail {
   sortOrd: number
   sqlCode: string
   newYn: 'Y' | 'N'
+  thumbImg: string
   useYn: 'Y' | 'N'
   createDt: string
   modifyDt: string
@@ -71,6 +73,12 @@ export interface LibrarySearchOption {
   label: string
   value: string
 }
+
+/**
+ * AI 생성 보고서 값 — 백엔드/DB 템플릿의 jsonKey와 1:1 매핑 (필드 정의는 가변)
+ * 응답 JSON을 그대로 파싱해 키 기준으로 채움
+ */
+export type LibraryGeneratedReportValues = Record<string, string>
 
 /** 카테고리 순서 변경 요청 항목 */
 export interface LibraryCategoryOrderItem {

@@ -9,6 +9,11 @@ export const useTmplApi = () => {
     return get<{ dataList: TmplBaseInfo[] }>('/tmpl/list.do')
   }
 
+  /** 템플릿 상세 조회 (필드 정의 포함, tmplType `T`일 때 사용) */
+  const fetchTmplDetail = async (tmplId: string): Promise<{ data: TmplBaseInfo }> => {
+    return post<{ data: TmplBaseInfo }>('/tmpl/detail.do', { tmplId })
+  }
+
   /** 템플릿 저장 */
   const fetchSaveTmpl = async (payload: TmplFormSavePayload) => {
     return post<{ data: TmplBaseInfo }>('/tmpl/save.do', payload)
@@ -21,6 +26,7 @@ export const useTmplApi = () => {
 
   return {
     fetchTmplList,
+    fetchTmplDetail,
     fetchSaveTmpl,
     fetchDeleteTmpl,
   }

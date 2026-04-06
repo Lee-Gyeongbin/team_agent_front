@@ -28,8 +28,21 @@ export interface MyPageLoginHistoryItem {
   createDt: string
 }
 
-/** 로그인 이력 테이블 컬럼 정의 */
-export const myPageColumns: TableColumn[] = [
+/** 마이페이지 로그인 이력 조회 조건 (POST JSON 본문) */
+export interface MyPageHistoryParams {
+  fromDt: string
+  toDt: string
+  ipAddr: string
+  result: string
+}
+
+/** 마이페이지 로그인 이력 조회 API 응답 */
+export interface MyPageHistoryResponse {
+  dataList: MyPageLoginHistoryItem[]
+}
+
+/** 로그인 이력 테이블 컬럼 */
+export const historyColumns: TableColumn[] = [
   { key: 'ipAddr', label: 'IP 주소', width: '100px', align: 'center', headerAlign: 'center' },
   { key: 'userAgent', label: '브라우저', width: '200px', align: 'left', headerAlign: 'center' },
   { key: 'result', label: '결과', width: '80px', align: 'center', headerAlign: 'center' },

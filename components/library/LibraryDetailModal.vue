@@ -246,17 +246,54 @@
     >
       <i class="icon icon-arrow-down size-20"></i>
     </button>
+
+    <!-- 문서 만들기 (유형 선택) -->
+    <LibraryCreateDocModal
+      :is-open="isCreateDocModalOpen"
+      :tmpl-list="tmplList"
+      @close="isCreateDocModalOpen = false"
+      @generate="onCreateDocGenerate"
+    />
+
+    <!-- 문서 생성 중 (AI 응답 대기) -->
+    <LibraryCreateDocLoadingModal
+      :is-open="isCreateDocLoadingOpen"
+      @close="onCreateDocLoadingClose"
+    />
+
+    <!-- AI 생성 보고서 편집 -->
+    <LibraryCreateDocReportModal
+      v-model:report="generatedReport"
+      :field-defs="reportFieldDefs"
+      :is-open="isCreateDocReportOpen"
+      @close="onCreateDocReportClose"
+      @export-pdf="onCreateDocExportPdf"
+      @share-link="onCreateDocShareLink"
+      @select-other-type="onCreateDocSelectOtherType"
+      @send-refine="onCreateDocSendRefine"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
-import type { LibraryCardDetail, DocItem, TableDataItem, ChartStatItem, ChartDetailCdItem } from '~/types/library'
+import type {
+  LibraryCardDetail,
+  DocItem,
+  TableDataItem,
+  ChartStatItem,
+  ChartDetailCdItem,
+  LibraryGeneratedReportValues,
+} from '~/types/library'
+import type { TmplField } from '~/types/tmpl'
 import type { VisualizationViewModel } from '~/types/chat'
 import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
 import { useFileStore } from '~/composables/com/useFileStore'
+import { useLibraryStore } from '~/composables/library/useLibraryStore'
+import { useTmplApi } from '~/composables/tmpl/useTmplApi'
 const { handleViewFileUrl } = useFileStore()
-
+const { handleSelectTmplList, tmplList } = useLibraryStore()
+const { fetchTmplDetail } = useTmplApi()
 const props = withDefaults(
   defineProps<{
     isOpen?: boolean
@@ -400,6 +437,11 @@ watch(
       displayData.value = null
       isSqlCodeVisible.value = false
       expandedRefKey.value = null
+      isCreateDocModalOpen.value = false
+      isCreateDocLoadingOpen.value = false
+      isCreateDocReportOpen.value = false
+      generatedReport.value = {}
+      reportFieldDefs.value = []
     }
   },
 )
@@ -429,8 +471,99 @@ const onReferenceLink = async (item: DocItem) => {
   openToast({ message: '참조 매뉴얼 링크가 복사되었습니다.', type: 'success' })
 }
 
+/** 문서 만들기 — 유형 선택 모달 */
+const isCreateDocModalOpen = ref(false)
+const isCreateDocLoadingOpen = ref(false)
+const isCreateDocReportOpen = ref(false)
+
+/** 보고서 편집 행 정의 (템플릿형 `T`일 때만 API/목록에서 채움) */
+const reportFieldDefs = ref<TmplField[]>([])
+
+const normalizedReportFields = (fields: TmplField[]) =>
+  [...fields].filter((f) => f.useYn === 'Y').sort((a, b) => a.sortOrd - b.sortOrd)
+
+const buildEmptyReportFromFields = (fields: TmplField[]): LibraryGeneratedReportValues => {
+  const out: LibraryGeneratedReportValues = {}
+  for (const f of normalizedReportFields(fields)) {
+    out[f.jsonKey] = ''
+  }
+  return out
+}
+
+const generatedReport = ref<LibraryGeneratedReportValues>({})
+
 const handleCreateDoc = () => {
-  console.log('handleCreateDoc')
+  handleSelectTmplList()
+  isCreateDocModalOpen.value = true
+}
+
+/** 문서 생성하기 — 로딩 → (추후 AI JSON) → 보고서 모달 */
+const onCreateDocGenerate = async (payload: { docTypeId: string }) => {
+  isCreateDocModalOpen.value = false
+  isCreateDocLoadingOpen.value = true
+  reportFieldDefs.value = []
+  generatedReport.value = {}
+
+  const tmpl = tmplList.value.find((t) => t.tmplId === payload.docTypeId)
+
+  try {
+    if (tmpl?.tmplType === 'T') {
+      try {
+        const res = await fetchTmplDetail(payload.docTypeId)
+        const fields = normalizedReportFields(res.data?.fields ?? [])
+        reportFieldDefs.value = fields
+        generatedReport.value = buildEmptyReportFromFields(fields)
+      } catch {
+        const fallback = normalizedReportFields(tmpl?.fields ?? [])
+        reportFieldDefs.value = fallback
+        generatedReport.value = buildEmptyReportFromFields(fallback)
+      }
+    } else {
+      // 자유형식(`F`): 필드 틀 없음 — 상세 조회하지 않음 (목록에 fields가 없을 수 있음)
+      reportFieldDefs.value = []
+      generatedReport.value = {}
+    }
+
+    // 🔽 더미 지연 — AI API 연동 시 제거하고 응답 JSON으로 `generatedReport` 설정
+    await new Promise((r) => setTimeout(r, 1600))
+    for (const f of reportFieldDefs.value) {
+      generatedReport.value[f.jsonKey] = `${f.fieldNm} 예시 내용입니다.`
+    }
+
+    isCreateDocReportOpen.value = true
+  } finally {
+    isCreateDocLoadingOpen.value = false
+  }
+}
+
+const onCreateDocLoadingClose = () => {
+  isCreateDocLoadingOpen.value = false
+}
+
+const onCreateDocReportClose = () => {
+  isCreateDocReportOpen.value = false
+  generatedReport.value = {}
+  reportFieldDefs.value = []
+}
+
+const onCreateDocExportPdf = () => {
+  openToast({ message: 'PDF 다운로드는 추후 연동 예정입니다.', duration: 2000 })
+}
+
+const onCreateDocShareLink = () => {
+  openToast({ message: '공유 링크는 추후 연동 예정입니다.', duration: 2000 })
+}
+
+const onCreateDocSelectOtherType = () => {
+  isCreateDocReportOpen.value = false
+  generatedReport.value = {}
+  reportFieldDefs.value = []
+  handleSelectTmplList()
+  isCreateDocModalOpen.value = true
+}
+
+const onCreateDocSendRefine = (_message: string) => {
+  openToast({ message: '문서 보완 요청은 AI 연동 후 사용할 수 있습니다.', duration: 2000 })
 }
 
 const handleCopyResponse = async () => {

@@ -237,10 +237,6 @@ const onRowClick = (row: Record<string, any>, index: number) => {
       &:not(.is-last) {
         border-right: 1px solid $color-border;
       }
-
-      &.is-sortable {
-        padding: 0 8px;
-      }
     }
   }
 
@@ -254,7 +250,13 @@ const onRowClick = (row: Record<string, any>, index: number) => {
       }
 
       &.is-clickable {
-        cursor: pointer;
+        td {
+          cursor: pointer;
+        }
+
+        td:first-child {
+          cursor: default;
+        }
       }
 
       &.is-selected td {

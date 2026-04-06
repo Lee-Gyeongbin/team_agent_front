@@ -1,0 +1,160 @@
+@use '../utils/variables' as *;
+@use '../utils/mixins' as *;
+
+// TmplListSections.vue — 템플릿 카드 목록 (내장/사용자) 공통 스타일
+.tmpl-section {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.tmpl-section__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.tmpl-section__title {
+  margin: 0;
+  font-size: $font-size-lg;
+  font-weight: $font-weight-bold;
+  line-height: $line-height-tight;
+  color: $color-text-heading-sub;
+}
+
+.tmpl-card-stack {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+ul.tmpl-card-stack {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tmpl-user-card {
+  gap: $spacing-sm;
+}
+
+.tmpl-user-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+}
+
+.tmpl-user-card__name {
+  margin: 0;
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  color: $color-text-heading-sub;
+}
+
+.tmpl-user-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.tmpl-user-card__desc {
+  margin: 0;
+  @include typo($body-medium);
+  color: $color-text-muted;
+  line-height: $line-height-base;
+}
+
+.tmpl-builtin-card {
+  gap: $spacing-md;
+}
+
+.tmpl-builtin-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+}
+
+.tmpl-builtin-card__name {
+  margin: 0;
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  line-height: $line-height-tight;
+  color: $color-text-heading-sub;
+}
+
+.tmpl-builtin-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.tmpl-builtin-card__desc {
+  margin: 0;
+  @include typo($body-medium);
+  color: $color-text-primary;
+  line-height: $line-height-base;
+}
+
+.tmpl-builtin-card__maps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tmpl-map-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: $border-radius-sm;
+  background: $color-surface;
+  border: 1px solid $color-border-light;
+  @include typo($body-xsmall);
+}
+
+.tmpl-map-chip__key {
+  margin: 0;
+  padding: 0;
+  font-family: $font-family-mono;
+  font-size: inherit;
+  font-weight: $font-weight-semibold;
+  color: var(--color-primary);
+  background: none;
+  border: none;
+}
+
+.tmpl-map-chip__arrow {
+  color: $color-text-disabled;
+}
+
+.tmpl-map-chip__label {
+  color: $color-text-heading-sub;
+}
+
+.tmpl-prompt-box {
+  padding: $spacing-md;
+  border-radius: 12px;
+  background: $color-background;
+  border: 1px solid $color-border-light;
+}
+
+.tmpl-prompt-box__label {
+  margin: 0 0 8px;
+  @include typo($body-small-bold);
+  color: $color-text-dark;
+}
+
+.tmpl-prompt-box__text {
+  margin: 0;
+  @include typo($body-small);
+  color: $color-text-secondary;
+  line-height: $line-height-relaxed;
+  white-space: pre-wrap;
+}

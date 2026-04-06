@@ -204,7 +204,8 @@
           justify-content: center;
           border: 1px solid $color-border;
           background: #ecf0f3;
-          height: 142px;
+          // 일반 카드와 동일 높이: padding(12+7) + 썸네일(78) + desc(8+39) + meta(20)
+          min-height: 164px;
         }
 
         &:hover {
@@ -378,5 +379,108 @@
     .badge-icon {
       @include icon-file('book');
     }
+  }
+}
+
+// ===================================
+// 문서 만들기 모달
+// — 레이아웃·푸터는 doc-dataset-create-modal / doc-dataset-create-footer 공유
+// — 지식창고 상세(z-index 400) 위에 표시
+// ===================================
+.library-create-doc-modal {
+  &.modal-dialog {
+    z-index: 410;
+  }
+
+  .library-create-doc-lead {
+    margin: 0;
+  }
+
+  .library-create-doc-label {
+    margin: 0 0 $spacing-md;
+    color: $color-text-heading;
+    font-size: $font-size-base;
+    font-weight: $font-weight-semibold;
+    line-height: 150%;
+  }
+
+  // 템플릿 목록과 동일 카드 + 선택 상태
+  .library-create-doc-stack .library-create-doc-select-card {
+    cursor: pointer;
+    outline: none;
+    transition:
+      border-color $transition-base,
+      box-shadow $transition-base,
+      background $transition-base;
+
+    &:focus-visible {
+      box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb, 60, 105, 219), 0.35);
+    }
+
+    &.is-selected {
+      border-color: var(--color-primary);
+      background: rgba(var(--color-primary-rgb, 60, 105, 219), 0.04);
+      box-shadow: 0 0 0 1px rgba(var(--color-primary-rgb, 60, 105, 219), 0.2);
+    }
+  }
+}
+
+// 문서 생성 로딩 / 보고서 — 상세 모달(400)·문서 만들기(410) 위 스택
+.library-create-doc-loading-modal {
+  &.modal-dialog {
+    z-index: 420;
+  }
+}
+
+.library-create-doc-report-modal {
+  &.modal-dialog {
+    z-index: 430;
+  }
+
+  // 뷰포트 안에 들어오도록 너비·높이 제한 (본문만 스크롤)
+  .modal-dialog-content {
+    display: flex;
+    flex-direction: column;
+    width: min(800px, calc(100vw - 48px));
+    max-width: min(800px, calc(100vw - 48px)) !important;
+    max-height: min(88vh, 780px);
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .modal-dialog-header {
+    flex-shrink: 0;
+  }
+
+  .modal-dialog-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    // 세로 스크롤과 본문 사이 여백
+    padding-right: 28px;
+    padding-left: 6px;
+    scrollbar-gutter: stable;
+    box-sizing: border-box;
+  }
+
+  // 스크롤바용 +6px 폭이 표·우측 테두리와 어긋남 → 보고서 모달에서는 제거, 대신 본문·스크롤 사이 공간 확보
+  .doc-dataset-create-form {
+    width: 100%;
+    max-width: 100%;
+    padding-right: 12px;
+    max-height: none;
+    box-sizing: border-box;
+  }
+
+  .library-create-doc-report-footer-chat {
+    flex-shrink: 0;
+  }
+
+  // 전체화면 시에는 공통 전체화면 규칙 우선
+  &.is-fullscreen .modal-dialog-content {
+    width: calc(100vw - 40px);
+    max-width: calc(100vw - 40px) !important;
+    max-height: calc(100vh - 40px);
   }
 }
