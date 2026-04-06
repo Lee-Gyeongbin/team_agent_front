@@ -98,9 +98,6 @@ const linkedDevices = ref([
 
 const onTwoFactorEnabledUpdate = (enabled: boolean) => {
   isTwoFactorEnabled.value = enabled
-  if (enabled && !selectedTwoFactorMethod.value) {
-    selectedTwoFactorMethod.value = 'totp'
-  }
 }
 
 const { logout } = useAuth()

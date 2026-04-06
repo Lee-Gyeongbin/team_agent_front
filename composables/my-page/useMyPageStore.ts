@@ -1,4 +1,4 @@
-import type { MyPageItem, MyPageLoginHistoryItem } from '~/types/my-page'
+import type { MyPageHistoryParams, MyPageItem, MyPageLoginHistoryItem } from '~/types/my-page'
 import { useMyPageApi } from '~/composables/my-page/useMyPageApi'
 import { useOrgManageStore } from '~/composables/org-manage/useOrgManageStore'
 import { openAlert, openConfirm } from '~/composables/useDialog'
@@ -20,7 +20,7 @@ const avatarFileInputRef = ref<HTMLInputElement | null>(null)
 const avatarPreviewUrl = ref<string | null>(null)
 
 export const useMyPageStore = () => {
-  const { fetchMyPageInfo, fetchUpdateMyPageInfo, fetchChangeMyPagePassword, fetchMyPageLoginHistory } = useMyPageApi()
+  const { fetchInfo, fetchUpdateInfo, fetchChangePassword, fetchLoginHistory } = useMyPageApi()
   const { orgOptions } = useOrgManageStore()
   const { user, logout } = useAuth()
 
@@ -39,7 +39,7 @@ export const useMyPageStore = () => {
         hasData.value = false
         return
       }
-      const data = await fetchMyPageInfo()
+      const data = await fetchInfo()
       form.value = data ?? {}
       hasData.value = Boolean(data && String(data.userId ?? '').trim())
     } catch (error) {
@@ -50,7 +50,7 @@ export const useMyPageStore = () => {
     }
   }
 
-  const handleLoadLoginHistory = async () => {
+  const handleLoadHistory = async (searchParams: MyPageHistoryParams) => {
     loginHistoryLoading.value = true
     loginHistoryError.value = ''
     try {
@@ -59,7 +59,8 @@ export const useMyPageStore = () => {
         loginHistoryList.value = []
         return
       }
-      loginHistoryList.value = await fetchMyPageLoginHistory()
+      const res = await fetchLoginHistory(searchParams)
+      loginHistoryList.value = res.dataList ?? []
     } catch (error) {
       loginHistoryError.value =
         error instanceof Error ? error.message : '로그인 이력을 불러오는 중 오류가 발생했습니다.'
@@ -114,20 +115,15 @@ export const useMyPageStore = () => {
     }
   }
 
-  const handleReloadMyPage = () => {
-    void handleLoadMyPage()
-  }
-
   const handleInitializeMyPage = async () => {
     const { orgOptions, handleFetchOrgList } = useOrgManageStore()
     if (!orgOptions.value.length) {
       await handleFetchOrgList()
     }
     await handleLoadMyPage()
-    await handleLoadLoginHistory()
   }
 
-  /** 사용자명, 이메일, 전화번호가 모두 있고, 값이 모두 유효할 때만 저장 가능 (아이디는 수정 불가) */
+  /** 사용자명, 이메일, 전화번호가 모두 있고, 값이 모두 유효할 때만 저장 가능 */
   const checkSave = computed(() => {
     const userNm = String(form.value.userNm ?? '')
     const email = String(form.value.email ?? '')
@@ -160,7 +156,7 @@ export const useMyPageStore = () => {
     isPasswordModalOpen.value = false
   }
 
-  const handleSaveMyPage = async (): Promise<boolean> => {
+  const handleSaveMyPage = async () => {
     const confirmed = await openConfirm({
       title: '계정 정보 저장',
       message: '계정 정보를 저장하시겠습니까?',
@@ -168,7 +164,7 @@ export const useMyPageStore = () => {
     if (!confirmed) return false
 
     try {
-      await fetchUpdateMyPageInfo(form.value)
+      await fetchUpdateInfo(form.value)
       openAlert({
         message: '계정 정보가 저장되었습니다.',
       })
@@ -185,7 +181,7 @@ export const useMyPageStore = () => {
 
   const handleSubmitPasswordChange = async (payload: { oldPassword: string; newPassword: string }) => {
     try {
-      await fetchChangeMyPagePassword(payload)
+      await fetchChangePassword(payload)
       isPasswordModalOpen.value = false
       await openAlert({
         message: '비밀번호가 변경되었습니다.\n보안을 위해 다시 로그인해 주세요.',
@@ -215,7 +211,7 @@ export const useMyPageStore = () => {
     avatarPreviewUrl,
     checkSave,
     handleLoadMyPage,
-    handleLoadLoginHistory,
+    handleLoadHistory,
     handleStartEdit,
     handleCancelEdit,
     openPasswordModal,
@@ -225,7 +221,6 @@ export const useMyPageStore = () => {
     onClickChangePhoto,
     onAvatarFileChange,
     cleanupAvatarPreview,
-    handleReloadMyPage,
     handleInitializeMyPage,
   }
 }
