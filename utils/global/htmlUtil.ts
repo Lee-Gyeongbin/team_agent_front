@@ -129,3 +129,22 @@ export const withLinks = (theText: string): string => {
     (match) => `<a href="${match}" style="color:#0e62dd!important" target="_blank">${match}</a>`,
   )
 }
+
+/**
+ * LLM JSON 등에 포함된 HTML 조각을 일반 텍스트로 (줄바꿈은 최대한 유지)
+ */
+export const plainTextFromHtml = (html: string): string => {
+  if (!html || typeof html !== 'string') return ''
+  let s = html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|h[1-6]|li|tr)>/gi, '\n')
+    .replace(/<\/ul>/gi, '\n')
+  s = s.replace(/<[^>]*>/g, '')
+  s = s
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+  return s.replace(/\n{3,}/g, '\n\n').trim()
+}

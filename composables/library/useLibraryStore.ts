@@ -9,8 +9,10 @@ import type {
   TableDataItem,
   ChartStatItem,
   ChartDetailCdItem,
+  LibraryGeneratedReportValues,
 } from '~/types/library'
 import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
+import { plainTextFromHtml } from '~/utils/global/htmlUtil'
 import { useLibraryApi } from '~/composables/library/useLibraryApi'
 import { useTmplApi } from '~/composables/tmpl/useTmplApi'
 import type { TmplBaseInfo } from '~/types/tmpl'
@@ -31,6 +33,7 @@ const {
   fetchTableData,
   fetchChartLabel,
   fetchDeleteTrashCard,
+  fetchCreateDoc,
 } = useLibraryApi()
 const { fetchTmplList } = useTmplApi()
 const errorMessage = ref('')
@@ -86,6 +89,33 @@ const searchTitle = ref('')
 const searchSort = ref('custom')
 
 const tmplList = ref<TmplBaseInfo[]>([])
+
+const isCreateDocModalOpen = ref(false)
+const isCreateDocLoadingOpen = ref(false)
+const isCreateDocReportOpen = ref(false)
+const generatedReport = ref<LibraryGeneratedReportValues>({})
+
+/** 문서 생성 API JSON → 편집용 flat 문자열 (HTML 제거, 비문자 값은 문자열화) */
+const normalizeGeneratedReport = (data: Record<string, unknown>): LibraryGeneratedReportValues => {
+  const out: LibraryGeneratedReportValues = {}
+  for (const key of Object.keys(data)) {
+    const v = data[key]
+    if (v === null || v === undefined) {
+      out[key] = ''
+      continue
+    }
+    if (typeof v === 'string') {
+      out[key] = /<[^>]+>/.test(v) ? plainTextFromHtml(v) : v
+      continue
+    }
+    if (typeof v === 'number' || typeof v === 'boolean') {
+      out[key] = String(v)
+      continue
+    }
+    out[key] = JSON.stringify(v)
+  }
+  return out
+}
 
 /** cardId가 속한 카테고리를 제외한 카테고리 목록 (이동 모달용) */
 const moveTargetOptions = computed(() => {
@@ -181,6 +211,7 @@ export const useLibraryStore = () => {
   const handleFetchCardList = async () => {
     initModalStates()
     try {
+      openLoading({ text: '카드 목록을 불러오는 중...' })
       const response = await fetchCardList(searchTitle.value, searchSort.value)
       const list = response.dataList ?? []
       cardList.value = list
@@ -191,6 +222,7 @@ export const useLibraryStore = () => {
         merged[key] = cardsByCategory[key] ?? []
       }
       categoryCards.value = merged
+      closeLoading()
     } catch {
       errorMessage.value = '카드 목록을 불러오는데 실패했습니다.'
     }
@@ -565,6 +597,72 @@ export const useLibraryStore = () => {
     }
   }
 
+  /** 문서 만들기 — 유형 선택 모달 닫기 */
+  const handleCreateDocTypeModalClose = () => {
+    isCreateDocModalOpen.value = false
+  }
+
+  /** 문서 생성하기 — 로딩 → API 응답 → 보고서 모달 */
+  const handleCreateDocGenerate = async (payload: { cardId: string; tmplId: string }) => {
+    const { cardId, tmplId } = payload
+    if (!cardId?.trim() || !tmplId?.trim()) {
+      openToast({ message: '카드 또는 템플릿 정보가 없습니다.', type: 'warning' })
+      return
+    }
+
+    isCreateDocModalOpen.value = false
+    isCreateDocLoadingOpen.value = true
+    generatedReport.value = {}
+
+    try {
+      const res = await fetchCreateDoc(cardId, tmplId)
+      const answer = res.data
+      if (answer) {
+        try {
+          const parsed = JSON.parse(answer) as unknown
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            generatedReport.value = normalizeGeneratedReport(parsed as Record<string, unknown>)
+          } else {
+            generatedReport.value = {}
+          }
+        } catch {
+          generatedReport.value = {}
+        }
+      }
+      isCreateDocLoadingOpen.value = false
+      await nextTick()
+      isCreateDocReportOpen.value = true
+    } catch {
+      openToast({ message: '문서 생성 실패', type: 'error' })
+      isCreateDocLoadingOpen.value = false
+    }
+  }
+
+  const handleCreateDocLoadingClose = () => {
+    isCreateDocLoadingOpen.value = false
+  }
+
+  const handleCreateDocReportClose = () => {
+    isCreateDocReportOpen.value = false
+    generatedReport.value = {}
+  }
+
+  /** 상세 모달 닫을 때 문서 만들기 관련 상태 초기화 */
+  const resetLibraryDetailCreateDocUi = () => {
+    isCreateDocModalOpen.value = false
+    isCreateDocLoadingOpen.value = false
+    isCreateDocReportOpen.value = false
+    generatedReport.value = {}
+  }
+
+  /** 보고서 모달에서 다른 유형 선택 */
+  const handleCreateDocSelectOtherType = () => {
+    isCreateDocReportOpen.value = false
+    generatedReport.value = {}
+    handleSelectTmplList()
+    isCreateDocModalOpen.value = true
+  }
+
   return {
     categoryList,
     categoryCards,
@@ -616,5 +714,15 @@ export const useLibraryStore = () => {
     handleEmptyTrash,
     handleSelectTmplList,
     tmplList,
+    isCreateDocModalOpen,
+    isCreateDocLoadingOpen,
+    isCreateDocReportOpen,
+    generatedReport,
+    handleCreateDocTypeModalClose,
+    handleCreateDocGenerate,
+    handleCreateDocLoadingClose,
+    handleCreateDocReportClose,
+    resetLibraryDetailCreateDocUi,
+    handleCreateDocSelectOtherType,
   }
 }

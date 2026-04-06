@@ -39,6 +39,7 @@
         :min="min"
         :max="max"
         :step="step"
+        :spellcheck="spellcheck"
         @input="onInput"
         @compositionupdate="onCompositionUpdate"
         @focus="onFocus"
@@ -93,6 +94,8 @@ interface Props {
   numberOnly?: boolean
   allowDecimal?: boolean
   allowNegative?: boolean
+  /** false면 브라우저 맞춤법 밑줄 비활성화 */
+  spellcheck?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {

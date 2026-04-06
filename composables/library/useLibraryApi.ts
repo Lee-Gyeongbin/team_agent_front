@@ -104,6 +104,14 @@ export const useLibraryApi = () => {
     await post('/library/deleteTrashCard.do', {})
   }
 
+  /** 문서 생성 API */
+  const fetchCreateDoc = async (
+    cardId: string,
+    tmplId: string,
+  ): Promise<{ successYn: boolean; returnMsg: string; data: string }> => {
+    return post<{ successYn: boolean; returnMsg: string; data: string }>('/library/createDoc.do', { cardId, tmplId })
+  }
+
   return {
     fetchCategoryList,
     fetchSaveCategory,
@@ -122,5 +130,6 @@ export const useLibraryApi = () => {
     fetchTableData,
     fetchChartLabel,
     fetchDeleteTrashCard,
+    fetchCreateDoc,
   }
 }
