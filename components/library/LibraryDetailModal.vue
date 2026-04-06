@@ -246,6 +246,14 @@
     >
       <i class="icon icon-arrow-down size-20"></i>
     </button>
+
+    <!-- 문서 만들기 (유형 선택) -->
+    <LibraryCreateDocModal
+      :is-open="isCreateDocModalOpen"
+      :tmpl-list="tmplList"
+      @close="isCreateDocModalOpen = false"
+      @generate="onCreateDocGenerate"
+    />
   </div>
 </template>
 
@@ -255,8 +263,9 @@ import type { LibraryCardDetail, DocItem, TableDataItem, ChartStatItem, ChartDet
 import type { VisualizationViewModel } from '~/types/chat'
 import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
 import { useFileStore } from '~/composables/com/useFileStore'
+import { useLibraryStore } from '~/composables/library/useLibraryStore'
 const { handleViewFileUrl } = useFileStore()
-
+const { handleSelectTmplList, tmplList } = useLibraryStore()
 const props = withDefaults(
   defineProps<{
     isOpen?: boolean
@@ -400,6 +409,7 @@ watch(
       displayData.value = null
       isSqlCodeVisible.value = false
       expandedRefKey.value = null
+      isCreateDocModalOpen.value = false
     }
   },
 )
@@ -429,8 +439,16 @@ const onReferenceLink = async (item: DocItem) => {
   openToast({ message: '참조 매뉴얼 링크가 복사되었습니다.', type: 'success' })
 }
 
+/** 문서 만들기 — 유형 선택 모달 */
+const isCreateDocModalOpen = ref(false)
+
 const handleCreateDoc = () => {
-  console.log('handleCreateDoc')
+  handleSelectTmplList()
+  isCreateDocModalOpen.value = true
+}
+
+const onCreateDocGenerate = (_payload: { docTypeId: string }) => {
+  isCreateDocModalOpen.value = false
 }
 
 const handleCopyResponse = async () => {

@@ -72,6 +72,17 @@ export interface LibrarySearchOption {
   value: string
 }
 
+/** 문서 만들기 — 유형 카드 한 줄 (목록은 API 연동 시 교체) */
+export interface LibraryCreateDocTypeItem {
+  id: string
+  title: string
+  badgeLabel: string
+  badgeKind: 'template' | 'freeform'
+  description: string
+  /** 템플릿형 등에서만 표시 — 필드 칩(`tmpl-map-chip`) */
+  tags: string[]
+}
+
 /** 카테고리 순서 변경 요청 항목 */
 export interface LibraryCategoryOrderItem {
   categoryId: string

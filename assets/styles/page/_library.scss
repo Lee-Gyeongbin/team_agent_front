@@ -380,3 +380,46 @@
     }
   }
 }
+
+// ===================================
+// 문서 만들기 모달
+// — 레이아웃·푸터는 doc-dataset-create-modal / doc-dataset-create-footer 공유
+// — 지식창고 상세(z-index 400) 위에 표시
+// ===================================
+.library-create-doc-modal {
+  &.modal-dialog {
+    z-index: 410;
+  }
+
+  .library-create-doc-lead {
+    margin: 0;
+  }
+
+  .library-create-doc-label {
+    margin: 0 0 $spacing-md;
+    color: $color-text-heading;
+    font-size: $font-size-base;
+    font-weight: $font-weight-semibold;
+    line-height: 150%;
+  }
+
+  // 템플릿 목록과 동일 카드 + 선택 상태
+  .library-create-doc-stack .library-create-doc-select-card {
+    cursor: pointer;
+    outline: none;
+    transition:
+      border-color $transition-base,
+      box-shadow $transition-base,
+      background $transition-base;
+
+    &:focus-visible {
+      box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb, 60, 105, 219), 0.35);
+    }
+
+    &.is-selected {
+      border-color: var(--color-primary);
+      background: rgba(var(--color-primary-rgb, 60, 105, 219), 0.04);
+      box-shadow: 0 0 0 1px rgba(var(--color-primary-rgb, 60, 105, 219), 0.2);
+    }
+  }
+}

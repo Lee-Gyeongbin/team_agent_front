@@ -12,6 +12,8 @@ import type {
 } from '~/types/library'
 import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
 import { useLibraryApi } from '~/composables/library/useLibraryApi'
+import { useTmplApi } from '~/composables/tmpl/useTmplApi'
+import type { TmplBaseInfo } from '~/types/tmpl'
 const {
   fetchCategoryList,
   fetchCardList,
@@ -30,6 +32,7 @@ const {
   fetchChartLabel,
   fetchDeleteTrashCard,
 } = useLibraryApi()
+const { fetchTmplList } = useTmplApi()
 const errorMessage = ref('')
 
 const isModalOpen = ref(false)
@@ -81,6 +84,8 @@ const chartDetailCdItems = ref<ChartDetailCdItem[]>([]) // 차트 상세 코드 
 const newCategoryNm = ref('')
 const searchTitle = ref('')
 const searchSort = ref('custom')
+
+const tmplList = ref<TmplBaseInfo[]>([])
 
 /** cardId가 속한 카테고리를 제외한 카테고리 목록 (이동 모달용) */
 const moveTargetOptions = computed(() => {
@@ -548,6 +553,16 @@ export const useLibraryStore = () => {
     })
   }
 
+  /** 템플릿 목록 조회 */
+  const handleSelectTmplList = async () => {
+    try {
+      const res = await fetchTmplList()
+      tmplList.value = res.dataList ?? []
+    } catch {
+      openToast({ message: '템플릿 목록 조회 실패', type: 'error' })
+    }
+  }
+
   return {
     categoryList,
     categoryCards,
@@ -597,5 +612,7 @@ export const useLibraryStore = () => {
     handleTrashModalClose,
     handleRestoreCard,
     handleEmptyTrash,
+    handleSelectTmplList,
+    tmplList,
   }
 }
