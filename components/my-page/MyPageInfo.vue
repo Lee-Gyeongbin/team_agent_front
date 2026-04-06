@@ -161,9 +161,16 @@
 <script setup lang="ts">
 import { formatPhone, toPhoneDigits } from '~/utils/global/numberUtil'
 
-const { orgOptions } = useOrgManageStore()
-const { form, currentOrgLabel, isEditMode, checkSave, handleStartEdit, handleCancelEdit, handleSaveMyPage } =
-  useMyPageStore()
+const {
+  form,
+  orgOptions,
+  currentOrgLabel,
+  isEditMode,
+  checkSave,
+  handleStartEdit,
+  handleCancelEdit,
+  handleSaveMyPage,
+} = useMyPageStore()
 
 const phoneDisplay = computed({
   get: () => formatPhone(form.value.phone ?? ''),

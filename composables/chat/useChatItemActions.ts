@@ -1,6 +1,7 @@
 import type { ChatMessage } from '~/types/chat'
 import { useChatStore } from '~/composables/chat/useChatStore'
 import { copyToClipboard } from '~/utils/global/clipboardUtil'
+import { buildQuestionPayload } from '~/utils/chat/chatSocketPayloadUtil'
 const { messages } = useChatStore()
 const { chatRoom } = useChatRooms()
 const { fetchCreateChatLogReaction, fetchCreateKnowledge } = useReportsApi()
@@ -117,14 +118,15 @@ export const useChatItemActions = () => {
 
     pushQuestionMessage(content, svcTy, modelId, refId)
     pushAnswerPlaceholder(svcTy, modelId, refId)
-    await ensureWebSocketAndSend({
-      type: 'question',
-      query: content,
-      threadId: chatRoom.value.roomId,
-      svcTy,
-      modelId,
-      refId,
-    })
+    await ensureWebSocketAndSend(
+      buildQuestionPayload({
+        query: content,
+        threadId: chatRoom.value.roomId,
+        svcTy,
+        modelId,
+        refId,
+      }),
+    )
   }
 
   // 답변 복사

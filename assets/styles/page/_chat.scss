@@ -277,33 +277,6 @@
       width: 100%;
     }
 
-    // 원본 마크다운 (토글)
-    .message-content--raw.raw-text {
-      margin: 0;
-      white-space: pre-wrap;
-      word-break: break-word;
-      font-family: $font-family-mono;
-      font-size: $font-size-sm;
-      line-height: $line-height-base;
-      color: $color-text-heading-sub;
-    }
-
-    .message-render-toggle {
-      margin-top: -8px;
-      .raw-toggle {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        font-size: $font-size-sm;
-        color: #64748b;
-        cursor: pointer;
-        user-select: none;
-
-        input {
-          cursor: pointer;
-        }
-      }
-    }
   }
 
   // user — 우측 정렬

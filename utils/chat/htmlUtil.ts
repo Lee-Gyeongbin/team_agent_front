@@ -1,7 +1,5 @@
 import DOMPurify from 'dompurify'
 import { marked } from 'marked'
-import { escapeHTML } from '~/utils/global/htmlUtil'
-import { makeBr } from '~/utils/global/stringUtil'
 
 /** GFM(표·취소선 등) + 단일 줄바꿈을 <br>로 (채팅 본문 UX) */
 marked.setOptions({
@@ -101,22 +99,4 @@ export const toHtmlContent = (value: string) => {
 
   const html = marked.parse(markdown, { async: false }) as string
   return DOMPurify.sanitize(html)
-}
-
-/**
- * 원본 텍스트(마크다운)를 “파싱하지 않고” 채팅용 줄바꿈 `<br/>`만 적용.
- * - 안전: HTML은 전부 이스케이프하고 `<br>`만 라인브레이크로 유지
- * - 기존 UX가 `<br>` 기반이라 원본보기 토글에서도 동일하게 보이도록 함
- */
-export const toRawTextHtml = (value: string) => {
-  const normalized = value.replace(/\r\n/g, '\n').replace(/\\n/g, '\n')
-  if (!normalized.trim()) return ''
-
-  // 기존에 이미 `<br>`가 들어있는 경우도 대비: `<br>`만 토큰으로 치환 후 이스케이프
-  const BR_TOKEN = '__CHAT_RAW_BR__'
-  const withBrToken = normalized.replace(/<br\s*\/?>/gi, BR_TOKEN)
-  const escaped = escapeHTML(withBrToken)
-
-  // 줄바꿈은 `<br />`로 변환
-  return makeBr(escaped).replaceAll(BR_TOKEN, '<br />')
 }

@@ -10,6 +10,8 @@ import type {
   VisualizationStatItem,
   SaveChatLogReactionResponse,
   KnowledgeItem,
+  ChatFileSavePayload,
+  ChatFileSaveResponse,
 } from '~/types/chat'
 
 export const useReportsApi = () => {
@@ -33,6 +35,14 @@ export const useReportsApi = () => {
   // CHAT 대화방 등록
   const fetchCreateChatRoom = async (content: string, svcTy: string): Promise<{ data: ChatRoom }> => {
     return post<{ data: ChatRoom }>('/ai/chatbot/createChatRoom.do', { content, svcTy })
+  }
+  // CHAT 첨부파일 메타 저장 (응답 본문은 JSON 최상위 — useApi는 axios처럼 data로 감싸지 않음)
+  const fetchCreateChatFile = async (payload: ChatFileSavePayload): Promise<ChatFileSaveResponse> => {
+    return post<ChatFileSaveResponse>('/ai/chatbot/saveChatFile.do', payload)
+  }
+  // CHAT 첨부파일 orphan 표기 (ws 전송 실패 등)
+  const fetchMarkChatFileOrphan = async (chatFileIdList: string[]): Promise<{ successYn?: boolean }> => {
+    return post<{ successYn?: boolean }>('/ai/chatbot/markChatFileOrphan.do', { chatFileIdList })
   }
   // CHAT 대화방 로그 목록 조회
   const fetchSelectChatLogList = async (roomId: string): Promise<{ list: ChatLogListRow[] }> => {
@@ -113,6 +123,8 @@ export const useReportsApi = () => {
     fetchSelectRagDsList,
     fetchSelectDmList,
     fetchCreateChatRoom,
+    fetchCreateChatFile,
+    fetchMarkChatFileOrphan,
     fetchSelectChatLogList,
     fetchSelectChatRef,
     fetchSelectTableDataList,

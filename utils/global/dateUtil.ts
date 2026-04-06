@@ -66,3 +66,26 @@ export const formatDateTimeDisplay = (dateTime: string): string => {
   const minutes = String(d.getMinutes()).padStart(2, '0')
   return `${year}.${month}.${day} ${hours}:${minutes}`
 }
+
+/** Date → yyyyMMdd (채팅 첨부 저장 경로의 일자 폴더 등) */
+export const formatYyyyMmDdFromDate = (d: Date): string => {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}${m}${day}`
+}
+
+/**
+ * NCP/DB 저장용 물리 파일명 베이스 — yyyyMMddHHmmssSSS (동일 초 내 중복 완화)
+ * 확장자는 호출 측에서 붙임.
+ */
+export const formatChatStoreFileNameBase = (d: Date = new Date()): string => {
+  const y = d.getFullYear()
+  const M = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  const h = String(d.getHours()).padStart(2, '0')
+  const m = String(d.getMinutes()).padStart(2, '0')
+  const s = String(d.getSeconds()).padStart(2, '0')
+  const ms = String(d.getMilliseconds()).padStart(3, '0')
+  return `${y}${M}${day}${h}${m}${s}${ms}`
+}

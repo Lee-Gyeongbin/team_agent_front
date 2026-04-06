@@ -3,10 +3,6 @@ import { useFileApi } from '~/composables/com/useFileApi'
 
 const { fetchUploadFileUrl, fetchViewFileUrl, fetchDownloadFileUrl, fetchDeleteFile } = useFileApi()
 
-const isUploading = ref(false)
-const uploadError = ref('')
-const uploadedFilePath = ref<string | null>(null)
-
 const viewUrl = ref<string | null>(null)
 const downloadUrl = ref<string | null>(null)
 const fileError = ref('')
@@ -17,17 +13,15 @@ export const useFileStore = () => {
    * 1) /com/file/uploadFile.do 로 메타데이터 보내서 uploadUrl, filePath 수신
    * 2) 반환된 uploadUrl 로 실제 파일 PUT 업로드
    * 3) 성공 시 filePath 반환 (DB 저장 시 사용 가능)
+   * - 호출마다 독립적으로 동작하므로 병렬 호출 안전
    */
   const handleUploadFile = async (payload: FileUploadRequest): Promise<string | null> => {
     const { file, docTitle, categoryId, secLvl, keywords } = payload
     if (!file) return null
 
-    isUploading.value = true
-    uploadError.value = ''
-    uploadedFilePath.value = null
-
     try {
       // 1) Presigned URL 발급
+      const { storeFileName, storeFilePath } = payload
       const meta = {
         fileName: file.name,
         fileType: file.type || 'application/octet-stream',
@@ -36,11 +30,13 @@ export const useFileStore = () => {
         categoryId,
         secLvl,
         keywords,
+        ...(storeFileName ? { storeFileName } : {}),
+        ...(storeFilePath ? { storeFilePath } : {}),
       }
 
       const { uploadUrl, filePath } = await fetchUploadFileUrl(meta)
 
-      // 2) S3로 실제 파일 업로드
+      // 2) NCP로 실제 파일 업로드
       const response = await fetch(uploadUrl, {
         method: 'PUT',
         headers: {
@@ -53,15 +49,11 @@ export const useFileStore = () => {
         throw new Error('파일 업로드에 실패했습니다.')
       }
 
-      uploadedFilePath.value = filePath
       return filePath
     } catch (error) {
       const message = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.'
       openToast({ message: message, type: 'error' })
-      uploadError.value = message
       return null
-    } finally {
-      isUploading.value = false
     }
   }
 
@@ -165,9 +157,6 @@ export const useFileStore = () => {
 
   return {
     // 상태
-    isUploading,
-    uploadError,
-    uploadedFilePath,
     viewUrl,
     downloadUrl,
     fileError,

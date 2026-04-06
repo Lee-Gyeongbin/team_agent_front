@@ -31,6 +31,10 @@ export interface FileUploadRequest {
   secLvl?: string
   /** 키워드 */
   keywords?: string
+  /** 저장 파일명 */
+  storeFileName?: string
+  /** 저장 파일 경로 */
+  storeFilePath?: string
 }
 
 // /com/file/uploadFile.do 응답
