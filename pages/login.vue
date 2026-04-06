@@ -1,77 +1,86 @@
 <template>
-  <div class="chat-index login-form flex flex-col items-center justify-center">
-    <div class="chat-index-header">
-      <h1 class="chat-index-title f-center">TeamAgent</h1>
-      <p class="chat-index-description f-center">로그인</p>
-    </div>
-
-    <div class="chat-index-input-wrapper flex flex-col items-center w-full login-form-width">
-      <div class="chat-index-input-top flex flex-col w-full">
-        <label
-          class="login-label"
-          for="login-id"
-        >
-          아이디
-        </label>
-        <input
-          id="login-id"
-          v-model="loginId"
-          type="text"
-          class="login-input"
-          placeholder="아이디를 입력하세요."
-          @keyup.enter="onSubmit"
+  <div class="login-form flex items-center justify-center">
+    <div class="login-form-wrapper login-center">
+      <div class="login-index-header">
+        <img
+          class="login-logo"
+          src="~/assets/icons/svg/logo-teamagent-login.svg"
+          alt="TeamAgent"
+          @click="navigateTo('/')"
         />
-
-        <label
-          class="login-label"
-          for="login-password"
-        >
-          비밀번호
-        </label>
-        <input
-          id="login-password"
-          v-model="loginPassword"
-          type="password"
-          class="login-input"
-          placeholder="비밀번호를 입력하세요."
-          @keyup.enter="onSubmit"
-        />
-
-        <p
-          v-if="sessionExpiredMessage"
-          class="login-session-expired"
-        >
-          {{ sessionExpiredMessage }}
-        </p>
-
-        <p
-          v-if="errorMessage"
-          class="login-error"
-        >
-          {{ errorMessage }}
-        </p>
       </div>
 
-      <div class="chat-index-input-bottom flex flex-col items-center w-full">
-        <div class="login-actions flex justify-end items-center w-full">
-          <button
-            class="btn btn-chat-index btn-login"
-            type="button"
-            :disabled="isLoading"
-            @click="onSubmit"
+      <div class="chat-index-input-wrapper flex flex-col items-center w-full login-form-width">
+        <div class="chat-index-input-top flex flex-col w-full">
+          <label
+            class="login-label"
+            for="login-id"
           >
-            <span class="icon-circle">
-              <i class="icon-user size-20" />
-            </span>
-            <p>{{ isLoading ? '로그인 중...' : '로그인' }}</p>
-          </button>
+            아이디
+          </label>
+          <input
+            id="login-id"
+            v-model="loginId"
+            type="text"
+            class="login-input"
+            placeholder="아이디를 입력하세요."
+            @keyup.enter="onSubmit"
+          />
+
+          <label
+            class="login-label"
+            for="login-password"
+          >
+            비밀번호
+          </label>
+          <input
+            id="login-password"
+            v-model="loginPassword"
+            type="password"
+            class="login-input"
+            placeholder="비밀번호를 입력하세요."
+            @keyup.enter="onSubmit"
+          />
+
+          <p
+            v-if="sessionExpiredMessage"
+            class="login-session-expired"
+          >
+            {{ sessionExpiredMessage }}
+          </p>
+
+          <p
+            v-if="errorMessage"
+            class="login-error"
+          >
+            {{ errorMessage }}
+          </p>
         </div>
-        <NuxtLink
-          to="/signup"
-          class="login-signup-link"
-        >
-          아직 계정이 없으신가요? <b>회원가입</b>
-        </NuxtLink>
+
+        <div class="chat-index-input-bottom flex flex-col items-center w-full">
+          <div class="login-actions flex items-center w-full">
+            <UiButton
+              type="button"
+              variant="primary"
+              size="lg"
+              class="btn-login-submit"
+              full-width
+              :loading="isLoading"
+              @click="onSubmit"
+            >
+              {{ isLoading ? '로그인 중...' : '로그인' }}
+              <template #icon-right>
+                <i class="icon-send size-20 icon-white" />
+              </template>
+            </UiButton>
+          </div>
+          <NuxtLink
+            to="/signup"
+            class="login-signup-link"
+          >
+            아직 계정이 없으신가요? <b>회원가입</b>
+          </NuxtLink>
+        </div>
       </div>
     </div>
   </div>
@@ -165,13 +174,26 @@ const onSubmit = async () => {
     margin-top: 16px;
   }
 
-  .btn-login {
-    width: 130px;
-    height: 60px;
+  // 로그인 메인 버튼: 전체 폭, 라벨 중앙 + 전송 아이콘 우측 정렬
+  .btn-login-submit.ui-button {
+    position: relative;
+    height: 44px;
+    min-height: 44px;
+    padding: 0 20px;
+    border-radius: 6px;
+    justify-content: center;
 
-    &:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
+    :deep(.ui-button-text) {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: $font-size-lg;
+      font-weight: $font-weight-bold;
+    }
+
+    :deep(.ui-button-icon) {
+      position: absolute;
+      right: 18px;
     }
   }
 

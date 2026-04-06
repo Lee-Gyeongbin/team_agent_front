@@ -1,0 +1,42 @@
+@use '../utils/variables' as *;
+@use '../utils/mixins' as *;
+
+.login-form {
+  height: 100vh;
+  width: 100vw;
+  background: #f4f7f9;
+
+  .login-form-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    width: 100%;
+    padding: 40px 32px;
+    border-radius: 20px;
+    border: 1px solid #ecf0f3;
+    background: #fff;
+
+    .login-index-header {
+      width: 100%;
+
+      padding-bottom: 24px;
+      border-bottom: 1px solid #ecf0f3;
+    }
+
+    .login-logo {
+      height: 50px;
+      width: auto;
+      margin: 0 auto;
+    }
+
+    .chat-index-title {
+      font-size: 2.25rem;
+      font-weight: $font-weight-bold;
+      line-height: 150%;
+      color: $color-text-primary;
+      margin-bottom: 8px;
+      color: #2d3139;
+    }
+  }
+}

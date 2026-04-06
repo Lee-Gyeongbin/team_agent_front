@@ -691,8 +691,7 @@
   transition: background $transition-fast;
 
   // 아이콘을 mask 방식으로 오버라이드 (SVG에 파란색 하드코딩 대응)
-  .icon-knowledge,
-  .icon-database {
+  i {
     background-image: none;
     background-color: #6f7a93;
   }

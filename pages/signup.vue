@@ -1,130 +1,139 @@
 <template>
-  <div class="chat-index signup-form flex flex-col items-center justify-center">
-    <div class="chat-index-header">
-      <h1 class="chat-index-title f-center">TeamAgent</h1>
-      <p class="chat-index-description f-center">회원가입</p>
-    </div>
-
-    <div class="chat-index-input-wrapper flex flex-col items-center w-full signup-form-width">
-      <div class="chat-index-input-top flex flex-col w-full">
-        <label
-          class="signup-label"
-          for="signup-id"
-        >
-          아이디
-        </label>
-        <input
-          id="signup-id"
-          v-model="form.userId"
-          type="text"
-          class="signup-input"
-          placeholder="아이디를 입력하세요."
-          @keyup.enter="onSubmit"
+  <div class="login-form signup-form flex items-center justify-center">
+    <div class="login-form-wrapper login-center">
+      <div class="login-index-header">
+        <img
+          class="login-logo"
+          src="~/assets/icons/svg/logo-teamagent-login.svg"
+          alt="TeamAgent"
+          @click="navigateTo('/')"
         />
-
-        <label
-          class="signup-label"
-          for="signup-name"
-        >
-          이름
-        </label>
-        <input
-          id="signup-name"
-          v-model="form.userNm"
-          type="text"
-          class="signup-input"
-          placeholder="이름을 입력하세요."
-          @keyup.enter="onSubmit"
-        />
-
-        <label
-          class="signup-label"
-          for="signup-password"
-        >
-          비밀번호
-        </label>
-        <input
-          id="signup-password"
-          v-model="form.password"
-          type="password"
-          class="signup-input"
-          placeholder="비밀번호를 입력하세요."
-          @keyup.enter="onSubmit"
-        />
-
-        <label
-          class="signup-label"
-          for="signup-password-confirm"
-        >
-          비밀번호 확인
-        </label>
-        <input
-          id="signup-password-confirm"
-          v-model="form.passwordConfirm"
-          type="password"
-          class="signup-input"
-          placeholder="비밀번호를 다시 입력하세요."
-          @keyup.enter="onSubmit"
-        />
-
-        <label
-          class="signup-label"
-          for="signup-email"
-        >
-          이메일
-        </label>
-        <input
-          id="signup-email"
-          v-model="form.email"
-          type="email"
-          class="signup-input"
-          placeholder="이메일을 입력하세요."
-          @keyup.enter="onSubmit"
-        />
-
-        <label
-          class="signup-label"
-          for="signup-phone"
-        >
-          연락처
-        </label>
-        <input
-          id="signup-phone"
-          v-model="form.phone"
-          type="tel"
-          class="signup-input"
-          placeholder="연락처를 입력하세요."
-          @keyup.enter="onSubmit"
-        />
-
-        <p
-          v-if="errorMessage"
-          class="signup-error"
-        >
-          {{ errorMessage }}
-        </p>
       </div>
 
-      <div class="chat-index-input-bottom flex flex-col items-center w-full">
-        <div class="signup-actions flex justify-end items-center w-full">
-          <button
-            class="btn btn-chat-index btn-signup"
-            type="button"
-            :disabled="isLoading"
-            @click="onSubmit"
+      <div class="chat-index-input-wrapper flex flex-col items-center w-full signup-form-width">
+        <div class="chat-index-input-top flex flex-col w-full">
+          <label
+            class="signup-label"
+            for="signup-id"
           >
-            <span class="icon-circle">
-              <i class="icon-user size-20" />
-            </span>
-            <p>{{ isLoading ? '가입 중...' : '회원가입' }}</p>
-          </button>
+            아이디
+          </label>
+          <input
+            id="signup-id"
+            v-model="form.userId"
+            type="text"
+            class="signup-input"
+            placeholder="아이디를 입력하세요."
+            @keyup.enter="onSubmit"
+          />
+
+          <label
+            class="signup-label"
+            for="signup-name"
+          >
+            이름
+          </label>
+          <input
+            id="signup-name"
+            v-model="form.userNm"
+            type="text"
+            class="signup-input"
+            placeholder="이름을 입력하세요."
+            @keyup.enter="onSubmit"
+          />
+
+          <label
+            class="signup-label"
+            for="signup-password"
+          >
+            비밀번호
+          </label>
+          <input
+            id="signup-password"
+            v-model="form.password"
+            type="password"
+            class="signup-input"
+            placeholder="비밀번호를 입력하세요."
+            @keyup.enter="onSubmit"
+          />
+
+          <label
+            class="signup-label"
+            for="signup-password-confirm"
+          >
+            비밀번호 확인
+          </label>
+          <input
+            id="signup-password-confirm"
+            v-model="form.passwordConfirm"
+            type="password"
+            class="signup-input"
+            placeholder="비밀번호를 다시 입력하세요."
+            @keyup.enter="onSubmit"
+          />
+
+          <label
+            class="signup-label"
+            for="signup-email"
+          >
+            이메일
+          </label>
+          <input
+            id="signup-email"
+            v-model="form.email"
+            type="email"
+            class="signup-input"
+            placeholder="이메일을 입력하세요."
+            @keyup.enter="onSubmit"
+          />
+
+          <label
+            class="signup-label"
+            for="signup-phone"
+          >
+            연락처
+          </label>
+          <input
+            id="signup-phone"
+            v-model="form.phone"
+            type="tel"
+            class="signup-input"
+            placeholder="연락처를 입력하세요."
+            @keyup.enter="onSubmit"
+          />
+
+          <p
+            v-if="errorMessage"
+            class="signup-error"
+          >
+            {{ errorMessage }}
+          </p>
         </div>
-        <NuxtLink
-          to="/login"
-          class="signup-login-link"
-        >
-          이미 계정이 있으신가요? <b>로그인</b>
-        </NuxtLink>
+
+        <div class="chat-index-input-bottom flex flex-col items-center w-full">
+          <div class="signup-actions flex items-center w-full">
+            <UiButton
+              type="button"
+              variant="primary"
+              size="lg"
+              class="btn-signup-submit"
+              full-width
+              :loading="isLoading"
+              @click="onSubmit"
+            >
+              {{ isLoading ? '가입 중...' : '회원가입' }}
+              <template #icon-right>
+                <i class="icon-send size-20 icon-white" />
+              </template>
+            </UiButton>
+          </div>
+          <NuxtLink
+            to="/login"
+            class="signup-login-link"
+          >
+            이미 계정이 있으신가요? <b>로그인</b>
+          </NuxtLink>
+        </div>
       </div>
     </div>
   </div>
@@ -216,13 +225,26 @@ const onSubmit = async () => {
     margin-top: 16px;
   }
 
-  .btn-signup {
-    width: 130px;
-    height: 60px;
+  // 회원가입 메인 버튼: 로그인 제출 버튼과 동일 레이아웃
+  .btn-signup-submit.ui-button {
+    position: relative;
+    height: 44px;
+    min-height: 44px;
+    padding: 0 20px;
+    border-radius: 6px;
+    justify-content: center;
 
-    &:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
+    :deep(.ui-button-text) {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: $font-size-lg;
+      font-weight: $font-weight-bold;
+    }
+
+    :deep(.ui-button-icon) {
+      position: absolute;
+      right: 18px;
     }
   }
 
