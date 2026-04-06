@@ -361,7 +361,7 @@ export const useLibraryStore = () => {
     openConfirm({
       message: '카드를 삭제하시겠습니까?',
       onConfirm: async () => {
-        await fetchSaveCard({ ...card, useYn: 'N' })
+        await fetchSaveCard({ ...card, useYn: 'N', thumbImg: '' })
         await handleFetchCategoryList()
         openAlert({ message: '카드가 삭제되었습니다.\n 삭제된 카드는 휴지통에서 확인할 수 있습니다.' })
       },
@@ -380,7 +380,7 @@ export const useLibraryStore = () => {
     openConfirm({
       message: '카드를 보관하시겠습니까?',
       onConfirm: async () => {
-        await fetchSaveCard({ ...card, archiveYn: 'Y' })
+        await fetchSaveCard({ ...card, archiveYn: 'Y', thumbImg: '' })
         await handleFetchCategoryList()
         openToast({ message: '카드가 보관되었습니다.' })
       },
@@ -392,7 +392,7 @@ export const useLibraryStore = () => {
     openConfirm({
       message: '카드를 보관해제하시겠습니까?',
       onConfirm: async () => {
-        await fetchSaveCard({ ...card, archiveYn: 'N' })
+        await fetchSaveCard({ ...card, archiveYn: 'N', thumbImg: '' })
         await handleFetchCategoryList()
         openToast({ message: '카드가 보관해제되었습니다.' })
         isArchiveModalOpen.value = false
@@ -421,9 +421,11 @@ export const useLibraryStore = () => {
             sortOrd: index + 1,
           })),
         }))
+        openLoading({ text: '카드 순서를 변경하는 중...' })
         await fetchUpdateCardOrder(payload as LibraryCardOrderPayload[])
         await handleFetchCardList()
         openAlert({ message: '카드 순서가 변경되었습니다.' })
+        closeLoading()
       },
       onCancel: () => {
         const restored: CategoryCardsMap = {}
@@ -472,7 +474,7 @@ export const useLibraryStore = () => {
 
       // 조회 시 카드 newYn → 'N' (목록·그리드 카드와 동기화)
       if (selectedCard.value?.newYn === 'Y') {
-        await fetchSaveCard({ ...selectedCard.value, newYn: 'N' })
+        await fetchSaveCard({ ...selectedCard.value, newYn: 'N', thumbImg: '' })
         selectedCard.value = { ...selectedCard.value, newYn: 'N' }
         patchCardNewYnInLists(cardId, selectedCard.value.categoryId, 'N')
       }
@@ -525,7 +527,7 @@ export const useLibraryStore = () => {
     openConfirm({
       message: '카드를 복원하시겠습니까?',
       onConfirm: async () => {
-        await fetchSaveCard({ ...card, useYn: 'Y' })
+        await fetchSaveCard({ ...card, useYn: 'Y', thumbImg: '' })
         await handleFetchCategoryList()
         openToast({ message: '카드가 복원되었습니다.' })
         isTrashModalOpen.value = false

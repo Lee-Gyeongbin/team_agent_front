@@ -150,10 +150,9 @@
                         :class="{ 'is-active': selectedCardId === card.cardId }"
                         @click="openModal(card.cardId)"
                       >
-                        <!-- TODO: 더미 이미지 -->
                         <div class="library-card-img-grp">
                           <img
-                            src="~/assets/images/test_images.png"
+                            :src="resolveDataUrlImageSrc(card.thumbImg, defaultLibraryCardImg)"
                             alt="카드 이미지"
                             class="img"
                           />
@@ -343,7 +342,9 @@
 
 <script setup lang="ts">
 import draggable from 'vuedraggable'
+import defaultLibraryCardImg from '~/assets/images/test_images.png'
 import { useLibraryStore } from '~/composables/library/useLibraryStore'
+import { resolveDataUrlImageSrc } from '~/utils/global/imageUtil'
 
 const {
   categoryList,

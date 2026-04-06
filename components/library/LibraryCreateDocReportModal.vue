@@ -79,7 +79,14 @@
         </div>
 
         <div class="library-create-doc-report-table-wrap">
+          <p
+            v-if="fieldDefs.length === 0"
+            class="library-create-doc-report-empty"
+          >
+            템플릿형(<code class="library-create-doc-report-empty-code">T</code>)이 아니거나, 등록된 필드가 없습니다. 자유형식은 AI 응답 JSON 연동 후 표시됩니다.
+          </p>
           <table
+            v-else
             class="library-create-doc-report-table"
             role="presentation"
           >
@@ -88,99 +95,31 @@
               <col class="library-create-doc-report-col-value" />
             </colgroup>
             <tbody>
-              <tr class="library-create-doc-report-tr">
+              <tr
+                v-for="row in fieldDefs"
+                :key="row.fieldId"
+                class="library-create-doc-report-tr"
+                :class="{ 'is-tall': row.multilineYn === 'Y' }"
+              >
                 <th
                   scope="row"
                   class="library-create-doc-report-label"
                 >
-                  제 목
+                  {{ row.fieldNm }}
                 </th>
                 <td class="library-create-doc-report-cell">
                   <UiInput
-                    v-model="report.title"
+                    v-if="row.multilineYn !== 'Y'"
+                    v-model="report[row.jsonKey]"
                     size="md"
-                    placeholder="제목"
+                    :placeholder="row.fieldNm"
                   />
-                </td>
-              </tr>
-              <tr class="library-create-doc-report-tr is-tall">
-                <th
-                  scope="row"
-                  class="library-create-doc-report-label"
-                >
-                  개 요
-                </th>
-                <td class="library-create-doc-report-cell">
                   <UiTextarea
-                    v-model="report.overview"
-                    :rows="3"
+                    v-else
+                    v-model="report[row.jsonKey]"
+                    :rows="5"
                     :auto-resize="false"
-                    placeholder="개요"
-                    border
-                  />
-                </td>
-              </tr>
-              <tr class="library-create-doc-report-tr">
-                <th
-                  scope="row"
-                  class="library-create-doc-report-label"
-                >
-                  작성일자
-                </th>
-                <td class="library-create-doc-report-cell">
-                  <UiInput
-                    v-model="report.date"
-                    size="md"
-                    placeholder="YYYY.MM.DD"
-                  />
-                </td>
-              </tr>
-              <tr class="library-create-doc-report-tr">
-                <th
-                  scope="row"
-                  class="library-create-doc-report-label"
-                >
-                  작성자
-                </th>
-                <td class="library-create-doc-report-cell">
-                  <UiInput
-                    v-model="report.author"
-                    size="md"
-                    placeholder="작성자 (소속부서)"
-                  />
-                </td>
-              </tr>
-              <tr class="library-create-doc-report-tr is-tall">
-                <th
-                  scope="row"
-                  class="library-create-doc-report-label"
-                >
-                  본문내용
-                </th>
-                <td class="library-create-doc-report-cell">
-                  <UiTextarea
-                    v-model="report.content"
-                    :rows="6"
-                    :auto-resize="false"
-                    placeholder="본문"
-                    border
-                    class="library-create-doc-report-textarea-main"
-                  />
-                </td>
-              </tr>
-              <tr class="library-create-doc-report-tr is-tall">
-                <th
-                  scope="row"
-                  class="library-create-doc-report-label"
-                >
-                  결 론
-                </th>
-                <td class="library-create-doc-report-cell">
-                  <UiTextarea
-                    v-model="report.conclusion"
-                    :rows="4"
-                    :auto-resize="false"
-                    placeholder="결론"
+                    :placeholder="row.fieldNm"
                     border
                   />
                 </td>
@@ -234,13 +173,21 @@
 </template>
 
 <script setup lang="ts">
-import type { LibraryGeneratedReport } from '~/types/library'
+import type { LibraryGeneratedReportValues } from '~/types/library'
+import type { TmplField } from '~/types/tmpl'
 
-const props = defineProps<{
-  isOpen: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    isOpen: boolean
+    /** 템플릿형(`T`)일 때만 채움 — jsonKey·fieldNm·multilineYn 기준 동적 행 */
+    fieldDefs?: TmplField[]
+  }>(),
+  {
+    fieldDefs: () => [] as TmplField[],
+  },
+)
 
-const report = defineModel<LibraryGeneratedReport>('report', { required: true })
+const report = defineModel<LibraryGeneratedReportValues>('report', { required: true })
 
 const emit = defineEmits<{
   close: []
@@ -360,6 +307,22 @@ const onSendRefine = () => {
   padding: 0;
   box-sizing: border-box;
   background: #fff;
+}
+
+.library-create-doc-report-empty {
+  margin: 0;
+  padding: $spacing-lg $spacing-md;
+  font-size: $font-size-sm;
+  color: $color-text-muted;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.library-create-doc-report-empty-code {
+  padding: 0 4px;
+  font-size: $font-size-xs;
+  border-radius: 4px;
+  background: #f1f5f9;
 }
 
 // 표 레이아웃 — 다행(th)이 본문 높이만큼 세로로 이어지도록 table 사용

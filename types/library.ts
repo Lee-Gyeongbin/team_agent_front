@@ -23,6 +23,7 @@ export interface LibraryCard {
   sortOrd: number
   sqlCode: string
   newYn: 'Y' | 'N'
+  thumbImg: string
   useYn: 'Y' | 'N'
   createDt: string
   modifyDt: string
@@ -44,6 +45,7 @@ export interface LibraryCardDetail {
   sortOrd: number
   sqlCode: string
   newYn: 'Y' | 'N'
+  thumbImg: string
   useYn: 'Y' | 'N'
   createDt: string
   modifyDt: string
@@ -72,26 +74,11 @@ export interface LibrarySearchOption {
   value: string
 }
 
-/** 문서 만들기 — 유형 카드 한 줄 (목록은 API 연동 시 교체) */
-export interface LibraryCreateDocTypeItem {
-  id: string
-  title: string
-  badgeLabel: string
-  badgeKind: 'template' | 'freeform'
-  description: string
-  /** 템플릿형 등에서만 표시 — 필드 칩(`tmpl-map-chip`) */
-  tags: string[]
-}
-
-/** AI 생성 보고서 JSON 필드 (키 매핑용) */
-export interface LibraryGeneratedReport {
-  title: string
-  overview: string
-  date: string
-  author: string
-  content: string
-  conclusion: string
-}
+/**
+ * AI 생성 보고서 값 — 백엔드/DB 템플릿의 jsonKey와 1:1 매핑 (필드 정의는 가변)
+ * 응답 JSON을 그대로 파싱해 키 기준으로 채움
+ */
+export type LibraryGeneratedReportValues = Record<string, string>
 
 /** 카테고리 순서 변경 요청 항목 */
 export interface LibraryCategoryOrderItem {
