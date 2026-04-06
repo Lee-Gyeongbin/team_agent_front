@@ -97,7 +97,7 @@ import { openToast } from '~/composables/useToast'
 import { apiStringFromDateValue, dateValueFromApiString, formatDateTimeDisplay } from '~/utils/global/dateUtil'
 
 /** 첫 진입 기본 조회 기간(일) */
-const INITIAL_RANGE_DAYS = 7
+const INITIAL_RANGE_DAYS = 3
 const rangeEnd = today(getLocalTimeZone())
 const rangeStart = rangeEnd.subtract({ days: INITIAL_RANGE_DAYS - 1 })
 
