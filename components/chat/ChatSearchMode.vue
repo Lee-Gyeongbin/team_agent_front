@@ -32,7 +32,7 @@
     <UiSelect
       v-if="isSearchModeActive && subOptions.length > 0"
       id="sub-option"
-      class="w-150 ref-select"
+      class="w-155 ref-select"
       name="sub-option"
       :model-value="selectedSubOption"
       :options="subOptions"
