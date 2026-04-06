@@ -421,9 +421,11 @@ export const useLibraryStore = () => {
             sortOrd: index + 1,
           })),
         }))
+        openLoading({ text: '카드 순서를 변경하는 중...' })
         await fetchUpdateCardOrder(payload as LibraryCardOrderPayload[])
         await handleFetchCardList()
         openAlert({ message: '카드 순서가 변경되었습니다.' })
+        closeLoading()
       },
       onCancel: () => {
         const restored: CategoryCardsMap = {}
