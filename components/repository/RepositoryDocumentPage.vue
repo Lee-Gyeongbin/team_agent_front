@@ -124,7 +124,7 @@
             <template #icon-left>
               <i class="icon icon-trashcan size-12" />
             </template>
-            일괄 삭제
+            삭제
           </UiButton>
         </div>
 
@@ -185,9 +185,6 @@
                 <i class="icon icon-sync size-16" />
               </button>
             </template>
-            <template #header-actions>
-              <i class="icon icon-add-dot size-20" />
-            </template>
             <template #cell-select="{ row }">
               <div
                 class="cell-select-stop"
@@ -200,7 +197,7 @@
               </div>
             </template>
             <template #cell-docTitle="{ row }">
-              <div class="cell-document flex items-center">
+              <div class="cell-document flex items-center doc-name-grp">
                 <!-- <span
                   class="doc-icon"
                   :class="getDocIconClass(row.fileType)"
@@ -208,6 +205,22 @@
                   <i :class="['icon', getDocIconName(row.fileType), 'size-20']" />
                 </span> -->
                 <span class="doc-name">{{ row.docTitle }}</span>
+                <button
+                  type="button"
+                  class="btn-doc-title"
+                  title="미리보기"
+                  @click.stop="onDocTitlePreview(row)"
+                >
+                  <i class="icon icon-view size-16"></i>
+                </button>
+                <button
+                  type="button"
+                  class="btn-doc-title"
+                  title="다운로드"
+                  @click.stop="onDocTitleDownload(row)"
+                >
+                  <i class="icon icon-download size-16"></i>
+                </button>
               </div>
             </template>
             <template #cell-useYn="{ value }">
@@ -239,31 +252,6 @@
                 </template>
               </UiTooltip>
               <span v-else>{{ value }}개 RAG</span>
-            </template>
-            <template #cell-actions="{ row }">
-              <div
-                class="cell-actions"
-                @click.stop
-              >
-                <UiDropdownMenu
-                  :items="rowActionItems"
-                  align="end"
-                  @select="(value) => onRowActionSelect(value, row as unknown as Document)"
-                >
-                  <template #trigger>
-                    <UiButton
-                      icon-only
-                      variant="ghost"
-                      size="xs"
-                      class="btn-row-more"
-                    >
-                      <template #icon-left>
-                        <i class="icon icon-add-dot size-20" />
-                      </template>
-                    </UiButton>
-                  </template>
-                </UiDropdownMenu>
-              </div>
             </template>
           </UiTable>
         </div>
@@ -327,7 +315,6 @@ const {
   tableColumns,
   documentList,
   formatUseYnLabel,
-  rowActionItems,
   isDocRegisterOpen,
   docRegisterInitialData,
   docTableHighlightedDocId,
@@ -342,6 +329,15 @@ const {
   filePreviewDocFileOptions,
   onCloseFilePreview,
 } = useRepositoryStore()
+
+/** 문서명 셀 미리보기/다운로드 */
+const onDocTitlePreview = (row: Record<string, unknown>) => {
+  void onRowActionSelect('preview', row as unknown as Document)
+}
+const onDocTitleDownload = (row: Record<string, unknown>) => {
+  void onRowActionSelect('download', row as unknown as Document)
+}
+
 const {
   filteredCategoryList,
   isCategoryInputVisible,

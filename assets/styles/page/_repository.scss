@@ -310,6 +310,19 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: 0;
+    }
+
+    // 체크박스 셀: td가 display:flex면 자식은 기본 flex-grow:0 → 체크박스 너비만 씀.
+    // flex:1 로 가로로 셀(content box) 전체를 클릭 영역으로 채움
+    .cell-select-stop {
+      flex: 1 1 0;
+      min-width: 0;
+      align-self: stretch;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-sizing: border-box;
     }
 
     .ui-table th .table-header-sort-btn {
@@ -317,7 +330,7 @@
       align-items: center;
       gap: 4px;
       height: 25px;
-      padding: 2px 4.5px 2px 6px;
+      padding: 2px 6px;
       border: none;
       border-radius: 4px;
       background: transparent;
@@ -383,9 +396,32 @@
       color: $color-text-muted;
     }
 
+    // doc-name-grp는 마크업에서 .cell-document와 동일 요소에 붙음 → 자손 선택자(.cell-document .doc-name-grp)는 매칭 안 됨
+    &.doc-name-grp {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      &:hover .btn-doc-title,
+      &:focus-within .btn-doc-title {
+        opacity: 1;
+        pointer-events: auto;
+      }
+    }
+
     .doc-name {
       min-width: 0;
       @include ellipsis(1);
+    }
+
+    .btn-doc-title {
+      flex-shrink: 0;
+      width: 16px;
+      height: 16px;
+      color: #5c6677;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity $transition-fast;
     }
   }
 

@@ -254,7 +254,13 @@ const onRowClick = (row: Record<string, any>, index: number) => {
       }
 
       &.is-clickable {
-        cursor: pointer;
+        td {
+          cursor: pointer;
+        }
+
+        td:first-child {
+          cursor: default;
+        }
       }
 
       &.is-selected td {
