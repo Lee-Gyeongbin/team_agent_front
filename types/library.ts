@@ -23,6 +23,7 @@ export interface LibraryCard {
   sortOrd: number
   sqlCode: string
   newYn: 'Y' | 'N'
+  thumbImg: string
   useYn: 'Y' | 'N'
   createDt: string
   modifyDt: string
@@ -44,6 +45,7 @@ export interface LibraryCardDetail {
   sortOrd: number
   sqlCode: string
   newYn: 'Y' | 'N'
+  thumbImg: string
   useYn: 'Y' | 'N'
   createDt: string
   modifyDt: string
