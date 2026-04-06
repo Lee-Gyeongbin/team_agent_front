@@ -254,12 +254,36 @@
       @close="isCreateDocModalOpen = false"
       @generate="onCreateDocGenerate"
     />
+
+    <!-- 문서 생성 중 (AI 응답 대기) -->
+    <LibraryCreateDocLoadingModal
+      :is-open="isCreateDocLoadingOpen"
+      @close="onCreateDocLoadingClose"
+    />
+
+    <!-- AI 생성 보고서 편집 -->
+    <LibraryCreateDocReportModal
+      v-model:report="generatedReport"
+      :is-open="isCreateDocReportOpen"
+      @close="onCreateDocReportClose"
+      @export-pdf="onCreateDocExportPdf"
+      @share-link="onCreateDocShareLink"
+      @select-other-type="onCreateDocSelectOtherType"
+      @send-refine="onCreateDocSendRefine"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
-import type { LibraryCardDetail, DocItem, TableDataItem, ChartStatItem, ChartDetailCdItem } from '~/types/library'
+import type {
+  LibraryCardDetail,
+  DocItem,
+  TableDataItem,
+  ChartStatItem,
+  ChartDetailCdItem,
+  LibraryGeneratedReport,
+} from '~/types/library'
 import type { VisualizationViewModel } from '~/types/chat'
 import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
 import { useFileStore } from '~/composables/com/useFileStore'
@@ -410,6 +434,9 @@ watch(
       isSqlCodeVisible.value = false
       expandedRefKey.value = null
       isCreateDocModalOpen.value = false
+      isCreateDocLoadingOpen.value = false
+      isCreateDocReportOpen.value = false
+      generatedReport.value = createEmptyGeneratedReport()
     }
   },
 )
@@ -441,14 +468,72 @@ const onReferenceLink = async (item: DocItem) => {
 
 /** 문서 만들기 — 유형 선택 모달 */
 const isCreateDocModalOpen = ref(false)
+const isCreateDocLoadingOpen = ref(false)
+const isCreateDocReportOpen = ref(false)
+
+const createEmptyGeneratedReport = (): LibraryGeneratedReport => ({
+  title: '',
+  overview: '',
+  date: '',
+  author: '',
+  content: '',
+  conclusion: '',
+})
+
+const generatedReport = ref<LibraryGeneratedReport>(createEmptyGeneratedReport())
 
 const handleCreateDoc = () => {
   handleSelectTmplList()
   isCreateDocModalOpen.value = true
 }
 
-const onCreateDocGenerate = (_payload: { docTypeId: string }) => {
+/** 문서 생성하기 — 로딩 → (추후 AI JSON) → 보고서 모달 */
+const onCreateDocGenerate = async (_payload: { docTypeId: string }) => {
   isCreateDocModalOpen.value = false
+  isCreateDocLoadingOpen.value = true
+  try {
+    // 🔽 더미 지연·JSON — AI API 연동 시 제거하고 응답으로 `generatedReport` 설정
+    await new Promise((r) => setTimeout(r, 1600))
+    generatedReport.value = {
+      title: '예시 보고서 제목',
+      overview: '지식창고를 기반으로 한 요약 개요 문단입니다.',
+      date: '2026.04.06',
+      author: '작성자 (소속부서)',
+      content: '- 항목 1\n- 항목 2\n본문 내용을 입력합니다.',
+      conclusion: '결론 요약 문단입니다.',
+    }
+    isCreateDocReportOpen.value = true
+  } finally {
+    isCreateDocLoadingOpen.value = false
+  }
+}
+
+const onCreateDocLoadingClose = () => {
+  isCreateDocLoadingOpen.value = false
+}
+
+const onCreateDocReportClose = () => {
+  isCreateDocReportOpen.value = false
+  generatedReport.value = createEmptyGeneratedReport()
+}
+
+const onCreateDocExportPdf = () => {
+  openToast({ message: 'PDF 다운로드는 추후 연동 예정입니다.', duration: 2000 })
+}
+
+const onCreateDocShareLink = () => {
+  openToast({ message: '공유 링크는 추후 연동 예정입니다.', duration: 2000 })
+}
+
+const onCreateDocSelectOtherType = () => {
+  isCreateDocReportOpen.value = false
+  generatedReport.value = createEmptyGeneratedReport()
+  handleSelectTmplList()
+  isCreateDocModalOpen.value = true
+}
+
+const onCreateDocSendRefine = (_message: string) => {
+  openToast({ message: '문서 보완 요청은 AI 연동 후 사용할 수 있습니다.', duration: 2000 })
 }
 
 const handleCopyResponse = async () => {
