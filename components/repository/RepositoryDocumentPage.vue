@@ -185,6 +185,10 @@
                 <i class="icon icon-sync size-16" />
               </button>
             </template>
+            <!-- 표시만 YYYY-MM-DD (정렬은 row.createDt 원문 기준 유지) -->
+            <template #cell-createDt="{ value }">
+              {{ String(value ?? '').slice(0, 10) }}
+            </template>
             <template #cell-select="{ row }">
               <div
                 class="cell-select-stop"

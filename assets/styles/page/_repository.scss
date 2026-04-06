@@ -401,16 +401,16 @@
       color: $color-text-muted;
     }
 
-    // doc-name-grp는 마크업에서 .cell-document와 동일 요소에 붙음 → 자손 선택자(.cell-document .doc-name-grp)는 매칭 안 됨
     &.doc-name-grp {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
 
       &:hover .btn-doc-title,
       &:focus-within .btn-doc-title {
         opacity: 1;
         pointer-events: auto;
+        color: $color-text-primary;
       }
     }
 
@@ -421,12 +421,20 @@
 
     .btn-doc-title {
       flex-shrink: 0;
-      width: 16px;
-      height: 16px;
-      color: #5c6677;
+      width: 20px;
+      height: 20px;
+      color: $color-text-dark;
       opacity: 0;
       pointer-events: none;
-      transition: opacity $transition-fast;
+      border-radius: 4px;
+      transition:
+        opacity $transition-fast,
+        color $transition-fast;
+      &:hover,
+      &:focus-visible {
+        background-color: #f1f6fe;
+        color: $color-text-heading-sub;
+      }
     }
   }
 
