@@ -55,7 +55,7 @@ const tableColumns: TableColumn[] = [
     sortable: true,
     sortType: 'string',
   },
-  { key: 'categoryName', label: '카테고리', width: '200px', align: 'left', headerAlign: 'left' },
+  { key: 'categoryName', label: '카테고리', width: '130px', align: 'left', headerAlign: 'left' },
   {
     key: 'fileSize',
     label: '파일 총 크기',
@@ -65,18 +65,18 @@ const tableColumns: TableColumn[] = [
     sortable: true,
     sortType: 'number',
   },
-  { key: 'fileCnt', label: '파일 개수', width: '100px', align: 'center', headerAlign: 'center' },
+  { key: 'fileCnt', label: '파일 개수', width: '80px', align: 'center', headerAlign: 'center' },
   {
     key: 'createDt',
     label: '등록일',
-    width: '120px',
+    width: '105px',
     align: 'center',
     headerAlign: 'center',
     sortable: true,
     sortType: 'date',
   },
-  { key: 'useYn', label: '상태', width: '80px', align: 'center', headerAlign: 'center' },
-  { key: 'dsDocCnt', label: 'RAG 사용', width: '100px', align: 'center', headerAlign: 'center' },
+  { key: 'useYn', label: '상태', width: '70px', align: 'center', headerAlign: 'center' },
+  { key: 'dsDocCnt', label: 'RAG 사용', width: '85px', align: 'center', headerAlign: 'center' },
 ]
 
 /** useYn 표시 (Y/N 또는 레거시 한글) */

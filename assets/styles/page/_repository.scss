@@ -304,6 +304,11 @@
     background: #fff;
     border-top: 1px solid #ecf0f3;
 
+    .ui-table thead th,
+    .ui-table tbody td {
+      padding: 0 6px;
+    }
+
     // 첫 번째 컬럼(체크박스): th/td 모두 가운데 정렬
     .ui-table thead th:first-child,
     .ui-table tbody td:first-child:not(.ui-table-empty) {
