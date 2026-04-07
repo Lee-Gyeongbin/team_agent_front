@@ -4,7 +4,7 @@
     title="문서 만들기"
     max-width="720px"
     custom-class="doc-dataset-create-modal library-create-doc-modal library-create-doc-loading-modal"
-    show-fullscreen
+    :show-close="false"
     :close-on-overlay-click="false"
     @close="emit('close')"
   >

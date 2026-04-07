@@ -38,7 +38,7 @@
         <UiButton
           variant="outline"
           size="md"
-          @click="emit('export-pdf')"
+          @click="onPrintReport"
         >
           <template #icon-left>
             <i class="icon icon-download size-16" />
@@ -80,10 +80,10 @@
 
         <div class="library-create-doc-report-table-wrap">
           <p
-            v-if="fieldDefs.length === 0"
+            v-if="reportRows.length === 0"
             class="library-create-doc-report-empty"
           >
-            템플릿형(<code class="library-create-doc-report-empty-code">T</code>)이 아니거나, 등록된 필드가 없습니다. 자유형식은 AI 응답 JSON 연동 후 표시됩니다.
+            AI 응답에 <code class="library-create-doc-report-empty-code">*_label</code> 필드가 없어 표시할 수 없습니다.
           </p>
           <table
             v-else
@@ -96,30 +96,24 @@
             </colgroup>
             <tbody>
               <tr
-                v-for="row in fieldDefs"
-                :key="row.fieldId"
-                class="library-create-doc-report-tr"
-                :class="{ 'is-tall': row.multilineYn === 'Y' }"
+                v-for="(row, idx) in reportRows"
+                :key="`${idx}-${row.labelKey}`"
+                class="library-create-doc-report-tr is-tall"
               >
                 <th
                   scope="row"
                   class="library-create-doc-report-label"
                 >
-                  {{ row.fieldNm }}
+                  {{ report[row.labelKey] ?? '' }}
                 </th>
                 <td class="library-create-doc-report-cell">
-                  <UiInput
-                    v-if="row.multilineYn !== 'Y'"
-                    v-model="report[row.jsonKey]"
-                    size="md"
-                    :placeholder="row.fieldNm"
-                  />
                   <UiTextarea
-                    v-else
-                    v-model="report[row.jsonKey]"
-                    :rows="5"
-                    :auto-resize="false"
-                    :placeholder="row.fieldNm"
+                    v-model="report[row.valueKey]"
+                    size="sm"
+                    :rows="1"
+                    :max-rows="9999"
+                    :placeholder="report[row.labelKey] ?? ''"
+                    :spellcheck="false"
                     border
                   />
                 </td>
@@ -137,7 +131,6 @@
           <span class="library-create-doc-report-footer-title">AI와 대화하여 내용 보완</span>
           <p class="library-create-doc-report-footer-lead">LLM과 대화하여 문서 내용을 보완할 수 있습니다</p>
         </div>
-        <!-- 한 줄 입력 — ChatInput 과 동일한 테두리·라운드 느낌만 유지 -->
         <div
           class="library-create-doc-chat-bar"
           :class="{ 'is-active': !!refineDraft.trim() }"
@@ -150,6 +143,7 @@
             v-model="refineDraft"
             size="md"
             class="library-create-doc-chat-bar-field"
+            :spellcheck="false"
             placeholder="예: 결론 부분을 좀 더 구체적으로 보완해주세요"
             @enter="onSendRefine"
           />
@@ -173,31 +167,29 @@
 </template>
 
 <script setup lang="ts">
+import { openToast } from '~/composables/useToast'
 import type { LibraryGeneratedReportValues } from '~/types/library'
-import type { TmplField } from '~/types/tmpl'
+import { getLibraryReportRows, printLibraryReport } from '~/utils/library/libraryReportPrintUtil'
 
 const props = withDefaults(
   defineProps<{
     isOpen: boolean
-    /** 템플릿형(`T`)일 때만 채움 — jsonKey·fieldNm·multilineYn 기준 동적 행 */
-    fieldDefs?: TmplField[]
   }>(),
-  {
-    fieldDefs: () => [] as TmplField[],
-  },
+  {},
 )
 
 const report = defineModel<LibraryGeneratedReportValues>('report', { required: true })
 
 const emit = defineEmits<{
   close: []
-  'export-pdf': []
   'share-link': []
   'select-other-type': []
   'send-refine': [message: string]
 }>()
 
 const refineDraft = ref('')
+
+const reportRows = computed(() => getLibraryReportRows(report.value || {}))
 
 watch(
   () => props.isOpen,
@@ -211,6 +203,17 @@ const onSendRefine = () => {
   if (!msg) return
   emit('send-refine', msg)
   refineDraft.value = ''
+}
+
+const onPrintReport = () => {
+  const ok = printLibraryReport(report.value || {})
+  if (!ok) {
+    openToast({
+      message: '인쇄할 보고서 항목이 없습니다.',
+      type: 'warning',
+      duration: 2500,
+    })
+  }
 }
 </script>
 
@@ -360,21 +363,24 @@ const onSendRefine = () => {
   vertical-align: middle;
 }
 
-// 표준 table-cell — UiInput / UiTextarea(has-border) 와 동일: 호버·포커스 시 테두리만 primary, 배경은 유지
 .library-create-doc-report-cell {
   box-sizing: border-box;
   padding: 0;
   vertical-align: middle;
   background: #fff;
   border-bottom: 1px solid #e2e8f0;
-  transition: box-shadow $transition-base;
+  transition:
+    background-color $transition-base,
+    box-shadow $transition-base;
 
   &:hover:not(:focus-within) {
-    box-shadow: inset 0 0 0 1px var(--color-primary);
+    background: #f1f5f9;
   }
 
   &:focus-within {
-    box-shadow: inset 0 0 0 1px var(--color-primary);
+    // 클릭·편집 중 — 호버보다 살짝 진한 회색으로 선택 영역 구분
+    background: #e8eef4;
+    box-shadow: none;
   }
 }
 
@@ -387,7 +393,7 @@ const onSendRefine = () => {
   border-bottom: none;
 }
 
-// 입력은 테두리 없음 — 겹침 방지 (편집 강조는 td:focus-within 만 사용)
+// 입력은 테두리 없음 — 겹침 방지 (편집 강조는 td:focus-within 배경)
 .library-create-doc-report-cell :deep(.ui-input-outer) {
   display: block;
   width: 100%;
@@ -416,6 +422,14 @@ const onSendRefine = () => {
   outline: none !important;
   border-radius: 0 !important;
   background: transparent !important;
+  // 표 라벨($font-size-sm)·본문 폼과 동일한 본문 크기 (UiTextarea 기본 lg 대비)
+  font-size: $font-size-sm;
+  line-height: 1.5;
+  font-weight: $font-weight-normal;
+  // autoResize 시 내용 높이만큼만 쓰도록 (UiTextarea 기본 min-height 84px 무시)
+  min-height: 0 !important;
+  overflow-y: hidden;
+  padding: $spacing-sm $spacing-md !important;
 }
 
 .library-create-doc-report-cell :deep(.inp.ui-textarea:hover),

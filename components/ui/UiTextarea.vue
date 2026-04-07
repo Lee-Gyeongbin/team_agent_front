@@ -8,6 +8,7 @@
     :disabled="disabled"
     :rows="rows"
     :maxlength="maxLength"
+    :spellcheck="spellcheck"
     @input="onInput"
   />
 </template>
@@ -24,6 +25,8 @@ interface Props {
   radius?: 'sm' | 'base' | 'lg'
   border?: boolean
   size?: 'sm' | 'md' | 'lg'
+  /** false면 브라우저 맞춤법 밑줄 비활성화 */
+  spellcheck?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {

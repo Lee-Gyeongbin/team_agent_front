@@ -79,7 +79,7 @@
           <UiButton
             variant="primary"
             size="md"
-            :disabled="!selectedId"
+            :disabled="!selectedId || !props.cardId"
             @click="onGenerate"
           >
             <template #icon-left>
@@ -100,15 +100,18 @@ const props = withDefaults(
   defineProps<{
     isOpen: boolean
     tmplList?: TmplBaseInfo[]
+    /** 문서 생성 대상 카드 (상세 모달에서 전달) */
+    cardId?: string
   }>(),
   {
     tmplList: () => [],
+    cardId: '',
   },
 )
 
 const emit = defineEmits<{
   close: []
-  generate: [payload: { docTypeId: string }]
+  generate: [payload: { cardId: string; tmplId: string }]
 }>()
 
 const router = useRouter()
@@ -136,7 +139,7 @@ const onSelectType = (tmplId: string) => {
 }
 
 const onGenerate = () => {
-  if (!selectedId.value) return
-  emit('generate', { docTypeId: selectedId.value })
+  if (!selectedId.value || !props.cardId) return
+  emit('generate', { cardId: props.cardId, tmplId: selectedId.value })
 }
 </script>

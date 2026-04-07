@@ -1,0 +1,193 @@
+/**
+ * 라이브러리 AI 생성 보고서 — 브라우저 인쇄용 HTML
+ * (현재 창에서 인쇄 대화상자만 띄움 — 새 탭·about:blank URL 없음)
+ */
+
+import type { LibraryGeneratedReportValues } from '~/types/library'
+import { escapeHTML } from '~/utils/global/htmlUtil'
+
+export type LibraryReportRow = { labelKey: string; valueKey: string }
+
+const PRINT_HOST_ID = 'library-report-print-host'
+const PRINT_STYLE_ID = 'library-report-print-style'
+
+/** *_label 키 기준으로 표 행 목록 생성 (모달 reportRows와 동일 규칙) */
+export const getLibraryReportRows = (values: LibraryGeneratedReportValues): LibraryReportRow[] => {
+  const rows: LibraryReportRow[] = []
+  for (const key of Object.keys(values || {})) {
+    if (!key.endsWith('_label')) continue
+    const valueKey = key.replace(/_label$/, '')
+    rows.push({ labelKey: key, valueKey })
+  }
+  return rows
+}
+
+/** Date → YYYY.MM.DD (인쇄 부제 «작성» 줄용) */
+const formatYyyyMmDdDots = (d: Date): string => {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}.${m}.${day}`
+}
+
+/** 본문에 삽입할 보고서 마크업(이스케이프된 값만 동적) */
+const buildPrintHostInnerHtml = (
+  rows: LibraryReportRow[],
+  values: LibraryGeneratedReportValues,
+  writtenOn: string,
+): string => {
+  const bodyRows = rows
+    .map((row) => {
+      const label = escapeHTML(values[row.labelKey] ?? '')
+      const raw = values[row.valueKey] ?? ''
+      const value = escapeHTML(raw)
+      return `<tr><th scope="row">${label}</th><td class="report-print-value">${value}</td></tr>`
+    })
+    .join('')
+
+  return `
+  <header class="report-print-header">
+    <h1 class="report-print-title">보고서</h1>
+    <p class="report-print-sub">${escapeHTML(writtenOn)} 작성</p>
+  </header>
+  <hr class="report-print-rule" />
+  <table class="report-print-table" role="presentation">
+    <tbody>
+      ${bodyRows}
+    </tbody>
+  </table>`
+}
+
+const buildPrintHostStyles = (): string => `
+@media screen {
+  #${PRINT_HOST_ID} {
+    position: fixed;
+    left: -99999px;
+    top: 0;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    pointer-events: none;
+  }
+}
+@media print {
+  @page { margin: 18mm 16mm; }
+  body * {
+    visibility: hidden !important;
+  }
+  #${PRINT_HOST_ID},
+  #${PRINT_HOST_ID} * {
+    visibility: visible !important;
+  }
+  #${PRINT_HOST_ID} {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    clip: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    box-sizing: border-box !important;
+    font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif !important;
+    font-size: 12pt !important;
+    line-height: 1.5 !important;
+    color: #1e293b !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  #${PRINT_HOST_ID} * {
+    box-sizing: border-box !important;
+  }
+  #${PRINT_HOST_ID} .report-print-header {
+    text-align: center !important;
+    margin-bottom: 12px !important;
+  }
+  #${PRINT_HOST_ID} .report-print-title {
+    margin: 0 0 8px !important;
+    font-size: 20pt !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.02em !important;
+  }
+  #${PRINT_HOST_ID} .report-print-sub {
+    margin: 0 !important;
+    font-size: 11pt !important;
+    color: #475569 !important;
+  }
+  #${PRINT_HOST_ID} .report-print-rule {
+    border: none !important;
+    border-top: 1px solid #1e293b !important;
+    margin: 16px 0 20px !important;
+  }
+  #${PRINT_HOST_ID} table.report-print-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    table-layout: fixed !important;
+  }
+  #${PRINT_HOST_ID} .report-print-table th {
+    width: 120px !important;
+    padding: 10px 12px !important;
+    font-size: 10.5pt !important;
+    font-weight: 600 !important;
+    text-align: left !important;
+    vertical-align: top !important;
+    color: #334155 !important;
+    background: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+  }
+  #${PRINT_HOST_ID} .report-print-table td {
+    padding: 10px 12px !important;
+    font-size: 10.5pt !important;
+    vertical-align: top !important;
+    border: 1px solid #cbd5e1 !important;
+    background: #fff !important;
+    word-break: break-word !important;
+  }
+  #${PRINT_HOST_ID} .report-print-value {
+    white-space: pre-wrap !important;
+  }
+}
+`
+
+const removeEl = (id: string) => {
+  document.getElementById(id)?.remove()
+}
+
+/**
+ * 현재 페이지 URL 기준으로 인쇄 미리보기를 연다(새 창 없음, 하단 URL에 about:blank 없음).
+ * @returns 인쇄할 행이 없으면 false
+ */
+export const printLibraryReport = (values: LibraryGeneratedReportValues): boolean => {
+  if (typeof document === 'undefined') return false
+
+  const rows = getLibraryReportRows(values)
+  if (rows.length === 0) return false
+
+  removeEl(PRINT_STYLE_ID)
+  removeEl(PRINT_HOST_ID)
+
+  const styleEl = document.createElement('style')
+  styleEl.id = PRINT_STYLE_ID
+  styleEl.textContent = buildPrintHostStyles()
+  document.head.appendChild(styleEl)
+
+  const host = document.createElement('div')
+  host.id = PRINT_HOST_ID
+  host.setAttribute('aria-hidden', 'true')
+  host.innerHTML = buildPrintHostInnerHtml(rows, values, formatYyyyMmDdDots(new Date()))
+  document.body.appendChild(host)
+
+  const cleanup = () => {
+    removeEl(PRINT_STYLE_ID)
+    removeEl(PRINT_HOST_ID)
+    window.removeEventListener('afterprint', cleanup)
+  }
+  window.addEventListener('afterprint', cleanup)
+  window.print()
+
+  return true
+}
