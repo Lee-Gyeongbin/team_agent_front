@@ -2,8 +2,14 @@
 @use '../utils/mixins' as *;
 
 .login-form {
-  height: 100vh;
-  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-items: safe center;
+  justify-content: safe center;
+  min-height: 100%;
+  width: 100%;
+  padding: 25px 0;
   background: #fff;
 
   .login-form-wrapper {
@@ -58,8 +64,31 @@
       color: $color-text-muted;
     }
 
-    // 로그인 제출: 기본 #4B81E6, 호버는 primary(variant 기본 배경과 동일)
-    .btn-login-submit.ui-button.variant-primary {
+    // 인증(로그인·회원가입) 메인 제출 버튼: 전체 폭, 라벨 중앙 + 아이콘 우측
+    .btn-auth-submit.ui-button {
+      position: relative;
+      height: 44px;
+      min-height: 44px;
+      padding: 0 20px;
+      border-radius: 6px;
+      justify-content: center;
+
+      .ui-button-text {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: $font-size-lg;
+        font-weight: $font-weight-bold;
+      }
+
+      .ui-button-icon {
+        position: absolute;
+        right: 18px;
+      }
+    }
+
+    // 기본 #4B81E6, 호버는 primary(variant 기본 배경과 동일)
+    .btn-auth-submit.ui-button.variant-primary {
       background: #4b81e6;
 
       &:hover:not(:disabled) {

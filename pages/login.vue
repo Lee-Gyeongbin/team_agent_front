@@ -1,5 +1,5 @@
 <template>
-  <div class="login-form flex items-center justify-center">
+  <div class="login-form">
     <div class="login-form-wrapper login-center">
       <div class="login-index-header">
         <img
@@ -73,7 +73,7 @@
               type="button"
               variant="primary"
               size="lg"
-              class="btn-login-submit"
+              class="btn-auth-submit"
               full-width
               :loading="isLoading"
               @click="onSubmit"
@@ -212,36 +212,11 @@ const noticeList = ref([
   .login-session-expired {
     color: #dd6b20;
     font-size: $font-size-sm;
-    margin-top: 4px;
   }
 
   .login-error {
     color: #e53e3e;
     font-size: $font-size-sm;
-    margin-top: 4px;
-  }
-
-  // 로그인 메인 버튼: 전체 폭, 라벨 중앙 + 전송 아이콘 우측 정렬
-  .btn-login-submit.ui-button {
-    position: relative;
-    height: 44px;
-    min-height: 44px;
-    padding: 0 20px;
-    border-radius: 6px;
-    justify-content: center;
-
-    :deep(.ui-button-text) {
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: $font-size-lg;
-      font-weight: $font-weight-bold;
-    }
-
-    :deep(.ui-button-icon) {
-      position: absolute;
-      right: 18px;
-    }
   }
 }
 </style>

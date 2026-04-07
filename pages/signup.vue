@@ -1,5 +1,5 @@
 <template>
-  <div class="login-form signup-form flex items-center justify-center">
+  <div class="login-form signup-form">
     <div class="login-form-wrapper login-center">
       <div class="login-index-header">
         <img
@@ -126,7 +126,7 @@
               type="button"
               variant="primary"
               size="lg"
-              class="btn-signup-submit"
+              class="btn-auth-submit"
               full-width
               :loading="isLoading"
               @click="onSubmit"
@@ -199,29 +199,6 @@ const onSubmit = async () => {
     color: #e53e3e;
     font-size: $font-size-sm;
     margin-top: 4px;
-  }
-
-  // 회원가입 메인 버튼: 로그인 제출 버튼과 동일 레이아웃
-  .btn-signup-submit.ui-button {
-    position: relative;
-    height: 44px;
-    min-height: 44px;
-    padding: 0 20px;
-    border-radius: 6px;
-    justify-content: center;
-
-    :deep(.ui-button-text) {
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: $font-size-lg;
-      font-weight: $font-weight-bold;
-    }
-
-    :deep(.ui-button-icon) {
-      position: absolute;
-      right: 18px;
-    }
   }
 
   .signup-login-link {
