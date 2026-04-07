@@ -267,7 +267,6 @@
       v-model:report="generatedReport"
       :is-open="isCreateDocReportOpen"
       @close="handleCreateDocReportClose"
-      @export-pdf="onCreateDocExportPdf"
       @share-link="onCreateDocShareLink"
       @select-other-type="handleCreateDocSelectOtherType"
       @send-refine="onCreateDocSendRefine"
@@ -473,10 +472,6 @@ const onReferenceLink = async (item: DocItem) => {
 const handleCreateDoc = () => {
   handleSelectTmplList()
   isCreateDocModalOpen.value = true
-}
-
-const onCreateDocExportPdf = () => {
-  openToast({ message: 'PDF 다운로드는 추후 연동 예정입니다.', duration: 2000 })
 }
 
 const onCreateDocShareLink = () => {
