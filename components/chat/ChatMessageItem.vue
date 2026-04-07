@@ -74,7 +74,21 @@
     <!-- user 메시지 -->
     <template v-else-if="message.type === 'question'">
       <div class="message-body">
-        <div class="message-content">{{ message.qContent }}</div>
+        <div
+          v-if="message.attachments?.length || message.qContent?.trim()"
+          class="message-user-block"
+        >
+          <ChatQuestionAttachments
+            v-if="message.attachments?.length"
+            :attachments="message.attachments"
+          />
+          <div
+            v-if="message.qContent?.trim()"
+            class="message-content"
+          >
+            {{ message.qContent }}
+          </div>
+        </div>
       </div>
     </template>
   </div>

@@ -283,6 +283,14 @@
   &.role-user {
     justify-content: flex-end;
 
+    .message-user-block {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+      max-width: 100%;
+    }
+
     .message-content {
       max-width: 100%;
       padding: 12px 16px;
@@ -295,6 +303,146 @@
       word-break: break-word;
       white-space: pre-wrap;
     }
+  }
+}
+
+// ===================================
+// 사용자 메시지 첨부 (썸네일 / 파일 패널)
+// ===================================
+.message-user-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-width: 100%;
+}
+
+.message-user-attach-item {
+  margin: 0;
+  padding: 0;
+}
+
+.message-user-attach {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  transition: opacity $transition-fast;
+
+  &:hover {
+    opacity: 0.92;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}
+
+.message-user-attach--file {
+  gap: 10px;
+  min-width: 200px;
+  max-width: min(280px, 92vw);
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: $border-radius-lg;
+  background: #fafbfc;
+}
+
+.message-user-attach-icon-wrap {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: $border-radius-base;
+  background: #fff;
+  border: 1px solid #ecf0f3;
+
+  i {
+    color: #64748b;
+  }
+}
+
+.message-user-attach-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.message-user-attach-name {
+  @include typo($body-small);
+  color: $color-text-heading-sub;
+  font-weight: $font-weight-medium;
+  @include ellipsis(2);
+}
+
+.message-user-attach-type {
+  @include typo($body-xsmall);
+  color: $color-text-secondary;
+  text-transform: uppercase;
+}
+
+.message-user-attach--image {
+  padding: 0;
+  border-radius: $border-radius-lg;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  max-width: min(220px, 88vw);
+}
+
+.message-user-attach-img {
+  display: block;
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+}
+
+.message-user-attach-img-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 120px;
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+
+.message-user-attach-thumb-loading {
+  display: block;
+  width: 28px;
+  height: 28px;
+  border: 3px solid #e2e8f0;
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: message-user-thumb-spin 0.75s linear infinite;
+}
+
+@keyframes message-user-thumb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.message-user-attachments.is-single-image {
+  .message-user-attach--image {
+    max-width: min(280px, 92vw);
+  }
+
+  .message-user-attach-img {
+    max-height: 240px;
   }
 }
 

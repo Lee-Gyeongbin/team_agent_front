@@ -83,7 +83,7 @@ const defaultApiParam = () => ({
   apiKey: '',
   tmoSec: 0,
   retryCnt: 0,
-  temperature: 0,
+  temperature: 0.1,
   maxTokens: 0,
   topP: 0.9,
   custHeaders: '',

@@ -19,6 +19,23 @@ export interface ChatAttachmentMeta {
   mimeType: string
 }
 
+/** 질문 말풍선·미리보기에 쓰는 첨부 (업로드 메타 + 선택적 로컬 썸네일 URL) */
+export interface ChatMessageAttachment extends ChatAttachmentMeta {
+  /** 전송 직후 로컬 미리보기(blob) — 새로고침 후에는 비어 있음 */
+  localPreviewUrl?: string
+}
+
+/** /ai/chatbot/viewChatFile.do — FileService 뷰 응답과 동일 키 */
+export interface ChatFileViewResponse {
+  viewType?: string
+  url?: string
+  content?: string
+  encoding?: string
+  fileName?: string
+  reason?: string
+  downloadUrl?: string
+}
+
 /** 채팅 첨부파일 메타 저장 요청 */
 export interface ChatFileSavePayload {
   roomId: string
@@ -74,6 +91,8 @@ export interface ChatMessage {
   docExist?: 'Y' | 'N'
   /** 시각화 테이블 원본 JSON (로그 목록 조회·스트리밍 완료 시) */
   tableData?: string
+  /** 질문에 첨부된 파일 (전송 직후 UI; 로그 API에 첨부 필드가 없으면 재조회 시 비어 있을 수 있음) */
+  attachments?: ChatMessageAttachment[]
   [key: string]: unknown
 }
 
@@ -169,6 +188,11 @@ export interface ChatLogListRow {
   satisYn?: string
   satisContent?: string
   satisCd?: string
+  /**
+   * 질문(LOG)에 연결된 채팅 첨부 JSON 배열 문자열 (selectChatLogList)
+   * 또는 일부 환경에서 파싱된 배열
+   */
+  chatAttachmentList?: string | unknown
   [key: string]: unknown
 }
 
