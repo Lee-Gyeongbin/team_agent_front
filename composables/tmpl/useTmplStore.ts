@@ -21,7 +21,7 @@ const handleSaveTmpl = async (payload: TmplFormSavePayload, hooks?: { onSaved?: 
     message: '템플릿을 저장하시겠습니까?',
     onConfirm: async () => {
       try {
-        openLoading({ message: '템플릿을 저장하는 중입니다...' })
+        openLoading({ text: '템플릿을 저장하는 중입니다...' })
         await fetchSaveTmpl(payload)
         await handleSelectTmplList()
         closeLoading()
