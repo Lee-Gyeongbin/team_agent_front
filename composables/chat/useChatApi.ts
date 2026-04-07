@@ -12,6 +12,7 @@ import type {
   KnowledgeItem,
   ChatFileSavePayload,
   ChatFileSaveResponse,
+  ChatFileViewResponse,
 } from '~/types/chat'
 
 export const useReportsApi = () => {
@@ -43,6 +44,10 @@ export const useReportsApi = () => {
   // CHAT 첨부파일 orphan 표기 (ws 전송 실패 등)
   const fetchMarkChatFileOrphan = async (chatFileIdList: string[]): Promise<{ successYn?: boolean }> => {
     return post<{ successYn?: boolean }>('/ai/chatbot/markChatFileOrphan.do', { chatFileIdList })
+  }
+  /** 채팅 첨부 미리보기 URL (TB_CHAT_FILE + 대화방 소유자 검증) */
+  const fetchViewChatFile = async (chatFileId: string): Promise<ChatFileViewResponse> => {
+    return post<ChatFileViewResponse>('/ai/chatbot/viewChatFile.do', { chatFileId })
   }
   // CHAT 대화방 로그 목록 조회
   const fetchSelectChatLogList = async (roomId: string): Promise<{ list: ChatLogListRow[] }> => {
@@ -124,6 +129,7 @@ export const useReportsApi = () => {
     fetchSelectDmList,
     fetchCreateChatRoom,
     fetchCreateChatFile,
+    fetchViewChatFile,
     fetchMarkChatFileOrphan,
     fetchSelectChatLogList,
     fetchSelectChatRef,

@@ -11,6 +11,7 @@ import {
 } from '~/types/chat'
 import { useChatAttachmentStore } from '~/composables/chat/useChatAttachmentStore'
 import { buildQuestionPayload } from '~/utils/chat/chatSocketPayloadUtil'
+import { buildMessageAttachmentsFromUpload } from '~/utils/chat/chatAttachmentDisplayUtil'
 const { user } = useAuth()
 const {
   fetchSelectChatRoomList,
@@ -146,8 +147,15 @@ export const useChatRooms = () => {
       attachments = uploaded
     }
 
+    const attachmentsForUi =
+      attachments.length > 0
+        ? files.length === attachments.length
+          ? buildMessageAttachmentsFromUpload(files, attachments)
+          : attachments.map((a) => ({ ...a }))
+        : undefined
+
     messages.value = []
-    pushQuestionMessage(qContent, svcTy, modelId, refId)
+    pushQuestionMessage(qContent, svcTy, modelId, refId, attachmentsForUi)
     pushAnswerPlaceholder(svcTy, modelId, refId)
     chatMessage.value = ''
 

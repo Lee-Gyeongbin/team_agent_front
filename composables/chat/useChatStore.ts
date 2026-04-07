@@ -17,6 +17,7 @@ import { useChatAttachmentStore } from '~/composables/chat/useChatAttachmentStor
 import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
 import { buildQuestionPayload } from '~/utils/chat/chatSocketPayloadUtil'
 import { clearBodyChartFullscreen } from '~/utils/chat/visualizationChartUtil'
+import { buildMessageAttachmentsFromUpload } from '~/utils/chat/chatAttachmentDisplayUtil'
 const { messages } = useChatSocket()
 const { logRowToMessages, pushQuestionMessage, pushAnswerPlaceholder, getMessagesForVisualization } = useChatMessages()
 const {
@@ -164,7 +165,13 @@ export const useChatStore = () => {
       if (uploaded === null) return false
       attachments = uploaded
     }
-    pushQuestionMessage(content, svcTy, modelId, refId)
+    const attachmentsForUi =
+      attachments.length > 0
+        ? files.length === attachments.length
+          ? buildMessageAttachmentsFromUpload(files, attachments)
+          : attachments.map((a) => ({ ...a }))
+        : undefined
+    pushQuestionMessage(content, svcTy, modelId, refId, attachmentsForUi)
     pushAnswerPlaceholder(svcTy, modelId, refId)
     chatMessage.value = ''
 

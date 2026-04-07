@@ -1,5 +1,6 @@
-import type { ChatLogListRow, ChatMessage } from '~/types/chat'
+import type { ChatLogListRow, ChatMessage, ChatMessageAttachment } from '~/types/chat'
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
+import { parseChatAttachmentsFromLogRow } from '~/utils/chat/chatAttachmentDisplayUtil'
 
 // 채팅 메시지/스트리밍 상태는 모듈 레벨에서 단일 인스턴스로 공유
 const messages = ref<ChatMessage[]>([])
@@ -32,8 +33,19 @@ export const useChatMessages = () => {
     const satisYnVal = typeof row.satisYn === 'string' ? row.satisYn : ''
     const satisContentVal = typeof row.satisContent === 'string' ? row.satisContent : ''
     const satisCdVal = typeof row.satisCd === 'string' ? row.satisCd : undefined
+    const attachments = parseChatAttachmentsFromLogRow(row)
     return [
-      { logId, type: 'question', qContent: row.qcontent ?? '', rContent: '', createdAt, svcTy, modelId, refId },
+      {
+        logId,
+        type: 'question',
+        qContent: row.qcontent ?? '',
+        rContent: '',
+        createdAt,
+        svcTy,
+        modelId,
+        refId,
+        ...(attachments?.length ? { attachments } : {}),
+      },
       {
         logId,
         type: 'answer',
@@ -63,7 +75,13 @@ export const useChatMessages = () => {
   }
 
   // question 메시지 생성 + push
-  const pushQuestionMessage = (content: string, svcTy: string, modelId: string, refId: string): string => {
+  const pushQuestionMessage = (
+    content: string,
+    svcTy: string,
+    modelId: string,
+    refId: string,
+    attachments?: ChatMessageAttachment[],
+  ): string => {
     const logId = Date.now().toString()
     messages.value.push({
       id: logId,
@@ -75,6 +93,7 @@ export const useChatMessages = () => {
       modelId,
       refId,
       createdAt: new Date().toISOString(),
+      ...(attachments?.length ? { attachments } : {}),
     })
     return logId
   }

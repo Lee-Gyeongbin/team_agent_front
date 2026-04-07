@@ -66,11 +66,21 @@
             size="xlg"
             icon-only
             class="btn-chat-send"
-            :disabled="!modelValue.trim() || isSearchModeMissingSubOptions || isSending"
+            :loading="isSending"
+            :aria-label="isSending ? '전송 중' : '메시지 전송'"
+            :disabled="!modelValue.trim() || isSearchModeMissingSubOptions"
             @click="handleSend"
           >
             <template #icon-left>
-              <i class="icon-send size-20" />
+              <span
+                v-if="isSending"
+                class="btn-chat-send-spinner"
+                aria-hidden="true"
+              />
+              <i
+                v-else
+                class="icon-send size-20"
+              />
             </template>
           </UiButton>
         </div>
@@ -338,3 +348,23 @@ const handleSend = async () => {
   }
 }
 </script>
+
+<style lang="scss" scoped>
+/* 전송 중: 전송 아이콘 대신 버튼 안에 맞는 스피너 */
+.btn-chat-send-spinner {
+  display: block;
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: chat-send-spin 0.75s linear infinite;
+}
+
+@keyframes chat-send-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>
