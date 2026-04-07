@@ -144,23 +144,27 @@ interface AttachmentPreviewItem {
 
 const ATTACH_ALLOWED_EXTENSIONS = [
   'pdf',
-  'doc',
   'docx',
+  'md',
   'txt',
-  'csv',
-  'ppt',
+  'json',
   'pptx',
-  'xls',
-  'xlsx',
-  'hwp',
+  'py',
+  'js',
+  'ts',
+  'html',
   'png',
   'jpg',
   'jpeg',
   'webp',
 ]
-const IMAGE_EXTENSION_SET = new Set(['png', 'jpg', 'jpeg', 'webp'])
+const GEMINI_ALLOWED_EXTENSIONS = ['png', 'jpeg', 'jpg', 'webp', 'heic', 'heif', 'pdf', 'txt', 'csv']
+const IMAGE_EXTENSION_SET = new Set(['png', 'jpg', 'jpeg', 'webp', 'heic', 'heif'])
 const ATTACH_EXTENSION_SET = new Set(ATTACH_ALLOWED_EXTENSIONS)
-const attachAccept = ATTACH_ALLOWED_EXTENSIONS.map((ext) => `.${ext}`).join(',')
+const GEMINI_ATTACH_EXTENSION_SET = new Set(GEMINI_ALLOWED_EXTENSIONS)
+const MAX_ATTACH_FILE_COUNT = 5
+const MAX_ATTACH_FILE_SIZE_MB = 15
+const MAX_ATTACH_FILE_SIZE_BYTES = MAX_ATTACH_FILE_SIZE_MB * 1024 * 1024
 
 const {
   chatRoom,
@@ -194,6 +198,11 @@ const previewItems = ref<AttachmentPreviewItem[]>([])
 const isDragging = ref(false)
 const isSending = ref(false)
 const isSingleImageAttachment = computed(() => previewItems.value.length === 1 && previewItems.value[0]?.isImage)
+const isGeminiModelSelected = computed(() => selectedModelOption.value.toLowerCase().includes('gemini'))
+const currentAllowedExtensions = computed(() =>
+  isGeminiModelSelected.value ? GEMINI_ALLOWED_EXTENSIONS : ATTACH_ALLOWED_EXTENSIONS,
+)
+const attachAccept = computed(() => currentAllowedExtensions.value.map((ext) => `.${ext}`).join(','))
 
 const getFileExtension = (fileName: string): string => {
   const trimmed = fileName.trim()
@@ -223,23 +232,96 @@ const handleAttachClick = () => {
   attachInputRef.value?.click()
 }
 
-const buildNextAttachFiles = (files: File[]) => {
+const validateAttachmentFiles = (files: File[]) => {
+  const allowedExtensionSet = isGeminiModelSelected.value ? GEMINI_ATTACH_EXTENSION_SET : ATTACH_EXTENSION_SET
   const invalidExtensions = new Set<string>()
-  const nextFiles: File[] = []
+  let hasOversizeFile = false
+  let hasExceededFileCount = false
 
   files.forEach((file) => {
     const ext = getFileExtension(file.name)
-    if (!ext || !ATTACH_EXTENSION_SET.has(ext)) {
+    if (!ext || !allowedExtensionSet.has(ext)) {
       invalidExtensions.add(ext || '확장자 없음')
+    }
+    if (file.size > MAX_ATTACH_FILE_SIZE_BYTES) {
+      hasOversizeFile = true
+    }
+  })
+
+  if (files.length > MAX_ATTACH_FILE_COUNT) {
+    hasExceededFileCount = true
+  }
+
+  if (invalidExtensions.size > 0) {
+    openToast({
+      message: `허용 형식만 첨부할 수 있습니다. (${currentAllowedExtensions.value.join(', ')})`,
+      type: 'warning',
+    })
+    return false
+  }
+
+  if (hasOversizeFile) {
+    openToast({
+      message: `파일 1개당 최대 ${MAX_ATTACH_FILE_SIZE_MB}MB까지 첨부할 수 있습니다.`,
+      type: 'warning',
+    })
+    return false
+  }
+
+  if (hasExceededFileCount) {
+    openToast({
+      message: `질문당 최대 ${MAX_ATTACH_FILE_COUNT}개 파일까지 첨부할 수 있습니다.`,
+      type: 'warning',
+    })
+    return false
+  }
+
+  return true
+}
+
+const buildNextAttachFiles = (files: File[]) => {
+  const nextFiles: File[] = []
+  const allowedExtensionSet = isGeminiModelSelected.value ? GEMINI_ATTACH_EXTENSION_SET : ATTACH_EXTENSION_SET
+  let hasInvalidExtension = false
+  let hasOversizeFile = false
+  let hasExceededFileCount = false
+
+  files.forEach((file) => {
+    if (selectedFiles.value.length + nextFiles.length >= MAX_ATTACH_FILE_COUNT) {
+      hasExceededFileCount = true
       return
     }
+
+    const ext = getFileExtension(file.name)
+    if (!ext || !allowedExtensionSet.has(ext)) {
+      hasInvalidExtension = true
+      return
+    }
+
+    if (file.size > MAX_ATTACH_FILE_SIZE_BYTES) {
+      hasOversizeFile = true
+      return
+    }
+
     if (selectedFiles.value.some((current) => isSameFile(current, file))) return
     nextFiles.push(file)
   })
 
-  if (invalidExtensions.size > 0) {
+  if (hasInvalidExtension) {
     openToast({
-      message: `허용 형식만 첨부할 수 있습니다. (${ATTACH_ALLOWED_EXTENSIONS.join(', ')})`,
+      message: `허용 형식만 첨부할 수 있습니다. (${currentAllowedExtensions.value.join(', ')})`,
+      type: 'warning',
+    })
+  }
+  if (hasOversizeFile) {
+    openToast({
+      message: `파일 1개당 최대 ${MAX_ATTACH_FILE_SIZE_MB}MB까지 첨부할 수 있습니다.`,
+      type: 'warning',
+    })
+  }
+  if (hasExceededFileCount) {
+    openToast({
+      message: `질문당 최대 ${MAX_ATTACH_FILE_COUNT}개 파일까지 첨부할 수 있습니다.`,
       type: 'warning',
     })
   }
@@ -332,6 +414,7 @@ onBeforeUnmount(() => {
 const handleSend = async () => {
   if (isSending.value) return
   if (isSearchModeMissingSubOptions.value) return
+  if (!validateAttachmentFiles(selectedFiles.value)) return
   isSending.value = true
   try {
     let sent = false
