@@ -4,103 +4,113 @@
       <div class="login-index-header">
         <img
           class="login-logo"
-          src="~/assets/icons/svg/logo-teamagent-login.svg"
+          src="~/assets/icons/svg/logo-teamagent.svg"
           alt="TeamAgent"
           @click="navigateTo('/')"
         />
       </div>
 
-      <div class="chat-index-input-wrapper flex flex-col items-center w-full signup-form-width">
-        <div class="chat-index-input-top flex flex-col w-full">
-          <label
-            class="signup-label"
-            for="signup-id"
-          >
-            아이디
-          </label>
-          <input
-            id="signup-id"
-            v-model="form.userId"
-            type="text"
-            class="signup-input"
-            placeholder="아이디를 입력하세요."
-            @keyup.enter="onSubmit"
-          />
+      <div class="chat-index-input-wrapper flex flex-col items-center w-full">
+        <div class="chat-index-input-top flex flex-col w-full gap-16">
+          <div class="input-grp">
+            <label
+              class="login-label"
+              for="signup-id"
+            >
+              아이디
+            </label>
+            <UiInput
+              id="signup-id"
+              v-model="form.userId"
+              size="auth"
+              placeholder="아이디를 입력하세요."
+              @enter="onSubmit"
+            />
+          </div>
 
-          <label
-            class="signup-label"
-            for="signup-name"
-          >
-            이름
-          </label>
-          <input
-            id="signup-name"
-            v-model="form.userNm"
-            type="text"
-            class="signup-input"
-            placeholder="이름을 입력하세요."
-            @keyup.enter="onSubmit"
-          />
+          <div class="input-grp">
+            <label
+              class="login-label"
+              for="signup-name"
+            >
+              이름
+            </label>
+            <UiInput
+              id="signup-name"
+              v-model="form.userNm"
+              size="auth"
+              placeholder="이름을 입력하세요."
+              @enter="onSubmit"
+            />
+          </div>
 
-          <label
-            class="signup-label"
-            for="signup-password"
-          >
-            비밀번호
-          </label>
-          <input
-            id="signup-password"
-            v-model="form.password"
-            type="password"
-            class="signup-input"
-            placeholder="비밀번호를 입력하세요."
-            @keyup.enter="onSubmit"
-          />
+          <div class="input-grp">
+            <label
+              class="login-label"
+              for="signup-password"
+            >
+              비밀번호
+            </label>
+            <UiInput
+              id="signup-password"
+              v-model="form.password"
+              type="password"
+              size="auth"
+              placeholder="비밀번호를 입력하세요."
+              @enter="onSubmit"
+            />
+          </div>
 
-          <label
-            class="signup-label"
-            for="signup-password-confirm"
-          >
-            비밀번호 확인
-          </label>
-          <input
-            id="signup-password-confirm"
-            v-model="form.passwordConfirm"
-            type="password"
-            class="signup-input"
-            placeholder="비밀번호를 다시 입력하세요."
-            @keyup.enter="onSubmit"
-          />
+          <div class="input-grp">
+            <label
+              class="login-label"
+              for="signup-password-confirm"
+            >
+              비밀번호 확인
+            </label>
+            <UiInput
+              id="signup-password-confirm"
+              v-model="form.passwordConfirm"
+              type="password"
+              size="auth"
+              placeholder="비밀번호를 다시 입력하세요."
+              @enter="onSubmit"
+            />
+          </div>
 
-          <label
-            class="signup-label"
-            for="signup-email"
-          >
-            이메일
-          </label>
-          <input
-            id="signup-email"
-            v-model="form.email"
-            type="email"
-            class="signup-input"
-            placeholder="이메일을 입력하세요."
-            @keyup.enter="onSubmit"
-          />
+          <div class="input-grp">
+            <label
+              class="login-label"
+              for="signup-email"
+            >
+              이메일
+            </label>
+            <UiInput
+              id="signup-email"
+              v-model="form.email"
+              type="email"
+              size="auth"
+              placeholder="이메일을 입력하세요."
+              @enter="onSubmit"
+            />
+          </div>
 
-          <label
-            class="signup-label"
-            for="signup-phone"
-          >
-            연락처
-          </label>
-          <input
-            id="signup-phone"
-            v-model="form.phone"
-            type="tel"
-            class="signup-input"
-            placeholder="연락처를 입력하세요."
-            @keyup.enter="onSubmit"
-          />
+          <div class="input-grp">
+            <label
+              class="login-label"
+              for="signup-phone"
+            >
+              연락처
+            </label>
+            <UiInput
+              id="signup-phone"
+              v-model="form.phone"
+              type="tel"
+              size="auth"
+              placeholder="연락처를 입력하세요."
+              @enter="onSubmit"
+            />
+          </div>
 
           <p
             v-if="errorMessage"
@@ -111,7 +121,7 @@
         </div>
 
         <div class="chat-index-input-bottom flex flex-col items-center w-full">
-          <div class="signup-actions flex items-center w-full">
+          <div class="login-actions flex items-center w-full">
             <UiButton
               type="button"
               variant="primary"
@@ -188,41 +198,10 @@ const onSubmit = async () => {
 
 <style lang="scss" scoped>
 .signup-form {
-  .signup-form-width {
-    max-width: 360px; // 회원가입 폼 영역 폭 제한 (auth 레이아웃에서 전체 폭 쓰지 않도록)
-  }
-
-  .chat-index-input-top {
-    gap: 12px;
-  }
-
-  .signup-label {
-    font-size: $font-size-sm;
-    font-weight: $font-weight-medium;
-    color: $color-text-secondary;
-  }
-
-  .signup-input {
-    width: 100%;
-    padding: $spacing-sm $spacing-md;
-    border-radius: $border-radius-base;
-    border: 1px solid $color-border;
-    font-size: $font-size-base;
-  }
-
   .signup-error {
     color: #e53e3e;
     font-size: $font-size-sm;
     margin-top: 4px;
-  }
-
-  .chat-index-input-bottom {
-    gap: 16px;
-    margin-top: 4px;
-  }
-
-  .signup-actions {
-    margin-top: 16px;
   }
 
   // 회원가입 메인 버튼: 로그인 제출 버튼과 동일 레이아웃

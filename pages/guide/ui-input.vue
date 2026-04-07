@@ -1,7 +1,9 @@
 <template>
   <div class="guide-page">
     <h1 class="guide-title">UiInput</h1>
-    <p class="guide-description">v-model 지원 텍스트 입력 — size, 검색 타입, 아이콘 슬롯 지원</p>
+    <p class="guide-description">
+      v-model 지원 텍스트 입력 — size(일반 + auth), type(text·search·password·email·tel), 아이콘 슬롯, number-only 지원
+    </p>
 
     <!-- ============================================ -->
     <!-- 기본 사용 -->
@@ -64,7 +66,10 @@
     <section class="guide-section">
       <h2 class="section-title">사이즈 (size)</h2>
       <div class="guide-demo">
-        <p class="demo-label">xs(26px) / sm(28px) / md(30px) / lg(32px) / xlg(36px)</p>
+        <p class="demo-label">
+          xs(26px) / sm(28px) / md(30px) / lg(32px) / xlg(36px) / auth(44px) — auth는 로그인·회원가입 전용 스펙(아래
+          섹션 참고)
+        </p>
         <div class="demo-box">
           <div style="display: flex; flex-direction: column; gap: 8px; max-width: 320px">
             <UiInput
@@ -80,7 +85,79 @@
 &lt;UiInput size="sm" placeholder="size=sm" /&gt;
 &lt;UiInput size="md" placeholder="size=md" /&gt;
 &lt;UiInput size="lg" placeholder="size=lg" /&gt;
-&lt;UiInput size="xlg" placeholder="size=xlg" /&gt;</pre
+&lt;UiInput size="xlg" placeholder="size=xlg" /&gt;
+&lt;UiInput size="auth" placeholder="size=auth" /&gt;</pre
+        >
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- 인증 폼 (size="auth") — 변경 사항 -->
+    <!-- ============================================ -->
+    <section class="guide-section">
+      <h2 class="section-title">인증 폼 (size="auth")</h2>
+      <div class="guide-demo">
+        <p class="demo-label">
+          로그인·회원가입(`pages/login.vue`, `pages/signup.vue`)에서 사용. 래퍼: 높이 44px(`$height-auth`), radius 기본
+          6px(`radius="base"`), border 1px #C6D2DB, 배경 #FFF / 입력 영역: padding 6px 8px, 본문
+          16px·400·#5C6677(`$color-text-dark`), 플레이스홀더 #94A3B8
+        </p>
+        <div class="demo-box">
+          <div style="display: flex; flex-direction: column; gap: 8px; max-width: 320px">
+            <UiInput
+              v-model="authIdValue"
+              size="auth"
+              placeholder="아이디를 입력하세요."
+              @enter="onAuthEnter"
+            />
+            <UiInput
+              v-model="authPasswordValue"
+              size="auth"
+              type="password"
+              placeholder="비밀번호를 입력하세요."
+              @enter="onAuthEnter"
+            />
+          </div>
+          <p
+            v-if="authEnterHint"
+            style="margin-top: 8px; font-size: 13px; color: #64748b"
+          >
+            @enter 호출됨 (데모)
+          </p>
+        </div>
+        <pre class="demo-code">
+&lt;UiInput v-model="loginId" size="auth" placeholder="아이디를 입력하세요." @enter="onSubmit" /&gt;
+&lt;UiInput v-model="password" type="password" size="auth" placeholder="비밀번호를 입력하세요." @enter="onSubmit" /&gt;</pre
+        >
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- 이메일·연락처 (type) — 변경 사항 -->
+    <!-- ============================================ -->
+    <section class="guide-section">
+      <h2 class="section-title">이메일·연락처 (type="email" | "tel")</h2>
+      <div class="guide-demo">
+        <p class="demo-label">네이티브 `input` 타입 전달 — 모바일 키보드·접근성에 맞게 사용 (회원가입 등)</p>
+        <div class="demo-box">
+          <div style="display: flex; flex-direction: column; gap: 8px; max-width: 320px">
+            <UiInput
+              v-model="emailTypeValue"
+              type="email"
+              size="auth"
+              placeholder="이메일을 입력하세요."
+            />
+            <UiInput
+              v-model="telTypeValue"
+              type="tel"
+              size="auth"
+              placeholder="연락처를 입력하세요."
+            />
+          </div>
+        </div>
+        <pre class="demo-code">
+&lt;UiInput v-model="email" type="email" size="auth" placeholder="이메일을 입력하세요." /&gt;
+&lt;UiInput v-model="phone" type="tel" size="auth" placeholder="연락처를 입력하세요." /&gt;</pre
         >
       </div>
     </section>
@@ -155,7 +232,8 @@
 &lt;UiInput v-model="value" number-only allow-decimal /&gt;
 
 &lt;!-- 음수 허용 --&gt;
-&lt;UiInput v-model="value" number-only allow-negative /&gt;</pre>
+&lt;UiInput v-model="value" number-only allow-negative /&gt;</pre
+        >
       </div>
     </section>
 
@@ -204,9 +282,9 @@
           </tr>
           <tr>
             <td>type</td>
-            <td>'text' | 'search' | 'password'</td>
+            <td>'text' | 'search' | 'password' | 'email' | 'tel'</td>
             <td>'text'</td>
-            <td>입력 타입 (search 시 검색 아이콘 자동 표시)</td>
+            <td>입력 타입 (search 시 검색 아이콘 자동 표시, email·tel은 네이티브 타입 전달)</td>
           </tr>
           <tr>
             <td>placeholder</td>
@@ -216,9 +294,9 @@
           </tr>
           <tr>
             <td>size</td>
-            <td>'xs' | 'sm' | 'md' | 'lg' | 'xlg'</td>
+            <td>'xs' | 'sm' | 'md' | 'lg' | 'xlg' | 'auth'</td>
             <td>'md'</td>
-            <td>높이 사이즈</td>
+            <td>높이 사이즈 (auth: 44px·인증 폼 스펙, `$height-auth`)</td>
           </tr>
           <tr>
             <td>radius</td>
@@ -340,13 +418,25 @@
 const basicValue = ref('')
 const searchValue = ref('')
 const searchResult = ref('')
+const authIdValue = ref('')
+const authPasswordValue = ref('')
+const authEnterHint = ref(false)
+const emailTypeValue = ref('')
+const telTypeValue = ref('')
 const numberValue = ref('')
 const decimalValue = ref('')
 const negativeValue = ref('')
 
-const sizes = ['xs', 'sm', 'md', 'lg', 'xlg'] as const
+const sizes = ['xs', 'sm', 'md', 'lg', 'xlg', 'auth'] as const
 
 const onSearch = (value: string | number | undefined) => {
   searchResult.value = String(value || '')
+}
+
+const onAuthEnter = () => {
+  authEnterHint.value = true
+  window.setTimeout(() => {
+    authEnterHint.value = false
+  }, 1500)
 }
 </script>
