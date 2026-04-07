@@ -477,10 +477,28 @@
     flex-shrink: 0;
   }
 
-  // 전체화면 시에는 공통 전체화면 규칙 우선
-  &.is-fullscreen .modal-dialog-content {
+  // 전체화면에서는 body를 스크롤 컨테이너로 고정
+  &.doc-dataset-create-modal.is-fullscreen .modal-dialog-content {
     width: calc(100vw - 40px);
     max-width: calc(100vw - 40px) !important;
     max-height: calc(100vh - 40px);
+    height: calc(100vh - 40px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  &.doc-dataset-create-modal.is-fullscreen .modal-dialog-body {
+    display: block;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 0;
+    overflow-x: hidden;
+    overflow-y: auto !important;
+  }
+
+  &.doc-dataset-create-modal.is-fullscreen .doc-dataset-create-form {
+    height: auto;
+    max-height: none;
+    overflow: visible;
   }
 }

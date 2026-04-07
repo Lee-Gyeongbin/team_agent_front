@@ -91,9 +91,9 @@ const searchSort = ref('custom')
 const tmplList = ref<TmplBaseInfo[]>([])
 
 const isCreateDocModalOpen = ref(false)
-const isCreateDocLoadingOpen = ref(false)
 const isCreateDocReportOpen = ref(false)
 const generatedReport = ref<LibraryGeneratedReportValues>({})
+const selectedCreateDocTmplNm = ref('')
 
 /** 문서 생성 API JSON → 편집용 flat 문자열 (HTML 제거, 비문자 값은 문자열화) */
 const normalizeGeneratedReport = (data: Record<string, unknown>): LibraryGeneratedReportValues => {
@@ -611,8 +611,20 @@ export const useLibraryStore = () => {
     }
 
     isCreateDocModalOpen.value = false
-    isCreateDocLoadingOpen.value = true
     generatedReport.value = {}
+    selectedCreateDocTmplNm.value = tmplList.value.find((tmpl) => tmpl.tmplId === tmplId)?.tmplNm ?? ''
+    openLoading({
+      text: 'AI가 문서를 작성 중입니다...',
+      isDy: true,
+      intervalMs: 3000,
+      dyTexts: [
+        'AI가 문서를 꼼꼼히 읽고 있어요...',
+        '좋은 문장으로 정리 중입니다...',
+        '핵심 내용을 뽑아내는 중입니다...',
+        '내용을 정리하는 중입니다...',
+        '완성도를 높이는 중입니다...',
+      ],
+    })
 
     try {
       const res = await fetchCreateDoc(cardId, tmplId)
@@ -629,36 +641,35 @@ export const useLibraryStore = () => {
           generatedReport.value = {}
         }
       }
-      isCreateDocLoadingOpen.value = false
+      closeLoading()
       await nextTick()
+      openToast({ message: `'${selectedCreateDocTmplNm.value}' 문서를 생성했습니다.`, type: 'success' })
       isCreateDocReportOpen.value = true
     } catch {
       openToast({ message: '문서 생성 실패', type: 'error' })
-      isCreateDocLoadingOpen.value = false
+      closeLoading()
     }
-  }
-
-  const handleCreateDocLoadingClose = () => {
-    isCreateDocLoadingOpen.value = false
   }
 
   const handleCreateDocReportClose = () => {
     isCreateDocReportOpen.value = false
     generatedReport.value = {}
+    selectedCreateDocTmplNm.value = ''
   }
 
   /** 상세 모달 닫을 때 문서 만들기 관련 상태 초기화 */
   const resetLibraryDetailCreateDocUi = () => {
     isCreateDocModalOpen.value = false
-    isCreateDocLoadingOpen.value = false
     isCreateDocReportOpen.value = false
     generatedReport.value = {}
+    selectedCreateDocTmplNm.value = ''
   }
 
   /** 보고서 모달에서 다른 유형 선택 */
   const handleCreateDocSelectOtherType = () => {
     isCreateDocReportOpen.value = false
     generatedReport.value = {}
+    selectedCreateDocTmplNm.value = ''
     handleSelectTmplList()
     isCreateDocModalOpen.value = true
   }
@@ -715,12 +726,11 @@ export const useLibraryStore = () => {
     handleSelectTmplList,
     tmplList,
     isCreateDocModalOpen,
-    isCreateDocLoadingOpen,
     isCreateDocReportOpen,
     generatedReport,
+    selectedCreateDocTmplNm,
     handleCreateDocTypeModalClose,
     handleCreateDocGenerate,
-    handleCreateDocLoadingClose,
     handleCreateDocReportClose,
     resetLibraryDetailCreateDocUi,
     handleCreateDocSelectOtherType,

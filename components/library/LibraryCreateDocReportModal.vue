@@ -68,12 +68,12 @@
         </UiButton>
       </div>
 
-      <!-- 보고서 본문 -->
+      <!-- 본문 -->
       <div class="library-create-doc-report-sheet">
         <div class="library-create-doc-report-sheet-head">
           <div class="library-create-doc-report-sheet-head-left">
             <i class="icon icon-document size-18" />
-            <span class="library-create-doc-report-sheet-title">보고서</span>
+            <span class="library-create-doc-report-sheet-title">{{ props.tmplNm || '보고서' }}</span>
           </div>
           <p class="library-create-doc-report-sheet-hint">셀을 클릭하면 직접 수정 가능합니다</p>
         </div>
@@ -83,7 +83,7 @@
             v-if="reportRows.length === 0"
             class="library-create-doc-report-empty"
           >
-            AI 응답에 <code class="library-create-doc-report-empty-code">*_label</code> 필드가 없어 표시할 수 없습니다.
+            보고서 내용이 없습니다.
           </p>
           <table
             v-else
@@ -174,8 +174,11 @@ import { getLibraryReportRows, printLibraryReport } from '~/utils/library/librar
 const props = withDefaults(
   defineProps<{
     isOpen: boolean
+    tmplNm?: string
   }>(),
-  {},
+  {
+    tmplNm: '',
+  },
 )
 
 const report = defineModel<LibraryGeneratedReportValues>('report', { required: true })
@@ -206,7 +209,7 @@ const onSendRefine = () => {
 }
 
 const onPrintReport = () => {
-  const ok = printLibraryReport(report.value || {})
+  const ok = printLibraryReport(report.value || {}, props.tmplNm || '보고서')
   if (!ok) {
     openToast({
       message: '인쇄할 보고서 항목이 없습니다.',

@@ -81,7 +81,8 @@ const onAddTemplate = () => {
 }
 
 const onEditTemplate = (t: TmplBaseInfo) => {
-  editingUserTemplate.value = { ...t, fields: t.fields.map((r) => ({ ...r })) }
+  const safeFields = Array.isArray(t.fields) ? t.fields : []
+  editingUserTemplate.value = { ...t, fields: safeFields.map((r) => ({ ...r })) }
   isTmplFormOpen.value = true
 }
 

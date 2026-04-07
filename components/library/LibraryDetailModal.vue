@@ -258,16 +258,11 @@
       @generate="handleCreateDocGenerate"
     />
 
-    <!-- 문서 생성 중 (AI 응답 대기) -->
-    <LibraryCreateDocLoadingModal
-      :is-open="isCreateDocLoadingOpen"
-      @close="handleCreateDocLoadingClose"
-    />
-
     <!-- AI 생성 보고서 편집 -->
     <LibraryCreateDocReportModal
       v-model:report="generatedReport"
       :is-open="isCreateDocReportOpen"
+      :tmpl-nm="selectedCreateDocTmplNm"
       @close="handleCreateDocReportClose"
       @share-link="onCreateDocShareLink"
       @select-other-type="handleCreateDocSelectOtherType"
@@ -288,12 +283,11 @@ const {
   handleSelectTmplList,
   tmplList,
   isCreateDocModalOpen,
-  isCreateDocLoadingOpen,
   isCreateDocReportOpen,
   generatedReport,
+  selectedCreateDocTmplNm,
   handleCreateDocTypeModalClose,
   handleCreateDocGenerate,
-  handleCreateDocLoadingClose,
   handleCreateDocReportClose,
   resetLibraryDetailCreateDocUi,
   handleCreateDocSelectOtherType,

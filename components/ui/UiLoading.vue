@@ -44,7 +44,7 @@ withDefaults(defineProps<Props>(), {
     inset: 0;
     min-height: 0;
     flex: none;
-    z-index: $z-overlay;
+    z-index: $z-toast;
     background: rgba(0, 0, 0, 0.3);
 
     .ui-loading-spinner {

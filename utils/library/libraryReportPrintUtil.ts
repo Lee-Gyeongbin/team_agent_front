@@ -35,6 +35,7 @@ const buildPrintHostInnerHtml = (
   rows: LibraryReportRow[],
   values: LibraryGeneratedReportValues,
   writtenOn: string,
+  reportTitle: string,
 ): string => {
   const bodyRows = rows
     .map((row) => {
@@ -47,7 +48,7 @@ const buildPrintHostInnerHtml = (
 
   return `
   <header class="report-print-header">
-    <h1 class="report-print-title">보고서</h1>
+    <h1 class="report-print-title">${escapeHTML(reportTitle)}</h1>
     <p class="report-print-sub">${escapeHTML(writtenOn)} 작성</p>
   </header>
   <hr class="report-print-rule" />
@@ -161,11 +162,12 @@ const removeEl = (id: string) => {
  * 현재 페이지 URL 기준으로 인쇄 미리보기를 연다(새 창 없음, 하단 URL에 about:blank 없음).
  * @returns 인쇄할 행이 없으면 false
  */
-export const printLibraryReport = (values: LibraryGeneratedReportValues): boolean => {
+export const printLibraryReport = (values: LibraryGeneratedReportValues, reportTitle = '보고서'): boolean => {
   if (typeof document === 'undefined') return false
 
   const rows = getLibraryReportRows(values)
   if (rows.length === 0) return false
+  const prevTitle = document.title
 
   removeEl(PRINT_STYLE_ID)
   removeEl(PRINT_HOST_ID)
@@ -178,15 +180,17 @@ export const printLibraryReport = (values: LibraryGeneratedReportValues): boolea
   const host = document.createElement('div')
   host.id = PRINT_HOST_ID
   host.setAttribute('aria-hidden', 'true')
-  host.innerHTML = buildPrintHostInnerHtml(rows, values, formatYyyyMmDdDots(new Date()))
+  host.innerHTML = buildPrintHostInnerHtml(rows, values, formatYyyyMmDdDots(new Date()), reportTitle)
   document.body.appendChild(host)
 
   const cleanup = () => {
     removeEl(PRINT_STYLE_ID)
     removeEl(PRINT_HOST_ID)
+    document.title = prevTitle
     window.removeEventListener('afterprint', cleanup)
   }
   window.addEventListener('afterprint', cleanup)
+  document.title = 'TeamAgent'
   window.print()
 
   return true
