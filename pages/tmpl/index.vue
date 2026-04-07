@@ -21,7 +21,7 @@
 
     <TmplListSections
       :tmpl-list="tmplList"
-      @edit-user-template="onEditUserTemplate"
+      @edit-template="onEditTemplate"
     />
 
     <TmplFormPanel
@@ -80,7 +80,7 @@ const onAddTemplate = () => {
   // isTmplFormOpen.value = true
 }
 
-const onEditUserTemplate = (t: TmplBaseInfo) => {
+const onEditTemplate = (t: TmplBaseInfo) => {
   editingUserTemplate.value = { ...t, fields: t.fields.map((r) => ({ ...r })) }
   isTmplFormOpen.value = true
 }

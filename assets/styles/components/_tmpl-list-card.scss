@@ -29,6 +29,16 @@
   gap: $spacing-md;
 }
 
+// 목록 카드 전체 클릭으로 수정 진입 (TmplListSections)
+.tmpl-list-card--clickable {
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary, #{$color-primary});
+    outline-offset: 2px;
+  }
+}
+
 ul.tmpl-card-stack {
   list-style: none;
   margin: 0;

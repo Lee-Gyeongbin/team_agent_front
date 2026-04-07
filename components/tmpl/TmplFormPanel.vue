@@ -56,10 +56,14 @@
         </UiFormField>
 
         <UiFormField label="설명">
-          <UiInput
+          <UiTextarea
             :model-value="description"
             placeholder="이 템플릿의 용도를 간단히 설명해 주세요"
+            :rows="2"
             size="sm"
+            border
+            :auto-resize="true"
+            :max-rows="5"
             @update:model-value="description = $event"
           />
         </UiFormField>
@@ -157,14 +161,6 @@
         label-width="132px"
         collapsible
       >
-        <UiFormField label="프롬프트 요약">
-          <UiInput
-            :model-value="llmPromptSmry"
-            placeholder="목록·카드에 표시할 한 줄 요약 (비우면 본문 앞부분을 사용)"
-            size="sm"
-            @update:model-value="llmPromptSmry = $event"
-          />
-        </UiFormField>
         <div class="tmpl-prompt-toolbar">
           <span />
           <button
@@ -176,6 +172,7 @@
           </button>
         </div>
         <UiTextarea
+          :disabled="template?.sysTmplYn === 'Y'"
           :model-value="llmPrompt"
           placeholder="LLM에게 보낼 프롬프트를 작성하세요. {{content}} 위치에 지식창고 내용이 삽입됩니다."
           :rows="10"
@@ -187,17 +184,12 @@
           <span class="tmpl-prompt-legend__label">템플릿 변수</span>
           <div class="tmpl-prompt-legend__tags">
             <UiTag
+              v-for="v in promptVariables"
+              :key="v"
               variant="default"
               size="sm"
-              label="{{content}}"
+              :label="v"
             />
-            <span class="tmpl-prompt-legend__desc">지식창고 내용</span>
-            <UiTag
-              variant="default"
-              size="sm"
-              label="{{question}}"
-            />
-            <span class="tmpl-prompt-legend__desc">원본 질문</span>
           </div>
         </div>
       </UiSettingSection>
@@ -252,15 +244,17 @@ const DEFAULT_FIELDS = (): TmplField[] => [
   createTmplField({ jsonKey: 'content', fieldNm: '본문내용', multilineYn: 'Y', sortOrd: 2 }),
 ]
 
-const DEFAULT_PROMPT_TEXT = `다음 지침에 따라 문서를 작성하세요.
-
-사용자 질문:
-{{question}}
-
-참고 자료(지식창고):
-{{content}}
-
-위 정보를 반영하여 요청된 형식으로 출력해 주세요.`
+const DEFAULT_PROMPT_TEXT = `다음 내용을 보고서 형식으로 정리해 주세요.
+질문: {{Q_CONTENT}}
+답변: {{R_CONTENT}}
+반드시 JSON 형식으로만 응답하세요. JSON 외 다른 텍스트, 마크다운, 코드블록은 절대 포함하지 마세요.
+{{HTML_FIELD_INSTRUCTION}}
+예시 출력 형식:
+{"title_label":"제목","title":"채용절차 프로세스 보고서", ...}
+출력 형식은 반드시 위와 같이 출력하세요.
+key가 date 필드의 값은 오늘 날짜로 {{TODAY}}이어야 합니다.
+key가 author 필드의 값은 {{USER_NM}}이어야 합니다.
+{{FIELD_LIST}}`
 
 const tmplTypeOptions: { value: TmplDocType; title: string; desc: string }[] = [
   {
@@ -295,6 +289,18 @@ const description = ref('')
 const fields = ref<TmplField[]>(DEFAULT_FIELDS())
 const llmPromptSmry = ref('')
 const llmPrompt = ref('')
+
+const promptVariables = computed(() => {
+  const src = llmPrompt.value ?? ''
+  const uniq = new Set<string>()
+  const re = /\{\{\s*([^{}]+?)\s*\}\}/g
+  for (const m of src.matchAll(re)) {
+    const inner = (m[1] ?? '').trim()
+    if (!inner) continue
+    uniq.add(`{{${inner}}}`)
+  }
+  return [...uniq]
+})
 
 const modalTitle = computed(() => (props.template ? '템플릿 수정' : '새 템플릿 추가'))
 
@@ -422,6 +428,7 @@ const onSave = () => {
     llmPromptSmry: smry,
     llmPrompt: promptBody,
     fields: outFields,
+    useYn: props.template?.useYn || 'Y',
   }
   emit('save', payload)
 }

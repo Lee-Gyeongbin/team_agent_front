@@ -17,7 +17,7 @@
         v-if="sec.type === 'builtin'"
         variant="default"
         size="sm"
-        label="시스템 제공 · 편집 불가"
+        label="시스템 제공"
       />
       <UiBadge
         v-else
@@ -31,8 +31,14 @@
       <article
         v-for="item in sec.items"
         :key="item.tmplId"
-        class="card-grid-card"
+        class="card-grid-card tmpl-list-card--clickable"
         :class="sec.type === 'builtin' ? 'tmpl-builtin-card' : 'tmpl-user-card'"
+        role="button"
+        tabindex="0"
+        :aria-label="`${item.tmplNm} 템플릿 수정`"
+        @click="onEditTemplate(item)"
+        @keydown.enter.prevent="onEditTemplate(item)"
+        @keydown.space.prevent="onEditTemplate(item)"
       >
         <template v-if="sec.type === 'builtin'">
           <div class="tmpl-builtin-card__head">
@@ -79,16 +85,6 @@
                 size="sm"
                 :label="item.tmplType === 'T' ? '템플릿형' : '자유형식'"
               />
-              <UiButton
-                variant="ghost"
-                size="sm"
-                @click="onEditUserTemplate(item)"
-              >
-                <template #icon-left>
-                  <i class="icon-edit size-16" />
-                </template>
-                수정
-              </UiButton>
             </div>
           </div>
           <p
@@ -122,7 +118,7 @@ interface Props {
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  editUserTemplate: [t: TmplBaseInfo]
+  editTemplate: [t: TmplBaseInfo]
 }>()
 
 const isSysBuiltinTmpl = (sysTmplYn: string | undefined): boolean => sysTmplYn === 'Y'
@@ -146,7 +142,7 @@ const tmplSections = computed((): TmplListSectionRow[] => {
   ]
 })
 
-const onEditUserTemplate = (t: TmplBaseInfo) => {
-  emit('editUserTemplate', t)
+const onEditTemplate = (t: TmplBaseInfo) => {
+  emit('editTemplate', t)
 }
 </script>
