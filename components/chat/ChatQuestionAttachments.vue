@@ -1,5 +1,6 @@
 <template>
   <ul
+    ref="listRef"
     class="message-user-attachments"
     :class="{ 'is-single-image': isSingleImageRow }"
   >
@@ -80,6 +81,7 @@ const props = defineProps<{
 
 const { fetchViewChatFile } = useReportsApi()
 
+const listRef = ref<HTMLElement | null>(null)
 const previewOpen = ref(false)
 const previewTarget = ref<ChatMessageAttachment | null>(null)
 
@@ -93,6 +95,7 @@ const thumbLoadingIds = ref<Set<string>>(new Set())
 const thumbInflightIds = ref<Record<string, boolean>>({})
 
 let remoteThumbLoadGen = 0
+let thumbObserver: IntersectionObserver | null = null
 
 const isAttachmentImage = (item: ChatMessageAttachment) => {
   const ext = getChatAttachmentExtension(item.fileName)
@@ -168,13 +171,58 @@ const loadRemoteImageThumbs = async () => {
   )
 }
 
+/** 아직 썸네일을 로드하지 않은 이미지 첨부파일이 있는지 확인 */
+const hasPendingImageThumbs = () =>
+  props.attachments.some((item) => {
+    if (!isAttachmentImage(item)) return false
+    if (item.localPreviewUrl) return false
+    const id = String(item.chatFileId ?? '').trim()
+    return id && !thumbFailedIds.value[id] && !resolvedThumbUrl.value[id] && !thumbInflightIds.value[id]
+  })
+
+/**
+ * IntersectionObserver를 (재)설정한다.
+ * - 로드할 이미지가 없으면 옵저버를 달지 않는다.
+ * - 이미 뷰포트 안에 있으면 콜백이 즉시 실행되어 썸네일을 바로 로드한다.
+ * - 뷰포트 밖이면 스크롤로 보이는 순간 로드한다.
+ */
+const setupThumbObserver = () => {
+  thumbObserver?.disconnect()
+  thumbObserver = null
+
+  if (!hasPendingImageThumbs() || !listRef.value) return
+
+  thumbObserver = new IntersectionObserver(
+    (entries) => {
+      if (entries[0]?.isIntersecting) {
+        void loadRemoteImageThumbs()
+        thumbObserver?.disconnect()
+        thumbObserver = null
+      }
+    },
+    { threshold: 0 },
+  )
+  thumbObserver.observe(listRef.value)
+}
+
+// 마운트 후 최초 1회 옵저버 설정
+onMounted(() => {
+  setupThumbObserver()
+})
+
+// 첨부파일 목록이 바뀌면 옵저버 재설정 (새 이미지 추가 대응)
 watch(
   () => props.attachments,
   () => {
-    void loadRemoteImageThumbs()
+    setupThumbObserver()
   },
-  { immediate: true, deep: true },
+  { deep: true },
 )
+
+onUnmounted(() => {
+  thumbObserver?.disconnect()
+  thumbObserver = null
+})
 
 const isSingleImageRow = computed(() => props.attachments.length === 1 && isAttachmentImage(props.attachments[0]))
 
