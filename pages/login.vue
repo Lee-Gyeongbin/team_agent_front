@@ -4,43 +4,46 @@
       <div class="login-index-header">
         <img
           class="login-logo"
-          src="~/assets/icons/svg/logo-teamagent-login.svg"
+          src="~/assets/icons/svg/logo-teamagent.svg"
           alt="TeamAgent"
           @click="navigateTo('/')"
         />
       </div>
 
-      <div class="chat-index-input-wrapper flex flex-col items-center w-full login-form-width">
-        <div class="chat-index-input-top flex flex-col w-full">
-          <label
-            class="login-label"
-            for="login-id"
-          >
-            아이디
-          </label>
-          <input
-            id="login-id"
-            v-model="loginId"
-            type="text"
-            class="login-input"
-            placeholder="아이디를 입력하세요."
-            @keyup.enter="onSubmit"
-          />
+      <div class="chat-index-input-wrapper flex flex-col items-center w-full">
+        <div class="chat-index-input-top flex flex-col w-full gap-16">
+          <div class="input-grp">
+            <label
+              class="login-label"
+              for="login-id"
+            >
+              아이디
+            </label>
+            <UiInput
+              id="login-id"
+              v-model="loginId"
+              size="auth"
+              placeholder="아이디를 입력하세요."
+              @enter="onSubmit"
+            />
+          </div>
 
-          <label
-            class="login-label"
-            for="login-password"
-          >
-            비밀번호
-          </label>
-          <input
-            id="login-password"
-            v-model="loginPassword"
-            type="password"
-            class="login-input"
-            placeholder="비밀번호를 입력하세요."
-            @keyup.enter="onSubmit"
-          />
+          <div class="input-grp">
+            <label
+              class="login-label"
+              for="login-password"
+            >
+              비밀번호
+            </label>
+            <UiInput
+              id="login-password"
+              v-model="loginPassword"
+              type="password"
+              size="auth"
+              placeholder="비밀번호를 입력하세요."
+              @enter="onSubmit"
+            />
+          </div>
 
           <p
             v-if="sessionExpiredMessage"
@@ -55,6 +58,13 @@
           >
             {{ errorMessage }}
           </p>
+
+          <!-- TODO: 로그인 정보 저장 체크박스 추가 -->
+          <UiCheckbox
+            v-model="saveLoginInfo"
+            label="로그인 정보 저장"
+            class="login-save-checkbox color-4B81E6"
+          />
         </div>
 
         <div class="chat-index-input-bottom flex flex-col items-center w-full">
@@ -69,17 +79,51 @@
               @click="onSubmit"
             >
               {{ isLoading ? '로그인 중...' : '로그인' }}
-              <template #icon-right>
-                <i class="icon-send size-20 icon-white" />
-              </template>
             </UiButton>
           </div>
-          <NuxtLink
-            to="/signup"
-            class="login-signup-link"
-          >
-            아직 계정이 없으신가요? <b>회원가입</b>
-          </NuxtLink>
+          <div class="login-btn-grp flex items-center justify-center">
+            <button
+              type="button"
+              class="btn-login"
+            >
+              아이디 찾기
+            </button>
+            <span
+              class="login-btn-sep"
+              aria-hidden="true"
+            />
+            <button
+              type="button"
+              class="btn-login"
+            >
+              비밀번호 찾기
+            </button>
+            <span
+              class="login-btn-sep"
+              aria-hidden="true"
+            />
+            <button
+              type="button"
+              class="btn-login"
+              @click="onNavigateSignup"
+            >
+              회원가입
+            </button>
+          </div>
+        </div>
+
+        <!-- 공지사항 -->
+        <div class="login-notice-wrap">
+          <div class="notice-list">
+            <div
+              v-for="notice in noticeList"
+              :key="notice.id"
+              class="notice-item"
+            >
+              <p class="notice-item-content title">{{ notice.content }}</p>
+              <p class="notice-item-content date">{{ notice.date }}</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -97,9 +141,24 @@ const loginPassword = ref('')
 const errorMessage = ref('')
 const isLoading = ref(false)
 const sessionExpiredMessage = ref('')
+/** 로그인 정보 저장 (아이디 기억 등 — 백엔드/스토리지 연동 시 사용) */
+const saveLoginInfo = ref(false)
 
 if (route.query.expired === 'true') {
   sessionExpiredMessage.value = '세션이 만료되었습니다. 다시 로그인해주세요.'
+}
+
+// 🔽 아이디/비밀번호 찾기 — 페이지 준비 시 라우트 연결
+// const onFindId = () => {
+//   navigateTo('/find-id')
+// }
+
+// const onFindPassword = () => {
+//   navigateTo('/find-password')
+// }
+
+const onNavigateSignup = () => {
+  navigateTo('/signup')
 }
 
 const onSubmit = async () => {
@@ -127,32 +186,29 @@ const onSubmit = async () => {
     isLoading.value = false
   }
 }
+
+// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
+const noticeList = ref([
+  {
+    id: 1,
+    content: '[장애안내] TeamAgent 서비스 일시 접속 장애 안내드립니다.',
+    date: '2026.04.03',
+  },
+  {
+    id: 2,
+    content: '[점검 완료 안내]TeamAgent 서비스 인프라 점검 안내드립니다.',
+    date: '2026.04.02',
+  },
+  {
+    id: 3,
+    content: '[서비스 점검 안내]TeamAgent 인프라 점검 실시 안내드립니다.',
+    date: '2026.04.01',
+  },
+])
 </script>
 
 <style lang="scss" scoped>
 .login-form {
-  .login-form-width {
-    max-width: 360px; // 로그인 폼 영역 폭 제한 (auth 레이아웃에서 전체 폭 쓰지 않도록)
-  }
-
-  .chat-index-input-top {
-    gap: 12px;
-  }
-
-  .login-label {
-    font-size: $font-size-sm;
-    font-weight: $font-weight-medium;
-    color: $color-text-secondary;
-  }
-
-  .login-input {
-    width: 100%;
-    padding: $spacing-sm $spacing-md;
-    border-radius: $border-radius-base;
-    border: 1px solid $color-border;
-    font-size: $font-size-base;
-  }
-
   .login-session-expired {
     color: #dd6b20;
     font-size: $font-size-sm;
@@ -163,15 +219,6 @@ const onSubmit = async () => {
     color: #e53e3e;
     font-size: $font-size-sm;
     margin-top: 4px;
-  }
-
-  .chat-index-input-bottom {
-    gap: 16px;
-    margin-top: 4px;
-  }
-
-  .login-actions {
-    margin-top: 16px;
   }
 
   // 로그인 메인 버튼: 전체 폭, 라벨 중앙 + 전송 아이콘 우측 정렬
@@ -194,17 +241,6 @@ const onSubmit = async () => {
     :deep(.ui-button-icon) {
       position: absolute;
       right: 18px;
-    }
-  }
-
-  .login-signup-link {
-    font-size: $font-size-sm;
-    color: $color-text-secondary;
-    text-decoration: none;
-    transition: color $transition-base;
-
-    &:hover {
-      color: var(--color-primary);
     }
   }
 }

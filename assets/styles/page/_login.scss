@@ -4,24 +4,26 @@
 .login-form {
   height: 100vh;
   width: 100vw;
-  background: #f4f7f9;
+  background: #fff;
 
   .login-form-wrapper {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 24px;
+    gap: $spacing-lg;
     width: 100%;
-    padding: 40px 32px;
+    padding: 40px $spacing-xl;
     border-radius: 20px;
-    border: 1px solid #ecf0f3;
+    border: 1px solid $color-background;
+    box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.07);
     background: #fff;
 
+    // 로고 헤더 =====================
     .login-index-header {
       width: 100%;
 
-      padding-bottom: 24px;
-      border-bottom: 1px solid #ecf0f3;
+      padding-bottom: $spacing-lg;
+      border-bottom: 1px solid $color-border-light;
     }
 
     .login-logo {
@@ -30,13 +32,153 @@
       margin: 0 auto;
     }
 
+    // 타이틀 =====================
     .chat-index-title {
       font-size: 2.25rem;
       font-weight: $font-weight-bold;
-      line-height: 150%;
-      color: $color-text-primary;
-      margin-bottom: 8px;
-      color: #2d3139;
+      line-height: $line-height-base;
+      color: $color-text-heading-sub;
+      margin-bottom: $spacing-sm;
+    }
+
+    // input-wrapper =====================
+    .chat-index-input-top {
+      gap: 16px;
+    }
+
+    .input-grp {
+      display: flex;
+      flex-direction: column;
+      gap: $spacing-xs;
+    }
+
+    .login-label {
+      font-size: 15px;
+      font-weight: $font-weight-medium;
+      color: $color-text-muted;
+    }
+
+    // 로그인 제출: 기본 #4B81E6, 호버는 primary(variant 기본 배경과 동일)
+    .btn-login-submit.ui-button.variant-primary {
+      background: #4b81e6;
+
+      &:hover:not(:disabled) {
+        background: var(--color-primary);
+      }
+    }
+
+    .chat-index-input-bottom {
+      padding-top: 20px;
+    }
+
+    // 로그인 정보 저장 체크 (signup 동의 체크와 동일 스펙)
+    .login-save-checkbox.ui-checkbox {
+      .ui-checkbox-box {
+        width: 20px;
+        height: 20px;
+      }
+
+      .ui-checkbox-icon {
+        width: 14px;
+        height: 14px;
+      }
+
+      .ui-checkbox-label {
+        font-size: 15px;
+        font-style: normal;
+        font-weight: $font-weight-medium;
+        color: $color-text-heading-sub;
+        line-height: 20px;
+      }
+    }
+
+    .login-actions {
+      padding-bottom: 24px;
+    }
+
+    // 로그인 하단: 아이디·비밀번호 찾기 · 회원가입
+    .login-btn-grp {
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+
+      .btn-login {
+        position: relative;
+        margin: 0;
+        padding: 0 2px;
+        height: 32px;
+        border: none;
+        background: transparent;
+        color: $color-text-heading-sub;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 32px;
+        font-family: inherit;
+        cursor: pointer;
+        transition: color $transition-base;
+        border-radius: 4px;
+
+        &:hover {
+          background: #ecf0f3;
+        }
+      }
+
+      .login-btn-sep {
+        flex-shrink: 0;
+        width: 1px;
+        height: 16px;
+        background: #c6d2db;
+      }
+    }
+
+    .login-notice-wrap {
+      width: 100%;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid #ecf0f3;
+
+      .notice-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .notice-item {
+        display: flex;
+        gap: 10px;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .notice-item-content {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 400;
+        color: #5c6677;
+        cursor: pointer;
+
+        &.title {
+          flex: 1 1 auto;
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+
+          &:hover {
+            color: #3c69db;
+            text-decoration-line: underline;
+          }
+        }
+
+        &.date {
+          flex-shrink: 0;
+          width: 75px;
+          min-width: 75px;
+          color: #6f7a93;
+          white-space: nowrap;
+          text-align: right;
+        }
+      }
     }
   }
 }

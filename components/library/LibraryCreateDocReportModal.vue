@@ -38,7 +38,7 @@
         <UiButton
           variant="outline"
           size="md"
-          @click="emit('export-pdf')"
+          @click="onPrintReport"
         >
           <template #icon-left>
             <i class="icon icon-download size-16" />
@@ -167,7 +167,9 @@
 </template>
 
 <script setup lang="ts">
+import { openToast } from '~/composables/useToast'
 import type { LibraryGeneratedReportValues } from '~/types/library'
+import { getLibraryReportRows, printLibraryReport } from '~/utils/library/libraryReportPrintUtil'
 
 const props = withDefaults(
   defineProps<{
@@ -180,7 +182,6 @@ const report = defineModel<LibraryGeneratedReportValues>('report', { required: t
 
 const emit = defineEmits<{
   close: []
-  'export-pdf': []
   'share-link': []
   'select-other-type': []
   'send-refine': [message: string]
@@ -188,16 +189,7 @@ const emit = defineEmits<{
 
 const refineDraft = ref('')
 
-const reportRows = computed(() => {
-  const reportData = report.value || {}
-  const rows: { labelKey: string; valueKey: string }[] = []
-  for (const key of Object.keys(reportData)) {
-    if (!key.endsWith('_label')) continue
-    const valueKey = key.replace(/_label$/, '')
-    rows.push({ labelKey: key, valueKey })
-  }
-  return rows
-})
+const reportRows = computed(() => getLibraryReportRows(report.value || {}))
 
 watch(
   () => props.isOpen,
@@ -211,6 +203,17 @@ const onSendRefine = () => {
   if (!msg) return
   emit('send-refine', msg)
   refineDraft.value = ''
+}
+
+const onPrintReport = () => {
+  const ok = printLibraryReport(report.value || {})
+  if (!ok) {
+    openToast({
+      message: '인쇄할 보고서 항목이 없습니다.',
+      type: 'warning',
+      duration: 2500,
+    })
+  }
 }
 </script>
 

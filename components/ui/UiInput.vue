@@ -77,7 +77,7 @@
 <script setup lang="ts">
 interface Props {
   modelValue?: string | number
-  type?: 'text' | 'search' | 'password'
+  type?: 'text' | 'search' | 'password' | 'email' | 'tel'
   placeholder?: string
   disabled?: boolean
   readonly?: boolean
@@ -88,7 +88,7 @@ interface Props {
   min?: string | number
   max?: string | number
   step?: string | number
-  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xlg'
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xlg' | 'auth'
   radius?: 'sm' | 'base' | 'lg'
   desc?: string
   numberOnly?: boolean
@@ -267,6 +267,30 @@ defineExpose({ focus })
   &.size-inp-xlg {
     height: $height-xlg;
     font-size: $font-size-lg;
+  }
+
+  /** 로그인·회원가입: 44px, 16px/400, 테두리·플레이스홀더 스펙 */
+  &.size-inp-auth {
+    height: $height-auth;
+    font-size: $font-size-lg;
+
+    .ui-input {
+      padding: 6px 8px;
+      font-weight: 400;
+      color: $color-text-dark;
+
+      &::placeholder {
+        color: #94a3b8;
+      }
+    }
+
+    &.has-icon-left .ui-input {
+      padding-left: 4px;
+    }
+
+    &.has-icon-right .ui-input {
+      padding-right: 4px;
+    }
   }
 
   // 비활성
