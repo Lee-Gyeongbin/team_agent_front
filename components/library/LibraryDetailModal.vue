@@ -169,10 +169,12 @@
             </template>
           </UiButton>
 
+          <!-- eslint-disable vue/no-v-html — toHtmlContent 내 안전 처리 적용 -->
           <div
-            class="message-content"
-            v-html="toHtmlContent(displayData?.rcontent ?? '')"
-          ></div>
+            class="message-content markdown-body"
+            v-html="responseRenderedHtml"
+          />
+          <!-- eslint-enable vue/no-v-html -->
         </div>
 
         <!-- 참조 매뉴얼 (매뉴얼AI 타입) -->
@@ -378,6 +380,9 @@ const visualizationView = computed<VisualizationViewModel | null>(() => {
 
 // 내부 표시용 데이터 (트랜지션 타이밍 제어용)
 const displayData = ref<LibraryCardDetail | null>(props.cardDetail ?? null)
+
+/** 시스템 응답 마크다운 렌더 결과 — v-html (ChatMessageItem과 동일) */
+const responseRenderedHtml = computed(() => toHtmlContent(displayData.value?.rcontent ?? ''))
 // SQL 코드 블록 표시 (데이터분석 타입에서 SQL 버튼으로 토글, 초기 숨김)
 const isSqlCodeVisible = ref(false)
 const toggleSqlCodeVisible = () => {
