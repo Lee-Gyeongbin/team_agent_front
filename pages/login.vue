@@ -81,12 +81,49 @@
               {{ isLoading ? '로그인 중...' : '로그인' }}
             </UiButton>
           </div>
-          <NuxtLink
-            to="/signup"
-            class="login-signup-link"
-          >
-            아직 계정이 없으신가요? <b>회원가입</b>
-          </NuxtLink>
+          <div class="login-btn-grp flex items-center justify-center">
+            <button
+              type="button"
+              class="btn-login"
+            >
+              아이디 찾기
+            </button>
+            <span
+              class="login-btn-sep"
+              aria-hidden="true"
+            />
+            <button
+              type="button"
+              class="btn-login"
+            >
+              비밀번호 찾기
+            </button>
+            <span
+              class="login-btn-sep"
+              aria-hidden="true"
+            />
+            <button
+              type="button"
+              class="btn-login"
+              @click="onNavigateSignup"
+            >
+              회원가입
+            </button>
+          </div>
+        </div>
+
+        <!-- 공지사항 -->
+        <div class="login-notice-wrap">
+          <div class="notice-list">
+            <div
+              v-for="notice in noticeList"
+              :key="notice.id"
+              class="notice-item"
+            >
+              <p class="notice-item-content title">{{ notice.content }}</p>
+              <p class="notice-item-content date">{{ notice.date }}</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -109,6 +146,19 @@ const saveLoginInfo = ref(false)
 
 if (route.query.expired === 'true') {
   sessionExpiredMessage.value = '세션이 만료되었습니다. 다시 로그인해주세요.'
+}
+
+// 🔽 아이디/비밀번호 찾기 — 페이지 준비 시 라우트 연결
+// const onFindId = () => {
+//   navigateTo('/find-id')
+// }
+
+// const onFindPassword = () => {
+//   navigateTo('/find-password')
+// }
+
+const onNavigateSignup = () => {
+  navigateTo('/signup')
 }
 
 const onSubmit = async () => {
@@ -136,6 +186,25 @@ const onSubmit = async () => {
     isLoading.value = false
   }
 }
+
+// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
+const noticeList = ref([
+  {
+    id: 1,
+    content: '[장애안내] TeamAgent 서비스 일시 접속 장애 안내드립니다.',
+    date: '2026.04.03',
+  },
+  {
+    id: 2,
+    content: '[점검 완료 안내]TeamAgent 서비스 인프라 점검 안내드립니다.',
+    date: '2026.04.02',
+  },
+  {
+    id: 3,
+    content: '[서비스 점검 안내]TeamAgent 인프라 점검 실시 안내드립니다.',
+    date: '2026.04.01',
+  },
+])
 </script>
 
 <style lang="scss" scoped>
@@ -172,17 +241,6 @@ const onSubmit = async () => {
     :deep(.ui-button-icon) {
       position: absolute;
       right: 18px;
-    }
-  }
-
-  .login-signup-link {
-    font-size: $font-size-sm;
-    color: $color-text-secondary;
-    text-decoration: none;
-    transition: color $transition-base;
-
-    &:hover {
-      color: var(--color-primary);
     }
   }
 }

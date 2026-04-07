@@ -132,9 +132,6 @@
               @click="onSubmit"
             >
               {{ isLoading ? '가입 중...' : '회원가입' }}
-              <template #icon-right>
-                <i class="icon-send size-20 icon-white" />
-              </template>
             </UiButton>
           </div>
           <NuxtLink

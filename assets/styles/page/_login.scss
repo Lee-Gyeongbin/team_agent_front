@@ -95,5 +95,90 @@
     .login-actions {
       padding-bottom: 24px;
     }
+
+    // 로그인 하단: 아이디·비밀번호 찾기 · 회원가입
+    .login-btn-grp {
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+
+      .btn-login {
+        position: relative;
+        margin: 0;
+        padding: 0 2px;
+        height: 32px;
+        border: none;
+        background: transparent;
+        color: $color-text-heading-sub;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 32px;
+        font-family: inherit;
+        cursor: pointer;
+        transition: color $transition-base;
+        border-radius: 4px;
+
+        &:hover {
+          background: #ecf0f3;
+        }
+      }
+
+      .login-btn-sep {
+        flex-shrink: 0;
+        width: 1px;
+        height: 16px;
+        background: #c6d2db;
+      }
+    }
+
+    .login-notice-wrap {
+      width: 100%;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid #ecf0f3;
+
+      .notice-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .notice-item {
+        display: flex;
+        gap: 10px;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .notice-item-content {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 400;
+        color: #5c6677;
+        cursor: pointer;
+
+        &.title {
+          flex: 1 1 auto;
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+
+          &:hover {
+            color: #3c69db;
+            text-decoration-line: underline;
+          }
+        }
+
+        &.date {
+          flex-shrink: 0;
+          width: 75px;
+          min-width: 75px;
+          color: #6f7a93;
+          white-space: nowrap;
+          text-align: right;
+        }
+      }
+    }
   }
 }
