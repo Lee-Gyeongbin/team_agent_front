@@ -43,6 +43,11 @@ const buildGfmPipeTable = (headers: [string, string, string], rows: [string, str
 /**
  * LLM이 파이프 없이 "헤더 줄 + 숫자로 시작하는 행들"만 줄 때 → GFM 표 문자열로 변환
  * (marked는 | 표만 테이블로 인식)
+ * 예:
+ *   순위 국가 GDP
+      1. 미국 약 28조 달러
+      2. 중국 약 18조 달러
+      3. 독일 약 4조 달러
  */
 const convertPlainTextTableBlocksToGfm = (text: string): string => {
   const lines = text.split('\n')
@@ -92,11 +97,14 @@ const convertPlainTextTableBlocksToGfm = (text: string): string => {
  * - DOMPurify로 XSS 방지 (v-html 전제)
  */
 export const toHtmlContent = (value: string) => {
+  // 줄바꿈 정규화
   const normalized = value.replace(/\r\n/g, '\n').replace(/\\n/g, '\n')
   if (!normalized.trim()) return ''
 
+  // 파이프 없는 "텍스트 표"는 GFM 표로 정규화 후 marked 파싱
   const markdown = convertPlainTextTableBlocksToGfm(normalized)
 
+  // DOMPurify로 XSS 방지 (v-html 전제)
   const html = marked.parse(markdown, { async: false }) as string
   return DOMPurify.sanitize(html)
 }
