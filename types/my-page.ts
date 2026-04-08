@@ -18,6 +18,25 @@ export interface ChangePasswordResponse {
   returnMsg?: string
 }
 
+export interface MyPageProfileUploadPrepareResponse {
+  successYn?: boolean
+  uploadUrl?: string
+  filePath?: string
+  returnMsg?: string
+}
+
+export interface MyPageProfileImageUpdateResponse {
+  successYn?: boolean
+  returnMsg?: string
+}
+
+export interface MyPageProfileImageViewResponse {
+  viewType?: string
+  url?: string
+  fileName?: string
+  reason?: string
+}
+
 /** 로그인 이력 행 */
 export interface MyPageLoginHistoryItem {
   userId: string

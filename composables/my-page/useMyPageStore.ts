@@ -18,9 +18,18 @@ const loginHistoryLoading = ref(false)
 const loginHistoryError = ref('')
 const avatarFileInputRef = ref<HTMLInputElement | null>(null)
 const avatarPreviewUrl = ref<string | null>(null)
+const avatarUploadedFilePath = ref('')
 
 export const useMyPageStore = () => {
-  const { fetchInfo, fetchUpdateInfo, fetchChangePassword, fetchLoginHistory } = useMyPageApi()
+  const {
+    fetchInfo,
+    fetchUpdateInfo,
+    fetchChangePassword,
+    fetchLoginHistory,
+    fetchPrepareProfileImageUpload,
+    fetchUpdateUserProfileImg,
+    fetchViewUserProfileImg,
+  } = useMyPageApi()
   const { orgOptions, handleFetchOrgList } = useOrgManageStore()
   const { user, logout } = useAuth()
 
@@ -30,6 +39,14 @@ export const useMyPageStore = () => {
   const currentOrgLabel = computed(() => {
     if (!form.value.orgId) return ''
     const found = orgOptions.value?.find((opt) => opt.value === form.value.orgId)
+    return found?.label ?? ''
+  })
+
+  /** 좌측 프로필/요약: 편집 중에는 스냅샷의 orgId 기준 조직명 */
+  const sidebarOrgLabel = computed(() => {
+    const orgId = formSnapshot.value !== null ? formSnapshot.value.orgId : form.value.orgId
+    if (!orgId) return ''
+    const found = orgOptions.value?.find((opt) => opt.value === orgId)
     return found?.label ?? ''
   })
 
@@ -50,6 +67,28 @@ export const useMyPageStore = () => {
     return true
   })
 
+  const revokeAvatarPreviewUrl = () => {
+    if (avatarPreviewUrl.value?.startsWith('blob:')) {
+      URL.revokeObjectURL(avatarPreviewUrl.value)
+    }
+  }
+
+  const handleLoadProfileImage = async () => {
+    try {
+      const res = await fetchViewUserProfileImg()
+      if (String(res?.viewType ?? '').toUpperCase() === 'IMAGE' && String(res?.url ?? '').trim()) {
+        revokeAvatarPreviewUrl()
+        avatarPreviewUrl.value = String(res?.url ?? '').trim()
+        return
+      }
+      revokeAvatarPreviewUrl()
+      avatarPreviewUrl.value = null
+    } catch {
+      revokeAvatarPreviewUrl()
+      avatarPreviewUrl.value = null
+    }
+  }
+
   const handleLoadMyPage = async () => {
     isLoading.value = true
     errorMessage.value = ''
@@ -64,6 +103,7 @@ export const useMyPageStore = () => {
       hasData.value = Boolean(data && String(data.userId ?? '').trim())
       isEditMode.value = false
       formSnapshot.value = null
+      avatarUploadedFilePath.value = ''
     } catch (error) {
       errorMessage.value = error instanceof Error ? error.message : '내 정보를 불러오는 중 오류가 발생했습니다.'
       hasData.value = false
@@ -98,6 +138,7 @@ export const useMyPageStore = () => {
       await handleFetchOrgList()
     }
     await handleLoadMyPage()
+    await handleLoadProfileImage()
   }
 
   const handleStartEdit = () => {
@@ -155,14 +196,15 @@ export const useMyPageStore = () => {
 
   const handleSubmitPasswordChange = async (payload: { oldPassword: string; newPassword: string }) => {
     try {
-      await fetchChangePassword(payload)
       isPasswordModalOpen.value = false
+      await fetchChangePassword(payload)
       await openAlert({
         message: '비밀번호가 변경되었습니다.\n보안을 위해 다시 로그인해 주세요.',
       })
       await logout()
     } catch (error) {
-      const message = error instanceof Error && error.message ? error.message : '기존 비밀번호가 일치하지 않습니다.'
+      const message =
+        error instanceof Error ? error.message : '비밀번호 수정 중 오류가 발생했습니다.\n다시 시도해주세요.'
       openToast({
         message,
         type: 'error',
@@ -174,43 +216,48 @@ export const useMyPageStore = () => {
     avatarFileInputRef.value?.click()
   }
 
-  const onAvatarFileChange = (event: Event) => {
+  const onAvatarFileChange = async (event: Event) => {
     const input = event.target as HTMLInputElement
     const file = input.files?.[0]
     if (!file) return
 
-    if (!file.type.startsWith('image/')) {
+    try {
+      const prepared = await fetchPrepareProfileImageUpload({
+        profileImgNm: file.name,
+      })
+
+      if (!prepared.uploadUrl || !prepared.filePath) {
+        throw new Error('프로필 이미지 업로드 정보가 올바르지 않습니다.')
+      }
+
+      const uploadRes = await fetch(prepared.uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': file.type || 'application/octet-stream',
+        },
+        body: file,
+      })
+      if (!uploadRes.ok) {
+        throw new Error('프로필 이미지 업로드에 실패했습니다.')
+      }
+
+      await fetchUpdateUserProfileImg({
+        profileImgNm: file.name,
+        profileImgPath: prepared.filePath,
+      })
+
+      avatarUploadedFilePath.value = prepared.filePath
+      await handleLoadProfileImage()
+    } catch (error) {
       openToast({
-        message: '이미지 파일만 선택할 수 있습니다.',
-        type: 'warning',
+        message: error instanceof Error ? error.message : '프로필 사진 저장 중 오류가 발생했습니다.',
+        type: 'error',
       })
       input.value = ''
       return
     }
 
-    if (avatarPreviewUrl.value) {
-      URL.revokeObjectURL(avatarPreviewUrl.value)
-    }
-    avatarPreviewUrl.value = URL.createObjectURL(file)
-
-    openToast({
-      message: '저장이 완료되었습니다.',
-      type: 'success',
-    })
-    openToast({
-      message: 'TODO : 개발 진행 예정입니다.',
-      type: 'info',
-    })
-
     input.value = ''
-  }
-
-  /** blob URL 해제 — 페이지 이탈 시 호출 */
-  const cleanupAvatarPreview = () => {
-    if (avatarPreviewUrl.value) {
-      URL.revokeObjectURL(avatarPreviewUrl.value)
-      avatarPreviewUrl.value = null
-    }
   }
 
   return {
@@ -219,8 +266,10 @@ export const useMyPageStore = () => {
     errorMessage,
     hasData,
     form,
+    formSnapshot,
     orgOptions,
     currentOrgLabel,
+    sidebarOrgLabel,
     isEditMode,
     checkSave,
     // 비밀번호 모달
@@ -232,6 +281,7 @@ export const useMyPageStore = () => {
     // 프로필 사진
     avatarFileInputRef,
     avatarPreviewUrl,
+    avatarUploadedFilePath,
     // 초기화 · 조회
     handleInitializeMyPage,
     handleLoadMyPage,
@@ -247,6 +297,5 @@ export const useMyPageStore = () => {
     // 프로필 사진
     onClickChangePhoto,
     onAvatarFileChange,
-    cleanupAvatarPreview,
   }
 }

@@ -66,7 +66,7 @@
                   ref="avatarFileInputRef"
                   type="file"
                   class="my-page-avatar-file-input"
-                  accept="image/*"
+                  accept=".png,.jpg,.jpeg,.webp,.gif"
                   @change="onAvatarFileChange"
                 />
                 <div class="my-page-avatar-icon">
@@ -91,14 +91,16 @@
                 </UiButton>
               </div>
               <div class="my-page-profile-text">
-                <p class="my-page-profile-name">{{ form.userNm || '-' }}</p>
+                <p class="my-page-profile-name">
+                  {{ formSnapshot?.userNm || form.userNm || '-' }}
+                </p>
                 <p class="my-page-profile-id">
-                  {{ form.userId || '-' }}
+                  {{ formSnapshot?.userId || form.userId || '-' }}
                   <span
-                    v-if="form.orgId"
+                    v-if="sidebarOrgLabel"
                     class="my-page-profile-org"
                   >
-                    · {{ currentOrgLabel }}
+                    · {{ sidebarOrgLabel }}
                   </span>
                 </p>
               </div>
@@ -107,15 +109,15 @@
             <dl class="my-page-summary-list">
               <div class="my-page-summary-item">
                 <dt>아이디</dt>
-                <dd>{{ form.userId || '-' }}</dd>
+                <dd>{{ formSnapshot?.userId || form.userId || '-' }}</dd>
               </div>
               <div class="my-page-summary-item">
                 <dt>이름</dt>
-                <dd>{{ form.userNm || '-' }}</dd>
+                <dd>{{ formSnapshot?.userNm || form.userNm || '-' }}</dd>
               </div>
               <div class="my-page-summary-item">
                 <dt>조직</dt>
-                <dd>{{ currentOrgLabel || '-' }}</dd>
+                <dd>{{ sidebarOrgLabel || '-' }}</dd>
               </div>
             </dl>
 
@@ -148,7 +150,8 @@ const activeTab = ref('account')
 
 const myPageTabItems = [
   { label: '내 계정 정보', value: 'account' },
-  { label: '보안', value: 'security' },
+  // TODO: 보안 기능 추가 시 활성화
+  // { label: '보안', value: 'security' },
   { label: '로그인 이력', value: 'login-history' },
 ]
 
@@ -157,7 +160,8 @@ const {
   errorMessage,
   hasData,
   form,
-  currentOrgLabel,
+  formSnapshot,
+  sidebarOrgLabel,
   isPasswordModalOpen,
   avatarFileInputRef,
   avatarPreviewUrl,
@@ -168,14 +172,9 @@ const {
   onAvatarFileChange,
   handleLoadMyPage,
   handleInitializeMyPage,
-  cleanupAvatarPreview,
 } = useMyPageStore()
 
 onMounted(() => {
   void handleInitializeMyPage()
-})
-
-onUnmounted(() => {
-  cleanupAvatarPreview()
 })
 </script>

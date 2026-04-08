@@ -38,7 +38,7 @@
           />
         </div>
 
-        <p class="password-field__helper">비밀번호는 8자 이상 입력해 주세요.</p>
+        <p class="password-field__helper">비밀번호는 8자 이상, 영문·숫자·특수문자를 모두 포함해 주세요.</p>
       </div>
     </div>
 
@@ -67,8 +67,6 @@
 </template>
 
 <script setup lang="ts">
-import { openToast } from '~/composables/useToast'
-
 defineProps<{ isOpen: boolean }>()
 
 const emit = defineEmits<{
@@ -79,16 +77,13 @@ const emit = defineEmits<{
 const newPassword = ref('')
 const newPasswordConfirm = ref('')
 const oldPassword = ref('')
+const MIN_PASSWORD_LEN = 8
 
 const canSubmit = computed(() => {
-  return !!(
-    oldPassword.value.trim() &&
-    newPassword.value.trim() &&
-    newPasswordConfirm.value.trim() &&
-    oldPassword.value.length >= 8 &&
-    newPassword.value.length >= 8 &&
-    newPasswordConfirm.value.length >= 8
-  )
+  const oldPw = oldPassword.value.trim()
+  const newPw = newPassword.value.trim()
+  const confirmPw = newPasswordConfirm.value.trim()
+  return oldPw.length >= MIN_PASSWORD_LEN && newPw.length >= MIN_PASSWORD_LEN && confirmPw.length >= MIN_PASSWORD_LEN
 })
 const resetForm = () => {
   newPassword.value = ''
@@ -97,11 +92,6 @@ const resetForm = () => {
 }
 
 const onSubmit = () => {
-  if (newPassword.value !== newPasswordConfirm.value) {
-    openToast({ message: '새 비밀번호와 확인 값이 일치하지 않습니다.', type: 'warning' })
-    return
-  }
-
   emit('submit', { oldPassword: oldPassword.value, newPassword: newPassword.value })
   resetForm()
 }

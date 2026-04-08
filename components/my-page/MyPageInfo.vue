@@ -84,6 +84,8 @@
               <template v-if="isEditMode">
                 <UiInput
                   v-model="phoneDisplay"
+                  type="tel"
+                  number-only
                   placeholder="'-' 없이 숫자만 입력하세요."
                   size="sm"
                 />
