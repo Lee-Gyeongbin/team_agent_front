@@ -24,6 +24,7 @@
         <!-- 검색바 -->
         <div class="library-archive-modal-search">
           <UiInput
+            v-model="archiveFilterTitle"
             type="search"
             placeholder="검색어를 입력하세요"
           />
@@ -38,7 +39,7 @@
       @scroll="handleScroll"
     >
       <div
-        v-for="(item, index) in archiveCardList"
+        v-for="(item, index) in filteredArchiveCardList"
         :key="index"
         class="library-archive-card"
         :class="{ 'is-show': expandedCards[index] }"
@@ -69,7 +70,7 @@
             size="sm"
             class="btn-library-archive-card-action"
             @click.stop
-            @click="emit('unarchive', item)"
+            @click="onUnarchive(item)"
           >
             보관해제
           </UiButton>
@@ -134,6 +135,17 @@ const getBadgeInfo = (svcTy: string) => {
 
 // 카드 확장 상태 관리
 const expandedCards = ref<Record<number, boolean>>({})
+const archiveFilterTitle = ref('')
+
+const filteredArchiveCardList = computed(() => {
+  const keyword = archiveFilterTitle.value.trim().toLowerCase()
+  if (!keyword) return archiveCardList.value
+  return archiveCardList.value.filter((item) => {
+    const title = (item.title ?? '').toLowerCase()
+    const qcontent = (item.qcontent ?? '').toLowerCase()
+    return title.includes(keyword) || qcontent.includes(keyword)
+  })
+})
 
 // 스크롤 상태
 const bodyRef = ref<HTMLElement | null>(null)
@@ -161,20 +173,12 @@ const toggleCard = (index: number) => {
 
 // 이벤트 핸들러
 const handleClose = () => {
+  archiveFilterTitle.value = ''
   emit('close')
 }
 
-// 복사 핸들러 (더미)
-const handleCopyResponse = () => {
-  // TODO: 응답 복사 기능 구현
+const onUnarchive = (item: LibraryCardDetail) => {
+  archiveFilterTitle.value = ''
+  emit('unarchive', item)
 }
-
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-const sqlCode = `SELECT
-TO_CHAR(sale_date, 'YYYY-MM') AS month,
-ROUND(SUM(amount) / 100000000, 1) AS sales_억
-FROM sales
-WHERE EXTRACT (YEAR FROM sale_date) = 2025
-GROUP BY TO_CHAR(sale_date, 'YYYY-MM')
-ORDER BY month;`
 </script>

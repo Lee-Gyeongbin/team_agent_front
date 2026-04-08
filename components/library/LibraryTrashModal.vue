@@ -23,12 +23,13 @@
         <!-- 검색바 + 휴지통 비우기 -->
         <div class="library-trash-modal-search">
           <UiInput
+            v-model="trashFilterTitle"
             type="search"
             placeholder="검색어를 입력하세요"
           />
           <button
             class="btn btn-empty-trash"
-            @click="emit('emptyTrash')"
+            @click="onEmptyTrash"
           >
             <i class="icon icon-trash-reset size-16"></i>
             <span>휴지통 비우기</span>
@@ -44,7 +45,7 @@
       @scroll="handleScroll"
     >
       <div
-        v-for="(item, index) in trashCardList"
+        v-for="(item, index) in filteredTrashCardList"
         :key="index"
         class="library-trash-card"
         :class="{ 'is-show': expandedCards[index] }"
@@ -75,7 +76,7 @@
             size="sm"
             class="btn-library-trash-card-action"
             @click.stop
-            @click="emit('restore', item)"
+            @click="onRestore(item)"
           >
             복원
           </UiButton>
@@ -141,6 +142,17 @@ const getBadgeInfo = (svcTy: string) => {
 
 // 카드 확장 상태 관리
 const expandedCards = ref<Record<number, boolean>>({})
+const trashFilterTitle = ref('')
+
+const filteredTrashCardList = computed(() => {
+  const keyword = trashFilterTitle.value.trim().toLowerCase()
+  if (!keyword) return trashCardList.value
+  return trashCardList.value.filter((item) => {
+    const title = (item.title ?? '').toLowerCase()
+    const qcontent = (item.qcontent ?? '').toLowerCase()
+    return title.includes(keyword) || qcontent.includes(keyword)
+  })
+})
 
 // 스크롤 상태
 const bodyRef = ref<HTMLElement | null>(null)
@@ -168,6 +180,17 @@ const toggleCard = (index: number) => {
 
 // 이벤트 핸들러
 const handleClose = () => {
+  trashFilterTitle.value = ''
   emit('close')
+}
+
+const onRestore = (item: LibraryCardDetail) => {
+  trashFilterTitle.value = ''
+  emit('restore', item)
+}
+
+const onEmptyTrash = () => {
+  trashFilterTitle.value = ''
+  emit('emptyTrash')
 }
 </script>
