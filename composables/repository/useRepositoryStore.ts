@@ -554,7 +554,6 @@ const onSaveDocument = async (data: Record<string, unknown>): Promise<boolean> =
   const docId = String(data.docId ?? '').trim()
   /** 좌측 트리에서 선택한 카테고리 우선 — useCategoryStore.onCategorySelect와 동일 ref */
   const categoryId = docSelectedCategoryId.value.trim() || String(data.categoryId ?? '')
-  isLoading.value = true
   try {
     // 수정 모드(docId 존재)에서는 중복 체크를 스킵
     if (!docId) {
@@ -589,8 +588,6 @@ const onSaveDocument = async (data: Record<string, unknown>): Promise<boolean> =
       type: 'error',
     })
     return false
-  } finally {
-    isLoading.value = false
   }
 }
 
