@@ -291,6 +291,7 @@ const {
   handleCreateDocReportClose,
   resetLibraryDetailCreateDocUi,
   handleCreateDocSelectOtherType,
+  handleReAskReport,
 } = useLibraryStore()
 const props = withDefaults(
   defineProps<{
@@ -477,8 +478,9 @@ const onCreateDocShareLink = () => {
   openToast({ message: '공유 링크는 추후 연동 예정입니다.', duration: 2000 })
 }
 
-const onCreateDocSendRefine = (_message: string) => {
-  openToast({ message: '문서 보완 요청은 AI 연동 후 사용할 수 있습니다.', duration: 2000 })
+/** 보고서 보완 요청 */
+const onCreateDocSendRefine = async (_message: string) => {
+  await handleReAskReport(_message)
 }
 
 const handleCopyResponse = async () => {

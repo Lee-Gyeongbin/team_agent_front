@@ -34,6 +34,8 @@ const {
   fetchChartLabel,
   fetchDeleteTrashCard,
   fetchCreateDoc,
+  fetchCreateReportChatRoom,
+  fetchReAskReport,
 } = useLibraryApi()
 const { fetchTmplList } = useTmplApi()
 const errorMessage = ref('')
@@ -94,6 +96,7 @@ const isCreateDocModalOpen = ref(false)
 const isCreateDocReportOpen = ref(false)
 const generatedReport = ref<LibraryGeneratedReportValues>({})
 const selectedCreateDocTmplNm = ref('')
+const roomId = ref('')
 
 /** 문서 생성 API JSON → 편집용 flat 문자열 (HTML 제거, 비문자 값은 문자열화) */
 const normalizeGeneratedReport = (data: Record<string, unknown>): LibraryGeneratedReportValues => {
@@ -627,7 +630,9 @@ export const useLibraryStore = () => {
     })
 
     try {
-      const res = await fetchCreateDoc(cardId, tmplId)
+      await handleCreateReportChatRoom()
+      await nextTick()
+      const res = await fetchCreateDoc(cardId, tmplId, roomId.value)
       const answer = res.data
       if (answer) {
         try {
@@ -651,10 +656,54 @@ export const useLibraryStore = () => {
     }
   }
 
+  /** 보고서 보완 요청 */
+  const handleReAskReport = async (message: string) => {
+    try {
+      openLoading({
+        text: 'AI가 문서를 보완 중입니다...',
+        isDy: true,
+        intervalMs: 3000,
+        dyTexts: [
+          'AI가 문서를 꼼꼼히 읽고 있어요...',
+          '사용자의 요청을 반영하는 중입니다...',
+          '문서를 수정하는 중입니다...',
+          '거의 다 완성되었습니다...',
+        ],
+      })
+      const res = await fetchReAskReport(roomId.value, message)
+      const answer = res.data
+      if (answer) {
+        try {
+          const parsed = JSON.parse(answer) as unknown
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            generatedReport.value = normalizeGeneratedReport(parsed as Record<string, unknown>)
+          }
+          openToast({ message: '보고서 보완을 완료했습니다.' })
+        } catch {
+          openToast({ message: '보고서 보완 요청 결과를 분석하는데 실패했습니다. 다시 시도해주세요.' })
+        }
+      }
+      closeLoading()
+    } catch {
+      openToast({ message: '보고서 보완 요청 실패', type: 'error' })
+    }
+  }
+
+  /** 보고서 채팅방 생성 */
+  const handleCreateReportChatRoom = async () => {
+    try {
+      const res = await fetchCreateReportChatRoom()
+      roomId.value = res.roomId
+    } catch {
+      openToast({ message: '채팅방 생성 실패', type: 'error' })
+    }
+  }
+
   const handleCreateDocReportClose = () => {
     isCreateDocReportOpen.value = false
     generatedReport.value = {}
     selectedCreateDocTmplNm.value = ''
+    roomId.value = ''
   }
 
   /** 상세 모달 닫을 때 문서 만들기 관련 상태 초기화 */
@@ -663,6 +712,7 @@ export const useLibraryStore = () => {
     isCreateDocReportOpen.value = false
     generatedReport.value = {}
     selectedCreateDocTmplNm.value = ''
+    roomId.value = ''
   }
 
   /** 보고서 모달에서 다른 유형 선택 */
@@ -670,6 +720,7 @@ export const useLibraryStore = () => {
     isCreateDocReportOpen.value = false
     generatedReport.value = {}
     selectedCreateDocTmplNm.value = ''
+    roomId.value = ''
     handleSelectTmplList()
     isCreateDocModalOpen.value = true
   }
@@ -734,5 +785,6 @@ export const useLibraryStore = () => {
     handleCreateDocReportClose,
     resetLibraryDetailCreateDocUi,
     handleCreateDocSelectOtherType,
+    handleReAskReport,
   }
 }
