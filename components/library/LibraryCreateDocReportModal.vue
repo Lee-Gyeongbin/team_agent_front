@@ -27,35 +27,36 @@
         <UiButton
           variant="primary"
           size="md"
-          disabled
-          title="추후 제공 예정"
+          icon-only
+          title="내 문서보관함 저장"
+          @click="emit('save-to-my-docs')"
         >
           <template #icon-left>
             <i class="icon icon-archive size-16" />
           </template>
-          내 문서보관함 저장
         </UiButton>
         <UiButton
           variant="outline"
           size="md"
+          icon-only
+          title="PDF 다운로드"
           @click="onPrintReport"
         >
           <template #icon-left>
             <i class="icon icon-download size-16" />
           </template>
-          PDF 다운로드
         </UiButton>
         <UiButton
           variant="outline"
           size="md"
+          icon-only
+          title="공유 링크"
           @click="emit('share-link')"
         >
           <template #icon-left>
             <i class="icon icon-sidebar-share size-16" />
           </template>
-          공유 링크
         </UiButton>
-        <div class="library-create-doc-report-toolbar-spacer" />
         <UiButton
           variant="outline"
           size="md"
@@ -69,7 +70,10 @@
       </div>
 
       <!-- 본문 -->
-      <div class="library-create-doc-report-sheet">
+      <div
+        class="library-create-doc-report-sheet"
+        :class="{ 'is-refine-completed': isRefineCompletedFx }"
+      >
         <div class="library-create-doc-report-sheet-head">
           <div class="library-create-doc-report-sheet-head-left">
             <i class="icon icon-document size-18" />
@@ -216,9 +220,11 @@ const props = withDefaults(
   defineProps<{
     isOpen: boolean
     tmplNm?: string
+    refineCompletedAt?: number
   }>(),
   {
     tmplNm: '',
+    refineCompletedAt: 0,
   },
 )
 
@@ -226,6 +232,7 @@ const report = defineModel<LibraryGeneratedReportValues>('report', { required: t
 
 const emit = defineEmits<{
   close: []
+  'save-to-my-docs': []
   'share-link': []
   'select-other-type': []
   'send-refine': [message: string]
@@ -234,6 +241,9 @@ const emit = defineEmits<{
 const refineDraft = ref('')
 /** 화면에 표시할 직전 전송 보완 요청 문구 */
 const lastRefineMessage = ref('')
+/** AI 보완 완료 시 문서 영역에 짧은 강조 효과 */
+const isRefineCompletedFx = ref(false)
+let refineCompletedFxTimer: ReturnType<typeof setTimeout> | null = null
 
 /** 표시·드래그 순서 (행 순서 변경 시 `report` 키 순서와 동기화) */
 const orderedRows = ref<LibraryReportRow[]>([])
@@ -274,6 +284,11 @@ watch(
   () => props.isOpen,
   (open) => {
     if (!open) {
+      if (refineCompletedFxTimer) {
+        clearTimeout(refineCompletedFxTimer)
+        refineCompletedFxTimer = null
+      }
+      isRefineCompletedFx.value = false
       refineDraft.value = ''
       lastRefineMessage.value = ''
       orderedRows.value = []
@@ -299,6 +314,28 @@ watch(
   },
   { deep: true },
 )
+
+watch(
+  () => props.refineCompletedAt,
+  (next, prev) => {
+    if (!props.isOpen || !next || next === prev) return
+    isRefineCompletedFx.value = false
+    requestAnimationFrame(() => {
+      isRefineCompletedFx.value = true
+      if (refineCompletedFxTimer) clearTimeout(refineCompletedFxTimer)
+      refineCompletedFxTimer = setTimeout(() => {
+        isRefineCompletedFx.value = false
+        refineCompletedFxTimer = null
+      }, 1400)
+    })
+  },
+)
+
+onBeforeUnmount(() => {
+  if (!refineCompletedFxTimer) return
+  clearTimeout(refineCompletedFxTimer)
+  refineCompletedFxTimer = null
+})
 
 const onSendRefine = () => {
   const msg = refineDraft.value.trim()
@@ -352,16 +389,13 @@ const onPrintReport = () => {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: $spacing-sm;
-}
-
-.library-create-doc-report-toolbar-spacer {
-  flex: 1;
-  min-width: $spacing-md;
 }
 
 // 시트 박스로 테이블을 감싸 가로 폭을 꽉 채우고 바깥선을 또렷이
 .library-create-doc-report-sheet {
+  position: relative;
   border: 1px solid #c6d2db;
   border-radius: $border-radius-lg;
   background: #fff;
@@ -370,6 +404,82 @@ const onPrintReport = () => {
   overflow-x: hidden;
   overflow-y: visible;
   box-shadow: 0 1px 3px rgba(30, 50, 77, 0.08);
+}
+
+.library-create-doc-report-sheet.is-refine-completed {
+  animation: report-refine-glow 3.3s ease-out forwards;
+}
+
+.library-create-doc-report-sheet::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-130%);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(186, 230, 253, 0.12) 36%,
+    rgba(255, 255, 255, 0.52) 50%,
+    rgba(187, 247, 208, 0.16) 64%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  filter: saturate(105%);
+  will-change: transform, opacity;
+}
+
+.library-create-doc-report-sheet.is-refine-completed::before {
+  animation: report-refine-sweep 4.4s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+@keyframes report-refine-glow {
+  0% {
+    border-color: #c6d2db;
+    box-shadow:
+      0 1px 3px rgba(30, 50, 77, 0.08),
+      0 0 0 0 rgba(59, 130, 246, 0),
+      0 0 0 0 rgba(34, 197, 94, 0);
+  }
+  22% {
+    border-color: rgba(59, 130, 246, 0.56);
+    box-shadow:
+      0 1px 3px rgba(30, 50, 77, 0.08),
+      0 0 0 2px rgba(59, 130, 246, 0.22),
+      0 0 14px 3px rgba(34, 197, 94, 0.12);
+  }
+  70% {
+    border-color: rgba(59, 130, 246, 0.36);
+    box-shadow:
+      0 1px 3px rgba(30, 50, 77, 0.08),
+      0 0 0 1px rgba(59, 130, 246, 0.14),
+      0 0 8px 2px rgba(34, 197, 94, 0.08);
+  }
+  100% {
+    border-color: #c6d2db;
+    box-shadow:
+      0 1px 3px rgba(30, 50, 77, 0.08),
+      0 0 0 0 rgba(59, 130, 246, 0),
+      0 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+
+@keyframes report-refine-sweep {
+  0% {
+    opacity: 0;
+    transform: translateX(-130%);
+  }
+  15% {
+    opacity: 0.68;
+  }
+  60% {
+    opacity: 0.52;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(130%);
+  }
 }
 
 .library-create-doc-report-sheet-head {

@@ -97,6 +97,7 @@ const isCreateDocReportOpen = ref(false)
 const generatedReport = ref<LibraryGeneratedReportValues>({})
 const selectedCreateDocTmplNm = ref('')
 const roomId = ref('')
+const reportRefineCompletedAt = ref(0)
 
 /** 문서 생성 API JSON → 편집용 flat 문자열 (HTML 제거, 비문자 값은 문자열화) */
 const normalizeGeneratedReport = (data: Record<string, unknown>): LibraryGeneratedReportValues => {
@@ -650,6 +651,8 @@ export const useLibraryStore = () => {
       await nextTick()
       openToast({ message: `'${selectedCreateDocTmplNm.value}' 문서를 생성했습니다.`, type: 'success' })
       isCreateDocReportOpen.value = true
+      await nextTick()
+      reportRefineCompletedAt.value = Date.now()
     } catch {
       openToast({ message: '문서 생성 실패', type: 'error' })
       closeLoading()
@@ -668,6 +671,7 @@ export const useLibraryStore = () => {
           '사용자의 요청을 반영하는 중입니다...',
           '문서를 수정하는 중입니다...',
           '거의 다 완성되었습니다...',
+          '완성도를 높이는 중입니다...',
         ],
       })
 
@@ -678,10 +682,11 @@ export const useLibraryStore = () => {
           const parsed = JSON.parse(answer) as unknown
           if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
             generatedReport.value = normalizeGeneratedReport(parsed as Record<string, unknown>)
+            reportRefineCompletedAt.value = Date.now()
           }
-          openToast({ message: '보고서 보완을 완료했습니다.' })
+          openToast({ message: '보고서 보완을 완료했습니다.', type: 'success' })
         } catch {
-          openToast({ message: '보고서 보완 요청 결과를 분석하는데 실패했습니다. 다시 시도해주세요.' })
+          openToast({ message: '보고서 보완 요청 결과를 분석하는데 실패했습니다. 다시 시도해주세요.', type: 'error' })
         }
       }
       closeLoading()
@@ -705,6 +710,7 @@ export const useLibraryStore = () => {
     generatedReport.value = {}
     selectedCreateDocTmplNm.value = ''
     roomId.value = ''
+    reportRefineCompletedAt.value = 0
   }
 
   /** 상세 모달 닫을 때 문서 만들기 관련 상태 초기화 */
@@ -714,6 +720,7 @@ export const useLibraryStore = () => {
     generatedReport.value = {}
     selectedCreateDocTmplNm.value = ''
     roomId.value = ''
+    reportRefineCompletedAt.value = 0
   }
 
   /** 보고서 모달에서 다른 유형 선택 */
@@ -722,6 +729,7 @@ export const useLibraryStore = () => {
     generatedReport.value = {}
     selectedCreateDocTmplNm.value = ''
     roomId.value = ''
+    reportRefineCompletedAt.value = 0
     handleSelectTmplList()
     isCreateDocModalOpen.value = true
   }
@@ -780,6 +788,7 @@ export const useLibraryStore = () => {
     isCreateDocModalOpen,
     isCreateDocReportOpen,
     generatedReport,
+    reportRefineCompletedAt,
     selectedCreateDocTmplNm,
     handleCreateDocTypeModalClose,
     handleCreateDocGenerate,

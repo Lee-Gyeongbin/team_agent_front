@@ -263,7 +263,9 @@
       v-model:report="generatedReport"
       :is-open="isCreateDocReportOpen"
       :tmpl-nm="selectedCreateDocTmplNm"
+      :refine-completed-at="reportRefineCompletedAt"
       @close="handleCreateDocReportClose"
+      @save-to-my-docs="onCreateDocSaveToMyDocs"
       @share-link="onCreateDocShareLink"
       @select-other-type="handleCreateDocSelectOtherType"
       @send-refine="onCreateDocSendRefine"
@@ -285,6 +287,7 @@ const {
   isCreateDocModalOpen,
   isCreateDocReportOpen,
   generatedReport,
+  reportRefineCompletedAt,
   selectedCreateDocTmplNm,
   handleCreateDocTypeModalClose,
   handleCreateDocGenerate,
@@ -474,8 +477,12 @@ const handleCreateDoc = () => {
   isCreateDocModalOpen.value = true
 }
 
+const onCreateDocSaveToMyDocs = () => {
+  openToast({ message: '내 문서보관함 저장을 추후 연동 예정입니다.', type: 'warning' })
+}
+
 const onCreateDocShareLink = () => {
-  openToast({ message: '공유 링크는 추후 연동 예정입니다.', duration: 2000 })
+  openToast({ message: '공유 링크는 추후 연동 예정입니다.', type: 'warning' })
 }
 
 /** 보고서 보완 요청 */
