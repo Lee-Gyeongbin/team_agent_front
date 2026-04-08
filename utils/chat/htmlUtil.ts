@@ -1,4 +1,5 @@
 import DOMPurify from 'dompurify'
+import hljs from 'highlight.js'
 import { marked } from 'marked'
 
 /** GFM(표·취소선 등) + 단일 줄바꿈을 <br>로 (채팅 본문 UX) */
@@ -6,6 +7,15 @@ marked.setOptions({
   gfm: true,
   breaks: true,
 })
+
+/** 코드 블록 syntax highlighting — 언어 지정 시 hljs로, 없으면 plaintext */
+const renderer = new marked.Renderer()
+renderer.code = ({ text, lang }) => {
+  const language = lang && hljs.getLanguage(lang) ? lang : 'plaintext'
+  const highlighted = hljs.highlight(text, { language }).value
+  return `<pre><code class="hljs language-${language}">${highlighted}</code></pre>`
+}
+marked.use({ renderer })
 
 /** 마크다운 셀 안의 | 이스케이프 */
 const escapeMdCell = (s: string) => s.replace(/\|/g, '\\|').replace(/\n/g, ' ')

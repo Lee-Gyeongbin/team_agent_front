@@ -248,7 +248,8 @@
           line-height: $line-height-base;
         }
 
-        pre code {
+        pre code,
+        pre code.hljs {
           background: transparent;
           padding: 0;
           font-size: inherit;

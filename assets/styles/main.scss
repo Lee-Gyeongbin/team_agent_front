@@ -1,6 +1,9 @@
 @use './utils/variables' as *;
 @use './utils/mixins' as *;
 
+// syntax highlighting (highlight.js — github 라이트 테마)
+@use 'highlight.js/styles/github';
+
 // base
 @use './base/font';
 @use './base/helpers';
