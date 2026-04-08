@@ -121,10 +121,12 @@ export const useLibraryApi = () => {
   const fetchReAskReport = async (
     roomId: string,
     askQuery: string,
+    generatedReport: Record<string, unknown>,
   ): Promise<{ successYn: boolean; returnMsg: string; data: string }> => {
     return post<{ successYn: boolean; returnMsg: string; data: string }>('/library/reAskReport.do', {
       roomId,
       askQuery,
+      generatedReport,
     })
   }
 

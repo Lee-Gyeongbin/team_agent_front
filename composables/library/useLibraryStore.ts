@@ -184,7 +184,7 @@ export const useLibraryStore = () => {
   /** 카테고리 추가 */
   const handleAddCategory = async () => {
     if (!newCategoryNm.value) {
-      openAlert({ message: '카테고리명을 입력해주세요.' })
+      openToast({ message: '카테고리명을 입력해주세요.', type: 'error' })
       return
     }
     try {
@@ -202,11 +202,11 @@ export const useLibraryStore = () => {
           await fetchSaveCategory(newCategory)
           newCategoryNm.value = ''
           await handleFetchCategoryList()
-          openAlert({ message: '카테고리가 추가되었습니다.' })
+          openToast({ message: '카테고리가 추가되었습니다.', type: 'success' })
         },
       })
     } catch {
-      openAlert({ message: '카테고리 추가에 실패했습니다.' })
+      openToast({ message: '카테고리 추가에 실패했습니다.', type: 'error' })
     }
   }
 
@@ -265,7 +265,7 @@ export const useLibraryStore = () => {
   const handleDeleteCategory = (category: LibraryCategory) => {
     const valid = validateCategoryDelete(category)
     if (!valid.isValid) {
-      openAlert({ message: valid.message })
+      openToast({ message: valid.message, type: 'error' })
       return
     }
     try {
@@ -276,15 +276,15 @@ export const useLibraryStore = () => {
           const response = await fetchDeleteCategory(category)
           closeLoading()
           if (response.result === 'SUCCESS') {
-            openAlert({ message: '카테고리가 삭제되었습니다.' })
+            openToast({ message: '카테고리가 삭제되었습니다.', type: 'success' })
             await handleFetchCategoryList()
           } else {
-            openAlert({ message: response.msg })
+            openToast({ message: response.msg, type: 'error' })
           }
         },
       })
     } catch {
-      openAlert({ message: '카테고리 삭제에 실패했습니다.' })
+      openToast({ message: '카테고리 삭제에 실패했습니다.', type: 'error' })
     }
   }
 
@@ -323,7 +323,7 @@ export const useLibraryStore = () => {
       onConfirm: async () => {
         await fetchMoveCard(_targetCategoryId, _cardId)
         await handleFetchCardList()
-        openAlert({ message: '카드가 이동되었습니다.' })
+        openToast({ message: '카드가 이동되었습니다.', type: 'success' })
         handleMoveModalClose()
       },
     })
@@ -332,7 +332,7 @@ export const useLibraryStore = () => {
   /** 카테고리명 변경 저장 */
   const handleSaveRename = async (categoryNm: string) => {
     if (!renamingCategory.value) {
-      openAlert({ message: '카테고리를 선택해주세요.' })
+      openToast({ message: '카테고리를 선택해주세요.', type: 'error' })
       return
     }
     try {
@@ -342,11 +342,11 @@ export const useLibraryStore = () => {
           await fetchSaveCategory({ ...renamingCategory.value, categoryNm: categoryNm } as LibraryCategory)
           await handleFetchCategoryList()
           handleRenameModalClose()
-          openAlert({ message: '카테고리명 변경되었습니다.' })
+          openToast({ message: '카테고리명 변경되었습니다.', type: 'success' })
         },
       })
     } catch {
-      openAlert({ message: '카테고리명 변경에 실패했습니다.' })
+      openToast({ message: '카테고리명 변경에 실패했습니다.', type: 'error' })
     }
   }
 
@@ -363,7 +363,7 @@ export const useLibraryStore = () => {
         const orderData = categoryList.value.map((item, index) => ({ categoryId: item.categoryId, sortOrd: index + 1 }))
         await fetchUpdateCategoryOrder(orderData)
         await handleFetchCategoryList()
-        openAlert({ message: '카테고리 순서가 변경되었습니다.' })
+        openToast({ message: '카테고리 순서가 변경되었습니다.', type: 'success' })
       },
       onCancel: () => {
         categoryList.value = [...categoryListBeforeDrag.value]
@@ -398,7 +398,7 @@ export const useLibraryStore = () => {
       onConfirm: async () => {
         await fetchSaveCard({ ...card, useYn: 'N', thumbImg: '' })
         await handleFetchCategoryList()
-        openAlert({ message: '카드가 삭제되었습니다.\n 삭제된 카드는 휴지통에서 확인할 수 있습니다.' })
+        openToast({ message: '카드가 삭제되었습니다.\n 삭제된 카드는 휴지통에서 확인할 수 있습니다.', type: 'success' })
       },
     })
   }
@@ -417,7 +417,7 @@ export const useLibraryStore = () => {
       onConfirm: async () => {
         await fetchSaveCard({ ...card, archiveYn: 'Y', thumbImg: '' })
         await handleFetchCategoryList()
-        openToast({ message: '카드가 보관되었습니다.' })
+        openToast({ message: '카드가 보관되었습니다.', type: 'success' })
       },
     })
   }
@@ -429,7 +429,7 @@ export const useLibraryStore = () => {
       onConfirm: async () => {
         await fetchSaveCard({ ...card, archiveYn: 'N', thumbImg: '' })
         await handleFetchCategoryList()
-        openToast({ message: '카드가 보관해제되었습니다.' })
+        openToast({ message: '카드가 보관해제되었습니다.', type: 'success' })
         isArchiveModalOpen.value = false
       },
     })
@@ -459,7 +459,7 @@ export const useLibraryStore = () => {
         openLoading({ text: '카드 순서를 변경하는 중...' })
         await fetchUpdateCardOrder(payload as LibraryCardOrderPayload[])
         await handleFetchCardList()
-        openAlert({ message: '카드 순서가 변경되었습니다.' })
+        openToast({ message: '카드 순서가 변경되었습니다.', type: 'success' })
         closeLoading()
       },
       onCancel: () => {
@@ -493,9 +493,9 @@ export const useLibraryStore = () => {
       if (selectedCard.value?.cardId === card.cardId) {
         selectedCard.value.pinYn = nextPinYn
       }
-      openToast({ message: `즐겨찾기가 ${nextPinYn === 'Y' ? '등록되었습니다.' : '해제되었습니다.'}` })
+      openToast({ message: `즐겨찾기가 ${nextPinYn === 'Y' ? '등록되었습니다.' : '해제되었습니다.'}`, type: 'success' })
     } catch {
-      openToast({ message: '즐겨찾기 등록/해제를 실패했습니다. 다시 시도해주세요.' })
+      openToast({ message: '즐겨찾기 등록/해제를 실패했습니다. 다시 시도해주세요.', type: 'error' })
     }
   }
 
@@ -564,7 +564,7 @@ export const useLibraryStore = () => {
       onConfirm: async () => {
         await fetchSaveCard({ ...card, useYn: 'Y', thumbImg: '' })
         await handleFetchCategoryList()
-        openToast({ message: '카드가 복원되었습니다.' })
+        openToast({ message: '카드가 복원되었습니다.', type: 'success' })
         isTrashModalOpen.value = false
       },
     })
@@ -582,9 +582,9 @@ export const useLibraryStore = () => {
         try {
           await fetchDeleteTrashCard()
           await handleFetchCategoryList()
-          openToast({ message: '휴지통을 비웠습니다.' })
+          openToast({ message: '휴지통을 비웠습니다.', type: 'success' })
         } catch {
-          openToast({ message: '휴지통 비우기에 실패했습니다.' })
+          openToast({ message: '휴지통 비우기에 실패했습니다.', type: 'error' })
         }
       },
     })
@@ -670,7 +670,8 @@ export const useLibraryStore = () => {
           '거의 다 완성되었습니다...',
         ],
       })
-      const res = await fetchReAskReport(roomId.value, message)
+
+      const res = await fetchReAskReport(roomId.value, message, generatedReport.value as Record<string, unknown>)
       const answer = res.data
       if (answer) {
         try {
