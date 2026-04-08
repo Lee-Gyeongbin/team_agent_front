@@ -47,8 +47,9 @@
 
           <div
             v-if="sessionExpiredMessage"
-            class="login-session-expired"
+            class="login-error"
           >
+            <i class="icon-error size-16" />
             {{ sessionExpiredMessage }}
           </div>
 
@@ -210,7 +211,7 @@ const noticeList = ref([
 
 <style lang="scss" scoped>
 .login-form {
-  // 로그인 폼 input만: 기본 1px 유지, 포커스 시 테두리 두께 2px (UiInput 기본은 border-color만 변경)
+  // 로그인 폼 input만: 기본 1px 유지, 포커스 시 테두리 두께 2px
   :deep(.ui-input-wrap) {
     transition:
       border-color $transition-base,
@@ -219,11 +220,6 @@ const noticeList = ref([
 
   :deep(.ui-input-wrap.is-focused:not(.is-disabled)) {
     border-width: 2px;
-  }
-
-  .login-session-expired {
-    color: #dd6b20;
-    font-size: $font-size-sm;
   }
 }
 </style>
