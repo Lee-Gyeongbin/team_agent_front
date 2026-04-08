@@ -87,15 +87,6 @@
       }
     }
 
-    // 기본 #4B81E6, 호버는 primary(variant 기본 배경과 동일)
-    .btn-auth-submit.ui-button.variant-primary {
-      background: #4b81e6;
-
-      &:hover:not(:disabled) {
-        background: var(--color-primary);
-      }
-    }
-
     .chat-index-input-bottom {
       padding-top: 20px;
     }
@@ -148,7 +139,7 @@
         border-radius: 4px;
 
         &:hover {
-          background: #ecf0f3;
+          background: $color-border-light;
         }
       }
 
@@ -164,7 +155,7 @@
       width: 100%;
       margin-top: 24px;
       padding-top: 24px;
-      border-top: 1px solid #ecf0f3;
+      border-top: 1px solid $color-border-light;
 
       .notice-list {
         display: flex;
@@ -183,7 +174,7 @@
         margin: 0;
         font-size: 14px;
         font-weight: 400;
-        color: #5c6677;
+        color: $color-text-dark;
         cursor: pointer;
 
         &.title {
@@ -194,7 +185,7 @@
           white-space: nowrap;
 
           &:hover {
-            color: #3c69db;
+            color: var(--color-primary);
             text-decoration-line: underline;
           }
         }
@@ -203,11 +194,29 @@
           flex-shrink: 0;
           width: 75px;
           min-width: 75px;
-          color: #6f7a93;
+          color: $color-text-muted;
           white-space: nowrap;
           text-align: right;
         }
       }
     }
+  }
+}
+
+.login-error {
+  display: flex;
+  gap: 8px;
+
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ffd2d2;
+  background: #fdefec;
+  font-size: 14px;
+  font-weight: 500;
+  color: #bd2c0f;
+  line-height: 150%;
+
+  .icon-error {
+    margin-top: 2px;
   }
 }
