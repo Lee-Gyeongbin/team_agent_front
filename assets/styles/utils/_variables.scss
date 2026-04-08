@@ -37,7 +37,7 @@ $font-family-base:
   'Pretendard',
   -apple-system,
   sans-serif;
-$font-family-mono: 'JetBrains Mono', monospace;
+$font-family-mono: ui-monospace, monospace;
 $font-size-xs: 0.625rem; // 10px — 캡션
 $font-size-sm: 0.75rem; // 12px — 보조 텍스트
 $font-size-base: 0.875rem; // 14px — 본문 기본
