@@ -45,25 +45,27 @@
             />
           </div>
 
-          <p
+          <div
             v-if="sessionExpiredMessage"
-            class="login-session-expired"
+            class="login-error"
           >
+            <i class="icon-error size-16" />
             {{ sessionExpiredMessage }}
-          </p>
+          </div>
 
-          <p
+          <div
             v-if="errorMessage"
             class="login-error"
           >
+            <i class="icon-error size-16" />
             {{ errorMessage }}
-          </p>
+          </div>
 
           <!-- TODO: 로그인 정보 저장 체크박스 추가 -->
           <UiCheckbox
             v-model="saveLoginInfo"
             label="로그인 정보 저장"
-            class="login-save-checkbox color-4B81E6"
+            class="login-save-checkbox"
           />
         </div>
 
@@ -209,14 +211,15 @@ const noticeList = ref([
 
 <style lang="scss" scoped>
 .login-form {
-  .login-session-expired {
-    color: #dd6b20;
-    font-size: $font-size-sm;
+  // 로그인 폼 input만: 기본 1px 유지, 포커스 시 테두리 두께 2px
+  :deep(.ui-input-wrap) {
+    transition:
+      border-color $transition-base,
+      border-width $transition-base;
   }
 
-  .login-error {
-    color: #e53e3e;
-    font-size: $font-size-sm;
+  :deep(.ui-input-wrap.is-focused:not(.is-disabled)) {
+    border-width: 2px;
   }
 }
 </style>

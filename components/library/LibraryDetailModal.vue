@@ -263,7 +263,9 @@
       v-model:report="generatedReport"
       :is-open="isCreateDocReportOpen"
       :tmpl-nm="selectedCreateDocTmplNm"
+      :refine-completed-at="reportRefineCompletedAt"
       @close="handleCreateDocReportClose"
+      @save-to-my-docs="onCreateDocSaveToMyDocs"
       @share-link="onCreateDocShareLink"
       @select-other-type="handleCreateDocSelectOtherType"
       @send-refine="onCreateDocSendRefine"
@@ -285,12 +287,14 @@ const {
   isCreateDocModalOpen,
   isCreateDocReportOpen,
   generatedReport,
+  reportRefineCompletedAt,
   selectedCreateDocTmplNm,
   handleCreateDocTypeModalClose,
   handleCreateDocGenerate,
   handleCreateDocReportClose,
   resetLibraryDetailCreateDocUi,
   handleCreateDocSelectOtherType,
+  handleReAskReport,
 } = useLibraryStore()
 const props = withDefaults(
   defineProps<{
@@ -473,12 +477,17 @@ const handleCreateDoc = () => {
   isCreateDocModalOpen.value = true
 }
 
-const onCreateDocShareLink = () => {
-  openToast({ message: '공유 링크는 추후 연동 예정입니다.', duration: 2000 })
+const onCreateDocSaveToMyDocs = () => {
+  openToast({ message: '내 문서보관함 저장을 추후 연동 예정입니다.', type: 'warning' })
 }
 
-const onCreateDocSendRefine = (_message: string) => {
-  openToast({ message: '문서 보완 요청은 AI 연동 후 사용할 수 있습니다.', duration: 2000 })
+const onCreateDocShareLink = () => {
+  openToast({ message: '공유 링크는 추후 연동 예정입니다.', type: 'warning' })
+}
+
+/** 보고서 보완 요청 */
+const onCreateDocSendRefine = async (_message: string) => {
+  await handleReAskReport(_message)
 }
 
 const handleCopyResponse = async () => {

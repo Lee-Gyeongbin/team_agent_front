@@ -278,9 +278,18 @@ defineExpose({ focus })
       padding: 6px 8px;
       font-weight: 400;
       color: $color-text-dark;
+      // input-reset 기본은 transparent — 로그인 등에서 필드 자체를 흰색으로 고정 (autofill 배경 덮음)
+      background-color: #fff;
 
       &::placeholder {
         color: #94a3b8;
+      }
+
+      &:-webkit-autofill,
+      &:-webkit-autofill:hover,
+      &:-webkit-autofill:focus {
+        -webkit-box-shadow: 0 0 0 1000px #fff inset;
+        -webkit-text-fill-color: $color-text-dark;
       }
     }
 

@@ -104,7 +104,7 @@ const onRunTest = () => {
   if (!testPrompt.value.trim()) return
   hasRunTest.value = true
   const combinedQuery = `${props.promptContent}\n\n${testPrompt.value.trim()}`
-  sendTestMessage(combinedQuery, 'auto')
+  sendTestMessage(combinedQuery, 'gpt-5.3-chat-latest')
 }
 </script>
 

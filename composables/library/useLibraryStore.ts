@@ -34,6 +34,8 @@ const {
   fetchChartLabel,
   fetchDeleteTrashCard,
   fetchCreateDoc,
+  fetchCreateReportChatRoom,
+  fetchReAskReport,
 } = useLibraryApi()
 const { fetchTmplList } = useTmplApi()
 const errorMessage = ref('')
@@ -94,6 +96,8 @@ const isCreateDocModalOpen = ref(false)
 const isCreateDocReportOpen = ref(false)
 const generatedReport = ref<LibraryGeneratedReportValues>({})
 const selectedCreateDocTmplNm = ref('')
+const roomId = ref('')
+const reportRefineCompletedAt = ref(0)
 
 /** 문서 생성 API JSON → 편집용 flat 문자열 (HTML 제거, 비문자 값은 문자열화) */
 const normalizeGeneratedReport = (data: Record<string, unknown>): LibraryGeneratedReportValues => {
@@ -181,7 +185,7 @@ export const useLibraryStore = () => {
   /** 카테고리 추가 */
   const handleAddCategory = async () => {
     if (!newCategoryNm.value) {
-      openAlert({ message: '카테고리명을 입력해주세요.' })
+      openToast({ message: '카테고리명을 입력해주세요.', type: 'error' })
       return
     }
     try {
@@ -199,11 +203,11 @@ export const useLibraryStore = () => {
           await fetchSaveCategory(newCategory)
           newCategoryNm.value = ''
           await handleFetchCategoryList()
-          openAlert({ message: '카테고리가 추가되었습니다.' })
+          openToast({ message: '카테고리가 추가되었습니다.', type: 'success' })
         },
       })
     } catch {
-      openAlert({ message: '카테고리 추가에 실패했습니다.' })
+      openToast({ message: '카테고리 추가에 실패했습니다.', type: 'error' })
     }
   }
 
@@ -262,7 +266,7 @@ export const useLibraryStore = () => {
   const handleDeleteCategory = (category: LibraryCategory) => {
     const valid = validateCategoryDelete(category)
     if (!valid.isValid) {
-      openAlert({ message: valid.message })
+      openToast({ message: valid.message, type: 'error' })
       return
     }
     try {
@@ -273,15 +277,15 @@ export const useLibraryStore = () => {
           const response = await fetchDeleteCategory(category)
           closeLoading()
           if (response.result === 'SUCCESS') {
-            openAlert({ message: '카테고리가 삭제되었습니다.' })
+            openToast({ message: '카테고리가 삭제되었습니다.', type: 'success' })
             await handleFetchCategoryList()
           } else {
-            openAlert({ message: response.msg })
+            openToast({ message: response.msg, type: 'error' })
           }
         },
       })
     } catch {
-      openAlert({ message: '카테고리 삭제에 실패했습니다.' })
+      openToast({ message: '카테고리 삭제에 실패했습니다.', type: 'error' })
     }
   }
 
@@ -320,7 +324,7 @@ export const useLibraryStore = () => {
       onConfirm: async () => {
         await fetchMoveCard(_targetCategoryId, _cardId)
         await handleFetchCardList()
-        openAlert({ message: '카드가 이동되었습니다.' })
+        openToast({ message: '카드가 이동되었습니다.', type: 'success' })
         handleMoveModalClose()
       },
     })
@@ -329,7 +333,7 @@ export const useLibraryStore = () => {
   /** 카테고리명 변경 저장 */
   const handleSaveRename = async (categoryNm: string) => {
     if (!renamingCategory.value) {
-      openAlert({ message: '카테고리를 선택해주세요.' })
+      openToast({ message: '카테고리를 선택해주세요.', type: 'error' })
       return
     }
     try {
@@ -339,11 +343,11 @@ export const useLibraryStore = () => {
           await fetchSaveCategory({ ...renamingCategory.value, categoryNm: categoryNm } as LibraryCategory)
           await handleFetchCategoryList()
           handleRenameModalClose()
-          openAlert({ message: '카테고리명 변경되었습니다.' })
+          openToast({ message: '카테고리명 변경되었습니다.', type: 'success' })
         },
       })
     } catch {
-      openAlert({ message: '카테고리명 변경에 실패했습니다.' })
+      openToast({ message: '카테고리명 변경에 실패했습니다.', type: 'error' })
     }
   }
 
@@ -360,7 +364,7 @@ export const useLibraryStore = () => {
         const orderData = categoryList.value.map((item, index) => ({ categoryId: item.categoryId, sortOrd: index + 1 }))
         await fetchUpdateCategoryOrder(orderData)
         await handleFetchCategoryList()
-        openAlert({ message: '카테고리 순서가 변경되었습니다.' })
+        openToast({ message: '카테고리 순서가 변경되었습니다.', type: 'success' })
       },
       onCancel: () => {
         categoryList.value = [...categoryListBeforeDrag.value]
@@ -395,7 +399,7 @@ export const useLibraryStore = () => {
       onConfirm: async () => {
         await fetchSaveCard({ ...card, useYn: 'N', thumbImg: '' })
         await handleFetchCategoryList()
-        openAlert({ message: '카드가 삭제되었습니다.\n 삭제된 카드는 휴지통에서 확인할 수 있습니다.' })
+        openToast({ message: '카드가 삭제되었습니다.\n 삭제된 카드는 휴지통에서 확인할 수 있습니다.', type: 'success' })
       },
     })
   }
@@ -414,7 +418,7 @@ export const useLibraryStore = () => {
       onConfirm: async () => {
         await fetchSaveCard({ ...card, archiveYn: 'Y', thumbImg: '' })
         await handleFetchCategoryList()
-        openToast({ message: '카드가 보관되었습니다.' })
+        openToast({ message: '카드가 보관되었습니다.', type: 'success' })
       },
     })
   }
@@ -426,7 +430,7 @@ export const useLibraryStore = () => {
       onConfirm: async () => {
         await fetchSaveCard({ ...card, archiveYn: 'N', thumbImg: '' })
         await handleFetchCategoryList()
-        openToast({ message: '카드가 보관해제되었습니다.' })
+        openToast({ message: '카드가 보관해제되었습니다.', type: 'success' })
         isArchiveModalOpen.value = false
       },
     })
@@ -456,7 +460,7 @@ export const useLibraryStore = () => {
         openLoading({ text: '카드 순서를 변경하는 중...' })
         await fetchUpdateCardOrder(payload as LibraryCardOrderPayload[])
         await handleFetchCardList()
-        openAlert({ message: '카드 순서가 변경되었습니다.' })
+        openToast({ message: '카드 순서가 변경되었습니다.', type: 'success' })
         closeLoading()
       },
       onCancel: () => {
@@ -490,9 +494,9 @@ export const useLibraryStore = () => {
       if (selectedCard.value?.cardId === card.cardId) {
         selectedCard.value.pinYn = nextPinYn
       }
-      openToast({ message: `즐겨찾기가 ${nextPinYn === 'Y' ? '등록되었습니다.' : '해제되었습니다.'}` })
+      openToast({ message: `즐겨찾기가 ${nextPinYn === 'Y' ? '등록되었습니다.' : '해제되었습니다.'}`, type: 'success' })
     } catch {
-      openToast({ message: '즐겨찾기 등록/해제를 실패했습니다. 다시 시도해주세요.' })
+      openToast({ message: '즐겨찾기 등록/해제를 실패했습니다. 다시 시도해주세요.', type: 'error' })
     }
   }
 
@@ -561,7 +565,7 @@ export const useLibraryStore = () => {
       onConfirm: async () => {
         await fetchSaveCard({ ...card, useYn: 'Y', thumbImg: '' })
         await handleFetchCategoryList()
-        openToast({ message: '카드가 복원되었습니다.' })
+        openToast({ message: '카드가 복원되었습니다.', type: 'success' })
         isTrashModalOpen.value = false
       },
     })
@@ -579,9 +583,9 @@ export const useLibraryStore = () => {
         try {
           await fetchDeleteTrashCard()
           await handleFetchCategoryList()
-          openToast({ message: '휴지통을 비웠습니다.' })
+          openToast({ message: '휴지통을 비웠습니다.', type: 'success' })
         } catch {
-          openToast({ message: '휴지통 비우기에 실패했습니다.' })
+          openToast({ message: '휴지통 비우기에 실패했습니다.', type: 'error' })
         }
       },
     })
@@ -627,7 +631,9 @@ export const useLibraryStore = () => {
     })
 
     try {
-      const res = await fetchCreateDoc(cardId, tmplId)
+      await handleCreateReportChatRoom()
+      await nextTick()
+      const res = await fetchCreateDoc(cardId, tmplId, roomId.value)
       const answer = res.data
       if (answer) {
         try {
@@ -645,9 +651,57 @@ export const useLibraryStore = () => {
       await nextTick()
       openToast({ message: `'${selectedCreateDocTmplNm.value}' 문서를 생성했습니다.`, type: 'success' })
       isCreateDocReportOpen.value = true
+      await nextTick()
+      reportRefineCompletedAt.value = Date.now()
     } catch {
       openToast({ message: '문서 생성 실패', type: 'error' })
       closeLoading()
+    }
+  }
+
+  /** 보고서 보완 요청 */
+  const handleReAskReport = async (message: string) => {
+    try {
+      openLoading({
+        text: 'AI가 문서를 보완 중입니다...',
+        isDy: true,
+        intervalMs: 3000,
+        dyTexts: [
+          'AI가 문서를 꼼꼼히 읽고 있어요...',
+          '사용자의 요청을 반영하는 중입니다...',
+          '문서를 수정하는 중입니다...',
+          '거의 다 완성되었습니다...',
+          '완성도를 높이는 중입니다...',
+        ],
+      })
+
+      const res = await fetchReAskReport(roomId.value, message, generatedReport.value as Record<string, unknown>)
+      const answer = res.data
+      if (answer) {
+        try {
+          const parsed = JSON.parse(answer) as unknown
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            generatedReport.value = normalizeGeneratedReport(parsed as Record<string, unknown>)
+            reportRefineCompletedAt.value = Date.now()
+          }
+          openToast({ message: '보고서 보완을 완료했습니다.', type: 'success' })
+        } catch {
+          openToast({ message: '보고서 보완 요청 결과를 분석하는데 실패했습니다. 다시 시도해주세요.', type: 'error' })
+        }
+      }
+      closeLoading()
+    } catch {
+      openToast({ message: '보고서 보완 요청 실패', type: 'error' })
+    }
+  }
+
+  /** 보고서 채팅방 생성 */
+  const handleCreateReportChatRoom = async () => {
+    try {
+      const res = await fetchCreateReportChatRoom()
+      roomId.value = res.roomId
+    } catch {
+      openToast({ message: '채팅방 생성 실패', type: 'error' })
     }
   }
 
@@ -655,6 +709,8 @@ export const useLibraryStore = () => {
     isCreateDocReportOpen.value = false
     generatedReport.value = {}
     selectedCreateDocTmplNm.value = ''
+    roomId.value = ''
+    reportRefineCompletedAt.value = 0
   }
 
   /** 상세 모달 닫을 때 문서 만들기 관련 상태 초기화 */
@@ -663,6 +719,8 @@ export const useLibraryStore = () => {
     isCreateDocReportOpen.value = false
     generatedReport.value = {}
     selectedCreateDocTmplNm.value = ''
+    roomId.value = ''
+    reportRefineCompletedAt.value = 0
   }
 
   /** 보고서 모달에서 다른 유형 선택 */
@@ -670,6 +728,8 @@ export const useLibraryStore = () => {
     isCreateDocReportOpen.value = false
     generatedReport.value = {}
     selectedCreateDocTmplNm.value = ''
+    roomId.value = ''
+    reportRefineCompletedAt.value = 0
     handleSelectTmplList()
     isCreateDocModalOpen.value = true
   }
@@ -728,11 +788,13 @@ export const useLibraryStore = () => {
     isCreateDocModalOpen,
     isCreateDocReportOpen,
     generatedReport,
+    reportRefineCompletedAt,
     selectedCreateDocTmplNm,
     handleCreateDocTypeModalClose,
     handleCreateDocGenerate,
     handleCreateDocReportClose,
     resetLibraryDetailCreateDocUi,
     handleCreateDocSelectOtherType,
+    handleReAskReport,
   }
 }

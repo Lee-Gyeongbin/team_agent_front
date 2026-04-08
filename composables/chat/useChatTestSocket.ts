@@ -98,7 +98,8 @@ export const useChatTestSocket = () => {
           query,
           threadId,
           svcTy: 'llmTest',
-          refId: modelId,
+          modelId: modelId,
+          refId: 'test',
         }
         socket.send(JSON.stringify(socketPayload))
       }

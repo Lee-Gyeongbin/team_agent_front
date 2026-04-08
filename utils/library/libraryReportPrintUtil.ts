@@ -11,14 +11,44 @@ export type LibraryReportRow = { labelKey: string; valueKey: string }
 const PRINT_HOST_ID = 'library-report-print-host'
 const PRINT_STYLE_ID = 'library-report-print-style'
 
-/** *_label 키 기준으로 표 행 목록 생성 (모달 reportRows와 동일 규칙) */
-export const getLibraryReportRows = (values: LibraryGeneratedReportValues): LibraryReportRow[] => {
+const LABEL_SUFFIX = '_label'
+const LABEL_SUFFIX_LEN = LABEL_SUFFIX.length
+
+const asReportValues = (values: LibraryGeneratedReportValues | null | undefined): LibraryGeneratedReportValues => {
+  if (!values || typeof values !== 'object' || Array.isArray(values)) return {}
+  return values
+}
+
+/**
+ * 보고서 표 행 — JSON `Object.keys` 순서 중 **값 키(valueKey)가 처음 나오는 순서**로 정렬.
+ * (보완 재응답 등에서 본문 키가 앞에 오고 `_label`이 뒤에 와도, API가 준 키 순서를 따름)
+ *
+ * 1) `_label`로 끝나지 않는 키 k에 대해 `k + '_label'`이 있으면 한 행으로 추가
+ * 2) 아직 없는 쌍은 `*_label` 키만 있는 경우 등 — 키 나열 순서대로 보충
+ */
+export const getLibraryReportRows = (values: LibraryGeneratedReportValues | null | undefined): LibraryReportRow[] => {
+  const v = asReportValues(values)
   const rows: LibraryReportRow[] = []
-  for (const key of Object.keys(values || {})) {
-    if (!key.endsWith('_label')) continue
-    const valueKey = key.replace(/_label$/, '')
-    rows.push({ labelKey: key, valueKey })
+  const seenValueKeys = new Set<string>()
+  const keys = Object.keys(v)
+
+  for (const k of keys) {
+    if (k.endsWith(LABEL_SUFFIX)) continue
+    const labelKey = `${k}${LABEL_SUFFIX}`
+    if (!Object.prototype.hasOwnProperty.call(v, labelKey)) continue
+    if (seenValueKeys.has(k)) continue
+    seenValueKeys.add(k)
+    rows.push({ labelKey, valueKey: k })
   }
+
+  for (const labelKey of keys) {
+    if (!labelKey.endsWith(LABEL_SUFFIX)) continue
+    const valueKey = labelKey.slice(0, -LABEL_SUFFIX_LEN)
+    if (!valueKey || seenValueKeys.has(valueKey)) continue
+    seenValueKeys.add(valueKey)
+    rows.push({ labelKey, valueKey })
+  }
+
   return rows
 }
 

@@ -114,8 +114,9 @@
 
           <p
             v-if="errorMessage"
-            class="signup-error"
+            class="login-error"
           >
+            <i class="icon-error size-16" />
             {{ errorMessage }}
           </p>
         </div>
@@ -195,12 +196,6 @@ const onSubmit = async () => {
 
 <style lang="scss" scoped>
 .signup-form {
-  .signup-error {
-    color: #e53e3e;
-    font-size: $font-size-sm;
-    margin-top: 4px;
-  }
-
   .signup-login-link {
     font-size: $font-size-sm;
     color: $color-text-secondary;
@@ -210,6 +205,17 @@ const onSubmit = async () => {
     &:hover {
       color: var(--color-primary);
     }
+  }
+
+  // 로그인 폼 input만: 기본 1px 유지, 포커스 시 테두리 두께 2px
+  :deep(.ui-input-wrap) {
+    transition:
+      border-color $transition-base,
+      border-width $transition-base;
+  }
+
+  :deep(.ui-input-wrap.is-focused:not(.is-disabled)) {
+    border-width: 2px;
   }
 }
 </style>
