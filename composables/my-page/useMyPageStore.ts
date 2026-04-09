@@ -248,16 +248,12 @@ export const useMyPageStore = () => {
 
       avatarUploadedFilePath.value = prepared.filePath
       await handleLoadProfileImage()
+      openToast({ message: '프로필 사진이 변경되었습니다.', type: 'success' })
     } catch (error) {
-      openToast({
-        message: error instanceof Error ? error.message : '프로필 사진 저장 중 오류가 발생했습니다.',
-        type: 'error',
-      })
-      input.value = ''
+      const message = error instanceof Error ? error.message : '프로필 사진 저장 중 오류가 발생했습니다.'
+      openToast({ message, type: 'error' })
       return
     }
-
-    input.value = ''
   }
 
   return {
