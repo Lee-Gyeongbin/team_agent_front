@@ -270,6 +270,8 @@ export const useAgentStore = () => {
     isSettingOpen,
     selectedAgent,
     modelOptions,
+    themeIcons,
+    themeColors,
     handleSelectAgentList,
     handleFetchModelOptions,
     handleToggleAgent,
