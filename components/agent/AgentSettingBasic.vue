@@ -5,6 +5,7 @@
       <div class="picker-wrap">
         <button
           class="picker-btn"
+          :class="{ 'is-placeholder': isIconUnset }"
           title="아이콘 선택"
           @click="isIconModalOpen = true"
         >
@@ -20,6 +21,7 @@
       >
         <button
           class="picker-btn"
+          :class="{ 'is-placeholder': isColorUnset }"
           title="색상 선택"
           @click="toggleColorPicker"
         >
@@ -303,12 +305,15 @@ const isColorPickerOpen = ref(false)
 const colorPickerWrapRef = ref<HTMLElement | null>(null)
 
 const selectedIconClassName = computed(() => {
-  return themeIcons.value.find((item) => item.iconId === props.modelValue.iconId)?.iconClassNm ?? 'icon-sparkle-agent'
+  return themeIcons.value.find((item) => item.iconId === props.modelValue.iconId)?.iconClassNm ?? 'icon-plus'
 })
 
 const selectedColorHex = computed(() => {
-  return themeColors.value.find((item) => item.colorId === props.modelValue.colorId)?.colorHex ?? '#4f46e5'
+  return themeColors.value.find((item) => item.colorId === props.modelValue.colorId)?.colorHex ?? '#94a3b8'
 })
+
+const isIconUnset = computed(() => !props.modelValue.iconId)
+const isColorUnset = computed(() => !props.modelValue.colorId)
 
 const toggleColorPicker = () => {
   isColorPickerOpen.value = !isColorPickerOpen.value
@@ -363,6 +368,12 @@ onUnmounted(() => {
 
     &:hover {
       border-color: #c3ced6;
+    }
+
+    &.is-placeholder {
+      border-style: dashed;
+      border-color: #cbd5e1;
+      background: #f8fafc;
     }
   }
 
