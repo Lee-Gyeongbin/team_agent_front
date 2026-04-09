@@ -47,6 +47,7 @@ const emptySettingForm: Partial<SystemPrompt> = {
   promptTypeCd: '',
   content: '',
   applyLlmYn: 'Y',
+  priority: 1,
 }
 
 /** settingForm 초기화 */
@@ -65,6 +66,7 @@ const handleSelectSystemPromptList = async () => {
   } catch {
     openToast({
       message: '시스템 프롬프트 조회 실패',
+      type: 'error',
     })
   }
 }
@@ -75,6 +77,7 @@ const handleSaveSystemPrompt = async (prompt: Partial<SystemPrompt>) => {
   if (!valid.valid) {
     openToast({
       message: valid.message,
+      type: 'error',
     })
     return
   }
@@ -87,12 +90,14 @@ const handleSaveSystemPrompt = async (prompt: Partial<SystemPrompt>) => {
         const payloadPromptAppAgtList = promptAppAgtList.value.filter((item) => item.promptId === targetPromptId)
         await fetchSaveSystemPrompt(prompt, payloadPromptAppAgtList)
         await handleSelectSystemPromptList()
-        openAlert({
+        openToast({
           message: '시스템 프롬프트가 저장되었습니다.',
+          type: 'success',
         })
       } catch {
         openToast({
           message: '시스템 프롬프트 저장 실패',
+          type: 'error',
         })
       }
     },
@@ -125,11 +130,12 @@ const handleDeleteSystemPrompt = async (prompt: SystemPrompt) => {
       try {
         await fetchDeleteSystemPrompt(prompt)
         await handleSelectSystemPromptList()
-        openAlert({
+        openToast({
           message: '프롬프트가 삭제되었습니다.',
+          type: 'success',
         })
       } catch {
-        openToast({ message: '시스템 프롬프트 삭제 실패' })
+        openToast({ message: '시스템 프롬프트 삭제 실패', type: 'error' })
       }
     },
   })
@@ -142,9 +148,9 @@ const handleToggleSystemPrompt = async (prompt: Partial<SystemPrompt>) => {
     const payloadPromptAppAgtList = promptAppAgtList.value.filter((item) => item.promptId === targetPromptId)
     await fetchSaveSystemPrompt(prompt, payloadPromptAppAgtList)
     await handleSelectSystemPromptList()
-    openToast({ message: '프롬프트 활성화 상태가 변경되었습니다.' })
+    openToast({ message: '프롬프트 활성화 상태가 변경되었습니다.', type: 'success' })
   } catch {
-    openToast({ message: '프롬프트 활성화 상태 변경 실패' })
+    openToast({ message: '프롬프트 활성화 상태 변경 실패', type: 'error' })
   }
 }
 
@@ -189,9 +195,9 @@ const handleSaveFilter = async (data: Partial<PromptFilterData>) => {
       try {
         await fetchSaveFilter(data)
         handleSelectFilterData()
-        openAlert({ message: '금지어/필터링이 저장되었습니다.' })
+        openToast({ message: '금지어/필터링이 저장되었습니다.', type: 'success' })
       } catch {
-        openToast({ message: '금지어/필터링 저장 실패' })
+        openToast({ message: '금지어/필터링 저장 실패', type: 'error' })
       }
     },
   })
@@ -232,9 +238,9 @@ const handleSaveLimit = async (data: Partial<PromptLimitData>) => {
       try {
         await fetchSaveLimit(data)
         await handleSelectLimitData()
-        openAlert({ message: '토큰/응답 제한 설정이 저장되었습니다.' })
+        openToast({ message: '토큰/응답 제한 설정이 저장되었습니다.', type: 'success' })
       } catch {
-        openToast({ message: '토큰/응답 제한 설정 저장 실패' })
+        openToast({ message: '토큰/응답 제한 설정 저장 실패', type: 'error' })
       }
     },
   })
