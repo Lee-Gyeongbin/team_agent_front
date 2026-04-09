@@ -2,6 +2,8 @@ import type { ModelOption, SearchModeValue, SubOption } from '~/types/chat'
 
 // 채팅의 검색모드 상태는 `useChatStore`, `useChatRooms`에서 함께 사용하므로 모듈 단일 인스턴스로 공유한다.
 const activeSearchModes = ref<SearchModeValue[]>([])
+/** 에이전트 관리(TB_AGT) 기준 선택된 에이전트 — 동일 M/S 모드가 여러 개일 때 활성 구분용 */
+const selectedChatAgentId = ref<string | null>(null)
 const subOptions = ref<SubOption[]>([])
 const selectedSubOption = ref<string>('all')
 const modelOptions = ref<ModelOption[]>([])
@@ -29,6 +31,7 @@ const searchModeSubOptionsEmptyMessage = computed(() => {
 export const useChatSearchState = () => {
   return {
     activeSearchModes,
+    selectedChatAgentId,
     subOptions,
     selectedSubOption,
     modelOptions,

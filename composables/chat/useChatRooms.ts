@@ -28,6 +28,7 @@ const {
 const {
   resolveSvcTy,
   activeSearchModes,
+  selectedChatAgentId,
   subOptions,
   selectedSubOption,
   modelOptions,
@@ -55,6 +56,7 @@ export const useChatRooms = () => {
   const resetChatRoom = () => {
     chatRoom.value = { ...EMPTY_CHAT_ROOM }
     activeSearchModes.value = []
+    selectedChatAgentId.value = null
   }
 
   // 채팅방 roomId 동기화 (/chat/[id] 진입 시 사용)
