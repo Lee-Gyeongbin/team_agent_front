@@ -276,6 +276,32 @@ export const useMyPageStore = () => {
     }
   }
 
+  const onClickDeletePhoto = async () => {
+    if (!avatarPreviewUrl.value) return
+
+    const confirmed = await openConfirm({
+      title: '프로필 사진 삭제',
+      message: '프로필 사진을 삭제하시겠습니까?',
+      confirmText: '확인',
+      cancelText: '취소',
+    })
+    if (!confirmed) return
+
+    try {
+      await fetchUpdateUserProfileImg({
+        profileImgNm: '',
+        profileImgPath: '',
+      })
+      revokeAvatarPreviewUrl()
+      avatarPreviewUrl.value = null
+      avatarUploadedFilePath.value = ''
+      openToast({ message: '프로필 사진이 삭제되었습니다.', type: 'success' })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '프로필 사진 삭제 중 오류가 발생했습니다.'
+      openToast({ message, type: 'error' })
+    }
+  }
+
   return {
     // 내 정보
     isLoading,
@@ -314,5 +340,6 @@ export const useMyPageStore = () => {
     // 프로필 사진
     onClickChangePhoto,
     onAvatarFileChange,
+    onClickDeletePhoto,
   }
 }

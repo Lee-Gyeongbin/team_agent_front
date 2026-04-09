@@ -199,6 +199,25 @@ $my-page-tab-body-viewport-gap: 260px;
   overflow: hidden;
 }
 
+.my-page-avatar-delete-button {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 20px;
+  height: 20px;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-full;
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+
+  .icon {
+    color: $color-text-secondary;
+  }
+}
+
 .my-page-avatar-preview {
   width: 100%;
   height: 100%;

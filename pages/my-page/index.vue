@@ -70,6 +70,14 @@
                   accept=".png,.jpg,.jpeg,.webp,.gif"
                   @change="onAvatarFileChange"
                 />
+                <button
+                  v-if="avatarPreviewUrl"
+                  type="button"
+                  class="my-page-avatar-delete-button"
+                  @click="onClickDeletePhoto"
+                >
+                  <i class="icon icon-close-gray size-16"></i>
+                </button>
                 <div class="my-page-avatar-icon">
                   <img
                     v-if="avatarPreviewUrl"
@@ -172,6 +180,7 @@ const {
   handleSubmitPasswordChange,
   onClickChangePhoto,
   onAvatarFileChange,
+  onClickDeletePhoto,
   handleLoadMyPage,
   handleInitializeMyPage,
   handleConfirmResetEditOnTabLeave,

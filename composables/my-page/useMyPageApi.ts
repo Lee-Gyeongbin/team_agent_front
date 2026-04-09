@@ -62,7 +62,7 @@ export const useMyPageApi = () => {
 
   /** 프로필 사진 보기 URL 조회 */
   const fetchViewUserProfileImg = async () => {
-    return post<MyPageProfileImageViewResponse>('/mypage/viewUserProfileImg.do', {})
+    return get<MyPageProfileImageViewResponse>('/mypage/viewUserProfileImg.do')
   }
 
   return {
