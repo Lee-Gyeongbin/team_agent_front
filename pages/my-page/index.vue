@@ -47,8 +47,9 @@
           <section class="my-page-main">
             <section class="my-page-tab-panel my-page-right">
               <UiTab
-                v-model="activeTab"
+                :model-value="activeTab"
                 :tabs="myPageTabItems"
+                @update:model-value="onChangeTab"
               />
               <div class="my-page-tab-panel__body">
                 <MyPageInfo v-if="activeTab === 'account'" />
@@ -162,6 +163,7 @@ const {
   form,
   formSnapshot,
   sidebarOrgLabel,
+  isEditMode,
   isPasswordModalOpen,
   avatarFileInputRef,
   avatarPreviewUrl,
@@ -172,7 +174,18 @@ const {
   onAvatarFileChange,
   handleLoadMyPage,
   handleInitializeMyPage,
+  handleConfirmResetEditOnTabLeave,
 } = useMyPageStore()
+
+const onChangeTab = async (nextTab: string) => {
+  if (activeTab.value === 'account' && nextTab !== 'account' && isEditMode.value) {
+    const canLeave = await handleConfirmResetEditOnTabLeave()
+    if (!canLeave) {
+      return
+    }
+  }
+  activeTab.value = nextTab
+}
 
 onMounted(() => {
   void handleInitializeMyPage()

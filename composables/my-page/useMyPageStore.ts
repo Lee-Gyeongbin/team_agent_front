@@ -162,6 +162,28 @@ export const useMyPageStore = () => {
     isEditMode.value = false
   }
 
+  const handleResetEditOnTabLeave = () => {
+    if (formSnapshot.value !== null) {
+      form.value = cloneForm(formSnapshot.value)
+    }
+    formSnapshot.value = null
+    isEditMode.value = false
+  }
+
+  /** 내 계정 정보 탭 이탈 시 확인 후 원복 */
+  const handleConfirmResetEditOnTabLeave = async () => {
+    const confirmed = await openConfirm({
+      title: '탭 이동',
+      message: '다른 탭으로 이동 시 수정 내역은 사라집니다.\n이동하시겠습니까?',
+      confirmText: '확인',
+      cancelText: '취소',
+    })
+    if (!confirmed) return false
+
+    handleResetEditOnTabLeave()
+    return true
+  }
+
   const handleSaveMyPage = async () => {
     const confirmed = await openConfirm({
       title: '계정 정보 저장',
@@ -283,6 +305,7 @@ export const useMyPageStore = () => {
     // 편집 · 저장
     handleStartEdit,
     handleCancelEdit,
+    handleConfirmResetEditOnTabLeave,
     handleSaveMyPage,
     // 비밀번호
     openPasswordModal,
