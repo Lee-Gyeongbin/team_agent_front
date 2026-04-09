@@ -17,6 +17,8 @@ export interface CodeItem {
   sortOrd: number
   useYn: string
   description: string
+  etc1: string
+  etc2: string
 }
 
 /** 그룹코드 선택 옵션 */
@@ -48,6 +50,8 @@ export interface CodeFormData {
   sortOrdStr: string
   useYn: string
   description: string
+  etc1: string
+  etc2: string
 }
 
 export const saveCodeForm = (): CodeFormData => ({
@@ -57,6 +61,8 @@ export const saveCodeForm = (): CodeFormData => ({
   sortOrdStr: '0',
   useYn: 'Y',
   description: '',
+  etc1: '',
+  etc2: '',
 })
 
 /** 공통코드 그룹 테이블 컬럼 정의 */

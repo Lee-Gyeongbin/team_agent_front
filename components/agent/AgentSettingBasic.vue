@@ -16,28 +16,13 @@
     <!-- PORT / Endpoint URL (라벨·인풋 동일 라인) -->
     <div class="com-setting-row endpoint-port-row">
       <div class="com-setting-field-row endpoint-port-field">
-        <label class="com-setting-label">
-          <span class="is-required">*</span>
-          PORT 번호
-        </label>
-        <UiInput
-          :model-value="modelValue.portNo"
-          placeholder="예: 9000"
+        <label class="com-setting-label"> API URL 코드 </label>
+        <UiSelect
+          :model-value="modelValue.apiUrlCd"
+          :options="apiUrlCdOptions"
+          placeholder="API URL 코드를 선택하세요"
           size="sm"
-          number-only
-          @update:model-value="onUpdate('portNo', String($event ?? ''))"
-        />
-      </div>
-      <div class="com-setting-field-row endpoint-url-field">
-        <label class="com-setting-label">
-          <span class="is-required">*</span>
-          Endpoint URL
-        </label>
-        <UiInput
-          :model-value="modelValue.endpointUrl"
-          placeholder="/query"
-          size="sm"
-          @update:model-value="onUpdate('endpointUrl', $event)"
+          @update:model-value="onUpdate('apiUrlCd', String($event ?? ''))"
         />
       </div>
     </div>
@@ -206,8 +191,7 @@
 <script setup lang="ts">
 interface BasicForm {
   agentNm: string
-  portNo: string
-  endpointUrl: string
+  apiUrlCd: string
   description: string
   temperature: number
   tempDefaultYn: 'Y' | 'N'
@@ -234,6 +218,7 @@ interface Props {
   ragForm: RagForm
   sqlForm: SqlForm
   sqlModelOptions: { value: string; label: string }[]
+  apiUrlCdOptions: { value: string | number; label: string }[]
 }
 
 const props = defineProps<Props>()
@@ -300,13 +285,12 @@ const onSqlUpdate = (key: keyof SqlForm, value: string | number | 'Y' | 'N') => 
 
 .endpoint-port-row {
   .endpoint-port-field {
-    flex: 0 1 260px;
-    min-width: 0;
-  }
-
-  .endpoint-url-field {
     flex: 1;
     min-width: 0;
+
+    .ui-select-wrap {
+      width: 100% !important;
+    }
   }
 }
 </style>

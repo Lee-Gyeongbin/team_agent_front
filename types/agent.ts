@@ -7,8 +7,7 @@ export interface Agent extends AgtRagCfg, AgtDs, AgtSqlCfg, AgtDm {
   tempDefaultYn: 'Y' | 'N' // TEMP_DEFAULT_YN
   topP: number // TOP_P
   topPDefaultYn: 'Y' | 'N' // TOP_P_DEFAULT_YN
-  portNo: string // PORT_NO
-  endpointUrl: string // ENDPOINT_URL
+  apiUrlCd: string // API_URL_CD
   description: string // DESCRIPTION
   sortOrd: number // SORT_ORD
   useYn: 'Y' | 'N' // USE_YN

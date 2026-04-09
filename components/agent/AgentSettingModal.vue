@@ -20,6 +20,7 @@
         :rag-form="ragForm"
         :sql-form="sqlForm"
         :sql-model-options="sqlModelOptions"
+        :api-url-cd-options="apiUrlCdOptions"
         @update:rag-form="ragForm = $event"
         @update:sql-form="sqlForm = $event"
       />
@@ -60,6 +61,7 @@
 
 <script setup lang="ts">
 import type { Agent, AgtDs, AgtDm } from '~/types/agent'
+import type { CodeItem } from '~/types/codes'
 import { useAgentStore } from '~/composables/agent/useAgentStore'
 
 interface Props {
@@ -77,6 +79,18 @@ const sqlModelOptions = computed(() => [
   { label: '선택', value: '' },
   ...modelOptions.value.map((m) => ({ value: m.modelId, label: m.modelName })),
 ])
+
+const apiUrlCdOptions = ref<{ label: string; value: string }[]>([{ label: '선택', value: '' }])
+const initApiUrlCdOptions = async () => {
+  const codes = await getCodes('AA000001')
+  apiUrlCdOptions.value = [
+    { label: '선택', value: '' },
+    ...codes.map((item: CodeItem) => ({
+      label: item.codeNm,
+      value: item.codeId,
+    })),
+  ]
+}
 
 const onChangeAgentType = async (svcTy: string) => {
   const result = await handleChangeAgentType(svcTy)
@@ -98,8 +112,7 @@ const form = ref({
 // 기본 설정 폼
 const basicForm = ref({
   agentNm: '',
-  portNo: '',
-  endpointUrl: '',
+  apiUrlCd: '',
   description: '',
   sortOrd: 0,
   temperature: 0.7,
@@ -130,14 +143,14 @@ const localDatamartList = ref<AgtDm[]>([])
 // 모달 열릴 때 폼 초기화
 watch(
   () => props.isOpen,
-  (open) => {
+  async (open) => {
     if (!open) return
+    await initApiUrlCdOptions()
     if (props.agent) {
       form.value.svcTy = props.agent.svcTy
       basicForm.value = {
         agentNm: props.agent.agentNm,
-        portNo: props.agent.portNo ?? '',
-        endpointUrl: props.agent.endpointUrl ?? '',
+        apiUrlCd: props.agent.apiUrlCd ?? '',
         description: props.agent.description,
         sortOrd: props.agent.sortOrd ?? 0,
         temperature: props.agent.temperature ?? 0.1,
@@ -163,8 +176,7 @@ watch(
       form.value.svcTy = ''
       basicForm.value = {
         agentNm: '',
-        portNo: '',
-        endpointUrl: '',
+        apiUrlCd: '',
         description: '',
         sortOrd: 0,
         temperature: 0.1,
