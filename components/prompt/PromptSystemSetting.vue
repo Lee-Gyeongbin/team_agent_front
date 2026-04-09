@@ -62,7 +62,7 @@
       </div>
 
       <!-- 우선순위 -->
-      <div class="com-setting-field-row">
+      <!-- <div class="com-setting-field-row">
         <label class="com-setting-label"><span class="is-required">*</span> 우선순위</label>
         <UiInput
           :disabled="form.sysPtYn === 'Y'"
@@ -72,7 +72,7 @@
           placeholder="우선순위를 입력하세요"
           @update:model-value="onUpdateForm('priority', $event === '' ? 0 : Number($event))"
         />
-      </div>
+      </div> -->
 
       <!-- 시스템 프롬프트 -->
       <div class="com-setting-field-row is-top">
