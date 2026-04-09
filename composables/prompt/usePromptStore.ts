@@ -47,6 +47,7 @@ const emptySettingForm: Partial<SystemPrompt> = {
   promptTypeCd: '',
   content: '',
   applyLlmYn: 'Y',
+  priority: 1,
 }
 
 /** settingForm 초기화 */

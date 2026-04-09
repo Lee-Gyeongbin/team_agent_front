@@ -38,7 +38,7 @@
 
       <!-- 프롬프트 명 -->
       <div class="com-setting-field-row">
-        <label class="com-setting-label">프롬프트 명</label>
+        <label class="com-setting-label"><span class="is-required">*</span> 프롬프트 명</label>
         <UiInput
           :disabled="form.sysPtYn === 'Y'"
           :model-value="form.promptName"
@@ -50,7 +50,7 @@
 
       <!-- 프롬프트 유형 -->
       <div class="com-setting-field-row">
-        <label class="com-setting-label">프롬프트 유형</label>
+        <label class="com-setting-label"><span class="is-required">*</span> 프롬프트 유형</label>
         <UiSelect
           :disabled="form.sysPtYn === 'Y'"
           :model-value="form.promptTypeCd"
@@ -61,12 +61,25 @@
         />
       </div>
 
+      <!-- 우선순위 -->
+      <div class="com-setting-field-row">
+        <label class="com-setting-label"><span class="is-required">*</span> 우선순위</label>
+        <UiInput
+          :disabled="form.sysPtYn === 'Y'"
+          :model-value="form.priority ?? ''"
+          size="sm"
+          number-only
+          placeholder="우선순위를 입력하세요"
+          @update:model-value="onUpdateForm('priority', $event === '' ? 0 : Number($event))"
+        />
+      </div>
+
       <!-- 시스템 프롬프트 -->
       <div class="com-setting-field-row is-top">
-        <label class="com-setting-label">시스템 프롬프트</label>
+        <label class="com-setting-label">프롬프트</label>
         <UiTextarea
           :model-value="form.content"
-          placeholder="시스템 프롬프트를 입력하세요"
+          placeholder="프롬프트를 입력하세요"
           :rows="6"
           size="sm"
           :border="true"
