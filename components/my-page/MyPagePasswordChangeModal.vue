@@ -39,6 +39,7 @@
         </div>
 
         <p class="password-field__helper">비밀번호는 8자 이상, 영문·숫자·특수문자를 모두 포함해 주세요.</p>
+        <p class="password-field__helper">허용 특수문자 : ! @ # $ % ^ & * ( ) _ - + =</p>
       </div>
     </div>
 
