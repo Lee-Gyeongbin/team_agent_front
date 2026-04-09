@@ -30,7 +30,8 @@ const {
   activeSearchModes,
   selectedChatAgentId,
   subOptions,
-  selectedSubOption,
+  selectedSubOptions,
+  buildRefIdForPayload,
   modelOptions,
   selectedModelOption,
   isSearchModeMissingSubOptions,
@@ -83,8 +84,15 @@ export const useChatRooms = () => {
       await selectModelOptions()
     }
     const lastRefId = lastRow?.refId
-    if (typeof lastRefId === 'string' && lastRefId && subOptions.value.some((o) => o.value === lastRefId)) {
-      selectedSubOption.value = lastRefId
+    if (typeof lastRefId === 'string' && lastRefId.trim()) {
+      const trimmed = lastRefId.trim()
+      const candidateIds = trimmed.includes(',')
+        ? trimmed.split(',').map((s) => s.trim()).filter(Boolean)
+        : [trimmed]
+      const valid = candidateIds.filter((id) => subOptions.value.some((o) => String(o.value) === id))
+      if (valid.length) {
+        selectedSubOptions.value = valid
+      }
     }
   }
   // 채팅방 목록 조회
@@ -122,7 +130,7 @@ export const useChatRooms = () => {
 
     const svcTy = resolveSvcTy()
     const modelId = selectedModelOption.value
-    const refId = selectedSubOption.value
+    const refId = buildRefIdForPayload()
     openLoading({ text: '채팅방을 생성하는 중...' })
     let res: { data: ChatRoom }
     try {
@@ -205,7 +213,8 @@ export const useChatRooms = () => {
       closeLoading()
     }
     subOptions.value = res.subOptionList.map((item: SubOption) => ({ label: item.label, value: item.value }))
-    selectedSubOption.value = subOptions.value[0]?.value ?? 'all'
+    const firstRag = subOptions.value[0]?.value ?? 'all'
+    selectedSubOptions.value = [String(firstRag)]
     return subOptions.value
   }
 
@@ -219,7 +228,8 @@ export const useChatRooms = () => {
       closeLoading()
     }
     subOptions.value = res.subOptionList.map((item: SubOption) => ({ label: item.label, value: item.value }))
-    selectedSubOption.value = subOptions.value[0]?.value ?? 'all'
+    const first = subOptions.value[0]?.value ?? 'all'
+    selectedSubOptions.value = [String(first)]
     return subOptions.value
   }
 

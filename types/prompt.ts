@@ -5,6 +5,8 @@ export interface SystemPrompt {
   promptTypeCd: string // PROMPT_TYPE_CD
   content: string // CONTENT
   applyLlmYn: 'Y' | 'N' // APPLY_LLM_YN
+  sysPtYn: 'Y' | 'N' // SYS_PT_YN
+  priority: number // PRIORITY
   useYn: 'Y' | 'N' // USE_YN
   createDt: string // CREATE_DT
   modifyDt: string // MODIFY_DT

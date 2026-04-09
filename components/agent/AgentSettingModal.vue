@@ -98,6 +98,8 @@ const form = ref({
 // 기본 설정 폼
 const basicForm = ref({
   agentNm: '',
+  portNo: '',
+  endpointUrl: '',
   description: '',
   sortOrd: 0,
   temperature: 0.7,
@@ -134,6 +136,8 @@ watch(
       form.value.agentTypeCd = props.agent.agentTypeCd
       basicForm.value = {
         agentNm: props.agent.agentNm,
+        portNo: props.agent.portNo ?? '',
+        endpointUrl: props.agent.endpointUrl ?? '',
         description: props.agent.description,
         sortOrd: props.agent.sortOrd ?? 0,
         temperature: props.agent.temperature ?? 0.1,
@@ -159,6 +163,8 @@ watch(
       form.value.agentTypeCd = ''
       basicForm.value = {
         agentNm: '',
+        portNo: '',
+        endpointUrl: '',
         description: '',
         sortOrd: 0,
         temperature: 0.1,

@@ -5,7 +5,15 @@ const activeSearchModes = ref<SearchModeValue[]>([])
 /** 에이전트 관리(TB_AGT) 기준 선택된 에이전트 — 동일 M/S 모드가 여러 개일 때 활성 구분용 */
 const selectedChatAgentId = ref<string | null>(null)
 const subOptions = ref<SubOption[]>([])
-const selectedSubOption = ref<string>('all')
+/** M/S 모드 서브옵션(데이터셋·데이터마트) 다중 선택 값 */
+const selectedSubOptions = ref<string[]>(['all'])
+
+/** 소켓/API용 refId: 다중 선택 시 콤마로 연결 (백엔드가 단일 문자열 필드 사용) */
+const buildRefIdForPayload = (): string => {
+  const list = selectedSubOptions.value
+  if (!list.length) return subOptions.value[0]?.value ?? 'all'
+  return list.map(String).join(',')
+}
 const modelOptions = ref<ModelOption[]>([])
 const selectedModelOption = ref<string>('all')
 
@@ -33,7 +41,8 @@ export const useChatSearchState = () => {
     activeSearchModes,
     selectedChatAgentId,
     subOptions,
-    selectedSubOption,
+    selectedSubOptions,
+    buildRefIdForPayload,
     modelOptions,
     selectedModelOption,
     resolveSvcTy,

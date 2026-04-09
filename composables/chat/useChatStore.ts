@@ -42,7 +42,8 @@ const {
   activeSearchModes,
   selectedChatAgentId,
   subOptions,
-  selectedSubOption,
+  selectedSubOptions,
+  buildRefIdForPayload,
   resolveSvcTy,
   modelOptions,
   selectedModelOption,
@@ -181,7 +182,7 @@ export const useChatStore = () => {
     if (!chatRoom.value.roomId) return false
 
     const svcTy = resolveSvcTy()
-    const refId = selectedSubOption.value
+    const refId = buildRefIdForPayload()
     const modelId = selectedModelOption.value
     let attachments: ChatAttachmentMeta[] = []
     if (files.length > 0) {
@@ -434,7 +435,8 @@ export const useChatStore = () => {
     isLoadingChatIndexAgents,
     getChatIndexAgentIconClass,
     subOptions,
-    selectedSubOption,
+    selectedSubOptions,
+    buildRefIdForPayload,
     selectedModelOption,
     currentSubOptions,
     knowledgeList,

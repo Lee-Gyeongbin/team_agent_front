@@ -1,15 +1,11 @@
 <template>
   <!-- body로 이동: 조상의 transform(filter 등)이 있으면 position:fixed가 뷰포트가 아닌 해당 박스 기준이 됨 → 오버레이가 부모만 덮는 현상 방지 -->
   <Teleport to="body">
-    <div
-      :class="[positionClass, customClass, { 'is-show': isOpen, 'is-fullscreen': isFullscreen }]"
-      @click.self="handleOverlayClick"
-    >
+    <div :class="[positionClass, customClass, { 'is-show': isOpen, 'is-fullscreen': isFullscreen }]">
       <!-- 오버레이 배경 -->
       <div
         v-if="showOverlay"
         :class="overlayClass"
-        @click="handleOverlayClick"
       ></div>
 
       <!-- 모달 컨텐츠 -->
@@ -137,10 +133,6 @@ const contentStyle = computed(() => {
 
 // 이벤트 핸들러
 const handleClose = () => {
-  emit('close')
-}
-
-const handleOverlayClick = () => {
   emit('close')
 }
 </script>
