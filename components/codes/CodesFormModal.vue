@@ -128,6 +128,8 @@ const onSubmit = () => {
     sortOrd: sortOrder,
     useYn: form.useYn,
     description: form.description.trim() || '',
+    etc1: form.etc1.trim() || '',
+    etc2: form.etc2.trim() || '',
   })
 }
 </script>
