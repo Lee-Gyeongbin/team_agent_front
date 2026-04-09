@@ -1,4 +1,4 @@
-import type { Agent, AgtDm, AgtDs } from '~/types/agent'
+import type { Agent, AgtDm, AgtDs, ColorItem, IconItem } from '~/types/agent'
 import { useApi } from '~/composables/com/useApi'
 const { get, post } = useApi()
 
@@ -55,6 +55,11 @@ export const useAgentApi = () => {
     return post<{ data: null }>(`/agent/order.do`, orderList)
   }
 
+  /** 테마 옵션 조회 */
+  const fetchThemeOptions = async (): Promise<{ iconList: IconItem[]; colorList: ColorItem[] }> => {
+    return get<{ iconList: IconItem[]; colorList: ColorItem[] }>('/agent/themeOptions.do')
+  }
+
   return {
     fetchAgentList,
     fetchModelOptions,
@@ -64,5 +69,6 @@ export const useAgentApi = () => {
     fetchSaveAgent,
     fetchDeleteAgent,
     fetchUpdateAgentOrder,
+    fetchThemeOptions,
   }
 }

@@ -61,6 +61,7 @@ const {
   onAgentDragStart,
   handleUpdateAgentOrder,
   handleToggleAgent,
+  handleFetchThemeOptions,
 } = useAgentStore()
 
 const isLoading = ref(true)
@@ -68,6 +69,7 @@ const isLoading = ref(true)
 onMounted(async () => {
   await handleSelectAgentList()
   await handleFetchModelOptions()
+  await handleFetchThemeOptions()
   isLoading.value = false
 })
 
