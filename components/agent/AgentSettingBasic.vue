@@ -16,7 +16,7 @@
     <!-- PORT / Endpoint URL (라벨·인풋 동일 라인) -->
     <div class="com-setting-row endpoint-port-row">
       <div class="com-setting-field-row endpoint-port-field">
-        <label class="com-setting-label"> API URL 코드 </label>
+        <label class="com-setting-label"> API URL </label>
         <UiSelect
           :model-value="modelValue.apiUrlCd"
           :options="apiUrlCdOptions"
