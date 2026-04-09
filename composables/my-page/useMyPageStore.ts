@@ -232,9 +232,7 @@ export const useMyPageStore = () => {
 
       const uploadRes = await fetch(prepared.uploadUrl, {
         method: 'PUT',
-        headers: {
-          'Content-Type': file.type || 'application/octet-stream',
-        },
+        headers: { 'Content-Type': file.type || 'application/octet-stream' },
         body: file,
       })
       if (!uploadRes.ok) {

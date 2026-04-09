@@ -46,9 +46,9 @@ export const useMyPageApi = () => {
       throw new Error(res?.returnMsg ?? '프로필 이미지 업로드 URL 발급에 실패했습니다.')
     }
     return {
-      uploadUrl: String(res?.uploadUrl ?? '').trim(),
-      filePath: String(res?.filePath ?? '').trim(),
-      returnMsg: String(res?.returnMsg ?? '').trim(),
+      uploadUrl: String(res?.uploadUrl ?? ''),
+      filePath: String(res?.filePath ?? ''),
+      returnMsg: String(res?.returnMsg ?? ''),
     }
   }
 
