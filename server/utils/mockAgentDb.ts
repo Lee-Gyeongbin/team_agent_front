@@ -3,7 +3,7 @@
 interface MockAgent {
   agentId: string
   agentNm: string
-  agentTypeCd: string
+  svcTy: string
   description: string
   sortOrd: number
   useYn: 'Y' | 'N'
@@ -31,7 +31,7 @@ const agentList: MockAgent[] = [
     agentId: '1',
     agentNm: '지식검색 (매뉴얼AI)22',
     description: '등록된 매뉴얼과 문서를 기반으로 사용자 질문에 답변하는 Agent입니다.',
-    agentTypeCd: 'RAG',
+    svcTy: 'M',
     sortOrd: 1,
     useYn: 'Y',
     lastMdfDt: '2026-02-29',
@@ -43,7 +43,7 @@ const agentList: MockAgent[] = [
     agentId: '2',
     agentNm: '데이터분석(SQL)',
     description: '사용자의 자연어 질문을 SQL 쿼리로 변환하여 데이터베이스에서 정보를 조회하는 Agent입니다.',
-    agentTypeCd: 'TextToSQL',
+    svcTy: 'S',
     sortOrd: 2,
     useYn: 'Y',
     lastMdfDt: '2026-02-29',
@@ -55,7 +55,7 @@ const agentList: MockAgent[] = [
     agentId: '3',
     agentNm: '번역 Agent',
     description: '다국어 번역 및 언어 감지 Agent',
-    agentTypeCd: 'TextToSQL',
+    svcTy: 'S',
     sortOrd: 3,
     useYn: 'N',
     lastMdfDt: '2026-02-29',
@@ -67,7 +67,7 @@ const agentList: MockAgent[] = [
     agentId: '4',
     agentNm: '지식검색 (매뉴얼AI)',
     description: '등록된 매뉴얼과 문서를 기반으로 사용자 질문에 답변하는 Agent입니다.',
-    agentTypeCd: 'RAG',
+    svcTy: 'M',
     sortOrd: 4,
     useYn: 'N',
     lastMdfDt: '2026-02-29',
@@ -133,7 +133,7 @@ export const mockAgentDb = {
         agentId: `agent-${Date.now()}`,
         agentNm: '',
         description: '',
-        agentTypeCd: '',
+        svcTy: '',
         sortOrd: agentList.length + 1,
         useYn: 'N',
         lastMdfDt: now,

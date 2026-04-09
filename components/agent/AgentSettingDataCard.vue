@@ -59,7 +59,7 @@
 import type { AgtDs, AgtDm } from '~/types/agent'
 
 interface Props {
-  agentTypeCd: string
+  svcTy: string
   item: AgtDs | AgtDm
 }
 
@@ -69,7 +69,7 @@ defineEmits<{
   toggle: [item: AgtDs | AgtDm]
 }>()
 
-const isRag = computed(() => props.agentTypeCd === '001')
+const isRag = computed(() => props.svcTy === 'M')
 const ds = computed(() => props.item as AgtDs)
 const dm = computed(() => props.item as AgtDm)
 </script>

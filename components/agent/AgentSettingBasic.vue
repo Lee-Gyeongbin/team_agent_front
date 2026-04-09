@@ -121,7 +121,7 @@
 
     <!-- RAG 설정 (001) -->
     <div
-      v-if="agentTypeCd === '001'"
+      v-if="svcTy === 'M'"
       class="com-setting-row type-config-row"
     >
       <div class="type-config-col">
@@ -156,7 +156,7 @@
     </div>
 
     <!-- SQL 설정 (002) -->
-    <template v-if="agentTypeCd === '002'">
+    <template v-if="svcTy === 'S'">
       <div class="com-setting-row type-config-row">
         <div class="type-config-col">
           <label class="com-setting-label">SQL 생성 모델</label>
@@ -230,7 +230,7 @@ interface SqlForm {
 
 interface Props {
   modelValue: BasicForm
-  agentTypeCd: string
+  svcTy: string
   ragForm: RagForm
   sqlForm: SqlForm
   sqlModelOptions: { value: string; label: string }[]
