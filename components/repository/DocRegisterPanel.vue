@@ -198,6 +198,7 @@ const isCategoryModalOpen = ref(false)
 
 const form = ref({
   docId: '',
+  dsDocCnt: '0',
   docTitle: '',
   categoryId: '',
   author: '',
@@ -237,6 +238,7 @@ const onCategoryConfirm = (selectedId: string) => {
 const applyInitialFromDocument = (src: Partial<Document>) => {
   form.value = {
     docId: String(src.docId ?? '').trim(),
+    dsDocCnt: String(src.dsDocCnt ?? '0'),
     docTitle: String(src.docTitle ?? ''),
     categoryId: String(src.categoryId ?? ''),
     author: String(src.author ?? ''),
@@ -253,6 +255,7 @@ const applyInitialFromDocument = (src: Partial<Document>) => {
 const resetForm = () => {
   form.value = {
     docId: '',
+    dsDocCnt: '0',
     docTitle: '',
     categoryId: '',
     author: '',

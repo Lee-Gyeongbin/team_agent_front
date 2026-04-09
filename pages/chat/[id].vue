@@ -193,8 +193,11 @@ watch(
     if (!roomId) return
     // 채팅방/로그 id가 바뀌면 이전에 열어둔 시각화/테이블 상태를 닫는다.
     handleResetChatPanels()
-    handleSetChatRoom(roomId)
+    // handleSetChatRoom 보다 먼저 로그를 조회해야
+    // handleSelectChatLogList 내부의 isSameRoom 비교가 "이전 방 vs 새 방"으로 올바르게 동작한다.
+    // (handleSetChatRoom을 먼저 호출하면 isSameRoom이 항상 true가 되어 이전 방 메시지가 잔류하는 버그 발생)
     await handleSelectChatLogList(roomId, { preserveLocalWhenEmpty: true })
+    handleSetChatRoom(roomId)
   },
   { immediate: true },
 )

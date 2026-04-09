@@ -1,12 +1,14 @@
 export interface Agent extends AgtRagCfg, AgtDs, AgtSqlCfg, AgtDm {
   agentId: string // AGENT_ID
   agentNm: string // AGENT_NM
-  agentTypeCd: string // AGENT_TYPE_CD
-  agentTypeCdNm: string // AGENT_TYPE_CD_NM
+  svcTy: string // SVC_TY
+  svcTyNm: string // SVC_TY_NM
   temperature: number // TEMPERATURE
   tempDefaultYn: 'Y' | 'N' // TEMP_DEFAULT_YN
   topP: number // TOP_P
   topPDefaultYn: 'Y' | 'N' // TOP_P_DEFAULT_YN
+  portNo: string // PORT_NO
+  endpointUrl: string // ENDPOINT_URL
   description: string // DESCRIPTION
   sortOrd: number // SORT_ORD
   useYn: 'Y' | 'N' // USE_YN
@@ -32,7 +34,6 @@ export interface AgtDs {
   dsNm: string // DS_NM
   description: string // DESCRIPTION
   connYn: 'Y' | 'N' // CONN_YN
-  sortOrd: number // SORT_ORD
   docCount: number // DOC_COUNT
   chunkSize: number // CHUNK_SIZE
   modifyDt: string // MODIFY_DT

@@ -24,7 +24,7 @@
 
     <!-- 목록 -->
     <draggable
-      v-if="agentTypeCd === '001'"
+      v-if="svcTy === 'M'"
       v-model="draggableList"
       class="agent-setting-data-list"
       handle=".agent-data-card-drag"
@@ -34,7 +34,7 @@
     >
       <template #item="{ element }">
         <AgentSettingDataCard
-          :agent-type-cd="agentTypeCd"
+          :svc-ty="svcTy"
           :item="element"
           @toggle="onToggleItem"
         />
@@ -49,7 +49,7 @@
       <AgentSettingDataCard
         v-for="item in filteredItems"
         :key="(item as AgtDm).datamartId"
-        :agent-type-cd="agentTypeCd"
+        :svc-ty="svcTy"
         :item="item"
         @toggle="onToggleItem"
       />
@@ -62,7 +62,7 @@ import draggable from 'vuedraggable'
 import type { AgtDs, AgtDm } from '~/types/agent'
 
 interface Props {
-  agentTypeCd: string
+  svcTy: string
   datasetList: AgtDs[]
   datamartList: AgtDm[]
 }
@@ -75,14 +75,12 @@ const emit = defineEmits<{
 }>()
 
 // 현재 타입에 맞는 아이템 목록
-const items = computed(() => (props.agentTypeCd === '001' ? props.datasetList : props.datamartList))
+const items = computed(() => (props.svcTy === 'M' ? props.datasetList : props.datamartList))
 
 // 섹션 텍스트
-const sectionTitle = computed(() => (props.agentTypeCd === '001' ? 'RAG 데이터셋 연결' : '데이터마트 연결'))
+const sectionTitle = computed(() => (props.svcTy === 'M' ? 'RAG 데이터셋 연결' : '데이터마트 연결'))
 const sectionDesc = computed(() =>
-  props.agentTypeCd === '001'
-    ? 'Agent가 참조할 데이터셋(벡터DB)을 선택합니다.'
-    : 'Agent가 참조할 데이터마트를 선택합니다.',
+  props.svcTy === 'M' ? 'Agent가 참조할 데이터셋(벡터DB)을 선택합니다.' : 'Agent가 참조할 데이터마트를 선택합니다.',
 )
 
 // 필터
@@ -129,7 +127,7 @@ const onDragEnd = () => {
 const onToggleItem = (target: AgtDs | AgtDm) => {
   const newConnYn = target.connYn === 'Y' ? 'N' : 'Y'
 
-  if (props.agentTypeCd === '001') {
+  if (props.svcTy === 'M') {
     const updated = props.datasetList.map((d) =>
       d.datasetId === (target as AgtDs).datasetId ? ({ ...d, connYn: newConnYn } as AgtDs) : d,
     )

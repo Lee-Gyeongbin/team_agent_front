@@ -8,7 +8,7 @@
     <div class="com-setting-form">
       <!-- 섹션1: Agent 유형 -->
       <AgentSettingType
-        v-model="form.agentTypeCd"
+        v-model="form.svcTy"
         :is-edit="isEmpty(agent?.agentId)"
         @change="onChangeAgentType"
       />
@@ -16,7 +16,7 @@
       <!-- 섹션2: Agent 기본 설정 + 유형별 상세 설정 -->
       <AgentSettingBasic
         v-model="basicForm"
-        :agent-type-cd="form.agentTypeCd"
+        :svc-ty="form.svcTy"
         :rag-form="ragForm"
         :sql-form="sqlForm"
         :sql-model-options="sqlModelOptions"
@@ -24,11 +24,11 @@
         @update:sql-form="sqlForm = $event"
       />
 
-      <!-- 섹션3: 데이터 연결 (agentTypeCd 기반 분기) -->
+      <!-- 섹션3: 데이터 연결 (svcTy 기반 분기) -->
       <AgentSettingData
-        v-if="form.agentTypeCd"
+        v-if="form.svcTy"
         ref="settingDataRef"
-        :agent-type-cd="form.agentTypeCd"
+        :svc-ty="form.svcTy"
         :dataset-list="localDatasetList"
         :datamart-list="localDatamartList"
         @update:dataset-list="localDatasetList = $event"
@@ -78,8 +78,8 @@ const sqlModelOptions = computed(() => [
   ...modelOptions.value.map((m) => ({ value: m.modelId, label: m.modelName })),
 ])
 
-const onChangeAgentType = async (agentTypeCd: string) => {
-  const result = await handleChangeAgentType(agentTypeCd)
+const onChangeAgentType = async (svcTy: string) => {
+  const result = await handleChangeAgentType(svcTy)
   localDatasetList.value = result.datasetList
   localDatamartList.value = result.datamartList
   nextTick(() => settingDataRef.value?.resetFilter())
@@ -92,12 +92,14 @@ const emit = defineEmits<{
 
 // 유형
 const form = ref({
-  agentTypeCd: '',
+  svcTy: '',
 })
 
 // 기본 설정 폼
 const basicForm = ref({
   agentNm: '',
+  portNo: '',
+  endpointUrl: '',
   description: '',
   sortOrd: 0,
   temperature: 0.7,
@@ -131,9 +133,11 @@ watch(
   (open) => {
     if (!open) return
     if (props.agent) {
-      form.value.agentTypeCd = props.agent.agentTypeCd
+      form.value.svcTy = props.agent.svcTy
       basicForm.value = {
         agentNm: props.agent.agentNm,
+        portNo: props.agent.portNo ?? '',
+        endpointUrl: props.agent.endpointUrl ?? '',
         description: props.agent.description,
         sortOrd: props.agent.sortOrd ?? 0,
         temperature: props.agent.temperature ?? 0.1,
@@ -156,9 +160,11 @@ watch(
       localDatamartList.value = [...(props.agent.datamartList ?? [])]
       nextTick(() => settingDataRef.value?.resetFilter())
     } else {
-      form.value.agentTypeCd = ''
+      form.value.svcTy = ''
       basicForm.value = {
         agentNm: '',
+        portNo: '',
+        endpointUrl: '',
         description: '',
         sortOrd: 0,
         temperature: 0.1,
@@ -176,13 +182,13 @@ watch(
 
 const onSave = () => {
   const base: Partial<Agent> = {
-    agentTypeCd: form.value.agentTypeCd,
+    svcTy: form.value.svcTy,
     ...basicForm.value,
   }
 
-  if (form.value.agentTypeCd === '001') {
+  if (form.value.svcTy === 'M') {
     Object.assign(base, ragForm.value, { datasetList: localDatasetList.value })
-  } else if (form.value.agentTypeCd === '002') {
+  } else if (form.value.svcTy === 'S') {
     Object.assign(base, sqlForm.value, { datamartList: localDatamartList.value })
   }
 

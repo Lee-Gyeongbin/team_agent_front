@@ -206,6 +206,44 @@
   &:hover {
     color: $color-text-secondary;
   }
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+
+  // 삭제 불가(내장): 휴지통 + 금지 대각선
+  &.is-delete-locked {
+    &:hover {
+      color: $color-text-disabled;
+    }
+
+    .icon-trashcan {
+      opacity: 0.5;
+    }
+  }
+}
+
+.prompt-saved-card-delete-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+
+.prompt-saved-card-delete-slash {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+  width: 20px;
+  height: 2px;
+  background: $color-error;
+  border-radius: 1px;
+  transform: translate(-50%, -50%) rotate(-45deg);
+  pointer-events: none;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.95);
 }
 
 // ===================================

@@ -83,9 +83,9 @@ const handleFetchAgentDetailDataList = async (agent: Agent) => {
   try {
     const response = await fetchAgentDetailDataList(agent)
     if (!selectedAgent.value) return
-    if (agent.agentTypeCd === '001') {
+    if (agent.svcTy === 'M') {
       selectedAgent.value.datasetList = (response?.dataList as AgtDs[]) ?? []
-    } else if (agent.agentTypeCd === '002') {
+    } else if (agent.svcTy === 'S') {
       selectedAgent.value.datamartList = (response?.dataList as AgtDm[]) ?? []
     }
   } catch {
@@ -128,7 +128,7 @@ const handleSaveAgent = async (agent: Partial<Agent>) => {
 const validateAgentSave = (agent: Partial<Agent>) => {
   let valid = true
   let msg = ''
-  if (isEmpty(agent.agentTypeCd)) {
+  if (isEmpty(agent.svcTy)) {
     valid = false
     msg = '에이전트 유형을 선택해주세요.'
     return { valid, msg }
@@ -144,7 +144,7 @@ const validateAgentSave = (agent: Partial<Agent>) => {
     return { valid, msg }
   }
 
-  if (agent.agentTypeCd === '001') {
+  if (agent.svcTy === 'M') {
     // RAG Agent 설정 검증
     if (isEmpty(agent.simThresh)) {
       valid = false
@@ -161,7 +161,7 @@ const validateAgentSave = (agent: Partial<Agent>) => {
       msg = '최대 검색 결과 수를 입력해주세요.'
       return { valid, msg }
     }
-  } else if (agent.agentTypeCd === '002') {
+  } else if (agent.svcTy === 'S') {
     // TextToSQL Agent 설정 검증
     if (isEmpty(agent.datamartList)) {
       valid = false
@@ -199,12 +199,12 @@ const validateAgentSave = (agent: Partial<Agent>) => {
 }
 
 /** 에이전트 유형 변경 → 해당 유형의 데이터 목록 반환 */
-const handleChangeAgentType = async (agentTypeCd: string) => {
+const handleChangeAgentType = async (svcTy: string) => {
   try {
-    const response = await fetchAgentDetailDataList({ agentTypeCd } as Agent)
+    const response = await fetchAgentDetailDataList({ svcTy } as Agent)
     return {
-      datasetList: agentTypeCd === '001' ? ((response?.dataList as AgtDs[]) ?? []) : [],
-      datamartList: agentTypeCd === '002' ? ((response?.dataList as AgtDm[]) ?? []) : [],
+      datasetList: svcTy === 'M' ? ((response?.dataList as AgtDs[]) ?? []) : [],
+      datamartList: svcTy === 'S' ? ((response?.dataList as AgtDm[]) ?? []) : [],
     }
   } catch {
     openToast({

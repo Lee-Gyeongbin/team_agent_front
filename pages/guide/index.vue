@@ -463,6 +463,12 @@ const componentList = [
     tags: ['v-model', 'size', 'placeholder', 'disabled'],
   },
   {
+    name: 'UiMultiSelect',
+    to: '/guide/ui-multiselect',
+    description: 'Radix Popover 기반 멀티 선택 — 배열 v-model, maxLabels 축약, size·radius',
+    tags: ['v-model', 'options', 'maxLabels', 'checkbox'],
+  },
+  {
     name: 'UiButton',
     to: '/guide/ui-button',
     description: 'variant / size / icon / iconOnly 지원 버튼 컴포넌트',

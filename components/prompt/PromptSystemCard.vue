@@ -33,11 +33,21 @@
         <i class="icon-copy-gray size-16" />
       </button>
       <button
+        type="button"
         class="prompt-saved-card-btn"
-        title="삭제"
+        :class="{ 'is-delete-locked': prompt.sysPtYn === 'Y' }"
+        :disabled="prompt.sysPtYn === 'Y'"
+        :title="prompt.sysPtYn === 'Y' ? '시스템 내장 프롬프트는 삭제할 수 없습니다' : '삭제'"
         @click="$emit('delete', prompt)"
       >
-        <i class="icon-trashcan size-16" />
+        <span class="prompt-saved-card-delete-icon">
+          <i class="icon-trashcan size-16" />
+          <span
+            v-if="prompt.sysPtYn === 'Y'"
+            class="prompt-saved-card-delete-slash"
+            aria-hidden="true"
+          />
+        </span>
       </button>
     </div>
   </div>
