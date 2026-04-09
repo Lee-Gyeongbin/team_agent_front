@@ -3,15 +3,14 @@
     ref="dropdownRef"
     class="chat-search-mode"
   >
-    <!-- 선택된 모드 태그 -->
+    <!-- 선택된 에이전트 태그 -->
     <button
-      v-for="mode in selectedOptions"
-      :key="mode.value"
+      v-if="selectedAgent"
       class="chat-search-mode-tag"
-      @click="onRemove(mode.value)"
+      @click="onRemove"
     >
-      <i class="icon-search size-20" />
-      <span class="ws-nowrap">{{ mode.label }}</span>
+      <i :class="[getChatIndexAgentIconClass(selectedAgent), 'size-20']" />
+      <span class="ws-nowrap">{{ selectedAgent.agentNm }}</span>
       <i class="icon-refund-back size-20" />
     </button>
 
@@ -47,22 +46,30 @@
       class="chat-search-mode-dropdown"
     >
       <button
-        v-for="option in searchModeOptions"
-        :key="option.value"
+        v-for="agent in chatIndexAgents"
+        :key="agent.agentId"
         class="chat-search-mode-item"
-        @click="onSelect(option.value)"
+        @click="onSelect(agent)"
       >
-        <i :class="[option.icon, 'size-20']" />
-        <span>{{ option.label }}</span>
+        <i :class="[getChatIndexAgentIconClass(agent), 'size-20']" />
+        <span>{{ agent.agentNm }}</span>
       </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { SearchModeValue } from '~/types/chat'
+import type { Agent } from '~/types/agent'
 
-const { searchModeOptions, activeSearchModes, toggleSearchMode, subOptions, selectedSubOptions } = useChatStore()
+const {
+  activeSearchModes,
+  selectChatIndexAgent,
+  chatIndexAgents,
+  getChatIndexAgentIconClass,
+  selectedChatAgentId,
+  subOptions,
+  selectedSubOptions,
+} = useChatStore()
 
 /** UiMultiSelect 전용 — API refId와 겹치지 않게 긴 sentinel 사용 */
 const SUB_OPTION_ALL_KEY = '__chat_sub_option_select_all__'
@@ -104,23 +111,28 @@ const onSubOptionsMultiChange = (next: Array<string | number>) => {
 const isOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
 
-// 선택된 모드의 옵션 정보
-const selectedOptions = computed(() => searchModeOptions.filter((opt) => activeSearchModes.value.includes(opt.value)))
+const selectedAgent = computed(() => {
+  if (!selectedChatAgentId.value) return null
+  return chatIndexAgents.value.find((a) => a.agentId === selectedChatAgentId.value) ?? null
+})
 const isSearchModeActive = computed(() => activeSearchModes.value.length > 0)
 
 const toggleDropdown = () => {
   isOpen.value = !isOpen.value
 }
 
-const onSelect = (mode: SearchModeValue) => {
-  if (!activeSearchModes.value.includes(mode)) {
-    toggleSearchMode(mode)
+const onSelect = (agent: Agent) => {
+  if (selectedChatAgentId.value === agent.agentId) {
+    isOpen.value = false
+    return
   }
+  selectChatIndexAgent(agent)
   isOpen.value = false
 }
 
-const onRemove = (mode: SearchModeValue) => {
-  toggleSearchMode(mode)
+const onRemove = () => {
+  if (!selectedAgent.value) return
+  selectChatIndexAgent(selectedAgent.value)
 }
 
 // 외부 클릭 시 닫기

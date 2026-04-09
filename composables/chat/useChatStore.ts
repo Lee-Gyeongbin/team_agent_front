@@ -1,12 +1,5 @@
 // 타입 선언
-import type {
-  ChatLogListRow,
-  ChatRefRow,
-  PanelType,
-  SearchModeOption,
-  SearchModeValue,
-  VisualizationViewModel,
-} from '~/types/chat'
+import type { ChatLogListRow, ChatRefRow, PanelType, SearchModeValue, VisualizationViewModel } from '~/types/chat'
 import type { Agent } from '~/types/agent'
 import { openToast } from '~/composables/useToast'
 import { useChatSocket } from '~/composables/chat/useChatSocket'
@@ -59,20 +52,14 @@ const {
 const { executeSendPipeline } = useChatSendPipeline()
 
 // API 호출
-const { fetchSelectChatLogList, fetchSelectChatRef, fetchSelectTableDataList, fetchSelectAgentListForChat } = useChatApi()
+const { fetchSelectChatLogList, fetchSelectChatRef, fetchSelectTableDataList, fetchSelectAgentListForChat } =
+  useChatApi()
 
 /** /chat 인덱스용 에이전트 목록 */
 const chatIndexAgents = ref<Agent[]>([])
 const isLoadingChatIndexAgents = ref(true)
 const normalizeChatAgents = (list: Agent[]) =>
   list.filter((a) => a.useYn === 'Y' && (a.svcTy === 'M' || a.svcTy === 'S')).sort((a, b) => a.sortOrd - b.sortOrd)
-
-/** ChatSearchMode·toggleSearchMode에서 모드만 선택 시 — 인덱스와 동일 목록 기준 첫 에이전트 */
-const pickFirstChatIndexAgentIdForMode = (mode: SearchModeValue): string | null => {
-  const agent = chatIndexAgents.value.find((a) => a.svcTy === mode)
-  const id = agent?.agentId
-  return typeof id === 'string' && id.trim() ? id.trim() : null
-}
 
 const selectedLogId = ref<string | null>(null)
 // pdf 뷰어 or 시각화
@@ -87,12 +74,6 @@ const isModalOpen = ref(false)
 const modalMessage = ref('')
 const modalTitle = ref('')
 const modalPlaceholder = ref('')
-
-// 검색모드 옵션
-const searchModeOptions: SearchModeOption[] = [
-  { label: '지식검색(매뉴얼AI)', value: 'M', icon: 'icon-knowledge' },
-  { label: '데이터분석(SQL)', value: 'S', icon: 'icon-database' },
-]
 
 export const useChatStore = () => {
   // 채팅 로그 조회 (roomId 기준)
@@ -282,25 +263,6 @@ export const useChatStore = () => {
     visualizationViewMap.value = {}
   }
 
-  // 검색모드 토글 (라디오 방식 — 하나만 선택 가능)
-  const toggleSearchMode = async (mode: SearchModeValue) => {
-    if (activeSearchModes.value.includes(mode)) {
-      // 모드 해제 → 디폴트(모델 옵션)로 복원
-      activeSearchModes.value = []
-      selectedChatAgentId.value = null
-      subOptions.value = []
-      await selectModelOptions()
-    } else {
-      activeSearchModes.value = [mode]
-      selectedChatAgentId.value = pickFirstChatIndexAgentIdForMode(mode)
-      if (mode === 'M') {
-        await selectRagDsList()
-      } else {
-        await selectDmList()
-      }
-    }
-  }
-
   /** 에이전트 관리 목록 기준 모드 선택 (/chat 인덱스 버튼) — 동일 모드 여러 에이전트 간 전환 지원 */
   const selectChatIndexAgent = async (agent: Agent) => {
     const mode = agentTypeToSearchMode(agent.svcTy)
@@ -358,7 +320,6 @@ export const useChatStore = () => {
     visualizationViewMap,
     activeVisualizationView,
     modelOptions,
-    searchModeOptions,
     activeSearchModes,
     selectedChatAgentId,
     chatIndexAgents,
@@ -375,7 +336,6 @@ export const useChatStore = () => {
     createChatRoom,
     handleSelectChatLogList,
     onSend,
-    toggleSearchMode,
     selectChatIndexAgent,
     handleSelectChatIndexAgents,
     // 패널
