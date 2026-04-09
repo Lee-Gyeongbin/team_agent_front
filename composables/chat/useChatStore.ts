@@ -23,16 +23,16 @@ import { buildMessageAttachmentsFromUpload } from '~/utils/chat/chatAttachmentDi
 import { useAgentApi } from '~/composables/agent/useAgentApi'
 
 /** 에이전트 AGENT_TYPE_CD → 채팅 svcTy/검색모드 (001=RAG·지식, 002=SQL·데이터마트) */
-function agentTypeToSearchMode(agentTypeCd: string): SearchModeValue | null {
-  if (agentTypeCd === '001') return 'M'
-  if (agentTypeCd === '002') return 'S'
+function agentTypeToSearchMode(svcTy: string): SearchModeValue | null {
+  if (svcTy === 'M') return 'M'
+  if (svcTy === 'S') return 'S'
   return null
 }
 
 /** /chat 인덱스 에이전트 버튼 아이콘 클래스 */
 const getChatIndexAgentIconClass = (agent: Agent) => {
-  if (agent.agentTypeCd === '001') return 'icon-knowledge'
-  if (agent.agentTypeCd === '002') return 'icon-database'
+  if (agent.svcTy === 'M') return 'icon-knowledge'
+  if (agent.svcTy === 'S') return 'icon-database'
   return 'icon-search'
 }
 
@@ -352,7 +352,7 @@ export const useChatStore = () => {
 
   /** 에이전트 관리 목록 기준 모드 선택 (/chat 인덱스 버튼) — 동일 모드 여러 에이전트 간 전환 지원 */
   const selectChatIndexAgent = async (agent: Agent) => {
-    const mode = agentTypeToSearchMode(agent.agentTypeCd)
+    const mode = agentTypeToSearchMode(agent.svcTy)
     if (!mode) {
       openToast({ message: '채팅에 연결할 수 없는 에이전트 유형입니다.', type: 'warning' })
       return
@@ -407,7 +407,7 @@ export const useChatStore = () => {
       const res = await fetchAgentList()
       const list = res?.dataList ?? []
       chatIndexAgents.value = list
-        .filter((a) => a.useYn === 'Y' && (a.agentTypeCd === '001' || a.agentTypeCd === '002'))
+        .filter((a) => a.useYn === 'Y' && (a.svcTy === 'M' || a.svcTy === 'S'))
         .sort((a, b) => a.sortOrd - b.sortOrd)
     } catch {
       chatIndexAgents.value = []
