@@ -25,13 +25,13 @@ export const useReportsApi = () => {
   const fetchSelectModelList = async (): Promise<{ modelList: ModelOption[] }> => {
     return get<{ modelList: ModelOption[] }>('/ai/chatbot/selectModelList.do')
   }
-  // RAG 데이터 목록 조회
-  const fetchSelectRagDsList = async (): Promise<{ subOptionList: SubOption[] }> => {
-    return get<{ subOptionList: SubOption[] }>('/ai/chatbot/selectRagDsList.do')
+  // RAG 데이터 목록 조회 (에이전트별 데이터셋)
+  const fetchSelectRagDsList = async (agentId: string): Promise<{ subOptionList: SubOption[] }> => {
+    return get<{ subOptionList: SubOption[] }>(`/ai/chatbot/selectRagDsList.do?agentId=${encodeURIComponent(agentId)}`)
   }
-  // 데이터마트 조회
-  const fetchSelectDmList = async (): Promise<{ subOptionList: SubOption[] }> => {
-    return get<{ subOptionList: SubOption[] }>('/ai/chatbot/selectDmList.do')
+  // 데이터마트 조회 (에이전트별)
+  const fetchSelectDmList = async (agentId: string): Promise<{ subOptionList: SubOption[] }> => {
+    return get<{ subOptionList: SubOption[] }>(`/ai/chatbot/selectDmList.do?agentId=${encodeURIComponent(agentId)}`)
   }
   // CHAT 대화방 등록
   const fetchCreateChatRoom = async (content: string, svcTy: string): Promise<{ data: ChatRoom }> => {

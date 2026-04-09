@@ -8,6 +8,7 @@ export interface ChatSocketPayload {
   svcTy: string
   modelId: string
   refId: string
+  agentId?: string
   attachments?: ChatAttachmentMeta[]
 }
 
@@ -170,6 +171,10 @@ export interface ChatLogListRow {
   qcontent?: string
   rcontent?: string
   createDt?: string
+  /** 질문에 매핑된 에이전트 ID (백엔드 환경별 키 차이 허용) */
+  agentId?: string
+  AGENT_ID?: string
+  agtId?: string
   /** 서비스 타입: C=일반(디폴트), M=지식검색, S=데이터분석 */
   svcTy?: string
   /** 참조 ID (지식베이스/데이터마트 등) */

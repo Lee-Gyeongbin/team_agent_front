@@ -32,12 +32,13 @@
     <UiMultiSelect
       v-if="isSearchModeActive && subOptions.length > 0"
       id="sub-option"
-      v-model="selectedSubOptions"
+      :model-value="subOptionsUiModel"
       name="sub-option"
-      :options="subOptions"
+      :options="subOptionsWithAll"
       size="xlg"
       placeholder="참조 선택"
       class="w-155 ref-select"
+      @update:model-value="onSubOptionsMultiChange"
     />
 
     <!-- 드롭다운 -->
@@ -62,6 +63,43 @@
 import type { SearchModeValue } from '~/types/chat'
 
 const { searchModeOptions, activeSearchModes, toggleSearchMode, subOptions, selectedSubOptions } = useChatStore()
+
+/** UiMultiSelect 전용 — API refId와 겹치지 않게 긴 sentinel 사용 */
+const SUB_OPTION_ALL_KEY = '__chat_sub_option_select_all__'
+
+const subOptionsWithAll = computed(() => [{ label: '전체', value: SUB_OPTION_ALL_KEY }, ...subOptions.value])
+
+const subOptionRealIds = computed(() => subOptions.value.map((o) => String(o.value)))
+
+/** 전체 선택 시 체크박스 동기화: 전체 + 각 항목이 모두 체크된 상태로 표시 */
+const subOptionsUiModel = computed(() => {
+  const reals = subOptionRealIds.value
+  const cur = selectedSubOptions.value.map(String)
+  if (!reals.length) return cur
+  if (reals.length > 0 && reals.every((r) => cur.includes(r))) {
+    return [SUB_OPTION_ALL_KEY, ...reals]
+  }
+  return cur
+})
+
+const onSubOptionsMultiChange = (next: Array<string | number>) => {
+  const n = next.map(String)
+  const reals = subOptionRealIds.value
+  const prev = subOptionsUiModel.value.map(String)
+  const hadAllKey = prev.includes(SUB_OPTION_ALL_KEY)
+  const hasAllKey = n.includes(SUB_OPTION_ALL_KEY)
+
+  if (hasAllKey && !hadAllKey) {
+    selectedSubOptions.value = [...reals]
+    return
+  }
+  // 전체 행만 해제한 경우: [전체,A,B,C] → [A,B,C] 로 오며, 이때는 참조를 모두 비움(다시 클릭 시 전체 해제)
+  if (!hasAllKey && hadAllKey) {
+    selectedSubOptions.value = []
+    return
+  }
+  selectedSubOptions.value = n.filter((x) => x !== SUB_OPTION_ALL_KEY && reals.includes(x))
+}
 
 const isOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)

@@ -127,6 +127,7 @@ const {
   onPanelClose,
   handleResetChatPanels,
   handleSelectKnowledge,
+  handleSelectChatIndexAgents,
 } = useChatStore()
 const { chatMessage, handleSetChatRoom } = useChatRooms()
 const { startChatSocket, stopChatSocket } = useChatSocket()
@@ -183,6 +184,7 @@ watch(activePanelType, (type) => {
 
 onMounted(() => {
   handleSelectKnowledge()
+  handleSelectChatIndexAgents()
   startChatSocket()
 })
 

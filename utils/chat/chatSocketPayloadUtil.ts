@@ -6,6 +6,7 @@ interface BuildQuestionPayloadParams {
   svcTy: string
   modelId: string
   refId: string
+  agentId?: string
   attachments?: ChatAttachmentMeta[]
 }
 
@@ -19,6 +20,7 @@ export const buildQuestionPayload = (params: BuildQuestionPayloadParams): ChatSo
     svcTy: params.svcTy,
     modelId: params.modelId,
     refId: params.refId,
+    agentId: params.agentId,
     attachments,
   }
 }

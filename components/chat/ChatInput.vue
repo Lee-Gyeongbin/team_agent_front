@@ -49,7 +49,7 @@
             multiple
             @change="onAttachFileChange"
           />
-          <ChatSearchMode />
+          <ChatSearchMode v-if="chatIndexAgents.length > 0" />
         </div>
         <div class="chat-input-bottom-right flex gap-8 items-center">
           <UiSelect
@@ -174,6 +174,7 @@ const {
   selectedModelOption,
   isSearchModeMissingSubOptions,
   searchModeSubOptionsEmptyMessage,
+  chatIndexAgents,
 } = useChatStore()
 
 const DEFAULT_INPUT_PLACEHOLDER = '궁금하신 내용을 입력하세요.'

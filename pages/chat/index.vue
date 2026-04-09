@@ -58,15 +58,24 @@ const {
 } = useChatStore()
 const { startChatSocket, stopChatSocket } = useChatSocket()
 const { user } = useAuth()
+const isMountedChatIndex = ref(true)
 
 onMounted(async () => {
   // 시각화 패널에서 나와 다시 일반 채팅으로 들어올 때 이전 tableData가 남지 않게 초기화
   handleResetChatPanels()
-  await Promise.all([selectChatRoomList(), handleSelectChatIndexAgents(), selectModelOptions()])
-  // 채팅방 초기화
+  // 인덱스 진입 시점에 즉시 채팅방 상태를 초기화해
+  // 비동기 로딩 완료 시점의 늦은 reset으로 인한 레이스를 방지한다.
   resetChatRoom()
+  await Promise.all([selectChatRoomList(), handleSelectChatIndexAgents(), selectModelOptions()])
+  // /chat에서 /chat/[id]로 이미 이동한 뒤 비동기 완료 시 reset이 늦게 실행되어
+  // 방금 생성한 방의 로컬 메시지가 지워지는 레이스 컨디션을 방지한다.
+  if (!isMountedChatIndex.value) return
   // 채팅소켓 시작
   startChatSocket()
+})
+
+onUnmounted(() => {
+  isMountedChatIndex.value = false
 })
 
 onBeforeRouteLeave((to) => {

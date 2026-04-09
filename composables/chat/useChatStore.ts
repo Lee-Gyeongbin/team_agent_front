@@ -20,9 +20,10 @@ import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
 import { buildQuestionPayload } from '~/utils/chat/chatSocketPayloadUtil'
 import { clearBodyChartFullscreen } from '~/utils/chat/visualizationChartUtil'
 import { buildMessageAttachmentsFromUpload } from '~/utils/chat/chatAttachmentDisplayUtil'
+import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
 import { useAgentApi } from '~/composables/agent/useAgentApi'
 
-/** 에이전트 AGENT_TYPE_CD → 채팅 svcTy/검색모드 (001=RAG·지식, 002=SQL·데이터마트) */
+/** 에이전트 SVC_TY → 채팅 검색모드 (M=RAG·지식, S=SQL·데이터마트) */
 function agentTypeToSearchMode(svcTy: string): SearchModeValue | null {
   if (svcTy === 'M') return 'M'
   if (svcTy === 'S') return 'S'
@@ -75,6 +76,15 @@ const { fetchAgentList } = useAgentApi()
 /** /chat 인덱스용 에이전트 목록 (TB_AGT·에이전트 관리와 동일 소스) */
 const chatIndexAgents = ref<Agent[]>([])
 const isLoadingChatIndexAgents = ref(true)
+const normalizeChatAgents = (list: Agent[]) =>
+  list.filter((a) => a.useYn === 'Y' && (a.svcTy === 'M' || a.svcTy === 'S')).sort((a, b) => a.sortOrd - b.sortOrd)
+
+/** ChatSearchMode·toggleSearchMode에서 모드만 선택 시 — 인덱스와 동일 목록 기준 첫 에이전트 */
+const pickFirstChatIndexAgentIdForMode = (mode: SearchModeValue): string | null => {
+  const agent = chatIndexAgents.value.find((a) => a.svcTy === mode)
+  const id = agent?.agentId
+  return typeof id === 'string' && id.trim() ? id.trim() : null
+}
 
 const selectedLogId = ref<string | null>(null)
 // pdf 뷰어 or 시각화
@@ -153,7 +163,7 @@ export const useChatStore = () => {
       // 로컬 메시지 존재 여부 확인
       const hasLocalMessages = messages.value.length > 0
       // 채팅방 동일 여부 확인
-      const isSameRoom = chatRoom.value.roomId === roomId
+      const isSameRoom = normalizeChatRoomId(chatRoom.value.roomId) === normalizeChatRoomId(roomId)
       // 로컬 메시지 보존 옵션 확인
       if (preserve && hasLocalMessages && isSameRoom) return
       // 로컬 메시지 초기화
@@ -184,6 +194,7 @@ export const useChatStore = () => {
     const svcTy = resolveSvcTy()
     const refId = buildRefIdForPayload()
     const modelId = selectedModelOption.value
+    const agentId = selectedChatAgentId.value ?? ''
     let attachments: ChatAttachmentMeta[] = []
     if (files.length > 0) {
       const uploaded = await handleUploadChatAttachments(files, chatRoom.value.roomId)
@@ -207,6 +218,7 @@ export const useChatStore = () => {
         svcTy,
         modelId,
         refId,
+        agentId,
         attachments,
       }),
     )
@@ -341,7 +353,7 @@ export const useChatStore = () => {
       await selectModelOptions()
     } else {
       activeSearchModes.value = [mode]
-      selectedChatAgentId.value = null
+      selectedChatAgentId.value = pickFirstChatIndexAgentIdForMode(mode)
       if (mode === 'M') {
         await selectRagDsList()
       } else {
@@ -406,9 +418,7 @@ export const useChatStore = () => {
     try {
       const res = await fetchAgentList()
       const list = res?.dataList ?? []
-      chatIndexAgents.value = list
-        .filter((a) => a.useYn === 'Y' && (a.svcTy === 'M' || a.svcTy === 'S'))
-        .sort((a, b) => a.sortOrd - b.sortOrd)
+      chatIndexAgents.value = normalizeChatAgents(list)
     } catch {
       chatIndexAgents.value = []
       openToast({ message: '에이전트 목록을 불러오지 못했습니다.', type: 'error' })

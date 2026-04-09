@@ -8,6 +8,7 @@ const { fetchCreateChatLogReaction, fetchCreateKnowledge } = useReportsApi()
 const {
   buildRefIdForPayload,
   selectedModelOption,
+  selectedChatAgentId,
   resolveSvcTy,
   pushQuestionMessage,
   pushAnswerPlaceholder,
@@ -115,6 +116,7 @@ export const useChatItemActions = () => {
     const svcTy = question?.svcTy ?? resolveSvcTy()
     const modelId = typeof question?.modelId === 'string' ? question.modelId : selectedModelOption.value
     const refId = question?.refId ?? buildRefIdForPayload()
+    const agentId = selectedChatAgentId.value ?? ''
 
     pushQuestionMessage(content, svcTy, modelId, refId)
     pushAnswerPlaceholder(svcTy, modelId, refId)
@@ -125,6 +127,7 @@ export const useChatItemActions = () => {
         svcTy,
         modelId,
         refId,
+        agentId,
       }),
     )
   }

@@ -12,6 +12,7 @@ import {
 import { useChatAttachmentStore } from '~/composables/chat/useChatAttachmentStore'
 import { buildQuestionPayload } from '~/utils/chat/chatSocketPayloadUtil'
 import { buildMessageAttachmentsFromUpload } from '~/utils/chat/chatAttachmentDisplayUtil'
+import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
 const { user } = useAuth()
 const {
   fetchSelectChatRoomList,
@@ -62,24 +63,35 @@ export const useChatRooms = () => {
 
   // 채팅방 roomId 동기화 (/chat/[id] 진입 시 사용)
   const handleSetChatRoom = (roomId: string) => {
-    chatRoom.value.roomId = roomId
+    chatRoom.value.roomId = normalizeChatRoomId(roomId)
   }
 
   // 마지막 로그 기준 검색모드·서브옵션 동기화: C=디폴트([]), M=지식검색, S=데이터분석
   const syncSearchModeFromLastLog = async (lastRow: ChatLogListRow | undefined) => {
     const svcTy = lastRow?.svcTy ?? 'C'
+    const lastAgentId =
+      typeof lastRow?.agentId === 'string'
+        ? lastRow.agentId.trim()
+        : typeof lastRow?.AGENT_ID === 'string'
+          ? lastRow.AGENT_ID.trim()
+          : typeof lastRow?.agtId === 'string'
+            ? lastRow.agtId.trim()
+            : ''
     if (svcTy === 'M') {
       activeSearchModes.value = ['M']
+      selectedChatAgentId.value = lastAgentId || null
       // 지식검색 시 라그 데이터셋 조회
       await selectRagDsList()
       await selectModelOptions()
     } else if (svcTy === 'S') {
       // 통계 질의 시 데이터마트 조회
       activeSearchModes.value = ['S']
+      selectedChatAgentId.value = lastAgentId || null
       await selectDmList()
       await selectModelOptions()
     } else {
       activeSearchModes.value = []
+      selectedChatAgentId.value = null
       // 일반 질의 시 모델 옵션 조회
       await selectModelOptions()
     }
@@ -87,7 +99,10 @@ export const useChatRooms = () => {
     if (typeof lastRefId === 'string' && lastRefId.trim()) {
       const trimmed = lastRefId.trim()
       const candidateIds = trimmed.includes(',')
-        ? trimmed.split(',').map((s) => s.trim()).filter(Boolean)
+        ? trimmed
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
         : [trimmed]
       const valid = candidateIds.filter((id) => subOptions.value.some((o) => String(o.value) === id))
       if (valid.length) {
@@ -131,6 +146,7 @@ export const useChatRooms = () => {
     const svcTy = resolveSvcTy()
     const modelId = selectedModelOption.value
     const refId = buildRefIdForPayload()
+    const agentId = selectedChatAgentId.value ?? ''
     openLoading({ text: '채팅방을 생성하는 중...' })
     let res: { data: ChatRoom }
     try {
@@ -138,8 +154,9 @@ export const useChatRooms = () => {
     } finally {
       closeLoading()
     }
+    const newRoomId = normalizeChatRoomId(res.data.roomId)
     const createdRoom: ChatRoom = {
-      roomId: res.data.roomId,
+      roomId: newRoomId,
       title: res.data.roomTitle,
       qContent,
       createdAt: res.data.createdAt,
@@ -148,7 +165,10 @@ export const useChatRooms = () => {
       fixYn: 'N',
     }
     chatRoom.value = createdRoom
-    chatRoomList.value = [createdRoom, ...chatRoomList.value.filter((room) => room.roomId !== createdRoom.roomId)]
+    chatRoomList.value = [
+      createdRoom,
+      ...chatRoomList.value.filter((room) => normalizeChatRoomId(room.roomId) !== newRoomId),
+    ]
 
     let attachments: ChatAttachmentMeta[] = []
     if (files.length > 0) {
@@ -176,6 +196,7 @@ export const useChatRooms = () => {
         svcTy,
         modelId,
         refId,
+        agentId,
         attachments,
       }),
     )
@@ -208,7 +229,7 @@ export const useChatRooms = () => {
     openLoading({ text: '지식 검색 옵션을 불러오는 중...' })
     let res: { subOptionList: SubOption[] }
     try {
-      res = await fetchSelectRagDsList()
+      res = await fetchSelectRagDsList(selectedChatAgentId.value ?? '')
     } finally {
       closeLoading()
     }
@@ -223,7 +244,7 @@ export const useChatRooms = () => {
     openLoading({ text: '데이터마트 옵션을 불러오는 중...' })
     let res: { subOptionList: SubOption[] }
     try {
-      res = await fetchSelectDmList()
+      res = await fetchSelectDmList(selectedChatAgentId.value ?? '')
     } finally {
       closeLoading()
     }
