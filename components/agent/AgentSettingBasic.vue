@@ -4,13 +4,42 @@
 
     <!-- Agent 이름 -->
     <div class="com-setting-field-row">
-      <label class="com-setting-label">Agent 이름</label>
+      <label class="com-setting-label"><span class="is-required">*</span>Agent 이름</label>
       <UiInput
         :model-value="modelValue.agentNm"
         placeholder="예: GPT-4o"
         size="sm"
         @update:model-value="onUpdate('agentNm', $event)"
       />
+    </div>
+
+    <!-- PORT / Endpoint URL (라벨·인풋 동일 라인) -->
+    <div class="com-setting-row endpoint-port-row">
+      <div class="com-setting-field-row endpoint-port-field">
+        <label class="com-setting-label">
+          <span class="is-required">*</span>
+          PORT 번호
+        </label>
+        <UiInput
+          :model-value="modelValue.portNo"
+          placeholder="예: 9000"
+          size="sm"
+          number-only
+          @update:model-value="onUpdate('portNo', String($event ?? ''))"
+        />
+      </div>
+      <div class="com-setting-field-row endpoint-url-field">
+        <label class="com-setting-label">
+          <span class="is-required">*</span>
+          Endpoint URL
+        </label>
+        <UiInput
+          :model-value="modelValue.endpointUrl"
+          placeholder="/query"
+          size="sm"
+          @update:model-value="onUpdate('endpointUrl', $event)"
+        />
+      </div>
     </div>
 
     <!-- Agent 설명 -->
@@ -177,6 +206,8 @@
 <script setup lang="ts">
 interface BasicForm {
   agentNm: string
+  portNo: string
+  endpointUrl: string
   description: string
   temperature: number
   tempDefaultYn: 'Y' | 'N'
@@ -265,5 +296,17 @@ const onSqlUpdate = (key: keyof SqlForm, value: string | number | 'Y' | 'N') => 
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.endpoint-port-row {
+  .endpoint-port-field {
+    flex: 0 1 260px;
+    min-width: 0;
+  }
+
+  .endpoint-url-field {
+    flex: 1;
+    min-width: 0;
+  }
 }
 </style>
