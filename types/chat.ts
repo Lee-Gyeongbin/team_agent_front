@@ -86,6 +86,8 @@ export interface ChatMessage {
   svcTy?: string
   /** 참조 ID (지식베이스/데이터마트 등) */
   refId?: string
+  /** 질문에 매핑된 에이전트 ID */
+  agentId?: string
   /** 출처 문서 ID */
   docId?: string
   /** 문서 존재 여부 (Y/N) */
@@ -116,6 +118,7 @@ export const EMPTY_CHAT_MESSAGE: ChatMessage = {
   },
   svcTy: '',
   refId: '',
+  agentId: '',
   docId: '',
   docExist: 'N',
 }

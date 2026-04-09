@@ -27,6 +27,7 @@ export const useChatMessages = () => {
     const svcTy = row.svcTy ?? 'C'
     const modelId = row.modelId ?? 'all'
     const refId = row.refId ?? ''
+    const agentId = typeof row.agentId === 'string' ? row.agentId.trim() : ''
     const docId = typeof row.docId === 'string' ? row.docId : ''
     const hasSource = row.docExist === 'Y'
     const hasVisualization = row.tableExist === 'Y'
@@ -44,6 +45,7 @@ export const useChatMessages = () => {
         svcTy,
         modelId,
         refId,
+        ...(agentId ? { agentId } : {}),
         ...(attachments?.length ? { attachments } : {}),
       },
       {
@@ -55,6 +57,7 @@ export const useChatMessages = () => {
         svcTy,
         modelId,
         refId,
+        ...(agentId ? { agentId } : {}),
         docId,
         createdAt,
         hasSource,
@@ -80,9 +83,11 @@ export const useChatMessages = () => {
     svcTy: string,
     modelId: string,
     refId: string,
+    agentId?: string,
     attachments?: ChatMessageAttachment[],
   ): string => {
     const logId = Date.now().toString()
+    const trimmedAgentId = typeof agentId === 'string' ? agentId.trim() : ''
     messages.value.push({
       id: logId,
       logId,
@@ -92,14 +97,16 @@ export const useChatMessages = () => {
       svcTy,
       modelId,
       refId,
+      ...(trimmedAgentId ? { agentId: trimmedAgentId } : {}),
       createdAt: new Date().toISOString(),
       ...(attachments?.length ? { attachments } : {}),
     })
     return logId
   }
   // answer placeholder 생성 + push + pendingMessageId 설정
-  const pushAnswerPlaceholder = (svcTy: string, modelId: string, refId: string): string => {
+  const pushAnswerPlaceholder = (svcTy: string, modelId: string, refId: string, agentId?: string): string => {
     const logId = (Date.now() + 1).toString()
+    const trimmedAgentId = typeof agentId === 'string' ? agentId.trim() : ''
     pendingMessageId.value = logId
     messages.value.push({
       id: logId,
@@ -110,6 +117,7 @@ export const useChatMessages = () => {
       svcTy,
       modelId,
       refId,
+      ...(trimmedAgentId ? { agentId: trimmedAgentId } : {}),
       createdAt: new Date().toISOString(),
       isStreaming: true,
       hasSource: false,

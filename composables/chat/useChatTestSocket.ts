@@ -1,17 +1,11 @@
 import type { ChatSocketMessage, ChatSocketPayload } from '~/types/chat'
+import { getWebSocketUrl } from '~/utils/chat/chatWebSocketUtil'
 
 const testSocket = shallowRef<WebSocket | null>(null)
 const testResponseText = ref('')
 const isTestStreaming = ref(false)
 const testErrorText = ref('')
 const testBuffer = ref('')
-
-function getWebSocketUrl(): string {
-  if (typeof window === 'undefined') return ''
-  const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
-  const host = import.meta.dev ? 'localhost:8082' : window.location.host
-  return `${protocol}://${host}/ws/chat`
-}
 
 export const useChatTestSocket = () => {
   /** 모델 테스트 소켓 메시지 처리 TODO : api url payload 필드 추가 */

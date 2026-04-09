@@ -14,12 +14,17 @@ import type {
   ChatFileSaveResponse,
   ChatFileViewResponse,
 } from '~/types/chat'
+import type { Agent } from '~/types/agent'
 
-export const useReportsApi = () => {
+export const useChatApi = () => {
   const { get, post } = useApi()
   // 채팅방 목록 조회
   const fetchSelectChatRoomList = async (userId: string): Promise<{ list: ChatRoom[] }> => {
     return get<{ list: ChatRoom[] }>(`/ai/chatbot/selectChatRoomList.do?userId=${encodeURIComponent(userId)}`)
+  }
+  // 채팅 화면용 에이전트 목록 조회
+  const fetchSelectAgentListForChat = async (): Promise<{ agentList: Agent[] }> => {
+    return get<{ agentList: Agent[] }>('/ai/chatbot/selectAgentListForChat.do')
   }
   // 모델 목록 조회
   const fetchSelectModelList = async (): Promise<{ modelList: ModelOption[] }> => {
@@ -123,6 +128,7 @@ export const useReportsApi = () => {
     return post<{ data: ChatRoom }>('/ai/chatbot/cloneChatRoom.do', { sourceRoomId })
   }
   return {
+    fetchSelectAgentListForChat,
     fetchSelectChatRoomList,
     fetchSelectModelList,
     fetchSelectRagDsList,

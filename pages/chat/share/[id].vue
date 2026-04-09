@@ -69,7 +69,7 @@
 
 <script setup lang="ts">
 import { setMessagesForVisualizationGetter } from '~/composables/chat/useChatMessages'
-const { sharedMessages, knowledgeList, loadSharedChatLog, onCopy, loadKnowledgeList, isExpired, shareTxt } =
+const { sharedMessages, knowledgeList, loadSharedChatLog, onCopy, handleSelectKnowledge, isExpired, shareTxt } =
   useChatRooms()
 const { handleCreateKnowledge } = useChatItemActions()
 const {
@@ -118,7 +118,7 @@ const onForkChat = () => {
 }
 
 onMounted(() => {
-  loadKnowledgeList()
+  handleSelectKnowledge()
 })
 
 watch(

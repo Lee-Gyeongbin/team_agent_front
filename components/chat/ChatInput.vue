@@ -133,6 +133,8 @@
 </template>
 
 <script setup lang="ts">
+import { getChatAttachmentExtension, getChatFileIconClass } from '~/utils/chat/chatAttachmentDisplayUtil'
+
 interface AttachmentPreviewItem {
   id: string
   file: File
@@ -205,21 +207,6 @@ const currentAllowedExtensions = computed(() =>
 )
 const attachAccept = computed(() => currentAllowedExtensions.value.map((ext) => `.${ext}`).join(','))
 
-const getFileExtension = (fileName: string): string => {
-  const trimmed = fileName.trim()
-  const lastDot = trimmed.lastIndexOf('.')
-  if (lastDot < 0 || lastDot === trimmed.length - 1) return ''
-  return trimmed.slice(lastDot + 1).toLowerCase()
-}
-
-const getFileIconClass = (fileName: string): string => {
-  const ext = getFileExtension(fileName)
-  if (ext === 'pdf') return 'icon-file-pdf'
-  if (ext === 'doc' || ext === 'docx') return 'icon-file-doc'
-  if (ext === 'txt' || ext === 'csv') return 'icon-file-txt'
-  return 'icon-document'
-}
-
 const isSameFile = (a: File, b: File) => a.name === b.name && a.size === b.size && a.lastModified === b.lastModified
 
 const revokePreviewUrl = (targetId: string) => {
@@ -240,7 +227,7 @@ const validateAttachmentFiles = (files: File[]) => {
   let hasExceededFileCount = false
 
   files.forEach((file) => {
-    const ext = getFileExtension(file.name)
+    const ext = getChatAttachmentExtension(file.name)
     if (!ext || !allowedExtensionSet.has(ext)) {
       invalidExtensions.add(ext || '확장자 없음')
     }
@@ -293,7 +280,7 @@ const buildNextAttachFiles = (files: File[]) => {
       return
     }
 
-    const ext = getFileExtension(file.name)
+    const ext = getChatAttachmentExtension(file.name)
     if (!ext || !allowedExtensionSet.has(ext)) {
       hasInvalidExtension = true
       return
@@ -338,14 +325,14 @@ const appendAttachmentPreview = (files: File[]) => {
   }
 
   const nextPreviewItems = nextFiles.map((file) => {
-    const ext = getFileExtension(file.name)
+    const ext = getChatAttachmentExtension(file.name)
     const isImage = IMAGE_EXTENSION_SET.has(ext)
     return {
       id: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2, 8)}`,
       file,
       previewUrl: isImage ? URL.createObjectURL(file) : '',
       isImage,
-      iconClass: getFileIconClass(file.name),
+      iconClass: getChatFileIconClass(file.name),
       extensionLabel: ext ? ext.toUpperCase() : 'FILE',
     } satisfies AttachmentPreviewItem
   })

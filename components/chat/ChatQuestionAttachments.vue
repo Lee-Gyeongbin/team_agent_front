@@ -79,7 +79,7 @@ const props = defineProps<{
   attachments: ChatMessageAttachment[]
 }>()
 
-const { fetchViewChatFile } = useReportsApi()
+const { fetchViewChatFile } = useChatApi()
 
 const listRef = ref<HTMLElement | null>(null)
 const previewOpen = ref(false)

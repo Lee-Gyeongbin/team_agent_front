@@ -5,23 +5,17 @@ import type {
   PanelType,
   SearchModeOption,
   SearchModeValue,
-  SubOption,
   VisualizationViewModel,
-  KnowledgeItem,
-  ChatAttachmentMeta,
 } from '~/types/chat'
 import type { Agent } from '~/types/agent'
 import { openToast } from '~/composables/useToast'
 import { useChatSocket } from '~/composables/chat/useChatSocket'
 import { useChatMessages } from '~/composables/chat/useChatMessages'
 import { useChatSearchState } from '~/composables/chat/useChatSearchState'
-import { useChatAttachmentStore } from '~/composables/chat/useChatAttachmentStore'
+import { useChatSendPipeline } from '~/composables/chat/useChatSendPipeline'
 import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
-import { buildQuestionPayload } from '~/utils/chat/chatSocketPayloadUtil'
 import { clearBodyChartFullscreen } from '~/utils/chat/visualizationChartUtil'
-import { buildMessageAttachmentsFromUpload } from '~/utils/chat/chatAttachmentDisplayUtil'
 import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
-import { useAgentApi } from '~/composables/agent/useAgentApi'
 
 /** 에이전트 SVC_TY → 채팅 검색모드 (M=RAG·지식, S=SQL·데이터마트) */
 function agentTypeToSearchMode(svcTy: string): SearchModeValue | null {
@@ -38,7 +32,7 @@ const getChatIndexAgentIconClass = (agent: Agent) => {
 }
 
 const { messages } = useChatSocket()
-const { logRowToMessages, pushQuestionMessage, pushAnswerPlaceholder, getMessagesForVisualization } = useChatMessages()
+const { logRowToMessages, getMessagesForVisualization } = useChatMessages()
 const {
   activeSearchModes,
   selectedChatAgentId,
@@ -59,21 +53,15 @@ const {
   selectModelOptions,
   selectRagDsList,
   selectDmList,
+  knowledgeList,
+  handleSelectKnowledge,
 } = useChatRooms()
-const { ensureWebSocketAndSend } = useChatSocket()
-const { handleUploadChatAttachments, handleMarkChatAttachmentsOrphan } = useChatAttachmentStore()
+const { executeSendPipeline } = useChatSendPipeline()
 
 // API 호출
-const {
-  fetchSelectChatLogList,
-  fetchSelectChatRef,
-  fetchSelectTableDataList,
-  fetchCreateChatLogReaction,
-  fetchSelectKnowledgeList,
-} = useReportsApi()
-const { fetchAgentList } = useAgentApi()
+const { fetchSelectChatLogList, fetchSelectChatRef, fetchSelectTableDataList, fetchSelectAgentListForChat } = useChatApi()
 
-/** /chat 인덱스용 에이전트 목록 (TB_AGT·에이전트 관리와 동일 소스) */
+/** /chat 인덱스용 에이전트 목록 */
 const chatIndexAgents = ref<Agent[]>([])
 const isLoadingChatIndexAgents = ref(true)
 const normalizeChatAgents = (list: Agent[]) =>
@@ -100,34 +88,11 @@ const modalMessage = ref('')
 const modalTitle = ref('')
 const modalPlaceholder = ref('')
 
-// 카테고리 목록
-const knowledgeList = ref<KnowledgeItem[]>([])
-
 // 검색모드 옵션
 const searchModeOptions: SearchModeOption[] = [
   { label: '지식검색(매뉴얼AI)', value: 'M', icon: 'icon-knowledge' },
   { label: '데이터분석(SQL)', value: 'S', icon: 'icon-database' },
 ]
-
-// ============================================
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-// ============================================
-const subOptionsMap: Record<SearchModeValue, SubOption[]> = {
-  M: [
-    { label: '전체', value: 'all' },
-    { label: 'ERP 지식베이스', value: 'erp' },
-    { label: '그룹웨어 지식베이스', value: 'groupware' },
-    { label: '인사관리 지식베이스', value: 'hr' },
-  ],
-  S: [
-    { label: '전체', value: 'all' },
-    { label: '경영 통계 데이터마트', value: 'management' },
-    { label: '재무회계 데이터마트', value: 'finance' },
-    { label: '인사급여 데이터마트', value: 'payroll' },
-    { label: '영업실적 데이터마트', value: 'sales' },
-    { label: '구매자재 데이터마트', value: 'purchase' },
-  ],
-}
 
 export const useChatStore = () => {
   // 채팅 로그 조회 (roomId 기준)
@@ -187,44 +152,18 @@ export const useChatStore = () => {
   // 메시지 전송
   const onSend = async (files: File[] = []): Promise<boolean> => {
     const content = chatMessage.value.trim()
-    if (!content) return false
-    if (isSearchModeMissingSubOptions.value) return false
-    if (!chatRoom.value.roomId) return false
+    if (!content || isSearchModeMissingSubOptions.value || !chatRoom.value.roomId) return false
 
-    const svcTy = resolveSvcTy()
-    const refId = buildRefIdForPayload()
-    const modelId = selectedModelOption.value
-    const agentId = selectedChatAgentId.value ?? ''
-    let attachments: ChatAttachmentMeta[] = []
-    if (files.length > 0) {
-      const uploaded = await handleUploadChatAttachments(files, chatRoom.value.roomId)
-      if (uploaded === null) return false
-      attachments = uploaded
-    }
-    const attachmentsForUi =
-      attachments.length > 0
-        ? files.length === attachments.length
-          ? buildMessageAttachmentsFromUpload(files, attachments)
-          : attachments.map((a) => ({ ...a }))
-        : undefined
-    pushQuestionMessage(content, svcTy, modelId, refId, attachmentsForUi)
-    pushAnswerPlaceholder(svcTy, modelId, refId)
-    chatMessage.value = ''
-
-    const sent = await ensureWebSocketAndSend(
-      buildQuestionPayload({
-        query: content,
-        threadId: chatRoom.value.roomId || '',
-        svcTy,
-        modelId,
-        refId,
-        agentId,
-        attachments,
-      }),
-    )
-    if (!sent && attachments.length > 0) {
-      await handleMarkChatAttachmentsOrphan(attachments)
-    }
+    const sent = await executeSendPipeline({
+      content,
+      roomId: chatRoom.value.roomId,
+      svcTy: resolveSvcTy(),
+      modelId: selectedModelOption.value,
+      refId: buildRefIdForPayload(),
+      agentId: selectedChatAgentId.value ?? '',
+      files,
+    })
+    if (sent) chatMessage.value = ''
     return sent
   }
 
@@ -387,37 +326,18 @@ export const useChatStore = () => {
     }
   }
 
-  // 현재 활성 모드의 서브 옵션 (마지막 선택된 모드 기준)
-  const currentSubOptions = computed<SubOption[]>(() => {
-    if (activeSearchModes.value.length === 0) return []
-    const lastMode = activeSearchModes.value[activeSearchModes.value.length - 1]
-    return subOptionsMap[lastMode] || []
-  })
-
   const activeVisualizationView = computed(() => {
     const messageId = activePanelMessageId.value
     if (!messageId) return null
     return visualizationViewMap.value[messageId] ?? getEmptyVisualizationViewModel(messageId)
   })
 
-  /** 카테고리 목록 조회 */
-  const handleSelectKnowledge = async () => {
-    openLoading({ text: '카테고리 목록을 불러오는 중...' })
-    let res: { dataList: KnowledgeItem[] }
-    try {
-      res = await fetchSelectKnowledgeList()
-    } finally {
-      closeLoading()
-    }
-    knowledgeList.value = res.dataList ?? []
-  }
-
   /** /chat 인덱스 에이전트 버튼 목록 조회 */
   const handleSelectChatIndexAgents = async () => {
     isLoadingChatIndexAgents.value = true
     try {
-      const res = await fetchAgentList()
-      const list = res?.dataList ?? []
+      const res = await fetchSelectAgentListForChat()
+      const list = res?.agentList ?? []
       chatIndexAgents.value = normalizeChatAgents(list)
     } catch {
       chatIndexAgents.value = []
@@ -448,7 +368,6 @@ export const useChatStore = () => {
     selectedSubOptions,
     buildRefIdForPayload,
     selectedModelOption,
-    currentSubOptions,
     knowledgeList,
     isSearchModeMissingSubOptions,
     searchModeSubOptionsEmptyMessage,
@@ -470,11 +389,6 @@ export const useChatStore = () => {
     selectedLogId,
     modalTitle,
     modalPlaceholder,
-    resolveSvcTy,
-    pushQuestionMessage,
-    pushAnswerPlaceholder,
-    ensureWebSocketAndSend,
-    fetchCreateChatLogReaction,
     handleSelectKnowledge,
   }
 }

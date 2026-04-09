@@ -1,19 +1,13 @@
 import type { ChatAttachmentMeta, ChatFileSavePayload, ChatFileSaveResponse } from '~/types/chat'
 import { useFileStore } from '~/composables/com/useFileStore'
 import { formatChatStoreFileNameBase, formatYyyyMmDdFromDate } from '~/utils/global/dateUtil'
+import { getChatAttachmentExtension } from '~/utils/chat/chatAttachmentDisplayUtil'
 
-const { fetchCreateChatFile, fetchMarkChatFileOrphan } = useReportsApi()
-
-const getFileExtension = (fileName: string): string => {
-  const trimmed = fileName.trim()
-  const lastDot = trimmed.lastIndexOf('.')
-  if (lastDot < 0 || lastDot === trimmed.length - 1) return ''
-  return trimmed.slice(lastDot + 1).toLowerCase()
-}
+const { fetchCreateChatFile, fetchMarkChatFileOrphan } = useChatApi()
 
 /** NCP/DB 저장 파일명: yyyyMMddHHmmssSSS + 확장자 */
 const buildStoreFileName = (originalName: string, at: Date): string => {
-  const ext = getFileExtension(originalName)
+  const ext = getChatAttachmentExtension(originalName)
   const base = formatChatStoreFileNameBase(at)
   return ext ? `${base}.${ext}` : base
 }
@@ -77,7 +71,7 @@ export const useChatAttachmentStore = () => {
           storeFileName,
           filePath,
           fileSize: Number(file.size),
-          fileType: getFileExtension(file.name),
+          fileType: getChatAttachmentExtension(file.name),
           mimeType: file.type || 'application/octet-stream',
         }
 

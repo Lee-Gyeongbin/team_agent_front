@@ -9,6 +9,7 @@
   >
     <div class="chat-detail-main flex flex-col s-center">
       <ChatMessageList
+        ref="chatMessageListRef"
         :messages="messages"
         :knowledge-list="knowledgeList"
         @on-copy="onCopy"
@@ -148,6 +149,12 @@ const {
   dislikeReasonOptions,
   selectedDislikeReasonId,
 } = useChatItemActions()
+
+type ChatMessageListExpose = {
+  scrollToBottom: () => void
+}
+
+const chatMessageListRef = ref<ChatMessageListExpose | null>(null)
 // 패널 리사이즈
 const panelWidthPercent = ref(50)
 const isResizing = ref(false)
@@ -202,6 +209,15 @@ watch(
     handleSetChatRoom(roomId)
   },
   { immediate: true },
+)
+
+watch(
+  () => messages.value.length,
+  async (nextLength, prevLength) => {
+    if (nextLength <= prevLength) return
+    await nextTick()
+    chatMessageListRef.value?.scrollToBottom()
+  },
 )
 
 onBeforeRouteLeave((to) => {

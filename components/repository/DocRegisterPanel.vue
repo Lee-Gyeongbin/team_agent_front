@@ -299,10 +299,11 @@ const onSave = async () => {
   }
   // 신규 첨부 파일: 확장자·용량 재검증 (비정상 상태·직접 조작 대비)
   for (const f of form.value.files) {
-    if (f.size > DOC_ATTACH_MAX_BYTES) {
-      openToast({ message: '파일당 최대 50MB까지 첨부할 수 있습니다.', type: 'warning' })
-      return
-    }
+    // TODO : 시연 종료 후 주석 삭제
+    // if (f.size > DOC_ATTACH_MAX_BYTES) {
+    //   openToast({ message: '파일당 최대 50MB까지 첨부할 수 있습니다.', type: 'warning' })
+    //   return
+    // }
     const ext = getFileExtensionLower(f.name)
     if (!ext || !DOC_ATTACH_EXT_SET.has(ext)) {
       openToast({

@@ -7,11 +7,8 @@ import {
   type ModelOption,
   type ChatMessage,
   type KnowledgeItem,
-  type ChatAttachmentMeta,
 } from '~/types/chat'
-import { useChatAttachmentStore } from '~/composables/chat/useChatAttachmentStore'
-import { buildQuestionPayload } from '~/utils/chat/chatSocketPayloadUtil'
-import { buildMessageAttachmentsFromUpload } from '~/utils/chat/chatAttachmentDisplayUtil'
+import { useChatSendPipeline } from '~/composables/chat/useChatSendPipeline'
 import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
 const { user } = useAuth()
 const {
@@ -25,7 +22,7 @@ const {
   fetchDeleteChatRoom,
   fetchSelectSharedChatLogList,
   fetchSelectKnowledgeList,
-} = useReportsApi()
+} = useChatApi()
 const {
   resolveSvcTy,
   activeSearchModes,
@@ -38,9 +35,9 @@ const {
   isSearchModeMissingSubOptions,
   searchModeSubOptionsEmptyMessage,
 } = useChatSearchState()
-const { messages, pushQuestionMessage, pushAnswerPlaceholder, logRowToMessages } = useChatMessages()
-const { ensureWebSocketAndSend, stopChatSocket } = useChatSocket()
-const { handleUploadChatAttachments, handleMarkChatAttachmentsOrphan } = useChatAttachmentStore()
+const { logRowToMessages } = useChatMessages()
+const { stopChatSocket } = useChatSocket()
+const { executeSendPipeline } = useChatSendPipeline()
 
 // 채팅방 관련
 const chatRoom = ref<ChatRoom>({ ...EMPTY_CHAT_ROOM })
@@ -69,14 +66,7 @@ export const useChatRooms = () => {
   // 마지막 로그 기준 검색모드·서브옵션 동기화: C=디폴트([]), M=지식검색, S=데이터분석
   const syncSearchModeFromLastLog = async (lastRow: ChatLogListRow | undefined) => {
     const svcTy = lastRow?.svcTy ?? 'C'
-    const lastAgentId =
-      typeof lastRow?.agentId === 'string'
-        ? lastRow.agentId.trim()
-        : typeof lastRow?.AGENT_ID === 'string'
-          ? lastRow.AGENT_ID.trim()
-          : typeof lastRow?.agtId === 'string'
-            ? lastRow.agtId.trim()
-            : ''
+    const lastAgentId = typeof lastRow?.agentId === 'string' ? lastRow.agentId.trim() : ''
     if (svcTy === 'M') {
       activeSearchModes.value = ['M']
       selectedChatAgentId.value = lastAgentId || null
@@ -144,9 +134,6 @@ export const useChatRooms = () => {
     }
 
     const svcTy = resolveSvcTy()
-    const modelId = selectedModelOption.value
-    const refId = buildRefIdForPayload()
-    const agentId = selectedChatAgentId.value ?? ''
     openLoading({ text: '채팅방을 생성하는 중...' })
     let res: { data: ChatRoom }
     try {
@@ -170,43 +157,19 @@ export const useChatRooms = () => {
       ...chatRoomList.value.filter((room) => normalizeChatRoomId(room.roomId) !== newRoomId),
     ]
 
-    let attachments: ChatAttachmentMeta[] = []
-    if (files.length > 0) {
-      const uploaded = await handleUploadChatAttachments(files, createdRoom.roomId)
-      if (uploaded === null) return false
-      attachments = uploaded
-    }
+    const sent = await executeSendPipeline({
+      content: qContent,
+      roomId: createdRoom.roomId,
+      svcTy,
+      modelId: selectedModelOption.value,
+      refId: buildRefIdForPayload(),
+      agentId: selectedChatAgentId.value ?? '',
+      files,
+      clearMessagesBefore: true,
+    })
+    if (!sent) return false
 
-    const attachmentsForUi =
-      attachments.length > 0
-        ? files.length === attachments.length
-          ? buildMessageAttachmentsFromUpload(files, attachments)
-          : attachments.map((a) => ({ ...a }))
-        : undefined
-
-    messages.value = []
-    pushQuestionMessage(qContent, svcTy, modelId, refId, attachmentsForUi)
-    pushAnswerPlaceholder(svcTy, modelId, refId)
     chatMessage.value = ''
-
-    const sent = await ensureWebSocketAndSend(
-      buildQuestionPayload({
-        query: qContent,
-        threadId: chatRoom.value.roomId,
-        svcTy,
-        modelId,
-        refId,
-        agentId,
-        attachments,
-      }),
-    )
-    if (!sent) {
-      if (attachments.length > 0) {
-        await handleMarkChatAttachmentsOrphan(attachments)
-      }
-      return false
-    }
-
     navigateTo(`/chat/${chatRoom.value.roomId}`)
     return true
   }
@@ -354,19 +317,16 @@ export const useChatRooms = () => {
     openToast({ message: '클립보드에 복사되었습니다.', type: 'success' })
   }
 
-  /** 카테고리 목록 (일반 채팅방과 동일 API) */
-  const loadKnowledgeList = async () => {
+  /** 카테고리 목록 조회 */
+  const handleSelectKnowledge = async () => {
+    openLoading({ text: '카테고리 목록을 불러오는 중...' })
     try {
-      openLoading({ text: '카테고리 목록을 불러오는 중...' })
-      let res: { dataList: KnowledgeItem[] }
-      try {
-        res = await fetchSelectKnowledgeList()
-      } finally {
-        closeLoading()
-      }
+      const res = await fetchSelectKnowledgeList()
       knowledgeList.value = res.dataList ?? []
     } catch {
       knowledgeList.value = []
+    } finally {
+      closeLoading()
     }
   }
 
@@ -390,7 +350,7 @@ export const useChatRooms = () => {
     handleDeleteChatRoom,
     loadSharedChatLog,
     onCopy,
-    loadKnowledgeList,
+    handleSelectKnowledge,
     knowledgeList,
   }
 }

@@ -1,5 +1,6 @@
 import type { ChatSocketMessage, ChatSocketPayload } from '~/types/chat'
 import { useChatMessages } from '~/composables/chat/useChatMessages'
+import { getWebSocketUrl } from '~/utils/chat/chatWebSocketUtil'
 const {
   messages,
   pendingMessageId,
@@ -8,13 +9,6 @@ const {
   finalizeStreamingMessage,
   updateStreamingError,
 } = useChatMessages()
-
-function getWebSocketUrl(): string {
-  if (typeof window === 'undefined') return ''
-  const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
-  const host = import.meta.dev ? 'localhost:8082' : window.location.host
-  return `${protocol}://${host}/ws/chat`
-}
 
 export const useChatSocket = () => {
   // 웹소켓 관련 (WebSocket은 앱 전역에서 단일 인스턴스로 공유)

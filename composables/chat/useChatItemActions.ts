@@ -1,19 +1,13 @@
 import type { ChatMessage } from '~/types/chat'
-import { useChatStore } from '~/composables/chat/useChatStore'
+import { useChatMessages } from '~/composables/chat/useChatMessages'
+import { useChatSearchState } from '~/composables/chat/useChatSearchState'
+import { useChatSendPipeline } from '~/composables/chat/useChatSendPipeline'
 import { copyToClipboard } from '~/utils/global/clipboardUtil'
-import { buildQuestionPayload } from '~/utils/chat/chatSocketPayloadUtil'
-const { messages } = useChatStore()
+const { messages } = useChatMessages()
 const { chatRoom } = useChatRooms()
-const { fetchCreateChatLogReaction, fetchCreateKnowledge } = useReportsApi()
-const {
-  buildRefIdForPayload,
-  selectedModelOption,
-  selectedChatAgentId,
-  resolveSvcTy,
-  pushQuestionMessage,
-  pushAnswerPlaceholder,
-  ensureWebSocketAndSend,
-} = useChatStore()
+const { fetchCreateChatLogReaction, fetchCreateKnowledge } = useChatApi()
+const { buildRefIdForPayload, selectedModelOption, selectedChatAgentId, resolveSvcTy } = useChatSearchState()
+const { executeSendPipeline } = useChatSendPipeline()
 export const useChatItemActions = () => {
   const modalTitle = ref('')
   const modalPlaceholder = ref('')
@@ -107,29 +101,20 @@ export const useChatItemActions = () => {
     }
   }
 
-  /** 동일 질문으로 답변만 다시 받기 — onSend와 동일 파이프라인 (새 logId 쌍 생성) */
+  /** 동일 질문으로 답변만 다시 받기 — 공통 전송 파이프라인 사용 (새 logId 쌍 생성) */
   const onRegenerate = async (id: string) => {
     const question = messages.value.find((m) => m.logId === id && m.type === 'question')
     const content = (question?.qContent ?? '').trim()
-    if (!content) return
-    if (!chatRoom.value.roomId) return
-    const svcTy = question?.svcTy ?? resolveSvcTy()
-    const modelId = typeof question?.modelId === 'string' ? question.modelId : selectedModelOption.value
-    const refId = question?.refId ?? buildRefIdForPayload()
-    const agentId = selectedChatAgentId.value ?? ''
+    if (!content || !chatRoom.value.roomId) return
 
-    pushQuestionMessage(content, svcTy, modelId, refId)
-    pushAnswerPlaceholder(svcTy, modelId, refId)
-    await ensureWebSocketAndSend(
-      buildQuestionPayload({
-        query: content,
-        threadId: chatRoom.value.roomId,
-        svcTy,
-        modelId,
-        refId,
-        agentId,
-      }),
-    )
+    await executeSendPipeline({
+      content,
+      roomId: chatRoom.value.roomId,
+      svcTy: question?.svcTy ?? resolveSvcTy(),
+      modelId: typeof question?.modelId === 'string' ? question.modelId : selectedModelOption.value,
+      refId: question?.refId ?? buildRefIdForPayload(),
+      agentId: typeof question?.agentId === 'string' ? question.agentId : (selectedChatAgentId.value ?? ''),
+    })
   }
 
   // 답변 복사

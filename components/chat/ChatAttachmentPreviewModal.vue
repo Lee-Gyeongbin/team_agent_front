@@ -82,7 +82,7 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const { fetchViewChatFile } = useReportsApi()
+const { fetchViewChatFile } = useChatApi()
 
 const modalTitle = computed(() => props.fileName?.trim() || '첨부 미리보기')
 

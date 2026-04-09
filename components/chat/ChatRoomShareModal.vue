@@ -47,7 +47,7 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const { fetchCreateShareToken } = useReportsApi()
+const { fetchCreateShareToken } = useChatApi()
 
 const shareToken = ref('')
 const isLoading = ref(false)

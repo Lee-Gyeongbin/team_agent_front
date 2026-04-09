@@ -230,8 +230,9 @@
 </template>
 
 <script setup lang="ts">
-import type { ChatPdfPanelProps, ChatRefRow, PdfDocumentProxy, PdfJsLib } from '~/types/chat'
+import type { ChatPdfPanelProps, ChatRefRow, PdfDocumentProxy } from '~/types/chat'
 import { useFileStore } from '~/composables/com/useFileStore'
+import { loadPdfJs } from '~/utils/chat/pdfJsLoader'
 
 const { handleViewFileUrl } = useFileStore()
 
@@ -267,12 +268,6 @@ const parseRelatedPages = (raw: string): number[] => {
 
 const buildDocKey = (docId: string, docFileId: string) => `${docId}::${docFileId}`
 
-/** viewFile.do에 넘길 파일 ID — 서버가 주면 showDocFileId 우선 */
-const effectiveDocFileId = (row: ChatRefRow) => {
-  const s = row.showDocFileId?.trim()
-  return s || row.docFileId
-}
-
 /** 참조 목록 첫 행의 초기 페이지 (showPageNo) */
 const parseInitialShowPageNo = (raw: string | undefined) => {
   if (!raw?.trim()) return 1
@@ -292,19 +287,19 @@ interface RelatedPageEntry {
 const documentList = computed(() =>
   (props.refList ?? []).map((r) => ({
     label: r.docTitle || r.fileName,
-    value: buildDocKey(r.docId, effectiveDocFileId(r)),
+    value: buildDocKey(r.docId, r.docFileId),
   })),
 )
 
 // 현재 선택된 문서 row
 const selectedRef = computed(() =>
-  (props.refList ?? []).find((r) => buildDocKey(r.docId, effectiveDocFileId(r)) === selectedDocKey.value),
+  (props.refList ?? []).find((r) => buildDocKey(r.docId, r.docFileId) === selectedDocKey.value),
 )
 
 // 관련페이지 탭에서 사용할 전체 파일 기준 페이지 목록
 const relatedPageEntries = computed<RelatedPageEntry[]>(() =>
   (props.refList ?? []).flatMap((row) => {
-    const docKey = buildDocKey(row.docId, effectiveDocFileId(row))
+    const docKey = buildDocKey(row.docId, row.docFileId)
     const docLabel = row.docTitle || row.fileName
     return parseRelatedPages(row.relatedPages).map((pageNum, index) => ({
       listKey: `${docKey}:${pageNum}:${index}`,
@@ -337,7 +332,6 @@ const relatedThumbSrcMap = ref<Record<string, string>>({})
 const relatedThumbLoadingMap = ref<Record<string, boolean>>({})
 const relatedDocUrlMap = new Map<string, string>()
 const relatedPdfDocMap = new Map<string, PdfDocumentProxy>()
-let relatedPdfJsLib: PdfJsLib | null = null
 
 const setThumbCanvasRef = (pageNum: number, el: HTMLCanvasElement | null) => {
   if (el) {
@@ -380,41 +374,15 @@ const setRelatedThumbLoading = (activeKey: string, isLoading: boolean) => {
 const getRelatedThumbSrc = (entry: RelatedPageEntry) => relatedThumbSrcMap.value[entry.activeKey] ?? ''
 const isRelatedThumbLoading = (entry: RelatedPageEntry) => relatedThumbLoadingMap.value[entry.activeKey] === true
 
-const loadRelatedPdfJs = async (): Promise<PdfJsLib> => {
-  if (typeof window === 'undefined') {
-    throw new Error('브라우저 환경에서만 PDF 썸네일을 렌더링할 수 있습니다.')
-  }
-  if (relatedPdfJsLib) return relatedPdfJsLib
-
-  if (window.pdfjsLib) {
-    relatedPdfJsLib = window.pdfjsLib
-    return relatedPdfJsLib
-  }
-
-  await new Promise<void>((resolve, reject) => {
-    const script = document.createElement('script')
-    script.src = '/pdfjs/build/pdf.js'
-    script.onload = () => resolve()
-    script.onerror = () => reject(new Error('PDF.js 스크립트를 불러오지 못했습니다.'))
-    document.head.appendChild(script)
-  })
-
-  relatedPdfJsLib = window.pdfjsLib || null
-  if (!relatedPdfJsLib) {
-    throw new Error('PDF.js 라이브러리를 찾을 수 없습니다.')
-  }
-  return relatedPdfJsLib
-}
-
 const getDocRowByKey = (docKey: string) =>
-  (props.refList ?? []).find((r) => buildDocKey(r.docId, effectiveDocFileId(r)) === docKey)
+  (props.refList ?? []).find((r) => buildDocKey(r.docId, r.docFileId) === docKey)
 
 const ensureRelatedDocUrl = async (docKey: string): Promise<string | null> => {
   const cachedUrl = relatedDocUrlMap.get(docKey)
   if (cachedUrl) return cachedUrl
   const row = getDocRowByKey(docKey)
   if (!row) return null
-  const url = await handleViewFileUrl(row.docId, effectiveDocFileId(row))
+  const url = await handleViewFileUrl(row.docId, row.docFileId)
   if (!url) return null
   relatedDocUrlMap.set(docKey, url)
   return url
@@ -425,7 +393,7 @@ const ensureRelatedPdfDoc = async (docKey: string): Promise<PdfDocumentProxy | n
   if (cached) return cached
   const url = await ensureRelatedDocUrl(docKey)
   if (!url) return null
-  const lib = await loadRelatedPdfJs()
+  const lib = await loadPdfJs()
   lib.GlobalWorkerOptions.workerSrc = '/pdfjs/build/pdf.worker.js'
   const loadedPdf = await lib.getDocument({ url }).promise
   relatedPdfDocMap.set(docKey, loadedPdf)
@@ -547,7 +515,7 @@ const loadAndGoToTargetPage = async () => {
   if (!props.open || !selectedRef.value) return
 
   // 1) /com/file/viewFile.do 로 presigned URL 조회
-  const url = await handleViewFileUrl(selectedRef.value.docId, effectiveDocFileId(selectedRef.value))
+  const url = await handleViewFileUrl(selectedRef.value.docId, selectedRef.value.docFileId)
   currentFilePath.value = url || ''
   if (!currentFilePath.value) return
 
@@ -579,13 +547,22 @@ watch(selectedDocKey, async () => {
   await loadAndGoToTargetPage()
 })
 
-// refList가 바뀌면 첫 번째 문서(showDocFileId)·초기 페이지(showPageNo)로 맞춤
+// refList가 바뀌면 초기 문서(showDocFileId)·페이지(showPageNo)로 맞춤
+// showDocFileId = TB_CHAT_LOG.MAIN_DOC_FILE_ID (AI가 가장 관련성 높다고 판단한 파일)
+// showDocFileId와 docFileId가 일치하는 row를 찾아 초기 선택, 없으면 첫 번째 row
 watch(
   () => props.refList,
   (list) => {
     const firstRow = list?.[0]
-    selectedDocKey.value = firstRow ? buildDocKey(firstRow.docId, effectiveDocFileId(firstRow)) : ''
-    pendingTargetPage.value = firstRow ? parseInitialShowPageNo(firstRow.showPageNo) : null
+    if (!firstRow) {
+      selectedDocKey.value = ''
+      pendingTargetPage.value = null
+      return
+    }
+    const showFileId = firstRow.showDocFileId?.trim()
+    const initialRow = showFileId ? (list?.find((r) => r.docFileId === showFileId) ?? firstRow) : firstRow
+    selectedDocKey.value = buildDocKey(initialRow.docId, initialRow.docFileId)
+    pendingTargetPage.value = parseInitialShowPageNo(firstRow.showPageNo)
   },
   { immediate: true },
 )
