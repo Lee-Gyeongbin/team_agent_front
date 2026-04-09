@@ -75,11 +75,13 @@ export const codeGroupColumns: TableColumn[] = [
 
 /** 공통코드 테이블 컬럼 정의 */
 export const codesColumns: TableColumn[] = [
-  { key: 'codeId', label: '코드', width: '120px', align: 'center', headerAlign: 'center' },
-  { key: 'codeNm', label: '코드명', width: '200px', align: 'left', headerAlign: 'center' },
+  { key: 'codeId', label: '코드', width: '50px', align: 'center', headerAlign: 'center' },
+  { key: 'codeNm', label: '코드명', width: '100px', align: 'left', headerAlign: 'center' },
   { key: 'sortOrd', label: '정렬순서', width: '100px', align: 'center', headerAlign: 'center' },
   { key: 'useYn', label: '사용여부', width: '100px', align: 'center', headerAlign: 'center' },
-  { key: 'description', label: '설명', width: '200px', align: 'left', headerAlign: 'center' },
+  { key: 'description', label: '설명', width: '100px', align: 'left', headerAlign: 'center' },
+  { key: 'etc1', label: '추가 정보1', width: '100px', align: 'left', headerAlign: 'center' },
+  { key: 'etc2', label: '추가 정보2', width: '100px', align: 'left', headerAlign: 'center' },
   { key: 'actions', label: '관리', width: '48px', align: 'center', headerAlign: 'center' },
 ]
 

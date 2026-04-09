@@ -1,6 +1,51 @@
 <template>
   <div class="com-setting-section">
     <div class="com-setting-section-title">Agent 기본 설정</div>
+    <div class="agent-theme-action-row">
+      <div class="picker-wrap">
+        <button
+          class="picker-btn"
+          :class="{ 'is-placeholder': isIconUnset }"
+          title="아이콘 선택"
+          @click="isIconModalOpen = true"
+        >
+          <i
+            :class="[selectedIconClassName, 'size-16']"
+            :style="{ color: selectedColorHex }"
+          />
+        </button>
+      </div>
+      <div
+        ref="colorPickerWrapRef"
+        class="picker-wrap"
+      >
+        <button
+          class="picker-btn"
+          :class="{ 'is-placeholder': isColorUnset }"
+          title="색상 선택"
+          @click="toggleColorPicker"
+        >
+          <span
+            class="color-dot"
+            :style="{ backgroundColor: selectedColorHex }"
+          />
+        </button>
+        <div
+          v-if="isColorPickerOpen"
+          class="theme-color-picker"
+        >
+          <button
+            v-for="color in themeColors"
+            :key="color.colorId"
+            class="theme-color-btn"
+            :class="{ 'is-active': modelValue.colorId === color.colorId }"
+            :style="{ backgroundColor: color.colorHex }"
+            :title="color.colorNm"
+            @click="onSelectColor(color.colorId)"
+          />
+        </div>
+      </div>
+    </div>
 
     <!-- Agent 이름 -->
     <div class="com-setting-field-row">
@@ -185,13 +230,26 @@
         />
       </div>
     </template>
+
+    <AgentIconSelectModal
+      :is-open="isIconModalOpen"
+      :icons="themeIcons"
+      :selected-icon-id="modelValue.iconId"
+      :selected-color-hex="selectedColorHex"
+      @close="isIconModalOpen = false"
+      @select="onSelectIcon"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+import { useAgentStore } from '~/composables/agent/useAgentStore'
+
 interface BasicForm {
   agentNm: string
   apiUrlCd: string
+  iconId: string
+  colorId: string
   description: string
   temperature: number
   tempDefaultYn: 'Y' | 'N'
@@ -222,6 +280,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const { themeIcons, themeColors } = useAgentStore()
 
 const emit = defineEmits<{
   'update:modelValue': [value: BasicForm]
@@ -240,9 +299,126 @@ const onRagUpdate = (key: keyof RagForm, value: number) => {
 const onSqlUpdate = (key: keyof SqlForm, value: string | number | 'Y' | 'N') => {
   emit('update:sqlForm', { ...props.sqlForm, [key]: value })
 }
+
+const isIconModalOpen = ref(false)
+const isColorPickerOpen = ref(false)
+const colorPickerWrapRef = ref<HTMLElement | null>(null)
+
+const selectedIconClassName = computed(() => {
+  return themeIcons.value.find((item) => item.iconId === props.modelValue.iconId)?.iconClassNm ?? 'icon-plus'
+})
+
+const selectedColorHex = computed(() => {
+  return themeColors.value.find((item) => item.colorId === props.modelValue.colorId)?.colorHex ?? '#94a3b8'
+})
+
+const isIconUnset = computed(() => !props.modelValue.iconId)
+const isColorUnset = computed(() => !props.modelValue.colorId)
+
+const toggleColorPicker = () => {
+  isColorPickerOpen.value = !isColorPickerOpen.value
+}
+
+const onSelectIcon = (iconId: string) => {
+  onUpdate('iconId', iconId)
+  isIconModalOpen.value = false
+}
+
+const onSelectColor = (colorId: string) => {
+  onUpdate('colorId', colorId)
+  isColorPickerOpen.value = false
+}
+
+const onClickOutside = (event: MouseEvent) => {
+  const target = event.target as Node
+  if (colorPickerWrapRef.value && !colorPickerWrapRef.value.contains(target)) {
+    isColorPickerOpen.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', onClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', onClickOutside)
+})
 </script>
 
 <style lang="scss" scoped>
+.agent-theme-action-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+
+  .picker-wrap {
+    position: relative;
+  }
+
+  .picker-btn {
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #dce4e9;
+    border-radius: $border-radius-base;
+    background: #fff;
+    transition: border-color 0.2s ease;
+
+    &:hover {
+      border-color: #c3ced6;
+    }
+
+    &.is-placeholder {
+      border-style: dashed;
+      border-color: #cbd5e1;
+      background: #f8fafc;
+    }
+  }
+
+  .color-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+}
+
+.theme-color-picker {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  width: fit-content;
+  padding: 6px;
+  border: 1px solid #dce4e9;
+  border-radius: $border-radius-base;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+  z-index: 20;
+}
+
+.theme-color-btn {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+
+  &.is-active {
+    border-color: #0f172a;
+  }
+
+  &:hover {
+    transform: scale(1.08);
+  }
+}
+
 .type-config-row {
   margin-left: calc(var(--label-width) + 12px);
 }

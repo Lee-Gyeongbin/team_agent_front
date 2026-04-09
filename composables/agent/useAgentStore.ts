@@ -1,5 +1,7 @@
 import { useAgentApi } from '~/composables/agent/useAgentApi'
 import type { Agent, AgtDs, AgtDm } from '~/types/agent'
+import type { IconItem, ColorItem } from '~/types/theme.ts'
+import { useThemeApi } from '~/composables/com/useThemeApi'
 
 const {
   fetchAgentList,
@@ -11,6 +13,7 @@ const {
   fetchToggleAgent,
   fetchUpdateAgentOrder,
 } = useAgentApi()
+const { fetchThemeOptions } = useThemeApi()
 
 const agentList = ref<Agent[]>([])
 /** 에이전트 상세 모달 */
@@ -19,6 +22,8 @@ const selectedAgent = ref<Agent | null>(null)
 const modelOptions = ref<{ modelId: string; modelName: string }[]>([])
 /** 드래그 시작 전 원본 순서 스냅샷 */
 const agentListBeforeDrag = ref<Agent[]>([])
+const themeIcons = ref<IconItem[]>([])
+const themeColors = ref<ColorItem[]>([])
 
 /** 에이전트 목록 조회 */
 const handleSelectAgentList = async () => {
@@ -247,12 +252,28 @@ const handleUpdateAgentOrder = async (orderList: { agentId: string; sortOrd: num
   })
 }
 
+/** 테마 옵션 조회 */
+const handleFetchThemeOptions = async () => {
+  try {
+    const res = await fetchThemeOptions()
+    themeIcons.value = res?.iconList ?? []
+    themeColors.value = res?.colorList ?? []
+  } catch {
+    openToast({
+      message: '테마 옵션 조회 실패',
+      type: 'error',
+    })
+  }
+}
+
 export const useAgentStore = () => {
   return {
     agentList,
     isSettingOpen,
     selectedAgent,
     modelOptions,
+    themeIcons,
+    themeColors,
     handleSelectAgentList,
     handleFetchModelOptions,
     handleToggleAgent,
@@ -262,5 +283,6 @@ export const useAgentStore = () => {
     handleDeleteAgent,
     onAgentDragStart,
     handleUpdateAgentOrder,
+    handleFetchThemeOptions,
   }
 }

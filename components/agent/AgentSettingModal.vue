@@ -113,6 +113,8 @@ const form = ref({
 const basicForm = ref({
   agentNm: '',
   apiUrlCd: '',
+  iconId: '',
+  colorId: '',
   description: '',
   sortOrd: 0,
   temperature: 0.7,
@@ -151,6 +153,8 @@ watch(
       basicForm.value = {
         agentNm: props.agent.agentNm,
         apiUrlCd: props.agent.apiUrlCd ?? '',
+        iconId: props.agent.iconId ?? '',
+        colorId: props.agent.colorId ?? '',
         description: props.agent.description,
         sortOrd: props.agent.sortOrd ?? 0,
         temperature: props.agent.temperature ?? 0.1,
@@ -177,6 +181,8 @@ watch(
       basicForm.value = {
         agentNm: '',
         apiUrlCd: '',
+        iconId: '',
+        colorId: '',
         description: '',
         sortOrd: 0,
         temperature: 0.1,

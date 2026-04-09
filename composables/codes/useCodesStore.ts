@@ -367,6 +367,8 @@ export const useCodesStore = () => {
       sortOrd: code.sortOrd,
       useYn,
       description: code.description ?? '',
+      etc1: code.etc1 ?? '',
+      etc2: code.etc2 ?? '',
     }
     try {
       errorMessage.value = ''
