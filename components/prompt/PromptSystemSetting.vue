@@ -21,10 +21,26 @@
       <!-- 상세 설정 타이틀 -->
       <div class="com-setting-section-title is-inline">상세 설정</div>
 
+      <section
+        v-if="form.sysPtYn === 'Y'"
+        class="tmpl-edit-notice"
+        aria-label="시스템 프롬프트 안내"
+      >
+        <i
+          class="icon icon-info size-18 tmpl-edit-notice__icon"
+          aria-hidden="true"
+        />
+        <p class="tmpl-edit-notice__text">
+          ※ 시스템 프롬프트는 시스템 내장형 프롬프트로, LLM 질의 및 선택한 에이전트에 공통으로 적용되는 기본 지침입니다.
+          정보수정에 주의해주세요.
+        </p>
+      </section>
+
       <!-- 프롬프트 명 -->
       <div class="com-setting-field-row">
         <label class="com-setting-label">프롬프트 명</label>
         <UiInput
+          :disabled="form.sysPtYn === 'Y'"
           :model-value="form.promptName"
           size="sm"
           placeholder="프롬프트 명을 입력하세요"
@@ -36,6 +52,7 @@
       <div class="com-setting-field-row">
         <label class="com-setting-label">프롬프트 유형</label>
         <UiSelect
+          :disabled="form.sysPtYn === 'Y'"
           :model-value="form.promptTypeCd"
           :options="typeOptions"
           size="sm"
@@ -123,10 +140,13 @@ const form = computed(() => props.modelValue)
 const typeOptions = ref<{ label: string; value: string }[]>([])
 const initTypeOptions = async () => {
   const codes = await getCodes('PR000001')
-  typeOptions.value = codes.map((item: CodeItem) => ({
-    label: item.codeNm,
-    value: item.codeId,
-  }))
+  typeOptions.value = [
+    { label: '선택', value: '' },
+    ...codes.map((item: CodeItem) => ({
+      label: item.codeNm,
+      value: item.codeId,
+    })),
+  ]
 }
 
 onMounted(() => {
@@ -170,3 +190,29 @@ const onToggleAgentApply = (agentId: string, checked: boolean) => {
     : [...promptAppAgtList.value, { promptId: currentPromptId, agentId, applyYn: nextApplyYn }]
 }
 </script>
+
+<style lang="scss" scoped>
+// TmplFormPanel.vue의 .tmpl-edit-notice와 동일 (내장 템플릿 수정 안내 박스)
+.tmpl-edit-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  background: $color-background;
+}
+
+.tmpl-edit-notice__icon {
+  flex-shrink: 0;
+  color: $color-text-secondary;
+  margin-top: 1px;
+}
+
+.tmpl-edit-notice__text {
+  margin: 0;
+  @include typo($body-small);
+  color: var(--color-primary);
+  line-height: $line-height-base;
+}
+</style>
