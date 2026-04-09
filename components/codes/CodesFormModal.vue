@@ -24,6 +24,21 @@
           placeholder="선택"
         />
       </div>
+
+      <div class="form-row">
+        <label class="form-label">추가 정보1</label>
+        <UiInput
+          v-model="form.etc1"
+          placeholder="추가 정보1 입력"
+        />
+      </div>
+      <div class="form-row">
+        <label class="form-label">추가 정보2</label>
+        <UiInput
+          v-model="form.etc2"
+          placeholder="추가 정보2 입력"
+        />
+      </div>
       <div class="form-row">
         <label class="form-label">설명</label>
         <UiInput
@@ -89,6 +104,8 @@ watch(
       form.sortOrdStr = String(code.sortOrd)
       form.useYn = code.useYn
       form.description = code.description ?? ''
+      form.etc1 = code.etc1 ?? ''
+      form.etc2 = code.etc2 ?? ''
     } else {
       Object.assign(form, saveCodeForm())
     }
@@ -97,7 +114,7 @@ watch(
 )
 
 watch(
-  () => [form.code, form.codeName, form.sortOrdStr, form.useYn, form.description],
+  () => [form.code, form.codeName, form.sortOrdStr, form.useYn, form.description, form.etc1, form.etc2],
   () => {
     modalErrorMessage.value = ''
   },
@@ -141,7 +158,6 @@ const onSubmit = () => {
     white-space: pre-line;
   }
 }
-
 
 .form-row {
   display: flex;
