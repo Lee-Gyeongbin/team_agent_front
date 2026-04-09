@@ -552,9 +552,27 @@ const onCloseDocRegister = () => {
 const onSaveDocument = async (data: Record<string, unknown>): Promise<boolean> => {
   const title = String(data.docTitle ?? '')
   const docId = String(data.docId ?? '').trim()
+  const dsDocCnt = Number(data.dsDocCnt ?? 0)
+  const newFiles = Array.isArray(data.files) ? (data.files as unknown[]).filter((f) => f instanceof File) : []
+  const deleteFileIds = Array.isArray(data.deleteFileIds)
+    ? (data.deleteFileIds as unknown[])
+        .map(String)
+        .map((id) => id.trim())
+        .filter(Boolean)
+    : []
+  const hasAttachedFileChanged = newFiles.length > 0 || deleteFileIds.length > 0
   /** 좌측 트리에서 선택한 카테고리 우선 — useCategoryStore.onCategorySelect와 동일 ref */
   const categoryId = docSelectedCategoryId.value.trim() || String(data.categoryId ?? '')
   try {
+    if (docId && dsDocCnt > 0 && hasAttachedFileChanged) {
+      const confirmedRagFileChange = await openConfirm({
+        title: 'RAG 문서 수정 확인',
+        message:
+          '기존에 이 문서로 RAG가 구축되어 있습니다.\n 첨부파일을 변경하면 RAG결과에 영향이 있을 수 있습니다.\n 계속하시겠습니까?',
+      })
+      if (!confirmedRagFileChange) return false
+    }
+
     // 수정 모드(docId 존재)에서는 중복 체크를 스킵
     if (!docId) {
       const res = await fetchSelectDocumentExistCnt(categoryId, title)
@@ -575,12 +593,7 @@ const onSaveDocument = async (data: Record<string, unknown>): Promise<boolean> =
       files: data.files as File[],
       keywords: String(data.keywords ?? ''),
       refUrl: String(data.refUrl ?? ''),
-      deleteFileIds: Array.isArray(data.deleteFileIds)
-        ? (data.deleteFileIds as unknown[])
-            .map(String)
-            .map((id) => id.trim())
-            .filter(Boolean)
-        : undefined,
+      deleteFileIds: deleteFileIds.length > 0 ? deleteFileIds : undefined,
     })
   } catch (error) {
     openToast({

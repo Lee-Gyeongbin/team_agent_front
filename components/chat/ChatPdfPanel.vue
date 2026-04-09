@@ -77,13 +77,13 @@
       </div>
       <!-- 우: 프린트 + 탭 -->
       <div class="chat-pdf-toolbar-right">
-        <button
+        <!-- <button
           class="chat-pdf-action-btn"
           title="인쇄"
           @click="onPrint"
         >
           <i class="icon-print size-20"></i>
-        </button>
+        </button> -->
         <div class="chat-pdf-tab-group">
           <button
             class="chat-pdf-tab"
