@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import type { IconItem } from '~/types/agent'
+import type { IconItem } from '~/types/theme.ts'
 
 interface Props {
   isOpen: boolean

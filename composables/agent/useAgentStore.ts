@@ -1,5 +1,7 @@
 import { useAgentApi } from '~/composables/agent/useAgentApi'
-import type { Agent, AgtDs, AgtDm, IconItem, ColorItem } from '~/types/agent'
+import type { Agent, AgtDs, AgtDm } from '~/types/agent'
+import type { IconItem, ColorItem } from '~/types/theme.ts'
+import { useThemeApi } from '~/composables/com/useThemeApi'
 
 const {
   fetchAgentList,
@@ -10,8 +12,8 @@ const {
   fetchDeleteAgent,
   fetchToggleAgent,
   fetchUpdateAgentOrder,
-  fetchThemeOptions,
 } = useAgentApi()
+const { fetchThemeOptions } = useThemeApi()
 
 const agentList = ref<Agent[]>([])
 /** 에이전트 상세 모달 */
