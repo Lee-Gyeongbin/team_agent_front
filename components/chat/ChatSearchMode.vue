@@ -29,15 +29,15 @@
         :class="{ 'is-flipped': isOpen }"
       />
     </button>
-    <UiSelect
+    <UiMultiSelect
       v-if="isSearchModeActive && subOptions.length > 0"
       id="sub-option"
-      class="w-155 ref-select"
+      v-model="selectedSubOptions"
       name="sub-option"
-      :model-value="selectedSubOption"
       :options="subOptions"
       size="xlg"
-      @update:model-value="selectedSubOption = String($event)"
+      placeholder="참조 선택"
+      class="w-155 ref-select"
     />
 
     <!-- 드롭다운 -->
@@ -61,7 +61,7 @@
 <script setup lang="ts">
 import type { SearchModeValue } from '~/types/chat'
 
-const { searchModeOptions, activeSearchModes, toggleSearchMode, subOptions, selectedSubOption } = useChatStore()
+const { searchModeOptions, activeSearchModes, toggleSearchMode, subOptions, selectedSubOptions } = useChatStore()
 
 const isOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)

@@ -6,7 +6,7 @@ const { messages } = useChatStore()
 const { chatRoom } = useChatRooms()
 const { fetchCreateChatLogReaction, fetchCreateKnowledge } = useReportsApi()
 const {
-  selectedSubOption,
+  buildRefIdForPayload,
   selectedModelOption,
   resolveSvcTy,
   pushQuestionMessage,
@@ -114,7 +114,7 @@ export const useChatItemActions = () => {
     if (!chatRoom.value.roomId) return
     const svcTy = question?.svcTy ?? resolveSvcTy()
     const modelId = typeof question?.modelId === 'string' ? question.modelId : selectedModelOption.value
-    const refId = question?.refId ?? selectedSubOption.value
+    const refId = question?.refId ?? buildRefIdForPayload()
 
     pushQuestionMessage(content, svcTy, modelId, refId)
     pushAnswerPlaceholder(svcTy, modelId, refId)

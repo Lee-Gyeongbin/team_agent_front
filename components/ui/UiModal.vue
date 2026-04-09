@@ -1,13 +1,9 @@
 <template>
-  <div
-    :class="[positionClass, customClass, { 'is-show': isOpen, 'is-fullscreen': isFullscreen }]"
-    @click.self="handleOverlayClick"
-  >
+  <div :class="[positionClass, customClass, { 'is-show': isOpen, 'is-fullscreen': isFullscreen }]">
     <!-- 오버레이 배경 -->
     <div
       v-if="showOverlay"
       :class="overlayClass"
-      @click="handleOverlayClick"
     ></div>
 
     <!-- 모달 컨텐츠 -->
@@ -134,10 +130,6 @@ const contentStyle = computed(() => {
 
 // 이벤트 핸들러
 const handleClose = () => {
-  emit('close')
-}
-
-const handleOverlayClick = () => {
   emit('close')
 }
 </script>
