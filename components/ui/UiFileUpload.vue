@@ -172,15 +172,15 @@ const getFileExtension = (fileName: string): string => {
 const addFiles = async (newFiles: FileList | File[]) => {
   let arr = Array.from(newFiles)
 
-  // 파일당 용량 제한
-  const overSize = arr.filter((f) => f.size > props.maxSize)
-  arr = arr.filter((f) => f.size <= props.maxSize)
-  if (overSize.length > 0) {
-    openToast({
-      message: `파일당 최대 ${formatSize(props.maxSize)}까지 첨부할 수 있습니다.`,
-      type: 'error',
-    })
-  }
+  // TODO : 시연 종료 후 주석 삭제 (파일당 용량 제한 복구)
+  // const overSize = arr.filter((f) => f.size > props.maxSize)
+  // arr = arr.filter((f) => f.size <= props.maxSize)
+  // if (overSize.length > 0) {
+  //   openToast({
+  //     message: `파일당 최대 ${formatSize(props.maxSize)}까지 첨부할 수 있습니다.`,
+  //     type: 'error',
+  //   })
+  // }
   if (arr.length === 0) return
 
   // 허용 확장자 (드래그 등으로 accept 우회 방지)

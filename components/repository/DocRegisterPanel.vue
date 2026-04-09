@@ -81,13 +81,13 @@
       <!-- 파일첨부 -->
       <div class="url-reg-field">
         <label class="url-reg-label">파일첨부</label>
+        <!-- TODO : 시연 종료 후 파일 용량 제한(max-size) 복구 -->
         <UiFileUpload
           v-model="form.files"
           :attached-file-list="form.attachedFileList"
           :is-downloadable="true"
           :max-files="5"
           accept=".txt,.pptx,.pdf,.docx,.hwp"
-          :max-size="DOC_ATTACH_MAX_BYTES"
           :allowed-extensions="DOC_ATTACH_ALLOWED_EXT"
           hint="TXT, PPTX, PDF, DOCX, HWP만 첨부 가능 (파일당 최대 50MB)"
           @remove-attached-file="onRemoveAttachedFile"
@@ -164,8 +164,7 @@ const emit = defineEmits<{
 const { categoryList } = useCategoryStore()
 const { secLvlOptions, onSaveDocument, docSelectedCategoryId } = useRepositoryStore()
 
-/** 문서 등록 패널 첨부: 허용 확장자·용량 (UiFileUpload·저장 시 동일 기준) */
-const DOC_ATTACH_MAX_BYTES = 50 * 1024 * 1024
+/** 문서 등록 패널 첨부: 허용 확장자 */
 const DOC_ATTACH_ALLOWED_EXT = ['txt', 'pptx', 'pdf', 'docx', 'hwp']
 const DOC_ATTACH_EXT_SET = new Set(DOC_ATTACH_ALLOWED_EXT)
 
@@ -297,13 +296,8 @@ const onSave = async () => {
     focusField(categoryFieldRef)
     return
   }
-  // 신규 첨부 파일: 확장자·용량 재검증 (비정상 상태·직접 조작 대비)
+  // 신규 첨부 파일: 확장자 재검증 (비정상 상태·직접 조작 대비)
   for (const f of form.value.files) {
-    // TODO : 시연 종료 후 주석 삭제
-    // if (f.size > DOC_ATTACH_MAX_BYTES) {
-    //   openToast({ message: '파일당 최대 50MB까지 첨부할 수 있습니다.', type: 'warning' })
-    //   return
-    // }
     const ext = getFileExtensionLower(f.name)
     if (!ext || !DOC_ATTACH_EXT_SET.has(ext)) {
       openToast({
