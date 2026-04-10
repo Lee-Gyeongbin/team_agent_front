@@ -76,6 +76,14 @@ const modalPlaceholder = ref('')
 const iconOptions = ref<IconItem[]>([])
 const colorOptions = ref<ColorItem[]>([])
 
+/** /chat 인덱스 에이전트 카드 서브타이틀 — svcTy 기반 */
+const SVC_TY_SUB_LABEL: Record<string, string> = {
+  M: '문서검색증강(RAG) Agent',
+  S: '검색모드-to-SQL Agent',
+  T: '실시간 음성인식(STT) Agent',
+}
+const getChatIndexAgentSubLabel = (agent: Agent) => SVC_TY_SUB_LABEL[agent.svcTy] ?? ''
+
 /** /chat 인덱스 에이전트 버튼 아이콘 — 테마 iconId 매칭 우선, 없으면 SVC_TY 기본 아이콘 */
 const getChatIndexAgentIconClass = (agent: Agent) => {
   const id = agent.iconId?.trim()
@@ -84,6 +92,27 @@ const getChatIndexAgentIconClass = (agent: Agent) => {
     if (iconClass?.trim()) return iconClass.trim()
   }
   return 'icon-search'
+}
+
+/** /chat 인덱스 에이전트 카드 아이콘 색상 스타일 — colorId 기반 */
+const hexToRgb = (hex: string) => {
+  const h = hex.replace('#', '')
+  return `${parseInt(h.substring(0, 2), 16)}, ${parseInt(h.substring(2, 4), 16)}, ${parseInt(h.substring(4, 6), 16)}`
+}
+
+const getChatIndexAgentColorStyle = (agent: Agent) => {
+  const id = agent.colorId?.trim()
+  if (id) {
+    const matched = colorOptions.value.find((item) => item.colorId === id)
+    if (matched?.colorHex?.trim()) {
+      const hex = matched.colorHex.trim()
+      return {
+        '--card-icon-color': hex,
+        '--card-icon-bg': `rgba(${hexToRgb(hex)}, 0.12)`,
+      }
+    }
+  }
+  return {}
 }
 
 export const useChatStore = () => {
@@ -370,6 +399,8 @@ export const useChatStore = () => {
     chatIndexAgents,
     isLoadingChatIndexAgents,
     getChatIndexAgentIconClass,
+    getChatIndexAgentSubLabel,
+    getChatIndexAgentColorStyle,
     subOptions,
     selectedSubOptions,
     buildRefIdForPayload,

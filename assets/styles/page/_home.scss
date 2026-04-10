@@ -27,9 +27,162 @@
     position: relative;
     z-index: 1;
     width: 100%;
+    margin-bottom: 40px;
   }
 
-  .btn-grp {
-    gap: 11px;
+  // 에이전트 카드
+  .chat-index-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 140px;
+    padding: 12px;
+    border-radius: $border-radius-lg;
+    border: 1px solid #dce4e9;
+    background: #fff;
+    cursor: pointer;
+    transition:
+      border-color $transition-base,
+      background $transition-base;
+    overflow: hidden;
+
+    &:hover {
+      border: 2px solid #3c69db;
+      background: #f1f6fe;
+
+      .chat-index-card-default {
+        opacity: 0;
+        visibility: hidden;
+      }
+
+      .chat-index-card-hover {
+        opacity: 1;
+        visibility: visible;
+      }
+    }
+
+    &.is-active {
+      border: 2px solid #3c69db;
+    }
+
+    .icon-circle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      flex-shrink: 0;
+      border-radius: $border-radius-lg;
+      background: var(--card-icon-bg, var(--color-primary-bg));
+      color: var(--card-icon-color, var(--color-primary));
+    }
+
+    .chat-index-card-name {
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 150%;
+      color: #2d3139;
+      text-align: center;
+    }
+
+    .chat-index-card-sub {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 22px;
+      padding: 0 8px;
+      border-radius: 24px;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 150%;
+      color: #6f7a93;
+      text-align: center;
+    }
+  }
+
+  .chat-index-card-default {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transition:
+      opacity $transition-base,
+      visibility $transition-base;
+
+    .chat-index-card-info {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+  }
+
+  .chat-index-card-hover {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    background: #f1f6fe;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity $transition-base,
+      visibility $transition-base;
+
+    .chat-index-card-hover-desc {
+      flex: 1;
+      font-size: 11px;
+      font-weight: 500;
+      line-height: 150%;
+      color: #2d3139;
+      text-align: left;
+      @include ellipsis(5);
+      word-break: keep-all;
+    }
+
+    .chat-index-card-hover-action {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      width: 100%;
+      height: 24px;
+      padding: 8px;
+      border-radius: $border-radius-base;
+      background: #6f7a93;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 150%;
+      color: #fff;
+
+      i {
+        width: 12px;
+        height: 12px;
+        color: #fff;
+      }
+    }
+  }
+
+  // 에이전트 카드 그리드 (4열, 개수에 따라 행 자동 증가)
+  .chat-index-card-grp {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    width: 100%;
+
+    // 3개 이하일 때 flex 균등 분배
+    &.is-few {
+      display: flex;
+
+      .chat-index-card {
+        flex: 1;
+      }
+    }
   }
 }
