@@ -490,10 +490,6 @@
   // 응답 영역 — 우상단 복사/SQL 버튼과 텍스트 겹침 방지 + 마크다운(채팅 assistant 본문과 동일 시각)
   .content-box.type-response .message-content {
     padding-right: 70px;
-    line-height: 1.5em;
-    color: #2d3139;
-    font-size: $font-size-lg;
-    font-weight: 500;
     width: 100%;
 
     p + p,
@@ -515,6 +511,7 @@
     }
 
     &.markdown-body {
+      font-size: $font-size-base;
       line-height: $line-height-relaxed;
       min-height: 60px;
       max-width: 100%;
