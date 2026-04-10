@@ -364,6 +364,7 @@ const onPrintReport = () => {
   gap: $spacing-md;
   width: 100%;
   min-width: 0;
+  padding-bottom: 6px;
 }
 
 .library-create-doc-report-lead-row {

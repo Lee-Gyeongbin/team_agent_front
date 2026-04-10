@@ -1,16 +1,18 @@
 <template>
   <div
     class="ui-datepicker-wrap"
-    :class="{ 'has-time': type === 'datetime' }"
+    :class="{ 'has-time': type === 'datetime', 'is-month': type === 'month' }"
   >
     <DatePickerRoot
       v-model="internalDate"
       v-model:placeholder="calendarPlaceholder"
+      :open="type === 'month' ? monthPickerOpen : undefined"
       :locale="locale"
-      granularity="day"
+      :granularity="pickerGranularity"
       :disabled="disabled"
       :min-value="minValue"
       :max-value="maxValue"
+      @update:open="onRootOpenUpdate"
     >
       <DatePickerField
         v-slot="{ segments }"
@@ -72,7 +74,92 @@
         class="ui-datepicker-popover"
         :side-offset="4"
       >
+        <!-- type=month: 일 그리드 대신 월 선택 (granularity=month는 필드 세그먼트만 처리, 캘린더는 day 고정) -->
+        <div
+          v-if="type === 'month'"
+          class="ui-datepicker-month-panel"
+        >
+          <div class="ui-datepicker-header ui-datepicker-header--month">
+            <button
+              type="button"
+              class="ui-datepicker-nav"
+              :disabled="disabled || isPrevYearDisabled"
+              aria-label="이전 연도"
+              @click="onMonthPanelPrevYear"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+              >
+                <path
+                  d="M10 4l-4 4 4 4"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+
+            <UiSelect
+              class="ui-datepicker-select ui-datepicker-select--year-only"
+              :model-value="String(calendarPlaceholder?.year)"
+              :options="yearSelectOptions"
+              size="xs"
+              :disabled="disabled"
+              @update:model-value="onYearSelect"
+            />
+
+            <button
+              type="button"
+              class="ui-datepicker-nav"
+              :disabled="disabled || isNextYearDisabled"
+              aria-label="다음 연도"
+              @click="onMonthPanelNextYear"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+              >
+                <path
+                  d="M6 4l4 4-4 4"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <div
+            class="ui-datepicker-month-grid"
+            role="grid"
+            :aria-label="`${calendarPlaceholder?.year}년 월 선택`"
+          >
+            <button
+              v-for="m in monthGridValues"
+              :key="m"
+              type="button"
+              role="gridcell"
+              class="ui-datepicker-month-cell"
+              :disabled="disabled || isMonthOutOfRange(calendarPlaceholder?.year ?? now.getFullYear(), m)"
+              :class="{
+                'is-selected': isMonthCellSelected(calendarPlaceholder?.year ?? now.getFullYear(), m),
+              }"
+              @click="onSelectMonth(m)"
+            >
+              {{ m }}월
+            </button>
+          </div>
+        </div>
+
         <DatePickerCalendar
+          v-else
           v-slot="{ weekDays, grid }"
           class="ui-datepicker-calendar"
         >
@@ -182,7 +269,7 @@
         maxlength="2"
         placeholder="00"
         :disabled="disabled"
-        @focus="($event.target as HTMLInputElement).select()"
+        @focus="onTimeFieldFocus"
         @blur="onTimeBlur($event, 'hour')"
         @keydown="onTimeKeydown($event, 'hour')"
       />
@@ -193,7 +280,7 @@
         maxlength="2"
         placeholder="00"
         :disabled="disabled"
-        @focus="($event.target as HTMLInputElement).select()"
+        @focus="onTimeFieldFocus"
         @blur="onTimeBlur($event, 'minute')"
         @keydown="onTimeKeydown($event, 'minute')"
       />
@@ -219,12 +306,12 @@ import {
   DatePickerRoot,
   DatePickerTrigger,
 } from 'radix-vue'
-import { CalendarDate, CalendarDateTime, type DateValue } from '@internationalized/date'
+import { CalendarDate, CalendarDateTime, endOfMonth, toCalendarDate, type DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
 
 interface Props {
   modelValue?: DateValue
-  type?: 'date' | 'datetime'
+  type?: 'date' | 'datetime' | 'month'
   size?: 'xs' | 'sm' | 'md' | 'lg'
   disabled?: boolean
   locale?: string
@@ -246,6 +333,42 @@ const emit = defineEmits<{
   'update:modelValue': [value: DateValue | undefined]
 }>()
 
+/** date/datetime → day, month → month (입력 세그먼트에서 일 숨김) — radix-vue DatePickerRoot Granularity 타입에 month 미기재 */
+const pickerGranularity = computed(() => (props.type === 'month' ? 'month' : 'day') as never)
+
+/** month 타입만 팝업 open 제어(월 선택 후 닫기) */
+const monthPickerOpen = ref(false)
+
+const onRootOpenUpdate = (open: boolean) => {
+  if (props.type === 'month') {
+    monthPickerOpen.value = open
+  }
+}
+
+const monthGridValues = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const
+
+/** 해당 연·월이 min/max와 겹치는 날이 하나도 없으면 비활성 */
+const isMonthOutOfRange = (year: number, month: number) => {
+  const monthStart = new CalendarDate(year, month, 1)
+  const monthEnd = toCalendarDate(endOfMonth(monthStart))
+  if (props.minValue) {
+    const minD = toCalendarDate(props.minValue)
+    if (monthEnd.compare(minD) < 0) return true
+  }
+  if (props.maxValue) {
+    const maxD = toCalendarDate(props.maxValue)
+    if (monthStart.compare(maxD) > 0) return true
+  }
+  return false
+}
+
+const isMonthCellSelected = (year: number, month: number) => {
+  const v = props.modelValue
+  if (!v || props.type !== 'month') return false
+  const cd = toCalendarDate(v)
+  return cd.year === year && cd.month === month
+}
+
 // ===== 시간 입력 (datetime 전용) =====
 const timeHour = ref(0)
 const timeMinute = ref(0)
@@ -253,7 +376,7 @@ const timeMinute = ref(0)
 // modelValue 변경 시 시간 동기화
 watch(
   () => props.modelValue,
-  (v) => {
+  (v: DateValue | undefined) => {
     if (v && 'hour' in v) {
       const dt = v as CalendarDateTime
       timeHour.value = dt.hour
@@ -265,6 +388,11 @@ watch(
 
 const timeHourDisplay = computed(() => String(timeHour.value).padStart(2, '0'))
 const timeMinuteDisplay = computed(() => String(timeMinute.value).padStart(2, '0'))
+
+const onTimeFieldFocus = (e: FocusEvent) => {
+  const el = e.target as HTMLInputElement
+  el.select()
+}
 
 const emitDateTime = () => {
   const v = props.modelValue
@@ -319,9 +447,13 @@ const internalDate = computed({
     if (props.type === 'datetime') {
       return new CalendarDate(v.year, v.month, v.day)
     }
+    // month: 항상 1일로 정규화 (granularity=month 와 값 일치)
+    if (props.type === 'month') {
+      return new CalendarDate(v.year, v.month, 1)
+    }
     return v
   },
-  set: (val) => {
+  set: (val: DateValue | undefined) => {
     if (!val) {
       emit('update:modelValue', undefined)
       return
@@ -329,6 +461,8 @@ const internalDate = computed({
     // datetime 모드에서는 시간 값과 결합
     if (props.type === 'datetime') {
       emit('update:modelValue', new CalendarDateTime(val.year, val.month, val.day, timeHour.value, timeMinute.value))
+    } else if (props.type === 'month') {
+      emit('update:modelValue', new CalendarDate(val.year, val.month, 1))
     } else {
       emit('update:modelValue', val)
     }
@@ -340,7 +474,7 @@ const now = new Date()
 const calendarPlaceholder = ref(new CalendarDate(now.getFullYear(), now.getMonth() + 1, 1)) as Ref<DateValue>
 
 // 년도 옵션 (현재 기준 ±10년)
-const yearOptions = computed(() => {
+const yearOptions = computed((): number[] => {
   const current = calendarPlaceholder.value?.year ?? now.getFullYear()
   const years: number[] = []
   for (let y = current - 10; y <= current + 10; y++) {
@@ -350,9 +484,7 @@ const yearOptions = computed(() => {
 })
 
 // UiSelect용 옵션
-const yearSelectOptions = computed(() =>
-  yearOptions.value.map((y) => ({ label: `${y}년`, value: String(y) })),
-)
+const yearSelectOptions = computed(() => yearOptions.value.map((y: number) => ({ label: `${y}년`, value: String(y) })))
 
 const monthSelectOptions = computed(() =>
   Array.from({ length: 12 }, (_, i) => ({ label: `${i + 1}월`, value: String(i + 1) })),
@@ -369,6 +501,40 @@ const onMonthSelect = (val: string | number) => {
   const year = calendarPlaceholder.value?.year ?? now.getFullYear()
   calendarPlaceholder.value = new CalendarDate(year, month, 1)
 }
+
+// ===== 월 선택 패널 (type=month, placeholder 이후) =====
+const onSelectMonth = (month: number) => {
+  const y = calendarPlaceholder.value?.year ?? now.getFullYear()
+  if (isMonthOutOfRange(y, month)) return
+  const next = new CalendarDate(y, month, 1)
+  emit('update:modelValue', next)
+  calendarPlaceholder.value = next
+  monthPickerOpen.value = false
+}
+
+const onMonthPanelPrevYear = () => {
+  const ph = calendarPlaceholder.value
+  if (!ph) return
+  calendarPlaceholder.value = ph.subtract({ years: 1 })
+}
+
+const onMonthPanelNextYear = () => {
+  const ph = calendarPlaceholder.value
+  if (!ph) return
+  calendarPlaceholder.value = ph.add({ years: 1 })
+}
+
+const isPrevYearDisabled = computed(() => {
+  if (!props.minValue || !calendarPlaceholder.value) return false
+  const minY = toCalendarDate(props.minValue).year
+  return (calendarPlaceholder.value.year ?? 0) <= minY
+})
+
+const isNextYearDisabled = computed(() => {
+  if (!props.maxValue || !calendarPlaceholder.value) return false
+  const maxY = toCalendarDate(props.maxValue).year
+  return (calendarPlaceholder.value.year ?? 0) >= maxY
+})
 </script>
 
 <!-- 글로벌: Radix 내부 요소에 scoped가 적용 안 되므로 -->
@@ -684,6 +850,75 @@ const onMonthSelect = (val: string | number) => {
   &[data-unavailable] {
     color: $color-text-disabled;
     text-decoration: line-through;
+  }
+}
+
+// 월 선택 패널 (type=month)
+.ui-datepicker-month-panel {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  min-width: 260px;
+}
+
+.ui-datepicker-header--month {
+  justify-content: center;
+  gap: $spacing-sm;
+}
+
+.ui-datepicker-select--year-only.ui-datepicker-select {
+  flex: 1;
+  min-width: 0;
+  max-width: 140px;
+}
+
+.ui-datepicker-month-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: $spacing-xs;
+}
+
+.ui-datepicker-month-cell {
+  height: 40px;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  background: #fff;
+  @include typo($body-small);
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+  cursor: pointer;
+  outline: none;
+  transition:
+    background $transition-fast,
+    border-color $transition-fast,
+    color $transition-fast;
+
+  &:hover:not(:disabled) {
+    border-color: var(--color-primary);
+    background: $color-background;
+  }
+
+  &:focus-visible {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(60, 105, 219, 0.2);
+  }
+
+  &.is-selected {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+    font-weight: $font-weight-bold;
+
+    &:hover:not(:disabled) {
+      background: var(--color-primary-hover);
+      border-color: var(--color-primary-hover);
+    }
+  }
+
+  &:disabled {
+    color: $color-text-disabled;
+    cursor: not-allowed;
+    opacity: 0.5;
   }
 }
 </style>

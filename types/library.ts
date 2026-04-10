@@ -52,6 +52,10 @@ export interface LibraryCardDetail {
   qcontent: string
   rcontent: string
   ttsq: string
+  agentId: string
+  agentNm: string
+  iconClassNm: string
+  colorHex: string
 }
 
 /** 문서 항목 */
