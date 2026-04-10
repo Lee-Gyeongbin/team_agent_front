@@ -90,7 +90,10 @@
       />
     </div>
 
-    <div class="com-setting-row type-config-row">
+    <div
+      v-if="svcTy === 'M' || svcTy === 'S'"
+      class="com-setting-row type-config-row"
+    >
       <div class="type-config-col">
         <label class="com-setting-label">Temperature</label>
         <div class="type-config-option">

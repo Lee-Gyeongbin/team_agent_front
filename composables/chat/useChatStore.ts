@@ -9,6 +9,7 @@ import { useChatSendPipeline } from '~/composables/chat/useChatSendPipeline'
 import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
 import { clearBodyChartFullscreen } from '~/utils/chat/visualizationChartUtil'
 import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
+import { getCodes } from '~/utils/global/comCodesUtil'
 
 /** 에이전트 SVC_TY → 채팅 검색모드 (M=RAG·지식, S=SQL·데이터마트) */
 function agentTypeToSearchMode(svcTy: string): SearchModeValue | null {
@@ -59,7 +60,9 @@ const { fetchSelectChatLogList, fetchSelectChatRef, fetchSelectTableDataList, fe
 const chatIndexAgents = ref<Agent[]>([])
 const isLoadingChatIndexAgents = ref(true)
 const normalizeChatAgents = (list: Agent[]) =>
-  list.filter((a) => a.useYn === 'Y' && (a.svcTy === 'M' || a.svcTy === 'S')).sort((a, b) => a.sortOrd - b.sortOrd)
+  list
+    .filter((a) => a.useYn === 'Y' && (a.svcTy === 'M' || a.svcTy === 'S' || a.svcTy === 'T'))
+    .sort((a, b) => a.sortOrd - b.sortOrd)
 
 const selectedLogId = ref<string | null>(null)
 // pdf 뷰어 or 시각화
@@ -265,6 +268,11 @@ export const useChatStore = () => {
 
   /** 에이전트 관리 목록 기준 모드 선택 (/chat 인덱스 버튼) — 동일 모드 여러 에이전트 간 전환 지원 */
   const selectChatIndexAgent = async (agent: Agent) => {
+    if (agent.svcTy === 'T') {
+      // 링크형 에이전트
+      await handleOpenAgentLink(agent)
+      return
+    }
     const mode = agentTypeToSearchMode(agent.svcTy)
     if (!mode) {
       openToast({ message: '채팅에 연결할 수 없는 에이전트 유형입니다.', type: 'warning' })
@@ -306,6 +314,28 @@ export const useChatStore = () => {
       openToast({ message: '에이전트 목록을 불러오지 못했습니다.', type: 'error' })
     } finally {
       isLoadingChatIndexAgents.value = false
+    }
+  }
+
+  /** 링크형 에이전트 외부 링크 열기 */
+  const handleOpenAgentLink = async (agent: Agent): Promise<boolean> => {
+    if (!agent.apiUrlCd?.trim()) {
+      openToast({ message: '연결 링크 코드가 설정되지 않았습니다.', type: 'warning' })
+      return false
+    }
+    try {
+      const codes = await getCodes('AA000001') // 링크형 에이전트 API_URL_CD 코드 그룹 ID
+      const row = codes.find((c) => c.codeId === agent.apiUrlCd && c.useYn === 'Y')
+      const link = row?.etc1?.trim()
+      if (!link) {
+        openToast({ message: '연결 링크를 찾을 수 없습니다.', type: 'error' })
+        return false
+      }
+      window.open(link, '_blank', 'noopener,noreferrer')
+      return true
+    } catch {
+      openToast({ message: '연결 정보를 불러오지 못했습니다.', type: 'error' })
+      return false
     }
   }
 

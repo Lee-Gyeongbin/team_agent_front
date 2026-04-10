@@ -27,7 +27,7 @@
 
       <!-- 섹션3: 데이터 연결 (svcTy 기반 분기) -->
       <AgentSettingData
-        v-if="form.svcTy"
+        v-if="form.svcTy === 'M' || form.svcTy === 'S'"
         ref="settingDataRef"
         :svc-ty="form.svcTy"
         :dataset-list="localDatasetList"
