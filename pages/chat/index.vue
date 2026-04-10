@@ -1,5 +1,5 @@
 <template>
-  <div class="chat-index flex flex-col items-center justify-center s-center">
+  <div class="chat-index s-center">
     <div
       class="chat-index-header"
       data-aos="fade-up"

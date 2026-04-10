@@ -771,59 +771,112 @@
   }
 }
 
-.chat-search-mode-dropdown {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-
-  // chat/[id] 상세 페이지에서는 위로 열기
-  .chat-detail & {
-    top: auto;
-    bottom: calc(100% + 4px);
-  }
-  display: flex;
-  flex-direction: column;
-  padding: 8px;
-  background: #fff;
-  border: 1px solid #c6d2db;
-  border-radius: $border-radius-sm;
-  z-index: $z-overlay;
+// 모드 선택 오버레이 (dim)
+.chat-mode-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: $z-toast;
 }
 
-.chat-search-mode-item {
+// 모드 선택 슬라이드업 패널
+.chat-mode-panel {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: $z-toast + 1;
+  max-height: 70vh;
+  padding: 24px 40px 40px;
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  box-shadow: $shadow-lg;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.chat-mode-panel-header {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
-  width: 152px;
+  justify-content: space-between;
+  width: 100%;
+  max-width: $chat-max-width;
+  margin-bottom: 24px;
+}
+
+.chat-mode-panel-title {
+  @include typo($body-large-bold);
+  color: $color-text-dark;
+}
+
+.chat-mode-panel-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
   height: 32px;
-  padding: 4px 8px;
   border: none;
   border-radius: $border-radius-sm;
   background: transparent;
-  color: $color-text-dark;
-  @include typo($body-medium);
-  text-align: left;
+  color: $color-text-muted;
   cursor: pointer;
   transition: background $transition-fast;
-
-  // 아이콘을 mask 방식으로 오버라이드 (SVG에 파란색 하드코딩 대응)
-  i {
-    background-image: none;
-    background-color: #6f7a93;
-  }
-
-  .icon-knowledge {
-    @include icon-file-bg('knowledge');
-  }
-
-  .icon-database {
-    @include icon-file-bg('database');
-  }
 
   &:hover {
     background: #ecf0f3;
   }
+}
+
+.chat-mode-panel-card-grp {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  width: 100%;
+  max-width: $chat-max-width;
+  overflow-y: auto;
+  // 카드 160px * 3행 + gap 12px * 2 = 504px
+  max-height: calc(160px * 3 + 12px * 2);
+  @include custom-scrollbar;
+
+  .chat-index-card {
+    height: 160px;
+  }
+
+  // 3개 이하일 때 flex 균등 분배
+  &:has(.chat-index-card:nth-child(4)) {
+    // 4개 이상이면 grid 유지
+  }
+
+  &:not(:has(.chat-index-card:nth-child(4))) {
+    display: flex;
+
+    .chat-index-card {
+      flex: 1;
+    }
+  }
+}
+
+// fade 트랜지션 (오버레이)
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity $transition-base;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+// slide-up 트랜지션 (패널)
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: transform $transition-slow;
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+  transform: translateY(100%);
 }
 
 // ===================================

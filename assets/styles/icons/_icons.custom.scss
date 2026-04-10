@@ -359,15 +359,15 @@
 
 // 에이전트 카드 아이콘
 .icon-agent-knowledge {
-  @include icon-file('agent-knowledge');
+  @include icon-file-bg('agent-knowledge');
 }
 
 .icon-agent-database {
-  @include icon-file('agent-database');
+  @include icon-file-bg('agent-database');
 }
 
 .icon-agent-microphone {
-  @include icon-file('agent-microphone');
+  @include icon-file-bg('agent-microphone');
 }
 
 // 마이너스 (줌아웃)
