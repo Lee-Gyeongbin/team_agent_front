@@ -41,6 +41,17 @@ const buildAttachmentsForUi = (
   return attachments.map((a) => ({ ...a }))
 }
 
+/**
+ * 메시지 전송 파이프라인 실행
+ * @param params - 전송 파이프라인 파라미터
+ * @returns 전송 성공 여부
+ * @description
+ * 1. 첨부 업로드 (있을 경우)
+ * 2. UI용 첨부 메타 생성
+ * 3. question + answer placeholder 메시지 push
+ * 4. WebSocket 전송
+ * 5. 실패 시 orphan 처리
+ */
 const executeSendPipeline = async (params: SendPipelineParams): Promise<boolean> => {
   const { content, roomId, svcTy, modelId, refId, agentId, files = [], clearMessagesBefore = false } = params
 

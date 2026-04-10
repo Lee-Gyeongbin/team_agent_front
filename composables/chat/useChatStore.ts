@@ -72,18 +72,25 @@ const modalMessage = ref('')
 const modalTitle = ref('')
 const modalPlaceholder = ref('')
 
-// 버튼 테마 옵션
-const iconOptions = ref<IconItem[]>([])
-const colorOptions = ref<ColorItem[]>([])
+/** /chat 인덱스 에이전트 카드 서브타이틀 — svcTy 기반 */
+const SVC_TY_SUB_LABEL: Record<string, string> = {
+  M: '문서검색증강(RAG) Agent',
+  S: '검색모드-to-SQL Agent',
+  T: '실시간 음성인식(STT) Agent',
+}
+const getChatIndexAgentSubLabel = (agent: Agent) => SVC_TY_SUB_LABEL[agent.svcTy] ?? ''
 
-/** /chat 인덱스 에이전트 버튼 아이콘 — 테마 iconId 매칭 우선, 없으면 SVC_TY 기본 아이콘 */
-const getChatIndexAgentIconClass = (agent: Agent) => {
-  const id = agent.iconId?.trim()
-  if (id) {
-    const iconClass = iconOptions.value.find((item) => item.iconId === id)?.iconClassNm
-    if (iconClass?.trim()) return iconClass.trim()
+/** /chat 인덱스 에이전트 카드 아이콘 색상 스타일 — colorId 기반 */
+const hexToRgb = (hex: string) => {
+  const h = hex.replace('#', '')
+  return `${parseInt(h.substring(0, 2), 16)}, ${parseInt(h.substring(2, 4), 16)}, ${parseInt(h.substring(4, 6), 16)}`
+}
+
+const getChatIndexAgentColorStyle = (colorHex: string) => {
+  return {
+    '--card-icon-color': colorHex,
+    '--card-icon-bg': `rgba(${hexToRgb(colorHex)}, 0.12)`,
   }
-  return 'icon-search'
 }
 
 export const useChatStore = () => {
@@ -325,13 +332,6 @@ export const useChatStore = () => {
     }
   }
 
-  /** 버튼 테마 옵션 조회 */
-  const handleThemeInit = async () => {
-    const res = await useThemeApi().fetchThemeOptions()
-    iconOptions.value = res.iconList ?? []
-    colorOptions.value = res.colorList ?? []
-  }
-
   /** 링크형 에이전트 외부 링크 열기 */
   const handleOpenAgentLink = async (agent: Agent): Promise<boolean> => {
     if (!agent.apiUrlCd?.trim()) {
@@ -369,7 +369,8 @@ export const useChatStore = () => {
     selectedChatAgentId,
     chatIndexAgents,
     isLoadingChatIndexAgents,
-    getChatIndexAgentIconClass,
+    getChatIndexAgentSubLabel,
+    getChatIndexAgentColorStyle,
     subOptions,
     selectedSubOptions,
     buildRefIdForPayload,
@@ -395,6 +396,5 @@ export const useChatStore = () => {
     modalTitle,
     modalPlaceholder,
     handleSelectKnowledge,
-    handleThemeInit,
   }
 }

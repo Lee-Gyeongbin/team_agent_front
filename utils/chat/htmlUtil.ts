@@ -20,12 +20,20 @@ marked.use({ renderer })
 /** 마크다운 셀 안의 | 이스케이프 */
 const escapeMdCell = (s: string) => s.replace(/\|/g, '\\|').replace(/\n/g, ' ')
 
-/**
- * 데이터 행: "1 미국 약 28조 달러" / "1. 미국 약 …" 등 (순위 + 국가/항목 + 나머지)
- * 한국어 답변에서 흔한 "… 약 N조 …" 패턴 우선
- */
+/** 마크다운 번호 목록·`[텍스트](url)` 출처 등 — "순위 국가 GDP" 텍스트 표와 구분 */
+const looksLikeMarkdownNumberedContent = (line: string) => {
+  const t = line.trim()
+  if (/\]\([^)]*\)/.test(t)) return true
+  const afterNum = t.match(/^\d+[.)]?\s+(\S+)/u)
+  const firstToken = afterNum?.[1] ?? ''
+  if (firstToken.startsWith('**') || firstToken.startsWith('*') || firstToken.startsWith('[')) return true
+  return false
+}
+
+/** 데이터 행: "1 미국 약 28조 달러" / "1. 미국 약 …" 등 (순위 + 국가/항목 + 나머지) */
 const parseThreeColumnDataLine = (line: string): [string, string, string] | null => {
   const t = line.trim()
+  if (looksLikeMarkdownNumberedContent(t)) return null
   // 순위(숫자) + 중간열 + "약…" 로 끝나는 열 (GDP 등)
   const mKorean = t.match(/^(\d+)[.)]?\s+(.+?)\s+(약.+)$/u)
   if (mKorean) return [mKorean[1], mKorean[2].trim(), mKorean[3].trim()]
@@ -68,13 +76,14 @@ const convertPlainTextTableBlocksToGfm = (text: string): string => {
     const line = lines[i]
     const trimmed = line.trim()
 
-    // 후보 헤더: 숫자로 시작하지 않음, 리스트/제목/마크다운 표 행(|…) 아님
+    // 후보 헤더: 숫자로 시작하지 않음, 리스트/제목/마크다운 표 행(|…) / 굵게 제목(**…) 아님
     const couldBeHeader =
       trimmed.length > 0 &&
       !/^\d+[.)]?\s/.test(trimmed) &&
       !/^[-*+]\s/.test(trimmed) &&
       !/^#{1,6}\s/.test(trimmed) &&
-      !trimmed.startsWith('|')
+      !trimmed.startsWith('|') &&
+      !trimmed.startsWith('**')
 
     if (couldBeHeader && i + 1 < lines.length) {
       const rows: [string, string, string][] = []

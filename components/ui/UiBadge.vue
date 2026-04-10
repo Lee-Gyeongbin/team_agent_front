@@ -8,6 +8,7 @@
         'is-icon-only': iconOnly,
       },
     ]"
+    :style="badgeStyle"
   >
     <!-- 왼쪽 아이콘 -->
     <span
@@ -34,16 +35,57 @@
 </template>
 
 <script setup lang="ts">
+type HexColor = `#${string}`
+
 interface Props {
   variant?: 'data-line' | 'basic-chat' | 'manual-ai' | 'category' | 'default' | 'success'
   size?: 'xs' | 'sm' | 'md' | 'lg'
   iconOnly?: boolean
+  /** 지정 시 variant 색상 대신 이 컬러 기반으로 표시 */
+  colorHex?: HexColor | string
+  /** 배경 투명도 (0~1). 기본 0.12 */
+  bgAlpha?: number
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   variant: 'default',
   size: 'sm',
   iconOnly: false,
+  colorHex: '',
+  bgAlpha: 0.12,
+})
+
+const normalizeHex = (input: string): string => {
+  const v = (input ?? '').trim()
+  if (!v) return ''
+  if (/^#[0-9a-fA-F]{6}$/.test(v)) return v
+  if (/^#[0-9a-fA-F]{3}$/.test(v)) {
+    const r = v[1]
+    const g = v[2]
+    const b = v[3]
+    return `#${r}${r}${g}${g}${b}${b}`
+  }
+  return ''
+}
+
+const hexToRgba = (hex: string, alpha: number) => {
+  const h = normalizeHex(hex)
+  if (!h) return ''
+  const r = Number.parseInt(h.slice(1, 3), 16)
+  const g = Number.parseInt(h.slice(3, 5), 16)
+  const b = Number.parseInt(h.slice(5, 7), 16)
+  const a = Number.isFinite(alpha) ? Math.min(Math.max(alpha, 0), 1) : 0.12
+  return `rgba(${r}, ${g}, ${b}, ${a})`
+}
+
+const badgeStyle = computed((): Record<string, string> => {
+  const hex = normalizeHex(props.colorHex || '')
+  if (!hex) return {}
+  const bg = hexToRgba(hex, props.bgAlpha)
+  return {
+    color: hex,
+    backgroundColor: bg || '',
+  }
 })
 </script>
 
@@ -55,7 +97,6 @@ withDefaults(defineProps<Props>(), {
   border-radius: 24px;
   font-size: $font-size-sm;
   white-space: nowrap;
-
   // ===================================
   // 사이즈
   // ===================================
