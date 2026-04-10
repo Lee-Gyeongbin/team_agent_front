@@ -300,7 +300,7 @@ const selectedRef = computed(() =>
 const relatedPageEntries = computed<RelatedPageEntry[]>(() =>
   (props.refList ?? []).flatMap((row) => {
     const docKey = buildDocKey(row.docId, row.docFileId)
-    const docLabel = row.docTitle || row.fileName
+    const docLabel = row.fileName
     return parseRelatedPages(row.relatedPages).map((pageNum, index) => ({
       listKey: `${docKey}:${pageNum}:${index}`,
       activeKey: `${docKey}:${pageNum}`,
@@ -332,6 +332,8 @@ const relatedThumbSrcMap = ref<Record<string, string>>({})
 const relatedThumbLoadingMap = ref<Record<string, boolean>>({})
 const relatedDocUrlMap = new Map<string, string>()
 const relatedPdfDocMap = new Map<string, PdfDocumentProxy>()
+/** 동일 docKey에 대해 getDocument 병렬 호출 방지 (pdf.js CJK/폰트 렌더 간헐 깨짐 완화) */
+const relatedPdfDocInflight = new Map<string, Promise<PdfDocumentProxy | null>>()
 
 const setThumbCanvasRef = (pageNum: number, el: HTMLCanvasElement | null) => {
   if (el) {
@@ -391,13 +393,23 @@ const ensureRelatedDocUrl = async (docKey: string): Promise<string | null> => {
 const ensureRelatedPdfDoc = async (docKey: string): Promise<PdfDocumentProxy | null> => {
   const cached = relatedPdfDocMap.get(docKey)
   if (cached) return cached
-  const url = await ensureRelatedDocUrl(docKey)
-  if (!url) return null
-  const lib = await loadPdfJs()
-  lib.GlobalWorkerOptions.workerSrc = '/pdfjs/build/pdf.worker.js'
-  const loadedPdf = await lib.getDocument({ url }).promise
-  relatedPdfDocMap.set(docKey, loadedPdf)
-  return loadedPdf
+  let inflight = relatedPdfDocInflight.get(docKey)
+  if (inflight) return inflight
+  inflight = (async () => {
+    try {
+      const url = await ensureRelatedDocUrl(docKey)
+      if (!url) return null
+      const lib = await loadPdfJs()
+      lib.GlobalWorkerOptions.workerSrc = '/pdfjs/build/pdf.worker.js'
+      const loadedPdf = await lib.getDocument({ url }).promise
+      relatedPdfDocMap.set(docKey, loadedPdf)
+      return loadedPdf
+    } finally {
+      relatedPdfDocInflight.delete(docKey)
+    }
+  })()
+  relatedPdfDocInflight.set(docKey, inflight)
+  return inflight
 }
 
 /**

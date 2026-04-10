@@ -18,6 +18,8 @@ export const usePdfViewer = (options: {
   const totalPages = ref(0)
   const scale = ref(1)
   const renderingToken = ref(0)
+  /** loadPdf 병렬 호출 시 이전 요청 결과가 나중에 덮어쓰지 않도록 함 */
+  const loadGeneration = ref(0)
 
   const pageList = computed(() => Array.from({ length: totalPages.value }, (_, i) => i + 1))
   const hasData = computed(() => totalPages.value > 0 && !!pdfDoc.value)
@@ -65,6 +67,7 @@ export const usePdfViewer = (options: {
 
   const loadPdf = async () => {
     if (!filePath.value || !open.value) return
+    const gen = ++loadGeneration.value
     isLoading.value = true
     loadError.value = ''
 
@@ -74,12 +77,16 @@ export const usePdfViewer = (options: {
 
       const loadingTask = lib.getDocument({ url: filePath.value })
       const loadedPdf = await loadingTask.promise
+      if (gen !== loadGeneration.value) return
+
       pdfDoc.value = loadedPdf
       totalPages.value = loadedPdf.numPages
       currentPage.value = 1
 
       // 컨테이너 너비에 맞게 초기 스케일 계산
       const firstPage = await loadedPdf.getPage(1)
+      if (gen !== loadGeneration.value) return
+
       const baseViewport = firstPage.getViewport({ scale: 1 })
       const container = mainCanvasRef.value?.parentElement
       const containerWidth = container ? container.clientWidth - 32 : 0 // padding 16px * 2
@@ -91,15 +98,20 @@ export const usePdfViewer = (options: {
 
       isLoading.value = false
       await nextTick()
+      if (gen !== loadGeneration.value) return
       await renderMainPage()
+      if (gen !== loadGeneration.value) return
       await renderAllThumbnails()
     } catch (error) {
+      if (gen !== loadGeneration.value) return
       const message = error instanceof Error ? error.message : '알 수 없는 오류'
       loadError.value = `PDF 로드 실패: ${message}`
       pdfDoc.value = null
       totalPages.value = 0
     } finally {
-      isLoading.value = false
+      if (gen === loadGeneration.value) {
+        isLoading.value = false
+      }
     }
   }
 
