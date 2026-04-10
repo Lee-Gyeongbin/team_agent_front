@@ -55,6 +55,7 @@ const {
   isLoadingChatIndexAgents,
   getChatIndexAgentIconClass,
   handleSelectChatIndexAgents,
+  handleThemeInit,
 } = useChatStore()
 const { startChatSocket, stopChatSocket } = useChatSocket()
 const { user } = useAuth()
@@ -65,6 +66,7 @@ onMounted(async () => {
   handleResetChatPanels()
   // 인덱스 진입 시점에 즉시 채팅방 상태를 초기화해
   // 비동기 로딩 완료 시점의 늦은 reset으로 인한 레이스를 방지한다.
+  handleThemeInit()
   resetChatRoom()
   await Promise.all([selectChatRoomList(), handleSelectChatIndexAgents(), selectModelOptions()])
   // /chat에서 /chat/[id]로 이미 이동한 뒤 비동기 완료 시 reset이 늦게 실행되어
