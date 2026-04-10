@@ -9,7 +9,7 @@
       class="chat-search-mode-tag"
       @click="onRemove"
     >
-      <i :class="[getChatIndexAgentIconClass(selectedAgent), 'size-20']" />
+      <i :class="[selectedAgent.iconClassNm ? selectedAgent.iconClassNm : 'icon-search', 'size-20']" />
       <span class="ws-nowrap">{{ selectedAgent.agentNm }}</span>
       <i class="icon-refund-back size-20" />
     </button>
@@ -51,7 +51,7 @@
         class="chat-search-mode-item"
         @click="onSelect(agent)"
       >
-        <i :class="[getChatIndexAgentIconClass(agent), 'size-20']" />
+        <i :class="[agent.iconClassNm ? agent.iconClassNm : 'icon-search', 'size-20']" />
         <span>{{ agent.agentNm }}</span>
       </button>
     </div>
@@ -65,7 +65,6 @@ const {
   activeSearchModes,
   selectChatIndexAgent,
   chatIndexAgents,
-  getChatIndexAgentIconClass,
   selectedChatAgentId,
   subOptions,
   selectedSubOptions,
