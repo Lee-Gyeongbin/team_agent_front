@@ -49,7 +49,7 @@
     overflow: hidden;
 
     &:hover {
-      border: 2px solid #3c69db;
+      border: 2px solid var(--card-icon-color, #3c69db);
       background: #f1f6fe;
 
       .chat-index-card-default {
@@ -64,7 +64,7 @@
     }
 
     &.is-active {
-      border: 2px solid #3c69db;
+      border: 2px solid var(--card-icon-color, #3c69db);
     }
 
     .icon-circle {

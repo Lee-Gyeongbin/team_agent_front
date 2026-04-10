@@ -29,13 +29,11 @@
         type="button"
         class="chat-index-card"
         :class="{ 'is-active': selectedChatAgentId === agent.agentId }"
+        :style="getChatIndexAgentColorStyle(agent)"
         @click="selectChatIndexAgent(agent)"
       >
         <div class="chat-index-card-default">
-          <span
-            class="icon-circle"
-            :style="getChatIndexAgentColorStyle(agent)"
-          ><i :class="[getChatIndexAgentIconClass(agent), 'size-24']" /></span>
+          <span class="icon-circle"><i :class="[getChatIndexAgentIconClass(agent), 'size-24']" /></span>
           <div class="chat-index-card-info">
             <p class="chat-index-card-name">{{ agent.agentNm }}</p>
             <p class="chat-index-card-sub">{{ getChatIndexAgentSubLabel(agent) }}</p>
