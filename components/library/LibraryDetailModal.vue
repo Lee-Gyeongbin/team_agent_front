@@ -36,31 +36,16 @@
             {{ displayData?.categoryNm }}
           </UiBadge>
           <UiBadge
-            v-if="displayData?.svcTy === 'S'"
-            variant="data-line"
+            v-if="displayData?.svcTy === 'C' || displayData?.agentId"
+            :variant="displayData?.svcTy === 'C' ? 'basic-chat' : 'default'"
+            :color-hex="displayData?.svcTy === 'C' ? '' : displayData?.colorHex"
           >
             <template #icon-left>
-              <i class="icon icon-data-line-small size-14"></i>
+              <i
+                :class="`icon ${displayData?.svcTy === 'C' ? 'icon-comment-other' : displayData?.iconClassNm} size-14`"
+              ></i>
             </template>
-            데이터분석
-          </UiBadge>
-          <UiBadge
-            v-else-if="displayData?.svcTy === 'C'"
-            variant="basic-chat"
-          >
-            <template #icon-left>
-              <i class="icon icon-comment-other size-14"></i>
-            </template>
-            기본대화
-          </UiBadge>
-          <UiBadge
-            v-else-if="displayData?.svcTy === 'M'"
-            variant="manual-ai"
-          >
-            <template #icon-left>
-              <i class="icon icon-book size-14"></i>
-            </template>
-            매뉴얼AI
+            {{ displayData?.svcTy === 'C' ? '기본대화' : displayData?.agentNm }}
           </UiBadge>
         </div>
 
