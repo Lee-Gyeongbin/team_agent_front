@@ -354,7 +354,7 @@
 
 // 오른쪽 꺾쇠 (소형, 12px)
 .icon-chevron-right-sm {
-  @include icon-file('chevron-right-sm');
+  @include icon-file-bg('chevron-right-sm');
 }
 
 // 에이전트 카드 아이콘
