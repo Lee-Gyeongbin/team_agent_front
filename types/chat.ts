@@ -57,9 +57,19 @@ export interface ChatFileSaveResponse {
   mimeType?: string
 }
 
+/** Vertex/Google 검색 그라운딩 등 Web 출처 스트리밍 청크 */
+export interface ChatGroundingSourceItem {
+  url: string
+  title?: string
+}
+
 export interface ChatSocketMessage {
   type: string
   content?: string
+  /** 스트리밍 청크 종류 — answer_source 등 (없으면 답변 텍스트 델타) */
+  chunkEvent?: string
+  /** chunkEvent별 누적 페이로드 (예: answer_source → {"items":[...]} JSON 문자열) */
+  accumulated?: string
   docFileId?: string
   /** 완료 시 서버에서 내려주는 로그 ID (있으면 스트리밍 메시지에 반영) */
   logId?: string
@@ -96,6 +106,8 @@ export interface ChatMessage {
   tableData?: string
   /** 질문에 첨부된 파일 (전송 직후 UI; 로그 API에 첨부 필드가 없으면 재조회 시 비어 있을 수 있음) */
   attachments?: ChatMessageAttachment[]
+  /** Web 검색/그라운딩 출처 (answer_source 스트리밍 청크로 수신) */
+  groundingSources?: ChatGroundingSourceItem[]
   [key: string]: unknown
 }
 
@@ -192,6 +204,8 @@ export interface ChatLogListRow {
   ttsq?: string
   /** 시각화 테이블 원본(JSON 문자열) */
   tableData?: string
+  /** Web 그라운딩 출처 JSON 문자열 — {"items":[{"url","title"},...]} */
+  webGroundingJson?: string
   /** 만족도 Y/N (목록 조회 시) */
   satisYn?: string
   satisContent?: string
