@@ -14,9 +14,9 @@
       <i class="icon-refund-back size-20" />
     </button>
 
-    <!-- 트리거 버튼 (선택된 모드가 없을 때만 표시) -->
+    <!-- 트리거 버튼 (선택된 모드가 없고, 채팅 상세일 때만 표시) -->
     <button
-      v-if="activeSearchModes.length === 0"
+      v-if="activeSearchModes.length === 0 && !isChatIndex"
       class="chat-search-mode-trigger"
       :class="{ 'is-open': isOpen }"
       @click="toggleDropdown"
@@ -40,21 +40,56 @@
       @update:model-value="onSubOptionsMultiChange"
     />
 
-    <!-- 드롭다운 -->
-    <div
-      v-show="isOpen"
-      class="chat-search-mode-dropdown"
-    >
-      <button
-        v-for="agent in chatIndexAgents"
-        :key="agent.agentId"
-        class="chat-search-mode-item"
-        @click="onSelect(agent)"
+    <!-- dim 오버레이 -->
+    <Transition name="fade">
+      <div
+        v-if="isOpen"
+        class="chat-mode-overlay"
+        @click="isOpen = false"
+      />
+    </Transition>
+
+    <!-- 하단 슬라이드업 패널 -->
+    <Transition name="slide-up">
+      <div
+        v-if="isOpen"
+        class="chat-mode-panel"
       >
-        <i :class="[agent.iconClassNm ? agent.iconClassNm : 'icon-search', 'size-20']" />
-        <span>{{ agent.agentNm }}</span>
-      </button>
-    </div>
+        <div class="chat-mode-panel-header">
+          <h3 class="chat-mode-panel-title">에이전트 선택</h3>
+          <button
+            type="button"
+            class="chat-mode-panel-close"
+            @click="isOpen = false"
+          >
+            <i class="icon-close size-20" />
+          </button>
+        </div>
+        <div class="chat-mode-panel-card-grp">
+          <button
+            v-for="agent in chatIndexAgents"
+            :key="agent.agentId"
+            type="button"
+            class="chat-index-card"
+            :class="{ 'is-active': selectedChatAgentId === agent.agentId }"
+            :style="getChatIndexAgentColorStyle(agent.colorHex ?? '')"
+            @click="onSelect(agent)"
+          >
+            <div class="chat-index-card-default">
+              <span class="icon-circle"><i :class="[agent.iconClassNm ? agent.iconClassNm : 'icon-search', 'size-24']" /></span>
+              <div class="chat-index-card-info">
+                <p class="chat-index-card-name">{{ agent.agentNm }}</p>
+                <p class="chat-index-card-sub">{{ getChatIndexAgentSubLabel(agent) }}</p>
+              </div>
+            </div>
+            <div class="chat-index-card-hover">
+              <p class="chat-index-card-hover-desc">{{ agent.description }}</p>
+              <span class="chat-index-card-hover-action">시작하기 <i class="icon-chevron-right-sm size-12" /></span>
+            </div>
+          </button>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -65,6 +100,8 @@ const {
   activeSearchModes,
   selectChatIndexAgent,
   chatIndexAgents,
+  getChatIndexAgentSubLabel,
+  getChatIndexAgentColorStyle,
   selectedChatAgentId,
   subOptions,
   selectedSubOptions,
@@ -107,6 +144,7 @@ const onSubOptionsMultiChange = (next: Array<string | number>) => {
   selectedSubOptions.value = n.filter((x) => x !== SUB_OPTION_ALL_KEY && reals.includes(x))
 }
 
+const route = useRoute()
 const isOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
 
@@ -116,7 +154,10 @@ const selectedAgent = computed(() => {
 })
 const isSearchModeActive = computed(() => activeSearchModes.value.length > 0)
 
+const isChatIndex = computed(() => route.path === '/chat')
+
 const toggleDropdown = () => {
+  if (isChatIndex.value) return
   isOpen.value = !isOpen.value
 }
 
@@ -133,21 +174,6 @@ const onRemove = () => {
   if (!selectedAgent.value) return
   selectChatIndexAgent(selectedAgent.value)
 }
-
-// 외부 클릭 시 닫기
-const onClickOutside = (e: MouseEvent) => {
-  if (dropdownRef.value && !dropdownRef.value.contains(e.target as Node)) {
-    isOpen.value = false
-  }
-}
-
-onMounted(() => {
-  document.addEventListener('click', onClickOutside)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('click', onClickOutside)
-})
 </script>
 <style scoped lang="scss">
 .ref-select {
