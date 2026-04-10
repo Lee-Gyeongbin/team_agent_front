@@ -61,7 +61,6 @@
             {{ errorMessage }}
           </div>
 
-          <!-- TODO: 로그인 정보 저장 체크박스 추가 -->
           <UiCheckbox
             v-model="saveLoginInfo"
             label="로그인 정보 저장"
@@ -138,17 +137,31 @@ definePageMeta({ layout: 'auth' })
 const { login } = useAuth()
 const route = useRoute()
 
+/** 로그인 정보 저장 쿠키 */
+const savedLoginIdCookie = useCookie<string | null>('ta_saved_login_id', {
+  path: '/',
+  maxAge: 60 * 60 * 24 * 365,
+  default: () => null,
+})
+
 const loginId = ref('')
 const loginPassword = ref('')
 const errorMessage = ref('')
 const isLoading = ref(false)
 const sessionExpiredMessage = ref('')
-/** 로그인 정보 저장 (아이디 기억 등 — 백엔드/스토리지 연동 시 사용) */
 const saveLoginInfo = ref(false)
 
 if (route.query.expired === 'true') {
   sessionExpiredMessage.value = '세션이 만료되었습니다. 다시 로그인해주세요.'
 }
+
+onMounted(() => {
+  const saved = savedLoginIdCookie.value
+  if (saved) {
+    loginId.value = saved
+    saveLoginInfo.value = true
+  }
+})
 
 // 🔽 아이디/비밀번호 찾기 — 페이지 준비 시 라우트 연결
 // const onFindId = () => {
@@ -177,6 +190,7 @@ const onSubmit = async () => {
     const res = await login(loginId.value, loginPassword.value)
 
     if (res.success) {
+      savedLoginIdCookie.value = saveLoginInfo.value ? loginId.value.trim() : null
       const redirect = (route.query.redirect as string) || '/chat'
       navigateTo(redirect)
     } else {
