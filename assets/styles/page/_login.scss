@@ -171,11 +171,18 @@
       }
 
       .notice-item-main {
-        display: flex;
+        flex: 1 1 auto;
         min-width: 0;
+        display: flex;
+        gap: 6px;
+        align-items: center;
         text-align: left;
+        border: none;
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        color: inherit;
 
-        // 유형·제목 영역에 포인터가 올 때 함께 강조 (제목만이 아닌 main 전체)
         &:hover {
           .notice-item-content.type,
           .notice-item-content.title {
