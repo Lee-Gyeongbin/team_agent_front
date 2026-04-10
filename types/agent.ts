@@ -10,6 +10,8 @@ export interface Agent extends AgtRagCfg, AgtDs, AgtSqlCfg, AgtDm {
   apiUrlCd: string // API_URL_CD
   iconId: string // ICON_ID
   colorId: string // COLOR_ID
+  iconClassNm: string // ICON_CLASS_NM
+  colorHex: string // COLOR_HEX
   description: string // DESCRIPTION
   sortOrd: number // SORT_ORD
   useYn: 'Y' | 'N' // USE_YN

@@ -9,7 +9,7 @@
       class="chat-search-mode-tag"
       @click="onRemove"
     >
-      <i :class="[getChatIndexAgentIconClass(selectedAgent), 'size-20']" />
+      <i :class="[selectedAgent.iconClassNm ? selectedAgent.iconClassNm : 'icon-search', 'size-20']" />
       <span class="ws-nowrap">{{ selectedAgent.agentNm }}</span>
       <i class="icon-refund-back size-20" />
     </button>
@@ -72,11 +72,11 @@
             type="button"
             class="chat-index-card"
             :class="{ 'is-active': selectedChatAgentId === agent.agentId }"
-            :style="getChatIndexAgentColorStyle(agent)"
+            :style="getChatIndexAgentColorStyle(agent.colorHex ?? '')"
             @click="onSelect(agent)"
           >
             <div class="chat-index-card-default">
-              <span class="icon-circle"><i :class="[getChatIndexAgentIconClass(agent), 'size-24']" /></span>
+              <span class="icon-circle"><i :class="[agent.iconClassNm ? agent.iconClassNm : 'icon-search', 'size-24']" /></span>
               <div class="chat-index-card-info">
                 <p class="chat-index-card-name">{{ agent.agentNm }}</p>
                 <p class="chat-index-card-sub">{{ getChatIndexAgentSubLabel(agent) }}</p>
@@ -100,7 +100,6 @@ const {
   activeSearchModes,
   selectChatIndexAgent,
   chatIndexAgents,
-  getChatIndexAgentIconClass,
   getChatIndexAgentSubLabel,
   getChatIndexAgentColorStyle,
   selectedChatAgentId,

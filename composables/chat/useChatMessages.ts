@@ -1,4 +1,4 @@
-import type { ChatLogListRow, ChatMessage, ChatMessageAttachment } from '~/types/chat'
+import type { ChatGroundingSourceItem, ChatLogListRow, ChatMessage, ChatMessageAttachment } from '~/types/chat'
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import { parseChatAttachmentsFromLogRow } from '~/utils/chat/chatAttachmentDisplayUtil'
 
@@ -35,6 +35,21 @@ export const useChatMessages = () => {
     const satisContentVal = typeof row.satisContent === 'string' ? row.satisContent : ''
     const satisCdVal = typeof row.satisCd === 'string' ? row.satisCd : undefined
     const attachments = parseChatAttachmentsFromLogRow(row)
+    let groundingSources: ChatGroundingSourceItem[] | undefined
+    const wg = row.webGroundingJson
+    if (typeof wg === 'string' && wg.trim().length > 0) {
+      try {
+        const parsed = JSON.parse(wg) as { items?: { url?: string; title?: string }[] }
+        if (Array.isArray(parsed.items)) {
+          groundingSources = parsed.items.map((it) => ({
+            url: String(it?.url ?? ''),
+            ...(it?.title != null && String(it.title).length > 0 ? { title: String(it.title) } : {}),
+          }))
+        }
+      } catch {
+        /* ignore */
+      }
+    }
     return [
       {
         logId,
@@ -67,6 +82,7 @@ export const useChatMessages = () => {
           chartTitle: '',
         },
         tableData: typeof row.tableData === 'string' ? row.tableData : undefined,
+        ...(groundingSources?.length ? { groundingSources } : {}),
         chatLogReaction: {
           logId,
           satisYn: satisYnVal,

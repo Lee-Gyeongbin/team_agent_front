@@ -25,6 +25,22 @@
             v-html="renderedHtml"
           />
           <!-- eslint-enable vue/no-v-html -->
+          <ul
+            v-if="message.groundingSources?.length"
+            class="message-grounding-sources"
+          >
+            <li
+              v-for="(src, idx) in message.groundingSources"
+              :key="`${src.url}-${idx}`"
+            >
+              <a
+                :href="src.url"
+                target="_blank"
+                rel="noopener noreferrer"
+                >{{ getSourceLabel(src.title, src.url) }}</a
+              >
+            </li>
+          </ul>
         </template>
         <!-- 액션 + 패널 버튼 (한 줄) -->
         <div
@@ -112,6 +128,13 @@ const props = withDefaults(defineProps<Props>(), {
 
 /** 마크다운 렌더 결과 — v-html */
 const renderedHtml = computed(() => toHtmlContent(props.message.rContent ?? ''))
+
+/** 출처 제목 앞 마크다운 헤더 기호(## 등) 제거 */
+const getSourceLabel = (title: string | undefined, url: string) => {
+  const raw = (title ?? '').trim()
+  if (!raw) return url
+  return raw.replace(/^#{1,6}\s+/u, '').trim()
+}
 
 const emit = defineEmits<{
   'on-copy': [id: string]

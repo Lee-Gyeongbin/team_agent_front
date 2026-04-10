@@ -14,6 +14,9 @@ export const useChatTestSocket = () => {
 
     switch (payload.type) {
       case 'chunk': {
+        if (payload.chunkEvent === 'answer_source') {
+          break
+        }
         const nextChunk = payload.content ?? ''
         testBuffer.value = `${testBuffer.value}${nextChunk}`
         testResponseText.value = testBuffer.value
