@@ -89,23 +89,19 @@
         />
       </div>
 
-      <!-- 적용 대상 -->
+      <!-- 적용 대상 (LLM은 폼 applyLlmYn, 에이전트는 promptAppAgtList) -->
       <div class="com-setting-field-row">
         <label class="com-setting-label">적용 대상</label>
-        <div class="com-setting-checkbox-group">
-          <UiCheckbox
-            :model-value="form.applyLlmYn === 'Y'"
-            label="LLM 질의"
-            @update:model-value="onToggleApply('applyLlmYn', $event)"
-          />
-          <UiCheckbox
-            v-for="agent in agentList"
-            :key="agent.agentId"
-            :model-value="isAgentApplied(agent.agentId)"
-            :label="agent.agentNm"
-            @update:model-value="onToggleAgentApply(agent.agentId, $event)"
-          />
-        </div>
+        <UiMultiSelect
+          id="prompt-apply-targets"
+          :model-value="applyTargetsUiModel"
+          name="prompt-apply-targets"
+          :options="applyTargetOptions"
+          size="sm"
+          placeholder="적용 대상 선택"
+          class="prompt-apply-targets-select"
+          @update:model-value="onApplyTargetsMultiChange"
+        />
       </div>
     </div>
 
@@ -170,37 +166,50 @@ const onUpdateForm = (key: string, value: string | number) => {
   emit('update:modelValue', { ...props.modelValue, [key]: value })
 }
 
-const onToggleApply = (key: 'applyLlmYn', checked: boolean) => {
-  emit('update:modelValue', { ...props.modelValue, [key]: checked ? 'Y' : 'N' })
-}
+/** LLM 질의 — agentId와 겹치지 않는 sentinel (멀티셀렉트 표시 ↔ 폼 applyLlmYn) */
+const APPLY_LLM_KEY = '__prompt_apply_llm__'
 
-const agentApplyYnMap = computed(() => {
-  const map = new Map<string, boolean>()
+const applyTargetOptions = computed(() => [
+  { label: 'LLM 질의', value: APPLY_LLM_KEY },
+  ...agentList.value.map((a) => ({ label: a.agentNm, value: a.agentId })),
+])
+
+const applyTargetsUiModel = computed(() => {
   const currentPromptId = form.value?.promptId ?? ''
+  const agentIds: string[] = []
   for (const item of promptAppAgtList.value) {
-    if (item.promptId === currentPromptId) {
-      map.set(item.agentId, item.applyYn === 'Y')
+    if (item.promptId === currentPromptId && item.applyYn === 'Y') {
+      agentIds.push(String(item.agentId))
     }
   }
-  return map
+  const llm = form.value?.applyLlmYn === 'Y' ? [APPLY_LLM_KEY] : []
+  return [...llm, ...agentIds]
 })
 
-const isAgentApplied = (agentId: string) => agentApplyYnMap.value.get(agentId) ?? false
+const onApplyTargetsMultiChange = (next: Array<string | number>) => {
+  const n = next.map(String)
+  const hasLlm = n.includes(APPLY_LLM_KEY)
+  const prevLlm = props.modelValue.applyLlmYn === 'Y'
+  if (hasLlm !== prevLlm) {
+    emit('update:modelValue', { ...props.modelValue, applyLlmYn: hasLlm ? 'Y' : 'N' })
+  }
 
-const onToggleAgentApply = (agentId: string, checked: boolean) => {
+  const reals = agentList.value.map((a) => String(a.agentId))
+  const selected = n.filter((x) => x !== APPLY_LLM_KEY && reals.includes(x))
+  const selectedSet = new Set(selected)
   const currentPromptId = form.value?.promptId ?? ''
 
-  const nextApplyYn: 'Y' | 'N' = checked ? 'Y' : 'N'
-  const exists = promptAppAgtList.value.some((item) => item.promptId === currentPromptId && item.agentId === agentId)
-
-  promptAppAgtList.value = exists
-    ? promptAppAgtList.value.map((item) => {
-        if (item.promptId === currentPromptId && item.agentId === agentId) {
-          return { ...item, applyYn: nextApplyYn }
-        }
-        return item
-      })
-    : [...promptAppAgtList.value, { promptId: currentPromptId, agentId, applyYn: nextApplyYn }]
+  const nextList = [...promptAppAgtList.value]
+  for (const agentId of reals) {
+    const shouldApply = selectedSet.has(agentId)
+    const idx = nextList.findIndex((item) => item.promptId === currentPromptId && String(item.agentId) === agentId)
+    if (idx >= 0) {
+      nextList[idx] = { ...nextList[idx], applyYn: shouldApply ? 'Y' : 'N' }
+    } else if (shouldApply) {
+      nextList.push({ promptId: currentPromptId, agentId, applyYn: 'Y' })
+    }
+  }
+  promptAppAgtList.value = nextList
 }
 </script>
 
@@ -227,5 +236,15 @@ const onToggleAgentApply = (agentId: string, checked: boolean) => {
   @include typo($body-small);
   color: var(--color-primary);
   line-height: $line-height-base;
+}
+
+// 적용 대상 멀티셀렉트 (필드 행 나머지 폭)
+.prompt-apply-targets-select {
+  flex: 1;
+  min-width: 0;
+}
+
+:deep(.prompt-apply-targets-select.ui-multi-select-wrap) {
+  width: 100%;
 }
 </style>
