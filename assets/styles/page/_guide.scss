@@ -347,6 +347,27 @@
   margin-bottom: $spacing-md;
 }
 
+// 베스트 프랙티스 등 짧은 강조 블록
+.guide-note--best {
+  padding: $spacing-sm $spacing-md;
+  margin-bottom: $spacing-md;
+  background: $color-surface;
+  border-left: 3px solid var(--color-primary);
+  border-radius: 0 $border-radius-sm $border-radius-sm 0;
+  color: $color-text-primary;
+
+  strong {
+    color: var(--color-primary-dark, $color-text-heading);
+  }
+
+  code {
+    @include typo($body-xsmall);
+    padding: 1px 4px;
+    background: rgba(0, 0, 0, 0.06);
+    border-radius: 2px;
+  }
+}
+
 .guide-code {
   padding: $spacing-md;
   background: #1e293b;
@@ -391,7 +412,7 @@
     color: #e2e8f0;
     border-radius: $border-radius-base;
     font-family: $font-family-mono;
-    font-size: $font-size-xs;
+    font-size: 11px;
     line-height: $line-height-base;
     overflow-x: auto;
     white-space: pre;

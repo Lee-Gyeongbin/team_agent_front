@@ -144,31 +144,31 @@
             v-else
             class="notice-list"
           >
-            <button
+            <div
               v-for="notice in loginNoticeList"
               :key="notice.noticeId"
-              type="button"
               class="notice-item"
-              @click="onOpenNoticeDetail(notice)"
             >
-              <span class="notice-item-main">
+              <button
+                type="button"
+                class="notice-item-main"
+                @click="onOpenNoticeDetail(notice)"
+              >
                 <span class="notice-item-content type">{{ getNoticeTypeBracketed(notice) }}</span>
                 <span class="notice-item-content title">{{ notice.title }}</span>
-              </span>
+              </button>
               <span class="notice-item-content date">{{ getNoticeDateLabel(notice.createDt) }}</span>
-            </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <NoticeDetailPanel
+    <LoginNoticeModal
       v-if="selectedNotice"
       :is-open="isNoticeDetailPanelOpen"
       :notice="selectedNotice"
       :notice-title="`${getNoticeTypeBracketed(selectedNotice)} ${selectedNotice.title}`.trim()"
-      @edit="onEditNotice"
-      @delete="onDeleteNotice"
       @close="isNoticeDetailPanelOpen = false"
     />
   </div>
@@ -190,8 +190,6 @@ const {
   isNoticeDetailPanelOpen,
   selectedNotice,
   onOpenNoticeDetail,
-  onEditNotice,
-  onDeleteNotice,
 } = useNoticeStore()
 
 /** 로그인 정보 저장 쿠키 */

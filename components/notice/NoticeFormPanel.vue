@@ -58,7 +58,6 @@
           ref="noticeContentRef"
           :model-value="formData.content"
           placeholder="공지 내용을 입력하세요"
-          :max-length="500"
           :rows="10"
           border
           :auto-resize="true"

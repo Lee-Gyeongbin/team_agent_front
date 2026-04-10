@@ -9,19 +9,14 @@ import { useChatSendPipeline } from '~/composables/chat/useChatSendPipeline'
 import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
 import { clearBodyChartFullscreen } from '~/utils/chat/visualizationChartUtil'
 import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
+import { getCodes } from '~/utils/global/comCodesUtil'
+import type { ColorItem, IconItem } from '~/types/theme'
 
 /** 에이전트 SVC_TY → 채팅 검색모드 (M=RAG·지식, S=SQL·데이터마트) */
 function agentTypeToSearchMode(svcTy: string): SearchModeValue | null {
   if (svcTy === 'M') return 'M'
   if (svcTy === 'S') return 'S'
   return null
-}
-
-/** /chat 인덱스 에이전트 버튼 아이콘 클래스 */
-const getChatIndexAgentIconClass = (agent: Agent) => {
-  if (agent.svcTy === 'M') return 'icon-knowledge'
-  if (agent.svcTy === 'S') return 'icon-database'
-  return 'icon-search'
 }
 
 const { messages } = useChatSocket()
@@ -59,7 +54,9 @@ const { fetchSelectChatLogList, fetchSelectChatRef, fetchSelectTableDataList, fe
 const chatIndexAgents = ref<Agent[]>([])
 const isLoadingChatIndexAgents = ref(true)
 const normalizeChatAgents = (list: Agent[]) =>
-  list.filter((a) => a.useYn === 'Y' && (a.svcTy === 'M' || a.svcTy === 'S')).sort((a, b) => a.sortOrd - b.sortOrd)
+  list
+    .filter((a) => a.useYn === 'Y' && (a.svcTy === 'M' || a.svcTy === 'S' || a.svcTy === 'T'))
+    .sort((a, b) => a.sortOrd - b.sortOrd)
 
 const selectedLogId = ref<string | null>(null)
 // pdf 뷰어 or 시각화
@@ -74,6 +71,49 @@ const isModalOpen = ref(false)
 const modalMessage = ref('')
 const modalTitle = ref('')
 const modalPlaceholder = ref('')
+
+// 버튼 테마 옵션
+const iconOptions = ref<IconItem[]>([])
+const colorOptions = ref<ColorItem[]>([])
+
+/** /chat 인덱스 에이전트 카드 서브타이틀 — svcTy 기반 */
+const SVC_TY_SUB_LABEL: Record<string, string> = {
+  M: '문서검색증강(RAG) Agent',
+  S: '검색모드-to-SQL Agent',
+  T: '실시간 음성인식(STT) Agent',
+}
+const getChatIndexAgentSubLabel = (agent: Agent) => SVC_TY_SUB_LABEL[agent.svcTy] ?? ''
+
+/** /chat 인덱스 에이전트 버튼 아이콘 — 테마 iconId 매칭 우선, 없으면 SVC_TY 기본 아이콘 */
+const getChatIndexAgentIconClass = (agent: Agent) => {
+  const id = agent.iconId?.trim()
+  if (id) {
+    const iconClass = iconOptions.value.find((item) => item.iconId === id)?.iconClassNm
+    if (iconClass?.trim()) return iconClass.trim()
+  }
+  return 'icon-search'
+}
+
+/** /chat 인덱스 에이전트 카드 아이콘 색상 스타일 — colorId 기반 */
+const hexToRgb = (hex: string) => {
+  const h = hex.replace('#', '')
+  return `${parseInt(h.substring(0, 2), 16)}, ${parseInt(h.substring(2, 4), 16)}, ${parseInt(h.substring(4, 6), 16)}`
+}
+
+const getChatIndexAgentColorStyle = (agent: Agent) => {
+  const id = agent.colorId?.trim()
+  if (id) {
+    const matched = colorOptions.value.find((item) => item.colorId === id)
+    if (matched?.colorHex?.trim()) {
+      const hex = matched.colorHex.trim()
+      return {
+        '--card-icon-color': hex,
+        '--card-icon-bg': `rgba(${hexToRgb(hex)}, 0.12)`,
+      }
+    }
+  }
+  return {}
+}
 
 export const useChatStore = () => {
   // 채팅 로그 조회 (roomId 기준)
@@ -265,6 +305,11 @@ export const useChatStore = () => {
 
   /** 에이전트 관리 목록 기준 모드 선택 (/chat 인덱스 버튼) — 동일 모드 여러 에이전트 간 전환 지원 */
   const selectChatIndexAgent = async (agent: Agent) => {
+    if (agent.svcTy === 'T') {
+      // 링크형 에이전트
+      await handleOpenAgentLink(agent)
+      return
+    }
     const mode = agentTypeToSearchMode(agent.svcTy)
     if (!mode) {
       openToast({ message: '채팅에 연결할 수 없는 에이전트 유형입니다.', type: 'warning' })
@@ -309,6 +354,35 @@ export const useChatStore = () => {
     }
   }
 
+  /** 버튼 테마 옵션 조회 */
+  const handleThemeInit = async () => {
+    const res = await useThemeApi().fetchThemeOptions()
+    iconOptions.value = res.iconList ?? []
+    colorOptions.value = res.colorList ?? []
+  }
+
+  /** 링크형 에이전트 외부 링크 열기 */
+  const handleOpenAgentLink = async (agent: Agent): Promise<boolean> => {
+    if (!agent.apiUrlCd?.trim()) {
+      openToast({ message: '연결 링크 코드가 설정되지 않았습니다.', type: 'warning' })
+      return false
+    }
+    try {
+      const codes = await getCodes('AA000001') // 링크형 에이전트 API_URL_CD 코드 그룹 ID
+      const row = codes.find((c) => c.codeId === agent.apiUrlCd && c.useYn === 'Y')
+      const link = row?.etc1?.trim()
+      if (!link) {
+        openToast({ message: '연결 링크를 찾을 수 없습니다.', type: 'error' })
+        return false
+      }
+      window.open(link, '_blank', 'noopener,noreferrer')
+      return true
+    } catch {
+      openToast({ message: '연결 정보를 불러오지 못했습니다.', type: 'error' })
+      return false
+    }
+  }
+
   return {
     // 상태
     chatRoom,
@@ -325,6 +399,8 @@ export const useChatStore = () => {
     chatIndexAgents,
     isLoadingChatIndexAgents,
     getChatIndexAgentIconClass,
+    getChatIndexAgentSubLabel,
+    getChatIndexAgentColorStyle,
     subOptions,
     selectedSubOptions,
     buildRefIdForPayload,
@@ -350,5 +426,6 @@ export const useChatStore = () => {
     modalTitle,
     modalPlaceholder,
     handleSelectKnowledge,
+    handleThemeInit,
   }
 }

@@ -111,10 +111,6 @@
     }
 
     .message-content {
-      line-height: 1.5em;
-      color: #2d3139;
-      font-size: $font-size-lg;
-      font-weight: 500;
       width: 100%;
 
       // v-html 내부 요소 간격 (피그마 gap: 16px)
@@ -294,7 +290,6 @@
       gap: 8px;
       width: 100%;
     }
-
   }
 
   // user — 우측 정렬

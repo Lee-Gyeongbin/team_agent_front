@@ -352,6 +352,24 @@
   @include icon-file('arrow-right-sm');
 }
 
+// 오른쪽 꺾쇠 (소형, 12px)
+.icon-chevron-right-sm {
+  @include icon-file-bg('chevron-right-sm');
+}
+
+// 에이전트 카드 아이콘
+.icon-agent-knowledge {
+  @include icon-file('agent-knowledge');
+}
+
+.icon-agent-database {
+  @include icon-file('agent-database');
+}
+
+.icon-agent-microphone {
+  @include icon-file('agent-microphone');
+}
+
 // 마이너스 (줌아웃)
 .icon-minus {
   @include icon-file('icon-minus');

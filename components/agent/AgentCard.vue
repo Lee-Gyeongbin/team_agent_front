@@ -23,9 +23,15 @@
           <span class="com-card-meta-item">
             <i class="icon-sparkle-agent size-12" /> 유형 <strong>{{ agent.svcTyNm }}</strong>
           </span>
-          <span class="com-card-meta-item">
+          <span
+            v-if="agent.svcTy === 'M' || agent.svcTy === 'S'"
+            class="com-card-meta-item"
+          >
             <i class="icon-link-agent size-12" /> 연결
-            <strong>{{ agent.connCount }}개 {{ agent.svcTy === 'M' ? '데이터셋' : '데이터마트' }}</strong>
+            <strong
+              >{{ agent.connCount }}개
+              {{ agent.svcTy === 'M' ? '데이터셋' : agent.svcTy === 'S' ? '데이터마트' : '' }}</strong
+            >
           </span>
           <span class="com-card-meta-item">
             <i class="icon-edit-agent size-12" /> 최종 수정 <strong>{{ agent.lastMdfDt }}</strong>

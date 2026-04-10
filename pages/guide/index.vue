@@ -493,6 +493,12 @@ const componentList = [
     tags: ['v-model', 'type', 'size', 'icon-left', 'icon-right'],
   },
   {
+    name: 'UiDatePicker',
+    to: '/guide/ui-date-picker',
+    description: 'Radix-vue DatePicker 기반 — 한국어 로케일, 세그먼트·캘린더, date/datetime/month 모드',
+    tags: ['v-model', 'type', 'date', 'datetime', 'month', 'locale'],
+  },
+  {
     name: 'UiTable',
     to: '/guide/ui-table',
     description: '컬럼 정의 기반 데이터 테이블 — 정렬, 고정 헤더, 셀 커스터마이징',

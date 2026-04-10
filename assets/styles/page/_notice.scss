@@ -204,3 +204,33 @@
     }
   }
 }
+
+// 로그인 공지 상세(LoginNoticeModal, 중앙 모달)
+.modal-dialog.login-notice-modal {
+  .modal-dialog-body {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .notice-detail-panel {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .notice-detail-body {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .notice-content-box {
+    width: 100%;
+    box-sizing: border-box;
+    height: calc(10 * #{$font-size-lg} * #{$line-height-base} + 2 * #{$spacing-sm});
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+}
