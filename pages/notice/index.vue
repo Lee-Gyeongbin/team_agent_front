@@ -92,9 +92,9 @@
                     class="notice-title-btn is-pinned-notice-title"
                     @click.stop="onOpenNoticeDetail(row as NoticeRow)"
                   >
-                    <span class="notice-title-text"
-                      >[{{ getNoticeTypeLabel(row as NoticeRow) }}] {{ getDisplayNoticeTitle(row.title) }}</span
-                    >
+                    <span class="notice-title-text">{{
+                      (getNoticeTypeBracketed(row as NoticeRow) + ' ' + getDisplayNoticeTitle(row.title)).trim()
+                    }}</span>
                   </button>
                 </template>
                 <template v-else>
@@ -103,9 +103,9 @@
                     class="notice-title-btn"
                     @click.stop="onOpenNoticeDetail(row as NoticeRow)"
                   >
-                    <span class="notice-title-text"
-                      >[{{ getNoticeTypeLabel(row as NoticeRow) }}] {{ getDisplayNoticeTitle(row.title) }}</span
-                    >
+                    <span class="notice-title-text">{{
+                      (getNoticeTypeBracketed(row as NoticeRow) + ' ' + getDisplayNoticeTitle(row.title)).trim()
+                    }}</span>
                   </button>
                 </template>
               </template>
@@ -153,7 +153,7 @@
       v-if="selectedNotice"
       :is-open="isNoticeDetailPanelOpen"
       :notice="selectedNotice"
-      :notice-title="`[${getNoticeTypeLabel(selectedNotice as NoticeRow)}] ${(selectedNotice as NoticeRow).title}`"
+      :notice-title="`${getNoticeTypeBracketed(selectedNotice as NoticeRow)} ${(selectedNotice as NoticeRow).title}`.trim()"
       @edit="onEditNotice"
       @delete="onDeleteNotice"
       @close="isNoticeDetailPanelOpen = false"
@@ -192,7 +192,7 @@ const {
   onOpenNoticeDetail,
   onEditNotice,
   onDeleteNotice,
-  getNoticeTypeLabel,
+  getNoticeTypeBracketed,
   getNoticeOrderLabel,
   getNoticeDateLabel,
 } = useNoticeStore()

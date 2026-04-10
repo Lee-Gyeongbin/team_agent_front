@@ -1,4 +1,4 @@
-import type { NoticeDetailResponse, NoticeFormData, NoticeItem, NoticeRow } from '~/types/notice'
+import type { NoticeDetailResponse, NoticeFormData, NoticeItem, NoticeRow, LoginNoticeItem } from '~/types/notice'
 import { useNoticeApi } from '~/composables/notice/useNoticeApi'
 import { formatDate } from '~/utils/global/dateUtil'
 import { getCodes } from '~/utils/global/comCodesUtil'
@@ -9,6 +9,7 @@ const {
   fetchSelectNoticeDetail,
   fetchSaveNotice,
   fetchDeleteNotice,
+  fetchSelectLoginNoticeList,
 } = useNoticeApi()
 
 export const useNoticeStore = () => {
@@ -79,7 +80,9 @@ export const useNoticeStore = () => {
   // ==============================
   const pinnedNoticeList = ref<NoticeItem[]>([])
   const normalNoticeList = ref<NoticeItem[]>([])
-
+  const loginNoticeList = ref<LoginNoticeItem[]>([])
+  const isLoginNoticeLoading = ref(false)
+  const loginNoticeErrorMessage = ref('')
   const searchKeyword = ref('')
   const isLoading = ref(false)
   const errorMessage = ref('')
@@ -180,6 +183,29 @@ export const useNoticeStore = () => {
     }
   }
 
+  const LOGIN_NOTICE_TOP_COUNT = 3
+
+  const handleSelectLoginNoticeList = async () => {
+    loginNoticeErrorMessage.value = ''
+    isLoginNoticeLoading.value = true
+    try {
+      const list = await fetchSelectLoginNoticeList()
+      const rows = Array.isArray(list) ? list : []
+      loginNoticeList.value = rows.slice(0, LOGIN_NOTICE_TOP_COUNT).map((row) => ({
+        noticeId: String(row.noticeId ?? ''),
+        noticeTypeCd: String(row.noticeTypeCd ?? ''),
+        title: String(row.title ?? '').trim(),
+        createDt: String(row.createDt ?? '').trim(),
+      }))
+    } catch (error) {
+      loginNoticeList.value = []
+      loginNoticeErrorMessage.value = '공지를 불러오지 못했습니다.'
+      console.error(error)
+    } finally {
+      isLoginNoticeLoading.value = false
+    }
+  }
+
   /** 성공 시 저장된 공지 ID, 실패 시 null */
   const handleSaveNotice = async (payload: NoticeFormData): Promise<string | null> => {
     const normalizedPayload = normalizeNoticeFormData(payload)
@@ -245,7 +271,7 @@ export const useNoticeStore = () => {
     resetNoticeFormState()
   }
 
-  const onOpenNoticeDetail = async (notice: NoticeRow) => {
+  const onOpenNoticeDetail = async (notice: Pick<NoticeRow, 'noticeId'>) => {
     await handleSelectNoticeDetail(notice.noticeId)
   }
 
@@ -288,10 +314,16 @@ export const useNoticeStore = () => {
     return `${trimmedTitle.slice(0, 50)}...`
   }
 
-  const getNoticeTypeLabel = (notice: NoticeRow) => {
+  const getNoticeTypeLabel = (notice: Pick<NoticeRow, 'noticeTypeCd'>) => {
     const noticeTypeCd = String(notice.noticeTypeCd ?? '').trim()
     const matchedOption = noticeTypeOptions.value.find((option) => option.value === noticeTypeCd)
     return matchedOption?.label ?? noticeTypeCd
+  }
+
+  /** 공지 구분 표기: 공통코드명을 대괄호로 감쌈 (라벨 없으면 빈 문자열) */
+  const getNoticeTypeBracketed = (notice: Pick<NoticeRow, 'noticeTypeCd'>) => {
+    const label = getNoticeTypeLabel(notice).trim()
+    return label ? `[${label}]` : ''
   }
 
   const getNoticeOrderLabel = (notice: NoticeRow) => {
@@ -324,6 +356,10 @@ export const useNoticeStore = () => {
     pagedNoticeList,
     handleSelectNoticeList,
     handleSelectNoticeTypeOptions,
+    loginNoticeList,
+    isLoginNoticeLoading,
+    loginNoticeErrorMessage,
+    handleSelectLoginNoticeList,
     onRegisterNotice,
     onSaveNoticeForm,
     onCloseNoticeForm,
@@ -331,6 +367,7 @@ export const useNoticeStore = () => {
     onEditNotice,
     onDeleteNotice,
     getNoticeTypeLabel,
+    getNoticeTypeBracketed,
     getNoticeOrderLabel,
     getNoticeDateLabel,
     getDisplayNoticeTitle,

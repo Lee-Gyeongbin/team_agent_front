@@ -170,12 +170,26 @@
         align-items: center;
       }
 
+      .notice-item-main {
+        display: flex;
+        min-width: 0;
+        text-align: left;
+
+        // 유형·제목 영역에 포인터가 올 때 함께 강조 (제목만이 아닌 main 전체)
+        &:hover {
+          .notice-item-content.type,
+          .notice-item-content.title {
+            color: var(--color-primary);
+            text-decoration-line: underline;
+          }
+        }
+      }
+
       .notice-item-content {
         margin: 0;
         font-size: 14px;
         font-weight: 400;
         color: $color-text-dark;
-        cursor: pointer;
 
         &.title {
           flex: 1 1 auto;
@@ -183,11 +197,6 @@
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
-
-          &:hover {
-            color: var(--color-primary);
-            text-decoration-line: underline;
-          }
         }
 
         &.date {

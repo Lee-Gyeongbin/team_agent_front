@@ -1,8 +1,7 @@
 @use '../utils/variables' as *;
 @use '../utils/mixins' as *;
 
-// 공지 페이지(`pages/notice/index.vue`) — 모달·폼은 동일 페이지 트리 하위 DOM
-// 페이지 셸: `codes-index` · `login-history-index` · `user-manage-index` 와 동일 토큰
+// 공지 페이지(`pages/notice/index.vue`) 페이지 셸
 .notice-index {
   display: flex;
   flex-direction: column;
@@ -143,7 +142,10 @@
     user-select: none;
     white-space: nowrap;
   }
+}
 
+// 공지 상세 우측 모달(NoticeDetailPanel) — Teleport 로 body 하위에 붙음
+.notice-detail-modal {
   .notice-detail-panel {
     display: flex;
     flex-direction: column;
@@ -179,6 +181,7 @@
       min-width: 0;
       max-width: 100%;
       min-height: 180px;
+      margin: 0;
       padding: $spacing-sm;
       border: 1px solid $color-border;
       border-radius: $border-radius-base;
@@ -193,13 +196,11 @@
     }
   }
 
-  .notice-detail-modal {
-    .modal-side-header {
-      .modal-side-title {
-        white-space: normal;
-        word-break: break-word;
-        overflow-wrap: anywhere;
-      }
+  .modal-side-header {
+    .modal-side-title {
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
     }
   }
 }

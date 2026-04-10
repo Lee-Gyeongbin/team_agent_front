@@ -59,3 +59,16 @@ export const noticeColumns: TableColumn[] = [
   { key: 'createDt', label: '등록일', width: '168px', align: 'center', headerAlign: 'center' },
   { key: 'modifyDt', label: '수정일', width: '168px', align: 'center', headerAlign: 'center' },
 ]
+
+/** 로그인화면 공지사항 표시용 타입 */
+export interface LoginNoticeItem {
+  noticeId: string
+  noticeTypeCd: string
+  title: string
+  createDt: string
+}
+
+/** 로그인 화면 공지 목록 API 응답 */
+export interface LoginNoticeListResponse {
+  dataList: LoginNoticeItem[]
+}

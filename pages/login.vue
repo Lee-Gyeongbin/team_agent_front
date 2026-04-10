@@ -115,19 +115,62 @@
 
         <!-- 공지사항 -->
         <div class="login-notice-wrap">
-          <div class="notice-list">
-            <div
-              v-for="notice in noticeList"
-              :key="notice.id"
-              class="notice-item"
+          <p
+            v-if="isLoginNoticeLoading"
+            class="login-notice-status"
+          >
+            공지를 불러오는 중...
+          </p>
+          <div
+            v-else-if="loginNoticeErrorMessage"
+            class="login-notice-status login-notice-status--error"
+          >
+            <span>{{ loginNoticeErrorMessage }}</span>
+            <button
+              type="button"
+              class="btn-login"
+              @click="onRetryLoginNotice"
             >
-              <p class="notice-item-content title">{{ notice.content }}</p>
-              <p class="notice-item-content date">{{ notice.date }}</p>
-            </div>
+              다시 시도
+            </button>
+          </div>
+          <p
+            v-else-if="loginNoticeList.length === 0"
+            class="login-notice-status"
+          >
+            등록된 공지가 없습니다.
+          </p>
+          <div
+            v-else
+            class="notice-list"
+          >
+            <button
+              v-for="notice in loginNoticeList"
+              :key="notice.noticeId"
+              type="button"
+              class="notice-item"
+              @click="onOpenNoticeDetail(notice)"
+            >
+              <span class="notice-item-main">
+                <span class="notice-item-content type">{{ getNoticeTypeBracketed(notice) }}</span>
+                <span class="notice-item-content title">{{ notice.title }}</span>
+              </span>
+              <span class="notice-item-content date">{{ getNoticeDateLabel(notice.createDt) }}</span>
+            </button>
           </div>
         </div>
       </div>
     </div>
+
+    <NoticeDetailPanel
+      v-if="selectedNotice"
+      :is-open="isNoticeDetailPanelOpen"
+      :notice="selectedNotice"
+      :notice-title="`${getNoticeTypeBracketed(selectedNotice)} ${selectedNotice.title}`.trim()"
+      @edit="onEditNotice"
+      @delete="onDeleteNotice"
+      @close="isNoticeDetailPanelOpen = false"
+    />
   </div>
 </template>
 
@@ -136,6 +179,20 @@ definePageMeta({ layout: 'auth' })
 
 const { login } = useAuth()
 const route = useRoute()
+const {
+  loginNoticeList,
+  isLoginNoticeLoading,
+  loginNoticeErrorMessage,
+  handleSelectLoginNoticeList,
+  handleSelectNoticeTypeOptions,
+  getNoticeTypeBracketed,
+  getNoticeDateLabel,
+  isNoticeDetailPanelOpen,
+  selectedNotice,
+  onOpenNoticeDetail,
+  onEditNotice,
+  onDeleteNotice,
+} = useNoticeStore()
 
 /** 로그인 정보 저장 쿠키 */
 const savedLoginIdCookie = useCookie<string | null>('ta_saved_login_id', {
@@ -161,7 +218,12 @@ onMounted(() => {
     loginId.value = saved
     saveLoginInfo.value = true
   }
+  void Promise.all([handleSelectNoticeTypeOptions(), handleSelectLoginNoticeList()])
 })
+
+const onRetryLoginNotice = () => {
+  handleSelectLoginNoticeList()
+}
 
 // 🔽 아이디/비밀번호 찾기 — 페이지 준비 시 라우트 연결
 // const onFindId = () => {
@@ -202,25 +264,6 @@ const onSubmit = async () => {
     isLoading.value = false
   }
 }
-
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-const noticeList = ref([
-  {
-    id: 1,
-    content: '[장애안내] TeamAgent 서비스 일시 접속 장애 안내드립니다.',
-    date: '2026.04.03',
-  },
-  {
-    id: 2,
-    content: '[점검 완료 안내]TeamAgent 서비스 인프라 점검 안내드립니다.',
-    date: '2026.04.02',
-  },
-  {
-    id: 3,
-    content: '[서비스 점검 안내]TeamAgent 인프라 점검 실시 안내드립니다.',
-    date: '2026.04.01',
-  },
-])
 </script>
 
 <style lang="scss" scoped>
@@ -234,6 +277,21 @@ const noticeList = ref([
 
   :deep(.ui-input-wrap.is-focused:not(.is-disabled)) {
     border-width: 2px;
+  }
+
+  .login-notice-status {
+    margin: 0;
+    font-size: 14px;
+    color: $color-text-muted;
+    line-height: 150%;
+  }
+
+  .login-notice-status--error {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    color: $color-text-dark;
   }
 }
 </style>

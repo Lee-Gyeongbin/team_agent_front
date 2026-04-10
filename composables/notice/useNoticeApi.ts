@@ -1,7 +1,14 @@
 import { useApi } from '~/composables/com/useApi'
-import type { NoticeDetailResponse, NoticeFormData, NoticeItem, NoticeListResponse } from '~/types/notice'
+import type {
+  LoginNoticeItem,
+  LoginNoticeListResponse,
+  NoticeDetailResponse,
+  NoticeFormData,
+  NoticeItem,
+  NoticeListResponse,
+} from '~/types/notice'
 export const useNoticeApi = () => {
-  const { post } = useApi()
+  const { post, get } = useApi()
 
   /** 공지사항 일반 목록 조회 (서버 페이징, 검색/카테고리 포함) */
   const fetchSelectNoticeList = async (params: {
@@ -38,11 +45,18 @@ export const useNoticeApi = () => {
     return post<NoticeItem>('/notice/delete.do', { noticeId })
   }
 
+  /** 로그인화면 공지사항 조회 */
+  const fetchSelectLoginNoticeList = async (): Promise<LoginNoticeItem[]> => {
+    const res = await get<LoginNoticeListResponse>('/notice/selectNoticeList.do')
+    return Array.isArray(res.dataList) ? res.dataList : []
+  }
+
   return {
     fetchSelectNoticeList,
     fetchSelectNoticePinnedList,
     fetchSelectNoticeDetail,
     fetchSaveNotice,
     fetchDeleteNotice,
+    fetchSelectLoginNoticeList,
   }
 }
