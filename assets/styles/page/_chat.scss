@@ -134,6 +134,8 @@
 
       // 마크다운 본문 (marked GFM) — 표·코드·제목 등
       &.markdown-body {
+        font-size: $font-size-lg;
+        font-weight: 500;
         line-height: $line-height-relaxed;
         min-height: 60px;
         max-width: 100%;
