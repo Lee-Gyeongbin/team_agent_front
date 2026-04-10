@@ -121,9 +121,9 @@ const handleSelectDashboardStatSummary = async () => {
 }
 
 /** 질의 비율 */
-const handleSelectDashboardQueryRatio = async () => {
+const handleSelectDashboardQueryRatio = async (ym: string) => {
   try {
-    const res = await fetchDashboardQueryRatio()
+    const res = await fetchDashboardQueryRatio({ ym })
     queryRatio.value = res.data ?? null
   } catch {
     openToast({ message: '질의 비율 조회에 실패했습니다.', type: 'error' })
@@ -143,9 +143,9 @@ const handleSelectDashboardNoticeList = async () => {
 }
 
 /** 토큰 사용량 */
-const handleSelectDashboardTokenUsage = async () => {
+const handleSelectDashboardTokenUsage = async (ym: string) => {
   try {
-    const res = await fetchDashboardTokenUsage()
+    const res = await fetchDashboardTokenUsage({ ym })
     tokenUsage.value = res.dataList ?? null
     monthlyUsage.value = res.dataList?.[res.dataList.length - 1].tokenUsage ?? 0
   } catch {
@@ -165,11 +165,13 @@ const handleSelectDashboardVisitorTrend = async () => {
 
 /** 대시보드 위젯 데이터 일괄 조회 (페이지 진입 시 등) */
 const handleSelectDashboardAll = async () => {
+  const now = new Date()
+  const currentYm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   await Promise.all([
     handleSelectDashboardStatSummary(),
-    handleSelectDashboardQueryRatio(),
+    handleSelectDashboardQueryRatio(currentYm),
     handleSelectDashboardNoticeList(),
-    handleSelectDashboardTokenUsage(),
+    handleSelectDashboardTokenUsage(currentYm),
     handleSelectDashboardVisitorTrend(),
   ])
 }

@@ -11,7 +11,7 @@ import type {
  * 대시보드 API — 엔드포인트는 백엔드 스펙에 맞게 조정
  */
 export const useDashboardApi = () => {
-  const { get } = useApi()
+  const { get, post } = useApi()
 
   /** 상단 통계 카드 */
   const fetchDashboardStatSummary = async (): Promise<{ data: DashboardStatSummary }> => {
@@ -19,8 +19,8 @@ export const useDashboardApi = () => {
   }
 
   /** 질의 비율 */
-  const fetchDashboardQueryRatio = async (): Promise<{ data: DashboardQueryRatio }> => {
-    return get<{ data: DashboardQueryRatio }>('/dashboard/query-ratio.do')
+  const fetchDashboardQueryRatio = async (params: { ym: string }): Promise<{ data: DashboardQueryRatio }> => {
+    return post<{ data: DashboardQueryRatio }>('/dashboard/query-ratio.do', { ym: params.ym })
   }
 
   /** 공지 요약 목록 */
@@ -29,8 +29,8 @@ export const useDashboardApi = () => {
   }
 
   /** 토큰 사용량 (월별 목록) */
-  const fetchDashboardTokenUsage = async (): Promise<{ dataList: DashboardTokenUsage[] }> => {
-    return get<{ dataList: DashboardTokenUsage[] }>('/dashboard/token-usage.do')
+  const fetchDashboardTokenUsage = async (params: { ym: string }): Promise<{ dataList: DashboardTokenUsage[] }> => {
+    return post<{ dataList: DashboardTokenUsage[] }>('/dashboard/token-usage.do', { ym: params.ym })
   }
 
   /** 사용자 추이 (기간 조건 필요 시 POST body 객체로 별도 메서드 추가) */
