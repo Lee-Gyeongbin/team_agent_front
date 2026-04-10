@@ -70,11 +70,6 @@
   @include icon-file-bg('document-search');
 }
 
-// 사이드바 — 라이브러리/문서
-.icon-sidebar-book {
-  @include icon-file-bg('sidebar-book');
-}
-
 // 사이드바 드롭다운 아이콘 ======================
 .icon-sidebar-community {
   @include icon-file-bg('sidebar-community');

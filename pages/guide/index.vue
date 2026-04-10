@@ -626,6 +626,7 @@ const iconGroups = [
       { class: 'icon-knowledge' },
       { class: 'icon-database' },
       { class: 'icon-refund-back' },
+      { class: 'icon-document-search' },
       { class: 'icon-sidebar-community' },
       { class: 'icon-sidebar-delete' },
       { class: 'icon-sidebar-edit' },
@@ -635,6 +636,10 @@ const iconGroups = [
       { class: 'icon-sidebar-share' },
       { class: 'icon-sidebar-arrow-right' },
     ],
+  },
+  {
+    title: '로그인 아이콘',
+    icons: [{ class: 'icon-error' }],
   },
   {
     title: 'chat 아이콘',
@@ -704,6 +709,10 @@ const iconGroups = [
       { class: 'icon-arrow-right' },
       { class: 'icon-arrow-left-sm' },
       { class: 'icon-arrow-right-sm' },
+      { class: 'icon-chevron-right-sm' },
+      { class: 'icon-agent-knowledge' },
+      { class: 'icon-agent-database' },
+      { class: 'icon-agent-microphone' },
       { class: 'icon-minus' },
       { class: 'icon-plus-zoom' },
       { class: 'icon-download' },
@@ -777,6 +786,18 @@ const iconGroups = [
       { class: 'icon-file-doc' },
       { class: 'icon-folder-close' },
       { class: 'icon-folder-open' },
+    ],
+  },
+  {
+    title: '대시보드 아이콘',
+    icons: [
+      { class: 'icon-dash-feedback' },
+      { class: 'icon-dash-query' },
+      { class: 'icon-dash-satisfaction' },
+      { class: 'icon-dash-satisfied' },
+      { class: 'icon-dash-dissatisfied' },
+      { class: 'icon-dash-notice' },
+      { class: 'icon-attach-file' },
     ],
   },
   {

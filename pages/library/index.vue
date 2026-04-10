@@ -246,7 +246,7 @@
                         class="library-card type-new-card"
                       >
                         <div class="library-card-new-card-content">
-                          <i class="icon-sidebar-book size-36"></i>
+                          <i class="icon-chat-open-book size-20"></i>
                           <p>마음에 드는 지식을 저장해주세요</p>
                         </div>
                       </div>
