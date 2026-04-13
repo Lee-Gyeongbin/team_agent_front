@@ -61,6 +61,16 @@
       <UiButton
         variant="line-secondary"
         size="sm"
+        @click="emit('meta-manage', datamart)"
+      >
+        <template #icon-left>
+          <i class="icon-settings size-12" />
+        </template>
+        메타 관리
+      </UiButton>
+      <UiButton
+        variant="line-secondary"
+        size="sm"
         @click="emit('edit', datamart)"
       >
         <template #icon-left>
@@ -94,6 +104,7 @@ const emit = defineEmits<{
   test: [datamart: Datamart]
   history: [datamart: Datamart]
   edit: [datamart: Datamart]
+  'meta-manage': [datamart: Datamart]
   delete: [id: string]
 }>()
 

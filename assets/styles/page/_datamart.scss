@@ -187,3 +187,92 @@
   padding: $spacing-md 0 0;
   border-top: 1px solid $color-border;
 }
+
+// ===================================
+// 메타 관리 모달 (4탭) — 프롬프트 페이지(.prompt-page) 탭 레이아웃과 동일 패턴
+// ===================================
+.datamart-meta-modal {
+  .modal-dialog-content {
+    overflow: hidden;
+  }
+
+  .modal-dialog-body {
+    display: block;
+    align-items: stretch;
+    min-height: auto;
+    padding: $spacing-sm 0 0;
+  }
+
+  // 탭: 왼쪽 정렬 (UiTab scoped 의 margin: auto 중앙 정렬 덮어쓰기 — 특이도 .ui-tab-inner[data-v-*] 보다 높게)
+  .ui-tab {
+    width: 100%;
+  }
+
+  .ui-tab .ui-tab-inner {
+    max-width: none;
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
+    justify-content: flex-start;
+  }
+
+  .ui-tab .ui-tab-item:first-child {
+    padding-left: 0;
+  }
+
+  .datamart-meta-modal-inner {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .datamart-meta-modal-header {
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+    background: #fff;
+  }
+
+  .datamart-meta-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+    flex: 1;
+    padding: $spacing-sm 0 0;
+    min-height: 0;
+  }
+
+  // 탭 본문 래퍼 (AOS fade-up 대상 — pages/prompt/index.vue 의 .prompt-tab-panel 과 동일 역할)
+  .datamart-meta-tab-panel {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  &.is-fullscreen {
+    .modal-dialog-content {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-dialog-body {
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .datamart-meta-modal-inner {
+      max-height: none;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .datamart-meta-modal-body {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      @include custom-scrollbar;
+    }
+  }
+}

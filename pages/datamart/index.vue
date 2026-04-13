@@ -36,6 +36,7 @@
           @toggle-active="handleToggleActiveDatamart"
           @test="onTest"
           @edit="onEdit"
+          @meta-manage="onMetaManage"
           @delete="onDelete"
         />
 
@@ -67,15 +68,32 @@
       @close="isSaveModalOpen = false"
       @save="onSave"
     />
+
+    <!-- 메타 관리 모달 -->
+    <DatamartMetaModal
+      v-model:active-tab="metaModalActiveTab"
+      :is-open="isMetaModalOpen"
+      :datamart="metaModalTarget"
+      @close="isMetaModalOpen = false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+import AOS from 'aos'
 import DatamartSummary from '~/components/datamart/DatamartSummary.vue'
 import DatamartCard from '~/components/datamart/DatamartCard.vue'
 import DatamartSaveModal from '~/components/datamart/DatamartSaveModal.vue'
+import DatamartMetaModal from '~/components/datamart/DatamartMetaModal.vue'
 import { useDatamartStore } from '~/composables/datamart/useDatamartStore'
 import type { Datamart, DatamartForm } from '~/types/datamart'
+
+/** 메타 모달 탭 전환 시 AOS fade-up 재계산 (pages/prompt/index.vue 와 동일 패턴) */
+const refreshMetaModalAos = () => {
+  nextTick(() => {
+    AOS.refresh()
+  })
+}
 
 const {
   datamartList,
@@ -103,6 +121,20 @@ const openCreateModal = () => {
   editTarget.value = null
   isSaveModalOpen.value = true
 }
+
+// 메타 관리 모달
+const isMetaModalOpen = ref(false)
+const metaModalTarget = ref<Datamart | null>(null)
+const metaModalActiveTab = ref('table')
+
+watch(metaModalActiveTab, () => {
+  if (!isMetaModalOpen.value) return
+  refreshMetaModalAos()
+})
+
+watch(isMetaModalOpen, (open) => {
+  if (open) refreshMetaModalAos()
+})
 
 const onSave = async (data: DatamartForm) => {
   if (data.dbType !== 'MySQL') {
@@ -132,5 +164,12 @@ const onEdit = (datamart: Datamart) => {
 // 삭제
 const onDelete = async (id: string) => {
   await handleDeleteDatamart(id)
+}
+
+// 메타 관리
+const onMetaManage = (datamart: Datamart) => {
+  metaModalTarget.value = datamart
+  metaModalActiveTab.value = 'table'
+  isMetaModalOpen.value = true
 }
 </script>
