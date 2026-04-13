@@ -323,10 +323,11 @@ watch(
     requestAnimationFrame(() => {
       isRefineCompletedFx.value = true
       if (refineCompletedFxTimer) clearTimeout(refineCompletedFxTimer)
+      // 시트 CSS 애니메이션(스윕 최장 ~3.6s)이 끝나기 전에 클래스가 제거되면 효과가 중간에 끊김
       refineCompletedFxTimer = setTimeout(() => {
         isRefineCompletedFx.value = false
         refineCompletedFxTimer = null
-      }, 1400)
+      }, 4000)
     })
   },
 )
@@ -408,7 +409,7 @@ const onPrintReport = () => {
 }
 
 .library-create-doc-report-sheet.is-refine-completed {
-  animation: report-refine-glow 3.3s ease-out forwards;
+  animation: report-refine-glow 3.2s ease-out forwards;
 }
 
 .library-create-doc-report-sheet::before {
@@ -419,20 +420,32 @@ const onPrintReport = () => {
   pointer-events: none;
   opacity: 0;
   transform: translateX(-130%);
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(186, 230, 253, 0.12) 36%,
-    rgba(255, 255, 255, 0.52) 50%,
-    rgba(187, 247, 208, 0.16) 64%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  filter: saturate(105%);
-  will-change: transform, opacity;
+  // 빛 스윕만 화려하게: 앞쪽 얇은 하이라이트 + 뒤쪽 청록·보라·연두 광대역
+  background:
+    linear-gradient(
+      96deg,
+      rgba(255, 255, 255, 0) 40%,
+      rgba(255, 255, 255, 0.65) 47.5%,
+      rgba(255, 255, 255, 0.98) 50%,
+      rgba(255, 255, 255, 0.5) 53%,
+      rgba(255, 255, 255, 0) 60%
+    ),
+    linear-gradient(
+      105deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(56, 189, 248, 0.28) 34%,
+      rgba(255, 255, 255, 0.72) 45%,
+      rgba(167, 139, 250, 0.2) 52%,
+      rgba(74, 222, 128, 0.26) 58%,
+      rgba(255, 255, 255, 0) 100%
+    );
+  background-blend-mode: screen, normal;
+  filter: saturate(112%) brightness(1.02);
+  will-change: transform, opacity, filter;
 }
 
 .library-create-doc-report-sheet.is-refine-completed::before {
-  animation: report-refine-sweep 4.4s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  animation: report-refine-sweep 3.35s cubic-bezier(0.18, 0.72, 0.32, 1) forwards;
 }
 
 @keyframes report-refine-glow {
@@ -443,19 +456,19 @@ const onPrintReport = () => {
       0 0 0 0 rgba(59, 130, 246, 0),
       0 0 0 0 rgba(34, 197, 94, 0);
   }
-  22% {
-    border-color: rgba(59, 130, 246, 0.56);
+  24% {
+    border-color: rgba(59, 130, 246, 0.5);
     box-shadow:
       0 1px 3px rgba(30, 50, 77, 0.08),
-      0 0 0 2px rgba(59, 130, 246, 0.22),
-      0 0 14px 3px rgba(34, 197, 94, 0.12);
+      0 0 0 2px rgba(59, 130, 246, 0.18),
+      0 0 16px 4px rgba(34, 197, 94, 0.1);
   }
-  70% {
-    border-color: rgba(59, 130, 246, 0.36);
+  62% {
+    border-color: rgba(59, 130, 246, 0.28);
     box-shadow:
       0 1px 3px rgba(30, 50, 77, 0.08),
-      0 0 0 1px rgba(59, 130, 246, 0.14),
-      0 0 8px 2px rgba(34, 197, 94, 0.08);
+      0 0 0 1px rgba(59, 130, 246, 0.1),
+      0 0 10px 2px rgba(34, 197, 94, 0.06);
   }
   100% {
     border-color: #c6d2db;
@@ -469,17 +482,29 @@ const onPrintReport = () => {
 @keyframes report-refine-sweep {
   0% {
     opacity: 0;
-    transform: translateX(-130%);
+    transform: translateX(-135%) skewX(-6deg);
+    filter: saturate(105%) brightness(1);
   }
-  15% {
-    opacity: 0.68;
+  14% {
+    opacity: 0.72;
+    filter: saturate(128%) brightness(1.04) blur(0);
   }
-  60% {
-    opacity: 0.52;
+  32% {
+    opacity: 0.94;
+    filter: saturate(152%) brightness(1.12) blur(0);
+  }
+  48% {
+    opacity: 0.78;
+    filter: saturate(138%) brightness(1.07) blur(0);
+  }
+  68% {
+    opacity: 0.38;
+    filter: saturate(118%) brightness(1.02);
   }
   100% {
     opacity: 0;
-    transform: translateX(130%);
+    transform: translateX(135%) skewX(-6deg);
+    filter: saturate(105%) brightness(1);
   }
 }
 
