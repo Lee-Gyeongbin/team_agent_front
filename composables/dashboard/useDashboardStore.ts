@@ -5,6 +5,7 @@ import type {
   DashboardStatSummary,
   DashboardTokenUsage,
   DashboardVisitorTrend,
+  DashboardKeywordTrend,
 } from '~/types/dashboard'
 import { calculateChartScale } from '~/utils/chat/visualizationChartUtil'
 
@@ -14,6 +15,7 @@ const {
   fetchDashboardNoticeList,
   fetchDashboardTokenUsage,
   fetchDashboardVisitorTrend,
+  fetchDashboardKeywordTrend,
 } = useDashboardApi()
 
 const statSummary = ref<DashboardStatSummary | null>(null)
@@ -110,6 +112,8 @@ const visitorTrendChartConfig = computed(() => {
   }
 })
 
+const keywordTrend = ref<DashboardKeywordTrend[]>([])
+
 /** 상단 통계 카드 */
 const handleSelectDashboardStatSummary = async () => {
   try {
@@ -163,6 +167,16 @@ const handleSelectDashboardVisitorTrend = async () => {
   }
 }
 
+/** 사용자 관심 키워드 */
+const handleSelectDashboardKeywordTrend = async (dayCnt: number) => {
+  try {
+    const res = await fetchDashboardKeywordTrend({ dayCnt })
+    keywordTrend.value = res.dataList ?? []
+  } catch {
+    openToast({ message: '사용자 관심 키워드 조회에 실패했습니다.', type: 'error' })
+  }
+}
+
 /** 대시보드 위젯 데이터 일괄 조회 (페이지 진입 시 등) */
 const handleSelectDashboardAll = async () => {
   const now = new Date()
@@ -173,6 +187,7 @@ const handleSelectDashboardAll = async () => {
     handleSelectDashboardNoticeList(),
     handleSelectDashboardTokenUsage(currentYm),
     handleSelectDashboardVisitorTrend(),
+    handleSelectDashboardKeywordTrend(3),
   ])
 }
 
@@ -189,11 +204,13 @@ export const useDashboardStore = () => {
     tokenUsageChartConfig,
     visitorTrend,
     visitorTrendChartConfig,
+    keywordTrend,
     handleSelectDashboardStatSummary,
     handleSelectDashboardQueryRatio,
     handleSelectDashboardNoticeList,
     handleSelectDashboardTokenUsage,
     handleSelectDashboardVisitorTrend,
+    handleSelectDashboardKeywordTrend,
     handleSelectDashboardAll,
   }
 }

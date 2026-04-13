@@ -28,6 +28,10 @@
         data-aos-delay="200"
       />
     </div>
+
+    <div class="dashboard-bottom-row is-single">
+      <DashboardKeywordTrend />
+    </div>
   </div>
 </template>
 

@@ -36,3 +36,10 @@ export interface DashboardVisitorTrend {
   statDate: string
   successCnt: number
 }
+
+/** 사용자 관심 키워드 */
+export interface DashboardKeywordTrend {
+  keyword: string
+  cnt: number
+  dayCnt: number
+}

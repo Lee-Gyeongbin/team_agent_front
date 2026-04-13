@@ -5,6 +5,7 @@ import type {
   DashboardStatSummary,
   DashboardTokenUsage,
   DashboardVisitorTrend,
+  DashboardKeywordTrend,
 } from '~/types/dashboard'
 
 /**
@@ -38,11 +39,19 @@ export const useDashboardApi = () => {
     return get<{ dataList: DashboardVisitorTrend[] }>('/dashboard/visitor-trend.do')
   }
 
+  /** 사용자 관심 키워드 */
+  const fetchDashboardKeywordTrend = async (params: {
+    dayCnt: number
+  }): Promise<{ dataList: DashboardKeywordTrend[] }> => {
+    return post<{ dataList: DashboardKeywordTrend[] }>('/dashboard/keyword-trend.do', { dayCnt: params.dayCnt })
+  }
+
   return {
     fetchDashboardStatSummary,
     fetchDashboardQueryRatio,
     fetchDashboardNoticeList,
     fetchDashboardTokenUsage,
     fetchDashboardVisitorTrend,
+    fetchDashboardKeywordTrend,
   }
 }
