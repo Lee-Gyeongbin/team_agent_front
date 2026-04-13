@@ -188,16 +188,17 @@
         color: $color-text-primary;
       }
     }
+  }
 
-    .card-badge {
-      font-size: 16px;
-      font-weight: 600;
-      line-height: 1.5;
-      color: #3c69db;
-      background: #f4f7f9;
-      padding: 4px 16px;
-      border-radius: 100px;
-    }
+  // 헤더 외 영역(차트 상단 등)에서도 동일 스타일 적용
+  .card-badge {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.5;
+    color: #3c69db;
+    background: #f4f7f9;
+    padding: 4px 16px;
+    border-radius: 100px;
   }
 }
 
