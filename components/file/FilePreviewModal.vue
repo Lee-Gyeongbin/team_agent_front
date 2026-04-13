@@ -284,6 +284,7 @@ watch(currentPage, async (page) => {
   margin: -12px 0 -20px;
   overflow: hidden;
   border-radius: 0 0 $border-radius-lg $border-radius-lg;
+  width: 100%;
 }
 
 .file-preview-modal__file-select {
