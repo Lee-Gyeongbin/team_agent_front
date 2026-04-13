@@ -167,15 +167,15 @@ const handleSelectDashboardVisitorTrend = async () => {
   }
 }
 
-/** 사용자 관심 키워드 */
-const handleSelectDashboardKeywordTrend = async (dayCnt: number) => {
-  try {
-    const res = await fetchDashboardKeywordTrend({ dayCnt })
-    keywordTrend.value = res.dataList ?? []
-  } catch {
-    openToast({ message: '사용자 관심 키워드 조회에 실패했습니다.', type: 'error' })
-  }
-}
+/** 사용자 관심 키워드 TODO : 시연 끝나면 주석 해제제 */
+// const handleSelectDashboardKeywordTrend = async (dayCnt: number) => {
+//   try {
+//     const res = await fetchDashboardKeywordTrend({ dayCnt })
+//     keywordTrend.value = res.dataList ?? []
+//   } catch {
+//     openToast({ message: '사용자 관심 키워드 조회에 실패했습니다.', type: 'error' })
+//   }
+// }
 
 /** 대시보드 위젯 데이터 일괄 조회 (페이지 진입 시 등) */
 const handleSelectDashboardAll = async () => {
@@ -187,7 +187,7 @@ const handleSelectDashboardAll = async () => {
     handleSelectDashboardNoticeList(),
     handleSelectDashboardTokenUsage(currentYm),
     handleSelectDashboardVisitorTrend(),
-    handleSelectDashboardKeywordTrend(3),
+    // handleSelectDashboardKeywordTrend(3),
   ])
 }
 
@@ -210,7 +210,7 @@ export const useDashboardStore = () => {
     handleSelectDashboardNoticeList,
     handleSelectDashboardTokenUsage,
     handleSelectDashboardVisitorTrend,
-    handleSelectDashboardKeywordTrend,
+    // handleSelectDashboardKeywordTrend,
     handleSelectDashboardAll,
   }
 }

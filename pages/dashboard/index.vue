@@ -29,9 +29,10 @@
       />
     </div>
 
-    <div class="dashboard-bottom-row is-single">
+    <!-- TODO : 시연 끝나면 주석 해제 -->
+    <!-- <div class="dashboard-bottom-row is-single">
       <DashboardKeywordTrend />
-    </div>
+    </div> -->
   </div>
 </template>
 
