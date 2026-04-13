@@ -40,56 +40,57 @@
       @update:model-value="onSubOptionsMultiChange"
     />
 
-    <!-- dim 오버레이 -->
-    <Transition name="fade">
-      <div
-        v-if="isOpen"
-        class="chat-mode-overlay"
-        @click="isOpen = false"
-      />
-    </Transition>
+    <!-- dim 오버레이 + 패널: body로 Teleport하여 사이드 패널 위에 표시 -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div
+          v-if="isOpen"
+          class="chat-mode-overlay"
+          @click="isOpen = false"
+        />
+      </Transition>
 
-    <!-- 하단 슬라이드업 패널 -->
-    <Transition name="slide-up">
-      <div
-        v-if="isOpen"
-        class="chat-mode-panel"
-      >
-        <div class="chat-mode-panel-header">
-          <h3 class="chat-mode-panel-title">에이전트 선택</h3>
-          <button
-            type="button"
-            class="chat-mode-panel-close"
-            @click="isOpen = false"
-          >
-            <i class="icon-close size-20" />
-          </button>
-        </div>
-        <div class="chat-mode-panel-card-grp">
-          <button
-            v-for="agent in chatIndexAgents"
-            :key="agent.agentId"
-            type="button"
-            class="chat-index-card"
-            :class="{ 'is-active': selectedChatAgentId === agent.agentId }"
-            :style="getChatIndexAgentColorStyle(agent.colorHex ?? '')"
-            @click="onSelect(agent)"
-          >
-            <div class="chat-index-card-default">
-              <span class="icon-circle"><i :class="[agent.iconClassNm ? agent.iconClassNm : 'icon-search', 'size-24']" /></span>
-              <div class="chat-index-card-info">
-                <p class="chat-index-card-name">{{ agent.agentNm }}</p>
-                <p class="chat-index-card-sub">{{ getChatIndexAgentSubLabel(agent) }}</p>
+      <Transition name="slide-up">
+        <div
+          v-if="isOpen"
+          class="chat-mode-panel"
+        >
+          <div class="chat-mode-panel-header">
+            <h3 class="chat-mode-panel-title">에이전트 선택</h3>
+            <button
+              type="button"
+              class="chat-mode-panel-close"
+              @click="isOpen = false"
+            >
+              <i class="icon-close size-20" />
+            </button>
+          </div>
+          <div class="chat-mode-panel-card-grp">
+            <button
+              v-for="agent in chatIndexAgents"
+              :key="agent.agentId"
+              type="button"
+              class="chat-index-card"
+              :class="{ 'is-active': selectedChatAgentId === agent.agentId }"
+              :style="getChatIndexAgentColorStyle(agent.colorHex ?? '')"
+              @click="onSelect(agent)"
+            >
+              <div class="chat-index-card-default">
+                <span class="icon-circle"><i :class="[agent.iconClassNm ? agent.iconClassNm : 'icon-search', 'size-24']" /></span>
+                <div class="chat-index-card-info">
+                  <p class="chat-index-card-name">{{ agent.agentNm }}</p>
+                  <p class="chat-index-card-sub">{{ getChatIndexAgentSubLabel(agent) }}</p>
+                </div>
               </div>
-            </div>
-            <div class="chat-index-card-hover">
-              <p class="chat-index-card-hover-desc">{{ agent.description }}</p>
-              <span class="chat-index-card-hover-action">시작하기 <i class="icon-chevron-right-sm size-12" /></span>
-            </div>
-          </button>
+              <div class="chat-index-card-hover">
+                <p class="chat-index-card-hover-desc">{{ agent.description }}</p>
+                <span class="chat-index-card-hover-action">시작하기 <i class="icon-chevron-right-sm size-12" /></span>
+              </div>
+            </button>
+          </div>
         </div>
-      </div>
-    </Transition>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
