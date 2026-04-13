@@ -470,6 +470,10 @@
     max-width: 100%;
     padding-right: 12px;
     max-height: none;
+    // 전역 `.doc-dataset-create-form`의 overflow-y:auto + max-height:70vh 때문에
+    // 보고서 영역 안에만 세로 스크롤이 생김 → 내용 높이만큼 늘리고 스크롤은 modal-body에만
+    overflow-x: hidden;
+    overflow-y: visible;
     box-sizing: border-box;
   }
 

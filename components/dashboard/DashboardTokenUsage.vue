@@ -12,8 +12,10 @@
             :max-value="monthPickerMax"
           />
         </div>
-        <span class="card-badge">이번달 사용량 : {{ monthlyUsage.toLocaleString() }} 토큰</span>
       </div>
+    </div>
+    <div class="token-usage-chart-badge-row">
+      <span class="card-badge">이번달 사용량 : {{ monthlyUsage.toLocaleString() }} 토큰</span>
     </div>
     <div
       class="dashboard-chart-area"
@@ -47,6 +49,12 @@ const month = computed({
 
 <style lang="scss" scoped>
 .dashboard-token-usage {
+  .token-usage-chart-badge-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: $spacing-sm;
+  }
+
   .token-usage-header-right {
     display: flex;
     align-items: center;
