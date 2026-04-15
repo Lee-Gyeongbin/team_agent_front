@@ -12,7 +12,7 @@ export default defineNuxtConfig({
 
   components: [{ path: '~/components', pathPrefix: false }],
 
-  css: ['~/assets/styles/main.scss', 'katex/dist/katex.min.css'],
+  css: ['~/assets/styles/main.scss'],
 
   vite: {
     // Vite가 클라이언트에서 import.meta.server → false 치환 후에도
