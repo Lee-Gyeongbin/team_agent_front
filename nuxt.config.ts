@@ -12,9 +12,17 @@ export default defineNuxtConfig({
 
   components: [{ path: '~/components', pathPrefix: false }],
 
-  css: ['~/assets/styles/main.scss'],
+  css: ['~/assets/styles/main.scss', 'katex/dist/katex.min.css'],
 
   vite: {
+    // Vite가 클라이언트에서 import.meta.server → false 치환 후에도
+    // manifest.js dead branch의 import("#app-manifest")를 분석하며 실패하는 경우 대비
+    // (@nuxt/vite-builder의 clientAliases와 동일, nuxt/nuxt#30461·#33606)
+    resolve: {
+      alias: {
+        '#app-manifest': 'mocked-exports/empty',
+      },
+    },
     css: {
       preprocessorOptions: {
         scss: {
