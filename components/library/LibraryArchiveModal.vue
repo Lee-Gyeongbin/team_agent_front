@@ -51,11 +51,15 @@
           <div>
             <!-- 태그 영역 -->
             <div class="library-archive-card-badges flex flex-wrap gap-4">
-              <UiBadge :variant="getBadgeInfo(item.svcTy)?.variant">
+              <UiBadge
+                v-if="item.svcTy === 'C' || item.agentId"
+                :variant="item.svcTy === 'C' ? 'basic-chat' : 'default'"
+                :color-hex="item.svcTy === 'C' ? '' : item.colorHex"
+              >
                 <template #icon-left>
-                  <i :class="`icon ${getBadgeInfo(item.svcTy)?.icon} size-14`"></i>
+                  <i :class="`icon ${item.svcTy === 'C' ? 'icon-comment-other' : item.iconClassNm} size-14`"></i>
                 </template>
-                {{ getBadgeInfo(item.svcTy)?.label }}
+                {{ item.svcTy === 'C' ? '기본대화' : item.agentNm }}
               </UiBadge>
             </div>
             <!-- 제목 -->
@@ -84,10 +88,12 @@
 
           <!-- 시스템 응답 -->
           <div class="content-box type-response">
+            <!-- eslint-disable vue/no-v-html — toHtmlContent 내 안전 처리 적용 -->
             <div
-              class="message-content"
+              class="message-content markdown-body"
               v-html="toHtmlContent(item.rcontent ?? '')"
             ></div>
+            <!-- eslint-enable vue/no-v-html -->
           </div>
         </div>
       </div>
@@ -121,17 +127,6 @@ const emit = defineEmits<{
   close: []
   unarchive: [card: LibraryCardDetail]
 }>()
-
-const getBadgeInfo = (svcTy: string) => {
-  switch (svcTy) {
-    case 'M':
-      return { variant: 'manual-ai' as const, icon: 'icon-book', label: '매뉴얼AI' }
-    case 'C':
-      return { variant: 'basic-chat' as const, icon: 'icon-comment-other', label: '기본대화' }
-    case 'S':
-      return { variant: 'data-line' as const, icon: 'icon-data-line-small', label: '데이터분석' }
-  }
-}
 
 // 카드 확장 상태 관리
 const expandedCards = ref<Record<number, boolean>>({})
