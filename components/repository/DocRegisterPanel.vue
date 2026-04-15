@@ -8,7 +8,7 @@
     <div class="com-setting-form">
       <!-- 문서 제목 -->
       <div class="url-reg-field">
-        <label class="url-reg-label">문서 제목 <span class="required">*</span></label>
+        <label class="url-reg-label">문서셋 제목 <span class="required">*</span></label>
         <UiInput
           ref="docTitleRef"
           v-model="form.docTitle"
@@ -78,20 +78,45 @@
         />
       </div>
 
-      <!-- 파일첨부 -->
+      <!-- 파일첨부 — 파일 관리 탭 저장소에서 선택 -->
       <div class="url-reg-field">
         <label class="url-reg-label">파일첨부</label>
-        <!-- TODO : 시연 종료 후 파일 용량 제한(max-size) 복구 -->
-        <UiFileUpload
-          v-model="form.files"
-          :attached-file-list="form.attachedFileList"
-          :is-downloadable="true"
-          :max-files="5"
-          accept=".txt,.pptx,.pdf,.docx,.hwp"
-          :allowed-extensions="DOC_ATTACH_ALLOWED_EXT"
-          hint="TXT, PPTX, PDF, DOCX, HWP만 첨부 가능 (파일당 최대 50MB)"
-          @remove-attached-file="onRemoveAttachedFile"
-        />
+        <div class="doc-reg-file-actions flex flex-wrap items-center gap-2">
+          <UiButton
+            variant="line-secondary"
+            size="md"
+            @click="onOpenFilePicker"
+          >
+            <template #icon-left>
+              <i class="icon icon-plus size-16" />
+            </template>
+            파일 등록
+          </UiButton>
+          <span class="doc-reg-file-hint">파일 관리 탭에 등록된 파일만 선택할 수 있습니다. (최대 5개)</span>
+        </div>
+        <ul
+          v-if="form.attachedFileList.length > 0"
+          class="doc-reg-attached-list"
+        >
+          <li
+            v-for="(file, index) in form.attachedFileList"
+            :key="`${file.docFileId}-${index}`"
+            class="doc-reg-attached-item flex items-center justify-between gap-2"
+          >
+            <span class="doc-reg-attached-name">{{ file.fileName }}</span>
+            <UiButton
+              variant="ghost"
+              size="xxs"
+              icon-only
+              aria-label="첨부 제거"
+              @click="onRemoveAttachedFile(file, index)"
+            >
+              <template #icon-left>
+                <i class="icon icon-close size-14" />
+              </template>
+            </UiButton>
+          </li>
+        </ul>
       </div>
 
       <!-- 키워드 -->
@@ -142,12 +167,22 @@
       @close="isCategoryModalOpen = false"
       @confirm="onCategoryConfirm"
     />
+
+    <FileLibraryPickerModal
+      :is-open="isFilePickerOpen"
+      :category-id="pickerCategoryId"
+      :exclude-doc-file-ids="attachedDocFileIds"
+      :max-files="5"
+      @close="isFilePickerOpen = false"
+      @confirm="onFilePickerConfirm"
+    />
   </UiModal>
 </template>
 
 <script setup lang="ts">
 import type { CategoryTreeItem, Document, FileItem } from '~/types/repository'
 import CategorySelectModal from '~/components/repository/CategorySelectModal.vue'
+import FileLibraryPickerModal from '~/components/repository/FileLibraryPickerModal.vue'
 import { openToast } from '~/composables/useToast'
 import { useCategoryStore } from '~/composables/repository/useCategoryStore'
 
@@ -164,16 +199,7 @@ const emit = defineEmits<{
 const { categoryList } = useCategoryStore()
 const { secLvlOptions, onSaveDocument, docSelectedCategoryId } = useRepositoryStore()
 
-/** 문서 등록 패널 첨부: 허용 확장자 */
-const DOC_ATTACH_ALLOWED_EXT = ['txt', 'pptx', 'pdf', 'docx', 'hwp']
-const DOC_ATTACH_EXT_SET = new Set(DOC_ATTACH_ALLOWED_EXT)
-
-const getFileExtensionLower = (fileName: string): string => {
-  const t = fileName.trim()
-  const lastDot = t.lastIndexOf('.')
-  if (lastDot < 0 || lastDot === t.length - 1) return ''
-  return t.slice(lastDot + 1).toLowerCase()
-}
+const isFilePickerOpen = ref(false)
 const docTitleRef = ref<{ focus?: () => void; $el?: HTMLElement } | null>(null)
 const categoryFieldRef = ref<HTMLElement | null>(null)
 
@@ -232,6 +258,37 @@ const selectedCategoryName = computed(() => {
 
 const onCategoryConfirm = (selectedId: string) => {
   form.value.categoryId = selectedId || ''
+}
+
+const pickerCategoryId = computed(() => docSelectedCategoryId.value.trim() || form.value.categoryId.trim())
+
+const attachedDocFileIds = computed(() =>
+  form.value.attachedFileList.map((f) => String(f.docFileId ?? '').trim()).filter(Boolean),
+)
+
+const onOpenFilePicker = () => {
+  if (!pickerCategoryId.value) {
+    openToast({ message: '카테고리를 먼저 선택해 주세요.', type: 'warning' })
+    focusField(categoryFieldRef)
+    return
+  }
+  isFilePickerOpen.value = true
+}
+
+const onFilePickerConfirm = (items: FileItem[]) => {
+  const existing = new Set(attachedDocFileIds.value)
+  const merged = [...form.value.attachedFileList]
+  for (const item of items) {
+    const id = String(item.docFileId ?? '').trim()
+    if (!id || existing.has(id)) continue
+    if (merged.length >= 5) {
+      openToast({ message: '파일은 최대 5개까지 첨부할 수 있습니다.', type: 'warning' })
+      break
+    }
+    merged.push(item)
+    existing.add(id)
+  }
+  form.value.attachedFileList = merged
 }
 
 const applyInitialFromDocument = (src: Partial<Document>) => {
@@ -296,21 +353,16 @@ const onSave = async () => {
     focusField(categoryFieldRef)
     return
   }
-  // 신규 첨부 파일: 확장자 재검증 (비정상 상태·직접 조작 대비)
-  for (const f of form.value.files) {
-    const ext = getFileExtensionLower(f.name)
-    if (!ext || !DOC_ATTACH_EXT_SET.has(ext)) {
-      openToast({
-        message: '허용 형식만 첨부할 수 있습니다. (txt, pptx, pdf, docx, hwp)',
-        type: 'warning',
-      })
-      return
-    }
-  }
+  const linkDocFileIds = form.value.attachedFileList
+    .filter((f) => !String(f.docId ?? '').trim())
+    .map((f) => String(f.docFileId ?? '').trim())
+    .filter(Boolean)
   const payload = {
     ...form.value,
+    categoryId: resolvedCategoryId,
     // longtext -> varchar(500) 변경 대응: 저장 전 안전하게 최대 길이 보장
     content: String(form.value.content ?? '').slice(0, 500),
+    linkDocFileIds,
   }
   const ok = await onSaveDocument(payload)
   if (!ok) return
@@ -328,3 +380,32 @@ const onRemoveAttachedFile = (file: FileItem, index: number) => {
   form.value.attachedFileList = form.value.attachedFileList.filter((_, i) => i !== index)
 }
 </script>
+
+<style lang="scss" scoped>
+.doc-reg-file-hint {
+  color: var(--color-text-secondary, #666);
+  @include typo($body-xsmall);
+}
+
+.doc-reg-attached-list {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--color-border-subtle, rgba(0, 0, 0, 0.12));
+  border-radius: $border-radius-base;
+}
+
+.doc-reg-attached-item {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border-subtle, rgba(0, 0, 0, 0.12));
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.doc-reg-attached-name {
+  @include typo($body-small);
+  word-break: break-all;
+}
+</style>

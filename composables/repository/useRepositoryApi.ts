@@ -1,13 +1,16 @@
+import type { ActionResponse } from '~/types/global'
 import type {
   CategoryItem,
+  DocExistCheckItem,
   DocRepositoryDetailApiResponse,
   Document,
   DocumentDeleteItem,
   DocumentSavePayload,
-  DocExistCheckItem,
+  FileLibraryItem,
+  FileLibrarySavePayload,
   UrlItem,
 } from '~/types/repository'
-import type { ActionResponse } from '~/types/global'
+import type { FileMeta, FileUploadResponse } from '~/types/file'
 
 // 🔽 Mock — 백엔드 API 완성 시 useApi 패턴으로 교체
 const MOCK_BASE = '/mock/repository'
@@ -85,6 +88,18 @@ export const useRepositoryApi = () => {
     return post<{ data: number }>('/repository/selectDocExistCnt.do', { docIdList })
   }
 
+  /**
+   * 문서 파일 presigned URL 발급 (NCP PUT)
+   * - 실제 바이너리 업로드는 호출부에서 `uploadUrl`로 PUT.
+   * - 백엔드 FileVO: `storeFilePath` = S3 객체 키(필수), `fileName`/`fileType`/`fileSize` 등 메타.
+   */
+  const fetchSaveDocumentFile = async (
+    meta: Pick<FileMeta, 'fileName' | 'fileType' | 'fileSize'> & Pick<FileMeta, 'storeFilePath'> & Partial<FileMeta>,
+  ) => {
+    return post<FileUploadResponse>('/repository/saveDocumentFile.do', meta)
+  }
+
+  /** 문서 저장 (DB) — file 은 업로드 완료 메타 배열 */
   const fetchSaveDocument = async (data: DocumentSavePayload): Promise<ActionResponse> => {
     return unwrapData<ActionResponse>(await post<{ data: ActionResponse }>('/repository/saveDocument.do', data))
   }
@@ -96,6 +111,25 @@ export const useRepositoryApi = () => {
    */
   const fetchDeleteDocument = async (docIdList: DocumentDeleteItem[]) => {
     return post<{ data: number }>('/repository/deleteDocument.do', { docIdList })
+  }
+
+  /** 파일 관리 탭 — 풀(DOC_ID IS NULL) 목록 */
+  const fetchSelectDocFileLibraryList = async (params: {
+    categoryId?: string
+    findContent?: string
+    page?: number
+    pageSize?: number
+  }) => {
+    return post<{ dataList: FileLibraryItem[]; totalCnt: number }>('/repository/selectDocFileLibraryList.do', params)
+  }
+
+  /** 파일 관리 탭 — 업로드 완료 후 TB_DOC_FILE 풀 INSERT */
+  const fetchSaveFileLibrary = async (data: FileLibrarySavePayload) => {
+    return post<{ successYn: boolean; returnMsg?: string; docFileId?: string }>('/repository/saveFileLibrary.do', data)
+  }
+
+  const fetchDeleteFileLibrary = async (docFileId: string) => {
+    return post<{ successYn: boolean; returnMsg?: string }>('/repository/deleteFileLibrary.do', { docFileId })
   }
 
   // ===== URL =====
@@ -130,11 +164,17 @@ export const useRepositoryApi = () => {
     fetchDocumentList,
     fetchSelectDocRepositoryDetail,
     fetchSaveDocument,
+    fetchSaveDocumentFile,
     fetchDeleteDocument,
     fetchUrlList,
     fetchSaveUrl,
     fetchDeleteUrl,
     fetchToggleUrlStatus,
     fetchSelectDocumentExistCnt,
+    fetchSelectDocFileLibraryList,
+    /** @deprecated 이름 통일용 별칭 — `fetchSelectDocFileLibraryList` 와 동일 */
+    fetchFileLibraryList: fetchSelectDocFileLibraryList,
+    fetchSaveFileLibrary,
+    fetchDeleteFileLibrary,
   }
 }

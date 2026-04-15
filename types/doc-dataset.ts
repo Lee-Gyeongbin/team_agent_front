@@ -45,6 +45,7 @@ export interface DocDatasetDetail {
   singleCellText: string
   llmCd?: string
   chunkOptJson?: string | Record<string, unknown> | null
+  fileChangedYn?: string
 }
 
 export interface CategoryItem {
@@ -59,6 +60,7 @@ export interface CategoryItem {
 export interface DocDatasetSelectedDoc {
   docId: string
   docTitle: string
+  fileChangedYn?: string
   categoryId?: string
   author?: string
   secLvl?: string

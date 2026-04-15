@@ -151,7 +151,7 @@
                 class="table-header-sort-btn"
                 @click="onSort()"
               >
-                문서명
+                문서셋명
                 <i class="icon icon-sync size-16" />
               </button>
             </template>

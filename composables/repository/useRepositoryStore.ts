@@ -1,4 +1,5 @@
 import { useRepositoryApi } from '~/composables/repository/useRepositoryApi'
+import { formatChatStoreFileNameBase } from '~/utils/global/dateUtil'
 import type { CodeItem } from '~/types/codes'
 import type {
   DocRepositoryDetailResponse,
@@ -8,10 +9,11 @@ import type {
   DocumentSavePayload,
   DocExistCheckItem,
   FileItem,
+  FileLibraryItem,
   UrlItem,
 } from '~/types/repository'
 import type { TableColumn } from '~/types/table'
-const { handleUploadFile, onDownloadFile, handleDeleteNcpFile, fileError } = useFileStore()
+const { onDownloadFile, handleUploadByPresignedUrl } = useFileStore()
 const {
   fetchSelectDocExistCnt,
   fetchSelectDocumentExistCnt,
@@ -23,6 +25,10 @@ const {
   fetchSaveUrl,
   fetchDeleteUrl,
   fetchToggleUrlStatus,
+  fetchSaveDocumentFile,
+  fetchSelectDocFileLibraryList,
+  fetchSaveFileLibrary,
+  fetchDeleteFileLibrary,
 } = useRepositoryApi()
 const isLoading = ref(false)
 
@@ -36,6 +42,16 @@ const docSelectedCategoryId = ref('')
 const docCurrentPage = ref(1)
 const docPageSize = 10
 
+// ===== 파일 라이브러리 (파일 관리 탭) =====
+const fileSearchKeyword = ref('')
+const fileSelectedCategoryId = ref('')
+const fileLibraryList = ref<FileLibraryItem[]>([])
+const fileTotalCount = ref(0)
+const fileCurrentPage = ref(1)
+const filePageSize = ref(10)
+const fileLibraryLoading = ref(false)
+const fileLibraryError = ref('')
+
 // 검색·필터
 const statusFilterOptions = [
   { label: '전체 상태', value: '' },
@@ -48,7 +64,7 @@ const tableColumns: TableColumn[] = [
   { key: 'select', label: '', width: '48px', align: 'center', headerAlign: 'center' },
   {
     key: 'docTitle',
-    label: '문서명',
+    label: '문서셋명',
     width: 'auto',
     align: 'left',
     headerAlign: 'left',
@@ -191,6 +207,204 @@ const urlCategoryFilter = ref('all')
 const urlCurrentPage = ref(1)
 const urlPageSize = 10
 
+// ===== 파일 라이브러리 액션 =====
+const handleSelectFileLibraryList = async () => {
+  fileLibraryLoading.value = true
+  fileLibraryError.value = ''
+  try {
+    const res = await fetchSelectDocFileLibraryList({
+      // 파일 관리 탭: 좌측 카테고리 UI 없음 → 전체 목록 조회 (업로드 시 카테고리는 별도 보관)
+      categoryId: undefined,
+      findContent: fileSearchKeyword.value || undefined,
+      page: fileCurrentPage.value,
+      pageSize: filePageSize.value,
+    })
+    fileLibraryList.value = res.dataList ?? []
+    fileTotalCount.value = res.totalCnt ?? 0
+  } catch (e) {
+    fileLibraryError.value = e instanceof Error ? e.message : '파일 목록을 불러오지 못했습니다.'
+    fileLibraryList.value = []
+    fileTotalCount.value = 0
+  } finally {
+    fileLibraryLoading.value = false
+  }
+}
+
+const onFileSearch = () => {
+  if (fileCurrentPage.value !== 1) fileCurrentPage.value = 1
+  void handleSelectFileLibraryList()
+}
+
+/** 원본 파일명에서 확장자 추출 (소문자, 점 없음) */
+const getFileExtension = (originalName: string): string => {
+  const trimmed = String(originalName ?? '').trim()
+  const lastDot = trimmed.lastIndexOf('.')
+  if (lastDot < 0 || lastDot === trimmed.length - 1) return ''
+  return trimmed.slice(lastDot + 1).toLowerCase()
+}
+
+/** NCP 저장용 물리 파일명: yyyyMMddHHmmssSSS(.ext) */
+const buildRepositoryStoreFileName = (originalName: string, at: Date): string => {
+  const base = formatChatStoreFileNameBase(at)
+  const ext = getFileExtension(originalName)
+  return ext ? `${base}.${ext}` : base
+}
+
+/** NCP 저장 경로: repository/물리파일명 */
+const buildRepositoryStoreFilePath = (originalName: string, at: Date): string => {
+  const storeFileName = buildRepositoryStoreFileName(originalName, at)
+  return `repository/${storeFileName}`
+}
+
+/** presign → 스토리지 PUT → 저장소 메타 저장 (로딩·토스트 없음) */
+const performFileLibraryUpload = async (
+  file: File,
+  mappedDocId?: string,
+): Promise<{ ok: true } | { ok: false; message: string }> => {
+  const categoryId = fileSelectedCategoryId.value.trim()
+  const at = new Date()
+  const storeFilePath = buildRepositoryStoreFilePath(file.name, at)
+  const presign = await fetchSaveDocumentFile({
+    fileName: file.name,
+    fileType: file.type || 'application/octet-stream',
+    fileSize: String(file.size),
+    storeFilePath,
+  })
+  const uploadUrl = String(presign.uploadUrl ?? '').trim()
+  const filePath = String(presign.filePath ?? '').trim()
+  if (!uploadUrl || !filePath) {
+    return { ok: false, message: '업로드 URL 발급에 실패했습니다.' }
+  }
+  const uploaded = await handleUploadByPresignedUrl(uploadUrl, file)
+  if (!uploaded) {
+    return { ok: false, message: '파일 업로드에 실패했습니다.' }
+  }
+  const res = await fetchSaveFileLibrary({
+    fileName: file.name,
+    filePath,
+    fileSize: String(file.size),
+    fileType: file.type || 'application/octet-stream',
+    categoryId,
+    docId: mappedDocId,
+  })
+  if (res.successYn) {
+    return { ok: true }
+  }
+  return { ok: false, message: res.returnMsg ?? '파일 정보 저장에 실패했습니다.' }
+}
+
+const handleSaveFileLibrary = async (file: File, mappedDocId?: string) => {
+  openLoading({ text: '파일을 업로드하는 중...' })
+  try {
+    const result = await performFileLibraryUpload(file, mappedDocId)
+    if (result.ok) {
+      openToast({ message: '파일이 등록되었습니다.', type: 'success' })
+      await handleSelectFileLibraryList()
+    } else {
+      openToast({ message: result.message, type: 'error' })
+    }
+  } catch {
+    openToast({ message: '파일 등록에 실패했습니다.', type: 'error' })
+  } finally {
+    closeLoading()
+  }
+}
+
+/** 모달 등에서 선택한 여러 파일을 순차 업로드 (로딩·목록 갱신·요약 토스트 1회) */
+const handleSaveFileLibraryBatch = async (files: File[], mappedDocId?: string) => {
+  if (files.length === 0) {
+    openToast({ message: '업로드할 파일을 선택해 주세요.', type: 'warning' })
+    return
+  }
+  openLoading({ text: '파일을 업로드하는 중...' })
+  let success = 0
+  let firstFailMessage: string | null = null
+  try {
+    for (const file of files) {
+      const result = await performFileLibraryUpload(file, mappedDocId)
+      if (result.ok) {
+        success++
+      } else if (!firstFailMessage) {
+        firstFailMessage = result.message
+      }
+    }
+    if (success === files.length) {
+      openToast({ message: `${success}개 파일이 등록되었습니다.`, type: 'success' })
+    } else if (success > 0) {
+      openToast({
+        message: `${success}개 등록됨 · ${files.length - success}개 실패${firstFailMessage ? ` (${firstFailMessage})` : ''}`,
+        type: 'warning',
+      })
+    } else {
+      openToast({ message: firstFailMessage ?? '파일 등록에 실패했습니다.', type: 'error' })
+    }
+    await handleSelectFileLibraryList()
+  } catch {
+    openToast({ message: '파일 등록에 실패했습니다.', type: 'error' })
+  } finally {
+    closeLoading()
+  }
+}
+
+const handleDeleteFileLibraryRow = async (docFileId: string) => {
+  const ok = await openConfirm({
+    title: '파일 삭제',
+    message: '이 파일을 삭제하시겠습니까? 저장소에서도 함께 삭제됩니다.',
+  })
+  if (!ok) return
+  openLoading({ text: '삭제하는 중...' })
+  try {
+    const res = await fetchDeleteFileLibrary(docFileId)
+    if (res.successYn) {
+      openToast({ message: '삭제되었습니다.', type: 'success' })
+      await handleSelectFileLibraryList()
+    } else {
+      openToast({ message: res.returnMsg ?? '삭제에 실패했습니다.', type: 'error' })
+    }
+  } finally {
+    closeLoading()
+  }
+}
+
+/** 파일 관리 탭: 선택한 여러 파일 삭제 (확인 1회) */
+const handleDeleteFileLibraryBatch = async (docFileIds: string[]) => {
+  const ids = docFileIds.map((id) => id.trim()).filter(Boolean)
+  if (ids.length === 0) {
+    openToast({ message: '삭제할 파일을 선택해 주세요.', type: 'warning' })
+    return
+  }
+  const ok = await openConfirm({
+    title: '파일 삭제',
+    message: `선택한 ${ids.length}개 파일을 삭제하시겠습니까? 저장소에서도 함께 삭제됩니다.`,
+  })
+  if (!ok) return
+  openLoading({ text: '삭제하는 중...' })
+  let success = 0
+  let lastErr: string | null = null
+  try {
+    for (const docFileId of ids) {
+      const res = await fetchDeleteFileLibrary(docFileId)
+      if (res.successYn) success++
+      else if (!lastErr) lastErr = res.returnMsg ?? '삭제에 실패했습니다.'
+    }
+    if (success === ids.length) {
+      openToast({ message: `${success}개 파일이 삭제되었습니다.`, type: 'success' })
+    } else if (success > 0) {
+      openToast({
+        message: `${success}개 삭제됨 · ${ids.length - success}개 실패${lastErr ? ` (${lastErr})` : ''}`,
+        type: 'warning',
+      })
+    } else {
+      openToast({ message: lastErr ?? '삭제에 실패했습니다.', type: 'error' })
+    }
+    await handleSelectFileLibraryList()
+  } catch {
+    openToast({ message: '삭제에 실패했습니다.', type: 'error' })
+  } finally {
+    closeLoading()
+  }
+}
+
 // ===== 문서 액션 =====
 const handleSelectDocumentList = async () => {
   isLoading.value = true
@@ -214,24 +428,42 @@ const handleSelectDocumentList = async () => {
   }
 }
 
-/** 업로드된 파일마다 NCP 업로드 후 DB 저장용 file 배열 생성 */
+/** 업로드된 파일마다 presign → S3 PUT → DB 저장용 file 배열 생성 (신규 바이너리가 없으면 빈 배열) */
 const buildUploadedFileMetaList = async (data: Partial<Document>): Promise<DocumentSaveFileItem[] | null> => {
   const files = Array.isArray(data.files) ? data.files.filter((f): f is File => f instanceof File) : []
+  if (files.length === 0) {
+    return []
+  }
   const fileMeta: DocumentSaveFileItem[] = []
   for (const file of files) {
-    const uploadedFilePath = await handleUploadFile({
-      file,
+    const categoryId = String(data.categoryId ?? '').trim()
+    // 백엔드 NCP 키: storeFilePath = S3 객체 경로 (FileServiceImpl.createUploadPresignedUrl)
+    const at = new Date()
+    const storeFilePath = buildRepositoryStoreFilePath(file.name, at)
+    const presign = await fetchSaveDocumentFile({
+      fileName: file.name,
+      fileType: file.type || 'application/octet-stream',
+      fileSize: String(file.size),
       docTitle: String(data.docTitle ?? ''),
-      categoryId: String(data.categoryId ?? ''),
+      categoryId,
       secLvl: String(data.secLvl ?? ''),
       keywords: String(data.keywords ?? ''),
+      storeFilePath,
     })
-    if (!uploadedFilePath) {
+    const uploadUrl = String(presign.uploadUrl ?? '').trim()
+    const filePath = String(presign.filePath ?? '').trim()
+    if (!uploadUrl || !filePath) {
+      openToast({ message: '업로드 URL 발급에 실패했습니다.', type: 'error' })
+      return null
+    }
+    const uploaded = await handleUploadByPresignedUrl(uploadUrl, file)
+    if (!uploaded) {
+      openToast({ message: '파일 업로드에 실패했습니다.', type: 'error' })
       return null
     }
     fileMeta.push({
       fileName: file.name,
-      filePath: uploadedFilePath,
+      filePath,
       fileSize: String(file.size),
       fileType: file.type,
     })
@@ -239,8 +471,10 @@ const buildUploadedFileMetaList = async (data: Partial<Document>): Promise<Docum
   return fileMeta
 }
 
-/** 문서 저장 (DB) — file 은 업로드 완료 메타 배열 */
-const performDocumentSave = async (data: Partial<Document> & { deleteFileIds?: string[] }): Promise<boolean> => {
+/** 문서 저장 (DB) — file 은 업로드 완료 메타 배열, orderedDocFileIds 가 있으면 TB_DOC_FILE_MAP 전체 교체 */
+const performDocumentSave = async (
+  data: Partial<Document> & { deleteFileIds?: string[]; linkDocFileIds?: string[]; orderedDocFileIds?: string[] },
+): Promise<boolean> => {
   const fileMeta = await buildUploadedFileMetaList(data)
   if (fileMeta === null) {
     openToast({ message: '파일 업로드에 실패했습니다.', type: 'error' })
@@ -260,6 +494,15 @@ const performDocumentSave = async (data: Partial<Document> & { deleteFileIds?: s
     ? data.deleteFileIds.map((id) => String(id ?? '').trim()).filter(Boolean)
     : []
   if (deleteFileIds.length > 0) payload.deleteFileIds = deleteFileIds
+  const linkDocFileIds = Array.isArray(data.linkDocFileIds)
+    ? data.linkDocFileIds.map((id) => String(id ?? '').trim()).filter(Boolean)
+    : []
+  if (linkDocFileIds.length > 0) payload.linkDocFileIds = linkDocFileIds
+  if (data.orderedDocFileIds !== undefined) {
+    payload.orderedDocFileIds = Array.isArray(data.orderedDocFileIds)
+      ? data.orderedDocFileIds.map((id) => String(id ?? '').trim()).filter(Boolean)
+      : []
+  }
   const id = String(data.docId ?? '').trim()
   if (id) payload.docId = id
   openLoading({ text: '문서를 저장하는 중...' })
@@ -280,7 +523,9 @@ const performDocumentSave = async (data: Partial<Document> & { deleteFileIds?: s
 }
 
 // 문서 저장
-const handleSaveDocument = async (data: Partial<Document> & { deleteFileIds?: string[] }): Promise<boolean> => {
+const handleSaveDocument = async (
+  data: Partial<Document> & { deleteFileIds?: string[]; linkDocFileIds?: string[]; orderedDocFileIds?: string[] },
+): Promise<boolean> => {
   const files = Array.isArray(data.files) ? data.files.filter((f): f is File => f instanceof File) : []
   const categoryId = String(data.categoryId ?? '')
   const docIdList: DocExistCheckItem[] = files.map((file) => {
@@ -328,16 +573,10 @@ const handleSaveDocument = async (data: Partial<Document> & { deleteFileIds?: st
   }
 }
 
-// 문서 삭제 (NCP 객체 삭제 후 DB 행 삭제)
+// 문서 삭제 — TB_DOC 삭제 + 첨부는 파일 풀로 복귀(DOC_ID NULL). S3 객체는 유지(파일 관리 탭에서만 삭제).
 const handleDeleteDocument = async (docIdList: DocumentDeleteItem[]) => {
   const valid = docIdList.filter((item) => String(item.docId ?? '').trim() !== '')
   if (valid.length === 0) return
-  const ids = valid.map((item) => item.docId)
-  const ncpOk = await handleDeleteNcpFile(ids)
-  if (!ncpOk) {
-    openToast({ message: fileError.value || '저장소에서 파일 삭제에 실패했습니다.', type: 'error' })
-    return
-  }
   openLoading({ text: '문서를 삭제하는 중...' })
   try {
     await fetchDeleteDocument(valid)
@@ -478,6 +717,22 @@ const handleFileView = async (row: Document) => {
   isFilePreviewOpen.value = true
 }
 
+/** 파일 저장소 목록 행 — 단일 파일만 미리보기 (DOC_ID 없이 DOC_FILE_ID만 있는 행 허용) */
+const handleOpenFileLibraryPreview = (row: FileLibraryItem) => {
+  const docFileId = String(row.docFileId ?? '').trim()
+  if (!docFileId) {
+    openToast({ message: '미리보기할 파일 정보가 없습니다.', type: 'warning' })
+    return
+  }
+  const docId = String(row.docId ?? '').trim()
+  const label = String(row.fileName ?? '').trim() || '파일'
+  filePreviewDocId.value = docId
+  filePreviewDocFileId.value = docFileId
+  filePreviewTitle.value = label
+  filePreviewDocFileOptions.value = [{ label, value: docFileId }]
+  isFilePreviewOpen.value = true
+}
+
 /** 모달 @close 시 상태 정리 (닫힘은 v-model:is-open으로 반영됨) */
 const onCloseFilePreview = () => {
   filePreviewDocFileOptions.value = []
@@ -560,7 +815,13 @@ const onSaveDocument = async (data: Record<string, unknown>): Promise<boolean> =
         .map((id) => id.trim())
         .filter(Boolean)
     : []
-  const hasAttachedFileChanged = newFiles.length > 0 || deleteFileIds.length > 0
+  const linkIds = Array.isArray(data.linkDocFileIds)
+    ? (data.linkDocFileIds as unknown[])
+        .map(String)
+        .map((id) => id.trim())
+        .filter(Boolean)
+    : []
+  const hasAttachedFileChanged = newFiles.length > 0 || deleteFileIds.length > 0 || linkIds.length > 0
   /** 좌측 트리에서 선택한 카테고리 우선 — useCategoryStore.onCategorySelect와 동일 ref */
   const categoryId = docSelectedCategoryId.value.trim() || String(data.categoryId ?? '')
   try {
@@ -583,6 +844,13 @@ const onSaveDocument = async (data: Record<string, unknown>): Promise<boolean> =
       }
     }
 
+    const rawAttached = (data as { attachedFileList?: { docFileId?: string }[] }).attachedFileList
+    const attached = Array.isArray(rawAttached) ? rawAttached : []
+    const linkDocFileIds = Array.isArray(data.linkDocFileIds)
+      ? data.linkDocFileIds.map((id) => String(id ?? '').trim()).filter(Boolean)
+      : []
+    const orderedDocFileIds = attached.map((f) => String(f?.docFileId ?? '').trim()).filter(Boolean)
+
     return await handleSaveDocument({
       docId: docId ? docId : undefined,
       docTitle: title,
@@ -594,6 +862,8 @@ const onSaveDocument = async (data: Record<string, unknown>): Promise<boolean> =
       keywords: String(data.keywords ?? ''),
       refUrl: String(data.refUrl ?? ''),
       deleteFileIds: deleteFileIds.length > 0 ? deleteFileIds : undefined,
+      linkDocFileIds: linkDocFileIds.length > 0 ? linkDocFileIds : undefined,
+      orderedDocFileIds,
     })
   } catch (error) {
     openToast({
@@ -704,6 +974,7 @@ export const useRepositoryStore = () => {
     handleDeleteUrl,
     handleToggleUrlStatus,
     handleFileView,
+    handleOpenFileLibraryPreview,
     isFilePreviewOpen,
     filePreviewDocId,
     filePreviewDocFileId,
@@ -721,5 +992,20 @@ export const useRepositoryStore = () => {
     isDocRegisterOpen,
     statusFilterOptions,
     secLvlOptions,
+    // 파일 라이브러리
+    fileSearchKeyword,
+    fileSelectedCategoryId,
+    fileLibraryList,
+    fileTotalCount,
+    fileCurrentPage,
+    filePageSize,
+    fileLibraryLoading,
+    fileLibraryError,
+    handleSelectFileLibraryList,
+    onFileSearch,
+    handleSaveFileLibrary,
+    handleSaveFileLibraryBatch,
+    handleDeleteFileLibraryRow,
+    handleDeleteFileLibraryBatch,
   }
 }

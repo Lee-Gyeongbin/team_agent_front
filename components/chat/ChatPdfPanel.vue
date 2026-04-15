@@ -526,7 +526,7 @@ const onClose = () => {
 const loadAndGoToTargetPage = async () => {
   if (!props.open || !selectedRef.value) return
 
-  // 1) /com/file/viewFile.do 로 presigned URL 조회
+  // 1) /repository/viewDocumentFile.do 로 presigned URL 조회
   const url = await handleViewFileUrl(selectedRef.value.docId, selectedRef.value.docFileId)
   currentFilePath.value = url || ''
   if (!currentFilePath.value) return

@@ -1,6 +1,7 @@
 import DOMPurify from 'dompurify'
 import hljs from 'highlight.js'
 import { marked } from 'marked'
+import markedKatex from 'marked-katex-extension'
 
 /** GFM(표·취소선 등) + 단일 줄바꿈을 <br>로 (채팅 본문 UX) */
 marked.setOptions({
@@ -16,6 +17,15 @@ renderer.code = ({ text, lang }) => {
   return `<pre><code class="hljs language-${language}">${highlighted}</code></pre>`
 }
 marked.use({ renderer })
+
+/** 인라인/블록 수식($...$, $$...$$) 렌더링 */
+marked.use(
+  markedKatex({
+    throwOnError: false,
+    output: 'html',
+    nonStandard: true,
+  }),
+)
 
 /** 마크다운 셀 안의 | 이스케이프 */
 const escapeMdCell = (s: string) => s.replace(/\|/g, '\\|').replace(/\n/g, ' ')

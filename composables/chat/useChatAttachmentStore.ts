@@ -3,7 +3,7 @@ import { useFileStore } from '~/composables/com/useFileStore'
 import { formatChatStoreFileNameBase, formatYyyyMmDdFromDate } from '~/utils/global/dateUtil'
 import { getChatAttachmentExtension } from '~/utils/chat/chatAttachmentDisplayUtil'
 
-const { fetchCreateChatFile, fetchMarkChatFileOrphan } = useChatApi()
+const { fetchCreateChatFileUploadUrl, fetchCreateChatFile, fetchMarkChatFileOrphan } = useChatApi()
 
 /** NCP/DB 저장 파일명: yyyyMMddHHmmssSSS + 확장자 */
 const buildStoreFileName = (originalName: string, at: Date): string => {
@@ -37,7 +37,7 @@ const toAttachmentMeta = (
 
 export const useChatAttachmentStore = () => {
   const { user } = useAuth()
-  const { handleUploadFile } = useFileStore()
+  const { handleUploadByPresignedUrl } = useFileStore()
 
   /** 질문 전송 직전, 첨부 파일을 업로드하고 ws attachments 메타를 생성 */
   const handleUploadChatAttachments = async (files: File[], roomId: string): Promise<ChatAttachmentMeta[] | null> => {
@@ -62,8 +62,19 @@ export const useChatAttachmentStore = () => {
         const storeFileName = buildStoreFileName(file.name, at)
         const storeFilePath = buildChatAttachmentStorePath(resolvedUserId, chatDateYmd, storeFileName)
 
-        const filePath = await handleUploadFile({ file, storeFileName, storeFilePath })
-        if (!filePath) throw new Error(`NCP 업로드 실패: ${file.name}`)
+        const presign = await fetchCreateChatFileUploadUrl({
+          fileName: file.name,
+          fileType: file.type || 'application/octet-stream',
+          fileSize: String(file.size),
+          filePath: storeFilePath,
+        })
+        const uploadUrl = String(presign.uploadUrl ?? '').trim()
+        const filePath = String(presign.filePath ?? '').trim()
+        if (!uploadUrl || !filePath) {
+          throw new Error(`업로드 URL 발급 실패: ${file.name}`)
+        }
+        const uploaded = await handleUploadByPresignedUrl(uploadUrl, file)
+        if (!uploaded) throw new Error(`NCP 업로드 실패: ${file.name}`)
 
         const payload: ChatFileSavePayload = {
           roomId: resolvedRoomId,

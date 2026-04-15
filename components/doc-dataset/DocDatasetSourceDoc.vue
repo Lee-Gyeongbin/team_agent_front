@@ -101,7 +101,15 @@
                 </svg>
               </span>
             </span>
-            <span class="doc-dataset-source-doc-file-name">{{ item.docTitle }}</span>
+            <span class="doc-dataset-source-doc-file-name-wrap">
+              <span class="doc-dataset-source-doc-file-name">{{ item.docTitle }}</span>
+              <span
+                v-if="item.fileChangedYn === 'Y'"
+                class="doc-dataset-source-doc-file-changed-badge"
+              >
+                수정된 문서셋
+              </span>
+            </span>
             <span class="doc-dataset-source-doc-file-size">{{ item.fileCount ?? 0 }}개</span>
           </div>
 

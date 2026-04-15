@@ -157,6 +157,7 @@ import type { FilePreviewModalProps } from '~/types/file'
 import { useFileStore } from '~/composables/com/useFileStore'
 
 const props = withDefaults(defineProps<FilePreviewModalProps>(), {
+  docId: '',
   title: '파일 미리보기',
   initialPage: 1,
   docFileOptions: () => [],
@@ -186,7 +187,8 @@ const showScrollTopBtn = ref(false)
 
 const currentFilePath = ref('')
 
-const hasValidIds = computed(() => Boolean(props.docId?.trim() && props.docFileId?.trim()))
+/** docFileId만으로 viewFile 호출 가능 (파일 저장소 미매핑 행 등) */
+const hasValidIds = computed(() => Boolean(props.docFileId?.trim()))
 
 const setThumbCanvasRef = (pageNum: number, el: HTMLCanvasElement | null) => {
   if (el) {
@@ -241,7 +243,7 @@ const onClose = () => {
 const loadFromApi = async () => {
   if (!props.isOpen || !hasValidIds.value) return
 
-  const url = await handleViewFileUrl(props.docId, props.docFileId)
+  const url = await handleViewFileUrl(String(props.docId ?? '').trim(), props.docFileId)
   currentFilePath.value = url || ''
   if (!currentFilePath.value) return
 

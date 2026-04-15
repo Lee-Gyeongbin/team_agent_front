@@ -119,6 +119,38 @@ export interface DocumentSavePayload {
   /** 수정 시 기존 파일 중 삭제할 대상 docFileId 목록 */
   deleteFileIds?: string[]
   file: DocumentSaveFileItem[]
+  /** 파일 저장소(DOC_ID 미할당) 행을 문서에 연결할 DOC_FILE_ID 목록 */
+  linkDocFileIds?: string[]
+  /** 문서 첨부 최종 순서 (DOC_FILE_ID 배열, 선택) */
+  orderedDocFileIds?: string[]
+}
+
+/** 파일 저장소 목록/저장 — tb_doc_file DOC_ID 미할당 행 */
+export interface FileLibraryItem {
+  docFileId: string
+  docId: string
+  fileName: string
+  filePath: string
+  fileSize: string
+  fileType: string
+  /** 파일이 연결된 문서셋 경로 목록 (예: 카테고리 > 문서셋명, ... ) */
+  dsNmList?: string
+  categoryId?: string
+  categoryName?: string
+  createDt?: string
+  useYn?: string
+}
+
+/** saveFileLibrary (Presigned 후 메타 저장) */
+export interface FileLibrarySavePayload {
+  fileName: string
+  filePath: string
+  fileSize: string
+  fileType: string
+  categoryId?: string
+  /** 선택 시 파일 저장과 동시에 문서셋 매핑할 DOC_ID */
+  docId?: string
+  categoryName?: string
 }
 
 /** URL 항목 */

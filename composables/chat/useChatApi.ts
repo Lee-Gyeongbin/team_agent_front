@@ -15,6 +15,7 @@ import type {
   ChatFileViewResponse,
 } from '~/types/chat'
 import type { Agent } from '~/types/agent'
+import type { FileMeta, FileUploadResponse } from '~/types/file'
 
 export const useChatApi = () => {
   const { get, post } = useApi()
@@ -45,6 +46,12 @@ export const useChatApi = () => {
   // CHAT 첨부파일 메타 저장 (응답 본문은 JSON 최상위 — useApi는 axios처럼 data로 감싸지 않음)
   const fetchCreateChatFile = async (payload: ChatFileSavePayload): Promise<ChatFileSaveResponse> => {
     return post<ChatFileSaveResponse>('/ai/chatbot/saveChatFile.do', payload)
+  }
+  // CHAT 첨부파일 업로드 presigned URL 발급
+  const fetchCreateChatFileUploadUrl = async (
+    meta: Pick<FileMeta, 'fileName' | 'fileType' | 'fileSize' | 'filePath'> & Partial<FileMeta>,
+  ): Promise<FileUploadResponse> => {
+    return post<FileUploadResponse>('/ai/chatbot/saveChatFileUploadUrl.do', meta)
   }
   // CHAT 첨부파일 orphan 표기 (ws 전송 실패 등)
   const fetchMarkChatFileOrphan = async (chatFileIdList: string[]): Promise<{ successYn?: boolean }> => {
@@ -134,6 +141,7 @@ export const useChatApi = () => {
     fetchSelectRagDsList,
     fetchSelectDmList,
     fetchCreateChatRoom,
+    fetchCreateChatFileUploadUrl,
     fetchCreateChatFile,
     fetchViewChatFile,
     fetchMarkChatFileOrphan,
