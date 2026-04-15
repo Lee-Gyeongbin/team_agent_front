@@ -60,7 +60,6 @@ export interface LibraryCardDetail {
 
 /** 문서 항목 */
 export interface DocItem {
-  docId: string
   docFileId: string
   fileName: string
   filePath: string

@@ -157,7 +157,6 @@ import type { FilePreviewModalProps } from '~/types/file'
 import { useFileStore } from '~/composables/com/useFileStore'
 
 const props = withDefaults(defineProps<FilePreviewModalProps>(), {
-  docId: '',
   title: '파일 미리보기',
   initialPage: 1,
   docFileOptions: () => [],
@@ -243,7 +242,7 @@ const onClose = () => {
 const loadFromApi = async () => {
   if (!props.isOpen || !hasValidIds.value) return
 
-  const url = await handleViewFileUrl(String(props.docId ?? '').trim(), props.docFileId)
+  const url = await handleViewFileUrl(props.docFileId)
   currentFilePath.value = url || ''
   if (!currentFilePath.value) return
 
@@ -256,7 +255,7 @@ const loadFromApi = async () => {
 }
 
 watch(
-  () => [props.isOpen, props.docId, props.docFileId] as const,
+  () => [props.isOpen, props.docFileId] as const,
   async ([open]) => {
     if (!open) {
       currentFilePath.value = ''

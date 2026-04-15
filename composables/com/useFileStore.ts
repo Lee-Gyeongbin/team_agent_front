@@ -36,13 +36,12 @@ export const useFileStore = () => {
 
   /**
    * 파일 보기용 URL 조회 (PDF 뷰어 등에서 사용)
-   * - ChatPdfPanel.vue에서는 docId 기준으로 호출 후, 반환된 URL을 그대로 사용하면 됨.
    */
-  const handleViewFileUrl = async (docId: string, docFileId: string): Promise<string | null> => {
+  const handleViewFileUrl = async (docFileId: string): Promise<string | null> => {
     fileError.value = ''
     viewUrl.value = null
     try {
-      const { url, reason } = await fetchViewFileUrl(docId, docFileId)
+      const { url, reason } = await fetchViewFileUrl(docFileId)
       if (reason) {
         fileError.value = reason
         return null
@@ -58,11 +57,8 @@ export const useFileStore = () => {
 
   /**
    * 파일 다운로드
-   * - 반환된 URL을 a 태그 클릭 등으로 바로 다운로드 트리거.
    */
   const triggerDownloadByUrl = (url: string) => {
-    // 연속 다운로드 시 a.click()은 브라우저 정책(자동 다운로드/사용자 제스처 제한)으로 누락될 수 있어
-    // iframe src 교체 방식으로 다운로드 트리거를 안정화한다.
     const iframe = document.createElement('iframe')
     iframe.style.display = 'none'
     iframe.src = url
@@ -72,8 +68,8 @@ export const useFileStore = () => {
     }, 3000)
   }
 
-  const onDownloadFile = async (docId: string, docFileId?: string) => {
-    const res = await handleDownloadFile(docId, docFileId)
+  const onDownloadFile = async (docFileId: string) => {
+    const res = await handleDownloadFile(docFileId)
     if (!res) return
     const singleUrl = String(res.url ?? '').trim()
     if (singleUrl) {
@@ -94,13 +90,12 @@ export const useFileStore = () => {
 
   /**
    * 파일 다운로드용 URL 조회
-   * - 반환된 URL을 a 태그 클릭 등으로 바로 다운로드 트리거.
    */
-  const handleDownloadFile = async (docId: string, docFileId?: string): Promise<FileDownloadResponse | null> => {
+  const handleDownloadFile = async (docFileId: string): Promise<FileDownloadResponse | null> => {
     fileError.value = ''
     downloadUrl.value = null
     try {
-      const res = await fetchDownloadFileUrl(docId, docFileId)
+      const res = await fetchDownloadFileUrl(docFileId)
       if (res.url) downloadUrl.value = res.url
       return res
     } catch (error) {
@@ -111,11 +106,9 @@ export const useFileStore = () => {
   }
 
   return {
-    // 상태
     viewUrl,
     downloadUrl,
     fileError,
-    // 액션
     onDownloadFile,
     handleUploadByPresignedUrl,
     handleViewFileUrl,

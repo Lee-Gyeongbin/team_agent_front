@@ -64,7 +64,7 @@ const getDefaultForm = (): DocDatasetForm => ({
   description: '',
   version: '',
   useDocument: true,
-  selectedDocIds: [],
+  selectedDocFileIds: [],
   useUrl: true,
   selectedUrlIds: [],
   chunkAlgorithm: '',
@@ -128,7 +128,7 @@ const buildMessageMap = ref<Record<string, string>>({})
 const buildStreamMap = new Map<string, EventSource>()
 const buildProgressTargetMap = ref<Record<string, number>>({})
 const buildProgressTimerMap = new Map<string, ReturnType<typeof setInterval>>()
-const initialSelectedDocIds = ref<string[]>([])
+const initialSelectedDocFileIds = ref<string[]>([])
 const initialPreprocessSignature = ref('')
 const initialEmbeddingModelCd = ref('')
 const initialVectorDbCd = ref('')
@@ -136,8 +136,8 @@ const initialVectorDbCd = ref('')
 type BuildUpdateType = 'init' | 'add' | 'replace_all' | 'delete_some'
 interface BuildStreamStartParams {
   updateType: BuildUpdateType
-  addDocIds: string[]
-  deleteDocIds: string[]
+  addDocFileIds: string[]
+  deleteDocFileIds: string[]
   vectorDiffYn: 'Y' | 'N'
 }
 
@@ -271,11 +271,11 @@ const buildStartQueryString = (datasetId: string, params?: BuildStreamStartParam
   if (!params) return query.toString()
   query.append('update_type', params.updateType)
   query.append('vector_diff_yn', params.vectorDiffYn)
-  params.addDocIds.forEach((docId) => {
-    query.append('add_doc_ids', docId)
+  params.addDocFileIds.forEach((docFileId) => {
+    query.append('add_doc_file_ids', docFileId)
   })
-  params.deleteDocIds.forEach((docId) => {
-    query.append('delete_doc_ids', docId)
+  params.deleteDocFileIds.forEach((docFileId) => {
+    query.append('delete_doc_file_ids', docFileId)
   })
   return query.toString()
 }
@@ -302,14 +302,14 @@ const buildPreprocessSignature = (form: DocDatasetForm): string => {
   })
 }
 
-const toSortedDocIds = (docIds: string[]) => [...new Set((docIds ?? []).map(String))].sort()
+const toSortedDocFileIds = (docFileIds: string[]) => [...new Set((docFileIds ?? []).map(String))].sort()
 
-const hasDocSourceChanged = (currentDocIds: string[]): boolean => {
+const hasDocSourceChanged = (currentDocFileIds: string[]): boolean => {
   if (modalMode.value !== 'edit') return true
-  const prev = toSortedDocIds(initialSelectedDocIds.value)
-  const current = toSortedDocIds(currentDocIds)
+  const prev = toSortedDocFileIds(initialSelectedDocFileIds.value)
+  const current = toSortedDocFileIds(currentDocFileIds)
   if (prev.length !== current.length) return true
-  return prev.some((docId, idx) => docId !== current[idx])
+  return prev.some((docFileId, idx) => docFileId !== current[idx])
 }
 
 const hasPreprocessChanged = (form: DocDatasetForm): boolean => {
@@ -326,16 +326,16 @@ const hasEmbeddingChanged = (form: DocDatasetForm): boolean => {
 }
 
 const hasBuildConfigChanges = (form: DocDatasetForm): boolean => {
-  return hasDocSourceChanged(form.selectedDocIds ?? []) || hasPreprocessChanged(form) || hasEmbeddingChanged(form)
+  return hasDocSourceChanged(form.selectedDocFileIds ?? []) || hasPreprocessChanged(form) || hasEmbeddingChanged(form)
 }
 
 // 데이터셋 구축 진행 스트림 시작 파라미터 생성
 const createBuildStreamStartParams = (form: DocDatasetForm): BuildStreamStartParams => {
-  const currentDocIds = form.selectedDocIds ?? []
-  const prevSet = new Set((initialSelectedDocIds.value ?? []).map(String))
-  const currentSet = new Set((currentDocIds ?? []).map(String))
-  const addDocIds = [...currentSet].filter((docId) => !prevSet.has(docId))
-  const deleteDocIds = [...prevSet].filter((docId) => !currentSet.has(docId))
+  const currentDocFileIds = form.selectedDocFileIds ?? []
+  const prevSet = new Set((initialSelectedDocFileIds.value ?? []).map(String))
+  const currentSet = new Set((currentDocFileIds ?? []).map(String))
+  const addDocFileIds = [...currentSet].filter((docFileId) => !prevSet.has(docFileId))
+  const deleteDocFileIds = [...prevSet].filter((docFileId) => !currentSet.has(docFileId))
   const isPreprocessChanged = hasPreprocessChanged(form)
   const vectorDiffYn: 'Y' | 'N' =
     modalMode.value === 'edit' && initialVectorDbCd.value !== String(form.vectorDb ?? '') ? 'Y' : 'N'
@@ -343,25 +343,25 @@ const createBuildStreamStartParams = (form: DocDatasetForm): BuildStreamStartPar
   if (isPreprocessChanged || prevSet.size === 0) {
     return {
       updateType: 'init',
-      addDocIds: [],
-      deleteDocIds: [],
+      addDocFileIds: [],
+      deleteDocFileIds: [],
       vectorDiffYn,
     }
   }
-  if (addDocIds.length > 0 && deleteDocIds.length > 0) {
-    return { updateType: 'replace_all', addDocIds, deleteDocIds, vectorDiffYn }
+  if (addDocFileIds.length > 0 && deleteDocFileIds.length > 0) {
+    return { updateType: 'replace_all', addDocFileIds, deleteDocFileIds, vectorDiffYn }
   }
-  if (addDocIds.length > 0) {
-    return { updateType: 'add', addDocIds, deleteDocIds: [], vectorDiffYn }
+  if (addDocFileIds.length > 0) {
+    return { updateType: 'add', addDocFileIds, deleteDocFileIds: [], vectorDiffYn }
   }
-  if (deleteDocIds.length > 0) {
-    return { updateType: 'delete_some', addDocIds: [], deleteDocIds, vectorDiffYn }
+  if (deleteDocFileIds.length > 0) {
+    return { updateType: 'delete_some', addDocFileIds: [], deleteDocFileIds, vectorDiffYn }
   }
 
   return {
     updateType: 'init',
-    addDocIds: [],
-    deleteDocIds: [],
+    addDocFileIds: [],
+    deleteDocFileIds: [],
     vectorDiffYn,
   }
 }
@@ -459,7 +459,7 @@ const openCreateModal = async () => {
   modalMode.value = 'create'
   editingDatasetId.value = ''
   selectedDatasetDetail.value = null
-  initialSelectedDocIds.value = []
+  initialSelectedDocFileIds.value = []
   initialPreprocessSignature.value = ''
   initialEmbeddingModelCd.value = ''
   initialVectorDbCd.value = ''
@@ -714,7 +714,10 @@ const onSaveCreate = (data: DocDatasetForm, startBuild: boolean) => {
         wspNormYn: data.useWhitespaceNorm ? 'Y' : 'N',
         specChrRmYn: data.useSpecialCharRemoval ? 'Y' : 'N',
         singleCellText: data.useSingleCellText ? 'Y' : 'N',
-        docIdList: data.selectedDocIds.map((id) => ({ docId: id, datasetId: editingDatasetId.value ?? '' })),
+        docFileIdList: data.selectedDocFileIds.map((id) => ({
+          docFileId: id,
+          datasetId: editingDatasetId.value ?? '',
+        })),
         urlIdList: data.selectedUrlIds.map((id) => ({ urlId: id, datasetId: editingDatasetId.value ?? '' })),
       }
 
@@ -734,7 +737,7 @@ const onSaveCreate = (data: DocDatasetForm, startBuild: boolean) => {
 // 상세 데이터를 폼 데이터로 변환
 const mapDetailToForm = (
   detail: DocDatasetDetail | null,
-  selectedDocIds: string[],
+  selectedDocFileIds: string[],
   selectedUrlIds: string[],
 ): DocDatasetForm => {
   const chunkOptJson = parseChunkOptJson(detail?.chunkOptJson)
@@ -749,8 +752,8 @@ const mapDetailToForm = (
     name: detail?.dsNm ?? '',
     description: detail?.description ?? '',
     version: detail?.version ?? '',
-    useDocument: detail ? selectedDocIds.length > 0 : true,
-    selectedDocIds,
+    useDocument: detail ? selectedDocFileIds.length > 0 : true,
+    selectedDocFileIds,
     useUrl: detail ? selectedUrlIds.length > 0 : true,
     selectedUrlIds,
     chunkAlgorithm: detail?.chunkAlgoCd ?? '',
@@ -790,10 +793,10 @@ const onEdit = async (dataset: DocDataset) => {
   await handleSelectDatasetSrcList()
 
   // 데이터셋과 매핑된 문서, URL ID 목록 세팅
-  const dsDocIds = (res.dsDocList ?? []).map((item) => String(item.docId))
+  const dsDocFileIds = (res.dsDocList ?? []).map((item) => String(item.docFileId ?? ''))
   const dsUrlIds = (res.dsUrlList ?? []).map((item) => String(item.urlId))
-  initialSelectedDocIds.value = [...dsDocIds]
-  const mappedForm = mapDetailToForm(data, dsDocIds, dsUrlIds)
+  initialSelectedDocFileIds.value = [...dsDocFileIds]
+  const mappedForm = mapDetailToForm(data, dsDocFileIds, dsUrlIds)
   initialPreprocessSignature.value = buildPreprocessSignature(mappedForm)
   initialEmbeddingModelCd.value = mappedForm.embeddingModel ?? ''
   initialVectorDbCd.value = mappedForm.vectorDb ?? ''

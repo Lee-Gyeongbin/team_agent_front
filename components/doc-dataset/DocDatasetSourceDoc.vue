@@ -13,7 +13,7 @@
         <span class="doc-dataset-source-panel-label">
           문서
           <span class="doc-dataset-source-panel-count">
-            (<strong>{{ selectedDocIds.length }}개</strong> 선택 / {{ docList.length }}개 사용가능)
+            (<strong>{{ selectedDocFileIds.length }}개</strong> 선택 / {{ docList.length }}개 사용가능)
           </span>
         </span>
       </UiCheckbox>
@@ -74,17 +74,17 @@
         <div class="doc-dataset-source-doc-files">
           <div
             v-for="item in filteredList"
-            :key="item.docId"
+            :key="getSourceId(item)"
             class="doc-dataset-source-doc-file-item"
-            @click="toggleSelect(item.docId)"
+            @click="toggleSelect(getSourceId(item))"
           >
             <span
               class="ui-checkbox"
-              :class="{ 'is-checked': isDocSelected(item.docId) }"
+              :class="{ 'is-checked': isDocSelected(getSourceId(item)) }"
             >
               <span class="ui-checkbox-box">
                 <svg
-                  v-if="isDocSelected(item.docId)"
+                  v-if="isDocSelected(getSourceId(item))"
                   class="ui-checkbox-icon"
                   width="12"
                   height="12"
@@ -102,13 +102,7 @@
               </span>
             </span>
             <span class="doc-dataset-source-doc-file-name-wrap">
-              <span class="doc-dataset-source-doc-file-name">{{ item.docTitle }}</span>
-              <span
-                v-if="item.fileChangedYn === 'Y'"
-                class="doc-dataset-source-doc-file-changed-badge"
-              >
-                수정된 문서셋
-              </span>
+              <span class="doc-dataset-source-doc-file-name">{{ item.fileName || item.docTitle || '-' }}</span>
             </span>
             <span class="doc-dataset-source-doc-file-size">{{ item.fileCount ?? 0 }}개</span>
           </div>
@@ -128,7 +122,7 @@ import type { CategoryItem, DocDatasetSelectedDoc } from '~/types/doc-dataset'
 
 interface Props {
   useDocument: boolean
-  selectedDocIds: string[]
+  selectedDocFileIds: string[]
   docList: DocDatasetSelectedDoc[]
   categoryList: CategoryItem[]
 }
@@ -137,7 +131,7 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   'update:useDocument': [value: boolean]
-  'update:selectedDocIds': [value: string[]]
+  'update:selectedDocFileIds': [value: string[]]
 }>()
 
 const isExpanded = ref(true)
@@ -155,18 +149,24 @@ const categoryOptions = computed(() => {
 const filteredList = computed(() => {
   if (!searchKeyword.value) return props.docList
   const keyword = searchKeyword.value.toLowerCase()
-  return props.docList.filter((d) => d.docTitle?.toLowerCase().includes(keyword))
+  return props.docList.filter((d) =>
+    String(d.fileName || d.docTitle || '')
+      .toLowerCase()
+      .includes(keyword),
+  )
 })
 
-const isDocSelected = (docId: string | number) => {
-  const id = String(docId)
-  return (props.selectedDocIds ?? []).map(String).includes(id)
+const getSourceId = (item: DocDatasetSelectedDoc) => String(item.docFileId ?? '')
+
+const isDocSelected = (docFileId: string | number) => {
+  const id = String(docFileId)
+  return (props.selectedDocFileIds ?? []).map(String).includes(id)
 }
 
-// 선택 토글 (API docId가 number로 올 수 있어 문자열로 통일)
+// 선택 토글 (API docFileId가 number로 올 수 있어 문자열로 통일)
 const toggleSelect = (rawId: string | number) => {
   const id = String(rawId)
-  const current = props.selectedDocIds ?? []
+  const current = props.selectedDocFileIds ?? []
   const ids = current.map(String)
   const index = ids.indexOf(id)
   if (index > -1) {
@@ -174,6 +174,6 @@ const toggleSelect = (rawId: string | number) => {
   } else {
     ids.push(id)
   }
-  emit('update:selectedDocIds', ids)
+  emit('update:selectedDocFileIds', ids)
 }
 </script>

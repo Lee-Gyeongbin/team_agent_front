@@ -3,8 +3,13 @@ import type { CategoryItem, CategoryTreeItem } from '~/types/repository'
 import { useRepositoryApi } from '~/composables/repository/useRepositoryApi'
 import { collectDescendantIds } from '~/utils/repository/categoryTreeUtil'
 
-const { fetchCategoryList, fetchSaveCategory, fetchRenameCategory, fetchDeleteCategory, fetchDocumentList } =
-  useRepositoryApi()
+const {
+  fetchCategoryList,
+  fetchSaveCategory,
+  fetchRenameCategory,
+  fetchDeleteCategory,
+  fetchSelectDocFileLibraryList,
+} = useRepositoryApi()
 
 /** 스토어 간 공유 — useRepositoryStore가 순환 없이 트리 참조 */
 export const categoryList = ref<CategoryTreeItem[]>([])
@@ -80,14 +85,8 @@ function buildCategoryTreeFromFlat(flat: CategoryItem[]): CategoryTreeItem[] {
 }
 
 export const useCategoryStore = () => {
-  const {
-    docSelectedCategoryId,
-    docCurrentPage,
-    docTotalCount,
-    docSearchKeyword,
-    docStatusFilter,
-    handleSelectDocumentList,
-  } = useRepositoryStore()
+  const { fileSelectedCategoryId, fileCurrentPage, fileTotalCount, fileSearchKeyword, handleSelectFileLibraryList } =
+    useRepositoryStore()
   // ===== 카테고리 =====
   const isCategoryInputVisible = ref(false)
   const isCategorySelectModalOpen = ref(false)
@@ -106,9 +105,9 @@ export const useCategoryStore = () => {
     { label: '하위 카테고리 추가', value: 'addSubcategory', icon: 'icon-folder-close' },
     { label: '카테고리 삭제', value: 'delete', icon: 'icon-trashcan', color: 'danger' as const },
   ]
-  // 카테고리 선택 → 문서 필터링
-  const selectedCategoryIds = computed(() => (docSelectedCategoryId.value ? [docSelectedCategoryId.value] : []))
-  /** id로 categoryList 원본 노드 찾기 — 필터 트리와 참조가 달라도 펼침 상태가 스토어에만 반영되도록 */
+  // 카테고리 선택 → 파일 필터링
+  const selectedCategoryIds = computed(() => (fileSelectedCategoryId.value ? [fileSelectedCategoryId.value] : []))
+  /** id로 categoryList 원본 노드 찾기 */
   const findCategoryNodeById = (items: CategoryTreeItem[], id: string): CategoryTreeItem | null => {
     for (const item of items) {
       if (item.categoryId === id) return item
@@ -120,28 +119,25 @@ export const useCategoryStore = () => {
     return null
   }
   const onCategorySelect = (item: CategoryTreeItem) => {
-    // 자식 있는 카테고리(최상위 루트 포함) → 펼침/접기 + 해당 카테고리 기준 문서 목록 조회 (같은 항목 재클릭 시에도 해제하지 않음)
     if (item.children?.length) {
       const node = findCategoryNodeById(categoryList.value, item.categoryId)
       if (node?.children?.length) node.expanded = !node.expanded
-      docSelectedCategoryId.value = item.categoryId
-      docCurrentPage.value = 1
-      handleSelectDocumentList()
+      fileSelectedCategoryId.value = item.categoryId
+      fileCurrentPage.value = 1
+      handleSelectFileLibraryList()
       return
     }
-    // 리프 카테고리 → 선택 유지 후 조회 (재클릭해도 필터 해제하지 않음)
-    docSelectedCategoryId.value = item.categoryId
-    docCurrentPage.value = 1
-    handleSelectDocumentList()
+    fileSelectedCategoryId.value = item.categoryId
+    fileCurrentPage.value = 1
+    handleSelectFileLibraryList()
   }
   // 카테고리 펼침 토글
   const toggleExpand = (item: CategoryTreeItem) => {
     if (!item?.children?.length) return
     const node = findCategoryNodeById(categoryList.value, item.categoryId)
-    // 자식 있는 카테고리 → 펼치기/접기만
     if (node?.children?.length) node.expanded = !node.expanded
   }
-  /** 카테고리 입력란에 포커스 (드롭다운 닫힌 뒤 DOM 갱신 이후 실행 권장) */
+  /** 카테고리 입력란에 포커스 */
   const focusCategoryInputField = () => {
     nextTick(() => {
       nextTick(() => categoryInputRef.value?.focus())
@@ -170,7 +166,6 @@ export const useCategoryStore = () => {
     if (!ok) return
     categoryInputValue.value = ''
     categoryInputParentId.value = null
-    // 하위 추가 플로우만 입력란 닫기 (+ 버튼으로 연 최상위 추가는 연속 입력 가능)
     if (wasSubcategory) isCategoryInputVisible.value = false
   }
   const startCategoryRename = (item: CategoryTreeItem) => {
@@ -194,26 +189,20 @@ export const useCategoryStore = () => {
       categoryInputValue.value = ''
       focusCategoryInputField()
     } else if (value === 'delete') {
-      // 삭제 대상 = 현재 목록 카테고리이고 필터 없음 → docTotalCount로 판단
-      if (docSelectedCategoryId.value === cat.categoryId && docTotalCount.value > 0) {
-        openToast({ message: '문서가 등록된 카테고리는 삭제할 수 없습니다.', type: 'warning' })
+      if (fileSelectedCategoryId.value === cat.categoryId && fileTotalCount.value > 0) {
+        openToast({ message: '파일이 등록된 카테고리는 삭제할 수 없습니다.', type: 'warning' })
         return
       }
-      // 다른 카테고리 삭제이거나 검색·상태 필터 적용 중 → 해당 카테고리 전체 건수만 조회
-      if (
-        docSelectedCategoryId.value !== cat.categoryId ||
-        docSearchKeyword.value.trim() !== '' ||
-        docStatusFilter.value !== ''
-      ) {
+      if (fileSelectedCategoryId.value !== cat.categoryId || fileSearchKeyword.value.trim() !== '') {
         openLoading({ text: '카테고리 삭제 가능 여부를 확인하는 중...' })
         let res: { totalCnt: number }
         try {
-          res = await fetchDocumentList(undefined, cat.categoryId, '', 1, 1)
+          res = await fetchSelectDocFileLibraryList({ categoryId: cat.categoryId, page: 1, pageSize: 1 })
         } finally {
           closeLoading()
         }
         if (res.totalCnt > 0) {
-          openToast({ message: '문서가 등록된 카테고리는 삭제할 수 없습니다.', type: 'warning' })
+          openToast({ message: '파일이 등록된 카테고리는 삭제할 수 없습니다.', type: 'warning' })
           return
         }
       }
@@ -229,11 +218,10 @@ export const useCategoryStore = () => {
   }
   const onCategorySelectConfirm = (selectedId: string) => {
     visibleCategoryId.value = selectedId
-    // 선택 중이던 카테고리가 필터에서 빠졌으면 해제
-    if (docSelectedCategoryId.value && selectedId && docSelectedCategoryId.value !== selectedId) {
-      docSelectedCategoryId.value = ''
-      docCurrentPage.value = 1
-      handleSelectDocumentList()
+    if (fileSelectedCategoryId.value && selectedId && fileSelectedCategoryId.value !== selectedId) {
+      fileSelectedCategoryId.value = ''
+      fileCurrentPage.value = 1
+      handleSelectFileLibraryList()
     }
   }
 
@@ -253,10 +241,7 @@ export const useCategoryStore = () => {
     }))
   }
 
-  const handleSelectCategoryList = async (options?: {
-    forceExpandIds?: string[]
-    preserveDocumentSelection?: boolean
-  }) => {
+  const handleSelectCategoryList = async (options?: { forceExpandIds?: string[]; preserveFileSelection?: boolean }) => {
     const expandedIds = collectExpandedCategoryIds(categoryList.value)
     for (const id of options?.forceExpandIds ?? []) {
       if (id) expandedIds.add(id)
@@ -271,14 +256,14 @@ export const useCategoryStore = () => {
     const tree = buildCategoryTreeFromFlat(res.dataList ?? [])
     categoryList.value = mergeCategoryExpandedState(tree, expandedIds)
 
-    if (options?.preserveDocumentSelection) {
-      await handleSelectDocumentList()
+    if (options?.preserveFileSelection) {
+      await handleSelectFileLibraryList()
       return
     }
     const firstCategoryId = categoryList.value[0]?.categoryId ?? ''
-    docSelectedCategoryId.value = firstCategoryId
-    docCurrentPage.value = 1
-    await handleSelectDocumentList()
+    fileSelectedCategoryId.value = firstCategoryId
+    fileCurrentPage.value = 1
+    await handleSelectFileLibraryList()
   }
 
   const handleSaveCategory = async (data: { categoryId?: string; categoryName: string; parnCatId?: string | null }) => {
@@ -302,7 +287,7 @@ export const useCategoryStore = () => {
       if (res.successYn) {
         openToast({ message: '카테고리가 저장되었습니다.', type: 'success' })
         const forceExpandIds = data.parnCatId ? [data.parnCatId] : []
-        await handleSelectCategoryList({ forceExpandIds, preserveDocumentSelection: true })
+        await handleSelectCategoryList({ forceExpandIds, preserveFileSelection: true })
         return true
       }
       openToast({ message: '카테고리 저장에 실패했습니다.', type: 'error' })
@@ -333,7 +318,7 @@ export const useCategoryStore = () => {
       }
       if (res.successYn) {
         openToast({ message: '카테고리가 수정되었습니다.', type: 'success' })
-        await handleSelectCategoryList({ preserveDocumentSelection: true })
+        await handleSelectCategoryList({ preserveFileSelection: true })
         return true
       }
       openToast({ message: '카테고리 수정에 실패했습니다.', type: 'error' })
@@ -358,7 +343,7 @@ export const useCategoryStore = () => {
       }
       if (res.successYn) {
         openToast({ message: '카테고리가 삭제되었습니다.', type: 'success' })
-        await handleSelectCategoryList({ preserveDocumentSelection: true })
+        await handleSelectCategoryList({ preserveFileSelection: true })
         return true
       }
       openToast({ message: '카테고리 삭제에 실패했습니다.', type: 'error' })

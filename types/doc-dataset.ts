@@ -45,7 +45,6 @@ export interface DocDatasetDetail {
   singleCellText: string
   llmCd?: string
   chunkOptJson?: string | Record<string, unknown> | null
-  fileChangedYn?: string
 }
 
 export interface CategoryItem {
@@ -58,10 +57,11 @@ export interface CategoryItem {
 }
 
 export interface DocDatasetSelectedDoc {
-  docId: string
-  docTitle: string
-  fileChangedYn?: string
+  docFileId: string
+  docTitle?: string
+  fileName?: string
   categoryId?: string
+  categoryName?: string
   author?: string
   secLvl?: string
   content?: string
@@ -80,10 +80,10 @@ export interface DocDatasetSelectedUrl {
   urlAddr: string
 }
 
-// 데이터셋-문서 매핑 목록 아이템
-export interface DocIdItem {
+// 데이터셋-파일 매핑 목록 아이템
+export interface DocFileIdItem {
   datasetId: string
-  docId: string
+  docFileId: string
 }
 
 // 데이터셋-URL 매핑 목록 아이템
@@ -94,8 +94,8 @@ export interface UrlIdItem {
 
 export interface DocDatasetSelectResponse {
   data?: DocDatasetDetail
-  // 데이터셋 매핑 문서/URL (edit 시 selectedDocIds/selectedUrlIds 세팅용)
-  dsDocList?: DocIdItem[]
+  // 데이터셋 매핑 문서/URL (edit 시 selectedDocFileIds/selectedUrlIds 세팅용)
+  dsDocList?: DocFileIdItem[]
   dsUrlList?: UrlIdItem[]
 }
 
@@ -129,7 +129,7 @@ export interface DocDatasetSavePayload {
   llmCd: string
   /** CHUNK_OPT_JSON — VO·DB는 문자열로 받고 MySQL JSON 컬럼에 저장 */
   chunkOptJson?: string
-  docIdList: DocIdItem[]
+  docFileIdList: DocFileIdItem[]
   urlIdList: UrlIdItem[]
 }
 
@@ -141,7 +141,7 @@ export interface DocDatasetForm {
   version: string
   // 데이터 소스
   useDocument: boolean
-  selectedDocIds: string[]
+  selectedDocFileIds: string[]
   useUrl: boolean
   selectedUrlIds: string[]
   // 청킹 옵션

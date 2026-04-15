@@ -1,6 +1,5 @@
 // 백엔드 FileVO 매핑 타입
 export interface FileMeta {
-  docId?: string
   docTitle?: string
   categoryId?: string
   author?: string
@@ -74,7 +73,6 @@ export interface FilePreviewDocFileOption {
 /** FilePreviewModal — PDF 미리보기 팝업 (viewFile.do presigned URL) */
 export interface FilePreviewModalProps {
   isOpen: boolean
-  docId: string
   docFileId: string
   /** 모달 헤더 제목 (미지정 시 기본 문구) */
   title?: string

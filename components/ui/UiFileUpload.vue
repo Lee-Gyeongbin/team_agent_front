@@ -287,13 +287,12 @@ const totalFileCount = computed(() => props.attachedFileList.length + props.mode
 
 const onDownloadAttachedFile = async (file: FileItem) => {
   if (!props.isDownloadable) return
-  const docId = String(file.docId ?? '').trim()
-  if (!docId) {
+  const docFileId = String(file.docFileId ?? '').trim()
+  if (!docFileId) {
     openToast({ message: '다운로드할 파일 정보가 없습니다.', type: 'warning' })
     return
   }
-  const docFileId = String(file.docFileId ?? '').trim()
-  await onDownloadFile(docId, docFileId)
+  await onDownloadFile(docFileId)
 }
 
 const onRemoveAttachedFile = (file: FileItem, index: number) => {

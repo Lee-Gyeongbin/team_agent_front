@@ -11,6 +11,7 @@ import { clearBodyChartFullscreen } from '~/utils/chat/visualizationChartUtil'
 import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
 import { getCodes } from '~/utils/global/comCodesUtil'
 import type { ColorItem, IconItem } from '~/types/theme'
+import { useFileStore } from '~/composables/com/useFileStore'
 
 /** 에이전트 SVC_TY → 채팅 검색모드 (M=RAG·지식, S=SQL·데이터마트) */
 function agentTypeToSearchMode(svcTy: string): SearchModeValue | null {
@@ -45,6 +46,7 @@ const {
   handleSelectKnowledge,
 } = useChatRooms()
 const { executeSendPipeline } = useChatSendPipeline()
+const { handleViewFileUrl } = useFileStore()
 
 // API 호출
 const { fetchSelectChatLogList, fetchSelectChatRef, fetchSelectTableDataList, fetchSelectAgentListForChat } =
@@ -64,6 +66,7 @@ const activePanelType = ref<PanelType>('none')
 const isPanelFullscreen = ref(false)
 const activePanelMessageId = ref<string | null>(null)
 const pdfRefList = ref<ChatRefRow[]>([])
+const chatPdfFileUrlMap = ref<Record<string, string>>({})
 const visualizationViewMap = ref<Record<string, VisualizationViewModel>>({})
 
 // 좋아요/싫어요 모달 상태
@@ -94,6 +97,21 @@ const getChatIndexAgentColorStyle = (colorHex: string) => {
 }
 
 export const useChatStore = () => {
+  const handleSelectChatPdfFileUrl = async (docFileId: string): Promise<string | null> => {
+    const normalizedId = String(docFileId ?? '').trim()
+    if (!normalizedId) return null
+    const cached = chatPdfFileUrlMap.value[normalizedId]
+    if (cached) return cached
+    const url = await handleViewFileUrl(normalizedId)
+    if (!url) return null
+    chatPdfFileUrlMap.value = { ...chatPdfFileUrlMap.value, [normalizedId]: url }
+    return url
+  }
+
+  const handleResetChatPdfFileUrlMap = () => {
+    chatPdfFileUrlMap.value = {}
+  }
+
   // 채팅 로그 조회 (roomId 기준)
   // - 새 채팅 직후처럼 서버 로그가 아직 적재되기 전(0건)인 순간에 페이지 진입하면,
   //   로컬에 이미 쌓아둔 placeholder 메시지까지 비워져 UI가 사라질 수 있어 보존 옵션을 둔다.
@@ -237,6 +255,7 @@ export const useChatStore = () => {
     activePanelType.value = 'pdf'
     activePanelMessageId.value = id
     pdfRefList.value = []
+    handleResetChatPdfFileUrlMap()
     // 참조 문서 목록 조회
     openLoading({ text: '참조 문서를 불러오는 중...' })
     let res: { list: ChatRefRow[] }
@@ -259,6 +278,9 @@ export const useChatStore = () => {
   const onPanelClose = (value: boolean) => {
     if (!value) {
       clearBodyChartFullscreen()
+      if (activePanelType.value === 'pdf') {
+        handleResetChatPdfFileUrlMap()
+      }
       if (activePanelType.value === 'visualization' && activePanelMessageId.value) {
         const removeId = activePanelMessageId.value
         visualizationViewMap.value = Object.fromEntries(
@@ -278,6 +300,7 @@ export const useChatStore = () => {
     isPanelFullscreen.value = false
     activePanelMessageId.value = null
     pdfRefList.value = []
+    handleResetChatPdfFileUrlMap()
     visualizationViewMap.value = {}
   }
 
@@ -388,6 +411,7 @@ export const useChatStore = () => {
     onViewSource,
     onViewVisualization,
     handleSelectVisualizationData,
+    handleSelectChatPdfFileUrl,
     onPanelClose,
     handleResetChatPanels,
     isModalOpen,

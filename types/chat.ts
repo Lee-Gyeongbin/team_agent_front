@@ -98,8 +98,8 @@ export interface ChatMessage {
   refId?: string
   /** 질문에 매핑된 에이전트 ID */
   agentId?: string
-  /** 출처 문서 ID */
-  docId?: string
+  /** 출처 파일 ID (TB_DOC_FILE.DOC_FILE_ID) */
+  docFileId?: string
   /** 문서 존재 여부 (Y/N) */
   docExist?: 'Y' | 'N'
   /** 시각화 테이블 원본 JSON (로그 목록 조회·스트리밍 완료 시) */
@@ -131,7 +131,7 @@ export const EMPTY_CHAT_MESSAGE: ChatMessage = {
   svcTy: '',
   refId: '',
   agentId: '',
-  docId: '',
+  docFileId: '',
   docExist: 'N',
 }
 
@@ -194,8 +194,8 @@ export interface ChatLogListRow {
   svcTy?: string
   /** 참조 ID (지식베이스/데이터마트 등) */
   refId?: string
-  /** 출처 문서 ID */
-  docId?: string
+  /** 출처 파일 ID (TB_DOC_FILE.DOC_FILE_ID) */
+  docFileId?: string
   /** 문서 존재 여부 (Y/N) */
   docExist?: 'Y' | 'N'
   /** 시각화 데이터 존재 여부 (Y/N) */
@@ -218,11 +218,10 @@ export interface ChatLogListRow {
   [key: string]: unknown
 }
 
-/** TB_CHAT_REF JOIN TB_DOC API 응답 한 건 */
+/** TB_CHAT_REF JOIN TB_DOC_FILE API 응답 한 건 */
 export interface ChatRefRow {
   logId: string
   docFileId: string
-  docId: string
   mainPageNo: number
   relatedPages: string // JSON 배열 "[63,75,88]" 또는 쉼표 구분 "1,3,5"
   createDt: string

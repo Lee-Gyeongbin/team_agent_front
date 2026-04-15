@@ -13,7 +13,7 @@
         variant="primary"
         size="md"
         class="btn-register-document"
-        @click="onOpenFileUploadModal"
+        @click="openRegisterModal"
       >
         <template #icon-left>
           <i class="icon icon-plus size-16" />
@@ -22,200 +22,197 @@
       </UiButton>
     </div>
 
-    <section class="repository-content-wrapper flex document-panel repository-file-panel">
-      <div
-        v-if="fileLibraryError"
-        class="repository-file-error flex flex-col items-center gap-3 py-8"
-      >
-        <p class="text-error">{{ fileLibraryError }}</p>
-        <UiButton
-          variant="line-secondary"
-          size="sm"
-          @click="handleSelectFileLibraryList"
-        >
-          다시 시도
-        </UiButton>
-      </div>
+    <section class="repository-content-wrapper flex">
+      <aside class="category-panel">
+        <div class="category-panel-header flex justify-between items-center">
+          <span class="category-panel-title">카테고리</span>
+        </div>
+        <div class="category-tree-wrap">
+          <ul class="category-tree">
+            <CategoryTreeNode
+              v-for="cat in categoryTree"
+              :key="cat.categoryId"
+              :item="cat"
+              :depth="1"
+              selectable
+              :selected-ids="selectedCategoryId ? [selectedCategoryId] : []"
+              :show-check-icon="false"
+              @toggle="onToggleExpand"
+              @select="onSelectCategory"
+            />
+          </ul>
+        </div>
+      </aside>
 
-      <template v-else>
-        <UiLoading
-          v-if="fileLibraryLoading"
-          text="불러오는 중..."
-        />
-        <template v-else-if="fileLibraryList.length === 0">
-          <UiEmpty description="등록된 파일이 없습니다." />
-        </template>
+      <div class="document-panel">
+        <div
+          v-if="fileLibraryError"
+          class="repository-file-error flex flex-col items-center gap-3 py-8"
+        >
+          <p class="text-error">{{ fileLibraryError }}</p>
+          <UiButton
+            variant="line-secondary"
+            size="sm"
+            @click="handleSelectFileLibraryList"
+          >
+            다시 시도
+          </UiButton>
+        </div>
+
         <template v-else>
-          <div class="document-batch-bar flex items-center">
-            <p class="batch-count">
-              <span class="point-color">{{ selectedFileIds.length }}개</span> 선택됨
-            </p>
-            <UiButton
-              variant="line-secondary"
-              size="xxs"
-              class="batch-bar-btn type-danger"
-              :disabled="selectedFileIds.length === 0"
-              @click="onBatchDelete"
-            >
-              <template #icon-left>
-                <i class="icon icon-trashcan size-12" />
-              </template>
-              삭제
-            </UiButton>
-          </div>
-          <div class="document-table-wrap">
-            <UiTable
-              :columns="fileTableColumns"
-              :data="fileLibraryList"
-              sticky-header
-              empty-text=""
-            >
-              <template #header-select>
-                <UiCheckbox
-                  :model-value="isAllFileRowsSelected"
-                  @update:model-value="toggleSelectAllFiles"
-                />
-              </template>
-              <template #cell-fileName="{ row }">
-                <div class="repository-file-name-wrap flex items-center">
-                  <span class="repository-file-name">{{ row.fileName }}</span>
-                  <button
-                    type="button"
-                    class="btn-doc-title"
-                    title="미리보기"
-                    @click.stop="onFileNamePreview(row)"
-                  >
-                    <i class="icon icon-view size-16"></i>
-                  </button>
-                  <button
-                    type="button"
-                    class="btn-doc-title"
-                    title="다운로드"
-                    @click.stop="onFileNameDownload(row)"
-                  >
-                    <i class="icon icon-download size-16"></i>
-                  </button>
-                </div>
-              </template>
-              <template #cell-fileType="{ value }">
-                <span class="repository-file-type">{{ formatFileTypeLabel(String(value ?? '')) }}</span>
-              </template>
-              <template #cell-dsNmList="{ value }">
-                <UiTooltip
-                  v-if="String(value ?? '').trim()"
-                  side="bottom"
-                  align="start"
-                  :show-arrow="false"
-                >
-                  <span class="repository-file-ds-nm">{{ String(value ?? '-') }}</span>
-                  <template #content>
-                    <span>{{ String(value ?? '-') }}</span>
-                  </template>
-                </UiTooltip>
-                <span
-                  v-else
-                  class="repository-file-ds-nm"
-                >
-                  -
-                </span>
-              </template>
-              <template #cell-select="{ row }">
-                <div
-                  class="cell-select-stop"
-                  @click.stop
-                >
-                  <UiCheckbox
-                    :model-value="selectedFileIds.includes(String(row.docFileId ?? ''))"
-                    @update:model-value="(v) => toggleSelectFileRow(String(row.docFileId ?? ''), v)"
-                  />
-                </div>
-              </template>
-              <template #cell-actions="{ row }">
-                <UiButton
-                  variant="line-secondary"
-                  size="xxs"
-                  class="type-danger"
-                  @click="onDeleteRow(row)"
-                >
-                  삭제
-                </UiButton>
-              </template>
-            </UiTable>
-          </div>
-          <UiPagination
-            v-if="fileTotalCount > 0"
-            v-model="filePageModel"
-            :total-count="fileTotalCount"
-            :page-size="filePageSize"
-            total-label="개 파일"
-            class="document-pagination"
+          <UiLoading
+            v-if="fileLibraryLoading"
+            text="불러오는 중..."
           />
+          <template v-else-if="fileLibraryList.length === 0">
+            <UiEmpty description="등록된 파일이 없습니다." />
+          </template>
+          <template v-else>
+            <div class="document-batch-bar flex items-center">
+              <p class="batch-count">
+                <span class="point-color">{{ selectedFileIds.length }}개</span> 선택됨
+              </p>
+              <UiButton
+                variant="line-secondary"
+                size="xxs"
+                class="batch-bar-btn type-danger"
+                :disabled="selectedFileIds.length === 0"
+                @click="onBatchDelete"
+              >
+                <template #icon-left>
+                  <i class="icon icon-trashcan size-12" />
+                </template>
+                삭제
+              </UiButton>
+            </div>
+            <div class="document-table-wrap">
+              <UiTable
+                :columns="fileTableColumns"
+                :data="fileLibraryList"
+                sticky-header
+                clickable
+                empty-text=""
+                @row-click="onFileTableRowClick"
+              >
+                <template #header-select>
+                  <UiCheckbox
+                    :model-value="isAllFileRowsSelected"
+                    @update:model-value="toggleSelectAllFiles"
+                  />
+                </template>
+                <template #cell-fileName="{ row }">
+                  <div class="cell-document flex items-center doc-name-grp">
+                    <UiTooltip
+                      v-if="String(row.fileName ?? '').trim()"
+                      font-size="11px"
+                      side="bottom"
+                      align="start"
+                      :content="String(row.fileName ?? '')"
+                      content-class="repository-doc-title-tooltip"
+                    >
+                      <span class="doc-name">{{ row.fileName }}</span>
+                    </UiTooltip>
+                    <span
+                      v-else
+                      class="doc-name"
+                    >
+                      {{ row.fileName }}
+                    </span>
+                    <button
+                      type="button"
+                      class="btn-doc-title"
+                      title="미리보기"
+                      @click.stop="onFileNamePreview(row)"
+                    >
+                      <i class="icon icon-view size-16"></i>
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-doc-title"
+                      title="다운로드"
+                      @click.stop="onFileNameDownload(row)"
+                    >
+                      <i class="icon icon-download size-16"></i>
+                    </button>
+                  </div>
+                </template>
+                <template #cell-fileType="{ value }">
+                  <span class="repository-file-type">{{ formatFileTypeLabel(String(value ?? '')) }}</span>
+                </template>
+                <template #cell-fileSize="{ value }">
+                  <span class="repository-file-size">{{ formatFileSizeToMb(value) }}</span>
+                </template>
+                <template #cell-categoryName="{ value }">
+                  <span class="repository-file-type">{{ String(value ?? '-').trim() || '-' }}</span>
+                </template>
+                <template #cell-select="{ row }">
+                  <div
+                    class="cell-select-stop"
+                    @click.stop
+                  >
+                    <UiCheckbox
+                      :model-value="selectedFileIds.includes(String(row.docFileId ?? ''))"
+                      @update:model-value="(v) => toggleSelectFileRow(String(row.docFileId ?? ''), v)"
+                    />
+                  </div>
+                </template>
+              </UiTable>
+            </div>
+            <UiPagination
+              v-if="fileTotalCount > 0"
+              v-model="filePageModel"
+              :total-count="fileTotalCount"
+              :page-size="filePageSize"
+              total-label="개 파일"
+              class="document-pagination"
+            />
+          </template>
         </template>
-      </template>
+      </div>
     </section>
 
-    <UiModal
-      :is-open="isFileUploadModalOpen"
-      title="파일 추가"
-      position="center"
-      :max-width="'560px'"
-      custom-class="modal-repository-file-upload"
-      @close="onCloseFileUploadModal"
-    >
-      <div class="repository-file-upload-modal-body">
-        <div class="repository-file-upload-target">
-          <p class="repository-file-upload-target-label">문서셋 매핑 (선택)</p>
-          <UiSelect
-            v-model="selectedDatasetDocId"
-            :options="datasetOptions"
-            placeholder="문서셋 선택 안 함"
-            :disabled="isDatasetLoading"
-            class="repository-file-upload-target-select"
-          />
-        </div>
-        <UiFileUpload
-          v-model="fileUploadModalFiles"
-          :multiple="true"
-          :max-files="FILE_UPLOAD_MAX"
-          :accept="fileAccept"
-          :allowed-extensions="FILE_UPLOAD_ALLOWED_EXT"
-          hint="TXT, PPTX, PDF, DOCX, HWP (파일당 최대 50MB)"
-        />
-      </div>
-      <template #footer>
-        <div class="repository-file-upload-modal-footer">
-          <UiButton
-            variant="outline"
-            size="xlg"
-            class="btn-modal-dialog"
-            @click="onCloseFileUploadModal"
-          >
-            취소
-          </UiButton>
-          <UiButton
-            variant="primary"
-            size="xlg"
-            class="btn-modal-dialog"
-            @click="onConfirmFileUploadModal"
-          >
-            등록
-          </UiButton>
-        </div>
-      </template>
-    </UiModal>
+    <RepositoryFileFormModal
+      v-model:form-category-id="formCategoryId"
+      v-model:form-sec-lvl="formSecLvl"
+      v-model:form-doc-desc="formDocDesc"
+      v-model:form-keywords="formKeywords"
+      v-model:form-doc-src="formDocSrc"
+      v-model:file-upload-modal-files="fileUploadModalFiles"
+      :is-open="isFormModalOpen"
+      :editing-doc-file-id="editingDocFileId"
+      :editing-file-name="editingFileName"
+      :category-options="categoryOptions"
+      :sec-lvl-options="secLvlOptions"
+      :file-upload-allowed-ext="FILE_UPLOAD_ALLOWED_EXT"
+      :file-upload-max="FILE_UPLOAD_MAX"
+      :file-upload-max-size="FILE_UPLOAD_MAX_SIZE"
+      :file-accept="fileAccept"
+      @close="closeFormModal"
+      @submit="onSubmitForm"
+    />
+
+    <FilePreviewModal
+      v-model:is-open="isFilePreviewOpen"
+      v-model:doc-file-id="filePreviewDocFileId"
+      :title="filePreviewTitle"
+      :doc-file-options="filePreviewDocFileOptions"
+      @close="onCloseFilePreview"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import type { FileLibraryItem } from '~/types/repository'
-import type { SelectOption } from '~/components/ui/UiSelect.vue'
-import { useFileStore } from '~/composables/com/useFileStore'
+import FilePreviewModal from '~/components/file/FilePreviewModal.vue'
+import CategoryTreeNode from '~/components/repository/CategoryTreeNode.vue'
+import RepositoryFileFormModal from '~/components/repository/RepositoryFileFormModal.vue'
 import { useRepositoryApi } from '~/composables/repository/useRepositoryApi'
 import { useRepositoryStore } from '~/composables/repository/useRepositoryStore'
+import type { CategoryItem, CategoryTreeItem, FileLibraryItem } from '~/types/repository'
 import type { TableColumn } from '~/types/table'
 
 const {
   fileSearchKeyword,
+  fileSelectedCategoryId,
   fileLibraryList,
   fileTotalCount,
   fileCurrentPage,
@@ -225,33 +222,65 @@ const {
   handleSelectFileLibraryList,
   onFileSearch,
   handleSaveFileLibraryBatch,
-  handleDeleteFileLibraryRow,
+  handleUpdateFileLibrary,
   handleDeleteFileLibraryBatch,
   handleOpenFileLibraryPreview,
+  handleDownloadFileLibraryRow,
+  isFilePreviewOpen,
+  filePreviewDocFileId,
+  filePreviewTitle,
+  filePreviewDocFileOptions,
+  onCloseFilePreview,
 } = useRepositoryStore()
+const { fetchCategoryList } = useRepositoryApi()
 
-const { fetchDocumentList } = useRepositoryApi()
-const { onDownloadFile } = useFileStore()
-
-const fileAccept = '.txt,.pptx,.pdf,.docx,.hwp'
-const FILE_UPLOAD_ALLOWED_EXT: string[] = ['txt', 'pptx', 'pdf', 'docx', 'hwp']
-const FILE_UPLOAD_MAX = 20
-
-const isFileUploadModalOpen = ref(false)
+const categoryTree = ref<CategoryTreeItem[]>([])
+const selectedCategoryId = ref('')
+const isFormModalOpen = ref(false)
+const editingDocFileId = ref('')
+const editingFileName = ref('')
+const formCategoryId = ref('')
+const formSecLvl = ref('001')
+const formDocDesc = ref('')
+const formKeywords = ref('')
+const formDocSrc = ref('')
 const fileUploadModalFiles = ref<File[]>([])
-const isDatasetLoading = ref(false)
-const datasetOptions = ref<SelectOption[]>([{ label: '문서셋 선택 안 함', value: '' }])
-const selectedDatasetDocId = ref<string | number>('')
-
-/** 현재 목록에서 선택된 docFileId (문서 관리 탭 패턴과 동일) */
 const selectedFileIds = ref<string[]>([])
+const secLvlOptions = ref<{ label: string; value: string }[]>([{ label: '선택', value: '' }])
 
-watch(isFileUploadModalOpen, (open) => {
-  if (open) {
-    fileUploadModalFiles.value = []
-    selectedDatasetDocId.value = ''
-    void loadDatasetOptions()
+const FILE_UPLOAD_ALLOWED_EXT: string[] = ['txt', 'pptx', 'pdf', 'docx', 'hwp']
+const FILE_UPLOAD_MAX = 30
+const FILE_UPLOAD_MAX_SIZE = 100 * 1024 * 1024
+const fileAccept = '.txt,.pptx,.pdf,.docx,.hwp'
+
+const fileTableColumns: TableColumn[] = [
+  { key: 'select', label: '', width: '48px', align: 'center', headerAlign: 'center' },
+  { key: 'fileName', label: '파일명', width: 'auto', align: 'left', headerAlign: 'center' },
+  { key: 'dsNm', label: '데이터셋명', width: 'auto', align: 'left', headerAlign: 'center' },
+  { key: 'fileSize', label: '크기', width: '100px', align: 'center', headerAlign: 'center' },
+  { key: 'fileType', label: '형식', width: '100px', align: 'center', headerAlign: 'center' },
+  { key: 'categoryName', label: '카테고리', width: '220px', align: 'left', headerAlign: 'center' },
+  { key: 'createDt', label: '등록일', width: '120px', align: 'center', headerAlign: 'center' },
+]
+
+const categoryOptions = computed(() => {
+  const options: { label: string; value: string }[] = [{ label: '선택', value: '' }]
+  const walk = (items: CategoryTreeItem[]) => {
+    for (const item of items) {
+      options.push({ label: item.categoryName, value: item.categoryId })
+      if (item.children?.length) walk(item.children)
+    }
   }
+  walk(categoryTree.value)
+  return options
+})
+
+const filePageModel = computed({
+  get: () => fileCurrentPage.value,
+  set: (page: number) => {
+    fileCurrentPage.value = page
+    void handleSelectFileLibraryList()
+  },
 })
 
 watch([fileCurrentPage, fileSearchKeyword], () => {
@@ -275,11 +304,7 @@ const toggleSelectAllFiles = () => {
   const rows = fileLibraryList.value
   const ids = rows.map((r) => String((r as FileLibraryItem).docFileId ?? '').trim()).filter(Boolean)
   if (ids.length === 0) return
-  if (isAllFileRowsSelected.value) {
-    selectedFileIds.value = []
-  } else {
-    selectedFileIds.value = [...ids]
-  }
+  selectedFileIds.value = isAllFileRowsSelected.value ? [] : [...ids]
 }
 
 const toggleSelectFileRow = (id: string, checked: boolean) => {
@@ -290,67 +315,125 @@ const toggleSelectFileRow = (id: string, checked: boolean) => {
   }
 }
 
-const fileTableColumns: TableColumn[] = [
-  { key: 'select', label: '', width: '48px', align: 'center', headerAlign: 'center' },
-  { key: 'fileName', label: '파일명', width: 'auto', align: 'left', headerAlign: 'center' },
-  { key: 'fileSize', label: '크기', width: '100px', align: 'center', headerAlign: 'center' },
-  { key: 'fileType', label: '형식', width: '120px', align: 'center', headerAlign: 'center' },
-  { key: 'dsNmList', label: '사용 문서셋', width: '240px', align: 'left', headerAlign: 'center' },
-  { key: 'createDt', label: '등록일', width: '120px', align: 'center', headerAlign: 'center' },
-  { key: 'actions', label: '관리', width: '88px', align: 'center', headerAlign: 'center' },
-]
-
 const formatFileTypeLabel = (t: string) => {
   if (t.includes('/')) return t.split('/').pop() || t
   return t
 }
 
-const filePageModel = computed({
-  get: () => fileCurrentPage.value,
-  set: (page: number) => {
-    fileCurrentPage.value = page
-    void handleSelectFileLibraryList()
-  },
-})
-
-const onOpenFileUploadModal = () => {
-  isFileUploadModalOpen.value = true
+const formatFileSizeToMb = (value: unknown) => {
+  const bytes = Number(value)
+  if (!Number.isFinite(bytes) || bytes < 0) return '-'
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
 }
 
-const onCloseFileUploadModal = () => {
-  isFileUploadModalOpen.value = false
+const buildCategoryTreeFromFlat = (flat: CategoryItem[]): CategoryTreeItem[] => {
+  const byId = new Map<string, CategoryTreeItem>()
+  for (const row of flat) byId.set(row.categoryId, { ...row, children: [] })
+  const roots: CategoryTreeItem[] = []
+  for (const row of flat) {
+    const node = byId.get(row.categoryId)
+    if (!node) continue
+    const parentId = row.parnCatId
+    if (!parentId || !byId.has(parentId)) roots.push(node)
+    else byId.get(parentId)!.children!.push(node)
+  }
+  return roots
 }
 
-const onConfirmFileUploadModal = async () => {
-  if (fileUploadModalFiles.value.length === 0) {
+const loadCategoryList = async () => {
+  const res = await fetchCategoryList()
+  categoryTree.value = buildCategoryTreeFromFlat(res.dataList ?? [])
+}
+
+const loadSecLvlOptions = async () => {
+  const codes = await getCodes('DC000001')
+  secLvlOptions.value = [{ label: '선택', value: '' }, ...codes.map((c) => ({ label: c.codeNm, value: c.codeId }))]
+}
+
+const onToggleExpand = (item: CategoryTreeItem) => {
+  if (!item.children?.length) return
+  item.expanded = !item.expanded
+}
+
+const onSelectCategory = (item: CategoryTreeItem) => {
+  selectedCategoryId.value = item.categoryId
+  fileSelectedCategoryId.value = item.categoryId
+  fileCurrentPage.value = 1
+  void handleSelectFileLibraryList()
+}
+
+const resetForm = () => {
+  editingDocFileId.value = ''
+  editingFileName.value = ''
+  formCategoryId.value = selectedCategoryId.value
+  formSecLvl.value = '001'
+  formDocDesc.value = ''
+  formKeywords.value = ''
+  formDocSrc.value = ''
+  fileUploadModalFiles.value = []
+}
+
+const openRegisterModal = () => {
+  resetForm()
+  isFormModalOpen.value = true
+}
+
+const openEditModal = (row: FileLibraryItem) => {
+  editingDocFileId.value = String(row.docFileId ?? '')
+  editingFileName.value = String(row.fileName ?? '')
+  formCategoryId.value = String(row.categoryId ?? '')
+  formSecLvl.value = String(row.secLvl ?? '001')
+  formDocDesc.value = String(row.docDesc ?? '')
+  formKeywords.value = String(row.keywords ?? '')
+  formDocSrc.value = String(row.docSrc ?? '')
+  isFormModalOpen.value = true
+}
+
+const closeFormModal = () => {
+  isFormModalOpen.value = false
+}
+
+const onSubmitForm = async () => {
+  if (!formCategoryId.value) {
+    openToast({ message: '카테고리를 선택해 주세요.', type: 'warning' })
+    return
+  }
+  if (!formSecLvl.value) {
+    openToast({ message: '보안등급을 선택해 주세요.', type: 'warning' })
+    return
+  }
+  if (!editingDocFileId.value && fileUploadModalFiles.value.length === 0) {
     openToast({ message: '업로드할 파일을 선택해 주세요.', type: 'warning' })
     return
   }
-  const mappedDocId = String(selectedDatasetDocId.value ?? '').trim()
-  await handleSaveFileLibraryBatch([...fileUploadModalFiles.value], mappedDocId || undefined)
-  isFileUploadModalOpen.value = false
-}
 
-const loadDatasetOptions = async () => {
-  isDatasetLoading.value = true
-  try {
-    const res = await fetchDocumentList(undefined, undefined, 'Y', 1, 200)
-    const rows = (res.dataList ?? []).map((doc) => ({
-      label: String(doc.docTitle ?? '').trim() || '(제목 없음)',
-      value: String(doc.docId ?? '').trim(),
-    }))
-    datasetOptions.value = [{ label: '문서셋 선택 안 함', value: '' }, ...rows.filter((r) => r.value)]
-  } catch {
-    datasetOptions.value = [{ label: '문서셋 선택 안 함', value: '' }]
-    openToast({ message: '문서셋 목록을 불러오지 못했습니다.', type: 'warning' })
-  } finally {
-    isDatasetLoading.value = false
+  if (editingDocFileId.value) {
+    const ok = await handleUpdateFileLibrary({
+      docFileId: editingDocFileId.value,
+      categoryId: formCategoryId.value,
+      secLvl: formSecLvl.value,
+      docDesc: formDocDesc.value,
+      keywords: formKeywords.value,
+      docSrc: formDocSrc.value,
+    })
+    if (ok) closeFormModal()
+    return
   }
+
+  await handleSaveFileLibraryBatch(fileUploadModalFiles.value, {
+    categoryId: formCategoryId.value,
+    secLvl: formSecLvl.value,
+    docDesc: formDocDesc.value,
+    keywords: formKeywords.value,
+    docSrc: formDocSrc.value,
+  })
+  closeFormModal()
 }
 
-const onDeleteRow = (row: Record<string, unknown>) => {
-  const id = String((row as unknown as FileLibraryItem).docFileId ?? '').trim()
-  if (id) void handleDeleteFileLibraryRow(id)
+const onFileTableRowClick = (row: Record<string, unknown>) => {
+  const item = row as unknown as FileLibraryItem
+  if (!String(item.docFileId ?? '').trim()) return
+  openEditModal(item)
 }
 
 const onFileNamePreview = (row: Record<string, unknown>) => {
@@ -358,13 +441,7 @@ const onFileNamePreview = (row: Record<string, unknown>) => {
 }
 
 const onFileNameDownload = async (row: Record<string, unknown>) => {
-  const docId = String(row.docId ?? '').trim()
-  const docFileId = String(row.docFileId ?? '').trim()
-  if (!docId || !docFileId) {
-    openToast({ message: '문서셋과 매핑된 파일만 다운로드할 수 있습니다.', type: 'warning' })
-    return
-  }
-  await onDownloadFile(docId, docFileId)
+  await handleDownloadFileLibraryRow(row as unknown as FileLibraryItem)
 }
 
 const onBatchDelete = async () => {
@@ -374,39 +451,14 @@ const onBatchDelete = async () => {
 }
 
 onMounted(async () => {
+  await Promise.all([loadCategoryList(), loadSecLvlOptions()])
   await handleSelectFileLibraryList()
 })
 </script>
 
 <style lang="scss" scoped>
-.repository-file-upload-modal-body {
-  padding: 0 4px 8px;
+.repository-file-tab {
   width: 100%;
-}
-
-.repository-file-upload-target {
-  margin-bottom: 12px;
-}
-
-.repository-file-upload-target-label {
-  margin: 0 0 6px;
-  @include typo($body-small);
-  color: $color-text-secondary;
-}
-
-.repository-file-upload-target-select {
-  width: 100%;
-}
-
-.repository-file-upload-modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.repository-file-panel {
-  min-height: 280px;
 }
 
 .repository-file-name {
@@ -420,18 +472,6 @@ onMounted(async () => {
   width: 100%;
   min-width: 0;
   @include ellipsis(1);
-}
-
-.repository-file-ds-nm {
-  display: block;
-  width: 100%;
-  min-width: 0;
-  @include ellipsis(1);
-}
-
-// table-layout: fixed 셀에서 말줄임 동작 보장 (형식 컬럼)
-:deep(.ui-table tbody td:nth-child(4)) {
-  overflow: hidden;
 }
 
 .cell-select-stop {

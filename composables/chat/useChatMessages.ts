@@ -28,7 +28,7 @@ export const useChatMessages = () => {
     const modelId = row.modelId ?? 'all'
     const refId = row.refId ?? ''
     const agentId = typeof row.agentId === 'string' ? row.agentId.trim() : ''
-    const docId = typeof row.docId === 'string' ? row.docId : ''
+    const docFileId = typeof row.docFileId === 'string' ? row.docFileId : ''
     const hasSource = row.docExist === 'Y'
     const hasVisualization = row.tableExist === 'Y'
     const satisYnVal = typeof row.satisYn === 'string' ? row.satisYn : ''
@@ -73,7 +73,7 @@ export const useChatMessages = () => {
         modelId,
         refId,
         ...(agentId ? { agentId } : {}),
-        docId,
+        docFileId,
         createdAt,
         hasSource,
         hasVisualization,
