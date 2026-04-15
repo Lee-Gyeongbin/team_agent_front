@@ -30,11 +30,11 @@
       <!-- 문서 패널 -->
       <DocDatasetSourceDoc
         :use-document="modelValue.useDocument"
-        :selected-doc-ids="modelValue.selectedDocIds"
+        :selected-doc-file-ids="modelValue.selectedDocFileIds"
         :doc-list="docList"
         :category-list="categoryList"
         @update:use-document="onUpdate('useDocument', $event)"
-        @update:selected-doc-ids="onUpdate('selectedDocIds', $event)"
+        @update:selected-doc-file-ids="onUpdate('selectedDocFileIds', $event)"
       />
 
       <!-- URL 패널 -->

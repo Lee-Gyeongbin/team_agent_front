@@ -104,8 +104,8 @@
             <button
               v-for="pageNum in displayPageList"
               :key="pageNum"
-              type="button"
               :ref="(el) => setThumbBtnRef(pageNum, el as HTMLElement | null)"
+              type="button"
               class="chat-pdf-thumb"
               :class="{ 'is-active': pageNum === currentPage }"
               @click="goToPage(pageNum)"
@@ -135,11 +135,16 @@
 </template>
 
 <script setup lang="ts">
-import type { DocItem } from '~/types/library'
 import { useFileStore } from '~/composables/com/useFileStore'
 
+interface ReferencePdfItem {
+  docFileId: string
+  fileName: string
+  relatedPages: string
+}
+
 const props = defineProps<{
-  item: DocItem
+  item: ReferencePdfItem
   open: boolean
 }>()
 
@@ -289,7 +294,7 @@ const onPageInput = (event: Event) => {
 const loadPdfFromItem = async () => {
   if (!props.open) return
 
-  const url = await handleViewFileUrl(props.item.docId, props.item.docFileId)
+  const url = await handleViewFileUrl(props.item.docFileId)
   currentFilePath.value = url || ''
   if (!currentFilePath.value) return
 
@@ -304,7 +309,7 @@ const loadPdfFromItem = async () => {
 }
 
 watch(
-  () => [props.open, props.item.docId, props.item.docFileId] as const,
+  () => [props.open, props.item.docFileId] as const,
   async ([open]) => {
     if (!open) {
       currentFilePath.value = ''

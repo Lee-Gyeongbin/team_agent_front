@@ -1,13 +1,6 @@
-import type {
-  CategoryItem,
-  DocRepositoryDetailApiResponse,
-  Document,
-  DocumentDeleteItem,
-  DocumentSavePayload,
-  DocExistCheckItem,
-  UrlItem,
-} from '~/types/repository'
 import type { ActionResponse } from '~/types/global'
+import type { CategoryItem, FileLibraryItem, FileLibrarySavePayload, UrlItem } from '~/types/repository'
+import type { FileMeta, FileUploadResponse } from '~/types/file'
 
 // 🔽 Mock — 백엔드 API 완성 시 useApi 패턴으로 교체
 const MOCK_BASE = '/mock/repository'
@@ -54,48 +47,51 @@ export const useRepositoryApi = () => {
     return post<ActionResponse>('/repository/deleteCategory.do', { categoryId })
   }
 
-  // ===== 문서 =====
-  const fetchDocumentList = async (
-    findContent?: string,
-    categoryId?: string,
-    useYn?: string,
-    page?: number,
-    pageSize?: number,
-  ) => {
-    return post<{ dataList: Document[]; totalCnt: number }>('/repository/selectDocRepositoryList.do', {
-      findContent,
-      categoryId,
-      useYn,
-      page,
-      pageSize,
-    })
-  }
-
-  const fetchSelectDocumentExistCnt = async (categoryId: string, docTitle: string) => {
-    return post<{ data: number }>('/repository/selectDocumentExistCnt.do', { categoryId, docTitle })
-  }
-
-  /** 문서 상세 — docId 기준, 응답은 { data, fileList } 구조 */
-  const fetchSelectDocRepositoryDetail = async (docId: string) => {
-    return post<DocRepositoryDetailApiResponse>('/repository/selectDocRepositoryDetail.do', { docId })
-  }
-
-  /** TB_DOC (CATEGORY_ID, FILE_NAME, FILE_TYPE) IN 조건 건수 — selectDocExistCnt */
-  const fetchSelectDocExistCnt = async (docIdList: DocExistCheckItem[]) => {
-    return post<{ data: number }>('/repository/selectDocExistCnt.do', { docIdList })
-  }
-
-  const fetchSaveDocument = async (data: DocumentSavePayload): Promise<ActionResponse> => {
-    return unwrapData<ActionResponse>(await post<{ data: ActionResponse }>('/repository/saveDocument.do', data))
-  }
+  // ===== 파일 =====
 
   /**
-   * 문서 삭제 — RepositoryVO.docIdList: { docId } 객체 배열 (MyBatis #{item.docId})
-   * JSON 예: `{ "docIdList": [ { "docId": "DOC001" } ] }`
-   * 백엔드 400 시: VO가 `List<String>`이면 Jackson 역직렬화 실패 → `List<DocIdBean>` 등 객체 리스트로 변경
+   * 파일 presigned URL 발급 (NCP PUT)
    */
-  const fetchDeleteDocument = async (docIdList: DocumentDeleteItem[]) => {
-    return post<{ data: number }>('/repository/deleteDocument.do', { docIdList })
+  const fetchSaveDocumentFile = async (
+    meta: Pick<FileMeta, 'fileName' | 'fileType' | 'fileSize'> & Pick<FileMeta, 'storeFilePath'> & Partial<FileMeta>,
+  ) => {
+    return post<FileUploadResponse>('/repository/saveDocumentFile.do', meta)
+  }
+
+  /** 파일 관리 탭 — 파일 목록 */
+  const fetchSelectDocFileLibraryList = async (params: {
+    categoryId?: string
+    findContent?: string
+    page?: number
+    pageSize?: number
+  }) => {
+    return post<{ dataList: FileLibraryItem[]; totalCnt: number }>('/repository/selectDocFileLibraryList.do', params)
+  }
+
+  /** 파일 관리 탭 — 업로드 완료 후 TB_DOC_FILE INSERT */
+  const fetchSaveFileLibrary = async (data: FileLibrarySavePayload) => {
+    return post<{ successYn: boolean; returnMsg?: string; docFileId?: string }>('/repository/saveFileLibrary.do', data)
+  }
+
+  const fetchUpdateFileLibrary = async (data: {
+    docFileId: string
+    categoryId: string
+    secLvl?: string
+    docDesc?: string
+    keywords?: string
+    docSrc?: string
+  }) => {
+    return post<{ successYn: boolean; returnMsg?: string }>('/repository/updateFileLibrary.do', data)
+  }
+
+  const fetchDeleteFileLibrary = async (docFileId: string, docFileIdList?: string[]) => {
+    return post<{ successYn: boolean; returnMsg?: string; blockedFileNames?: string[] }>(
+      '/repository/deleteFileLibrary.do',
+      {
+        docFileId,
+        docFileIdList,
+      },
+    )
   }
 
   // ===== URL =====
@@ -123,18 +119,19 @@ export const useRepositoryApi = () => {
 
   return {
     fetchCategoryList,
-    fetchSelectDocExistCnt,
     fetchSaveCategory,
     fetchRenameCategory,
     fetchDeleteCategory,
-    fetchDocumentList,
-    fetchSelectDocRepositoryDetail,
-    fetchSaveDocument,
-    fetchDeleteDocument,
+    fetchSaveDocumentFile,
     fetchUrlList,
     fetchSaveUrl,
     fetchDeleteUrl,
     fetchToggleUrlStatus,
-    fetchSelectDocumentExistCnt,
+    fetchSelectDocFileLibraryList,
+    /** @deprecated 이름 통일용 별칭 — `fetchSelectDocFileLibraryList` 와 동일 */
+    fetchFileLibraryList: fetchSelectDocFileLibraryList,
+    fetchSaveFileLibrary,
+    fetchUpdateFileLibrary,
+    fetchDeleteFileLibrary,
   }
 }

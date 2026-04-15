@@ -129,12 +129,12 @@ onMounted(() => {
   handleSelectCodeOptions()
 })
 
-// 저장 스냅샷 — reactive spread 시 selectedDocIds 등 배열이 비는 이슈 방지
+// 저장 스냅샷 — reactive spread 시 selectedDocFileIds 등 배열이 비는 이슈 방지
 const snapshotFormData = (): DocDatasetForm => {
   const raw = toRaw(formData)
   return {
     ...raw,
-    selectedDocIds: [...(raw.selectedDocIds ?? [])],
+    selectedDocFileIds: [...(raw.selectedDocFileIds ?? [])],
     selectedUrlIds: [...(raw.selectedUrlIds ?? [])],
   }
 }

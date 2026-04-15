@@ -186,7 +186,8 @@ const showScrollTopBtn = ref(false)
 
 const currentFilePath = ref('')
 
-const hasValidIds = computed(() => Boolean(props.docId?.trim() && props.docFileId?.trim()))
+/** docFileId만으로 viewFile 호출 가능 (파일 저장소 미매핑 행 등) */
+const hasValidIds = computed(() => Boolean(props.docFileId?.trim()))
 
 const setThumbCanvasRef = (pageNum: number, el: HTMLCanvasElement | null) => {
   if (el) {
@@ -241,7 +242,7 @@ const onClose = () => {
 const loadFromApi = async () => {
   if (!props.isOpen || !hasValidIds.value) return
 
-  const url = await handleViewFileUrl(props.docId, props.docFileId)
+  const url = await handleViewFileUrl(props.docFileId)
   currentFilePath.value = url || ''
   if (!currentFilePath.value) return
 
@@ -254,7 +255,7 @@ const loadFromApi = async () => {
 }
 
 watch(
-  () => [props.isOpen, props.docId, props.docFileId] as const,
+  () => [props.isOpen, props.docFileId] as const,
   async ([open]) => {
     if (!open) {
       currentFilePath.value = ''

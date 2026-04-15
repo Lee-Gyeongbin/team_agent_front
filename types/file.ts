@@ -1,6 +1,5 @@
 // 백엔드 FileVO 매핑 타입
 export interface FileMeta {
-  docId?: string
   docTitle?: string
   categoryId?: string
   author?: string
@@ -16,6 +15,9 @@ export interface FileMeta {
   ragUseCnt?: string
   createDt?: string
   modifyDt?: string
+  /** NCP 업로드 시 객체 키 (presign 요청 시 서버와 동일 경로) */
+  storeFilePath?: string
+  storeFileName?: string
   // 기타 필드 확장용
   [key: string]: unknown
 }
@@ -37,34 +39,29 @@ export interface FileUploadRequest {
   storeFilePath?: string
 }
 
-// /com/file/uploadFile.do 응답
+// /repository/saveDocumentFile.do 응답
 export interface FileUploadResponse {
   uploadUrl: string
   filePath: string
 }
 
-// /com/file/viewFile.do 응답
+// /repository/viewDocumentFile.do 응답
 export interface FileUrlResponse {
   url: string
   reason: string
 }
 
-// /com/file/downloadFile.do 응답 항목 (docFileId 미지정 시 다건)
+// /repository/downloadDocumentFile.do 응답 항목 (docFileId 미지정 시 다건)
 export interface FileDownloadItem {
   docFileId: string
   fileName: string
   url: string
 }
 
-// /com/file/downloadFile.do 응답
+// /repository/downloadDocumentFile.do 응답
 export interface FileDownloadResponse {
   url?: string
   downloadList?: FileDownloadItem[]
-}
-
-// /com/file/deleteFile.do 응답 — NCP Object Storage 객체 삭제 결과
-export interface FileDeleteResponse {
-  successYn?: boolean
 }
 
 /** 첨부 파일 선택 (복수 첨부 시 FilePreviewModal 셀렉트) */
@@ -76,7 +73,6 @@ export interface FilePreviewDocFileOption {
 /** FilePreviewModal — PDF 미리보기 팝업 (viewFile.do presigned URL) */
 export interface FilePreviewModalProps {
   isOpen: boolean
-  docId: string
   docFileId: string
   /** 모달 헤더 제목 (미지정 시 기본 문구) */
   title?: string

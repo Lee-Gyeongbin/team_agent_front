@@ -173,7 +173,7 @@
           <ul class="reference-list">
             <li
               v-for="item in refItems"
-              :key="`${item.docId}::${item.docFileId}`"
+              :key="item.docFileId"
               class="reference-list-item"
             >
               <div
@@ -308,7 +308,7 @@ const emit = defineEmits<{
 
 // 참조 매뉴얼 PDF 아코디언 (한 행만 펼침)
 const expandedRefKey = ref<string | null>(null)
-const refDocKey = (item: DocItem) => `${item.docId}::${item.docFileId}`
+const refDocKey = (item: DocItem) => item.docFileId
 const onReferenceRowClick = (item: DocItem) => {
   const key = refDocKey(item)
   expandedRefKey.value = expandedRefKey.value === key ? null : key
@@ -448,7 +448,7 @@ const handleDelete = () => {
 }
 
 const onReferenceLink = async (item: DocItem) => {
-  const url = await handleViewFileUrl(item.docId, item.docFileId)
+  const url = await handleViewFileUrl(item.docFileId)
   if (!url) {
     openToast({ message: '참조 매뉴얼 파일을 찾을 수 없습니다.', type: 'error' })
     return

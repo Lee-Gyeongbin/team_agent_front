@@ -6,7 +6,15 @@
     <!-- 헤더: 이름 + 토글 + kebab -->
     <div class="card-grid-card-header">
       <div class="card-grid-card-title">
-        <span class="card-grid-card-name">{{ dataset.dsNm }}</span>
+        <div class="card-grid-card-name-row">
+          <span class="card-grid-card-name">{{ dataset.dsNm }}</span>
+          <span
+            v-if="isRebuildRequired"
+            class="doc-dataset-card-rebuild-required"
+          >
+            재구축 필요
+          </span>
+        </div>
         <span class="card-grid-card-sub">{{ dataset.version }} • {{ dataset.modifyDt }} 업데이트</span>
       </div>
       <div class="card-grid-card-actions">
@@ -180,6 +188,7 @@ const onMenuSelect = (key: string) => {
 }
 
 const isBuilding = computed(() => ['BUILDING', '002'].includes(props.dataset.datasetBuildStatusCd))
+const isRebuildRequired = computed(() => props.dataset.datasetBuildStatusCd === '005')
 
 const buildProgress = computed(() => {
   const progress = Number(props.buildProgress)
