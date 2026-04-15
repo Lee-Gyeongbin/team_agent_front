@@ -25,20 +25,63 @@
     <section class="repository-content-wrapper flex">
       <aside class="category-panel">
         <div class="category-panel-header flex justify-between items-center">
-          <span class="category-panel-title">카테고리</span>
+          <div class="flex items-center gap-2">
+            <span class="category-panel-title">카테고리</span>
+            <UiButton
+              icon-only
+              variant="ghost"
+              size="xxs"
+              class="btn-add-category"
+              @click="openCategorySelectModal"
+            >
+              <template #icon-left>
+                <i class="icon icon-sliders size-16" />
+              </template>
+            </UiButton>
+          </div>
+          <UiButton
+            icon-only
+            variant="ghost"
+            size="xxs"
+            class="btn-add-category"
+            @click="toggleCategoryInput"
+          >
+            <template #icon-left>
+              <i class="icon icon-plus-medium size-16" />
+            </template>
+          </UiButton>
+        </div>
+        <div
+          v-if="isCategoryInputVisible"
+          class="category-input-wrap"
+        >
+          <UiInput
+            ref="categoryInputRef"
+            v-model="categoryInputValue"
+            :placeholder="categoryInputPlaceholder"
+            size="sm"
+            @enter="onCategoryInputEnter"
+          />
         </div>
         <div class="category-tree-wrap">
           <ul class="category-tree">
             <CategoryTreeNode
-              v-for="cat in categoryTree"
+              v-for="cat in filteredCategoryList"
               :key="cat.categoryId"
               :item="cat"
               :depth="1"
               selectable
-              :selected-ids="selectedCategoryId ? [selectedCategoryId] : []"
+              :max-category-depth="5"
+              :selected-ids="selectedCategoryIds"
               :show-check-icon="false"
-              @toggle="onToggleExpand"
-              @select="onSelectCategory"
+              :editing-category-id="editingCategoryId"
+              :editing-name="editingName"
+              :menu-items="categoryMenuItems"
+              @toggle="toggleExpand"
+              @select="onCategorySelect"
+              @menu-select="onCategoryMenuSelect"
+              @update:editing-name="editingName = $event"
+              @save-rename="saveCategoryRename"
             />
           </ul>
         </div>
@@ -198,16 +241,23 @@
       :doc-file-options="filePreviewDocFileOptions"
       @close="onCloseFilePreview"
     />
+
+    <CategorySelectModal
+      :is-open="isCategorySelectModalOpen"
+      @close="isCategorySelectModalOpen = false"
+      @confirm="onCategorySelectConfirm"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import FilePreviewModal from '~/components/file/FilePreviewModal.vue'
+import CategorySelectModal from '~/components/repository/CategorySelectModal.vue'
 import CategoryTreeNode from '~/components/repository/CategoryTreeNode.vue'
 import RepositoryFileFormModal from '~/components/repository/RepositoryFileFormModal.vue'
-import { useRepositoryApi } from '~/composables/repository/useRepositoryApi'
+import { useCategoryStore } from '~/composables/repository/useCategoryStore'
 import { useRepositoryStore } from '~/composables/repository/useRepositoryStore'
-import type { CategoryItem, CategoryTreeItem, FileLibraryItem } from '~/types/repository'
+import type { CategoryTreeItem, FileLibraryItem } from '~/types/repository'
 import type { TableColumn } from '~/types/table'
 
 const {
@@ -232,10 +282,29 @@ const {
   filePreviewDocFileOptions,
   onCloseFilePreview,
 } = useRepositoryStore()
-const { fetchCategoryList } = useRepositoryApi()
 
-const categoryTree = ref<CategoryTreeItem[]>([])
-const selectedCategoryId = ref('')
+const {
+  isCategoryInputVisible,
+  isCategorySelectModalOpen,
+  categoryInputValue,
+  categoryInputRef,
+  editingCategoryId,
+  editingName,
+  categoryInputPlaceholder,
+  categoryMenuItems,
+  filteredCategoryList,
+  selectedCategoryIds,
+  onCategorySelectConfirm,
+  handleSelectCategoryList,
+  toggleExpand,
+  onCategorySelect,
+  onCategoryMenuSelect,
+  saveCategoryRename,
+  openCategorySelectModal,
+  toggleCategoryInput,
+  onCategoryInputEnter,
+} = useCategoryStore()
+
 const isFormModalOpen = ref(false)
 const editingDocFileId = ref('')
 const editingFileName = ref('')
@@ -265,13 +334,14 @@ const fileTableColumns: TableColumn[] = [
 
 const categoryOptions = computed(() => {
   const options: { label: string; value: string }[] = [{ label: '선택', value: '' }]
-  const walk = (items: CategoryTreeItem[]) => {
+  const walk = (items: CategoryTreeItem[] | undefined) => {
+    if (!items?.length) return
     for (const item of items) {
       options.push({ label: item.categoryName, value: item.categoryId })
       if (item.children?.length) walk(item.children)
     }
   }
-  walk(categoryTree.value)
+  walk(filteredCategoryList.value)
   return options
 })
 
@@ -326,46 +396,15 @@ const formatFileSizeToMb = (value: unknown) => {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
 }
 
-const buildCategoryTreeFromFlat = (flat: CategoryItem[]): CategoryTreeItem[] => {
-  const byId = new Map<string, CategoryTreeItem>()
-  for (const row of flat) byId.set(row.categoryId, { ...row, children: [] })
-  const roots: CategoryTreeItem[] = []
-  for (const row of flat) {
-    const node = byId.get(row.categoryId)
-    if (!node) continue
-    const parentId = row.parnCatId
-    if (!parentId || !byId.has(parentId)) roots.push(node)
-    else byId.get(parentId)!.children!.push(node)
-  }
-  return roots
-}
-
-const loadCategoryList = async () => {
-  const res = await fetchCategoryList()
-  categoryTree.value = buildCategoryTreeFromFlat(res.dataList ?? [])
-}
-
 const loadSecLvlOptions = async () => {
   const codes = await getCodes('DC000001')
   secLvlOptions.value = [{ label: '선택', value: '' }, ...codes.map((c) => ({ label: c.codeNm, value: c.codeId }))]
 }
 
-const onToggleExpand = (item: CategoryTreeItem) => {
-  if (!item.children?.length) return
-  item.expanded = !item.expanded
-}
-
-const onSelectCategory = (item: CategoryTreeItem) => {
-  selectedCategoryId.value = item.categoryId
-  fileSelectedCategoryId.value = item.categoryId
-  fileCurrentPage.value = 1
-  void handleSelectFileLibraryList()
-}
-
 const resetForm = () => {
   editingDocFileId.value = ''
   editingFileName.value = ''
-  formCategoryId.value = selectedCategoryId.value
+  formCategoryId.value = fileSelectedCategoryId.value
   formSecLvl.value = '001'
   formDocDesc.value = ''
   formKeywords.value = ''
@@ -451,8 +490,7 @@ const onBatchDelete = async () => {
 }
 
 onMounted(async () => {
-  await Promise.all([loadCategoryList(), loadSecLvlOptions()])
-  await handleSelectFileLibraryList()
+  await Promise.all([handleSelectCategoryList(), loadSecLvlOptions()])
 })
 </script>
 
