@@ -12,7 +12,6 @@ import type {
   LibraryGeneratedReportValues,
 } from '~/types/library'
 import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
-import { plainTextFromHtml } from '~/utils/global/htmlUtil'
 import { useLibraryApi } from '~/composables/library/useLibraryApi'
 import { useTmplApi } from '~/composables/tmpl/useTmplApi'
 import type { TmplBaseInfo } from '~/types/tmpl'
@@ -101,7 +100,7 @@ const selectedCreateDocTmplNm = ref('')
 const roomId = ref('')
 const reportRefineCompletedAt = ref(0)
 
-/** 문서 생성 API JSON → 편집용 flat 문자열 (HTML 제거, 비문자 값은 문자열화) */
+/** 문서 생성 API JSON → 표시용 flat 문자열 (HTML 유지, 비문자 값은 문자열화) */
 const normalizeGeneratedReport = (data: Record<string, unknown>): LibraryGeneratedReportValues => {
   const out: LibraryGeneratedReportValues = {}
   for (const key of Object.keys(data)) {
@@ -111,7 +110,7 @@ const normalizeGeneratedReport = (data: Record<string, unknown>): LibraryGenerat
       continue
     }
     if (typeof v === 'string') {
-      out[key] = /<[^>]+>/.test(v) ? plainTextFromHtml(v) : v
+      out[key] = v
       continue
     }
     if (typeof v === 'number' || typeof v === 'boolean') {
