@@ -68,9 +68,11 @@ export const useRepositoryApi = () => {
     return post<{ dataList: FileLibraryItem[]; totalCnt: number }>('/repository/selectDocFileLibraryList.do', params)
   }
 
-  /** 파일 관리 탭 — 업로드 완료 후 TB_DOC_FILE INSERT */
-  const fetchSaveFileLibrary = async (data: FileLibrarySavePayload) => {
-    return post<{ successYn: boolean; returnMsg?: string; docFileId?: string }>('/repository/saveFileLibrary.do', data)
+  /** 파일 관리 탭 — 업로드 완료 후 TB_DOC_FILE INSERT (배치) */
+  const fetchSaveFileLibraryBatch = async (dataList: FileLibrarySavePayload[]) => {
+    return post<{ successYn: boolean; returnMsg?: string; successCnt?: number }>('/repository/saveFileLibrary.do', {
+      dataList,
+    })
   }
 
   const fetchUpdateFileLibrary = async (data: {
@@ -130,7 +132,7 @@ export const useRepositoryApi = () => {
     fetchSelectDocFileLibraryList,
     /** @deprecated 이름 통일용 별칭 — `fetchSelectDocFileLibraryList` 와 동일 */
     fetchFileLibraryList: fetchSelectDocFileLibraryList,
-    fetchSaveFileLibrary,
+    fetchSaveFileLibraryBatch,
     fetchUpdateFileLibrary,
     fetchDeleteFileLibrary,
   }

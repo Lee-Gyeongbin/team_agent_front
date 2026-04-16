@@ -485,6 +485,19 @@ const onFileNameDownload = async (row: Record<string, unknown>) => {
 
 const onBatchDelete = async () => {
   if (selectedFileIds.value.length === 0) return
+  const selectedIdSet = new Set(selectedFileIds.value)
+  const hasDatasetLinkedRow = fileLibraryList.value.some((row) => {
+    const rowId = String((row as FileLibraryItem).docFileId ?? '').trim()
+    if (!selectedIdSet.has(rowId)) return false
+    return String((row as FileLibraryItem).dsNm ?? '').trim().length > 0
+  })
+  if (hasDatasetLinkedRow) {
+    openToast({
+      message: '기존에 이 파일로 데이터셋이 구축되어 있습니다. \n첨부파일을 변경하면 데이터셋 재구축이 필요합니다. \n계속하시겠습니까?',
+      type: 'warning',
+    })
+    return
+  }
   await handleDeleteFileLibraryBatch([...selectedFileIds.value])
   selectedFileIds.value = []
 }
