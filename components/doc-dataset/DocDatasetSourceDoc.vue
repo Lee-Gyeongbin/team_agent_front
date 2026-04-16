@@ -140,20 +140,26 @@ const selectedCategory = ref('all')
 
 // 카테고리 필터 옵션
 const categoryOptions = computed(() => {
-  return [
-    { label: '전체 카테고리', value: 'all' },
-    ...props.categoryList.map((c) => ({ label: c.categoryName, value: c.categoryId })),
-  ].sort((a, b) => a.label.localeCompare(b.label))
+  const sortedCategoryOptions = props.categoryList
+    .map((c) => ({ label: c.categoryName, value: c.categoryId }))
+    .sort((a, b) => String(a.value).localeCompare(String(b.value)))
+
+  return [{ label: '전체 카테고리', value: 'all' }, ...sortedCategoryOptions]
 })
 // 필터링된 리스트
 const filteredList = computed(() => {
-  if (!searchKeyword.value) return props.docList
-  const keyword = searchKeyword.value.toLowerCase()
-  return props.docList.filter((d) =>
-    String(d.fileName || d.docTitle || '')
+  return props.docList.filter((d) => {
+    const isMatchedCategory = selectedCategory.value === 'all' || String(d.categoryId ?? '') === selectedCategory.value
+
+    if (!isMatchedCategory) return false
+
+    if (!searchKeyword.value) return true
+
+    const keyword = searchKeyword.value.toLowerCase()
+    return String(d.fileName || d.docTitle || '')
       .toLowerCase()
-      .includes(keyword),
-  )
+      .includes(keyword)
+  })
 })
 
 const getSourceId = (item: DocDatasetSelectedDoc) => String(item.docFileId ?? '')
