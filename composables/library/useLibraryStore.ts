@@ -43,6 +43,7 @@ const errorMessage = ref('')
 const isModalOpen = ref(false)
 const isArchiveModalOpen = ref(false)
 const isRenameModalOpen = ref(false)
+const isCardTitleRenameModalOpen = ref(false)
 const isMoveModalOpen = ref(false)
 const isTrashModalOpen = ref(false)
 /** 정렬 옵션 목록 */
@@ -79,6 +80,7 @@ const trashCardList = ref<LibraryCardDetail[]>([])
 const categoryListBeforeDrag = ref<LibraryCategory[]>([]) // 카테고리 드래그 시작 시점 순서 (취소 시 복원용)
 const categoryCardsBeforeDrag = ref<CategoryCardsMap>({}) // 카드 드래그 시작 시점 순서 (취소 시 복원용)
 const renamingCategory = ref<LibraryCategory | null>(null)
+const renamingCardTitle = ref<LibraryCardDetail | null>(null)
 const movingCard = ref<LibraryCard | null>(null)
 const selectedCardId = ref<string | null>(null)
 const selectedCard = ref<LibraryCardDetail | null>(null)
@@ -147,9 +149,11 @@ const initModalStates = () => {
   isModalOpen.value = false
   isArchiveModalOpen.value = false
   isRenameModalOpen.value = false
+  isCardTitleRenameModalOpen.value = false
   isMoveModalOpen.value = false
   isTrashModalOpen.value = false
   renamingCategory.value = null
+  renamingCardTitle.value = null
   movingCard.value = null
   selectedCardId.value = null
   selectedCard.value = null
@@ -161,6 +165,14 @@ const patchCardNewYnInLists = (id: string, categoryId: number, newYn: 'Y' | 'N')
   if (row) row.newYn = newYn
   const rowInCat = categoryCards.value[String(categoryId)]?.find((c) => c.cardId === id)
   if (rowInCat) rowInCat.newYn = newYn
+}
+
+/** cardList·categoryCards에 있는 동일 카드의 title 동기화 */
+const patchCardTitleInLists = (id: string, categoryId: number, title: string) => {
+  const row = cardList.value.find((c) => c.cardId === id)
+  if (row) row.title = title
+  const rowInCat = categoryCards.value[String(categoryId)]?.find((c) => c.cardId === id)
+  if (rowInCat) rowInCat.title = title
 }
 
 export const useLibraryStore = () => {
@@ -543,11 +555,42 @@ export const useLibraryStore = () => {
     selectedCard.value = null
   }
 
+  /** 카드 이동 모달 열기 */
   const handleModalMove = (card: LibraryCardDetail) => {
     movingCard.value = { ...card }
     isMoveModalOpen.value = true
   }
 
+  /** 상세 모달 — 제목 변경 */
+  const handleModalRenameTitle = (card: LibraryCardDetail) => {
+    renamingCardTitle.value = { ...card }
+    isCardTitleRenameModalOpen.value = true
+  }
+
+  /** 지식 제목 변경 모달 닫기 */
+  const handleCardTitleRenameModalClose = () => {
+    isCardTitleRenameModalOpen.value = false
+    renamingCardTitle.value = null
+  }
+
+  /** 지식 제목 변경 저장 */
+  const handleSaveCardTitle = async (title: string) => {
+    const card = renamingCardTitle.value
+    if (!card) return
+    try {
+      await fetchSaveCard({ ...card, title, thumbImg: '' })
+      patchCardTitleInLists(card.cardId, card.categoryId, title)
+      if (selectedCard.value?.cardId === card.cardId) {
+        selectedCard.value = { ...selectedCard.value, title }
+      }
+      handleCardTitleRenameModalClose()
+      openToast({ message: '제목이 변경되었습니다.', type: 'success' })
+    } catch {
+      openToast({ message: '제목 변경에 실패했습니다. 다시 시도해주세요.', type: 'error' })
+    }
+  }
+
+  /** 카드 삭제 */
   const handleModalDelete = (card: LibraryCardDetail | null) => {
     if (!card) return
     handleDeleteCard(card)
@@ -748,8 +791,10 @@ export const useLibraryStore = () => {
     isArchiveModalOpen,
     isTrashModalOpen,
     isRenameModalOpen,
+    isCardTitleRenameModalOpen,
     isMoveModalOpen,
     renamingCategory,
+    renamingCardTitle,
     movingCard,
     moveTargetOptions,
     selectedCardId,
@@ -767,6 +812,9 @@ export const useLibraryStore = () => {
     handleListMenuSelect,
     handleRenameModalClose,
     handleSaveRename,
+    handleModalRenameTitle,
+    handleCardTitleRenameModalClose,
+    handleSaveCardTitle,
     handleMoveModalClose,
     handleMoveCard,
     handleCardMenuSelect,
