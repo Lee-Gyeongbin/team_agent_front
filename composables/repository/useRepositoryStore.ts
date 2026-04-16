@@ -11,6 +11,7 @@ const {
   fetchSelectDocFileLibraryList,
   fetchSaveFileLibraryBatch,
   fetchUpdateFileLibrary,
+  fetchSaveUseYnN,
   fetchDeleteFileLibrary,
 } = useRepositoryApi()
 const isLoading = ref(false)
@@ -24,6 +25,7 @@ const fileLibraryList = ref<FileLibraryItem[]>([])
 const fileTotalCount = ref(0)
 const fileCurrentPage = ref(1)
 const filePageSize = ref(10)
+const fileUseYn = ref<'Y' | 'N'>('Y')
 const fileLibraryLoading = ref(false)
 const fileLibraryError = ref('')
 
@@ -44,6 +46,7 @@ const handleSelectFileLibraryList = async () => {
     const res = await fetchSelectDocFileLibraryList({
       categoryId: fileSelectedCategoryId.value || undefined,
       findContent: fileSearchKeyword.value || undefined,
+      useYn: fileUseYn.value,
       page: fileCurrentPage.value,
       pageSize: filePageSize.value,
     })
@@ -172,33 +175,49 @@ const handleSaveFileLibraryBatch = async (
   }
 }
 
-/** 파일 관리 탭: 선택한 여러 파일 삭제 (확인 1회) */
+/** 파일 관리 탭: 선택한 여러 파일 삭제 처리 (USE_YN='N') */
 const handleDeleteFileLibraryBatch = async (docFileIds: string[]) => {
   const ids = docFileIds.map((id) => id.trim()).filter(Boolean)
   if (ids.length === 0) {
     openToast({ message: '삭제할 파일을 선택해 주세요.', type: 'warning' })
     return
   }
-  const ok = await openConfirm({
-    title: '파일 삭제',
-    message: `선택한 ${ids.length}개 파일을 삭제하시겠습니까? 저장소에서도 함께 삭제됩니다.`,
-  })
-  if (!ok) return
-  openLoading({ text: '삭제하는 중...' })
-  let success = 0
-  let lastErr: string | null = null
+  openLoading({ text: '삭제 처리하는 중...' })
   try {
-    const res = await fetchDeleteFileLibrary(ids[0], ids)
+    const res = await fetchSaveUseYnN(ids)
     if (res.successYn) {
-      success = ids.length
-      openToast({ message: `${success}개 파일이 삭제되었습니다.`, type: 'success' })
+      openToast({ message: `${ids.length}개 파일이 삭제 처리되었습니다.`, type: 'success' })
     } else {
-      lastErr = res.returnMsg ?? '삭제에 실패했습니다.'
-      openToast({ message: lastErr, type: 'error' })
+      openToast({ message: res.returnMsg ?? '삭제 처리에 실패했습니다.', type: 'error' })
     }
     await handleSelectFileLibraryList()
   } catch {
-    openToast({ message: '삭제에 실패했습니다.', type: 'error' })
+    openToast({ message: '삭제 처리에 실패했습니다.', type: 'error' })
+  } finally {
+    closeLoading()
+  }
+}
+
+/** 파일 관리 탭: 삭제된 파일(USE_YN='N') 완전 삭제 */
+const handleDeleteFileLibraryPermanentBatch = async (docFileIds: string[]) => {
+  const ids = docFileIds.map((id) => id.trim()).filter(Boolean)
+  if (ids.length === 0) {
+    openToast({ message: '삭제할 파일을 선택해 주세요.', type: 'warning' })
+    return false
+  }
+  openLoading({ text: '파일을 완전 삭제하는 중...' })
+  try {
+    const res = await fetchDeleteFileLibrary(ids)
+    if (res.successYn) {
+      openToast({ message: `${ids.length}개 파일이 완전 삭제되었습니다.`, type: 'success' })
+      await handleSelectFileLibraryList()
+      return true
+    }
+    openToast({ message: res.returnMsg ?? '파일 완전 삭제에 실패했습니다.', type: 'error' })
+    return false
+  } catch {
+    openToast({ message: '파일 완전 삭제에 실패했습니다.', type: 'error' })
+    return false
   } finally {
     closeLoading()
   }
@@ -406,12 +425,14 @@ export const useRepositoryStore = () => {
     fileTotalCount,
     fileCurrentPage,
     filePageSize,
+    fileUseYn,
     fileLibraryLoading,
     fileLibraryError,
     handleSelectFileLibraryList,
     onFileSearch,
     handleSaveFileLibraryBatch,
     handleDeleteFileLibraryBatch,
+    handleDeleteFileLibraryPermanentBatch,
     handleUpdateFileLibrary,
   }
 }
