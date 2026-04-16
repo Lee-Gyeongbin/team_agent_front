@@ -32,7 +32,6 @@
 
     <template v-else>
       <div class="datamart-meta-column-metadata-header">
-        <h3 class="datamart-meta-column-metadata-title">컬럼 메타데이터</h3>
         <p class="datamart-meta-column-metadata-desc">
           테이블별 컬럼 설명과 용도 분류를 정리하면 AI가 스키마를 더 정확히 이해합니다.
           <template v-if="datamart?.dmNm">
@@ -384,10 +383,6 @@ const onRemoveColumn = (col: DatamartMetaColumnRow) => {
   text-align: center;
 }
 
-.datamart-meta-column-metadata-header {
-  margin-bottom: $spacing-sm;
-}
-
 .datamart-meta-column-metadata-title {
   margin: 0 0 4px;
   font-size: $font-size-lg;
@@ -396,7 +391,7 @@ const onRemoveColumn = (col: DatamartMetaColumnRow) => {
 }
 
 .datamart-meta-column-metadata-desc {
-  margin: 0;
+  margin: $spacing-xs 0 0;
   font-size: $font-size-sm;
   line-height: 1.5;
   color: $color-text-secondary;

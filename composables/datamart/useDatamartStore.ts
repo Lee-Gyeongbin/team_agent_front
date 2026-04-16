@@ -1,8 +1,16 @@
 import { useDatamartApi } from '~/composables/datamart/useDatamartApi'
 import type { Datamart, DatamartSummary } from '~/types/datamart'
+import type { DatamartMetaTableItem } from '~/types/datamartMeta'
 
-const { fetchDatamartList, fetchDatamartSummary, fetchSaveDatamart, fetchDeleteDatamart, fetchTestConnection } =
-  useDatamartApi()
+const {
+  fetchDatamartList,
+  fetchDatamartSummary,
+  fetchSaveDatamart,
+  fetchDeleteDatamart,
+  fetchTestConnection,
+  fetchMetaTableList,
+  fetchSaveMetaTable,
+} = useDatamartApi()
 
 /** 상태 변수 */
 const datamartList = ref<Datamart[]>([])
@@ -97,6 +105,38 @@ const handleTestConnection = async (datamart: Datamart, testType: 'saved' | 'for
   }
 }
 
+/** 테이블 목록 조회 */
+const handleFetchMetaTableList = async (datamartId: string) => {
+  try {
+    const res = await fetchMetaTableList(datamartId)
+    return res.dataList
+  } catch {
+    openToast({ message: '메타 테이블 목록 조회에 실패했습니다.', type: 'error' })
+  }
+}
+
+/** 메타 관리 > 테이블 저장 (테이블 선택 탭) */
+const handleSaveMetaTableSelection = async (datamartId: string, tables: DatamartMetaTableItem[]) => {
+  if (!datamartId) {
+    openToast({ message: '데이터마트 정보가 없습니다.', type: 'warning' })
+    return false
+  }
+
+  const payload = {
+    datamartId: datamartId,
+    tableList: tables,
+  }
+
+  try {
+    await fetchSaveMetaTable(payload)
+    openToast({ message: '테이블 저장에 성공했습니다.', type: 'success' })
+    return true
+  } catch {
+    openToast({ message: '테이블 저장에 실패했습니다.', type: 'error' })
+    return false
+  }
+}
+
 export const useDatamartStore = () => {
   return {
     datamartList,
@@ -106,5 +146,7 @@ export const useDatamartStore = () => {
     handleDeleteDatamart,
     handleToggleActiveDatamart,
     handleTestConnection,
+    handleFetchMetaTableList,
+    handleSaveMetaTableSelection,
   }
 }

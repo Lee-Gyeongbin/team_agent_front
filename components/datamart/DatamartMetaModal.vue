@@ -24,10 +24,10 @@
         >
           <DatamartMetaTableSelectTab
             v-if="activeTab === 'table'"
+            :is-open="isOpen"
             :datamart="datamart"
             :tables="metaTables"
-            :is-loading="isTableListLoading"
-            :error-message="tableListErrorMessage"
+            :error-message="metaTableListErrorMessage"
             @retry="onRetryTableList"
             @set-table-use-yn="onSetTableUseYn"
           />
@@ -86,36 +86,29 @@ import DatamartMetaTableSelectTab from '~/components/datamart/DatamartMetaTableS
 import DatamartMetaColumnMetadataTab from '~/components/datamart/DatamartMetaColumnMetadataTab.vue'
 import DatamartMetaRelationshipTab from '~/components/datamart/DatamartMetaRelationshipTab.vue'
 import DatamartMetaCodeMappingTab from '~/components/datamart/DatamartMetaCodeMappingTab.vue'
+import { useDatamartStore } from '~/composables/datamart/useDatamartStore'
 import {
   createDatamartMetaCodeMappingsSeed,
   createDatamartMetaRelationshipsSeed,
-  createDatamartMetaTablesSeed,
 } from '~/utils/datamart/datamartMetaSeed'
 
-withDefaults(
-  defineProps<{
-    isOpen: boolean
-    datamart: Datamart | null
-    /** 테이블 목록 API 연동 시 로딩 표시 */
-    isTableListLoading?: boolean
-    /** 테이블 목록 조회 실패 시 메시지 */
-    tableListErrorMessage?: string | null
-  }>(),
-  {
-    isTableListLoading: false,
-    tableListErrorMessage: null,
-  },
-)
-
-const emit = defineEmits<{
-  close: []
-  'retry-table-list': []
+const props = defineProps<{
+  isOpen: boolean
+  datamart: Datamart | null
 }>()
+
+defineEmits<{
+  close: []
+}>()
+
+const { handleFetchMetaTableList, handleSaveMetaTableSelection } = useDatamartStore()
+
+const metaTableListErrorMessage = ref<string | null>(null)
 
 const activeTab = defineModel<string>('activeTab', { default: 'table' })
 
 /** 테이블 선택·컬럼 메타데이터 탭 공유 상태 */
-const metaTables = ref<DatamartMetaTableItem[]>(createDatamartMetaTablesSeed())
+const metaTables = ref<DatamartMetaTableItem[]>([])
 
 const selectedColumnMetaTableId = ref(metaTables.value.find((t) => t.useYn === 'Y')?.id ?? '')
 
@@ -132,9 +125,45 @@ const onSetTableUseYn = (payload: { id: string; useYn: 'Y' | 'N' }) => {
   }
 }
 
-const onRetryTableList = () => {
-  emit('retry-table-list')
+function resetMetaTableState() {
+  metaTables.value = []
+  selectedColumnMetaTableId.value = ''
+  metaTableListErrorMessage.value = null
 }
+
+async function loadMetaTableList() {
+  const id = props.datamart?.datamartId?.trim() ?? ''
+  if (!id) {
+    metaTableListErrorMessage.value = '데이터마트 정보가 없습니다.'
+    return
+  }
+  metaTableListErrorMessage.value = null
+  openLoading({ text: '스키마정보를 불러오는 중...' })
+  try {
+    const list = await handleFetchMetaTableList(id)
+    if (!Array.isArray(list)) {
+      metaTableListErrorMessage.value = '테이블 목록을 불러오지 못했습니다.'
+      return
+    }
+    metaTables.value = list
+    selectedColumnMetaTableId.value = metaTables.value.find((t) => t.useYn === 'Y')?.id ?? metaTables.value[0]?.id ?? ''
+  } finally {
+    closeLoading()
+  }
+}
+
+const onRetryTableList = () => {
+  void loadMetaTableList()
+}
+
+watch(
+  () => props.isOpen,
+  (open) => {
+    if (!open) return
+    resetMetaTableState()
+    void loadMetaTableList()
+  },
+)
 
 const metaTabs = [
   { label: '테이블 선택', value: 'table' },
@@ -143,15 +172,19 @@ const metaTabs = [
   { label: '코드값 매핑', value: 'code' },
 ]
 
-const onSave = () => {
-  openToast({ message: '저장 기능은 개발 중입니다.', type: 'warning' })
-  console.warn(
-    '[DatamartMetaModal] 저장 — API 연동 예정',
-    metaTables.value,
-    selectedColumnMetaTableId.value,
-    metaRelationships.value,
-    metaCodeMappings.value,
-  )
+const onSave = async () => {
+  if (activeTab.value === 'table') {
+    const datamartId = props.datamart?.datamartId ?? ''
+    await handleSaveMetaTableSelection(datamartId, metaTables.value)
+    return
+  }
+
+  openToast({ message: '현재 탭 저장 기능은 개발 중입니다.', type: 'warning' })
+  console.warn('[DatamartMetaModal] 저장 — 미구현 탭', activeTab.value, {
+    selectedColumnMetaTableId: selectedColumnMetaTableId.value,
+    metaRelationships: metaRelationships.value,
+    metaCodeMappings: metaCodeMappings.value,
+  })
 }
 </script>
 
