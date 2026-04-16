@@ -110,7 +110,7 @@
               @end="onReportRowsDragEnd"
             >
               <template #item="{ element: row }">
-                <tr class="library-create-doc-report-tr is-tall">
+                <tr class="library-create-doc-report-tr">
                   <th
                     scope="row"
                     class="library-create-doc-report-label"
@@ -138,32 +138,34 @@
                     </div>
                   </th>
                   <td class="library-create-doc-report-cell">
-                    <UiTextarea
-                      v-if="editingValueKey === row.valueKey"
-                      v-model="report[row.valueKey]"
-                      size="sm"
-                      :rows="1"
-                      :max-rows="9999"
-                      :placeholder="String(report[row.labelKey] ?? '')"
-                      :spellcheck="false"
-                      border
-                      class="library-create-doc-report-value-editor"
-                      @blur="stopEditReportValue"
-                    />
-                    <button
-                      v-else
-                      type="button"
-                      class="library-create-doc-report-rendered-trigger"
-                      :title="`${String(report[row.labelKey] ?? '')} 내용 편집`"
-                      @click="startEditReportValue(row.valueKey)"
-                    >
-                      <!-- eslint-disable vue/no-v-html -- 상세 모달과 동일한 HTML 렌더 적용 -->
-                      <div
-                        class="library-create-doc-report-rendered message-content markdown-body"
-                        v-html="getReportValueRenderedHtml(row.valueKey)"
+                    <div class="library-create-doc-report-value-frame">
+                      <UiTextarea
+                        v-if="editingValueKey === row.valueKey"
+                        v-model="report[row.valueKey]"
+                        size="sm"
+                        :rows="1"
+                        :max-rows="9999"
+                        :placeholder="String(report[row.labelKey] ?? '')"
+                        :spellcheck="false"
+                        border
+                        class="library-create-doc-report-value-editor"
+                        @blur="stopEditReportValue"
                       />
-                      <!-- eslint-enable vue/no-v-html -->
-                    </button>
+                      <button
+                        v-else
+                        type="button"
+                        class="library-create-doc-report-rendered-trigger"
+                        :title="`${String(report[row.labelKey] ?? '')} 내용 편집`"
+                        @click="startEditReportValue(row.valueKey)"
+                      >
+                        <!-- eslint-disable vue/no-v-html -- 상세 모달과 동일한 HTML 렌더 적용 -->
+                        <div
+                          class="library-create-doc-report-rendered message-content markdown-body"
+                          v-html="getReportValueRenderedHtml(row.valueKey)"
+                        />
+                        <!-- eslint-enable vue/no-v-html -->
+                      </button>
+                    </div>
                   </td>
                 </tr>
               </template>
@@ -733,29 +735,59 @@ const stopEditReportValue = () => {
   }
 }
 
-.library-create-doc-report-tr.is-tall .library-create-doc-report-cell {
-  vertical-align: top;
+.library-create-doc-report-value-frame {
+  width: 100%;
+  min-height: 60px;
 }
 
 .library-create-doc-report-rendered {
+  display: grid;
+  align-content: center;
   width: 100%;
   min-height: 60px;
-  padding: $spacing-xs $spacing-sm;
+  box-sizing: border-box;
+  padding: $spacing-sm $spacing-md;
   overflow-x: auto;
   color: $color-text-secondary;
   font-size: $font-size-sm;
   line-height: 1.55;
-  font-weight: $font-weight-semibold;
+  font-weight: $font-weight-normal;
+  font-family: inherit;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
   -webkit-overflow-scrolling: touch;
 }
 
 .library-create-doc-report-rendered-trigger {
+  display: block;
   width: 100%;
+  min-height: 60px;
   border: none;
   padding: 0;
   background: transparent;
   text-align: left;
   cursor: text;
+}
+
+.library-create-doc-report-rendered-trigger:focus-visible {
+  outline: none;
+}
+
+.library-create-doc-report-value-editor {
+  display: block;
+  width: 100%;
+  min-height: 60px;
+}
+
+.library-create-doc-report-value-editor :deep(.ui-input-outer),
+.library-create-doc-report-value-editor :deep(.ui-input-wrap) {
+  min-height: 60px;
+}
+
+.library-create-doc-report-value-editor :deep(textarea) {
+  min-height: 60px !important;
+  font-family: inherit;
 }
 
 .library-create-doc-report-rendered :deep(h1),
@@ -868,6 +900,11 @@ const stopEditReportValue = () => {
   // autoResize 시 내용 높이만큼만 쓰도록 (UiTextarea 기본 min-height 84px 무시)
   min-height: 0 !important;
   padding: $spacing-sm $spacing-md !important;
+}
+
+.library-create-doc-report-value-editor :deep(.inp.ui-textarea),
+.library-create-doc-report-value-editor :deep(.inp.ui-textarea.has-border) {
+  min-height: 60px !important;
 }
 
 // 본문 셀: overflow:auto는 스크롤 컨테이너가 되어 높이와 미세하게 어긋난 느낌 → hidden + UiTextarea 높이 여유로 잘림만 방지
