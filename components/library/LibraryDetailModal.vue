@@ -68,7 +68,20 @@
               </span>
             </div>
             <div class="library-detail-modal-actions">
-              <!-- 변경 btn -->
+              <!-- 지식 제목 변경 -->
+              <UiButton
+                variant="ghost"
+                size="xxs"
+                icon-only
+                class="btn-custom-white"
+                title="지식 제목 변경"
+                @click="handleRenameTitle"
+              >
+                <template #icon-left>
+                  <i class="icon icon-edit-version size-16"></i>
+                </template>
+              </UiButton>
+              <!-- 카테고리 이동 -->
               <UiButton
                 variant="ghost"
                 size="xxs"
@@ -302,6 +315,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   close: []
+  renameTitle: [card: LibraryCardDetail]
   move: [card: LibraryCardDetail]
   delete: [card: LibraryCardDetail]
 }>()
@@ -419,6 +433,17 @@ watch(
   },
 )
 
+/** 동일 카드에서 제목만 갱신된 경우 상세 본문과 동기화 */
+watch(
+  () => props.cardDetail?.title,
+  (title) => {
+    if (title === undefined || !displayData.value) return
+    if (props.cardDetail?.cardId !== displayData.value.cardId) return
+    if (isTransitioning.value) return
+    displayData.value = { ...displayData.value, title }
+  },
+)
+
 // 모달 닫힐 때 displayData도 초기화
 watch(
   () => props.isOpen,
@@ -435,6 +460,11 @@ watch(
 // 이벤트 핸들러
 const handleClose = () => {
   emit('close')
+}
+
+const handleRenameTitle = () => {
+  if (!displayData.value) return
+  emit('renameTitle', displayData.value)
 }
 
 const handleMove = () => {
