@@ -287,6 +287,7 @@
         :chart-stat-items="chartStatItems"
         :chart-detail-cd-items="chartDetailCdItems"
         @close="handleModalClose"
+        @rename-title="handleModalRenameTitle"
         @move="handleModalMove"
         @delete="handleModalDelete"
       />
@@ -318,6 +319,21 @@
           :category="renamingCategory"
           @save="handleSaveRename"
           @close="handleRenameModalClose"
+        />
+      </UiModal>
+
+      <!-- 카드 제목 변경 모달 -->
+      <UiModal
+        :is-open="isCardTitleRenameModalOpen"
+        title="지식 제목 변경"
+        position="center"
+        max-width="420px"
+        @close="handleCardTitleRenameModalClose"
+      >
+        <LibraryCardTitleRenameModal
+          :card="renamingCardTitle"
+          @save="handleSaveCardTitle"
+          @close="handleCardTitleRenameModalClose"
         />
       </UiModal>
 
@@ -360,8 +376,10 @@ const {
   isArchiveModalOpen,
   isTrashModalOpen,
   isRenameModalOpen,
+  isCardTitleRenameModalOpen,
   isMoveModalOpen,
   renamingCategory,
+  renamingCardTitle,
   movingCard,
   moveTargetOptions,
   selectedCardId,
@@ -378,6 +396,9 @@ const {
   handleListMenuSelect,
   handleRenameModalClose,
   handleSaveRename,
+  handleModalRenameTitle,
+  handleCardTitleRenameModalClose,
+  handleSaveCardTitle,
   handleMoveModalClose,
   handleMoveCard,
   handleCardMenuSelect,
