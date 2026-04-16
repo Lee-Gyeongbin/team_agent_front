@@ -1,11 +1,11 @@
 import { useDashboardApi } from '~/composables/dashboard/useDashboardApi'
 import type {
+  DashboardCategoryTrend,
   DashboardNoticeItem,
   DashboardQueryRatio,
   DashboardStatSummary,
   DashboardTokenUsage,
   DashboardVisitorTrend,
-  DashboardKeywordTrend,
 } from '~/types/dashboard'
 import { calculateChartScale } from '~/utils/chat/visualizationChartUtil'
 
@@ -15,8 +15,10 @@ const {
   fetchDashboardNoticeList,
   fetchDashboardTokenUsage,
   fetchDashboardVisitorTrend,
-  fetchDashboardKeywordTrend,
+  fetchDashboardCategoryTrend,
 } = useDashboardApi()
+
+export const CATEGORY_TREND_DEFAULT_DAY_CNT = 1
 
 const statSummary = ref<DashboardStatSummary | null>(null)
 const queryRatio = ref<DashboardQueryRatio | null>(null)
@@ -84,6 +86,9 @@ const tokenUsageChartConfig = computed(() => {
   }
 })
 const visitorTrend = ref<DashboardVisitorTrend[]>([])
+const categoryTrend = ref<DashboardCategoryTrend[]>([])
+const categoryTrendLoading = ref<boolean>(false)
+
 const visitorTrendChartConfig = computed(() => {
   const list = visitorTrend.value ?? []
   const values = list.map((item) => item.successCnt)
@@ -111,8 +116,6 @@ const visitorTrendChartConfig = computed(() => {
     },
   }
 })
-
-const keywordTrend = ref<DashboardKeywordTrend[]>([])
 
 /** 상단 통계 카드 */
 const handleSelectDashboardStatSummary = async () => {
@@ -167,15 +170,19 @@ const handleSelectDashboardVisitorTrend = async () => {
   }
 }
 
-/** 사용자 관심 키워드 TODO : 시연 끝나면 주석 해제제 */
-// const handleSelectDashboardKeywordTrend = async (dayCnt: number) => {
-//   try {
-//     const res = await fetchDashboardKeywordTrend({ dayCnt })
-//     keywordTrend.value = res.dataList ?? []
-//   } catch {
-//     openToast({ message: '사용자 관심 키워드 조회에 실패했습니다.', type: 'error' })
-//   }
-// }
+/** 사용자 관심 카테고리 */
+const handleSelectDashboardCategoryTrend = async (dayCnt: number) => {
+  categoryTrendLoading.value = true
+  try {
+    const res = await fetchDashboardCategoryTrend(dayCnt)
+    categoryTrend.value = res.dataList ?? []
+  } catch {
+    categoryTrend.value = []
+    openToast({ message: '카테고리 추이 조회에 실패했습니다.', type: 'error' })
+  } finally {
+    categoryTrendLoading.value = false
+  }
+}
 
 /** 대시보드 위젯 데이터 일괄 조회 (페이지 진입 시 등) */
 const handleSelectDashboardAll = async () => {
@@ -187,7 +194,7 @@ const handleSelectDashboardAll = async () => {
     handleSelectDashboardNoticeList(),
     handleSelectDashboardTokenUsage(currentYm),
     handleSelectDashboardVisitorTrend(),
-    // handleSelectDashboardKeywordTrend(3),
+    handleSelectDashboardCategoryTrend(CATEGORY_TREND_DEFAULT_DAY_CNT),
   ])
 }
 
@@ -204,13 +211,14 @@ export const useDashboardStore = () => {
     tokenUsageChartConfig,
     visitorTrend,
     visitorTrendChartConfig,
-    keywordTrend,
+    categoryTrend,
+    categoryTrendLoading,
     handleSelectDashboardStatSummary,
     handleSelectDashboardQueryRatio,
     handleSelectDashboardNoticeList,
     handleSelectDashboardTokenUsage,
     handleSelectDashboardVisitorTrend,
-    // handleSelectDashboardKeywordTrend,
+    handleSelectDashboardCategoryTrend,
     handleSelectDashboardAll,
   }
 }
