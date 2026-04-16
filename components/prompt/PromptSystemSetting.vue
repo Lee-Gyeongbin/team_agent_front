@@ -93,6 +93,7 @@
       <div class="com-setting-field-row">
         <label class="com-setting-label">적용 대상</label>
         <UiMultiSelect
+          :disabled="form.sysPtYn === 'Y'"
           id="prompt-apply-targets"
           :model-value="applyTargetsUiModel"
           name="prompt-apply-targets"
@@ -234,7 +235,7 @@ const onApplyTargetsMultiChange = (next: Array<string | number>) => {
 .tmpl-edit-notice__text {
   margin: 0;
   @include typo($body-small);
-  color: var(--color-primary);
+  color: $color-error;
   line-height: $line-height-base;
 }
 

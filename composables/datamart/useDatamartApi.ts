@@ -1,5 +1,6 @@
 import type { Datamart, DatamartSummary } from '~/types/datamart'
 import { useApi } from '~/composables/com/useApi'
+import type { DatamartMetaTableItem } from '~/types/datamartMeta'
 const { get, post } = useApi()
 
 export const useDatamartApi = () => {
@@ -28,11 +29,26 @@ export const useDatamartApi = () => {
     return post<{ result: string; msg: string; tblCnt: number }>('/datamart/connTest.do', datamart)
   }
 
+  /** 메타 테이블 목록 조회 API */
+  const fetchMetaTableList = async (datamartId: string): Promise<{ dataList: DatamartMetaTableItem[] }> => {
+    return post<{ dataList: DatamartMetaTableItem[] }>('/datamart/metaTableList.do', { datamartId })
+  }
+
+  /** 메타 관리 > 테이블 저장 API */
+  const fetchSaveMetaTable = async (payload: {
+    datamartId: string
+    tableList: DatamartMetaTableItem[]
+  }): Promise<void> => {
+    return post('/datamart/metaTableSave.do', payload)
+  }
+
   return {
     fetchDatamartList,
     fetchDatamartSummary,
     fetchSaveDatamart,
     fetchDeleteDatamart,
     fetchTestConnection,
+    fetchMetaTableList,
+    fetchSaveMetaTable,
   }
 }

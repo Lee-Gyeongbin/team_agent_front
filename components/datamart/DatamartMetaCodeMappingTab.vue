@@ -18,7 +18,6 @@
 
     <template v-else>
       <div class="datamart-meta-code-mapping-header">
-        <h3 class="datamart-meta-code-mapping-title">코드성 컬럼 선택</h3>
         <p class="datamart-meta-code-mapping-desc">
           자연어(예: 세부항목)를 DB 코드값(예: 03)으로 바꿀 때 참고할 메타입니다.
           <template v-if="datamart?.dmNm">
@@ -449,10 +448,6 @@ const onRemoveEntry = (mappingId: string, entryId: string) => {
   }
 }
 
-.datamart-meta-code-mapping-header {
-  margin-bottom: $spacing-xs;
-}
-
 .datamart-meta-code-mapping-title {
   margin: 0 0 2px;
   font-size: $font-size-lg;
@@ -461,7 +456,7 @@ const onRemoveEntry = (mappingId: string, entryId: string) => {
 }
 
 .datamart-meta-code-mapping-desc {
-  margin: 0;
+  margin: $spacing-xs 0 0;
   font-size: $font-size-sm;
   line-height: 1.4;
   color: $color-text-secondary;

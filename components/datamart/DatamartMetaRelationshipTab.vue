@@ -18,7 +18,6 @@
 
     <template v-else>
       <div class="datamart-meta-relationship-header">
-        <h3 class="datamart-meta-relationship-title">JOIN 관계</h3>
         <p class="datamart-meta-relationship-desc">
           정의된 관계는 AI가 다중 테이블 쿼리 작성 시 JOIN 조건으로 직접 활용합니다.
           <template v-if="datamart?.dmNm">
@@ -337,10 +336,6 @@ const onRemoveRelationship = (id: string) => {
   }
 }
 
-.datamart-meta-relationship-header {
-  margin-bottom: $spacing-sm;
-}
-
 .datamart-meta-relationship-title {
   margin: 0 0 4px;
   font-size: $font-size-lg;
@@ -349,7 +344,7 @@ const onRemoveRelationship = (id: string) => {
 }
 
 .datamart-meta-relationship-desc {
-  margin: 0;
+  margin: $spacing-xs 0 0;
   font-size: $font-size-sm;
   line-height: 1.5;
   color: $color-text-secondary;

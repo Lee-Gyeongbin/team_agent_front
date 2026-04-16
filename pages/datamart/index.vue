@@ -88,7 +88,7 @@ import DatamartMetaModal from '~/components/datamart/DatamartMetaModal.vue'
 import { useDatamartStore } from '~/composables/datamart/useDatamartStore'
 import type { Datamart, DatamartForm } from '~/types/datamart'
 
-/** 메타 모달 탭 전환 시 AOS fade-up 재계산 (pages/prompt/index.vue 와 동일 패턴) */
+/** 메타 모달 탭 전환 시 AOS fade-up 재계산 */
 const refreshMetaModalAos = () => {
   nextTick(() => {
     AOS.refresh()
