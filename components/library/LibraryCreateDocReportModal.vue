@@ -139,6 +139,7 @@
                   </th>
                   <td class="library-create-doc-report-cell">
                     <UiTextarea
+                      v-if="editingValueKey === row.valueKey"
                       v-model="report[row.valueKey]"
                       size="sm"
                       :rows="1"
@@ -146,7 +147,23 @@
                       :placeholder="String(report[row.labelKey] ?? '')"
                       :spellcheck="false"
                       border
+                      class="library-create-doc-report-value-editor"
+                      @blur="stopEditReportValue"
                     />
+                    <button
+                      v-else
+                      type="button"
+                      class="library-create-doc-report-rendered-trigger"
+                      :title="`${String(report[row.labelKey] ?? '')} 내용 편집`"
+                      @click="startEditReportValue(row.valueKey)"
+                    >
+                      <!-- eslint-disable vue/no-v-html -- 상세 모달과 동일한 HTML 렌더 적용 -->
+                      <div
+                        class="library-create-doc-report-rendered message-content markdown-body"
+                        v-html="getReportValueRenderedHtml(row.valueKey)"
+                      />
+                      <!-- eslint-enable vue/no-v-html -->
+                    </button>
                   </td>
                 </tr>
               </template>
@@ -215,6 +232,7 @@ import draggable from 'vuedraggable'
 import { openToast } from '~/composables/useToast'
 import type { LibraryGeneratedReportValues } from '~/types/library'
 import { getLibraryReportRows, printLibraryReport, type LibraryReportRow } from '~/utils/library/libraryReportPrintUtil'
+import { toHtmlContent } from '~/utils/chat/htmlUtil'
 
 const props = withDefaults(
   defineProps<{
@@ -239,6 +257,7 @@ const emit = defineEmits<{
 }>()
 
 const refineDraft = ref('')
+const editingValueKey = ref<string | null>(null)
 /** 화면에 표시할 직전 전송 보완 요청 문구 */
 const lastRefineMessage = ref('')
 /** AI 보완 완료 시 문서 영역에 짧은 강조 효과 */
@@ -290,6 +309,7 @@ watch(
       }
       isRefineCompletedFx.value = false
       refineDraft.value = ''
+      editingValueKey.value = null
       lastRefineMessage.value = ''
       orderedRows.value = []
       return
@@ -356,9 +376,33 @@ const onPrintReport = () => {
     })
   }
 }
+
+/** 보고서 본문 셀 렌더링용 HTML(상세 모달과 동일 파서 사용) */
+const getReportValueRenderedHtml = (valueKey: string) => toHtmlContent(String(report.value?.[valueKey] ?? ''))
+
+/** 본문 셀 편집 시작 */
+const startEditReportValue = (valueKey: string) => {
+  editingValueKey.value = valueKey
+  nextTick(() => {
+    const textarea = document.querySelector(
+      '.library-create-doc-report-value-editor textarea',
+    ) as HTMLTextAreaElement | null
+    if (!textarea) return
+    textarea.focus()
+    const length = textarea.value.length
+    textarea.setSelectionRange(length, length)
+  })
+}
+
+/** 본문 셀 편집 종료 */
+const stopEditReportValue = () => {
+  editingValueKey.value = null
+}
 </script>
 
 <style lang="scss" scoped>
+@use 'sass:color';
+
 .library-create-doc-report {
   display: flex;
   flex-direction: column;
@@ -691,6 +735,90 @@ const onPrintReport = () => {
 
 .library-create-doc-report-tr.is-tall .library-create-doc-report-cell {
   vertical-align: top;
+}
+
+.library-create-doc-report-rendered {
+  width: 100%;
+  min-height: 60px;
+  padding: $spacing-xs $spacing-sm;
+  overflow-x: auto;
+  color: $color-text-secondary;
+  font-size: $font-size-sm;
+  line-height: 1.55;
+  font-weight: $font-weight-semibold;
+  -webkit-overflow-scrolling: touch;
+}
+
+.library-create-doc-report-rendered-trigger {
+  width: 100%;
+  border: none;
+  padding: 0;
+  background: transparent;
+  text-align: left;
+  cursor: text;
+}
+
+.library-create-doc-report-rendered :deep(h1),
+.library-create-doc-report-rendered :deep(h2),
+.library-create-doc-report-rendered :deep(h3) {
+  margin: 16px 0 8px;
+  font-weight: $font-weight-semibold;
+  color: $color-text-secondary;
+}
+
+.library-create-doc-report-rendered :deep(h1) {
+  font-size: $font-size-xl;
+}
+
+.library-create-doc-report-rendered :deep(h2) {
+  font-size: $font-size-lg;
+}
+
+.library-create-doc-report-rendered :deep(h3) {
+  font-size: $font-size-base;
+}
+
+.library-create-doc-report-rendered :deep(p) {
+  margin: 0 0 10px;
+}
+
+.library-create-doc-report-rendered :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+.library-create-doc-report-rendered :deep(table) {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 280px;
+  margin: 12px 0;
+  font-size: $font-size-sm;
+  border: 1px solid $color-border;
+}
+
+.library-create-doc-report-rendered :deep(th),
+.library-create-doc-report-rendered :deep(td) {
+  border: 1px solid $color-border;
+  padding: 8px 12px;
+  text-align: left;
+  vertical-align: top;
+  color: $color-text-secondary;
+  font-size: $font-size-sm;
+  line-height: 1.55;
+}
+
+.library-create-doc-report-rendered :deep(thead th) {
+  background: color.mix($color-primary, #ffffff, 8%);
+  font-weight: $font-weight-semibold;
+  color: $color-text-heading-sub;
+}
+
+.library-create-doc-report-rendered :deep(tr:first-child th) {
+  background: color.mix($color-primary, #ffffff, 8%);
+  font-weight: $font-weight-semibold;
+}
+
+.library-create-doc-report-rendered :deep(tbody tr:nth-child(even) td) {
+  background: $color-surface;
 }
 
 .library-create-doc-report-tr:last-child .library-create-doc-report-label,

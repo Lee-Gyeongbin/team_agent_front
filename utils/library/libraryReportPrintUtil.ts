@@ -5,6 +5,7 @@
 
 import type { LibraryGeneratedReportValues } from '~/types/library'
 import { escapeHTML } from '~/utils/global/htmlUtil'
+import { toHtmlContent } from '~/utils/chat/htmlUtil'
 
 export type LibraryReportRow = { labelKey: string; valueKey: string }
 
@@ -60,7 +61,7 @@ const formatYyyyMmDdDots = (d: Date): string => {
   return `${y}.${m}.${day}`
 }
 
-/** 본문에 삽입할 보고서 마크업(이스케이프된 값만 동적) */
+/** 본문에 삽입할 보고서 마크업(라벨은 이스케이프, 본문 값은 sanitize된 HTML 렌더) */
 const buildPrintHostInnerHtml = (
   rows: LibraryReportRow[],
   values: LibraryGeneratedReportValues,
@@ -71,7 +72,7 @@ const buildPrintHostInnerHtml = (
     .map((row) => {
       const label = escapeHTML(values[row.labelKey] ?? '')
       const raw = values[row.valueKey] ?? ''
-      const value = escapeHTML(raw)
+      const value = toHtmlContent(raw)
       return `<tr><th scope="row">${label}</th><td class="report-print-value">${value}</td></tr>`
     })
     .join('')
@@ -180,6 +181,34 @@ const buildPrintHostStyles = (): string => `
   }
   #${PRINT_HOST_ID} .report-print-value {
     white-space: pre-wrap !important;
+  }
+  #${PRINT_HOST_ID} .report-print-value p {
+    margin: 0 0 8px !important;
+  }
+  #${PRINT_HOST_ID} .report-print-value p:last-child {
+    margin-bottom: 0 !important;
+  }
+  #${PRINT_HOST_ID} .report-print-value ul,
+  #${PRINT_HOST_ID} .report-print-value ol {
+    margin: 8px 0 !important;
+    padding-left: 1.4em !important;
+  }
+  #${PRINT_HOST_ID} .report-print-value table {
+    width: 100% !important;
+    margin: 10px 0 !important;
+    border-collapse: collapse !important;
+    table-layout: fixed !important;
+    font-size: 10pt !important;
+  }
+  #${PRINT_HOST_ID} .report-print-value th,
+  #${PRINT_HOST_ID} .report-print-value td {
+    border: 1px solid #cbd5e1 !important;
+    padding: 6px 8px !important;
+    vertical-align: top !important;
+    text-align: left !important;
+  }
+  #${PRINT_HOST_ID} .report-print-value thead th {
+    background: #f1f5f9 !important;
   }
 }
 `
