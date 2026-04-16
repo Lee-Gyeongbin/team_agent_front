@@ -171,6 +171,7 @@ watch(
   () => props.isOpen,
   (open) => {
     if (!open) return
+    searchInput.value = ''
     showActiveOnly.value = false
   },
 )
