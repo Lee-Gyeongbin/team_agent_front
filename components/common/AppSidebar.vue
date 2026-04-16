@@ -47,16 +47,19 @@
         </button>
         <div
           v-show="isSearchHistoryOpen"
+          ref="searchHistoryScrollEl"
           class="sidebar-section-body"
+          @scroll="onSearchHistoryScroll"
         >
           <div
-            v-for="(entry, idx) in chatRoomList"
-            :key="idx"
+            v-for="entry in displayedChatRooms"
+            :key="entry.roomId"
             class="search-history-item"
             :class="{
               'is-active': activeRoomId === String(entry.roomId),
               'is-dropdown-open': openMoreDropdownId === entry.roomId,
               'is-pinned': entry.fixYn === 'Y',
+              'is-revealing': searchHistoryRevealIdSet.has(String(entry.roomId)),
             }"
             @click="onClickHistory(entry)"
           >
@@ -119,6 +122,16 @@
               </DropdownMenuPortal>
             </DropdownMenuRoot>
           </div>
+          <template v-if="isSearchHistoryLoadingMore">
+            <div
+              v-for="sk in searchHistorySkeletonSlots"
+              :key="`search-history-sk-${sk}`"
+              class="search-history-skeleton-row"
+              aria-hidden="true"
+            >
+              <span class="search-history-skeleton-bar" />
+            </div>
+          </template>
         </div>
       </section>
 
@@ -192,6 +205,167 @@ const { chatRoomList, selectChatRoomList, handleRenameChatRoom, handleDeleteChat
 const route = useRoute()
 const { menuList } = useMenu()
 const SETTING_MENU_ID = 'ME000003'
+
+/** 검색기록: 초기 표시 개수, 스크롤 하단 시 추가 로드 단위 (클라이언트 슬라이스) */
+const SEARCH_HISTORY_INITIAL = 30
+const SEARCH_HISTORY_LOAD_MORE = 5
+/** 스켈레톤 표시 후 실제 행을 붙이기까지 지연 (ms) */
+const SEARCH_HISTORY_LOAD_DELAY_MS = 1420
+/** 하단에서 이 px 이내면 추가 로드 시도 */
+const SEARCH_HISTORY_NEAR_BOTTOM_PX = 40
+/**
+ * 로드 직후 맨 아래에서 띄울 여백(px).
+ * 반드시 `SEARCH_HISTORY_NEAR_BOTTOM_PX`보다 커야, 힌트 적용 후에도 연속 로드가 다시 걸리지 않음.
+ */
+const SEARCH_HISTORY_TAIL_HINT_GAP_PX = SEARCH_HISTORY_NEAR_BOTTOM_PX + 24
+
+const searchHistoryVisibleCount = ref(SEARCH_HISTORY_INITIAL)
+const isSearchHistoryLoadingMore = ref(false)
+const pendingSearchHistorySkeletonCount = ref(0)
+const searchHistoryRevealIdSet = shallowRef<Set<string>>(new Set())
+
+const displayedChatRooms = computed(() => {
+  const list = chatRoomList.value
+  const n = Math.min(searchHistoryVisibleCount.value, list.length)
+  return list.slice(0, n)
+})
+
+const searchHistorySkeletonSlots = computed(() => {
+  const n = pendingSearchHistorySkeletonCount.value
+  if (n <= 0) return []
+  return Array.from({ length: n }, (_, i) => i)
+})
+
+const searchHistoryScrollEl = ref<HTMLElement | null>(null)
+
+let searchHistoryLoadMoreRaf = 0
+let searchHistoryLoadMoreTimer: ReturnType<typeof setTimeout> | null = null
+let searchHistoryRevealClearTimer: ReturnType<typeof setTimeout> | null = null
+
+/** `scrollTop`을 코드에서 바꿀 때 생기는 scroll 이벤트로 인한 연속 로드 방지 (ms) */
+const SEARCH_HISTORY_SUPPRESS_SCROLL_LOAD_MS = 72
+let searchHistorySuppressLoadScrollUntil = 0
+
+function applySearchHistoryScrollLayout(layout: () => void) {
+  searchHistorySuppressLoadScrollUntil = performance.now() + SEARCH_HISTORY_SUPPRESS_SCROLL_LOAD_MS
+  layout()
+}
+
+function pinSearchHistoryScrollToBottom() {
+  const el = searchHistoryScrollEl.value
+  if (!el) return
+  applySearchHistoryScrollLayout(() => {
+    el.scrollTop = Math.max(0, el.scrollHeight - el.clientHeight)
+  })
+}
+
+/** 추가 로드 직후: 아직 숨겨진 검색기록이 있으면 스크롤을 살짝 올려 ‘더 있음’이 보이게 함 */
+function adjustSearchHistoryScrollAfterLoadMore() {
+  const el = searchHistoryScrollEl.value
+  if (!el) return
+  applySearchHistoryScrollLayout(() => {
+    const maxScroll = Math.max(0, el.scrollHeight - el.clientHeight)
+    const hasMoreBelow = searchHistoryVisibleCount.value < chatRoomList.value.length
+    const gapPx = hasMoreBelow ? SEARCH_HISTORY_TAIL_HINT_GAP_PX : 0
+    el.scrollTop = Math.max(0, maxScroll - gapPx)
+  })
+}
+
+function resetSearchHistoryLoadMoreUi() {
+  if (searchHistoryLoadMoreTimer) {
+    clearTimeout(searchHistoryLoadMoreTimer)
+    searchHistoryLoadMoreTimer = null
+  }
+  if (searchHistoryRevealClearTimer) {
+    clearTimeout(searchHistoryRevealClearTimer)
+    searchHistoryRevealClearTimer = null
+  }
+  isSearchHistoryLoadingMore.value = false
+  pendingSearchHistorySkeletonCount.value = 0
+  searchHistoryRevealIdSet.value = new Set()
+}
+
+watch(chatRoomList, resetSearchHistoryLoadMoreUi)
+
+watch(
+  () => chatRoomList.value.length,
+  (len) => {
+    if (searchHistoryVisibleCount.value > len) {
+      searchHistoryVisibleCount.value = len
+    }
+  },
+)
+
+function finishSearchHistoryLoadMore() {
+  searchHistoryLoadMoreTimer = null
+  const list = chatRoomList.value
+  const prev = searchHistoryVisibleCount.value
+  const total = list.length
+  const add = Math.min(SEARCH_HISTORY_LOAD_MORE, total - prev)
+  if (add <= 0) {
+    isSearchHistoryLoadingMore.value = false
+    pendingSearchHistorySkeletonCount.value = 0
+    return
+  }
+  const addedIds = list.slice(prev, prev + add).map((r) => String(r.roomId))
+  searchHistoryVisibleCount.value = prev + add
+  isSearchHistoryLoadingMore.value = false
+  pendingSearchHistorySkeletonCount.value = 0
+  searchHistoryRevealIdSet.value = new Set(addedIds)
+  if (searchHistoryRevealClearTimer) clearTimeout(searchHistoryRevealClearTimer)
+  searchHistoryRevealClearTimer = setTimeout(() => {
+    searchHistoryRevealClearTimer = null
+    searchHistoryRevealIdSet.value = new Set()
+  }, 1520)
+
+  void nextTick(() => {
+    requestAnimationFrame(() => {
+      adjustSearchHistoryScrollAfterLoadMore()
+    })
+  })
+}
+
+function beginSearchHistoryLoadMore() {
+  if (isSearchHistoryLoadingMore.value) return
+  const prev = searchHistoryVisibleCount.value
+  const total = chatRoomList.value.length
+  if (prev >= total) return
+
+  const add = Math.min(SEARCH_HISTORY_LOAD_MORE, total - prev)
+  isSearchHistoryLoadingMore.value = true
+  pendingSearchHistorySkeletonCount.value = add
+  searchHistoryLoadMoreTimer = setTimeout(finishSearchHistoryLoadMore, SEARCH_HISTORY_LOAD_DELAY_MS)
+
+  void nextTick(() => {
+    requestAnimationFrame(() => {
+      pinSearchHistoryScrollToBottom()
+    })
+  })
+}
+
+function onSearchHistoryScroll(ev: Event) {
+  if (performance.now() < searchHistorySuppressLoadScrollUntil) return
+  if (isSearchHistoryLoadingMore.value) return
+  const el = ev.target as HTMLElement
+  const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+  if (distanceFromBottom > SEARCH_HISTORY_NEAR_BOTTOM_PX) return
+  if (searchHistoryVisibleCount.value >= chatRoomList.value.length) return
+  if (searchHistoryLoadMoreRaf) return
+
+  searchHistoryLoadMoreRaf = requestAnimationFrame(() => {
+    searchHistoryLoadMoreRaf = 0
+    if (searchHistoryVisibleCount.value >= chatRoomList.value.length) return
+    beginSearchHistoryLoadMore()
+  })
+}
+
+onUnmounted(() => {
+  if (searchHistoryLoadMoreRaf) {
+    cancelAnimationFrame(searchHistoryLoadMoreRaf)
+    searchHistoryLoadMoreRaf = 0
+  }
+  resetSearchHistoryLoadMoreUi()
+})
 
 const isExpanded = ref(false)
 const isSearchHistoryOpen = ref(true)
