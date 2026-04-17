@@ -101,7 +101,7 @@ defineEmits<{
   close: []
 }>()
 
-const { handleFetchMetaTableList, handleSaveMetaTableSelection } = useDatamartStore()
+const { handleFetchMetaTableList, handleSaveMetaTableSelection, handleSaveMetaColumnSelection } = useDatamartStore()
 
 const metaTableListErrorMessage = ref<string | null>(null)
 
@@ -176,6 +176,10 @@ const onSave = async () => {
   if (activeTab.value === 'table') {
     const datamartId = props.datamart?.datamartId ?? ''
     await handleSaveMetaTableSelection(datamartId, metaTables.value)
+    return
+  } else if (activeTab.value === 'column') {
+    const datamartId = props.datamart?.datamartId ?? ''
+    await handleSaveMetaColumnSelection(datamartId, metaTables.value)
     return
   }
 

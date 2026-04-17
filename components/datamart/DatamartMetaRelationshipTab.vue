@@ -241,7 +241,7 @@ const tableOptions = computed(() =>
 const columnOptionsForTableId = (tableId: string) => {
   const t = activeTables.value.find((row) => row.id === tableId)
   if (!t) return []
-  return t.columns.map((c) => ({ label: c.colName, value: c.id }))
+  return t.columns.map((c) => ({ label: c.colPhyNm || c.colKorNm || c.colId, value: c.colId }))
 }
 
 const srcColumnOptions = computed(() => columnOptionsForTableId(draft.srcTableId))
@@ -291,8 +291,8 @@ const onAddRelationship = () => {
 
   const srcTable = props.tables.find((t) => t.id === draft.srcTableId && t.useYn === 'Y')
   const tgtTable = props.tables.find((t) => t.id === draft.tgtTableId && t.useYn === 'Y')
-  const srcCol = srcTable?.columns.find((c) => c.id === draft.srcColId)
-  const tgtCol = tgtTable?.columns.find((c) => c.id === draft.tgtColId)
+  const srcCol = srcTable?.columns.find((c) => c.colId === draft.srcColId)
+  const tgtCol = tgtTable?.columns.find((c) => c.colId === draft.tgtColId)
   if (!srcTable || !tgtTable || !srcCol || !tgtCol) return
 
   relationships.value = [
@@ -300,9 +300,9 @@ const onAddRelationship = () => {
     {
       id: `rel_${Date.now()}`,
       srcTableId: draft.srcTableId,
-      srcColName: srcCol.colName,
+      srcColName: srcCol.colPhyNm,
       tgtTableId: draft.tgtTableId,
-      tgtColName: tgtCol.colName,
+      tgtColName: tgtCol.colPhyNm,
       cardinality: draft.cardinality,
       joinTy: draft.joinTy,
       descKo: draft.descKo.trim(),

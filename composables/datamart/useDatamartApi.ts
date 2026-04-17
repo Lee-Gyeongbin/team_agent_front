@@ -42,6 +42,14 @@ export const useDatamartApi = () => {
     return post('/datamart/metaTableSave.do', payload)
   }
 
+  /** 메타 관리 > 컬럼 메타데이터 저장 API */
+  const fetchSaveMetaColumn = async (payload: {
+    datamartId: string
+    tableList: DatamartMetaTableItem[]
+  }): Promise<void> => {
+    return post('/datamart/metaColumnSave.do', payload)
+  }
+
   return {
     fetchDatamartList,
     fetchDatamartSummary,
@@ -50,5 +58,6 @@ export const useDatamartApi = () => {
     fetchTestConnection,
     fetchMetaTableList,
     fetchSaveMetaTable,
+    fetchSaveMetaColumn,
   }
 }
