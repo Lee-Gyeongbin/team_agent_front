@@ -1,25 +1,35 @@
 import type { TableColumn } from '~/types/table'
 
-/** 메타 관리 > 컬럼 메타 행 */
+/** 메타 관리 > 컬럼 메타 행 (COL_* 스키마 — 카멜케이스) */
 export interface DatamartMetaColumnRow {
-  id: string
-  colName: string
+  colId: string
+  colPhyNm: string
+  colKorNm: string
+  colDesc: string
   dataType: string
-  isPk: boolean
-  isFk: boolean
-  descKo: string
-  nullable: 'Y' | 'N'
+  dataLen: string
+  pkYn: 'Y' | 'N'
+  fkYn: 'Y' | 'N'
+  nullableYn: 'Y' | 'N'
+  hasCodeYn: 'Y' | 'N'
+  aiHint: string
+  sortOrd: number
+  useYn: 'Y' | 'N'
+  createDt: string
+  modifyDt: string
 }
 
-/** 메타 관리 > 컬럼 메타데이터 탭 — UiTable 컬럼 정의 (pages/user-manage 의 userColumns 패턴) */
+/** 메타 관리 > 컬럼 메타데이터 탭 — UiTable 컬럼 정의 */
 export const datamartMetaColumnTableColumns: TableColumn[] = [
-  { key: 'colName', label: '컬럼명', width: '15%', align: 'left', headerAlign: 'center' },
-  { key: 'dataType', label: '타입', width: '15%', align: 'center', headerAlign: 'center' },
-  { key: 'isPk', label: 'PK', width: '8%', align: 'center', headerAlign: 'center' },
-  { key: 'isFk', label: 'FK', width: '8%', align: 'center', headerAlign: 'center' },
-  { key: 'descKo', label: '설명 (한국어)', width: 'auto', align: 'left', headerAlign: 'center' },
-  { key: 'nullable', label: 'NULL 허용', width: '12%', align: 'center', headerAlign: 'center' },
-  { key: '_actions', label: '', width: '8%', align: 'center', headerAlign: 'center' },
+  { key: 'colPhyNm', label: '컬럼ID', width: '8%', align: 'left', headerAlign: 'center' },
+  { key: 'colKorNm', label: '컬럼명', width: '8%', align: 'left', headerAlign: 'center' },
+  { key: 'dataType', label: '타입', width: '8%', align: 'center', headerAlign: 'center' },
+  { key: 'pkYn', label: 'PK', width: '4%', align: 'center', headerAlign: 'center' },
+  { key: 'fkYn', label: 'FK', width: '4%', align: 'center', headerAlign: 'center' },
+  { key: 'nullableYn', label: 'NULL허용', width: '5%', align: 'center', headerAlign: 'center' },
+  { key: 'hasCodeYn', label: '코드여부', width: '5%', align: 'center', headerAlign: 'center' },
+  { key: 'aiHint', label: 'AI 힌트', width: '4%', align: 'left', headerAlign: 'center' },
+  { key: '_actions', label: '삭제', width: '4%', align: 'center', headerAlign: 'center' },
 ]
 
 /**
@@ -74,8 +84,8 @@ export interface DatamartMetaCodeColumnMapping {
 /** 메타 관리 > 코드값 매핑 탭 — 코드성 컬럼별 마스터 행 UiTable 컬럼 */
 export const datamartMetaCodeMappingMasterColumns: TableColumn[] = [
   { key: 'tableNm', label: '테이블', width: '20%', align: 'left', headerAlign: 'center' },
-  { key: 'colName', label: '컬럼', width: '18%', align: 'left', headerAlign: 'center' },
-  { key: 'descKo', label: '설명', width: 'auto', align: 'left', headerAlign: 'center' },
+  { key: 'colPhyNm', label: '컬럼', width: '18%', align: 'left', headerAlign: 'center' },
+  { key: 'colDesc', label: '설명', width: 'auto', align: 'left', headerAlign: 'center' },
   { key: 'entryCnt', label: '코드값 수', width: '12%', align: 'center', headerAlign: 'center' },
   { key: '_actions', label: '', width: '40px', align: 'center', headerAlign: 'center' },
 ]

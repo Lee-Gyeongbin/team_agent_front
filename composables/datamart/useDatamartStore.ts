@@ -10,6 +10,7 @@ const {
   fetchTestConnection,
   fetchMetaTableList,
   fetchSaveMetaTable,
+  fetchSaveMetaColumn,
 } = useDatamartApi()
 
 /** 상태 변수 */
@@ -137,6 +138,37 @@ const handleSaveMetaTableSelection = async (datamartId: string, tables: Datamart
   }
 }
 
+/** 컬럼 메타데이터 저장 (useYn=Y 테이블만, 각 테이블의 columns 포함) */
+const handleSaveMetaColumnSelection = async (datamartId: string, tables: DatamartMetaTableItem[]) => {
+  if (!datamartId) {
+    openToast({ message: '데이터마트 정보가 없습니다.', type: 'warning' })
+    return false
+  }
+
+  const activeTables = tables.filter((t) => t.useYn === 'Y')
+  if (!activeTables.length) {
+    openToast({
+      message: '활성화된 테이블이 없습니다. 테이블 선택 탭에서 사용할 테이블을 켜 주세요.',
+      type: 'warning',
+    })
+    return false
+  }
+
+  const payload = {
+    datamartId,
+    tableList: activeTables,
+  }
+
+  try {
+    await fetchSaveMetaColumn(payload)
+    openToast({ message: '컬럼 메타데이터 저장에 성공했습니다.', type: 'success' })
+    return true
+  } catch {
+    openToast({ message: '컬럼 메타데이터 저장에 실패했습니다.', type: 'error' })
+    return false
+  }
+}
+
 export const useDatamartStore = () => {
   return {
     datamartList,
@@ -148,5 +180,6 @@ export const useDatamartStore = () => {
     handleTestConnection,
     handleFetchMetaTableList,
     handleSaveMetaTableSelection,
+    handleSaveMetaColumnSelection,
   }
 }
