@@ -93,8 +93,8 @@
       <div class="com-setting-field-row">
         <label class="com-setting-label">적용 대상</label>
         <UiMultiSelect
-          :disabled="form.sysPtYn === 'Y'"
           id="prompt-apply-targets"
+          :disabled="form.sysPtYn === 'Y'"
           :model-value="applyTargetsUiModel"
           name="prompt-apply-targets"
           :options="applyTargetOptions"
@@ -143,7 +143,7 @@ const emit = defineEmits<{
   test: []
 }>()
 
-const { resetSettingForm, agentList, promptAppAgtList } = usePromptStore()
+const { resetSettingForm, applyAgentOptions, agentList, promptAppAgtList } = usePromptStore()
 
 const form = computed(() => props.modelValue)
 
@@ -170,10 +170,7 @@ const onUpdateForm = (key: string, value: string | number) => {
 /** LLM 질의 — agentId와 겹치지 않는 sentinel (멀티셀렉트 표시 ↔ 폼 applyLlmYn) */
 const APPLY_LLM_KEY = '__prompt_apply_llm__'
 
-const applyTargetOptions = computed(() => [
-  { label: 'LLM 질의', value: APPLY_LLM_KEY },
-  ...agentList.value.map((a) => ({ label: a.agentNm, value: a.agentId })),
-])
+const applyTargetOptions = computed(() => [{ label: 'LLM 질의', value: APPLY_LLM_KEY }, ...applyAgentOptions.value])
 
 const applyTargetsUiModel = computed(() => {
   const currentPromptId = form.value?.promptId ?? ''
