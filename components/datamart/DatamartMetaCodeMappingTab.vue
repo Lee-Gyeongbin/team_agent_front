@@ -192,7 +192,7 @@
                             class="datamart-meta-code-entry-remove"
                             title="이 코드 행 삭제"
                             aria-label="이 코드 행 삭제"
-                            @click="onRemoveEntry(activeMapping.tblId, entry.sortOrd)"
+                            @click="onRemoveEntry(activeMapping.tblId, activeMapping.colId, entry.sortOrd)"
                           >
                             <template #icon-left>
                               <i class="icon-trashcan size-16" />
@@ -268,6 +268,8 @@ const selectedMappingId = ref('')
 const pickTableId = ref('')
 const pickColId = ref('')
 
+const buildMappingId = (tblId: string, colId: string) => `${tblId}::${colId}`
+
 const sectionCollapsed = reactive({
   aiContextPreview: false,
 })
@@ -294,7 +296,7 @@ const pickColumnOptions = computed(() => {
 const activeMapping = computed(() => {
   const id = selectedMappingId.value
   if (!id) return null
-  return codeMappings.value.find((m) => m.tblId === id) ?? null
+  return codeMappings.value.find((m) => buildMappingId(m.tblId, m.colId) === id) ?? null
 })
 
 const activeEntries = computed<DatamartMetaCodeValueRow[]>({
@@ -328,7 +330,7 @@ const mappingMasterRows = computed((): MappingMasterRow[] =>
   codeMappings.value.map((m) => {
     const { table, col } = resolveTableCol(m.tblId, m.colId)
     return {
-      mappingId: m.tblId,
+      mappingId: buildMappingId(m.tblId, m.colId),
       tableNm: table?.physicalNm ?? m.tblId,
       colPhyNm: col?.colPhyNm ?? m.colId,
       colDesc: col?.colDesc?.trim() ? col.colDesc : '—',
@@ -442,13 +444,13 @@ const onAddCodeColumn = () => {
       ],
     },
   ]
-  selectedMappingId.value = table.id
+  selectedMappingId.value = buildMappingId(table.id, col.colId)
   pickColId.value = ''
 }
 
-const onRemoveMapping = (tblId: string) => {
-  codeMappings.value = codeMappings.value.filter((m) => m.tblId !== tblId)
-  if (selectedMappingId.value === tblId) selectedMappingId.value = ''
+const onRemoveMapping = (mappingId: string) => {
+  codeMappings.value = codeMappings.value.filter((m) => buildMappingId(m.tblId, m.colId) !== mappingId)
+  if (selectedMappingId.value === mappingId) selectedMappingId.value = ''
 }
 
 const onAddEntry = () => {
@@ -469,8 +471,8 @@ const onAddEntry = () => {
   m.entries = [...m.entries, row]
 }
 
-const onRemoveEntry = (mappingId: string, sortOrd: number) => {
-  const m = codeMappings.value.find((x) => x.tblId === mappingId)
+const onRemoveEntry = (tblId: string, colId: string, sortOrd: number) => {
+  const m = codeMappings.value.find((x) => x.tblId === tblId && x.colId === colId)
   if (!m) return
   m.entries = m.entries
     .filter((e) => e.sortOrd !== sortOrd)
