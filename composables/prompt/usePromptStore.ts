@@ -32,6 +32,12 @@ const {
 const systemPromptList = ref<SystemPrompt[]>([])
 const agentList = ref<PromptAgent[]>([])
 const promptAppAgtList = ref<PromptAppAgt[]>([])
+const applyAgentOptions = computed(() =>
+  agentList.value.map((agent) => ({
+    label: agent.agentNm,
+    value: String(agent.agentId),
+  })),
+)
 const templateList = ref<PromptTemplate[]>([])
 const filterData = ref<PromptFilterData>({
   inputBanWords: [],
@@ -283,6 +289,7 @@ export const usePromptStore = () => {
     systemPromptList,
     settingForm,
     agentList,
+    applyAgentOptions,
     promptAppAgtList,
     resetSettingForm,
     handleSelectSystemPromptList,

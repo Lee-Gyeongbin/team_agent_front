@@ -242,8 +242,8 @@ const codeMappings = defineModel<DatamartMetaCodeColumnMapping[]>('codeMappings'
 interface MappingMasterRow {
   mappingId: string
   tableNm: string
-  colName: string
-  descKo: string
+  colPhyNm: string
+  colDesc: string
   entryCnt: string
 }
 
@@ -268,7 +268,7 @@ const tableOptions = computed(() =>
 const pickColumnOptions = computed(() => {
   const t = activeTables.value.find((row) => row.id === pickTableId.value)
   if (!t) return []
-  return t.columns.map((c) => ({ label: c.colName, value: c.id }))
+  return t.columns.map((c) => ({ label: c.colPhyNm || c.colKorNm || c.colId, value: c.colId }))
 })
 
 const activeMapping = computed(() => {
@@ -283,12 +283,12 @@ const activeMappingChipLabel = computed(() => {
   if (!m) return ''
   const { table, col } = resolveTableCol(m.tableId, m.columnId)
   if (!table || !col) return ''
-  return ` · ${table.physicalNm}.${col.colName}`
+  return ` · ${table.physicalNm}.${col.colPhyNm}`
 })
 
 const resolveTableCol = (tableId: string, columnId: string) => {
   const t = props.tables.find((row) => row.id === tableId)
-  const c = t?.columns.find((col) => col.id === columnId)
+  const c = t?.columns.find((col) => col.colId === columnId)
   return { table: t, col: c }
 }
 
@@ -298,8 +298,8 @@ const mappingMasterRows = computed((): MappingMasterRow[] =>
     return {
       mappingId: m.id,
       tableNm: table?.physicalNm ?? m.tableId,
-      colName: col?.colName ?? m.columnId,
-      descKo: col?.descKo?.trim() ? col.descKo : '—',
+      colPhyNm: col?.colPhyNm ?? m.columnId,
+      colDesc: col?.colDesc?.trim() ? col.colDesc : '—',
       entryCnt: String(m.entries.length),
     }
   }),
@@ -349,7 +349,7 @@ const previewAiContext = computed(() => {
     if (table && col) {
       const tableKo = table.logicalNm?.trim() || table.tableDescKo?.trim() || '—'
       lines.push(`테이블: ${table.physicalNm} (${tableKo})`)
-      lines.push(`컬럼: ${col.colName} ${col.dataType} — ${col.descKo?.trim() || '—'}`)
+      lines.push(`컬럼: ${col.colPhyNm} ${col.dataType} — ${col.colDesc?.trim() || '—'}`)
       lines.push(`  값: ${formatMappingValues(cur)}`)
     } else {
       lines.push('테이블: —')
@@ -376,10 +376,10 @@ const previewAiContext = computed(() => {
 const onAddCodeColumn = () => {
   if (!pickTableId.value || !pickColId.value) return
   const table = activeTables.value.find((t) => t.id === pickTableId.value)
-  const col = table?.columns.find((c) => c.id === pickColId.value)
+  const col = table?.columns.find((c) => c.colId === pickColId.value)
   if (!table || !col) return
 
-  const dup = codeMappings.value.some((m) => m.tableId === table.id && m.columnId === col.id)
+  const dup = codeMappings.value.some((m) => m.tableId === table.id && m.columnId === col.colId)
   if (dup) {
     openToast({ message: '이미 추가된 컬럼입니다.', type: 'warning' })
     return
@@ -392,7 +392,7 @@ const onAddCodeColumn = () => {
     {
       id: newId,
       tableId: table.id,
-      columnId: col.id,
+      columnId: col.colId,
       entries: [{ id: entryId, codeValue: '', labelKo: '' }],
     },
   ]

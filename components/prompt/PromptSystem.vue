@@ -13,10 +13,26 @@
 
       <!-- 저장된 프롬프트 목록 -->
       <div class="prompt-saved-section">
-        <div class="prompt-saved-title">저장된 프롬프트</div>
-        <div class="prompt-saved-list">
+        <div class="prompt-saved-header">
+          <div class="prompt-saved-title">저장된 프롬프트</div>
+          <UiSelect
+            :model-value="selectedApplyAgentId"
+            :options="savedPromptFilterOptions"
+            size="sm"
+            placeholder="적용 에이전트 선택"
+            class="prompt-saved-agent-select"
+            @update:model-value="onChangeSelectedApplyAgent"
+          />
+        </div>
+        <template v-if="filteredSystemPromptList.length === 0">
+          <UiEmpty description="조건에 맞는 시스템 프롬프트가 없습니다." />
+        </template>
+        <div
+          v-else
+          class="prompt-saved-list"
+        >
           <PromptSystemCard
-            v-for="item in systemPromptList"
+            v-for="item in filteredSystemPromptList"
             :key="item.promptId"
             :prompt="item"
             @edit="onEdit"
@@ -44,6 +60,8 @@ import { usePromptStore } from '~/composables/prompt/usePromptStore'
 const {
   systemPromptList,
   settingForm,
+  applyAgentOptions,
+  promptAppAgtList,
   handleSelectSystemPromptList,
   handleToggleSystemPrompt,
   handleDeleteSystemPrompt,
@@ -56,6 +74,28 @@ const settingFormModel = computed({
     settingForm.value = value
   },
 })
+
+const selectedApplyAgentId = ref('')
+
+const savedPromptFilterOptions = computed(() => [{ label: '전체', value: '' }, ...applyAgentOptions.value])
+
+const filteredSystemPromptList = computed(() => {
+  if (isEmpty(selectedApplyAgentId.value)) {
+    return systemPromptList.value
+  }
+
+  const selectedAgentId = String(selectedApplyAgentId.value)
+  const matchedPromptIdSet = new Set(
+    promptAppAgtList.value
+      .filter((item) => String(item.agentId) === selectedAgentId && item.applyYn === 'Y')
+      .map((item) => item.promptId),
+  )
+  return systemPromptList.value.filter((item) => matchedPromptIdSet.has(item.promptId))
+})
+
+const onChangeSelectedApplyAgent = (value: string | number) => {
+  selectedApplyAgentId.value = String(value ?? '')
+}
 
 onMounted(() => {
   handleSelectSystemPromptList()
@@ -100,3 +140,17 @@ const onCopy = async (prompt: SystemPrompt) => {
   openToast({ message: '프롬프트가 복사되었습니다.' })
 }
 </script>
+
+<style lang="scss" scoped>
+.prompt-saved-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.prompt-saved-agent-select {
+  width: 220px;
+  flex-shrink: 0;
+}
+</style>
