@@ -146,7 +146,7 @@
               <div class="datamart-meta-rel-form-pair">
                 <div class="datamart-meta-rel-form-side">
                   <div class="com-setting-field-row">
-                    <label class="com-setting-label">기준 테이블</label>
+                    <label class="com-setting-label"><span class="is-required">*</span>기준 테이블</label>
                     <UiSelect
                       v-model="draft.fromTblId"
                       :options="tableOptions"
@@ -156,7 +156,7 @@
                     />
                   </div>
                   <div class="com-setting-field-row">
-                    <label class="com-setting-label">대상 테이블</label>
+                    <label class="com-setting-label"><span class="is-required">*</span>대상 테이블</label>
                     <UiSelect
                       v-model="draft.toTblId"
                       :options="tableOptions"
@@ -168,7 +168,7 @@
                 </div>
                 <div class="datamart-meta-rel-form-side">
                   <div class="com-setting-field-row">
-                    <label class="com-setting-label">기준 컬럼</label>
+                    <label class="com-setting-label"><span class="is-required">*</span>기준 컬럼</label>
                     <UiSelect
                       v-model="draft.fromColId"
                       :options="srcColumnOptions"
@@ -178,7 +178,7 @@
                     />
                   </div>
                   <div class="com-setting-field-row">
-                    <label class="com-setting-label">대상 컬럼</label>
+                    <label class="com-setting-label"><span class="is-required">*</span>대상 컬럼</label>
                     <UiSelect
                       v-model="draft.toColId"
                       :options="tgtColumnOptions"

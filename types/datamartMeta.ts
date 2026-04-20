@@ -43,7 +43,6 @@ export interface DatamartMetaTableItem {
   colCnt: number
   useYn: 'Y' | 'N'
   tableDescKo: string
-  usageTy: string
   columns: DatamartMetaColumnRow[]
 }
 

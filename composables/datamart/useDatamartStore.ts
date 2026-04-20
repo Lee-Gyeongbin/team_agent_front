@@ -190,6 +190,7 @@ const hydrateDatamartMetaModal = async (datamartId: string) => {
   metaModalRelationships.value = Array.isArray(rels) ? rels : []
 }
 
+/** 메타 관리 모달 — 테이블 사용 상태 변경 */
 const setDatamartMetaModalTableUseYn = (payload: { id: string; useYn: 'Y' | 'N' }) => {
   const row = metaModalTables.value.find((t) => t.id === payload.id)
   if (!row || row.useYn === payload.useYn) return
