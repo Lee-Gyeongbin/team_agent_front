@@ -53,17 +53,21 @@ export type DatamartMetaCardinality = '1:1' | '1:N' | 'N:1'
 /** 메타 관리 > 관계 정의 탭 — JOIN 유형 (표시는 SQL 키워드) */
 export type DatamartMetaJoinTy = 'INNER' | 'LEFT' | 'RIGHT' | 'FULL'
 
-/** 메타 관리 > 관계 정의 탭 — JOIN 한 줄 */
+/** 메타 관리 > 관계 정의 탭 — JOIN 한 줄 (REL_* 스키마 — 카멜케이스) */
 export interface DatamartMetaRelationship {
-  id: string
-  srcTableId: string
-  srcColName: string
-  tgtTableId: string
-  tgtColName: string
+  datamartId: string
+  relId: string
+  fromTblId: string
+  fromColId: string
+  toTblId: string
+  toColId: string
   cardinality: DatamartMetaCardinality
-  joinTy: DatamartMetaJoinTy
-  /** 관계 설명 (선택) */
-  descKo: string
+  joinType: DatamartMetaJoinTy
+  relDesc: string
+  sortOrd: number
+  useYn: 'Y' | 'N'
+  createDt: string
+  modifyDt: string
 }
 
 /** 메타 관리 > 코드값 매핑 탭 — 코드 한 줄 */
