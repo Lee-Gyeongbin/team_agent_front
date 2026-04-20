@@ -1,4 +1,4 @@
-import type { DatamartMetaCodeColumnMapping, DatamartMetaRelationship } from '~/types/datamartMeta'
+import type { DatamartMetaCodeColumnMapping } from '~/types/datamartMeta'
 
 /** 🔽 더미 데이터 — 백엔드 연결 시 API로 교체 */
 export const createDatamartMetaCodeMappingsSeed = (): DatamartMetaCodeColumnMapping[] => [
@@ -11,19 +11,5 @@ export const createDatamartMetaCodeMappingsSeed = (): DatamartMetaCodeColumnMapp
       { id: 'code-map-1-e2', codeValue: '20242', labelKo: '2024년 2분기' },
       { id: 'code-map-1-e3', codeValue: '20243', labelKo: '2024년 3분기' },
     ],
-  },
-]
-
-/** 🔽 더미 데이터 — 백엔드 연결 시 API로 교체 */
-export const createDatamartMetaRelationshipsSeed = (): DatamartMetaRelationship[] => [
-  {
-    id: 'rel-1',
-    srcTableId: '2',
-    srcColName: 'data_id',
-    tgtTableId: '1',
-    tgtColName: 'attr_id',
-    cardinality: 'N:1',
-    joinTy: 'INNER',
-    descKo: '',
   },
 ]

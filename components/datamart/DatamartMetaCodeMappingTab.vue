@@ -310,7 +310,7 @@ const onMappingMasterRowClick = (row: Record<string, unknown>) => {
   if (id) selectedMappingId.value = id
 }
 
-const joinTyLabel = (ty: DatamartMetaJoinTy) => {
+const joinTypeLabel = (ty: DatamartMetaJoinTy) => {
   const m: Record<DatamartMetaJoinTy, string> = {
     INNER: 'INNER JOIN',
     LEFT: 'LEFT JOIN',
@@ -320,9 +320,12 @@ const joinTyLabel = (ty: DatamartMetaJoinTy) => {
   return m[ty] ?? ty
 }
 
-const formatTableCol = (tableId: string, colName: string) => {
-  const phys = props.tables.find((t) => t.id === tableId)?.physicalNm ?? tableId
-  return `${phys}.${colName}`
+const formatTableCol = (tableId: string, colId: string) => {
+  const t = props.tables.find((row) => row.id === tableId)
+  const phys = t?.physicalNm ?? tableId
+  const col = t?.columns.find((c) => c.colId === colId)
+  const colNm = col?.colPhyNm || colId
+  return `${phys}.${colNm}`
 }
 
 const formatMappingValues = (m: DatamartMetaCodeColumnMapping) => {
@@ -364,9 +367,9 @@ const previewAiContext = computed(() => {
     lines.push('JOIN: (관계 정의 탭에 정의된 JOIN 없음)')
   } else {
     for (const r of props.relationships) {
-      const src = formatTableCol(r.srcTableId, r.srcColName)
-      const tgt = formatTableCol(r.tgtTableId, r.tgtColName)
-      lines.push(`JOIN: ${src} → ${tgt} (${r.cardinality}, ${joinTyLabel(r.joinTy)})`)
+      const src = formatTableCol(r.fromTblId, r.fromColId)
+      const tgt = formatTableCol(r.toTblId, r.toColId)
+      lines.push(`JOIN: ${src} → ${tgt} (${r.cardinality}, ${joinTypeLabel(r.joinType)})`)
     }
   }
 

@@ -20,15 +20,10 @@
 
       <div
         class="com-setting-section"
-        :class="{ 'is-collapsed': sectionCollapsed.tablePick }"
         style="--label-width: 140px"
       >
-        <div
-          class="com-setting-section-header"
-          @click="sectionCollapsed.tablePick = !sectionCollapsed.tablePick"
-        >
+        <div class="com-setting-section-header">
           <span class="com-setting-section-title">편집할 테이블</span>
-          <i class="icon-chevron-down size-16 com-setting-section-arrow" />
         </div>
         <div class="com-setting-section-body">
           <p class="datamart-meta-column-metadata-section-hint">활성화된 테이블만 표시됩니다.</p>
@@ -77,52 +72,10 @@
       <template v-if="selectedTable">
         <div
           class="com-setting-section"
-          :class="{ 'is-collapsed': sectionCollapsed.tableInfo }"
           style="--label-width: 140px"
         >
-          <div
-            class="com-setting-section-header"
-            @click="sectionCollapsed.tableInfo = !sectionCollapsed.tableInfo"
-          >
-            <span class="com-setting-section-title">
-              테이블 정보
-              <span class="datamart-meta-column-metadata-table-chip">· {{ selectedTable.physicalNm }}</span>
-            </span>
-            <i class="icon-chevron-down size-16 com-setting-section-arrow" />
-          </div>
-          <div class="com-setting-section-body">
-            <div class="com-setting-row datamart-meta-column-metadata-table-info-row">
-              <div class="com-setting-field-row">
-                <label class="com-setting-label">테이블 설명 (한국어)</label>
-                <UiInput
-                  v-model="selectedTable.tableDescKo"
-                  size="sm"
-                  placeholder="테이블 설명을 입력하세요"
-                />
-              </div>
-              <div class="com-setting-field-row">
-                <label class="com-setting-label">테이블 유형</label>
-                <UiSelect
-                  v-model="selectedTable.usageTy"
-                  :options="tableTypeOptions"
-                  size="sm"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div
-          class="com-setting-section"
-          :class="{ 'is-collapsed': sectionCollapsed.columns }"
-          style="--label-width: 140px"
-        >
-          <div
-            class="com-setting-section-header"
-            @click="sectionCollapsed.columns = !sectionCollapsed.columns"
-          >
+          <div class="com-setting-section-header">
             <span class="com-setting-section-title">컬럼 목록</span>
-            <i class="icon-chevron-down size-16 com-setting-section-arrow" />
           </div>
           <div class="com-setting-section-body">
             <div class="datamart-meta-col-editor-toolbar">
@@ -303,13 +256,6 @@ const props = withDefaults(
 
 const selectedTableId = defineModel<string>('selectedTableId', { default: '' })
 
-/** LLM 설정 모달 섹션과 동일 — false면 펼침 */
-const sectionCollapsed = reactive({
-  tablePick: false,
-  tableInfo: false,
-  columns: false,
-})
-
 const activeTables = computed(() => props.tables.filter((t) => t.useYn === 'Y'))
 
 /** 모델이 비었거나 비활성 테이블을 가리키면 첫 활성 테이블로 표시 */
@@ -322,16 +268,6 @@ const resolvedSelectedId = computed(() => {
 const selectedTable = computed(
   () => props.tables.find((t) => t.id === resolvedSelectedId.value && t.useYn === 'Y') ?? null,
 )
-
-const tableTypeOptions = [
-  { label: '일반 테이블', value: 'TABLE' },
-  { label: '뷰', value: 'VIEW' },
-  { label: '시스템 테이블', value: 'SYSTEMTABLE' },
-  { label: '글로벌 임시 테이블', value: 'GLOBALTEMPORARY' },
-  { label: '로컬 임시 테이블', value: 'LOCALTEMPORARY' },
-  { label: '별칭', value: 'ALIAS' },
-  { label: '동의어', value: 'SYNONYM' },
-]
 
 const dataTypeOptions = [
   { label: 'BIGINT', value: 'BIGINT' },
@@ -439,6 +375,8 @@ const onAiHintModalClose = () => {
 
   :deep(.com-setting-section-header) {
     padding: 2px 0 6px;
+    cursor: default;
+    user-select: text;
   }
 
   :deep(.com-setting-section-body) {
@@ -574,25 +512,6 @@ const onAiHintModalClose = () => {
 
   .datamart-meta-col-add-btn {
     flex-shrink: 0;
-  }
-}
-
-.datamart-meta-column-metadata-table-chip {
-  font-weight: $font-weight-medium;
-  color: $color-text-secondary;
-}
-
-.datamart-meta-column-metadata-table-info-row {
-  width: 100%;
-  align-items: flex-start;
-
-  .com-setting-field-row {
-    flex: 1;
-    min-width: 0;
-  }
-
-  @media (max-width: 640px) {
-    flex-direction: column;
   }
 }
 

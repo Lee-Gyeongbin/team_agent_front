@@ -76,7 +76,9 @@
               @click="onSelect(agent)"
             >
               <div class="chat-index-card-default">
-                <span class="icon-circle"><i :class="[agent.iconClassNm ? agent.iconClassNm : 'icon-search', 'size-24']" /></span>
+                <span class="icon-circle"
+                  ><i :class="[agent.iconClassNm ? agent.iconClassNm : 'icon-search', 'size-24']"
+                /></span>
                 <div class="chat-index-card-info">
                   <p class="chat-index-card-name">{{ agent.agentNm }}</p>
                   <p class="chat-index-card-sub">{{ getChatIndexAgentSubLabel(agent) }}</p>

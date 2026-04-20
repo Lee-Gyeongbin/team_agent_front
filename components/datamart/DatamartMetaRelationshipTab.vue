@@ -46,14 +46,33 @@
             aria-label="JOIN 관계 목록"
           >
             <div
-              v-for="rel in relationships"
-              :key="rel.id"
+              v-for="(rel, idx) in relationships"
+              :key="idx"
               class="datamart-meta-rel-join-row"
               role="listitem"
             >
+              <span class="datamart-meta-rel-join-desc-tip">
+                <UiTooltip
+                  side="top"
+                  align="center"
+                  :show-arrow="false"
+                  content-class="datamart-meta-rel-desc-tooltip"
+                >
+                  <button
+                    type="button"
+                    class="datamart-meta-rel-join-info-trigger"
+                    :aria-label="rel.relDesc?.trim() ? '관계 설명' : '관계 설명 없음'"
+                  >
+                    <i class="icon icon-info size-16" />
+                  </button>
+                  <template #content>
+                    <span>{{ rel.relDesc?.trim() || '등록된 관계 설명이 없습니다.' }}</span>
+                  </template>
+                </UiTooltip>
+              </span>
               <span class="datamart-meta-rel-join-mapping">
                 <span class="datamart-meta-rel-join-src">
-                  <span class="datamart-meta-rel-join-ident">{{ formatTableCol(rel.srcTableId, rel.srcColName) }}</span>
+                  <span class="datamart-meta-rel-join-ident">{{ formatTableCol(rel.fromTblId, rel.fromColId) }}</span>
                 </span>
                 <span
                   class="datamart-meta-rel-join-arrow"
@@ -61,7 +80,7 @@
                   >→</span
                 >
                 <span class="datamart-meta-rel-join-tgt">
-                  <span class="datamart-meta-rel-join-ident">{{ formatTableCol(rel.tgtTableId, rel.tgtColName) }}</span>
+                  <span class="datamart-meta-rel-join-ident">{{ formatTableCol(rel.toTblId, rel.toColId) }}</span>
                 </span>
               </span>
               <UiBadge
@@ -71,7 +90,7 @@
               >
                 {{ rel.cardinality }}
               </UiBadge>
-              <span class="datamart-meta-rel-join-jointy">{{ joinTyLabel(rel.joinTy) }}</span>
+              <span class="datamart-meta-rel-join-jointy">{{ joinTypeLabel(rel.joinType) }}</span>
               <div class="datamart-meta-rel-join-actions">
                 <UiButton
                   variant="line-secondary"
@@ -80,7 +99,7 @@
                   type="button"
                   title="관계 삭제"
                   aria-label="관계 삭제"
-                  @click="onRemoveRelationship(rel.id)"
+                  @click="onRemoveRelationship(idx)"
                 >
                   <template #icon-left>
                     <i class="icon-trashcan size-16" />
@@ -124,80 +143,88 @@
 
           <div class="datamart-meta-rel-form-panel">
             <div class="com-setting-row datamart-meta-rel-form-row">
-              <div class="datamart-meta-rel-form-side">
-                <div class="com-setting-field-row">
-                  <label class="com-setting-label">기준 테이블</label>
-                  <UiSelect
-                    v-model="draft.srcTableId"
-                    :options="tableOptions"
-                    size="sm"
-                    placeholder="테이블 선택"
-                    @update:model-value="draft.srcColId = ''"
-                  />
+              <div class="datamart-meta-rel-form-pair">
+                <div class="datamart-meta-rel-form-side">
+                  <div class="com-setting-field-row">
+                    <label class="com-setting-label"><span class="is-required">*</span>기준 테이블</label>
+                    <UiSelect
+                      v-model="draft.fromTblId"
+                      :options="tableOptions"
+                      size="sm"
+                      placeholder="테이블 선택"
+                      @update:model-value="draft.fromColId = ''"
+                    />
+                  </div>
+                  <div class="com-setting-field-row">
+                    <label class="com-setting-label"><span class="is-required">*</span>대상 테이블</label>
+                    <UiSelect
+                      v-model="draft.toTblId"
+                      :options="tableOptions"
+                      size="sm"
+                      placeholder="테이블 선택"
+                      @update:model-value="draft.toColId = ''"
+                    />
+                  </div>
                 </div>
-                <div class="com-setting-field-row">
-                  <label class="com-setting-label">기준 컬럼</label>
-                  <UiSelect
-                    v-model="draft.srcColId"
-                    :options="srcColumnOptions"
-                    size="sm"
-                    placeholder="컬럼 선택"
-                    :disabled="!draft.srcTableId || srcColumnOptions.length === 0"
-                  />
-                </div>
-              </div>
-              <div class="datamart-meta-rel-form-side">
-                <div class="com-setting-field-row">
-                  <label class="com-setting-label">대상 테이블</label>
-                  <UiSelect
-                    v-model="draft.tgtTableId"
-                    :options="tableOptions"
-                    size="sm"
-                    placeholder="테이블 선택"
-                    @update:model-value="draft.tgtColId = ''"
-                  />
-                </div>
-                <div class="com-setting-field-row">
-                  <label class="com-setting-label">대상 컬럼</label>
-                  <UiSelect
-                    v-model="draft.tgtColId"
-                    :options="tgtColumnOptions"
-                    size="sm"
-                    placeholder="컬럼 선택"
-                    :disabled="!draft.tgtTableId || tgtColumnOptions.length === 0"
-                  />
+                <div class="datamart-meta-rel-form-side">
+                  <div class="com-setting-field-row">
+                    <label class="com-setting-label"><span class="is-required">*</span>기준 컬럼</label>
+                    <UiSelect
+                      v-model="draft.fromColId"
+                      :options="srcColumnOptions"
+                      size="sm"
+                      placeholder="컬럼 선택"
+                      :disabled="!draft.fromTblId"
+                    />
+                  </div>
+                  <div class="com-setting-field-row">
+                    <label class="com-setting-label"><span class="is-required">*</span>대상 컬럼</label>
+                    <UiSelect
+                      v-model="draft.toColId"
+                      :options="tgtColumnOptions"
+                      size="sm"
+                      placeholder="컬럼 선택"
+                      :disabled="!draft.toTblId"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
             <div class="com-setting-row datamart-meta-rel-form-row">
-              <div class="com-setting-field-row">
-                <label class="com-setting-label">관계 유형</label>
-                <UiSelect
-                  v-model="draft.cardinality"
-                  :options="cardinalityOptions"
-                  size="sm"
-                />
-              </div>
-              <div class="com-setting-field-row">
-                <label class="com-setting-label">JOIN 유형</label>
-                <UiSelect
-                  v-model="draft.joinTy"
-                  :options="joinTyOptions"
-                  size="sm"
-                />
+              <div class="datamart-meta-rel-form-pair">
+                <div class="datamart-meta-rel-form-side">
+                  <div class="com-setting-field-row">
+                    <label class="com-setting-label">관계 유형</label>
+                    <UiSelect
+                      v-model="draft.cardinality"
+                      :options="cardinalityOptions"
+                      size="sm"
+                    />
+                  </div>
+                </div>
+                <div class="datamart-meta-rel-form-side">
+                  <div class="com-setting-field-row">
+                    <label class="com-setting-label">JOIN 유형</label>
+                    <UiSelect
+                      v-model="draft.joinType"
+                      :options="joinTypeOptions"
+                      size="sm"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
             <div class="com-setting-row datamart-meta-rel-form-row datamart-meta-rel-form-row-desc">
               <div class="com-setting-field-row is-top">
                 <label class="com-setting-label">관계 설명 (선택)</label>
                 <UiTextarea
-                  v-model="draft.descKo"
+                  v-model="draft.relDesc"
                   size="sm"
                   :rows="2"
                   :auto-resize="true"
                   :max-rows="5"
                   border
-                  placeholder="예: 주문에 연결된 결제 내역"
+                  placeholder="예: 합산방법 코드와 연결된 공통코드"
                 />
               </div>
             </div>
@@ -231,22 +258,26 @@ const sectionCollapsed = reactive({
 
 const activeTables = computed(() => props.tables.filter((t) => t.useYn === 'Y'))
 
-const tableOptions = computed(() =>
-  activeTables.value.map((t) => ({
+const tableOptions = computed(() => [
+  { label: '선택', value: '' },
+  ...activeTables.value.map((t) => ({
     label: `${t.physicalNm} · ${t.logicalNm}`,
     value: t.id,
   })),
-)
+])
 
 const columnOptionsForTableId = (tableId: string) => {
   const t = activeTables.value.find((row) => row.id === tableId)
   if (!t) return []
-  return t.columns.map((c) => ({ label: c.colPhyNm || c.colKorNm || c.colId, value: c.colId }))
+  return [
+    { label: '선택', value: '' },
+    ...t.columns.map((c) => ({ label: c.colPhyNm || c.colKorNm || c.colId, value: c.colId })),
+  ]
 }
 
-const srcColumnOptions = computed(() => columnOptionsForTableId(draft.srcTableId))
+const srcColumnOptions = computed(() => columnOptionsForTableId(draft.fromTblId))
 
-const tgtColumnOptions = computed(() => columnOptionsForTableId(draft.tgtTableId))
+const tgtColumnOptions = computed(() => columnOptionsForTableId(draft.toTblId))
 
 const cardinalityOptions: { label: string; value: DatamartMetaCardinality }[] = [
   { label: '1 : 1', value: '1:1' },
@@ -254,7 +285,7 @@ const cardinalityOptions: { label: string; value: DatamartMetaCardinality }[] = 
   { label: 'N : 1', value: 'N:1' },
 ]
 
-const joinTyOptions: { label: string; value: DatamartMetaJoinTy }[] = [
+const joinTypeOptions: { label: string; value: DatamartMetaJoinTy }[] = [
   { label: 'INNER JOIN', value: 'INNER' },
   { label: 'LEFT JOIN', value: 'LEFT' },
   { label: 'RIGHT JOIN', value: 'RIGHT' },
@@ -262,16 +293,16 @@ const joinTyOptions: { label: string; value: DatamartMetaJoinTy }[] = [
 ]
 
 const draft = reactive({
-  srcTableId: '',
-  srcColId: '',
-  tgtTableId: '',
-  tgtColId: '',
+  fromTblId: '',
+  fromColId: '',
+  toTblId: '',
+  toColId: '',
   cardinality: 'N:1' as DatamartMetaCardinality,
-  joinTy: 'INNER' as DatamartMetaJoinTy,
-  descKo: '',
+  joinType: 'INNER' as DatamartMetaJoinTy,
+  relDesc: '',
 })
 
-const joinTyLabel = (ty: DatamartMetaJoinTy) => {
+const joinTypeLabel = (ty: DatamartMetaJoinTy) => {
   const m: Record<DatamartMetaJoinTy, string> = {
     INNER: 'INNER JOIN',
     LEFT: 'LEFT JOIN',
@@ -281,37 +312,56 @@ const joinTyLabel = (ty: DatamartMetaJoinTy) => {
   return m[ty] ?? ty
 }
 
-const formatTableCol = (tableId: string, colName: string) => {
-  const phys = props.tables.find((t) => t.id === tableId)?.physicalNm ?? tableId
-  return `${phys}.${colName}`
+/** 테이블 ID + 컬럼 ID → physicalNm.colPhyNm (컬럼 미매칭 시 colId 그대로) */
+const formatTableCol = (tableId: string, colId: string) => {
+  const t = props.tables.find((row) => row.id === tableId)
+  const phys = t?.physicalNm ?? tableId
+  const col = t?.columns.find((c) => c.colId === colId)
+  const colNm = col?.colPhyNm || colId
+  return `${phys}.${colNm}`
 }
 
 const onAddRelationship = () => {
-  if (!draft.srcTableId || !draft.srcColId || !draft.tgtTableId || !draft.tgtColId) return
+  if (!draft.fromTblId || !draft.fromColId || !draft.toTblId || !draft.toColId) {
+    openToast({
+      message: '기준 테이블 및 컬럼, 대상 테이블 및 컬럼을 선택해주세요.',
+      type: 'warning',
+    })
+    return
+  }
 
-  const srcTable = props.tables.find((t) => t.id === draft.srcTableId && t.useYn === 'Y')
-  const tgtTable = props.tables.find((t) => t.id === draft.tgtTableId && t.useYn === 'Y')
-  const srcCol = srcTable?.columns.find((c) => c.colId === draft.srcColId)
-  const tgtCol = tgtTable?.columns.find((c) => c.colId === draft.tgtColId)
-  if (!srcTable || !tgtTable || !srcCol || !tgtCol) return
+  const fromTable = props.tables.find((t) => t.id === draft.fromTblId && t.useYn === 'Y')
+  const toTable = props.tables.find((t) => t.id === draft.toTblId && t.useYn === 'Y')
+  const fromCol = fromTable?.columns.find((c) => c.colId === draft.fromColId)
+  const toCol = toTable?.columns.find((c) => c.colId === draft.toColId)
+  if (!fromTable || !toTable || !fromCol || !toCol) return
+
+  const dmId = props.datamart?.datamartId?.trim() ?? ''
+  const now = new Date().toISOString()
+  const nextSortOrd = relationships.value.reduce((max, r) => Math.max(max, r.sortOrd), 0) + 1
 
   relationships.value = [
     ...relationships.value,
     {
-      id: `rel_${Date.now()}`,
-      srcTableId: draft.srcTableId,
-      srcColName: srcCol.colPhyNm,
-      tgtTableId: draft.tgtTableId,
-      tgtColName: tgtCol.colPhyNm,
+      datamartId: dmId,
+      relId: '',
+      fromTblId: draft.fromTblId,
+      fromColId: draft.fromColId,
+      toTblId: draft.toTblId,
+      toColId: draft.toColId,
       cardinality: draft.cardinality,
-      joinTy: draft.joinTy,
-      descKo: draft.descKo.trim(),
+      joinType: draft.joinType,
+      relDesc: draft.relDesc.trim(),
+      sortOrd: nextSortOrd,
+      useYn: 'Y',
+      createDt: now,
+      modifyDt: now,
     },
   ]
 }
 
-const onRemoveRelationship = (id: string) => {
-  relationships.value = relationships.value.filter((r) => r.id !== id)
+const onRemoveRelationship = (index: number) => {
+  relationships.value = relationships.value.filter((_, i) => i !== index)
 }
 </script>
 
@@ -399,7 +449,7 @@ const onRemoveRelationship = (id: string) => {
 
 .datamart-meta-rel-join-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 8px 10px;
   padding: 8px 10px;
@@ -407,36 +457,41 @@ const onRemoveRelationship = (id: string) => {
   border-radius: $border-radius-base;
   background: #fff;
   box-sizing: border-box;
+  min-width: 0;
+  overflow-x: auto;
+  @include custom-scrollbar;
 }
 
 .datamart-meta-rel-join-mapping {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 3fr);
+  /* 기준/대상 각각 table.col 표시 — 최소 너비 확보, 비율은 1 : 1.2 정도로 완만하게 */
+  grid-template-columns: minmax(12rem, 1.15fr) auto minmax(14rem, 1.35fr);
   align-items: center;
-  flex: 1 1 200px;
-  min-width: 0;
+  flex: 1 1 420px;
+  min-width: min(100%, 360px);
   column-gap: 0;
 }
 
 .datamart-meta-rel-join-src {
   min-width: 0;
   text-align: left;
-  padding-right: $spacing-2xl;
+  padding-right: $spacing-xl;
 }
 
 .datamart-meta-rel-join-tgt {
   min-width: 0;
   text-align: left;
-  padding-left: $spacing-2xl * 2;
+  padding-left: $spacing-2xl;
 }
 
 .datamart-meta-rel-join-ident {
-  display: inline-block;
+  display: block;
   max-width: 100%;
   font-size: $font-size-sm;
   font-weight: $font-weight-semibold;
   color: $color-text-dark;
-  word-break: break-all;
+  overflow-wrap: break-word;
+  word-break: normal;
   text-align: inherit;
 }
 
@@ -462,12 +517,43 @@ const onRemoveRelationship = (id: string) => {
   color: $color-text-secondary;
 }
 
+.datamart-meta-rel-join-desc-tip {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  align-self: center;
+  line-height: 0;
+}
+
 .datamart-meta-rel-join-actions {
   display: flex;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
   margin-left: auto;
+}
+
+.datamart-meta-rel-join-info-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: $color-text-secondary;
+  cursor: pointer;
+  border-radius: $border-radius-sm;
+  line-height: 0;
+
+  &:hover,
+  &:focus-visible {
+    color: $color-text-primary;
+    outline: none;
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px rgba($color-primary, 0.35);
+  }
 }
 
 .datamart-meta-rel-editor-toolbar {
@@ -556,16 +642,32 @@ const onRemoveRelationship = (id: string) => {
     min-width: 0;
   }
 
-  > .datamart-meta-rel-form-side {
+  > .datamart-meta-rel-form-pair {
     display: flex;
-    flex: 1 1 0;
-    flex-direction: column;
+    flex: 1 1 100%;
+    align-items: stretch;
     gap: 8px;
     min-width: 0;
+    width: 100%;
   }
 
   @media (max-width: 720px) {
     flex-direction: column;
+  }
+}
+
+.datamart-meta-rel-form-pair > .datamart-meta-rel-form-side {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .datamart-meta-rel-form-pair {
+    flex-direction: column;
+    gap: 8px;
   }
 }
 
@@ -576,5 +678,14 @@ const onRemoveRelationship = (id: string) => {
     flex: 1 1 100%;
     width: 100%;
   }
+}
+</style>
+
+<style lang="scss">
+/* Radix 포탈(body) — content-class만 타깃 */
+.ui-tooltip-content.datamart-meta-rel-desc-tooltip {
+  max-width: 320px;
+  text-align: left;
+  white-space: pre-wrap;
 }
 </style>
