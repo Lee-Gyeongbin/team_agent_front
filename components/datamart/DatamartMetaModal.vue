@@ -99,6 +99,7 @@ const {
   handleSaveMetaTableSelection,
   handleSaveMetaColumnSelection,
   handleSaveMetaRelationship,
+  handleSaveMetaCodeMapping,
 } = useDatamartStore()
 
 const activeTab = defineModel<string>('activeTab', { default: 'table' })
@@ -135,6 +136,10 @@ const onSave = async () => {
   } else if (activeTab.value === 'relation') {
     const datamartId = props.datamart?.datamartId ?? ''
     await handleSaveMetaRelationship(datamartId, metaModalRelationships.value)
+    return
+  } else if (activeTab.value === 'code') {
+    const datamartId = props.datamart?.datamartId ?? ''
+    await handleSaveMetaCodeMapping(datamartId, metaModalCodeMappings.value)
     return
   }
 
