@@ -382,6 +382,46 @@
   &:hover {
     background: #f8fafc;
   }
+
+  &.is-doc-unavailable {
+    cursor: not-allowed;
+
+    &:hover {
+      background: transparent;
+    }
+
+    .doc-dataset-source-doc-file-name {
+      color: #ef4444;
+      text-decoration: line-through;
+    }
+
+    .doc-dataset-source-doc-file-size {
+      color: #fca5a5;
+    }
+
+    .ui-checkbox-box {
+      border-color: #fecaca;
+      background: #fef2f2;
+    }
+
+    .is-checked .ui-checkbox-box {
+      background: #fecaca;
+      border-color: #fecaca;
+    }
+
+    &.is-doc-unavailable--can-deselect {
+      cursor: pointer;
+
+      &:hover {
+        background: #f8fafc;
+      }
+
+      .is-checked .ui-checkbox-box {
+        background: var(--color-primary);
+        border-color: var(--color-primary);
+      }
+    }
+  }
 }
 
 .doc-dataset-source-doc-file-name {
