@@ -71,16 +71,22 @@ export interface DatamartMetaRelationship {
 
 /** 메타 관리 > 코드값 매핑 탭 — 코드 한 줄 */
 export interface DatamartMetaCodeValueRow {
-  id: string
-  codeValue: string
-  labelKo: string
+  datamartId: string
+  tblId: string
+  colId: string
+  codeVal: string
+  codeKorNm: string
+  codeDesc: string
+  sortOrd: number
+  useYn: 'Y' | 'N'
+  createDt: string
+  modifyDt: string
 }
 
 /** 메타 관리 > 코드값 매핑 탭 — 코드성 컬럼별 매핑 묶음 */
 export interface DatamartMetaCodeColumnMapping {
-  id: string
-  tableId: string
-  columnId: string
+  tblId: string
+  colId: string
   entries: DatamartMetaCodeValueRow[]
 }
 
