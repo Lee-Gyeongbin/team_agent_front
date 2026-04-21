@@ -34,7 +34,7 @@ export const useDashboardApi = () => {
     return post<{ dataList: DashboardTokenUsage[] }>('/dashboard/token-usage.do', { ym: params.ym })
   }
 
-  /** 사용자 추이 (기간 조건 필요 시 POST body 객체로 별도 메서드 추가) */
+  /** 사용자 추이 */
   const fetchDashboardVisitorTrend = async (): Promise<{ dataList: DashboardVisitorTrend[] }> => {
     return get<{ dataList: DashboardVisitorTrend[] }>('/dashboard/visitor-trend.do')
   }

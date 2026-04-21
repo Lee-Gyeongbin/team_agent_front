@@ -170,7 +170,7 @@ const handleSelectDashboardVisitorTrend = async () => {
   }
 }
 
-/** 사용자 관심 카테고리 */
+/** 사용자 관심 카테고리 (keyword -> category 수정) */
 const handleSelectDashboardCategoryTrend = async (dayCnt: number) => {
   categoryTrendLoading.value = true
   try {
