@@ -32,7 +32,6 @@
 
     <template v-else>
       <div class="datamart-meta-table-select-header">
-        <h3 class="datamart-meta-table-select-title">사용할 테이블 선택</h3>
         <p class="datamart-meta-table-select-desc">
           AI에게 노출할 테이블만 선택하세요. 전체 {{ totalTableCount }}개 중 필요한 테이블만 포함하면 쿼리 정확도가
           높아집니다.
@@ -46,15 +45,7 @@
           placeholder="테이블명을 입력하세요"
           size="sm"
           class="datamart-meta-table-select-search"
-          @enter="onSearch"
         />
-        <UiButton
-          variant="line-secondary"
-          size="sm"
-          @click="onSearch"
-        >
-          검색
-        </UiButton>
         <UiButton
           variant="line-secondary"
           size="sm"
@@ -82,52 +73,59 @@
         </UiButton>
       </div>
 
-      <!-- 검색 결과 없음 -->
-      <UiEmpty
-        v-if="filteredTables.length === 0"
-        icon="icon-search"
-        title="검색 결과가 없습니다."
-        description="다른 검색어로 시도해 보세요."
-      />
+      <div class="datamart-meta-table-select-list-wrap">
+        <div class="datamart-meta-table-select-summary-bar">
+          <label class="datamart-meta-table-select-active-only">
+            <UiToggle v-model="showActiveOnly" />
+            <span class="datamart-meta-table-select-active-only-label">활성 목록만 보기</span>
+          </label>
+          <span class="datamart-meta-table-select-summary">
+            <span class="datamart-meta-table-select-summary-active">{{ activeCount }}개 활성</span>
+            / {{ totalTableCount }}개 전체
+          </span>
+        </div>
 
-      <!-- 테이블 목록 (Agent 설정 > 데이터 연결 카드와 동일 패턴: agent-data-card + UiToggle) -->
-      <div
-        v-else
-        class="datamart-meta-table-select-scroll"
-        role="list"
-        aria-label="테이블 목록"
-      >
-        <div class="agent-setting-data-list">
-          <div
-            v-for="row in filteredTables"
-            :key="row.id"
-            class="agent-data-card"
-            :class="{ 'is-connected': isUseY(row) }"
-          >
-            <div class="agent-data-card-info">
-              <div class="agent-data-card-title">{{ row.physicalNm }}</div>
-              <p class="agent-data-card-desc">{{ row.logicalNm }}</p>
-              <div class="agent-data-card-meta">
-                <span class="agent-data-card-meta-item">
-                  <i class="icon-database size-12" />
-                  컬럼 <strong>{{ row.colCnt }}개</strong>
-                </span>
+        <!-- 검색 결과 없음 -->
+        <UiEmpty
+          v-if="visibleTables.length === 0"
+          icon="icon-search"
+          :title="emptyStateTitle"
+          :description="emptyStateDescription"
+        />
+
+        <!-- 테이블 목록 (Agent 설정 > 데이터 연결 카드와 동일 패턴: agent-data-card + UiToggle) -->
+        <div
+          v-else
+          class="datamart-meta-table-select-scroll"
+          role="list"
+          aria-label="테이블 목록"
+        >
+          <div class="agent-setting-data-list">
+            <div
+              v-for="row in visibleTables"
+              :key="row.id"
+              class="agent-data-card"
+              :class="{ 'is-connected': isUseY(row) }"
+            >
+              <div class="agent-data-card-info">
+                <div class="agent-data-card-title">{{ row.physicalNm }}</div>
+                <p class="agent-data-card-desc">{{ row.logicalNm }}</p>
+                <div class="agent-data-card-meta">
+                  <span class="agent-data-card-meta-item">
+                    <i class="icon-database size-12" />
+                    컬럼 <strong>{{ row.colCnt }}개</strong>
+                  </span>
+                </div>
               </div>
-            </div>
-            <div class="agent-data-card-actions">
-              <UiToggle
-                :model-value="isUseY(row)"
-                @update:model-value="(v: boolean) => onToggleUseYn(row.id, v)"
-              />
+              <div class="agent-data-card-actions">
+                <UiToggle
+                  :model-value="isUseY(row)"
+                  @update:model-value="(v: boolean) => onToggleUseYn(row.id, v)"
+                />
+              </div>
             </div>
           </div>
         </div>
-      </div>
-
-      <div class="datamart-meta-table-select-footer">
-        <span class="datamart-meta-table-select-summary">
-          {{ activeCount }}개 활성 / {{ totalTableCount }}개 전체
-        </span>
       </div>
     </template>
   </div>
@@ -142,10 +140,12 @@ const props = withDefaults(
     datamart: Datamart | null
     /** 테이블 선택·컬럼 메타 탭 공유 목록 (useYn 토글 시 emit) */
     tables: DatamartMetaTableItem[]
+    isOpen?: boolean
     isLoading?: boolean
     errorMessage?: string | null
   }>(),
   {
+    isOpen: false,
     isLoading: false,
     errorMessage: null,
   },
@@ -164,15 +164,27 @@ const totalTableCount = computed(() => {
   return props.tables.length > 0 ? props.tables.length : 409
 })
 
-/** 입력값 — 검색 버튼 또는 Enter 시 appliedQuery 로 반영 */
 const searchInput = ref('')
-/** 실제 필터에 사용되는 검색어 */
-const appliedQuery = ref('')
+const showActiveOnly = ref(false)
+
+watch(
+  () => props.isOpen,
+  (open) => {
+    if (!open) return
+    searchInput.value = ''
+    showActiveOnly.value = false
+  },
+)
 
 const filteredTables = computed(() => {
-  const q = appliedQuery.value.trim().toLowerCase()
+  const q = searchInput.value.trim().toLowerCase()
   if (!q) return props.tables
   return props.tables.filter((t) => t.physicalNm.toLowerCase().includes(q) || t.logicalNm.toLowerCase().includes(q))
+})
+
+const visibleTables = computed(() => {
+  if (!showActiveOnly.value) return filteredTables.value
+  return filteredTables.value.filter((row) => row.useYn === 'Y')
 })
 
 const isUseY = (row: DatamartMetaTableItem) => row.useYn === 'Y'
@@ -184,11 +196,17 @@ const isFilteredAllActive = computed(() => {
   return rows.every((row) => row.useYn === 'Y')
 })
 
-const onSearch = () => {
-  appliedQuery.value = searchInput.value.trim()
-}
-
 const activeCount = computed(() => props.tables.filter((t) => t.useYn === 'Y').length)
+
+const emptyStateTitle = computed(() => {
+  if (showActiveOnly.value) return '활성화된 테이블이 없습니다.'
+  return '검색 결과가 없습니다.'
+})
+
+const emptyStateDescription = computed(() => {
+  if (showActiveOnly.value) return '활성 목록만 보기 해제 후 전체 목록을 확인해 보세요.'
+  return '다른 검색어로 시도해 보세요.'
+})
 
 const onToggleUseYn = (id: string, value: boolean) => {
   emit('set-table-use-yn', { id, useYn: value ? 'Y' : 'N' })
@@ -232,10 +250,6 @@ const onToggleActivateAllFiltered = () => {
   text-align: center;
 }
 
-.datamart-meta-table-select-header {
-  margin-bottom: $spacing-md;
-}
-
 .datamart-meta-table-select-title {
   margin: 0 0 6px;
   font-size: $font-size-lg;
@@ -244,7 +258,7 @@ const onToggleActivateAllFiltered = () => {
 }
 
 .datamart-meta-table-select-desc {
-  margin: 0;
+  margin: $spacing-xs 0 0;
   font-size: $font-size-sm;
   line-height: 1.5;
   color: $color-text-secondary;
@@ -255,7 +269,6 @@ const onToggleActivateAllFiltered = () => {
   align-items: center;
   gap: $spacing-sm;
   width: 100%;
-  margin-bottom: $spacing-md;
 }
 
 .datamart-meta-table-select-search {
@@ -302,14 +315,42 @@ const onToggleActivateAllFiltered = () => {
   @include custom-scrollbar;
 }
 
-.datamart-meta-table-select-footer {
-  margin-top: $spacing-md;
-  padding-top: $spacing-md;
-  border-top: 1px solid $color-border;
+.datamart-meta-table-select-list-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  padding: 10px;
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+}
+
+.datamart-meta-table-select-summary-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+}
+
+.datamart-meta-table-select-active-only {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.datamart-meta-table-select-active-only-label {
+  @include typo($body-small);
+  color: $color-text-secondary;
 }
 
 .datamart-meta-table-select-summary {
   font-size: $font-size-sm;
   color: $color-text-secondary;
+}
+
+.datamart-meta-table-select-summary-active {
+  font-weight: $font-weight-semibold;
+  color: $color-primary;
 }
 </style>

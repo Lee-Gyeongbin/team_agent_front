@@ -103,6 +103,15 @@
         </div>
 
         <template v-else>
+          <div class="file-filter-bar flex items-center justify-end">
+            <label class="batch-deleted-toggle flex items-center gap-1">
+              <UiCheckbox
+                :model-value="isShowDeletedFiles"
+                @update:model-value="onToggleDeletedFiles"
+              />
+              <span>삭제된 파일 보기</span>
+            </label>
+          </div>
           <UiLoading
             v-if="fileLibraryLoading"
             text="불러오는 중..."
@@ -153,11 +162,17 @@
                       :content="String(row.fileName ?? '')"
                       content-class="repository-doc-title-tooltip"
                     >
-                      <span class="doc-name">{{ row.fileName }}</span>
+                      <span
+                        class="doc-name"
+                        :class="{ 'doc-name-deleted': isShowDeletedFiles }"
+                      >
+                        {{ row.fileName }}
+                      </span>
                     </UiTooltip>
                     <span
                       v-else
                       class="doc-name"
+                      :class="{ 'doc-name-deleted': isShowDeletedFiles }"
                     >
                       {{ row.fileName }}
                     </span>
@@ -187,6 +202,23 @@
                 </template>
                 <template #cell-categoryName="{ value }">
                   <span class="repository-file-type">{{ String(value ?? '-').trim() || '-' }}</span>
+                </template>
+                <template #cell-ragUse="{ row }">
+                  <UiTooltip
+                    v-if="String(row.dsNm ?? '').trim()"
+                    font-size="11px"
+                    side="bottom"
+                    align="center"
+                    :content="String(row.dsNm ?? '')"
+                  >
+                    <span class="repository-rag-use">{{ Number(row.activeDsCnt ?? 0) }}개 사용</span>
+                  </UiTooltip>
+                  <span
+                    v-else
+                    class="repository-rag-use"
+                  >
+                    {{ Number(row.activeDsCnt ?? 0) }}개 사용
+                  </span>
                 </template>
                 <template #cell-select="{ row }">
                   <div
@@ -267,6 +299,7 @@ const {
   fileTotalCount,
   fileCurrentPage,
   filePageSize,
+  fileUseYn,
   fileLibraryLoading,
   fileLibraryError,
   handleSelectFileLibraryList,
@@ -274,6 +307,7 @@ const {
   handleSaveFileLibraryBatch,
   handleUpdateFileLibrary,
   handleDeleteFileLibraryBatch,
+  handleDeleteFileLibraryPermanentBatch,
   handleOpenFileLibraryPreview,
   handleDownloadFileLibraryRow,
   isFilePreviewOpen,
@@ -325,11 +359,11 @@ const fileAccept = '.txt,.pptx,.pdf,.docx,.hwp'
 const fileTableColumns: TableColumn[] = [
   { key: 'select', label: '', width: '48px', align: 'center', headerAlign: 'center' },
   { key: 'fileName', label: '파일명', width: 'auto', align: 'left', headerAlign: 'center' },
-  { key: 'dsNm', label: '데이터셋명', width: 'auto', align: 'left', headerAlign: 'center' },
   { key: 'fileSize', label: '크기', width: '100px', align: 'center', headerAlign: 'center' },
-  { key: 'fileType', label: '형식', width: '100px', align: 'center', headerAlign: 'center' },
+  { key: 'fileType', label: '형식', width: '80px', align: 'center', headerAlign: 'center' },
   { key: 'categoryName', label: '카테고리', width: '220px', align: 'left', headerAlign: 'center' },
   { key: 'createDt', label: '등록일', width: '120px', align: 'center', headerAlign: 'center' },
+  { key: 'ragUse', label: 'RAG사용', width: '90px', align: 'center', headerAlign: 'center' },
 ]
 
 const categoryOptions = computed(() => {
@@ -352,6 +386,15 @@ const filePageModel = computed({
     void handleSelectFileLibraryList()
   },
 })
+
+const isShowDeletedFiles = computed(() => fileUseYn.value === 'N')
+
+const onToggleDeletedFiles = (checked: boolean) => {
+  fileUseYn.value = checked ? 'N' : 'Y'
+  fileCurrentPage.value = 1
+  selectedFileIds.value = []
+  void handleSelectFileLibraryList()
+}
 
 watch([fileCurrentPage, fileSearchKeyword], () => {
   selectedFileIds.value = []
@@ -485,6 +528,43 @@ const onFileNameDownload = async (row: Record<string, unknown>) => {
 
 const onBatchDelete = async () => {
   if (selectedFileIds.value.length === 0) return
+  if (isShowDeletedFiles.value) {
+    const selectedIdSet = new Set(selectedFileIds.value)
+    const hasRagUsedRow = fileLibraryList.value.some((row) => {
+      const rowId = String((row as FileLibraryItem).docFileId ?? '').trim()
+      if (!selectedIdSet.has(rowId)) return false
+      return Number((row as FileLibraryItem).activeDsCnt ?? 0) > 0
+    })
+    if (hasRagUsedRow) {
+      await openAlert({
+        title: '파일 삭제',
+        message: '사용하고 있는 데이터셋이 있어 삭제할 수 없습니다.',
+      })
+      return
+    }
+    const confirmed = await openConfirm({
+      title: '파일 완전 삭제',
+      message: `선택한 ${selectedFileIds.value.length}개 파일을 완전 삭제하시겠습니까?`,
+    })
+    if (!confirmed) return
+    const deleted = await handleDeleteFileLibraryPermanentBatch([...selectedFileIds.value])
+    if (deleted) selectedFileIds.value = []
+    return
+  }
+  const selectedIdSet = new Set(selectedFileIds.value)
+  const hasDatasetLinkedRow = fileLibraryList.value.some((row) => {
+    const rowId = String((row as FileLibraryItem).docFileId ?? '').trim()
+    if (!selectedIdSet.has(rowId)) return false
+    return String((row as FileLibraryItem).dsNm ?? '').trim().length > 0
+  })
+  const confirmMessage = hasDatasetLinkedRow
+    ? '기존에 이 파일로 데이터셋이 구축되어 있습니다.\n첨부파일을 삭제 처리하면 데이터셋 재구축이 필요합니다.\n계속하시겠습니까?'
+    : `선택한 ${selectedFileIds.value.length}개 파일을 삭제하시겠습니까?`
+  const confirmed = await openConfirm({
+    title: '파일 삭제',
+    message: confirmMessage,
+  })
+  if (!confirmed) return
   await handleDeleteFileLibraryBatch([...selectedFileIds.value])
   selectedFileIds.value = []
 }
@@ -505,11 +585,22 @@ onMounted(async () => {
   word-break: break-all;
 }
 
+.doc-name-deleted {
+  color: var(--color-danger, #c62828);
+}
+
 .repository-file-type {
   display: block;
   width: 100%;
   min-width: 0;
   @include ellipsis(1);
+}
+
+.repository-rag-use {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
 }
 
 .cell-select-stop {
@@ -525,5 +616,17 @@ onMounted(async () => {
 .repository-file-error {
   border: 1px dashed var(--color-border-subtle, rgba(0, 0, 0, 0.12));
   border-radius: $border-radius-base;
+}
+
+.file-filter-bar {
+  margin-bottom: 8px;
+}
+
+.batch-deleted-toggle {
+  padding: 2px 0;
+  color: var(--color-text-tertiary, #666);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
 }
 </style>

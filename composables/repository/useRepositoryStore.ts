@@ -1,6 +1,6 @@
 import { useRepositoryApi } from '~/composables/repository/useRepositoryApi'
 import type { CodeItem } from '~/types/codes'
-import type { FileLibraryItem, UrlItem } from '~/types/repository'
+import type { FileLibraryItem, FileLibrarySavePayload, UrlItem } from '~/types/repository'
 const { handleUploadByPresignedUrl, onDownloadFile } = useFileStore()
 const {
   fetchUrlList,
@@ -9,8 +9,9 @@ const {
   fetchToggleUrlStatus,
   fetchSaveDocumentFile,
   fetchSelectDocFileLibraryList,
-  fetchSaveFileLibrary,
+  fetchSaveFileLibraryBatch,
   fetchUpdateFileLibrary,
+  fetchSaveUseYnN,
   fetchDeleteFileLibrary,
 } = useRepositoryApi()
 const isLoading = ref(false)
@@ -24,6 +25,7 @@ const fileLibraryList = ref<FileLibraryItem[]>([])
 const fileTotalCount = ref(0)
 const fileCurrentPage = ref(1)
 const filePageSize = ref(10)
+const fileUseYn = ref<'Y' | 'N'>('Y')
 const fileLibraryLoading = ref(false)
 const fileLibraryError = ref('')
 
@@ -44,6 +46,7 @@ const handleSelectFileLibraryList = async () => {
     const res = await fetchSelectDocFileLibraryList({
       categoryId: fileSelectedCategoryId.value || undefined,
       findContent: fileSearchKeyword.value || undefined,
+      useYn: fileUseYn.value,
       page: fileCurrentPage.value,
       pageSize: filePageSize.value,
     })
@@ -73,7 +76,7 @@ const buildRepositoryStoreFilePath = (originalName: string, categoryId: string):
   return `repository/${safeCategoryId}/${safeOriginalName}`
 }
 
-/** presign → 스토리지 PUT → 저장소 메타 저장 (로딩·토스트 없음) */
+/** presign → 스토리지 PUT → 저장소 메타 준비 (로딩·토스트 없음) */
 const performFileLibraryUpload = async (
   file: File,
   metadata?: {
@@ -83,7 +86,7 @@ const performFileLibraryUpload = async (
     keywords?: string
     docSrc?: string
   },
-): Promise<{ ok: true } | { ok: false; message: string }> => {
+): Promise<{ ok: true; payload: FileLibrarySavePayload } | { ok: false; message: string }> => {
   const categoryId = String(metadata?.categoryId ?? '').trim()
   if (!categoryId) {
     return { ok: false, message: '카테고리를 선택해 주세요.' }
@@ -104,7 +107,7 @@ const performFileLibraryUpload = async (
   if (!uploaded) {
     return { ok: false, message: '파일 업로드에 실패했습니다.' }
   }
-  const res = await fetchSaveFileLibrary({
+  const payload: FileLibrarySavePayload = {
     fileName: file.name,
     filePath,
     fileSize: String(file.size),
@@ -114,31 +117,8 @@ const performFileLibraryUpload = async (
     docDesc: String(metadata?.docDesc ?? ''),
     keywords: String(metadata?.keywords ?? ''),
     docSrc: String(metadata?.docSrc ?? ''),
-  })
-  if (res.successYn) {
-    return { ok: true }
   }
-  return { ok: false, message: res.returnMsg ?? '파일 정보 저장에 실패했습니다.' }
-}
-
-const handleSaveFileLibrary = async (
-  file: File,
-  metadata?: { categoryId: string; secLvl?: string; docDesc?: string; keywords?: string; docSrc?: string },
-) => {
-  openLoading({ text: '파일을 업로드하는 중...' })
-  try {
-    const result = await performFileLibraryUpload(file, metadata)
-    if (result.ok) {
-      openToast({ message: '파일이 등록되었습니다.', type: 'success' })
-      await handleSelectFileLibraryList()
-    } else {
-      openToast({ message: result.message, type: 'error' })
-    }
-  } catch {
-    openToast({ message: '파일 등록에 실패했습니다.', type: 'error' })
-  } finally {
-    closeLoading()
-  }
+  return { ok: true, payload }
 }
 
 /** 모달 등에서 선택한 여러 파일을 순차 업로드 (로딩·목록 갱신·요약 토스트 1회) */
@@ -153,13 +133,28 @@ const handleSaveFileLibraryBatch = async (
   openLoading({ text: '파일을 업로드하는 중...' })
   let success = 0
   let firstFailMessage: string | null = null
+  const uploadedPayloadList: FileLibrarySavePayload[] = []
   try {
     for (const file of files) {
       const result = await performFileLibraryUpload(file, metadata)
       if (result.ok) {
-        success++
+        uploadedPayloadList.push(result.payload)
       } else if (!firstFailMessage) {
         firstFailMessage = result.message
+      }
+    }
+    if (uploadedPayloadList.length > 0) {
+      const saveRes = await fetchSaveFileLibraryBatch(uploadedPayloadList)
+      if (saveRes.successYn) {
+        const successCnt = Number(saveRes.successCnt ?? uploadedPayloadList.length)
+        success = Number.isFinite(successCnt)
+          ? Math.max(0, Math.min(uploadedPayloadList.length, Math.trunc(successCnt)))
+          : uploadedPayloadList.length
+        if (success < uploadedPayloadList.length && !firstFailMessage) {
+          firstFailMessage = saveRes.returnMsg ?? '일부 파일 정보 저장에 실패했습니다.'
+        }
+      } else if (!firstFailMessage) {
+        firstFailMessage = saveRes.returnMsg ?? '파일 정보 저장에 실패했습니다.'
       }
     }
     if (success === files.length) {
@@ -180,53 +175,49 @@ const handleSaveFileLibraryBatch = async (
   }
 }
 
-const handleDeleteFileLibraryRow = async (docFileId: string) => {
-  const ok = await openConfirm({
-    title: '파일 삭제',
-    message: '이 파일을 삭제하시겠습니까? 저장소에서도 함께 삭제됩니다.',
-  })
-  if (!ok) return
-  openLoading({ text: '삭제하는 중...' })
-  try {
-    const res = await fetchDeleteFileLibrary(docFileId)
-    if (res.successYn) {
-      openToast({ message: '삭제되었습니다.', type: 'success' })
-      await handleSelectFileLibraryList()
-    } else {
-      openToast({ message: res.returnMsg ?? '삭제에 실패했습니다.', type: 'error' })
-    }
-  } finally {
-    closeLoading()
-  }
-}
-
-/** 파일 관리 탭: 선택한 여러 파일 삭제 (확인 1회) */
+/** 파일 관리 탭: 선택한 여러 파일 삭제 처리 (USE_YN='N') */
 const handleDeleteFileLibraryBatch = async (docFileIds: string[]) => {
   const ids = docFileIds.map((id) => id.trim()).filter(Boolean)
   if (ids.length === 0) {
     openToast({ message: '삭제할 파일을 선택해 주세요.', type: 'warning' })
     return
   }
-  const ok = await openConfirm({
-    title: '파일 삭제',
-    message: `선택한 ${ids.length}개 파일을 삭제하시겠습니까? 저장소에서도 함께 삭제됩니다.`,
-  })
-  if (!ok) return
-  openLoading({ text: '삭제하는 중...' })
-  let success = 0
-  let lastErr: string | null = null
+  openLoading({ text: '삭제 처리하는 중...' })
   try {
-    const res = await fetchDeleteFileLibrary(ids[0], ids)
+    const res = await fetchSaveUseYnN(ids)
     if (res.successYn) {
-      success = ids.length
-      openToast({ message: `${success}개 파일이 삭제되었습니다.`, type: 'success' })
+      openToast({ message: `${ids.length}개 파일이 삭제 처리되었습니다.`, type: 'success' })
     } else {
-      lastErr = res.returnMsg ?? '삭제에 실패했습니다.'
-      openToast({ message: lastErr, type: 'error' })
+      openToast({ message: res.returnMsg ?? '삭제 처리에 실패했습니다.', type: 'error' })
     }
     await handleSelectFileLibraryList()
   } catch {
-    openToast({ message: '삭제에 실패했습니다.', type: 'error' })
+    openToast({ message: '삭제 처리에 실패했습니다.', type: 'error' })
+  } finally {
+    closeLoading()
+  }
+}
+
+/** 파일 관리 탭: 삭제된 파일(USE_YN='N') 완전 삭제 */
+const handleDeleteFileLibraryPermanentBatch = async (docFileIds: string[]) => {
+  const ids = docFileIds.map((id) => id.trim()).filter(Boolean)
+  if (ids.length === 0) {
+    openToast({ message: '삭제할 파일을 선택해 주세요.', type: 'warning' })
+    return false
+  }
+  openLoading({ text: '파일을 완전 삭제하는 중...' })
+  try {
+    const res = await fetchDeleteFileLibrary(ids)
+    if (res.successYn) {
+      openToast({ message: `${ids.length}개 파일이 완전 삭제되었습니다.`, type: 'success' })
+      await handleSelectFileLibraryList()
+      return true
+    }
+    openToast({ message: res.returnMsg ?? '파일 완전 삭제에 실패했습니다.', type: 'error' })
+    return false
+  } catch {
+    openToast({ message: '파일 완전 삭제에 실패했습니다.', type: 'error' })
+    return false
   } finally {
     closeLoading()
   }
@@ -434,14 +425,14 @@ export const useRepositoryStore = () => {
     fileTotalCount,
     fileCurrentPage,
     filePageSize,
+    fileUseYn,
     fileLibraryLoading,
     fileLibraryError,
     handleSelectFileLibraryList,
     onFileSearch,
-    handleSaveFileLibrary,
     handleSaveFileLibraryBatch,
-    handleDeleteFileLibraryRow,
     handleDeleteFileLibraryBatch,
+    handleDeleteFileLibraryPermanentBatch,
     handleUpdateFileLibrary,
   }
 }

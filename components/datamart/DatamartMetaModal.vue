@@ -16,39 +16,34 @@
       </div>
 
       <div class="datamart-meta-modal-body">
-        <!-- 탭별 본문: key로 교체 시 AOS가 새 요소로 인식해 fade-up 재생 (pages/prompt/index.vue 동일) -->
-        <div
-          :key="activeTab"
-          class="datamart-meta-tab-panel"
-          data-aos="fade-up"
-        >
+        <div class="datamart-meta-tab-panel">
           <DatamartMetaTableSelectTab
             v-if="activeTab === 'table'"
+            :is-open="isOpen"
             :datamart="datamart"
-            :tables="metaTables"
-            :is-loading="isTableListLoading"
-            :error-message="tableListErrorMessage"
+            :tables="metaModalTables"
+            :error-message="metaModalTableListError"
             @retry="onRetryTableList"
-            @set-table-use-yn="onSetTableUseYn"
+            @set-table-use-yn="setDatamartMetaModalTableUseYn"
           />
           <DatamartMetaColumnMetadataTab
             v-else-if="activeTab === 'column'"
-            v-model:selected-table-id="selectedColumnMetaTableId"
+            v-model:selected-table-id="metaModalSelectedColumnTableId"
             :datamart="datamart"
-            :tables="metaTables"
+            :tables="metaModalTables"
           />
           <DatamartMetaRelationshipTab
             v-else-if="activeTab === 'relation'"
-            v-model:relationships="metaRelationships"
+            v-model:relationships="metaModalRelationships"
             :datamart="datamart"
-            :tables="metaTables"
+            :tables="metaModalTables"
           />
           <DatamartMetaCodeMappingTab
             v-else-if="activeTab === 'code'"
-            v-model:code-mappings="metaCodeMappings"
+            v-model:code-mappings="metaModalCodeMappings"
             :datamart="datamart"
-            :tables="metaTables"
-            :relationships="metaRelationships"
+            :tables="metaModalTables"
+            :relationships="metaModalRelationships"
           />
         </div>
       </div>
@@ -77,64 +72,50 @@
 
 <script setup lang="ts">
 import type { Datamart } from '~/types/datamart'
-import type {
-  DatamartMetaCodeColumnMapping,
-  DatamartMetaRelationship,
-  DatamartMetaTableItem,
-} from '~/types/datamartMeta'
 import DatamartMetaTableSelectTab from '~/components/datamart/DatamartMetaTableSelectTab.vue'
 import DatamartMetaColumnMetadataTab from '~/components/datamart/DatamartMetaColumnMetadataTab.vue'
 import DatamartMetaRelationshipTab from '~/components/datamart/DatamartMetaRelationshipTab.vue'
 import DatamartMetaCodeMappingTab from '~/components/datamart/DatamartMetaCodeMappingTab.vue'
-import {
-  createDatamartMetaCodeMappingsSeed,
-  createDatamartMetaRelationshipsSeed,
-  createDatamartMetaTablesSeed,
-} from '~/utils/datamart/datamartMetaSeed'
+import { useDatamartStore } from '~/composables/datamart/useDatamartStore'
 
-withDefaults(
-  defineProps<{
-    isOpen: boolean
-    datamart: Datamart | null
-    /** 테이블 목록 API 연동 시 로딩 표시 */
-    isTableListLoading?: boolean
-    /** 테이블 목록 조회 실패 시 메시지 */
-    tableListErrorMessage?: string | null
-  }>(),
-  {
-    isTableListLoading: false,
-    tableListErrorMessage: null,
-  },
-)
-
-const emit = defineEmits<{
-  close: []
-  'retry-table-list': []
+const props = defineProps<{
+  isOpen: boolean
+  datamart: Datamart | null
 }>()
+
+defineEmits<{
+  close: []
+}>()
+
+const {
+  metaModalTables,
+  metaModalRelationships,
+  metaModalTableListError,
+  metaModalSelectedColumnTableId,
+  metaModalCodeMappings,
+  resetDatamartMetaModal,
+  hydrateDatamartMetaModal,
+  setDatamartMetaModalTableUseYn,
+  handleSaveMetaTableSelection,
+  handleSaveMetaColumnSelection,
+  handleSaveMetaRelationship,
+  handleSaveMetaCodeMapping,
+} = useDatamartStore()
 
 const activeTab = defineModel<string>('activeTab', { default: 'table' })
 
-/** 테이블 선택·컬럼 메타데이터 탭 공유 상태 */
-const metaTables = ref<DatamartMetaTableItem[]>(createDatamartMetaTablesSeed())
-
-const selectedColumnMetaTableId = ref(metaTables.value.find((t) => t.useYn === 'Y')?.id ?? '')
-
-const metaRelationships = ref<DatamartMetaRelationship[]>(createDatamartMetaRelationshipsSeed())
-
-const metaCodeMappings = ref<DatamartMetaCodeColumnMapping[]>(createDatamartMetaCodeMappingsSeed())
-
-const onSetTableUseYn = (payload: { id: string; useYn: 'Y' | 'N' }) => {
-  const row = metaTables.value.find((t) => t.id === payload.id)
-  if (!row || row.useYn === payload.useYn) return
-  row.useYn = payload.useYn
-  if (payload.useYn === 'N' && selectedColumnMetaTableId.value === payload.id) {
-    selectedColumnMetaTableId.value = metaTables.value.find((t) => t.useYn === 'Y')?.id ?? ''
-  }
-}
-
 const onRetryTableList = () => {
-  emit('retry-table-list')
+  void hydrateDatamartMetaModal(props.datamart?.datamartId ?? '')
 }
+
+watch(
+  () => props.isOpen,
+  (open) => {
+    if (!open) return
+    resetDatamartMetaModal()
+    void hydrateDatamartMetaModal(props.datamart?.datamartId ?? '')
+  },
+)
 
 const metaTabs = [
   { label: '테이블 선택', value: 'table' },
@@ -143,15 +124,26 @@ const metaTabs = [
   { label: '코드값 매핑', value: 'code' },
 ]
 
-const onSave = () => {
-  openToast({ message: '저장 기능은 개발 중입니다.', type: 'warning' })
-  console.warn(
-    '[DatamartMetaModal] 저장 — API 연동 예정',
-    metaTables.value,
-    selectedColumnMetaTableId.value,
-    metaRelationships.value,
-    metaCodeMappings.value,
-  )
+const onSave = async () => {
+  if (activeTab.value === 'table') {
+    const datamartId = props.datamart?.datamartId ?? ''
+    await handleSaveMetaTableSelection(datamartId, metaModalTables.value)
+    return
+  } else if (activeTab.value === 'column') {
+    const datamartId = props.datamart?.datamartId ?? ''
+    await handleSaveMetaColumnSelection(datamartId, metaModalTables.value)
+    return
+  } else if (activeTab.value === 'relation') {
+    const datamartId = props.datamart?.datamartId ?? ''
+    await handleSaveMetaRelationship(datamartId, metaModalRelationships.value)
+    return
+  } else if (activeTab.value === 'code') {
+    const datamartId = props.datamart?.datamartId ?? ''
+    await handleSaveMetaCodeMapping(datamartId, metaModalCodeMappings.value)
+    return
+  }
+
+  openToast({ message: '현재 탭 저장 기능은 개발 중입니다.', type: 'warning' })
 }
 </script>
 

@@ -68,7 +68,7 @@
             class="btn-chat-send"
             :loading="isSending"
             :aria-label="isSending ? '전송 중' : '메시지 전송'"
-            :disabled="!modelValue.trim() || isSearchModeMissingSubOptions"
+            :disabled="!modelValue.trim() || isSearchModeMissingSubOptions || selectedSubOptions.length === 0"
             @click="handleSend"
           >
             <template #icon-left>
@@ -177,6 +177,7 @@ const {
   isSearchModeMissingSubOptions,
   searchModeSubOptionsEmptyMessage,
   chatIndexAgents,
+  selectedSubOptions,
 } = useChatStore()
 
 const DEFAULT_INPUT_PLACEHOLDER = '궁금하신 내용을 입력하세요.'

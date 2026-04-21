@@ -3,6 +3,8 @@
     :is-open="isOpen"
     :title="title"
     position="center"
+    :max-width="maxWidth"
+    :custom-class="customClass"
     @close="handleClose"
   >
     <!-- 본문 -->
@@ -41,6 +43,10 @@ interface Props {
   message?: string
   cancelText?: string
   confirmText?: string
+  /** 예: `720px` — 본문(슬롯)이 넓을 때 `UiModal`과 동일 */
+  maxWidth?: string
+  /** `UiModal` 루트에 추가 — 본문 레이아웃 오버라이드 등 */
+  customClass?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -49,6 +55,8 @@ const props = withDefaults(defineProps<Props>(), {
   message: '',
   cancelText: '취소',
   confirmText: '확인',
+  maxWidth: '',
+  customClass: '',
 })
 
 const emit = defineEmits<{

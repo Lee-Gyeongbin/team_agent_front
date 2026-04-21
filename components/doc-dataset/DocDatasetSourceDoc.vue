@@ -76,7 +76,11 @@
             v-for="item in filteredList"
             :key="getSourceId(item)"
             class="doc-dataset-source-doc-file-item"
-            @click="toggleSelect(getSourceId(item))"
+            :class="{
+              'is-doc-unavailable': isDocRowDisabled(item),
+              'is-doc-unavailable--can-deselect': isDocRowDisabled(item) && isDocSelected(getSourceId(item)),
+            }"
+            @click="onDocRowClick(item)"
           >
             <span
               class="ui-checkbox"
@@ -104,7 +108,7 @@
             <span class="doc-dataset-source-doc-file-name-wrap">
               <span class="doc-dataset-source-doc-file-name">{{ item.fileName || item.docTitle || '-' }}</span>
             </span>
-            <span class="doc-dataset-source-doc-file-size">{{ item.fileCount ?? 0 }}개</span>
+            <span class="doc-dataset-source-doc-file-size">{{ item.fileSize ?? 0 }}MB</span>
           </div>
 
           <UiEmpty
@@ -140,23 +144,37 @@ const selectedCategory = ref('all')
 
 // 카테고리 필터 옵션
 const categoryOptions = computed(() => {
-  return [
-    { label: '전체 카테고리', value: 'all' },
-    ...props.categoryList.map((c) => ({ label: c.categoryName, value: c.categoryId })),
-  ].sort((a, b) => a.label.localeCompare(b.label))
+  const sortedCategoryOptions = props.categoryList
+    .map((c) => ({ label: c.categoryName, value: c.categoryId }))
+    .sort((a, b) => String(a.value).localeCompare(String(b.value)))
+
+  return [{ label: '전체 카테고리', value: 'all' }, ...sortedCategoryOptions]
 })
 // 필터링된 리스트
 const filteredList = computed(() => {
-  if (!searchKeyword.value) return props.docList
-  const keyword = searchKeyword.value.toLowerCase()
-  return props.docList.filter((d) =>
-    String(d.fileName || d.docTitle || '')
+  return props.docList.filter((d) => {
+    const isMatchedCategory = selectedCategory.value === 'all' || String(d.categoryId ?? '') === selectedCategory.value
+
+    if (!isMatchedCategory) return false
+
+    if (!searchKeyword.value) return true
+
+    const keyword = searchKeyword.value.toLowerCase()
+    return String(d.fileName || d.docTitle || '')
       .toLowerCase()
-      .includes(keyword),
-  )
+      .includes(keyword)
+  })
 })
 
 const getSourceId = (item: DocDatasetSelectedDoc) => String(item.docFileId ?? '')
+
+/** 사용 불가(useYn N) 행: 신규 선택 불가, 이미 선택된 경우에만 클릭으로 해제 가능 */
+const isDocRowDisabled = (item: DocDatasetSelectedDoc) => String(item.useYn ?? '').toUpperCase() === 'N'
+
+const onDocRowClick = (item: DocDatasetSelectedDoc) => {
+  if (isDocRowDisabled(item) && !isDocSelected(getSourceId(item))) return
+  toggleSelect(getSourceId(item))
+}
 
 const isDocSelected = (docFileId: string | number) => {
   const id = String(docFileId)

@@ -1,28 +1,6 @@
 <template>
   <div class="datamart-meta-column-metadata com-setting-form">
-    <!-- 로딩 -->
-    <UiLoading
-      v-if="isLoading"
-      overlay
-      text="메타데이터를 불러오는 중..."
-    />
-
-    <template v-else-if="errorMessage">
-      <div class="datamart-meta-column-metadata-error">
-        <p class="datamart-meta-column-metadata-error-msg">
-          {{ errorMessage }}
-        </p>
-        <UiButton
-          variant="line-secondary"
-          size="sm"
-          @click="emit('retry')"
-        >
-          다시 시도
-        </UiButton>
-      </div>
-    </template>
-
-    <template v-else-if="tables.length === 0">
+    <template v-if="tables.length === 0">
       <UiEmpty
         icon="icon-database"
         title="테이블이 없습니다."
@@ -32,7 +10,6 @@
 
     <template v-else>
       <div class="datamart-meta-column-metadata-header">
-        <h3 class="datamart-meta-column-metadata-title">컬럼 메타데이터</h3>
         <p class="datamart-meta-column-metadata-desc">
           테이블별 컬럼 설명과 용도 분류를 정리하면 AI가 스키마를 더 정확히 이해합니다.
           <template v-if="datamart?.dmNm">
@@ -41,18 +18,12 @@
         </p>
       </div>
 
-      <!-- 편집할 테이블 / 테이블 정보 / 컬럼 목록 — LlmSettingBasic 등과 동일 com-setting-section 아코디언 -->
       <div
         class="com-setting-section"
-        :class="{ 'is-collapsed': sectionCollapsed.tablePick }"
         style="--label-width: 140px"
       >
-        <div
-          class="com-setting-section-header"
-          @click="sectionCollapsed.tablePick = !sectionCollapsed.tablePick"
-        >
+        <div class="com-setting-section-header">
           <span class="com-setting-section-title">편집할 테이블</span>
-          <i class="icon-chevron-down size-16 com-setting-section-arrow" />
         </div>
         <div class="com-setting-section-body">
           <p class="datamart-meta-column-metadata-section-hint">활성화된 테이블만 표시됩니다.</p>
@@ -80,6 +51,7 @@
               >
                 <span class="datamart-meta-col-table-pick-name">{{ row.physicalNm }}</span>
                 <span
+                  v-if="row.logicalNm"
                   class="datamart-meta-col-table-pick-sep"
                   aria-hidden="true"
                   >·</span
@@ -100,56 +72,18 @@
       <template v-if="selectedTable">
         <div
           class="com-setting-section"
-          :class="{ 'is-collapsed': sectionCollapsed.tableInfo }"
           style="--label-width: 140px"
         >
-          <div
-            class="com-setting-section-header"
-            @click="sectionCollapsed.tableInfo = !sectionCollapsed.tableInfo"
-          >
-            <span class="com-setting-section-title">
-              테이블 정보
-              <span class="datamart-meta-column-metadata-table-chip">· {{ selectedTable.physicalNm }}</span>
-            </span>
-            <i class="icon-chevron-down size-16 com-setting-section-arrow" />
-          </div>
-          <div class="com-setting-section-body">
-            <div class="com-setting-row datamart-meta-column-metadata-table-info-row">
-              <div class="com-setting-field-row">
-                <label class="com-setting-label">테이블 설명 (한국어)</label>
-                <UiInput
-                  v-model="selectedTable.tableDescKo"
-                  size="sm"
-                  placeholder="테이블 설명을 입력하세요"
-                />
-              </div>
-              <div class="com-setting-field-row">
-                <label class="com-setting-label">용도 분류</label>
-                <UiSelect
-                  v-model="selectedTable.usageTy"
-                  :options="usageOptions"
-                  size="sm"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div
-          class="com-setting-section"
-          :class="{ 'is-collapsed': sectionCollapsed.columns }"
-          style="--label-width: 140px"
-        >
-          <div
-            class="com-setting-section-header"
-            @click="sectionCollapsed.columns = !sectionCollapsed.columns"
-          >
+          <div class="com-setting-section-header">
             <span class="com-setting-section-title">컬럼 목록</span>
-            <i class="icon-chevron-down size-16 com-setting-section-arrow" />
           </div>
           <div class="com-setting-section-body">
             <div class="datamart-meta-col-editor-toolbar">
+              <p class="datamart-meta-col-footer-hint">
+                저장정보가 없는 컬럼 정보는 DB 스키마 원본 정보를 기준으로 조회됩니다.
+              </p>
               <UiButton
+                class="datamart-meta-col-add-btn"
                 variant="primary"
                 size="sm"
                 type="button"
@@ -171,11 +105,18 @@
                 sticky-header
                 empty-text="컬럼이 없습니다. 위의 컬럼 추가 버튼으로 추가하거나 DB에서 스키마를 불러오세요."
               >
-                <template #cell-colName="{ row }">
+                <template #cell-colPhyNm="{ row }">
                   <UiInput
-                    v-model="(row as DatamartMetaColumnRow).colName"
+                    v-model="(row as DatamartMetaColumnRow).colPhyNm"
                     size="xs"
-                    placeholder="컬럼명"
+                    placeholder="물리 컬럼명"
+                  />
+                </template>
+                <template #cell-colKorNm="{ row }">
+                  <UiInput
+                    v-model="(row as DatamartMetaColumnRow).colKorNm"
+                    size="xs"
+                    placeholder="한글명"
                   />
                 </template>
                 <template #cell-dataType="{ row }">
@@ -186,35 +127,60 @@
                     class="datamart-meta-col-type-select"
                   />
                 </template>
-                <template #cell-isPk="{ row }">
-                  <div class="datamart-meta-col-toggle-wrap">
-                    <UiToggle
-                      :model-value="(row as DatamartMetaColumnRow).isPk"
-                      @update:model-value="(v: boolean) => ((row as DatamartMetaColumnRow).isPk = v)"
-                    />
-                  </div>
-                </template>
-                <template #cell-isFk="{ row }">
-                  <div class="datamart-meta-col-toggle-wrap">
-                    <UiToggle
-                      :model-value="(row as DatamartMetaColumnRow).isFk"
-                      @update:model-value="(v: boolean) => ((row as DatamartMetaColumnRow).isFk = v)"
-                    />
-                  </div>
-                </template>
-                <template #cell-descKo="{ row }">
+                <template #cell-dataLen="{ row }">
                   <UiInput
-                    v-model="(row as DatamartMetaColumnRow).descKo"
+                    v-model="(row as DatamartMetaColumnRow).dataLen"
                     size="xs"
-                    placeholder="컬럼 설명"
+                    placeholder="길이"
                   />
                 </template>
-                <template #cell-nullable="{ row }">
+                <template #cell-pkYn="{ row }">
                   <div class="datamart-meta-col-toggle-wrap">
                     <UiToggle
-                      :model-value="(row as DatamartMetaColumnRow).nullable === 'Y'"
-                      @update:model-value="(v: boolean) => onNullableToggle(row as DatamartMetaColumnRow, v)"
+                      :model-value="ynOn(row as DatamartMetaColumnRow, 'pkYn')"
+                      @update:model-value="(v: boolean) => setYn(row as DatamartMetaColumnRow, 'pkYn', v)"
                     />
+                  </div>
+                </template>
+                <template #cell-fkYn="{ row }">
+                  <div class="datamart-meta-col-toggle-wrap">
+                    <UiToggle
+                      :model-value="ynOn(row as DatamartMetaColumnRow, 'fkYn')"
+                      @update:model-value="(v: boolean) => setYn(row as DatamartMetaColumnRow, 'fkYn', v)"
+                    />
+                  </div>
+                </template>
+                <template #cell-nullableYn="{ row }">
+                  <div class="datamart-meta-col-toggle-wrap">
+                    <UiToggle
+                      :model-value="ynOn(row as DatamartMetaColumnRow, 'nullableYn')"
+                      @update:model-value="(v: boolean) => setYn(row as DatamartMetaColumnRow, 'nullableYn', v)"
+                    />
+                  </div>
+                </template>
+                <template #cell-hasCodeYn="{ row }">
+                  <div class="datamart-meta-col-toggle-wrap">
+                    <UiToggle
+                      :model-value="ynOn(row as DatamartMetaColumnRow, 'hasCodeYn')"
+                      @update:model-value="(v: boolean) => setYn(row as DatamartMetaColumnRow, 'hasCodeYn', v)"
+                    />
+                  </div>
+                </template>
+                <template #cell-aiHint="{ row }">
+                  <div class="picker-wrap datamart-meta-col-aihint-picker">
+                    <button
+                      type="button"
+                      class="picker-btn"
+                      :class="{
+                        'is-placeholder': !aiHintHasValue(row as DatamartMetaColumnRow),
+                        'is-filled': aiHintHasValue(row as DatamartMetaColumnRow),
+                      }"
+                      title="AI 힌트 편집"
+                      aria-label="AI 힌트 편집"
+                      @click="openAiHintModal(row as DatamartMetaColumnRow)"
+                    >
+                      <i class="icon-edit-version size-16" />
+                    </button>
                   </div>
                 </template>
                 <template #cell-_actions="{ row }">
@@ -236,12 +202,39 @@
                 </template>
               </UiTable>
             </div>
-
-            <p class="datamart-meta-col-footer-hint">DB에서 스키마 자동 불러오기도 지원됩니다</p>
           </div>
         </div>
       </template>
     </template>
+
+    <UiDialogModal
+      :is-open="aiHintModalOpen"
+      title="AI 힌트 편집"
+      max-width="min(480px, 92vw)"
+      custom-class="datamart-meta-aihint-dialog"
+      confirm-text="적용"
+      cancel-text="취소"
+      @close="onAiHintModalClose"
+      @confirm="onAiHintModalConfirm"
+    >
+      <div class="datamart-meta-aihint-modal">
+        <p
+          v-if="aiHintModalContextLabel"
+          class="datamart-meta-aihint-modal-context"
+        >
+          {{ aiHintModalContextLabel }}
+        </p>
+        <UiTextarea
+          v-model="aiHintDraft"
+          class="datamart-meta-aihint-modal-textarea"
+          placeholder="이 컬럼을 AI가 해석할 때 참고할 설명·예시·주의사항을 입력하세요."
+          :rows="8"
+          :auto-resize="false"
+          border
+          size="md"
+        />
+      </div>
+    </UiDialogModal>
   </div>
 </template>
 
@@ -256,29 +249,12 @@ import {
 const props = withDefaults(
   defineProps<{
     datamart: Datamart | null
-    /** 테이블 선택 탭과 동일 목록 — useYn === 'Y' 인 행만 목록에 표시 */
     tables: DatamartMetaTableItem[]
-    isLoading?: boolean
-    errorMessage?: string | null
   }>(),
-  {
-    isLoading: false,
-    errorMessage: null,
-  },
+  {},
 )
 
-const emit = defineEmits<{
-  retry: []
-}>()
-
 const selectedTableId = defineModel<string>('selectedTableId', { default: '' })
-
-/** LLM 설정 모달 섹션과 동일 — false면 펼침 */
-const sectionCollapsed = reactive({
-  tablePick: false,
-  tableInfo: false,
-  columns: false,
-})
 
 const activeTables = computed(() => props.tables.filter((t) => t.useYn === 'Y'))
 
@@ -293,33 +269,31 @@ const selectedTable = computed(
   () => props.tables.find((t) => t.id === resolvedSelectedId.value && t.useYn === 'Y') ?? null,
 )
 
-const usageOptions = [
-  { label: '트랜잭션', value: 'TX' },
-  { label: '마스터', value: 'MST' },
-  { label: '차원', value: 'DIM' },
-  { label: '스테이징', value: 'STG' },
-  { label: '기타', value: 'ETC' },
-]
-
 const dataTypeOptions = [
-  { label: 'VARCHAR', value: 'VARCHAR' },
-  { label: 'CHAR', value: 'CHAR' },
-  { label: 'TEXT', value: 'TEXT' },
-  { label: 'INT', value: 'INT' },
   { label: 'BIGINT', value: 'BIGINT' },
-  { label: 'DECIMAL', value: 'DECIMAL' },
-  { label: 'FLOAT', value: 'FLOAT' },
-  { label: 'DOUBLE', value: 'DOUBLE' },
+  { label: 'BIGINT UNSIGNED', value: 'BIGINT UNSIGNED' },
+  { label: 'BIT', value: 'BIT' },
+  { label: 'CHAR', value: 'CHAR' },
   { label: 'DATE', value: 'DATE' },
   { label: 'DATETIME', value: 'DATETIME' },
-  { label: 'TIMESTAMP', value: 'TIMESTAMP' },
-  { label: 'BOOLEAN', value: 'BOOLEAN' },
-  { label: 'BLOB', value: 'BLOB' },
+  { label: 'DECIMAL', value: 'DECIMAL' },
+  { label: 'INT', value: 'INT' },
+  { label: 'INT UNSIGNED', value: 'INT UNSIGNED' },
+  { label: 'JSON', value: 'JSON' },
+  { label: 'LONGTEXT', value: 'LONGTEXT' },
+  { label: 'TEXT', value: 'TEXT' },
+  { label: 'VARCHAR', value: 'VARCHAR' },
 ]
 
-const onNullableToggle = (col: DatamartMetaColumnRow, v: boolean) => {
-  col.nullable = v ? 'Y' : 'N'
+type ColumnYnKey = 'pkYn' | 'fkYn' | 'nullableYn' | 'hasCodeYn'
+
+const ynOn = (col: DatamartMetaColumnRow, key: ColumnYnKey) => col[key] === 'Y'
+
+const setYn = (col: DatamartMetaColumnRow, key: ColumnYnKey, v: boolean) => {
+  col[key] = v ? 'Y' : 'N'
 }
+
+const aiHintHasValue = (col: DatamartMetaColumnRow) => Boolean(String(col.aiHint ?? '').trim())
 
 const onSelectTable = (id: string) => {
   selectedTableId.value = id
@@ -329,21 +303,61 @@ const onAddColumn = () => {
   const t = selectedTable.value
   if (!t) return
   t.columns.push({
-    id: `col_${Date.now()}`,
-    colName: '',
+    colId: `col_${Date.now()}`,
+    colPhyNm: '',
+    colKorNm: '',
+    colDesc: '',
     dataType: 'VARCHAR',
-    isPk: false,
-    isFk: false,
-    descKo: '',
-    nullable: 'Y',
+    dataLen: '',
+    pkYn: 'N',
+    fkYn: 'N',
+    nullableYn: 'Y',
+    hasCodeYn: 'N',
+    aiHint: '',
+    sortOrd: t.columns.length + 1,
+    useYn: 'Y',
+    createDt: '',
+    modifyDt: '',
   })
 }
 
 const onRemoveColumn = (col: DatamartMetaColumnRow) => {
   const t = selectedTable.value
   if (!t) return
-  const idx = t.columns.findIndex((c) => c.id === col.id)
+  const idx = t.columns.findIndex((c) => c.colId === col.colId)
   if (idx !== -1) t.columns.splice(idx, 1)
+}
+
+const aiHintModalOpen = ref(false)
+const aiHintDraft = ref('')
+const aiHintEditingCol = ref<DatamartMetaColumnRow | null>(null)
+
+const aiHintModalContextLabel = computed(() => {
+  const c = aiHintEditingCol.value
+  if (!c) return ''
+  const phy = c.colPhyNm?.trim()
+  const kor = c.colKorNm?.trim()
+  if (phy && kor) return `${phy} · ${kor}`
+  if (phy) return phy
+  if (kor) return kor
+  return '이름 미입력 컬럼'
+})
+
+const openAiHintModal = (col: DatamartMetaColumnRow) => {
+  aiHintEditingCol.value = col
+  aiHintDraft.value = col.aiHint ?? ''
+  aiHintModalOpen.value = true
+}
+
+const onAiHintModalConfirm = () => {
+  const col = aiHintEditingCol.value
+  if (col) col.aiHint = aiHintDraft.value
+}
+
+const onAiHintModalClose = () => {
+  aiHintModalOpen.value = false
+  aiHintEditingCol.value = null
+  aiHintDraft.value = ''
 }
 </script>
 
@@ -361,6 +375,8 @@ const onRemoveColumn = (col: DatamartMetaColumnRow) => {
 
   :deep(.com-setting-section-header) {
     padding: 2px 0 6px;
+    cursor: default;
+    user-select: text;
   }
 
   :deep(.com-setting-section-body) {
@@ -384,10 +400,6 @@ const onRemoveColumn = (col: DatamartMetaColumnRow) => {
   text-align: center;
 }
 
-.datamart-meta-column-metadata-header {
-  margin-bottom: $spacing-sm;
-}
-
 .datamart-meta-column-metadata-title {
   margin: 0 0 4px;
   font-size: $font-size-lg;
@@ -396,7 +408,7 @@ const onRemoveColumn = (col: DatamartMetaColumnRow) => {
 }
 
 .datamart-meta-column-metadata-desc {
-  margin: 0;
+  margin: $spacing-xs 0 0;
   font-size: $font-size-sm;
   line-height: 1.5;
   color: $color-text-secondary;
@@ -492,32 +504,20 @@ const onRemoveColumn = (col: DatamartMetaColumnRow) => {
 
 .datamart-meta-col-editor-toolbar {
   display: flex;
-  justify-content: flex-end;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
   margin: 0 0 4px;
-}
 
-.datamart-meta-column-metadata-table-chip {
-  font-weight: $font-weight-medium;
-  color: $color-text-secondary;
-}
-
-.datamart-meta-column-metadata-table-info-row {
-  width: 100%;
-  align-items: flex-start;
-
-  .com-setting-field-row {
-    flex: 1;
-    min-width: 0;
-  }
-
-  @media (max-width: 640px) {
-    flex-direction: column;
+  .datamart-meta-col-add-btn {
+    flex-shrink: 0;
   }
 }
 
 /* pages/user-manage 톤 + 행 유무와 관계없이 목록 영역 높이 고정 */
 .datamart-meta-col-table-wrap {
-  --datamart-meta-col-table-height: min(168px, 24vh);
+  --datamart-meta-col-table-height: min(220px, 32vh);
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -537,9 +537,11 @@ const onRemoveColumn = (col: DatamartMetaColumnRow) => {
     overflow: auto;
   }
 
-  /* 본문 1·5열(컬럼명·설명)만 좌측 — 헤더는 컬럼 headerAlign(가운데) 유지 */
+  /* 텍스트 편집 열 좌측 정렬 — 헤더는 컬럼 headerAlign 유지 */
   :deep(.ui-table td:nth-child(1)),
-  :deep(.ui-table td:nth-child(5)) {
+  :deep(.ui-table td:nth-child(2)),
+  :deep(.ui-table td:nth-child(3)),
+  :deep(.ui-table td:nth-child(10)) {
     text-align: left;
   }
 
@@ -547,11 +549,22 @@ const onRemoveColumn = (col: DatamartMetaColumnRow) => {
     vertical-align: middle;
   }
 
-  /* PK / FK / NULL: 행 높이가 커져도 토글 수직 가운데 */
-  :deep(.ui-table tbody td:nth-child(3)),
-  :deep(.ui-table tbody td:nth-child(4)),
-  :deep(.ui-table tbody td:nth-child(6)) {
+  :deep(.ui-table tbody td:nth-child(6)),
+  :deep(.ui-table tbody td:nth-child(7)),
+  :deep(.ui-table tbody td:nth-child(8)),
+  :deep(.ui-table tbody td:nth-child(9)),
+  :deep(.ui-table tbody td:nth-child(12)) {
     vertical-align: middle;
+  }
+
+  :deep(.datamart-meta-col-dt) {
+    display: block;
+    padding: 0 4px;
+    font-size: 11px;
+    line-height: 1.35;
+    color: $color-text-muted;
+    text-align: center;
+    word-break: break-all;
   }
 
   :deep(.datamart-meta-col-actions-cell) {
@@ -575,6 +588,82 @@ const onRemoveColumn = (col: DatamartMetaColumnRow) => {
     width: 100%;
   }
 
+  /* AgentSettingBasic.vue picker-btn / is-placeholder 패턴 */
+  :deep(.datamart-meta-col-aihint-picker) {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+    padding: 0 2px;
+  }
+
+  :deep(.datamart-meta-col-aihint-picker .picker-btn) {
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid #dce4e9;
+    border-radius: $border-radius-base;
+    background: #fff;
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+    appearance: none;
+    transition:
+      border-color 0.2s ease,
+      background 0.2s ease,
+      box-shadow 0.2s ease;
+
+    i {
+      display: block;
+      line-height: 1;
+      transition: color 0.2s ease;
+    }
+
+    &:hover {
+      border-color: #c3ced6;
+    }
+
+    &.is-placeholder {
+      border-style: dashed;
+      border-color: #cbd5e1;
+      background: #f8fafc;
+
+      i {
+        color: #94a3b8;
+      }
+
+      &:hover {
+        border-color: #94a3b8;
+        background: #f1f5f9;
+
+        i {
+          color: #64748b;
+        }
+      }
+    }
+
+    &.is-filled {
+      border-style: solid;
+      border-color: rgba(var(--color-primary-rgb, 99, 102, 241), 0.55);
+      background: rgba(var(--color-primary-rgb, 99, 102, 241), 0.07);
+      box-shadow: 0 0 0 1px rgba(var(--color-primary-rgb, 99, 102, 241), 0.12);
+
+      i {
+        color: var(--color-primary, #6366f1);
+      }
+
+      &:hover {
+        border-color: var(--color-primary, #6366f1);
+        background: rgba(var(--color-primary-rgb, 99, 102, 241), 0.1);
+      }
+    }
+  }
+
   :deep(.datamart-meta-col-type-select) {
     width: 100%;
     min-width: 0;
@@ -588,9 +677,54 @@ const onRemoveColumn = (col: DatamartMetaColumnRow) => {
 }
 
 .datamart-meta-col-footer-hint {
-  margin: 4px 0 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
   font-size: 11px;
   line-height: 1.4;
   color: #6f7a93;
+}
+
+.datamart-meta-aihint-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.datamart-meta-aihint-modal-context {
+  margin: 0;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $color-text-secondary;
+  word-break: break-all;
+}
+
+.datamart-meta-aihint-modal-textarea {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-height: 160px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+</style>
+<!-- Teleport 로 body 아래 렌더 — scoped 조상이 없어 동일 선택자는 비-scoped 로만 적용됨 -->
+<style lang="scss">
+.modal-dialog.datamart-meta-aihint-dialog {
+  .modal-dialog-content {
+    width: 100%;
+  }
+
+  .modal-dialog-body {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    width: 100%;
+    box-sizing: border-box;
+  }
 }
 </style>

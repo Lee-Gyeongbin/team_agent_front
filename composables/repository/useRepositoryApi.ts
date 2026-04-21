@@ -62,15 +62,18 @@ export const useRepositoryApi = () => {
   const fetchSelectDocFileLibraryList = async (params: {
     categoryId?: string
     findContent?: string
+    useYn?: 'Y' | 'N'
     page?: number
     pageSize?: number
   }) => {
     return post<{ dataList: FileLibraryItem[]; totalCnt: number }>('/repository/selectDocFileLibraryList.do', params)
   }
 
-  /** 파일 관리 탭 — 업로드 완료 후 TB_DOC_FILE INSERT */
-  const fetchSaveFileLibrary = async (data: FileLibrarySavePayload) => {
-    return post<{ successYn: boolean; returnMsg?: string; docFileId?: string }>('/repository/saveFileLibrary.do', data)
+  /** 파일 관리 탭 — 업로드 완료 후 TB_DOC_FILE INSERT (배치) */
+  const fetchSaveFileLibraryBatch = async (dataList: FileLibrarySavePayload[]) => {
+    return post<{ successYn: boolean; returnMsg?: string; successCnt?: number }>('/repository/saveFileLibrary.do', {
+      dataList,
+    })
   }
 
   const fetchUpdateFileLibrary = async (data: {
@@ -80,17 +83,25 @@ export const useRepositoryApi = () => {
     docDesc?: string
     keywords?: string
     docSrc?: string
+    useYn?: 'Y' | 'N'
   }) => {
     return post<{ successYn: boolean; returnMsg?: string }>('/repository/updateFileLibrary.do', data)
   }
 
-  const fetchDeleteFileLibrary = async (docFileId: string, docFileIdList?: string[]) => {
+  const fetchDeleteFileLibrary = async (docFileIdList: string[]) => {
     return post<{ successYn: boolean; returnMsg?: string; blockedFileNames?: string[] }>(
       '/repository/deleteFileLibrary.do',
       {
-        docFileId,
         docFileIdList,
       },
+    )
+  }
+
+  /** 파일 관리 탭 — 선택 파일 배치 삭제 처리(서버에서 USE_YN='N' 반영) */
+  const fetchSaveUseYnN = async (docFileIdList: string[]) => {
+    return post<{ successYn: boolean; returnMsg?: string; successCnt?: number; blockedFileNames?: string[] }>(
+      '/repository/saveUseYnN.do',
+      { docFileIdList },
     )
   }
 
@@ -130,8 +141,9 @@ export const useRepositoryApi = () => {
     fetchSelectDocFileLibraryList,
     /** @deprecated 이름 통일용 별칭 — `fetchSelectDocFileLibraryList` 와 동일 */
     fetchFileLibraryList: fetchSelectDocFileLibraryList,
-    fetchSaveFileLibrary,
+    fetchSaveFileLibraryBatch,
     fetchUpdateFileLibrary,
     fetchDeleteFileLibrary,
+    fetchSaveUseYnN,
   }
 }

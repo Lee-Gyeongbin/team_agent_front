@@ -57,6 +57,7 @@ export interface CategoryItem {
 }
 
 export interface DocDatasetSelectedDoc {
+  fileSize?: number
   docFileId: string
   docTitle?: string
   fileName?: string
