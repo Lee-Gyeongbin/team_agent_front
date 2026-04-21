@@ -4,7 +4,7 @@ export default defineNuxtRouteMiddleware((to) => {
   /** 미구현 메뉴 TODO : 삭제 */
   if (to.path === '/planned') {
     if (import.meta.client) {
-      openToast({ message: '개발예정입니다.', type: 'warning' })
+      openToast({ message: '준비중입니다.', type: 'warning' })
       return abortNavigation()
     }
     return navigateTo('/')
