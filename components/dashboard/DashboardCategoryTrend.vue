@@ -68,6 +68,7 @@ import { CATEGORY_TREND_DEFAULT_DAY_CNT } from '~/composables/dashboard/useDashb
 
 const { categoryTrend, categoryTrendLoading, handleSelectDashboardCategoryTrend } = useDashboardStore()
 
+/** 집계 기간 옵션 */
 const periodOptions = [
   { label: '1일', value: 1 },
   { label: '3일', value: 3 },
