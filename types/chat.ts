@@ -79,7 +79,7 @@ export interface ChatSocketMessage {
 export interface ChatMessage {
   id?: string
   logId: string
-  type: 'question' | 'answer'
+  type: 'question' | 'answer' | 'survey'
   qContent?: string
   rContent?: string
   createdAt: string
@@ -108,6 +108,12 @@ export interface ChatMessage {
   attachments?: ChatMessageAttachment[]
   /** Web 검색/그라운딩 출처 (answer_source 스트리밍 청크로 수신) */
   groundingSources?: ChatGroundingSourceItem[]
+  /** 클라이언트 전용: 설문 진단 프롬프트 등 화면에 노출하지 않을 메시지 */
+  hiddenFromDisplay?: boolean
+  /** 산업심리 설문 메시지(type=survey) 전용: 사용자 응답 */
+  surveyAnswers?: Record<number, number>
+  /** 산업심리 설문 메시지(type=survey) 전용: 제출 완료 여부 */
+  surveySubmitted?: boolean
   [key: string]: unknown
 }
 

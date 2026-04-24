@@ -7,10 +7,10 @@ import { useChatMessages } from '~/composables/chat/useChatMessages'
 import { useChatSearchState } from '~/composables/chat/useChatSearchState'
 import { useChatSendPipeline } from '~/composables/chat/useChatSendPipeline'
 import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
+import { usePsychologySurvey, createSurveyMessage, buildDiagnosticPrompt } from '~/utils/chat/psychologyConsultUtil'
 import { clearBodyChartFullscreen } from '~/utils/chat/visualizationChartUtil'
 import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
 import { getCodes } from '~/utils/global/comCodesUtil'
-import type { ColorItem, IconItem } from '~/types/theme'
 import { useFileStore } from '~/composables/com/useFileStore'
 
 /** 에이전트 SVC_TY → 채팅 검색모드 (M=RAG·지식, S=SQL·데이터마트) */
@@ -22,6 +22,14 @@ function agentTypeToSearchMode(svcTy: string): SearchModeValue | null {
 
 const { messages } = useChatSocket()
 const { logRowToMessages, getMessagesForVisualization } = useChatMessages()
+const {
+  openPsychologySurvey,
+  closePsychologySurvey,
+  isSurveyRoom,
+  surveyAnswers,
+  registerSurveyRoom,
+  isSurveyVisible,
+} = usePsychologySurvey()
 const {
   activeSearchModes,
   selectedChatAgentId,
@@ -48,6 +56,26 @@ const {
 const { executeSendPipeline } = useChatSendPipeline()
 const { handleViewFileUrl } = useFileStore()
 
+/**
+ * 설문 채팅방에서는 첫 번째 question 메시지(진단 프롬프트)를 숨긴 메시지 목록
+ * - 일반 채팅방은 messages 그대로 반환
+ * - hiddenFromDisplay 플래그가 설정된 메시지는 항상 숨김 (기존 채팅방에서 설문 재실행 시)
+ */
+const messagesForDisplay = computed(() => {
+  let base = messages.value
+  if (isSurveyRoom(chatRoom.value.roomId)) {
+    let firstQuestionSeen = false
+    base = messages.value.filter((m) => {
+      if (m.type === 'question' && !firstQuestionSeen) {
+        firstQuestionSeen = true
+        return false
+      }
+      return true
+    })
+  }
+  return base.filter((m) => !m.hiddenFromDisplay)
+})
+
 // API 호출
 const { fetchSelectChatLogList, fetchSelectChatRef, fetchSelectTableDataList, fetchSelectAgentListForChat } =
   useChatApi()
@@ -57,7 +85,7 @@ const chatIndexAgents = ref<Agent[]>([])
 const isLoadingChatIndexAgents = ref(true)
 const normalizeChatAgents = (list: Agent[]) =>
   list
-    .filter((a) => a.useYn === 'Y' && (a.svcTy === 'M' || a.svcTy === 'S' || a.svcTy === 'T'))
+    .filter((a) => a.useYn === 'Y' && (a.svcTy === 'M' || a.svcTy === 'S' || a.svcTy === 'T' || a.svcTy === 'C'))
     .sort((a, b) => a.sortOrd - b.sortOrd)
 
 const selectedLogId = ref<string | null>(null)
@@ -182,6 +210,58 @@ export const useChatStore = () => {
     })
     if (sent) chatMessage.value = ''
     return sent
+  }
+
+  /**
+   * 설문 진단 프롬프트 전송 — question 메시지를 화면에 노출하지 않는다.
+   * @param content - 전송할 프롬프트 문자열
+   * @param surveyMessageLogId - 제출 완료로 전환할 survey 메시지 logId (있으면 surveySubmitted=true로 갱신)
+   */
+  const onSendSurvey = async (content: string, surveyMessageLogId?: string): Promise<boolean> => {
+    if (!content.trim() || isSearchModeMissingSubOptions.value || !chatRoom.value.roomId) return false
+
+    // 설문 메시지를 제출 완료 상태로 전환
+    if (surveyMessageLogId) {
+      const surveyMsg = messages.value.find((m) => m.logId === surveyMessageLogId && m.type === 'survey')
+      if (surveyMsg) {
+        surveyMsg.surveyAnswers = { ...surveyAnswers.value }
+        surveyMsg.surveySubmitted = true
+      }
+    }
+
+    const prevLen = messages.value.length
+    const sent = await executeSendPipeline({
+      content: content.trim(),
+      roomId: chatRoom.value.roomId,
+      svcTy: resolveSvcTy(),
+      modelId: selectedModelOption.value,
+      refId: buildRefIdForPayload(),
+      agentId: selectedChatAgentId.value ?? '',
+      files: [],
+    })
+    if (sent) {
+      const newQuestion = messages.value.slice(prevLen).find((m) => m.type === 'question')
+      if (newQuestion) newQuestion.hiddenFromDisplay = true
+    }
+    return sent
+  }
+
+  /** 메시지 목록 내 설문 컴포넌트 제출 — 진단 프롬프트 빌드 후 전송 */
+  const onSurveyMessageSubmit = async (logId: string): Promise<boolean> => {
+    const prompt = buildDiagnosticPrompt(surveyAnswers.value)
+    return await onSendSurvey(prompt, logId)
+  }
+
+  /**
+   * index.vue에서 설문 제출 후 새 채팅방 진입 시 설문 컴포넌트를 메시지 목록 앞에 주입
+   * - question 메시지는 hiddenFromDisplay=true로 숨김
+   */
+  const addInlineSurveyMessage = (answers: Record<number, number>) => {
+    const surveyMsg = createSurveyMessage(answers, true)
+    const msgs = [...messages.value]
+    const firstQ = msgs.find((m) => m.type === 'question')
+    if (firstQ) firstQ.hiddenFromDisplay = true
+    messages.value = [surveyMsg, ...msgs]
   }
 
   const getEmptyVisualizationViewModel = (messageId: string): VisualizationViewModel => ({
@@ -311,6 +391,29 @@ export const useChatStore = () => {
       await handleOpenAgentLink(agent)
       return
     }
+
+    if (agent.agentId === 'AG000010') {
+      // 산업심리 상담 에이전트 — 에이전트 모드 상태 초기화
+      activeSearchModes.value = []
+      subOptions.value = []
+      selectedChatAgentId.value = agent.agentId
+      await selectModelOptions()
+
+      if (chatRoom.value.roomId) {
+        // 채팅방 내부: 이미 활성 설문 메시지가 있으면 중복 추가하지 않음
+        const alreadyHasSurvey = messages.value.some((m) => m.type === 'survey' && !m.surveySubmitted)
+        if (!alreadyHasSurvey) {
+          surveyAnswers.value = {}
+          const surveyMsg = createSurveyMessage({}, false)
+          messages.value = [...messages.value, surveyMsg]
+        }
+      } else {
+        // 최초화면(/chat index): 기존처럼 isSurveyVisible로 인라인 표시
+        openPsychologySurvey()
+      }
+      return
+    }
+
     const mode = agentTypeToSearchMode(agent.svcTy)
     if (!mode) {
       openToast({ message: '채팅에 연결할 수 없는 에이전트 유형입니다.', type: 'warning' })
@@ -332,6 +435,31 @@ export const useChatStore = () => {
         await selectDmList()
       }
     }
+  }
+
+  /**
+   * 설문 닫기 — 에이전트 선택 상태를 초기화하고 설문을 닫는다
+   * @param surveyMessageLogId - 제거할 survey 메시지 logId (없으면 메시지 목록 그대로)
+   */
+  const handleClosePsychologySurvey = (surveyMessageLogId?: string) => {
+    selectedChatAgentId.value = null
+    closePsychologySurvey()
+    if (surveyMessageLogId) {
+      messages.value = messages.value.filter((m) => m.logId !== surveyMessageLogId)
+    }
+  }
+
+  /** /chat 인덱스에서 설문 제출 — 방 생성·인라인 주입·등록·닫기 */
+  const handleIndexSurveySubmit = async (): Promise<boolean> => {
+    const prompt = buildDiagnosticPrompt(surveyAnswers.value)
+    const answers = { ...surveyAnswers.value }
+    const sent = await createChatRoom(prompt)
+    if (sent) {
+      addInlineSurveyMessage(answers)
+      registerSurveyRoom(chatRoom.value.roomId)
+      handleClosePsychologySurvey()
+    }
+    return sent
   }
 
   const activeVisualizationView = computed(() => {
@@ -380,7 +508,7 @@ export const useChatStore = () => {
   return {
     // 상태
     chatRoom,
-    messages,
+    messages: messagesForDisplay,
     activePanelType,
     isPanelFullscreen,
     activePanelMessageId,
@@ -401,11 +529,17 @@ export const useChatStore = () => {
     knowledgeList,
     isSearchModeMissingSubOptions,
     searchModeSubOptionsEmptyMessage,
+    isSurveyVisible,
     // 액션
     createChatRoom,
     handleSelectChatLogList,
     onSend,
+    onSendSurvey,
+    onSurveyMessageSubmit,
+    handleIndexSurveySubmit,
+    addInlineSurveyMessage,
     selectChatIndexAgent,
+    handleClosePsychologySurvey,
     handleSelectChatIndexAgents,
     // 패널
     onViewSource,

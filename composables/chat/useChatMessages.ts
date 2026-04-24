@@ -1,6 +1,7 @@
 import type { ChatGroundingSourceItem, ChatLogListRow, ChatMessage, ChatMessageAttachment } from '~/types/chat'
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import { parseChatAttachmentsFromLogRow } from '~/utils/chat/chatAttachmentDisplayUtil'
+import { parseSurveyAnswersFromPrompt } from '~/utils/chat/psychologyConsultUtil'
 
 // 채팅 메시지/스트리밍 상태는 모듈 레벨에서 단일 인스턴스로 공유
 const messages = ref<ChatMessage[]>([])
@@ -50,6 +51,49 @@ export const useChatMessages = () => {
         /* ignore */
       }
     }
+    const answerMessage: ChatMessage = {
+      logId,
+      type: 'answer',
+      qContent: '',
+      /** 마크다운 원문 — 화면에서는 ChatMessageItem에서 toHtmlContent로 렌더 */
+      rContent: row.rcontent ?? '',
+      svcTy,
+      modelId,
+      refId,
+      ...(agentId ? { agentId } : {}),
+      docFileId,
+      createdAt,
+      hasSource,
+      hasVisualization,
+      visualizationData: {
+        sql: row.ttsq ?? '',
+        chartTitle: '',
+      },
+      tableData: typeof row.tableData === 'string' ? row.tableData : undefined,
+      ...(groundingSources?.length ? { groundingSources } : {}),
+      chatLogReaction: {
+        logId,
+        satisYn: satisYnVal,
+        satisContent: satisContentVal,
+        satisCd: satisCdVal,
+      },
+    }
+
+    // 산업심리 상담 에이전트: question(진단 프롬프트) → readonly survey 메시지로 대체
+    if (agentId === 'AG000010') {
+      const surveyAnswers = parseSurveyAnswersFromPrompt(row.qcontent ?? '')
+      return [
+        {
+          logId: `${logId}-survey`,
+          type: 'survey',
+          createdAt,
+          surveyAnswers,
+          surveySubmitted: true,
+        },
+        answerMessage,
+      ]
+    }
+
     return [
       {
         logId,
@@ -63,33 +107,7 @@ export const useChatMessages = () => {
         ...(agentId ? { agentId } : {}),
         ...(attachments?.length ? { attachments } : {}),
       },
-      {
-        logId,
-        type: 'answer',
-        qContent: '',
-        /** 마크다운 원문 — 화면에서는 ChatMessageItem에서 toHtmlContent로 렌더 */
-        rContent: row.rcontent ?? '',
-        svcTy,
-        modelId,
-        refId,
-        ...(agentId ? { agentId } : {}),
-        docFileId,
-        createdAt,
-        hasSource,
-        hasVisualization,
-        visualizationData: {
-          sql: row.ttsq ?? '',
-          chartTitle: '',
-        },
-        tableData: typeof row.tableData === 'string' ? row.tableData : undefined,
-        ...(groundingSources?.length ? { groundingSources } : {}),
-        chatLogReaction: {
-          logId,
-          satisYn: satisYnVal,
-          satisContent: satisContentVal,
-          satisCd: satisCdVal,
-        },
-      },
+      answerMessage,
     ]
   }
 

@@ -9,6 +9,7 @@
         <ChatMessageItem
           v-for="msg in messages"
           :key="`${msg.logId}-${msg.type}`"
+          :data-log-id="msg.logId"
           :message="msg"
           :knowledge-list="knowledgeList"
           :is-share="isShare"
@@ -22,6 +23,8 @@
             (logId: string, categoryValue: string, categoryNm: string) =>
               emit('on-select-category', logId, categoryValue, categoryNm)
           "
+          @on-survey-submit="emit('on-survey-submit', $event)"
+          @on-survey-close="emit('on-survey-close', $event)"
         />
       </div>
     </div>
@@ -60,6 +63,8 @@ const emit = defineEmits<{
   'on-select-category': [logId: string, categoryValue: string, categoryNm: string]
   'on-view-source': [id: string]
   'on-view-visualization': [id: string]
+  'on-survey-submit': [logId: string]
+  'on-survey-close': [logId: string]
 }>()
 
 const listRef = ref<HTMLElement | null>(null)
@@ -82,6 +87,19 @@ const scrollToBottom = () => {
   if (listRef.value) {
     listRef.value.scrollTo({ top: listRef.value.scrollHeight, behavior: 'smooth' })
   }
+}
+
+// 특정 logId 메시지 상단으로 즉시 스크롤
+// - getBoundingClientRect 기반으로 정확한 위치 계산
+// - isUserScrolling을 선점해 ResizeObserver의 scrollToBottomInstant 간섭을 차단
+const scrollToMessage = (logId: string) => {
+  if (!listRef.value) return
+  const el = listRef.value.querySelector(`[data-log-id="${logId}"]`) as HTMLElement | null
+  if (!el) return
+  isUserScrolling.value = true
+  const containerRect = listRef.value.getBoundingClientRect()
+  const elRect = el.getBoundingClientRect()
+  listRef.value.scrollTop += elRect.top - containerRect.top
 }
 
 // 즉시 스크롤 (자동 추적용 — instant)
@@ -113,5 +131,5 @@ onUnmounted(() => {
   resizeObserver?.disconnect()
 })
 
-defineExpose({ scrollToBottom })
+defineExpose({ scrollToBottom, scrollToMessage })
 </script>

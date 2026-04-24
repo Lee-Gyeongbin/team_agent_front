@@ -19,8 +19,13 @@
         @on-view-source="onViewSource"
         @on-view-visualization="onViewVisualization"
         @on-select-category="onSelectCategory"
+        @on-survey-submit="onSurveyMessageSubmit"
+        @on-survey-close="onSurveyMessageClose"
       />
-      <ChatInput v-model="chatMessage" />
+      <ChatInput
+        v-model="chatMessage"
+        :disabled="isSurveyInputLocked"
+      />
     </div>
     <!-- 리사이즈 핸들 -->
     <div
@@ -129,8 +134,15 @@ const {
   handleResetChatPanels,
   handleSelectKnowledge,
   handleSelectChatIndexAgents,
+  onSurveyMessageSubmit,
+  handleClosePsychologySurvey,
 } = useChatStore()
 const { chatMessage, handleSetChatRoom } = useChatRooms()
+
+/** 메시지 목록의 설문 컴포넌트 "닫기" 버튼 클릭 */
+const onSurveyMessageClose = (logId: string) => {
+  handleClosePsychologySurvey(logId)
+}
 const { startChatSocket, stopChatSocket } = useChatSocket()
 const route = useRoute()
 const {
@@ -152,9 +164,11 @@ const {
 
 type ChatMessageListExpose = {
   scrollToBottom: () => void
+  scrollToMessage: (logId: string) => void
 }
 
 const chatMessageListRef = ref<ChatMessageListExpose | null>(null)
+const isSurveyInputLocked = computed(() => messages.value.some((m) => m.type === 'survey' && !m.surveySubmitted))
 // 패널 리사이즈
 const panelWidthPercent = ref(50)
 const isResizing = ref(false)
@@ -216,7 +230,19 @@ watch(
   async (nextLength, prevLength) => {
     if (nextLength <= prevLength) return
     await nextTick()
-    chatMessageListRef.value?.scrollToBottom()
+    const lastMsg = messages.value[messages.value.length - 1]
+    if (lastMsg?.type === 'survey' && !lastMsg.surveySubmitted) {
+      // ResizeObserver(scrollToBottomInstant)가 먼저 실행된 뒤에 survey 상단으로 이동해야 하므로
+      // double-rAF로 두 프레임 뒤에 스크롤을 적용한다
+      const logId = lastMsg.logId
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          chatMessageListRef.value?.scrollToMessage(logId)
+        })
+      })
+    } else {
+      chatMessageListRef.value?.scrollToBottom()
+    }
   },
 )
 
@@ -226,7 +252,9 @@ onBeforeRouteLeave((to) => {
     handleResetChatPanels()
   }
 
+  // chat 영역 밖으로 나갈 때 열려 있을 수 있는 설문 닫기
   if (!String(to.path).startsWith('/chat')) {
+    handleClosePsychologySurvey()
     stopChatSocket()
   }
 })

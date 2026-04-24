@@ -1,7 +1,7 @@
 <template>
   <div
     class="chat-message-item"
-    :class="message.type === 'answer' ? 'role-assistant' : 'role-user'"
+    :class="message.type === 'answer' ? 'role-assistant' : message.type === 'survey' ? 'role-survey' : 'role-user'"
   >
     <!-- assistant 메시지 -->
     <template v-if="message.type === 'answer'">
@@ -107,6 +107,16 @@
         </div>
       </div>
     </template>
+
+    <!-- 설문 메시지 (산업심리 상담 에이전트) -->
+    <template v-else-if="message.type === 'survey'">
+      <ChatPsychologySurvey
+        :readonly="message.surveySubmitted === true"
+        :initial-answers="message.surveyAnswers"
+        @close="emit('on-survey-close', message.logId)"
+        @submit="emit('on-survey-submit', message.logId)"
+      />
+    </template>
   </div>
 </template>
 
@@ -145,6 +155,10 @@ const emit = defineEmits<{
   'on-select-category': [id: string, categoryValue: string, categoryNm: string]
   'on-view-source': [id: string]
   'on-view-visualization': [id: string]
+  /** 설문 제출 (survey 타입 메시지) */
+  'on-survey-submit': [logId: string]
+  /** 설문 닫기 (survey 타입 메시지) */
+  'on-survey-close': [logId: string]
 }>()
 
 /** 카테고리 id만 전달되므로 표시명은 knowledgeList에서 매칭 */
