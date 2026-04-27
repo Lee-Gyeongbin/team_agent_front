@@ -351,7 +351,7 @@ const fileUploadModalFiles = ref<File[]>([])
 const selectedFileIds = ref<string[]>([])
 const secLvlOptions = ref<{ label: string; value: string }[]>([{ label: '선택', value: '' }])
 
-const FILE_UPLOAD_ALLOWED_EXT: string[] = ['txt', 'pptx', 'pdf', 'docx', 'hwp']
+const FILE_UPLOAD_ALLOWED_EXT: string[] = ['txt', 'pptx', 'pdf', 'docx', 'hwp', 'doc', 'ppt', 'xls']
 const FILE_UPLOAD_MAX = 30
 const FILE_UPLOAD_MAX_SIZE = 100 * 1024 * 1024
 const fileAccept = '.txt,.pptx,.pdf,.docx,.hwp'
