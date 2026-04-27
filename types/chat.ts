@@ -74,6 +74,8 @@ export interface ChatSocketMessage {
   /** 완료 시 서버에서 내려주는 로그 ID (있으면 스트리밍 메시지에 반영) */
   logId?: string
   tableData?: string
+  /** complete 시점 차트 기본 옵션 */
+  chartOption?: VisualizationChartOptionPayload | string
 }
 // 메세지
 export interface ChatMessage {
@@ -104,6 +106,8 @@ export interface ChatMessage {
   docExist?: 'Y' | 'N'
   /** 시각화 테이블 원본 JSON (로그 목록 조회·스트리밍 완료 시) */
   tableData?: string
+  /** 시각화 축/차트 기본 옵션 */
+  chartOption?: VisualizationChartOptionPayload | string
   /** 질문에 첨부된 파일 (전송 직후 UI; 로그 API에 첨부 필드가 없으면 재조회 시 비어 있을 수 있음) */
   attachments?: ChatMessageAttachment[]
   /** Web 검색/그라운딩 출처 (answer_source 스트리밍 청크로 수신) */
@@ -204,6 +208,8 @@ export interface ChatLogListRow {
   ttsq?: string
   /** 시각화 테이블 원본(JSON 문자열) */
   tableData?: string
+  /** 시각화 차트 옵션(JSON 문자열 또는 객체) */
+  chartOption?: VisualizationChartOptionPayload | string
   /** Web 그라운딩 출처 JSON 문자열 — {"items":[{"url","title"},...]} */
   webGroundingJson?: string
   /** 만족도 Y/N (목록 조회 시) */
@@ -280,6 +286,11 @@ export const EMPTY_VISUALIZATION_DATA_ROW: VisualizationDataRow = {
 
 export type VisualizationStatus = 'idle' | 'loading' | 'success' | 'empty' | 'error'
 export type VisualizationChartType = 'bar' | 'line' | 'pie'
+export interface VisualizationChartOptionPayload {
+  chart?: VisualizationChartType
+  x?: string[]
+  y?: string[]
+}
 
 export interface VisualizationSelectOption {
   label: string

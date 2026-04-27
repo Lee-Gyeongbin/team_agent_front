@@ -10,7 +10,6 @@ import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
 import { clearBodyChartFullscreen } from '~/utils/chat/visualizationChartUtil'
 import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
 import { getCodes } from '~/utils/global/comCodesUtil'
-import type { ColorItem, IconItem } from '~/types/theme'
 import { useFileStore } from '~/composables/com/useFileStore'
 
 /** 에이전트 SVC_TY → 채팅 검색모드 (M=RAG·지식, S=SQL·데이터마트) */
@@ -205,6 +204,7 @@ export const useChatStore = () => {
     const answerMsg = source.find((m) => m.logId === logId && m.type === 'answer')
     // 답변 메시지의 tableData 조회
     const tableData = typeof answerMsg?.tableData === 'string' ? answerMsg.tableData : ''
+    const chartOption = answerMsg?.chartOption
     // 답변 메시지의 sql 조회
     const sql = typeof answerMsg?.visualizationData?.sql === 'string' ? answerMsg.visualizationData.sql : ''
     // 테이블 데이터가 없으면 빈 뷰 모델 반환
@@ -242,6 +242,7 @@ export const useChatStore = () => {
       messageId: logId,
       sql,
       tableData,
+      chartOption,
       statList,
       statDetailList,
     })
@@ -307,8 +308,8 @@ export const useChatStore = () => {
   /** 에이전트 관리 목록 기준 모드 선택 (/chat 인덱스 버튼) — 동일 모드 여러 에이전트 간 전환 지원 */
   const selectChatIndexAgent = async (agent: Agent) => {
     if (agent.svcTy === 'T') {
-      // 링크형 에이전트
-      await handleOpenAgentLink(agent)
+      // 회의록 에이전트 → 내부 회의 페이지로 이동
+      await navigateTo('/meeting')
       return
     }
     const mode = agentTypeToSearchMode(agent.svcTy)

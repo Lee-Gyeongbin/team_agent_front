@@ -153,7 +153,9 @@
       v-if="selectedNotice"
       :is-open="isNoticeDetailPanelOpen"
       :notice="selectedNotice"
-      :notice-title="`${getNoticeTypeBracketed(selectedNotice as NoticeRow)} ${(selectedNotice as NoticeRow).title}`.trim()"
+      :notice-title="
+        `${getNoticeTypeBracketed(selectedNotice as NoticeRow)} ${(selectedNotice as NoticeRow).title}`.trim()
+      "
       @edit="onEditNotice"
       @delete="onDeleteNotice"
       @close="isNoticeDetailPanelOpen = false"
