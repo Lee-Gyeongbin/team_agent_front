@@ -29,20 +29,15 @@
       <!-- 매핑 대상 컬럼 + 매핑 목록 + 코드값 (한 영역) -->
       <div
         class="com-setting-section datamart-meta-code-section"
-        :class="{ 'is-collapsed': sectionCollapsed.listAndEditor }"
         style="--label-width: 140px"
       >
-        <div
-          class="com-setting-section-header"
-          @click="sectionCollapsed.listAndEditor = !sectionCollapsed.listAndEditor"
-        >
+        <div class="com-setting-section-header datamart-meta-code-section-header-static">
           <span class="com-setting-section-title">
             매핑 목록 · 코드값
             <template v-if="activeMappingChipLabel">
               <span class="datamart-meta-column-metadata-table-chip">{{ activeMappingChipLabel }}</span>
             </template>
           </span>
-          <i class="icon-chevron-down size-16 com-setting-section-arrow" />
         </div>
         <div class="com-setting-section-body">
           <div class="datamart-meta-code-combined">
@@ -69,7 +64,7 @@
                       :options="pickColumnOptions"
                       size="sm"
                       placeholder="컬럼 선택"
-                      :disabled="!pickTableId || pickColumnOptions.length === 0"
+                      :disabled="!pickTableId"
                     />
                   </div>
                 </div>
@@ -98,7 +93,7 @@
                 clickable
                 selected-row-key="mappingId"
                 :selected-row-value="selectedMappingId"
-                empty-text="등록된 코드 매핑이 없습니다. 위에서 테이블·컬럼을 선택 후 컬럼 추가를 누르세요."
+                empty-text="등록된 코드 매핑이 없습니다."
                 @row-click="onMappingMasterRowClick"
               >
                 <template #cell-_actions="{ row }">
@@ -147,45 +142,66 @@
                       코드값 추가
                     </UiButton>
                   </div>
-                  <div class="datamart-meta-code-entry-list">
-                    <div
-                      v-for="entry in activeMapping.entries"
-                      :key="entry.id"
-                      class="datamart-meta-code-entry-row"
-                    >
-                      <UiInput
-                        v-model="entry.codeValue"
-                        size="sm"
-                        class="datamart-meta-code-entry-code"
-                        placeholder="코드값"
-                      />
-                      <span
-                        class="datamart-meta-code-entry-eq"
-                        aria-hidden="true"
-                      >
-                        =
-                      </span>
-                      <UiInput
-                        v-model="entry.labelKo"
-                        size="sm"
-                        class="datamart-meta-code-entry-label"
-                        placeholder="설명(한국어)"
-                      />
-                      <UiButton
-                        variant="line-secondary"
-                        size="sm"
-                        icon-only
-                        type="button"
-                        title="이 코드 행 삭제"
-                        aria-label="이 코드 행 삭제"
-                        @click="onRemoveEntry(activeMapping.id, entry.id)"
-                      >
-                        <template #icon-left>
-                          <i class="icon-trashcan size-16" />
-                        </template>
-                      </UiButton>
-                    </div>
-                  </div>
+                  <draggable
+                    v-model="activeEntries"
+                    item-key="sortOrd"
+                    handle=".datamart-meta-code-entry-drag-handle"
+                    animation="200"
+                    class="datamart-meta-code-entry-list"
+                  >
+                    <template #item="{ element: entry }">
+                      <div class="datamart-meta-code-entry-row">
+                        <span
+                          class="datamart-meta-code-entry-drag-handle"
+                          aria-label="순서 변경"
+                          title="드래그하여 순서 변경"
+                        >
+                          <i class="icon-move-handle size-16" />
+                        </span>
+                        <span class="datamart-meta-code-entry-mapping">
+                          <span class="datamart-meta-code-entry-side is-code">
+                            <span class="datamart-meta-code-entry-text-label">코드</span>
+                            <UiInput
+                              v-model="entry.codeVal"
+                              size="sm"
+                              class="datamart-meta-code-entry-code"
+                              placeholder="코드값"
+                            />
+                          </span>
+                          <span
+                            class="datamart-meta-code-entry-arrow"
+                            aria-hidden="true"
+                            >→</span
+                          >
+                          <span class="datamart-meta-code-entry-side is-label">
+                            <span class="datamart-meta-code-entry-text-label">코드값(설명)</span>
+                            <UiInput
+                              v-model="entry.codeKorNm"
+                              size="sm"
+                              class="datamart-meta-code-entry-label"
+                              placeholder="설명"
+                            />
+                          </span>
+                        </span>
+                        <div class="datamart-meta-code-entry-actions">
+                          <UiButton
+                            variant="line-secondary"
+                            size="sm"
+                            icon-only
+                            type="button"
+                            class="datamart-meta-code-entry-remove"
+                            title="이 코드 행 삭제"
+                            aria-label="이 코드 행 삭제"
+                            @click="onRemoveEntry(activeMapping.tblId, activeMapping.colId, entry.sortOrd)"
+                          >
+                            <template #icon-left>
+                              <i class="icon-trashcan size-16" />
+                            </template>
+                          </UiButton>
+                        </div>
+                      </div>
+                    </template>
+                  </draggable>
                 </div>
               </template>
             </div>
@@ -229,6 +245,7 @@ import type {
   DatamartMetaTableItem,
 } from '~/types/datamartMeta'
 import { datamartMetaCodeMappingMasterColumns } from '~/types/datamartMeta'
+import draggable from 'vuedraggable'
 
 const props = defineProps<{
   datamart: Datamart | null
@@ -251,37 +268,54 @@ const selectedMappingId = ref('')
 const pickTableId = ref('')
 const pickColId = ref('')
 
+const buildMappingId = (tblId: string, colId: string) => `${tblId}::${colId}`
+
 const sectionCollapsed = reactive({
-  listAndEditor: false,
   aiContextPreview: false,
 })
 
 const activeTables = computed(() => props.tables.filter((t) => t.useYn === 'Y'))
 
-const tableOptions = computed(() =>
-  activeTables.value.map((t) => ({
-    label: `${t.physicalNm} · ${t.logicalNm}`,
+const tableOptions = computed(() => [
+  { label: '선택', value: '' },
+  ...activeTables.value.map((t) => ({
+    label: `${t.physicalNm} ${t.logicalNm ? `· ${t.logicalNm}` : ''}`,
     value: t.id,
   })),
-)
+])
 
 const pickColumnOptions = computed(() => {
   const t = activeTables.value.find((row) => row.id === pickTableId.value)
-  if (!t) return []
-  return t.columns.map((c) => ({ label: c.colPhyNm || c.colKorNm || c.colId, value: c.colId }))
+  if (!t) return [{ label: '선택', value: '' }]
+  return [
+    { label: '선택', value: '' },
+    ...t.columns.map((c) => ({ label: c.colPhyNm || c.colKorNm || c.colId, value: c.colId })),
+  ]
 })
 
 const activeMapping = computed(() => {
   const id = selectedMappingId.value
   if (!id) return null
-  return codeMappings.value.find((m) => m.id === id) ?? null
+  return codeMappings.value.find((m) => buildMappingId(m.tblId, m.colId) === id) ?? null
+})
+
+const activeEntries = computed<DatamartMetaCodeValueRow[]>({
+  get: () => activeMapping.value?.entries ?? [],
+  set: (entries) => {
+    const m = activeMapping.value
+    if (!m) return
+    m.entries = entries.map((entry, index) => ({
+      ...entry,
+      sortOrd: index + 1,
+    }))
+  },
 })
 
 /** 컬럼 메타 탭 「테이블 정보 · physicalNm」과 동일 톤 — 앞에 중점 */
 const activeMappingChipLabel = computed(() => {
   const m = activeMapping.value
   if (!m) return ''
-  const { table, col } = resolveTableCol(m.tableId, m.columnId)
+  const { table, col } = resolveTableCol(m.tblId, m.colId)
   if (!table || !col) return ''
   return ` · ${table.physicalNm}.${col.colPhyNm}`
 })
@@ -294,11 +328,11 @@ const resolveTableCol = (tableId: string, columnId: string) => {
 
 const mappingMasterRows = computed((): MappingMasterRow[] =>
   codeMappings.value.map((m) => {
-    const { table, col } = resolveTableCol(m.tableId, m.columnId)
+    const { table, col } = resolveTableCol(m.tblId, m.colId)
     return {
-      mappingId: m.id,
-      tableNm: table?.physicalNm ?? m.tableId,
-      colPhyNm: col?.colPhyNm ?? m.columnId,
+      mappingId: buildMappingId(m.tblId, m.colId),
+      tableNm: table?.physicalNm ?? m.tblId,
+      colPhyNm: col?.colPhyNm ?? m.colId,
       colDesc: col?.colDesc?.trim() ? col.colDesc : '—',
       entryCnt: String(m.entries.length),
     }
@@ -332,8 +366,8 @@ const formatMappingValues = (m: DatamartMetaCodeColumnMapping) => {
   if (m.entries.length === 0) return '(없음)'
   return m.entries
     .map((e) => {
-      const q = e.codeValue.includes("'") ? e.codeValue.replace(/'/g, "''") : e.codeValue
-      return `'${q}'=${e.labelKo || '(미입력)'}`
+      const q = e.codeVal.includes("'") ? e.codeVal.replace(/'/g, "''") : e.codeVal
+      return `'${q}'=${e.codeKorNm || '(미입력)'}`
     })
     .join(', ')
 }
@@ -348,11 +382,12 @@ const previewAiContext = computed(() => {
 
   const cur = activeMapping.value
   if (cur) {
-    const { table, col } = resolveTableCol(cur.tableId, cur.columnId)
+    const { table, col } = resolveTableCol(cur.tblId, cur.colId)
     if (table && col) {
       const tableKo = table.logicalNm?.trim() || table.tableDescKo?.trim() || '—'
       lines.push(`테이블: ${table.physicalNm} (${tableKo})`)
-      lines.push(`컬럼: ${col.colPhyNm} ${col.dataType} — ${col.colDesc?.trim() || '—'}`)
+      lines.push(`컬럼: ${col.colPhyNm} ${col.colDesc?.trim() ? `— ${col.colDesc}` : ''}`)
+      lines.push(`타입: ${col.dataType} `)
       lines.push(`  값: ${formatMappingValues(cur)}`)
     } else {
       lines.push('테이블: —')
@@ -382,47 +417,69 @@ const onAddCodeColumn = () => {
   const col = table?.columns.find((c) => c.colId === pickColId.value)
   if (!table || !col) return
 
-  const dup = codeMappings.value.some((m) => m.tableId === table.id && m.columnId === col.colId)
+  const dup = codeMappings.value.some((m) => m.tblId === table.id && m.colId === col.colId)
   if (dup) {
     openToast({ message: '이미 추가된 컬럼입니다.', type: 'warning' })
     return
   }
 
-  const newId = `code_map_${Date.now()}`
-  const entryId = `code_entry_${Date.now()}`
   codeMappings.value = [
     ...codeMappings.value,
     {
-      id: newId,
-      tableId: table.id,
-      columnId: col.colId,
-      entries: [{ id: entryId, codeValue: '', labelKo: '' }],
+      tblId: table.id,
+      colId: col.colId,
+      entries: [
+        {
+          datamartId: props.datamart?.datamartId ?? '',
+          tblId: table.id,
+          colId: col.colId,
+          codeVal: '',
+          codeKorNm: '',
+          codeDesc: '',
+          sortOrd: 1,
+          useYn: 'Y',
+          createDt: '',
+          modifyDt: '',
+        },
+      ],
     },
   ]
-  selectedMappingId.value = newId
+  selectedMappingId.value = buildMappingId(table.id, col.colId)
   pickColId.value = ''
 }
 
-const onRemoveMapping = (id: string) => {
-  codeMappings.value = codeMappings.value.filter((m) => m.id !== id)
-  if (selectedMappingId.value === id) selectedMappingId.value = ''
+const onRemoveMapping = (mappingId: string) => {
+  codeMappings.value = codeMappings.value.filter((m) => buildMappingId(m.tblId, m.colId) !== mappingId)
+  if (selectedMappingId.value === mappingId) selectedMappingId.value = ''
 }
 
 const onAddEntry = () => {
   const m = activeMapping.value
   if (!m) return
   const row: DatamartMetaCodeValueRow = {
-    id: `code_entry_${Date.now()}`,
-    codeValue: '',
-    labelKo: '',
+    datamartId: props.datamart?.datamartId ?? '',
+    tblId: m.tblId,
+    colId: m.colId,
+    codeVal: '',
+    codeKorNm: '',
+    codeDesc: '',
+    sortOrd: m.entries.length + 1,
+    useYn: 'Y',
+    createDt: '',
+    modifyDt: '',
   }
   m.entries = [...m.entries, row]
 }
 
-const onRemoveEntry = (mappingId: string, entryId: string) => {
-  const m = codeMappings.value.find((x) => x.id === mappingId)
+const onRemoveEntry = (tblId: string, colId: string, sortOrd: number) => {
+  const m = codeMappings.value.find((x) => x.tblId === tblId && x.colId === colId)
   if (!m) return
-  m.entries = m.entries.filter((e) => e.id !== entryId)
+  m.entries = m.entries
+    .filter((e) => e.sortOrd !== sortOrd)
+    .map((entry, index) => ({
+      ...entry,
+      sortOrd: index + 1,
+    }))
 }
 </script>
 
@@ -430,6 +487,7 @@ const onRemoveEntry = (mappingId: string, entryId: string) => {
 .datamart-meta-code-mapping {
   /* 목록·코드값 패널 — 모달 안 세로 여유 확보 */
   --datamart-meta-code-panel-h: min(120px, 16vh);
+  --datamart-meta-code-editor-h: min(180px, 26vh);
   --datamart-meta-ai-context-h: min(120px, 16.5vh);
 
   position: relative;
@@ -474,6 +532,13 @@ const onRemoveEntry = (mappingId: string, entryId: string) => {
 .datamart-meta-column-metadata-table-chip {
   font-weight: $font-weight-medium;
   color: $color-text-secondary;
+}
+
+/* 매핑 목록·코드값 — 접기 없음: 클릭/포인터 커서 제거 */
+.datamart-meta-code-section-header-static {
+  cursor: default;
+  user-select: text;
+  justify-content: flex-start;
 }
 
 .datamart-meta-code-section-hint {
@@ -562,9 +627,9 @@ const onRemoveEntry = (mappingId: string, entryId: string) => {
   &.is-editor {
     display: flex;
     flex-direction: column;
-    height: var(--datamart-meta-code-panel-h);
-    min-height: var(--datamart-meta-code-panel-h);
-    max-height: var(--datamart-meta-code-panel-h);
+    height: var(--datamart-meta-code-editor-h);
+    min-height: var(--datamart-meta-code-editor-h);
+    max-height: var(--datamart-meta-code-editor-h);
   }
 
   :deep(.ui-table-wrap) {
@@ -654,17 +719,17 @@ const onRemoveEntry = (mappingId: string, entryId: string) => {
   display: flex;
   flex-shrink: 0;
   justify-content: flex-end;
-  padding: 4px 8px 2px;
+  padding: 6px 10px 4px;
   box-sizing: border-box;
 }
 
 .datamart-meta-code-entry-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   flex: 1 1 auto;
   min-height: 0;
-  padding: 6px 8px;
+  padding: 8px 10px;
   box-sizing: border-box;
   overflow-y: auto;
   @include custom-scrollbar;
@@ -672,25 +737,120 @@ const onRemoveEntry = (mappingId: string, entryId: string) => {
 
 .datamart-meta-code-entry-row {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 6px 8px;
+  border: 1px solid #e9edf5;
+  border-radius: $border-radius-base;
+  background: #fff;
+}
+
+.datamart-meta-code-entry-drag-handle {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  color: #9aa5bc;
+  cursor: grab;
+  line-height: 0;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.datamart-meta-code-entry-mapping {
+  display: flex;
   align-items: center;
   gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.datamart-meta-code-entry-side {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.datamart-meta-code-entry-inline-label {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: $font-weight-medium;
+  color: #5d6983;
+  background: #f2f5fb;
+}
+
+.datamart-meta-code-entry-text-label {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  font-size: 12px;
+  font-weight: $font-weight-medium;
+  color: #5d6983;
+  line-height: 1;
+}
+
+.datamart-meta-code-entry-side.is-code {
+  flex: 1 1 0;
+}
+
+.datamart-meta-code-entry-side.is-label {
+  flex: 1 1 auto;
 }
 
 .datamart-meta-code-entry-code {
-  flex: 0 1 120px;
-  min-width: 72px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
-.datamart-meta-code-entry-eq {
+.datamart-meta-code-entry-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
   flex-shrink: 0;
-  font-weight: $font-weight-bold;
-  color: $color-text-disabled;
+  font-size: 12px;
+  color: #8f99ad;
+  line-height: 1;
 }
 
 .datamart-meta-code-entry-label {
-  flex: 1 1 160px;
-  min-width: 100px;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: none;
+}
+
+:deep(.datamart-meta-code-entry-code .ui-input-wrap),
+:deep(.datamart-meta-code-entry-label .ui-input-wrap) {
+  border-radius: $border-radius-sm;
+}
+
+.datamart-meta-code-entry-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+}
+
+:deep(.datamart-meta-code-entry-remove.ui-button.is-icon-only.size-sm) {
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  border-radius: $border-radius-sm;
+}
+
+.datamart-meta-code-entry-list :deep(.sortable-ghost) {
+  opacity: 0.45;
 }
 
 .datamart-meta-code-ai-context-hint {
