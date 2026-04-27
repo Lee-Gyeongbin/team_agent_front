@@ -118,6 +118,8 @@
   background: transparent;
   cursor: pointer;
   color: $color-text-muted;
+  white-space: nowrap;
+  flex-shrink: 0;
   @include typo($body-small);
   transition: all $transition-fast;
 
@@ -133,6 +135,16 @@
   width: 1px;
   height: 16px;
   background: $color-border;
+  flex-shrink: 0;
+}
+
+// 제목 + 편집버튼 wrapper — 한 그룹으로 묶어 분리 방지
+.meeting-detail-title-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .meeting-detail-title {

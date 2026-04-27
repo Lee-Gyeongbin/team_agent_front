@@ -22,7 +22,10 @@
           @keydown.esc.prevent="onCancelTitle"
           @blur="onSaveTitle"
         />
-        <template v-else>
+        <div
+          v-else
+          class="meeting-detail-title-wrap"
+        >
           <h2
             class="meeting-detail-title"
             @dblclick="onClickEditTitle"
@@ -37,7 +40,7 @@
           >
             <i class="icon-edit size-16" />
           </button>
-        </template>
+        </div>
       </template>
     </div>
 
