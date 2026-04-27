@@ -114,6 +114,12 @@ export interface ChatMessage {
   surveyAnswers?: Record<number, number>
   /** 산업심리 설문 메시지(type=survey) 전용: 제출 완료 여부 */
   surveySubmitted?: boolean
+  /** 점심 추천 카드(uiType=lunch-card) 전용: 사용자 응답 */
+  lunchFormPayload?: LunchAgentFormPayload
+  /** 점심 추천 카드(uiType=lunch-card) 전용: 제출 완료 여부 */
+  lunchSubmitted?: boolean
+  /** 답변 말풍선 내 특수 UI 렌더 타입 */
+  uiType?: 'lunch-card'
   [key: string]: unknown
 }
 
@@ -163,6 +169,42 @@ export interface SearchModeOption {
 export interface SubOption {
   label: string
   value: string
+}
+
+export interface LunchCardMeta {
+  lunchSelectCardDisplayYn?: string
+  rcontent?: string
+  logId?: string | number
+  refId?: string
+  svcTy?: string
+  createDt?: string
+  agentId?: string
+  roomId?: string | number
+  roomTitle?: string
+  [key: string]: unknown
+}
+
+export interface DmListResponse {
+  subOptionList?: SubOption[]
+  data?: LunchCardMeta
+  [key: string]: unknown
+}
+
+export interface LunchAgentFormPayload {
+  sido: string
+  sigungu: string
+  dong: string
+  mood: string
+  budget: string
+  peopleCount: string
+  cuisineType: string
+}
+
+export interface LunchRecommendationItem {
+  restaurant: string
+  location: string
+  menu: string
+  price: string
 }
 
 export interface ChatRoom {

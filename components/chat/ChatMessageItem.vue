@@ -19,14 +19,26 @@
           <span class="typing-dot" /><span class="typing-dot" /><span class="typing-dot" />
         </div>
         <template v-else>
+          <ChatLunchAgentCard
+            v-if="message.uiType === 'lunch-card'"
+            :readonly="message.lunchSubmitted === true"
+            :initial-payload="message.lunchFormPayload"
+            @submit="emit('on-submit-lunch-card', message.logId, $event)"
+            @close="emit('on-close-lunch-card', message.logId)"
+          />
+          <ChatLunchAgentCard
+            v-else-if="parsedLunchRecommendations.length"
+            :recommendations="parsedLunchRecommendations"
+          />
           <!-- eslint-disable vue/no-v-html — toHtmlContent 내 안전 처리 적용 -->
           <div
+            v-else
             class="message-content markdown-body"
             v-html="renderedHtml"
           />
           <!-- eslint-enable vue/no-v-html -->
           <ul
-            v-if="message.groundingSources?.length"
+            v-if="message.uiType !== 'lunch-card' && message.groundingSources?.length"
             class="message-grounding-sources"
           >
             <li
@@ -44,7 +56,7 @@
         </template>
         <!-- 액션 + 패널 버튼 (한 줄) -->
         <div
-          v-if="!message.isStreaming"
+          v-if="!message.isStreaming && message.uiType !== 'lunch-card'"
           class="message-footer"
         >
           <!-- 라이브러리 카테고리: Actions는 value만 알 수 있어 logId는 여기서 묶어 상위로 전달 -->
@@ -121,7 +133,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ChatMessage, KnowledgeItem } from '~/types/chat'
+import type { ChatMessage, KnowledgeItem, LunchAgentFormPayload, LunchRecommendationItem } from '~/types/chat'
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 
 interface Props {
@@ -139,6 +151,22 @@ const props = withDefaults(defineProps<Props>(), {
 /** 마크다운 렌더 결과 — v-html */
 const renderedHtml = computed(() => toHtmlContent(props.message.rContent ?? ''))
 
+const parseLunchRecommendations = (raw: string): LunchRecommendationItem[] => {
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (!Array.isArray(parsed)) return []
+    return parsed as LunchRecommendationItem[]
+  } catch {
+    return []
+  }
+}
+
+const parsedLunchRecommendations = computed<LunchRecommendationItem[]>(() => {
+  const raw = (props.message.rContent ?? '').trim()
+  if (!raw || props.message.uiType === 'lunch-card') return []
+  return parseLunchRecommendations(raw)
+})
+
 /** 출처 제목 앞 마크다운 헤더 기호(## 등) 제거 */
 const getSourceLabel = (title: string | undefined, url: string) => {
   const raw = (title ?? '').trim()
@@ -155,6 +183,8 @@ const emit = defineEmits<{
   'on-select-category': [id: string, categoryValue: string, categoryNm: string]
   'on-view-source': [id: string]
   'on-view-visualization': [id: string]
+  'on-submit-lunch-card': [logId: string, payload: LunchAgentFormPayload]
+  'on-close-lunch-card': [logId: string]
   /** 설문 제출 (survey 타입 메시지) */
   'on-survey-submit': [logId: string]
   /** 설문 닫기 (survey 타입 메시지) */

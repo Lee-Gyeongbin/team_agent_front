@@ -21,6 +21,8 @@
         @on-select-category="onSelectCategory"
         @on-survey-submit="onSurveyMessageSubmit"
         @on-survey-close="onSurveyMessageClose"
+        @on-lunch-card-submit="handleSubmitLunchAgentForm"
+        @on-lunch-card-close="onLunchMessageClose"
       />
       <ChatInput
         v-model="chatMessage"
@@ -136,6 +138,8 @@ const {
   handleSelectChatIndexAgents,
   onSurveyMessageSubmit,
   handleClosePsychologySurvey,
+  handleSubmitLunchAgentForm,
+  handleCloseLunchAgentForm,
 } = useChatStore()
 const { chatMessage, handleSetChatRoom } = useChatRooms()
 
@@ -168,7 +172,16 @@ type ChatMessageListExpose = {
 }
 
 const chatMessageListRef = ref<ChatMessageListExpose | null>(null)
-const isSurveyInputLocked = computed(() => messages.value.some((m) => m.type === 'survey' && !m.surveySubmitted))
+const isSurveyInputLocked = computed(() =>
+  messages.value.some(
+    (m) => (m.type === 'survey' && !m.surveySubmitted) || (m.uiType === 'lunch-card' && !m.lunchSubmitted),
+  ),
+)
+
+/** 메시지 목록의 점심 카드 "닫기" 버튼 클릭 */
+const onLunchMessageClose = (logId: string) => {
+  handleCloseLunchAgentForm(logId)
+}
 // 패널 리사이즈
 const panelWidthPercent = ref(50)
 const isResizing = ref(false)

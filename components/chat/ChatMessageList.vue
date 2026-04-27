@@ -19,6 +19,8 @@
           @on-regenerate="emit('on-regenerate', $event)"
           @on-view-source="emit('on-view-source', $event)"
           @on-view-visualization="emit('on-view-visualization', $event)"
+          @on-submit-lunch-card="onSubmitLunchCard"
+          @on-lunch-card-close="emit('on-lunch-card-close', $event)"
           @on-select-category="
             (logId: string, categoryValue: string, categoryNm: string) =>
               emit('on-select-category', logId, categoryValue, categoryNm)
@@ -41,7 +43,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ChatMessage, KnowledgeItem } from '~/types/chat'
+import type { ChatMessage, KnowledgeItem, LunchAgentFormPayload } from '~/types/chat'
 
 interface Props {
   messages: ChatMessage[]
@@ -52,6 +54,7 @@ interface Props {
 
 withDefaults(defineProps<Props>(), {
   isShare: false,
+  knowledgeList: undefined,
 })
 
 const emit = defineEmits<{
@@ -65,7 +68,13 @@ const emit = defineEmits<{
   'on-view-visualization': [id: string]
   'on-survey-submit': [logId: string]
   'on-survey-close': [logId: string]
+  'on-lunch-card-submit': [logId: string, payload: LunchAgentFormPayload]
+  'on-lunch-card-close': [logId: string]
 }>()
+
+const onSubmitLunchCard = (logId: string, payload: LunchAgentFormPayload) => {
+  emit('on-lunch-card-submit', logId, payload)
+}
 
 const listRef = ref<HTMLElement | null>(null)
 const innerRef = ref<HTMLElement | null>(null)
