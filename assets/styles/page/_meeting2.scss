@@ -1462,6 +1462,54 @@
   gap: $spacing-xs;
 }
 
+// 작업 메뉴 안 드롭다운 (파일 저장 형식 선택)
+.meeting2-action-picker {
+  position: relative;
+}
+
+.meeting2-action-picker-caret {
+  margin-left: auto;
+  transition: transform $transition-fast;
+
+  &.is-open {
+    transform: rotate(180deg);
+  }
+}
+
+.meeting2-action-picker-pop {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: $z-dropdown;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  box-shadow: $shadow-md;
+}
+
+.meeting2-action-picker-item {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 12px;
+  border: none;
+  background: transparent;
+  border-radius: $border-radius-sm;
+  cursor: pointer;
+  text-align: left;
+  @include typo($body-small, $color-text-dark);
+  transition: background $transition-fast;
+
+  &:hover {
+    background: #ecf0f3;
+    color: var(--color-primary);
+  }
+}
+
 .meeting2-side-action-btn {
   display: flex;
   align-items: center;
