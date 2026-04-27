@@ -1,31 +1,31 @@
 <template>
-  <div class="meeting-stepper">
+  <div class="meeting2-stepper">
     <template
       v-for="(step, idx) in steps"
       :key="step.key"
     >
       <div
-        class="meeting-stepper-item"
+        class="meeting2-stepper-item"
         :class="{
           'is-progress': step.status === 'progress',
           'is-done': step.status === 'done',
         }"
       >
-        <span class="meeting-stepper-item-icon">
+        <span class="meeting2-stepper-item-icon">
           <i
             v-if="iconMap[step.key]"
             :class="[iconMap[step.key], 'size-20']"
           />
           <span v-else>{{ idx + 1 }}</span>
         </span>
-        <div class="meeting-stepper-item-text">
-          <span class="meeting-stepper-item-title">{{ idx + 1 }}. {{ step.label }}</span>
-          <span class="meeting-stepper-item-status">{{ statusLabel(step.status) }}</span>
+        <div class="meeting2-stepper-item-text">
+          <span class="meeting2-stepper-item-title">{{ idx + 1 }}. {{ step.label }}</span>
+          <span class="meeting2-stepper-item-status">{{ statusLabel(step.status) }}</span>
         </div>
       </div>
       <span
         v-if="idx < steps.length - 1"
-        class="meeting-stepper-item-arrow"
+        class="meeting2-stepper-item-arrow"
       >
         <i class="icon-arrow-right size-20" />
       </span>

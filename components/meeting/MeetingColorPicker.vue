@@ -1,32 +1,32 @@
 <template>
   <div
     ref="rootRef"
-    class="meeting-color-picker"
+    class="meeting2-color-picker"
   >
     <button
       type="button"
-      class="meeting-editor-toolbar-btn meeting-color-picker-trigger"
+      class="meeting2-editor-toolbar-btn meeting2-color-picker-trigger"
       :title="title"
       :class="{ 'is-active': !!currentColor }"
       @click="toggleOpen"
     >
-      <span class="meeting-color-picker-label">{{ label }}</span>
+      <span class="meeting2-color-picker-label">{{ label }}</span>
       <span
-        class="meeting-color-picker-bar"
+        class="meeting2-color-picker-bar"
         :style="{ background: currentColor || 'transparent' }"
       ></span>
     </button>
 
     <div
       v-if="isOpen"
-      class="meeting-color-picker-pop"
+      class="meeting2-color-picker-pop"
     >
-      <div class="meeting-color-picker-grid">
+      <div class="meeting2-color-picker-grid">
         <button
           v-for="color in colors"
           :key="color"
           type="button"
-          class="meeting-color-picker-swatch"
+          class="meeting2-color-picker-swatch"
           :class="{ 'is-current': currentColor === color }"
           :style="{ background: color }"
           :title="color"
@@ -35,34 +35,34 @@
 
         <!-- 커스텀 색상 (네이티브 color input 트리거) -->
         <label
-          class="meeting-color-picker-swatch is-custom"
+          class="meeting2-color-picker-swatch is-custom"
           title="커스텀 색상"
         >
           <input
             type="color"
-            class="meeting-color-picker-custom-input"
+            class="meeting2-color-picker-custom-input"
             :value="customColorValue"
             @input="onCustomColor"
           />
-          <span class="meeting-color-picker-custom-icon">+</span>
+          <span class="meeting2-color-picker-custom-icon">+</span>
         </label>
       </div>
 
-      <div class="meeting-color-picker-actions">
+      <div class="meeting2-color-picker-actions">
         <span
           v-if="currentColor"
-          class="meeting-color-picker-current"
+          class="meeting2-color-picker-current"
         >
           현재:
           <span
-            class="meeting-color-picker-current-swatch"
+            class="meeting2-color-picker-current-swatch"
             :style="{ background: currentColor }"
           ></span>
-          <span class="meeting-color-picker-current-hex">{{ currentColor }}</span>
+          <span class="meeting2-color-picker-current-hex">{{ currentColor }}</span>
         </span>
         <button
           type="button"
-          class="meeting-color-picker-clear"
+          class="meeting2-color-picker-clear"
           @click="onClear"
         >
           색 해제

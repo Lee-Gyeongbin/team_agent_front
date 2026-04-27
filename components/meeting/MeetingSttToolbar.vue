@@ -1,13 +1,13 @@
 <template>
-  <div class="meeting-stt-toolbar">
-    <span class="meeting-stt-toggle">
+  <div class="meeting2-stt-toolbar">
+    <span class="meeting2-stt-toggle">
       실시간 STT
       <UiBadge :variant="sttBadgeVariant">{{ sttBadgeLabel }}</UiBadge>
     </span>
 
     <select
       v-model="selectedLanguage"
-      class="meeting-editor-toolbar-select"
+      class="meeting2-editor-toolbar-select"
     >
       <option
         v-for="lang in languages"

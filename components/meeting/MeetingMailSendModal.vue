@@ -5,15 +5,15 @@
     max-width="720px"
     @close="onClose"
   >
-    <div class="meeting-modal-form">
+    <div class="meeting2-modal-form">
       <!-- 받는 사람 -->
-      <div class="meeting-modal-field">
-        <div class="meeting-modal-field-head">
-          <span class="meeting-label">받는 사람 ({{ recipients.length }})</span>
+      <div class="meeting2-modal-field">
+        <div class="meeting2-modal-field-head">
+          <span class="meeting2-label">받는 사람 ({{ recipients.length }})</span>
           <button
             v-if="canFillParticipants"
             type="button"
-            class="meeting-modal-link-btn"
+            class="meeting2-modal-link-btn"
             @click="onClickFillParticipants"
           >
             참석자 {{ participantsCount }}명 자동 채움
@@ -32,31 +32,31 @@
         <!-- 검색 결과 드롭다운 -->
         <div
           v-if="hasSearchResults"
-          class="meeting-mail-search-results"
+          class="meeting2-mail-search-results"
         >
           <button
             v-for="user in filteredSearchResults"
             :key="user.id"
             type="button"
-            class="meeting-mail-search-result-item"
+            class="meeting2-mail-search-result-item"
             @click="onAddUser(user)"
           >
             <span
-              class="meeting-stt-item-avatar"
-              :class="`meeting-speaker-color-${user.id.charCodeAt(2) % 8}`"
+              class="meeting2-stt-item-avatar"
+              :class="`meeting2-speaker-color-${user.id.charCodeAt(2) % 8}`"
             >
               {{ user.name.charAt(0) }}
             </span>
-            <div class="meeting-mail-search-result-text">
-              <span class="meeting-mail-search-result-name">{{ user.name }}</span>
-              <span class="meeting-mail-search-result-email">{{ user.email }} · {{ user.dept }}</span>
+            <div class="meeting2-mail-search-result-text">
+              <span class="meeting2-mail-search-result-name">{{ user.name }}</span>
+              <span class="meeting2-mail-search-result-email">{{ user.email }} · {{ user.dept }}</span>
             </div>
           </button>
         </div>
 
         <!-- 추가된 수신자 칩 (UiTag 공통 컴포넌트) -->
         <div
-          class="meeting-mail-recipient-grid"
+          class="meeting2-mail-recipient-grid"
           :class="{ 'is-empty': recipients.length === 0 }"
         >
           <UiEmpty

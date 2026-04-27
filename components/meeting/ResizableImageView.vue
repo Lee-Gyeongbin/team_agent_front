@@ -1,7 +1,7 @@
 <template>
   <NodeViewWrapper
     as="span"
-    class="meeting-image-wrap"
+    class="meeting2-image-wrap"
     :class="{ 'is-selected': selected, 'is-editable': editor.isEditable }"
     :style="{ width: node.attrs.width || undefined }"
   >
@@ -15,18 +15,18 @@
     <!-- 우하단 리사이즈 핸들 (편집 가능 시에만) -->
     <span
       v-if="editor.isEditable"
-      class="meeting-image-handle"
+      class="meeting2-image-handle"
       @mousedown.prevent.stop="onResizeStart"
     ></span>
 
     <!-- 정렬 / 크기 단축 버튼 (선택 상태일 때만) -->
     <span
       v-if="editor.isEditable && selected"
-      class="meeting-image-toolbar"
+      class="meeting2-image-toolbar"
     >
       <button
         type="button"
-        class="meeting-image-toolbar-btn"
+        class="meeting2-image-toolbar-btn"
         title="작게 (25%)"
         @mousedown.prevent="setWidthPercent(25)"
       >
@@ -34,7 +34,7 @@
       </button>
       <button
         type="button"
-        class="meeting-image-toolbar-btn"
+        class="meeting2-image-toolbar-btn"
         title="중간 (50%)"
         @mousedown.prevent="setWidthPercent(50)"
       >
@@ -42,7 +42,7 @@
       </button>
       <button
         type="button"
-        class="meeting-image-toolbar-btn"
+        class="meeting2-image-toolbar-btn"
         title="크게 (75%)"
         @mousedown.prevent="setWidthPercent(75)"
       >
@@ -50,7 +50,7 @@
       </button>
       <button
         type="button"
-        class="meeting-image-toolbar-btn"
+        class="meeting2-image-toolbar-btn"
         title="원본"
         @mousedown.prevent="resetWidth"
       >

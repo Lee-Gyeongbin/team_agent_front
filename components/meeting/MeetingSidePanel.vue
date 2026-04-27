@@ -1,9 +1,9 @@
 <template>
-  <div class="meeting-panel">
-    <div class="meeting-panel-header">
-      <span class="meeting-panel-title">공유 / 발송</span>
+  <div class="meeting2-panel">
+    <div class="meeting2-panel-header">
+      <span class="meeting2-panel-title">공유 / 발송</span>
     </div>
-    <div class="meeting-panel-body">
+    <div class="meeting2-panel-body">
       <MeetingMeta />
       <MeetingActionMenu />
     </div>

@@ -5,15 +5,15 @@
     max-width="440px"
     @close="onClose"
   >
-    <div class="meeting-modal-form">
-      <div class="meeting-modal-field">
-        <span class="meeting-label">파일 형식</span>
-        <div class="meeting-format-grp">
+    <div class="meeting2-modal-form">
+      <div class="meeting2-modal-field">
+        <span class="meeting2-label">파일 형식</span>
+        <div class="meeting2-format-grp">
           <button
             v-for="format in formats"
             :key="format"
             type="button"
-            class="meeting-format-chip"
+            class="meeting2-format-chip"
             :class="{ 'is-active': form.format === format }"
             @click="form.format = format"
           >
@@ -22,14 +22,14 @@
         </div>
       </div>
 
-      <div class="meeting-modal-field">
-        <span class="meeting-label">파일명</span>
+      <div class="meeting2-modal-field">
+        <span class="meeting2-label">파일명</span>
         <UiInput
           v-model="form.fileName"
           size="md"
           placeholder="파일명 입력"
         />
-        <p class="meeting-modal-hint">최종 저장: {{ form.fileName || '-' }}.{{ form.format }}</p>
+        <p class="meeting2-modal-hint">최종 저장: {{ form.fileName || '-' }}.{{ form.format }}</p>
       </div>
     </div>
 

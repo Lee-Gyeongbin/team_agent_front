@@ -6,15 +6,15 @@
     @close="onClose"
   >
     <div style="display: flex; flex-direction: column; gap: 16px">
-      <div class="meeting-field-row">
+      <div class="meeting2-field-row">
         <span
-          class="meeting-stt-item-avatar"
-          :class="`meeting-speaker-color-${form.colorIndex}`"
+          class="meeting2-stt-item-avatar"
+          :class="`meeting2-speaker-color-${form.colorIndex}`"
         >
           {{ form.name.charAt(0) || '?' }}
         </span>
         <div style="flex: 1">
-          <span class="meeting-label">이름</span>
+          <span class="meeting2-label">이름</span>
           <UiInput
             v-model="form.name"
             placeholder="화자 이름"
@@ -24,7 +24,7 @@
       </div>
 
       <div>
-        <span class="meeting-label">별칭 (선택)</span>
+        <span class="meeting2-label">별칭 (선택)</span>
         <UiInput
           v-model="form.alias"
           placeholder="예: 나"
@@ -33,7 +33,7 @@
       </div>
 
       <div>
-        <span class="meeting-label">색상</span>
+        <span class="meeting2-label">색상</span>
         <div
           style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px"
           role="radiogroup"
@@ -42,7 +42,7 @@
             v-for="i in 8"
             :key="i - 1"
             type="button"
-            :class="`meeting-stt-item-avatar meeting-speaker-color-${i - 1}`"
+            :class="`meeting2-stt-item-avatar meeting2-speaker-color-${i - 1}`"
             :style="{
               cursor: 'pointer',
               border: form.colorIndex === i - 1 ? '2px solid var(--color-primary)' : '2px solid transparent',

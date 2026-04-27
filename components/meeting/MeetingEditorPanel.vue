@@ -1,11 +1,11 @@
 <template>
   <div
-    class="meeting-panel meeting-editor"
+    class="meeting2-panel meeting2-editor"
     @click="onPanelClick"
   >
-    <div class="meeting-panel-header">
-      <span class="meeting-panel-title"> 자동 생성된 회의록 </span>
-      <div class="meeting-panel-actions">
+    <div class="meeting2-panel-header">
+      <span class="meeting2-panel-title"> 자동 생성된 회의록 </span>
+      <div class="meeting2-panel-actions">
         <UiButton
           variant="line-secondary"
           size="sm"
@@ -30,18 +30,18 @@
     </div>
 
     <MeetingEditorToolbar />
-    <div class="meeting-editor-relative">
+    <div class="meeting2-editor-relative">
       <MeetingEditorBody />
 
       <!-- 표 floating 툴바 — 표 안 커서 있을 때 위에 노출 -->
       <div
         v-if="showTableBubble"
-        class="meeting-table-bubble"
+        class="meeting2-table-bubble"
         :style="{ top: `${bubbleTop}px`, left: `${bubbleLeft}px` }"
       >
         <button
           type="button"
-          class="meeting-table-bubble-btn"
+          class="meeting2-table-bubble-btn"
           title="위에 행 추가"
           @mousedown.prevent="bubbleCmd((c) => c.addRowBefore())"
         >
@@ -49,7 +49,7 @@
         </button>
         <button
           type="button"
-          class="meeting-table-bubble-btn"
+          class="meeting2-table-bubble-btn"
           title="아래에 행 추가"
           @mousedown.prevent="bubbleCmd((c) => c.addRowAfter())"
         >
@@ -57,16 +57,16 @@
         </button>
         <button
           type="button"
-          class="meeting-table-bubble-btn"
+          class="meeting2-table-bubble-btn"
           title="행 삭제"
           @mousedown.prevent="bubbleCmd((c) => c.deleteRow())"
         >
           행−
         </button>
-        <span class="meeting-table-bubble-sep"></span>
+        <span class="meeting2-table-bubble-sep"></span>
         <button
           type="button"
-          class="meeting-table-bubble-btn"
+          class="meeting2-table-bubble-btn"
           title="왼쪽에 열 추가"
           @mousedown.prevent="bubbleCmd((c) => c.addColumnBefore())"
         >
@@ -74,7 +74,7 @@
         </button>
         <button
           type="button"
-          class="meeting-table-bubble-btn"
+          class="meeting2-table-bubble-btn"
           title="오른쪽에 열 추가"
           @mousedown.prevent="bubbleCmd((c) => c.addColumnAfter())"
         >
@@ -82,25 +82,25 @@
         </button>
         <button
           type="button"
-          class="meeting-table-bubble-btn"
+          class="meeting2-table-bubble-btn"
           title="열 삭제"
           @mousedown.prevent="bubbleCmd((c) => c.deleteColumn())"
         >
           열−
         </button>
-        <span class="meeting-table-bubble-sep"></span>
+        <span class="meeting2-table-bubble-sep"></span>
         <button
           type="button"
-          class="meeting-table-bubble-btn"
+          class="meeting2-table-bubble-btn"
           title="셀 병합 / 분리"
           @mousedown.prevent="bubbleCmd((c) => c.mergeOrSplit())"
         >
           병합
         </button>
-        <span class="meeting-table-bubble-sep"></span>
+        <span class="meeting2-table-bubble-sep"></span>
         <button
           type="button"
-          class="meeting-table-bubble-btn is-danger"
+          class="meeting2-table-bubble-btn is-danger"
           title="표 삭제 (Ctrl+Backspace)"
           @mousedown.prevent="bubbleCmd((c) => c.deleteTable())"
         >
@@ -109,7 +109,7 @@
       </div>
     </div>
 
-    <div class="meeting-editor-footer">
+    <div class="meeting2-editor-footer">
       <span v-if="isAutoSaving">저장 중…</span>
       <span v-else>마지막 저장: {{ lastSavedLabel }}</span>
     </div>
@@ -210,7 +210,7 @@ const editor = useEditor({
   },
   editorProps: {
     attributes: {
-      class: 'meeting-editor-body',
+      class: 'meeting2-editor-body',
     },
     /** 파일 탐색기에서 이미지 드래그 앤 드롭 → base64 삽입 */
     handleDrop(_view, event, _slice, moved) {
@@ -307,8 +307,8 @@ const updateTableBubble = () => {
     showTableBubble.value = false
     return
   }
-  // 스크롤 컨테이너(.meeting-editor-scroll) 기준 absolute 위치
-  const editorScrollEl = (editor.value.view.dom as HTMLElement).closest('.meeting-editor-scroll') as HTMLElement | null
+  // 스크롤 컨테이너(.meeting2-editor-scroll) 기준 absolute 위치
+  const editorScrollEl = (editor.value.view.dom as HTMLElement).closest('.meeting2-editor-scroll') as HTMLElement | null
   if (!editorScrollEl) {
     showTableBubble.value = false
     return
@@ -335,7 +335,7 @@ watch(editor, (ed) => {
 /** 패널 빈 영역 클릭 시 에디터 포커스 (사용성 개선) */
 const onPanelClick = (e: MouseEvent) => {
   const target = e.target as HTMLElement
-  if (target.closest('.meeting-panel-header, .meeting-editor-toolbar, button, a, input, select')) return
+  if (target.closest('.meeting2-panel-header, .meeting2-editor-toolbar, button, a, input, select')) return
   editor.value?.commands.focus()
 }
 

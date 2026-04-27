@@ -1,23 +1,23 @@
 <template>
-  <div class="meeting-side-section">
-    <span class="meeting-section-title">작업</span>
-    <div class="meeting-side-action-grp">
+  <div class="meeting2-side-section">
+    <span class="meeting2-section-title">작업</span>
+    <div class="meeting2-side-action-grp">
       <button
-        class="meeting-side-action-btn"
+        class="meeting2-side-action-btn"
         @click="onClickDownload"
       >
         <i class="icon-download size-16" />
         파일로 저장
       </button>
       <button
-        class="meeting-side-action-btn"
+        class="meeting2-side-action-btn"
         @click="onClickShare"
       >
         <i class="icon-link-agent size-16" />
         회의록 공유
       </button>
       <button
-        class="meeting-side-action-btn"
+        class="meeting2-side-action-btn"
         @click="onClickMail"
       >
         <i class="icon-send size-16" />

@@ -8,25 +8,25 @@
 
     <div
       v-else
-      class="meeting-stt-list"
+      class="meeting2-stt-list"
     >
       <div
         v-for="item in sttList"
         :key="item.id"
-        class="meeting-stt-item"
+        class="meeting2-stt-item"
       >
         <span
-          class="meeting-stt-item-avatar"
-          :class="`meeting-speaker-color-${getSpeakerColor(item.speakerId)}`"
+          class="meeting2-stt-item-avatar"
+          :class="`meeting2-speaker-color-${getSpeakerColor(item.speakerId)}`"
         >
           {{ item.speakerName.charAt(0) }}
         </span>
-        <div class="meeting-stt-item-body">
-          <div class="meeting-stt-item-meta">
-            <span class="meeting-stt-item-name">{{ item.speakerName }}</span>
-            <span class="meeting-stt-item-time">{{ item.time }}</span>
+        <div class="meeting2-stt-item-body">
+          <div class="meeting2-stt-item-meta">
+            <span class="meeting2-stt-item-name">{{ item.speakerName }}</span>
+            <span class="meeting2-stt-item-time">{{ item.time }}</span>
           </div>
-          <p class="meeting-stt-item-text">{{ item.text }}</p>
+          <p class="meeting2-stt-item-text">{{ item.text }}</p>
         </div>
       </div>
     </div>

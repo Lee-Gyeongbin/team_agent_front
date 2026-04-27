@@ -1,18 +1,18 @@
 <template>
-  <div class="meeting-speaker-list">
-    <div class="meeting-speaker-list-header">
-      <span class="meeting-section-title">
+  <div class="meeting2-speaker-list">
+    <div class="meeting2-speaker-list-header">
+      <span class="meeting2-section-title">
         화자 목록 ({{ speakers.length }})
         <span
           v-if="isEditMode"
-          class="meeting-speaker-edit-hint"
+          class="meeting2-speaker-edit-hint"
         >
           — 편집 중
         </span>
       </span>
       <div
         v-if="isEditMode"
-        class="meeting-speaker-edit-actions"
+        class="meeting2-speaker-edit-actions"
       >
         <UiButton
           variant="line-secondary"
@@ -49,18 +49,18 @@
 
     <div
       v-else
-      class="meeting-speaker-chips"
+      class="meeting2-speaker-chips"
     >
       <span
         v-for="(speaker, idx) in displayList"
         :key="speaker.id"
-        class="meeting-speaker-chip"
+        class="meeting2-speaker-chip"
         :class="{ 'is-editing': isEditMode }"
         @click="onClickChip(speaker.id)"
       >
         <span
-          class="meeting-speaker-chip-avatar"
-          :class="`meeting-speaker-color-${speaker.colorIndex}`"
+          class="meeting2-speaker-chip-avatar"
+          :class="`meeting2-speaker-color-${speaker.colorIndex}`"
         >
           {{ avatarChar(idx) }}
         </span>
@@ -69,7 +69,7 @@
           <input
             :ref="(el) => setInputRef(el, idx)"
             v-model="editForm[idx].name"
-            class="meeting-speaker-chip-input"
+            class="meeting2-speaker-chip-input"
             :placeholder="`화자${idx + 1}`"
             :size="Math.max((editForm[idx].name?.length ?? 0) + 1, 4)"
             @keydown.enter.prevent="onEnterKey(idx)"
@@ -78,7 +78,7 @@
           />
           <span
             v-if="speaker.alias"
-            class="meeting-speaker-chip-alias"
+            class="meeting2-speaker-chip-alias"
           >
             ({{ speaker.alias }})
           </span>
@@ -87,7 +87,7 @@
           {{ speaker.name }}
           <span
             v-if="speaker.alias"
-            class="meeting-speaker-chip-alias"
+            class="meeting2-speaker-chip-alias"
           >
             ({{ speaker.alias }})
           </span>

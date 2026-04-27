@@ -1,22 +1,22 @@
 <template>
-  <div class="meeting-page">
+  <div class="meeting2-page">
     <!-- 페이지 헤더 (좌측 정렬: 백버튼 + 구분선 + 제목) -->
-    <div class="meeting-detail-header">
+    <div class="meeting2-detail-header">
       <button
         type="button"
-        class="meeting-detail-back"
+        class="meeting2-detail-back"
         @click="onClickBack"
       >
         <i class="icon-arrow-left-sm size-16" />
         회의 목록
       </button>
-      <span class="meeting-detail-header-divider"></span>
+      <span class="meeting2-detail-header-divider"></span>
       <template v-if="currentMeeting">
         <input
           v-if="isEditingTitle"
           ref="titleInputRef"
           v-model="editingTitle"
-          class="meeting-detail-title-input"
+          class="meeting2-detail-title-input"
           maxlength="100"
           @keydown.enter.prevent="onSaveTitle"
           @keydown.esc.prevent="onCancelTitle"
@@ -24,17 +24,17 @@
         />
         <div
           v-else
-          class="meeting-detail-title-wrap"
+          class="meeting2-detail-title-wrap"
         >
           <h2
-            class="meeting-detail-title"
+            class="meeting2-detail-title"
             @dblclick="onClickEditTitle"
           >
             {{ currentMeeting.title }}
           </h2>
           <button
             type="button"
-            class="meeting-detail-title-edit"
+            class="meeting2-detail-title-edit"
             title="제목 편집"
             @click="onClickEditTitle"
           >
@@ -53,7 +53,7 @@
     <!-- 모바일 탭 (1023px 이하) -->
     <div
       v-if="isMobile"
-      class="meeting-layout-tabs"
+      class="meeting2-layout-tabs"
     >
       <button
         :class="{ 'is-active': activeMobileTab === 'left' }"
@@ -77,37 +77,37 @@
 
     <!-- 3분할 레이아웃 -->
     <div
-      class="meeting-layout"
+      class="meeting2-layout"
       :style="layoutStyle"
     >
       <div
-        class="meeting-layout-left"
+        class="meeting2-layout-left"
         :class="{ 'is-active': activeMobileTab === 'left' }"
       >
         <MeetingRecordPanel v-if="currentMeeting" />
       </div>
 
       <div
-        class="meeting-layout-resizer"
+        class="meeting2-layout-resizer"
         :class="{ 'is-resizing': resizingTarget === 'left' }"
         @mousedown="onResizeStart('left', $event)"
       ></div>
 
       <div
-        class="meeting-layout-center"
+        class="meeting2-layout-center"
         :class="{ 'is-active': activeMobileTab === 'center' }"
       >
         <MeetingEditorPanel v-if="currentMeeting" />
       </div>
 
       <div
-        class="meeting-layout-resizer"
+        class="meeting2-layout-resizer"
         :class="{ 'is-resizing': resizingTarget === 'right' }"
         @mousedown="onResizeStart('right', $event)"
       ></div>
 
       <div
-        class="meeting-layout-right"
+        class="meeting2-layout-right"
         :class="{ 'is-active': activeMobileTab === 'right' }"
       >
         <MeetingSidePanel v-if="currentMeeting" />
@@ -172,8 +172,8 @@ const rightWidth = ref(18)
 const resizingTarget = ref<'left' | 'right' | null>(null)
 
 const layoutStyle = computed(() => ({
-  '--meeting-left': `${leftWidth.value}%`,
-  '--meeting-right': `${rightWidth.value}%`,
+  '--meeting2-left': `${leftWidth.value}%`,
+  '--meeting2-right': `${rightWidth.value}%`,
 }))
 
 // 반응형 — 1023px 이하 탭 전환

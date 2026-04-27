@@ -1,9 +1,9 @@
 <template>
-  <div class="meeting-list-page">
+  <div class="meeting2-list-page">
     <!-- 헤더 -->
-    <div class="meeting-list-header">
-      <h2 class="meeting-list-title">회의록</h2>
-      <div class="meeting-list-toolbar">
+    <div class="meeting2-list-header">
+      <h2 class="meeting2-list-title">회의록</h2>
+      <div class="meeting2-list-toolbar">
         <UiInput
           v-model="searchKeyword"
           type="search"
@@ -33,17 +33,17 @@
     <!-- 목록 -->
     <div
       v-else
-      class="meeting-list-grid"
+      class="meeting2-list-grid"
     >
       <div
         v-for="meeting in filteredList"
         :key="meeting.id"
-        class="meeting-list-card"
+        class="meeting2-list-card"
         @click="onClickCard(meeting.id)"
       >
-        <p class="meeting-list-card-title">{{ meeting.title }}</p>
-        <p class="meeting-list-card-date">{{ meeting.date }}</p>
-        <div class="meeting-list-card-meta">
+        <p class="meeting2-list-card-title">{{ meeting.title }}</p>
+        <p class="meeting2-list-card-date">{{ meeting.date }}</p>
+        <div class="meeting2-list-card-meta">
           <UiBadge
             v-for="step in progressBadges(meeting.steps)"
             :key="step.key"
@@ -53,7 +53,7 @@
             {{ step.label }}
           </UiBadge>
         </div>
-        <div class="meeting-list-card-actions">
+        <div class="meeting2-list-card-actions">
           <UiButton
             variant="ghost"
             size="sm"

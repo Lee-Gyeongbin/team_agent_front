@@ -1,5 +1,5 @@
 <template>
-  <div class="meeting-editor-scroll">
+  <div class="meeting2-editor-scroll">
     <EditorContent :editor="editor" />
   </div>
 </template>

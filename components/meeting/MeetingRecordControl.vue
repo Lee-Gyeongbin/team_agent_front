@@ -1,17 +1,17 @@
 <template>
-  <div class="meeting-record-control">
-    <div class="meeting-record-status-row">
+  <div class="meeting2-record-control">
+    <div class="meeting2-record-status-row">
       <span
-        class="meeting-record-status"
+        class="meeting2-record-status"
         :class="`is-${recordStatus}`"
       >
-        <span class="meeting-record-status-dot"></span>
+        <span class="meeting2-record-status-dot"></span>
         {{ statusLabel }}
       </span>
-      <span class="meeting-record-time">{{ formattedTime }}</span>
+      <span class="meeting2-record-time">{{ formattedTime }}</span>
     </div>
 
-    <div class="meeting-record-actions">
+    <div class="meeting2-record-actions">
       <UiButton
         v-if="recordStatus === 'idle' || recordStatus === 'paused' || recordStatus === 'stopped'"
         variant="primary"

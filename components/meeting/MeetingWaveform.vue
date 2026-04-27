@@ -1,12 +1,12 @@
 <template>
   <div
-    class="meeting-waveform"
+    class="meeting2-waveform"
     :class="`is-${recordStatus}`"
   >
     <span
       v-for="(bar, idx) in bars"
       :key="idx"
-      class="meeting-waveform-bar"
+      class="meeting2-waveform-bar"
       :style="{ height: `${bar}%` }"
     ></span>
   </div>

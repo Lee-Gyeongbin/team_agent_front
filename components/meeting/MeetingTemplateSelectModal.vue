@@ -6,17 +6,17 @@
     @close="onClose"
   >
     <!-- 🔽 더미 — 실제 템플릿은 후속 (관리자 페이지에서 등록) -->
-    <div class="meeting-template-list">
+    <div class="meeting2-template-list">
       <button
         v-for="tmpl in templates"
         :key="tmpl.id"
         type="button"
-        class="meeting-template-card"
+        class="meeting2-template-card"
         :class="{ 'is-active': currentMeeting?.templateId === tmpl.id }"
         @click="onSelect(tmpl.id)"
       >
-        <strong class="meeting-template-card-name">{{ tmpl.name }}</strong>
-        <span class="meeting-template-card-desc">{{ tmpl.description }}</span>
+        <strong class="meeting2-template-card-name">{{ tmpl.name }}</strong>
+        <span class="meeting2-template-card-desc">{{ tmpl.description }}</span>
       </button>
     </div>
   </UiModal>

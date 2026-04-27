@@ -1,8 +1,8 @@
 <template>
-  <div class="meeting-editor-toolbar">
+  <div class="meeting2-editor-toolbar">
     <!-- 제목 스타일 -->
     <select
-      class="meeting-editor-toolbar-select"
+      class="meeting2-editor-toolbar-select"
       :value="currentBlockType"
       @change="onChangeHeading"
     >
@@ -12,10 +12,10 @@
       <option value="heading-3">제목 3</option>
     </select>
 
-    <span class="meeting-editor-toolbar-divider"></span>
+    <span class="meeting2-editor-toolbar-divider"></span>
 
     <button
-      class="meeting-editor-toolbar-btn"
+      class="meeting2-editor-toolbar-btn"
       :class="{ 'is-active': isActive('bold') }"
       title="굵게 (Ctrl+B)"
       @click="run((c) => c.toggleBold())"
@@ -23,7 +23,7 @@
       <strong>B</strong>
     </button>
     <button
-      class="meeting-editor-toolbar-btn"
+      class="meeting2-editor-toolbar-btn"
       :class="{ 'is-active': isActive('italic') }"
       title="기울임 (Ctrl+I)"
       @click="run((c) => c.toggleItalic())"
@@ -31,7 +31,7 @@
       <em>I</em>
     </button>
     <button
-      class="meeting-editor-toolbar-btn"
+      class="meeting2-editor-toolbar-btn"
       :class="{ 'is-active': isActive('underline') }"
       title="밑줄 (Ctrl+U)"
       @click="run((c) => c.toggleUnderline())"
@@ -39,7 +39,7 @@
       <u>U</u>
     </button>
     <button
-      class="meeting-editor-toolbar-btn"
+      class="meeting2-editor-toolbar-btn"
       :class="{ 'is-active': isActive('strike') }"
       title="취소선"
       @click="run((c) => c.toggleStrike())"
@@ -47,7 +47,7 @@
       <s>S</s>
     </button>
 
-    <span class="meeting-editor-toolbar-divider"></span>
+    <span class="meeting2-editor-toolbar-divider"></span>
 
     <!-- 글자색 -->
     <MeetingColorPicker
@@ -69,10 +69,10 @@
       @clear="onClearHighlight"
     />
 
-    <span class="meeting-editor-toolbar-divider"></span>
+    <span class="meeting2-editor-toolbar-divider"></span>
 
     <button
-      class="meeting-editor-toolbar-btn"
+      class="meeting2-editor-toolbar-btn"
       :class="{ 'is-active': isActive('bulletList') }"
       title="순서 없는 리스트"
       @click="run((c) => c.toggleBulletList())"
@@ -80,7 +80,7 @@
       • 리스트
     </button>
     <button
-      class="meeting-editor-toolbar-btn"
+      class="meeting2-editor-toolbar-btn"
       :class="{ 'is-active': isActive('orderedList') }"
       title="순서 있는 리스트"
       @click="run((c) => c.toggleOrderedList())"
@@ -88,7 +88,7 @@
       1. 번호
     </button>
     <button
-      class="meeting-editor-toolbar-btn"
+      class="meeting2-editor-toolbar-btn"
       :class="{ 'is-active': isActive('blockquote') }"
       title="인용"
       @click="run((c) => c.toggleBlockquote())"
@@ -96,27 +96,27 @@
       인용
     </button>
 
-    <span class="meeting-editor-toolbar-divider"></span>
+    <span class="meeting2-editor-toolbar-divider"></span>
 
     <button
-      class="meeting-editor-toolbar-btn"
+      class="meeting2-editor-toolbar-btn"
       title="내어쓰기"
       @click="run((c) => c.liftListItem('listItem'))"
     >
       ←
     </button>
     <button
-      class="meeting-editor-toolbar-btn"
+      class="meeting2-editor-toolbar-btn"
       title="들여쓰기"
       @click="run((c) => c.sinkListItem('listItem'))"
     >
       →
     </button>
 
-    <span class="meeting-editor-toolbar-divider"></span>
+    <span class="meeting2-editor-toolbar-divider"></span>
 
     <button
-      class="meeting-editor-toolbar-btn"
+      class="meeting2-editor-toolbar-btn"
       :class="{ 'is-active': isActive('link') }"
       title="링크 삽입"
       @click="onClickLink"
@@ -125,10 +125,10 @@
     </button>
     <div
       ref="imagePickerRef"
-      class="meeting-image-picker"
+      class="meeting2-image-picker"
     >
       <button
-        class="meeting-editor-toolbar-btn"
+        class="meeting2-editor-toolbar-btn"
         title="이미지 삽입"
         @click="toggleImagePicker"
       >
@@ -137,11 +137,11 @@
 
       <div
         v-if="isImagePickerOpen"
-        class="meeting-image-picker-pop"
+        class="meeting2-image-picker-pop"
       >
         <button
           type="button"
-          class="meeting-image-picker-item"
+          class="meeting2-image-picker-item"
           @click="onClickFileUpload"
         >
           <i class="icon-attach-file size-16" />
@@ -149,7 +149,7 @@
         </button>
         <button
           type="button"
-          class="meeting-image-picker-item"
+          class="meeting2-image-picker-item"
           @click="onClickImageUrl"
         >
           <i class="icon-link-agent size-16" />
@@ -161,15 +161,15 @@
       ref="imageInputRef"
       type="file"
       accept="image/*"
-      class="meeting-editor-toolbar-file"
+      class="meeting2-editor-toolbar-file"
       @change="onImageFileChange"
     />
     <div
       ref="tablePickerRef"
-      class="meeting-image-picker"
+      class="meeting2-image-picker"
     >
       <button
-        class="meeting-editor-toolbar-btn"
+        class="meeting2-editor-toolbar-btn"
         :class="{ 'is-active': isActive('table') }"
         title="표"
         @click="toggleTablePicker"
@@ -179,23 +179,23 @@
 
       <div
         v-if="isTablePickerOpen"
-        class="meeting-image-picker-pop"
+        class="meeting2-image-picker-pop"
       >
         <template v-if="!isInTable">
           <!-- 행/열 그리드 선택 (1x1 ~ 6x8) -->
-          <div class="meeting-table-grid-wrap">
-            <span class="meeting-table-grid-label">
+          <div class="meeting2-table-grid-wrap">
+            <span class="meeting2-table-grid-label">
               {{ hoveredCol + 1 }} × {{ hoveredRow + 1 }}
             </span>
             <div
-              class="meeting-table-grid"
+              class="meeting2-table-grid"
               @mouseleave="onGridLeave"
             >
               <button
                 v-for="idx in TOTAL_CELLS"
                 :key="idx"
                 type="button"
-                class="meeting-table-grid-cell"
+                class="meeting2-table-grid-cell"
                 :class="{ 'is-hovered': isCellHovered(idx - 1) }"
                 @mouseenter="onCellHover(idx - 1)"
                 @click="onCellSelect(idx - 1)"
@@ -205,84 +205,84 @@
         </template>
 
         <template v-else>
-          <span class="meeting-image-picker-label">행</span>
+          <span class="meeting2-image-picker-label">행</span>
           <button
             type="button"
-            class="meeting-image-picker-item"
+            class="meeting2-image-picker-item"
             @click="onTableCmd((c) => c.addRowBefore())"
           >
             위에 행 추가
           </button>
           <button
             type="button"
-            class="meeting-image-picker-item"
+            class="meeting2-image-picker-item"
             @click="onTableCmd((c) => c.addRowAfter())"
           >
             아래에 행 추가
           </button>
           <button
             type="button"
-            class="meeting-image-picker-item"
+            class="meeting2-image-picker-item"
             @click="onTableCmd((c) => c.deleteRow())"
           >
             행 삭제
           </button>
 
-          <div class="meeting-image-picker-sep"></div>
+          <div class="meeting2-image-picker-sep"></div>
 
-          <span class="meeting-image-picker-label">열</span>
+          <span class="meeting2-image-picker-label">열</span>
           <button
             type="button"
-            class="meeting-image-picker-item"
+            class="meeting2-image-picker-item"
             @click="onTableCmd((c) => c.addColumnBefore())"
           >
             왼쪽에 열 추가
           </button>
           <button
             type="button"
-            class="meeting-image-picker-item"
+            class="meeting2-image-picker-item"
             @click="onTableCmd((c) => c.addColumnAfter())"
           >
             오른쪽에 열 추가
           </button>
           <button
             type="button"
-            class="meeting-image-picker-item"
+            class="meeting2-image-picker-item"
             @click="onTableCmd((c) => c.deleteColumn())"
           >
             열 삭제
           </button>
 
-          <div class="meeting-image-picker-sep"></div>
+          <div class="meeting2-image-picker-sep"></div>
 
-          <span class="meeting-image-picker-label">셀</span>
+          <span class="meeting2-image-picker-label">셀</span>
           <button
             type="button"
-            class="meeting-image-picker-item"
+            class="meeting2-image-picker-item"
             @click="onTableCmd((c) => c.mergeOrSplit())"
           >
             셀 병합 / 분리
           </button>
           <button
             type="button"
-            class="meeting-image-picker-item"
+            class="meeting2-image-picker-item"
             @click="onTableCmd((c) => c.toggleHeaderRow())"
           >
             헤더 행 토글
           </button>
           <button
             type="button"
-            class="meeting-image-picker-item"
+            class="meeting2-image-picker-item"
             @click="onTableCmd((c) => c.toggleHeaderColumn())"
           >
             헤더 열 토글
           </button>
 
-          <div class="meeting-image-picker-sep"></div>
+          <div class="meeting2-image-picker-sep"></div>
 
           <button
             type="button"
-            class="meeting-image-picker-item is-danger"
+            class="meeting2-image-picker-item is-danger"
             @click="onTableCmd((c) => c.deleteTable())"
           >
             표 삭제
@@ -291,10 +291,10 @@
       </div>
     </div>
 
-    <span class="meeting-editor-toolbar-divider"></span>
+    <span class="meeting2-editor-toolbar-divider"></span>
 
     <button
-      class="meeting-editor-toolbar-btn"
+      class="meeting2-editor-toolbar-btn"
       :disabled="!canUndo"
       title="실행 취소 (Ctrl+Z)"
       @click="run((c) => c.undo())"
@@ -302,7 +302,7 @@
       ↶
     </button>
     <button
-      class="meeting-editor-toolbar-btn"
+      class="meeting2-editor-toolbar-btn"
       :disabled="!canRedo"
       title="다시 실행 (Ctrl+Y)"
       @click="run((c) => c.redo())"
