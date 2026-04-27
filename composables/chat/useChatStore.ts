@@ -2,7 +2,6 @@
 import type {
   ChatLogListRow,
   ChatRefRow,
-  ChatMessage,
   LunchAgentFormPayload,
   PanelType,
   SearchModeValue,
@@ -21,6 +20,7 @@ import {
   buildDiagnosticPrompt,
   parseSurveyAnswersFromPrompt,
 } from '~/utils/chat/psychologyConsultUtil'
+import { buildLunchRecommendationPrompt, createLunchCardMessage } from '~/utils/chat/lunchAgentUtil'
 import { clearBodyChartFullscreen } from '~/utils/chat/visualizationChartUtil'
 import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
 import { getCodes } from '~/utils/global/comCodesUtil'
@@ -154,27 +154,6 @@ const shouldShowLunchCard = (row: ChatLogListRow) => {
   return typeof raw === 'string' && raw.toUpperCase() === 'Y'
 }
 
-const buildLunchCardMessage = (options?: {
-  createdAt?: string
-  svcTy?: string
-  refId?: string
-  agentId?: string
-}): ChatMessage => ({
-  logId: `lunch-card-${Date.now()}`,
-  type: 'answer',
-  qContent: '',
-  rContent: '',
-  createdAt: options?.createdAt ?? new Date().toISOString(),
-  svcTy: options?.svcTy ?? 'C',
-  refId: options?.refId ?? '',
-  agentId: options?.agentId ?? '',
-  isStreaming: false,
-  hasSource: false,
-  hasVisualization: false,
-  uiType: 'lunch-card',
-  lunchSubmitted: false,
-})
-
 export const useChatStore = () => {
   const handleSelectChatPdfFileUrl = async (docFileId: string): Promise<string | null> => {
     const normalizedId = String(docFileId ?? '').trim()
@@ -243,7 +222,7 @@ export const useChatStore = () => {
     const normalizedRoomId = normalizeChatRoomId(roomId)
     const shouldShowFromDmFlag = normalizedRoomId !== '' && pendingLunchCardRoomId.value === normalizedRoomId
     if (lunchSeedRow || shouldShowFromDmFlag) {
-      const lunchCardMessage = buildLunchCardMessage({
+      const lunchCardMessage = createLunchCardMessage({
         createdAt: lunchSeedRow?.createDt ?? new Date().toISOString(),
         svcTy: lunchSeedRow?.svcTy ?? 'C',
         refId: typeof lunchSeedRow?.refId === 'string' ? lunchSeedRow.refId : '',
@@ -334,6 +313,7 @@ export const useChatStore = () => {
       messages.value = messages.value.filter((m) => m.uiType !== 'lunch-card')
       return
     }
+    selectedChatAgentId.value = null
     messages.value = messages.value.filter((m) => m.logId !== lunchMessageLogId)
   }
 
@@ -377,8 +357,7 @@ export const useChatStore = () => {
   }
 
   const handleSubmitLunchAgentForm = async (logId: string, payload: LunchAgentFormPayload) => {
-    const location = `${payload.sido} ${payload.sigungu} ${payload.dong}`.trim()
-    const content = `현재 위치는 ${location}, ${payload.mood} 먹고싶고, 예산은 1인당 ${payload.budget}, 식사 인원은 ${payload.peopleCount}, 선호하는 음식종류는 ${payload.cuisineType}입니다. 점심 메뉴를 추천해줘.`
+    const content = buildLunchRecommendationPrompt(payload)
     const sentAt = new Date().toISOString()
     let sent = false
     if (!chatRoom.value.roomId) {
@@ -392,14 +371,10 @@ export const useChatStore = () => {
           lunchMsg.lunchSubmitted = true
         }
       }
-    }
-    if (chatRoom.value.roomId) {
+    } else {
       sent = await onSendLunch(content, logId, payload)
     }
     if (!sent) return
-    // 점심 추천 요청이 성공하면 입력 카드 메시지는 즉시 제거해 재선택/재호출 부담을 줄인다.
-    handleCloseLunchAgentForm(logId)
-    // 입력창의 선택 에이전트 태그도 함께 해제한다.
     selectedChatAgentId.value = null
     lastLunchSentAt.value = sentAt
   }

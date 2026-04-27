@@ -23,12 +23,18 @@
             v-if="message.uiType === 'lunch-card'"
             :readonly="message.lunchSubmitted === true"
             :initial-payload="message.lunchFormPayload"
+            :theme-icon-class-nm="surveyThemeAgent?.iconClassNm ?? ''"
+            :theme-color-hex="surveyThemeAgent?.colorHex ?? ''"
             @submit="emit('on-submit-lunch-card', message.logId, $event)"
-            @close="emit('on-close-lunch-card', message.logId)"
+            @close="emit('on-lunch-card-close', message.logId)"
           />
           <ChatLunchAgentCard
             v-else-if="parsedLunchRecommendations.length"
             :recommendations="parsedLunchRecommendations"
+            :theme-icon-class-nm="surveyThemeAgent?.iconClassNm ?? ''"
+            :theme-color-hex="surveyThemeAgent?.colorHex ?? ''"
+            @submit="emit('on-submit-lunch-card', message.logId, $event)"
+            @close="emit('on-lunch-card-close', message.logId)"
           />
           <!-- eslint-disable vue/no-v-html — toHtmlContent 내 안전 처리 적용 -->
           <div
@@ -191,7 +197,7 @@ const emit = defineEmits<{
   'on-view-source': [id: string]
   'on-view-visualization': [id: string]
   'on-submit-lunch-card': [logId: string, payload: LunchAgentFormPayload]
-  'on-close-lunch-card': [logId: string]
+  'on-lunch-card-close': [logId: string]
   /** 설문 제출 (survey 타입 메시지) */
   'on-survey-submit': [logId: string]
   /** 설문 닫기 (survey 타입 메시지) */
