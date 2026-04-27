@@ -215,14 +215,14 @@
       <template v-else>
         <UiButton
           variant="line-secondary"
-          size="md"
+          size="sm"
           @click="emit('close')"
         >
           닫기
         </UiButton>
         <UiButton
           variant="dark"
-          size="md"
+          size="sm"
           @click="onSubmitClick"
         >
           조건 입력 완료 후 추천받기
@@ -485,7 +485,7 @@ const onSubmitClick = () => {
   &__body {
     flex: 1;
     overflow-y: auto;
-    padding: $spacing-lg $spacing-xl;
+    padding: 20px;
     display: flex;
     flex-direction: column;
     gap: $spacing-md;
@@ -536,8 +536,8 @@ const onSubmitClick = () => {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: $spacing-sm;
-    padding: $spacing-md $spacing-xl;
+    gap: 6px;
+    padding: 10px 12px;
     border-top: 1px solid $color-border;
     background: $color-surface;
     flex-shrink: 0;
@@ -552,7 +552,7 @@ const onSubmitClick = () => {
     display: flex;
     flex-direction: column;
     gap: $spacing-sm;
-    padding: $spacing-md $spacing-lg;
+    padding: 20px;
   }
 
   &__result-item {
@@ -619,8 +619,8 @@ const onSubmitClick = () => {
     display: inline-flex;
     align-items: center;
     gap: $spacing-xs;
-    padding: 7px 12px;
-    border-radius: 8px;
+    padding: 3.5px 10px;
+    border-radius: 6px;
     border: 1px solid rgba(var(--lunch-theme-rgb), 0.22);
     background: rgba(var(--lunch-theme-rgb), 0.08);
     color: var(--lunch-theme-color);
