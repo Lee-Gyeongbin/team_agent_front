@@ -125,6 +125,8 @@
       <ChatPsychologySurvey
         :readonly="message.surveySubmitted === true"
         :initial-answers="message.surveyAnswers"
+        :theme-icon-class-nm="surveyThemeAgent?.iconClassNm ?? ''"
+        :theme-color-hex="surveyThemeAgent?.colorHex ?? ''"
         @close="emit('on-survey-close', message.logId)"
         @submit="emit('on-survey-submit', message.logId)"
       />
@@ -135,7 +137,8 @@
 <script setup lang="ts">
 import type { ChatMessage, KnowledgeItem, LunchAgentFormPayload, LunchRecommendationItem } from '~/types/chat'
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
-
+import type { Agent } from '~/types/agent'
+const { chatIndexAgents } = useChatStore()
 interface Props {
   message: ChatMessage
   knowledgeList?: KnowledgeItem[]
@@ -150,6 +153,10 @@ const props = withDefaults(defineProps<Props>(), {
 
 /** 마크다운 렌더 결과 — v-html */
 const renderedHtml = computed(() => toHtmlContent(props.message.rContent ?? ''))
+const surveyThemeAgent = computed<Agent | null>(() => {
+  const targetAgentId = props.message.agentId || 'AG000010'
+  return chatIndexAgents.value.find((agent) => agent.agentId === targetAgentId) ?? null
+})
 
 const parseLunchRecommendations = (raw: string): LunchRecommendationItem[] => {
   try {

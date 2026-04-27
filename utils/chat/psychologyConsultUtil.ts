@@ -267,6 +267,7 @@ export const createSurveyMessage = (answers: Record<number, number>, submitted: 
   logId: `survey-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
   type: 'survey',
   createdAt: new Date().toISOString(),
+  agentId: 'AG000010',
   surveyAnswers: { ...answers },
   surveySubmitted: submitted,
 })

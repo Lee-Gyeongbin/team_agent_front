@@ -15,7 +15,12 @@ import { useChatMessages } from '~/composables/chat/useChatMessages'
 import { useChatSearchState } from '~/composables/chat/useChatSearchState'
 import { useChatSendPipeline } from '~/composables/chat/useChatSendPipeline'
 import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
-import { usePsychologySurvey, createSurveyMessage, buildDiagnosticPrompt } from '~/utils/chat/psychologyConsultUtil'
+import {
+  usePsychologySurvey,
+  createSurveyMessage,
+  buildDiagnosticPrompt,
+  parseSurveyAnswersFromPrompt,
+} from '~/utils/chat/psychologyConsultUtil'
 import { clearBodyChartFullscreen } from '~/utils/chat/visualizationChartUtil'
 import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
 import { getCodes } from '~/utils/global/comCodesUtil'
@@ -72,11 +77,15 @@ const { handleViewFileUrl } = useFileStore()
 const messagesForDisplay = computed(() => {
   let base = messages.value
   if (isSurveyRoom(chatRoom.value.roomId)) {
-    let firstQuestionSeen = false
+    let surveyPromptHidden = false
     base = messages.value.filter((m) => {
-      if (m.type === 'question' && !firstQuestionSeen) {
-        firstQuestionSeen = true
-        return false
+      if (m.type === 'question' && !surveyPromptHidden) {
+        const parsed = parseSurveyAnswersFromPrompt(m.qContent ?? '')
+        const isSurveyPrompt = Object.keys(parsed).length === 25
+        if (isSurveyPrompt) {
+          surveyPromptHidden = true
+          return false
+        }
       }
       return true
     })
@@ -297,6 +306,7 @@ export const useChatStore = () => {
     if (sent) {
       const newQuestion = messages.value.slice(prevLen).find((m) => m.type === 'question')
       if (newQuestion) newQuestion.hiddenFromDisplay = true
+      selectedChatAgentId.value = null
     }
     return sent
   }

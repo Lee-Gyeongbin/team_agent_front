@@ -17,6 +17,8 @@
     <ChatPsychologySurvey
       v-if="isSurveyVisible"
       class="chat-index-survey"
+      :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? ''"
+      :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
       @close="handleClosePsychologySurvey"
       @submit="handleIndexSurveySubmit"
     />
@@ -95,6 +97,9 @@ const { startChatSocket, stopChatSocket } = useChatSocket()
 const { user } = useAuth()
 
 const isMountedChatIndex = ref(true)
+const currentSurveyAgent = computed(
+  () => chatIndexAgents.value.find((agent) => agent.agentId === selectedChatAgentId.value) ?? null,
+)
 
 onMounted(async () => {
   // 시각화 패널에서 나와 다시 일반 채팅으로 들어올 때 이전 tableData가 남지 않게 초기화

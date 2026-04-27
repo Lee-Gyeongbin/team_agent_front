@@ -79,19 +79,24 @@ export const useChatMessages = () => {
       },
     }
 
-    // 산업심리 상담 에이전트: question(진단 프롬프트) → readonly survey 메시지로 대체
+    // 산업심리 상담 에이전트: "진단 프롬프트"인 경우에만 readonly survey 메시지로 대체
+    // (후속 일반 대화 질문까지 survey로 잘못 렌더링되는 문제 방지)
     if (agentId === 'AG000010') {
       const surveyAnswers = parseSurveyAnswersFromPrompt(row.qcontent ?? '')
-      return [
-        {
-          logId: `${logId}-survey`,
-          type: 'survey',
-          createdAt,
-          surveyAnswers,
-          surveySubmitted: true,
-        },
-        answerMessage,
-      ]
+      const isSurveyPrompt = Object.keys(surveyAnswers).length === 25
+      if (isSurveyPrompt) {
+        return [
+          {
+            logId: `${logId}-survey`,
+            type: 'survey',
+            createdAt,
+            agentId,
+            surveyAnswers,
+            surveySubmitted: true,
+          },
+          answerMessage,
+        ]
+      }
     }
 
     return [
