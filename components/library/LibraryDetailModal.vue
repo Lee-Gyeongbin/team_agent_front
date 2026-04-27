@@ -144,6 +144,14 @@
             :theme-icon-class-nm="displayData?.iconClassNm ?? ''"
             :theme-color-hex="displayData?.colorHex ?? ''"
           />
+          <ChatLunchAgentCard
+            v-else-if="lunchQuestionPayload"
+            class="library-detail-lunch-readonly"
+            readonly
+            :initial-payload="lunchQuestionPayload"
+            :theme-icon-class-nm="displayData?.iconClassNm ?? ''"
+            :theme-color-hex="displayData?.colorHex ?? ''"
+          />
           <p v-else>{{ displayData?.qcontent }}</p>
         </div>
 
@@ -179,6 +187,8 @@
           <ChatLunchAgentCard
             v-if="parsedLunchRecommendations.length"
             :recommendations="parsedLunchRecommendations"
+            :theme-icon-class-nm="displayData?.iconClassNm ?? ''"
+            :theme-color-hex="displayData?.colorHex ?? ''"
           />
           <!-- eslint-disable vue/no-v-html — toHtmlContent 내 안전 처리 적용 -->
           <div
@@ -287,6 +297,7 @@
 
 <script setup lang="ts">
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
+import { parseLunchPayloadFromPrompt } from '~/utils/chat/lunchAgentUtil'
 import { parseSurveyAnswersFromPrompt } from '~/utils/chat/psychologyConsultUtil'
 import type { LibraryCardDetail, DocItem, TableDataItem, ChartStatItem, ChartDetailCdItem } from '~/types/library'
 import type { LunchRecommendationItem, VisualizationViewModel } from '~/types/chat'
@@ -396,6 +407,8 @@ const isPsychologySurveyCard = computed(() => displayData.value?.agentId === 'AG
 const surveyReadonlyAnswers = computed<Record<number, number>>(() =>
   parseSurveyAnswersFromPrompt(displayData.value?.qcontent ?? ''),
 )
+/** 점심 추천 전송 프롬프트(qcontent) — 검색기록·채팅과 동일하게 제출 완료 카드로 표시 */
+const lunchQuestionPayload = computed(() => parseLunchPayloadFromPrompt(displayData.value?.qcontent ?? ''))
 
 /** 시스템 응답 마크다운 렌더 결과 — v-html (ChatMessageItem과 동일) */
 const responseRenderedHtml = computed(() => toHtmlContent(displayData.value?.rcontent ?? ''))
@@ -548,6 +561,13 @@ const handleCopyResponse = async () => {
 
 <style lang="scss" scoped>
 .library-detail-survey-readonly {
+  width: 100%;
+  max-width: 100%;
+  max-height: min(560px, calc(100vh - 280px));
+  overflow: hidden;
+}
+
+.library-detail-lunch-readonly {
   width: 100%;
   max-width: 100%;
   max-height: min(560px, calc(100vh - 280px));

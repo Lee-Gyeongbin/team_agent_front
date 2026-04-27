@@ -1,62 +1,78 @@
 <template>
   <section
     class="chat-lunch-agent-card"
-    :class="{ 'is-readonly': props.readonly, 'is-result': isResultMode }"
+    :class="{
+      'is-readonly': props.readonly,
+      'is-intro-playing': isIntroPlaying,
+      'is-content-visible': isContentVisible,
+    }"
+    :style="themeStyle"
   >
-    <div class="chat-lunch-agent-card__header">
+    <Transition name="lunch-intro">
+      <div
+        v-if="isIntroPlaying && !hasResultRecommendations"
+        class="chat-lunch-agent-card__intro"
+        aria-live="polite"
+      >
+        <div class="chat-lunch-agent-card__intro-inner">
+          <div class="chat-lunch-agent-card__intro-avatar">
+            <i :class="[themeIconClassNm || 'icon-bot', 'size-24']" />
+          </div>
+          <p class="chat-lunch-agent-card__intro-title">점심 메뉴 추천 에이전트</p>
+          <p class="chat-lunch-agent-card__intro-subtitle">조건을 분석하고 있습니다...</p>
+        </div>
+      </div>
+    </Transition>
+
+    <div
+      v-if="isContentVisible"
+      class="chat-lunch-agent-card__header"
+    >
       <div class="chat-lunch-agent-card__header-info">
         <div class="chat-lunch-agent-card__avatar">
-          <i class="icon-bot size-24" />
+          <i :class="[themeIconClassNm || 'icon-bot', 'size-24']" />
         </div>
         <div>
           <p class="chat-lunch-agent-card__title">
-            {{ isResultMode ? '점심 메뉴 추천 결과' : '점심 메뉴 추천 에이전트' }}
+            {{ hasResultRecommendations ? '점심 메뉴 추천 결과' : '점심 메뉴 추천 에이전트' }}
           </p>
           <p class="chat-lunch-agent-card__subtitle">
             {{
-              isResultMode
-                ? '입력 조건을 바탕으로 추천된 식당 목록입니다.'
+              hasResultRecommendations
+                ? '선택하신 조건을 바탕으로 추천된 식당 목록입니다.'
                 : props.readonly
                   ? '추천 요청이 완료되었습니다.'
-                  : '질문에 답하면 조건에 맞는 메뉴와 식당을 추천해드려요.'
+                  : '아래 항목을 모두 선택해 주세요.'
             }}
           </p>
         </div>
       </div>
-      <span
-        v-if="isResultMode"
-        class="chat-lunch-agent-card__result-count"
-      >
-        {{ recommendations.length }}건
-      </span>
     </div>
 
     <div
-      v-if="!isResultMode"
+      v-if="isContentVisible && !hasResultRecommendations"
       class="chat-lunch-agent-card__body"
     >
       <div
         class="chat-lunch-agent-card__field"
-        :class="{
-          'is-answered': isLocationAnswered,
-        }"
+        :class="{ 'is-answered': isLocationAnswered }"
       >
         <p class="chat-lunch-agent-card__label">현재 위치는?</p>
         <div class="chat-lunch-agent-card__location-grid">
           <UiSelect
-            :model-value="selectedSido"
+            :model-value="form.sido"
             :options="sidoOptions"
             :disabled="props.readonly"
             @update:model-value="!props.readonly && onChangeSido($event)"
           />
           <UiSelect
-            :model-value="selectedSigungu"
+            :model-value="form.sigungu"
             :options="sigunguOptions"
             :disabled="props.readonly"
             @update:model-value="!props.readonly && onChangeSigungu($event)"
           />
           <UiSelect
-            :model-value="selectedDong"
+            :model-value="form.dong"
             :options="dongOptions"
             :disabled="props.readonly"
             @update:model-value="!props.readonly && onChangeDong($event)"
@@ -66,16 +82,14 @@
 
       <div
         class="chat-lunch-agent-card__field"
-        :class="{
-          'is-answered': !!selectedMood,
-        }"
+        :class="{ 'is-answered': !!form.mood }"
       >
         <p class="chat-lunch-agent-card__label">오늘 어떤 음식을 드시고 싶으신가요?</p>
         <div class="chat-lunch-agent-card__chip-row">
           <UiButton
-            v-for="option in moodOptions"
+            v-for="option in LUNCH_MOOD_OPTIONS"
             :key="option"
-            :variant="selectedMood === option ? 'primary' : 'line-secondary'"
+            :variant="form.mood === option ? 'primary' : 'line-secondary'"
             size="sm"
             :disabled="props.readonly"
             @click="!props.readonly && onSelectMood(option)"
@@ -87,16 +101,14 @@
 
       <div
         class="chat-lunch-agent-card__field"
-        :class="{
-          'is-answered': !!selectedBudget,
-        }"
+        :class="{ 'is-answered': !!form.budget }"
       >
         <p class="chat-lunch-agent-card__label">예산은 어느 정도인가요? (1인 기준)</p>
         <div class="chat-lunch-agent-card__chip-row">
           <UiButton
-            v-for="option in budgetOptions"
+            v-for="option in LUNCH_BUDGET_OPTIONS"
             :key="option"
-            :variant="selectedBudget === option ? 'primary' : 'line-secondary'"
+            :variant="form.budget === option ? 'primary' : 'line-secondary'"
             size="sm"
             :disabled="props.readonly"
             @click="!props.readonly && onSelectBudget(option)"
@@ -108,16 +120,14 @@
 
       <div
         class="chat-lunch-agent-card__field"
-        :class="{
-          'is-answered': !!selectedPeopleCount,
-        }"
+        :class="{ 'is-answered': !!form.peopleCount }"
       >
         <p class="chat-lunch-agent-card__label">몇 명이 식사하나요?</p>
         <div class="chat-lunch-agent-card__chip-row">
           <UiButton
-            v-for="option in peopleOptions"
+            v-for="option in LUNCH_PEOPLE_OPTIONS"
             :key="option"
-            :variant="selectedPeopleCount === option ? 'primary' : 'line-secondary'"
+            :variant="form.peopleCount === option ? 'primary' : 'line-secondary'"
             size="sm"
             :disabled="props.readonly"
             @click="!props.readonly && onSelectPeople(option)"
@@ -129,16 +139,14 @@
 
       <div
         class="chat-lunch-agent-card__field"
-        :class="{
-          'is-answered': !!selectedCuisineType,
-        }"
+        :class="{ 'is-answered': !!form.cuisineType }"
       >
         <p class="chat-lunch-agent-card__label">선호하는 음식종류는?</p>
         <div class="chat-lunch-agent-card__chip-row">
           <UiButton
-            v-for="option in cuisineOptions"
+            v-for="option in LUNCH_CUISINE_OPTIONS"
             :key="option"
-            :variant="selectedCuisineType === option ? 'primary' : 'line-secondary'"
+            :variant="form.cuisineType === option ? 'primary' : 'line-secondary'"
             size="sm"
             :disabled="props.readonly"
             @click="!props.readonly && onSelectCuisine(option)"
@@ -148,8 +156,9 @@
         </div>
       </div>
     </div>
+
     <ul
-      v-else
+      v-if="isContentVisible && hasResultRecommendations"
       class="chat-lunch-agent-card__result-list"
     >
       <li
@@ -179,7 +188,7 @@
     </ul>
 
     <div
-      v-if="!isResultMode"
+      v-if="isContentVisible && !hasResultRecommendations"
       class="chat-lunch-agent-card__footer"
     >
       <template v-if="props.readonly">
@@ -199,7 +208,7 @@
         <UiButton
           variant="dark"
           size="md"
-          @click="onSubmit"
+          @click="onSubmitClick"
         >
           조건 입력 완료 후 추천받기
           <template #icon-right>
@@ -213,32 +222,29 @@
 
 <script setup lang="ts">
 import type { LunchAgentFormPayload, LunchRecommendationItem } from '~/types/chat'
-// 🔽 더미 데이터
-const locationMap: Record<string, Record<string, string[]>> = {
-  서울특별시: {
-    강남구: ['역삼동', '삼성동', '논현동'],
-    마포구: ['서교동', '합정동', '상암동'],
-  },
-  경기도: {
-    성남시: ['분당동', '정자동', '서현동'],
-    수원시: ['영통동', '광교동', '인계동'],
-  },
-}
+import {
+  LUNCH_BUDGET_OPTIONS,
+  LUNCH_CUISINE_OPTIONS,
+  LUNCH_LOCATION_MAP,
+  LUNCH_MOOD_OPTIONS,
+  LUNCH_PEOPLE_OPTIONS,
+  getLunchAnsweredCount,
+} from '~/utils/chat/lunchAgentUtil'
 
-const peopleOptions = ['1명', '2명', '3~4명', '5명 이상']
-const cuisineOptions = ['한식', '중식', '양식', '일식', '패스트푸드', '아시아음식', '상관없음']
-const moodOptions = ['든든하게', '가볍게', '매콤하게', '달달하게', '깔끔하게', '상관없음']
-const budgetOptions = ['8,000 ~ 12,000원', '12,000 ~ 15,000원', '15,000 ~ 20,000원', '20,000원 이상']
 interface Props {
   readonly?: boolean
   initialPayload?: LunchAgentFormPayload
   recommendations?: LunchRecommendationItem[]
+  themeIconClassNm?: string
+  themeColorHex?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   readonly: false,
   initialPayload: undefined,
   recommendations: () => [],
+  themeIconClassNm: '',
+  themeColorHex: '',
 })
 
 const emit = defineEmits<{
@@ -247,47 +253,65 @@ const emit = defineEmits<{
 }>()
 
 const toSelectOptions = (list: string[]) => list.map((item) => ({ label: item, value: item }))
+const sidoList = Object.keys(LUNCH_LOCATION_MAP)
+const form = reactive<LunchAgentFormPayload>({
+  sido: sidoList[0] ?? '',
+  sigungu: '',
+  dong: '',
+  mood: LUNCH_MOOD_OPTIONS[0] ?? '',
+  budget: LUNCH_BUDGET_OPTIONS[0] ?? '',
+  peopleCount: LUNCH_PEOPLE_OPTIONS[0] ?? '',
+  cuisineType: LUNCH_CUISINE_OPTIONS[0] ?? '',
+})
 
-const sidoList = Object.keys(locationMap)
-const selectedSido = ref(sidoList[0] ?? '')
-const selectedSigungu = ref('')
-const selectedDong = ref('')
-const selectedMood = ref(moodOptions[0])
-const selectedBudget = ref(budgetOptions[0])
-const selectedPeopleCount = ref(peopleOptions[0])
-const selectedCuisineType = ref(cuisineOptions[0])
-
-const sidoOptions = computed(() => toSelectOptions(sidoList))
-const sigunguList = computed(() => Object.keys(locationMap[selectedSido.value] ?? {}))
-const sigunguOptions = computed(() => toSelectOptions(sigunguList.value))
-const dongList = computed(() => locationMap[selectedSido.value]?.[selectedSigungu.value] ?? [])
-const dongOptions = computed(() => toSelectOptions(dongList.value))
-const isLocationAnswered = computed(() => !!selectedSido.value && !!selectedSigungu.value && !!selectedDong.value)
 const recommendations = computed(() => props.recommendations ?? [])
-const isResultMode = computed(() => recommendations.value.length > 0)
+const hasResultRecommendations = computed(() => recommendations.value.length > 0)
+const isLocationAnswered = computed(() => !!form.sido && !!form.sigungu && !!form.dong)
+const displayAnsweredCount = computed(() => getLunchAnsweredCount(form))
+
+const DEFAULT_THEME_HEX = '#3c69db'
+const hexToRgb = (hex: string) => {
+  const cleanedHex = String(hex || '')
+    .trim()
+    .replace('#', '')
+  if (!/^[0-9a-fA-F]{6}$/.test(cleanedHex)) return '60, 105, 219'
+  return `${parseInt(cleanedHex.slice(0, 2), 16)}, ${parseInt(cleanedHex.slice(2, 4), 16)}, ${parseInt(cleanedHex.slice(4, 6), 16)}`
+}
+const themeStyle = computed(() => {
+  const colorHex = String(props.themeColorHex || '').trim() || DEFAULT_THEME_HEX
+  return {
+    '--lunch-theme-color': colorHex,
+    '--lunch-theme-rgb': hexToRgb(colorHex),
+  }
+})
+const themeIconClassNm = computed(() => String(props.themeIconClassNm || '').trim())
 
 const applyPayloadToForm = (payload?: LunchAgentFormPayload) => {
   if (!payload) return
-  selectedSido.value = payload.sido
-  selectedSigungu.value = payload.sigungu
-  selectedDong.value = payload.dong
-  selectedMood.value = payload.mood
-  selectedBudget.value = payload.budget
-  selectedPeopleCount.value = payload.peopleCount
-  selectedCuisineType.value = payload.cuisineType
+  form.sido = payload.sido
+  form.sigungu = payload.sigungu
+  form.dong = payload.dong
+  form.mood = payload.mood
+  form.budget = payload.budget
+  form.peopleCount = payload.peopleCount
+  form.cuisineType = payload.cuisineType
 }
+
+const sidoOptions = computed(() => toSelectOptions(sidoList))
+const sigunguList = computed(() => Object.keys(LUNCH_LOCATION_MAP[form.sido] ?? {}))
+const sigunguOptions = computed(() => toSelectOptions(sigunguList.value))
+const dongList = computed(() => LUNCH_LOCATION_MAP[form.sido]?.[form.sigungu] ?? [])
+const dongOptions = computed(() => toSelectOptions(dongList.value))
 
 watch(
   sigunguList,
   (list) => {
     if (!list.length) {
-      selectedSigungu.value = ''
-      selectedDong.value = ''
+      form.sigungu = ''
+      form.dong = ''
       return
     }
-    if (!list.includes(selectedSigungu.value)) {
-      selectedSigungu.value = list[0]
-    }
+    if (!list.includes(form.sigungu)) form.sigungu = list[0]
   },
   { immediate: true },
 )
@@ -296,12 +320,10 @@ watch(
   dongList,
   (list) => {
     if (!list.length) {
-      selectedDong.value = ''
+      form.dong = ''
       return
     }
-    if (!list.includes(selectedDong.value)) {
-      selectedDong.value = list[0]
-    }
+    if (!list.includes(form.dong)) form.dong = list[0]
   },
   { immediate: true },
 )
@@ -315,51 +337,74 @@ watch(
   { immediate: true },
 )
 
+const getShouldPlayIntro = () => !props.readonly && !hasResultRecommendations.value && displayAnsweredCount.value === 0
+const isIntroPlaying = ref(getShouldPlayIntro())
+const isContentVisible = ref(!getShouldPlayIntro())
+let introStartTimer: ReturnType<typeof setTimeout> | null = null
+let introEndTimer: ReturnType<typeof setTimeout> | null = null
+
+const clearIntroTimers = () => {
+  if (introStartTimer) clearTimeout(introStartTimer)
+  if (introEndTimer) clearTimeout(introEndTimer)
+  introStartTimer = null
+  introEndTimer = null
+}
+
+const startIntroSequence = () => {
+  clearIntroTimers()
+  if (!getShouldPlayIntro()) {
+    isIntroPlaying.value = false
+    isContentVisible.value = true
+    return
+  }
+  isIntroPlaying.value = true
+  isContentVisible.value = false
+  introStartTimer = setTimeout(() => {
+    isContentVisible.value = true
+  }, 1600)
+  introEndTimer = setTimeout(() => {
+    isIntroPlaying.value = false
+  }, 2300)
+}
+
+onMounted(() => {
+  startIntroSequence()
+})
+
+onUnmounted(() => {
+  clearIntroTimers()
+})
+
 const onChangeSido = (value: string | number) => {
-  selectedSido.value = String(value)
+  form.sido = String(value)
 }
-
 const onChangeSigungu = (value: string | number) => {
-  selectedSigungu.value = String(value)
+  form.sigungu = String(value)
 }
-
 const onChangeDong = (value: string | number) => {
-  selectedDong.value = String(value)
+  form.dong = String(value)
 }
 
 const onSelectMood = (option: string) => {
-  selectedMood.value = option
+  form.mood = option
 }
-
 const onSelectBudget = (option: string) => {
-  selectedBudget.value = option
+  form.budget = option
 }
-
 const onSelectPeople = (option: string) => {
-  selectedPeopleCount.value = option
+  form.peopleCount = option
 }
-
 const onSelectCuisine = (option: string) => {
-  selectedCuisineType.value = option
+  form.cuisineType = option
 }
 
-const onSubmit = () => {
-  if (props.readonly) return
-
-  emit('submit', {
-    sido: selectedSido.value,
-    sigungu: selectedSigungu.value,
-    dong: selectedDong.value,
-    mood: selectedMood.value,
-    budget: selectedBudget.value,
-    peopleCount: selectedPeopleCount.value,
-    cuisineType: selectedCuisineType.value,
-  })
+const onSubmitClick = () => {
+  emit('submit', { ...form })
 }
 </script>
-
 <style lang="scss" scoped>
 .chat-lunch-agent-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -369,6 +414,13 @@ const onSubmit = () => {
   border-radius: $border-radius-lg;
   background: #fff;
   overflow: hidden;
+  --lunch-content-opacity: 1;
+  --lunch-content-shift: 0px;
+
+  &.is-intro-playing {
+    --lunch-content-opacity: 0;
+    --lunch-content-shift: 8px;
+  }
 
   &__header {
     display: flex;
@@ -378,6 +430,11 @@ const onSubmit = () => {
     border-bottom: 1px solid $color-border;
     background: $color-surface;
     flex-shrink: 0;
+    opacity: var(--lunch-content-opacity);
+    transform: translateY(var(--lunch-content-shift));
+    transition:
+      opacity 0.32s ease,
+      transform 0.32s ease;
   }
 
   &__header-info {
@@ -393,36 +450,9 @@ const onSubmit = () => {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: $color-primary;
+    background: var(--lunch-theme-color);
     color: #fff;
     flex-shrink: 0;
-  }
-
-  &__result-count {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    align-self: flex-end;
-    min-width: 52px;
-    padding: 3px $spacing-sm;
-    border-radius: $border-radius-full;
-    border: 1px solid rgba(60, 105, 219, 0.22);
-    background: rgba(60, 105, 219, 0.06);
-    @include typo($body-xsmall);
-    font-weight: $font-weight-semibold;
-    line-height: 1.2;
-    letter-spacing: 0.01em;
-    color: $color-primary;
-  }
-
-  &__body {
-    flex: 1;
-    overflow-y: auto;
-    padding: $spacing-lg $spacing-xl;
-    display: flex;
-    flex-direction: column;
-    gap: $spacing-md;
-    @include custom-scrollbar(4px);
   }
 
   &__title {
@@ -435,6 +465,21 @@ const onSubmit = () => {
     @include typo($body-small);
     color: $color-text-muted;
     margin-top: 2px;
+  }
+
+  &__body {
+    flex: 1;
+    overflow-y: auto;
+    padding: $spacing-lg $spacing-xl;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+    opacity: var(--lunch-content-opacity);
+    transform: translateY(var(--lunch-content-shift));
+    transition:
+      opacity 0.36s ease 0.04s,
+      transform 0.36s ease 0.04s;
+    @include custom-scrollbar(4px);
   }
 
   &__field {
@@ -450,8 +495,8 @@ const onSubmit = () => {
       background 0.2s ease;
 
     &.is-answered {
-      border-color: $color-primary;
-      background: rgba(60, 105, 219, 0.03);
+      border-color: var(--lunch-theme-color);
+      background: rgba(var(--lunch-theme-rgb), 0.03);
     }
   }
 
@@ -481,6 +526,11 @@ const onSubmit = () => {
     border-top: 1px solid $color-border;
     background: $color-surface;
     flex-shrink: 0;
+    opacity: var(--lunch-content-opacity);
+    transform: translateY(var(--lunch-content-shift));
+    transition:
+      opacity 0.28s ease 0.08s,
+      transform 0.28s ease 0.08s;
   }
 
   &__result-list {
@@ -519,9 +569,9 @@ const onSubmit = () => {
     justify-content: center;
     padding: 2px $spacing-xs;
     border-radius: $border-radius-full;
-    background: rgba(60, 105, 219, 0.08);
+    background: rgba(var(--lunch-theme-rgb), 0.08);
     @include typo($body-xsmall);
-    color: $color-primary;
+    color: var(--lunch-theme-color);
     font-weight: $font-weight-medium;
   }
 
@@ -554,12 +604,54 @@ const onSubmit = () => {
     display: inline-flex;
     align-items: center;
     gap: $spacing-xs;
-    padding: $spacing-xs $spacing-md;
-    border-radius: $border-radius-full;
-    background: rgba(60, 105, 219, 0.08);
-    color: $color-primary;
-    @include typo($body-small);
+    padding: 7px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(var(--lunch-theme-rgb), 0.22);
+    background: rgba(var(--lunch-theme-rgb), 0.08);
+    color: var(--lunch-theme-color);
+    @include typo($body-medium);
     font-weight: $font-weight-medium;
+  }
+
+  &__intro {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.9) 100%);
+    pointer-events: none;
+  }
+
+  &__intro-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: $spacing-xs;
+  }
+
+  &__intro-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    background: var(--lunch-theme-color);
+  }
+
+  &__intro-title {
+    @include typo($body-large);
+    font-weight: $font-weight-semibold;
+    color: $color-text-primary;
+  }
+
+  &__intro-subtitle {
+    @include typo($body-medium);
+    color: $color-text-muted;
   }
 
   &.is-readonly {
@@ -567,9 +659,15 @@ const onSubmit = () => {
       pointer-events: none;
     }
   }
+}
 
-  &.is-result {
-    height: auto;
-  }
+.lunch-intro-enter-active,
+.lunch-intro-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.lunch-intro-enter-from,
+.lunch-intro-leave-to {
+  opacity: 0;
 }
 </style>
