@@ -5,7 +5,7 @@ import type {
   DashboardStatSummary,
   DashboardTokenUsage,
   DashboardVisitorTrend,
-  DashboardKeywordTrend,
+  DashboardCategoryTrend,
 } from '~/types/dashboard'
 
 /**
@@ -34,16 +34,14 @@ export const useDashboardApi = () => {
     return post<{ dataList: DashboardTokenUsage[] }>('/dashboard/token-usage.do', { ym: params.ym })
   }
 
-  /** 사용자 추이 (기간 조건 필요 시 POST body 객체로 별도 메서드 추가) */
+  /** 사용자 추이 */
   const fetchDashboardVisitorTrend = async (): Promise<{ dataList: DashboardVisitorTrend[] }> => {
     return get<{ dataList: DashboardVisitorTrend[] }>('/dashboard/visitor-trend.do')
   }
 
-  /** 사용자 관심 키워드 */
-  const fetchDashboardKeywordTrend = async (params: {
-    dayCnt: number
-  }): Promise<{ dataList: DashboardKeywordTrend[] }> => {
-    return post<{ dataList: DashboardKeywordTrend[] }>('/dashboard/keyword-trend.do', { dayCnt: params.dayCnt })
+  /** 사용자 관심 카테고리 */
+  const fetchDashboardCategoryTrend = async (dayCnt: number): Promise<{ dataList: DashboardCategoryTrend[] }> => {
+    return post<{ dataList: DashboardCategoryTrend[] }>('/dashboard/category-trend.do', { dayCnt: dayCnt })
   }
 
   return {
@@ -52,6 +50,6 @@ export const useDashboardApi = () => {
     fetchDashboardNoticeList,
     fetchDashboardTokenUsage,
     fetchDashboardVisitorTrend,
-    fetchDashboardKeywordTrend,
+    fetchDashboardCategoryTrend,
   }
 }

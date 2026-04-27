@@ -2,7 +2,7 @@
   <div class="chat-input">
     <div
       class="chat-input-inner"
-      :class="{ 'is-active': modelValue.trim(), 'is-dragging': isDragging }"
+      :class="{ 'is-active': modelValue.trim(), 'is-dragging': isDragging, 'is-disabled': props.disabled }"
       @dragenter.prevent="onAttachDragEnter"
       @dragover.prevent="onAttachDragOver"
       @dragleave.prevent="onAttachDragLeave"
@@ -17,7 +17,7 @@
           :model-value="modelValue"
           class="inp-chat-search"
           :placeholder="inputPlaceholder"
-          :disabled="isSearchModeMissingSubOptions"
+          :disabled="props.disabled || isSearchModeMissingSubOptions"
           :auto-resize="true"
           :max-rows="6"
           @update:model-value="emit('update:modelValue', $event)"
@@ -34,7 +34,7 @@
             icon-only
             class="btn-chat-attach"
             aria-label="파일 첨부"
-            :disabled="isSending"
+            :disabled="isSending || props.disabled"
             @click="handleAttachClick"
           >
             <template #icon-left>
@@ -46,6 +46,7 @@
             type="file"
             class="chat-input-attach-hidden"
             :accept="attachAccept"
+            :disabled="props.disabled"
             multiple
             @change="onAttachFileChange"
           />
@@ -68,7 +69,9 @@
             class="btn-chat-send"
             :loading="isSending"
             :aria-label="isSending ? '전송 중' : '메시지 전송'"
-            :disabled="!modelValue.trim() || isSearchModeMissingSubOptions || selectedSubOptions.length === 0"
+            :disabled="
+              props.disabled || !modelValue.trim() || isSearchModeMissingSubOptions || selectedSubOptions.length === 0
+            "
             @click="handleSend"
           >
             <template #icon-left>
@@ -188,13 +191,16 @@ const inputPlaceholder = computed(() =>
 
 interface Props {
   modelValue: string
+  disabled?: boolean
 }
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  disabled: false,
+})
 
 const attachInputRef = ref<HTMLInputElement | null>(null)
 const selectedFiles = ref<File[]>([])
@@ -218,6 +224,7 @@ const revokePreviewUrl = (targetId: string) => {
 }
 
 const handleAttachClick = () => {
+  if (props.disabled) return
   attachInputRef.value?.click()
 }
 
@@ -343,6 +350,7 @@ const appendAttachmentPreview = (files: File[]) => {
 }
 
 const onAttachFileChange = (event: Event) => {
+  if (props.disabled) return
   const input = event.target as HTMLInputElement
   const fileList = input.files
   if (!fileList?.length) return
@@ -371,6 +379,7 @@ const onAttachDragLeave = (event: DragEvent) => {
 
 const onAttachDrop = (event: DragEvent) => {
   isDragging.value = false
+  if (props.disabled) return
   const files = event.dataTransfer?.files
   if (!files?.length) return
   appendAttachmentPreview(Array.from(files))
@@ -402,6 +411,7 @@ onBeforeUnmount(() => {
 
 const handleSend = async () => {
   if (isSending.value) return
+  if (props.disabled) return
   if (isSearchModeMissingSubOptions.value) return
   if (!validateAttachmentFiles(selectedFiles.value)) return
   isSending.value = true

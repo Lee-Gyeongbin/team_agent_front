@@ -153,6 +153,7 @@ const dropdownRef = ref<HTMLElement | null>(null)
 
 const selectedAgent = computed(() => {
   if (!selectedChatAgentId.value) return null
+  if (selectedChatAgentId.value === 'AG000010') return null
   return chatIndexAgents.value.find((a) => a.agentId === selectedChatAgentId.value) ?? null
 })
 const isSearchModeActive = computed(() => activeSearchModes.value.length > 0)
@@ -165,7 +166,7 @@ const toggleDropdown = () => {
 }
 
 const onSelect = (agent: Agent) => {
-  if (selectedChatAgentId.value === agent.agentId) {
+  if (selectedChatAgentId.value === agent.agentId && agent.agentId !== 'AG000010') {
     isOpen.value = false
     return
   }
