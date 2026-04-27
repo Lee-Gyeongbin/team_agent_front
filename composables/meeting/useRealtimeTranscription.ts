@@ -112,41 +112,48 @@ const stopChunkRecorder = (): Promise<Blob | null> => {
 const sendChunk = async () => {
   if (pendingWaitingIds.length === 0) return
 
-  // in-flight waiting 블록 ID 스냅샷
   const inflightIds = [...pendingWaitingIds]
   pendingWaitingIds = []
   chunkBufferStart = Date.now()
 
-  // chunkRecorder 정지 → 완전한 WebM Blob 획득
-  const chunkBlob = await stopChunkRecorder()
-
-  // 다음 청크 수집 즉시 재시작
+  // chunkRecorder 정지 후 재시작 (mainRecorder는 계속 누적)
+  await stopChunkRecorder()
   if (isRecording.value) startChunkRecorder()
 
-  if (!chunkBlob || chunkBlob.size === 0) return
+  // diarize 호출 없이 바로 confirmed 처리
+  inflightIds.forEach((id) => {
+    const idx = blocks.value.findIndex((b) => b.id === id)
+    if (idx !== -1) {
+      blocks.value[idx] = { ...blocks.value[idx], status: 'confirmed' }
+    }
+  })
+}
+// 텍스트 겹치는 segment 찾기
+const findBestMatchSegment = (blockText: string, segments: DiarizedSegment[]): DiarizedSegment | undefined => {
+  if (!segments.length) return undefined
 
-  try {
-    const res = await fetchTranscribeChunk(chunkBlob)
-    const segments: DiarizedSegment[] = res.segments ?? []
+  let bestScore = -1
+  let bestSeg: DiarizedSegment | undefined
 
-    // waiting → confirmed 교체
-    // 텍스트는 Realtime WebSocket에서 받은 것(정확한 한국어)을 유지하고,
-    // diarize 결과에서는 speaker 레이블만 가져온다
-    inflightIds.forEach((id, idx) => {
-      const blockIdx = blocks.value.findIndex((b) => b.id === id)
-      if (blockIdx === -1) return
-
-      const seg = segments[idx]
-      blocks.value[blockIdx] = {
-        ...blocks.value[blockIdx], // 기존 text 유지
-        status: 'confirmed',
-        speaker: seg?.speaker, // speaker 레이블만 diarize에서
-      }
-      console.log('blocks.value[blockIdx]', blocks.value[blockIdx])
-    })
-  } catch (e) {
-    console.warn('[Realtime] 청크 화자 분리 실패:', e)
+  for (const seg of segments) {
+    const score = calcOverlapScore(blockText, seg.text ?? '')
+    if (score > bestScore) {
+      bestScore = score
+      bestSeg = seg
+    }
   }
+  return bestSeg
+}
+
+// 두 문자열의 공통 글자 비율
+const calcOverlapScore = (a: string, b: string): number => {
+  const setA = new Set(a.replace(/\s/g, ''))
+  const setB = new Set(b.replace(/\s/g, ''))
+  let common = 0
+  setA.forEach((ch) => {
+    if (setB.has(ch)) common++
+  })
+  return common / Math.max(setA.size, setB.size, 1)
 }
 
 /** 최대 30초 강제 전송 타이머 */

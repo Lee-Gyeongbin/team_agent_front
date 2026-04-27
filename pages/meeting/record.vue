@@ -168,15 +168,10 @@ const onClickFinish = async () => {
     return
   }
 
-  // 확정·대기 블록을 segments로 변환 (실시간 diarize 화자 힌트 포함)
-  const segments: SpeechSegment[] = blocks.value
-    .filter((b) => b.status === 'confirmed' || b.status === 'waiting')
-    .map((b, idx) => ({ seq: idx, text: b.text, speaker: b.speaker }))
-
   const success = await handleFinishMeetingWithAudio({
     meetingId,
     audioBlob,
-    segments,
+    segments: [],
   })
   if (success) {
     resetRecording()
