@@ -1,6 +1,7 @@
 import type {
   VisualizationChartSelection,
   VisualizationChartType,
+  VisualizationChartOptionPayload,
   VisualizationColumnProfile,
   VisualizationSchema,
   VisualizationSelectableOptions,
@@ -18,31 +19,28 @@ import {
 } from '~/utils/chat/visualizationLabelMap'
 import { calculateChartScale } from '~/utils/chat/visualizationChartUtil'
 
-const TIME_AXIS_YEAR_MONTH = '__TIME_AXIS_YEAR_MONTH__'
-const TIME_AXIS_YEAR_QUARTER = '__TIME_AXIS_YEAR_QUARTER__'
 const EMPTY_VALUE = '-'
 const DEFAULT_CHART_TYPE: VisualizationChartType = 'bar'
-const CHART_TYPES: VisualizationChartType[] = ['bar', 'line', 'pie']
-
-const METRIC_HINT_PATTERNS = [
-  'TOTAL_VAL',
-  'AVG_VAL',
-  'RATIO_PERCENT',
-  'ALL_TOTAL',
-  'DIFF_VAL',
-  'GROWTH_RATE',
-  'MAX',
-  'MIN',
-  'STAT_VAL',
-  'MON_VAL',
-  'SUM_TOTAL',
-]
-
-const TIME_HINT_PATTERNS = ['YEAR', 'MON', 'MONTH', 'QUARTER', 'QTR', 'DATE', 'DAY', 'YM', 'YMD']
-const CODE_HINT_PATTERNS = ['_CD', '_ID', 'CODE', 'SEQ', 'ORDER_NO', 'ORDER', 'NO']
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+const toChartType = (value: unknown): VisualizationChartType | null => {
+  if (value === 'bar' || value === 'line' || value === 'pie') return value
+  return null
+}
+const normalizeChartOption = (value: unknown): VisualizationChartOptionPayload | null => {
+  if (!value) return null
+  const raw = typeof value === 'string' ? parseTableData(value) : value
+  if (!isRecord(raw)) return null
+  const chart = toChartType(raw.chart)
+  const x = Array.isArray(raw.x) ? raw.x.filter((item): item is string => typeof item === 'string') : []
+  const y = Array.isArray(raw.y) ? raw.y.filter((item): item is string => typeof item === 'string') : []
+  return {
+    ...(chart ? { chart } : {}),
+    ...(x.length > 0 ? { x } : {}),
+    ...(y.length > 0 ? { y } : {}),
+  }
 }
 
 const toNumber = (value: unknown) => {
@@ -62,38 +60,8 @@ const getColumnKeys = (rows: Array<Record<string, unknown>>) => {
   return Array.from(keySet)
 }
 
-const normalizeKey = (key: string) => key.trim().toUpperCase()
-
-const includesAnyPattern = (value: string, patterns: string[]) => {
-  return patterns.some((pattern) => value.includes(pattern))
-}
-
-const isLikelyTimeKey = (key: string, label: string) => {
-  const upper = normalizeKey(key)
-  const upperLabel = label.toUpperCase()
-  return includesAnyPattern(upper, TIME_HINT_PATTERNS) || /(년|월|분기|일자|날짜)/.test(upperLabel)
-}
-
-const isLikelyCodeKey = (key: string, label: string) => {
-  const upper = normalizeKey(key)
-  const upperLabel = label.toUpperCase()
-  const isCodePattern =
-    includesAnyPattern(upper, CODE_HINT_PATTERNS) || upper.endsWith('_CD') || upper.endsWith('_ID') || upper === 'ID'
-  return isCodePattern || /(코드|식별|순번|번호|ID)/.test(upperLabel)
-}
-
-const isLikelyMetricKey = (key: string, label: string) => {
-  const upper = normalizeKey(key)
-  const upperLabel = label.toUpperCase()
-  return (
-    includesAnyPattern(upper, METRIC_HINT_PATTERNS) ||
-    /(금액|매출|비율|건수|점수|수량|총계|합계|평균|통계|지표)/.test(upperLabel)
-  )
-}
-
-// 차트의 x축, y축, 시리즈 컬럼 추론을 위한 컬럼 프로파일 조회
+// 컬럼 프로파일 조회 (표 정렬/표시 보조용)
 const getColumnProfile = (rows: Array<Record<string, unknown>>, key: string): VisualizationColumnProfile => {
-  const label = resolveColumnLabel(key)
   const uniqueSet = new Set<string>()
   let nonEmptyCount = 0
   let numericCount = 0
@@ -114,16 +82,6 @@ const getColumnProfile = (rows: Array<Record<string, unknown>>, key: string): Vi
   const uniqueCount = uniqueSet.size
   // 유니크 값 비율 조회
   const uniqueRatio = nonEmptyCount > 0 ? uniqueCount / nonEmptyCount : 0
-  // 시간형인지 여부 확인
-  const isTimeLike = isLikelyTimeKey(key, label)
-  // 코드형인지 여부 확인
-  const isCodeLike = isLikelyCodeKey(key, label)
-  // 통계값 힌트 여부 확인
-  const metricHint = isLikelyMetricKey(key, label)
-  // 숫자 컬럼이지만 ID처럼 행마다 거의 다른 값(고유값 비율 높은)인 컬럼을 걸러내기 위함 - 이런 컬럼을 y축으로 쓰면 차트가 깨짐
-  const idLikeHighCardinality = uniqueRatio >= 0.9 && nonEmptyCount >= 12
-  // 차트의 y축으로 쓸 만한 컬럼인지 최종 판정. 숫자형이고 시간형이나 코드형이 아니며 통계값 힌트가 있거나 고유도 값 비율이 90% 이상이고 비어있지 않은 값이 12개 이상인 컬럼은 통계값 힌트가 있는지 여부에 따라 판정.
-  const isLikelyMetric = isNumeric && !isTimeLike && !isCodeLike && (metricHint || !idLikeHighCardinality)
 
   return {
     key,
@@ -131,22 +89,14 @@ const getColumnProfile = (rows: Array<Record<string, unknown>>, key: string): Vi
     nonEmptyCount,
     uniqueRatio,
     isNumeric,
-    isTimeLike,
-    isCodeLike,
-    isLikelyMetric,
+    isTimeLike: false,
+    isCodeLike: false,
+    isLikelyMetric: false,
   }
 }
 
-const getPreferredChartTargetKey = (keys: string[]) => {
-  const priority = ['STAT_ID', 'REGN_CD', 'DETAIL_ITEM_CD', 'RESULT']
-  return priority.find((p) => keys.some((k) => normalizeColumnKeyForMapping(k) === p)) ?? keys[0] ?? ''
-}
-
-const isTimeAxisKey = (key: string) => key === TIME_AXIS_YEAR_MONTH || key === TIME_AXIS_YEAR_QUARTER
-
-/** 시리즈 후보: X축 옵션 중 시간축(년-월, 년-분기) 제외 */
 const getAvailableSeriesKeys = (options: VisualizationSelectableOptions): string[] => {
-  return options.chartTargetKeys.filter((key) => !isTimeAxisKey(key))
+  return options.chartTargetKeys
 }
 
 /**
@@ -154,23 +104,13 @@ const getAvailableSeriesKeys = (options: VisualizationSelectableOptions): string
  * getDefaultSelection과 동일 규칙.
  */
 export const inferSeriesKeyFromChartTargets = (chartTargetKeys: string[], selectedChartTargetKey: string): string => {
-  const available = chartTargetKeys.filter((key) => !isTimeAxisKey(key) && key !== selectedChartTargetKey)
-  return available.length === 1 ? available[0] : ''
+  const available = chartTargetKeys.filter((key) => key !== selectedChartTargetKey)
+  return available[0] ?? ''
 }
 
-const getDefaultSelection = (options: VisualizationSelectableOptions): VisualizationChartSelection => {
-  const chartTargetKey = options.chartTargetKeys[0] ?? ''
-  const availableSeries = getAvailableSeriesKeys(options).filter((key) => key !== chartTargetKey)
-  const seriesKey = availableSeries.length === 1 ? availableSeries[0] : ''
-  return {
-    chartType: isTimeAxisKey(chartTargetKey) ? 'line' : DEFAULT_CHART_TYPE,
-    chartTargetKey,
-    yAxisKeys: options.yAxisKeys.slice(0, seriesKey ? 1 : options.yAxisKeys.length > 1 ? 2 : 1),
-    seriesKey,
-    stack: false,
-    dualAxis: false,
-    statIdFilter: '',
-  }
+const pickColumnKeysFromChartOption = (columns: string[], keys: string[] | undefined): string[] => {
+  if (!keys?.length) return []
+  return keys.filter((key, index, arr) => columns.includes(key) && arr.indexOf(key) === index)
 }
 
 /** 통계ID 컬럼 기준 유니크 값 목록 (차트 통계 지정 UI) */
@@ -183,37 +123,8 @@ export const getUniqueStatIdsFromRows = (rows: Array<Record<string, unknown>>, s
   return Array.from(set).sort((a, b) => a.localeCompare(b, 'ko'))
 }
 
-const padMonth = (value: unknown) => String(value ?? '').padStart(2, '0')
-
-const getTimeAxisLabel = (row: Record<string, unknown>, xAxisKey: string) => {
-  if (xAxisKey === TIME_AXIS_YEAR_MONTH) {
-    return `${row.YEAR ?? ''}-${padMonth(row.MON)}`
-  }
-  if (xAxisKey === TIME_AXIS_YEAR_QUARTER) {
-    return `${row.YEAR ?? ''}-Q${row.QUARTER ?? ''}`
-  }
-  return ''
-}
-
 const getXAxisValue = (row: Record<string, unknown>, xAxisKey: string) => {
-  if (xAxisKey === TIME_AXIS_YEAR_MONTH || xAxisKey === TIME_AXIS_YEAR_QUARTER) {
-    return getTimeAxisLabel(row, xAxisKey)
-  }
   return resolveDisplayValue(xAxisKey, row[xAxisKey])
-}
-
-const getXAxisSortValue = (row: Record<string, unknown>, xAxisKey: string) => {
-  if (xAxisKey === TIME_AXIS_YEAR_MONTH) {
-    const year = Number(row.YEAR ?? 0)
-    const month = Number(row.MON ?? 0)
-    return year * 100 + month
-  }
-  if (xAxisKey === TIME_AXIS_YEAR_QUARTER) {
-    const year = Number(row.YEAR ?? 0)
-    const quarter = Number(row.QUARTER ?? 0)
-    return year * 10 + quarter
-  }
-  return 0
 }
 
 const formatTableMetric = (value: unknown) => {
@@ -321,75 +232,45 @@ export const buildRowsFromColumnarJson = (raw: unknown): Array<Record<string, un
   })
 }
 
-/** x축, y축, 시리즈 컬럼 추론
- * 1. 모든 컬럼 조회
- * 2. 컬럼 프로파일 조회
- * 3. 통계값(Y축) 컬럼 조회
- * 4. X축 컬럼 조회
- * 5. X축 컬럼 후보 조회
- * 6. X축 컬럼 정렬
- * 7. 선호하는 X축 컬럼 조회
- * 8. X축 컬럼 정렬 후 선호하는 X축 컬럼 제외 나머지 X축 컬럼 추가
- * 9. 시리즈 키 후보 조회
+/**
+ * 표 데이터 + AI chartOption으로 시각화 스키마를 구성한다.
+ * - 표: tableData 전체 컬럼 기반
+ * - 차트: chartOption(chart/x/y)만 사용
  */
-export const inferSchema = (rows: Array<Record<string, unknown>>): VisualizationSchema | null => {
+export const inferSchema = (
+  rows: Array<Record<string, unknown>>,
+  chartOption: VisualizationChartOptionPayload | null,
+): VisualizationSchema | null => {
   if (rows.length === 0) return null
 
-  // 모든 컬럼
   const columns = getColumnKeys(rows)
-  // 컬럼 프로파일
   const profiles = columns.map((key) => getColumnProfile(rows, key))
-  // 통계값(Y축) 컬럼
-  const metricKeys = profiles.filter((profile) => profile.isLikelyMetric).map((profile) => profile.key)
-  // X축 컬럼
+  const xAxisKeys = pickColumnKeysFromChartOption(columns, chartOption?.x)
+  const metricKeys = pickColumnKeysFromChartOption(columns, chartOption?.y).slice(0, 2)
   const dimensionKeys = columns.filter((key) => !metricKeys.includes(key))
-  // 통계ID 컬럼 — 서로 다른 통계가 섞인 조회 시 축/시리즈 후보에서 제외하고 별도 통계 지정 UI로 선택
+  const chartType = chartOption?.chart ?? DEFAULT_CHART_TYPE
+  const hasChartOption = xAxisKeys.length > 0 && metricKeys.length > 0 && !!chartOption?.chart
   const statIdColumnKey = columns.find((k) => normalizeColumnKeyForMapping(k) === 'STAT_ID')
-  const isStatIdColumn = (key: string) => !!statIdColumnKey && key === statIdColumnKey
-
-  // X축 컬럼 후보 (통계ID 제외 — 가상 연·월/연·분기 축은 선택지에서 제외, YEAR/MON 등 원본 컬럼으로만 구성)
-  const rawChartTargetKeys = profiles
-    .filter((profile) => !profile.isLikelyMetric && profile.uniqueCount > 1 && !isStatIdColumn(profile.key))
-    .map((profile) => profile.key)
-  const sortedChartTargetKeys: string[] = []
-  // 선호하는 X축 컬럼
-  const preferredChartTarget = getPreferredChartTargetKey(rawChartTargetKeys)
-  // X축 컬럼 정렬
-  const orderedDimensionKeys = [
-    preferredChartTarget,
-    ...rawChartTargetKeys.filter((key) => key !== preferredChartTarget),
-  ].filter(Boolean)
-  orderedDimensionKeys.forEach((key) => {
-    if (!sortedChartTargetKeys.includes(key)) sortedChartTargetKeys.push(key)
-  })
-
-  // 시리즈 키 후보: 비수치, 비시간형, 유니크값 2~20개인 dimension (통계ID 제외)
-  const seriesKeys = profiles
-    .filter(
-      (profile) =>
-        !profile.isLikelyMetric &&
-        !profile.isTimeLike &&
-        !isStatIdColumn(profile.key) &&
-        profile.uniqueCount >= 2 &&
-        profile.uniqueCount <= 20 &&
-        profile.nonEmptyCount > 0,
-    )
-    .map((profile) => profile.key)
 
   const selectableOptions: VisualizationSelectableOptions = {
-    chartTargetKeys: sortedChartTargetKeys,
-    yAxisKeys: metricKeys,
-    seriesKeys,
-    chartTypes: metricKeys.length > 0 ? CHART_TYPES : [],
+    chartTargetKeys: hasChartOption ? xAxisKeys : [],
+    yAxisKeys: hasChartOption ? metricKeys : [],
+    seriesKeys: hasChartOption ? xAxisKeys.slice(1) : [],
+    chartTypes: hasChartOption ? [chartType] : [],
     canStack: true,
-    canDualAxis: metricKeys.length >= 2,
+    canDualAxis: hasChartOption && metricKeys.length >= 2,
   }
 
   const statIdValues = statIdColumnKey ? getUniqueStatIdsFromRows(rows, statIdColumnKey) : []
   const defaultStatIdFilter = statIdValues.length > 0 ? statIdValues[0] : ''
 
   const defaultSelection: VisualizationChartSelection = {
-    ...getDefaultSelection(selectableOptions),
+    chartType,
+    chartTargetKey: hasChartOption ? (xAxisKeys[0] ?? '') : '',
+    yAxisKeys: hasChartOption ? metricKeys : [],
+    seriesKey: hasChartOption ? (xAxisKeys[1] ?? '') : '',
+    stack: false,
+    dualAxis: hasChartOption && metricKeys.length >= 2,
     statIdFilter: defaultStatIdFilter,
   }
 
@@ -409,6 +290,7 @@ export const buildVisualizationViewModel = (params: {
   messageId: string
   sql?: string
   tableData?: string
+  chartOption?: VisualizationChartOptionPayload | string
   statList?: VisualizationStatItem[]
   statDetailList?: VisualizationStatDetailItem[]
 }): VisualizationViewModel => {
@@ -416,8 +298,9 @@ export const buildVisualizationViewModel = (params: {
   const parsed = parseTableData(params.tableData ?? '')
   // 테이블 데이터 파싱 결과를 행 데이터로 변환
   const rows = buildRowsFromColumnarJson(parsed)
-  // x축, y축, 시리즈 컬럼 추론
-  const schema = inferSchema(rows)
+  // chartOption 기준 차트 스키마 구성
+  const normalizedChartOption = normalizeChartOption(params.chartOption)
+  const resolvedSchema = inferSchema(rows, normalizedChartOption)
 
   // 테이블 데이터가 없으면 빈 뷰 모델 반환
   if (!params.tableData) {
@@ -427,7 +310,7 @@ export const buildVisualizationViewModel = (params: {
       sql: params.sql ?? '',
       rawTableData: '',
       rows: [],
-      schema: null,
+      schema: resolvedSchema,
     }
   }
 
@@ -439,7 +322,7 @@ export const buildVisualizationViewModel = (params: {
       sql: params.sql ?? '',
       rawTableData: params.tableData ?? '',
       rows: [],
-      schema: null,
+      schema: resolvedSchema,
     }
   }
 
@@ -450,7 +333,7 @@ export const buildVisualizationViewModel = (params: {
     sql: params.sql ?? '',
     rawTableData: params.tableData ?? '',
     rows,
-    schema,
+    schema: resolvedSchema,
     statList: params.statList,
     statDetailList: params.statDetailList,
   }
@@ -713,11 +596,6 @@ export const buildChartModel = (
   }
 
   const rowList = [...chartRows]
-  if (selection.chartTargetKey === TIME_AXIS_YEAR_MONTH || selection.chartTargetKey === TIME_AXIS_YEAR_QUARTER) {
-    rowList.sort(
-      (a, b) => getXAxisSortValue(a, selection.chartTargetKey) - getXAxisSortValue(b, selection.chartTargetKey),
-    )
-  }
   const categories = buildCategories(rowList, selection.chartTargetKey)
   if (categories.length === 0) return null
 
@@ -863,8 +741,3 @@ export const buildChartModel = (
   }
   return config
 }
-
-export const getTimeAxisKeys = () => ({
-  yearMonth: TIME_AXIS_YEAR_MONTH,
-  yearQuarter: TIME_AXIS_YEAR_QUARTER,
-})

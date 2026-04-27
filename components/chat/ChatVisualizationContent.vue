@@ -595,7 +595,11 @@ const buildAxisSettingsFromSchema = (): ColumnAxisSetting[] => {
   return displayKeys.map((key) => {
     let role: AxisRole = ''
     if (key === defaultSel.chartTargetKey) role = 'X'
-    else if (defaultSel.yAxisKeys.includes(key)) role = 'YL'
+    else {
+      const yIndex = defaultSel.yAxisKeys.indexOf(key)
+      if (yIndex === 0) role = 'YL'
+      if (yIndex === 1 && showAxisYRButton.value) role = 'YR'
+    }
     return {
       key,
       label: resolveColumnLabel(key),
@@ -726,7 +730,7 @@ const onCreateChart = () => {
 
   const newCard: ChartCardState = {
     id: createCardId(),
-    chartType: 'bar',
+    chartType: currentVisualizationView.value?.schema?.defaultSelection.chartType ?? 'bar',
     axisSettings: JSON.parse(JSON.stringify(addAxisSettings.value)) as ColumnAxisSetting[],
     configVersion: 0,
     statIdFilter: statId,

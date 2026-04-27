@@ -2,6 +2,7 @@ import type { ChatGroundingSourceItem, ChatLogListRow, ChatMessage, ChatMessageA
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import { parseChatAttachmentsFromLogRow } from '~/utils/chat/chatAttachmentDisplayUtil'
 import { parseSurveyAnswersFromPrompt } from '~/utils/chat/psychologyConsultUtil'
+import { parseLunchPayloadFromPrompt } from '~/utils/chat/lunchAgentUtil'
 
 // 채팅 메시지/스트리밍 상태는 모듈 레벨에서 단일 인스턴스로 공유
 const messages = ref<ChatMessage[]>([])
@@ -70,6 +71,7 @@ export const useChatMessages = () => {
         chartTitle: '',
       },
       tableData: typeof row.tableData === 'string' ? row.tableData : undefined,
+      chartOption: typeof row.chartOption === 'string' ? row.chartOption : undefined,
       ...(groundingSources?.length ? { groundingSources } : {}),
       chatLogReaction: {
         logId,
@@ -97,6 +99,30 @@ export const useChatMessages = () => {
           answerMessage,
         ]
       }
+    }
+
+    // 점심 추천 에이전트: 프롬프트 패턴이면 readonly lunch-card로 대체 (새로고침 복원)
+    const lunchPayload = parseLunchPayloadFromPrompt(row.qcontent ?? '')
+    if (lunchPayload) {
+      return [
+        {
+          logId: `${logId}-lunch-card`,
+          type: 'answer',
+          qContent: '',
+          rContent: '',
+          createdAt,
+          svcTy,
+          modelId,
+          refId,
+          ...(agentId ? { agentId } : {}),
+          uiType: 'lunch-card',
+          lunchSubmitted: true,
+          lunchFormPayload: { ...lunchPayload },
+          hasSource: false,
+          hasVisualization: false,
+        },
+        answerMessage,
+      ]
     }
 
     return [

@@ -64,6 +64,19 @@ const appendStreamingChunk = (logId: string, nextChunk: string) => {
   messageBufferMap.value[logId] = `${prevBuffer}${nextChunk}`
 }
 
+const parseChartOption = (value: ChatSocketMessage['chartOption']) => {
+  if (!value) return undefined
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value) as ChatSocketMessage['chartOption']
+      return parsed
+    } catch {
+      return undefined
+    }
+  }
+  return value
+}
+
 const finalizeCompletedMessage = (streamingMessage: (typeof messages.value)[number], payload: ChatSocketMessage) => {
   // 서버 logId가 있으면 question + answer 메시지에 반영
   if (payload.logId) {
@@ -89,6 +102,10 @@ const finalizeCompletedMessage = (streamingMessage: (typeof messages.value)[numb
   streamingMessage.hasVisualization = !!payload.tableData
   if (payload.tableData !== undefined && payload.tableData !== '') {
     streamingMessage.tableData = payload.tableData
+  }
+  const parsedChartOption = parseChartOption(payload.chartOption)
+  if (parsedChartOption) {
+    streamingMessage.chartOption = parsedChartOption
   }
   // 스트리밍 메시지 완료 처리
   finalizeStreamingMessage()

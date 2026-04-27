@@ -2,7 +2,6 @@
 import type {
   ChatLogListRow,
   ChatRefRow,
-  ChatMessage,
   LunchAgentFormPayload,
   PanelType,
   SearchModeValue,
@@ -21,6 +20,7 @@ import {
   buildDiagnosticPrompt,
   parseSurveyAnswersFromPrompt,
 } from '~/utils/chat/psychologyConsultUtil'
+import { buildLunchRecommendationPrompt, createLunchCardMessage } from '~/utils/chat/lunchAgentUtil'
 import { clearBodyChartFullscreen } from '~/utils/chat/visualizationChartUtil'
 import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
 import { getCodes } from '~/utils/global/comCodesUtil'
@@ -94,13 +94,8 @@ const messagesForDisplay = computed(() => {
 })
 
 // API 호출
-const {
-  fetchSelectChatLogList,
-  fetchSelectChatRef,
-  fetchSelectTableDataList,
-  fetchSelectAgentListForChat,
-  fetchSelectDmList,
-} = useChatApi()
+const { fetchSelectChatLogList, fetchSelectChatRef, fetchSelectTableDataList, fetchSelectAgentListForChat } =
+  useChatApi()
 
 /** /chat 인덱스용 에이전트 목록 */
 const chatIndexAgents = ref<Agent[]>([])
@@ -118,14 +113,24 @@ const activePanelMessageId = ref<string | null>(null)
 const pdfRefList = ref<ChatRefRow[]>([])
 const chatPdfFileUrlMap = ref<Record<string, string>>({})
 const visualizationViewMap = ref<Record<string, VisualizationViewModel>>({})
-const pendingLunchCardRoomId = ref('')
+const isLunchVisible = ref(false)
 
 // 좋아요/싫어요 모달 상태
 const isModalOpen = ref(false)
 const modalMessage = ref('')
 const modalTitle = ref('')
 const modalPlaceholder = ref('')
-const lastLunchSentAt = ref('')
+const createReadonlyLunchMessage = (payload: LunchAgentFormPayload, agentId = selectedChatAgentId.value ?? '') => {
+  const lunchMsg = createLunchCardMessage({
+    createdAt: new Date().toISOString(),
+    svcTy: 'C',
+    refId: '',
+    agentId,
+  })
+  lunchMsg.lunchFormPayload = { ...payload }
+  lunchMsg.lunchSubmitted = true
+  return lunchMsg
+}
 
 /** /chat 인덱스 에이전트 카드 서브타이틀 — svcTy 기반 */
 const SVC_TY_SUB_LABEL: Record<string, string> = {
@@ -148,32 +153,6 @@ const getChatIndexAgentColorStyle = (colorHex: string) => {
     '--card-icon-bg': `rgba(${hexToRgb(colorHex)}, 0.12)`,
   }
 }
-
-const shouldShowLunchCard = (row: ChatLogListRow) => {
-  const raw = row.lunchSelectCardDisplayYn
-  return typeof raw === 'string' && raw.toUpperCase() === 'Y'
-}
-
-const buildLunchCardMessage = (options?: {
-  createdAt?: string
-  svcTy?: string
-  refId?: string
-  agentId?: string
-}): ChatMessage => ({
-  logId: `lunch-card-${Date.now()}`,
-  type: 'answer',
-  qContent: '',
-  rContent: '',
-  createdAt: options?.createdAt ?? new Date().toISOString(),
-  svcTy: options?.svcTy ?? 'C',
-  refId: options?.refId ?? '',
-  agentId: options?.agentId ?? '',
-  isStreaming: false,
-  hasSource: false,
-  hasVisualization: false,
-  uiType: 'lunch-card',
-  lunchSubmitted: false,
-})
 
 export const useChatStore = () => {
   const handleSelectChatPdfFileUrl = async (docFileId: string): Promise<string | null> => {
@@ -239,19 +218,6 @@ export const useChatStore = () => {
     const flattened = rawList.flatMap(logRowToMessages)
     // 메시지 정렬
     flattened.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-    const lunchSeedRow = [...rawList].reverse().find(shouldShowLunchCard)
-    const normalizedRoomId = normalizeChatRoomId(roomId)
-    const shouldShowFromDmFlag = normalizedRoomId !== '' && pendingLunchCardRoomId.value === normalizedRoomId
-    if (lunchSeedRow || shouldShowFromDmFlag) {
-      const lunchCardMessage = buildLunchCardMessage({
-        createdAt: lunchSeedRow?.createDt ?? new Date().toISOString(),
-        svcTy: lunchSeedRow?.svcTy ?? 'C',
-        refId: typeof lunchSeedRow?.refId === 'string' ? lunchSeedRow.refId : '',
-        agentId: typeof lunchSeedRow?.agentId === 'string' ? lunchSeedRow.agentId : (selectedChatAgentId.value ?? ''),
-      })
-      flattened.push(lunchCardMessage)
-      if (shouldShowFromDmFlag) pendingLunchCardRoomId.value = ''
-    }
     // 메시지 설정
     messages.value = flattened
     // 검색모드·서브옵션 동기화
@@ -329,11 +295,21 @@ export const useChatStore = () => {
     messages.value = [surveyMsg, ...msgs]
   }
 
+  /** index.vue에서 점심 카드 제출 후 새 채팅방 진입 시 readonly 점심 카드를 메시지 목록 앞에 주입 */
+  const addInlineLunchMessage = (payload: LunchAgentFormPayload) => {
+    const lunchMsg = createReadonlyLunchMessage(payload)
+    const msgs = [...messages.value]
+    const firstQ = msgs.find((m) => m.type === 'question')
+    if (firstQ) firstQ.hiddenFromDisplay = true
+    messages.value = [lunchMsg, ...msgs]
+  }
+
   const handleCloseLunchAgentForm = (lunchMessageLogId?: string) => {
     if (!lunchMessageLogId) {
       messages.value = messages.value.filter((m) => m.uiType !== 'lunch-card')
       return
     }
+    selectedChatAgentId.value = null
     messages.value = messages.value.filter((m) => m.logId !== lunchMessageLogId)
   }
 
@@ -363,7 +339,7 @@ export const useChatStore = () => {
     const sent = await executeSendPipeline({
       content: content.trim(),
       roomId: chatRoom.value.roomId,
-      svcTy: 'C',
+      svcTy: resolveSvcTy(),
       modelId: selectedModelOption.value,
       refId: buildRefIdForPayload(),
       agentId: selectedChatAgentId.value ?? '',
@@ -372,36 +348,36 @@ export const useChatStore = () => {
     if (sent) {
       const newQuestion = messages.value.slice(prevLen).find((m) => m.type === 'question')
       if (newQuestion) newQuestion.hiddenFromDisplay = true
+      selectedChatAgentId.value = null
     }
     return sent
   }
 
   const handleSubmitLunchAgentForm = async (logId: string, payload: LunchAgentFormPayload) => {
-    const location = `${payload.sido} ${payload.sigungu} ${payload.dong}`.trim()
-    const content = `현재 위치는 ${location}, ${payload.mood} 먹고싶고, 예산은 1인당 ${payload.budget}, 식사 인원은 ${payload.peopleCount}, 선호하는 음식종류는 ${payload.cuisineType}입니다. 점심 메뉴를 추천해줘.`
-    const sentAt = new Date().toISOString()
+    const content = buildLunchRecommendationPrompt(payload)
     let sent = false
     if (!chatRoom.value.roomId) {
+      const submittedPayload = { ...payload }
       sent = await createChatRoom(content)
       if (sent) {
-        const newQuestion = [...messages.value].reverse().find((m) => m.type === 'question')
-        if (newQuestion) newQuestion.hiddenFromDisplay = true
-        const lunchMsg = messages.value.find((m) => m.logId === logId && m.uiType === 'lunch-card')
+        const msgs = [...messages.value]
+        const firstQuestion = msgs.find((m) => m.type === 'question')
+        if (firstQuestion) firstQuestion.hiddenFromDisplay = true
+        const lunchMsg = msgs.find((m) => m.logId === logId && m.uiType === 'lunch-card')
         if (lunchMsg) {
-          lunchMsg.lunchFormPayload = { ...payload }
+          lunchMsg.lunchFormPayload = submittedPayload
           lunchMsg.lunchSubmitted = true
+          messages.value = msgs
+        } else {
+          const inlineLunchMsg = createReadonlyLunchMessage(submittedPayload)
+          messages.value = [inlineLunchMsg, ...msgs]
         }
+        selectedChatAgentId.value = null
       }
-    }
-    if (chatRoom.value.roomId) {
+    } else {
       sent = await onSendLunch(content, logId, payload)
     }
     if (!sent) return
-    // 점심 추천 요청이 성공하면 입력 카드 메시지는 즉시 제거해 재선택/재호출 부담을 줄인다.
-    handleCloseLunchAgentForm(logId)
-    // 입력창의 선택 에이전트 태그도 함께 해제한다.
-    selectedChatAgentId.value = null
-    lastLunchSentAt.value = sentAt
   }
 
   const getEmptyVisualizationViewModel = (messageId: string): VisualizationViewModel => ({
@@ -425,6 +401,7 @@ export const useChatStore = () => {
     const answerMsg = source.find((m) => m.logId === logId && m.type === 'answer')
     // 답변 메시지의 tableData 조회
     const tableData = typeof answerMsg?.tableData === 'string' ? answerMsg.tableData : ''
+    const chartOption = answerMsg?.chartOption
     // 답변 메시지의 sql 조회
     const sql = typeof answerMsg?.visualizationData?.sql === 'string' ? answerMsg.visualizationData.sql : ''
     // 테이블 데이터가 없으면 빈 뷰 모델 반환
@@ -462,6 +439,7 @@ export const useChatStore = () => {
       messageId: logId,
       sql,
       tableData,
+      chartOption,
       statList,
       statDetailList,
     })
@@ -528,6 +506,7 @@ export const useChatStore = () => {
     const isDeselecting = selectedChatAgentId.value === agent.agentId && activeSearchModes.value.length === 0
     if (isDeselecting) {
       selectedChatAgentId.value = null
+      isLunchVisible.value = false
       messages.value = messages.value.filter((m) => m.uiType !== 'lunch-card')
     } else {
       selectedChatAgentId.value = agent.agentId
@@ -537,26 +516,27 @@ export const useChatStore = () => {
     await selectModelOptions()
     if (isDeselecting) return
 
-    const dmRes = await fetchSelectDmList(agent.agentId, String(chatRoom.value.roomId ?? ''))
-    const lunchFlag = String(dmRes.data?.lunchSelectCardDisplayYn ?? '').toUpperCase()
-    if (lunchFlag !== 'Y') return
-
-    const responseRoomId = normalizeChatRoomId(String(dmRes.data?.roomId ?? ''))
-    if (!responseRoomId) return
-
-    pendingLunchCardRoomId.value = responseRoomId
-    if (normalizeChatRoomId(chatRoom.value.roomId) !== responseRoomId) {
-      await navigateTo(`/chat/${responseRoomId}`)
+    if (chatRoom.value.roomId) {
+      const alreadyHasLunchCard = messages.value.some((m) => m.uiType === 'lunch-card' && !m.lunchSubmitted)
+      if (!alreadyHasLunchCard) {
+        const lunchCardMessage = createLunchCardMessage({
+          createdAt: new Date().toISOString(),
+          svcTy: 'C',
+          refId: '',
+          agentId: agent.agentId,
+        })
+        messages.value = [...messages.value, lunchCardMessage]
+      }
       return
     }
-    await handleSelectChatLogList(responseRoomId, { preserveLocalWhenEmpty: false })
+    isLunchVisible.value = true
   }
 
   /** 에이전트 관리 목록 기준 모드 선택 (/chat 인덱스 버튼) — 동일 모드 여러 에이전트 간 전환 지원 */
   const selectChatIndexAgent = async (agent: Agent) => {
     if (agent.svcTy === 'T') {
-      // 링크형 에이전트
-      await handleOpenAgentLink(agent)
+      // 회의록 에이전트 → 내부 회의 페이지로 이동
+      await navigateTo('/meeting')
       return
     }
 
@@ -634,6 +614,23 @@ export const useChatStore = () => {
     return sent
   }
 
+  /** /chat 인덱스에서 점심 카드 닫기 */
+  const handleCloseIndexLunchCard = () => {
+    selectedChatAgentId.value = null
+    isLunchVisible.value = false
+  }
+
+  /** /chat 인덱스에서 점심 카드 제출 — 방 생성·인라인 주입·닫기 */
+  const handleIndexLunchSubmit = async (payload: LunchAgentFormPayload): Promise<boolean> => {
+    const content = buildLunchRecommendationPrompt(payload)
+    const sent = await createChatRoom(content)
+    if (sent) {
+      addInlineLunchMessage(payload)
+      handleCloseIndexLunchCard()
+    }
+    return sent
+  }
+
   const activeVisualizationView = computed(() => {
     const messageId = activePanelMessageId.value
     if (!messageId) return null
@@ -699,10 +696,10 @@ export const useChatStore = () => {
     buildRefIdForPayload,
     selectedModelOption,
     knowledgeList,
-    lastLunchSentAt,
     isSearchModeMissingSubOptions,
     searchModeSubOptionsEmptyMessage,
     isSurveyVisible,
+    isLunchVisible,
     // 액션
     createChatRoom,
     handleSelectChatLogList,
@@ -711,10 +708,13 @@ export const useChatStore = () => {
     onSurveyMessageSubmit,
     handleIndexSurveySubmit,
     addInlineSurveyMessage,
+    handleIndexLunchSubmit,
+    addInlineLunchMessage,
     handleSubmitLunchAgentForm,
     handleCloseLunchAgentForm,
     selectChatIndexAgent,
     handleClosePsychologySurvey,
+    handleCloseIndexLunchCard,
     handleSelectChatIndexAgents,
     // 패널
     onViewSource,
