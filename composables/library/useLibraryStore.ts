@@ -99,6 +99,8 @@ const generatedReport = ref<LibraryGeneratedReportValues>({})
 const selectedCreateDocTmplNm = ref('')
 const roomId = ref('')
 const reportRefineCompletedAt = ref(0)
+/** AI 보완 응답 HTML — LibraryCreateDocReportModal에서 에디터에 직접 적용 */
+const refinedEditorHtml = ref('')
 
 /** 문서 생성 API JSON → 표시용 flat 문자열 (HTML 유지, 비문자 값은 문자열화) */
 const normalizeGeneratedReport = (data: Record<string, unknown>): LibraryGeneratedReportValues => {
@@ -701,8 +703,8 @@ export const useLibraryStore = () => {
     }
   }
 
-  /** 보고서 보완 요청 */
-  const handleReAskReport = async (message: string) => {
+  /** 보고서 보완 요청 — currentHtml: 현재 에디터 전체 HTML (표 외 텍스트 포함) */
+  const handleReAskReport = async (message: string, currentHtml: string) => {
     try {
       openLoading({
         text: 'AI가 문서를 보완 중입니다...',
@@ -717,23 +719,18 @@ export const useLibraryStore = () => {
         ],
       })
 
-      const res = await fetchReAskReport(roomId.value, message, generatedReport.value as Record<string, unknown>)
+      const res = await fetchReAskReport(roomId.value, message, currentHtml)
       const answer = res.data
       if (answer) {
-        try {
-          const parsed = JSON.parse(answer) as unknown
-          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-            generatedReport.value = normalizeGeneratedReport(parsed as Record<string, unknown>)
-            reportRefineCompletedAt.value = Date.now()
-          }
-          openToast({ message: '보고서 보완을 완료했습니다.', type: 'success' })
-        } catch {
-          openToast({ message: '보고서 보완 요청 결과를 분석하는데 실패했습니다. 다시 시도해주세요.', type: 'error' })
-        }
+        // AI 응답을 HTML 문자열로 직접 적용 (표 외 텍스트 포함된 전체 에디터 HTML)
+        refinedEditorHtml.value = answer
+        reportRefineCompletedAt.value = Date.now()
+        openToast({ message: '보고서 보완을 완료했습니다.', type: 'success' })
       }
       closeLoading()
     } catch {
       openToast({ message: '보고서 보완 요청 실패', type: 'error' })
+      closeLoading()
     }
   }
 
@@ -753,6 +750,7 @@ export const useLibraryStore = () => {
     selectedCreateDocTmplNm.value = ''
     roomId.value = ''
     reportRefineCompletedAt.value = 0
+    refinedEditorHtml.value = ''
   }
 
   /** 상세 모달 닫을 때 문서 만들기 관련 상태 초기화 */
@@ -763,6 +761,7 @@ export const useLibraryStore = () => {
     selectedCreateDocTmplNm.value = ''
     roomId.value = ''
     reportRefineCompletedAt.value = 0
+    refinedEditorHtml.value = ''
   }
 
   /** 보고서 모달에서 다른 유형 선택 */
@@ -772,6 +771,7 @@ export const useLibraryStore = () => {
     selectedCreateDocTmplNm.value = ''
     roomId.value = ''
     reportRefineCompletedAt.value = 0
+    refinedEditorHtml.value = ''
     handleSelectTmplList()
     isCreateDocModalOpen.value = true
   }
@@ -836,6 +836,7 @@ export const useLibraryStore = () => {
     isCreateDocReportOpen,
     generatedReport,
     reportRefineCompletedAt,
+    refinedEditorHtml,
     selectedCreateDocTmplNm,
     handleCreateDocTypeModalClose,
     handleCreateDocGenerate,

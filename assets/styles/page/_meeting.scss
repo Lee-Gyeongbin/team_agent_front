@@ -1,0 +1,835 @@
+@use '../utils/variables' as *;
+@use '../utils/mixins' as *;
+
+// =============================================
+// Meeting (회의록)
+// =============================================
+
+// ---- 목록 페이지 ----
+.meeting-list-page {
+  padding: $spacing-lg;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.meeting-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-lg;
+}
+
+.meeting-list-title {
+  @include typo($body-xlarge-bold);
+  color: $color-text-heading;
+}
+
+.meeting-list-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: $spacing-md;
+}
+
+// ---- 회의 카드 ----
+.meeting-card {
+  padding: $spacing-md;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  background: #fff;
+  cursor: pointer;
+  transition: box-shadow $transition-base, border-color $transition-base;
+
+  &:hover {
+    box-shadow: $shadow-md;
+    border-color: var(--color-primary);
+  }
+
+  &.is-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+    cursor: default;
+
+    &:hover {
+      box-shadow: none;
+      border-color: $color-border;
+    }
+  }
+}
+
+.meeting-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-sm;
+}
+
+.meeting-card-status {
+  @include typo($body-xsmall-bold);
+  padding: 2px 8px;
+  border-radius: $border-radius-sm;
+
+  &.status-001 {
+    background: rgba(var(--color-primary-rgb, 74, 144, 226), 0.12);
+    color: var(--color-primary);
+  }
+
+  &.status-002 {
+    background: rgba(82, 196, 26, 0.12);
+    color: #52c41a;
+  }
+
+  &.status-003 {
+    background: rgba(0, 0, 0, 0.06);
+    color: $color-text-muted;
+  }
+}
+
+.meeting-card-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: $border-radius-sm;
+  color: $color-text-muted;
+  transition: color $transition-fast, background $transition-fast;
+
+  &:hover {
+    color: $color-error;
+    background: rgba(255, 77, 79, 0.08);
+  }
+}
+
+.meeting-card-title {
+  @include typo($body-medium-bold);
+  color: $color-text-primary;
+  margin-bottom: $spacing-xs;
+  @include ellipsis(2);
+}
+
+.meeting-card-attendees {
+  @include typo($body-xsmall);
+  color: $color-text-muted;
+  margin-bottom: $spacing-xs;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  @include ellipsis(1);
+}
+
+.meeting-card-date {
+  @include typo($body-caption);
+  color: $color-text-muted;
+}
+
+// ---- 녹음 페이지 ----
+.meeting-record-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: $spacing-lg;
+}
+
+.meeting-record-header {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  margin-bottom: $spacing-lg;
+  flex-shrink: 0;
+}
+
+.meeting-record-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: $border-radius-base;
+  color: $color-text-secondary;
+  transition: background $transition-fast;
+
+  &:hover {
+    background: $color-surface;
+  }
+}
+
+.meeting-record-header-info {
+  flex: 1;
+}
+
+.meeting-record-title {
+  @include typo($body-large-bold);
+  color: $color-text-heading;
+}
+
+.meeting-record-timer {
+  @include typo($body-small);
+  color: $color-text-muted;
+  font-variant-numeric: tabular-nums;
+}
+
+.meeting-record-badge {
+  @include typo($body-xsmall-bold);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 99px;
+
+  &.is-recording {
+    background: rgba(255, 77, 79, 0.12);
+    color: $color-error;
+  }
+
+  &.is-connecting {
+    background: $color-surface;
+    color: $color-text-muted;
+  }
+}
+
+.meeting-record-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: $color-error;
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.meeting-record-unsupported {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-md;
+  color: $color-text-muted;
+  text-align: center;
+
+  p {
+    @include typo($body-medium);
+    line-height: 1.7;
+  }
+}
+
+.meeting-record-controls {
+  display: flex;
+  justify-content: center;
+  padding-top: $spacing-lg;
+  flex-shrink: 0;
+}
+
+.meeting-record-btn {
+  min-width: 160px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-xs;
+  @include typo($body-medium-bold);
+}
+
+// ---- 실시간 자막 ----
+.meeting-transcript {
+  flex: 1;
+  overflow-y: auto;
+  padding: $spacing-md;
+  background: $color-background;
+  border-radius: $border-radius-lg;
+  border: 1px solid $color-border;
+  @include custom-scrollbar;
+}
+
+.meeting-transcript-hint {
+  @include typo($body-small);
+  color: $color-text-muted;
+  text-align: center;
+  margin-top: $spacing-lg;
+}
+
+.meeting-transcript-interim-badge {
+  display: inline-block;
+  margin-bottom: $spacing-sm;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: $color-surface;
+  color: $color-text-muted;
+  font-size: 11px;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+}
+
+// ---- 자막 블록 (3단계: confirmed / waiting / interim) ----
+.meeting-transcript-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.meeting-transcript-block {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-sm;
+  @include typo($body-medium);
+  line-height: 1.8;
+  word-break: break-word;
+
+  // confirmed: 정상 표시 + fade-in
+  &.is-confirmed {
+    color: $color-text-primary;
+    font-style: normal;
+    animation: transcript-fadein $transition-slow ease both;
+  }
+
+  // waiting: diarize 대기 (회색, 이탤릭)
+  &.is-waiting {
+    color: $color-text-muted;
+    font-style: italic;
+  }
+
+  // interim: 스트리밍 중 (회색, 이탤릭, 반투명)
+  &.is-interim {
+    color: $color-text-muted;
+    font-style: italic;
+    opacity: 0.65;
+  }
+}
+
+.meeting-transcript-speaker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  margin-top: 2px;
+  border-radius: $border-radius-sm;
+  background: rgba(var(--color-primary-rgb, 60, 105, 219), 0.12);
+  color: var(--color-primary);
+  @include typo($body-xsmall-bold);
+  font-style: normal;
+
+  // waiting 플레이스홀더
+  &.is-waiting {
+    background: $color-surface;
+    color: $color-text-muted;
+    letter-spacing: 1px;
+  }
+}
+
+.meeting-transcript-block-text {
+  flex: 1;
+}
+
+@keyframes transcript-fadein {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.meeting-transcript-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.2em;
+  background: var(--color-primary);
+  vertical-align: middle;
+  margin-left: 2px;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+// ---- 상세 페이지 ----
+.meeting-detail-page {
+  padding: $spacing-lg;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.meeting-detail-header {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  margin-bottom: $spacing-lg;
+}
+
+.meeting-detail-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: $border-radius-base;
+  color: $color-text-secondary;
+  transition: background $transition-fast;
+
+  &:hover {
+    background: $color-surface;
+  }
+}
+
+.meeting-detail-title {
+  flex: 1;
+  @include typo($body-xlarge-bold);
+  color: $color-text-heading;
+}
+
+.meeting-detail-date {
+  @include typo($body-small);
+  color: $color-text-muted;
+}
+
+.meeting-detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+// ---- 회의록 ----
+.meeting-minutes {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.meeting-minutes-section {
+  padding: $spacing-md;
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+}
+
+.meeting-minutes-section-title {
+  @include typo($body-medium-bold);
+  color: $color-text-heading;
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-md;
+}
+
+.meeting-minutes-summary {
+  @include typo($body-medium);
+  color: $color-text-primary;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+.meeting-minutes-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  padding-left: $spacing-md;
+  list-style: disc;
+}
+
+.meeting-minutes-list-item {
+  @include typo($body-medium);
+  color: $color-text-primary;
+  line-height: 1.7;
+}
+
+.meeting-minutes-empty-text {
+  @include typo($body-small);
+  color: $color-text-muted;
+}
+
+.meeting-minutes-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: $color-text-heading;
+}
+
+.meeting-minutes-fulltext {
+  @include typo($body-small);
+  color: $color-text-secondary;
+  line-height: 1.9;
+  white-space: pre-wrap;
+  margin-top: $spacing-md;
+  padding-top: $spacing-md;
+  border-top: 1px solid $color-border;
+}
+
+.meeting-minutes-report {
+  border: 1px solid #c6d2db;
+  border-radius: $border-radius-lg;
+  background: #fff;
+  overflow: hidden;
+}
+
+.meeting-minutes-report-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+
+  th,
+  td {
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: top;
+    text-align: left;
+  }
+
+  tr:last-child {
+    th,
+    td {
+      border-bottom: none;
+    }
+  }
+
+  th {
+    width: 180px;
+    padding: $spacing-sm $spacing-md;
+    background: #f8fafc;
+    border-right: 1px solid #e2e8f0;
+    @include typo($body-small-bold);
+    color: $color-text-secondary;
+  }
+
+  td {
+    padding: $spacing-sm $spacing-md;
+    @include typo($body-small);
+    color: $color-text-primary;
+    line-height: 1.65;
+  }
+}
+
+.meeting-report-prewrap {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.meeting-infographic-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.meeting-infographic-item {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.meeting-infographic-topic {
+  @include typo($body-small-bold);
+  color: $color-text-heading;
+}
+
+.meeting-infographic-summary {
+  @include typo($body-small);
+  color: $color-text-secondary;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.meeting-infographic-image {
+  width: 100%;
+  max-width: 560px;
+  border: 1px solid #e2e8f0;
+  border-radius: $border-radius-base;
+  background: #fff;
+  object-fit: contain;
+}
+
+// ---- 시작 모달 ----
+// MeetingStartModal.vue — Teleport(body) 루트. 클래스명이 공통 _modal.scss 와 다르므로 여기서 정의
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: $z-modal;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-lg;
+  box-sizing: border-box;
+  background: rgba(45, 49, 57, 0.4);
+}
+
+.meeting-start-modal {
+  background: #fff;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-lg;
+  width: 480px;
+  max-width: calc(100vw - $spacing-lg * 2);
+}
+
+.meeting-start-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-md $spacing-lg;
+  border-bottom: 1px solid $color-border;
+}
+
+.meeting-start-modal-title {
+  @include typo($body-large-bold);
+  color: $color-text-heading;
+}
+
+.meeting-start-modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: $border-radius-base;
+  color: $color-text-muted;
+  transition: background $transition-fast;
+
+  &:hover {
+    background: $color-surface;
+  }
+}
+
+.meeting-start-modal-body {
+  padding: $spacing-lg;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.meeting-start-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.meeting-attendee-search-input {
+  margin-bottom: $spacing-xs;
+}
+
+.meeting-attendee-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid #dce4e9;
+  border-radius: $border-radius-base;
+  @include custom-scrollbar;
+
+  .ui-empty {
+    margin: auto;
+    padding: $spacing-lg 0;
+  }
+}
+
+.meeting-attendee-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color $transition-fast;
+
+  &:hover {
+    background: #f8fafc;
+  }
+
+  & + .meeting-attendee-item {
+    border-top: 1px solid #f1f5f9;
+  }
+
+  input[type='checkbox'] {
+    margin: 0;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--color-primary);
+    flex-shrink: 0;
+  }
+
+  &.is-selected {
+    background: rgba(var(--color-primary-rgb, 74, 144, 226), 0.08);
+  }
+}
+
+.meeting-attendee-name {
+  @include typo($body-small);
+  color: $color-text-primary;
+}
+
+.meeting-attendee-selected {
+  @include typo($body-small);
+  color: $color-text-secondary;
+}
+
+.meeting-start-modal-label {
+  @include typo($body-small-bold);
+  color: $color-text-secondary;
+
+  .required {
+    color: $color-error;
+    margin-left: 2px;
+  }
+}
+
+.meeting-start-modal-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+}
+
+.meeting-start-modal-ai-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  @include typo($body-small);
+  color: $color-text-secondary;
+  cursor: pointer;
+
+  input[type='checkbox'] {
+    margin: 0;
+    width: 14px;
+    height: 14px;
+    accent-color: var(--color-primary);
+  }
+}
+
+.meeting-start-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+  padding: $spacing-md $spacing-lg;
+  border-top: 1px solid $color-border;
+}
+
+// ---- 화자 매핑 모달 (MeetingSpeakerMapModal.vue) — 시작 모달과 동일 톤·레이아웃 ----
+.meeting-speaker-modal {
+  background: #fff;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-lg;
+  width: 480px;
+  max-width: calc(100vw - $spacing-lg * 2);
+}
+
+.meeting-speaker-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-md $spacing-lg;
+  border-bottom: 1px solid $color-border;
+}
+
+.meeting-speaker-modal-title {
+  @include typo($body-large-bold);
+  color: $color-text-heading;
+}
+
+.meeting-speaker-modal-body {
+  padding: $spacing-lg;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.meeting-speaker-modal-desc {
+  @include typo($body-small);
+  color: $color-text-secondary;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.meeting-speaker-modal-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 140px;
+  border: 1px solid #dce4e9;
+  border-radius: $border-radius-base;
+  background: $color-background;
+
+  .ui-empty {
+    margin: auto;
+    padding: $spacing-md 0;
+  }
+}
+
+.meeting-speaker-list {
+  border: 1px solid #dce4e9;
+  border-radius: $border-radius-base;
+  max-height: 280px;
+  overflow-y: auto;
+  @include custom-scrollbar;
+}
+
+.meeting-speaker-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+
+  th,
+  td {
+    border-bottom: 1px solid #e2e8f0;
+    padding: 8px 10px;
+    text-align: left;
+    vertical-align: middle;
+    @include typo($body-small);
+    color: $color-text-primary;
+  }
+
+  th {
+    background: #f8fafc;
+    @include typo($body-small-bold);
+    color: $color-text-secondary;
+  }
+
+  tbody tr:last-child {
+    td {
+      border-bottom: none;
+    }
+  }
+}
+
+.meeting-speaker-col-speaker {
+  width: 35%;
+}
+
+.meeting-speaker-col-attendee {
+  width: 65%;
+}
+
+.meeting-speaker-select {
+  width: 100%;
+  height: $height-md;
+  padding: 0 10px;
+  border: 1px solid #c6d2db;
+  border-radius: $border-radius-base;
+  background: #fff;
+  @include typo($body-small);
+  color: $color-text-primary;
+  cursor: pointer;
+  outline: none;
+  transition: border-color $transition-base;
+
+  &:hover {
+    border-color: var(--color-primary);
+  }
+
+  &:focus {
+    border-color: var(--color-primary);
+  }
+}
+
+.meeting-speaker-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+  padding: $spacing-md $spacing-lg;
+  border-top: 1px solid $color-border;
+}

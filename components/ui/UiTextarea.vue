@@ -108,6 +108,7 @@ watch(
   color: $color-text-primary;
   background-color: #fff;
   resize: none;
+  padding: 6px 8px;
   border-radius: $border-radius-base;
 
   // 라운드

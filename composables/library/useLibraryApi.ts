@@ -117,16 +117,16 @@ export const useLibraryApi = () => {
     })
   }
 
-  /** 보고서 보완 요청 API */
+  /** 보고서 보완 요청 API — currentHtml: 현재 에디터 전체 HTML (표 외 텍스트 포함) */
   const fetchReAskReport = async (
     roomId: string,
     askQuery: string,
-    generatedReport: Record<string, unknown>,
+    currentHtml: string,
   ): Promise<{ successYn: boolean; returnMsg: string; data: string }> => {
     return post<{ successYn: boolean; returnMsg: string; data: string }>('/library/reAskReport.do', {
       roomId,
       askQuery,
-      generatedReport,
+      currentHtml,
     })
   }
 

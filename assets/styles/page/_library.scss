@@ -437,13 +437,14 @@
     z-index: 430;
   }
 
-  // 뷰포트 안에 들어오도록 너비·높이 제한 (본문만 스크롤)
+  // 넓은 가로·세로 (좌측 표 + 우측 도구 패널)
   .modal-dialog-content {
     display: flex;
     flex-direction: column;
-    width: min(800px, calc(100vw - 48px));
-    max-width: min(800px, calc(100vw - 48px)) !important;
-    max-height: min(88vh, 780px);
+    width: min(1720px, calc(100vw - 32px));
+    max-width: min(1720px, calc(100vw - 32px)) !important;
+    height: min(94vh, calc(100vh - 32px));
+    max-height: min(94vh, calc(100vh - 32px));
     box-sizing: border-box;
     overflow: hidden;
   }
@@ -452,36 +453,42 @@
     flex-shrink: 0;
   }
 
+  // 스크롤은 표 영역·우측 패널 내부에서만 (본문은 flex 채움)
   .modal-dialog-body {
+    display: flex;
     flex: 1 1 auto;
+    flex-direction: column;
     min-height: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
-    // 세로 스크롤과 본문 사이 여백
-    padding-right: 28px;
+    overflow: hidden;
+    padding-right: 20px;
     padding-left: 6px;
     scrollbar-gutter: stable;
     box-sizing: border-box;
   }
 
-  // 스크롤바용 +6px 폭이 표·우측 테두리와 어긋남 → 보고서 모달에서는 제거, 대신 본문·스크롤 사이 공간 확보
+  // `.doc-dataset-create-modal .modal-dialog-body` 기본 규칙(display:block)을 확실히 덮어씀
+  &.doc-dataset-create-modal .modal-dialog-body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
   .doc-dataset-create-form {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
     width: 100%;
     max-width: 100%;
-    padding-right: 12px;
+    min-height: 0;
+    padding-right: 8px;
     max-height: none;
-    // 전역 `.doc-dataset-create-form`의 overflow-y:auto + max-height:70vh 때문에
-    // 보고서 영역 안에만 세로 스크롤이 생김 → 내용 높이만큼 늘리고 스크롤은 modal-body에만
-    overflow-x: hidden;
-    overflow-y: visible;
+    overflow: hidden;
     box-sizing: border-box;
   }
 
-  .library-create-doc-report-footer-chat {
-    flex-shrink: 0;
-  }
-
-  // 전체화면에서는 body를 스크롤 컨테이너로 고정
+  // 전체화면: 뷰포트 높이에 맞춰 좌·우 열이 꽉 참
   &.doc-dataset-create-modal.is-fullscreen .modal-dialog-content {
     width: calc(100vw - 40px);
     max-width: calc(100vw - 40px) !important;
@@ -492,17 +499,19 @@
   }
 
   &.doc-dataset-create-modal.is-fullscreen .modal-dialog-body {
-    display: block;
+    display: flex;
     flex: 1 1 auto;
+    flex-direction: column;
     min-height: 0;
     height: 0;
-    overflow-x: hidden;
-    overflow-y: auto !important;
+    overflow: hidden;
   }
 
   &.doc-dataset-create-modal.is-fullscreen .doc-dataset-create-form {
-    height: auto;
+    flex: 1 1 auto;
+    height: 100%;
     max-height: none;
-    overflow: visible;
+    min-height: 0;
+    overflow: hidden;
   }
 }

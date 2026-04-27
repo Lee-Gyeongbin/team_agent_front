@@ -2,249 +2,224 @@
   <UiModal
     :is-open="isOpen"
     title="문서 만들기"
-    :max-width="'min(800px, calc(100vw - 48px))'"
+    :max-width="'min(1720px, calc(100vw - 32px))'"
     custom-class="doc-dataset-create-modal library-create-doc-modal library-create-doc-report-modal"
     show-fullscreen
     @close="emit('close')"
   >
     <div class="library-create-doc-report doc-dataset-create-form com-setting-form">
-      <div class="library-create-doc-report-lead-row">
-        <p class="doc-dataset-subsection-desc library-create-doc-lead">
-          지식창고 내용을 기반으로 문서를 자동 생성합니다
-        </p>
-        <UiBadge
-          variant="success"
-          size="sm"
-        >
-          <template #icon-left>
-            <i class="icon icon-check size-14"></i>
-          </template>
-          AI 생성 완료
-        </UiBadge>
-      </div>
-      <!-- 액션 행 -->
-      <div class="library-create-doc-report-toolbar">
-        <UiButton
-          variant="primary"
-          size="md"
-          icon-only
-          title="내 문서보관함 저장"
-          @click="emit('save-to-my-docs')"
-        >
-          <template #icon-left>
-            <i class="icon icon-archive size-16" />
-          </template>
-        </UiButton>
-        <UiButton
-          variant="outline"
-          size="md"
-          icon-only
-          title="PDF 다운로드"
-          @click="onPrintReport"
-        >
-          <template #icon-left>
-            <i class="icon icon-download size-16" />
-          </template>
-        </UiButton>
-        <UiButton
-          variant="outline"
-          size="md"
-          icon-only
-          title="공유 링크"
-          @click="emit('share-link')"
-        >
-          <template #icon-left>
-            <i class="icon icon-sidebar-share size-16" />
-          </template>
-        </UiButton>
-        <UiButton
-          variant="outline"
-          size="md"
-          @click="emit('select-other-type')"
-        >
-          <template #icon-left>
-            <i class="icon icon-refresh size-16" />
-          </template>
-          다른 유형 선택
-        </UiButton>
-      </div>
+      <div class="library-create-doc-report-layout">
+        <!-- 좌측: 웹에디터 (보고서 2열 표) -->
+        <div class="library-create-doc-report-main">
+          <div
+            class="library-create-doc-report-sheet"
+            :class="{ 'is-refine-completed': isRefineCompletedFx }"
+          >
+            <div class="library-create-doc-report-sheet-head">
+              <div class="library-create-doc-report-sheet-head-left">
+                <i class="icon icon-document size-18" />
+                <span class="library-create-doc-report-sheet-title">{{ props.tmplNm || '보고서' }}</span>
+              </div>
+              <p class="library-create-doc-report-sheet-hint">
+                라벨·내용을 직접 편집하거나 툴바로 서식을 적용할 수 있습니다
+              </p>
+            </div>
 
-      <!-- 본문 -->
-      <div
-        class="library-create-doc-report-sheet"
-        :class="{ 'is-refine-completed': isRefineCompletedFx }"
-      >
-        <div class="library-create-doc-report-sheet-head">
-          <div class="library-create-doc-report-sheet-head-left">
-            <i class="icon icon-document size-18" />
-            <span class="library-create-doc-report-sheet-title">{{ props.tmplNm || '보고서' }}</span>
+            <!-- 웹에디터 — 2열 표 형태로 보고서 항목 표시 -->
+            <LibraryReportEditor v-model:html="editorHtml" />
           </div>
-          <p class="library-create-doc-report-sheet-hint">
-            항목명·본문을 수정할 수 있으며, 항목명 옆 핸들을 드래그하면 순서를 바꿀 수 있습니다
-          </p>
         </div>
 
-        <div class="library-create-doc-report-table-wrap">
-          <p
-            v-if="orderedRows.length === 0"
-            class="library-create-doc-report-empty"
-          >
-            보고서 내용이 없습니다.
-          </p>
-          <table
-            v-else
-            class="library-create-doc-report-table"
-            role="presentation"
-          >
-            <colgroup>
-              <col class="library-create-doc-report-col-label" />
-              <col class="library-create-doc-report-col-value" />
-            </colgroup>
-            <draggable
-              v-model="orderedRows"
-              tag="tbody"
-              item-key="valueKey"
-              handle=".library-create-doc-report-row-drag"
-              class="library-create-doc-report-tbody"
-              :animation="200"
-              @end="onReportRowsDragEnd"
+        <!-- 우측: 안내·액션·AI 보완(보고서 표 제외) -->
+        <aside
+          class="library-create-doc-report-side"
+          aria-label="문서 도구 및 AI 보완"
+        >
+          <div class="library-create-doc-report-side-scroll">
+            <div class="library-create-doc-report-lead-row">
+              <p class="doc-dataset-subsection-desc library-create-doc-lead">
+                지식창고 내용을 기반으로 문서를 자동 생성합니다
+              </p>
+              <UiBadge
+                variant="success"
+                size="sm"
+              >
+                <template #icon-left>
+                  <i class="icon icon-check size-14"></i>
+                </template>
+                AI 생성 완료
+              </UiBadge>
+            </div>
+            <div class="library-create-doc-report-toolbar">
+              <UiButton
+                variant="primary"
+                size="md"
+                icon-only
+                title="내 문서보관함 저장"
+                @click="emit('save-to-my-docs')"
+              >
+                <template #icon-left>
+                  <i class="icon icon-archive size-16" />
+                </template>
+              </UiButton>
+              <UiButton
+                variant="outline"
+                size="md"
+                icon-only
+                title="PDF 다운로드"
+                @click="onPrintReport"
+              >
+                <template #icon-left>
+                  <i class="icon icon-download size-16" />
+                </template>
+              </UiButton>
+              <UiButton
+                variant="outline"
+                size="md"
+                icon-only
+                title="공유 링크"
+                @click="emit('share-link')"
+              >
+                <template #icon-left>
+                  <i class="icon icon-sidebar-share size-16" />
+                </template>
+              </UiButton>
+              <UiButton
+                variant="outline"
+                size="md"
+                class="library-create-doc-report-toolbar-wide"
+                @click="emit('select-other-type')"
+              >
+                <template #icon-left>
+                  <i class="icon icon-refresh size-16" />
+                </template>
+                다른 유형 선택
+              </UiButton>
+            </div>
+            <div class="library-create-doc-report-side-divider" />
+            <div class="library-create-doc-report-footer-head">
+              <span class="library-create-doc-report-footer-title">AI와 대화하여 내용 보완</span>
+              <p class="library-create-doc-report-footer-lead">LLM과 대화하여 문서 내용을 보완할 수 있습니다</p>
+            </div>
+            <div
+              v-if="refineChatLog.length > 0"
+              class="library-create-doc-report-last-refine"
+              role="status"
+              aria-live="polite"
             >
-              <template #item="{ element: row }">
-                <tr class="library-create-doc-report-tr">
-                  <th
-                    scope="row"
-                    class="library-create-doc-report-label"
+              <span class="library-create-doc-report-last-refine-label">마지막 보완 요청</span>
+              <p
+                class="library-create-doc-report-last-refine-text"
+                :class="{ 'is-placeholder': !lastRefineMessage.trim() }"
+              >
+                {{ lastRefineMessage.trim() || '...' }}
+              </p>
+              <span
+                v-if="lastRefineTimeLabel"
+                class="library-create-doc-report-last-refine-time"
+              >
+                {{ lastRefineTimeLabel }}
+              </span>
+            </div>
+          </div>
+
+          <!-- 보완 대화(말풍선) — 닫거나 다시 열면 초기화 -->
+          <div
+            ref="refineChatListRef"
+            class="library-create-doc-report-refine-chat"
+            aria-label="보완 요청 대화 기록"
+          >
+            <p
+              v-if="refineChatLog.length === 0"
+              class="library-create-doc-report-refine-chat-empty"
+            >
+              문서 보완 요청 내역이 없습니다.
+            </p>
+            <ul
+              v-else
+              class="library-create-doc-report-refine-chat-list"
+            >
+              <li
+                v-for="entry in refineChatLog"
+                :key="entry.id"
+                class="library-create-doc-report-refine-chat-item"
+                :class="entry.role === 'user' ? 'role-user' : 'role-assistant'"
+              >
+                <i
+                  v-if="entry.role === 'assistant'"
+                  class="library-create-doc-report-refine-avatar icon-bot size-20"
+                />
+                <div class="library-create-doc-report-refine-message">
+                  <p class="library-create-doc-report-refine-bubble">
+                    {{ entry.text }}
+                  </p>
+                  <span
+                    v-if="entry.role === 'user'"
+                    class="library-create-doc-report-refine-time"
                   >
-                    <div class="library-create-doc-report-label-row">
-                      <button
-                        type="button"
-                        class="library-create-doc-report-row-drag"
-                        title="순서 변경"
-                        aria-label="순서 변경"
-                      >
-                        <i class="icon-move-handle size-16" />
-                      </button>
-                      <div class="library-create-doc-report-label-field">
-                        <UiTextarea
-                          v-model="report[row.labelKey]"
-                          size="sm"
-                          :rows="1"
-                          :max-rows="9999"
-                          :placeholder="row.labelKey"
-                          :spellcheck="false"
-                          border
-                        />
-                      </div>
-                    </div>
-                  </th>
-                  <td class="library-create-doc-report-cell">
-                    <div class="library-create-doc-report-value-frame">
-                      <UiTextarea
-                        v-if="editingValueKey === row.valueKey"
-                        v-model="report[row.valueKey]"
-                        size="sm"
-                        :rows="1"
-                        :max-rows="9999"
-                        :placeholder="String(report[row.labelKey] ?? '')"
-                        :spellcheck="false"
-                        border
-                        class="library-create-doc-report-value-editor"
-                        @blur="stopEditReportValue"
-                      />
-                      <button
-                        v-else
-                        type="button"
-                        class="library-create-doc-report-rendered-trigger"
-                        :title="`${String(report[row.labelKey] ?? '')} 내용 편집`"
-                        @click="startEditReportValue(row.valueKey)"
-                      >
-                        <!-- eslint-disable vue/no-v-html -- 상세 모달과 동일한 HTML 렌더 적용 -->
-                        <div
-                          class="library-create-doc-report-rendered message-content markdown-body"
-                          v-html="getReportValueRenderedHtml(row.valueKey)"
-                        />
-                        <!-- eslint-enable vue/no-v-html -->
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </template>
-            </draggable>
-          </table>
-        </div>
+                    {{ entry.timeLabel }}
+                  </span>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="library-create-doc-report-side-chat">
+            <div
+              class="library-create-doc-chat-bar"
+              :class="{ 'is-active': !!refineDraft.trim() }"
+            >
+              <i
+                v-show="!refineDraft.trim()"
+                class="icon-sparkle size-20"
+              />
+              <UiInput
+                v-model="refineDraft"
+                size="md"
+                class="library-create-doc-chat-bar-field"
+                :spellcheck="false"
+                placeholder="예: 결론 부분을 좀 더 구체적으로 보완해주세요"
+                @enter="onSendRefine"
+              />
+              <UiButton
+                variant="primary"
+                size="md"
+                icon-only
+                class="btn-chat-send library-create-doc-chat-send"
+                :disabled="!refineDraft.trim()"
+                aria-label="전송"
+                @click="onSendRefine"
+              >
+                <template #icon-left>
+                  <i class="icon-send size-20" />
+                </template>
+              </UiButton>
+            </div>
+          </div>
+        </aside>
       </div>
     </div>
-
-    <template #footer>
-      <div class="library-create-doc-report-footer-chat">
-        <div class="library-create-doc-report-footer-head">
-          <span class="library-create-doc-report-footer-title">AI와 대화하여 내용 보완</span>
-          <p class="library-create-doc-report-footer-lead">LLM과 대화하여 문서 내용을 보완할 수 있습니다</p>
-        </div>
-        <div
-          class="library-create-doc-report-last-refine"
-          role="status"
-          aria-live="polite"
-        >
-          <span class="library-create-doc-report-last-refine-label">마지막 보완 요청</span>
-          <p
-            class="library-create-doc-report-last-refine-text"
-            :class="{ 'is-placeholder': !lastRefineMessage.trim() }"
-          >
-            {{ lastRefineMessage.trim() || '...' }}
-          </p>
-        </div>
-        <div
-          class="library-create-doc-chat-bar"
-          :class="{ 'is-active': !!refineDraft.trim() }"
-        >
-          <i
-            v-show="!refineDraft.trim()"
-            class="icon-sparkle size-20"
-          />
-          <UiInput
-            v-model="refineDraft"
-            size="md"
-            class="library-create-doc-chat-bar-field"
-            :spellcheck="false"
-            placeholder="예: 결론 부분을 좀 더 구체적으로 보완해주세요"
-            @enter="onSendRefine"
-          />
-          <UiButton
-            variant="primary"
-            size="md"
-            icon-only
-            class="btn-chat-send library-create-doc-chat-send"
-            :disabled="!refineDraft.trim()"
-            aria-label="전송"
-            @click="onSendRefine"
-          >
-            <template #icon-left>
-              <i class="icon-send size-20" />
-            </template>
-          </UiButton>
-        </div>
-      </div>
-    </template>
   </UiModal>
 </template>
 
 <script setup lang="ts">
-import draggable from 'vuedraggable'
 import { openToast } from '~/composables/useToast'
 import type { LibraryGeneratedReportValues } from '~/types/library'
-import { getLibraryReportRows, printLibraryReport, type LibraryReportRow } from '~/utils/library/libraryReportPrintUtil'
-import { toHtmlContent } from '~/utils/chat/htmlUtil'
+import { getLibraryReportRows, printLibraryReportFromHtml } from '~/utils/library/libraryReportPrintUtil'
+import { buildReportEditorHtml, parseReportEditorHtml } from '~/utils/library/libraryReportEditorUtil'
 
 const props = withDefaults(
   defineProps<{
     isOpen: boolean
     tmplNm?: string
     refineCompletedAt?: number
+    /** AI 보완 응답 HTML — 전체 에디터 HTML(표 외 텍스트 포함)로 에디터를 직접 교체 */
+    refinedHtml?: string
   }>(),
   {
     tmplNm: '',
     refineCompletedAt: 0,
+    refinedHtml: '',
   },
 )
 
@@ -255,52 +230,92 @@ const emit = defineEmits<{
   'save-to-my-docs': []
   'share-link': []
   'select-other-type': []
-  'send-refine': [message: string]
+  /** 보완 요청 — message: 사용자 입력, currentHtml: 현재 에디터 전체 HTML */
+  'send-refine': [message: string, currentHtml: string]
 }>()
 
+type RefineChatRole = 'user' | 'assistant'
+
+/** 보완 대화 한 줄(모달 세션 동안만 유지) */
+interface RefineChatEntry {
+  id: string
+  role: RefineChatRole
+  text: string
+  createdAt: number
+  timeLabel: string
+}
+
 const refineDraft = ref('')
-const editingValueKey = ref<string | null>(null)
-/** 화면에 표시할 직전 전송 보완 요청 문구 */
 const lastRefineMessage = ref('')
-/** AI 보완 완료 시 문서 영역에 짧은 강조 효과 */
+const lastRefineTimeLabel = ref('')
+const hasUserSentRefineThisSession = ref(false)
+const refineChatLog = ref<RefineChatEntry[]>([])
+const refineChatListRef = ref<HTMLElement | null>(null)
+let refineChatIdSeq = 0
+
+// ===== 웹에디터 HTML 상태 =====
+/** 에디터와 연결된 HTML 문자열 — buildReportEditorHtml 결과가 들어가고, 편집 시 업데이트됨 */
+const editorHtml = ref('')
+/** 외부(AI 보완/초기 로딩)에서 에디터를 업데이트하는 동안 write-back을 막는 플래그 */
+let isExternalEditorUpdate = false
+let writebackTimer: ReturnType<typeof setTimeout> | null = null
+
+/** report → editorHtml 동기화 (모달 열기·AI 보완 완료 시) */
+const setEditorFromReport = () => {
+  isExternalEditorUpdate = true
+  const rows = getLibraryReportRows(report.value ?? {})
+  editorHtml.value = buildReportEditorHtml(report.value ?? {}, rows)
+  // Vue watcher는 동기적으로 실행되므로 nextTick에서 플래그 해제
+  nextTick(() => {
+    isExternalEditorUpdate = false
+  })
+}
+
+/** editorHtml → report 역파싱 (디바운스 400ms) */
+watch(editorHtml, (html) => {
+  if (isExternalEditorUpdate) return
+  if (writebackTimer) clearTimeout(writebackTimer)
+  writebackTimer = setTimeout(() => {
+    const parsed = parseReportEditorHtml(html)
+    report.value = { ...parsed }
+    writebackTimer = null
+  }, 400)
+})
+
+// ===== AI 보완 완료 강조 효과 =====
 const isRefineCompletedFx = ref(false)
 let refineCompletedFxTimer: ReturnType<typeof setTimeout> | null = null
 
-/** 표시·드래그 순서 (행 순서 변경 시 `report` 키 순서와 동기화) */
-const orderedRows = ref<LibraryReportRow[]>([])
-
-const rowsOrderSignature = (rows: LibraryReportRow[]) => rows.map((r) => `${r.valueKey}:${r.labelKey}`).join('|')
-
-const syncOrderedRowsFromReport = () => {
-  const v = report.value
-  if (!v || typeof v !== 'object') {
-    orderedRows.value = []
-    return
-  }
-  orderedRows.value = getLibraryReportRows(v).map((r) => ({ ...r }))
+const nextRefineChatId = () => {
+  refineChatIdSeq += 1
+  return `refine-chat-${refineChatIdSeq}`
 }
 
-/** 드래그 후 JSON 객체 삽입 순서를 행 순서에 맞춤(인쇄·재파싱 순서 유지) */
-const onReportRowsDragEnd = () => {
-  const v = report.value
-  if (!v || typeof v !== 'object' || orderedRows.value.length === 0) return
-
-  const next: LibraryGeneratedReportValues = {}
-  const rowKeySet = new Set<string>()
-  for (const row of orderedRows.value) {
-    rowKeySet.add(row.valueKey)
-    rowKeySet.add(row.labelKey)
-  }
-  for (const row of orderedRows.value) {
-    next[row.valueKey] = v[row.valueKey] ?? ''
-    next[row.labelKey] = v[row.labelKey] ?? ''
-  }
-  for (const k of Object.keys(v)) {
-    if (!rowKeySet.has(k)) next[k] = v[k] ?? ''
-  }
-  report.value = next
+const resetRefineSessionUi = () => {
+  refineChatLog.value = []
+  hasUserSentRefineThisSession.value = false
+  lastRefineMessage.value = ''
+  lastRefineTimeLabel.value = ''
+  refineChatIdSeq = 0
 }
 
+const scrollRefineChatToBottom = () => {
+  nextTick(() => {
+    const el = refineChatListRef.value
+    if (!el) return
+    el.scrollTop = el.scrollHeight
+  })
+}
+
+const toRefineTimeLabel = (timestamp: number) =>
+  new Date(timestamp).toLocaleTimeString('ko-KR', {
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  })
+
+// ===== 모달 열기/닫기 =====
 watch(
   () => props.isOpen,
   (open) => {
@@ -309,43 +324,51 @@ watch(
         clearTimeout(refineCompletedFxTimer)
         refineCompletedFxTimer = null
       }
+      if (writebackTimer) {
+        clearTimeout(writebackTimer)
+        writebackTimer = null
+      }
       isRefineCompletedFx.value = false
       refineDraft.value = ''
-      editingValueKey.value = null
-      lastRefineMessage.value = ''
-      orderedRows.value = []
+      editorHtml.value = ''
+      resetRefineSessionUi()
       return
     }
-    syncOrderedRowsFromReport()
+    resetRefineSessionUi()
+    setEditorFromReport()
+    nextTick(() => scrollRefineChatToBottom())
   },
 )
 
+// ===== AI 보완 완료 감지 =====
+// refinedHtml prop이 바뀌면 에디터를 직접 교체 (표 외 텍스트도 보존)
 watch(
-  () => report.value,
-  () => {
-    if (!props.isOpen) return
-    const v = report.value
-    if (!v || typeof v !== 'object') {
-      orderedRows.value = []
-      return
-    }
-    const fromObj = getLibraryReportRows(v)
-    if (rowsOrderSignature(fromObj) !== rowsOrderSignature(orderedRows.value)) {
-      orderedRows.value = fromObj.map((r) => ({ ...r }))
-    }
-  },
-  { deep: true },
-)
+  () => props.refinedHtml,
+  (newHtml) => {
+    if (!props.isOpen || !newHtml) return
 
-watch(
-  () => props.refineCompletedAt,
-  (next, prev) => {
-    if (!props.isOpen || !next || next === prev) return
+    // 에디터 HTML 직접 교체 (report JSON 재빌드 없음 → 표 외 텍스트 유지)
+    isExternalEditorUpdate = true
+    editorHtml.value = newHtml
+    nextTick(() => {
+      isExternalEditorUpdate = false
+    })
+
+    if (hasUserSentRefineThisSession.value) {
+      refineChatLog.value.push({
+        id: nextRefineChatId(),
+        role: 'assistant',
+        text: '보고서를 수정했습니다.',
+        createdAt: Date.now(),
+        timeLabel: toRefineTimeLabel(Date.now()),
+      })
+      scrollRefineChatToBottom()
+    }
+
     isRefineCompletedFx.value = false
     requestAnimationFrame(() => {
       isRefineCompletedFx.value = true
       if (refineCompletedFxTimer) clearTimeout(refineCompletedFxTimer)
-      // 시트 CSS 애니메이션(스윕 최장 ~3.6s)이 끝나기 전에 클래스가 제거되면 효과가 중간에 끊김
       refineCompletedFxTimer = setTimeout(() => {
         isRefineCompletedFx.value = false
         refineCompletedFxTimer = null
@@ -355,70 +378,229 @@ watch(
 )
 
 onBeforeUnmount(() => {
-  if (!refineCompletedFxTimer) return
-  clearTimeout(refineCompletedFxTimer)
-  refineCompletedFxTimer = null
+  if (refineCompletedFxTimer) {
+    clearTimeout(refineCompletedFxTimer)
+    refineCompletedFxTimer = null
+  }
+  if (writebackTimer) {
+    clearTimeout(writebackTimer)
+    writebackTimer = null
+  }
 })
 
 const onSendRefine = () => {
   const msg = refineDraft.value.trim()
   if (!msg) return
+  const createdAt = Date.now()
+  hasUserSentRefineThisSession.value = true
   lastRefineMessage.value = msg
-  emit('send-refine', msg)
+  lastRefineTimeLabel.value = toRefineTimeLabel(createdAt)
+  refineChatLog.value.push({
+    id: nextRefineChatId(),
+    role: 'user',
+    text: msg,
+    createdAt,
+    timeLabel: toRefineTimeLabel(createdAt),
+  })
+  // 현재 에디터 전체 HTML을 함께 전달 (표 외 텍스트 포함)
+  emit('send-refine', msg, editorHtml.value)
   refineDraft.value = ''
+  scrollRefineChatToBottom()
 }
 
 const onPrintReport = () => {
-  const ok = printLibraryReport(report.value || {}, props.tmplNm || '보고서')
+  // 에디터 전체 HTML 기반으로 인쇄 (표 외 텍스트 포함)
+  const ok = printLibraryReportFromHtml(editorHtml.value, props.tmplNm || '보고서')
   if (!ok) {
     openToast({
-      message: '인쇄할 보고서 항목이 없습니다.',
+      message: '인쇄할 보고서 내용이 없습니다.',
       type: 'warning',
       duration: 2500,
     })
   }
-}
-
-/** 보고서 본문 셀 렌더링용 HTML(상세 모달과 동일 파서 사용) */
-const getReportValueRenderedHtml = (valueKey: string) => toHtmlContent(String(report.value?.[valueKey] ?? ''))
-
-/** 본문 셀 편집 시작 */
-const startEditReportValue = (valueKey: string) => {
-  editingValueKey.value = valueKey
-  nextTick(() => {
-    const textarea = document.querySelector(
-      '.library-create-doc-report-value-editor textarea',
-    ) as HTMLTextAreaElement | null
-    if (!textarea) return
-    textarea.focus()
-    const length = textarea.value.length
-    textarea.setSelectionRange(length, length)
-  })
-}
-
-/** 본문 셀 편집 종료 */
-const stopEditReportValue = () => {
-  editingValueKey.value = null
 }
 </script>
 
 <style lang="scss" scoped>
 @use 'sass:color';
 
+// 모달 본문 높이를 채운 뒤 좌(표)·우(도구) 분할
 .library-create-doc-report {
   display: flex;
   flex-direction: column;
-  gap: $spacing-md;
+  flex: 1 1 auto;
+  min-height: 0;
   width: 100%;
   min-width: 0;
-  padding-bottom: 6px;
+  padding-bottom: 0;
+}
+
+.library-create-doc-report-layout {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: stretch;
+  gap: $spacing-md;
+  min-height: 0;
+  width: 100%;
+  min-width: 0;
+}
+
+.library-create-doc-report-main {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+// 우측 패널: 안내·버튼·AI 입력 (고정 폭, 세로 flex)
+.library-create-doc-report-side {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  width: clamp(300px, 26vw, 400px);
+  min-width: 280px;
+  max-width: 100%;
+  min-height: 0;
+  padding-left: $spacing-md;
+  border-left: 1px solid $color-border;
+  box-sizing: border-box;
+}
+
+// 상단 안내·버튼·마지막 요청
+.library-create-doc-report-side-scroll {
+  flex: 0 1 auto;
+  min-height: 250px;
+  max-height: min(520px, 62vh);
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 2px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+}
+
+// 말풍선 영역 — 세로 스크롤
+.library-create-doc-report-refine-chat {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 140px;
+  margin-top: $spacing-md;
+  padding: $spacing-xs 2px $spacing-xs 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  @include custom-scrollbar(4px);
+}
+
+.library-create-doc-report-refine-chat-empty {
+  margin: 0;
+  padding: $spacing-md $spacing-sm;
+  font-size: $font-size-sm;
+  color: $color-text-muted;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.library-create-doc-report-refine-chat-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.library-create-doc-report-refine-chat-item {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  gap: 8px;
+  align-items: flex-start;
+
+  &.role-user {
+    justify-content: flex-end;
+  }
+
+  &.role-assistant {
+    justify-content: flex-start;
+  }
+}
+
+.library-create-doc-report-refine-avatar {
+  flex-shrink: 0;
+  color: var(--color-primary);
+}
+
+.library-create-doc-report-refine-message {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-width: 94%;
+}
+
+.library-create-doc-report-refine-bubble {
+  max-width: 100%;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 18px;
+  font-size: $font-size-sm;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+}
+
+.library-create-doc-report-refine-time {
+  margin-top: 4px;
+  align-self: flex-end;
+  font-size: $font-size-xs;
+  line-height: 1.2;
+  color: $color-text-muted;
+}
+
+.role-user .library-create-doc-report-refine-bubble {
+  background: #eef2f6;
+  color: #2d3139;
+  border-color: #dfe3e8;
+  font-weight: 500;
+}
+
+.role-assistant .library-create-doc-report-refine-bubble {
+  background: transparent;
+  border-color: transparent;
+  color: $color-text-heading;
+  border-radius: 0;
+  padding: 0;
+  font-weight: $font-weight-semibold;
+}
+
+.library-create-doc-report-side-divider {
+  flex-shrink: 0;
+  height: 1px;
+  margin: $spacing-md 0;
+  background: $color-border;
+}
+
+.library-create-doc-report-side-chat {
+  flex-shrink: 0;
+  margin-top: $spacing-sm;
+  padding-top: $spacing-md;
+  border-top: 1px solid $color-border;
 }
 
 .library-create-doc-report-lead-row {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: $spacing-md;
+  gap: $spacing-sm;
   width: 100%;
   min-width: 0;
 
@@ -435,22 +617,32 @@ const stopEditReportValue = () => {
 
 .library-create-doc-report-toolbar {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: $spacing-sm;
+  width: 100%;
+  margin-top: $spacing-sm;
 }
 
-// 시트 박스로 테이블을 감싸 가로 폭을 꽉 채우고 바깥선을 또렷이
+.library-create-doc-report-toolbar-wide {
+  flex: 1 1 auto;
+  min-width: 0;
+  justify-content: center;
+}
+
+// 시트 박스
 .library-create-doc-report-sheet {
   position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
   border: 1px solid #c6d2db;
   border-radius: $border-radius-lg;
   background: #fff;
   padding: 0;
-  // 세로는 표·textarea 높이를 자르지 않음 (가로만 넘침 숨김)
-  overflow-x: hidden;
-  overflow-y: visible;
+  overflow: hidden;
   box-shadow: 0 1px 3px rgba(30, 50, 77, 0.08);
 }
 
@@ -466,7 +658,6 @@ const stopEditReportValue = () => {
   pointer-events: none;
   opacity: 0;
   transform: translateX(-130%);
-  // 빛 스윕만 화려하게: 앞쪽 얇은 하이라이트 + 뒤쪽 청록·보라·연두 광대역
   background:
     linear-gradient(
       96deg,
@@ -556,12 +747,12 @@ const stopEditReportValue = () => {
 
 .library-create-doc-report-sheet-head {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   gap: $spacing-md;
-  margin-bottom: 0;
   flex-wrap: wrap;
-  padding: $spacing-md;
+  padding: $spacing-sm $spacing-md;
   background: #f1f5f9;
   border-bottom: 1px solid #e2e8f0;
 }
@@ -590,355 +781,7 @@ const stopEditReportValue = () => {
   color: $color-text-muted;
 }
 
-// 시트 가로 전체 사용 — 헤더 바와 동일 너비로 붕 뜨는 느낌 제거
-.library-create-doc-report-table-wrap {
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  background: #fff;
-  overflow: visible;
-}
-
-.library-create-doc-report-tr {
-  overflow: visible;
-}
-
-.library-create-doc-report-empty {
-  margin: 0;
-  padding: $spacing-lg $spacing-md;
-  font-size: $font-size-sm;
-  color: $color-text-muted;
-  line-height: 1.5;
-  text-align: center;
-}
-
-.library-create-doc-report-empty-code {
-  padding: 0 4px;
-  font-size: $font-size-xs;
-  border-radius: 4px;
-  background: #f1f5f9;
-}
-
-// 표 레이아웃 — 다행(th)이 본문 높이만큼 세로로 이어지도록 table 사용
-.library-create-doc-report-table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-  border: none;
-  background: #fff;
-}
-
-.library-create-doc-report-col-label {
-  width: 32%;
-}
-
-.library-create-doc-report-col-value {
-  width: 68%;
-}
-
-.library-create-doc-report-tbody {
-  display: table-row-group;
-}
-
-.library-create-doc-report-tbody :deep(tr.sortable-ghost) {
-  opacity: 0.45;
-}
-
-.library-create-doc-report-row-drag {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  // 라벨 textarea 첫 줄(패딩 + 반줄높이)과 28px 핸들의 세로 중앙을 맞춤 — flex center만 쓰면 글리프 박스와 어긋남
-  margin: max(0px, calc(#{$spacing-xs} + 0.775em - 14px)) 0 0;
-  border: none;
-  border-radius: $border-radius-base;
-  background: transparent;
-  color: $color-text-muted;
-  cursor: grab;
-
-  &:hover {
-    background: #e2e8f0;
-    color: $color-text-secondary;
-  }
-
-  &:active {
-    cursor: grabbing;
-  }
-}
-
-// tr 에 border 주면 일부 브라우저에서 우측 끝까지 선이 안 맞을 수 있어 th/td 에만 구분선 부여
-.library-create-doc-report-label {
-  box-sizing: border-box;
-  padding: $spacing-xs $spacing-sm;
-  font-size: $font-size-sm;
-  font-weight: $font-weight-semibold;
-  color: $color-text-secondary;
-  background: #f8fafc;
-  border-right: 1px solid #e2e8f0;
-  border-bottom: 1px solid #e2e8f0;
-  vertical-align: middle;
-  text-align: left;
-  min-width: 0;
-  transition:
-    background-color $transition-base,
-    box-shadow $transition-base;
-
-  &:hover:not(:focus-within) {
-    background: #f1f5f9;
-  }
-
-  &:focus-within {
-    background: #e8eef4;
-  }
-}
-
-.library-create-doc-report-label-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 4px;
-  width: 100%;
-  min-width: 0;
-  font-size: $font-size-sm;
-  line-height: 1.55;
-}
-
-.library-create-doc-report-label-field {
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: 0;
-}
-
-.library-create-doc-report-cell {
-  box-sizing: border-box;
-  padding: 0;
-  vertical-align: middle;
-  background: #fff;
-  border-bottom: 1px solid #e2e8f0;
-  overflow: visible;
-  transition:
-    background-color $transition-base,
-    box-shadow $transition-base;
-
-  &:hover:not(:focus-within) {
-    background: #f1f5f9;
-  }
-
-  &:focus-within {
-    // 클릭·편집 중 — 호버보다 살짝 진한 회색으로 선택 영역 구분
-    background: #e8eef4;
-    box-shadow: none;
-  }
-}
-
-.library-create-doc-report-value-frame {
-  width: 100%;
-  min-height: 60px;
-}
-
-.library-create-doc-report-rendered {
-  display: grid;
-  align-content: center;
-  width: 100%;
-  min-height: 60px;
-  box-sizing: border-box;
-  padding: $spacing-sm $spacing-md;
-  overflow-x: auto;
-  color: $color-text-secondary;
-  font-size: $font-size-sm;
-  line-height: 1.55;
-  font-weight: $font-weight-normal;
-  font-family: inherit;
-  white-space: pre-wrap;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-  -webkit-overflow-scrolling: touch;
-}
-
-.library-create-doc-report-rendered-trigger {
-  display: block;
-  width: 100%;
-  min-height: 60px;
-  border: none;
-  padding: 0;
-  background: transparent;
-  text-align: left;
-  cursor: text;
-}
-
-.library-create-doc-report-rendered-trigger:focus-visible {
-  outline: none;
-}
-
-.library-create-doc-report-value-editor {
-  display: block;
-  width: 100%;
-  min-height: 60px;
-}
-
-.library-create-doc-report-value-editor :deep(.ui-input-outer),
-.library-create-doc-report-value-editor :deep(.ui-input-wrap) {
-  min-height: 60px;
-}
-
-.library-create-doc-report-value-editor :deep(textarea) {
-  min-height: 60px !important;
-  font-family: inherit;
-}
-
-.library-create-doc-report-rendered :deep(h1),
-.library-create-doc-report-rendered :deep(h2),
-.library-create-doc-report-rendered :deep(h3) {
-  margin: 16px 0 8px;
-  font-weight: $font-weight-semibold;
-  color: $color-text-secondary;
-}
-
-.library-create-doc-report-rendered :deep(h1) {
-  font-size: $font-size-xl;
-}
-
-.library-create-doc-report-rendered :deep(h2) {
-  font-size: $font-size-lg;
-}
-
-.library-create-doc-report-rendered :deep(h3) {
-  font-size: $font-size-base;
-}
-
-.library-create-doc-report-rendered :deep(p) {
-  margin: 0 0 10px;
-}
-
-.library-create-doc-report-rendered :deep(p:last-child) {
-  margin-bottom: 0;
-}
-
-.library-create-doc-report-rendered :deep(table) {
-  border-collapse: collapse;
-  width: 100%;
-  min-width: 280px;
-  margin: 12px 0;
-  font-size: $font-size-sm;
-  border: 1px solid $color-border;
-}
-
-.library-create-doc-report-rendered :deep(th),
-.library-create-doc-report-rendered :deep(td) {
-  border: 1px solid $color-border;
-  padding: 8px 12px;
-  text-align: left;
-  vertical-align: top;
-  color: $color-text-secondary;
-  font-size: $font-size-sm;
-  line-height: 1.55;
-}
-
-.library-create-doc-report-rendered :deep(thead th) {
-  background: color.mix($color-primary, #ffffff, 8%);
-  font-weight: $font-weight-semibold;
-  color: $color-text-heading-sub;
-}
-
-.library-create-doc-report-rendered :deep(tr:first-child th) {
-  background: color.mix($color-primary, #ffffff, 8%);
-  font-weight: $font-weight-semibold;
-}
-
-.library-create-doc-report-rendered :deep(tbody tr:nth-child(even) td) {
-  background: $color-surface;
-}
-
-.library-create-doc-report-tr:last-child .library-create-doc-report-label,
-.library-create-doc-report-tr:last-child .library-create-doc-report-cell {
-  border-bottom: none;
-}
-
-// 입력은 테두리 없음 — 겹침 방지 (편집 강조는 td:focus-within 배경)
-.library-create-doc-report-cell :deep(.ui-input-outer) {
-  display: block;
-  width: 100%;
-}
-
-.library-create-doc-report-cell :deep(.ui-input-wrap) {
-  border: none !important;
-  box-shadow: none !important;
-  background: transparent !important;
-  border-radius: 0 !important;
-}
-
-.library-create-doc-report-cell :deep(.ui-input-wrap.is-focused),
-.library-create-doc-report-cell :deep(.ui-input-wrap:hover) {
-  border: none !important;
-  box-shadow: none !important;
-  background: transparent !important;
-}
-
-.library-create-doc-report-cell :deep(.inp.ui-textarea),
-.library-create-doc-report-cell :deep(.inp.ui-textarea.has-border),
-.library-create-doc-report-label-field :deep(.inp.ui-textarea),
-.library-create-doc-report-label-field :deep(.inp.ui-textarea.has-border) {
-  width: 100%;
-  box-sizing: border-box;
-  border: none !important;
-  box-shadow: none !important;
-  outline: none !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  // 표 라벨($font-size-sm)·본문 폼과 동일한 본문 크기 (UiTextarea 기본 lg 대비)
-  font-size: $font-size-sm;
-  line-height: 1.55;
-  // 라벨은 굵게, 본문 셀은 일반 굵기
-  font-weight: $font-weight-normal;
-  white-space: pre-wrap;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-  // autoResize 시 내용 높이만큼만 쓰도록 (UiTextarea 기본 min-height 84px 무시)
-  min-height: 0 !important;
-  padding: $spacing-sm $spacing-md !important;
-}
-
-.library-create-doc-report-value-editor :deep(.inp.ui-textarea),
-.library-create-doc-report-value-editor :deep(.inp.ui-textarea.has-border) {
-  min-height: 60px !important;
-}
-
-// 본문 셀: overflow:auto는 스크롤 컨테이너가 되어 높이와 미세하게 어긋난 느낌 → hidden + UiTextarea 높이 여유로 잘림만 방지
-.library-create-doc-report-cell :deep(.inp.ui-textarea),
-.library-create-doc-report-cell :deep(.inp.ui-textarea.has-border) {
-  overflow-x: hidden;
-  overflow-y: hidden;
-}
-
-.library-create-doc-report-label-field :deep(.inp.ui-textarea),
-.library-create-doc-report-label-field :deep(.inp.ui-textarea.has-border) {
-  overflow-x: hidden;
-  overflow-y: hidden;
-  font-weight: $font-weight-semibold;
-  color: $color-text-secondary;
-  padding: $spacing-xs $spacing-sm !important;
-}
-
-.library-create-doc-report-cell :deep(.inp.ui-textarea:hover),
-.library-create-doc-report-cell :deep(.inp.ui-textarea:focus),
-.library-create-doc-report-label-field :deep(.inp.ui-textarea:hover),
-.library-create-doc-report-label-field :deep(.inp.ui-textarea:focus) {
-  border: none !important;
-  box-shadow: none !important;
-}
-
-.library-create-doc-report-footer-chat {
-  width: 100%;
-  margin-top: $spacing-md;
-  padding: $spacing-md 0 0;
-  border-top: 1px solid $color-border;
-}
-
-// 아이콘 열 / 텍스트 열 분리 — 부제가 제목과 같은 열에서 시작해 왼쪽이 정확히 맞음
+// 아이콘 열 / 텍스트 열 분리
 .library-create-doc-report-footer-head {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
@@ -946,6 +789,7 @@ const stopEditReportValue = () => {
   row-gap: 6px;
   align-items: start;
   margin-bottom: $spacing-md;
+  margin-top: 0;
   min-width: 0;
 }
 
@@ -974,7 +818,7 @@ const stopEditReportValue = () => {
   min-width: 0;
 }
 
-// 마지막 보완 요청 — 이 영역만 박스, 라벨 왼쪽 / 본문 오른쪽
+// 마지막 보완 요청 박스
 .library-create-doc-report-last-refine {
   display: flex;
   flex-direction: column;
@@ -1019,7 +863,19 @@ const stopEditReportValue = () => {
   }
 }
 
-// ChatInput-inner 와 유사: 한 줄 바 + 포커스 시 보더
+.library-create-doc-report-last-refine-time {
+  align-self: flex-end;
+  margin-top: 2px;
+  font-size: $font-size-xs;
+  line-height: 1.2;
+  color: $color-text-muted;
+}
+
+.library-create-doc-report-side .library-create-doc-report-last-refine-text {
+  text-align: right;
+}
+
+// 보완 입력 바
 .library-create-doc-chat-bar {
   display: flex;
   align-items: center;

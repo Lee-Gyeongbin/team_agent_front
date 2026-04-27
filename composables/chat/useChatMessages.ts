@@ -71,6 +71,7 @@ export const useChatMessages = () => {
         chartTitle: '',
       },
       tableData: typeof row.tableData === 'string' ? row.tableData : undefined,
+      chartOption: typeof row.chartOption === 'string' ? row.chartOption : undefined,
       ...(groundingSources?.length ? { groundingSources } : {}),
       chatLogReaction: {
         logId,

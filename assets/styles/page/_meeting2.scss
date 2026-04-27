@@ -1,0 +1,2002 @@
+@use '../utils/variables' as *;
+@use '../utils/mixins' as *;
+
+// ===================================
+// 회의록 (Meeting) 페이지/컴포넌트 스타일
+// ===================================
+
+// ---- 페이지 컨테이너 ----
+.meeting2-page {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 16px 20px;
+  gap: 12px;
+  background: $color-background;
+}
+
+// ---- 회의 목록 페이지 ----
+.meeting2-list-page {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  width: 100%;
+  padding: $spacing-lg;
+}
+
+.meeting2-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+}
+
+.meeting2-list-title {
+  @include typo($body-large-bold, $color-text-dark);
+}
+
+.meeting2-list-toolbar {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.meeting2-list-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: $spacing-md;
+}
+
+.meeting2-list-card {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  padding: $spacing-md;
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  cursor: pointer;
+  transition:
+    border-color $transition-base,
+    box-shadow $transition-base;
+
+  &:hover {
+    border-color: var(--color-primary);
+    box-shadow: $shadow-sm;
+  }
+}
+
+.meeting2-list-card-title {
+  @include typo($body-medium-bold, $color-text-dark);
+  @include ellipsis(1);
+}
+
+.meeting2-list-card-date {
+  @include typo($body-small, $color-text-muted);
+}
+
+.meeting2-list-card-meta {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  flex-wrap: wrap;
+}
+
+.meeting2-list-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: $spacing-xs;
+}
+
+// ---- 회의록 상세 (3분할) ----
+.meeting2-detail {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.meeting2-detail-header {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.meeting2-detail-back {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: $border-radius-base;
+  background: transparent;
+  cursor: pointer;
+  color: $color-text-muted;
+  white-space: nowrap;
+  flex-shrink: 0;
+  @include typo($body-small);
+  transition: all $transition-fast;
+
+  &:hover {
+    background: $color-border-light;
+    color: var(--color-primary);
+    border-color: $color-border;
+  }
+}
+
+.meeting2-detail-header-divider {
+  display: inline-block;
+  width: 1px;
+  height: 16px;
+  background: $color-border;
+  flex-shrink: 0;
+}
+
+// 제목 + 편집버튼 wrapper — 한 그룹으로 묶어 분리 방지
+.meeting2-detail-title-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 0 1 auto; // 자식 폭만큼만 (헤더 전체 차지 X)
+  max-width: 100%;
+}
+
+.meeting2-detail-title {
+  @include typo($body-large-bold, $color-text-dark);
+  @include ellipsis(1);
+  cursor: text;
+
+  &:hover {
+    color: var(--color-primary);
+  }
+}
+
+.meeting2-detail-title-edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: $border-radius-sm;
+  background: transparent;
+  cursor: pointer;
+  color: $color-text-muted;
+  transition: all $transition-fast;
+
+  &:hover {
+    background: $color-border-light;
+    color: var(--color-primary);
+  }
+}
+
+.meeting2-detail-title-input {
+  flex: 1;
+  min-width: 0;
+  max-width: 480px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--color-primary);
+  border-radius: $border-radius-base;
+  background: #fff;
+  outline: none;
+  @include typo($body-large-bold, $color-text-dark);
+}
+
+.meeting2-layout {
+  display: grid;
+  grid-template-columns: var(--meeting2-left, 28%) 6px var(--meeting2-center, 1fr) 6px var(--meeting2-right, 22%);
+  gap: 0;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.meeting2-layout-left,
+.meeting2-layout-center,
+.meeting2-layout-right {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  overflow: hidden;
+}
+
+.meeting2-layout-resizer {
+  cursor: col-resize;
+  background: transparent;
+  position: relative;
+  z-index: 1;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    background: transparent;
+    transition: background $transition-fast;
+  }
+
+  &:hover::after,
+  &.is-resizing::after {
+    background: var(--color-primary);
+  }
+}
+
+// ---- 패널 공통 ----
+.meeting2-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.meeting2-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  min-height: 44px;
+  padding: 6px 10px 6px 16px;
+  border-bottom: 1px solid $color-border;
+  background: $color-surface;
+}
+
+.meeting2-panel-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  @include typo($body-medium-bold, $color-text-dark);
+  font-size: 15px;
+}
+
+.meeting2-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+
+  .meeting2-panel-action-btn {
+    .ui-button-text {
+      font-size: 13px;
+    }
+  }
+}
+
+.meeting2-panel-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px 14px;
+  @include custom-scrollbar;
+}
+
+.meeting2-section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 0;
+  @include typo($body-medium-bold, $color-text-dark);
+}
+
+.meeting2-label {
+  @include typo($body-small-bold, $color-text-dark);
+}
+
+.meeting2-field-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-sm;
+}
+
+// ---- 진행 단계 (Stepper) ----
+.meeting2-stepper {
+  display: flex;
+  align-items: stretch;
+  gap: $spacing-xs;
+  padding: 12px $spacing-md;
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+}
+
+.meeting2-stepper-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  padding: 10px $spacing-md;
+  border-radius: $border-radius-base;
+  background: $color-surface;
+  transition: background $transition-fast;
+}
+
+.meeting2-stepper-item-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: $color-border-light;
+  color: $color-text-muted;
+  flex-shrink: 0;
+  @include typo($body-medium-bold);
+}
+
+.meeting2-stepper-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.meeting2-stepper-item-title {
+  @include typo($body-medium-bold, $color-text-dark);
+  @include ellipsis(1);
+}
+
+.meeting2-stepper-item-status {
+  @include typo($body-small, $color-text-muted);
+}
+
+.meeting2-stepper-item-arrow {
+  display: flex;
+  align-items: center;
+  color: #cbd5e1;
+  flex-shrink: 0;
+  padding: 0 $spacing-xs;
+}
+
+.meeting2-stepper-item.is-progress {
+  background: rgba(var(--color-primary-rgb), 0.08);
+
+  .meeting2-stepper-item-icon {
+    background: var(--color-primary);
+    color: #fff;
+  }
+
+  .meeting2-stepper-item-status {
+    color: var(--color-primary);
+    font-weight: $font-weight-bold;
+  }
+}
+
+.meeting2-stepper-item.is-done {
+  background: #f0faf5;
+
+  .meeting2-stepper-item-icon {
+    background: #d6f3e3;
+    color: #0d8a5b;
+  }
+
+  .meeting2-stepper-item-title {
+    color: #0d8a5b;
+  }
+
+  .meeting2-stepper-item-status {
+    color: #0d8a5b;
+    font-weight: $font-weight-bold;
+  }
+}
+
+// ---- 좌측 패널: 상단 고정 / 하단 스크롤 분리 ----
+.meeting2-record-fixed {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  background: #fff;
+  border-bottom: 1px solid $color-border;
+
+  // 고정 영역 안의 STT 툴바 — 하단 마진 0으로 (구분선이 이미 있음)
+  .meeting2-stt-toolbar {
+    margin-bottom: 0;
+  }
+}
+
+.meeting2-record-scroll {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  padding: 8px 14px 8px 16px;
+}
+
+// ---- 좌측: 녹음 컨트롤 ----
+.meeting2-record-control {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid $color-border;
+}
+
+.meeting2-record-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+}
+
+.meeting2-record-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  @include typo($body-small-bold);
+  color: $color-text-muted;
+
+  // 녹음 중 — 빨강 + 점 펄스
+  &.is-recording {
+    color: #d92d20;
+  }
+
+  // 일시정지 — 주황
+  &.is-paused {
+    color: #d97706;
+  }
+
+  // 중지됨 / 대기 — 회색 (기본값)
+  &.is-stopped,
+  &.is-idle {
+    color: $color-text-muted;
+  }
+}
+
+.meeting2-record-status-dot {
+  display: inline-block;
+  width: $spacing-sm;
+  height: $spacing-sm;
+  border-radius: 50%;
+  background: currentColor;
+
+  .is-recording & {
+    animation: meeting2-pulse 1.2s ease-in-out infinite;
+  }
+}
+
+@keyframes meeting2-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.meeting2-record-time {
+  @include typo($body-large-bold, $color-text-dark);
+  font-variant-numeric: tabular-nums;
+}
+
+.meeting2-record-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+}
+
+// ---- 좌측: 파형 (더미) ----
+.meeting2-waveform {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px;
+  height: 48px;
+  margin-bottom: $spacing-sm;
+  padding: 0 $spacing-sm;
+}
+
+.meeting2-waveform-bar {
+  flex: 1;
+  background: var(--color-primary);
+  border-radius: 2px;
+  opacity: 0.6;
+  transition:
+    height $transition-fast,
+    background $transition-base,
+    opacity $transition-base;
+
+  // 대기 / 중지됨 — 회색
+  .is-idle &,
+  .is-stopped & {
+    background: $color-border;
+    opacity: 1;
+  }
+
+  // 일시정지 — 파랑이지만 흐리게
+  .is-paused & {
+    opacity: 0.3;
+  }
+}
+
+// ---- 좌측: STT 옵션 (언어 선택 등) ----
+.meeting2-stt-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-sm;
+
+  // UiButton size="sm"의 medium-bold 폰트를 medium으로 완화
+  .ui-button {
+    font-weight: $font-weight-medium;
+  }
+}
+
+.meeting2-stt-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  @include typo($body-small);
+  color: $color-text-muted;
+}
+
+// ---- 좌측: STT 발화 리스트 ----
+.meeting2-stt-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.meeting2-stt-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  flex: 1;
+  min-height: 0;
+  padding-left: $spacing-xs;
+  overflow-y: auto;
+  @include custom-scrollbar;
+}
+
+.meeting2-stt-item {
+  display: flex;
+  gap: $spacing-sm;
+  padding: $spacing-sm 0;
+  border-bottom: 1px dashed transparent;
+}
+
+.meeting2-stt-item-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  color: #fff;
+  @include typo($body-small-bold);
+}
+
+.meeting2-stt-item-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.meeting2-stt-item-meta {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.meeting2-stt-item-name {
+  @include typo($body-small-bold, $color-text-dark);
+}
+
+.meeting2-stt-item-time {
+  @include typo($body-xsmall, $color-text-muted);
+}
+
+.meeting2-stt-item-text {
+  @include typo($body-small, $color-text-dark);
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+// ---- 좌측: 화자 목록 ----
+.meeting2-speaker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 0 4px;
+  margin-top: 0;
+  border-top: 1px solid $color-border;
+  flex-shrink: 0;
+}
+
+.meeting2-speaker-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+}
+
+.meeting2-speaker-edit-hint {
+  margin-left: $spacing-xs;
+  @include typo($body-small-bold, var(--color-primary));
+}
+
+.meeting2-speaker-edit-actions {
+  display: flex;
+  gap: $spacing-xs;
+}
+
+.meeting2-speaker-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+}
+
+.meeting2-speaker-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px 3px 3px;
+  background: $color-background;
+  border: 1px solid transparent;
+  border-radius: 20px;
+  cursor: pointer;
+  transition:
+    background $transition-fast,
+    border-color $transition-fast;
+  @include typo($body-small);
+  color: $color-text-dark;
+
+  &:hover {
+    background: #e9eef2;
+  }
+
+  // 편집 모드 — 칩 안에 input
+  &.is-editing {
+    cursor: default;
+    background: #fff;
+    border-color: var(--color-primary);
+
+    &:hover {
+      background: #fff;
+    }
+  }
+}
+
+.meeting2-speaker-chip-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 11px;
+  font-weight: $font-weight-bold;
+  flex-shrink: 0;
+}
+
+// 인라인 편집용 input — 칩 안에 자연스럽게 보이도록
+.meeting2-speaker-chip-input {
+  min-width: 40px;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  @include typo($body-small, $color-text-dark);
+
+  &::placeholder {
+    color: $color-text-disabled;
+  }
+}
+
+.meeting2-speaker-chip-alias {
+  color: $color-text-muted;
+}
+
+// ---- 화자 색상 팔레트 (colorIndex 0~7) ----
+.meeting2-speaker-color-0 {
+  background: #6c63ff;
+}
+.meeting2-speaker-color-1 {
+  background: #34c38f;
+}
+.meeting2-speaker-color-2 {
+  background: #f59e0b;
+}
+.meeting2-speaker-color-3 {
+  background: #ec4899;
+}
+.meeting2-speaker-color-4 {
+  background: #06b6d4;
+}
+.meeting2-speaker-color-5 {
+  background: #8b5cf6;
+}
+.meeting2-speaker-color-6 {
+  background: #ef4444;
+}
+.meeting2-speaker-color-7 {
+  background: #10b981;
+}
+
+// ---- 중앙: 에디터 ----
+.meeting2-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.meeting2-editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: 6px $spacing-sm;
+  border-bottom: 1px solid $color-border;
+  background: $color-background;
+  flex-wrap: wrap;
+}
+
+// 빈 아이콘 자리 fallback — 후속에 SVG 등록 시 자동 보임
+.meeting2-editor-toolbar-btn:empty,
+.meeting2-editor-toolbar-btn > i:not([class*='icon-']):empty {
+  display: none;
+}
+
+.meeting2-editor-toolbar-divider {
+  width: 1px;
+  height: 18px;
+  background: $color-border;
+  margin: 0 $spacing-xs;
+}
+
+.meeting2-editor-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 $spacing-sm;
+  border: none;
+  background: transparent;
+  border-radius: $border-radius-sm;
+  cursor: pointer;
+  color: $color-text-muted;
+  font-size: $font-size-sm;
+  transition: background $transition-fast;
+
+  &:hover:not(:disabled) {
+    background: $color-border-light;
+    color: $color-text-dark;
+  }
+
+  &.is-active {
+    background: rgba(var(--color-primary-rgb), 0.12);
+    color: var(--color-primary);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+// 숨겨진 파일 input (이미지 업로드 트리거용)
+.meeting2-editor-toolbar-file {
+  display: none;
+}
+
+// 이미지 드롭다운 (파일 / URL)
+.meeting2-image-picker {
+  position: relative;
+  display: inline-flex;
+}
+
+.meeting2-image-picker-pop {
+  position: absolute;
+  top: calc(100% + #{$spacing-xs});
+  left: 0;
+  z-index: $z-dropdown;
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  padding: $spacing-xs;
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  box-shadow: $shadow-md;
+}
+
+.meeting2-image-picker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm 12px;
+  border: none;
+  background: transparent;
+  border-radius: $border-radius-sm;
+  cursor: pointer;
+  text-align: left;
+  @include typo($body-small, $color-text-dark);
+  transition: background $transition-fast;
+
+  &:hover {
+    background: $color-border-light;
+    color: var(--color-primary);
+  }
+
+  &.is-danger {
+    color: #d92d20;
+
+    &:hover {
+      background: rgba(217, 45, 32, 0.08);
+      color: #d92d20;
+    }
+  }
+}
+
+.meeting2-image-picker-label {
+  display: block;
+  padding: 6px 12px 2px;
+  @include typo($body-xsmall, $color-text-muted);
+  font-weight: $font-weight-bold;
+  text-transform: uppercase;
+}
+
+.meeting2-image-picker-sep {
+  height: 1px;
+  margin: $spacing-xs 0;
+  background: $color-border;
+}
+
+// 표 삽입용 그리드 (호버해서 행/열 선택)
+.meeting2-table-grid-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: $spacing-sm;
+}
+
+.meeting2-table-grid-label {
+  @include typo($body-xsmall, $color-text-dark);
+  text-align: center;
+  font-weight: $font-weight-bold;
+}
+
+.meeting2-table-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 18px);
+  grid-template-rows: repeat(6, 18px);
+  gap: 2px;
+}
+
+.meeting2-table-grid-cell {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid $color-border;
+  border-radius: 2px;
+  background: #fff;
+  cursor: pointer;
+  transition:
+    background $transition-fast,
+    border-color $transition-fast;
+
+  &.is-hovered {
+    background: rgba(var(--color-primary-rgb), 0.25);
+    border-color: var(--color-primary);
+  }
+}
+
+.meeting2-editor-toolbar-select {
+  height: 28px;
+  padding: 0 $spacing-sm;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-sm;
+  background: #fff;
+  font-size: $font-size-sm;
+  color: $color-text-dark;
+  cursor: pointer;
+}
+
+// ---- 색상 피커 (글자색 / 형광펜) ----
+.meeting2-color-picker {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.meeting2-color-picker-trigger {
+  flex-direction: column;
+  gap: 0;
+  padding: 0 $spacing-sm;
+  min-width: 36px;
+}
+
+.meeting2-color-picker-label {
+  display: inline-block;
+  line-height: 1;
+  @include typo($body-small-bold);
+}
+
+.meeting2-color-picker-bar {
+  display: block;
+  width: 16px;
+  height: 3px;
+  margin-top: 2px;
+  border-radius: 2px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.meeting2-color-picker-pop {
+  position: absolute;
+  top: calc(100% + #{$spacing-xs});
+  left: 0;
+  z-index: $z-dropdown;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: $spacing-sm;
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  box-shadow: $shadow-md;
+}
+
+.meeting2-color-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: $spacing-xs;
+}
+
+.meeting2-color-picker-swatch {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: $border-radius-sm;
+  cursor: pointer;
+  padding: 0;
+  transition: transform $transition-fast;
+
+  &:hover {
+    transform: scale(1.12);
+  }
+
+  &.is-current {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 1px;
+  }
+
+  // 커스텀 입력용 (네이티브 input 숨기고 + 아이콘 노출)
+  &.is-custom {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background:
+      linear-gradient(45deg, transparent 45%, $color-text-muted 45%, $color-text-muted 55%, transparent 55%),
+      conic-gradient(#ff5252, #ffeb3b, #69f0ae, #40c4ff, #b388ff, #ff5252);
+    border-style: dashed;
+  }
+}
+
+.meeting2-color-picker-custom-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+  background: transparent;
+}
+
+.meeting2-color-picker-custom-icon {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border-radius: 50%;
+  color: $color-text-dark;
+  font-size: 14px;
+  font-weight: $font-weight-bold;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.meeting2-color-picker-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid $color-background;
+}
+
+.meeting2-color-picker-current {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  @include typo($body-xsmall, $color-text-muted);
+}
+
+.meeting2-color-picker-current-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+}
+
+.meeting2-color-picker-current-hex {
+  @include typo($body-xsmall, $color-text-dark);
+  font-family: 'Menlo', 'Consolas', monospace;
+  text-transform: uppercase;
+}
+
+.meeting2-color-picker-clear {
+  height: 26px;
+  padding: 0 $spacing-sm;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-sm;
+  background: #fff;
+  cursor: pointer;
+  @include typo($body-xsmall, $color-text-muted);
+  transition: all $transition-fast;
+
+  &:hover {
+    background: $color-border-light;
+    color: $color-text-dark;
+  }
+}
+
+// 에디터 본문 + floating bubble을 함께 감싸는 relative wrapper
+.meeting2-editor-relative {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+// 스크롤 wrapper — Tiptap EditorContent의 부모
+// (.meeting2-editor-body는 .ProseMirror 자체에 들어가서 flex 동작 안 함 → 명시적 wrapper 필요)
+.meeting2-editor-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  @include custom-scrollbar;
+}
+
+// ---- 표 floating 툴바 ----
+.meeting2-table-bubble {
+  position: absolute;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: $spacing-xs;
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  box-shadow: $shadow-md;
+  pointer-events: auto;
+  white-space: nowrap;
+}
+
+.meeting2-table-bubble-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  padding: 0 10px;
+  border: none;
+  background: transparent;
+  border-radius: $border-radius-sm;
+  cursor: pointer;
+  @include typo($body-small, $color-text-dark);
+  transition: background $transition-fast;
+
+  &:hover {
+    background: $color-border-light;
+    color: var(--color-primary);
+  }
+
+  &.is-danger {
+    color: #d92d20;
+
+    &:hover {
+      background: rgba(217, 45, 32, 0.08);
+      color: #d92d20;
+    }
+  }
+}
+
+.meeting2-table-bubble-sep {
+  display: inline-block;
+  width: 1px;
+  height: 16px;
+  margin: 0 2px;
+  background: $color-border;
+}
+
+// Tiptap의 EditorContent → .ProseMirror 안의 컨텐츠 영역에 적용
+// (MeetingEditorPanel에서 editorProps.attributes.class = 'meeting2-editor-body' 주입)
+.meeting2-editor-body {
+  min-height: 100%;
+  padding: $spacing-md $spacing-lg;
+  outline: none;
+
+  // Tiptap 기본 placeholder (extension-placeholder)
+  p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    color: $color-text-disabled;
+    pointer-events: none;
+    height: 0;
+  }
+
+  h1 {
+    margin: $spacing-lg 0 $spacing-md;
+    @include typo($body-xlarge-bold, $color-text-dark);
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+
+  h2 {
+    margin: $spacing-lg 0 $spacing-md;
+    @include typo($body-large-bold, $color-text-dark);
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+
+  h3 {
+    margin: $spacing-md 0 $spacing-sm;
+    @include typo($body-medium-bold, $color-text-dark);
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+
+  // 글로벌 reset이 list-style: none 이라 에디터 영역에서만 복원
+  ul {
+    list-style: disc outside;
+    margin: 0 0 $spacing-md;
+    padding-left: 26px;
+
+    li {
+      margin-bottom: $spacing-xs;
+      @include typo($body-medium, $color-text-dark);
+      line-height: 1.7;
+    }
+
+    // 중첩 리스트
+    ul {
+      list-style: circle outside;
+      margin: $spacing-xs 0 0;
+    }
+  }
+
+  ol {
+    list-style: decimal outside;
+    margin: 0 0 $spacing-md;
+    padding-left: 26px;
+
+    li {
+      margin-bottom: $spacing-xs;
+      @include typo($body-medium, $color-text-dark);
+      line-height: 1.7;
+    }
+
+    // 중첩 리스트
+    ol {
+      list-style: lower-alpha outside;
+      margin: $spacing-xs 0 0;
+    }
+  }
+
+  // Tiptap의 li > p (StarterKit BulletList/OrderedList는 li 안에 p를 넣음)
+  li > p {
+    margin: 0;
+    @include typo($body-medium, $color-text-dark);
+    line-height: 1.7;
+  }
+
+  blockquote {
+    margin: 0 0 $spacing-md;
+    padding: $spacing-sm $spacing-md;
+    border-left: 3px solid var(--color-primary);
+    background: rgba(var(--color-primary-rgb), 0.04);
+    @include typo($body-medium, $color-text-dark);
+    line-height: 1.7;
+    font-style: italic;
+  }
+
+  table {
+    width: 100%;
+    margin-bottom: $spacing-md;
+    border-collapse: collapse;
+    border: 1px solid $color-border;
+    table-layout: fixed;
+
+    th,
+    td {
+      padding: 6px 10px;
+      border: 1px solid $color-border;
+      @include typo($body-small, $color-text-dark);
+      line-height: 1.5;
+      text-align: left;
+      vertical-align: top;
+      position: relative;
+
+      // 셀 안쪽 단락(Tiptap이 셀 내용을 <p>로 감싸므로 마진/라인하이트 리셋)
+      p {
+        margin: 0;
+        font-size: inherit;
+        line-height: inherit;
+      }
+
+      // Tiptap에서 셀 선택 시 표시
+      &.selectedCell::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: rgba(var(--color-primary-rgb), 0.12);
+        pointer-events: none;
+      }
+    }
+
+    th {
+      background: $color-background;
+      @include typo($body-small-bold, $color-text-dark);
+      line-height: 1.5;
+    }
+
+    // Tiptap 표 컬럼 리사이즈 핸들
+    .column-resize-handle {
+      position: absolute;
+      right: -2px;
+      top: 0;
+      bottom: -2px;
+      width: 4px;
+      background: var(--color-primary);
+      pointer-events: none;
+    }
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+    border-radius: $border-radius-sm;
+    margin: $spacing-sm 0;
+
+    &.ProseMirror-selectednode {
+      outline: 2px solid var(--color-primary);
+    }
+  }
+
+  // 리사이즈 가능한 이미지 wrapper
+  .meeting2-image-wrap {
+    position: relative;
+    display: inline-block;
+    line-height: 0;
+    margin: $spacing-sm 0;
+    max-width: 100%;
+
+    img {
+      display: block;
+      width: 100%;
+      height: auto;
+      margin: 0;
+    }
+
+    &.is-selected,
+    &:hover.is-editable {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+  }
+
+  // 우하단 리사이즈 핸들
+  .meeting2-image-handle {
+    position: absolute;
+    right: -6px;
+    bottom: -6px;
+    width: 14px;
+    height: 14px;
+    background: var(--color-primary);
+    border: 2px solid #fff;
+    border-radius: 50%;
+    cursor: nwse-resize;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    transition: opacity $transition-fast;
+    z-index: 2;
+  }
+
+  .meeting2-image-wrap.is-editable:hover .meeting2-image-handle,
+  .meeting2-image-wrap.is-selected .meeting2-image-handle {
+    opacity: 1;
+  }
+
+  // 선택 시 상단 노출되는 단축 툴바
+  .meeting2-image-toolbar {
+    position: absolute;
+    top: -36px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: $spacing-xs;
+    background: #fff;
+    border: 1px solid $color-border;
+    border-radius: $border-radius-base;
+    box-shadow: $shadow-md;
+    line-height: 1;
+    z-index: 3;
+  }
+
+  .meeting2-image-toolbar-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 24px;
+    padding: 0 6px;
+    border: none;
+    border-radius: $border-radius-sm;
+    background: transparent;
+    cursor: pointer;
+    @include typo($body-xsmall, $color-text-dark);
+    transition: background $transition-fast;
+
+    &:hover {
+      background: $color-border-light;
+      color: var(--color-primary);
+    }
+  }
+
+  a {
+    color: var(--color-primary);
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  // Tiptap Highlight (형광펜) — extension-highlight 기본 mark
+  mark {
+    padding: 1px 2px;
+    border-radius: 2px;
+  }
+
+  p {
+    margin: 0 0 $spacing-md;
+    @include typo($body-medium, $color-text-dark);
+    line-height: 1.7;
+  }
+
+  // Tiptap 코드 블록 (StarterKit 기본 포함)
+  pre {
+    margin: 0 0 $spacing-md;
+    padding: $spacing-sm $spacing-md;
+    background: #2d3139;
+    color: #fff;
+    border-radius: $border-radius-base;
+    overflow-x: auto;
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-size: 13px;
+
+    code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+    }
+  }
+
+  code {
+    padding: 2px $spacing-xs;
+    background: $color-background;
+    border-radius: 3px;
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-size: 0.9em;
+    color: #d92d20;
+  }
+}
+
+// 표 리사이즈 중 사용자 선택 방지
+.resize-cursor {
+  cursor: col-resize;
+}
+
+.meeting2-editor-footer {
+  padding: $spacing-xs 12px;
+  border-top: 1px solid $color-border;
+  @include typo($body-xsmall, $color-text-muted);
+  font-size: 11px;
+  text-align: right;
+}
+
+// ---- 우측: 사이드 메뉴 ----
+.meeting2-side-section {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  padding-bottom: $spacing-md;
+  margin-bottom: $spacing-md;
+  border-bottom: 1px solid $color-border;
+
+  &:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+}
+
+.meeting2-side-action-grp {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+// 작업 메뉴 안 드롭다운 (파일 저장 형식 선택)
+.meeting2-action-picker {
+  position: relative;
+}
+
+.meeting2-action-picker-caret {
+  margin-left: auto;
+  transition: transform $transition-fast;
+
+  &.is-open {
+    transform: rotate(180deg);
+  }
+}
+
+.meeting2-action-picker-pop {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: $z-dropdown;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  box-shadow: $shadow-md;
+}
+
+.meeting2-action-picker-item {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 12px;
+  border: none;
+  background: transparent;
+  border-radius: $border-radius-sm;
+  cursor: pointer;
+  text-align: left;
+  @include typo($body-small, $color-text-dark);
+  transition: background $transition-fast;
+
+  &:hover {
+    background: #ecf0f3;
+    color: var(--color-primary);
+  }
+}
+
+.meeting2-side-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: $spacing-xs;
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  background: #fff;
+  cursor: pointer;
+  @include typo($body-small, $color-text-dark);
+  transition: all $transition-fast;
+
+  &:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+}
+
+.meeting2-format-grp {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: $spacing-xs;
+}
+
+.meeting2-format-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  background: #fff;
+  cursor: pointer;
+  @include typo($body-small, $color-text-dark);
+  transition: all $transition-fast;
+
+  &:hover {
+    border-color: var(--color-primary);
+  }
+
+  &.is-active {
+    border-color: var(--color-primary);
+    background: rgba(var(--color-primary-rgb), 0.08);
+    color: var(--color-primary);
+    font-weight: $font-weight-bold;
+  }
+}
+
+.meeting2-recipient-grp {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+}
+
+.meeting2-recipient-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-xs $spacing-sm;
+  background: $color-background;
+  border-radius: $border-radius-sm;
+  @include typo($body-small, $color-text-dark);
+
+  .meeting2-recipient-chip-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: $color-text-muted;
+    padding: 0;
+
+    &:hover {
+      color: $color-text-dark;
+    }
+  }
+}
+
+.meeting2-recipient-add {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-xs $spacing-sm;
+  border: 1px dashed $color-border;
+  border-radius: $border-radius-sm;
+  background: transparent;
+  cursor: pointer;
+  @include typo($body-small, $color-text-muted);
+  transition: all $transition-fast;
+
+  &:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+}
+
+.meeting2-mail-send-btn {
+  width: 100%;
+  margin-top: $spacing-sm;
+}
+
+// ---- 템플릿 선택 모달 ----
+.meeting2-template-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  width: 100%;
+}
+
+.meeting2-template-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  width: 100%;
+  padding: $spacing-md;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  transition: all $transition-fast;
+
+  &:hover {
+    border-color: var(--color-primary);
+    background: rgba(var(--color-primary-rgb), 0.03);
+  }
+
+  &.is-active {
+    border-color: var(--color-primary);
+    background: rgba(var(--color-primary-rgb), 0.06);
+  }
+}
+
+.meeting2-template-card-name {
+  @include typo($body-medium-bold, $color-text-dark);
+}
+
+.meeting2-template-card-desc {
+  @include typo($body-small, $color-text-muted);
+}
+
+// ---- 모달 공통 폼 (파일 저장 / 메일 발송) ----
+.meeting2-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  width: 100%;
+}
+
+.meeting2-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.meeting2-modal-field-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+}
+
+.meeting2-modal-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  @include typo($body-small, var(--color-primary));
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.meeting2-modal-hint {
+  margin: $spacing-xs 0 0;
+  @include typo($body-xsmall, $color-text-muted);
+}
+
+.meeting2-modal-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  @include typo($body-small, $color-text-dark);
+
+  input[type='checkbox'] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+  }
+}
+
+// ---- 메일 발송 모달 ----
+.meeting2-mail-search-results {
+  display: flex;
+  flex-direction: column;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  background: #fff;
+  @include custom-scrollbar;
+}
+
+.meeting2-mail-search-result-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-xs $spacing-sm;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background $transition-fast;
+
+  & + & {
+    border-top: 1px solid $color-background;
+  }
+
+  &:hover {
+    background: rgba(var(--color-primary-rgb), 0.06);
+  }
+}
+
+.meeting2-mail-search-result-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.meeting2-mail-search-result-name {
+  @include typo($body-small-bold, $color-text-dark);
+  @include ellipsis(1);
+}
+
+.meeting2-mail-search-result-email {
+  @include typo($body-xsmall, $color-text-muted);
+  @include ellipsis(1);
+}
+
+.meeting2-mail-recipient-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: $spacing-xs;
+  padding: $spacing-sm;
+  background: $color-surface;
+  border-radius: $border-radius-base;
+  min-height: 120px;
+
+  // 빈 상태 — UiEmpty 가운데 정렬
+  &.is-empty {
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ui-empty {
+    width: 100%;
+    padding: $spacing-md 0;
+  }
+}
+
+// ---- 사이드: 회의 정보 (Meta) ----
+.meeting2-meta-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+}
+
+.meeting2-meta-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: $spacing-sm;
+  background: $color-surface;
+  border-radius: $border-radius-base;
+}
+
+.meeting2-meta-row {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: $spacing-xs;
+  align-items: start;
+
+  dt {
+    @include typo($body-small-bold, $color-text-dark);
+    margin: 0;
+  }
+
+  dd {
+    @include typo($body-small, $color-text-dark);
+    margin: 0;
+    word-break: break-word;
+  }
+}
+
+.meeting2-meta-participants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+  margin-top: 2px;
+}
+
+.meeting2-meta-participant-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: 12px;
+  @include typo($body-small, $color-text-dark);
+}
+
+// ---- 회의 정보 편집 모달 ----
+.meeting2-info-form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  width: 100%;
+}
+
+.meeting2-info-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.meeting2-info-hint {
+  margin: 4px 0 0;
+  @include typo($body-xsmall, $color-text-muted);
+}
+
+// 칩 input — 칩 + 텍스트 입력이 같은 박스 안에 있는 것처럼 보이도록
+.meeting2-info-chip-input {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-height: 38px;
+  padding: 5px 10px;
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  cursor: text;
+  transition: border-color $transition-fast;
+
+  &:focus-within {
+    border-color: var(--color-primary);
+  }
+}
+
+.meeting2-info-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px 2px 10px;
+  background: $color-surface;
+  border-radius: 12px;
+  @include typo($body-small, $color-text-dark);
+}
+
+.meeting2-info-chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  color: $color-text-muted;
+  font-size: 14px;
+  line-height: 1;
+  transition:
+    background $transition-fast,
+    color $transition-fast;
+
+  &:hover {
+    background: #e9eef2;
+    color: $color-text-dark;
+  }
+}
+
+.meeting2-info-chip-input-text {
+  flex: 0 1 auto;
+  min-width: 80px;
+  max-width: 100%;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px dashed $color-border;
+  border-radius: 12px;
+  outline: none;
+  background: transparent;
+  @include typo($body-small, $color-text-dark);
+  transition:
+    border-color $transition-fast,
+    background $transition-fast;
+
+  &:hover {
+    border-color: var(--color-primary);
+    background: rgba(var(--color-primary-rgb), 0.04);
+  }
+
+  &:focus {
+    border-style: solid;
+    border-color: var(--color-primary);
+    background: #fff;
+  }
+
+  &::placeholder {
+    color: $color-text-muted;
+  }
+}
+
+// ---- 모바일 / 태블릿 (1023px 이하) ----
+@media (max-width: 1023px) {
+  .meeting2-page,
+  .meeting2-list-page {
+    padding: $spacing-md;
+  }
+
+  .meeting2-stepper {
+    flex-wrap: wrap;
+    gap: $spacing-xs;
+
+    .meeting2-stepper-item {
+      flex: 1 1 calc(50% - $spacing-xs);
+      min-width: 0;
+    }
+  }
+
+  .meeting2-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+
+  .meeting2-layout-resizer {
+    display: none;
+  }
+
+  .meeting2-layout-tabs {
+    display: flex;
+    gap: $spacing-xs;
+    margin-bottom: $spacing-sm;
+
+    button {
+      flex: 1;
+      height: 36px;
+      border: 1px solid $color-border;
+      border-radius: $border-radius-base;
+      background: #fff;
+      @include typo($body-small, $color-text-muted);
+      cursor: pointer;
+
+      &.is-active {
+        background: var(--color-primary);
+        color: #fff;
+        border-color: var(--color-primary);
+      }
+    }
+  }
+
+  .meeting2-layout-left,
+  .meeting2-layout-center,
+  .meeting2-layout-right {
+    display: none;
+
+    &.is-active {
+      display: flex;
+    }
+  }
+}

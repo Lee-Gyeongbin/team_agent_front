@@ -676,3 +676,32 @@
 .icon-attach-file {
   @include icon-file-bg('attach-file');
 }
+
+// ===================================
+// 회의록(Meeting) 단계 아이콘
+// ===================================
+
+// 1. 회의 녹음
+.icon-meeting-mic {
+  @include icon-file-bg('meeting-mic');
+}
+
+// 2. 회의록 자동 생성
+.icon-meeting-generate {
+  @include icon-file-bg('meeting-generate');
+}
+
+// 3. 편집
+.icon-meeting-edit {
+  @include icon-file-bg('meeting-edit');
+}
+
+// 4. 저장
+.icon-meeting-save {
+  @include icon-file-bg('meeting-save');
+}
+
+// 5. 메일 발송
+.icon-meeting-mail {
+  @include icon-file-bg('meeting-mail');
+}

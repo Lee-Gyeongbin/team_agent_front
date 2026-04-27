@@ -10,6 +10,7 @@ import {
 } from '~/types/chat'
 import { useChatSendPipeline } from '~/composables/chat/useChatSendPipeline'
 import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
+import { parseLunchPayloadFromPrompt } from '~/utils/chat/lunchAgentUtil'
 const { user } = useAuth()
 const {
   fetchSelectChatRoomList,
@@ -67,6 +68,7 @@ export const useChatRooms = () => {
   const syncSearchModeFromLastLog = async (lastRow: ChatLogListRow | undefined) => {
     const svcTy = lastRow?.svcTy ?? 'C'
     const lastAgentId = typeof lastRow?.agentId === 'string' ? lastRow.agentId.trim() : ''
+    const isLunchPromptLog = !!parseLunchPayloadFromPrompt(String(lastRow?.qcontent ?? ''))
     if (svcTy === 'M') {
       activeSearchModes.value = ['M']
       selectedChatAgentId.value = lastAgentId || null
@@ -81,7 +83,7 @@ export const useChatRooms = () => {
       await selectModelOptions()
     } else {
       activeSearchModes.value = []
-      selectedChatAgentId.value = lastAgentId || null
+      selectedChatAgentId.value = isLunchPromptLog ? null : lastAgentId || null
       // 일반 질의 시 모델 옵션 조회
       await selectModelOptions()
     }
