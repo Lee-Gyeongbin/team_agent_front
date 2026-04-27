@@ -1911,16 +1911,33 @@
 }
 
 .meeting2-info-chip-input-text {
-  flex: 1;
-  min-width: 120px;
-  padding: 0;
-  border: none;
+  flex: 0 1 auto;
+  min-width: 80px;
+  max-width: 100%;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px dashed $color-border;
+  border-radius: 12px;
   outline: none;
   background: transparent;
   @include typo($body-small, $color-text-dark);
+  transition:
+    border-color $transition-fast,
+    background $transition-fast;
+
+  &:hover {
+    border-color: var(--color-primary);
+    background: rgba(var(--color-primary-rgb), 0.04);
+  }
+
+  &:focus {
+    border-style: solid;
+    border-color: var(--color-primary);
+    background: #fff;
+  }
 
   &::placeholder {
-    color: $color-text-disabled;
+    color: $color-text-muted;
   }
 }
 

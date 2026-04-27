@@ -65,7 +65,7 @@
             v-model="inputName"
             type="text"
             class="meeting2-info-chip-input-text"
-            :placeholder="form.participants.length === 0 ? '이름 입력 후 Enter / 쉼표로 추가' : ''"
+            :placeholder="form.participants.length === 0 ? '이름 입력 후 Enter / 쉼표로 추가' : '+ 추가'"
             @keydown.enter.prevent="onAddParticipant"
             @keydown="onChipInputKeydown"
             @blur="onAddParticipant"
