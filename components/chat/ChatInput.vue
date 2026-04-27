@@ -50,7 +50,10 @@
             multiple
             @change="onAttachFileChange"
           />
-          <ChatSearchMode v-if="chatIndexAgents.length > 0" />
+          <ChatSearchMode
+            v-if="chatIndexAgents.length > 0"
+            :disabled="props.disabled"
+          />
         </div>
         <div class="chat-input-bottom-right flex gap-8 items-center">
           <UiSelect
@@ -60,6 +63,7 @@
             :model-value="selectedModelOption"
             :options="modelOptions"
             size="xlg"
+            :disabled="props.disabled"
             @update:model-value="selectedModelOption = String($event)"
           />
           <UiButton
