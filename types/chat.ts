@@ -176,7 +176,6 @@ export interface SubOption {
 }
 
 export interface LunchCardMeta {
-  lunchSelectCardDisplayYn?: string
   rcontent?: string
   logId?: string | number
   refId?: string
