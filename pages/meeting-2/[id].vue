@@ -118,6 +118,7 @@
     <MeetingSpeakerEditModal />
     <MeetingTemplateSelectModal />
     <MeetingMailSendModal />
+    <MeetingInfoEditModal />
   </div>
 </template>
 

@@ -33,6 +33,9 @@ const isTemplateSelectOpen = ref(false)
 const isMailSendOpen = ref(false)
 const mailInitialRecipients = ref<MeetingRecipient[]>([])
 
+// 모달 상태 (회의 정보 편집)
+const isInfoEditOpen = ref(false)
+
 // 사용자 검색 결과
 const userSearchResults = ref<MeetingUser[]>([])
 
@@ -360,6 +363,16 @@ const handleShareMeeting = () => {
   openToast({ message: '공유 링크가 복사되었습니다.' })
 }
 
+// ===== 회의 정보 편집 (모달) =====
+/** 회의 정보 편집 모달 열기 */
+const openInfoEditModal = () => {
+  if (!currentMeeting.value) {
+    openToast({ message: '회의 정보가 없습니다.', type: 'warning' })
+    return
+  }
+  isInfoEditOpen.value = true
+}
+
 export const useMeeting2Store = () => {
   return {
     // 상태
@@ -372,6 +385,7 @@ export const useMeeting2Store = () => {
     isTemplateSelectOpen,
     isMailSendOpen,
     mailInitialRecipients,
+    isInfoEditOpen,
     userSearchResults,
     // 조회
     handleSelectMeetingList,
@@ -400,5 +414,7 @@ export const useMeeting2Store = () => {
     handleSearchUsers,
     // 공유
     handleShareMeeting,
+    // 회의 정보 편집 (모달)
+    openInfoEditModal,
   }
 }

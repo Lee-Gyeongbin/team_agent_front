@@ -3,7 +3,20 @@
     v-if="currentMeeting"
     class="meeting2-side-section"
   >
-    <span class="meeting2-section-title">회의 정보</span>
+    <div class="meeting2-meta-header">
+      <span class="meeting2-section-title">회의 정보</span>
+      <UiButton
+        variant="ghost"
+        size="xs"
+        @click="onClickEdit"
+      >
+        <template #icon-left>
+          <i class="icon-edit size-14" />
+        </template>
+        편집
+      </UiButton>
+    </div>
+
     <dl class="meeting2-meta-list">
       <div class="meeting2-meta-row">
         <dt>일시</dt>
@@ -47,5 +60,9 @@
 <script setup lang="ts">
 import { useMeeting2Store } from '~/composables/meeting/useMeeting2Store'
 
-const { currentMeeting } = useMeeting2Store()
+const { currentMeeting, openInfoEditModal } = useMeeting2Store()
+
+const onClickEdit = () => {
+  openInfoEditModal()
+}
 </script>
