@@ -150,6 +150,7 @@
         <!-- 시스템 응답 -->
         <div class="content-box type-response">
           <UiButton
+            v-if="parsedLunchRecommendations.length === 0"
             variant="ghost"
             size="xxs"
             icon-only
@@ -175,8 +176,13 @@
             </template>
           </UiButton>
 
+          <ChatLunchAgentCard
+            v-if="parsedLunchRecommendations.length"
+            :recommendations="parsedLunchRecommendations"
+          />
           <!-- eslint-disable vue/no-v-html — toHtmlContent 내 안전 처리 적용 -->
           <div
+            v-else
             class="message-content markdown-body"
             v-html="responseRenderedHtml"
           />
@@ -283,7 +289,7 @@
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import { parseSurveyAnswersFromPrompt } from '~/utils/chat/psychologyConsultUtil'
 import type { LibraryCardDetail, DocItem, TableDataItem, ChartStatItem, ChartDetailCdItem } from '~/types/library'
-import type { VisualizationViewModel } from '~/types/chat'
+import type { LunchRecommendationItem, VisualizationViewModel } from '~/types/chat'
 import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
 import { useFileStore } from '~/composables/com/useFileStore'
 import { useLibraryStore } from '~/composables/library/useLibraryStore'
@@ -393,6 +399,20 @@ const surveyReadonlyAnswers = computed<Record<number, number>>(() =>
 
 /** 시스템 응답 마크다운 렌더 결과 — v-html (ChatMessageItem과 동일) */
 const responseRenderedHtml = computed(() => toHtmlContent(displayData.value?.rcontent ?? ''))
+const parseLunchRecommendations = (raw: string): LunchRecommendationItem[] => {
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (!Array.isArray(parsed)) return []
+    return parsed as LunchRecommendationItem[]
+  } catch {
+    return []
+  }
+}
+const parsedLunchRecommendations = computed<LunchRecommendationItem[]>(() => {
+  const raw = (displayData.value?.rcontent ?? '').trim()
+  if (!raw) return []
+  return parseLunchRecommendations(raw)
+})
 // SQL 코드 블록 표시 (데이터분석 타입에서 SQL 버튼으로 토글, 초기 숨김)
 const isSqlCodeVisible = ref(false)
 const toggleSqlCodeVisible = () => {
