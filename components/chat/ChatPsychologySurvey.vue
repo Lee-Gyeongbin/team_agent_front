@@ -330,6 +330,7 @@ const onSubmitClick = async () => {
   &.is-intro-playing {
     --survey-content-opacity: 0;
     --survey-content-shift: 8px;
+    border-color: transparent;
   }
 
   &.is-content-visible {

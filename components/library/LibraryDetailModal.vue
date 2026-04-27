@@ -136,7 +136,15 @@
       <div class="library-detail-modal-body">
         <!-- 사용자 질문 -->
         <div class="content-box type-question">
-          <p>{{ displayData?.qcontent }}</p>
+          <ChatPsychologySurvey
+            v-if="isPsychologySurveyCard"
+            class="library-detail-survey-readonly"
+            readonly
+            :initial-answers="surveyReadonlyAnswers"
+            :theme-icon-class-nm="displayData?.iconClassNm ?? ''"
+            :theme-color-hex="displayData?.colorHex ?? ''"
+          />
+          <p v-else>{{ displayData?.qcontent }}</p>
         </div>
 
         <!-- 시스템 응답 -->
@@ -273,6 +281,7 @@
 
 <script setup lang="ts">
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
+import { parseSurveyAnswersFromPrompt } from '~/utils/chat/psychologyConsultUtil'
 import type { LibraryCardDetail, DocItem, TableDataItem, ChartStatItem, ChartDetailCdItem } from '~/types/library'
 import type { VisualizationViewModel } from '~/types/chat'
 import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
@@ -377,6 +386,10 @@ const visualizationView = computed<VisualizationViewModel | null>(() => {
 
 // 내부 표시용 데이터 (트랜지션 타이밍 제어용)
 const displayData = ref<LibraryCardDetail | null>(props.cardDetail ?? null)
+const isPsychologySurveyCard = computed(() => displayData.value?.agentId === 'AG000010')
+const surveyReadonlyAnswers = computed<Record<number, number>>(() =>
+  parseSurveyAnswersFromPrompt(displayData.value?.qcontent ?? ''),
+)
 
 /** 시스템 응답 마크다운 렌더 결과 — v-html (ChatMessageItem과 동일) */
 const responseRenderedHtml = computed(() => toHtmlContent(displayData.value?.rcontent ?? ''))
@@ -512,3 +525,12 @@ const handleCopyResponse = async () => {
   openToast({ message: '답변이 복사되었습니다.', duration: 1500 })
 }
 </script>
+
+<style lang="scss" scoped>
+.library-detail-survey-readonly {
+  width: 100%;
+  max-width: 100%;
+  max-height: min(560px, calc(100vh - 280px));
+  overflow: hidden;
+}
+</style>
