@@ -210,11 +210,99 @@ const buildPrintHostStyles = (): string => `
   #${PRINT_HOST_ID} .report-print-value thead th {
     background: #f1f5f9 !important;
   }
+
+  /* 에디터 HTML 직접 인쇄 스타일 (printLibraryReportFromHtml) */
+  #${PRINT_HOST_ID} .report-print-editor-body {
+    font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif !important;
+    font-size: 11pt !important;
+    color: #1e293b !important;
+    line-height: 1.55 !important;
+  }
+  #${PRINT_HOST_ID} .report-print-editor-body h1 { font-size: 18pt !important; font-weight: 700 !important; margin: 12px 0 8px !important; }
+  #${PRINT_HOST_ID} .report-print-editor-body h2 { font-size: 15pt !important; font-weight: 700 !important; margin: 10px 0 6px !important; }
+  #${PRINT_HOST_ID} .report-print-editor-body h3 { font-size: 12pt !important; font-weight: 700 !important; margin: 8px 0 4px !important; }
+  #${PRINT_HOST_ID} .report-print-editor-body p { margin: 0 0 6px !important; }
+  #${PRINT_HOST_ID} .report-print-editor-body ul,
+  #${PRINT_HOST_ID} .report-print-editor-body ol { margin: 6px 0 !important; padding-left: 1.4em !important; }
+  #${PRINT_HOST_ID} .report-print-editor-body li { margin-bottom: 2px !important; }
+  #${PRINT_HOST_ID} .report-print-editor-body blockquote {
+    margin: 6px 0 !important;
+    padding: 4px 10px !important;
+    border-left: 3px solid #3b82f6 !important;
+    background: #f8fafc !important;
+    font-style: italic !important;
+  }
+  #${PRINT_HOST_ID} .report-print-editor-body table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    table-layout: fixed !important;
+    margin: 8px 0 10px !important;
+    font-size: 10.5pt !important;
+  }
+  #${PRINT_HOST_ID} .report-print-editor-body th {
+    width: 28% !important;
+    padding: 8px 10px !important;
+    background: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+    font-weight: 600 !important;
+    text-align: left !important;
+    vertical-align: top !important;
+    color: #334155 !important;
+  }
+  #${PRINT_HOST_ID} .report-print-editor-body td {
+    padding: 8px 12px !important;
+    background: #fff !important;
+    border: 1px solid #cbd5e1 !important;
+    vertical-align: top !important;
+    word-break: break-word !important;
+  }
+  #${PRINT_HOST_ID} .report-print-editor-body td p { margin: 0 0 4px !important; }
+  #${PRINT_HOST_ID} .report-print-editor-body td p:last-child { margin-bottom: 0 !important; }
+  #${PRINT_HOST_ID} .report-print-editor-body a { color: #3b82f6 !important; text-decoration: underline !important; }
 }
 `
 
 const removeEl = (id: string) => {
   document.getElementById(id)?.remove()
+}
+
+/** 에디터 HTML 그대로 인쇄 (표 외 텍스트 포함) — Tiptap getHTML() 결과물을 받아 인쇄 */
+export const printLibraryReportFromHtml = (editorHtml: string, reportTitle = '보고서'): boolean => {
+  if (typeof document === 'undefined' || !editorHtml.trim()) return false
+  const prevTitle = document.title
+
+  removeEl(PRINT_STYLE_ID)
+  removeEl(PRINT_HOST_ID)
+
+  const styleEl = document.createElement('style')
+  styleEl.id = PRINT_STYLE_ID
+  styleEl.textContent = buildPrintHostStyles()
+  document.head.appendChild(styleEl)
+
+  const writtenOn = formatYyyyMmDdDots(new Date())
+  const host = document.createElement('div')
+  host.id = PRINT_HOST_ID
+  host.setAttribute('aria-hidden', 'true')
+  host.innerHTML = `
+  <header class="report-print-header">
+    <h1 class="report-print-title">${escapeHTML(reportTitle)}</h1>
+    <p class="report-print-sub">${escapeHTML(writtenOn)} 작성</p>
+  </header>
+  <hr class="report-print-rule" />
+  <div class="report-print-editor-body">${editorHtml}</div>`
+  document.body.appendChild(host)
+
+  const cleanup = () => {
+    removeEl(PRINT_STYLE_ID)
+    removeEl(PRINT_HOST_ID)
+    document.title = prevTitle
+    window.removeEventListener('afterprint', cleanup)
+  }
+  window.addEventListener('afterprint', cleanup)
+  document.title = 'TeamAgent'
+  window.print()
+
+  return true
 }
 
 /**
