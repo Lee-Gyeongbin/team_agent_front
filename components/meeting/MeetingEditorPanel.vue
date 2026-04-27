@@ -122,8 +122,8 @@ import { useEditor } from '@tiptap/vue-3'
 import { StarterKit } from '@tiptap/starter-kit'
 import { Underline } from '@tiptap/extension-underline'
 import { Link } from '@tiptap/extension-link'
-import { ResizableImage } from '~/composables/minutes/resizableImage'
-import { TableShortcuts } from '~/composables/minutes/tableShortcuts'
+import { ResizableImage } from '~/composables/meeting/resizableImage'
+import { TableShortcuts } from '~/composables/meeting/tableShortcuts'
 import type { ChainedCommands } from '@tiptap/vue-3'
 import { Table } from '@tiptap/extension-table'
 import { TableRow } from '@tiptap/extension-table-row'
@@ -133,10 +133,10 @@ import { Placeholder } from '@tiptap/extension-placeholder'
 import { TextStyle } from '@tiptap/extension-text-style'
 import { Color } from '@tiptap/extension-color'
 import { Highlight } from '@tiptap/extension-highlight'
-import { useMeetingStore } from '~/composables/minutes/useMeetingStore'
-import { meetingEditorKey } from '~/composables/minutes/meetingEditorKey'
+import { useMeeting2Store } from '~/composables/meeting/useMeeting2Store'
+import { meetingEditorKey } from '~/composables/meeting/meetingEditorKey'
 
-const { currentMeeting, openTemplateSelectModal, handleRegenerateMinutes, handleSaveMeeting } = useMeetingStore()
+const { currentMeeting, openTemplateSelectModal, handleRegenerateMinutes, handleSaveMeeting } = useMeeting2Store()
 
 // ===== 본문 자동 저장 (디바운스 800ms) =====
 const isAutoSaving = ref(false)

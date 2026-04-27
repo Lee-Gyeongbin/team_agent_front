@@ -34,9 +34,9 @@
 </template>
 
 <script setup lang="ts">
-import { useMeetingStore } from '~/composables/minutes/useMeetingStore'
+import { useMeeting2Store } from '~/composables/meeting/useMeeting2Store'
 
-const { currentMeeting, recordStatus } = useMeetingStore()
+const { currentMeeting, recordStatus } = useMeeting2Store()
 
 const selectedLanguage = ref('ko')
 

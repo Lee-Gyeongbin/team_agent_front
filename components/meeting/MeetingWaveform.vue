@@ -13,9 +13,9 @@
 </template>
 
 <script setup lang="ts">
-import { useMeetingStore } from '~/composables/minutes/useMeetingStore'
+import { useMeeting2Store } from '~/composables/meeting/useMeeting2Store'
 
-const { recordStatus } = useMeetingStore()
+const { recordStatus } = useMeeting2Store()
 
 // 🔽 더미 — 백엔드에서 WebSocket으로 audio level 데이터 받기로 결정
 //    실제 연동 시: 백엔드가 push하는 levels 배열을 bars.value에 그대로 할당

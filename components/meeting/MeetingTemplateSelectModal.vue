@@ -23,9 +23,9 @@
 </template>
 
 <script setup lang="ts">
-import { useMeetingStore } from '~/composables/minutes/useMeetingStore'
+import { useMeeting2Store } from '~/composables/meeting/useMeeting2Store'
 
-const { isTemplateSelectOpen, currentMeeting, handleSelectTemplate } = useMeetingStore()
+const { isTemplateSelectOpen, currentMeeting, handleSelectTemplate } = useMeeting2Store()
 
 // 🔽 더미 — 실제 템플릿은 후속 (관리자 페이지에서 등록 예정)
 const templates = [{ id: 'default', name: '기본 템플릿', description: '회의 개요 / 논의 내용 / 실행 계획 / 다음 회의' }]

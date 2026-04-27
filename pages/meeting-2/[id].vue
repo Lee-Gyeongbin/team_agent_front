@@ -120,10 +120,13 @@
 </template>
 
 <script setup lang="ts">
-import { useMeetingStore } from '~/composables/minutes/useMeetingStore'
+import { useMeeting2Store } from '~/composables/meeting/useMeeting2Store'
+
+// 라우트는 /meeting-2/:id로 노출 (다른팀 /meeting과 분리)
+definePageMeta({ path: '/meeting-2/:id' })
 
 const route = useRoute()
-const { currentMeeting, handleSelectMeetingDetail, handleResetRecord, handleSaveMeeting } = useMeetingStore()
+const { currentMeeting, handleSelectMeetingDetail, handleResetRecord, handleSaveMeeting } = useMeeting2Store()
 
 // 제목 인라인 편집
 const isEditingTitle = ref(false)
@@ -227,6 +230,6 @@ const onResizeStart = (target: 'left' | 'right', e: MouseEvent) => {
 }
 
 const onClickBack = () => {
-  navigateTo('/minutes')
+  navigateTo('/meeting-2')
 }
 </script>

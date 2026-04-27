@@ -28,9 +28,9 @@
 </template>
 
 <script setup lang="ts">
-import { useMeetingStore } from '~/composables/minutes/useMeetingStore'
+import { useMeeting2Store } from '~/composables/meeting/useMeeting2Store'
 
-const { handleOpenFileSave, handleShareMeeting, handleOpenMailSend } = useMeetingStore()
+const { handleOpenFileSave, handleShareMeeting, handleOpenMailSend } = useMeeting2Store()
 
 const onClickDownload = () => handleOpenFileSave()
 const onClickShare = () => handleShareMeeting()

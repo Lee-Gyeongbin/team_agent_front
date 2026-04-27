@@ -34,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import type { MeetingStep, MeetingStepKey, MeetingStepStatus } from '~/types/meeting'
+import type { MeetingStep, MeetingStepKey, MeetingStepStatus } from '~/types/meeting2'
 
 interface Props {
   steps: MeetingStep[]

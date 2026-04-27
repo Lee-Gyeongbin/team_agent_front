@@ -1,4 +1,4 @@
-import { useMeetingApi } from '~/composables/minutes/useMeetingApi'
+import { useMeeting2Api } from '~/composables/meeting/useMeeting2Api'
 import type {
   Meeting,
   MeetingSpeaker,
@@ -6,7 +6,7 @@ import type {
   MeetingRecipient,
   MeetingUser,
   MeetingFileSaveForm,
-} from '~/types/meeting'
+} from '~/types/meeting2'
 
 const {
   fetchMeetingList,
@@ -18,7 +18,7 @@ const {
   fetchSttDummy,
   fetchSearchUsers,
   fetchMatchUsersByNames,
-} = useMeetingApi()
+} = useMeeting2Api()
 
 // ===== 상태 =====
 const meetingList = ref<Meeting[]>([])
@@ -313,7 +313,7 @@ const handleShareMeeting = () => {
   openToast({ message: '공유 링크가 복사되었습니다.' })
 }
 
-export const useMeetingStore = () => {
+export const useMeeting2Store = () => {
   return {
     // 상태
     meetingList,

@@ -71,10 +71,13 @@
 </template>
 
 <script setup lang="ts">
-import { useMeetingStore } from '~/composables/minutes/useMeetingStore'
-import type { MeetingStep } from '~/types/meeting'
+import { useMeeting2Store } from '~/composables/meeting/useMeeting2Store'
+import type { MeetingStep } from '~/types/meeting2'
 
-const { meetingList, handleSelectMeetingList, handleSaveMeeting, handleDeleteMeeting } = useMeetingStore()
+// 라우트는 /meeting-2로 노출 (다른팀 /meeting과 분리)
+definePageMeta({ path: '/meeting-2' })
+
+const { meetingList, handleSelectMeetingList, handleSaveMeeting, handleDeleteMeeting } = useMeeting2Store()
 
 const searchKeyword = ref('')
 
@@ -104,11 +107,11 @@ const onClickNew = async () => {
   // 응답으로 받은 신규 회의의 id로 이동 (정렬/페이지네이션 영향 X)
   const created = await handleSaveMeeting({})
   if (!created?.id) return
-  navigateTo(`/minutes/${created.id}`)
+  navigateTo(`/meeting-2/${created.id}`)
 }
 
 const onClickCard = (id: string) => {
-  navigateTo(`/minutes/${id}`)
+  navigateTo(`/meeting-2/${id}`)
 }
 
 const doDelete = async (id: string) => {

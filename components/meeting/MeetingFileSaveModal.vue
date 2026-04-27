@@ -55,10 +55,10 @@
 </template>
 
 <script setup lang="ts">
-import { useMeetingStore } from '~/composables/minutes/useMeetingStore'
-import type { MeetingFileFormat, MeetingFileSaveForm } from '~/types/meeting'
+import { useMeeting2Store } from '~/composables/meeting/useMeeting2Store'
+import type { MeetingFileFormat, MeetingFileSaveForm } from '~/types/meeting2'
 
-const { isFileSaveOpen, currentMeeting, doSaveFile } = useMeetingStore()
+const { isFileSaveOpen, currentMeeting, doSaveFile } = useMeeting2Store()
 
 const formats: MeetingFileFormat[] = ['docx', 'pdf', 'hwp', 'txt', 'md']
 

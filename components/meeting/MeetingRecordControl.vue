@@ -59,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { useMeetingStore } from '~/composables/minutes/useMeetingStore'
+import { useMeeting2Store } from '~/composables/meeting/useMeeting2Store'
 
 const {
   recordStatus,
@@ -69,7 +69,7 @@ const {
   handlePauseRecord,
   handleStopRecord,
   handleResetRecord,
-} = useMeetingStore()
+} = useMeeting2Store()
 
 const formattedTime = computed(() => {
   const total = elapsedSeconds.value

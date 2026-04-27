@@ -102,11 +102,11 @@
 </template>
 
 <script setup lang="ts">
-import { useMeetingStore } from '~/composables/minutes/useMeetingStore'
-import type { MeetingRecipient, MeetingUser } from '~/types/meeting'
+import { useMeeting2Store } from '~/composables/meeting/useMeeting2Store'
+import type { MeetingRecipient, MeetingUser } from '~/types/meeting2'
 
 const { isMailSendOpen, currentMeeting, mailInitialRecipients, userSearchResults, handleSearchUsers, doSendMail } =
-  useMeetingStore()
+  useMeeting2Store()
 
 const recipients = ref<MeetingRecipient[]>([])
 const searchKeyword = ref('')
