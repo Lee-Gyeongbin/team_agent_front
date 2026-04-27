@@ -7,8 +7,9 @@
       <span class="meeting2-panel-title"> 자동 생성된 회의록 </span>
       <div class="meeting2-panel-actions">
         <UiButton
+          class="meeting2-panel-action-btn"
           variant="line-secondary"
-          size="sm"
+          size="xs"
           @click="onClickTemplate"
         >
           <template #icon-left>
@@ -17,8 +18,9 @@
           템플릿 선택
         </UiButton>
         <UiButton
+          class="meeting2-panel-action-btn"
           variant="primary-line"
-          size="sm"
+          size="xs"
           @click="onClickRegenerate"
         >
           <template #icon-left>
@@ -345,10 +347,7 @@ onBeforeUnmount(() => {
     clearTimeout(autoSaveTimer)
     autoSaveTimer = null
     if (currentMeeting.value && editor.value) {
-      handleSaveMeeting(
-        { id: currentMeeting.value.id, minutesContent: editor.value.getHTML() },
-        { silent: true },
-      )
+      handleSaveMeeting({ id: currentMeeting.value.id, minutesContent: editor.value.getHTML() }, { silent: true })
     }
   }
   editor.value?.destroy()
