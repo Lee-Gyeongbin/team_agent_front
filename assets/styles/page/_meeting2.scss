@@ -144,7 +144,8 @@
   align-items: center;
   gap: 6px;
   min-width: 0;
-  flex: 1 1 auto;
+  flex: 0 1 auto; // 자식 폭만큼만 (헤더 전체 차지 X)
+  max-width: 100%;
 }
 
 .meeting-detail-title {
