@@ -31,6 +31,8 @@
         <span class="meeting2-label">목적</span>
         <UiTextarea
           v-model="form.purpose"
+          border
+          size="sm"
           :rows="3"
           placeholder="회의 목적을 입력해주세요."
         />
