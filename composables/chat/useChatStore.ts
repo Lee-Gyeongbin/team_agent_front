@@ -1,5 +1,12 @@
 // 타입 선언
-import type { ChatLogListRow, ChatRefRow, PanelType, SearchModeValue, VisualizationViewModel } from '~/types/chat'
+import type {
+  ChatLogListRow,
+  ChatRefRow,
+  LunchAgentFormPayload,
+  PanelType,
+  SearchModeValue,
+  VisualizationViewModel,
+} from '~/types/chat'
 import type { Agent } from '~/types/agent'
 import { openToast } from '~/composables/useToast'
 import { useChatSocket } from '~/composables/chat/useChatSocket'
@@ -7,6 +14,13 @@ import { useChatMessages } from '~/composables/chat/useChatMessages'
 import { useChatSearchState } from '~/composables/chat/useChatSearchState'
 import { useChatSendPipeline } from '~/composables/chat/useChatSendPipeline'
 import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
+import {
+  usePsychologySurvey,
+  createSurveyMessage,
+  buildDiagnosticPrompt,
+  parseSurveyAnswersFromPrompt,
+} from '~/utils/chat/psychologyConsultUtil'
+import { buildLunchRecommendationPrompt, createLunchCardMessage } from '~/utils/chat/lunchAgentUtil'
 import { clearBodyChartFullscreen } from '~/utils/chat/visualizationChartUtil'
 import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
 import { getCodes } from '~/utils/global/comCodesUtil'
@@ -21,6 +35,14 @@ function agentTypeToSearchMode(svcTy: string): SearchModeValue | null {
 
 const { messages } = useChatSocket()
 const { logRowToMessages, getMessagesForVisualization } = useChatMessages()
+const {
+  openPsychologySurvey,
+  closePsychologySurvey,
+  isSurveyRoom,
+  surveyAnswers,
+  registerSurveyRoom,
+  isSurveyVisible,
+} = usePsychologySurvey()
 const {
   activeSearchModes,
   selectedChatAgentId,
@@ -47,16 +69,45 @@ const {
 const { executeSendPipeline } = useChatSendPipeline()
 const { handleViewFileUrl } = useFileStore()
 
+/**
+ * 설문 채팅방에서는 첫 번째 question 메시지(진단 프롬프트)를 숨긴 메시지 목록
+ * - 일반 채팅방은 messages 그대로 반환
+ * - hiddenFromDisplay 플래그가 설정된 메시지는 항상 숨김 (기존 채팅방에서 설문 재실행 시)
+ */
+const messagesForDisplay = computed(() => {
+  let base = messages.value
+  if (isSurveyRoom(chatRoom.value.roomId)) {
+    let surveyPromptHidden = false
+    base = messages.value.filter((m) => {
+      if (m.type === 'question' && !surveyPromptHidden) {
+        const parsed = parseSurveyAnswersFromPrompt(m.qContent ?? '')
+        const isSurveyPrompt = Object.keys(parsed).length === 25
+        if (isSurveyPrompt) {
+          surveyPromptHidden = true
+          return false
+        }
+      }
+      return true
+    })
+  }
+  return base.filter((m) => !m.hiddenFromDisplay)
+})
+
 // API 호출
-const { fetchSelectChatLogList, fetchSelectChatRef, fetchSelectTableDataList, fetchSelectAgentListForChat } =
-  useChatApi()
+const {
+  fetchSelectChatLogList,
+  fetchSelectChatRef,
+  fetchSelectTableDataList,
+  fetchSelectAgentListForChat,
+  fetchSelectDmList,
+} = useChatApi()
 
 /** /chat 인덱스용 에이전트 목록 */
 const chatIndexAgents = ref<Agent[]>([])
 const isLoadingChatIndexAgents = ref(true)
 const normalizeChatAgents = (list: Agent[]) =>
   list
-    .filter((a) => a.useYn === 'Y' && (a.svcTy === 'M' || a.svcTy === 'S' || a.svcTy === 'T'))
+    .filter((a) => a.useYn === 'Y' && (a.svcTy === 'M' || a.svcTy === 'S' || a.svcTy === 'T' || a.svcTy === 'C'))
     .sort((a, b) => a.sortOrd - b.sortOrd)
 
 const selectedLogId = ref<string | null>(null)
@@ -67,18 +118,21 @@ const activePanelMessageId = ref<string | null>(null)
 const pdfRefList = ref<ChatRefRow[]>([])
 const chatPdfFileUrlMap = ref<Record<string, string>>({})
 const visualizationViewMap = ref<Record<string, VisualizationViewModel>>({})
+const pendingLunchCardRoomId = ref('')
 
 // 좋아요/싫어요 모달 상태
 const isModalOpen = ref(false)
 const modalMessage = ref('')
 const modalTitle = ref('')
 const modalPlaceholder = ref('')
+const lastLunchSentAt = ref('')
 
 /** /chat 인덱스 에이전트 카드 서브타이틀 — svcTy 기반 */
 const SVC_TY_SUB_LABEL: Record<string, string> = {
   M: '문서검색증강(RAG) Agent',
   S: '검색모드-to-SQL Agent',
   T: '실시간 음성인식(STT) Agent',
+  C: '일반 채팅 Agent',
 }
 const getChatIndexAgentSubLabel = (agent: Agent) => SVC_TY_SUB_LABEL[agent.svcTy] ?? ''
 
@@ -93,6 +147,11 @@ const getChatIndexAgentColorStyle = (colorHex: string) => {
     '--card-icon-color': colorHex,
     '--card-icon-bg': `rgba(${hexToRgb(colorHex)}, 0.12)`,
   }
+}
+
+const shouldShowLunchCard = (row: ChatLogListRow) => {
+  const raw = row.lunchSelectCardDisplayYn
+  return typeof raw === 'string' && raw.toUpperCase() === 'Y'
 }
 
 export const useChatStore = () => {
@@ -159,6 +218,19 @@ export const useChatStore = () => {
     const flattened = rawList.flatMap(logRowToMessages)
     // 메시지 정렬
     flattened.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    const lunchSeedRow = [...rawList].reverse().find(shouldShowLunchCard)
+    const normalizedRoomId = normalizeChatRoomId(roomId)
+    const shouldShowFromDmFlag = normalizedRoomId !== '' && pendingLunchCardRoomId.value === normalizedRoomId
+    if (lunchSeedRow || shouldShowFromDmFlag) {
+      const lunchCardMessage = createLunchCardMessage({
+        createdAt: lunchSeedRow?.createDt ?? new Date().toISOString(),
+        svcTy: lunchSeedRow?.svcTy ?? 'C',
+        refId: typeof lunchSeedRow?.refId === 'string' ? lunchSeedRow.refId : '',
+        agentId: typeof lunchSeedRow?.agentId === 'string' ? lunchSeedRow.agentId : (selectedChatAgentId.value ?? ''),
+      })
+      flattened.push(lunchCardMessage)
+      if (shouldShowFromDmFlag) pendingLunchCardRoomId.value = ''
+    }
     // 메시지 설정
     messages.value = flattened
     // 검색모드·서브옵션 동기화
@@ -181,6 +253,130 @@ export const useChatStore = () => {
     })
     if (sent) chatMessage.value = ''
     return sent
+  }
+
+  /**
+   * 설문 진단 프롬프트 전송 — question 메시지를 화면에 노출하지 않는다.
+   * @param content - 전송할 프롬프트 문자열
+   * @param surveyMessageLogId - 제출 완료로 전환할 survey 메시지 logId (있으면 surveySubmitted=true로 갱신)
+   */
+  const onSendSurvey = async (content: string, surveyMessageLogId?: string): Promise<boolean> => {
+    if (!content.trim() || isSearchModeMissingSubOptions.value || !chatRoom.value.roomId) return false
+
+    // 설문 메시지를 제출 완료 상태로 전환
+    if (surveyMessageLogId) {
+      const surveyMsg = messages.value.find((m) => m.logId === surveyMessageLogId && m.type === 'survey')
+      if (surveyMsg) {
+        surveyMsg.surveyAnswers = { ...surveyAnswers.value }
+        surveyMsg.surveySubmitted = true
+      }
+    }
+
+    const prevLen = messages.value.length
+    const sent = await executeSendPipeline({
+      content: content.trim(),
+      roomId: chatRoom.value.roomId,
+      svcTy: resolveSvcTy(),
+      modelId: selectedModelOption.value,
+      refId: buildRefIdForPayload(),
+      agentId: selectedChatAgentId.value ?? '',
+      files: [],
+    })
+    if (sent) {
+      const newQuestion = messages.value.slice(prevLen).find((m) => m.type === 'question')
+      if (newQuestion) newQuestion.hiddenFromDisplay = true
+      selectedChatAgentId.value = null
+    }
+    return sent
+  }
+
+  /** 메시지 목록 내 설문 컴포넌트 제출 — 진단 프롬프트 빌드 후 전송 */
+  const onSurveyMessageSubmit = async (logId: string): Promise<boolean> => {
+    const prompt = buildDiagnosticPrompt(surveyAnswers.value)
+    return await onSendSurvey(prompt, logId)
+  }
+
+  /**
+   * index.vue에서 설문 제출 후 새 채팅방 진입 시 설문 컴포넌트를 메시지 목록 앞에 주입
+   * - question 메시지는 hiddenFromDisplay=true로 숨김
+   */
+  const addInlineSurveyMessage = (answers: Record<number, number>) => {
+    const surveyMsg = createSurveyMessage(answers, true)
+    const msgs = [...messages.value]
+    const firstQ = msgs.find((m) => m.type === 'question')
+    if (firstQ) firstQ.hiddenFromDisplay = true
+    messages.value = [surveyMsg, ...msgs]
+  }
+
+  const handleCloseLunchAgentForm = (lunchMessageLogId?: string) => {
+    if (!lunchMessageLogId) {
+      messages.value = messages.value.filter((m) => m.uiType !== 'lunch-card')
+      return
+    }
+    selectedChatAgentId.value = null
+    messages.value = messages.value.filter((m) => m.logId !== lunchMessageLogId)
+  }
+
+  /**
+   * 점심 추천 프롬프트 전송 — question 메시지를 화면에 노출하지 않는다.
+   * @param content - 전송할 프롬프트 문자열
+   * @param lunchMessageLogId - 제출 완료로 전환할 lunch-card 메시지 logId
+   * @param payload - readonly 카드에 표시할 사용자 응답 데이터
+   */
+  const onSendLunch = async (
+    content: string,
+    lunchMessageLogId?: string,
+    payload?: LunchAgentFormPayload,
+  ): Promise<boolean> => {
+    if (!content.trim() || isSearchModeMissingSubOptions.value || !chatRoom.value.roomId) return false
+
+    const markLunchSubmitted = () => {
+      if (!lunchMessageLogId) return
+      const lunchMsg = messages.value.find((m) => m.logId === lunchMessageLogId && m.uiType === 'lunch-card')
+      if (!lunchMsg) return
+      lunchMsg.lunchFormPayload = payload ? { ...payload } : lunchMsg.lunchFormPayload
+      lunchMsg.lunchSubmitted = true
+    }
+    markLunchSubmitted()
+
+    const prevLen = messages.value.length
+    const sent = await executeSendPipeline({
+      content: content.trim(),
+      roomId: chatRoom.value.roomId,
+      svcTy: 'C',
+      modelId: selectedModelOption.value,
+      refId: buildRefIdForPayload(),
+      agentId: selectedChatAgentId.value ?? '',
+      files: [],
+    })
+    if (sent) {
+      const newQuestion = messages.value.slice(prevLen).find((m) => m.type === 'question')
+      if (newQuestion) newQuestion.hiddenFromDisplay = true
+    }
+    return sent
+  }
+
+  const handleSubmitLunchAgentForm = async (logId: string, payload: LunchAgentFormPayload) => {
+    const content = buildLunchRecommendationPrompt(payload)
+    const sentAt = new Date().toISOString()
+    let sent = false
+    if (!chatRoom.value.roomId) {
+      sent = await createChatRoom(content)
+      if (sent) {
+        const newQuestion = [...messages.value].reverse().find((m) => m.type === 'question')
+        if (newQuestion) newQuestion.hiddenFromDisplay = true
+        const lunchMsg = messages.value.find((m) => m.logId === logId && m.uiType === 'lunch-card')
+        if (lunchMsg) {
+          lunchMsg.lunchFormPayload = { ...payload }
+          lunchMsg.lunchSubmitted = true
+        }
+      }
+    } else {
+      sent = await onSendLunch(content, logId, payload)
+    }
+    if (!sent) return
+    selectedChatAgentId.value = null
+    lastLunchSentAt.value = sentAt
   }
 
   const getEmptyVisualizationViewModel = (messageId: string): VisualizationViewModel => ({
@@ -305,11 +501,66 @@ export const useChatStore = () => {
     visualizationViewMap.value = {}
   }
 
+  const handleSelectChatIndexAgentForC = async (agent: Agent) => {
+    const isDeselecting = selectedChatAgentId.value === agent.agentId && activeSearchModes.value.length === 0
+    if (isDeselecting) {
+      selectedChatAgentId.value = null
+      messages.value = messages.value.filter((m) => m.uiType !== 'lunch-card')
+    } else {
+      selectedChatAgentId.value = agent.agentId
+    }
+    activeSearchModes.value = []
+    subOptions.value = []
+    await selectModelOptions()
+    if (isDeselecting) return
+
+    const dmRes = await fetchSelectDmList(agent.agentId, String(chatRoom.value.roomId ?? ''))
+    const lunchFlag = String(dmRes.data?.lunchSelectCardDisplayYn ?? '').toUpperCase()
+    if (lunchFlag !== 'Y') return
+
+    const responseRoomId = normalizeChatRoomId(String(dmRes.data?.roomId ?? ''))
+    if (!responseRoomId) return
+
+    pendingLunchCardRoomId.value = responseRoomId
+    if (normalizeChatRoomId(chatRoom.value.roomId) !== responseRoomId) {
+      await navigateTo(`/chat/${responseRoomId}`)
+      return
+    }
+    await handleSelectChatLogList(responseRoomId, { preserveLocalWhenEmpty: false })
+  }
+
   /** 에이전트 관리 목록 기준 모드 선택 (/chat 인덱스 버튼) — 동일 모드 여러 에이전트 간 전환 지원 */
   const selectChatIndexAgent = async (agent: Agent) => {
     if (agent.svcTy === 'T') {
       // 회의록 에이전트 → 내부 회의 페이지로 이동
       await navigateTo('/meeting')
+      return
+    }
+
+    if (agent.agentId === 'AG000010') {
+      // 산업심리 상담 에이전트 — 에이전트 모드 상태 초기화
+      activeSearchModes.value = []
+      subOptions.value = []
+      selectedChatAgentId.value = agent.agentId
+      await selectModelOptions()
+
+      if (chatRoom.value.roomId) {
+        // 채팅방 내부: 이미 활성 설문 메시지가 있으면 중복 추가하지 않음
+        const alreadyHasSurvey = messages.value.some((m) => m.type === 'survey' && !m.surveySubmitted)
+        if (!alreadyHasSurvey) {
+          surveyAnswers.value = {}
+          const surveyMsg = createSurveyMessage({}, false)
+          messages.value = [...messages.value, surveyMsg]
+        }
+      } else {
+        // 최초화면(/chat index): 기존처럼 isSurveyVisible로 인라인 표시
+        openPsychologySurvey()
+      }
+      return
+    }
+
+    if (agent.svcTy === 'C') {
+      await handleSelectChatIndexAgentForC(agent)
       return
     }
     const mode = agentTypeToSearchMode(agent.svcTy)
@@ -333,6 +584,31 @@ export const useChatStore = () => {
         await selectDmList()
       }
     }
+  }
+
+  /**
+   * 설문 닫기 — 에이전트 선택 상태를 초기화하고 설문을 닫는다
+   * @param surveyMessageLogId - 제거할 survey 메시지 logId (없으면 메시지 목록 그대로)
+   */
+  const handleClosePsychologySurvey = (surveyMessageLogId?: string) => {
+    selectedChatAgentId.value = null
+    closePsychologySurvey()
+    if (surveyMessageLogId) {
+      messages.value = messages.value.filter((m) => m.logId !== surveyMessageLogId)
+    }
+  }
+
+  /** /chat 인덱스에서 설문 제출 — 방 생성·인라인 주입·등록·닫기 */
+  const handleIndexSurveySubmit = async (): Promise<boolean> => {
+    const prompt = buildDiagnosticPrompt(surveyAnswers.value)
+    const answers = { ...surveyAnswers.value }
+    const sent = await createChatRoom(prompt)
+    if (sent) {
+      addInlineSurveyMessage(answers)
+      registerSurveyRoom(chatRoom.value.roomId)
+      handleClosePsychologySurvey()
+    }
+    return sent
   }
 
   const activeVisualizationView = computed(() => {
@@ -381,7 +657,7 @@ export const useChatStore = () => {
   return {
     // 상태
     chatRoom,
-    messages,
+    messages: messagesForDisplay,
     activePanelType,
     isPanelFullscreen,
     activePanelMessageId,
@@ -400,13 +676,22 @@ export const useChatStore = () => {
     buildRefIdForPayload,
     selectedModelOption,
     knowledgeList,
+    lastLunchSentAt,
     isSearchModeMissingSubOptions,
     searchModeSubOptionsEmptyMessage,
+    isSurveyVisible,
     // 액션
     createChatRoom,
     handleSelectChatLogList,
     onSend,
+    onSendSurvey,
+    onSurveyMessageSubmit,
+    handleIndexSurveySubmit,
+    addInlineSurveyMessage,
+    handleSubmitLunchAgentForm,
+    handleCloseLunchAgentForm,
     selectChatIndexAgent,
+    handleClosePsychologySurvey,
     handleSelectChatIndexAgents,
     // 패널
     onViewSource,

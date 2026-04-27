@@ -7,6 +7,7 @@
     <button
       v-if="selectedAgent"
       class="chat-search-mode-tag"
+      :disabled="disabled"
       @click="onRemove"
     >
       <i :class="[selectedAgent.iconClassNm ? selectedAgent.iconClassNm : 'icon-search', 'size-20']" />
@@ -19,6 +20,7 @@
       v-if="activeSearchModes.length === 0 && !isChatIndex"
       class="chat-search-mode-trigger"
       :class="{ 'is-open': isOpen }"
+      :disabled="disabled"
       @click="toggleDropdown"
     >
       <i class="icon-search size-20" />
@@ -37,6 +39,7 @@
       size="xlg"
       placeholder="참조 선택"
       class="w-155 ref-select"
+      :disabled="disabled"
       @update:model-value="onSubOptionsMultiChange"
     />
 
@@ -99,6 +102,14 @@
 <script setup lang="ts">
 import type { Agent } from '~/types/agent'
 
+interface Props {
+  disabled?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  disabled: false,
+})
+
 const {
   activeSearchModes,
   selectChatIndexAgent,
@@ -109,6 +120,8 @@ const {
   subOptions,
   selectedSubOptions,
 } = useChatStore()
+
+const disabled = computed(() => props.disabled)
 
 /** UiMultiSelect 전용 — API refId와 겹치지 않게 긴 sentinel 사용 */
 const SUB_OPTION_ALL_KEY = '__chat_sub_option_select_all__'
@@ -129,6 +142,7 @@ const subOptionsUiModel = computed(() => {
 })
 
 const onSubOptionsMultiChange = (next: Array<string | number>) => {
+  if (disabled.value) return
   const n = next.map(String)
   const reals = subOptionRealIds.value
   const prev = subOptionsUiModel.value.map(String)
@@ -153,19 +167,26 @@ const dropdownRef = ref<HTMLElement | null>(null)
 
 const selectedAgent = computed(() => {
   if (!selectedChatAgentId.value) return null
+  if (selectedChatAgentId.value === 'AG000010') return null
   return chatIndexAgents.value.find((a) => a.agentId === selectedChatAgentId.value) ?? null
 })
 const isSearchModeActive = computed(() => activeSearchModes.value.length > 0)
 
 const isChatIndex = computed(() => route.path === '/chat')
 
+watch(disabled, (nextDisabled) => {
+  if (nextDisabled) isOpen.value = false
+})
+
 const toggleDropdown = () => {
+  if (disabled.value) return
   if (isChatIndex.value) return
   isOpen.value = !isOpen.value
 }
 
 const onSelect = (agent: Agent) => {
-  if (selectedChatAgentId.value === agent.agentId) {
+  if (disabled.value) return
+  if (selectedChatAgentId.value === agent.agentId && agent.agentId !== 'AG000010') {
     isOpen.value = false
     return
   }
@@ -174,6 +195,7 @@ const onSelect = (agent: Agent) => {
 }
 
 const onRemove = () => {
+  if (disabled.value) return
   if (!selectedAgent.value) return
   selectChatIndexAgent(selectedAgent.value)
 }

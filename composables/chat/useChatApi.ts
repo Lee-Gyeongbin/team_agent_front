@@ -13,6 +13,7 @@ import type {
   ChatFileSavePayload,
   ChatFileSaveResponse,
   ChatFileViewResponse,
+  DmListResponse,
 } from '~/types/chat'
 import type { Agent } from '~/types/agent'
 import type { FileMeta, FileUploadResponse } from '~/types/file'
@@ -36,8 +37,9 @@ export const useChatApi = () => {
     return get<{ subOptionList: SubOption[] }>(`/ai/chatbot/selectRagDsList.do?agentId=${encodeURIComponent(agentId)}`)
   }
   // 데이터마트 조회 (에이전트별)
-  const fetchSelectDmList = async (agentId: string): Promise<{ subOptionList: SubOption[] }> => {
-    return get<{ subOptionList: SubOption[] }>(`/ai/chatbot/selectDmList.do?agentId=${encodeURIComponent(agentId)}`)
+  const fetchSelectDmList = async (agentId: string, roomId?: string): Promise<DmListResponse> => {
+    const roomQuery = roomId?.trim() ? `&roomId=${encodeURIComponent(roomId)}` : ''
+    return get<DmListResponse>(`/ai/chatbot/selectDmList.do?agentId=${encodeURIComponent(agentId)}${roomQuery}`)
   }
   // CHAT 대화방 등록
   const fetchCreateChatRoom = async (content: string, svcTy: string): Promise<{ data: ChatRoom }> => {
@@ -134,6 +136,7 @@ export const useChatApi = () => {
   const fetchCloneChatRoom = async (sourceRoomId: string): Promise<{ data: ChatRoom }> => {
     return post<{ data: ChatRoom }>('/ai/chatbot/cloneChatRoom.do', { sourceRoomId })
   }
+
   return {
     fetchSelectAgentListForChat,
     fetchSelectChatRoomList,

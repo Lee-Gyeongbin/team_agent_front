@@ -81,7 +81,7 @@ export interface ChatSocketMessage {
 export interface ChatMessage {
   id?: string
   logId: string
-  type: 'question' | 'answer'
+  type: 'question' | 'answer' | 'survey'
   qContent?: string
   rContent?: string
   createdAt: string
@@ -112,6 +112,18 @@ export interface ChatMessage {
   attachments?: ChatMessageAttachment[]
   /** Web 검색/그라운딩 출처 (answer_source 스트리밍 청크로 수신) */
   groundingSources?: ChatGroundingSourceItem[]
+  /** 클라이언트 전용: 설문 진단 프롬프트 등 화면에 노출하지 않을 메시지 */
+  hiddenFromDisplay?: boolean
+  /** 산업심리 설문 메시지(type=survey) 전용: 사용자 응답 */
+  surveyAnswers?: Record<number, number>
+  /** 산업심리 설문 메시지(type=survey) 전용: 제출 완료 여부 */
+  surveySubmitted?: boolean
+  /** 점심 추천 카드(uiType=lunch-card) 전용: 사용자 응답 */
+  lunchFormPayload?: LunchAgentFormPayload
+  /** 점심 추천 카드(uiType=lunch-card) 전용: 제출 완료 여부 */
+  lunchSubmitted?: boolean
+  /** 답변 말풍선 내 특수 UI 렌더 타입 */
+  uiType?: 'lunch-card'
   [key: string]: unknown
 }
 
@@ -161,6 +173,42 @@ export interface SearchModeOption {
 export interface SubOption {
   label: string
   value: string
+}
+
+export interface LunchCardMeta {
+  lunchSelectCardDisplayYn?: string
+  rcontent?: string
+  logId?: string | number
+  refId?: string
+  svcTy?: string
+  createDt?: string
+  agentId?: string
+  roomId?: string | number
+  roomTitle?: string
+  [key: string]: unknown
+}
+
+export interface DmListResponse {
+  subOptionList?: SubOption[]
+  data?: LunchCardMeta
+  [key: string]: unknown
+}
+
+export interface LunchAgentFormPayload {
+  sido: string
+  sigungu: string
+  dong: string
+  mood: string
+  budget: string
+  peopleCount: string
+  cuisineType: string
+}
+
+export interface LunchRecommendationItem {
+  restaurant: string
+  location: string
+  menu: string
+  price: string
 }
 
 export interface ChatRoom {

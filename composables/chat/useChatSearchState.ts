@@ -10,9 +10,14 @@ const selectedSubOptions = ref<string[]>(['all'])
 
 /** 소켓/API용 refId: 다중 선택 시 콤마로 연결 (백엔드가 단일 문자열 필드 사용) */
 const buildRefIdForPayload = (): string => {
-  const list = selectedSubOptions.value
-  if (!list.length) return subOptions.value[0]?.value ?? 'all'
-  return list.map(String).join(',')
+  // 일반 채팅(C)에서는 참조 ID를 보내지 않도록 all로 고정
+  if (activeSearchModes.value.length === 0) return 'all'
+
+  const validOptionSet = new Set(subOptions.value.map((o) => String(o.value)))
+  const validSelected = selectedSubOptions.value.map(String).filter((id) => validOptionSet.has(id))
+
+  if (!validSelected.length) return subOptions.value[0]?.value ?? 'all'
+  return validSelected.join(',')
 }
 const modelOptions = ref<ModelOption[]>([])
 const selectedModelOption = ref<string>('all')

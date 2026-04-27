@@ -83,13 +83,26 @@
         <div class="library-archive-card-body">
           <!-- 사용자 질문 -->
           <div class="content-box type-question">
-            <p>{{ item.qcontent }}</p>
+            <ChatPsychologySurvey
+              v-if="isPsychologySurveyCard(item)"
+              class="library-archive-survey-readonly"
+              readonly
+              :initial-answers="parseSurveyAnswersFromPrompt(item.qcontent ?? '')"
+              :theme-icon-class-nm="item.iconClassNm ?? ''"
+              :theme-color-hex="item.colorHex ?? ''"
+            />
+            <p v-else>{{ item.qcontent }}</p>
           </div>
 
           <!-- 시스템 응답 -->
           <div class="content-box type-response">
+            <ChatLunchAgentCard
+              v-if="parseLunchRecommendations(item.rcontent ?? '').length"
+              :recommendations="parseLunchRecommendations(item.rcontent ?? '')"
+            />
             <!-- eslint-disable vue/no-v-html — toHtmlContent 내 안전 처리 적용 -->
             <div
+              v-else
               class="message-content markdown-body"
               v-html="toHtmlContent(item.rcontent ?? '')"
             ></div>
@@ -112,6 +125,8 @@
 
 <script setup lang="ts">
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
+import { parseSurveyAnswersFromPrompt } from '~/utils/chat/psychologyConsultUtil'
+import type { LunchRecommendationItem } from '~/types/chat'
 import type { LibraryCardDetail } from '~/types/library'
 const { archiveCardList } = useLibraryStore()
 
@@ -119,7 +134,7 @@ interface Props {
   isOpen?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   isOpen: false,
 })
 
@@ -141,6 +156,17 @@ const filteredArchiveCardList = computed(() => {
     return title.includes(keyword) || qcontent.includes(keyword)
   })
 })
+
+const isPsychologySurveyCard = (item: LibraryCardDetail) => item.agentId === 'AG000010'
+const parseLunchRecommendations = (raw: string): LunchRecommendationItem[] => {
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (!Array.isArray(parsed)) return []
+    return parsed as LunchRecommendationItem[]
+  } catch {
+    return []
+  }
+}
 
 // 스크롤 상태
 const bodyRef = ref<HTMLElement | null>(null)
@@ -177,3 +203,12 @@ const onUnarchive = (item: LibraryCardDetail) => {
   emit('unarchive', item)
 }
 </script>
+
+<style lang="scss" scoped>
+.library-archive-survey-readonly {
+  width: 100%;
+  max-width: 100%;
+  max-height: min(560px, calc(100vh - 280px));
+  overflow: hidden;
+}
+</style>

@@ -81,7 +81,7 @@ export const useChatRooms = () => {
       await selectModelOptions()
     } else {
       activeSearchModes.value = []
-      selectedChatAgentId.value = null
+      selectedChatAgentId.value = lastAgentId || null
       // 일반 질의 시 모델 옵션 조회
       await selectModelOptions()
     }
@@ -190,13 +190,13 @@ export const useChatRooms = () => {
   // 라그 데이터셋 조회
   const selectRagDsList = async () => {
     openLoading({ text: '지식 검색 옵션을 불러오는 중...' })
-    let res: { subOptionList: SubOption[] }
+    let res: { subOptionList?: SubOption[] }
     try {
       res = await fetchSelectRagDsList(selectedChatAgentId.value ?? '')
     } finally {
       closeLoading()
     }
-    subOptions.value = res.subOptionList.map((item: SubOption) => ({ label: item.label, value: item.value }))
+    subOptions.value = (res.subOptionList ?? []).map((item: SubOption) => ({ label: item.label, value: item.value }))
     const firstRag = subOptions.value[0]?.value ?? 'all'
     selectedSubOptions.value = [String(firstRag)]
     return subOptions.value
@@ -205,13 +205,13 @@ export const useChatRooms = () => {
   // 데이터마트 데이터셋 조회
   const selectDmList = async () => {
     openLoading({ text: '데이터마트 옵션을 불러오는 중...' })
-    let res: { subOptionList: SubOption[] }
+    let res: { subOptionList?: SubOption[] }
     try {
-      res = await fetchSelectDmList(selectedChatAgentId.value ?? '')
+      res = await fetchSelectDmList(selectedChatAgentId.value ?? '', String(chatRoom.value.roomId ?? ''))
     } finally {
       closeLoading()
     }
-    subOptions.value = res.subOptionList.map((item: SubOption) => ({ label: item.label, value: item.value }))
+    subOptions.value = (res.subOptionList ?? []).map((item: SubOption) => ({ label: item.label, value: item.value }))
     const first = subOptions.value[0]?.value ?? 'all'
     selectedSubOptions.value = [String(first)]
     return subOptions.value
