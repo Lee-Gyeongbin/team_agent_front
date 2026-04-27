@@ -1,11 +1,11 @@
 <template>
   <div
     class="chat-index s-center"
-    :class="{ 'is-survey-mode': isSurveyVisible }"
+    :class="{ 'is-survey-mode': isSurveyVisible || isLunchVisible }"
   >
     <!-- 헤더 (설문 모드에서 숨김) -->
     <div
-      v-if="!isSurveyVisible"
+      v-if="!isSurveyVisible && !isLunchVisible"
       class="chat-index-header"
       data-aos="fade-up"
     >
@@ -22,11 +22,19 @@
       @close="handleClosePsychologySurvey"
       @submit="handleIndexSurveySubmit"
     />
+    <ChatLunchAgentCard
+      v-if="isLunchVisible"
+      class="chat-index-survey"
+      :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? ''"
+      :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
+      @close="handleCloseIndexLunchCard"
+      @submit="handleIndexLunchSubmit"
+    />
 
     <!-- 채팅 입력창 (설문 진행 중 비활성화) -->
     <div
       class="chat-index-input-wrapper"
-      :class="{ 'is-survey-locked': isSurveyVisible }"
+      :class="{ 'is-survey-locked': isSurveyVisible || isLunchVisible }"
       data-aos="fade-up"
       data-aos-delay="200"
     >
@@ -34,7 +42,7 @@
     </div>
 
     <!-- 에이전트 카드 (설문 모드 아닐 때) -->
-    <template v-if="!isSurveyVisible">
+    <template v-if="!isSurveyVisible && !isLunchVisible">
       <div
         v-if="!isLoadingChatIndexAgents && chatIndexAgents.length > 0"
         class="chat-index-card-grp"
@@ -92,6 +100,9 @@ const {
   handleClosePsychologySurvey,
   isSurveyVisible,
   handleIndexSurveySubmit,
+  isLunchVisible,
+  handleCloseIndexLunchCard,
+  handleIndexLunchSubmit,
 } = useChatStore()
 const { startChatSocket, stopChatSocket } = useChatSocket()
 const { user } = useAuth()
@@ -106,6 +117,7 @@ onMounted(async () => {
   handleResetChatPanels()
   // 다른 메뉴 갔다 돌아올 때 설문 / 에이전트 선택 상태 초기화
   handleClosePsychologySurvey()
+  handleCloseIndexLunchCard()
   // 인덱스 진입 시점에 즉시 채팅방 상태를 초기화해
   // 비동기 로딩 완료 시점의 늦은 reset으로 인한 레이스를 방지한다.
   resetChatRoom()

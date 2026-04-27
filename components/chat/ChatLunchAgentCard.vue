@@ -18,16 +18,31 @@
           <div class="chat-lunch-agent-card__intro-avatar">
             <i :class="[themeIconClassNm || 'icon-bot', 'size-24']" />
           </div>
-          <p class="chat-lunch-agent-card__intro-title">점심 메뉴 추천 에이전트</p>
-          <p class="chat-lunch-agent-card__intro-subtitle">조건을 분석하고 있습니다...</p>
+          <p class="chat-lunch-agent-card__intro-title">
+            <span
+              v-for="(char, index) in introTitleChars"
+              :key="`intro-title-${index}`"
+              class="chat-lunch-agent-card__intro-char"
+              :style="{ '--intro-char-delay': `${index * 0.03}s` }"
+            >
+              {{ char === ' ' ? '\u00A0' : char }}
+            </span>
+          </p>
+          <p class="chat-lunch-agent-card__intro-subtitle">
+            <span
+              v-for="(char, index) in introSubtitleChars"
+              :key="`intro-subtitle-${index}`"
+              class="chat-lunch-agent-card__intro-char"
+              :style="{ '--intro-char-delay': `${0.12 + index * 0.024}s` }"
+            >
+              {{ char === ' ' ? '\u00A0' : char }}
+            </span>
+          </p>
         </div>
       </div>
     </Transition>
 
-    <div
-      v-if="isContentVisible"
-      class="chat-lunch-agent-card__header"
-    >
+    <div class="chat-lunch-agent-card__header">
       <div class="chat-lunch-agent-card__header-info">
         <div class="chat-lunch-agent-card__avatar">
           <i :class="[themeIconClassNm || 'icon-bot', 'size-24']" />
@@ -50,7 +65,7 @@
     </div>
 
     <div
-      v-if="isContentVisible && !hasResultRecommendations"
+      v-if="!hasResultRecommendations"
       class="chat-lunch-agent-card__body"
     >
       <div
@@ -158,7 +173,7 @@
     </div>
 
     <ul
-      v-if="isContentVisible && hasResultRecommendations"
+      v-if="hasResultRecommendations"
       class="chat-lunch-agent-card__result-list"
     >
       <li
@@ -188,7 +203,7 @@
     </ul>
 
     <div
-      v-if="isContentVisible && !hasResultRecommendations"
+      v-if="!hasResultRecommendations"
       class="chat-lunch-agent-card__footer"
     >
       <template v-if="props.readonly">
@@ -228,7 +243,6 @@ import {
   LUNCH_LOCATION_MAP,
   LUNCH_MOOD_OPTIONS,
   LUNCH_PEOPLE_OPTIONS,
-  getLunchAnsweredCount,
 } from '~/utils/chat/lunchAgentUtil'
 
 interface Props {
@@ -267,7 +281,8 @@ const form = reactive<LunchAgentFormPayload>({
 const recommendations = computed(() => props.recommendations ?? [])
 const hasResultRecommendations = computed(() => recommendations.value.length > 0)
 const isLocationAnswered = computed(() => !!form.sido && !!form.sigungu && !!form.dong)
-const displayAnsweredCount = computed(() => getLunchAnsweredCount(form))
+const introTitleChars = '점심 메뉴 추천 에이전트'.split('')
+const introSubtitleChars = '조건을 분석하고 있습니다...'.split('')
 
 const DEFAULT_THEME_HEX = '#3c69db'
 const hexToRgb = (hex: string) => {
@@ -337,7 +352,7 @@ watch(
   { immediate: true },
 )
 
-const getShouldPlayIntro = () => !props.readonly && !hasResultRecommendations.value && displayAnsweredCount.value === 0
+const getShouldPlayIntro = () => !props.readonly && !hasResultRecommendations.value && !props.initialPayload
 const isIntroPlaying = ref(getShouldPlayIntro())
 const isContentVisible = ref(!getShouldPlayIntro())
 let introStartTimer: ReturnType<typeof setTimeout> | null = null
@@ -414,12 +429,12 @@ const onSubmitClick = () => {
   border-radius: $border-radius-lg;
   background: #fff;
   overflow: hidden;
-  --lunch-content-opacity: 1;
-  --lunch-content-shift: 0px;
+  --lunch-content-opacity: 0;
+  --lunch-content-shift: 8px;
 
-  &.is-intro-playing {
-    --lunch-content-opacity: 0;
-    --lunch-content-shift: 8px;
+  &.is-content-visible {
+    --lunch-content-opacity: 1;
+    --lunch-content-shift: 0px;
   }
 
   &__header {
@@ -654,6 +669,12 @@ const onSubmitClick = () => {
     color: $color-text-muted;
   }
 
+  &__intro-char {
+    display: inline-block;
+    animation: lunch-intro-text-bounce 1.15s ease-in-out infinite;
+    animation-delay: var(--intro-char-delay, 0s);
+  }
+
   &.is-readonly {
     .chat-lunch-agent-card__chip-row {
       pointer-events: none;
@@ -669,5 +690,18 @@ const onSubmitClick = () => {
 .lunch-intro-enter-from,
 .lunch-intro-leave-to {
   opacity: 0;
+}
+
+@keyframes lunch-intro-text-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  35% {
+    transform: translateY(-2px);
+  }
+  65% {
+    transform: translateY(0.5px);
+  }
 }
 </style>
