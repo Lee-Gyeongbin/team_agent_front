@@ -5,30 +5,6 @@
   >
     <div class="meeting2-panel-header">
       <span class="meeting2-panel-title"> 자동 생성된 회의록 </span>
-      <div class="meeting2-panel-actions">
-        <UiButton
-          class="meeting2-panel-action-btn"
-          variant="line-secondary"
-          size="xs"
-          @click="onClickTemplate"
-        >
-          <template #icon-left>
-            <i class="icon-document size-14" />
-          </template>
-          템플릿 선택
-        </UiButton>
-        <UiButton
-          class="meeting2-panel-action-btn"
-          variant="primary-line"
-          size="xs"
-          @click="onClickRegenerate"
-        >
-          <template #icon-left>
-            <i class="icon-refresh size-14" />
-          </template>
-          AI 요약 재생성
-        </UiButton>
-      </div>
     </div>
 
     <MeetingEditorToolbar />
@@ -138,7 +114,7 @@ import { Highlight } from '@tiptap/extension-highlight'
 import { useMeeting2Store } from '~/composables/meeting/useMeeting2Store'
 import { meetingEditorKey } from '~/composables/meeting/meetingEditorKey'
 
-const { currentMeeting, openTemplateSelectModal, handleRegenerateMinutes, handleSaveMeeting } = useMeeting2Store()
+const { currentMeeting, handleSaveMeeting } = useMeeting2Store()
 
 // ===== 본문 자동 저장 (디바운스 800ms) =====
 const isAutoSaving = ref(false)
@@ -279,9 +255,6 @@ const lastSavedLabel = computed(() => {
   if (isSameDay) return `오늘 ${hhmm}`
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${hhmm}`
 })
-
-const onClickTemplate = () => openTemplateSelectModal()
-const onClickRegenerate = () => handleRegenerateMinutes()
 
 // ===== 표 floating 툴바 위치 계산 =====
 const showTableBubble = ref(false)

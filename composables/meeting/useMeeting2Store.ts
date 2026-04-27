@@ -15,7 +15,6 @@ const {
   fetchDeleteMeeting,
   fetchSaveSpeaker,
   fetchSaveSpeakers,
-  fetchSttDummy,
   fetchSearchUsers,
   fetchMatchUsersByNames,
 } = useMeeting2Api()
@@ -27,7 +26,6 @@ const recordStatus = ref<RecordStatus>('idle')
 const elapsedSeconds = ref(0)
 const selectedSpeaker = ref<MeetingSpeaker | null>(null)
 const isSpeakerEditOpen = ref(false)
-const isTemplateSelectOpen = ref(false)
 
 // 모달 상태 (메일 발송)
 const isMailSendOpen = ref(false)
@@ -40,7 +38,6 @@ const isInfoEditOpen = ref(false)
 const userSearchResults = ref<MeetingUser[]>([])
 
 let recordTimer: ReturnType<typeof setInterval> | null = null
-let sttDummyTimer: ReturnType<typeof setInterval> | null = null
 
 // ===== 조회 =====
 /** 회의 목록 조회 */
@@ -68,21 +65,10 @@ const handleSelectMeetingDetail = async (id: string) => {
 const handleStartRecord = () => {
   if (recordStatus.value === 'recording') return
   recordStatus.value = 'recording'
-  // 시간 카운트
+  // 시간 카운트 (실제 STT 수신은 백엔드 WebSocket/SSE 연결 후 처리)
   recordTimer = setInterval(() => {
     elapsedSeconds.value += 1
   }, 1000)
-  // STT 더미 발화 자동 추가 (3초마다)
-  if (currentMeeting.value) {
-    sttDummyTimer = setInterval(async () => {
-      const meetingId = currentMeeting.value?.id
-      if (!meetingId) return
-      const res = await fetchSttDummy(meetingId)
-      if (res?.data && currentMeeting.value) {
-        currentMeeting.value.sttList = [...currentMeeting.value.sttList, res.data]
-      }
-    }, 3000)
-  }
 }
 
 /** 녹음 일시정지 */
@@ -91,10 +77,6 @@ const handlePauseRecord = () => {
   if (recordTimer) {
     clearInterval(recordTimer)
     recordTimer = null
-  }
-  if (sttDummyTimer) {
-    clearInterval(sttDummyTimer)
-    sttDummyTimer = null
   }
 }
 
@@ -109,10 +91,6 @@ const handleStopRecord = () => {
         clearInterval(recordTimer)
         recordTimer = null
       }
-      if (sttDummyTimer) {
-        clearInterval(sttDummyTimer)
-        sttDummyTimer = null
-      }
       openToast({ message: '녹음이 중지되었습니다.' })
     },
   })
@@ -123,9 +101,7 @@ const handleResetRecord = () => {
   recordStatus.value = 'idle'
   elapsedSeconds.value = 0
   if (recordTimer) clearInterval(recordTimer)
-  if (sttDummyTimer) clearInterval(sttDummyTimer)
   recordTimer = null
-  sttDummyTimer = null
 }
 
 // ===== 회의록 =====
@@ -160,18 +136,6 @@ const handleSaveMeeting = async (
     openToast({ message: '회의록 저장 실패', type: 'error' })
     return null
   }
-}
-
-/** AI 요약 재생성 (더미) */
-const handleRegenerateMinutes = async () => {
-  openConfirm({
-    title: 'AI 요약 재생성',
-    message: '회의록을 다시 생성하시겠습니까?\n기존 편집 내용이 덮어써질 수 있습니다.',
-    onConfirm: () => {
-      // 🔽 더미 — 실제 LLM 호출로 교체
-      openToast({ message: 'AI 요약이 재생성되었습니다.' })
-    },
-  })
 }
 
 /** 회의 삭제 */
@@ -231,19 +195,6 @@ const handleSaveSpeakers = async (speakers: Partial<MeetingSpeaker>[]) => {
   } catch {
     openToast({ message: '화자 저장 실패', type: 'error' })
   }
-}
-
-// ===== 템플릿 =====
-/** 템플릿 선택 모달 열기 */
-const openTemplateSelectModal = () => {
-  isTemplateSelectOpen.value = true
-}
-
-/** 템플릿 적용 */
-const handleSelectTemplate = (templateId: string) => {
-  if (currentMeeting.value) currentMeeting.value.templateId = templateId
-  isTemplateSelectOpen.value = false
-  openToast({ message: '템플릿이 적용되었습니다.' })
 }
 
 // ===== 파일 저장 (드롭다운에서 직접 다운로드) =====
@@ -358,11 +309,6 @@ const handleSearchUsers = async (keyword: string) => {
   }
 }
 
-/** 회의록 공유 (링크 복사) — 더미 */
-const handleShareMeeting = () => {
-  openToast({ message: '공유 링크가 복사되었습니다.' })
-}
-
 // ===== 회의 정보 편집 (모달) =====
 /** 회의 정보 편집 모달 열기 */
 const openInfoEditModal = () => {
@@ -382,7 +328,6 @@ export const useMeeting2Store = () => {
     elapsedSeconds,
     selectedSpeaker,
     isSpeakerEditOpen,
-    isTemplateSelectOpen,
     isMailSendOpen,
     mailInitialRecipients,
     isInfoEditOpen,
@@ -397,23 +342,17 @@ export const useMeeting2Store = () => {
     handleResetRecord,
     // 회의록
     handleSaveMeeting,
-    handleRegenerateMinutes,
     handleDeleteMeeting,
     // 화자
     openSpeakerEditModal,
     handleSaveSpeaker,
     handleSaveSpeakers,
-    // 템플릿
-    openTemplateSelectModal,
-    handleSelectTemplate,
     // 파일 다운로드 (드롭다운에서 형식 선택 후 즉시 다운로드)
     handleDownloadFile,
     // 메일 발송 (모달)
     handleOpenMailSend,
     doSendMail,
     handleSearchUsers,
-    // 공유
-    handleShareMeeting,
     // 회의 정보 편집 (모달)
     openInfoEditModal,
   }

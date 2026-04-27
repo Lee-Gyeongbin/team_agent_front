@@ -37,13 +37,6 @@
 
       <button
         class="meeting2-side-action-btn"
-        @click="onClickShare"
-      >
-        <i class="icon-link-agent size-16" />
-        회의록 공유
-      </button>
-      <button
-        class="meeting2-side-action-btn"
         @click="onClickMail"
       >
         <i class="icon-send size-16" />
@@ -57,7 +50,7 @@
 import { useMeeting2Store } from '~/composables/meeting/useMeeting2Store'
 import type { MeetingFileFormat } from '~/types/meeting2'
 
-const { handleDownloadFile, handleShareMeeting, handleOpenMailSend } = useMeeting2Store()
+const { handleDownloadFile, handleOpenMailSend } = useMeeting2Store()
 
 const formats: MeetingFileFormat[] = ['pdf', 'docx', 'hwp', 'txt', 'md']
 
@@ -73,7 +66,6 @@ const onSelectFormat = (format: MeetingFileFormat) => {
   handleDownloadFile(format)
 }
 
-const onClickShare = () => handleShareMeeting()
 const onClickMail = () => handleOpenMailSend()
 
 // 외부 클릭 시 드롭다운 닫기

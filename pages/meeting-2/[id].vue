@@ -116,7 +116,6 @@
 
     <!-- 모달 -->
     <MeetingSpeakerEditModal />
-    <MeetingTemplateSelectModal />
     <MeetingMailSendModal />
     <MeetingInfoEditModal />
   </div>
