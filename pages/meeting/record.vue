@@ -168,10 +168,15 @@ const onClickFinish = async () => {
     return
   }
 
+  // confirmed 블록 텍스트를 segments로 전달 (백엔드 LLM 화자 분리용)
+  const segments: SpeechSegment[] = blocks.value
+    .filter((b) => b.status === 'confirmed')
+    .map((b, idx) => ({ seq: idx, text: b.text }))
+
   const success = await handleFinishMeetingWithAudio({
     meetingId,
     audioBlob,
-    segments: [],
+    segments,
   })
   if (success) {
     resetRecording()

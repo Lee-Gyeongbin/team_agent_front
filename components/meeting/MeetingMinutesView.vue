@@ -179,6 +179,7 @@ interface SpeakerLine {
 
 interface UtteranceItem {
   seq?: number
+  start?: number
   text?: string
 }
 
@@ -195,7 +196,13 @@ const speakerTranscriptLines = computed<SpeakerLine[]>(() => {
       parsed.forEach((item) => {
         const text = String(item?.text ?? '').trim()
         if (!text) return
-        const seq = typeof item?.seq === 'number' ? item.seq : 100000 + fallbackSeq++
+        // start 있으면 start 기준, 없으면 seq, 둘 다 없으면 fallback
+        const seq =
+          typeof item?.start === 'number'
+            ? item.start
+            : typeof item?.seq === 'number'
+              ? item.seq
+              : 100000 + fallbackSeq++
         lines.push({ seq, speaker: speakerName, text })
       })
     } catch {

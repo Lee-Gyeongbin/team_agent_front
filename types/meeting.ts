@@ -64,28 +64,27 @@ export interface SpeechSegment {
   speaker?: string
 }
 
+/** 화자 분리 전사 세그먼트 */
+export interface DiarizedSegment {
+  text: string
+  speaker: string
+  seq?: number
+  start?: number
+  end?: number
+}
+
 // ─── Realtime 전사 관련 ───────────────────────────────────────────
 
 /** 자막 블록 상태 */
-export type TranscriptStatus = 'interim' | 'waiting' | 'confirmed'
+export type TranscriptStatus = 'interim' | 'confirmed'
 
 /**
  * 실시간 자막 블록
  * - interim: WebSocket delta 스트리밍 중 (회색, 이탤릭, 흐릿)
- * - waiting: completed 이후 diarize 대기 중 (회색, 이탤릭)
- * - confirmed: diarize 완료, 화자 레이블 확정 (검정, 정상)
+ * - confirmed: completed 수신 완료 (검정, 정상)
  */
 export interface TranscriptBlock {
   id: string
   status: TranscriptStatus
   text: string
-  speaker?: string // confirmed 블록에만 존재 (A, B, C ...)
-}
-
-/** diarize API 응답의 segment 단위 */
-export interface DiarizedSegment {
-  speaker?: string
-  text: string
-  start: number
-  end: number
 }

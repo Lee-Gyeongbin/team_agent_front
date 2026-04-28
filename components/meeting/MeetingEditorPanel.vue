@@ -345,10 +345,7 @@ onBeforeUnmount(() => {
     clearTimeout(autoSaveTimer)
     autoSaveTimer = null
     if (currentMeeting.value && editor.value) {
-      handleSaveMeeting(
-        { id: currentMeeting.value.id, minutesContent: editor.value.getHTML() },
-        { silent: true },
-      )
+      handleSaveMeeting({ id: currentMeeting.value.id, minutesContent: editor.value.getHTML() }, { silent: true })
     }
   }
   editor.value?.destroy()
