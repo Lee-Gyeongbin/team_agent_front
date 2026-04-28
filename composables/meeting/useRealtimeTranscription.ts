@@ -15,8 +15,8 @@
  * (청크별 diarize는 매 청크마다 화자 레이블이 리셋되어 일관성 없음)
  */
 
-import { useMeetingApi } from '~/composables/meeting/useMeetingApi'
 import type { TranscriptBlock } from '~/types/meeting'
+import { useMeetingApi } from '~/composables/meeting/useMeetingApi'
 
 const REALTIME_WS_URL = 'wss://api.openai.com/v1/realtime?intent=transcription'
 
@@ -205,6 +205,16 @@ const startRecording = async (): Promise<boolean> => {
   blocks.value = []
   currentInterimId = null
   mainChunks = []
+
+  // fetchRealtimeToken()          // 백엔드 → OpenAI ephemeral token 발급
+  //     ↓ 성공
+  // initWebSocket(token)          // wss://api.openai.com/v1/realtime 연결
+  //     ↓ ws.onopen → session.created 수신
+  // sendSessionUpdate()           // 언어(ko), VAD 설정 등 전송
+  //     ↓
+  // initAudioStreaming()           // 마이크 PCM16 → ws.send() 실시간 전송
+  //     ↓
+  // ws.onmessage                  // OpenAI → 자막 이벤트 수신
 
   try {
     // 1. 백엔드에서 ephemeral token 발급

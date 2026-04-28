@@ -77,10 +77,10 @@
 </template>
 
 <script setup lang="ts">
-import { useMeeting2Store } from '~/composables/meeting/useMeeting2Store'
+import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
 import type { MeetingSpeaker } from '~/types/meeting2'
 
-const { isSpeakerEditOpen, selectedSpeaker, handleSaveSpeaker } = useMeeting2Store()
+const { isSpeakerEditOpen, selectedSpeaker, handleSaveSpeaker } = useMeetingStore()
 
 const form = reactive<{ id?: string; name: string; alias?: string; colorIndex: number }>({
   name: '',

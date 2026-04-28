@@ -76,15 +76,20 @@ export interface DiarizedSegment {
 // ─── Realtime 전사 관련 ───────────────────────────────────────────
 
 /** 자막 블록 상태 */
-export type TranscriptStatus = 'interim' | 'confirmed'
+export type TranscriptStatus =
+  | 'interim' // WebSocket delta 스트리밍 중 (회색, 이탤릭)
+  | 'confirmed' // completed 수신 완료 (검정, 정상)
+  | 'waiting' // confirmed 후 화자 분리(diarize) 결과 대기 중
 
 /**
  * 실시간 자막 블록
- * - interim: WebSocket delta 스트리밍 중 (회색, 이탤릭, 흐릿)
+ * - interim  : WebSocket delta 스트리밍 중 (회색, 이탤릭, 흐릿)
  * - confirmed: completed 수신 완료 (검정, 정상)
+ * - waiting  : 화자 분리 결과 대기 중 (··· 표시)
  */
 export interface TranscriptBlock {
   id: string
   status: TranscriptStatus
   text: string
+  speaker?: string // 화자 분리 완료 후 채워짐 (화자1, 홍길동 등)
 }

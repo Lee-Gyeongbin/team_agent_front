@@ -264,6 +264,19 @@
   font-size: 15px;
 }
 
+// 회의록 에디터 패널 — 제목 + 안내 부제 세로 배치
+.meeting2-editor-panel-header {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+}
+
+.meeting2-panel-sub {
+  @include typo($body-xsmall, $color-text-muted);
+  line-height: 1.45;
+}
+
 .meeting2-panel-actions {
   display: flex;
   align-items: center;

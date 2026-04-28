@@ -3,7 +3,7 @@
     <div class="meeting2-record-status-row">
       <span
         class="meeting2-record-status"
-        :class="`is-${recordStatus}`"
+        :class="statusClass"
       >
         <span class="meeting2-record-status-dot"></span>
         {{ statusLabel }}
@@ -12,97 +12,79 @@
     </div>
 
     <div class="meeting2-record-actions">
+      <!-- 녹음 시작 -->
       <UiButton
-        v-if="recordStatus === 'idle' || recordStatus === 'paused' || recordStatus === 'stopped'"
+        v-if="!isRecording && !isConnecting"
         variant="primary"
         size="sm"
         full-width
-        @click="onClickStart"
+        @click="emit('start')"
       >
         <template #icon-left>
           <i class="icon-play size-16" />
         </template>
-        {{ startButtonLabel }}
+        녹음 시작
       </UiButton>
 
+      <!-- 연결 중 (비활성) -->
       <UiButton
-        v-if="recordStatus === 'recording'"
-        variant="line-secondary"
+        v-else-if="isConnecting"
+        variant="primary"
         size="sm"
         full-width
-        @click="onClickPause"
+        disabled
       >
-        일시정지
+        연결 중...
       </UiButton>
 
+      <!-- 회의 종료 (녹음 중) -->
       <UiButton
-        v-if="recordStatus === 'recording' || recordStatus === 'paused'"
+        v-else
         variant="dark"
         size="sm"
         full-width
-        @click="onClickStop"
+        :disabled="isFinishing"
+        @click="emit('finish')"
       >
-        녹음 중지
-      </UiButton>
-
-      <UiButton
-        v-if="recordStatus === 'stopped'"
-        variant="line-secondary"
-        size="sm"
-        full-width
-        @click="onClickReset"
-      >
-        처음부터
+        <template #icon-left>
+          <i class="icon-stop size-16" />
+        </template>
+        {{ isFinishing ? '회의록 생성 중...' : '회의 종료' }}
       </UiButton>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useMeeting2Store } from '~/composables/meeting/useMeeting2Store'
+const props = defineProps<{
+  isRecording: boolean
+  isConnecting: boolean
+  isFinishing: boolean
+  elapsed?: number
+}>()
 
-const {
-  recordStatus,
-  elapsedSeconds,
-  currentMeeting,
-  handleStartRecord,
-  handlePauseRecord,
-  handleStopRecord,
-  handleResetRecord,
-} = useMeeting2Store()
+const emit = defineEmits<{
+  start: []
+  finish: []
+}>()
 
 const formattedTime = computed(() => {
-  const total = elapsedSeconds.value
+  const total = props.elapsed ?? 0
   const h = String(Math.floor(total / 3600)).padStart(2, '0')
   const m = String(Math.floor((total % 3600) / 60)).padStart(2, '0')
   const s = String(total % 60).padStart(2, '0')
   return `${h}:${m}:${s}`
 })
 
+const statusClass = computed(() => {
+  if (props.isRecording) return 'is-recording'
+  if (props.isConnecting) return 'is-connecting'
+  return 'is-idle'
+})
+
 const statusLabel = computed(() => {
-  if (recordStatus.value === 'recording') return '녹음 중'
-  if (recordStatus.value === 'paused') return '일시정지'
-  if (recordStatus.value === 'stopped') return '중지됨'
+  if (props.isRecording) return '녹음 중'
+  if (props.isConnecting) return '연결 중'
   return '대기 중'
 })
-
-const startButtonLabel = computed(() => {
-  if (recordStatus.value === 'paused') return '녹음 재개'
-  if (recordStatus.value === 'stopped') return '이어서 녹음'
-  return '녹음 시작'
-})
-
-const onClickStart = () => handleStartRecord()
-const onClickPause = () => handlePauseRecord()
-const onClickStop = () => handleStopRecord()
-const onClickReset = () => {
-  openConfirm({
-    title: '처음부터 녹음',
-    message: '시간과 발화 기록이 초기화됩니다.\n계속하시겠습니까?',
-    onConfirm: () => {
-      handleResetRecord()
-      if (currentMeeting.value) currentMeeting.value.sttList = []
-    },
-  })
-}
 </script>

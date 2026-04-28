@@ -21,37 +21,25 @@
 </template>
 
 <script setup lang="ts">
-import { useMeeting2Store } from '~/composables/meeting/useMeeting2Store'
+import { useRealtimeTranscription } from '~/composables/meeting/useRealtimeTranscription'
+import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
 
-const { currentMeeting, recordStatus } = useMeeting2Store()
+const { isRecording, isConnecting } = useRealtimeTranscription()
+const { currentMeeting } = useMeetingStore()
 
 const sttList = computed(() => currentMeeting.value?.sttList ?? [])
 
 /** 녹음 상태별 STT 뱃지 라벨/색 */
 const sttBadgeLabel = computed(() => {
-  switch (recordStatus.value) {
-    case 'recording':
-      return 'ON'
-    case 'paused':
-      return '일시정지'
-    case 'stopped':
-      return '완료'
-    default:
-      return 'OFF'
-  }
+  if (isRecording.value) return 'ON'
+  if (isConnecting.value) return '연결 중'
+  return 'OFF'
 })
 
 const sttBadgeVariant = computed(() => {
-  switch (recordStatus.value) {
-    case 'recording':
-      return 'success' as const
-    case 'paused':
-      return 'basic-chat' as const
-    case 'stopped':
-      return 'data-line' as const
-    default:
-      return 'default' as const
-  }
+  if (isRecording.value) return 'success' as const
+  if (isConnecting.value) return 'basic-chat' as const
+  return 'default' as const
 })
 
 const onClickDownload = () => {

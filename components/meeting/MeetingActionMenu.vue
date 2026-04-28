@@ -47,10 +47,10 @@
 </template>
 
 <script setup lang="ts">
-import { useMeeting2Store } from '~/composables/meeting/useMeeting2Store'
+import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
 import type { MeetingFileFormat } from '~/types/meeting2'
 
-const { handleDownloadFile, handleOpenMailSend } = useMeeting2Store()
+const { handleDownloadFile, handleOpenMailSend } = useMeetingStore()
 
 const formats: MeetingFileFormat[] = ['pdf', 'docx', 'hwp', 'txt', 'md']
 
