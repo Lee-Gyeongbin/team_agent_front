@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="meeting2-stt-section">
     <UiEmpty
       v-if="sttList.length === 0"
       title="아직 발화 내용이 없습니다."

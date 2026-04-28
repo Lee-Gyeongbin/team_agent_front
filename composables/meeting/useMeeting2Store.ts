@@ -5,7 +5,7 @@ import type {
   RecordStatus,
   MeetingRecipient,
   MeetingUser,
-  MeetingFileSaveForm,
+  MeetingFileFormat,
 } from '~/types/meeting2'
 
 const {
@@ -15,7 +15,6 @@ const {
   fetchDeleteMeeting,
   fetchSaveSpeaker,
   fetchSaveSpeakers,
-  fetchSttDummy,
   fetchSearchUsers,
   fetchMatchUsersByNames,
 } = useMeeting2Api()
@@ -27,18 +26,18 @@ const recordStatus = ref<RecordStatus>('idle')
 const elapsedSeconds = ref(0)
 const selectedSpeaker = ref<MeetingSpeaker | null>(null)
 const isSpeakerEditOpen = ref(false)
-const isTemplateSelectOpen = ref(false)
 
-// 모달 상태 (파일 저장 / 메일 발송)
-const isFileSaveOpen = ref(false)
+// 모달 상태 (메일 발송)
 const isMailSendOpen = ref(false)
 const mailInitialRecipients = ref<MeetingRecipient[]>([])
+
+// 모달 상태 (회의 정보 편집)
+const isInfoEditOpen = ref(false)
 
 // 사용자 검색 결과
 const userSearchResults = ref<MeetingUser[]>([])
 
 let recordTimer: ReturnType<typeof setInterval> | null = null
-let sttDummyTimer: ReturnType<typeof setInterval> | null = null
 
 // ===== 조회 =====
 /** 회의 목록 조회 */
@@ -66,21 +65,10 @@ const handleSelectMeetingDetail = async (id: string) => {
 const handleStartRecord = () => {
   if (recordStatus.value === 'recording') return
   recordStatus.value = 'recording'
-  // 시간 카운트
+  // 시간 카운트 (실제 STT 수신은 백엔드 WebSocket/SSE 연결 후 처리)
   recordTimer = setInterval(() => {
     elapsedSeconds.value += 1
   }, 1000)
-  // STT 더미 발화 자동 추가 (3초마다)
-  if (currentMeeting.value) {
-    sttDummyTimer = setInterval(async () => {
-      const meetingId = currentMeeting.value?.id
-      if (!meetingId) return
-      const res = await fetchSttDummy(meetingId)
-      if (res?.data && currentMeeting.value) {
-        currentMeeting.value.sttList = [...currentMeeting.value.sttList, res.data]
-      }
-    }, 3000)
-  }
 }
 
 /** 녹음 일시정지 */
@@ -89,10 +77,6 @@ const handlePauseRecord = () => {
   if (recordTimer) {
     clearInterval(recordTimer)
     recordTimer = null
-  }
-  if (sttDummyTimer) {
-    clearInterval(sttDummyTimer)
-    sttDummyTimer = null
   }
 }
 
@@ -107,10 +91,6 @@ const handleStopRecord = () => {
         clearInterval(recordTimer)
         recordTimer = null
       }
-      if (sttDummyTimer) {
-        clearInterval(sttDummyTimer)
-        sttDummyTimer = null
-      }
       openToast({ message: '녹음이 중지되었습니다.' })
     },
   })
@@ -121,9 +101,7 @@ const handleResetRecord = () => {
   recordStatus.value = 'idle'
   elapsedSeconds.value = 0
   if (recordTimer) clearInterval(recordTimer)
-  if (sttDummyTimer) clearInterval(sttDummyTimer)
   recordTimer = null
-  sttDummyTimer = null
 }
 
 // ===== 회의록 =====
@@ -158,18 +136,6 @@ const handleSaveMeeting = async (
     openToast({ message: '회의록 저장 실패', type: 'error' })
     return null
   }
-}
-
-/** AI 요약 재생성 (더미) */
-const handleRegenerateMinutes = async () => {
-  openConfirm({
-    title: 'AI 요약 재생성',
-    message: '회의록을 다시 생성하시겠습니까?\n기존 편집 내용이 덮어써질 수 있습니다.',
-    onConfirm: () => {
-      // 🔽 더미 — 실제 LLM 호출로 교체
-      openToast({ message: 'AI 요약이 재생성되었습니다.' })
-    },
-  })
 }
 
 /** 회의 삭제 */
@@ -231,36 +197,71 @@ const handleSaveSpeakers = async (speakers: Partial<MeetingSpeaker>[]) => {
   }
 }
 
-// ===== 템플릿 =====
-/** 템플릿 선택 모달 열기 */
-const openTemplateSelectModal = () => {
-  isTemplateSelectOpen.value = true
-}
-
-/** 템플릿 적용 */
-const handleSelectTemplate = (templateId: string) => {
-  if (currentMeeting.value) currentMeeting.value.templateId = templateId
-  isTemplateSelectOpen.value = false
-  openToast({ message: '템플릿이 적용되었습니다.' })
-}
-
-// ===== 파일 저장 (모달) =====
-/** 파일 저장 모달 열기 */
-const handleOpenFileSave = () => {
+// ===== 파일 저장 (드롭다운에서 직접 다운로드) =====
+/**
+ * 파일 다운로드 — 브라우저가 OS 다운로드 다이얼로그를 띄움
+ * 🔽 PDF/DOCX/HWP는 서버 변환 필요 → 현재는 HTML로 fallback (확장자만 다름)
+ *    백엔드 완성 시: const blob = await fetchExportFile(meetingId, format) → 같은 방식 다운로드
+ */
+const handleDownloadFile = (format: MeetingFileFormat) => {
   if (!currentMeeting.value) {
     openToast({ message: '회의 정보가 없습니다.', type: 'warning' })
     return
   }
-  isFileSaveOpen.value = true
-}
 
-/** 파일 저장 실행 — 더미 */
-const doSaveFile = (form: MeetingFileSaveForm) => {
-  if (!currentMeeting.value) return
-  currentMeeting.value.fileFormat = form.format
-  // 🔽 더미 — 실제 다운로드는 후속 (서버에서 변환된 파일 받기)
-  openToast({ message: `${form.fileName}.${form.format} 파일로 저장되었습니다.` })
-  isFileSaveOpen.value = false
+  const html = currentMeeting.value.minutesContent ?? ''
+  const today = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+  const safeTitle = currentMeeting.value.title.replace(/[\\/:*?"<>|]/g, '').trim() || '회의록'
+  const fileName = `${safeTitle}_${today}.${format}`
+
+  let content = ''
+  let mimeType = 'text/plain;charset=utf-8'
+
+  if (format === 'txt') {
+    // HTML 태그 제거 → plain text
+    const div = document.createElement('div')
+    div.innerHTML = html
+    content = div.innerText
+    mimeType = 'text/plain;charset=utf-8'
+  } else if (format === 'md') {
+    // 간단 변환 (h2 → ##, h3 → ###, br → \n) — 후속에 정식 마크다운 변환 라이브러리
+    content = html
+      .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1\n\n')
+      .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1\n\n')
+      .replace(/<h3[^>]*>(.*?)<\/h3>/gi, '### $1\n\n')
+      .replace(/<li[^>]*>(.*?)<\/li>/gi, '- $1\n')
+      .replace(/<\/?(ul|ol)[^>]*>/gi, '\n')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
+      .replace(/<[^>]+>/g, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
+    mimeType = 'text/markdown;charset=utf-8'
+  } else {
+    // pdf / docx / hwp — 서버 변환 필요. 현재 데모로 HTML 다운로드
+    content = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${safeTitle}</title></head><body>${html}</body></html>`
+    mimeType = 'text/html;charset=utf-8'
+    openToast({
+      message: `${format.toUpperCase()} 변환은 백엔드 연동 후 정식 지원됩니다. 임시로 HTML로 다운로드합니다.`,
+      type: 'info',
+    })
+  }
+
+  const blob = new Blob([content], { type: mimeType })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = fileName
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+
+  if (format === 'txt' || format === 'md') {
+    openToast({ message: `${fileName} 파일이 다운로드되었습니다.` })
+  }
+
+  if (currentMeeting.value) currentMeeting.value.fileFormat = format
 }
 
 // ===== 메일 발송 (모달) =====
@@ -308,9 +309,14 @@ const handleSearchUsers = async (keyword: string) => {
   }
 }
 
-/** 회의록 공유 (링크 복사) — 더미 */
-const handleShareMeeting = () => {
-  openToast({ message: '공유 링크가 복사되었습니다.' })
+// ===== 회의 정보 편집 (모달) =====
+/** 회의 정보 편집 모달 열기 */
+const openInfoEditModal = () => {
+  if (!currentMeeting.value) {
+    openToast({ message: '회의 정보가 없습니다.', type: 'warning' })
+    return
+  }
+  isInfoEditOpen.value = true
 }
 
 export const useMeeting2Store = () => {
@@ -322,10 +328,9 @@ export const useMeeting2Store = () => {
     elapsedSeconds,
     selectedSpeaker,
     isSpeakerEditOpen,
-    isTemplateSelectOpen,
-    isFileSaveOpen,
     isMailSendOpen,
     mailInitialRecipients,
+    isInfoEditOpen,
     userSearchResults,
     // 조회
     handleSelectMeetingList,
@@ -337,23 +342,18 @@ export const useMeeting2Store = () => {
     handleResetRecord,
     // 회의록
     handleSaveMeeting,
-    handleRegenerateMinutes,
     handleDeleteMeeting,
     // 화자
     openSpeakerEditModal,
     handleSaveSpeaker,
     handleSaveSpeakers,
-    // 템플릿
-    openTemplateSelectModal,
-    handleSelectTemplate,
-    // 파일 저장 (모달)
-    handleOpenFileSave,
-    doSaveFile,
+    // 파일 다운로드 (드롭다운에서 형식 선택 후 즉시 다운로드)
+    handleDownloadFile,
     // 메일 발송 (모달)
     handleOpenMailSend,
     doSendMail,
     handleSearchUsers,
-    // 공유
-    handleShareMeeting,
+    // 회의 정보 편집 (모달)
+    openInfoEditModal,
   }
 }

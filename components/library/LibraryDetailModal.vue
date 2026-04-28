@@ -286,6 +286,7 @@
       :is-open="isCreateDocReportOpen"
       :tmpl-nm="selectedCreateDocTmplNm"
       :refine-completed-at="reportRefineCompletedAt"
+      :refined-html="refinedEditorHtml"
       @close="handleCreateDocReportClose"
       @save-to-my-docs="onCreateDocSaveToMyDocs"
       @share-link="onCreateDocShareLink"
@@ -312,6 +313,7 @@ const {
   isCreateDocReportOpen,
   generatedReport,
   reportRefineCompletedAt,
+  refinedEditorHtml,
   selectedCreateDocTmplNm,
   handleCreateDocTypeModalClose,
   handleCreateDocGenerate,
@@ -546,9 +548,9 @@ const onCreateDocShareLink = () => {
   openToast({ message: '공유 링크는 추후 연동 예정입니다.', type: 'warning' })
 }
 
-/** 보고서 보완 요청 */
-const onCreateDocSendRefine = async (_message: string) => {
-  await handleReAskReport(_message)
+/** 보고서 보완 요청 — currentHtml: 현재 에디터 전체 HTML */
+const onCreateDocSendRefine = async (message: string, currentHtml: string) => {
+  await handleReAskReport(message, currentHtml)
 }
 
 const handleCopyResponse = async () => {

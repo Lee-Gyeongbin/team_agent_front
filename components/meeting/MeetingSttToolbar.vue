@@ -5,19 +5,6 @@
       <UiBadge :variant="sttBadgeVariant">{{ sttBadgeLabel }}</UiBadge>
     </span>
 
-    <select
-      v-model="selectedLanguage"
-      class="meeting2-editor-toolbar-select"
-    >
-      <option
-        v-for="lang in languages"
-        :key="lang.value"
-        :value="lang.value"
-      >
-        언어: {{ lang.label }}
-      </option>
-    </select>
-
     <UiButton
       variant="ghost"
       size="sm"
@@ -38,27 +25,7 @@ import { useMeeting2Store } from '~/composables/meeting/useMeeting2Store'
 
 const { currentMeeting, recordStatus } = useMeeting2Store()
 
-const selectedLanguage = ref('ko')
-
-const languages = [
-  { value: 'ko', label: '한국어' },
-  { value: 'en', label: '영어' },
-  { value: 'ja', label: '일본어' },
-]
-
 const sttList = computed(() => currentMeeting.value?.sttList ?? [])
-
-watch(
-  () => currentMeeting.value?.language,
-  (lang) => {
-    if (lang) selectedLanguage.value = lang
-  },
-  { immediate: true },
-)
-
-watch(selectedLanguage, (lang) => {
-  if (currentMeeting.value) currentMeeting.value.language = lang
-})
 
 /** 녹음 상태별 STT 뱃지 라벨/색 */
 const sttBadgeLabel = computed(() => {

@@ -1,4 +1,4 @@
-import type { Meeting, MeetingSpeaker, MeetingSttItem, MeetingUser } from '~/types/meeting2'
+import type { Meeting, MeetingSpeaker, MeetingUser } from '~/types/meeting2'
 
 // 🔽 Mock API — 백엔드 API 완성 시 useApi 패턴으로 교체
 const MOCK_BASE = '/mock/meeting'
@@ -51,12 +51,6 @@ export const useMeeting2Api = () => {
     return mockPost<{ list: MeetingSpeaker[] }>(`${MOCK_BASE}/speaker/save-batch`, { meetingId, speakers })
   }
 
-  // ===== STT =====
-  /** 더미 STT 발화 추가 (녹음 중 호출) */
-  const fetchSttDummy = async (meetingId: string): Promise<{ data: MeetingSttItem | null }> => {
-    return mockPost<{ data: MeetingSttItem | null }>(`${MOCK_BASE}/stt/dummy`, { meetingId })
-  }
-
   // ===== User (메일 발송 대상 검색) =====
   /** 사용자 검색 — 이름/메일/부서 부분 일치 */
   const fetchSearchUsers = async (keyword: string): Promise<{ list: MeetingUser[] }> => {
@@ -75,7 +69,6 @@ export const useMeeting2Api = () => {
     fetchDeleteMeeting,
     fetchSaveSpeaker,
     fetchSaveSpeakers,
-    fetchSttDummy,
     fetchSearchUsers,
     fetchMatchUsersByNames,
   }
