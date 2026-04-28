@@ -109,6 +109,51 @@ const mapApiSpeakers = (apiSpeakers: ApiMeetingSpeaker[]): MeetingSpeaker[] =>
     colorIndex: i % 8,
   }))
 
+const formatStartTime = (start?: number): string => {
+  if (typeof start !== 'number' || !Number.isFinite(start) || start < 0) return '-'
+  const totalSeconds = Math.floor(start)
+  const hh = Math.floor(totalSeconds / 3600)
+    .toString()
+    .padStart(2, '0')
+  const mm = Math.floor((totalSeconds % 3600) / 60)
+    .toString()
+    .padStart(2, '0')
+  const ss = (totalSeconds % 60).toString().padStart(2, '0')
+  return `${hh}:${mm}:${ss}`
+}
+
+const buildSttListFromSpeakers = (apiSpeakers: ApiMeetingSpeaker[]) =>
+  apiSpeakers
+    .flatMap((speaker, speakerIndex) => {
+      const speakerName = speaker.speakerNm || speaker.speakerLabel || '화자 미확정'
+      const speakerId = String(speaker.speakerId ?? `speaker-${speakerIndex}`)
+      const utterances = parseJsonArray<{ seq?: number; start?: number; text?: string }>(speaker.utterances ?? '[]')
+      return utterances
+        .filter((u) => !!u.text?.trim())
+        .map((u, idx) => ({
+          id: `${speakerId}-${u.seq ?? idx}`,
+          speakerId,
+          speakerName,
+          time: formatStartTime(u.start),
+          text: (u.text ?? '').trim(),
+          start: typeof u.start === 'number' ? u.start : Number.POSITIVE_INFINITY,
+          seq: u.seq ?? idx,
+          speakerIndex,
+        }))
+    })
+    .sort((a, b) => {
+      if (a.start !== b.start) return a.start - b.start
+      if (a.seq !== b.seq) return a.seq - b.seq
+      return a.speakerIndex - b.speakerIndex
+    })
+    .map(({ id, speakerId, speakerName, time, text }) => ({
+      id,
+      speakerId,
+      speakerName,
+      time,
+      text,
+    }))
+
 const mapApiDetailToMeeting = (detail: MeetingDetail): Meeting | null => {
   const m = detail.meeting
   if (!m) return null
@@ -125,8 +170,8 @@ const mapApiDetailToMeeting = (detail: MeetingDetail): Meeting | null => {
     purpose: undefined,
     steps: deriveSteps(m.status, hasMinutes),
     speakers: mapApiSpeakers(detail.speakers ?? []),
-    sttList: [],
-    minutesContent: buildMinutesHtml(detail.minutes, detail.infographicList, detail.speakers),
+    sttList: buildSttListFromSpeakers(detail.speakers ?? []),
+    minutesContent: buildMinutesHtml(detail.minutes, detail.infographicList),
     fileFormat: 'docx' as MeetingFileFormat,
     recipients: [],
     templateId: '',
@@ -138,11 +183,7 @@ const mapApiDetailToMeeting = (detail: MeetingDetail): Meeting | null => {
 
 const nlToBr = (escaped: string) => escaped.replace(/\n/g, '<br>')
 
-const buildMinutesHtml = (
-  minutes: MeetingMinutes | null,
-  infographics?: MeetingInfographic[],
-  speakers?: ApiMeetingSpeaker[],
-): string => {
+const buildMinutesHtml = (minutes: MeetingMinutes | null, infographics?: MeetingInfographic[]): string => {
   if (!minutes) return ''
 
   const summary = minutes.summary ? `<h2>요약</h2><p>${nlToBr(escapeHTML(minutes.summary))}</p>` : ''
@@ -181,29 +222,7 @@ const buildMinutesHtml = (
           .join('')}`
       : ''
 
-  const transcriptRows = (speakers ?? [])
-    .flatMap((speaker) => {
-      const utterances = parseJsonArray<{ seq?: number; start?: number; text: string }>(speaker.utterances ?? '[]')
-      return utterances.map((u, idx) => ({
-        seq: u.seq ?? idx,
-        start: typeof u.start === 'number' ? u.start : Number.POSITIVE_INFINITY,
-        speakerNm: speaker.speakerNm || speaker.speakerLabel,
-        text: u.text,
-      }))
-    })
-    .sort((a, b) => {
-      if (a.start !== b.start) return a.start - b.start
-      return a.seq - b.seq
-    })
-
-  const transcriptBlock =
-    transcriptRows.length > 0
-      ? `<h2>전체 녹취록</h2><p>${transcriptRows
-          .map((row) => `${escapeHTML(row.speakerNm)}: ${escapeHTML(row.text ?? '')}`)
-          .join('<br>')}</p>`
-      : ''
-
-  return `${summary}${decisions}${todos}${infographicBlock}${transcriptBlock}`
+  return `${summary}${decisions}${todos}${infographicBlock}`
 }
 
 // ===== 조회 =====
@@ -246,6 +265,7 @@ const handleSelectMeetingDetail = async (meetingId: number) => {
     } else if (currentMeeting.value && mapped) {
       currentMeeting.value.steps = mapped.steps
       currentMeeting.value.speakers = mapped.speakers
+      currentMeeting.value.sttList = mapped.sttList
       if (detail.minutes && mapped.minutesContent && isMinutesEditorEmpty(currentMeeting.value.minutesContent)) {
         currentMeeting.value.minutesContent = mapped.minutesContent
       }
@@ -427,14 +447,36 @@ const handleSaveSpeaker = async (speaker: Partial<MeetingSpeaker>) => {
 const handleSaveSpeakers = async (speakers: Partial<MeetingSpeaker>[]) => {
   if (!currentMeeting.value) return
   try {
-    const res = await fetchSaveSpeakers(currentMeeting.value.id, speakers)
-    if (res?.list && currentMeeting.value) {
-      currentMeeting.value.speakers = res.list
-      currentMeeting.value.sttList = currentMeeting.value.sttList.map((stt) => {
-        const speaker = res.list.find((s) => s.id === stt.speakerId)
-        return speaker ? { ...stt, speakerName: speaker.name } : stt
+    // meetingDetail의 ApiMeetingSpeaker에서 기존 speakerUserId 조회 (유저 매핑 유지)
+    const apiSpeakers = meetingDetail.value.speakers ?? []
+    const payload = speakers
+      .filter((s) => !!s.id)
+      .map((s) => {
+        const existing = apiSpeakers.find((a) => String(a.speakerId) === s.id)
+        return {
+          speakerId: Number(s.id),
+          speakerNm: s.name ?? '',
+          speakerUserId: existing?.speakerUserId ?? '',
+        }
       })
-    }
+
+    await fetchSaveSpeakers(payload)
+
+    // 로컬 speakers 상태 업데이트 → MeetingSpeakerList 반영
+    speakers.forEach((updated) => {
+      if (!currentMeeting.value || !updated.id) return
+      const idx = currentMeeting.value.speakers.findIndex((s) => s.id === updated.id)
+      if (idx > -1) {
+        currentMeeting.value.speakers[idx] = { ...currentMeeting.value.speakers[idx], ...updated }
+      }
+    })
+
+    // sttList 화자명 갱신 → MeetingSttList 반영
+    currentMeeting.value.sttList = currentMeeting.value.sttList.map((stt) => {
+      const speaker = currentMeeting.value!.speakers.find((s) => s.id === stt.speakerId)
+      return speaker ? { ...stt, speakerName: speaker.name } : stt
+    })
+
     openToast({ message: '화자 정보가 저장되었습니다.' })
   } catch {
     openToast({ message: '화자 저장 실패', type: 'error' })

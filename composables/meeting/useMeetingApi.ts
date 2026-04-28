@@ -104,13 +104,12 @@ export const useMeetingApi = () => {
     return mockPost<{ data: MeetingSpeaker }>(`${MOCK_BASE}/speaker/save`, { meetingId, speaker })
   }
 
-  /** 화자 일괄 저장 (인라인 편집 — 이름 매핑) — 백엔드 API 없음 */
+  /** 화자 일괄 저장 — saveSpeakerMapping을 화자 수만큼 병렬 호출 */
   const fetchSaveSpeakers = async (
-    meetingId: string,
-    speakers: Partial<MeetingSpeaker>[],
-  ): Promise<{ list: MeetingSpeaker[] }> => {
-    // TODO: 백엔드 API 연동 필요
-    return mockPost<{ list: MeetingSpeaker[] }>(`${MOCK_BASE}/speaker/save-batch`, { meetingId, speakers })
+    speakers: Array<{ speakerId: number; speakerNm: string; speakerUserId: string }>,
+  ): Promise<{ successYn: boolean }> => {
+    await Promise.all(speakers.map((s) => post<{ successYn: boolean }>('/ai/meeting/saveSpeakerMapping.do', s)))
+    return { successYn: true }
   }
 
   /** 사용자 검색 (이름/메일/부서 부분 일치) — 백엔드 API 없음 */
