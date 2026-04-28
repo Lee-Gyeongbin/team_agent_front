@@ -801,6 +801,16 @@ const iconGroups = [
     ],
   },
   {
+    title: '회의록(Meeting) 단계 아이콘',
+    icons: [
+      { class: 'icon-meeting-mic' },
+      { class: 'icon-meeting-generate' },
+      { class: 'icon-meeting-edit' },
+      { class: 'icon-meeting-save' },
+      { class: 'icon-meeting-mail' },
+    ],
+  },
+  {
     title: '기타 아이콘',
     icons: [
       { class: 'icon-plus-medium' },
