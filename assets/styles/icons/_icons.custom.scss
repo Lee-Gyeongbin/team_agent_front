@@ -686,22 +686,22 @@
   @include icon-file-bg('meeting-mic');
 }
 
-// 2. 회의록 자동 생성
+// 2. 화자 분리리
 .icon-meeting-generate {
-  @include icon-file-bg('meeting-generate');
+  @include icon-file-bg('meeting-tabler-wand');
 }
 
-// 3. 편집
+// 3. 회의록 자동 생성성 (연필)
 .icon-meeting-edit {
-  @include icon-file-bg('meeting-edit');
+  @include icon-file-bg('meeting-pencil');
 }
 
-// 4. 저장
+// 4. 회의록 편집집 (체크 파일)
 .icon-meeting-save {
-  @include icon-file-bg('meeting-save');
+  @include icon-file-bg('meeting-check-file');
 }
 
-// 5. 메일 발송
+// 5. 저장 및 공유 (메일)
 .icon-meeting-mail {
   @include icon-file-bg('meeting-mail');
 }
