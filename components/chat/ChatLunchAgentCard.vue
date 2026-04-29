@@ -200,13 +200,13 @@
           </div>
           <div class="chat-lunch-agent-card__result-content">
             <div class="chat-lunch-agent-card__result-item-head">
-              <p class="chat-lunch-agent-card__result-name">{{ item.restaurant }}</p>
+              <p class="chat-lunch-agent-card__result-name">{{ item.menu }}</p>
               <span class="chat-lunch-agent-card__result-rank">추천 {{ idx + 1 }}</span>
             </div>
             <dl class="chat-lunch-agent-card__result-meta">
               <div class="chat-lunch-agent-card__result-meta-row">
-                <dt>메뉴</dt>
-                <dd>{{ item.menu }}</dd>
+                <dt>상호명</dt>
+                <dd>{{ item.restaurant }}</dd>
               </div>
               <div class="chat-lunch-agent-card__result-meta-row">
                 <dt>가격</dt>
@@ -742,7 +742,7 @@ const onSubmitClick = () => {
 
   &__result-meta-row {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: $spacing-xs;
 
     dt {
