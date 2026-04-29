@@ -928,6 +928,12 @@
   font-size: $font-size-sm;
   color: $color-text-dark;
   cursor: pointer;
+
+  &--font-size {
+    width: 58px;
+    padding: 0 4px;
+    text-align: center;
+  }
 }
 
 // ---- 색상 피커 (글자색 / 형광펜) ----

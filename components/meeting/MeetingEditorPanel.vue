@@ -100,8 +100,10 @@ import { useEditor } from '@tiptap/vue-3'
 import { StarterKit } from '@tiptap/starter-kit'
 import { Underline } from '@tiptap/extension-underline'
 import { Link } from '@tiptap/extension-link'
+import { TextAlign } from '@tiptap/extension-text-align'
 import { ResizableImage } from '~/composables/meeting/resizableImage'
 import { TableShortcuts } from '~/composables/meeting/tableShortcuts'
+import { FontSize } from '~/composables/meeting/fontSize'
 import type { ChainedCommands } from '@tiptap/vue-3'
 import { Table } from '@tiptap/extension-table'
 import { TableRow } from '@tiptap/extension-table-row'
@@ -160,7 +162,9 @@ const editor = useEditor({
       openOnClick: false,
       HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
     }),
+    TextAlign.configure({ types: ['heading', 'paragraph'] }),
     ResizableImage,
+    FontSize,
     Table.configure({ resizable: true }),
     TableRow,
     TableHeader,
