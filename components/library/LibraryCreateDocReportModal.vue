@@ -365,7 +365,7 @@ watch(
       refineChatLog.value.push({
         id: nextRefineChatId(),
         role: 'assistant',
-        text: '보고서를 수정했습니다.',
+        text: '문서를 수정했습니다.',
         createdAt: Date.now(),
         timeLabel: toRefineTimeLabel(Date.now()),
       })

@@ -222,9 +222,16 @@ const buildPrintHostStyles = (): string => `
   #${PRINT_HOST_ID} .report-print-editor-body h2 { font-size: 15pt !important; font-weight: 700 !important; margin: 10px 0 6px !important; }
   #${PRINT_HOST_ID} .report-print-editor-body h3 { font-size: 12pt !important; font-weight: 700 !important; margin: 8px 0 4px !important; }
   #${PRINT_HOST_ID} .report-print-editor-body p { margin: 0 0 6px !important; }
+  /* 빈 <p></p>는 line box가 없어 높이 0이 됨 → &nbsp;로 line box 강제 생성 */
+  #${PRINT_HOST_ID} .report-print-editor-body p:empty::after { content: '\u00A0'; }
   #${PRINT_HOST_ID} .report-print-editor-body ul,
   #${PRINT_HOST_ID} .report-print-editor-body ol { margin: 6px 0 !important; padding-left: 1.4em !important; }
-  #${PRINT_HOST_ID} .report-print-editor-body li { margin-bottom: 2px !important; }
+  /* 전역 reset(_reset.scss)의 list-style: none을 출력 시 복원 */
+  #${PRINT_HOST_ID} .report-print-editor-body ul { list-style-type: disc !important; }
+  #${PRINT_HOST_ID} .report-print-editor-body ol { list-style-type: decimal !important; }
+  #${PRINT_HOST_ID} .report-print-editor-body ul ul { list-style-type: circle !important; }
+  #${PRINT_HOST_ID} .report-print-editor-body ul ul ul { list-style-type: square !important; }
+  #${PRINT_HOST_ID} .report-print-editor-body li { margin-bottom: 2px !important; list-style-position: outside !important; }
   #${PRINT_HOST_ID} .report-print-editor-body blockquote {
     margin: 6px 0 !important;
     padding: 4px 10px !important;
@@ -258,6 +265,7 @@ const buildPrintHostStyles = (): string => `
   }
   #${PRINT_HOST_ID} .report-print-editor-body td p { margin: 0 0 4px !important; }
   #${PRINT_HOST_ID} .report-print-editor-body td p:last-child { margin-bottom: 0 !important; }
+  #${PRINT_HOST_ID} .report-print-editor-body td p:empty::after { content: '\u00A0'; }
   #${PRINT_HOST_ID} .report-print-editor-body a { color: #3b82f6 !important; text-decoration: underline !important; }
   #${PRINT_HOST_ID} .report-print-editor-body img {
     max-width: 100% !important;
