@@ -9,6 +9,8 @@ import ResizableImageView from '~/components/meeting/ResizableImageView.vue'
  * - HTML 출력은 `<img style="width: ...">` 형태로 직렬화
  */
 export const ResizableImage = Image.extend({
+  draggable: true,
+
   addAttributes() {
     return {
       ...this.parent?.(),
@@ -16,7 +18,6 @@ export const ResizableImage = Image.extend({
         default: null,
         parseHTML: (el) => {
           const html = el as HTMLElement
-          // style.width 우선, 없으면 width 속성
           return html.style?.width || html.getAttribute('width') || null
         },
         renderHTML: (attrs) => {
@@ -24,6 +25,11 @@ export const ResizableImage = Image.extend({
           if (!w) return {}
           return { style: `width: ${w}` }
         },
+      },
+      textAlign: {
+        default: 'left',
+        parseHTML: (el) => (el as HTMLElement).getAttribute('data-align') || 'left',
+        renderHTML: (attrs) => (attrs.textAlign ? { 'data-align': attrs.textAlign } : {}),
       },
     }
   },

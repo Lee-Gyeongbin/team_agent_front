@@ -19,6 +19,24 @@
 
       <span class="library-report-editor-toolbar-divider" />
 
+      <!-- 폰트 크기 -->
+      <select
+        class="library-report-editor-toolbar-select library-report-editor-toolbar-select--font-size"
+        :value="currentFontSize"
+        title="글자 크기"
+        @change="onChangeFontSize"
+      >
+        <option
+          v-for="size in FONT_SIZE_OPTIONS"
+          :key="size"
+          :value="size"
+        >
+          {{ size }}
+        </option>
+      </select>
+
+      <span class="library-report-editor-toolbar-divider" />
+
       <!-- 텍스트 서식 -->
       <button
         class="library-report-editor-toolbar-btn"
@@ -121,6 +139,34 @@
 
       <span class="library-report-editor-toolbar-divider" />
 
+      <!-- 텍스트 / 이미지 정렬 -->
+      <button
+        class="library-report-editor-toolbar-btn"
+        :class="{ 'is-active': isAlignActive('left') }"
+        title="왼쪽 정렬"
+        @click="onSetAlign('left')"
+      >
+        ≡←
+      </button>
+      <button
+        class="library-report-editor-toolbar-btn"
+        :class="{ 'is-active': isAlignActive('center') }"
+        title="가운데 정렬"
+        @click="onSetAlign('center')"
+      >
+        ≡
+      </button>
+      <button
+        class="library-report-editor-toolbar-btn"
+        :class="{ 'is-active': isAlignActive('right') }"
+        title="오른쪽 정렬"
+        @click="onSetAlign('right')"
+      >
+        ≡→
+      </button>
+
+      <span class="library-report-editor-toolbar-divider" />
+
       <!-- 링크 -->
       <button
         class="library-report-editor-toolbar-btn"
@@ -130,6 +176,22 @@
       >
         링크
       </button>
+
+      <!-- 이미지 삽입 -->
+      <button
+        class="library-report-editor-toolbar-btn"
+        title="이미지 삽입"
+        @click="onClickInsertImage"
+      >
+        이미지
+      </button>
+      <input
+        ref="imageInputRef"
+        type="file"
+        accept="image/*"
+        class="library-report-editor-image-input"
+        @change="onImageFileChange"
+      />
 
       <!-- 표 드롭다운 -->
       <div
@@ -376,17 +438,21 @@ import { Placeholder } from '@tiptap/extension-placeholder'
 import { TextStyle } from '@tiptap/extension-text-style'
 import { Color } from '@tiptap/extension-color'
 import { Highlight } from '@tiptap/extension-highlight'
+import { TextAlign } from '@tiptap/extension-text-align'
 import { ResizableImage } from '~/composables/meeting/resizableImage'
 import { TableShortcuts } from '~/composables/meeting/tableShortcuts'
+import { FontSize } from '~/composables/meeting/fontSize'
 import type { ChainedCommands } from '@tiptap/vue-3'
 
 const html = defineModel<string>('html', { default: '' })
 const props = withDefaults(
   defineProps<{
     placeholder?: string
+    tmplHtml?: string
   }>(),
   {
     placeholder: '보고서 내용을 입력하세요...',
+    tmplHtml: '',
   },
 )
 
@@ -418,6 +484,31 @@ const ReportTableCell = TableCell.extend({
   },
 })
 
+// ===== 이미지 삽입 (파일 선택) =====
+const imageInputRef = ref<HTMLInputElement | null>(null)
+
+const insertImageFromFile = (file: File) => {
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    const src = e.target?.result as string
+    if (!src || !editor.value) return
+    editor.value.chain().focus().setImage({ src }).run()
+  }
+  reader.readAsDataURL(file)
+}
+
+const onClickInsertImage = () => {
+  imageInputRef.value?.click()
+}
+
+const onImageFileChange = (e: Event) => {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  insertImageFromFile(file)
+  // 같은 파일 재선택 허용
+  ;(e.target as HTMLInputElement).value = ''
+}
+
 // ===== 에디터 인스턴스 =====
 const editor = useEditor({
   extensions: [
@@ -427,7 +518,9 @@ const editor = useEditor({
       openOnClick: false,
       HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
     }),
-    ResizableImage,
+    TextAlign.configure({ types: ['heading', 'paragraph'] }),
+    // allowBase64: data URL 형태의 src 를 schema 에서 허용
+    ResizableImage.configure({ allowBase64: true }),
     Table.configure({ resizable: true }),
     TableRow,
     ReportTableHeader,
@@ -435,16 +528,58 @@ const editor = useEditor({
     Placeholder.configure({ placeholder: props.placeholder }),
     TextStyle,
     Color,
+    FontSize,
     Highlight.configure({ multicolor: true }),
     TableShortcuts,
   ],
-  content: html.value,
+  content: props.tmplHtml || html.value,
   onUpdate: ({ editor: ed }) => {
     html.value = ed.getHTML()
   },
   editorProps: {
     attributes: {
       class: 'library-report-editor-body',
+    },
+    // 클립보드에서 이미지 파일 붙여넣기
+    handlePaste(view, event) {
+      const items = Array.from(event.clipboardData?.items ?? [])
+      const imageItem = items.find((item) => item.type.startsWith('image/'))
+      if (!imageItem) return false
+      event.preventDefault()
+      const file = imageItem.getAsFile()
+      if (!file) return false
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const src = e.target?.result as string
+        if (!src) return
+        const { schema, tr } = view.state
+        const node = schema.nodes.image?.create({ src })
+        if (!node) return
+        view.dispatch(tr.replaceSelectionWith(node))
+      }
+      reader.readAsDataURL(file)
+      return true
+    },
+    // 드래그&드롭으로 이미지 파일 삽입
+    handleDrop(view, event, _slice, moved) {
+      if (moved) return false
+      const files = Array.from((event as DragEvent).dataTransfer?.files ?? [])
+      const imageFile = files.find((f) => f.type.startsWith('image/'))
+      if (!imageFile) return false
+      event.preventDefault()
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const src = e.target?.result as string
+        if (!src) return
+        const pos = view.posAtCoords({ left: (event as DragEvent).clientX, top: (event as DragEvent).clientY })
+        const { schema } = view.state
+        const node = schema.nodes.image?.create({ src })
+        if (!node) return
+        const insertAt = pos?.pos ?? view.state.selection.from
+        view.dispatch(view.state.tr.insert(insertAt, node))
+      }
+      reader.readAsDataURL(imageFile)
+      return true
     },
   },
 })
@@ -463,6 +598,26 @@ watch(
 onBeforeUnmount(() => {
   editor.value?.destroy()
 })
+
+// ===== 툴바 — 폰트 크기 =====
+const FONT_SIZE_OPTIONS = ['8', '9', '10', '11', '12', '14', '16', '18', '20', '24', '28', '32', '36', '48']
+const DEFAULT_FONT_SIZE = '14'
+
+const currentFontSize = computed<string>(() => {
+  if (!editor.value) return DEFAULT_FONT_SIZE
+  const fs = editor.value.getAttributes('textStyle').fontSize as string | undefined
+  if (!fs) return DEFAULT_FONT_SIZE
+  return fs.replace('px', '')
+})
+
+const onChangeFontSize = (e: Event) => {
+  const size = (e.target as HTMLSelectElement).value
+  if (!size) {
+    editor.value?.chain().focus().unsetFontSize().run()
+  } else {
+    editor.value?.chain().focus().setFontSize(`${size}px`).run()
+  }
+}
 
 // ===== 툴바 — 색상 팔레트 =====
 const textColors = ['#000000', '#5c6677', '#d92d20', '#d97706', '#0d8a5b', '#3b82f6', '#7c3aed', '#ec4899']
@@ -484,9 +639,10 @@ const onSelectHighlight = (color: string) => editor.value?.chain().focus().toggl
 const onClearHighlight = () => editor.value?.chain().focus().unsetHighlight().run()
 
 // ===== 툴바 — 공통 helpers =====
-const isActive = (name: string, attrs?: Record<string, unknown>) => {
+const isActive = (nameOrAttrs: string | Record<string, unknown>, attrs?: Record<string, unknown>) => {
   if (!editor.value) return false
-  return attrs ? editor.value.isActive(name, attrs) : editor.value.isActive(name)
+  if (typeof nameOrAttrs === 'object') return editor.value.isActive(nameOrAttrs)
+  return attrs ? editor.value.isActive(nameOrAttrs, attrs) : editor.value.isActive(nameOrAttrs)
 }
 
 const run = (fn: (chain: ChainedCommands) => ChainedCommands) => {
@@ -504,6 +660,25 @@ const currentBlockType = computed(() => {
 
 const canUndo = computed(() => editor.value?.can().undo() ?? false)
 const canRedo = computed(() => editor.value?.can().redo() ?? false)
+
+/** 이미지 노드 선택 시에는 node attribute, 그 외엔 단락 textAlign 적용 */
+const onSetAlign = (align: 'left' | 'center' | 'right') => {
+  if (!editor.value) return
+  if (editor.value.isActive('image')) {
+    editor.value.chain().focus().updateAttributes('image', { textAlign: align }).run()
+  } else {
+    editor.value.chain().focus().setTextAlign(align).run()
+  }
+}
+
+/** 정렬 active 상태 — 이미지/단락 모두 반영 */
+const isAlignActive = (align: 'left' | 'center' | 'right') => {
+  if (!editor.value) return false
+  if (editor.value.isActive('image')) {
+    return (editor.value.getAttributes('image').textAlign ?? 'left') === align
+  }
+  return editor.value.isActive({ textAlign: align })
+}
 
 const onChangeHeading = (e: Event) => {
   const value = (e.target as HTMLSelectElement).value
@@ -702,6 +877,11 @@ const onEditorClick = (e: MouseEvent) => {
   }
 }
 
+// 이미지 파일 선택용 hidden input
+.library-report-editor-image-input {
+  display: none;
+}
+
 .library-report-editor-toolbar-divider {
   display: inline-block;
   width: 1px;
@@ -724,6 +904,12 @@ const onEditorClick = (e: MouseEvent) => {
   &:hover {
     border-color: $color-text-muted;
   }
+}
+
+.library-report-editor-toolbar-select--font-size {
+  width: 58px;
+  padding: 0 4px;
+  text-align: center;
 }
 
 // ===== 표 드롭다운 =====
@@ -993,6 +1179,13 @@ const onEditorClick = (e: MouseEvent) => {
   a {
     color: var(--color-primary);
     text-decoration: underline;
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    border-radius: $border-radius-sm;
   }
 }
 

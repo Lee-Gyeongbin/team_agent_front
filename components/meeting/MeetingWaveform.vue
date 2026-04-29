@@ -1,7 +1,7 @@
 <template>
   <div
     class="meeting2-waveform"
-    :class="`is-${recordStatus}`"
+    :class="isRecording ? 'is-recording' : isConnecting ? 'is-connecting' : 'is-idle'"
   >
     <span
       v-for="(bar, idx) in bars"
@@ -13,9 +13,9 @@
 </template>
 
 <script setup lang="ts">
-import { useMeeting2Store } from '~/composables/meeting/useMeeting2Store'
+import { useRealtimeTranscription } from '~/composables/meeting/useRealtimeTranscription'
 
-const { recordStatus } = useMeeting2Store()
+const { isRecording, isConnecting } = useRealtimeTranscription()
 
 // 🔽 더미 — 백엔드에서 WebSocket으로 audio level 데이터 받기로 결정
 //    실제 연동 시: 백엔드가 push하는 levels 배열을 bars.value에 그대로 할당
@@ -26,9 +26,9 @@ const bars = ref<number[]>(Array(BAR_COUNT).fill(20))
 let timer: ReturnType<typeof setInterval> | null = null
 
 watch(
-  recordStatus,
-  (status) => {
-    if (status === 'recording') {
+  isRecording,
+  (recording) => {
+    if (recording) {
       // 백엔드 연결 전 임시 — 시각 효과용 random 막대
       timer = setInterval(() => {
         bars.value = bars.value.map(() => 20 + Math.random() * 70)
@@ -36,11 +36,7 @@ watch(
     } else {
       if (timer) clearInterval(timer)
       timer = null
-      // 대기 / 중지됨 — 작은 균일 막대로 reset
-      // 일시정지 — 마지막 파형 유지 (CSS opacity로 흐리게)
-      if (status === 'idle' || status === 'stopped') {
-        bars.value = Array(BAR_COUNT).fill(20)
-      }
+      bars.value = Array(BAR_COUNT).fill(20)
     }
   },
   { immediate: true },

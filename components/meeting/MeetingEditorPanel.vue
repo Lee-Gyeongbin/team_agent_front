@@ -5,32 +5,9 @@
   >
     <div class="meeting2-panel-header">
       <span class="meeting2-panel-title"> 자동 생성된 회의록 </span>
-      <div class="meeting2-panel-actions">
-        <UiButton
-          class="meeting2-panel-action-btn"
-          variant="line-secondary"
-          size="xs"
-          @click="onClickTemplate"
-        >
-          <template #icon-left>
-            <i class="icon-document size-14" />
-          </template>
-          템플릿 선택
-        </UiButton>
-        <UiButton
-          class="meeting2-panel-action-btn"
-          variant="primary-line"
-          size="xs"
-          @click="onClickRegenerate"
-        >
-          <template #icon-left>
-            <i class="icon-refresh size-14" />
-          </template>
-          AI 요약 재생성
-        </UiButton>
-      </div>
     </div>
 
+    <!-- ── WYSIWYG 에디터 ────────────────────────────────────────────── -->
     <MeetingEditorToolbar />
     <div class="meeting2-editor-relative">
       <MeetingEditorBody />
@@ -120,7 +97,6 @@
 
 <script setup lang="ts">
 import { useEditor } from '@tiptap/vue-3'
-// Tiptap 3.x — 모두 named export
 import { StarterKit } from '@tiptap/starter-kit'
 import { Underline } from '@tiptap/extension-underline'
 import { Link } from '@tiptap/extension-link'
@@ -135,12 +111,12 @@ import { Placeholder } from '@tiptap/extension-placeholder'
 import { TextStyle } from '@tiptap/extension-text-style'
 import { Color } from '@tiptap/extension-color'
 import { Highlight } from '@tiptap/extension-highlight'
-import { useMeeting2Store } from '~/composables/meeting/useMeeting2Store'
+import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
 import { meetingEditorKey } from '~/composables/meeting/meetingEditorKey'
+const { currentMeeting, meetingDetail, handleSaveMeeting } = useMeetingStore()
 
-const { currentMeeting, openTemplateSelectModal, handleRegenerateMinutes, handleSaveMeeting } = useMeeting2Store()
+// ── WYSIWYG 에디터 ───────────────────────────────────────────────────
 
-// ===== 본문 자동 저장 (디바운스 800ms) =====
 const isAutoSaving = ref(false)
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -178,26 +154,18 @@ const insertImageAsBase64 = (file: File) => {
 
 const editor = useEditor({
   extensions: [
-    StarterKit.configure({
-      // Tiptap StarterKit이 기본 제공: bold/italic/strike/heading/list/blockquote/codeBlock/history 등
-    }),
+    StarterKit.configure({}),
     Underline,
     Link.configure({
       openOnClick: false,
-      HTMLAttributes: {
-        rel: 'noopener noreferrer',
-        target: '_blank',
-      },
+      HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
     }),
     ResizableImage,
     Table.configure({ resizable: true }),
     TableRow,
     TableHeader,
     TableCell,
-    Placeholder.configure({
-      placeholder: '회의록 내용을 입력하세요...',
-    }),
-    // 글자색 / 형광펜 (Color는 TextStyle mark에 의존)
+    Placeholder.configure({ placeholder: '회의록 내용을 입력하세요...' }),
     TextStyle,
     Color,
     Highlight.configure({ multicolor: true }),
@@ -211,12 +179,9 @@ const editor = useEditor({
     triggerAutoSave(html)
   },
   editorProps: {
-    attributes: {
-      class: 'meeting2-editor-body',
-    },
-    /** 파일 탐색기에서 이미지 드래그 앤 드롭 → base64 삽입 */
+    attributes: { class: 'meeting2-editor-body' },
     handleDrop(_view, event, _slice, moved) {
-      if (moved) return false // 에디터 내부 이동은 기본 동작
+      if (moved) return false
       const dragEvent = event as DragEvent
       const files = dragEvent.dataTransfer?.files
       if (!files || files.length === 0) return false
@@ -226,7 +191,6 @@ const editor = useEditor({
       imageFiles.forEach(insertImageAsBase64)
       return true
     },
-    /** 클립보드에 이미지 → 붙여넣기 시 삽입 (스크린샷 캡처 → Ctrl+V) */
     handlePaste(_view, event) {
       const files = event.clipboardData?.files
       if (!files || files.length === 0) return false
@@ -245,7 +209,6 @@ watch(
   () => {
     if (editor.value && currentMeeting.value) {
       const html = currentMeeting.value.minutesContent ?? ''
-      // 외부 변경 시에만 setContent (사용자 입력 → onUpdate → 다시 watch 무한 루프 방지)
       if (editor.value.getHTML() !== html) {
         editor.value.commands.setContent(html, { emitUpdate: false })
       }
@@ -253,16 +216,24 @@ watch(
   },
 )
 
+// meetingDetail에서 minutes가 로드되면 에디터 초기화 (회의 종료 직후)
+watch(
+  () => meetingDetail.value.minutes,
+  (newMinutes) => {
+    if (!newMinutes || !editor.value || !currentMeeting.value) return
+    // 에디터가 아직 비어있는 경우에만 minutes 내용 반영
+    const current = editor.value.getHTML()
+    if (!current || current === '<p></p>') {
+      const html = currentMeeting.value.minutesContent
+      if (html) editor.value.commands.setContent(html, { emitUpdate: false })
+    }
+  },
+)
+
 // 자식 컴포넌트(Toolbar/Body)에서 사용할 에디터 인스턴스 주입
 provide(meetingEditorKey, editor)
 
-/**
- * 마지막 저장 시각 라벨
- * - 60초 이내 → "방금 전"
- * - 같은 날 → "오늘 HH:MM"
- * - 그 외 → "YYYY-MM-DD HH:MM"
- * - 파싱 실패 → 원본 문자열
- */
+/** 마지막 저장 시각 라벨 */
 const lastSavedLabel = computed(() => {
   const raw = currentMeeting.value?.updatedAt
   if (!raw) return '-'
@@ -280,10 +251,7 @@ const lastSavedLabel = computed(() => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${hhmm}`
 })
 
-const onClickTemplate = () => openTemplateSelectModal()
-const onClickRegenerate = () => handleRegenerateMinutes()
-
-// ===== 표 floating 툴바 위치 계산 =====
+// ── 표 floating 툴바 ─────────────────────────────────────────────────
 const showTableBubble = ref(false)
 const bubbleTop = ref(0)
 const bubbleLeft = ref(0)
@@ -293,7 +261,6 @@ const updateTableBubble = () => {
     showTableBubble.value = false
     return
   }
-  // 현재 selection의 DOM에서 table element 찾기
   const { from } = editor.value.state.selection
   const domAtPos = editor.value.view.domAtPos(from)
   let cur: Node | null = domAtPos.node
@@ -309,7 +276,6 @@ const updateTableBubble = () => {
     showTableBubble.value = false
     return
   }
-  // 스크롤 컨테이너(.meeting2-editor-scroll) 기준 absolute 위치
   const editorScrollEl = (editor.value.view.dom as HTMLElement).closest('.meeting2-editor-scroll') as HTMLElement | null
   if (!editorScrollEl) {
     showTableBubble.value = false
@@ -334,7 +300,6 @@ watch(editor, (ed) => {
   ed.on('transaction', updateTableBubble)
 })
 
-/** 패널 빈 영역 클릭 시 에디터 포커스 (사용성 개선) */
 const onPanelClick = (e: MouseEvent) => {
   const target = e.target as HTMLElement
   if (target.closest('.meeting2-panel-header, .meeting2-editor-toolbar, button, a, input, select')) return
@@ -342,7 +307,6 @@ const onPanelClick = (e: MouseEvent) => {
 }
 
 onBeforeUnmount(() => {
-  // 미저장 변경분이 있으면 즉시 flush
   if (autoSaveTimer) {
     clearTimeout(autoSaveTimer)
     autoSaveTimer = null

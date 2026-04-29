@@ -30,6 +30,8 @@
           />
           <ChatLunchAgentCard
             v-else-if="parsedLunchRecommendations.length"
+            :readonly="true"
+            :initial-payload="message.lunchFormPayload"
             :recommendations="parsedLunchRecommendations"
             :theme-icon-class-nm="surveyThemeAgent?.iconClassNm ?? ''"
             :theme-color-hex="surveyThemeAgent?.colorHex ?? ''"

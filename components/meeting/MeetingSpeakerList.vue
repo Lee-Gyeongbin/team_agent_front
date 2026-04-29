@@ -98,10 +98,10 @@
 </template>
 
 <script setup lang="ts">
-import { useMeeting2Store } from '~/composables/meeting/useMeeting2Store'
+import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
 import type { MeetingSpeaker } from '~/types/meeting2'
 
-const { currentMeeting, openSpeakerEditModal, handleSaveSpeakers } = useMeeting2Store()
+const { currentMeeting, openSpeakerEditModal, handleSaveSpeakers } = useMeetingStore()
 
 const speakers = computed(() => currentMeeting.value?.speakers ?? [])
 

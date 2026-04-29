@@ -11,10 +11,7 @@ const isHtmlValue = (s: string): boolean => /^\s*</.test(s)
  *   - <th data-label-key="..."><p>라벨</p></th>
  *   - <td data-value-key="...">HTML 값 내용</td>
  */
-export const buildReportEditorHtml = (
-  values: LibraryGeneratedReportValues,
-  rows: LibraryReportRow[],
-): string => {
+export const buildReportEditorHtml = (values: LibraryGeneratedReportValues, rows: LibraryReportRow[]): string => {
   if (rows.length === 0) return ''
 
   const bodyRows = rows
@@ -23,8 +20,7 @@ export const buildReportEditorHtml = (
       const rawValue = String(values[row.valueKey] ?? '')
       // 이미 HTML이면 그대로 사용 → round-trip 안정성 확보
       // 아니면 toHtmlContent로 마크다운/플레인 텍스트를 HTML로 변환
-      const valueHtml =
-        rawValue.trim() ? (isHtmlValue(rawValue) ? rawValue : toHtmlContent(rawValue)) : '<p></p>'
+      const valueHtml = rawValue.trim() ? (isHtmlValue(rawValue) ? rawValue : toHtmlContent(rawValue)) : '<p></p>'
       return (
         `<tr>` +
         `<th data-label-key="${row.labelKey}"><p>${labelText}</p></th>` +

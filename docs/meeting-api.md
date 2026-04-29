@@ -186,7 +186,7 @@ interface Meeting {
 
 ---
 
-## 4. 엔드포인트 명세 (구현된 것)
+## 4. 엔드포인트 명세 (구현된 것 — 8개)
 
 > 현재 프론트는 Mock으로 `POST /mock/meeting/*`을 호출합니다. 실제 API는 `POST /api/meeting/*`로 전환됩니다 (proxy 설정).
 
@@ -308,21 +308,6 @@ Body: { names: string[] }
 
 **프론트 사용**: 메일 발송 모달 열 때 `Meeting.participants`(이름 배열)을 사용자 정보로 자동 매칭
 
-### 4.9. STT 발화 추가 (⚠ Mock 전용)
-
-```
-POST /meeting/stt/dummy
-Body: { meetingId: string }
-```
-
-**응답**
-
-```ts
-{ result: 'SUCCESS', data: MeetingSttItem | null, message: '' }
-```
-
-> ⚠ **이 엔드포인트는 프론트 데모용 Mock입니다.** 실제 STT 처리 방식은 [6.1 STT 처리 방식](#61-stt-처리-방식-가장-큰-결정) 참조.
-
 ---
 
 ## 5. 미구현 — 추가 필요한 엔드포인트
@@ -347,17 +332,7 @@ Body: { meetingId: string }
 - **응답**: `{ data: { minutesContent: string } }` (HTML)
 - **고려**: 처리 시간이 길면 비동기 잡으로 → 진행 상태 polling 필요?
 
-### 5.4. AI 요약 재생성
-
-```
-POST /meeting/ai/regenerate
-Body: { meetingId: string, templateId?: string }
-```
-
-- 현재 프론트: `handleRegenerateMinutes()`가 토스트만 띄움
-- 백엔드: LLM 재호출 후 새 `minutesContent` 반환
-
-### 5.5. 파일 다운로드 (PDF/DOCX/HWP/TXT/MD 변환)
+### 5.4. 파일 다운로드 (PDF/DOCX/HWP 변환)
 
 ```
 POST /meeting/download
@@ -368,8 +343,9 @@ Body: { meetingId: string, format: MeetingFileFormat, fileName: string }
   - (a) Binary (Content-Disposition 헤더로 직접 다운로드)
   - (b) URL (S3 등에 저장된 변환 파일 URL 응답 → 프론트가 `<a href>` 다운로드)
   - 권장: (b) — 큰 파일 처리 + 재다운로드 가능
+- **현재**: `txt` / `md`는 클라이언트 변환으로 동작. `pdf` / `docx` / `hwp`는 백엔드 변환 필요
 
-### 5.6. 메일 발송
+### 5.5. 메일 발송
 
 ```
 POST /meeting/mail/send
@@ -378,41 +354,6 @@ Body: { meetingId: string, recipients: MeetingRecipient[], format?: MeetingFileF
 
 - 회의록을 첨부 또는 본문에 임베드해서 발송
 - 첨부 파일 형식 협의 필요 (PDF가 일반적)
-
-### 5.7. 공유 링크 생성
-
-```
-POST /meeting/share/create
-Body: { meetingId: string, expiresIn?: number }
-```
-
-- **응답**: `{ data: { shareUrl: string, expiresAt: string } }`
-- 프론트 현재: `handleShareMeeting()`가 토스트만 띄움
-- 만료 / 권한(읽기 전용?) 정책 협의 필요
-
-### 5.8. 템플릿 목록/적용
-
-```
-POST /meeting/template/list
-→ { list: MeetingTemplate[] }
-
-POST /meeting/template/apply
-Body: { meetingId: string, templateId: string }
-→ { data: Meeting }   // 템플릿 적용된 minutesContent 반환
-```
-
-```ts
-interface MeetingTemplate {
-  id: string
-  name: string         // "기본 템플릿", "주간 리뷰", "프로젝트 킥오프" 등
-  description: string
-  contentHtml?: string // 템플릿 본문 (편집 시 placeholder)
-}
-```
-
-### 5.9. 회의록 인쇄/PDF 미리보기 (선택)
-
-다운로드 전에 미리보기를 띄우고 싶다면 별도 endpoint 또는 클라이언트에서 처리.
 
 ---
 
@@ -456,10 +397,6 @@ interface Meeting {
   audioFile?: string              // 녹음 파일 경로/URL
   audioFileSize?: number          // 용량 (bytes)
   audioDuration?: number          // 녹음 시간 (seconds)
-
-  sharedLinkId?: string           // 공유 링크 토큰
-  sharedExpiresAt?: string        // 공유 만료 시각
-  isShared?: boolean              // 공유 활성 여부
 
   organizer?: string              // 작성자/소유자 userId — 권한 체크용
   createdBy?: string              // (organizer와 같다면 1개로 통합)
@@ -529,9 +466,7 @@ interface Meeting {
     ▼
 [3. 회의록 자동 생성]
     │
-    │ 사용자: "AI 요약 재생성" 버튼 (또는 자동 트리거)
-    │ → POST /meeting/ai/regenerate (LLM 호출)
-    │ → 응답으로 minutesContent 갱신
+    │ 서버: STT 종료 후 LLM이 minutesContent 자동 생성 (트리거/방식 협의)
     │
     ▼
 [4. 회의록 편집]
@@ -543,13 +478,13 @@ interface Meeting {
     │ → POST /meeting/speaker/save 또는 save-batch
     │
     ▼
-[5. 저장 및 공유]
+[5. 저장 및 메일 발송]
     │
-    │ 파일 저장: → POST /meeting/download (PDF/DOCX/HWP/TXT/MD 변환)
+    │ 파일 저장(PDF/DOCX/HWP): → POST /meeting/download (서버 변환)
+    │ 파일 저장(TXT/MD):       → 클라이언트 변환 (API 불필요)
     │ 메일 발송: → POST /meeting/user/match-names (참석자 매칭)
     │           → POST /meeting/user/search (수신자 추가 검색)
     │           → POST /meeting/mail/send
-    │ 공유 링크: → POST /meeting/share/create
     │
     ▼ (단계별 status 갱신은 백엔드가 처리 권장)
    [완료]
@@ -748,7 +683,6 @@ team-agent-front/
 │   │   └── MeetingActionMenu.vue             # 파일 저장/공유/메일
 │   ├── MeetingFileSaveModal.vue              # 파일 저장 모달
 │   ├── MeetingMailSendModal.vue              # 메일 발송 모달
-│   ├── MeetingTemplateSelectModal.vue        # 템플릿 선택 모달
 │   └── MeetingSpeakerEditModal.vue           # 화자 색상/별칭 편집 모달
 ├── pages/meeting/
 │   ├── index.vue                             # 회의 목록
@@ -765,3 +699,4 @@ team-agent-front/
 | 날짜 | 내용 |
 |------|------|
 | 2026-04-27 | 초안 작성 — Mock API 기반 프론트 구현 후 백엔드 협의용 |
+| 2026-04-27 | 더미 UI/액션 정리: STT Mock(`/stt/dummy`), AI 재생성, 공유 링크, 템플릿 제거. 8개 endpoint로 슬림화 |

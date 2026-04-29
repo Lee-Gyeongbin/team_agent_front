@@ -1,15 +1,45 @@
-import type { ChatMessage, LunchAgentFormPayload } from '~/types/chat'
+import type { ChatMessage, LunchAgentFormPayload, RegionLocationMap } from '~/types/chat'
 
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-export const LUNCH_LOCATION_MAP: Record<string, Record<string, string[]>> = {
-  서울특별시: {
-    강남구: ['역삼동', '삼성동', '논현동'],
-    마포구: ['서교동', '합정동', '상암동'],
-  },
-  경기도: {
-    성남시: ['분당동', '정자동', '서현동'],
-    수원시: ['영통동', '광교동', '인계동'],
-  },
+/**
+ * 브라우저 geolocation으로 WGS84 좌표 획득 (selectRegionTree.do lat/lng 쿼리용).
+ * 비지원·거부·타임아웃 시 null.
+ */
+export const getLunchGeolocationCoords = (): Promise<{ lat: number; lng: number } | null> =>
+  new Promise((resolve) => {
+    if (typeof window === 'undefined' || !navigator?.geolocation) {
+      resolve(null)
+      return
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude
+        const lng = pos.coords.longitude
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+          resolve(null)
+          return
+        }
+        resolve({ lat, lng })
+      },
+      () => resolve(null),
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
+    )
+  })
+
+/** 지역 트리 응답(data)을 점심카드 위치 셀렉트 맵으로 정규화 */
+export const normalizeLunchLocationMap = (regionData?: RegionLocationMap): RegionLocationMap => {
+  if (!regionData || typeof regionData !== 'object') return {}
+
+  return Object.fromEntries(
+    Object.entries(regionData).map(([sidoName, sigunguObj]) => [
+      sidoName,
+      Object.fromEntries(
+        Object.entries(sigunguObj ?? {}).map(([sigunguName, dongList]) => [
+          sigunguName,
+          Array.isArray(dongList) ? dongList.map((dong) => String(dong ?? '').trim()).filter(Boolean) : [],
+        ]),
+      ),
+    ]),
+  )
 }
 
 export const LUNCH_PEOPLE_OPTIONS = ['1명', '2명', '3~4명', '5명 이상']

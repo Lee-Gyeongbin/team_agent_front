@@ -171,6 +171,22 @@
         <p class="tmpl-field-drag-hint">항목을 드래그하여 순서를 변경할 수 있습니다.</p>
       </UiSettingSection>
 
+      <!-- HTML 템플릿 (템플릿형만) -->
+      <UiSettingSection
+        v-show="tmplType === 'T'"
+        title="HTML 문서 템플릿"
+        label-width="132px"
+        collapsible
+      >
+        <p class="tmpl-html-hint">문서 생성 시 초기 HTML 구조로 사용됩니다. 비워두면 기본 레이아웃이 적용됩니다.</p>
+        <div class="tmpl-html-editor-wrap">
+          <LibraryReportEditor
+            v-model:html="tmplHtml"
+            placeholder="HTML 템플릿 내용을 입력하세요..."
+          />
+        </div>
+      </UiSettingSection>
+
       <!-- LLM 프롬프트 -->
       <UiSettingSection
         title="LLM 프롬프트 템플릿"
@@ -332,6 +348,7 @@ const description = ref('')
 const fields = ref<TmplField[]>(DEFAULT_FIELDS())
 const llmPromptSmry = ref('')
 const llmPrompt = ref('')
+const tmplHtml = ref('')
 
 const promptVariables = computed(() => {
   const src = llmPrompt.value ?? ''
@@ -354,6 +371,7 @@ const resetForm = () => {
   fields.value = DEFAULT_FIELDS()
   llmPromptSmry.value = ''
   llmPrompt.value = ''
+  tmplHtml.value = ''
 }
 
 const normalizeField = (r: TmplField, tmplId: string): TmplField => ({
@@ -380,6 +398,7 @@ const loadFromTemplate = (t: TmplBaseInfo) => {
     fields.value = DEFAULT_FIELDS()
   }
   llmPrompt.value = t.llmPrompt
+  tmplHtml.value = t.tmplHtml ?? ''
 }
 
 watch(tmplType, (v) => {
@@ -475,6 +494,7 @@ const onSave = () => {
     description: description.value.trim(),
     llmPromptSmry: smry,
     llmPrompt: promptBody,
+    tmplHtml: tmplType.value === 'T' ? tmplHtml.value : '',
     fields: outFields,
     useYn: props.template?.useYn || 'Y',
   }
@@ -710,5 +730,19 @@ const onSave = () => {
   @include typo($body-xsmall);
   color: $color-text-muted;
   margin-right: 4px;
+}
+
+.tmpl-html-hint {
+  margin: 0 0 10px;
+  @include typo($body-xsmall);
+  color: $color-text-muted;
+  line-height: $line-height-base;
+}
+
+.tmpl-html-editor-wrap {
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  overflow: hidden;
+  min-height: 280px;
 }
 </style>
