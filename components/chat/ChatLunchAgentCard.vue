@@ -69,33 +69,35 @@
       class="chat-lunch-agent-card__body"
     >
       <div
+        ref="locationFieldRef"
         class="chat-lunch-agent-card__field"
         :class="{ 'is-answered': isLocationAnswered }"
       >
-        <p class="chat-lunch-agent-card__label">현재 위치는?</p>
+        <p class="chat-lunch-agent-card__label">점심메뉴를 추천받을 지역은? (위치 허용 시 자동으로 선택됩니다)</p>
         <div class="chat-lunch-agent-card__location-grid">
           <UiSelect
             :model-value="form.sido"
-            :options="sidoOptions"
-            :disabled="props.readonly"
-            @update:model-value="!props.readonly && onChangeSido($event)"
+            :options="sidoSelectOptions"
+            :disabled="props.readonly || isRegionLoading"
+            @update:model-value="!props.readonly && setFormValue('sido', $event)"
           />
           <UiSelect
             :model-value="form.sigungu"
-            :options="sigunguOptions"
-            :disabled="props.readonly"
-            @update:model-value="!props.readonly && onChangeSigungu($event)"
+            :options="sigunguSelectOptions"
+            :disabled="props.readonly || isRegionLoading || !hasSelectedSido"
+            @update:model-value="!props.readonly && setFormValue('sigungu', $event)"
           />
           <UiSelect
             :model-value="form.dong"
-            :options="dongOptions"
-            :disabled="props.readonly"
-            @update:model-value="!props.readonly && onChangeDong($event)"
+            :options="dongSelectOptions"
+            :disabled="props.readonly || isRegionLoading || !hasSelectedSigungu"
+            @update:model-value="!props.readonly && setFormValue('dong', $event)"
           />
         </div>
       </div>
 
       <div
+        ref="moodFieldRef"
         class="chat-lunch-agent-card__field"
         :class="{ 'is-answered': !!form.mood }"
       >
@@ -107,7 +109,7 @@
             :variant="form.mood === option ? 'primary' : 'line-secondary'"
             size="sm"
             :disabled="props.readonly"
-            @click="!props.readonly && onSelectMood(option)"
+            @click="!props.readonly && setFormValue('mood', option)"
           >
             {{ option }}
           </UiButton>
@@ -115,6 +117,7 @@
       </div>
 
       <div
+        ref="budgetFieldRef"
         class="chat-lunch-agent-card__field"
         :class="{ 'is-answered': !!form.budget }"
       >
@@ -126,7 +129,7 @@
             :variant="form.budget === option ? 'primary' : 'line-secondary'"
             size="sm"
             :disabled="props.readonly"
-            @click="!props.readonly && onSelectBudget(option)"
+            @click="!props.readonly && setFormValue('budget', option)"
           >
             {{ option }}
           </UiButton>
@@ -134,6 +137,7 @@
       </div>
 
       <div
+        ref="peopleFieldRef"
         class="chat-lunch-agent-card__field"
         :class="{ 'is-answered': !!form.peopleCount }"
       >
@@ -145,7 +149,7 @@
             :variant="form.peopleCount === option ? 'primary' : 'line-secondary'"
             size="sm"
             :disabled="props.readonly"
-            @click="!props.readonly && onSelectPeople(option)"
+            @click="!props.readonly && setFormValue('peopleCount', option)"
           >
             {{ option }}
           </UiButton>
@@ -153,6 +157,7 @@
       </div>
 
       <div
+        ref="cuisineFieldRef"
         class="chat-lunch-agent-card__field"
         :class="{ 'is-answered': !!form.cuisineType }"
       >
@@ -164,7 +169,7 @@
             :variant="form.cuisineType === option ? 'primary' : 'line-secondary'"
             size="sm"
             :disabled="props.readonly"
-            @click="!props.readonly && onSelectCuisine(option)"
+            @click="!props.readonly && setFormValue('cuisineType', option)"
           >
             {{ option }}
           </UiButton>
@@ -197,6 +202,20 @@
           <div class="chat-lunch-agent-card__result-meta-row">
             <dt>위치</dt>
             <dd>{{ item.location }}</dd>
+          </div>
+          <div class="chat-lunch-agent-card__result-meta-row">
+            <dt>URL</dt>
+            <dd class="chat-lunch-agent-card__result-address">
+              <a
+                v-if="item.address"
+                :href="item.address"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {{ item.address }}
+              </a>
+              <span v-else>-</span>
+            </dd>
           </div>
         </dl>
       </li>
@@ -236,13 +255,14 @@
 </template>
 
 <script setup lang="ts">
-import type { LunchAgentFormPayload, LunchRecommendationItem } from '~/types/chat'
+import type { LunchAgentFormPayload, LunchRecommendationItem, RegionSelectedLocation } from '~/types/chat'
 import {
+  getLunchGeolocationCoords,
   LUNCH_BUDGET_OPTIONS,
   LUNCH_CUISINE_OPTIONS,
-  LUNCH_LOCATION_MAP,
   LUNCH_MOOD_OPTIONS,
   LUNCH_PEOPLE_OPTIONS,
+  normalizeLunchLocationMap,
 } from '~/utils/chat/lunchAgentUtil'
 
 interface Props {
@@ -265,22 +285,29 @@ const emit = defineEmits<{
   submit: [payload: LunchAgentFormPayload]
   close: []
 }>()
+const { fetchSelectRegionTree } = useChatApi()
 
 const toSelectOptions = (list: string[]) => list.map((item) => ({ label: item, value: item }))
-const sidoList = Object.keys(LUNCH_LOCATION_MAP)
+const locationMap = ref<Record<string, Record<string, string[]>>>({})
+const isRegionLoading = ref(false)
 const form = reactive<LunchAgentFormPayload>({
-  sido: sidoList[0] ?? '',
+  sido: '',
   sigungu: '',
   dong: '',
-  mood: LUNCH_MOOD_OPTIONS[0] ?? '',
-  budget: LUNCH_BUDGET_OPTIONS[0] ?? '',
-  peopleCount: LUNCH_PEOPLE_OPTIONS[0] ?? '',
-  cuisineType: LUNCH_CUISINE_OPTIONS[0] ?? '',
+  mood: '',
+  budget: '',
+  peopleCount: '',
+  cuisineType: '',
 })
 
 const recommendations = computed(() => props.recommendations ?? [])
 const hasResultRecommendations = computed(() => recommendations.value.length > 0)
 const isLocationAnswered = computed(() => !!form.sido && !!form.sigungu && !!form.dong)
+const hasSelectedSido = computed(() => !!form.sido)
+const hasSelectedSigungu = computed(() => !!form.sigungu)
+const isLocationSelectionMode = computed(
+  () => !hasResultRecommendations.value && !props.readonly && !props.initialPayload,
+)
 const introTitleChars = '점심 메뉴 추천 에이전트'.split('')
 const introSubtitleChars = '조건을 분석하고 있습니다...'.split('')
 
@@ -300,6 +327,55 @@ const themeStyle = computed(() => {
   }
 })
 const themeIconClassNm = computed(() => String(props.themeIconClassNm || '').trim())
+const locationFieldRef = ref<HTMLElement | null>(null)
+const moodFieldRef = ref<HTMLElement | null>(null)
+const budgetFieldRef = ref<HTMLElement | null>(null)
+const peopleFieldRef = ref<HTMLElement | null>(null)
+const cuisineFieldRef = ref<HTMLElement | null>(null)
+
+const focusField = (fieldEl: HTMLElement | null) => {
+  if (!fieldEl) return
+  fieldEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  const focusTarget = fieldEl.querySelector<HTMLElement>(
+    'button,[role="combobox"],[role="button"],input,[tabindex]:not([tabindex="-1"])',
+  )
+  focusTarget?.focus()
+}
+
+const fetchLunchRegionTree = async () => {
+  if (!isLocationSelectionMode.value) return
+  if (Object.keys(locationMap.value).length > 0) return
+  isRegionLoading.value = true
+  try {
+    const coords = await getLunchGeolocationCoords()
+    const res = await fetchSelectRegionTree(coords)
+    locationMap.value = normalizeLunchLocationMap(res.data)
+    applySelectedLocationToForm(res.selected)
+  } catch (error) {
+    locationMap.value = {}
+    const message = error instanceof Error && error.message ? error.message : '지역 정보를 불러오지 못했습니다.'
+    openToast({ message, type: 'error' })
+  } finally {
+    isRegionLoading.value = false
+  }
+}
+
+const applySelectedLocationToForm = (selected?: RegionSelectedLocation) => {
+  const selectedSido = String(selected?.sido ?? '').trim()
+  const selectedSigungu = String(selected?.sigungu ?? '').trim()
+  const selectedDong = String(selected?.dong ?? '').trim()
+  if (!selectedSido || !selectedSigungu || !selectedDong) return
+  if (form.sido || form.sigungu || form.dong) return
+
+  const sigunguMap = locationMap.value[selectedSido]
+  if (!sigunguMap) return
+  const dongListBySigungu = sigunguMap[selectedSigungu]
+  if (!Array.isArray(dongListBySigungu) || !dongListBySigungu.includes(selectedDong)) return
+
+  form.sido = selectedSido
+  form.sigungu = selectedSigungu
+  form.dong = selectedDong
+}
 
 const applyPayloadToForm = (payload?: LunchAgentFormPayload) => {
   if (!payload) return
@@ -312,33 +388,53 @@ const applyPayloadToForm = (payload?: LunchAgentFormPayload) => {
   form.cuisineType = payload.cuisineType
 }
 
-const sidoOptions = computed(() => toSelectOptions(sidoList))
-const sigunguList = computed(() => Object.keys(LUNCH_LOCATION_MAP[form.sido] ?? {}))
+const sidoList = computed(() => Object.keys(locationMap.value))
+const sidoOptions = computed(() => toSelectOptions(sidoList.value))
+const sigunguList = computed(() => Object.keys(locationMap.value[form.sido] ?? {}))
 const sigunguOptions = computed(() => toSelectOptions(sigunguList.value))
-const dongList = computed(() => LUNCH_LOCATION_MAP[form.sido]?.[form.sigungu] ?? [])
+const dongList = computed(() => locationMap.value[form.sido]?.[form.sigungu] ?? [])
 const dongOptions = computed(() => toSelectOptions(dongList.value))
 
+/** 읽기전용: options에 현재 값이 없으면 Radix Select에 라벨이 안 보임 — form 값을 옵션으로 합침 */
+const mergeReadonlyOption = (base: { label: string; value: string }[], current: string) => {
+  const v = String(current ?? '').trim()
+  if (!v) return base
+  if (base.some((o) => String(o.value) === v)) return base
+  return [{ label: v, value: v }, ...base]
+}
+
+const sidoSelectOptions = computed(() =>
+  props.readonly ? mergeReadonlyOption(sidoOptions.value, form.sido) : sidoOptions.value,
+)
+const sigunguSelectOptions = computed(() =>
+  props.readonly ? mergeReadonlyOption(sigunguOptions.value, form.sigungu) : sigunguOptions.value,
+)
+const dongSelectOptions = computed(() =>
+  props.readonly ? mergeReadonlyOption(dongOptions.value, form.dong) : dongOptions.value,
+)
+
+/** 지역 옵션(시도·시군구·동)과 form 값 동기화 — 상위가 바뀌면 하위만 단계적으로 정리 */
 watch(
-  sigunguList,
-  (list) => {
-    if (!list.length) {
+  [sidoList, sigunguList, dongList],
+  ([sidos, sigungus, dongs]) => {
+    if (!isLocationSelectionMode.value) return
+
+    if (!sidos.length || !sidos.includes(form.sido)) {
+      form.sido = ''
       form.sigungu = ''
       form.dong = ''
       return
     }
-    if (!list.includes(form.sigungu)) form.sigungu = list[0]
-  },
-  { immediate: true },
-)
 
-watch(
-  dongList,
-  (list) => {
-    if (!list.length) {
+    if (!sigungus.length || !sigungus.includes(form.sigungu)) {
+      form.sigungu = ''
       form.dong = ''
       return
     }
-    if (!list.includes(form.dong)) form.dong = list[0]
+
+    if (!dongs.length || !dongs.includes(form.dong)) {
+      form.dong = ''
+    }
   },
   { immediate: true },
 )
@@ -376,48 +472,76 @@ const startIntroSequence = () => {
   isContentVisible.value = false
   introStartTimer = setTimeout(() => {
     isContentVisible.value = true
-  }, 1600)
+  }, 2100)
   introEndTimer = setTimeout(() => {
     isIntroPlaying.value = false
-  }, 2300)
+  }, 3100)
 }
 
 onMounted(() => {
   startIntroSequence()
+  if (isLocationSelectionMode.value) {
+    fetchLunchRegionTree()
+  }
 })
 
 onUnmounted(() => {
   clearIntroTimers()
 })
 
-const onChangeSido = (value: string | number) => {
-  form.sido = String(value)
-}
-const onChangeSigungu = (value: string | number) => {
-  form.sigungu = String(value)
-}
-const onChangeDong = (value: string | number) => {
-  form.dong = String(value)
-}
-
-const onSelectMood = (option: string) => {
-  form.mood = option
-}
-const onSelectBudget = (option: string) => {
-  form.budget = option
-}
-const onSelectPeople = (option: string) => {
-  form.peopleCount = option
-}
-const onSelectCuisine = (option: string) => {
-  form.cuisineType = option
+const setFormValue = (key: keyof LunchAgentFormPayload, value: string | number) => {
+  form[key] = String(value)
 }
 
 const onSubmitClick = () => {
+  const requiredChecks: Array<{ isInvalid: boolean; fieldRef: HTMLElement | null }> = [
+    { isInvalid: !isLocationAnswered.value, fieldRef: locationFieldRef.value },
+    { isInvalid: !form.mood, fieldRef: moodFieldRef.value },
+    { isInvalid: !form.budget, fieldRef: budgetFieldRef.value },
+    { isInvalid: !form.peopleCount, fieldRef: peopleFieldRef.value },
+    { isInvalid: !form.cuisineType, fieldRef: cuisineFieldRef.value },
+  ]
+  const firstInvalid = requiredChecks.find((check) => check.isInvalid)
+  if (firstInvalid) {
+    openToast({ message: '모든 항목을 선택해야 합니다.', type: 'warning' })
+    focusField(firstInvalid.fieldRef)
+    return
+  }
   emit('submit', { ...form })
 }
 </script>
 <style lang="scss" scoped>
+@mixin lunch-content-reveal($duration, $delay: 0s) {
+  opacity: var(--lunch-content-opacity);
+  transform: translateY(var(--lunch-content-shift));
+  transition:
+    opacity $duration ease $delay,
+    transform $duration ease $delay;
+}
+
+@mixin lunch-theme-avatar($size) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: $size;
+  height: $size;
+  border-radius: 50%;
+  background: var(--lunch-theme-color);
+  color: #fff;
+}
+
+@mixin lunch-emphasis-title($typo-map) {
+  @include typo($typo-map);
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+@mixin lunch-panel-surface {
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  background: #fff;
+}
+
 .chat-lunch-agent-card {
   position: relative;
   display: flex;
@@ -445,11 +569,7 @@ const onSubmitClick = () => {
     border-bottom: 1px solid $color-border;
     background: $color-surface;
     flex-shrink: 0;
-    opacity: var(--lunch-content-opacity);
-    transform: translateY(var(--lunch-content-shift));
-    transition:
-      opacity 0.32s ease,
-      transform 0.32s ease;
+    @include lunch-content-reveal(0.32s);
   }
 
   &__header-info {
@@ -459,21 +579,12 @@ const onSubmitClick = () => {
   }
 
   &__avatar {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: var(--lunch-theme-color);
-    color: #fff;
+    @include lunch-theme-avatar(40px);
     flex-shrink: 0;
   }
 
   &__title {
-    @include typo($body-medium);
-    font-weight: $font-weight-semibold;
-    color: $color-text-primary;
+    @include lunch-emphasis-title($body-medium);
   }
 
   &__subtitle {
@@ -489,11 +600,7 @@ const onSubmitClick = () => {
     display: flex;
     flex-direction: column;
     gap: $spacing-md;
-    opacity: var(--lunch-content-opacity);
-    transform: translateY(var(--lunch-content-shift));
-    transition:
-      opacity 0.36s ease 0.04s,
-      transform 0.36s ease 0.04s;
+    @include lunch-content-reveal(0.36s, 0.04s);
     @include custom-scrollbar(4px);
   }
 
@@ -502,9 +609,7 @@ const onSubmitClick = () => {
     flex-direction: column;
     gap: $spacing-sm;
     padding: $spacing-md;
-    background: #fff;
-    border: 1px solid $color-border;
-    border-radius: $border-radius-base;
+    @include lunch-panel-surface;
     transition:
       border-color 0.2s ease,
       background 0.2s ease;
@@ -541,11 +646,7 @@ const onSubmitClick = () => {
     border-top: 1px solid $color-border;
     background: $color-surface;
     flex-shrink: 0;
-    opacity: var(--lunch-content-opacity);
-    transform: translateY(var(--lunch-content-shift));
-    transition:
-      opacity 0.28s ease 0.08s,
-      transform 0.28s ease 0.08s;
+    @include lunch-content-reveal(0.28s, 0.08s);
   }
 
   &__result-list {
@@ -557,11 +658,9 @@ const onSubmitClick = () => {
 
   &__result-item {
     padding: $spacing-md;
-    border: 1px solid $color-border;
-    border-radius: $border-radius-base;
+    @include lunch-panel-surface;
     @include typo($body-small);
     color: $color-text-primary;
-    background: #fff;
   }
 
   &__result-item-head {
@@ -573,9 +672,7 @@ const onSubmitClick = () => {
   }
 
   &__result-name {
-    @include typo($body-medium);
-    font-weight: $font-weight-semibold;
-    color: $color-text-primary;
+    @include lunch-emphasis-title($body-medium);
   }
 
   &__result-rank {
@@ -598,6 +695,7 @@ const onSubmitClick = () => {
 
   &__result-meta-row {
     display: flex;
+    align-items: flex-start;
     gap: $spacing-xs;
 
     dt {
@@ -609,9 +707,21 @@ const onSubmitClick = () => {
 
     dd {
       margin: 0;
+      min-width: 0;
       @include typo($body-small);
       color: $color-text-primary;
-      word-break: break-word;
+      overflow-wrap: anywhere;
+      word-break: break-all;
+    }
+  }
+
+  &__result-address {
+    min-width: 0;
+
+    a {
+      color: var(--lunch-theme-color);
+      text-decoration: underline;
+      text-underline-offset: 2px;
     }
   }
 
@@ -648,20 +758,11 @@ const onSubmitClick = () => {
   }
 
   &__intro-avatar {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    background: var(--lunch-theme-color);
+    @include lunch-theme-avatar(44px);
   }
 
   &__intro-title {
-    @include typo($body-large);
-    font-weight: $font-weight-semibold;
-    color: $color-text-primary;
+    @include lunch-emphasis-title($body-large);
   }
 
   &__intro-subtitle {

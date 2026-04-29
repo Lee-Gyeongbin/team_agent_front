@@ -34,7 +34,7 @@ function agentTypeToSearchMode(svcTy: string): SearchModeValue | null {
 }
 
 const { messages } = useChatSocket()
-const { logRowToMessages, getMessagesForVisualization } = useChatMessages()
+const { logRowToMessages, getMessagesForVisualization, setStreamingLunchPayload } = useChatMessages()
 const {
   openPsychologySurvey,
   closePsychologySurvey,
@@ -345,6 +345,9 @@ export const useChatStore = () => {
       agentId: selectedChatAgentId.value ?? '',
       files: [],
     })
+    if (sent && payload) {
+      setStreamingLunchPayload(payload)
+    }
     if (sent) {
       const newQuestion = messages.value.slice(prevLen).find((m) => m.type === 'question')
       if (newQuestion) newQuestion.hiddenFromDisplay = true
@@ -355,28 +358,30 @@ export const useChatStore = () => {
 
   const handleSubmitLunchAgentForm = async (logId: string, payload: LunchAgentFormPayload) => {
     const content = buildLunchRecommendationPrompt(payload)
-    let sent = false
     if (!chatRoom.value.roomId) {
       const submittedPayload = { ...payload }
-      sent = await createChatRoom(content)
-      if (sent) {
-        const msgs = [...messages.value]
-        const firstQuestion = msgs.find((m) => m.type === 'question')
-        if (firstQuestion) firstQuestion.hiddenFromDisplay = true
-        const lunchMsg = msgs.find((m) => m.logId === logId && m.uiType === 'lunch-card')
-        if (lunchMsg) {
-          lunchMsg.lunchFormPayload = submittedPayload
-          lunchMsg.lunchSubmitted = true
-          messages.value = msgs
-        } else {
-          const inlineLunchMsg = createReadonlyLunchMessage(submittedPayload)
-          messages.value = [inlineLunchMsg, ...msgs]
-        }
-        selectedChatAgentId.value = null
+      const sent = await createChatRoom(content)
+      if (!sent) return
+
+      setStreamingLunchPayload(submittedPayload)
+
+      const msgs = [...messages.value]
+      const firstQuestion = msgs.find((m) => m.type === 'question')
+      if (firstQuestion) firstQuestion.hiddenFromDisplay = true
+      const lunchMsg = msgs.find((m) => m.logId === logId && m.uiType === 'lunch-card')
+      if (lunchMsg) {
+        lunchMsg.lunchFormPayload = submittedPayload
+        lunchMsg.lunchSubmitted = true
+        messages.value = msgs
+      } else {
+        const inlineLunchMsg = createReadonlyLunchMessage(submittedPayload)
+        messages.value = [inlineLunchMsg, ...msgs]
       }
-    } else {
-      sent = await onSendLunch(content, logId, payload)
+      selectedChatAgentId.value = null
+      return
     }
+
+    const sent = await onSendLunch(content, logId, payload)
     if (!sent) return
   }
 
@@ -625,6 +630,7 @@ export const useChatStore = () => {
     const content = buildLunchRecommendationPrompt(payload)
     const sent = await createChatRoom(content)
     if (sent) {
+      setStreamingLunchPayload(payload)
       addInlineLunchMessage(payload)
       handleCloseIndexLunchCard()
     }
