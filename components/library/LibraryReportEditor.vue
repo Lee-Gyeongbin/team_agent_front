@@ -384,9 +384,11 @@ const html = defineModel<string>('html', { default: '' })
 const props = withDefaults(
   defineProps<{
     placeholder?: string
+    tmplHtml?: string
   }>(),
   {
     placeholder: '보고서 내용을 입력하세요...',
+    tmplHtml: '',
   },
 )
 
@@ -438,7 +440,7 @@ const editor = useEditor({
     Highlight.configure({ multicolor: true }),
     TableShortcuts,
   ],
-  content: html.value,
+  content: props.tmplHtml || html.value,
   onUpdate: ({ editor: ed }) => {
     html.value = ed.getHTML()
   },

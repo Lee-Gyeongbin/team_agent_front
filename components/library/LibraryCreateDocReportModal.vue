@@ -26,7 +26,10 @@
             </div>
 
             <!-- 웹에디터 — 2열 표 형태로 보고서 항목 표시 -->
-            <LibraryReportEditor v-model:html="editorHtml" />
+            <LibraryReportEditor
+              v-model:html="editorHtml"
+              :tmpl-html="props.tmplHtml"
+            />
           </div>
         </div>
 
@@ -213,12 +216,14 @@ const props = withDefaults(
     isOpen: boolean
     tmplNm?: string
     refineCompletedAt?: number
+    tmplHtml?: string
     /** AI 보완 응답 HTML — 전체 에디터 HTML(표 외 텍스트 포함)로 에디터를 직접 교체 */
     refinedHtml?: string
   }>(),
   {
     tmplNm: '',
     refineCompletedAt: 0,
+    tmplHtml: '',
     refinedHtml: '',
   },
 )
@@ -264,7 +269,9 @@ let writebackTimer: ReturnType<typeof setTimeout> | null = null
 const setEditorFromReport = () => {
   isExternalEditorUpdate = true
   const rows = getLibraryReportRows(report.value ?? {})
-  editorHtml.value = buildReportEditorHtml(report.value ?? {}, rows)
+  const tableHtml = buildReportEditorHtml(report.value ?? {}, rows)
+  // tmplHtml이 있으면 표 위에 머리글 HTML 삽입
+  editorHtml.value = props.tmplHtml ? `${props.tmplHtml}${tableHtml}` : tableHtml
   // Vue watcher는 동기적으로 실행되므로 nextTick에서 플래그 해제
   nextTick(() => {
     isExternalEditorUpdate = false
