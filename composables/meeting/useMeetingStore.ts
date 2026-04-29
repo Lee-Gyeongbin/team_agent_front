@@ -1,29 +1,231 @@
-import { openToast } from '~/composables/useToast'
-import { openConfirm } from '~/composables/useDialog'
 import { useMeetingApi } from '~/composables/meeting/useMeetingApi'
-import type { Meeting, MeetingDetail, MeetingUser, SpeechSegment } from '~/types/meeting'
+import type {
+  Meeting as ApiMeeting,
+  MeetingDetail,
+  MeetingInfographic,
+  MeetingMinutes,
+  MeetingSpeaker as ApiMeetingSpeaker,
+  MeetingUser as ApiMeetingUser,
+  SpeechSegment,
+} from '~/types/meeting'
+import { escapeHTML } from '~/utils/global/htmlUtil'
+import type {
+  Meeting,
+  MeetingStep,
+  MeetingStepKey,
+  MeetingStepStatus,
+  MeetingSpeaker,
+  MeetingRecipient,
+  MeetingUser,
+  MeetingFileFormat,
+} from '~/types/meeting2'
 
 const {
   fetchUserList,
   fetchMeetingList,
   fetchMeetingDetail,
+  fetchSaveMeeting,
+  fetchDeleteMeeting,
   fetchCreateMeeting,
   fetchFinishMeeting,
   fetchFinishMeetingWithAudio,
   fetchSaveSpeakerMapping,
+  fetchSaveSpeaker,
+  fetchSaveSpeakers,
+  fetchSearchUsers,
+  fetchMatchUsersByNames,
   fetchGenerateMeetingTitle,
-  fetchDeleteMeeting,
 } = useMeetingApi()
 
-const meetingList = ref<Meeting[]>([])
+// ===== 상태 =====
+const meetingList = ref<ApiMeeting[]>([])
 const meetingDetail = ref<MeetingDetail>({ meeting: null, minutes: null, speakers: [] })
-const userList = ref<MeetingUser[]>([])
+const currentMeeting = ref<Meeting | null>(null)
+
 const isLoadingList = ref(false)
 const isLoadingDetail = ref(false)
 const isFinishing = ref(false)
 const isGeneratingTitle = ref(false)
 
-/** 참석자 선택용 사용자 목록 조회 */
+const userList = ref<ApiMeetingUser[]>([])
+const selectedSpeaker = ref<MeetingSpeaker | null>(null)
+const isSpeakerEditOpen = ref(false)
+
+const isMailSendOpen = ref(false)
+const mailInitialRecipients = ref<MeetingRecipient[]>([])
+
+const isInfoEditOpen = ref(false)
+const userSearchResults = ref<MeetingUser[]>([])
+
+// ===== 유틸 =====
+const parseJsonArray = <T = string>(jsonStr: string): T[] => {
+  try {
+    const parsed = JSON.parse(jsonStr)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+const parseAttendeesDisplay = (attendees: string): string => {
+  try {
+    const arr = JSON.parse(attendees)
+    if (Array.isArray(arr)) return arr.map((u: { userNm: string }) => u.userNm).join(', ')
+  } catch {
+    // 구 형식(평문) 그대로 반환
+  }
+  return attendees ?? ''
+}
+
+const deriveSteps = (status: string, hasMinutes: boolean): MeetingStep[] => {
+  const s = (key: MeetingStepKey, label: string, stepStatus: MeetingStepStatus): MeetingStep => ({
+    key,
+    label,
+    status: stepStatus,
+  })
+  if (status === '001') {
+    return [
+      s('record', '녹음', 'progress'),
+      s('speaker', '화자 분리', 'wait'),
+      s('generate', '회의록 생성', 'wait'),
+      s('edit', '회의록 편집', 'wait'),
+      s('share', '공유', 'wait'),
+    ]
+  }
+  return [
+    s('record', '녹음', 'done'),
+    s('speaker', '화자 분리', hasMinutes ? 'done' : 'wait'),
+    s('generate', '회의록 생성', hasMinutes ? 'done' : 'wait'),
+    s('edit', '회의록 편집', hasMinutes ? 'progress' : 'wait'),
+    s('share', '공유', 'wait'),
+  ]
+}
+
+const mapApiSpeakers = (apiSpeakers: ApiMeetingSpeaker[]): MeetingSpeaker[] =>
+  apiSpeakers.map((s, i) => ({
+    id: String(s.speakerId),
+    name: s.speakerNm || s.speakerLabel,
+    alias: s.speakerLabel,
+    colorIndex: i % 8,
+  }))
+
+const formatStartTime = (start?: number): string => {
+  if (typeof start !== 'number' || !Number.isFinite(start) || start < 0) return '-'
+  const totalSeconds = Math.floor(start)
+  const hh = Math.floor(totalSeconds / 3600)
+    .toString()
+    .padStart(2, '0')
+  const mm = Math.floor((totalSeconds % 3600) / 60)
+    .toString()
+    .padStart(2, '0')
+  const ss = (totalSeconds % 60).toString().padStart(2, '0')
+  return `${hh}:${mm}:${ss}`
+}
+
+const buildSttListFromSpeakers = (apiSpeakers: ApiMeetingSpeaker[]) =>
+  apiSpeakers
+    .flatMap((speaker, speakerIndex) => {
+      const speakerName = speaker.speakerNm || speaker.speakerLabel || '화자 미확정'
+      const speakerId = String(speaker.speakerId ?? `speaker-${speakerIndex}`)
+      const utterances = parseJsonArray<{ seq?: number; start?: number; text?: string }>(speaker.utterances ?? '[]')
+      return utterances
+        .filter((u) => !!u.text?.trim())
+        .map((u, idx) => ({
+          id: `${speakerId}-${u.seq ?? idx}`,
+          speakerId,
+          speakerName,
+          time: formatStartTime(u.start),
+          text: (u.text ?? '').trim(),
+          start: typeof u.start === 'number' ? u.start : Number.POSITIVE_INFINITY,
+          seq: u.seq ?? idx,
+          speakerIndex,
+        }))
+    })
+    .sort((a, b) => {
+      if (a.start !== b.start) return a.start - b.start
+      if (a.seq !== b.seq) return a.seq - b.seq
+      return a.speakerIndex - b.speakerIndex
+    })
+    .map(({ id, speakerId, speakerName, time, text }) => ({
+      id,
+      speakerId,
+      speakerName,
+      time,
+      text,
+    }))
+
+const mapApiDetailToMeeting = (detail: MeetingDetail): Meeting | null => {
+  const m = detail.meeting
+  if (!m) return null
+  const hasMinutes = !!detail.minutes
+  return {
+    id: String(m.meetingId),
+    title: m.meetingTitle,
+    date: m.startDt,
+    location: undefined,
+    participants: parseAttendeesDisplay(m.attendees)
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean),
+    purpose: undefined,
+    steps: deriveSteps(m.status, hasMinutes),
+    speakers: mapApiSpeakers(detail.speakers ?? []),
+    sttList: buildSttListFromSpeakers(detail.speakers ?? []),
+    minutesContent: buildMinutesHtml(detail.minutes, detail.infographicList),
+    fileFormat: 'docx' as MeetingFileFormat,
+    recipients: [],
+    templateId: '',
+    language: 'ko',
+    createdAt: m.createDt ?? '',
+    updatedAt: m.createDt ?? '',
+  }
+}
+
+const nlToBr = (escaped: string) => escaped.replace(/\n/g, '<br>')
+
+const buildMinutesHtml = (minutes: MeetingMinutes | null, infographics?: MeetingInfographic[]): string => {
+  if (!minutes) return ''
+
+  const summary = minutes.summary ? `<h2>요약</h2><p>${nlToBr(escapeHTML(minutes.summary))}</p>` : ''
+  const decisions = minutes.decisions
+    ? `<h2>결정 사항</h2><ul>${parseJsonArray<string>(minutes.decisions)
+        .map((d) => `<li>${nlToBr(escapeHTML(d))}</li>`)
+        .join('')}</ul>`
+    : ''
+  const todos = minutes.todoList
+    ? `<h2>할 일</h2><ul>${parseJsonArray<{ content: string; due_date: string; collaborators: string }>(
+        minutes.todoList,
+      )
+        .map((t) => {
+          const c = escapeHTML(t.content ?? '')
+          const collab = (t.collaborators ?? '').trim()
+          const due = (t.due_date ?? '').trim()
+          const meta: string[] = []
+          if (collab) meta.push(`담당: ${escapeHTML(collab)}`)
+          if (due) meta.push(`기한: ${escapeHTML(due)}`)
+          const tail = meta.length ? ` <span>(${meta.join(' · ')})</span>` : ''
+          return `<li>${c}${tail}</li>`
+        })
+        .join('')}</ul>`
+    : ''
+
+  const sortedInfo = [...(infographics ?? [])].sort((a, b) => a.sortOrd - b.sortOrd)
+  const infographicBlock =
+    sortedInfo.length > 0
+      ? `<h2>인포그래픽</h2>${sortedInfo
+          .map((info) => {
+            const title = escapeHTML(info.topicNm ?? '')
+            const sum = info.topicSummary ? `<p>${nlToBr(escapeHTML(info.topicSummary))}</p>` : ''
+            const tree = info.treeText ? `<p style="white-space:pre-wrap">${escapeHTML(info.treeText)}</p>` : ''
+            return `<h3>${title}</h3>${sum}${tree}`
+          })
+          .join('')}`
+      : ''
+
+  return `${summary}${decisions}${todos}${infographicBlock}`
+}
+
+// ===== 조회 =====
 const handleSelectUserList = async () => {
   try {
     const res = await fetchUserList()
@@ -33,25 +235,41 @@ const handleSelectUserList = async () => {
   }
 }
 
-/** 회의 목록 조회 */
 const handleSelectMeetingList = async () => {
   isLoadingList.value = true
   try {
     const res = await fetchMeetingList()
-    meetingList.value = res.list ?? []
+    meetingList.value = res?.list ?? []
   } catch {
+    openToast({ message: '회의 목록 조회 실패', type: 'error' })
     meetingList.value = []
-    openToast({ message: '회의 목록을 불러오지 못했습니다.', type: 'error' })
   } finally {
     isLoadingList.value = false
   }
 }
 
-/** 회의 상세 + 회의록 + 화자 목록 조회 */
+const isMinutesEditorEmpty = (html?: string) => {
+  if (!html?.trim()) return true
+  const n = html.replace(/\s|&nbsp;/gi, '').toLowerCase()
+  return n === '<p></p>' || n === '<p><br></p>' || n === '<p><br/></p>'
+}
+
 const handleSelectMeetingDetail = async (meetingId: number) => {
   isLoadingDetail.value = true
   try {
-    meetingDetail.value = await fetchMeetingDetail(meetingId)
+    const detail = await fetchMeetingDetail(meetingId)
+    meetingDetail.value = detail
+    const mapped = mapApiDetailToMeeting(detail)
+    if (!currentMeeting.value || currentMeeting.value.id !== mapped?.id) {
+      currentMeeting.value = mapped
+    } else if (currentMeeting.value && mapped) {
+      currentMeeting.value.steps = mapped.steps
+      currentMeeting.value.speakers = mapped.speakers
+      currentMeeting.value.sttList = mapped.sttList
+      if (detail.minutes && mapped.minutesContent && isMinutesEditorEmpty(currentMeeting.value.minutesContent)) {
+        currentMeeting.value.minutesContent = mapped.minutesContent
+      }
+    }
   } catch {
     openToast({ message: '회의 정보를 불러오지 못했습니다.', type: 'error' })
   } finally {
@@ -59,7 +277,7 @@ const handleSelectMeetingDetail = async (meetingId: number) => {
   }
 }
 
-/** 회의 시작 */
+// ===== 회의 시작/종료 =====
 const handleCreateMeeting = async (params: {
   meetingTitle: string
   attendees: string
@@ -78,7 +296,6 @@ const handleCreateMeeting = async (params: {
   }
 }
 
-/** 회의 종료 + 회의록 생성 + 화자 분리 */
 const handleFinishMeeting = async (params: {
   meetingId: number
   fullText: string
@@ -102,10 +319,6 @@ const handleFinishMeeting = async (params: {
   }
 }
 
-/**
- * 회의 종료 (오디오 파일 전사 버전)
- * - 오디오 Blob 업로드 → 백엔드 gpt-4o-mini-transcribe → 회의록 생성
- */
 const handleFinishMeetingWithAudio = async (params: {
   meetingId: number
   audioBlob: Blob
@@ -129,22 +342,6 @@ const handleFinishMeetingWithAudio = async (params: {
   }
 }
 
-/** 화자-참석자 매핑 저장 */
-const handleSaveSpeakerMapping = async (params: {
-  speakerId: number
-  speakerNm: string
-  speakerUserId: string
-}): Promise<boolean> => {
-  try {
-    const res = await fetchSaveSpeakerMapping(params)
-    return !!res.successYn
-  } catch {
-    openToast({ message: '화자 매핑 저장에 실패했습니다.', type: 'error' })
-    return false
-  }
-}
-
-/** 회의 제목 자동 생성 */
 const handleGenerateMeetingTitle = async (description: string): Promise<string | null> => {
   isGeneratingTitle.value = true
   try {
@@ -160,7 +357,31 @@ const handleGenerateMeetingTitle = async (description: string): Promise<string |
   }
 }
 
-/** 회의 삭제 */
+// ===== 회의록 저장/삭제 =====
+const handleSaveMeeting = async (
+  meeting: Partial<Meeting>,
+  options: { silent?: boolean } = {},
+): Promise<Meeting | null> => {
+  try {
+    const res = await fetchSaveMeeting(meeting)
+    if (res?.data && currentMeeting.value) {
+      if (options.silent) {
+        currentMeeting.value.updatedAt = res.data.updatedAt
+        currentMeeting.value.id = res.data.id
+      } else {
+        currentMeeting.value = res.data
+      }
+    } else if (res?.data) {
+      currentMeeting.value = res.data
+    }
+    if (!options.silent) openToast({ message: '저장되었습니다.' })
+    return res?.data ?? null
+  } catch {
+    openToast({ message: '회의록 저장 실패', type: 'error' })
+    return null
+  }
+}
+
 const handleDeleteMeeting = async (meetingId: number): Promise<boolean> => {
   const confirmed = await openConfirm({
     title: '회의 삭제',
@@ -183,44 +404,226 @@ const handleDeleteMeeting = async (meetingId: number): Promise<boolean> => {
   }
 }
 
-/** decisions / todoList JSON 문자열 → 배열로 파싱 */
-const parseJsonArray = <T = string>(jsonStr: string): T[] => {
+const handleResetRecord = () => {
+  if (currentMeeting.value) currentMeeting.value.sttList = []
+}
+
+// ===== 화자 =====
+const handleSaveSpeakerMapping = async (params: {
+  speakerId: number
+  speakerNm: string
+  speakerUserId: string
+}): Promise<boolean> => {
   try {
-    const parsed = JSON.parse(jsonStr)
-    return Array.isArray(parsed) ? parsed : []
+    const res = await fetchSaveSpeakerMapping(params)
+    return !!res.successYn
   } catch {
-    return []
+    openToast({ message: '화자 매핑 저장에 실패했습니다.', type: 'error' })
+    return false
   }
 }
 
-/** attendees JSON 문자열 → 이름 콤마 문자열 */
-const parseAttendeesDisplay = (attendees: string): string => {
-  try {
-    const arr = JSON.parse(attendees)
-    if (Array.isArray(arr)) return arr.map((u: { userNm: string }) => u.userNm).join(', ')
-  } catch {
-    // 구 형식(평문) 그대로 반환
-  }
-  return attendees ?? ''
+const openSpeakerEditModal = (speaker?: MeetingSpeaker) => {
+  selectedSpeaker.value = speaker ?? null
+  isSpeakerEditOpen.value = true
 }
 
-export const useMeetingStore = () => ({
-  meetingList,
-  meetingDetail,
-  userList,
-  isLoadingList,
-  isLoadingDetail,
-  isFinishing,
-  isGeneratingTitle,
-  handleSelectUserList,
-  handleSelectMeetingList,
-  handleSelectMeetingDetail,
-  handleCreateMeeting,
-  handleFinishMeeting,
-  handleFinishMeetingWithAudio,
-  handleSaveSpeakerMapping,
-  handleGenerateMeetingTitle,
-  handleDeleteMeeting,
-  parseJsonArray,
-  parseAttendeesDisplay,
-})
+const handleSaveSpeaker = async (speaker: Partial<MeetingSpeaker>) => {
+  if (!currentMeeting.value) return
+  try {
+    const res = await fetchSaveSpeaker(currentMeeting.value.id, speaker)
+    if (res?.data && currentMeeting.value) {
+      const idx = currentMeeting.value.speakers.findIndex((s) => s.id === res.data.id)
+      if (idx > -1) currentMeeting.value.speakers[idx] = res.data
+      else currentMeeting.value.speakers.push(res.data)
+    }
+    isSpeakerEditOpen.value = false
+    openToast({ message: '화자 정보가 저장되었습니다.' })
+  } catch {
+    openToast({ message: '화자 저장 실패', type: 'error' })
+  }
+}
+
+const handleSaveSpeakers = async (speakers: Partial<MeetingSpeaker>[]) => {
+  if (!currentMeeting.value) return
+  try {
+    // meetingDetail의 ApiMeetingSpeaker에서 기존 speakerUserId 조회 (유저 매핑 유지)
+    const apiSpeakers = meetingDetail.value.speakers ?? []
+    const payload = speakers
+      .filter((s) => !!s.id)
+      .map((s) => {
+        const existing = apiSpeakers.find((a) => String(a.speakerId) === s.id)
+        return {
+          speakerId: Number(s.id),
+          speakerNm: s.name ?? '',
+          speakerUserId: existing?.speakerUserId ?? '',
+        }
+      })
+
+    await fetchSaveSpeakers(payload)
+
+    // 로컬 speakers 상태 업데이트 → MeetingSpeakerList 반영
+    speakers.forEach((updated) => {
+      if (!currentMeeting.value || !updated.id) return
+      const idx = currentMeeting.value.speakers.findIndex((s) => s.id === updated.id)
+      if (idx > -1) {
+        currentMeeting.value.speakers[idx] = { ...currentMeeting.value.speakers[idx], ...updated }
+      }
+    })
+
+    // sttList 화자명 갱신 → MeetingSttList 반영
+    currentMeeting.value.sttList = currentMeeting.value.sttList.map((stt) => {
+      const speaker = currentMeeting.value!.speakers.find((s) => s.id === stt.speakerId)
+      return speaker ? { ...stt, speakerName: speaker.name } : stt
+    })
+
+    openToast({ message: '화자 정보가 저장되었습니다.' })
+  } catch {
+    openToast({ message: '화자 저장 실패', type: 'error' })
+  }
+}
+
+// ===== 파일 다운로드 =====
+const handleDownloadFile = (format: MeetingFileFormat) => {
+  if (!currentMeeting.value) {
+    openToast({ message: '회의 정보가 없습니다.', type: 'warning' })
+    return
+  }
+
+  const html = currentMeeting.value.minutesContent ?? ''
+  const today = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+  const safeTitle = currentMeeting.value.title.replace(/[\\/:*?"<>|]/g, '').trim() || '회의록'
+  const fileName = `${safeTitle}_${today}.${format}`
+
+  let content = ''
+  let mimeType = 'text/plain;charset=utf-8'
+
+  if (format === 'txt') {
+    const div = document.createElement('div')
+    div.innerHTML = html
+    content = div.innerText
+  } else if (format === 'md') {
+    content = html
+      .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1\n\n')
+      .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1\n\n')
+      .replace(/<h3[^>]*>(.*?)<\/h3>/gi, '### $1\n\n')
+      .replace(/<li[^>]*>(.*?)<\/li>/gi, '- $1\n')
+      .replace(/<\/?(ul|ol)[^>]*>/gi, '\n')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
+      .replace(/<[^>]+>/g, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
+    mimeType = 'text/markdown;charset=utf-8'
+  } else {
+    content = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${safeTitle}</title></head><body>${html}</body></html>`
+    mimeType = 'text/html;charset=utf-8'
+    openToast({
+      message: `${format.toUpperCase()} 변환은 백엔드 연동 후 정식 지원됩니다. 임시로 HTML로 다운로드합니다.`,
+      type: 'info',
+    })
+  }
+
+  const blob = new Blob([content], { type: mimeType })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = fileName
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+
+  if (format === 'txt' || format === 'md') {
+    openToast({ message: `${fileName} 파일이 다운로드되었습니다.` })
+  }
+
+  if (currentMeeting.value) currentMeeting.value.fileFormat = format
+}
+
+// ===== 메일 발송 =====
+const handleOpenMailSend = async () => {
+  if (!currentMeeting.value) {
+    openToast({ message: '회의 정보가 없습니다.', type: 'warning' })
+    return
+  }
+  const names = currentMeeting.value.participants ?? []
+  let initial: MeetingRecipient[] = []
+  if (names.length > 0) {
+    try {
+      const res = await fetchMatchUsersByNames(names)
+      initial = (res?.list ?? []).map((u) => ({ id: u.id, name: u.name, email: u.email }))
+    } catch {
+      // 매칭 실패해도 모달은 빈 목록으로 열림
+    }
+  }
+  if (currentMeeting.value.recipients.length > 0) {
+    initial = currentMeeting.value.recipients
+  }
+  mailInitialRecipients.value = initial
+  isMailSendOpen.value = true
+}
+
+const doSendMail = (recipients: MeetingRecipient[]) => {
+  if (!currentMeeting.value) return
+  currentMeeting.value.recipients = recipients
+  openToast({ message: `${recipients.length}명에게 회의록이 발송되었습니다.` })
+  isMailSendOpen.value = false
+}
+
+const handleSearchUsers = async (keyword: string) => {
+  try {
+    const res = await fetchSearchUsers(keyword)
+    userSearchResults.value = res?.list ?? []
+  } catch {
+    userSearchResults.value = []
+  }
+}
+
+const openInfoEditModal = () => {
+  if (!currentMeeting.value) {
+    openToast({ message: '회의 정보가 없습니다.', type: 'warning' })
+    return
+  }
+  isInfoEditOpen.value = true
+}
+
+export const useMeetingStore = () => {
+  return {
+    meetingList,
+    meetingDetail,
+    currentMeeting,
+    userList,
+    isLoadingList,
+    isLoadingDetail,
+    isFinishing,
+    isGeneratingTitle,
+    selectedSpeaker,
+    isSpeakerEditOpen,
+    isMailSendOpen,
+    mailInitialRecipients,
+    isInfoEditOpen,
+    userSearchResults,
+    handleSelectUserList,
+    handleSelectMeetingList,
+    handleSelectMeetingDetail,
+    handleCreateMeeting,
+    handleFinishMeeting,
+    handleFinishMeetingWithAudio,
+    handleSaveMeeting,
+    handleDeleteMeeting,
+    handleResetRecord,
+    handleSaveSpeakerMapping,
+    openSpeakerEditModal,
+    handleSaveSpeaker,
+    handleSaveSpeakers,
+    handleDownloadFile,
+    handleOpenMailSend,
+    doSendMail,
+    handleSearchUsers,
+    handleGenerateMeetingTitle,
+    openInfoEditModal,
+    parseJsonArray,
+    parseAttendeesDisplay,
+  }
+}

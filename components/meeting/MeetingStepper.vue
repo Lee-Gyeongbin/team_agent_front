@@ -47,9 +47,9 @@ defineProps<Props>()
 // 'icon-meeting-save'는 파일 저장 모달 등에서 사용
 const iconMap: Partial<Record<MeetingStepKey, string>> = {
   record: 'icon-meeting-mic',
-  speaker: 'icon-user',
-  generate: 'icon-meeting-generate',
-  edit: 'icon-meeting-edit',
+  speaker: 'icon-meeting-generate',
+  generate: 'icon-meeting-edit',
+  edit: 'icon-meeting-save',
   share: 'icon-meeting-mail',
 }
 

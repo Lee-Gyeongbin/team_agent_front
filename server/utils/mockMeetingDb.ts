@@ -327,26 +327,4 @@ export const mockMeetingDb = {
     return [...meeting.speakers]
   },
 
-  // STT 더미 발화 추가 (녹음 중 가짜 데이터 생성)
-  pushSttDummy: (meetingId: string) => {
-    const meeting = meetingList.find((m) => m.id === meetingId)
-    if (!meeting || meeting.speakers.length === 0) return null
-    const speaker = meeting.speakers[Math.floor(Math.random() * meeting.speakers.length)]
-    const dummyTexts = [
-      '추가 의견을 드리자면 일정 재조정이 필요합니다.',
-      '해당 사항은 다음 회의에서 다시 다루는 게 좋겠습니다.',
-      '제가 말씀드린 부분은 별도 자료로 공유드리겠습니다.',
-      '이번 분기 KPI 달성을 위한 추가 캠페인을 검토해 주세요.',
-      '그 부분은 제가 담당해서 진행하겠습니다.',
-    ]
-    const newItem: MockSttItem = {
-      id: `stt-${Date.now()}`,
-      speakerId: speaker.id,
-      speakerName: speaker.name,
-      time: new Date().toTimeString().slice(0, 8),
-      text: dummyTexts[Math.floor(Math.random() * dummyTexts.length)],
-    }
-    meeting.sttList.push(newItem)
-    return newItem
-  },
 }

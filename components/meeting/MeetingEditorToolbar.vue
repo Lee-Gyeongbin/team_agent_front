@@ -184,9 +184,7 @@
         <template v-if="!isInTable">
           <!-- 행/열 그리드 선택 (1x1 ~ 6x8) -->
           <div class="meeting2-table-grid-wrap">
-            <span class="meeting2-table-grid-label">
-              {{ hoveredCol + 1 }} × {{ hoveredRow + 1 }}
-            </span>
+            <span class="meeting2-table-grid-label"> {{ hoveredCol + 1 }} × {{ hoveredRow + 1 }} </span>
             <div
               class="meeting2-table-grid"
               @mouseleave="onGridLeave"

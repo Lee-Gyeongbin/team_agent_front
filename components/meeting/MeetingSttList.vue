@@ -34,9 +34,9 @@
 </template>
 
 <script setup lang="ts">
-import { useMeeting2Store } from '~/composables/meeting/useMeeting2Store'
+import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
 
-const { currentMeeting } = useMeeting2Store()
+const { currentMeeting } = useMeetingStore()
 
 const sttList = computed(() => currentMeeting.value?.sttList ?? [])
 

@@ -105,12 +105,13 @@
   display: flex;
   align-items: center;
   gap: $spacing-sm;
+  min-height: 32px;
 }
 
 .meeting2-detail-back {
   display: inline-flex;
   align-items: center;
-  gap: $spacing-xs;
+  gap: 7px;
   height: 30px;
   padding: 0 10px;
   border: 1px solid transparent;
@@ -125,7 +126,8 @@
 
   &:hover {
     background: $color-border-light;
-    color: var(--color-primary);
+    color: #4d5462;
+    font-weight: 500;
     border-color: $color-border;
   }
 }
@@ -262,6 +264,19 @@
   gap: 6px;
   @include typo($body-medium-bold, $color-text-dark);
   font-size: 15px;
+}
+
+// 회의록 에디터 패널 — 제목 + 안내 부제 세로 배치
+.meeting2-editor-panel-header {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+}
+
+.meeting2-panel-sub {
+  @include typo($body-xsmall, $color-text-muted);
+  line-height: 1.45;
 }
 
 .meeting2-panel-actions {
