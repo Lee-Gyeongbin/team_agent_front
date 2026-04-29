@@ -240,7 +240,7 @@ const buildPrintHostStyles = (): string => `
     font-size: 10.5pt !important;
   }
   #${PRINT_HOST_ID} .report-print-editor-body th {
-    width: 28% !important;
+    width: 20%;
     padding: 8px 10px !important;
     background: #f8fafc !important;
     border: 1px solid #cbd5e1 !important;
@@ -259,6 +259,23 @@ const buildPrintHostStyles = (): string => `
   #${PRINT_HOST_ID} .report-print-editor-body td p { margin: 0 0 4px !important; }
   #${PRINT_HOST_ID} .report-print-editor-body td p:last-child { margin-bottom: 0 !important; }
   #${PRINT_HOST_ID} .report-print-editor-body a { color: #3b82f6 !important; text-decoration: underline !important; }
+  #${PRINT_HOST_ID} .report-print-editor-body img {
+    max-width: 100% !important;
+    height: auto !important;
+    display: block !important;
+  }
+  #${PRINT_HOST_ID} .report-print-editor-body img[data-align="center"] {
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+  #${PRINT_HOST_ID} .report-print-editor-body img[data-align="right"] {
+    margin-left: auto !important;
+    margin-right: 0 !important;
+  }
+  #${PRINT_HOST_ID} .report-print-editor-body img[data-align="left"] {
+    margin-left: 0 !important;
+    margin-right: auto !important;
+  }
 }
 `
 

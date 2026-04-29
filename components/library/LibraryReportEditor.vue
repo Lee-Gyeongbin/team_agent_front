@@ -1044,9 +1044,9 @@ const onEditorClick = (e: MouseEvent) => {
     border-radius: $border-radius-base;
     margin: 0 0 $spacing-sm;
 
-    // 라벨 열 (th) — 좌측 고정 폭
+    // 라벨 열 (th) — 좌측 고정 폭 (colwidth 없을 때 fallback; col[width] 있으면 col이 우선)
     th {
-      width: 28%;
+      width: 20%;
       padding: $spacing-xs $spacing-sm;
       background: #f8fafc;
       border-right: 1px solid #e2e8f0;
