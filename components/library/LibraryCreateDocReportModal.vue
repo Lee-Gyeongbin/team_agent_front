@@ -416,8 +416,8 @@ const onSendRefine = () => {
 }
 
 const onPrintReport = () => {
-  // 에디터 전체 HTML 기반으로 인쇄 (표 외 텍스트 포함)
-  const ok = printLibraryReportFromHtml(editorHtml.value, props.tmplNm || '보고서')
+  // 에디터 전체 HTML 기반으로 인쇄 (제목·작성일자는 tmplHtml에서 관리)
+  const ok = printLibraryReportFromHtml(editorHtml.value)
   if (!ok) {
     openToast({
       message: '인쇄할 보고서 내용이 없습니다.',
