@@ -209,6 +209,7 @@ export interface LunchRecommendationItem {
   menu: string
   price: string
   address: string
+  imageUrl: string
 }
 
 /** 시도 > 시군구 > 동 구조 지역 맵 */

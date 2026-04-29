@@ -186,38 +186,53 @@
         :key="`${item.restaurant}-${idx}`"
         class="chat-lunch-agent-card__result-item"
       >
-        <div class="chat-lunch-agent-card__result-item-head">
-          <p class="chat-lunch-agent-card__result-name">{{ item.restaurant }}</p>
-          <span class="chat-lunch-agent-card__result-rank">추천 {{ idx + 1 }}</span>
+        <div class="chat-lunch-agent-card__result-main">
+          <div class="chat-lunch-agent-card__result-thumb">
+            <img
+              v-if="item.imageUrl"
+              :src="item.imageUrl"
+              :alt="`${item.restaurant} 이미지`"
+            />
+            <i
+              v-else
+              class="icon-image size-20"
+            />
+          </div>
+          <div class="chat-lunch-agent-card__result-content">
+            <div class="chat-lunch-agent-card__result-item-head">
+              <p class="chat-lunch-agent-card__result-name">{{ item.restaurant }}</p>
+              <span class="chat-lunch-agent-card__result-rank">추천 {{ idx + 1 }}</span>
+            </div>
+            <dl class="chat-lunch-agent-card__result-meta">
+              <div class="chat-lunch-agent-card__result-meta-row">
+                <dt>메뉴</dt>
+                <dd>{{ item.menu }}</dd>
+              </div>
+              <div class="chat-lunch-agent-card__result-meta-row">
+                <dt>가격</dt>
+                <dd>{{ item.price }}</dd>
+              </div>
+              <div class="chat-lunch-agent-card__result-meta-row">
+                <dt>위치</dt>
+                <dd>{{ item.location }}</dd>
+              </div>
+              <div class="chat-lunch-agent-card__result-meta-row">
+                <dt>URL</dt>
+                <dd class="chat-lunch-agent-card__result-address">
+                  <a
+                    v-if="item.address"
+                    :href="item.address"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {{ item.address }}
+                  </a>
+                  <span v-else>-</span>
+                </dd>
+              </div>
+            </dl>
+          </div>
         </div>
-        <dl class="chat-lunch-agent-card__result-meta">
-          <div class="chat-lunch-agent-card__result-meta-row">
-            <dt>메뉴</dt>
-            <dd>{{ item.menu }}</dd>
-          </div>
-          <div class="chat-lunch-agent-card__result-meta-row">
-            <dt>가격</dt>
-            <dd>{{ item.price }}</dd>
-          </div>
-          <div class="chat-lunch-agent-card__result-meta-row">
-            <dt>위치</dt>
-            <dd>{{ item.location }}</dd>
-          </div>
-          <div class="chat-lunch-agent-card__result-meta-row">
-            <dt>URL</dt>
-            <dd class="chat-lunch-agent-card__result-address">
-              <a
-                v-if="item.address"
-                :href="item.address"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {{ item.address }}
-              </a>
-              <span v-else>-</span>
-            </dd>
-          </div>
-        </dl>
       </li>
     </ul>
 
@@ -657,10 +672,42 @@ const onSubmitClick = () => {
   }
 
   &__result-item {
-    padding: $spacing-md;
+    padding: 14px;
     @include lunch-panel-surface;
     @include typo($body-small);
     color: $color-text-primary;
+  }
+
+  &__result-main {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  &__result-thumb {
+    width: 120px;
+    height: 115px;
+    border-radius: 8px;
+    border: 1px solid $color-border;
+    background: $color-surface;
+    color: $color-text-muted;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex: 0 0 auto;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+  }
+
+  &__result-content {
+    min-width: 0;
+    flex: 1;
   }
 
   &__result-item-head {
