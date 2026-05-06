@@ -146,21 +146,10 @@
         h2,
         h3 {
           margin: 16px 0 8px;
-          font-weight: $font-weight-semibold;
+          font-weight: $font-weight-bold;
           color: $color-text-heading;
         }
 
-        h1 {
-          font-size: $font-size-xl;
-        }
-
-        h2 {
-          font-size: $font-size-lg;
-        }
-
-        h3 {
-          font-size: $font-size-base;
-        }
 
         p {
           margin: 0 0 10px;
@@ -255,7 +244,7 @@
         }
 
         strong {
-          font-weight: $font-weight-bold;
+          font-weight: $font-weight-semibold;
         }
 
         blockquote {
