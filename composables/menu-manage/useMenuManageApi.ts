@@ -1,6 +1,6 @@
 import { useApi } from '~/composables/com/useApi'
 import { patchMenuPaths } from '~/composables/com/useMenu'
-import type { MenuItem, MenuListResponse, MenuOrderSortItem } from '~/types/menu'
+import type { MenuItem, MenuListResponse, MenuOrderSortItem, MenuTreeItem } from '~/types/menu'
 
 export const useMenuManageApi = () => {
   const { get, post } = useApi()
@@ -25,5 +25,10 @@ export const useMenuManageApi = () => {
     })
   }
 
-  return { fetchMenuManageList, fetchUpdateMenuOrder }
+  /** 현재 메뉴 상세 수정 저장 */
+  const fetchSaveMenu = async (item: MenuTreeItem): Promise<void> => {
+    await post('/menumanage/save.do', item)
+  }
+
+  return { fetchMenuManageList, fetchUpdateMenuOrder, fetchSaveMenu }
 }

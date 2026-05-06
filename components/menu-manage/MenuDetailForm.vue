@@ -1,7 +1,7 @@
 <template>
   <div class="menu-detail-form">
     <div class="menu-form-header flex items-center justify-between">
-      <h3 class="menu-form-title">{{ menuTitle }}</h3>
+      <h3 class="menu-form-title">{{ menu.menuName }}</h3>
       <div class="flex items-center gap-2">
         <UiButton
           variant="primary"
@@ -18,13 +18,14 @@
       <div class="com-setting-field-row">
         <label class="com-setting-label"><span class="is-required">*</span>메뉴명</label>
         <UiInput
-          :model-value="form.menuName"
+          :model-value="menu.menuName"
           placeholder="메뉴명을 입력하세요"
           size="sm"
           @update:model-value="onPatch({ menuName: $event })"
         />
       </div>
 
+      <!-- 메뉴 경로 (표시용: 메뉴명으로 조합, 저장 payload는 menuPath ID 경로 그대로 전달) -->
       <div class="com-setting-field-row">
         <label class="com-setting-label">메뉴 경로</label>
         <div
@@ -41,7 +42,7 @@
         </div>
       </div>
 
-      <!-- 상위 메뉴 (선택 시 menuPath를 ID 경로로 재계산) -->
+      <!-- 상위 메뉴 (선택 시 menuPath·parnMenuId 재계산) -->
       <div class="com-setting-field-row">
         <label class="com-setting-label"><span class="is-required">*</span>상위 메뉴</label>
         <div
@@ -49,7 +50,7 @@
           style="flex: 1"
         >
           <UiSelect
-            :model-value="selectedParentMenuId"
+            :model-value="menu.parnMenuId ?? ''"
             :options="parentMenuSelectOptions"
             placeholder="상위 메뉴를 선택하세요"
             size="sm"
@@ -66,7 +67,7 @@
           style="flex: 1"
         >
           <UiInput
-            :model-value="form.srcPath"
+            :model-value="menu.srcPath"
             placeholder="예: /menu-manage"
             size="sm"
             @update:model-value="onPatch({ srcPath: $event })"
@@ -74,7 +75,7 @@
         </div>
       </div>
 
-      <!-- 아이콘 (Agent 기본 설정과 동일: 피커 + 모달) -->
+      <!-- 아이콘 -->
       <div class="com-setting-field-row">
         <label class="com-setting-label">아이콘</label>
         <div
@@ -101,7 +102,7 @@
       <div class="com-setting-field-row is-top">
         <label class="com-setting-label">상세 설명</label>
         <UiTextarea
-          :model-value="form.description"
+          :model-value="menu.description"
           placeholder="메뉴에 대한 설명을 입력하세요"
           :rows="4"
           size="sm"
@@ -117,10 +118,10 @@
         <label class="com-setting-label">사용 여부</label>
         <div class="menu-use-yn-field flex items-center gap-2">
           <UiToggle
-            :model-value="form.useYnBool"
-            @update:model-value="onPatch({ useYnBool: $event })"
+            :model-value="menu.useYn !== 'N'"
+            @update:model-value="onPatch({ useYn: $event ? 'Y' : 'N' })"
           />
-          <span class="menu-use-yn-label">{{ form.useYnBool ? '사용' : '미사용' }}</span>
+          <span class="menu-use-yn-label">{{ menu.useYn !== 'N' ? '사용' : '미사용' }}</span>
         </div>
       </div>
     </div>
@@ -139,23 +140,19 @@
 <script setup lang="ts">
 import AgentIconSelectModal from '~/components/agent/AgentIconSelectModal.vue'
 import { useAgentStore } from '~/composables/agent/useAgentStore'
-import type { MenuManageFormValues, MenuTreeItem } from '~/types/menu'
+import type { MenuTreeItem } from '~/types/menu'
 import type { SelectOption } from '~/components/ui/UiSelect.vue'
 
 interface Props {
-  menuTitle: string
   /** 상위 메뉴 후보를 만들 트리 (편집 중인 메뉴·하위는 선택 불가) */
   menuTree: MenuTreeItem[]
-  /** 현재 수정 중인 메뉴 ID — menuPath 끝단과 상위 해석에 사용 */
-  editingMenuId: string
 }
 
 const props = defineProps<Props>()
 
-const form = defineModel<MenuManageFormValues>('form', { required: true })
+const menu = defineModel<MenuTreeItem>('menu', { required: true })
 
 defineEmits<{
-  reset: []
   save: []
 }>()
 
@@ -163,8 +160,8 @@ const { themeIcons, themeColors, handleFetchThemeOptions } = useAgentStore()
 
 const isIconModalOpen = ref(false)
 
-const onPatch = (partial: Partial<MenuManageFormValues>) => {
-  form.value = { ...form.value, ...partial }
+const onPatch = (partial: Partial<MenuTreeItem>) => {
+  menu.value = { ...menu.value, ...partial }
 }
 
 /** 트리에서 menuId → 메뉴명 */
@@ -191,7 +188,7 @@ const findMenuItemById = (nodes: MenuTreeItem[], id: string): MenuTreeItem | nul
 
 /** 편집 중 메뉴 및 모든 하위 — 상위로 선택 불가 */
 const excludedParentIds = computed(() => {
-  const root = findMenuItemById(props.menuTree, props.editingMenuId)
+  const root = findMenuItemById(props.menuTree, menu.value.menuId)
   const ids = new Set<string>()
   if (!root) return ids
   const collect = (item: MenuTreeItem) => {
@@ -201,25 +198,6 @@ const excludedParentIds = computed(() => {
   collect(root)
   return ids
 })
-
-/** menuPath(예: A/B/C)와 현재 메뉴 ID로 직계 상위 메뉴 ID 파싱 — 없으면 ''(최상위) */
-const parseParentMenuId = (menuPath: string, menuId: string): string => {
-  const parts = menuPath
-    .split('/')
-    .map((s) => s.trim())
-    .filter(Boolean)
-  if (parts.length === 0) return ''
-  const last = parts[parts.length - 1]
-  const aligned = last === menuId
-  if (!aligned && parts.includes(menuId)) {
-    const idx = parts.lastIndexOf(menuId)
-    return idx > 0 ? parts[idx - 1]! : ''
-  }
-  if (!aligned) return parts.length >= 2 ? parts[parts.length - 2]! : ''
-  return parts.length >= 2 ? parts[parts.length - 2]! : ''
-}
-
-const selectedParentMenuId = computed(() => parseParentMenuId(form.value.menuPath, props.editingMenuId))
 
 const flattenParentOptions = (
   nodes: MenuTreeItem[],
@@ -241,18 +219,18 @@ const parentMenuSelectOptions = computed((): SelectOption[] => {
   return opts
 })
 
-/** breadcrumb: ID는 노출하지 않고 메뉴명만 (현재 행은 입력 중인 메뉴명 반영) */
+/** breadcrumb: 화면에는 메뉴명만 표시. 저장 API payload는 menu.menuPath(ID 경로)를 그대로 사용 */
 const breadcrumbSegments = computed(() => {
-  const ids = form.value.menuPath
+  const ids = menu.value.menuPath
     .split('/')
     .map((s) => s.trim())
     .filter(Boolean)
   const nameMap = menuIdToNameMap.value
-  const selfId = props.editingMenuId
+  const selfId = menu.value.menuId
   return ids.map((id, idx) => {
     const isSelf = id === selfId && idx === ids.length - 1
     if (isSelf) {
-      const typed = form.value.menuName.trim()
+      const typed = menu.value.menuName.trim()
       return typed || nameMap.get(id) || '이 메뉴'
     }
     return nameMap.get(id) ?? '상위 메뉴'
@@ -265,36 +243,39 @@ const breadcrumbDisplay = computed(() => {
   return parts.join(' › ')
 })
 
+/** 상위 메뉴 변경 시 menuPath·parnMenuId 동시 갱신 */
 const onParentMenuChange = (parentId: string | number) => {
   const pid = typeof parentId === 'number' ? String(parentId) : parentId
-  const selfId = props.editingMenuId
+  const selfId = menu.value.menuId
   if (!selfId) return
   if (!pid) {
-    onPatch({ menuPath: selfId })
+    onPatch({ menuPath: selfId, parnMenuId: null })
     return
   }
   const parentNode = findMenuItemById(props.menuTree, pid)
   if (!parentNode) return
   const base = parentNode.menuPath.trim()
-  onPatch({ menuPath: base ? `${base}/${selfId}` : `${pid}/${selfId}` })
+  onPatch({
+    menuPath: base ? `${base}/${selfId}` : `${pid}/${selfId}`,
+    parnMenuId: pid,
+  })
 }
 
 const resolvedIconId = computed(() => {
-  const cls = form.value.icon?.trim()
+  const cls = menu.value.icon?.trim()
   if (!cls) return ''
   return themeIcons.value.find((i) => i.iconClassNm === cls)?.iconId ?? ''
 })
 
 const iconModalColorHex = computed(() => themeColors.value[0]?.colorHex ?? '#64748b')
 
-/** AgentSettingBasic 과 동일: iconClassNm + size (마스크 아이콘) */
 const pickerIconClasses = computed(() => {
-  const cls = form.value.icon?.trim()
+  const cls = menu.value.icon?.trim()
   if (!cls) return ['icon-plus', 'size-16']
   return [cls, 'size-16']
 })
 
-const isIconUnset = computed(() => !form.value.icon?.trim())
+const isIconUnset = computed(() => !menu.value.icon?.trim())
 
 const onSelectIcon = (iconId: string) => {
   const item = themeIcons.value.find((i) => i.iconId === iconId)
@@ -340,7 +321,6 @@ onMounted(() => {
   }
 }
 
-// AgentSettingBasic.vue 의 아이콘 피커와 동일 패턴
 .picker-wrap {
   position: relative;
 }

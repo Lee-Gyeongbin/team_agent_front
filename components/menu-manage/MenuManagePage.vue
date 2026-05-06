@@ -87,18 +87,14 @@
 
       <!-- 우측: 메뉴 상세 / 수정 폼 패널 -->
       <div class="menu-detail-panel">
-        <!-- 선택된 메뉴 없음 -->
         <template v-if="!selectedMenu">
           <UiEmpty description="좌측 목록에서 메뉴를 선택하면 상세 정보를 수정할 수 있습니다." />
         </template>
 
         <MenuDetailForm
           v-else
-          v-model:form="form"
-          :menu-title="selectedMenu.menuName"
+          v-model:menu="selectedMenu"
           :menu-tree="menuTreeList"
-          :editing-menu-id="selectedMenu.menuId"
-          @reset="onResetForm"
           @save="onSaveMenu"
         />
       </div>
@@ -109,14 +105,17 @@
 <script setup lang="ts">
 import MenuDetailForm from '~/components/menu-manage/MenuDetailForm.vue'
 import MenuTreeNode from '~/components/menu-manage/MenuTreeNode.vue'
-import type { MenuManageFormValues, MenuTreeItem, MenuTreeReorderPayload } from '~/types/menu'
+import type { MenuTreeItem, MenuTreeReorderPayload } from '~/types/menu'
 
 const {
   menuManageTreeList: menuTreeList,
   menuManageTreeLoading: isTreeLoading,
   menuManageTreeError: treeFetchError,
+  selectedMenu,
   handleFetchMenuManageTree,
+  handleSelectMenu,
   handleUpdateMenuOrder,
+  handleSaveMenu,
 } = useMenuManageStore()
 
 const onRetryTreeFetch = async (): Promise<void> => {
@@ -167,7 +166,6 @@ const onTreeReorder = async (payload: MenuTreeReorderPayload) => {
       return
     }
     openToast({ message: '메뉴 순서가 저장되었습니다.', type: 'success' })
-    if (selectedMenu.value) resetFormValues(selectedMenu.value)
   } catch {
     await handleFetchMenuManageTree()
     openToast({ message: '메뉴 순서 저장에 실패했습니다.', type: 'error' })
@@ -183,7 +181,6 @@ const onSearch = () => {
 // 트리 상태 (펼치기/접기, 선택)
 // ===========================
 const selectedMenuId = ref<string | null>(null)
-const selectedMenu = ref<MenuTreeItem | null>(null)
 
 const findAndToggle = (list: MenuTreeItem[], target: MenuTreeItem): boolean => {
   for (const item of list) {
@@ -202,58 +199,15 @@ const onToggle = (item: MenuTreeItem) => {
 
 const onMenuSelect = (item: MenuTreeItem) => {
   selectedMenuId.value = item.menuId
-  selectedMenu.value = item
-  resetFormValues(item)
+  handleSelectMenu(item)
 }
 
 // ===========================
-// 폼 상태
+// 저장
 // ===========================
-const form = ref<MenuManageFormValues>({
-  menuName: '',
-  menuPath: '',
-  srcPath: '',
-  icon: '',
-  sortOrd: '',
-  description: '',
-  useYnBool: true,
-})
+const onSaveMenu = () => handleSaveMenu()
 
-const resetFormValues = (item: MenuTreeItem) => {
-  form.value = {
-    menuName: item.menuName,
-    menuPath: item.menuPath,
-    srcPath: item.srcPath ?? '',
-    icon: item.icon ?? '',
-    sortOrd: String(item.sortOrd ?? ''),
-    description: item.description ?? '',
-    useYnBool: item.useYn !== 'N',
-  }
-}
-
-const onResetForm = () => {
-  if (!selectedMenu.value) return
-  resetFormValues(selectedMenu.value)
-}
-
-const onSaveMenu = () => {
-  if (!form.value.menuName.trim()) {
-    openToast({ message: '메뉴명을 입력해 주세요.', type: 'warning' })
-    return
-  }
-  if (!form.value.srcPath.trim()) {
-    openToast({ message: '메뉴 URL을 입력해 주세요.', type: 'warning' })
-    return
-  }
-  // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-  openToast({ message: '저장되었습니다.', type: 'success' })
-}
-
-// ===========================
-// 메뉴 추가 / 전체 펼치기
-// ===========================
 const onAddMenu = () => {
-  // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
   openToast({ message: '메뉴 추가 기능은 준비 중입니다.', type: 'info' })
 }
 
