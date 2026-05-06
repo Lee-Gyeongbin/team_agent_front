@@ -17,6 +17,7 @@ export const PieChartModule = {
   /** 파이 차트 생성 (분기 처리) */
   create(config: any) {
     const { id, legendId, items, style, textStyle, labelColor, useSvgDonut, type } = config
+    const normalizedItems = Array.isArray(items) ? items : []
     const valueMode = config?.valueMode ? String(config.valueMode) : 'percent'
 
     function formatRawNumber(v: any): string {
@@ -38,6 +39,12 @@ export const PieChartModule = {
       return
     }
 
+    if (normalizedItems.length === 0) {
+      const legendContainer = legendId ? document.getElementById(legendId) : null
+      if (legendContainer) legendContainer.innerHTML = ''
+      return
+    }
+
     const canvas = document.getElementById(id) as HTMLCanvasElement | null
     if (!canvas) {
       console.warn(`Canvas element with id '${id}' not found`)
@@ -52,13 +59,13 @@ export const PieChartModule = {
     // 색상 적용
     let itemsWithColors: any[]
     if (labelColor && labelColor.length > 0) {
-      itemsWithColors = items.map((item: any, index: number) => ({
+      itemsWithColors = normalizedItems.map((item: any, index: number) => ({
         ...item,
         color: labelColor[index] || labelColor[0],
       }))
     } else {
       const colors = this.getColors(style)
-      itemsWithColors = items.map((item: any, index: number) => ({
+      itemsWithColors = normalizedItems.map((item: any, index: number) => ({
         ...item,
         color: colors[index] || colors[0],
       }))
@@ -568,7 +575,7 @@ export const PieChartModule = {
     }))
 
     const total = visibleData.reduce((sum: number, d: any) => sum + d.displayValue, 0)
-    const existingSvg = document.getElementById(`${chartId}-svg`)
+    const existingSvg = document.getElementById(`${chartId}-svg`) as SVGElement | null
     if (!existingSvg) return
 
     if (total === 0) {

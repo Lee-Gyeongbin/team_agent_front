@@ -1,0 +1,239 @@
+@use '../utils/variables' as *;
+@use '../utils/mixins' as *;
+
+// ===================================
+// 페이지 레이아웃
+// ===================================
+.menu-manage-index {
+  min-height: calc(100vh - #{$header-height});
+  box-sizing: border-box;
+
+  .ui-tab .ui-tab-inner {
+    max-width: 1366px;
+    margin: 0 auto;
+  }
+}
+
+.menu-manage-main {
+  gap: $spacing-lg;
+  padding: 16px;
+  min-height: calc(100vh - #{$header-height} - 45px);
+  max-width: 1366px;
+}
+
+.menu-manage-content-wrapper {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+// ===================================
+// 상단 toolbar
+// ===================================
+.menu-manage-toolbar {
+  gap: $spacing-sm;
+  padding-bottom: 16px;
+}
+
+.menu-search-input {
+  min-width: 150px;
+  max-width: 400px;
+}
+
+.btn-add-menu {
+  margin-left: auto;
+}
+
+// ===================================
+// 좌측: 메뉴 트리 패널
+// ===================================
+.menu-tree-panel {
+  width: 260px;
+  flex-shrink: 0;
+  background: #fff;
+  border: 1px solid $color-border;
+  padding: 16px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - #{$header-height} - 123px);
+
+  .menu-panel-header {
+    margin-bottom: $spacing-sm;
+  }
+
+  .menu-panel-title {
+    @include typo($body-xlarge-bold);
+    color: $color-text-heading-sub;
+  }
+
+  // 트리 스크롤 영역
+  .menu-tree-wrap {
+    flex: 1;
+    overflow-y: auto;
+    @include custom-scrollbar;
+  }
+
+  .menu-tree-panel-error {
+    @include flex-center;
+    flex-direction: column;
+    min-height: 200px;
+    padding: $spacing-xl $spacing-md;
+    gap: $spacing-md;
+
+    &__message {
+      @include typo($body-medium);
+      color: $color-error;
+      text-align: center;
+    }
+  }
+
+  .menu-tree {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  // ── 트리 아이템 ──
+  .menu-tree-item {
+    margin-bottom: 2px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .menu-tree-row {
+    padding: 0 2px 0 0;
+    border-radius: $border-radius-sm;
+    gap: 0;
+    min-height: 36px;
+    cursor: pointer;
+    transition: background-color $transition-fast;
+
+    &[draggable='true'] {
+      cursor: grab;
+    }
+
+    &:active[draggable='true'] {
+      cursor: grabbing;
+    }
+
+    &.is-dragging {
+      opacity: 0.45;
+    }
+
+    &.is-drop-before {
+      box-shadow: inset 0 2px 0 0 var(--color-primary, #{$color-primary});
+    }
+
+    &.is-drop-after {
+      box-shadow: inset 0 -2px 0 0 var(--color-primary, #{$color-primary});
+    }
+
+    &:hover {
+      background-color: $color-surface;
+    }
+
+    &.is-selected {
+      background-color: #f1f6fe;
+      border-radius: 4px;
+
+      .menu-tree-name {
+        color: var(--color-primary);
+        font-weight: $font-weight-medium;
+      }
+    }
+
+    .menu-tree-icon {
+      flex-shrink: 0;
+      margin-right: 4px;
+      color: #aebccb;
+    }
+
+    .menu-tree-name {
+      flex: 1;
+      min-width: 0;
+      @include typo($body-medium);
+      color: $color-text-primary;
+      @include ellipsis(1);
+    }
+
+    // 미사용 뱃지
+    .menu-tree-badge {
+      flex-shrink: 0;
+      font-size: 10px;
+      font-weight: $font-weight-bold;
+      color: $color-text-muted;
+      background: $color-surface;
+      border: 1px solid $color-border-light;
+      border-radius: 4px;
+      padding: 1px 5px;
+      margin-right: 2px;
+    }
+
+    .btn-menu-arrow {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .icon-arrow-down-gray {
+      color: #aebccb;
+      transition: transform $transition-fast;
+
+      &.is-expanded {
+        transform: rotate(180deg);
+      }
+    }
+
+    .menu-toggle-placeholder {
+      width: 20px;
+      flex-shrink: 0;
+    }
+  }
+
+  .menu-tree-children {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+}
+
+// ===================================
+// 우측: 메뉴 상세/수정 폼 패널
+// ===================================
+.menu-detail-panel {
+  flex: 1 0 0;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 24px;
+  border-radius: 16px;
+  border: 1px solid $color-border;
+  background: #fff;
+  height: calc(100vh - #{$header-height} - 123px);
+  overflow-y: auto;
+  @include custom-scrollbar;
+
+  // 선택 없을 때 빈 상태 세로 중앙
+  .ui-empty {
+    margin: auto;
+  }
+}
+
+.menu-form-header {
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid $color-border-light;
+
+  .menu-form-title {
+    @include typo($body-xlarge-bold);
+    color: $color-text-heading-sub;
+  }
+}
+
+// 우측 상세 폼 (MenuDetailForm) — 전체 너비 사용
+.menu-detail-panel .menu-detail-form {
+  flex: 1;
+  min-width: 0;
+}

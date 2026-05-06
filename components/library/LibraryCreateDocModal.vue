@@ -38,6 +38,11 @@
                 size="sm"
                 :label="item.tmplType === 'T' ? '템플릿형' : '자유형식'"
               />
+              <UiTag
+                variant="default"
+                size="sm"
+                :label="isSysBuiltinTmpl(item.sysTmplYn) ? '내장' : '사용자'"
+              />
             </div>
           </div>
           <p class="tmpl-builtin-card__desc">{{ item.description }}</p>
@@ -123,6 +128,7 @@ const onOpenTmplPage = () => {
 }
 
 const selectedId = ref<string | null>(null)
+const isSysBuiltinTmpl = (sysTmplYn: string | undefined): boolean => sysTmplYn === 'Y'
 
 watch(
   () => props.isOpen,

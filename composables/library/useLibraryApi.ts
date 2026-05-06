@@ -109,8 +109,8 @@ export const useLibraryApi = () => {
     cardId: string,
     tmplId: string,
     roomId: string,
-  ): Promise<{ successYn: boolean; returnMsg: string; data: string }> => {
-    return post<{ successYn: boolean; returnMsg: string; data: string }>('/library/createDoc.do', {
+  ): Promise<{ successYn: boolean; returnMsg: string; data: string; tmplHtml: string }> => {
+    return post<{ successYn: boolean; returnMsg: string; data: string; tmplHtml: string }>('/library/createDoc.do', {
       cardId,
       tmplId,
       roomId,

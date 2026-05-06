@@ -40,12 +40,18 @@ export interface MeetingDetail {
   minutes: MeetingMinutes | null
   speakers: MeetingSpeaker[]
   infographicList?: MeetingInfographic[]
+  userList?: User[]
 }
 
 export interface TodoItem {
   due_date: string
   content: string
   collaborators: string
+}
+
+export interface User {
+  userId: string
+  userNm: string
 }
 
 export interface MeetingInfographic {

@@ -1,4 +1,10 @@
-import type { ChatGroundingSourceItem, ChatLogListRow, ChatMessage, ChatMessageAttachment } from '~/types/chat'
+import type {
+  ChatGroundingSourceItem,
+  ChatLogListRow,
+  ChatMessage,
+  ChatMessageAttachment,
+  LunchAgentFormPayload,
+} from '~/types/chat'
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import { parseChatAttachmentsFromLogRow } from '~/utils/chat/chatAttachmentDisplayUtil'
 import { parseSurveyAnswersFromPrompt } from '~/utils/chat/psychologyConsultUtil'
@@ -101,7 +107,7 @@ export const useChatMessages = () => {
       }
     }
 
-    // 점심 추천 에이전트: 프롬프트 패턴이면 readonly lunch-card로 대체 (새로고침 복원)
+    // 점심 추천 에이전트: 프롬프트 패턴이면 readonly lunch-card로 대체
     const lunchPayload = parseLunchPayloadFromPrompt(row.qcontent ?? '')
     if (lunchPayload) {
       return [
@@ -190,6 +196,12 @@ export const useChatMessages = () => {
     })
     return logId
   }
+
+  /** 점심 추천 */
+  const setStreamingLunchPayload = (payload: LunchAgentFormPayload) => {
+    const msg = getStreamingMessage()
+    if (msg) msg.lunchFormPayload = { ...payload }
+  }
   // 스트리밍 메시지 찾기
   const getStreamingMessage = () => {
     if (pendingMessageId.value) {
@@ -231,6 +243,7 @@ export const useChatMessages = () => {
     logRowToMessages,
     pushQuestionMessage,
     pushAnswerPlaceholder,
+    setStreamingLunchPayload,
     getStreamingMessage,
     finalizeStreamingMessage,
     updateStreamingError,

@@ -1,0 +1,530 @@
+@use '../utils/variables' as *;
+@use '../utils/mixins' as *;
+
+.org-manage-index {
+  display: flex;
+  flex-direction: column;
+  padding: $spacing-md;
+  min-height: calc(100vh - #{$header-height});
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.org-manage-header {
+  display: flex;
+  align-items: center;
+  padding: 12px 0;
+  margin-bottom: $spacing-md;
+  gap: $spacing-sm;
+}
+
+.org-manage-header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.org-manage-header-search {
+  width: 280px;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.org-manage-title {
+  @include typo($body-2xlarge-bold);
+  color: $color-text-heading;
+  margin: 0 0 $spacing-sm;
+}
+
+.org-manage-description {
+  color: $color-text-secondary;
+  font-size: $font-size-base;
+  margin: 0;
+}
+
+// ===== 좌우 분할 =====
+.org-manage-split {
+  display: flex;
+  align-items: stretch;
+  gap: $spacing-md;
+  min-height: 0;
+  flex: 1;
+}
+
+.org-manage-tree-panel,
+.org-manage-member-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 360px;
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  overflow: hidden;
+}
+
+.org-manage-tree-panel {
+  flex: 0 0 38%;
+  max-width: 440px;
+}
+
+.org-manage-member-panel {
+  flex: 1;
+}
+
+.org-manage-panel-header {
+  flex-shrink: 0;
+  padding: $spacing-sm $spacing-md;
+  border-bottom: 1px solid $color-border;
+  background: $color-background;
+  gap: $spacing-sm;
+}
+
+.org-manage-panel-title {
+  margin: 0;
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-heading;
+}
+
+.org-manage-panel-sub {
+  margin: 4px 0 0;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.org-manage-member-selected-org {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.org-manage-member-selected-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: $spacing-sm;
+  align-items: baseline;
+  margin: 0;
+
+  dt {
+    margin: 0;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-text-secondary;
+    white-space: nowrap;
+  }
+
+  dd {
+    margin: 0;
+    font-size: $font-size-sm;
+    color: $color-text-primary;
+    word-break: break-all;
+  }
+
+  &--name {
+    align-items: center;
+    gap: $spacing-md;
+
+    dt {
+      font-size: $font-size-base;
+      font-weight: $font-weight-semibold;
+    }
+
+    dd {
+      font-size: $font-size-lg;
+      font-weight: $font-weight-semibold;
+      color: $color-text-heading;
+      line-height: $line-height-tight;
+    }
+  }
+}
+
+.org-manage-tree-body,
+.org-manage-member-body {
+  position: relative;
+  flex: 1;
+  min-height: 280px;
+  overflow: auto;
+}
+
+.org-manage-panel-error,
+.org-manage-panel-empty {
+  @include flex-center;
+  min-height: 240px;
+}
+
+.org-manage-panel-error {
+  flex-direction: column;
+  padding: $spacing-2xl $spacing-md;
+  gap: $spacing-md;
+
+  &__message {
+    font-size: $font-size-sm;
+    color: $color-error;
+    text-align: center;
+  }
+}
+
+.org-manage-panel-empty {
+  padding: $spacing-md;
+}
+
+// ===== 조직도 트리 =====
+.org-manage-tree-root,
+.org-manage-tree-children,
+.org-manage-member-list {
+  list-style: none;
+  margin: 0;
+}
+
+.org-manage-tree-root {
+  padding: $spacing-sm 0;
+}
+
+.org-manage-tree-children,
+.org-manage-member-list {
+  padding: 0;
+}
+
+.org-manage-tree-root-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.org-manage-tree-item {
+  margin-bottom: 2px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.org-manage-tree-row {
+  padding: 0 8px 0 0;
+  border-radius: $border-radius-sm;
+  gap: 4px;
+  min-height: 40px;
+  cursor: pointer;
+
+  &.is-selected {
+    background-color: #f1f6fe;
+  }
+
+  &:hover:not(.is-selected) {
+    background-color: #f8fafc;
+  }
+}
+
+.org-manage-tree-drag-handle,
+.org-manage-tree-icon {
+  flex-shrink: 0;
+  color: #aebccb;
+}
+
+.org-manage-tree-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.org-manage-tree-label {
+  flex: 1;
+  min-width: 0;
+  @include typo($body-medium);
+  color: $color-text-primary;
+  @include ellipsis(1);
+}
+
+.org-manage-tree-toggle {
+  flex-shrink: 0;
+}
+
+.org-manage-tree-toggle-placeholder {
+  width: 28px;
+  flex-shrink: 0;
+}
+
+.org-manage-tree-toggle .icon-arrow-down-gray {
+  transition: transform $transition-fast;
+
+  &.is-expanded {
+    transform: rotate(180deg);
+  }
+}
+
+// ===== 팀원 카드 =====
+.org-manage-member-list-wrap {
+  padding: $spacing-md;
+}
+
+.org-manage-member-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: $spacing-md;
+
+  @include mobile {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 767px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.org-manage-member-card {
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  background: #fff;
+  padding: $spacing-lg;
+}
+
+.org-manage-member-card-top {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+}
+
+.org-manage-member-avatar {
+  @include flex-center;
+  width: 64px;
+  height: 64px;
+  border-radius: $border-radius-full;
+  background: #f1f6fe;
+  color: #5e87d7;
+  flex-shrink: 0;
+}
+
+.org-manage-member-avatar-image {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
+.org-manage-member-head {
+  min-width: 0;
+}
+
+.org-manage-member-name {
+  margin: 0;
+  @include typo($body-large-bold);
+  color: $color-text-heading;
+  @include ellipsis(1);
+}
+
+.org-manage-member-id {
+  margin: 4px 0 0;
+  font-size: $font-size-base;
+  color: $color-text-secondary;
+  @include ellipsis(1);
+}
+
+.org-manage-member-divider {
+  border-top: 1px solid $color-border;
+  margin: $spacing-md 0;
+}
+
+.org-manage-member-meta {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.org-manage-member-meta-item {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  align-items: center;
+  gap: $spacing-sm;
+
+  dt {
+    margin: 0;
+    font-size: $font-size-base;
+    color: $color-text-secondary;
+  }
+
+  dd {
+    margin: 0;
+    min-width: 0;
+    font-size: $font-size-base;
+    color: $color-text-primary;
+    word-break: break-all;
+  }
+}
+
+.org-manage-member-status {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: $border-radius-full;
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+
+  &.is-active {
+    background: rgba($color-success, 0.12);
+    color: $color-success;
+  }
+
+  &.is-inactive {
+    background: rgba($color-text-secondary, 0.12);
+    color: $color-text-secondary;
+  }
+
+  &.is-lock {
+    background: rgba($color-warning, 0.12);
+    color: $color-warning;
+  }
+}
+
+// ===== 조직 추가 모달 =====
+.org-manage-add-org-modal,
+.org-manage-parent-select-modal {
+  .modal-dialog-body {
+    align-items: stretch;
+    width: 100%;
+  }
+}
+
+.org-manage-add-modal {
+  width: 100%;
+  padding: $spacing-md;
+}
+
+.org-manage-add-form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.org-manage-add-form-row {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+
+  :deep(.ui-input-wrap),
+  :deep(.ui-select-wrap) {
+    width: 100%;
+  }
+}
+
+.org-manage-add-form-label {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+}
+
+.org-manage-delete-btn {
+  color: $color-error;
+  border-color: rgba($color-error, 0.5);
+
+  &:hover {
+    background: rgba($color-error, 0.06);
+    border-color: rgba($color-error, 0.7);
+  }
+}
+
+.org-manage-parent-picker {
+  position: relative;
+}
+
+.org-manage-parent-picker-trigger {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.org-manage-parent-picker-tree {
+  margin-top: $spacing-xs;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  max-height: 250px;
+  overflow: auto;
+  background: #fff;
+}
+
+.org-manage-parent-root-select {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(100% - #{$spacing-sm * 2});
+  border: 1px solid $color-border;
+  border-radius: $border-radius-sm;
+  background: #fff;
+  text-align: center;
+  padding: 10px $spacing-md;
+  margin: $spacing-sm $spacing-sm 4px;
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+  cursor: pointer;
+  transition: background-color $transition-fast, border-color $transition-fast, color $transition-fast;
+
+  &:focus-visible {
+    outline: 2px solid rgba($color-primary, 0.24);
+    outline-offset: 1px;
+  }
+
+  &:hover {
+    border-color: rgba($color-primary, 0.45);
+    background: #f8fafc;
+    color: $color-primary;
+  }
+
+  &.is-selected {
+    border-color: rgba($color-primary, 0.45);
+    background: rgba($color-primary, 0.08);
+    color: $color-primary;
+    font-weight: $font-weight-semibold;
+  }
+}
+
+.org-manage-parent-select-modal {
+  .modal-dialog-content {
+    // 세로 고정 구간 (뷰포트 계산 없음)
+    min-height: 400px;
+    max-height: 460px;
+  }
+
+  .modal-dialog-header {
+    flex-shrink: 0;
+  }
+
+  .modal-dialog-body {
+    flex: 1 1 auto;
+    align-self: stretch;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .org-manage-parent-picker-tree {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    width: 100%;
+    margin-top: 0;
+    max-height: none;
+    overflow: hidden;
+  }
+
+  .org-manage-tree-root {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+  }
+}
+
+.org-manage-add-error {
+  margin-top: $spacing-md;
+  padding: $spacing-sm $spacing-md;
+  border-radius: $border-radius-base;
+  background: rgba($color-error, 0.06);
+  color: $color-error;
+  font-size: $font-size-sm;
+}

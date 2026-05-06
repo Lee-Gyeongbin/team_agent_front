@@ -500,10 +500,16 @@ export const ChartConfig = {
   },
 
   /** 색상 문자열에서 RGB 값 추출 (hex, rgb, rgba 모두 지원) */
-  parseColorToRgb(color: string): [number, number, number] | null {
+  parseColorToRgb(color: unknown): [number, number, number] | null {
+    let normalizedColor = color
+    if (Array.isArray(normalizedColor)) {
+      normalizedColor = normalizedColor.find((item) => typeof item === 'string') ?? null
+    }
+    if (typeof normalizedColor !== 'string') return null
+
     // hex 색상 (#RRGGBB 또는 #RGB)
-    if (color.startsWith('#')) {
-      let hex = color.slice(1)
+    if (normalizedColor.startsWith('#')) {
+      let hex = normalizedColor.slice(1)
       if (hex.length === 3) {
         hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2]
       }
@@ -513,7 +519,7 @@ export const ChartConfig = {
       return [r, g, b]
     }
     // rgba/rgb 색상
-    const match = color.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/)
+    const match = normalizedColor.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/)
     if (match) {
       return [parseInt(match[1]), parseInt(match[2]), parseInt(match[3])]
     }

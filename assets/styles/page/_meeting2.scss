@@ -707,6 +707,14 @@
 }
 
 // 인라인 편집용 input — 칩 안에 자연스럽게 보이도록
+.meeting2-speaker-chip-edit-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+}
+
 .meeting2-speaker-chip-input {
   min-width: 40px;
   padding: 0;
@@ -717,6 +725,53 @@
 
   &::placeholder {
     color: $color-text-disabled;
+  }
+}
+
+// 회의 상세 userList 기반 자동완성 (MeetingStartModal 참석자 목록과 유사)
+.meeting2-speaker-suggest {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  top: auto;
+  left: 0;
+  z-index: 40;
+  min-width: 180px;
+  max-width: min(280px, 70vw);
+  max-height: 200px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  @include custom-scrollbar;
+
+  .ui-empty {
+    margin: auto;
+    padding: $spacing-md 0;
+  }
+}
+
+.meeting2-speaker-suggest-item {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  margin: 0;
+  border: none;
+  border-bottom: 1px solid #f1f5f9;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  @include typo($body-small, $color-text-dark);
+  transition: background-color $transition-fast;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: #f8fafc;
   }
 }
 
@@ -928,6 +983,12 @@
   font-size: $font-size-sm;
   color: $color-text-dark;
   cursor: pointer;
+
+  &--font-size {
+    width: 58px;
+    padding: 0 4px;
+    text-align: center;
+  }
 }
 
 // ---- 색상 피커 (글자색 / 형광펜) ----
@@ -1311,88 +1372,6 @@
 
     &.ProseMirror-selectednode {
       outline: 2px solid var(--color-primary);
-    }
-  }
-
-  // 리사이즈 가능한 이미지 wrapper
-  .meeting2-image-wrap {
-    position: relative;
-    display: inline-block;
-    line-height: 0;
-    margin: $spacing-sm 0;
-    max-width: 100%;
-
-    img {
-      display: block;
-      width: 100%;
-      height: auto;
-      margin: 0;
-    }
-
-    &.is-selected,
-    &:hover.is-editable {
-      outline: 2px solid var(--color-primary);
-      outline-offset: 2px;
-    }
-  }
-
-  // 우하단 리사이즈 핸들
-  .meeting2-image-handle {
-    position: absolute;
-    right: -6px;
-    bottom: -6px;
-    width: 14px;
-    height: 14px;
-    background: var(--color-primary);
-    border: 2px solid #fff;
-    border-radius: 50%;
-    cursor: nwse-resize;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-    opacity: 0;
-    transition: opacity $transition-fast;
-    z-index: 2;
-  }
-
-  .meeting2-image-wrap.is-editable:hover .meeting2-image-handle,
-  .meeting2-image-wrap.is-selected .meeting2-image-handle {
-    opacity: 1;
-  }
-
-  // 선택 시 상단 노출되는 단축 툴바
-  .meeting2-image-toolbar {
-    position: absolute;
-    top: -36px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: inline-flex;
-    align-items: center;
-    gap: 2px;
-    padding: $spacing-xs;
-    background: #fff;
-    border: 1px solid $color-border;
-    border-radius: $border-radius-base;
-    box-shadow: $shadow-md;
-    line-height: 1;
-    z-index: 3;
-  }
-
-  .meeting2-image-toolbar-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 28px;
-    height: 24px;
-    padding: 0 6px;
-    border: none;
-    border-radius: $border-radius-sm;
-    background: transparent;
-    cursor: pointer;
-    @include typo($body-xsmall, $color-text-dark);
-    transition: background $transition-fast;
-
-    &:hover {
-      background: $color-border-light;
-      color: var(--color-primary);
     }
   }
 

@@ -96,6 +96,7 @@ const tmplList = ref<TmplBaseInfo[]>([])
 const isCreateDocModalOpen = ref(false)
 const isCreateDocReportOpen = ref(false)
 const generatedReport = ref<LibraryGeneratedReportValues>({})
+const generatedReportTmplHtml = ref('')
 const selectedCreateDocTmplNm = ref('')
 const roomId = ref('')
 const reportRefineCompletedAt = ref(0)
@@ -679,6 +680,7 @@ export const useLibraryStore = () => {
       await nextTick()
       const res = await fetchCreateDoc(cardId, tmplId, roomId.value)
       const answer = res.data
+      const tmplHtml = res.tmplHtml ?? ''
       if (answer) {
         try {
           const parsed = JSON.parse(answer) as unknown
@@ -691,6 +693,7 @@ export const useLibraryStore = () => {
           generatedReport.value = {}
         }
       }
+      generatedReportTmplHtml.value = tmplHtml
       closeLoading()
       await nextTick()
       openToast({ message: `'${selectedCreateDocTmplNm.value}' 문서를 생성했습니다.`, type: 'success' })
@@ -835,6 +838,7 @@ export const useLibraryStore = () => {
     isCreateDocModalOpen,
     isCreateDocReportOpen,
     generatedReport,
+    generatedReportTmplHtml,
     reportRefineCompletedAt,
     refinedEditorHtml,
     selectedCreateDocTmplNm,

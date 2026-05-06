@@ -14,6 +14,7 @@ import type {
   ChatFileSaveResponse,
   ChatFileViewResponse,
   DmListResponse,
+  RegionTreeResponse,
 } from '~/types/chat'
 import type { Agent } from '~/types/agent'
 import type { FileMeta, FileUploadResponse } from '~/types/file'
@@ -40,6 +41,14 @@ export const useChatApi = () => {
   const fetchSelectDmList = async (agentId: string, roomId?: string): Promise<DmListResponse> => {
     const roomQuery = roomId?.trim() ? `&roomId=${encodeURIComponent(roomId)}` : ''
     return get<DmListResponse>(`/ai/chatbot/selectDmList.do?agentId=${encodeURIComponent(agentId)}${roomQuery}`)
+  }
+  // 지역 트리 조회 (점심 추천 위치 선택)
+  const fetchSelectRegionTree = async (coords?: { lat: number; lng: number } | null): Promise<RegionTreeResponse> => {
+    let path = '/region/selectRegionTree.do'
+    if (coords != null && Number.isFinite(coords.lat) && Number.isFinite(coords.lng)) {
+      path += `?${new URLSearchParams({ lat: String(coords.lat), lng: String(coords.lng) }).toString()}`
+    }
+    return get<RegionTreeResponse>(path)
   }
   // CHAT 대화방 등록
   const fetchCreateChatRoom = async (content: string, svcTy: string): Promise<{ data: ChatRoom }> => {
@@ -143,6 +152,7 @@ export const useChatApi = () => {
     fetchSelectModelList,
     fetchSelectRagDsList,
     fetchSelectDmList,
+    fetchSelectRegionTree,
     fetchCreateChatRoom,
     fetchCreateChatFileUploadUrl,
     fetchCreateChatFile,

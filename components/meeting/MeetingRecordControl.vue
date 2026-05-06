@@ -17,6 +17,7 @@
         v-if="!isRecording && !isConnecting"
         variant="primary"
         size="sm"
+        :disabled="status == '002'"
         full-width
         @click="emit('start')"
       >
@@ -56,6 +57,10 @@
 </template>
 
 <script setup lang="ts">
+import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
+
+const { currentMeeting } = useMeetingStore()
+
 const props = defineProps<{
   isRecording: boolean
   isConnecting: boolean
@@ -67,6 +72,8 @@ const emit = defineEmits<{
   start: []
   finish: []
 }>()
+
+const status = computed(() => currentMeeting.value?.status)
 
 const formattedTime = computed(() => {
   const total = props.elapsed ?? 0

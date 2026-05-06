@@ -107,6 +107,7 @@ const mapApiSpeakers = (apiSpeakers: ApiMeetingSpeaker[]): MeetingSpeaker[] =>
     name: s.speakerNm || s.speakerLabel,
     alias: s.speakerLabel,
     colorIndex: i % 8,
+    speakerUserId: s.speakerUserId?.trim() || undefined,
   }))
 
 const formatStartTime = (start?: number): string => {
@@ -178,6 +179,7 @@ const mapApiDetailToMeeting = (detail: MeetingDetail): Meeting | null => {
     language: 'ko',
     createdAt: m.createDt ?? '',
     updatedAt: m.createDt ?? '',
+    status: m.status,
   }
 }
 
@@ -269,6 +271,7 @@ const handleSelectMeetingDetail = async (meetingId: number) => {
       if (detail.minutes && mapped.minutesContent && isMinutesEditorEmpty(currentMeeting.value.minutesContent)) {
         currentMeeting.value.minutesContent = mapped.minutesContent
       }
+      currentMeeting.value.status = detail.meeting?.status ?? ''
     }
   } catch {
     openToast({ message: '회의 정보를 불러오지 못했습니다.', type: 'error' })
@@ -456,7 +459,7 @@ const handleSaveSpeakers = async (speakers: Partial<MeetingSpeaker>[]) => {
         return {
           speakerId: Number(s.id),
           speakerNm: s.name ?? '',
-          speakerUserId: existing?.speakerUserId ?? '',
+          speakerUserId: s.speakerUserId?.trim() || existing?.speakerUserId || '',
         }
       })
 

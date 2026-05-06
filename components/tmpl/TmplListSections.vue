@@ -93,6 +93,13 @@
           >
             {{ item.description }}
           </p>
+          <div
+            v-if="item.llmPromptSmry"
+            class="tmpl-prompt-box"
+          >
+            <p class="tmpl-prompt-box__label">프롬프트 (요약)</p>
+            <p class="tmpl-prompt-box__text">{{ item.llmPromptSmry }}</p>
+          </div>
         </template>
       </article>
     </div>

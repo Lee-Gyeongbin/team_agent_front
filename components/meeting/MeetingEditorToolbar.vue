@@ -14,6 +14,24 @@
 
     <span class="meeting2-editor-toolbar-divider"></span>
 
+    <!-- 폰트 크기 -->
+    <select
+      class="meeting2-editor-toolbar-select meeting2-editor-toolbar-select--font-size"
+      :value="currentFontSize"
+      title="글자 크기"
+      @change="onChangeFontSize"
+    >
+      <option
+        v-for="size in FONT_SIZE_OPTIONS"
+        :key="size"
+        :value="size"
+      >
+        {{ size }}
+      </option>
+    </select>
+
+    <span class="meeting2-editor-toolbar-divider"></span>
+
     <button
       class="meeting2-editor-toolbar-btn"
       :class="{ 'is-active': isActive('bold') }"
@@ -111,6 +129,34 @@
       @click="run((c) => c.sinkListItem('listItem'))"
     >
       →
+    </button>
+
+    <span class="meeting2-editor-toolbar-divider"></span>
+
+    <!-- 텍스트 / 이미지 정렬 -->
+    <button
+      class="meeting2-editor-toolbar-btn"
+      :class="{ 'is-active': isAlignActive('left') }"
+      title="왼쪽 정렬"
+      @click="onSetAlign('left')"
+    >
+      ≡←
+    </button>
+    <button
+      class="meeting2-editor-toolbar-btn"
+      :class="{ 'is-active': isAlignActive('center') }"
+      title="가운데 정렬"
+      @click="onSetAlign('center')"
+    >
+      ≡
+    </button>
+    <button
+      class="meeting2-editor-toolbar-btn"
+      :class="{ 'is-active': isAlignActive('right') }"
+      title="오른쪽 정렬"
+      @click="onSetAlign('right')"
+    >
+      ≡→
     </button>
 
     <span class="meeting2-editor-toolbar-divider"></span>
@@ -315,6 +361,46 @@ import type { ChainedCommands } from '@tiptap/vue-3'
 import { meetingEditorKey } from '~/composables/meeting/meetingEditorKey'
 
 const editor = inject(meetingEditorKey)
+
+// ===== 폰트 크기 =====
+const FONT_SIZE_OPTIONS = ['8', '9', '10', '11', '12', '14', '16', '18', '20', '24', '28', '32', '36', '48']
+const DEFAULT_FONT_SIZE = '14'
+
+const currentFontSize = computed<string>(() => {
+  if (!editor?.value) return DEFAULT_FONT_SIZE
+  const fs = editor.value.getAttributes('textStyle').fontSize as string | undefined
+  if (!fs) return DEFAULT_FONT_SIZE
+  return fs.replace('px', '')
+})
+
+const onChangeFontSize = (e: Event) => {
+  const size = (e.target as HTMLSelectElement).value
+  if (!size) {
+    editor?.value?.chain().focus().unsetFontSize().run()
+  } else {
+    editor?.value?.chain().focus().setFontSize(`${size}px`).run()
+  }
+}
+
+// ===== 정렬 =====
+/** 이미지 노드 선택 시에는 node attribute, 그 외엔 단락 textAlign 적용 */
+const onSetAlign = (align: 'left' | 'center' | 'right') => {
+  if (!editor?.value) return
+  if (editor.value.isActive('image')) {
+    editor.value.chain().focus().updateAttributes('image', { textAlign: align }).run()
+  } else {
+    editor.value.chain().focus().setTextAlign(align).run()
+  }
+}
+
+/** 정렬 active 상태 — 이미지/단락 모두 반영 */
+const isAlignActive = (align: 'left' | 'center' | 'right') => {
+  if (!editor?.value) return false
+  if (editor.value.isActive('image')) {
+    return (editor.value.getAttributes('image').textAlign ?? 'left') === align
+  }
+  return editor.value.isActive({ textAlign: align })
+}
 
 // ===== 색상 팔레트 =====
 const textColors = ['#000000', '#5c6677', '#d92d20', '#d97706', '#0d8a5b', '#3b82f6', '#7c3aed', '#ec4899']

@@ -75,9 +75,8 @@ const isTmplFormOpen = ref(false)
 const editingUserTemplate = ref<TmplBaseInfo | null>(null)
 
 const onAddTemplate = () => {
-  openToast({ message: '템플릿 추가 기능은 개발 예정입니다.', type: 'warning' })
-  // editingUserTemplate.value = null
-  // isTmplFormOpen.value = true
+  editingUserTemplate.value = null
+  isTmplFormOpen.value = true
 }
 
 const onEditTemplate = (t: TmplBaseInfo) => {

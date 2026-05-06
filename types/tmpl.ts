@@ -22,6 +22,7 @@ export interface TmplBaseInfo {
   description: string
   llmPromptSmry: string
   llmPrompt: string
+  tmplHtml?: string
   sysTmplYn: string
   useYn: string
   createDt: string
@@ -37,6 +38,8 @@ export interface TmplFormSavePayload {
   description: string
   llmPromptSmry: string
   llmPrompt: string
+  /** DB: TMPL_HTML — 템플릿형(T)에서 문서 초기 HTML 구조 */
+  tmplHtml?: string
   useYn?: string
   fields: TmplField[]
 }

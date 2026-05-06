@@ -208,6 +208,21 @@ export interface LunchRecommendationItem {
   location: string
   menu: string
   price: string
+  address: string
+  imageUrl: string
+}
+
+/** 시도 > 시군구 > 동 구조 지역 맵 */
+export type RegionLocationMap = Record<string, Record<string, string[]>>
+
+export type RegionSelectedLocation = Partial<Pick<LunchAgentFormPayload, 'sido' | 'sigungu' | 'dong'>>
+
+/** /region/selectRegionTree.do 응답 — selected는 lat/lng 쿼리 쌍이 있을 때만 채워질 수 있음 */
+export interface RegionTreeResponse {
+  successYn?: boolean
+  returnMsg?: string
+  data?: RegionLocationMap
+  selected?: RegionSelectedLocation
 }
 
 export interface ChatRoom {

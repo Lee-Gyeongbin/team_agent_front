@@ -52,13 +52,13 @@ export const useChart = () => {
   const destroyChart = () => {
     if (ChartConfig.instances[chartId]) {
       ChartConfig.instances[chartId].destroy()
-      delete ChartConfig.instances[chartId]
+      Reflect.deleteProperty(ChartConfig.instances, chartId)
     }
     // SVG 도넛 인스턴스 + DOM 정리
     if (ChartConfig.svgDonutInstances[chartId]) {
       const svgEl = document.getElementById(`${chartId}-svg`)
       if (svgEl) svgEl.remove()
-      delete ChartConfig.svgDonutInstances[chartId]
+      Reflect.deleteProperty(ChartConfig.svgDonutInstances, chartId)
     }
   }
 

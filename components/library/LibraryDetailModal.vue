@@ -283,6 +283,7 @@
     <!-- AI 생성 보고서 편집 -->
     <LibraryCreateDocReportModal
       v-model:report="generatedReport"
+      v-model:tmpl-html="generatedReportTmplHtml"
       :is-open="isCreateDocReportOpen"
       :tmpl-nm="selectedCreateDocTmplNm"
       :refine-completed-at="reportRefineCompletedAt"
@@ -312,6 +313,7 @@ const {
   isCreateDocModalOpen,
   isCreateDocReportOpen,
   generatedReport,
+  generatedReportTmplHtml,
   reportRefineCompletedAt,
   refinedEditorHtml,
   selectedCreateDocTmplNm,
@@ -397,7 +399,9 @@ const visualizationView = computed<VisualizationViewModel | null>(() => {
   if (!props.tableData?.tableData) return null
   return buildVisualizationViewModel({
     messageId: props.tableData.logId,
+    sql: props.tableData.sql ?? props.cardDetail?.ttsq ?? '',
     tableData: props.tableData.tableData,
+    chartOption: props.tableData.chartOption,
     statList: props.chartStatItems,
     statDetailList: props.chartDetailCdItems,
   })
