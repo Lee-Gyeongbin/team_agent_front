@@ -23,6 +23,8 @@ export interface MeetingSpeaker {
   name: string
   alias?: string // (나) 같은 표시용 별칭
   colorIndex: number // 0~7 색상 팔레트 인덱스
+  /** 참석자(userList) 매핑 시 백엔드 speakerUserId */
+  speakerUserId?: string
 }
 
 /** 실시간 STT 발화 항목 */
@@ -73,4 +75,5 @@ export interface Meeting {
   language: string // STT 언어 (ko, en, ja 등)
   createdAt: string
   updatedAt: string
+  status: string
 }

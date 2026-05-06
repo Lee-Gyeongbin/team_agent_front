@@ -5,6 +5,15 @@
   >
     <div class="meeting2-panel-header">
       <span class="meeting2-panel-title"> 자동 생성된 회의록 </span>
+      <UiButton
+        variant="primary"
+        size="sm"
+      >
+        <template #icon-left>
+          <i class="icon-edit size-16" />
+        </template>
+        저장하기
+      </UiButton>
     </div>
 
     <!-- ── WYSIWYG 에디터 ────────────────────────────────────────────── -->

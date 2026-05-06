@@ -707,6 +707,14 @@
 }
 
 // 인라인 편집용 input — 칩 안에 자연스럽게 보이도록
+.meeting2-speaker-chip-edit-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+}
+
 .meeting2-speaker-chip-input {
   min-width: 40px;
   padding: 0;
@@ -717,6 +725,53 @@
 
   &::placeholder {
     color: $color-text-disabled;
+  }
+}
+
+// 회의 상세 userList 기반 자동완성 (MeetingStartModal 참석자 목록과 유사)
+.meeting2-speaker-suggest {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  top: auto;
+  left: 0;
+  z-index: 40;
+  min-width: 180px;
+  max-width: min(280px, 70vw);
+  max-height: 200px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  @include custom-scrollbar;
+
+  .ui-empty {
+    margin: auto;
+    padding: $spacing-md 0;
+  }
+}
+
+.meeting2-speaker-suggest-item {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  margin: 0;
+  border: none;
+  border-bottom: 1px solid #f1f5f9;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  @include typo($body-small, $color-text-dark);
+  transition: background-color $transition-fast;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: #f8fafc;
   }
 }
 

@@ -117,14 +117,18 @@ const convertPlainTextTableBlocksToGfm = (text: string): string => {
  * - DOMPurify로 XSS 방지 (v-html 전제)
  */
 export const toHtmlContent = (value: string) => {
-  // 줄바꿈 정규화
   const normalized = value.replace(/\r\n/g, '\n').replace(/\\n/g, '\n')
   if (!normalized.trim()) return ''
 
-  // 파이프 없는 "텍스트 표"는 GFM 표로 정규화 후 marked 파싱
-  const markdown = convertPlainTextTableBlocksToGfm(normalized)
+  // list 항목 다음에 볼드 텍스트(①②... 또는 일반 **)가 바로 오면 빈 줄 삽입
+  // → marked가 list continuation으로 오인하는 것 방지
+  const preprocessed = normalized
+    // "- xxx\n**..." 패턴에서 사이에 빈 줄 추가
+    .replace(/(^[ \t]*[-*+] .+$)\n([ \t]*\*\*)/gm, '$1\n\n$2')
+    // 숫자 list 다음도 동일하게
+    .replace(/(^[ \t]*\d+[.)].+$)\n([ \t]*\*\*)/gm, '$1\n\n$2')
 
-  // DOMPurify로 XSS 방지 (v-html 전제)
+  const markdown = convertPlainTextTableBlocksToGfm(preprocessed)
   const html = marked.parse(markdown, { async: false }) as string
   return DOMPurify.sanitize(html)
 }

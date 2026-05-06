@@ -168,10 +168,6 @@ const onClickNew = () => {
 
 /** 카드 클릭 — 진행중인 회의(status 001)는 녹음 화면으로 이동 */
 const onClickCard = (meeting: { id: string; status: string }) => {
-  if (meeting.status === '001') {
-    navigateTo(`/meeting/record?meetingId=${meeting.id}`)
-    return
-  }
   navigateTo(`/meeting/${meeting.id}`)
 }
 
