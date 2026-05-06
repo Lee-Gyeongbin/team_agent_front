@@ -15,6 +15,13 @@ renderer.code = ({ text, lang }) => {
   const highlighted = hljs.highlight(text, { language }).value
   return `<pre><code class="hljs language-${language}">${highlighted}</code></pre>`
 }
+/** 외부 링크(http/https)는 새 탭으로 열기 */
+renderer.link = ({ href, title, text }) => {
+  const isExternal = /^https?:\/\//i.test(href ?? '')
+  const titleAttr = title ? ` title="${title}"` : ''
+  const targetAttr = isExternal ? ' target="_blank" rel="noopener noreferrer"' : ''
+  return `<a href="${href}"${titleAttr}${targetAttr}>${text}</a>`
+}
 marked.use({ renderer })
 
 /** 인라인/블록 수식($...$, $$...$$) 렌더링 */
@@ -129,6 +136,8 @@ export const toHtmlContent = (value: string) => {
     .replace(/(^[ \t]*\d+[.)].+$)\n([ \t]*\*\*)/gm, '$1\n\n$2')
 
   const markdown = convertPlainTextTableBlocksToGfm(preprocessed)
+  // DOMPurify로 XSS 방지 (v-html 전제)
+  // ADD_ATTR에 target 추가: marked가 생성한 외부 링크의 target="_blank" 유지
   const html = marked.parse(markdown, { async: false }) as string
-  return DOMPurify.sanitize(html)
+  return DOMPurify.sanitize(html, { ADD_ATTR: ['target'] })
 }

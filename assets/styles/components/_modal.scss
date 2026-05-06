@@ -641,6 +641,18 @@
         background: color.change($color-primary, $alpha: 0.06);
         color: $color-text-secondary;
       }
+
+      a {
+        color: $color-primary;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+        font-weight: $font-weight-medium;
+        transition: opacity 0.15s ease;
+
+        &:hover {
+          opacity: 0.75;
+        }
+      }
     }
   }
 
@@ -846,6 +858,18 @@
           border-radius: 0 6px 6px 0;
           background: color.change($color-primary, $alpha: 0.06);
           color: $color-text-secondary;
+        }
+
+        a {
+          color: $color-primary;
+          text-decoration: underline;
+          text-underline-offset: 2px;
+          font-weight: $font-weight-medium;
+          transition: opacity 0.15s ease;
+
+          &:hover {
+            opacity: 0.75;
+          }
         }
       }
     }

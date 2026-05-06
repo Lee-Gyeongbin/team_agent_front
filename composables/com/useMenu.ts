@@ -13,7 +13,7 @@ const MENU_NAME_TO_PATH: Record<string, string> = {
 }
 
 /** 메뉴 트리에서 매핑된 메뉴명 항목의 srcPath를 위 경로로 보정 */
-function patchMenuPaths(items: MenuItem[]): void {
+export function patchMenuPaths(items: MenuItem[]): void {
   for (const item of items) {
     const path = MENU_NAME_TO_PATH[item.menuName]
     if (path) {
