@@ -463,45 +463,59 @@ watch(
   { immediate: true },
 )
 
-const getShouldPlayIntro = () => !props.readonly && !hasResultRecommendations.value && !props.initialPayload
-const isIntroPlaying = ref(getShouldPlayIntro())
-const isContentVisible = ref(!getShouldPlayIntro())
-let introStartTimer: ReturnType<typeof setTimeout> | null = null
-let introEndTimer: ReturnType<typeof setTimeout> | null = null
+/** 인트로 최소 노출(ms) */
+const LUNCH_INTRO_MIN_MS = 3100
 
-const clearIntroTimers = () => {
-  if (introStartTimer) clearTimeout(introStartTimer)
-  if (introEndTimer) clearTimeout(introEndTimer)
-  introStartTimer = null
-  introEndTimer = null
+const shouldPlayIntro = computed(() => !props.readonly && !hasResultRecommendations.value && !props.initialPayload)
+const isIntroPlaying = ref(false)
+const isContentVisible = ref(false)
+let introTimer: ReturnType<typeof setTimeout> | null = null
+let isIntroDestroyed = false
+
+const clearIntroTimer = () => {
+  if (introTimer) clearTimeout(introTimer)
+  introTimer = null
 }
 
-const startIntroSequence = () => {
-  clearIntroTimers()
-  if (!getShouldPlayIntro()) {
+const runIntroSequence = async () => {
+  clearIntroTimer()
+  if (!shouldPlayIntro.value) {
     isIntroPlaying.value = false
     isContentVisible.value = true
     return
   }
+
   isIntroPlaying.value = true
   isContentVisible.value = false
-  introStartTimer = setTimeout(() => {
-    isContentVisible.value = true
-  }, 2100)
-  introEndTimer = setTimeout(() => {
-    isIntroPlaying.value = false
-  }, 3100)
+
+  const startedAt = Date.now()
+  await fetchLunchRegionTree()
+  if (isIntroDestroyed) return
+
+  const elapsed = Date.now() - startedAt
+  const waitMs = Math.max(0, LUNCH_INTRO_MIN_MS - elapsed)
+  if (waitMs > 0) {
+    await new Promise<void>((resolve) => {
+      introTimer = setTimeout(() => {
+        introTimer = null
+        resolve()
+      }, waitMs)
+    })
+    if (isIntroDestroyed) return
+  }
+
+  isIntroPlaying.value = false
+  isContentVisible.value = true
 }
 
 onMounted(() => {
-  startIntroSequence()
-  if (isLocationSelectionMode.value) {
-    fetchLunchRegionTree()
-  }
+  isIntroDestroyed = false
+  void runIntroSequence()
 })
 
 onUnmounted(() => {
-  clearIntroTimers()
+  isIntroDestroyed = true
+  clearIntroTimer()
 })
 
 const setFormValue = (key: keyof LunchAgentFormPayload, value: string | number) => {
