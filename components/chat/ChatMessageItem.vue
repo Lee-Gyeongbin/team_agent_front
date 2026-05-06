@@ -146,6 +146,7 @@
 import type { ChatMessage, KnowledgeItem, LunchAgentFormPayload, LunchRecommendationItem } from '~/types/chat'
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import type { Agent } from '~/types/agent'
+import { injectImageKeywordLinks } from '~/utils/chat/psychologyConsultUtil'
 const { chatIndexAgents } = useChatStore()
 interface Props {
   message: ChatMessage
@@ -159,8 +160,14 @@ const props = withDefaults(defineProps<Props>(), {
   isShare: false,
 })
 
-/** 마크다운 렌더 결과 — v-html */
-const renderedHtml = computed(() => toHtmlContent(props.message.rContent ?? ''))
+/** 마크다운 렌더 결과 — v-html
+ * 산업심리 상담 에이전트(AG000010)는 키워드 텍스트에 Unsplash 링크를 삽입 후 렌더 */
+const renderedHtml = computed(() => {
+  const raw = props.message.rContent ?? ''
+  if (props.message.agentId !== 'AG000010') return toHtmlContent(raw)
+  const injected = injectImageKeywordLinks(raw)
+  return toHtmlContent(injected)
+})
 const surveyThemeAgent = computed<Agent | null>(() => {
   const targetAgentId = props.message.agentId || 'AG000010'
   return chatIndexAgents.value.find((agent) => agent.agentId === targetAgentId) ?? null
