@@ -105,6 +105,8 @@ export interface LibraryCardOrderPayload {
 export interface TableDataItem {
   logId: string
   tableData: string
+  chartOption?: string
+  sql?: string
 }
 
 /** 차트 라벨 항목 TODO : 프로토타입 시연용*/

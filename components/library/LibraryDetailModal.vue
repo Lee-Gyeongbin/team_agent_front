@@ -399,7 +399,9 @@ const visualizationView = computed<VisualizationViewModel | null>(() => {
   if (!props.tableData?.tableData) return null
   return buildVisualizationViewModel({
     messageId: props.tableData.logId,
+    sql: props.tableData.sql ?? props.cardDetail?.ttsq ?? '',
     tableData: props.tableData.tableData,
+    chartOption: props.tableData.chartOption,
     statList: props.chartStatItems,
     statDetailList: props.chartDetailCdItems,
   })
