@@ -5,6 +5,7 @@ export interface MenuItem {
   parnMenuId: string | null
   menuLevel: number
   menuPath: string
+  isLeaf: 'Y' | 'N'
   srcPath: string
   icon: string
   sortOrd: number
@@ -17,17 +18,6 @@ export interface MenuItem {
 export interface MenuTreeItem extends MenuItem {
   expanded?: boolean
   children?: MenuTreeItem[]
-}
-
-/** 메뉴 관리 우측 상세 폼 값 */
-export interface MenuManageFormValues {
-  menuName: string
-  menuPath: string
-  srcPath: string
-  icon: string
-  sortOrd: string
-  description: string
-  useYnBool: boolean
 }
 
 /** /menuList.do API 응답 */

@@ -20,7 +20,6 @@ definePageMeta({ layout: 'default' })
 
 const { handleFetchMenuManageTree } = useMenuManageStore()
 
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
 const activeTab = ref('menu')
 const tabItems = [{ label: '메뉴 관리', value: 'menu' }]
 

@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import type { MenuItem, MenuTreeItem, MenuTreeReorderPayload } from '~/types/menu'
 import { useMenuManageApi } from '~/composables/menu-manage/useMenuManageApi'
 
-const { fetchMenuManageList, fetchUpdateMenuOrder } = useMenuManageApi()
+const { fetchMenuManageList, fetchUpdateMenuOrder, fetchSaveMenu } = useMenuManageApi()
 
 /** API 계층형 목록 → 트리 UI용(펼침 상태·children 정규화) */
 function mapMenuItemsToTreeItems(items: MenuItem[]): MenuTreeItem[] {
@@ -33,9 +33,22 @@ function findSiblingContext(
   return null
 }
 
+/** 트리에서 menuId로 노드 탐색 */
+function findNodeById(nodes: MenuTreeItem[], menuId: string): MenuTreeItem | null {
+  for (const node of nodes) {
+    if (node.menuId === menuId) return node
+    const found = findNodeById(node.children ?? [], menuId)
+    if (found) return found
+  }
+  return null
+}
+
 const menuManageTreeList = ref<MenuTreeItem[]>([])
 const menuManageTreeLoading = ref(false)
 const menuManageTreeError = ref('')
+
+/** 현재 수정 중인 메뉴 — 트리 노드의 얕은 복사본으로 관리 (저장 전 원본 트리 미변경) */
+const selectedMenu = ref<MenuTreeItem | null>(null)
 
 /** 메뉴 목록 조회 */
 const handleFetchMenuManageTree = async (): Promise<void> => {
@@ -95,12 +108,43 @@ const handleUpdateMenuOrder = async ({ draggedId, targetId, position }: MenuTree
   }
 }
 
+/** 트리 노드 선택 — 트리 원본을 보호하기 위해 얕은 복사본으로 저장 */
+const handleSelectMenu = (item: MenuTreeItem) => {
+  selectedMenu.value = { ...item }
+}
+
+/** 메뉴 상세 저장 — 검증·토스트 포함 */
+const handleSaveMenu = async (): Promise<void> => {
+  if (!selectedMenu.value) return
+  if (!selectedMenu.value.menuName.trim()) {
+    openToast({ message: '메뉴명을 입력해 주세요.', type: 'warning' })
+    return
+  }
+  if (!selectedMenu.value.srcPath.trim()) {
+    openToast({ message: '메뉴 URL을 입력해 주세요.', type: 'warning' })
+    return
+  }
+  const menuId = selectedMenu.value.menuId
+  try {
+    await fetchSaveMenu(selectedMenu.value)
+    await handleFetchMenuManageTree()
+    const refreshed = findNodeById(menuManageTreeList.value, menuId)
+    if (refreshed) selectedMenu.value = { ...refreshed }
+    openToast({ message: '저장되었습니다.', type: 'success' })
+  } catch {
+    openToast({ message: '메뉴 저장에 실패했습니다.', type: 'error' })
+  }
+}
+
 export const useMenuManageStore = () => {
   return {
     menuManageTreeList,
     menuManageTreeLoading,
     menuManageTreeError,
+    selectedMenu,
     handleFetchMenuManageTree,
+    handleSelectMenu,
     handleUpdateMenuOrder,
+    handleSaveMenu,
   }
 }

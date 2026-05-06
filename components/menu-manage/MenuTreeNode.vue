@@ -21,13 +21,17 @@
       @dragleave="onDragLeave"
       @drop="onDrop"
     >
-      <!-- 폴더 아이콘 -->
+      <!-- 리프(Y): 햄버거(사이드 메뉴와 동일 자산) / 그룹(N): 폴더 -->
       <span class="menu-tree-icon">
         <i
           :class="[
             'icon',
             'size-16',
-            item.children?.length && item.expanded ? 'icon-folder-open' : 'icon-folder-close',
+            item.isLeaf === 'Y'
+              ? 'icon-menu'
+              : item.children?.length && item.expanded
+                ? 'icon-folder-open'
+                : 'icon-folder-close',
           ]"
         />
       </span>
