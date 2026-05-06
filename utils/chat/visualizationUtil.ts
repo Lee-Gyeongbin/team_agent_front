@@ -21,6 +21,7 @@ import { calculateChartScale } from '~/utils/chat/visualizationChartUtil'
 
 const EMPTY_VALUE = '-'
 const DEFAULT_CHART_TYPE: VisualizationChartType = 'bar'
+const SUPPORTED_CHART_TYPES: VisualizationChartType[] = ['bar', 'line', 'pie']
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -256,7 +257,7 @@ export const inferSchema = (
     chartTargetKeys: hasChartOption ? xAxisKeys : [],
     yAxisKeys: hasChartOption ? metricKeys : [],
     seriesKeys: hasChartOption ? xAxisKeys.slice(1) : [],
-    chartTypes: hasChartOption ? [chartType] : [],
+    chartTypes: hasChartOption ? SUPPORTED_CHART_TYPES : [],
     canStack: true,
     canDualAxis: hasChartOption && metricKeys.length >= 2,
   }
