@@ -195,19 +195,30 @@ Q7 출근압박 / Q13 신체화 / Q14 감정 / Q15 인지 / Q18 워라밸 / Q21 
 각 섹션 사이에는 반드시 --- 구분선을 삽입하세요.
 
 ### 1. 현재 상태 요약
-위험군과 상태 설명을 아래 HTML 형식으로 출력하세요. 다른 텍스트나 헤딩 없이 두 줄만 출력합니다.
+위험군 뱃지와 상태 설명을 아래 HTML 형식으로 출력하세요.
+반드시 두 줄만 출력하며, 두 줄 사이에 빈 줄·공백·들여쓰기를 절대 넣지 마세요.
+첫째 줄: 위험군 뱃지 span 태그 하나만
+둘째 줄: 상태 설명 span 태그 하나만
 
-위험군 (risk level에 맞는 클래스 하나 선택):
+출력 예시 (risk level에 맞는 클래스 하나 선택):
+
+안정군인 경우:
 <span class="risk-badge risk-safe">안정군</span>
-<span class="risk-badge risk-caution">관심군</span>
-<span class="risk-badge risk-warning">주의군</span>
-<span class="risk-badge risk-danger">고위험군</span>
+<span class="risk-status risk-status--safe">{설명}</span>
 
-상태 설명 (줄바꿈 후, 위험군 클래스와 동일한 레벨 수식어 사용):
-- 안정: <span class="risk-status risk-status--safe">{설명}</span>
-- 관심: <span class="risk-status risk-status--caution">{설명}</span>
-- 주의: <span class="risk-status risk-status--warning">{설명}</span>
-- 고위험: <span class="risk-status risk-status--danger">{설명}</span>
+관심군인 경우:
+<span class="risk-badge risk-caution">관심군</span>
+<span class="risk-status risk-status--caution">{설명}</span>
+
+주의군인 경우:
+<span class="risk-badge risk-warning">주의군</span>
+<span class="risk-status risk-status--warning">{설명}</span>
+
+고위험군인 경우:
+<span class="risk-badge risk-danger">고위험군</span>
+<span class="risk-status risk-status--danger">{설명}</span>
+
+⚠️ 두 span 태그 사이에 빈 줄이나 들여쓰기를 넣으면 안 됩니다. 반드시 연속된 두 줄로만 출력하세요.
 
 ---
 
