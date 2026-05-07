@@ -1,11 +1,11 @@
 <template>
   <div
     class="chat-index s-center"
-    :class="{ 'is-survey-mode': isSurveyVisible || isLunchVisible }"
+    :class="{ 'is-survey-mode': isSurveyVisible || isLunchVisible || isTodayMemeVisible }"
   >
     <!-- 헤더 (설문 모드에서 숨김) -->
     <div
-      v-if="!isSurveyVisible && !isLunchVisible"
+      v-if="!isSurveyVisible && !isLunchVisible && !isTodayMemeVisible"
       class="chat-index-header"
       data-aos="fade-up"
     >
@@ -30,11 +30,18 @@
       @close="handleCloseIndexLunchCard"
       @submit="handleIndexLunchSubmit"
     />
+    <ChatTodayMeme
+      v-if="isTodayMemeVisible"
+      class="chat-index-today-meme"
+      :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? ''"
+      :theme-color-hex="currentSurveyAgent!.colorHex"
+      @intro-complete="handleTodayMemeIntroEnd"
+    />
 
     <!-- 채팅 입력창 (설문 진행 중 비활성화) -->
     <div
       class="chat-index-input-wrapper"
-      :class="{ 'is-survey-locked': isSurveyVisible || isLunchVisible }"
+      :class="{ 'is-survey-locked': isSurveyVisible || isLunchVisible || isTodayMemeVisible }"
       data-aos="fade-up"
       data-aos-delay="200"
     >
@@ -42,7 +49,7 @@
     </div>
 
     <!-- 에이전트 카드 (설문 모드 아닐 때) -->
-    <template v-if="!isSurveyVisible && !isLunchVisible">
+    <template v-if="!isSurveyVisible && !isLunchVisible && !isTodayMemeVisible">
       <div
         v-if="!isLoadingChatIndexAgents && chatIndexAgents.length > 0"
         class="chat-index-card-grp"
@@ -103,6 +110,8 @@ const {
   isLunchVisible,
   handleCloseIndexLunchCard,
   handleIndexLunchSubmit,
+  isTodayMemeVisible,
+  handleTodayMemeIntroEnd,
 } = useChatStore()
 const { startChatSocket, stopChatSocket } = useChatSocket()
 const { user } = useAuth()
@@ -160,6 +169,14 @@ onBeforeRouteLeave((to) => {
 
 // 설문 컴포넌트: 남은 세로 공간을 모두 차지, 입력창과 간격 확보
 .chat-index-survey {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  margin-bottom: $spacing-md;
+}
+
+// TodayMeme: 남은 세로 공간 사용 + 내부 스크롤
+.chat-index-today-meme {
   flex: 1;
   min-height: 0;
   width: 100%;

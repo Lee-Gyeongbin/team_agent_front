@@ -81,7 +81,7 @@ export interface ChatSocketMessage {
 export interface ChatMessage {
   id?: string
   logId: string
-  type: 'question' | 'answer' | 'survey'
+  type: 'question' | 'answer' | 'survey' | 'meme' | 'lunch'
   qContent?: string
   rContent?: string
   createdAt: string
@@ -118,6 +118,8 @@ export interface ChatMessage {
   surveyAnswers?: Record<number, number>
   /** 산업심리 설문 메시지(type=survey) 전용: 제출 완료 여부 */
   surveySubmitted?: boolean
+  /** TodayMeme 메시지(type=meme) 전용: 제출 완료 여부 */
+  memeSubmitted?: boolean
   /** 점심 추천 카드(uiType=lunch-card) 전용: 사용자 응답 */
   lunchFormPayload?: LunchAgentFormPayload
   /** 점심 추천 카드(uiType=lunch-card) 전용: 제출 완료 여부 */

@@ -9,6 +9,7 @@ import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import { parseChatAttachmentsFromLogRow } from '~/utils/chat/chatAttachmentDisplayUtil'
 import { parseSurveyAnswersFromPrompt } from '~/utils/chat/psychologyConsultUtil'
 import { parseLunchPayloadFromPrompt } from '~/utils/chat/lunchAgentUtil'
+import { isTodayMemePrompt } from '~/utils/chat/todayMemeUtil'
 
 // 채팅 메시지/스트리밍 상태는 모듈 레벨에서 단일 인스턴스로 공유
 const messages = ref<ChatMessage[]>([])
@@ -107,13 +108,27 @@ export const useChatMessages = () => {
       }
     }
 
+    // TodayMeme 에이전트: 프롬프트 패턴이면 readonly meme 메시지로 대체
+    if (agentId === 'AG000011' && isTodayMemePrompt(row.qcontent ?? '')) {
+      return [
+        {
+          logId: `${logId}-today-meme`,
+          type: 'meme',
+          createdAt,
+          ...(agentId ? { agentId } : {}),
+          memeSubmitted: true,
+        },
+        answerMessage,
+      ]
+    }
+
     // 점심 추천 에이전트: 프롬프트 패턴이면 readonly lunch-card로 대체
     const lunchPayload = parseLunchPayloadFromPrompt(row.qcontent ?? '')
     if (lunchPayload) {
       return [
         {
           logId: `${logId}-lunch-card`,
-          type: 'answer',
+          type: 'lunch',
           qContent: '',
           rContent: '',
           createdAt,
