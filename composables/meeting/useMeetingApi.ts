@@ -53,18 +53,6 @@ export const useMeetingApi = () => {
     return post<{ successYn: boolean; meetingId: number }>('/ai/meeting/createMeeting.do', params)
   }
 
-  /** 회의 종료 + 회의록 생성 + 화자 분리 */
-  const fetchFinishMeeting = async (params: {
-    meetingId: number
-    fullText: string
-    segments: SpeechSegment[]
-  }): Promise<{ successYn: boolean }> => {
-    return post<{ successYn: boolean }>('/ai/meeting/finishMeeting.do', {
-      ...params,
-      segments: JSON.stringify(params.segments),
-    })
-  }
-
   /**
    * 회의 종료 (오디오 파일 전사 버전)
    * - 오디오 Blob을 multipart/form-data로 전송
@@ -148,7 +136,6 @@ export const useMeetingApi = () => {
     fetchMeetingDetail,
     fetchSaveMeeting,
     fetchCreateMeeting,
-    fetchFinishMeeting,
     fetchFinishMeetingWithAudio,
     fetchSaveSpeakerMapping,
     fetchSaveSpeaker,

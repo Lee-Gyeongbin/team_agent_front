@@ -11,7 +11,32 @@ export const useTmplApi = () => {
 
   /** 템플릿 상세 조회 (필드 정의 포함, tmplType `T`일 때 사용) */
   const fetchTmplDetail = async (tmplId: string): Promise<{ data: TmplBaseInfo }> => {
-    return post<{ data: TmplBaseInfo }>('/tmpl/detail.do', { tmplId })
+    const res = await post<{ tmplDetail: TmplBaseInfo | null; tmplFieldList?: TmplBaseInfo['fields'] }>(
+      '/tmpl/detail.do',
+      {
+        tmplId,
+      },
+    )
+    const detail = res.tmplDetail
+    return {
+      data: {
+        ...(detail ?? {
+          tmplId,
+          tmplNm: '',
+          tmplType: 'T',
+          description: '',
+          llmPromptSmry: '',
+          llmPrompt: '',
+          tmplHtml: '',
+          sysTmplYn: 'N',
+          useYn: 'Y',
+          createDt: '',
+          modifyDt: '',
+          fields: [],
+        }),
+        fields: res.tmplFieldList ?? [],
+      },
+    }
   }
 
   /** 템플릿 저장 */
