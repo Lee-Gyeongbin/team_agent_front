@@ -550,16 +550,105 @@ export const extractSections1to4 = (answer: string): string => {
   return answer.substring(0, section5Match.index).trim()
 }
 
+/** 역코딩 대상 문항 번호 (1→4, 2→3, 3→2, 4→1) */
+const REVERSE_SCORE_QNO = new Set([16, 17, 22, 23])
+
+/** 역코딩 변환 */
+const applyReverse = (score: number): number => 5 - score
+
+/** 카테고리 문항 번호 목록 (역코딩 적용 포함) → 소수점 2자리 평균 문자열 반환 */
+const calcCategoryAvg = (qNos: number[], answers: Record<number, number>): string => {
+  const scores = qNos.map((no) => {
+    const raw = answers[no] ?? 2
+    return REVERSE_SCORE_QNO.has(no) ? applyReverse(raw) : raw
+  })
+  const avg = scores.reduce((a, b) => a + b, 0) / scores.length
+  return avg.toFixed(2)
+}
+
+/** LLM 응답 텍스트에서 위험군 클래스명을 읽어 색상 매핑 — SCSS .risk-safe/caution/warning/danger 와 동일 */
+const resolveRiskColorsFromResponse = (sectionsText: string): { riskBg: string; riskColor: string } => {
+  const match = sectionsText.match(/class="risk-badge\s+(risk-\w+)"/)
+  const cls = match?.[1] ?? ''
+  if (cls === 'risk-safe') return { riskBg: '#e8f5e9', riskColor: '#2e7d32' }
+  if (cls === 'risk-caution') return { riskBg: '#fff8e1', riskColor: '#f57f17' }
+  if (cls === 'risk-warning') return { riskBg: '#fff3e0', riskColor: '#e65100' }
+  if (cls === 'risk-danger') return { riskBg: '#ffebee', riskColor: '#c62828' }
+  return { riskBg: '#ffffff', riskColor: '#e53935' } // 파싱 실패 시 흰 배경 빨강
+}
+
+/**
+ * Q1~Q25 응답값으로 방사형 그래프 생성 정형화 프롬프트 빌드
+ * - buildDiagnosticPrompt 의 역코딩 규칙과 동일하게 적용
+ * - 위험군 색상은 LLM 응답의 risk-badge 클래스에서 파싱 (재계산 불필요)
+ */
+const buildRadarChartPrompt = (answers: Record<number, number>, sectionsText: string): string => {
+  const 직무요구 = calcCategoryAvg([1, 2, 3, 4], answers)
+  const 번아웃 = calcCategoryAvg([5, 6, 7, 8], answers)
+  const 조직관계 = calcCategoryAvg([9, 10, 11, 12], answers)
+  const 신체인지 = calcCategoryAvg([13, 14, 15], answers)
+  const 회복력 = calcCategoryAvg([16, 17], answers)
+  const 워라밸 = calcCategoryAvg([18, 19], answers)
+  const 심리안전감 = calcCategoryAvg([20, 21], answers)
+  const 의미동기 = calcCategoryAvg([22, 23, 24, 25], answers)
+
+  const { riskBg, riskColor } = resolveRiskColorsFromResponse(sectionsText)
+
+  return `[방사형 그래프 생성 조건]
+아래 8개 축과 점수를 사용하여 방사형(레이더) 차트를 그려주세요.
+
+축 항목과 점수 (1.0~4.0 척도):
+- 직무요구: ${직무요구}
+- 번아웃: ${번아웃}
+- 조직관계: ${조직관계}
+- 신체인지: ${신체인지}
+- 회복력: ${회복력}
+- 워라밸: ${워라밸}
+- 심리안전감: ${심리안전감}
+- 의미동기: ${의미동기}
+
+레이아웃 규칙:
+- 그래프는 이미지 정중앙에 배치
+- 최소값 1.0 / 최대값 4.0으로 고정
+- 각 축 레이블은 그래프 외곽에만 표시
+- 동심원 기준선 3개 표시 (1.0 / 2.0 / 3.0 / 4.0)
+- 배경 색상: ${riskBg} (안정: #e8f5e9 / 관심: #fff8e1 / 주의: #fff3e0 / 고위험: #ffebee)
+- 그래프 채우기 색상: ${riskColor} 투명도 30% (안정: #2e7d32 / 관심: #f57f17 / 주의: #e65100 / 고위험: #c62828)
+- 그래프 외곽선 색상: ${riskColor} 두께 2px
+
+① 영역별 점수표 — 아래 8개 항목을 두 줄로 나눠 표 형태로 표시:
+  직무요구 {score} | 번아웃 {score} | 조직관계 {score} | 신체인지 {score}
+  회복력 {score}   | 워라밸 {score} | 심리안전감 {score} | 의미동기 {score}
+
+② 위험 수준 한 줄 — 각 점수 옆에 괄호로 표기:
+  (1.0~1.59: 안정 / 1.6~2.29: 관심 / 2.3~2.99: 주의 / 3.0~4.0: 고위험)
+
+③ 핵심 원인 한 줄 — 가장 높은 영역 1~2개:
+  ※ 핵심 영역: {가장높은영역} ({score}) · {두번째영역} ({score})
+
+위 세 줄은 그래프 아래 여백에 동일한 폰트, 동일한 레이아웃으로 항상 출력하세요.
+다른 텍스트, 분석 문장, 권고 문구는 절대 추가하지 마세요
+`
+}
+
 /**
  * 섹션 1~4 텍스트를 백엔드 AI 이미지 생성 엔드포인트에 POST
+ * @param answers Q1~Q25 원점수 — 전달 시 정확한 카테고리 평균 기반 정형화 프롬프트 사용
  * @returns base64 이미지 문자열 (data: prefix 포함), 실패 시 null
  */
-export const fetchPsychologyAiImage = async (sectionsText: string): Promise<string | null> => {
+export const fetchPsychologyAiImage = async (
+  sectionsText: string,
+  answers?: Record<number, number>,
+): Promise<string | null> => {
   try {
     const { post } = useApi()
-    sectionsText += '\n위 내용에 해당하는 방사형 그래프 이미지 생성해주세요.'
+    const radarPrompt =
+      answers && Object.keys(answers).length > 0
+        ? buildRadarChartPrompt(answers, sectionsText)
+        : '위 내용에 해당하는 방사형 그래프 이미지 생성해주세요.'
+    const prompt = `${sectionsText}\n\n${radarPrompt}`
     const data = await post<{ base64Image?: string; imageData?: string }>('/ai/chatbot/generatePsychologyImage.do', {
-      prompt: sectionsText,
+      prompt,
     })
     const raw = data.base64Image ?? null
     if (!raw) return null

@@ -102,7 +102,8 @@ export const useChatMessages = () => {
             surveyAnswers,
             surveySubmitted: true,
           },
-          answerMessage,
+          // answer 메시지에도 surveyAnswers 주입 — 방사형 그래프 이미지 생성 프롬프트용
+          { ...answerMessage, surveyAnswers },
         ]
       }
     }

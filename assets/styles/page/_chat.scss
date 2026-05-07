@@ -2078,7 +2078,7 @@
   margin: 16px 0;
   cursor: zoom-in;
   transition: opacity 0.15s;
-
+  justify-self: center;
   &:hover {
     opacity: 0.85;
   }

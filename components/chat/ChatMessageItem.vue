@@ -318,7 +318,8 @@ watch(
     // AI 이미지 생성 — 캐시 미스 시에만 API 호출 (1회)
     if (!aiImageFetchDone && markerSplit.found) {
       aiImageFetchDone = true
-      fetchPsychologyAiImage(extractSections1to4(raw)).then((base64) => {
+      // answer 메시지에 주입된 surveyAnswers → 정확한 수치 기반 방사형 그래프 프롬프트 생성
+      fetchPsychologyAiImage(extractSections1to4(raw), props.message.surveyAnswers).then((base64) => {
         if (base64) setAiImageCache(props.message.logId, base64)
         aiImageHtml = base64 ? toAiImgTag(base64) : ''
         rebuildPsychHtml()
