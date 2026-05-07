@@ -52,7 +52,7 @@
           <i :class="[themeIconClassNm || 'icon-bot', 'size-24']" />
         </div>
         <div>
-          <p class="psychology-survey__title">산업심리 스트레스 진단</p>
+          <p class="psychology-survey__title">심리 스트레스 진단</p>
           <p class="psychology-survey__subtitle">
             {{ readonly ? '진단이 완료되었습니다.' : '아래 25가지 문항에 솔직하게 응답해 주세요.' }}
           </p>
@@ -209,7 +209,7 @@ const displayAnsweredCount = computed(() => {
 const progressPercent = computed(() =>
   Math.round((displayAnsweredCount.value / PSYCHOLOGY_SURVEY_TOTAL_QUESTIONS) * 100),
 )
-const introTitleChars = '산업심리 스트레스 진단'.split('')
+const introTitleChars = '심리 스트레스 진단'.split('')
 const introSubtitleChars = '상담 세션을 준비하고 있습니다...'.split('')
 
 const surveyDomId = useId().replace(/:/g, '')
@@ -372,13 +372,13 @@ const onSubmitClick = async () => {
   }
 
   &__title {
-    @include typo($body-large);
+    @include typo($body-xlarge);
     font-weight: $font-weight-semibold;
     color: $color-text-primary;
   }
 
   &__subtitle {
-    @include typo($body-medium);
+    @include typo($body-large);
     color: $color-text-muted;
     margin-top: 2px;
   }
@@ -390,7 +390,7 @@ const onSubmitClick = async () => {
   }
 
   &__progress-text {
-    @include typo($body-medium);
+    @include typo($body-large);
     font-weight: $font-weight-medium;
     color: $color-text-secondary;
     white-space: nowrap;
@@ -454,7 +454,7 @@ const onSubmitClick = async () => {
     border-radius: 50%;
     background: var(--survey-theme-color);
     color: #fff;
-    @include typo($body-xsmall);
+    @include typo($body-small);
     font-weight: $font-weight-semibold;
     flex-shrink: 0;
   }
@@ -467,13 +467,13 @@ const onSubmitClick = async () => {
   }
 
   &__category-title {
-    @include typo($body-medium);
+    @include typo($body-large);
     font-weight: $font-weight-semibold;
     color: $color-text-primary;
   }
 
   &__category-title-en {
-    @include typo($body-small);
+    @include typo($body-medium);
     color: $color-text-muted;
   }
 
@@ -513,8 +513,8 @@ const onSubmitClick = async () => {
   }
 
   &__question-no {
-    @include typo($body-xsmall);
-    font-weight: $font-weight-semibold;
+    @include typo($body-medium);
+    font-weight: $font-weight-bold;
     color: var(--survey-theme-color);
     white-space: nowrap;
     flex-shrink: 0;
@@ -522,7 +522,7 @@ const onSubmitClick = async () => {
   }
 
   &__question-content {
-    @include typo($body-medium);
+    @include typo($body-large);
     color: $color-text-primary;
     line-height: 1.6;
   }
@@ -570,14 +570,14 @@ const onSubmitClick = async () => {
   }
 
   &__option-score {
-    @include typo($body-medium);
+    @include typo($body-large);
     font-weight: $font-weight-semibold;
     color: $color-text-primary;
     line-height: 1;
   }
 
   &__option-label {
-    @include typo($body-small);
+    @include typo($body-medium);
     color: $color-text-muted;
     white-space: nowrap;
   }
@@ -633,13 +633,13 @@ const onSubmitClick = async () => {
   }
 
   &__intro-title {
-    @include typo($body-large);
+    @include typo($body-xlarge);
     font-weight: $font-weight-semibold;
     color: $color-text-primary;
   }
 
   &__intro-subtitle {
-    @include typo($body-medium);
+    @include typo($body-large);
     color: $color-text-muted;
   }
 
@@ -658,7 +658,7 @@ const onSubmitClick = async () => {
     border: 1px solid rgba(var(--survey-theme-rgb), 0.22);
     background: rgba(var(--survey-theme-rgb), 0.08);
     color: var(--survey-theme-color);
-    @include typo($body-medium);
+    @include typo($body-large);
     font-weight: $font-weight-medium;
   }
 

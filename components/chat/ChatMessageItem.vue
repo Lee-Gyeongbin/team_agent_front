@@ -42,6 +42,7 @@
           <div
             v-else
             class="message-content markdown-body"
+            @click="onMarkdownClick"
             v-html="renderedHtml"
           />
           <!-- eslint-enable vue/no-v-html -->
@@ -140,13 +141,40 @@
       />
     </template>
   </div>
+
+  <!-- Pexels 이미지 원본 확대 모달 -->
+  <Teleport to="body">
+    <Transition name="pexels-modal">
+      <div
+        v-if="pexelsModalUrl"
+        class="pexels-modal"
+        @click.self="pexelsModalUrl = ''"
+      >
+        <button
+          class="pexels-modal__close"
+          @click="pexelsModalUrl = ''"
+        >
+          <i class="icon-close size-20"></i>
+        </button>
+        <img
+          class="pexels-modal__img"
+          :src="pexelsModalUrl"
+          alt="확대 이미지"
+        />
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
 import type { ChatMessage, KnowledgeItem, LunchAgentFormPayload, LunchRecommendationItem } from '~/types/chat'
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import type { Agent } from '~/types/agent'
-import { injectImageKeywordLinks } from '~/utils/chat/psychologyConsultUtil'
+import {
+  fetchAndInjectPexelsImages,
+  extractKeywordSection,
+  PEXELS_LOADING_HTML,
+} from '~/utils/chat/psychologyConsultUtil'
 const { chatIndexAgents } = useChatStore()
 interface Props {
   message: ChatMessage
@@ -160,14 +188,62 @@ const props = withDefaults(defineProps<Props>(), {
   isShare: false,
 })
 
-/** 마크다운 렌더 결과 — v-html
- * 산업심리 상담 에이전트(AG000010)는 키워드 텍스트에 Unsplash 링크를 삽입 후 렌더 */
-const renderedHtml = computed(() => {
-  const raw = props.message.rContent ?? ''
-  if (props.message.agentId !== 'AG000010') return toHtmlContent(raw)
-  const injected = injectImageKeywordLinks(raw)
-  return toHtmlContent(injected)
-})
+/**
+ * 마크다운 렌더 결과 — v-html
+ * 산업심리 상담 에이전트(AG000010): 스트리밍 완료 시 Pexels API로 이미지 URL 조회 후 렌더
+ * 그 외 에이전트: 동기 렌더
+ */
+const renderedHtml = ref('')
+const pexelsModalUrl = ref('')
+
+/** .pexels-img 클릭 시 data-full(원본) URL로 모달 오픈 */
+const onMarkdownClick = (e: MouseEvent) => {
+  const target = e.target as HTMLElement
+  if (target.tagName === 'IMG' && target.classList.contains('pexels-img')) {
+    const img = target as HTMLImageElement
+    pexelsModalUrl.value = img.dataset.full ?? img.src
+  }
+}
+
+/** Pexels fetch 진행 중 여부 — watch 재트리거 방지 */
+let pexelsFetchInProgress = false
+
+watch(
+  () => [props.message.rContent, props.message.agentId, props.message.isStreaming] as const,
+  ([rContent, agentId, isStreaming]) => {
+    const raw = rContent ?? ''
+
+    if (agentId !== 'AG000010') {
+      renderedHtml.value = toHtmlContent(raw)
+      return
+    }
+
+    // 스트리밍 중: 키워드 텍스트 그대로 노출, 완료 후 이미지로 교체
+    if (isStreaming) {
+      if (!pexelsFetchInProgress) {
+        renderedHtml.value = toHtmlContent(raw)
+      }
+      return
+    }
+
+    // 이미 fetch 중이면 무시 (중복 호출 방지)
+    if (pexelsFetchInProgress) return
+
+    // 스트리밍 완료 즉시:
+    //   1) before/after 텍스트는 동기로 바로 렌더 (텍스트 사라짐 없음)
+    //   2) 키워드 영역엔 로딩 스피너 표시
+    //   3) Pexels API 완료 후 스피너 → 이미지 그리드로 교체
+    const { beforeText, afterText } = extractKeywordSection(raw)
+    renderedHtml.value = toHtmlContent(beforeText) + PEXELS_LOADING_HTML + toHtmlContent(afterText)
+
+    pexelsFetchInProgress = true
+    fetchAndInjectPexelsImages(raw).then(({ beforeText: bt, afterText: at, gridHtml }) => {
+      renderedHtml.value = toHtmlContent(bt) + gridHtml + toHtmlContent(at)
+      pexelsFetchInProgress = false
+    })
+  },
+  { immediate: true },
+)
 const surveyThemeAgent = computed<Agent | null>(() => {
   const targetAgentId = props.message.agentId || 'AG000010'
   return chatIndexAgents.value.find((agent) => agent.agentId === targetAgentId) ?? null
