@@ -192,52 +192,72 @@ Q7 출근압박 / Q13 신체화 / Q14 감정 / Q15 인지 / Q18 워라밸 / Q21 
 동률 시: 번아웃 > 신체/인지 > 워라밸 > 안전감 > 직무요구
 
 # Output Format
-1. 현재 상태 요약
-(위험군 + 한 줄 상태)
+각 섹션 사이에는 반드시 --- 구분선을 삽입하세요.
 
-2. 핵심 원인
-(상위 1~2개 영역 + 문항 기반 설명)
+### 1. 현재 상태 요약
+위험군과 상태 설명을 아래 HTML 형식으로 출력하세요. 다른 텍스트나 헤딩 없이 두 줄만 출력합니다.
 
-3. 심리 상태
+위험군 (risk level에 맞는 클래스 하나 선택):
+<span class="risk-badge risk-safe">안정군</span>
+<span class="risk-badge risk-caution">관심군</span>
+<span class="risk-badge risk-warning">주의군</span>
+<span class="risk-badge risk-danger">고위험군</span>
+
+상태 설명 (줄바꿈 후, 위험군 클래스와 동일한 레벨 수식어 사용):
+- 안정: <span class="risk-status risk-status--safe">{설명}</span>
+- 관심: <span class="risk-status risk-status--caution">{설명}</span>
+- 주의: <span class="risk-status risk-status--warning">{설명}</span>
+- 고위험: <span class="risk-status risk-status--danger">{설명}</span>
+
+---
+
+### 2. 핵심 원인
+(상위 1~2개 영역 + 증상 중심 설명 — 문항 번호·점수 언급 없이 경험 내용만 서술)
+
+---
+
+### 3. 심리 상태
 정서 / 인지 / 행동
 
-4. 스트레스 유형
+---
 
-5. 맞춤 처방 (회복을 위한 작은 가이드)
-### ① 지금 가장 먼저 해보면 좋은 것 (1~2개)
+### 4. 스트레스 유형
+
+---
+
+### 5. 맞춤 처방 (회복을 위한 작은 가이드)
+#### ① 지금 가장 먼저 해보면 좋은 것 (1~2개)
 → 가장 효과적인 행동 1개는 반드시 포함
-### ② 생각을 조금 가볍게 바꾸는 방법 (2~3개)
+#### ② 생각을 조금 가볍게 바꾸는 방법 (2~3개)
 → 해석/관점 전환 중심
-### ③ 일상에서 바로 실천해볼 수 있는 것들 (2~3개)
+#### ③ 일상에서 바로 실천해볼 수 있는 것들 (2~3개)
 → 업무/생활 행동
-### ④ 몸과 마음을 편안하게 만드는 방법 (2~3개)
+#### ④ 몸과 마음을 편안하게 만드는 방법 (2~3개)
 → 신체 + 감정 안정
 
-6. 심리 안정 음악 (반드시 포함)
+---
+
+### 6. 심리 안정 음악 (반드시 포함)
 현재 심리 상태에 맞는 음악 3곡을 아래 형식으로 빠짐없이 출력하세요.
 
 출력 형식:
 [번호]. 곡명 - 아티스트
    이유: {지금 이 사람에게 왜 이 곡이 도움이 되는지 1~2문장}
 
-7. 회복에 도움이 되는 이미지 (반드시 포함)
-현재 사용자의 심리 상태에 맞는 이미지 키워드 3~5개를 아래 형식으로 출력하세요.
+---
+
+### 7. 회복에 도움이 되는 이미지 (반드시 포함)
+현재 사용자의 심리 상태에 맞는 이미지 키워드 4개를 아래 형식으로 출력하세요.
 
 출력 형식:
-[번호]. 설명: {한국어 설명}
-   키워드: {영어-키워드-하이픈연결}
-   이유: {이유 1문장}
+[번호]. 이미지키워드: {영어-키워드-하이픈연결}
 
 예시:
-1. 설명: 고요한 숲길
-   키워드: peaceful-forest-path
-   이유: 목적지 없이 걸어도 괜찮다는 감각을 줍니다.
+1. 이미지키워드: peaceful-forest-path
 
-8. 한 줄 응원
-현재 심리 상태에 맞는 한 줄 응원 메시지를 출력하세요.
+---
 
-출력 형식:
-{한 줄 응원 메시지}
+<h3>{현재 심리 상태에 맞는 한 줄 응원 메시지.}</h3>
 
 # Constraints (반드시 준수)
 - 의료 진단 금지 (대신 심각할 경우 전문의 상담을 권고)
@@ -246,13 +266,16 @@ Q7 출근압박 / Q13 신체화 / Q14 감정 / Q15 인지 / Q18 워라밸 / Q21 
 - 비난 금지
 - "열심히" 금지, "잠시 멈춰도 괜찮다"는 허용의 메시지 전달
 - 점수의 계산방법(점수체계, 역코딩 등)은 설명하지 마세요.
+- 문항 번호(Q1, Q5~Q8 등) 및 점수 수치를 답변에 절대 노출하지 마세요. 대신 해당 문항이 나타내는 경험(에너지 고갈, 냉소 등)을 자연스러운 문장으로 서술하세요.
 
 # Markdown Format Rules (절대 준수 — 예외 없음)
 답변 작성 시 마크다운 형식을 다음과 같이 통일하세요:
-- 대제목(섹션): ### 헤딩 사용
-- 소제목: #### 헤딩 사용  
+- 섹션 제목(1~7번): Output Format의 ### 헤딩 구조를 그대로 사용
+- 마지막 응원 메시지: 헤딩·레이블 없이 <h3> 태그 한 줄만 출력
+- 소제목: #### 헤딩 사용
 - 강조 텍스트: **볼드** 사용 (소제목 대용 금지)
-- 숫자 + 텍스트 형태(1. 제목)를 헤딩 대용으로 사용하지 마세요
+- 본문 내 일반 목록에서 숫자를 헤딩 대용으로 사용하지 마세요
+- 각 섹션 사이 --- 구분선 반드시 유지
 
 # Tone
 - 공감 중심
@@ -303,23 +326,129 @@ export const createSurveyMessage = (answers: Record<number, number>, submitted: 
 // LLM 응답 파싱: 회복 이미지 키워드 섹션
 // ============================================================
 
+/** ← 여기에 Pexels API 키 입력 (https://www.pexels.com/api/) */
+const PEXELS_API_KEY = 'ZfMCftGUUwMVyRLpkijpkbMfC0AXC22TUNzTv5USRoeXItGM8S2m22Dx'
+
 /**
- * LLM 응답 텍스트에서 "키워드:" 패턴을 찾아 키워드 값에 Unsplash 링크를 삽입
+ * Pexels 이미지들을 바둑판식 그리드 HTML로 조립
+ * - 1개: 단일 이미지
+ * - 2개+: 왼쪽 floor(n/2)개, 오른쪽 ceil(n/2)개로 균등 분할 (각 col 내부는 세로 스택)
+ *   예) 3개→1/2, 4개→2/2, 5개→2/3
+ */
+const buildPexelsGrid = (images: { keyword: string; url: string; fullUrl: string }[]): string => {
+  const imgTag = (img: { keyword: string; url: string; fullUrl: string }) =>
+    `<img class="pexels-img" src="${img.url}" data-full="${img.fullUrl}" alt="${img.keyword}">`
+
+  if (images.length === 1) {
+    return `<div class="pexels-grid pexels-grid--single">${imgTag(images[0])}</div>`
+  }
+
+  const leftCount = Math.floor(images.length / 2)
+  const leftCol = images.slice(0, leftCount).map(imgTag).join('')
+  const rightCol = images.slice(leftCount).map(imgTag).join('')
+  return `<div class="pexels-grid"><div class="pexels-grid__col">${leftCol}</div><div class="pexels-grid__col">${rightCol}</div></div>`
+}
+
+/**
+ * LLM 응답 텍스트에서 "키워드:" 패턴을 찾아 Pexels API로 이미지 URL을 조회
  *
  * 처리하는 형식:
  *   키워드: peaceful-forest-path          (일반)
- *   **키워드:** peaceful-forest-path      (볼드 레이블 — LLM 마크다운 규칙 적용 시)
- *   → 키워드: [peaceful-forest-path](https://unsplash.com/s/photos/peaceful-forest-path)
+ *   1. 키워드: peaceful-forest-path       (번호 목록)
+ *   **키워드:** peaceful-forest-path      (볼드 레이블)
+ *
+ * @returns beforeText  키워드 블록 이전 마크다운 텍스트
+ * @returns afterText   키워드 블록 이후 마크다운 텍스트
+ * @returns gridHtml    그리드 이미지 HTML (marked를 거치지 않고 두 텍스트 사이에 삽입)
+ *
+ * - 스트리밍 완료 후 1회만 호출
+ * - Pexels API 실패한 키워드는 제외, 성공한 것만 그리드에 포함
+ * - 키워드 미발견 시 beforeText=answer, afterText='', gridHtml='' 반환
  */
-export const injectImageKeywordLinks = (answer: string): string => {
-  // \*{0,2} 로 볼드 기호 유무 모두 허용, 키워드는 영어-하이픈 구성
-  return answer.replace(
-    /^(\s*\*{0,2}키워드\*{0,2}:?\*{0,2}\s*)([a-zA-Z][a-zA-Z0-9-]*)(\s*)$/gmu,
-    (_, prefix, keyword, trailing) => {
-      const url = `https://unsplash.com/s/photos/${encodeURIComponent(keyword)}`
-      return `${prefix}[${keyword}](${url}) (${url})${trailing}`
-    },
+
+/** 키워드 패턴 (removeKeywordLines / extractKeywordSection / fetch 공용) */
+const KEYWORD_REGEX =
+  /^[\s\-•*]*(?:\d+[.)]\s*)?\*{0,2}이미지키워드\*{0,2}\s*:?\s*\*{0,2}\s*([a-zA-Z][a-zA-Z0-9-]*)\s*\*{0,2}\s*$/gmu
+
+/**
+ * 스트리밍 중 키워드 라인 즉시 제거 — 텍스트 날것 노출 및 높이 번쩍임 방지
+ * 완성된 라인뿐 아니라 스트리밍 중인 **불완전 라인**도 제거 (`[^\n\r]*` 로 줄 끝까지 삭제)
+ * 예) "1. 이미지키워드: quiet-" (미완성) → 즉시 제거
+ */
+export const removeKeywordLines = (answer: string): string =>
+  answer.replace(/^[\s\-•*]*(?:\d+[.)]\s*)?\*{0,2}이미지키워드\*{0,2}[^\n\r]*/gmu, '')
+
+/**
+ * 키워드 섹션의 앞/뒤 텍스트를 동기적으로 추출
+ * 스트리밍 완료 직후 즉시 before+로딩스피너+after 렌더링에 사용
+ */
+export const extractKeywordSection = (answer: string): { beforeText: string; afterText: string } => {
+  const matches = [...answer.matchAll(new RegExp(KEYWORD_REGEX.source, KEYWORD_REGEX.flags))]
+  if (!matches.length) return { beforeText: answer, afterText: '' }
+
+  const firstStart = matches[0].index ?? 0
+  const lastEnd = (matches[matches.length - 1].index ?? 0) + matches[matches.length - 1][0].length
+
+  return { beforeText: answer.substring(0, firstStart), afterText: answer.substring(lastEnd) }
+}
+
+/** Pexels 이미지 로딩 중 표시할 스피너 HTML (v-html 삽입용) */
+export const PEXELS_LOADING_HTML = '<div class="pexels-loading"><div class="pexels-loading__spinner"></div></div>'
+
+export const fetchAndInjectPexelsImages = async (
+  answer: string,
+): Promise<{ beforeText: string; afterText: string; gridHtml: string }> => {
+  const matches = [...answer.matchAll(new RegExp(KEYWORD_REGEX.source, KEYWORD_REGEX.flags))]
+  if (!matches.length) return { beforeText: answer, afterText: '', gridHtml: '' }
+
+  // 첫 번째 키워드 시작 ~ 마지막 키워드 끝 범위를 그리드로 대체 (위치 보존)
+  const firstMatchStart = matches[0].index ?? 0
+  const lastMatch = matches[matches.length - 1]
+  const lastMatchEnd = (lastMatch.index ?? 0) + lastMatch[0].length
+
+  const beforeText = answer.substring(0, firstMatchStart)
+  const afterText = answer.substring(lastMatchEnd)
+
+  const imageResults = await Promise.all(
+    matches.map(async (m) => {
+      const [, keyword] = m
+      try {
+        const res = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(keyword)}&per_page=1`, {
+          headers: { Authorization: PEXELS_API_KEY },
+        })
+        const data = (await res.json()) as { photos?: { src?: { large?: string; large2x?: string } }[] }
+        return {
+          keyword,
+          url: data.photos?.[0]?.src?.large ?? null,
+          fullUrl: data.photos?.[0]?.src?.large2x ?? data.photos?.[0]?.src?.large ?? null,
+        }
+      } catch {
+        return { keyword, url: null, fullUrl: null }
+      }
+    }),
   )
+
+  const validImages = imageResults.filter(
+    (img): img is { keyword: string; url: string; fullUrl: string } => img.url !== null,
+  )
+
+  if (!validImages.length) return { beforeText, afterText, gridHtml: '' }
+
+  // DOM 교체 전에 모든 이미지를 브라우저 캐시에 미리 적재
+  // → renderedHtml 갱신 시점에 이미지가 이미 캐시에 있어 레이아웃 재계산 없이 한 번에 렌더링됨
+  await Promise.all(
+    validImages.map(
+      ({ url }) =>
+        new Promise<void>((resolve) => {
+          const el = new window.Image()
+          el.onload = () => resolve()
+          el.onerror = () => resolve()
+          el.src = url
+        }),
+    ),
+  )
+
+  return { beforeText, afterText, gridHtml: buildPexelsGrid(validImages) }
 }
 
 // ============================================================
