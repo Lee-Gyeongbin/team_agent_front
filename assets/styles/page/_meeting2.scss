@@ -1256,6 +1256,8 @@
     border-bottom: 1px solid $color-border;
     text-align: center;
     @include typo($body-xlarge-bold, $color-text-dark);
+    font-size: 26px;
+    line-height: 1.4;
   }
 
   h2 {
@@ -1371,10 +1373,10 @@
 
     th,
     td {
-      padding: 10px 12px;
+      padding: 6px 10px;
       border: 1px solid $color-border;
       @include typo($body-medium, $color-text-dark);
-      font-size: 15px;
+      font-size: 14px;
       line-height: 1.6;
       vertical-align: middle;
       position: relative;
@@ -1401,7 +1403,7 @@
     th {
       background: $color-background;
       @include typo($body-medium-bold, $color-text-dark);
-      font-size: 15px;
+      font-size: 14px;
       text-align: center;
     }
 
