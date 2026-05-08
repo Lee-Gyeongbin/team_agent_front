@@ -1256,6 +1256,8 @@
     border-bottom: 1px solid $color-border;
     text-align: center;
     @include typo($body-xlarge-bold, $color-text-dark);
+    font-size: 26px;
+    line-height: 1.4;
   }
 
   h2 {
@@ -1266,6 +1268,7 @@
     padding-bottom: 8px;
     border-bottom: 1px solid $color-border;
     @include typo($body-medium-bold);
+    font-size: 16px;
     color: var(--color-primary);
 
     &::before {
@@ -1371,10 +1374,10 @@
 
     th,
     td {
-      padding: 10px 12px;
+      padding: 6px 10px;
       border: 1px solid $color-border;
       @include typo($body-medium, $color-text-dark);
-      font-size: 15px;
+      font-size: 14px;
       line-height: 1.6;
       vertical-align: middle;
       position: relative;
@@ -1401,13 +1404,19 @@
     th {
       background: $color-background;
       @include typo($body-medium-bold, $color-text-dark);
-      font-size: 15px;
+      font-size: 14px;
       text-align: center;
     }
 
-    // 정보 표 라벨 컬럼 — tbody 행의 첫 번째 th 만 폭 고정
+    // 정보 표 라벨 컬럼 — tbody 행의 첫 번째 th 폭 고정
     tbody tr > th:first-child {
       width: 120px;
+    }
+
+    // 한 행에 라벨-값 쌍이 두 개일 때 — 두 번째 라벨(3번째 셀) 폭도 고정
+    // 예: <tr><th>일시</th><td>...</td><th>장소</th><td>...</td></tr>
+    tbody tr > th:nth-child(3) {
+      width: 100px;
     }
 
     // Tiptap 표 컬럼 리사이즈 핸들
