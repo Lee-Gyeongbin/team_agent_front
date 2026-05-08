@@ -1163,6 +1163,25 @@
   @include custom-scrollbar;
 }
 
+// HTML 소스 보기 textarea — WYSIWYG 영역과 동일한 박스 안에서 swap
+.meeting2-editor-source {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  padding: $spacing-md $spacing-lg;
+  border: none;
+  outline: none;
+  background: #fff;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: $color-text-dark;
+  resize: none;
+  white-space: pre-wrap;
+  word-break: break-all;
+  @include custom-scrollbar;
+}
+
 // ---- 표 floating 툴바 ----
 .meeting2-table-bubble {
   position: absolute;
@@ -1232,20 +1251,37 @@
   }
 
   h1 {
-    margin: $spacing-lg 0 $spacing-md;
+    margin: 0 0 $spacing-lg;
+    padding-bottom: $spacing-md;
+    border-bottom: 1px solid $color-border;
+    text-align: center;
     @include typo($body-xlarge-bold, $color-text-dark);
-
-    &:first-child {
-      margin-top: 0;
-    }
   }
 
   h2 {
-    margin: $spacing-lg 0 $spacing-md;
-    @include typo($body-large-bold, $color-text-dark);
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    margin: $spacing-xl 0 $spacing-sm;
+    padding-bottom: 8px;
+    border-bottom: 1px solid $color-border;
+    @include typo($body-medium-bold);
+    color: var(--color-primary);
 
-    &:first-child {
-      margin-top: 0;
+    &::before {
+      content: '';
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      background-color: var(--color-primary);
+      mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='3'/%3E%3Cpath d='m8 12 3 3 5-6'/%3E%3C/svg%3E");
+      mask-repeat: no-repeat;
+      mask-position: center;
+      mask-size: contain;
+      -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='3'/%3E%3Cpath d='m8 12 3 3 5-6'/%3E%3C/svg%3E");
+      -webkit-mask-repeat: no-repeat;
+      -webkit-mask-position: center;
+      -webkit-mask-size: contain;
     }
   }
 
@@ -1258,22 +1294,34 @@
     }
   }
 
-  // 글로벌 reset이 list-style: none 이라 에디터 영역에서만 복원
   ul {
-    list-style: disc outside;
+    list-style: none;
     margin: 0 0 $spacing-md;
-    padding-left: 26px;
+    padding-left: 0;
 
     li {
-      margin-bottom: $spacing-xs;
+      position: relative;
+      padding-left: 18px;
+      margin-bottom: 10px;
       @include typo($body-medium, $color-text-dark);
       line-height: 1.7;
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 4px;
+        top: 0.65em;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: $color-text-dark;
+      }
     }
 
-    // 중첩 리스트
+    // 중첩 리스트 — 1단 가정이지만 들여쓰기는 살림
     ul {
-      list-style: circle outside;
-      margin: $spacing-xs 0 0;
+      margin: 8px 0 0;
+      padding-left: 12px;
     }
   }
 
@@ -1283,7 +1331,7 @@
     padding-left: 26px;
 
     li {
-      margin-bottom: $spacing-xs;
+      margin-bottom: 8px;
       @include typo($body-medium, $color-text-dark);
       line-height: 1.7;
     }
@@ -1295,11 +1343,13 @@
     }
   }
 
-  // Tiptap의 li > p (StarterKit BulletList/OrderedList는 li 안에 p를 넣음)
+  // TipTap StarterKit 가 li 안에 p를 자동 삽입하므로 부모 li 의 타이포 토큰을 그대로 상속받도록 단순화
+  // (ul li 는 $body-small, ol li 는 $body-medium — 각 부모 li 에서 결정)
   li > p {
     margin: 0;
-    @include typo($body-medium, $color-text-dark);
-    line-height: 1.7;
+    font-size: inherit;
+    line-height: inherit;
+    color: inherit;
   }
 
   blockquote {
@@ -1314,22 +1364,22 @@
 
   table {
     width: 100%;
-    margin-bottom: $spacing-md;
+    margin: 0 0 $spacing-lg;
     border-collapse: collapse;
     border: 1px solid $color-border;
     table-layout: fixed;
 
     th,
     td {
-      padding: 6px 10px;
+      padding: 10px 12px;
       border: 1px solid $color-border;
-      @include typo($body-small, $color-text-dark);
-      line-height: 1.5;
-      text-align: left;
-      vertical-align: top;
+      @include typo($body-medium, $color-text-dark);
+      font-size: 15px;
+      line-height: 1.6;
+      vertical-align: middle;
       position: relative;
 
-      // 셀 안쪽 단락(Tiptap이 셀 내용을 <p>로 감싸므로 마진/라인하이트 리셋)
+      // Tiptap이 셀 내용을 <p>로 감싸므로 마진/라인하이트 리셋
       p {
         margin: 0;
         font-size: inherit;
@@ -1346,10 +1396,18 @@
       }
     }
 
+    // 모든 th — 회색 배경 + 굵은 글씨 + 가운데 정렬
+    // (TipTap은 thead 없이 tbody 첫 행에 <th>를 두므로 셀렉터를 th 전반으로 확장)
     th {
       background: $color-background;
-      @include typo($body-small-bold, $color-text-dark);
-      line-height: 1.5;
+      @include typo($body-medium-bold, $color-text-dark);
+      font-size: 15px;
+      text-align: center;
+    }
+
+    // 정보 표 라벨 컬럼 — tbody 행의 첫 번째 th 만 폭 고정
+    tbody tr > th:first-child {
+      width: 120px;
     }
 
     // Tiptap 표 컬럼 리사이즈 핸들

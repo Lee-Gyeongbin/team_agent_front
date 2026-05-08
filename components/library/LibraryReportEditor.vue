@@ -339,12 +339,34 @@
       >
         ↷
       </button>
+
+      <span class="library-report-editor-toolbar-divider" />
+
+      <!-- HTML 소스 보기 토글 -->
+      <button
+        class="library-report-editor-toolbar-btn"
+        :class="{ 'is-active': isSourceView }"
+        title="HTML 소스 보기"
+        @click="toggleSourceView"
+      >
+        <i class="icon-code size-16" />
+      </button>
     </div>
 
     <!-- 에디터 본문 + 표 floating 툴바 -->
     <div class="library-report-editor-relative">
       <div class="library-report-editor-scroll">
-        <EditorContent :editor="editor" />
+        <EditorContent
+          v-show="!isSourceView"
+          :editor="editor"
+        />
+        <textarea
+          v-if="isSourceView"
+          v-model="sourceHtml"
+          class="library-report-editor-source"
+          spellcheck="false"
+          placeholder="<p>HTML 소스를 직접 편집하세요</p>"
+        />
       </div>
 
       <!-- 표 floating 툴바 — 표 안 커서 있을 때 노출 -->
@@ -442,6 +464,7 @@ import { TextAlign } from '@tiptap/extension-text-align'
 import { ResizableImage } from '~/composables/meeting/resizableImage'
 import { TableShortcuts } from '~/composables/meeting/tableShortcuts'
 import { FontSize } from '~/composables/meeting/fontSize'
+import { useEditorSourceView } from '~/composables/com/useEditorSourceView'
 import type { ChainedCommands } from '@tiptap/vue-3'
 
 const html = defineModel<string>('html', { default: '' })
@@ -539,6 +562,7 @@ const editor = useEditor({
   editorProps: {
     attributes: {
       class: 'library-report-editor-body',
+      spellcheck: 'false',
     },
     // 클립보드에서 이미지 파일 붙여넣기
     handlePaste(view, event) {
@@ -583,6 +607,9 @@ const editor = useEditor({
     },
   },
 })
+
+// HTML 소스 보기 토글 — 라이브러리 단일 컴포넌트라 직접 사용
+const { isSourceView, sourceHtml, toggleSourceView } = useEditorSourceView(editor)
 
 // 외부 html 변경(AI 보완 등) 시 에디터 동기화
 watch(
@@ -775,6 +802,10 @@ const bubbleTop = ref(0)
 const bubbleLeft = ref(0)
 
 const updateTableBubble = () => {
+  if (isSourceView.value) {
+    showTableBubble.value = false
+    return
+  }
   if (!editor.value || !editor.value.isActive('table')) {
     showTableBubble.value = false
     return
@@ -1017,6 +1048,25 @@ const onEditorClick = (e: MouseEvent) => {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  @include custom-scrollbar(4px);
+}
+
+// HTML 소스 보기 textarea — WYSIWYG 영역과 동일한 박스 안에서 swap
+.library-report-editor-source {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  padding: $spacing-md;
+  border: none;
+  outline: none;
+  background: #fff;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: $color-text-secondary;
+  resize: none;
+  white-space: pre-wrap;
+  word-break: break-all;
   @include custom-scrollbar(4px);
 }
 
