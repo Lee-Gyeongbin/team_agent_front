@@ -8,6 +8,7 @@
       <UiButton
         variant="primary"
         size="sm"
+        @click.stop="onSaveMeetingClick"
       >
         <template #icon-left>
           <i class="icon-edit size-16" />
@@ -129,6 +130,7 @@ const { currentMeeting, meetingDetail, handleSaveMeeting } = useMeetingStore()
 // ── WYSIWYG 에디터 ───────────────────────────────────────────────────
 
 const isAutoSaving = ref(false)
+const minutesId = meetingDetail.value.minutes?.minutesId
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
 
 const triggerAutoSave = (html: string) => {
@@ -137,9 +139,15 @@ const triggerAutoSave = (html: string) => {
   autoSaveTimer = setTimeout(async () => {
     if (!currentMeeting.value) return
     isAutoSaving.value = true
-    await handleSaveMeeting({ id: currentMeeting.value.id, minutesContent: html }, { silent: true })
+    await handleSaveMeeting({ id: String(minutesId), minutesContent: html }, { silent: true })
     isAutoSaving.value = false
   }, 800)
+}
+
+/** 저장하기 버튼 — 사용자 저장 시 토스트 표시 */
+const onSaveMeetingClick = async () => {
+  if (!currentMeeting.value || !editor.value) return
+  await handleSaveMeeting({ id: String(minutesId), minutesContent: editor.value.getHTML() }, { silent: false })
 }
 
 /**
@@ -352,7 +360,7 @@ onBeforeUnmount(() => {
     clearTimeout(autoSaveTimer)
     autoSaveTimer = null
     if (currentMeeting.value && editor.value) {
-      handleSaveMeeting({ id: currentMeeting.value.id, minutesContent: editor.value.getHTML() }, { silent: true })
+      handleSaveMeeting({ id: String(minutesId), minutesContent: editor.value.getHTML() }, { silent: true })
     }
   }
   editor.value?.destroy()

@@ -12,6 +12,7 @@ export interface Meeting {
 
 export interface MeetingMinutes {
   flatData: string
+  editedContent?: string
   minutesId: number
   meetingId: number
   fullText: string

@@ -26,7 +26,7 @@ const {
   fetchUserList,
   fetchMeetingList,
   fetchMeetingDetail,
-  fetchSaveMeeting,
+  fetchSaveMeetingMinutes,
   fetchDeleteMeeting,
   fetchCreateMeeting,
   fetchFinishMeetingWithAudio,
@@ -180,7 +180,9 @@ const mapApiDetailToMeeting = (detail: MeetingDetail): Meeting | null => {
     steps: deriveSteps(m.status, hasMinutes),
     speakers: mapApiSpeakers(detail.speakers ?? []),
     sttList: buildSttListFromSpeakers(detail.speakers ?? []),
-    minutesContent: buildMinutesHtml(detail.minutes, { infographics: detail.infographicList, tmpl: minutesTmpl.value }),
+    minutesContent:
+      detail.minutes?.editedContent ||
+      buildMinutesHtml(detail.minutes, { infographics: detail.infographicList, tmpl: minutesTmpl.value }),
     fileFormat: 'docx' as MeetingFileFormat,
     recipients: [],
     templateId: DEFAULT_MINUTES_TMPL_ID,
@@ -424,7 +426,7 @@ const handleSaveMeeting = async (
   options: { silent?: boolean } = {},
 ): Promise<Meeting | null> => {
   try {
-    const res = await fetchSaveMeeting(meeting)
+    const res = await fetchSaveMeetingMinutes(meeting)
     if (res?.data && currentMeeting.value) {
       if (options.silent) {
         currentMeeting.value.updatedAt = res.data.updatedAt
