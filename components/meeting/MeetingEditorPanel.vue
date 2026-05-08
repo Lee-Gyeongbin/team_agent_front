@@ -124,7 +124,8 @@ import { TextStyle } from '@tiptap/extension-text-style'
 import { Color } from '@tiptap/extension-color'
 import { Highlight } from '@tiptap/extension-highlight'
 import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
-import { meetingEditorKey } from '~/composables/meeting/meetingEditorKey'
+import { meetingEditorKey, meetingSourceViewKey } from '~/composables/meeting/meetingEditorKey'
+import { useEditorSourceView } from '~/composables/com/useEditorSourceView'
 const { currentMeeting, meetingDetail, handleSaveMeeting } = useMeetingStore()
 
 // ── WYSIWYG 에디터 ───────────────────────────────────────────────────
@@ -147,6 +148,10 @@ const triggerAutoSave = (html: string) => {
 /** 저장하기 버튼 — 사용자 저장 시 토스트 표시 */
 const onSaveMeetingClick = async () => {
   if (!currentMeeting.value || !editor.value) return
+  // 소스 모드 → textarea 내용을 에디터에 먼저 반영
+  if (sourceView.isSourceView.value) {
+    editor.value.commands.setContent(sourceView.sourceHtml.value, { emitUpdate: false })
+  }
   await handleSaveMeeting({ id: String(minutesId), minutesContent: editor.value.getHTML() }, { silent: false })
 }
 
@@ -257,6 +262,8 @@ watch(
   () => currentMeeting.value?.id,
   () => {
     if (editor.value && currentMeeting.value) {
+      // 다른 회의로 전환 시 소스 모드 강제 해제 (textarea 잔존 방지)
+      sourceView.exitSourceView()
       const html = currentMeeting.value.minutesContent ?? ''
       if (editor.value.getHTML() !== html) {
         editor.value.commands.setContent(html, { emitUpdate: false })
@@ -282,6 +289,10 @@ watch(
 // 자식 컴포넌트(Toolbar/Body)에서 사용할 에디터 인스턴스 주입
 provide(meetingEditorKey, editor)
 
+// HTML 소스 보기 토글 — Toolbar/Body가 모드 상태 공유
+const sourceView = useEditorSourceView(editor)
+provide(meetingSourceViewKey, sourceView)
+
 /** 마지막 저장 시각 라벨 */
 const lastSavedLabel = computed(() => {
   const raw = currentMeeting.value?.updatedAt
@@ -306,6 +317,10 @@ const bubbleTop = ref(0)
 const bubbleLeft = ref(0)
 
 const updateTableBubble = () => {
+  if (sourceView.isSourceView.value) {
+    showTableBubble.value = false
+    return
+  }
   if (!editor.value || !editor.value.isActive('table')) {
     showTableBubble.value = false
     return
@@ -360,6 +375,10 @@ onBeforeUnmount(() => {
     clearTimeout(autoSaveTimer)
     autoSaveTimer = null
     if (currentMeeting.value && editor.value) {
+      // 소스 모드면 textarea 내용 기준으로 저장
+      if (sourceView.isSourceView.value) {
+        editor.value.commands.setContent(sourceView.sourceHtml.value, { emitUpdate: false })
+      }
       handleSaveMeeting({ id: String(minutesId), minutesContent: editor.value.getHTML() }, { silent: true })
     }
   }

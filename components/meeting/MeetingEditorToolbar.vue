@@ -353,14 +353,27 @@
     >
       ↷
     </button>
+
+    <span class="meeting2-editor-toolbar-divider"></span>
+
+    <!-- HTML 소스 보기 토글 -->
+    <button
+      class="meeting2-editor-toolbar-btn"
+      :class="{ 'is-active': sourceView?.isSourceView.value }"
+      title="HTML 소스 보기"
+      @click="sourceView?.toggleSourceView()"
+    >
+      <i class="icon-code size-16" />
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { ChainedCommands } from '@tiptap/vue-3'
-import { meetingEditorKey } from '~/composables/meeting/meetingEditorKey'
+import { meetingEditorKey, meetingSourceViewKey } from '~/composables/meeting/meetingEditorKey'
 
 const editor = inject(meetingEditorKey)
+const sourceView = inject(meetingSourceViewKey)
 
 // ===== 폰트 크기 =====
 const FONT_SIZE_OPTIONS = ['8', '9', '10', '11', '12', '14', '16', '18', '20', '24', '28', '32', '36', '48']
