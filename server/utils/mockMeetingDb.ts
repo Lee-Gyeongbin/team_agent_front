@@ -108,45 +108,46 @@ const sampleStt: MockSttItem[] = [
   },
 ]
 
-const sampleMinutesContent = `<h2>1. 회의 개요</h2>
+const sampleMinutesContent = `<h1>회의록</h1>
+<table>
+  <tbody>
+    <tr><th>제목</th><td>퍼블릭 LLM 사용 및 비용 관련 논의</td></tr>
+    <tr><th>작성자</th><td>허회진</td></tr>
+    <tr><th>일시</th><td></td></tr>
+    <tr><th>장소</th><td></td></tr>
+    <tr><th>참석자</th><td>SPEAKER_00, SPEAKER_01</td></tr>
+  </tbody>
+</table>
+<h2>안건</h2>
 <ul>
-  <li>회의명: 2026년 5월 마케팅 전략 회의</li>
-  <li>일시: 2026.05.20 (월) 10:00 ~ 11:30</li>
-  <li>장소: 회의실 A / 온라인</li>
-  <li>참석자: 김지현, 박상우, 이수진, 최민호, 정우영, 한지혜</li>
-  <li>회의 목적: 5월 마케팅 전략 논의 및 실행 계획 수립</li>
+  <li>퍼블릭 LLM 사용 가능 여부</li>
+  <li>비용 발생 시점과 규모</li>
+  <li>방산업체의 제약 사항</li>
 </ul>
-
-<h2>2. 주요 논의 내용</h2>
-<table>
-  <thead>
-    <tr><th>안건</th><th>주요 내용</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>5월 프로모션 목표</td><td>신규 고객 유입 20% 증가</td></tr>
-    <tr><td>타겟 고객 및 메시지</td><td>핵심 키워드 '간편함', '신뢰'</td></tr>
-    <tr><td>예산 및 채널</td><td>총 2천만원, 디지털 광고 및 인플루언서 협업 중심</td></tr>
-    <tr><td>기타 논의</td><td>세부 실행 계획 및 일정 확정 필요</td></tr>
-  </tbody>
-</table>
-
-<h2>3. 실행 계획</h2>
-<table>
-  <thead>
-    <tr><th>No.</th><th>과제</th><th>담당자</th><th>기한</th><th>비고</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>1</td><td>캠페인 기획안 상세화</td><td>이수진</td><td>~ 5/24(금)</td><td>타겟 메시지 확정</td></tr>
-    <tr><td>2</td><td>디지털 광고 집행 계획 수립</td><td>최민호</td><td>~ 5/24(금)</td><td>매체/예산 배분 포함</td></tr>
-    <tr><td>3</td><td>인플루언서 섭외 및 협업 논의</td><td>정우영</td><td>~ 5/27(월)</td><td>후보 리스트업</td></tr>
-    <tr><td>4</td><td>성과 지표 및 측정 방안 정의</td><td>한지혜</td><td>~ 5/27(월)</td><td>KPI 설정</td></tr>
-  </tbody>
-</table>
-
-<h2>4. 다음 회의</h2>
+<h2>논의내용</h2>
 <ul>
-  <li>일시: 2026.05.27 (월) 10:00</li>
-  <li>안건: 실행 계획 진행 상황 점검</li>
+  <li>방산업체는 퍼블릭 LLM 사용 불가하여 SLM 이동 필요</li>
+  <li>일부 기관에서는 퍼블릭 LLM 사용 가능</li>
+  <li>과제 비용은 약 3600만원 수준이며 단계별로 지출됨</li>
+  <li>필요 시 클라우드 사용 요청 가능하지만 현재는 미확정</li>
+  <li>퍼블릭 LLM이 필요 기능을 수행하는 데 필수적임</li>
+</ul>
+<h2>결정사항</h2>
+<ul>
+  <li>퍼블릭 LLM 사용 가능한 기관과 비사용 기관 구분하여 적용</li>
+  <li>비용 산정은 단계별로 진행하며 구체적 비용 추후 확정</li>
+  <li>클라우드 사용 요청은 필요 시에만 진행</li>
+</ul>
+<h2>할일목록 (To-Do)</h2>
+<ul>
+  <li>SLM 이동 가능성 검토 및 추진</li>
+  <li>비용 세부 산정 자료 준비</li>
+  <li>클라우드 사용 요청 절차 마련</li>
+</ul>
+<h2>보류사항</h2>
+<ul>
+  <li>정확한 비용 산정 확정</li>
+  <li>클라우드 사용 시기 및 범위 결정</li>
 </ul>`
 
 const meetingList: MockMeeting[] = [
