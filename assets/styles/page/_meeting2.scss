@@ -1268,6 +1268,7 @@
     padding-bottom: 8px;
     border-bottom: 1px solid $color-border;
     @include typo($body-medium-bold);
+    font-size: 16px;
     color: var(--color-primary);
 
     &::before {
