@@ -63,6 +63,9 @@ export const RadarChartModule = {
       fillOpacity = 0.35,
       showLegend = false,
       pointLabelFormat,
+      pointLabelColors,
+      /** 단일 모드: 각 축 꼭짓점 색 (라인·면 채우기는 `color` 유지) */
+      pointBackgroundColors,
     } = config
 
     const canvas = document.getElementById(id) as HTMLCanvasElement | null
@@ -108,14 +111,22 @@ export const RadarChartModule = {
     } else if (Array.isArray(data)) {
       // 단일 모드
       const resolvedColor = color || ChartConfig.getColor(colorKey, colorIndex)
+      const perPointColors =
+        Array.isArray(pointBackgroundColors) &&
+        pointBackgroundColors.length === data.length &&
+        pointBackgroundColors.length > 0
+          ? pointBackgroundColors
+          : null
       normalizedDatasets = [
         {
           label: '',
           data,
           borderColor: resolvedColor,
           backgroundColor: colorToRgba(resolvedColor, fillOpacity),
-          pointBackgroundColor: resolvedColor,
+          pointBackgroundColor: perPointColors ?? resolvedColor,
+          pointHoverBackgroundColor: perPointColors ?? resolvedColor,
           pointBorderColor: '#fff',
+          pointHoverBorderColor: '#fff',
           pointBorderWidth: 2,
           pointRadius: 4,
           pointHoverRadius: 6,
@@ -182,7 +193,6 @@ export const RadarChartModule = {
           grid: { color: 'rgba(0, 0, 26, 0.12)' },
           angleLines: { color: 'rgba(0, 0, 26, 0.12)' },
           pointLabels: {
-            color: '#5C6677',
             font: {
               family: ChartConfig.font.family,
               size: ChartConfig.font.size.medium,
@@ -197,6 +207,14 @@ export const RadarChartModule = {
                   },
                 }
               : {}),
+            ...(Array.isArray(pointLabelColors) && pointLabelColors.length > 0
+              ? {
+                  color: (ctx: { index: number }) => {
+                    const c = pointLabelColors[ctx.index]
+                    return typeof c === 'string' && c.length > 0 ? c : '#5C6677'
+                  },
+                }
+              : { color: '#5C6677' }),
           },
         },
       },
@@ -227,6 +245,12 @@ export const RadarChartModule = {
       // 단일 모드 업데이트
       if (chart.data.datasets[0]) {
         chart.data.datasets[0].data = newData.data
+        const ds0: any = chart.data.datasets[0]
+        const pbc = newData.pointBackgroundColors
+        if (Array.isArray(pbc) && pbc.length === newData.data.length && pbc.length > 0) {
+          ds0.pointBackgroundColor = pbc
+          ds0.pointHoverBackgroundColor = pbc
+        }
       }
     }
 

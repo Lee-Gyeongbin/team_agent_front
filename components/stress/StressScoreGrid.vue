@@ -81,7 +81,7 @@ const formatValue = (value: number) => value.toFixed(props.decimal)
 }
 
 .stress-score-item {
-  padding: $spacing-md $spacing-sm;
+  padding: $spacing-sm $spacing-sm;
   text-align: center;
   border-right: 1px solid $color-border;
   border-bottom: 1px solid $color-border;
