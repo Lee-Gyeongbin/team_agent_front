@@ -39,6 +39,22 @@
             @close="emit('on-lunch-card-close', message.logId)"
           />
           <!-- eslint-disable vue/no-v-html — toHtmlContent 내 안전 처리 적용 -->
+          <!-- AG000010 스트리밍 중 마커 발견: 스피너를 Vue 요소로 분리해 DOM 유지 -->
+          <template v-else-if="message.agentId === 'AG000010' && streamingSpinnerVisible">
+            <div
+              class="message-content markdown-body"
+              @click="onMarkdownClick"
+              v-html="streamingBeforeHtml"
+            />
+            <div class="pexels-loading">
+              <div class="pexels-loading__spinner" />
+            </div>
+            <div
+              class="message-content markdown-body"
+              @click="onMarkdownClick"
+              v-html="streamingAfterHtml"
+            />
+          </template>
           <div
             v-else
             class="message-content markdown-body"
@@ -174,12 +190,19 @@ import {
   fetchAndInjectPexelsImages,
   extractKeywordSection,
   PEXELS_LOADING_HTML,
+  extractAiImageMarkerSection,
+  AI_IMAGE_LOADING_HTML,
+  extractSections1to4,
+  fetchPsychologyAiImage,
+  getAiImageCache,
+  setAiImageCache,
 } from '~/utils/chat/psychologyConsultUtil'
+
 const { chatIndexAgents } = useChatStore()
+
 interface Props {
   message: ChatMessage
   knowledgeList?: KnowledgeItem[]
-  /** 공유 페이지 등: 액션 영역은 복사·카테고리만 */
   isShare?: boolean
 }
 
@@ -188,25 +211,57 @@ const props = withDefaults(defineProps<Props>(), {
   isShare: false,
 })
 
-/**
- * 마크다운 렌더 결과 — v-html
- * 산업심리 상담 에이전트(AG000010): 스트리밍 완료 시 Pexels API로 이미지 URL 조회 후 렌더
- * 그 외 에이전트: 동기 렌더
- */
+const emit = defineEmits<{
+  'on-copy': [id: string]
+  'on-like': [id: string]
+  'on-dislike': [id: string]
+  'on-regenerate': [id: string]
+  /** [답변 logId, categoryId, categoryNm] */
+  'on-select-category': [id: string, categoryValue: string, categoryNm: string]
+  'on-view-source': [id: string]
+  'on-view-visualization': [id: string]
+  'on-submit-lunch-card': [logId: string, payload: LunchAgentFormPayload]
+  'on-lunch-card-close': [logId: string]
+  'on-survey-submit': [logId: string]
+  'on-survey-close': [logId: string]
+}>()
+
+// ── 공통 ──────────────────────────────────────────────────────────────────
 const renderedHtml = ref('')
 const pexelsModalUrl = ref('')
 
-/** .pexels-img 클릭 시 data-full(원본) URL로 모달 오픈 */
 const onMarkdownClick = (e: MouseEvent) => {
   const target = e.target as HTMLElement
-  if (target.tagName === 'IMG' && target.classList.contains('pexels-img')) {
-    const img = target as HTMLImageElement
-    pexelsModalUrl.value = img.dataset.full ?? img.src
+  if (
+    target.tagName === 'IMG' &&
+    (target.classList.contains('pexels-img') || target.classList.contains('psychology-ai-image'))
+  ) {
+    pexelsModalUrl.value = (target as HTMLImageElement).dataset.full ?? (target as HTMLImageElement).src
   }
 }
 
-/** Pexels fetch 진행 중 여부 — watch 재트리거 방지 */
-let pexelsFetchInProgress = false
+// ── AG000010 렌더 상태 ────────────────────────────────────────────────────
+let markerSplit: { before: string; after: string; found: boolean } | null = null
+let aiImageHtml = ''
+let pexelsSplit: { beforeKw: string; gridHtml: string; afterKw: string } | null = null
+let pexelsFetchDone = false
+let aiImageFetchDone = false
+
+// 스트리밍 중 마커 발견: 스피너를 Vue 요소로 분리해 DOM 재생성·애니메이션 리셋 방지
+const streamingSpinnerVisible = ref(false)
+const streamingBeforeHtml = ref('')
+const streamingAfterHtml = ref('')
+
+const toAiImgTag = (src: string) =>
+  `<img class="psychology-ai-image" src="${src}" data-full="${src}" alt="AI 생성 심리 이미지">`
+
+const rebuildPsychHtml = () => {
+  if (!markerSplit || !pexelsSplit) return
+  const { before, found } = markerSplit
+  const { beforeKw, gridHtml, afterKw } = pexelsSplit
+  const pexelsSection = toHtmlContent(beforeKw) + gridHtml + toHtmlContent(afterKw)
+  renderedHtml.value = found ? toHtmlContent(before) + aiImageHtml + pexelsSection : pexelsSection
+}
 
 watch(
   () => [props.message.rContent, props.message.agentId, props.message.isStreaming] as const,
@@ -218,78 +273,84 @@ watch(
       return
     }
 
-    // 스트리밍 중: 키워드 텍스트 그대로 노출, 완료 후 이미지로 교체
+    // 스트리밍 중: before/after ref를 독립 갱신해 스피너 DOM 유지
     if (isStreaming) {
-      if (!pexelsFetchInProgress) {
+      const { found, before, after } = extractAiImageMarkerSection(raw)
+      if (found) {
+        streamingSpinnerVisible.value = true
+        streamingBeforeHtml.value = toHtmlContent(before)
+        streamingAfterHtml.value = toHtmlContent(after)
+      } else {
         renderedHtml.value = toHtmlContent(raw)
       }
       return
     }
 
-    // 이미 fetch 중이면 무시 (중복 호출 방지)
-    if (pexelsFetchInProgress) return
+    streamingSpinnerVisible.value = false
+    if (!raw) return
 
-    // 스트리밍 완료 즉시:
-    //   1) before/after 텍스트는 동기로 바로 렌더 (텍스트 사라짐 없음)
-    //   2) 키워드 영역엔 로딩 스피너 표시
-    //   3) Pexels API 완료 후 스피너 → 이미지 그리드로 교체
-    const { beforeText, afterText } = extractKeywordSection(raw)
-    renderedHtml.value = toHtmlContent(beforeText) + PEXELS_LOADING_HTML + toHtmlContent(afterText)
+    // 최초 1회: 마커·Pexels 구간 분리 및 초기 렌더
+    if (!markerSplit) {
+      markerSplit = extractAiImageMarkerSection(raw)
+      const pexelsTarget = markerSplit.found ? markerSplit.after : raw
+      const { beforeText, afterText } = extractKeywordSection(pexelsTarget)
+      pexelsSplit = { beforeKw: beforeText, gridHtml: PEXELS_LOADING_HTML, afterKw: afterText }
 
-    pexelsFetchInProgress = true
-    fetchAndInjectPexelsImages(raw).then(({ beforeText: bt, afterText: at, gridHtml }) => {
-      renderedHtml.value = toHtmlContent(bt) + gridHtml + toHtmlContent(at)
-      pexelsFetchInProgress = false
-    })
+      if (markerSplit.found) {
+        const cached = getAiImageCache(props.message.logId)
+        aiImageHtml = cached ? toAiImgTag(cached) : AI_IMAGE_LOADING_HTML
+        if (cached) aiImageFetchDone = true
+      }
+      rebuildPsychHtml()
+    }
+
+    // Pexels 이미지 그리드 (1회 — logId 캐시 히트 시 API 재호출 없음)
+    if (!pexelsFetchDone) {
+      pexelsFetchDone = true
+      fetchAndInjectPexelsImages(markerSplit.found ? markerSplit.after : raw, props.message.logId).then(
+        ({ beforeText: bt, afterText: at, gridHtml }) => {
+          pexelsSplit = { beforeKw: bt, gridHtml, afterKw: at }
+          rebuildPsychHtml()
+        },
+      )
+    }
+
+    // AI 이미지 생성 — 캐시 미스 시에만 API 호출 (1회)
+    if (!aiImageFetchDone && markerSplit.found) {
+      aiImageFetchDone = true
+      // answer 메시지에 주입된 surveyAnswers → 정확한 수치 기반 방사형 그래프 프롬프트 생성
+      fetchPsychologyAiImage(extractSections1to4(raw), props.message.surveyAnswers).then((base64) => {
+        if (base64) setAiImageCache(props.message.logId, base64)
+        aiImageHtml = base64 ? toAiImgTag(base64) : ''
+        rebuildPsychHtml()
+      })
+    }
   },
   { immediate: true },
 )
-const surveyThemeAgent = computed<Agent | null>(() => {
-  const targetAgentId = props.message.agentId || 'AG000010'
-  return chatIndexAgents.value.find((agent) => agent.agentId === targetAgentId) ?? null
-})
 
-const parseLunchRecommendations = (raw: string): LunchRecommendationItem[] => {
-  try {
-    const parsed = JSON.parse(raw) as unknown
-    if (!Array.isArray(parsed)) return []
-    return parsed as LunchRecommendationItem[]
-  } catch {
-    return []
-  }
-}
+// ── 기타 computed / 유틸 ──────────────────────────────────────────────────
+const surveyThemeAgent = computed<Agent | null>(
+  () => chatIndexAgents.value.find((a) => a.agentId === (props.message.agentId || 'AG000010')) ?? null,
+)
 
 const parsedLunchRecommendations = computed<LunchRecommendationItem[]>(() => {
   const raw = (props.message.rContent ?? '').trim()
   if (!raw || props.message.uiType === 'lunch-card') return []
-  return parseLunchRecommendations(raw)
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    return Array.isArray(parsed) ? (parsed as LunchRecommendationItem[]) : []
+  } catch {
+    return []
+  }
 })
 
 /** 출처 제목 앞 마크다운 헤더 기호(## 등) 제거 */
 const getSourceLabel = (title: string | undefined, url: string) => {
-  const raw = (title ?? '').trim()
-  if (!raw) return url
-  return raw.replace(/^#{1,6}\s+/u, '').trim()
+  const text = (title ?? '').trim()
+  return text ? text.replace(/^#{1,6}\s+/u, '').trim() : url
 }
 
-const emit = defineEmits<{
-  'on-copy': [id: string]
-  'on-like': [id: string]
-  'on-dislike': [id: string]
-  'on-regenerate': [id: string]
-  /** [답변 logId, categoryId, categoryNm] — Actions는 value만 알 수 있어 여기서 knowledgeList로 이름 조회 */
-  'on-select-category': [id: string, categoryValue: string, categoryNm: string]
-  'on-view-source': [id: string]
-  'on-view-visualization': [id: string]
-  'on-submit-lunch-card': [logId: string, payload: LunchAgentFormPayload]
-  'on-lunch-card-close': [logId: string]
-  /** 설문 제출 (survey 타입 메시지) */
-  'on-survey-submit': [logId: string]
-  /** 설문 닫기 (survey 타입 메시지) */
-  'on-survey-close': [logId: string]
-}>()
-
-/** 카테고리 id만 전달되므로 표시명은 knowledgeList에서 매칭 */
 const onSelectCategoryFromActions = (categoryId: string) => {
   const categoryNm = props.knowledgeList?.find((k) => k.categoryId === categoryId)?.categoryNm ?? ''
   emit('on-select-category', props.message.logId, categoryId, categoryNm)

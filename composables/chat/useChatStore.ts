@@ -270,8 +270,14 @@ export const useChatStore = () => {
       files: [],
     })
     if (sent) {
-      const newQuestion = messages.value.slice(prevLen).find((m) => m.type === 'question')
+      const newMsgs = messages.value.slice(prevLen)
+      const newQuestion = newMsgs.find((m) => m.type === 'question')
       if (newQuestion) newQuestion.hiddenFromDisplay = true
+      // 설문 전송 시 answer 메시지에 surveyAnswers 주입 — 방사형 그래프 이미지 생성 프롬프트용
+      if (Object.keys(surveyAnswers.value).length > 0) {
+        const newAnswer = newMsgs.find((m) => m.type === 'answer')
+        if (newAnswer) newAnswer.surveyAnswers = { ...surveyAnswers.value }
+      }
       selectedChatAgentId.value = null
     }
     return sent
