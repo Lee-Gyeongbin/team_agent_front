@@ -1292,22 +1292,34 @@
     }
   }
 
-  // 글로벌 reset이 list-style: none 이라 에디터 영역에서만 복원
   ul {
-    list-style: disc outside;
+    list-style: none;
     margin: 0 0 $spacing-md;
-    padding-left: 26px;
+    padding-left: 0;
 
     li {
-      margin-bottom: $spacing-xs;
-      @include typo($body-medium, $color-text-dark);
+      position: relative;
+      padding-left: 18px;
+      margin-bottom: 6px;
+      @include typo($body-small, $color-text-dark);
       line-height: 1.7;
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 4px;
+        top: 0.65em;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--color-primary);
+      }
     }
 
-    // 중첩 리스트
+    // 중첩 리스트 — 1단 가정이지만 들여쓰기는 살림
     ul {
-      list-style: circle outside;
-      margin: $spacing-xs 0 0;
+      margin: 6px 0 0;
+      padding-left: 12px;
     }
   }
 
@@ -1329,11 +1341,13 @@
     }
   }
 
-  // Tiptap의 li > p (StarterKit BulletList/OrderedList는 li 안에 p를 넣음)
+  // TipTap StarterKit 가 li 안에 p를 자동 삽입하므로 부모 li 의 타이포 토큰을 그대로 상속받도록 단순화
+  // (ul li 는 $body-small, ol li 는 $body-medium — 각 부모 li 에서 결정)
   li > p {
     margin: 0;
-    @include typo($body-medium, $color-text-dark);
-    line-height: 1.7;
+    font-size: inherit;
+    line-height: inherit;
+    color: inherit;
   }
 
   blockquote {
