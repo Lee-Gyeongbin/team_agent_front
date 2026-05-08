@@ -483,7 +483,7 @@ const componentList = [
   {
     name: 'UiChart',
     to: '/guide/ui-chart',
-    description: 'Chart.js 기반 차트 — bar, line, pie, mixed, horizontalBar 5종',
+    description: 'Chart.js 기반 차트 — bar, line, pie, mixed, horizontalBar, radar 6종',
     tags: ['type', 'config', 'showLegend'],
   },
   {
