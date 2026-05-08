@@ -4,8 +4,10 @@
 // - useChatStore 에서는 import 후 호출만 수행
 // ============================================================
 
+import { nextTick } from 'vue'
 import { useApi } from '~/composables/com/useApi'
 import type { ChatMessage } from '~/types/chat'
+import type { StressLevel, StressScoreItem } from '~/types/stress'
 import type {
   PsychologySurveyQuestion,
   PsychologySurveyCategory,
@@ -482,9 +484,161 @@ export const fetchAndInjectPexelsImages = async (
 }
 
 // ============================================================
+// 방사형 차트 데이터 타입
+// - LLM JSON 응답을 파싱한 결과 — 차트 컴포넌트에 주입하는 단일 DTO
+// ============================================================
+
+/** 방사형 차트용 8개 영역 점수 (1~4 척도 → 0~100 선형 환산, LLM·백엔드 응답 키는 영어 camelCase) */
+export type RadarChartScore = {
+  jobDemands: number
+  burnout: number
+  organizationalRelations: number
+  physicalCognition: number
+  resilience: number
+  workLifeBalance: number
+  psychologicalSafety: number
+  meaningMotivation: number
+}
+
+export type RadarChartRiskLevel = '안정' | '관심' | '주의' | '고위험'
+
+/** LLM JSON 응답 → 차트 컴포넌트 주입 DTO */
+export type RadarChartData = {
+  /** 8개 영역별 평균 점수 (역코딩 적용 후 1.0~4.0 → 0~100 환산, 키는 영어) */
+  scores: RadarChartScore
+  /** 위험군 레이블 */
+  riskLevel: RadarChartRiskLevel
+  /** 위험군 주색 hex (예: #f59e0b 주의) */
+  riskColor: string
+  /** 위험군 배경색 hex (예: #fffbeb 주의 배경) */
+  riskBgColor: string
+  /** 위험 수준 한 줄 설명 */
+  riskSummary: string
+  /** 핵심 원인 한 줄 (가장 높은 영역 1~2개 중심) */
+  coreAreasSummary: string
+}
+
+/** 방사형 차트 scores 키 표시 순서 (JSON 영어 키 → UI 한글 라벨) */
+export const PSYCHOLOGY_RADAR_SCORE_KEYS: readonly (keyof RadarChartScore)[] = [
+  'jobDemands',
+  'burnout',
+  'organizationalRelations',
+  'physicalCognition',
+  'resilience',
+  'workLifeBalance',
+  'psychologicalSafety',
+  'meaningMotivation',
+] as const
+
+/** scores 영어 키 → 그리드/차트 축 한글명 */
+export const PSYCHOLOGY_RADAR_LABEL_KO: Record<keyof RadarChartScore, string> = {
+  jobDemands: '직무요구',
+  burnout: '번아웃',
+  organizationalRelations: '조직관계',
+  physicalCognition: '신체인지',
+  resilience: '회복력',
+  workLifeBalance: '워라밸',
+  psychologicalSafety: '심리안전감',
+  meaningMotivation: '의미동기',
+}
+
+/** 구 응답(한글 키) 호환 */
+const LEGACY_RADAR_SCORE_KO_TO_EN: Record<string, keyof RadarChartScore> = {
+  직무요구: 'jobDemands',
+  번아웃: 'burnout',
+  조직관계: 'organizationalRelations',
+  신체인지: 'physicalCognition',
+  회복력: 'resilience',
+  워라밸: 'workLifeBalance',
+  심리안전감: 'psychologicalSafety',
+  의미동기: 'meaningMotivation',
+}
+
+const coerceRadarScoreNumber = (v: unknown): number | null => {
+  if (typeof v === 'number' && Number.isFinite(v)) return v
+  if (typeof v === 'string' && v.trim() !== '') {
+    const n = Number(v)
+    if (Number.isFinite(n)) return n
+  }
+  return null
+}
+
+/**
+ * 0~100 환산 점수 → 항목별 등급 (내부적으로 1~4 척도 구간과 동일: x = 1 + score/100*3)
+ */
+export const stressLevelFromPsychologyRadarScore100 = (score: number): StressLevel => {
+  const x = 1 + (score / 100) * 3
+  if (x <= 1.59) return '안정'
+  if (x <= 2.29) return '관심'
+  if (x <= 2.99) return '주의'
+  return '고위험'
+}
+
+/** RadarChartData → StressScoreGrid props.items */
+export const buildStressItemsFromRadarChartData = (data: RadarChartData): StressScoreItem[] => {
+  return PSYCHOLOGY_RADAR_SCORE_KEYS.map((key) => {
+    const raw = data.scores[key]
+    const value = typeof raw === 'number' && Number.isFinite(raw) ? raw : 0
+    return {
+      name: PSYCHOLOGY_RADAR_LABEL_KO[key],
+      value,
+      level: stressLevelFromPsychologyRadarScore100(value),
+    }
+  })
+}
+
+/**
+ * guide/ui-chart.vue 의 radarStressConfig 와 동일 형태 — max 0~100, riskColor 로 라인 색
+ */
+export const buildPsychologyRadarUiChartConfig = (data: RadarChartData): Record<string, unknown> => {
+  const items = buildStressItemsFromRadarChartData(data)
+  return {
+    categories: items.map((i) => i.name),
+    data: items.map((i) => i.value),
+    color: data.riskColor || '#ef4444',
+    maxValue: 100,
+    stepSize: 20,
+    fillOpacity: 0.25,
+    pointLabelFormat: (name: string, value: number) =>
+      `${name} (${typeof value === 'number' && Number.isFinite(value) ? value.toFixed(2) : String(value)})`,
+  }
+}
+
+function normalizeRadarChartData(raw: Record<string, unknown>): RadarChartData | null {
+  const scoresRaw = raw.scores
+  if (!scoresRaw || typeof scoresRaw !== 'object') return null
+  const obj = scoresRaw as Record<string, unknown>
+  const scores: Partial<RadarChartScore> = {}
+
+  for (const key of PSYCHOLOGY_RADAR_SCORE_KEYS) {
+    const n = coerceRadarScoreNumber(obj[key])
+    if (n != null) scores[key] = n
+  }
+  for (const [ko, en] of Object.entries(LEGACY_RADAR_SCORE_KO_TO_EN)) {
+    if (scores[en] != null) continue
+    const n = coerceRadarScoreNumber(obj[ko])
+    if (n != null) scores[en] = n
+  }
+  if (PSYCHOLOGY_RADAR_SCORE_KEYS.some((k) => scores[k] == null)) return null
+
+  const rl = raw.riskLevel
+  const riskLevel: RadarChartRiskLevel =
+    rl === '안정' || rl === '관심' || rl === '주의' || rl === '고위험' ? rl : '관심'
+
+  return {
+    scores: scores as RadarChartScore,
+    riskLevel,
+    riskColor: typeof raw.riskColor === 'string' ? raw.riskColor : '#3b82f6',
+    riskBgColor: typeof raw.riskBgColor === 'string' ? raw.riskBgColor : '#eff6ff',
+    riskSummary: typeof raw.riskSummary === 'string' ? raw.riskSummary : '',
+    coreAreasSummary: typeof raw.coreAreasSummary === 'string' ? raw.coreAreasSummary : '',
+  }
+}
+
+// ============================================================
 // 인메모리 캐시 (logId 기반, 탭 이동 시 재호출 방지)
 // - Pexels 이미지 그리드: pexelsImageCache
-// - AI 방사형 그래프 base64: aiImageCache
+// - 방사형 차트 데이터: radarChartCache
 // - 페이지 새로고침 시 초기화되는 것은 허용
 // ============================================================
 
@@ -499,14 +653,24 @@ export const setPexelsImageCache = (logId: string, entry: PexelsCacheEntry): voi
   pexelsImageCache.set(logId, entry)
 }
 
-const aiImageCache = new Map<string, string>()
+const radarChartCache = new Map<string, RadarChartData>()
 
-/** logId에 대한 캐시된 base64 이미지 반환 (없으면 null) */
-export const getAiImageCache = (logId: string): string | null => aiImageCache.get(logId) ?? null
+/** logId에 대한 캐시된 방사형 차트 데이터 반환 (없으면 null) */
+export const getRadarChartCache = (logId: string): RadarChartData | null => radarChartCache.get(logId) ?? null
 
-/** logId에 대해 base64 이미지를 캐시에 저장 */
-export const setAiImageCache = (logId: string, base64: string): void => {
-  aiImageCache.set(logId, base64)
+/** logId에 대해 방사형 차트 데이터를 캐시에 저장 */
+export const setRadarChartCache = (logId: string, data: RadarChartData): void => {
+  radarChartCache.set(logId, data)
+}
+
+/** 캐시 히트 후 같은 tick 에 차트가 붙지 않도록 지연 주입 — canvas 초기화 레이스 완화 */
+export function schedulePsychologyRadarUiInjection(fn: () => void): () => void {
+  if (typeof window === 'undefined') {
+    queueMicrotask(fn)
+    return () => {}
+  }
+  const id = window.setTimeout(() => nextTick(fn), 160)
+  return () => clearTimeout(id)
 }
 
 // ============================================================
@@ -535,9 +699,9 @@ export const extractAiImageMarkerSection = (answer: string): { before: string; a
 }
 
 // ============================================================
-// 섹션 1~4 기반 AI 이미지 생성 (백엔드 API 연동)
+// 섹션 1~4 기반 방사형 차트 JSON 데이터 요청 (백엔드 API 연동)
 // - Pexels 이미지(섹션 7 키워드) 와는 완전히 별개 기능
-// - 섹션 1~4 응답 텍스트를 프롬프트로 백엔드에 전달 → base64 이미지 수신
+// - 섹션 1~4 응답 텍스트 + 설문 답변 → JSON 수신 → 차트 컴포넌트 주입
 // ============================================================
 
 /**
@@ -566,21 +730,69 @@ const calcCategoryAvg = (qNos: number[], answers: Record<number, number>): strin
   return avg.toFixed(2)
 }
 
-/** LLM 응답 텍스트에서 위험군 클래스명을 읽어 색상 매핑 — SCSS .risk-safe/caution/warning/danger 와 동일 */
-const resolveRiskColorsFromResponse = (sectionsText: string): { riskBg: string; riskColor: string } => {
-  const match = sectionsText.match(/class="risk-badge\s+(risk-\w+)"/)
-  const cls = match?.[1] ?? ''
-  if (cls === 'risk-safe') return { riskBg: '#e8f5e9', riskColor: '#2e7d32' }
-  if (cls === 'risk-caution') return { riskBg: '#fff8e1', riskColor: '#f57f17' }
-  if (cls === 'risk-warning') return { riskBg: '#fff3e0', riskColor: '#e65100' }
-  if (cls === 'risk-danger') return { riskBg: '#ffebee', riskColor: '#c62828' }
-  return { riskBg: '#ffffff', riskColor: '#e53935' } // 파싱 실패 시 흰 배경 빨강
+/** 1~4 평균(소수 둘째 자리 문자열) → scores와 동일 공식의 0~100 환산 문자열 */
+const radarScore100FromAvg14 = (avgFixed2: string): string => {
+  const x = Number(avgFixed2)
+  if (!Number.isFinite(x)) return '0.00'
+  return (((x - 1) / 3) * 100).toFixed(2)
 }
 
 /**
- * Q1~Q25 응답값으로 방사형 그래프 생성 정형화 프롬프트 빌드
- * - buildDiagnosticPrompt 의 역코딩 규칙과 동일하게 적용
- * - 위험군 색상은 LLM 응답의 risk-badge 클래스에서 파싱 (재계산 불필요)
+ * 프롬프트 내 「동일 구간을 0~100으로 나타내면」표와 동일 경계 (844~847행)
+ * - coreAreasSummary 단계 표기·예시 생성에 사용
+ */
+const stressTierFromScore100Bands = (score100: number): RadarChartRiskLevel => {
+  if (score100 <= 19.67) return '안정'
+  if (score100 <= 43.0) return '관심'
+  if (score100 <= 66.33) return '주의'
+  return '고위험'
+}
+
+/** LLM 응답 텍스트에서 위험군 클래스명을 읽어 색상 매핑 — SCSS .risk-safe/caution/warning/danger 및 $color-* 디자인 토큰과 동일 */
+const resolveRiskColorsFromResponse = (sectionsText: string): { riskBg: string; riskColor: string } => {
+  const match = sectionsText.match(/class="risk-badge\s+(risk-\w+)"/)
+  const cls = match?.[1] ?? ''
+  if (cls === 'risk-safe') return { riskBg: '#ecfdf5', riskColor: '#22c55e' }
+  if (cls === 'risk-caution') return { riskBg: '#eff6ff', riskColor: '#3b82f6' }
+  if (cls === 'risk-warning') return { riskBg: '#fffbeb', riskColor: '#f59e0b' }
+  if (cls === 'risk-danger') return { riskBg: '#fef2f2', riskColor: '#ef4444' }
+  return { riskBg: '#ffffff', riskColor: '#ef4444' }
+}
+
+/** risk-badge 클래스 → 방사형 JSON riskLevel */
+const RISK_BADGE_CLASS_TO_LEVEL: Record<string, RadarChartRiskLevel> = {
+  'risk-safe': '안정',
+  'risk-caution': '관심',
+  'risk-warning': '주의',
+  'risk-danger': '고위험',
+}
+
+/**
+ * 진단 분석 섹션 1(현재 상태 요약) HTML에서 위험군·색·상태 설명 추출
+ * - 1차 LLM이 판정한 위험군과 방사형 JSON을 맞추기 위함 (8영역 MAX 재계산 불일치 방지)
+ */
+const parseSection1ForRadarChart = (
+  sectionsText: string,
+): { riskLevel: RadarChartRiskLevel; riskColor: string; riskBgColor: string; riskSummary: string } | null => {
+  const badgeMatch = sectionsText.match(
+    /<span class="risk-badge\s+(risk-(?:safe|caution|warning|danger))">([^<]*)<\/span>/,
+  )
+  if (!badgeMatch?.[1]) return null
+  const badgeClass = badgeMatch[1]
+  const riskLevel = RISK_BADGE_CLASS_TO_LEVEL[badgeClass]
+  if (!riskLevel) return null
+  const { riskColor, riskBg: riskBgColor } = resolveRiskColorsFromResponse(`class="risk-badge ${badgeClass}"`)
+  const statusMatch = sectionsText.match(/<span class="risk-status\s+[^"]+">([\s\S]*?)<\/span>/)
+  const riskSummary = (statusMatch?.[1] ?? '').replace(/<[^>]+>/g, '').trim()
+  return { riskLevel, riskColor, riskBgColor, riskSummary }
+}
+
+/**
+ * Q1~Q25 응답값으로 방사형 차트 JSON 데이터 요청 프롬프트 빌드
+ * - 역코딩 규칙은 buildDiagnosticPrompt 와 동일
+ * - sectionsText에 섹션1 HTML(risk-badge/risk-status)이 있으면 riskLevel·색·riskSummary는 해당 값으로 고정 (MAX 재판정 불가)
+ * - 섹션1 파싱 실패 시에만 8영역 MAX·구간표로 위험 판정 지시
+ * - LLM 은 이미지 생성 없이 JSON 만 반환
  */
 const buildRadarChartPrompt = (answers: Record<number, number>, sectionsText: string): string => {
   const 직무요구 = calcCategoryAvg([1, 2, 3, 4], answers)
@@ -592,12 +804,78 @@ const buildRadarChartPrompt = (answers: Record<number, number>, sectionsText: st
   const 심리안전감 = calcCategoryAvg([20, 21], answers)
   const 의미동기 = calcCategoryAvg([22, 23, 24, 25], answers)
 
-  const { riskBg, riskColor } = resolveRiskColorsFromResponse(sectionsText)
+  const 직무요구100 = radarScore100FromAvg14(직무요구)
+  const 번아웃100 = radarScore100FromAvg14(번아웃)
+  const 조직관계100 = radarScore100FromAvg14(조직관계)
+  const 신체인지100 = radarScore100FromAvg14(신체인지)
+  const 회복력100 = radarScore100FromAvg14(회복력)
+  const 워라밸100 = radarScore100FromAvg14(워라밸)
+  const 심리안전감100 = radarScore100FromAvg14(심리안전감)
+  const 의미동기100 = radarScore100FromAvg14(의미동기)
 
-  return `[방사형 그래프 생성 조건]
-아래 8개 축과 점수를 사용하여 방사형(레이더) 차트를 그려주세요.
+  const areas100Sorted = [
+    { ko: '직무요구', s100: 직무요구100 },
+    { ko: '번아웃', s100: 번아웃100 },
+    { ko: '조직관계', s100: 조직관계100 },
+    { ko: '신체인지', s100: 신체인지100 },
+    { ko: '회복력', s100: 회복력100 },
+    { ko: '워라밸', s100: 워라밸100 },
+    { ko: '심리안전감', s100: 심리안전감100 },
+    { ko: '의미동기', s100: 의미동기100 },
+  ].sort((a, b) => Number(b.s100) - Number(a.s100))
+  const topA = areas100Sorted[0]
+  const topB = areas100Sorted[1]
+  const coreAreasSummaryExample =
+    topA && topB
+      ? `"${topA.ko}(${topA.s100}, ${stressTierFromScore100Bands(Number(topA.s100))})·${topB.ko}(${topB.s100}, ${stressTierFromScore100Bands(Number(topB.s100))}) 영역이 핵심 스트레스 요인으로 나타났습니다."`
+      : topA
+        ? `"${topA.ko}(${topA.s100}, ${stressTierFromScore100Bands(Number(topA.s100))}) 영역이 핵심 스트레스 요인으로 나타났습니다."`
+        : '"(영역명)(0~100값, 안정|관심|주의|고위험) 형식으로 기재"'
 
-축 항목과 점수 (1.0~4.0 척도):
+  const section1Anchors = parseSection1ForRadarChart(sectionsText)
+  const { riskColor } = resolveRiskColorsFromResponse(sectionsText)
+
+  const section1LockBlock = section1Anchors
+    ? `
+위 진단 분석 본문 중 "### 1. 현재 상태 요약"에 이미 출력된 HTML을 기준으로, 아래 네 값은 **이미 확정된 결과**입니다.
+8개 영역 평균의 MAX·구간표로 riskLevel을 **다시 계산하거나 바꾸지 마세요.** JSON 필드에 **글자 단위로 동일하게** 넣으세요.
+
+- riskLevel: ${JSON.stringify(section1Anchors.riskLevel)}
+- riskColor: ${JSON.stringify(section1Anchors.riskColor)}
+- riskBgColor: ${JSON.stringify(section1Anchors.riskBgColor)}
+- riskSummary: ${JSON.stringify(section1Anchors.riskSummary)}
+`
+    : ''
+
+  const riskJudgementBlock = section1Anchors
+    ? `
+위험 수준 (riskLevel·riskColor·riskBgColor·riskSummary): 위 「이미 확정된 결과」블록과 **완전히 동일**하게만 출력합니다. 임의 수정·요약 재작성 금지.
+`
+    : `
+위험 수준 판정 (필수): 위 1.0~4.0 척도 8개 영역 평균 중 최댓값(MAX)을 구한 뒤, 아래 「1~4 척도 구간표」만으로 riskLevel·riskColor·riskBgColor를 결정하세요. (scores의 0~100 환산값으로 위험 단계를 판정하지 마세요.)
+
+1~4 척도 구간표 (위험 단계 판정 전용, 디자인 토큰과 동일한 hex):
+- 1.00~1.59: 안정  → riskLevel: "안정", riskColor: "#22c55e", riskBgColor: "#ecfdf5" ($color-success 계열)
+- 1.60~2.29: 관심  → riskLevel: "관심", riskColor: "#3b82f6", riskBgColor: "#eff6ff" ($color-info 계열)
+- 2.30~2.99: 주의  → riskLevel: "주의", riskColor: "#f59e0b", riskBgColor: "#fffbeb" ($color-warning 계열)
+- 3.00~4.00: 고위험 → riskLevel: "고위험", riskColor: "#ef4444", riskBgColor: "#fef2f2" ($color-error 계열)
+`
+
+  const riskSummaryRule = section1Anchors
+    ? '- riskSummary: 위 「이미 확정된 결과」의 riskSummary 문자열과 동일 (공백·줄바꿈 포함 그대로)'
+    : '- riskSummary: 현재 위험군을 한 문장으로 설명 (예: "전반적으로 번아웃과 조직관계 영역에서 주의 수준의 스트레스가 감지됩니다.")'
+
+  const riskLevelColorRule = section1Anchors
+    ? '- riskLevel / riskColor / riskBgColor: 위 「이미 확정된 결과」블록과 동일 (MAX·구간표로 재판정 금지)'
+    : '- riskLevel / riskColor / riskBgColor: 8개 영역 1~4 평균의 최댓값이 속한 「1~4 척도 구간표」에서 선택'
+
+  const coreAreasSummaryRule = `- coreAreasSummary: **scores의 0~100 값**으로 영역 간 상대 크기를 비교해 가장 큰 영역 1~2개를 고릅니다. 각 영역의 단계(안정/관심/주의/고위험)는 반드시 아래 「동일 구간을 0~100으로 나타내면」표(0.00~19.67 안정 … 66.67~100.00 고위험)에 **해당 0~100 점수를 넣어** 판정합니다. 문장·괄호 안에 **1~4 척도 원점수는 쓰지 마세요.** 괄호 안 형식: 한글 영역명(0~100값, 구간표 단계) (예: ${coreAreasSummaryExample})`
+
+  return `[방사형 차트 데이터 요청]
+아래 진단 결과를 바탕으로 방사형 차트 컴포넌트에 주입할 데이터를 JSON 형식으로 응답하세요.
+마크다운 코드블록(\`\`\`) 없이 순수 JSON 문자열만 출력하세요. 다른 텍스트는 절대 추가하지 마세요.
+${section1LockBlock}
+영역별 점수 (역코딩 적용, 소수점 2자리, 내부 판정·비교용 1.0~4.0 척도):
 - 직무요구: ${직무요구}
 - 번아웃: ${번아웃}
 - 조직관계: ${조직관계}
@@ -607,52 +885,88 @@ const buildRadarChartPrompt = (answers: Record<number, number>, sectionsText: st
 - 심리안전감: ${심리안전감}
 - 의미동기: ${의미동기}
 
-레이아웃 규칙:
-- 그래프는 이미지 정중앙에 배치
-- 최소값 1.0 / 최대값 4.0으로 고정
-- 각 축 레이블은 그래프 외곽에만 표시
-- 동심원 기준선 3개 표시 (1.0 / 2.0 / 3.0 / 4.0)
-- 배경 색상: ${riskBg} (안정: #e8f5e9 / 관심: #fff8e1 / 주의: #fff3e0 / 고위험: #ffebee)
-- 그래프 채우기 색상: ${riskColor} 투명도 30% (안정: #2e7d32 / 관심: #f57f17 / 주의: #e65100 / 고위험: #c62828)
-- 그래프 외곽선 색상: ${riskColor} 두께 2px
+영역별 0~100 환산값 (위 공식과 동일하며 JSON scores에 넣을 숫자와 **반드시 일치**해야 함, 소수 둘째 자리):
+- 직무요구(jobDemands): ${직무요구100}
+- 번아웃(burnout): ${번아웃100}
+- 조직관계(organizationalRelations): ${조직관계100}
+- 신체인지(physicalCognition): ${신체인지100}
+- 회복력(resilience): ${회복력100}
+- 워라밸(workLifeBalance): ${워라밸100}
+- 심리안전감(psychologicalSafety): ${심리안전감100}
+- 의미동기(meaningMotivation): ${의미동기100}
 
-① 영역별 점수표 — 아래 8개 항목을 두 줄로 나눠 표 형태로 표시:
-  직무요구 {score} | 번아웃 {score} | 조직관계 {score} | 신체인지 {score}
-  회복력 {score}   | 워라밸 {score} | 심리안전감 {score} | 의미동기 {score}
+scores 키 매핑 (JSON scores에는 반드시 오른쪽 영어만 사용):
+- 직무요구 → jobDemands
+- 번아웃 → burnout
+- 조직관계 → organizationalRelations
+- 신체인지 → physicalCognition
+- 회복력 → resilience
+- 워라밸 → workLifeBalance
+- 심리안전감 → psychologicalSafety
+- 의미동기 → meaningMotivation
 
-② 위험 수준 한 줄 — 각 점수 옆에 괄호로 표기:
-  (1.0~1.59: 안정 / 1.6~2.29: 관심 / 2.3~2.99: 주의 / 3.0~4.0: 고위험)
+${section1Anchors ? '' : `현재 판정된 위험군 색상 참고 (진단 분석에서 추출):\n- riskColor: ${riskColor}\n`}
 
-③ 핵심 원인 한 줄 — 가장 높은 영역 1~2개:
-  ※ 핵심 영역: {가장높은영역} ({score}) · {두번째영역} ({score})
+${riskJudgementBlock}
+0~100 환산 (scores 필드에만 적용): 각 영역의 1~4 척도 값 x에 대해 ((x - 1) / 3) * 100 을 계산하고 소수점 둘째 자리까지 반올림하여 number로 기재. (예: 1.00→0, 2.50→50, 4.00→100)
+동일 구간을 0~100으로 나타내면 (참고·해석용${section1Anchors ? '' : ', 위험 판정은 반드시 MAX의 1~4 값으로 위 표를 따를 것'}):
+- 0.00~19.67: 안정에 해당 (1.00~1.59와 동치)
+- 20.00~43.00: 관심에 해당 (1.60~2.29와 동치)
+- 43.33~66.33: 주의에 해당 (2.30~2.99와 동치)
+- 66.67~100.00: 고위험에 해당 (3.00~4.00와 동치)
 
-위 세 줄은 그래프 아래 여백에 동일한 폰트, 동일한 레이아웃으로 항상 출력하세요.
-다른 텍스트, 분석 문장, 권고 문구는 절대 추가하지 마세요
+응답 JSON 스키마 (키 이름·타입 정확히 준수):
+{
+  "scores": {
+    "jobDemands": number,
+    "burnout": number,
+    "organizationalRelations": number,
+    "physicalCognition": number,
+    "resilience": number,
+    "workLifeBalance": number,
+    "psychologicalSafety": number,
+    "meaningMotivation": number
+  },
+  "riskLevel": "안정" | "관심" | "주의" | "고위험",
+  "riskColor": string,
+  "riskBgColor": string,
+  "riskSummary": string,
+  "coreAreasSummary": string
+}
+
+필드 작성 규칙:
+- scores: 위 「영역별 0~100 환산값」목록과 **동일한 숫자**만 기재 (문자열 금지), 키는 반드시 영어 스키마대로. 재계산·반올림 방식을 바꾸지 마세요.
+${riskLevelColorRule}
+${riskSummaryRule}
+${coreAreasSummaryRule}
 `
 }
 
 /**
- * 섹션 1~4 텍스트를 백엔드 AI 이미지 생성 엔드포인트에 POST
- * @param answers Q1~Q25 원점수 — 전달 시 정확한 카테고리 평균 기반 정형화 프롬프트 사용
- * @returns base64 이미지 문자열 (data: prefix 포함), 실패 시 null
+ * 섹션 1~4 텍스트 + Q1~Q25 응답값을 기반으로 방사형 차트 JSON 데이터 요청
+ * - 백엔드 엔드포인트: /ai/chatbot/getPsychologyChartData.do (백엔드 연결 시 확인 필요)
+ * @param sectionsText 섹션 1~4 LLM 응답 텍스트 (위험군 파싱에 사용)
+ * @param answers Q1~Q25 원점수 — 카테고리 평균 계산 및 프롬프트 생성에 필수
+ * @returns RadarChartData (차트 컴포넌트 주입용), 실패 시 null
  */
-export const fetchPsychologyAiImage = async (
+export const fetchPsychologyRadarChartData = async (
   sectionsText: string,
-  answers?: Record<number, number>,
-): Promise<string | null> => {
+  answers: Record<number, number>,
+): Promise<RadarChartData | null> => {
   try {
     const { post } = useApi()
-    const radarPrompt =
-      answers && Object.keys(answers).length > 0
-        ? buildRadarChartPrompt(answers, sectionsText)
-        : '위 내용에 해당하는 방사형 그래프 이미지 생성해주세요.'
-    const prompt = `${sectionsText}\n\n${radarPrompt}`
-    const data = await post<{ base64Image?: string; imageData?: string }>('/ai/chatbot/generatePsychologyImage.do', {
+    const prompt = `${sectionsText}\n\n${buildRadarChartPrompt(answers, sectionsText)}`
+    // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체 (엔드포인트·응답 키 확인 필요)
+    const data = await post<{ chartData?: string; result?: string }>('/ai/chatbot/getPsychologyChartData.do', {
       prompt,
     })
-    const raw = data.base64Image ?? null
+
+    // 백엔드가 JSON 문자열을 chartData 또는 result 키로 반환하는 경우 모두 처리
+    const raw = data.chartData ?? data.result ?? null
     if (!raw) return null
-    return raw.startsWith('data:') ? raw : `data:image/png;base64,${raw}`
+
+    const parsed = JSON.parse(raw) as Record<string, unknown>
+    return normalizeRadarChartData(parsed)
   } catch {
     return null
   }
