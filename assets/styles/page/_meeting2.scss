@@ -1348,22 +1348,21 @@
 
   table {
     width: 100%;
-    margin-bottom: $spacing-md;
+    margin: 0 0 $spacing-lg;
     border-collapse: collapse;
     border: 1px solid $color-border;
     table-layout: fixed;
 
     th,
     td {
-      padding: 6px 10px;
+      padding: 10px 12px;
       border: 1px solid $color-border;
       @include typo($body-small, $color-text-dark);
-      line-height: 1.5;
-      text-align: left;
-      vertical-align: top;
+      line-height: 1.6;
+      vertical-align: middle;
       position: relative;
 
-      // 셀 안쪽 단락(Tiptap이 셀 내용을 <p>로 감싸므로 마진/라인하이트 리셋)
+      // Tiptap이 셀 내용을 <p>로 감싸므로 마진/라인하이트 리셋
       p {
         margin: 0;
         font-size: inherit;
@@ -1380,10 +1379,12 @@
       }
     }
 
-    th {
+    // 정보 표 라벨 컬럼 — tbody 행의 첫 번째 th
+    tbody tr > th:first-child {
+      width: 96px;
       background: $color-background;
       @include typo($body-small-bold, $color-text-dark);
-      line-height: 1.5;
+      text-align: center;
     }
 
     // Tiptap 표 컬럼 리사이즈 핸들
