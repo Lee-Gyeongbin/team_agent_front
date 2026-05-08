@@ -408,7 +408,7 @@ const onSelectCategoryFromActions = (categoryId: string) => {
 
 .chat-psychology-radar-chart,
 .chat-psychology-radar-metrics {
-  width: 80%;
+  width: 86%;
   margin-left: auto;
   margin-right: auto;
 }
