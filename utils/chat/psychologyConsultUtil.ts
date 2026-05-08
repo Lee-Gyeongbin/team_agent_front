@@ -575,6 +575,16 @@ export const stressLevelFromPsychologyRadarScore100 = (score: number): StressLev
   return '고위험'
 }
 
+/** StressScoreGrid `.item-level` / 레이더 축 라벨 — SCSS $color-success·info·warning·error 와 동일 */
+export const STRESS_LEVEL_LABEL_HEX: Record<StressLevel, string> = {
+  안정: '#22c55e',
+  관심: '#3b82f6',
+  주의: '#f59e0b',
+  고위험: '#ef4444',
+}
+
+export const hexForStressLevel = (level: StressLevel): string => STRESS_LEVEL_LABEL_HEX[level] ?? '#64748b'
+
 /** RadarChartData → StressScoreGrid props.items */
 export const buildStressItemsFromRadarChartData = (data: RadarChartData): StressScoreItem[] => {
   return PSYCHOLOGY_RADAR_SCORE_KEYS.map((key) => {
@@ -593,6 +603,7 @@ export const buildStressItemsFromRadarChartData = (data: RadarChartData): Stress
  */
 export const buildPsychologyRadarUiChartConfig = (data: RadarChartData): Record<string, unknown> => {
   const items = buildStressItemsFromRadarChartData(data)
+  const levelColors = items.map((i) => hexForStressLevel(i.level))
   return {
     categories: items.map((i) => i.name),
     data: items.map((i) => i.value),
@@ -602,6 +613,10 @@ export const buildPsychologyRadarUiChartConfig = (data: RadarChartData): Record<
     fillOpacity: 0.25,
     pointLabelFormat: (name: string, value: number) =>
       `${name} (${typeof value === 'number' && Number.isFinite(value) ? value.toFixed(2) : String(value)})`,
+    /** 축 라벨(이름+점수) — 항목별 위험등급 색 */
+    pointLabelColors: levelColors,
+    /** 꼭짓점(호버 포함) — 라인·면은 `color`(종합 riskColor) 유지 */
+    pointBackgroundColors: levelColors,
   }
 }
 
