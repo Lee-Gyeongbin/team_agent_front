@@ -9,9 +9,10 @@ import {
   PieChartModule,
   MixedChartModule,
   XBarChartModule,
+  RadarChartModule,
 } from '~/utils/chart'
 
-type ChartType = 'bar' | 'line' | 'pie' | 'mixed' | 'horizontalBar'
+type ChartType = 'bar' | 'line' | 'pie' | 'mixed' | 'horizontalBar' | 'radar'
 
 /** 차트 타입에 맞는 모듈 반환 */
 function getModule(type: ChartType) {
@@ -26,6 +27,8 @@ function getModule(type: ChartType) {
       return MixedChartModule
     case 'horizontalBar':
       return XBarChartModule
+    case 'radar':
+      return RadarChartModule
     default:
       return BarChartModule
   }

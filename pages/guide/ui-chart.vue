@@ -1,7 +1,7 @@
 <template>
   <div class="guide-page">
     <h1 class="guide-title">UiChart</h1>
-    <p class="guide-description">Chart.js 기반 범용 차트 컴포넌트 — bar, line, pie, mixed, horizontalBar 5종 지원</p>
+    <p class="guide-description">Chart.js 기반 범용 차트 컴포넌트 — bar, line, pie, mixed, horizontalBar, radar 6종 지원</p>
 
     <!-- Bar Chart -->
     <section class="guide-section">
@@ -87,6 +87,106 @@
       </div>
     </section>
 
+    <!-- Radar Chart -->
+    <section class="guide-section">
+      <h2 class="section-title">Radar Chart (방사선 차트) — 단일 데이터셋</h2>
+      <div class="guide-demo">
+        <div class="demo-box">
+          <div style="height: 400px; max-width: 480px; margin: 0 auto">
+            <UiChart
+              type="radar"
+              :config="radarSingleConfig"
+            />
+          </div>
+        </div>
+        <pre class="demo-code">&lt;UiChart type="radar" :config="radarSingleConfig" /&gt;</pre>
+      </div>
+    </section>
+
+    <section class="guide-section">
+      <h2 class="section-title">Radar Chart — 다중 데이터셋 비교</h2>
+      <div class="guide-demo">
+        <div class="demo-box">
+          <div style="height: 400px; max-width: 480px; margin: 0 auto">
+            <UiChart
+              type="radar"
+              :config="radarMultiConfig"
+              show-legend
+            />
+          </div>
+        </div>
+        <pre class="demo-code">&lt;UiChart type="radar" :config="radarMultiConfig" show-legend /&gt;</pre>
+      </div>
+    </section>
+
+    <section class="guide-section">
+      <h2 class="section-title">Radar Chart — 데이터 라벨 표시</h2>
+      <div class="guide-demo">
+        <div class="demo-box">
+          <div style="height: 400px; max-width: 480px; margin: 0 auto">
+            <UiChart
+              type="radar"
+              :config="radarLabelConfig"
+            />
+          </div>
+        </div>
+        <pre class="demo-code">&lt;UiChart type="radar" :config="radarLabelConfig" /&gt;</pre>
+      </div>
+    </section>
+
+    <section class="guide-section">
+      <h2 class="section-title">Radar Chart — 0~4 스케일 (다른 max 케이스)</h2>
+      <div class="guide-demo">
+        <div class="demo-box">
+          <div style="height: 400px; max-width: 480px; margin: 0 auto">
+            <UiChart
+              type="radar"
+              :config="radarSmallScaleConfig"
+            />
+          </div>
+        </div>
+        <pre class="demo-code">&lt;UiChart type="radar" :config="radarSmallScaleConfig" /&gt;</pre>
+      </div>
+    </section>
+
+    <section class="guide-section">
+      <h2 class="section-title">Radar Chart — 축 라벨에 점수 표기</h2>
+      <div class="guide-demo">
+        <div class="demo-box">
+          <div style="height: 400px; max-width: 520px; margin: 0 auto">
+            <UiChart
+              type="radar"
+              :config="radarLabelFormatConfig"
+            />
+          </div>
+        </div>
+        <pre class="demo-code">&lt;UiChart type="radar" :config="radarLabelFormatConfig" /&gt;
+// pointLabelFormat: (name, value) =&gt; `${name} (${value})`</pre>
+      </div>
+    </section>
+
+    <section class="guide-section">
+      <h2 class="section-title">Radar + StressScoreGrid 조합 예시 (도메인 컴포넌트)</h2>
+      <div class="guide-demo">
+        <div class="demo-box">
+          <div style="max-width: 720px; margin: 0 auto">
+            <div style="height: 400px">
+              <UiChart
+                type="radar"
+                :config="radarStressConfig"
+              />
+            </div>
+            <StressScoreGrid
+              :items="stressItems"
+              :core-areas-text="stressCoreAreasText"
+            />
+          </div>
+        </div>
+        <pre class="demo-code">&lt;UiChart type="radar" :config="radarStressConfig" /&gt;
+&lt;StressScoreGrid :items="stressItems" :core-areas-text="stressCoreAreasText" /&gt;</pre>
+      </div>
+    </section>
+
     <!-- Props 테이블 -->
     <section class="guide-section">
       <h2 class="section-title">Props</h2>
@@ -102,7 +202,7 @@
         <tbody>
           <tr>
             <td>type</td>
-            <td><code>'bar' | 'line' | 'pie' | 'mixed' | 'horizontalBar'</code></td>
+            <td><code>'bar' | 'line' | 'pie' | 'mixed' | 'horizontalBar' | 'radar'</code></td>
             <td>-</td>
             <td>차트 타입 (필수)</td>
           </tr>
@@ -487,6 +587,111 @@ const config = {
 }</pre
         >
       </div>
+
+      <!-- Radar Config -->
+      <h3 class="section-subtitle">radar — 방사선 차트</h3>
+      <table class="guide-status-table">
+        <thead>
+          <tr>
+            <th>옵션</th>
+            <th>Type</th>
+            <th>필수</th>
+            <th>설명</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>categories</td>
+            <td><code>string[]</code></td>
+            <td>O</td>
+            <td>축 라벨 배열 (3개 이상 권장)</td>
+          </tr>
+          <tr>
+            <td>data</td>
+            <td><code>number[]</code></td>
+            <td>△</td>
+            <td>단일 모드 (datasets와 택1)</td>
+          </tr>
+          <tr>
+            <td>datasets</td>
+            <td><code>{ label, data, color?, colorKey?, colorIndex? }[]</code></td>
+            <td>△</td>
+            <td>다중 모드 (data와 택1)</td>
+          </tr>
+          <tr>
+            <td>color</td>
+            <td><code>string</code></td>
+            <td></td>
+            <td>hex 직접 지정 (colorKey보다 우선, riskColor 등)</td>
+          </tr>
+          <tr>
+            <td>colorKey</td>
+            <td><code>string</code></td>
+            <td></td>
+            <td>ChartColors 경로 (기본 <code>'radar.primary'</code>)</td>
+          </tr>
+          <tr>
+            <td>colorIndex</td>
+            <td><code>number</code></td>
+            <td></td>
+            <td>다중 팔레트 인덱스 (기본 0)</td>
+          </tr>
+          <tr>
+            <td>maxValue</td>
+            <td><code>number</code></td>
+            <td></td>
+            <td>축 최대값 (생략 시 자동)</td>
+          </tr>
+          <tr>
+            <td>stepSize</td>
+            <td><code>number</code></td>
+            <td></td>
+            <td>격자 간격 (생략 시 자동)</td>
+          </tr>
+          <tr>
+            <td>showDataLabels</td>
+            <td><code>boolean</code></td>
+            <td></td>
+            <td>각 점에 수치 표시 (기본 false)</td>
+          </tr>
+          <tr>
+            <td>fillOpacity</td>
+            <td><code>number</code></td>
+            <td></td>
+            <td>채움 투명도 0~1 (기본 0.35)</td>
+          </tr>
+          <tr>
+            <td>pointLabelFormat</td>
+            <td><code>(name, value, index) =&gt; string</code></td>
+            <td></td>
+            <td>축 라벨 포맷 콜백. value는 첫 번째 데이터셋 값</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="guide-demo">
+        <pre class="demo-code">
+// 단일 데이터셋 (실데이터 응답에 맞춰 hex 직접 주입)
+const config = {
+  categories: ['직무요구','번아웃','조직관계','신체인지','회복력','워라밸','심리안전감','의미동기'],
+  data: [30, 30, 20, 27, 75, 30, 20, 20],
+  color: '#c62828',  // riskColor 등 hex 그대로
+  maxValue: 100,
+  stepSize: 25,
+  fillOpacity: 0.25,
+}
+
+// 다중 데이터셋 비교
+const config = {
+  categories: [...],
+  datasets: [
+    { label: '본인', data: [...], colorKey: 'radar.set1', colorIndex: 0 },
+    { label: '부서 평균', data: [...], colorKey: 'radar.set1', colorIndex: 1 },
+  ],
+  maxValue: 100,
+  stepSize: 25,
+}</pre
+        >
+      </div>
     </section>
 
     <!-- 기본 사용법 -->
@@ -565,6 +770,11 @@ const chartConfig = {
               <td><code>height: 480px; max-width: 480px</code></td>
               <td>외부 라벨 + 연결선 공간 확보 필수</td>
             </tr>
+            <tr>
+              <td>radar</td>
+              <td><code>height: 400px; max-width: 480px</code></td>
+              <td>정사각형에 가까울수록 좋음, 라벨 공간 확보</td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -602,6 +812,8 @@ const chartConfig = {
 </template>
 
 <script setup lang="ts">
+import type { StressScoreItem } from '~/types/stress'
+
 // ============================================
 // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
 // ============================================
@@ -662,5 +874,82 @@ const horizontalBarConfig = {
   maxValue: 100,
   showDataLabels: true,
   unit: '%',
+}
+
+// 방사선 차트 — 단일 데이터셋 (스트레스 진단 재현, 0~100점, 고위험 빨강)
+const radarSingleConfig = {
+  categories: ['직무요구', '번아웃', '조직관계', '신체인지', '회복력', '워라밸', '심리안전감', '의미동기'],
+  data: [30, 30, 20, 27, 75, 30, 20, 20],
+  color: '#c62828',
+  maxValue: 100,
+  stepSize: 25,
+  fillOpacity: 0.25,
+}
+
+// 방사선 차트 — 다중 데이터셋 비교 (본인 vs 부서 평균)
+const radarMultiConfig = {
+  categories: ['직무요구', '번아웃', '조직관계', '신체인지', '회복력', '워라밸', '심리안전감', '의미동기'],
+  datasets: [
+    { label: '본인', data: [30, 30, 20, 27, 75, 30, 20, 20], colorKey: 'radar.set1', colorIndex: 0 },
+    { label: '부서 평균', data: [50, 40, 45, 50, 50, 45, 50, 45], colorKey: 'radar.set1', colorIndex: 1 },
+  ],
+  maxValue: 100,
+  stepSize: 25,
+}
+
+// 방사선 차트 — 데이터 라벨 표시
+const radarLabelConfig = {
+  categories: ['React', 'Vue', 'Angular', 'Svelte', 'Next.js', 'Nuxt'],
+  data: [85, 90, 60, 55, 80, 75],
+  colorKey: 'radar.secondary',
+  maxValue: 100,
+  stepSize: 20,
+  showDataLabels: true,
+}
+
+// 방사선 차트 — 0~4 스케일 (이미지 톤)
+const radarSmallScaleConfig = {
+  categories: ['직무요구', '번아웃', '조직관계', '신체인지', '회복력', '워라밸', '심리안전감', '의미동기'],
+  data: [2.75, 2.0, 2.5, 3.0, 3.0, 2.0, 2.5, 2.0],
+  colorKey: 'radar.primary',
+  maxValue: 4,
+  stepSize: 1,
+}
+
+// 방사선 차트 — 축 라벨에 점수 표기
+const radarLabelFormatConfig = {
+  categories: ['직무요구', '번아웃', '조직관계', '신체인지', '회복력', '워라밸', '심리안전감', '의미동기'],
+  data: [30, 30, 20, 27, 75, 30, 20, 20],
+  color: '#c62828',
+  maxValue: 100,
+  stepSize: 25,
+  fillOpacity: 0.25,
+  pointLabelFormat: (name: string, value: number) => `${name} (${value})`,
+}
+
+// ============================================
+// 🔽 도메인 조합 예시 (StressScoreGrid + radar)
+// ============================================
+const stressItems: StressScoreItem[] = [
+  { name: '직무요구', value: 2.75, level: '주의' },
+  { name: '번아웃', value: 2.0, level: '관심' },
+  { name: '조직관계', value: 2.5, level: '주의' },
+  { name: '신체인지', value: 3.0, level: '고위험' },
+  { name: '회복력', value: 3.0, level: '고위험' },
+  { name: '워라밸', value: 2.0, level: '관심' },
+  { name: '심리안전감', value: 2.5, level: '주의' },
+  { name: '의미동기', value: 2.0, level: '관심' },
+]
+
+const stressCoreAreasText = '※ 핵심 영역: 신체인지(3.00) · 회복력(3.00)'
+
+const radarStressConfig = {
+  categories: stressItems.map((i) => i.name),
+  data: stressItems.map((i) => i.value),
+  color: '#c62828',
+  maxValue: 4,
+  stepSize: 1,
+  fillOpacity: 0.25,
+  pointLabelFormat: (name: string, value: number) => `${name} (${value.toFixed(2)})`,
 }
 </script>
