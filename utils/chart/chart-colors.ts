@@ -137,6 +137,21 @@ export const ChartColors = {
     ],
   },
 
+  // ===== 방사선(Radar) 차트 색상 =====
+  radar: {
+    // 단일 데이터셋용 (단일 hex)
+    primary: '#FF8127', // 주황 (위험 상태 강조용)
+    secondary: '#258CEC', // 파랑
+    success: '#00B248', // 초록 (안전)
+    danger: '#FF6565', // 빨강 (고위험)
+    purple: '#725FEA', // 보라
+
+    // 다중 데이터셋용 (colorIndex로 선택)
+    set1: ['#FF8127', '#258CEC'], // 주황, 파랑 — 본인 vs 평균
+    set2: ['#725FEA', '#FF8127', '#40D4B1'], // 보라, 주황, 민트 — 3자 비교
+    multi: ['#725FEA', '#DB59B6', '#258CEC', '#FF8127', '#40D4B1', '#FFC927', '#4CCCFF', '#FF6565'], // 8색
+  },
+
   // ===== 상태 색상 =====
   status: {
     error: '#E52E00', // 빨강 (오류, 감소)

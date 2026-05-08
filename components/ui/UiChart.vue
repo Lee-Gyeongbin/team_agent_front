@@ -12,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-type ChartType = 'bar' | 'line' | 'pie' | 'mixed' | 'horizontalBar'
+type ChartType = 'bar' | 'line' | 'pie' | 'mixed' | 'horizontalBar' | 'radar'
 
 interface Props {
   /** 차트 타입 */
