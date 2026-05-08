@@ -1393,19 +1393,17 @@
       }
     }
 
-    // 정보 표 라벨 컬럼 — tbody 행의 첫 번째 th
-    tbody tr > th:first-child {
-      width: 96px;
+    // 모든 th — 회색 배경 + 굵은 글씨 + 가운데 정렬
+    // (TipTap은 thead 없이 tbody 첫 행에 <th>를 두므로 셀렉터를 th 전반으로 확장)
+    th {
       background: $color-background;
       @include typo($body-medium-bold, $color-text-dark);
       text-align: center;
     }
 
-    // thead 헤더 행 — 일반 데이터 표(마일스톤/담당/완료일 등)도 동일한 회색 라벨 룩 적용
-    thead th {
-      background: $color-background;
-      @include typo($body-medium-bold, $color-text-dark);
-      text-align: center;
+    // 정보 표 라벨 컬럼 — tbody 행의 첫 번째 th 만 폭 고정
+    tbody tr > th:first-child {
+      width: 96px;
     }
 
     // Tiptap 표 컬럼 리사이즈 핸들
