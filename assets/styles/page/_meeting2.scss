@@ -1303,7 +1303,7 @@
       position: relative;
       padding-left: 18px;
       margin-bottom: 10px;
-      @include typo($body-small, $color-text-dark);
+      @include typo($body-medium, $color-text-dark);
       line-height: 1.7;
 
       &::before {
