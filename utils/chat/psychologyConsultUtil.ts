@@ -4,6 +4,7 @@
 // - useChatStore 에서는 import 후 호출만 수행
 // ============================================================
 
+import { nextTick } from 'vue'
 import { useApi } from '~/composables/com/useApi'
 import type { ChatMessage } from '~/types/chat'
 import type { StressLevel, StressScoreItem } from '~/types/stress'
@@ -660,6 +661,16 @@ export const getRadarChartCache = (logId: string): RadarChartData | null => rada
 /** logId에 대해 방사형 차트 데이터를 캐시에 저장 */
 export const setRadarChartCache = (logId: string, data: RadarChartData): void => {
   radarChartCache.set(logId, data)
+}
+
+/** 캐시 히트 후 같은 tick 에 차트가 붙지 않도록 지연 주입 — canvas 초기화 레이스 완화 */
+export function schedulePsychologyRadarUiInjection(fn: () => void): () => void {
+  if (typeof window === 'undefined') {
+    queueMicrotask(fn)
+    return () => {}
+  }
+  const id = window.setTimeout(() => nextTick(fn), 160)
+  return () => clearTimeout(id)
 }
 
 // ============================================================

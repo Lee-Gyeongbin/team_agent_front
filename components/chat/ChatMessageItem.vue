@@ -220,6 +220,7 @@ import {
   fetchPsychologyRadarChartData,
   getRadarChartCache,
   setRadarChartCache,
+  schedulePsychologyRadarUiInjection,
   buildStressItemsFromRadarChartData,
   buildPsychologyRadarUiChartConfig,
   type RadarChartData,
@@ -291,6 +292,14 @@ const psychologyRadarChartConfig = computed<Record<string, unknown>>(() =>
 let pexelsFetchDone = false
 let radarChartFetchDone = false
 
+/** 캐시 주입 타이머 취소용 */
+let cancelPsychologyRadarUiInjection: (() => void) | null = null
+
+onBeforeUnmount(() => {
+  cancelPsychologyRadarUiInjection?.()
+  cancelPsychologyRadarUiInjection = null
+})
+
 watch(
   () => [props.message.rContent, props.message.agentId, props.message.isStreaming] as const,
   ([rContent, agentId, isStreaming]) => {
@@ -320,16 +329,20 @@ watch(
       afterChartHtml.value = toHtmlContent(removeKeywordLines(after))
     }
 
-    // 마커 최초 발견 시 즉시 차트 데이터 요청 (스트리밍 완료를 기다리지 않음)
-    // — 마커 등장 시점에 섹션 1~3 완성, surveyAnswers는 클라이언트 계산이므로 즉시 호출 가능
+    // 마커 최초 발견 시 차트 데이터 — 캐시는 API 대기 없이 바로 올 수 있어 JSON 주입만 짧게 지연
     if (!radarChartFetchDone) {
       radarChartFetchDone = true
       radarChartLoading.value = true
 
       const cached = getRadarChartCache(props.message.logId)
       if (cached) {
-        radarChartData.value = cached
-        radarChartLoading.value = false
+        cancelPsychologyRadarUiInjection?.()
+        const logIdForInject = props.message.logId
+        cancelPsychologyRadarUiInjection = schedulePsychologyRadarUiInjection(() => {
+          if (props.message.logId !== logIdForInject) return
+          radarChartData.value = cached
+          radarChartLoading.value = false
+        })
       } else {
         fetchPsychologyRadarChartData(extractSections1to4(raw), props.message.surveyAnswers!).then((chartData) => {
           radarChartLoading.value = false
