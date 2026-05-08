@@ -1401,6 +1401,13 @@
       text-align: center;
     }
 
+    // thead 헤더 행 — 일반 데이터 표(마일스톤/담당/완료일 등)도 동일한 회색 라벨 룩 적용
+    thead th {
+      background: $color-background;
+      @include typo($body-medium-bold, $color-text-dark);
+      text-align: center;
+    }
+
     // Tiptap 표 컬럼 리사이즈 핸들
     .column-resize-handle {
       position: absolute;
