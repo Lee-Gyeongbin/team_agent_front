@@ -38,10 +38,9 @@ export const useMeetingApi = () => {
     return get<MeetingDetail>(`/ai/meeting/selectMeetingDetail.do?meetingId=${meetingId}`)
   }
 
-  /** 회의 저장 (신규/수정) — 백엔드 API 없음, Mock 유지 */
-  const fetchSaveMeeting = async (meeting: Partial<Meeting>): Promise<{ data: Meeting }> => {
-    // TODO: 백엔드 API 연동 필요 (/ai/meeting/saveMeeting.do 예정)
-    return mockPost<{ data: Meeting }>(`${MOCK_BASE}/save`, meeting)
+  /** 회의 저장 (신규/수정) */
+  const fetchSaveMeetingMinutes = async (meeting: Partial<Meeting>): Promise<{ data: Meeting }> => {
+    return post<{ data: Meeting }>(`/ai/meeting/saveMeetingMinutes.do`, meeting)
   }
 
   /** 회의 시작 */
@@ -51,18 +50,6 @@ export const useMeetingApi = () => {
     isAutoTitle: 'Y' | 'N'
   }): Promise<{ successYn: boolean; meetingId: number }> => {
     return post<{ successYn: boolean; meetingId: number }>('/ai/meeting/createMeeting.do', params)
-  }
-
-  /** 회의 종료 + 회의록 생성 + 화자 분리 */
-  const fetchFinishMeeting = async (params: {
-    meetingId: number
-    fullText: string
-    segments: SpeechSegment[]
-  }): Promise<{ successYn: boolean }> => {
-    return post<{ successYn: boolean }>('/ai/meeting/finishMeeting.do', {
-      ...params,
-      segments: JSON.stringify(params.segments),
-    })
   }
 
   /**
@@ -146,9 +133,8 @@ export const useMeetingApi = () => {
     fetchUserList,
     fetchMeetingList,
     fetchMeetingDetail,
-    fetchSaveMeeting,
+    fetchSaveMeetingMinutes,
     fetchCreateMeeting,
-    fetchFinishMeeting,
     fetchFinishMeetingWithAudio,
     fetchSaveSpeakerMapping,
     fetchSaveSpeaker,

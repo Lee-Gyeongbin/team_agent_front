@@ -5,15 +5,16 @@
   >
     <div class="meeting2-panel-header">
       <span class="meeting2-panel-title"> 자동 생성된 회의록 </span>
-      <!-- <UiButton
+      <UiButton
         variant="primary"
         size="sm"
+        @click.stop="onSaveMeetingClick"
       >
         <template #icon-left>
           <i class="icon-edit size-16" />
         </template>
         저장하기
-      </UiButton> -->
+      </UiButton>
     </div>
 
     <!-- ── WYSIWYG 에디터 ────────────────────────────────────────────── -->
@@ -129,6 +130,7 @@ const { currentMeeting, meetingDetail, handleSaveMeeting } = useMeetingStore()
 // ── WYSIWYG 에디터 ───────────────────────────────────────────────────
 
 const isAutoSaving = ref(false)
+const minutesId = meetingDetail.value.minutes?.minutesId
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
 
 const triggerAutoSave = (html: string) => {
@@ -137,9 +139,15 @@ const triggerAutoSave = (html: string) => {
   autoSaveTimer = setTimeout(async () => {
     if (!currentMeeting.value) return
     isAutoSaving.value = true
-    await handleSaveMeeting({ id: currentMeeting.value.id, minutesContent: html }, { silent: true })
+    await handleSaveMeeting({ id: String(minutesId), minutesContent: html }, { silent: true })
     isAutoSaving.value = false
   }, 800)
+}
+
+/** 저장하기 버튼 — 사용자 저장 시 토스트 표시 */
+const onSaveMeetingClick = async () => {
+  if (!currentMeeting.value || !editor.value) return
+  await handleSaveMeeting({ id: String(minutesId), minutesContent: editor.value.getHTML() }, { silent: false })
 }
 
 /**
@@ -163,6 +171,33 @@ const insertImageAsBase64 = (file: File) => {
   reader.readAsDataURL(file)
 }
 
+// ===== 회의록 2열 표 데이터 키 보존 확장 (tmpl_field 기반 round-trip 안정성) =====
+const MinutesTableHeader = TableHeader.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      'data-label-key': {
+        default: null,
+        parseHTML: (el) => (el as HTMLElement).getAttribute('data-label-key'),
+        renderHTML: (attrs) => (attrs['data-label-key'] ? { 'data-label-key': attrs['data-label-key'] } : {}),
+      },
+    }
+  },
+})
+
+const MinutesTableCell = TableCell.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      'data-value-key': {
+        default: null,
+        parseHTML: (el) => (el as HTMLElement).getAttribute('data-value-key'),
+        renderHTML: (attrs) => (attrs['data-value-key'] ? { 'data-value-key': attrs['data-value-key'] } : {}),
+      },
+    }
+  },
+})
+
 const editor = useEditor({
   extensions: [
     StarterKit.configure({}),
@@ -172,12 +207,13 @@ const editor = useEditor({
       HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
     }),
     TextAlign.configure({ types: ['heading', 'paragraph'] }),
-    ResizableImage,
+    // 템플릿(tmplHtml)의 data:image;base64 로고가 파싱 시 제거되지 않도록 허용
+    ResizableImage.configure({ allowBase64: true }),
     FontSize,
     Table.configure({ resizable: true }),
     TableRow,
-    TableHeader,
-    TableCell,
+    MinutesTableHeader,
+    MinutesTableCell,
     Placeholder.configure({ placeholder: '회의록 내용을 입력하세요...' }),
     TextStyle,
     Color,
@@ -324,7 +360,7 @@ onBeforeUnmount(() => {
     clearTimeout(autoSaveTimer)
     autoSaveTimer = null
     if (currentMeeting.value && editor.value) {
-      handleSaveMeeting({ id: currentMeeting.value.id, minutesContent: editor.value.getHTML() }, { silent: true })
+      handleSaveMeeting({ id: String(minutesId), minutesContent: editor.value.getHTML() }, { silent: true })
     }
   }
   editor.value?.destroy()

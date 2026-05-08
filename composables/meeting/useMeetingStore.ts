@@ -8,6 +8,8 @@ import type {
   MeetingUser as ApiMeetingUser,
   SpeechSegment,
 } from '~/types/meeting'
+import { useTmplApi } from '~/composables/tmpl/useTmplApi'
+import type { TmplBaseInfo, TmplField } from '~/types/tmpl'
 import { escapeHTML } from '~/utils/global/htmlUtil'
 import type {
   Meeting,
@@ -24,10 +26,9 @@ const {
   fetchUserList,
   fetchMeetingList,
   fetchMeetingDetail,
-  fetchSaveMeeting,
+  fetchSaveMeetingMinutes,
   fetchDeleteMeeting,
   fetchCreateMeeting,
-  fetchFinishMeeting,
   fetchFinishMeetingWithAudio,
   fetchSaveSpeakerMapping,
   fetchSaveSpeaker,
@@ -36,6 +37,8 @@ const {
   fetchMatchUsersByNames,
   fetchGenerateMeetingTitle,
 } = useMeetingApi()
+
+const { fetchTmplDetail } = useTmplApi()
 
 // ===== 상태 =====
 const meetingList = ref<ApiMeeting[]>([])
@@ -46,6 +49,9 @@ const isLoadingList = ref(false)
 const isLoadingDetail = ref(false)
 const isFinishing = ref(false)
 const isGeneratingTitle = ref(false)
+
+// 회의록 템플릿(필드 정의 포함) — tm000004 등
+const minutesTmpl = ref<TmplBaseInfo | null>(null)
 
 const userList = ref<ApiMeetingUser[]>([])
 const selectedSpeaker = ref<MeetingSpeaker | null>(null)
@@ -155,6 +161,8 @@ const buildSttListFromSpeakers = (apiSpeakers: ApiMeetingSpeaker[]) =>
       text,
     }))
 
+const DEFAULT_MINUTES_TMPL_ID = 'TM000004'
+
 const mapApiDetailToMeeting = (detail: MeetingDetail): Meeting | null => {
   const m = detail.meeting
   if (!m) return null
@@ -172,10 +180,12 @@ const mapApiDetailToMeeting = (detail: MeetingDetail): Meeting | null => {
     steps: deriveSteps(m.status, hasMinutes),
     speakers: mapApiSpeakers(detail.speakers ?? []),
     sttList: buildSttListFromSpeakers(detail.speakers ?? []),
-    minutesContent: buildMinutesHtml(detail.minutes, detail.infographicList),
+    minutesContent:
+      detail.minutes?.editedContent ||
+      buildMinutesHtml(detail.minutes, { infographics: detail.infographicList, tmpl: minutesTmpl.value }),
     fileFormat: 'docx' as MeetingFileFormat,
     recipients: [],
-    templateId: '',
+    templateId: DEFAULT_MINUTES_TMPL_ID,
     language: 'ko',
     createdAt: m.createDt ?? '',
     updatedAt: m.createDt ?? '',
@@ -185,33 +195,95 @@ const mapApiDetailToMeeting = (detail: MeetingDetail): Meeting | null => {
 
 const nlToBr = (escaped: string) => escaped.replace(/\n/g, '<br>')
 
-const buildMinutesHtml = (minutes: MeetingMinutes | null, infographics?: MeetingInfographic[]): string => {
+const parseFlatData = (flatData: string | undefined) => {
+  if (!flatData?.trim()) return {}
+  try {
+    const parsed = JSON.parse(flatData)
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+const normalizeFlatText = (value: unknown): string => {
+  if (value == null) return ''
+  if (Array.isArray(value)) {
+    return value
+      .map((v) => String(v ?? '').trim())
+      .filter(Boolean)
+      .join(', ')
+  }
+  return String(value).trim()
+}
+
+const parseStringArrayField = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value.map((v) => String(v ?? '').trim()).filter(Boolean)
+  }
+  if (typeof value !== 'string') return []
+  const raw = value.trim()
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) return parsed.map((v) => String(v ?? '').trim()).filter(Boolean)
+  } catch {
+    // JSON 배열이 아니면 일반 텍스트로 처리
+  }
+  return []
+}
+
+const renderFlatValueHtml = (value: unknown, options?: { orderedList?: boolean }): string => {
+  const arr = parseStringArrayField(value)
+  if (arr.length > 0) {
+    const tag = options?.orderedList ? 'ol' : 'ul'
+    return `<${tag}>${arr.map((item) => `<li>${nlToBr(escapeHTML(item))}</li>`).join('')}</${tag}>`
+  }
+  const text = normalizeFlatText(value)
+  return text ? `<p>${nlToBr(escapeHTML(text))}</p>` : '<p></p>'
+}
+
+const normalizeFields = (fields: TmplField[] | undefined): TmplField[] => {
+  const safe = Array.isArray(fields) ? fields : []
+  return safe
+    .filter((f) => f && f.useYn === 'Y' && !!f.jsonKey?.trim())
+    .slice()
+    .sort((a, b) => (a.sortOrd ?? 0) - (b.sortOrd ?? 0))
+}
+
+const buildMinutesHtml = (
+  minutes: MeetingMinutes | null,
+  options?: { infographics?: MeetingInfographic[]; tmpl?: TmplBaseInfo | null },
+): string => {
   if (!minutes) return ''
 
-  const summary = minutes.summary ? `<h2>요약</h2><p>${nlToBr(escapeHTML(minutes.summary))}</p>` : ''
-  const decisions = minutes.decisions
-    ? `<h2>결정 사항</h2><ul>${parseJsonArray<string>(minutes.decisions)
-        .map((d) => `<li>${nlToBr(escapeHTML(d))}</li>`)
-        .join('')}</ul>`
-    : ''
-  const todos = minutes.todoList
-    ? `<h2>할 일</h2><ul>${parseJsonArray<{ content: string; due_date: string; collaborators: string }>(
-        minutes.todoList,
-      )
-        .map((t) => {
-          const c = escapeHTML(t.content ?? '')
-          const collab = (t.collaborators ?? '').trim()
-          const due = (t.due_date ?? '').trim()
-          const meta: string[] = []
-          if (collab) meta.push(`담당: ${escapeHTML(collab)}`)
-          if (due) meta.push(`기한: ${escapeHTML(due)}`)
-          const tail = meta.length ? ` <span>(${meta.join(' · ')})</span>` : ''
-          return `<li>${c}${tail}</li>`
-        })
-        .join('')}</ul>`
-    : ''
+  const flat = parseFlatData(minutes.flatData)
+  const tmplHtml = options?.tmpl?.tmplHtml ?? ''
+  const fields = normalizeFields(options?.tmpl?.fields)
 
-  const sortedInfo = [...(infographics ?? [])].sort((a, b) => a.sortOrd - b.sortOrd)
+  // 템플릿 필드가 있으면 field 정의 기반으로 표 구성 (DB 변경 대응)
+  // 없으면 flatData 키를 그대로 표 구성(최소 fallback)
+  const rowsSource =
+    fields.length > 0
+      ? fields.map((f) => ({ label: f.fieldNm, key: f.jsonKey, multilineYn: f.multilineYn }))
+      : Object.keys(flat).map((k) => ({ label: k, key: k, multilineYn: 'Y' }))
+
+  const rows = rowsSource
+    .map((r) => {
+      const value = (flat as Record<string, unknown>)[r.key]
+      // 참석자처럼 JSON 배열 문자열인 케이스는 자동 목록/문단 렌더링 로직이 처리
+      const valueHtml =
+        r.multilineYn === 'N'
+          ? renderFlatValueHtml(normalizeFlatText(value))
+          : renderFlatValueHtml(value, { orderedList: true })
+      if (valueHtml === '<p></p>') return ''
+      return `<tr><th>${escapeHTML(r.label)}</th><td>${valueHtml}</td></tr>`
+    })
+    .filter(Boolean)
+    .join('')
+  const reportTable = rows ? `<table><tbody>${rows}</tbody></table><p></p>` : ''
+
+  // 인포그래픽 (기존 유지)
+  const sortedInfo = [...(options?.infographics ?? [])].sort((a, b) => a.sortOrd - b.sortOrd)
   const infographicBlock =
     sortedInfo.length > 0
       ? `<h2>인포그래픽</h2>${sortedInfo
@@ -224,7 +296,7 @@ const buildMinutesHtml = (minutes: MeetingMinutes | null, infographics?: Meeting
           .join('')}`
       : ''
 
-  return `${summary}${decisions}${todos}${infographicBlock}`
+  return `${tmplHtml}${reportTable}${infographicBlock}`
 }
 
 // ===== 조회 =====
@@ -261,6 +333,17 @@ const handleSelectMeetingDetail = async (meetingId: number) => {
   try {
     const detail = await fetchMeetingDetail(meetingId)
     meetingDetail.value = detail
+
+    // 회의록 템플릿 상세(필드 포함) 캐시 — 템플릿 기반 표 구성
+    if (!minutesTmpl.value?.tmplId) {
+      try {
+        const res = await fetchTmplDetail(DEFAULT_MINUTES_TMPL_ID)
+        minutesTmpl.value = res.data ?? null
+      } catch {
+        minutesTmpl.value = null
+      }
+    }
+
     const mapped = mapApiDetailToMeeting(detail)
     if (!currentMeeting.value || currentMeeting.value.id !== mapped?.id) {
       currentMeeting.value = mapped
@@ -296,29 +379,6 @@ const handleCreateMeeting = async (params: {
   } catch {
     openToast({ message: '회의를 시작하지 못했습니다.', type: 'error' })
     return null
-  }
-}
-
-const handleFinishMeeting = async (params: {
-  meetingId: number
-  fullText: string
-  segments: SpeechSegment[]
-}): Promise<boolean> => {
-  isFinishing.value = true
-  openLoading({ text: '회의록을 생성하는 중...' })
-  try {
-    const res = await fetchFinishMeeting(params)
-    if (!res.successYn) {
-      openToast({ message: '회의 종료에 실패했습니다.', type: 'error' })
-      return false
-    }
-    return true
-  } catch {
-    openToast({ message: '회의 종료에 실패했습니다.', type: 'error' })
-    return false
-  } finally {
-    isFinishing.value = false
-    closeLoading()
   }
 }
 
@@ -366,7 +426,7 @@ const handleSaveMeeting = async (
   options: { silent?: boolean } = {},
 ): Promise<Meeting | null> => {
   try {
-    const res = await fetchSaveMeeting(meeting)
+    const res = await fetchSaveMeetingMinutes(meeting)
     if (res?.data && currentMeeting.value) {
       if (options.silent) {
         currentMeeting.value.updatedAt = res.data.updatedAt
@@ -596,6 +656,7 @@ export const useMeetingStore = () => {
     meetingList,
     meetingDetail,
     currentMeeting,
+    minutesTmpl,
     userList,
     isLoadingList,
     isLoadingDetail,
@@ -611,7 +672,6 @@ export const useMeetingStore = () => {
     handleSelectMeetingList,
     handleSelectMeetingDetail,
     handleCreateMeeting,
-    handleFinishMeeting,
     handleFinishMeetingWithAudio,
     handleSaveMeeting,
     handleDeleteMeeting,

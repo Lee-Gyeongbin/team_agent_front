@@ -18,7 +18,8 @@ utils/chart/
 ├── chart-line.ts           # 라인 차트 (LineChartModule)
 ├── chart-pie.ts            # 파이/도넛 차트 (PieChartModule)
 ├── chart-mixed.ts          # 혼합 차트 (MixedChartModule)
-└── chart-horizontal-bar.ts # 가로 막대 차트 (XBarChartModule)
+├── chart-horizontal-bar.ts # 가로 막대 차트 (XBarChartModule)
+└── chart-radar.ts          # 방사선 차트 (RadarChartModule)
 
 composables/chart/useChart.ts   # 차트 생명주기 관리
 components/ui/UiChart.vue       # 범용 래퍼
@@ -47,12 +48,13 @@ components/ui/UiChart.vue       # 범용 래퍼
 | bar / line / mixed / horizontalBar | `height: 300px` |
 | pie (내부 라벨) | `height: 300px; max-width: 400px` |
 | pie (outerLabel) | `height: 480px; max-width: 480px` |
+| radar | `height: 400px; max-width: 480px` |
 
 ## UiChart Props
 
 | Prop | Type | Default | 설명 |
 |------|------|---------|------|
-| `type` | `'bar' \| 'line' \| 'pie' \| 'mixed' \| 'horizontalBar'` | - | 필수 |
+| `type` | `'bar' \| 'line' \| 'pie' \| 'mixed' \| 'horizontalBar' \| 'radar'` | - | 필수 |
 | `config` | `Record<string, any>` | - | 필수 |
 | `showLegend` | `boolean` | `false` | 범례 표시 |
 
@@ -127,6 +129,25 @@ components/ui/UiChart.vue       # 범용 래퍼
 { categories: [...], data: [...], colorKey: 'bar.set1', colorIndex: 0, maxValue: 100, unit: '%' }
 ```
 
+### 6. Radar (방사선)
+
+```ts
+// 단일 데이터셋
+{ categories: [...], data: [...], color: '#c62828', maxValue: 100, stepSize: 25, fillOpacity: 0.25 }
+
+// 다중 데이터셋
+{ categories: [...], datasets: [{ label, data, colorKey, colorIndex }], maxValue: 100 }
+```
+
+| 옵션 | 설명 |
+|------|------|
+| `color` | hex 직접 지정 (colorKey보다 우선, riskColor 등 그대로 주입) |
+| `colorKey` | ChartColors 경로 (기본 `'radar.primary'`) |
+| `maxValue` / `stepSize` | 축 최대값과 격자 간격 (생략 시 자동) |
+| `showDataLabels` | 점 위 수치 표시 |
+| `fillOpacity` | 채움 투명도 0~1 (기본 0.35) |
+| `pointLabelFormat` | `(name, value, idx) => string` 축 라벨 포맷 콜백 (예: `\`${name} (${value})\``) |
+
 ## 색상 시스템
 
 `colorKey`로 `chart-colors.ts`의 ChartColors 경로 지정, `colorIndex`로 배열 인덱스.
@@ -138,6 +159,8 @@ components/ui/UiChart.vue       # 범용 래퍼
 'line.success'     // 초록
 'pie.regionRatio'  // 8색
 'mixed.set1'       // [보라, 연주황]
+'radar.primary'    // 주황 (단일)
+'radar.set1'       // [주황, 파랑] (다중 비교)
 
 // 직접 지정
 { labelColor: ['#FF6565', '#258CEC'] }
@@ -159,6 +182,8 @@ components/ui/UiChart.vue       # 범용 래퍼
 | `backgroundBar` | chart-config.ts | 세로 막대 배경 (bar, mixed 공통) |
 | `backgroundBarHorizontal` | chart-config.ts | 가로 막대 배경 |
 | `averageLine` | chart-config.ts | 평균선 (bar, line, mixed 공통) |
+
+**참고**: `backgroundBar` / `averageLine`은 카르테시안 좌표계 전용 — radar에는 적용 안 됨.
 
 ## 새 차트 추가 체크리스트
 
@@ -186,4 +211,4 @@ bar: { mySet: ['#FF0000', '#00FF00'] }
 
 ## 가이드 페이지
 
-`/guide/ui-chart` — 5종 라이브 데모 + Props + Config 예시 + 부모 높이 가이드
+`/guide/ui-chart` — 6종 라이브 데모 + Props + Config 예시 + 부모 높이 가이드

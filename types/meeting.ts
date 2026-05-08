@@ -11,12 +11,11 @@ export interface Meeting {
 }
 
 export interface MeetingMinutes {
+  flatData: string
+  editedContent?: string
   minutesId: number
   meetingId: number
   fullText: string
-  summary: string
-  decisions: string // JSON 배열 문자열
-  todoList: string // JSON 배열 문자열 [{due_date, content, collaborators}]
   createDt: string
   modifyDt: string
 }

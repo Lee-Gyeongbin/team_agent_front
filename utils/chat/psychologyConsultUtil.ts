@@ -4,6 +4,7 @@
 // - useChatStore 에서는 import 후 호출만 수행
 // ============================================================
 
+import { useApi } from '~/composables/com/useApi'
 import type { ChatMessage } from '~/types/chat'
 import type {
   PsychologySurveyQuestion,
@@ -230,6 +231,8 @@ Q7 출근압박 / Q13 신체화 / Q14 감정 / Q15 인지 / Q18 워라밸 / Q21 
 
 ### 3. 심리 상태
 정서 / 인지 / 행동
+섹션 3 본문을 모두 작성한 뒤, 반드시 아래 마커를 단독으로 한 줄 출력하세요 (들여쓰기·공백 없이):
+[방사형그래프]
 
 ---
 
@@ -279,6 +282,7 @@ Q7 출근압박 / Q13 신체화 / Q14 감정 / Q15 인지 / Q18 워라밸 / Q21 
 - 비난 금지
 - "열심히" 금지, "잠시 멈춰도 괜찮다"는 허용의 메시지 전달
 - 점수의 계산방법(점수체계, 역코딩 등)은 설명하지 마세요.
+- 섹션 3 본문 마지막에 반드시 [방사형그래프] 한 줄만 출력하세요 (생략 불가, 다른 텍스트 혼입 금지).
 - 문항 번호(Q1, Q5~Q8 등) 및 점수 수치를 답변에 절대 노출하지 마세요. 대신 해당 문항이 나타내는 경험(에너지 고갈, 냉소 등)을 자연스러운 문장으로 서술하세요.
 
 # Markdown Format Rules (절대 준수 — 예외 없음)
@@ -410,7 +414,14 @@ export const PEXELS_LOADING_HTML = '<div class="pexels-loading"><div class="pexe
 
 export const fetchAndInjectPexelsImages = async (
   answer: string,
+  logId?: string,
 ): Promise<{ beforeText: string; afterText: string; gridHtml: string }> => {
+  // logId가 있으면 캐시 먼저 확인 — API 재호출 없이 즉시 반환
+  if (logId) {
+    const cached = getPexelsImageCache(logId)
+    if (cached) return cached
+  }
+
   const matches = [...answer.matchAll(new RegExp(KEYWORD_REGEX.source, KEYWORD_REGEX.flags))]
   if (!matches.length) return { beforeText: answer, afterText: '', gridHtml: '' }
 
@@ -445,7 +456,11 @@ export const fetchAndInjectPexelsImages = async (
     (img): img is { keyword: string; url: string; fullUrl: string } => img.url !== null,
   )
 
-  if (!validImages.length) return { beforeText, afterText, gridHtml: '' }
+  if (!validImages.length) {
+    const emptyResult = { beforeText, afterText, gridHtml: '' }
+    if (logId) setPexelsImageCache(logId, emptyResult)
+    return emptyResult
+  }
 
   // DOM 교체 전에 모든 이미지를 브라우저 캐시에 미리 적재
   // → renderedHtml 갱신 시점에 이미지가 이미 캐시에 있어 레이아웃 재계산 없이 한 번에 렌더링됨
@@ -461,7 +476,186 @@ export const fetchAndInjectPexelsImages = async (
     ),
   )
 
-  return { beforeText, afterText, gridHtml: buildPexelsGrid(validImages) }
+  const result = { beforeText, afterText, gridHtml: buildPexelsGrid(validImages) }
+  if (logId) setPexelsImageCache(logId, result)
+  return result
+}
+
+// ============================================================
+// 인메모리 캐시 (logId 기반, 탭 이동 시 재호출 방지)
+// - Pexels 이미지 그리드: pexelsImageCache
+// - AI 방사형 그래프 base64: aiImageCache
+// - 페이지 새로고침 시 초기화되는 것은 허용
+// ============================================================
+
+type PexelsCacheEntry = { beforeText: string; afterText: string; gridHtml: string }
+const pexelsImageCache = new Map<string, PexelsCacheEntry>()
+
+/** logId에 대한 캐시된 Pexels 이미지 그리드 반환 (없으면 null) */
+export const getPexelsImageCache = (logId: string): PexelsCacheEntry | null => pexelsImageCache.get(logId) ?? null
+
+/** logId에 대해 Pexels 이미지 그리드 결과를 캐시에 저장 */
+export const setPexelsImageCache = (logId: string, entry: PexelsCacheEntry): void => {
+  pexelsImageCache.set(logId, entry)
+}
+
+const aiImageCache = new Map<string, string>()
+
+/** logId에 대한 캐시된 base64 이미지 반환 (없으면 null) */
+export const getAiImageCache = (logId: string): string | null => aiImageCache.get(logId) ?? null
+
+/** logId에 대해 base64 이미지를 캐시에 저장 */
+export const setAiImageCache = (logId: string, base64: string): void => {
+  aiImageCache.set(logId, base64)
+}
+
+// ============================================================
+// [방사형그래프] 마커 파싱 — Pexels 키워드 패턴과 동일한 방식
+// ============================================================
+
+/** 섹션3 끝에 LLM이 출력하는 고정 마커 패턴 */
+const AI_IMAGE_MARKER_REGEX = /^\[방사형그래프\]\s*$/mu
+
+/** AI 이미지 로딩 스피너 HTML — 마커 위치에 즉시 주입 (pexels-loading 재사용) */
+export const AI_IMAGE_LOADING_HTML = '<div class="pexels-loading"><div class="pexels-loading__spinner"></div></div>'
+
+/**
+ * LLM 응답에서 [방사형그래프] 마커를 찾아 앞/뒤 텍스트 분리
+ * - found: true  → before: 섹션1~3, after: 섹션4~7
+ * - found: false → before: 전체 응답, after: ''
+ */
+export const extractAiImageMarkerSection = (answer: string): { before: string; after: string; found: boolean } => {
+  const match = answer.match(AI_IMAGE_MARKER_REGEX)
+  if (!match || match.index == null) return { before: answer, after: '', found: false }
+  return {
+    before: answer.substring(0, match.index),
+    after: answer.substring(match.index + match[0].length),
+    found: true,
+  }
+}
+
+// ============================================================
+// 섹션 1~4 기반 AI 이미지 생성 (백엔드 API 연동)
+// - Pexels 이미지(섹션 7 키워드) 와는 완전히 별개 기능
+// - 섹션 1~4 응답 텍스트를 프롬프트로 백엔드에 전달 → base64 이미지 수신
+// ============================================================
+
+/**
+ * LLM 응답에서 섹션 1(현재 상태 요약) ~ 4(스트레스 유형) 텍스트만 추출
+ * 백엔드 이미지 생성 API의 프롬프트로 사용
+ */
+export const extractSections1to4 = (answer: string): string => {
+  const section5Match = answer.match(/^###\s*5\./m)
+  if (!section5Match?.index) return answer.slice(0, 2000)
+  return answer.substring(0, section5Match.index).trim()
+}
+
+/** 역코딩 대상 문항 번호 (1→4, 2→3, 3→2, 4→1) */
+const REVERSE_SCORE_QNO = new Set([16, 17, 22, 23])
+
+/** 역코딩 변환 */
+const applyReverse = (score: number): number => 5 - score
+
+/** 카테고리 문항 번호 목록 (역코딩 적용 포함) → 소수점 2자리 평균 문자열 반환 */
+const calcCategoryAvg = (qNos: number[], answers: Record<number, number>): string => {
+  const scores = qNos.map((no) => {
+    const raw = answers[no] ?? 2
+    return REVERSE_SCORE_QNO.has(no) ? applyReverse(raw) : raw
+  })
+  const avg = scores.reduce((a, b) => a + b, 0) / scores.length
+  return avg.toFixed(2)
+}
+
+/** LLM 응답 텍스트에서 위험군 클래스명을 읽어 색상 매핑 — SCSS .risk-safe/caution/warning/danger 와 동일 */
+const resolveRiskColorsFromResponse = (sectionsText: string): { riskBg: string; riskColor: string } => {
+  const match = sectionsText.match(/class="risk-badge\s+(risk-\w+)"/)
+  const cls = match?.[1] ?? ''
+  if (cls === 'risk-safe') return { riskBg: '#e8f5e9', riskColor: '#2e7d32' }
+  if (cls === 'risk-caution') return { riskBg: '#fff8e1', riskColor: '#f57f17' }
+  if (cls === 'risk-warning') return { riskBg: '#fff3e0', riskColor: '#e65100' }
+  if (cls === 'risk-danger') return { riskBg: '#ffebee', riskColor: '#c62828' }
+  return { riskBg: '#ffffff', riskColor: '#e53935' } // 파싱 실패 시 흰 배경 빨강
+}
+
+/**
+ * Q1~Q25 응답값으로 방사형 그래프 생성 정형화 프롬프트 빌드
+ * - buildDiagnosticPrompt 의 역코딩 규칙과 동일하게 적용
+ * - 위험군 색상은 LLM 응답의 risk-badge 클래스에서 파싱 (재계산 불필요)
+ */
+const buildRadarChartPrompt = (answers: Record<number, number>, sectionsText: string): string => {
+  const 직무요구 = calcCategoryAvg([1, 2, 3, 4], answers)
+  const 번아웃 = calcCategoryAvg([5, 6, 7, 8], answers)
+  const 조직관계 = calcCategoryAvg([9, 10, 11, 12], answers)
+  const 신체인지 = calcCategoryAvg([13, 14, 15], answers)
+  const 회복력 = calcCategoryAvg([16, 17], answers)
+  const 워라밸 = calcCategoryAvg([18, 19], answers)
+  const 심리안전감 = calcCategoryAvg([20, 21], answers)
+  const 의미동기 = calcCategoryAvg([22, 23, 24, 25], answers)
+
+  const { riskBg, riskColor } = resolveRiskColorsFromResponse(sectionsText)
+
+  return `[방사형 그래프 생성 조건]
+아래 8개 축과 점수를 사용하여 방사형(레이더) 차트를 그려주세요.
+
+축 항목과 점수 (1.0~4.0 척도):
+- 직무요구: ${직무요구}
+- 번아웃: ${번아웃}
+- 조직관계: ${조직관계}
+- 신체인지: ${신체인지}
+- 회복력: ${회복력}
+- 워라밸: ${워라밸}
+- 심리안전감: ${심리안전감}
+- 의미동기: ${의미동기}
+
+레이아웃 규칙:
+- 그래프는 이미지 정중앙에 배치
+- 최소값 1.0 / 최대값 4.0으로 고정
+- 각 축 레이블은 그래프 외곽에만 표시
+- 동심원 기준선 3개 표시 (1.0 / 2.0 / 3.0 / 4.0)
+- 배경 색상: ${riskBg} (안정: #e8f5e9 / 관심: #fff8e1 / 주의: #fff3e0 / 고위험: #ffebee)
+- 그래프 채우기 색상: ${riskColor} 투명도 30% (안정: #2e7d32 / 관심: #f57f17 / 주의: #e65100 / 고위험: #c62828)
+- 그래프 외곽선 색상: ${riskColor} 두께 2px
+
+① 영역별 점수표 — 아래 8개 항목을 두 줄로 나눠 표 형태로 표시:
+  직무요구 {score} | 번아웃 {score} | 조직관계 {score} | 신체인지 {score}
+  회복력 {score}   | 워라밸 {score} | 심리안전감 {score} | 의미동기 {score}
+
+② 위험 수준 한 줄 — 각 점수 옆에 괄호로 표기:
+  (1.0~1.59: 안정 / 1.6~2.29: 관심 / 2.3~2.99: 주의 / 3.0~4.0: 고위험)
+
+③ 핵심 원인 한 줄 — 가장 높은 영역 1~2개:
+  ※ 핵심 영역: {가장높은영역} ({score}) · {두번째영역} ({score})
+
+위 세 줄은 그래프 아래 여백에 동일한 폰트, 동일한 레이아웃으로 항상 출력하세요.
+다른 텍스트, 분석 문장, 권고 문구는 절대 추가하지 마세요
+`
+}
+
+/**
+ * 섹션 1~4 텍스트를 백엔드 AI 이미지 생성 엔드포인트에 POST
+ * @param answers Q1~Q25 원점수 — 전달 시 정확한 카테고리 평균 기반 정형화 프롬프트 사용
+ * @returns base64 이미지 문자열 (data: prefix 포함), 실패 시 null
+ */
+export const fetchPsychologyAiImage = async (
+  sectionsText: string,
+  answers?: Record<number, number>,
+): Promise<string | null> => {
+  try {
+    const { post } = useApi()
+    const radarPrompt =
+      answers && Object.keys(answers).length > 0
+        ? buildRadarChartPrompt(answers, sectionsText)
+        : '위 내용에 해당하는 방사형 그래프 이미지 생성해주세요.'
+    const prompt = `${sectionsText}\n\n${radarPrompt}`
+    const data = await post<{ base64Image?: string; imageData?: string }>('/ai/chatbot/generatePsychologyImage.do', {
+      prompt,
+    })
+    const raw = data.base64Image ?? null
+    if (!raw) return null
+    return raw.startsWith('data:') ? raw : `data:image/png;base64,${raw}`
+  } catch {
+    return null
+  }
 }
 
 // ============================================================

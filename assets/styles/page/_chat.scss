@@ -35,7 +35,7 @@
 .chat-message-list {
   height: 100%;
   overflow-y: auto;
-  padding: 0 0 0 16px;
+  // padding: 0 0 0 16px;
   scrollbar-width: none;
   &::-webkit-scrollbar {
     display: none;
@@ -2068,12 +2068,31 @@
 }
 
 // ============================================================
+// AI 생성 심리 이미지 (AG000010 전용)
+// ============================================================
+.psychology-ai-image {
+  display: block;
+  width: 250px;
+  max-width: 480px;
+  height: auto;
+  border-radius: 12px;
+  margin: 16px 0;
+  cursor: zoom-in;
+  transition: opacity 0.15s;
+  justify-self: center;
+  &:hover {
+    opacity: 0.85;
+  }
+}
+
+// ============================================================
 // Pexels 이미지 로딩 스피너 (스트리밍 완료 ~ 이미지 조회 완료 사이)
 // ============================================================
 .pexels-loading {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
   height: 280px;
   margin: 16px 0;
 
