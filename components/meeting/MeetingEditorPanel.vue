@@ -233,7 +233,7 @@ const editor = useEditor({
     triggerAutoSave(html)
   },
   editorProps: {
-    attributes: { class: 'meeting2-editor-body' },
+    attributes: { class: 'meeting2-editor-body', spellcheck: 'false' },
     handleDrop(_view, event, _slice, moved) {
       if (moved) return false
       const dragEvent = event as DragEvent

@@ -562,6 +562,7 @@ const editor = useEditor({
   editorProps: {
     attributes: {
       class: 'library-report-editor-body',
+      spellcheck: 'false',
     },
     // 클립보드에서 이미지 파일 붙여넣기
     handlePaste(view, event) {

@@ -1262,7 +1262,9 @@
     display: flex;
     align-items: center;
     gap: $spacing-xs;
-    margin: $spacing-lg 0 $spacing-sm;
+    margin: $spacing-xl 0 $spacing-sm;
+    padding-bottom: 8px;
+    border-bottom: 1px solid $color-border;
     @include typo($body-medium-bold);
     color: var(--color-primary);
 
@@ -1300,7 +1302,7 @@
     li {
       position: relative;
       padding-left: 18px;
-      margin-bottom: 6px;
+      margin-bottom: 10px;
       @include typo($body-small, $color-text-dark);
       line-height: 1.7;
 
@@ -1318,7 +1320,7 @@
 
     // 중첩 리스트 — 1단 가정이지만 들여쓰기는 살림
     ul {
-      margin: 6px 0 0;
+      margin: 8px 0 0;
       padding-left: 12px;
     }
   }
@@ -1329,7 +1331,7 @@
     padding-left: 26px;
 
     li {
-      margin-bottom: $spacing-xs;
+      margin-bottom: 8px;
       @include typo($body-medium, $color-text-dark);
       line-height: 1.7;
     }
@@ -1405,7 +1407,7 @@
 
     // 정보 표 라벨 컬럼 — tbody 행의 첫 번째 th 만 폭 고정
     tbody tr > th:first-child {
-      width: 96px;
+      width: 120px;
     }
 
     // Tiptap 표 컬럼 리사이즈 핸들
