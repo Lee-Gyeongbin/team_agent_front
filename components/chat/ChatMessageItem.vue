@@ -399,11 +399,11 @@ const onSelectCategoryFromActions = (categoryId: string) => {
 </script>
 
 <style lang="scss" scoped>
-// guide/ui-chart «Radar + StressScoreGrid» — 차트·스트레스 지표 동일 가로 80% + 가운데
+// guide/ui-chart «Radar + StressScoreGrid» — 전체 영역 약 80% 스케일 (576≈720×0.8, 320≈400×0.8)
 .chat-psychology-radar-block {
-  max-width: 720px;
+  max-width: 576px;
   width: 100%;
-  margin: 16px auto;
+  margin: 12px auto;
 }
 
 .chat-psychology-radar-chart,
@@ -414,7 +414,7 @@ const onSelectCategoryFromActions = (categoryId: string) => {
 }
 
 .chat-psychology-radar-chart {
-  height: 400px;
+  height: 320px;
 }
 
 .chat-psychology-radar-metrics {

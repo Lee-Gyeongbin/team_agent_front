@@ -705,3 +705,12 @@
 .icon-meeting-mail {
   @include icon-file-bg('meeting-mail');
 }
+
+// ===================================
+// 에디터 툴바 아이콘
+// ===================================
+
+// HTML 소스 보기 토글
+.icon-code {
+  @include icon-file-bg('code');
+}
