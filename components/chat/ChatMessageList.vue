@@ -8,7 +8,7 @@
       <div class="chat-message-list-inner">
         <ChatMessageItem
           v-for="msg in messages"
-          :key="`${msg.logId}-${msg.type}`"
+          :key="`${msg.id ?? msg.logId}-${msg.type}`"
           :data-log-id="msg.logId"
           :message="msg"
           :knowledge-list="knowledgeList"
