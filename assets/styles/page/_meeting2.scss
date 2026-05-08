@@ -1372,6 +1372,7 @@
       padding: 10px 12px;
       border: 1px solid $color-border;
       @include typo($body-medium, $color-text-dark);
+      font-size: 15px;
       line-height: 1.6;
       vertical-align: middle;
       position: relative;
@@ -1398,6 +1399,7 @@
     th {
       background: $color-background;
       @include typo($body-medium-bold, $color-text-dark);
+      font-size: 15px;
       text-align: center;
     }
 
