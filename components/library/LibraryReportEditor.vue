@@ -1064,7 +1064,8 @@ const onEditorClick = (e: MouseEvent) => {
   line-height: 1.6;
   color: $color-text-secondary;
   resize: none;
-  white-space: pre;
+  white-space: pre-wrap;
+  word-break: break-all;
   @include custom-scrollbar(4px);
 }
 

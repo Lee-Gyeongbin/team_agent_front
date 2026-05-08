@@ -1177,7 +1177,8 @@
   line-height: 1.6;
   color: $color-text-dark;
   resize: none;
-  white-space: pre;
+  white-space: pre-wrap;
+  word-break: break-all;
   @include custom-scrollbar;
 }
 
