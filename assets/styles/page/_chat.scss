@@ -2023,23 +2023,23 @@
   line-height: 1.6;
 
   &.risk-safe {
-    background: #e8f5e9;
-    color: #2e7d32;
+    background: rgba($color-success, 0.12);
+    color: $color-success;
   }
 
   &.risk-caution {
-    background: #fff8e1;
-    color: #f57f17;
+    background: rgba($color-info, 0.12);
+    color: $color-info;
   }
 
   &.risk-warning {
-    background: #fff3e0;
-    color: #e65100;
+    background: rgba($color-warning, 0.12);
+    color: $color-warning;
   }
 
   &.risk-danger {
-    background: #ffebee;
-    color: #c62828;
+    background: rgba($color-error, 0.12);
+    color: $color-error;
   }
 }
 
@@ -2050,19 +2050,19 @@
   color: $color-text-secondary;
 
   &--safe {
-    color: #2e7d32;
+    color: $color-success;
   }
 
   &--caution {
-    color: #f57f17;
+    color: $color-info;
   }
 
   &--warning {
-    color: #e65100;
+    color: $color-warning;
   }
 
   &--danger {
-    color: #c62828;
+    color: $color-error;
   }
 }
 

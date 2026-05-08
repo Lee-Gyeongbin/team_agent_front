@@ -39,20 +39,43 @@
             @close="emit('on-lunch-card-close', message.logId)"
           />
           <!-- eslint-disable vue/no-v-html — toHtmlContent 내 안전 처리 적용 -->
-          <!-- AG000010 스트리밍 중 마커 발견: 스피너를 Vue 요소로 분리해 DOM 유지 -->
-          <template v-else-if="message.agentId === 'AG000010' && streamingSpinnerVisible">
+          <!-- AG000010: 마커 발견 → 섹션1~3 / 차트 슬롯 / 섹션4~7 분리 렌더 -->
+          <template v-else-if="message.agentId === 'AG000010' && markerFound">
             <div
               class="message-content markdown-body"
               @click="onMarkdownClick"
-              v-html="streamingBeforeHtml"
+              v-html="beforeChartHtml"
             />
-            <div class="pexels-loading">
+            <!-- 차트 슬롯: 로딩 스피너 → 차트 컴포넌트 (퍼블리싱 후 연결) -->
+            <div
+              v-if="radarChartLoading"
+              class="pexels-loading"
+            >
               <div class="pexels-loading__spinner" />
+            </div>
+            <div
+              v-else-if="radarChartData"
+              class="chat-psychology-radar-block"
+            >
+              <div class="chat-psychology-radar-chart">
+                <UiChart
+                  type="radar"
+                  :config="psychologyRadarChartConfig"
+                />
+              </div>
+              <div class="chat-psychology-radar-metrics">
+                <StressScoreGrid
+                  :items="psychologyStressItems"
+                  :core-areas-text="radarChartData.coreAreasSummary"
+                  :risk-summary="radarChartData.riskSummary"
+                  :risk-color="radarChartData.riskColor"
+                />
+              </div>
             </div>
             <div
               class="message-content markdown-body"
               @click="onMarkdownClick"
-              v-html="streamingAfterHtml"
+              v-html="afterChartHtml"
             />
           </template>
           <div
@@ -184,18 +207,22 @@
 
 <script setup lang="ts">
 import type { ChatMessage, KnowledgeItem, LunchAgentFormPayload, LunchRecommendationItem } from '~/types/chat'
+import type { StressScoreItem } from '~/types/stress'
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import type { Agent } from '~/types/agent'
 import {
   fetchAndInjectPexelsImages,
   extractKeywordSection,
+  removeKeywordLines,
   PEXELS_LOADING_HTML,
   extractAiImageMarkerSection,
-  AI_IMAGE_LOADING_HTML,
   extractSections1to4,
-  fetchPsychologyAiImage,
-  getAiImageCache,
-  setAiImageCache,
+  fetchPsychologyRadarChartData,
+  getRadarChartCache,
+  setRadarChartCache,
+  buildStressItemsFromRadarChartData,
+  buildPsychologyRadarUiChartConfig,
+  type RadarChartData,
 } from '~/utils/chat/psychologyConsultUtil'
 
 const { chatIndexAgents } = useChatStore()
@@ -232,36 +259,37 @@ const pexelsModalUrl = ref('')
 
 const onMarkdownClick = (e: MouseEvent) => {
   const target = e.target as HTMLElement
-  if (
-    target.tagName === 'IMG' &&
-    (target.classList.contains('pexels-img') || target.classList.contains('psychology-ai-image'))
-  ) {
+  if (target.tagName === 'IMG' && target.classList.contains('pexels-img')) {
     pexelsModalUrl.value = (target as HTMLImageElement).dataset.full ?? (target as HTMLImageElement).src
   }
 }
 
 // ── AG000010 렌더 상태 ────────────────────────────────────────────────────
-let markerSplit: { before: string; after: string; found: boolean } | null = null
-let aiImageHtml = ''
-let pexelsSplit: { beforeKw: string; gridHtml: string; afterKw: string } | null = null
+/** [방사형그래프] 마커 발견 여부 — 템플릿 분기 조건 */
+const markerFound = ref(false)
+/** 마커 이전 구간 HTML (섹션 1~3) */
+const beforeChartHtml = ref('')
+/** 마커 이후 구간 HTML (섹션 4~7, Pexels 포함) */
+const afterChartHtml = ref('')
+/** 차트 API 요청 중 여부 — 스트리밍 시작부터 응답 완료까지 true */
+const radarChartLoading = ref(false)
+/**
+ * 차트 컴포넌트 주입 데이터
+ * — API 응답 후 채워짐, 차트 컴포넌트 퍼블리싱 후 템플릿에서 바인딩
+ */
+const radarChartData = ref<RadarChartData | null>(null)
+
+/** guide/ui-chart Radar + StressScoreGrid 동일 구성 */
+const psychologyStressItems = computed<StressScoreItem[]>(() =>
+  radarChartData.value ? buildStressItemsFromRadarChartData(radarChartData.value) : [],
+)
+
+const psychologyRadarChartConfig = computed<Record<string, unknown>>(() =>
+  radarChartData.value ? buildPsychologyRadarUiChartConfig(radarChartData.value) : {},
+)
+
 let pexelsFetchDone = false
-let aiImageFetchDone = false
-
-// 스트리밍 중 마커 발견: 스피너를 Vue 요소로 분리해 DOM 재생성·애니메이션 리셋 방지
-const streamingSpinnerVisible = ref(false)
-const streamingBeforeHtml = ref('')
-const streamingAfterHtml = ref('')
-
-const toAiImgTag = (src: string) =>
-  `<img class="psychology-ai-image" src="${src}" data-full="${src}" alt="AI 생성 심리 이미지">`
-
-const rebuildPsychHtml = () => {
-  if (!markerSplit || !pexelsSplit) return
-  const { before, found } = markerSplit
-  const { beforeKw, gridHtml, afterKw } = pexelsSplit
-  const pexelsSection = toHtmlContent(beforeKw) + gridHtml + toHtmlContent(afterKw)
-  renderedHtml.value = found ? toHtmlContent(before) + aiImageHtml + pexelsSection : pexelsSection
-}
+let radarChartFetchDone = false
 
 watch(
   () => [props.message.rContent, props.message.agentId, props.message.isStreaming] as const,
@@ -273,56 +301,56 @@ watch(
       return
     }
 
-    // 스트리밍 중: before/after ref를 독립 갱신해 스피너 DOM 유지
-    if (isStreaming) {
-      const { found, before, after } = extractAiImageMarkerSection(raw)
-      if (found) {
-        streamingSpinnerVisible.value = true
-        streamingBeforeHtml.value = toHtmlContent(before)
-        streamingAfterHtml.value = toHtmlContent(after)
-      } else {
-        renderedHtml.value = toHtmlContent(raw)
-      }
+    const { found, before, after } = extractAiImageMarkerSection(raw)
+
+    if (!found) {
+      // 마커 미발견: 스트리밍 중에도 전체 내용 실시간 렌더
+      renderedHtml.value = toHtmlContent(removeKeywordLines(raw))
       return
     }
 
-    streamingSpinnerVisible.value = false
-    if (!raw) return
+    // ── [방사형그래프] 마커 발견 ──────────────────────────────────────────
+    markerFound.value = true
 
-    // 최초 1회: 마커·Pexels 구간 분리 및 초기 렌더
-    if (!markerSplit) {
-      markerSplit = extractAiImageMarkerSection(raw)
-      const pexelsTarget = markerSplit.found ? markerSplit.after : raw
-      const { beforeText, afterText } = extractKeywordSection(pexelsTarget)
-      pexelsSplit = { beforeKw: beforeText, gridHtml: PEXELS_LOADING_HTML, afterKw: afterText }
+    // 섹션 1~3 실시간 갱신 (스트리밍 중에도 계속 업데이트)
+    beforeChartHtml.value = toHtmlContent(removeKeywordLines(before))
 
-      if (markerSplit.found) {
-        const cached = getAiImageCache(props.message.logId)
-        aiImageHtml = cached ? toAiImgTag(cached) : AI_IMAGE_LOADING_HTML
-        if (cached) aiImageFetchDone = true
-      }
-      rebuildPsychHtml()
+    // 섹션 4~7: Pexels 처리 완료 전까지 keyword 라인만 제거한 텍스트 표시
+    if (!pexelsFetchDone) {
+      afterChartHtml.value = toHtmlContent(removeKeywordLines(after))
     }
 
-    // Pexels 이미지 그리드 (1회 — logId 캐시 히트 시 API 재호출 없음)
+    // 마커 최초 발견 시 즉시 차트 데이터 요청 (스트리밍 완료를 기다리지 않음)
+    // — 마커 등장 시점에 섹션 1~3 완성, surveyAnswers는 클라이언트 계산이므로 즉시 호출 가능
+    if (!radarChartFetchDone) {
+      radarChartFetchDone = true
+      radarChartLoading.value = true
+
+      const cached = getRadarChartCache(props.message.logId)
+      if (cached) {
+        radarChartData.value = cached
+        radarChartLoading.value = false
+      } else {
+        fetchPsychologyRadarChartData(extractSections1to4(raw), props.message.surveyAnswers!).then((chartData) => {
+          radarChartLoading.value = false
+          if (chartData) {
+            setRadarChartCache(props.message.logId, chartData)
+            radarChartData.value = chartData
+          }
+        })
+      }
+    }
+
+    // Pexels 이미지: 키워드 섹션이 완성되는 스트리밍 완료 후에만 처리
+    if (isStreaming) return
+
+    // ── 스트리밍 완료 이후 1회 ────────────────────────────────────────────
     if (!pexelsFetchDone) {
       pexelsFetchDone = true
-      fetchAndInjectPexelsImages(markerSplit.found ? markerSplit.after : raw, props.message.logId).then(
-        ({ beforeText: bt, afterText: at, gridHtml }) => {
-          pexelsSplit = { beforeKw: bt, gridHtml, afterKw: at }
-          rebuildPsychHtml()
-        },
-      )
-    }
-
-    // AI 이미지 생성 — 캐시 미스 시에만 API 호출 (1회)
-    if (!aiImageFetchDone && markerSplit.found) {
-      aiImageFetchDone = true
-      // answer 메시지에 주입된 surveyAnswers → 정확한 수치 기반 방사형 그래프 프롬프트 생성
-      fetchPsychologyAiImage(extractSections1to4(raw), props.message.surveyAnswers).then((base64) => {
-        if (base64) setAiImageCache(props.message.logId, base64)
-        aiImageHtml = base64 ? toAiImgTag(base64) : ''
-        rebuildPsychHtml()
+      const { beforeText, afterText } = extractKeywordSection(after)
+      afterChartHtml.value = toHtmlContent(beforeText) + PEXELS_LOADING_HTML + toHtmlContent(afterText)
+      fetchAndInjectPexelsImages(after, props.message.logId).then(({ beforeText: bt, afterText: at, gridHtml }) => {
+        afterChartHtml.value = toHtmlContent(bt) + gridHtml + toHtmlContent(at)
       })
     }
   },
@@ -356,3 +384,27 @@ const onSelectCategoryFromActions = (categoryId: string) => {
   emit('on-select-category', props.message.logId, categoryId, categoryNm)
 }
 </script>
+
+<style lang="scss" scoped>
+// guide/ui-chart «Radar + StressScoreGrid» — 차트·스트레스 지표 동일 가로 80% + 가운데
+.chat-psychology-radar-block {
+  max-width: 720px;
+  width: 100%;
+  margin: 16px auto;
+}
+
+.chat-psychology-radar-chart,
+.chat-psychology-radar-metrics {
+  width: 80%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.chat-psychology-radar-chart {
+  height: 400px;
+}
+
+.chat-psychology-radar-metrics {
+  margin-top: $spacing-md;
+}
+</style>

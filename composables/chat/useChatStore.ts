@@ -618,6 +618,12 @@ export const useChatStore = () => {
     const answers = { ...surveyAnswers.value }
     const sent = await createChatRoom(prompt)
     if (sent) {
+      // createChatRoom은 clearMessagesBefore:true로 초기화 후 question+answer placeholder만 남김
+      // → answer 메시지에 surveyAnswers 주입 (방사형 차트 데이터 요청 프롬프트 생성에 필요)
+      const answerMsg = messages.value.find((m) => m.type === 'answer')
+      if (answerMsg && Object.keys(answers).length > 0) {
+        answerMsg.surveyAnswers = { ...answers }
+      }
       addInlineSurveyMessage(answers)
       registerSurveyRoom(chatRoom.value.roomId)
       handleClosePsychologySurvey()
