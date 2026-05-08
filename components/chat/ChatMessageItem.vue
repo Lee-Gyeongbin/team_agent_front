@@ -324,9 +324,9 @@ watch(
     // 섹션 1~3 실시간 갱신 (스트리밍 중에도 계속 업데이트)
     beforeChartHtml.value = toHtmlContent(removeKeywordLines(before))
 
-    // 섹션 4~7: Pexels 처리 완료 전까지 keyword 라인만 제거한 텍스트 표시
-    if (!pexelsFetchDone) {
-      afterChartHtml.value = toHtmlContent(removeKeywordLines(after))
+    // 섹션 4~7: 스트리밍 중에는 Pexels 키워드 줄을 제거하지 않고 원문 표시 — 완료 후에만 이미지 주입
+    if (!pexelsFetchDone && isStreaming) {
+      afterChartHtml.value = toHtmlContent(after)
     }
 
     // 마커 최초 발견 시 차트 데이터 — 캐시는 API 대기 없이 바로 올 수 있어 JSON 주입만 짧게 지연
