@@ -232,7 +232,8 @@ Q7 출근압박 / Q13 신체화 / Q14 감정 / Q15 인지 / Q18 워라밸 / Q21 
 ---
 
 ### 3. 심리 상태
-정서 / 인지 / 행동
+정서·인지·행동 세 항목을 다룰 때, **각 항목 앞에 반드시 말머리 기호(\`- \`)를 붙이고** 한 줄 이상으로 서술하세요.
+예: \`- 정서: …\`, \`- 인지: …\`, \`- 행동: …\` (하위 설명이 있으면 추가 줄도 모두 \`- \`로 시작)
 섹션 3 본문을 모두 작성한 뒤, 반드시 아래 마커를 단독으로 한 줄 출력하세요 (들여쓰기·공백 없이):
 [방사형그래프]
 
@@ -284,7 +285,7 @@ Q7 출근압박 / Q13 신체화 / Q14 감정 / Q15 인지 / Q18 워라밸 / Q21 
 - 비난 금지
 - "열심히" 금지, "잠시 멈춰도 괜찮다"는 허용의 메시지 전달
 - 점수의 계산방법(점수체계, 역코딩 등)은 설명하지 마세요.
-- 섹션 3 본문 마지막에 반드시 [방사형그래프] 한 줄만 출력하세요 (생략 불가, 다른 텍스트 혼입 금지).
+- 섹션 3: 정서·인지·행동은 각 항목 \`- \` 말머리 목록으로 작성하고, 본문 마지막에 반드시 [방사형그래프] 한 줄만 출력하세요 (생략 불가, 다른 텍스트 혼입 금지).
 - 문항 번호(Q1, Q5~Q8 등) 및 점수 수치를 답변에 절대 노출하지 마세요. 대신 해당 문항이 나타내는 경험(에너지 고갈, 냉소 등)을 자연스러운 문장으로 서술하세요.
 
 # Markdown Format Rules (절대 준수 — 예외 없음)
@@ -574,6 +575,16 @@ export const stressLevelFromPsychologyRadarScore100 = (score: number): StressLev
   return '고위험'
 }
 
+/** StressScoreGrid `.item-level` / 레이더 축 라벨 — SCSS $color-success·info·warning·error 와 동일 */
+export const STRESS_LEVEL_LABEL_HEX: Record<StressLevel, string> = {
+  안정: '#22c55e',
+  관심: '#3b82f6',
+  주의: '#f59e0b',
+  고위험: '#ef4444',
+}
+
+export const hexForStressLevel = (level: StressLevel): string => STRESS_LEVEL_LABEL_HEX[level] ?? '#64748b'
+
 /** RadarChartData → StressScoreGrid props.items */
 export const buildStressItemsFromRadarChartData = (data: RadarChartData): StressScoreItem[] => {
   return PSYCHOLOGY_RADAR_SCORE_KEYS.map((key) => {
@@ -592,6 +603,7 @@ export const buildStressItemsFromRadarChartData = (data: RadarChartData): Stress
  */
 export const buildPsychologyRadarUiChartConfig = (data: RadarChartData): Record<string, unknown> => {
   const items = buildStressItemsFromRadarChartData(data)
+  const levelColors = items.map((i) => hexForStressLevel(i.level))
   return {
     categories: items.map((i) => i.name),
     data: items.map((i) => i.value),
@@ -601,6 +613,10 @@ export const buildPsychologyRadarUiChartConfig = (data: RadarChartData): Record<
     fillOpacity: 0.25,
     pointLabelFormat: (name: string, value: number) =>
       `${name} (${typeof value === 'number' && Number.isFinite(value) ? value.toFixed(2) : String(value)})`,
+    /** 축 라벨(이름+점수) — 항목별 위험등급 색 */
+    pointLabelColors: levelColors,
+    /** 꼭짓점(호버 포함) — 라인·면은 `color`(종합 riskColor) 유지 */
+    pointBackgroundColors: levelColors,
   }
 }
 
