@@ -1176,6 +1176,8 @@ const onEditorClick = (e: MouseEvent) => {
 </script>
 
 <style lang="scss" scoped>
+@use '@/assets/styles/utils/doc-content' as *;
+
 .library-report-editor {
   display: flex;
   flex-direction: column;
@@ -1389,172 +1391,9 @@ const onEditorClick = (e: MouseEvent) => {
 }
 
 // ===== ProseMirror 본문 스타일 =====
+// 회의록(.meeting2-editor-body) 과 동일한 mixin 으로 통일 — utils/_doc-content.scss
 :deep(.library-report-editor-body) {
-  min-height: 100%;
-  padding: $spacing-md;
-  outline: none;
-
-  // placeholder
-  p.is-editor-empty:first-child::before {
-    content: attr(data-placeholder);
-    float: left;
-    color: $color-text-disabled;
-    pointer-events: none;
-    height: 0;
-  }
-
-  // 보고서 2열 표 — 에디터 내용으로 배치
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed;
-    border: 1px solid #e2e8f0;
-    border-radius: $border-radius-base;
-    margin: 0 0 $spacing-sm;
-
-    // 라벨 열 (th) — 좌측 고정 폭 (colwidth 없을 때 fallback; col[width] 있으면 col이 우선)
-    th {
-      width: 20%;
-      padding: $spacing-xs $spacing-sm;
-      background: #f8fafc;
-      border-right: 1px solid #e2e8f0;
-      border-bottom: 1px solid #e2e8f0;
-      vertical-align: top;
-      text-align: left;
-      font-size: $font-size-sm;
-      font-weight: $font-weight-semibold;
-      color: $color-text-secondary;
-      position: relative;
-    }
-
-    // 값 열 (td) — 나머지 폭
-    td {
-      padding: $spacing-sm $spacing-md;
-      background: #fff;
-      border-bottom: 1px solid #e2e8f0;
-      vertical-align: top;
-      font-size: $font-size-sm;
-      color: $color-text-secondary;
-      line-height: 1.55;
-      position: relative;
-    }
-
-    // 셀 안 단락 마진 리셋
-    th p,
-    td p {
-      margin: 0 0 6px;
-      font-size: inherit;
-      line-height: inherit;
-
-      &:last-child {
-        margin-bottom: 0;
-      }
-    }
-
-    // Tiptap 셀 선택 시 하이라이트
-    th.selectedCell::after,
-    td.selectedCell::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: rgba(var(--color-primary-rgb), 0.1);
-      pointer-events: none;
-    }
-
-    // 컬럼 리사이즈 핸들
-    .column-resize-handle {
-      position: absolute;
-      right: -2px;
-      top: 0;
-      bottom: -2px;
-      width: 4px;
-      background: var(--color-primary);
-      pointer-events: none;
-    }
-  }
-
-  // 표 바깥 일반 컨텐츠
-  h1,
-  h2,
-  h3 {
-    margin: $spacing-md 0 $spacing-sm;
-    font-weight: $font-weight-bold;
-    color: $color-text-heading;
-
-    &:first-child {
-      margin-top: 0;
-    }
-  }
-
-  h1 {
-    font-size: $font-size-xl;
-  }
-  h2 {
-    font-size: $font-size-lg;
-  }
-  h3 {
-    font-size: $font-size-base;
-  }
-
-  p {
-    margin: 0 0 8px;
-    &:last-child {
-      margin-bottom: 0;
-    }
-  }
-
-  ul {
-    list-style: disc outside;
-    margin: 0 0 $spacing-sm;
-    padding-left: 1.4em;
-
-    li {
-      margin-bottom: 2px;
-    }
-    ul {
-      list-style: circle outside;
-      margin: 2px 0 0;
-    }
-  }
-
-  ol {
-    list-style: decimal outside;
-    margin: 0 0 $spacing-sm;
-    padding-left: 1.4em;
-
-    li {
-      margin-bottom: 2px;
-    }
-    ol {
-      list-style: lower-alpha outside;
-      margin: 2px 0 0;
-    }
-  }
-
-  li > p {
-    margin: 0;
-    line-height: 1.55;
-  }
-
-  blockquote {
-    margin: 0 0 $spacing-sm;
-    padding: $spacing-xs $spacing-sm;
-    border-left: 3px solid var(--color-primary);
-    background: rgba(var(--color-primary-rgb), 0.04);
-    font-style: italic;
-  }
-
-  a {
-    color: var(--color-primary);
-    text-decoration: underline;
-  }
-
-  img {
-    max-width: 100%;
-    height: auto;
-    display: block;
-    border-radius: $border-radius-sm;
-  }
+  @include doc-content-styles;
 }
 
 // ===== 표 floating 툴바 =====
