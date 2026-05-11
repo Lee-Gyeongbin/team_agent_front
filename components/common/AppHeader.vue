@@ -45,95 +45,7 @@
       </div>
 
       <!-- 알림 -->
-      <div
-        ref="notificationWrapRef"
-        class="notification-wrap"
-      >
-        <button
-          class="header-btn notif-trigger-btn"
-          :class="{ 'is-active': isNotificationOpen }"
-          title="알림"
-          @click="toggleNotification"
-        >
-          <i class="icon-notification size-20" />
-          <span
-            v-if="unreadCount > 0"
-            class="notif-badge"
-          />
-        </button>
-
-        <!-- 알림 패널 -->
-        <div
-          v-if="isNotificationOpen"
-          class="notification-panel"
-        >
-          <div class="notif-panel-header">
-            <span class="notif-panel-title">
-              알림
-              <em
-                v-if="unreadCount > 0"
-                class="notif-count"
-                >{{ unreadCount }}</em
-              >
-            </span>
-            <button
-              class="notif-read-all-btn"
-              @click="handleMarkAllRead"
-            >
-              모두 읽음
-            </button>
-          </div>
-
-          <div
-            v-if="notifyList.length > 0"
-            class="notif-list"
-          >
-            <div
-              v-for="item in notifyList"
-              :key="item.notifyId"
-              class="notif-item"
-              :class="{ 'is-unread': item.readYn === 'N' }"
-              @click="handleMarkRead(item.notifyId)"
-            >
-              <div
-                class="notif-avatar"
-                :style="{ backgroundColor: getAvatarColor(item.sendUserId) }"
-              >
-                {{ getInitials(item) }}
-              </div>
-              <div class="notif-body">
-                <div class="notif-meta">
-                  <span class="notif-sender">{{ item.sendUserNm ?? item.sendUserId }}</span>
-                  <span class="notif-time">{{ item.createDt }}</span>
-                </div>
-                <div class="notif-title">{{ item.title }}</div>
-                <p class="notif-message">{{ item.content }}</p>
-              </div>
-              <button
-                class="notif-dismiss-btn"
-                title="닫기"
-                @click.stop="handleDismissNotify(item.notifyId)"
-              >
-                <i class="icon-close size-12" />
-              </button>
-            </div>
-          </div>
-
-          <div
-            v-else-if="notifyLoading"
-            class="notif-empty"
-          >
-            알림을 불러오는 중입니다...
-          </div>
-
-          <div
-            v-else
-            class="notif-empty"
-          >
-            새로운 알림이 없습니다.
-          </div>
-        </div>
-      </div>
+      <AppNotificationPanel />
 
       <!-- 유저 프로필 -->
       <button
@@ -203,33 +115,11 @@ const onSelectTheme = (theme: ThemeColor) => {
   isThemePickerOpen.value = false
 }
 
-// ── 알림 ──────────────────────────────────────────────
-const {
-  notifyList,
-  notifyLoading,
-  unreadCount,
-  getInitials,
-  getAvatarColor,
-  handleMarkRead,
-  handleMarkAllRead,
-  handleDismissNotify,
-} = useNotifyStore()
-
-const isNotificationOpen = ref(false)
-const notificationWrapRef = ref<HTMLElement | null>(null)
-
-const toggleNotification = () => {
-  isNotificationOpen.value = !isNotificationOpen.value
-}
-
-// ── 외부 클릭 시 닫기 ─────────────────────────────────
+// ── 외부 클릭 시 닫기 (테마 피커) ─────────────────────
 const onClickOutside = (e: MouseEvent) => {
   const themeWrap = document.querySelector('.theme-picker-wrap')
   if (themeWrap && !themeWrap.contains(e.target as Node)) {
     isThemePickerOpen.value = false
-  }
-  if (notificationWrapRef.value && !notificationWrapRef.value.contains(e.target as Node)) {
-    isNotificationOpen.value = false
   }
 }
 
