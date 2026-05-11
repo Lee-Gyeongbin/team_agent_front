@@ -461,11 +461,57 @@ import { TextStyle } from '@tiptap/extension-text-style'
 import { Color } from '@tiptap/extension-color'
 import { Highlight } from '@tiptap/extension-highlight'
 import { TextAlign } from '@tiptap/extension-text-align'
+import { Heading } from '@tiptap/extension-heading'
+import { Paragraph } from '@tiptap/extension-paragraph'
 import { ResizableImage } from '~/composables/meeting/resizableImage'
 import { TableShortcuts } from '~/composables/meeting/tableShortcuts'
 import { FontSize } from '~/composables/meeting/fontSize'
 import { useEditorSourceView } from '~/composables/com/useEditorSourceView'
 import type { ChainedCommands } from '@tiptap/vue-3'
+import type { Editor as CoreEditor } from '@tiptap/core'
+import { escapeHTML } from '~/utils/global/htmlUtil'
+
+/** 템플릿 폼에서 표 행과 매핑 — TmplFormPanel `TmplField.fieldId` */
+const TMPL_FIELD_ROW_ATTR = 'data-tmpl-field-id'
+/** 여러 줄(section) 블록 — h2 / 다음 p 한 쌍 */
+const TMPL_FIELD_MULTILINE_H2 = 'data-tmpl-field-multiline'
+const TMPL_FIELD_MULTILINE_P = 'data-tmpl-field-multiline-p'
+
+const escapeAttr = (s: string) => String(s).replaceAll('&', '&amp;').replaceAll('"', '&quot;')
+
+const getOrCreateTbody = (table: HTMLTableElement, doc: Document): HTMLTableSectionElement => {
+  let tbody = table.querySelector('tbody')
+  if (tbody) return tbody
+  const directRows = Array.from(table.children).filter((c) => c.tagName === 'TR')
+  tbody = doc.createElement('tbody')
+  directRows.forEach((tr) => tbody!.appendChild(tr))
+  table.appendChild(tbody)
+  return tbody
+}
+
+const buildTmplFieldTableRowMarkup = (fieldId: string, jsonKey: string, fieldNm: string) => {
+  const k = jsonKey.trim()
+  const nm = fieldNm.trim()
+  const labelKey = `${k}_label`
+  const placeholder = `{{${escapeHTML(k)}}}`
+  return (
+    `<tr ${TMPL_FIELD_ROW_ATTR}="${escapeAttr(fieldId)}">` +
+    `<th data-label-key="${escapeAttr(labelKey)}"><p>${escapeHTML(nm)}</p></th>` +
+    `<td data-value-key="${escapeAttr(k)}"><p>${placeholder}</p></td>` +
+    `</tr>`
+  )
+}
+
+/** 여러 줄(section) — h2(항목명) + p({{jsonKey}}), 표와 구분 */
+const buildTmplMultilineSectionMarkup = (fieldId: string, jsonKey: string, fieldNm: string) => {
+  const k = jsonKey.trim()
+  const nm = fieldNm.trim()
+  const placeholder = `{{${escapeHTML(k)}}}`
+  return (
+    `<h2 ${TMPL_FIELD_MULTILINE_H2}="${escapeAttr(fieldId)}">${escapeHTML(nm)}</h2>` +
+    `<p ${TMPL_FIELD_MULTILINE_P}="${escapeAttr(fieldId)}" data-tmpl-json-key="${escapeAttr(k)}">${placeholder}</p>`
+  )
+}
 
 const html = defineModel<string>('html', { default: '' })
 const props = withDefaults(
@@ -507,6 +553,46 @@ const ReportTableCell = TableCell.extend({
   },
 })
 
+/** 템플릿 여러 줄 블록 — h2에 fieldId 보존 */
+const ReportTemplateHeading = Heading.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      'data-tmpl-field-multiline': {
+        default: null,
+        parseHTML: (el) => (el as HTMLElement).getAttribute('data-tmpl-field-multiline'),
+        renderHTML: (attrs) =>
+          attrs['data-tmpl-field-multiline']
+            ? { 'data-tmpl-field-multiline': attrs['data-tmpl-field-multiline'] as string }
+            : {},
+      },
+    }
+  },
+})
+
+/** 템플릿 여러 줄 블록 — p에 fieldId·jsonKey 보존 */
+const ReportTemplateParagraph = Paragraph.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      'data-tmpl-field-multiline-p': {
+        default: null,
+        parseHTML: (el) => (el as HTMLElement).getAttribute('data-tmpl-field-multiline-p'),
+        renderHTML: (attrs) =>
+          attrs['data-tmpl-field-multiline-p']
+            ? { 'data-tmpl-field-multiline-p': attrs['data-tmpl-field-multiline-p'] as string }
+            : {},
+      },
+      'data-tmpl-json-key': {
+        default: null,
+        parseHTML: (el) => (el as HTMLElement).getAttribute('data-tmpl-json-key'),
+        renderHTML: (attrs) =>
+          attrs['data-tmpl-json-key'] ? { 'data-tmpl-json-key': attrs['data-tmpl-json-key'] as string } : {},
+      },
+    }
+  },
+})
+
 // ===== 이미지 삽입 (파일 선택) =====
 const imageInputRef = ref<HTMLInputElement | null>(null)
 
@@ -535,7 +621,12 @@ const onImageFileChange = (e: Event) => {
 // ===== 에디터 인스턴스 =====
 const editor = useEditor({
   extensions: [
-    StarterKit,
+    StarterKit.configure({
+      heading: false,
+      paragraph: false,
+    }),
+    ReportTemplateHeading,
+    ReportTemplateParagraph,
     Underline,
     Link.configure({
       openOnClick: false,
@@ -608,8 +699,235 @@ const editor = useEditor({
   },
 })
 
+// ===== 마지막 커서 위치 저장 =====
+const lastSelectionRange = ref<{ from: number; to: number } | null>(null)
+
+const saveCurrentSelectionRange = (ed: CoreEditor) => {
+  const { from, to } = ed.state.selection
+  lastSelectionRange.value = { from, to }
+}
+
+const onSelectionRangeUpdate = (payload: unknown) => {
+  const ed = (payload as { editor?: CoreEditor } | null)?.editor
+  if (!ed) return
+  saveCurrentSelectionRange(ed)
+}
+
+watch(editor, (ed, prevEd) => {
+  if (prevEd) {
+    prevEd.off('selectionUpdate', onSelectionRangeUpdate)
+    prevEd.off('blur', onSelectionRangeUpdate)
+  }
+  if (!ed) return
+  saveCurrentSelectionRange(ed)
+  ed.on('selectionUpdate', onSelectionRangeUpdate)
+  ed.on('blur', onSelectionRangeUpdate)
+})
+
+const clampSelectionPosition = (pos: number, maxPos: number) => Math.max(0, Math.min(pos, maxPos))
+
+const insertContentAtLastSelection = (content: string) => {
+  if (!editor.value) return
+  const maxPos = editor.value.state.doc.content.size
+  const from = clampSelectionPosition(lastSelectionRange.value?.from ?? editor.value.state.selection.from, maxPos)
+  const to = clampSelectionPosition(lastSelectionRange.value?.to ?? editor.value.state.selection.to, maxPos)
+
+  editor.value.chain().focus().setTextSelection({ from, to }).insertContent(content).focus().run()
+  saveCurrentSelectionRange(editor.value)
+}
+
 // HTML 소스 보기 토글 — 라이브러리 단일 컴포넌트라 직접 사용
 const { isSourceView, sourceHtml, toggleSourceView } = useEditorSourceView(editor)
+
+/** 템플릿 HTML 조각 DOM 변경 후 에디터/소스에 반영 */
+const applyTmplRootMutation = (fn: (root: HTMLElement) => void) => {
+  if (typeof document === 'undefined') return
+
+  if (isSourceView.value) {
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(`<div id="tmpl-mut-root">${sourceHtml.value ?? ''}</div>`, 'text/html')
+    const root = doc.getElementById('tmpl-mut-root')
+    if (!root) return
+    fn(root as HTMLElement)
+    const next = root.innerHTML
+    sourceHtml.value = next
+    html.value = next
+    return
+  }
+
+  if (!editor.value) return
+  const parser = new DOMParser()
+  const raw = editor.value.getHTML()
+  const doc = parser.parseFromString(`<div id="tmpl-mut-root">${raw}</div>`, 'text/html')
+  const root = doc.getElementById('tmpl-mut-root')
+  if (!root) return
+  fn(root as HTMLElement)
+  const next = root.innerHTML
+  editor.value.chain().focus().setContent(next, { emitUpdate: true }).run()
+  saveCurrentSelectionRange(editor.value)
+}
+
+/** 표 사용 ON — 2열 표 행 삽입·갱신(th=항목명, td={{jsonKey}}, 보고서 유틸과 동일 data-* ) */
+const upsertTmplFieldTableRow = (opts: { fieldId: string; jsonKey: string; fieldNm: string }) => {
+  const { fieldId, jsonKey, fieldNm } = opts
+  const k = jsonKey.trim()
+  const nm = fieldNm.trim()
+  if (!fieldId || !k || !nm) return
+
+  applyTmplRootMutation((root) => {
+    const doc = root.ownerDocument
+    const rowMarkup = buildTmplFieldTableRowMarkup(fieldId, k, nm)
+    const tpl = doc.createElement('template')
+    tpl.innerHTML = rowMarkup.trim()
+    const newTr = tpl.content.firstElementChild as HTMLTableRowElement | null
+    if (!newTr) return
+
+    const existing = root.querySelector(`tr[${TMPL_FIELD_ROW_ATTR}="${fieldId}"]`)
+    if (existing?.parentNode) {
+      existing.replaceWith(newTr)
+      return
+    }
+
+    let table = root.querySelector('table')
+    if (!table) {
+      table = doc.createElement('table')
+      const tbody = doc.createElement('tbody')
+      tbody.appendChild(newTr)
+      table.appendChild(tbody)
+      root.appendChild(table)
+      root.appendChild(doc.createElement('p'))
+      return
+    }
+
+    const tbody = getOrCreateTbody(table, doc)
+    tbody.appendChild(newTr)
+  })
+}
+
+/** 표 사용 OFF — 해당 필드에 연결된 표 행 제거 */
+const removeTmplFieldTableRow = (fieldId: string) => {
+  if (!fieldId) return
+  applyTmplRootMutation((root) => {
+    root.querySelector(`tr[${TMPL_FIELD_ROW_ATTR}="${fieldId}"]`)?.remove()
+  })
+}
+
+/** 여러 줄(section) 블록 제거 — h2 + 짝 p */
+const removeTmplMultilineSection = (fieldId: string) => {
+  if (!fieldId) return
+  applyTmplRootMutation((root) => {
+    const h2 = root.querySelector(`h2[${TMPL_FIELD_MULTILINE_H2}="${fieldId}"]`)
+    if (!h2) return
+    const p = h2.nextElementSibling
+    if (p?.tagName === 'P' && p.getAttribute(TMPL_FIELD_MULTILINE_P) === fieldId) p.remove()
+    h2.remove()
+  })
+}
+
+/** 여러 줄(section) — h2(항목명) + p({{jsonKey}}) 삽입·갱신 */
+const upsertTmplMultilineSection = (opts: { fieldId: string; jsonKey: string; fieldNm: string }) => {
+  const { fieldId, jsonKey, fieldNm } = opts
+  const k = jsonKey.trim()
+  const nm = fieldNm.trim()
+  if (!fieldId || !k || !nm) return
+
+  applyTmplRootMutation((root) => {
+    const doc = root.ownerDocument
+    const markup = buildTmplMultilineSectionMarkup(fieldId, k, nm)
+    const tpl = doc.createElement('template')
+    tpl.innerHTML = markup.trim()
+    const newH2 = tpl.content.querySelector(`h2[${TMPL_FIELD_MULTILINE_H2}]`) as HTMLElement | null
+    const newP = tpl.content.querySelector(`p[${TMPL_FIELD_MULTILINE_P}]`) as HTMLElement | null
+    if (!newH2 || !newP) return
+
+    const existingH2 = root.querySelector(`h2[${TMPL_FIELD_MULTILINE_H2}="${fieldId}"]`)
+    if (existingH2) {
+      const oldP = existingH2.nextElementSibling
+      existingH2.replaceWith(newH2)
+      if (oldP?.tagName === 'P' && oldP.getAttribute(TMPL_FIELD_MULTILINE_P) === fieldId) {
+        oldP.replaceWith(newP)
+      } else {
+        newH2.after(newP)
+      }
+      return
+    }
+
+    root.append(newH2, newP)
+  })
+}
+
+/** `{{jsonKey}}` 제거 시, 표 사용으로 넣은 값 셀(`data-tmpl-field-id` 행의 td)은 유지 */
+const stripPlaceholderFromHtmlFragment = (fragment: string, jsonKey: string): string => {
+  if (typeof document === 'undefined') return fragment
+  const key = jsonKey.trim()
+  if (!key) return fragment
+  const needle = `{{${key}}}`
+  if (!fragment.includes(needle)) return fragment
+
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(`<div id="strip-root">${fragment}</div>`, 'text/html')
+  const root = doc.getElementById('strip-root')
+  if (!root) return fragment
+
+  const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+  const updates: { node: Text; next: string }[] = []
+  let n: Node | null
+  while ((n = walker.nextNode())) {
+    const t = n as Text
+    const v = t.nodeValue ?? ''
+    if (!v.includes(needle)) continue
+    const td = t.parentElement?.closest('td')
+    const tr = td?.closest('tr')
+    if (tr?.hasAttribute(TMPL_FIELD_ROW_ATTR) && td?.getAttribute('data-value-key') === key) continue
+    const multilineP = t.parentElement?.closest(`p[${TMPL_FIELD_MULTILINE_P}]`)
+    if (multilineP?.getAttribute('data-tmpl-json-key') === key) continue
+    updates.push({ node: t, next: v.split(needle).join('') })
+  }
+  updates.forEach(({ node, next }) => {
+    node.nodeValue = next
+  })
+  return root.innerHTML
+}
+
+/** 칩 해제 시 — 에디터/HTML에서 `{{jsonKey}}` 제거(표 값 셀은 stripPlaceholderFromHtmlFragment에서 제외) */
+const removePlaceholderByJsonKey = (jsonKey: string) => {
+  const key = jsonKey.trim()
+  if (!key || !editor.value) return
+  const needle = `{{${key}}}`
+
+  if (isSourceView.value) {
+    const src = sourceHtml.value ?? ''
+    if (!src.includes(needle)) return
+    const next = stripPlaceholderFromHtmlFragment(src, key)
+    sourceHtml.value = next
+    html.value = next
+    return
+  }
+
+  const current = editor.value.getHTML()
+  if (!current.includes(needle)) return
+  const next = stripPlaceholderFromHtmlFragment(current, key)
+  editor.value.chain().focus().setContent(next, { emitUpdate: true }).run()
+  saveCurrentSelectionRange(editor.value)
+}
+
+defineExpose<{
+  editor: typeof editor
+  insertContentAtLastSelection: (content: string) => void
+  removePlaceholderByJsonKey: (jsonKey: string) => void
+  upsertTmplFieldTableRow: (opts: { fieldId: string; jsonKey: string; fieldNm: string }) => void
+  removeTmplFieldTableRow: (fieldId: string) => void
+  upsertTmplMultilineSection: (opts: { fieldId: string; jsonKey: string; fieldNm: string }) => void
+  removeTmplMultilineSection: (fieldId: string) => void
+}>({
+  editor,
+  insertContentAtLastSelection,
+  removePlaceholderByJsonKey,
+  upsertTmplFieldTableRow,
+  removeTmplFieldTableRow,
+  upsertTmplMultilineSection,
+  removeTmplMultilineSection,
+})
 
 // 외부 html 변경(AI 보완 등) 시 에디터 동기화
 watch(
