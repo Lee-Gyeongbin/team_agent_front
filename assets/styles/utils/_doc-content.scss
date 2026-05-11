@@ -150,14 +150,47 @@ $doc-content-logo: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAAA/CA
     padding-left: 26px;
 
     li {
-      margin-bottom: 8px;
+      margin-bottom: $spacing-md;
       @include typo($body-medium, $color-text-dark);
       line-height: 1.7;
+    }
+
+    // 안건 텍스트(ol 직접 자식 p) — 본문보다 한 단계 진하게 (소제목 dash 와 hierarchy 차이)
+    > li > p {
+      color: $color-text-heading-sub;
     }
 
     ol {
       list-style: lower-alpha outside;
       margin: $spacing-xs 0 0;
+    }
+
+    // 번호 리스트 안 dash 리스트 — 회의록 회의내용 섹션 형식
+    // (1. 안건 / - 소제목 / - 소제목)
+    > li > ul {
+      margin: 4px 0 0;
+      padding-left: 4px;
+
+      > li {
+        padding-left: 14px;
+        margin-bottom: 2px;
+        @include typo($body-medium, $color-text-dark);
+
+        &::before {
+          content: '-';
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: auto;
+          height: auto;
+          background: transparent;
+          border-radius: 0;
+          color: $color-text-muted;
+          font-weight: $font-weight-normal;
+          font-size: inherit;
+          line-height: inherit;
+        }
+      }
     }
   }
 
