@@ -2,7 +2,21 @@ import type { Editor } from '@tiptap/vue-3'
 import type { Ref } from 'vue'
 
 /** void(self-closing) 태그 — 종료 태그 없이 depth 증가 안 시킴 */
-const VOID_TAGS = new Set(['br', 'hr', 'img', 'input', 'meta', 'link', 'col', 'area', 'base', 'embed', 'source', 'track', 'wbr'])
+const VOID_TAGS = new Set([
+  'br',
+  'hr',
+  'img',
+  'input',
+  'meta',
+  'link',
+  'col',
+  'area',
+  'base',
+  'embed',
+  'source',
+  'track',
+  'wbr',
+])
 
 /**
  * HTML 문자열을 사람이 읽기 좋은 형태로 정리

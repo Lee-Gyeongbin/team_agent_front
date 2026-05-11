@@ -21,4 +21,3 @@ import { meetingEditorKey, meetingSourceViewKey } from '~/composables/meeting/me
 const editor = inject(meetingEditorKey)
 const sourceView = inject(meetingSourceViewKey)
 </script>
-
