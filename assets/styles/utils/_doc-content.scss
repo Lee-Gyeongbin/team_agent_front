@@ -50,6 +50,12 @@ $doc-content-logo: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAAA/CA
     border-bottom: none;
   }
 
+  // 헤더(로고 + 회의록) 다음 본문 첫 요소 위에 구분선 한 줄
+  > figure:first-of-type + h1 + * {
+    border-top: 1px solid $color-border;
+    padding-top: $spacing-md;
+  }
+
   // Tiptap 기본 placeholder (extension-placeholder)
   p.is-editor-empty:first-child::before {
     content: attr(data-placeholder);
