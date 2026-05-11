@@ -248,6 +248,7 @@
         <UiCodeBlock
           v-if="displayData?.svcTy === 'S' && isSqlCodeVisible"
           :code="displayData?.ttsq"
+          format-sql
         />
         <!-- 데이터 시각화 (데이터분석 타입) -->
         <div
