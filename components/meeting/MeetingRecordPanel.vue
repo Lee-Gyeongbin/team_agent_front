@@ -46,7 +46,7 @@
           @finish="onClickFinish"
         />
         <MeetingWaveform />
-        <MeetingSttToolbar />
+        <MeetingSttToolbar :meeting-id="meetingId" />
       </div>
 
       <!-- 스크롤 영역: 발화 리스트 + 화자 목록 -->
@@ -64,7 +64,6 @@ import { useSpeechRecognition } from '~/composables/meeting/useSpeechRecognition
 import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
 import { openToast } from '~/composables/useToast'
 import { openConfirm } from '~/composables/useDialog'
-import type { SpeechSegment } from '~/types/meeting'
 import type { MeetingSttItem } from '~/types/meeting2'
 
 const route = useRoute()
@@ -193,34 +192,18 @@ const onClickFinish = async () => {
 
   stopTimer()
 
-  // Realtime 블록 기반 segments
-  const realtimeSegments: SpeechSegment[] = blocks.value
-    .filter((b) => b.status === 'confirmed')
-    .map((b, idx) => ({ seq: idx, text: b.text }))
-
-  // Web Speech API segments (fallback 경우 활용)
-  const fallbackSegments: SpeechSegment[] = speechSegments.value.map((s) => ({ seq: s.seq, text: s.text }))
-
-  const segments = realtimeSegments.length > 0 ? realtimeSegments : fallbackSegments
-
-  // 전체 오디오 Blob 확보 (Realtime 녹음)
+  // 전체 오디오 Blob 확보 (Realtime 녹음) — 전사·세그먼트는 서버 AI diarize 결과 사용
   const audioBlob = await stopRecording()
   stopRecognition()
 
-  if (!audioBlob && segments.length === 0) {
-    openToast({ message: '녹음된 내용이 없습니다.', type: 'warning' })
-    return
-  }
-
   if (!audioBlob) {
-    openToast({ message: '오디오 파일이 없습니다. 녹음 후 종료해주세요.', type: 'warning' })
+    openToast({ message: '녹음된 오디오가 없습니다. 녹음 후 종료해 주세요.', type: 'warning' })
     return
   }
 
   const success = await handleFinishMeetingWithAudio({
     meetingId: meetingId.value,
     audioBlob,
-    segments,
   })
 
   if (success) {

@@ -17,11 +17,15 @@
       <!-- 테마 색상 -->
       <div class="theme-picker-wrap">
         <button
-          class="header-btn"
+          class="header-btn theme-trigger-btn"
+          :class="{ 'is-active': isThemePickerOpen }"
           title="테마 색상"
           @click="toggleThemePicker"
         >
-          <i class="icon-notification size-20" />
+          <span
+            class="theme-current-dot"
+            :style="{ backgroundColor: currentThemeColor?.primary }"
+          />
         </button>
         <!-- 테마 팔레트 드롭다운 -->
         <div
@@ -39,6 +43,9 @@
           />
         </div>
       </div>
+
+      <!-- 알림 -->
+      <AppNotificationPanel />
 
       <!-- 유저 프로필 -->
       <button
@@ -94,6 +101,9 @@ const currentPageTitle = computed(() => {
   return result.name
 })
 
+// ── 테마 피커 ──────────────────────────────────────────
+const currentThemeColor = computed(() => themeColors.find((t) => t.key === currentThemeKey.value))
+
 const isThemePickerOpen = ref(false)
 
 const toggleThemePicker = () => {
@@ -105,10 +115,10 @@ const onSelectTheme = (theme: ThemeColor) => {
   isThemePickerOpen.value = false
 }
 
-// 외부 클릭 시 닫기
+// ── 외부 클릭 시 닫기 (테마 피커) ─────────────────────
 const onClickOutside = (e: MouseEvent) => {
-  const wrap = document.querySelector('.theme-picker-wrap')
-  if (wrap && !wrap.contains(e.target as Node)) {
+  const themeWrap = document.querySelector('.theme-picker-wrap')
+  if (themeWrap && !themeWrap.contains(e.target as Node)) {
     isThemePickerOpen.value = false
   }
 }

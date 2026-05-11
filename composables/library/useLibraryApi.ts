@@ -9,6 +9,7 @@ import type {
   TableDataItem,
   ChartStatItem,
   ChartDetailCdItem,
+  ShareCardPayload,
 } from '~/types/library'
 
 export const useLibraryApi = () => {
@@ -135,6 +136,14 @@ export const useLibraryApi = () => {
     return post<{ roomId: string }>('/library/createReportChatRoom.do', {})
   }
 
+  /**
+   * 카드 공유 API
+   * tb_know_card_share + tb_notify 동시 처리
+   */
+  const fetchShareCard = async (payload: ShareCardPayload): Promise<{ result: string; msg: string }> => {
+    return post<{ result: string; msg: string }>('/library/shareCard.do', payload)
+  }
+
   return {
     fetchCategoryList,
     fetchSaveCategory,
@@ -156,5 +165,6 @@ export const useLibraryApi = () => {
     fetchCreateDoc,
     fetchCreateReportChatRoom,
     fetchReAskReport,
+    fetchShareCard,
   }
 }

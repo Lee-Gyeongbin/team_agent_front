@@ -120,3 +120,10 @@ export interface ChartDetailCdItem {
   detailItemCd: string
   detailItemNm: string
 }
+
+/** 카드 공유 요청 payload */
+export interface ShareCardPayload {
+  cardId: string
+  userIds: string[]
+  shareMsg?: string
+}
