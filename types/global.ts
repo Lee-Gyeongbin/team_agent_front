@@ -18,4 +18,5 @@ export interface Notify {
   useYn: 'Y' | 'N'
   createDt: string
   modifyDt?: string
+  saveYn: 'Y' | 'N'
 }

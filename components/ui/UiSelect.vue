@@ -223,7 +223,7 @@ const onUpdate = (val: string) => {
   border-radius: $border-radius-base;
   box-shadow: $shadow-md;
   padding: $spacing-xs 0;
-  z-index: $z-modal;
+  z-index: 480;
 }
 
 .ui-select-item {
