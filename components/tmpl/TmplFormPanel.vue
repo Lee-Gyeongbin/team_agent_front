@@ -303,8 +303,8 @@ const createTmplField = (
 })
 
 const DEFAULT_FIELDS = (): TmplField[] => [
-  createTmplField({ jsonKey: 'title', fieldNm: '제목', multilineYn: 'N', sortOrd: 1 }),
-  createTmplField({ jsonKey: 'content', fieldNm: '본문내용', multilineYn: 'Y', sortOrd: 2 }),
+  createTmplField({ jsonKey: 'title', fieldNm: '제목', multilineYn: 'N', layoutType: 'table', sortOrd: 1 }),
+  createTmplField({ jsonKey: 'content', fieldNm: '본문내용', multilineYn: 'Y', layoutType: 'section', sortOrd: 2 }),
 ]
 
 const DEFAULT_PROMPT_TEXT_T = `다음 내용을 보고서 형식으로 정리해 주세요.
@@ -421,6 +421,43 @@ watch(availableJsonKeys, (keys) => {
 
 const modalTitle = computed(() => (props.template ? '템플릿 수정' : '새 템플릿 추가'))
 
+const isTmplHtmlBlank = (h: string) => !h?.trim()
+
+/**
+ * 항목 정의(layoutType / multilineYn)에 맞춰 HTML 조각 반영
+ * — onFieldTableLayoutChange / onFieldMultilineChange 와 동일 규칙
+ */
+const applyTmplHtmlFromFields = () => {
+  if (tmplType.value !== 'T') return
+  const api = tmplHtmlEditorRef.value
+  if (!api) return
+  const rows = [...fields.value].sort((a, b) => (a.sortOrd ?? 0) - (b.sortOrd ?? 0))
+  for (const row of rows) {
+    const k = row.jsonKey.trim()
+    const nm = row.fieldNm.trim()
+    if (!k || !nm) continue
+    if (row.layoutType === 'table') {
+      api.upsertTmplFieldTableRow({ fieldId: row.fieldId, jsonKey: k, fieldNm: nm })
+    } else if (row.multilineYn === 'Y') {
+      api.upsertTmplMultilineSection({ fieldId: row.fieldId, jsonKey: k, fieldNm: nm })
+    }
+  }
+}
+
+/** 저장된 tmplHtml이 비어 있을 때만 자동 구성(기존 HTML 덮어쓰지 않음). 에디터 마운트 이후 실행 */
+const scheduleApplyTmplHtmlFromFieldsWhenBlank = () => {
+  if (tmplType.value !== 'T') return
+  if (!isTmplHtmlBlank(tmplHtml.value)) return
+  nextTick(() => {
+    if (tmplType.value !== 'T') return
+    if (!isTmplHtmlBlank(tmplHtml.value)) return
+    nextTick(() => {
+      if (tmplType.value !== 'T') return
+      applyTmplHtmlFromFields()
+    })
+  })
+}
+
 const resetForm = () => {
   tmplNm.value = ''
   tmplType.value = 'T'
@@ -464,6 +501,9 @@ watch(tmplType, (v) => {
   if (v === 'T' && fields.value.length === 0) {
     fields.value = DEFAULT_FIELDS()
   }
+  if (props.isOpen && v === 'T') {
+    scheduleApplyTmplHtmlFromFieldsWhenBlank()
+  }
 })
 
 watch(
@@ -475,7 +515,10 @@ watch(
     } else {
       resetForm()
     }
-    nextTick(() => formRef.value?.closest('.modal-side-body')?.scrollTo(0, 0))
+    nextTick(() => {
+      formRef.value?.closest('.modal-side-body')?.scrollTo(0, 0)
+      scheduleApplyTmplHtmlFromFieldsWhenBlank()
+    })
   },
 )
 
