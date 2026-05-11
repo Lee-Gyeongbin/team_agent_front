@@ -107,6 +107,18 @@
                   <i class="icon icon-dropdown-document size-16"></i>
                 </template>
               </UiButton>
+              <UiButton
+                variant="ghost"
+                size="xxs"
+                icon-only
+                class="btn-custom-white"
+                title="공유하기"
+                @click="handleShare"
+              >
+                <template #icon-left>
+                  <i class="icon icon-sidebar-share size-16"></i>
+                </template>
+              </UiButton>
               <!-- 삭제 btn -->
               <UiButton
                 variant="ghost"
@@ -245,11 +257,27 @@
           </ul>
         </div>
         <!-- SQL 코드 블록 -->
-        <UiCodeBlock
-          v-if="displayData?.svcTy === 'S' && isSqlCodeVisible"
-          :code="displayData?.ttsq"
-          format-sql
-        />
+        <div
+          v-if="displayData?.svcTy === 'S'"
+          ref="sqlCodeRef"
+          class="chat-vis-sql-area"
+          :class="{ 'is-open': isSqlCodeVisible }"
+        >
+          <UiCodeBlock
+            :code="displayData?.ttsq"
+            format-sql
+          />
+          <button
+            class="chat-vis-sql-toggle"
+            type="button"
+            @click="toggleSqlCodeVisible"
+          >
+            <i
+              class="icon-chevron-down size-12"
+              :class="{ 'is-flipped': isSqlCodeVisible }"
+            ></i>
+          </button>
+        </div>
         <!-- 데이터 시각화 (데이터분석 타입) -->
         <div
           v-if="displayData?.svcTy === 'S'"
@@ -295,6 +323,15 @@
       @select-other-type="handleCreateDocSelectOtherType"
       @send-refine="onCreateDocSendRefine"
     />
+
+    <!-- 공유 대상 사용자 선택 모달 -->
+    <UserSelectModal
+      :is-open="isUserSelectModalOpen"
+      title="공유 대상 선택"
+      confirm-text="공유하기"
+      @close="closeUserSelectModal"
+      @confirm="onShareConfirm"
+    />
   </div>
 </template>
 
@@ -307,7 +344,10 @@ import type { LunchRecommendationItem, VisualizationViewModel } from '~/types/ch
 import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
 import { useFileStore } from '~/composables/com/useFileStore'
 import { useLibraryStore } from '~/composables/library/useLibraryStore'
+import { useUserSelectStore } from '~/composables/com/useUserSelectStore'
+import type { OrgUserItem } from '~/types/org-manage'
 const { handleViewFileUrl } = useFileStore()
+const { isUserSelectModalOpen, openUserSelectModal, closeUserSelectModal } = useUserSelectStore()
 const {
   handleSelectTmplList,
   tmplList,
@@ -324,6 +364,7 @@ const {
   resetLibraryDetailCreateDocUi,
   handleCreateDocSelectOtherType,
   handleReAskReport,
+  handleShareCard,
 } = useLibraryStore()
 const props = withDefaults(
   defineProps<{
@@ -435,9 +476,21 @@ const parsedLunchRecommendations = computed<LunchRecommendationItem[]>(() => {
 })
 // SQL 코드 블록 표시 (데이터분석 타입에서 SQL 버튼으로 토글, 초기 숨김)
 const isSqlCodeVisible = ref(false)
+const sqlCodeRef = ref<HTMLElement | null>(null)
 const toggleSqlCodeVisible = () => {
   if (displayData.value?.svcTy !== 'S') return
   isSqlCodeVisible.value = !isSqlCodeVisible.value
+  if (isSqlCodeVisible.value) {
+    setTimeout(() => {
+      if (!sqlCodeRef.value || !contentRef.value) return
+      const stickyHeader = contentRef.value.querySelector('.library-detail-modal-header')
+      const headerHeight = stickyHeader ? (stickyHeader as HTMLElement).offsetHeight : 0
+      const containerRect = contentRef.value.getBoundingClientRect()
+      const targetRect = sqlCodeRef.value.getBoundingClientRect()
+      const offset = targetRect.top - containerRect.top + contentRef.value.scrollTop - headerHeight
+      contentRef.value.scrollTo({ top: offset, behavior: 'smooth' })
+    }, 320)
+  }
 }
 // 스크롤 이벤트 핸들러
 const handleScroll = () => {
@@ -453,6 +506,12 @@ const handleScrollToTop = () => {
     behavior: 'smooth',
   })
 }
+
+const handleShare = () => {
+  openUserSelectModal()
+}
+
+const onShareConfirm = (users: OrgUserItem[]) => handleShareCard(users)
 
 // 카드 변경 시 모달 전체 슬라이드 재실행 + 스크롤 리셋
 watch(
