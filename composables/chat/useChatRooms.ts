@@ -11,6 +11,19 @@ import {
 import { useChatSendPipeline } from '~/composables/chat/useChatSendPipeline'
 import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
 import { parseLunchPayloadFromPrompt } from '~/utils/chat/lunchAgentUtil'
+
+/** 목록에 동일 방이 문자열/숫자 등 다른 형태로 중복되면 사이드바에서 활성 행이 여러 개로 보일 수 있어 통일·중복 제거 */
+function dedupeChatRoomsByNormalizedId(list: ChatRoom[]): ChatRoom[] {
+  const seen = new Set<string>()
+  const out: ChatRoom[] = []
+  for (const raw of list) {
+    const id = normalizeChatRoomId(raw.roomId)
+    if (!id || seen.has(id)) continue
+    seen.add(id)
+    out.push({ ...raw, roomId: id })
+  }
+  return out
+}
 const { user } = useAuth()
 const {
   fetchSelectChatRoomList,
@@ -114,7 +127,7 @@ export const useChatRooms = () => {
       } finally {
         closeLoading()
       }
-      chatRoomList.value = res.list
+      chatRoomList.value = dedupeChatRoomsByNormalizedId(res.list ?? [])
       return chatRoomList.value
     } catch (error) {
       console.error('채팅방 목록 조회 실패:', error)
@@ -158,7 +171,7 @@ export const useChatRooms = () => {
     const prev = chatRoomList.value.filter((room) => normalizeChatRoomId(room.roomId) !== newRoomId)
     const pinned = prev.filter((room) => room.fixYn === 'Y')
     const unpinned = prev.filter((room) => room.fixYn !== 'Y')
-    chatRoomList.value = [...pinned, createdRoom, ...unpinned]
+    chatRoomList.value = dedupeChatRoomsByNormalizedId([...pinned, createdRoom, ...unpinned])
 
     const sent = await executeSendPipeline({
       content: qContent,

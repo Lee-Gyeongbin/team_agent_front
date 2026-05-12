@@ -201,7 +201,7 @@ import {
 } from 'radix-vue'
 import type { MenuItem } from '~/types/menu'
 import type { ChatRoom } from '~/types/chat'
-import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
+import { normalizeChatRoomId, parseChatRoomIdFromChatPath } from '~/utils/chat/chatRoomIdUtil'
 const { chatRoomList, selectChatRoomList, handleRenameChatRoom, handleDeleteChatRoom, handlePinChatRoom } =
   useChatRooms()
 const route = useRoute()
@@ -385,8 +385,8 @@ function onHistoryDropdownOpenChange(entry: ChatRoom, open: boolean) {
   openMoreDropdownId.value = open ? normalizeChatRoomId(entry.roomId) : null
 }
 
-// route.params.id를 단일 진실 원천으로 사용 (roomId 비교는 항상 normalize)
-const activeRoomId = computed(() => normalizeChatRoomId(route.params.id))
+// URL 경로 기준 활성 방 — 동적 라우트 전환 시 params 반영 타이밍보다 일관됨
+const activeRoomId = computed(() => parseChatRoomIdFromChatPath(route.path))
 
 // 사이드바 너비를 CSS 변수로 전달 (채팅 패널 레이아웃 계산용)
 watch(
@@ -397,8 +397,14 @@ watch(
   { immediate: true },
 )
 
-function onClickHistory(entry: ChatRoom) {
-  navigateTo(`/chat/${normalizeChatRoomId(entry.roomId)}`)
+async function onClickHistory(entry: ChatRoom) {
+  const id = normalizeChatRoomId(entry.roomId)
+  if (!id) return
+  // 다른 행 클릭 시 열려 있던 더보기·radix 상태가 클릭/네비를 방해하지 않도록 닫음
+  openMoreDropdownId.value = null
+  const targetPath = `/chat/${id}`
+  if (route.path === targetPath || route.path === `${targetPath}/`) return
+  await navigateTo({ path: targetPath })
 }
 
 /** 라우트상 활성 방이 클라이언트 슬라이스 밖이면 표시 개수를 늘려 하이라이트·클릭 대상이 일치하도록 함 */
