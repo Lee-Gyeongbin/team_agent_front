@@ -15,8 +15,9 @@
   bottom: 0;
   z-index: $z-modal;
 
-  /* app.vue 전역 Alert/Confirm — 헤더·우측 패널보다 위 */
-  &.modal-dialog--global {
+  /* 전역 Alert/Confirm · 사이드 패널 위 중첩 모달 — 우측 패널(460)보다 위 */
+  &.modal-dialog--global,
+  &.modal-dialog--above-side-panel {
     z-index: $z-dialog-global;
   }
   display: flex;
@@ -300,7 +301,7 @@
   left: auto;
   right: 0;
   bottom: 0;
-  z-index: $z-modal;
+  z-index: $z-detail-sheet;
   display: flex;
   align-items: center;
   justify-content: center;

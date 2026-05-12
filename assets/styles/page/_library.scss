@@ -385,13 +385,9 @@
 // ===================================
 // 문서 만들기 모달
 // — 레이아웃·푸터는 doc-dataset-create-modal / doc-dataset-create-footer 공유
-// — 지식창고 상세(z-index 400) 위에 표시
+// — z-index: 기본 $z-modal(451), 중첩은 stack-2/3 (_variables.scss)
 // ===================================
 .library-create-doc-modal {
-  &.modal-dialog {
-    z-index: 410;
-  }
-
   .library-create-doc-lead {
     margin: 0;
   }
@@ -425,16 +421,16 @@
   }
 }
 
-// 문서 생성 로딩 / 보고서 — 상세 모달(400)·문서 만들기(410) 위 스택
+// 문서 생성 로딩 / 보고서 — 한 단계씩 위 스택($z-modal-stack-2, -3)
 .library-create-doc-loading-modal {
   &.modal-dialog {
-    z-index: 420;
+    z-index: $z-modal-stack-2;
   }
 }
 
 .library-create-doc-report-modal {
   &.modal-dialog {
-    z-index: 430;
+    z-index: $z-modal-stack-3;
   }
 
   // 넓은 가로·세로 (좌측 표 + 우측 도구 패널)

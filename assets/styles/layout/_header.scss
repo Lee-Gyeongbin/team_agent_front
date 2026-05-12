@@ -9,6 +9,8 @@
   height: $header-height;
   padding: 0 $spacing-md;
   z-index: $z-header;
+  // 모달 오버레이와 겹칠 때 투명 영역으로 테두리만 튀는 현상 방지
+  background-color: #fff;
   border-bottom: 1px solid $color-border;
 
   .header-title-wrap {
