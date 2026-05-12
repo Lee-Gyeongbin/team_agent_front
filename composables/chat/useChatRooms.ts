@@ -154,10 +154,11 @@ export const useChatRooms = () => {
       fixYn: 'N',
     }
     chatRoom.value = createdRoom
-    chatRoomList.value = [
-      createdRoom,
-      ...chatRoomList.value.filter((room) => normalizeChatRoomId(room.roomId) !== newRoomId),
-    ]
+    // 고정 검색기록 위에 새 방이 오지 않도록: 고정 목록 아래(비고정 구역 선두)에 삽입
+    const prev = chatRoomList.value.filter((room) => normalizeChatRoomId(room.roomId) !== newRoomId)
+    const pinned = prev.filter((room) => room.fixYn === 'Y')
+    const unpinned = prev.filter((room) => room.fixYn !== 'Y')
+    chatRoomList.value = [...pinned, createdRoom, ...unpinned]
 
     const sent = await executeSendPipeline({
       content: qContent,
