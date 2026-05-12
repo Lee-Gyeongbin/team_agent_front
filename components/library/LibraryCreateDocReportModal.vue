@@ -208,8 +208,8 @@
 <script setup lang="ts">
 import { openToast } from '~/composables/useToast'
 import type { LibraryGeneratedReportValues } from '~/types/library'
-import { printLibraryReportFromHtml } from '~/utils/library/libraryReportPrintUtil'
-import { parseReportEditorHtml } from '~/utils/library/libraryReportEditorUtil'
+import { getLibraryReportRows, printLibraryReportFromHtml } from '~/utils/library/libraryReportPrintUtil'
+import { buildReportEditorHtml, parseReportEditorHtml } from '~/utils/library/libraryReportEditorUtil'
 
 const props = withDefaults(
   defineProps<{
@@ -268,8 +268,15 @@ let writebackTimer: ReturnType<typeof setTimeout> | null = null
 /** report → editorHtml 동기화 (모달 열기·AI 보완 완료 시) */
 const setEditorFromReport = () => {
   isExternalEditorUpdate = true
-  // tmplHtml이 있으면 표 위에 머리글 HTML 삽입
-  editorHtml.value = props.tmplHtml
+  const tmpl = props.tmplHtml?.trim() ?? ''
+  if (tmpl) {
+    // 템플릿형: API tmplHtml 그대로 (표·머리글 구조는 템플릿에 따름)
+    editorHtml.value = props.tmplHtml
+  } else {
+    // 자유형식: JSON(title_label/title …) → 에디터용 2열 표 HTML
+    const rows = getLibraryReportRows(report.value)
+    editorHtml.value = buildReportEditorHtml(report.value, rows)
+  }
   // Vue watcher는 동기적으로 실행되므로 nextTick에서 플래그 해제
   nextTick(() => {
     isExternalEditorUpdate = false
