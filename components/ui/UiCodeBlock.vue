@@ -1,6 +1,6 @@
 <template>
   <div class="ui-code-block">
-    <pre class="ui-code-block-pre"><code>{{ code }}</code></pre>
+    <pre class="ui-code-block-pre"><code>{{ displayCode }}</code></pre>
     <div class="ui-code-block-action">
       <button
         class="ui-code-block-copy"
@@ -19,16 +19,25 @@
 <script setup lang="ts">
 interface Props {
   code: string
+  /** SQL 포맷팅 자동 적용 여부 (기본값: false) */
+  formatSql?: boolean
 }
 
 const props = defineProps<Props>()
+
+const displayCode = computed(() => {
+  if (props.formatSql && props.code) {
+    return formatSql(props.code)
+  }
+  return props.code ?? ''
+})
 
 const isCopied = ref(false)
 let copyTimer: ReturnType<typeof setTimeout> | null = null
 
 const onCopy = async () => {
   try {
-    await copyToClipboard(props.code)
+    await copyToClipboard(displayCode.value)
     isCopied.value = true
     if (copyTimer) clearTimeout(copyTimer)
     copyTimer = setTimeout(() => {

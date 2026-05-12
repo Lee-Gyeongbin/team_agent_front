@@ -15,6 +15,9 @@ import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
 import { useLibraryApi } from '~/composables/library/useLibraryApi'
 import { useTmplApi } from '~/composables/tmpl/useTmplApi'
 import type { TmplBaseInfo } from '~/types/tmpl'
+import type { OrgUserItem } from '~/types/org-manage'
+import { useUserSelectStore } from '~/composables/com/useUserSelectStore'
+const { closeUserSelectModal } = useUserSelectStore()
 const {
   fetchCategoryList,
   fetchCardList,
@@ -35,6 +38,7 @@ const {
   fetchCreateDoc,
   fetchCreateReportChatRoom,
   fetchReAskReport,
+  fetchShareCard,
 } = useLibraryApi()
 const { fetchTmplList } = useTmplApi()
 const errorMessage = ref('')
@@ -756,6 +760,29 @@ export const useLibraryStore = () => {
     refinedEditorHtml.value = ''
   }
 
+  /**
+   * 카드 공유 확인 핸들러 (UserSelectModal @confirm 이벤트 직접 연결)
+   * - 선택된 사용자 목록으로 tb_know_card_share + tb_notify 동시 처리
+   * - API 완료 후 사용자 선택 모달 닫기
+   */
+  const handleShareCard = async (users: OrgUserItem[]) => {
+    const cardId = selectedCard.value?.cardId
+    if (!cardId || !users.length) {
+      openToast({ message: '카드 또는 사용자 정보가 없습니다.', type: 'warning' })
+      return
+    }
+    const userIds = users.map((u) => u.userId)
+    try {
+      await fetchShareCard({ cardId, userIds, shareMsg: '' })
+      openToast({ message: '카드 공유 완료', type: 'success' })
+      closeUserSelectModal()
+    } catch {
+      openToast({ message: '카드 공유 실패', type: 'error' })
+    } finally {
+      closeUserSelectModal()
+    }
+  }
+
   /** 상세 모달 닫을 때 문서 만들기 관련 상태 초기화 */
   const resetLibraryDetailCreateDocUi = () => {
     isCreateDocModalOpen.value = false
@@ -848,5 +875,6 @@ export const useLibraryStore = () => {
     resetLibraryDetailCreateDocUi,
     handleCreateDocSelectOtherType,
     handleReAskReport,
+    handleShareCard,
   }
 }

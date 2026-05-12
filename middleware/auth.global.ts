@@ -15,4 +15,10 @@ export default defineNuxtRouteMiddleware((to) => {
     const redirect = to.fullPath !== '/' ? `?redirect=${encodeURIComponent(to.fullPath)}` : ''
     return navigateTo(`/login${redirect}`)
   }
+
+  // 로그인 상태일 때 모든 라우트에서 알림 목록 갱신 (비동기 — 네비게이션 차단 없음)
+  if (import.meta.client) {
+    const { handleFetchNotifyList } = useNotifyStore()
+    handleFetchNotifyList()
+  }
 })

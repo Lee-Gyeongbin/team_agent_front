@@ -94,7 +94,10 @@
             class="chat-vis-sql-area"
             :class="{ 'is-open': isSqlOpen }"
           >
-            <UiCodeBlock :code="sqlQuery" />
+            <UiCodeBlock
+              :code="sqlQuery"
+              format-sql
+            />
             <button
               class="chat-vis-sql-toggle"
               type="button"

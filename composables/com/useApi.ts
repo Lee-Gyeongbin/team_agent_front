@@ -37,6 +37,37 @@ export const useApi = () => {
     return response.json()
   }
 
+  /** GET — 응답 본문을 JSON이 아닌 Blob으로 받을 때(파일 다운로드 등) */
+  const getBlob = async (endpoint: string, options: RequestInit = {}): Promise<Blob> => {
+    const url = endpoint.startsWith('/') ? `${baseURL}${endpoint}` : `${baseURL}/${endpoint}`
+
+    const response = await fetch(url, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      ...options,
+    })
+
+    if (response.status === 401) {
+      clearSessionAndRedirect()
+      throw new Error('인증이 만료되었습니다')
+    }
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}))
+      const errorData = error as { errorType?: string; message?: string }
+      if (errorData.errorType === 'sessionExpired') {
+        clearSessionAndRedirect()
+        throw new Error('로그인 세션이 만료되었습니다')
+      }
+      throw new Error(errorData.message || '요청에 실패했습니다')
+    }
+
+    return response.blob()
+  }
+
   const get = <T>(endpoint: string) => request<T>(endpoint)
   const post = <T>(endpoint: string, body: unknown) =>
     request<T>(endpoint, { method: 'POST', body: JSON.stringify(body) })
@@ -44,5 +75,5 @@ export const useApi = () => {
     request<T>(endpoint, { method: 'PUT', body: JSON.stringify(body) })
   const del = <T>(endpoint: string) => request<T>(endpoint, { method: 'DELETE' })
 
-  return { get, post, put, del }
+  return { get, getBlob, post, put, del }
 }

@@ -128,6 +128,22 @@ import { meetingEditorKey, meetingSourceViewKey } from '~/composables/meeting/me
 import { useEditorSourceView } from '~/composables/com/useEditorSourceView'
 const { currentMeeting, meetingDetail, handleSaveMeeting } = useMeetingStore()
 
+/**
+ * 회의록 콘텐츠 마크업 정리
+ * LLM/템플릿이 생성한 마크업이 `<h1></h1><img><p>회의록</p>` 처럼 분리된 케이스를
+ * `<img><h1>회의록</h1>` 형태로 합쳐 회의록 제목 스타일이 정상 적용되도록 보정.
+ * 빈 h1 + 바로 뒤 img + p 패턴일 때만 동작 → 일반 콘텐츠는 건드리지 않음.
+ */
+const normalizeMinutesHtml = (html: string): string => {
+  if (!html) return html
+  const pattern = /<h1([^>]*)>\s*<\/h1>\s*(<img[^>]*>)\s*<p[^>]*>([\s\S]*?)<\/p>/
+  return html.replace(pattern, (_match, h1Attrs, imgTag, text) => {
+    const inner = String(text).trim()
+    if (!inner) return `${imgTag}<h1${h1Attrs}></h1>`
+    return `${imgTag}<h1${h1Attrs}>${inner}</h1>`
+  })
+}
+
 // ── WYSIWYG 에디터 ───────────────────────────────────────────────────
 
 const isAutoSaving = ref(false)
@@ -225,7 +241,7 @@ const editor = useEditor({
     Highlight.configure({ multicolor: true }),
     TableShortcuts,
   ],
-  content: currentMeeting.value?.minutesContent ?? '',
+  content: normalizeMinutesHtml(currentMeeting.value?.minutesContent ?? ''),
   onUpdate: ({ editor }) => {
     if (!currentMeeting.value) return
     const html = editor.getHTML()
@@ -264,7 +280,7 @@ watch(
     if (editor.value && currentMeeting.value) {
       // 다른 회의로 전환 시 소스 모드 강제 해제 (textarea 잔존 방지)
       sourceView.exitSourceView()
-      const html = currentMeeting.value.minutesContent ?? ''
+      const html = normalizeMinutesHtml(currentMeeting.value.minutesContent ?? '')
       if (editor.value.getHTML() !== html) {
         editor.value.commands.setContent(html, { emitUpdate: false })
       }
@@ -280,7 +296,7 @@ watch(
     // 에디터가 아직 비어있는 경우에만 minutes 내용 반영
     const current = editor.value.getHTML()
     if (!current || current === '<p></p>') {
-      const html = currentMeeting.value.minutesContent
+      const html = normalizeMinutesHtml(currentMeeting.value.minutesContent ?? '')
       if (html) editor.value.commands.setContent(html, { emitUpdate: false })
     }
   },

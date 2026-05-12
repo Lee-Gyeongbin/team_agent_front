@@ -1,0 +1,334 @@
+@use './variables' as *;
+@use './mixins' as *;
+
+// ===================================
+// 문서 본문 공통 스타일 (Tiptap ProseMirror)
+// ---------------------------------------------
+// 회의록(.meeting2-editor-body)과 HTML 문서 템플릿(.library-report-editor-body)
+// 양쪽 본문 영역에서 동일한 모양으로 보이도록 @mixin 으로 추출.
+// 사용처: 각 본문 클래스 셀렉터 안에서 @include doc-content-styles;
+// ===================================
+
+// 회의록 h1 ::before 로고 (회사 로고 PNG, base64 인라인)
+$doc-content-logo: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAAA/CAYAAAF1FQFSAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAFxEAABcRAcom8z8AADoHSURBVHhe7X0HdBNX9v41LZVsegJo3swIUjY9S3pfDIT0hACpBCyZEhLSk01iGyfZJJtNNoWOjY3BxpJssOnFYNl0Fyzbcu/dYIPBTZK77v/cN5IsCUPI7ma3m/z3O+cdSaPR6Onqm/fuu+0BuOF1s+2jv+Ran3I/9ovxrKkLXzVZcX5+F966vrYdQvIQVuYhrC1H73N/Fk+lW/EVkxV9FmW1wFIzEmCZGVu6+/hzu91+EXxxCOGz/Qif7rrD+/Mu+B6yFD6VZsEJ+08egUVZCEuzlYuF5PLHoavzEdYULIAFyUovg5JO7e2sWOXYuJT2TLoYRBcjLM5CWJKlXCzUjGnHrPz5EF3hXH4R54X8YxC0+jaYvR5Bq4sFra6XPyc8SRczlCJsqERYaOIX+CDlCMIKx4WDkj+A4OQx/OTZ65QPacKGw+w45blWn+XoI8ATadbXIba0D+LLcNDmcjwvNLvHJyQLX95Xr5z8t/2XuE6eGjvY9Xz25vNhdsZQ/lwbc6nruAvJlRd7HxJF0U9i7GuJSatGM2k2Y+wNNWNfiaJ4r1oQZ96gUl0qC2Ko6wMzc23COznWv3pc5Z/B1MNW1GTZ8IbYajssy7HAynyE8HyEiLzbvM89IyYd7kS62JycToQl2ZxfXOgrcvgjf/7B1qvhs30IX6WfSgt3PJpqwSmHrfzDdLHzV+bi/gaFEhCeh4PXFCAEGov5yYHGk96f98DEVAs+l9ZugdhSzrP15c14UXguwkqlZwEZDch7RRz76yGE1zcQt+wwO+R8zjeNLgu0ekXWjx7uxFt3N3byiy0y2ZWfmM2b7/ZytPXaaz1Y76+bxhmv0f2Nvyau0UWdmJbdgxBXhrCxDC+NL6mA0Gy8aX0R3rupYio/4WM3nvnHTOOccvKKHudvP8f1vgsZGUMhxEFCN0iM/SAJ0tPiCPF6SZKuGzNmzDkykyJkxrQyE1eLgrhQHilf6/GhaYdtCdOzOzlN5plt+G6ure+2uNreuzfW4/0b63qZrrwQVhakw5qCyzw++GthYkr7xqfTrZxuNEYq/K3pGL4yvxaW5SAsJ9aYkT+nMZP4vCofITQXISQvz/t6/xb4pjQ/QrSlEY2oS+Pt8IhCEx8m6X5Ymo303HUvrMzFrl7OH/zK3ISP7KzCGks3wvaScyAg8Qdl1EucAEFJD/Ph9IuDZ75nTgffVCvSLUAdm2qyIUQW9UJobhUsynQMu9l4T1wp78ic/XW8Y81dysRAuH9LOQ5bk48+UYWL+Y0bvFfpyMfJY3gnv0pTXr8aeQH4xVzh+uIZEefyx7mRV4J/9Ifgb1DOo+NTYs4D3/QOtbNj9yYd7wJdiTJ8LzR1wOJMhCWZ/dKi16FmhLAchPAcvFJf2P/epO3n8I4EJoVCUOKDEBw8iH/RrNgmmLO+mT/3j6V5Iwj8otWg1SPMXHuz4xw6bgStwe7qOGFCavs4mk98DzYf4/f6ulKEOJpbSnuHLsvk/1tWkw1hWX8nveADQcbDyliAPh4Xn7uRxoNO/uU0FgQnDwF/Qy9o3OYf6iR/1NHxErdP92N6prUUttQgbCzn4wdsLkfYWo4Xbq/Ea5KP4JgNJSYIzZjp/bmxY8e6hoYbbrhhmOe7A8LzB5z6+t8DSWA6WVbdJQjyUxJjH0oCK5AYCxZF8TZZFL9gKhYkiuLVMhNzpFHS3WpRnCwJYpQksDhJku4eLQjTRFGcJwssW2IsyPv6HHOy2qfNz7F+9YHZ+s5fK06K3u//n+GZLLz45axOnJFlw9nZNpyfY8Mpe0/U3hFfhw9uacB7N9Th4LCCSlhV9IL3Z38VPHa4/ebJh234UoYVZ2RacVaWDX13HmsYu6EeR64prYXQAoTQfORKQhgpCYUIq4sOel/n34ons3px8mErvujolMZk6bhhXa0NljhG+hW5CEsdz6lTNNqH5SGsKkaYOJAC9i/C91Bb5ONpFnzWrVNCZFklLKWOKNPOH8Lz+RiwuqSZT0Fvphz1Hh6U2/vbHITPDyAE70OugQft6R8Cfgkm5SFSp55zdGp6pqWXz4GOEZ7UsX9kH+NffHlUIYr6YldH7t9ehe+kN+LYrVWt/GIL9tBg2gfBybdBoDHLMbiu8v7On8X4tA5Xp16iqSequMd92oFl2Vje1qVIIzQXv8hUOvhBWgPC6nwcuqYAfaJLEILzhjlWAdtcF1c6edzjCwfC65sQ/PSbXK99UyxKp9Kt+ERKSxvoy/jE7FyCUKecgBVmHBVd5Hpd0tqFg1fl4RDq1CfJNymSSZ7CLxyUVOqYtB/kr2kunB91EX8+NXYYb1O+P4+/nrWORn7lczQfjk/vxMccnRqmL+nlc+HCjGYuLeqUYznT22dHCDFz3fWa2P6OEQZFFZFSHO9aL1GjyTooKQE0+g8caugJPrXQioWmFU10PMzdgHzOdE45yvS0BiYVoKtTEFXSyydnfYkNFpn45HzBCkVSutJmR6ccE/RKMzZ19vL3pHXFlbwjnx2gjtwPgbuUiZdAc9+82AtBu/Z+mBPvWODF2l2T8Zz11ygTNJ8Dv+bHfA9ZPuGdOmyjziDElCKfoEPNDdSpT1Lq+ReP0RcgLM/Cl5KqEZbRUjUTrT0utWYQBO9BWLCn19UZgp/uK5dyrtHl87+JdyQeYXb09Y7ji/niUaurAY2uzvXZJ819+CxJiiREHVpfirR4hFW5tSbHcnZYaDZOTqh0dsIFu90eBcE4iCt6QUkZrosStNFT+V+j0RWARl8N/nqzclyPMDtEmcj9Y+yg1R8CTcx1/DjdME48m9nd99C+E7W8Q7TS2ECrjXK8ZGcVXhKRa6HlMbWLVuXg07sq0Xd7hWVhSYlzVeEDwckXQ3Cyosy5Y5b+PtDoRsIrURfxRp1xX/HS83djFMLTc1oZu2Pa4Q7/K7ZV1cHmKof6UoawRVFhVLtq8OakerxkbV6Ux4e8MGbMGLrDuML3M6qMS2UZOxZOWRmdHsmNF8Lmes+eDwBaSjHGpsiC8IkssKQxoni7JIphEpOCJCbulwVhIZ0nMfbV6JEjBVEQPhYF8eMxY8ZcIQmiURRHTVYz9r0oihfTUsz7+v8UrrrqqgtEQfxCEliyyNg3MmNT1KL4uMTEPDVjgWpRnEnKoCwLT8mM7RAFlioJ0l8EQRgpiuJ7ksCWykz6kdaHpGt5X98DL6XbHn41qzNyhslim1eJ+EYp4tsliO8WI35Yghhcg/hWprXzsV2NXXdtOYb3bqovf2BDXfxDm+sCHt1S/2hCtv0C72v+rvB0uuX2yabOEy+Ye7iKRWtXrtGQ/udYXL+Va+set7Oh6abYmp4/xdXiPRuP4N3xdZ3C2tLqc8OLT8KKPCuEFyGEFSJEFCFE1yCEFVggonAjhBc94P2dvzk8XWgf/nhKe9PTh21c7aNFPik07sJ6PbcLn97TVHFtbE3PretrUVpbXjt4ea6FL/hX5CkqITWn0dTZnOrhqgKEiAKEyFKENUV9sDq/37T2W8GfD7beNylN0WXIwEtKllNYZHwgYfmbO3FiYlO9Orqyy2dp1lGuJ5OKSo30ZWrLzPhd9nH8KbeJtw9TG5TjTstJWB5eGFWIr+yrw2117VjZ3o3HuuxY0tZp7bTbw+12+x2I2G8A/TzpYQg2fgxBSeEQaNzI1Y8gowECkgMhOPl615z1f4kJ6daOR9OsirAcuru7sPzMHfjc/pMV8FPWSUVtznZYbRzCWkaP2fjUDs/Je2pijYttn2Q0erw3EMpaezJdnSLFkSzuTl2N1gFOS4+it5GGQmZrG3ySeJXHD/q14HvIGjrR1ItkynIKi5hFJi0Sll9uN8pbampguVlR5V2as1NgilpPxw82WFw/vK27FwevzOVq/mt7FBXNiffTG5Ql5eoCHLyabk3HbRpJy8uc53jHAo2JEETaEdeQSjwUEtKcPjvQ4xJkYFKT20/65+EXnQsaXTto9YcHZO24lPZeWk6QFcslrHSXsOyXra9sAF0pmbE7FGE51j7UliruExKWFFWIFocvhrAk/wR3qUBoDs7cU+chrF67Hd9JO8rNdEMj8vG8NfncPDeYliRRhT/AJ9uvgCBjp4s9AcZ/eHQ6eLdaWWmSUr6Pli9bPd7/ZzDDcA/MjVeMWRrDl95vc4w71N413mGLdBfWy+ZuvDK+qhT05Qj6Ulr4VXBWuQuMlkDErsVZOH9/v0DsdsT7SHMMyeHCovXauO0VHgJzx095TQhhuThsbTH6rC34EgJ2z4e/pjhuNc6sTAg07oRAYyoEJvX034Z7EQITd/IfMivmZtDoN4PWUAZafbPSaDGg3wMzYq8GBB/Q6teB/7pC8Nd9AbMMfwb/mELQ6rL557X6DVxH5y1G8UZpdWGgMRTArNhi0EYHwLiDbd9OzLJzYdFqxymscfubj8Haog6+8qEWW04OkVqXwMhOym2nWQg/ZGBTR4/rxzdYexAWZipLNbKlriSDCQnOjIPDc/CJXZXuKySOI9ZuvGxtgX3YxorrIDCppX9tmawIzL0FGk3cYk3wN7zC/XJk9NUaSvjCZEbsbfx2UpZ0itWIjMPONamWztXbQWOIA806X5gefxlo9I3K+dGpMDN6Kl+Rcd+ffomLWYRxKZaKR9NsHsK6bXdjH+iKFVbRMpFaXDl5KMtgcWavS1iLTDhuU4nHD9fuqVGWjSGKb4c35/rWYYSmdsBtjCPM2Fd/PwTsfsQxTiF8mUqPj3p01h1+0eNh7ib08BERtLq3YE4cwrzNCP7RY5VzDeO5OYOWoxqd522mXTuZL9xJkHQbUqNr+kX7eZxHeDgZL5yQ0t78WLoVychNwronuakbdMV9rvW00+itLGO7IDS7CRab+mCxCdeVNbt+cHt3L16yim69bDw/PAfrLN2u98wnO3B7TRuWOmw87ujt7f2IdyYoeTVfiysDdz28e+j0Jjt/w2LOAG4413/Kj2mjX+eCIvZo9A3wrsPEotWn8nM1+uMebgn+Hq3tyZOsO8ZXpWRcoGvSGKbRT/c414lJqa0fPJeH+Gy6Badl2LrOXV9+EtaV9QvJubymNT8tsbdV4xXxJTX2PrvrntpS1cINEdTGbSnFpPp27FN8QKegubOnzNrdO8/VgeCIc/mATYwiP0xQ0jqPDg4EjW4PvL4FOcM4a/R/Aa1+J7yVQM8VT5hf1A3w5naEN7bRsV1en79DeW87vdf/fRp9Cszfifw6Wv3LHp9xx7MpbQ88n2Ereq0IUdhWWwPryz2FxG0RZQibHI08GNuryQTQdeH64sYL1uY1QUhmOSwz9br8P2uKEUKyOmFZZhAEJ1/o/Z2/G2hzum4ZFF8yFzaU7YINpVZIOIqQcETpu44g7D6CYDyKkNyIQ3dUdl6VUJEhJ1R+c2NCxcQH91bJ3tc7HVQq1XkSk753P8YYu0QShBRJEN6WBVkZ1B2QBbZDpVKNkgThaffjZ4Isy3cyxvzdj41m7D71KPU1siB+RxYH9/f+a0EmFUlgekklfS2K4iRJFPeT3Udi7Hu1IH4sMzZVZmKZJEmviYL4qcXISfaOEgVxJgmiPL+0YIwUWZSEUFOJDEpO+oQiHKkqiYUSCSyWxNgGtSAukVTSC2pBuk0Sxc2yIO5UC+Jzjnv/jdoQAcN+i+9R/QlJ0jKZsToi+r8GtSDOoZsoCayJ+vsv4f8AtaQuKzCV8N4AAAAASUVORK5CYII=');
+
+@mixin doc-content-styles {
+  min-height: 100%;
+  padding: $spacing-md $spacing-lg;
+  outline: none;
+
+  // ===== 회의록 헤더: 로고(figure) + h1(회의록) 가로 배치 =====
+  // 첫 ResizableImage NodeView(figure) 와 그 다음 h1 을 한 라인 가운데 정렬
+  // → "로고 왼쪽 + 회의록 텍스트 오른쪽" 형태
+  // 부모를 text-align: center 로 두고, 본문 요소들은 text-align: left 로 reset.
+  text-align: center;
+
+  > p,
+  > ul,
+  > ol,
+  > blockquote,
+  > pre,
+  > table,
+  > h2,
+  > h3 {
+    text-align: left;
+  }
+
+  > figure:first-of-type {
+    // ResizableImageView 가 inline style 로 margin auto 를 주므로 !important 필요
+    display: inline-block !important;
+    vertical-align: middle;
+    margin: 0 $spacing-md 0 0 !important;
+    margin-bottom: $spacing-xl !important;
+  }
+
+  > figure:first-of-type + h1 {
+    display: inline-block;
+    vertical-align: middle;
+    margin: 0 0 $spacing-xl 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+
+  // 헤더(로고 + 회의록) 다음 본문 첫 요소 위에 구분선 한 줄
+  > figure:first-of-type + h1 + * {
+    border-top: 1px solid $color-border;
+    padding-top: $spacing-md;
+  }
+
+  // Tiptap 기본 placeholder (extension-placeholder)
+  p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    color: $color-text-disabled;
+    pointer-events: none;
+    height: 0;
+  }
+
+  // ===== 제목 =====
+  h1 {
+    margin: 0 0 $spacing-lg;
+    padding-bottom: $spacing-md;
+    border-bottom: 1px solid $color-border;
+    text-align: center;
+    @include typo($body-xlarge-bold, $color-text-dark);
+    font-size: 26px;
+    line-height: 1.4;
+  }
+
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    margin: $spacing-xl 0 $spacing-sm;
+    padding-bottom: 8px;
+    border-bottom: 1px solid $color-border;
+    @include typo($body-medium-bold);
+    font-size: 16px;
+    color: var(--color-primary);
+
+    &::before {
+      content: '';
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      background-color: var(--color-primary);
+      mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='3'/%3E%3Cpath d='m8 12 3 3 5-6'/%3E%3C/svg%3E");
+      mask-repeat: no-repeat;
+      mask-position: center;
+      mask-size: contain;
+      -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='3'/%3E%3Cpath d='m8 12 3 3 5-6'/%3E%3C/svg%3E");
+      -webkit-mask-repeat: no-repeat;
+      -webkit-mask-position: center;
+      -webkit-mask-size: contain;
+    }
+  }
+
+  h3 {
+    margin: $spacing-md 0 $spacing-sm;
+    @include typo($body-medium-bold, $color-text-dark);
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+
+  // ===== 리스트 =====
+  ul {
+    list-style: none;
+    margin: 0 0 $spacing-md;
+    padding-left: 0;
+
+    li {
+      position: relative;
+      padding-left: 18px;
+      margin-bottom: 10px;
+      @include typo($body-medium, $color-text-dark);
+      line-height: 1.7;
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 4px;
+        top: 0.65em;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: $color-text-dark;
+      }
+    }
+
+    ul {
+      margin: 8px 0 0;
+      padding-left: 12px;
+    }
+  }
+
+  ol {
+    list-style: decimal outside;
+    margin: 0 0 $spacing-md;
+    padding-left: 26px;
+
+    li {
+      margin-bottom: $spacing-md;
+      @include typo($body-medium, $color-text-dark);
+      line-height: 1.7;
+    }
+
+    // 안건 텍스트(ol 직접 자식 p) — 본문보다 한 단계 진하게 (소제목 dash 와 hierarchy 차이)
+    > li > p {
+      color: $color-text-heading-sub;
+    }
+
+    ol {
+      list-style: lower-alpha outside;
+      margin: $spacing-xs 0 0;
+    }
+
+    // 번호 리스트 안 dash 리스트 — 회의록 회의내용 섹션 형식
+    // (1. 안건 / - 소제목 / - 소제목)
+    > li > ul {
+      margin: 4px 0 0;
+      padding-left: 4px;
+
+      > li {
+        padding-left: 14px;
+        margin-bottom: 2px;
+        @include typo($body-medium, $color-text-dark);
+
+        &::before {
+          content: '-';
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: auto;
+          height: auto;
+          background: transparent;
+          border-radius: 0;
+          color: $color-text-muted;
+          font-weight: $font-weight-normal;
+          font-size: inherit;
+          line-height: inherit;
+        }
+      }
+    }
+  }
+
+  // li 내부 p 는 부모 li 타이포 상속
+  li > p {
+    margin: 0;
+    font-size: inherit;
+    line-height: inherit;
+    color: inherit;
+  }
+
+  // ===== 인용 =====
+  blockquote {
+    margin: 0 0 $spacing-md;
+    padding: $spacing-sm $spacing-md;
+    border-left: 3px solid var(--color-primary);
+    background: rgba(var(--color-primary-rgb), 0.04);
+    @include typo($body-medium, $color-text-dark);
+    line-height: 1.7;
+    font-style: italic;
+  }
+
+  // ===== 표 =====
+  table {
+    width: 100%;
+    margin: 0 0 $spacing-lg;
+    border-collapse: collapse;
+    border: 1px solid $color-border;
+    table-layout: fixed;
+
+    th,
+    td {
+      padding: 6px 10px;
+      border: 1px solid $color-border;
+      @include typo($body-medium, $color-text-dark);
+      font-size: 14px;
+      line-height: 1.6;
+      vertical-align: middle;
+      position: relative;
+
+      p {
+        margin: 0;
+        font-size: inherit;
+        line-height: inherit;
+      }
+
+      &.selectedCell::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: rgba(var(--color-primary-rgb), 0.12);
+        pointer-events: none;
+      }
+    }
+
+    th {
+      background: $color-background;
+      @include typo($body-medium-bold, $color-text-dark);
+      font-size: 14px;
+      text-align: center;
+    }
+
+    // 정보 표 라벨 컬럼 — tbody 행 첫 번째 th 폭 고정
+    tbody tr > th:first-child {
+      width: 120px;
+    }
+
+    // 한 행에 라벨-값 쌍이 두 개일 때 — 두 번째 라벨(3번째 셀) 폭도 고정
+    tbody tr > th:nth-child(3) {
+      width: 100px;
+    }
+
+    // Tiptap 표 컬럼 리사이즈 핸들
+    .column-resize-handle {
+      position: absolute;
+      right: -2px;
+      top: 0;
+      bottom: -2px;
+      width: 4px;
+      background: var(--color-primary);
+      pointer-events: none;
+    }
+  }
+
+  // ===== 이미지 / 링크 / 형광펜 =====
+  img {
+    max-width: 100%;
+    height: auto;
+    border-radius: $border-radius-sm;
+    margin: $spacing-sm 0;
+
+    &.ProseMirror-selectednode {
+      outline: 2px solid var(--color-primary);
+    }
+  }
+
+  a {
+    color: var(--color-primary);
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  mark {
+    padding: 1px 2px;
+    border-radius: 2px;
+  }
+
+  // ===== 본문 단락 =====
+  p {
+    margin: 0 0 $spacing-md;
+    @include typo($body-medium, $color-text-dark);
+    line-height: 1.7;
+  }
+
+  // ===== 코드 블록 / 인라인 코드 =====
+  pre {
+    margin: 0 0 $spacing-md;
+    padding: $spacing-sm $spacing-md;
+    background: #2d3139;
+    color: #fff;
+    border-radius: $border-radius-base;
+    overflow-x: auto;
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-size: 13px;
+
+    code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+    }
+  }
+
+  code {
+    padding: 2px $spacing-xs;
+    background: $color-background;
+    border-radius: 3px;
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-size: 0.9em;
+    color: #d92d20;
+  }
+}

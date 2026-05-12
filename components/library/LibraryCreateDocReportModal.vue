@@ -208,8 +208,8 @@
 <script setup lang="ts">
 import { openToast } from '~/composables/useToast'
 import type { LibraryGeneratedReportValues } from '~/types/library'
-import { getLibraryReportRows, printLibraryReportFromHtml } from '~/utils/library/libraryReportPrintUtil'
-import { buildReportEditorHtml, parseReportEditorHtml } from '~/utils/library/libraryReportEditorUtil'
+import { printLibraryReportFromHtml } from '~/utils/library/libraryReportPrintUtil'
+import { parseReportEditorHtml } from '~/utils/library/libraryReportEditorUtil'
 
 const props = withDefaults(
   defineProps<{
@@ -259,7 +259,7 @@ const refineChatListRef = ref<HTMLElement | null>(null)
 let refineChatIdSeq = 0
 
 // ===== 웹에디터 HTML 상태 =====
-/** 에디터와 연결된 HTML 문자열 — buildReportEditorHtml 결과가 들어가고, 편집 시 업데이트됨 */
+/** 에디터와 연결된 HTML 문자열 — 초기 tmplHtml/보완 결과를 표시하고, 편집 시 업데이트됨 */
 const editorHtml = ref('')
 /** 외부(AI 보완/초기 로딩)에서 에디터를 업데이트하는 동안 write-back을 막는 플래그 */
 let isExternalEditorUpdate = false
@@ -268,10 +268,8 @@ let writebackTimer: ReturnType<typeof setTimeout> | null = null
 /** report → editorHtml 동기화 (모달 열기·AI 보완 완료 시) */
 const setEditorFromReport = () => {
   isExternalEditorUpdate = true
-  const rows = getLibraryReportRows(report.value ?? {})
-  const tableHtml = buildReportEditorHtml(report.value ?? {}, rows)
   // tmplHtml이 있으면 표 위에 머리글 HTML 삽입
-  editorHtml.value = props.tmplHtml ? `${props.tmplHtml}${tableHtml}` : tableHtml
+  editorHtml.value = props.tmplHtml
   // Vue watcher는 동기적으로 실행되므로 nextTick에서 플래그 해제
   nextTick(() => {
     isExternalEditorUpdate = false

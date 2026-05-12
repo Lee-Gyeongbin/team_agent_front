@@ -8,7 +8,9 @@
   flex-shrink: 0;
   height: $header-height;
   padding: 0 $spacing-md;
-  z-index: 1;
+  z-index: $z-header;
+  // 모달 오버레이와 겹칠 때 투명 영역으로 테두리만 튀는 현상 방지
+  background-color: #fff;
   border-bottom: 1px solid $color-border;
 
   .header-title-wrap {
@@ -77,40 +79,57 @@
     position: relative;
   }
 
+  .theme-trigger-btn {
+    &.is-active {
+      background-color: #e6e8ea;
+      color: #58616a;
+    }
+  }
+
+  .theme-current-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: $border-radius-full;
+    border: 2px solid rgba(0, 0, 0, 0.12);
+    flex-shrink: 0;
+  }
+
   .theme-picker {
     position: absolute;
     top: calc(100% + #{$spacing-xs});
     right: 0;
-    display: flex;
-    gap: $spacing-sm;
-    padding: $spacing-sm $spacing-md;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: fit-content;
+    padding: $spacing-sm;
     background: #fff;
     border: 1px solid $color-border;
-    border-radius: $border-radius-lg;
-    box-shadow: $shadow-md;
+    border-radius: $border-radius-base;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
     z-index: $z-dropdown;
   }
 
   .theme-color-btn {
-    width: 24px;
-    height: 24px;
-    border: 2px solid transparent;
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+    border: 1px solid transparent;
     border-radius: $border-radius-full;
     cursor: pointer;
-    transition:
-      transform $transition-fast,
-      border-color $transition-fast;
+    transition: transform 0.2s ease;
 
     &:hover {
-      transform: scale(1.15);
+      transform: scale(1.1);
     }
 
     &.is-active {
-      box-shadow: 0 0 0 2px var(--color-primary);
+      border-color: #0f172a;
     }
   }
 
   .header-logo {
     cursor: pointer;
   }
+
 }

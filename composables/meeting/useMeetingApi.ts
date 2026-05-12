@@ -1,12 +1,7 @@
 import { useApi } from '~/composables/com/useApi'
 import { useApi_multipart } from '~/composables/com/useApi_multipart'
-import type {
-  Meeting as ApiMeeting,
-  MeetingDetail,
-  MeetingUser as ApiMeetingUser,
-  SpeechSegment,
-} from '~/types/meeting'
-import type { Meeting, MeetingSpeaker, MeetingUser } from '~/types/meeting2'
+import type { Meeting as ApiMeeting, MeetingDetail, MeetingUser as ApiMeetingUser } from '~/types/meeting'
+import type { Meeting, MeetingSpeaker, MeetingUser, MeetingFileFormat } from '~/types/meeting2'
 
 // 🔽 Mock — 백엔드 API 없는 항목만 유지 (실제 엔드포인트 완성 시 useApi 패턴으로 교체)
 const MOCK_BASE = '/mock/meeting'
@@ -21,7 +16,7 @@ const mockPost = async <T>(url: string, body: unknown = {}): Promise<T> => {
 }
 
 export const useMeetingApi = () => {
-  const { get, post } = useApi()
+  const { get, getBlob, post } = useApi()
 
   /** 참석자 선택용 사용자 목록 */
   const fetchUserList = async (): Promise<{ list: ApiMeetingUser[] }> => {
@@ -55,17 +50,15 @@ export const useMeetingApi = () => {
   /**
    * 회의 종료 (오디오 파일 전사 버전)
    * - 오디오 Blob을 multipart/form-data로 전송
-   * - 백엔드에서 gpt-4o-mini-transcribe 전사 후 회의록 생성
+   * - 세그먼트는 AI 전사(diarize) 응답으로만 서버에서 채움 — 클라이언트 segments 전송 없음
    */
   const fetchFinishMeetingWithAudio = async (params: {
     meetingId: number
     audioBlob: Blob
-    segments: SpeechSegment[]
   }): Promise<{ successYn: boolean; returnMsg?: string }> => {
     const formData = new FormData()
     formData.append('meetingId', String(params.meetingId))
     formData.append('audioFile', params.audioBlob, 'meeting.webm')
-    formData.append('segments', JSON.stringify(params.segments ?? []))
 
     return useApi_multipart<{ successYn: boolean; returnMsg?: string }>('/api/ai/meeting/finishMeetingWithAudio.do', {
       method: 'POST',
@@ -129,6 +122,19 @@ export const useMeetingApi = () => {
     return get<{ token: string; expiresAt: number }>('/meeting/realtime-token')
   }
 
+  /** 회의 파일 다운로드 */
+  const fetchDownloadFile = async (meetingId: number, format: MeetingFileFormat): Promise<void> => {
+    const blob = await getBlob(`/ai/meeting/downloadMinutes.do?meetingId=${meetingId}&format=${format}`)
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `회의록_${meetingId}.${format}`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  }
+
   return {
     fetchUserList,
     fetchMeetingList,
@@ -144,5 +150,6 @@ export const useMeetingApi = () => {
     fetchGenerateMeetingTitle,
     fetchDeleteMeeting,
     fetchRealtimeToken,
+    fetchDownloadFile,
   }
 }

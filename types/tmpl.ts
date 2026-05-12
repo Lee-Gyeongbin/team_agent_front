@@ -8,6 +8,7 @@ export interface TmplField {
   jsonKey: string
   fieldNm: string
   multilineYn: string
+  layoutType: string
   sortOrd: number
   useYn: string
   createDt: string

@@ -110,7 +110,8 @@
           <div class="tmpl-field-table__head">
             <span class="tmpl-field-table__col tmpl-field-table__col--drag" />
             <span class="tmpl-field-table__col">JSON 키</span>
-            <span class="tmpl-field-table__col">항목명 (표에 표시)</span>
+            <span class="tmpl-field-table__col">항목명</span>
+            <span class="tmpl-field-table__col tmpl-field-table__col--check">표 사용</span>
             <span class="tmpl-field-table__col tmpl-field-table__col--check">여러줄</span>
             <span class="tmpl-field-table__col tmpl-field-table__col--action" />
           </div>
@@ -148,11 +149,20 @@
                 />
                 <div
                   class="tmpl-field-table__check"
+                  title="표 사용"
+                >
+                  <UiCheckbox
+                    :model-value="row.layoutType === 'table'"
+                    @update:model-value="onFieldTableLayoutChange(row, $event)"
+                  />
+                </div>
+                <div
+                  class="tmpl-field-table__check"
                   title="여러 줄 입력 허용"
                 >
                   <UiCheckbox
                     :model-value="row.multilineYn === 'Y'"
-                    @update:model-value="row.multilineYn = $event ? 'Y' : 'N'"
+                    @update:model-value="onFieldMultilineChange(row, $event)"
                   />
                 </div>
                 <button
@@ -179,8 +189,25 @@
         collapsible
       >
         <p class="tmpl-html-hint">문서 생성 시 초기 HTML 구조로 사용됩니다. 비워두면 기본 레이아웃이 적용됩니다.</p>
+        <div class="tmpl-html-variable-legend">
+          <span class="tmpl-html-variable-legend__label">JSON 키 삽입</span>
+          <div class="tmpl-html-variable-legend__tags">
+            <button
+              v-for="jsonKey in availableJsonKeys"
+              :key="jsonKey"
+              type="button"
+              class="tmpl-html-variable-tag"
+              :class="{ active: selectedJsonKeys.has(jsonKey) }"
+              title="템플릿에 삽입"
+              @click="onInsertJsonKeyToTemplate(jsonKey)"
+            >
+              {{ jsonKey }}
+            </button>
+          </div>
+        </div>
         <div class="tmpl-html-editor-wrap">
           <LibraryReportEditor
+            ref="tmplHtmlEditorRef"
             v-model:html="tmplHtml"
             placeholder="HTML 템플릿 내용을 입력하세요..."
           />
@@ -255,6 +282,9 @@ import type { TmplBaseInfo, TmplDocType, TmplField, TmplFormSavePayload } from '
 
 const genFieldId = () => `fld_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
 
+/** JSON 키 칩 다중 선택(토글). 선택 시 에디터에 삽입, 재클릭 시 선택만 해제 */
+const selectedJsonKeys = ref(new Set<string>())
+
 const emptyDt = ''
 
 const createTmplField = (
@@ -265,6 +295,7 @@ const createTmplField = (
   jsonKey: partial.jsonKey,
   fieldNm: partial.fieldNm,
   multilineYn: partial.multilineYn,
+  layoutType: partial.layoutType ?? 'table',
   sortOrd: partial.sortOrd,
   useYn: partial.useYn ?? 'Y',
   createDt: partial.createDt ?? emptyDt,
@@ -272,8 +303,8 @@ const createTmplField = (
 })
 
 const DEFAULT_FIELDS = (): TmplField[] => [
-  createTmplField({ jsonKey: 'title', fieldNm: '제목', multilineYn: 'N', sortOrd: 1 }),
-  createTmplField({ jsonKey: 'content', fieldNm: '본문내용', multilineYn: 'Y', sortOrd: 2 }),
+  createTmplField({ jsonKey: 'title', fieldNm: '제목', multilineYn: 'N', layoutType: 'table', sortOrd: 1 }),
+  createTmplField({ jsonKey: 'content', fieldNm: '본문내용', multilineYn: 'Y', layoutType: 'section', sortOrd: 2 }),
 ]
 
 const DEFAULT_PROMPT_TEXT_T = `다음 내용을 보고서 형식으로 정리해 주세요.
@@ -349,6 +380,27 @@ const fields = ref<TmplField[]>(DEFAULT_FIELDS())
 const llmPromptSmry = ref('')
 const llmPrompt = ref('')
 const tmplHtml = ref('')
+const tmplHtmlEditorRef = ref<{
+  insertContentAtLastSelection: (content: string) => void
+  removePlaceholderByJsonKey: (jsonKey: string) => void
+  renderTmplFieldByState: (opts: {
+    fieldId: string
+    jsonKey: string
+    fieldNm: string
+    mode: 'none' | 'table-only' | 'multiline-only' | 'table-multiline'
+  }) => void
+  upsertTmplFieldTableRow: (opts: { fieldId: string; jsonKey: string; fieldNm: string }) => void
+  removeTmplFieldTableRow: (fieldId: string) => void
+  upsertTmplMultilineSection: (opts: {
+    fieldId: string
+    jsonKey: string
+    fieldNm: string
+    variant: 'table' | 'list'
+  }) => void
+  removeTmplMultilineSection: (fieldId: string) => void
+} | null>(null)
+const fieldSyncTokenById = new Map<string, number>()
+let fieldSyncTokenSeed = 0
 
 const promptVariables = computed(() => {
   const src = llmPrompt.value ?? ''
@@ -362,7 +414,89 @@ const promptVariables = computed(() => {
   return [...uniq]
 })
 
+const availableJsonKeys = computed(() =>
+  fields.value
+    .map((row) => row.jsonKey.trim())
+    .filter((jsonKey): jsonKey is string => Boolean(jsonKey))
+    .filter((jsonKey, idx, arr) => arr.indexOf(jsonKey) === idx),
+)
+
+watch(availableJsonKeys, (keys) => {
+  const allowed = new Set(keys)
+  const next = new Set<string>()
+  for (const k of selectedJsonKeys.value) {
+    if (allowed.has(k)) next.add(k)
+  }
+  if (next.size !== selectedJsonKeys.value.size) {
+    selectedJsonKeys.value = next
+  }
+})
+
 const modalTitle = computed(() => (props.template ? '템플릿 수정' : '새 템플릿 추가'))
+
+const isTmplHtmlBlank = (h: string) => !h?.trim()
+
+const getFieldRenderMode = (row: TmplField): 'none' | 'table-only' | 'multiline-only' | 'table-multiline' => {
+  const isTable = row.layoutType === 'table'
+  const isMultiline = row.multilineYn === 'Y'
+  if (isTable && isMultiline) return 'table-multiline'
+  if (isTable) return 'table-only'
+  if (isMultiline) return 'multiline-only'
+  return 'none'
+}
+
+const syncFieldTemplateFragment = (row: TmplField) => {
+  const api = tmplHtmlEditorRef.value
+  if (!api) return
+
+  const k = row.jsonKey.trim()
+  const nm = row.fieldNm.trim()
+  const mode = k && nm ? getFieldRenderMode(row) : 'none'
+  api.renderTmplFieldByState({
+    fieldId: row.fieldId,
+    jsonKey: k,
+    fieldNm: nm,
+    mode,
+  })
+}
+
+const scheduleSyncFieldTemplateFragment = (fieldId: string) => {
+  const token = ++fieldSyncTokenSeed
+  fieldSyncTokenById.set(fieldId, token)
+  nextTick(() => {
+    if (fieldSyncTokenById.get(fieldId) !== token) return
+    const targetRow = fields.value.find((r) => r.fieldId === fieldId)
+    if (!targetRow) return
+    syncFieldTemplateFragment(targetRow)
+  })
+}
+
+/**
+ * 항목 정의(layoutType / multilineYn)에 맞춰 HTML 조각 반영
+ * — onFieldTableLayoutChange / onFieldMultilineChange 와 동일 규칙
+ */
+const applyTmplHtmlFromFields = () => {
+  if (tmplType.value !== 'T') return
+  if (!tmplHtmlEditorRef.value) return
+  const rows = [...fields.value].sort((a, b) => (a.sortOrd ?? 0) - (b.sortOrd ?? 0))
+  for (const row of rows) {
+    syncFieldTemplateFragment(row)
+  }
+}
+
+/** 저장된 tmplHtml이 비어 있을 때만 자동 구성(기존 HTML 덮어쓰지 않음). 에디터 마운트 이후 실행 */
+const scheduleApplyTmplHtmlFromFieldsWhenBlank = () => {
+  if (tmplType.value !== 'T') return
+  if (!isTmplHtmlBlank(tmplHtml.value)) return
+  nextTick(() => {
+    if (tmplType.value !== 'T') return
+    if (!isTmplHtmlBlank(tmplHtml.value)) return
+    nextTick(() => {
+      if (tmplType.value !== 'T') return
+      applyTmplHtmlFromFields()
+    })
+  })
+}
 
 const resetForm = () => {
   tmplNm.value = ''
@@ -372,6 +506,7 @@ const resetForm = () => {
   llmPromptSmry.value = ''
   llmPrompt.value = ''
   tmplHtml.value = ''
+  selectedJsonKeys.value = new Set()
 }
 
 const normalizeField = (r: TmplField, tmplId: string): TmplField => ({
@@ -399,11 +534,15 @@ const loadFromTemplate = (t: TmplBaseInfo) => {
   }
   llmPrompt.value = t.llmPrompt
   tmplHtml.value = t.tmplHtml ?? ''
+  selectedJsonKeys.value = new Set()
 }
 
 watch(tmplType, (v) => {
   if (v === 'T' && fields.value.length === 0) {
     fields.value = DEFAULT_FIELDS()
+  }
+  if (props.isOpen && v === 'T') {
+    scheduleApplyTmplHtmlFromFieldsWhenBlank()
   }
 })
 
@@ -416,7 +555,10 @@ watch(
     } else {
       resetForm()
     }
-    nextTick(() => formRef.value?.closest('.modal-side-body')?.scrollTo(0, 0))
+    nextTick(() => {
+      formRef.value?.closest('.modal-side-body')?.scrollTo(0, 0)
+      scheduleApplyTmplHtmlFromFieldsWhenBlank()
+    })
   },
 )
 
@@ -429,6 +571,7 @@ const onAddFieldRow = () => {
       jsonKey: '',
       fieldNm: '',
       multilineYn: 'N',
+      layoutType: 'section',
       sortOrd: nextOrd,
     }),
   )
@@ -441,6 +584,15 @@ const onRemoveFieldRow = (fieldId: string) => {
   }
   const idx = fields.value.findIndex((r) => r.fieldId === fieldId)
   if (idx !== -1) fields.value.splice(idx, 1)
+  fieldSyncTokenById.delete(fieldId)
+  nextTick(() =>
+    tmplHtmlEditorRef.value?.renderTmplFieldByState({
+      fieldId,
+      jsonKey: '',
+      fieldNm: '',
+      mode: 'none',
+    }),
+  )
 }
 
 const onInsertDefaultPrompt = () => {
@@ -449,6 +601,56 @@ const onInsertDefaultPrompt = () => {
     return
   }
   llmPrompt.value = tmplType.value === 'F' ? DEFAULT_PROMPT_TEXT_F : DEFAULT_PROMPT_TEXT_T
+}
+
+/** 표 사용 — HTML 템플릿에 2열 표 행(th=항목명, td={{jsonKey}}) 삽입·갱신 / 해제 시 해당 행 제거 */
+const onFieldTableLayoutChange = (row: TmplField, useTable: boolean) => {
+  if (useTable) {
+    const k = row.jsonKey.trim()
+    const nm = row.fieldNm.trim()
+    if (!k || !nm) {
+      openToast({ message: 'JSON 키와 항목명을 입력한 뒤 표 사용을 켜 주세요.', type: 'warning' })
+      return
+    }
+    row.layoutType = 'table'
+    scheduleSyncFieldTemplateFragment(row.fieldId)
+    return
+  }
+  row.layoutType = 'section'
+  scheduleSyncFieldTemplateFragment(row.fieldId)
+}
+
+/** 여러 줄(section) — 최종 체크 조합 상태에 맞춰 HTML 조각 동기화 */
+const onFieldMultilineChange = (row: TmplField, isMultiline: boolean) => {
+  if (isMultiline) {
+    const k = row.jsonKey.trim()
+    const nm = row.fieldNm.trim()
+    if (!k || !nm) {
+      openToast({ message: 'JSON 키와 항목명을 입력한 뒤 여러 줄을 켜 주세요.', type: 'warning' })
+      return
+    }
+    row.multilineYn = 'Y'
+    scheduleSyncFieldTemplateFragment(row.fieldId)
+    return
+  }
+  row.multilineYn = 'N'
+  scheduleSyncFieldTemplateFragment(row.fieldId)
+}
+
+// JSON 키 칩: 토글 선택 + 최초 선택 시 삽입 / 재클릭 시 선택 해제 + 에디터에서 {{key}} 제거
+const onInsertJsonKeyToTemplate = (jsonKey: string) => {
+  const normalizedKey = jsonKey.trim()
+  if (!normalizedKey) return
+  const next = new Set(selectedJsonKeys.value)
+  if (next.has(normalizedKey)) {
+    next.delete(normalizedKey)
+    selectedJsonKeys.value = next
+    tmplHtmlEditorRef.value?.removePlaceholderByJsonKey(normalizedKey)
+    return
+  }
+  next.add(normalizedKey)
+  selectedJsonKeys.value = next
+  tmplHtmlEditorRef.value?.insertContentAtLastSelection(`{{${normalizedKey}}}`)
 }
 
 const onSave = () => {
@@ -588,7 +790,7 @@ const onSave = () => {
 
 .tmpl-field-table__head {
   display: grid;
-  grid-template-columns: 36px 1fr 1fr 100px 44px;
+  grid-template-columns: 36px 1fr 1fr 80px 80px 44px;
   gap: 8px;
   align-items: center;
   padding: 8px 10px;
@@ -609,7 +811,7 @@ const onSave = () => {
 
 .tmpl-field-table__row {
   display: grid;
-  grid-template-columns: 36px 1fr 1fr 100px 44px;
+  grid-template-columns: 36px 1fr 1fr 80px 80px 44px;
   gap: 8px;
   align-items: center;
   padding: 8px 10px;
@@ -737,6 +939,58 @@ const onSave = () => {
   @include typo($body-xsmall);
   color: $color-text-muted;
   line-height: $line-height-base;
+}
+
+.tmpl-html-variable-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.tmpl-html-variable-legend__label {
+  @include typo($body-xsmall-bold);
+  color: $color-text-dark;
+}
+
+.tmpl-html-variable-legend__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tmpl-html-variable-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid $color-border;
+  border-radius: 999px;
+  background: #fff;
+  @include typo($body-xsmall);
+  color: $color-text-secondary;
+  cursor: pointer;
+  transition:
+    border-color $transition-base,
+    background-color $transition-base,
+    color $transition-base;
+
+  &:hover {
+    border-color: var(--color-primary);
+    background: color-mix(in srgb, var(--color-primary) 8%, #fff);
+    color: var(--color-primary);
+  }
+  &.active {
+    border-color: var(--color-primary);
+    background: color-mix(in srgb, var(--color-primary) 8%, #fff);
+    color: var(--color-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
 }
 
 .tmpl-html-editor-wrap {

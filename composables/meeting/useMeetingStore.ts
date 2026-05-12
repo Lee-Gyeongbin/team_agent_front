@@ -2,15 +2,9 @@ import { useMeetingApi } from '~/composables/meeting/useMeetingApi'
 import type {
   Meeting as ApiMeeting,
   MeetingDetail,
-  MeetingInfographic,
-  MeetingMinutes,
   MeetingSpeaker as ApiMeetingSpeaker,
   MeetingUser as ApiMeetingUser,
-  SpeechSegment,
 } from '~/types/meeting'
-import { useTmplApi } from '~/composables/tmpl/useTmplApi'
-import type { TmplBaseInfo, TmplField } from '~/types/tmpl'
-import { escapeHTML } from '~/utils/global/htmlUtil'
 import type {
   Meeting,
   MeetingStep,
@@ -36,9 +30,8 @@ const {
   fetchSearchUsers,
   fetchMatchUsersByNames,
   fetchGenerateMeetingTitle,
+  fetchDownloadFile,
 } = useMeetingApi()
-
-const { fetchTmplDetail } = useTmplApi()
 
 // ===== 상태 =====
 const meetingList = ref<ApiMeeting[]>([])
@@ -49,9 +42,6 @@ const isLoadingList = ref(false)
 const isLoadingDetail = ref(false)
 const isFinishing = ref(false)
 const isGeneratingTitle = ref(false)
-
-// 회의록 템플릿(필드 정의 포함) — tm000004 등
-const minutesTmpl = ref<TmplBaseInfo | null>(null)
 
 const userList = ref<ApiMeetingUser[]>([])
 const selectedSpeaker = ref<MeetingSpeaker | null>(null)
@@ -180,9 +170,7 @@ const mapApiDetailToMeeting = (detail: MeetingDetail): Meeting | null => {
     steps: deriveSteps(m.status, hasMinutes),
     speakers: mapApiSpeakers(detail.speakers ?? []),
     sttList: buildSttListFromSpeakers(detail.speakers ?? []),
-    minutesContent:
-      detail.minutes?.editedContent ||
-      buildMinutesHtml(detail.minutes, { infographics: detail.infographicList, tmpl: minutesTmpl.value }),
+    minutesContent: detail.minutes?.editedContent || detail.minutes?.generatedContent || '',
     fileFormat: 'docx' as MeetingFileFormat,
     recipients: [],
     templateId: DEFAULT_MINUTES_TMPL_ID,
@@ -191,112 +179,6 @@ const mapApiDetailToMeeting = (detail: MeetingDetail): Meeting | null => {
     updatedAt: m.createDt ?? '',
     status: m.status,
   }
-}
-
-const nlToBr = (escaped: string) => escaped.replace(/\n/g, '<br>')
-
-const parseFlatData = (flatData: string | undefined) => {
-  if (!flatData?.trim()) return {}
-  try {
-    const parsed = JSON.parse(flatData)
-    return parsed && typeof parsed === 'object' ? parsed : {}
-  } catch {
-    return {}
-  }
-}
-
-const normalizeFlatText = (value: unknown): string => {
-  if (value == null) return ''
-  if (Array.isArray(value)) {
-    return value
-      .map((v) => String(v ?? '').trim())
-      .filter(Boolean)
-      .join(', ')
-  }
-  return String(value).trim()
-}
-
-const parseStringArrayField = (value: unknown): string[] => {
-  if (Array.isArray(value)) {
-    return value.map((v) => String(v ?? '').trim()).filter(Boolean)
-  }
-  if (typeof value !== 'string') return []
-  const raw = value.trim()
-  if (!raw) return []
-  try {
-    const parsed = JSON.parse(raw)
-    if (Array.isArray(parsed)) return parsed.map((v) => String(v ?? '').trim()).filter(Boolean)
-  } catch {
-    // JSON 배열이 아니면 일반 텍스트로 처리
-  }
-  return []
-}
-
-const renderFlatValueHtml = (value: unknown, options?: { orderedList?: boolean }): string => {
-  const arr = parseStringArrayField(value)
-  if (arr.length > 0) {
-    const tag = options?.orderedList ? 'ol' : 'ul'
-    return `<${tag}>${arr.map((item) => `<li>${nlToBr(escapeHTML(item))}</li>`).join('')}</${tag}>`
-  }
-  const text = normalizeFlatText(value)
-  return text ? `<p>${nlToBr(escapeHTML(text))}</p>` : '<p></p>'
-}
-
-const normalizeFields = (fields: TmplField[] | undefined): TmplField[] => {
-  const safe = Array.isArray(fields) ? fields : []
-  return safe
-    .filter((f) => f && f.useYn === 'Y' && !!f.jsonKey?.trim())
-    .slice()
-    .sort((a, b) => (a.sortOrd ?? 0) - (b.sortOrd ?? 0))
-}
-
-const buildMinutesHtml = (
-  minutes: MeetingMinutes | null,
-  options?: { infographics?: MeetingInfographic[]; tmpl?: TmplBaseInfo | null },
-): string => {
-  if (!minutes) return ''
-
-  const flat = parseFlatData(minutes.flatData)
-  const tmplHtml = options?.tmpl?.tmplHtml ?? ''
-  const fields = normalizeFields(options?.tmpl?.fields)
-
-  // 템플릿 필드가 있으면 field 정의 기반으로 표 구성 (DB 변경 대응)
-  // 없으면 flatData 키를 그대로 표 구성(최소 fallback)
-  const rowsSource =
-    fields.length > 0
-      ? fields.map((f) => ({ label: f.fieldNm, key: f.jsonKey, multilineYn: f.multilineYn }))
-      : Object.keys(flat).map((k) => ({ label: k, key: k, multilineYn: 'Y' }))
-
-  const rows = rowsSource
-    .map((r) => {
-      const value = (flat as Record<string, unknown>)[r.key]
-      // 참석자처럼 JSON 배열 문자열인 케이스는 자동 목록/문단 렌더링 로직이 처리
-      const valueHtml =
-        r.multilineYn === 'N'
-          ? renderFlatValueHtml(normalizeFlatText(value))
-          : renderFlatValueHtml(value, { orderedList: true })
-      if (valueHtml === '<p></p>') return ''
-      return `<tr><th>${escapeHTML(r.label)}</th><td>${valueHtml}</td></tr>`
-    })
-    .filter(Boolean)
-    .join('')
-  const reportTable = rows ? `<table><tbody>${rows}</tbody></table><p></p>` : ''
-
-  // 인포그래픽 (기존 유지)
-  const sortedInfo = [...(options?.infographics ?? [])].sort((a, b) => a.sortOrd - b.sortOrd)
-  const infographicBlock =
-    sortedInfo.length > 0
-      ? `<h2>인포그래픽</h2>${sortedInfo
-          .map((info) => {
-            const title = escapeHTML(info.topicNm ?? '')
-            const sum = info.topicSummary ? `<p>${nlToBr(escapeHTML(info.topicSummary))}</p>` : ''
-            const tree = info.treeText ? `<p style="white-space:pre-wrap">${escapeHTML(info.treeText)}</p>` : ''
-            return `<h3>${title}</h3>${sum}${tree}`
-          })
-          .join('')}`
-      : ''
-
-  return `${tmplHtml}${reportTable}${infographicBlock}`
 }
 
 // ===== 조회 =====
@@ -333,16 +215,6 @@ const handleSelectMeetingDetail = async (meetingId: number) => {
   try {
     const detail = await fetchMeetingDetail(meetingId)
     meetingDetail.value = detail
-
-    // 회의록 템플릿 상세(필드 포함) 캐시 — 템플릿 기반 표 구성
-    if (!minutesTmpl.value?.tmplId) {
-      try {
-        const res = await fetchTmplDetail(DEFAULT_MINUTES_TMPL_ID)
-        minutesTmpl.value = res.data ?? null
-      } catch {
-        minutesTmpl.value = null
-      }
-    }
 
     const mapped = mapApiDetailToMeeting(detail)
     if (!currentMeeting.value || currentMeeting.value.id !== mapped?.id) {
@@ -382,11 +254,7 @@ const handleCreateMeeting = async (params: {
   }
 }
 
-const handleFinishMeetingWithAudio = async (params: {
-  meetingId: number
-  audioBlob: Blob
-  segments: SpeechSegment[]
-}): Promise<boolean> => {
+const handleFinishMeetingWithAudio = async (params: { meetingId: number; audioBlob: Blob }): Promise<boolean> => {
   isFinishing.value = true
   openLoading({ text: '음성을 전사하고 회의록을 생성하는 중...' })
   try {
@@ -547,61 +415,12 @@ const handleSaveSpeakers = async (speakers: Partial<MeetingSpeaker>[]) => {
 }
 
 // ===== 파일 다운로드 =====
-const handleDownloadFile = (format: MeetingFileFormat) => {
+const handleDownloadFile = (meetingId: number, format: MeetingFileFormat) => {
   if (!currentMeeting.value) {
     openToast({ message: '회의 정보가 없습니다.', type: 'warning' })
     return
   }
-
-  const html = currentMeeting.value.minutesContent ?? ''
-  const today = new Date().toISOString().slice(0, 10).replace(/-/g, '')
-  const safeTitle = currentMeeting.value.title.replace(/[\\/:*?"<>|]/g, '').trim() || '회의록'
-  const fileName = `${safeTitle}_${today}.${format}`
-
-  let content = ''
-  let mimeType = 'text/plain;charset=utf-8'
-
-  if (format === 'txt') {
-    const div = document.createElement('div')
-    div.innerHTML = html
-    content = div.innerText
-  } else if (format === 'md') {
-    content = html
-      .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1\n\n')
-      .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1\n\n')
-      .replace(/<h3[^>]*>(.*?)<\/h3>/gi, '### $1\n\n')
-      .replace(/<li[^>]*>(.*?)<\/li>/gi, '- $1\n')
-      .replace(/<\/?(ul|ol)[^>]*>/gi, '\n')
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
-      .replace(/<[^>]+>/g, '')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim()
-    mimeType = 'text/markdown;charset=utf-8'
-  } else {
-    content = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${safeTitle}</title></head><body>${html}</body></html>`
-    mimeType = 'text/html;charset=utf-8'
-    openToast({
-      message: `${format.toUpperCase()} 변환은 백엔드 연동 후 정식 지원됩니다. 임시로 HTML로 다운로드합니다.`,
-      type: 'info',
-    })
-  }
-
-  const blob = new Blob([content], { type: mimeType })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = fileName
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
-
-  if (format === 'txt' || format === 'md') {
-    openToast({ message: `${fileName} 파일이 다운로드되었습니다.` })
-  }
-
-  if (currentMeeting.value) currentMeeting.value.fileFormat = format
+  fetchDownloadFile(meetingId, format)
 }
 
 // ===== 메일 발송 =====
@@ -656,7 +475,6 @@ export const useMeetingStore = () => {
     meetingList,
     meetingDetail,
     currentMeeting,
-    minutesTmpl,
     userList,
     isLoadingList,
     isLoadingDetail,

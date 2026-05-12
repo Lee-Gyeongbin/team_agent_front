@@ -5,16 +5,17 @@
   >
     <!-- 왼쪽 리사이즈 핸들 -->
     <div
-      class="library-detail-modal-resize-handle"
-      :class="{ 'is-dragging': isResizing }"
-      @mousedown="onResizeStart"
-    ></div>
-    <div
       ref="contentRef"
       class="library-detail-modal-content"
       :style="{ maxWidth: modalWidth + 'px' }"
       @scroll="handleScroll"
     >
+      <!-- 왼쪽 리사이즈 핸들 — 콘텐츠 내부에 두어 헤더·버튼보다 아래 레이어(클릭 가로막힘 방지) -->
+      <div
+        class="library-detail-modal-resize-handle"
+        :class="{ 'is-dragging': isResizing }"
+        @mousedown="onResizeStart"
+      ></div>
       <!-- 상단 헤더 -->
       <div class="library-detail-modal-header">
         <!-- 뱃지 -->
@@ -107,6 +108,18 @@
                   <i class="icon icon-dropdown-document size-16"></i>
                 </template>
               </UiButton>
+              <UiButton
+                variant="ghost"
+                size="xxs"
+                icon-only
+                class="btn-custom-white"
+                title="공유하기"
+                @click="handleShare"
+              >
+                <template #icon-left>
+                  <i class="icon icon-sidebar-share size-16"></i>
+                </template>
+              </UiButton>
               <!-- 삭제 btn -->
               <UiButton
                 variant="ghost"
@@ -184,19 +197,10 @@
             </template>
           </UiButton>
 
-          <ChatLunchAgentCard
-            v-if="parsedLunchRecommendations.length"
-            :recommendations="parsedLunchRecommendations"
-            :theme-icon-class-nm="displayData?.iconClassNm ?? ''"
-            :theme-color-hex="displayData?.colorHex ?? ''"
+          <LibraryCardResponseBody
+            v-if="displayData"
+            :item="displayData"
           />
-          <!-- eslint-disable vue/no-v-html — toHtmlContent 내 안전 처리 적용 -->
-          <div
-            v-else
-            class="message-content markdown-body"
-            v-html="responseRenderedHtml"
-          />
-          <!-- eslint-enable vue/no-v-html -->
         </div>
 
         <!-- 참조 매뉴얼 (매뉴얼AI 타입) -->
@@ -245,10 +249,27 @@
           </ul>
         </div>
         <!-- SQL 코드 블록 -->
-        <UiCodeBlock
-          v-if="displayData?.svcTy === 'S' && isSqlCodeVisible"
-          :code="displayData?.ttsq"
-        />
+        <div
+          v-if="displayData?.svcTy === 'S'"
+          ref="sqlCodeRef"
+          class="chat-vis-sql-area"
+          :class="{ 'is-open': isSqlCodeVisible }"
+        >
+          <UiCodeBlock
+            :code="displayData?.ttsq"
+            format-sql
+          />
+          <button
+            class="chat-vis-sql-toggle"
+            type="button"
+            @click="toggleSqlCodeVisible"
+          >
+            <i
+              class="icon-chevron-down size-12"
+              :class="{ 'is-flipped': isSqlCodeVisible }"
+            ></i>
+          </button>
+        </div>
         <!-- 데이터 시각화 (데이터분석 타입) -->
         <div
           v-if="displayData?.svcTy === 'S'"
@@ -294,11 +315,19 @@
       @select-other-type="handleCreateDocSelectOtherType"
       @send-refine="onCreateDocSendRefine"
     />
+
+    <!-- 공유 대상 사용자 선택 모달 -->
+    <UserSelectModal
+      :is-open="isUserSelectModalOpen"
+      title="공유 대상 선택"
+      confirm-text="공유하기"
+      @close="closeUserSelectModal"
+      @confirm="onShareConfirm"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import { parseLunchPayloadFromPrompt } from '~/utils/chat/lunchAgentUtil'
 import { parseSurveyAnswersFromPrompt } from '~/utils/chat/psychologyConsultUtil'
 import type { LibraryCardDetail, DocItem, TableDataItem, ChartStatItem, ChartDetailCdItem } from '~/types/library'
@@ -306,7 +335,10 @@ import type { LunchRecommendationItem, VisualizationViewModel } from '~/types/ch
 import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
 import { useFileStore } from '~/composables/com/useFileStore'
 import { useLibraryStore } from '~/composables/library/useLibraryStore'
+import { useUserSelectStore } from '~/composables/com/useUserSelectStore'
+import type { OrgUserItem } from '~/types/org-manage'
 const { handleViewFileUrl } = useFileStore()
+const { isUserSelectModalOpen, openUserSelectModal, closeUserSelectModal } = useUserSelectStore()
 const {
   handleSelectTmplList,
   tmplList,
@@ -323,6 +355,7 @@ const {
   resetLibraryDetailCreateDocUi,
   handleCreateDocSelectOtherType,
   handleReAskReport,
+  handleShareCard,
 } = useLibraryStore()
 const props = withDefaults(
   defineProps<{
@@ -416,8 +449,7 @@ const surveyReadonlyAnswers = computed<Record<number, number>>(() =>
 /** 점심 추천 전송 프롬프트(qcontent) — 검색기록·채팅과 동일하게 제출 완료 카드로 표시 */
 const lunchQuestionPayload = computed(() => parseLunchPayloadFromPrompt(displayData.value?.qcontent ?? ''))
 
-/** 시스템 응답 마크다운 렌더 결과 — v-html (ChatMessageItem과 동일) */
-const responseRenderedHtml = computed(() => toHtmlContent(displayData.value?.rcontent ?? ''))
+/** 시스템 응답 복사 버튼 노출 — 점심 JSON 답변은 별도 UI */
 const parseLunchRecommendations = (raw: string): LunchRecommendationItem[] => {
   try {
     const parsed = JSON.parse(raw) as unknown
@@ -434,9 +466,21 @@ const parsedLunchRecommendations = computed<LunchRecommendationItem[]>(() => {
 })
 // SQL 코드 블록 표시 (데이터분석 타입에서 SQL 버튼으로 토글, 초기 숨김)
 const isSqlCodeVisible = ref(false)
+const sqlCodeRef = ref<HTMLElement | null>(null)
 const toggleSqlCodeVisible = () => {
   if (displayData.value?.svcTy !== 'S') return
   isSqlCodeVisible.value = !isSqlCodeVisible.value
+  if (isSqlCodeVisible.value) {
+    setTimeout(() => {
+      if (!sqlCodeRef.value || !contentRef.value) return
+      const stickyHeader = contentRef.value.querySelector('.library-detail-modal-header')
+      const headerHeight = stickyHeader ? (stickyHeader as HTMLElement).offsetHeight : 0
+      const containerRect = contentRef.value.getBoundingClientRect()
+      const targetRect = sqlCodeRef.value.getBoundingClientRect()
+      const offset = targetRect.top - containerRect.top + contentRef.value.scrollTop - headerHeight
+      contentRef.value.scrollTo({ top: offset, behavior: 'smooth' })
+    }, 320)
+  }
 }
 // 스크롤 이벤트 핸들러
 const handleScroll = () => {
@@ -452,6 +496,12 @@ const handleScrollToTop = () => {
     behavior: 'smooth',
   })
 }
+
+const handleShare = () => {
+  openUserSelectModal()
+}
+
+const onShareConfirm = (users: OrgUserItem[]) => handleShareCard(users)
 
 // 카드 변경 시 모달 전체 슬라이드 재실행 + 스크롤 리셋
 watch(
