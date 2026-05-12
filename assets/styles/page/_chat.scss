@@ -976,7 +976,8 @@
   height: 100vh;
   border-left: 1px solid $color-border;
   background: #fff;
-  z-index: $z-overlay;
+  // AppHeader($z-header)보다 위 — PDF/시각화 패널 상단이 헤더에 가리지 않도록
+  z-index: $z-side-panel;
   transition: width $transition-base;
 
   &.is-open {
@@ -1061,7 +1062,7 @@
   width: 3px;
   height: 100vh;
   margin-right: -3px;
-  z-index: $z-overlay + 1;
+  z-index: $z-side-panel + 1;
   cursor: col-resize;
   background: transparent;
   transition: background $transition-fast;

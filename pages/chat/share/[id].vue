@@ -36,6 +36,8 @@
           v-if="!isExpired"
           variant="primary"
           size="md"
+          :disabled="sharedMessages.length === 0"
+          :loading="isForking"
           @click="onForkChat"
         >
           대화 이어가기
@@ -69,8 +71,16 @@
 
 <script setup lang="ts">
 import { setMessagesForVisualizationGetter } from '~/composables/chat/useChatMessages'
-const { sharedMessages, knowledgeList, loadSharedChatLog, onCopy, handleSelectKnowledge, isExpired, shareTxt } =
-  useChatRooms()
+const {
+  sharedMessages,
+  knowledgeList,
+  loadSharedChatLog,
+  handleForkSharedChat,
+  onCopy,
+  handleSelectKnowledge,
+  isExpired,
+  shareTxt,
+} = useChatRooms()
 const { handleCreateKnowledge } = useChatItemActions()
 const {
   activePanelType,
@@ -80,8 +90,11 @@ const {
   onViewSource,
   onViewVisualization,
   onPanelClose,
+  handleSelectChatIndexAgents,
 } = useChatStore()
 const route = useRoute()
+
+const isForking = ref(false)
 
 // 패널 리사이즈
 const panelWidthPercent = ref(50)
@@ -112,14 +125,16 @@ watch(activePanelType, (type) => {
   }
 })
 
-// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
-const onForkChat = () => {
-  openToast({ message: '대화 이어가기 기능은 준비 중입니다.', type: 'warning' })
+const onForkChat = async () => {
+  const shareToken = String(route.params.id || '').trim()
+  if (!shareToken) return
+  isForking.value = true
+  try {
+    await handleForkSharedChat(shareToken)
+  } finally {
+    isForking.value = false
+  }
 }
-
-onMounted(() => {
-  handleSelectKnowledge()
-})
 
 watch(
   () => route.params.id,
@@ -131,8 +146,11 @@ watch(
   { immediate: true },
 )
 
-// 공유 페이지는 전역 messages 대신 sharedMessages에서 시각화 데이터를 찾도록 연결
+// 채팅 상세(`/chat/[id]`)와 동일: 에이전트 목록이 있어야 심리상담(AG000010 등) 아이콘·테마가 메시지에 반영됨
 onMounted(() => {
+  handleSelectKnowledge()
+  handleSelectChatIndexAgents()
+  // 공유 페이지는 전역 messages 대신 sharedMessages에서 시각화 데이터를 찾도록 연결
   setMessagesForVisualizationGetter(() => sharedMessages.value)
 })
 onUnmounted(() => {
