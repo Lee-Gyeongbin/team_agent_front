@@ -68,6 +68,7 @@ export const useNotifyStore = () => {
     item.readYn = 'Y'
     try {
       await fetchMarkRead(notifyId)
+      await handleFetchNotifyList()
     } catch {
       item.readYn = 'N'
     }
@@ -102,6 +103,9 @@ export const useNotifyStore = () => {
     ksCardDetail.value = null
     isKsModalOpen.value = true
     ksModalLoading.value = true
+
+    // 받기 버튼 클릭 시 즉시 읽음 처리
+    handleMarkRead(notify.notifyId)
 
     const [categoryRes, cardRes] = await Promise.allSettled([
       fetchSelectCategoryList(),
