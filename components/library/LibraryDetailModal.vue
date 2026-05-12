@@ -5,16 +5,17 @@
   >
     <!-- 왼쪽 리사이즈 핸들 -->
     <div
-      class="library-detail-modal-resize-handle"
-      :class="{ 'is-dragging': isResizing }"
-      @mousedown="onResizeStart"
-    ></div>
-    <div
       ref="contentRef"
       class="library-detail-modal-content"
       :style="{ maxWidth: modalWidth + 'px' }"
       @scroll="handleScroll"
     >
+      <!-- 왼쪽 리사이즈 핸들 — 콘텐츠 내부에 두어 헤더·버튼보다 아래 레이어(클릭 가로막힘 방지) -->
+      <div
+        class="library-detail-modal-resize-handle"
+        :class="{ 'is-dragging': isResizing }"
+        @mousedown="onResizeStart"
+      ></div>
       <!-- 상단 헤더 -->
       <div class="library-detail-modal-header">
         <!-- 뱃지 -->
@@ -196,57 +197,10 @@
             </template>
           </UiButton>
 
-          <ChatLunchAgentCard
-            v-if="parsedLunchRecommendations.length"
-            :recommendations="parsedLunchRecommendations"
-            :theme-icon-class-nm="displayData?.iconClassNm ?? ''"
-            :theme-color-hex="displayData?.colorHex ?? ''"
+          <LibraryCardResponseBody
+            v-if="displayData"
+            :item="displayData"
           />
-          <!-- eslint-disable vue/no-v-html — toHtmlContent 내 안전 처리 적용 -->
-          <!-- AG000010 + [방사형그래프]: ChatMessageItem과 동일 — 마커 앞·방사형 차트·Pexels 구간·마커 뒤 -->
-          <template v-else-if="isPsychologyRadarResponse">
-            <div
-              class="message-content markdown-body library-psychology-markdown"
-              @click="onPsychologyMarkdownClick"
-              v-html="psychologyBeforeChartHtml"
-            />
-            <div
-              v-if="psychologyRadarLoading"
-              class="pexels-loading library-psychology-chart-loading"
-            >
-              <div class="pexels-loading__spinner" />
-            </div>
-            <div
-              v-else-if="psychologyRadarData"
-              class="library-psychology-radar-block"
-            >
-              <div class="library-psychology-radar-chart">
-                <UiChart
-                  type="radar"
-                  :config="psychologyRadarChartConfig"
-                />
-              </div>
-              <div class="library-psychology-radar-metrics">
-                <StressScoreGrid
-                  :items="psychologyStressItems"
-                  :core-areas-text="psychologyRadarData.coreAreasSummary"
-                  :risk-summary="psychologyRadarData.riskSummary"
-                  :risk-color="psychologyRadarData.riskColor"
-                />
-              </div>
-            </div>
-            <div
-              class="message-content markdown-body library-psychology-markdown"
-              @click="onPsychologyMarkdownClick"
-              v-html="psychologyAfterChartHtml"
-            />
-          </template>
-          <div
-            v-else
-            class="message-content markdown-body"
-            v-html="responseRenderedHtml"
-          />
-          <!-- eslint-enable vue/no-v-html -->
         </div>
 
         <!-- 참조 매뉴얼 (매뉴얼AI 타입) -->
@@ -370,53 +324,12 @@
       @close="closeUserSelectModal"
       @confirm="onShareConfirm"
     />
-
-    <!-- 산업심리 응답 내 Pexels 이미지 확대 (ChatMessageItem과 동일, 전역 _chat.scss) -->
-    <Teleport to="body">
-      <Transition name="pexels-modal">
-        <div
-          v-if="pexelsModalUrl"
-          class="pexels-modal"
-          @click.self="pexelsModalUrl = ''"
-        >
-          <button
-            class="pexels-modal__close"
-            type="button"
-            @click="pexelsModalUrl = ''"
-          >
-            <i class="icon-close size-20"></i>
-          </button>
-          <img
-            class="pexels-modal__img"
-            :src="pexelsModalUrl"
-            alt="확대 이미지"
-          />
-        </div>
-      </Transition>
-    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import { parseLunchPayloadFromPrompt } from '~/utils/chat/lunchAgentUtil'
-import type { StressScoreItem } from '~/types/stress'
-import {
-  parseSurveyAnswersFromPrompt,
-  extractAiImageMarkerSection,
-  extractSections1to4,
-  fetchPsychologyRadarChartData,
-  getRadarChartCache,
-  setRadarChartCache,
-  schedulePsychologyRadarUiInjection,
-  buildStressItemsFromRadarChartData,
-  buildPsychologyRadarUiChartConfig,
-  removeKeywordLines,
-  extractKeywordSection,
-  PEXELS_LOADING_HTML,
-  fetchAndInjectPexelsImages,
-  type RadarChartData,
-} from '~/utils/chat/psychologyConsultUtil'
+import { parseSurveyAnswersFromPrompt } from '~/utils/chat/psychologyConsultUtil'
 import type { LibraryCardDetail, DocItem, TableDataItem, ChartStatItem, ChartDetailCdItem } from '~/types/library'
 import type { LunchRecommendationItem, VisualizationViewModel } from '~/types/chat'
 import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
@@ -536,110 +449,7 @@ const surveyReadonlyAnswers = computed<Record<number, number>>(() =>
 /** 점심 추천 전송 프롬프트(qcontent) — 검색기록·채팅과 동일하게 제출 완료 카드로 표시 */
 const lunchQuestionPayload = computed(() => parseLunchPayloadFromPrompt(displayData.value?.qcontent ?? ''))
 
-/** 시스템 응답 마크다운 렌더 결과 — v-html (ChatMessageItem과 동일, AG000010은 키워드 줄 제거) */
-const responseRenderedHtml = computed(() => {
-  const raw = displayData.value?.rcontent ?? ''
-  if (displayData.value?.agentId === 'AG000010') {
-    return toHtmlContent(removeKeywordLines(raw))
-  }
-  return toHtmlContent(raw)
-})
-
-// ── AG000010 방사형 차트 (라이브러리 상세) — ChatMessageItem과 동일 유틸·캐시 키 logId 우선 ──
-const psychologyMarkerFound = ref(false)
-const psychologyBeforeChartHtml = ref('')
-const psychologyAfterChartHtml = ref('')
-const psychologyRadarLoading = ref(false)
-const psychologyRadarData = ref<RadarChartData | null>(null)
-let cancelPsychologyRadarInjection: (() => void) | null = null
-
-const isPsychologyRadarResponse = computed(
-  () => displayData.value?.agentId === 'AG000010' && psychologyMarkerFound.value,
-)
-
-const psychologyStressItems = computed<StressScoreItem[]>(() =>
-  psychologyRadarData.value ? buildStressItemsFromRadarChartData(psychologyRadarData.value) : [],
-)
-
-const psychologyRadarChartConfig = computed<Record<string, unknown>>(() =>
-  psychologyRadarData.value ? buildPsychologyRadarUiChartConfig(psychologyRadarData.value) : {},
-)
-
-/** Pexels 썸네일 클릭 시 전체 화면 오버레이 (ChatMessageItem 동일) */
-const pexelsModalUrl = ref('')
-const onPsychologyMarkdownClick = (e: MouseEvent) => {
-  const target = e.target as HTMLElement
-  if (target.tagName === 'IMG' && target.classList.contains('pexels-img')) {
-    pexelsModalUrl.value = (target as HTMLImageElement).dataset.full ?? (target as HTMLImageElement).src
-  }
-}
-
-onBeforeUnmount(() => {
-  cancelPsychologyRadarInjection?.()
-  cancelPsychologyRadarInjection = null
-  pexelsModalUrl.value = ''
-})
-
-watch(
-  () =>
-    [
-      displayData.value?.cardId ?? '',
-      displayData.value?.agentId ?? '',
-      displayData.value?.rcontent ?? '',
-      displayData.value?.qcontent ?? '',
-      displayData.value?.logId ?? '',
-    ] as const,
-  ([cardId, agentId, rcontent, qcontent, logId]) => {
-    pexelsModalUrl.value = ''
-    cancelPsychologyRadarInjection?.()
-    cancelPsychologyRadarInjection = null
-    psychologyMarkerFound.value = false
-    psychologyBeforeChartHtml.value = ''
-    psychologyAfterChartHtml.value = ''
-    psychologyRadarData.value = null
-    psychologyRadarLoading.value = false
-
-    if (!cardId || agentId !== 'AG000010') return
-
-    const { found, before, after } = extractAiImageMarkerSection(rcontent)
-    if (!found) return
-
-    psychologyMarkerFound.value = true
-    psychologyBeforeChartHtml.value = toHtmlContent(removeKeywordLines(before))
-
-    const answers = parseSurveyAnswersFromPrompt(qcontent)
-    const cacheKey = logId || cardId
-
-    psychologyRadarLoading.value = true
-    const cached = getRadarChartCache(cacheKey)
-    if (cached) {
-      const keyForInject = cacheKey
-      cancelPsychologyRadarInjection = schedulePsychologyRadarUiInjection(() => {
-        const curKey = displayData.value?.logId || displayData.value?.cardId || ''
-        if (curKey !== keyForInject) return
-        psychologyRadarData.value = cached
-        psychologyRadarLoading.value = false
-      })
-    } else {
-      fetchPsychologyRadarChartData(extractSections1to4(rcontent), answers).then((chartData) => {
-        psychologyRadarLoading.value = false
-        if ((displayData.value?.cardId ?? '') !== cardId) return
-        if (chartData) {
-          setRadarChartCache(cacheKey, chartData)
-          psychologyRadarData.value = chartData
-        }
-      })
-    }
-
-    const { beforeText, afterText } = extractKeywordSection(after)
-    psychologyAfterChartHtml.value = toHtmlContent(beforeText) + PEXELS_LOADING_HTML + toHtmlContent(afterText)
-    fetchAndInjectPexelsImages(after, cacheKey).then(({ beforeText: bt, afterText: at, gridHtml }) => {
-      if ((displayData.value?.cardId ?? '') !== cardId) return
-      psychologyAfterChartHtml.value = toHtmlContent(bt) + gridHtml + toHtmlContent(at)
-    })
-  },
-  { immediate: true },
-)
+/** 시스템 응답 복사 버튼 노출 — 점심 JSON 답변은 별도 UI */
 const parseLunchRecommendations = (raw: string): LunchRecommendationItem[] => {
   try {
     const parsed = JSON.parse(raw) as unknown
@@ -744,7 +554,6 @@ watch(
       displayData.value = null
       isSqlCodeVisible.value = false
       expandedRefKey.value = null
-      pexelsModalUrl.value = ''
       resetLibraryDetailCreateDocUi()
     }
   },
@@ -819,107 +628,5 @@ const handleCopyResponse = async () => {
   max-width: 100%;
   max-height: min(560px, calc(100vh - 280px));
   overflow: hidden;
-}
-
-// 방사형 차트 + StressScoreGrid — 채팅 대비 약 70% (403×224, 그리드 zoom 0.7)
-.library-psychology-radar-block {
-  max-width: 100%;
-  width: 100%;
-  margin: 12px auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: $spacing-md;
-}
-
-.library-psychology-radar-chart {
-  width: 403px;
-  max-width: 100%;
-  height: 224px;
-  margin-left: auto;
-  margin-right: auto;
-  flex-shrink: 0;
-}
-
-// UiChart 기본 min-height(260px)가 잘못된 부모 높이일 때 겹침 방지
-.library-psychology-radar-chart :deep(.ui-chart) {
-  height: 100%;
-  min-height: 0;
-}
-
-.library-psychology-radar-chart :deep(.ui-chart-canvas-wrap) {
-  min-height: 0;
-  flex: 1;
-}
-
-.library-psychology-radar-metrics {
-  width: 576px;
-  max-width: 100%;
-  margin-left: auto;
-  margin-right: auto;
-  margin-top: 0;
-  zoom: 0.7;
-}
-
-// 차트 API 로딩 스피너 — 차트 박스와 동일 너비·높이
-.library-psychology-chart-loading {
-  height: 224px;
-  max-width: 403px;
-  margin: 12px auto;
-}
-
-// 라이브러리 모달은 .chat-message-item 밖이라 채팅용 .pexels-grid 스타일이 안 먹음 → :deep(전체선택자) 만 사용 (:deep 내부 & 접미사 금지)
-.library-psychology-markdown {
-  :deep(.pexels-loading) {
-    height: 140px;
-    max-width: 288px;
-    margin: 12px auto;
-  }
-
-  :deep(.pexels-grid) {
-    display: flex;
-    gap: 8px;
-    margin: 12px auto;
-    height: 140px;
-    max-width: 288px;
-  }
-
-  :deep(.pexels-grid__col) {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  :deep(.pexels-grid__col .pexels-img) {
-    flex: 1;
-    min-height: 0;
-    width: 100%;
-    max-width: none;
-    margin: 0;
-    object-fit: cover;
-    border-radius: 12px;
-    cursor: zoom-in;
-    transition: opacity 0.15s;
-
-    &:hover {
-      opacity: 0.85;
-    }
-  }
-
-  :deep(.pexels-grid--single) {
-    height: auto;
-    max-width: 288px;
-  }
-
-  :deep(.pexels-grid--single .pexels-img) {
-    width: 100%;
-    max-width: 288px;
-    height: 140px;
-    margin: 0;
-    object-fit: cover;
-    border-radius: 12px;
-    cursor: zoom-in;
-  }
 }
 </style>

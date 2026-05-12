@@ -46,7 +46,7 @@
     >
       <div
         v-for="(item, index) in filteredTrashCardList"
-        :key="index"
+        :key="item.cardId"
         class="library-trash-card"
         :class="{ 'is-show': expandedCards[index] }"
       >
@@ -102,17 +102,7 @@
 
           <!-- 시스템 응답 -->
           <div class="content-box type-response">
-            <ChatLunchAgentCard
-              v-if="parseLunchRecommendations(item.rcontent ?? '').length"
-              :recommendations="parseLunchRecommendations(item.rcontent ?? '')"
-            />
-            <!-- eslint-disable vue/no-v-html — toHtmlContent 내 안전 처리 적용 -->
-            <div
-              v-else
-              class="message-content markdown-body"
-              v-html="toHtmlContent(item.rcontent ?? '')"
-            ></div>
-            <!-- eslint-enable vue/no-v-html -->
+            <LibraryCardResponseBody :item="item" />
           </div>
         </div>
       </div>
@@ -130,9 +120,7 @@
 </template>
 
 <script setup lang="ts">
-import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import { parseSurveyAnswersFromPrompt } from '~/utils/chat/psychologyConsultUtil'
-import type { LunchRecommendationItem } from '~/types/chat'
 import type { LibraryCardDetail } from '~/types/library'
 const { trashCardList } = useLibraryStore()
 
@@ -140,7 +128,7 @@ interface Props {
   isOpen?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   isOpen: false,
 })
 
@@ -165,15 +153,6 @@ const filteredTrashCardList = computed(() => {
 })
 
 const isPsychologySurveyCard = (item: LibraryCardDetail) => item.agentId === 'AG000010'
-const parseLunchRecommendations = (raw: string): LunchRecommendationItem[] => {
-  try {
-    const parsed = JSON.parse(raw) as unknown
-    if (!Array.isArray(parsed)) return []
-    return parsed as LunchRecommendationItem[]
-  } catch {
-    return []
-  }
-}
 
 // 스크롤 상태
 const bodyRef = ref<HTMLElement | null>(null)

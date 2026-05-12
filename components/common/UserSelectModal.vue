@@ -1,220 +1,222 @@
 <template>
-  <!-- 사용자 선택 모달 (공통) -->
-  <div
-    class="user-select-modal"
-    :class="{ 'is-show': isOpen }"
-  >
-    <!-- 오버레이 -->
+  <!-- body로 Teleport — 지식 상세 시트(z-detail-sheet 400) 자식에 두면 쌓임 맥락에 갇혀 AppHeader(450) 위로 오버레이 불가 -->
+  <Teleport to="body">
     <div
-      class="user-select-modal-overlay"
-      @click="onClose"
-    />
+      class="user-select-modal"
+      :class="{ 'is-show': isOpen }"
+    >
+      <!-- 오버레이 -->
+      <div
+        class="user-select-modal-overlay"
+        @click="onClose"
+      />
 
-    <div class="user-select-modal-content">
-      <!-- 헤더 -->
-      <div class="user-select-modal-header">
-        <h3 class="user-select-modal-title">{{ title }}</h3>
-        <button
-          class="btn btn-modal-close"
-          @click="onClose"
-        >
-          <i class="icon icon-close-gray size-18"></i>
-        </button>
-      </div>
-
-      <!-- 바디 (좌: 조직도 / 우: 선택된 사용자) -->
-      <div class="user-select-modal-body">
-        <!-- 왼쪽: 조직도 트리 + 사용자 목록 -->
-        <div class="us-panel us-panel-org">
-          <p class="us-panel-label">조직도</p>
-
-          <!-- 로딩 -->
-          <div
-            v-if="orgListLoading"
-            class="us-state-box"
+      <div class="user-select-modal-content">
+        <!-- 헤더 -->
+        <div class="user-select-modal-header">
+          <h3 class="user-select-modal-title">{{ title }}</h3>
+          <button
+            class="btn btn-modal-close"
+            @click="onClose"
           >
-            <UiSpinner size="sm" />
-          </div>
+            <i class="icon icon-close-gray size-18"></i>
+          </button>
+        </div>
 
-          <!-- 에러 -->
-          <div
-            v-else-if="orgListError"
-            class="us-state-box"
-          >
-            <p class="us-state-text is-error">{{ orgListError }}</p>
-            <UiButton
-              size="xs"
-              variant="outline"
-              @click="handleFetchOrgList"
-              >재시도</UiButton
-            >
-          </div>
+        <!-- 바디 (좌: 조직도 / 우: 선택된 사용자) -->
+        <div class="user-select-modal-body">
+          <!-- 왼쪽: 조직도 트리 + 사용자 목록 -->
+          <div class="us-panel us-panel-org">
+            <p class="us-panel-label">조직도</p>
 
-          <!-- 조직 트리 + 사용자 목록 -->
-          <template v-else>
-            <!-- 조직 트리 -->
-            <div class="us-org-tree">
-              <div
-                v-if="orgTree.length === 0"
-                class="us-state-box"
-              >
-                <p class="us-state-text">조직 정보가 없습니다.</p>
-              </div>
-              <UserSelectOrgTreeNode
-                v-for="node in orgTree"
-                :key="node.orgId"
-                :node="node"
-                :selected-org-id="selectedOrgId"
-                @select="handleSelectOrg"
-                @toggle="handleToggleOrgExpand"
-              />
-            </div>
-
-            <!-- 선택된 조직의 사용자 목록 -->
+            <!-- 로딩 -->
             <div
-              v-if="selectedOrgId"
-              class="us-org-users"
+              v-if="orgListLoading"
+              class="us-state-box"
             >
-              <p class="us-panel-sub-label">소속 팀원</p>
-
-              <!-- 사용자 목록 로딩 -->
-              <div
-                v-if="orgUserListLoading"
-                class="us-state-box"
-              >
-                <UiSpinner size="sm" />
-              </div>
-
-              <!-- 사용자 목록 에러 -->
-              <div
-                v-else-if="orgUserListError"
-                class="us-state-box"
-              >
-                <p class="us-state-text is-error">{{ orgUserListError }}</p>
-              </div>
-
-              <!-- 사용자 없음 -->
-              <div
-                v-else-if="orgUserList.length === 0"
-                class="us-state-box"
-              >
-                <p class="us-state-text">소속 팀원이 없습니다.</p>
-              </div>
-
-              <!-- 사용자 항목 -->
-              <ul
-                v-else
-                class="us-user-list"
-              >
-                <li
-                  v-for="user in orgUserList"
-                  :key="user.userId"
-                  class="us-user-item"
-                  :class="{ 'is-selected': isUserSelected(user.userId) }"
-                  @click="onUserClick(user)"
-                >
-                  <UiAvatar
-                    :src="user.profileImgUrl ?? ''"
-                    :alt="user.userNm"
-                    size="sm"
-                  />
-                  <div class="us-user-info">
-                    <span class="us-user-name">{{ user.userNm }}</span>
-                    <span class="us-user-email">{{ user.email }}</span>
-                  </div>
-                  <i
-                    v-if="isUserSelected(user.userId)"
-                    class="icon icon-check size-16 us-user-check-icon"
-                  />
-                </li>
-              </ul>
+              <UiSpinner size="sm" />
             </div>
-          </template>
-        </div>
 
-        <!-- 오른쪽: 선택된 사용자 목록 -->
-        <div class="us-panel us-panel-selected">
-          <div class="us-panel-label-row">
-            <p class="us-panel-label">
-              선택된 사용자
-              <span
-                v-if="selectedUsers.length > 0"
-                class="us-selected-count"
-                >{{ selectedUsers.length }}</span
+            <!-- 에러 -->
+            <div
+              v-else-if="orgListError"
+              class="us-state-box"
+            >
+              <p class="us-state-text is-error">{{ orgListError }}</p>
+              <UiButton
+                size="xs"
+                variant="outline"
+                @click="handleFetchOrgList"
+                >재시도</UiButton
               >
-            </p>
-            <button
-              v-if="selectedUsers.length > 0"
-              class="btn-us-clear"
-              @click="clearSelectedUsers"
-            >
-              전체 해제
-            </button>
-          </div>
+            </div>
 
-          <!-- 선택된 사용자 없음 -->
-          <div
-            v-if="selectedUsers.length === 0"
-            class="us-state-box"
-          >
-            <p class="us-state-text">선택된 사용자가 없습니다.</p>
-          </div>
-
-          <!-- 선택된 사용자 목록 -->
-          <ul
-            v-else
-            class="us-selected-list"
-          >
-            <li
-              v-for="user in selectedUsers"
-              :key="user.userId"
-              class="us-selected-item"
-            >
-              <UiAvatar
-                :src="user.profileImgUrl ?? ''"
-                :alt="user.userNm"
-                size="sm"
-              />
-              <div class="us-user-info">
-                <span class="us-user-name">{{ user.userNm }}</span>
-                <span class="us-user-email">{{ user.email }}</span>
+            <!-- 조직 트리 + 사용자 목록 -->
+            <template v-else>
+              <!-- 조직 트리 -->
+              <div class="us-org-tree">
+                <div
+                  v-if="orgTree.length === 0"
+                  class="us-state-box"
+                >
+                  <p class="us-state-text">조직 정보가 없습니다.</p>
+                </div>
+                <UserSelectOrgTreeNode
+                  v-for="node in orgTree"
+                  :key="node.orgId"
+                  :node="node"
+                  :selected-org-id="selectedOrgId"
+                  @select="handleSelectOrg"
+                  @toggle="handleToggleOrgExpand"
+                />
               </div>
-              <button
-                class="btn-us-remove"
-                @click="removeSelectedUser(user.userId)"
-              >
-                <i class="icon icon-close-gray size-14" />
-              </button>
-            </li>
-          </ul>
-        </div>
-      </div>
 
-      <!-- 푸터 -->
-      <div class="user-select-modal-footer">
-        <UiButton
-          variant="outline"
-          size="sm"
-          @click="onClose"
-          >취소</UiButton
-        >
-        <UiButton
-          variant="primary"
-          size="sm"
-          :disabled="selectedUsers.length === 0"
-          @click="onConfirm"
-          >{{ confirmText }}</UiButton
-        >
+              <!-- 선택된 조직의 사용자 목록 -->
+              <div
+                v-if="selectedOrgId"
+                class="us-org-users"
+              >
+                <p class="us-panel-sub-label">소속 팀원</p>
+
+                <!-- 사용자 목록 로딩 -->
+                <div
+                  v-if="orgUserListLoading"
+                  class="us-state-box"
+                >
+                  <UiSpinner size="sm" />
+                </div>
+
+                <!-- 사용자 목록 에러 -->
+                <div
+                  v-else-if="orgUserListError"
+                  class="us-state-box"
+                >
+                  <p class="us-state-text is-error">{{ orgUserListError }}</p>
+                </div>
+
+                <!-- 사용자 없음 -->
+                <div
+                  v-else-if="orgUserList.length === 0"
+                  class="us-state-box"
+                >
+                  <p class="us-state-text">소속 팀원이 없습니다.</p>
+                </div>
+
+                <!-- 사용자 항목 -->
+                <ul
+                  v-else
+                  class="us-user-list"
+                >
+                  <li
+                    v-for="user in orgUserList"
+                    :key="user.userId"
+                    class="us-user-item"
+                    :class="{ 'is-selected': isUserSelected(user.userId) }"
+                    @click="onUserClick(user)"
+                  >
+                    <UiAvatar
+                      :src="user.profileImgUrl ?? ''"
+                      :alt="user.userNm"
+                      size="sm"
+                    />
+                    <div class="us-user-info">
+                      <span class="us-user-name">{{ user.userNm }}</span>
+                      <span class="us-user-email">{{ user.email }}</span>
+                    </div>
+                    <i
+                      v-if="isUserSelected(user.userId)"
+                      class="icon icon-check size-16 us-user-check-icon"
+                    />
+                  </li>
+                </ul>
+              </div>
+            </template>
+          </div>
+
+          <!-- 오른쪽: 선택된 사용자 목록 -->
+          <div class="us-panel us-panel-selected">
+            <div class="us-panel-label-row">
+              <p class="us-panel-label">
+                선택된 사용자
+                <span
+                  v-if="selectedUsers.length > 0"
+                  class="us-selected-count"
+                  >{{ selectedUsers.length }}</span
+                >
+              </p>
+              <button
+                v-if="selectedUsers.length > 0"
+                class="btn-us-clear"
+                @click="clearSelectedUsers"
+              >
+                전체 해제
+              </button>
+            </div>
+
+            <!-- 선택된 사용자 없음 -->
+            <div
+              v-if="selectedUsers.length === 0"
+              class="us-state-box"
+            >
+              <p class="us-state-text">선택된 사용자가 없습니다.</p>
+            </div>
+
+            <!-- 선택된 사용자 목록 -->
+            <ul
+              v-else
+              class="us-selected-list"
+            >
+              <li
+                v-for="user in selectedUsers"
+                :key="user.userId"
+                class="us-selected-item"
+              >
+                <UiAvatar
+                  :src="user.profileImgUrl ?? ''"
+                  :alt="user.userNm"
+                  size="sm"
+                />
+                <div class="us-user-info">
+                  <span class="us-user-name">{{ user.userNm }}</span>
+                  <span class="us-user-email">{{ user.email }}</span>
+                </div>
+                <button
+                  class="btn-us-remove"
+                  @click="removeSelectedUser(user.userId)"
+                >
+                  <i class="icon icon-close-gray size-14" />
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- 푸터 -->
+        <div class="user-select-modal-footer">
+          <UiButton
+            variant="outline"
+            size="sm"
+            @click="onClose"
+            >취소</UiButton
+          >
+          <UiButton
+            variant="primary"
+            size="sm"
+            :disabled="selectedUsers.length === 0"
+            @click="onConfirm"
+            >{{ confirmText }}</UiButton
+          >
+        </div>
       </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
 import type { OrgUserItem } from '~/types/org-manage'
 import { useUserSelectStore } from '~/composables/com/useUserSelectStore'
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
     isOpen?: boolean
     /** 모달 제목 */
