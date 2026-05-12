@@ -3,6 +3,7 @@
     :is-open="isOpen"
     :title="title"
     position="center"
+    :custom-class="customClass"
     @close="handleClose"
   >
     <!-- 본문 -->
@@ -32,13 +33,16 @@ interface Props {
   title?: string
   message?: string
   confirmText?: string
+  /** `UiModal` 루트 클래스 — 전역 다이얼로그 z-index 등 */
+  customClass?: string
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   isOpen: false,
   title: '확인',
   message: '',
   confirmText: '확인',
+  customClass: '',
 })
 
 const emit = defineEmits<{
