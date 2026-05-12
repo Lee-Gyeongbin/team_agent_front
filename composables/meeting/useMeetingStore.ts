@@ -30,6 +30,7 @@ const {
   fetchSearchUsers,
   fetchMatchUsersByNames,
   fetchGenerateMeetingTitle,
+  fetchDownloadFile,
 } = useMeetingApi()
 
 // ===== 상태 =====
@@ -414,61 +415,12 @@ const handleSaveSpeakers = async (speakers: Partial<MeetingSpeaker>[]) => {
 }
 
 // ===== 파일 다운로드 =====
-const handleDownloadFile = (format: MeetingFileFormat) => {
+const handleDownloadFile = (meetingId: number, format: MeetingFileFormat) => {
   if (!currentMeeting.value) {
     openToast({ message: '회의 정보가 없습니다.', type: 'warning' })
     return
   }
-
-  const html = currentMeeting.value.minutesContent ?? ''
-  const today = new Date().toISOString().slice(0, 10).replace(/-/g, '')
-  const safeTitle = currentMeeting.value.title.replace(/[\\/:*?"<>|]/g, '').trim() || '회의록'
-  const fileName = `${safeTitle}_${today}.${format}`
-
-  let content = ''
-  let mimeType = 'text/plain;charset=utf-8'
-
-  if (format === 'txt') {
-    const div = document.createElement('div')
-    div.innerHTML = html
-    content = div.innerText
-  } else if (format === 'md') {
-    content = html
-      .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1\n\n')
-      .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1\n\n')
-      .replace(/<h3[^>]*>(.*?)<\/h3>/gi, '### $1\n\n')
-      .replace(/<li[^>]*>(.*?)<\/li>/gi, '- $1\n')
-      .replace(/<\/?(ul|ol)[^>]*>/gi, '\n')
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
-      .replace(/<[^>]+>/g, '')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim()
-    mimeType = 'text/markdown;charset=utf-8'
-  } else {
-    content = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${safeTitle}</title></head><body>${html}</body></html>`
-    mimeType = 'text/html;charset=utf-8'
-    openToast({
-      message: `${format.toUpperCase()} 변환은 백엔드 연동 후 정식 지원됩니다. 임시로 HTML로 다운로드합니다.`,
-      type: 'info',
-    })
-  }
-
-  const blob = new Blob([content], { type: mimeType })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = fileName
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
-
-  if (format === 'txt' || format === 'md') {
-    openToast({ message: `${fileName} 파일이 다운로드되었습니다.` })
-  }
-
-  if (currentMeeting.value) currentMeeting.value.fileFormat = format
+  fetchDownloadFile(meetingId, format)
 }
 
 // ===== 메일 발송 =====
