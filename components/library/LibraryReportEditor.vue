@@ -454,6 +454,7 @@ import { Underline } from '@tiptap/extension-underline'
 import { Link } from '@tiptap/extension-link'
 import { Table } from '@tiptap/extension-table'
 import { TableRow } from '@tiptap/extension-table-row'
+import { OrderedList } from '@tiptap/extension-ordered-list'
 import { TableHeader } from '@tiptap/extension-table-header'
 import { TableCell } from '@tiptap/extension-table-cell'
 import { Placeholder } from '@tiptap/extension-placeholder'
@@ -546,6 +547,63 @@ const props = withDefaults(
     tmplHtml: '',
   },
 )
+
+// ===== 템플릿 관리용 data-* 속성 보존 확장 =====
+
+/** TableRow 확장 — data-tmpl-field-id 보존 */
+const ReportTemplateTableRow = TableRow.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      [TMPL_FIELD_ROW_ATTR]: {
+        default: null,
+        parseHTML: (el) => (el as HTMLElement).getAttribute(TMPL_FIELD_ROW_ATTR),
+        renderHTML: (attrs) =>
+          attrs[TMPL_FIELD_ROW_ATTR] ? { [TMPL_FIELD_ROW_ATTR]: attrs[TMPL_FIELD_ROW_ATTR] as string } : {},
+      },
+    }
+  },
+})
+
+/** Table 확장 — data-tmpl-field-table-root + data-tmpl-field-multiline-table 보존 */
+const ReportTemplateTable = Table.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      [TMPL_FIELD_TABLE_ROOT]: {
+        default: null,
+        parseHTML: (el) => (el as HTMLElement).getAttribute(TMPL_FIELD_TABLE_ROOT),
+        renderHTML: (attrs) =>
+          attrs[TMPL_FIELD_TABLE_ROOT] ? { [TMPL_FIELD_TABLE_ROOT]: attrs[TMPL_FIELD_TABLE_ROOT] as string } : {},
+      },
+      [TMPL_FIELD_MULTILINE_TABLE]: {
+        default: null,
+        parseHTML: (el) => (el as HTMLElement).getAttribute(TMPL_FIELD_MULTILINE_TABLE),
+        renderHTML: (attrs) =>
+          attrs[TMPL_FIELD_MULTILINE_TABLE]
+            ? { [TMPL_FIELD_MULTILINE_TABLE]: attrs[TMPL_FIELD_MULTILINE_TABLE] as string }
+            : {},
+      },
+    }
+  },
+})
+
+/** OrderedList 확장 — data-tmpl-field-multiline-list 보존 */
+const ReportTemplateOrderedList = OrderedList.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      [TMPL_FIELD_MULTILINE_LIST]: {
+        default: null,
+        parseHTML: (el) => (el as HTMLElement).getAttribute(TMPL_FIELD_MULTILINE_LIST),
+        renderHTML: (attrs) =>
+          attrs[TMPL_FIELD_MULTILINE_LIST]
+            ? { [TMPL_FIELD_MULTILINE_LIST]: attrs[TMPL_FIELD_MULTILINE_LIST] as string }
+            : {},
+      },
+    }
+  },
+})
 
 // ===== data-label-key 속성 보존 확장 =====
 const ReportTableHeader = TableHeader.extend({
@@ -646,6 +704,7 @@ const editor = useEditor({
     StarterKit.configure({
       heading: false,
       paragraph: false,
+      orderedList: false,
     }),
     ReportTemplateHeading,
     ReportTemplateParagraph,
@@ -657,8 +716,8 @@ const editor = useEditor({
     TextAlign.configure({ types: ['heading', 'paragraph'] }),
     // allowBase64: data URL 형태의 src 를 schema 에서 허용
     ResizableImage.configure({ allowBase64: true }),
-    Table.configure({ resizable: true }),
-    TableRow,
+    ReportTemplateTable.configure({ resizable: true }),
+    ReportTemplateTableRow,
     ReportTableHeader,
     ReportTableCell,
     Placeholder.configure({ placeholder: props.placeholder }),
@@ -666,6 +725,7 @@ const editor = useEditor({
     Color,
     FontSize,
     Highlight.configure({ multicolor: true }),
+    ReportTemplateOrderedList,
     TableShortcuts,
   ],
   content: props.tmplHtml || html.value,

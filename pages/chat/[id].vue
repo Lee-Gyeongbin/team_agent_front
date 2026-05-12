@@ -121,6 +121,12 @@
 
 <script setup lang="ts">
 import { RadioGroupIndicator, RadioGroupItem, RadioGroupRoot } from 'radix-vue'
+import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
+
+/** 방 id가 바뀔 때마다 페이지 인스턴스 분리 — 전환 트랜지션(out-in)·조합형 라우트에서 상태 잔류 완화 */
+definePageMeta({
+  key: (route) => normalizeChatRoomId(route.params.id),
+})
 
 const {
   messages,
