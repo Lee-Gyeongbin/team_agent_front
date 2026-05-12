@@ -473,9 +473,13 @@ import { escapeHTML } from '~/utils/global/htmlUtil'
 
 /** 템플릿 폼에서 표 행과 매핑 — TmplFormPanel `TmplField.fieldId` */
 const TMPL_FIELD_ROW_ATTR = 'data-tmpl-field-id'
-/** 여러 줄(section) 블록 — h2 / 다음 p 한 쌍 */
+/** 여러 줄(section) 블록 식별용 속성 */
 const TMPL_FIELD_MULTILINE_H2 = 'data-tmpl-field-multiline'
 const TMPL_FIELD_MULTILINE_P = 'data-tmpl-field-multiline-p'
+const TMPL_FIELD_MULTILINE_TABLE = 'data-tmpl-field-multiline-table'
+const TMPL_FIELD_MULTILINE_LIST = 'data-tmpl-field-multiline-list'
+const TMPL_FIELD_TABLE_ROOT = 'data-tmpl-field-table-root'
+type TmplFieldRenderMode = 'none' | 'table-only' | 'multiline-only' | 'table-multiline'
 
 const escapeAttr = (s: string) => String(s).replaceAll('&', '&amp;').replaceAll('"', '&quot;')
 
@@ -502,14 +506,32 @@ const buildTmplFieldTableRowMarkup = (fieldId: string, jsonKey: string, fieldNm:
   )
 }
 
-/** 여러 줄(section) — h2(항목명) + p({{jsonKey}}), 표와 구분 */
-const buildTmplMultilineSectionMarkup = (fieldId: string, jsonKey: string, fieldNm: string) => {
+/** 여러 줄(section) + 표 사용 — h2 + 1x2 표(첫 행: 내용, 둘째 행: {{jsonKey}}) */
+const buildTmplMultilineTableSectionMarkup = (fieldId: string, jsonKey: string, fieldNm: string) => {
   const k = jsonKey.trim()
   const nm = fieldNm.trim()
   const placeholder = `{{${escapeHTML(k)}}}`
   return (
     `<h2 ${TMPL_FIELD_MULTILINE_H2}="${escapeAttr(fieldId)}">${escapeHTML(nm)}</h2>` +
-    `<p ${TMPL_FIELD_MULTILINE_P}="${escapeAttr(fieldId)}" data-tmpl-json-key="${escapeAttr(k)}">${placeholder}</p>`
+    `<table ${TMPL_FIELD_MULTILINE_TABLE}="${escapeAttr(fieldId)}">` +
+    `<tbody>` +
+    `<tr><th><p>내용</p></th></tr>` +
+    `<tr><td data-value-key="${escapeAttr(k)}"><p ${TMPL_FIELD_MULTILINE_P}="${escapeAttr(fieldId)}" data-tmpl-json-key="${escapeAttr(k)}">${placeholder}</p></td></tr>` +
+    `</tbody>` +
+    `</table>`
+  )
+}
+
+/** 여러 줄(section)만 — ol > li > p(항목명), p({{jsonKey}}) */
+const buildTmplMultilineListItemMarkup = (fieldId: string, jsonKey: string, fieldNm: string) => {
+  const k = jsonKey.trim()
+  const nm = fieldNm.trim()
+  const placeholder = `{{${escapeHTML(k)}}}`
+  return (
+    `<li>` +
+    `<p ${TMPL_FIELD_MULTILINE_P}="${escapeAttr(fieldId)}" data-tmpl-json-key="${escapeAttr(k)}">${escapeHTML(nm)}</p>` +
+    `<p ${TMPL_FIELD_MULTILINE_P}="${escapeAttr(fieldId)}" data-tmpl-json-key="${escapeAttr(k)}">${placeholder}</p>` +
+    `</li>`
   )
 }
 
@@ -767,92 +789,193 @@ const applyTmplRootMutation = (fn: (root: HTMLElement) => void) => {
   saveCurrentSelectionRange(editor.value)
 }
 
-/** 표 사용 ON — 2열 표 행 삽입·갱신(th=항목명, td={{jsonKey}}, 보고서 유틸과 동일 data-* ) */
-const upsertTmplFieldTableRow = (opts: { fieldId: string; jsonKey: string; fieldNm: string }) => {
+const upsertTmplFieldTableRowAtRoot = (
+  root: HTMLElement,
+  opts: { fieldId: string; jsonKey: string; fieldNm: string },
+) => {
   const { fieldId, jsonKey, fieldNm } = opts
   const k = jsonKey.trim()
   const nm = fieldNm.trim()
   if (!fieldId || !k || !nm) return
 
-  applyTmplRootMutation((root) => {
-    const doc = root.ownerDocument
-    const rowMarkup = buildTmplFieldTableRowMarkup(fieldId, k, nm)
-    const tpl = doc.createElement('template')
-    tpl.innerHTML = rowMarkup.trim()
-    const newTr = tpl.content.firstElementChild as HTMLTableRowElement | null
-    if (!newTr) return
+  const doc = root.ownerDocument
+  const rowMarkup = buildTmplFieldTableRowMarkup(fieldId, k, nm)
+  const tpl = doc.createElement('template')
+  tpl.innerHTML = rowMarkup.trim()
+  const newTr = tpl.content.firstElementChild as HTMLTableRowElement | null
+  if (!newTr) return
 
-    const existing = root.querySelector(`tr[${TMPL_FIELD_ROW_ATTR}="${fieldId}"]`)
-    if (existing?.parentNode) {
-      existing.replaceWith(newTr)
-      return
-    }
+  const existing = root.querySelector(`tr[${TMPL_FIELD_ROW_ATTR}="${fieldId}"]`)
+  if (existing?.parentNode) {
+    existing.replaceWith(newTr)
+    return
+  }
 
-    let table = root.querySelector('table')
-    if (!table) {
-      table = doc.createElement('table')
-      const tbody = doc.createElement('tbody')
-      tbody.appendChild(newTr)
-      table.appendChild(tbody)
-      root.appendChild(table)
-      root.appendChild(doc.createElement('p'))
-      return
-    }
-
-    const tbody = getOrCreateTbody(table, doc)
+  let table = root.querySelector(`table[${TMPL_FIELD_TABLE_ROOT}]`) as HTMLTableElement | null
+  if (!table) {
+    table = doc.createElement('table')
+    table.setAttribute(TMPL_FIELD_TABLE_ROOT, 'Y')
+    const tbody = doc.createElement('tbody')
     tbody.appendChild(newTr)
-  })
+    table.appendChild(tbody)
+    root.appendChild(table)
+    root.appendChild(doc.createElement('p'))
+    return
+  }
+
+  const tbody = getOrCreateTbody(table, doc)
+  tbody.appendChild(newTr)
+}
+
+const removeTmplFieldTableRowAtRoot = (root: HTMLElement, fieldId: string) => {
+  const row = root.querySelector(`tr[${TMPL_FIELD_ROW_ATTR}="${fieldId}"]`) as HTMLTableRowElement | null
+  if (!row) return
+  const table = row.closest('table') as HTMLTableElement | null
+  row.remove()
+
+  if (!table) return
+
+  const hasManagedRows = table.querySelector(`tr[${TMPL_FIELD_ROW_ATTR}]`)
+  if (hasManagedRows) return
+
+  // 자동 생성 표에서 관리 행이 모두 사라지면 빈 표/후행 빈 문단까지 정리
+  if (table.getAttribute(TMPL_FIELD_TABLE_ROOT) === 'Y') {
+    const trailing = table.nextElementSibling
+    if (trailing?.tagName === 'P' && !(trailing.textContent ?? '').trim()) trailing.remove()
+    table.remove()
+  }
+}
+
+/** 표 사용 ON — 2열 표 행 삽입·갱신(th=항목명, td={{jsonKey}}, 보고서 유틸과 동일 data-* ) */
+const upsertTmplFieldTableRow = (opts: { fieldId: string; jsonKey: string; fieldNm: string }) => {
+  applyTmplRootMutation((root) => upsertTmplFieldTableRowAtRoot(root, opts))
 }
 
 /** 표 사용 OFF — 해당 필드에 연결된 표 행 제거 */
 const removeTmplFieldTableRow = (fieldId: string) => {
   if (!fieldId) return
-  applyTmplRootMutation((root) => {
-    root.querySelector(`tr[${TMPL_FIELD_ROW_ATTR}="${fieldId}"]`)?.remove()
-  })
+  applyTmplRootMutation((root) => removeTmplFieldTableRowAtRoot(root, fieldId))
 }
 
-/** 여러 줄(section) 블록 제거 — h2 + 짝 p */
+const removeTmplMultilineGeneratedNodes = (root: HTMLElement, fieldId: string) => {
+  root.querySelector(`h2[${TMPL_FIELD_MULTILINE_H2}="${fieldId}"]`)?.remove()
+  root.querySelector(`table[${TMPL_FIELD_MULTILINE_TABLE}="${fieldId}"]`)?.remove()
+
+  const multilinePs = Array.from(root.querySelectorAll(`p[${TMPL_FIELD_MULTILINE_P}="${fieldId}"]`))
+  const listItems = new Set<HTMLElement>()
+  multilinePs.forEach((p) => {
+    const li = p.closest('li')
+    if (li) {
+      listItems.add(li)
+      return
+    }
+    p.remove()
+  })
+  listItems.forEach((li) => li.remove())
+
+  const ol = root.querySelector(`ol[${TMPL_FIELD_MULTILINE_LIST}]`) as HTMLOListElement | null
+  if (ol && ol.children.length === 0) ol.remove()
+}
+
+/** 여러 줄(section) 블록 제거 — h2+표 / ol>li / 레거시 h2+p 모두 제거 */
 const removeTmplMultilineSection = (fieldId: string) => {
   if (!fieldId) return
-  applyTmplRootMutation((root) => {
-    const h2 = root.querySelector(`h2[${TMPL_FIELD_MULTILINE_H2}="${fieldId}"]`)
-    if (!h2) return
-    const p = h2.nextElementSibling
-    if (p?.tagName === 'P' && p.getAttribute(TMPL_FIELD_MULTILINE_P) === fieldId) p.remove()
-    h2.remove()
-  })
+  applyTmplRootMutation((root) => removeTmplMultilineGeneratedNodes(root, fieldId))
 }
 
-/** 여러 줄(section) — h2(항목명) + p({{jsonKey}}) 삽입·갱신 */
-const upsertTmplMultilineSection = (opts: { fieldId: string; jsonKey: string; fieldNm: string }) => {
-  const { fieldId, jsonKey, fieldNm } = opts
+/**
+ * 여러 줄(section) 삽입·갱신
+ * - variant='table': h2 + 1x2 표(내용 / {{jsonKey}})
+ * - variant='list' : ol > li > p(항목명), p({{jsonKey}})
+ */
+const upsertTmplMultilineSectionAtRoot = (
+  root: HTMLElement,
+  opts: {
+    fieldId: string
+    jsonKey: string
+    fieldNm: string
+    variant: 'table' | 'list'
+  },
+) => {
+  const { fieldId, jsonKey, fieldNm, variant } = opts
   const k = jsonKey.trim()
   const nm = fieldNm.trim()
   if (!fieldId || !k || !nm) return
 
-  applyTmplRootMutation((root) => {
-    const doc = root.ownerDocument
-    const markup = buildTmplMultilineSectionMarkup(fieldId, k, nm)
+  const doc = root.ownerDocument
+  removeTmplMultilineGeneratedNodes(root, fieldId)
+
+  if (variant === 'table') {
+    const markup = buildTmplMultilineTableSectionMarkup(fieldId, k, nm)
     const tpl = doc.createElement('template')
     tpl.innerHTML = markup.trim()
     const newH2 = tpl.content.querySelector(`h2[${TMPL_FIELD_MULTILINE_H2}]`) as HTMLElement | null
-    const newP = tpl.content.querySelector(`p[${TMPL_FIELD_MULTILINE_P}]`) as HTMLElement | null
-    if (!newH2 || !newP) return
+    const newTable = tpl.content.querySelector(`table[${TMPL_FIELD_MULTILINE_TABLE}]`) as HTMLElement | null
+    if (!newH2 || !newTable) return
+    root.append(newH2, newTable)
+    return
+  }
 
-    const existingH2 = root.querySelector(`h2[${TMPL_FIELD_MULTILINE_H2}="${fieldId}"]`)
-    if (existingH2) {
-      const oldP = existingH2.nextElementSibling
-      existingH2.replaceWith(newH2)
-      if (oldP?.tagName === 'P' && oldP.getAttribute(TMPL_FIELD_MULTILINE_P) === fieldId) {
-        oldP.replaceWith(newP)
-      } else {
-        newH2.after(newP)
-      }
+  let ol = root.querySelector(`ol[${TMPL_FIELD_MULTILINE_LIST}]`) as HTMLOListElement | null
+  if (!ol) {
+    ol = doc.createElement('ol')
+    ol.setAttribute(TMPL_FIELD_MULTILINE_LIST, 'Y')
+    root.appendChild(ol)
+  }
+
+  const markup = buildTmplMultilineListItemMarkup(fieldId, k, nm)
+  const tpl = doc.createElement('template')
+  tpl.innerHTML = markup.trim()
+  const newLi = tpl.content.firstElementChild as HTMLLIElement | null
+  if (!newLi) return
+  ol.appendChild(newLi)
+}
+
+const upsertTmplMultilineSection = (opts: {
+  fieldId: string
+  jsonKey: string
+  fieldNm: string
+  variant: 'table' | 'list'
+}) => {
+  applyTmplRootMutation((root) => upsertTmplMultilineSectionAtRoot(root, opts))
+}
+
+/** 템플릿 필드 최종 상태 기준 단일 렌더 — 기존 생성 노드 정리 후 필요한 형태만 생성 */
+const renderTmplFieldByState = (opts: {
+  fieldId: string
+  jsonKey: string
+  fieldNm: string
+  mode: TmplFieldRenderMode
+}) => {
+  const { fieldId, jsonKey, fieldNm, mode } = opts
+  if (!fieldId) return
+  const k = jsonKey.trim()
+  const nm = fieldNm.trim()
+
+  applyTmplRootMutation((root) => {
+    removeTmplFieldTableRowAtRoot(root, fieldId)
+    removeTmplMultilineGeneratedNodes(root, fieldId)
+
+    if (!k || !nm || mode === 'none') return
+    if (mode === 'table-only') {
+      upsertTmplFieldTableRowAtRoot(root, { fieldId, jsonKey: k, fieldNm: nm })
       return
     }
-
-    root.append(newH2, newP)
+    if (mode === 'table-multiline') {
+      upsertTmplMultilineSectionAtRoot(root, {
+        fieldId,
+        jsonKey: k,
+        fieldNm: nm,
+        variant: 'table',
+      })
+      return
+    }
+    upsertTmplMultilineSectionAtRoot(root, {
+      fieldId,
+      jsonKey: k,
+      fieldNm: nm,
+      variant: 'list',
+    })
   })
 }
 
@@ -879,6 +1002,8 @@ const stripPlaceholderFromHtmlFragment = (fragment: string, jsonKey: string): st
     const td = t.parentElement?.closest('td')
     const tr = td?.closest('tr')
     if (tr?.hasAttribute(TMPL_FIELD_ROW_ATTR) && td?.getAttribute('data-value-key') === key) continue
+    const multilineTable = td?.closest(`table[${TMPL_FIELD_MULTILINE_TABLE}]`)
+    if (multilineTable && td?.getAttribute('data-value-key') === key) continue
     const multilineP = t.parentElement?.closest(`p[${TMPL_FIELD_MULTILINE_P}]`)
     if (multilineP?.getAttribute('data-tmpl-json-key') === key) continue
     updates.push({ node: t, next: v.split(needle).join('') })
@@ -915,14 +1040,26 @@ defineExpose<{
   editor: typeof editor
   insertContentAtLastSelection: (content: string) => void
   removePlaceholderByJsonKey: (jsonKey: string) => void
+  renderTmplFieldByState: (opts: {
+    fieldId: string
+    jsonKey: string
+    fieldNm: string
+    mode: TmplFieldRenderMode
+  }) => void
   upsertTmplFieldTableRow: (opts: { fieldId: string; jsonKey: string; fieldNm: string }) => void
   removeTmplFieldTableRow: (fieldId: string) => void
-  upsertTmplMultilineSection: (opts: { fieldId: string; jsonKey: string; fieldNm: string }) => void
+  upsertTmplMultilineSection: (opts: {
+    fieldId: string
+    jsonKey: string
+    fieldNm: string
+    variant: 'table' | 'list'
+  }) => void
   removeTmplMultilineSection: (fieldId: string) => void
 }>({
   editor,
   insertContentAtLastSelection,
   removePlaceholderByJsonKey,
+  renderTmplFieldByState,
   upsertTmplFieldTableRow,
   removeTmplFieldTableRow,
   upsertTmplMultilineSection,
