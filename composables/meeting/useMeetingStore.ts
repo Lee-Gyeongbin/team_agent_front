@@ -251,7 +251,6 @@ const handleStreamInfographic = (meetingId: number): (() => void) => {
   const es = openInfographicStream(meetingId)
 
   es.addEventListener('progress', (e: MessageEvent) => {
-    debugger
     try {
       const data = JSON.parse(e.data)
       const idx = infographicList.value.findIndex((item) => item.infographicId === data.infographicId)
