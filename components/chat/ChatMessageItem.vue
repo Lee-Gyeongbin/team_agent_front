@@ -167,8 +167,9 @@
       </div>
       <div class="message-body">
         <ChatLunchAgentCard
-          :readonly="message.lunchSubmitted === true"
+          :readonly="isShare || message.lunchSubmitted === true"
           :initial-payload="message.lunchFormPayload"
+          :recommendations="message.lunchDisplayRecommendations ?? []"
           :theme-icon-class-nm="surveyThemeAgent?.iconClassNm ?? ''"
           :theme-color-hex="surveyThemeAgent?.colorHex ?? ''"
           @submit="emit('on-submit-lunch-card', message.logId, $event)"
@@ -231,7 +232,7 @@
       </div>
       <div class="message-body">
         <ChatTodayMeme
-          :readonly="message.memeSubmitted === true"
+          :readonly="isShare || message.memeSubmitted === true"
           :meme-items="resolvedTodayMemeItems"
           :is-answer-streaming="isMemeAnswerStreaming"
           :theme-icon-class-nm="surveyThemeAgent?.iconClassNm ?? ''"
@@ -251,7 +252,7 @@
       </div>
       <div class="message-body">
         <ChatNewsCurator
-          :readonly="message.newsSubmitted === true"
+          :readonly="isShare || message.newsSubmitted === true"
           :locked-selected-categories="message.newsSelectedCategories ?? []"
           :news-items="resolvedNewsCuratorItemsForNewsCard"
           :is-answer-streaming="isNewsCuratorAnswerStreaming"
@@ -480,6 +481,9 @@ const surveyThemeAgent = computed<Agent | null>(
 )
 
 const parsedLunchRecommendations = computed<LunchRecommendationItem[]>(() => {
+  if (Array.isArray(props.message.lunchDisplayRecommendations)) {
+    return props.message.lunchDisplayRecommendations
+  }
   const raw = (props.message.rContent ?? '').trim()
   if (!raw || props.message.uiType === 'lunch-card') return []
   try {
@@ -503,6 +507,9 @@ const isNewsCuratorAnswerMessage = (message: ChatMessage) =>
 
 const resolvedTodayMemeItems = computed<TodayMemeItem[]>(() => {
   if (props.message.type !== 'meme') return []
+  const injected = props.message.memeDisplayItems
+  if (Array.isArray(injected) && injected.length > 0) return injected
+
   const findParsedItems = (list: ChatMessage[]): TodayMemeItem[] => {
     for (const msg of list) {
       if (!isTodayMemeAnswerMessage(msg)) continue
@@ -521,6 +528,9 @@ const resolvedTodayMemeItems = computed<TodayMemeItem[]>(() => {
 
 const resolvedNewsCuratorItemsForNewsCard = computed<NewsCuratorItem[]>(() => {
   if (props.message.type !== 'news') return []
+  const injected = props.message.newsDisplayItems
+  if (Array.isArray(injected) && injected.length > 0) return injected
+
   const newsCardMessageIndex = messages.value.findIndex((messageEntry) => messageEntry.logId === props.message.logId)
   if (newsCardMessageIndex < 0) return []
   const messagesAfterNewsCard = messages.value.slice(newsCardMessageIndex + 1)

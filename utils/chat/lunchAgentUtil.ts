@@ -1,4 +1,4 @@
-import type { ChatMessage, LunchAgentFormPayload, RegionLocationMap } from '~/types/chat'
+import type { ChatMessage, LunchAgentFormPayload, LunchRecommendationItem, RegionLocationMap } from '~/types/chat'
 
 /**
  * 브라우저 geolocation으로 WGS84 좌표 획득 (selectRegionTree.do lat/lng 쿼리용).
@@ -56,6 +56,18 @@ export const getLunchAnsweredCount = (payload: Partial<LunchAgentFormPayload>): 
     !!payload.cuisineType,
   ]
   return checks.filter(Boolean).length
+}
+
+/** 답변 본문 JSON 배열 — 점심 추천 결과 (로그 재구성·메시지 주입용) */
+export const parseLunchRecommendationsFromAnswerRContent = (rContent: string): LunchRecommendationItem[] => {
+  const raw = String(rContent ?? '').trim()
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    return Array.isArray(parsed) ? (parsed as LunchRecommendationItem[]) : []
+  } catch {
+    return []
+  }
 }
 
 export const buildLunchRecommendationPrompt = (payload: LunchAgentFormPayload): string => {
