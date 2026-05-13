@@ -62,6 +62,8 @@ export interface MeetingInfographic {
   treeText: string
   infographicImg: string
   sortOrd: number
+  /** 001:대기 002:생성중 003:완료 004:실패 */
+  infographicStatus: string
 }
 
 export interface SpeechSegment {
