@@ -177,8 +177,19 @@
           v-if="message.attachments?.length || message.qContent?.trim()"
           class="message-user-block"
         >
+          <!-- 공유 또는 타인 첨부(createUserId ≠ 본인): 패널·미리보기 대신 안내 한 줄 -->
+          <div
+            v-if="showAttachmentSummaryIndicator"
+            class="message-user-attach-share-indicator"
+          >
+            <i
+              class="icon-folder-close size-20"
+              aria-hidden="true"
+            />
+            <span>파일 업로드됨</span>
+          </div>
           <ChatQuestionAttachments
-            v-if="message.attachments?.length"
+            v-else-if="message.attachments?.length"
             :attachments="message.attachments"
           />
           <div
@@ -270,7 +281,10 @@ import {
 } from '~/utils/chat/psychologyConsultUtil'
 import { parseTodayMemeItems } from '~/utils/chat/todayMemeUtil'
 import type { TodayMemeItem } from '~/utils/chat/todayMemeUtil'
+import { attachmentsRequireSummaryIndicator } from '~/utils/chat/chatAttachmentDisplayUtil'
+
 const { chatIndexAgents, messages } = useChatStore()
+const { user } = useAuth()
 interface Props {
   message: ChatMessage
   knowledgeList?: KnowledgeItem[]
@@ -281,6 +295,13 @@ const props = withDefaults(defineProps<Props>(), {
   knowledgeList: undefined,
   isShare: false,
 })
+
+const showAttachmentSummaryIndicator = computed(() =>
+  attachmentsRequireSummaryIndicator(props.message.attachments, {
+    isSharePage: props.isShare,
+    currentUserId: user.value?.userId,
+  }),
+)
 
 const emit = defineEmits<{
   'on-copy': [id: string]
@@ -423,7 +444,12 @@ const surveyThemeAgent = computed<Agent | null>(
 const parsedLunchRecommendations = computed<LunchRecommendationItem[]>(() => {
   const raw = (props.message.rContent ?? '').trim()
   if (!raw || props.message.uiType === 'lunch-card') return []
-  return parseLunchRecommendations(raw)
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    return Array.isArray(parsed) ? (parsed as LunchRecommendationItem[]) : []
+  } catch {
+    return []
+  }
 })
 const isLunchRecommendationAnswer = computed(() => props.message.agentId === 'AG000009')
 
@@ -467,23 +493,6 @@ const getSourceLabel = (title: string | undefined, url: string) => {
   if (!raw) return url
   return raw.replace(/^#{1,6}\s+/u, '').trim()
 }
-
-const emit = defineEmits<{
-  'on-copy': [id: string]
-  'on-like': [id: string]
-  'on-dislike': [id: string]
-  'on-regenerate': [id: string]
-  /** [답변 logId, categoryId, categoryNm] — Actions는 value만 알 수 있어 여기서 knowledgeList로 이름 조회 */
-  'on-select-category': [id: string, categoryValue: string, categoryNm: string]
-  'on-view-source': [id: string]
-  'on-view-visualization': [id: string]
-  'on-submit-lunch-card': [logId: string, payload: LunchAgentFormPayload]
-  'on-lunch-card-close': [logId: string]
-  /** 설문 제출 (survey 타입 메시지) */
-  'on-survey-submit': [logId: string]
-  /** 설문 닫기 (survey 타입 메시지) */
-  'on-survey-close': [logId: string]
-}>()
 
 /** 카테고리 id만 전달되므로 표시명은 knowledgeList에서 매칭 */
 const onSelectCategoryFromActions = (categoryId: string) => {

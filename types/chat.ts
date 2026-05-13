@@ -24,6 +24,11 @@ export interface ChatAttachmentMeta {
 export interface ChatMessageAttachment extends ChatAttachmentMeta {
   /** 전송 직후 로컬 미리보기(blob) — 새로고침 후에는 비어 있음 */
   localPreviewUrl?: string
+  /**
+   * TB_CHAT_FILE.CREATE_USER_ID (백 VO: ChatAttachmentItem.createUserId)
+   * 타인 업로드 판별·공유/이어가기 시 「파일 업로드됨」요약 표시용 (미제공이면 패널 유지)
+   */
+  uploadUserId?: string
 }
 
 /** /ai/chatbot/viewChatFile.do — FileService 뷰 응답과 동일 키 */
