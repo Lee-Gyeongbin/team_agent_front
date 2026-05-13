@@ -277,6 +277,7 @@
 
 <script setup lang="ts">
 import draggable from 'vuedraggable'
+import { openConfirm } from '~/composables/useDialog'
 import { openToast } from '~/composables/useToast'
 import type { TmplBaseInfo, TmplDocType, TmplField, TmplFormSavePayload } from '~/types/tmpl'
 
@@ -653,7 +654,7 @@ const onInsertJsonKeyToTemplate = (jsonKey: string) => {
   tmplHtmlEditorRef.value?.insertContentAtLastSelection(`{{${normalizedKey}}}`)
 }
 
-const onSave = () => {
+const onSave = async () => {
   const name = tmplNm.value.trim()
   if (!name) {
     openToast({ message: '템플릿 이름을 입력해 주세요.', type: 'error' })
@@ -684,6 +685,28 @@ const onSave = () => {
       openToast({ message: 'JSON 키가 중복되었습니다.', type: 'error' })
       return
     }
+    const htmlSrc = (tmplHtml.value ?? '').trim()
+    const hasJsonKeyInHtml = outFields.some((r) => htmlSrc.includes(`{{${r.jsonKey}}}`))
+    if (!hasJsonKeyInHtml) {
+      openToast({
+        message: 'HTML 문서 템플릿에 항목 정의의 JSON 키를 {{키}} 형식으로 최소 1개 이상 넣어 주세요. (예: {{title}})',
+        type: 'warning',
+      })
+      return
+    }
+  }
+
+  const trimmedPrompt = (llmPrompt.value ?? '').trim()
+  if (!trimmedPrompt) {
+    if (props.template?.sysTmplYn === 'Y') {
+      openToast({ message: 'LLM 프롬프트를 입력해 주세요.', type: 'error' })
+      return
+    }
+    const confirmed = await openConfirm({
+      message: '작성한 LLM 프롬프트가 없습니다. 기본 프롬프트를 삽입하시겠습니까?',
+    })
+    if (!confirmed) return
+    llmPrompt.value = tmplType.value === 'F' ? DEFAULT_PROMPT_TEXT_F : DEFAULT_PROMPT_TEXT_T
   }
 
   const promptBody = llmPrompt.value

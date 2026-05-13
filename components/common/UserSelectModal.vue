@@ -96,7 +96,7 @@
 
                 <!-- 사용자 없음 -->
                 <div
-                  v-else-if="orgUserList.length === 0"
+                  v-else-if="visibleOrgUserList.length === 0"
                   class="us-state-box"
                 >
                   <p class="us-state-text">소속 팀원이 없습니다.</p>
@@ -108,23 +108,23 @@
                   class="us-user-list"
                 >
                   <li
-                    v-for="user in orgUserList"
-                    :key="user.userId"
+                    v-for="orgMember in visibleOrgUserList"
+                    :key="orgMember.userId"
                     class="us-user-item"
-                    :class="{ 'is-selected': isUserSelected(user.userId) }"
-                    @click="onUserClick(user)"
+                    :class="{ 'is-selected': isUserSelected(orgMember.userId) }"
+                    @click="onUserClick(orgMember)"
                   >
                     <UiAvatar
-                      :src="user.profileImgUrl ?? ''"
-                      :alt="user.userNm"
+                      :src="orgMember.profileImgUrl ?? ''"
+                      :alt="orgMember.userNm"
                       size="sm"
                     />
                     <div class="us-user-info">
-                      <span class="us-user-name">{{ user.userNm }}</span>
-                      <span class="us-user-email">{{ user.email }}</span>
+                      <span class="us-user-name">{{ orgMember.userNm }}</span>
+                      <span class="us-user-email">{{ orgMember.email }}</span>
                     </div>
                     <i
-                      v-if="isUserSelected(user.userId)"
+                      v-if="isUserSelected(orgMember.userId)"
                       class="icon icon-check size-16 us-user-check-icon"
                     />
                   </li>
@@ -167,22 +167,22 @@
               class="us-selected-list"
             >
               <li
-                v-for="user in selectedUsers"
-                :key="user.userId"
+                v-for="selectedRow in selectedUsers"
+                :key="selectedRow.userId"
                 class="us-selected-item"
               >
                 <UiAvatar
-                  :src="user.profileImgUrl ?? ''"
-                  :alt="user.userNm"
+                  :src="selectedRow.profileImgUrl ?? ''"
+                  :alt="selectedRow.userNm"
                   size="sm"
                 />
                 <div class="us-user-info">
-                  <span class="us-user-name">{{ user.userNm }}</span>
-                  <span class="us-user-email">{{ user.email }}</span>
+                  <span class="us-user-name">{{ selectedRow.userNm }}</span>
+                  <span class="us-user-email">{{ selectedRow.email }}</span>
                 </div>
                 <button
                   class="btn-us-remove"
-                  @click="removeSelectedUser(user.userId)"
+                  @click="removeSelectedUser(selectedRow.userId)"
                 >
                   <i class="icon icon-close-gray size-14" />
                 </button>
@@ -252,6 +252,15 @@ const {
   removeSelectedUser,
   clearSelectedUsers,
 } = useUserSelectStore()
+
+const { user } = useAuth()
+
+/** 로그인 사용자는 선택 대상에서 제외 */
+const visibleOrgUserList = computed(() => {
+  const selfId = String(user.value?.userId ?? '').trim()
+  if (!selfId) return orgUserList.value
+  return orgUserList.value.filter((u) => String(u.userId ?? '').trim() !== selfId)
+})
 
 const isUserSelected = (userId: string) => selectedUsers.value.some((u) => u.userId === userId)
 

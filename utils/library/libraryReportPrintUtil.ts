@@ -105,7 +105,8 @@ const buildPrintHostStyles = (): string => `
   }
 }
 @media print {
-  @page { margin: 18mm 16mm; }
+  /* 여백 축소 → 인쇄 가능 영역 확대 (브라우저·프린터 여백 한계는 남음) */
+  @page { margin: 12mm 12mm; }
   body * {
     visibility: hidden !important;
   }
@@ -126,8 +127,8 @@ const buildPrintHostStyles = (): string => `
     background: #fff !important;
     box-sizing: border-box !important;
     font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif !important;
-    font-size: 12pt !important;
-    line-height: 1.5 !important;
+    font-size: 10pt !important;
+    line-height: 1.45 !important;
     color: #1e293b !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
@@ -211,44 +212,159 @@ const buildPrintHostStyles = (): string => `
     background: #f1f5f9 !important;
   }
 
-  /* 에디터 HTML 직접 인쇄 스타일 (printLibraryReportFromHtml) */
+  /* 에디터 HTML 직접 인쇄 — 화면 미리보기보다 한 단계 작게(페이지 분산 완화) */
   #${PRINT_HOST_ID} .report-print-editor-body {
     font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif !important;
-    font-size: 11pt !important;
+    font-size: 9.5pt !important;
     color: #1e293b !important;
-    line-height: 1.55 !important;
+    line-height: 1.45 !important;
+    text-align: left !important;
   }
-  #${PRINT_HOST_ID} .report-print-editor-body h1 { font-size: 18pt !important; font-weight: 700 !important; margin: 12px 0 8px !important; }
-  #${PRINT_HOST_ID} .report-print-editor-body h2 { font-size: 15pt !important; font-weight: 700 !important; margin: 10px 0 6px !important; }
-  #${PRINT_HOST_ID} .report-print-editor-body h3 { font-size: 12pt !important; font-weight: 700 !important; margin: 8px 0 4px !important; }
-  #${PRINT_HOST_ID} .report-print-editor-body p { margin: 0 0 6px !important; }
-  /* 빈 <p></p>는 line box가 없어 높이 0이 됨 → &nbsp;로 line box 강제 생성 */
+  /* 인라인 style(font-size 등)은 그대로 적용됨 → 에디터에서 큰 글꼴을 쓰면 인쇄도 커짐 */
+  #${PRINT_HOST_ID} .report-print-editor-body h1 {
+    font-size: 15pt !important;
+    font-weight: 700 !important;
+    margin: 8px 0 5px !important;
+    line-height: 1.3 !important;
+    padding-bottom: 4px !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+  /* h2 — doc-content 와 동일: 둥근 사각형 + 체크(√) 마스크 아이콘 */
+  #${PRINT_HOST_ID} .report-print-editor-body h2 {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    font-size: 12.5pt !important;
+    font-weight: 700 !important;
+    margin: 10px 0 4px !important;
+    line-height: 1.3 !important;
+    color: #2563eb !important;
+    padding-bottom: 3px !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+  #${PRINT_HOST_ID} .report-print-editor-body h2::before {
+    content: '' !important;
+    flex-shrink: 0 !important;
+    width: 11pt !important;
+    height: 11pt !important;
+    background-color: #2563eb !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='3'/%3E%3Cpath d='m8 12 3 3 5-6'/%3E%3C/svg%3E") !important;
+    mask-repeat: no-repeat !important;
+    mask-position: center !important;
+    mask-size: contain !important;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='3'/%3E%3Cpath d='m8 12 3 3 5-6'/%3E%3C/svg%3E") !important;
+    -webkit-mask-repeat: no-repeat !important;
+    -webkit-mask-position: center !important;
+    -webkit-mask-size: contain !important;
+  }
+  #${PRINT_HOST_ID} .report-print-editor-body h3 {
+    font-size: 11pt !important;
+    font-weight: 700 !important;
+    margin: 8px 0 3px !important;
+    line-height: 1.35 !important;
+    color: #1e293b !important;
+  }
+  #${PRINT_HOST_ID} .report-print-editor-body h4 {
+    font-size: 10pt !important;
+    font-weight: 700 !important;
+    margin: 6px 0 3px !important;
+    line-height: 1.35 !important;
+  }
+  #${PRINT_HOST_ID} .report-print-editor-body h5 {
+    font-size: 9.5pt !important;
+    font-weight: 700 !important;
+    margin: 5px 0 2px !important;
+    line-height: 1.4 !important;
+  }
+  #${PRINT_HOST_ID} .report-print-editor-body h6 {
+    font-size: 9pt !important;
+    font-weight: 700 !important;
+    margin: 4px 0 2px !important;
+    line-height: 1.4 !important;
+    color: #475569 !important;
+  }
+  #${PRINT_HOST_ID} .report-print-editor-body p { margin: 0 0 5px !important; line-height: 1.5 !important; }
   #${PRINT_HOST_ID} .report-print-editor-body p:empty::after { content: '\u00A0'; }
+  #${PRINT_HOST_ID} .report-print-editor-body strong,
+  #${PRINT_HOST_ID} .report-print-editor-body b { font-weight: 700 !important; }
+  #${PRINT_HOST_ID} .report-print-editor-body em,
+  #${PRINT_HOST_ID} .report-print-editor-body i { font-style: italic !important; }
+  #${PRINT_HOST_ID} .report-print-editor-body u { text-decoration: underline !important; }
+  #${PRINT_HOST_ID} .report-print-editor-body s,
+  #${PRINT_HOST_ID} .report-print-editor-body strike,
+  #${PRINT_HOST_ID} .report-print-editor-body del { text-decoration: line-through !important; }
+  #${PRINT_HOST_ID} .report-print-editor-body mark {
+    padding: 1px 3px !important;
+    border-radius: 2px !important;
+  }
+  #${PRINT_HOST_ID} .report-print-editor-body hr {
+    border: none !important;
+    border-top: 1px solid #cbd5e1 !important;
+    margin: 8px 0 !important;
+  }
   #${PRINT_HOST_ID} .report-print-editor-body ul,
-  #${PRINT_HOST_ID} .report-print-editor-body ol { margin: 6px 0 !important; padding-left: 1.4em !important; }
-  /* 전역 reset(_reset.scss)의 list-style: none을 출력 시 복원 */
+  #${PRINT_HOST_ID} .report-print-editor-body ol { margin: 5px 0 !important; padding-left: 1.35em !important; }
   #${PRINT_HOST_ID} .report-print-editor-body ul { list-style-type: disc !important; }
   #${PRINT_HOST_ID} .report-print-editor-body ol { list-style-type: decimal !important; }
-  #${PRINT_HOST_ID} .report-print-editor-body ul ul { list-style-type: circle !important; }
+  #${PRINT_HOST_ID} .report-print-editor-body ul ul { list-style-type: circle !important; margin-top: 4px !important; }
   #${PRINT_HOST_ID} .report-print-editor-body ul ul ul { list-style-type: square !important; }
-  #${PRINT_HOST_ID} .report-print-editor-body li { margin-bottom: 2px !important; list-style-position: outside !important; }
+  #${PRINT_HOST_ID} .report-print-editor-body ol ol { list-style-type: lower-alpha !important; margin-top: 4px !important; }
+  #${PRINT_HOST_ID} .report-print-editor-body li {
+    margin-bottom: 2px !important;
+    list-style-position: outside !important;
+    line-height: 1.5 !important;
+  }
+  #${PRINT_HOST_ID} .report-print-editor-body li > p {
+    margin: 0 !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
+  }
+  #${PRINT_HOST_ID} .report-print-editor-body p:last-child { margin-bottom: 0 !important; }
   #${PRINT_HOST_ID} .report-print-editor-body blockquote {
-    margin: 6px 0 !important;
+    margin: 5px 0 !important;
     padding: 4px 10px !important;
     border-left: 3px solid #3b82f6 !important;
     background: #f8fafc !important;
     font-style: italic !important;
+    line-height: 1.6 !important;
+  }
+  #${PRINT_HOST_ID} .report-print-editor-body pre {
+    margin: 5px 0 !important;
+    padding: 8px 10px !important;
+    background: #2d3139 !important;
+    color: #fff !important;
+    border-radius: 4px !important;
+    overflow-x: auto !important;
+    font-family: Menlo, Consolas, monospace !important;
+    font-size: 8.5pt !important;
+    line-height: 1.4 !important;
+  }
+  #${PRINT_HOST_ID} .report-print-editor-body pre code {
+    background: transparent !important;
+    color: inherit !important;
+    padding: 0 !important;
+    font-size: inherit !important;
+  }
+  #${PRINT_HOST_ID} .report-print-editor-body code {
+    font-family: Menlo, Consolas, monospace !important;
+    font-size: 0.92em !important;
+    background: #f1f5f9 !important;
+    padding: 2px 5px !important;
+    border-radius: 3px !important;
+    color: #b42318 !important;
   }
   #${PRINT_HOST_ID} .report-print-editor-body table {
     width: 100% !important;
     border-collapse: collapse !important;
     table-layout: fixed !important;
-    margin: 8px 0 10px !important;
-    font-size: 10.5pt !important;
+    margin: 5px 0 7px !important;
+    font-size: 9pt !important;
   }
   #${PRINT_HOST_ID} .report-print-editor-body th {
     width: 20%;
-    padding: 8px 10px !important;
+    padding: 5px 8px !important;
     background: #f8fafc !important;
     border: 1px solid #cbd5e1 !important;
     font-weight: 600 !important;
@@ -257,16 +373,30 @@ const buildPrintHostStyles = (): string => `
     color: #334155 !important;
   }
   #${PRINT_HOST_ID} .report-print-editor-body td {
-    padding: 8px 12px !important;
+    padding: 5px 8px !important;
     background: #fff !important;
     border: 1px solid #cbd5e1 !important;
     vertical-align: top !important;
+    text-align: left !important;
     word-break: break-word !important;
   }
+  #${PRINT_HOST_ID} .report-print-editor-body td h1,
+  #${PRINT_HOST_ID} .report-print-editor-body td h2,
+  #${PRINT_HOST_ID} .report-print-editor-body td h3,
+  #${PRINT_HOST_ID} .report-print-editor-body td h4,
+  #${PRINT_HOST_ID} .report-print-editor-body td h5,
+  #${PRINT_HOST_ID} .report-print-editor-body td h6 {
+    margin-top: 4px !important;
+  }
+  #${PRINT_HOST_ID} .report-print-editor-body td h1:first-child,
+  #${PRINT_HOST_ID} .report-print-editor-body td h2:first-child,
+  #${PRINT_HOST_ID} .report-print-editor-body td h3:first-child { margin-top: 0 !important; }
   #${PRINT_HOST_ID} .report-print-editor-body td p { margin: 0 0 4px !important; }
   #${PRINT_HOST_ID} .report-print-editor-body td p:last-child { margin-bottom: 0 !important; }
   #${PRINT_HOST_ID} .report-print-editor-body td p:empty::after { content: '\u00A0'; }
-  #${PRINT_HOST_ID} .report-print-editor-body a { color: #3b82f6 !important; text-decoration: underline !important; }
+  #${PRINT_HOST_ID} .report-print-editor-body td ul,
+  #${PRINT_HOST_ID} .report-print-editor-body td ol { margin: 3px 0 5px !important; }
+  #${PRINT_HOST_ID} .report-print-editor-body a { color: #2563eb !important; text-decoration: underline !important; }
   #${PRINT_HOST_ID} .report-print-editor-body img {
     max-width: 100% !important;
     height: auto !important;
