@@ -1891,6 +1891,40 @@
   height: auto;
   border-radius: $border-radius-sm;
   display: block;
+  cursor: zoom-in;
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 0.85;
+  }
+}
+
+// ---- 인포그래픽 미리보기 모달 ----
+.meeting2-infographic-preview-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  background: $color-background;
+  overflow: auto;
+}
+
+.meeting2-infographic-preview-img {
+  display: block;
+  max-width: 100%;
+  max-height: min(80vh, 900px);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: $border-radius-sm;
+}
+
+.meeting2-infographic-preview-modal {
+  &.is-fullscreen {
+    .meeting2-infographic-preview-img {
+      max-height: calc(100vh - 120px);
+    }
+  }
 }
 
 .meeting2-infographic-card-error {
