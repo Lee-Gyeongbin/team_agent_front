@@ -248,14 +248,26 @@ const handleSelectMeetingDetail = async (meetingId: number) => {
  * @returns 구독 해제 함수
  */
 const handleStreamInfographic = (meetingId: number): (() => void) => {
+  type InfographicStreamProgressPayload = Pick<
+    MeetingInfographic,
+    'infographicId' | 'sortOrd' | 'infographicStatus' | 'infographicImg'
+  >
+
   const es = openInfographicStream(meetingId)
 
   es.addEventListener('progress', (e: MessageEvent) => {
     try {
-      const data = JSON.parse(e.data)
+      const data = JSON.parse(e.data) as Partial<InfographicStreamProgressPayload>
       const idx = infographicList.value.findIndex((item) => item.infographicId === data.infographicId)
       if (idx !== -1) {
-        infographicList.value[idx] = { ...infographicList.value[idx], ...data }
+        const prev = infographicList.value[idx]
+        infographicList.value[idx] = {
+          ...prev,
+          infographicId: data.infographicId ?? prev.infographicId,
+          sortOrd: data.sortOrd ?? prev.sortOrd,
+          infographicStatus: data.infographicStatus ?? prev.infographicStatus,
+          infographicImg: data.infographicImg ?? prev.infographicImg,
+        }
       }
     } catch {
       // 파싱 실패 무시

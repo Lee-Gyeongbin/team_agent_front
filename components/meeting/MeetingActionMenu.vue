@@ -56,7 +56,7 @@ const route = useRoute()
 /** 현재 회의 ID — 라우트 파라미터에서 추출 */
 const meetingId = computed(() => Number(route.params.id))
 
-const formats: MeetingFileFormat[] = ['pdf', 'docx', 'hwp', 'txt', 'md']
+const formats: MeetingFileFormat[] = ['pdf', 'docx', 'txt', 'md']
 
 const isDownloadPickerOpen = ref(false)
 const downloadPickerRef = ref<HTMLDivElement | null>(null)
