@@ -184,8 +184,19 @@
           v-if="message.attachments?.length || message.qContent?.trim()"
           class="message-user-block"
         >
+          <!-- 공유 또는 타인 첨부(createUserId ≠ 본인): 패널·미리보기 대신 안내 한 줄 -->
+          <div
+            v-if="showAttachmentSummaryIndicator"
+            class="message-user-attach-share-indicator"
+          >
+            <i
+              class="icon-folder-close size-20"
+              aria-hidden="true"
+            />
+            <span>파일 업로드됨</span>
+          </div>
           <ChatQuestionAttachments
-            v-if="message.attachments?.length"
+            v-else-if="message.attachments?.length"
             :attachments="message.attachments"
           />
           <div
@@ -306,8 +317,10 @@ import {
 } from '~/utils/chat/psychologyConsultUtil'
 import { parseTodayMemeItems } from '~/utils/chat/todayMemeUtil'
 import type { TodayMemeItem } from '~/utils/chat/todayMemeUtil'
+import { attachmentsRequireSummaryIndicator } from '~/utils/chat/chatAttachmentDisplayUtil'
 import { parseNewsCuratorItems } from '~/utils/chat/newsCuratorUtil'
 const { chatIndexAgents, messages } = useChatStore()
+const { user } = useAuth()
 interface Props {
   message: ChatMessage
   knowledgeList?: KnowledgeItem[]
@@ -318,6 +331,13 @@ const props = withDefaults(defineProps<Props>(), {
   knowledgeList: undefined,
   isShare: false,
 })
+
+const showAttachmentSummaryIndicator = computed(() =>
+  attachmentsRequireSummaryIndicator(props.message.attachments, {
+    isSharePage: props.isShare,
+    currentUserId: user.value?.userId,
+  }),
+)
 
 const emit = defineEmits<{
   'on-copy': [id: string]
@@ -472,7 +492,12 @@ const parseLunchRecommendations = (raw: string): LunchRecommendationItem[] => {
 const parsedLunchRecommendations = computed<LunchRecommendationItem[]>(() => {
   const raw = (props.message.rContent ?? '').trim()
   if (!raw || props.message.uiType === 'lunch-card') return []
-  return parseLunchRecommendations(raw)
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    return Array.isArray(parsed) ? (parsed as LunchRecommendationItem[]) : []
+  } catch {
+    return []
+  }
 })
 const isLunchRecommendationAnswer = computed(() => props.message.agentId === 'AG000009')
 const isLunchRecommendationsPending = computed(
