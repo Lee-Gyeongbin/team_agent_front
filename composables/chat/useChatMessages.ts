@@ -10,6 +10,7 @@ import { parseChatAttachmentsFromLogRow } from '~/utils/chat/chatAttachmentDispl
 import { parseSurveyAnswersFromPrompt } from '~/utils/chat/psychologyConsultUtil'
 import { parseLunchPayloadFromPrompt } from '~/utils/chat/lunchAgentUtil'
 import { isTodayMemePrompt } from '~/utils/chat/todayMemeUtil'
+import { parseNewsCuratorPromptMeta } from '~/utils/chat/newsCuratorUtil'
 
 // 채팅 메시지/스트리밍 상태는 모듈 레벨에서 단일 인스턴스로 공유
 const messages = ref<ChatMessage[]>([])
@@ -116,8 +117,24 @@ export const useChatMessages = () => {
           logId: `${logId}-today-meme`,
           type: 'meme',
           createdAt,
-          ...(agentId ? { agentId } : {}),
+          agentId,
           memeSubmitted: true,
+        },
+        answerMessage,
+      ]
+    }
+
+    // NewsCurator 에이전트(AG000012): question을 readonly news 메시지로 대체
+    const newsPromptMeta = parseNewsCuratorPromptMeta(row.qcontent ?? '')
+    if (agentId === 'AG000012' && newsPromptMeta.isHiddenQuestion) {
+      return [
+        {
+          logId: `${logId}-news-curator`,
+          type: 'news',
+          createdAt,
+          agentId,
+          newsSubmitted: true,
+          newsSelectedCategories: newsPromptMeta.categories,
         },
         answerMessage,
       ]

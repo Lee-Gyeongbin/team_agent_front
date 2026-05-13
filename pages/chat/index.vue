@@ -1,11 +1,14 @@
 <template>
   <div
     class="chat-index s-center"
-    :class="{ 'is-survey-mode': isSurveyVisible || isLunchVisible || isTodayMemeVisible }"
+    :class="{
+      'is-survey-mode': isSurveyVisible || isLunchVisible || isTodayMemeVisible || isNewsCuratorVisible,
+      'is-news-curator-index': isNewsCuratorVisible,
+    }"
   >
     <!-- 헤더 (설문 모드에서 숨김) -->
     <div
-      v-if="!isSurveyVisible && !isLunchVisible && !isTodayMemeVisible"
+      v-if="!isSurveyVisible && !isLunchVisible && !isTodayMemeVisible && !isNewsCuratorVisible"
       class="chat-index-header"
       data-aos="fade-up"
     >
@@ -37,11 +40,21 @@
       :theme-color-hex="currentSurveyAgent!.colorHex"
       @intro-complete="handleTodayMemeIntroEnd"
     />
+    <ChatNewsCurator
+      v-if="isNewsCuratorVisible"
+      class="chat-index-survey chat-index-news-curator"
+      :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? ''"
+      :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
+      @close="handleCloseIndexNewsCurator"
+      @submit="handleIndexNewsCuratorSubmit"
+    />
 
     <!-- 채팅 입력창 (설문 진행 중 비활성화) -->
     <div
       class="chat-index-input-wrapper"
-      :class="{ 'is-survey-locked': isSurveyVisible || isLunchVisible || isTodayMemeVisible }"
+      :class="{
+        'is-survey-locked': isSurveyVisible || isLunchVisible || isTodayMemeVisible || isNewsCuratorVisible,
+      }"
       data-aos="fade-up"
       data-aos-delay="200"
     >
@@ -49,7 +62,7 @@
     </div>
 
     <!-- 에이전트 카드 (설문 모드 아닐 때) -->
-    <template v-if="!isSurveyVisible && !isLunchVisible && !isTodayMemeVisible">
+    <template v-if="!isSurveyVisible && !isLunchVisible && !isTodayMemeVisible && !isNewsCuratorVisible">
       <div
         v-if="!isLoadingChatIndexAgents && chatIndexAgents.length > 0"
         class="chat-index-card-grp"
@@ -112,6 +125,9 @@ const {
   handleIndexLunchSubmit,
   isTodayMemeVisible,
   handleTodayMemeIntroEnd,
+  isNewsCuratorVisible,
+  handleCloseIndexNewsCurator,
+  handleIndexNewsCuratorSubmit,
 } = useChatStore()
 const { startChatSocket, stopChatSocket } = useChatSocket()
 const { user } = useAuth()
@@ -127,6 +143,7 @@ onMounted(async () => {
   // 다른 메뉴 갔다 돌아올 때 설문 / 에이전트 선택 상태 초기화
   handleClosePsychologySurvey()
   handleCloseIndexLunchCard()
+  handleCloseIndexNewsCurator()
   // 인덱스 진입 시점에 즉시 채팅방 상태를 초기화해
   // 비동기 로딩 완료 시점의 늦은 reset으로 인한 레이스를 방지한다.
   resetChatRoom()
@@ -156,8 +173,30 @@ onBeforeRouteLeave((to) => {
   color: $color-text-muted;
 }
 
+// 뉴스 큐레이터(/chat 인덱스): 선택 카드는 최상단, 입력창은 margin-top:auto로 뷰포트 하단 고정
+.chat-index.is-survey-mode.is-news-curator-index {
+  justify-content: flex-start;
+  align-items: center;
+  padding-top: $spacing-sm;
+
+  :deep(.chat-index-news-curator) {
+    flex: 0 0 auto;
+    min-height: 0;
+    align-self: center;
+    width: 100%;
+    margin-bottom: 0;
+  }
+
+  .chat-index-input-wrapper {
+    margin-top: auto;
+    margin-bottom: $spacing-lg;
+    flex-shrink: 0;
+    width: 100%;
+  }
+}
+
 // 설문 모드: justify-content를 flex-start로 전환해 설문이 위에서 시작
-.chat-index.is-survey-mode {
+.chat-index.is-survey-mode:not(.is-news-curator-index) {
   justify-content: flex-start;
   padding-top: $spacing-lg;
 

@@ -101,7 +101,8 @@ export const useChatRooms = () => {
     } else {
       activeSearchModes.value = []
       // TodayMeme·점심 카드 전용 로그는 UI상 에이전트 선택을 유지하지 않음(채팅방 재진입 시)
-      selectedChatAgentId.value = isLunchPromptLog || lastAgentId === 'AG000011' ? null : lastAgentId || null
+      selectedChatAgentId.value =
+        isLunchPromptLog || lastAgentId === 'AG000011' || lastAgentId === 'AG000012' ? null : lastAgentId || null
       // 일반 질의 시 모델 옵션 조회
       await selectModelOptions()
     }
