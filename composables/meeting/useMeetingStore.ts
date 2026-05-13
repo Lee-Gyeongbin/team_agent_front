@@ -32,7 +32,6 @@ const {
   fetchMatchUsersByNames,
   fetchGenerateMeetingTitle,
   fetchDownloadFile,
-  fetchInfographicList,
   openInfographicStream,
 } = useMeetingApi()
 
@@ -56,6 +55,7 @@ const mailInitialRecipients = ref<MeetingRecipient[]>([])
 
 const isInfoEditOpen = ref(false)
 const userSearchResults = ref<MeetingUser[]>([])
+const activeTab = ref<'share' | 'infographic'>('share')
 
 // ===== 유틸 =====
 const parseJsonArray = <T = string>(jsonStr: string): T[] => {
@@ -240,16 +240,6 @@ const handleSelectMeetingDetail = async (meetingId: number) => {
   }
 }
 
-/** 인포그래픽 목록 조회 (폴백용) */
-const handleSelectInfographicList = async (meetingId: number) => {
-  try {
-    const res = await fetchInfographicList(meetingId)
-    infographicList.value = res.list ?? []
-  } catch {
-    // 폴링 실패는 무시
-  }
-}
-
 /**
  * 인포그래픽 생성 SSE 스트림 구독
  * - progress 이벤트: 이미지 생성 완료 시 해당 항목만 업데이트
@@ -261,6 +251,7 @@ const handleStreamInfographic = (meetingId: number): (() => void) => {
   const es = openInfographicStream(meetingId)
 
   es.addEventListener('progress', (e: MessageEvent) => {
+    debugger
     try {
       const data = JSON.parse(e.data)
       const idx = infographicList.value.findIndex((item) => item.infographicId === data.infographicId)
@@ -535,10 +526,10 @@ export const useMeetingStore = () => {
     mailInitialRecipients,
     isInfoEditOpen,
     userSearchResults,
+    activeTab,
     handleSelectUserList,
     handleSelectMeetingList,
     handleSelectMeetingDetail,
-    handleSelectInfographicList,
     handleStreamInfographic,
     handleCreateMeeting,
     handleFinishMeetingWithAudio,
