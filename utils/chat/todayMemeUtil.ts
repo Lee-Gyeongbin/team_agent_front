@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import type { ChatMessage } from '~/types/chat'
 
 export const TODAY_MEME_MODEL_ID = 'gemini-3-flash-preview'
+export const TODAY_MEME_AGENT_ID = 'AG000011'
 export const TODAY_MEME_PROMPT = `너는 한국 커뮤니티 트렌드 및 밈 표현 분석 AI이다.
 
 최근 24시간 이내 한국 커뮤니티 게시글/댓글 데이터를 기반으로,
@@ -84,42 +85,18 @@ export const getTodayMemePointRows = (item: TodayMemeItem) => {
   }))
 }
 
-/** LLM 응답(코드펜스·주변 텍스트 포함)에서 최상위 JSON 배열 구간만 추출 */
-const extractTopLevelJsonArrayString = (raw: string) => {
-  const trimmed = String(raw ?? '').trim()
-  if (!trimmed) return ''
-  const fencedMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
-  const base = fencedMatch?.[1]?.trim() ?? trimmed
-  const startIdx = base.indexOf('[')
-  if (startIdx < 0) return base
-  let depth = 0
-  let inString = false
-  let isEscaped = false
-  for (let idx = startIdx; idx < base.length; idx += 1) {
-    const ch = base[idx]
-    if (inString) {
-      if (isEscaped) {
-        isEscaped = false
-        continue
-      }
-      if (ch === '\\') {
-        isEscaped = true
-        continue
-      }
-      if (ch === '"') inString = false
-      continue
-    }
-    if (ch === '"') {
-      inString = true
-      continue
-    }
-    if (ch === '[') depth += 1
-    if (ch === ']') {
-      depth -= 1
-      if (depth === 0) return base.slice(startIdx, idx + 1)
-    }
+/** 백엔드 `complete.content` 등 — 표준 JSON 루트에서 밈 항목 배열만 추출 */
+const rowsFromMemeJsonRoot = (parsed: unknown): unknown[] | null => {
+  if (Array.isArray(parsed)) return parsed
+  if (parsed && typeof parsed === 'object') {
+    const o = parsed as Record<string, unknown>
+    const k = Object.keys(o).find((x) => {
+      const low = x.toLowerCase()
+      return low === 'memes' || low === 'meme'
+    })
+    if (k && Array.isArray(o[k])) return o[k] as unknown[]
   }
-  return base
+  return null
 }
 
 const MEME_CONFIDENCE_SET = new Set<string>(['높음', '중간', '낮음'])
@@ -156,30 +133,21 @@ const mapRawRowToItem = (row: unknown, idx: number): TodayMemeItem => {
   }
 }
 
-/** LLM 산출 JSON 오류 보정 후 파싱 (따옴표·trailing comma 등) */
-const parseLenientJson = (text: string): unknown => {
-  const normalized = String(text ?? '')
-    .trim()
-    .replace(/[“”]/g, '"')
-    .replace(/[‘’]/g, "'")
-  if (!normalized) return null
-  try {
-    return JSON.parse(normalized) as unknown
-  } catch {
-    const withoutTrailingComma = normalized.replace(/,\s*([}\]])/g, '$1')
-    try {
-      return JSON.parse(withoutTrailingComma) as unknown
-    } catch {
-      return null
-    }
-  }
-}
-
 export const parseTodayMemeItems = (raw: string): TodayMemeItem[] => {
-  const candidate = extractTopLevelJsonArrayString(raw)
-  const parsed = parseLenientJson(candidate)
-  if (!Array.isArray(parsed)) return []
-  return parsed.map(mapRawRowToItem).filter((item) => item.title && item.source && item.points.length > 0)
+  const text = String(raw ?? '').trim()
+  if (!text) return []
+  try {
+    let root: unknown = JSON.parse(text)
+    if (typeof root === 'string') {
+      const inner = root.trim()
+      if (inner.startsWith('{') || inner.startsWith('[')) root = JSON.parse(inner)
+    }
+    const rows = rowsFromMemeJsonRoot(root)
+    if (!rows?.length) return []
+    return rows.map(mapRawRowToItem).filter((item) => item.title && item.source && item.points.length > 0)
+  } catch {
+    return []
+  }
 }
 
 export const isTodayMemePrompt = (promptText: string) => String(promptText ?? '').trim() === TODAY_MEME_PROMPT
@@ -188,7 +156,7 @@ export const createTodayMemeMessage = (submitted: boolean): ChatMessage => ({
   logId: `today-meme-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
   type: 'meme',
   createdAt: new Date().toISOString(),
-  agentId: 'AG000011',
+  agentId: TODAY_MEME_AGENT_ID,
   memeSubmitted: submitted,
 })
 
@@ -196,10 +164,6 @@ const isTodayMemeVisible = ref(false)
 const todayMemeRoomIdSet = ref<Set<string>>(new Set())
 
 export const useTodayMeme = () => {
-  const openTodayMeme = () => {
-    isTodayMemeVisible.value = true
-  }
-
   const registerTodayMemeRoom = (roomId: string) => {
     const next = new Set(todayMemeRoomIdSet.value)
     next.add(roomId)
@@ -210,7 +174,6 @@ export const useTodayMeme = () => {
 
   return {
     isTodayMemeVisible,
-    openTodayMeme,
     registerTodayMemeRoom,
     isTodayMemeRoom,
   }

@@ -38,9 +38,7 @@
 <script setup lang="ts">
 import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
 
-const { infographicList } = useMeetingStore()
-
-const activeTab = ref<'share' | 'infographic'>('share')
+const { infographicList, activeTab } = useMeetingStore()
 
 /** 생성 중 항목이 있으면 탭에 뱃지 표시 */
 const hasPendingInfographic = computed(() =>

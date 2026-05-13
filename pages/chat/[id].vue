@@ -22,7 +22,10 @@
         @on-survey-submit="onSurveyMessageSubmit"
         @on-survey-close="onSurveyMessageClose"
         @on-meme-intro-complete="handleTodayMemeIntroEnd"
+        @on-news-intro-complete="handleNewsCuratorIntroEnd"
         @on-lunch-card-submit="handleSubmitLunchAgentForm"
+        @on-news-card-submit="handleSubmitNewsCuratorMessage"
+        @on-news-card-close="onNewsMessageClose"
         @on-lunch-card-close="onLunchMessageClose"
       />
       <ChatInput
@@ -123,6 +126,7 @@
 <script setup lang="ts">
 import { RadioGroupIndicator, RadioGroupItem, RadioGroupRoot } from 'radix-vue'
 import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
+import { TODAY_MEME_AGENT_ID } from '~/utils/chat/todayMemeUtil'
 
 /** 방 id가 바뀔 때마다 페이지 인스턴스 분리 — 전환 트랜지션(out-in)·조합형 라우트에서 상태 잔류 완화 */
 definePageMeta({
@@ -146,7 +150,11 @@ const {
   handleSelectChatIndexAgents,
   onSurveyMessageSubmit,
   handleClosePsychologySurvey,
+  handleCloseTodayMeme,
   handleTodayMemeIntroEnd,
+  handleNewsCuratorIntroEnd,
+  handleSubmitNewsCuratorMessage,
+  handleCloseNewsCuratorForm,
   handleSubmitLunchAgentForm,
   handleCloseLunchAgentForm,
 } = useChatStore()
@@ -185,14 +193,19 @@ const isSurveyInputLocked = computed(() =>
   messages.value.some(
     (m) =>
       (m.type === 'survey' && !m.surveySubmitted) ||
-      (m.type === 'lunch' && !m.lunchSubmitted) ||
-      (m.type === 'meme' && !m.memeSubmitted && selectedChatAgentId.value === 'AG000011'),
+      ((m.type === 'lunch' || m.uiType === 'lunch-card') && !m.lunchSubmitted) ||
+      (m.type === 'meme' && !m.memeSubmitted && selectedChatAgentId.value === TODAY_MEME_AGENT_ID) ||
+      (m.type === 'news' && !m.newsSubmitted && selectedChatAgentId.value === 'AG000012'),
   ),
 )
 
 /** 메시지 목록의 점심 카드 "닫기" 버튼 클릭 */
 const onLunchMessageClose = (logId: string) => {
   handleCloseLunchAgentForm(logId)
+}
+/** 메시지 목록의 뉴스 카드 "닫기" 버튼 클릭 */
+const onNewsMessageClose = (logId: string) => {
+  handleCloseNewsCuratorForm(logId)
 }
 // 패널 리사이즈
 const panelWidthPercent = ref(50)
@@ -258,7 +271,8 @@ watch(
     const lastMsg = messages.value[messages.value.length - 1]
     if (
       (lastMsg?.type === 'survey' && !lastMsg.surveySubmitted) ||
-      (lastMsg?.type === 'meme' && !lastMsg.memeSubmitted)
+      (lastMsg?.type === 'meme' && !lastMsg.memeSubmitted) ||
+      (lastMsg?.type === 'news' && !lastMsg.newsSubmitted)
     ) {
       // ResizeObserver(scrollToBottomInstant)가 먼저 실행된 뒤에 survey 상단으로 이동해야 하므로
       // double-rAF로 두 프레임 뒤에 스크롤을 적용한다
@@ -283,6 +297,7 @@ onBeforeRouteLeave((to) => {
   // chat 영역 밖으로 나갈 때 열려 있을 수 있는 설문 닫기
   if (!String(to.path).startsWith('/chat')) {
     handleClosePsychologySurvey()
+    handleCloseTodayMeme()
     stopChatSocket()
   }
 })

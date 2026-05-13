@@ -10,9 +10,6 @@
         size="sm"
         @click.stop="onSaveMeetingClick"
       >
-        <template #icon-left>
-          <i class="icon-edit size-16" />
-        </template>
         저장하기
       </UiButton>
     </div>

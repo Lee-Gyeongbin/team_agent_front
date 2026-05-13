@@ -11,7 +11,7 @@ import {
 import { useChatSendPipeline } from '~/composables/chat/useChatSendPipeline'
 import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
 import { parseLunchPayloadFromPrompt } from '~/utils/chat/lunchAgentUtil'
-import { TODAY_MEME_MODEL_ID } from '~/utils/chat/todayMemeUtil'
+import { isTodayMemePrompt, TODAY_MEME_AGENT_ID, TODAY_MEME_MODEL_ID } from '~/utils/chat/todayMemeUtil'
 
 /** 목록에 동일 방이 문자열/숫자 등 다른 형태로 중복되면 사이드바에서 활성 행이 여러 개로 보일 수 있어 통일·중복 제거 */
 function dedupeChatRoomsByNormalizedId(list: ChatRoom[]): ChatRoom[] {
@@ -25,6 +25,7 @@ function dedupeChatRoomsByNormalizedId(list: ChatRoom[]): ChatRoom[] {
   }
   return out
 }
+
 const { user } = useAuth()
 const {
   fetchSelectChatRoomList,
@@ -86,6 +87,7 @@ export const useChatRooms = () => {
     const svcTy = lastRow?.svcTy ?? 'C'
     const lastAgentId = typeof lastRow?.agentId === 'string' ? lastRow.agentId.trim() : ''
     const isLunchPromptLog = !!parseLunchPayloadFromPrompt(String(lastRow?.qcontent ?? ''))
+    const isTodayMemePromptLog = isTodayMemePrompt(String(lastRow?.qcontent ?? ''))
     if (svcTy === 'M') {
       activeSearchModes.value = ['M']
       selectedChatAgentId.value = lastAgentId || null
@@ -101,7 +103,10 @@ export const useChatRooms = () => {
     } else {
       activeSearchModes.value = []
       // TodayMeme·점심 카드 전용 로그는 UI상 에이전트 선택을 유지하지 않음(채팅방 재진입 시)
-      selectedChatAgentId.value = isLunchPromptLog || lastAgentId === 'AG000011' ? null : lastAgentId || null
+      selectedChatAgentId.value =
+        isLunchPromptLog || isTodayMemePromptLog || lastAgentId === TODAY_MEME_AGENT_ID || lastAgentId === 'AG000012'
+          ? null
+          : lastAgentId || null
       // 일반 질의 시 모델 옵션 조회
       await selectModelOptions()
     }

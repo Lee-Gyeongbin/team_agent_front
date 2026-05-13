@@ -32,6 +32,17 @@
           >
             {{ format.toUpperCase() }}로 저장
           </button>
+          <hr class="meeting2-action-picker-divider" />
+          <label
+            class="meeting2-action-picker-check"
+            @mousedown.stop
+          >
+            <input
+              v-model="includeInfographic"
+              type="checkbox"
+            />
+            인포그래픽 포함
+          </label>
         </div>
       </div>
 
@@ -50,16 +61,17 @@
 import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
 import type { MeetingFileFormat } from '~/types/meeting2'
 
-const { handleDownloadFile, handleOpenMailSend } = useMeetingStore()
+const { handleDownloadFile, handleOpenMailSend, infographicList } = useMeetingStore()
 
 const route = useRoute()
 /** 현재 회의 ID — 라우트 파라미터에서 추출 */
 const meetingId = computed(() => Number(route.params.id))
 
-const formats: MeetingFileFormat[] = ['pdf', 'docx', 'hwp', 'txt', 'md']
+const formats: MeetingFileFormat[] = ['pdf', 'docx', 'txt', 'md']
 
 const isDownloadPickerOpen = ref(false)
 const downloadPickerRef = ref<HTMLDivElement | null>(null)
+const includeInfographic = ref(false)
 
 const toggleDownloadPicker = () => {
   isDownloadPickerOpen.value = !isDownloadPickerOpen.value
@@ -67,7 +79,7 @@ const toggleDownloadPicker = () => {
 
 const onSelectFormat = (format: MeetingFileFormat) => {
   isDownloadPickerOpen.value = false
-  handleDownloadFile(meetingId.value, format)
+  handleDownloadFile(meetingId.value, format, includeInfographic.value)
 }
 
 const onClickMail = () => handleOpenMailSend()

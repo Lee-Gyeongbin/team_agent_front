@@ -507,7 +507,7 @@ const buildTmplFieldTableRowMarkup = (fieldId: string, jsonKey: string, fieldNm:
   )
 }
 
-/** 여러 줄(section) + 표 사용 — h2 + 1x2 표(첫 행: 내용, 둘째 행: {{jsonKey}}) */
+/** 여러 줄(section) + 표 사용 — h2 + 2열×2행 표(No. | 내용 / 번호칸 | {{jsonKey}}) */
 const buildTmplMultilineTableSectionMarkup = (fieldId: string, jsonKey: string, fieldNm: string) => {
   const k = jsonKey.trim()
   const nm = fieldNm.trim()
@@ -516,8 +516,8 @@ const buildTmplMultilineTableSectionMarkup = (fieldId: string, jsonKey: string, 
     `<h2 ${TMPL_FIELD_MULTILINE_H2}="${escapeAttr(fieldId)}">${escapeHTML(nm)}</h2>` +
     `<table ${TMPL_FIELD_MULTILINE_TABLE}="${escapeAttr(fieldId)}">` +
     `<tbody>` +
-    `<tr><th><p>내용</p></th></tr>` +
-    `<tr><td data-value-key="${escapeAttr(k)}"><p ${TMPL_FIELD_MULTILINE_P}="${escapeAttr(fieldId)}" data-tmpl-json-key="${escapeAttr(k)}">${placeholder}</p></td></tr>` +
+    `<tr><th><p>No.</p></th><th><p>내용</p></th></tr>` +
+    `<tr><td><p>{{no}}</p></td><td data-value-key="${escapeAttr(k)}"><p ${TMPL_FIELD_MULTILINE_P}="${escapeAttr(fieldId)}" data-tmpl-json-key="${escapeAttr(k)}">${placeholder}</p></td></tr>` +
     `</tbody>` +
     `</table>`
   )
@@ -945,7 +945,7 @@ const removeTmplMultilineSection = (fieldId: string) => {
 
 /**
  * 여러 줄(section) 삽입·갱신
- * - variant='table': h2 + 1x2 표(내용 / {{jsonKey}})
+ * - variant='table': h2 + 2열 표(No. | 내용 / 빈칸 | {{jsonKey}})
  * - variant='list' : ol > li > p(항목명), p({{jsonKey}})
  */
 const upsertTmplMultilineSectionAtRoot = (

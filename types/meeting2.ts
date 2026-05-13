@@ -5,7 +5,7 @@ export type MeetingStepStatus = 'wait' | 'progress' | 'done'
 export type MeetingStepKey = 'record' | 'speaker' | 'generate' | 'edit' | 'share'
 
 /** 파일 형식 */
-export type MeetingFileFormat = 'docx' | 'pdf' | 'hwp' | 'txt' | 'md'
+export type MeetingFileFormat = 'docx' | 'pdf' | 'txt' | 'md'
 
 /** 녹음 상태 */
 export type RecordStatus = 'idle' | 'recording' | 'paused' | 'stopped'

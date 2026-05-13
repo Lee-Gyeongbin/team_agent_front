@@ -1,6 +1,11 @@
 import { useApi } from '~/composables/com/useApi'
 import { useApi_multipart } from '~/composables/com/useApi_multipart'
-import type { Meeting as ApiMeeting, MeetingDetail, MeetingUser as ApiMeetingUser, MeetingInfographic } from '~/types/meeting'
+import type {
+  Meeting as ApiMeeting,
+  MeetingDetail,
+  MeetingUser as ApiMeetingUser,
+  MeetingInfographic,
+} from '~/types/meeting'
 import type { Meeting, MeetingSpeaker, MeetingUser, MeetingFileFormat } from '~/types/meeting2'
 
 // 🔽 Mock — 백엔드 API 없는 항목만 유지 (실제 엔드포인트 완성 시 useApi 패턴으로 교체)

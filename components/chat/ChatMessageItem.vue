@@ -1,17 +1,19 @@
 <template>
   <div
-    v-if="!isTodayMemeAnswer"
+    v-if="!isTodayMemeAnswer && !isNewsCuratorAnswer"
     class="chat-message-item"
     :class="[
       message.type === 'answer'
         ? 'role-assistant'
         : message.type === 'lunch'
           ? 'role-assistant'
-          : message.type === 'meme'
-            ? 'role-meme'
-            : message.type === 'survey'
-              ? 'role-survey'
-              : 'role-user',
+          : message.type === 'news'
+            ? 'role-news'
+            : message.type === 'meme'
+              ? 'role-meme'
+              : message.type === 'survey'
+                ? 'role-survey'
+                : 'role-user',
     ]"
   >
     <!-- assistant 메시지 -->
@@ -24,17 +26,27 @@
       </div>
       <div class="message-body">
         <div
-          v-if="message.isStreaming && !message.rContent"
+          v-if="message.isStreaming && !message.rContent && !isLunchAnswerBubble && !isNewsCuratorAnswer"
           class="message-loading"
         >
           <span class="typing-dot" /><span class="typing-dot" /><span class="typing-dot" />
         </div>
         <template v-else>
           <ChatLunchAgentCard
-            v-if="isLunchRecommendationAnswer"
+            v-if="message.uiType === 'lunch-card'"
+            :readonly="isShare || message.lunchSubmitted === true"
+            :initial-payload="message.lunchFormPayload"
+            :theme-icon-class-nm="surveyThemeAgent?.iconClassNm ?? ''"
+            :theme-color-hex="surveyThemeAgent?.colorHex ?? ''"
+            @submit="emit('on-submit-lunch-card', message.logId, $event)"
+            @close="emit('on-lunch-card-close', message.logId)"
+          />
+          <ChatLunchAgentCard
+            v-else-if="isLunchAnswerBubble"
             :readonly="true"
             :initial-payload="message.lunchFormPayload"
             :recommendations="parsedLunchRecommendations"
+            :is-recommendations-pending="isLunchRecommendationsPending"
             :theme-icon-class-nm="surveyThemeAgent?.iconClassNm ?? ''"
             :theme-color-hex="surveyThemeAgent?.colorHex ?? ''"
             @submit="emit('on-submit-lunch-card', message.logId, $event)"
@@ -43,6 +55,10 @@
           <!-- TodayMeme 답변 JSON 원문은 숨기고 카드 컴포넌트에서만 노출 -->
           <div
             v-else-if="isTodayMemeAnswer"
+            class="message-content"
+          />
+          <div
+            v-else-if="isNewsCuratorAnswer"
             class="message-content"
           />
           <!-- eslint-disable vue/no-v-html — toHtmlContent 내 안전 처리 적용 -->
@@ -160,8 +176,9 @@
       </div>
       <div class="message-body">
         <ChatLunchAgentCard
-          :readonly="message.lunchSubmitted === true"
+          :readonly="isShare || message.lunchSubmitted === true"
           :initial-payload="message.lunchFormPayload"
+          :recommendations="message.lunchDisplayRecommendations ?? []"
           :theme-icon-class-nm="surveyThemeAgent?.iconClassNm ?? ''"
           :theme-color-hex="surveyThemeAgent?.colorHex ?? ''"
           @submit="emit('on-submit-lunch-card', message.logId, $event)"
@@ -224,12 +241,35 @@
       </div>
       <div class="message-body">
         <ChatTodayMeme
-          :readonly="message.memeSubmitted === true"
+          :readonly="isShare || message.memeSubmitted === true"
           :meme-items="resolvedTodayMemeItems"
           :is-answer-streaming="isMemeAnswerStreaming"
           :theme-icon-class-nm="surveyThemeAgent?.iconClassNm ?? ''"
-          :theme-color-hex="surveyThemeAgent!.colorHex"
+          :theme-color-hex="surveyThemeAgent?.colorHex ?? ''"
           @intro-complete="emit('on-meme-intro-complete', message.logId)"
+        />
+      </div>
+    </template>
+
+    <!-- NewsCurator 메시지 -->
+    <template v-else-if="message.type === 'news'">
+      <div
+        class="avatar"
+        :class="{ 'is-streaming': isNewsCuratorAnswerStreaming }"
+      >
+        <i class="icon-bot size-24"></i>
+      </div>
+      <div class="message-body">
+        <ChatNewsCurator
+          :readonly="isShare || message.newsSubmitted === true"
+          :locked-selected-categories="message.newsSelectedCategories ?? []"
+          :news-items="resolvedNewsCuratorItemsForNewsCard"
+          :is-answer-streaming="isNewsCuratorAnswerStreaming"
+          :theme-icon-class-nm="surveyThemeAgent?.iconClassNm ?? ''"
+          :theme-color-hex="surveyThemeAgent?.colorHex ?? ''"
+          @intro-complete="emit('on-news-intro-complete', message.logId)"
+          @close="emit('on-news-card-close', message.logId)"
+          @submit="emit('on-submit-news-card', message.logId, $event)"
         />
       </div>
     </template>
@@ -260,7 +300,13 @@
 </template>
 
 <script setup lang="ts">
-import type { ChatMessage, KnowledgeItem, LunchAgentFormPayload, LunchRecommendationItem } from '~/types/chat'
+import type {
+  ChatMessage,
+  KnowledgeItem,
+  LunchAgentFormPayload,
+  LunchRecommendationItem,
+  NewsCuratorItem,
+} from '~/types/chat'
 import type { StressScoreItem } from '~/types/stress'
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import type { Agent } from '~/types/agent'
@@ -279,9 +325,10 @@ import {
   buildPsychologyRadarUiChartConfig,
   type RadarChartData,
 } from '~/utils/chat/psychologyConsultUtil'
-import { parseTodayMemeItems } from '~/utils/chat/todayMemeUtil'
+import { parseTodayMemeItems, TODAY_MEME_AGENT_ID } from '~/utils/chat/todayMemeUtil'
 import type { TodayMemeItem } from '~/utils/chat/todayMemeUtil'
 import { attachmentsRequireSummaryIndicator } from '~/utils/chat/chatAttachmentDisplayUtil'
+import { parseNewsCuratorItems } from '~/utils/chat/newsCuratorUtil'
 
 const { chatIndexAgents, messages } = useChatStore()
 const { user } = useAuth()
@@ -316,8 +363,10 @@ const emit = defineEmits<{
   'on-lunch-card-close': [logId: string]
   'on-survey-submit': [logId: string]
   'on-survey-close': [logId: string]
-  /** TodayMeme 인트로 종료 — 프롬프트 전송 트리거 */
   'on-meme-intro-complete': [logId: string]
+  'on-submit-news-card': [logId: string, categories: string[]]
+  'on-news-card-close': [logId: string]
+  'on-news-intro-complete': [logId: string]
 }>()
 
 // ── 공통 ──────────────────────────────────────────────────────────────────
@@ -442,6 +491,9 @@ const surveyThemeAgent = computed<Agent | null>(
 )
 
 const parsedLunchRecommendations = computed<LunchRecommendationItem[]>(() => {
+  if (Array.isArray(props.message.lunchDisplayRecommendations)) {
+    return props.message.lunchDisplayRecommendations
+  }
   const raw = (props.message.rContent ?? '').trim()
   if (!raw || props.message.uiType === 'lunch-card') return []
   try {
@@ -451,11 +503,33 @@ const parsedLunchRecommendations = computed<LunchRecommendationItem[]>(() => {
     return []
   }
 })
-const isLunchRecommendationAnswer = computed(() => props.message.agentId === 'AG000009')
+const LUNCH_AGENT_ID = 'AG000009'
 
-const isTodayMemeAnswerMessage = (message: ChatMessage) => message.type === 'answer' && message.agentId === 'AG000011'
+const isTodayMemeAnswerPayload = computed(() => {
+  if (props.message.type !== 'answer') return false
+  return parseTodayMemeItems(String(props.message.rContent ?? '')).length > 0
+})
+
+/** 점심 에이전트 답변 말풍선 — JSON 파싱 전(스트리밍) 포함 */
+const isLunchAnswerBubble = computed(
+  () => props.message.type === 'answer' && props.message.agentId === LUNCH_AGENT_ID && !isTodayMemeAnswerPayload.value,
+)
+
+const isLunchRecommendationsPending = computed(
+  () =>
+    isLunchAnswerBubble.value && props.message.isStreaming === true && parsedLunchRecommendations.value.length === 0,
+)
+
+const isTodayMemeAnswerMessage = (message: ChatMessage) =>
+  message.type === 'answer' && message.agentId === TODAY_MEME_AGENT_ID
+const isNewsCuratorAnswerMessage = (message: ChatMessage) =>
+  message.type === 'answer' && String(message.agentId ?? '').trim() === 'AG000012'
 
 const resolvedTodayMemeItems = computed<TodayMemeItem[]>(() => {
+  if (props.message.type !== 'meme') return []
+  const injected = props.message.memeDisplayItems
+  if (Array.isArray(injected) && injected.length > 0) return injected
+
   const findParsedItems = (list: ChatMessage[]): TodayMemeItem[] => {
     for (const msg of list) {
       if (!isTodayMemeAnswerMessage(msg)) continue
@@ -472,19 +546,60 @@ const resolvedTodayMemeItems = computed<TodayMemeItem[]>(() => {
   return findParsedItems([...messages.value].reverse())
 })
 
+const resolvedNewsCuratorItemsForNewsCard = computed<NewsCuratorItem[]>(() => {
+  if (props.message.type !== 'news') return []
+  const injected = props.message.newsDisplayItems
+  if (Array.isArray(injected) && injected.length > 0) return injected
+
+  const newsCardMessageIndex = messages.value.findIndex((messageEntry) => messageEntry.logId === props.message.logId)
+  if (newsCardMessageIndex < 0) return []
+  const messagesAfterNewsCard = messages.value.slice(newsCardMessageIndex + 1)
+  const nextNewsCardMessageIndex = messagesAfterNewsCard.findIndex((messageEntry) => messageEntry.type === 'news')
+  const answerMessagesUntilNextNewsCard =
+    nextNewsCardMessageIndex < 0 ? messagesAfterNewsCard : messagesAfterNewsCard.slice(0, nextNewsCardMessageIndex)
+  for (const answerMessage of answerMessagesUntilNextNewsCard) {
+    if (answerMessage.type !== 'answer') continue
+    const parsedNewsItems = parseNewsCuratorItems(String(answerMessage.rContent ?? ''))
+    if (parsedNewsItems.length > 0) return parsedNewsItems
+  }
+  return []
+})
+
 /** TodayMeme 에이전트 답변 행 식별 */
 const isTodayMemeAnswer = computed(() => isTodayMemeAnswerMessage(props.message))
+const isNewsCuratorAnswer = computed(() => isNewsCuratorAnswerMessage(props.message))
 
 /** 답변 액션 푸터 노출 조건을 한곳에서 관리 */
 const shouldShowMessageFooter = computed(
-  () => !props.message.isStreaming && props.message.uiType !== 'lunch-card' && !isTodayMemeAnswer.value,
+  () =>
+    !props.message.isStreaming &&
+    props.message.uiType !== 'lunch-card' &&
+    !isTodayMemeAnswer.value &&
+    !isNewsCuratorAnswer.value,
 )
 
 /** 이 meme 메시지에 대응하는 TodayMeme 답변이 아직 스트리밍 중인지 */
 const isMemeAnswerStreaming = computed(() => {
+  if (props.message.type !== 'meme') return false
   const idx = messages.value.findIndex((m) => m.logId === props.message.logId)
   if (idx < 0) return false
-  return messages.value.slice(idx + 1).some((m) => isTodayMemeAnswerMessage(m) && m.isStreaming === true)
+  const after = messages.value.slice(idx + 1)
+  const ans = after.find((m) => m.type === 'answer' && m.agentId === TODAY_MEME_AGENT_ID)
+  return ans?.isStreaming === true
+})
+
+/** 이 news 카드 직후(다음 news 전까지) 구간에 answer가 스트리밍 중인지 */
+const isNewsCuratorAnswerStreaming = computed(() => {
+  if (props.message.type !== 'news') return false
+  const newsCardMessageIndex = messages.value.findIndex((messageEntry) => messageEntry.logId === props.message.logId)
+  if (newsCardMessageIndex < 0) return false
+  const messagesAfterNewsCard = messages.value.slice(newsCardMessageIndex + 1)
+  const nextNewsCardMessageIndex = messagesAfterNewsCard.findIndex((messageEntry) => messageEntry.type === 'news')
+  const answerMessagesUntilNextNewsCard =
+    nextNewsCardMessageIndex < 0 ? messagesAfterNewsCard : messagesAfterNewsCard.slice(0, nextNewsCardMessageIndex)
+  return answerMessagesUntilNextNewsCard.some(
+    (messageAfterNewsCard) => messageAfterNewsCard.type === 'answer' && messageAfterNewsCard.isStreaming === true,
+  )
 })
 
 /** 출처 제목 앞 마크다운 헤더 기호(## 등) 제거 */

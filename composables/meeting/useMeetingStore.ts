@@ -32,7 +32,6 @@ const {
   fetchMatchUsersByNames,
   fetchGenerateMeetingTitle,
   fetchDownloadFile,
-  fetchInfographicList,
   openInfographicStream,
 } = useMeetingApi()
 
@@ -56,6 +55,7 @@ const mailInitialRecipients = ref<MeetingRecipient[]>([])
 
 const isInfoEditOpen = ref(false)
 const userSearchResults = ref<MeetingUser[]>([])
+const activeTab = ref<'share' | 'infographic'>('share')
 
 // ===== 유틸 =====
 const parseJsonArray = <T = string>(jsonStr: string): T[] => {
@@ -240,16 +240,6 @@ const handleSelectMeetingDetail = async (meetingId: number) => {
   }
 }
 
-/** 인포그래픽 목록 조회 (폴백용) */
-const handleSelectInfographicList = async (meetingId: number) => {
-  try {
-    const res = await fetchInfographicList(meetingId)
-    infographicList.value = res.list ?? []
-  } catch {
-    // 폴링 실패는 무시
-  }
-}
-
 /**
  * 인포그래픽 생성 SSE 스트림 구독
  * - progress 이벤트: 이미지 생성 완료 시 해당 항목만 업데이트
@@ -258,14 +248,26 @@ const handleSelectInfographicList = async (meetingId: number) => {
  * @returns 구독 해제 함수
  */
 const handleStreamInfographic = (meetingId: number): (() => void) => {
+  type InfographicStreamProgressPayload = Pick<
+    MeetingInfographic,
+    'infographicId' | 'sortOrd' | 'infographicStatus' | 'infographicImg'
+  >
+
   const es = openInfographicStream(meetingId)
 
   es.addEventListener('progress', (e: MessageEvent) => {
     try {
-      const data = JSON.parse(e.data)
+      const data = JSON.parse(e.data) as Partial<InfographicStreamProgressPayload>
       const idx = infographicList.value.findIndex((item) => item.infographicId === data.infographicId)
       if (idx !== -1) {
-        infographicList.value[idx] = { ...infographicList.value[idx], ...data }
+        const prev = infographicList.value[idx]
+        infographicList.value[idx] = {
+          ...prev,
+          infographicId: data.infographicId ?? prev.infographicId,
+          sortOrd: data.sortOrd ?? prev.sortOrd,
+          infographicStatus: data.infographicStatus ?? prev.infographicStatus,
+          infographicImg: data.infographicImg ?? prev.infographicImg,
+        }
       }
     } catch {
       // 파싱 실패 무시
@@ -463,12 +465,208 @@ const handleSaveSpeakers = async (speakers: Partial<MeetingSpeaker>[]) => {
 }
 
 // ===== 파일 다운로드 =====
-const handleDownloadFile = (meetingId: number, format: MeetingFileFormat) => {
+const buildInfographicHtml = (): string => {
+  const completed = infographicList.value.filter((item) => item.infographicStatus === '003' && item.infographicImg)
+  if (completed.length === 0) return ''
+
+  const items = completed
+    .map(
+      (item) => `
+      <div style="margin-bottom:24px;page-break-inside:avoid;">
+        <h3 style="font-size:12pt;font-weight:700;margin:0 0 8px;">${item.topicNm}</h3>
+        <img src="data:image/png;base64,${item.infographicImg}" alt="${item.topicNm}" style="max-width:100%;height:auto;display:block;" />
+      </div>`,
+    )
+    .join('')
+
+  return `
+    <hr style="border:none;border-top:1px solid #cbd5e1;margin:24px 0;" />
+    <h2 style="font-size:14pt;font-weight:700;margin:0 0 16px;">인포그래픽</h2>
+    ${items}`
+}
+
+const handleDownloadFile = async (meetingId: number, format: MeetingFileFormat, includeInfographic = false) => {
   if (!currentMeeting.value) {
     openToast({ message: '회의 정보가 없습니다.', type: 'warning' })
     return
   }
+
+  let content = currentMeeting.value.minutesContent
+
+  if (includeInfographic && (format === 'pdf' || format === 'docx')) {
+    const infographicHtml = buildInfographicHtml()
+    if (infographicHtml) {
+      content = content + infographicHtml
+    } else {
+      openToast({ message: '완료된 인포그래픽이 없습니다.', type: 'warning' })
+    }
+  }
+
+  if (format === 'pdf') {
+    await downloadAsPdf(content, `회의록_${meetingId}`)
+    return
+  }
+
+  if (format === 'docx') {
+    await downloadAsDocx(content, `회의록_${meetingId}`)
+    return
+  }
+
+  // txt, md → 백엔드 (이미지 포함 불가)
   fetchDownloadFile(meetingId, format)
+}
+
+const MEETING_PRINT_HOST_ID = 'meeting-minutes-print-host'
+const MEETING_PRINT_STYLE_ID = 'meeting-minutes-print-style'
+
+const buildMeetingPrintStyles = () => `
+@media screen {
+  #${MEETING_PRINT_HOST_ID} {
+    position: fixed;
+    left: -99999px;
+    top: 0;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    pointer-events: none;
+  }
+}
+@media print {
+  @page { margin: 15mm 15mm; }
+  body * { visibility: hidden !important; }
+  #${MEETING_PRINT_HOST_ID},
+  #${MEETING_PRINT_HOST_ID} * { visibility: visible !important; }
+  #${MEETING_PRINT_HOST_ID} {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    clip: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    box-sizing: border-box !important;
+    font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif !important;
+    font-size: 10pt !important;
+    line-height: 1.5 !important;
+    color: #1e293b !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  #${MEETING_PRINT_HOST_ID} * { box-sizing: border-box !important; }
+  #${MEETING_PRINT_HOST_ID} h1 { font-size: 18pt !important; font-weight: 700 !important; margin: 0 0 8px !important; }
+  #${MEETING_PRINT_HOST_ID} h2 { font-size: 14pt !important; font-weight: 700 !important; margin: 12px 0 6px !important; }
+  #${MEETING_PRINT_HOST_ID} h3 { font-size: 12pt !important; font-weight: 700 !important; margin: 10px 0 4px !important; }
+  #${MEETING_PRINT_HOST_ID} h4 { font-size: 10.5pt !important; font-weight: 700 !important; margin: 8px 0 3px !important; }
+  #${MEETING_PRINT_HOST_ID} p { margin: 0 0 5px !important; }
+  #${MEETING_PRINT_HOST_ID} p:last-child { margin-bottom: 0 !important; }
+  #${MEETING_PRINT_HOST_ID} ul, #${MEETING_PRINT_HOST_ID} ol { margin: 5px 0 !important; padding-left: 1.4em !important; }
+  #${MEETING_PRINT_HOST_ID} li { margin-bottom: 2px !important; line-height: 1.5 !important; }
+  #${MEETING_PRINT_HOST_ID} strong, #${MEETING_PRINT_HOST_ID} b { font-weight: 700 !important; }
+  #${MEETING_PRINT_HOST_ID} em, #${MEETING_PRINT_HOST_ID} i { font-style: italic !important; }
+  #${MEETING_PRINT_HOST_ID} u { text-decoration: underline !important; }
+  #${MEETING_PRINT_HOST_ID} table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    table-layout: fixed !important;
+    margin: 6px 0 !important;
+    font-size: 9.5pt !important;
+  }
+  #${MEETING_PRINT_HOST_ID} th {
+    padding: 6px 8px !important;
+    background: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+    font-weight: 600 !important;
+    text-align: left !important;
+    vertical-align: top !important;
+    color: #334155 !important;
+  }
+  #${MEETING_PRINT_HOST_ID} td {
+    padding: 6px 8px !important;
+    background: #fff !important;
+    border: 1px solid #cbd5e1 !important;
+    vertical-align: top !important;
+    word-break: break-word !important;
+  }
+  #${MEETING_PRINT_HOST_ID} hr {
+    border: none !important;
+    border-top: 1px solid #cbd5e1 !important;
+    margin: 8px 0 !important;
+  }
+  #${MEETING_PRINT_HOST_ID} blockquote {
+    margin: 5px 0 !important;
+    padding: 4px 10px !important;
+    border-left: 3px solid #3b82f6 !important;
+    background: #f8fafc !important;
+  }
+  #${MEETING_PRINT_HOST_ID} img { max-width: 100% !important; height: auto !important; }
+}`
+
+const downloadAsPdf = async (html: string, _fileName: string) => {
+  if (!html?.trim()) {
+    openToast({ message: '다운로드할 회의록 내용이 없습니다.', type: 'warning' })
+    return
+  }
+
+  document.getElementById(MEETING_PRINT_STYLE_ID)?.remove()
+  document.getElementById(MEETING_PRINT_HOST_ID)?.remove()
+
+  const styleEl = document.createElement('style')
+  styleEl.id = MEETING_PRINT_STYLE_ID
+  styleEl.textContent = buildMeetingPrintStyles()
+  document.head.appendChild(styleEl)
+
+  const host = document.createElement('div')
+  host.id = MEETING_PRINT_HOST_ID
+  host.setAttribute('aria-hidden', 'true')
+  host.innerHTML = html
+  document.body.appendChild(host)
+
+  // base64 이미지가 렌더링되기 전에 print()가 호출되면 이미지가 누락됨
+  // → 모든 img 로드 완료 후 print() 호출
+  const images = Array.from(host.querySelectorAll('img'))
+  if (images.length > 0) {
+    await Promise.all(
+      images.map(
+        (img) =>
+          new Promise<void>((resolve) => {
+            if (img.complete) resolve()
+            else {
+              img.onload = () => resolve()
+              img.onerror = () => resolve() // 실패해도 나머지는 출력
+            }
+          }),
+      ),
+    )
+  }
+
+  const cleanup = () => {
+    document.getElementById(MEETING_PRINT_STYLE_ID)?.remove()
+    document.getElementById(MEETING_PRINT_HOST_ID)?.remove()
+    window.removeEventListener('afterprint', cleanup)
+  }
+  window.addEventListener('afterprint', cleanup)
+  window.print()
+}
+
+const downloadAsDocx = async (html: string, fileName: string) => {
+  try {
+    const { asBlob } = await import('html-docx-js-typescript')
+    const blob = (await asBlob(html)) as Blob
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${fileName}.docx`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  } catch {
+    openToast({ message: 'DOCX 다운로드에 실패했습니다.', type: 'error' })
+  }
 }
 
 // ===== 메일 발송 =====
@@ -535,10 +733,10 @@ export const useMeetingStore = () => {
     mailInitialRecipients,
     isInfoEditOpen,
     userSearchResults,
+    activeTab,
     handleSelectUserList,
     handleSelectMeetingList,
     handleSelectMeetingDetail,
-    handleSelectInfographicList,
     handleStreamInfographic,
     handleCreateMeeting,
     handleFinishMeetingWithAudio,

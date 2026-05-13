@@ -8,13 +8,13 @@
     <div class="meeting2-stt-toolbar-actions">
       <UiButton
         variant="ghost"
-        size="sm"
+        size="md"
         :disabled="sttList.length === 0"
         title="전체 텍스트 다운로드"
         @click="onClickDownload"
       >
         <template #icon-left>
-          <i class="icon-download size-14" />
+          <i class="icon-download size-20" />
         </template>
         다운로드
       </UiButton>
@@ -29,13 +29,13 @@
 
       <UiButton
         variant="ghost"
-        size="sm"
+        size="md"
         :disabled="!isMeetingIdValid || isFinishing"
         title="로컬 오디오 파일로 전사·회의록 생성 (테스트용)"
         @click="onClickPickAudioFile"
       >
         <template #icon-left>
-          <i class="icon-attach-file size-14" />
+          <i class="icon-attach-file size-20" />
         </template>
         오디오 첨부
       </UiButton>
@@ -54,7 +54,8 @@ const props = defineProps<{
 }>()
 
 const { isRecording, isConnecting } = useRealtimeTranscription()
-const { currentMeeting, isFinishing, handleFinishMeetingWithAudio, handleSelectMeetingDetail } = useMeetingStore()
+const { currentMeeting, isFinishing, handleSelectMeetingDetail, activeTab, handleFinishMeetingWithAudio } =
+  useMeetingStore()
 
 const audioFileInputRef = ref<HTMLInputElement | null>(null)
 
@@ -117,6 +118,7 @@ const onAudioFileChange = async (e: Event) => {
   if (success) {
     await handleSelectMeetingDetail(props.meetingId)
     await navigateTo(`/meeting/${props.meetingId}`)
+    activeTab.value = 'infographic'
   }
 }
 </script>
