@@ -26,14 +26,23 @@
       </div>
       <div class="message-body">
         <div
-          v-if="message.isStreaming && !message.rContent && !isLunchRecommendationAnswer && !isNewsCuratorAnswer"
+          v-if="message.isStreaming && !message.rContent && !isLunchAnswerBubble && !isNewsCuratorAnswer"
           class="message-loading"
         >
           <span class="typing-dot" /><span class="typing-dot" /><span class="typing-dot" />
         </div>
         <template v-else>
           <ChatLunchAgentCard
-            v-if="isLunchRecommendationAnswer"
+            v-if="message.uiType === 'lunch-card'"
+            :readonly="isShare || message.lunchSubmitted === true"
+            :initial-payload="message.lunchFormPayload"
+            :theme-icon-class-nm="surveyThemeAgent?.iconClassNm ?? ''"
+            :theme-color-hex="surveyThemeAgent?.colorHex ?? ''"
+            @submit="emit('on-submit-lunch-card', message.logId, $event)"
+            @close="emit('on-lunch-card-close', message.logId)"
+          />
+          <ChatLunchAgentCard
+            v-else-if="isLunchAnswerBubble"
             :readonly="true"
             :initial-payload="message.lunchFormPayload"
             :recommendations="parsedLunchRecommendations"
@@ -236,7 +245,7 @@
           :meme-items="resolvedTodayMemeItems"
           :is-answer-streaming="isMemeAnswerStreaming"
           :theme-icon-class-nm="surveyThemeAgent?.iconClassNm ?? ''"
-          :theme-color-hex="surveyThemeAgent!.colorHex"
+          :theme-color-hex="surveyThemeAgent?.colorHex ?? ''"
           @intro-complete="emit('on-meme-intro-complete', message.logId)"
         />
       </div>
@@ -316,10 +325,11 @@ import {
   buildPsychologyRadarUiChartConfig,
   type RadarChartData,
 } from '~/utils/chat/psychologyConsultUtil'
-import { parseTodayMemeItems } from '~/utils/chat/todayMemeUtil'
+import { parseTodayMemeItems, TODAY_MEME_AGENT_ID } from '~/utils/chat/todayMemeUtil'
 import type { TodayMemeItem } from '~/utils/chat/todayMemeUtil'
 import { attachmentsRequireSummaryIndicator } from '~/utils/chat/chatAttachmentDisplayUtil'
 import { parseNewsCuratorItems } from '~/utils/chat/newsCuratorUtil'
+
 const { chatIndexAgents, messages } = useChatStore()
 const { user } = useAuth()
 interface Props {
@@ -493,15 +503,25 @@ const parsedLunchRecommendations = computed<LunchRecommendationItem[]>(() => {
     return []
   }
 })
-const isLunchRecommendationAnswer = computed(() => props.message.agentId === 'AG000009')
-const isLunchRecommendationsPending = computed(
-  () =>
-    isLunchRecommendationAnswer.value &&
-    props.message.isStreaming === true &&
-    parsedLunchRecommendations.value.length === 0,
+const LUNCH_AGENT_ID = 'AG000009'
+
+const isTodayMemeAnswerPayload = computed(() => {
+  if (props.message.type !== 'answer') return false
+  return parseTodayMemeItems(String(props.message.rContent ?? '')).length > 0
+})
+
+/** 점심 에이전트 답변 말풍선 — JSON 파싱 전(스트리밍) 포함 */
+const isLunchAnswerBubble = computed(
+  () => props.message.type === 'answer' && props.message.agentId === LUNCH_AGENT_ID && !isTodayMemeAnswerPayload.value,
 )
 
-const isTodayMemeAnswerMessage = (message: ChatMessage) => message.type === 'answer' && message.agentId === 'AG000011'
+const isLunchRecommendationsPending = computed(
+  () =>
+    isLunchAnswerBubble.value && props.message.isStreaming === true && parsedLunchRecommendations.value.length === 0,
+)
+
+const isTodayMemeAnswerMessage = (message: ChatMessage) =>
+  message.type === 'answer' && message.agentId === TODAY_MEME_AGENT_ID
 const isNewsCuratorAnswerMessage = (message: ChatMessage) =>
   message.type === 'answer' && String(message.agentId ?? '').trim() === 'AG000012'
 
@@ -560,9 +580,12 @@ const shouldShowMessageFooter = computed(
 
 /** 이 meme 메시지에 대응하는 TodayMeme 답변이 아직 스트리밍 중인지 */
 const isMemeAnswerStreaming = computed(() => {
+  if (props.message.type !== 'meme') return false
   const idx = messages.value.findIndex((m) => m.logId === props.message.logId)
   if (idx < 0) return false
-  return messages.value.slice(idx + 1).some((m) => isTodayMemeAnswerMessage(m) && m.isStreaming === true)
+  const after = messages.value.slice(idx + 1)
+  const ans = after.find((m) => m.type === 'answer' && m.agentId === TODAY_MEME_AGENT_ID)
+  return ans?.isStreaming === true
 })
 
 /** 이 news 카드 직후(다음 news 전까지) 구간에 answer가 스트리밍 중인지 */

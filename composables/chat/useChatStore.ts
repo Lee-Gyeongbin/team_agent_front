@@ -23,7 +23,7 @@ import {
 import { buildLunchRecommendationPrompt, createLunchCardMessage } from '~/utils/chat/lunchAgentUtil'
 import {
   createTodayMemeMessage,
-  isTodayMemePrompt,
+  TODAY_MEME_AGENT_ID,
   TODAY_MEME_MODEL_ID,
   TODAY_MEME_PROMPT,
   useTodayMeme,
@@ -54,7 +54,7 @@ const {
   registerSurveyRoom,
   isSurveyVisible,
 } = usePsychologySurvey()
-const { isTodayMemeRoom, isTodayMemeVisible, registerTodayMemeRoom } = useTodayMeme()
+const { isTodayMemeVisible, isTodayMemeRoom, registerTodayMemeRoom } = useTodayMeme()
 const {
   activeSearchModes,
   selectedChatAgentId,
@@ -117,14 +117,7 @@ const messagesForDisplay = computed(() => {
     })
   }
   if (isTodayMemeRoom(chatRoom.value.roomId)) {
-    let memePromptHidden = false
-    base = base.filter((m) => {
-      if (m.type === 'question' && !memePromptHidden && isTodayMemePrompt(m.qContent ?? '')) {
-        memePromptHidden = true
-        return false
-      }
-      return true
-    })
+    base = base.filter((m) => m.type !== 'meme')
   }
   return base.filter((m) => !m.hiddenFromDisplay)
 })
@@ -190,6 +183,11 @@ const getChatIndexAgentColorStyle = (colorHex: string) => {
     '--card-icon-bg': `rgba(${hexToRgb(colorHex)}, 0.12)`,
   }
 }
+
+const AGENT_ID_LUNCH = 'AG000009'
+const AGENT_ID_PSYCHOLOGY = 'AG000010'
+const AGENT_ID_MEME = TODAY_MEME_AGENT_ID
+const AGENT_ID_NEWS = 'AG000012'
 
 export const useChatStore = () => {
   const handleSelectChatPdfFileUrl = async (docFileId: string): Promise<string | null> => {
@@ -428,7 +426,7 @@ export const useChatStore = () => {
       svcTy: resolveSvcTy(),
       modelId: selectedModelOption.value,
       refId: buildRefIdForPayload(),
-      agentId: 'AG000012',
+      agentId: AGENT_ID_NEWS,
       files: [],
     })
     if (sent) {
@@ -452,6 +450,15 @@ export const useChatStore = () => {
     if (!newsMessageLogId) return
     selectedChatAgentId.value = null
     messages.value = messages.value.filter((m) => m.logId !== newsMessageLogId)
+  }
+
+  const handleCloseTodayMeme = (memeMessageLogId?: string) => {
+    selectedChatAgentId.value = null
+    if (!memeMessageLogId) {
+      messages.value = messages.value.filter((m) => m.type !== 'meme')
+      return
+    }
+    messages.value = messages.value.filter((m) => m.logId !== memeMessageLogId)
   }
 
   /**
@@ -649,7 +656,7 @@ export const useChatStore = () => {
   }
 
   const handleSelectChatIndexAgentForC = async (agent: Agent) => {
-    const isLunchAgent = agent.agentId === 'AG000009'
+    const isLunchAgent = agent.agentId === AGENT_ID_LUNCH
     const isDeselecting = selectedChatAgentId.value === agent.agentId && activeSearchModes.value.length === 0
     if (isDeselecting) {
       selectedChatAgentId.value = null
@@ -689,7 +696,7 @@ export const useChatStore = () => {
       return
     }
 
-    if (agent.agentId === 'AG000010') {
+    if (agent.agentId === AGENT_ID_PSYCHOLOGY) {
       // 산업심리 상담 에이전트 — 에이전트 모드 상태 초기화
       activeSearchModes.value = []
       subOptions.value = []
@@ -711,7 +718,7 @@ export const useChatStore = () => {
       return
     }
 
-    if (agent.agentId === 'AG000011') {
+    if (agent.agentId === AGENT_ID_MEME) {
       activeSearchModes.value = []
       subOptions.value = []
       selectedChatAgentId.value = agent.agentId
@@ -730,7 +737,7 @@ export const useChatStore = () => {
       return
     }
 
-    if (agent.agentId === 'AG000012') {
+    if (agent.agentId === AGENT_ID_NEWS) {
       activeSearchModes.value = []
       subOptions.value = []
       selectedChatAgentId.value = agent.agentId
@@ -831,9 +838,15 @@ export const useChatStore = () => {
     if (sent) {
       addInlineTodayMemeMessage()
       registerTodayMemeRoom(chatRoom.value.roomId)
-      selectedChatAgentId.value = null
+      handleCloseIndexTodayMeme()
     }
     return sent
+  }
+
+  /** /chat 인덱스에서 TodayMeme 카드(오버레이)만 닫기 — 에이전트 선택 해제 */
+  const handleCloseIndexTodayMeme = () => {
+    selectedChatAgentId.value = null
+    isTodayMemeVisible.value = false
   }
 
   /** /chat 인덱스에서 NewsCurator 닫기 — 방 생성 없음 */
@@ -856,14 +869,14 @@ export const useChatStore = () => {
 
   /** TodayMeme 인트로 종료·건너뛰기 후 하단 에이전트 선택 해제(카드·메시지는 유지) */
   const handleTodayMemeIntroEnd = () => {
-    if (selectedChatAgentId.value === 'AG000011') {
+    if (selectedChatAgentId.value === AGENT_ID_MEME) {
       selectedChatAgentId.value = null
     }
   }
 
   /** NewsCurator 인트로 종료·건너뛰기 후 하단 에이전트 선택 해제(카드·메시지는 유지) */
   const handleNewsCuratorIntroEnd = () => {
-    if (selectedChatAgentId.value === 'AG000012') {
+    if (selectedChatAgentId.value === AGENT_ID_NEWS) {
       selectedChatAgentId.value = null
     }
   }
@@ -956,6 +969,7 @@ export const useChatStore = () => {
     addInlineLunchMessage,
     addInlineTodayMemeMessage,
     handleSyncNewsCard,
+    handleCloseTodayMeme,
     handleSubmitLunchAgentForm,
     handleCloseLunchAgentForm,
     handleCloseNewsCuratorForm,
@@ -963,6 +977,7 @@ export const useChatStore = () => {
     handleClosePsychologySurvey,
     handleCloseIndexLunchCard,
     handleCloseIndexNewsCurator,
+    handleCloseIndexTodayMeme,
     handleTodayMemeIntroEnd,
     handleNewsCuratorIntroEnd,
     handleSelectChatIndexAgents,

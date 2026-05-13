@@ -37,7 +37,7 @@
       v-if="isTodayMemeVisible"
       class="chat-index-today-meme"
       :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? ''"
-      :theme-color-hex="currentSurveyAgent!.colorHex"
+      :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
       @intro-complete="handleTodayMemeIntroEnd"
     />
     <ChatNewsCurator
@@ -128,6 +128,7 @@ const {
   isNewsCuratorVisible,
   handleCloseIndexNewsCurator,
   handleIndexNewsCuratorSubmit,
+  handleCloseIndexTodayMeme,
 } = useChatStore()
 const { startChatSocket, stopChatSocket } = useChatSocket()
 const { user } = useAuth()
@@ -144,6 +145,7 @@ onMounted(async () => {
   handleClosePsychologySurvey()
   handleCloseIndexLunchCard()
   handleCloseIndexNewsCurator()
+  handleCloseIndexTodayMeme()
   // 인덱스 진입 시점에 즉시 채팅방 상태를 초기화해
   // 비동기 로딩 완료 시점의 늦은 reset으로 인한 레이스를 방지한다.
   resetChatRoom()

@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import type { ChatMessage } from '~/types/chat'
 
 export const TODAY_MEME_MODEL_ID = 'gemini-3-flash-preview'
+export const TODAY_MEME_AGENT_ID = 'AG000011'
 export const TODAY_MEME_PROMPT = `너는 한국 커뮤니티 트렌드 및 밈 표현 분석 AI이다.
 
 최근 24시간 이내 한국 커뮤니티 게시글/댓글 데이터를 기반으로,
@@ -155,7 +156,7 @@ export const createTodayMemeMessage = (submitted: boolean): ChatMessage => ({
   logId: `today-meme-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
   type: 'meme',
   createdAt: new Date().toISOString(),
-  agentId: 'AG000011',
+  agentId: TODAY_MEME_AGENT_ID,
   memeSubmitted: submitted,
 })
 
@@ -163,10 +164,6 @@ const isTodayMemeVisible = ref(false)
 const todayMemeRoomIdSet = ref<Set<string>>(new Set())
 
 export const useTodayMeme = () => {
-  const openTodayMeme = () => {
-    isTodayMemeVisible.value = true
-  }
-
   const registerTodayMemeRoom = (roomId: string) => {
     const next = new Set(todayMemeRoomIdSet.value)
     next.add(roomId)
@@ -177,7 +174,6 @@ export const useTodayMeme = () => {
 
   return {
     isTodayMemeVisible,
-    openTodayMeme,
     registerTodayMemeRoom,
     isTodayMemeRoom,
   }

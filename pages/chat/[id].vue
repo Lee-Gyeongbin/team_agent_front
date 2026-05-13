@@ -126,6 +126,7 @@
 <script setup lang="ts">
 import { RadioGroupIndicator, RadioGroupItem, RadioGroupRoot } from 'radix-vue'
 import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
+import { TODAY_MEME_AGENT_ID } from '~/utils/chat/todayMemeUtil'
 
 /** 방 id가 바뀔 때마다 페이지 인스턴스 분리 — 전환 트랜지션(out-in)·조합형 라우트에서 상태 잔류 완화 */
 definePageMeta({
@@ -149,6 +150,7 @@ const {
   handleSelectChatIndexAgents,
   onSurveyMessageSubmit,
   handleClosePsychologySurvey,
+  handleCloseTodayMeme,
   handleTodayMemeIntroEnd,
   handleNewsCuratorIntroEnd,
   handleSubmitNewsCuratorMessage,
@@ -191,8 +193,8 @@ const isSurveyInputLocked = computed(() =>
   messages.value.some(
     (m) =>
       (m.type === 'survey' && !m.surveySubmitted) ||
-      (m.type === 'lunch' && !m.lunchSubmitted) ||
-      (m.type === 'meme' && !m.memeSubmitted && selectedChatAgentId.value === 'AG000011') ||
+      ((m.type === 'lunch' || m.uiType === 'lunch-card') && !m.lunchSubmitted) ||
+      (m.type === 'meme' && !m.memeSubmitted && selectedChatAgentId.value === TODAY_MEME_AGENT_ID) ||
       (m.type === 'news' && !m.newsSubmitted && selectedChatAgentId.value === 'AG000012'),
   ),
 )
@@ -295,6 +297,7 @@ onBeforeRouteLeave((to) => {
   // chat 영역 밖으로 나갈 때 열려 있을 수 있는 설문 닫기
   if (!String(to.path).startsWith('/chat')) {
     handleClosePsychologySurvey()
+    handleCloseTodayMeme()
     stopChatSocket()
   }
 })

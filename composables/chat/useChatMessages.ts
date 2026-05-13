@@ -9,7 +9,7 @@ import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import { parseChatAttachmentsFromLogRow } from '~/utils/chat/chatAttachmentDisplayUtil'
 import { parseSurveyAnswersFromPrompt } from '~/utils/chat/psychologyConsultUtil'
 import { parseLunchPayloadFromPrompt, parseLunchRecommendationsFromAnswerRContent } from '~/utils/chat/lunchAgentUtil'
-import { isTodayMemePrompt, parseTodayMemeItems } from '~/utils/chat/todayMemeUtil'
+import { isTodayMemePrompt, parseTodayMemeItems, TODAY_MEME_AGENT_ID } from '~/utils/chat/todayMemeUtil'
 import { parseNewsCuratorItems, parseNewsCuratorPromptMeta } from '~/utils/chat/newsCuratorUtil'
 
 // 채팅 메시지/스트리밍 상태는 모듈 레벨에서 단일 인스턴스로 공유
@@ -111,7 +111,7 @@ export const useChatMessages = () => {
     }
 
     // TodayMeme 에이전트: 프롬프트 패턴이면 readonly meme 메시지로 대체
-    if (agentId === 'AG000011' && isTodayMemePrompt(row.qcontent ?? '')) {
+    if (agentId === TODAY_MEME_AGENT_ID && isTodayMemePrompt(row.qcontent ?? '')) {
       const memeDisplayItems = parseTodayMemeItems(String(row.rcontent ?? ''))
       return [
         {
