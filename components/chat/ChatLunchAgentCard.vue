@@ -4,13 +4,14 @@
     :class="{
       'is-readonly': props.readonly,
       'is-intro-playing': isIntroPlaying,
+      'is-pending-intro': isRecommendationsPending,
       'is-content-visible': isContentVisible,
     }"
     :style="themeStyle"
   >
     <Transition name="lunch-intro">
       <div
-        v-if="isIntroPlaying && !hasResultRecommendations"
+        v-if="((isIntroPlaying && shouldPlayIntro) || isRecommendationsPending) && !hasResultRecommendations"
         class="chat-lunch-agent-card__intro"
         aria-live="polite"
       >
@@ -30,7 +31,7 @@
           </p>
           <p class="chat-lunch-agent-card__intro-subtitle">
             <span
-              v-for="(char, index) in introSubtitleChars"
+              v-for="(char, index) in displayIntroSubtitleChars"
               :key="`intro-subtitle-${index}`"
               class="chat-lunch-agent-card__intro-char"
               :style="{ '--intro-char-delay': `${0.12 + index * 0.024}s` }"
@@ -42,7 +43,10 @@
       </div>
     </Transition>
 
-    <div class="chat-lunch-agent-card__header">
+    <div
+      v-if="!isRecommendationsPending"
+      class="chat-lunch-agent-card__header"
+    >
       <div class="chat-lunch-agent-card__header-info">
         <div class="chat-lunch-agent-card__avatar">
           <i :class="[themeIconClassNm || 'icon-bot', 'size-24']" />
@@ -65,7 +69,7 @@
     </div>
 
     <div
-      v-if="!hasResultRecommendations"
+      v-if="!isRecommendationResultPhase"
       class="chat-lunch-agent-card__body"
     >
       <div
@@ -181,63 +185,71 @@
       v-if="hasResultRecommendations"
       class="chat-lunch-agent-card__result-list"
     >
-      <li
-        v-for="(item, idx) in recommendations"
-        :key="`${item.restaurant}-${idx}`"
-        class="chat-lunch-agent-card__result-item"
-      >
-        <div class="chat-lunch-agent-card__result-main">
-          <div class="chat-lunch-agent-card__result-thumb">
-            <img
-              v-if="item.imageUrl"
-              :src="item.imageUrl"
-              :alt="`${item.restaurant} 이미지`"
-            />
-            <i
-              v-else
-              class="icon-image size-20"
-            />
-          </div>
-          <div class="chat-lunch-agent-card__result-content">
-            <div class="chat-lunch-agent-card__result-item-head">
-              <p class="chat-lunch-agent-card__result-name">{{ item.menu }}</p>
-              <span class="chat-lunch-agent-card__result-rank">추천 {{ idx + 1 }}</span>
+      <template v-if="hasResultRecommendations">
+        <li
+          v-for="(item, idx) in recommendations"
+          :key="`${item.restaurant}-${idx}`"
+          class="chat-lunch-agent-card__result-item"
+        >
+          <div class="chat-lunch-agent-card__result-main">
+            <div class="chat-lunch-agent-card__result-thumb">
+              <img
+                v-if="item.imageUrl"
+                :src="item.imageUrl"
+                :alt="`${item.restaurant} 이미지`"
+              />
+              <i
+                v-else
+                class="icon-image size-20"
+              />
             </div>
-            <dl class="chat-lunch-agent-card__result-meta">
-              <div class="chat-lunch-agent-card__result-meta-row">
-                <dt>상호명</dt>
-                <dd>{{ item.restaurant }}</dd>
+            <div class="chat-lunch-agent-card__result-content">
+              <div class="chat-lunch-agent-card__result-item-head">
+                <p class="chat-lunch-agent-card__result-name">{{ item.menu }}</p>
+                <span class="chat-lunch-agent-card__result-rank">추천 {{ idx + 1 }}</span>
               </div>
-              <div class="chat-lunch-agent-card__result-meta-row">
-                <dt>가격</dt>
-                <dd>{{ item.price }}</dd>
-              </div>
-              <div class="chat-lunch-agent-card__result-meta-row">
-                <dt>위치</dt>
-                <dd>{{ item.location }}</dd>
-              </div>
-              <div class="chat-lunch-agent-card__result-meta-row">
-                <dt>URL</dt>
-                <dd class="chat-lunch-agent-card__result-address">
-                  <a
-                    v-if="item.address"
-                    :href="item.address"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {{ item.address }}
-                  </a>
-                  <span v-else>-</span>
-                </dd>
-              </div>
-            </dl>
+              <dl class="chat-lunch-agent-card__result-meta">
+                <div class="chat-lunch-agent-card__result-meta-row">
+                  <dt>상호명</dt>
+                  <dd>{{ item.restaurant }}</dd>
+                </div>
+                <div class="chat-lunch-agent-card__result-meta-row">
+                  <dt>가격</dt>
+                  <dd>{{ item.price }}</dd>
+                </div>
+                <div class="chat-lunch-agent-card__result-meta-row">
+                  <dt>위치</dt>
+                  <dd>{{ item.location }}</dd>
+                </div>
+                <div class="chat-lunch-agent-card__result-meta-row">
+                  <dt>URL</dt>
+                  <dd class="chat-lunch-agent-card__result-address">
+                    <a
+                      v-if="item.address"
+                      :href="item.address"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {{ item.address }}
+                    </a>
+                    <span v-else>-</span>
+                  </dd>
+                </div>
+              </dl>
+            </div>
           </div>
-        </div>
-      </li>
+        </li>
+      </template>
     </ul>
+    <p
+      v-if="hasResultRecommendations"
+      class="chat-lunch-agent-card__result-image-notice"
+    >
+      ※ 본 이미지는 AI가 제작한 참고용 이미지입니다
+    </p>
 
     <div
-      v-if="!hasResultRecommendations"
+      v-if="!hasResultRecommendations && (props.readonly || !isRecommendationsPending)"
       class="chat-lunch-agent-card__footer"
     >
       <template v-if="props.readonly">
@@ -259,7 +271,7 @@
           size="sm"
           @click="onSubmitClick"
         >
-          조건 입력 완료 후 추천받기
+          추천받기
           <template #icon-right>
             <i class="icon-arrow-right size-16" />
           </template>
@@ -284,6 +296,7 @@ interface Props {
   readonly?: boolean
   initialPayload?: LunchAgentFormPayload
   recommendations?: LunchRecommendationItem[]
+  isRecommendationsPending?: boolean
   themeIconClassNm?: string
   themeColorHex?: string
 }
@@ -292,6 +305,7 @@ const props = withDefaults(defineProps<Props>(), {
   readonly: false,
   initialPayload: undefined,
   recommendations: () => [],
+  isRecommendationsPending: false,
   themeIconClassNm: '',
   themeColorHex: '',
 })
@@ -317,6 +331,8 @@ const form = reactive<LunchAgentFormPayload>({
 
 const recommendations = computed(() => props.recommendations ?? [])
 const hasResultRecommendations = computed(() => recommendations.value.length > 0)
+const isRecommendationsPending = computed(() => props.isRecommendationsPending === true)
+const isRecommendationResultPhase = computed(() => hasResultRecommendations.value || isRecommendationsPending.value)
 const isLocationAnswered = computed(() => !!form.sido && !!form.sigungu && !!form.dong)
 const hasSelectedSido = computed(() => !!form.sido)
 const hasSelectedSigungu = computed(() => !!form.sigungu)
@@ -324,7 +340,22 @@ const isLocationSelectionMode = computed(
   () => !hasResultRecommendations.value && !props.readonly && !props.initialPayload,
 )
 const introTitleChars = '점심 메뉴 추천 에이전트'.split('')
-const introSubtitleChars = '조건을 분석하고 있습니다...'.split('')
+const introSubtitleChars = '점심 메뉴 추천 에이전트를 생성 중입니다...'.split('')
+
+const LUNCH_PENDING_STATUS_TEXTS = [
+  '적합한 음식점을 찾고 있는 중입니다...',
+  '주변 식당 정보를 분석하고 있습니다...',
+  '예산과 취향에 맞는 메뉴를 추천하는 중입니다...',
+  '지금 방문하기 좋은 음식점을 탐색하고 있습니다...',
+  '사용자 조건에 적합한 식당을 매칭하고 있습니다...',
+] as const
+const LUNCH_PENDING_STATUS_INTERVAL_MS = 3000
+const pendingStatusTextIndex = ref(0)
+const pendingStatusText = computed(() => LUNCH_PENDING_STATUS_TEXTS[pendingStatusTextIndex.value])
+const pendingStatusChars = computed(() => pendingStatusText.value.split(''))
+const displayIntroSubtitleChars = computed(() =>
+  isRecommendationsPending.value ? pendingStatusChars.value : introSubtitleChars,
+)
 
 const DEFAULT_THEME_HEX = '#3c69db'
 const hexToRgb = (hex: string) => {
@@ -470,11 +501,25 @@ const shouldPlayIntro = computed(() => !props.readonly && !hasResultRecommendati
 const isIntroPlaying = ref(false)
 const isContentVisible = ref(false)
 let introTimer: ReturnType<typeof setTimeout> | null = null
+let pendingStatusTimer: ReturnType<typeof setInterval> | null = null
 let isIntroDestroyed = false
 
 const clearIntroTimer = () => {
   if (introTimer) clearTimeout(introTimer)
   introTimer = null
+}
+
+const clearPendingStatusTimer = () => {
+  if (pendingStatusTimer) clearInterval(pendingStatusTimer)
+  pendingStatusTimer = null
+}
+
+const startPendingStatusRotation = () => {
+  clearPendingStatusTimer()
+  pendingStatusTextIndex.value = 0
+  pendingStatusTimer = setInterval(() => {
+    pendingStatusTextIndex.value = (pendingStatusTextIndex.value + 1) % LUNCH_PENDING_STATUS_TEXTS.length
+  }, LUNCH_PENDING_STATUS_INTERVAL_MS)
 }
 
 const runIntroSequence = async () => {
@@ -508,6 +553,29 @@ const runIntroSequence = async () => {
   isContentVisible.value = true
 }
 
+watch(
+  shouldPlayIntro,
+  (shouldPlay) => {
+    if (shouldPlay) return
+    clearIntroTimer()
+    isIntroPlaying.value = false
+    isContentVisible.value = true
+  },
+  { immediate: true },
+)
+
+watch(
+  isRecommendationsPending,
+  (isPending) => {
+    if (isPending) {
+      startPendingStatusRotation()
+      return
+    }
+    clearPendingStatusTimer()
+  },
+  { immediate: true },
+)
+
 onMounted(() => {
   isIntroDestroyed = false
   void runIntroSequence()
@@ -516,6 +584,7 @@ onMounted(() => {
 onUnmounted(() => {
   isIntroDestroyed = true
   clearIntroTimer()
+  clearPendingStatusTimer()
 })
 
 const setFormValue = (key: keyof LunchAgentFormPayload, value: string | number) => {
@@ -577,7 +646,8 @@ const onSubmitClick = () => {
   flex-direction: column;
   width: 100%;
   max-width: 760px;
-  height: 100%;
+  height: auto;
+  min-height: 420px;
   border: 1px solid $color-border;
   border-radius: $border-radius-lg;
   background: #fff;
@@ -685,6 +755,12 @@ const onSubmitClick = () => {
     padding: 20px;
   }
 
+  &__result-image-notice {
+    margin: -6px 20px 12px;
+    @include typo($body-xsmall);
+    color: $color-text-muted;
+  }
+
   &__result-item {
     padding: 14px;
     @include lunch-panel-surface;
@@ -717,6 +793,28 @@ const onSubmitClick = () => {
       object-fit: cover;
       display: block;
     }
+
+    &.is-pending {
+      border-style: dashed;
+      background: rgba(var(--lunch-theme-rgb), 0.06);
+      animation: lunch-result-thumb-pulse 1.2s ease-in-out infinite;
+    }
+  }
+
+  &__result-pending-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $spacing-md;
+    width: 100%;
+    padding: $spacing-sm 0;
+  }
+
+  &__result-pending-thumbs {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: $spacing-md;
   }
 
   &__result-content {
@@ -852,6 +950,16 @@ const onSubmitClick = () => {
 .lunch-intro-enter-from,
 .lunch-intro-leave-to {
   opacity: 0;
+}
+
+@keyframes lunch-result-thumb-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
 }
 
 @keyframes lunch-intro-text-bounce {
