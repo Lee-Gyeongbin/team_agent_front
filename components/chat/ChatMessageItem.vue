@@ -479,16 +479,6 @@ const surveyThemeAgent = computed<Agent | null>(
   () => chatIndexAgents.value.find((a) => a.agentId === (props.message.agentId || 'AG000010')) ?? null,
 )
 
-const parseLunchRecommendations = (raw: string): LunchRecommendationItem[] => {
-  try {
-    const parsed = JSON.parse(raw) as unknown
-    if (!Array.isArray(parsed)) return []
-    return parsed as LunchRecommendationItem[]
-  } catch {
-    return []
-  }
-}
-
 const parsedLunchRecommendations = computed<LunchRecommendationItem[]>(() => {
   const raw = (props.message.rContent ?? '').trim()
   if (!raw || props.message.uiType === 'lunch-card') return []
