@@ -1,6 +1,6 @@
 import { useApi } from '~/composables/com/useApi'
 import { useApi_multipart } from '~/composables/com/useApi_multipart'
-import type { Meeting as ApiMeeting, MeetingDetail, MeetingUser as ApiMeetingUser } from '~/types/meeting'
+import type { Meeting as ApiMeeting, MeetingDetail, MeetingUser as ApiMeetingUser, MeetingInfographic } from '~/types/meeting'
 import type { Meeting, MeetingSpeaker, MeetingUser, MeetingFileFormat } from '~/types/meeting2'
 
 // 🔽 Mock — 백엔드 API 없는 항목만 유지 (실제 엔드포인트 완성 시 useApi 패턴으로 교체)
@@ -122,6 +122,16 @@ export const useMeetingApi = () => {
     return get<{ token: string; expiresAt: number }>('/meeting/realtime-token')
   }
 
+  /** 인포그래픽 목록 조회 (폴백용) */
+  const fetchInfographicList = async (meetingId: number): Promise<{ list: MeetingInfographic[] }> => {
+    return get<{ list: MeetingInfographic[] }>(`/ai/meeting/selectMeetingInfographicList.do?meetingId=${meetingId}`)
+  }
+
+  /** 인포그래픽 생성 SSE 스트림 구독 */
+  const openInfographicStream = (meetingId: number): EventSource => {
+    return new EventSource(`/api/ai/meeting/streamInfographic.do?meetingId=${meetingId}`)
+  }
+
   /** 회의 파일 다운로드 */
   const fetchDownloadFile = async (meetingId: number, format: MeetingFileFormat): Promise<void> => {
     const blob = await getBlob(`/ai/meeting/downloadMinutes.do?meetingId=${meetingId}&format=${format}`)
@@ -151,5 +161,7 @@ export const useMeetingApi = () => {
     fetchDeleteMeeting,
     fetchRealtimeToken,
     fetchDownloadFile,
+    fetchInfographicList,
+    openInfographicStream,
   }
 }

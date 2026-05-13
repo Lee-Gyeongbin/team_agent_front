@@ -84,7 +84,8 @@
   gap: 16px;
 
   // assistant — 좌측 정렬
-  &.role-assistant {
+  &.role-assistant,
+  &.role-meme {
     justify-content: flex-start;
     padding: 12px 6px;
     background: #fff;
@@ -356,6 +357,20 @@
       align-items: flex-end;
       gap: 8px;
       max-width: 100%;
+    }
+
+    /** 공유·타인 업로드 첨부 — 아이콘 + 「파일 업로드됨」(패널/미리보기 없음) */
+    .message-user-attach-share-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      @include typo($body-small);
+      color: $color-text-secondary;
+
+      i {
+        flex-shrink: 0;
+        color: currentColor;
+      }
     }
 
     .message-content {

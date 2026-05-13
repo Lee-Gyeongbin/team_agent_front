@@ -91,7 +91,7 @@ export const createLunchCardMessage = (options?: {
   agentId?: string
 }): ChatMessage => ({
   logId: `lunch-card-${Date.now()}`,
-  type: 'answer',
+  type: 'lunch',
   qContent: '',
   rContent: '',
   createdAt: options?.createdAt ?? new Date().toISOString(),

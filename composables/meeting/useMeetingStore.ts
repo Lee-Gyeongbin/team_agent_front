@@ -4,6 +4,7 @@ import type {
   MeetingDetail,
   MeetingSpeaker as ApiMeetingSpeaker,
   MeetingUser as ApiMeetingUser,
+  MeetingInfographic,
 } from '~/types/meeting'
 import type {
   Meeting,
@@ -31,12 +32,15 @@ const {
   fetchMatchUsersByNames,
   fetchGenerateMeetingTitle,
   fetchDownloadFile,
+  fetchInfographicList,
+  openInfographicStream,
 } = useMeetingApi()
 
 // ===== 상태 =====
 const meetingList = ref<ApiMeeting[]>([])
 const meetingDetail = ref<MeetingDetail>({ meeting: null, minutes: null, speakers: [] })
 const currentMeeting = ref<Meeting | null>(null)
+const infographicList = ref<MeetingInfographic[]>([])
 
 const isLoadingList = ref(false)
 const isLoadingDetail = ref(false)
@@ -215,6 +219,7 @@ const handleSelectMeetingDetail = async (meetingId: number) => {
   try {
     const detail = await fetchMeetingDetail(meetingId)
     meetingDetail.value = detail
+    infographicList.value = detail.infographicList ?? []
 
     const mapped = mapApiDetailToMeeting(detail)
     if (!currentMeeting.value || currentMeeting.value.id !== mapped?.id) {
@@ -233,6 +238,49 @@ const handleSelectMeetingDetail = async (meetingId: number) => {
   } finally {
     isLoadingDetail.value = false
   }
+}
+
+/** 인포그래픽 목록 조회 (폴백용) */
+const handleSelectInfographicList = async (meetingId: number) => {
+  try {
+    const res = await fetchInfographicList(meetingId)
+    infographicList.value = res.list ?? []
+  } catch {
+    // 폴링 실패는 무시
+  }
+}
+
+/**
+ * 인포그래픽 생성 SSE 스트림 구독
+ * - progress 이벤트: 이미지 생성 완료 시 해당 항목만 업데이트
+ * - done 이벤트: 전체 완료
+ * - error 이벤트: 스트림 오류
+ * @returns 구독 해제 함수
+ */
+const handleStreamInfographic = (meetingId: number): (() => void) => {
+  const es = openInfographicStream(meetingId)
+
+  es.addEventListener('progress', (e: MessageEvent) => {
+    try {
+      const data = JSON.parse(e.data)
+      const idx = infographicList.value.findIndex((item) => item.infographicId === data.infographicId)
+      if (idx !== -1) {
+        infographicList.value[idx] = { ...infographicList.value[idx], ...data }
+      }
+    } catch {
+      // 파싱 실패 무시
+    }
+  })
+
+  es.addEventListener('done', () => {
+    es.close()
+  })
+
+  es.addEventListener('error', () => {
+    es.close()
+  })
+
+  return () => es.close()
 }
 
 // ===== 회의 시작/종료 =====
@@ -475,6 +523,7 @@ export const useMeetingStore = () => {
     meetingList,
     meetingDetail,
     currentMeeting,
+    infographicList,
     userList,
     isLoadingList,
     isLoadingDetail,
@@ -489,6 +538,8 @@ export const useMeetingStore = () => {
     handleSelectUserList,
     handleSelectMeetingList,
     handleSelectMeetingDetail,
+    handleSelectInfographicList,
+    handleStreamInfographic,
     handleCreateMeeting,
     handleFinishMeetingWithAudio,
     handleSaveMeeting,

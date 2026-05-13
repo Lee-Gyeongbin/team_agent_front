@@ -21,6 +21,7 @@
         @on-select-category="onSelectCategory"
         @on-survey-submit="onSurveyMessageSubmit"
         @on-survey-close="onSurveyMessageClose"
+        @on-meme-intro-complete="handleTodayMemeIntroEnd"
         @on-lunch-card-submit="handleSubmitLunchAgentForm"
         @on-lunch-card-close="onLunchMessageClose"
       />
@@ -130,6 +131,7 @@ definePageMeta({
 
 const {
   messages,
+  selectedChatAgentId,
   handleSelectChatLogList,
   activePanelType,
   isPanelFullscreen,
@@ -144,6 +146,7 @@ const {
   handleSelectChatIndexAgents,
   onSurveyMessageSubmit,
   handleClosePsychologySurvey,
+  handleTodayMemeIntroEnd,
   handleSubmitLunchAgentForm,
   handleCloseLunchAgentForm,
 } = useChatStore()
@@ -180,7 +183,10 @@ type ChatMessageListExpose = {
 const chatMessageListRef = ref<ChatMessageListExpose | null>(null)
 const isSurveyInputLocked = computed(() =>
   messages.value.some(
-    (m) => (m.type === 'survey' && !m.surveySubmitted) || (m.uiType === 'lunch-card' && !m.lunchSubmitted),
+    (m) =>
+      (m.type === 'survey' && !m.surveySubmitted) ||
+      (m.type === 'lunch' && !m.lunchSubmitted) ||
+      (m.type === 'meme' && !m.memeSubmitted && selectedChatAgentId.value === 'AG000011'),
   ),
 )
 
@@ -250,7 +256,10 @@ watch(
     if (nextLength <= prevLength) return
     await nextTick()
     const lastMsg = messages.value[messages.value.length - 1]
-    if (lastMsg?.type === 'survey' && !lastMsg.surveySubmitted) {
+    if (
+      (lastMsg?.type === 'survey' && !lastMsg.surveySubmitted) ||
+      (lastMsg?.type === 'meme' && !lastMsg.memeSubmitted)
+    ) {
       // ResizeObserver(scrollToBottomInstant)가 먼저 실행된 뒤에 survey 상단으로 이동해야 하므로
       // double-rAF로 두 프레임 뒤에 스크롤을 적용한다
       const logId = lastMsg.logId

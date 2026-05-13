@@ -21,6 +21,13 @@ import {
   parseSurveyAnswersFromPrompt,
 } from '~/utils/chat/psychologyConsultUtil'
 import { buildLunchRecommendationPrompt, createLunchCardMessage } from '~/utils/chat/lunchAgentUtil'
+import {
+  createTodayMemeMessage,
+  isTodayMemePrompt,
+  TODAY_MEME_MODEL_ID,
+  TODAY_MEME_PROMPT,
+  useTodayMeme,
+} from '~/utils/chat/todayMemeUtil'
 import { clearBodyChartFullscreen } from '~/utils/chat/visualizationChartUtil'
 import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
 import { getCodes } from '~/utils/global/comCodesUtil'
@@ -43,6 +50,7 @@ const {
   registerSurveyRoom,
   isSurveyVisible,
 } = usePsychologySurvey()
+const { isTodayMemeRoom, isTodayMemeVisible, registerTodayMemeRoom } = useTodayMeme()
 const {
   activeSearchModes,
   selectedChatAgentId,
@@ -86,6 +94,16 @@ const messagesForDisplay = computed(() => {
           surveyPromptHidden = true
           return false
         }
+      }
+      return true
+    })
+  }
+  if (isTodayMemeRoom(chatRoom.value.roomId)) {
+    let memePromptHidden = false
+    base = base.filter((m) => {
+      if (m.type === 'question' && !memePromptHidden && isTodayMemePrompt(m.qContent ?? '')) {
+        memePromptHidden = true
+        return false
       }
       return true
     })
@@ -310,6 +328,54 @@ export const useChatStore = () => {
     messages.value = [lunchMsg, ...msgs]
   }
 
+  /** index.vue에서 TodayMeme 제출 후 새 채팅방 진입 시 readonly TodayMeme 카드를 메시지 목록 앞에 주입 */
+  const addInlineTodayMemeMessage = () => {
+    const memeMsg = createTodayMemeMessage(true)
+    const msgs = [...messages.value]
+    const firstQ = msgs.find((m) => m.type === 'question')
+    if (firstQ) firstQ.hiddenFromDisplay = true
+    messages.value = [memeMsg, ...msgs]
+  }
+
+  /**
+   * TodayMeme 프롬프트 전송 — question 메시지를 화면에 노출하지 않는다.
+   * @param content - 전송할 프롬프트 문자열
+   * @param memeMessageLogId - 제출 완료로 전환할 meme 메시지 logId
+   */
+  const onSendTodayMeme = async (content: string, memeMessageLogId?: string): Promise<boolean> => {
+    if (!content.trim() || isSearchModeMissingSubOptions.value || !chatRoom.value.roomId) return false
+
+    if (memeMessageLogId) {
+      const memeMsg = messages.value.find((m) => m.logId === memeMessageLogId && m.type === 'meme')
+      if (memeMsg) {
+        memeMsg.memeSubmitted = true
+      }
+    }
+
+    const prevLen = messages.value.length
+    const sent = await executeSendPipeline({
+      content: content.trim(),
+      roomId: chatRoom.value.roomId,
+      svcTy: resolveSvcTy(),
+      modelId: TODAY_MEME_MODEL_ID,
+      refId: buildRefIdForPayload(),
+      agentId: selectedChatAgentId.value ?? '',
+      files: [],
+    })
+    if (sent) {
+      const newQuestion = messages.value.slice(prevLen).find((m) => m.type === 'question')
+      if (newQuestion) newQuestion.hiddenFromDisplay = true
+      selectedChatAgentId.value = null
+    }
+    return sent
+  }
+
+  /** 메시지 목록 내 TodayMeme 컴포넌트 제출(인트로 완료) — 프롬프트 빌드 후 전송 */
+  const handleSubmitTodayMemeMessage = async (logId: string): Promise<boolean> => {
+    const prompt = TODAY_MEME_PROMPT
+    return await onSendTodayMeme(prompt, logId)
+  }
+
   const handleCloseLunchAgentForm = (lunchMessageLogId?: string) => {
     if (!lunchMessageLogId) {
       messages.value = messages.value.filter((m) => m.uiType !== 'lunch-card')
@@ -334,7 +400,7 @@ export const useChatStore = () => {
 
     const markLunchSubmitted = () => {
       if (!lunchMessageLogId) return
-      const lunchMsg = messages.value.find((m) => m.logId === lunchMessageLogId && m.uiType === 'lunch-card')
+      const lunchMsg = messages.value.find((m) => m.logId === lunchMessageLogId && m.type === 'lunch')
       if (!lunchMsg) return
       lunchMsg.lunchFormPayload = payload ? { ...payload } : lunchMsg.lunchFormPayload
       lunchMsg.lunchSubmitted = true
@@ -374,7 +440,7 @@ export const useChatStore = () => {
       const msgs = [...messages.value]
       const firstQuestion = msgs.find((m) => m.type === 'question')
       if (firstQuestion) firstQuestion.hiddenFromDisplay = true
-      const lunchMsg = msgs.find((m) => m.logId === logId && m.uiType === 'lunch-card')
+      const lunchMsg = msgs.find((m) => m.logId === logId && m.type === 'lunch')
       if (lunchMsg) {
         lunchMsg.lunchFormPayload = submittedPayload
         lunchMsg.lunchSubmitted = true
@@ -514,11 +580,12 @@ export const useChatStore = () => {
   }
 
   const handleSelectChatIndexAgentForC = async (agent: Agent) => {
+    const isLunchAgent = agent.agentId === 'AG000009'
     const isDeselecting = selectedChatAgentId.value === agent.agentId && activeSearchModes.value.length === 0
     if (isDeselecting) {
       selectedChatAgentId.value = null
       isLunchVisible.value = false
-      messages.value = messages.value.filter((m) => m.uiType !== 'lunch-card')
+      messages.value = messages.value.filter((m) => m.type !== 'lunch')
     } else {
       selectedChatAgentId.value = agent.agentId
     }
@@ -527,8 +594,10 @@ export const useChatStore = () => {
     await selectModelOptions()
     if (isDeselecting) return
 
+    if (!isLunchAgent) return
+
     if (chatRoom.value.roomId) {
-      const alreadyHasLunchCard = messages.value.some((m) => m.uiType === 'lunch-card' && !m.lunchSubmitted)
+      const alreadyHasLunchCard = messages.value.some((m) => m.type === 'lunch' && !m.lunchSubmitted)
       if (!alreadyHasLunchCard) {
         const lunchCardMessage = createLunchCardMessage({
           createdAt: new Date().toISOString(),
@@ -569,6 +638,25 @@ export const useChatStore = () => {
       } else {
         // 최초화면(/chat index): 기존처럼 isSurveyVisible로 인라인 표시
         openPsychologySurvey()
+      }
+      return
+    }
+
+    if (agent.agentId === 'AG000011') {
+      activeSearchModes.value = []
+      subOptions.value = []
+      selectedChatAgentId.value = agent.agentId
+      await selectModelOptions()
+
+      if (chatRoom.value.roomId) {
+        const alreadyHasMeme = messages.value.some((m) => m.type === 'meme' && !m.memeSubmitted)
+        if (!alreadyHasMeme) {
+          const memeMsg = createTodayMemeMessage(false)
+          messages.value = [...messages.value, memeMsg]
+          await handleSubmitTodayMemeMessage(memeMsg.logId)
+        }
+      } else {
+        await handleIndexTodayMemeSubmit()
       }
       return
     }
@@ -649,6 +737,25 @@ export const useChatStore = () => {
     return sent
   }
 
+  /** /chat 인덱스에서 TodayMeme 제출(에이전트 클릭 즉시) — 방 생성·인라인 주입·등록·닫기 */
+  const handleIndexTodayMemeSubmit = async (): Promise<boolean> => {
+    const content = TODAY_MEME_PROMPT
+    const sent = await createChatRoom(content)
+    if (sent) {
+      addInlineTodayMemeMessage()
+      registerTodayMemeRoom(chatRoom.value.roomId)
+      selectedChatAgentId.value = null
+    }
+    return sent
+  }
+
+  /** TodayMeme 인트로 종료·건너뛰기 후 하단 에이전트 선택 해제(카드·메시지는 유지) */
+  const handleTodayMemeIntroEnd = () => {
+    if (selectedChatAgentId.value === 'AG000011') {
+      selectedChatAgentId.value = null
+    }
+  }
+
   const activeVisualizationView = computed(() => {
     const messageId = activePanelMessageId.value
     if (!messageId) return null
@@ -718,21 +825,27 @@ export const useChatStore = () => {
     searchModeSubOptionsEmptyMessage,
     isSurveyVisible,
     isLunchVisible,
+    isTodayMemeVisible,
     // 액션
     createChatRoom,
     handleSelectChatLogList,
     onSend,
     onSendSurvey,
     onSurveyMessageSubmit,
+    onSendTodayMeme,
+    handleSubmitTodayMemeMessage,
     handleIndexSurveySubmit,
+    handleIndexTodayMemeSubmit,
     addInlineSurveyMessage,
     handleIndexLunchSubmit,
     addInlineLunchMessage,
+    addInlineTodayMemeMessage,
     handleSubmitLunchAgentForm,
     handleCloseLunchAgentForm,
     selectChatIndexAgent,
     handleClosePsychologySurvey,
     handleCloseIndexLunchCard,
+    handleTodayMemeIntroEnd,
     handleSelectChatIndexAgents,
     // 패널
     onViewSource,
