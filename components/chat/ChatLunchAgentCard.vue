@@ -296,6 +296,7 @@ interface Props {
   readonly?: boolean
   initialPayload?: LunchAgentFormPayload
   recommendations?: LunchRecommendationItem[]
+  /** 추천 JSON 파싱 전·스트리밍 중 썸네일 영역(플레이스홀더) 표시 */
   isRecommendationsPending?: boolean
   themeIconClassNm?: string
   themeColorHex?: string
