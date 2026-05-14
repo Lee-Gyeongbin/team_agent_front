@@ -122,6 +122,7 @@
 <script setup lang="ts">
 import { openConfirm } from '~/composables/useDialog'
 import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
+import { computeSpeakerAvatarMap } from '~/utils/meeting/speakerAvatarUtil'
 import type { User, MeetingViewSpeaker as MeetingSpeaker, MergeGroup } from '~/types/meeting'
 
 const { currentMeeting, meetingDetail, handleSaveSpeakers } = useMeetingStore()
@@ -151,9 +152,11 @@ const setInputRef = (el: unknown, idx: number) => {
   if (el) inputRefs.value[idx] = el as HTMLInputElement
 }
 
+// 화자 목록 컨텍스트로 아바타 1글자 계산 (공통 util)
+const avatarMap = computed(() => computeSpeakerAvatarMap(displayList.value))
 const avatarChar = (idx: number) => {
-  const name = isEditMode.value ? editForm.value[idx]?.name : speakers.value[idx]?.name
-  return name?.charAt(0) || '?'
+  const id = displayList.value[idx]?.id
+  return (id && avatarMap.value.get(id)) || '?'
 }
 
 const onClickEdit = () => {

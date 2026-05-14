@@ -84,7 +84,7 @@
                 </span>
               </span>
               <UiBadge
-                variant="category"
+                variant="default"
                 size="xs"
                 class="datamart-meta-rel-join-badge"
               >
