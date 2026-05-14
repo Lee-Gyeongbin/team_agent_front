@@ -12,7 +12,11 @@ export default defineNuxtConfig({
 
   components: [{ path: '~/components', pathPrefix: false }],
 
-  css: ['~/assets/styles/main.scss'],
+  css: [
+    '~/assets/styles/main.scss',
+    // ispark-ui 라이브러리 글로벌 스타일 (UiTable 등)
+    '@leechanyong/ispark-ui/styles',
+  ],
 
   vite: {
     // Vite가 클라이언트에서 import.meta.server → false 치환 후에도
