@@ -15,7 +15,7 @@ export default defineNuxtConfig({
   css: [
     '~/assets/styles/main.scss',
     // ispark-ui 라이브러리 글로벌 스타일 (UiTable 등)
-    '@leechanyong/ispark-ui/styles',
+    // '@leechanyong/ispark-ui/styles',
   ],
 
   vite: {
