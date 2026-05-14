@@ -104,7 +104,7 @@
 
 <script setup lang="ts">
 import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
-import type { MeetingStep } from '~/types/meeting2'
+import type { MeetingStep } from '~/types/meeting'
 
 definePageMeta({ path: '/meeting' })
 

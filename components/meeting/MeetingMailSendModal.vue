@@ -103,7 +103,7 @@
 
 <script setup lang="ts">
 import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
-import type { MeetingRecipient, MeetingUser } from '~/types/meeting2'
+import type { MeetingRecipient, MeetingViewUser as MeetingUser } from '~/types/meeting'
 
 const { isMailSendOpen, currentMeeting, mailInitialRecipients, userSearchResults, handleSearchUsers, doSendMail } =
   useMeetingStore()

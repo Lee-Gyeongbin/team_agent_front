@@ -64,7 +64,7 @@ import { useSpeechRecognition } from '~/composables/meeting/useSpeechRecognition
 import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
 import { openToast } from '~/composables/useToast'
 import { openConfirm } from '~/composables/useDialog'
-import type { MeetingSttItem } from '~/types/meeting2'
+import type { MeetingSttItem } from '~/types/meeting'
 
 const route = useRoute()
 /** 현재 회의 ID — 라우트 파라미터에서 추출 */

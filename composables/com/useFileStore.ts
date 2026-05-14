@@ -68,6 +68,13 @@ export const useFileStore = () => {
     }, 3000)
   }
 
+  const handleDownloadByUrl = (url: string): boolean => {
+    const normalizedUrl = String(url ?? '').trim()
+    if (!normalizedUrl) return false
+    triggerDownloadByUrl(normalizedUrl)
+    return true
+  }
+
   const onDownloadFile = async (docFileId: string) => {
     const res = await handleDownloadFile(docFileId)
     if (!res) return
@@ -110,6 +117,7 @@ export const useFileStore = () => {
     downloadUrl,
     fileError,
     onDownloadFile,
+    handleDownloadByUrl,
     handleUploadByPresignedUrl,
     handleViewFileUrl,
     handleDownloadFile,

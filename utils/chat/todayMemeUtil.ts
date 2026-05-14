@@ -137,14 +137,30 @@ export const parseTodayMemeItems = (raw: string): TodayMemeItem[] => {
   const text = String(raw ?? '').trim()
   if (!text) return []
   try {
-    let root: unknown = JSON.parse(text)
+    const parseCandidates: string[] = [text]
+    const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
+    if (codeBlockMatch?.[1]) parseCandidates.push(codeBlockMatch[1].trim())
+    const arrayMatch = text.match(/\[[\s\S]*\]/)
+    if (arrayMatch?.[0]) parseCandidates.push(arrayMatch[0].trim())
+
+    let root: unknown = null
+    for (const candidate of parseCandidates) {
+      try {
+        root = JSON.parse(candidate)
+        break
+      } catch {
+        // 다음 후보 문자열로 파싱 재시도
+      }
+    }
+    if (root == null) return []
+
     if (typeof root === 'string') {
       const inner = root.trim()
       if (inner.startsWith('{') || inner.startsWith('[')) root = JSON.parse(inner)
     }
     const rows = rowsFromMemeJsonRoot(root)
     if (!rows?.length) return []
-    return rows.map(mapRawRowToItem).filter((item) => item.title && item.source && item.points.length > 0)
+    return rows.map(mapRawRowToItem).filter((item) => item.title && item.points.length > 0)
   } catch {
     return []
   }

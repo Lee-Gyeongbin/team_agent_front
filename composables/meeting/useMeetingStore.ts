@@ -1,21 +1,21 @@
 import { useMeetingApi } from '~/composables/meeting/useMeetingApi'
+import { useFileStore } from '~/composables/com/useFileStore'
 import type {
   Meeting as ApiMeeting,
   MeetingDetail,
   MeetingSpeaker as ApiMeetingSpeaker,
   MeetingUser as ApiMeetingUser,
   MeetingInfographic,
-} from '~/types/meeting'
-import type {
-  Meeting,
+  MeetingViewModel as Meeting,
   MeetingStep,
   MeetingStepKey,
   MeetingStepStatus,
-  MeetingSpeaker,
+  MeetingViewSpeaker as MeetingSpeaker,
   MeetingRecipient,
-  MeetingUser,
+  MeetingViewUser as MeetingUser,
   MeetingFileFormat,
-} from '~/types/meeting2'
+  MergeGroup,
+} from '~/types/meeting'
 
 const {
   fetchUserList,
@@ -26,14 +26,17 @@ const {
   fetchCreateMeeting,
   fetchFinishMeetingWithAudio,
   fetchSaveSpeakerMapping,
-  fetchSaveSpeaker,
   fetchSaveSpeakers,
+  fetchSaveSpeakersMerge,
   fetchSearchUsers,
   fetchMatchUsersByNames,
   fetchGenerateMeetingTitle,
   fetchDownloadFile,
+  fetchDownloadAudioFileUrl,
+  openMeetingProcessingStream,
   openInfographicStream,
 } = useMeetingApi()
+const { handleDownloadByUrl } = useFileStore()
 
 // ===== 상태 =====
 const meetingList = ref<ApiMeeting[]>([])
@@ -47,9 +50,6 @@ const isFinishing = ref(false)
 const isGeneratingTitle = ref(false)
 
 const userList = ref<ApiMeetingUser[]>([])
-const selectedSpeaker = ref<MeetingSpeaker | null>(null)
-const isSpeakerEditOpen = ref(false)
-
 const isMailSendOpen = ref(false)
 const mailInitialRecipients = ref<MeetingRecipient[]>([])
 
@@ -306,20 +306,50 @@ const handleCreateMeeting = async (params: {
 
 const handleFinishMeetingWithAudio = async (params: { meetingId: number; audioBlob: Blob }): Promise<boolean> => {
   isFinishing.value = true
-  openLoading({ text: '음성을 전사하고 회의록을 생성하는 중...' })
+  // step 1-2: 업로드 + DB저장 (빠르게 반환)
+  openLoading({ text: '오디오 파일을 업로드하는 중...' })
   try {
     const res = await fetchFinishMeetingWithAudio(params)
     if (!res.successYn) {
       openToast({ message: res.returnMsg || '회의 종료에 실패했습니다.', type: 'error' })
+      closeLoading()
+      isFinishing.value = false
       return false
     }
-    return true
+
+    // step 3-5: SSE 스트림 구독 — 로딩 텍스트를 실제 진행 단계로 업데이트
+    return await new Promise<boolean>((resolve) => {
+      const es = openMeetingProcessingStream(params.meetingId)
+
+      es.addEventListener('progress', (e: MessageEvent) => {
+        try {
+          const { message } = JSON.parse(e.data) as { step: string; message: string }
+          updateLoadingText(message)
+        } catch {
+          // 파싱 실패 무시
+        }
+      })
+
+      es.addEventListener('done', () => {
+        es.close()
+        isFinishing.value = false
+        closeLoading()
+        resolve(true)
+      })
+
+      es.addEventListener('error', () => {
+        es.close()
+        isFinishing.value = false
+        closeLoading()
+        openToast({ message: '회의 처리 중 오류가 발생했습니다.', type: 'error' })
+        resolve(false)
+      })
+    })
   } catch {
     openToast({ message: '회의 종료에 실패했습니다.', type: 'error' })
-    return false
-  } finally {
-    isFinishing.value = false
     closeLoading()
+    isFinishing.value = false
+    return false
   }
 }
 
@@ -404,28 +434,7 @@ const handleSaveSpeakerMapping = async (params: {
   }
 }
 
-const openSpeakerEditModal = (speaker?: MeetingSpeaker) => {
-  selectedSpeaker.value = speaker ?? null
-  isSpeakerEditOpen.value = true
-}
-
-const handleSaveSpeaker = async (speaker: Partial<MeetingSpeaker>) => {
-  if (!currentMeeting.value) return
-  try {
-    const res = await fetchSaveSpeaker(currentMeeting.value.id, speaker)
-    if (res?.data && currentMeeting.value) {
-      const idx = currentMeeting.value.speakers.findIndex((s) => s.id === res.data.id)
-      if (idx > -1) currentMeeting.value.speakers[idx] = res.data
-      else currentMeeting.value.speakers.push(res.data)
-    }
-    isSpeakerEditOpen.value = false
-    openToast({ message: '화자 정보가 저장되었습니다.' })
-  } catch {
-    openToast({ message: '화자 저장 실패', type: 'error' })
-  }
-}
-
-const handleSaveSpeakers = async (speakers: Partial<MeetingSpeaker>[]) => {
+const handleSaveSpeakers = async (speakers: Partial<MeetingSpeaker>[], mergeGroups?: MergeGroup[]) => {
   if (!currentMeeting.value) return
   try {
     // meetingDetail의 ApiMeetingSpeaker에서 기존 speakerUserId 조회 (유저 매핑 유지)
@@ -441,22 +450,53 @@ const handleSaveSpeakers = async (speakers: Partial<MeetingSpeaker>[]) => {
         }
       })
 
-    await fetchSaveSpeakers(payload)
+    if (mergeGroups && mergeGroups.length > 0) {
+      // 동명이인 머지: 배치 API 한 번 호출 (서버에서 utterances 합산 + 중복 행 삭제)
+      await fetchSaveSpeakersMerge({
+        meetingId: Number(currentMeeting.value.id),
+        speakerList: payload,
+        mergeSpeakerYn: 'Y',
+      })
 
-    // 로컬 speakers 상태 업데이트 → MeetingSpeakerList 반영
-    speakers.forEach((updated) => {
-      if (!currentMeeting.value || !updated.id) return
-      const idx = currentMeeting.value.speakers.findIndex((s) => s.id === updated.id)
-      if (idx > -1) {
-        currentMeeting.value.speakers[idx] = { ...currentMeeting.value.speakers[idx], ...updated }
-      }
-    })
+      const removedIds = mergeGroups.flatMap((g) => g.removeSpeakerIds)
 
-    // sttList 화자명 갱신 → MeetingSttList 반영
-    currentMeeting.value.sttList = currentMeeting.value.sttList.map((stt) => {
-      const speaker = currentMeeting.value!.speakers.find((s) => s.id === stt.speakerId)
-      return speaker ? { ...stt, speakerName: speaker.name } : stt
-    })
+      // 로컬 speakers: 제거된 화자 삭제 + 나머지 이름/userId 업데이트
+      currentMeeting.value.speakers = currentMeeting.value.speakers
+        .filter((s) => !removedIds.includes(s.id))
+        .map((s) => {
+          const updated = speakers.find((u) => u.id === s.id)
+          return updated ? { ...s, ...updated } : s
+        })
+
+      // sttList: 제거된 화자의 발화 → keepSpeakerId로 재매핑
+      currentMeeting.value.sttList = currentMeeting.value.sttList.map((stt) => {
+        for (const group of mergeGroups) {
+          if (group.removeSpeakerIds.includes(stt.speakerId)) {
+            const keepSpeaker = currentMeeting.value!.speakers.find((s) => s.id === group.keepSpeakerId)
+            return { ...stt, speakerId: group.keepSpeakerId, speakerName: keepSpeaker?.name ?? stt.speakerName }
+          }
+        }
+        return stt
+      })
+    } else {
+      // 일반 저장: 화자별 병렬 호출
+      await fetchSaveSpeakers(payload)
+
+      // 로컬 speakers 상태 업데이트 → MeetingSpeakerList 반영
+      speakers.forEach((updated) => {
+        if (!currentMeeting.value || !updated.id) return
+        const idx = currentMeeting.value.speakers.findIndex((s) => s.id === updated.id)
+        if (idx > -1) {
+          currentMeeting.value.speakers[idx] = { ...currentMeeting.value.speakers[idx], ...updated }
+        }
+      })
+
+      // sttList 화자명 갱신 → MeetingSttList 반영
+      currentMeeting.value.sttList = currentMeeting.value.sttList.map((stt) => {
+        const speaker = currentMeeting.value!.speakers.find((s) => s.id === stt.speakerId)
+        return speaker ? { ...stt, speakerName: speaker.name } : stt
+      })
+    }
 
     openToast({ message: '화자 정보가 저장되었습니다.' })
   } catch {
@@ -465,6 +505,62 @@ const handleSaveSpeakers = async (speakers: Partial<MeetingSpeaker>[]) => {
 }
 
 // ===== 파일 다운로드 =====
+const downloadTextFile = (text: string, fileName: string) => {
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = fileName
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(url)
+}
+
+const buildSttTextContent = () => {
+  const list = currentMeeting.value?.sttList ?? []
+  return list.map((item) => `[${item.time}] ${item.speakerName}\n${item.text}`).join('\n\n')
+}
+
+const handleDownloadSttText = () => {
+  const sttText = buildSttTextContent()
+  if (!sttText.trim()) {
+    openToast({ message: '다운로드할 텍스트가 없습니다.', type: 'warning' })
+    return false
+  }
+
+  const meetingId = Number(currentMeeting.value?.id ?? 0)
+  const fileName = Number.isFinite(meetingId) && meetingId > 0 ? `회의_STT_${meetingId}.txt` : '회의_STT.txt'
+  downloadTextFile(sttText, fileName)
+  return true
+}
+
+const handleDownloadMeetingAudio = async () => {
+  const meetingId = Number(currentMeeting.value?.id ?? 0)
+  if (!Number.isFinite(meetingId) || meetingId <= 0) {
+    openToast({ message: '회의 정보가 없습니다.', type: 'warning' })
+    return false
+  }
+
+  try {
+    const res = await fetchDownloadAudioFileUrl(meetingId)
+    const url = String(res?.url ?? '').trim()
+    if (!url) {
+      openToast({ message: '오디오 다운로드 URL을 받지 못했습니다.', type: 'error' })
+      return false
+    }
+    const downloaded = handleDownloadByUrl(url)
+    if (!downloaded) {
+      openToast({ message: '오디오 다운로드에 실패했습니다.', type: 'error' })
+      return false
+    }
+    return true
+  } catch {
+    openToast({ message: '오디오 다운로드에 실패했습니다.', type: 'error' })
+    return false
+  }
+}
+
 const buildInfographicHtml = (): string => {
   const completed = infographicList.value.filter((item) => item.infographicStatus === '003' && item.infographicImg)
   if (completed.length === 0) return ''
@@ -727,8 +823,6 @@ export const useMeetingStore = () => {
     isLoadingDetail,
     isFinishing,
     isGeneratingTitle,
-    selectedSpeaker,
-    isSpeakerEditOpen,
     isMailSendOpen,
     mailInitialRecipients,
     isInfoEditOpen,
@@ -744,9 +838,9 @@ export const useMeetingStore = () => {
     handleDeleteMeeting,
     handleResetRecord,
     handleSaveSpeakerMapping,
-    openSpeakerEditModal,
-    handleSaveSpeaker,
     handleSaveSpeakers,
+    handleDownloadSttText,
+    handleDownloadMeetingAudio,
     handleDownloadFile,
     handleOpenMailSend,
     doSendMail,

@@ -25,3 +25,6 @@ logs
 
 # MCP config (contains tokens)
 .mcp.json
+
+# Playwright MCP 검증 흔적
+.playwright-mcp

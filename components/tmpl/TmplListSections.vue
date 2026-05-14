@@ -21,7 +21,7 @@
       />
       <UiBadge
         v-else
-        variant="manual-ai"
+        variant="info"
         size="sm"
       >
         {{ sec.items.length }}개
