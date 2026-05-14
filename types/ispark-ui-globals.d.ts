@@ -3,11 +3,27 @@
 // 런타임 등록은 plugins/ispark-ui.ts에서, 타입은 여기에서.
 import type {
   UiTable,
+  UiInput,
+  UiSelect,
+  UiModal,
+  UiTextarea,
+  UiEmpty,
+  UiToggle,
+  UiLoading,
+  UiCheckbox,
 } from '@leechanyong/ispark-ui'
 
 declare module 'vue' {
   interface GlobalComponents {
     UiTable: typeof UiTable
+    UiInput: typeof UiInput
+    UiSelect: typeof UiSelect
+    UiModal: typeof UiModal
+    UiTextarea: typeof UiTextarea
+    UiEmpty: typeof UiEmpty
+    UiToggle: typeof UiToggle
+    UiLoading: typeof UiLoading
+    UiCheckbox: typeof UiCheckbox
   }
 }
 
