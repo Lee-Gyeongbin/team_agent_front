@@ -8,6 +8,7 @@
 // - UiBadge: 사용처에서 도메인 특화 variant(data-line/manual-ai 등) 사용
 // → 라이브러리 variant 확장 또는 사용처 일괄 매핑 후 별도 PR
 import {
+  UiButton,
   UiTable,
   UiInput,
   UiSelect,
@@ -17,9 +18,11 @@ import {
   UiToggle,
   UiLoading,
   UiCheckbox,
+  UiBadge,
 } from '@leechanyong/ispark-ui'
 
 export default defineNuxtPlugin((nuxtApp) => {
+  nuxtApp.vueApp.component('UiButton', UiButton)
   nuxtApp.vueApp.component('UiTable', UiTable)
   nuxtApp.vueApp.component('UiInput', UiInput)
   nuxtApp.vueApp.component('UiSelect', UiSelect)
@@ -29,4 +32,5 @@ export default defineNuxtPlugin((nuxtApp) => {
   nuxtApp.vueApp.component('UiToggle', UiToggle)
   nuxtApp.vueApp.component('UiLoading', UiLoading)
   nuxtApp.vueApp.component('UiCheckbox', UiCheckbox)
+  nuxtApp.vueApp.component('UiBadge', UiBadge)
 })

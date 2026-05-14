@@ -17,15 +17,15 @@
           class="demo-box"
           style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap"
         >
-          <UiBadge variant="data-line">데이터분석</UiBadge>
-          <UiBadge variant="basic-chat">기본대화</UiBadge>
-          <UiBadge variant="manual-ai">매뉴얼AI</UiBadge>
+          <UiBadge variant="primary">데이터분석</UiBadge>
+          <UiBadge variant="warning">기본대화</UiBadge>
+          <UiBadge variant="info">매뉴얼AI</UiBadge>
           <UiBadge variant="default">기본</UiBadge>
         </div>
         <pre class="demo-code">
-&lt;UiBadge variant="data-line"&gt;데이터분석&lt;/UiBadge&gt;
-&lt;UiBadge variant="basic-chat"&gt;기본대화&lt;/UiBadge&gt;
-&lt;UiBadge variant="manual-ai"&gt;매뉴얼AI&lt;/UiBadge&gt;
+&lt;UiBadge variant="primary"&gt;데이터분석&lt;/UiBadge&gt;
+&lt;UiBadge variant="warning"&gt;기본대화&lt;/UiBadge&gt;
+&lt;UiBadge variant="info"&gt;매뉴얼AI&lt;/UiBadge&gt;
 &lt;UiBadge variant="default"&gt;기본&lt;/UiBadge&gt;</pre
         >
       </div>
@@ -40,35 +40,35 @@
           style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap"
         >
           <UiBadge
-            variant="data-line"
+            variant="primary"
             size="xs"
           >
             Extra Small
           </UiBadge>
           <UiBadge
-            variant="data-line"
+            variant="primary"
             size="sm"
           >
             Small
           </UiBadge>
           <UiBadge
-            variant="data-line"
+            variant="primary"
             size="md"
           >
             Medium
           </UiBadge>
           <UiBadge
-            variant="data-line"
+            variant="primary"
             size="lg"
           >
             Large
           </UiBadge>
         </div>
         <pre class="demo-code">
-&lt;UiBadge variant="data-line" size="xs"&gt;Extra Small&lt;/UiBadge&gt;
-&lt;UiBadge variant="data-line" size="sm"&gt;Small&lt;/UiBadge&gt;
-&lt;UiBadge variant="data-line" size="md"&gt;Medium&lt;/UiBadge&gt;
-&lt;UiBadge variant="data-line" size="lg"&gt;Large&lt;/UiBadge&gt;</pre
+&lt;UiBadge variant="primary" size="xs"&gt;Extra Small&lt;/UiBadge&gt;
+&lt;UiBadge variant="primary" size="sm"&gt;Small&lt;/UiBadge&gt;
+&lt;UiBadge variant="primary" size="md"&gt;Medium&lt;/UiBadge&gt;
+&lt;UiBadge variant="primary" size="lg"&gt;Large&lt;/UiBadge&gt;</pre
         >
       </div>
     </section>
@@ -81,19 +81,19 @@
           class="demo-box"
           style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap"
         >
-          <UiBadge variant="data-line">
+          <UiBadge variant="primary">
             <template #icon-left>
               <i class="icon icon-data-line-small size-14"></i>
             </template>
             데이터분석
           </UiBadge>
-          <UiBadge variant="basic-chat">
+          <UiBadge variant="warning">
             <template #icon-left>
               <i class="icon icon-comment-other size-14"></i>
             </template>
             기본대화
           </UiBadge>
-          <UiBadge variant="manual-ai">
+          <UiBadge variant="info">
             <template #icon-left>
               <i class="icon icon-book size-14"></i>
             </template>
@@ -101,7 +101,7 @@
           </UiBadge>
         </div>
         <pre class="demo-code">
-&lt;UiBadge variant="data-line"&gt;
+&lt;UiBadge variant="primary"&gt;
   &lt;template #icon-left&gt;
     &lt;i class="icon icon-data-line-small size-14"&gt;&lt;/i&gt;
   &lt;/template&gt;
@@ -146,7 +146,7 @@
           style="display: flex; gap: 12px; align-items: center"
         >
           <UiBadge
-            variant="data-line"
+            variant="primary"
             icon-only
           >
             <template #icon-left>
@@ -154,7 +154,7 @@
             </template>
           </UiBadge>
           <UiBadge
-            variant="basic-chat"
+            variant="warning"
             icon-only
           >
             <template #icon-left>
@@ -162,7 +162,7 @@
             </template>
           </UiBadge>
           <UiBadge
-            variant="manual-ai"
+            variant="info"
             icon-only
           >
             <template #icon-left>
@@ -179,7 +179,7 @@
           </UiBadge>
         </div>
         <pre class="demo-code">
-&lt;UiBadge variant="data-line" icon-only&gt;
+&lt;UiBadge variant="primary" icon-only&gt;
   &lt;template #icon-left&gt;
     &lt;i class="icon icon-data-line-small size-14"&gt;&lt;/i&gt;
   &lt;/template&gt;

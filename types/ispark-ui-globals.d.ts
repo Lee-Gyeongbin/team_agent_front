@@ -2,6 +2,7 @@
 // <UiTable> 등으로 직접 사용할 수 있도록 GlobalComponents 인터페이스에 선언.
 // 런타임 등록은 plugins/ispark-ui.ts에서, 타입은 여기에서.
 import type {
+  UiButton,
   UiTable,
   UiInput,
   UiSelect,
@@ -11,10 +12,12 @@ import type {
   UiToggle,
   UiLoading,
   UiCheckbox,
+  UiBadge,
 } from '@leechanyong/ispark-ui'
 
 declare module 'vue' {
   interface GlobalComponents {
+    UiButton: typeof UiButton
     UiTable: typeof UiTable
     UiInput: typeof UiInput
     UiSelect: typeof UiSelect
@@ -24,6 +27,7 @@ declare module 'vue' {
     UiToggle: typeof UiToggle
     UiLoading: typeof UiLoading
     UiCheckbox: typeof UiCheckbox
+    UiBadge: typeof UiBadge
   }
 }
 

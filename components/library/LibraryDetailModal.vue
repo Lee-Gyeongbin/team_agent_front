@@ -29,7 +29,7 @@
               <i class="icon icon-star-fill size-12"></i>
             </template>
           </UiButton>
-          <UiBadge variant="category">
+          <UiBadge variant="default">
             <template #icon-left>
               <i class="icon icon-diamond-small size-12"></i>
             </template>
