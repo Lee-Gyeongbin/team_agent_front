@@ -321,10 +321,17 @@ const handleFinishMeetingWithAudio = async (params: { meetingId: number; audioBl
     return await new Promise<boolean>((resolve) => {
       const es = openMeetingProcessingStream(params.meetingId)
 
+      const stepMessages: Record<string, string> = {
+        transcribe: '음성 인식 및 화자 분리 중입니다.',
+        minutes: '회의록 생성 중입니다.',
+        save: '데이터를 저장 중입니다.',
+      }
+
       es.addEventListener('progress', (e: MessageEvent) => {
         try {
-          const { message } = JSON.parse(e.data) as { step: string; message: string }
-          updateLoadingText(message)
+          const { step } = JSON.parse(e.data) as { step: string }
+          const message = stepMessages[step]
+          if (message) updateLoadingText(message)
         } catch {
           // 파싱 실패 무시
         }
