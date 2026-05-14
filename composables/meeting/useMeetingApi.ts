@@ -97,6 +97,15 @@ export const useMeetingApi = () => {
     return { successYn: true }
   }
 
+  /** 화자 일괄 저장 + 동명이인 머지 — 배치 API (utterances 합산 + 중복 행 삭제) */
+  const fetchSaveSpeakersMerge = async (params: {
+    meetingId: number
+    speakerList: Array<{ speakerId: number; speakerNm: string; speakerUserId: string }>
+    mergeSpeakerYn: 'Y' | 'N'
+  }): Promise<{ successYn: boolean }> => {
+    return post<{ successYn: boolean }>('/ai/meeting/saveSpeakers.do', params)
+  }
+
   /** 사용자 검색 (이름/메일/부서 부분 일치) — 백엔드 API 없음 */
   const fetchSearchUsers = async (keyword: string): Promise<{ list: MeetingUser[] }> => {
     // TODO: 백엔드 API 연동 필요
@@ -127,14 +136,14 @@ export const useMeetingApi = () => {
     return get<{ token: string; expiresAt: number }>('/meeting/realtime-token')
   }
 
-  /** 인포그래픽 목록 조회 (폴백용) */
-  const fetchInfographicList = async (meetingId: number): Promise<{ list: MeetingInfographic[] }> => {
-    return get<{ list: MeetingInfographic[] }>(`/ai/meeting/selectMeetingInfographicList.do?meetingId=${meetingId}`)
-  }
-
   /** 인포그래픽 생성 SSE 스트림 구독 */
   const openInfographicStream = (meetingId: number): EventSource => {
     return new EventSource(`/api/ai/meeting/streamInfographic.do?meetingId=${meetingId}`)
+  }
+
+  /** 인포그래픽 목록 조회 (폴백용) */
+  const fetchInfographicList = async (meetingId: number): Promise<{ list: MeetingInfographic[] }> => {
+    return get<{ list: MeetingInfographic[] }>(`/ai/meeting/selectMeetingInfographicList.do?meetingId=${meetingId}`)
   }
 
   /** 회의 파일 다운로드 */
@@ -150,6 +159,11 @@ export const useMeetingApi = () => {
     window.URL.revokeObjectURL(url)
   }
 
+  /** 오디오 파일 다운로드 Presigned URL 조회 */
+  const fetchDownloadAudioFileUrl = async (meetingId: number): Promise<{ url: string }> => {
+    return post<{ url: string }>('/ai/meeting/downloadAudioFile.do', { meetingId })
+  }
+
   return {
     fetchUserList,
     fetchMeetingList,
@@ -160,6 +174,7 @@ export const useMeetingApi = () => {
     fetchSaveSpeakerMapping,
     fetchSaveSpeaker,
     fetchSaveSpeakers,
+    fetchSaveSpeakersMerge,
     fetchSearchUsers,
     fetchMatchUsersByNames,
     fetchGenerateMeetingTitle,
@@ -167,6 +182,7 @@ export const useMeetingApi = () => {
     fetchRealtimeToken,
     fetchDownloadFile,
     fetchInfographicList,
+    fetchDownloadAudioFileUrl,
     openInfographicStream,
   }
 }

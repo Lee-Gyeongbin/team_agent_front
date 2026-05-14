@@ -17,6 +17,12 @@ export interface MeetingStep {
   status: MeetingStepStatus
 }
 
+/** 화자 머지 그룹 (동명이인 머지 시) */
+export interface MergeGroup {
+  keepSpeakerId: string      // 발화를 흡수할 화자 ID
+  removeSpeakerIds: string[] // 삭제될 화자 IDs
+}
+
 /** 화자 정보 */
 export interface MeetingSpeaker {
   id: string

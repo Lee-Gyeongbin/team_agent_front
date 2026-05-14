@@ -115,7 +115,6 @@
     </div>
 
     <!-- 모달 -->
-    <MeetingSpeakerEditModal />
     <MeetingMailSendModal />
     <MeetingInfoEditModal />
   </div>
@@ -258,7 +257,7 @@ const onClickBack = () => {
   navigateTo('/meeting')
 }
 
-// attendeeList, onSavedSpeakerMapping은 MeetingSpeakerEditModal 등 자식 컴포넌트에서
+// attendeeList, onSavedSpeakerMapping은 자식 컴포넌트에서
 // provide/inject 또는 props로 연결 시 활용
 provide('attendeeList', attendeeList)
 provide('onSavedSpeakerMapping', onSavedSpeakerMapping)
