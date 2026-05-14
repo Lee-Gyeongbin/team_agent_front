@@ -139,6 +139,11 @@ export const useMeetingApi = () => {
     return get<{ token: string; expiresAt: number }>('/meeting/realtime-token')
   }
 
+  /** 회의 처리 SSE 스트림 구독 (전사·화자분리·회의록생성·저장) */
+  const openMeetingProcessingStream = (meetingId: number): EventSource => {
+    return new EventSource(`/api/ai/meeting/streamMeetingProcessing.do?meetingId=${meetingId}`)
+  }
+
   /** 인포그래픽 생성 SSE 스트림 구독 */
   const openInfographicStream = (meetingId: number): EventSource => {
     return new EventSource(`/api/ai/meeting/streamInfographic.do?meetingId=${meetingId}`)
@@ -186,6 +191,7 @@ export const useMeetingApi = () => {
     fetchDownloadFile,
     fetchInfographicList,
     fetchDownloadAudioFileUrl,
+    openMeetingProcessingStream,
     openInfographicStream,
   }
 }

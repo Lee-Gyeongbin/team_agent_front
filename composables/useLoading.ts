@@ -64,6 +64,15 @@ export function closeLoading(): void {
   }
 }
 
+/**
+ * 로딩 중 텍스트만 즉시 교체 (SSE progress 이벤트 등에서 호출)
+ * openLoading/closeLoading 카운터는 그대로 유지
+ */
+export function updateLoadingText(text: string): void {
+  clearDynamicTextTimer()
+  loadingText.value = text
+}
+
 /** app.vue 로딩 렌더용 — 내부 전용 */
 export function useLoadingState() {
   return { isLoading, loadingText }
