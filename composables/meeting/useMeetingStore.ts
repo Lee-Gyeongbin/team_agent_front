@@ -33,6 +33,7 @@ const {
   fetchGenerateMeetingTitle,
   fetchDownloadFile,
   fetchDownloadAudioFileUrl,
+  openMeetingProcessingStream,
   openInfographicStream,
 } = useMeetingApi()
 const { handleDownloadByUrl } = useFileStore()
@@ -305,20 +306,50 @@ const handleCreateMeeting = async (params: {
 
 const handleFinishMeetingWithAudio = async (params: { meetingId: number; audioBlob: Blob }): Promise<boolean> => {
   isFinishing.value = true
-  openLoading({ text: '음성을 전사하고 회의록을 생성하는 중...' })
+  // step 1-2: 업로드 + DB저장 (빠르게 반환)
+  openLoading({ text: '오디오 파일을 업로드하는 중...' })
   try {
     const res = await fetchFinishMeetingWithAudio(params)
     if (!res.successYn) {
       openToast({ message: res.returnMsg || '회의 종료에 실패했습니다.', type: 'error' })
+      closeLoading()
+      isFinishing.value = false
       return false
     }
-    return true
+
+    // step 3-5: SSE 스트림 구독 — 로딩 텍스트를 실제 진행 단계로 업데이트
+    return await new Promise<boolean>((resolve) => {
+      const es = openMeetingProcessingStream(params.meetingId)
+
+      es.addEventListener('progress', (e: MessageEvent) => {
+        try {
+          const { message } = JSON.parse(e.data) as { step: string; message: string }
+          updateLoadingText(message)
+        } catch {
+          // 파싱 실패 무시
+        }
+      })
+
+      es.addEventListener('done', () => {
+        es.close()
+        isFinishing.value = false
+        closeLoading()
+        resolve(true)
+      })
+
+      es.addEventListener('error', () => {
+        es.close()
+        isFinishing.value = false
+        closeLoading()
+        openToast({ message: '회의 처리 중 오류가 발생했습니다.', type: 'error' })
+        resolve(false)
+      })
+    })
   } catch {
     openToast({ message: '회의 종료에 실패했습니다.', type: 'error' })
-    return false
-  } finally {
-    isFinishing.value = false
     closeLoading()
+    isFinishing.value = false
+    return false
   }
 }
 
