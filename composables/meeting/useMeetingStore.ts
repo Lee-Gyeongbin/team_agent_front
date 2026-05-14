@@ -6,18 +6,16 @@ import type {
   MeetingSpeaker as ApiMeetingSpeaker,
   MeetingUser as ApiMeetingUser,
   MeetingInfographic,
-} from '~/types/meeting'
-import type {
-  Meeting,
+  MeetingViewModel as Meeting,
   MeetingStep,
   MeetingStepKey,
   MeetingStepStatus,
-  MeetingSpeaker,
+  MeetingViewSpeaker as MeetingSpeaker,
   MeetingRecipient,
-  MeetingUser,
+  MeetingViewUser as MeetingUser,
   MeetingFileFormat,
   MergeGroup,
-} from '~/types/meeting2'
+} from '~/types/meeting'
 
 const {
   fetchUserList,

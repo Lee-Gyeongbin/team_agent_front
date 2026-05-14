@@ -5,8 +5,11 @@ import type {
   MeetingDetail,
   MeetingUser as ApiMeetingUser,
   MeetingInfographic,
+  MeetingViewModel as Meeting,
+  MeetingViewSpeaker as MeetingSpeaker,
+  MeetingViewUser as MeetingUser,
+  MeetingFileFormat,
 } from '~/types/meeting'
-import type { Meeting, MeetingSpeaker, MeetingUser, MeetingFileFormat } from '~/types/meeting2'
 
 // 🔽 Mock — 백엔드 API 없는 항목만 유지 (실제 엔드포인트 완성 시 useApi 패턴으로 교체)
 const MOCK_BASE = '/mock/meeting'

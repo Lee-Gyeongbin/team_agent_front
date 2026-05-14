@@ -122,8 +122,7 @@
 <script setup lang="ts">
 import { openConfirm } from '~/composables/useDialog'
 import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
-import type { User } from '~/types/meeting'
-import type { MeetingSpeaker, MergeGroup } from '~/types/meeting2'
+import type { User, MeetingViewSpeaker as MeetingSpeaker, MergeGroup } from '~/types/meeting'
 
 const { currentMeeting, meetingDetail, handleSaveSpeakers } = useMeetingStore()
 

@@ -46,7 +46,6 @@
 @use './page/my-page';
 @use './page/login';
 @use './page/meeting';
-@use './page/meeting2'; // 우리 페이지 — 다른팀 _meeting.scss의 동일 클래스를 우리 페이지에서 덮어쓰기
 @use './page/menu-manage';
 
 // ===================================
