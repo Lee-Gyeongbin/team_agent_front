@@ -141,9 +141,13 @@ export const useChatApi = () => {
       `/ai/chatbot/selectSharedChatLogList.do?shareToken=${encodeURIComponent(shareToken)}`,
     )
   }
-  // 공유 채팅방 복제 (대화 이어가기) TODO (프로토타입)
-  const fetchCloneChatRoom = async (sourceRoomId: string): Promise<{ data: ChatRoom }> => {
-    return post<{ data: ChatRoom }>('/ai/chatbot/cloneChatRoom.do', { sourceRoomId })
+
+  /** 공유 토큰 기준 대화 로그를 신규 roomId 채팅방으로 복사 (대화 이어가기 — 백엔드 미구현 시 API만 연결) */
+  const fetchCopySharedChatLogsToRoom = async (payload: {
+    roomId: string
+    shareToken: string
+  }): Promise<{ successYn?: boolean; returnMsg?: string }> => {
+    return post<{ successYn?: boolean; returnMsg?: string }>('/ai/chatbot/copySharedChatLogsToRoom.do', payload)
   }
 
   return {
@@ -169,6 +173,6 @@ export const useChatApi = () => {
     fetchDeleteChatRoom,
     fetchCreateShareToken,
     fetchSelectSharedChatLogList,
-    fetchCloneChatRoom,
+    fetchCopySharedChatLogsToRoom,
   }
 }

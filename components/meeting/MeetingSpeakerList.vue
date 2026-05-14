@@ -56,7 +56,6 @@
         :key="speaker.id"
         class="meeting2-speaker-chip"
         :class="{ 'is-editing': isEditMode }"
-        @click="onClickChip(speaker.id)"
       >
         <span
           class="meeting2-speaker-chip-avatar"
@@ -121,11 +120,11 @@
 </template>
 
 <script setup lang="ts">
+import { openConfirm } from '~/composables/useDialog'
 import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
-import type { User } from '~/types/meeting'
-import type { MeetingSpeaker } from '~/types/meeting2'
+import type { User, MeetingViewSpeaker as MeetingSpeaker, MergeGroup } from '~/types/meeting'
 
-const { currentMeeting, meetingDetail, openSpeakerEditModal, handleSaveSpeakers } = useMeetingStore()
+const { currentMeeting, meetingDetail, handleSaveSpeakers } = useMeetingStore()
 
 const speakers = computed(() => currentMeeting.value?.speakers ?? [])
 
@@ -209,16 +208,82 @@ const onPickDetailUser = (idx: number, user: User) => {
   nextTick(() => inputRefs.value[idx]?.focus())
 }
 
+type DuplicateNameGroup = {
+  name: string
+  indexes: number[]
+}
+
+const getDuplicateNameGroups = (list: MeetingSpeaker[]): DuplicateNameGroup[] => {
+  const nameIndexMap = new Map<string, number[]>()
+  list.forEach((speaker, idx) => {
+    const name = (speaker.name ?? '').trim()
+    if (!name) return
+    const indexes = nameIndexMap.get(name) ?? []
+    indexes.push(idx)
+    nameIndexMap.set(name, indexes)
+  })
+  return Array.from(nameIndexMap.entries())
+    .filter(([, indexes]) => indexes.length > 1)
+    .map(([name, indexes]) => ({ name, indexes }))
+}
+
+const applyMergedDuplicateNames = (list: MeetingSpeaker[], groups: DuplicateNameGroup[]) => {
+  groups.forEach((group) => {
+    const mergedUserId = group.indexes.map((idx) => list[idx]?.speakerUserId?.trim()).find((userId) => !!userId)
+    group.indexes.forEach((idx) => {
+      const row = list[idx]
+      if (!row) return
+      row.name = group.name
+      if (mergedUserId) row.speakerUserId = mergedUserId
+    })
+  })
+}
+
+const applyDistinctDuplicateNames = (list: MeetingSpeaker[], groups: DuplicateNameGroup[]) => {
+  groups.forEach((group) => {
+    group.indexes.forEach((idx, order) => {
+      const row = list[idx]
+      if (!row) return
+      row.name = `${group.name}${order + 1}`
+    })
+  })
+}
+
 const onSaveEdit = async () => {
+  const nextForm = editForm.value.map((speaker) => ({
+    ...speaker,
+    name: speaker.name.trim(),
+  }))
+
+  const duplicateGroups = getDuplicateNameGroups(nextForm)
+  let mergeGroups: MergeGroup[] | undefined
+
+  if (duplicateGroups.length > 0) {
+    const isMerge = await openConfirm({
+      title: '동명이인 확인',
+      message: '동명이인이 있습니다. 화자를 합치겠습니까?',
+    })
+    if (isMerge) {
+      applyMergedDuplicateNames(nextForm, duplicateGroups)
+      // 첫 번째 화자를 keepSpeaker로, 나머지를 removeSpeaker로 구성
+      mergeGroups = duplicateGroups.map((group) => ({
+        keepSpeakerId: nextForm[group.indexes[0]]!.id,
+        removeSpeakerIds: group.indexes.slice(1).map((idx) => nextForm[idx]!.id),
+      }))
+    } else {
+      applyDistinctDuplicateNames(nextForm, duplicateGroups)
+    }
+  }
+
   // 빈 이름 허용 (점진적 매핑) — trim만 적용
-  const payload: Partial<MeetingSpeaker>[] = editForm.value.map((s) => ({
+  const payload: Partial<MeetingSpeaker>[] = nextForm.map((s) => ({
     id: s.id,
-    name: s.name.trim(),
+    name: s.name,
     alias: s.alias,
     colorIndex: s.colorIndex,
     speakerUserId: s.speakerUserId,
   }))
-  await handleSaveSpeakers(payload)
+  await handleSaveSpeakers(payload, mergeGroups)
   if (suggestBlurTimer) {
     clearTimeout(suggestBlurTimer)
     suggestBlurTimer = null
@@ -235,12 +300,5 @@ const onEnterKey = (idx: number) => {
   } else {
     onSaveEdit()
   }
-}
-
-const onClickChip = (speakerId: string) => {
-  // 편집 모드에선 칩 클릭 무시 (input focus는 input 자체에 위임)
-  if (isEditMode.value) return
-  const speaker = currentMeeting.value?.speakers.find((s) => s.id === speakerId)
-  if (speaker) openSpeakerEditModal(speaker)
 }
 </script>

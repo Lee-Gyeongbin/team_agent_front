@@ -6,18 +6,49 @@
     </span>
 
     <div class="meeting2-stt-toolbar-actions">
-      <UiButton
-        variant="ghost"
-        size="sm"
-        :disabled="sttList.length === 0"
-        title="전체 텍스트 다운로드"
-        @click="onClickDownload"
+      <div
+        ref="downloadPickerRef"
+        class="meeting2-stt-download-picker"
       >
-        <template #icon-left>
-          <i class="icon-download size-14" />
-        </template>
-        다운로드
-      </UiButton>
+        <UiButton
+          variant="ghost"
+          size="md"
+          :disabled="sttList.length === 0"
+          title="다운로드"
+          @click="toggleDownloadPicker"
+        >
+          <template #icon-left>
+            <i class="icon-download size-20" />
+          </template>
+          다운로드
+          <template #icon-right>
+            <i
+              class="icon-arrow-down-gray size-12 meeting2-stt-download-caret"
+              :class="{ 'is-open': isDownloadPickerOpen }"
+            />
+          </template>
+        </UiButton>
+
+        <div
+          v-if="isDownloadPickerOpen"
+          class="meeting2-stt-download-pop"
+        >
+          <button
+            type="button"
+            class="meeting2-stt-download-item"
+            @click="onClickTextDownload"
+          >
+            텍스트 다운로드
+          </button>
+          <button
+            type="button"
+            class="meeting2-stt-download-item"
+            @click="onClickAudioDownload"
+          >
+            오디오 다운로드
+          </button>
+        </div>
+      </div>
 
       <input
         ref="audioFileInputRef"
@@ -29,13 +60,13 @@
 
       <UiButton
         variant="ghost"
-        size="sm"
+        size="md"
         :disabled="!isMeetingIdValid || isFinishing"
         title="로컬 오디오 파일로 전사·회의록 생성 (테스트용)"
         @click="onClickPickAudioFile"
       >
         <template #icon-left>
-          <i class="icon-attach-file size-14" />
+          <i class="icon-attach-file size-20" />
         </template>
         오디오 첨부
       </UiButton>
@@ -54,9 +85,19 @@ const props = defineProps<{
 }>()
 
 const { isRecording, isConnecting } = useRealtimeTranscription()
-const { currentMeeting, isFinishing, handleFinishMeetingWithAudio, handleSelectMeetingDetail } = useMeetingStore()
+const {
+  currentMeeting,
+  isFinishing,
+  handleSelectMeetingDetail,
+  activeTab,
+  handleFinishMeetingWithAudio,
+  handleDownloadSttText,
+  handleDownloadMeetingAudio,
+} = useMeetingStore()
 
 const audioFileInputRef = ref<HTMLInputElement | null>(null)
+const downloadPickerRef = ref<HTMLDivElement | null>(null)
+const isDownloadPickerOpen = ref(false)
 
 const isMeetingIdValid = computed(() => Number.isFinite(props.meetingId) && props.meetingId > 0)
 
@@ -75,12 +116,21 @@ const sttBadgeVariant = computed(() => {
   return 'default' as const
 })
 
-const onClickDownload = () => {
-  if (sttList.value.length === 0) {
-    openToast({ message: '다운로드할 텍스트가 없습니다.', type: 'warning' })
-    return
-  }
-  openToast({ message: '전체 텍스트가 다운로드되었습니다.' })
+const toggleDownloadPicker = () => {
+  if (sttList.value.length === 0) return
+  isDownloadPickerOpen.value = !isDownloadPickerOpen.value
+}
+
+const onClickTextDownload = () => {
+  isDownloadPickerOpen.value = false
+  const success = handleDownloadSttText()
+  if (success) openToast({ message: '텍스트 파일을 다운로드했습니다.' })
+}
+
+const onClickAudioDownload = async () => {
+  isDownloadPickerOpen.value = false
+  const success = await handleDownloadMeetingAudio()
+  if (success) openToast({ message: '오디오 파일을 다운로드했습니다.' })
 }
 
 const onClickPickAudioFile = () => {
@@ -117,8 +167,24 @@ const onAudioFileChange = async (e: Event) => {
   if (success) {
     await handleSelectMeetingDetail(props.meetingId)
     await navigateTo(`/meeting/${props.meetingId}`)
+    activeTab.value = 'infographic'
   }
 }
+
+const onDocClick = (e: MouseEvent) => {
+  if (!isDownloadPickerOpen.value) return
+  if (downloadPickerRef.value && !downloadPickerRef.value.contains(e.target as Node)) {
+    isDownloadPickerOpen.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('mousedown', onDocClick)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('mousedown', onDocClick)
+})
 </script>
 
 <style lang="scss" scoped>
@@ -126,6 +192,47 @@ const onAudioFileChange = async (e: Event) => {
   display: inline-flex;
   align-items: center;
   gap: $spacing-xs;
+}
+
+.meeting2-stt-download-picker {
+  position: relative;
+}
+
+.meeting2-stt-download-caret {
+  transition: transform 0.2s ease;
+
+  &.is-open {
+    transform: rotate(180deg);
+  }
+}
+
+.meeting2-stt-download-pop {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 144px;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  z-index: 20;
+}
+
+.meeting2-stt-download-item {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #334155;
+  cursor: pointer;
+
+  &:hover {
+    background: #f1f5f9;
+  }
 }
 
 // 파일 입력은 버튼으로만 열기 — 레이아웃에서 숨김

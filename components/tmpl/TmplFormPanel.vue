@@ -277,6 +277,7 @@
 
 <script setup lang="ts">
 import draggable from 'vuedraggable'
+import { openConfirm } from '~/composables/useDialog'
 import { openToast } from '~/composables/useToast'
 import type { TmplBaseInfo, TmplDocType, TmplField, TmplFormSavePayload } from '~/types/tmpl'
 
@@ -383,11 +384,24 @@ const tmplHtml = ref('')
 const tmplHtmlEditorRef = ref<{
   insertContentAtLastSelection: (content: string) => void
   removePlaceholderByJsonKey: (jsonKey: string) => void
+  renderTmplFieldByState: (opts: {
+    fieldId: string
+    jsonKey: string
+    fieldNm: string
+    mode: 'none' | 'table-only' | 'multiline-only' | 'table-multiline'
+  }) => void
   upsertTmplFieldTableRow: (opts: { fieldId: string; jsonKey: string; fieldNm: string }) => void
   removeTmplFieldTableRow: (fieldId: string) => void
-  upsertTmplMultilineSection: (opts: { fieldId: string; jsonKey: string; fieldNm: string }) => void
+  upsertTmplMultilineSection: (opts: {
+    fieldId: string
+    jsonKey: string
+    fieldNm: string
+    variant: 'table' | 'list'
+  }) => void
   removeTmplMultilineSection: (fieldId: string) => void
 } | null>(null)
+const fieldSyncTokenById = new Map<string, number>()
+let fieldSyncTokenSeed = 0
 
 const promptVariables = computed(() => {
   const src = llmPrompt.value ?? ''
@@ -423,24 +437,51 @@ const modalTitle = computed(() => (props.template ? '템플릿 수정' : '새 �
 
 const isTmplHtmlBlank = (h: string) => !h?.trim()
 
+const getFieldRenderMode = (row: TmplField): 'none' | 'table-only' | 'multiline-only' | 'table-multiline' => {
+  const isTable = row.layoutType === 'table'
+  const isMultiline = row.multilineYn === 'Y'
+  if (isTable && isMultiline) return 'table-multiline'
+  if (isTable) return 'table-only'
+  if (isMultiline) return 'multiline-only'
+  return 'none'
+}
+
+const syncFieldTemplateFragment = (row: TmplField) => {
+  const api = tmplHtmlEditorRef.value
+  if (!api) return
+
+  const k = row.jsonKey.trim()
+  const nm = row.fieldNm.trim()
+  const mode = k && nm ? getFieldRenderMode(row) : 'none'
+  api.renderTmplFieldByState({
+    fieldId: row.fieldId,
+    jsonKey: k,
+    fieldNm: nm,
+    mode,
+  })
+}
+
+const scheduleSyncFieldTemplateFragment = (fieldId: string) => {
+  const token = ++fieldSyncTokenSeed
+  fieldSyncTokenById.set(fieldId, token)
+  nextTick(() => {
+    if (fieldSyncTokenById.get(fieldId) !== token) return
+    const targetRow = fields.value.find((r) => r.fieldId === fieldId)
+    if (!targetRow) return
+    syncFieldTemplateFragment(targetRow)
+  })
+}
+
 /**
  * 항목 정의(layoutType / multilineYn)에 맞춰 HTML 조각 반영
  * — onFieldTableLayoutChange / onFieldMultilineChange 와 동일 규칙
  */
 const applyTmplHtmlFromFields = () => {
   if (tmplType.value !== 'T') return
-  const api = tmplHtmlEditorRef.value
-  if (!api) return
+  if (!tmplHtmlEditorRef.value) return
   const rows = [...fields.value].sort((a, b) => (a.sortOrd ?? 0) - (b.sortOrd ?? 0))
   for (const row of rows) {
-    const k = row.jsonKey.trim()
-    const nm = row.fieldNm.trim()
-    if (!k || !nm) continue
-    if (row.layoutType === 'table') {
-      api.upsertTmplFieldTableRow({ fieldId: row.fieldId, jsonKey: k, fieldNm: nm })
-    } else if (row.multilineYn === 'Y') {
-      api.upsertTmplMultilineSection({ fieldId: row.fieldId, jsonKey: k, fieldNm: nm })
-    }
+    syncFieldTemplateFragment(row)
   }
 }
 
@@ -531,6 +572,7 @@ const onAddFieldRow = () => {
       jsonKey: '',
       fieldNm: '',
       multilineYn: 'N',
+      layoutType: 'section',
       sortOrd: nextOrd,
     }),
   )
@@ -543,10 +585,15 @@ const onRemoveFieldRow = (fieldId: string) => {
   }
   const idx = fields.value.findIndex((r) => r.fieldId === fieldId)
   if (idx !== -1) fields.value.splice(idx, 1)
-  nextTick(() => {
-    tmplHtmlEditorRef.value?.removeTmplFieldTableRow(fieldId)
-    tmplHtmlEditorRef.value?.removeTmplMultilineSection(fieldId)
-  })
+  fieldSyncTokenById.delete(fieldId)
+  nextTick(() =>
+    tmplHtmlEditorRef.value?.renderTmplFieldByState({
+      fieldId,
+      jsonKey: '',
+      fieldNm: '',
+      mode: 'none',
+    }),
+  )
 }
 
 const onInsertDefaultPrompt = () => {
@@ -567,34 +614,14 @@ const onFieldTableLayoutChange = (row: TmplField, useTable: boolean) => {
       return
     }
     row.layoutType = 'table'
-    nextTick(() => {
-      tmplHtmlEditorRef.value?.removeTmplMultilineSection(row.fieldId)
-      tmplHtmlEditorRef.value?.upsertTmplFieldTableRow({
-        fieldId: row.fieldId,
-        jsonKey: k,
-        fieldNm: nm,
-      })
-    })
+    scheduleSyncFieldTemplateFragment(row.fieldId)
     return
   }
   row.layoutType = 'section'
-  nextTick(() => {
-    tmplHtmlEditorRef.value?.removeTmplFieldTableRow(row.fieldId)
-    if (row.multilineYn === 'Y') {
-      const k = row.jsonKey.trim()
-      const nm = row.fieldNm.trim()
-      if (k && nm) {
-        tmplHtmlEditorRef.value?.upsertTmplMultilineSection({
-          fieldId: row.fieldId,
-          jsonKey: k,
-          fieldNm: nm,
-        })
-      }
-    }
-  })
+  scheduleSyncFieldTemplateFragment(row.fieldId)
 }
 
-/** 여러 줄(section) — h2(항목명) + p({{jsonKey}}). 표 사용 중이면 플래그만 켜고 HTML에는 넣지 않음 */
+/** 여러 줄(section) — 최종 체크 조합 상태에 맞춰 HTML 조각 동기화 */
 const onFieldMultilineChange = (row: TmplField, isMultiline: boolean) => {
   if (isMultiline) {
     const k = row.jsonKey.trim()
@@ -604,18 +631,11 @@ const onFieldMultilineChange = (row: TmplField, isMultiline: boolean) => {
       return
     }
     row.multilineYn = 'Y'
-    if (row.layoutType === 'table') return
-    nextTick(() =>
-      tmplHtmlEditorRef.value?.upsertTmplMultilineSection({
-        fieldId: row.fieldId,
-        jsonKey: k,
-        fieldNm: nm,
-      }),
-    )
+    scheduleSyncFieldTemplateFragment(row.fieldId)
     return
   }
   row.multilineYn = 'N'
-  nextTick(() => tmplHtmlEditorRef.value?.removeTmplMultilineSection(row.fieldId))
+  scheduleSyncFieldTemplateFragment(row.fieldId)
 }
 
 // JSON 키 칩: 토글 선택 + 최초 선택 시 삽입 / 재클릭 시 선택 해제 + 에디터에서 {{key}} 제거
@@ -634,7 +654,7 @@ const onInsertJsonKeyToTemplate = (jsonKey: string) => {
   tmplHtmlEditorRef.value?.insertContentAtLastSelection(`{{${normalizedKey}}}`)
 }
 
-const onSave = () => {
+const onSave = async () => {
   const name = tmplNm.value.trim()
   if (!name) {
     openToast({ message: '템플릿 이름을 입력해 주세요.', type: 'error' })
@@ -665,6 +685,28 @@ const onSave = () => {
       openToast({ message: 'JSON 키가 중복되었습니다.', type: 'error' })
       return
     }
+    const htmlSrc = (tmplHtml.value ?? '').trim()
+    const hasJsonKeyInHtml = outFields.some((r) => htmlSrc.includes(`{{${r.jsonKey}}}`))
+    if (!hasJsonKeyInHtml) {
+      openToast({
+        message: 'HTML 문서 템플릿에 항목 정의의 JSON 키를 {{키}} 형식으로 최소 1개 이상 넣어 주세요. (예: {{title}})',
+        type: 'warning',
+      })
+      return
+    }
+  }
+
+  const trimmedPrompt = (llmPrompt.value ?? '').trim()
+  if (!trimmedPrompt) {
+    if (props.template?.sysTmplYn === 'Y') {
+      openToast({ message: 'LLM 프롬프트를 입력해 주세요.', type: 'error' })
+      return
+    }
+    const confirmed = await openConfirm({
+      message: '작성한 LLM 프롬프트가 없습니다. 기본 프롬프트를 삽입하시겠습니까?',
+    })
+    if (!confirmed) return
+    llmPrompt.value = tmplType.value === 'F' ? DEFAULT_PROMPT_TEXT_F : DEFAULT_PROMPT_TEXT_T
   }
 
   const promptBody = llmPrompt.value

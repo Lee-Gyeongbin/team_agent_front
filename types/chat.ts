@@ -1,6 +1,8 @@
 // ============================================
 // 타입 정의
 // ============================================
+import type { TodayMemeItem } from '~/utils/chat/todayMemeUtil'
+
 export interface ChatSocketPayload {
   type: string
   query: string
@@ -24,6 +26,11 @@ export interface ChatAttachmentMeta {
 export interface ChatMessageAttachment extends ChatAttachmentMeta {
   /** 전송 직후 로컬 미리보기(blob) — 새로고침 후에는 비어 있음 */
   localPreviewUrl?: string
+  /**
+   * TB_CHAT_FILE.CREATE_USER_ID (백 VO: ChatAttachmentItem.createUserId)
+   * 타인 업로드 판별·공유/이어가기 시 「파일 업로드됨」요약 표시용 (미제공이면 패널 유지)
+   */
+  uploadUserId?: string
 }
 
 /** /ai/chatbot/viewChatFile.do — FileService 뷰 응답과 동일 키 */
@@ -81,7 +88,7 @@ export interface ChatSocketMessage {
 export interface ChatMessage {
   id?: string
   logId: string
-  type: 'question' | 'answer' | 'survey'
+  type: 'question' | 'answer' | 'survey' | 'meme' | 'lunch' | 'news'
   qContent?: string
   rContent?: string
   createdAt: string
@@ -118,6 +125,19 @@ export interface ChatMessage {
   surveyAnswers?: Record<number, number>
   /** 산업심리 설문 메시지(type=survey) 전용: 제출 완료 여부 */
   surveySubmitted?: boolean
+  /** TodayMeme 메시지(type=meme) 전용: 제출 완료 여부 */
+  memeSubmitted?: boolean
+  /** NewsCurator 메시지(type=news) 전용: 제출 완료 여부 */
+  newsSubmitted?: boolean
+  /** NewsCurator 메시지(type=news) 전용: 사용자가 제출한 뉴스 분야 라벨(최대 3) */
+  newsSelectedCategories?: string[]
+  /**
+   * 로그 API → 메시지 변환 시 동일 row 답변(rcontent)에서 추출한 표시용 데이터
+   * (설문 surveyAnswers와 동일 패턴 — 카드·답변 행에 주입, 스레드 검색 없이 렌더)
+   */
+  memeDisplayItems?: TodayMemeItem[]
+  newsDisplayItems?: NewsCuratorItem[]
+  lunchDisplayRecommendations?: LunchRecommendationItem[]
   /** 점심 추천 카드(uiType=lunch-card) 전용: 사용자 응답 */
   lunchFormPayload?: LunchAgentFormPayload
   /** 점심 추천 카드(uiType=lunch-card) 전용: 제출 완료 여부 */
@@ -209,6 +229,16 @@ export interface LunchRecommendationItem {
   menu: string
   price: string
   address: string
+  imageUrl: string
+}
+
+export interface NewsCuratorItem {
+  rank: number
+  source: string
+  title: string
+  category: string
+  summary: string
+  sourceUrl: string
   imageUrl: string
 }
 

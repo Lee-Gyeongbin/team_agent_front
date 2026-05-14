@@ -11,6 +11,21 @@ import {
 import { useChatSendPipeline } from '~/composables/chat/useChatSendPipeline'
 import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
 import { parseLunchPayloadFromPrompt } from '~/utils/chat/lunchAgentUtil'
+import { isTodayMemePrompt, TODAY_MEME_AGENT_ID, TODAY_MEME_MODEL_ID } from '~/utils/chat/todayMemeUtil'
+
+/** 목록에 동일 방이 문자열/숫자 등 다른 형태로 중복되면 사이드바에서 활성 행이 여러 개로 보일 수 있어 통일·중복 제거 */
+function dedupeChatRoomsByNormalizedId(list: ChatRoom[]): ChatRoom[] {
+  const seen = new Set<string>()
+  const out: ChatRoom[] = []
+  for (const raw of list) {
+    const id = normalizeChatRoomId(raw.roomId)
+    if (!id || seen.has(id)) continue
+    seen.add(id)
+    out.push({ ...raw, roomId: id })
+  }
+  return out
+}
+
 const { user } = useAuth()
 const {
   fetchSelectChatRoomList,
@@ -22,6 +37,7 @@ const {
   fetchRenameChatRoom,
   fetchDeleteChatRoom,
   fetchSelectSharedChatLogList,
+  fetchCopySharedChatLogsToRoom,
   fetchSelectKnowledgeList,
 } = useChatApi()
 const {
@@ -45,6 +61,8 @@ const chatRoom = ref<ChatRoom>({ ...EMPTY_CHAT_ROOM })
 const chatRoomList = ref<ChatRoom[]>([])
 const chatMessage = ref('')
 const sharedMessages = ref<ChatMessage[]>([])
+/** 공유 페이지에서 조회된 원본 로그 행(대화 이어가기 시 svcTy·시드 질문 등 판별용) */
+const sharedChatLogRows = ref<ChatLogListRow[]>([])
 const shareTxt = ref('공유된 대화입니다.')
 const isExpired = ref(false)
 const knowledgeList = ref<KnowledgeItem[]>([])
@@ -69,6 +87,7 @@ export const useChatRooms = () => {
     const svcTy = lastRow?.svcTy ?? 'C'
     const lastAgentId = typeof lastRow?.agentId === 'string' ? lastRow.agentId.trim() : ''
     const isLunchPromptLog = !!parseLunchPayloadFromPrompt(String(lastRow?.qcontent ?? ''))
+    const isTodayMemePromptLog = isTodayMemePrompt(String(lastRow?.qcontent ?? ''))
     if (svcTy === 'M') {
       activeSearchModes.value = ['M']
       selectedChatAgentId.value = lastAgentId || null
@@ -83,7 +102,11 @@ export const useChatRooms = () => {
       await selectModelOptions()
     } else {
       activeSearchModes.value = []
-      selectedChatAgentId.value = isLunchPromptLog ? null : lastAgentId || null
+      // TodayMeme·점심 카드 전용 로그는 UI상 에이전트 선택을 유지하지 않음(채팅방 재진입 시)
+      selectedChatAgentId.value =
+        isLunchPromptLog || isTodayMemePromptLog || lastAgentId === TODAY_MEME_AGENT_ID || lastAgentId === 'AG000012'
+          ? null
+          : lastAgentId || null
       // 일반 질의 시 모델 옵션 조회
       await selectModelOptions()
     }
@@ -103,18 +126,23 @@ export const useChatRooms = () => {
     }
   }
   // 채팅방 목록 조회
-  const selectChatRoomList = async () => {
+  const selectChatRoomList = async (options?: { skipLoading?: boolean }) => {
     try {
       const userId = user.value?.userId
       if (!userId) return []
-      openLoading({ text: '채팅방 목록을 불러오는 중...' })
+      const skipLoading = options?.skipLoading === true
+      if (!skipLoading) {
+        openLoading({ text: '채팅방 목록을 불러오는 중...' })
+      }
       let res: { list: ChatRoom[] }
       try {
         res = await fetchSelectChatRoomList(userId)
       } finally {
-        closeLoading()
+        if (!skipLoading) {
+          closeLoading()
+        }
       }
-      chatRoomList.value = res.list
+      chatRoomList.value = dedupeChatRoomsByNormalizedId(res.list ?? [])
       return chatRoomList.value
     } catch (error) {
       console.error('채팅방 목록 조회 실패:', error)
@@ -154,16 +182,17 @@ export const useChatRooms = () => {
       fixYn: 'N',
     }
     chatRoom.value = createdRoom
-    chatRoomList.value = [
-      createdRoom,
-      ...chatRoomList.value.filter((room) => normalizeChatRoomId(room.roomId) !== newRoomId),
-    ]
+    // 고정 검색기록 위에 새 방이 오지 않도록: 고정 목록 아래(비고정 구역 선두)에 삽입
+    const prev = chatRoomList.value.filter((room) => normalizeChatRoomId(room.roomId) !== newRoomId)
+    const pinned = prev.filter((room) => room.fixYn === 'Y')
+    const unpinned = prev.filter((room) => room.fixYn !== 'Y')
+    chatRoomList.value = dedupeChatRoomsByNormalizedId([...pinned, createdRoom, ...unpinned])
 
     const sent = await executeSendPipeline({
       content: qContent,
       roomId: createdRoom.roomId,
       svcTy,
-      modelId: selectedModelOption.value,
+      modelId: selectedChatAgentId.value === 'AG000011' ? TODAY_MEME_MODEL_ID : selectedModelOption.value,
       refId: buildRefIdForPayload(),
       agentId: selectedChatAgentId.value ?? '',
       files,
@@ -287,6 +316,7 @@ export const useChatRooms = () => {
   const loadSharedChatLog = async (shareToken: string) => {
     if (!shareToken) return
     isExpired.value = false
+    sharedChatLogRows.value = []
     openLoading({ text: '공유 대화를 불러오는 중...' })
     try {
       const res = await fetchSelectSharedChatLogList(shareToken)
@@ -302,12 +332,71 @@ export const useChatRooms = () => {
         sharedMessages.value = []
         return
       }
+      sharedChatLogRows.value = rawList
       const flattened = rawList.flatMap(logRowToMessages)
       flattened.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
       sharedMessages.value = flattened
     } catch {
       openToast({ message: '대화를 불러올 수 없습니다. 접근 권한이 없거나 존재하지 않는 대화입니다.', type: 'error' })
       sharedMessages.value = []
+      sharedChatLogRows.value = []
+    } finally {
+      closeLoading()
+    }
+  }
+
+  /**
+   * 대화 이어가기: 신규 방 생성 후 공유 로그 복사 API 호출 → /chat/[roomId]
+   * - 신규 방은 기존 `createChatRoom.do`만 사용(WebSocket 미전송)
+   * - 로그 일괄 복사는 `copySharedChatLogsToRoom.do`(roomId + shareToken) — 백엔드 구현 대기
+   */
+  const handleForkSharedChat = async (shareToken: string): Promise<boolean> => {
+    const token = String(shareToken || '').trim()
+    if (!token) return false
+    if (!user.value?.userId) {
+      openToast({ message: '로그인 후 이용할 수 있습니다.', type: 'warning' })
+      return false
+    }
+    if (!sharedChatLogRows.value.length) {
+      openToast({ message: '복사할 대화가 없습니다.', type: 'warning' })
+      return false
+    }
+
+    const sorted = [...sharedChatLogRows.value].sort((a, b) =>
+      String(a.createDt ?? '').localeCompare(String(b.createDt ?? '')),
+    )
+    const firstRow = sorted[0]
+    const lastRow = sorted[sorted.length - 1]
+
+    let seedContent = String(firstRow?.qcontent ?? '').trim()
+    if (!seedContent) seedContent = '공유된 대화 이어가기'
+
+    let svcTy = String(lastRow?.svcTy ?? 'C')
+      .trim()
+      .toUpperCase()
+    if (svcTy !== 'M' && svcTy !== 'S') svcTy = 'C'
+
+    openLoading({ text: '내 대화로 가져오는 중...' })
+    try {
+      const createRes = await fetchCreateChatRoom(seedContent, svcTy)
+      const newRoomId = normalizeChatRoomId(createRes.data.roomId)
+      if (!newRoomId) {
+        throw new Error('채팅방 ID를 받지 못했습니다.')
+      }
+
+      const copyRes = await fetchCopySharedChatLogsToRoom({ roomId: newRoomId, shareToken: token })
+      if (copyRes.successYn === false) {
+        throw new Error(copyRes.returnMsg || '내 대화로 가져오기에 실패했습니다.')
+      }
+
+      await selectChatRoomList({ skipLoading: true })
+      openToast({ message: '대화를 이어나갑니다.', type: 'success' })
+      await navigateTo(`/chat/${newRoomId}`)
+      return true
+    } catch (error) {
+      const msg = error instanceof Error && error.message.trim() ? error.message : '대화 이어가기에 실패했습니다.'
+      openToast({ message: msg, type: 'error' })
+      return false
     } finally {
       closeLoading()
     }
@@ -351,6 +440,7 @@ export const useChatRooms = () => {
     handleRenameChatRoom,
     handleDeleteChatRoom,
     loadSharedChatLog,
+    handleForkSharedChat,
     onCopy,
     handleSelectKnowledge,
     knowledgeList,

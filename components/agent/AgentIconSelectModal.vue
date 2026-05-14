@@ -3,7 +3,7 @@
     :is-open="isOpen"
     title="아이콘 선택"
     max-width="420px"
-    custom-class="agent-icon-select-modal"
+    custom-class="agent-icon-select-modal modal-dialog--above-side-panel"
     @close="$emit('close')"
   >
     <div class="icon-grid">

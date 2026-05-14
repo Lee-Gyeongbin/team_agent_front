@@ -59,6 +59,12 @@ const guessMimeFromFileName = (fileName: string): string => {
   return ''
 }
 
+/**
+ * selectChatLogList chatAttachmentList 원소(ChatAttachmentItem)의 createUserId(TB_CHAT_FILE.CREATE_USER_ID).
+ * 클라이언트 비교용 필드 ChatMessageAttachment.uploadUserId 에만 채운다.
+ */
+const pickUploaderIdFromAttachmentVo = (o: Record<string, unknown>): string => String(o.createUserId ?? '').trim()
+
 const normalizeChatAttachmentItems = (items: unknown[]): ChatMessageAttachment[] => {
   const out: ChatMessageAttachment[] = []
   for (const item of items) {
@@ -69,14 +75,37 @@ const normalizeChatAttachmentItems = (items: unknown[]): ChatMessageAttachment[]
     if (!chatFileId || !fileName) continue
     let mimeType = String(o.mimeType ?? '').trim()
     if (!mimeType) mimeType = guessMimeFromFileName(fileName)
+    const uploadUserId = pickUploaderIdFromAttachmentVo(o)
     out.push({
       chatFileId,
       fileName,
       filePath: String(o.filePath ?? '').trim(),
       mimeType,
+      ...(uploadUserId ? { uploadUserId } : {}),
     })
   }
   return out
+}
+
+/**
+ * 공유 페이지이거나, 첨부 업로더(TB_CHAT_FILE.CREATE_USER_ID → uploadUserId)가 현재 사용자와 다른 항목이 있는 경우 패널 대신 안내 한 줄 표시.
+ * createUserId가 항목에 전혀 없으면 로그 구버전 간주 후 전체 패널 유지.
+ */
+export const attachmentsRequireSummaryIndicator = (
+  attachments: ChatMessageAttachment[] | undefined,
+  opts: { isSharePage: boolean; currentUserId?: string },
+): boolean => {
+  const list = attachments ?? []
+  if (list.length === 0) return false
+  if (opts.isSharePage) return true
+  const me = String(opts.currentUserId ?? '').trim()
+  const hasSpecifiedOwner = list.some((a) => String(a.uploadUserId ?? '').trim())
+  if (!hasSpecifiedOwner) return false
+  return list.some((a) => {
+    const uid = String(a.uploadUserId ?? '').trim()
+    if (!uid) return false
+    return !me || uid !== me
+  })
 }
 
 /** selectChatLogList 응답 행 → 질문 메시지용 첨부 배열 */

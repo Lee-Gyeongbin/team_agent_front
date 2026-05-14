@@ -52,14 +52,15 @@
           @scroll="onSearchHistoryScroll"
         >
           <div
-            v-for="entry in displayedChatRooms"
-            :key="entry.roomId"
+            v-for="(entry, historyIdx) in displayedChatRooms"
+            :key="chatRoomRowKey(entry, historyIdx)"
             class="search-history-item"
+            :data-room-id="normalizeChatRoomId(entry.roomId)"
             :class="{
-              'is-active': activeRoomId === String(entry.roomId),
-              'is-dropdown-open': openMoreDropdownId === entry.roomId,
+              'is-active': activeRoomId === normalizeChatRoomId(entry.roomId),
+              'is-dropdown-open': openMoreDropdownId === normalizeChatRoomId(entry.roomId),
               'is-pinned': entry.fixYn === 'Y',
-              'is-revealing': searchHistoryRevealIdSet.has(String(entry.roomId)),
+              'is-revealing': searchHistoryRevealIdSet.has(normalizeChatRoomId(entry.roomId)),
             }"
             @click="onClickHistory(entry)"
           >
@@ -69,8 +70,8 @@
             />
             <span class="search-history-text">{{ entry.title }}</span>
             <DropdownMenuRoot
-              :open="openMoreDropdownId === entry.roomId"
-              @update:open="(open) => (openMoreDropdownId = open ? entry.roomId : null)"
+              :open="openMoreDropdownId === normalizeChatRoomId(entry.roomId)"
+              @update:open="onHistoryDropdownOpenChange(entry, $event)"
             >
               <DropdownMenuTrigger as-child>
                 <button
@@ -200,6 +201,7 @@ import {
 } from 'radix-vue'
 import type { MenuItem } from '~/types/menu'
 import type { ChatRoom } from '~/types/chat'
+import { normalizeChatRoomId, parseChatRoomIdFromChatPath } from '~/utils/chat/chatRoomIdUtil'
 const { chatRoomList, selectChatRoomList, handleRenameChatRoom, handleDeleteChatRoom, handlePinChatRoom } =
   useChatRooms()
 const route = useRoute()
@@ -223,6 +225,12 @@ const searchHistoryVisibleCount = ref(SEARCH_HISTORY_INITIAL)
 const isSearchHistoryLoadingMore = ref(false)
 const pendingSearchHistorySkeletonCount = ref(0)
 const searchHistoryRevealIdSet = shallowRef<Set<string>>(new Set())
+
+/** API가 숫자/문자 혼재로 내려줄 때 :key·활성 행·드롭다운 open 상태가 어긋나 DOM 재사용 버그가 나지 않도록 통일 */
+function chatRoomRowKey(entry: ChatRoom, idx: number) {
+  const id = normalizeChatRoomId(entry.roomId)
+  return id ? id : `room-unknown-${idx}`
+}
 
 const displayedChatRooms = computed(() => {
   const list = chatRoomList.value
@@ -307,7 +315,7 @@ function finishSearchHistoryLoadMore() {
     pendingSearchHistorySkeletonCount.value = 0
     return
   }
-  const addedIds = list.slice(prev, prev + add).map((r) => String(r.roomId))
+  const addedIds = list.slice(prev, prev + add).map((r) => normalizeChatRoomId(r.roomId))
   searchHistoryVisibleCount.value = prev + add
   isSearchHistoryLoadingMore.value = false
   pendingSearchHistorySkeletonCount.value = 0
@@ -370,14 +378,15 @@ onUnmounted(() => {
 const isExpanded = ref(false)
 const isSearchHistoryOpen = ref(true)
 const isSettingsDropdownOpen = ref(false)
-/** 검색기록 항목 중 '더보기' 드롭다운이 열린 entry.id (열려 있으면 호버 배경 유지) */
+/** 검색기록 항목 중 '더보기' 드롭다운이 열린 roomId (normalize된 문자열) */
 const openMoreDropdownId = ref<string | null>(null)
 
-// route.params.id를 단일 진실 원천으로 사용
-const activeRoomId = computed(() => {
-  const id = route.params.id
-  return typeof id === 'string' ? id : ''
-})
+function onHistoryDropdownOpenChange(entry: ChatRoom, open: boolean) {
+  openMoreDropdownId.value = open ? normalizeChatRoomId(entry.roomId) : null
+}
+
+// URL 경로 기준 활성 방 — 동적 라우트 전환 시 params 반영 타이밍보다 일관됨
+const activeRoomId = computed(() => parseChatRoomIdFromChatPath(route.path))
 
 // 사이드바 너비를 CSS 변수로 전달 (채팅 패널 레이아웃 계산용)
 watch(
@@ -388,9 +397,44 @@ watch(
   { immediate: true },
 )
 
-function onClickHistory(entry: ChatRoom) {
-  navigateTo(`/chat/${entry.roomId}`)
+async function onClickHistory(entry: ChatRoom) {
+  const id = normalizeChatRoomId(entry.roomId)
+  if (!id) return
+  // 다른 행 클릭 시 열려 있던 더보기·radix 상태가 클릭/네비를 방해하지 않도록 닫음
+  openMoreDropdownId.value = null
+  const targetPath = `/chat/${id}`
+  if (route.path === targetPath || route.path === `${targetPath}/`) return
+  await navigateTo({ path: targetPath })
 }
+
+/** 라우트상 활성 방이 클라이언트 슬라이스 밖이면 표시 개수를 늘려 하이라이트·클릭 대상이 일치하도록 함 */
+function ensureSearchHistoryShowsRoom(roomIdNorm: string) {
+  if (!roomIdNorm) return
+  const idx = chatRoomList.value.findIndex((r) => normalizeChatRoomId(r.roomId) === roomIdNorm)
+  if (idx < 0) return
+  const need = idx + 1
+  if (searchHistoryVisibleCount.value < need) {
+    searchHistoryVisibleCount.value = Math.min(need, chatRoomList.value.length)
+  }
+}
+
+function scrollActiveHistoryRowIntoView(roomIdNorm: string) {
+  if (!isExpanded.value || !isSearchHistoryOpen.value || !roomIdNorm) return
+  const container = searchHistoryScrollEl.value
+  if (!container) return
+  const escaped =
+    typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+      ? CSS.escape(roomIdNorm)
+      : roomIdNorm.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+  const row = container.querySelector<HTMLElement>(`[data-room-id="${escaped}"]`)
+  row?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+}
+
+watch([activeRoomId, chatRoomList, isExpanded, isSearchHistoryOpen], async ([id]) => {
+  ensureSearchHistoryShowsRoom(id)
+  await nextTick()
+  requestAnimationFrame(() => scrollActiveHistoryRowIntoView(id))
+})
 
 function toggleExpanded() {
   isExpanded.value = !isExpanded.value

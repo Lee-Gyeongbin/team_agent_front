@@ -5,16 +5,17 @@
   >
     <!-- 왼쪽 리사이즈 핸들 -->
     <div
-      class="library-detail-modal-resize-handle"
-      :class="{ 'is-dragging': isResizing }"
-      @mousedown="onResizeStart"
-    ></div>
-    <div
       ref="contentRef"
       class="library-detail-modal-content"
       :style="{ maxWidth: modalWidth + 'px' }"
       @scroll="handleScroll"
     >
+      <!-- 왼쪽 리사이즈 핸들 — 콘텐츠 내부에 두어 헤더·버튼보다 아래 레이어(클릭 가로막힘 방지) -->
+      <div
+        class="library-detail-modal-resize-handle"
+        :class="{ 'is-dragging': isResizing }"
+        @mousedown="onResizeStart"
+      ></div>
       <!-- 상단 헤더 -->
       <div class="library-detail-modal-header">
         <!-- 뱃지 -->
@@ -196,19 +197,10 @@
             </template>
           </UiButton>
 
-          <ChatLunchAgentCard
-            v-if="parsedLunchRecommendations.length"
-            :recommendations="parsedLunchRecommendations"
-            :theme-icon-class-nm="displayData?.iconClassNm ?? ''"
-            :theme-color-hex="displayData?.colorHex ?? ''"
+          <LibraryCardResponseBody
+            v-if="displayData"
+            :item="displayData"
           />
-          <!-- eslint-disable vue/no-v-html — toHtmlContent 내 안전 처리 적용 -->
-          <div
-            v-else
-            class="message-content markdown-body"
-            v-html="responseRenderedHtml"
-          />
-          <!-- eslint-enable vue/no-v-html -->
         </div>
 
         <!-- 참조 매뉴얼 (매뉴얼AI 타입) -->
@@ -336,7 +328,6 @@
 </template>
 
 <script setup lang="ts">
-import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import { parseLunchPayloadFromPrompt } from '~/utils/chat/lunchAgentUtil'
 import { parseSurveyAnswersFromPrompt } from '~/utils/chat/psychologyConsultUtil'
 import type { LibraryCardDetail, DocItem, TableDataItem, ChartStatItem, ChartDetailCdItem } from '~/types/library'
@@ -458,8 +449,7 @@ const surveyReadonlyAnswers = computed<Record<number, number>>(() =>
 /** 점심 추천 전송 프롬프트(qcontent) — 검색기록·채팅과 동일하게 제출 완료 카드로 표시 */
 const lunchQuestionPayload = computed(() => parseLunchPayloadFromPrompt(displayData.value?.qcontent ?? ''))
 
-/** 시스템 응답 마크다운 렌더 결과 — v-html (ChatMessageItem과 동일) */
-const responseRenderedHtml = computed(() => toHtmlContent(displayData.value?.rcontent ?? ''))
+/** 시스템 응답 복사 버튼 노출 — 점심 JSON 답변은 별도 UI */
 const parseLunchRecommendations = (raw: string): LunchRecommendationItem[] => {
   try {
     const parsed = JSON.parse(raw) as unknown

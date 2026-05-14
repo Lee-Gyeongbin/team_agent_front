@@ -176,7 +176,8 @@ $sidebar-btn-bg-hover: $color-border;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  /* 스크롤은 `.sidebar-section-body`만 담당 — 중첩 스크롤 시 목록 잘림 방지 */
+  overflow: hidden;
 }
 
 .sidebar-section-head {

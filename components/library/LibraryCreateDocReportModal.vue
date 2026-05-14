@@ -259,7 +259,7 @@ const refineChatListRef = ref<HTMLElement | null>(null)
 let refineChatIdSeq = 0
 
 // ===== 웹에디터 HTML 상태 =====
-/** 에디터와 연결된 HTML 문자열 — buildReportEditorHtml 결과가 들어가고, 편집 시 업데이트됨 */
+/** 에디터와 연결된 HTML 문자열 — 초기 tmplHtml/보완 결과를 표시하고, 편집 시 업데이트됨 */
 const editorHtml = ref('')
 /** 외부(AI 보완/초기 로딩)에서 에디터를 업데이트하는 동안 write-back을 막는 플래그 */
 let isExternalEditorUpdate = false
@@ -268,10 +268,15 @@ let writebackTimer: ReturnType<typeof setTimeout> | null = null
 /** report → editorHtml 동기화 (모달 열기·AI 보완 완료 시) */
 const setEditorFromReport = () => {
   isExternalEditorUpdate = true
-  const rows = getLibraryReportRows(report.value ?? {})
-  const tableHtml = buildReportEditorHtml(report.value ?? {}, rows)
-  // tmplHtml이 있으면 표 위에 머리글 HTML 삽입
-  editorHtml.value = props.tmplHtml ? `${props.tmplHtml}${tableHtml}` : tableHtml
+  const tmpl = props.tmplHtml?.trim() ?? ''
+  if (tmpl) {
+    // 템플릿형: API tmplHtml 그대로 (표·머리글 구조는 템플릿에 따름)
+    editorHtml.value = props.tmplHtml
+  } else {
+    // 자유형식: JSON(title_label/title …) → 에디터용 2열 표 HTML
+    const rows = getLibraryReportRows(report.value)
+    editorHtml.value = buildReportEditorHtml(report.value, rows)
+  }
   // Vue watcher는 동기적으로 실행되므로 nextTick에서 플래그 해제
   nextTick(() => {
     isExternalEditorUpdate = false

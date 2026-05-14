@@ -20,6 +20,8 @@
           @on-view-source="emit('on-view-source', $event)"
           @on-view-visualization="emit('on-view-visualization', $event)"
           @on-submit-lunch-card="onSubmitLunchCard"
+          @on-submit-news-card="onSubmitNewsCard"
+          @on-news-card-close="emit('on-news-card-close', $event)"
           @on-lunch-card-close="emit('on-lunch-card-close', $event)"
           @on-select-category="
             (logId: string, categoryValue: string, categoryNm: string) =>
@@ -27,6 +29,8 @@
           "
           @on-survey-submit="emit('on-survey-submit', $event)"
           @on-survey-close="emit('on-survey-close', $event)"
+          @on-meme-intro-complete="emit('on-meme-intro-complete', $event)"
+          @on-news-intro-complete="emit('on-news-intro-complete', $event)"
         />
       </div>
     </div>
@@ -68,12 +72,19 @@ const emit = defineEmits<{
   'on-view-visualization': [id: string]
   'on-survey-submit': [logId: string]
   'on-survey-close': [logId: string]
+  'on-meme-intro-complete': [logId: string]
+  'on-news-intro-complete': [logId: string]
   'on-lunch-card-submit': [logId: string, payload: LunchAgentFormPayload]
+  'on-news-card-submit': [logId: string, categories: string[]]
+  'on-news-card-close': [logId: string]
   'on-lunch-card-close': [logId: string]
 }>()
 
 const onSubmitLunchCard = (logId: string, payload: LunchAgentFormPayload) => {
   emit('on-lunch-card-submit', logId, payload)
+}
+const onSubmitNewsCard = (logId: string, categories: string[]) => {
+  emit('on-news-card-submit', logId, categories)
 }
 
 const listRef = ref<HTMLElement | null>(null)

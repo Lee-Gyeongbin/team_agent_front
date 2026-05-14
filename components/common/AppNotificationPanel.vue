@@ -62,6 +62,24 @@
             </div>
             <div class="notif-title">{{ item.title }}</div>
             <p class="notif-message">{{ item.content }}</p>
+            <!-- KS(지식 공유) 알림: 받기 버튼 -->
+            <div
+              v-if="item.notifyTyCd === 'KS'"
+              class="notif-receive-wrap"
+            >
+              <button
+                v-if="item.saveYn === 'N'"
+                class="notif-receive-btn"
+                @click.stop="onClickReceive(item)"
+              >
+                받기
+              </button>
+              <span
+                v-else
+                class="notif-receive-done"
+                >공유완료</span
+              >
+            </div>
           </div>
           <button
             class="notif-dismiss-btn"
@@ -88,9 +106,30 @@
       </div>
     </div>
   </div>
+
+  <!-- KS(지식 공유) 카테고리 선택 모달 -->
+  <UiModal
+    :is-open="isKsModalOpen"
+    title="지식창고 카테고리 선택"
+    position="center"
+    max-width="420px"
+    custom-class="modal-ks-receive"
+    @close="handleCloseKsModal"
+  >
+    <ReceiveCategoryModal
+      :card="ksCardDetail"
+      :knowledge-list="ksKnowledgeList"
+      :loading="ksModalLoading"
+      @close="handleCloseKsModal"
+      @confirm="onKsCategoryConfirm"
+    />
+  </UiModal>
 </template>
 
 <script setup lang="ts">
+import type { Notify } from '~/types/global'
+import ReceiveCategoryModal from '~/components/common/ReceiveCategoryModal.vue'
+
 const {
   notifyList,
   notifyLoading,
@@ -100,6 +139,13 @@ const {
   handleMarkRead,
   handleMarkAllRead,
   handleDismissNotify,
+  isKsModalOpen,
+  ksModalLoading,
+  ksKnowledgeList,
+  ksCardDetail,
+  handleOpenKsModal,
+  handleCloseKsModal,
+  handleReceiveKnowledge,
 } = useNotifyStore()
 
 const isNotificationOpen = ref(false)
@@ -113,6 +159,17 @@ const onClickOutside = (e: MouseEvent) => {
   if (notificationWrapRef.value && !notificationWrapRef.value.contains(e.target as Node)) {
     isNotificationOpen.value = false
   }
+}
+
+/** KS 알림 받기 — 패널 닫고 카테고리 모달 오픈 */
+const onClickReceive = (item: Notify) => {
+  isNotificationOpen.value = false
+  handleOpenKsModal(item)
+}
+
+/** 카테고리 선택 확인 — 선택한 카테고리로 지식 카드 복사 저장 */
+const onKsCategoryConfirm = (categoryId: string) => {
+  handleReceiveKnowledge(categoryId)
 }
 
 onMounted(() => document.addEventListener('click', onClickOutside))
@@ -301,6 +358,43 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside))
   @include ellipsis(2);
 }
 
+.notif-receive-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: $border-radius-sm;
+  border: 1px solid var(--color-primary);
+  background: none;
+  color: var(--color-primary);
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+  transition:
+    background-color $transition-fast,
+    color $transition-fast;
+
+  &:hover {
+    background-color: var(--color-primary);
+    color: #fff;
+  }
+}
+
+.notif-receive-wrap {
+  margin-top: 6px;
+  text-align: right;
+}
+
+.notif-receive-done {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: $border-radius-sm;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+}
+
 .notif-dismiss-btn {
   flex-shrink: 0;
   width: 20px;
@@ -330,5 +424,14 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside))
   text-align: center;
   font-size: $font-size-sm;
   color: $color-text-muted;
+}
+</style>
+
+<!-- KS 받기 모달: 다른 모달·사이드패널보다 최상위로 표시 -->
+<style lang="scss">
+@use '~/assets/styles/utils/variables' as *;
+
+.modal-ks-receive {
+  z-index: 460 !important;
 }
 </style>

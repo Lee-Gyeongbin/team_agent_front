@@ -8,7 +8,9 @@ import type {
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import { parseChatAttachmentsFromLogRow } from '~/utils/chat/chatAttachmentDisplayUtil'
 import { parseSurveyAnswersFromPrompt } from '~/utils/chat/psychologyConsultUtil'
-import { parseLunchPayloadFromPrompt } from '~/utils/chat/lunchAgentUtil'
+import { parseLunchPayloadFromPrompt, parseLunchRecommendationsFromAnswerRContent } from '~/utils/chat/lunchAgentUtil'
+import { isTodayMemePrompt, parseTodayMemeItems, TODAY_MEME_AGENT_ID } from '~/utils/chat/todayMemeUtil'
+import { parseNewsCuratorItems, parseNewsCuratorPromptMeta } from '~/utils/chat/newsCuratorUtil'
 
 // 채팅 메시지/스트리밍 상태는 모듈 레벨에서 단일 인스턴스로 공유
 const messages = ref<ChatMessage[]>([])
@@ -108,13 +110,48 @@ export const useChatMessages = () => {
       }
     }
 
+    // TodayMeme 에이전트: 프롬프트 패턴이면 readonly meme 메시지로 대체
+    if (agentId === TODAY_MEME_AGENT_ID && isTodayMemePrompt(row.qcontent ?? '')) {
+      const memeDisplayItems = parseTodayMemeItems(String(row.rcontent ?? ''))
+      return [
+        {
+          logId: `${logId}-today-meme`,
+          type: 'meme',
+          createdAt,
+          agentId,
+          memeSubmitted: true,
+          ...(memeDisplayItems.length > 0 ? { memeDisplayItems } : {}),
+        },
+        answerMessage,
+      ]
+    }
+
+    // NewsCurator 에이전트(AG000012): question을 readonly news 메시지로 대체
+    const newsPromptMeta = parseNewsCuratorPromptMeta(row.qcontent ?? '')
+    if (agentId === 'AG000012' && newsPromptMeta.isHiddenQuestion) {
+      const newsDisplayItems = parseNewsCuratorItems(String(row.rcontent ?? ''))
+      return [
+        {
+          logId: `${logId}-news-curator`,
+          type: 'news',
+          createdAt,
+          agentId,
+          newsSubmitted: true,
+          newsSelectedCategories: newsPromptMeta.categories,
+          ...(newsDisplayItems.length > 0 ? { newsDisplayItems } : {}),
+        },
+        answerMessage,
+      ]
+    }
+
     // 점심 추천 에이전트: 프롬프트 패턴이면 readonly lunch-card로 대체
     const lunchPayload = parseLunchPayloadFromPrompt(row.qcontent ?? '')
     if (lunchPayload) {
+      const lunchDisplayRecommendations = parseLunchRecommendationsFromAnswerRContent(String(row.rcontent ?? ''))
       return [
         {
           logId: `${logId}-lunch-card`,
-          type: 'answer',
+          type: 'lunch',
           qContent: '',
           rContent: '',
           createdAt,
@@ -125,10 +162,11 @@ export const useChatMessages = () => {
           uiType: 'lunch-card',
           lunchSubmitted: true,
           lunchFormPayload: { ...lunchPayload },
+          lunchDisplayRecommendations,
           hasSource: false,
           hasVisualization: false,
         },
-        answerMessage,
+        { ...answerMessage, lunchDisplayRecommendations },
       ]
     }
 
