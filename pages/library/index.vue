@@ -17,6 +17,24 @@
 
     <!-- 메인 콘텐츠 -->
     <template v-else>
+      <!-- 미수신 지식공유 알림 배너 -->
+      <Transition name="banner-slide-up">
+        <div
+          v-if="hasPendingKsNotify && !isKsBannerDismissed"
+          class="library-ks-banner"
+        >
+          <i class="icon-notification size-16" />
+          <span class="library-ks-banner__text">공유받은 지식이 있습니다. 상단 알림에서 확인하고 받아보세요.</span>
+          <button
+            class="library-ks-banner__close"
+            title="닫기"
+            @click="isKsBannerDismissed = true"
+          >
+            <i class="icon-close size-12" />
+          </button>
+        </div>
+      </Transition>
+
       <div class="library-header-wrapper flex justify-between items-center">
         <p class="library-top-title">나의 지식 목록</p>
         <div class="right-grp flex items-center">
@@ -360,6 +378,7 @@
 import draggable from 'vuedraggable'
 import defaultLibraryCardImg from '~/assets/images/test_images.png'
 import { useLibraryStore } from '~/composables/library/useLibraryStore'
+import { useNotifyStore } from '~/composables/com/useNotifyStore'
 import { resolveDataUrlImageSrc } from '~/utils/global/imageUtil'
 
 const {
@@ -417,6 +436,11 @@ const {
   handleRestoreCard,
   handleEmptyTrash,
 } = useLibraryStore()
+
+const { hasPendingKsNotify } = useNotifyStore()
+
+/** KS 알림 배너 닫힘 상태 (페이지 내 로컬 — 이탈 후 재진입 시 초기화) */
+const isKsBannerDismissed = ref(false)
 
 const contentWrapperRef = ref<HTMLElement | null>(null)
 const canScrollLeft = ref(false)

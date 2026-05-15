@@ -11,6 +11,12 @@ const notifyList = ref<Notify[]>([])
 const notifyLoading = ref(false)
 const notifyError = ref('')
 
+// ── 알림 패널 열림 상태 (모듈 레벨 — 외부 페이지에서도 제어 가능) ──
+const isNotificationOpen = ref(false)
+
+/** notifyTyCd==='KS' && saveYn==='N' 인 미수신 지식공유 알림 존재 여부 */
+const hasPendingKsNotify = computed(() => notifyList.value.some((n) => n.notifyTyCd === 'KS' && n.saveYn === 'N'))
+
 // ── KS(지식 공유) 받기 모달 상태 (모듈 레벨) ──
 const isKsModalOpen = ref(false)
 const ksModalLoading = ref(false)
@@ -157,6 +163,8 @@ export const useNotifyStore = () => {
     notifyLoading,
     notifyError,
     unreadCount,
+    isNotificationOpen,
+    hasPendingKsNotify,
     getInitials,
     getAvatarColor,
     handleFetchNotifyList,
