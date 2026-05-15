@@ -5,7 +5,6 @@
         <label class="form-label">공유 링크</label>
         <UiInput
           :model-value="shareLink"
-          :placeholder="isLoading ? '링크 생성 중...' : ''"
           type="text"
           disabled
           @focus="($event.target as HTMLInputElement).select()"
@@ -35,10 +34,8 @@
 </template>
 
 <script setup lang="ts">
-import type { ChatRoom } from '~/types/chat'
-
 interface Props {
-  room: ChatRoom | null
+  shareToken: string
 }
 
 const props = defineProps<Props>()
@@ -47,39 +44,13 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const { fetchCreateShareToken } = useChatApi()
-
-const shareToken = ref('')
-const isLoading = ref(false)
-
 const shareLink = computed(() => {
-  if (!shareToken.value) return ''
+  if (!props.shareToken) return ''
   const origin = import.meta.client ? window.location.origin : ''
-  return `${origin}/chat/share/${shareToken.value}`
+  return `${origin}/chat/share/${props.shareToken}`
 })
 
-const loadShareToken = async () => {
-  if (!props.room?.roomId) return
-  isLoading.value = true
-  try {
-    const res = await fetchCreateShareToken(props.room.roomId)
-    shareToken.value = res.shareToken
-  } catch {
-    openToast({ message: '공유 링크 생성에 실패했습니다.', type: 'error' })
-  } finally {
-    isLoading.value = false
-  }
-}
-
-watch(
-  () => props.room?.roomId,
-  (roomId) => {
-    if (roomId) loadShareToken()
-  },
-  { immediate: true },
-)
-
-const onCopyLink = async () => {
+const onCopyLink = () => {
   if (!shareLink.value) return
   try {
     copyToClipboard(shareLink.value)

@@ -39,6 +39,8 @@ const {
   fetchSelectSharedChatLogList,
   fetchCopySharedChatLogsToRoom,
   fetchSelectKnowledgeList,
+  fetchCheckRoomAttachment,
+  fetchCreateShareToken,
 } = useChatApi()
 const {
   resolveSvcTy,
@@ -312,6 +314,40 @@ export const useChatRooms = () => {
     })
   }
 
+  /** 채팅방 첨부파일 존재 여부 확인 */
+  const handleCheckRoomAttachment = async (roomId: string): Promise<boolean> => {
+    openLoading({ text: '대화 정보를 확인하는 중...' })
+    try {
+      const { hasAttachment } = await fetchCheckRoomAttachment(roomId)
+      return hasAttachment
+    } catch {
+      openToast({ message: '공유 준비 중 오류가 발생했습니다.', type: 'error' })
+      return false
+    } finally {
+      closeLoading()
+    }
+  }
+
+  /**
+   * 공유 토큰 발급 — includeAttachment(Y/N)를 받아 토큰 테이블에 insert
+   * @returns shareToken 문자열, 오류 시 null
+   */
+  const handleBuildShareToken = async (
+    roomId: string,
+    includeAttachment: 'Y' | 'N',
+  ): Promise<string | null> => {
+    openLoading({ text: '공유 링크를 생성하는 중...' })
+    try {
+      const { shareToken } = await fetchCreateShareToken(roomId, includeAttachment)
+      return shareToken
+    } catch {
+      openToast({ message: '공유 링크 생성에 실패했습니다.', type: 'error' })
+      return null
+    } finally {
+      closeLoading()
+    }
+  }
+
   /** 공유 대화 로드 */
   const loadSharedChatLog = async (shareToken: string) => {
     if (!shareToken) return
@@ -439,6 +475,8 @@ export const useChatRooms = () => {
     handlePinChatRoom,
     handleRenameChatRoom,
     handleDeleteChatRoom,
+    handleCheckRoomAttachment,
+    handleBuildShareToken,
     loadSharedChatLog,
     handleForkSharedChat,
     onCopy,

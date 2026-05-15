@@ -161,7 +161,22 @@
     </nav>
   </aside>
 
-  <!-- 대화 공유 모달 -->
+  <!-- 첨부파일 공유 옵션 모달 -->
+  <UiModal
+    :is-open="isShareOptionModalOpen"
+    title="공유 방식 선택"
+    position="center"
+    max-width="420px"
+    @close="onShareOptionCancel"
+  >
+    <ChatRoomShareOptionModal
+      :is-open="isShareOptionModalOpen"
+      @confirm="onShareOptionConfirm"
+      @cancel="onShareOptionCancel"
+    />
+  </UiModal>
+
+  <!-- 대화 공유 링크 모달 -->
   <UiModal
     :is-open="isShareModalOpen"
     title="공유 가능한 공개 링크"
@@ -170,7 +185,7 @@
     @close="handleShareModalClose"
   >
     <ChatRoomShareModal
-      :room="sharingRoom"
+      :share-token="sharingShareToken"
       @close="handleShareModalClose"
     />
   </UiModal>
@@ -202,8 +217,15 @@ import {
 import type { MenuItem } from '~/types/menu'
 import type { ChatRoom } from '~/types/chat'
 import { normalizeChatRoomId, parseChatRoomIdFromChatPath } from '~/utils/chat/chatRoomIdUtil'
-const { chatRoomList, selectChatRoomList, handleRenameChatRoom, handleDeleteChatRoom, handlePinChatRoom } =
-  useChatRooms()
+const {
+  chatRoomList,
+  selectChatRoomList,
+  handleRenameChatRoom,
+  handleDeleteChatRoom,
+  handlePinChatRoom,
+  handleCheckRoomAttachment,
+  handleBuildShareToken,
+} = useChatRooms()
 const route = useRoute()
 const { menuList } = useMenu()
 const SETTING_MENU_ID = 'ME000003'
@@ -520,19 +542,49 @@ async function handleSaveRename(roomTitle: string) {
   handleRenameModalClose()
 }
 
-// 대화 공유 모달
+// 공유 옵션 모달 (첨부파일 있는 경우만 표시)
+const isShareOptionModalOpen = ref(false)
+const pendingShareRoomId = ref('')
+
+// 공유 링크 모달
 const isShareModalOpen = ref(false)
-const sharingRoom = ref<ChatRoom | null>(null)
+const sharingShareToken = ref('')
 
 function handleShareModalClose() {
   isShareModalOpen.value = false
-  sharingRoom.value = null
+  sharingShareToken.value = ''
+}
+
+/** 토큰 발급 후 공유 링크 모달 오픈 */
+async function proceedShareToken(roomId: string, includeAttachment: 'Y' | 'N') {
+  const token = await handleBuildShareToken(roomId, includeAttachment)
+  if (!token) return
+  sharingShareToken.value = token
+  isShareModalOpen.value = true
 }
 
 // 검색기록 컨텍스트 메뉴 액션
-function onContextShare(entry: ChatRoom) {
-  sharingRoom.value = entry
-  isShareModalOpen.value = true
+async function onContextShare(entry: ChatRoom) {
+  const hasAttachment = await handleCheckRoomAttachment(entry.roomId)
+  if (hasAttachment) {
+    // 첨부파일 있음 → 옵션 모달 표시
+    pendingShareRoomId.value = entry.roomId
+    isShareOptionModalOpen.value = true
+  } else {
+    // 첨부파일 없음 → 바로 토큰 발급
+    await proceedShareToken(entry.roomId, 'Y')
+  }
+}
+
+async function onShareOptionConfirm(includeAttachment: 'Y' | 'N') {
+  isShareOptionModalOpen.value = false
+  await proceedShareToken(pendingShareRoomId.value, includeAttachment)
+  pendingShareRoomId.value = ''
+}
+
+function onShareOptionCancel() {
+  isShareOptionModalOpen.value = false
+  pendingShareRoomId.value = ''
 }
 async function onContextPin(_entry: ChatRoom) {
   await handlePinChatRoom(_entry)

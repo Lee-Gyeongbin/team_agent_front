@@ -129,9 +129,16 @@ export const useChatApi = () => {
   const fetchDeleteChatRoom = async (roomId: string): Promise<void> => {
     return post('/ai/chatbot/deleteChatRoom.do', { roomId })
   }
-  // 공유 토큰 발급 (roomId → UUID share token)
-  const fetchCreateShareToken = async (roomId: string): Promise<{ shareToken: string }> => {
-    return post<{ shareToken: string }>('/ai/chatbot/createShareToken.do', { roomId })
+  // 채팅방에 첨부파일 업로드 내역이 있는지 확인
+  const fetchCheckRoomAttachment = async (roomId: string): Promise<{ hasAttachment: boolean }> => {
+    return post<{ hasAttachment: boolean }>('/ai/chatbot/checkRoomAttachment.do', { roomId })
+  }
+  // 공유 토큰 발급 — includeAttachment(Y/N)와 함께 토큰 테이블에 insert
+  const fetchCreateShareToken = async (
+    roomId: string,
+    includeAttachment: 'Y' | 'N',
+  ): Promise<{ shareToken: string }> => {
+    return post<{ shareToken: string }>('/ai/chatbot/createShareToken.do', { roomId, includeAttachment })
   }
   // 공유 토큰으로 채팅 로그 조회
   const fetchSelectSharedChatLogList = async (
@@ -171,6 +178,7 @@ export const useChatApi = () => {
     fetchPinChatRoom,
     fetchRenameChatRoom,
     fetchDeleteChatRoom,
+    fetchCheckRoomAttachment,
     fetchCreateShareToken,
     fetchSelectSharedChatLogList,
     fetchCopySharedChatLogsToRoom,
