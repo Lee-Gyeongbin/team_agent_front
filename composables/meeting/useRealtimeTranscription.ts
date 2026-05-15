@@ -77,19 +77,22 @@ const getSupportedMimeType = (): string => {
 const sendSessionUpdate = () => {
   ws?.send(
     JSON.stringify({
-      type: 'transcription_session.update',
+      type: 'session.update',
       session: {
-        input_audio_format: 'pcm16',
-        input_audio_transcription: {
-          model: 'gpt-4o-mini-transcribe',
-          language: 'ko',
-        },
-        input_audio_noise_reduction: { type: 'far_field' },
-        turn_detection: {
-          type: 'server_vad',
-          threshold: 0.5,
-          prefix_padding_ms: 300,
-          silence_duration_ms: 500,
+        audio: {
+          input: {
+            transcription: {
+              model: 'gpt-4o-mini-transcribe',
+              language: 'ko',
+            },
+            noise_reduction: { type: 'far_field' },
+            turn_detection: {
+              type: 'server_vad',
+              threshold: 0.5,
+              prefix_padding_ms: 300,
+              silence_duration_ms: 500,
+            },
+          },
         },
       },
     }),
@@ -98,7 +101,7 @@ const sendSessionUpdate = () => {
 
 // ─── WebSocket 초기화 ──────────────────────────────────────────────
 const initWebSocket = (token: string) => {
-  ws = new WebSocket(REALTIME_WS_URL, ['realtime', `openai-insecure-api-key.${token}`, 'openai-beta.realtime-v1'])
+  ws = new WebSocket(REALTIME_WS_URL, ['realtime', `openai-insecure-api-key.${token}`])
 
   ws.onopen = () => {
     // onopen 시점에는 아직 session.created 이전이므로 연결 상태만 유지
