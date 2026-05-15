@@ -134,6 +134,7 @@ const {
   notifyList,
   notifyLoading,
   unreadCount,
+  isNotificationOpen,
   getInitials,
   getAvatarColor,
   handleMarkRead,
@@ -148,7 +149,6 @@ const {
   handleReceiveKnowledge,
 } = useNotifyStore()
 
-const isNotificationOpen = ref(false)
 const notificationWrapRef = ref<HTMLElement | null>(null)
 
 const toggleNotification = () => {
