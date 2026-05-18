@@ -11,7 +11,11 @@
   >
     <Transition name="lunch-intro">
       <div
-        v-if="((isIntroPlaying && shouldPlayIntro) || isRecommendationsPending) && !hasResultRecommendations"
+        v-if="
+          !isFormOnlyCard &&
+          ((isIntroPlaying && shouldPlayIntro) || isRecommendationsPending) &&
+          !hasResultRecommendations
+        "
         class="chat-lunch-agent-card__intro"
         aria-live="polite"
       >
@@ -44,7 +48,7 @@
     </Transition>
 
     <div
-      v-if="!isRecommendationsPending"
+      v-if="!isRecommendationsPending || isFormOnlyCard"
       class="chat-lunch-agent-card__header"
     >
       <div class="chat-lunch-agent-card__header-info">
@@ -182,25 +186,39 @@
     </div>
 
     <ul
-      v-if="hasResultRecommendations"
+      v-if="hasResultRecommendations && !isFormOnlyCard"
       class="chat-lunch-agent-card__result-list"
     >
       <template v-if="hasResultRecommendations">
         <li
-          v-for="(item, idx) in recommendations"
+          v-for="(item, idx) in visibleRecommendations"
           :key="`${item.restaurant}-${idx}`"
           class="chat-lunch-agent-card__result-item"
         >
           <div class="chat-lunch-agent-card__result-main">
-            <div class="chat-lunch-agent-card__result-thumb">
+            <div
+              class="chat-lunch-agent-card__result-thumb"
+              :class="{ 'is-pending': isThumbAwaitingUrlInFlight(item) }"
+            >
               <img
-                v-if="item.imageUrl"
-                :src="item.imageUrl"
+                v-if="hasThumbUrl(item)"
+                :src="String(item.imageUrl).trim()"
                 :alt="`${item.restaurant} 이미지`"
+                @load="onThumbImgLoad(idx, item)"
+                @error="onThumbImgError(idx, item)"
               />
+              <div
+                v-if="showThumbLoadingOverlay(idx, item)"
+                class="pexels-loading chat-lunch-agent-card__thumb-pexels"
+                aria-busy="true"
+                aria-live="polite"
+              >
+                <div class="pexels-loading__spinner" />
+              </div>
               <i
-                v-else
+                v-else-if="!hasThumbUrl(item)"
                 class="icon-image size-20"
+                aria-hidden="true"
               />
             </div>
             <div class="chat-lunch-agent-card__result-content">
@@ -242,7 +260,7 @@
       </template>
     </ul>
     <p
-      v-if="hasResultRecommendations"
+      v-if="hasResultRecommendations && !isFormOnlyCard"
       class="chat-lunch-agent-card__result-image-notice"
     >
       ※ 본 이미지는 AI가 제작한 참고용 이미지입니다
@@ -289,31 +307,50 @@ import {
   LUNCH_CUISINE_OPTIONS,
   LUNCH_MOOD_OPTIONS,
   LUNCH_PEOPLE_OPTIONS,
+  isLunchMenuImageApiLoading,
+  isLunchMenuImagePlaceholderUrl,
   normalizeLunchLocationMap,
+  resolveLunchMenuImageEnrichment,
 } from '~/utils/chat/lunchAgentUtil'
+
+/** form: 설문(q)만, result: 추천(r)만, combined: 단일 카드(인덱스 오버레이) */
+type LunchCardDisplayMode = 'form' | 'result' | 'combined'
 
 interface Props {
   readonly?: boolean
+  displayMode?: LunchCardDisplayMode
   initialPayload?: LunchAgentFormPayload
   recommendations?: LunchRecommendationItem[]
   /** 추천 JSON 파싱 전·스트리밍 중 썸네일 영역(플레이스홀더) 표시 */
   isRecommendationsPending?: boolean
+  /** 스트리밍 중(파싱된 행이 있어도 imageUrl이 아직 비는 경우) 썸네일 로딩 표시 */
+  isRecommendationResponseStreaming?: boolean
   themeIconClassNm?: string
   themeColorHex?: string
+  /** 썸네일 API 캐시 키 — result 카드 logId 권장 */
+  enrichmentCacheKey?: string
+  /** answer rContent 원문 — 캐시·중복 호출 키용 */
+  enrichmentRContent?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   readonly: false,
+  displayMode: 'combined',
   initialPayload: undefined,
   recommendations: () => [],
   isRecommendationsPending: false,
+  isRecommendationResponseStreaming: false,
   themeIconClassNm: '',
   themeColorHex: '',
+  enrichmentCacheKey: '',
+  enrichmentRContent: '',
 })
 
 const emit = defineEmits<{
   submit: [payload: LunchAgentFormPayload]
   close: []
+  /** 썸네일 enrichment 완료 시 상위 메시지 상태 동기화 */
+  enriched: [items: LunchRecommendationItem[]]
 }>()
 const { fetchSelectRegionTree } = useChatApi()
 
@@ -330,10 +367,47 @@ const form = reactive<LunchAgentFormPayload>({
   cuisineType: '',
 })
 
-const recommendations = computed(() => props.recommendations ?? [])
-const hasResultRecommendations = computed(() => recommendations.value.length > 0)
+const displayRecommendations = ref<LunchRecommendationItem[]>([])
+
+const syncRecommendationImages = async () => {
+  const items = props.recommendations ?? []
+  displayRecommendations.value = items
+  if (!items.length || props.displayMode === 'form') return
+
+  const cacheKey = String(props.enrichmentCacheKey ?? '').trim()
+  if (!cacheKey) return
+
+  const rContent = String(props.enrichmentRContent ?? '').trim() || JSON.stringify(items)
+  const enriched = await resolveLunchMenuImageEnrichment(cacheKey, rContent, items)
+  if (!enriched?.length) return
+  displayRecommendations.value = enriched
+  emit('enriched', enriched)
+}
+
+watch(
+  () => [props.recommendations, props.enrichmentCacheKey, props.enrichmentRContent, props.displayMode] as const,
+  () => {
+    void syncRecommendationImages()
+  },
+  { immediate: true, deep: true },
+)
+
+const visibleRecommendations = computed(() => displayRecommendations.value)
+const hasResultRecommendations = computed(() => visibleRecommendations.value.length > 0)
 const isRecommendationsPending = computed(() => props.isRecommendationsPending === true)
-const isRecommendationResultPhase = computed(() => hasResultRecommendations.value || isRecommendationsPending.value)
+const isRecommendationResponseStreaming = computed(() => props.isRecommendationResponseStreaming === true)
+const isFormOnlyCard = computed(() => props.displayMode === 'form')
+const isResultOnlyCard = computed(() => props.displayMode === 'result')
+
+/** result 단계: 폼 숨김·추천 표시 / form 단계: 폼 유지·추천 숨김 */
+const isRecommendationResultPhase = computed(() => {
+  if (isFormOnlyCard.value) return false
+  if (isResultOnlyCard.value) return true
+  if (props.readonly && props.initialPayload) {
+    return isRecommendationsPending.value
+  }
+  return hasResultRecommendations.value || isRecommendationsPending.value
+})
 const isLocationAnswered = computed(() => !!form.sido && !!form.sigungu && !!form.dong)
 const hasSelectedSido = computed(() => !!form.sido)
 const hasSelectedSigungu = computed(() => !!form.sigungu)
@@ -592,6 +666,56 @@ const setFormValue = (key: keyof LunchAgentFormPayload, value: string | number) 
   form[key] = String(value)
 }
 
+/** 썸네일: URL 수신 전(스트리밍)·이미지 디코딩 전 스피너 — 설문 차트 슬롯(pexels-loading)과 동일 패턴 */
+const thumbLoadedKeySet = ref(new Set<string>())
+const thumbKey = (idx: number, url: string) => `${idx}::${url}`
+
+const hasThumbUrl = (item: LunchRecommendationItem) => {
+  const url = String(item.imageUrl ?? '').trim()
+  return url.length > 0 && !isLunchMenuImagePlaceholderUrl(url)
+}
+
+const isThumbAwaitingUrlInFlight = (item: LunchRecommendationItem) =>
+  !hasThumbUrl(item) &&
+  (isRecommendationsPending.value || isRecommendationResponseStreaming.value || isLunchMenuImageApiLoading.value)
+
+const isThumbImageDecoded = (idx: number, item: LunchRecommendationItem) => {
+  const url = String(item.imageUrl ?? '').trim()
+  if (!url) return false
+  return thumbLoadedKeySet.value.has(thumbKey(idx, url))
+}
+
+const showThumbLoadingOverlay = (idx: number, item: LunchRecommendationItem) =>
+  isThumbAwaitingUrlInFlight(item) || (hasThumbUrl(item) && !isThumbImageDecoded(idx, item))
+
+const onThumbImgLoad = (idx: number, item: LunchRecommendationItem) => {
+  const url = String(item.imageUrl ?? '').trim()
+  if (!url) return
+  const k = thumbKey(idx, url)
+  const next = new Set(thumbLoadedKeySet.value)
+  next.add(k)
+  thumbLoadedKeySet.value = next
+}
+
+const onThumbImgError = (idx: number, item: LunchRecommendationItem) => {
+  onThumbImgLoad(idx, item)
+}
+
+watch(
+  visibleRecommendations,
+  (list) => {
+    const next = new Set<string>()
+    list.forEach((item, idx) => {
+      const url = String(item.imageUrl ?? '').trim()
+      if (!url || isLunchMenuImagePlaceholderUrl(url)) return
+      const k = thumbKey(idx, url)
+      if (thumbLoadedKeySet.value.has(k)) next.add(k)
+    })
+    thumbLoadedKeySet.value = next
+  },
+  { deep: true },
+)
+
 const onSubmitClick = () => {
   const requiredChecks: Array<{ isInvalid: boolean; fieldRef: HTMLElement | null }> = [
     { isInvalid: !isLocationAnswered.value, fieldRef: locationFieldRef.value },
@@ -776,6 +900,7 @@ const onSubmitClick = () => {
   }
 
   &__result-thumb {
+    position: relative;
     width: 120px;
     height: 115px;
     border-radius: 8px;
@@ -793,6 +918,24 @@ const onSubmitClick = () => {
       height: 100%;
       object-fit: cover;
       display: block;
+    }
+
+    // 설문 차트 슬롯과 동일 스피너 — 썸네일 박스 크기에 맞게 오버레이
+    :deep(.pexels-loading.chat-lunch-agent-card__thumb-pexels) {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      margin: 0;
+      background: rgb(255 255 255 / 82%);
+    }
+
+    :deep(.pexels-loading.chat-lunch-agent-card__thumb-pexels .pexels-loading__spinner) {
+      width: 28px;
+      height: 28px;
+      border-top-color: var(--lunch-theme-color, $color-primary);
     }
 
     &.is-pending {

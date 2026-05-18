@@ -302,14 +302,23 @@ const introSubtitleChars = NEWS_INTRO_SUBTITLE.split('')
 const NEWS_CATEGORY_MAX_COUNT = 3
 const NEWS_CATEGORY_OPTIONS = [
   { value: '정치', label: '정치', description: '정부·국회·정당·외교 등 국내외 주요 정책과 정치 이슈를 전달합니다.' },
-  { value: '경제', label: '경제', description: '금융·증시·부동산·기업 동향 등 경제 흐름과 시장 변화를 제공합니다.' },
+  { value: '경제', label: '경제', description: '거시경제·환율·무역·부동산·기업 실적 등 경제 전반의 흐름을 다룹니다.' },
   { value: '사회', label: '사회', description: '사건·사고·교육·노동·복지 등 우리 사회의 다양한 현안을 다룹니다.' },
-  {
-    value: '생활/문화',
-    label: '생활/문화',
-    description: '문화·예술·건강·여행·라이프스타일 등 일상과 밀접한 소식을 전합니다.',
-  },
   { value: '산업', label: '산업', description: 'IT·반도체·AI·자동차·에너지 등 주요 산업과 기술 트렌드를 소개합니다.' },
+  { value: '문화', label: '문화', description: '문화예술·전시·출판·영화 등 창작과 문화계 소식을 전합니다.' },
+  {
+    value: '세계',
+    label: '세계',
+    description: '해외 정세·국제관계·글로벌 이슈 등 세계 무대의 주요 뉴스를 제공합니다.',
+  },
+  { value: '건강', label: '건강', description: '의료·질병·웰빙·공중보건 등 몸과 마음의 건강에 관한 정보를 다룹니다.' },
+  { value: '연예', label: '연예', description: '방송·영화·음악·스타 동향 등 연예계 화제를 빠르게 전합니다.' },
+  {
+    value: '스포츠',
+    label: '스포츠',
+    description: '국내외 경기·리그·선수 소식 등 스포츠 팬을 위한 뉴스를 모았습니다.',
+  },
+  { value: '주식', label: '주식', description: '증시·종목·투자 지표 등 주식 시장 중심의 투자·금융 소식을 전합니다.' },
 ] as const
 const selectedCategories = ref<string[]>([])
 const isCategoryDisabled = (category: string) =>
@@ -436,8 +445,8 @@ onUnmounted(() => {
 
   &__panel--selection {
     flex: 0 1 auto;
-    /** 오늘의 뉴스픽 카테고리 패널만의 상한(결과 패널과 독립) */
-    max-height: min(360px, 42vh);
+    /** 오늘의 뉴스픽 카테고리 패널만의 상한(10개·2행 그리드, 결과 패널과 독립) */
+    max-height: min(520px, 58vh);
     display: flex;
     flex-direction: column;
     overflow: hidden;

@@ -114,6 +114,23 @@
         </article>
       </div>
     </div>
+
+    <!-- 인덱스·방: 제출 전 사용자 액션(설문 ChatPsychologySurvey 푸터와 동일 역할) -->
+    <div
+      v-if="isContentVisible && !props.readonly && props.awaitingUserSubmit && !hasResultRecommendations"
+      class="chat-today-meme__footer-actions"
+    >
+      <UiButton
+        variant="dark"
+        size="sm"
+        @click="emit('submit')"
+      >
+        오늘의 밈 받기
+        <template #icon-right>
+          <i class="icon-arrow-right size-16" />
+        </template>
+      </UiButton>
+    </div>
   </section>
 </template>
 
@@ -121,21 +138,26 @@
 import { getTodayMemePointRows, TODAY_MEME_MODEL_ID, type TodayMemeItem } from '~/utils/chat/todayMemeUtil'
 interface Props {
   readonly?: boolean
+  /** 제출 전(응답 없음) — 인트로 후 요청 버튼 표시 */
+  awaitingUserSubmit?: boolean
   isAnswerStreaming?: boolean
   themeIconClassNm?: string
-  themeColorHex: string
+  themeColorHex?: string
   memeItems?: TodayMemeItem[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
   readonly: false,
+  awaitingUserSubmit: false,
   isAnswerStreaming: false,
   themeIconClassNm: '',
+  themeColorHex: '',
   memeItems: () => [],
 })
 
 const emit = defineEmits<{
   introComplete: []
+  submit: []
 }>()
 const TODAY_MEME_TITLE = '오늘의 밈 배달부'
 const TODAY_MEME_INTRO_SUBTITLE = '오늘의 밈을 고르는 중입니다...'
@@ -146,6 +168,9 @@ const introSubtitleChars = TODAY_MEME_INTRO_SUBTITLE.split('')
 
 const memeList = computed<TodayMemeItem[]>(() => props.memeItems)
 
+/** 추천 밈 카드가 있으면 하단 설문 액션(받기) 숨김 — ChatLunchAgentCard와 동일 패턴 */
+const hasResultRecommendations = computed(() => memeList.value.length > 0)
+
 const themeStyle = computed(() => ({
   '--today-meme-theme-color': String(props.themeColorHex).trim(),
 }))
@@ -153,7 +178,9 @@ const themeIconClassNm = computed(() => String(props.themeIconClassNm || '').tri
 
 const TODAY_MEME_INTRO_MIN_MS = 3100
 const hasMemeResponse = computed(() => memeList.value.length > 0 && !props.isAnswerStreaming)
-const canShowContent = computed(() => !props.isAnswerStreaming && (props.readonly || hasMemeResponse.value))
+const canShowContent = computed(
+  () => !props.isAnswerStreaming && (props.readonly || hasMemeResponse.value || props.awaitingUserSubmit === true),
+)
 const isIntroPlaying = ref(!canShowContent.value)
 const isContentVisible = ref(canShowContent.value)
 const isIntroMinElapsed = ref(false)
@@ -321,6 +348,22 @@ onUnmounted(() => {
     display: flex;
     flex-direction: column;
     gap: $spacing-lg;
+  }
+
+  /** 설문 ChatPsychologySurvey 푸터와 유사 — 제출 전 액션 */
+  &__footer-actions {
+    display: flex;
+    flex-shrink: 0;
+    justify-content: flex-end;
+    gap: $spacing-sm;
+    padding: $spacing-md $spacing-xl $spacing-lg;
+    border-top: 1px solid $color-border;
+    background: $color-surface;
+    opacity: var(--today-meme-content-opacity);
+    transform: translateY(var(--today-meme-content-shift));
+    transition:
+      opacity 0.36s ease 0.04s,
+      transform 0.36s ease 0.04s;
   }
 
   /* 개별 밈 카드 — 시안: 랭크/필, 제목·출처, 설명 테이블, 하단 메타 */

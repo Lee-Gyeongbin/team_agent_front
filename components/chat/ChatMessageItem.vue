@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="!isTodayMemeAnswer && !isNewsCuratorAnswer"
+    v-if="!isTodayMemeAnswer && !isNewsCuratorAnswer && !isLunchAgentAnswer"
     class="chat-message-item"
     :class="[
       message.type === 'answer'
@@ -26,35 +26,15 @@
       </div>
       <div class="message-body">
         <div
-          v-if="message.isStreaming && !message.rContent && !isLunchAnswerBubble && !isNewsCuratorAnswer"
+          v-if="message.isStreaming && !message.rContent && !isNewsCuratorAnswer"
           class="message-loading"
         >
           <span class="typing-dot" /><span class="typing-dot" /><span class="typing-dot" />
         </div>
         <template v-else>
-          <ChatLunchAgentCard
-            v-if="message.uiType === 'lunch-card'"
-            :readonly="isShare || message.lunchSubmitted === true"
-            :initial-payload="message.lunchFormPayload"
-            :theme-icon-class-nm="surveyThemeAgent?.iconClassNm ?? ''"
-            :theme-color-hex="surveyThemeAgent?.colorHex ?? ''"
-            @submit="emit('on-submit-lunch-card', message.logId, $event)"
-            @close="emit('on-lunch-card-close', message.logId)"
-          />
-          <ChatLunchAgentCard
-            v-else-if="isLunchAnswerBubble"
-            :readonly="true"
-            :initial-payload="message.lunchFormPayload"
-            :recommendations="parsedLunchRecommendations"
-            :is-recommendations-pending="isLunchRecommendationsPending"
-            :theme-icon-class-nm="surveyThemeAgent?.iconClassNm ?? ''"
-            :theme-color-hex="surveyThemeAgent?.colorHex ?? ''"
-            @submit="emit('on-submit-lunch-card', message.logId, $event)"
-            @close="emit('on-lunch-card-close', message.logId)"
-          />
           <!-- TodayMeme 답변 JSON 원문은 숨기고 카드 컴포넌트에서만 노출 -->
           <div
-            v-else-if="isTodayMemeAnswer"
+            v-if="isTodayMemeAnswer"
             class="message-content"
           />
           <div
@@ -108,7 +88,7 @@
             v-html="renderedHtml"
           />
           <ul
-            v-if="message.uiType !== 'lunch-card' && message.groundingSources?.length"
+            v-if="message.groundingSources?.length"
             class="message-grounding-sources"
           >
             <li
@@ -176,13 +156,19 @@
       </div>
       <div class="message-body">
         <ChatLunchAgentCard
-          :readonly="isShare || message.lunchSubmitted === true"
-          :initial-payload="message.lunchFormPayload"
-          :recommendations="message.lunchDisplayRecommendations ?? []"
-          :theme-icon-class-nm="surveyThemeAgent?.iconClassNm ?? ''"
-          :theme-color-hex="surveyThemeAgent?.colorHex ?? ''"
+          :readonly="message.lunchSubmitted === true"
+          :display-mode="lunchCardDisplayMode"
+          :initial-payload="isLunchFormCard ? message.lunchFormPayload : undefined"
+          :recommendations="isLunchResultCard ? resolvedLunchRecommendations : []"
+          :is-recommendations-pending="isLunchResultCard && isLunchRecommendationsPending"
+          :is-recommendation-response-streaming="isLunchResultCard && isLunchRecommendationResponseStreaming"
+          :enrichment-cache-key="isLunchResultCard ? message.logId : ''"
+          :enrichment-r-content="lunchEnrichmentRContent"
+          :theme-icon-class-nm="lunchThemeAgent?.iconClassNm ?? ''"
+          :theme-color-hex="lunchThemeAgent?.colorHex ?? ''"
           @submit="emit('on-submit-lunch-card', message.logId, $event)"
           @close="emit('on-lunch-card-close', message.logId)"
+          @enriched="onLunchRecommendationsEnriched"
         />
       </div>
     </template>
@@ -326,6 +312,7 @@ import {
   buildPsychologyRadarUiChartConfig,
   type RadarChartData,
 } from '~/utils/chat/psychologyConsultUtil'
+import { LUNCH_AGENT_ID, parseLunchRecommendationsFromAnswerRContent } from '~/utils/chat/lunchAgentUtil'
 import { parseTodayMemeItems, TODAY_MEME_AGENT_ID } from '~/utils/chat/todayMemeUtil'
 import type { TodayMemeItem } from '~/utils/chat/todayMemeUtil'
 import { attachmentsRequireSummaryIndicator } from '~/utils/chat/chatAttachmentDisplayUtil'
@@ -495,35 +482,73 @@ const surveyThemeAgent = computed<Agent | null>(
   () => chatIndexAgents.value.find((a) => a.agentId === (props.message.agentId || 'AG000010')) ?? null,
 )
 
-const parsedLunchRecommendations = computed<LunchRecommendationItem[]>(() => {
-  if (Array.isArray(props.message.lunchDisplayRecommendations)) {
-    return props.message.lunchDisplayRecommendations
-  }
-  const raw = (props.message.rContent ?? '').trim()
-  if (!raw || props.message.uiType === 'lunch-card') return []
-  try {
-    const parsed = JSON.parse(raw) as unknown
-    return Array.isArray(parsed) ? (parsed as LunchRecommendationItem[]) : []
-  } catch {
-    return []
-  }
-})
-const LUNCH_AGENT_ID = 'AG000009'
+const lunchThemeAgent = computed<Agent | null>(
+  () => chatIndexAgents.value.find((a) => a.agentId === (props.message.agentId || LUNCH_AGENT_ID)) ?? null,
+)
 
 const isTodayMemeAnswerPayload = computed(() => {
   if (props.message.type !== 'answer') return false
   return parseTodayMemeItems(String(props.message.rContent ?? '')).length > 0
 })
 
-/** 점심 에이전트 답변 말풍선 — JSON 파싱 전(스트리밍) 포함 */
-const isLunchAnswerBubble = computed(
+/** 점심 에이전트 answer 행 — 추천 JSON은 type=lunch 카드에서만 표시 */
+const isLunchAgentAnswer = computed(
   () => props.message.type === 'answer' && props.message.agentId === LUNCH_AGENT_ID && !isTodayMemeAnswerPayload.value,
 )
 
+const lunchCardDisplayMode = computed((): 'form' | 'result' | 'combined' => {
+  if (props.message.type !== 'lunch') return 'combined'
+  if (props.message.lunchCardRole === 'result') return 'result'
+  if (props.message.lunchCardRole === 'form' || !props.message.lunchSubmitted) return 'form'
+  return 'combined'
+})
+
+const isLunchFormCard = computed(() => lunchCardDisplayMode.value === 'form')
+const isLunchResultCard = computed(() => lunchCardDisplayMode.value === 'result')
+
+const linkedLunchAnswerMessage = computed(() => {
+  if (props.message.type !== 'lunch' || isLunchFormCard.value) return undefined
+  const answerLogId = String(props.message.lunchAnswerLogId ?? '').trim()
+  if (answerLogId) {
+    return messages.value.find((m) => m.type === 'answer' && m.logId === answerLogId)
+  }
+  const lunchIndex = messages.value.findIndex((m) => m.logId === props.message.logId)
+  if (lunchIndex < 0) return undefined
+  return messages.value.slice(lunchIndex + 1).find((m) => m.type === 'answer' && m.agentId === LUNCH_AGENT_ID)
+})
+
+const resolvedLunchRecommendations = computed<LunchRecommendationItem[]>(() => {
+  if (props.message.type !== 'lunch' || isLunchFormCard.value) return []
+  const injected = props.message.lunchDisplayRecommendations
+  if (Array.isArray(injected) && injected.length > 0) return injected
+  const answer = linkedLunchAnswerMessage.value
+  if (!answer) return []
+  return parseLunchRecommendationsFromAnswerRContent(String(answer.rContent ?? ''))
+})
+
 const isLunchRecommendationsPending = computed(
   () =>
-    isLunchAnswerBubble.value && props.message.isStreaming === true && parsedLunchRecommendations.value.length === 0,
+    isLunchResultCard.value &&
+    linkedLunchAnswerMessage.value?.isStreaming === true &&
+    resolvedLunchRecommendations.value.length === 0,
 )
+
+const isLunchRecommendationResponseStreaming = computed(
+  () =>
+    isLunchResultCard.value &&
+    linkedLunchAnswerMessage.value?.isStreaming === true &&
+    resolvedLunchRecommendations.value.length > 0,
+)
+
+const lunchEnrichmentRContent = computed(() => {
+  if (!isLunchResultCard.value) return ''
+  return String(linkedLunchAnswerMessage.value?.rContent ?? '')
+})
+
+const onLunchRecommendationsEnriched = (items: LunchRecommendationItem[]) => {
+  const target = messages.value.find((m) => m.logId === props.message.logId && m.type === 'lunch')
+  if (target) target.lunchDisplayRecommendations = [...items]
+}
 
 const isTodayMemeAnswerMessage = (message: ChatMessage) =>
   message.type === 'answer' && message.agentId === TODAY_MEME_AGENT_ID
@@ -576,11 +601,7 @@ const isNewsCuratorAnswer = computed(() => isNewsCuratorAnswerMessage(props.mess
 
 /** 답변 액션 푸터 노출 조건을 한곳에서 관리 */
 const shouldShowMessageFooter = computed(
-  () =>
-    !props.message.isStreaming &&
-    props.message.uiType !== 'lunch-card' &&
-    !isTodayMemeAnswer.value &&
-    !isNewsCuratorAnswer.value,
+  () => !props.message.isStreaming && !isTodayMemeAnswer.value && !isNewsCuratorAnswer.value,
 )
 
 /** 이 meme 메시지에 대응하는 TodayMeme 답변이 아직 스트리밍 중인지 */
