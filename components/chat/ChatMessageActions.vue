@@ -87,6 +87,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  chatLogReaction: undefined,
   knowledgeList: () => [],
   isShare: false,
 })

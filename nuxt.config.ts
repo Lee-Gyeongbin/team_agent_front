@@ -2,6 +2,12 @@
 export default defineNuxtConfig({
   ssr: false,
 
+  runtimeConfig: {
+    public: {
+      langFlowEmbedUrl: 'http://localhost:7860',
+    },
+  },
+
   devtools: { enabled: false },
 
   modules: ['@nuxt/eslint'],

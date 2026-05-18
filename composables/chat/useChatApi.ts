@@ -5,7 +5,6 @@ import type {
   ChatRoom,
   ChatLogListRow,
   ChatRefRow,
-  VisualizationDataRow,
   VisualizationStatDetailItem,
   VisualizationStatItem,
   SaveChatLogReactionResponse,

@@ -138,12 +138,14 @@ export interface ChatMessage {
   memeDisplayItems?: TodayMemeItem[]
   newsDisplayItems?: NewsCuratorItem[]
   lunchDisplayRecommendations?: LunchRecommendationItem[]
-  /** 점심 추천 카드(uiType=lunch-card) 전용: 사용자 응답 */
+  /** 점심 카드 역할 — form: q(설문) 카드, result: r(추천) 카드 */
+  lunchCardRole?: 'form' | 'result'
+  /** 점심 추천 카드 전용: 사용자 응답 */
   lunchFormPayload?: LunchAgentFormPayload
-  /** 점심 추천 카드(uiType=lunch-card) 전용: 제출 완료 여부 */
+  /** 점심 추천 카드 전용: 제출 완료 여부 */
   lunchSubmitted?: boolean
-  /** 답변 말풍선 내 특수 UI 렌더 타입 */
-  uiType?: 'lunch-card'
+  /** result 카드 ↔ answer logId 연결 (히스토리 logId `{answerLogId}-lunch-result`) */
+  lunchAnswerLogId?: string
   [key: string]: unknown
 }
 
