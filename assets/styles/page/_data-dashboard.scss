@@ -372,7 +372,7 @@
     border-radius: $border-radius-base;
     @include typo($body-xsmall);
     color: $color-text-secondary;
-    white-space: pre-wrap;
+    white-space: pre;
     word-break: break-all;
     max-height: 120px;
     overflow-y: auto;
