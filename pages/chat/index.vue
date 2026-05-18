@@ -174,14 +174,17 @@ onBeforeRouteLeave((to) => {
   color: $color-text-muted;
 }
 
-// 설문 모드: 카드형 에이전트(설문·점심·밈·뉴스) 공통 — 상단 정렬·입력창 하단 여백
+// 설문 모드: 카드 상단 · 채팅 입력창 뷰포트 하단 고정
 .chat-index.is-survey-mode {
   justify-content: flex-start;
   padding-top: $spacing-lg;
+  min-height: calc(100vh - #{$header-height});
 
   .chat-index-input-wrapper {
+    margin-top: auto;
     margin-bottom: $spacing-lg;
     flex-shrink: 0;
+    width: 100%;
   }
 }
 
@@ -191,6 +194,11 @@ onBeforeRouteLeave((to) => {
   min-height: 0;
   width: 100%;
   margin-bottom: $spacing-md;
+}
+
+/** 뉴스픽 분야 선택 — 콘텐츠 높이만큼만 (하단 여백 방지) */
+.chat-index-news-curator {
+  flex: 0 1 auto;
 }
 
 // 설문 진행 중 입력창 비활성화
