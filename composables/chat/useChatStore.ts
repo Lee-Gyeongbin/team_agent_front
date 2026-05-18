@@ -810,7 +810,8 @@ export const useChatStore = () => {
       return
     }
 
-    if (agent.apiUrlCd?.trim()) {
+    // agentTypeToSearchMode가 처리 가능한 svcTy(M/S)인 경우 apiUrlCd가 있어도 외부 링크로 보내지 않음
+    if (agent.apiUrlCd?.trim() && agentTypeToSearchMode(agent.svcTy) === null) {
       await handleOpenAgentLink(agent)
       return
     }
