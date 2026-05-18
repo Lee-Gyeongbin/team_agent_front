@@ -31,7 +31,6 @@
           @on-survey-submit="emit('on-survey-submit', $event)"
           @on-survey-close="emit('on-survey-close', $event)"
           @on-meme-intro-complete="emit('on-meme-intro-complete', $event)"
-          @on-meme-submit="emit('on-meme-submit', $event)"
           @on-news-intro-complete="emit('on-news-intro-complete', $event)"
         />
       </div>
@@ -78,7 +77,6 @@ const emit = defineEmits<{
   'on-survey-submit': [logId: string]
   'on-survey-close': [logId: string]
   'on-meme-intro-complete': [logId: string]
-  'on-meme-submit': [logId: string]
   'on-news-intro-complete': [logId: string]
   'on-lunch-card-submit': [logId: string, payload: LunchAgentFormPayload]
   'on-news-card-submit': [logId: string, categories: string[]]

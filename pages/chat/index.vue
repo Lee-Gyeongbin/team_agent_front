@@ -38,7 +38,6 @@
       :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? ''"
       :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
       @intro-complete="handleTodayMemeIntroEnd"
-      @submit="handleIndexTodayMemeSubmit"
     />
     <ChatNewsCurator
       v-if="isNewsCuratorVisible"
@@ -125,7 +124,6 @@ const {
   handleIndexLunchSubmit,
   isTodayMemeVisible,
   handleTodayMemeIntroEnd,
-  handleIndexTodayMemeSubmit,
   resetTodayMemePanel,
   isNewsCuratorVisible,
   handleCloseNewsCurator,

@@ -2,142 +2,173 @@
   <section
     class="chat-today-meme"
     :class="{
+      'is-request-only': isRequestOnly,
       'is-intro-playing': isIntroPlaying,
       'is-content-visible': isContentVisible,
     }"
     :style="themeStyle"
     :data-meme-model-id="TODAY_MEME_MODEL_ID"
   >
-    <Transition name="today-meme-intro">
+    <div
+      v-if="showRequestComplete"
+      class="chat-today-meme__request-complete"
+    >
+      <span class="chat-today-meme__request-badge">
+        <i
+          class="icon-check size-16"
+          aria-hidden="true"
+        />
+        전달 완료
+      </span>
+      <h3 class="chat-today-meme__request-title">요청한 밈을 안전하게 전달했어요!</h3>
+      <p class="chat-today-meme__request-desc">
+        밈 배달부가 오늘의 밈을 잘 전달했어요.<br />
+        아래에서 맞춤 밈을 확인해보세요!
+      </p>
+    </div>
+
+    <template v-if="!isRequestOnly">
+      <Transition name="today-meme-intro">
+        <div
+          v-if="isIntroPlaying"
+          class="chat-today-meme__intro"
+          aria-live="polite"
+        >
+          <div class="chat-today-meme__intro-inner">
+            <div class="chat-today-meme__intro-avatar">
+              <i :class="[themeIconClassNm || 'icon-bot', 'size-24']" />
+            </div>
+            <p class="chat-today-meme__intro-title">
+              <span
+                v-for="(char, index) in introTitleChars"
+                :key="`intro-title-${index}`"
+                class="chat-today-meme__intro-char"
+                :style="{ '--intro-char-delay': `${index * 0.03}s` }"
+              >
+                {{ char === ' ' ? '\u00A0' : char }}
+              </span>
+            </p>
+            <p class="chat-today-meme__intro-subtitle">
+              <span
+                v-for="(char, index) in introSubtitleChars"
+                :key="`intro-subtitle-${index}`"
+                class="chat-today-meme__intro-char"
+                :style="{ '--intro-char-delay': `${0.12 + index * 0.024}s` }"
+              >
+                {{ char === ' ' ? '\u00A0' : char }}
+              </span>
+            </p>
+          </div>
+        </div>
+      </Transition>
+
       <div
-        v-if="isIntroPlaying"
-        class="chat-today-meme__intro"
-        aria-live="polite"
+        v-if="!showRequestComplete"
+        class="chat-today-meme__header"
       >
-        <div class="chat-today-meme__intro-inner">
-          <div class="chat-today-meme__intro-avatar">
+        <div class="chat-today-meme__header-info">
+          <div class="chat-today-meme__avatar">
             <i :class="[themeIconClassNm || 'icon-bot', 'size-24']" />
           </div>
-          <p class="chat-today-meme__intro-title">
-            <span
-              v-for="(char, index) in introTitleChars"
-              :key="`intro-title-${index}`"
-              class="chat-today-meme__intro-char"
-              :style="{ '--intro-char-delay': `${index * 0.03}s` }"
-            >
-              {{ char === ' ' ? '\u00A0' : char }}
-            </span>
-          </p>
-          <p class="chat-today-meme__intro-subtitle">
-            <span
-              v-for="(char, index) in introSubtitleChars"
-              :key="`intro-subtitle-${index}`"
-              class="chat-today-meme__intro-char"
-              :style="{ '--intro-char-delay': `${0.12 + index * 0.024}s` }"
-            >
-              {{ char === ' ' ? '\u00A0' : char }}
-            </span>
-          </p>
+          <div>
+            <p class="chat-today-meme__title">{{ TODAY_MEME_TITLE }}</p>
+            <p class="chat-today-meme__subtitle">
+              {{ props.readonly ? '최신 유행 밈들을 선별했어요!' : '오늘의 밈 추천을 시작해 보세요.' }}
+            </p>
+          </div>
         </div>
       </div>
-    </Transition>
 
-    <div class="chat-today-meme__header">
-      <div class="chat-today-meme__header-info">
-        <div class="chat-today-meme__avatar">
-          <i :class="[themeIconClassNm || 'icon-bot', 'size-24']" />
-        </div>
-        <div>
-          <p class="chat-today-meme__title">{{ TODAY_MEME_TITLE }}</p>
-          <p class="chat-today-meme__subtitle">
-            {{ props.readonly ? '최신 유행 밈들을 선별했어요!' : '오늘의 밈 추천을 시작해 보세요.' }}
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <div class="chat-today-meme__body">
-      <div class="chat-today-meme__list">
-        <article
-          v-for="item in memeList"
-          :key="`${item.rank}-${item.title}`"
-          class="meme-card"
-        >
-          <div class="meme-card__top">
-            <div class="meme-card__badges-left">
-              <span class="meme-card__rank-badge">{{ item.rank }}</span>
+      <div class="chat-today-meme__body">
+        <div class="chat-today-meme__list">
+          <article
+            v-for="item in memeList"
+            :key="`${item.rank}-${item.title}`"
+            class="meme-card"
+          >
+            <div class="meme-card__top">
+              <div class="meme-card__badges-left">
+                <span class="meme-card__rank-badge">{{ item.rank }}</span>
+                <span
+                  v-if="item.contextLabel"
+                  class="meme-card__pill"
+                >
+                  {{ item.contextLabel }}
+                </span>
+              </div>
               <span
-                v-if="item.contextLabel"
+                v-if="item.confidence"
                 class="meme-card__pill"
               >
-                {{ item.contextLabel }}
+                신뢰도: <strong>{{ item.confidence }}</strong>
               </span>
             </div>
-            <span
-              v-if="item.confidence"
-              class="meme-card__pill"
-            >
-              신뢰도: <strong>{{ item.confidence }}</strong>
-            </span>
-          </div>
 
-          <h3 class="meme-card__title">{{ item.title }}</h3>
-          <p class="meme-card__source">{{ item.source }}</p>
-          <div class="meme-card__divider" />
+            <h3 class="meme-card__title">{{ item.title }}</h3>
+            <p class="meme-card__source">{{ item.source }}</p>
+            <div class="meme-card__divider" />
 
-          <section class="meme-card__explain">
-            <h4 class="meme-card__explain-heading">설명</h4>
-            <div class="meme-card__explain-box">
-              <div
-                v-for="(row, idx) in getTodayMemePointRows(item)"
-                :key="`${item.rank}-pt-${idx}`"
-                class="meme-card__explain-row"
-              >
-                <span class="meme-card__explain-label">{{ row.label }}</span>
-                <span
-                  class="meme-card__explain-vbar"
-                  aria-hidden="true"
-                />
-                <p class="meme-card__explain-text">{{ row.text }}</p>
+            <section class="meme-card__explain">
+              <h4 class="meme-card__explain-heading">설명</h4>
+              <div class="meme-card__explain-box">
+                <div
+                  v-for="(row, idx) in getTodayMemePointRows(item)"
+                  :key="`${item.rank}-pt-${idx}`"
+                  class="meme-card__explain-row"
+                >
+                  <span class="meme-card__explain-label">{{ row.label }}</span>
+                  <span
+                    class="meme-card__explain-vbar"
+                    aria-hidden="true"
+                  />
+                  <p class="meme-card__explain-text">{{ row.text }}</p>
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
 
-          <footer class="meme-card__footer">
-            <div class="meme-card__footer-inner">
-              <div class="meme-card__footer-block">
-                <span class="meme-card__footer-key">카테고리</span>
-                <span class="meme-card__footer-val">{{ item.contextLabel?.trim() || '반응 표현' }}</span>
+            <footer class="meme-card__footer">
+              <div class="meme-card__footer-inner">
+                <div class="meme-card__footer-block">
+                  <span class="meme-card__footer-key">카테고리</span>
+                  <span class="meme-card__footer-val">{{ item.contextLabel?.trim() || '반응 표현' }}</span>
+                </div>
               </div>
-            </div>
-          </footer>
-        </article>
+            </footer>
+          </article>
+        </div>
       </div>
-    </div>
 
-    <!-- 인덱스·방: 제출 전 사용자 액션(설문 ChatPsychologySurvey 푸터와 동일 역할) -->
-    <div
-      v-if="isContentVisible && !props.readonly && props.awaitingUserSubmit && !hasResultRecommendations"
-      class="chat-today-meme__footer-actions"
-    >
-      <UiButton
-        variant="dark"
-        size="sm"
-        @click="emit('submit')"
+      <!-- 인덱스·방: 제출 전 사용자 액션(설문 ChatPsychologySurvey 푸터와 동일 역할) -->
+      <div
+        v-if="isContentVisible && !props.readonly && props.awaitingUserSubmit && !hasResultRecommendations"
+        class="chat-today-meme__footer-actions"
       >
-        오늘의 밈 받기
-        <template #icon-right>
-          <i class="icon-arrow-right size-16" />
-        </template>
-      </UiButton>
-    </div>
+        <UiButton
+          variant="dark"
+          size="sm"
+          @click="emit('submit')"
+        >
+          오늘의 밈 받기
+          <template #icon-right>
+            <i class="icon-arrow-right size-16" />
+          </template>
+        </UiButton>
+      </div>
+    </template>
   </section>
 </template>
 
 <script setup lang="ts">
 import { getTodayMemePointRows, TODAY_MEME_MODEL_ID, type TodayMemeItem } from '~/utils/chat/todayMemeUtil'
+
+type TodayMemeDisplayMode = 'card' | 'request'
+
 interface Props {
+  /** card: 채팅 카드 전체, request: 라이브러리 q_content(질문) 전달 완료 UI만 */
+  displayMode?: TodayMemeDisplayMode
   readonly?: boolean
+  /** q_content 전송 완료 — 요청 영역 전달 완료 UI */
+  requestDelivered?: boolean
   /** 제출 전(응답 없음) — 인트로 후 요청 버튼 표시 */
   awaitingUserSubmit?: boolean
   isAnswerStreaming?: boolean
@@ -147,7 +178,9 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  displayMode: 'card',
   readonly: false,
+  requestDelivered: false,
   awaitingUserSubmit: false,
   isAnswerStreaming: false,
   themeIconClassNm: '',
@@ -168,18 +201,27 @@ const introSubtitleChars = TODAY_MEME_INTRO_SUBTITLE.split('')
 
 const memeList = computed<TodayMemeItem[]>(() => props.memeItems)
 
+const isRequestOnly = computed(() => props.displayMode === 'request')
+const showRequestComplete = computed(() => isRequestOnly.value || props.requestDelivered)
+
 /** 추천 밈 카드가 있으면 하단 설문 액션(받기) 숨김 — ChatLunchAgentCard와 동일 패턴 */
 const hasResultRecommendations = computed(() => memeList.value.length > 0)
 
-const themeStyle = computed(() => ({
-  '--today-meme-theme-color': String(props.themeColorHex).trim(),
-}))
+const themeStyle = computed(() => {
+  const hex = String(props.themeColorHex).trim() || '#6d5bd0'
+  return {
+    '--today-meme-theme-color': hex,
+    '--today-meme-request-theme-color': hex,
+  }
+})
 const themeIconClassNm = computed(() => String(props.themeIconClassNm || '').trim())
 
 const TODAY_MEME_INTRO_MIN_MS = 3100
 const hasMemeResponse = computed(() => memeList.value.length > 0 && !props.isAnswerStreaming)
 const canShowContent = computed(
-  () => !props.isAnswerStreaming && (props.readonly || hasMemeResponse.value || props.awaitingUserSubmit === true),
+  () =>
+    !props.isAnswerStreaming &&
+    (props.requestDelivered || props.readonly || hasMemeResponse.value || props.awaitingUserSubmit === true),
 )
 const isIntroPlaying = ref(!canShowContent.value)
 const isContentVisible = ref(canShowContent.value)
@@ -268,6 +310,67 @@ onUnmounted(() => {
   &.is-content-visible {
     --today-meme-content-opacity: 1;
     --today-meme-content-shift: 0;
+  }
+
+  &.is-request-only {
+    max-height: none;
+    overflow: visible;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+
+    .chat-today-meme__request-complete {
+      padding: 0;
+      border-bottom: none;
+      background: transparent;
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  &__request-complete {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $spacing-md;
+    width: 100%;
+    text-align: left;
+    flex-shrink: 0;
+    padding: $spacing-xl;
+    border-bottom: 1px solid $color-border;
+    background: $color-surface;
+    opacity: var(--today-meme-content-opacity);
+    transform: translateY(var(--today-meme-content-shift));
+    transition:
+      opacity 0.32s ease,
+      transform 0.32s ease;
+  }
+
+  &__request-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--today-meme-request-theme-color) 14%, #fff);
+    color: var(--today-meme-request-theme-color);
+    @include typo($body-small);
+    font-weight: $font-weight-semibold;
+  }
+
+  &__request-title {
+    margin: 0;
+    @include typo($body-2xlarge-bold);
+    color: #1a2b4b;
+    letter-spacing: -0.02em;
+  }
+
+  &__request-desc {
+    margin: 0;
+    @include typo($body-medium);
+    color: $color-text-muted;
+    line-height: 1.55;
   }
 
   &__header {

@@ -19,6 +19,13 @@
       :theme-icon-class-nm="item.iconClassNm ?? ''"
       :theme-color-hex="item.colorHex ?? ''"
     />
+    <ChatTodayMeme
+      v-else-if="isTodayMemeResponse"
+      readonly
+      :meme-items="memeList"
+      :theme-icon-class-nm="item.iconClassNm ?? ''"
+      :theme-color-hex="item.colorHex ?? ''"
+    />
     <!-- eslint-disable vue/no-v-html — toHtmlContent 내 안전 처리 적용 -->
     <template v-else-if="isPsychologyRadarResponse">
       <div
@@ -95,6 +102,7 @@ import type { StressScoreItem } from '~/types/stress'
 import type { LibraryCardDetail } from '~/types/library'
 import { getLunchImageEnrichmentCacheKey, LUNCH_AGENT_ID, parseLunchJsonArray } from '~/utils/chat/lunchAgentUtil'
 import { NEWS_CURATOR_AGENT_ID, parseNewsCuratorItems, parseNewsCuratorPromptMeta } from '~/utils/chat/newsCuratorUtil'
+import { isTodayMemeLibraryCard, parseTodayMemeItems } from '~/utils/chat/todayMemeUtil'
 import {
   parseSurveyAnswersFromPrompt,
   extractAiImageMarkerSection,
@@ -150,6 +158,15 @@ const isNewsCuratorResponse = computed(
     props.item.agentId === NEWS_CURATOR_AGENT_ID &&
     (newsList.value.length > 0 || newsSelectedCategories.value.length > 0),
 )
+
+const memeList = computed(() => {
+  if (!isTodayMemeLibraryCard(props.item)) return []
+  const raw = String(props.item.rcontent ?? '').trim()
+  if (!raw) return []
+  return parseTodayMemeItems(raw)
+})
+
+const isTodayMemeResponse = computed(() => isTodayMemeLibraryCard(props.item) && memeList.value.length > 0)
 
 const responseRenderedHtml = computed(() => {
   const raw = props.item.rcontent ?? ''

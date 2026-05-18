@@ -174,13 +174,24 @@
             :theme-icon-class-nm="displayData?.iconClassNm ?? ''"
             :theme-color-hex="displayData?.colorHex ?? ''"
           />
+          <ChatTodayMeme
+            v-else-if="isTodayMemeQuestion && displayData && hasTodayMemeQcontent(displayData)"
+            class="library-detail-meme-request"
+            display-mode="request"
+            request-delivered
+            :theme-color-hex="displayData?.colorHex ?? ''"
+          />
           <p v-else>{{ displayData?.qcontent }}</p>
         </div>
 
         <!-- 시스템 응답 -->
         <div class="content-box type-response">
           <UiButton
-            v-if="parsedLunchRecommendations.length === 0 && parsedNewsCuratorItems.length === 0"
+            v-if="
+              parsedLunchRecommendations.length === 0 &&
+              parsedNewsCuratorItems.length === 0 &&
+              parsedTodayMemeItems.length === 0
+            "
             variant="ghost"
             size="xxs"
             icon-only
@@ -344,6 +355,7 @@ import {
   parseLunchJsonArray,
 } from '~/utils/chat/lunchAgentUtil'
 import { NEWS_CURATOR_AGENT_ID, parseNewsCuratorItems, parseNewsCuratorPromptMeta } from '~/utils/chat/newsCuratorUtil'
+import { hasTodayMemeQcontent, isTodayMemeLibraryCard, parseTodayMemeItems } from '~/utils/chat/todayMemeUtil'
 import { parseSurveyAnswersFromPrompt } from '~/utils/chat/psychologyConsultUtil'
 import type { LibraryCardDetail, DocItem, TableDataItem, ChartStatItem, ChartDetailCdItem } from '~/types/library'
 import type { LunchRecommendationItem, VisualizationViewModel } from '~/types/chat'
@@ -482,6 +494,15 @@ const parsedNewsCuratorItems = computed(() => {
   const raw = (displayData.value?.rcontent ?? '').trim()
   if (!raw) return []
   return parseNewsCuratorItems(raw)
+})
+
+const isTodayMemeQuestion = computed(() => (displayData.value ? isTodayMemeLibraryCard(displayData.value) : false))
+
+const parsedTodayMemeItems = computed(() => {
+  if (!displayData.value || !isTodayMemeLibraryCard(displayData.value)) return []
+  const raw = (displayData.value?.rcontent ?? '').trim()
+  if (!raw) return []
+  return parseTodayMemeItems(raw)
 })
 // SQL 코드 블록 표시 (데이터분석 타입에서 SQL 버튼으로 토글, 초기 숨김)
 const isSqlCodeVisible = ref(false)
@@ -654,5 +675,10 @@ const handleCopyResponse = async () => {
   max-width: 100%;
   max-height: min(560px, calc(100vh - 280px));
   overflow: hidden;
+}
+
+.library-detail-meme-request {
+  width: 100%;
+  max-width: 100%;
 }
 </style>

@@ -97,6 +97,13 @@
               :theme-icon-class-nm="item.iconClassNm ?? ''"
               :theme-color-hex="item.colorHex ?? ''"
             />
+            <ChatTodayMeme
+              v-else-if="isTodayMemeLibraryCard(item) && hasTodayMemeQcontent(item)"
+              class="library-trash-meme-request"
+              display-mode="request"
+              request-delivered
+              :theme-color-hex="item.colorHex ?? ''"
+            />
             <p v-else>{{ item.qcontent }}</p>
           </div>
 
@@ -121,6 +128,7 @@
 
 <script setup lang="ts">
 import { parseSurveyAnswersFromPrompt } from '~/utils/chat/psychologyConsultUtil'
+import { hasTodayMemeQcontent, isTodayMemeLibraryCard } from '~/utils/chat/todayMemeUtil'
 import type { LibraryCardDetail } from '~/types/library'
 const { trashCardList } = useLibraryStore()
 
@@ -196,7 +204,8 @@ const onEmptyTrash = () => {
 </script>
 
 <style lang="scss" scoped>
-.library-trash-survey-readonly {
+.library-trash-survey-readonly,
+.library-trash-meme-request {
   width: 100%;
   max-width: 100%;
   max-height: min(560px, calc(100vh - 280px));

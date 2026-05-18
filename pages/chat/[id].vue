@@ -22,7 +22,6 @@
         @on-survey-submit="onSurveyMessageSubmit"
         @on-survey-close="onSurveyMessageClose"
         @on-meme-intro-complete="handleTodayMemeIntroEnd"
-        @on-meme-submit="onMemeMessageSubmit"
         @on-news-intro-complete="handleNewsCuratorIntroEnd"
         @on-lunch-card-submit="handleSubmitLunchAgentForm"
         @on-news-card-submit="onNewsMessageSubmit"
@@ -150,7 +149,6 @@ const {
   onSurveyMessageSubmit,
   handleClosePsychologySurvey,
   resetTodayMemePanel,
-  onTodayMemeMessageSubmit,
   handleTodayMemeIntroEnd,
   handleNewsCuratorIntroEnd,
   onNewsCuratorMessageSubmit,
@@ -198,10 +196,6 @@ const isSurveyInputLocked = computed(() =>
       (m.type === 'news' && !m.newsSubmitted),
   ),
 )
-
-const onMemeMessageSubmit = async (logId: string) => {
-  await onTodayMemeMessageSubmit(logId)
-}
 
 const onNewsMessageSubmit = async (logId: string, categories: string[]) => {
   await onNewsCuratorMessageSubmit(logId, categories)
