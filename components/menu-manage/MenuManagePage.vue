@@ -112,8 +112,10 @@ const {
   menuManageTreeLoading: isTreeLoading,
   menuManageTreeError: treeFetchError,
   selectedMenu,
+  isNewMenu,
   handleFetchMenuManageTree,
   handleSelectMenu,
+  handleAddMenu,
   handleUpdateMenuOrder,
   handleSaveMenu,
 } = useMenuManageStore()
@@ -121,6 +123,7 @@ const {
 const onRetryTreeFetch = async (): Promise<void> => {
   selectedMenuId.value = null
   selectedMenu.value = null
+  isNewMenu.value = false
   await handleFetchMenuManageTree()
 }
 
@@ -175,6 +178,7 @@ const onTreeReorder = async (payload: MenuTreeReorderPayload) => {
 const onSearch = () => {
   selectedMenuId.value = null
   selectedMenu.value = null
+  isNewMenu.value = false
 }
 
 // ===========================
@@ -208,7 +212,8 @@ const onMenuSelect = (item: MenuTreeItem) => {
 const onSaveMenu = () => handleSaveMenu()
 
 const onAddMenu = () => {
-  openToast({ message: '메뉴 추가 기능은 준비 중입니다.', type: 'info' })
+  selectedMenuId.value = null
+  handleAddMenu()
 }
 
 const setAllExpanded = (list: MenuTreeItem[], value: boolean) => {

@@ -247,7 +247,12 @@ const breadcrumbDisplay = computed(() => {
 const onParentMenuChange = (parentId: string | number) => {
   const pid = typeof parentId === 'number' ? String(parentId) : parentId
   const selfId = menu.value.menuId
-  if (!selfId) return
+
+  if (!selfId) {
+    onPatch({ parnMenuId: pid || null })
+    return
+  }
+
   if (!pid) {
     onPatch({ menuPath: selfId, parnMenuId: null })
     return
