@@ -328,7 +328,12 @@
 </template>
 
 <script setup lang="ts">
-import { parseLunchPayloadFromPrompt } from '~/utils/chat/lunchAgentUtil'
+import {
+  LUNCH_AGENT_ID,
+  normalizeLunchRecommendationImages,
+  parseLunchPayloadFromPrompt,
+  parseLunchJsonArray,
+} from '~/utils/chat/lunchAgentUtil'
 import { parseSurveyAnswersFromPrompt } from '~/utils/chat/psychologyConsultUtil'
 import type { LibraryCardDetail, DocItem, TableDataItem, ChartStatItem, ChartDetailCdItem } from '~/types/library'
 import type { LunchRecommendationItem, VisualizationViewModel } from '~/types/chat'
@@ -450,19 +455,11 @@ const surveyReadonlyAnswers = computed<Record<number, number>>(() =>
 const lunchQuestionPayload = computed(() => parseLunchPayloadFromPrompt(displayData.value?.qcontent ?? ''))
 
 /** 시스템 응답 복사 버튼 노출 — 점심 JSON 답변은 별도 UI */
-const parseLunchRecommendations = (raw: string): LunchRecommendationItem[] => {
-  try {
-    const parsed = JSON.parse(raw) as unknown
-    if (!Array.isArray(parsed)) return []
-    return parsed as LunchRecommendationItem[]
-  } catch {
-    return []
-  }
-}
 const parsedLunchRecommendations = computed<LunchRecommendationItem[]>(() => {
+  if (displayData.value?.agentId !== LUNCH_AGENT_ID) return []
   const raw = (displayData.value?.rcontent ?? '').trim()
   if (!raw) return []
-  return parseLunchRecommendations(raw)
+  return normalizeLunchRecommendationImages(parseLunchJsonArray(raw))
 })
 // SQL 코드 블록 표시 (데이터분석 타입에서 SQL 버튼으로 토글, 초기 숨김)
 const isSqlCodeVisible = ref(false)

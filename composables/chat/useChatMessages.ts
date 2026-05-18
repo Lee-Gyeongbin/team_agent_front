@@ -8,7 +8,11 @@ import type {
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import { parseChatAttachmentsFromLogRow } from '~/utils/chat/chatAttachmentDisplayUtil'
 import { parseSurveyAnswersFromPrompt } from '~/utils/chat/psychologyConsultUtil'
-import { parseLunchPayloadFromPrompt, parseLunchRecommendationsFromAnswerRContent } from '~/utils/chat/lunchAgentUtil'
+import {
+  normalizeLunchRecommendationImages,
+  parseLunchPayloadFromPrompt,
+  parseLunchJsonArray,
+} from '~/utils/chat/lunchAgentUtil'
 import { isTodayMemePrompt, parseTodayMemeItems } from '~/utils/chat/todayMemeUtil'
 import { parseNewsCuratorItems, parseNewsCuratorPromptMeta } from '~/utils/chat/newsCuratorUtil'
 
@@ -147,7 +151,9 @@ export const useChatMessages = () => {
     // 점심 추천 에이전트: q(폼) 카드 + r(추천) 카드 분리, answer 행은 숨김
     const lunchPayload = parseLunchPayloadFromPrompt(row.qcontent ?? '')
     if (lunchPayload) {
-      const lunchDisplayRecommendations = parseLunchRecommendationsFromAnswerRContent(String(row.rcontent ?? ''))
+      const lunchDisplayRecommendations = normalizeLunchRecommendationImages(
+        parseLunchJsonArray(String(row.rcontent ?? '')),
+      )
       const lunchAgentFields = {
         createdAt,
         svcTy,

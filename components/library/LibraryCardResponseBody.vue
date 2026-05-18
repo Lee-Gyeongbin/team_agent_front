@@ -1,8 +1,12 @@
 <template>
   <div class="library-card-response-body">
     <ChatLunchAgentCard
-      v-if="lunchList.length"
+      v-if="isLunchAgentResponse"
+      readonly
+      display-mode="result"
       :recommendations="lunchList"
+      :enrichment-cache-key="lunchImageCacheKey"
+      :enrichment-r-content="lunchEnrichmentRContent"
       :theme-icon-class-nm="item.iconClassNm ?? ''"
       :theme-color-hex="item.colorHex ?? ''"
     />
@@ -80,7 +84,12 @@
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import type { StressScoreItem } from '~/types/stress'
 import type { LibraryCardDetail } from '~/types/library'
-import type { LunchRecommendationItem } from '~/types/chat'
+import {
+  getLunchImageEnrichmentCacheKey,
+  LUNCH_AGENT_ID,
+  normalizeLunchRecommendationImages,
+  parseLunchJsonArray,
+} from '~/utils/chat/lunchAgentUtil'
 import {
   parseSurveyAnswersFromPrompt,
   extractAiImageMarkerSection,
@@ -102,21 +111,22 @@ const props = defineProps<{
   item: LibraryCardDetail
 }>()
 
-const parseLunchRecommendations = (raw: string): LunchRecommendationItem[] => {
-  try {
-    const parsed = JSON.parse(raw) as unknown
-    if (!Array.isArray(parsed)) return []
-    return parsed as LunchRecommendationItem[]
-  } catch {
-    return []
-  }
-}
+const lunchEnrichmentRContent = computed(() => String(props.item.rcontent ?? '').trim())
+
+const lunchImageCacheKey = computed(() => {
+  const fromLog = getLunchImageEnrichmentCacheKey({ logId: props.item.logId })
+  if (fromLog) return fromLog
+  return String(props.item.cardId ?? '').trim()
+})
 
 const lunchList = computed(() => {
-  const raw = (props.item.rcontent ?? '').trim()
+  if (props.item.agentId !== LUNCH_AGENT_ID) return []
+  const raw = lunchEnrichmentRContent.value
   if (!raw) return []
-  return parseLunchRecommendations(raw)
+  return parseLunchJsonArray(raw)
 })
+
+const isLunchAgentResponse = computed(() => props.item.agentId === LUNCH_AGENT_ID && lunchList.value.length > 0)
 
 const responseRenderedHtml = computed(() => {
   const raw = props.item.rcontent ?? ''

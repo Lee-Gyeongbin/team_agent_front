@@ -22,7 +22,6 @@ import {
 } from '~/utils/chat/psychologyConsultUtil'
 import {
   buildLunchRecommendationPrompt,
-  applyLunchMenuImageEnrichmentToResultMessage,
   createLunchCardMessage,
   createLunchResultCardMessage,
   LUNCH_AGENT_ID,
@@ -274,16 +273,6 @@ export const useChatStore = () => {
     // 메시지 설정
     messages.value = flattened
 
-    // 히스토리 result 카드 — 로그에 placeholder imageUrl만 있을 때 썸네일 API 보강
-    for (const msg of messages.value) {
-      if (msg.type !== 'lunch' || msg.lunchCardRole !== 'result') continue
-      const answerLogId = String(msg.lunchAnswerLogId ?? '').trim()
-      const answer = answerLogId
-        ? messages.value.find((m) => m.type === 'answer' && m.logId === answerLogId)
-        : undefined
-      const rContent = String(answer?.rContent ?? '')
-      void applyLunchMenuImageEnrichmentToResultMessage(msg, rContent)
-    }
     // 검색모드·서브옵션 동기화
     await syncSearchModeFromLastLog(rawList[rawList.length - 1])
     if (selectedChatAgentId.value === AGENT_ID_LUNCH) {
@@ -756,11 +745,6 @@ export const useChatStore = () => {
       return
     }
 
-    if (agent.apiUrlCd?.trim()) {
-      await handleOpenAgentLink(agent)
-      return
-    }
-
     if (agent.agentId === 'AG000010') {
       // 산업심리 상담 에이전트 — 에이전트 모드 상태 초기화
       activeSearchModes.value = []
@@ -818,10 +802,17 @@ export const useChatStore = () => {
       return
     }
 
+    // 채팅 인앱 전용 에이전트(점심·일반 C) — apiUrlCd가 있어도 외부 링크로 보내지 않음
     if (agent.svcTy === 'C') {
       await handleSelectChatIndexAgentForC(agent)
       return
     }
+
+    if (agent.apiUrlCd?.trim()) {
+      await handleOpenAgentLink(agent)
+      return
+    }
+
     const mode = agentTypeToSearchMode(agent.svcTy)
     if (!mode) {
       openToast({ message: '채팅에 연결할 수 없는 에이전트 유형입니다.', type: 'warning' })
