@@ -10,7 +10,10 @@
     <div class="chat-news-curator__content">
       <!-- 제출 후: 카테고리 패널 + 결과 패널 -->
       <template v-if="readonly">
-        <article class="chat-news-curator__panel chat-news-curator__panel--selection">
+        <article
+          v-if="showReadonlySelectionPanel"
+          class="chat-news-curator__panel chat-news-curator__panel--selection"
+        >
           <div class="chat-news-curator__header">
             <div class="chat-news-curator__header-info">
               <div class="chat-news-curator__header-avatar">
@@ -47,6 +50,7 @@
         </article>
 
         <article
+          v-if="showReadonlyResultsPanel"
           class="chat-news-curator__panel chat-news-curator__panel--results"
           :class="{ 'is-intro-playing': isIntroPlaying && readonly }"
         >
@@ -241,8 +245,12 @@
 <script setup lang="ts">
 import type { NewsCuratorItem } from '~/types/chat'
 
+/** form: 분야 선택만, result: 뉴스 목록만, combined: 선택+결과(채팅 기본) */
+type NewsCardDisplayMode = 'form' | 'result' | 'combined'
+
 interface Props {
   readonly?: boolean
+  displayMode?: NewsCardDisplayMode
   isAnswerStreaming?: boolean
   themeIconClassNm?: string
   themeColorHex?: string
@@ -252,6 +260,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   readonly: false,
+  displayMode: 'combined',
   isAnswerStreaming: false,
   themeIconClassNm: '',
   themeColorHex: '',
@@ -287,6 +296,9 @@ const themeIconClassNm = computed(() => String(props.themeIconClassNm || '').tri
 const lockedSelectedCategoriesList = computed(() =>
   (props.lockedSelectedCategories ?? []).map((categoryLabel) => String(categoryLabel).trim()).filter(Boolean),
 )
+
+const showReadonlySelectionPanel = computed(() => props.displayMode === 'form' || props.displayMode === 'combined')
+const showReadonlyResultsPanel = computed(() => props.displayMode === 'result' || props.displayMode === 'combined')
 
 /** 제출 전·readonly 상단 부제 */
 const preSubmitCategoryHint = '보고 싶은 뉴스 종류를 선택해주세요! (최대 3개)'

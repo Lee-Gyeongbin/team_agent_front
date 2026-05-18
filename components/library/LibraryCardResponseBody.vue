@@ -10,6 +10,15 @@
       :theme-icon-class-nm="item.iconClassNm ?? ''"
       :theme-color-hex="item.colorHex ?? ''"
     />
+    <ChatNewsCurator
+      v-else-if="isNewsCuratorResponse"
+      readonly
+      display-mode="result"
+      :news-items="newsList"
+      :locked-selected-categories="newsSelectedCategories"
+      :theme-icon-class-nm="item.iconClassNm ?? ''"
+      :theme-color-hex="item.colorHex ?? ''"
+    />
     <!-- eslint-disable vue/no-v-html — toHtmlContent 내 안전 처리 적용 -->
     <template v-else-if="isPsychologyRadarResponse">
       <div
@@ -84,12 +93,8 @@
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import type { StressScoreItem } from '~/types/stress'
 import type { LibraryCardDetail } from '~/types/library'
-import {
-  getLunchImageEnrichmentCacheKey,
-  LUNCH_AGENT_ID,
-  normalizeLunchRecommendationImages,
-  parseLunchJsonArray,
-} from '~/utils/chat/lunchAgentUtil'
+import { getLunchImageEnrichmentCacheKey, LUNCH_AGENT_ID, parseLunchJsonArray } from '~/utils/chat/lunchAgentUtil'
+import { NEWS_CURATOR_AGENT_ID, parseNewsCuratorItems, parseNewsCuratorPromptMeta } from '~/utils/chat/newsCuratorUtil'
 import {
   parseSurveyAnswersFromPrompt,
   extractAiImageMarkerSection,
@@ -127,6 +132,24 @@ const lunchList = computed(() => {
 })
 
 const isLunchAgentResponse = computed(() => props.item.agentId === LUNCH_AGENT_ID && lunchList.value.length > 0)
+
+const newsSelectedCategories = computed(() => {
+  if (props.item.agentId !== NEWS_CURATOR_AGENT_ID) return []
+  return parseNewsCuratorPromptMeta(props.item.qcontent ?? '').categories
+})
+
+const newsList = computed(() => {
+  if (props.item.agentId !== NEWS_CURATOR_AGENT_ID) return []
+  const raw = String(props.item.rcontent ?? '').trim()
+  if (!raw) return []
+  return parseNewsCuratorItems(raw)
+})
+
+const isNewsCuratorResponse = computed(
+  () =>
+    props.item.agentId === NEWS_CURATOR_AGENT_ID &&
+    (newsList.value.length > 0 || newsSelectedCategories.value.length > 0),
+)
 
 const responseRenderedHtml = computed(() => {
   const raw = props.item.rcontent ?? ''
