@@ -52,6 +52,11 @@ let headerChunk: Blob | null = null
 let mimeType = ''
 let currentInterimId: string | null = null
 
+// 재연결 관련
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+let reconnectAttempts: number = 0
+const MAX_RECONNECT_ATTEMPTS = 5
+
 const { fetchRealtimeToken } = useMeetingApi()
 
 // ─── 유틸 ──────────────────────────────────────────────────────────
@@ -167,6 +172,27 @@ const initWebSocket = (token: string) => {
 
   ws.onclose = () => {
     isConnecting.value = false
+    // 녹음 중에 WS가 끊기면 재연결 시도 (자동저장 시 네트워크 부하 등으로 끊길 수 있음)
+    if (isRecording.value && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+      const delay = Math.min(2000 * 2 ** reconnectAttempts, 30000)
+      console.warn(
+        `[Realtime] WS 끊김 — ${delay}ms 후 재연결 시도 (${reconnectAttempts + 1}/${MAX_RECONNECT_ATTEMPTS})`,
+      )
+      reconnectTimer = setTimeout(async () => {
+        reconnectAttempts++
+        try {
+          const tokenRes = await fetchRealtimeToken()
+          if (!tokenRes.token) throw new Error('토큰 발급 실패')
+          initWebSocket(tokenRes.token)
+          console.info('[Realtime] WS 재연결 성공')
+          reconnectAttempts = 0
+        } catch (e) {
+          console.warn('[Realtime] WS 재연결 실패:', e)
+        }
+      }, delay)
+    } else if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+      console.warn('[Realtime] WS 재연결 한도 초과 — 재연결 중단')
+    }
   }
 }
 
@@ -376,6 +402,13 @@ const startRecording = async (meetingId: string, initialBackupIndex = 0): Promis
 const stopRecording = (): Promise<Blob | null> => {
   isRecording.value = false
 
+  // 재연결 타이머 취소 (의도적 종료이므로 재연결 불필요)
+  if (reconnectTimer !== null) {
+    clearTimeout(reconnectTimer)
+    reconnectTimer = null
+  }
+  reconnectAttempts = 0
+
   // 자동 저장 중지
   stopAutoSave()
 
@@ -415,6 +448,13 @@ const stopRecording = (): Promise<Blob | null> => {
 
 /** 전체 정리 (페이지 이탈 시) */
 const cleanup = async () => {
+  // 재연결 타이머 취소
+  if (reconnectTimer !== null) {
+    clearTimeout(reconnectTimer)
+    reconnectTimer = null
+  }
+  reconnectAttempts = 0
+
   if (ws && ws.readyState !== WebSocket.CLOSED) {
     ws.close()
     ws = null

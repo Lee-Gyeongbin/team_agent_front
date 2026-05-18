@@ -130,7 +130,7 @@ definePageMeta({ path: '/meeting/:id' })
 const route = useRoute()
 const meetingId = computed(() => Number(route.params.id))
 
-const { currentMeeting, meetingDetail, handleSelectMeetingDetail, handleResetRecord, handleSaveMeeting } =
+const { currentMeeting, meetingDetail, infographicList, activeTab, handleSelectMeetingDetail, handleResetRecord, handleSaveMeeting } =
   useMeetingStore()
 const { fetchAbnormalMeetingList } = useMeetingApi()
 
@@ -240,6 +240,11 @@ const updateMobile = () => {
 // ── 라이프사이클 ─────────────────────────────────────────────────────
 onMounted(async () => {
   if (meetingId.value) await handleSelectMeetingDetail(meetingId.value)
+
+  // 인포그래픽 데이터가 있으면 인포그래픽 탭 활성화
+  if (infographicList.value.length > 0) {
+    activeTab.value = 'infographic'
+  }
 
   // 비정상 종료 여부 확인
   try {

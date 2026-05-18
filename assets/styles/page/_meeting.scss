@@ -839,10 +839,10 @@
 // ---- migrated from _meeting2.scss ----
 
 // ===================================
-// ?�의�?(Meeting) ?�이지/컴포?�트 ?��???
+// ?�의�?(Meeting) ?�이지/컴포?�트 ?��???
 // ===================================
 
-// ---- ?�이지 컨테?�너 ----
+// ---- ?�이지 컨테?�너 ----
 .meeting2-page {
   display: flex;
   flex-direction: column;
@@ -854,7 +854,7 @@
   background: $color-background;
 }
 
-// ---- ?�의 목록 ?�이지 ----
+// ---- ?�의 목록 ?�이지 ----
 .meeting2-list-page {
   display: flex;
   flex-direction: column;
@@ -928,7 +928,7 @@
   gap: $spacing-xs;
 }
 
-// ---- ?�의�??�세 (3분할) ----
+// ---- ?�의�??�세 (3분할) ----
 .meeting2-detail {
   display: flex;
   flex-direction: column;
@@ -977,13 +977,13 @@
   flex-shrink: 0;
 }
 
-// ?�목 + ?�집버튼 wrapper ????그룹?�로 묶어 분리 방�?
+// ?�목 + ?�집버튼 wrapper ????그룹?�로 묶어 분리 방�?
 .meeting2-detail-title-wrap {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   min-width: 0;
-  flex: 0 1 auto; // ?�식 ??��?�만 (?�더 ?�체 차�? X)
+  flex: 0 1 auto; // ?�식 ??��?�만 (?�더 ?�체 차�? X)
   max-width: 100%;
 }
 
@@ -1076,7 +1076,7 @@
   }
 }
 
-// ---- ?�널 공통 ----
+// ---- ?�널 공통 ----
 .meeting2-panel {
   display: flex;
   flex-direction: column;
@@ -1103,7 +1103,7 @@
   font-size: 15px;
 }
 
-// ?�의�??�디???�널 ???�목 + ?�내 부???�로 배치
+// ?�의�??�디???�널 ???�목 + ?�내 부???�로 배치
 .meeting2-editor-panel-header {
   flex-direction: column;
   align-items: flex-start;
@@ -1155,7 +1155,7 @@
   margin-bottom: $spacing-sm;
 }
 
-// ---- 진행 ?�계 (Stepper) ----
+// ---- 진행 단계 (Stepper) ----
 .meeting2-stepper {
   display: flex;
   align-items: stretch;
@@ -1164,6 +1164,70 @@
   background: #fff;
   border: 1px solid $color-border;
   border-radius: $border-radius-lg;
+  transition: padding $transition-fast;
+
+  &.is-collapsed {
+    align-items: center;
+    padding: 8px $spacing-md;
+  }
+}
+
+// 접기/펼치기 토글 버튼
+.meeting2-stepper-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  background: transparent;
+  color: $color-text-muted;
+  cursor: pointer;
+  transition: background $transition-fast, border-color $transition-fast;
+
+  &:hover {
+    background: $color-surface;
+    border-color: $color-text-muted;
+  }
+}
+
+.meeting2-stepper-toggle-icon {
+  transition: transform $transition-fast;
+  transform: rotate(180deg); // 펼친 상태: 위쪽 화살표
+
+  &.is-collapsed {
+    transform: rotate(0deg); // 접힌 상태: 아래쪽 화살표
+  }
+}
+
+// 접힌 상태 요약 줄
+.meeting2-stepper-summary {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex: 1;
+  min-width: 0;
+
+  .meeting2-stepper-item-icon {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+}
+
+.meeting2-stepper-summary-label {
+  @include typo($body-small-bold, $color-text-dark);
+  @include ellipsis(1);
+}
+
+.meeting2-stepper-summary-status {
+  @include typo($body-xsmall);
+  color: var(--color-primary);
+  font-weight: $font-weight-bold;
+  flex-shrink: 0;
 }
 
 .meeting2-stepper-item {
@@ -1247,14 +1311,14 @@
   }
 }
 
-// ---- 좌측 ?�널: ?�단 고정 / ?�단 ?�크�?분리 ----
+// ---- 좌측 ?�널: ?�단 고정 / ?�단 ?�크�?분리 ----
 .meeting2-record-fixed {
   flex-shrink: 0;
   padding: 8px 14px;
   background: #fff;
   border-bottom: 1px solid $color-border;
 
-  // 고정 ?�역 ?�의 STT ?�바 ???�단 마진 0?�로 (구분?�이 ?��? ?�음)
+  // 고정 ?�역 ?�의 STT ?�바 ???�단 마진 0?�로 (구분?�이 ?��? ?�음)
   .meeting2-stt-toolbar {
     margin-bottom: 0;
   }
@@ -1269,7 +1333,7 @@
   padding: 8px 14px 8px 16px;
 }
 
-// ---- 좌측: ?�음 컨트�?----
+// ---- 좌측: ?�음 컨트�?----
 .meeting2-record-control {
   display: flex;
   flex-direction: column;
@@ -1293,17 +1357,17 @@
   @include typo($body-small-bold);
   color: $color-text-muted;
 
-  // ?�음 �???빨강 + ???�스
+  // ?�음 �???빨강 + ???�스
   &.is-recording {
     color: #d92d20;
   }
 
-  // ?�시?��? ??주황
+  // ?�시?��? ??주황
   &.is-paused {
     color: #d97706;
   }
 
-  // 중�???/ ?��????�색 (기본�?
+  // 중�???/ ?��????�색 (기본�?
   &.is-stopped,
   &.is-idle {
     color: $color-text-muted;
@@ -1343,7 +1407,7 @@
   gap: $spacing-xs;
 }
 
-// ---- 좌측: ?�형 (?��?) ----
+// ---- 좌측: ?�형 (?��?) ----
 .meeting2-waveform {
   display: flex;
   align-items: center;
@@ -1364,20 +1428,20 @@
     background $transition-base,
     opacity $transition-base;
 
-  // ?��?/ 중�??????�색
+  // ?��?/ 중�??????�색
   .is-idle &,
   .is-stopped & {
     background: $color-border;
     opacity: 1;
   }
 
-  // ?�시?��? ???�랑?��?�??�리�?
+  // ?�시?��? ???�랑?��?�??�리�?
   .is-paused & {
     opacity: 0.3;
   }
 }
 
-// ---- 좌측: STT ?�션 (?�어 ?�택 ?? ----
+// ---- 좌측: STT ?�션 (?�어 ?�택 ?? ----
 .meeting2-stt-toolbar {
   display: flex;
   align-items: center;
@@ -1385,7 +1449,7 @@
   gap: $spacing-sm;
   margin-bottom: $spacing-sm;
 
-  // UiButton size="sm"??medium-bold ?�트�?medium?�로 ?�화
+  // UiButton size="sm"??medium-bold ?�트�?medium?�로 ?�화
   .ui-button {
     font-weight: $font-weight-medium;
   }
@@ -1407,6 +1471,92 @@
   min-height: 0;
 }
 
+// STT 검색 바
+.meeting2-stt-search-bar {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-xs $spacing-sm;
+  border-bottom: 1px solid $color-border;
+  flex-shrink: 0;
+}
+
+.meeting2-stt-search-select-wrap {
+  flex-shrink: 0;
+}
+
+.meeting2-stt-search-select {
+  height: 32px;
+  padding: 0 $spacing-xs;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  background: #fff;
+  @include typo($body-small, $color-text-dark);
+  cursor: pointer;
+  outline: none;
+
+  &:focus {
+    border-color: var(--color-primary);
+  }
+}
+
+.meeting2-stt-search-input-wrap {
+  position: relative;
+  flex: 1;
+}
+
+.meeting2-stt-search-input {
+  width: 100%;
+  height: 32px;
+  padding: 0 $spacing-sm;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  background: #fff;
+  @include typo($body-small, $color-text-dark);
+  outline: none;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: $color-text-muted;
+  }
+
+  &:focus {
+    border-color: var(--color-primary);
+  }
+}
+
+.meeting2-stt-search-suggest {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  box-shadow: $shadow-md;
+  z-index: $z-dropdown;
+  padding: 4px;
+}
+
+.meeting2-stt-search-suggest-item {
+  display: block;
+  width: 100%;
+  padding: 7px $spacing-sm;
+  border: 0;
+  border-radius: $border-radius-sm;
+  background: transparent;
+  text-align: left;
+  @include typo($body-small, $color-text-dark);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-primary-bg);
+    color: var(--color-primary);
+  }
+}
+
 .meeting2-stt-list {
   display: flex;
   flex-direction: column;
@@ -1421,8 +1571,17 @@
 .meeting2-stt-item {
   display: flex;
   gap: $spacing-sm;
-  padding: $spacing-sm 0;
-  border-bottom: 1px dashed transparent;
+  padding: $spacing-sm;
+  border-radius: $border-radius-base;
+  border: 1px solid transparent;
+  transition:
+    background $transition-fast,
+    border-color $transition-fast;
+
+  &.is-focused {
+    background: var(--color-primary-bg);
+    border-color: var(--color-primary);
+  }
 }
 
 .meeting2-stt-item-avatar {
@@ -1465,7 +1624,7 @@
   white-space: pre-wrap;
 }
 
-// ---- 좌측: ?�자 목록 ----
+// ---- 좌측: ?�자 목록 ----
 .meeting2-speaker-list {
   display: flex;
   flex-direction: column;
@@ -1518,7 +1677,7 @@
     background: #e9eef2;
   }
 
-  // ?�집 모드 ??�??�에 input
+  // 편집 모드일 때에 input
   &.is-editing {
     cursor: default;
     background: #fff;
@@ -1527,6 +1686,12 @@
     &:hover {
       background: #fff;
     }
+  }
+
+  // 화자 STT 내비게이션 활성 상태
+  &.is-nav-active {
+    background: var(--color-primary-bg);
+    border-color: var(--color-primary);
   }
 }
 
@@ -1543,7 +1708,7 @@
   flex-shrink: 0;
 }
 
-// ?�라???�집??input ??�??�에 ?�연?�럽�?보이?�록
+// ?�라???�집??input ??�??�에 ?�연?�럽�?보이?�록
 .meeting2-speaker-chip-edit-wrap {
   position: relative;
   display: inline-flex;
@@ -1565,7 +1730,7 @@
   }
 }
 
-// ?�의 ?�세 userList 기반 ?�동?�성 (MeetingStartModal 참석??목록�??�사)
+// ?�의 ?�세 userList 기반 ?�동?�성 (MeetingStartModal 참석??목록�??�사)
 .meeting2-speaker-suggest {
   position: absolute;
   bottom: calc(100% + 4px);
@@ -1616,7 +1781,7 @@
   color: $color-text-muted;
 }
 
-// ---- ?�자 ?�상 ?�레??(colorIndex 0~7) ----
+// ---- ?�자 ?�상 ?�레??(colorIndex 0~7) ----
 .meeting2-speaker-color-0 {
   background: #6c63ff;
 }
@@ -1642,7 +1807,7 @@
   background: #10b981;
 }
 
-// ---- 중앙: ?�디??----
+// ---- 중앙: ?�디??----
 .meeting2-editor {
   display: flex;
   flex-direction: column;
@@ -1660,7 +1825,7 @@
   flex-wrap: wrap;
 }
 
-// �??�이�??�리 fallback ???�속??SVG ?�록 ???�동 보임
+// �??�이�??�리 fallback ???�속??SVG ?�록 ???�동 보임
 .meeting2-editor-toolbar-btn:empty,
 .meeting2-editor-toolbar-btn > i:not([class*='icon-']):empty {
   display: none;
@@ -1704,12 +1869,12 @@
   }
 }
 
-// ?�겨�??�일 input (?��?지 ?�로???�리거용)
+// ?�겨�??�일 input (?��?지 ?�로???�리거용)
 .meeting2-editor-toolbar-file {
   display: none;
 }
 
-// ?��?지 ?�롭?�운 (?�일 / URL)
+// ?��?지 ?�롭?�운 (?�일 / URL)
 .meeting2-image-picker {
   position: relative;
   display: inline-flex;
@@ -1772,7 +1937,7 @@
   background: $color-border;
 }
 
-// ???�입??그리??(?�버?�서 ?????�택)
+// ???�입??그리??(?�버?�서 ?????�택)
 .meeting2-table-grid-wrap {
   display: flex;
   flex-direction: column;
@@ -1828,7 +1993,7 @@
   }
 }
 
-// ---- ?�상 ?�커 (글?�색 / ?�광?? ----
+// ---- ?�상 ?�커 (글?�색 / ?�광?? ----
 .meeting2-color-picker {
   position: relative;
   display: inline-flex;
@@ -1897,7 +2062,7 @@
     outline-offset: 1px;
   }
 
-  // 커스?� ?�력??(?�이?�브 input ?�기�?+ ?�이�??�출)
+  // 커스?� ?�력??(?�이?�브 input ?�기�?+ ?�이�??�출)
   &.is-custom {
     display: inline-flex;
     align-items: center;
@@ -1982,7 +2147,7 @@
   }
 }
 
-// ?�디??본문 + floating bubble???�께 감싸??relative wrapper
+// ?�디??본문 + floating bubble???�께 감싸??relative wrapper
 .meeting2-editor-relative {
   position: relative;
   flex: 1;
@@ -1991,8 +2156,8 @@
   flex-direction: column;
 }
 
-// ?�크�?wrapper ??Tiptap EditorContent??부�?
-// (.meeting2-editor-body??.ProseMirror ?�체???�어가??flex ?�작 ??????명시??wrapper ?�요)
+// ?�크�?wrapper ??Tiptap EditorContent??부�?
+// (.meeting2-editor-body??.ProseMirror ?�체???�어가??flex ?�작 ??????명시??wrapper ?�요)
 .meeting2-editor-scroll {
   flex: 1;
   min-height: 0;
@@ -2000,7 +2165,7 @@
   @include custom-scrollbar;
 }
 
-// HTML ?�스 보기 textarea ??WYSIWYG ?�역�??�일??박스 ?�에??swap
+// HTML ?�스 보기 textarea ??WYSIWYG ?�역�??�일??박스 ?�에??swap
 .meeting2-editor-source {
   width: 100%;
   height: 100%;
@@ -2019,7 +2184,7 @@
   @include custom-scrollbar;
 }
 
-// ---- ??floating ?�바 ----
+// ---- ??floating ?�바 ----
 .meeting2-table-bubble {
   position: absolute;
   z-index: 10;
@@ -2071,15 +2236,15 @@
   background: $color-border;
 }
 
-// Tiptap??EditorContent ??.ProseMirror ?�의 컨텐�??�역???�용
-// (MeetingEditorPanel?�서 editorProps.attributes.class = 'meeting2-editor-body' 주입)
-// 본문 ?��???h1~h3/p/ul/ol/table/blockquote/img/a/mark/pre/code/placeholder)?�
-// utils/_doc-content.scss ??doc-content-styles mixin ?�로 ?�일 ??HTML 문서 ?�플�??�디?�도 ?�일 mixin ?�용
+// Tiptap??EditorContent ??.ProseMirror ?�의 컨텐�??�역???�용
+// (MeetingEditorPanel?�서 editorProps.attributes.class = 'meeting2-editor-body' 주입)
+// 본문 ?��???h1~h3/p/ul/ol/table/blockquote/img/a/mark/pre/code/placeholder)?�
+// utils/_doc-content.scss ??doc-content-styles mixin ?�로 ?�일 ??HTML 문서 ?�플�??�디?�도 ?�일 mixin ?�용
 .meeting2-editor-body {
   @include doc-content-styles;
 }
 
-// ??리사?�즈 �??�용???�택 방�?
+// ??리사?�즈 �??�용???�택 방�?
 .resize-cursor {
   cursor: col-resize;
 }
@@ -2092,7 +2257,7 @@
   text-align: right;
 }
 
-// ---- ?�측: ?�이??메뉴 ----
+// ---- ?�측: ?�이??메뉴 ----
 .meeting2-side-section {
   display: flex;
   flex-direction: column;
@@ -2114,7 +2279,7 @@
   gap: $spacing-xs;
 }
 
-// ?�업 메뉴 ???�롭?�운 (?�일 ?�???�식 ?�택)
+// ?�업 메뉴 ???�롭?�운 (?�일 ?�???�식 ?�택)
 .meeting2-action-picker {
   position: relative;
 }
@@ -2298,7 +2463,7 @@
   margin-top: $spacing-sm;
 }
 
-// ---- ?�플�??�택 모달 ----
+// ---- ?�플�??�택 모달 ----
 .meeting2-template-list {
   display: flex;
   flex-direction: column;
@@ -2339,7 +2504,7 @@
   @include typo($body-small, $color-text-muted);
 }
 
-// ---- 모달 공통 ??(?�일 ?�??/ 메일 발송) ----
+// ---- 모달 공통 ??(?�일 ?�??/ 메일 발송) ----
 .meeting2-modal-form {
   display: flex;
   flex-direction: column;
@@ -2456,7 +2621,7 @@
   border-radius: $border-radius-base;
   min-height: 120px;
 
-  // �??�태 ??UiEmpty 가?�데 ?�렬
+  // �??�태 ??UiEmpty 가?�데 ?�렬
   &.is-empty {
     align-items: center;
     justify-content: center;
@@ -2468,7 +2633,7 @@
   }
 }
 
-// ---- ?�이?? ?�의 ?�보 (Meta) ----
+// ---- ?�이?? ?�의 ?�보 (Meta) ----
 .meeting2-meta-header {
   display: flex;
   align-items: center;
@@ -2521,7 +2686,7 @@
   @include typo($body-small, $color-text-dark);
 }
 
-// ---- ?�의 ?�보 ?�집 모달 ----
+// ---- ?�의 ?�보 ?�집 모달 ----
 .meeting2-info-form {
   display: flex;
   flex-direction: column;
@@ -2540,7 +2705,7 @@
   @include typo($body-xsmall, $color-text-muted);
 }
 
-// �?input ??�?+ ?�스???�력??같�? 박스 ?�에 ?�는 것처??보이?�록
+// �?input ??�?+ ?�스???�력??같�? 박스 ?�에 ?�는 것처??보이?�록
 .meeting2-info-chip-input {
   display: flex;
   flex-wrap: wrap;
@@ -2624,7 +2789,7 @@
   }
 }
 
-// ---- 모바??/ ?�블�?(1023px ?�하) ----
+// ---- 모바??/ ?�블�?(1023px ?�하) ----
 @media (max-width: 1023px) {
   .meeting2-page,
   .meeting2-list-page {
@@ -2683,7 +2848,7 @@
   }
 }
 
-// ---- ?�이???�널 ??----
+// ---- ?�이???�널 ??----
 .meeting2-side-tab-group {
   display: flex;
   align-items: center;
@@ -2726,7 +2891,7 @@
   flex-shrink: 0;
 }
 
-// ---- ?�포그래???�널 ----
+// ---- ?�포그래???�널 ----
 .meeting2-infographic-panel {
   width: 100%;
 }
@@ -2765,7 +2930,7 @@
   }
 }
 
-// ---- ?�포그래??미리보기 모달 ----
+// ---- ?�포그래??미리보기 모달 ----
 .meeting2-infographic-preview-body {
   display: flex;
   align-items: center;
