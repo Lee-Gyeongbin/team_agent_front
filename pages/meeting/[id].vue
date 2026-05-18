@@ -122,6 +122,7 @@
 
 <script setup lang="ts">
 import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
+import { useMeetingApi } from '~/composables/meeting/useMeetingApi'
 import type { MeetingUser } from '~/types/meeting'
 
 definePageMeta({ path: '/meeting/:id' })
@@ -131,6 +132,10 @@ const meetingId = computed(() => Number(route.params.id))
 
 const { currentMeeting, meetingDetail, handleSelectMeetingDetail, handleResetRecord, handleSaveMeeting } =
   useMeetingStore()
+const { fetchAbnormalMeetingList } = useMeetingApi()
+
+// ── 비정상 종료 상태 ─────────────────────────────────────────────────────
+const isAbnormal = ref(false)
 
 // ── 참석자 목록 (meeting 기존 로직 흡수) ────────────────────────────
 /** 화자-참석자 매핑 모달용 — meetingDetail의 attendees JSON 파싱 */
@@ -235,6 +240,16 @@ const updateMobile = () => {
 // ── 라이프사이클 ─────────────────────────────────────────────────────
 onMounted(async () => {
   if (meetingId.value) await handleSelectMeetingDetail(meetingId.value)
+
+  // 비정상 종료 여부 확인
+  try {
+    const res = await fetchAbnormalMeetingList()
+    const found = (res.list ?? []).some((m) => m.meetingId === meetingId.value)
+    if (found) isAbnormal.value = true
+  } catch {
+    // 무시
+  }
+
   updateMobile()
   window.addEventListener('resize', updateMobile)
 })
@@ -261,4 +276,5 @@ const onClickBack = () => {
 // provide/inject 또는 props로 연결 시 활용
 provide('attendeeList', attendeeList)
 provide('onSavedSpeakerMapping', onSavedSpeakerMapping)
+provide('isAbnormal', isAbnormal)
 </script>

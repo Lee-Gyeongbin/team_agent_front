@@ -165,13 +165,22 @@
             :theme-icon-class-nm="displayData?.iconClassNm ?? ''"
             :theme-color-hex="displayData?.colorHex ?? ''"
           />
+          <ChatNewsCurator
+            v-else-if="newsQuestionCategories.length"
+            class="library-detail-news-readonly"
+            readonly
+            display-mode="form"
+            :locked-selected-categories="newsQuestionCategories"
+            :theme-icon-class-nm="displayData?.iconClassNm ?? ''"
+            :theme-color-hex="displayData?.colorHex ?? ''"
+          />
           <p v-else>{{ displayData?.qcontent }}</p>
         </div>
 
         <!-- 시스템 응답 -->
         <div class="content-box type-response">
           <UiButton
-            v-if="parsedLunchRecommendations.length === 0"
+            v-if="parsedLunchRecommendations.length === 0 && parsedNewsCuratorItems.length === 0"
             variant="ghost"
             size="xxs"
             icon-only
@@ -328,7 +337,13 @@
 </template>
 
 <script setup lang="ts">
-import { parseLunchPayloadFromPrompt } from '~/utils/chat/lunchAgentUtil'
+import {
+  LUNCH_AGENT_ID,
+  normalizeLunchRecommendationImages,
+  parseLunchPayloadFromPrompt,
+  parseLunchJsonArray,
+} from '~/utils/chat/lunchAgentUtil'
+import { NEWS_CURATOR_AGENT_ID, parseNewsCuratorItems, parseNewsCuratorPromptMeta } from '~/utils/chat/newsCuratorUtil'
 import { parseSurveyAnswersFromPrompt } from '~/utils/chat/psychologyConsultUtil'
 import type { LibraryCardDetail, DocItem, TableDataItem, ChartStatItem, ChartDetailCdItem } from '~/types/library'
 import type { LunchRecommendationItem, VisualizationViewModel } from '~/types/chat'
@@ -450,19 +465,23 @@ const surveyReadonlyAnswers = computed<Record<number, number>>(() =>
 const lunchQuestionPayload = computed(() => parseLunchPayloadFromPrompt(displayData.value?.qcontent ?? ''))
 
 /** 시스템 응답 복사 버튼 노출 — 점심 JSON 답변은 별도 UI */
-const parseLunchRecommendations = (raw: string): LunchRecommendationItem[] => {
-  try {
-    const parsed = JSON.parse(raw) as unknown
-    if (!Array.isArray(parsed)) return []
-    return parsed as LunchRecommendationItem[]
-  } catch {
-    return []
-  }
-}
 const parsedLunchRecommendations = computed<LunchRecommendationItem[]>(() => {
+  if (displayData.value?.agentId !== LUNCH_AGENT_ID) return []
   const raw = (displayData.value?.rcontent ?? '').trim()
   if (!raw) return []
-  return parseLunchRecommendations(raw)
+  return normalizeLunchRecommendationImages(parseLunchJsonArray(raw))
+})
+
+const newsQuestionCategories = computed(() => {
+  if (displayData.value?.agentId !== NEWS_CURATOR_AGENT_ID) return []
+  return parseNewsCuratorPromptMeta(displayData.value?.qcontent ?? '').categories
+})
+
+const parsedNewsCuratorItems = computed(() => {
+  if (displayData.value?.agentId !== NEWS_CURATOR_AGENT_ID) return []
+  const raw = (displayData.value?.rcontent ?? '').trim()
+  if (!raw) return []
+  return parseNewsCuratorItems(raw)
 })
 // SQL 코드 블록 표시 (데이터분석 타입에서 SQL 버튼으로 토글, 초기 숨김)
 const isSqlCodeVisible = ref(false)
@@ -624,6 +643,13 @@ const handleCopyResponse = async () => {
 }
 
 .library-detail-lunch-readonly {
+  width: 100%;
+  max-width: 100%;
+  max-height: min(560px, calc(100vh - 280px));
+  overflow: hidden;
+}
+
+.library-detail-news-readonly {
   width: 100%;
   max-width: 100%;
   max-height: min(560px, calc(100vh - 280px));

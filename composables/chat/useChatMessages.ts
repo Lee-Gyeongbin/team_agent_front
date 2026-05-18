@@ -8,8 +8,12 @@ import type {
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import { parseChatAttachmentsFromLogRow } from '~/utils/chat/chatAttachmentDisplayUtil'
 import { parseSurveyAnswersFromPrompt } from '~/utils/chat/psychologyConsultUtil'
-import { parseLunchPayloadFromPrompt, parseLunchRecommendationsFromAnswerRContent } from '~/utils/chat/lunchAgentUtil'
-import { isTodayMemePrompt, parseTodayMemeItems, TODAY_MEME_AGENT_ID } from '~/utils/chat/todayMemeUtil'
+import {
+  normalizeLunchRecommendationImages,
+  parseLunchPayloadFromPrompt,
+  parseLunchJsonArray,
+} from '~/utils/chat/lunchAgentUtil'
+import { isTodayMemePrompt, parseTodayMemeItems } from '~/utils/chat/todayMemeUtil'
 import { parseNewsCuratorItems, parseNewsCuratorPromptMeta } from '~/utils/chat/newsCuratorUtil'
 
 // 채팅 메시지/스트리밍 상태는 모듈 레벨에서 단일 인스턴스로 공유
@@ -111,7 +115,7 @@ export const useChatMessages = () => {
     }
 
     // TodayMeme 에이전트: 프롬프트 패턴이면 readonly meme 메시지로 대체
-    if (agentId === TODAY_MEME_AGENT_ID && isTodayMemePrompt(row.qcontent ?? '')) {
+    if (agentId === 'AG000011' && isTodayMemePrompt(row.qcontent ?? '')) {
       const memeDisplayItems = parseTodayMemeItems(String(row.rcontent ?? ''))
       return [
         {
@@ -144,29 +148,44 @@ export const useChatMessages = () => {
       ]
     }
 
-    // 점심 추천 에이전트: 프롬프트 패턴이면 readonly lunch-card로 대체
+    // 점심 추천 에이전트: q(폼) 카드 + r(추천) 카드 분리, answer 행은 숨김
     const lunchPayload = parseLunchPayloadFromPrompt(row.qcontent ?? '')
     if (lunchPayload) {
-      const lunchDisplayRecommendations = parseLunchRecommendationsFromAnswerRContent(String(row.rcontent ?? ''))
+      const lunchDisplayRecommendations = normalizeLunchRecommendationImages(
+        parseLunchJsonArray(String(row.rcontent ?? '')),
+      )
+      const lunchAgentFields = {
+        createdAt,
+        svcTy,
+        modelId,
+        refId,
+        ...(agentId ? { agentId } : {}),
+        hasSource: false,
+        hasVisualization: false,
+      }
       return [
         {
-          logId: `${logId}-lunch-card`,
+          logId: `${logId}-lunch-form`,
           type: 'lunch',
+          lunchCardRole: 'form',
           qContent: '',
           rContent: '',
-          createdAt,
-          svcTy,
-          modelId,
-          refId,
-          ...(agentId ? { agentId } : {}),
-          uiType: 'lunch-card',
           lunchSubmitted: true,
           lunchFormPayload: { ...lunchPayload },
-          lunchDisplayRecommendations,
-          hasSource: false,
-          hasVisualization: false,
+          ...lunchAgentFields,
         },
-        { ...answerMessage, lunchDisplayRecommendations },
+        {
+          logId: `${logId}-lunch-result`,
+          type: 'lunch',
+          lunchCardRole: 'result',
+          qContent: '',
+          rContent: '',
+          lunchSubmitted: true,
+          lunchDisplayRecommendations,
+          lunchAnswerLogId: logId,
+          ...lunchAgentFields,
+        },
+        { ...answerMessage, hiddenFromDisplay: true },
       ]
     }
 
