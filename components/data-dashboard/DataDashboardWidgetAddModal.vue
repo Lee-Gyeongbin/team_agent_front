@@ -35,11 +35,13 @@
                 <span
                   v-if="sql.agentNm"
                   class="sql-item-badge"
-                >{{ sql.agentNm }}</span>
+                  >{{ sql.agentNm }}</span
+                >
                 <span
                   v-if="sql.datamartNm"
                   class="sql-item-badge type-secondary"
-                >{{ sql.datamartNm }}</span>
+                  >{{ sql.datamartNm }}</span
+                >
               </div>
             </button>
           </template>
@@ -56,7 +58,7 @@
           <!-- SQL 미리보기 -->
           <div class="config-sql-preview">
             <span class="config-sql-preview-label">SQL</span>
-            <pre class="config-sql-code">{{ selectedSql.sqlContent }}</pre>
+            <pre class="config-sql-code">{{ formattedSql }}</pre>
           </div>
 
           <!-- 위젯 제목 -->
@@ -204,19 +206,23 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   close: []
-  save: [widget: {
-    logId: string
-    sqlTitle: string
-    title: string
-    vizType: DataDashboardVizType
-    vizConfig: DataDashboardVizConfig
-    colSpan: 1 | 2
-    variables: DataDashboardSqlItem['variables']
-    ttsqParam?: string | null
-  }]
+  save: [
+    widget: {
+      logId: string
+      sqlTitle: string
+      title: string
+      vizType: DataDashboardVizType
+      vizConfig: DataDashboardVizConfig
+      colSpan: 1 | 2
+      variables: DataDashboardSqlItem['variables']
+      ttsqParam?: string | null
+    },
+  ]
 }>()
 
 const { sqlList, sqlListLoading } = useDataDashboardStore()
+
+const formattedSql = computed(() => formatSql(selectedSql.value?.sqlContent))
 
 const searchKeyword = ref('')
 const selectedLogId = ref<string | null>(null)
@@ -294,7 +300,12 @@ watch(
     selectedLogId.value = null
     selectedSql.value = null
     yAxisKeysInput.value = ''
-    Object.assign(form, { title: '', vizType: 'bar', vizConfig: { xAxisKey: '', yAxisKeys: [], labelKey: '', valueKey: '' }, colSpan: 1 })
+    Object.assign(form, {
+      title: '',
+      vizType: 'bar',
+      vizConfig: { xAxisKey: '', yAxisKeys: [], labelKey: '', valueKey: '' },
+      colSpan: 1,
+    })
   },
 )
 </script>
