@@ -167,6 +167,14 @@ export interface MeetingFileSaveForm {
   fileName: string
 }
 
+/** 비정상종료 회의 항목 */
+export interface AbnormalMeeting {
+  meetingId: number
+  meetingTitle: string
+  startDt: string
+  endDt: string
+}
+
 /** 회의록 화면용 회의 단건 */
 export interface MeetingViewModel {
   id: string

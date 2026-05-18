@@ -19,6 +19,7 @@ import type { TranscriptBlock } from '~/types/meeting'
 import { useMeetingApi } from '~/composables/meeting/useMeetingApi'
 
 const REALTIME_WS_URL = 'wss://api.openai.com/v1/realtime?intent=transcription'
+const AUTO_SAVE_INTERVAL_MS = 10 * 60 * 1000 // 10분
 
 // ─── module-scope 상태 (컴포넌트 간 공유) ─────────────────────────
 const isRecording = ref(false)
@@ -35,6 +36,18 @@ let scriptProcessor: ScriptProcessorNode | null = null
 // mainRecorder: 전체 세션 녹음 (finishMeetingWithAudio용 전체 Blob)
 let mainRecorder: MediaRecorder | null = null
 let mainChunks: Blob[] = []
+
+// 자동 저장 (백업)
+let autoSaveTimer: ReturnType<typeof setInterval> | null = null
+let autoSaveIndex: number = 0
+let lastSavedChunkCount: number = 0 // 마지막 저장 시점의 mainChunks 길이
+
+/**
+ * WebM 헤더 청크 — MediaRecorder 첫 번째 ondataavailable 청크에만 포함됨
+ * (EBML header + Segment Info + Tracks 등)
+ * 이후 incremental 백업 파일 생성 시 반드시 앞에 붙여야 재생 가능한 WebM이 됨
+ */
+let headerChunk: Blob | null = null
 
 let mimeType = ''
 let currentInterimId: string | null = null
@@ -186,11 +199,111 @@ const initMediaRecorder = () => {
 
   // 전체 세션 녹음용 (finishMeetingWithAudio에 전달할 전체 Blob)
   mainChunks = []
+  headerChunk = null
   mainRecorder = new MediaRecorder(mediaStream, mimeType ? { mimeType } : undefined)
   mainRecorder.ondataavailable = (e) => {
-    if (e.data.size > 0) mainChunks.push(e.data)
+    if (e.data.size > 0) {
+      mainChunks.push(e.data)
+      // 첫 번째 청크에 WebM EBML 헤더가 포함됨 — incremental 백업 시 재사용
+      if (headerChunk === null) headerChunk = e.data
+    }
   }
   mainRecorder.start(1000)
+}
+
+// ─── 자동 저장 (백업) ──────────────────────────────────────────────
+
+/**
+ * 10분마다 마지막 저장 이후 새로 쌓인 청크를 NCP에 업로드
+ *
+ * backup_0.webm = 0~10분 (헤더 포함, 그대로 재생 가능)
+ * backup_1.webm = 헤더 + 10~20분 청크 (헤더를 앞에 붙여야 재생 가능한 WebM이 됨)
+ * backup_2.webm = 헤더 + 20~30분 청크
+ *
+ * WebM은 첫 청크에만 EBML 헤더가 들어가므로, 이후 구간 파일에는
+ * headerChunk를 앞에 붙여야 독립적으로 재생 가능한 파일이 됨
+ * → ffmpeg concat 시 각 파일을 개별 input으로 처리하면 중복 헤더도 문제 없음
+ */
+const startAutoSave = (meetingId: string) => {
+  stopAutoSave()
+  const { fetchUploadBackupAudio } = useMeetingApi()
+  autoSaveTimer = setInterval(async () => {
+    const newChunks = mainChunks.slice(lastSavedChunkCount)
+    if (newChunks.length === 0) return
+
+    const filename = `backup_${autoSaveIndex++}.webm`
+
+    // 첫 번째 구간(backup_0)은 헤더가 이미 포함되어 있음
+    // 이후 구간은 headerChunk를 앞에 붙여 독립 재생 가능한 파일로 만듦
+    const chunksToSave = lastSavedChunkCount > 0 && headerChunk ? [headerChunk, ...newChunks] : newChunks
+    const blob = new Blob(chunksToSave, { type: mimeType || 'audio/webm' })
+
+    try {
+      await fetchUploadBackupAudio(Number(meetingId), blob, filename)
+      lastSavedChunkCount = mainChunks.length // 저장 완료 지점 갱신
+      console.info('[AutoSave] 백업 완료:', filename)
+    } catch (e) {
+      console.warn('[AutoSave] 백업 업로드 실패:', e)
+      // 실패 시 lastSavedChunkCount 미갱신 → 다음 주기에 재시도
+      autoSaveIndex-- // 실패한 인덱스 되돌리기
+    }
+  }, AUTO_SAVE_INTERVAL_MS)
+}
+
+/**
+ * 페이지 이탈 시 마지막 auto-save 이후 남은 청크를 sendBeacon으로 즉시 전송
+ * beforeunload 핸들러에서 동기적으로 호출해야 함
+ * sendBeacon은 브라우저가 비동기 큐에 넣어 전송 보장 (단, 페이로드 크기 제한 있음)
+ */
+const sendRemainingChunksBeacon = (meetingId: string): boolean => {
+  const remainingChunks = mainChunks.slice(lastSavedChunkCount)
+  if (remainingChunks.length === 0) return true
+
+  // 이전에 저장된 구간이 있으면 헤더 청크를 앞에 붙여 독립 재생 가능하게 함
+  const chunksToSend = lastSavedChunkCount > 0 && headerChunk ? [headerChunk, ...remainingChunks] : remainingChunks
+  const blob = new Blob(chunksToSend, { type: mimeType || 'audio/webm' })
+  const filename = `backup_${autoSaveIndex}.webm`
+  const formData = new FormData()
+  formData.append('audioFile', blob, filename)
+  const sent = navigator.sendBeacon(`/api/meeting/${meetingId}/backup-audio`, formData)
+  if (sent) {
+    console.info('[UnloadSave] 남은 청크 beacon 전송:', filename, `${blob.size}bytes`)
+  } else {
+    console.warn('[UnloadSave] beacon 전송 실패 (페이로드 초과 가능성)')
+  }
+  return sent
+}
+
+/**
+ * 이어서 녹음 후 종료 시 — auto-save 이후 남은 청크를 마지막 백업 파일로 업로드
+ * sendRemainingChunksBeacon의 async 버전 (회의 종료 플로우에서 사용)
+ * stopRecording() 호출 이후 mainChunks가 확정된 시점에 호출해야 함
+ */
+const uploadRemainingChunks = async (meetingId: string): Promise<boolean> => {
+  const remainingChunks = mainChunks.slice(lastSavedChunkCount)
+  if (remainingChunks.length === 0) return true
+
+  const chunksToSend = lastSavedChunkCount > 0 && headerChunk ? [headerChunk, ...remainingChunks] : remainingChunks
+  const blob = new Blob(chunksToSend, { type: mimeType || 'audio/webm' })
+  const filename = `backup_${autoSaveIndex}.webm`
+
+  const { fetchUploadBackupAudio } = useMeetingApi()
+  try {
+    await fetchUploadBackupAudio(Number(meetingId), blob, filename)
+    console.info('[FinishSave] 마지막 청크 업로드 완료:', filename, `${blob.size}bytes`)
+    return true
+  } catch (e) {
+    console.warn('[FinishSave] 마지막 청크 업로드 실패:', e)
+    return false
+  }
+}
+
+/** 자동 저장 중지 */
+const stopAutoSave = () => {
+  if (autoSaveTimer !== null) {
+    clearInterval(autoSaveTimer)
+    autoSaveTimer = null
+  }
 }
 
 // ─── Public API ───────────────────────────────────────────────────
@@ -200,14 +313,20 @@ const checkSupport = () => {
   isSupported.value = !!(window.WebSocket && navigator.mediaDevices?.getUserMedia)
 }
 
-/** 녹음 시작: 토큰 발급 → 마이크 획득 → WS 연결 → 스트리밍 시작 */
-const startRecording = async (): Promise<boolean> => {
+/**
+ * 녹음 시작: 토큰 발급 → 마이크 획득 → WS 연결 → 스트리밍 시작
+ * @param initialBackupIndex 이어서 녹음 시 기존 백업 파일 개수 (auto-save 인덱스 연속성 유지)
+ */
+const startRecording = async (meetingId: string, initialBackupIndex = 0): Promise<boolean> => {
   if (isRecording.value || isConnecting.value) return false
 
   isConnecting.value = true
   blocks.value = []
   currentInterimId = null
   mainChunks = []
+  headerChunk = null
+  autoSaveIndex = initialBackupIndex
+  lastSavedChunkCount = 0
 
   // fetchRealtimeToken()          // 백엔드 → OpenAI ephemeral token 발급
   //     ↓ 성공
@@ -236,6 +355,9 @@ const startRecording = async (): Promise<boolean> => {
     // 5. MediaRecorder 시작 (전체 세션 녹음)
     initMediaRecorder()
 
+    // 6. 자동 저장 (10분마다 백업 업로드)
+    startAutoSave(meetingId)
+
     isRecording.value = true
     return true
   } catch (e) {
@@ -253,6 +375,9 @@ const startRecording = async (): Promise<boolean> => {
  */
 const stopRecording = (): Promise<Blob | null> => {
   isRecording.value = false
+
+  // 자동 저장 중지
+  stopAutoSave()
 
   // WebSocket 종료
   if (ws && ws.readyState !== WebSocket.CLOSED) {
@@ -328,4 +453,8 @@ export const useRealtimeTranscription = () => ({
   stopRecording,
   cleanup,
   resetRecording,
+  startAutoSave,
+  stopAutoSave,
+  sendRemainingChunksBeacon,
+  uploadRemainingChunks,
 })

@@ -12,24 +12,9 @@
     </div>
 
     <div class="meeting2-record-actions">
-      <!-- 녹음 시작 -->
-      <UiButton
-        v-if="!isRecording && !isConnecting"
-        variant="primary"
-        size="sm"
-        :disabled="status == '002'"
-        full-width
-        @click="emit('start')"
-      >
-        <template #icon-left>
-          <i class="icon-play size-16" />
-        </template>
-        녹음 시작
-      </UiButton>
-
       <!-- 연결 중 (비활성) -->
       <UiButton
-        v-else-if="isConnecting"
+        v-if="isConnecting"
         variant="primary"
         size="sm"
         full-width
@@ -40,7 +25,7 @@
 
       <!-- 회의 종료 (녹음 중) -->
       <UiButton
-        v-else
+        v-else-if="isRecording"
         variant="dark"
         size="sm"
         full-width
@@ -51,6 +36,45 @@
           <i class="icon-stop size-16" />
         </template>
         {{ isFinishing ? '회의록 생성 중...' : '회의 종료' }}
+      </UiButton>
+
+      <!-- 비정상 종료 복구 버튼 두 개 -->
+      <template v-else-if="isAbnormal">
+        <UiButton
+          variant="primary"
+          size="sm"
+          @click="emit('resume')"
+        >
+          <template #icon-left>
+            <i class="icon-play size-16" />
+          </template>
+          녹음하기 (이어서)
+        </UiButton>
+        <UiButton
+          variant="outline"
+          size="sm"
+          @click="emit('generateFromBackup')"
+        >
+          <template #icon-left>
+            <i class="icon-edit size-16" />
+          </template>
+          기존 음성으로 회의록 생성
+        </UiButton>
+      </template>
+
+      <!-- 녹음 시작 -->
+      <UiButton
+        v-else
+        variant="primary"
+        size="sm"
+        :disabled="status == '002'"
+        full-width
+        @click="emit('start')"
+      >
+        <template #icon-left>
+          <i class="icon-play size-16" />
+        </template>
+        녹음 시작
       </UiButton>
     </div>
   </div>
@@ -65,12 +89,15 @@ const props = defineProps<{
   isRecording: boolean
   isConnecting: boolean
   isFinishing: boolean
+  isAbnormal?: boolean
   elapsed?: number
 }>()
 
 const emit = defineEmits<{
   start: []
   finish: []
+  resume: []
+  generateFromBackup: []
 }>()
 
 const status = computed(() => currentMeeting.value?.status)

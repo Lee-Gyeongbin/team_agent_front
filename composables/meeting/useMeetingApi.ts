@@ -9,6 +9,7 @@ import type {
   MeetingViewSpeaker as MeetingSpeaker,
   MeetingViewUser as MeetingUser,
   MeetingFileFormat,
+  AbnormalMeeting,
 } from '~/types/meeting'
 
 // 🔽 Mock — 백엔드 API 없는 항목만 유지 (실제 엔드포인트 완성 시 useApi 패턴으로 교체)
@@ -172,6 +173,37 @@ export const useMeetingApi = () => {
     return post<{ url: string }>('/ai/meeting/downloadAudioFile.do', { meetingId })
   }
 
+  /** 비정상종료 회의 목록 조회 */
+  const fetchAbnormalMeetingList = async (): Promise<{ list: AbnormalMeeting[] }> => {
+    return get<{ list: AbnormalMeeting[] }>('/meeting/abnormal')
+  }
+
+  /** 백업 파일 병합 복구 */
+  const fetchRecoverMeeting = async (
+    meetingId: number,
+  ): Promise<{ successYn: boolean; audioId?: number; returnMsg?: string }> => {
+    return post<{ successYn: boolean; audioId?: number; returnMsg?: string }>(`/meeting/${meetingId}/recover`, {})
+  }
+
+  /** 백업 파일 개수 조회 — 이어서 녹음 시 auto-save 인덱스 연속성 유지용 */
+  const fetchBackupFileCount = async (meetingId: number): Promise<{ count: number; successYn: boolean }> => {
+    return get<{ count: number; successYn: boolean }>(`/meeting/${meetingId}/backup-file-count`)
+  }
+
+  /** 백업 오디오 파일 업로드 (multipart/form-data) */
+  const fetchUploadBackupAudio = async (
+    meetingId: number,
+    blob: Blob,
+    filename: string,
+  ): Promise<{ successYn: boolean }> => {
+    const formData = new FormData()
+    formData.append('audioFile', blob, filename)
+    return useApi_multipart<{ successYn: boolean }>(`/api/meeting/${meetingId}/backup-audio`, {
+      method: 'POST',
+      body: formData,
+    })
+  }
+
   return {
     fetchUserList,
     fetchMeetingList,
@@ -193,5 +225,9 @@ export const useMeetingApi = () => {
     fetchDownloadAudioFileUrl,
     openMeetingProcessingStream,
     openInfographicStream,
+    fetchAbnormalMeetingList,
+    fetchRecoverMeeting,
+    fetchUploadBackupAudio,
+    fetchBackupFileCount,
   }
 }

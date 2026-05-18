@@ -35,6 +35,7 @@ const {
   fetchDownloadAudioFileUrl,
   openMeetingProcessingStream,
   openInfographicStream,
+  fetchRecoverMeeting,
 } = useMeetingApi()
 const { handleDownloadByUrl } = useFileStore()
 
@@ -354,6 +355,139 @@ const handleFinishMeetingWithAudio = async (params: { meetingId: number; audioBl
     })
   } catch {
     openToast({ message: '회의 종료에 실패했습니다.', type: 'error' })
+    closeLoading()
+    isFinishing.value = false
+    return false
+  }
+}
+
+/**
+ * 복구된 회의 오디오 처리 (SSE 흐름만 실행)
+ * 백업 복구 후 백엔드에 이미 오디오 레코드가 insert된 상태에서 호출
+ * finishMeetingWithAudio의 step 3-5(전사·화자분리·회의록생성)만 수행
+ */
+const handleProcessRecoveredMeeting = async (meetingId: number): Promise<boolean> => {
+  isFinishing.value = true
+  openLoading({ text: '복구된 녹음을 처리하는 중...' })
+
+  return new Promise<boolean>((resolve) => {
+    const es = openMeetingProcessingStream(meetingId)
+
+    const stepMessages: Record<string, string> = {
+      transcribe: '음성 인식 및 화자 분리 중입니다.',
+      minutes: '회의록 생성 중입니다.',
+      save: '데이터를 저장 중입니다.',
+    }
+
+    es.addEventListener('progress', (e: MessageEvent) => {
+      try {
+        const { step } = JSON.parse(e.data) as { step: string }
+        const message = stepMessages[step]
+        if (message) updateLoadingText(message)
+      } catch {
+        // 파싱 실패 무시
+      }
+    })
+
+    es.addEventListener('done', () => {
+      es.close()
+      isFinishing.value = false
+      closeLoading()
+      resolve(true)
+    })
+
+    es.addEventListener('error', () => {
+      es.close()
+      isFinishing.value = false
+      closeLoading()
+      openToast({ message: '복구 처리 중 오류가 발생했습니다.', type: 'error' })
+      resolve(false)
+    })
+  })
+}
+
+/**
+ * 이어서 녹음 후 회의 종료 처리
+ * 1. 마지막 미저장 청크를 백업 파일로 업로드 (uploadRemainingChunks)
+ * 2. recoverMeeting으로 전체 백업 파일 병합 후 SSE 처리
+ * MeetingRecordPanel의 [회의 종료] 버튼에서 isResumeMode일 때 호출
+ */
+const handleFinishResumedMeeting = async (params: {
+  meetingId: number
+  uploadRemainingChunks: () => Promise<boolean>
+}): Promise<boolean> => {
+  openLoading({ text: '오디오를 업로드하는 중...' })
+  try {
+    const uploaded = await params.uploadRemainingChunks()
+    if (!uploaded) {
+      // 업로드 실패해도 기존 백업 파일로 복구 시도
+      console.warn('[handleFinishResumedMeeting] 마지막 청크 업로드 실패 — 기존 백업으로 복구 시도')
+    }
+    closeLoading()
+  } catch {
+    closeLoading()
+    openToast({ message: '오디오 업로드에 실패했습니다.', type: 'error' })
+    return false
+  }
+
+  // 전체 백업 파일 병합 + SSE 처리 (recoverMeeting과 동일한 흐름)
+  return handleRecoverMeeting({ meetingId: params.meetingId })
+}
+
+/**
+ * 비정상 종료 회의 복구 — POST /meeting/{meetingId}/recover 호출 후 SSE 처리
+ * MeetingRecordPanel의 [기존 음성으로 회의록 생성] 버튼에서 호출
+ */
+const handleRecoverMeeting = async (params: { meetingId: number }): Promise<boolean> => {
+  isFinishing.value = true
+  openLoading({ text: '백업 파일을 복구하는 중...' })
+  try {
+    const res = await fetchRecoverMeeting(params.meetingId)
+    if (!res.successYn || res.audioId == null) {
+      openToast({ message: res.returnMsg ?? '복구에 실패했습니다.', type: 'error' })
+      closeLoading()
+      isFinishing.value = false
+      return false
+    }
+
+    // SSE 스트림 구독 — handleProcessRecoveredMeeting과 동일한 흐름
+    return await new Promise<boolean>((resolve) => {
+      const es = openMeetingProcessingStream(params.meetingId)
+
+      const stepMessages: Record<string, string> = {
+        transcribe: '음성 인식 및 화자 분리 중입니다.',
+        minutes: '회의록 생성 중입니다.',
+        save: '데이터를 저장 중입니다.',
+      }
+
+      es.addEventListener('progress', (e: MessageEvent) => {
+        try {
+          const { step } = JSON.parse(e.data) as { step: string }
+          const message = stepMessages[step]
+          if (message) updateLoadingText(message)
+        } catch {
+          // 파싱 실패 무시
+        }
+      })
+
+      es.addEventListener('done', () => {
+        es.close()
+        isFinishing.value = false
+        closeLoading()
+        openToast({ message: '회의록이 생성되었습니다.' })
+        resolve(true)
+      })
+
+      es.addEventListener('error', () => {
+        es.close()
+        isFinishing.value = false
+        closeLoading()
+        openToast({ message: '복구 처리 중 오류가 발생했습니다.', type: 'error' })
+        resolve(false)
+      })
+    })
+  } catch {
+    openToast({ message: '복구 처리에 실패했습니다.', type: 'error' })
     closeLoading()
     isFinishing.value = false
     return false
@@ -841,6 +975,9 @@ export const useMeetingStore = () => {
     handleStreamInfographic,
     handleCreateMeeting,
     handleFinishMeetingWithAudio,
+    handleFinishResumedMeeting,
+    handleProcessRecoveredMeeting,
+    handleRecoverMeeting,
     handleSaveMeeting,
     handleDeleteMeeting,
     handleResetRecord,

@@ -99,6 +99,12 @@
       @close="isModalOpen = false"
       @confirm="onConfirmStart"
     />
+
+    <!-- 비정상종료 회의 복구 모달 (페이지 진입 시 자동 조회) -->
+    <MeetingRecoverModal
+      v-model="isRecoverModalOpen"
+      @recover="onRecover"
+    />
   </div>
 </template>
 
@@ -108,11 +114,17 @@ import type { MeetingStep } from '~/types/meeting'
 
 definePageMeta({ path: '/meeting' })
 
-const { meetingList, isLoadingList, handleSelectMeetingList, handleDeleteMeeting, handleCreateMeeting } =
-  useMeetingStore()
+const {
+  meetingList,
+  isLoadingList,
+  handleSelectMeetingList,
+  handleDeleteMeeting,
+  handleCreateMeeting,
+} = useMeetingStore()
 
 const searchKeyword = ref('')
 const isModalOpen = ref(false)
+const isRecoverModalOpen = ref(false)
 
 onMounted(() => {
   handleSelectMeetingList()
@@ -182,5 +194,10 @@ const onConfirmStart = async (params: { meetingTitle: string; attendees: string;
   if (meetingId) {
     navigateTo(`/meeting/${meetingId}`)
   }
+}
+
+/** 복구하기 클릭 → 해당 회의 상세 페이지로 이동 */
+const onRecover = ({ meetingId }: { meetingId: number }) => {
+  navigateTo(`/meeting/${meetingId}`)
 }
 </script>
