@@ -6,6 +6,19 @@
     </span>
 
     <div class="meeting2-stt-toolbar-actions">
+      <UiButton
+        variant="ghost"
+        size="md"
+        :class="{ 'is-active': isSearchOpen }"
+        title="STT 검색"
+        @click="toggleSearch"
+      >
+        <template #icon-left>
+          <i class="icon-search size-20" />
+        </template>
+        검색
+      </UiButton>
+
       <div
         ref="downloadPickerRef"
         class="meeting2-stt-download-picker"
@@ -88,6 +101,8 @@ const { isRecording, isConnecting } = useRealtimeTranscription()
 const {
   currentMeeting,
   isFinishing,
+  isSearchOpen,
+  toggleSearch,
   handleSelectMeetingDetail,
   activeTab,
   handleFinishMeetingWithAudio,

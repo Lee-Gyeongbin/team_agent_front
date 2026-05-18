@@ -58,6 +58,37 @@ const isInfoEditOpen = ref(false)
 const userSearchResults = ref<MeetingUser[]>([])
 const activeTab = ref<'share' | 'infographic'>('share')
 
+// ── 화자 STT 내비게이션 ────────────────────────────────────────────────
+/** 현재 내비게이션 중인 화자 ID */
+const speakerNavSpeakerId = ref<string | null>(null)
+/** 현재 하이라이트된 STT 아이템 ID */
+const focusedSttItemId = ref<string | null>(null)
+
+// ── STT 검색 ─────────────────────────────────────────────────────────
+const isSearchOpen = ref(false)
+const searchType = ref<'화자' | '내용'>('내용')
+const searchKeyword = ref('')
+
+/** 검색 조건에 맞게 필터링된 STT 목록 */
+const filteredSttList = computed(() => {
+  const list = currentMeeting.value?.sttList ?? []
+  const kw = searchKeyword.value.trim()
+  if (!isSearchOpen.value || !kw) return list
+  if (searchType.value === '화자') {
+    return list.filter((item) => item.speakerName.includes(kw))
+  }
+  return list.filter((item) => item.text.includes(kw))
+})
+
+/** 검색창 토글 — 닫을 때 검색 조건 초기화 */
+const toggleSearch = () => {
+  isSearchOpen.value = !isSearchOpen.value
+  if (!isSearchOpen.value) {
+    searchKeyword.value = ''
+    searchType.value = '내용'
+  }
+}
+
 // ===== 유틸 =====
 const parseJsonArray = <T = string>(jsonStr: string): T[] => {
   try {
@@ -228,7 +259,11 @@ const handleSelectMeetingDetail = async (meetingId: number) => {
     } else if (currentMeeting.value && mapped) {
       currentMeeting.value.steps = mapped.steps
       currentMeeting.value.speakers = mapped.speakers
-      currentMeeting.value.sttList = mapped.sttList
+      // 녹음 중(status='001')에는 sttList를 덮어쓰지 않음
+      // DB에 화자가 없어 mapped.sttList = []이 되어 실시간 STT 블록이 지워지는 것을 방지
+      if (detail.meeting?.status !== '001') {
+        currentMeeting.value.sttList = mapped.sttList
+      }
       if (detail.minutes && mapped.minutesContent && isMinutesEditorEmpty(currentMeeting.value.minutesContent)) {
         currentMeeting.value.minutesContent = mapped.minutesContent
       }
@@ -945,6 +980,30 @@ const handleSearchUsers = async (keyword: string) => {
   }
 }
 
+/**
+ * 화자 칩 클릭 → STT 목록 내비게이션
+ * - 다른 화자 클릭: 해당 화자의 가장 최신(마지막) 발화로 이동
+ * - 같은 화자 재클릭: 바로 위(이전) 발화로 이동, 처음이면 다시 마지막으로 순환
+ */
+const navigateSpeakerUtterance = (speakerId: string) => {
+  if (!currentMeeting.value) return
+  const items = currentMeeting.value.sttList.filter((s) => s.speakerId === speakerId)
+  if (items.length === 0) return
+
+  if (speakerId !== speakerNavSpeakerId.value) {
+    speakerNavSpeakerId.value = speakerId
+    focusedSttItemId.value = items[items.length - 1].id
+  } else {
+    const currentIdx = items.findIndex((i) => i.id === focusedSttItemId.value)
+    if (currentIdx > 0) {
+      focusedSttItemId.value = items[currentIdx - 1].id
+    } else {
+      // 처음에 도달하면 마지막으로 순환
+      focusedSttItemId.value = items[items.length - 1].id
+    }
+  }
+}
+
 const openInfoEditModal = () => {
   if (!currentMeeting.value) {
     openToast({ message: '회의 정보가 없습니다.', type: 'warning' })
@@ -969,6 +1028,14 @@ export const useMeetingStore = () => {
     isInfoEditOpen,
     userSearchResults,
     activeTab,
+    speakerNavSpeakerId,
+    focusedSttItemId,
+    navigateSpeakerUtterance,
+    isSearchOpen,
+    searchType,
+    searchKeyword,
+    filteredSttList,
+    toggleSearch,
     handleSelectUserList,
     handleSelectMeetingList,
     handleSelectMeetingDetail,

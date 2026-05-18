@@ -55,7 +55,11 @@
         v-for="(speaker, idx) in displayList"
         :key="speaker.id"
         class="meeting2-speaker-chip"
-        :class="{ 'is-editing': isEditMode }"
+        :class="{
+          'is-editing': isEditMode,
+          'is-nav-active': !isEditMode && speakerNavSpeakerId === speaker.id,
+        }"
+        @click="!isEditMode && navigateSpeakerUtterance(speaker.id)"
       >
         <span
           class="meeting2-speaker-chip-avatar"
@@ -125,7 +129,8 @@ import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
 import { computeSpeakerAvatarMap } from '~/utils/meeting/speakerAvatarUtil'
 import type { User, MeetingViewSpeaker as MeetingSpeaker, MergeGroup } from '~/types/meeting'
 
-const { currentMeeting, meetingDetail, handleSaveSpeakers } = useMeetingStore()
+const { currentMeeting, meetingDetail, speakerNavSpeakerId, handleSaveSpeakers, navigateSpeakerUtterance } =
+  useMeetingStore()
 
 const speakers = computed(() => currentMeeting.value?.speakers ?? [])
 
