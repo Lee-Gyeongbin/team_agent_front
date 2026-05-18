@@ -63,7 +63,7 @@ const {
   registerSurveyRoom,
   isSurveyVisible,
 } = usePsychologySurvey()
-const { isTodayMemeVisible, isTodayMemeRoom, registerTodayMemeRoom, openTodayMeme } = useTodayMeme()
+const { isTodayMemeVisible, isTodayMemeRoom, registerTodayMemeRoom } = useTodayMeme()
 const { isNewsCuratorVisible, isNewsCuratorRoom, registerNewsCuratorRoom, openNewsCurator, closeNewsCurator } =
   useNewsCurator()
 const { isLunchVisible, openLunchAgent, closeLunchAgent } = useLunchAgent()
@@ -411,7 +411,7 @@ export const useChatStore = () => {
       svcTy: resolveSvcTy(),
       modelId: TODAY_MEME_MODEL_ID,
       refId: buildRefIdForPayload(),
-      agentId: selectedChatAgentId.value ?? '',
+      agentId: AGENT_ID_MEME,
       files: [],
     })
     if (sent) {
@@ -776,10 +776,12 @@ export const useChatStore = () => {
       if (chatRoom.value.roomId) {
         const alreadyHasMeme = messages.value.some((m) => m.type === 'meme' && !m.memeSubmitted)
         if (!alreadyHasMeme) {
-          messages.value = [...messages.value, createTodayMemeMessage(false)]
+          const memeMsg = createTodayMemeMessage(false)
+          messages.value = [...messages.value, memeMsg]
+          await onTodayMemeMessageSubmit(memeMsg.logId)
         }
       } else {
-        openTodayMeme()
+        await handleIndexTodayMemeSubmit()
       }
       return
     }

@@ -11,7 +11,7 @@ import {
 import { useChatSendPipeline } from '~/composables/chat/useChatSendPipeline'
 import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
 import { parseLunchPayloadFromPrompt } from '~/utils/chat/lunchAgentUtil'
-import { isTodayMemePrompt, TODAY_MEME_MODEL_ID } from '~/utils/chat/todayMemeUtil'
+import { isTodayMemePrompt, TODAY_MEME_AGENT_ID, TODAY_MEME_MODEL_ID } from '~/utils/chat/todayMemeUtil'
 
 /** 목록에 동일 방이 문자열/숫자 등 다른 형태로 중복되면 사이드바에서 활성 행이 여러 개로 보일 수 있어 통일·중복 제거 */
 function dedupeChatRoomsByNormalizedId(list: ChatRoom[]): ChatRoom[] {
@@ -192,13 +192,14 @@ export const useChatRooms = () => {
     const unpinned = prev.filter((room) => room.fixYn !== 'Y')
     chatRoomList.value = dedupeChatRoomsByNormalizedId([...pinned, createdRoom, ...unpinned])
 
+    const isMemePrompt = isTodayMemePrompt(qContent)
     const sent = await executeSendPipeline({
       content: qContent,
       roomId: createdRoom.roomId,
       svcTy,
-      modelId: selectedChatAgentId.value === 'AG000011' ? TODAY_MEME_MODEL_ID : selectedModelOption.value,
+      modelId: isMemePrompt ? TODAY_MEME_MODEL_ID : selectedModelOption.value,
       refId: buildRefIdForPayload(),
-      agentId: selectedChatAgentId.value ?? '',
+      agentId: isMemePrompt ? TODAY_MEME_AGENT_ID : (selectedChatAgentId.value ?? ''),
       files,
       clearMessagesBefore: true,
     })

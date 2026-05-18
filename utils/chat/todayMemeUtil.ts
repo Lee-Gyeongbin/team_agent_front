@@ -170,6 +170,15 @@ export const parseTodayMemeItems = (raw: string): TodayMemeItem[] => {
 
 export const isTodayMemePrompt = (promptText: string) => String(promptText ?? '').trim() === TODAY_MEME_PROMPT
 
+/** 라이브러리 카드·상세 — agentId 또는 숨김 프롬프트(qcontent)로 밈 에이전트 로그 식별 */
+export const isTodayMemeLibraryCard = (item: { agentId?: string; qcontent?: string }) => {
+  if (String(item.agentId ?? '').trim() === TODAY_MEME_AGENT_ID) return true
+  return isTodayMemePrompt(item.qcontent ?? '')
+}
+
+/** 요청(qcontent) 영역 — 전달 완료 UI 노출 여부 */
+export const hasTodayMemeQcontent = (item: { qcontent?: string }) => String(item.qcontent ?? '').trim().length > 0
+
 export const createTodayMemeMessage = (submitted: boolean): ChatMessage => ({
   logId: `today-meme-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
   type: 'meme',

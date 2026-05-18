@@ -50,6 +50,9 @@ const menuManageTreeError = ref('')
 /** 현재 수정 중인 메뉴 — 트리 노드의 얕은 복사본으로 관리 (저장 전 원본 트리 미변경) */
 const selectedMenu = ref<MenuTreeItem | null>(null)
 
+/** 신규 메뉴 추가 모드 여부 (true: 신규 생성, false: 기존 수정) */
+const isNewMenu = ref(false)
+
 /** 메뉴 목록 조회 */
 const handleFetchMenuManageTree = async (): Promise<void> => {
   menuManageTreeError.value = ''
@@ -110,10 +113,37 @@ const handleUpdateMenuOrder = async ({ draggedId, targetId, position }: MenuTree
 
 /** 트리 노드 선택 — 트리 원본을 보호하기 위해 얕은 복사본으로 저장 */
 const handleSelectMenu = (item: MenuTreeItem) => {
+  isNewMenu.value = false
   selectedMenu.value = { ...item }
 }
 
-/** 메뉴 상세 저장 — 검증·토스트 포함 */
+/**
+ * 새 메뉴 추가 모드 진입 — 선택한 부모 노드 기준으로 빈 폼 초기화
+ * @param parent 부모 메뉴 노드 (null이면 최상위 메뉴로 추가)
+ */
+const handleAddMenu = (parent: MenuTreeItem | null = null) => {
+  isNewMenu.value = true
+  selectedMenu.value = {
+    menuId: '',
+    menuName: '',
+    parnMenuId: parent?.menuId ?? null,
+    menuLevel: (parent?.menuLevel ?? 0) + 1,
+    menuPath: '',
+    isLeaf: 'Y',
+    srcPath: '',
+    icon: '',
+    sortOrd: 0,
+    useYn: 'Y',
+    description: '',
+    expanded: true,
+    children: [],
+  }
+}
+
+/**
+ * 메뉴 저장 — 신규(isNewMenu=true)·수정(isNewMenu=false) 모두 fetchSaveMenu 단일 API 사용
+ * 신규: 저장 후 selectedMenu 초기화 / 수정: 트리 갱신 후 해당 노드 재선택
+ */
 const handleSaveMenu = async (): Promise<void> => {
   if (!selectedMenu.value) return
   if (!selectedMenu.value.menuName.trim()) {
@@ -124,12 +154,24 @@ const handleSaveMenu = async (): Promise<void> => {
     openToast({ message: '메뉴 URL을 입력해 주세요.', type: 'warning' })
     return
   }
+
+  const savingNew = isNewMenu.value
   const menuId = selectedMenu.value.menuId
+
   try {
     await fetchSaveMenu(selectedMenu.value)
     await handleFetchMenuManageTree()
-    const refreshed = findNodeById(menuManageTreeList.value, menuId)
-    if (refreshed) selectedMenu.value = { ...refreshed }
+
+    if (savingNew) {
+      // 신규 저장 완료: 폼 초기화
+      isNewMenu.value = false
+      selectedMenu.value = null
+    } else {
+      // 기존 수정: 트리에서 갱신된 노드 재선택
+      const refreshed = findNodeById(menuManageTreeList.value, menuId)
+      if (refreshed) selectedMenu.value = { ...refreshed }
+    }
+
     openToast({ message: '저장되었습니다.', type: 'success' })
   } catch {
     openToast({ message: '메뉴 저장에 실패했습니다.', type: 'error' })
@@ -142,8 +184,10 @@ export const useMenuManageStore = () => {
     menuManageTreeLoading,
     menuManageTreeError,
     selectedMenu,
+    isNewMenu,
     handleFetchMenuManageTree,
     handleSelectMenu,
+    handleAddMenu,
     handleUpdateMenuOrder,
     handleSaveMenu,
   }

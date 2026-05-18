@@ -222,6 +222,7 @@
         <ChatTodayMeme
           v-else-if="message.type === 'meme'"
           :readonly="isShare || message.memeSubmitted === true"
+          :request-delivered="message.memeSubmitted === true"
           :meme-items="resolvedTodayMemeItems"
           :is-answer-streaming="isMemeAnswerStreaming"
           :theme-icon-class-nm="themeAgent?.iconClassNm ?? ''"

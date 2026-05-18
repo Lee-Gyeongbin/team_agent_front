@@ -407,6 +407,7 @@ onUnmounted(() => {
   width: 100%;
   /** 런치/설문 에이전트 카드와 동일 너비 (768px $chat-max-width와 구분) */
   max-width: 760px;
+  height: auto;
   max-height: min(640px, 78vh);
   margin-inline: auto;
   border: 1px solid $color-border;
@@ -424,8 +425,13 @@ onUnmounted(() => {
   }
 
   &--compact {
+    height: auto;
     max-height: none;
     flex: 0 0 auto;
+
+    .chat-news-curator__content {
+      flex: 0 0 auto;
+    }
   }
 
   &--stacked {
@@ -595,6 +601,7 @@ onUnmounted(() => {
   }
 
   &--compact &__main {
+    flex: 0 0 auto;
     max-height: none;
     overflow-y: visible;
   }
