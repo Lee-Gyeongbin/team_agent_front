@@ -67,6 +67,8 @@ const sharedMessages = ref<ChatMessage[]>([])
 const sharedChatLogRows = ref<ChatLogListRow[]>([])
 const shareTxt = ref('공유된 대화입니다.')
 const isExpired = ref(false)
+/** 공유 채팅방의 파일 공유 여부 — Y: 첨부 뷰어 표시, N: '파일 업로드됨' 안내 표시 */
+const sharedFileShareYn = ref<'Y' | 'N'>('N')
 const knowledgeList = ref<KnowledgeItem[]>([])
 
 export const useChatRooms = () => {
@@ -332,10 +334,7 @@ export const useChatRooms = () => {
    * 공유 토큰 발급 — includeAttachment(Y/N)를 받아 토큰 테이블에 insert
    * @returns shareToken 문자열, 오류 시 null
    */
-  const handleBuildShareToken = async (
-    roomId: string,
-    includeAttachment: 'Y' | 'N',
-  ): Promise<string | null> => {
+  const handleBuildShareToken = async (roomId: string, includeAttachment: 'Y' | 'N'): Promise<string | null> => {
     openLoading({ text: '공유 링크를 생성하는 중...' })
     try {
       const { shareToken } = await fetchCreateShareToken(roomId, includeAttachment)
@@ -353,6 +352,7 @@ export const useChatRooms = () => {
     if (!shareToken) return
     isExpired.value = false
     sharedChatLogRows.value = []
+    sharedFileShareYn.value = 'N'
     openLoading({ text: '공유 대화를 불러오는 중...' })
     try {
       const res = await fetchSelectSharedChatLogList(shareToken)
@@ -363,6 +363,7 @@ export const useChatRooms = () => {
         sharedMessages.value = []
         return
       }
+      sharedFileShareYn.value = res.fileShareYn ?? 'N'
       const rawList = res.list ?? []
       if (rawList.length === 0) {
         sharedMessages.value = []
@@ -420,7 +421,11 @@ export const useChatRooms = () => {
         throw new Error('채팅방 ID를 받지 못했습니다.')
       }
 
-      const copyRes = await fetchCopySharedChatLogsToRoom({ roomId: newRoomId, shareToken: token })
+      const copyRes = await fetchCopySharedChatLogsToRoom({
+        roomId: newRoomId,
+        shareToken: token,
+        fileShareYn: sharedFileShareYn.value,
+      })
       if (copyRes.successYn === false) {
         throw new Error(copyRes.returnMsg || '내 대화로 가져오기에 실패했습니다.')
       }
@@ -460,6 +465,7 @@ export const useChatRooms = () => {
   return {
     chatRoom,
     sharedMessages,
+    sharedFileShareYn,
     isExpired,
     shareTxt,
     chatMessage,

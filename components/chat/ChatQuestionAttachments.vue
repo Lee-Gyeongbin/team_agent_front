@@ -62,6 +62,7 @@
     :file-name="previewTarget?.fileName ?? ''"
     :mime-type="previewTarget?.mimeType ?? ''"
     :local-preview-url="previewTarget?.localPreviewUrl"
+    :is-share="isShare"
     @update:is-open="onPreviewOpenChange"
   />
 </template>
@@ -77,9 +78,15 @@ import {
 
 const props = defineProps<{
   attachments: ChatMessageAttachment[]
+  /** 공유 채팅 페이지 여부 — true 시 썸네일·미리보기 API를 viewChatFile_share.do 로 호출 */
+  isShare?: boolean
 }>()
 
-const { fetchViewChatFile } = useChatApi()
+const { fetchViewChatFile, fetchViewChatFileShare } = useChatApi()
+
+/** 공유 페이지 여부에 따라 적절한 API 호출 */
+const fetchFileView = (chatFileId: string) =>
+  props.isShare ? fetchViewChatFileShare(chatFileId) : fetchViewChatFile(chatFileId)
 
 const listRef = ref<HTMLElement | null>(null)
 const previewOpen = ref(false)
@@ -148,7 +155,7 @@ const loadRemoteImageThumbs = async () => {
     targets.map(async (item) => {
       const id = String(item.chatFileId ?? '').trim()
       try {
-        const res = await fetchViewChatFile(id)
+        const res = await fetchFileView(id)
         if (gen !== remoteThumbLoadGen) return
         const vt = String(res.viewType ?? '').toUpperCase()
         const url = String(res.url ?? '').trim()

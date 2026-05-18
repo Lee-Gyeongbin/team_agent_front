@@ -72,6 +72,10 @@ export const useChatApi = () => {
   const fetchViewChatFile = async (chatFileId: string): Promise<ChatFileViewResponse> => {
     return post<ChatFileViewResponse>('/ai/chatbot/viewChatFile.do', { chatFileId })
   }
+  /** 공유 채팅방 첨부 미리보기 URL (소유자 사용자 검증 없음 — 공유 페이지 전용) */
+  const fetchViewChatFileShare = async (chatFileId: string): Promise<ChatFileViewResponse> => {
+    return post<ChatFileViewResponse>('/ai/chatbot/viewChatFile_share.do', { chatFileId })
+  }
   // CHAT 대화방 로그 목록 조회
   const fetchSelectChatLogList = async (roomId: string): Promise<{ list: ChatLogListRow[] }> => {
     return get<{ list: ChatLogListRow[] }>(`/ai/chatbot/selectChatLogList.do?roomId=${encodeURIComponent(roomId)}`)
@@ -143,16 +147,18 @@ export const useChatApi = () => {
   // 공유 토큰으로 채팅 로그 조회
   const fetchSelectSharedChatLogList = async (
     shareToken: string,
-  ): Promise<{ list: ChatLogListRow[]; successYn: boolean; returnMsg: string }> => {
-    return get<{ list: ChatLogListRow[]; successYn: boolean; returnMsg: string }>(
+  ): Promise<{ list: ChatLogListRow[]; successYn: boolean; returnMsg: string; fileShareYn?: 'Y' | 'N' }> => {
+    return get<{ list: ChatLogListRow[]; successYn: boolean; returnMsg: string; fileShareYn?: 'Y' | 'N' }>(
       `/ai/chatbot/selectSharedChatLogList.do?shareToken=${encodeURIComponent(shareToken)}`,
     )
   }
 
-  /** 공유 토큰 기준 대화 로그를 신규 roomId 채팅방으로 복사 (대화 이어가기 — 백엔드 미구현 시 API만 연결) */
+  /** 공유 토큰 기준 대화 로그를 신규 roomId 채팅방으로 복사 (대화 이어가기) */
   const fetchCopySharedChatLogsToRoom = async (payload: {
     roomId: string
     shareToken: string
+    /** 파일 공유 여부 — Y: 채팅 파일도 복사, N: 파일 제외 */
+    fileShareYn: 'Y' | 'N'
   }): Promise<{ successYn?: boolean; returnMsg?: string }> => {
     return post<{ successYn?: boolean; returnMsg?: string }>('/ai/chatbot/copySharedChatLogsToRoom.do', payload)
   }
@@ -168,6 +174,7 @@ export const useChatApi = () => {
     fetchCreateChatFileUploadUrl,
     fetchCreateChatFile,
     fetchViewChatFile,
+    fetchViewChatFileShare,
     fetchMarkChatFileOrphan,
     fetchSelectChatLogList,
     fetchSelectChatRef,

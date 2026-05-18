@@ -13,6 +13,7 @@
         v-if="sharedMessages.length > 0"
         :messages="sharedMessages"
         :knowledge-list="knowledgeList"
+        :file-share-yn="sharedFileShareYn"
         is-share
         @on-copy="onCopy"
         @on-view-source="onViewSource"
@@ -73,6 +74,7 @@
 import { setMessagesForVisualizationGetter } from '~/composables/chat/useChatMessages'
 const {
   sharedMessages,
+  sharedFileShareYn,
   knowledgeList,
   loadSharedChatLog,
   handleForkSharedChat,

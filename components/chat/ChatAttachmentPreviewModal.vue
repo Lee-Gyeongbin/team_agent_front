@@ -71,10 +71,13 @@ interface Props {
   mimeType: string
   /** 직전에 선택한 파일의 blob URL (이미지 등, 세션 한정) */
   localPreviewUrl?: string
+  /** 공유 채팅 페이지 여부 — true 시 viewChatFile_share.do 호출 */
+  isShare?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   localPreviewUrl: undefined,
+  isShare: false,
 })
 
 const emit = defineEmits<{
@@ -82,7 +85,11 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const { fetchViewChatFile } = useChatApi()
+const { fetchViewChatFile, fetchViewChatFileShare } = useChatApi()
+
+/** 공유 페이지 여부에 따라 적절한 API 호출 */
+const fetchFileView = (chatFileId: string) =>
+  props.isShare ? fetchViewChatFileShare(chatFileId) : fetchViewChatFile(chatFileId)
 
 const modalTitle = computed(() => props.fileName?.trim() || '첨부 미리보기')
 
@@ -157,7 +164,7 @@ const loadPreview = async () => {
 
   loadStatus.value = 'loading'
   try {
-    const res = await fetchViewChatFile(props.chatFileId.trim())
+    const res = await fetchFileView(props.chatFileId.trim())
     applyResponse(res)
   } catch (e) {
     errorMessage.value = e instanceof Error ? e.message : '불러오기에 실패했습니다.'
