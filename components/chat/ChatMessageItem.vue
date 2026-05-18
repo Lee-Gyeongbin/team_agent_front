@@ -208,6 +208,7 @@
           <ChatQuestionAttachments
             v-else-if="message.attachments?.length"
             :attachments="message.attachments"
+            :is-share="isShare"
           />
           <div
             v-if="message.qContent?.trim()"
@@ -336,16 +337,20 @@ interface Props {
   message: ChatMessage
   knowledgeList?: KnowledgeItem[]
   isShare?: boolean
+  /** 파일 공유 여부 — Y: 첨부 뷰어 표시, N: '파일 업로드됨' 안내 표시 */
+  fileShareYn?: 'Y' | 'N'
 }
 
 const props = withDefaults(defineProps<Props>(), {
   knowledgeList: undefined,
   isShare: false,
+  fileShareYn: 'N',
 })
 
 const showAttachmentSummaryIndicator = computed(() =>
   attachmentsRequireSummaryIndicator(props.message.attachments, {
     isSharePage: props.isShare,
+    fileShareYn: props.fileShareYn,
     currentUserId: user.value?.userId,
   }),
 )

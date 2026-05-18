@@ -89,15 +89,20 @@ const normalizeChatAttachmentItems = (items: unknown[]): ChatMessageAttachment[]
 
 /**
  * 공유 페이지이거나, 첨부 업로더(TB_CHAT_FILE.CREATE_USER_ID → uploadUserId)가 현재 사용자와 다른 항목이 있는 경우 패널 대신 안내 한 줄 표시.
- * createUserId가 항목에 전혀 없으면 로그 구버전 간주 후 전체 패널 유지.
+ * - 공유 페이지에서 fileShareYn === 'Y'이면 파일 뷰어를 그대로 표시(indicator 숨김).
+ * - createUserId가 항목에 전혀 없으면 로그 구버전 간주 후 전체 패널 유지.
  */
 export const attachmentsRequireSummaryIndicator = (
   attachments: ChatMessageAttachment[] | undefined,
-  opts: { isSharePage: boolean; currentUserId?: string },
+  opts: { isSharePage: boolean; fileShareYn?: 'Y' | 'N'; currentUserId?: string },
 ): boolean => {
   const list = attachments ?? []
   if (list.length === 0) return false
-  if (opts.isSharePage) return true
+  if (opts.isSharePage) {
+    // 파일 공유 허용된 경우 뷰어 그대로 표시
+    if (opts.fileShareYn === 'Y') return false
+    return true
+  }
   const me = String(opts.currentUserId ?? '').trim()
   const hasSpecifiedOwner = list.some((a) => String(a.uploadUserId ?? '').trim())
   if (!hasSpecifiedOwner) return false

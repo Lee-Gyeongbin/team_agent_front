@@ -13,6 +13,7 @@
           :message="msg"
           :knowledge-list="knowledgeList"
           :is-share="isShare"
+          :file-share-yn="fileShareYn"
           @on-copy="emit('on-copy', $event)"
           @on-like="emit('on-like', $event)"
           @on-dislike="emit('on-dislike', $event)"
@@ -54,11 +55,14 @@ interface Props {
   knowledgeList?: KnowledgeItem[]
   /** 공유 보기 페이지 등 */
   isShare?: boolean
+  /** 파일 공유 여부 — Y: 첨부 뷰어 표시, N: '파일 업로드됨' 안내 표시 */
+  fileShareYn?: 'Y' | 'N'
 }
 
 withDefaults(defineProps<Props>(), {
   isShare: false,
   knowledgeList: undefined,
+  fileShareYn: 'N',
 })
 
 const emit = defineEmits<{
