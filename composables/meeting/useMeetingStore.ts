@@ -142,6 +142,36 @@ const mapApiSpeakers = (apiSpeakers: ApiMeetingSpeaker[]): MeetingSpeaker[] =>
     speakerUserId: s.speakerUserId?.trim() || undefined,
   }))
 
+const normalizeSpeakerKey = (value?: string) => (value ?? '').replace(/\s+/g, '').trim().toLowerCase()
+
+/**
+ * STT 목록의 화자명을 현재 화자 목록 기준으로 동기화
+ * - 1차: speakerId 매칭
+ * - 2차: speakerName ↔ speaker.name/alias(공백 제거) 매칭
+ */
+const syncSttListSpeakerNames = (sttList: Meeting['sttList'], speakers: MeetingSpeaker[]) => {
+  const speakerById = new Map(speakers.map((speaker) => [speaker.id, speaker]))
+  const speakerByNameOrAlias = new Map<string, MeetingSpeaker>()
+
+  speakers.forEach((speaker) => {
+    const nameKey = normalizeSpeakerKey(speaker.name)
+    if (nameKey) speakerByNameOrAlias.set(nameKey, speaker)
+    const aliasKey = normalizeSpeakerKey(speaker.alias)
+    if (aliasKey) speakerByNameOrAlias.set(aliasKey, speaker)
+  })
+
+  return sttList.map((stt) => {
+    const matchedById = speakerById.get(stt.speakerId)
+    if (matchedById) return { ...stt, speakerName: matchedById.name }
+
+    const matchedByName = speakerByNameOrAlias.get(normalizeSpeakerKey(stt.speakerName))
+    if (matchedByName) {
+      return { ...stt, speakerId: matchedByName.id, speakerName: matchedByName.name }
+    }
+    return stt
+  })
+}
+
 const formatStartTime = (start?: number): string => {
   if (typeof start !== 'number' || !Number.isFinite(start) || start < 0) return '-'
   const totalSeconds = Math.floor(start)
@@ -645,7 +675,7 @@ const handleSaveSpeakers = async (speakers: Partial<MeetingSpeaker>[], mergeGrou
         })
 
       // sttList: 제거된 화자의 발화 → keepSpeakerId로 재매핑
-      currentMeeting.value.sttList = currentMeeting.value.sttList.map((stt) => {
+      const mergedSttList = currentMeeting.value.sttList.map((stt) => {
         for (const group of mergeGroups) {
           if (group.removeSpeakerIds.includes(stt.speakerId)) {
             const keepSpeaker = currentMeeting.value!.speakers.find((s) => s.id === group.keepSpeakerId)
@@ -654,6 +684,7 @@ const handleSaveSpeakers = async (speakers: Partial<MeetingSpeaker>[], mergeGrou
         }
         return stt
       })
+      currentMeeting.value.sttList = syncSttListSpeakerNames(mergedSttList, currentMeeting.value.speakers)
     } else {
       // 일반 저장: 화자별 병렬 호출
       await fetchSaveSpeakers(payload)
@@ -668,10 +699,10 @@ const handleSaveSpeakers = async (speakers: Partial<MeetingSpeaker>[], mergeGrou
       })
 
       // sttList 화자명 갱신 → MeetingSttList 반영
-      currentMeeting.value.sttList = currentMeeting.value.sttList.map((stt) => {
-        const speaker = currentMeeting.value!.speakers.find((s) => s.id === stt.speakerId)
-        return speaker ? { ...stt, speakerName: speaker.name } : stt
-      })
+      currentMeeting.value.sttList = syncSttListSpeakerNames(
+        currentMeeting.value.sttList,
+        currentMeeting.value.speakers,
+      )
     }
 
     openToast({ message: '화자 정보가 저장되었습니다.' })

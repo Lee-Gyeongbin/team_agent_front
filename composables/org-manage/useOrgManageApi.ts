@@ -1,15 +1,19 @@
 import { useApi } from '~/composables/com/useApi'
+import { useApi_multipart } from '~/composables/com/useApi_multipart'
 import type {
   InsertOrgPayload,
   OrgItem,
+  OrgExcelUploadResponse,
   OrgUserListResponse,
   UpdateOrgPayload,
   UpdateOrgSortOrderPayload,
 } from '~/types/org-manage'
+import { downloadBlobAsFile } from '~/utils/global/fileDownloadUtil'
+import { formatYyyyMmDdFromDate } from '~/utils/global/dateUtil'
 
 /** 조직 목록 조회 */
 export const useOrgManageApi = () => {
-  const { get, post } = useApi()
+  const { get, post, getBlob } = useApi()
 
   const fetchOrgList = async (): Promise<OrgItem[]> => {
     const res = await get<{ list?: OrgItem[] }>('/orgmanage/selectOrgList.do')
@@ -38,5 +42,31 @@ export const useOrgManageApi = () => {
     return post<{ successYn?: boolean; returnMsg?: string }>('/orgmanage/deleteOrg.do', { orgId })
   }
 
-  return { fetchOrgList, fetchSelectOrgUserList, fetchInsertOrg, fetchUpdateOrg, fetchUpdateOrgOrder, fetchDeleteOrg }
+  /** 조직도 엑셀 다운로드 */
+  const fetchDownloadOrgExcel = async (): Promise<void> => {
+    const blob = await getBlob('/orgmanage/downloadOrgExcel.do')
+    const fileName = `${formatYyyyMmDdFromDate(new Date())}조직도.xlsx`
+    downloadBlobAsFile(blob, fileName)
+  }
+
+  /** 조직도 엑셀 업로드 */
+  const fetchUploadOrgExcel = async (file: File): Promise<OrgExcelUploadResponse> => {
+    const formData = new FormData()
+    formData.append('uploadFile', file)
+    return useApi_multipart<OrgExcelUploadResponse>('/orgmanage/uploadOrgExcel.do', {
+      method: 'POST',
+      body: formData,
+    })
+  }
+
+  return {
+    fetchOrgList,
+    fetchSelectOrgUserList,
+    fetchInsertOrg,
+    fetchUpdateOrg,
+    fetchUpdateOrgOrder,
+    fetchDeleteOrg,
+    fetchDownloadOrgExcel,
+    fetchUploadOrgExcel,
+  }
 }

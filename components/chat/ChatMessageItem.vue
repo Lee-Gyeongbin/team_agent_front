@@ -308,6 +308,7 @@ import {
   schedulePsychologyRadarUiInjection,
   buildStressItemsFromRadarChartData,
   buildPsychologyRadarUiChartConfig,
+  usePsychologySurvey,
   type RadarChartData,
 } from '~/utils/chat/psychologyConsultUtil'
 import {
@@ -327,6 +328,7 @@ import { attachmentsRequireSummaryIndicator } from '~/utils/chat/chatAttachmentD
 import { parseNewsCuratorItems } from '~/utils/chat/newsCuratorUtil'
 
 const { chatIndexAgents, messages } = useChatStore()
+const { surveyGender } = usePsychologySurvey()
 const { user } = useAuth()
 interface Props {
   message: ChatMessage
@@ -459,13 +461,15 @@ watch(
           radarChartLoading.value = false
         })
       } else {
-        fetchPsychologyRadarChartData(extractSections1to4(raw), props.message.surveyAnswers!).then((chartData) => {
-          radarChartLoading.value = false
-          if (chartData) {
-            setRadarChartCache(props.message.logId, chartData)
-            radarChartData.value = chartData
-          }
-        })
+        fetchPsychologyRadarChartData(extractSections1to4(raw), props.message.surveyAnswers!, surveyGender.value).then(
+          (chartData) => {
+            radarChartLoading.value = false
+            if (chartData) {
+              setRadarChartCache(props.message.logId, chartData)
+              radarChartData.value = chartData
+            }
+          },
+        )
       }
     }
 

@@ -8,13 +8,13 @@
     <div class="meeting2-stt-toolbar-actions">
       <UiButton
         variant="ghost"
-        size="md"
+        size="xs"
         :class="{ 'is-active': isSearchOpen }"
         title="STT 검색"
         @click="toggleSearch"
       >
         <template #icon-left>
-          <i class="icon-search size-20" />
+          <i class="icon-search size-16" />
         </template>
         검색
       </UiButton>
@@ -25,7 +25,7 @@
       >
         <UiButton
           variant="ghost"
-          size="md"
+          size="xs"
           :disabled="sttList.length === 0"
           title="다운로드"
           @click="toggleDownloadPicker"
@@ -73,7 +73,7 @@
 
       <UiButton
         variant="ghost"
-        size="md"
+        size="xs"
         :disabled="!isMeetingIdValid || isFinishing"
         title="로컬 오디오 파일로 전사·회의록 생성 (테스트용)"
         @click="onClickPickAudioFile"
@@ -207,10 +207,17 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: $spacing-xs;
+
+  :deep(.ui-button.size-btn-xs) {
+    font-size: 12px;
+  }
 }
 
 .meeting2-stt-download-picker {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
 }
 
 .meeting2-stt-download-caret {
