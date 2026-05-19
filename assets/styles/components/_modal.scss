@@ -149,6 +149,13 @@
       transform $transition-base,
       opacity $transition-base;
   }
+
+  // body가 헤더/푸터를 제외한 나머지 공간을 채우도록
+  .modal-dialog-body {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
 }
 
 // 모달 다이얼로그 버튼 공통 클래스
