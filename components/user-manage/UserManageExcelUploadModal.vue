@@ -4,7 +4,7 @@
     title="엑셀 업로드"
     position="center"
     max-width="600px"
-    custom-class="org-manage-excel-upload-modal"
+    custom-class="user-manage-excel-upload-modal"
     @close="onModalClose"
   >
     <UiFileUpload
@@ -52,7 +52,7 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const { handleUploadOrgExcel } = useOrgManageStore()
+const { handleUploadUserExcel } = useUserManageStore()
 
 const excelAllowedExtensions = ['xlsx', 'xls']
 const excelFiles = ref<File[]>([])
@@ -77,7 +77,7 @@ const onUpload = async (): Promise<void> => {
 
   isUploading.value = true
   try {
-    const success = await handleUploadOrgExcel(file)
+    const success = await handleUploadUserExcel(file)
     if (success) {
       resetForm()
       emit('close')

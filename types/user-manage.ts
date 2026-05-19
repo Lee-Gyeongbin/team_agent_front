@@ -23,6 +23,12 @@ export interface UserItem {
   mdfrId: string
 }
 
+/** 사용자 엑셀 업로드 응답 */
+export interface UserExcelUploadResponse {
+  successYn?: boolean
+  returnMsg?: string
+}
+
 /** 사용자 테이블 컬럼 정의 */
 export const userColumns: TableColumn[] = [
   { key: 'userId', label: 'ID', width: '100px', align: 'center', headerAlign: 'center' },
