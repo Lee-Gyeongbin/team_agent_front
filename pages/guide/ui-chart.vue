@@ -931,14 +931,14 @@ const radarLabelFormatConfig = {
 // 🔽 도메인 조합 예시 (StressScoreGrid + radar)
 // ============================================
 const stressItems: StressScoreItem[] = [
-  { name: '직무요구', value: 2.75, level: '주의' },
-  { name: '번아웃', value: 2.0, level: '관심' },
-  { name: '조직관계', value: 2.5, level: '주의' },
+  { name: '직무요구', value: 2.75, level: '경계' },
+  { name: '번아웃', value: 2.0, level: '정상' },
+  { name: '조직관계', value: 2.5, level: '경계' },
   { name: '신체인지', value: 3.0, level: '고위험' },
   { name: '회복력', value: 3.0, level: '고위험' },
-  { name: '워라밸', value: 2.0, level: '관심' },
-  { name: '심리안전감', value: 2.5, level: '주의' },
-  { name: '의미동기', value: 2.0, level: '관심' },
+  { name: '워라밸', value: 2.0, level: '정상' },
+  { name: '심리안전감', value: 2.5, level: '경계' },
+  { name: '의미동기', value: 2.0, level: '정상' },
 ]
 
 const stressCoreAreasText = '※ 핵심 영역: 신체인지(3.00) · 회복력(3.00)'
