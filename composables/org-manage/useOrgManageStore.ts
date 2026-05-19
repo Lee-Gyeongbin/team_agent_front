@@ -72,6 +72,11 @@ const orgAddForm = ref<InsertOrgPayload>({
 })
 const orgAddErrorMessage = ref('')
 
+/** selectOrgList 행의 updatedDt (조직정보 최종 반영일시) */
+export const getOrgLastReflectDt = (org: OrgItem | null | undefined): string => {
+  return String(org?.updatedDt ?? '').trim()
+}
+
 const createDefaultOrgAddForm = (parentOrgId = ''): InsertOrgPayload => ({
   orgNm: '',
   parentOrgId,
@@ -102,6 +107,7 @@ export interface OrgManageStore {
   orgEditMode: Ref<'add' | 'edit'>
   orgAddForm: Ref<InsertOrgPayload>
   orgAddErrorMessage: Ref<string>
+  selectedOrgLastReflectDt: ComputedRef<string>
   handleFetchOrgList: () => Promise<void>
   handleFetchOrgUserList: (orgId: string) => Promise<void>
   handleSelectOrg: (orgId: string) => Promise<void>
@@ -113,12 +119,22 @@ export interface OrgManageStore {
   handleUpdateOrgOrder: (payload: UpdateOrgSortOrderPayload) => Promise<void>
   handleDeleteOrg: () => Promise<void>
   handleToggleOrgExpand: (orgId: string) => void
+  handleDownloadOrgExcel: () => Promise<void>
+  handleUploadOrgExcel: (file: File) => Promise<boolean>
   orgOptions: ComputedRef<{ label: string; value: string }[]>
 }
 
 export const useOrgManageStore = (): OrgManageStore => {
-  const { fetchOrgList, fetchSelectOrgUserList, fetchInsertOrg, fetchUpdateOrg, fetchUpdateOrgOrder, fetchDeleteOrg } =
-    useOrgManageApi()
+  const {
+    fetchOrgList,
+    fetchSelectOrgUserList,
+    fetchInsertOrg,
+    fetchUpdateOrg,
+    fetchUpdateOrgOrder,
+    fetchDeleteOrg,
+    fetchDownloadOrgExcel,
+    fetchUploadOrgExcel,
+  } = useOrgManageApi()
 
   const normalizeParentOrgId = (parentOrgId: string | null | undefined): string => String(parentOrgId ?? '').trim()
   const normalizeOrgNm = (orgNm: string | null | undefined): string => String(orgNm ?? '').trim()
@@ -157,14 +173,52 @@ export const useOrgManageStore = (): OrgManageStore => {
     orgUserErrorMessage.value = ''
     orgUserListLoading.value = true
     try {
-      const res = await fetchSelectOrgUserList(orgId)
-      orgUserList.value = res.list ?? []
+      const userRes = await fetchSelectOrgUserList(orgId)
+      orgUserList.value = userRes.list ?? []
     } catch (error) {
       orgUserList.value = []
       const message = error instanceof Error ? error.message : '팀원 목록 조회 중 오류가 발생했습니다.'
       orgUserErrorMessage.value = message
     } finally {
       orgUserListLoading.value = false
+    }
+  }
+
+  const EXCEL_UPLOAD_ACCEPT_EXT = ['.xlsx', '.xls']
+
+  const isOrgExcelFile = (file: File): boolean => {
+    const name = String(file.name ?? '').toLowerCase()
+    return EXCEL_UPLOAD_ACCEPT_EXT.some((ext) => name.endsWith(ext))
+  }
+
+  const handleDownloadOrgExcel = async (): Promise<void> => {
+    try {
+      await fetchDownloadOrgExcel()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '조직도 엑셀 다운로드 중 오류가 발생했습니다.'
+      openToast({ message, type: 'error' })
+    }
+  }
+
+  const handleUploadOrgExcel = async (file: File): Promise<boolean> => {
+    if (!isOrgExcelFile(file)) {
+      openToast({ message: 'xlsx, xls 형식의 엑셀 파일만 업로드할 수 있습니다.', type: 'warning' })
+      return false
+    }
+
+    try {
+      const res = await fetchUploadOrgExcel(file)
+      if (res?.successYn === false) {
+        openToast({ message: String(res.returnMsg ?? '조직도 엑셀 업로드에 실패했습니다.'), type: 'error' })
+        return false
+      }
+      openToast({ message: '조직도 엑셀이 업로드되었습니다.' })
+      await handleFetchOrgList()
+      return true
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '조직도 엑셀 업로드 중 오류가 발생했습니다.'
+      openToast({ message, type: 'error' })
+      return false
     }
   }
 
@@ -336,6 +390,8 @@ export const useOrgManageStore = (): OrgManageStore => {
 
   const orgOptions = computed(() => orgList.value.map((item) => ({ label: item.orgNm, value: item.orgId })))
 
+  const selectedOrgLastReflectDt = computed(() => getOrgLastReflectDt(getSelectedOrg()))
+
   return {
     orgList,
     orgTree,
@@ -349,6 +405,7 @@ export const useOrgManageStore = (): OrgManageStore => {
     orgEditMode,
     orgAddForm,
     orgAddErrorMessage,
+    selectedOrgLastReflectDt,
     handleFetchOrgList,
     handleFetchOrgUserList,
     handleSelectOrg,
@@ -360,6 +417,8 @@ export const useOrgManageStore = (): OrgManageStore => {
     handleUpdateOrgOrder,
     handleDeleteOrg,
     handleToggleOrgExpand,
+    handleDownloadOrgExcel,
+    handleUploadOrgExcel,
     orgOptions,
   }
 }

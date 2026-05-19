@@ -2,6 +2,26 @@
   <div class="org-manage-index wide-center">
     <div class="org-manage-header">
       <div class="org-manage-header-actions">
+        <UiButton
+          variant="outline"
+          size="md"
+          @click="openExcelUploadModal"
+        >
+          <template #icon-left>
+            <i class="icon icon-document-search size-16" />
+          </template>
+          엑셀 업로드
+        </UiButton>
+        <UiButton
+          variant="outline"
+          size="md"
+          @click="handleDownloadOrgExcel"
+        >
+          <template #icon-left>
+            <i class="icon icon-download size-16" />
+          </template>
+          엑셀 다운로드
+        </UiButton>
         <div class="org-manage-header-search">
           <UiInput
             v-model="searchKeyword"
@@ -29,11 +49,16 @@
         @retry="onRetryOrgUserList"
       />
     </div>
+    <OrgManageExcelUploadModal
+      :is-open="isExcelUploadModalOpen"
+      @close="closeExcelUploadModal"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import OrgManageExcelUploadModal from '~/components/org-manage/OrgManageExcelUploadModal.vue'
 import OrgManageMemberPanel from '~/components/org-manage/OrgManageMemberPanel.vue'
 import OrgManageOrgTreePanel from '~/components/org-manage/OrgManageOrgTreePanel.vue'
 
@@ -47,9 +72,19 @@ const {
   orgUserErrorMessage,
   handleFetchOrgList,
   handleFetchOrgUserList,
+  handleDownloadOrgExcel,
 } = useOrgManageStore()
 
 const searchKeyword = ref('')
+const isExcelUploadModalOpen = ref(false)
+
+const openExcelUploadModal = (): void => {
+  isExcelUploadModalOpen.value = true
+}
+
+const closeExcelUploadModal = (): void => {
+  isExcelUploadModalOpen.value = false
+}
 
 const selectedOrgName = computed(() => {
   if (selectedOrgId.value == null) return ''
