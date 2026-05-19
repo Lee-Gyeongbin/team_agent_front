@@ -14,6 +14,8 @@ export interface DataDashboardSqlItem {
   sqlTitle: string
   sqlContent: string
   ttsqParam: string | null
+  /** LLM이 추천한 시각화 옵션 JSON 문자열 (TB_CHAT_LOG.CHART_OPTION) — { chart, x, y } */
+  chartOption?: string | null
   agentId?: string
   agentNm?: string
   datamartId?: string

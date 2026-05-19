@@ -114,16 +114,16 @@
           {{ surveyGender === 'male' ? '남성' : '여성' }}
         </div>
       </div>
-      <!-- KOSS-SF2 안내문 (설문 진행 중에만 표시) -->
+      <!-- KOSS-SF1 안내문 (설문 진행 중에만 표시) -->
       <div
         v-if="!readonly"
         class="psychology-survey__disclaimer"
       >
         <span class="psychology-survey__disclaimer-source">
-          출처 : 한국형 직무스트레스 평가도구 (KOSS-SF2) : 한국산업안전보건공단
+          출처 : 한국형 직무스트레스 평가도구 (KOSS-SF1) : 한국산업안전보건공단
         </span>
         <p>
-          본 AI 에이전트는 한국인 직무스트레스 요인 평가도구 단축형 2, KOSS-SF2를 기반으로 직장인의 직무스트레스 요인을
+          본 AI 에이전트는 한국인 직무스트레스 요인 평가도구 단축형 1, KOSS-SF1를 기반으로 직장인의 직무스트레스 요인을
           분석합니다. 사용자의 응답 결과를 8개 영역별로 환산하여 정상, 경계, 고위험 수준을 제시하고, 주요 스트레스
           원인에 따른 맞춤형 관리 가이드를 제공합니다. 본 결과는 의학적 진단이 아니며, 건강 이상이나 심리적 어려움이
           지속될 경우 전문가 상담을 권장합니다.
@@ -466,7 +466,7 @@ const onSubmitClick = async () => {
     font-weight: $font-weight-medium;
   }
 
-  // KOSS-SF2 안내문 (인라인 채팅 출처 텍스트와 유사한 스타일)
+  // KOSS-SF1 안내문 (인라인 채팅 출처 텍스트와 유사한 스타일)
   &__disclaimer {
     display: flex;
     flex-direction: column;
