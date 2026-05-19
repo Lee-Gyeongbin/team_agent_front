@@ -554,7 +554,8 @@ export type RadarChartScore = {
   workplaceCulture: number // 직장 문화
 }
 
-export type RadarChartRiskLevel = '정상' | '경계' | '고위험'
+/** KOSS-SF1 3단계 — StressLevel 과 동일 (타입 호환 별칭) */
+export type RadarChartRiskLevel = StressLevel
 
 /**
  * KOSS-SF1 별표 4 — 성별별 영역 참고치 (0~100 환산 점수 기준)
@@ -664,21 +665,20 @@ export const stressLevelFromPsychologyRadarScore100 = (
 ): StressLevel => {
   if (gender && area) {
     const thresholds = KOSS_SF1_RISK_TABLE[gender][area]
-    if (score <= thresholds.정상Max) return '안정'
-    if (score <= thresholds.경계Max) return '관심'
+    if (score <= thresholds.정상Max) return '정상'
+    if (score <= thresholds.경계Max) return '경계'
     return '고위험'
   }
-  if (score <= 33.3) return '안정'
-  if (score <= 50.0) return '관심'
-  if (score <= 66.6) return '주의'
+  // 성별 미지정 시 보수적 공통 구간 적용 (0~100 환산 기준)
+  if (score <= 33.3) return '정상'
+  if (score <= 66.6) return '경계'
   return '고위험'
 }
 
-/** StressScoreGrid `.item-level` / 레이더 축 라벨 — SCSS $color-success·info·warning·error 와 동일 */
+/** StressScoreGrid `.item-level` / 레이더 축 라벨 — KOSS-SF1 3단계, SCSS $color-success·warning·error 와 동일 */
 export const STRESS_LEVEL_LABEL_HEX: Record<StressLevel, string> = {
-  안정: '#22c55e',
-  관심: '#3b82f6',
-  주의: '#f59e0b',
+  정상: '#22c55e',
+  경계: '#f59e0b',
   고위험: '#ef4444',
 }
 
@@ -1084,7 +1084,6 @@ export const fetchPsychologyRadarChartData = async (
   try {
     const { post } = useApi()
     const prompt = `${sectionsText}\n\n${buildRadarChartPrompt(answers, sectionsText, gender)}`
-    // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체 (엔드포인트·응답 키 확인 필요)
     const data = await post<{ chartData?: string; result?: string }>('/ai/chatbot/getPsychologyChartData.do', {
       prompt,
     })

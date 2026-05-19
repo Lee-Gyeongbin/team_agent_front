@@ -19,6 +19,7 @@ import {
   createSurveyMessage,
   buildDiagnosticPrompt,
   parseSurveyAnswersFromPrompt,
+  PSYCHOLOGY_SURVEY_TOTAL_QUESTIONS,
 } from '~/utils/chat/psychologyConsultUtil'
 import {
   buildLunchRecommendationPrompt,
@@ -119,7 +120,7 @@ const messagesForDisplay = computed(() => {
     base = messages.value.filter((m) => {
       if (m.type === 'question' && !surveyPromptHidden) {
         const parsed = parseSurveyAnswersFromPrompt(m.qContent ?? '')
-        const isSurveyPrompt = Object.keys(parsed).length === 25
+        const isSurveyPrompt = Object.keys(parsed).length === PSYCHOLOGY_SURVEY_TOTAL_QUESTIONS
         if (isSurveyPrompt) {
           surveyPromptHidden = true
           return false
