@@ -361,18 +361,31 @@ const PEXELS_API_KEY = 'ZfMCftGUUwMVyRLpkijpkbMfC0AXC22TUNzTv5USRoeXItGM8S2m22Dx
  * - 1개: 단일 이미지
  * - 2개+: 왼쪽 floor(n/2)개, 오른쪽 ceil(n/2)개로 균등 분할 (각 col 내부는 세로 스택)
  *   예) 3개→1/2, 4개→2/2, 5개→2/3
+ * - 각 이미지 하단에 사진작가별 Pexels attribution 라벨 표시 (API 이용 정책 준수)
  */
-const buildPexelsGrid = (images: { keyword: string; url: string; fullUrl: string }[]): string => {
-  const imgTag = (img: { keyword: string; url: string; fullUrl: string }) =>
-    `<img class="pexels-img" src="${img.url}" data-full="${img.fullUrl}" alt="${img.keyword}">`
+const buildPexelsGrid = (
+  images: { keyword: string; url: string; fullUrl: string; photographer: string; photographerUrl: string }[],
+): string => {
+  // 이미지 + 사진작가 attribution을 하나의 래퍼로 묶음
+  const imgWrap = (img: {
+    keyword: string
+    url: string
+    fullUrl: string
+    photographer: string
+    photographerUrl: string
+  }) =>
+    `<div class="pexels-img-wrap">` +
+    `<img class="pexels-img" src="${img.url}" data-full="${img.fullUrl}" alt="${img.keyword}">` +
+    `<a class="pexels-attribution" href="${img.photographerUrl}" target="_blank" rel="noopener noreferrer">Photo by ${img.photographer} on Pexels</a>` +
+    `</div>`
 
   if (images.length === 1) {
-    return `<div class="pexels-grid pexels-grid--single">${imgTag(images[0])}</div>`
+    return `<div class="pexels-grid pexels-grid--single">${imgWrap(images[0])}</div>`
   }
 
   const leftCount = Math.floor(images.length / 2)
-  const leftCol = images.slice(0, leftCount).map(imgTag).join('')
-  const rightCol = images.slice(leftCount).map(imgTag).join('')
+  const leftCol = images.slice(0, leftCount).map(imgWrap).join('')
+  const rightCol = images.slice(leftCount).map(imgWrap).join('')
   return `<div class="pexels-grid"><div class="pexels-grid__col">${leftCol}</div><div class="pexels-grid__col">${rightCol}</div></div>`
 }
 
@@ -450,20 +463,30 @@ export const fetchAndInjectPexelsImages = async (
         const res = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(keyword)}&per_page=1`, {
           headers: { Authorization: PEXELS_API_KEY },
         })
-        const data = (await res.json()) as { photos?: { src?: { large?: string; large2x?: string } }[] }
+        const data = (await res.json()) as {
+          photos?: {
+            src?: { large?: string; large2x?: string }
+            photographer?: string
+            photographer_url?: string
+          }[]
+        }
+        const photo = data.photos?.[0]
         return {
           keyword,
-          url: data.photos?.[0]?.src?.large ?? null,
-          fullUrl: data.photos?.[0]?.src?.large2x ?? data.photos?.[0]?.src?.large ?? null,
+          url: photo?.src?.large ?? null,
+          fullUrl: photo?.src?.large2x ?? photo?.src?.large ?? null,
+          photographer: photo?.photographer ?? null,
+          photographerUrl: photo?.photographer_url ?? null,
         }
       } catch {
-        return { keyword, url: null, fullUrl: null }
+        return { keyword, url: null, fullUrl: null, photographer: null, photographerUrl: null }
       }
     }),
   )
 
   const validImages = imageResults.filter(
-    (img): img is { keyword: string; url: string; fullUrl: string } => img.url !== null,
+    (img): img is { keyword: string; url: string; fullUrl: string; photographer: string; photographerUrl: string } =>
+      img.url !== null && img.photographer !== null && img.photographerUrl !== null,
   )
 
   if (!validImages.length) {
