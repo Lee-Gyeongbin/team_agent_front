@@ -56,12 +56,14 @@ function agentTypeToSearchMode(svcTy: string): SearchModeValue | null {
 const { messages } = useChatSocket()
 const { logRowToMessages, getMessagesForVisualization, setStreamingLunchPayload } = useChatMessages()
 const {
-  openPsychologySurvey,
+  openGenderStep,
   closePsychologySurvey,
   isSurveyRoom,
   surveyAnswers,
+  surveyGender,
   registerSurveyRoom,
   isSurveyVisible,
+  isGenderStepVisible,
 } = usePsychologySurvey()
 const { isTodayMemeVisible, isTodayMemeRoom, registerTodayMemeRoom } = useTodayMeme()
 const { isNewsCuratorVisible, isNewsCuratorRoom, registerNewsCuratorRoom, openNewsCurator, closeNewsCurator } =
@@ -236,6 +238,8 @@ export const useChatStore = () => {
       messages.value = []
       return
     }
+    // 기존 채팅방 로드 시 성별 선택 단계 초기화 (이전 미완료 상태가 남지 않도록)
+    closePsychologySurvey()
     openLoading({ text: '채팅 기록을 불러오는 중...' })
     let rawList: ChatLogListRow[]
     try {
@@ -341,7 +345,7 @@ export const useChatStore = () => {
 
   /** 메시지 목록 내 설문 컴포넌트 제출 — 진단 프롬프트 빌드 후 전송 */
   const onSurveyMessageSubmit = async (logId: string): Promise<boolean> => {
-    const prompt = buildDiagnosticPrompt(surveyAnswers.value)
+    const prompt = buildDiagnosticPrompt(surveyAnswers.value, surveyGender.value)
     return await onSendSurvey(prompt, logId)
   }
 
@@ -756,13 +760,15 @@ export const useChatStore = () => {
         // 채팅방 내부: 이미 활성 설문 메시지가 있으면 중복 추가하지 않음
         const alreadyHasSurvey = messages.value.some((m) => m.type === 'survey' && !m.surveySubmitted)
         if (!alreadyHasSurvey) {
-          surveyAnswers.value = {}
+          // 성별 선택 Step 활성화 후 설문 메시지 즉시 주입
+          // ChatPsychologySurvey.vue에서 isGenderStepVisible 체크 후 성별 선택 먼저 표시
+          openGenderStep()
           const surveyMsg = createSurveyMessage({}, false)
           messages.value = [...messages.value, surveyMsg]
         }
       } else {
-        // 최초화면(/chat index): 기존처럼 isSurveyVisible로 인라인 표시
-        openPsychologySurvey()
+        // 최초화면(/chat index): 성별 선택 Step 0 → 설문으로 진행
+        openGenderStep()
       }
       return
     }
@@ -853,7 +859,7 @@ export const useChatStore = () => {
 
   /** /chat 인덱스에서 설문 제출 — 방 생성·인라인 주입·등록·닫기 */
   const handleIndexSurveySubmit = async (): Promise<boolean> => {
-    const prompt = buildDiagnosticPrompt(surveyAnswers.value)
+    const prompt = buildDiagnosticPrompt(surveyAnswers.value, surveyGender.value)
     const answers = { ...surveyAnswers.value }
     const sent = await createChatRoom(prompt)
     if (sent) {
@@ -990,6 +996,8 @@ export const useChatStore = () => {
     isSearchModeMissingSubOptions,
     searchModeSubOptionsEmptyMessage,
     isSurveyVisible,
+    isGenderStepVisible,
+    surveyGender,
     isLunchVisible,
     isTodayMemeVisible,
     isNewsCuratorVisible,
