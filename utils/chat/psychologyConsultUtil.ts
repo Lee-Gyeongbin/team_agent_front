@@ -131,7 +131,6 @@ export const PSYCHOLOGY_SURVEY_TOTAL_QUESTIONS = 26
 
 /**
  * 사용자의 응답(answers)을 채워 LLM에 전송할 진단 프롬프트 문자열을 반환
- * # Input Data 섹션만 동적으로 생성하고 나머지는 고정 템플릿 사용
  */
 export const buildDiagnosticPrompt = (answers: Record<number, number>, gender: SurveyGender | null): string => {
   const inputDataJson =
