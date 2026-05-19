@@ -149,7 +149,7 @@
           display: flex;
           gap: 10px;
           margin: 16px 0;
-          height: 280px;
+          height: 300px;
 
           // 좌/우 col — 각각 세로 스택 (flex: 1로 너비 균등)
           &__col {
@@ -157,13 +157,21 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
+          }
+
+          // 이미지 + attribution 래퍼 (col 내부 각 항목)
+          .pexels-img-wrap {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
 
             .pexels-img {
               flex: 1;
               min-height: 0;
               width: 100%;
               max-width: none;
-              margin: 0;
               object-fit: cover;
               border-radius: 12px;
               cursor: zoom-in;
@@ -173,20 +181,42 @@
                 opacity: 0.85;
               }
             }
+
+            .pexels-attribution {
+              font-size: $font-size-xs;
+              color: $color-text-secondary;
+              text-decoration: none;
+              text-align: right;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+
+              &:hover {
+                text-decoration: underline;
+              }
+            }
           }
 
           // 이미지 1개일 때
           &--single {
             height: auto;
 
-            .pexels-img {
-              width: 100%;
-              max-width: 400px;
-              height: 260px;
-              margin: 0;
-              object-fit: cover;
-              border-radius: 12px;
-              cursor: zoom-in;
+            .pexels-img-wrap {
+              flex: none;
+              gap: 4px;
+
+              .pexels-img {
+                width: 100%;
+                max-width: 400px;
+                height: 260px;
+                object-fit: cover;
+                border-radius: 12px;
+                cursor: zoom-in;
+              }
+
+              .pexels-attribution {
+                max-width: 400px;
+              }
             }
           }
         }
