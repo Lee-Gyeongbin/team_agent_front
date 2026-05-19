@@ -45,7 +45,7 @@ export const useOrgManageApi = () => {
   /** 조직도 엑셀 다운로드 */
   const fetchDownloadOrgExcel = async (): Promise<void> => {
     const blob = await getBlob('/orgmanage/downloadOrgExcel.do')
-    const fileName = `${formatYyyyMmDdFromDate(new Date())}조직도.xlsx`
+    const fileName = `${formatYyyyMmDdFromDate(new Date())}_조직도.xlsx`
     downloadBlobAsFile(blob, fileName)
   }
 

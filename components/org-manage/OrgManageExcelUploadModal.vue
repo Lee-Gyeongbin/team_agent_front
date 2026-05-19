@@ -3,7 +3,7 @@
     :is-open="isOpen"
     title="엑셀 업로드"
     position="center"
-    max-width="520px"
+    max-width="600px"
     custom-class="org-manage-excel-upload-modal"
     @close="onModalClose"
   >
