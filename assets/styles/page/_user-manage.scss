@@ -1,0 +1,100 @@
+@use '../utils/variables' as *;
+@use '../utils/mixins' as *;
+
+.user-manage-index {
+  padding: $spacing-md;
+  min-height: calc(100vh - #{$header-height});
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+.user-manage-header {
+  padding: 12px 0;
+  margin-bottom: $spacing-md;
+}
+
+.user-manage-header__right {
+  gap: $spacing-sm;
+  flex: 1;
+  justify-content: flex-end;
+  min-width: 0;
+
+  .user-manage-header__total {
+    font-size: $font-size-base;
+    color: $color-text-secondary;
+    white-space: nowrap;
+
+    strong {
+      color: $color-text-primary;
+    }
+  }
+}
+
+.user-manage-header__input-wrap {
+  min-width: 0;
+}
+
+.user-manage-list-table-wrap {
+  width: 100%;
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  overflow: hidden;
+}
+
+.user-manage-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: $border-radius-full;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+
+  &.is-active {
+    background: rgba($color-success, 0.12);
+    color: $color-success;
+  }
+
+  &.is-inactive {
+    background: rgba($color-text-secondary, 0.12);
+    color: $color-text-secondary;
+  }
+
+  &.is-lock {
+    background: rgba($color-warning, 0.12);
+    color: $color-warning;
+  }
+}
+
+.user-manage-cell-actions {
+  display: flex;
+  gap: $spacing-xs;
+  justify-content: center;
+}
+
+.user-manage-error {
+  @include flex-center;
+  flex-direction: column;
+  padding: $spacing-2xl;
+  gap: $spacing-md;
+  min-height: 240px;
+
+  &__message {
+    font-size: $font-size-sm;
+    color: $color-error;
+  }
+}
+
+// ===== 사용자관리 — 엑셀 업로드 모달 (UiModal 본문) =====
+.user-manage-excel-upload-modal {
+  .modal-dialog-body {
+    display: block;
+    width: 100%;
+  }
+
+  .ui-file-upload,
+  .ui-file-upload-dropzone {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}

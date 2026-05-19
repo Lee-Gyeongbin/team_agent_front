@@ -1,5 +1,8 @@
 import { useApi } from '~/composables/com/useApi'
-import type { UserItem } from '~/types/user-manage'
+import { useApi_multipart } from '~/composables/com/useApi_multipart'
+import type { UserExcelUploadResponse, UserItem } from '~/types/user-manage'
+import { downloadBlobAsFile } from '~/utils/global/fileDownloadUtil'
+import { formatYyyyMmDdFromDate } from '~/utils/global/dateUtil'
 
 interface ResetPasswordResponse {
   successYn: boolean
@@ -14,7 +17,7 @@ interface InsertUserResponse {
 }
 
 export const useUserManageApi = () => {
-  const { get, post } = useApi()
+  const { get, post, getBlob } = useApi()
 
   /** 사용자 목록 조회 */
   const fetchUserList = async (): Promise<UserItem[]> => {
@@ -58,6 +61,23 @@ export const useUserManageApi = () => {
     return res
   }
 
+  /** 사용자 목록 엑셀 다운로드 */
+  const fetchDownloadUserExcel = async (): Promise<void> => {
+    const blob = await getBlob('/usermanage/downloadUserExcel.do')
+    const fileName = `${formatYyyyMmDdFromDate(new Date())}_사용자목록.xlsx`
+    downloadBlobAsFile(blob, fileName)
+  }
+
+  /** 사용자 목록 엑셀 업로드 */
+  const fetchUploadUserExcel = async (file: File): Promise<UserExcelUploadResponse> => {
+    const formData = new FormData()
+    formData.append('uploadFile', file)
+    return useApi_multipart<UserExcelUploadResponse>('/usermanage/uploadUserExcel.do', {
+      method: 'POST',
+      body: formData,
+    })
+  }
+
   return {
     fetchUserList,
     fetchInsertUser,
@@ -65,5 +85,7 @@ export const useUserManageApi = () => {
     fetchDeleteUser,
     fetchRestoreUser,
     fetchResetUserPassword,
+    fetchDownloadUserExcel,
+    fetchUploadUserExcel,
   }
 }

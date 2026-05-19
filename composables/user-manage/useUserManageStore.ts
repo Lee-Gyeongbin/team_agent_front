@@ -2,6 +2,7 @@ import { computed, ref, type ComputedRef, type Ref } from 'vue'
 import type { UserItem } from '~/types/user-manage'
 import { useUserManageApi } from '~/composables/user-manage/useUserManageApi'
 import { useOrgManageStore } from '~/composables/org-manage/useOrgManageStore'
+import { openToast } from '~/composables/useToast'
 import { formatPhone, toPhoneDigits } from '~/utils/global/numberUtil'
 
 const userManageList = ref<UserItem[]>([])
@@ -25,12 +26,22 @@ export const useUserManageStore = (): {
   handleUpdateUserManage: (payload: Partial<UserItem>) => Promise<void>
   handleFetchUserManageList: () => Promise<void>
   handleResetUserPassword: (user: UserItem) => Promise<void>
+  handleDownloadUserExcel: () => Promise<void>
+  handleUploadUserExcel: (file: File) => Promise<boolean>
   getOrgName: (orgId: string | undefined | null) => string
   formatPhone: (value: string | undefined | null) => string
   toPhoneDigits: (value: string | undefined | null) => string
 } => {
-  const { fetchUserList, fetchInsertUser, fetchUpdateUser, fetchDeleteUser, fetchRestoreUser, fetchResetUserPassword } =
-    useUserManageApi()
+  const {
+    fetchUserList,
+    fetchInsertUser,
+    fetchUpdateUser,
+    fetchDeleteUser,
+    fetchRestoreUser,
+    fetchResetUserPassword,
+    fetchDownloadUserExcel,
+    fetchUploadUserExcel,
+  } = useUserManageApi()
   const { orgList } = useOrgManageStore()
 
   const userManageFilteredList = computed(() => {
@@ -158,6 +169,44 @@ export const useUserManageStore = (): {
     return orgList.value.find((item) => item.orgId === orgId)?.orgNm ?? orgId
   }
 
+  const EXCEL_UPLOAD_ACCEPT_EXT = ['.xlsx', '.xls']
+
+  const isUserExcelFile = (file: File): boolean => {
+    const name = String(file.name ?? '').toLowerCase()
+    return EXCEL_UPLOAD_ACCEPT_EXT.some((ext) => name.endsWith(ext))
+  }
+
+  const handleDownloadUserExcel = async (): Promise<void> => {
+    try {
+      await fetchDownloadUserExcel()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '사용자 목록 엑셀 다운로드 중 오류가 발생했습니다.'
+      openToast({ message, type: 'error' })
+    }
+  }
+
+  const handleUploadUserExcel = async (file: File): Promise<boolean> => {
+    if (!isUserExcelFile(file)) {
+      openToast({ message: 'xlsx, xls 형식의 엑셀 파일만 업로드할 수 있습니다.', type: 'warning' })
+      return false
+    }
+
+    try {
+      const res = await fetchUploadUserExcel(file)
+      if (res?.successYn === false) {
+        openToast({ message: String(res.returnMsg ?? '사용자 목록 엑셀 업로드에 실패했습니다.'), type: 'error' })
+        return false
+      }
+      openToast({ message: '사용자 목록 엑셀이 업로드되었습니다.' })
+      await handleFetchUserManageList()
+      return true
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '사용자 목록 엑셀 업로드 중 오류가 발생했습니다.'
+      openToast({ message, type: 'error' })
+      return false
+    }
+  }
+
   return {
     userManageList,
     userManageSearchKeyword,
@@ -172,6 +221,8 @@ export const useUserManageStore = (): {
     handleUpdateUserManage,
     handleFetchUserManageList,
     handleResetUserPassword,
+    handleDownloadUserExcel,
+    handleUploadUserExcel,
     getOrgName,
     formatPhone,
     toPhoneDigits,
