@@ -304,6 +304,7 @@
         :table-data="tableData"
         :chart-stat-items="chartStatItems"
         :chart-detail-cd-items="chartDetailCdItems"
+        :banner-offset="ksBannerOffset"
         @close="handleModalClose"
         @rename-title="handleModalRenameTitle"
         @move="handleModalMove"
@@ -441,6 +442,10 @@ const { hasPendingKsNotify } = useNotifyStore()
 
 /** KS 알림 배너 닫힘 상태 (페이지 내 로컬 — 이탈 후 재진입 시 초기화) */
 const isKsBannerDismissed = ref(false)
+
+/** KS 배너가 화면에 표시될 때 사이드 패널에 전달할 추가 오프셋(px) — 배너 높이(padding 20 + 텍스트 18) */
+const KS_BANNER_HEIGHT = 38
+const ksBannerOffset = computed(() => (hasPendingKsNotify.value && !isKsBannerDismissed.value ? KS_BANNER_HEIGHT : 0))
 
 const contentWrapperRef = ref<HTMLElement | null>(null)
 const canScrollLeft = ref(false)

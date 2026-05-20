@@ -7,7 +7,7 @@
     <div
       ref="contentRef"
       class="library-detail-modal-content"
-      :style="{ maxWidth: modalWidth + 'px' }"
+      :style="{ maxWidth: modalWidth + 'px', height: contentHeight }"
       @scroll="handleScroll"
     >
       <!-- 왼쪽 리사이즈 핸들 — 콘텐츠 내부에 두어 헤더·버튼보다 아래 레이어(클릭 가로막힘 방지) -->
@@ -392,6 +392,8 @@ const props = withDefaults(
     tableData?: TableDataItem | null
     chartStatItems?: ChartStatItem[]
     chartDetailCdItems?: ChartDetailCdItem[]
+    /** KS 배너가 표시될 때 사이드 패널 상단을 내려야 하는 추가 오프셋(px) */
+    bannerOffset?: number
   }>(),
   {
     isOpen: false,
@@ -400,6 +402,7 @@ const props = withDefaults(
     tableData: null,
     chartStatItems: () => [] as ChartStatItem[],
     chartDetailCdItems: () => [] as ChartDetailCdItem[],
+    bannerOffset: 0,
   },
 )
 
@@ -421,6 +424,9 @@ const onReferenceRowClick = (item: DocItem) => {
 // 스크롤 상태
 const contentRef = ref<HTMLElement | null>(null)
 const isScrolled = ref(false)
+
+// KS 배너 오프셋을 반영한 패널 높이 — SCSS calc(100vh - 102px) 기준에서 banner만큼 추가 차감
+const contentHeight = computed(() => `calc(100vh - ${102 + props.bannerOffset}px)`)
 
 // 리사이즈 상태
 const MIN_WIDTH = 680
