@@ -181,10 +181,17 @@ ${inputDataJson}
 [역] 표시 문항(Q5, Q7~Q13, Q16~Q22) 역코딩 후 계산
 (1점→4점, 2점→3점, 3점→2점, 4점→1점)
 
-# Scoring Rule (KOSS-SF1 환산 공식)
-각 영역 환산점수 = (역코딩 적용 후 합산 - 문항수) × 100 ÷ (3 × 문항수)
-→ 결과는 0~100점 범위
-총점 = 8개 영역 환산점수 합계 ÷ 8
+# Scoring Rule (산업안전보건연구원 KOSS-SF1 평가점수 산출 공식 — PDF 규정 준수)
+[영역별 환산 점수]
+각 영역별 환산 점수 = (해당 영역에서 평가한 실제 점수의 합 − 문항 개수) ÷ (해당 영역에서 예상 가능한 최고 점수의 합 − 문항 개수) × 100
+
+- 평가 척도: 1점(전혀 그렇지 않다) ~ 4점(매우 그렇다)
+- 한 문항의 최고 점수 = 4점 → 영역별 「예상 가능한 최고 점수의 합」 = 4 × 문항 개수
+- [역] 표시 문항은 역코딩(1↔4, 2↔3) 후 합산
+- 결과 범위: 0~100점
+
+[총점 (KOSS-SF1, 8개 영역)]
+총점 = (8개 영역의 환산 점수의 총합) ÷ 8
 
 # Risk Level (KOSS-SF1 참고치 기준 — ${gender === 'female' ? '여성' : '남성'} 기준 적용)
 **총점 기준:**
@@ -654,21 +661,22 @@ const coerceRadarScoreNumber = (v: unknown): number | null => {
 }
 
 /**
- * 0~100 환산 점수 → 항목별 등급 (KOSS-SF1 참고치 기반)
- * gender + area 지정 시 정확한 성별별 임계값 적용, 미지정 시 보수적 기본값 사용
+ * 0~100 환산 점수 → 항목별 등급 (KOSS-SF1 PDF 23p 영역별 참고치 기반)
+ * - area 지정 시: 영역별 참고치 적용 (gender 미지정 시 남성 기준 fallback)
+ * - area 미지정 시: 총점·일반 평가용 보수적 공통 구간(0~100 균등 분할) 적용
+ *   ※ 영역별 단계 판정은 area 인자를 반드시 함께 전달할 것
  */
 export const stressLevelFromPsychologyRadarScore100 = (
   score: number,
   gender?: SurveyGender | null,
   area?: keyof RadarChartScore,
 ): StressLevel => {
-  if (gender && area) {
-    const thresholds = KOSS_SF1_RISK_TABLE[gender][area]
+  if (area) {
+    const thresholds = KOSS_SF1_RISK_TABLE[gender ?? 'male'][area]
     if (score <= thresholds.정상Max) return '정상'
     if (score <= thresholds.경계Max) return '경계'
     return '고위험'
   }
-  // 성별 미지정 시 보수적 공통 구간 적용 (0~100 환산 기준)
   if (score <= 33.3) return '정상'
   if (score <= 66.6) return '경계'
   return '고위험'
@@ -701,9 +709,14 @@ export const buildStressItemsFromRadarChartData = (
 
 /**
  * guide/ui-chart.vue 의 radarStressConfig 와 동일 형태 — max 0~100, riskColor 로 라인 색
+ * - gender 전달 시: KOSS-SF1 PDF 23p 영역별·성별 참고치로 영역 단계(점·라벨 색) 결정
+ * - gender 미전달 시: 남성 기준 영역별 참고치 fallback
  */
-export const buildPsychologyRadarUiChartConfig = (data: RadarChartData): Record<string, unknown> => {
-  const items = buildStressItemsFromRadarChartData(data)
+export const buildPsychologyRadarUiChartConfig = (
+  data: RadarChartData,
+  gender?: SurveyGender | null,
+): Record<string, unknown> => {
+  const items = buildStressItemsFromRadarChartData(data, gender)
   const levelColors = items.map((i) => hexForStressLevel(i.level))
   return {
     categories: items.map((i) => i.name),
@@ -839,32 +852,41 @@ const REVERSE_SCORE_QNO = new Set([5, 7, 8, 9, 10, 11, 12, 13, 16, 17, 18, 19, 2
 /** 역코딩 변환 */
 const applyReverse = (score: number): number => 5 - score
 
-/** 카테고리 문항 번호 목록 (역코딩 적용 포함) → 소수점 2자리 평균 문자열 반환 */
-const calcCategoryAvg = (qNos: number[], answers: Record<number, number>): string => {
-  const scores = qNos.map((no) => {
+/**
+ * KOSS-SF1 영역별 통계 — 산업안전보건연구원 PDF 평가점수 산출 공식 직접 적용
+ * 환산 점수 = (실제 점수의 합 − 문항 개수) ÷ (예상 가능한 최고 점수의 합 − 문항 개수) × 100
+ * - 1~4점 척도이므로 영역별 「최고 점수의 합」 = 4 × 문항 개수
+ * - [역] 표시 문항은 역코딩(1↔4, 2↔3) 후 합산
+ */
+const calcCategoryStats = (qNos: number[], answers: Record<number, number>) => {
+  const itemCount = qNos.length
+  const sumActual = qNos.reduce((acc, no) => {
     const raw = answers[no] ?? 2
-    return REVERSE_SCORE_QNO.has(no) ? applyReverse(raw) : raw
-  })
-  const avg = scores.reduce((a, b) => a + b, 0) / scores.length
-  return avg.toFixed(2)
-}
-
-/** 1~4 평균(소수 둘째 자리 문자열) → scores와 동일 공식의 0~100 환산 문자열 */
-const radarScore100FromAvg14 = (avgFixed2: string): string => {
-  const x = Number(avgFixed2)
-  if (!Number.isFinite(x)) return '0.00'
-  return (((x - 1) / 3) * 100).toFixed(2)
+    return acc + (REVERSE_SCORE_QNO.has(no) ? applyReverse(raw) : raw)
+  }, 0)
+  const sumMax = 4 * itemCount
+  const denom = sumMax - itemCount
+  const score100 = denom === 0 ? 0 : ((sumActual - itemCount) / denom) * 100
+  const avg = itemCount === 0 ? 0 : sumActual / itemCount
+  return {
+    itemCount,
+    sumActual,
+    sumMax,
+    avg: avg.toFixed(2),
+    score100: score100.toFixed(2),
+  }
 }
 
 /**
- * 0~100 환산 점수 → KOSS-SF1 위험 단계 (coreAreasSummary 예시 생성에 사용)
- * KOSS-SF1 참고치 기준 (영역 평균)
+ * 영역별 0~100 환산 점수 → KOSS-SF1 PDF 23p 영역별 참고치 기준 위험 단계
+ * - coreAreasSummary 예시 생성에 사용 (LLM이 동일 기준으로 단계 표기하도록)
+ * - gender 미전달 시 남성 기준 영역별 참고치 fallback
  */
-const stressTierFromScore100Bands = (score100: number): RadarChartRiskLevel => {
-  if (score100 <= 33.3) return '정상'
-  if (score100 <= 66.6) return '경계'
-  return '고위험'
-}
+const stressTierFromScore100ByArea = (
+  score100: number,
+  area: keyof RadarChartScore,
+  gender: SurveyGender | null,
+): RadarChartRiskLevel => stressLevelFromPsychologyRadarScore100(score100, gender, area)
 
 /**
  * LLM 응답 텍스트에서 위험군 클래스명을 읽어 색상 매핑
@@ -907,10 +929,13 @@ const parseSection1ForRadarChart = (
 }
 
 /**
- * Q1~Q25 응답값으로 방사형 차트 JSON 데이터 요청 프롬프트 빌드
+ * Q1~Q26 응답값으로 방사형 차트 JSON 데이터 요청 프롬프트 빌드
+ * - 점수 산출은 산업안전보건연구원 KOSS-SF1 PDF 평가점수 산출 공식 그대로 적용
+ *   환산 점수 = (실제 점수의 합 − 문항 개수) ÷ (예상 가능한 최고 점수의 합 − 문항 개수) × 100
+ *   총점 = (8개 영역의 환산 점수의 총합) ÷ 8
  * - 역코딩 규칙은 buildDiagnosticPrompt 와 동일
- * - sectionsText에 섹션1 HTML(risk-badge/risk-status)이 있으면 riskLevel·색·riskSummary는 해당 값으로 고정 (MAX 재판정 불가)
- * - 섹션1 파싱 실패 시에만 8영역 MAX·구간표로 위험 판정 지시
+ * - sectionsText에 섹션1 HTML(risk-badge/risk-status)이 있으면 riskLevel·색·riskSummary는 해당 값으로 고정 (PDF 공식 재판정 금지)
+ * - 섹션1 파싱 실패 시에만 PDF 공식 총점·구간표로 위험 판정 지시
  * - LLM 은 이미지 생성 없이 JSON 만 반환
  */
 const buildRadarChartPrompt = (
@@ -918,41 +943,39 @@ const buildRadarChartPrompt = (
   sectionsText: string,
   gender: SurveyGender | null,
 ): string => {
-  const 물리적환경 = calcCategoryAvg([1, 2], answers)
-  const 직무요구 = calcCategoryAvg([3, 4, 5, 6], answers)
-  const 직무자율 = calcCategoryAvg([7, 8, 9, 10], answers)
-  const 관계갈등 = calcCategoryAvg([11, 12, 13], answers)
-  const 직무불안정 = calcCategoryAvg([14, 15], answers)
-  const 조직체계 = calcCategoryAvg([16, 17, 18, 19], answers)
-  const 보상부적절 = calcCategoryAvg([20, 21, 22], answers)
-  const 직장문화 = calcCategoryAvg([23, 24, 25, 26], answers)
+  // KOSS-SF1 영역별 통계 — PDF 평가점수 산출 공식 직접 적용
+  const 물리적환경Stats = calcCategoryStats([1, 2], answers)
+  const 직무요구Stats = calcCategoryStats([3, 4, 5, 6], answers)
+  const 직무자율Stats = calcCategoryStats([7, 8, 9, 10], answers)
+  const 관계갈등Stats = calcCategoryStats([11, 12, 13], answers)
+  const 직무불안정Stats = calcCategoryStats([14, 15], answers)
+  const 조직체계Stats = calcCategoryStats([16, 17, 18, 19], answers)
+  const 보상부적절Stats = calcCategoryStats([20, 21, 22], answers)
+  const 직장문화Stats = calcCategoryStats([23, 24, 25, 26], answers)
 
-  const 물리적환경100 = radarScore100FromAvg14(물리적환경)
-  const 직무요구100 = radarScore100FromAvg14(직무요구)
-  const 직무자율100 = radarScore100FromAvg14(직무자율)
-  const 관계갈등100 = radarScore100FromAvg14(관계갈등)
-  const 직무불안정100 = radarScore100FromAvg14(직무불안정)
-  const 조직체계100 = radarScore100FromAvg14(조직체계)
-  const 보상부적절100 = radarScore100FromAvg14(보상부적절)
-  const 직장문화100 = radarScore100FromAvg14(직장문화)
+  // 8개 영역 환산 점수의 총합 ÷ 8 = KOSS-SF1 총점 (PDF 규정)
+  const allStats = [
+    { ko: '물리적환경', en: 'physicalEnvironment', stats: 물리적환경Stats },
+    { ko: '직무요구', en: 'jobDemand', stats: 직무요구Stats },
+    { ko: '직무자율', en: 'jobAutonomy', stats: 직무자율Stats },
+    { ko: '관계갈등', en: 'interpersonalConflict', stats: 관계갈등Stats },
+    { ko: '직무불안정', en: 'jobInsecurity', stats: 직무불안정Stats },
+    { ko: '조직체계', en: 'organizationalSystem', stats: 조직체계Stats },
+    { ko: '보상부적절', en: 'inadequateCompensation', stats: 보상부적절Stats },
+    { ko: '직장문화', en: 'workplaceCulture', stats: 직장문화Stats },
+  ]
+  const totalScore = (allStats.reduce((acc, a) => acc + Number(a.stats.score100), 0) / allStats.length).toFixed(2)
 
-  const areas100Sorted = [
-    { ko: '물리적환경', s100: 물리적환경100 },
-    { ko: '직무요구', s100: 직무요구100 },
-    { ko: '직무자율', s100: 직무자율100 },
-    { ko: '관계갈등', s100: 관계갈등100 },
-    { ko: '직무불안정', s100: 직무불안정100 },
-    { ko: '조직체계', s100: 조직체계100 },
-    { ko: '보상부적절', s100: 보상부적절100 },
-    { ko: '직장문화', s100: 직장문화100 },
-  ].sort((a, b) => Number(b.s100) - Number(a.s100))
+  const areas100Sorted = [...allStats]
+    .map((a) => ({ ko: a.ko, en: a.en as keyof RadarChartScore, s100: a.stats.score100 }))
+    .sort((a, b) => Number(b.s100) - Number(a.s100))
   const topA = areas100Sorted[0]
   const topB = areas100Sorted[1]
   const coreAreasSummaryExample =
     topA && topB
-      ? `"${topA.ko}(${topA.s100}, ${stressTierFromScore100Bands(Number(topA.s100))})·${topB.ko}(${topB.s100}, ${stressTierFromScore100Bands(Number(topB.s100))}) 영역이 핵심 스트레스 요인으로 나타났습니다."`
+      ? `"${topA.ko}(${topA.s100}, ${stressTierFromScore100ByArea(Number(topA.s100), topA.en, gender)})·${topB.ko}(${topB.s100}, ${stressTierFromScore100ByArea(Number(topB.s100), topB.en, gender)}) 영역이 핵심 스트레스 요인으로 나타났습니다."`
       : topA
-        ? `"${topA.ko}(${topA.s100}, ${stressTierFromScore100Bands(Number(topA.s100))}) 영역이 핵심 스트레스 요인으로 나타났습니다."`
+        ? `"${topA.ko}(${topA.s100}, ${stressTierFromScore100ByArea(Number(topA.s100), topA.en, gender)}) 영역이 핵심 스트레스 요인으로 나타났습니다."`
         : '"(영역명)(0~100값, 정상|경계|고위험) 형식으로 기재"'
 
   const section1Anchors = parseSection1ForRadarChart(sectionsText)
@@ -961,7 +984,7 @@ const buildRadarChartPrompt = (
   const section1LockBlock = section1Anchors
     ? `
 위 진단 분석 본문 중 "### 1. 현재 상태 요약"에 이미 출력된 HTML을 기준으로, 아래 네 값은 **이미 확정된 결과**입니다.
-8개 영역 평균의 MAX·구간표로 riskLevel을 **다시 계산하거나 바꾸지 마세요.** JSON 필드에 **글자 단위로 동일하게** 넣으세요.
+8개 영역의 환산 점수·총점·구간표로 riskLevel을 **다시 계산하거나 바꾸지 마세요.** JSON 필드에 **글자 단위로 동일하게** 넣으세요.
 
 - riskLevel: ${JSON.stringify(section1Anchors.riskLevel)}
 - riskColor: ${JSON.stringify(section1Anchors.riskColor)}
@@ -978,7 +1001,7 @@ const buildRadarChartPrompt = (
 `
     : `
 위험 수준 판정 (${genderLabel} 기준 KOSS-SF1 참고치 적용):
-총점(8개 영역 환산 점수 평균)을 계산한 뒤 아래 구간표로 riskLevel을 결정하세요.
+PDF 규정에 따라 산출한 총점 = (8개 영역의 환산 점수의 총합) ÷ 8 을 계산한 뒤 아래 구간표로 riskLevel을 결정하세요.
 
 총점 구간표 (${genderLabel} 기준):
 - ≤${totalRisk.정상Max}: 정상  → riskLevel: "정상", riskColor: "#22c55e", riskBgColor: "#ecfdf5"
@@ -993,34 +1016,51 @@ const buildRadarChartPrompt = (
     : '- riskSummary: 현재 위험군을 한 문장으로 설명 (예: "전반적으로 직무요구와 조직체계 영역에서 경계 수준의 스트레스가 감지됩니다.")'
 
   const riskLevelColorRule = section1Anchors
-    ? '- riskLevel / riskColor / riskBgColor: 위 「이미 확정된 결과」블록과 동일 (MAX·구간표로 재판정 금지)'
-    : '- riskLevel / riskColor / riskBgColor: 8개 영역 환산점수 평균(총점)이 속한 「KOSS-SF1 총점 구간표」에서 선택'
+    ? '- riskLevel / riskColor / riskBgColor: 위 「이미 확정된 결과」블록과 동일 (PDF 공식·구간표로 재판정 금지)'
+    : '- riskLevel / riskColor / riskBgColor: 「(8개 영역 환산 점수의 총합) ÷ 8」로 계산한 총점이 속한 「KOSS-SF1 총점 구간표」에서 선택'
 
-  const coreAreasSummaryRule = `- coreAreasSummary: **scores의 0~100 값**으로 영역 간 상대 크기를 비교해 가장 큰 영역 1~2개를 고릅니다. 각 영역의 단계(정상/경계/고위험)는 반드시 아래 「동일 구간을 0~100으로 나타내면」표(0.00~33.33 정상, 33.34~66.67 경계, 66.68~100.00 고위험)에 **해당 0~100 점수를 넣어** 판정합니다. 문장·괄호 안에 **1~4 척도 원점수는 쓰지 마세요.** 괄호 안 형식: 한글 영역명(0~100값, 구간표 단계) (예: ${coreAreasSummaryExample})`
+  const coreAreasSummaryRule = `- coreAreasSummary: **scores의 0~100 값**으로 영역 간 상대 크기를 비교해 가장 큰 영역 1~2개를 고릅니다. 각 영역의 단계(정상/경계/고위험)는 반드시 아래 「영역별 단계 판정 기준」표(KOSS-SF1 PDF 23p 참고치)에 해당 영역의 0~100 점수를 대입해 판정합니다. **균등한 33.33/66.67 분할 표를 절대 사용하지 마세요.** 영역마다 임계값이 다릅니다. 문장·괄호 안에 **1~4 척도 원점수는 쓰지 마세요.** 괄호 안 형식: 한글 영역명(0~100값, 구간표 단계) (예: ${coreAreasSummaryExample})`
+
+  // 영역별 PDF 공식 산출 과정 표 (LLM에게 분자·분모를 명시적으로 전달)
+  const areaCalcTable = allStats
+    .map(
+      ({ ko, en, stats }) =>
+        `- ${ko}(${en}): 실제 점수의 합 ${stats.sumActual}, 문항 개수 ${stats.itemCount}, 예상 가능한 최고 점수의 합 ${stats.sumMax}` +
+        ` → (${stats.sumActual} − ${stats.itemCount}) ÷ (${stats.sumMax} − ${stats.itemCount}) × 100 = ${stats.score100}`,
+    )
+    .join('\n')
+
+  const areaScoreList = allStats.map(({ ko, en, stats }) => `- ${ko}(${en}): ${stats.score100}`).join('\n')
+
+  // 영역별 단계 판정 기준 표 (KOSS-SF1 PDF 23p — 성별별 참고치)
+  const riskTableForGender = KOSS_SF1_RISK_TABLE[gender ?? 'male']
+  const areaThresholdTable = allStats
+    .map(({ ko, en }) => {
+      const t = riskTableForGender[en as keyof RadarChartScore]
+      return `| ${ko} | ≤${t.정상Max} | ${t.정상Max} 초과 ~ ${t.경계Max} | ${t.경계Max} 초과 |`
+    })
+    .join('\n')
 
   return `[방사형 차트 데이터 요청]
 아래 진단 결과를 바탕으로 방사형 차트 컴포넌트에 주입할 데이터를 JSON 형식으로 응답하세요.
 마크다운 코드블록(\`\`\`) 없이 순수 JSON 문자열만 출력하세요. 다른 텍스트는 절대 추가하지 마세요.
 ${section1LockBlock}
-영역별 점수 (역코딩 적용, 소수점 2자리, 내부 판정·비교용 1.0~4.0 척도):
-- 물리적환경: ${물리적환경}
-- 직무요구: ${직무요구}
-- 직무자율: ${직무자율}
-- 관계갈등: ${관계갈등}
-- 직무불안정: ${직무불안정}
-- 조직체계: ${조직체계}
-- 보상부적절: ${보상부적절}
-- 직장문화: ${직장문화}
+[KOSS-SF1 평가점수 산출 공식 — 산업안전보건연구원 PDF 규정]
+각 영역별 환산 점수 = (해당 영역에서 평가한 실제 점수의 합 − 문항 개수) ÷ (해당 영역에서 예상 가능한 최고 점수의 합 − 문항 개수) × 100
+- 평가 척도: 1점(전혀 그렇지 않다) ~ 4점(매우 그렇다)
+- 한 문항의 최고 점수 = 4점 → 영역별 「예상 가능한 최고 점수의 합」 = 4 × 문항 개수
+- [역] 표시 문항은 역코딩(1↔4, 2↔3) 후 합산
+- 결과 범위: 0~100점
 
-영역별 0~100 환산값 (위 공식과 동일하며 JSON scores에 넣을 숫자와 **반드시 일치**해야 함, 소수 둘째 자리):
-- 물리적환경(physicalEnvironment): ${물리적환경100}
-- 직무요구(jobDemand): ${직무요구100}
-- 직무자율(jobAutonomy): ${직무자율100}
-- 관계갈등(interpersonalConflict): ${관계갈등100}
-- 직무불안정(jobInsecurity): ${직무불안정100}
-- 조직체계(organizationalSystem): ${조직체계100}
-- 보상부적절(inadequateCompensation): ${보상부적절100}
-- 직장문화(workplaceCulture): ${직장문화100}
+총점(KOSS-SF1) = (8개 영역의 환산 점수의 총합) ÷ 8
+
+[영역별 PDF 공식 산출 과정 — 역코딩 적용 후]
+${areaCalcTable}
+
+[영역별 0~100 환산 점수 (JSON scores에 넣을 숫자와 **반드시 일치**, 소수 둘째 자리)]
+${areaScoreList}
+
+[총점] (8개 영역의 환산 점수의 총합) ÷ 8 = ${totalScore}
 
 scores 키 매핑 (JSON scores에는 반드시 오른쪽 영어만 사용):
 - 물리적환경 → physicalEnvironment
@@ -1035,11 +1075,18 @@ scores 키 매핑 (JSON scores에는 반드시 오른쪽 영어만 사용):
 ${section1Anchors ? '' : `현재 판정된 위험군 색상 참고 (진단 분석에서 추출):\n- riskColor: ${riskColor}\n`}
 
 ${riskJudgementBlock}
-0~100 환산 (scores 필드에만 적용): 각 영역의 1~4 척도 역코딩 적용 평균 x에 대해 ((x - 1) / 3) * 100 을 계산하고 소수점 둘째 자리까지 반올림하여 number로 기재. (예: 1.00→0, 2.50→50, 4.00→100)
-동일 구간을 0~100으로 나타내면 (참고·해석용${section1Anchors ? '' : ', 위험 판정은 반드시 총점 구간표를 따를 것'}):
-- 0.00~33.33: 정상
-- 33.34~66.67: 경계
-- 66.68~100.00: 고위험
+[scores 필드 환산 규칙]
+각 영역의 0~100 환산 점수는 위 「KOSS-SF1 평가점수 산출 공식」을 그대로 적용합니다.
+즉, scores[영역] = (실제 점수의 합 − 문항 개수) ÷ (예상 가능한 최고 점수의 합 − 문항 개수) × 100, 소수 둘째 자리까지 반올림하여 number로 기재.
+(예: 실제합=문항수×1 → 0, 실제합=문항수×2.5 → 50, 실제합=문항수×4 → 100)
+
+영역별 단계 판정 기준 (KOSS-SF1 PDF 23p — ${genderLabel} 기준 참고치 / coreAreasSummary 단계 표기 시 **반드시 이 표 사용**${section1Anchors ? '' : ' / 단, 종합 위험 판정은 위 총점 구간표를 따를 것'}):
+
+| 영역 | 정상 | 경계 | 고위험 |
+|------|------|------|--------|
+${areaThresholdTable}
+
+⚠️ 영역마다 임계값이 다릅니다. 모든 영역에 균등하게 0~33.33/33.34~66.67/66.68~100을 적용하면 잘못된 단계가 됩니다. 반드시 위 표의 해당 영역 행을 읽어 단계를 결정하세요.
 
 응답 JSON 스키마 (키 이름·타입 정확히 준수):
 {
@@ -1061,7 +1108,7 @@ ${riskJudgementBlock}
 }
 
 필드 작성 규칙:
-- scores: 위 「영역별 0~100 환산값」목록과 **동일한 숫자**만 기재 (문자열 금지), 키는 반드시 영어 스키마대로. 재계산·반올림 방식을 바꾸지 마세요.
+- scores: 위 「영역별 0~100 환산 점수」목록과 **동일한 숫자**만 기재 (문자열 금지), 키는 반드시 영어 스키마대로. PDF 공식 외 다른 방식으로 재계산하거나 반올림 방식을 바꾸지 마세요.
 ${riskLevelColorRule}
 ${riskSummaryRule}
 ${coreAreasSummaryRule}
@@ -1069,10 +1116,10 @@ ${coreAreasSummaryRule}
 }
 
 /**
- * 섹션 1~4 텍스트 + Q1~Q25 응답값을 기반으로 방사형 차트 JSON 데이터 요청
+ * 섹션 1~4 텍스트 + Q1~Q26 응답값을 기반으로 방사형 차트 JSON 데이터 요청
  * - 백엔드 엔드포인트: /ai/chatbot/getPsychologyChartData.do (백엔드 연결 시 확인 필요)
  * @param sectionsText 섹션 1~4 LLM 응답 텍스트 (위험군 파싱에 사용)
- * @param answers Q1~Q25 원점수 — 카테고리 평균 계산 및 프롬프트 생성에 필수
+ * @param answers Q1~Q26 원점수 — KOSS-SF1 PDF 평가점수 산출 공식 적용 및 프롬프트 생성에 필수
  * @returns RadarChartData (차트 컴포넌트 주입용), 실패 시 null
  */
 export const fetchPsychologyRadarChartData = async (

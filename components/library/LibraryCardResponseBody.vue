@@ -117,8 +117,11 @@ import {
   extractKeywordSection,
   PEXELS_LOADING_HTML,
   fetchAndInjectPexelsImages,
+  usePsychologySurvey,
   type RadarChartData,
 } from '~/utils/chat/psychologyConsultUtil'
+
+const { surveyGender } = usePsychologySurvey()
 
 const props = defineProps<{
   item: LibraryCardDetail
@@ -187,11 +190,13 @@ let cancelPsychologyRadarInjection: (() => void) | null = null
 const isPsychologyRadarResponse = computed(() => props.item.agentId === 'AG000010' && psychologyMarkerFound.value)
 
 const psychologyStressItems = computed<StressScoreItem[]>(() =>
-  psychologyRadarData.value ? buildStressItemsFromRadarChartData(psychologyRadarData.value) : [],
+  psychologyRadarData.value ? buildStressItemsFromRadarChartData(psychologyRadarData.value, surveyGender.value) : [],
 )
 
 const psychologyRadarChartConfig = computed<Record<string, unknown>>(() =>
-  psychologyRadarData.value ? buildPsychologyRadarUiChartConfig(psychologyRadarData.value) : {},
+  psychologyRadarData.value
+    ? buildPsychologyRadarUiChartConfig(psychologyRadarData.value, surveyGender.value)
+    : {},
 )
 
 const pexelsModalUrl = ref('')
@@ -249,7 +254,7 @@ watch(
         psychologyRadarLoading.value = false
       })
     } else {
-      fetchPsychologyRadarChartData(extractSections1to4(rcontent), answers).then((chartData) => {
+      fetchPsychologyRadarChartData(extractSections1to4(rcontent), answers, surveyGender.value).then((chartData) => {
         psychologyRadarLoading.value = false
         if ((props.item.cardId ?? '') !== cardId) return
         if (chartData) {
