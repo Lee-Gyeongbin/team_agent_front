@@ -3,13 +3,22 @@
     class="app-sidebar"
     :class="{ 'is-expanded': isExpanded }"
   >
-    <!-- 햄버거 메뉴 -->
-    <button
-      class="sidebar-btn sidebar-toggle-btn"
-      @click="toggleExpanded"
-    >
-      <i class="sidebar-icon icon-menu size-20" />
-    </button>
+    <!-- 사이드바 펼침/접힘 (기본: 패널 막대, 호버: > / <) -->
+    <div class="sidebar-top">
+      <button
+        type="button"
+        class="sidebar-btn sidebar-toggle-btn"
+        :title="isExpanded ? '사이드바 닫기' : '사이드바 펼치기'"
+        :aria-label="isExpanded ? '사이드바 닫기' : '사이드바 펼치기'"
+        @click="toggleExpanded"
+      >
+        <i class="sidebar-icon sidebar-toggle-icon--default icon-sidebar-panel sidebar-toggle-icon-size" />
+        <i
+          class="sidebar-icon sidebar-toggle-icon--hover sidebar-toggle-icon-size"
+          :class="isExpanded ? 'icon-sidebar-panel-collapse' : 'icon-sidebar-panel-expand'"
+        />
+      </button>
+    </div>
 
     <!-- 통합 네비게이션: 접힘/펼침 모두 동일 마크업, CSS로 표시 제어 -->
     <nav class="sidebar-nav">

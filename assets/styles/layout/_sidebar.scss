@@ -41,8 +41,53 @@ $sidebar-btn-bg-hover: $color-border;
   }
 }
 
-.sidebar-toggle-btn {
+.sidebar-top {
+  display: flex;
+  align-items: center;
+  width: 100%;
   flex-shrink: 0;
+  min-height: 36px;
+}
+
+.app-sidebar:not(.is-expanded) .sidebar-top {
+  justify-content: flex-start;
+}
+
+.app-sidebar.is-expanded .sidebar-top {
+  justify-content: flex-end;
+}
+
+// 토글 아이콘: 기본 24px 대비 1.1배
+$sidebar-toggle-icon-size: 24px * 1.1;
+
+.sidebar-toggle-icon-size {
+  width: $sidebar-toggle-icon-size;
+  height: $sidebar-toggle-icon-size;
+}
+
+.sidebar-toggle-btn {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle-icon--default,
+.sidebar-toggle-icon--hover {
+  grid-area: 1 / 1;
+  display: block;
+  transition: opacity $transition-fast;
+}
+
+.sidebar-toggle-icon--hover {
+  opacity: 0;
+}
+
+.sidebar-toggle-btn:hover .sidebar-toggle-icon--default {
+  opacity: 0;
+}
+
+.sidebar-toggle-btn:hover .sidebar-toggle-icon--hover {
+  opacity: 1;
 }
 
 /* 버튼 내 아이콘: 부모 color 상속, is-active 시 테마 primary (mask 아이콘은 background-color 사용) */
