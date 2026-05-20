@@ -109,6 +109,8 @@ export interface OrgManageStore {
   orgAddErrorMessage: Ref<string>
   selectedOrgLastReflectDt: ComputedRef<string>
   handleFetchOrgList: () => Promise<void>
+  /** 조직 목록 조회 후 선택 조직 팀원 목록까지 조회 (조직 관리 화면용) */
+  handleRefreshOrgManage: () => Promise<void>
   handleFetchOrgUserList: (orgId: string) => Promise<void>
   handleSelectOrg: (orgId: string) => Promise<void>
   openAddOrgModal: () => void
@@ -213,7 +215,7 @@ export const useOrgManageStore = (): OrgManageStore => {
         return false
       }
       openToast({ message: '조직도 엑셀이 업로드되었습니다.' })
-      await handleFetchOrgList()
+      await handleRefreshOrgManage()
       return true
     } catch (error) {
       const message = error instanceof Error ? error.message : '조직도 엑셀 업로드 중 오류가 발생했습니다.'
@@ -222,6 +224,7 @@ export const useOrgManageStore = (): OrgManageStore => {
     }
   }
 
+  /** 조직 목록·트리만 조회 (selectUserList.do 미호출) */
   const handleFetchOrgList = async (): Promise<void> => {
     orgErrorMessage.value = ''
     orgListLoading.value = true
@@ -235,9 +238,6 @@ export const useOrgManageStore = (): OrgManageStore => {
       } else if (selectedOrgId.value == null || !list.some((o) => o.orgId === selectedOrgId.value)) {
         selectedOrgId.value = getFirstOrgIdInTree(orgTree.value) ?? list[0]?.orgId ?? null
       }
-      if (selectedOrgId.value) {
-        await handleFetchOrgUserList(selectedOrgId.value)
-      }
     } catch (error) {
       orgList.value = []
       orgTree.value = []
@@ -248,6 +248,13 @@ export const useOrgManageStore = (): OrgManageStore => {
     } finally {
       orgListLoading.value = false
     }
+  }
+
+  /** 조직 목록 갱신 후 선택 조직 팀원 목록 조회 */
+  const handleRefreshOrgManage = async (): Promise<void> => {
+    await handleFetchOrgList()
+    const id = selectedOrgId.value
+    if (id) await handleFetchOrgUserList(id)
   }
 
   const handleSelectOrg = async (orgId: string): Promise<void> => {
@@ -296,7 +303,7 @@ export const useOrgManageStore = (): OrgManageStore => {
         return
       }
       closeAddOrgModal()
-      await handleFetchOrgList()
+      await handleRefreshOrgManage()
       openToast({ message: '조직이 추가되었습니다.' })
     } catch (error) {
       orgAddErrorMessage.value = error instanceof Error ? error.message : '조직 추가 중 오류가 발생했습니다.'
@@ -327,7 +334,7 @@ export const useOrgManageStore = (): OrgManageStore => {
         return
       }
       closeAddOrgModal()
-      await handleFetchOrgList()
+      await handleRefreshOrgManage()
       openToast({ message: '조직이 수정되었습니다.' })
     } catch (error) {
       orgAddErrorMessage.value = error instanceof Error ? error.message : '조직 수정 중 오류가 발생했습니다.'
@@ -352,7 +359,7 @@ export const useOrgManageStore = (): OrgManageStore => {
         return
       }
       closeAddOrgModal()
-      await handleFetchOrgList()
+      await handleRefreshOrgManage()
       openToast({ message: '조직이 삭제되었습니다.' })
     } catch (error) {
       orgAddErrorMessage.value = error instanceof Error ? error.message : '조직 삭제 중 오류가 발생했습니다.'
@@ -370,17 +377,17 @@ export const useOrgManageStore = (): OrgManageStore => {
       const res = await fetchUpdateOrgOrder(body)
       if (res?.successYn === false) {
         openToast({ message: String(res.returnMsg ?? '조직 순서 저장에 실패했습니다.'), type: 'error' })
-        await handleFetchOrgList()
+        await handleRefreshOrgManage()
         return
       }
       openToast({ message: '조직 순서가 저장되었습니다.' })
-      await handleFetchOrgList()
+      await handleRefreshOrgManage()
     } catch (error) {
       openToast({
         message: error instanceof Error ? error.message : '조직 순서 저장 중 오류가 발생했습니다.',
         type: 'error',
       })
-      await handleFetchOrgList()
+      await handleRefreshOrgManage()
     }
   }
 
@@ -407,6 +414,7 @@ export const useOrgManageStore = (): OrgManageStore => {
     orgAddErrorMessage,
     selectedOrgLastReflectDt,
     handleFetchOrgList,
+    handleRefreshOrgManage,
     handleFetchOrgUserList,
     handleSelectOrg,
     openAddOrgModal,

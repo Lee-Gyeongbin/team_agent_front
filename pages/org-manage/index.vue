@@ -32,7 +32,7 @@
         <UiButton
           variant="outline"
           size="md"
-          @click="handleFetchOrgList"
+          @click="handleRefreshOrgManage"
         >
           새로고침
         </UiButton>
@@ -70,7 +70,7 @@ const {
   orgUserList,
   orgUserListLoading,
   orgUserErrorMessage,
-  handleFetchOrgList,
+  handleRefreshOrgManage,
   handleFetchOrgUserList,
   handleDownloadOrgExcel,
 } = useOrgManageStore()
@@ -107,7 +107,7 @@ const onRetryOrgUserList = (): void => {
   if (id) void handleFetchOrgUserList(id)
 }
 
-onMounted(async () => {
-  await handleFetchOrgList()
+onMounted(() => {
+  void handleRefreshOrgManage()
 })
 </script>
