@@ -30,7 +30,7 @@
         <UiButton
           variant="outline"
           size="md"
-          @click="handleFetchOrgList"
+          @click="handleRefreshOrgManage"
         >
           다시 시도
         </UiButton>
@@ -133,7 +133,7 @@ const {
   orgAddForm,
   orgAddErrorMessage,
   orgOptions,
-  handleFetchOrgList,
+  handleRefreshOrgManage,
   handleSelectOrg,
   openAddOrgModal,
   closeAddOrgModal,

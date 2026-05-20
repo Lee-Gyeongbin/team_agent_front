@@ -397,13 +397,13 @@ const radarChartLoading = ref(false)
  */
 const radarChartData = ref<RadarChartData | null>(null)
 
-/** guide/ui-chart Radar + StressScoreGrid 동일 구성 */
+/** guide/ui-chart Radar + StressScoreGrid 동일 구성 — 성별별 PDF 23p 영역별 참고치로 단계 판정 */
 const psychologyStressItems = computed<StressScoreItem[]>(() =>
-  radarChartData.value ? buildStressItemsFromRadarChartData(radarChartData.value) : [],
+  radarChartData.value ? buildStressItemsFromRadarChartData(radarChartData.value, surveyGender.value) : [],
 )
 
 const psychologyRadarChartConfig = computed<Record<string, unknown>>(() =>
-  radarChartData.value ? buildPsychologyRadarUiChartConfig(radarChartData.value) : {},
+  radarChartData.value ? buildPsychologyRadarUiChartConfig(radarChartData.value, surveyGender.value) : {},
 )
 
 let pexelsFetchDone = false
