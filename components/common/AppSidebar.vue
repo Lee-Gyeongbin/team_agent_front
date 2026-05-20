@@ -8,8 +8,8 @@
       <button
         type="button"
         class="sidebar-btn sidebar-toggle-btn"
-        :title="isExpanded ? '사이드바 닫기' : '사이드바 펼치기'"
-        :aria-label="isExpanded ? '사이드바 닫기' : '사이드바 펼치기'"
+        :title="isExpanded ? '사이드바 닫기 (Ctrl + .)' : '사이드바 펼치기 (Ctrl + .)'"
+        :aria-label="isExpanded ? '사이드바 닫기 (Ctrl + .)' : '사이드바 펼치기 (Ctrl + .)'"
         @click="toggleExpanded"
       >
         <i class="sidebar-icon sidebar-toggle-icon--default icon-sidebar-panel sidebar-toggle-icon-size" />
@@ -471,6 +471,31 @@ function toggleExpanded() {
   isExpanded.value = !isExpanded.value
 }
 
+/** 단축키 무시: 텍스트 입력 중에는 사이드바 토글하지 않음 */
+function isSidebarShortcutWritingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false
+  if (target.isContentEditable) return true
+  const tag = target.tagName
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true
+  return Boolean(target.closest('[contenteditable="true"]'))
+}
+
+/** 전역: Ctrl + . → 사이드바 펼침/접힘 (기본 레이아웃에서만 등록됨) */
+const SIDEBAR_TOGGLE_SHORTCUT_OPTS: AddEventListenerOptions = { capture: true }
+function onSidebarToggleShortcut(ev: KeyboardEvent) {
+  if (!ev.ctrlKey || ev.altKey || ev.shiftKey || ev.metaKey) return
+  if (ev.code !== 'Period' && ev.key !== '.') return
+  if (isSidebarShortcutWritingTarget(ev.target)) return
+  ev.preventDefault()
+  toggleExpanded()
+}
+
+onUnmounted(() => {
+  if (import.meta.client) {
+    window.removeEventListener('keydown', onSidebarToggleShortcut, SIDEBAR_TOGGLE_SHORTCUT_OPTS)
+  }
+})
+
 const topNavItems = computed(() => {
   return menuList.value
     .filter((item: MenuItem) => item.menuId !== SETTING_MENU_ID)
@@ -607,6 +632,9 @@ async function onContextDelete(entry: ChatRoom) {
 }
 
 onMounted(async () => {
+  if (import.meta.client) {
+    window.addEventListener('keydown', onSidebarToggleShortcut, SIDEBAR_TOGGLE_SHORTCUT_OPTS)
+  }
   // 채팅방 목록 조회
   await selectChatRoomList()
 })
