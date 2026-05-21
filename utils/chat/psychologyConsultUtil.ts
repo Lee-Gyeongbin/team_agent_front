@@ -141,6 +141,47 @@ export const buildDiagnosticPrompt = (answers: Record<number, number>, gender: S
     }).join(',\n') +
     '\n}'
 
+  // ============================================================
+  // JS 사전 계산 — LLM 산수 오류 차단 (영역 점수·총점·종합 위험군 모두 여기서 확정)
+  // PDF 평가점수 산출 공식과 PDF 23p 총점 참고치(성별별)를 정확히 적용
+  // ============================================================
+  const areaList = [
+    { ko: '물리적환경', en: 'physicalEnvironment' as const, stats: calcCategoryStats([1, 2], answers) },
+    { ko: '직무요구', en: 'jobDemand' as const, stats: calcCategoryStats([3, 4, 5, 6], answers) },
+    { ko: '직무자율', en: 'jobAutonomy' as const, stats: calcCategoryStats([7, 8, 9, 10], answers) },
+    { ko: '관계갈등', en: 'interpersonalConflict' as const, stats: calcCategoryStats([11, 12, 13], answers) },
+    { ko: '직무불안정', en: 'jobInsecurity' as const, stats: calcCategoryStats([14, 15], answers) },
+    { ko: '조직체계', en: 'organizationalSystem' as const, stats: calcCategoryStats([16, 17, 18, 19], answers) },
+    { ko: '보상부적절', en: 'inadequateCompensation' as const, stats: calcCategoryStats([20, 21, 22], answers) },
+    { ko: '직장문화', en: 'workplaceCulture' as const, stats: calcCategoryStats([23, 24, 25, 26], answers) },
+  ]
+  const totalScoreNum = areaList.reduce((acc, a) => acc + Number(a.stats.score100), 0) / areaList.length
+  const totalScore = totalScoreNum.toFixed(2)
+  const genderLabel = gender === 'female' ? '여성' : '남성'
+  const totalRisk = gender ? KOSS_SF1_TOTAL_RISK[gender] : KOSS_SF1_TOTAL_RISK.male
+  const areaRisk = gender ? KOSS_SF1_RISK_TABLE[gender] : KOSS_SF1_RISK_TABLE.male
+
+  // 총점만으로 1차 판정
+  const baseRiskLevel: RadarChartRiskLevel =
+    totalScoreNum <= totalRisk.정상Max ? '정상' : totalScoreNum <= totalRisk.경계Max ? '경계' : '고위험'
+
+  // High Risk Flag: 「고위험」 구간 영역 ≥3개일 때만 종합 판정을 고위험으로 상향
+  const highRiskAreaCount = areaList.filter((a) => Number(a.stats.score100) > areaRisk[a.en].경계Max).length
+  const finalRiskLevel: RadarChartRiskLevel = highRiskAreaCount >= 3 ? '고위험' : baseRiskLevel
+  const finalRiskGroupLabel = `${finalRiskLevel}군`
+
+  // 뱃지/상태 클래스 매핑 (출력 HTML 그대로)
+  const badgeClass =
+    finalRiskLevel === '정상' ? 'risk-safe' : finalRiskLevel === '경계' ? 'risk-caution' : 'risk-danger'
+  const statusClass =
+    finalRiskLevel === '정상'
+      ? 'risk-status--safe'
+      : finalRiskLevel === '경계'
+        ? 'risk-status--caution'
+        : 'risk-status--danger'
+
+  const areaScoresBlock = areaList.map((a) => `- ${a.ko}: ${a.stats.score100}`).join('\n')
+
   return `# Role
 당신은 기업 구성원의 심리적 웰빙을 책임지는 '전문 산업심리 상담사 및 멘탈 웰니스 코치'입니다.
 사용자가 작성한 한국인 직무스트레스 요인 평가도구 단축형(KOSS-SF1) 결과를 분석하여, 따뜻한 공감과 함께 실질적인 정신 건강 가이드를 제공하는 것이 당신의 임무입니다.
@@ -181,77 +222,48 @@ ${inputDataJson}
 [역] 표시 문항(Q5, Q7~Q13, Q16~Q22) 역코딩 후 계산
 (1점→4점, 2점→3점, 3점→2점, 4점→1점)
 
-# Scoring Rule (산업안전보건연구원 KOSS-SF1 평가점수 산출 공식 — PDF 규정 준수)
-[영역별 환산 점수]
-각 영역별 환산 점수 = (해당 영역에서 평가한 실제 점수의 합 − 문항 개수) ÷ (해당 영역에서 예상 가능한 최고 점수의 합 − 문항 개수) × 100
+# Pre-computed Scoring Result (시스템에서 KOSS-SF1 공식으로 사전 계산된 값 — 그대로 사용, 재계산 금지)
+아래 값들은 산업안전보건연구원 KOSS-SF1 PDF 공식으로 시스템이 직접 계산한 결과입니다.
+당신은 이 값을 **다시 계산하거나 검증하려 하지 마세요.** 종합 위험군 판정과 뱃지 클래스 선택에 이 값을 그대로 사용합니다.
 
-- 평가 척도: 1점(전혀 그렇지 않다) ~ 4점(매우 그렇다)
-- 한 문항의 최고 점수 = 4점 → 영역별 「예상 가능한 최고 점수의 합」 = 4 × 문항 개수
-- [역] 표시 문항은 역코딩(1↔4, 2↔3) 후 합산
-- 결과 범위: 0~100점
+[영역별 환산 점수 (0~100, 소수 둘째 자리)]
+${areaScoresBlock}
 
-[총점 (KOSS-SF1, 8개 영역)]
-총점 = (8개 영역의 환산 점수의 총합) ÷ 8
+[총점 (8개 영역 환산 점수의 평균)]
+총점 = ${totalScore}
 
-# Risk Level (KOSS-SF1 참고치 기준 — ${gender === 'female' ? '여성' : '남성'} 기준 적용)
-**총점 기준:**
-- ${gender === 'female' ? '50.0' : '48.4'} 이하: 정상
-- ${gender === 'female' ? '50.1~55.6' : '48.5~54.7'}: 경계
-- ${gender === 'female' ? '55.7' : '54.8'} 이상: 고위험
+[종합 위험군 판정 (${genderLabel} KOSS-SF1 PDF 23p 총점 참고치 기준)]
+- 적용 임계값: ≤${totalRisk.정상Max} 정상 / ${(totalRisk.정상Max + 0.1).toFixed(1)}~${totalRisk.경계Max} 경계 / ≥${(totalRisk.경계Max + 0.1).toFixed(1)} 고위험
+- 총점 ${totalScore} → 1차 판정: ${baseRiskLevel}
+- 고위험 구간 영역 개수: ${highRiskAreaCount}개 (3개 이상일 때만 종합 판정을 고위험으로 상향)
+- **최종 종합 위험군: ${finalRiskGroupLabel}**
+- **섹션 1 뱃지 클래스: ${badgeClass} / 상태 클래스: ${statusClass}**
 
-**영역별 기준 (판정 참고용):**
-| 영역 | 정상 | 경계 | 고위험 |
-|------|------|------|--------|
-| 물리적환경 | ≤44.4 | 44.5~${gender === 'female' ? '55.5' : '66.6'} | ≥${gender === 'female' ? '55.6' : '66.7'} |
-| 직무요구 | ≤${gender === 'female' ? '58.3' : '50.0'} | ${gender === 'female' ? '58.4~66.6' : '50.1~58.3'} | ≥${gender === 'female' ? '66.7' : '58.4'} |
-| 직무자율 | ≤${gender === 'female' ? '58.3' : '50.0'} | ${gender === 'female' ? '58.4~66.6' : '50.1~66.6'} | ≥66.7 |
-| 관계갈등 | ≤33.3 | 33.4~44.4 | ≥44.5 |
-| 직무불안정 | ≤${gender === 'female' ? '33.3' : '50.0'} | ${gender === 'female' ? '33.4~50.0' : '50.1~66.6'} | ≥${gender === 'female' ? '50.1' : '66.7'} |
-| 조직체계 | ≤50.0 | 50.1~66.6 | ≥66.7 |
-| 보상부적절 | ≤55.5 | 55.6~66.6 | ≥66.7 |
-| 직장문화 | ≤41.6 | 41.7~50.0 | ≥50.1 |
+⚠️ 위 「최종 종합 위험군」과 「뱃지 클래스」는 시스템이 PDF 공식으로 확정한 값입니다.
+- 섹션 1의 뱃지·상태 클래스는 반드시 위 값을 그대로 사용하세요.
+- 영역별 점수가 100점인 영역이 있어도, 총점 기준 판정을 바꾸지 마세요.
+- 본문 전체 톤(섹션 2~5)은 「${finalRiskGroupLabel}」 기준에 맞춰 작성합니다.
 
-# High Risk Flag
-고위험 기준 초과 영역이 3개 이상이면 종합 판정을 고위험으로 상향 조정
+# Stress Type (KOSS-SF1 공식 영역명 기준 — 섹션 4 표기에만 사용)
+영역별 환산 점수가 해당 영역의 「정상」 임계값을 초과(경계 이상)한 영역을 섹션 4에 나열합니다.
+- 물리적환경 위험 / 직무요구 과부하 / 직무자율 결여 / 관계갈등(사회적 지지 부족) / 직무불안정 / 조직체계 불공정 / 보상 부적절 / 직장문화 갈등
 
-# Stress Type (KOSS-SF1 공식 영역명 기준)
-물리적환경 위험: A영역 경계 이상
-직무요구 과부하: B영역 경계 이상
-직무자율 결여: C영역 경계 이상
-관계갈등(사회적 지지 부족): D영역 경계 이상
-직무불안정: E영역 경계 이상
-조직체계 불공정: F영역 경계 이상
-보상 부적절: G영역 경계 이상
-직장문화 갈등: H영역 경계 이상
-
-# Priority
-환산점수가 가장 높은 1~2개 영역 = 핵심 원인
-동률인 경우 해당 영역 모두 언급
+# Priority (섹션 2 핵심 원인 — 종합 판정과는 별개)
+위 「영역별 환산 점수」에서 가장 높은 1~2개 영역 = 핵심 원인 (동률인 경우 해당 영역 모두 언급)
+※ 핵심 원인 영역의 점수가 100점이어도, 종합 판정은 위 「최종 종합 위험군」을 그대로 따릅니다.
 
 # Output Format
 각 섹션 사이에는 반드시 --- 구분선을 삽입하세요.
 
 ### 1. 현재 상태 요약
-위험군 뱃지와 상태 설명을 아래 HTML 형식으로 출력하세요.
-반드시 두 줄만 출력하며, 두 줄 사이에 빈 줄·공백·들여쓰기를 절대 넣지 마세요.
-첫째 줄: 위험군 뱃지 span 태그 하나만
-둘째 줄: 상태 설명 span 태그 하나만
+위 「Pre-computed Scoring Result」의 종합 위험군은 **${finalRiskGroupLabel}** 이며, 뱃지 클래스는 **${badgeClass}**, 상태 클래스는 **${statusClass}** 로 사전 확정되어 있습니다.
+아래 형식을 그대로 사용해 두 줄만 출력하세요 (클래스명 변경 금지):
 
-출력 예시 (risk level에 맞는 클래스 하나 선택):
+<span class="risk-badge ${badgeClass}">${finalRiskGroupLabel}</span>
+<span class="risk-status ${statusClass}">{종합 상태를 1~2문장으로 설명}</span>
 
-정상군인 경우:
-<span class="risk-badge risk-safe">정상군</span>
-<span class="risk-status risk-status--safe">{설명}</span>
-
-경계군인 경우:
-<span class="risk-badge risk-caution">경계군</span>
-<span class="risk-status risk-status--caution">{설명}</span>
-
-고위험군인 경우:
-<span class="risk-badge risk-danger">고위험군</span>
-<span class="risk-status risk-status--danger">{설명}</span>
-
-⚠️ 두 span 태그 사이에 빈 줄이나 들여쓰기를 넣으면 안 됩니다. 반드시 연속된 두 줄로만 출력하세요.
+⚠️ 두 span 태그 사이에 빈 줄·공백·들여쓰기를 절대 넣지 마세요. 반드시 연속된 두 줄로 출력하세요.
+⚠️ 뱃지/상태 클래스(${badgeClass} / ${statusClass}) 와 라벨(${finalRiskGroupLabel}) 을 임의로 다른 값으로 바꾸지 마세요.
 
 ---
 
@@ -333,12 +345,18 @@ ${inputDataJson}
 - 본문 내 일반 목록에서 숫자를 헤딩 대용으로 사용하지 마세요
 - 각 섹션 사이 --- 구분선 반드시 유지
 
-# Tone
+# Tone (사전 확정된 종합 위험군: ${finalRiskGroupLabel} — 이 기준에 맞춰 본문 전체 작성)
 - 공감 중심
 - 따듯하고 친근한 말투
 - 현실적
 - 행동 유도
-- 고위험군 → 위트 제거`
+${
+  finalRiskLevel === '정상'
+    ? '- 종합 판정 = 정상군: 전반적으로 안정적이라는 점을 인정하면서, 점수가 높게 나온 일부 영역에 대해서만 가벼운 케어를 제안하세요. 과한 위기감·경고 톤 사용 금지. "주의가 필요한 상태"라는 표현은 사용하지 마세요.'
+    : finalRiskLevel === '경계'
+      ? '- 종합 판정 = 경계군: 주의가 필요한 시점임을 알리되, 위기감을 과장하지 말고 균형 잡힌 안내 톤을 유지하세요.'
+      : '- 종합 판정 = 고위험군: 위트 제거, 진지하고 명확한 안내 톤. 전문의 상담을 권고하세요.'
+}`
 }
 
 // ============================================================
