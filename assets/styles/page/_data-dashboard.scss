@@ -77,6 +77,38 @@
   &.col-span-1 {
     grid-column: span 1;
   }
+
+  // 헤더·필터 등 위젯 내 아이콘 액션 버튼 공통
+  .btn-widget-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: $border-radius-sm;
+    background: transparent;
+    color: $color-text-muted;
+    cursor: pointer;
+    transition:
+      background $transition-fast,
+      color $transition-fast;
+
+    &:hover {
+      background: $color-background;
+      color: $color-text-primary;
+    }
+
+    &.is-active {
+      background: var(--color-primary-bg);
+      color: var(--color-primary);
+    }
+
+    &.type-danger:hover {
+      background: #fff1f1;
+      color: $color-error;
+    }
+  }
 }
 
 // 위젯 헤더
@@ -137,37 +169,6 @@
   align-items: center;
   gap: 2px;
   flex-shrink: 0;
-
-  .btn-widget-action {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border: none;
-    border-radius: $border-radius-sm;
-    background: transparent;
-    color: $color-text-muted;
-    cursor: pointer;
-    transition:
-      background $transition-fast,
-      color $transition-fast;
-
-    &:hover {
-      background: $color-background;
-      color: $color-text-primary;
-    }
-
-    &.is-active {
-      background: var(--color-primary-bg);
-      color: var(--color-primary);
-    }
-
-    &.type-danger:hover {
-      background: #fff1f1;
-      color: $color-error;
-    }
-  }
 }
 
 // ===================================
@@ -221,13 +222,49 @@
   }
 }
 
+// SQL 미리보기 (필터 하단 전체 너비)
+.widget-filter-sql-preview {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.widget-filter-sql-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-xs;
+
+  .widget-filter-sql-copy {
+    flex-shrink: 0;
+  }
+}
+
+.widget-filter-sql-code {
+  padding: 8px 10px;
+  background: #f4f7f9;
+  border: 1px solid $color-border-light;
+  border-radius: $border-radius-base;
+  @include typo($body-xsmall);
+  color: $color-text-secondary;
+  white-space: pre;
+  word-break: break-all;
+  max-height: 120px;
+  overflow-y: auto;
+  font-family: 'Consolas', 'Monaco', monospace;
+  line-height: 1.6;
+  @include custom-scrollbar;
+}
+
 // 필터 슬라이드 애니메이션
 .widget-filter-slide-enter-active,
 .widget-filter-slide-leave-active {
   transition:
     max-height $transition-base,
     opacity $transition-base;
-  max-height: 120px;
+  max-height: 500px;
   overflow: hidden;
 }
 

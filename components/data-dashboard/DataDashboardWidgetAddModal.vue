@@ -262,6 +262,7 @@
 </template>
 
 <script setup lang="ts">
+import { parseTtsqParam } from '~/utils/dataDashboard/ttsqParamParser'
 import type {
   DataDashboardSqlItem,
   DataDashboardSqlVariable,
@@ -311,20 +312,6 @@ const parsedParams = ref<DataDashboardSqlVariable[]>([])
 
 /** 파라미터 추가 입력값 */
 const newParamInput = ref('')
-
-/** ttsqParam JSON 문자열을 파싱해 DataDashboardSqlVariable 배열로 변환 */
-const parseTtsqParam = (raw: string | null | undefined): DataDashboardSqlVariable[] => {
-  if (!raw) return []
-  try {
-    const parsed = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return []
-    return parsed
-      .filter((v: unknown): v is string => typeof v === 'string')
-      .map((key) => ({ key, label: key.toUpperCase(), type: 'text' as const }))
-  } catch {
-    return []
-  }
-}
 
 /** 파라미터 제거 */
 const onRemoveParam = (key: string) => {
