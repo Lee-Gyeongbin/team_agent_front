@@ -24,6 +24,7 @@
         <DataDashboardWidget
           :widget="element"
           :state="getWidgetState(element.widgetId)"
+          :code-map="getWidgetCodeMap(element.widgetId)"
           @execute="onExecute"
           @delete="handleDeleteWidget"
           @resize="handleResizeWidget"
@@ -78,6 +79,7 @@ const {
   handleDeleteWidget,
   handleResizeWidget,
   handleSaveWidgetOrder,
+  getWidgetCodeMap,
   openAddModal,
   closeAddModal,
 } = useDataDashboardStore()
@@ -99,12 +101,11 @@ const onExecute = async (widgetId: string, filterValues: Record<string, string>)
   await handleExecuteSql(widgetId)
 }
 
-// 시각화 유형 변경
-const onChangeVizType = async (widgetId: string, vizType: DataDashboardVizType) => {
-  const widget = widgetList.value.find((w) => w.widgetId === widgetId)
-  if (!widget) return
-  widget.vizType = vizType
-  await handleSaveWidget({ widgetId, vizType })
+// 시각화 유형 변경 (저장 없이 로컬 상태만 변경 — 다른 유형으로 재렌더링)
+const onChangeVizType = (widgetId: string, vizType: DataDashboardVizType) => {
+  const idx = widgetList.value.findIndex((w) => w.widgetId === widgetId)
+  if (idx === -1) return
+  widgetList.value[idx] = { ...widgetList.value[idx], vizType }
 }
 
 // 위젯 추가 저장
