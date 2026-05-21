@@ -144,6 +144,16 @@
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
 
+        // data URL·마크다운 이미지
+        img {
+          display: block;
+          max-width: 100%;
+          height: auto;
+          margin: 12px 0;
+          border-radius: 12px;
+          cursor: zoom-in;
+        }
+
         // Pexels 회복 이미지 그리드 (산업심리 상담 에이전트)
         .pexels-grid {
           display: flex;
