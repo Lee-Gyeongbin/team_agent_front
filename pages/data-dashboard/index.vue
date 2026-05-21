@@ -43,12 +43,6 @@
         title="위젯이 없습니다."
         description="TextToSQL로 생성한 SQL을 위젯으로 추가해 대시보드를 구성하세요."
       >
-        <UiButton
-          variant="primary-line"
-          @click="openAddModal"
-        >
-          위젯 추가하기
-        </UiButton>
       </UiEmpty>
     </div>
 
@@ -108,13 +102,9 @@ const onChangeVizType = (widgetId: string, vizType: DataDashboardVizType) => {
   widgetList.value[idx] = { ...widgetList.value[idx], vizType }
 }
 
-// 위젯 추가 저장
+// 위젯 추가 저장 (목록 갱신 + 전체 차트 재조회는 store에서 처리)
 const onSaveWidget = async (data: Partial<DataDashboardWidget>) => {
-  const saved = await handleSaveWidget(data)
-  if (saved) {
-    closeAddModal()
-    await handleExecuteSql(saved.widgetId)
-  }
+  await handleSaveWidget(data)
 }
 
 // 드래그 순서 저장
@@ -122,11 +112,7 @@ const onDragEnd = () => {
   handleSaveWidgetOrder()
 }
 
-onMounted(async () => {
-  await handleSelectWidgetList()
-  // 초기 로드 시 모든 위젯 일괄 조회
-  for (const widget of widgetList.value) {
-    handleExecuteSql(widget.widgetId)
-  }
+onMounted(() => {
+  handleSelectWidgetList()
 })
 </script>

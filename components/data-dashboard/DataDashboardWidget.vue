@@ -129,7 +129,17 @@
           v-if="previewSql"
           class="widget-filter-sql-preview"
         >
-          <span class="filter-label">실행 SQL</span>
+          <div class="widget-filter-sql-header">
+            <span class="filter-label">실행 SQL</span>
+            <button
+              type="button"
+              class="btn btn-widget-action widget-filter-sql-copy"
+              title="SQL 복사"
+              @click="onCopyPreviewSql"
+            >
+              <i class="icon-copy size-16" />
+            </button>
+          </div>
           <pre class="widget-filter-sql-code">{{ previewSql }}</pre>
         </div>
       </div>
@@ -193,8 +203,18 @@
 
 <script setup lang="ts">
 import { substituteWhereValues } from '~/utils/dataDashboard/ttsqParamParser'
+import { copyToClipboard } from '~/utils/global/clipboardUtil'
 import { formatSql } from '~/utils/global/codeUtil'
-import { parseVizConfig, resolveColumnKey, getRowValue, buildPositiveYScale } from '~/utils/dataDashboard/vizConfigUtil'
+import {
+  parseVizConfig,
+  resolveColumnKey,
+  getRowValue,
+  buildPositiveYScale,
+  buildDualAxisScales,
+  buildRawCategories,
+  buildCategoryLabels,
+  buildAggregatedValueMap,
+} from '~/utils/dataDashboard/vizConfigUtil'
 import type {
   DataDashboardWidget,
   DataDashboardWidgetState,
@@ -294,6 +314,16 @@ const previewSql = computed<string>(() => {
   return formatSql(substituted)
 })
 
+const onCopyPreviewSql = async () => {
+  if (!previewSql.value) return
+  try {
+    await copyToClipboard(previewSql.value)
+    openToast({ message: 'SQL이 복사되었습니다.', type: 'success' })
+  } catch {
+    openToast({ message: '클립보드에 복사하지 못했습니다.', type: 'error' })
+  }
+}
+
 const onExecute = () => {
   emit('execute', props.widget.widgetId, { ...resolvedFilterValues.value })
 }
@@ -345,95 +375,108 @@ const chartConfig = computed(() => {
   const readNum = (row: Record<string, unknown>, colKey: string) => Number(getRowValue(row, colKey)) || 0
   const readLabel = (row: Record<string, unknown>, colKey: string) => String(getRowValue(row, colKey) ?? '')
 
-  // 파이 차트
-  // vizConfig에 labelKey/valueKey가 없으면 xAxisKey/yAxisKeys[0] 을 폴백으로 사용
-  if (vizType === 'pie') {
-    const labelKey = resolveColumnKey(columns, vizCfg.labelKey ?? vizCfg.xAxisKey) ?? columns[0]
-    const valueKey = resolveColumnKey(columns, vizCfg.valueKey ?? vizCfg.yAxisKeys?.[0]) ?? columns[1] ?? columns[0]
-    const rawValues = rows.map((r) => readNum(r, valueKey))
-    const total = rawValues.reduce((sum, v) => sum + v, 0)
-    // 음수 포함 또는 합계 0이면 비율 계산 불가
-    if (rawValues.some((v) => v < 0) || total <= 0) return {}
-    return {
-      items: rows.map((r, i) => ({
-        name: readLabel((dRows[i] ?? r) as Record<string, unknown>, labelKey),
-        value: Math.round((readNum(r, valueKey) / total) * 1000) / 10,
-      })),
-      style: 'analystatSet',
-      type: 'outerLabel',
-    }
-  }
-
   const xKey = resolveColumnKey(columns, vizCfg.xAxisKey) ?? columns[0]
   const configuredYKeys = (vizCfg.yAxisKeys ?? [])
     .map((k) => resolveColumnKey(columns, k))
     .filter((k): k is string => !!k)
   const yKeys = configuredYKeys.length ? configuredYKeys : columns.filter((c) => c !== xKey)
 
-  // x축 categories는 코드명 치환 적용
-  const categories = dRows.map((r) => readLabel(r, xKey))
+  // x축 고유값 + Y합산 (REGN_CD 등 부차 차원이 있어도 xAxisKey 기준으로 묶음)
+  const buildGroupedSeries = (groupKey: string) => {
+    const rawCategories = buildRawCategories(rows, groupKey)
+    const categories = buildCategoryLabels(rawCategories, rows, dRows, groupKey, readLabel)
+    const valueMap = buildAggregatedValueMap(rows, groupKey, yKeys[0], readNum)
+    const values = rawCategories.map((raw) => valueMap.get(raw) ?? 0)
+    return { rawCategories, categories, values }
+  }
+
+  // 파이 차트
+  // vizConfig에 labelKey/valueKey가 없으면 xAxisKey/yAxisKeys[0] 을 폴백으로 사용
+  if (vizType === 'pie') {
+    const labelKey = resolveColumnKey(columns, vizCfg.labelKey ?? vizCfg.xAxisKey) ?? columns[0]
+    const valueKey = resolveColumnKey(columns, vizCfg.valueKey ?? vizCfg.yAxisKeys?.[0]) ?? columns[1] ?? columns[0]
+    const rawCategories = buildRawCategories(rows, labelKey)
+    const valueMap = buildAggregatedValueMap(rows, labelKey, valueKey, readNum)
+    const aggregatedValues = rawCategories.map((raw) => valueMap.get(raw) ?? 0)
+    const total = aggregatedValues.reduce((sum, v) => sum + v, 0)
+    // 음수 포함 또는 합계 0이면 비율 계산 불가
+    if (aggregatedValues.some((v) => v < 0) || total <= 0) return {}
+    const labels = buildCategoryLabels(rawCategories, rows, dRows, labelKey, readLabel)
+    return {
+      items: rawCategories.map((raw, i) => ({
+        name: labels[i],
+        value: Math.round((aggregatedValues[i] / total) * 1000) / 10,
+      })),
+      style: 'analystatSet',
+      type: 'outerLabel',
+    }
+  }
+
+  const { rawCategories, categories, values: groupedValues } = buildGroupedSeries(xKey)
 
   const chartColorKey = vizType === 'line' ? 'line.analystatSet' : 'bar.analystatSet'
 
   // 가로 막대
   if (vizType === 'horizontalBar') {
-    const yKey = yKeys[0]
-    const values = rows.map((r) => readNum(r, yKey))
-    const scale = buildPositiveYScale(values)
+    const scale = buildPositiveYScale(groupedValues)
     return {
       categories,
-      data: values,
+      data: groupedValues,
       colorKey: chartColorKey,
       maxValue: scale.max,
       yAxisStepSize: scale.stepSize,
     }
   }
 
-  // 라인 차트
-  if (vizType === 'line') {
-    const values = yKeys.flatMap((k) => rows.map((r) => readNum(r, k)))
-    const scale = buildPositiveYScale(values)
-    return {
-      categories,
-      datasets: yKeys.map((key, idx) => ({
+  // Y축 2개 — 채팅 시각화와 동일하게 좌/우 이축 (스케일이 다른 지표 대비)
+  if (yKeys.length >= 2 && (vizType === 'bar' || vizType === 'line')) {
+    const dualKeys = yKeys.slice(0, 2)
+    const datasets = dualKeys.map((key, idx) => {
+      const valueMap = buildAggregatedValueMap(rows, xKey, key, readNum)
+      return {
         label: key,
-        data: rows.map((r) => readNum(r, key)),
+        data: rawCategories.map((raw) => valueMap.get(raw) ?? 0),
         colorKey: chartColorKey,
         colorIndex: idx,
-      })),
-      maxValue: scale.max,
-      minValue: scale.min,
-      yAxisStepSize: scale.stepSize,
-    }
-  }
-
-  // 막대 차트 (기본)
-  const values = yKeys.flatMap((k) => rows.map((r) => readNum(r, k)))
-  const scale = buildPositiveYScale(values)
-
-  if (yKeys.length === 1) {
+        yAxisID: idx === 0 ? 'y' : 'y1',
+      }
+    })
     return {
       categories,
-      data: rows.map((r) => readNum(r, yKeys[0])),
-      colorKey: chartColorKey,
-      maxValue: scale.max,
-      minValue: scale.min,
-      yAxisStepSize: scale.stepSize,
-      showDataLabels: false,
+      datasets,
+      scales: buildDualAxisScales(datasets, vizType),
     }
   }
 
+  // 라인 차트 (단일 Y)
+  if (vizType === 'line') {
+    const scale = buildPositiveYScale(groupedValues)
+    return {
+      categories,
+      datasets: [
+        {
+          label: yKeys[0],
+          data: groupedValues,
+          colorKey: chartColorKey,
+          colorIndex: 0,
+        },
+      ],
+      maxValue: scale.max,
+      minValue: scale.min,
+      yAxisStepSize: scale.stepSize,
+    }
+  }
+
+  // 막대 차트 (단일 Y)
+  const scale = buildPositiveYScale(groupedValues)
   return {
     categories,
-    datasets: yKeys.map((key, idx) => ({
-      label: key,
-      data: rows.map((r) => readNum(r, key)),
-      colorKey: chartColorKey,
-      colorIndex: idx,
-    })),
+    data: groupedValues,
+    colorKey: chartColorKey,
     maxValue: scale.max,
     minValue: scale.min,
     yAxisStepSize: scale.stepSize,
+    showDataLabels: false,
   }
 })
 </script>

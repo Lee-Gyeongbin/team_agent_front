@@ -95,12 +95,18 @@ const prefetchCodeMaps = async () => {
   await Promise.all(ids.map((id) => fetchColCodeMap(id).then((map) => (codeMapCache.value[id] = map))))
 }
 
+/** 위젯 목록의 모든 SQL을 병렬 실행해 차트를 일괄 갱신 */
+const handleExecuteAllWidgets = async () => {
+  await Promise.all(widgetList.value.map((w) => handleExecuteSql(w.widgetId)))
+}
+
 const handleSelectWidgetList = async () => {
   try {
     const res = await fetchWidgetList()
     widgetList.value = (res.list ?? []).map(hydrateVariables)
     widgetList.value.forEach(initWidgetState)
     await prefetchCodeMaps()
+    await handleExecuteAllWidgets()
   } catch {
     openToast({ message: '위젯 목록 조회에 실패했습니다.', type: 'error' })
   }
@@ -188,15 +194,22 @@ const toWidgetPayload = (widget: Partial<DataDashboardWidget>): Record<string, u
 })
 
 const handleSaveWidget = async (widget: Partial<DataDashboardWidget>): Promise<DataDashboardWidget | null> => {
+  // 저장 전 기존 widgetId 집합 — 신규 추가된 위젯 식별용
+  const prevIds = new Set(widgetList.value.map((w) => w.widgetId))
   try {
-    const res = await fetchSaveWidget(toWidgetPayload(widget) as Partial<DataDashboardWidget>)
+    await fetchSaveWidget(toWidgetPayload(widget) as Partial<DataDashboardWidget>)
     await handleSelectWidgetList()
+    closeAddModal()
     openToast({ message: '위젯이 저장되었습니다.', type: 'success' })
-    return hydrateVariables(res.data)
   } catch {
     openToast({ message: '위젯 저장에 실패했습니다.', type: 'error' })
     return null
   }
+  // 수정: 기존 widgetId로 조회 / 신규: prevIds에 없는 위젯 반환
+  const saved = widget.widgetId
+    ? widgetList.value.find((w) => w.widgetId === widget.widgetId)
+    : widgetList.value.find((w) => !prevIds.has(w.widgetId))
+  return saved ?? null
 }
 
 // ===== 위젯 삭제 =====
@@ -245,8 +258,8 @@ const handleSaveWidgetOrder = async () => {
 
 // ===== 모달 =====
 
-const openAddModal = () => {
-  if (!sqlList.value.length) handleSelectSqlList()
+const openAddModal = async () => {
+  await handleSelectSqlList()
   isAddModalOpen.value = true
 }
 const closeAddModal = () => {

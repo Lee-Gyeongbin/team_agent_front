@@ -77,6 +77,38 @@
   &.col-span-1 {
     grid-column: span 1;
   }
+
+  // 헤더·필터 등 위젯 내 아이콘 액션 버튼 공통
+  .btn-widget-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: $border-radius-sm;
+    background: transparent;
+    color: $color-text-muted;
+    cursor: pointer;
+    transition:
+      background $transition-fast,
+      color $transition-fast;
+
+    &:hover {
+      background: $color-background;
+      color: $color-text-primary;
+    }
+
+    &.is-active {
+      background: var(--color-primary-bg);
+      color: var(--color-primary);
+    }
+
+    &.type-danger:hover {
+      background: #fff1f1;
+      color: $color-error;
+    }
+  }
 }
 
 // 위젯 헤더
@@ -137,37 +169,6 @@
   align-items: center;
   gap: 2px;
   flex-shrink: 0;
-
-  .btn-widget-action {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border: none;
-    border-radius: $border-radius-sm;
-    background: transparent;
-    color: $color-text-muted;
-    cursor: pointer;
-    transition:
-      background $transition-fast,
-      color $transition-fast;
-
-    &:hover {
-      background: $color-background;
-      color: $color-text-primary;
-    }
-
-    &.is-active {
-      background: var(--color-primary-bg);
-      color: var(--color-primary);
-    }
-
-    &.type-danger:hover {
-      background: #fff1f1;
-      color: $color-error;
-    }
-  }
 }
 
 // ===================================
@@ -228,6 +229,17 @@
   flex-direction: column;
   gap: 4px;
   margin-top: 2px;
+}
+
+.widget-filter-sql-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-xs;
+
+  .widget-filter-sql-copy {
+    flex-shrink: 0;
+  }
 }
 
 .widget-filter-sql-code {
