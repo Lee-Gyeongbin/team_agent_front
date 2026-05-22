@@ -25,10 +25,13 @@
           :widget="element"
           :state="getWidgetState(element.widgetId)"
           :code-map="getWidgetCodeMap(element.widgetId)"
+          :height-px="getWidgetHeightPx(element.widgetId)"
           @execute="onExecute"
           @delete="handleDeleteWidget"
           @resize="handleResizeWidget"
           @change-viz-type="onChangeVizType"
+          @update-height="onUpdateHeight"
+          @reset-height="onResetHeight"
         />
       </template>
     </draggable>
@@ -73,7 +76,10 @@ const {
   handleDeleteWidget,
   handleResizeWidget,
   handleSaveWidgetOrder,
+  handleSaveWidgetHeight,
+  handleResetWidgetHeight,
   getWidgetCodeMap,
+  getWidgetHeightPx,
   openAddModal,
   closeAddModal,
 } = useDataDashboardStore()
@@ -110,6 +116,16 @@ const onSaveWidget = async (data: Partial<DataDashboardWidget>) => {
 // 드래그 순서 저장
 const onDragEnd = () => {
   handleSaveWidgetOrder()
+}
+
+// 높이 변경 저장
+const onUpdateHeight = (widgetId: string, heightPx: number) => {
+  handleSaveWidgetHeight(widgetId, heightPx)
+}
+
+// 높이 초기화
+const onResetHeight = (widgetId: string) => {
+  handleResetWidgetHeight(widgetId)
 }
 
 onMounted(() => {

@@ -1,12 +1,13 @@
 <template>
   <div
+    ref="widgetEl"
     class="dashboard-widget"
-    :class="[`col-span-${widget.colSpan}`, { 'is-filter-open': isFilterOpen }]"
+    :class="[`col-span-${widget.colSpan}`, { 'is-filter-open': isFilterOpen, 'is-resizing': isResizing }]"
   >
     <!-- 헤더 -->
     <div class="widget-header">
       <div class="widget-header-left">
-        <i class="icon-move-handle size-18 widget-drag-handle" />
+        <i class="icon-move-handle size-20 widget-drag-handle" />
         <span class="widget-title">{{ widget.title }}</span>
         <span class="widget-sql-badge">{{ widget.sqlTitle }}</span>
       </div>
@@ -20,25 +21,6 @@
           @click="isFilterOpen = !isFilterOpen"
         >
           <i class="icon-sliders size-16" />
-        </button>
-        <!-- 너비 전환 -->
-        <button
-          class="btn btn-widget-action"
-          :title="widget.colSpan === 2 ? '절반 너비' : '전체 너비'"
-          @click="$emit('resize', widget.widgetId, widget.colSpan === 2 ? 1 : 2)"
-        >
-          <i
-            :class="widget.colSpan === 2 ? 'icon-collapse' : 'icon-expand'"
-            class="size-16"
-          />
-        </button>
-        <!-- 새로고침 -->
-        <button
-          class="btn btn-widget-action"
-          title="새로고침"
-          @click="onExecute"
-        >
-          <i class="icon-refresh size-16" />
         </button>
         <!-- 시각화 유형 변경 -->
         <UiDropdownMenu
@@ -54,6 +36,35 @@
             </button>
           </template>
         </UiDropdownMenu>
+        <!-- 너비 전환 (절반 ↔ 전체) -->
+        <button
+          class="btn btn-widget-action"
+          :title="widget.colSpan === 2 ? '절반 너비로' : '전체 너비로'"
+          @click="$emit('resize', widget.widgetId, widget.colSpan === 2 ? 1 : 2)"
+        >
+          <i
+            :class="widget.colSpan === 2 ? 'icon-collapse' : 'icon-expand'"
+            class="size-16"
+          />
+        </button>
+        <!-- 높이 기본값으로 초기화 -->
+        <button
+          v-if="localHeightPx !== DEFAULT_HEIGHT"
+          class="btn btn-widget-action"
+          title="높이 초기화 (400px)"
+          @click="onResetHeight"
+        >
+          <i class="icon-resize-height size-16" />
+        </button>
+        <!-- 새로고침 -->
+        <button
+          class="btn btn-widget-action"
+          title="새로고침"
+          @click="onExecute"
+        >
+          <i class="icon-refresh size-16" />
+        </button>
+
         <!-- 삭제 -->
         <button
           class="btn btn-widget-action type-danger"
@@ -145,8 +156,13 @@
       </div>
     </transition>
 
-    <!-- 콘텐츠 -->
-    <div class="widget-content">
+    <!-- 콘텐츠 — 필터는 이 밖에 있어서 필터 열릴 때 위젯 전체가 늘어남 -->
+    <!-- minHeight로 로딩·빈상태 높이 보장 / 차트·테이블은 height inline style 직접 적용 -->
+    <div
+      ref="contentEl"
+      class="widget-content"
+      :style="{ minHeight: `${localHeightPx}px` }"
+    >
       <!-- 로딩 -->
       <UiLoading
         v-if="state.loading"
@@ -168,10 +184,11 @@
         title="조회 결과가 없습니다."
       />
 
-      <!-- 차트 -->
+      <!-- 차트 — height inline style 직접 적용 (chart.js 부모 크기 인식) -->
       <div
         v-else-if="state.result && widget.vizType !== 'table'"
         class="widget-chart-wrap"
+        :style="{ height: `${localHeightPx}px` }"
       >
         <UiChart
           :type="chartVizType"
@@ -180,16 +197,20 @@
         />
       </div>
 
-      <!-- 테이블 -->
-      <template v-else-if="state.result && widget.vizType === 'table'">
+      <!-- 테이블 — height + overflow:hidden inline 직접 적용, ui-table-wrap 스크롤 -->
+      <div
+        v-else-if="state.result && widget.vizType === 'table'"
+        class="widget-table-wrap"
+        :style="{ height: `${localHeightPx}px` }"
+      >
         <UiTable
           :columns="tableColumns"
           :data="displayRows"
-          max-height="280px"
+          :max-height="`${localHeightPx}px`"
           sticky-header
           size="sm"
         />
-      </template>
+      </div>
 
       <!-- 초기 상태 -->
       <UiEmpty
@@ -198,6 +219,12 @@
         title="조회 버튼을 눌러 데이터를 확인하세요."
       />
     </div>
+
+    <!-- 우측 하단 리사이즈 핸들 -->
+    <div
+      class="widget-resize-handle"
+      @mousedown.prevent.stop="onResizeStart"
+    />
   </div>
 </template>
 
@@ -227,6 +254,7 @@ interface Props {
   widget: DataDashboardWidget
   state: DataDashboardWidgetState
   codeMap?: ColCodeMap
+  heightPx?: number | null
 }
 
 const props = defineProps<Props>()
@@ -236,6 +264,8 @@ const emit = defineEmits<{
   delete: [widgetId: string]
   resize: [widgetId: string, colSpan: 1 | 2]
   'change-viz-type': [widgetId: string, vizType: DataDashboardVizType]
+  'update-height': [widgetId: string, heightPx: number]
+  'reset-height': [widgetId: string]
 }>()
 
 const isFilterOpen = ref(false)
@@ -330,6 +360,53 @@ const onExecute = () => {
 
 const onChangeVizType = (value: string) => {
   emit('change-viz-type', props.widget.widgetId, value as DataDashboardVizType)
+}
+
+// ===== 높이 드래그 리사이즈 =====
+// localHeightPx = widget-content 영역 높이 (필터·헤더 제외)
+// 기본값 300px — chart.js가 부모 높이를 항상 인식하도록 항상 명시적 높이 적용
+const DEFAULT_HEIGHT = 400
+const MIN_HEIGHT = 400
+
+const widgetEl = ref<HTMLElement | null>(null)
+const contentEl = ref<HTMLElement | null>(null)
+const localHeightPx = ref<number>(props.heightPx ?? DEFAULT_HEIGHT)
+const isResizing = ref(false)
+
+watch(
+  () => props.heightPx,
+  (v) => {
+    localHeightPx.value = v ?? DEFAULT_HEIGHT
+  },
+)
+
+const onResetHeight = () => {
+  localHeightPx.value = DEFAULT_HEIGHT
+  emit('reset-height', props.widget.widgetId)
+}
+
+const onResizeStart = (e: MouseEvent) => {
+  isResizing.value = true
+  const startY = e.clientY
+  const startHeight = localHeightPx.value
+
+  const onMouseMove = (ev: MouseEvent) => {
+    localHeightPx.value = Math.max(MIN_HEIGHT, startHeight + (ev.clientY - startY))
+  }
+
+  const onMouseUp = () => {
+    if (localHeightPx.value === DEFAULT_HEIGHT) {
+      emit('reset-height', props.widget.widgetId)
+    } else {
+      emit('update-height', props.widget.widgetId, localHeightPx.value)
+    }
+    isResizing.value = false
+    document.removeEventListener('mousemove', onMouseMove)
+    document.removeEventListener('mouseup', onMouseUp)
+  }
+
+  document.addEventListener('mousemove', onMouseMove)
+  document.addEventListener('mouseup', onMouseUp)
 }
 
 // 시각화 유형 변경 메뉴

@@ -59,15 +59,36 @@
 // 위젯 카드
 // ===================================
 .dashboard-widget {
+  position: relative;
   background: #fff;
   border: 1px solid #dce4e9;
   border-radius: 16px;
   display: flex;
   flex-direction: column;
-  transition: box-shadow $transition-base;
+  transition:
+    box-shadow $transition-base,
+    border-color $transition-fast;
 
   &:hover {
     box-shadow: $shadow-md;
+  }
+
+  &.is-resizing {
+    user-select: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px var(--color-primary-bg);
+
+    .widget-resize-handle {
+      opacity: 1;
+
+      &::before {
+        border-color: var(--color-primary);
+      }
+    }
+  }
+
+  &:hover .widget-resize-handle {
+    opacity: 1;
   }
 
   &.col-span-2 {
@@ -108,6 +129,38 @@
       background: #fff1f1;
       color: $color-error;
     }
+  }
+}
+
+// 높이 리사이즈 핸들 (하단 중앙)
+.widget-resize-handle {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 12px;
+  cursor: ns-resize;
+  opacity: 0;
+  transition: opacity $transition-fast;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  // 가로 줄 2개 (리사이즈 그립)
+  &::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    border-top: 2px solid $color-border;
+    border-bottom: 2px solid $color-border;
+    border-radius: 2px;
+    transition: border-color $transition-fast;
+  }
+
+  &:hover::before {
+    border-color: var(--color-primary);
   }
 }
 
@@ -277,24 +330,30 @@
 // ===================================
 // 위젯 콘텐츠 영역
 // ===================================
+// height는 JS(localHeightPx)가 inline style로 직접 적용
+// CSS 변수 미사용 → 타이밍/fallback 이슈 없음
 .widget-content {
-  flex: 1;
-  min-height: 0;
   display: flex;
   flex-direction: column;
   padding: $spacing-md;
-  min-height: 300px;
 
+  // 로딩·빈상태: widget-content minHeight(JS 주입)로 높이 확보 후 flex:1로 채움
   .ui-loading,
   .ui-empty {
     flex: 1;
   }
 }
 
+// height는 inline style로 주입 — chart.js 부모 height 인식
 .widget-chart-wrap {
-  flex: 1;
+  flex-shrink: 0;
   min-height: 0;
-  height: 280px;
+}
+
+// height + overflow:hidden inline 주입 — 팽창 차단, ui-table-wrap이 내부 스크롤 담당
+.widget-table-wrap {
+  flex-shrink: 0;
+  overflow: hidden;
 }
 
 // ===================================
