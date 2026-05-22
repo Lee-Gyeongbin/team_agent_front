@@ -415,10 +415,8 @@ const onSelectVizType = (vizType: DataDashboardVizType) => {
   form.vizType = vizType
 }
 
-/** 저장용 vizConfig — 파이·축 차트 공통 xAxisKey/yAxisKeys, 테이블은 빈 객체 */
+/** 저장용 vizConfig — 시각화 유형과 무관하게 xAxisKey/yAxisKeys 유지 (테이블→차트 전환용) */
 const buildSaveVizConfig = (): DataDashboardVizConfig => {
-  if (form.vizType === 'table') return {}
-
   const xAxisKey = form.vizConfig.xAxisKey.trim()
   const yAxisKeys = yAxisKeysInput.value
     .split(',')
