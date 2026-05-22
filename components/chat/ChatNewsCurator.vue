@@ -21,20 +21,42 @@
               </div>
               <div class="chat-news-curator__header-copy">
                 <p class="chat-news-curator__header-title">{{ NEWS_INTRO_TITLE }}</p>
-                <p class="chat-news-curator__header-subtitle">{{ preSubmitCategoryHint }}</p>
+                <p class="chat-news-curator__header-subtitle">{{ readonlyCategoryHint }}</p>
               </div>
             </div>
           </div>
 
           <div class="chat-news-curator__selector">
-            <ul class="chat-news-curator__selector-grid">
+            <div
+              v-if="categoryLoadError"
+              class="chat-news-curator__selector-state"
+            >
+              <p>{{ categoryLoadError }}</p>
+              <UiButton
+                variant="line-secondary"
+                size="sm"
+                @click="onRetryLoadCategories"
+              >
+                다시 시도
+              </UiButton>
+            </div>
+            <p
+              v-else-if="!hasCategoryOptions && !isCategoryOptionsLoading"
+              class="chat-news-curator__selector-state"
+            >
+              등록된 뉴스 분야가 없습니다.
+            </p>
+            <ul
+              v-else-if="hasCategoryOptions"
+              class="chat-news-curator__selector-grid"
+            >
               <li
-                v-for="category in NEWS_CATEGORY_OPTIONS"
+                v-for="category in categoryOptions"
                 :key="category.value"
               >
                 <div
                   class="chat-news-curator__selector-card is-readonly"
-                  :class="{ 'is-selected': lockedSelectedCategoriesList.includes(category.value) }"
+                  :class="{ 'is-selected': isLockedCategorySelected(category) }"
                 >
                   <strong>{{ category.label }}</strong>
                   <p>{{ category.description }}</p>
@@ -99,7 +121,7 @@
                     </div>
                     <div class="chat-news-curator__meta-row">
                       <dt>카테고리</dt>
-                      <dd>{{ item.category || '-' }}</dd>
+                      <dd>{{ resolveCategoryLabel(item.category) }}</dd>
                     </div>
                     <div class="chat-news-curator__meta-row">
                       <dt>요약</dt>
@@ -136,8 +158,23 @@
             </p>
           </div>
 
-          <!-- 인트로 -->
-          <Transition name="news-curator-intro">
+          <div
+            v-if="showResultsReselectFooter"
+            class="chat-news-curator__footer chat-news-curator__footer--results"
+          >
+            <div class="chat-news-curator__footer-actions">
+              <UiButton
+                variant="line-secondary"
+                size="sm"
+                :disabled="props.reselectDisabled"
+                @click="onReselectCategoriesClick"
+              >
+                새로운 카테고리 선택하기
+              </UiButton>
+            </div>
+          </div>
+
+          <Transition name="agent-intro">
             <div
               v-if="isIntroPlaying && readonly"
               class="chat-news-curator__results-intro"
@@ -173,9 +210,19 @@
         </article>
       </template>
 
-      <!-- 제출 전: 단일 영역(분야 선택) -->
+      <!-- 제출 전: 저장 관심분야 자동 제출 -->
       <div
-        v-else
+        v-else-if="isPreSubmitLoading"
+        class="chat-news-curator__main chat-news-curator__main--busy"
+      >
+        <UiLoading
+          :text="isAutoSubmitting ? '저장된 관심 분야로 뉴스픽을 준비하는 중...' : '관심 분야를 확인하는 중...'"
+        />
+      </div>
+
+      <!-- 제출 전: 카테고리 선택이 필요할 때만 -->
+      <div
+        v-else-if="shouldShowCategoryPicker"
         class="chat-news-curator__main"
       >
         <div class="chat-news-curator__header">
@@ -190,13 +237,32 @@
           </div>
         </div>
 
-        <div
-          v-if="showCategoryPicker"
-          class="chat-news-curator__selector"
-        >
-          <ul class="chat-news-curator__selector-grid">
+        <div class="chat-news-curator__selector">
+          <div
+            v-if="categoryLoadError"
+            class="chat-news-curator__selector-state"
+          >
+            <p>{{ categoryLoadError }}</p>
+            <UiButton
+              variant="line-secondary"
+              size="sm"
+              @click="onRetryLoadCategories"
+            >
+              다시 시도
+            </UiButton>
+          </div>
+          <p
+            v-else-if="!hasCategoryOptions && !isCategoryOptionsLoading"
+            class="chat-news-curator__selector-state"
+          >
+            등록된 뉴스 분야가 없습니다.
+          </p>
+          <ul
+            v-else-if="hasCategoryOptions"
+            class="chat-news-curator__selector-grid"
+          >
             <li
-              v-for="category in NEWS_CATEGORY_OPTIONS"
+              v-for="category in categoryOptions"
               :key="category.value"
             >
               <button
@@ -215,7 +281,7 @@
         </div>
 
         <div
-          v-if="showCategoryPicker"
+          v-if="shouldShowCategoryPicker"
           class="chat-news-curator__footer"
         >
           <p class="chat-news-curator__footer-tip">{{ footerTipText }}</p>
@@ -230,7 +296,7 @@
             <UiButton
               variant="dark"
               size="sm"
-              :disabled="selectedCategories.length === 0"
+              :disabled="isSubmitDisabled"
               @click="onSubmitClick"
             >
               제출하기
@@ -244,6 +310,14 @@
 
 <script setup lang="ts">
 import type { NewsCuratorItem } from '~/types/chat'
+import {
+  NEWS_CURATOR_MAX_CATEGORY_COUNT,
+  isNewsCuratorLockedCategorySelected,
+  useNewsCuratorCategories,
+  parseInterestCodeIdsFromResponse,
+  type NewsCuratorCategoryOption,
+} from '~/utils/chat/newsCuratorUtil'
+import { useChatApi } from '~/composables/chat/useChatApi'
 
 /** form: 분야 선택만, result: 뉴스 목록만, combined: 선택+결과(채팅 기본) */
 type NewsCardDisplayMode = 'form' | 'result' | 'combined'
@@ -256,6 +330,14 @@ interface Props {
   themeColorHex?: string
   newsItems?: NewsCuratorItem[]
   lockedSelectedCategories?: string[]
+  /** 결과 패널 하단 '새로운 카테고리 선택하기' 노출 (공유·라이브러리 등에서는 false) */
+  enableReselect?: boolean
+  /** 미제출 news 카드가 있을 때 재선택 버튼 비활성 (노출은 유지) */
+  reselectDisabled?: boolean
+  /** 로그·제출 반영 — `카테고리 제출 유형: NEW` 카드(readonly 상단 분야 패널) */
+  newsIsNew?: boolean
+  /** 「새로운 카테고리 선택하기」 미제출 카드 — 저장 관심분야 API 자동 제출 스킵 */
+  newsReselect?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -266,16 +348,47 @@ const props = withDefaults(defineProps<Props>(), {
   themeColorHex: '',
   newsItems: () => [],
   lockedSelectedCategories: () => [],
+  enableReselect: true,
+  reselectDisabled: false,
+  newsIsNew: undefined,
+  newsReselect: false,
 })
 
 const emit = defineEmits<{
   introComplete: []
-  submit: [categories: string[]]
+  submit: [categories: string[], options?: { isNew?: boolean }]
   close: []
+  reselectCategories: []
 }>()
 
 const DEFAULT_THEME_HEX = '#4b5bd6'
-/** 인트로 펄스용 RGB */
+const preSubmitCategoryHint = '보고 싶은 뉴스 종류를 선택해주세요! (최대 3개)'
+const readonlyCategoryHint = '선택하신 뉴스 분야입니다.'
+const footerTipText = 'TIP. 최대 3개까지 선택할 수 있으며, 선택한 분야를 기반으로 맞춤 뉴스를 추천해드립니다.'
+const NEWS_INTRO_TITLE = '오늘의 뉴스픽'
+const NEWS_INTRO_SUBTITLE = '오늘의 뉴스픽을 준비 중입니다...'
+const introTitleChars = NEWS_INTRO_TITLE.split('')
+const introSubtitleChars = NEWS_INTRO_SUBTITLE.split('')
+
+const {
+  categoryOptions,
+  isCategoryOptionsLoading,
+  categoryLoadError,
+  handleLoadNewsCuratorCategories,
+  resetNewsCuratorCategoriesCache,
+  resolveNewsCuratorCategoryLabel,
+} = useNewsCuratorCategories()
+const { fetchSelectUserNewsInterestCategory } = useChatApi()
+
+const selectedCategories = ref<string[]>([])
+/** 저장 관심분야 조회 전·자동 제출 중 */
+const isInterestResolving = ref(!props.readonly)
+const isAutoSubmitting = ref(false)
+/** select 결과 codeIds 없음·재선택 시에만 카테고리 선택 UI */
+const needsCategoryPicker = ref(false)
+const isIntroPlaying = ref(false)
+const hasIntroCompleted = ref(false)
+
 const hexToRgb = (hex: string) => {
   const cleanedHex = String(hex || '')
     .trim()
@@ -283,7 +396,6 @@ const hexToRgb = (hex: string) => {
   if (!/^[0-9a-fA-F]{6}$/.test(cleanedHex)) return '75, 91, 214'
   return `${parseInt(cleanedHex.slice(0, 2), 16)}, ${parseInt(cleanedHex.slice(2, 4), 16)}, ${parseInt(cleanedHex.slice(4, 6), 16)}`
 }
-
 const themeStyle = computed(() => {
   const colorHex = String(props.themeColorHex || '').trim() || DEFAULT_THEME_HEX
   return {
@@ -296,45 +408,68 @@ const themeIconClassNm = computed(() => String(props.themeIconClassNm || '').tri
 const lockedSelectedCategoriesList = computed(() =>
   (props.lockedSelectedCategories ?? []).map((categoryLabel) => String(categoryLabel).trim()).filter(Boolean),
 )
-
-const showReadonlySelectionPanel = computed(() => props.displayMode === 'form' || props.displayMode === 'combined')
+/** NEW 제출 카드만 readonly 상단 분야 패널 */
+const showReadonlySelectionPanel = computed(
+  () => props.newsIsNew === true && (props.displayMode === 'form' || props.displayMode === 'combined'),
+)
 const showReadonlyResultsPanel = computed(() => props.displayMode === 'result' || props.displayMode === 'combined')
+/** 카테고리 재선택 카드 — 저장 관심분야 API 자동 제출 스킵 */
+const isReselectFlow = computed(() => props.newsReselect === true)
+const hasNewsResult = computed(() => (props.newsItems?.length ?? 0) > 0)
 
-/** 제출 전·readonly 상단 부제 */
-const preSubmitCategoryHint = '보고 싶은 뉴스 종류를 선택해주세요! (최대 3개)'
+const hasCategoryOptions = computed(() => categoryOptions.value.length > 0)
+const isSubmitDisabled = computed(
+  () =>
+    selectedCategories.value.length === 0 ||
+    isCategoryOptionsLoading.value ||
+    !!categoryLoadError.value ||
+    !hasCategoryOptions.value,
+)
+const showCategoryPicker = computed(() => !props.readonly && !hasNewsResult.value)
+const shouldShowCategoryPicker = computed(
+  () => showCategoryPicker.value && needsCategoryPicker.value && !isInterestResolving.value,
+)
+/** 관심분야 조회 중·저장분야 자동 제출 중(선택 UI 없음) */
+const isPreSubmitLoading = computed(() => {
+  if (!showCategoryPicker.value) return false
+  if (isInterestResolving.value) return true
+  return isAutoSubmitting.value && !needsCategoryPicker.value
+})
 
-const footerTipText = 'TIP. 최대 3개까지 선택할 수 있으며, 선택한 분야를 기반으로 맞춤 뉴스를 추천해드립니다.'
+const newsResultsPanelTitle = computed(() =>
+  hasNewsResult.value ? `${NEWS_INTRO_TITLE} ${props.newsItems.length}건` : NEWS_INTRO_TITLE,
+)
+const selectedCategoryDisplayNames = computed(() =>
+  lockedSelectedCategoriesList.value
+    .map((token) => resolveNewsCuratorCategoryLabel(token))
+    .filter((name) => name && name !== '-'),
+)
+const bottomCardSubtitle = computed(() => {
+  if (hasNewsResult.value) {
+    return `골라주신 ${selectedCategoryDisplayNames.value.join(', ')} 카테고리를 통해 선정한 뉴스픽입니다!`
+  }
+  if (props.isAnswerStreaming) return 'AI가 맞춤 기사를 선정하는 중입니다…'
+  return '추천 뉴스를 준비 중입니다.'
+})
+/** 제출 완료(combined) 결과 패널 — 인트로 중에는 숨김 */
+const showResultsReselectFooter = computed(
+  () =>
+    props.readonly &&
+    props.enableReselect &&
+    showReadonlyResultsPanel.value &&
+    props.displayMode === 'combined' &&
+    !isIntroPlaying.value,
+)
 
-/** 인트로 타이틀·카드 헤더·결과 패널 제목(0건)과 동일 카피 */
-const NEWS_INTRO_TITLE = '오늘의 뉴스픽'
-const NEWS_INTRO_SUBTITLE = '오늘의 뉴스픽을 준비 중입니다...'
-const introTitleChars = NEWS_INTRO_TITLE.split('')
-const introSubtitleChars = NEWS_INTRO_SUBTITLE.split('')
-
-const NEWS_CATEGORY_MAX_COUNT = 3
-const NEWS_CATEGORY_OPTIONS = [
-  { value: '정치', label: '정치', description: '정부·국회·정당·외교 등 국내외 주요 정책과 정치 이슈를 전달합니다.' },
-  { value: '경제', label: '경제', description: '거시경제·환율·무역·부동산·기업 실적 등 경제 전반의 흐름을 다룹니다.' },
-  { value: '사회', label: '사회', description: '사건·사고·교육·노동·복지 등 우리 사회의 다양한 현안을 다룹니다.' },
-  { value: '산업', label: '산업', description: 'IT·반도체·AI·자동차·에너지 등 주요 산업과 기술 트렌드를 소개합니다.' },
-  { value: '문화', label: '문화', description: '문화예술·전시·출판·영화 등 창작과 문화계 소식을 전합니다.' },
-  {
-    value: '세계',
-    label: '세계',
-    description: '해외 정세·국제관계·글로벌 이슈 등 세계 무대의 주요 뉴스를 제공합니다.',
-  },
-  { value: '건강', label: '건강', description: '의료·질병·웰빙·공중보건 등 몸과 마음의 건강에 관한 정보를 다룹니다.' },
-  { value: '연예', label: '연예', description: '방송·영화·음악·스타 동향 등 연예계 화제를 빠르게 전합니다.' },
-  {
-    value: '스포츠',
-    label: '스포츠',
-    description: '국내외 경기·리그·선수 소식 등 스포츠 팬을 위한 뉴스를 모았습니다.',
-  },
-  { value: '주식', label: '주식', description: '증시·종목·투자 지표 등 주식 시장 중심의 투자·금융 소식을 전합니다.' },
-] as const
-const selectedCategories = ref<string[]>([])
+const isLockedCategorySelected = (category: NewsCuratorCategoryOption) =>
+  isNewsCuratorLockedCategorySelected(lockedSelectedCategoriesList.value, category)
+const resolveCategoryLabel = (raw: string | undefined) => resolveNewsCuratorCategoryLabel(raw ?? '')
+const onRetryLoadCategories = () => {
+  resetNewsCuratorCategoriesCache()
+  handleLoadNewsCuratorCategories()
+}
 const isCategoryDisabled = (category: string) =>
-  !selectedCategories.value.includes(category) && selectedCategories.value.length >= NEWS_CATEGORY_MAX_COUNT
+  !selectedCategories.value.includes(category) && selectedCategories.value.length >= NEWS_CURATOR_MAX_CATEGORY_COUNT
 const toggleCategory = (category: string) => {
   if (isCategoryDisabled(category)) return
   selectedCategories.value = selectedCategories.value.includes(category)
@@ -343,48 +478,89 @@ const toggleCategory = (category: string) => {
 }
 const onSubmitClick = () => {
   if (selectedCategories.value.length === 0) return
-  emit('submit', [...selectedCategories.value])
+  emit('submit', [...selectedCategories.value], { isNew: true })
 }
 
-const hasNewsResult = computed(() => (props.newsItems?.length ?? 0) > 0)
-/** 파싱된 기사 건수에 맞춰 제목 표시 */
-const newsResultsPanelTitle = computed(() =>
-  hasNewsResult.value ? `${NEWS_INTRO_TITLE} ${props.newsItems.length}건` : NEWS_INTRO_TITLE,
-)
-/** 제출 전에만 카테고리·제출 버튼 표시 */
-const showCategoryPicker = computed(() => !props.readonly && !hasNewsResult.value)
+/** selectUserNewsInterestCategory — 빈 codeIds면 선택 UI, 있으면 자동 제출(SAVED) */
+const handleInitNewsInterestFlow = async () => {
+  if (props.readonly) {
+    isInterestResolving.value = false
+    return
+  }
 
-const bottomCardSubtitle = computed(() => {
-  if (hasNewsResult.value) return '골라주신 카테고리를 통해 선정한 뉴스픽입니다!'
-  if (props.isAnswerStreaming) return 'AI가 맞춤 기사를 선정하는 중입니다…'
-  return '추천 뉴스를 준비 중입니다.'
-})
+  isInterestResolving.value = true
+  isAutoSubmitting.value = false
+  needsCategoryPicker.value = false
 
-const isIntroPlaying = ref(false)
-const hasIntroCompleted = ref(false)
+  try {
+    await handleLoadNewsCuratorCategories()
 
+    if (isReselectFlow.value) {
+      needsCategoryPicker.value = true
+      return
+    }
+
+    const res = await fetchSelectUserNewsInterestCategory()
+    const codeIds = parseInterestCodeIdsFromResponse(res)
+    if (codeIds.length > 0) {
+      needsCategoryPicker.value = false
+      isInterestResolving.value = false
+      isAutoSubmitting.value = true
+      emit('submit', codeIds, { isNew: false })
+      return
+    }
+
+    needsCategoryPicker.value = true
+  } catch {
+    needsCategoryPicker.value = true
+  } finally {
+    if (!isAutoSubmitting.value) isInterestResolving.value = false
+  }
+}
+
+const onReselectCategoriesClick = () => {
+  if (props.reselectDisabled) return
+  emit('reselectCategories')
+}
 const startIntroSequence = () => {
   hasIntroCompleted.value = false
   isIntroPlaying.value = true
 }
 
 watch(
-  () => [props.readonly, props.isAnswerStreaming] as const,
-  ([readonly, isAnswerStreaming]) => {
+  () => props.readonly,
+  (readonly) => {
+    if (!readonly) return
+    isAutoSubmitting.value = false
+    isInterestResolving.value = false
+  },
+)
+
+watch(isReselectFlow, (reselect) => {
+  if (!props.readonly && reselect) {
+    needsCategoryPicker.value = true
+    isAutoSubmitting.value = false
+  }
+})
+
+watch(
+  () => [props.readonly, props.isAnswerStreaming, hasNewsResult.value] as const,
+  ([readonly, isAnswerStreaming, hasResult]) => {
     if (!readonly) {
       isIntroPlaying.value = false
       hasIntroCompleted.value = false
       return
     }
 
-    if (isAnswerStreaming) {
+    const shouldShowIntro = isAnswerStreaming || !hasResult
+
+    if (shouldShowIntro) {
       if (!hasIntroCompleted.value && !isIntroPlaying.value) {
         startIntroSequence()
       }
       return
     }
 
-    // complete 수신(스트리밍 종료) 시 intro를 즉시 종료한다.
     if (isIntroPlaying.value) {
       emit('introComplete')
     }
@@ -394,12 +570,18 @@ watch(
   { immediate: true },
 )
 
+onMounted(() => {
+  handleInitNewsInterestFlow()
+})
+
 onUnmounted(() => {
   isIntroPlaying.value = false
 })
 </script>
 
 <style lang="scss" scoped>
+@use '@/assets/styles/utils/agent-intro' as *;
+
 .chat-news-curator {
   position: relative;
   display: flex;
@@ -414,7 +596,6 @@ onUnmounted(() => {
   border-radius: $border-radius-lg;
   background: #fff;
   overflow: hidden;
-  box-shadow: 0 2px 12px rgba(26, 43, 75, 0.06);
 
   /** 런치/설문 카드와 동일 톤 — 본문 영역이 뷰포트 내에서 스크롤되도록 */
   &__content {
@@ -457,7 +638,6 @@ onUnmounted(() => {
     border: 1px solid $color-border;
     border-radius: $border-radius-lg;
     background: #fff;
-    box-shadow: 0 2px 12px rgba(26, 43, 75, 0.06);
     overflow: hidden;
   }
 
@@ -498,62 +678,10 @@ onUnmounted(() => {
     &.is-intro-playing {
       min-height: min(600px, 80vh);
     }
-  }
 
-  /** 스트리밍 준비 인트로 — 결과 패널 내부에만 오버레이 */
-  &__results-intro {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 3;
-    pointer-events: none;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.9) 100%);
-    backdrop-filter: blur(1px);
-  }
-
-  &__results-intro-inner {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: $spacing-sm;
-    text-align: center;
-    padding: $spacing-lg;
-    animation: news-curator-intro-rise 0.6s ease both;
-  }
-
-  &__results-intro-avatar {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    color: #fff;
-    background: var(--news-curator-theme-color);
-    box-shadow: 0 8px 20px color-mix(in srgb, var(--news-curator-theme-color) 34%, transparent);
-    animation: news-curator-intro-pulse 1.3s ease-in-out infinite;
-  }
-
-  &__results-intro-title {
-    margin: 0;
-    @include typo($body-medium);
-    font-weight: $font-weight-semibold;
-    color: $color-text-primary;
-  }
-
-  &__results-intro-subtitle {
-    margin: 0;
-    @include typo($body-small);
-    color: $color-text-muted;
-    font-weight: $font-weight-medium;
-  }
-
-  &__results-intro-char {
-    display: inline-block;
-    animation: news-curator-intro-char 1.15s ease-in-out infinite;
-    animation-delay: var(--intro-char-delay, 0s);
+    .chat-news-curator__footer {
+      flex-shrink: 0;
+    }
   }
 
   &__results-body {
@@ -598,6 +726,13 @@ onUnmounted(() => {
     overflow-y: auto;
     overflow-x: hidden;
     @include custom-scrollbar(4px);
+  }
+
+  &__main--busy {
+    align-items: center;
+    justify-content: center;
+    min-height: min(200px, 40vh);
+    padding: $spacing-lg;
   }
 
   &--compact &__main {
@@ -657,6 +792,23 @@ onUnmounted(() => {
 
   &__selector {
     padding: 0 $spacing-lg;
+  }
+
+  &__selector-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-sm;
+    min-height: 120px;
+    padding: $spacing-md 0;
+    text-align: center;
+
+    p {
+      margin: 0;
+      @include typo($body-small);
+      color: $color-text-secondary;
+    }
   }
 
   &__selector-grid {
@@ -922,6 +1074,11 @@ onUnmounted(() => {
     justify-content: flex-start;
   }
 
+  &__footer--results {
+    justify-content: flex-end;
+    border-top: 1px solid $color-border;
+  }
+
   &__footer-tip {
     margin: 0;
     @include typo($body-small);
@@ -936,64 +1093,12 @@ onUnmounted(() => {
   }
 }
 
-.news-curator-intro-enter-active,
-.news-curator-intro-leave-active {
-  transition: opacity 0.25s ease;
-}
-
-.news-curator-intro-enter-from,
-.news-curator-intro-leave-to {
-  opacity: 0;
-}
-
-@keyframes news-curator-intro-rise {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes news-curator-intro-pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(var(--news-curator-theme-rgb), 0.2);
-    transform: scale(1);
-  }
-  70% {
-    box-shadow: 0 0 0 14px rgba(var(--news-curator-theme-rgb), 0);
-    transform: scale(1.02);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(var(--news-curator-theme-rgb), 0);
-    transform: scale(1);
-  }
-}
-
-@keyframes news-curator-intro-char {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  35% {
-    transform: translateY(-2px);
-  }
-  65% {
-    transform: translateY(0.5px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .chat-news-curator__results-intro-inner,
-  .chat-news-curator__results-intro-avatar,
-  .chat-news-curator__results-intro-char {
-    animation: none !important;
-  }
-
-  .chat-news-curator__results-intro-avatar {
-    box-shadow: none;
-  }
-}
+@include agent-card-intro(
+  'chat-news-curator',
+  'results-intro',
+  '--news-curator-theme-color',
+  '--news-curator-theme-rgb'
+);
+@include agent-card-intro-keyframes;
+@include agent-intro-transition;
 </style>

@@ -2,7 +2,8 @@
   <div
     class="chat-index s-center"
     :class="{
-      'is-survey-mode': isSurveyVisible || isGenderStepVisible || isLunchVisible || isTodayMemeVisible || isNewsCuratorVisible,
+      'is-survey-mode':
+        isSurveyVisible || isGenderStepVisible || isLunchVisible || isTodayMemeVisible || isNewsCuratorVisible,
     }"
   >
     <!-- 헤더 (설문 모드에서 숨김) -->
@@ -52,7 +53,8 @@
     <div
       class="chat-index-input-wrapper"
       :class="{
-        'is-survey-locked': isSurveyVisible || isGenderStepVisible || isLunchVisible || isTodayMemeVisible || isNewsCuratorVisible,
+        'is-survey-locked':
+          isSurveyVisible || isGenderStepVisible || isLunchVisible || isTodayMemeVisible || isNewsCuratorVisible,
       }"
       data-aos="fade-up"
       data-aos-delay="200"
@@ -61,7 +63,9 @@
     </div>
 
     <!-- 에이전트 카드 (설문 모드 아닐 때) -->
-    <template v-if="!isSurveyVisible && !isGenderStepVisible && !isLunchVisible && !isTodayMemeVisible && !isNewsCuratorVisible">
+    <template
+      v-if="!isSurveyVisible && !isGenderStepVisible && !isLunchVisible && !isTodayMemeVisible && !isNewsCuratorVisible"
+    >
       <div
         v-if="!isLoadingChatIndexAgents && chatIndexAgents.length > 0"
         class="chat-index-card-grp"

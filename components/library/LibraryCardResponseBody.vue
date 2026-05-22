@@ -14,6 +14,7 @@
       v-else-if="isNewsCuratorResponse"
       readonly
       display-mode="result"
+      :news-is-new="newsIsNewFromLog"
       :news-items="newsList"
       :locked-selected-categories="newsSelectedCategories"
       :theme-icon-class-nm="item.iconClassNm ?? ''"
@@ -144,10 +145,17 @@ const lunchList = computed(() => {
 
 const isLunchAgentResponse = computed(() => props.item.agentId === LUNCH_AGENT_ID && lunchList.value.length > 0)
 
-const newsSelectedCategories = computed(() => {
-  if (props.item.agentId !== NEWS_CURATOR_AGENT_ID) return []
-  return parseNewsCuratorPromptMeta(props.item.qcontent ?? '').categories
-})
+const newsPromptMeta = computed(() =>
+  props.item.agentId === NEWS_CURATOR_AGENT_ID
+    ? parseNewsCuratorPromptMeta(props.item.qcontent ?? '')
+    : { categories: [] as string[], isNew: undefined as boolean | undefined },
+)
+
+const newsSelectedCategories = computed(() => newsPromptMeta.value.categories)
+
+const newsIsNewFromLog = computed(
+  () => props.item.agentId === NEWS_CURATOR_AGENT_ID && newsPromptMeta.value.isNew === true,
+)
 
 const newsList = computed(() => {
   if (props.item.agentId !== NEWS_CURATOR_AGENT_ID) return []
@@ -194,9 +202,7 @@ const psychologyStressItems = computed<StressScoreItem[]>(() =>
 )
 
 const psychologyRadarChartConfig = computed<Record<string, unknown>>(() =>
-  psychologyRadarData.value
-    ? buildPsychologyRadarUiChartConfig(psychologyRadarData.value, surveyGender.value)
-    : {},
+  psychologyRadarData.value ? buildPsychologyRadarUiChartConfig(psychologyRadarData.value, surveyGender.value) : {},
 )
 
 const pexelsModalUrl = ref('')

@@ -23,6 +23,7 @@
           @on-submit-lunch-card="onSubmitLunchCard"
           @on-submit-news-card="onSubmitNewsCard"
           @on-news-card-close="emit('on-news-card-close', $event)"
+          @on-news-card-reselect="emit('on-news-card-reselect', $event)"
           @on-lunch-card-close="emit('on-lunch-card-close', $event)"
           @on-select-category="
             (logId: string, categoryValue: string, categoryNm: string) =>
@@ -79,16 +80,17 @@ const emit = defineEmits<{
   'on-meme-intro-complete': [logId: string]
   'on-news-intro-complete': [logId: string]
   'on-lunch-card-submit': [logId: string, payload: LunchAgentFormPayload]
-  'on-news-card-submit': [logId: string, categories: string[]]
+  'on-news-card-submit': [logId: string, categories: string[], options?: { isNew?: boolean }]
   'on-news-card-close': [logId: string]
+  'on-news-card-reselect': [logId: string]
   'on-lunch-card-close': [logId: string]
 }>()
 
 const onSubmitLunchCard = (logId: string, payload: LunchAgentFormPayload) => {
   emit('on-lunch-card-submit', logId, payload)
 }
-const onSubmitNewsCard = (logId: string, categories: string[]) => {
-  emit('on-news-card-submit', logId, categories)
+const onSubmitNewsCard = (logId: string, categories: string[], options?: { isNew?: boolean }) => {
+  emit('on-news-card-submit', logId, categories, options)
 }
 
 const listRef = ref<HTMLElement | null>(null)

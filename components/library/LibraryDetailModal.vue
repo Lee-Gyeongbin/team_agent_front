@@ -170,6 +170,7 @@
             class="library-detail-news-readonly"
             readonly
             display-mode="form"
+            :news-is-new="newsQuestionIsNew"
             :locked-selected-categories="newsQuestionCategories"
             :theme-icon-class-nm="displayData?.iconClassNm ?? ''"
             :theme-color-hex="displayData?.colorHex ?? ''"
@@ -490,10 +491,18 @@ const parsedLunchRecommendations = computed<LunchRecommendationItem[]>(() => {
   return normalizeLunchRecommendationImages(parseLunchJsonArray(raw))
 })
 
-const newsQuestionCategories = computed(() => {
-  if (displayData.value?.agentId !== NEWS_CURATOR_AGENT_ID) return []
-  return parseNewsCuratorPromptMeta(displayData.value?.qcontent ?? '').categories
+const newsQuestionMeta = computed(() => {
+  if (displayData.value?.agentId !== NEWS_CURATOR_AGENT_ID) {
+    return { categories: [] as string[], isNew: undefined as boolean | undefined }
+  }
+  return parseNewsCuratorPromptMeta(displayData.value?.qcontent ?? '')
 })
+
+const newsQuestionCategories = computed(() => newsQuestionMeta.value.categories)
+
+const newsQuestionIsNew = computed(
+  () => displayData.value?.agentId === NEWS_CURATOR_AGENT_ID && newsQuestionMeta.value.isNew === true,
+)
 
 const parsedNewsCuratorItems = computed(() => {
   if (displayData.value?.agentId !== NEWS_CURATOR_AGENT_ID) return []
