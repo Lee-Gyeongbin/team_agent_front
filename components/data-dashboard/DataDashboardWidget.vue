@@ -8,8 +8,25 @@
     <div class="widget-header">
       <div class="widget-header-left">
         <i class="icon-move-handle size-20 widget-drag-handle" />
+        <UiTooltip
+          v-if="widget.sqlTitle"
+          side="bottom"
+          align="start"
+          :delay-duration="150"
+          content-class="widget-sql-query-tooltip"
+        >
+          <button
+            type="button"
+            class="btn btn-widget-action widget-sql-query-btn"
+            :aria-label="`사용자 질의: ${widget.sqlTitle}`"
+          >
+            <i class="icon-comment-other size-16" />
+          </button>
+          <template #content>
+            {{ widget.sqlTitle }}
+          </template>
+        </UiTooltip>
         <span class="widget-title">{{ widget.title }}</span>
-        <span class="widget-sql-badge">{{ widget.sqlTitle }}</span>
       </div>
       <div class="widget-header-actions">
         <!-- 필터 토글 (변수 있을 때만) -->
@@ -51,7 +68,7 @@
         <button
           v-if="localHeightPx !== DEFAULT_HEIGHT"
           class="btn btn-widget-action"
-          title="높이 초기화 (400px)"
+          title="높이 초기화 (320px)"
           @click="onResetHeight"
         >
           <i class="icon-resize-height size-16" />
@@ -184,11 +201,11 @@
     </transition>
 
     <!-- 콘텐츠 — 필터는 이 밖에 있어서 필터 열릴 때 위젯 전체가 늘어남 -->
-    <!-- minHeight로 로딩·빈상태 높이 보장 / 차트·테이블은 height inline style 직접 적용 -->
+    <!-- height로 콘텐츠 영역 고정 — 차트·테이블은 내부 flex로 동일 높이에 맞춤 -->
     <div
       ref="contentEl"
       class="widget-content"
-      :style="{ minHeight: `${localHeightPx}px` }"
+      :style="{ height: `${localHeightPx}px` }"
     >
       <!-- 로딩 -->
       <UiLoading
@@ -211,29 +228,30 @@
         title="조회 결과가 없습니다."
       />
 
-      <!-- 차트 — height inline style 직접 적용 (chart.js 부모 크기 인식) -->
+      <!-- 차트 — padding 제외 높이 명시 (chart.js는 마운트 시 부모 height 필요) -->
       <div
         v-else-if="state.result && widget.vizType !== 'table'"
         class="widget-chart-wrap"
-        :style="{ height: `${localHeightPx}px` }"
+        :style="{ height: `${chartBodyHeightPx}px` }"
       >
         <UiChart
+          :key="`${widget.widgetId}-${chartBodyHeightPx}-${chartVizType}`"
           :type="chartVizType"
           :config="chartConfig"
           show-legend
         />
       </div>
 
-      <!-- 테이블 — height + overflow:hidden inline 직접 적용, ui-table-wrap 스크롤 -->
+      <!-- 테이블 -->
       <div
         v-else-if="state.result && widget.vizType === 'table'"
         class="widget-table-wrap"
-        :style="{ height: `${localHeightPx}px` }"
+        :style="{ height: `${chartBodyHeightPx}px` }"
       >
         <UiTable
           :columns="tableColumns"
           :data="displayRows"
-          :max-height="`${localHeightPx}px`"
+          :max-height="`${chartBodyHeightPx}px`"
           sticky-header
           size="sm"
         />
@@ -269,6 +287,7 @@ import {
   buildCategoryLabels,
   buildAggregatedValueMap,
 } from '~/utils/dataDashboard/vizConfigUtil'
+import { DATA_DASHBOARD_DEFAULT_HEIGHT_PX } from '~/composables/data-dashboard/useDataDashboardStore'
 import type {
   DataDashboardWidget,
   DataDashboardWidgetState,
@@ -395,12 +414,16 @@ const onChangeVizType = (value: string) => {
 }
 
 // ===== 높이 드래그 리사이즈 =====
-// localHeightPx = widget-content 영역 높이 (필터·헤더 제외)
-// 기본값 300px — chart.js가 부모 높이를 항상 인식하도록 항상 명시적 높이 적용
-const DEFAULT_HEIGHT = 400
-const MIN_HEIGHT = 400
+// localHeightPx = widget-content 영역 높이 (필터·헤더 제외, padding 포함)
+const DEFAULT_HEIGHT = DATA_DASHBOARD_DEFAULT_HEIGHT_PX
+const MIN_HEIGHT = DATA_DASHBOARD_DEFAULT_HEIGHT_PX
+/** widget-content 좌우 padding($spacing-md) 합 — SCSS와 동기 */
+const WIDGET_CONTENT_PADDING_Y = 32
 
 const localHeightPx = ref<number>(props.heightPx ?? DEFAULT_HEIGHT)
+
+/** chart.js·테이블이 사용하는 내부 높이 (content height − padding) */
+const chartBodyHeightPx = computed(() => Math.max(120, localHeightPx.value - WIDGET_CONTENT_PADDING_Y))
 const isResizing = ref(false)
 
 watch(

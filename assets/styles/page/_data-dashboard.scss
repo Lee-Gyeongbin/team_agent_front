@@ -220,17 +220,29 @@
     @include ellipsis(1);
   }
 
-  .widget-sql-badge {
+  .widget-sql-query-btn {
     flex-shrink: 0;
-    @include typo($body-xsmall);
-    color: $color-text-muted;
-    background: $color-background;
-    border: 1px solid $color-border-light;
-    border-radius: 100px;
-    padding: 2px 8px;
-    @include ellipsis(1);
-    max-width: 160px;
+    color: var(--color-primary);
+
+    // icon-file(고정색) → mask + currentColor 로 테마 primary 연동
+    .icon-comment-other {
+      background-image: none;
+      @include icon-file-bg('comment-other');
+    }
+
+    &:hover {
+      background: var(--color-primary-bg);
+    }
   }
+}
+
+// 사용자 질의(sqlTitle) 툴팁 — 긴 질문 전체 표시
+.widget-sql-query-tooltip {
+  max-width: min(420px, 85vw);
+  word-break: break-word;
+  white-space: pre-wrap;
+  text-align: left;
+  line-height: 1.55;
 }
 
 // 위젯 헤더 액션 버튼
@@ -438,25 +450,37 @@
 .widget-content {
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
   padding: $spacing-md;
   min-width: 0;
+  overflow: hidden;
 
-  // 로딩·빈상태: widget-content minHeight(JS 주입)로 높이 확보 후 flex:1로 채움
+  // 로딩·빈상태: content height(JS) 안에서 flex:1로 채움
   .ui-loading,
   .ui-empty {
     flex: 1;
+    min-height: 0;
   }
 }
 
-// height는 inline style로 주입 — chart.js 부모 height 인식
+// height는 JS(chartBodyHeightPx) inline — chart.js 마운트 시 부모 height 필수
 .widget-chart-wrap {
   flex-shrink: 0;
   min-width: 0;
-  min-height: 0;
   width: 100%;
+  overflow: hidden;
+
+  :deep(.ui-chart) {
+    height: 100%;
+    min-height: 0;
+  }
+
+  // UiChart 기본 min-height:260px — 위젯 콘텐츠 높이에 맞추기 위해 해제
+  :deep(.ui-chart-canvas-wrap) {
+    min-height: 0;
+  }
 }
 
-// height + overflow:hidden inline 주입 — 팽창 차단, ui-table-wrap이 내부 스크롤 담당
 .widget-table-wrap {
   flex-shrink: 0;
   min-width: 0;
