@@ -1,0 +1,136 @@
+@use './variables' as *;
+@use './mixins' as *;
+
+// ── 에이전트 카드 인트로 (ChatPsychologySurvey 기준) ──
+// $intro-base: 'intro' | 'results-intro' 등 BEM element 접두
+
+@mixin agent-card-intro-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.9) 100%);
+  backdrop-filter: blur(1px);
+  pointer-events: none;
+}
+
+@mixin agent-card-intro-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-xs;
+  text-align: center;
+  animation: agent-card-intro-rise 0.6s ease both;
+}
+
+@mixin agent-card-intro-avatar($theme-color-var, $theme-rgb-var) {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: var(#{$theme-color-var});
+  --agent-card-intro-theme-rgb: var(#{$theme-rgb-var});
+  box-shadow: 0 0 0 0 rgba(var(--agent-card-intro-theme-rgb), 0.2);
+  animation: agent-card-intro-pulse 1.3s ease-in-out infinite;
+}
+
+@mixin agent-card-intro-title {
+  @include typo($body-xlarge);
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+@mixin agent-card-intro-subtitle {
+  @include typo($body-large);
+  color: $color-text-muted;
+}
+
+@mixin agent-card-intro-char {
+  display: inline-block;
+  animation: agent-card-intro-text-bounce 1.15s ease-in-out infinite;
+  animation-delay: var(--intro-char-delay, 0s);
+}
+
+@mixin agent-card-intro($block, $intro-base: 'intro', $theme-color-var, $theme-rgb-var) {
+  .#{$block}__#{$intro-base} {
+    @include agent-card-intro-overlay;
+  }
+
+  .#{$block}__#{$intro-base}-inner {
+    @include agent-card-intro-inner;
+  }
+
+  .#{$block}__#{$intro-base}-avatar {
+    @include agent-card-intro-avatar($theme-color-var, $theme-rgb-var);
+  }
+
+  .#{$block}__#{$intro-base}-title {
+    @include agent-card-intro-title;
+  }
+
+  .#{$block}__#{$intro-base}-subtitle {
+    @include agent-card-intro-subtitle;
+  }
+
+  .#{$block}__#{$intro-base}-char {
+    @include agent-card-intro-char;
+  }
+}
+
+@mixin agent-card-intro-keyframes {
+  @keyframes agent-card-intro-rise {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes agent-card-intro-pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(var(--agent-card-intro-theme-rgb), 0.2);
+      transform: scale(1);
+    }
+    70% {
+      box-shadow: 0 0 0 14px rgba(var(--agent-card-intro-theme-rgb), 0);
+      transform: scale(1.02);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(var(--agent-card-intro-theme-rgb), 0);
+      transform: scale(1);
+    }
+  }
+
+  @keyframes agent-card-intro-text-bounce {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    35% {
+      transform: translateY(-2px);
+    }
+    65% {
+      transform: translateY(0.5px);
+    }
+  }
+}
+
+@mixin agent-intro-transition {
+  .agent-intro-enter-active,
+  .agent-intro-leave-active {
+    transition: opacity 0.25s ease;
+  }
+
+  .agent-intro-enter-from,
+  .agent-intro-leave-to {
+    opacity: 0;
+  }
+}

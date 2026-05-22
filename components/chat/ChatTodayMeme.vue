@@ -28,7 +28,7 @@
     </div>
 
     <template v-if="!isRequestOnly">
-      <Transition name="today-meme-intro">
+      <Transition name="agent-intro">
         <div
           v-if="isIntroPlaying"
           class="chat-today-meme__intro"
@@ -194,8 +194,6 @@ const emit = defineEmits<{
 }>()
 const TODAY_MEME_TITLE = '오늘의 밈 배달부'
 const TODAY_MEME_INTRO_SUBTITLE = '오늘의 밈을 고르는 중입니다...'
-
-/** 인트로 타이포 애니메이션 */
 const introTitleChars = TODAY_MEME_TITLE.split('')
 const introSubtitleChars = TODAY_MEME_INTRO_SUBTITLE.split('')
 
@@ -207,10 +205,19 @@ const showRequestComplete = computed(() => isRequestOnly.value || props.requestD
 /** 추천 밈 카드가 있으면 하단 설문 액션(받기) 숨김 — ChatLunchAgentCard와 동일 패턴 */
 const hasResultRecommendations = computed(() => memeList.value.length > 0)
 
+const hexToRgb = (hex: string) => {
+  const cleanedHex = String(hex || '')
+    .trim()
+    .replace('#', '')
+  if (!/^[0-9a-fA-F]{6}$/.test(cleanedHex)) return '109, 91, 208'
+  return `${parseInt(cleanedHex.slice(0, 2), 16)}, ${parseInt(cleanedHex.slice(2, 4), 16)}, ${parseInt(cleanedHex.slice(4, 6), 16)}`
+}
+
 const themeStyle = computed(() => {
   const hex = String(props.themeColorHex).trim() || '#6d5bd0'
   return {
     '--today-meme-theme-color': hex,
+    '--today-meme-theme-rgb': hexToRgb(hex),
     '--today-meme-request-theme-color': hex,
   }
 })
@@ -280,6 +287,8 @@ onUnmounted(() => {
 </script>
 
 <style lang="scss" scoped>
+@use '@/assets/styles/utils/agent-intro' as *;
+
 .chat-today-meme {
   --today-meme-content-opacity: 0;
   --today-meme-content-shift: #{$spacing-sm};
@@ -300,11 +309,15 @@ onUnmounted(() => {
   border: 1px solid $color-border;
   border-radius: $border-radius-lg;
   background: #fff;
-  box-shadow: 0 2px 12px rgba(26, 43, 75, 0.06);
 
   &.is-intro-playing {
     border-color: transparent;
     min-height: min(640px, 78vh);
+  }
+
+  &.is-intro-playing:not(.is-content-visible) {
+    --today-meme-content-opacity: 0;
+    --today-meme-content-shift: #{$spacing-sm};
   }
 
   &.is-content-visible {
@@ -405,19 +418,6 @@ onUnmounted(() => {
     color: #fff;
   }
 
-  &__intro-avatar {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background: var(--today-meme-theme-color);
-    color: #fff;
-    box-shadow: 0 0 0 0 rgba(var(--today-meme-theme-rgb), 0.2);
-    animation: today-meme-intro-pulse 1.3s ease-in-out infinite;
-  }
-
   &__title {
     @include typo($body-medium);
     font-weight: $font-weight-semibold;
@@ -475,7 +475,6 @@ onUnmounted(() => {
     border-radius: 14px;
     background: #fff;
     padding: $spacing-lg $spacing-xl 0;
-    box-shadow: 0 2px 10px rgba(26, 43, 75, 0.05);
 
     &__top {
       display: flex;
@@ -646,104 +645,18 @@ onUnmounted(() => {
       }
     }
   }
-
-  &__intro {
-    position: absolute;
-    inset: 0;
-    z-index: 3;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.9) 100%);
-    backdrop-filter: blur(1px);
-  }
-
-  &__intro-inner {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: $spacing-xs;
-    text-align: center;
-    animation: today-meme-intro-rise 0.6s ease both;
-  }
-
-  &__intro-title {
-    @include typo($body-large);
-    font-weight: $font-weight-semibold;
-    color: $color-text-primary;
-  }
-
-  &__intro-subtitle {
-    @include typo($body-medium);
-    color: $color-text-muted;
-  }
-
-  &__intro-char {
-    display: inline-block;
-    animation: today-meme-intro-text-bounce 1.15s ease-in-out infinite;
-    animation-delay: var(--intro-char-delay, 0s);
-  }
 }
 
-@keyframes today-meme-intro-rise {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes today-meme-intro-pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(var(--today-meme-theme-rgb), 0.2);
-    transform: scale(1);
-  }
-  70% {
-    box-shadow: 0 0 0 14px rgba(var(--today-meme-theme-rgb), 0);
-    transform: scale(1.02);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(var(--today-meme-theme-rgb), 0);
-    transform: scale(1);
-  }
-}
-
-@keyframes today-meme-intro-text-bounce {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  35% {
-    transform: translateY(-2px);
-  }
-  65% {
-    transform: translateY(0.5px);
-  }
-}
+@include agent-card-intro('chat-today-meme', 'intro', '--today-meme-theme-color', '--today-meme-theme-rgb');
+@include agent-card-intro-keyframes;
+@include agent-intro-transition;
 
 @media (prefers-reduced-motion: reduce) {
   .chat-today-meme__intro-inner,
   .chat-today-meme__intro-avatar,
-  .chat-today-meme__intro-char {
-    animation: none !important;
+  .chat-today-meme__intro-title,
+  .chat-today-meme__intro-subtitle {
+    animation: none;
   }
-
-  .chat-today-meme__intro-avatar {
-    box-shadow: none;
-  }
-}
-
-.today-meme-intro-enter-active,
-.today-meme-intro-leave-active {
-  transition: opacity 0.25s ease;
-}
-
-.today-meme-intro-enter-from,
-.today-meme-intro-leave-to {
-  opacity: 0;
 }
 </style>
