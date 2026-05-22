@@ -1,6 +1,7 @@
 import DOMPurify from 'dompurify'
 import hljs from 'highlight.js'
 import { marked } from 'marked'
+import { resolveDataUrlImageSrc } from '~/utils/global/imageUtil'
 
 /** GFM(표·취소선 등) + 단일 줄바꿈을 <br>로 (채팅 본문 UX) */
 marked.setOptions({
@@ -23,6 +24,48 @@ renderer.link = ({ href, title, text }) => {
   return `<a href="${href}"${titleAttr}${targetAttr}>${text}</a>`
 }
 marked.use({ renderer })
+
+/** 이미 `![](url)` 또는 `<img src>` 안인지 */
+const isInsideMarkdownOrHtmlImage = (text: string, offset: number): boolean => {
+  const before = text.slice(0, offset)
+  if (/!\[[^\]]*\]\([^)]*$/s.test(before)) return true
+  if (/<img\s[^>]*\bsrc\s*=\s*["'][^"']*$/i.test(before)) return true
+  return false
+}
+
+const toDataImageMarkdown = (raw: string): string => {
+  const src = resolveDataUrlImageSrc(raw.trim(), '')
+  if (!src.startsWith('data:image/')) return raw
+  return `![](${src})`
+}
+
+/**
+ * LLM이 data URL을 평문·잘못된 마크다운으로 내려줄 때 이미지 문법으로 정규화
+ * - `data:image/png;base64,...` 단독 줄/인라인
+ * - `![](iVBORw0...)` · `![](image/png;base64,...)` 등
+ */
+const convertDataImageUrlsToMarkdown = (text: string): string => {
+  let out = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (full, alt: string, url: string) => {
+    const u = url.trim()
+    if (/^(?:data:image\/|https?:\/\/)/i.test(u)) return full
+    if (/(?:data:)?image\/[a-z0-9+.+-]+;base64,/i.test(u)) {
+      const src = resolveDataUrlImageSrc(u, '')
+      return src.startsWith('data:image/') ? `![${alt}](${src})` : full
+    }
+    return full
+  })
+
+  out = out.replace(/^\s*((?:data:)?image\/[a-z0-9+.+-]+;base64,[A-Za-z0-9+/=\s]+)\s*$/gim, (_, payload: string) =>
+    toDataImageMarkdown(payload),
+  )
+
+  out = out.replace(/(?:data:)?image\/[a-z0-9+.+-]+;base64,[A-Za-z0-9+/=\s]+/gi, (match, offset) => {
+    if (isInsideMarkdownOrHtmlImage(out, offset)) return match
+    return toDataImageMarkdown(match)
+  })
+
+  return out
+}
 
 /** 인라인/블록 수식($...$, $$...$$) 렌더링 */
 /** 마크다운 셀 안의 | 이스케이프 */
@@ -124,7 +167,7 @@ const convertPlainTextTableBlocksToGfm = (text: string): string => {
  * - DOMPurify로 XSS 방지 (v-html 전제)
  */
 export const toHtmlContent = (value: string) => {
-  const normalized = value.replace(/\r\n/g, '\n').replace(/\\n/g, '\n')
+  const normalized = convertDataImageUrlsToMarkdown(value.replace(/\r\n/g, '\n').replace(/\\n/g, '\n'))
   if (!normalized.trim()) return ''
 
   // list 항목 다음에 볼드 텍스트(①②... 또는 일반 **)가 바로 오면 빈 줄 삽입

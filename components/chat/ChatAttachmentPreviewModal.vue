@@ -143,11 +143,17 @@ const applyResponse = (res: ChatFileViewResponse) => {
   loadStatus.value = 'error'
 }
 
+/** chatFileId 없이 localPreviewUrl만으로 이미지 표시 (답변 인라인 base64·Pexels 등) */
 const useLocalImageFirst = () => {
+  const url = String(props.localPreviewUrl ?? '').trim()
+  if (!url) return false
+
   const mime = String(props.mimeType ?? '')
-  if (!props.localPreviewUrl || !mime.startsWith('image/')) return false
+  const isImageUrl = mime.startsWith('image/') || url.startsWith('data:image/') || /^https?:\/\//i.test(url)
+  if (!isImageUrl) return false
+
   viewerKind.value = 'image'
-  viewerUrl.value = props.localPreviewUrl
+  viewerUrl.value = url
   loadStatus.value = 'ready'
   return true
 }
@@ -155,12 +161,13 @@ const useLocalImageFirst = () => {
 const loadPreview = async () => {
   errorMessage.value = ''
   resetViewer()
+  if (useLocalImageFirst()) return
+
   if (!props.chatFileId?.trim()) {
     loadStatus.value = 'error'
     errorMessage.value = '파일 정보가 없습니다.'
     return
   }
-  if (useLocalImageFirst()) return
 
   loadStatus.value = 'loading'
   try {
@@ -178,7 +185,7 @@ const openDownload = () => {
 }
 
 watch(
-  () => [props.isOpen, props.chatFileId] as const,
+  () => [props.isOpen, props.chatFileId, props.localPreviewUrl] as const,
   ([open]) => {
     if (!open) {
       resetViewer()

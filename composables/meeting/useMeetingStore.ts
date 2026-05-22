@@ -1,4 +1,5 @@
 import { useMeetingApi } from '~/composables/meeting/useMeetingApi'
+import { buildMeetingPrintCss, MEETING_DOCX_CSS } from '~/composables/meeting/meetingExportStyles'
 import { useFileStore } from '~/composables/com/useFileStore'
 import type {
   Meeting as ApiMeeting,
@@ -861,92 +862,6 @@ const handleIntegrateMeeting = async (meetingIds: number[]) => {
 const MEETING_PRINT_HOST_ID = 'meeting-minutes-print-host'
 const MEETING_PRINT_STYLE_ID = 'meeting-minutes-print-style'
 
-const buildMeetingPrintStyles = () => `
-@media screen {
-  #${MEETING_PRINT_HOST_ID} {
-    position: fixed;
-    left: -99999px;
-    top: 0;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0,0,0,0);
-    pointer-events: none;
-  }
-}
-@media print {
-  @page { margin: 15mm 15mm; }
-  body * { visibility: hidden !important; }
-  #${MEETING_PRINT_HOST_ID},
-  #${MEETING_PRINT_HOST_ID} * { visibility: visible !important; }
-  #${MEETING_PRINT_HOST_ID} {
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-    width: 100% !important;
-    height: auto !important;
-    overflow: visible !important;
-    clip: auto !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: #fff !important;
-    box-sizing: border-box !important;
-    font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif !important;
-    font-size: 10pt !important;
-    line-height: 1.5 !important;
-    color: #1e293b !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-  #${MEETING_PRINT_HOST_ID} * { box-sizing: border-box !important; }
-  #${MEETING_PRINT_HOST_ID} h1 { font-size: 18pt !important; font-weight: 700 !important; margin: 0 0 8px !important; }
-  #${MEETING_PRINT_HOST_ID} h2 { font-size: 14pt !important; font-weight: 700 !important; margin: 12px 0 6px !important; }
-  #${MEETING_PRINT_HOST_ID} h3 { font-size: 12pt !important; font-weight: 700 !important; margin: 10px 0 4px !important; }
-  #${MEETING_PRINT_HOST_ID} h4 { font-size: 10.5pt !important; font-weight: 700 !important; margin: 8px 0 3px !important; }
-  #${MEETING_PRINT_HOST_ID} p { margin: 0 0 5px !important; }
-  #${MEETING_PRINT_HOST_ID} p:last-child { margin-bottom: 0 !important; }
-  #${MEETING_PRINT_HOST_ID} ul, #${MEETING_PRINT_HOST_ID} ol { margin: 5px 0 !important; padding-left: 1.4em !important; }
-  #${MEETING_PRINT_HOST_ID} li { margin-bottom: 2px !important; line-height: 1.5 !important; }
-  #${MEETING_PRINT_HOST_ID} strong, #${MEETING_PRINT_HOST_ID} b { font-weight: 700 !important; }
-  #${MEETING_PRINT_HOST_ID} em, #${MEETING_PRINT_HOST_ID} i { font-style: italic !important; }
-  #${MEETING_PRINT_HOST_ID} u { text-decoration: underline !important; }
-  #${MEETING_PRINT_HOST_ID} table {
-    width: 100% !important;
-    border-collapse: collapse !important;
-    table-layout: fixed !important;
-    margin: 6px 0 !important;
-    font-size: 9.5pt !important;
-  }
-  #${MEETING_PRINT_HOST_ID} th {
-    padding: 6px 8px !important;
-    background: #f8fafc !important;
-    border: 1px solid #cbd5e1 !important;
-    font-weight: 600 !important;
-    text-align: left !important;
-    vertical-align: top !important;
-    color: #334155 !important;
-  }
-  #${MEETING_PRINT_HOST_ID} td {
-    padding: 6px 8px !important;
-    background: #fff !important;
-    border: 1px solid #cbd5e1 !important;
-    vertical-align: top !important;
-    word-break: break-word !important;
-  }
-  #${MEETING_PRINT_HOST_ID} hr {
-    border: none !important;
-    border-top: 1px solid #cbd5e1 !important;
-    margin: 8px 0 !important;
-  }
-  #${MEETING_PRINT_HOST_ID} blockquote {
-    margin: 5px 0 !important;
-    padding: 4px 10px !important;
-    border-left: 3px solid #3b82f6 !important;
-    background: #f8fafc !important;
-  }
-  #${MEETING_PRINT_HOST_ID} img { max-width: 100% !important; height: auto !important; }
-}`
-
 const downloadAsPdf = async (html: string, _fileName: string) => {
   if (!html?.trim()) {
     openToast({ message: '다운로드할 회의록 내용이 없습니다.', type: 'warning' })
@@ -958,7 +873,7 @@ const downloadAsPdf = async (html: string, _fileName: string) => {
 
   const styleEl = document.createElement('style')
   styleEl.id = MEETING_PRINT_STYLE_ID
-  styleEl.textContent = buildMeetingPrintStyles()
+  styleEl.textContent = buildMeetingPrintCss(MEETING_PRINT_HOST_ID)
   document.head.appendChild(styleEl)
 
   const host = document.createElement('div')
@@ -997,7 +912,8 @@ const downloadAsPdf = async (html: string, _fileName: string) => {
 const downloadAsDocx = async (html: string, fileName: string) => {
   try {
     const { asBlob } = await import('html-docx-js-typescript')
-    const blob = (await asBlob(html)) as Blob
+    const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${MEETING_DOCX_CSS}</style></head><body>${html}</body></html>`
+    const blob = (await asBlob(fullHtml)) as Blob
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url

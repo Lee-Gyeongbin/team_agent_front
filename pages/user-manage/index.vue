@@ -2,8 +2,27 @@
   <div class="user-manage-index wide-center">
     <!-- 헤더 -->
     <div class="user-manage-header flex justify-between items-center">
-      <p class="user-manage-description">사용자를 조회하고 관리할 수 있습니다.</p>
       <div class="user-manage-header__right flex items-center">
+        <UiButton
+          variant="outline"
+          size="md"
+          @click="openExcelUploadModal"
+        >
+          <template #icon-left>
+            <i class="icon icon-document-search size-16" />
+          </template>
+          엑셀 업로드
+        </UiButton>
+        <UiButton
+          variant="outline"
+          size="md"
+          @click="handleDownloadUserExcel"
+        >
+          <template #icon-left>
+            <i class="icon icon-download size-16" />
+          </template>
+          엑셀 다운로드
+        </UiButton>
         <p class="user-manage-header__total">
           총 <strong>{{ userManageFilteredList.length }}명</strong>
         </p>
@@ -51,7 +70,7 @@
       v-else-if="userManageErrorMessage"
       class="user-manage-error"
     >
-      <p class="user-error__message">{{ userManageErrorMessage }}</p>
+      <p class="user-manage-error__message">{{ userManageErrorMessage }}</p>
       <UiButton
         variant="outline"
         size="md"
@@ -126,6 +145,12 @@
       </div>
     </div>
 
+    <!-- 엑셀 업로드 모달 -->
+    <UserManageExcelUploadModal
+      :is-open="isExcelUploadModalOpen"
+      @close="closeExcelUploadModal"
+    />
+
     <!-- 사용자 추가/수정 모달 -->
     <UserManageModal
       :key="editingUserManage?.userId || (isUserManageModalOpen ? 'create' : 'closed')"
@@ -142,6 +167,7 @@
 import { userColumns, type UserItem } from '~/types/user-manage'
 import { useUserManageStore } from '~/composables/user-manage/useUserManageStore'
 import { useOrgManageStore } from '~/composables/org-manage/useOrgManageStore'
+import UserManageExcelUploadModal from '~/components/user-manage/UserManageExcelUploadModal.vue'
 
 const {
   userManageSearchKeyword,
@@ -156,9 +182,20 @@ const {
   handleUpdateUserManage,
   handleFetchUserManageList,
   handleResetUserPassword,
+  handleDownloadUserExcel,
   getOrgName,
   formatPhone,
 } = useUserManageStore()
+
+const isExcelUploadModalOpen = ref(false)
+
+const openExcelUploadModal = (): void => {
+  isExcelUploadModalOpen.value = true
+}
+
+const closeExcelUploadModal = (): void => {
+  isExcelUploadModalOpen.value = false
+}
 
 const { handleFetchOrgList } = useOrgManageStore()
 
@@ -172,94 +209,3 @@ onMounted(() => {
   handleFetchOrgList()
 })
 </script>
-
-<style lang="scss" scoped>
-.user-manage-index {
-  padding: $spacing-md;
-  min-height: calc(100vh - #{$header-height});
-  width: 100%;
-  max-width: none;
-  box-sizing: border-box;
-}
-
-.user-manage-description {
-  color: $color-text-secondary;
-  font-size: $font-size-base;
-}
-
-.user-manage-header {
-  padding: 12px 0;
-  margin-bottom: $spacing-md;
-}
-
-.user-manage-header__right {
-  gap: $spacing-sm;
-  flex: 1;
-  justify-content: flex-end;
-  min-width: 0;
-
-  .user-manage-header__total {
-    font-size: $font-size-base;
-    color: $color-text-secondary;
-    white-space: nowrap;
-
-    strong {
-      color: $color-text-primary;
-    }
-  }
-}
-
-.user-manage-header__input-wrap {
-  min-width: 0;
-}
-
-.user-manage-list-table-wrap {
-  width: 100%;
-  background: #fff;
-  border: 1px solid $color-border;
-  border-radius: $border-radius-base;
-  overflow: hidden;
-}
-
-.user-manage-status {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: $border-radius-full;
-  font-size: $font-size-sm;
-  font-weight: $font-weight-medium;
-
-  &.is-active {
-    background: rgba($color-success, 0.12);
-    color: $color-success;
-  }
-
-  &.is-inactive {
-    background: rgba($color-text-secondary, 0.12);
-    color: $color-text-secondary;
-  }
-
-  &.is-lock {
-    background: rgba($color-warning, 0.12);
-    color: $color-warning;
-  }
-}
-
-.user-manage-cell-actions {
-  display: flex;
-  gap: $spacing-xs;
-  justify-content: center;
-}
-
-.user-manage-error {
-  @include flex-center;
-  flex-direction: column;
-  padding: $spacing-2xl;
-  gap: $spacing-md;
-  min-height: 240px;
-
-  &__message {
-    font-size: $font-size-sm;
-    color: $color-error;
-  }
-}
-</style>

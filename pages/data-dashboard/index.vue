@@ -18,16 +18,22 @@
       item-key="widgetId"
       handle=".widget-drag-handle"
       animation="200"
+      @start="onDragStart"
       @end="onDragEnd"
     >
       <template #item="{ element }">
         <DataDashboardWidget
           :widget="element"
           :state="getWidgetState(element.widgetId)"
+          :code-map="getWidgetCodeMap(element.widgetId)"
+          :height-px="getWidgetHeightPx(element.widgetId)"
           @execute="onExecute"
+          @reset-filters="onResetFilters"
           @delete="handleDeleteWidget"
           @resize="handleResizeWidget"
           @change-viz-type="onChangeVizType"
+          @update-height="onUpdateHeight"
+          @reset-height="onResetHeight"
         />
       </template>
     </draggable>
@@ -42,12 +48,6 @@
         title="위젯이 없습니다."
         description="TextToSQL로 생성한 SQL을 위젯으로 추가해 대시보드를 구성하세요."
       >
-        <UiButton
-          variant="primary-line"
-          @click="openAddModal"
-        >
-          위젯 추가하기
-        </UiButton>
       </UiEmpty>
     </div>
 
@@ -74,10 +74,15 @@ const {
   handleSelectWidgetList,
   handleExecuteSql,
   handleUpdateFilterValues,
+  handleResetFilterValues,
   handleSaveWidget,
   handleDeleteWidget,
   handleResizeWidget,
   handleSaveWidgetOrder,
+  handleSaveWidgetHeight,
+  handleResetWidgetHeight,
+  getWidgetCodeMap,
+  getWidgetHeightPx,
   openAddModal,
   closeAddModal,
 } = useDataDashboardStore()
@@ -99,33 +104,50 @@ const onExecute = async (widgetId: string, filterValues: Record<string, string>)
   await handleExecuteSql(widgetId)
 }
 
-// 시각화 유형 변경
-const onChangeVizType = async (widgetId: string, vizType: DataDashboardVizType) => {
-  const widget = widgetList.value.find((w) => w.widgetId === widgetId)
-  if (!widget) return
-  widget.vizType = vizType
-  await handleSaveWidget({ widgetId, vizType })
+// 필터값 TTSQ 초기값 복원 (실행 없음)
+const onResetFilters = (widgetId: string) => {
+  handleResetFilterValues(widgetId)
 }
 
-// 위젯 추가 저장
+// 시각화 유형 변경 (저장 없이 로컬 상태만 변경 — 다른 유형으로 재렌더링)
+const onChangeVizType = (widgetId: string, vizType: DataDashboardVizType) => {
+  const idx = widgetList.value.findIndex((w) => w.widgetId === widgetId)
+  if (idx === -1) return
+  widgetList.value[idx] = { ...widgetList.value[idx], vizType }
+}
+
+// 위젯 추가 저장 (목록 갱신 + 전체 차트 재조회는 store에서 처리)
 const onSaveWidget = async (data: Partial<DataDashboardWidget>) => {
-  const saved = await handleSaveWidget(data)
-  if (saved) {
-    closeAddModal()
-    await handleExecuteSql(saved.widgetId)
-  }
+  await handleSaveWidget(data)
 }
 
-// 드래그 순서 저장
-const onDragEnd = () => {
+/** 드래그 시작 시 현재 너비 고정 — Sortable transform 중 콘텐츠가 그리드를 밀어내는 것 방지 */
+const onDragStart = (evt: { item: HTMLElement }) => {
+  const el = evt.item
+  const { width } = el.getBoundingClientRect()
+  el.style.width = `${width}px`
+  el.style.maxWidth = `${width}px`
+}
+
+/** 드래그 종료 시 인라인 너비 제거 후 순서 저장 */
+const onDragEnd = (evt: { item: HTMLElement }) => {
+  const el = evt.item
+  el.style.width = ''
+  el.style.maxWidth = ''
   handleSaveWidgetOrder()
 }
 
-onMounted(async () => {
-  await handleSelectWidgetList()
-  // 초기 로드 시 모든 위젯 일괄 조회
-  for (const widget of widgetList.value) {
-    handleExecuteSql(widget.widgetId)
-  }
+// 높이 변경 저장
+const onUpdateHeight = (widgetId: string, heightPx: number) => {
+  handleSaveWidgetHeight(widgetId, heightPx)
+}
+
+// 높이 초기화
+const onResetHeight = (widgetId: string) => {
+  handleResetWidgetHeight(widgetId)
+}
+
+onMounted(() => {
+  handleSelectWidgetList()
 })
 </script>

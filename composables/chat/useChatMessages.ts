@@ -7,7 +7,7 @@ import type {
 } from '~/types/chat'
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import { parseChatAttachmentsFromLogRow } from '~/utils/chat/chatAttachmentDisplayUtil'
-import { parseSurveyAnswersFromPrompt } from '~/utils/chat/psychologyConsultUtil'
+import { parseSurveyAnswersFromPrompt, PSYCHOLOGY_SURVEY_TOTAL_QUESTIONS } from '~/utils/chat/psychologyConsultUtil'
 import {
   normalizeLunchRecommendationImages,
   parseLunchPayloadFromPrompt,
@@ -97,7 +97,7 @@ export const useChatMessages = () => {
     // (후속 일반 대화 질문까지 survey로 잘못 렌더링되는 문제 방지)
     if (agentId === 'AG000010') {
       const surveyAnswers = parseSurveyAnswersFromPrompt(row.qcontent ?? '')
-      const isSurveyPrompt = Object.keys(surveyAnswers).length === 25
+      const isSurveyPrompt = Object.keys(surveyAnswers).length === PSYCHOLOGY_SURVEY_TOTAL_QUESTIONS
       if (isSurveyPrompt) {
         return [
           {

@@ -2,12 +2,12 @@
   <div
     class="chat-index s-center"
     :class="{
-      'is-survey-mode': isSurveyVisible || isLunchVisible || isTodayMemeVisible || isNewsCuratorVisible,
+      'is-survey-mode': isSurveyVisible || isGenderStepVisible || isLunchVisible || isTodayMemeVisible || isNewsCuratorVisible,
     }"
   >
     <!-- 헤더 (설문 모드에서 숨김) -->
     <div
-      v-if="!isSurveyVisible && !isLunchVisible && !isTodayMemeVisible && !isNewsCuratorVisible"
+      v-if="!isSurveyVisible && !isGenderStepVisible && !isLunchVisible && !isTodayMemeVisible && !isNewsCuratorVisible"
       class="chat-index-header"
       data-aos="fade-up"
     >
@@ -15,9 +15,9 @@
       <p class="chat-index-description f-center">{{ user?.userNm + '님, ' || '' }}어떤게 궁금하세요?</p>
     </div>
 
-    <!-- 산업심리 상담 설문  -->
+    <!-- 산업심리 상담 — 성별 선택 또는 설문  -->
     <ChatPsychologySurvey
-      v-if="isSurveyVisible"
+      v-if="isSurveyVisible || isGenderStepVisible"
       class="chat-index-survey"
       :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? ''"
       :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
@@ -52,7 +52,7 @@
     <div
       class="chat-index-input-wrapper"
       :class="{
-        'is-survey-locked': isSurveyVisible || isLunchVisible || isTodayMemeVisible || isNewsCuratorVisible,
+        'is-survey-locked': isSurveyVisible || isGenderStepVisible || isLunchVisible || isTodayMemeVisible || isNewsCuratorVisible,
       }"
       data-aos="fade-up"
       data-aos-delay="200"
@@ -61,7 +61,7 @@
     </div>
 
     <!-- 에이전트 카드 (설문 모드 아닐 때) -->
-    <template v-if="!isSurveyVisible && !isLunchVisible && !isTodayMemeVisible && !isNewsCuratorVisible">
+    <template v-if="!isSurveyVisible && !isGenderStepVisible && !isLunchVisible && !isTodayMemeVisible && !isNewsCuratorVisible">
       <div
         v-if="!isLoadingChatIndexAgents && chatIndexAgents.length > 0"
         class="chat-index-card-grp"
@@ -118,6 +118,7 @@ const {
   handleSelectChatIndexAgents,
   handleClosePsychologySurvey,
   isSurveyVisible,
+  isGenderStepVisible,
   handleIndexSurveySubmit,
   isLunchVisible,
   handleCloseLunchAgent,

@@ -264,6 +264,44 @@
   padding: $spacing-md;
 }
 
+.org-manage-member-footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  padding: $spacing-md $spacing-lg;
+  border-top: 1px solid $color-border;
+  background: $color-background;
+}
+
+.org-manage-member-footer-meta {
+  margin: 0;
+  min-width: 0;
+}
+
+.org-manage-member-footer-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  margin: 0;
+
+  dt {
+    margin: 0;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-text-secondary;
+    white-space: nowrap;
+  }
+
+  dd {
+    margin: 0;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-text-heading;
+    white-space: nowrap;
+  }
+}
+
 .org-manage-member-list {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -382,12 +420,22 @@
   }
 }
 
-// ===== 조직 추가 모달 =====
+// ===== 조직 모달 공통 (UiModal 본문) =====
 .org-manage-add-org-modal,
-.org-manage-parent-select-modal {
+.org-manage-parent-select-modal,
+.org-manage-excel-upload-modal {
   .modal-dialog-body {
-    align-items: stretch;
+    display: block;
     width: 100%;
+  }
+}
+
+// 엑셀 업로드 — 드롭존을 모달 본문 너비에 맞춤
+.org-manage-excel-upload-modal {
+  .ui-file-upload,
+  .ui-file-upload-dropzone {
+    width: 100%;
+    box-sizing: border-box;
   }
 }
 

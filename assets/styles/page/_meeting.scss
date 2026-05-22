@@ -38,7 +38,9 @@
   border-radius: $border-radius-lg;
   background: #fff;
   cursor: pointer;
-  transition: box-shadow $transition-base, border-color $transition-base;
+  transition:
+    box-shadow $transition-base,
+    border-color $transition-base;
 
   &:hover {
     box-shadow: $shadow-md;
@@ -94,7 +96,9 @@
   height: 28px;
   border-radius: $border-radius-sm;
   color: $color-text-muted;
-  transition: color $transition-fast, background $transition-fast;
+  transition:
+    color $transition-fast,
+    background $transition-fast;
 
   &:hover {
     color: $color-error;
@@ -198,8 +202,13 @@
 }
 
 @keyframes pulse-dot {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
 }
 
 .meeting-record-unsupported {
@@ -350,8 +359,13 @@
 }
 
 @keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
 }
 
 // ---- 상세 페이지 ----
@@ -835,7 +849,6 @@
   border-top: 1px solid $color-border;
 }
 
-
 // ---- migrated from _meeting2.scss ----
 
 // ===================================
@@ -1218,7 +1231,9 @@
   background: transparent;
   color: $color-text-muted;
   cursor: pointer;
-  transition: background $transition-fast, border-color $transition-fast;
+  transition:
+    background $transition-fast,
+    border-color $transition-fast;
 
   &:hover {
     background: $color-surface;
@@ -1508,7 +1523,7 @@
   display: flex;
   align-items: center;
   gap: $spacing-xs;
-  padding: $spacing-xs $spacing-sm;
+  padding: 2px 8px 6px;
   border-bottom: 1px solid $color-border;
   flex-shrink: 0;
 }
@@ -1592,7 +1607,7 @@
 .meeting2-stt-list {
   display: flex;
   flex-direction: column;
-  gap: $spacing-sm;
+  gap: 6px;
   flex: 1;
   min-height: 0;
   padding-left: $spacing-xs;
@@ -1603,7 +1618,7 @@
 .meeting2-stt-item {
   display: flex;
   gap: $spacing-sm;
-  padding: $spacing-sm;
+  padding: 6px 8px;
   border-radius: $border-radius-base;
   border: 1px solid transparent;
   transition:
@@ -2900,7 +2915,9 @@
   background: transparent;
   @include typo($body-small, $color-text-secondary);
   cursor: pointer;
-  transition: background $transition-fast, color $transition-fast;
+  transition:
+    background $transition-fast,
+    color $transition-fast;
 
   &:hover {
     background: $color-surface;
@@ -3017,8 +3034,12 @@
 }
 
 @keyframes skeleton-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .meeting2-infographic-card-pending-label {

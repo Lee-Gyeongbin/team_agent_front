@@ -16,98 +16,114 @@ import type {
 
 export type { PsychologySurveyQuestion, PsychologySurveyCategory, PsychologySurveyScoreOption }
 
+/** 설문 성별 (KOSS-SF1 참고치 판정 기준) */
+export type SurveyGender = 'male' | 'female'
+
 export const PSYCHOLOGY_SURVEY_CATEGORIES: PsychologySurveyCategory[] = [
   {
     no: 1,
-    title: '직무 요구 및 통제',
-    titleEn: 'Job Demand & Control',
+    title: '물리적 환경',
+    titleEn: 'Physical Environment',
     questions: [
-      { no: 1, text: '업무량이 과다하여 정해진 시간 내에 끝내기 어렵다.', categoryNo: 1 },
-      { no: 2, text: '업무 수행 과정에서 나에게 주어진 결정권이나 권한이 거의 없다.', categoryNo: 1 },
-      { no: 3, text: '여러 가지 일을 동시에 수행해야 하거나 업무 중단이 잦아 집중하기 어렵다.', categoryNo: 1 },
-      { no: 4, text: '내 업무가 회사 전체에서 어떤 기여를 하는지 불명확하고 역할이 모호하다.', categoryNo: 1 },
+      { no: 1, text: '내 일은 위험하여 사고를 당할 가능성이 있다.', categoryNo: 1 },
+      { no: 2, text: '나는 불편한 자세로 오랫동안 일을 해야 한다.', categoryNo: 1 },
     ],
   },
   {
     no: 2,
-    title: '직무 소진 및 정서적 고갈',
-    titleEn: 'Burnout & Exhaustion',
+    title: '직무 요구',
+    titleEn: 'Job Demand',
     questions: [
-      { no: 5, text: '퇴근할 때쯤이면 업무로 인해 에너지가 완전히 고갈된 느낌이다.', categoryNo: 2 },
-      { no: 6, text: '업무에 대해 냉소적으로 변했으며, 일의 의미를 찾기 어렵다.', categoryNo: 2 },
-      { no: 7, text: '아침에 출근할 생각을 하면 가슴이 답답하거나 심리적 압박감을 느낀다.', categoryNo: 2 },
-      { no: 8, text: '예전보다 업무 성취감이 현저히 떨어지고, 실수가 잦아졌다.', categoryNo: 2 },
+      { no: 3, text: '나는 일이 많아 항상 시간에 쫓기며 일한다.', categoryNo: 2 },
+      { no: 4, text: '업무량이 현저하게 증가하였다.', categoryNo: 2 },
+      { no: 5, text: '업무 수행 중에 충분한 휴식(짬)이 주어진다.', categoryNo: 2 },
+      { no: 6, text: '여러 가지 일을 동시에 해야 한다.', categoryNo: 2 },
     ],
   },
   {
     no: 3,
-    title: '관계 및 조직 체계',
-    titleEn: 'Interpersonal & System',
+    title: '직무 자율',
+    titleEn: 'Job Autonomy',
     questions: [
-      { no: 9, text: '직장 내 상사나 동료로부터 적절한 지지나 도움을 받지 못하고 있다.', categoryNo: 3 },
-      { no: 10, text: '조직 내 의사결정 과정이 불투명하고 공정하지 않다고 느낀다.', categoryNo: 3 },
-      { no: 11, text: '업무 성과에 비해 적절한 보상(금전적, 심리적)이 이루어지지 않고 있다.', categoryNo: 3 },
-      { no: 12, text: '부서 간의 협조가 원활하지 않아 불필요한 마찰이 잦다.', categoryNo: 3 },
+      { no: 7, text: '내 업무는 창의력을 필요로 한다.', categoryNo: 3 },
+      { no: 8, text: '내 업무를 수행하기 위해서는 높은 수준의 기술이나 지식이 필요하다.', categoryNo: 3 },
+      { no: 9, text: '작업시간, 업무 수행 과정에서 내가 스스로 결정할 권한이 주어진다.', categoryNo: 3 },
+      { no: 10, text: '나의 업무량과 작업 스케줄을 스스로 조절할 수 있다.', categoryNo: 3 },
     ],
   },
   {
     no: 4,
-    title: '신체화 증상 및 인지 기능',
-    titleEn: 'Somatization & Cognitive',
+    title: '관계 갈등',
+    titleEn: 'Interpersonal Conflict',
     questions: [
-      { no: 13, text: '스트레스로 인해 뒷목이 뻣뻣하거나 소화기 장애 등 신체 증상이 나타난다.', categoryNo: 4 },
-      { no: 14, text: '사소한 일에도 감정 조절이 어렵고 분노나 불안을 자주 느낀다.', categoryNo: 4 },
-      { no: 15, text: '업무와 관련된 정보를 기억하거나 복잡한 판단을 내리는 능력이 저하되었다.', categoryNo: 4 },
+      { no: 11, text: '나의 상사는 업무를 수행하는 데 도움을 준다.', categoryNo: 4 },
+      { no: 12, text: '나의 동료는 업무를 수행하는 데 도움을 준다.', categoryNo: 4 },
+      { no: 13, text: '직장에서 내가 힘들 때 내가 힘들다는 것을 알아주고 이해해 주는 사람이 있다.', categoryNo: 4 },
     ],
   },
   {
     no: 5,
-    title: '회복력 / 개인 자원',
-    titleEn: 'Resilience',
+    title: '직무 불안정',
+    titleEn: 'Job Insecurity',
     questions: [
-      { no: 16, text: '나는 업무 스트레스를 스스로 해소할 수 있는 방법을 가지고 있다.', categoryNo: 5 },
-      { no: 17, text: '힘든 상황에서도 비교적 빠르게 심리적 균형을 회복하는 편이다.', categoryNo: 5 },
+      { no: 14, text: '직장 사정이 불안하여 미래가 불확실하다.', categoryNo: 5 },
+      {
+        no: 15,
+        text: '나의 근무조건이나 상황에 바람직하지 못한 변화(예, 구조조정)가 있었거나 있을 것으로 예상된다.',
+        categoryNo: 5,
+      },
     ],
   },
   {
     no: 6,
-    title: '워라밸 / 경계',
-    titleEn: 'Work-Life Boundary',
+    title: '조직 체계',
+    titleEn: 'Organizational System',
     questions: [
-      { no: 18, text: '퇴근 후에도 업무 생각이나 걱정이 머릿속에서 계속 이어진다.', categoryNo: 6 },
-      { no: 19, text: '업무로 인해 개인 시간(휴식, 가족, 취미)이 충분히 보장되지 않는다.', categoryNo: 6 },
+      {
+        no: 16,
+        text: '우리 직장은 근무 평가, 인사제도(예, 승진, 부서 배치) 등의 정책 결정 과정이 공정하고 합리적이다.',
+        categoryNo: 6,
+      },
+      { no: 17, text: '업무 수행에 필요한 인원, 공간, 시설, 장비, 훈련 등의 지원이 이루어지고 있다.', categoryNo: 6 },
+      { no: 18, text: '우리 부서와 타 부서 간에는 마찰이 없고 업무 협조가 잘 이루어진다.', categoryNo: 6 },
+      { no: 19, text: '업무 수행 과정에 나의 생각을 반영할 수 있는 기회와 통로가 있다.', categoryNo: 6 },
     ],
   },
   {
     no: 7,
-    title: '심리적 안전감',
-    titleEn: 'Psychological Safety',
+    title: '보상 부적절',
+    titleEn: 'Inadequate Compensation',
     questions: [
-      { no: 20, text: '조직 내에서 내 의견을 자유롭게 말하기 어렵다.', categoryNo: 7 },
-      { no: 21, text: '실수했을 때 비난이나 불이익을 받을까 봐 걱정된다.', categoryNo: 7 },
+      {
+        no: 20,
+        text: '내가 쏟는 노력과 업적을 고려할 때, 나는 직장에서 제대로 존중과 신임을 받고 있다.',
+        categoryNo: 7,
+      },
+      { no: 21, text: '내 사정이 앞으로 더 좋아질 것을 생각하면 힘든 줄 모르고 일하게 된다.', categoryNo: 7 },
+      { no: 22, text: '나의 능력을 개발하고 발휘할 수 있는 기회가 주어진다.', categoryNo: 7 },
     ],
   },
   {
     no: 8,
-    title: '일의 의미 / 동기',
-    titleEn: 'Meaning & Motivation',
+    title: '직장 문화',
+    titleEn: 'Workplace Culture',
     questions: [
-      { no: 22, text: '현재 하는 일이 개인적으로 의미 있다고 느낀다.', categoryNo: 8 },
-      { no: 23, text: '일을 통해 성장하고 있다는 느낌이 있다.', categoryNo: 8 },
-      { no: 24, text: '현재 업무는 나의 역량이나 적성과 잘 맞지 않는다.', categoryNo: 8 },
-      { no: 25, text: '현재 직장에서의 미래가 불확실하게 느껴진다.', categoryNo: 8 },
+      { no: 23, text: '회식 자리가 불편하다.', categoryNo: 8 },
+      { no: 24, text: '기준이나 일관성이 없는 상태로 업무지시를 받는다.', categoryNo: 8 },
+      { no: 25, text: '직장의 분위기가 권위적이고 수직적이다.', categoryNo: 8 },
+      { no: 26, text: '남성, 여성이라는 성적인 차이로 불이익을 받는다.', categoryNo: 8 },
     ],
   },
 ]
 
 export const PSYCHOLOGY_SURVEY_SCORE_OPTIONS: PsychologySurveyScoreOption[] = [
-  { value: 1, label: '전혀 아니다' },
-  { value: 2, label: '아니다' },
+  { value: 1, label: '전혀 그렇지 않다' },
+  { value: 2, label: '그렇지 않다' },
   { value: 3, label: '그렇다' },
   { value: 4, label: '매우 그렇다' },
 ]
 
-export const PSYCHOLOGY_SURVEY_TOTAL_QUESTIONS = 25
+export const PSYCHOLOGY_SURVEY_TOTAL_QUESTIONS = 26
 
 // ============================================================
 // 진단 프롬프트 빌더
@@ -115,9 +131,8 @@ export const PSYCHOLOGY_SURVEY_TOTAL_QUESTIONS = 25
 
 /**
  * 사용자의 응답(answers)을 채워 LLM에 전송할 진단 프롬프트 문자열을 반환
- * # Input Data 섹션만 동적으로 생성하고 나머지는 고정 템플릿 사용
  */
-export const buildDiagnosticPrompt = (answers: Record<number, number>): string => {
+export const buildDiagnosticPrompt = (answers: Record<number, number>, gender: SurveyGender | null): string => {
   const inputDataJson =
     '{\n' +
     Array.from({ length: PSYCHOLOGY_SURVEY_TOTAL_QUESTIONS }, (_, i) => {
@@ -126,103 +141,129 @@ export const buildDiagnosticPrompt = (answers: Record<number, number>): string =
     }).join(',\n') +
     '\n}'
 
+  // ============================================================
+  // JS 사전 계산 — LLM 산수 오류 차단 (영역 점수·총점·종합 위험군 모두 여기서 확정)
+  // PDF 평가점수 산출 공식과 PDF 23p 총점 참고치(성별별)를 정확히 적용
+  // ============================================================
+  const areaList = [
+    { ko: '물리적환경', en: 'physicalEnvironment' as const, stats: calcCategoryStats([1, 2], answers) },
+    { ko: '직무요구', en: 'jobDemand' as const, stats: calcCategoryStats([3, 4, 5, 6], answers) },
+    { ko: '직무자율', en: 'jobAutonomy' as const, stats: calcCategoryStats([7, 8, 9, 10], answers) },
+    { ko: '관계갈등', en: 'interpersonalConflict' as const, stats: calcCategoryStats([11, 12, 13], answers) },
+    { ko: '직무불안정', en: 'jobInsecurity' as const, stats: calcCategoryStats([14, 15], answers) },
+    { ko: '조직체계', en: 'organizationalSystem' as const, stats: calcCategoryStats([16, 17, 18, 19], answers) },
+    { ko: '보상부적절', en: 'inadequateCompensation' as const, stats: calcCategoryStats([20, 21, 22], answers) },
+    { ko: '직장문화', en: 'workplaceCulture' as const, stats: calcCategoryStats([23, 24, 25, 26], answers) },
+  ]
+  const totalScoreNum = areaList.reduce((acc, a) => acc + Number(a.stats.score100), 0) / areaList.length
+  const totalScore = totalScoreNum.toFixed(2)
+  const genderLabel = gender === 'female' ? '여성' : '남성'
+  const totalRisk = gender ? KOSS_SF1_TOTAL_RISK[gender] : KOSS_SF1_TOTAL_RISK.male
+  const areaRisk = gender ? KOSS_SF1_RISK_TABLE[gender] : KOSS_SF1_RISK_TABLE.male
+
+  // 총점만으로 1차 판정
+  const baseRiskLevel: RadarChartRiskLevel =
+    totalScoreNum <= totalRisk.정상Max ? '정상' : totalScoreNum <= totalRisk.경계Max ? '경계' : '고위험'
+
+  // High Risk Flag: 「고위험」 구간 영역 ≥3개일 때만 종합 판정을 고위험으로 상향
+  const highRiskAreaCount = areaList.filter((a) => Number(a.stats.score100) > areaRisk[a.en].경계Max).length
+  const finalRiskLevel: RadarChartRiskLevel = highRiskAreaCount >= 3 ? '고위험' : baseRiskLevel
+  const finalRiskGroupLabel = `${finalRiskLevel}군`
+
+  // 뱃지/상태 클래스 매핑 (출력 HTML 그대로)
+  const badgeClass =
+    finalRiskLevel === '정상' ? 'risk-safe' : finalRiskLevel === '경계' ? 'risk-caution' : 'risk-danger'
+  const statusClass =
+    finalRiskLevel === '정상'
+      ? 'risk-status--safe'
+      : finalRiskLevel === '경계'
+        ? 'risk-status--caution'
+        : 'risk-status--danger'
+
+  const areaScoresBlock = areaList.map((a) => `- ${a.ko}: ${a.stats.score100}`).join('\n')
+
   return `# Role
-당신은 기업 구성원의 심리적 웰빙을 책임지는 '전문 산업심리 상담사 및 멘탈 웰니스 코치'입니다. 
-사용자가 작성한 직무 스트레스 진단(IS-MSI) 결과를 분석하여, 따뜻한 공감과 함께 실질적인 정신 건강 가이드를 제공하는 것이 당신의 임무입니다.
+당신은 기업 구성원의 심리적 웰빙을 책임지는 '전문 산업심리 상담사 및 멘탈 웰니스 코치'입니다.
+사용자가 작성한 한국인 직무스트레스 요인 평가도구 단축형(KOSS-SF1) 결과를 분석하여, 따뜻한 공감과 함께 실질적인 정신 건강 가이드를 제공하는 것이 당신의 임무입니다.
 모든 답변은 **한국어**로 작성하세요. (곡명·아티스트명·이미지 키워드는 영어 허용)
 
 # Scale
-1: 전혀 아니다 / 2: 아니다 / 3: 그렇다 / 4: 매우 그렇다
+1: 전혀 그렇지 않다 / 2: 그렇지 않다 / 3: 그렇다 / 4: 매우 그렇다
 
-# 문항 구조
-A. 직무 요구
-Q1 과도한 업무 / Q2 권한 부족 / Q3 멀티태스킹 / Q4 역할 모호
+# 문항 구조 (KOSS-SF1 26문항)
+A. 물리적 환경 (Q1~Q2)
+Q1 사고위험 / Q2 불편한자세
 
-B. 번아웃
-Q5 에너지 고갈 / Q6 냉소 / Q7 출근 압박 / Q8 성취감 저하
+B. 직무 요구 (Q3~Q6)
+Q3 시간압박 / Q4 업무량증가 / Q5 휴식부족[역] / Q6 멀티태스킹
 
-C. 조직/관계
-Q9 지원 부족 / Q10 불공정 / Q11 보상 불만 / Q12 협업 문제
+C. 직무 자율 (Q7~Q10, 모두 역코딩)
+Q7 창의력필요[역] / Q8 기술지식필요[역] / Q9 결정권한[역] / Q10 스케줄조절[역]
 
-D. 신체/인지
-Q13 신체화 / Q14 감정조절 어려움 / Q15 인지 저하
+D. 관계 갈등 (Q11~Q13, 모두 역코딩)
+Q11 상사도움[역] / Q12 동료도움[역] / Q13 이해공감[역]
 
-E. 회복력
-Q16 스트레스 해소능력 / Q17 회복속도
+E. 직무 불안정 (Q14~Q15)
+Q14 미래불확실 / Q15 근무조건변화
 
-F. 워라밸
-Q18 업무침투 / Q19 개인시간 부족
+F. 조직 체계 (Q16~Q19, 모두 역코딩)
+Q16 인사공정성[역] / Q17 업무지원[역] / Q18 부서협조[역] / Q19 의견반영[역]
 
-G. 심리적 안전감
-Q20 의견 표현 어려움 / Q21 실수 두려움
+G. 보상 부적절 (Q20~Q22, 모두 역코딩)
+Q20 존중신임[역] / Q21 미래기대[역] / Q22 능력발휘[역]
 
-H. 의미/동기
-Q22 일의 의미 / Q23 성장감 / Q24 적성 불일치 / Q25 미래 불안
+H. 직장 문화 (Q23~Q26)
+Q23 회식불편 / Q24 업무지시일관성 / Q25 권위적분위기 / Q26 성차별
 
 # Input Data
 ${inputDataJson}
 
 # Reverse Scoring
-Q16, Q17, Q22, Q23 역코딩 후 계산
+[역] 표시 문항(Q5, Q7~Q13, Q16~Q22) 역코딩 후 계산
 (1점→4점, 2점→3점, 3점→2점, 4점→1점)
 
-# Scoring Rule
-모든 평균 = 역코딩 적용 후 계산
-High Risk 판단 = 원점수 기준
+# Pre-computed Scoring Result (시스템에서 KOSS-SF1 공식으로 사전 계산된 값 — 그대로 사용, 재계산 금지)
+아래 값들은 산업안전보건연구원 KOSS-SF1 PDF 공식으로 시스템이 직접 계산한 결과입니다.
+당신은 이 값을 **다시 계산하거나 검증하려 하지 마세요.** 종합 위험군 판정과 뱃지 클래스 선택에 이 값을 그대로 사용합니다.
 
-# Risk Level
-1.00~1.59 안정
-1.60~2.29 관심
-2.30~2.99 주의
-3.00~4.00 고위험
+[영역별 환산 점수 (0~100, 소수 둘째 자리)]
+${areaScoresBlock}
 
-# High Risk Flag (4점)
-Q7 출근압박 / Q13 신체화 / Q14 감정 / Q15 인지 / Q18 워라밸 / Q21 위축
-2개 이상 → 주의군
-3개 이상 → 고위험군
+[총점 (8개 영역 환산 점수의 평균)]
+총점 = ${totalScore}
 
-# Stress Type
-업무과중: Q1,Q3 ≥3
-번아웃: B≥3
-관계: Q9 or Q12 ≥3
-조직불신: Q10 or Q11 ≥3
-신체화: Q13≥3 & (Q14 or Q15≥3)
-워라밸붕괴: Q18,Q19 ≥3
-저회복력: (E 역코딩) ≥2.8
-의미상실: H ≥2.8
+[종합 위험군 판정 (${genderLabel} KOSS-SF1 PDF 23p 총점 참고치 기준)]
+- 적용 임계값: ≤${totalRisk.정상Max} 정상 / ${(totalRisk.정상Max + 0.1).toFixed(1)}~${totalRisk.경계Max} 경계 / ≥${(totalRisk.경계Max + 0.1).toFixed(1)} 고위험
+- 총점 ${totalScore} → 1차 판정: ${baseRiskLevel}
+- 고위험 구간 영역 개수: ${highRiskAreaCount}개 (3개 이상일 때만 종합 판정을 고위험으로 상향)
+- **최종 종합 위험군: ${finalRiskGroupLabel}**
+- **섹션 1 뱃지 클래스: ${badgeClass} / 상태 클래스: ${statusClass}**
 
-# Priority
-최고 점수 영역 = 핵심 원인
-동률 시: 번아웃 > 신체/인지 > 워라밸 > 안전감 > 직무요구
+⚠️ 위 「최종 종합 위험군」과 「뱃지 클래스」는 시스템이 PDF 공식으로 확정한 값입니다.
+- 섹션 1의 뱃지·상태 클래스는 반드시 위 값을 그대로 사용하세요.
+- 영역별 점수가 100점인 영역이 있어도, 총점 기준 판정을 바꾸지 마세요.
+- 본문 전체 톤(섹션 2~5)은 「${finalRiskGroupLabel}」 기준에 맞춰 작성합니다.
+
+# Stress Type (KOSS-SF1 공식 영역명 기준 — 섹션 4 표기에만 사용)
+영역별 환산 점수가 해당 영역의 「정상」 임계값을 초과(경계 이상)한 영역을 섹션 4에 나열합니다.
+- 물리적환경 위험 / 직무요구 과부하 / 직무자율 결여 / 관계갈등(사회적 지지 부족) / 직무불안정 / 조직체계 불공정 / 보상 부적절 / 직장문화 갈등
+
+# Priority (섹션 2 핵심 원인 — 종합 판정과는 별개)
+위 「영역별 환산 점수」에서 가장 높은 1~2개 영역 = 핵심 원인 (동률인 경우 해당 영역 모두 언급)
+※ 핵심 원인 영역의 점수가 100점이어도, 종합 판정은 위 「최종 종합 위험군」을 그대로 따릅니다.
 
 # Output Format
 각 섹션 사이에는 반드시 --- 구분선을 삽입하세요.
 
 ### 1. 현재 상태 요약
-위험군 뱃지와 상태 설명을 아래 HTML 형식으로 출력하세요.
-반드시 두 줄만 출력하며, 두 줄 사이에 빈 줄·공백·들여쓰기를 절대 넣지 마세요.
-첫째 줄: 위험군 뱃지 span 태그 하나만
-둘째 줄: 상태 설명 span 태그 하나만
+위 「Pre-computed Scoring Result」의 종합 위험군은 **${finalRiskGroupLabel}** 이며, 뱃지 클래스는 **${badgeClass}**, 상태 클래스는 **${statusClass}** 로 사전 확정되어 있습니다.
+아래 형식을 그대로 사용해 두 줄만 출력하세요 (클래스명 변경 금지):
 
-출력 예시 (risk level에 맞는 클래스 하나 선택):
+<span class="risk-badge ${badgeClass}">${finalRiskGroupLabel}</span>
+<span class="risk-status ${statusClass}">{종합 상태를 1~2문장으로 설명}</span>
 
-안정군인 경우:
-<span class="risk-badge risk-safe">안정군</span>
-<span class="risk-status risk-status--safe">{설명}</span>
-
-관심군인 경우:
-<span class="risk-badge risk-caution">관심군</span>
-<span class="risk-status risk-status--caution">{설명}</span>
-
-주의군인 경우:
-<span class="risk-badge risk-warning">주의군</span>
-<span class="risk-status risk-status--warning">{설명}</span>
-
-고위험군인 경우:
-<span class="risk-badge risk-danger">고위험군</span>
-<span class="risk-status risk-status--danger">{설명}</span>
-
-⚠️ 두 span 태그 사이에 빈 줄이나 들여쓰기를 넣으면 안 됩니다. 반드시 연속된 두 줄로만 출력하세요.
+⚠️ 두 span 태그 사이에 빈 줄·공백·들여쓰기를 절대 넣지 마세요. 반드시 연속된 두 줄로 출력하세요.
+⚠️ 뱃지/상태 클래스(${badgeClass} / ${statusClass}) 와 라벨(${finalRiskGroupLabel}) 을 임의로 다른 값으로 바꾸지 마세요.
 
 ---
 
@@ -243,7 +284,7 @@ Q7 출근압박 / Q13 신체화 / Q14 감정 / Q15 인지 / Q18 워라밸 / Q21 
 
 ---
 
-### 5. 맞춤 처방 
+### 5. 맞춤 처방
 회복을 위한 작은 가이드를 항목별로 출력합니다.
 #### ① 지금 가장 먼저 해보면 좋은 것 (1~2개)
 → 가장 효과적인 행동 1개는 반드시 포함
@@ -256,7 +297,7 @@ Q7 출근압박 / Q13 신체화 / Q14 감정 / Q15 인지 / Q18 워라밸 / Q21 
 
 ---
 
-### 6. 심리 안정 음악 
+### 6. 심리 안정 음악
 현재 심리 상태에 맞는 음악 3곡을 아래 형식으로 빠짐없이 출력하세요.
 
 선곡 기준:
@@ -271,7 +312,7 @@ Q7 출근압박 / Q13 신체화 / Q14 감정 / Q15 인지 / Q18 워라밸 / Q21 
 
 ---
 
-### 7. 회복에 도움이 되는 이미지 
+### 7. 회복에 도움이 되는 이미지
 현재 사용자의 심리 상태에 맞는 이미지 키워드 4개를 아래 형식으로 출력하세요.
 
 출력 형식:
@@ -291,9 +332,9 @@ Q7 출근압박 / Q13 신체화 / Q14 감정 / Q15 인지 / Q18 워라밸 / Q21 
 - 과도한 긍정 금지
 - 비난 금지
 - "열심히" 금지, "잠시 멈춰도 괜찮다"는 허용의 메시지 전달
-- 점수의 계산방법(점수체계, 역코딩 등)은 설명하지 마세요.
+- 점수의 계산방법(점수체계, 역코딩, 환산공식 등)은 설명하지 마세요.
 - 섹션 3: 정서·인지·행동은 각 항목 \`- \` 말머리 목록으로 작성하고, 본문 마지막에 반드시 [방사형그래프] 한 줄만 출력하세요 (생략 불가, 다른 텍스트 혼입 금지).
-- 문항 번호(Q1, Q5~Q8 등) 및 점수 수치를 답변에 절대 노출하지 마세요. 대신 해당 문항이 나타내는 경험(에너지 고갈, 냉소 등)을 자연스러운 문장으로 서술하세요.
+- 문항 번호(Q1, Q5~Q8 등) 및 점수 수치를 답변에 절대 노출하지 마세요. 대신 해당 문항이 나타내는 경험(사고위험, 시간압박 등)을 자연스러운 문장으로 서술하세요.
 
 # Markdown Format Rules (절대 준수 — 예외 없음)
 답변 작성 시 마크다운 형식을 다음과 같이 통일하세요:
@@ -304,12 +345,18 @@ Q7 출근압박 / Q13 신체화 / Q14 감정 / Q15 인지 / Q18 워라밸 / Q21 
 - 본문 내 일반 목록에서 숫자를 헤딩 대용으로 사용하지 마세요
 - 각 섹션 사이 --- 구분선 반드시 유지
 
-# Tone
+# Tone (사전 확정된 종합 위험군: ${finalRiskGroupLabel} — 이 기준에 맞춰 본문 전체 작성)
 - 공감 중심
 - 따듯하고 친근한 말투
 - 현실적
 - 행동 유도
-- 고위험군 → 위트 제거`
+${
+  finalRiskLevel === '정상'
+    ? '- 종합 판정 = 정상군: 전반적으로 안정적이라는 점을 인정하면서, 점수가 높게 나온 일부 영역에 대해서만 가벼운 케어를 제안하세요. 과한 위기감·경고 톤 사용 금지. "주의가 필요한 상태"라는 표현은 사용하지 마세요.'
+    : finalRiskLevel === '경계'
+      ? '- 종합 판정 = 경계군: 주의가 필요한 시점임을 알리되, 위기감을 과장하지 말고 균형 잡힌 안내 톤을 유지하세요.'
+      : '- 종합 판정 = 고위험군: 위트 제거, 진지하고 명확한 안내 톤. 전문의 상담을 권고하세요.'
+}`
 }
 
 // ============================================================
@@ -519,19 +566,56 @@ export const fetchAndInjectPexelsImages = async (
 // - LLM JSON 응답을 파싱한 결과 — 차트 컴포넌트에 주입하는 단일 DTO
 // ============================================================
 
-/** 방사형 차트용 8개 영역 점수 (1~4 척도 → 0~100 선형 환산, LLM·백엔드 응답 키는 영어 camelCase) */
+/** 방사형 차트용 8개 영역 점수 (KOSS-SF1 환산 공식 적용 → 0~100, LLM·백엔드 응답 키는 영어 camelCase) */
 export type RadarChartScore = {
-  jobDemands: number
-  burnout: number
-  organizationalRelations: number
-  physicalCognition: number
-  resilience: number
-  workLifeBalance: number
-  psychologicalSafety: number
-  meaningMotivation: number
+  physicalEnvironment: number // 물리적 환경
+  jobDemand: number // 직무 요구
+  jobAutonomy: number // 직무 자율 (자율성 결여)
+  interpersonalConflict: number // 관계 갈등
+  jobInsecurity: number // 직무 불안정
+  organizationalSystem: number // 조직 체계
+  inadequateCompensation: number // 보상 부적절
+  workplaceCulture: number // 직장 문화
 }
 
-export type RadarChartRiskLevel = '안정' | '관심' | '주의' | '고위험'
+/** KOSS-SF1 3단계 — StressLevel 과 동일 (타입 호환 별칭) */
+export type RadarChartRiskLevel = StressLevel
+
+/**
+ * KOSS-SF1 별표 4 — 성별별 영역 참고치 (0~100 환산 점수 기준)
+ * 정상Max: A등급 상한, 경계Max: B등급 상한 (초과 시 C 고위험)
+ */
+export const KOSS_SF1_RISK_TABLE: Record<
+  SurveyGender,
+  Record<keyof RadarChartScore, { 정상Max: number; 경계Max: number }>
+> = {
+  male: {
+    physicalEnvironment: { 정상Max: 44.4, 경계Max: 66.6 },
+    jobDemand: { 정상Max: 50.0, 경계Max: 58.3 },
+    jobAutonomy: { 정상Max: 50.0, 경계Max: 66.6 },
+    interpersonalConflict: { 정상Max: 33.3, 경계Max: 44.4 },
+    jobInsecurity: { 정상Max: 50.0, 경계Max: 66.6 },
+    organizationalSystem: { 정상Max: 50.0, 경계Max: 66.6 },
+    inadequateCompensation: { 정상Max: 55.5, 경계Max: 66.6 },
+    workplaceCulture: { 정상Max: 41.6, 경계Max: 50.0 },
+  },
+  female: {
+    physicalEnvironment: { 정상Max: 44.4, 경계Max: 55.5 },
+    jobDemand: { 정상Max: 58.3, 경계Max: 66.6 },
+    jobAutonomy: { 정상Max: 58.3, 경계Max: 66.6 },
+    interpersonalConflict: { 정상Max: 33.3, 경계Max: 44.4 },
+    jobInsecurity: { 정상Max: 33.3, 경계Max: 50.0 },
+    organizationalSystem: { 정상Max: 50.0, 경계Max: 66.6 },
+    inadequateCompensation: { 정상Max: 55.5, 경계Max: 66.6 },
+    workplaceCulture: { 정상Max: 41.6, 경계Max: 50.0 },
+  },
+}
+
+/** KOSS-SF1 별표 4 — 성별별 총점 참고치 */
+export const KOSS_SF1_TOTAL_RISK: Record<SurveyGender, { 정상Max: number; 경계Max: number }> = {
+  male: { 정상Max: 48.4, 경계Max: 54.7 },
+  female: { 정상Max: 50.0, 경계Max: 55.6 },
+}
 
 /** LLM JSON 응답 → 차트 컴포넌트 주입 DTO */
 export type RadarChartData = {
@@ -551,38 +635,38 @@ export type RadarChartData = {
 
 /** 방사형 차트 scores 키 표시 순서 (JSON 영어 키 → UI 한글 라벨) */
 export const PSYCHOLOGY_RADAR_SCORE_KEYS: readonly (keyof RadarChartScore)[] = [
-  'jobDemands',
-  'burnout',
-  'organizationalRelations',
-  'physicalCognition',
-  'resilience',
-  'workLifeBalance',
-  'psychologicalSafety',
-  'meaningMotivation',
+  'physicalEnvironment',
+  'jobDemand',
+  'jobAutonomy',
+  'interpersonalConflict',
+  'jobInsecurity',
+  'organizationalSystem',
+  'inadequateCompensation',
+  'workplaceCulture',
 ] as const
 
 /** scores 영어 키 → 그리드/차트 축 한글명 */
 export const PSYCHOLOGY_RADAR_LABEL_KO: Record<keyof RadarChartScore, string> = {
-  jobDemands: '직무요구',
-  burnout: '번아웃',
-  organizationalRelations: '조직관계',
-  physicalCognition: '신체인지',
-  resilience: '회복력',
-  workLifeBalance: '워라밸',
-  psychologicalSafety: '심리안전감',
-  meaningMotivation: '의미동기',
+  physicalEnvironment: '물리적환경',
+  jobDemand: '직무요구',
+  jobAutonomy: '직무자율',
+  interpersonalConflict: '관계갈등',
+  jobInsecurity: '직무불안정',
+  organizationalSystem: '조직체계',
+  inadequateCompensation: '보상부적절',
+  workplaceCulture: '직장문화',
 }
 
 /** 구 응답(한글 키) 호환 */
 const LEGACY_RADAR_SCORE_KO_TO_EN: Record<string, keyof RadarChartScore> = {
-  직무요구: 'jobDemands',
-  번아웃: 'burnout',
-  조직관계: 'organizationalRelations',
-  신체인지: 'physicalCognition',
-  회복력: 'resilience',
-  워라밸: 'workLifeBalance',
-  심리안전감: 'psychologicalSafety',
-  의미동기: 'meaningMotivation',
+  물리적환경: 'physicalEnvironment',
+  직무요구: 'jobDemand',
+  직무자율: 'jobAutonomy',
+  관계갈등: 'interpersonalConflict',
+  직무불안정: 'jobInsecurity',
+  조직체계: 'organizationalSystem',
+  보상부적절: 'inadequateCompensation',
+  직장문화: 'workplaceCulture',
 }
 
 const coerceRadarScoreNumber = (v: unknown): number | null => {
@@ -595,44 +679,62 @@ const coerceRadarScoreNumber = (v: unknown): number | null => {
 }
 
 /**
- * 0~100 환산 점수 → 항목별 등급 (내부적으로 1~4 척도 구간과 동일: x = 1 + score/100*3)
+ * 0~100 환산 점수 → 항목별 등급 (KOSS-SF1 PDF 23p 영역별 참고치 기반)
+ * - area 지정 시: 영역별 참고치 적용 (gender 미지정 시 남성 기준 fallback)
+ * - area 미지정 시: 총점·일반 평가용 보수적 공통 구간(0~100 균등 분할) 적용
+ *   ※ 영역별 단계 판정은 area 인자를 반드시 함께 전달할 것
  */
-export const stressLevelFromPsychologyRadarScore100 = (score: number): StressLevel => {
-  const x = 1 + (score / 100) * 3
-  if (x <= 1.59) return '안정'
-  if (x <= 2.29) return '관심'
-  if (x <= 2.99) return '주의'
+export const stressLevelFromPsychologyRadarScore100 = (
+  score: number,
+  gender?: SurveyGender | null,
+  area?: keyof RadarChartScore,
+): StressLevel => {
+  if (area) {
+    const thresholds = KOSS_SF1_RISK_TABLE[gender ?? 'male'][area]
+    if (score <= thresholds.정상Max) return '정상'
+    if (score <= thresholds.경계Max) return '경계'
+    return '고위험'
+  }
+  if (score <= 33.3) return '정상'
+  if (score <= 66.6) return '경계'
   return '고위험'
 }
 
-/** StressScoreGrid `.item-level` / 레이더 축 라벨 — SCSS $color-success·info·warning·error 와 동일 */
+/** StressScoreGrid `.item-level` / 레이더 축 라벨 — KOSS-SF1 3단계, SCSS $color-success·warning·error 와 동일 */
 export const STRESS_LEVEL_LABEL_HEX: Record<StressLevel, string> = {
-  안정: '#22c55e',
-  관심: '#3b82f6',
-  주의: '#f59e0b',
+  정상: '#22c55e',
+  경계: '#f59e0b',
   고위험: '#ef4444',
 }
 
 export const hexForStressLevel = (level: StressLevel): string => STRESS_LEVEL_LABEL_HEX[level] ?? '#64748b'
 
-/** RadarChartData → StressScoreGrid props.items */
-export const buildStressItemsFromRadarChartData = (data: RadarChartData): StressScoreItem[] => {
+/** RadarChartData → StressScoreGrid props.items (gender 지정 시 성별 참고치 적용) */
+export const buildStressItemsFromRadarChartData = (
+  data: RadarChartData,
+  gender?: SurveyGender | null,
+): StressScoreItem[] => {
   return PSYCHOLOGY_RADAR_SCORE_KEYS.map((key) => {
     const raw = data.scores[key]
     const value = typeof raw === 'number' && Number.isFinite(raw) ? raw : 0
     return {
       name: PSYCHOLOGY_RADAR_LABEL_KO[key],
       value,
-      level: stressLevelFromPsychologyRadarScore100(value),
+      level: stressLevelFromPsychologyRadarScore100(value, gender, key),
     }
   })
 }
 
 /**
  * guide/ui-chart.vue 의 radarStressConfig 와 동일 형태 — max 0~100, riskColor 로 라인 색
+ * - gender 전달 시: KOSS-SF1 PDF 23p 영역별·성별 참고치로 영역 단계(점·라벨 색) 결정
+ * - gender 미전달 시: 남성 기준 영역별 참고치 fallback
  */
-export const buildPsychologyRadarUiChartConfig = (data: RadarChartData): Record<string, unknown> => {
-  const items = buildStressItemsFromRadarChartData(data)
+export const buildPsychologyRadarUiChartConfig = (
+  data: RadarChartData,
+  gender?: SurveyGender | null,
+): Record<string, unknown> => {
+  const items = buildStressItemsFromRadarChartData(data, gender)
   const levelColors = items.map((i) => hexForStressLevel(i.level))
   return {
     categories: items.map((i) => i.name),
@@ -668,8 +770,7 @@ function normalizeRadarChartData(raw: Record<string, unknown>): RadarChartData |
   if (PSYCHOLOGY_RADAR_SCORE_KEYS.some((k) => scores[k] == null)) return null
 
   const rl = raw.riskLevel
-  const riskLevel: RadarChartRiskLevel =
-    rl === '안정' || rl === '관심' || rl === '주의' || rl === '고위험' ? rl : '관심'
+  const riskLevel: RadarChartRiskLevel = rl === '정상' || rl === '경계' || rl === '고위험' ? rl : '경계'
 
   return {
     scores: scores as RadarChartScore,
@@ -760,56 +861,68 @@ export const extractSections1to4 = (answer: string): string => {
   return answer.substring(0, section5Match.index).trim()
 }
 
-/** 역코딩 대상 문항 번호 (1→4, 2→3, 3→2, 4→1) */
-const REVERSE_SCORE_QNO = new Set([16, 17, 22, 23])
+/**
+ * KOSS-SF1 역코딩 대상 문항 번호 (1→4, 2→3, 3→2, 4→1)
+ * Q5: 충분한 휴식, Q7~Q10: 직무자율, Q11~Q13: 관계갈등, Q16~Q19: 조직체계, Q20~Q22: 보상부적절
+ */
+const REVERSE_SCORE_QNO = new Set([5, 7, 8, 9, 10, 11, 12, 13, 16, 17, 18, 19, 20, 21, 22])
 
 /** 역코딩 변환 */
 const applyReverse = (score: number): number => 5 - score
 
-/** 카테고리 문항 번호 목록 (역코딩 적용 포함) → 소수점 2자리 평균 문자열 반환 */
-const calcCategoryAvg = (qNos: number[], answers: Record<number, number>): string => {
-  const scores = qNos.map((no) => {
+/**
+ * KOSS-SF1 영역별 통계 — 산업안전보건연구원 PDF 평가점수 산출 공식 직접 적용
+ * 환산 점수 = (실제 점수의 합 − 문항 개수) ÷ (예상 가능한 최고 점수의 합 − 문항 개수) × 100
+ * - 1~4점 척도이므로 영역별 「최고 점수의 합」 = 4 × 문항 개수
+ * - [역] 표시 문항은 역코딩(1↔4, 2↔3) 후 합산
+ */
+const calcCategoryStats = (qNos: number[], answers: Record<number, number>) => {
+  const itemCount = qNos.length
+  const sumActual = qNos.reduce((acc, no) => {
     const raw = answers[no] ?? 2
-    return REVERSE_SCORE_QNO.has(no) ? applyReverse(raw) : raw
-  })
-  const avg = scores.reduce((a, b) => a + b, 0) / scores.length
-  return avg.toFixed(2)
-}
-
-/** 1~4 평균(소수 둘째 자리 문자열) → scores와 동일 공식의 0~100 환산 문자열 */
-const radarScore100FromAvg14 = (avgFixed2: string): string => {
-  const x = Number(avgFixed2)
-  if (!Number.isFinite(x)) return '0.00'
-  return (((x - 1) / 3) * 100).toFixed(2)
+    return acc + (REVERSE_SCORE_QNO.has(no) ? applyReverse(raw) : raw)
+  }, 0)
+  const sumMax = 4 * itemCount
+  const denom = sumMax - itemCount
+  const score100 = denom === 0 ? 0 : ((sumActual - itemCount) / denom) * 100
+  const avg = itemCount === 0 ? 0 : sumActual / itemCount
+  return {
+    itemCount,
+    sumActual,
+    sumMax,
+    avg: avg.toFixed(2),
+    score100: score100.toFixed(2),
+  }
 }
 
 /**
- * 프롬프트 내 「동일 구간을 0~100으로 나타내면」표와 동일 경계 (844~847행)
- * - coreAreasSummary 단계 표기·예시 생성에 사용
+ * 영역별 0~100 환산 점수 → KOSS-SF1 PDF 23p 영역별 참고치 기준 위험 단계
+ * - coreAreasSummary 예시 생성에 사용 (LLM이 동일 기준으로 단계 표기하도록)
+ * - gender 미전달 시 남성 기준 영역별 참고치 fallback
  */
-const stressTierFromScore100Bands = (score100: number): RadarChartRiskLevel => {
-  if (score100 <= 19.67) return '안정'
-  if (score100 <= 43.0) return '관심'
-  if (score100 <= 66.33) return '주의'
-  return '고위험'
-}
+const stressTierFromScore100ByArea = (
+  score100: number,
+  area: keyof RadarChartScore,
+  gender: SurveyGender | null,
+): RadarChartRiskLevel => stressLevelFromPsychologyRadarScore100(score100, gender, area)
 
-/** LLM 응답 텍스트에서 위험군 클래스명을 읽어 색상 매핑 — SCSS .risk-safe/caution/warning/danger 및 $color-* 디자인 토큰과 동일 */
+/**
+ * LLM 응답 텍스트에서 위험군 클래스명을 읽어 색상 매핑
+ * KOSS-SF1 3단계: risk-safe(정상) / risk-caution(경계) / risk-danger(고위험)
+ */
 const resolveRiskColorsFromResponse = (sectionsText: string): { riskBg: string; riskColor: string } => {
   const match = sectionsText.match(/class="risk-badge\s+(risk-\w+)"/)
   const cls = match?.[1] ?? ''
   if (cls === 'risk-safe') return { riskBg: '#ecfdf5', riskColor: '#22c55e' }
-  if (cls === 'risk-caution') return { riskBg: '#eff6ff', riskColor: '#3b82f6' }
-  if (cls === 'risk-warning') return { riskBg: '#fffbeb', riskColor: '#f59e0b' }
+  if (cls === 'risk-caution') return { riskBg: '#fffbeb', riskColor: '#f59e0b' }
   if (cls === 'risk-danger') return { riskBg: '#fef2f2', riskColor: '#ef4444' }
   return { riskBg: '#ffffff', riskColor: '#ef4444' }
 }
 
-/** risk-badge 클래스 → 방사형 JSON riskLevel */
+/** risk-badge 클래스 → 방사형 JSON riskLevel (KOSS-SF1 3단계) */
 const RISK_BADGE_CLASS_TO_LEVEL: Record<string, RadarChartRiskLevel> = {
-  'risk-safe': '안정',
-  'risk-caution': '관심',
-  'risk-warning': '주의',
+  'risk-safe': '정상',
+  'risk-caution': '경계',
   'risk-danger': '고위험',
 }
 
@@ -834,49 +947,54 @@ const parseSection1ForRadarChart = (
 }
 
 /**
- * Q1~Q25 응답값으로 방사형 차트 JSON 데이터 요청 프롬프트 빌드
+ * Q1~Q26 응답값으로 방사형 차트 JSON 데이터 요청 프롬프트 빌드
+ * - 점수 산출은 산업안전보건연구원 KOSS-SF1 PDF 평가점수 산출 공식 그대로 적용
+ *   환산 점수 = (실제 점수의 합 − 문항 개수) ÷ (예상 가능한 최고 점수의 합 − 문항 개수) × 100
+ *   총점 = (8개 영역의 환산 점수의 총합) ÷ 8
  * - 역코딩 규칙은 buildDiagnosticPrompt 와 동일
- * - sectionsText에 섹션1 HTML(risk-badge/risk-status)이 있으면 riskLevel·색·riskSummary는 해당 값으로 고정 (MAX 재판정 불가)
- * - 섹션1 파싱 실패 시에만 8영역 MAX·구간표로 위험 판정 지시
+ * - sectionsText에 섹션1 HTML(risk-badge/risk-status)이 있으면 riskLevel·색·riskSummary는 해당 값으로 고정 (PDF 공식 재판정 금지)
+ * - 섹션1 파싱 실패 시에만 PDF 공식 총점·구간표로 위험 판정 지시
  * - LLM 은 이미지 생성 없이 JSON 만 반환
  */
-const buildRadarChartPrompt = (answers: Record<number, number>, sectionsText: string): string => {
-  const 직무요구 = calcCategoryAvg([1, 2, 3, 4], answers)
-  const 번아웃 = calcCategoryAvg([5, 6, 7, 8], answers)
-  const 조직관계 = calcCategoryAvg([9, 10, 11, 12], answers)
-  const 신체인지 = calcCategoryAvg([13, 14, 15], answers)
-  const 회복력 = calcCategoryAvg([16, 17], answers)
-  const 워라밸 = calcCategoryAvg([18, 19], answers)
-  const 심리안전감 = calcCategoryAvg([20, 21], answers)
-  const 의미동기 = calcCategoryAvg([22, 23, 24, 25], answers)
+const buildRadarChartPrompt = (
+  answers: Record<number, number>,
+  sectionsText: string,
+  gender: SurveyGender | null,
+): string => {
+  // KOSS-SF1 영역별 통계 — PDF 평가점수 산출 공식 직접 적용
+  const 물리적환경Stats = calcCategoryStats([1, 2], answers)
+  const 직무요구Stats = calcCategoryStats([3, 4, 5, 6], answers)
+  const 직무자율Stats = calcCategoryStats([7, 8, 9, 10], answers)
+  const 관계갈등Stats = calcCategoryStats([11, 12, 13], answers)
+  const 직무불안정Stats = calcCategoryStats([14, 15], answers)
+  const 조직체계Stats = calcCategoryStats([16, 17, 18, 19], answers)
+  const 보상부적절Stats = calcCategoryStats([20, 21, 22], answers)
+  const 직장문화Stats = calcCategoryStats([23, 24, 25, 26], answers)
 
-  const 직무요구100 = radarScore100FromAvg14(직무요구)
-  const 번아웃100 = radarScore100FromAvg14(번아웃)
-  const 조직관계100 = radarScore100FromAvg14(조직관계)
-  const 신체인지100 = radarScore100FromAvg14(신체인지)
-  const 회복력100 = radarScore100FromAvg14(회복력)
-  const 워라밸100 = radarScore100FromAvg14(워라밸)
-  const 심리안전감100 = radarScore100FromAvg14(심리안전감)
-  const 의미동기100 = radarScore100FromAvg14(의미동기)
+  // 8개 영역 환산 점수의 총합 ÷ 8 = KOSS-SF1 총점 (PDF 규정)
+  const allStats = [
+    { ko: '물리적환경', en: 'physicalEnvironment', stats: 물리적환경Stats },
+    { ko: '직무요구', en: 'jobDemand', stats: 직무요구Stats },
+    { ko: '직무자율', en: 'jobAutonomy', stats: 직무자율Stats },
+    { ko: '관계갈등', en: 'interpersonalConflict', stats: 관계갈등Stats },
+    { ko: '직무불안정', en: 'jobInsecurity', stats: 직무불안정Stats },
+    { ko: '조직체계', en: 'organizationalSystem', stats: 조직체계Stats },
+    { ko: '보상부적절', en: 'inadequateCompensation', stats: 보상부적절Stats },
+    { ko: '직장문화', en: 'workplaceCulture', stats: 직장문화Stats },
+  ]
+  const totalScore = (allStats.reduce((acc, a) => acc + Number(a.stats.score100), 0) / allStats.length).toFixed(2)
 
-  const areas100Sorted = [
-    { ko: '직무요구', s100: 직무요구100 },
-    { ko: '번아웃', s100: 번아웃100 },
-    { ko: '조직관계', s100: 조직관계100 },
-    { ko: '신체인지', s100: 신체인지100 },
-    { ko: '회복력', s100: 회복력100 },
-    { ko: '워라밸', s100: 워라밸100 },
-    { ko: '심리안전감', s100: 심리안전감100 },
-    { ko: '의미동기', s100: 의미동기100 },
-  ].sort((a, b) => Number(b.s100) - Number(a.s100))
+  const areas100Sorted = [...allStats]
+    .map((a) => ({ ko: a.ko, en: a.en as keyof RadarChartScore, s100: a.stats.score100 }))
+    .sort((a, b) => Number(b.s100) - Number(a.s100))
   const topA = areas100Sorted[0]
   const topB = areas100Sorted[1]
   const coreAreasSummaryExample =
     topA && topB
-      ? `"${topA.ko}(${topA.s100}, ${stressTierFromScore100Bands(Number(topA.s100))})·${topB.ko}(${topB.s100}, ${stressTierFromScore100Bands(Number(topB.s100))}) 영역이 핵심 스트레스 요인으로 나타났습니다."`
+      ? `"${topA.ko}(${topA.s100}, ${stressTierFromScore100ByArea(Number(topA.s100), topA.en, gender)})·${topB.ko}(${topB.s100}, ${stressTierFromScore100ByArea(Number(topB.s100), topB.en, gender)}) 영역이 핵심 스트레스 요인으로 나타났습니다."`
       : topA
-        ? `"${topA.ko}(${topA.s100}, ${stressTierFromScore100Bands(Number(topA.s100))}) 영역이 핵심 스트레스 요인으로 나타났습니다."`
-        : '"(영역명)(0~100값, 안정|관심|주의|고위험) 형식으로 기재"'
+        ? `"${topA.ko}(${topA.s100}, ${stressTierFromScore100ByArea(Number(topA.s100), topA.en, gender)}) 영역이 핵심 스트레스 요인으로 나타났습니다."`
+        : '"(영역명)(0~100값, 정상|경계|고위험) 형식으로 기재"'
 
   const section1Anchors = parseSection1ForRadarChart(sectionsText)
   const { riskColor } = resolveRiskColorsFromResponse(sectionsText)
@@ -884,7 +1002,7 @@ const buildRadarChartPrompt = (answers: Record<number, number>, sectionsText: st
   const section1LockBlock = section1Anchors
     ? `
 위 진단 분석 본문 중 "### 1. 현재 상태 요약"에 이미 출력된 HTML을 기준으로, 아래 네 값은 **이미 확정된 결과**입니다.
-8개 영역 평균의 MAX·구간표로 riskLevel을 **다시 계산하거나 바꾸지 마세요.** JSON 필드에 **글자 단위로 동일하게** 넣으세요.
+8개 영역의 환산 점수·총점·구간표로 riskLevel을 **다시 계산하거나 바꾸지 마세요.** JSON 필드에 **글자 단위로 동일하게** 넣으세요.
 
 - riskLevel: ${JSON.stringify(section1Anchors.riskLevel)}
 - riskColor: ${JSON.stringify(section1Anchors.riskColor)}
@@ -893,87 +1011,114 @@ const buildRadarChartPrompt = (answers: Record<number, number>, sectionsText: st
 `
     : ''
 
+  const genderLabel = gender === 'female' ? '여성' : '남성'
+  const totalRisk = gender ? KOSS_SF1_TOTAL_RISK[gender] : KOSS_SF1_TOTAL_RISK.male
   const riskJudgementBlock = section1Anchors
     ? `
 위험 수준 (riskLevel·riskColor·riskBgColor·riskSummary): 위 「이미 확정된 결과」블록과 **완전히 동일**하게만 출력합니다. 임의 수정·요약 재작성 금지.
 `
     : `
-위험 수준 판정 (필수): 위 1.0~4.0 척도 8개 영역 평균 중 최댓값(MAX)을 구한 뒤, 아래 「1~4 척도 구간표」만으로 riskLevel·riskColor·riskBgColor를 결정하세요. (scores의 0~100 환산값으로 위험 단계를 판정하지 마세요.)
+위험 수준 판정 (${genderLabel} 기준 KOSS-SF1 참고치 적용):
+PDF 규정에 따라 산출한 총점 = (8개 영역의 환산 점수의 총합) ÷ 8 을 계산한 뒤 아래 구간표로 riskLevel을 결정하세요.
 
-1~4 척도 구간표 (위험 단계 판정 전용, 디자인 토큰과 동일한 hex):
-- 1.00~1.59: 안정  → riskLevel: "안정", riskColor: "#22c55e", riskBgColor: "#ecfdf5" ($color-success 계열)
-- 1.60~2.29: 관심  → riskLevel: "관심", riskColor: "#3b82f6", riskBgColor: "#eff6ff" ($color-info 계열)
-- 2.30~2.99: 주의  → riskLevel: "주의", riskColor: "#f59e0b", riskBgColor: "#fffbeb" ($color-warning 계열)
-- 3.00~4.00: 고위험 → riskLevel: "고위험", riskColor: "#ef4444", riskBgColor: "#fef2f2" ($color-error 계열)
+총점 구간표 (${genderLabel} 기준):
+- ≤${totalRisk.정상Max}: 정상  → riskLevel: "정상", riskColor: "#22c55e", riskBgColor: "#ecfdf5"
+- ${totalRisk.정상Max + 0.1}~${totalRisk.경계Max}: 경계  → riskLevel: "경계", riskColor: "#f59e0b", riskBgColor: "#fffbeb"
+- ≥${totalRisk.경계Max + 0.1}: 고위험 → riskLevel: "고위험", riskColor: "#ef4444", riskBgColor: "#fef2f2"
+
+단, 고위험 영역이 3개 이상이면 총점에 무관하게 riskLevel을 "고위험"으로 판정합니다.
 `
 
   const riskSummaryRule = section1Anchors
     ? '- riskSummary: 위 「이미 확정된 결과」의 riskSummary 문자열과 동일 (공백·줄바꿈 포함 그대로)'
-    : '- riskSummary: 현재 위험군을 한 문장으로 설명 (예: "전반적으로 번아웃과 조직관계 영역에서 주의 수준의 스트레스가 감지됩니다.")'
+    : '- riskSummary: 현재 위험군을 한 문장으로 설명 (예: "전반적으로 직무요구와 조직체계 영역에서 경계 수준의 스트레스가 감지됩니다.")'
 
   const riskLevelColorRule = section1Anchors
-    ? '- riskLevel / riskColor / riskBgColor: 위 「이미 확정된 결과」블록과 동일 (MAX·구간표로 재판정 금지)'
-    : '- riskLevel / riskColor / riskBgColor: 8개 영역 1~4 평균의 최댓값이 속한 「1~4 척도 구간표」에서 선택'
+    ? '- riskLevel / riskColor / riskBgColor: 위 「이미 확정된 결과」블록과 동일 (PDF 공식·구간표로 재판정 금지)'
+    : '- riskLevel / riskColor / riskBgColor: 「(8개 영역 환산 점수의 총합) ÷ 8」로 계산한 총점이 속한 「KOSS-SF1 총점 구간표」에서 선택'
 
-  const coreAreasSummaryRule = `- coreAreasSummary: **scores의 0~100 값**으로 영역 간 상대 크기를 비교해 가장 큰 영역 1~2개를 고릅니다. 각 영역의 단계(안정/관심/주의/고위험)는 반드시 아래 「동일 구간을 0~100으로 나타내면」표(0.00~19.67 안정 … 66.67~100.00 고위험)에 **해당 0~100 점수를 넣어** 판정합니다. 문장·괄호 안에 **1~4 척도 원점수는 쓰지 마세요.** 괄호 안 형식: 한글 영역명(0~100값, 구간표 단계) (예: ${coreAreasSummaryExample})`
+  const coreAreasSummaryRule = `- coreAreasSummary: **scores의 0~100 값**으로 영역 간 상대 크기를 비교해 가장 큰 영역 1~2개를 고릅니다. 각 영역의 단계(정상/경계/고위험)는 반드시 아래 「영역별 단계 판정 기준」표(KOSS-SF1 PDF 23p 참고치)에 해당 영역의 0~100 점수를 대입해 판정합니다. **균등한 33.33/66.67 분할 표를 절대 사용하지 마세요.** 영역마다 임계값이 다릅니다. 문장·괄호 안에 **1~4 척도 원점수는 쓰지 마세요.** 괄호 안 형식: 한글 영역명(0~100값, 구간표 단계) (예: ${coreAreasSummaryExample})`
+
+  // 영역별 PDF 공식 산출 과정 표 (LLM에게 분자·분모를 명시적으로 전달)
+  const areaCalcTable = allStats
+    .map(
+      ({ ko, en, stats }) =>
+        `- ${ko}(${en}): 실제 점수의 합 ${stats.sumActual}, 문항 개수 ${stats.itemCount}, 예상 가능한 최고 점수의 합 ${stats.sumMax}` +
+        ` → (${stats.sumActual} − ${stats.itemCount}) ÷ (${stats.sumMax} − ${stats.itemCount}) × 100 = ${stats.score100}`,
+    )
+    .join('\n')
+
+  const areaScoreList = allStats.map(({ ko, en, stats }) => `- ${ko}(${en}): ${stats.score100}`).join('\n')
+
+  // 영역별 단계 판정 기준 표 (KOSS-SF1 PDF 23p — 성별별 참고치)
+  const riskTableForGender = KOSS_SF1_RISK_TABLE[gender ?? 'male']
+  const areaThresholdTable = allStats
+    .map(({ ko, en }) => {
+      const t = riskTableForGender[en as keyof RadarChartScore]
+      return `| ${ko} | ≤${t.정상Max} | ${t.정상Max} 초과 ~ ${t.경계Max} | ${t.경계Max} 초과 |`
+    })
+    .join('\n')
 
   return `[방사형 차트 데이터 요청]
 아래 진단 결과를 바탕으로 방사형 차트 컴포넌트에 주입할 데이터를 JSON 형식으로 응답하세요.
 마크다운 코드블록(\`\`\`) 없이 순수 JSON 문자열만 출력하세요. 다른 텍스트는 절대 추가하지 마세요.
 ${section1LockBlock}
-영역별 점수 (역코딩 적용, 소수점 2자리, 내부 판정·비교용 1.0~4.0 척도):
-- 직무요구: ${직무요구}
-- 번아웃: ${번아웃}
-- 조직관계: ${조직관계}
-- 신체인지: ${신체인지}
-- 회복력: ${회복력}
-- 워라밸: ${워라밸}
-- 심리안전감: ${심리안전감}
-- 의미동기: ${의미동기}
+[KOSS-SF1 평가점수 산출 공식 — 산업안전보건연구원 PDF 규정]
+각 영역별 환산 점수 = (해당 영역에서 평가한 실제 점수의 합 − 문항 개수) ÷ (해당 영역에서 예상 가능한 최고 점수의 합 − 문항 개수) × 100
+- 평가 척도: 1점(전혀 그렇지 않다) ~ 4점(매우 그렇다)
+- 한 문항의 최고 점수 = 4점 → 영역별 「예상 가능한 최고 점수의 합」 = 4 × 문항 개수
+- [역] 표시 문항은 역코딩(1↔4, 2↔3) 후 합산
+- 결과 범위: 0~100점
 
-영역별 0~100 환산값 (위 공식과 동일하며 JSON scores에 넣을 숫자와 **반드시 일치**해야 함, 소수 둘째 자리):
-- 직무요구(jobDemands): ${직무요구100}
-- 번아웃(burnout): ${번아웃100}
-- 조직관계(organizationalRelations): ${조직관계100}
-- 신체인지(physicalCognition): ${신체인지100}
-- 회복력(resilience): ${회복력100}
-- 워라밸(workLifeBalance): ${워라밸100}
-- 심리안전감(psychologicalSafety): ${심리안전감100}
-- 의미동기(meaningMotivation): ${의미동기100}
+총점(KOSS-SF1) = (8개 영역의 환산 점수의 총합) ÷ 8
+
+[영역별 PDF 공식 산출 과정 — 역코딩 적용 후]
+${areaCalcTable}
+
+[영역별 0~100 환산 점수 (JSON scores에 넣을 숫자와 **반드시 일치**, 소수 둘째 자리)]
+${areaScoreList}
+
+[총점] (8개 영역의 환산 점수의 총합) ÷ 8 = ${totalScore}
 
 scores 키 매핑 (JSON scores에는 반드시 오른쪽 영어만 사용):
-- 직무요구 → jobDemands
-- 번아웃 → burnout
-- 조직관계 → organizationalRelations
-- 신체인지 → physicalCognition
-- 회복력 → resilience
-- 워라밸 → workLifeBalance
-- 심리안전감 → psychologicalSafety
-- 의미동기 → meaningMotivation
+- 물리적환경 → physicalEnvironment
+- 직무요구 → jobDemand
+- 직무자율 → jobAutonomy
+- 관계갈등 → interpersonalConflict
+- 직무불안정 → jobInsecurity
+- 조직체계 → organizationalSystem
+- 보상부적절 → inadequateCompensation
+- 직장문화 → workplaceCulture
 
 ${section1Anchors ? '' : `현재 판정된 위험군 색상 참고 (진단 분석에서 추출):\n- riskColor: ${riskColor}\n`}
 
 ${riskJudgementBlock}
-0~100 환산 (scores 필드에만 적용): 각 영역의 1~4 척도 값 x에 대해 ((x - 1) / 3) * 100 을 계산하고 소수점 둘째 자리까지 반올림하여 number로 기재. (예: 1.00→0, 2.50→50, 4.00→100)
-동일 구간을 0~100으로 나타내면 (참고·해석용${section1Anchors ? '' : ', 위험 판정은 반드시 MAX의 1~4 값으로 위 표를 따를 것'}):
-- 0.00~19.67: 안정에 해당 (1.00~1.59와 동치)
-- 20.00~43.00: 관심에 해당 (1.60~2.29와 동치)
-- 43.33~66.33: 주의에 해당 (2.30~2.99와 동치)
-- 66.67~100.00: 고위험에 해당 (3.00~4.00와 동치)
+[scores 필드 환산 규칙]
+각 영역의 0~100 환산 점수는 위 「KOSS-SF1 평가점수 산출 공식」을 그대로 적용합니다.
+즉, scores[영역] = (실제 점수의 합 − 문항 개수) ÷ (예상 가능한 최고 점수의 합 − 문항 개수) × 100, 소수 둘째 자리까지 반올림하여 number로 기재.
+(예: 실제합=문항수×1 → 0, 실제합=문항수×2.5 → 50, 실제합=문항수×4 → 100)
+
+영역별 단계 판정 기준 (KOSS-SF1 PDF 23p — ${genderLabel} 기준 참고치 / coreAreasSummary 단계 표기 시 **반드시 이 표 사용**${section1Anchors ? '' : ' / 단, 종합 위험 판정은 위 총점 구간표를 따를 것'}):
+
+| 영역 | 정상 | 경계 | 고위험 |
+|------|------|------|--------|
+${areaThresholdTable}
+
+⚠️ 영역마다 임계값이 다릅니다. 모든 영역에 균등하게 0~33.33/33.34~66.67/66.68~100을 적용하면 잘못된 단계가 됩니다. 반드시 위 표의 해당 영역 행을 읽어 단계를 결정하세요.
 
 응답 JSON 스키마 (키 이름·타입 정확히 준수):
 {
   "scores": {
-    "jobDemands": number,
-    "burnout": number,
-    "organizationalRelations": number,
-    "physicalCognition": number,
-    "resilience": number,
-    "workLifeBalance": number,
-    "psychologicalSafety": number,
-    "meaningMotivation": number
+    "physicalEnvironment": number,
+    "jobDemand": number,
+    "jobAutonomy": number,
+    "interpersonalConflict": number,
+    "jobInsecurity": number,
+    "organizationalSystem": number,
+    "inadequateCompensation": number,
+    "workplaceCulture": number
   },
-  "riskLevel": "안정" | "관심" | "주의" | "고위험",
+  "riskLevel": "정상" | "경계" | "고위험",
   "riskColor": string,
   "riskBgColor": string,
   "riskSummary": string,
@@ -981,7 +1126,7 @@ ${riskJudgementBlock}
 }
 
 필드 작성 규칙:
-- scores: 위 「영역별 0~100 환산값」목록과 **동일한 숫자**만 기재 (문자열 금지), 키는 반드시 영어 스키마대로. 재계산·반올림 방식을 바꾸지 마세요.
+- scores: 위 「영역별 0~100 환산 점수」목록과 **동일한 숫자**만 기재 (문자열 금지), 키는 반드시 영어 스키마대로. PDF 공식 외 다른 방식으로 재계산하거나 반올림 방식을 바꾸지 마세요.
 ${riskLevelColorRule}
 ${riskSummaryRule}
 ${coreAreasSummaryRule}
@@ -989,20 +1134,20 @@ ${coreAreasSummaryRule}
 }
 
 /**
- * 섹션 1~4 텍스트 + Q1~Q25 응답값을 기반으로 방사형 차트 JSON 데이터 요청
+ * 섹션 1~4 텍스트 + Q1~Q26 응답값을 기반으로 방사형 차트 JSON 데이터 요청
  * - 백엔드 엔드포인트: /ai/chatbot/getPsychologyChartData.do (백엔드 연결 시 확인 필요)
  * @param sectionsText 섹션 1~4 LLM 응답 텍스트 (위험군 파싱에 사용)
- * @param answers Q1~Q25 원점수 — 카테고리 평균 계산 및 프롬프트 생성에 필수
+ * @param answers Q1~Q26 원점수 — KOSS-SF1 PDF 평가점수 산출 공식 적용 및 프롬프트 생성에 필수
  * @returns RadarChartData (차트 컴포넌트 주입용), 실패 시 null
  */
 export const fetchPsychologyRadarChartData = async (
   sectionsText: string,
   answers: Record<number, number>,
+  gender: SurveyGender | null = null,
 ): Promise<RadarChartData | null> => {
   try {
     const { post } = useApi()
-    const prompt = `${sectionsText}\n\n${buildRadarChartPrompt(answers, sectionsText)}`
-    // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체 (엔드포인트·응답 키 확인 필요)
+    const prompt = `${sectionsText}\n\n${buildRadarChartPrompt(answers, sectionsText, gender)}`
     const data = await post<{ chartData?: string; result?: string }>('/ai/chatbot/getPsychologyChartData.do', {
       prompt,
     })
@@ -1023,6 +1168,10 @@ export const fetchPsychologyRadarChartData = async (
 // ============================================================
 const isSurveyVisible = ref(false)
 const surveyAnswers = ref<Record<number, number>>({})
+/** 성별 선택 단계 표시 여부 (설문 시작 전 Step 0) */
+const isGenderStepVisible = ref(false)
+/** 선택된 성별 (KOSS-SF1 참고치 판정에 사용) */
+const surveyGender = ref<SurveyGender | null>(null)
 
 /**
  * 설문 제출을 통해 생성된 채팅방 ID
@@ -1031,15 +1180,35 @@ const surveyAnswers = ref<Record<number, number>>({})
 const surveyRoomIds = ref<Set<string>>(new Set())
 
 export const usePsychologySurvey = () => {
-  /** 설문 시작: 답변 초기화 후 노출 */
-  const openPsychologySurvey = () => {
+  /**
+   * 성별 선택 단계 시작 (설문 시작 전 Step 0)
+   * - index 모드: 이후 confirmGender() 호출 시 isSurveyVisible = true 로 전환
+   * - room 모드: 설문 메시지는 caller가 즉시 추가, 이후 confirmGender() 호출 시 isGenderStepVisible = false 로 전환
+   */
+  const openGenderStep = () => {
     surveyAnswers.value = {}
+    surveyGender.value = null
+    isGenderStepVisible.value = true
+    isSurveyVisible.value = false
+  }
+
+  /** 성별 선택 완료 후 설문 진입 */
+  const confirmGender = (gender: SurveyGender) => {
+    surveyGender.value = gender
+    isGenderStepVisible.value = false
     isSurveyVisible.value = true
   }
 
-  /** 설문 닫기 */
+  /** 설문 닫기 (성별 단계 포함) */
   const closePsychologySurvey = () => {
     isSurveyVisible.value = false
+    isGenderStepVisible.value = false
+  }
+
+  /** 설문 시작: 답변 초기화 후 노출 (성별 선택 없이 직접 시작하는 경우) */
+  const openPsychologySurvey = () => {
+    surveyAnswers.value = {}
+    isSurveyVisible.value = true
   }
 
   /** 특정 문항 답변 저장 */
@@ -1066,9 +1235,13 @@ export const usePsychologySurvey = () => {
 
   return {
     isSurveyVisible,
+    isGenderStepVisible,
+    surveyGender,
     surveyAnswers,
     answeredCount,
     isSurveyComplete,
+    openGenderStep,
+    confirmGender,
     openPsychologySurvey,
     closePsychologySurvey,
     setSurveyAnswer,

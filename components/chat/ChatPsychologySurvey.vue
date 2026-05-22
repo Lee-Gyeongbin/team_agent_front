@@ -42,21 +42,92 @@
       </div>
     </Transition>
 
+    <!-- Step 0: 성별 선택 (readonly가 아닌 활성 설문에서만 표시) -->
+    <div
+      v-if="!readonly && isGenderStepVisible && !isIntroPlaying"
+      class="psychology-survey__gender-step"
+    >
+      <div class="psychology-survey__gender-avatar">
+        <i :class="[themeIconClassNm || 'icon-bot', 'size-24']" />
+      </div>
+      <p class="psychology-survey__gender-title">진단 전 성별을 선택해 주세요</p>
+      <p class="psychology-survey__gender-desc">
+        KOSS-SF1 직무스트레스 척도는 성별에 따라 위험군 판정 기준이 다릅니다.
+      </p>
+      <div class="psychology-survey__gender-btns">
+        <button
+          type="button"
+          class="psychology-survey__gender-btn"
+          :class="{ 'is-selected': surveyGender === 'male' }"
+          @click="onSelectGender('male')"
+        >
+          <i class="icon-user size-24" />
+          <span>남성</span>
+        </button>
+        <button
+          type="button"
+          class="psychology-survey__gender-btn"
+          :class="{ 'is-selected': surveyGender === 'female' }"
+          @click="onSelectGender('female')"
+        >
+          <i class="icon-user size-24" />
+          <span>여성</span>
+        </button>
+      </div>
+      <div class="psychology-survey__gender-footer">
+        <UiButton
+          variant="line-secondary"
+          size="sm"
+          @click="emit('close')"
+        >
+          닫기
+        </UiButton>
+      </div>
+    </div>
+
     <!-- 헤더 -->
     <div
-      v-if="isContentVisible"
+      v-if="isContentVisible && (!isGenderStepVisible || readonly)"
       class="psychology-survey__header"
     >
       <div class="psychology-survey__header-info">
-        <div class="psychology-survey__avatar">
-          <i :class="[themeIconClassNm || 'icon-bot', 'size-24']" />
+        <div class="psychology-survey__header-info-left">
+          <div class="psychology-survey__avatar">
+            <i :class="[themeIconClassNm || 'icon-bot', 'size-24']" />
+          </div>
+          <div>
+            <p class="psychology-survey__title">한국인 직무스트레스 요인 평가</p>
+            <p
+              v-if="readonly"
+              class="psychology-survey__subtitle"
+            >
+              진단이 완료되었습니다.
+            </p>
+          </div>
         </div>
-        <div>
-          <p class="psychology-survey__title">심리 스트레스 진단</p>
-          <p class="psychology-survey__subtitle">
-            {{ readonly ? '진단이 완료되었습니다.' : '아래 25가지 문항에 솔직하게 응답해 주세요.' }}
-          </p>
+        <!-- 성별 배지 (성별 선택 후 노출) -->
+        <div
+          v-if="surveyGender"
+          class="psychology-survey__gender-badge"
+        >
+          <i class="icon-user size-14" />
+          {{ surveyGender === 'male' ? '남성' : '여성' }}
         </div>
+      </div>
+      <!-- KOSS-SF1 안내문 (설문 진행 중에만 표시) -->
+      <div
+        v-if="!readonly"
+        class="psychology-survey__disclaimer"
+      >
+        <span class="psychology-survey__disclaimer-source">
+          출처 : 한국형 직무스트레스 평가도구 (KOSS-SF1) : 한국산업안전보건공단
+        </span>
+        <p>
+          본 AI 에이전트는 한국인 직무스트레스 요인 평가도구 단축형 1, KOSS-SF1를 기반으로 직장인의 직무스트레스 요인을
+          분석합니다. 사용자의 응답 결과를 7개 영역별로 환산하여 정상, 경계, 고위험 수준을 제시하고, 주요 스트레스
+          원인에 따른 맞춤형 관리 가이드를 제공합니다. 본 결과는 의학적 진단이 아니며, 건강 이상이나 심리적 어려움이
+          지속될 경우 전문가 상담을 권장합니다.
+        </p>
       </div>
       <div class="psychology-survey__progress">
         <span
@@ -76,7 +147,7 @@
 
     <!-- 문항 목록 -->
     <div
-      v-if="isContentVisible"
+      v-if="isContentVisible && (!isGenderStepVisible || readonly)"
       ref="surveyScrollRef"
       class="psychology-survey__body"
     >
@@ -130,7 +201,7 @@
 
     <!-- 하단 액션 -->
     <div
-      v-if="isContentVisible"
+      v-if="isContentVisible && (!isGenderStepVisible || readonly)"
       class="psychology-survey__footer"
     >
       <template v-if="readonly">
@@ -168,6 +239,7 @@ import {
   PSYCHOLOGY_SURVEY_CATEGORIES,
   PSYCHOLOGY_SURVEY_SCORE_OPTIONS,
   PSYCHOLOGY_SURVEY_TOTAL_QUESTIONS,
+  type SurveyGender,
 } from '~/utils/chat/psychologyConsultUtil'
 import { openToast } from '~/composables/useToast'
 
@@ -189,7 +261,15 @@ const props = withDefaults(defineProps<Props>(), {
   themeColorHex: '',
 })
 
-const { surveyAnswers, answeredCount, isSurveyComplete, setSurveyAnswer } = usePsychologySurvey()
+const {
+  surveyAnswers,
+  surveyGender,
+  isGenderStepVisible,
+  answeredCount,
+  isSurveyComplete,
+  setSurveyAnswer,
+  confirmGender,
+} = usePsychologySurvey()
 
 const emit = defineEmits<{
   close: []
@@ -289,6 +369,10 @@ const onSelectAnswer = (questionNo: number, score: number) => {
   focusWarningQuestionNo.value = null
 }
 
+const onSelectGender = (gender: SurveyGender) => {
+  confirmGender(gender)
+}
+
 const onSubmitClick = async () => {
   if (props.readonly) return
   if (isSurveyComplete.value) {
@@ -355,8 +439,57 @@ const onSubmitClick = async () => {
 
   &__header-info {
     display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: $spacing-md;
+  }
+
+  &__header-info-left {
+    display: flex;
     align-items: center;
     gap: $spacing-md;
+    min-width: 0;
+  }
+
+  // 성별 배지 (헤더 우측 상단)
+  &__gender-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid rgba(var(--survey-theme-rgb), 0.3);
+    background: rgba(var(--survey-theme-rgb), 0.08);
+    color: var(--survey-theme-color);
+    @include typo($body-small);
+    font-weight: $font-weight-medium;
+  }
+
+  // KOSS-SF1 안내문 (인라인 채팅 출처 텍스트와 유사한 스타일)
+  &__disclaimer {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 10px;
+    border-left: 2px solid $color-border;
+    background: $color-surface;
+    border-radius: 0 $border-radius-sm $border-radius-sm 0;
+  }
+
+  &__disclaimer-source {
+    display: block;
+    @include typo($body-small);
+    font-weight: $font-weight-bold;
+    color: $color-text-secondary;
+    margin-bottom: 2px;
+  }
+
+  &__disclaimer p {
+    @include typo($body-small);
+    color: $color-text-muted;
+    line-height: 1.6;
+    margin: 0;
   }
 
   &__avatar {
@@ -528,10 +661,11 @@ const onSubmitClick = async () => {
   }
 
   &__options {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
     gap: $spacing-xs;
-    flex-wrap: wrap;
     margin-left: calc(28px + #{$spacing-sm});
+    width: 80%;
   }
 
   &__option-btn {
@@ -539,8 +673,8 @@ const onSubmitClick = async () => {
     flex-direction: column;
     align-items: center;
     gap: 2px;
-    min-width: 70px;
-    padding: $spacing-xs $spacing-sm;
+    width: 100%;
+    padding: $spacing-xs 6px;
     border: 1px solid $color-border;
     border-radius: $border-radius-sm;
     background: $color-surface;
@@ -579,7 +713,98 @@ const onSubmitClick = async () => {
   &__option-label {
     @include typo($body-medium);
     color: $color-text-muted;
-    white-space: nowrap;
+    white-space: normal;
+    word-break: keep-all;
+    text-align: center;
+    line-height: 1.35;
+  }
+
+  // Step 0: 성별 선택
+  &__gender-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-lg;
+    flex: 1;
+    padding: $spacing-xl $spacing-xl $spacing-lg;
+    text-align: center;
+    animation: survey-intro-rise 0.4s ease both;
+  }
+
+  &__gender-avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--survey-theme-color);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(var(--survey-theme-rgb), 0.35);
+  }
+
+  &__gender-title {
+    @include typo($body-xlarge);
+    font-weight: $font-weight-semibold;
+    color: $color-text-primary;
+  }
+
+  &__gender-desc {
+    @include typo($body-large);
+    color: $color-text-muted;
+    max-width: 340px;
+    line-height: 1.6;
+    margin-top: -$spacing-sm;
+  }
+
+  &__gender-btns {
+    display: flex;
+    gap: $spacing-lg;
+    margin-top: $spacing-xs;
+  }
+
+  &__gender-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $spacing-sm;
+    width: 120px;
+    padding: $spacing-lg $spacing-md;
+    border: 2px solid $color-border;
+    border-radius: $border-radius-base;
+    background: $color-surface;
+    cursor: pointer;
+    @include typo($body-large);
+    font-weight: $font-weight-medium;
+    color: $color-text-secondary;
+    transition:
+      border-color 0.18s ease,
+      background 0.18s ease,
+      color 0.18s ease,
+      box-shadow 0.18s ease;
+
+    &:hover {
+      border-color: var(--survey-theme-color);
+      color: var(--survey-theme-color);
+      background: rgba(var(--survey-theme-rgb), 0.04);
+    }
+
+    &.is-selected {
+      border-color: var(--survey-theme-color);
+      background: var(--survey-theme-color);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(var(--survey-theme-rgb), 0.3);
+    }
+  }
+
+  &__gender-footer {
+    margin-top: auto;
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
+    padding-top: $spacing-md;
+    border-top: 1px solid $color-border;
   }
 
   &__footer {

@@ -14,6 +14,8 @@ export interface DataDashboardSqlItem {
   sqlTitle: string
   sqlContent: string
   ttsqParam: string | null
+  /** LLM이 추천한 시각화 옵션 JSON 문자열 (TB_CHAT_LOG.CHART_OPTION) — { chart, x, y } */
+  chartOption?: string | null
   agentId?: string
   agentNm?: string
   datamartId?: string
@@ -30,6 +32,8 @@ export interface DataDashboardSqlVariable {
   type: 'text' | 'date' | 'month' | 'number' | 'select'
   defaultValue?: string
   options?: { label: string; value: string }[]
+  /** 코드 다중 선택 여부 (codeMap 기반으로 enrichedVariables에서 주입) */
+  multiple?: boolean
 }
 
 /** 사용자가 배치한 위젯 인스턴스 (TB_USER_DASHBOARD_WIDGET 기반) */
@@ -42,10 +46,10 @@ export interface DataDashboardWidget {
   vizConfig: DataDashboardVizConfig
   colSpan: 1 | 2
   sortOrd: number
-  /** ttsqParam을 파싱한 검색 조건 변수 (프론트 런타임에서 생성) */
   variables: DataDashboardSqlVariable[]
-  /** 원본 ttsqParam JSON (백엔드에서 직접 수신) */
   ttsqParam?: string | null
+  /** widgetList 응답 시 TB_CHAT_LOG JOIN으로 함께 내려오는 SQL 본문 (필터 초기값 추출에 사용) */
+  sqlContent?: string | null
   agentNm?: string
   datamartId?: string
   datamartNm?: string
@@ -61,16 +65,38 @@ export interface DataDashboardVizConfig {
   valueKey?: string
 }
 
+/**
+ * datamartId별 컬럼 코드 매핑
+ * 구조: COL_ID(대문자) → CODE_VAL → CODE_KOR_NM
+ * 예: { REGN_CD: { '01': '본부', '02': '대전' } }
+ */
+export type ColCodeMap = Record<string, Record<string, string>>
+
 /** SQL 실행 결과 (런타임, 저장 안 함) */
 export interface DataDashboardQueryResult {
   columns: string[]
   rows: Record<string, unknown>[]
 }
 
+/** 레이아웃 저장 데이터 (TB_USER_DASHBOARD_LAYOUT) */
+export interface DataDashboardLayout {
+  layoutId?: string
+  widgetId: string
+  sortOrd?: number
+  rowPos?: number
+  colPos?: number
+  colSpan?: 1 | 2
+  rowSpan?: number
+  widthPx?: number | null
+  heightPx?: number | null
+}
+
 /** 위젯별 런타임 상태 (저장 안 함) */
 export interface DataDashboardWidgetState {
   filterValues: Record<string, string>
   result: DataDashboardQueryResult | null
+  /** SQL 실행 시 datamartId 기준으로 조회한 코드맵 (실행마다 갱신) */
+  codeMap?: ColCodeMap
   loading: boolean
   error: string | null
 }

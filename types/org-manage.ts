@@ -36,6 +36,12 @@ export interface OrgUserListResponse {
   list: OrgUserItem[]
 }
 
+/** 조직도 엑셀 업로드 응답 */
+export interface OrgExcelUploadResponse {
+  successYn?: boolean
+  returnMsg?: string
+}
+
 /** 조직 추가 요청 */
 export interface InsertOrgPayload {
   orgNm: string

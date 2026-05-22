@@ -20,7 +20,7 @@
           팀원
         </p>
       </div>
-      <div class="org-manage-header-actions flex items-center gap-8">
+      <div class="org-manage-header-actions flex items-center gap-8 flex-wrap">
         <UiButton
           variant="outline"
           size="sm"
@@ -138,11 +138,24 @@
         </ul>
       </div>
     </div>
+
+    <footer
+      v-if="selectedOrgId"
+      class="org-manage-member-footer"
+    >
+      <dl class="org-manage-member-footer-meta">
+        <div class="org-manage-member-footer-row">
+          <dt>최종 반영일시</dt>
+          <dd>{{ lastReflectDtDisplay }}</dd>
+        </div>
+      </dl>
+    </footer>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { OrgUserItem } from '~/types/org-manage'
+import { formatDateTimeDisplay } from '~/utils/global/dateUtil'
 import { formatPhone } from '~/utils/global/numberUtil'
 
 defineProps<{
@@ -157,7 +170,13 @@ const emit = defineEmits<{
   retry: []
 }>()
 
-const { openEditOrgModal, handleDeleteOrg } = useOrgManageStore()
+const { openEditOrgModal, handleDeleteOrg, selectedOrgLastReflectDt } = useOrgManageStore()
+
+const lastReflectDtDisplay = computed(() => {
+  const dt = String(selectedOrgLastReflectDt.value ?? '').trim()
+  if (!dt) return '-'
+  return formatDateTimeDisplay(dt) || dt
+})
 
 const getMemberStatusClass = (status: string): string => {
   if (status === '잠금') return 'is-lock'

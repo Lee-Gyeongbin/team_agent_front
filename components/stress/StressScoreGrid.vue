@@ -56,9 +56,8 @@ const riskSummaryInlineStyle = computed(() => {
 })
 
 const LEVEL_CLASS_MAP: Record<StressLevel, string> = {
-  안정: 'stable',
-  관심: 'interest',
-  주의: 'warning',
+  정상: 'normal',
+  경계: 'caution',
   고위험: 'danger',
 }
 
@@ -104,16 +103,12 @@ const formatValue = (value: number) => value.toFixed(props.decimal)
     color: $color-text-secondary;
   }
 
-  // ===== 등급별 색상 (신호등 + 관심=하늘색) =====
-  &.level-stable .item-level {
+  // ===== 등급별 색상 — KOSS-SF1 3단계 신호등 =====
+  &.level-normal .item-level {
     color: $color-success;
   }
 
-  &.level-interest .item-level {
-    color: $color-info;
-  }
-
-  &.level-warning .item-level {
+  &.level-caution .item-level {
     color: $color-warning;
   }
 

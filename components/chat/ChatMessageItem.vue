@@ -260,28 +260,15 @@
     </template>
   </div>
 
-  <!-- Pexels 이미지 원본 확대 모달 -->
-  <Teleport to="body">
-    <Transition name="pexels-modal">
-      <div
-        v-if="pexelsModalUrl"
-        class="pexels-modal"
-        @click.self="pexelsModalUrl = ''"
-      >
-        <button
-          class="pexels-modal__close"
-          @click="pexelsModalUrl = ''"
-        >
-          <i class="icon-close size-20"></i>
-        </button>
-        <img
-          class="pexels-modal__img"
-          :src="pexelsModalUrl"
-          alt="확대 이미지"
-        />
-      </div>
-    </Transition>
-  </Teleport>
+  <ChatAttachmentPreviewModal
+    :is-open="!!imagePreview"
+    chat-file-id=""
+    :file-name="imagePreview?.title ?? '이미지'"
+    :mime-type="imagePreview?.mimeType ?? 'image/png'"
+    :local-preview-url="imagePreview?.src"
+    :is-share="isShare"
+    @update:is-open="onImagePreviewOpenChange"
+  />
 </template>
 
 <script setup lang="ts">
@@ -308,6 +295,7 @@ import {
   schedulePsychologyRadarUiInjection,
   buildStressItemsFromRadarChartData,
   buildPsychologyRadarUiChartConfig,
+  usePsychologySurvey,
   type RadarChartData,
 } from '~/utils/chat/psychologyConsultUtil'
 import {
@@ -327,6 +315,7 @@ import { attachmentsRequireSummaryIndicator } from '~/utils/chat/chatAttachmentD
 import { parseNewsCuratorItems } from '~/utils/chat/newsCuratorUtil'
 
 const { chatIndexAgents, messages } = useChatStore()
+const { surveyGender } = usePsychologySurvey()
 const { user } = useAuth()
 interface Props {
   message: ChatMessage
@@ -371,12 +360,28 @@ const emit = defineEmits<{
 
 // ── 공통 ──────────────────────────────────────────────────────────────────
 const renderedHtml = ref('')
-const pexelsModalUrl = ref('')
+const imagePreview = ref<{ src: string; title: string; mimeType: string } | null>(null)
+
+const onImagePreviewOpenChange = (open: boolean) => {
+  if (!open) imagePreview.value = null
+}
 
 const onMarkdownClick = (e: MouseEvent) => {
   const target = e.target as HTMLElement
-  if (target.tagName === 'IMG' && target.classList.contains('pexels-img')) {
-    pexelsModalUrl.value = (target as HTMLImageElement).dataset.full ?? (target as HTMLImageElement).src
+  if (target.tagName !== 'IMG') return
+  const img = target as HTMLImageElement
+  let src = ''
+  if (img.classList.contains('pexels-img')) {
+    src = img.dataset.full ?? img.src
+  } else if (img.src.startsWith('data:image/')) {
+    src = img.src
+  }
+  if (!src) return
+  const mimeMatch = src.match(/^data:(image\/[a-z0-9+.+-]+);/i)
+  imagePreview.value = {
+    src,
+    title: img.alt?.trim() || '이미지',
+    mimeType: mimeMatch?.[1] ?? 'image/png',
   }
 }
 
@@ -395,13 +400,13 @@ const radarChartLoading = ref(false)
  */
 const radarChartData = ref<RadarChartData | null>(null)
 
-/** guide/ui-chart Radar + StressScoreGrid 동일 구성 */
+/** guide/ui-chart Radar + StressScoreGrid 동일 구성 — 성별별 PDF 23p 영역별 참고치로 단계 판정 */
 const psychologyStressItems = computed<StressScoreItem[]>(() =>
-  radarChartData.value ? buildStressItemsFromRadarChartData(radarChartData.value) : [],
+  radarChartData.value ? buildStressItemsFromRadarChartData(radarChartData.value, surveyGender.value) : [],
 )
 
 const psychologyRadarChartConfig = computed<Record<string, unknown>>(() =>
-  radarChartData.value ? buildPsychologyRadarUiChartConfig(radarChartData.value) : {},
+  radarChartData.value ? buildPsychologyRadarUiChartConfig(radarChartData.value, surveyGender.value) : {},
 )
 
 let pexelsFetchDone = false
@@ -459,13 +464,15 @@ watch(
           radarChartLoading.value = false
         })
       } else {
-        fetchPsychologyRadarChartData(extractSections1to4(raw), props.message.surveyAnswers!).then((chartData) => {
-          radarChartLoading.value = false
-          if (chartData) {
-            setRadarChartCache(props.message.logId, chartData)
-            radarChartData.value = chartData
-          }
-        })
+        fetchPsychologyRadarChartData(extractSections1to4(raw), props.message.surveyAnswers!, surveyGender.value).then(
+          (chartData) => {
+            radarChartLoading.value = false
+            if (chartData) {
+              setRadarChartCache(props.message.logId, chartData)
+              radarChartData.value = chartData
+            }
+          },
+        )
       }
     }
 

@@ -12,6 +12,21 @@
   @include icon-file-bg('sidebar-menu');
 }
 
+// 사이드바 패널 (화살표 없음)
+.icon-sidebar-panel {
+  @include icon-file-bg('sidebar-panel');
+}
+
+// 사이드바 패널 펼침 (>|)
+.icon-sidebar-panel-expand {
+  @include icon-file-bg('sidebar-panel-expand');
+}
+
+// 사이드바 패널 접기 (|<)
+.icon-sidebar-panel-collapse {
+  @include icon-file-bg('sidebar-panel-collapse');
+}
+
 // AI 채팅
 .icon-ai-chat {
   @include icon-file-bg('sidebar-new-chat');
@@ -271,7 +286,7 @@
 }
 
 .icon-sql {
-  @include icon-file('sql');
+  @include icon-file-bg('sql');
 }
 
 // ===================================
@@ -642,6 +657,11 @@
 // ===================================
 // 대시보드 아이콘
 // ===================================
+
+// 위젯 높이 초기화 (세로 리사이즈)
+.icon-resize-height {
+  @include icon-file-bg('resize-height');
+}
 
 // 피드백 수 (클립보드)
 .icon-dash-feedback {
