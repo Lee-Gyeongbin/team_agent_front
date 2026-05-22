@@ -22,6 +22,7 @@ const {
   fetchMeetingList,
   fetchMeetingDetail,
   fetchSaveMeetingMinutes,
+  fetchCheckMeetingIntegration,
   fetchDeleteMeeting,
   fetchCreateMeeting,
   fetchFinishMeetingWithAudio,
@@ -36,6 +37,7 @@ const {
   openMeetingProcessingStream,
   openInfographicStream,
   fetchRecoverMeeting,
+  fetchIntegrateMeeting,
 } = useMeetingApi()
 const { handleDownloadByUrl } = useFileStore()
 
@@ -244,6 +246,7 @@ const mapApiDetailToMeeting = (detail: MeetingDetail): Meeting | null => {
     createdAt: m.createDt ?? '',
     updatedAt: m.createDt ?? '',
     status: m.status,
+    integrateYn: m.integrateYn ?? 'N',
   }
 }
 
@@ -600,10 +603,20 @@ const handleSaveMeeting = async (
 }
 
 const handleDeleteMeeting = async (meetingId: number): Promise<boolean> => {
-  const confirmed = await openConfirm({
-    title: '회의 삭제',
-    message: '삭제하면 회의록도 함께 삭제됩니다. 삭제하시겠습니까?',
-  })
+  // 통합 회의록 원본 여부 확인
+  let message = '삭제하면 회의록도 함께 삭제됩니다. 삭제하시겠습니까?'
+  try {
+    const checkRes = await fetchCheckMeetingIntegration(meetingId)
+    const parentMeetings = checkRes?.parentMeetings ?? []
+    if (parentMeetings.length > 0) {
+      const titles = parentMeetings.map((m) => `· ${m.meetingTitle}`).join('\n')
+      message = `이 회의는 아래 통합 회의록의 원본입니다.\n${titles}\n\n삭제해도 통합 회의록 내용은 유지되지만 원본 목록에서 제거됩니다. 삭제하시겠습니까?`
+    }
+  } catch {
+    // 확인 실패 시 기본 메시지로 진행
+  }
+
+  const confirmed = await openConfirm({ title: '회의 삭제', message })
   if (!confirmed) return false
 
   try {
@@ -817,6 +830,32 @@ const handleDownloadFile = async (meetingId: number, format: MeetingFileFormat, 
 
   // txt, md → 백엔드 (이미지 포함 불가)
   fetchDownloadFile(meetingId, format)
+}
+
+/** 회의 통합 */
+const handleIntegrateMeeting = async (meetingIds: number[]) => {
+  openLoading({ text: '회의록을 통합하는 중입니다...' })
+  try {
+    const res = await fetchIntegrateMeeting(meetingIds)
+    if (!res.successYn) {
+      openToast({ message: '회의 통합에 실패했습니다.', type: 'error' })
+      return false
+    }
+    openToast({ message: '회의 통합이 완료되었습니다.' })
+    const meetingId = res.meetingId
+    if (meetingId) {
+      navigateTo(`/meeting/${meetingId}`)
+      return true
+    } else {
+      openToast({ message: '회의 통합에 실패했습니다.', type: 'error' })
+      return false
+    }
+  } catch {
+    openToast({ message: '회의 통합이 실패했습니다.' })
+    return false
+  } finally {
+    closeLoading()
+  }
 }
 
 const MEETING_PRINT_HOST_ID = 'meeting-minutes-print-host'
@@ -1091,5 +1130,6 @@ export const useMeetingStore = () => {
     openInfoEditModal,
     parseJsonArray,
     parseAttendeesDisplay,
+    handleIntegrateMeeting,
   }
 }

@@ -13,6 +13,16 @@
         <UiButton
           variant="primary"
           size="md"
+          @click="onClickIntegrate"
+        >
+          <template #icon-left>
+            <i class="icon-meeting-generate size-16" />
+          </template>
+          {{ integrateButtonLabel }}
+        </UiButton>
+        <UiButton
+          variant="primary"
+          size="md"
           @click="onClickNew"
         >
           <template #icon-left>
@@ -63,22 +73,43 @@
       <div
         v-for="meeting in filteredList"
         :key="meeting.id"
-        class="meeting2-list-card"
+        :class="[
+          'meeting2-list-card',
+          { 'is-integrate-mode': isIntegrateMode, 'is-selected': isMeetingSelected(meeting.id) },
+        ]"
         @click="onClickCard(meeting)"
       >
+        <div
+          v-if="isIntegrateMode"
+          class="meeting2-list-card-check"
+        >
+          {{ isMeetingSelected(meeting.id) ? 'O' : '' }}
+        </div>
         <p class="meeting2-list-card-title">{{ meeting.title }}</p>
         <p class="meeting2-list-card-date">{{ meeting.date }}</p>
         <div class="meeting2-list-card-meta">
           <UiBadge
-            v-for="step in progressBadges(meeting.steps)"
-            :key="step.key"
-            :variant="step.variant"
+            v-if="meeting.integrateYn === 'Y'"
+            variant="manual-ai"
             size="sm"
           >
-            {{ step.label }}
+            통합 회의록
           </UiBadge>
+          <template v-else>
+            <UiBadge
+              v-for="step in progressBadges(meeting.steps)"
+              :key="step.key"
+              :variant="step.variant"
+              size="sm"
+            >
+              {{ step.label }}
+            </UiBadge>
+          </template>
         </div>
-        <div class="meeting2-list-card-actions">
+        <div
+          v-if="!isIntegrateMode"
+          class="meeting2-list-card-actions"
+        >
           <UiButton
             variant="ghost"
             size="sm"
@@ -120,11 +151,18 @@ const {
   handleSelectMeetingList,
   handleDeleteMeeting,
   handleCreateMeeting,
+  handleIntegrateMeeting,
 } = useMeetingStore()
 
 const searchKeyword = ref('')
 const isModalOpen = ref(false)
 const isRecoverModalOpen = ref(false)
+const isIntegrateMode = ref(false)
+const selectedMeetingIds = ref<string[]>([])
+
+const integrateButtonLabel = computed(() => {
+  return isIntegrateMode.value ? '통합 진행하기' : '회의 통합하기'
+})
 
 onMounted(() => {
   handleSelectMeetingList()
@@ -144,6 +182,7 @@ const filteredList = computed(() => {
     title: m.meetingTitle,
     date: m.startDt,
     status: m.status,
+    integrateYn: m.integrateYn ?? 'N',
     steps: deriveDisplaySteps(m.status) satisfies MeetingStep[],
   }))
 })
@@ -179,8 +218,32 @@ const onClickNew = () => {
 }
 
 /** 카드 클릭 — 진행중인 회의(status 001)는 녹음 화면으로 이동 */
-const onClickCard = (meeting: { id: string; status: string }) => {
+const onClickCard = (meeting: { id: string; status: string; integrateYn: string }) => {
+  if (isIntegrateMode.value) {
+    if (meeting.integrateYn === 'Y') {
+      openToast({ message: '통합 회의록은 다시 통합할 수 없습니다.', type: 'warning' })
+      return false
+    }
+    onToggleMeetingSelect(meeting.id)
+    return
+  }
+
   navigateTo(`/meeting/${meeting.id}`)
+}
+
+const onToggleMeetingSelect = (meetingId: string) => {
+  const selectedIndex = selectedMeetingIds.value.indexOf(meetingId)
+
+  if (selectedIndex > -1) {
+    selectedMeetingIds.value.splice(selectedIndex, 1)
+    return
+  }
+
+  selectedMeetingIds.value.push(meetingId)
+}
+
+const isMeetingSelected = (meetingId: string) => {
+  return selectedMeetingIds.value.includes(meetingId)
 }
 
 const doDelete = (meetingId: number) => {
@@ -199,5 +262,26 @@ const onConfirmStart = async (params: { meetingTitle: string; attendees: string;
 /** 복구하기 클릭 → 해당 회의 상세 페이지로 이동 */
 const onRecover = ({ meetingId }: { meetingId: number }) => {
   navigateTo(`/meeting/${meetingId}`)
+}
+
+const onClickIntegrate = async () => {
+  if (!isIntegrateMode.value) {
+    isIntegrateMode.value = true
+    selectedMeetingIds.value = []
+    return
+  }
+
+  if (selectedMeetingIds.value.length === 0) {
+    openToast({ message: '통합할 회의록을 선택해주세요.', type: 'warning' })
+    return false
+  }
+
+  const success = await handleIntegrateMeeting(selectedMeetingIds.value.map(Number))
+  if (success) {
+    isIntegrateMode.value = false
+    selectedMeetingIds.value = []
+  }
+
+  console.warn('통합 진행할 회의 ID', selectedMeetingIds.value)
 }
 </script>

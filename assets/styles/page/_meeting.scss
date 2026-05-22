@@ -887,6 +887,7 @@
 }
 
 .meeting2-list-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
@@ -903,6 +904,37 @@
     border-color: var(--color-primary);
     box-shadow: $shadow-sm;
   }
+
+  &.is-integrate-mode {
+    padding-top: calc(#{$spacing-md} + 16px);
+  }
+
+  &.is-selected {
+    border-color: var(--color-primary);
+    box-shadow: $shadow-sm;
+  }
+}
+
+.meeting2-list-card-check {
+  position: absolute;
+  top: $spacing-sm;
+  left: $spacing-sm;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid $color-border;
+  border-radius: 50%;
+  @include typo($body-small-bold, $color-text-muted);
+  line-height: 1;
+  background: #fff;
+}
+
+.meeting2-list-card.is-selected .meeting2-list-card-check {
+  border-color: var(--color-primary);
+  background: rgba(var(--color-primary-rgb), 0.08);
+  color: var(--color-primary);
 }
 
 .meeting2-list-card-title {
@@ -2994,4 +3026,71 @@
   align-items: center;
   gap: 4px;
   @include typo($body-xsmall, $color-text-muted);
+}
+
+// ---- 통합 회의록 원본 목록 ----
+.meeting2-integrated-sources {
+  flex: 1;
+  overflow-y: auto;
+  padding: $spacing-md;
+  @include custom-scrollbar;
+}
+
+.meeting2-integrated-source-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.meeting2-integrated-source-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  background: $color-background;
+  cursor: pointer;
+  transition: background $transition-fast, border-color $transition-fast;
+
+  &:hover {
+    background: var(--color-primary-bg);
+    border-color: var(--color-primary);
+
+    .meeting2-integrated-source-arrow {
+      color: var(--color-primary);
+    }
+  }
+}
+
+.meeting2-integrated-source-icon {
+  flex-shrink: 0;
+  color: $color-text-muted;
+}
+
+.meeting2-integrated-source-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.meeting2-integrated-source-title {
+  @include typo($body-small-bold);
+  color: $color-text-primary;
+  @include ellipsis(1);
+}
+
+.meeting2-integrated-source-date {
+  @include typo($body-xsmall, $color-text-muted);
+}
+
+.meeting2-integrated-source-arrow {
+  flex-shrink: 0;
+  color: $color-text-muted;
+  transition: color $transition-fast;
 }

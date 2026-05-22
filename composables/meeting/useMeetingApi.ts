@@ -127,6 +127,16 @@ export const useMeetingApi = () => {
     return post<{ successYn: boolean; title: string }>('/ai/meeting/generateMeetingTitle.do', { description })
   }
 
+  /** 해당 회의가 원본인 통합 회의록 목록 조회 (삭제 전 확인용) */
+  const fetchCheckMeetingIntegration = async (
+    meetingId: number,
+  ): Promise<{ parentMeetings: Array<{ meetingId: number; meetingTitle: string }> }> => {
+    return post<{ parentMeetings: Array<{ meetingId: number; meetingTitle: string }> }>(
+      '/ai/meeting/checkMeetingIntegration.do',
+      { meetingId },
+    )
+  }
+
   /** 회의 삭제 */
   const fetchDeleteMeeting = async (meetingId: number): Promise<{ successYn: boolean }> => {
     return post<{ successYn: boolean }>('/ai/meeting/deleteMeeting.do', { meetingId })
@@ -204,6 +214,11 @@ export const useMeetingApi = () => {
     })
   }
 
+  /** 회의 통합 */
+  const fetchIntegrateMeeting = async (meetingIds: number[]): Promise<{ successYn: boolean; meetingId: number }> => {
+    return post<{ successYn: boolean; meetingId: number }>('/ai/meeting/integrateMeeting.do', { meetingIds })
+  }
+
   return {
     fetchUserList,
     fetchMeetingList,
@@ -218,6 +233,7 @@ export const useMeetingApi = () => {
     fetchSearchUsers,
     fetchMatchUsersByNames,
     fetchGenerateMeetingTitle,
+    fetchCheckMeetingIntegration,
     fetchDeleteMeeting,
     fetchRealtimeToken,
     fetchDownloadFile,
@@ -229,5 +245,6 @@ export const useMeetingApi = () => {
     fetchRecoverMeeting,
     fetchUploadBackupAudio,
     fetchBackupFileCount,
+    fetchIntegrateMeeting,
   }
 }

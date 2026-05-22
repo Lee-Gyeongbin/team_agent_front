@@ -1,62 +1,73 @@
 <template>
   <div class="meeting2-panel">
-    <div class="meeting2-panel-header">
-      <span class="meeting2-panel-title">실시간 녹음 / STT</span>
-      <!-- 녹음 상태 배지 -->
-      <span
-        v-if="isRecording"
-        class="meeting2-record-badge is-recording"
-      >
-        <i class="meeting2-record-dot" />
-        녹음 중
-      </span>
-      <span
-        v-else-if="isConnecting"
-        class="meeting2-record-badge is-connecting"
-      >
-        연결 중...
-      </span>
-      <!-- 타이머 -->
-      <span
-        v-if="isRecording || isConnecting"
-        class="meeting2-record-timer"
-      >
-        {{ timerDisplay }}
-      </span>
-    </div>
+    <!-- ── 통합 회의록: 원본 회의 목록 표시 ── -->
+    <template v-if="currentMeeting?.integrateYn === 'Y'">
+      <div class="meeting2-panel-header">
+        <span class="meeting2-panel-title">통합된 회의 목록</span>
+      </div>
+      <MeetingIntegratedSources />
+    </template>
 
-    <!-- 미지원 안내 -->
-    <div
-      v-if="!isSupported"
-      class="meeting2-record-unsupported"
-    >
-      <i class="icon-warning size-24" />
-      <p>이 브라우저는 음성 인식을 지원하지 않습니다.<br />Chrome 브라우저를 사용해 주세요.</p>
-    </div>
-
+    <!-- ── 일반 회의: 실시간 녹음 / STT ── -->
     <template v-else>
-      <!-- 상단 고정 영역: 녹음 컨트롤 + 파형 + STT 툴바 -->
-      <div class="meeting2-record-fixed">
-        <MeetingRecordControl
-          :is-recording="isRecording"
-          :is-connecting="isConnecting"
-          :is-finishing="isFinishing"
-          :is-abnormal="isAbnormal && !isRecording && !isConnecting"
-          :elapsed="elapsed"
-          @start="onClickStart"
-          @finish="onClickFinish"
-          @resume="onResume"
-          @generate-from-backup="onGenerateFromBackup"
-        />
-        <MeetingWaveform />
-        <MeetingSttToolbar :meeting-id="meetingId" />
+      <div class="meeting2-panel-header">
+        <span class="meeting2-panel-title">실시간 녹음 / STT</span>
+        <!-- 녹음 상태 배지 -->
+        <span
+          v-if="isRecording"
+          class="meeting2-record-badge is-recording"
+        >
+          <i class="meeting2-record-dot" />
+          녹음 중
+        </span>
+        <span
+          v-else-if="isConnecting"
+          class="meeting2-record-badge is-connecting"
+        >
+          연결 중...
+        </span>
+        <!-- 타이머 -->
+        <span
+          v-if="isRecording || isConnecting"
+          class="meeting2-record-timer"
+        >
+          {{ timerDisplay }}
+        </span>
       </div>
 
-      <!-- 스크롤 영역: 발화 리스트 + 화자 목록 -->
-      <div class="meeting2-record-scroll">
-        <MeetingSttList />
-        <MeetingSpeakerList />
+      <!-- 미지원 안내 -->
+      <div
+        v-if="!isSupported"
+        class="meeting2-record-unsupported"
+      >
+        <i class="icon-warning size-24" />
+        <p>이 브라우저는 음성 인식을 지원하지 않습니다.<br />Chrome 브라우저를 사용해 주세요.</p>
       </div>
+
+      <template v-else>
+        <!-- 상단 고정 영역: 녹음 컨트롤 + 파형 + STT 툴바 -->
+        <div class="meeting2-record-fixed">
+          <MeetingRecordControl
+            :is-recording="isRecording"
+            :is-connecting="isConnecting"
+            :is-finishing="isFinishing"
+            :is-abnormal="isAbnormal && !isRecording && !isConnecting"
+            :elapsed="elapsed"
+            @start="onClickStart"
+            @finish="onClickFinish"
+            @resume="onResume"
+            @generate-from-backup="onGenerateFromBackup"
+          />
+          <MeetingWaveform />
+          <MeetingSttToolbar :meeting-id="meetingId" />
+        </div>
+
+        <!-- 스크롤 영역: 발화 리스트 + 화자 목록 -->
+        <div class="meeting2-record-scroll">
+          <MeetingSttList />
+          <MeetingSpeakerList />
+        </div>
+      </template>
     </template>
   </div>
 </template>
