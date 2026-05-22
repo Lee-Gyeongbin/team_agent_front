@@ -10,6 +10,8 @@
   gap: $spacing-md;
   padding: $spacing-md;
   max-width: 1366px;
+  min-width: 0;
+  overflow-x: clip;
 }
 
 .data-dashboard-toolbar {
@@ -29,9 +31,12 @@
 // ===================================
 .data-dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  // minmax(0, 1fr): 콘텐츠 min-width가 컬럼을 밀어 화면 밖으로 넘치는 것 방지
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: $spacing-md;
   align-items: start;
+  width: 100%;
+  min-width: 0;
 
   // 드래그 고스트
   .sortable-ghost {
@@ -39,6 +44,9 @@
     border: 2px dashed var(--color-primary);
     border-radius: 12px;
     background: var(--color-primary-bg);
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
   }
 }
 
@@ -59,15 +67,45 @@
 // 위젯 카드
 // ===================================
 .dashboard-widget {
+  position: relative;
   background: #fff;
   border: 1px solid #dce4e9;
   border-radius: 16px;
   display: flex;
   flex-direction: column;
-  transition: box-shadow $transition-base;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  transition:
+    box-shadow $transition-base,
+    border-color $transition-fast;
+
+  // 드래그 중 transform 적용 시 그리드 밖으로 넓어지는 현상 방지
+  &.sortable-chosen {
+    box-sizing: border-box;
+  }
 
   &:hover {
     box-shadow: $shadow-md;
+  }
+
+  &.is-resizing {
+    user-select: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px var(--color-primary-bg);
+
+    .widget-resize-handle {
+      opacity: 1;
+
+      &::before {
+        border-color: var(--color-primary);
+      }
+    }
+  }
+
+  &:hover .widget-resize-handle {
+    opacity: 1;
   }
 
   &.col-span-2 {
@@ -78,36 +116,75 @@
     grid-column: span 1;
   }
 
-  // 헤더·필터 등 위젯 내 아이콘 액션 버튼 공통
-  .btn-widget-action {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border: none;
-    border-radius: $border-radius-sm;
-    background: transparent;
-    color: $color-text-muted;
-    cursor: pointer;
-    transition:
-      background $transition-fast,
-      color $transition-fast;
+}
 
-    &:hover {
-      background: $color-background;
-      color: $color-text-primary;
-    }
+// 헤더·필터·위젯 추가 모달 공통 아이콘 액션 버튼
+.dashboard-widget .btn-widget-action,
+.widget-add-layout .btn-widget-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: $border-radius-sm;
+  background: transparent;
+  color: $color-text-muted;
+  cursor: pointer;
+  transition:
+    background $transition-fast,
+    color $transition-fast;
 
-    &.is-active {
-      background: var(--color-primary-bg);
-      color: var(--color-primary);
-    }
+  &:hover:not(:disabled) {
+    background: $color-background;
+    color: $color-text-primary;
+  }
 
-    &.type-danger:hover {
-      background: #fff1f1;
-      color: $color-error;
-    }
+  &.is-active {
+    background: var(--color-primary-bg);
+    color: var(--color-primary);
+  }
+
+  &.type-danger:hover:not(:disabled) {
+    background: #fff1f1;
+    color: $color-error;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+// 높이 리사이즈 핸들 (하단 중앙)
+.widget-resize-handle {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 12px;
+  cursor: ns-resize;
+  opacity: 0;
+  transition: opacity $transition-fast;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  // 가로 줄 2개 (리사이즈 그립)
+  &::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    border-top: 2px solid $color-border;
+    border-bottom: 2px solid $color-border;
+    border-radius: 2px;
+    transition: border-color $transition-fast;
+  }
+
+  &:hover::before {
+    border-color: var(--color-primary);
   }
 }
 
@@ -150,17 +227,29 @@
     @include ellipsis(1);
   }
 
-  .widget-sql-badge {
+  .widget-sql-query-btn {
     flex-shrink: 0;
-    @include typo($body-xsmall);
-    color: $color-text-muted;
-    background: $color-background;
-    border: 1px solid $color-border-light;
-    border-radius: 100px;
-    padding: 2px 8px;
-    @include ellipsis(1);
-    max-width: 160px;
+    color: var(--color-primary);
+
+    // icon-file(고정색) → mask + currentColor 로 테마 primary 연동
+    .icon-comment-other {
+      background-image: none;
+      @include icon-file-bg('comment-other');
+    }
+
+    &:hover {
+      background: var(--color-primary-bg);
+    }
   }
+}
+
+// 사용자 질의(sqlTitle) 툴팁 — 긴 질문 전체 표시
+.widget-sql-query-tooltip {
+  max-width: min(420px, 85vw);
+  word-break: break-word;
+  white-space: pre-wrap;
+  text-align: left;
+  line-height: 1.55;
 }
 
 // 위젯 헤더 액션 버튼
@@ -176,41 +265,114 @@
 // ===================================
 .widget-filter {
   display: flex;
-  align-items: flex-end;
+  flex-direction: column;
   gap: $spacing-sm;
   padding: 10px 14px;
-  background: #f9fafb;
-  border-bottom: 1px solid #ecf0f3;
-  flex-wrap: wrap;
+  background: #f4f7f9;
+  border-bottom: 1px solid #e4eaef;
+
+  .widget-filter-main {
+    display: flex;
+    align-items: stretch;
+    flex: 1;
+    min-width: 0;
+    background: #fff;
+    border: 1px solid $color-border-light;
+    border-radius: $border-radius-base;
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+    overflow: hidden;
+  }
 
   .widget-filter-fields {
     display: flex;
-    align-items: flex-end;
-    gap: $spacing-sm;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 8px;
     flex: 1;
     min-width: 0;
-    flex-wrap: wrap;
+    padding: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    background: #f9fafb;
+    @include custom-scrollbar;
+  }
+
+  .widget-filter-actions {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    justify-content: flex-end;
+    gap: 6px;
+    padding: 8px;
+    border-left: 1px solid #e2e8f0;
+    background: #f9fafb;
   }
 
   .filter-field {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    flex-shrink: 0;
+    gap: 6px;
+    padding: 8px 10px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: $border-radius-base;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+    transition: border-color $transition-fast, box-shadow $transition-fast;
+
+    &:hover {
+      border-color: #c6d2db;
+    }
+
+    &:focus-within {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb, 59, 130, 246), 0.12);
+    }
+  }
+
+  // 텍스트·숫자·날짜만 컴팩트 너비 (기준 대비 1.2배)
+  .filter-field--compact {
+    flex: 0 0 auto;
+    width: 116px;
+    min-width: 116px;
+
+    :deep(.ui-input-wrap) {
+      width: 100%;
+      max-width: 92px;
+    }
+  }
+
+  // 셀렉트·멀티셀렉트 — 기본 너비 유지 (컴팩트 제한 없음)
+  .filter-field--select {
+    flex: 0 0 auto;
     min-width: 120px;
+
+    :deep(.ui-select-wrap),
+    :deep(.ui-multi-select-wrap) {
+      width: 100%;
+      min-width: 100px;
+    }
   }
 
   .filter-label {
     @include typo($body-xsmall);
+    font-weight: 600;
     color: $color-text-secondary;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #e8edf2;
   }
 
   .filter-date-input {
+    width: 100%;
+    max-width: 92px;
     height: $height-sm;
-    padding: 0 8px;
+    padding: 0 6px;
     border: 1px solid #c6d2db;
     border-radius: $border-radius-base;
-    font-size: $font-size-base;
+    font-size: $font-size-sm;
     color: $color-text-primary;
     background: #fff;
     transition: border-color $transition-base;
@@ -227,8 +389,12 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-top: 2px;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 10px 12px;
+  background: rgba(var(--color-primary-rgb, 60, 105, 219), 0.09);
+  border: 1px solid rgba(var(--color-primary-rgb, 60, 105, 219), 0.22);
+  border-radius: $border-radius-base;
 }
 
 .widget-filter-sql-header {
@@ -237,24 +403,33 @@
   justify-content: space-between;
   gap: $spacing-xs;
 
+  .filter-label {
+    @include typo($body-small-bold);
+    font-weight: $font-weight-semibold;
+    color: var(--color-primary);
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
   .widget-filter-sql-copy {
     flex-shrink: 0;
   }
 }
 
 .widget-filter-sql-code {
-  padding: 8px 10px;
-  background: #f4f7f9;
-  border: 1px solid $color-border-light;
+  padding: 10px 12px;
+  background: #f0f4f8;
+  border: 1px solid rgba(var(--color-primary-rgb, 60, 105, 219), 0.16);
   border-radius: $border-radius-base;
   @include typo($body-xsmall);
-  color: $color-text-secondary;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
   white-space: pre;
   word-break: break-all;
   max-height: 120px;
   overflow-y: auto;
   font-family: 'Consolas', 'Monaco', monospace;
-  line-height: 1.6;
+  line-height: 1.65;
   @include custom-scrollbar;
 }
 
@@ -277,24 +452,47 @@
 // ===================================
 // 위젯 콘텐츠 영역
 // ===================================
+// height는 JS(localHeightPx)가 inline style로 직접 적용
+// CSS 변수 미사용 → 타이밍/fallback 이슈 없음
 .widget-content {
-  flex: 1;
-  min-height: 0;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
   padding: $spacing-md;
-  min-height: 300px;
+  min-width: 0;
+  overflow: hidden;
 
+  // 로딩·빈상태: content height(JS) 안에서 flex:1로 채움
   .ui-loading,
   .ui-empty {
     flex: 1;
+    min-height: 0;
   }
 }
 
+// height는 JS(chartBodyHeightPx) inline — chart.js 마운트 시 부모 height 필수
 .widget-chart-wrap {
-  flex: 1;
-  min-height: 0;
-  height: 280px;
+  flex-shrink: 0;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
+
+  :deep(.ui-chart) {
+    height: 100%;
+    min-height: 0;
+  }
+
+  // UiChart 기본 min-height:260px — 위젯 콘텐츠 높이에 맞추기 위해 해제
+  :deep(.ui-chart-canvas-wrap) {
+    min-height: 0;
+  }
+}
+
+.widget-table-wrap {
+  flex-shrink: 0;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
 }
 
 // ===================================
@@ -333,8 +531,14 @@
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  width: 280px;
+  width: 420px;
   min-height: 0;
+}
+
+.widget-add-datamart-tooltip {
+  max-width: min(360px, 85vw);
+  word-break: keep-all;
+  text-align: left;
 }
 
 .widget-add-left-search {
@@ -391,7 +595,7 @@
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  gap: $spacing-md;
+  gap: 12px;
   overflow-y: auto;
   padding-right: $spacing-sm;
   padding-bottom: $spacing-md;
@@ -401,6 +605,61 @@
   // SQL 미선택 안내가 남은 공간을 채우도록
   .sql-select-guide {
     flex: 1;
+  }
+}
+
+// 위젯 설정 폼 — 항목별 구역 카드
+.config-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #f9fafb;
+  border: 1px solid #e2e8f0;
+  border-radius: $border-radius-base;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+
+  .config-label {
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e8edf2;
+  }
+
+  .config-label-row {
+    padding-bottom: 6px;
+    margin-bottom: 2px;
+    border-bottom: 1px solid #e8edf2;
+
+    .config-label {
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+  }
+
+  .config-field:last-child {
+    margin-bottom: 0;
+  }
+
+  &--sql {
+    gap: 0;
+
+    .widget-filter-sql-preview {
+      width: 100%;
+      margin-top: 0;
+    }
+  }
+
+  .param-tags--readonly {
+    margin-top: 0;
+    background: #fff;
+  }
+
+  .viz-type-btn {
+    background: #fff;
+  }
+
+  &--column-mapping .config-hint--locked {
+    @include typo($body-xsmall);
+    color: $color-text-secondary;
   }
 }
 
@@ -415,6 +674,39 @@
 .widget-add-panel-title {
   @include typo($body-large-bold);
   color: $color-text-heading;
+}
+
+.widget-add-right .widget-add-panel-header--config {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+}
+
+.widget-add-datamart-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  max-width: min(280px, 55%);
+  padding: 5px 12px;
+  border-radius: 100px;
+  background: rgba(var(--color-primary-rgb, 60, 105, 219), 0.1);
+  border: 1px solid rgba(var(--color-primary-rgb, 60, 105, 219), 0.3);
+  color: var(--color-primary);
+  @include typo($body-small-bold);
+
+  .icon-database {
+    flex-shrink: 0;
+    color: var(--color-primary);
+  }
+}
+
+.widget-add-datamart-badge-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 // SQL 미선택 안내 (하단 영역 중앙 정렬)
@@ -451,27 +743,6 @@
   @include typo($body-small);
   color: $color-text-secondary;
   line-height: $line-height-relaxed;
-}
-
-.config-sql-preview {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-
-  .config-sql-code {
-    padding: 10px 12px;
-    background: #f4f7f9;
-    border: 1px solid $color-border-light;
-    border-radius: $border-radius-base;
-    @include typo($body-xsmall);
-    color: $color-text-secondary;
-    white-space: pre;
-    word-break: break-all;
-    max-height: 120px;
-    overflow-y: auto;
-    font-family: 'Consolas', 'Monaco', monospace;
-    @include custom-scrollbar;
-  }
 }
 
 .config-label {

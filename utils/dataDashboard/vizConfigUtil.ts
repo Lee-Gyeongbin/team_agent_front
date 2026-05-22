@@ -113,6 +113,26 @@ export const buildAggregatedValueMap = (
 /**
  * Y축 2개일 때 좌(y)·우(y1) 이축 scales — ChatVisualization buildChartModel과 동일 규칙
  */
+/**
+ * 막대·라인·가로막대·파이용 X/Y축 컬럼 해석
+ * - xAxisKey / yAxisKeys 우선
+ * - 없으면 첫 컬럼·나머지 컬럼 자동
+ */
+export const resolveChartAxisMapping = (
+  columns: string[],
+  vizCfg: DataDashboardVizConfig,
+): { xKey: string; yKeys: string[] } => {
+  const xKey = resolveColumnKey(columns, vizCfg.xAxisKey) ?? columns[0]
+
+  const configuredYKeys = (vizCfg.yAxisKeys ?? [])
+    .map((k) => resolveColumnKey(columns, k))
+    .filter((k): k is string => !!k)
+
+  const yKeys = configuredYKeys.length ? configuredYKeys : columns.filter((c) => c !== xKey)
+
+  return { xKey, yKeys }
+}
+
 export const buildDualAxisScales = (
   datasets: Array<{ data: number[] }>,
   chartType: 'bar' | 'line',

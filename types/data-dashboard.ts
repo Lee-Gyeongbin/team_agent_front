@@ -57,12 +57,10 @@ export interface DataDashboardWidget {
 
 export type DataDashboardVizType = 'bar' | 'line' | 'pie' | 'horizontalBar' | 'table'
 
-/** 시각화 컬럼 매핑 설정 */
+/** 시각화 컬럼 매핑 설정 (파이·막대·라인 공통 — xAxisKey / yAxisKeys) */
 export interface DataDashboardVizConfig {
   xAxisKey?: string
   yAxisKeys?: string[]
-  labelKey?: string
-  valueKey?: string
 }
 
 /**
@@ -78,10 +76,25 @@ export interface DataDashboardQueryResult {
   rows: Record<string, unknown>[]
 }
 
+/** 레이아웃 저장 데이터 (TB_USER_DASHBOARD_LAYOUT) */
+export interface DataDashboardLayout {
+  layoutId?: string
+  widgetId: string
+  sortOrd?: number
+  rowPos?: number
+  colPos?: number
+  colSpan?: 1 | 2
+  rowSpan?: number
+  widthPx?: number | null
+  heightPx?: number | null
+}
+
 /** 위젯별 런타임 상태 (저장 안 함) */
 export interface DataDashboardWidgetState {
   filterValues: Record<string, string>
   result: DataDashboardQueryResult | null
+  /** SQL 실행 시 datamartId 기준으로 조회한 코드맵 (실행마다 갱신) */
+  codeMap?: ColCodeMap
   loading: boolean
   error: string | null
 }

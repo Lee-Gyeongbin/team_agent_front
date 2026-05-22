@@ -1,14 +1,32 @@
 <template>
   <div
+    ref="widgetEl"
     class="dashboard-widget"
-    :class="[`col-span-${widget.colSpan}`, { 'is-filter-open': isFilterOpen }]"
+    :class="[`col-span-${widget.colSpan}`, { 'is-filter-open': isFilterOpen, 'is-resizing': isResizing }]"
   >
     <!-- 헤더 -->
     <div class="widget-header">
       <div class="widget-header-left">
-        <i class="icon-move-handle size-18 widget-drag-handle" />
+        <i class="icon-move-handle size-20 widget-drag-handle" />
+        <UiTooltip
+          v-if="widget.sqlTitle"
+          side="bottom"
+          align="start"
+          :delay-duration="150"
+          content-class="widget-sql-query-tooltip"
+        >
+          <button
+            type="button"
+            class="btn btn-widget-action widget-sql-query-btn"
+            :aria-label="`사용자 질의: ${widget.sqlTitle}`"
+          >
+            <i class="icon-comment-other size-16" />
+          </button>
+          <template #content>
+            {{ widget.sqlTitle }}
+          </template>
+        </UiTooltip>
         <span class="widget-title">{{ widget.title }}</span>
-        <span class="widget-sql-badge">{{ widget.sqlTitle }}</span>
       </div>
       <div class="widget-header-actions">
         <!-- 필터 토글 (변수 있을 때만) -->
@@ -20,25 +38,6 @@
           @click="isFilterOpen = !isFilterOpen"
         >
           <i class="icon-sliders size-16" />
-        </button>
-        <!-- 너비 전환 -->
-        <button
-          class="btn btn-widget-action"
-          :title="widget.colSpan === 2 ? '절반 너비' : '전체 너비'"
-          @click="$emit('resize', widget.widgetId, widget.colSpan === 2 ? 1 : 2)"
-        >
-          <i
-            :class="widget.colSpan === 2 ? 'icon-collapse' : 'icon-expand'"
-            class="size-16"
-          />
-        </button>
-        <!-- 새로고침 -->
-        <button
-          class="btn btn-widget-action"
-          title="새로고침"
-          @click="onExecute"
-        >
-          <i class="icon-refresh size-16" />
         </button>
         <!-- 시각화 유형 변경 -->
         <UiDropdownMenu
@@ -54,6 +53,35 @@
             </button>
           </template>
         </UiDropdownMenu>
+        <!-- 너비 전환 (절반 ↔ 전체) -->
+        <button
+          class="btn btn-widget-action"
+          :title="widget.colSpan === 2 ? '절반 너비로' : '전체 너비로'"
+          @click="$emit('resize', widget.widgetId, widget.colSpan === 2 ? 1 : 2)"
+        >
+          <i
+            :class="widget.colSpan === 2 ? 'icon-collapse' : 'icon-expand'"
+            class="size-16"
+          />
+        </button>
+        <!-- 높이 기본값으로 초기화 -->
+        <button
+          v-if="localHeightPx !== DEFAULT_HEIGHT"
+          class="btn btn-widget-action"
+          title="높이 초기화 (320px)"
+          @click="onResetHeight"
+        >
+          <i class="icon-resize-height size-16" />
+        </button>
+        <!-- 새로고침 -->
+        <button
+          class="btn btn-widget-action"
+          title="새로고침"
+          @click="onExecute"
+        >
+          <i class="icon-refresh size-16" />
+        </button>
+
         <!-- 삭제 -->
         <button
           class="btn btn-widget-action type-danger"
@@ -71,58 +99,85 @@
         v-if="isFilterOpen && enrichedVariables.length"
         class="widget-filter"
       >
-        <div class="widget-filter-fields">
-          <template
-            v-for="variable in enrichedVariables"
-            :key="variable.key"
-          >
-            <div class="filter-field">
-              <label class="filter-label">{{ variable.label }}</label>
-              <!-- 멀티셀렉트 (코드맵 기반 변수) -->
-              <UiMultiSelect
-                v-if="variable.type === 'select' && variable.multiple"
-                :model-value="(localFilterValues[variable.key] || '').split(',').filter(Boolean)"
-                :options="variable.options ?? []"
-                size="sm"
-                @update:model-value="localFilterValues[variable.key] = $event.join(',')"
-              />
-              <!-- 단일 셀렉트 -->
-              <UiSelect
-                v-else-if="variable.type === 'select'"
-                :model-value="localFilterValues[variable.key]"
-                :options="variable.options ?? []"
-                size="sm"
-                @update:model-value="localFilterValues[variable.key] = String($event)"
-              />
-              <!-- 숫자 -->
-              <UiInput
-                v-else-if="variable.type === 'number'"
-                v-model="localFilterValues[variable.key]"
-                number-only
-                size="sm"
-              />
-              <!-- 날짜 (date/month — native input) -->
-              <input
-                v-else-if="variable.type === 'date' || variable.type === 'month'"
-                v-model="localFilterValues[variable.key]"
-                class="inp filter-date-input"
-                :type="variable.type"
-              />
-              <!-- 텍스트 -->
-              <UiInput
-                v-else
-                v-model="localFilterValues[variable.key]"
-                size="sm"
-              />
-            </div>
-          </template>
+        <div class="widget-filter-main">
+          <div class="widget-filter-fields">
+            <template
+              v-for="variable in enrichedVariables"
+              :key="variable.key"
+            >
+              <div
+                class="filter-field"
+                :class="variable.type === 'select' ? 'filter-field--select' : 'filter-field--compact'"
+              >
+                <label class="filter-label">{{ variable.label }}</label>
+                <!-- 멀티셀렉트 (코드맵 기반 변수) -->
+                <UiMultiSelect
+                  v-if="variable.type === 'select' && variable.multiple"
+                  :model-value="(localFilterValues[variable.key] || '').split(',').filter(Boolean)"
+                  :options="variable.options ?? []"
+                  size="sm"
+                  @update:model-value="localFilterValues[variable.key] = $event.join(',')"
+                />
+                <!-- 단일 셀렉트 -->
+                <UiSelect
+                  v-else-if="variable.type === 'select'"
+                  :model-value="localFilterValues[variable.key]"
+                  :options="variable.options ?? []"
+                  size="sm"
+                  @update:model-value="localFilterValues[variable.key] = String($event)"
+                />
+                <!-- 숫자 -->
+                <UiInput
+                  v-else-if="variable.type === 'number'"
+                  v-model="localFilterValues[variable.key]"
+                  number-only
+                  size="sm"
+                />
+                <!-- 날짜 (date/month — native input) -->
+                <input
+                  v-else-if="variable.type === 'date' || variable.type === 'month'"
+                  v-model="localFilterValues[variable.key]"
+                  class="inp filter-date-input"
+                  :type="variable.type"
+                />
+                <!-- 텍스트 -->
+                <UiInput
+                  v-else
+                  v-model="localFilterValues[variable.key]"
+                  size="sm"
+                />
+              </div>
+            </template>
+          </div>
+          <div class="widget-filter-actions">
+            <UiButton
+              variant="outline"
+              size="sm"
+              icon-only
+              class="widget-filter-reset"
+              title="초기값 복원"
+              aria-label="초기값 복원"
+              @click="onResetFilters"
+            >
+              <template #icon-left>
+                <i class="icon-refresh size-16" />
+              </template>
+            </UiButton>
+            <UiButton
+              variant="primary"
+              size="sm"
+              icon-only
+              class="widget-filter-execute"
+              title="실행"
+              aria-label="조회 실행"
+              @click="onExecute"
+            >
+              <template #icon-left>
+                <i class="icon-play size-16" />
+              </template>
+            </UiButton>
+          </div>
         </div>
-        <UiButton
-          size="sm"
-          @click="onExecute"
-        >
-          조회
-        </UiButton>
 
         <!-- 실행 SQL 미리보기 -->
         <div
@@ -145,8 +200,13 @@
       </div>
     </transition>
 
-    <!-- 콘텐츠 -->
-    <div class="widget-content">
+    <!-- 콘텐츠 — 필터는 이 밖에 있어서 필터 열릴 때 위젯 전체가 늘어남 -->
+    <!-- height로 콘텐츠 영역 고정 — 차트·테이블은 내부 flex로 동일 높이에 맞춤 -->
+    <div
+      ref="contentEl"
+      class="widget-content"
+      :style="{ height: `${localHeightPx}px` }"
+    >
       <!-- 로딩 -->
       <UiLoading
         v-if="state.loading"
@@ -168,12 +228,14 @@
         title="조회 결과가 없습니다."
       />
 
-      <!-- 차트 -->
+      <!-- 차트 — padding 제외 높이 명시 (chart.js는 마운트 시 부모 height 필요) -->
       <div
         v-else-if="state.result && widget.vizType !== 'table'"
         class="widget-chart-wrap"
+        :style="{ height: `${chartBodyHeightPx}px` }"
       >
         <UiChart
+          :key="`${widget.widgetId}-${chartBodyHeightPx}-${chartVizType}`"
           :type="chartVizType"
           :config="chartConfig"
           show-legend
@@ -181,15 +243,19 @@
       </div>
 
       <!-- 테이블 -->
-      <template v-else-if="state.result && widget.vizType === 'table'">
+      <div
+        v-else-if="state.result && widget.vizType === 'table'"
+        class="widget-table-wrap"
+        :style="{ height: `${chartBodyHeightPx}px` }"
+      >
         <UiTable
           :columns="tableColumns"
           :data="displayRows"
-          max-height="280px"
+          :max-height="`${chartBodyHeightPx}px`"
           sticky-header
           size="sm"
         />
-      </template>
+      </div>
 
       <!-- 초기 상태 -->
       <UiEmpty
@@ -198,6 +264,12 @@
         title="조회 버튼을 눌러 데이터를 확인하세요."
       />
     </div>
+
+    <!-- 우측 하단 리사이즈 핸들 -->
+    <div
+      class="widget-resize-handle"
+      @mousedown.prevent.stop="onResizeStart"
+    />
   </div>
 </template>
 
@@ -214,7 +286,9 @@ import {
   buildRawCategories,
   buildCategoryLabels,
   buildAggregatedValueMap,
+  resolveChartAxisMapping,
 } from '~/utils/dataDashboard/vizConfigUtil'
+import { DATA_DASHBOARD_DEFAULT_HEIGHT_PX } from '~/composables/data-dashboard/useDataDashboardStore'
 import type {
   DataDashboardWidget,
   DataDashboardWidgetState,
@@ -227,15 +301,19 @@ interface Props {
   widget: DataDashboardWidget
   state: DataDashboardWidgetState
   codeMap?: ColCodeMap
+  heightPx?: number | null
 }
 
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
   execute: [widgetId: string, filterValues: Record<string, string>]
+  'reset-filters': [widgetId: string]
   delete: [widgetId: string]
   resize: [widgetId: string, colSpan: 1 | 2]
   'change-viz-type': [widgetId: string, vizType: DataDashboardVizType]
+  'update-height': [widgetId: string, heightPx: number]
+  'reset-height': [widgetId: string]
 }>()
 
 const isFilterOpen = ref(false)
@@ -324,12 +402,65 @@ const onCopyPreviewSql = async () => {
   }
 }
 
+const onResetFilters = () => {
+  emit('reset-filters', props.widget.widgetId)
+}
+
 const onExecute = () => {
   emit('execute', props.widget.widgetId, { ...resolvedFilterValues.value })
 }
 
 const onChangeVizType = (value: string) => {
   emit('change-viz-type', props.widget.widgetId, value as DataDashboardVizType)
+}
+
+// ===== 높이 드래그 리사이즈 =====
+// localHeightPx = widget-content 영역 높이 (필터·헤더 제외, padding 포함)
+const DEFAULT_HEIGHT = DATA_DASHBOARD_DEFAULT_HEIGHT_PX
+const MIN_HEIGHT = DATA_DASHBOARD_DEFAULT_HEIGHT_PX
+/** widget-content 좌우 padding($spacing-md) 합 — SCSS와 동기 */
+const WIDGET_CONTENT_PADDING_Y = 32
+
+const localHeightPx = ref<number>(props.heightPx ?? DEFAULT_HEIGHT)
+
+/** chart.js·테이블이 사용하는 내부 높이 (content height − padding) */
+const chartBodyHeightPx = computed(() => Math.max(120, localHeightPx.value - WIDGET_CONTENT_PADDING_Y))
+const isResizing = ref(false)
+
+watch(
+  () => props.heightPx,
+  (v) => {
+    localHeightPx.value = v ?? DEFAULT_HEIGHT
+  },
+)
+
+const onResetHeight = () => {
+  localHeightPx.value = DEFAULT_HEIGHT
+  emit('reset-height', props.widget.widgetId)
+}
+
+const onResizeStart = (e: MouseEvent) => {
+  isResizing.value = true
+  const startY = e.clientY
+  const startHeight = localHeightPx.value
+
+  const onMouseMove = (ev: MouseEvent) => {
+    localHeightPx.value = Math.max(MIN_HEIGHT, startHeight + (ev.clientY - startY))
+  }
+
+  const onMouseUp = () => {
+    if (localHeightPx.value === DEFAULT_HEIGHT) {
+      emit('reset-height', props.widget.widgetId)
+    } else {
+      emit('update-height', props.widget.widgetId, localHeightPx.value)
+    }
+    isResizing.value = false
+    document.removeEventListener('mousemove', onMouseMove)
+    document.removeEventListener('mouseup', onMouseUp)
+  }
+
+  document.addEventListener('mousemove', onMouseMove)
+  document.addEventListener('mouseup', onMouseUp)
 }
 
 // 시각화 유형 변경 메뉴
@@ -375,11 +506,7 @@ const chartConfig = computed(() => {
   const readNum = (row: Record<string, unknown>, colKey: string) => Number(getRowValue(row, colKey)) || 0
   const readLabel = (row: Record<string, unknown>, colKey: string) => String(getRowValue(row, colKey) ?? '')
 
-  const xKey = resolveColumnKey(columns, vizCfg.xAxisKey) ?? columns[0]
-  const configuredYKeys = (vizCfg.yAxisKeys ?? [])
-    .map((k) => resolveColumnKey(columns, k))
-    .filter((k): k is string => !!k)
-  const yKeys = configuredYKeys.length ? configuredYKeys : columns.filter((c) => c !== xKey)
+  const { xKey, yKeys } = resolveChartAxisMapping(columns, vizCfg)
 
   // x축 고유값 + Y합산 (REGN_CD 등 부차 차원이 있어도 xAxisKey 기준으로 묶음)
   const buildGroupedSeries = (groupKey: string) => {
@@ -390,18 +517,15 @@ const chartConfig = computed(() => {
     return { rawCategories, categories, values }
   }
 
-  // 파이 차트
-  // vizConfig에 labelKey/valueKey가 없으면 xAxisKey/yAxisKeys[0] 을 폴백으로 사용
+  // 파이 차트 — xAxisKey / yAxisKeys[0]
   if (vizType === 'pie') {
-    const labelKey = resolveColumnKey(columns, vizCfg.labelKey ?? vizCfg.xAxisKey) ?? columns[0]
-    const valueKey = resolveColumnKey(columns, vizCfg.valueKey ?? vizCfg.yAxisKeys?.[0]) ?? columns[1] ?? columns[0]
-    const rawCategories = buildRawCategories(rows, labelKey)
-    const valueMap = buildAggregatedValueMap(rows, labelKey, valueKey, readNum)
+    const rawCategories = buildRawCategories(rows, xKey)
+    const valueMap = buildAggregatedValueMap(rows, xKey, yKeys[0] ?? columns[1] ?? columns[0], readNum)
     const aggregatedValues = rawCategories.map((raw) => valueMap.get(raw) ?? 0)
     const total = aggregatedValues.reduce((sum, v) => sum + v, 0)
     // 음수 포함 또는 합계 0이면 비율 계산 불가
     if (aggregatedValues.some((v) => v < 0) || total <= 0) return {}
-    const labels = buildCategoryLabels(rawCategories, rows, dRows, labelKey, readLabel)
+    const labels = buildCategoryLabels(rawCategories, rows, dRows, xKey, readLabel)
     return {
       items: rawCategories.map((raw, i) => ({
         name: labels[i],

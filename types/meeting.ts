@@ -8,6 +8,16 @@ export interface Meeting {
   endDt: string
   createUserId: string
   createDt: string
+  integrateYn?: string // 'Y' | 'N'
+}
+
+/** 통합 회의록의 원본 회의 항목 */
+export interface MeetingIntegrationSource {
+  meetingId: number
+  meetingTitle: string
+  startDt: string
+  endDt: string
+  status: string
 }
 
 export interface MeetingMinutes {
@@ -41,6 +51,7 @@ export interface MeetingDetail {
   speakers: MeetingSpeaker[]
   infographicList?: MeetingInfographic[]
   userList?: User[]
+  integrationSources?: MeetingIntegrationSource[]
 }
 
 export interface TodoItem {
@@ -194,4 +205,5 @@ export interface MeetingViewModel {
   createdAt: string
   updatedAt: string
   status: string
+  integrateYn: string // 'Y' | 'N' — 통합 회의록 여부
 }

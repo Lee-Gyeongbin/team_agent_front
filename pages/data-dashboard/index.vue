@@ -18,6 +18,8 @@
       item-key="widgetId"
       handle=".widget-drag-handle"
       animation="200"
+      :scroll="false"
+      @start="onDragStart"
       @end="onDragEnd"
     >
       <template #item="{ element }">
@@ -25,10 +27,14 @@
           :widget="element"
           :state="getWidgetState(element.widgetId)"
           :code-map="getWidgetCodeMap(element.widgetId)"
+          :height-px="getWidgetHeightPx(element.widgetId)"
           @execute="onExecute"
+          @reset-filters="onResetFilters"
           @delete="handleDeleteWidget"
           @resize="handleResizeWidget"
           @change-viz-type="onChangeVizType"
+          @update-height="onUpdateHeight"
+          @reset-height="onResetHeight"
         />
       </template>
     </draggable>
@@ -59,6 +65,7 @@
 import draggable from 'vuedraggable'
 import type { DataDashboardWidget, DataDashboardWidgetState, DataDashboardVizType } from '~/types/data-dashboard'
 import { useDataDashboardStore } from '~/composables/data-dashboard/useDataDashboardStore'
+import { useDashboardDragAutoScroll } from '~/composables/data-dashboard/useDashboardDragAutoScroll'
 
 definePageMeta({ layout: 'default' })
 
@@ -69,14 +76,20 @@ const {
   handleSelectWidgetList,
   handleExecuteSql,
   handleUpdateFilterValues,
+  handleResetFilterValues,
   handleSaveWidget,
   handleDeleteWidget,
   handleResizeWidget,
   handleSaveWidgetOrder,
+  handleSaveWidgetHeight,
+  handleResetWidgetHeight,
   getWidgetCodeMap,
+  getWidgetHeightPx,
   openAddModal,
   closeAddModal,
 } = useDataDashboardStore()
+
+const { startDragAutoScroll, stopDragAutoScroll } = useDashboardDragAutoScroll()
 
 // 위젯 상태 조회 (없으면 기본값 반환)
 const defaultState: DataDashboardWidgetState = {
@@ -95,6 +108,11 @@ const onExecute = async (widgetId: string, filterValues: Record<string, string>)
   await handleExecuteSql(widgetId)
 }
 
+// 필터값 TTSQ 초기값 복원 (실행 없음)
+const onResetFilters = (widgetId: string) => {
+  handleResetFilterValues(widgetId)
+}
+
 // 시각화 유형 변경 (저장 없이 로컬 상태만 변경 — 다른 유형으로 재렌더링)
 const onChangeVizType = (widgetId: string, vizType: DataDashboardVizType) => {
   const idx = widgetList.value.findIndex((w) => w.widgetId === widgetId)
@@ -107,9 +125,32 @@ const onSaveWidget = async (data: Partial<DataDashboardWidget>) => {
   await handleSaveWidget(data)
 }
 
-// 드래그 순서 저장
-const onDragEnd = () => {
+/** 드래그 시작 시 현재 너비 고정 — Sortable transform 중 콘텐츠가 그리드를 밀어내는 것 방지 */
+const onDragStart = (evt: { item: HTMLElement }) => {
+  const el = evt.item
+  const { width } = el.getBoundingClientRect()
+  el.style.width = `${width}px`
+  el.style.maxWidth = `${width}px`
+  startDragAutoScroll(el)
+}
+
+/** 드래그 종료 시 인라인 너비 제거 후 순서 저장 */
+const onDragEnd = (evt: { item: HTMLElement }) => {
+  stopDragAutoScroll()
+  const el = evt.item
+  el.style.width = ''
+  el.style.maxWidth = ''
   handleSaveWidgetOrder()
+}
+
+// 높이 변경 저장
+const onUpdateHeight = (widgetId: string, heightPx: number) => {
+  handleSaveWidgetHeight(widgetId, heightPx)
+}
+
+// 높이 초기화
+const onResetHeight = (widgetId: string) => {
+  handleResetWidgetHeight(widgetId)
 }
 
 onMounted(() => {

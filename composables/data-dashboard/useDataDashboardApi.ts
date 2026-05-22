@@ -2,6 +2,7 @@ import { useApi } from '~/composables/com/useApi'
 import type {
   DataDashboardSqlItem,
   DataDashboardWidget,
+  DataDashboardLayout,
   DataDashboardQueryResult,
   ColCodeMap,
 } from '~/types/data-dashboard'
@@ -29,9 +30,36 @@ export const useDataDashboardApi = () => {
     await post('/datadashboard/widgetDelete.do', { widgetId })
   }
 
+  /** 위젯 너비(colSpan)만 저장 — vizType 등 다른 필드 불변 */
+  const fetchSaveWidgetColSpan = async (widgetId: string, colSpan: 1 | 2): Promise<void> => {
+    await post('/datadashboard/widgetColSpan.do', { widgetId, colSpan })
+  }
+
   /** 위젯 순서 저장 */
   const fetchSaveWidgetOrder = async (orderList: { widgetId: string; sortOrd: number }[]): Promise<void> => {
     await post('/datadashboard/widgetOrder.do', { orderList })
+  }
+
+  /** 레이아웃 목록 조회 */
+  const fetchLayoutList = async (): Promise<{ list: DataDashboardLayout[] }> => {
+    return post<{ list: DataDashboardLayout[] }>('/datadashboard/layoutList.do', {})
+  }
+
+  /** 레이아웃 단건 저장 (heightPx · widthPx 등 개별 속성 업데이트) */
+  const fetchSaveLayout = async (layout: DataDashboardLayout): Promise<void> => {
+    await post('/datadashboard/layoutSave.do', layout)
+  }
+
+  /** 위젯 높이 초기화 (HEIGHT_PX = NULL) */
+  const fetchResetLayoutHeight = async (widgetId: string): Promise<void> => {
+    await post('/datadashboard/layoutResetHeight.do', { widgetId })
+  }
+
+  /** 레이아웃 순서/위치 일괄 저장 (드래그 종료 후 호출) */
+  const fetchSaveLayoutOrder = async (
+    layoutOrderList: { widgetId: string; sortOrd: number; rowPos: number; colPos: number; colSpan: number }[],
+  ): Promise<void> => {
+    await post('/datadashboard/layoutOrder.do', { layoutOrderList })
   }
 
   /**
@@ -76,7 +104,12 @@ export const useDataDashboardApi = () => {
     fetchWidgetList,
     fetchSaveWidget,
     fetchDeleteWidget,
+    fetchSaveWidgetColSpan,
     fetchSaveWidgetOrder,
+    fetchLayoutList,
+    fetchSaveLayout,
+    fetchResetLayoutHeight,
+    fetchSaveLayoutOrder,
     fetchExecuteSql,
     fetchColCodeMap,
   }
