@@ -10,6 +10,8 @@
   gap: $spacing-md;
   padding: $spacing-md;
   max-width: 1366px;
+  min-width: 0;
+  overflow-x: clip;
 }
 
 .data-dashboard-toolbar {
@@ -29,9 +31,12 @@
 // ===================================
 .data-dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  // minmax(0, 1fr): 콘텐츠 min-width가 컬럼을 밀어 화면 밖으로 넘치는 것 방지
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: $spacing-md;
   align-items: start;
+  width: 100%;
+  min-width: 0;
 
   // 드래그 고스트
   .sortable-ghost {
@@ -39,6 +44,9 @@
     border: 2px dashed var(--color-primary);
     border-radius: 12px;
     background: var(--color-primary-bg);
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
   }
 }
 
@@ -59,15 +67,45 @@
 // 위젯 카드
 // ===================================
 .dashboard-widget {
+  position: relative;
   background: #fff;
   border: 1px solid #dce4e9;
   border-radius: 16px;
   display: flex;
   flex-direction: column;
-  transition: box-shadow $transition-base;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  transition:
+    box-shadow $transition-base,
+    border-color $transition-fast;
+
+  // 드래그 중 transform 적용 시 그리드 밖으로 넓어지는 현상 방지
+  &.sortable-chosen {
+    box-sizing: border-box;
+  }
 
   &:hover {
     box-shadow: $shadow-md;
+  }
+
+  &.is-resizing {
+    user-select: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px var(--color-primary-bg);
+
+    .widget-resize-handle {
+      opacity: 1;
+
+      &::before {
+        border-color: var(--color-primary);
+      }
+    }
+  }
+
+  &:hover .widget-resize-handle {
+    opacity: 1;
   }
 
   &.col-span-2 {
@@ -108,6 +146,38 @@
       background: #fff1f1;
       color: $color-error;
     }
+  }
+}
+
+// 높이 리사이즈 핸들 (하단 중앙)
+.widget-resize-handle {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 12px;
+  cursor: ns-resize;
+  opacity: 0;
+  transition: opacity $transition-fast;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  // 가로 줄 2개 (리사이즈 그립)
+  &::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    border-top: 2px solid $color-border;
+    border-bottom: 2px solid $color-border;
+    border-radius: 2px;
+    transition: border-color $transition-fast;
+  }
+
+  &:hover::before {
+    border-color: var(--color-primary);
   }
 }
 
@@ -176,41 +246,114 @@
 // ===================================
 .widget-filter {
   display: flex;
-  align-items: flex-end;
+  flex-direction: column;
   gap: $spacing-sm;
   padding: 10px 14px;
-  background: #f9fafb;
-  border-bottom: 1px solid #ecf0f3;
-  flex-wrap: wrap;
+  background: #f4f7f9;
+  border-bottom: 1px solid #e4eaef;
+
+  .widget-filter-main {
+    display: flex;
+    align-items: stretch;
+    flex: 1;
+    min-width: 0;
+    background: #fff;
+    border: 1px solid $color-border-light;
+    border-radius: $border-radius-base;
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+    overflow: hidden;
+  }
 
   .widget-filter-fields {
     display: flex;
-    align-items: flex-end;
-    gap: $spacing-sm;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 8px;
     flex: 1;
     min-width: 0;
-    flex-wrap: wrap;
+    padding: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    background: #f9fafb;
+    @include custom-scrollbar;
+  }
+
+  .widget-filter-actions {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    justify-content: flex-end;
+    gap: 6px;
+    padding: 8px;
+    border-left: 1px solid #e2e8f0;
+    background: #f9fafb;
   }
 
   .filter-field {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    flex-shrink: 0;
+    gap: 6px;
+    padding: 8px 10px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: $border-radius-base;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+    transition: border-color $transition-fast, box-shadow $transition-fast;
+
+    &:hover {
+      border-color: #c6d2db;
+    }
+
+    &:focus-within {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb, 59, 130, 246), 0.12);
+    }
+  }
+
+  // 텍스트·숫자·날짜만 컴팩트 너비 (기준 대비 1.2배)
+  .filter-field--compact {
+    flex: 0 0 auto;
+    width: 116px;
+    min-width: 116px;
+
+    :deep(.ui-input-wrap) {
+      width: 100%;
+      max-width: 92px;
+    }
+  }
+
+  // 셀렉트·멀티셀렉트 — 기본 너비 유지 (컴팩트 제한 없음)
+  .filter-field--select {
+    flex: 0 0 auto;
     min-width: 120px;
+
+    :deep(.ui-select-wrap),
+    :deep(.ui-multi-select-wrap) {
+      width: 100%;
+      min-width: 100px;
+    }
   }
 
   .filter-label {
     @include typo($body-xsmall);
+    font-weight: 600;
     color: $color-text-secondary;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #e8edf2;
   }
 
   .filter-date-input {
+    width: 100%;
+    max-width: 92px;
     height: $height-sm;
-    padding: 0 8px;
+    padding: 0 6px;
     border: 1px solid #c6d2db;
     border-radius: $border-radius-base;
-    font-size: $font-size-base;
+    font-size: $font-size-sm;
     color: $color-text-primary;
     background: #fff;
     transition: border-color $transition-base;
@@ -227,8 +370,12 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-top: 2px;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 10px 12px;
+  background: rgba(var(--color-primary-rgb, 60, 105, 219), 0.09);
+  border: 1px solid rgba(var(--color-primary-rgb, 60, 105, 219), 0.22);
+  border-radius: $border-radius-base;
 }
 
 .widget-filter-sql-header {
@@ -237,24 +384,33 @@
   justify-content: space-between;
   gap: $spacing-xs;
 
+  .filter-label {
+    @include typo($body-small-bold);
+    font-weight: $font-weight-semibold;
+    color: var(--color-primary);
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
   .widget-filter-sql-copy {
     flex-shrink: 0;
   }
 }
 
 .widget-filter-sql-code {
-  padding: 8px 10px;
-  background: #f4f7f9;
-  border: 1px solid $color-border-light;
+  padding: 10px 12px;
+  background: #f0f4f8;
+  border: 1px solid rgba(var(--color-primary-rgb, 60, 105, 219), 0.16);
   border-radius: $border-radius-base;
   @include typo($body-xsmall);
-  color: $color-text-secondary;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
   white-space: pre;
   word-break: break-all;
   max-height: 120px;
   overflow-y: auto;
   font-family: 'Consolas', 'Monaco', monospace;
-  line-height: 1.6;
+  line-height: 1.65;
   @include custom-scrollbar;
 }
 
@@ -277,24 +433,35 @@
 // ===================================
 // 위젯 콘텐츠 영역
 // ===================================
+// height는 JS(localHeightPx)가 inline style로 직접 적용
+// CSS 변수 미사용 → 타이밍/fallback 이슈 없음
 .widget-content {
-  flex: 1;
-  min-height: 0;
   display: flex;
   flex-direction: column;
   padding: $spacing-md;
-  min-height: 300px;
+  min-width: 0;
 
+  // 로딩·빈상태: widget-content minHeight(JS 주입)로 높이 확보 후 flex:1로 채움
   .ui-loading,
   .ui-empty {
     flex: 1;
   }
 }
 
+// height는 inline style로 주입 — chart.js 부모 height 인식
 .widget-chart-wrap {
-  flex: 1;
+  flex-shrink: 0;
+  min-width: 0;
   min-height: 0;
-  height: 280px;
+  width: 100%;
+}
+
+// height + overflow:hidden inline 주입 — 팽창 차단, ui-table-wrap이 내부 스크롤 담당
+.widget-table-wrap {
+  flex-shrink: 0;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
 }
 
 // ===================================
