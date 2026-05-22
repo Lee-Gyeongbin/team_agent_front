@@ -2,7 +2,7 @@
   <UiModal
     :is-open="isOpen"
     title="위젯 추가"
-    :max-width="'min(960px, calc(100vw - 32px))'"
+    :max-width="'min(1200px, calc(100vw - 32px))'"
     show-fullscreen
     @close="$emit('close')"
   >
@@ -10,7 +10,7 @@
       <!-- 좌측: SQL 목록 -->
       <div class="widget-add-left">
         <div class="widget-add-panel-header">
-          <span class="widget-add-panel-title">SQL 목록</span>
+          <span class="widget-add-panel-title">데이터분석 질의 목록</span>
         </div>
         <div class="widget-add-left-search">
           <UiInput
@@ -35,12 +35,20 @@
                 @click="onSelectSql(sql)"
               >
                 <span class="sql-row-title">{{ sql.sqlTitle }}</span>
-                <span
+                <UiTooltip
                   v-if="sql.datamartNm"
-                  class="sql-row-badge"
+                  side="bottom"
+                  align="end"
+                  :content="sql.datamartNm"
+                  content-class="widget-add-datamart-tooltip"
                 >
-                  {{ sql.datamartNm }}
-                </span>
+                  <span
+                    class="sql-row-datamart-icon"
+                    @click.stop
+                  >
+                    <i class="icon-database size-16" />
+                  </span>
+                </UiTooltip>
               </button>
             </div>
           </template>
@@ -53,127 +61,133 @@
 
       <!-- 우측: 위젯 설정 폼 -->
       <div class="widget-add-right">
-        <div class="widget-add-panel-header">
+        <div class="widget-add-panel-header widget-add-panel-header--config">
           <span class="widget-add-panel-title">위젯 설정</span>
+          <span
+            v-if="selectedSql?.datamartNm"
+            class="widget-add-datamart-badge"
+            :title="selectedSql.datamartNm"
+          >
+            <i class="icon-database size-14" />
+            <span class="widget-add-datamart-badge-text">{{ selectedSql.datamartNm }}</span>
+          </span>
         </div>
         <div class="widget-add-right-body">
           <template v-if="selectedSql">
-            <!-- SQL 미리보기 -->
-            <div class="config-sql-preview">
-              <label class="config-label">SQL</label>
-              <pre class="config-sql-code">{{ formattedSql }}</pre>
-            </div>
-
-            <!-- 위젯 제목 -->
-            <div class="config-field">
-              <label class="config-label">위젯 제목</label>
-              <UiInput
-                v-model="form.title"
-                placeholder="위젯 제목을 입력하세요"
-              />
-            </div>
-
-            <!-- 시각화 유형 -->
-            <div class="config-field">
-              <div class="config-label-row">
-                <label class="config-label">시각화 유형</label>
-                <span
-                  v-if="isLlmAutoFilled"
-                  class="config-ai-badge"
-                >
-                  <i class="icon-ai-stars size-12" />
-                  AI 추천
-                </span>
+            <section class="config-section config-section--sql">
+              <div class="widget-filter-sql-preview">
+                <div class="widget-filter-sql-header">
+                  <span class="filter-label">SQL</span>
+                  <button
+                    type="button"
+                    class="btn btn-widget-action widget-filter-sql-copy"
+                    title="SQL 복사"
+                    :disabled="!formattedSql"
+                    @click="onCopySql"
+                  >
+                    <i class="icon-copy size-16" />
+                  </button>
+                </div>
+                <pre class="widget-filter-sql-code">{{ formattedSql }}</pre>
               </div>
-              <div class="viz-type-group">
-                <button
-                  v-for="opt in vizTypeOptions"
-                  :key="opt.value"
-                  class="viz-type-btn"
-                  :class="{ 'is-selected': form.vizType === opt.value }"
-                  type="button"
-                  @click="form.vizType = opt.value"
-                >
-                  <i
-                    :class="opt.icon"
-                    class="size-18"
-                  />
-                  <span>{{ opt.label }}</span>
-                </button>
-              </div>
-            </div>
+            </section>
 
-            <!-- 컬럼 매핑 (테이블 제외) -->
-            <template v-if="form.vizType !== 'table'">
+            <section class="config-section">
               <div class="config-field">
-                <label class="config-label">컬럼 매핑</label>
-                <p class="config-hint">조회 결과의 컬럼명을 입력하세요. (비워두면 자동 매핑)</p>
+                <label class="config-label">위젯 제목</label>
+                <UiInput
+                  v-model="form.title"
+                  placeholder="위젯 제목을 입력하세요"
+                />
               </div>
+            </section>
 
-              <template v-if="form.vizType === 'pie'">
-                <div class="config-field-row">
-                  <div class="config-field is-half">
-                    <label class="config-label-sm">라벨 컬럼</label>
-                    <UiInput
-                      v-model="form.vizConfig.labelKey"
-                      placeholder="예: 카테고리"
-                      size="sm"
-                    />
-                  </div>
-                  <div class="config-field is-half">
-                    <label class="config-label-sm">값 컬럼</label>
-                    <UiInput
-                      v-model="form.vizConfig.valueKey"
-                      placeholder="예: 건수"
-                      size="sm"
-                    />
-                  </div>
+            <section class="config-section">
+              <div class="config-field">
+                <div class="config-label-row">
+                  <label class="config-label">시각화 유형</label>
+                  <span
+                    v-if="isLlmAutoFilled"
+                    class="config-ai-badge"
+                  >
+                    <i class="icon-ai-stars size-12" />
+                    AI 추천
+                  </span>
                 </div>
-              </template>
-
-              <template v-else>
-                <div class="config-field-row">
-                  <div class="config-field is-half">
-                    <label class="config-label-sm">X축 컬럼</label>
-                    <UiInput
-                      v-model="form.vizConfig.xAxisKey"
-                      placeholder="예: 월"
-                      size="sm"
+                <div class="viz-type-group">
+                  <button
+                    v-for="opt in vizTypeOptions"
+                    :key="opt.value"
+                    class="viz-type-btn"
+                    :class="{ 'is-selected': form.vizType === opt.value }"
+                    type="button"
+                    @click="onSelectVizType(opt.value)"
+                  >
+                    <i
+                      :class="opt.icon"
+                      class="size-18"
                     />
-                  </div>
-                  <div class="config-field is-half">
-                    <label class="config-label-sm">Y축 컬럼 (쉼표 구분)</label>
-                    <UiInput
-                      v-model="yAxisKeysInput"
-                      placeholder="예: 쿼리수, 성공수"
-                      size="sm"
-                    />
-                  </div>
+                    <span>{{ opt.label }}</span>
+                  </button>
                 </div>
-              </template>
-            </template>
+              </div>
+            </section>
 
-            <!-- SQL 파라미터 -->
-            <div class="config-field">
-              <label class="config-label">SQL 파라미터</label>
-              <p class="config-hint">
-                SQL 재활용 시 값을 변경할 수 있는 변수 컬럼입니다. 대시보드 화면에서 값을 수정해 조회할 수 있습니다.
-              </p>
-              <div class="param-tag-area">
-                <div class="param-tags">
+            <section
+              v-if="isAxisChartViz"
+              class="config-section config-section--column-mapping"
+            >
+              <div class="config-field config-field--column-mapping">
+                <div class="config-label-row">
+                  <label class="config-label">컬럼 매핑</label>
+                  <span class="config-ai-badge config-ai-badge--setting">
+                    <i class="icon-ai-stars size-12" />
+                    AI 설정
+                  </span>
+                </div>
+                <p class="config-hint config-hint--locked">AI가 설정한 컬럼 매핑이며 수정할 수 없습니다.</p>
+              </div>
+              <div class="config-field-row config-field-row--locked">
+                <div class="config-field is-half">
+                  <label class="config-label-sm">X축 컬럼</label>
+                  <UiInput
+                    v-model="form.vizConfig.xAxisKey"
+                    placeholder="예: 월"
+                    size="sm"
+                    disabled
+                  />
+                </div>
+                <div class="config-field is-half">
+                  <label class="config-label-sm">Y축 컬럼 (쉼표 구분)</label>
+                  <UiInput
+                    v-model="yAxisKeysInput"
+                    placeholder="예: 쿼리수, 성공수"
+                    size="sm"
+                    disabled
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section class="config-section">
+              <div class="config-field">
+                <div class="config-label-row">
+                  <label class="config-label">SQL 파라미터</label>
+                  <span class="config-ai-badge config-ai-badge--setting">
+                    <i class="icon-ai-stars size-12" />
+                    AI 설정
+                  </span>
+                </div>
+                <p class="config-hint">
+                  SQL 재활용 시 값을 변경할 수 있는 변수 컬럼입니다. 대시보드 화면에서 값을 수정해 조회할 수 있습니다.
+                </p>
+                <div class="param-tags param-tags--readonly">
                   <span
                     v-for="param in parsedParams"
                     :key="param.key"
                     class="param-tag"
                   >
                     {{ param.key.toUpperCase() }}
-                    <button
-                      type="button"
-                      class="param-tag-del"
-                      @click="onRemoveParam(param.key)"
-                    >
-                      <i class="icon-close size-10" />
-                    </button>
                   </span>
                   <span
                     v-if="!parsedParams.length"
@@ -182,49 +196,34 @@
                     파라미터 없음
                   </span>
                 </div>
-                <div class="param-add-row">
-                  <UiInput
-                    v-model="newParamInput"
-                    placeholder="파라미터 추가 (예: YEAR)"
-                    size="sm"
-                    class="param-add-input"
-                    @keydown.enter.prevent="onAddParam"
-                  />
-                  <UiButton
-                    variant="line-secondary"
-                    size="sm"
-                    @click="onAddParam"
+              </div>
+            </section>
+
+            <section class="config-section">
+              <div class="config-field">
+                <label class="config-label">위젯 너비</label>
+                <div class="col-span-group">
+                  <button
+                    class="col-span-btn"
+                    :class="{ 'is-selected': form.colSpan === 1 }"
+                    type="button"
+                    @click="form.colSpan = 1"
                   >
-                    추가
-                  </UiButton>
+                    <span class="col-span-preview is-half" />
+                    <span>1칸 (절반)</span>
+                  </button>
+                  <button
+                    class="col-span-btn"
+                    :class="{ 'is-selected': form.colSpan === 2 }"
+                    type="button"
+                    @click="form.colSpan = 2"
+                  >
+                    <span class="col-span-preview is-full" />
+                    <span>2칸 (전체)</span>
+                  </button>
                 </div>
               </div>
-            </div>
-
-            <!-- 너비 설정 -->
-            <div class="config-field">
-              <label class="config-label">위젯 너비</label>
-              <div class="col-span-group">
-                <button
-                  class="col-span-btn"
-                  :class="{ 'is-selected': form.colSpan === 1 }"
-                  type="button"
-                  @click="form.colSpan = 1"
-                >
-                  <span class="col-span-preview is-half" />
-                  <span>1칸 (절반)</span>
-                </button>
-                <button
-                  class="col-span-btn"
-                  :class="{ 'is-selected': form.colSpan === 2 }"
-                  type="button"
-                  @click="form.colSpan = 2"
-                >
-                  <span class="col-span-preview is-full" />
-                  <span>2칸 (전체)</span>
-                </button>
-              </div>
-            </div>
+            </section>
           </template>
 
           <!-- SQL 미선택 안내 -->
@@ -251,7 +250,7 @@
           취소
         </UiButton>
         <UiButton
-          :disabled="!selectedSql"
+          :disabled="!canSave"
           @click="onSave"
         >
           위젯 추가
@@ -263,6 +262,8 @@
 
 <script setup lang="ts">
 import { parseTtsqParam } from '~/utils/dataDashboard/ttsqParamParser'
+import { copyToClipboard } from '~/utils/global/clipboardUtil'
+import { formatSql } from '~/utils/global/codeUtil'
 import type {
   DataDashboardSqlItem,
   DataDashboardSqlVariable,
@@ -296,7 +297,17 @@ const emit = defineEmits<{
 
 const { sqlList, sqlListLoading } = useDataDashboardStore()
 
-const formattedSql = computed(() => formatSql(selectedSql.value?.sqlContent))
+const formattedSql = computed(() => formatSql(selectedSql.value?.sqlContent ?? ''))
+
+const onCopySql = async () => {
+  if (!formattedSql.value) return
+  try {
+    await copyToClipboard(formattedSql.value)
+    openToast({ message: 'SQL이 복사되었습니다.', type: 'success' })
+  } catch {
+    openToast({ message: '클립보드에 복사하지 못했습니다.', type: 'error' })
+  }
+}
 
 const searchKeyword = ref('')
 const selectedLogId = ref<string | null>(null)
@@ -304,28 +315,11 @@ const selectedSql = ref<DataDashboardSqlItem | null>(null)
 
 const yAxisKeysInput = ref('')
 
-/** LLM이 자동 세팅한 항목 여부 (뱃지 표시용) */
+/** LLM chartOption 자동 세팅 여부 (시각화 유형 뱃지) */
 const isLlmAutoFilled = ref(false)
 
-/** LLM이 추출한 SQL 파라미터 컬럼 목록 */
+/** LLM이 추출한 SQL 파라미터 컬럼 목록 (읽기 전용) */
 const parsedParams = ref<DataDashboardSqlVariable[]>([])
-
-/** 파라미터 추가 입력값 */
-const newParamInput = ref('')
-
-/** 파라미터 제거 */
-const onRemoveParam = (key: string) => {
-  parsedParams.value = parsedParams.value.filter((p) => p.key !== key)
-}
-
-/** 파라미터 추가 */
-const onAddParam = () => {
-  const key = newParamInput.value.trim().toLowerCase()
-  if (!key) return
-  if (parsedParams.value.some((p) => p.key === key)) return
-  parsedParams.value.push({ key, label: key.toUpperCase(), type: 'text' as const })
-  newParamInput.value = ''
-}
 
 const form = reactive<{
   title: string
@@ -338,6 +332,28 @@ const form = reactive<{
   vizConfig: { xAxisKey: '', yAxisKeys: [], labelKey: '', valueKey: '' },
   colSpan: 1,
 })
+
+/** 컬럼 매핑 필수 시각화 (막대·라인·가로막대) */
+const AXIS_CHART_VIZ_TYPES: DataDashboardVizType[] = ['bar', 'line', 'horizontalBar']
+
+const isAxisChartViz = computed(() => AXIS_CHART_VIZ_TYPES.includes(form.vizType))
+
+/** ttsqParam 파싱 + LLM 추천 뱃지 상태 반영 */
+const applyTtsqParam = (ttsqParam: string | null | undefined) => {
+  parsedParams.value = parseTtsqParam(ttsqParam)
+}
+
+const isColumnMappingValid = computed(() => {
+  if (!isAxisChartViz.value) return true
+  const x = form.vizConfig.xAxisKey.trim()
+  const yKeys = yAxisKeysInput.value
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  return !!x && yKeys.length > 0
+})
+
+const canSave = computed(() => !!selectedSql.value && isColumnMappingValid.value)
 
 /** chartOption JSON 문자열을 파싱해 객체로 반환 */
 const parseChartOption = (raw: string | null | undefined): VisualizationChartOptionPayload | null => {
@@ -400,6 +416,45 @@ const vizTypeOptions: { label: string; value: DataDashboardVizType; icon: string
   { label: '테이블', value: 'table', icon: 'icon-sql' },
 ]
 
+/** 시각화 유형 변경 — 파이 선택 시 AI가 채운 X/Y 값을 label/value로 이관 */
+const onSelectVizType = (vizType: DataDashboardVizType) => {
+  form.vizType = vizType
+  if (vizType !== 'pie') return
+
+  if (!form.vizConfig.labelKey.trim() && form.vizConfig.xAxisKey.trim()) {
+    form.vizConfig.labelKey = form.vizConfig.xAxisKey.trim()
+  }
+  const firstY = yAxisKeysInput.value
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)[0]
+  if (!form.vizConfig.valueKey.trim() && firstY) {
+    form.vizConfig.valueKey = firstY
+  }
+}
+
+/** 저장용 vizConfig — 파이는 label/value, 축 차트는 x/y, 테이블·파이(미설정)는 빈 객체 허용 */
+const buildSaveVizConfig = (): DataDashboardVizConfig => {
+  if (form.vizType === 'pie') {
+    const labelKey = form.vizConfig.labelKey.trim()
+    const valueKey = form.vizConfig.valueKey.trim()
+    const cfg: DataDashboardVizConfig = {}
+    if (labelKey) cfg.labelKey = labelKey
+    if (valueKey) cfg.valueKey = valueKey
+    return cfg
+  }
+  if (isAxisChartViz.value) {
+    return {
+      xAxisKey: form.vizConfig.xAxisKey.trim(),
+      yAxisKeys: yAxisKeysInput.value
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+    }
+  }
+  return {}
+}
+
 const onSelectSql = (sql: DataDashboardSqlItem) => {
   selectedLogId.value = sql.logId
   selectedSql.value = sql
@@ -413,28 +468,18 @@ const onSelectSql = (sql: DataDashboardSqlItem) => {
   applyChartOption(parseChartOption(sql.chartOption))
 
   // LLM이 추출한 SQL 파라미터 자동 세팅
-  parsedParams.value = parseTtsqParam(sql.ttsqParam)
+  applyTtsqParam(sql.ttsqParam)
 }
 
 const onSave = () => {
-  if (!selectedSql.value) return
-
-  const yAxisKeys = yAxisKeysInput.value
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
+  if (!canSave.value || !selectedSql.value) return
 
   emit('save', {
     logId: selectedSql.value.logId,
     sqlTitle: selectedSql.value.sqlTitle,
     title: form.title || selectedSql.value.sqlTitle,
     vizType: form.vizType,
-    vizConfig: {
-      xAxisKey: form.vizConfig.xAxisKey || undefined,
-      yAxisKeys: yAxisKeys.length ? yAxisKeys : undefined,
-      labelKey: form.vizConfig.labelKey || undefined,
-      valueKey: form.vizConfig.valueKey || undefined,
-    },
+    vizConfig: buildSaveVizConfig(),
     colSpan: form.colSpan,
     variables: parsedParams.value.length ? parsedParams.value : selectedSql.value.variables,
     ttsqParam: selectedSql.value.ttsqParam,
@@ -452,7 +497,6 @@ watch(
     yAxisKeysInput.value = ''
     isLlmAutoFilled.value = false
     parsedParams.value = []
-    newParamInput.value = ''
     form.title = ''
     form.vizType = 'bar'
     form.colSpan = 1
@@ -505,14 +549,17 @@ watch(
   color: var(--color-text-primary, #222);
 }
 
-.sql-row-badge {
+.sql-row-datamart-icon {
   flex-shrink: 0;
-  padding: 2px 8px;
-  border-radius: 10px;
-  background: var(--color-bg-subtle, #eef0f5);
-  color: var(--color-text-secondary, #666);
-  font-size: 11px;
-  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted, #8b95a5);
+  cursor: default;
+
+  &:hover {
+    color: var(--color-primary);
+  }
 }
 
 // ===== 라벨 + AI 뱃지 =====
@@ -539,17 +586,28 @@ watch(
   font-weight: 500;
   line-height: 1.4;
   white-space: nowrap;
+
+  &--setting {
+    font-weight: 600;
+  }
+}
+
+.config-hint--locked {
+  margin-top: 0;
+  color: var(--color-text-secondary, #5c6677);
+}
+
+.config-field-row--locked {
+  :deep(.ui-input-wrap.is-disabled) {
+    background: #f0f4f8;
+    border-color: #dce4e9;
+    cursor: not-allowed;
+  }
 }
 
 // ===== SQL 파라미터 =====
-.param-tag-area {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 6px;
-}
-
 .param-tags {
+  margin-top: 6px;
   display: flex;
   flex-wrap: wrap;
   align-content: flex-start;
@@ -559,6 +617,10 @@ watch(
   border-radius: 8px;
   background: var(--color-bg-subtle, #f8fafc);
   min-height: 46px;
+}
+
+.param-tags--readonly .param-tag {
+  padding: 4px 10px;
 }
 
 .param-tag {
@@ -576,42 +638,9 @@ watch(
   letter-spacing: 0.04em;
 }
 
-.param-tag-del {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  padding: 0;
-  background: none;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  color: var(--color-primary, #3c69db);
-  opacity: 0.55;
-  transition:
-    opacity 0.15s,
-    background 0.15s;
-
-  &:hover {
-    opacity: 1;
-    background: rgba(60, 105, 219, 0.12);
-  }
-}
-
 .param-empty {
   font-size: 12px;
   color: var(--color-text-secondary, #999);
   align-self: center;
-}
-
-.param-add-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.param-add-input {
-  flex: 1;
 }
 </style>

@@ -286,6 +286,7 @@ import {
   buildRawCategories,
   buildCategoryLabels,
   buildAggregatedValueMap,
+  resolveChartAxisMapping,
 } from '~/utils/dataDashboard/vizConfigUtil'
 import { DATA_DASHBOARD_DEFAULT_HEIGHT_PX } from '~/composables/data-dashboard/useDataDashboardStore'
 import type {
@@ -505,11 +506,7 @@ const chartConfig = computed(() => {
   const readNum = (row: Record<string, unknown>, colKey: string) => Number(getRowValue(row, colKey)) || 0
   const readLabel = (row: Record<string, unknown>, colKey: string) => String(getRowValue(row, colKey) ?? '')
 
-  const xKey = resolveColumnKey(columns, vizCfg.xAxisKey) ?? columns[0]
-  const configuredYKeys = (vizCfg.yAxisKeys ?? [])
-    .map((k) => resolveColumnKey(columns, k))
-    .filter((k): k is string => !!k)
-  const yKeys = configuredYKeys.length ? configuredYKeys : columns.filter((c) => c !== xKey)
+  const { xKey, yKeys } = resolveChartAxisMapping(columns, vizCfg)
 
   // x축 고유값 + Y합산 (REGN_CD 등 부차 차원이 있어도 xAxisKey 기준으로 묶음)
   const buildGroupedSeries = (groupKey: string) => {
