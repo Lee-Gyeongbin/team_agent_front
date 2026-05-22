@@ -246,41 +246,114 @@
 // ===================================
 .widget-filter {
   display: flex;
-  align-items: flex-end;
+  flex-direction: column;
   gap: $spacing-sm;
   padding: 10px 14px;
-  background: #f9fafb;
-  border-bottom: 1px solid #ecf0f3;
-  flex-wrap: wrap;
+  background: #f4f7f9;
+  border-bottom: 1px solid #e4eaef;
+
+  .widget-filter-main {
+    display: flex;
+    align-items: stretch;
+    flex: 1;
+    min-width: 0;
+    background: #fff;
+    border: 1px solid $color-border-light;
+    border-radius: $border-radius-base;
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+    overflow: hidden;
+  }
 
   .widget-filter-fields {
     display: flex;
-    align-items: flex-end;
-    gap: $spacing-sm;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 8px;
     flex: 1;
     min-width: 0;
-    flex-wrap: wrap;
+    padding: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    background: #f9fafb;
+    @include custom-scrollbar;
+  }
+
+  .widget-filter-actions {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    justify-content: flex-end;
+    gap: 6px;
+    padding: 8px;
+    border-left: 1px solid #e2e8f0;
+    background: #f9fafb;
   }
 
   .filter-field {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    flex-shrink: 0;
+    gap: 6px;
+    padding: 8px 10px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: $border-radius-base;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+    transition: border-color $transition-fast, box-shadow $transition-fast;
+
+    &:hover {
+      border-color: #c6d2db;
+    }
+
+    &:focus-within {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb, 59, 130, 246), 0.12);
+    }
+  }
+
+  // 텍스트·숫자·날짜만 컴팩트 너비 (기준 대비 1.2배)
+  .filter-field--compact {
+    flex: 0 0 auto;
+    width: 116px;
+    min-width: 116px;
+
+    :deep(.ui-input-wrap) {
+      width: 100%;
+      max-width: 92px;
+    }
+  }
+
+  // 셀렉트·멀티셀렉트 — 기본 너비 유지 (컴팩트 제한 없음)
+  .filter-field--select {
+    flex: 0 0 auto;
     min-width: 120px;
+
+    :deep(.ui-select-wrap),
+    :deep(.ui-multi-select-wrap) {
+      width: 100%;
+      min-width: 100px;
+    }
   }
 
   .filter-label {
     @include typo($body-xsmall);
+    font-weight: 600;
     color: $color-text-secondary;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #e8edf2;
   }
 
   .filter-date-input {
+    width: 100%;
+    max-width: 92px;
     height: $height-sm;
-    padding: 0 8px;
+    padding: 0 6px;
     border: 1px solid #c6d2db;
     border-radius: $border-radius-base;
-    font-size: $font-size-base;
+    font-size: $font-size-sm;
     color: $color-text-primary;
     background: #fff;
     transition: border-color $transition-base;
@@ -297,8 +370,12 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-top: 2px;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 10px 12px;
+  background: rgba(var(--color-primary-rgb, 60, 105, 219), 0.09);
+  border: 1px solid rgba(var(--color-primary-rgb, 60, 105, 219), 0.22);
+  border-radius: $border-radius-base;
 }
 
 .widget-filter-sql-header {
@@ -307,24 +384,33 @@
   justify-content: space-between;
   gap: $spacing-xs;
 
+  .filter-label {
+    @include typo($body-small-bold);
+    font-weight: $font-weight-semibold;
+    color: var(--color-primary);
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
   .widget-filter-sql-copy {
     flex-shrink: 0;
   }
 }
 
 .widget-filter-sql-code {
-  padding: 8px 10px;
-  background: #f4f7f9;
-  border: 1px solid $color-border-light;
+  padding: 10px 12px;
+  background: #f0f4f8;
+  border: 1px solid rgba(var(--color-primary-rgb, 60, 105, 219), 0.16);
   border-radius: $border-radius-base;
   @include typo($body-xsmall);
-  color: $color-text-secondary;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
   white-space: pre;
   word-break: break-all;
   max-height: 120px;
   overflow-y: auto;
   font-family: 'Consolas', 'Monaco', monospace;
-  line-height: 1.6;
+  line-height: 1.65;
   @include custom-scrollbar;
 }
 

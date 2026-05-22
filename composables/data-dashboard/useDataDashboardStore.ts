@@ -70,14 +70,19 @@ const hydrateVariables = <
   return item
 }
 
-/** 위젯 상태 초기화 */
-const initWidgetState = (widget: DataDashboardWidget) => {
+/** TTSQ_PARAM + SQL WHERE 추출값 기준 필터 초기값 */
+const buildDefaultFilterValues = (variables: DataDashboardWidget['variables']): Record<string, string> => {
   const defaults: Record<string, string> = {}
-  for (const v of widget.variables ?? []) {
+  for (const v of variables ?? []) {
     defaults[v.key] = v.defaultValue ?? ''
   }
+  return defaults
+}
+
+/** 위젯 상태 초기화 */
+const initWidgetState = (widget: DataDashboardWidget) => {
   widgetStates.value[widget.widgetId] = {
-    filterValues: defaults,
+    filterValues: buildDefaultFilterValues(widget.variables),
     result: null,
     loading: false,
     error: null,
@@ -171,6 +176,14 @@ const getWidgetCodeMap = (widgetId: string): ColCodeMap | undefined => {
 const handleUpdateFilterValues = (widgetId: string, values: Record<string, string>) => {
   ensureWidgetState(widgetId)
   widgetStates.value[widgetId].filterValues = { ...values }
+}
+
+/** 필터값을 TTSQ가 만든 초기값(defaultValue)으로 복원 */
+const handleResetFilterValues = (widgetId: string) => {
+  const widget = widgetList.value.find((w) => w.widgetId === widgetId)
+  if (!widget) return
+  ensureWidgetState(widgetId)
+  widgetStates.value[widgetId].filterValues = buildDefaultFilterValues(widget.variables)
 }
 
 // ===== 위젯 저장 =====
@@ -324,6 +337,7 @@ export const useDataDashboardStore = () => {
     handleSelectSqlList,
     handleExecuteSql,
     handleUpdateFilterValues,
+    handleResetFilterValues,
     handleSaveWidget,
     handleDeleteWidget,
     handleResizeWidget,

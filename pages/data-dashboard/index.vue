@@ -28,6 +28,7 @@
           :code-map="getWidgetCodeMap(element.widgetId)"
           :height-px="getWidgetHeightPx(element.widgetId)"
           @execute="onExecute"
+          @reset-filters="onResetFilters"
           @delete="handleDeleteWidget"
           @resize="handleResizeWidget"
           @change-viz-type="onChangeVizType"
@@ -73,6 +74,7 @@ const {
   handleSelectWidgetList,
   handleExecuteSql,
   handleUpdateFilterValues,
+  handleResetFilterValues,
   handleSaveWidget,
   handleDeleteWidget,
   handleResizeWidget,
@@ -100,6 +102,11 @@ const getWidgetState = (widgetId: string): DataDashboardWidgetState => {
 const onExecute = async (widgetId: string, filterValues: Record<string, string>) => {
   handleUpdateFilterValues(widgetId, filterValues)
   await handleExecuteSql(widgetId)
+}
+
+// 필터값 TTSQ 초기값 복원 (실행 없음)
+const onResetFilters = (widgetId: string) => {
+  handleResetFilterValues(widgetId)
 }
 
 // 시각화 유형 변경 (저장 없이 로컬 상태만 변경 — 다른 유형으로 재렌더링)

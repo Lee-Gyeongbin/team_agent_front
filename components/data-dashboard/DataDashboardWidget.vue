@@ -82,58 +82,85 @@
         v-if="isFilterOpen && enrichedVariables.length"
         class="widget-filter"
       >
-        <div class="widget-filter-fields">
-          <template
-            v-for="variable in enrichedVariables"
-            :key="variable.key"
-          >
-            <div class="filter-field">
-              <label class="filter-label">{{ variable.label }}</label>
-              <!-- 멀티셀렉트 (코드맵 기반 변수) -->
-              <UiMultiSelect
-                v-if="variable.type === 'select' && variable.multiple"
-                :model-value="(localFilterValues[variable.key] || '').split(',').filter(Boolean)"
-                :options="variable.options ?? []"
-                size="sm"
-                @update:model-value="localFilterValues[variable.key] = $event.join(',')"
-              />
-              <!-- 단일 셀렉트 -->
-              <UiSelect
-                v-else-if="variable.type === 'select'"
-                :model-value="localFilterValues[variable.key]"
-                :options="variable.options ?? []"
-                size="sm"
-                @update:model-value="localFilterValues[variable.key] = String($event)"
-              />
-              <!-- 숫자 -->
-              <UiInput
-                v-else-if="variable.type === 'number'"
-                v-model="localFilterValues[variable.key]"
-                number-only
-                size="sm"
-              />
-              <!-- 날짜 (date/month — native input) -->
-              <input
-                v-else-if="variable.type === 'date' || variable.type === 'month'"
-                v-model="localFilterValues[variable.key]"
-                class="inp filter-date-input"
-                :type="variable.type"
-              />
-              <!-- 텍스트 -->
-              <UiInput
-                v-else
-                v-model="localFilterValues[variable.key]"
-                size="sm"
-              />
-            </div>
-          </template>
+        <div class="widget-filter-main">
+          <div class="widget-filter-fields">
+            <template
+              v-for="variable in enrichedVariables"
+              :key="variable.key"
+            >
+              <div
+                class="filter-field"
+                :class="variable.type === 'select' ? 'filter-field--select' : 'filter-field--compact'"
+              >
+                <label class="filter-label">{{ variable.label }}</label>
+                <!-- 멀티셀렉트 (코드맵 기반 변수) -->
+                <UiMultiSelect
+                  v-if="variable.type === 'select' && variable.multiple"
+                  :model-value="(localFilterValues[variable.key] || '').split(',').filter(Boolean)"
+                  :options="variable.options ?? []"
+                  size="sm"
+                  @update:model-value="localFilterValues[variable.key] = $event.join(',')"
+                />
+                <!-- 단일 셀렉트 -->
+                <UiSelect
+                  v-else-if="variable.type === 'select'"
+                  :model-value="localFilterValues[variable.key]"
+                  :options="variable.options ?? []"
+                  size="sm"
+                  @update:model-value="localFilterValues[variable.key] = String($event)"
+                />
+                <!-- 숫자 -->
+                <UiInput
+                  v-else-if="variable.type === 'number'"
+                  v-model="localFilterValues[variable.key]"
+                  number-only
+                  size="sm"
+                />
+                <!-- 날짜 (date/month — native input) -->
+                <input
+                  v-else-if="variable.type === 'date' || variable.type === 'month'"
+                  v-model="localFilterValues[variable.key]"
+                  class="inp filter-date-input"
+                  :type="variable.type"
+                />
+                <!-- 텍스트 -->
+                <UiInput
+                  v-else
+                  v-model="localFilterValues[variable.key]"
+                  size="sm"
+                />
+              </div>
+            </template>
+          </div>
+          <div class="widget-filter-actions">
+            <UiButton
+              variant="outline"
+              size="sm"
+              icon-only
+              class="widget-filter-reset"
+              title="초기값 복원"
+              aria-label="초기값 복원"
+              @click="onResetFilters"
+            >
+              <template #icon-left>
+                <i class="icon-refresh size-16" />
+              </template>
+            </UiButton>
+            <UiButton
+              variant="primary"
+              size="sm"
+              icon-only
+              class="widget-filter-execute"
+              title="실행"
+              aria-label="조회 실행"
+              @click="onExecute"
+            >
+              <template #icon-left>
+                <i class="icon-play size-16" />
+              </template>
+            </UiButton>
+          </div>
         </div>
-        <UiButton
-          size="sm"
-          @click="onExecute"
-        >
-          조회
-        </UiButton>
 
         <!-- 실행 SQL 미리보기 -->
         <div
@@ -261,6 +288,7 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   execute: [widgetId: string, filterValues: Record<string, string>]
+  'reset-filters': [widgetId: string]
   delete: [widgetId: string]
   resize: [widgetId: string, colSpan: 1 | 2]
   'change-viz-type': [widgetId: string, vizType: DataDashboardVizType]
@@ -354,6 +382,10 @@ const onCopyPreviewSql = async () => {
   }
 }
 
+const onResetFilters = () => {
+  emit('reset-filters', props.widget.widgetId)
+}
+
 const onExecute = () => {
   emit('execute', props.widget.widgetId, { ...resolvedFilterValues.value })
 }
@@ -368,8 +400,6 @@ const onChangeVizType = (value: string) => {
 const DEFAULT_HEIGHT = 400
 const MIN_HEIGHT = 400
 
-const widgetEl = ref<HTMLElement | null>(null)
-const contentEl = ref<HTMLElement | null>(null)
 const localHeightPx = ref<number>(props.heightPx ?? DEFAULT_HEIGHT)
 const isResizing = ref(false)
 
