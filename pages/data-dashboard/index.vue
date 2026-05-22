@@ -18,6 +18,7 @@
       item-key="widgetId"
       handle=".widget-drag-handle"
       animation="200"
+      :scroll="false"
       @start="onDragStart"
       @end="onDragEnd"
     >
@@ -64,6 +65,7 @@
 import draggable from 'vuedraggable'
 import type { DataDashboardWidget, DataDashboardWidgetState, DataDashboardVizType } from '~/types/data-dashboard'
 import { useDataDashboardStore } from '~/composables/data-dashboard/useDataDashboardStore'
+import { useDashboardDragAutoScroll } from '~/composables/data-dashboard/useDashboardDragAutoScroll'
 
 definePageMeta({ layout: 'default' })
 
@@ -86,6 +88,8 @@ const {
   openAddModal,
   closeAddModal,
 } = useDataDashboardStore()
+
+const { startDragAutoScroll, stopDragAutoScroll } = useDashboardDragAutoScroll()
 
 // 위젯 상태 조회 (없으면 기본값 반환)
 const defaultState: DataDashboardWidgetState = {
@@ -127,10 +131,12 @@ const onDragStart = (evt: { item: HTMLElement }) => {
   const { width } = el.getBoundingClientRect()
   el.style.width = `${width}px`
   el.style.maxWidth = `${width}px`
+  startDragAutoScroll(el)
 }
 
 /** 드래그 종료 시 인라인 너비 제거 후 순서 저장 */
 const onDragEnd = (evt: { item: HTMLElement }) => {
+  stopDragAutoScroll()
   const el = evt.item
   el.style.width = ''
   el.style.maxWidth = ''

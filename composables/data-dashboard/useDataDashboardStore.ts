@@ -95,6 +95,26 @@ const ensureWidgetState = (widgetId: string) => {
   }
 }
 
+/** sortOrd 기준 오름차순 정렬 (동일 시 widgetId로 안정 정렬) */
+const sortWidgetsByOrd = (widgets: DataDashboardWidget[]): DataDashboardWidget[] => {
+  return [...widgets].sort((a, b) => {
+    const diff = (Number(a.sortOrd) || 0) - (Number(b.sortOrd) || 0)
+    if (diff !== 0) return diff
+    return String(a.widgetId).localeCompare(String(b.widgetId))
+  })
+}
+
+/** 배열 맨 끝으로 옮긴 뒤 순서·레이아웃 저장 */
+const moveWidgetToEnd = async (widgetId: string) => {
+  const idx = widgetList.value.findIndex((w) => w.widgetId === widgetId)
+  if (idx === -1 || idx === widgetList.value.length - 1) return
+  const next = [...widgetList.value]
+  const [item] = next.splice(idx, 1)
+  next.push(item)
+  widgetList.value = next
+  await handleSaveWidgetOrder()
+}
+
 // ===== 위젯 목록 =====
 
 /** 위젯 목록의 모든 SQL을 병렬 실행해 차트를 일괄 갱신 */
@@ -105,7 +125,7 @@ const handleExecuteAllWidgets = async () => {
 const handleSelectWidgetList = async () => {
   try {
     const [widgetRes, layoutRes] = await Promise.all([fetchWidgetList(), fetchLayoutList()])
-    widgetList.value = (widgetRes.list ?? []).map(hydrateVariables)
+    widgetList.value = sortWidgetsByOrd((widgetRes.list ?? []).map(hydrateVariables))
     widgetList.value.forEach(initWidgetState)
     layoutMap.value = Object.fromEntries((layoutRes.list ?? []).map((l) => [l.widgetId, l]))
     await handleExecuteAllWidgets()
@@ -208,9 +228,19 @@ const toWidgetPayload = (widget: Partial<DataDashboardWidget>): Record<string, u
 const handleSaveWidget = async (widget: Partial<DataDashboardWidget>): Promise<DataDashboardWidget | null> => {
   // 저장 전 기존 widgetId 집합 — 신규 추가된 위젯 식별용
   const prevIds = new Set(widgetList.value.map((w) => w.widgetId))
+  const isNew = !widget.widgetId
+  const payload: Partial<DataDashboardWidget> = { ...widget }
+  if (isNew) {
+    const maxSort = widgetList.value.reduce((max, w) => Math.max(max, Number(w.sortOrd) || 0), 0)
+    payload.sortOrd = maxSort + 1
+  }
   try {
-    await fetchSaveWidget(toWidgetPayload(widget) as Partial<DataDashboardWidget>)
+    await fetchSaveWidget(toWidgetPayload(payload) as Partial<DataDashboardWidget>)
     await handleSelectWidgetList()
+    if (isNew) {
+      const newWidget = widgetList.value.find((w) => !prevIds.has(w.widgetId))
+      if (newWidget) await moveWidgetToEnd(newWidget.widgetId)
+    }
     closeAddModal()
     openToast({ message: '위젯이 저장되었습니다.', type: 'success' })
   } catch {
