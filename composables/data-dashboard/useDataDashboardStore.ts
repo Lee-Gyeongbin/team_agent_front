@@ -18,7 +18,6 @@ const {
   fetchSaveWidgetOrder,
   fetchLayoutList,
   fetchSaveLayout,
-  fetchResetLayoutHeight,
   fetchSaveLayoutOrder,
   fetchExecuteSql,
   fetchColCodeMap,
@@ -255,8 +254,11 @@ const handleSaveWidgetHeight = async (widgetId: string, heightPx: number) => {
   }
 }
 
+/** 위젯 콘텐츠 기본 높이(px) */
+export const DATA_DASHBOARD_DEFAULT_HEIGHT_PX = 320
+
 const handleResetWidgetHeight = async (widgetId: string) => {
-  await handleSaveWidgetHeight(widgetId, 400)
+  await handleSaveWidgetHeight(widgetId, DATA_DASHBOARD_DEFAULT_HEIGHT_PX)
 }
 
 // ===== 드래그 / 레이아웃 순서 저장 =====
