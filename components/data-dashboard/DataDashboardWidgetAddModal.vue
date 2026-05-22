@@ -324,12 +324,12 @@ const parsedParams = ref<DataDashboardSqlVariable[]>([])
 const form = reactive<{
   title: string
   vizType: DataDashboardVizType
-  vizConfig: { xAxisKey: string; yAxisKeys: string[]; labelKey: string; valueKey: string }
+  vizConfig: { xAxisKey: string }
   colSpan: 1 | 2
 }>({
   title: '',
   vizType: 'bar',
-  vizConfig: { xAxisKey: '', yAxisKeys: [], labelKey: '', valueKey: '' },
+  vizConfig: { xAxisKey: '' },
   colSpan: 1,
 })
 
@@ -389,13 +389,8 @@ const applyChartOption = (chartOption: VisualizationChartOptionPayload | null) =
 
   if (chart) form.vizType = chart as DataDashboardVizType
 
-  if (form.vizType === 'pie') {
-    form.vizConfig.labelKey = x[0] ?? ''
-    form.vizConfig.valueKey = y[0] ?? ''
-  } else {
-    form.vizConfig.xAxisKey = x[0] ?? ''
-    yAxisKeysInput.value = y.join(', ')
-  }
+  form.vizConfig.xAxisKey = x[0] ?? ''
+  yAxisKeysInput.value = y.join(', ')
 
   isLlmAutoFilled.value = true
 }
@@ -416,43 +411,23 @@ const vizTypeOptions: { label: string; value: DataDashboardVizType; icon: string
   { label: '테이블', value: 'table', icon: 'icon-sql' },
 ]
 
-/** 시각화 유형 변경 — 파이 선택 시 AI가 채운 X/Y 값을 label/value로 이관 */
 const onSelectVizType = (vizType: DataDashboardVizType) => {
   form.vizType = vizType
-  if (vizType !== 'pie') return
-
-  if (!form.vizConfig.labelKey.trim() && form.vizConfig.xAxisKey.trim()) {
-    form.vizConfig.labelKey = form.vizConfig.xAxisKey.trim()
-  }
-  const firstY = yAxisKeysInput.value
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)[0]
-  if (!form.vizConfig.valueKey.trim() && firstY) {
-    form.vizConfig.valueKey = firstY
-  }
 }
 
-/** 저장용 vizConfig — 파이는 label/value, 축 차트는 x/y, 테이블·파이(미설정)는 빈 객체 허용 */
+/** 저장용 vizConfig — 파이·축 차트 공통 xAxisKey/yAxisKeys, 테이블은 빈 객체 */
 const buildSaveVizConfig = (): DataDashboardVizConfig => {
-  if (form.vizType === 'pie') {
-    const labelKey = form.vizConfig.labelKey.trim()
-    const valueKey = form.vizConfig.valueKey.trim()
-    const cfg: DataDashboardVizConfig = {}
-    if (labelKey) cfg.labelKey = labelKey
-    if (valueKey) cfg.valueKey = valueKey
-    return cfg
-  }
-  if (isAxisChartViz.value) {
-    return {
-      xAxisKey: form.vizConfig.xAxisKey.trim(),
-      yAxisKeys: yAxisKeysInput.value
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean),
-    }
-  }
-  return {}
+  if (form.vizType === 'table') return {}
+
+  const xAxisKey = form.vizConfig.xAxisKey.trim()
+  const yAxisKeys = yAxisKeysInput.value
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  const cfg: DataDashboardVizConfig = {}
+  if (xAxisKey) cfg.xAxisKey = xAxisKey
+  if (yAxisKeys.length) cfg.yAxisKeys = yAxisKeys
+  return cfg
 }
 
 const onSelectSql = (sql: DataDashboardSqlItem) => {
@@ -461,7 +436,7 @@ const onSelectSql = (sql: DataDashboardSqlItem) => {
   form.title = sql.sqlTitle
   form.vizType = 'bar'
   // 객체 참조 유지하여 reactivity 보장
-  Object.assign(form.vizConfig, { xAxisKey: '', yAxisKeys: [], labelKey: '', valueKey: '' })
+  form.vizConfig.xAxisKey = ''
   yAxisKeysInput.value = ''
 
   // LLM 추천 chartOption 자동 세팅
@@ -500,7 +475,7 @@ watch(
     form.title = ''
     form.vizType = 'bar'
     form.colSpan = 1
-    Object.assign(form.vizConfig, { xAxisKey: '', yAxisKeys: [], labelKey: '', valueKey: '' })
+    form.vizConfig.xAxisKey = ''
   },
 )
 </script>
