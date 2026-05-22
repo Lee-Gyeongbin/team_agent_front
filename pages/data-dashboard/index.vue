@@ -18,6 +18,7 @@
       item-key="widgetId"
       handle=".widget-drag-handle"
       animation="200"
+      @start="onDragStart"
       @end="onDragEnd"
     >
       <template #item="{ element }">
@@ -113,8 +114,19 @@ const onSaveWidget = async (data: Partial<DataDashboardWidget>) => {
   await handleSaveWidget(data)
 }
 
-// 드래그 순서 저장
-const onDragEnd = () => {
+/** 드래그 시작 시 현재 너비 고정 — Sortable transform 중 콘텐츠가 그리드를 밀어내는 것 방지 */
+const onDragStart = (evt: { item: HTMLElement }) => {
+  const el = evt.item
+  const { width } = el.getBoundingClientRect()
+  el.style.width = `${width}px`
+  el.style.maxWidth = `${width}px`
+}
+
+/** 드래그 종료 시 인라인 너비 제거 후 순서 저장 */
+const onDragEnd = (evt: { item: HTMLElement }) => {
+  const el = evt.item
+  el.style.width = ''
+  el.style.maxWidth = ''
   handleSaveWidgetOrder()
 }
 

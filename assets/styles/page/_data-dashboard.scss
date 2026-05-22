@@ -10,6 +10,8 @@
   gap: $spacing-md;
   padding: $spacing-md;
   max-width: 1366px;
+  min-width: 0;
+  overflow-x: clip;
 }
 
 .data-dashboard-toolbar {
@@ -29,9 +31,12 @@
 // ===================================
 .data-dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  // minmax(0, 1fr): 콘텐츠 min-width가 컬럼을 밀어 화면 밖으로 넘치는 것 방지
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: $spacing-md;
   align-items: start;
+  width: 100%;
+  min-width: 0;
 
   // 드래그 고스트
   .sortable-ghost {
@@ -39,6 +44,9 @@
     border: 2px dashed var(--color-primary);
     border-radius: 12px;
     background: var(--color-primary-bg);
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
   }
 }
 
@@ -65,9 +73,18 @@
   border-radius: 16px;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
   transition:
     box-shadow $transition-base,
     border-color $transition-fast;
+
+  // 드래그 중 transform 적용 시 그리드 밖으로 넓어지는 현상 방지
+  &.sortable-chosen {
+    box-sizing: border-box;
+  }
 
   &:hover {
     box-shadow: $shadow-md;
@@ -336,6 +353,7 @@
   display: flex;
   flex-direction: column;
   padding: $spacing-md;
+  min-width: 0;
 
   // 로딩·빈상태: widget-content minHeight(JS 주입)로 높이 확보 후 flex:1로 채움
   .ui-loading,
@@ -347,12 +365,16 @@
 // height는 inline style로 주입 — chart.js 부모 height 인식
 .widget-chart-wrap {
   flex-shrink: 0;
+  min-width: 0;
   min-height: 0;
+  width: 100%;
 }
 
 // height + overflow:hidden inline 주입 — 팽창 차단, ui-table-wrap이 내부 스크롤 담당
 .widget-table-wrap {
   flex-shrink: 0;
+  min-width: 0;
+  width: 100%;
   overflow: hidden;
 }
 
