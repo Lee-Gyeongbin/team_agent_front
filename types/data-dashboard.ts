@@ -57,12 +57,10 @@ export interface DataDashboardWidget {
 
 export type DataDashboardVizType = 'bar' | 'line' | 'pie' | 'horizontalBar' | 'table'
 
-/** 시각화 컬럼 매핑 설정 */
+/** 시각화 컬럼 매핑 설정 (파이·막대·라인 공통 — xAxisKey / yAxisKeys) */
 export interface DataDashboardVizConfig {
   xAxisKey?: string
   yAxisKeys?: string[]
-  labelKey?: string
-  valueKey?: string
 }
 
 /**

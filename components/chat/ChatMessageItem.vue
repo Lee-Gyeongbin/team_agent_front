@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="!isTodayMemeAnswer && !isNewsCuratorAnswer && !isLunchAgentAnswer"
+    v-if="!isTodayMemeAnswer && !isLunchAgentAnswer"
     class="chat-message-item"
     :class="[
       message.type === 'answer'
@@ -26,7 +26,7 @@
       </div>
       <div class="message-body">
         <div
-          v-if="message.isStreaming && !message.rContent && !isNewsCuratorAnswer"
+          v-if="message.isStreaming && !message.rContent"
           class="message-loading"
         >
           <span class="typing-dot" /><span class="typing-dot" /><span class="typing-dot" />
@@ -37,13 +37,9 @@
             v-if="isTodayMemeAnswer"
             class="message-content"
           />
-          <div
-            v-else-if="isNewsCuratorAnswer"
-            class="message-content"
-          />
           <!-- eslint-disable vue/no-v-html — toHtmlContent 내 안전 처리 적용 -->
-          <!-- AG000010: 마커 발견 → 섹션1~3 / 차트 슬롯 / 섹션4~7 분리 렌더 -->
-          <template v-else-if="message.agentId === 'AG000010' && markerFound">
+          <!-- SURVEY(showRadarChart): 마커 발견 → 섹션1~3 / 차트 슬롯 / 섹션4~7 분리 렌더 -->
+          <template v-else-if="isSurveyRadarAnswer && markerFound">
             <div
               class="message-content markdown-body"
               @click="onMarkdownClick"
@@ -182,9 +178,11 @@
       </div>
     </template>
 
-    <!-- 설문 메시지 (산업심리 상담 에이전트) -->
+    <!-- 설문 메시지 (svcTy C + subCfg SURVEY) -->
     <template v-else-if="message.type === 'survey'">
-      <ChatPsychologySurvey
+      <ChatSurvey
+        v-if="messageSurveyConfig"
+        :survey-config="messageSurveyConfig"
         :readonly="message.surveySubmitted === true"
         :initial-answers="message.surveyAnswers"
         :theme-icon-class-nm="themeAgent?.iconClassNm ?? ''"
@@ -232,14 +230,19 @@
         <ChatNewsCurator
           v-else-if="message.type === 'news'"
           :readonly="isShare || message.newsSubmitted === true"
+          :news-is-new="newsCardIsNew"
+          :news-reselect="newsCardReselect"
           :locked-selected-categories="message.newsSelectedCategories ?? []"
           :news-items="resolvedNewsCuratorItemsForNewsCard"
-          :is-answer-streaming="isNewsCuratorAnswerStreaming"
+          :enable-reselect="!isShare"
+          :reselect-disabled="isNewsReselectDisabled"
+          :is-answer-streaming="isLinkedAgentCardAnswerStreaming"
           :theme-icon-class-nm="themeAgent?.iconClassNm ?? ''"
           :theme-color-hex="themeAgent?.colorHex ?? ''"
           @intro-complete="emit('on-news-intro-complete', message.logId)"
           @close="emit('on-news-card-close', message.logId)"
-          @submit="emit('on-submit-news-card', message.logId, $event)"
+          @submit="(categories, options) => emit('on-submit-news-card', message.logId, categories, options)"
+          @reselect-categories="emit('on-news-card-reselect', message.logId)"
         />
         <div
           v-if="shouldShowAgentCardKnowledgeFooter"
@@ -296,8 +299,9 @@ import {
   buildStressItemsFromRadarChartData,
   buildPsychologyRadarUiChartConfig,
   usePsychologySurvey,
+  parseSurveyAnswersFromPrompt,
   type RadarChartData,
-} from '~/utils/chat/psychologyConsultUtil'
+} from '~/utils/chat/surveyUtil'
 import {
   applyLunchMenuImageEnrichmentToResultMessage,
   findLinkedLunchAnswerMessage,
@@ -311,12 +315,20 @@ import {
 } from '~/utils/chat/lunchAgentUtil'
 import { parseTodayMemeItems, TODAY_MEME_AGENT_ID } from '~/utils/chat/todayMemeUtil'
 import type { TodayMemeItem } from '~/utils/chat/todayMemeUtil'
+import { findLinkedNewsCuratorAnswer, resolveNewsCuratorItemsForCard } from '~/utils/chat/newsCuratorUtil'
 import { attachmentsRequireSummaryIndicator } from '~/utils/chat/chatAttachmentDisplayUtil'
-import { parseNewsCuratorItems } from '~/utils/chat/newsCuratorUtil'
+import {
+  parseSurveyConfigFromAgent,
+  resolveSurveyConfigByAgentId,
+  setActiveSurveyConfig,
+  isSurveyRadarAgentById,
+} from '~/utils/chat/surveyUtil'
 
 const { chatIndexAgents, messages } = useChatStore()
 const { surveyGender } = usePsychologySurvey()
 const { user } = useAuth()
+
+const isSurveyRadarAgent = (agentId: string) => isSurveyRadarAgentById(agentId, chatIndexAgents.value)
 interface Props {
   message: ChatMessage
   knowledgeList?: KnowledgeItem[]
@@ -353,8 +365,9 @@ const emit = defineEmits<{
   'on-survey-submit': [logId: string]
   'on-survey-close': [logId: string]
   'on-meme-intro-complete': [logId: string]
-  'on-submit-news-card': [logId: string, categories: string[]]
+  'on-submit-news-card': [logId: string, categories: string[], options?: { isNew?: boolean }]
   'on-news-card-close': [logId: string]
+  'on-news-card-reselect': [logId: string]
   'on-news-intro-complete': [logId: string]
 }>()
 
@@ -385,7 +398,7 @@ const onMarkdownClick = (e: MouseEvent) => {
   }
 }
 
-// ── AG000010 렌더 상태 ────────────────────────────────────────────────────
+// ── SURVEY(showRadarChart) 렌더 상태 ────────────────────────────────────────────────────
 /** [방사형그래프] 마커 발견 여부 — 템플릿 분기 조건 */
 const markerFound = ref(false)
 /** 마커 이전 구간 HTML (섹션 1~3) */
@@ -412,20 +425,74 @@ const psychologyRadarChartConfig = computed<Record<string, unknown>>(() =>
 let pexelsFetchDone = false
 let radarChartFetchDone = false
 
+/** F5 직후 chatIndexAgents 미로드 → 이후 재처리 트리거용 */
+let lastSurveyRadarGateKey = ''
+
+const resetSurveyRadarRenderState = () => {
+  markerFound.value = false
+  beforeChartHtml.value = ''
+  afterChartHtml.value = ''
+  radarChartLoading.value = false
+  radarChartData.value = null
+  pexelsFetchDone = false
+  radarChartFetchDone = false
+  cancelPsychologyRadarUiInjection?.()
+  cancelPsychologyRadarUiInjection = null
+}
+
+/** answer 행에 surveyAnswers가 없을 때(로그 재조회 등) 연결 question·survey 메시지에서 복원 */
+const resolveSurveyAnswersForRadar = (): Record<number, number> => {
+  const direct = props.message.surveyAnswers
+  if (direct && Object.keys(direct).length > 0) return direct
+
+  const surveyMsg = messages.value.find(
+    (m) => m.type === 'survey' && m.surveySubmitted && (!props.message.agentId || m.agentId === props.message.agentId),
+  )
+  if (surveyMsg?.surveyAnswers && Object.keys(surveyMsg.surveyAnswers).length > 0) {
+    return surveyMsg.surveyAnswers
+  }
+
+  const questionMsg = messages.value.find((m) => {
+    if (m.type !== 'question') return false
+    if (props.message.agentId && m.agentId && m.agentId !== props.message.agentId) return false
+    return Object.keys(parseSurveyAnswersFromPrompt(m.qContent ?? '')).length > 0
+  })
+  if (questionMsg) return parseSurveyAnswersFromPrompt(questionMsg.qContent ?? '')
+
+  return {}
+}
+
 /** 캐시 주입 타이머 취소용 */
 let cancelPsychologyRadarUiInjection: (() => void) | null = null
+/** 페이지 전환·메시지 교체 후 비동기 콜백이 언마운트된 vnode를 갱신하지 않도록 */
+let isMessageItemAlive = true
 
 onBeforeUnmount(() => {
+  isMessageItemAlive = false
   cancelPsychologyRadarUiInjection?.()
   cancelPsychologyRadarUiInjection = null
 })
 
 watch(
-  () => [props.message.rContent, props.message.agentId, props.message.isStreaming] as const,
-  ([rContent, agentId, isStreaming]) => {
+  () =>
+    [
+      props.message.logId,
+      props.message.rContent,
+      props.message.agentId,
+      props.message.isStreaming,
+      props.message.surveyAnswers,
+      chatIndexAgents.value.map((a) => a.agentId).join(','),
+    ] as const,
+  ([, rContent, agentId, isStreaming]) => {
     const raw = rContent ?? ''
+    const gateKey = `${props.message.logId}:${isSurveyRadarAgentById(agentId ?? '', chatIndexAgents.value)}`
 
-    if (agentId !== 'AG000010') {
+    if (gateKey !== lastSurveyRadarGateKey) {
+      resetSurveyRadarRenderState()
+      lastSurveyRadarGateKey = gateKey
+    }
+
+    if (!isSurveyRadarAgent(agentId ?? '')) {
       renderedHtml.value = toHtmlContent(raw)
       return
     }
@@ -453,22 +520,26 @@ watch(
     if (!radarChartFetchDone) {
       radarChartFetchDone = true
       radarChartLoading.value = true
+      const logIdForChart = props.message.logId
 
-      const cached = getRadarChartCache(props.message.logId)
+      const cached = getRadarChartCache(logIdForChart)
       if (cached) {
         cancelPsychologyRadarUiInjection?.()
-        const logIdForInject = props.message.logId
         cancelPsychologyRadarUiInjection = schedulePsychologyRadarUiInjection(() => {
-          if (props.message.logId !== logIdForInject) return
+          if (!isMessageItemAlive || props.message.logId !== logIdForChart) return
           radarChartData.value = cached
           radarChartLoading.value = false
         })
       } else {
-        fetchPsychologyRadarChartData(extractSections1to4(raw), props.message.surveyAnswers!, surveyGender.value).then(
+        const surveyConfig = resolveSurveyConfigByAgentId(props.message.agentId ?? '', chatIndexAgents.value)
+        if (surveyConfig) setActiveSurveyConfig(surveyConfig)
+        const answersForRadar = resolveSurveyAnswersForRadar()
+        fetchPsychologyRadarChartData(extractSections1to4(raw), answersForRadar, surveyGender.value).then(
           (chartData) => {
+            if (!isMessageItemAlive || props.message.logId !== logIdForChart) return
             radarChartLoading.value = false
             if (chartData) {
-              setRadarChartCache(props.message.logId, chartData)
+              setRadarChartCache(logIdForChart, chartData)
               radarChartData.value = chartData
             }
           },
@@ -482,9 +553,11 @@ watch(
     // ── 스트리밍 완료 이후 1회 ────────────────────────────────────────────
     if (!pexelsFetchDone) {
       pexelsFetchDone = true
+      const logIdForPexels = props.message.logId
       const { beforeText, afterText } = extractKeywordSection(after)
       afterChartHtml.value = toHtmlContent(beforeText) + PEXELS_LOADING_HTML + toHtmlContent(afterText)
-      fetchAndInjectPexelsImages(after, props.message.logId).then(({ beforeText: bt, afterText: at, gridHtml }) => {
+      fetchAndInjectPexelsImages(after, logIdForPexels).then(({ beforeText: bt, afterText: at, gridHtml }) => {
+        if (!isMessageItemAlive || props.message.logId !== logIdForPexels) return
         afterChartHtml.value = toHtmlContent(bt) + gridHtml + toHtmlContent(at)
       })
     }
@@ -497,6 +570,21 @@ watch(
 const themeAgent = computed<Agent | null>(
   () => chatIndexAgents.value.find((a) => a.agentId === props.message.agentId) ?? null,
 )
+
+const isSurveyRadarAnswer = computed(
+  () => props.message.type === 'answer' && isSurveyRadarAgent(props.message.agentId ?? ''),
+)
+
+/** 설문 메시지용 subCfg 기반 설정 */
+const messageSurveyConfig = computed(() => {
+  if (props.message.type !== 'survey') return null
+  const agent = themeAgent.value
+  if (agent) return parseSurveyConfigFromAgent(agent)
+  if (props.message.agentId) {
+    return resolveSurveyConfigByAgentId(props.message.agentId, chatIndexAgents.value)
+  }
+  return null
+})
 
 /** 점심 에이전트 answer 행 — 추천 JSON은 type=lunch 카드에서만 표시 */
 const isLunchAgentAnswer = computed(() => props.message.type === 'answer' && props.message.agentId === LUNCH_AGENT_ID)
@@ -583,9 +671,6 @@ watch(
 
 const isTodayMemeAnswerMessage = (message: ChatMessage) =>
   message.type === 'answer' && message.agentId === TODAY_MEME_AGENT_ID
-const isNewsCuratorAnswerMessage = (message: ChatMessage) =>
-  message.type === 'answer' && String(message.agentId ?? '').trim() === 'AG000012'
-
 const resolvedTodayMemeItems = computed<TodayMemeItem[]>(() => {
   if (props.message.type !== 'meme') return []
   const injected = props.message.memeDisplayItems
@@ -607,40 +692,23 @@ const resolvedTodayMemeItems = computed<TodayMemeItem[]>(() => {
   return findParsedItems([...messages.value].reverse())
 })
 
-const resolvedNewsCuratorItemsForNewsCard = computed<NewsCuratorItem[]>(() => {
-  if (props.message.type !== 'news') return []
-  const injected = props.message.newsDisplayItems
-  if (Array.isArray(injected) && injected.length > 0) return injected
+const resolvedNewsCuratorItemsForNewsCard = computed<NewsCuratorItem[]>(() =>
+  props.message.type === 'news' ? resolveNewsCuratorItemsForCard(props.message, messages.value) : [],
+)
 
-  const newsCardMessageIndex = messages.value.findIndex((messageEntry) => messageEntry.logId === props.message.logId)
-  if (newsCardMessageIndex < 0) return []
-  const messagesAfterNewsCard = messages.value.slice(newsCardMessageIndex + 1)
-  const nextNewsCardMessageIndex = messagesAfterNewsCard.findIndex((messageEntry) => messageEntry.type === 'news')
-  const answerMessagesUntilNextNewsCard =
-    nextNewsCardMessageIndex < 0 ? messagesAfterNewsCard : messagesAfterNewsCard.slice(0, nextNewsCardMessageIndex)
-  for (const answerMessage of answerMessagesUntilNextNewsCard) {
-    if (answerMessage.type !== 'answer') continue
-    const parsedNewsItems = parseNewsCuratorItems(String(answerMessage.rContent ?? ''))
-    if (parsedNewsItems.length > 0) return parsedNewsItems
-  }
-  return []
-})
+/** 미제출 news 카드가 있으면 기존 뉴스픽 '새로운 카테고리 선택하기' 비활성 */
+const isNewsReselectDisabled = computed(() => messages.value.some((m) => m.type === 'news' && m.newsSubmitted !== true))
+
+/** NewsCurator 카드 — `newsIsNew` / `newsReselect` */
+const newsCardIsNew = computed(() => (props.message.type === 'news' ? props.message.newsIsNew : undefined))
+const newsCardReselect = computed(() => props.message.type === 'news' && props.message.newsReselect === true)
 
 /** TodayMeme 에이전트 답변 행 식별 */
 const isTodayMemeAnswer = computed(() => isTodayMemeAnswerMessage(props.message))
-const isNewsCuratorAnswer = computed(() => isNewsCuratorAnswerMessage(props.message))
-
-const NEWS_CURATOR_AGENT_ID = 'AG000012'
 
 const isAgentCardMessage = computed(
   () => props.message.type === 'lunch' || props.message.type === 'meme' || props.message.type === 'news',
 )
-
-const isAgentCardAvatarStreaming = computed(() => {
-  if (props.message.type === 'meme') return isMemeAnswerStreaming.value
-  if (props.message.type === 'news') return isNewsCuratorAnswerStreaming.value
-  return false
-})
 
 /** answer 행 또는 에이전트 카드에 연결된 answer logId — 지식창고·반응 API 공통 */
 const knowledgeActionsLogId = computed(() => {
@@ -664,12 +732,7 @@ const linkedAgentCardAnswer = computed((): ChatMessage | undefined => {
     return messages.value.slice(cardIndex + 1).find((m) => m.type === 'answer' && m.agentId === TODAY_MEME_AGENT_ID)
   }
   if (props.message.type === 'news') {
-    const cardIndex = messages.value.findIndex((m) => m.logId === props.message.logId)
-    if (cardIndex < 0) return undefined
-    const after = messages.value.slice(cardIndex + 1)
-    const nextNewsIndex = after.findIndex((m) => m.type === 'news')
-    const untilNext = nextNewsIndex < 0 ? after : after.slice(0, nextNewsIndex)
-    return untilNext.find((m) => m.type === 'answer' && String(m.agentId ?? '').trim() === NEWS_CURATOR_AGENT_ID)
+    return findLinkedNewsCuratorAnswer(messages.value, props.message.logId)
   }
   return undefined
 })
@@ -699,6 +762,12 @@ const isLinkedAgentCardAnswerStreaming = computed(() => {
   return messages.value.find((m) => m.type === 'answer' && m.logId === logId)?.isStreaming === true
 })
 
+const isAgentCardAvatarStreaming = computed(() => {
+  if (props.message.type === 'meme') return isMemeAnswerStreaming.value
+  if (props.message.type === 'news') return isLinkedAgentCardAnswerStreaming.value
+  return false
+})
+
 /** 에이전트 카드 하단 지식창고·반응 푸터 — 숨겨진 answer 행 대신 연결된 logId 사용 */
 const shouldShowAgentCardKnowledgeFooter = computed(() => {
   if (!agentCardFooterLogId.value || isLinkedAgentCardAnswerStreaming.value) return false
@@ -721,9 +790,7 @@ const shouldShowAgentCardKnowledgeFooter = computed(() => {
 })
 
 /** 답변 액션 푸터 노출 조건을 한곳에서 관리 */
-const shouldShowMessageFooter = computed(
-  () => !props.message.isStreaming && !isTodayMemeAnswer.value && !isNewsCuratorAnswer.value,
-)
+const shouldShowMessageFooter = computed(() => !props.message.isStreaming && !isTodayMemeAnswer.value)
 
 /** 이 meme 메시지에 대응하는 TodayMeme 답변이 아직 스트리밍 중인지 */
 const isMemeAnswerStreaming = computed(() => {
@@ -733,20 +800,6 @@ const isMemeAnswerStreaming = computed(() => {
   const after = messages.value.slice(idx + 1)
   const ans = after.find((m) => m.type === 'answer' && m.agentId === TODAY_MEME_AGENT_ID)
   return ans?.isStreaming === true
-})
-
-/** 이 news 카드 직후(다음 news 전까지) 구간에 answer가 스트리밍 중인지 */
-const isNewsCuratorAnswerStreaming = computed(() => {
-  if (props.message.type !== 'news') return false
-  const newsCardMessageIndex = messages.value.findIndex((messageEntry) => messageEntry.logId === props.message.logId)
-  if (newsCardMessageIndex < 0) return false
-  const messagesAfterNewsCard = messages.value.slice(newsCardMessageIndex + 1)
-  const nextNewsCardMessageIndex = messagesAfterNewsCard.findIndex((messageEntry) => messageEntry.type === 'news')
-  const answerMessagesUntilNextNewsCard =
-    nextNewsCardMessageIndex < 0 ? messagesAfterNewsCard : messagesAfterNewsCard.slice(0, nextNewsCardMessageIndex)
-  return answerMessagesUntilNextNewsCard.some(
-    (messageAfterNewsCard) => messageAfterNewsCard.type === 'answer' && messageAfterNewsCard.isStreaming === true,
-  )
 })
 
 /** 출처 제목 앞 마크다운 헤더 기호(## 등) 제거 */

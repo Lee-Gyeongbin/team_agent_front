@@ -149,10 +149,11 @@
       <div class="library-detail-modal-body">
         <!-- 사용자 질문 -->
         <div class="content-box type-question">
-          <ChatPsychologySurvey
-            v-if="isPsychologySurveyCard"
+          <ChatSurvey
+            v-if="isSurveyLibraryCard && surveyLibraryConfig"
             class="library-detail-survey-readonly"
             readonly
+            :survey-config="surveyLibraryConfig"
             :initial-answers="surveyReadonlyAnswers"
             :theme-icon-class-nm="displayData?.iconClassNm ?? ''"
             :theme-color-hex="displayData?.colorHex ?? ''"
@@ -170,6 +171,7 @@
             class="library-detail-news-readonly"
             readonly
             display-mode="form"
+            :news-is-new="newsQuestionIsNew"
             :locked-selected-categories="newsQuestionCategories"
             :theme-icon-class-nm="displayData?.iconClassNm ?? ''"
             :theme-color-hex="displayData?.colorHex ?? ''"
@@ -356,7 +358,7 @@ import {
 } from '~/utils/chat/lunchAgentUtil'
 import { NEWS_CURATOR_AGENT_ID, parseNewsCuratorItems, parseNewsCuratorPromptMeta } from '~/utils/chat/newsCuratorUtil'
 import { hasTodayMemeQcontent, isTodayMemeLibraryCard, parseTodayMemeItems } from '~/utils/chat/todayMemeUtil'
-import { parseSurveyAnswersFromPrompt } from '~/utils/chat/psychologyConsultUtil'
+import { parseSurveyAnswersFromPrompt, isSurveyAgent, parseSurveyConfigFromAgent, resolveSurveyConfigByAgentId } from '~/utils/chat/surveyUtil'
 import type { LibraryCardDetail, DocItem, TableDataItem, ChartStatItem, ChartDetailCdItem } from '~/types/library'
 import type { LunchRecommendationItem, VisualizationViewModel } from '~/types/chat'
 import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
@@ -384,6 +386,7 @@ const {
   handleReAskReport,
   handleShareCard,
 } = useLibraryStore()
+const { chatIndexAgents } = useChatStore()
 const props = withDefaults(
   defineProps<{
     isOpen?: boolean
@@ -475,7 +478,19 @@ const visualizationView = computed<VisualizationViewModel | null>(() => {
 
 // 내부 표시용 데이터 (트랜지션 타이밍 제어용)
 const displayData = ref<LibraryCardDetail | null>(props.cardDetail ?? null)
-const isPsychologySurveyCard = computed(() => displayData.value?.agentId === 'AG000010')
+const isSurveyLibraryCard = computed(() => {
+  const agentId = displayData.value?.agentId
+  if (!agentId) return false
+  const agent = chatIndexAgents.value.find((a) => a.agentId === agentId)
+  return agent ? isSurveyAgent(agent) : false
+})
+const surveyLibraryConfig = computed(() => {
+  const agentId = displayData.value?.agentId
+  if (!agentId) return null
+  const agent = chatIndexAgents.value.find((a) => a.agentId === agentId)
+  if (agent) return parseSurveyConfigFromAgent(agent)
+  return resolveSurveyConfigByAgentId(agentId, chatIndexAgents.value)
+})
 const surveyReadonlyAnswers = computed<Record<number, number>>(() =>
   parseSurveyAnswersFromPrompt(displayData.value?.qcontent ?? ''),
 )
@@ -490,10 +505,18 @@ const parsedLunchRecommendations = computed<LunchRecommendationItem[]>(() => {
   return normalizeLunchRecommendationImages(parseLunchJsonArray(raw))
 })
 
-const newsQuestionCategories = computed(() => {
-  if (displayData.value?.agentId !== NEWS_CURATOR_AGENT_ID) return []
-  return parseNewsCuratorPromptMeta(displayData.value?.qcontent ?? '').categories
+const newsQuestionMeta = computed(() => {
+  if (displayData.value?.agentId !== NEWS_CURATOR_AGENT_ID) {
+    return { categories: [] as string[], isNew: undefined as boolean | undefined }
+  }
+  return parseNewsCuratorPromptMeta(displayData.value?.qcontent ?? '')
 })
+
+const newsQuestionCategories = computed(() => newsQuestionMeta.value.categories)
+
+const newsQuestionIsNew = computed(
+  () => displayData.value?.agentId === NEWS_CURATOR_AGENT_ID && newsQuestionMeta.value.isNew === true,
+)
 
 const parsedNewsCuratorItems = computed(() => {
   if (displayData.value?.agentId !== NEWS_CURATOR_AGENT_ID) return []

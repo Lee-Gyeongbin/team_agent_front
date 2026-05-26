@@ -21,7 +21,22 @@ export interface Agent extends AgtRagCfg, AgtDs, AgtSqlCfg, AgtDm {
   connCount: number // CONN_COUNT
   datasetList: AgtDs[] // DATASET_LIST (RAG)
   datamartList: AgtDm[] // DATAMART_LIST
+  subCfg?: AgtSubCfg | null
 }
+
+/** Agent 서브 설정 (tb_agt_sub_cfg) */
+export interface AgtSubCfg {
+  subCfgId: string // SUB_CFG_ID
+  agentId: string // AGENT_ID
+  subTy: string // SUB_TY / SUB_TY_CD (normalizeAgentSubCfg에서 통합)
+  additionalConfig: AgtSubAdditionalConfig | null
+  useYn: 'Y' | 'N' // USE_YN
+  createDt: string // CREATE_DT
+  modifyDt: string // MODIFY_DT
+}
+
+/** SUB_TY_CD별 ADDITIONAL_CONFIG — 백엔드 스키마 확정 시 유형별 인터페이스로 분리 */
+export type AgtSubAdditionalConfig = Record<string, unknown>
 
 /** RAG 설정 */
 export interface AgtRagCfg {

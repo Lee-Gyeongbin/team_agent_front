@@ -2,7 +2,8 @@
   <div
     class="chat-index s-center"
     :class="{
-      'is-survey-mode': isSurveyVisible || isGenderStepVisible || isLunchVisible || isTodayMemeVisible || isNewsCuratorVisible,
+      'is-survey-mode':
+        isSurveyVisible || isGenderStepVisible || isLunchVisible || isTodayMemeVisible || isNewsCuratorVisible,
     }"
   >
     <!-- 헤더 (설문 모드에서 숨김) -->
@@ -15,10 +16,11 @@
       <p class="chat-index-description f-center">{{ user?.userNm + '님, ' || '' }}어떤게 궁금하세요?</p>
     </div>
 
-    <!-- 산업심리 상담 — 성별 선택 또는 설문  -->
-    <ChatPsychologySurvey
-      v-if="isSurveyVisible || isGenderStepVisible"
+    <!-- 설문 에이전트 (svcTy C + subCfg SURVEY) -->
+    <ChatSurvey
+      v-if="(isSurveyVisible || isGenderStepVisible) && currentSurveyConfig"
       class="chat-index-survey"
+      :survey-config="currentSurveyConfig"
       :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? ''"
       :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
       @close="handleClosePsychologySurvey"
@@ -52,7 +54,8 @@
     <div
       class="chat-index-input-wrapper"
       :class="{
-        'is-survey-locked': isSurveyVisible || isGenderStepVisible || isLunchVisible || isTodayMemeVisible || isNewsCuratorVisible,
+        'is-survey-locked':
+          isSurveyVisible || isGenderStepVisible || isLunchVisible || isTodayMemeVisible || isNewsCuratorVisible,
       }"
       data-aos="fade-up"
       data-aos-delay="200"
@@ -61,7 +64,9 @@
     </div>
 
     <!-- 에이전트 카드 (설문 모드 아닐 때) -->
-    <template v-if="!isSurveyVisible && !isGenderStepVisible && !isLunchVisible && !isTodayMemeVisible && !isNewsCuratorVisible">
+    <template
+      v-if="!isSurveyVisible && !isGenderStepVisible && !isLunchVisible && !isTodayMemeVisible && !isNewsCuratorVisible"
+    >
       <div
         v-if="!isLoadingChatIndexAgents && chatIndexAgents.length > 0"
         class="chat-index-card-grp"
@@ -106,6 +111,8 @@
 </template>
 
 <script setup lang="ts">
+import { parseSurveyConfigFromAgent } from '~/utils/chat/surveyUtil'
+
 const { chatMessage, selectChatRoomList, selectModelOptions, resetChatRoom } = useChatRooms()
 const {
   selectedChatAgentId,
@@ -137,6 +144,10 @@ const isMountedChatIndex = ref(true)
 const currentSurveyAgent = computed(
   () => chatIndexAgents.value.find((agent) => agent.agentId === selectedChatAgentId.value) ?? null,
 )
+const currentSurveyConfig = computed(() => {
+  const agent = currentSurveyAgent.value
+  return agent ? parseSurveyConfigFromAgent(agent) : null
+})
 
 onMounted(async () => {
   // 시각화 패널에서 나와 다시 일반 채팅으로 들어올 때 이전 tableData가 남지 않게 초기화

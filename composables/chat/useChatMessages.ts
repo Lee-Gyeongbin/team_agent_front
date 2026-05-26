@@ -7,14 +7,20 @@ import type {
 } from '~/types/chat'
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import { parseChatAttachmentsFromLogRow } from '~/utils/chat/chatAttachmentDisplayUtil'
-import { parseSurveyAnswersFromPrompt, PSYCHOLOGY_SURVEY_TOTAL_QUESTIONS } from '~/utils/chat/psychologyConsultUtil'
+import { parseSurveyAnswersFromPrompt } from '~/utils/chat/surveyUtil'
 import {
   normalizeLunchRecommendationImages,
   parseLunchPayloadFromPrompt,
   parseLunchJsonArray,
 } from '~/utils/chat/lunchAgentUtil'
 import { isTodayMemePrompt, parseTodayMemeItems } from '~/utils/chat/todayMemeUtil'
-import { parseNewsCuratorItems, parseNewsCuratorPromptMeta } from '~/utils/chat/newsCuratorUtil'
+import {
+  applyNewsDisplayItemsToSubmitCard,
+  isNewsCuratorAnswerMessage,
+  NEWS_CURATOR_AGENT_ID,
+  parseNewsCuratorItems,
+  parseNewsCuratorPromptMeta,
+} from '~/utils/chat/newsCuratorUtil'
 
 // 채팅 메시지/스트리밍 상태는 모듈 레벨에서 단일 인스턴스로 공유
 const messages = ref<ChatMessage[]>([])
@@ -93,26 +99,21 @@ export const useChatMessages = () => {
       },
     }
 
-    // 산업심리 상담 에이전트: "진단 프롬프트"인 경우에만 readonly survey 메시지로 대체
-    // (후속 일반 대화 질문까지 survey로 잘못 렌더링되는 문제 방지)
-    if (agentId === 'AG000010') {
-      const surveyAnswers = parseSurveyAnswersFromPrompt(row.qcontent ?? '')
-      const answerCount = Object.keys(surveyAnswers).length
-      const isSurveyPrompt = answerCount >= 25 && answerCount <= PSYCHOLOGY_SURVEY_TOTAL_QUESTIONS
-      if (isSurveyPrompt) {
-        return [
-          {
-            logId: `${logId}-survey`,
-            type: 'survey',
-            createdAt,
-            agentId,
-            surveyAnswers,
-            surveySubmitted: true,
-          },
-          // answer 메시지에도 surveyAnswers 주입 — 방사형 그래프 이미지 생성 프롬프트용
-          { ...answerMessage, surveyAnswers },
-        ]
-      }
+    // SURVEY 에이전트: "진단 프롬프트"인 경우에만 readonly survey 메시지로 대체
+    const surveyAnswers = parseSurveyAnswersFromPrompt(row.qcontent ?? '')
+    const isSurveyPrompt = Object.keys(surveyAnswers).length > 0
+    if (isSurveyPrompt) {
+      return [
+        {
+          logId: `${logId}-survey`,
+          type: 'survey',
+          createdAt,
+          agentId,
+          surveyAnswers,
+          surveySubmitted: true,
+        },
+        { ...answerMessage, surveyAnswers },
+      ]
     }
 
     // TodayMeme 에이전트: 프롬프트 패턴이면 readonly meme 메시지로 대체
@@ -131,9 +132,9 @@ export const useChatMessages = () => {
       ]
     }
 
-    // NewsCurator 에이전트(AG000012): question을 readonly news 메시지로 대체
+    // NewsCurator: question을 readonly news 카드로 대체, answer 행은 숨김(점심 카드와 동일)
     const newsPromptMeta = parseNewsCuratorPromptMeta(row.qcontent ?? '')
-    if (agentId === 'AG000012' && newsPromptMeta.isHiddenQuestion) {
+    if (agentId === NEWS_CURATOR_AGENT_ID && newsPromptMeta.isHiddenQuestion) {
       const newsDisplayItems = parseNewsCuratorItems(String(row.rcontent ?? ''))
       return [
         {
@@ -143,9 +144,10 @@ export const useChatMessages = () => {
           agentId,
           newsSubmitted: true,
           newsSelectedCategories: newsPromptMeta.categories,
+          newsIsNew: newsPromptMeta.isNew === true,
           ...(newsDisplayItems.length > 0 ? { newsDisplayItems } : {}),
         },
-        answerMessage,
+        { ...answerMessage, hiddenFromDisplay: true },
       ]
     }
 
@@ -252,6 +254,7 @@ export const useChatMessages = () => {
       isStreaming: true,
       hasSource: false,
       hasVisualization: false,
+      ...(trimmedAgentId === NEWS_CURATOR_AGENT_ID ? { hiddenFromDisplay: true } : {}),
     })
     return logId
   }
@@ -276,6 +279,9 @@ export const useChatMessages = () => {
     if (streamingMessage) {
       streamingMessage.isStreaming = false
       messageBufferMap.value[streamingMessage.logId] = ''
+      if (isNewsCuratorAnswerMessage(streamingMessage)) {
+        applyNewsDisplayItemsToSubmitCard(messages.value, String(streamingMessage.rContent ?? ''))
+      }
     }
     pendingMessageId.value = null
   }

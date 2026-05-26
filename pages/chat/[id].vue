@@ -24,8 +24,9 @@
         @on-meme-intro-complete="handleTodayMemeIntroEnd"
         @on-news-intro-complete="handleNewsCuratorIntroEnd"
         @on-lunch-card-submit="handleSubmitLunchAgentForm"
-        @on-news-card-submit="onNewsMessageSubmit"
+        @on-news-card-submit="onNewsCuratorMessageSubmit"
         @on-news-card-close="onNewsMessageClose"
+        @on-news-card-reselect="onNewsMessageReselect"
         @on-lunch-card-close="onLunchMessageClose"
       />
       <ChatInput
@@ -152,6 +153,7 @@ const {
   handleTodayMemeIntroEnd,
   handleNewsCuratorIntroEnd,
   onNewsCuratorMessageSubmit,
+  handleNewsCuratorReselectCategories,
   handleCloseNewsCurator,
   handleSubmitLunchAgentForm,
   handleCloseLunchAgent,
@@ -197,10 +199,6 @@ const isSurveyInputLocked = computed(() =>
   ),
 )
 
-const onNewsMessageSubmit = async (logId: string, categories: string[]) => {
-  await onNewsCuratorMessageSubmit(logId, categories)
-}
-
 /** 메시지 목록의 점심 카드 "닫기" 버튼 클릭 */
 const onLunchMessageClose = (logId: string) => {
   handleCloseLunchAgent(logId)
@@ -208,6 +206,13 @@ const onLunchMessageClose = (logId: string) => {
 /** 메시지 목록의 뉴스 카드 "닫기" 버튼 클릭 */
 const onNewsMessageClose = (logId: string) => {
   handleCloseNewsCurator(logId)
+}
+/** 메시지 목록의 뉴스 카드 "새로운 카테고리 선택하기" 클릭 */
+const onNewsMessageReselect = async (logId: string) => {
+  const newLogId = await handleNewsCuratorReselectCategories(logId)
+  if (!newLogId) return
+  await nextTick()
+  chatMessageListRef.value?.scrollToMessage(newLogId)
 }
 // 패널 리사이즈
 const panelWidthPercent = ref(50)

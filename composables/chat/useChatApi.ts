@@ -14,6 +14,8 @@ import type {
   ChatFileViewResponse,
   DmListResponse,
   RegionTreeResponse,
+  UserNewsInterestCategoryResponse,
+  NewsInterestSaveResponse,
 } from '~/types/chat'
 import type { Agent } from '~/types/agent'
 import type { FileMeta, FileUploadResponse } from '~/types/file'
@@ -162,6 +164,20 @@ export const useChatApi = () => {
     return post<{ successYn?: boolean; returnMsg?: string }>('/ai/chatbot/copySharedChatLogsToRoom.do', payload)
   }
 
+  /** 사용자 관심 뉴스 카테고리 목록 조회 — 세션 userId는 서버에서 설정 */
+  const fetchSelectUserNewsInterestCategory = async (): Promise<UserNewsInterestCategoryResponse> => {
+    return post<UserNewsInterestCategoryResponse>('/ai/chatbot/selectUserNewsInterestCategory.do', {})
+  }
+
+  /** 사용자 관심 뉴스 카테고리 저장 — newsCategoryCodeIdList: NC000001 codeId 배열 */
+  const fetchSaveUserNewsInterestCategories = async (
+    newsCategoryCodeIdList: string[],
+  ): Promise<NewsInterestSaveResponse> => {
+    return post<NewsInterestSaveResponse>('/ai/chatbot/saveUserNewsInterestCategories.do', {
+      newsCategoryCodeIdList,
+    })
+  }
+
   return {
     fetchSelectAgentListForChat,
     fetchSelectChatRoomList,
@@ -188,5 +204,7 @@ export const useChatApi = () => {
     fetchCreateShareToken,
     fetchSelectSharedChatLogList,
     fetchCopySharedChatLogsToRoom,
+    fetchSelectUserNewsInterestCategory,
+    fetchSaveUserNewsInterestCategories,
   }
 }

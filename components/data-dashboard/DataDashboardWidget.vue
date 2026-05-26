@@ -517,18 +517,15 @@ const chartConfig = computed(() => {
     return { rawCategories, categories, values }
   }
 
-  // 파이 차트
-  // vizConfig에 labelKey/valueKey가 없으면 xAxisKey/yAxisKeys[0] 을 폴백으로 사용
+  // 파이 차트 — xAxisKey / yAxisKeys[0]
   if (vizType === 'pie') {
-    const labelKey = resolveColumnKey(columns, vizCfg.labelKey ?? vizCfg.xAxisKey) ?? columns[0]
-    const valueKey = resolveColumnKey(columns, vizCfg.valueKey ?? vizCfg.yAxisKeys?.[0]) ?? columns[1] ?? columns[0]
-    const rawCategories = buildRawCategories(rows, labelKey)
-    const valueMap = buildAggregatedValueMap(rows, labelKey, valueKey, readNum)
+    const rawCategories = buildRawCategories(rows, xKey)
+    const valueMap = buildAggregatedValueMap(rows, xKey, yKeys[0] ?? columns[1] ?? columns[0], readNum)
     const aggregatedValues = rawCategories.map((raw) => valueMap.get(raw) ?? 0)
     const total = aggregatedValues.reduce((sum, v) => sum + v, 0)
     // 음수 포함 또는 합계 0이면 비율 계산 불가
     if (aggregatedValues.some((v) => v < 0) || total <= 0) return {}
-    const labels = buildCategoryLabels(rawCategories, rows, dRows, labelKey, readLabel)
+    const labels = buildCategoryLabels(rawCategories, rows, dRows, xKey, readLabel)
     return {
       items: rawCategories.map((raw, i) => ({
         name: labels[i],

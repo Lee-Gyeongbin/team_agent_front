@@ -129,8 +129,12 @@ export interface ChatMessage {
   memeSubmitted?: boolean
   /** NewsCurator 메시지(type=news) 전용: 제출 완료 여부 */
   newsSubmitted?: boolean
-  /** NewsCurator 메시지(type=news) 전용: 사용자가 제출한 뉴스 분야 라벨(최대 3) */
+  /** NewsCurator 메시지(type=news) 전용: 사용자가 제출한 뉴스 분야 codeId(최대 3) */
   newsSelectedCategories?: string[]
+  /** NewsCurator — `카테고리 제출 유형: NEW` 카드(readonly 상단 분야 패널) */
+  newsIsNew?: boolean
+  /** 「새로운 카테고리 선택하기」로 추가된 미제출 카드 */
+  newsReselect?: boolean
   /**
    * 로그 API → 메시지 변환 시 동일 row 답변(rcontent)에서 추출한 표시용 데이터
    * (설문 surveyAnswers와 동일 패턴 — 카드·답변 행에 주입, 스레드 검색 없이 렌더)
@@ -492,4 +496,17 @@ export interface KnowledgeItem {
   color: string
   sortOrd: number
   createDt: string
+}
+
+/** POST /ai/chatbot/selectUserNewsInterestCategory.do 응답 */
+export interface UserNewsInterestCategoryResponse {
+  codeIds: string[]
+  modifyDt?: string
+}
+
+/** POST /ai/chatbot/saveUserNewsInterestCategories.do 응답 */
+export interface NewsInterestSaveResponse {
+  successYn?: string
+  returnMsg?: string
+  codeIds?: string[]
 }

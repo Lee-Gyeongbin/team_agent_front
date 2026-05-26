@@ -14,6 +14,7 @@
       v-else-if="isNewsCuratorResponse"
       readonly
       display-mode="result"
+      :news-is-new="newsIsNewFromLog"
       :news-items="newsList"
       :locked-selected-categories="newsSelectedCategories"
       :theme-icon-class-nm="item.iconClassNm ?? ''"
@@ -118,10 +119,15 @@ import {
   PEXELS_LOADING_HTML,
   fetchAndInjectPexelsImages,
   usePsychologySurvey,
+  isSurveyRadarAgentById,
+  isLikelySurveyResponseByQcontent,
+  resolveSurveyConfigByAgentId,
+  setActiveSurveyConfig,
   type RadarChartData,
-} from '~/utils/chat/psychologyConsultUtil'
+} from '~/utils/chat/surveyUtil'
 
 const { surveyGender } = usePsychologySurvey()
+const { chatIndexAgents } = useChatStore()
 
 const props = defineProps<{
   item: LibraryCardDetail
@@ -144,10 +150,17 @@ const lunchList = computed(() => {
 
 const isLunchAgentResponse = computed(() => props.item.agentId === LUNCH_AGENT_ID && lunchList.value.length > 0)
 
-const newsSelectedCategories = computed(() => {
-  if (props.item.agentId !== NEWS_CURATOR_AGENT_ID) return []
-  return parseNewsCuratorPromptMeta(props.item.qcontent ?? '').categories
-})
+const newsPromptMeta = computed(() =>
+  props.item.agentId === NEWS_CURATOR_AGENT_ID
+    ? parseNewsCuratorPromptMeta(props.item.qcontent ?? '')
+    : { categories: [] as string[], isNew: undefined as boolean | undefined },
+)
+
+const newsSelectedCategories = computed(() => newsPromptMeta.value.categories)
+
+const newsIsNewFromLog = computed(
+  () => props.item.agentId === NEWS_CURATOR_AGENT_ID && newsPromptMeta.value.isNew === true,
+)
 
 const newsList = computed(() => {
   if (props.item.agentId !== NEWS_CURATOR_AGENT_ID) return []
@@ -171,32 +184,36 @@ const memeList = computed(() => {
 
 const isTodayMemeResponse = computed(() => isTodayMemeLibraryCard(props.item) && memeList.value.length > 0)
 
+const isSurveyRadarLibraryCard = (agentId: string, qcontent: string) =>
+  isSurveyRadarAgentById(agentId, chatIndexAgents.value) || isLikelySurveyResponseByQcontent(qcontent)
+
 const responseRenderedHtml = computed(() => {
   const raw = props.item.rcontent ?? ''
-  if (props.item.agentId === 'AG000010') {
+  if (isSurveyRadarLibraryCard(props.item.agentId ?? '', props.item.qcontent ?? '')) {
     return toHtmlContent(removeKeywordLines(raw))
   }
   return toHtmlContent(raw)
 })
 
-// ── AG000010 방사형 차트 (LibraryDetailModal 과 동일 로직) ──
+// ── SURVEY(showRadarChart) 방사형 차트 (LibraryDetailModal 과 동일 로직) ──
 const psychologyMarkerFound = ref(false)
 const psychologyBeforeChartHtml = ref('')
 const psychologyAfterChartHtml = ref('')
 const psychologyRadarLoading = ref(false)
 const psychologyRadarData = ref<RadarChartData | null>(null)
 let cancelPsychologyRadarInjection: (() => void) | null = null
+let isLibraryCardAlive = true
 
-const isPsychologyRadarResponse = computed(() => props.item.agentId === 'AG000010' && psychologyMarkerFound.value)
+const isPsychologyRadarResponse = computed(
+  () => isSurveyRadarLibraryCard(props.item.agentId ?? '', props.item.qcontent ?? '') && psychologyMarkerFound.value,
+)
 
 const psychologyStressItems = computed<StressScoreItem[]>(() =>
   psychologyRadarData.value ? buildStressItemsFromRadarChartData(psychologyRadarData.value, surveyGender.value) : [],
 )
 
 const psychologyRadarChartConfig = computed<Record<string, unknown>>(() =>
-  psychologyRadarData.value
-    ? buildPsychologyRadarUiChartConfig(psychologyRadarData.value, surveyGender.value)
-    : {},
+  psychologyRadarData.value ? buildPsychologyRadarUiChartConfig(psychologyRadarData.value, surveyGender.value) : {},
 )
 
 const pexelsModalUrl = ref('')
@@ -208,6 +225,7 @@ const onPsychologyMarkdownClick = (e: MouseEvent) => {
 }
 
 onBeforeUnmount(() => {
+  isLibraryCardAlive = false
   cancelPsychologyRadarInjection?.()
   cancelPsychologyRadarInjection = null
   pexelsModalUrl.value = ''
@@ -232,7 +250,10 @@ watch(
     psychologyRadarData.value = null
     psychologyRadarLoading.value = false
 
-    if (!cardId || agentId !== 'AG000010') return
+    if (!cardId || !isSurveyRadarLibraryCard(agentId, qcontent)) return
+
+    const surveyConfig = resolveSurveyConfigByAgentId(agentId, chatIndexAgents.value)
+    if (surveyConfig) setActiveSurveyConfig(surveyConfig)
 
     const { found, before, after } = extractAiImageMarkerSection(rcontent)
     if (!found) return
@@ -248,6 +269,7 @@ watch(
     if (cached) {
       const keyForInject = cacheKey
       cancelPsychologyRadarInjection = schedulePsychologyRadarUiInjection(() => {
+        if (!isLibraryCardAlive) return
         const curKey = props.item.logId || props.item.cardId || ''
         if (curKey !== keyForInject) return
         psychologyRadarData.value = cached
@@ -255,8 +277,8 @@ watch(
       })
     } else {
       fetchPsychologyRadarChartData(extractSections1to4(rcontent), answers, surveyGender.value).then((chartData) => {
+        if (!isLibraryCardAlive || (props.item.cardId ?? '') !== cardId) return
         psychologyRadarLoading.value = false
-        if ((props.item.cardId ?? '') !== cardId) return
         if (chartData) {
           setRadarChartCache(cacheKey, chartData)
           psychologyRadarData.value = chartData
@@ -267,7 +289,7 @@ watch(
     const { beforeText, afterText } = extractKeywordSection(after)
     psychologyAfterChartHtml.value = toHtmlContent(beforeText) + PEXELS_LOADING_HTML + toHtmlContent(afterText)
     fetchAndInjectPexelsImages(after, cacheKey).then(({ beforeText: bt, afterText: at, gridHtml }) => {
-      if ((props.item.cardId ?? '') !== cardId) return
+      if (!isLibraryCardAlive || (props.item.cardId ?? '') !== cardId) return
       psychologyAfterChartHtml.value = toHtmlContent(bt) + gridHtml + toHtmlContent(at)
     })
   },

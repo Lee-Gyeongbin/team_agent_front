@@ -3,14 +3,13 @@
     class="chat-lunch-agent-card"
     :class="{
       'is-readonly': props.readonly,
-      'is-intro-playing': isIntroPlaying,
-      'is-pending-intro': isRecommendationsPending,
+      'is-intro-playing': isIntroPlaying || (isRecommendationsPending && !isFormOnlyCard),
       'is-content-visible': isContentVisible,
       'is-result-phase': hasResultRecommendations && !isFormOnlyCard,
     }"
     :style="themeStyle"
   >
-    <Transition name="lunch-intro">
+    <Transition name="agent-intro">
       <div
         v-if="isIntroPlaying && !isRecommendationsPending"
         class="chat-lunch-agent-card__intro"
@@ -45,7 +44,7 @@
     </Transition>
 
     <!-- result 카드: 추천 스트리밍 대기 -->
-    <Transition name="lunch-intro">
+    <Transition name="agent-intro">
       <div
         v-if="isRecommendationsPending && !isFormOnlyCard"
         class="chat-lunch-agent-card__intro"
@@ -105,7 +104,7 @@
     </div>
 
     <div
-      v-if="isContentVisible && !isRecommendationResultPhase"
+      v-if="!isRecommendationResultPhase"
       class="chat-lunch-agent-card__body"
     >
       <div
@@ -301,7 +300,7 @@
     </p>
 
     <div
-      v-if="isContentVisible && !hasResultRecommendations && (props.readonly || !isRecommendationsPending)"
+      v-if="!hasResultRecommendations && (props.readonly || !isRecommendationsPending)"
       class="chat-lunch-agent-card__footer"
     >
       <template v-if="props.readonly">
@@ -487,10 +486,11 @@ const isResultOnlyCard = computed(() => props.displayMode === 'result')
 
 const shouldRenderResultList = computed(() => !isFormOnlyCard.value && hasResultRecommendations.value)
 
-/** 헤더 — form은 isContentVisible 후, result는 추천 수신 후 (pending 중 숨김) */
+/** 헤더 — 선택 폼은 인트로 중에도 DOM 유지(높이 고정), result pending 중만 숨김 */
 const showCardHeader = computed(() => {
   if (isRecommendationsPending.value && isResultOnlyCard.value) return false
   if (hasResultRecommendations.value) return true
+  if (!isResultOnlyCard.value && !hasResultRecommendations.value) return true
   return isContentVisible.value && (isFormOnlyCard.value || !isRecommendationsPending.value)
 })
 
@@ -523,7 +523,6 @@ const LUNCH_PENDING_STATUS_INTERVAL_MS = 3000
 const pendingStatusTextIndex = ref(0)
 const pendingStatusText = computed(() => LUNCH_PENDING_STATUS_TEXTS[pendingStatusTextIndex.value])
 const pendingStatusChars = computed(() => pendingStatusText.value.split(''))
-
 const DEFAULT_THEME_HEX = '#3c69db'
 const hexToRgb = (hex: string) => {
   const cleanedHex = String(hex || '')
@@ -840,6 +839,8 @@ const onSubmitClick = () => {
 }
 </script>
 <style lang="scss" scoped>
+@use '@/assets/styles/utils/agent-intro' as *;
+
 @mixin lunch-content-reveal($duration, $delay: 0s) {
   opacity: var(--lunch-content-opacity);
   transform: translateY(var(--lunch-content-shift));
@@ -878,7 +879,8 @@ const onSubmitClick = () => {
   width: 100%;
   max-width: 760px;
   height: auto;
-  min-height: 420px;
+  /* 인트로·선택 폼·추천 대기·결과 카드 공통 최소 높이 (TodayMeme 인트로와 동일 계열) */
+  min-height: min(640px, 78vh);
   border: 1px solid $color-border;
   border-radius: $border-radius-lg;
   background: #fff;
@@ -886,10 +888,20 @@ const onSubmitClick = () => {
   --lunch-content-opacity: 0;
   --lunch-content-shift: 8px;
 
+  /* 채팅 인덱스 오버레이: 부모 flex 영역을 채워 인트로↔선택 폼 전환 시 외곽 크기 고정 */
+  &.chat-index-survey {
+    height: 100%;
+    min-height: min(640px, 78vh);
+  }
+
   &.is-intro-playing {
+    min-height: min(640px, 78vh);
+    border-color: transparent;
+  }
+
+  &.is-intro-playing:not(.is-content-visible) {
     --lunch-content-opacity: 0;
     --lunch-content-shift: 8px;
-    border-color: transparent;
   }
 
   &.is-content-visible {
@@ -897,7 +909,8 @@ const onSubmitClick = () => {
     --lunch-content-shift: 0px;
   }
 
-  &.is-result-phase {
+  /* 결과 표시 카드드 */
+  &.is-result-phase:not(.is-intro-playing) {
     min-height: 0;
   }
 
@@ -990,15 +1003,21 @@ const onSubmitClick = () => {
   }
 
   &__result-list {
+    flex: 0 1 auto;
+    max-height: min(480px, calc(78vh - 180px));
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: $spacing-sm;
-    padding: 20px;
+    padding: 16px 20px 8px;
+    flex-shrink: 0;
     @include lunch-content-reveal(0.32s);
+    @include custom-scrollbar(4px);
   }
 
   &__result-image-notice {
-    margin: -6px 20px 12px;
+    flex-shrink: 0;
+    margin: 0 20px 12px;
     @include typo($body-xsmall);
     color: $color-text-muted;
   }
@@ -1174,48 +1193,6 @@ const onSubmitClick = () => {
     font-weight: $font-weight-medium;
   }
 
-  &__intro {
-    position: absolute;
-    inset: 0;
-    z-index: 3;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.9) 100%);
-    backdrop-filter: blur(1px);
-    pointer-events: none;
-  }
-
-  &__intro-inner {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: $spacing-xs;
-    animation: lunch-intro-rise 0.6s ease both;
-  }
-
-  &__intro-avatar {
-    @include lunch-theme-avatar(44px);
-    box-shadow: 0 0 0 0 rgba(var(--lunch-theme-rgb), 0.2);
-    animation: lunch-intro-pulse 1.3s ease-in-out infinite;
-  }
-
-  &__intro-title {
-    @include lunch-emphasis-title($body-large);
-  }
-
-  &__intro-subtitle {
-    @include typo($body-medium);
-    color: $color-text-muted;
-  }
-
-  &__intro-char {
-    display: inline-block;
-    animation: lunch-intro-text-bounce 1.15s ease-in-out infinite;
-    animation-delay: var(--intro-char-delay, 0s);
-  }
-
   &.is-readonly {
     .chat-lunch-agent-card__chip-row {
       pointer-events: none;
@@ -1223,15 +1200,9 @@ const onSubmitClick = () => {
   }
 }
 
-.lunch-intro-enter-active,
-.lunch-intro-leave-active {
-  transition: opacity 0.25s ease;
-}
-
-.lunch-intro-enter-from,
-.lunch-intro-leave-to {
-  opacity: 0;
-}
+@include agent-card-intro('chat-lunch-agent-card', 'intro', '--lunch-theme-color', '--lunch-theme-rgb');
+@include agent-card-intro-keyframes;
+@include agent-intro-transition;
 
 @keyframes lunch-result-thumb-pulse {
   0%,
@@ -1240,40 +1211,6 @@ const onSubmitClick = () => {
   }
   50% {
     opacity: 0.55;
-  }
-}
-
-@keyframes lunch-intro-text-bounce {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  35% {
-    transform: translateY(-2px);
-  }
-  65% {
-    transform: translateY(0.5px);
-  }
-}
-
-@keyframes lunch-intro-rise {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes lunch-intro-pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba(var(--lunch-theme-rgb), 0.2);
-  }
-  50% {
-    box-shadow: 0 0 0 10px rgba(var(--lunch-theme-rgb), 0);
   }
 }
 </style>
