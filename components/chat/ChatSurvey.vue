@@ -234,11 +234,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  usePsychologySurvey,
-  type SurveyGender,
-} from '~/utils/chat/surveyUtil'
-import type { SurveyAgentConfig } from '~/utils/chat/surveyUtil'
+import { usePsychologySurvey, type SurveyAgentConfig, type SurveyGender } from '~/utils/chat/surveyUtil'
 import { openToast } from '~/composables/useToast'
 
 interface Props {
@@ -261,14 +257,8 @@ const props = withDefaults(defineProps<Props>(), {
   themeColorHex: '',
 })
 
-const {
-  surveyAnswers,
-  surveyGender,
-  isGenderStepVisible,
-  answeredCount,
-  setSurveyAnswer,
-  confirmGender,
-} = usePsychologySurvey()
+const { surveyAnswers, surveyGender, isGenderStepVisible, answeredCount, setSurveyAnswer, confirmGender } =
+  usePsychologySurvey()
 
 const emit = defineEmits<{
   close: []
@@ -291,9 +281,7 @@ const progressPercent = computed(() =>
 const introTitleChars = computed(() => props.surveyConfig.introTitle.split(''))
 const introSubtitleChars = computed(() => props.surveyConfig.introSubtitle.split(''))
 
-const isSurveyComplete = computed(
-  () => Object.keys(displayAnswers.value).length === props.surveyConfig.totalQuestions,
-)
+const isSurveyComplete = computed(() => Object.keys(displayAnswers.value).length === props.surveyConfig.totalQuestions)
 
 const surveyDomId = useId().replace(/:/g, '')
 
