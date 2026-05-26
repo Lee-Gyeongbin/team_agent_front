@@ -121,7 +121,7 @@
                     </div>
                     <div class="chat-news-curator__meta-row">
                       <dt>카테고리</dt>
-                      <dd>{{ item.category ? resolveNewsCuratorCategoryLabel(item.category) : '-' }}</dd>
+                      <dd>{{ item.category || '-' }}</dd>
                     </div>
                     <div class="chat-news-curator__meta-row">
                       <dt>요약</dt>

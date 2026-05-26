@@ -170,7 +170,7 @@ ${submitTypeLine}
 3. source, title, sourceUrl, imageUrl 값은 입력 데이터를 그대로 사용한다.
 4. imageUrl은 기사 원본 데이터의 imageUrl 값을 그대로 사용한다.
 5. 받은 카테고리별로 1가지 이상의 기사를 선택해야 한다.
-6. category는 NC000001 공통코드 목록에 있는 코드 ID(codeId)만 사용한다.
+6. category는 RSS 선택에 사용된 카테고리 값을 그대로 사용한다.
 
 [작업 규칙]
 1. 사용자 관심 카테고리와 일치하거나 가장 가까운 기사를 우선 선정한다.
@@ -202,7 +202,7 @@ ${submitTypeLine}
     "summary": "삼성전자가 AI 반도체 투자를 확대한다. 생산 역량 강화에 나선다.",
     "sourceUrl": "https://www.etnews.com/20260507000353",
     "imageUrl": "https://image.example.com/sample.jpg"
-    "category": "002"
+    "category": "경제"
   }
 ]`
 }
