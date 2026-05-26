@@ -83,10 +83,11 @@
         <div class="library-archive-card-body">
           <!-- 사용자 질문 -->
           <div class="content-box type-question">
-            <ChatPsychologySurvey
-              v-if="isPsychologySurveyCard(item)"
+            <ChatSurvey
+              v-if="isSurveyLibraryCard(item) && getSurveyLibraryConfig(item)"
               class="library-archive-survey-readonly"
               readonly
+              :survey-config="getSurveyLibraryConfig(item)!"
               :initial-answers="parseSurveyAnswersFromPrompt(item.qcontent ?? '')"
               :theme-icon-class-nm="item.iconClassNm ?? ''"
               :theme-color-hex="item.colorHex ?? ''"
@@ -121,10 +122,12 @@
 </template>
 
 <script setup lang="ts">
-import { parseSurveyAnswersFromPrompt } from '~/utils/chat/psychologyConsultUtil'
+import { parseSurveyAnswersFromPrompt } from '~/utils/chat/surveyUtil'
+import { isSurveyAgent, parseSurveyConfigFromAgent, resolveSurveyConfigByAgentId } from '~/utils/chat/surveyUtil'
 import { hasTodayMemeQcontent, isTodayMemeLibraryCard } from '~/utils/chat/todayMemeUtil'
 import type { LibraryCardDetail } from '~/types/library'
 const { archiveCardList } = useLibraryStore()
+const { chatIndexAgents } = useChatStore()
 
 interface Props {
   isOpen?: boolean
@@ -153,7 +156,13 @@ const filteredArchiveCardList = computed(() => {
   })
 })
 
-const isPsychologySurveyCard = (item: LibraryCardDetail) => item.agentId === 'AG000010'
+const isSurveyLibraryCard = (item: LibraryCardDetail) => {
+  const agent = chatIndexAgents.value.find((a) => a.agentId === item.agentId)
+  return agent ? isSurveyAgent(agent) : false
+}
+
+const getSurveyLibraryConfig = (item: LibraryCardDetail) =>
+  resolveSurveyConfigByAgentId(item.agentId, chatIndexAgents.value)
 
 // 스크롤 상태
 const bodyRef = ref<HTMLElement | null>(null)

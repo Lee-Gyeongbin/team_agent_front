@@ -7,7 +7,7 @@ import type {
 } from '~/types/chat'
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import { parseChatAttachmentsFromLogRow } from '~/utils/chat/chatAttachmentDisplayUtil'
-import { parseSurveyAnswersFromPrompt, PSYCHOLOGY_SURVEY_TOTAL_QUESTIONS } from '~/utils/chat/psychologyConsultUtil'
+import { parseSurveyAnswersFromPrompt } from '~/utils/chat/surveyUtil'
 import {
   normalizeLunchRecommendationImages,
   parseLunchPayloadFromPrompt,
@@ -99,25 +99,21 @@ export const useChatMessages = () => {
       },
     }
 
-    // 산업심리 상담 에이전트: "진단 프롬프트"인 경우에만 readonly survey 메시지로 대체
-    // (후속 일반 대화 질문까지 survey로 잘못 렌더링되는 문제 방지)
-    if (agentId === 'AG000010') {
-      const surveyAnswers = parseSurveyAnswersFromPrompt(row.qcontent ?? '')
-      const isSurveyPrompt = Object.keys(surveyAnswers).length === PSYCHOLOGY_SURVEY_TOTAL_QUESTIONS
-      if (isSurveyPrompt) {
-        return [
-          {
-            logId: `${logId}-survey`,
-            type: 'survey',
-            createdAt,
-            agentId,
-            surveyAnswers,
-            surveySubmitted: true,
-          },
-          // answer 메시지에도 surveyAnswers 주입 — 방사형 그래프 이미지 생성 프롬프트용
-          { ...answerMessage, surveyAnswers },
-        ]
-      }
+    // SURVEY 에이전트: "진단 프롬프트"인 경우에만 readonly survey 메시지로 대체
+    const surveyAnswers = parseSurveyAnswersFromPrompt(row.qcontent ?? '')
+    const isSurveyPrompt = Object.keys(surveyAnswers).length > 0
+    if (isSurveyPrompt) {
+      return [
+        {
+          logId: `${logId}-survey`,
+          type: 'survey',
+          createdAt,
+          agentId,
+          surveyAnswers,
+          surveySubmitted: true,
+        },
+        { ...answerMessage, surveyAnswers },
+      ]
     }
 
     // TodayMeme 에이전트: 프롬프트 패턴이면 readonly meme 메시지로 대체

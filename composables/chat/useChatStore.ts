@@ -19,8 +19,9 @@ import {
   createSurveyMessage,
   buildDiagnosticPrompt,
   parseSurveyAnswersFromPrompt,
-  PSYCHOLOGY_SURVEY_TOTAL_QUESTIONS,
-} from '~/utils/chat/psychologyConsultUtil'
+  normalizeAgentSubCfg,
+  handleSelectSurveyChatIndexAgent,
+} from '~/utils/chat/surveyUtil'
 import {
   buildLunchRecommendationPrompt,
   createLunchCardMessage,
@@ -61,7 +62,6 @@ function agentTypeToSearchMode(svcTy: string): SearchModeValue | null {
 const { messages } = useChatSocket()
 const { logRowToMessages, getMessagesForVisualization, setStreamingLunchPayload } = useChatMessages()
 const {
-  openGenderStep,
   closePsychologySurvey,
   isSurveyRoom,
   surveyAnswers,
@@ -124,7 +124,7 @@ const messagesForDisplay = computed(() => {
     base = messages.value.filter((m) => {
       if (m.type === 'question' && !surveyPromptHidden) {
         const parsed = parseSurveyAnswersFromPrompt(m.qContent ?? '')
-        const isSurveyPrompt = Object.keys(parsed).length === PSYCHOLOGY_SURVEY_TOTAL_QUESTIONS
+        const isSurveyPrompt = Object.keys(parsed).length > 0
         if (isSurveyPrompt) {
           surveyPromptHidden = true
           return false
@@ -158,6 +158,10 @@ const isLoadingChatIndexAgents = ref(true)
 const normalizeChatAgents = (list: Agent[]) =>
   list
     .filter((a) => a.useYn === 'Y' && (a.svcTy === 'M' || a.svcTy === 'S' || a.svcTy === 'T' || a.svcTy === 'C'))
+    .map((a) => ({
+      ...a,
+      subCfg: normalizeAgentSubCfg(a.subCfg),
+    }))
     .sort((a, b) => a.sortOrd - b.sortOrd)
 
 const selectedLogId = ref<string | null>(null)
@@ -373,8 +377,8 @@ export const useChatStore = () => {
    * index.vue에서 설문 제출 후 새 채팅방 진입 시 설문 컴포넌트를 메시지 목록 앞에 주입
    * - question 메시지는 hiddenFromDisplay=true로 숨김
    */
-  const addInlineSurveyMessage = (answers: Record<number, number>) => {
-    const surveyMsg = createSurveyMessage(answers, true)
+  const addInlineSurveyMessage = (answers: Record<number, number>, agentId = selectedChatAgentId.value ?? '') => {
+    const surveyMsg = createSurveyMessage(answers, true, agentId)
     const msgs = [...messages.value]
     const firstQ = msgs.find((m) => m.type === 'question')
     if (firstQ) firstQ.hiddenFromDisplay = true
@@ -836,26 +840,17 @@ export const useChatStore = () => {
       return
     }
 
-    if (agent.agentId === 'AG000010') {
-      // 산업심리 상담 에이전트 — 에이전트 모드 상태 초기화
+    if (agent.svcTy === 'C' && agent.subCfg != null && agent.subCfg.subTy === 'SURVEY') {
+      const surveySelection = handleSelectSurveyChatIndexAgent(agent, {
+        roomId: chatRoom.value.roomId,
+        messages: messages.value,
+      })
       activeSearchModes.value = []
       subOptions.value = []
       selectedChatAgentId.value = agent.agentId
       await selectModelOptions()
-
-      if (chatRoom.value.roomId) {
-        // 채팅방 내부: 이미 활성 설문 메시지가 있으면 중복 추가하지 않음
-        const alreadyHasSurvey = messages.value.some((m) => m.type === 'survey' && !m.surveySubmitted)
-        if (!alreadyHasSurvey) {
-          // 성별 선택 Step 활성화 후 설문 메시지 즉시 주입
-          // ChatPsychologySurvey.vue에서 isGenderStepVisible 체크 후 성별 선택 먼저 표시
-          openGenderStep()
-          const surveyMsg = createSurveyMessage({}, false)
-          messages.value = [...messages.value, surveyMsg]
-        }
-      } else {
-        // 최초화면(/chat index): 성별 선택 Step 0 → 설문으로 진행
-        openGenderStep()
+      if (surveySelection.appendMessage) {
+        messages.value = [...messages.value, surveySelection.appendMessage]
       }
       return
     }
@@ -947,7 +942,12 @@ export const useChatStore = () => {
   /** /chat 인덱스에서 설문 제출 — 방 생성·인라인 주입·등록·닫기 */
   const handleIndexSurveySubmit = async (): Promise<boolean> => {
     const prompt = buildDiagnosticPrompt(surveyAnswers.value, surveyGender.value)
+    if (!prompt.trim()) {
+      openToast({ message: '설문 설정을 불러오지 못했습니다. 에이전트를 다시 선택해 주세요.', type: 'warning' })
+      return false
+    }
     const answers = { ...surveyAnswers.value }
+    const agentId = selectedChatAgentId.value ?? ''
     const sent = await createChatRoom(prompt)
     if (sent) {
       // createChatRoom은 clearMessagesBefore:true로 초기화 후 question+answer placeholder만 남김
@@ -955,8 +955,9 @@ export const useChatStore = () => {
       const answerMsg = messages.value.find((m) => m.type === 'answer')
       if (answerMsg && Object.keys(answers).length > 0) {
         answerMsg.surveyAnswers = { ...answers }
+        if (agentId && !answerMsg.agentId) answerMsg.agentId = agentId
       }
-      addInlineSurveyMessage(answers)
+      addInlineSurveyMessage(answers, agentId)
       registerSurveyRoom(chatRoom.value.roomId)
       handleClosePsychologySurvey()
     }

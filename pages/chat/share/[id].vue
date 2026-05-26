@@ -148,7 +148,7 @@ watch(
   { immediate: true },
 )
 
-// 채팅 상세(`/chat/[id]`)와 동일: 에이전트 목록이 있어야 심리상담(AG000010 등) 아이콘·테마가 메시지에 반영됨
+// 채팅 상세(`/chat/[id]`)와 동일: 에이전트 목록이 있어야 SURVEY 에이전트 아이콘·테마가 메시지에 반영됨
 onMounted(() => {
   handleSelectKnowledge()
   handleSelectChatIndexAgents()
