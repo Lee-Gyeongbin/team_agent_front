@@ -121,7 +121,7 @@
                     </div>
                     <div class="chat-news-curator__meta-row">
                       <dt>카테고리</dt>
-                      <dd>{{ resolveCategoryLabel(item.category) }}</dd>
+                      <dd>{{ item.category ? resolveNewsCuratorCategoryLabel(item.category) : '-' }}</dd>
                     </div>
                     <div class="chat-news-curator__meta-row">
                       <dt>요약</dt>
@@ -463,7 +463,6 @@ const showResultsReselectFooter = computed(
 
 const isLockedCategorySelected = (category: NewsCuratorCategoryOption) =>
   isNewsCuratorLockedCategorySelected(lockedSelectedCategoriesList.value, category)
-const resolveCategoryLabel = (raw: string | undefined) => resolveNewsCuratorCategoryLabel(raw ?? '')
 const onRetryLoadCategories = () => {
   resetNewsCuratorCategoriesCache()
   handleLoadNewsCuratorCategories()
@@ -483,17 +482,16 @@ const onSubmitClick = () => {
 
 /** selectUserNewsInterestCategory — 빈 codeIds면 선택 UI, 있으면 자동 제출(SAVED) */
 const handleInitNewsInterestFlow = async () => {
-  if (props.readonly) {
-    isInterestResolving.value = false
-    return
-  }
-
   isInterestResolving.value = true
   isAutoSubmitting.value = false
   needsCategoryPicker.value = false
 
   try {
     await handleLoadNewsCuratorCategories()
+
+    if (props.readonly) {
+      return
+    }
 
     if (isReselectFlow.value) {
       needsCategoryPicker.value = true
