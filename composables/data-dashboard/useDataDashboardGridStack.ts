@@ -16,7 +16,7 @@ export const GS_MARGIN = 10
  * GS_MARGIN 값만 바꾸면 핸들 위치가 자동으로 따라감
  * CSS variable --gs-resize-handle-offset 으로 SCSS에 주입
  */
-export const GS_RESIZE_HANDLE_OFFSET = GS_MARGIN / 2 + 3
+export const GS_RESIZE_HANDLE_OFFSET = GS_MARGIN / 2
 
 /** 새 위젯 추가 시 기본 레이아웃 */
 export const GS_DEFAULT_LAYOUT = {
