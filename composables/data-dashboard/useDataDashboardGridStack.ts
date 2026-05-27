@@ -7,9 +7,16 @@ export const GS_CELL_HEIGHT = 100
 export const GS_COLUMNS = 6
 /**
  * GridStack margin 옵션값 — 내부적으로 2로 나뉘어 각 면에 적용
- * GS_MARGIN = 32 → --gs-item-margin: 16px → $spacing-md와 동일한 16px 인셋
+ * GS_MARGIN = 10 → --gs-item-margin: 5px → 각 면 5px 인셋
  */
-export const GS_MARGIN = 32
+export const GS_MARGIN = 10
+
+/**
+ * 리사이즈 핸들 위치 = 콘텐츠 경계(GS_MARGIN/2) + 3px 안쪽
+ * GS_MARGIN 값만 바꾸면 핸들 위치가 자동으로 따라감
+ * CSS variable --gs-resize-handle-offset 으로 SCSS에 주입
+ */
+export const GS_RESIZE_HANDLE_OFFSET = GS_MARGIN / 2 + 3
 
 /** 새 위젯 추가 시 기본 레이아웃 */
 export const GS_DEFAULT_LAYOUT = {
@@ -49,6 +56,9 @@ export const useDataDashboardGridStack = () => {
       },
       gridEl.value,
     )
+
+    // 리사이즈 핸들 오프셋을 CSS variable로 주입 → SCSS가 GS_MARGIN에 독립적으로 읽음
+    gridEl.value.style.setProperty('--gs-resize-handle-offset', `${GS_RESIZE_HANDLE_OFFSET}px`)
 
     return grid
   }

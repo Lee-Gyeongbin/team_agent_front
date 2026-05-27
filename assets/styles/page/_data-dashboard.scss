@@ -52,13 +52,12 @@
   }
 
   // 리사이즈 핸들 위치 조정
-  // GS_MARGIN = 32 → GridStack 내부에서 /2 → 각 면 16px 인셋($spacing-md 일치)
-  // content 경계는 grid-stack-item에서 16px 안쪽
-  // right: 20px(16+4) → 핸들(20×20)이 content 경계 기준 4px 안쪽에서 시작, 중심은 14px 안쪽(border-radius arc 내)
+  // --gs-resize-handle-offset = GS_MARGIN/2 + 3 (TS에서 initGrid 시 주입)
+  // → GS_MARGIN 값만 바꾸면 핸들이 항상 콘텐츠 경계 기준 3px 안쪽에 자동 배치
   // !important: GridStack CSS variable(--gs-item-margin-*)을 덮어쓰기 위해 필요
   .grid-stack-item > .ui-resizable-se {
-    right: 20px !important;
-    bottom: 20px !important;
+    right: var(--gs-resize-handle-offset, 8px) !important;
+    bottom: var(--gs-resize-handle-offset, 8px) !important;
     width: 20px;
     height: 20px;
     z-index: 10;
