@@ -129,7 +129,7 @@ export interface ChatMessage {
   memeSubmitted?: boolean
   /** NewsCurator 메시지(type=news) 전용: 제출 완료 여부 */
   newsSubmitted?: boolean
-  /** NewsCurator 메시지(type=news) 전용: 사용자가 제출한 뉴스 분야 codeId(최대 3) */
+  /** NewsCurator 메시지(type=news) 전용: 사용자가 제출한 뉴스 분야 codeId(최대 5) */
   newsSelectedCategories?: string[]
   /** NewsCurator — `카테고리 제출 유형: NEW` 카드(readonly 상단 분야 패널) */
   newsIsNew?: boolean

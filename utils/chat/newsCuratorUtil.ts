@@ -107,39 +107,18 @@ export const useNewsCuratorCategories = () => ({
 })
 
 /** 뉴스픽 UI·숨김 질문 파서 — 최대 선택 분야 개수 */
-export const NEWS_CURATOR_MAX_CATEGORY_COUNT = 3
+export const NEWS_CURATOR_MAX_CATEGORY_COUNT = 5
 
-/**
- * 긴 큐레이션 프롬프트에서 `사용자 관심 카테고리: ["codeId",...]` 형태만 추출
- * - NC000001 codeId만 허용, 1~3개, 중복 불가
- */
-const extractCategoriesFromLabeledJsonArray = (text: string): string[] | null => {
-  const labelMatch = text.match(/(?:^|[\r\n])\s*[-*•]?\s*사용자\s*관심\s*카테고리\s*[:：]\s*(\[[\s\S]*?\])/u)
-  if (!labelMatch?.[1]) return null
-  try {
-    const parsed: unknown = JSON.parse(labelMatch[1])
-    if (!Array.isArray(parsed)) return null
-    if (parsed.length === 0 || parsed.length > NEWS_CURATOR_MAX_CATEGORY_COUNT) return null
-    const codeIds: string[] = []
-    const seen = new Set<string>()
-    for (const cell of parsed) {
-      if (typeof cell !== 'string' && typeof cell !== 'number') return null
-      const codeId = String(cell).trim()
-      if (!codeId || !isNewsCuratorCategoryKnown(codeId) || seen.has(codeId)) return null
-      seen.add(codeId)
-      codeIds.push(codeId)
-    }
-    return codeIds
-  } catch {
-    return null
-  }
+/** NEW 제출·저장 API용 분야 codeId 검증 (프롬프트 본문에는 분야 미포함) */
+export const isValidNewsCuratorCategorySelection = (categories: string[]) => {
+  const codeIds = categories.map((c) => normalizeCategoryToken(String(c))).filter(Boolean)
+  return (
+    codeIds.length > 0 &&
+    codeIds.length <= NEWS_CURATOR_MAX_CATEGORY_COUNT &&
+    new Set(codeIds).size === codeIds.length &&
+    codeIds.every((codeId) => isNewsCuratorCategoryKnown(codeId))
+  )
 }
-
-const isValidHiddenCategoryList = (categories: string[]) =>
-  categories.length > 0 &&
-  categories.length <= NEWS_CURATOR_MAX_CATEGORY_COUNT &&
-  new Set(categories).size === categories.length &&
-  categories.every((codeId) => isNewsCuratorCategoryKnown(codeId))
 
 const parseNewsSubmitTypeIsNew = (text: string): boolean | undefined => {
   if (/카테고리\s*제출\s*유형\s*[:：]\s*SAVED/u.test(text)) return false
@@ -147,83 +126,8 @@ const parseNewsSubmitTypeIsNew = (text: string): boolean | undefined => {
   return undefined
 }
 
-/** 사용자 제출 시 API로 보내는 뉴스 큐레이션 시스템 프롬프트 — 선택 분야만 JSON 배열로 치환 */
-export const buildNewsCuratorSubmissionPrompt = (categories: string[], options?: { isNew?: boolean }): string => {
-  const codeIds = categories.map((c) => String(c).trim()).filter(Boolean)
-  if (!isValidHiddenCategoryList(codeIds)) return ''
-
-  const categoryJson = JSON.stringify(codeIds)
-  const submitTypeLine = options?.isNew === false ? '- 카테고리 제출 유형: SAVED' : '- 카테고리 제출 유형: NEW'
-
-  return `너는 뉴스 큐레이션 편집자이다.
-
-[입력 데이터]
-- 사용자 관심 카테고리: ${categoryJson}
-${submitTypeLine}
-
-[역할]
-후보 기사 목록 중에서 사용자 관심 카테고리와 가장 관련성이 높은 기사 5개를 선정한다.
-
-[전제 조건]
-1. 반드시 후보 기사 목록 안에 존재하는 기사만 사용한다.
-2. 존재하지 않는 기사나 값을 임의 생성하지 않는다.
-3. source, title, sourceUrl, imageUrl 값은 입력 데이터를 그대로 사용한다.
-4. imageUrl은 기사 원본 데이터의 imageUrl 값을 그대로 사용한다.
-5. 받은 카테고리별로 1가지 이상의 기사를 선택해야 한다.
-6. category는 RSS 선택에 사용된 카테고리 값을 그대로 사용한다.
-
-[작업 규칙]
-1. 사용자 관심 카테고리와 일치하거나 가장 가까운 기사를 우선 선정한다.
-2. 같은 주제 또는 유사한 내용의 기사는 중복 선택하지 않는다.
-3. summary만 새롭게 작성하며, 기사 내용을 자연스럽게 축약한 한국어 두 문장으로 작성한다.
-4. summary는 최대 150자 이내로 간결하게 작성한다.
-5. summary에는 과장, 추측, 허위 표현을 사용하지 않는다.
-
-[출력 규칙]
-1. 반드시 JSON 배열만 출력한다.
-2. 설명, 마크다운, 코드블록, 추가 텍스트는 절대 출력하지 않는다.
-3. 배열 원소 개수는 반드시 정확히 5개이다.
-4. rank 값은 반드시 1부터 5까지 순서로 출력한다.
-5. 출력 필드는 아래만 사용한다.
-   - rank
-   - source
-   - title
-   - summary
-   - sourceUrl
-   - imageUrl
-   - category
-
-[출력 예시]
-[
-  {
-    "rank": 1,
-    "source": "전자신문",
-    "title": "삼성전자 AI 반도체 투자 확대",
-    "summary": "삼성전자가 AI 반도체 투자를 확대한다. 생산 역량 강화에 나선다.",
-    "sourceUrl": "https://www.etnews.com/20260507000353",
-    "imageUrl": "https://image.example.com/sample.jpg"
-    "category": "경제"
-  }
-]`
-}
-
-/**
- * 숨김 질문 여부 + 선택 분야(codeId)
- * - 본문 `사용자 관심 카테고리:` + JSON 배열(현행 제출 프롬프트)만 인식
- */
-export const parseNewsCuratorPromptMeta = (questionPromptText: string) => {
-  const normalizedPrompt = String(questionPromptText ?? '').trim()
-  if (!normalizedPrompt) {
-    return { isHiddenQuestion: false, categories: [] as string[], isNew: undefined as boolean | undefined }
-  }
-
-  const submitTypeIsNew = parseNewsSubmitTypeIsNew(normalizedPrompt)
-  const categories = extractCategoriesFromLabeledJsonArray(normalizedPrompt)
-  if (!categories) {
-    return { isHiddenQuestion: false, categories: [] as string[], isNew: undefined as boolean | undefined }
-  }
-  return { isHiddenQuestion: true, categories, isNew: submitTypeIsNew }
-}
+const isNewsCuratorHiddenPromptText = (text: string): boolean =>
+  /너는\s*뉴스\s*큐레이션\s*편집자/u.test(text) && /카테고리\s*제출\s*유형\s*[:：]/u.test(text)
 
 /** 백엔드 `complete.content` 등 — 표준 JSON 루트에서 `news` 배열만 추출 */
 const rowsFromNewsJsonRoot = (parsedJson: unknown): unknown[] | null => {
@@ -253,22 +157,146 @@ const mapRow = (row: unknown, idx: number): NewsCuratorItem => {
   }
 }
 
-/** 답변 `rContent` — 백엔드가 항상 표준 JSON으로 내려줄 때 사용 */
-export const parseNewsCuratorItems = (raw: string): NewsCuratorItem[] => {
-  const text = String(raw ?? '').trim()
-  if (!text) return []
+const parseJsonRoot = (jsonText: string): unknown | null => {
   try {
-    let root: unknown = JSON.parse(text)
+    let root: unknown = JSON.parse(jsonText)
     if (typeof root === 'string') {
       const inner = root.trim()
       if (inner.startsWith('{') || inner.startsWith('[')) root = JSON.parse(inner)
     }
-    const rows = rowsFromNewsJsonRoot(root)
-    if (!rows?.length) return []
-    return rows.map(mapRow).filter((it) => it.title && it.summary)
+    return root
   } catch {
-    return []
+    return null
   }
+}
+
+const parseNewsCuratorItemsFromJsonText = (jsonText: string): NewsCuratorItem[] => {
+  const rows = rowsFromNewsJsonRoot(parseJsonRoot(jsonText))
+  if (!rows?.length) return []
+  return rows.map(mapRow).filter((it) => it.title && it.summary)
+}
+
+/** 사용자 제출 시 WS로 보내는 뉴스 큐레이션 시스템 프롬프트 — 선정 대상 카테고리·후보 기사는 서버 주입 */
+export const buildNewsCuratorSubmissionPrompt = (_categories: string[], options?: { isNew?: boolean }): string => {
+  const submitTypeLine = options?.isNew === false ? '- 카테고리 제출 유형: SAVED' : '- 카테고리 제출 유형: NEW'
+
+  return `너는 뉴스 큐레이션 편집자이다.
+
+[입력 데이터]
+${submitTypeLine}
+(선정 대상 카테고리·후보 기사 목록은 서버가 [역할] 직전에 주입한다.)
+
+[역할]
+후보 기사 목록 중에서 선정 대상 카테고리에서 관련성이 높은 기사를 선정한다.
+
+[전제 조건]
+1. 반드시 후보 기사 목록 안에 존재하는 기사만 사용한다.
+2. 존재하지 않는 기사나 값을 임의 생성하지 않는다.
+3. source, title, sourceUrl, imageUrl 값은 입력 데이터를 그대로 사용한다.
+4. imageUrl은 기사 원본 데이터의 imageUrl 값을 그대로 사용한다.
+5. 선정 대상 카테고리에서 관련성이 높은 기사를 5개 선정한다.
+6. category는 후보 기사의 rssCategory 값을 그대로 사용한다.
+
+[작업 규칙]
+1. 같은 주제 또는 유사한 내용의 기사는 중복 선택하지 않는다.
+2. summary만 새롭게 작성하며, 기사 내용을 자연스럽게 축약한 한국어 두 문장으로 작성한다.
+3. summary는 최대 150자 이내로 간결하게 작성한다.
+4. summary에는 과장, 추측, 허위 표현을 사용하지 않는다.
+
+[출력 규칙]
+1. 반드시 JSON 배열만 출력한다.
+2. 설명, 마크다운, 코드블록, 추가 텍스트는 절대 출력하지 않는다.
+3. rank 값은 선정 대상 카테고리에서 1부터 순서대로 5까지 출력한다.
+4. 배열 원소 개수는 반드시 정확히 5개이다.
+5. 출력 필드는 아래만 사용한다.
+   - rank
+   - source
+   - title
+   - summary
+   - sourceUrl
+   - imageUrl
+   - category
+
+[출력 예시]
+[
+  {
+    "rank": 1,
+    "source": "전자신문",
+    "title": "삼성전자 AI 반도체 투자 확대",
+    "summary": "삼성전자가 AI 반도체 투자를 확대한다. 생산 역량 강화에 나선다.",
+    "sourceUrl": "https://www.etnews.com/20260507000353",
+    "imageUrl": "https://image.example.com/sample.jpg",
+    "category": "경제"
+  }
+]`
+}
+
+/**
+ * 숨김 질문 여부 + 선택 분야 codeId
+ * - 큐레이션 프롬프트 + `카테고리 제출 유형`(서버·클라이언트 공통)
+ * - 분야: 서버 주입 `선정 대상 카테고리` JSON 배열(codeId)
+ */
+export const parseNewsCuratorPromptMeta = (questionPromptText: string) => {
+  const normalizedPrompt = String(questionPromptText ?? '').trim()
+  if (!normalizedPrompt || !isNewsCuratorHiddenPromptText(normalizedPrompt)) {
+    return { isHiddenQuestion: false, categories: [] as string[], isNew: undefined as boolean | undefined }
+  }
+
+  const labelMatch = normalizedPrompt.match(/(?:^|[\r\n])\s*[-*•]?\s*선정\s*대상\s*카테고리\s*[:：]\s*(\[[\s\S]*?\])/u)
+  let categories: string[] = []
+  if (labelMatch?.[1]) {
+    try {
+      const parsed = JSON.parse(labelMatch[1])
+      if (Array.isArray(parsed) && parsed.length > 0 && parsed.length <= NEWS_CURATOR_MAX_CATEGORY_COUNT) {
+        const codeIds: string[] = []
+        const seen = new Set<string>()
+        let valid = true
+        for (const cell of parsed) {
+          if (typeof cell !== 'string' && typeof cell !== 'number') {
+            valid = false
+            break
+          }
+          const codeId = normalizeCategoryToken(String(cell))
+          if (!codeId || !isNewsCuratorCategoryKnown(codeId) || seen.has(codeId)) {
+            valid = false
+            break
+          }
+          seen.add(codeId)
+          codeIds.push(codeId)
+        }
+        if (valid) categories = codeIds
+      }
+    } catch {
+      categories = []
+    }
+  }
+
+  return {
+    isHiddenQuestion: true,
+    categories,
+    isNew: parseNewsSubmitTypeIsNew(normalizedPrompt),
+  }
+}
+
+/**
+ * 답변·qcontent — 순수 JSON 또는 본문 뒤에 붙은 기사 JSON 배열
+ * - 전체 문자열이 JSON이면 바로 파싱
+ * - 앞에 설명 텍스트가 있으면 `[` 위치부터 마지막으로 성공한 배열 사용
+ */
+export const parseNewsCuratorItems = (raw: string): NewsCuratorItem[] => {
+  const text = String(raw ?? '').trim()
+  if (!text) return []
+
+  const fromWhole = parseNewsCuratorItemsFromJsonText(text)
+  if (fromWhole.length > 0) return fromWhole
+
+  let last: NewsCuratorItem[] = []
+  for (let index = 0; index < text.length; index += 1) {
+    if (text[index] !== '[') continue
+    const parsed = parseNewsCuratorItemsFromJsonText(text.slice(index))
+    if (parsed.length > 0) last = parsed
+  }
+  return last
 }
 
 export const createNewsCuratorMessage = (submitted: boolean, options?: { newsReselect?: boolean }): ChatMessage => ({

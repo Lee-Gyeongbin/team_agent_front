@@ -266,21 +266,27 @@ const handleSaveWidget = async (widget: Partial<DataDashboardWidget>): Promise<D
 
 // ===== 위젯 삭제 =====
 
-const handleDeleteWidget = async (widgetId: string) => {
+const handleDeleteWidget = async (
+  widgetId: string,
+  options?: { onBeforeListUpdate?: () => void },
+): Promise<boolean> => {
   const confirmed = await openConfirm({
     title: '위젯 삭제',
     message: '위젯을 삭제하시겠습니까?',
   })
-  if (!confirmed) return
+  if (!confirmed) return false
 
   try {
     await fetchDeleteWidget(widgetId)
+    options?.onBeforeListUpdate?.()
     widgetList.value = widgetList.value.filter((w) => w.widgetId !== widgetId)
     widgetStates.value = Object.fromEntries(Object.entries(widgetStates.value).filter(([id]) => id !== widgetId))
     layoutMap.value = Object.fromEntries(Object.entries(layoutMap.value).filter(([id]) => id !== widgetId))
     openToast({ message: '위젯이 삭제되었습니다.', type: 'success' })
+    return true
   } catch {
     openToast({ message: '위젯 삭제에 실패했습니다.', type: 'error' })
+    return false
   }
 }
 

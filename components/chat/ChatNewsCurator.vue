@@ -86,13 +86,20 @@
             </div>
           </div>
 
+          <UiTab
+            v-if="newsCategoryTabs.length > 1"
+            v-model="activeNewsCategoryTab"
+            class="chat-news-curator__category-tabs"
+            :tabs="newsCategoryTabs"
+          />
+
           <div class="chat-news-curator__results-body">
             <ul
-              v-if="hasNewsResult"
+              v-if="visibleNewsItems.length > 0"
               class="chat-news-curator__list"
             >
               <li
-                v-for="item in newsItems"
+                v-for="item in visibleNewsItems"
                 :key="`${item.rank}-${item.title}`"
                 class="chat-news-curator__item"
               >
@@ -142,6 +149,13 @@
                 </div>
               </li>
             </ul>
+
+            <p
+              v-else-if="hasNewsResult"
+              class="chat-news-curator__panel-empty"
+            >
+              {{ activeCategoryEmptyMessage }}
+            </p>
 
             <p
               v-else
@@ -362,9 +376,9 @@ const emit = defineEmits<{
 }>()
 
 const DEFAULT_THEME_HEX = '#4b5bd6'
-const preSubmitCategoryHint = '보고 싶은 뉴스 종류를 선택해주세요! (최대 3개)'
+const preSubmitCategoryHint = `보고 싶은 뉴스 종류를 선택해주세요! (최대 ${NEWS_CURATOR_MAX_CATEGORY_COUNT}개)`
 const readonlyCategoryHint = '선택하신 뉴스 분야입니다.'
-const footerTipText = 'TIP. 최대 3개까지 선택할 수 있으며, 선택한 분야를 기반으로 맞춤 뉴스를 추천해드립니다.'
+const footerTipText = `TIP. 최대 ${NEWS_CURATOR_MAX_CATEGORY_COUNT}개까지 선택할 수 있으며, 선택한 분야를 기반으로 맞춤 뉴스를 추천해드립니다.`
 const NEWS_INTRO_TITLE = '오늘의 뉴스픽'
 const NEWS_INTRO_SUBTITLE = '오늘의 뉴스픽을 준비 중입니다...'
 const introTitleChars = NEWS_INTRO_TITLE.split('')
@@ -416,6 +430,63 @@ const showReadonlyResultsPanel = computed(() => props.displayMode === 'result' |
 /** 카테고리 재선택 카드 — 저장 관심분야 API 자동 제출 스킵 */
 const isReselectFlow = computed(() => props.newsReselect === true)
 const hasNewsResult = computed(() => (props.newsItems?.length ?? 0) > 0)
+
+/** 기사 category(rssCategory=codeNm)가 탭 분야(codeId)와 일치하는지 */
+const isNewsItemInCategoryTab = (item: NewsCuratorItem, codeId: string): boolean => {
+  const itemCategory = String(item.category ?? '').trim()
+  if (!itemCategory) return false
+  const label = resolveNewsCuratorCategoryLabel(codeId)
+  return label !== '-' && label === itemCategory
+}
+
+const newsCategoryTabs = computed(() => {
+  const items = props.newsItems ?? []
+  if (!items.length) return [] as { label: string; value: string }[]
+
+  const tabs: { label: string; value: string }[] = []
+  const seen = new Set<string>()
+
+  for (const codeId of lockedSelectedCategoriesList.value) {
+    const label = resolveNewsCuratorCategoryLabel(codeId)
+    if (label === '-') continue
+    if (seen.has(codeId)) continue
+    if (!items.some((item) => isNewsItemInCategoryTab(item, codeId))) continue
+    seen.add(codeId)
+    tabs.push({ label, value: codeId })
+  }
+
+  return tabs
+})
+
+const activeNewsCategoryTab = ref('')
+
+const visibleNewsItems = computed(() => {
+  const items = props.newsItems ?? []
+  const tabs = newsCategoryTabs.value
+  if (tabs.length <= 1) return items
+  if (!activeNewsCategoryTab.value) return items
+  return items.filter((item) => isNewsItemInCategoryTab(item, activeNewsCategoryTab.value))
+})
+
+const activeCategoryEmptyMessage = computed(() => {
+  const activeTab = newsCategoryTabs.value.find((tab) => tab.value === activeNewsCategoryTab.value)
+  if (activeTab) return `${activeTab.label} 분야에 표시할 뉴스가 없습니다.`
+  return '표시할 뉴스가 없습니다.'
+})
+
+watch(
+  newsCategoryTabs,
+  (tabs) => {
+    if (tabs.length === 0) {
+      activeNewsCategoryTab.value = ''
+      return
+    }
+    if (!tabs.some((tab) => tab.value === activeNewsCategoryTab.value)) {
+      activeNewsCategoryTab.value = tabs[0].value
+    }
+  },
+  { immediate: true },
+)
 
 const hasCategoryOptions = computed(() => categoryOptions.value.length > 0)
 const isSubmitDisabled = computed(
@@ -786,6 +857,30 @@ onUnmounted(() => {
     @include typo($body-small);
     color: $color-text-muted;
     font-weight: $font-weight-medium;
+  }
+
+  &__category-tabs {
+    flex-shrink: 0;
+    width: 100%;
+
+    :deep(.ui-tab) {
+      width: 100%;
+    }
+
+    :deep(.ui-tab-inner) {
+      display: flex;
+      width: 100%;
+      max-width: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    :deep(.ui-tab-item) {
+      flex: 1 1 0;
+      min-width: 0;
+      text-align: center;
+      @include ellipsis(1);
+    }
   }
 
   &__selector {

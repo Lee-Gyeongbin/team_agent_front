@@ -43,7 +43,7 @@
               :is-edit-mode="true"
               @execute="onExecute"
               @reset-filters="onResetFilters"
-              @delete="handleDeleteWidget"
+              @delete="onDeleteWidget"
               @change-viz-type="onChangeVizType"
               @filter-toggle="onFilterToggle"
               @filter-height-px="onFilterHeightPx"
@@ -110,6 +110,8 @@ const {
   initGrid,
   destroyGrid,
   addWidget,
+  removeWidget,
+  getNextWidgetPosition,
   getGridNodes,
   onGridChange,
   onDragStop,
@@ -250,6 +252,28 @@ const onChangeVizType = (widgetId: string, vizType: DataDashboardVizType) => {
 }
 
 /**
+ * 위젯 삭제
+ *
+ * Vue v-for로 DOM이 제거되기 전에 GridStack 엔진에서 먼저 제거·압축해야
+ * 삭제 직후 빈 공간이 남지 않는다. (새로고침 시 initGrid가 재계산하므로 그때는 정상)
+ */
+const onDeleteWidget = async (widgetId: string) => {
+  const el = gridEl.value?.querySelector(`.grid-stack-item[gs-id="${widgetId}"]`) as HTMLElement | null
+
+  const deleted = await handleDeleteWidget(widgetId, {
+    onBeforeListUpdate: () => {
+      if (el) removeWidget(el)
+      filterOriginalH.delete(widgetId)
+    },
+  })
+
+  if (!deleted) return
+
+  await nextTick()
+  await autoSaveLayout()
+}
+
+/**
  * 위젯 추가 모달 저장
  *
  * [버그 수정] GridStack.init() 이후 Vue v-for로 새로 추가된 DOM 요소는
@@ -270,8 +294,9 @@ const onSaveWidget = async (data: Partial<DataDashboardWidget>) => {
     const el = gridEl.value.querySelector(`.grid-stack-item[gs-id="${newWidget.widgetId}"]`) as HTMLElement | null
     if (el) {
       const layout = getWidgetLayout(newWidget.widgetId)
-      // x/y 미지정 → float:false 이므로 GridStack이 빈 공간을 찾아 자동 배치
-      addWidget(el, { w: layout.w, h: layout.h })
+      const { x, y } = getNextWidgetPosition(layout.w)
+      addWidget(el, { x, y, w: layout.w, h: layout.h })
+      await autoSaveLayout()
     }
   }
 }
