@@ -63,7 +63,6 @@ const resolveDatasetYScale = (data: number[], chartType: 'bar' | 'line'): YScale
 }
 
 type ReadRowNum = (row: Record<string, unknown>, colKey: string) => number
-type ReadRowLabel = (row: Record<string, unknown>, colKey: string) => string
 
 /** x축 고유값 목록 (등장 순서 유지) — raw 값 기준 */
 export const buildRawCategories = (rows: Record<string, unknown>[], xKey: string): string[] => {
@@ -81,17 +80,10 @@ export const buildRawCategories = (rows: Record<string, unknown>[], xKey: string
 /** x축 raw 값 → 표시 레이블 (코드명 치환 등) */
 export const buildCategoryLabels = (
   rawCategories: string[],
-  rows: Record<string, unknown>[],
-  displayRows: Record<string, unknown>[],
   xKey: string,
-  readLabel: ReadRowLabel,
+  resolveLabel: (colKey: string, raw: string) => string,
 ): string[] => {
-  return rawCategories.map((raw) => {
-    const idx = rows.findIndex((row) => String(getRowValue(row, xKey) ?? '') === raw)
-    const displayRow =
-      idx >= 0 ? (displayRows[idx] ?? rows[idx]) : rows.find((row) => String(getRowValue(row, xKey) ?? '') === raw)
-    return readLabel((displayRow ?? {}) as Record<string, unknown>, xKey)
-  })
+  return rawCategories.map((raw) => resolveLabel(xKey, raw))
 }
 
 /** x축 키 기준 Y값 합산 — 동일 x축에 여러 행(REGN_CD 등)이 있을 때 사용 */

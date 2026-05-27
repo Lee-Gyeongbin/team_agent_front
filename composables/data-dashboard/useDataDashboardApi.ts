@@ -1,10 +1,12 @@
 import { useApi } from '~/composables/com/useApi'
+import { buildColCodeMapFromList, buildColNmMapFromList } from '~/utils/dataDashboard/colCodeMapUtil'
 import type {
   DataDashboardSqlItem,
   DataDashboardWidget,
   DataDashboardLayout,
   DataDashboardQueryResult,
   ColCodeMap,
+  ColNmMap,
 } from '~/types/data-dashboard'
 
 export const useDataDashboardApi = () => {
@@ -30,36 +32,20 @@ export const useDataDashboardApi = () => {
     await post('/datadashboard/widgetDelete.do', { widgetId })
   }
 
-  /** 위젯 너비(colSpan)만 저장 — vizType 등 다른 필드 불변 */
-  const fetchSaveWidgetColSpan = async (widgetId: string, colSpan: 1 | 2): Promise<void> => {
-    await post('/datadashboard/widgetColSpan.do', { widgetId, colSpan })
-  }
-
-  /** 위젯 순서 저장 */
-  const fetchSaveWidgetOrder = async (orderList: { widgetId: string; sortOrd: number }[]): Promise<void> => {
-    await post('/datadashboard/widgetOrder.do', { orderList })
-  }
-
-  /** 레이아웃 목록 조회 */
+  /**
+   * 레이아웃 목록 조회
+   * - 응답: widgetId별 x, y, w, h, minW, maxW, minH, maxH, isVisible
+   */
   const fetchLayoutList = async (): Promise<{ list: DataDashboardLayout[] }> => {
     return post<{ list: DataDashboardLayout[] }>('/datadashboard/layoutList.do', {})
   }
 
-  /** 레이아웃 단건 저장 (heightPx · widthPx 등 개별 속성 업데이트) */
-  const fetchSaveLayout = async (layout: DataDashboardLayout): Promise<void> => {
-    await post('/datadashboard/layoutSave.do', layout)
-  }
-
-  /** 위젯 높이 초기화 (HEIGHT_PX = NULL) */
-  const fetchResetLayoutHeight = async (widgetId: string): Promise<void> => {
-    await post('/datadashboard/layoutResetHeight.do', { widgetId })
-  }
-
-  /** 레이아웃 순서/위치 일괄 저장 (드래그 종료 후 호출) */
-  const fetchSaveLayoutOrder = async (
-    layoutOrderList: { widgetId: string; sortOrd: number; rowPos: number; colPos: number; colSpan: number }[],
-  ): Promise<void> => {
-    await post('/datadashboard/layoutOrder.do', { layoutOrderList })
+  /**
+   * 레이아웃 일괄 저장 (드래그/리사이즈 완료 시 자동 저장)
+   * - x, y, w, h, isVisible 포함
+   */
+  const fetchSaveLayoutBatch = async (layoutBatchList: DataDashboardLayout[]): Promise<void> => {
+    await post('/datadashboard/layoutSaveBatch.do', { layoutBatchList })
   }
 
   /**
@@ -68,14 +54,22 @@ export const useDataDashboardApi = () => {
    */
   const fetchColCodeMap = async (datamartId: string): Promise<ColCodeMap> => {
     type RawItem = { colId: string; codeVal: string; codeKorNm: string }
-    const res = await post<{ list: RawItem[] }>('/datadashboard/colCodeMap.do', { datamartId })
-    const map: ColCodeMap = {}
-    for (const { colId, codeVal, codeKorNm } of res.list ?? []) {
-      const key = colId.toUpperCase()
-      if (!map[key]) map[key] = {}
-      map[key][codeVal] = codeKorNm
-    }
-    return map
+    const res = await post<{ list?: RawItem[]; dataList?: RawItem[] }>('/datadashboard/colCodeMap.do', {
+      datamartId,
+    })
+    return buildColCodeMapFromList(res.list ?? res.dataList)
+  }
+
+  /**
+   * 데이터마트 컬럼명 한국어 매핑 조회 (tb_dm_col)
+   * USE_YN = 'Y', COL_ID 당 SORT_ORD 최솟값 기준 1건 반환
+   */
+  const fetchColNmMap = async (datamartId: string): Promise<ColNmMap> => {
+    type RawItem = { colId: string; colKorNm: string }
+    const res = await post<{ list?: RawItem[]; dataList?: RawItem[] }>('/datadashboard/colNmMap.do', {
+      datamartId,
+    })
+    return buildColNmMapFromList(res.list ?? res.dataList)
   }
 
   /** SQL 실행 */
@@ -104,13 +98,10 @@ export const useDataDashboardApi = () => {
     fetchWidgetList,
     fetchSaveWidget,
     fetchDeleteWidget,
-    fetchSaveWidgetColSpan,
-    fetchSaveWidgetOrder,
     fetchLayoutList,
-    fetchSaveLayout,
-    fetchResetLayoutHeight,
-    fetchSaveLayoutOrder,
+    fetchSaveLayoutBatch,
     fetchExecuteSql,
     fetchColCodeMap,
+    fetchColNmMap,
   }
 }

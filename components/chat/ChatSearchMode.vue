@@ -101,6 +101,7 @@
 
 <script setup lang="ts">
 import type { Agent } from '~/types/agent'
+import { isSurveyAgent } from '~/utils/chat/surveyUtil'
 
 interface Props {
   disabled?: boolean
@@ -165,9 +166,13 @@ const route = useRoute()
 const isOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
 
+const selectedSurveyAgent = computed(
+  () => chatIndexAgents.value.find((a) => a.agentId === selectedChatAgentId.value && isSurveyAgent(a)) ?? null,
+)
+
 const selectedAgent = computed(() => {
   if (!selectedChatAgentId.value) return null
-  if (selectedChatAgentId.value === 'AG000010') return null
+  if (selectedSurveyAgent.value) return null
   return chatIndexAgents.value.find((a) => a.agentId === selectedChatAgentId.value) ?? null
 })
 const isSearchModeActive = computed(() => activeSearchModes.value.length > 0)
@@ -186,7 +191,7 @@ const toggleDropdown = () => {
 
 const onSelect = (agent: Agent) => {
   if (disabled.value) return
-  if (selectedChatAgentId.value === agent.agentId && agent.agentId !== 'AG000010') {
+  if (selectedChatAgentId.value === agent.agentId && !isSurveyAgent(agent)) {
     isOpen.value = false
     return
   }

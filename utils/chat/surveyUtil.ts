@@ -1,129 +1,247 @@
 // ============================================================
-// 산업심리 상담 에이전트 (AG000010) 전용 설문 유틸
-// - 모든 문항 데이터, 타입, 반응형 상태, 비즈니스 로직을 여기서 관리
-// - useChatStore 에서는 import 후 호출만 수행
+// 설문(SURVEY) 에이전트 공통 유틸 — subCfg.additionalConfig JSON 기반
 // ============================================================
 
 import { nextTick } from 'vue'
 import { useApi } from '~/composables/com/useApi'
+import type { Agent, AgtSubCfg } from '~/types/agent'
 import type { ChatMessage } from '~/types/chat'
 import type { StressLevel, StressScoreItem } from '~/types/stress'
-import type {
-  PsychologySurveyQuestion,
-  PsychologySurveyCategory,
-  PsychologySurveyScoreOption,
-} from '~/types/psychology-consult'
+import type { SurveyCategory, SurveyRiskThreshold, SurveyScoreOption } from '~/types/survey'
 
-export type { PsychologySurveyQuestion, PsychologySurveyCategory, PsychologySurveyScoreOption }
+export type { SurveyCategory, SurveyScoreOption }
+export type { PsychologySurveyQuestion, PsychologySurveyCategory, PsychologySurveyScoreOption } from '~/types/survey'
 
-/** 설문 성별 (KOSS-SF1 참고치 판정 기준) */
+/** 설문 성별 (참고치 판정 기준) */
 export type SurveyGender = 'male' | 'female'
 
-export const PSYCHOLOGY_SURVEY_CATEGORIES: PsychologySurveyCategory[] = [
-  {
-    no: 1,
-    title: '물리적 환경',
-    titleEn: 'Physical Environment',
-    questions: [
-      { no: 1, text: '내 일은 위험하여 사고를 당할 가능성이 있다.', categoryNo: 1 },
-      { no: 2, text: '나는 불편한 자세로 오랫동안 일을 해야 한다.', categoryNo: 1 },
-    ],
-  },
-  {
-    no: 2,
-    title: '직무 요구',
-    titleEn: 'Job Demand',
-    questions: [
-      { no: 3, text: '나는 일이 많아 항상 시간에 쫓기며 일한다.', categoryNo: 2 },
-      { no: 4, text: '업무량이 현저하게 증가하였다.', categoryNo: 2 },
-      { no: 5, text: '업무 수행 중에 충분한 휴식(짬)이 주어진다.', categoryNo: 2 },
-      { no: 6, text: '여러 가지 일을 동시에 해야 한다.', categoryNo: 2 },
-    ],
-  },
-  {
-    no: 3,
-    title: '직무 자율',
-    titleEn: 'Job Autonomy',
-    questions: [
-      { no: 7, text: '내 업무는 창의력을 필요로 한다.', categoryNo: 3 },
-      { no: 8, text: '내 업무를 수행하기 위해서는 높은 수준의 기술이나 지식이 필요하다.', categoryNo: 3 },
-      { no: 9, text: '작업시간, 업무 수행 과정에서 내가 스스로 결정할 권한이 주어진다.', categoryNo: 3 },
-      { no: 10, text: '나의 업무량과 작업 스케줄을 스스로 조절할 수 있다.', categoryNo: 3 },
-    ],
-  },
-  {
-    no: 4,
-    title: '관계 갈등',
-    titleEn: 'Interpersonal Conflict',
-    questions: [
-      { no: 11, text: '나의 상사는 업무를 수행하는 데 도움을 준다.', categoryNo: 4 },
-      { no: 12, text: '나의 동료는 업무를 수행하는 데 도움을 준다.', categoryNo: 4 },
-      { no: 13, text: '직장에서 내가 힘들 때 내가 힘들다는 것을 알아주고 이해해 주는 사람이 있다.', categoryNo: 4 },
-    ],
-  },
-  {
-    no: 5,
-    title: '직무 불안정',
-    titleEn: 'Job Insecurity',
-    questions: [
-      { no: 14, text: '직장 사정이 불안하여 미래가 불확실하다.', categoryNo: 5 },
-      {
-        no: 15,
-        text: '나의 근무조건이나 상황에 바람직하지 못한 변화(예, 구조조정)가 있었거나 있을 것으로 예상된다.',
-        categoryNo: 5,
-      },
-    ],
-  },
-  {
-    no: 6,
-    title: '조직 체계',
-    titleEn: 'Organizational System',
-    questions: [
-      {
-        no: 16,
-        text: '우리 직장은 근무 평가, 인사제도(예, 승진, 부서 배치) 등의 정책 결정 과정이 공정하고 합리적이다.',
-        categoryNo: 6,
-      },
-      { no: 17, text: '업무 수행에 필요한 인원, 공간, 시설, 장비, 훈련 등의 지원이 이루어지고 있다.', categoryNo: 6 },
-      { no: 18, text: '우리 부서와 타 부서 간에는 마찰이 없고 업무 협조가 잘 이루어진다.', categoryNo: 6 },
-      { no: 19, text: '업무 수행 과정에 나의 생각을 반영할 수 있는 기회와 통로가 있다.', categoryNo: 6 },
-    ],
-  },
-  {
-    no: 7,
-    title: '보상 부적절',
-    titleEn: 'Inadequate Compensation',
-    questions: [
-      {
-        no: 20,
-        text: '내가 쏟는 노력과 업적을 고려할 때, 나는 직장에서 제대로 존중과 신임을 받고 있다.',
-        categoryNo: 7,
-      },
-      { no: 21, text: '내 사정이 앞으로 더 좋아질 것을 생각하면 힘든 줄 모르고 일하게 된다.', categoryNo: 7 },
-      { no: 22, text: '나의 능력을 개발하고 발휘할 수 있는 기회가 주어진다.', categoryNo: 7 },
-    ],
-  },
-  {
-    no: 8,
-    title: '직장 문화',
-    titleEn: 'Workplace Culture',
-    questions: [
-      { no: 23, text: '회식 자리가 불편하다.', categoryNo: 8 },
-      { no: 24, text: '기준이나 일관성이 없는 상태로 업무지시를 받는다.', categoryNo: 8 },
-      { no: 25, text: '직장의 분위기가 권위적이고 수직적이다.', categoryNo: 8 },
-      { no: 26, text: '남성, 여성이라는 성적인 차이로 불이익을 받는다.', categoryNo: 8 },
-    ],
-  },
-]
+export const SURVEY_SUB_TY = 'SURVEY'
 
-export const PSYCHOLOGY_SURVEY_SCORE_OPTIONS: PsychologySurveyScoreOption[] = [
-  { value: 1, label: '전혀 그렇지 않다' },
-  { value: 2, label: '그렇지 않다' },
-  { value: 3, label: '그렇다' },
-  { value: 4, label: '매우 그렇다' },
-]
+const KOSS_DISCLAIMER_TEXT =
+  '본 AI 에이전트는 한국인 직무스트레스 요인 평가도구 단축형 1, KOSS-SF1를 기반으로 직장인의 직무스트레스 요인을 분석합니다. 사용자의 응답 결과를 7개 영역별로 환산하여 정상, 경계, 고위험 수준을 제시하고, 주요 스트레스 원인에 따른 맞춤형 관리 가이드를 제공합니다. 본 결과는 의학적 진단이 아니며, 건강 이상이나 심리적 어려움이 지속될 경우 전문가 상담을 권장합니다.'
 
-export const PSYCHOLOGY_SURVEY_TOTAL_QUESTIONS = 26
+export interface SurveyAgentConfig {
+  agentId: string
+  surveyType: string
+  categories: SurveyCategory[]
+  scoreOptions: SurveyScoreOption[]
+  totalQuestions: number
+  requireGender: boolean
+  reverseQuestionNos: number[]
+  highRiskAreaThreshold: number
+  areaRiskByGender: Record<SurveyGender, Record<string, SurveyRiskThreshold>>
+  totalRiskByGender: Record<SurveyGender, SurveyRiskThreshold>
+  promptRole: string
+  promptLanguage: string
+  outputSections: string[]
+  toneByRiskLevel: Record<string, string>
+  features: {
+    showRadarChart: boolean
+    showAiRecoveryImage: boolean
+    showPexelsRecoveryImages: boolean
+  }
+  surveyTitle: string
+  genderStepTitle: string
+  genderStepDesc: string
+  disclaimerSource?: string
+  disclaimerText?: string
+  introTitle: string
+  introSubtitle: string
+  submitLabel: string
+}
+
+export const getAgentSubTy = (subCfg: unknown): string => {
+  if (!subCfg || typeof subCfg !== 'object') return ''
+  const raw = subCfg as Record<string, unknown>
+  return String(raw.subTy ?? raw.subTyCd ?? '').trim()
+}
+
+export const isSurveyAgent = (agent: Pick<Agent, 'svcTy' | 'subCfg'> | null | undefined): boolean => {
+  if (!agent || agent.svcTy !== 'C') return false
+  return getAgentSubTy(agent.subCfg) === SURVEY_SUB_TY
+}
+
+export const normalizeAgentSubCfg = (subCfg: unknown): AgtSubCfg | null => {
+  if (!subCfg || subCfg === '' || typeof subCfg !== 'object') return null
+  const raw = subCfg as Record<string, unknown>
+  return {
+    subCfgId: String(raw.subCfgId ?? ''),
+    agentId: String(raw.agentId ?? ''),
+    subTy: getAgentSubTy(raw),
+    additionalConfig: (raw.additionalConfig as AgtSubCfg['additionalConfig']) ?? null,
+    useYn: raw.useYn === 'N' ? 'N' : 'Y',
+    createDt: String(raw.createDt ?? ''),
+    modifyDt: String(raw.modifyDt ?? ''),
+  }
+}
+
+const parseRiskThreshold = (raw: unknown): SurveyRiskThreshold | null => {
+  if (!raw || typeof raw !== 'object') return null
+  const row = raw as Record<string, unknown>
+  const normalMax = Number(row.normalMax ?? row.정상Max)
+  const cautionMax = Number(row.cautionMax ?? row.경계Max)
+  if (!Number.isFinite(normalMax) || !Number.isFinite(cautionMax)) return null
+  return { normalMax, cautionMax }
+}
+
+const parseAreaRiskByGender = (
+  riskRules: Record<string, unknown>,
+): Record<SurveyGender, Record<string, SurveyRiskThreshold>> => {
+  const areaScore = (riskRules.areaScore ?? {}) as Record<string, unknown>
+  const parseGender = (gender: SurveyGender) => {
+    const raw = (areaScore[gender] ?? {}) as Record<string, unknown>
+    const result: Record<string, SurveyRiskThreshold> = {}
+    for (const [key, value] of Object.entries(raw)) {
+      const threshold = parseRiskThreshold(value)
+      if (threshold) result[key] = threshold
+    }
+    return result
+  }
+  return { male: parseGender('male'), female: parseGender('female') }
+}
+
+const parseTotalRiskByGender = (riskRules: Record<string, unknown>): Record<SurveyGender, SurveyRiskThreshold> => {
+  const totalScore = (riskRules.totalScore ?? {}) as Record<string, unknown>
+  return {
+    male: parseRiskThreshold(totalScore.male) ?? { normalMax: 48.4, cautionMax: 54.7 },
+    female: parseRiskThreshold(totalScore.female) ?? { normalMax: 50.0, cautionMax: 55.6 },
+  }
+}
+
+const parseSurveyCategory = (cat: Record<string, unknown>, index: number): SurveyCategory => {
+  const no = Number(cat.no ?? index + 1)
+  const key = String(cat.key ?? `category${no}`)
+  const questionsRaw = Array.isArray(cat.questions) ? cat.questions : []
+  const questions = questionsRaw.map((q) => {
+    const row = q as Record<string, unknown>
+    return { no: Number(row.no), text: String(row.text ?? ''), categoryNo: no }
+  })
+  const questionNos = Array.isArray(cat.questionNos)
+    ? cat.questionNos.map((n) => Number(n))
+    : questions.map((q) => q.no)
+  return { no, key, title: String(cat.title ?? ''), titleEn: String(cat.titleEn ?? ''), questions, questionNos }
+}
+
+const buildKossUiDefaults = (agentNm: string) => ({
+  surveyTitle: '한국인 직무스트레스 요인 평가',
+  genderStepTitle: '진단 전 성별을 선택해 주세요',
+  genderStepDesc: 'KOSS-SF1 직무스트레스 척도는 성별에 따라 위험군 판정 기준이 다릅니다.',
+  disclaimerSource: '출처 : 한국형 직무스트레스 평가도구 (KOSS-SF1) : 한국산업안전보건공단',
+  disclaimerText: KOSS_DISCLAIMER_TEXT,
+  introTitle: '심리 스트레스 진단',
+  introSubtitle: '상담 세션을 준비하고 있습니다...',
+  submitLabel: '진단 완료 후 상담 시작',
+  agentNm,
+})
+
+export const parseSurveyConfigFromAgent = (agent: Agent): SurveyAgentConfig | null => {
+  if (!isSurveyAgent(agent)) return null
+  const additional = agent.subCfg?.additionalConfig
+  if (!additional || typeof additional !== 'object') return null
+  const cfg = additional as Record<string, unknown>
+  const surveyType = String(cfg.surveyType ?? '')
+  const isKoss = surveyType === 'KOSS_SF1'
+  const ui = buildKossUiDefaults(agent.agentNm)
+  const categoriesRaw = Array.isArray(cfg.categories) ? cfg.categories : []
+  if (!categoriesRaw.length) return null
+  const categories = categoriesRaw.map((c, i) => parseSurveyCategory(c as Record<string, unknown>, i))
+  const scoreOptionsRaw = Array.isArray(cfg.scoreOptions) ? cfg.scoreOptions : []
+  const scoreOptions =
+    scoreOptionsRaw.length > 0
+      ? scoreOptionsRaw.map((o) => {
+          const row = o as Record<string, unknown>
+          return { value: Number(row.value), label: String(row.label ?? '') }
+        })
+      : [
+          { value: 1, label: '전혀 그렇지 않다' },
+          { value: 2, label: '그렇지 않다' },
+          { value: 3, label: '그렇다' },
+          { value: 4, label: '매우 그렇다' },
+        ]
+  const totalQuestions =
+    Number(cfg.totalQuestions) > 0
+      ? Number(cfg.totalQuestions)
+      : categories.reduce((sum, c) => sum + c.questions.length, 0)
+  const reverseQuestionNos = Array.isArray(cfg.reverseQuestionNos) ? cfg.reverseQuestionNos.map((n) => Number(n)) : []
+  const riskRules = (cfg.riskRules ?? {}) as Record<string, unknown>
+  const prompt = (cfg.prompt ?? {}) as Record<string, unknown>
+  const features = (cfg.features ?? {}) as Record<string, unknown>
+  return {
+    agentId: agent.agentId,
+    surveyType,
+    categories,
+    scoreOptions,
+    totalQuestions,
+    requireGender: features.requireGender === true,
+    reverseQuestionNos,
+    highRiskAreaThreshold: Number(riskRules.highRiskAreaThreshold) > 0 ? Number(riskRules.highRiskAreaThreshold) : 3,
+    areaRiskByGender: parseAreaRiskByGender(riskRules),
+    totalRiskByGender: parseTotalRiskByGender(riskRules),
+    promptRole: String(prompt.role ?? agent.description ?? '설문 분석 전문가'),
+    promptLanguage: String(prompt.language ?? 'ko'),
+    outputSections: Array.isArray(prompt.outputSections) ? prompt.outputSections.map(String) : [],
+    toneByRiskLevel: (prompt.toneByRiskLevel ?? {}) as Record<string, string>,
+    features: {
+      showRadarChart: features.showRadarChart === true,
+      showAiRecoveryImage: features.showAiRecoveryImage === true,
+      showPexelsRecoveryImages: features.showPexelsRecoveryImages === true,
+    },
+    surveyTitle: isKoss ? ui.surveyTitle : agent.agentNm || '설문',
+    genderStepTitle: isKoss ? ui.genderStepTitle : '설문 전 성별을 선택해 주세요',
+    genderStepDesc: isKoss ? ui.genderStepDesc : '설문 결과 해석을 위해 성별을 선택해 주세요.',
+    disclaimerSource: isKoss ? ui.disclaimerSource : undefined,
+    disclaimerText: isKoss ? ui.disclaimerText : undefined,
+    introTitle: isKoss ? ui.introTitle : agent.agentNm || '설문',
+    introSubtitle: isKoss ? ui.introSubtitle : '설문을 준비하고 있습니다...',
+    submitLabel: isKoss ? ui.submitLabel : '설문 완료',
+  }
+}
+
+export const resolveSurveyConfigByAgentId = (agentId: string, agents: Agent[]): SurveyAgentConfig | null => {
+  const agent = agents.find((a) => a.agentId === agentId)
+  return agent ? parseSurveyConfigFromAgent(agent) : null
+}
+
+/** SURVEY 에이전트 중 방사형 차트(showRadarChart) UI가 필요한지 */
+export const isSurveyRadarAgentById = (agentId: string, agents: Agent[]): boolean =>
+  resolveSurveyConfigByAgentId(agentId, agents)?.features.showRadarChart === true
+
+const activeSurveyConfig = ref<SurveyAgentConfig | null>(null)
+
+export const setActiveSurveyConfig = (config: SurveyAgentConfig | null) => {
+  activeSurveyConfig.value = config
+}
+
+export const getActiveSurveyConfig = () => activeSurveyConfig.value
+
+const applyReverse = (score: number): number => 5 - score
+
+const calcCategoryStats = (qNos: number[], answers: Record<number, number>, reverseSet: Set<number>) => {
+  const itemCount = qNos.length
+  const sumActual = qNos.reduce((acc, no) => {
+    const raw = answers[no] ?? 2
+    return acc + (reverseSet.has(no) ? applyReverse(raw) : raw)
+  }, 0)
+  const sumMax = 4 * itemCount
+  const denom = sumMax - itemCount
+  const score100 = denom === 0 ? 0 : ((sumActual - itemCount) / denom) * 100
+  const avg = itemCount === 0 ? 0 : sumActual / itemCount
+  return { itemCount, sumActual, sumMax, avg: avg.toFixed(2), score100: score100.toFixed(2) }
+}
+
+const toLegacyAreaRisk = (config: SurveyAgentConfig, gender: SurveyGender) => {
+  const table: Record<string, { 정상Max: number; 경계Max: number }> = {}
+  for (const cat of config.categories) {
+    const t = config.areaRiskByGender[gender][cat.key]
+    if (t) table[cat.key] = { 정상Max: t.normalMax, 경계Max: t.cautionMax }
+  }
+  return table
+}
+
+const toLegacyTotalRisk = (config: SurveyAgentConfig, gender: SurveyGender) => {
+  const t = config.totalRiskByGender[gender]
+  return { 정상Max: t.normalMax, 경계Max: t.cautionMax }
+}
 
 // ============================================================
 // 진단 프롬프트 빌더
@@ -133,41 +251,46 @@ export const PSYCHOLOGY_SURVEY_TOTAL_QUESTIONS = 26
  * 사용자의 응답(answers)을 채워 LLM에 전송할 진단 프롬프트 문자열을 반환
  */
 export const buildDiagnosticPrompt = (answers: Record<number, number>, gender: SurveyGender | null): string => {
+  const config = activeSurveyConfig.value
+  if (!config) return ''
+  return buildSurveyPrompt(config, answers, gender)
+}
+
+const buildSurveyPrompt = (
+  config: SurveyAgentConfig,
+  answers: Record<number, number>,
+  gender: SurveyGender | null,
+): string => {
+  const reverseSet = new Set(config.reverseQuestionNos)
   const inputDataJson =
     '{\n' +
-    Array.from({ length: PSYCHOLOGY_SURVEY_TOTAL_QUESTIONS }, (_, i) => {
+    Array.from({ length: config.totalQuestions }, (_, i) => {
       const no = i + 1
       return ` "Q${no}": ${answers[no] ?? 1}`
     }).join(',\n') +
     '\n}'
 
-  // ============================================================
-  // JS 사전 계산 — LLM 산수 오류 차단 (영역 점수·총점·종합 위험군 모두 여기서 확정)
-  // PDF 평가점수 산출 공식과 PDF 23p 총점 참고치(성별별)를 정확히 적용
-  // ============================================================
-  const areaList = [
-    { ko: '물리적환경', en: 'physicalEnvironment' as const, stats: calcCategoryStats([1, 2], answers) },
-    { ko: '직무요구', en: 'jobDemand' as const, stats: calcCategoryStats([3, 4, 5, 6], answers) },
-    { ko: '직무자율', en: 'jobAutonomy' as const, stats: calcCategoryStats([7, 8, 9, 10], answers) },
-    { ko: '관계갈등', en: 'interpersonalConflict' as const, stats: calcCategoryStats([11, 12, 13], answers) },
-    { ko: '직무불안정', en: 'jobInsecurity' as const, stats: calcCategoryStats([14, 15], answers) },
-    { ko: '조직체계', en: 'organizationalSystem' as const, stats: calcCategoryStats([16, 17, 18, 19], answers) },
-    { ko: '보상부적절', en: 'inadequateCompensation' as const, stats: calcCategoryStats([20, 21, 22], answers) },
-    { ko: '직장문화', en: 'workplaceCulture' as const, stats: calcCategoryStats([23, 24, 25, 26], answers) },
-  ]
+  const areaList = config.categories.map((cat) => ({
+    ko: cat.title.replace(/\s+/g, ''),
+    en: cat.key,
+    stats: calcCategoryStats(cat.questionNos, answers, reverseSet),
+  }))
   const totalScoreNum = areaList.reduce((acc, a) => acc + Number(a.stats.score100), 0) / areaList.length
   const totalScore = totalScoreNum.toFixed(2)
   const genderLabel = gender === 'female' ? '여성' : '남성'
-  const totalRisk = gender ? KOSS_SF1_TOTAL_RISK[gender] : KOSS_SF1_TOTAL_RISK.male
-  const areaRisk = gender ? KOSS_SF1_RISK_TABLE[gender] : KOSS_SF1_RISK_TABLE.male
+  const resolvedGender: SurveyGender = gender ?? 'male'
+  const totalRisk = toLegacyTotalRisk(config, resolvedGender)
+  const areaRisk = toLegacyAreaRisk(config, resolvedGender)
 
-  // 총점만으로 1차 판정
   const baseRiskLevel: RadarChartRiskLevel =
     totalScoreNum <= totalRisk.정상Max ? '정상' : totalScoreNum <= totalRisk.경계Max ? '경계' : '고위험'
 
-  // High Risk Flag: 「고위험」 구간 영역 ≥3개일 때만 종합 판정을 고위험으로 상향
-  const highRiskAreaCount = areaList.filter((a) => Number(a.stats.score100) > areaRisk[a.en].경계Max).length
-  const finalRiskLevel: RadarChartRiskLevel = highRiskAreaCount >= 3 ? '고위험' : baseRiskLevel
+  const highRiskAreaCount = areaList.filter((a) => {
+    const threshold = areaRisk[a.en]
+    return threshold != null && Number(a.stats.score100) > threshold.경계Max
+  }).length
+  const finalRiskLevel: RadarChartRiskLevel =
+    highRiskAreaCount >= config.highRiskAreaThreshold ? '고위험' : baseRiskLevel
   const finalRiskGroupLabel = `${finalRiskLevel}군`
 
   // 뱃지/상태 클래스 매핑 (출력 HTML 그대로)
@@ -183,9 +306,9 @@ export const buildDiagnosticPrompt = (answers: Record<number, number>, gender: S
   const areaScoresBlock = areaList.map((a) => `- ${a.ko}: ${a.stats.score100}`).join('\n')
 
   return `# Role
-당신은 기업 구성원의 심리적 웰빙을 책임지는 '전문 산업심리 상담사 및 멘탈 웰니스 코치'입니다.
-사용자가 작성한 한국인 직무스트레스 요인 평가도구 단축형(KOSS-SF1) 결과를 분석하여, 따뜻한 공감과 함께 실질적인 정신 건강 가이드를 제공하는 것이 당신의 임무입니다.
-모든 답변은 **한국어**로 작성하세요. (곡명·아티스트명·이미지 키워드는 영어 허용)
+당신은 기업 구성원의 심리적 웰빙을 책임지는 '${config.promptRole}'입니다.
+사용자가 작성한 ${config.surveyType || '설문'} 결과를 분석하여, 따뜻한 공감과 함께 실질적인 정신 건강 가이드를 제공하는 것이 당신의 임무입니다.
+모든 답변은 **${config.promptLanguage === 'ko' ? '한국어' : config.promptLanguage}**로 작성하세요. (곡명·아티스트명·이미지 키워드는 영어 허용)
 
 # Scale
 1: 전혀 그렇지 않다 / 2: 그렇지 않다 / 3: 그렇다 / 4: 매우 그렇다
@@ -368,17 +491,23 @@ ${
  * - buildDiagnosticPrompt가 생성한 # Input Data 섹션 JSON을 파싱
  * - 파싱 실패 시 빈 객체 반환
  */
-export const parseSurveyAnswersFromPrompt = (promptText: string): Record<number, number> => {
+export const parseSurveyAnswersFromPrompt = (promptText: string, totalQuestions?: number): Record<number, number> => {
   try {
     const match = promptText.match(/# Input Data\s*\n(\{[\s\S]*?\})/)
     if (!match) return {}
     const json = JSON.parse(match[1]) as Record<string, unknown>
     const answers: Record<number, number> = {}
-    for (let i = 1; i <= PSYCHOLOGY_SURVEY_TOTAL_QUESTIONS; i++) {
-      const val = json[`Q${i}`]
-      if (typeof val === 'number' && val >= 1 && val <= 4) {
-        answers[i] = val
+    for (const [key, val] of Object.entries(json)) {
+      const qMatch = key.match(/^Q(\d+)$/)
+      if (!qMatch || typeof val !== 'number' || val < 1 || val > 4) continue
+      answers[Number(qMatch[1])] = val
+    }
+    if (totalQuestions != null && totalQuestions > 0) {
+      const filtered: Record<number, number> = {}
+      for (let i = 1; i <= totalQuestions; i++) {
+        if (answers[i] != null) filtered[i] = answers[i]
       }
+      return filtered
     }
     return answers
   } catch {
@@ -386,12 +515,23 @@ export const parseSurveyAnswersFromPrompt = (promptText: string): Record<number,
   }
 }
 
+/**
+ * 라이브러리 카드 — 에이전트 목록 미동기화 시 qcontent 설문 JSON으로 SURVEY 응답 추정
+ * (채팅방과 달리 카드만 렌더하는 경우 대비)
+ */
+export const isLikelySurveyResponseByQcontent = (qcontent: string): boolean =>
+  Object.keys(parseSurveyAnswersFromPrompt(qcontent)).length > 0
+
 /** 채팅 메시지 목록에 인라인으로 삽입할 설문 메시지 객체 생성 */
-export const createSurveyMessage = (answers: Record<number, number>, submitted: boolean): ChatMessage => ({
+export const createSurveyMessage = (
+  answers: Record<number, number>,
+  submitted: boolean,
+  agentId = '',
+): ChatMessage => ({
   logId: `survey-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
   type: 'survey',
   createdAt: new Date().toISOString(),
-  agentId: 'AG000010',
+  agentId,
   surveyAnswers: { ...answers },
   surveySubmitted: submitted,
 })
@@ -690,7 +830,15 @@ export const stressLevelFromPsychologyRadarScore100 = (
   area?: keyof RadarChartScore,
 ): StressLevel => {
   if (area) {
-    const thresholds = KOSS_SF1_RISK_TABLE[gender ?? 'male'][area]
+    const config = activeSurveyConfig.value
+    const g = gender ?? 'male'
+    const fromConfig = config?.areaRiskByGender[g]?.[area]
+    if (fromConfig) {
+      if (score <= fromConfig.normalMax) return '정상'
+      if (score <= fromConfig.cautionMax) return '경계'
+      return '고위험'
+    }
+    const thresholds = KOSS_SF1_RISK_TABLE[g][area]
     if (score <= thresholds.정상Max) return '정상'
     if (score <= thresholds.경계Max) return '경계'
     return '고위험'
@@ -861,55 +1009,12 @@ export const extractSections1to4 = (answer: string): string => {
   return answer.substring(0, section5Match.index).trim()
 }
 
-/**
- * KOSS-SF1 역코딩 대상 문항 번호 (1→4, 2→3, 3→2, 4→1)
- * Q5: 충분한 휴식, Q7~Q10: 직무자율, Q11~Q13: 관계갈등, Q16~Q19: 조직체계, Q20~Q22: 보상부적절
- */
-const REVERSE_SCORE_QNO = new Set([5, 7, 8, 9, 10, 11, 12, 13, 16, 17, 18, 19, 20, 21, 22])
-
-/** 역코딩 변환 */
-const applyReverse = (score: number): number => 5 - score
-
-/**
- * KOSS-SF1 영역별 통계 — 산업안전보건연구원 PDF 평가점수 산출 공식 직접 적용
- * 환산 점수 = (실제 점수의 합 − 문항 개수) ÷ (예상 가능한 최고 점수의 합 − 문항 개수) × 100
- * - 1~4점 척도이므로 영역별 「최고 점수의 합」 = 4 × 문항 개수
- * - [역] 표시 문항은 역코딩(1↔4, 2↔3) 후 합산
- */
-const calcCategoryStats = (qNos: number[], answers: Record<number, number>) => {
-  const itemCount = qNos.length
-  const sumActual = qNos.reduce((acc, no) => {
-    const raw = answers[no] ?? 2
-    return acc + (REVERSE_SCORE_QNO.has(no) ? applyReverse(raw) : raw)
-  }, 0)
-  const sumMax = 4 * itemCount
-  const denom = sumMax - itemCount
-  const score100 = denom === 0 ? 0 : ((sumActual - itemCount) / denom) * 100
-  const avg = itemCount === 0 ? 0 : sumActual / itemCount
-  return {
-    itemCount,
-    sumActual,
-    sumMax,
-    avg: avg.toFixed(2),
-    score100: score100.toFixed(2),
-  }
-}
-
-/**
- * 영역별 0~100 환산 점수 → KOSS-SF1 PDF 23p 영역별 참고치 기준 위험 단계
- * - coreAreasSummary 예시 생성에 사용 (LLM이 동일 기준으로 단계 표기하도록)
- * - gender 미전달 시 남성 기준 영역별 참고치 fallback
- */
 const stressTierFromScore100ByArea = (
   score100: number,
-  area: keyof RadarChartScore,
+  area: keyof RadarChartScore | string,
   gender: SurveyGender | null,
-): RadarChartRiskLevel => stressLevelFromPsychologyRadarScore100(score100, gender, area)
+): RadarChartRiskLevel => stressLevelFromPsychologyRadarScore100(score100, gender, area as keyof RadarChartScore)
 
-/**
- * LLM 응답 텍스트에서 위험군 클래스명을 읽어 색상 매핑
- * KOSS-SF1 3단계: risk-safe(정상) / risk-caution(경계) / risk-danger(고위험)
- */
 const resolveRiskColorsFromResponse = (sectionsText: string): { riskBg: string; riskColor: string } => {
   const match = sectionsText.match(/class="risk-badge\s+(risk-\w+)"/)
   const cls = match?.[1] ?? ''
@@ -919,17 +1024,12 @@ const resolveRiskColorsFromResponse = (sectionsText: string): { riskBg: string; 
   return { riskBg: '#ffffff', riskColor: '#ef4444' }
 }
 
-/** risk-badge 클래스 → 방사형 JSON riskLevel (KOSS-SF1 3단계) */
 const RISK_BADGE_CLASS_TO_LEVEL: Record<string, RadarChartRiskLevel> = {
   'risk-safe': '정상',
   'risk-caution': '경계',
   'risk-danger': '고위험',
 }
 
-/**
- * 진단 분석 섹션 1(현재 상태 요약) HTML에서 위험군·색·상태 설명 추출
- * - 1차 LLM이 판정한 위험군과 방사형 JSON을 맞추기 위함 (8영역 MAX 재계산 불일치 방지)
- */
 const parseSection1ForRadarChart = (
   sectionsText: string,
 ): { riskLevel: RadarChartRiskLevel; riskColor: string; riskBgColor: string; riskSummary: string } | null => {
@@ -947,41 +1047,20 @@ const parseSection1ForRadarChart = (
 }
 
 /**
- * Q1~Q26 응답값으로 방사형 차트 JSON 데이터 요청 프롬프트 빌드
- * - 점수 산출은 산업안전보건연구원 KOSS-SF1 PDF 평가점수 산출 공식 그대로 적용
- *   환산 점수 = (실제 점수의 합 − 문항 개수) ÷ (예상 가능한 최고 점수의 합 − 문항 개수) × 100
- *   총점 = (8개 영역의 환산 점수의 총합) ÷ 8
- * - 역코딩 규칙은 buildDiagnosticPrompt 와 동일
- * - sectionsText에 섹션1 HTML(risk-badge/risk-status)이 있으면 riskLevel·색·riskSummary는 해당 값으로 고정 (PDF 공식 재판정 금지)
- * - 섹션1 파싱 실패 시에만 PDF 공식 총점·구간표로 위험 판정 지시
- * - LLM 은 이미지 생성 없이 JSON 만 반환
+ * subCfg 기반 방사형 차트 JSON 데이터 요청 프롬프트
  */
 const buildRadarChartPrompt = (
   answers: Record<number, number>,
   sectionsText: string,
   gender: SurveyGender | null,
+  config: SurveyAgentConfig,
 ): string => {
-  // KOSS-SF1 영역별 통계 — PDF 평가점수 산출 공식 직접 적용
-  const 물리적환경Stats = calcCategoryStats([1, 2], answers)
-  const 직무요구Stats = calcCategoryStats([3, 4, 5, 6], answers)
-  const 직무자율Stats = calcCategoryStats([7, 8, 9, 10], answers)
-  const 관계갈등Stats = calcCategoryStats([11, 12, 13], answers)
-  const 직무불안정Stats = calcCategoryStats([14, 15], answers)
-  const 조직체계Stats = calcCategoryStats([16, 17, 18, 19], answers)
-  const 보상부적절Stats = calcCategoryStats([20, 21, 22], answers)
-  const 직장문화Stats = calcCategoryStats([23, 24, 25, 26], answers)
-
-  // 8개 영역 환산 점수의 총합 ÷ 8 = KOSS-SF1 총점 (PDF 규정)
-  const allStats = [
-    { ko: '물리적환경', en: 'physicalEnvironment', stats: 물리적환경Stats },
-    { ko: '직무요구', en: 'jobDemand', stats: 직무요구Stats },
-    { ko: '직무자율', en: 'jobAutonomy', stats: 직무자율Stats },
-    { ko: '관계갈등', en: 'interpersonalConflict', stats: 관계갈등Stats },
-    { ko: '직무불안정', en: 'jobInsecurity', stats: 직무불안정Stats },
-    { ko: '조직체계', en: 'organizationalSystem', stats: 조직체계Stats },
-    { ko: '보상부적절', en: 'inadequateCompensation', stats: 보상부적절Stats },
-    { ko: '직장문화', en: 'workplaceCulture', stats: 직장문화Stats },
-  ]
+  const reverseSet = new Set(config.reverseQuestionNos)
+  const allStats = config.categories.map((cat) => ({
+    ko: cat.title.replace(/\s+/g, ''),
+    en: cat.key,
+    stats: calcCategoryStats(cat.questionNos, answers, reverseSet),
+  }))
   const totalScore = (allStats.reduce((acc, a) => acc + Number(a.stats.score100), 0) / allStats.length).toFixed(2)
 
   const areas100Sorted = [...allStats]
@@ -1012,7 +1091,8 @@ const buildRadarChartPrompt = (
     : ''
 
   const genderLabel = gender === 'female' ? '여성' : '남성'
-  const totalRisk = gender ? KOSS_SF1_TOTAL_RISK[gender] : KOSS_SF1_TOTAL_RISK.male
+  const resolvedGender: SurveyGender = gender ?? 'male'
+  const totalRisk = toLegacyTotalRisk(config, resolvedGender)
   const riskJudgementBlock = section1Anchors
     ? `
 위험 수준 (riskLevel·riskColor·riskBgColor·riskSummary): 위 「이미 확정된 결과」블록과 **완전히 동일**하게만 출력합니다. 임의 수정·요약 재작성 금지.
@@ -1051,7 +1131,7 @@ PDF 규정에 따라 산출한 총점 = (8개 영역의 환산 점수의 총합)
   const areaScoreList = allStats.map(({ ko, en, stats }) => `- ${ko}(${en}): ${stats.score100}`).join('\n')
 
   // 영역별 단계 판정 기준 표 (KOSS-SF1 PDF 23p — 성별별 참고치)
-  const riskTableForGender = KOSS_SF1_RISK_TABLE[gender ?? 'male']
+  const riskTableForGender = toLegacyAreaRisk(config, resolvedGender)
   const areaThresholdTable = allStats
     .map(({ ko, en }) => {
       const t = riskTableForGender[en as keyof RadarChartScore]
@@ -1145,9 +1225,11 @@ export const fetchPsychologyRadarChartData = async (
   answers: Record<number, number>,
   gender: SurveyGender | null = null,
 ): Promise<RadarChartData | null> => {
+  const config = activeSurveyConfig.value
+  if (!config) return null
   try {
     const { post } = useApi()
-    const prompt = `${sectionsText}\n\n${buildRadarChartPrompt(answers, sectionsText, gender)}`
+    const prompt = `${sectionsText}\n\n${buildRadarChartPrompt(answers, sectionsText, gender, config)}`
     const data = await post<{ chartData?: string; result?: string }>('/ai/chatbot/getPsychologyChartData.do', {
       prompt,
     })
@@ -1220,7 +1302,9 @@ export const usePsychologySurvey = () => {
   const answeredCount = computed(() => Object.keys(surveyAnswers.value).length)
 
   /** 전체 문항 응답 완료 여부 */
-  const isSurveyComplete = computed(() => Object.keys(surveyAnswers.value).length === PSYCHOLOGY_SURVEY_TOTAL_QUESTIONS)
+  const isSurveyComplete = computed(
+    () => Object.keys(surveyAnswers.value).length === (activeSurveyConfig.value?.totalQuestions ?? 0),
+  )
 
   /** 설문 제출 채팅방으로 등록 (질문 메시지 숨김 처리용) */
   const registerSurveyRoom = (roomId: string) => {
@@ -1248,4 +1332,33 @@ export const usePsychologySurvey = () => {
     registerSurveyRoom,
     isSurveyRoom,
   }
+}
+
+export const useSurvey = usePsychologySurvey
+
+/** /chat 인덱스·채팅방 에이전트 선택 시 설문 플로우 시작 */
+export const handleSelectSurveyChatIndexAgent = (
+  agent: Agent,
+  ctx: { roomId: string; messages: ChatMessage[] },
+): { appendMessage?: ChatMessage } => {
+  const surveyConfig = parseSurveyConfigFromAgent(agent)
+  if (!surveyConfig) return {}
+
+  setActiveSurveyConfig(surveyConfig)
+  const { openGenderStep, openPsychologySurvey } = usePsychologySurvey()
+
+  const startSurveyFlow = () => {
+    if (surveyConfig.requireGender) openGenderStep()
+    else openPsychologySurvey()
+  }
+
+  if (ctx.roomId) {
+    const alreadyHasSurvey = ctx.messages.some((m) => m.type === 'survey' && !m.surveySubmitted)
+    if (alreadyHasSurvey) return {}
+    startSurveyFlow()
+    return { appendMessage: createSurveyMessage({}, false, agent.agentId) }
+  }
+
+  startSurveyFlow()
+  return {}
 }

@@ -210,7 +210,8 @@ export const useChatRooms = () => {
     if (!sent) return false
 
     chatMessage.value = ''
-    navigateTo(`/chat/${chatRoom.value.roomId}`)
+    // out-in 페이지 전환 중 로컬 상태를 동시에 갱신하면 언마운트된 vnode 패치 오류가 날 수 있어 await
+    await navigateTo(`/chat/${chatRoom.value.roomId}`)
     return true
   }
 

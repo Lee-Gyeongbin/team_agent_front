@@ -1,13 +1,17 @@
 <template>
   <div
-    ref="widgetEl"
     class="dashboard-widget"
-    :class="[`col-span-${widget.colSpan}`, { 'is-filter-open': isFilterOpen, 'is-resizing': isResizing }]"
+    :class="{ 'is-filter-open': isFilterOpen }"
   >
-    <!-- 헤더 -->
+    <!-- ===== 헤더 ===== -->
     <div class="widget-header">
       <div class="widget-header-left">
-        <i class="icon-move-handle size-20 widget-drag-handle" />
+        <!-- 드래그 핸들 (편집 모드일 때만 활성화) -->
+        <i
+          class="icon-move-handle size-20 widget-drag-handle"
+          :class="{ 'is-disabled': !isEditMode }"
+        />
+        <!-- SQL 질의 툴팁 -->
         <UiTooltip
           v-if="widget.sqlTitle"
           side="bottom"
@@ -28,6 +32,7 @@
         </UiTooltip>
         <span class="widget-title">{{ widget.title }}</span>
       </div>
+
       <div class="widget-header-actions">
         <!-- 필터 토글 (변수 있을 때만) -->
         <button
@@ -39,6 +44,7 @@
         >
           <i class="icon-sliders size-16" />
         </button>
+
         <!-- 시각화 유형 변경 -->
         <UiDropdownMenu
           :items="vizTypeMenuItems"
@@ -53,26 +59,7 @@
             </button>
           </template>
         </UiDropdownMenu>
-        <!-- 너비 전환 (절반 ↔ 전체) -->
-        <button
-          class="btn btn-widget-action"
-          :title="widget.colSpan === 2 ? '절반 너비로' : '전체 너비로'"
-          @click="$emit('resize', widget.widgetId, widget.colSpan === 2 ? 1 : 2)"
-        >
-          <i
-            :class="widget.colSpan === 2 ? 'icon-collapse' : 'icon-expand'"
-            class="size-16"
-          />
-        </button>
-        <!-- 높이 기본값으로 초기화 -->
-        <button
-          v-if="localHeightPx !== DEFAULT_HEIGHT"
-          class="btn btn-widget-action"
-          title="높이 초기화 (320px)"
-          @click="onResetHeight"
-        >
-          <i class="icon-resize-height size-16" />
-        </button>
+
         <!-- 새로고침 -->
         <button
           class="btn btn-widget-action"
@@ -93,10 +80,11 @@
       </div>
     </div>
 
-    <!-- 필터 영역 -->
+    <!-- ===== 필터 영역 ===== -->
     <transition name="widget-filter-slide">
       <div
         v-if="isFilterOpen && enrichedVariables.length"
+        ref="filterEl"
         class="widget-filter"
       >
         <div class="widget-filter-main">
@@ -200,12 +188,10 @@
       </div>
     </transition>
 
-    <!-- 콘텐츠 — 필터는 이 밖에 있어서 필터 열릴 때 위젯 전체가 늘어남 -->
-    <!-- height로 콘텐츠 영역 고정 — 차트·테이블은 내부 flex로 동일 높이에 맞춤 -->
+    <!-- ===== 콘텐츠 영역 (GridStack이 높이 관리 — flex:1로 채움) ===== -->
     <div
       ref="contentEl"
       class="widget-content"
-      :style="{ height: `${localHeightPx}px` }"
     >
       <!-- 로딩 -->
       <UiLoading
@@ -228,7 +214,7 @@
         title="조회 결과가 없습니다."
       />
 
-      <!-- 차트 — padding 제외 높이 명시 (chart.js는 마운트 시 부모 height 필요) -->
+      <!-- 차트 -->
       <div
         v-else-if="state.result && widget.vizType !== 'table'"
         class="widget-chart-wrap"
@@ -264,12 +250,6 @@
         title="조회 버튼을 눌러 데이터를 확인하세요."
       />
     </div>
-
-    <!-- 우측 하단 리사이즈 핸들 -->
-    <div
-      class="widget-resize-handle"
-      @mousedown.prevent.stop="onResizeStart"
-    />
   </div>
 </template>
 
@@ -279,7 +259,6 @@ import { copyToClipboard } from '~/utils/global/clipboardUtil'
 import { formatSql } from '~/utils/global/codeUtil'
 import {
   parseVizConfig,
-  resolveColumnKey,
   getRowValue,
   buildPositiveYScale,
   buildDualAxisScales,
@@ -288,12 +267,18 @@ import {
   buildAggregatedValueMap,
   resolveChartAxisMapping,
 } from '~/utils/dataDashboard/vizConfigUtil'
-import { DATA_DASHBOARD_DEFAULT_HEIGHT_PX } from '~/composables/data-dashboard/useDataDashboardStore'
+import {
+  normalizeColIdForCodeMap,
+  resolveColCodeLabel,
+  formatChartCategoryLabel,
+  resolveColNmLabel,
+} from '~/utils/dataDashboard/colCodeMapUtil'
 import type {
   DataDashboardWidget,
   DataDashboardWidgetState,
   DataDashboardVizType,
   ColCodeMap,
+  ColNmMap,
 } from '~/types/data-dashboard'
 import type { TableColumn } from '~/types/table'
 
@@ -301,39 +286,100 @@ interface Props {
   widget: DataDashboardWidget
   state: DataDashboardWidgetState
   codeMap?: ColCodeMap
-  heightPx?: number | null
+  /** 컬럼명 한국어 매핑 (TB_DM_COL 기반 — 테이블 헤더 한글화) */
+  colNmMap?: ColNmMap
+  /** 편집 모드 여부 (드래그 핸들 활성화/비활성화) */
+  isEditMode?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  isEditMode: false,
+})
 
 const emit = defineEmits<{
   execute: [widgetId: string, filterValues: Record<string, string>]
   'reset-filters': [widgetId: string]
   delete: [widgetId: string]
-  resize: [widgetId: string, colSpan: 1 | 2]
   'change-viz-type': [widgetId: string, vizType: DataDashboardVizType]
-  'update-height': [widgetId: string, heightPx: number]
-  'reset-height': [widgetId: string]
+  /** 필터 열기/닫기 (GridStack 높이 조정용) */
+  'filter-toggle': [widgetId: string, isOpen: boolean]
+  /** 필터 DOM 높이 변경 시 실제 픽셀값 전달 (ResizeObserver 기반) */
+  'filter-height-px': [widgetId: string, heightPx: number]
 }>()
 
 const isFilterOpen = ref(false)
+const contentEl = ref<HTMLElement | null>(null)
+const filterEl = ref<HTMLElement | null>(null)
 
-/**
- * codeMap에 해당 변수 키가 있으면 select 타입 + "코드명 (코드)" 옵션으로 보강.
- * 없으면 원본 그대로 반환.
- */
+// ===== 필터 ResizeObserver — 열릴 때 높이 변화를 부모에 전달 =====
+let filterResizeObserver: ResizeObserver | null = null
+
+const startFilterObserver = () => {
+  if (!filterEl.value) return
+  filterResizeObserver = new ResizeObserver(() => {
+    if (filterEl.value) {
+      emit('filter-height-px', props.widget.widgetId, filterEl.value.offsetHeight)
+    }
+  })
+  filterResizeObserver.observe(filterEl.value)
+}
+
+const stopFilterObserver = () => {
+  filterResizeObserver?.disconnect()
+  filterResizeObserver = null
+}
+
+watch(isFilterOpen, async (open) => {
+  if (open) {
+    emit('filter-toggle', props.widget.widgetId, true)
+    await nextTick()
+    startFilterObserver()
+  } else {
+    stopFilterObserver()
+    emit('filter-toggle', props.widget.widgetId, false)
+  }
+})
+
+// ===== ResizeObserver로 차트 높이 동적 계산 =====
+const WIDGET_CONTENT_PADDING_Y = 32 // widget-content padding top+bottom (16px×2)
+const chartBodyHeightPx = ref(240)
+
+let resizeObserver: ResizeObserver | null = null
+
+const updateChartHeight = () => {
+  if (!contentEl.value) return
+  chartBodyHeightPx.value = Math.max(120, contentEl.value.clientHeight - WIDGET_CONTENT_PADDING_Y)
+}
+
+onMounted(() => {
+  if (!contentEl.value) return
+  resizeObserver = new ResizeObserver(() => {
+    updateChartHeight()
+  })
+  resizeObserver.observe(contentEl.value)
+  updateChartHeight()
+})
+
+onBeforeUnmount(() => {
+  resizeObserver?.disconnect()
+  resizeObserver = null
+  stopFilterObserver()
+})
+
+// ===== 코드맵 기반 변수 보강 =====
+
 const enrichedVariables = computed<typeof props.widget.variables>(() => {
   const map = props.codeMap
   return props.widget.variables.map((v) => {
-    const codes = map?.[v.key.toUpperCase()]
+    const codes = map?.[normalizeColIdForCodeMap(v.key)]
     if (!codes || Object.keys(codes).length === 0) return v
-    // 코드맵 있는 변수 → 멀티셀렉트 (전체 옵션 제외, 체크박스로 전체 선택 처리)
     const options = Object.entries(codes).map(([code, name]) => ({ label: `${name} (${code})`, value: code }))
     return { ...v, type: 'select' as const, multiple: true, options }
   })
 })
 
-// 로컬 필터 값 (prop에서 초기화)
+// ===== 로컬 필터 값 =====
+
 const localFilterValues = ref<Record<string, string>>({ ...props.state.filterValues })
 
 watch(
@@ -344,31 +390,23 @@ watch(
   { deep: true },
 )
 
-/** COL_ID + 코드값을 코드명으로 치환. 매핑 없으면 원본 반환 */
 const resolveCode = (colKey: string, val: unknown): string => {
-  const text = String(val ?? '')
-  if (!props.codeMap) return text
-  return props.codeMap[colKey.toUpperCase()]?.[text] ?? text
+  return resolveColCodeLabel(props.codeMap, colKey, val)
 }
 
-/** 테이블/차트에 사용할 코드명 치환된 rows */
 const displayRows = computed<Record<string, unknown>[]>(() => {
-  const rows = props.state.result?.rows ?? []
-  if (!props.codeMap) return rows as Record<string, unknown>[]
-  return rows.map((row) => {
-    const mapped: Record<string, unknown> = {}
-    for (const [key, val] of Object.entries(row as Record<string, unknown>)) {
-      mapped[key] = resolveCode(key, val)
+  const result = props.state.result
+  if (!result?.rows.length) return []
+  return result.rows.map((row) => {
+    const source = row as Record<string, unknown>
+    const mapped: Record<string, unknown> = { ...source }
+    for (const col of result.columns) {
+      mapped[col] = resolveCode(col, getRowValue(source, col))
     }
     return mapped
   })
 })
 
-/**
- * 실제 API 전송용 필터값.
- * 멀티셀렉트(코드변수)는 쉼표 구분 문자열로 직렬화.
- * 아무것도 선택 안 했거나 전체 선택이면 → 모든 코드값 전송 (원본 IN 절 유지).
- */
 const resolvedFilterValues = computed<Record<string, string>>(() => {
   const result: Record<string, string> = {}
   for (const v of enrichedVariables.value) {
@@ -384,7 +422,6 @@ const resolvedFilterValues = computed<Record<string, string>>(() => {
   return result
 })
 
-/** 현재 필터값으로 WHERE 조건을 치환한 포맷팅된 SQL 미리보기 */
 const previewSql = computed<string>(() => {
   const sql = props.widget.sqlContent
   if (!sql) return ''
@@ -402,6 +439,8 @@ const onCopyPreviewSql = async () => {
   }
 }
 
+// ===== 이벤트 =====
+
 const onResetFilters = () => {
   emit('reset-filters', props.widget.widgetId)
 }
@@ -414,56 +453,8 @@ const onChangeVizType = (value: string) => {
   emit('change-viz-type', props.widget.widgetId, value as DataDashboardVizType)
 }
 
-// ===== 높이 드래그 리사이즈 =====
-// localHeightPx = widget-content 영역 높이 (필터·헤더 제외, padding 포함)
-const DEFAULT_HEIGHT = DATA_DASHBOARD_DEFAULT_HEIGHT_PX
-const MIN_HEIGHT = DATA_DASHBOARD_DEFAULT_HEIGHT_PX
-/** widget-content 좌우 padding($spacing-md) 합 — SCSS와 동기 */
-const WIDGET_CONTENT_PADDING_Y = 32
+// ===== 시각화 유형 메뉴 =====
 
-const localHeightPx = ref<number>(props.heightPx ?? DEFAULT_HEIGHT)
-
-/** chart.js·테이블이 사용하는 내부 높이 (content height − padding) */
-const chartBodyHeightPx = computed(() => Math.max(120, localHeightPx.value - WIDGET_CONTENT_PADDING_Y))
-const isResizing = ref(false)
-
-watch(
-  () => props.heightPx,
-  (v) => {
-    localHeightPx.value = v ?? DEFAULT_HEIGHT
-  },
-)
-
-const onResetHeight = () => {
-  localHeightPx.value = DEFAULT_HEIGHT
-  emit('reset-height', props.widget.widgetId)
-}
-
-const onResizeStart = (e: MouseEvent) => {
-  isResizing.value = true
-  const startY = e.clientY
-  const startHeight = localHeightPx.value
-
-  const onMouseMove = (ev: MouseEvent) => {
-    localHeightPx.value = Math.max(MIN_HEIGHT, startHeight + (ev.clientY - startY))
-  }
-
-  const onMouseUp = () => {
-    if (localHeightPx.value === DEFAULT_HEIGHT) {
-      emit('reset-height', props.widget.widgetId)
-    } else {
-      emit('update-height', props.widget.widgetId, localHeightPx.value)
-    }
-    isResizing.value = false
-    document.removeEventListener('mousemove', onMouseMove)
-    document.removeEventListener('mouseup', onMouseUp)
-  }
-
-  document.addEventListener('mousemove', onMouseMove)
-  document.addEventListener('mouseup', onMouseUp)
-}
-
-// 시각화 유형 변경 메뉴
 const vizTypeMenuItems = [
   { label: '막대 차트', value: 'bar', icon: 'icon-bar-chart' },
   { label: '라인 차트', value: 'line', icon: 'icon-line-chart' },
@@ -472,60 +463,62 @@ const vizTypeMenuItems = [
   { label: '테이블', value: 'table', icon: 'icon-sql' },
 ]
 
-/** UiChart type prop — DataDashboardVizType 중 table 제외 */
 const chartVizType = computed((): Exclude<DataDashboardVizType, 'table'> => {
   const { vizType } = props.widget
   return vizType === 'table' ? 'bar' : vizType
 })
 
-// ===== 테이블 컬럼 자동 생성 =====
+// ===== 테이블 컬럼 =====
+
 const tableColumns = computed<TableColumn[]>(() => {
   if (!props.state.result) return []
   return props.state.result.columns.map((col) => ({
     key: col,
-    label: col,
+    // colNmMap에 한국어명이 있으면 헤더에 표시, 없으면 물리 컬럼명 그대로 사용
+    label: resolveColNmLabel(props.colNmMap, col),
     sortable: true,
     sortType: 'auto' as const,
     align: 'center' as const,
   }))
 })
 
-// ===== 차트 config 자동 빌드 =====
+// ===== 차트 config =====
+
 const chartConfig = computed(() => {
   const result = props.state.result
   const { vizType } = props.widget
   const vizCfg = parseVizConfig(props.widget.vizConfig)
+  // codeMap 변경 시 범례·축 레이블 재계산
+  const codeMap = props.codeMap
 
   if (!result || !result.rows.length) return {}
 
   const { columns } = result
-  // 수치 계산은 raw rows, 범주 레이블은 displayRows(코드명 치환)로 분리
   const rows = result.rows as Record<string, unknown>[]
-  const dRows = displayRows.value
 
   const readNum = (row: Record<string, unknown>, colKey: string) => Number(getRowValue(row, colKey)) || 0
-  const readLabel = (row: Record<string, unknown>, colKey: string) => String(getRowValue(row, colKey) ?? '')
+  const resolveCategoryLabel = (colKey: string, raw: string) => formatChartCategoryLabel(codeMap, colKey, raw)
 
   const { xKey, yKeys } = resolveChartAxisMapping(columns, vizCfg)
 
-  // x축 고유값 + Y합산 (REGN_CD 등 부차 차원이 있어도 xAxisKey 기준으로 묶음)
   const buildGroupedSeries = (groupKey: string) => {
     const rawCategories = buildRawCategories(rows, groupKey)
-    const categories = buildCategoryLabels(rawCategories, rows, dRows, groupKey, readLabel)
+    const categories = buildCategoryLabels(rawCategories, groupKey, resolveCategoryLabel)
     const valueMap = buildAggregatedValueMap(rows, groupKey, yKeys[0], readNum)
     const values = rawCategories.map((raw) => valueMap.get(raw) ?? 0)
     return { rawCategories, categories, values }
   }
 
-  // 파이 차트 — xAxisKey / yAxisKeys[0]
+  const chartColorKey = vizType === 'line' ? 'line.analystatSet' : 'bar.analystatSet'
+
+  // 파이 차트
   if (vizType === 'pie') {
     const rawCategories = buildRawCategories(rows, xKey)
     const valueMap = buildAggregatedValueMap(rows, xKey, yKeys[0] ?? columns[1] ?? columns[0], readNum)
     const aggregatedValues = rawCategories.map((raw) => valueMap.get(raw) ?? 0)
     const total = aggregatedValues.reduce((sum, v) => sum + v, 0)
-    // 음수 포함 또는 합계 0이면 비율 계산 불가
     if (aggregatedValues.some((v) => v < 0) || total <= 0) return {}
-    const labels = buildCategoryLabels(rawCategories, rows, dRows, xKey, readLabel)
+    const labels = buildCategoryLabels(rawCategories, xKey, resolveCategoryLabel)
     return {
       items: rawCategories.map((raw, i) => ({
         name: labels[i],
@@ -537,8 +530,6 @@ const chartConfig = computed(() => {
   }
 
   const { rawCategories, categories, values: groupedValues } = buildGroupedSeries(xKey)
-
-  const chartColorKey = vizType === 'line' ? 'line.analystatSet' : 'bar.analystatSet'
 
   // 가로 막대
   if (vizType === 'horizontalBar') {
@@ -552,7 +543,7 @@ const chartConfig = computed(() => {
     }
   }
 
-  // Y축 2개 — 채팅 시각화와 동일하게 좌/우 이축 (스케일이 다른 지표 대비)
+  // 이축 차트 (Y 2개)
   if (yKeys.length >= 2 && (vizType === 'bar' || vizType === 'line')) {
     const dualKeys = yKeys.slice(0, 2)
     const datasets = dualKeys.map((key, idx) => {
@@ -577,14 +568,7 @@ const chartConfig = computed(() => {
     const scale = buildPositiveYScale(groupedValues)
     return {
       categories,
-      datasets: [
-        {
-          label: yKeys[0],
-          data: groupedValues,
-          colorKey: chartColorKey,
-          colorIndex: 0,
-        },
-      ],
+      datasets: [{ label: yKeys[0], data: groupedValues, colorKey: chartColorKey, colorIndex: 0 }],
       maxValue: scale.max,
       minValue: scale.min,
       yAxisStepSize: scale.stepSize,

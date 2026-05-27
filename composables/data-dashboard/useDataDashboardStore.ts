@@ -1,4 +1,5 @@
 import { useDataDashboardApi } from '~/composables/data-dashboard/useDataDashboardApi'
+import { GS_DEFAULT_LAYOUT } from '~/composables/data-dashboard/useDataDashboardGridStack'
 import { parseTtsqParam, extractSqlWhereValues } from '~/utils/dataDashboard/ttsqParamParser'
 import { parseVizConfig } from '~/utils/dataDashboard/vizConfigUtil'
 import type {
@@ -6,7 +7,9 @@ import type {
   DataDashboardWidget,
   DataDashboardLayout,
   DataDashboardWidgetState,
+  DataDashboardVizType,
   ColCodeMap,
+  ColNmMap,
 } from '~/types/data-dashboard'
 
 const {
@@ -14,25 +17,28 @@ const {
   fetchWidgetList,
   fetchSaveWidget,
   fetchDeleteWidget,
-  fetchSaveWidgetColSpan,
-  fetchSaveWidgetOrder,
   fetchLayoutList,
-  fetchSaveLayout,
-  fetchSaveLayoutOrder,
+  fetchSaveLayoutBatch,
   fetchExecuteSql,
   fetchColCodeMap,
+  fetchColNmMap,
 } = useDataDashboardApi()
 
 // ===== 전역 상태 =====
 const widgetList = ref<DataDashboardWidget[]>([])
 const sqlList = ref<DataDashboardSqlItem[]>([])
 const sqlListLoading = ref(false)
-// 위젯별 런타임 상태 (실행 결과, 필터 값, 로딩)
+
+/** 위젯별 런타임 상태 (실행 결과, 필터 값, 로딩) */
 const widgetStates = ref<Record<string, DataDashboardWidgetState>>({})
-// 위젯별 레이아웃 (widgetId → layout: widthPx, heightPx 등)
+
+/** 위젯별 GridStack 레이아웃 (widgetId → DataDashboardLayout) */
 const layoutMap = ref<Record<string, DataDashboardLayout>>({})
-// 모달
+
+/** 위젯 추가 모달 오픈 여부 */
 const isAddModalOpen = ref(false)
+
+// ===== 유틸 =====
 
 /**
  * 백엔드 응답 VO → 프론트 위젯 타입으로 변환
@@ -51,7 +57,6 @@ const hydrateVariables = <
 ): T => {
   const vars = parseTtsqParam(item.ttsqParam ?? null)
 
-  // sqlContent가 있으면 WHERE 절에서 실제 조회값을 추출해 defaultValue에 반영
   if (item.sqlContent) {
     const whereValues = extractSqlWhereValues(
       item.sqlContent,
@@ -95,7 +100,7 @@ const ensureWidgetState = (widgetId: string) => {
   }
 }
 
-/** sortOrd 기준 오름차순 정렬 (동일 시 widgetId로 안정 정렬) */
+/** sortOrd 기준 오름차순 정렬 */
 const sortWidgetsByOrd = (widgets: DataDashboardWidget[]): DataDashboardWidget[] => {
   return [...widgets].sort((a, b) => {
     const diff = (Number(a.sortOrd) || 0) - (Number(b.sortOrd) || 0)
@@ -104,39 +109,54 @@ const sortWidgetsByOrd = (widgets: DataDashboardWidget[]): DataDashboardWidget[]
   })
 }
 
-/** 배열 맨 끝으로 옮긴 뒤 순서·레이아웃 저장 */
-const moveWidgetToEnd = async (widgetId: string) => {
-  const idx = widgetList.value.findIndex((w) => w.widgetId === widgetId)
-  if (idx === -1 || idx === widgetList.value.length - 1) return
-  const next = [...widgetList.value]
-  const [item] = next.splice(idx, 1)
-  next.push(item)
-  widgetList.value = next
-  await handleSaveWidgetOrder()
+/**
+ * widgetId에 대한 레이아웃 설정 반환
+ * - layoutMap에 없으면 기본 배치(auto) 반환
+ */
+const getWidgetLayout = (widgetId: string): DataDashboardLayout => {
+  const layout = layoutMap.value[widgetId]
+  if (layout) return layout
+  return {
+    widgetId,
+    ...GS_DEFAULT_LAYOUT,
+    x: 0,
+    y: 0,
+    isVisible: true,
+  }
 }
 
-// ===== 위젯 목록 =====
+/** widgetList에 datamartId가 없을 때 sqlList(logId)에서 보강 */
+const resolveWidgetDatamartId = (widget: DataDashboardWidget): string | undefined => {
+  const fromWidget = widget.datamartId?.trim()
+  if (fromWidget) return fromWidget
+  return sqlList.value.find((s) => s.logId === widget.logId)?.datamartId?.trim() || undefined
+}
 
-/** 위젯 목록의 모든 SQL을 병렬 실행해 차트를 일괄 갱신 */
+const enrichWidgetDatamartId = (widget: DataDashboardWidget): DataDashboardWidget => {
+  const datamartId = resolveWidgetDatamartId(widget)
+  if (!datamartId || widget.datamartId?.trim() === datamartId) return widget
+  return { ...widget, datamartId }
+}
+
+// ===== 위젯 목록 조회 =====
+
 const handleExecuteAllWidgets = async () => {
   await Promise.all(widgetList.value.map((w) => handleExecuteSql(w.widgetId)))
 }
 
 const handleSelectWidgetList = async () => {
   try {
-    const [widgetRes, layoutRes] = await Promise.all([fetchWidgetList(), fetchLayoutList()])
-    widgetList.value = sortWidgetsByOrd((widgetRes.list ?? []).map(hydrateVariables))
+    const [widgetRes, layoutRes, sqlRes] = await Promise.all([fetchWidgetList(), fetchLayoutList(), fetchSqlList()])
+    sqlList.value = (sqlRes.list ?? []).map((item) => hydrateVariables(item as DataDashboardSqlItem))
+    widgetList.value = sortWidgetsByOrd((widgetRes.list ?? []).map(hydrateVariables).map(enrichWidgetDatamartId))
     widgetList.value.forEach(initWidgetState)
-    layoutMap.value = Object.fromEntries((layoutRes.list ?? []).map((l) => [l.widgetId, l]))
+    layoutMap.value = Object.fromEntries(
+      (layoutRes.list ?? []).map((l) => [l.widgetId, { ...l, isVisible: l.isVisible !== false }]),
+    )
     await handleExecuteAllWidgets()
   } catch {
     openToast({ message: '위젯 목록 조회에 실패했습니다.', type: 'error' })
   }
-}
-
-/** widgetId로 저장된 heightPx 반환 (null = 기본값 사용) */
-const getWidgetHeightPx = (widgetId: string): number | null => {
-  return layoutMap.value[widgetId]?.heightPx ?? null
 }
 
 // ===== SQL 목록 =====
@@ -164,15 +184,14 @@ const handleExecuteSql = async (widgetId: string) => {
   state.loading = true
   state.error = null
   try {
-    // SQL 실행 + 코드맵 조회 병렬 처리 (실행마다 코드맵 API 호출)
-    const sqlPromise = fetchExecuteSql(widget.logId, state.filterValues)
-    const codeMapPromise = widget.datamartId
-      ? fetchColCodeMap(widget.datamartId).then((map) => {
-          state.codeMap = map
-        })
-      : Promise.resolve()
-
-    const [res] = await Promise.all([sqlPromise, codeMapPromise])
+    const datamartId = resolveWidgetDatamartId(widget)
+    const [res, codeMap, colNmMap] = await Promise.all([
+      fetchExecuteSql(widget.logId, state.filterValues),
+      datamartId ? fetchColCodeMap(datamartId) : Promise.resolve(undefined),
+      datamartId ? fetchColNmMap(datamartId) : Promise.resolve(undefined),
+    ])
+    if (codeMap) state.codeMap = codeMap
+    if (colNmMap) state.colNmMap = colNmMap
 
     if (res.result === 'SUCCESS') {
       state.result = res.data ?? null
@@ -187,9 +206,12 @@ const handleExecuteSql = async (widgetId: string) => {
   }
 }
 
-/** widgetId로 해당 위젯의 최근 실행 시 조회한 코드맵 반환 */
 const getWidgetCodeMap = (widgetId: string): ColCodeMap | undefined => {
   return widgetStates.value[widgetId]?.codeMap
+}
+
+const getWidgetColNmMap = (widgetId: string): ColNmMap | undefined => {
+  return widgetStates.value[widgetId]?.colNmMap
 }
 
 const handleUpdateFilterValues = (widgetId: string, values: Record<string, string>) => {
@@ -197,7 +219,6 @@ const handleUpdateFilterValues = (widgetId: string, values: Record<string, strin
   widgetStates.value[widgetId].filterValues = { ...values }
 }
 
-/** 필터값을 TTSQ가 만든 초기값(defaultValue)으로 복원 */
 const handleResetFilterValues = (widgetId: string) => {
   const widget = widgetList.value.find((w) => w.widgetId === widgetId)
   if (!widget) return
@@ -207,10 +228,6 @@ const handleResetFilterValues = (widgetId: string) => {
 
 // ===== 위젯 저장 =====
 
-/**
- * 백엔드 mapper가 받아야 할 필드만 추출.
- * variables, sqlContent, agentNm 등 프론트 전용 필드는 제외한다.
- */
 const toWidgetPayload = (widget: Partial<DataDashboardWidget>): Record<string, unknown> => ({
   widgetId: widget.widgetId,
   logId: widget.logId,
@@ -221,12 +238,10 @@ const toWidgetPayload = (widget: Partial<DataDashboardWidget>): Record<string, u
       ? JSON.stringify(widget.vizConfig)
       : (widget.vizConfig ?? null),
   ttsqParam: widget.ttsqParam ?? null,
-  colSpan: widget.colSpan,
   sortOrd: widget.sortOrd,
 })
 
 const handleSaveWidget = async (widget: Partial<DataDashboardWidget>): Promise<DataDashboardWidget | null> => {
-  // 저장 전 기존 widgetId 집합 — 신규 추가된 위젯 식별용
   const prevIds = new Set(widgetList.value.map((w) => w.widgetId))
   const isNew = !widget.widgetId
   const payload: Partial<DataDashboardWidget> = { ...widget }
@@ -237,17 +252,12 @@ const handleSaveWidget = async (widget: Partial<DataDashboardWidget>): Promise<D
   try {
     await fetchSaveWidget(toWidgetPayload(payload) as Partial<DataDashboardWidget>)
     await handleSelectWidgetList()
-    if (isNew) {
-      const newWidget = widgetList.value.find((w) => !prevIds.has(w.widgetId))
-      if (newWidget) await moveWidgetToEnd(newWidget.widgetId)
-    }
     closeAddModal()
     openToast({ message: '위젯이 저장되었습니다.', type: 'success' })
   } catch {
     openToast({ message: '위젯 저장에 실패했습니다.', type: 'error' })
     return null
   }
-  // 수정: 기존 widgetId로 조회 / 신규: prevIds에 없는 위젯 반환
   const saved = widget.widgetId
     ? widgetList.value.find((w) => w.widgetId === widget.widgetId)
     : widgetList.value.find((w) => !prevIds.has(w.widgetId))
@@ -267,117 +277,92 @@ const handleDeleteWidget = async (widgetId: string) => {
     await fetchDeleteWidget(widgetId)
     widgetList.value = widgetList.value.filter((w) => w.widgetId !== widgetId)
     widgetStates.value = Object.fromEntries(Object.entries(widgetStates.value).filter(([id]) => id !== widgetId))
+    layoutMap.value = Object.fromEntries(Object.entries(layoutMap.value).filter(([id]) => id !== widgetId))
     openToast({ message: '위젯이 삭제되었습니다.', type: 'success' })
   } catch {
     openToast({ message: '위젯 삭제에 실패했습니다.', type: 'error' })
   }
 }
 
-// ===== 위젯 높이 저장 =====
+// ===== 시각화 유형 변경 (로컬) =====
 
-const handleSaveWidgetHeight = async (widgetId: string, heightPx: number) => {
-  layoutMap.value[widgetId] = { ...(layoutMap.value[widgetId] ?? {}), widgetId, heightPx }
-  try {
-    await fetchSaveLayout({ widgetId, heightPx: Math.round(heightPx) })
-  } catch {
-    openToast({ message: '높이 저장에 실패했습니다.', type: 'error' })
-  }
-}
-
-/** 위젯 콘텐츠 기본 높이(px) */
-export const DATA_DASHBOARD_DEFAULT_HEIGHT_PX = 320
-
-const handleResetWidgetHeight = async (widgetId: string) => {
-  await handleSaveWidgetHeight(widgetId, DATA_DASHBOARD_DEFAULT_HEIGHT_PX)
-}
-
-// ===== 드래그 / 레이아웃 순서 저장 =====
-
-/**
- * 위젯 배열을 2-컬럼 그리드 기준으로 순회하며 rowPos, colPos를 계산.
- * colSpan=2 는 전체 행을 차지, colSpan=1 은 좌/우 절반.
- */
-const computeLayoutOrder = (widgets: DataDashboardWidget[]) => {
-  let row = 0
-  let colFilled = 0
-
-  return widgets.map((w, i) => {
-    const colSpan = w.colSpan ?? 1
-
-    if (colFilled + colSpan > 2) {
-      row++
-      colFilled = 0
-    }
-
-    const colPos = colFilled
-    colFilled += colSpan
-
-    if (colFilled >= 2) {
-      row++
-      colFilled = 0
-    }
-
-    return { widgetId: w.widgetId, sortOrd: i + 1, rowPos: row, colPos, colSpan }
-  })
-}
-
-const handleSaveWidgetOrder = async () => {
-  const orderList = widgetList.value.map((w, i) => ({ widgetId: w.widgetId, sortOrd: i + 1 }))
-  const layoutOrderList = computeLayoutOrder(widgetList.value)
-  try {
-    await Promise.all([fetchSaveWidgetOrder(orderList), fetchSaveLayoutOrder(layoutOrderList)])
-  } catch {
-    openToast({ message: '순서 저장에 실패했습니다.', type: 'error' })
-  }
-}
-
-// ===== 위젯 너비 변경 =====
-
-const handleResizeWidget = async (widgetId: string, colSpan: 1 | 2) => {
+const handleChangeVizType = (widgetId: string, vizType: DataDashboardVizType) => {
   const idx = widgetList.value.findIndex((w) => w.widgetId === widgetId)
   if (idx === -1) return
-  widgetList.value[idx] = { ...widgetList.value[idx], colSpan }
+  widgetList.value[idx] = { ...widgetList.value[idx], vizType }
+}
+
+// ===== 레이아웃 저장 (드래그/리사이즈 완료 시 자동 저장) =====
+
+/**
+ * GridStack 현재 위치·크기를 일괄 저장 (자동 저장 — 토스트 없음)
+ * @param layouts - GridStack에서 읽어온 위치 데이터 목록
+ */
+const handleSaveLayout = async (layouts: DataDashboardLayout[]) => {
   try {
-    const layoutOrderList = computeLayoutOrder(widgetList.value)
-    await Promise.all([
-      fetchSaveWidgetColSpan(widgetId, colSpan), // colSpan만 저장 — vizType 불변
-      fetchSaveLayoutOrder(layoutOrderList),
-    ])
+    await fetchSaveLayoutBatch(layouts)
+    for (const l of layouts) {
+      layoutMap.value[l.widgetId] = { ...layoutMap.value[l.widgetId], ...l }
+    }
   } catch {
-    openToast({ message: '위젯 너비 변경에 실패했습니다.', type: 'error' })
+    openToast({ message: '레이아웃 저장에 실패했습니다.', type: 'error' })
   }
 }
 
-// ===== 모달 =====
+// ===== 위젯 추가 모달 =====
 
 const openAddModal = async () => {
   await handleSelectSqlList()
   isAddModalOpen.value = true
 }
+
 const closeAddModal = () => {
   isAddModalOpen.value = false
 }
 
+// ===== 위젯 상태 조회 =====
+
+const defaultState: DataDashboardWidgetState = {
+  filterValues: {},
+  result: null,
+  loading: false,
+  error: null,
+}
+
+const getWidgetState = (widgetId: string): DataDashboardWidgetState => {
+  return widgetStates.value[widgetId] ?? defaultState
+}
+
 export const useDataDashboardStore = () => {
   return {
+    // 상태
     widgetList,
     sqlList,
     sqlListLoading,
-    widgetStates,
+    layoutMap,
     isAddModalOpen,
+
+    // 데이터 조회
     handleSelectWidgetList,
-    handleSelectSqlList,
     handleExecuteSql,
+    getWidgetState,
+    getWidgetLayout,
+    getWidgetCodeMap,
+    getWidgetColNmMap,
+
+    // 필터
     handleUpdateFilterValues,
     handleResetFilterValues,
+
+    // 위젯 CRUD
     handleSaveWidget,
     handleDeleteWidget,
-    handleResizeWidget,
-    handleSaveWidgetOrder,
-    handleSaveWidgetHeight,
-    handleResetWidgetHeight,
-    getWidgetCodeMap,
-    getWidgetHeightPx,
+    handleChangeVizType,
+
+    // 레이아웃
+    handleSaveLayout,
+
+    // 위젯 추가 모달
     openAddModal,
     closeAddModal,
   }

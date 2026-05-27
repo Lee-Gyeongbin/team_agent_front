@@ -115,20 +115,36 @@
                   </span>
                 </div>
                 <div class="viz-type-group">
-                  <button
+                  <UiTooltip
                     v-for="opt in vizTypeOptions"
                     :key="opt.value"
-                    class="viz-type-btn"
-                    :class="{ 'is-selected': form.vizType === opt.value }"
-                    type="button"
-                    @click="onSelectVizType(opt.value)"
+                    side="top"
+                    align="center"
+                    :show-arrow="false"
+                    :delay-duration="250"
+                    content-class="viz-type-preview-tooltip"
                   >
-                    <i
-                      :class="opt.icon"
-                      class="size-18"
-                    />
-                    <span>{{ opt.label }}</span>
-                  </button>
+                    <div class="viz-type-item">
+                      <button
+                        class="viz-type-btn"
+                        :class="{ 'is-selected': form.vizType === opt.value }"
+                        type="button"
+                        @click="onSelectVizType(opt.value)"
+                      >
+                        <i
+                          :class="opt.icon"
+                          class="size-18"
+                        />
+                        <span>{{ opt.label }}</span>
+                      </button>
+                    </div>
+                    <template #content>
+                      <div class="viz-type-preview-popover">
+                        <DataDashboardVizTypePreview :type="opt.value" />
+                        <span class="viz-type-preview-popover-label">{{ opt.label }}</span>
+                      </div>
+                    </template>
+                  </UiTooltip>
                 </div>
               </div>
             </section>
@@ -199,31 +215,7 @@
               </div>
             </section>
 
-            <section class="config-section">
-              <div class="config-field">
-                <label class="config-label">위젯 너비</label>
-                <div class="col-span-group">
-                  <button
-                    class="col-span-btn"
-                    :class="{ 'is-selected': form.colSpan === 1 }"
-                    type="button"
-                    @click="form.colSpan = 1"
-                  >
-                    <span class="col-span-preview is-half" />
-                    <span>1칸 (절반)</span>
-                  </button>
-                  <button
-                    class="col-span-btn"
-                    :class="{ 'is-selected': form.colSpan === 2 }"
-                    type="button"
-                    @click="form.colSpan = 2"
-                  >
-                    <span class="col-span-preview is-full" />
-                    <span>2칸 (전체)</span>
-                  </button>
-                </div>
-              </div>
-            </section>
+            <!-- 위젯 너비 설정 제거됨: GridStack 드래그로 자유롭게 조절 -->
           </template>
 
           <!-- SQL 미선택 안내 -->
@@ -288,7 +280,6 @@ const emit = defineEmits<{
       title: string
       vizType: DataDashboardVizType
       vizConfig: DataDashboardVizConfig
-      colSpan: 1 | 2
       variables: DataDashboardSqlItem['variables']
       ttsqParam?: string | null
     },
@@ -325,12 +316,10 @@ const form = reactive<{
   title: string
   vizType: DataDashboardVizType
   vizConfig: { xAxisKey: string }
-  colSpan: 1 | 2
 }>({
   title: '',
   vizType: 'bar',
   vizConfig: { xAxisKey: '' },
-  colSpan: 1,
 })
 
 /** 컬럼 매핑 필수 시각화 (막대·라인·가로막대) */
@@ -453,7 +442,6 @@ const onSave = () => {
     title: form.title || selectedSql.value.sqlTitle,
     vizType: form.vizType,
     vizConfig: buildSaveVizConfig(),
-    colSpan: form.colSpan,
     variables: parsedParams.value.length ? parsedParams.value : selectedSql.value.variables,
     ttsqParam: selectedSql.value.ttsqParam,
   })
@@ -472,7 +460,6 @@ watch(
     parsedParams.value = []
     form.title = ''
     form.vizType = 'bar'
-    form.colSpan = 1
     form.vizConfig.xAxisKey = ''
   },
 )

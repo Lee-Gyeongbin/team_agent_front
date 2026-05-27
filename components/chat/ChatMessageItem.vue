@@ -38,8 +38,8 @@
             class="message-content"
           />
           <!-- eslint-disable vue/no-v-html — toHtmlContent 내 안전 처리 적용 -->
-          <!-- AG000010: 마커 발견 → 섹션1~3 / 차트 슬롯 / 섹션4~7 분리 렌더 -->
-          <template v-else-if="message.agentId === 'AG000010' && markerFound">
+          <!-- SURVEY(showRadarChart): 마커 발견 → 섹션1~3 / 차트 슬롯 / 섹션4~7 분리 렌더 -->
+          <template v-else-if="isSurveyRadarAnswer && markerFound">
             <div
               class="message-content markdown-body"
               @click="onMarkdownClick"
@@ -178,9 +178,11 @@
       </div>
     </template>
 
-    <!-- 설문 메시지 (산업심리 상담 에이전트) -->
+    <!-- 설문 메시지 (svcTy C + subCfg SURVEY) -->
     <template v-else-if="message.type === 'survey'">
-      <ChatPsychologySurvey
+      <ChatSurvey
+        v-if="messageSurveyConfig"
+        :survey-config="messageSurveyConfig"
         :readonly="message.surveySubmitted === true"
         :initial-answers="message.surveyAnswers"
         :theme-icon-class-nm="themeAgent?.iconClassNm ?? ''"
@@ -297,8 +299,9 @@ import {
   buildStressItemsFromRadarChartData,
   buildPsychologyRadarUiChartConfig,
   usePsychologySurvey,
+  parseSurveyAnswersFromPrompt,
   type RadarChartData,
-} from '~/utils/chat/psychologyConsultUtil'
+} from '~/utils/chat/surveyUtil'
 import {
   applyLunchMenuImageEnrichmentToResultMessage,
   findLinkedLunchAnswerMessage,
@@ -312,12 +315,20 @@ import {
 } from '~/utils/chat/lunchAgentUtil'
 import { parseTodayMemeItems, TODAY_MEME_AGENT_ID } from '~/utils/chat/todayMemeUtil'
 import type { TodayMemeItem } from '~/utils/chat/todayMemeUtil'
-import { attachmentsRequireSummaryIndicator } from '~/utils/chat/chatAttachmentDisplayUtil'
 import { findLinkedNewsCuratorAnswer, resolveNewsCuratorItemsForCard } from '~/utils/chat/newsCuratorUtil'
+import { attachmentsRequireSummaryIndicator } from '~/utils/chat/chatAttachmentDisplayUtil'
+import {
+  parseSurveyConfigFromAgent,
+  resolveSurveyConfigByAgentId,
+  setActiveSurveyConfig,
+  isSurveyRadarAgentById,
+} from '~/utils/chat/surveyUtil'
 
 const { chatIndexAgents, messages } = useChatStore()
 const { surveyGender } = usePsychologySurvey()
 const { user } = useAuth()
+
+const isSurveyRadarAgent = (agentId: string) => isSurveyRadarAgentById(agentId, chatIndexAgents.value)
 interface Props {
   message: ChatMessage
   knowledgeList?: KnowledgeItem[]
@@ -387,7 +398,7 @@ const onMarkdownClick = (e: MouseEvent) => {
   }
 }
 
-// ── AG000010 렌더 상태 ────────────────────────────────────────────────────
+// ── SURVEY(showRadarChart) 렌더 상태 ────────────────────────────────────────────────────
 /** [방사형그래프] 마커 발견 여부 — 템플릿 분기 조건 */
 const markerFound = ref(false)
 /** 마커 이전 구간 HTML (섹션 1~3) */
@@ -414,20 +425,74 @@ const psychologyRadarChartConfig = computed<Record<string, unknown>>(() =>
 let pexelsFetchDone = false
 let radarChartFetchDone = false
 
+/** F5 직후 chatIndexAgents 미로드 → 이후 재처리 트리거용 */
+let lastSurveyRadarGateKey = ''
+
+const resetSurveyRadarRenderState = () => {
+  markerFound.value = false
+  beforeChartHtml.value = ''
+  afterChartHtml.value = ''
+  radarChartLoading.value = false
+  radarChartData.value = null
+  pexelsFetchDone = false
+  radarChartFetchDone = false
+  cancelPsychologyRadarUiInjection?.()
+  cancelPsychologyRadarUiInjection = null
+}
+
+/** answer 행에 surveyAnswers가 없을 때(로그 재조회 등) 연결 question·survey 메시지에서 복원 */
+const resolveSurveyAnswersForRadar = (): Record<number, number> => {
+  const direct = props.message.surveyAnswers
+  if (direct && Object.keys(direct).length > 0) return direct
+
+  const surveyMsg = messages.value.find(
+    (m) => m.type === 'survey' && m.surveySubmitted && (!props.message.agentId || m.agentId === props.message.agentId),
+  )
+  if (surveyMsg?.surveyAnswers && Object.keys(surveyMsg.surveyAnswers).length > 0) {
+    return surveyMsg.surveyAnswers
+  }
+
+  const questionMsg = messages.value.find((m) => {
+    if (m.type !== 'question') return false
+    if (props.message.agentId && m.agentId && m.agentId !== props.message.agentId) return false
+    return Object.keys(parseSurveyAnswersFromPrompt(m.qContent ?? '')).length > 0
+  })
+  if (questionMsg) return parseSurveyAnswersFromPrompt(questionMsg.qContent ?? '')
+
+  return {}
+}
+
 /** 캐시 주입 타이머 취소용 */
 let cancelPsychologyRadarUiInjection: (() => void) | null = null
+/** 페이지 전환·메시지 교체 후 비동기 콜백이 언마운트된 vnode를 갱신하지 않도록 */
+let isMessageItemAlive = true
 
 onBeforeUnmount(() => {
+  isMessageItemAlive = false
   cancelPsychologyRadarUiInjection?.()
   cancelPsychologyRadarUiInjection = null
 })
 
 watch(
-  () => [props.message.rContent, props.message.agentId, props.message.isStreaming] as const,
-  ([rContent, agentId, isStreaming]) => {
+  () =>
+    [
+      props.message.logId,
+      props.message.rContent,
+      props.message.agentId,
+      props.message.isStreaming,
+      props.message.surveyAnswers,
+      chatIndexAgents.value.map((a) => a.agentId).join(','),
+    ] as const,
+  ([, rContent, agentId, isStreaming]) => {
     const raw = rContent ?? ''
+    const gateKey = `${props.message.logId}:${isSurveyRadarAgentById(agentId ?? '', chatIndexAgents.value)}`
 
-    if (agentId !== 'AG000010') {
+    if (gateKey !== lastSurveyRadarGateKey) {
+      resetSurveyRadarRenderState()
+      lastSurveyRadarGateKey = gateKey
+    }
+
+    if (!isSurveyRadarAgent(agentId ?? '')) {
       renderedHtml.value = toHtmlContent(raw)
       return
     }
@@ -455,22 +520,26 @@ watch(
     if (!radarChartFetchDone) {
       radarChartFetchDone = true
       radarChartLoading.value = true
+      const logIdForChart = props.message.logId
 
-      const cached = getRadarChartCache(props.message.logId)
+      const cached = getRadarChartCache(logIdForChart)
       if (cached) {
         cancelPsychologyRadarUiInjection?.()
-        const logIdForInject = props.message.logId
         cancelPsychologyRadarUiInjection = schedulePsychologyRadarUiInjection(() => {
-          if (props.message.logId !== logIdForInject) return
+          if (!isMessageItemAlive || props.message.logId !== logIdForChart) return
           radarChartData.value = cached
           radarChartLoading.value = false
         })
       } else {
-        fetchPsychologyRadarChartData(extractSections1to4(raw), props.message.surveyAnswers!, surveyGender.value).then(
+        const surveyConfig = resolveSurveyConfigByAgentId(props.message.agentId ?? '', chatIndexAgents.value)
+        if (surveyConfig) setActiveSurveyConfig(surveyConfig)
+        const answersForRadar = resolveSurveyAnswersForRadar()
+        fetchPsychologyRadarChartData(extractSections1to4(raw), answersForRadar, surveyGender.value).then(
           (chartData) => {
+            if (!isMessageItemAlive || props.message.logId !== logIdForChart) return
             radarChartLoading.value = false
             if (chartData) {
-              setRadarChartCache(props.message.logId, chartData)
+              setRadarChartCache(logIdForChart, chartData)
               radarChartData.value = chartData
             }
           },
@@ -484,9 +553,11 @@ watch(
     // ── 스트리밍 완료 이후 1회 ────────────────────────────────────────────
     if (!pexelsFetchDone) {
       pexelsFetchDone = true
+      const logIdForPexels = props.message.logId
       const { beforeText, afterText } = extractKeywordSection(after)
       afterChartHtml.value = toHtmlContent(beforeText) + PEXELS_LOADING_HTML + toHtmlContent(afterText)
-      fetchAndInjectPexelsImages(after, props.message.logId).then(({ beforeText: bt, afterText: at, gridHtml }) => {
+      fetchAndInjectPexelsImages(after, logIdForPexels).then(({ beforeText: bt, afterText: at, gridHtml }) => {
+        if (!isMessageItemAlive || props.message.logId !== logIdForPexels) return
         afterChartHtml.value = toHtmlContent(bt) + gridHtml + toHtmlContent(at)
       })
     }
@@ -499,6 +570,21 @@ watch(
 const themeAgent = computed<Agent | null>(
   () => chatIndexAgents.value.find((a) => a.agentId === props.message.agentId) ?? null,
 )
+
+const isSurveyRadarAnswer = computed(
+  () => props.message.type === 'answer' && isSurveyRadarAgent(props.message.agentId ?? ''),
+)
+
+/** 설문 메시지용 subCfg 기반 설정 */
+const messageSurveyConfig = computed(() => {
+  if (props.message.type !== 'survey') return null
+  const agent = themeAgent.value
+  if (agent) return parseSurveyConfigFromAgent(agent)
+  if (props.message.agentId) {
+    return resolveSurveyConfigByAgentId(props.message.agentId, chatIndexAgents.value)
+  }
+  return null
+})
 
 /** 점심 에이전트 answer 행 — 추천 JSON은 type=lunch 카드에서만 표시 */
 const isLunchAgentAnswer = computed(() => props.message.type === 'answer' && props.message.agentId === LUNCH_AGENT_ID)

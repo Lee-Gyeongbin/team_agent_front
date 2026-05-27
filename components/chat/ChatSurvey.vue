@@ -1,6 +1,6 @@
 <template>
   <div
-    class="psychology-survey"
+    class="chat-survey"
     :class="{
       'is-readonly': readonly,
       'is-intro-playing': isIntroPlaying,
@@ -11,28 +11,28 @@
     <Transition name="survey-intro">
       <div
         v-if="isIntroPlaying"
-        class="psychology-survey__intro"
+        class="chat-survey__intro"
         aria-live="polite"
       >
-        <div class="psychology-survey__intro-inner">
-          <div class="psychology-survey__intro-avatar">
+        <div class="chat-survey__intro-inner">
+          <div class="chat-survey__intro-avatar">
             <i :class="[themeIconClassNm || 'icon-bot', 'size-24']" />
           </div>
-          <p class="psychology-survey__intro-title">
+          <p class="chat-survey__intro-title">
             <span
               v-for="(char, index) in introTitleChars"
               :key="`intro-title-${index}`"
-              class="psychology-survey__intro-char"
+              class="chat-survey__intro-char"
               :style="{ '--intro-char-delay': `${index * 0.03}s` }"
             >
               {{ char === ' ' ? '\u00A0' : char }}
             </span>
           </p>
-          <p class="psychology-survey__intro-subtitle">
+          <p class="chat-survey__intro-subtitle">
             <span
               v-for="(char, index) in introSubtitleChars"
               :key="`intro-subtitle-${index}`"
-              class="psychology-survey__intro-char"
+              class="chat-survey__intro-char"
               :style="{ '--intro-char-delay': `${0.12 + index * 0.024}s` }"
             >
               {{ char === ' ' ? '\u00A0' : char }}
@@ -42,22 +42,22 @@
       </div>
     </Transition>
 
-    <!-- Step 0: 성별 선택 (readonly가 아닌 활성 설문에서만 표시) -->
+    <!-- Step 0: 성별 선택 (requireGender + 활성 설문에서만 표시) -->
     <div
-      v-if="!readonly && isGenderStepVisible && !isIntroPlaying"
-      class="psychology-survey__gender-step"
+      v-if="!readonly && surveyConfig.requireGender && isGenderStepVisible && !isIntroPlaying"
+      class="chat-survey__gender-step"
     >
-      <div class="psychology-survey__gender-avatar">
+      <div class="chat-survey__gender-avatar">
         <i :class="[themeIconClassNm || 'icon-bot', 'size-24']" />
       </div>
-      <p class="psychology-survey__gender-title">진단 전 성별을 선택해 주세요</p>
-      <p class="psychology-survey__gender-desc">
-        KOSS-SF1 직무스트레스 척도는 성별에 따라 위험군 판정 기준이 다릅니다.
+      <p class="chat-survey__gender-title">{{ surveyConfig.genderStepTitle }}</p>
+      <p class="chat-survey__gender-desc">
+        {{ surveyConfig.genderStepDesc }}
       </p>
-      <div class="psychology-survey__gender-btns">
+      <div class="chat-survey__gender-btns">
         <button
           type="button"
-          class="psychology-survey__gender-btn"
+          class="chat-survey__gender-btn"
           :class="{ 'is-selected': surveyGender === 'male' }"
           @click="onSelectGender('male')"
         >
@@ -66,7 +66,7 @@
         </button>
         <button
           type="button"
-          class="psychology-survey__gender-btn"
+          class="chat-survey__gender-btn"
           :class="{ 'is-selected': surveyGender === 'female' }"
           @click="onSelectGender('female')"
         >
@@ -74,7 +74,7 @@
           <span>여성</span>
         </button>
       </div>
-      <div class="psychology-survey__gender-footer">
+      <div class="chat-survey__gender-footer">
         <UiButton
           variant="line-secondary"
           size="sm"
@@ -87,19 +87,19 @@
 
     <!-- 헤더 -->
     <div
-      v-if="isContentVisible && (!isGenderStepVisible || readonly)"
-      class="psychology-survey__header"
+      v-if="isContentVisible && (!surveyConfig.requireGender || !isGenderStepVisible || readonly)"
+      class="chat-survey__header"
     >
-      <div class="psychology-survey__header-info">
-        <div class="psychology-survey__header-info-left">
-          <div class="psychology-survey__avatar">
+      <div class="chat-survey__header-info">
+        <div class="chat-survey__header-info-left">
+          <div class="chat-survey__avatar">
             <i :class="[themeIconClassNm || 'icon-bot', 'size-24']" />
           </div>
           <div>
-            <p class="psychology-survey__title">한국인 직무스트레스 요인 평가</p>
+            <p class="chat-survey__title">{{ surveyConfig.surveyTitle }}</p>
             <p
               v-if="readonly"
-              class="psychology-survey__subtitle"
+              class="chat-survey__subtitle"
             >
               진단이 완료되었습니다.
             </p>
@@ -107,38 +107,38 @@
         </div>
         <!-- 성별 배지 (성별 선택 후 노출) -->
         <div
-          v-if="surveyGender"
-          class="psychology-survey__gender-badge"
+          v-if="surveyConfig.requireGender && surveyGender"
+          class="chat-survey__gender-badge"
         >
           <i class="icon-user size-14" />
           {{ surveyGender === 'male' ? '남성' : '여성' }}
         </div>
       </div>
-      <!-- KOSS-SF1 안내문 (설문 진행 중에만 표시) -->
+      <!-- 설문 안내문 (설문 진행 중에만 표시) -->
       <div
-        v-if="!readonly"
-        class="psychology-survey__disclaimer"
+        v-if="!readonly && (surveyConfig.disclaimerSource || surveyConfig.disclaimerText)"
+        class="chat-survey__disclaimer"
       >
-        <span class="psychology-survey__disclaimer-source">
-          출처 : 한국형 직무스트레스 평가도구 (KOSS-SF1) : 한국산업안전보건공단
+        <span
+          v-if="surveyConfig.disclaimerSource"
+          class="chat-survey__disclaimer-source"
+        >
+          {{ surveyConfig.disclaimerSource }}
         </span>
-        <p>
-          본 AI 에이전트는 한국인 직무스트레스 요인 평가도구 단축형 1, KOSS-SF1를 기반으로 직장인의 직무스트레스 요인을
-          분석합니다. 사용자의 응답 결과를 7개 영역별로 환산하여 정상, 경계, 고위험 수준을 제시하고, 주요 스트레스
-          원인에 따른 맞춤형 관리 가이드를 제공합니다. 본 결과는 의학적 진단이 아니며, 건강 이상이나 심리적 어려움이
-          지속될 경우 전문가 상담을 권장합니다.
+        <p v-if="surveyConfig.disclaimerText">
+          {{ surveyConfig.disclaimerText }}
         </p>
       </div>
-      <div class="psychology-survey__progress">
+      <div class="chat-survey__progress">
         <span
-          class="psychology-survey__progress-text"
+          class="chat-survey__progress-text"
           :class="{ 'is-complete': readonly }"
         >
-          {{ displayAnsweredCount }} / {{ PSYCHOLOGY_SURVEY_TOTAL_QUESTIONS }}
+          {{ displayAnsweredCount }} / {{ surveyConfig.totalQuestions }}
         </span>
-        <div class="psychology-survey__progress-bar">
+        <div class="chat-survey__progress-bar">
           <div
-            class="psychology-survey__progress-fill"
+            class="chat-survey__progress-fill"
             :style="{ width: progressPercent + '%' }"
           />
         </div>
@@ -147,21 +147,21 @@
 
     <!-- 문항 목록 -->
     <div
-      v-if="isContentVisible && (!isGenderStepVisible || readonly)"
+      v-if="isContentVisible && (!surveyConfig.requireGender || !isGenderStepVisible || readonly)"
       ref="surveyScrollRef"
-      class="psychology-survey__body"
+      class="chat-survey__body"
     >
       <div
-        v-for="category in PSYCHOLOGY_SURVEY_CATEGORIES"
+        v-for="category in surveyConfig.categories"
         :key="category.no"
-        class="psychology-survey__category"
+        class="chat-survey__category"
       >
         <!-- 카테고리 헤더 -->
-        <div class="psychology-survey__category-header">
-          <span class="psychology-survey__category-no">{{ category.no }}</span>
-          <div class="psychology-survey__category-title-wrap">
-            <span class="psychology-survey__category-title">{{ category.title }}</span>
-            <span class="psychology-survey__category-title-en">{{ category.titleEn }}</span>
+        <div class="chat-survey__category-header">
+          <span class="chat-survey__category-no">{{ category.no }}</span>
+          <div class="chat-survey__category-title-wrap">
+            <span class="chat-survey__category-title">{{ category.title }}</span>
+            <span class="chat-survey__category-title-en">{{ category.titleEn }}</span>
           </div>
         </div>
 
@@ -170,29 +170,29 @@
           v-for="question in category.questions"
           :id="questionBlockId(question.no)"
           :key="question.no"
-          class="psychology-survey__question"
+          class="chat-survey__question"
           tabindex="-1"
           :class="{
             'is-answered': displayAnswers[question.no] != null,
             'is-missing-alert': !readonly && focusWarningQuestionNo === question.no,
           }"
         >
-          <div class="psychology-survey__question-text">
-            <span class="psychology-survey__question-no">Q{{ question.no }}</span>
-            <span class="psychology-survey__question-content">{{ question.text }}</span>
+          <div class="chat-survey__question-text">
+            <span class="chat-survey__question-no">Q{{ question.no }}</span>
+            <span class="chat-survey__question-content">{{ question.text }}</span>
           </div>
-          <div class="psychology-survey__options">
+          <div class="chat-survey__options">
             <button
-              v-for="option in PSYCHOLOGY_SURVEY_SCORE_OPTIONS"
+              v-for="option in surveyConfig.scoreOptions"
               :key="option.value"
               type="button"
-              class="psychology-survey__option-btn"
+              class="chat-survey__option-btn"
               :class="{ 'is-selected': displayAnswers[question.no] === option.value }"
               :disabled="readonly"
               @click="!readonly && onSelectAnswer(question.no, option.value)"
             >
-              <span class="psychology-survey__option-score">{{ option.value }}</span>
-              <span class="psychology-survey__option-label">{{ option.label }}</span>
+              <span class="chat-survey__option-score">{{ option.value }}</span>
+              <span class="chat-survey__option-label">{{ option.label }}</span>
             </button>
           </div>
         </div>
@@ -201,11 +201,11 @@
 
     <!-- 하단 액션 -->
     <div
-      v-if="isContentVisible && (!isGenderStepVisible || readonly)"
-      class="psychology-survey__footer"
+      v-if="isContentVisible && (!surveyConfig.requireGender || !isGenderStepVisible || readonly)"
+      class="chat-survey__footer"
     >
       <template v-if="readonly">
-        <span class="psychology-survey__submitted-badge">
+        <span class="chat-survey__submitted-badge">
           <i class="icon-check size-16" />
           제출 완료
         </span>
@@ -223,7 +223,7 @@
           size="sm"
           @click="onSubmitClick"
         >
-          진단 완료 후 상담 시작
+          {{ surveyConfig.submitLabel }}
           <template #icon-right>
             <i class="icon-arrow-right size-16" />
           </template>
@@ -234,16 +234,12 @@
 </template>
 
 <script setup lang="ts">
-import {
-  usePsychologySurvey,
-  PSYCHOLOGY_SURVEY_CATEGORIES,
-  PSYCHOLOGY_SURVEY_SCORE_OPTIONS,
-  PSYCHOLOGY_SURVEY_TOTAL_QUESTIONS,
-  type SurveyGender,
-} from '~/utils/chat/psychologyConsultUtil'
+import { usePsychologySurvey, type SurveyAgentConfig, type SurveyGender } from '~/utils/chat/surveyUtil'
 import { openToast } from '~/composables/useToast'
 
 interface Props {
+  /** subCfg 기반 설문 설정 */
+  surveyConfig: SurveyAgentConfig
   /** 제출 완료 상태: true이면 선택 불가·하단 버튼 숨김 */
   readonly?: boolean
   /** readonly 모드에서 표시할 응답 데이터 */
@@ -261,15 +257,8 @@ const props = withDefaults(defineProps<Props>(), {
   themeColorHex: '',
 })
 
-const {
-  surveyAnswers,
-  surveyGender,
-  isGenderStepVisible,
-  answeredCount,
-  isSurveyComplete,
-  setSurveyAnswer,
-  confirmGender,
-} = usePsychologySurvey()
+const { surveyAnswers, surveyGender, isGenderStepVisible, answeredCount, setSurveyAnswer, confirmGender } =
+  usePsychologySurvey()
 
 const emit = defineEmits<{
   close: []
@@ -287,14 +276,16 @@ const displayAnsweredCount = computed(() => {
 })
 
 const progressPercent = computed(() =>
-  Math.round((displayAnsweredCount.value / PSYCHOLOGY_SURVEY_TOTAL_QUESTIONS) * 100),
+  Math.round((displayAnsweredCount.value / props.surveyConfig.totalQuestions) * 100),
 )
-const introTitleChars = '심리 스트레스 진단'.split('')
-const introSubtitleChars = '상담 세션을 준비하고 있습니다...'.split('')
+const introTitleChars = computed(() => props.surveyConfig.introTitle.split(''))
+const introSubtitleChars = computed(() => props.surveyConfig.introSubtitle.split(''))
+
+const isSurveyComplete = computed(() => Object.keys(displayAnswers.value).length === props.surveyConfig.totalQuestions)
 
 const surveyDomId = useId().replace(/:/g, '')
 
-const questionBlockId = (questionNo: number) => `psychology-survey-q-${surveyDomId}-${questionNo}`
+const questionBlockId = (questionNo: number) => `chat-survey-q-${surveyDomId}-${questionNo}`
 
 const DEFAULT_SURVEY_THEME_HEX = '#3c69db'
 const hexToRgb = (hex: string) => {
@@ -358,7 +349,7 @@ const focusWarningQuestionNo = ref<number | null>(null)
 
 const findFirstUnansweredQuestionNo = (): number | null => {
   const answers = displayAnswers.value
-  for (let i = 1; i <= PSYCHOLOGY_SURVEY_TOTAL_QUESTIONS; i++) {
+  for (let i = 1; i <= props.surveyConfig.totalQuestions; i++) {
     if (answers[i] == null) return i
   }
   return null
@@ -397,7 +388,7 @@ const onSubmitClick = async () => {
 </script>
 
 <style lang="scss" scoped>
-.psychology-survey {
+.chat-survey {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -693,11 +684,11 @@ const onSubmitClick = async () => {
       border-color: var(--survey-theme-color);
       background: var(--survey-theme-color);
 
-      .psychology-survey__option-score {
+      .chat-survey__option-score {
         color: #fff;
       }
 
-      .psychology-survey__option-label {
+      .chat-survey__option-label {
         color: rgba(255, 255, 255, 0.85);
       }
     }
@@ -894,7 +885,7 @@ const onSubmitClick = async () => {
 
   // 읽기전용 상태: 옵션 버튼 커서·hover 비활성화
   &.is-readonly {
-    .psychology-survey__option-btn {
+    .chat-survey__option-btn {
       cursor: default;
       pointer-events: none;
     }
@@ -951,7 +942,7 @@ const onSubmitClick = async () => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .psychology-survey {
+  .chat-survey {
     &__header,
     &__body,
     &__footer {
