@@ -7,7 +7,7 @@ import { ChartConfig } from './chart-config'
 
 export const XBarChartModule = {
   /** 범례 생성 */
-  createLegend(legendId: string, categories: string[], colors: any) {
+  createLegend(legendId: string, categories: string[], colors: any, chartId: string) {
     const legendContainer = document.getElementById(legendId)
     if (!legendContainer) {
       console.warn(`Legend container with id '${legendId}' not found`)
@@ -17,18 +17,25 @@ export const XBarChartModule = {
     legendContainer.innerHTML = ''
     legendContainer.classList.add('bar-chart__legend')
 
+    const isSingle = categories.length <= 1
     categories.forEach((category, index) => {
       const color = Array.isArray(colors) ? colors[index] || colors[0] : colors
       const legendItem = ChartConfig.createLegendItem({
         label: category,
         color,
-        onClick: () => {
-          const chart = ChartConfig.instances[legendId.replace('legend-', '')]
-          if (chart) {
-            ChartConfig.toggleLegend(legendItem, chart, index, 'bar')
-          }
-        },
+        onClick: isSingle
+          ? undefined
+          : () => {
+              const chart = ChartConfig.instances[chartId]
+              if (chart) {
+                const type = chart.data.datasets.length > 1 ? 'dataset' : 'single'
+                ChartConfig.toggleLegend(legendItem, chart, index, type)
+              }
+            },
       })
+      if (isSingle) {
+        legendItem.style.cursor = 'default'
+      }
       legendContainer.appendChild(legendItem)
     })
   },
@@ -108,7 +115,7 @@ export const XBarChartModule = {
     if (showLegend && legendId) {
       const legendCategories = datasets ? datasets.map((d: any) => d.label) : categories
       const legendColors = datasets ? datasets.map((d: any) => ChartConfig.getColor(d.colorKey, d.colorIndex)) : colors
-      this.createLegend(legendId, legendCategories, legendColors)
+      this.createLegend(legendId, legendCategories, legendColors, id)
     }
 
     const barStyle = {

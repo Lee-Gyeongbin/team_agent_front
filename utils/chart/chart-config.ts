@@ -449,12 +449,14 @@ export const ChartConfig = {
       }
 
       const store = this._originalData[chart.id]
-      const yMin = chart.options.scales?.y?.min ?? 0
+      // indexAxis: 'y' (가로 막대)는 값 축이 x, 세로 막대는 y
+      const valueScaleKey = chart.options.indexAxis === 'y' ? 'x' : 'y'
+      const valueMin = chart.options.scales?.[valueScaleKey]?.min ?? 0
       const currentlyHidden = !!store.hidden[index]
 
       if (!currentlyHidden) {
         store.data[index] = dataset.data[index]
-        dataset.data[index] = yMin
+        dataset.data[index] = valueMin
       } else {
         dataset.data[index] = store.data[index]
       }
