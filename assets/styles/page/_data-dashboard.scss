@@ -9,14 +9,17 @@
   flex-direction: column;
   gap: $spacing-md;
   padding: $spacing-md;
-  max-width: 1366px;
 }
 
+// ===================================
+// 툴바
+// ===================================
 .data-dashboard-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: $spacing-md;
+  flex-shrink: 0;
 
   .page-title {
     @include typo($body-xlarge-bold);
@@ -24,65 +27,51 @@
   }
 }
 
+.toolbar-btn-group {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
 // ===================================
-// 위젯 그리드
+// GridStack 위젯 그리드
 // ===================================
 .data-dashboard-grid-wrap {
   width: 100%;
   min-width: 0;
+  flex: 1;
 }
 
-.data-dashboard-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: $spacing-md;
-  align-items: start;
-  width: 100%;
-  min-width: 0;
-
-  // 드래그 고스트
-  .sortable-ghost {
-    opacity: 0.3;
-    border: 2px dashed var(--color-primary);
-    border-radius: 12px;
-    background: var(--color-primary-bg);
-    box-sizing: border-box;
-    min-width: 0;
-    max-width: 100%;
-  }
-}
-
-// 그리드 아이템 래퍼 (colSpan 기본 너비 + widthPx 오버라이드)
-.data-dashboard-grid-item {
-  position: relative;
-  box-sizing: border-box;
-  min-width: 0;
-  max-width: 100%;
-  overflow: visible;
-
-  &.col-span-1 {
-    width: calc((100% - #{$spacing-md} * 2) / 3);
-    flex: 0 0 calc((100% - #{$spacing-md} * 2) / 3);
+// GridStack 기본 스타일 확장
+.grid-stack {
+  // GridStack이 inset: var(--gs-item-margin) 으로 콘텐츠 영역을 설정함
+  // height: 100% 금지 — 설정 시 bottom: margin 이 무시되어 위젯이 붙어버리는 버그 발생
+  .grid-stack-item-content {
+    overflow: hidden;
+    border-radius: 16px;
   }
 
-  &.col-span-2 {
-    width: calc((100% - #{$spacing-md} * 2) / 3 * 2 + #{$spacing-md});
-    flex: 0 0 calc((100% - #{$spacing-md} * 2) / 3 * 2 + #{$spacing-md});
-  }
+  // 리사이즈 핸들 위치 조정
+  // --gs-resize-handle-offset = GS_MARGIN/2 + 3 (TS에서 initGrid 시 주입)
+  // → GS_MARGIN 값만 바꾸면 핸들이 항상 콘텐츠 경계 기준 3px 안쪽에 자동 배치
+  // !important: GridStack CSS variable(--gs-item-margin-*)을 덮어쓰기 위해 필요
+  .grid-stack-item > .ui-resizable-se {
+    right: var(--gs-resize-handle-offset, 8px) !important;
+    bottom: var(--gs-resize-handle-offset, 8px) !important;
+    width: 20px;
+    height: 20px;
+    z-index: 10;
+    opacity: 0.55;
+    transition: opacity $transition-fast;
 
-  &.col-span-3 {
-    width: 100%;
-    flex: 0 0 100%;
-  }
-
-  &.has-custom-width {
-    flex: 0 0 auto;
+    &:hover {
+      opacity: 1;
+    }
   }
 }
 
 // 빈 상태 (위젯 없을 때)
 .data-dashboard-empty {
-  grid-column: span 3;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -94,7 +83,7 @@
 }
 
 // ===================================
-// 위젯 카드
+// 위젯 카드 (.grid-stack-item-content > .dashboard-widget)
 // ===================================
 .dashboard-widget {
   position: relative;
@@ -103,61 +92,16 @@
   border-radius: 16px;
   display: flex;
   flex-direction: column;
+  height: 100%;            // GridStack이 높이를 제어 — 전체 채움
   min-width: 0;
-  max-width: 100%;
   box-sizing: border-box;
-  overflow: visible;
+  overflow: hidden;        // 내부 콘텐츠 잘림 방지
   transition:
     box-shadow $transition-base,
     border-color $transition-fast;
 
-  // 드래그 중 transform 적용 시 그리드 밖으로 넓어지는 현상 방지
-  &.sortable-chosen {
-    box-sizing: border-box;
-  }
-
-  &.is-resizing {
-    user-select: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 2px var(--color-primary-bg);
-
-    .widget-resize-handle {
-      opacity: 1;
-
-      &::before {
-        border-color: var(--color-primary);
-      }
-    }
-  }
-
-  &.is-resizing-width {
-    user-select: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 2px var(--color-primary-bg);
-
-    .widget-width-resize-handle {
-      opacity: 1;
-      background: var(--color-primary-bg);
-
-      &::before {
-        border-color: var(--color-primary);
-      }
-    }
-  }
-
   &:hover {
     box-shadow: $shadow-md;
-  }
-
-  &:hover .widget-resize-handle,
-  &:hover .widget-width-resize-handle {
-    opacity: 1;
-  }
-
-  &.col-span-3,
-  &.col-span-2,
-  &.col-span-1 {
-    width: 100%;
   }
 }
 
@@ -199,73 +143,9 @@
   }
 }
 
-// 높이 리사이즈 핸들 (하단 중앙)
-.widget-resize-handle {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 60px;
-  height: 12px;
-  cursor: ns-resize;
-  opacity: 0;
-  transition: opacity $transition-fast;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2;
-
-  // 가로 줄 2개 (리사이즈 그립)
-  &::before {
-    content: '';
-    display: block;
-    width: 36px;
-    height: 4px;
-    border-top: 2px solid $color-border;
-    border-bottom: 2px solid $color-border;
-    border-radius: 2px;
-    transition: border-color $transition-fast;
-  }
-
-  &:hover::before {
-    border-color: var(--color-primary);
-  }
-}
-
-// 가로 리사이즈 핸들 (우측 중앙 — 인접 위젯과 경계)
-.widget-width-resize-handle {
-  position: absolute;
-  top: 50%;
-  right: -6px;
-  transform: translateY(-50%);
-  width: 12px;
-  height: 48px;
-  cursor: ew-resize;
-  opacity: 0;
-  transition: opacity $transition-fast, background $transition-fast;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  z-index: 3;
-
-  &::before {
-    content: '';
-    display: block;
-    width: 4px;
-    height: 28px;
-    border-left: 2px solid $color-border;
-    border-right: 2px solid $color-border;
-    border-radius: 2px;
-    transition: border-color $transition-fast;
-  }
-
-  &:hover::before {
-    border-color: var(--color-primary);
-  }
-}
-
+// ===================================
 // 위젯 헤더
+// ===================================
 .widget-header {
   display: flex;
   align-items: center;
@@ -274,6 +154,7 @@
   border-bottom: 1px solid #ecf0f3;
   gap: $spacing-sm;
   min-height: 48px;
+  flex-shrink: 0;
 
   .widget-header-left {
     display: flex;
@@ -296,6 +177,12 @@
     &:active {
       cursor: grabbing;
     }
+
+    // 보기 모드에서는 드래그 불가 표시
+    &.is-disabled {
+      cursor: default;
+      opacity: 0.3;
+    }
   }
 
   .widget-title {
@@ -308,7 +195,6 @@
     flex-shrink: 0;
     color: var(--color-primary);
 
-    // icon-file(고정색) → mask + currentColor 로 테마 primary 연동
     .icon-comment-other {
       background-image: none;
       @include icon-file-bg('comment-other');
@@ -320,7 +206,7 @@
   }
 }
 
-// 사용자 질의(sqlTitle) 툴팁 — 긴 질문 전체 표시
+// 사용자 질의 툴팁
 .widget-sql-query-tooltip {
   max-width: min(420px, 85vw);
   word-break: break-word;
@@ -329,7 +215,6 @@
   line-height: 1.55;
 }
 
-// 위젯 헤더 액션 버튼
 .widget-header-actions {
   display: flex;
   align-items: center;
@@ -347,6 +232,7 @@
   padding: 10px 14px;
   background: #f4f7f9;
   border-bottom: 1px solid #e4eaef;
+  flex-shrink: 0;
 
   .widget-filter-main {
     display: flex;
@@ -395,7 +281,9 @@
     border: 1px solid #e2e8f0;
     border-radius: $border-radius-base;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
-    transition: border-color $transition-fast, box-shadow $transition-fast;
+    transition:
+      border-color $transition-fast,
+      box-shadow $transition-fast;
 
     &:hover {
       border-color: #c6d2db;
@@ -407,7 +295,6 @@
     }
   }
 
-  // 텍스트·숫자·날짜만 컴팩트 너비 (기준 대비 1.2배)
   .filter-field--compact {
     flex: 0 0 auto;
     width: 116px;
@@ -419,7 +306,6 @@
     }
   }
 
-  // 셀렉트·멀티셀렉트 — 기본 너비 유지 (컴팩트 제한 없음)
   .filter-field--select {
     flex: 0 0 auto;
     min-width: 120px;
@@ -461,7 +347,7 @@
   }
 }
 
-// SQL 미리보기 (필터 하단 전체 너비)
+// SQL 미리보기
 .widget-filter-sql-preview {
   width: 100%;
   display: flex;
@@ -527,19 +413,17 @@
 }
 
 // ===================================
-// 위젯 콘텐츠 영역
+// 위젯 콘텐츠 영역 (flex:1 — GridStack이 높이 관리)
 // ===================================
-// height는 JS(localHeightPx)가 inline style로 직접 적용
-// CSS 변수 미사용 → 타이밍/fallback 이슈 없음
 .widget-content {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
   box-sizing: border-box;
   padding: $spacing-md;
-  min-width: 0;
   overflow: hidden;
 
-  // 로딩·빈상태: content height(JS) 안에서 flex:1로 채움
   .ui-loading,
   .ui-empty {
     flex: 1;
@@ -547,7 +431,6 @@
   }
 }
 
-// height는 JS(chartBodyHeightPx) inline — chart.js 마운트 시 부모 height 필수
 .widget-chart-wrap {
   flex-shrink: 0;
   min-width: 0;
@@ -559,7 +442,6 @@
     min-height: 0;
   }
 
-  // UiChart 기본 min-height:260px — 위젯 콘텐츠 높이에 맞추기 위해 해제
   :deep(.ui-chart-canvas-wrap) {
     min-height: 0;
   }
@@ -587,13 +469,11 @@
   min-width: 0;
   height: 560px;
 
-  // 전체화면 시 높이 100% 채움
   .modal-dialog.is-fullscreen & {
     height: 100%;
   }
 }
 
-// ── 공통 패널 스타일 ─────────────────────────────────────────
 .widget-add-left,
 .widget-add-right {
   border: 1px solid #dce4e9;
@@ -603,7 +483,6 @@
   overflow: hidden;
 }
 
-// ── 좌측: SQL 목록 ──────────────────────────────────────────
 .widget-add-left {
   display: flex;
   flex-direction: column;
@@ -618,7 +497,6 @@
   text-align: left;
 }
 
-// 시각화 유형 hover 미리보기 (Radix 포탈 — 글로벌)
 .viz-type-preview-tooltip {
   padding: 10px 12px !important;
   background: #fff !important;
@@ -657,7 +535,6 @@
   @include custom-scrollbar(4px);
 }
 
-// SQL 카드 — agent-data-card 기반, 버튼 리셋 + 전체 너비
 .sql-card {
   appearance: none;
   -webkit-appearance: none;
@@ -669,19 +546,16 @@
   font: inherit;
 }
 
-// 타이틀 행: 아이콘 + 텍스트 인라인 배치
 .sql-card-title {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-// 선택됨 체크 아이콘
 .sql-card-check {
   color: var(--color-primary);
 }
 
-// ── 우측: 위젯 설정 폼 ──────────────────────────────────────
 .widget-add-right {
   display: flex;
   flex: 1;
@@ -690,7 +564,6 @@
   min-height: 0;
 }
 
-// 우측 패널 스크롤 바디
 .widget-add-right-body {
   display: flex;
   flex-direction: column;
@@ -703,13 +576,11 @@
 
   @include custom-scrollbar(4px);
 
-  // SQL 미선택 안내가 남은 공간을 채우도록
   .sql-select-guide {
     flex: 1;
   }
 }
 
-// 위젯 설정 폼 — 항목별 구역 카드
 .config-section {
   display: flex;
   flex-direction: column;
@@ -764,7 +635,6 @@
   }
 }
 
-// ── 공통 패널 헤더 ───────────────────────────────────────────
 .widget-add-panel-header {
   flex-shrink: 0;
   padding-bottom: $spacing-sm;
@@ -810,7 +680,6 @@
   white-space: nowrap;
 }
 
-// SQL 미선택 안내 (하단 영역 중앙 정렬)
 .sql-select-guide {
   flex: 1;
   display: flex;
@@ -932,64 +801,6 @@
 
     i {
       color: var(--color-primary);
-    }
-  }
-}
-
-// 너비 선택 버튼 그룹
-.col-span-group {
-  display: flex;
-  gap: $spacing-sm;
-}
-
-.col-span-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 20px;
-  border: 1px solid $color-border;
-  border-radius: $border-radius-base;
-  background: #fff;
-  cursor: pointer;
-  transition:
-    border-color $transition-fast,
-    background $transition-fast;
-  @include typo($body-xsmall);
-  color: $color-text-secondary;
-
-  .col-span-preview {
-    display: block;
-    height: 16px;
-    border-radius: 3px;
-    background: $color-border;
-    transition: background $transition-fast;
-
-    &.is-third {
-      width: 24px;
-    }
-
-    &.is-two-thirds {
-      width: 48px;
-    }
-
-    &.is-full {
-      width: 72px;
-    }
-  }
-
-  &:hover {
-    border-color: var(--color-primary);
-  }
-
-  &.is-selected {
-    border-color: var(--color-primary);
-    background: var(--color-primary-bg);
-    color: var(--color-primary);
-    font-weight: $font-weight-semibold;
-
-    .col-span-preview {
-      background: var(--color-primary);
     }
   }
 }

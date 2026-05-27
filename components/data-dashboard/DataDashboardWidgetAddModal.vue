@@ -215,40 +215,7 @@
               </div>
             </section>
 
-            <section class="config-section">
-              <div class="config-field">
-                <label class="config-label">위젯 너비</label>
-                <div class="col-span-group">
-                  <button
-                    class="col-span-btn"
-                    :class="{ 'is-selected': form.colSpan === 1 }"
-                    type="button"
-                    @click="form.colSpan = 1"
-                  >
-                    <span class="col-span-preview is-third" />
-                    <span>1칸 (1/3)</span>
-                  </button>
-                  <button
-                    class="col-span-btn"
-                    :class="{ 'is-selected': form.colSpan === 2 }"
-                    type="button"
-                    @click="form.colSpan = 2"
-                  >
-                    <span class="col-span-preview is-two-thirds" />
-                    <span>2칸 (2/3)</span>
-                  </button>
-                  <button
-                    class="col-span-btn"
-                    :class="{ 'is-selected': form.colSpan === 3 }"
-                    type="button"
-                    @click="form.colSpan = 3"
-                  >
-                    <span class="col-span-preview is-full" />
-                    <span>3칸 (전체)</span>
-                  </button>
-                </div>
-              </div>
-            </section>
+            <!-- 위젯 너비 설정 제거됨: GridStack 드래그로 자유롭게 조절 -->
           </template>
 
           <!-- SQL 미선택 안내 -->
@@ -294,7 +261,6 @@ import type {
   DataDashboardSqlVariable,
   DataDashboardVizType,
   DataDashboardVizConfig,
-  DataDashboardColSpan,
 } from '~/types/data-dashboard'
 import type { VisualizationChartOptionPayload } from '~/types/chat'
 import { useDataDashboardStore } from '~/composables/data-dashboard/useDataDashboardStore'
@@ -314,7 +280,6 @@ const emit = defineEmits<{
       title: string
       vizType: DataDashboardVizType
       vizConfig: DataDashboardVizConfig
-      colSpan: DataDashboardColSpan
       variables: DataDashboardSqlItem['variables']
       ttsqParam?: string | null
     },
@@ -351,12 +316,10 @@ const form = reactive<{
   title: string
   vizType: DataDashboardVizType
   vizConfig: { xAxisKey: string }
-  colSpan: DataDashboardColSpan
 }>({
   title: '',
   vizType: 'bar',
   vizConfig: { xAxisKey: '' },
-  colSpan: 1,
 })
 
 /** 컬럼 매핑 필수 시각화 (막대·라인·가로막대) */
@@ -479,7 +442,6 @@ const onSave = () => {
     title: form.title || selectedSql.value.sqlTitle,
     vizType: form.vizType,
     vizConfig: buildSaveVizConfig(),
-    colSpan: form.colSpan,
     variables: parsedParams.value.length ? parsedParams.value : selectedSql.value.variables,
     ttsqParam: selectedSql.value.ttsqParam,
   })
@@ -498,7 +460,6 @@ watch(
     parsedParams.value = []
     form.title = ''
     form.vizType = 'bar'
-    form.colSpan = 1
     form.vizConfig.xAxisKey = ''
   },
 )
