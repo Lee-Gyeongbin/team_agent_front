@@ -2,7 +2,14 @@
   <div
     ref="widgetEl"
     class="dashboard-widget"
-    :class="[`col-span-${widget.colSpan}`, { 'is-filter-open': isFilterOpen, 'is-resizing': isResizing }]"
+    :class="[
+      `col-span-${widget.colSpan}`,
+      {
+        'is-filter-open': isFilterOpen,
+        'is-resizing': isResizingHeight,
+        'is-resizing-width': isResizingWidth,
+      },
+    ]"
   >
     <!-- 헤더 -->
     <div class="widget-header">
@@ -53,25 +60,14 @@
             </button>
           </template>
         </UiDropdownMenu>
-        <!-- 너비 전환 (절반 ↔ 전체) -->
+        <!-- 크기 초기화 (colSpan 1 · 높이 320px · 커스텀 너비) -->
         <button
+          v-if="isLayoutCustomized"
           class="btn btn-widget-action"
-          :title="widget.colSpan === 2 ? '절반 너비로' : '전체 너비로'"
-          @click="$emit('resize', widget.widgetId, widget.colSpan === 2 ? 1 : 2)"
+          title="크기 초기화 (너비 1칸 · 높이 기본)"
+          @click="onResetLayout"
         >
-          <i
-            :class="widget.colSpan === 2 ? 'icon-collapse' : 'icon-expand'"
-            class="size-16"
-          />
-        </button>
-        <!-- 높이 기본값으로 초기화 -->
-        <button
-          v-if="localHeightPx !== DEFAULT_HEIGHT"
-          class="btn btn-widget-action"
-          title="높이 초기화 (320px)"
-          @click="onResetHeight"
-        >
-          <i class="icon-resize-height size-16" />
+          <i class="icon-regenerate size-16" />
         </button>
         <!-- 새로고침 -->
         <button
@@ -265,10 +261,19 @@
       />
     </div>
 
-    <!-- 우측 하단 리사이즈 핸들 -->
+    <!-- 우측 가로 리사이즈 핸들 (이웃 위젯 쌍 조절 또는 단독 행) -->
+    <div
+      v-if="canResizeWidth"
+      class="widget-width-resize-handle"
+      title="드래그하여 너비 조절"
+      @mousedown.prevent.stop="onWidthResizeStart"
+    />
+
+    <!-- 하단 세로 리사이즈 핸들 -->
     <div
       class="widget-resize-handle"
-      @mousedown.prevent.stop="onResizeStart"
+      title="드래그하여 높이 조절"
+      @mousedown.prevent.stop="onHeightResizeStart"
     />
   </div>
 </template>
@@ -288,6 +293,7 @@ import {
   buildAggregatedValueMap,
   resolveChartAxisMapping,
 } from '~/utils/dataDashboard/vizConfigUtil'
+import { applyPairWidthResize, applySingleWidthResize } from '~/utils/dataDashboard/layoutUtil'
 import { DATA_DASHBOARD_DEFAULT_HEIGHT_PX } from '~/composables/data-dashboard/useDataDashboardStore'
 import type {
   DataDashboardWidget,
@@ -302,21 +308,38 @@ interface Props {
   state: DataDashboardWidgetState
   codeMap?: ColCodeMap
   heightPx?: number | null
+  widthPx?: number | null
+  hasRightNeighbor?: boolean
+  rightNeighborId?: string | null
+  isSoloInRow?: boolean
+  canResizeWidth?: boolean
+  containerWidth?: number
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  hasRightNeighbor: false,
+  rightNeighborId: null,
+  isSoloInRow: false,
+  canResizeWidth: false,
+  containerWidth: 0,
+})
 
 const emit = defineEmits<{
   execute: [widgetId: string, filterValues: Record<string, string>]
   'reset-filters': [widgetId: string]
   delete: [widgetId: string]
-  resize: [widgetId: string, colSpan: 1 | 2]
   'change-viz-type': [widgetId: string, vizType: DataDashboardVizType]
   'update-height': [widgetId: string, heightPx: number]
   'reset-height': [widgetId: string]
+  'update-width-pair': [leftWidgetId: string, leftWidthPx: number, rightWidgetId: string, rightWidthPx: number]
+  'update-width': [widgetId: string, widthPx: number]
+  'reset-layout': [widgetId: string]
+  'width-resize-active': [leftWidgetId: string, rightWidgetId: string | null]
+  'width-resize-done': []
 }>()
 
 const isFilterOpen = ref(false)
+const widgetEl = ref<HTMLElement | null>(null)
 
 /**
  * codeMap에 해당 변수 키가 있으면 select 타입 + "코드명 (코드)" 옵션으로 보강.
@@ -425,7 +448,17 @@ const localHeightPx = ref<number>(props.heightPx ?? DEFAULT_HEIGHT)
 
 /** chart.js·테이블이 사용하는 내부 높이 (content height − padding) */
 const chartBodyHeightPx = computed(() => Math.max(120, localHeightPx.value - WIDGET_CONTENT_PADDING_Y))
-const isResizing = ref(false)
+const isResizingHeight = ref(false)
+const isResizingWidth = ref(false)
+
+/** colSpan 1 · height 320px · widthPx null 이 아닐 때 크기 초기화 버튼 표시 */
+const isLayoutCustomized = computed(
+  () =>
+    props.widget.colSpan !== 1 ||
+    props.widthPx != null ||
+    localHeightPx.value !== DEFAULT_HEIGHT ||
+    (props.heightPx != null && props.heightPx !== DEFAULT_HEIGHT),
+)
 
 watch(
   () => props.heightPx,
@@ -434,13 +467,29 @@ watch(
   },
 )
 
-const onResetHeight = () => {
+const onResetLayout = () => {
   localHeightPx.value = DEFAULT_HEIGHT
-  emit('reset-height', props.widget.widgetId)
+  emit('reset-layout', props.widget.widgetId)
 }
 
-const onResizeStart = (e: MouseEvent) => {
-  isResizing.value = true
+const getGridItemElement = (): HTMLElement | null => {
+  return widgetEl.value?.closest('.data-dashboard-grid-item') as HTMLElement | null
+}
+
+const getGridItemByWidgetId = (widgetId: string): HTMLElement | null => {
+  const grid = widgetEl.value?.closest('.data-dashboard-grid')
+  return grid?.querySelector(`.data-dashboard-grid-item[data-widget-id="${widgetId}"]`) as HTMLElement | null
+}
+
+const finishWidthResize = (onMouseMove: (ev: MouseEvent) => void, onMouseUp: () => void) => {
+  document.removeEventListener('mousemove', onMouseMove)
+  document.removeEventListener('mouseup', onMouseUp)
+  isResizingWidth.value = false
+  emit('width-resize-done')
+}
+
+const onHeightResizeStart = (e: MouseEvent) => {
+  isResizingHeight.value = true
   const startY = e.clientY
   const startHeight = localHeightPx.value
 
@@ -454,9 +503,80 @@ const onResizeStart = (e: MouseEvent) => {
     } else {
       emit('update-height', props.widget.widgetId, localHeightPx.value)
     }
-    isResizing.value = false
+    isResizingHeight.value = false
     document.removeEventListener('mousemove', onMouseMove)
     document.removeEventListener('mouseup', onMouseUp)
+  }
+
+  document.addEventListener('mousemove', onMouseMove)
+  document.addEventListener('mouseup', onMouseUp)
+}
+
+/** 가로 너비 조절 — 이웃 쌍 또는 단독 행(colSpan 3 등) */
+const onWidthResizeStart = (e: MouseEvent) => {
+  if (!props.canResizeWidth) return
+
+  const leftWrap = getGridItemElement()
+  if (!leftWrap) return
+
+  isResizingWidth.value = true
+  const startX = e.clientX
+
+  // 이웃 위젯과 쌍 조절
+  if (props.hasRightNeighbor && props.rightNeighborId) {
+    const rightWrap = getGridItemByWidgetId(props.rightNeighborId)
+    if (!rightWrap) {
+      isResizingWidth.value = false
+      return
+    }
+
+    emit('width-resize-active', props.widget.widgetId, props.rightNeighborId)
+    const startLeftWidth = leftWrap.offsetWidth
+    const startRightWidth = rightWrap.offsetWidth
+
+    const applyWidths = (leftWidth: number, rightWidth: number) => {
+      leftWrap.style.width = `${leftWidth}px`
+      leftWrap.style.flex = '0 0 auto'
+      rightWrap.style.width = `${rightWidth}px`
+      rightWrap.style.flex = '0 0 auto'
+    }
+
+    const onMouseMove = (ev: MouseEvent) => {
+      const next = applyPairWidthResize(startLeftWidth, startRightWidth, ev.clientX - startX)
+      if (!next) return
+      applyWidths(next.leftWidth, next.rightWidth)
+    }
+
+    const onMouseUp = () => {
+      emit('update-width-pair', props.widget.widgetId, leftWrap.offsetWidth, props.rightNeighborId!, rightWrap.offsetWidth)
+      finishWidthResize(onMouseMove, onMouseUp)
+    }
+
+    document.addEventListener('mousemove', onMouseMove)
+    document.addEventListener('mouseup', onMouseUp)
+    return
+  }
+
+  // 단독 행 — 컨테이너 너비 이내 조절
+  if (!props.isSoloInRow || props.containerWidth <= 0) {
+    isResizingWidth.value = false
+    return
+  }
+
+  emit('width-resize-active', props.widget.widgetId, null)
+  const startWidth = leftWrap.offsetWidth
+  const maxWidth = props.containerWidth
+
+  const onMouseMove = (ev: MouseEvent) => {
+    const next = applySingleWidthResize(startWidth, ev.clientX - startX, maxWidth)
+    if (next == null) return
+    leftWrap.style.width = `${next}px`
+    leftWrap.style.flex = '0 0 auto'
+  }
+
+  const onMouseUp = () => {
+    emit('update-width', props.widget.widgetId, leftWrap.offsetWidth)
+    finishWidthResize(onMouseMove, onMouseUp)
   }
 
   document.addEventListener('mousemove', onMouseMove)

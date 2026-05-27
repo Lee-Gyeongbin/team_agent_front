@@ -36,6 +36,12 @@ export interface DataDashboardSqlVariable {
   multiple?: boolean
 }
 
+/** 위젯 그리드 열 너비 (3열 그리드 기준: 1=1/3, 2=2/3, 3=전체) */
+export type DataDashboardColSpan = 1 | 2 | 3
+
+/** 대시보드 그리드 열 수 */
+export const DATA_DASHBOARD_GRID_COLUMNS = 3
+
 /** 사용자가 배치한 위젯 인스턴스 (TB_USER_DASHBOARD_WIDGET 기반) */
 export interface DataDashboardWidget {
   widgetId: string
@@ -44,7 +50,7 @@ export interface DataDashboardWidget {
   title: string
   vizType: DataDashboardVizType
   vizConfig: DataDashboardVizConfig
-  colSpan: 1 | 2
+  colSpan: DataDashboardColSpan
   sortOrd: number
   variables: DataDashboardSqlVariable[]
   ttsqParam?: string | null
@@ -83,7 +89,7 @@ export interface DataDashboardLayout {
   sortOrd?: number
   rowPos?: number
   colPos?: number
-  colSpan?: 1 | 2
+  colSpan?: DataDashboardColSpan
   rowSpan?: number
   widthPx?: number | null
   heightPx?: number | null

@@ -115,20 +115,36 @@
                   </span>
                 </div>
                 <div class="viz-type-group">
-                  <button
+                  <UiTooltip
                     v-for="opt in vizTypeOptions"
                     :key="opt.value"
-                    class="viz-type-btn"
-                    :class="{ 'is-selected': form.vizType === opt.value }"
-                    type="button"
-                    @click="onSelectVizType(opt.value)"
+                    side="top"
+                    align="center"
+                    :show-arrow="false"
+                    :delay-duration="250"
+                    content-class="viz-type-preview-tooltip"
                   >
-                    <i
-                      :class="opt.icon"
-                      class="size-18"
-                    />
-                    <span>{{ opt.label }}</span>
-                  </button>
+                    <div class="viz-type-item">
+                      <button
+                        class="viz-type-btn"
+                        :class="{ 'is-selected': form.vizType === opt.value }"
+                        type="button"
+                        @click="onSelectVizType(opt.value)"
+                      >
+                        <i
+                          :class="opt.icon"
+                          class="size-18"
+                        />
+                        <span>{{ opt.label }}</span>
+                      </button>
+                    </div>
+                    <template #content>
+                      <div class="viz-type-preview-popover">
+                        <DataDashboardVizTypePreview :type="opt.value" />
+                        <span class="viz-type-preview-popover-label">{{ opt.label }}</span>
+                      </div>
+                    </template>
+                  </UiTooltip>
                 </div>
               </div>
             </section>
@@ -209,8 +225,8 @@
                     type="button"
                     @click="form.colSpan = 1"
                   >
-                    <span class="col-span-preview is-half" />
-                    <span>1칸 (절반)</span>
+                    <span class="col-span-preview is-third" />
+                    <span>1칸 (1/3)</span>
                   </button>
                   <button
                     class="col-span-btn"
@@ -218,8 +234,17 @@
                     type="button"
                     @click="form.colSpan = 2"
                   >
+                    <span class="col-span-preview is-two-thirds" />
+                    <span>2칸 (2/3)</span>
+                  </button>
+                  <button
+                    class="col-span-btn"
+                    :class="{ 'is-selected': form.colSpan === 3 }"
+                    type="button"
+                    @click="form.colSpan = 3"
+                  >
                     <span class="col-span-preview is-full" />
-                    <span>2칸 (전체)</span>
+                    <span>3칸 (전체)</span>
                   </button>
                 </div>
               </div>
@@ -269,6 +294,7 @@ import type {
   DataDashboardSqlVariable,
   DataDashboardVizType,
   DataDashboardVizConfig,
+  DataDashboardColSpan,
 } from '~/types/data-dashboard'
 import type { VisualizationChartOptionPayload } from '~/types/chat'
 import { useDataDashboardStore } from '~/composables/data-dashboard/useDataDashboardStore'
@@ -288,7 +314,7 @@ const emit = defineEmits<{
       title: string
       vizType: DataDashboardVizType
       vizConfig: DataDashboardVizConfig
-      colSpan: 1 | 2
+      colSpan: DataDashboardColSpan
       variables: DataDashboardSqlItem['variables']
       ttsqParam?: string | null
     },
@@ -325,7 +351,7 @@ const form = reactive<{
   title: string
   vizType: DataDashboardVizType
   vizConfig: { xAxisKey: string }
-  colSpan: 1 | 2
+  colSpan: DataDashboardColSpan
 }>({
   title: '',
   vizType: 'bar',

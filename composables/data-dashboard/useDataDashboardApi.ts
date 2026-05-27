@@ -4,6 +4,7 @@ import type {
   DataDashboardWidget,
   DataDashboardLayout,
   DataDashboardQueryResult,
+  DataDashboardColSpan,
   ColCodeMap,
 } from '~/types/data-dashboard'
 
@@ -31,7 +32,7 @@ export const useDataDashboardApi = () => {
   }
 
   /** 위젯 너비(colSpan)만 저장 — vizType 등 다른 필드 불변 */
-  const fetchSaveWidgetColSpan = async (widgetId: string, colSpan: 1 | 2): Promise<void> => {
+  const fetchSaveWidgetColSpan = async (widgetId: string, colSpan: DataDashboardColSpan): Promise<void> => {
     await post('/datadashboard/widgetColSpan.do', { widgetId, colSpan })
   }
 
@@ -53,6 +54,11 @@ export const useDataDashboardApi = () => {
   /** 위젯 높이 초기화 (HEIGHT_PX = NULL) */
   const fetchResetLayoutHeight = async (widgetId: string): Promise<void> => {
     await post('/datadashboard/layoutResetHeight.do', { widgetId })
+  }
+
+  /** 위젯 가로 너비 초기화 (WIDTH_PX = NULL) */
+  const fetchResetLayoutWidth = async (widgetId: string): Promise<void> => {
+    await fetchSaveLayout({ widgetId, widthPx: null })
   }
 
   /** 레이아웃 순서/위치 일괄 저장 (드래그 종료 후 호출) */
@@ -109,6 +115,7 @@ export const useDataDashboardApi = () => {
     fetchLayoutList,
     fetchSaveLayout,
     fetchResetLayoutHeight,
+    fetchResetLayoutWidth,
     fetchSaveLayoutOrder,
     fetchExecuteSql,
     fetchColCodeMap,
