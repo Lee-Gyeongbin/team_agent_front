@@ -248,6 +248,7 @@ const mapApiDetailToMeeting = (detail: MeetingDetail): Meeting | null => {
     updatedAt: m.createDt ?? '',
     status: m.status,
     integrateYn: m.integrateYn ?? 'N',
+    showSpeakerYn: m.showSpeakerYn ?? 'Y',
   }
 }
 
@@ -360,6 +361,7 @@ const handleCreateMeeting = async (params: {
   meetingTitle: string
   attendees: string
   isAutoTitle: 'Y' | 'N'
+  showSpeakerYn: 'Y' | 'N'
 }): Promise<number | null> => {
   try {
     const res = await fetchCreateMeeting(params)
@@ -700,8 +702,8 @@ const handleSaveSpeakers = async (speakers: Partial<MeetingSpeaker>[], mergeGrou
       })
       currentMeeting.value.sttList = syncSttListSpeakerNames(mergedSttList, currentMeeting.value.speakers)
     } else {
-      // 일반 저장: 화자별 병렬 호출
-      await fetchSaveSpeakers(payload)
+      // 일반 저장: 배치 API 호출
+      await fetchSaveSpeakers(payload, Number(currentMeeting.value.id))
 
       // 로컬 speakers 상태 업데이트 → MeetingSpeakerList 반영
       speakers.forEach((updated) => {
@@ -717,6 +719,13 @@ const handleSaveSpeakers = async (speakers: Partial<MeetingSpeaker>[], mergeGrou
         currentMeeting.value.sttList,
         currentMeeting.value.speakers,
       )
+    }
+
+    // 회의록 HTML 갱신 (decisions 화자명 + attendees 업데이트 반영)
+    const updatedDetail = await fetchMeetingDetail(Number(currentMeeting.value.id))
+    const newContent = updatedDetail.minutes?.editedContent || updatedDetail.minutes?.generatedContent || ''
+    if (newContent && currentMeeting.value) {
+      currentMeeting.value.minutesContent = newContent
     }
 
     openToast({ message: '화자 정보가 저장되었습니다.' })
@@ -834,10 +843,10 @@ const handleDownloadFile = async (meetingId: number, format: MeetingFileFormat, 
 }
 
 /** 회의 통합 */
-const handleIntegrateMeeting = async (meetingIds: number[]) => {
+const handleIntegrateMeeting = async (meetingIds: number[], showSpeakerYn: 'Y' | 'N' = 'Y') => {
   openLoading({ text: '회의록을 통합하는 중입니다...' })
   try {
-    const res = await fetchIntegrateMeeting(meetingIds)
+    const res = await fetchIntegrateMeeting(meetingIds, showSpeakerYn)
     if (!res.successYn) {
       openToast({ message: '회의 통합에 실패했습니다.', type: 'error' })
       return false

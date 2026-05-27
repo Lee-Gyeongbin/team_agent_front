@@ -10,6 +10,17 @@
           size="sm"
           placeholder="회의명 검색"
         />
+        <!-- 통합 모드: 발언자 표시 옵션 -->
+        <label
+          v-if="isIntegrateMode"
+          class="meeting2-integrate-speaker-check"
+        >
+          <input
+            v-model="integrateShowSpeaker"
+            type="checkbox"
+          />
+          <span>결정사항에 발언자 표시</span>
+        </label>
         <UiButton
           variant="primary"
           size="md"
@@ -159,6 +170,7 @@ const isModalOpen = ref(false)
 const isRecoverModalOpen = ref(false)
 const isIntegrateMode = ref(false)
 const selectedMeetingIds = ref<string[]>([])
+const integrateShowSpeaker = ref(true) // 통합 회의록 발언자 표시 여부 (기본: 표시)
 
 const integrateButtonLabel = computed(() => {
   return isIntegrateMode.value ? '통합 진행하기' : '회의 통합하기'
@@ -251,7 +263,12 @@ const doDelete = (meetingId: number) => {
 }
 
 /** 새 회의 생성 확인 → 녹음 화면으로 이동 */
-const onConfirmStart = async (params: { meetingTitle: string; attendees: string; isAutoTitle: 'Y' | 'N' }) => {
+const onConfirmStart = async (params: {
+  meetingTitle: string
+  attendees: string
+  isAutoTitle: 'Y' | 'N'
+  showSpeakerYn: 'Y' | 'N'
+}) => {
   isModalOpen.value = false
   const meetingId = await handleCreateMeeting(params)
   if (meetingId) {
@@ -268,6 +285,7 @@ const onClickIntegrate = async () => {
   if (!isIntegrateMode.value) {
     isIntegrateMode.value = true
     selectedMeetingIds.value = []
+    integrateShowSpeaker.value = true
     return
   }
 
@@ -276,12 +294,11 @@ const onClickIntegrate = async () => {
     return false
   }
 
-  const success = await handleIntegrateMeeting(selectedMeetingIds.value.map(Number))
+  const showSpeakerYn: 'Y' | 'N' = integrateShowSpeaker.value ? 'Y' : 'N'
+  const success = await handleIntegrateMeeting(selectedMeetingIds.value.map(Number), showSpeakerYn)
   if (success) {
     isIntegrateMode.value = false
     selectedMeetingIds.value = []
   }
-
-  console.warn('통합 진행할 회의 ID', selectedMeetingIds.value)
 }
 </script>

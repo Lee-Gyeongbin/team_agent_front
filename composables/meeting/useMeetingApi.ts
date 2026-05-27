@@ -52,6 +52,7 @@ export const useMeetingApi = () => {
     meetingTitle: string
     attendees: string
     isAutoTitle: 'Y' | 'N'
+    showSpeakerYn: 'Y' | 'N'
   }): Promise<{ successYn: boolean; meetingId: number }> => {
     return post<{ successYn: boolean; meetingId: number }>('/ai/meeting/createMeeting.do', params)
   }
@@ -93,12 +94,16 @@ export const useMeetingApi = () => {
     return mockPost<{ data: MeetingSpeaker }>(`${MOCK_BASE}/speaker/save`, { meetingId, speaker })
   }
 
-  /** 화자 일괄 저장 — saveSpeakerMapping을 화자 수만큼 병렬 호출 */
+  /** 화자 일괄 저장 — 배치 API (decisions 화자명 업데이트 포함) */
   const fetchSaveSpeakers = async (
     speakers: Array<{ speakerId: number; speakerNm: string; speakerUserId: string }>,
+    meetingId: number,
   ): Promise<{ successYn: boolean }> => {
-    await Promise.all(speakers.map((s) => post<{ successYn: boolean }>('/ai/meeting/saveSpeakerMapping.do', s)))
-    return { successYn: true }
+    return post<{ successYn: boolean }>('/ai/meeting/saveSpeakers.do', {
+      meetingId,
+      speakerList: speakers,
+      mergeSpeakerYn: 'N',
+    })
   }
 
   /** 화자 일괄 저장 + 동명이인 머지 — 배치 API (utterances 합산 + 중복 행 삭제) */
@@ -215,8 +220,14 @@ export const useMeetingApi = () => {
   }
 
   /** 회의 통합 */
-  const fetchIntegrateMeeting = async (meetingIds: number[]): Promise<{ successYn: boolean; meetingId: number }> => {
-    return post<{ successYn: boolean; meetingId: number }>('/ai/meeting/integrateMeeting.do', { meetingIds })
+  const fetchIntegrateMeeting = async (
+    meetingIds: number[],
+    showSpeakerYn: 'Y' | 'N',
+  ): Promise<{ successYn: boolean; meetingId: number }> => {
+    return post<{ successYn: boolean; meetingId: number }>('/ai/meeting/integrateMeeting.do', {
+      meetingIds,
+      showSpeakerYn,
+    })
   }
 
   return {
