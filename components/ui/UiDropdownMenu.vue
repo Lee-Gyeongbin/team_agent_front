@@ -32,7 +32,10 @@
             v-for="item in items"
             :key="item.value"
             class="dropdown-item"
-            :class="{ 'type-danger': item.color === 'danger' }"
+            :class="{
+              'type-danger': item.color === 'danger',
+              'is-active': isItemActive(item),
+            }"
             @select="emit('select', item.value)"
           >
             <i
@@ -40,6 +43,10 @@
               :class="['icon', item.icon, 'size-16']"
             />
             <span>{{ item.label }}</span>
+            <i
+              v-if="isItemActive(item)"
+              class="icon icon-check size-14 dropdown-item__check"
+            />
           </DropdownMenuItem>
         </div>
       </DropdownMenuContent>
@@ -70,6 +77,8 @@ export interface DropdownMenuItemDef {
 
 interface Props {
   items: DropdownMenuItemDef[]
+  /** 현재 선택된 value — 일치하는 항목에 is-active 강조 */
+  activeValue?: string
   /** 상단 비클릭 라벨(타이틀) — 예: 카테고리 선택 */
   title?: string
   /** 제어 모드: 열림 상태 (v-model:open 사용 시) */
@@ -91,6 +100,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  activeValue: '',
   title: '',
   side: 'bottom',
   align: 'end',
@@ -108,6 +118,8 @@ const emit = defineEmits<{
 
 const openState = ref(props.open ?? false)
 let hoverCloseTimeoutId: ReturnType<typeof setTimeout> | null = null
+
+const isItemActive = (item: DropdownMenuItemDef) => props.activeValue !== '' && item.value === props.activeValue
 
 const clearHoverCloseTimeout = () => {
   if (!hoverCloseTimeoutId) return
@@ -225,6 +237,25 @@ watch(openState, (v: boolean) => emit('update:open', v))
 
 .ui-dropdown-content-list {
   padding: 4px;
+
+  .dropdown-item.is-active {
+    background-color: var(--color-primary-bg, #eff3ff);
+    color: var(--color-primary, #5b73e8);
+    font-weight: 600;
+
+    .icon {
+      color: var(--color-primary, #5b73e8);
+    }
+
+    &:hover {
+      background-color: var(--color-primary-bg, #eff3ff);
+    }
+  }
+
+  .dropdown-item__check {
+    margin-left: auto;
+    flex-shrink: 0;
+  }
 }
 
 @keyframes ui-dropdown-in {
