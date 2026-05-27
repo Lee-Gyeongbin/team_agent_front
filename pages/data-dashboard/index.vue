@@ -39,6 +39,7 @@
               :widget="widget"
               :state="getWidgetState(widget.widgetId)"
               :code-map="getWidgetCodeMap(widget.widgetId)"
+              :col-nm-map="getWidgetColNmMap(widget.widgetId)"
               :is-edit-mode="true"
               @execute="onExecute"
               @reset-filters="onResetFilters"
@@ -99,6 +100,7 @@ const {
   getWidgetState,
   getWidgetLayout,
   getWidgetCodeMap,
+  getWidgetColNmMap,
   openAddModal,
   closeAddModal,
 } = useDataDashboardStore()

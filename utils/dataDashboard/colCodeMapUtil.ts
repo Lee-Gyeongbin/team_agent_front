@@ -1,4 +1,4 @@
-import type { ColCodeMap } from '~/types/data-dashboard'
+import type { ColCodeMap, ColNmMap } from '~/types/data-dashboard'
 
 type ColCodeRawItem = {
   colId?: string
@@ -67,11 +67,7 @@ const normalizeCodeRaw = (raw: string): string => {
 }
 
 /** 코드값 → 한글명 (컬럼 키·코드값 형식 불일치 보정) */
-export const resolveColCodeLabel = (
-  codeMap: ColCodeMap | undefined,
-  colKey: string,
-  codeVal: unknown,
-): string => {
+export const resolveColCodeLabel = (codeMap: ColCodeMap | undefined, colKey: string, codeVal: unknown): string => {
   const raw = normalizeCodeRaw(String(codeVal ?? ''))
   if (!codeMap || !raw) return raw
 
@@ -81,12 +77,36 @@ export const resolveColCodeLabel = (
   return findCodeLabel(colMap, raw) ?? raw
 }
 
+// ===== 컬럼명 한국어 매핑 (TB_DM_COL 기반) =====
+
+type ColNmRawItem = {
+  colId?: string
+  colKorNm?: string
+}
+
+/** colNmMap API list → ColNmMap */
+export const buildColNmMapFromList = (list: ColNmRawItem[] | undefined | null): ColNmMap => {
+  const map: ColNmMap = {}
+  for (const item of list ?? []) {
+    const colId = item.colId?.trim()
+    const colKorNm = item.colKorNm?.trim()
+    if (!colId || !colKorNm) continue
+    map[normalizeColIdForCodeMap(colId)] = colKorNm
+  }
+  return map
+}
+
+/**
+ * 컬럼 물리명 → 한국어명 변환
+ * colNmMap에 매핑이 없으면 원본 colKey 그대로 반환
+ */
+export const resolveColNmLabel = (colNmMap: ColNmMap | undefined, colKey: string): string => {
+  if (!colNmMap) return colKey
+  return colNmMap[normalizeColIdForCodeMap(colKey)] ?? colKey
+}
+
 /** 차트 범례·축 레이블 — 코드맵 우선, MON은 N월·QUARTER는 N분기 형식 */
-export const formatChartCategoryLabel = (
-  codeMap: ColCodeMap | undefined,
-  colKey: string,
-  raw: string,
-): string => {
+export const formatChartCategoryLabel = (codeMap: ColCodeMap | undefined, colKey: string, raw: string): string => {
   const trimmed = String(raw ?? '').trim()
   const mapped = resolveColCodeLabel(codeMap, colKey, trimmed)
   if (mapped !== normalizeCodeRaw(trimmed)) return mapped

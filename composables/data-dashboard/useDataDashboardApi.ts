@@ -1,11 +1,12 @@
 import { useApi } from '~/composables/com/useApi'
-import { buildColCodeMapFromList } from '~/utils/dataDashboard/colCodeMapUtil'
+import { buildColCodeMapFromList, buildColNmMapFromList } from '~/utils/dataDashboard/colCodeMapUtil'
 import type {
   DataDashboardSqlItem,
   DataDashboardWidget,
   DataDashboardLayout,
   DataDashboardQueryResult,
   ColCodeMap,
+  ColNmMap,
 } from '~/types/data-dashboard'
 
 export const useDataDashboardApi = () => {
@@ -59,6 +60,18 @@ export const useDataDashboardApi = () => {
     return buildColCodeMapFromList(res.list ?? res.dataList)
   }
 
+  /**
+   * 데이터마트 컬럼명 한국어 매핑 조회 (tb_dm_col)
+   * USE_YN = 'Y', COL_ID 당 SORT_ORD 최솟값 기준 1건 반환
+   */
+  const fetchColNmMap = async (datamartId: string): Promise<ColNmMap> => {
+    type RawItem = { colId: string; colKorNm: string }
+    const res = await post<{ list?: RawItem[]; dataList?: RawItem[] }>('/datadashboard/colNmMap.do', {
+      datamartId,
+    })
+    return buildColNmMapFromList(res.list ?? res.dataList)
+  }
+
   /** SQL 실행 */
   const fetchExecuteSql = async (
     logId: string | number,
@@ -89,5 +102,6 @@ export const useDataDashboardApi = () => {
     fetchSaveLayoutBatch,
     fetchExecuteSql,
     fetchColCodeMap,
+    fetchColNmMap,
   }
 }
