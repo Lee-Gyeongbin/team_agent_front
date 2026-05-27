@@ -69,6 +69,14 @@ export interface DataDashboardVizConfig {
  */
 export type ColCodeMap = Record<string, Record<string, string>>
 
+/**
+ * datamartId별 컬럼명 한국어 매핑 (TB_DM_COL 기반)
+ * 구조: COL_ID(대문자) → COL_KOR_NM
+ * 예: { ORD_NO: '주문번호', CUST_NM: '고객명' }
+ * 테이블 헤더 한글화에 사용
+ */
+export type ColNmMap = Record<string, string>
+
 /** SQL 실행 결과 (런타임, 저장 안 함) */
 export interface DataDashboardQueryResult {
   columns: string[]
@@ -106,8 +114,10 @@ export interface DataDashboardLayout {
 export interface DataDashboardWidgetState {
   filterValues: Record<string, string>
   result: DataDashboardQueryResult | null
-  /** SQL 실행 시 datamartId 기준으로 조회한 코드맵 (실행마다 갱신) */
+  /** SQL 실행 시 datamartId 기준으로 조회한 코드맵 (TB_DM_COL_CODE, 실행마다 갱신) */
   codeMap?: ColCodeMap
+  /** SQL 실행 시 datamartId 기준으로 조회한 컬럼명 한국어 매핑 (TB_DM_COL, 실행마다 갱신) */
+  colNmMap?: ColNmMap
   loading: boolean
   error: string | null
 }

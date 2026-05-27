@@ -267,12 +267,18 @@ import {
   buildAggregatedValueMap,
   resolveChartAxisMapping,
 } from '~/utils/dataDashboard/vizConfigUtil'
-import { normalizeColIdForCodeMap, resolveColCodeLabel, formatChartCategoryLabel } from '~/utils/dataDashboard/colCodeMapUtil'
+import {
+  normalizeColIdForCodeMap,
+  resolveColCodeLabel,
+  formatChartCategoryLabel,
+  resolveColNmLabel,
+} from '~/utils/dataDashboard/colCodeMapUtil'
 import type {
   DataDashboardWidget,
   DataDashboardWidgetState,
   DataDashboardVizType,
   ColCodeMap,
+  ColNmMap,
 } from '~/types/data-dashboard'
 import type { TableColumn } from '~/types/table'
 
@@ -280,6 +286,8 @@ interface Props {
   widget: DataDashboardWidget
   state: DataDashboardWidgetState
   codeMap?: ColCodeMap
+  /** 컬럼명 한국어 매핑 (TB_DM_COL 기반 — 테이블 헤더 한글화) */
+  colNmMap?: ColNmMap
   /** 편집 모드 여부 (드래그 핸들 활성화/비활성화) */
   isEditMode?: boolean
 }
@@ -466,7 +474,8 @@ const tableColumns = computed<TableColumn[]>(() => {
   if (!props.state.result) return []
   return props.state.result.columns.map((col) => ({
     key: col,
-    label: col,
+    // colNmMap에 한국어명이 있으면 헤더에 표시, 없으면 물리 컬럼명 그대로 사용
+    label: resolveColNmLabel(props.colNmMap, col),
     sortable: true,
     sortType: 'auto' as const,
     align: 'center' as const,

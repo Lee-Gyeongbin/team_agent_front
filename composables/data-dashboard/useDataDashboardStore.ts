@@ -9,6 +9,7 @@ import type {
   DataDashboardWidgetState,
   DataDashboardVizType,
   ColCodeMap,
+  ColNmMap,
 } from '~/types/data-dashboard'
 
 const {
@@ -20,6 +21,7 @@ const {
   fetchSaveLayoutBatch,
   fetchExecuteSql,
   fetchColCodeMap,
+  fetchColNmMap,
 } = useDataDashboardApi()
 
 // ===== 전역 상태 =====
@@ -183,11 +185,13 @@ const handleExecuteSql = async (widgetId: string) => {
   state.error = null
   try {
     const datamartId = resolveWidgetDatamartId(widget)
-    const [res, codeMap] = await Promise.all([
+    const [res, codeMap, colNmMap] = await Promise.all([
       fetchExecuteSql(widget.logId, state.filterValues),
       datamartId ? fetchColCodeMap(datamartId) : Promise.resolve(undefined),
+      datamartId ? fetchColNmMap(datamartId) : Promise.resolve(undefined),
     ])
     if (codeMap) state.codeMap = codeMap
+    if (colNmMap) state.colNmMap = colNmMap
 
     if (res.result === 'SUCCESS') {
       state.result = res.data ?? null
@@ -204,6 +208,10 @@ const handleExecuteSql = async (widgetId: string) => {
 
 const getWidgetCodeMap = (widgetId: string): ColCodeMap | undefined => {
   return widgetStates.value[widgetId]?.codeMap
+}
+
+const getWidgetColNmMap = (widgetId: string): ColNmMap | undefined => {
+  return widgetStates.value[widgetId]?.colNmMap
 }
 
 const handleUpdateFilterValues = (widgetId: string, values: Record<string, string>) => {
@@ -340,6 +348,7 @@ export const useDataDashboardStore = () => {
     getWidgetState,
     getWidgetLayout,
     getWidgetCodeMap,
+    getWidgetColNmMap,
 
     // 필터
     handleUpdateFilterValues,
