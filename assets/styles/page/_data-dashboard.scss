@@ -10,8 +10,6 @@
   gap: $spacing-md;
   padding: $spacing-md;
   max-width: 1366px;
-  min-width: 0;
-  overflow-x: clip;
 }
 
 .data-dashboard-toolbar {
@@ -29,10 +27,14 @@
 // ===================================
 // 위젯 그리드
 // ===================================
+.data-dashboard-grid-wrap {
+  width: 100%;
+  min-width: 0;
+}
+
 .data-dashboard-grid {
-  display: grid;
-  // minmax(0, 1fr): 콘텐츠 min-width가 컬럼을 밀어 화면 밖으로 넘치는 것 방지
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: $spacing-md;
   align-items: start;
   width: 100%;
@@ -50,9 +52,37 @@
   }
 }
 
+// 그리드 아이템 래퍼 (colSpan 기본 너비 + widthPx 오버라이드)
+.data-dashboard-grid-item {
+  position: relative;
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible;
+
+  &.col-span-1 {
+    width: calc((100% - #{$spacing-md} * 2) / 3);
+    flex: 0 0 calc((100% - #{$spacing-md} * 2) / 3);
+  }
+
+  &.col-span-2 {
+    width: calc((100% - #{$spacing-md} * 2) / 3 * 2 + #{$spacing-md});
+    flex: 0 0 calc((100% - #{$spacing-md} * 2) / 3 * 2 + #{$spacing-md});
+  }
+
+  &.col-span-3 {
+    width: 100%;
+    flex: 0 0 100%;
+  }
+
+  &.has-custom-width {
+    flex: 0 0 auto;
+  }
+}
+
 // 빈 상태 (위젯 없을 때)
 .data-dashboard-empty {
-  grid-column: span 2;
+  grid-column: span 3;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -76,7 +106,7 @@
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: visible;
   transition:
     box-shadow $transition-base,
     border-color $transition-fast;
@@ -84,10 +114,6 @@
   // 드래그 중 transform 적용 시 그리드 밖으로 넓어지는 현상 방지
   &.sortable-chosen {
     box-sizing: border-box;
-  }
-
-  &:hover {
-    box-shadow: $shadow-md;
   }
 
   &.is-resizing {
@@ -104,18 +130,35 @@
     }
   }
 
-  &:hover .widget-resize-handle {
+  &.is-resizing-width {
+    user-select: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px var(--color-primary-bg);
+
+    .widget-width-resize-handle {
+      opacity: 1;
+      background: var(--color-primary-bg);
+
+      &::before {
+        border-color: var(--color-primary);
+      }
+    }
+  }
+
+  &:hover {
+    box-shadow: $shadow-md;
+  }
+
+  &:hover .widget-resize-handle,
+  &:hover .widget-width-resize-handle {
     opacity: 1;
   }
 
-  &.col-span-2 {
-    grid-column: span 2;
-  }
-
+  &.col-span-3,
+  &.col-span-2,
   &.col-span-1 {
-    grid-column: span 1;
+    width: 100%;
   }
-
 }
 
 // 헤더·필터·위젯 추가 모달 공통 아이콘 액션 버튼
@@ -170,6 +213,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 2;
 
   // 가로 줄 2개 (리사이즈 그립)
   &::before {
@@ -179,6 +223,39 @@
     height: 4px;
     border-top: 2px solid $color-border;
     border-bottom: 2px solid $color-border;
+    border-radius: 2px;
+    transition: border-color $transition-fast;
+  }
+
+  &:hover::before {
+    border-color: var(--color-primary);
+  }
+}
+
+// 가로 리사이즈 핸들 (우측 중앙 — 인접 위젯과 경계)
+.widget-width-resize-handle {
+  position: absolute;
+  top: 50%;
+  right: -6px;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 48px;
+  cursor: ew-resize;
+  opacity: 0;
+  transition: opacity $transition-fast, background $transition-fast;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  z-index: 3;
+
+  &::before {
+    content: '';
+    display: block;
+    width: 4px;
+    height: 28px;
+    border-left: 2px solid $color-border;
+    border-right: 2px solid $color-border;
     border-radius: 2px;
     transition: border-color $transition-fast;
   }
@@ -541,6 +618,30 @@
   text-align: left;
 }
 
+// 시각화 유형 hover 미리보기 (Radix 포탈 — 글로벌)
+.viz-type-preview-tooltip {
+  padding: 10px 12px !important;
+  background: #fff !important;
+  color: $color-text-primary !important;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  box-shadow: $shadow-md;
+  max-width: none !important;
+  word-break: keep-all;
+}
+
+.viz-type-preview-popover {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.viz-type-preview-popover-label {
+  @include typo($body-xsmall-bold);
+  color: $color-text-secondary;
+}
+
 .widget-add-left-search {
   flex-shrink: 0;
   padding: $spacing-sm 0;
@@ -783,6 +884,15 @@
   gap: 6px;
 }
 
+.viz-type-item {
+  flex: 1;
+  min-width: 0;
+
+  .viz-type-btn {
+    width: 100%;
+  }
+}
+
 .viz-type-btn {
   flex: 1;
   display: flex;
@@ -855,12 +965,16 @@
     background: $color-border;
     transition: background $transition-fast;
 
-    &.is-half {
-      width: 32px;
+    &.is-third {
+      width: 24px;
+    }
+
+    &.is-two-thirds {
+      width: 48px;
     }
 
     &.is-full {
-      width: 68px;
+      width: 72px;
     }
   }
 

@@ -12,32 +12,54 @@
     </div>
 
     <!-- 위젯 그리드 -->
-    <draggable
-      v-model="widgetList"
-      class="data-dashboard-grid"
-      item-key="widgetId"
-      handle=".widget-drag-handle"
-      animation="200"
-      :scroll="false"
-      @start="onDragStart"
-      @end="onDragEnd"
+    <div
+      ref="gridRef"
+      class="data-dashboard-grid-wrap"
     >
-      <template #item="{ element }">
-        <DataDashboardWidget
-          :widget="element"
-          :state="getWidgetState(element.widgetId)"
-          :code-map="getWidgetCodeMap(element.widgetId)"
-          :height-px="getWidgetHeightPx(element.widgetId)"
-          @execute="onExecute"
-          @reset-filters="onResetFilters"
-          @delete="handleDeleteWidget"
-          @resize="handleResizeWidget"
-          @change-viz-type="onChangeVizType"
-          @update-height="onUpdateHeight"
-          @reset-height="onResetHeight"
-        />
-      </template>
-    </draggable>
+      <draggable
+        v-model="widgetList"
+        class="data-dashboard-grid"
+        item-key="widgetId"
+        handle=".widget-drag-handle"
+        animation="200"
+        :scroll="false"
+        @start="onDragStart"
+        @end="onDragEnd"
+      >
+        <template #item="{ element }">
+          <div
+            class="data-dashboard-grid-item"
+            :class="[`col-span-${element.colSpan}`, { 'has-custom-width': getWidgetWidthPx(element.widgetId) != null }]"
+            :style="getItemStyle(element.widgetId)"
+            :data-widget-id="element.widgetId"
+          >
+            <DataDashboardWidget
+              :widget="element"
+              :state="getWidgetState(element.widgetId)"
+              :code-map="getWidgetCodeMap(element.widgetId)"
+              :height-px="getWidgetHeightPx(element.widgetId)"
+              :width-px="getWidgetWidthPx(element.widgetId)"
+              :has-right-neighbor="hasRightNeighbor(element.widgetId)"
+              :right-neighbor-id="getRightNeighborId(element.widgetId)"
+              :is-solo-in-row="isSoloInRow(element.widgetId)"
+              :can-resize-width="canResizeWidth(element.widgetId)"
+              :container-width="containerWidth"
+              @execute="onExecute"
+              @reset-filters="onResetFilters"
+              @delete="handleDeleteWidget"
+              @change-viz-type="onChangeVizType"
+              @update-height="onUpdateHeight"
+              @reset-height="onResetHeight"
+              @update-width-pair="onUpdateWidthPair"
+              @update-width="onUpdateWidth"
+              @reset-layout="onResetLayout"
+              @width-resize-active="onWidthResizeActive"
+              @width-resize-done="onWidthResizeDone"
+            />
+          </div>
+        </template>
+      </draggable>
+    </div>
 
     <!-- 위젯 없을 때 -->
     <div
@@ -65,6 +87,7 @@
 import draggable from 'vuedraggable'
 import type { DataDashboardWidget, DataDashboardWidgetState, DataDashboardVizType } from '~/types/data-dashboard'
 import { useDataDashboardStore } from '~/composables/data-dashboard/useDataDashboardStore'
+import { useDataDashboardGridLayout } from '~/composables/data-dashboard/useDataDashboardGridLayout'
 import { useDashboardDragAutoScroll } from '~/composables/data-dashboard/useDashboardDragAutoScroll'
 
 definePageMeta({ layout: 'default' })
@@ -72,6 +95,7 @@ definePageMeta({ layout: 'default' })
 const {
   widgetList,
   widgetStates,
+  layoutMap,
   isAddModalOpen,
   handleSelectWidgetList,
   handleExecuteSql,
@@ -79,15 +103,38 @@ const {
   handleResetFilterValues,
   handleSaveWidget,
   handleDeleteWidget,
-  handleResizeWidget,
   handleSaveWidgetOrder,
   handleSaveWidgetHeight,
   handleResetWidgetHeight,
+  handleSaveWidgetWidth,
+  handleSaveWidgetWidthPair,
+  handleResetWidgetLayout,
   getWidgetCodeMap,
   getWidgetHeightPx,
+  getWidgetWidthPx,
   openAddModal,
   closeAddModal,
 } = useDataDashboardStore()
+
+const { gridRef, containerWidth, getGridItemStyle, hasRightNeighbor, getRightNeighborId, isSoloInRow, canResizeWidth } =
+  useDataDashboardGridLayout(widgetList, layoutMap)
+
+/** 가로 리사이즈 중인 위젯 — :style 재적용으로 드래그 너비가 덮이지 않도록 제외 */
+const widthResizingWidgetIds = ref<Set<string>>(new Set())
+
+const getItemStyle = (widgetId: string) => {
+  if (widthResizingWidgetIds.value.has(widgetId)) return {}
+  return getGridItemStyle(widgetId)
+}
+
+const onWidthResizeActive = (leftWidgetId: string, rightWidgetId: string | null) => {
+  const ids = rightWidgetId ? [leftWidgetId, rightWidgetId] : [leftWidgetId]
+  widthResizingWidgetIds.value = new Set(ids)
+}
+
+const onWidthResizeDone = () => {
+  widthResizingWidgetIds.value = new Set()
+}
 
 const { startDragAutoScroll, stopDragAutoScroll } = useDashboardDragAutoScroll()
 
@@ -131,6 +178,7 @@ const onDragStart = (evt: { item: HTMLElement }) => {
   const { width } = el.getBoundingClientRect()
   el.style.width = `${width}px`
   el.style.maxWidth = `${width}px`
+  el.style.flex = '0 0 auto'
   startDragAutoScroll(el)
 }
 
@@ -140,6 +188,7 @@ const onDragEnd = (evt: { item: HTMLElement }) => {
   const el = evt.item
   el.style.width = ''
   el.style.maxWidth = ''
+  el.style.flex = ''
   handleSaveWidgetOrder()
 }
 
@@ -151,6 +200,21 @@ const onUpdateHeight = (widgetId: string, heightPx: number) => {
 // 높이 초기화
 const onResetHeight = (widgetId: string) => {
   handleResetWidgetHeight(widgetId)
+}
+
+// 가로 너비 쌍 저장 (인접 위젯)
+const onUpdateWidthPair = (leftWidgetId: string, leftWidthPx: number, rightWidgetId: string, rightWidthPx: number) => {
+  handleSaveWidgetWidthPair(leftWidgetId, leftWidthPx, rightWidgetId, rightWidthPx)
+}
+
+// 가로 너비 단독 저장 (colSpan 3 등)
+const onUpdateWidth = (widgetId: string, widthPx: number) => {
+  handleSaveWidgetWidth(widgetId, widthPx)
+}
+
+// 크기 초기화 (colSpan 1 · 높이 320px · widthPx null)
+const onResetLayout = (widgetId: string) => {
+  handleResetWidgetLayout(widgetId)
 }
 
 onMounted(() => {

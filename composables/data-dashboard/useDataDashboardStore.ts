@@ -1,12 +1,15 @@
 import { useDataDashboardApi } from '~/composables/data-dashboard/useDataDashboardApi'
 import { parseTtsqParam, extractSqlWhereValues } from '~/utils/dataDashboard/ttsqParamParser'
 import { parseVizConfig } from '~/utils/dataDashboard/vizConfigUtil'
-import type {
-  DataDashboardSqlItem,
-  DataDashboardWidget,
-  DataDashboardLayout,
-  DataDashboardWidgetState,
-  ColCodeMap,
+import { buildLayoutRows, findRowWidgetIds } from '~/utils/dataDashboard/layoutUtil'
+import {
+  DATA_DASHBOARD_GRID_COLUMNS,
+  type DataDashboardSqlItem,
+  type DataDashboardWidget,
+  type DataDashboardLayout,
+  type DataDashboardWidgetState,
+  type DataDashboardColSpan,
+  type ColCodeMap,
 } from '~/types/data-dashboard'
 
 const {
@@ -19,6 +22,7 @@ const {
   fetchLayoutList,
   fetchSaveLayout,
   fetchSaveLayoutOrder,
+  fetchResetLayoutWidth,
   fetchExecuteSql,
   fetchColCodeMap,
 } = useDataDashboardApi()
@@ -137,6 +141,40 @@ const handleSelectWidgetList = async () => {
 /** widgetId로 저장된 heightPx 반환 (null = 기본값 사용) */
 const getWidgetHeightPx = (widgetId: string): number | null => {
   return layoutMap.value[widgetId]?.heightPx ?? null
+}
+
+/** widgetId로 저장된 widthPx 반환 (null = colSpan 비율 기본값) */
+const getWidgetWidthPx = (widgetId: string): number | null => {
+  return layoutMap.value[widgetId]?.widthPx ?? null
+}
+
+/** 행 단위 커스텀 widthPx 초기화 */
+const clearRowCustomWidths = async (widgetId: string) => {
+  const rows = buildLayoutRows(widgetList.value)
+  const rowWidgetIds = findRowWidgetIds(rows, widgetId)
+  if (!rowWidgetIds.length) return
+
+  await Promise.all(
+    rowWidgetIds.map(async (id) => {
+      layoutMap.value[id] = { ...(layoutMap.value[id] ?? { widgetId: id }), widgetId: id, widthPx: null }
+      await fetchResetLayoutWidth(id)
+    }),
+  )
+}
+
+/** 드래그 등 레이아웃 재배치 시 모든 커스텀 widthPx 초기화 */
+const clearAllCustomWidths = async () => {
+  const widgetIds = Object.entries(layoutMap.value)
+    .filter(([, layout]) => layout.widthPx != null)
+    .map(([id]) => id)
+  if (!widgetIds.length) return
+
+  await Promise.all(
+    widgetIds.map(async (id) => {
+      layoutMap.value[id] = { ...layoutMap.value[id], widthPx: null }
+      await fetchResetLayoutWidth(id)
+    }),
+  )
 }
 
 // ===== SQL 목록 =====
@@ -291,20 +329,111 @@ const handleResetWidgetHeight = async (widgetId: string) => {
   await handleSaveWidgetHeight(widgetId, DATA_DASHBOARD_DEFAULT_HEIGHT_PX)
 }
 
+// ===== 위젯 가로 너비 저장 =====
+
+const handleSaveWidgetWidth = async (widgetId: string, widthPx: number) => {
+  const width = Math.round(widthPx)
+  layoutMap.value[widgetId] = {
+    ...(layoutMap.value[widgetId] ?? { widgetId }),
+    widgetId,
+    widthPx: width,
+  }
+  try {
+    await fetchSaveLayout({ widgetId, widthPx: width })
+  } catch {
+    openToast({ message: '너비 저장에 실패했습니다.', type: 'error' })
+  }
+}
+
+const handleSaveWidgetWidthPair = async (
+  leftWidgetId: string,
+  leftWidthPx: number,
+  rightWidgetId: string,
+  rightWidthPx: number,
+) => {
+  const leftWidth = Math.round(leftWidthPx)
+  const rightWidth = Math.round(rightWidthPx)
+
+  layoutMap.value[leftWidgetId] = {
+    ...(layoutMap.value[leftWidgetId] ?? { widgetId: leftWidgetId }),
+    widgetId: leftWidgetId,
+    widthPx: leftWidth,
+  }
+  layoutMap.value[rightWidgetId] = {
+    ...(layoutMap.value[rightWidgetId] ?? { widgetId: rightWidgetId }),
+    widgetId: rightWidgetId,
+    widthPx: rightWidth,
+  }
+
+  try {
+    await Promise.all([
+      fetchSaveLayout({ widgetId: leftWidgetId, widthPx: leftWidth }),
+      fetchSaveLayout({ widgetId: rightWidgetId, widthPx: rightWidth }),
+    ])
+  } catch {
+    openToast({ message: '너비 저장에 실패했습니다.', type: 'error' })
+  }
+}
+
+const handleResetWidgetWidth = async (widgetId: string) => {
+  try {
+    await clearRowCustomWidths(widgetId)
+  } catch {
+    openToast({ message: '너비 초기화에 실패했습니다.', type: 'error' })
+  }
+}
+
+/** 너비(colSpan 1·widthPx 초기화) + 높이(320px) 기본값으로 일괄 복원 */
+const handleResetWidgetLayout = async (widgetId: string) => {
+  const idx = widgetList.value.findIndex((w) => w.widgetId === widgetId)
+  if (idx !== -1) {
+    widgetList.value[idx] = { ...widgetList.value[idx], colSpan: 1 }
+  }
+
+  const rows = buildLayoutRows(widgetList.value)
+  const rowWidgetIds = findRowWidgetIds(rows, widgetId)
+
+  for (const id of rowWidgetIds) {
+    layoutMap.value[id] = {
+      ...(layoutMap.value[id] ?? { widgetId: id }),
+      widgetId: id,
+      widthPx: null,
+    }
+  }
+  layoutMap.value[widgetId] = {
+    ...(layoutMap.value[widgetId] ?? { widgetId }),
+    widgetId,
+    heightPx: DATA_DASHBOARD_DEFAULT_HEIGHT_PX,
+  }
+
+  try {
+    const layoutOrderList = computeLayoutOrder(widgetList.value)
+
+    await Promise.all([
+      fetchSaveWidgetColSpan(widgetId, 1),
+      fetchSaveLayoutOrder(layoutOrderList),
+      fetchSaveLayout({ widgetId, heightPx: DATA_DASHBOARD_DEFAULT_HEIGHT_PX }),
+      ...rowWidgetIds.map((id) => fetchResetLayoutWidth(id)),
+    ])
+  } catch {
+    openToast({ message: '크기 초기화에 실패했습니다.', type: 'error' })
+  }
+}
+
 // ===== 드래그 / 레이아웃 순서 저장 =====
 
 /**
- * 위젯 배열을 2-컬럼 그리드 기준으로 순회하며 rowPos, colPos를 계산.
- * colSpan=2 는 전체 행을 차지, colSpan=1 은 좌/우 절반.
+ * 위젯 배열을 3-컬럼 그리드 기준으로 순회하며 rowPos, colPos를 계산.
+ * colSpan=3 은 전체 행, 1+2 / 2+1 / 1+1+1 등 혼합 배치 가능.
  */
 const computeLayoutOrder = (widgets: DataDashboardWidget[]) => {
   let row = 0
   let colFilled = 0
 
   return widgets.map((w, i) => {
-    const colSpan = w.colSpan ?? 1
+    const colSpan = Math.min(w.colSpan ?? 1, DATA_DASHBOARD_GRID_COLUMNS) as DataDashboardColSpan
 
-    if (colFilled + colSpan > 2) {
+    if (colFilled + colSpan > DATA_DASHBOARD_GRID_COLUMNS) {
       row++
       colFilled = 0
     }
@@ -312,7 +441,7 @@ const computeLayoutOrder = (widgets: DataDashboardWidget[]) => {
     const colPos = colFilled
     colFilled += colSpan
 
-    if (colFilled >= 2) {
+    if (colFilled >= DATA_DASHBOARD_GRID_COLUMNS) {
       row++
       colFilled = 0
     }
@@ -325,7 +454,7 @@ const handleSaveWidgetOrder = async () => {
   const orderList = widgetList.value.map((w, i) => ({ widgetId: w.widgetId, sortOrd: i + 1 }))
   const layoutOrderList = computeLayoutOrder(widgetList.value)
   try {
-    await Promise.all([fetchSaveWidgetOrder(orderList), fetchSaveLayoutOrder(layoutOrderList)])
+    await Promise.all([fetchSaveWidgetOrder(orderList), fetchSaveLayoutOrder(layoutOrderList), clearAllCustomWidths()])
   } catch {
     openToast({ message: '순서 저장에 실패했습니다.', type: 'error' })
   }
@@ -333,15 +462,16 @@ const handleSaveWidgetOrder = async () => {
 
 // ===== 위젯 너비 변경 =====
 
-const handleResizeWidget = async (widgetId: string, colSpan: 1 | 2) => {
+const handleResizeWidget = async (widgetId: string, colSpan: DataDashboardColSpan) => {
   const idx = widgetList.value.findIndex((w) => w.widgetId === widgetId)
   if (idx === -1) return
   widgetList.value[idx] = { ...widgetList.value[idx], colSpan }
   try {
     const layoutOrderList = computeLayoutOrder(widgetList.value)
     await Promise.all([
-      fetchSaveWidgetColSpan(widgetId, colSpan), // colSpan만 저장 — vizType 불변
+      fetchSaveWidgetColSpan(widgetId, colSpan),
       fetchSaveLayoutOrder(layoutOrderList),
+      clearRowCustomWidths(widgetId),
     ])
   } catch {
     openToast({ message: '위젯 너비 변경에 실패했습니다.', type: 'error' })
@@ -364,6 +494,7 @@ export const useDataDashboardStore = () => {
     sqlList,
     sqlListLoading,
     widgetStates,
+    layoutMap,
     isAddModalOpen,
     handleSelectWidgetList,
     handleSelectSqlList,
@@ -376,8 +507,13 @@ export const useDataDashboardStore = () => {
     handleSaveWidgetOrder,
     handleSaveWidgetHeight,
     handleResetWidgetHeight,
+    handleSaveWidgetWidth,
+    handleSaveWidgetWidthPair,
+    handleResetWidgetWidth,
+    handleResetWidgetLayout,
     getWidgetCodeMap,
     getWidgetHeightPx,
+    getWidgetWidthPx,
     openAddModal,
     closeAddModal,
   }
