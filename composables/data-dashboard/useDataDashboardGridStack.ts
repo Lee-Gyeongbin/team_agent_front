@@ -130,6 +130,17 @@ export const useDataDashboardGridStack = () => {
     grid.on('resizestop', () => cb())
   }
 
+  /**
+   * 특정 위젯 요소의 GridStack 높이를 프로그래밍 방식으로 변경
+   * (필터 확장/복원 등 임시 조정용 — dragstop/resizestop 이벤트 미발생 → autoSave 미호출)
+   * @param el - .grid-stack-item 엘리먼트
+   * @param h - 변경할 높이 (셀 단위)
+   */
+  const updateWidgetH = (el: HTMLElement, h: number) => {
+    if (!grid) return
+    grid.update(el, { h })
+  }
+
   return {
     gridEl,
     initGrid,
@@ -139,5 +150,6 @@ export const useDataDashboardGridStack = () => {
     onGridChange,
     onDragStop,
     onResizeStop,
+    updateWidgetH,
   }
 }

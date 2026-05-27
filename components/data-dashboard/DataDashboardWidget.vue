@@ -84,6 +84,7 @@
     <transition name="widget-filter-slide">
       <div
         v-if="isFilterOpen && enrichedVariables.length"
+        ref="filterEl"
         class="widget-filter"
       >
         <div class="widget-filter-main">
@@ -266,6 +267,7 @@ import {
   buildAggregatedValueMap,
   resolveChartAxisMapping,
 } from '~/utils/dataDashboard/vizConfigUtil'
+import { normalizeColIdForCodeMap, resolveColCodeLabel, formatChartCategoryLabel } from '~/utils/dataDashboard/colCodeMapUtil'
 import type {
   DataDashboardWidget,
   DataDashboardWidgetState,
@@ -291,10 +293,44 @@ const emit = defineEmits<{
   'reset-filters': [widgetId: string]
   delete: [widgetId: string]
   'change-viz-type': [widgetId: string, vizType: DataDashboardVizType]
+  /** 필터 열기/닫기 (GridStack 높이 조정용) */
+  'filter-toggle': [widgetId: string, isOpen: boolean]
+  /** 필터 DOM 높이 변경 시 실제 픽셀값 전달 (ResizeObserver 기반) */
+  'filter-height-px': [widgetId: string, heightPx: number]
 }>()
 
 const isFilterOpen = ref(false)
 const contentEl = ref<HTMLElement | null>(null)
+const filterEl = ref<HTMLElement | null>(null)
+
+// ===== 필터 ResizeObserver — 열릴 때 높이 변화를 부모에 전달 =====
+let filterResizeObserver: ResizeObserver | null = null
+
+const startFilterObserver = () => {
+  if (!filterEl.value) return
+  filterResizeObserver = new ResizeObserver(() => {
+    if (filterEl.value) {
+      emit('filter-height-px', props.widget.widgetId, filterEl.value.offsetHeight)
+    }
+  })
+  filterResizeObserver.observe(filterEl.value)
+}
+
+const stopFilterObserver = () => {
+  filterResizeObserver?.disconnect()
+  filterResizeObserver = null
+}
+
+watch(isFilterOpen, async (open) => {
+  if (open) {
+    emit('filter-toggle', props.widget.widgetId, true)
+    await nextTick()
+    startFilterObserver()
+  } else {
+    stopFilterObserver()
+    emit('filter-toggle', props.widget.widgetId, false)
+  }
+})
 
 // ===== ResizeObserver로 차트 높이 동적 계산 =====
 const WIDGET_CONTENT_PADDING_Y = 32 // widget-content padding top+bottom (16px×2)
@@ -319,6 +355,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   resizeObserver?.disconnect()
   resizeObserver = null
+  stopFilterObserver()
 })
 
 // ===== 코드맵 기반 변수 보강 =====
@@ -326,7 +363,7 @@ onBeforeUnmount(() => {
 const enrichedVariables = computed<typeof props.widget.variables>(() => {
   const map = props.codeMap
   return props.widget.variables.map((v) => {
-    const codes = map?.[v.key.toUpperCase()]
+    const codes = map?.[normalizeColIdForCodeMap(v.key)]
     if (!codes || Object.keys(codes).length === 0) return v
     const options = Object.entries(codes).map(([code, name]) => ({ label: `${name} (${code})`, value: code }))
     return { ...v, type: 'select' as const, multiple: true, options }
@@ -346,18 +383,17 @@ watch(
 )
 
 const resolveCode = (colKey: string, val: unknown): string => {
-  const text = String(val ?? '')
-  if (!props.codeMap) return text
-  return props.codeMap[colKey.toUpperCase()]?.[text] ?? text
+  return resolveColCodeLabel(props.codeMap, colKey, val)
 }
 
 const displayRows = computed<Record<string, unknown>[]>(() => {
-  const rows = props.state.result?.rows ?? []
-  if (!props.codeMap) return rows as Record<string, unknown>[]
-  return rows.map((row) => {
-    const mapped: Record<string, unknown> = {}
-    for (const [key, val] of Object.entries(row as Record<string, unknown>)) {
-      mapped[key] = resolveCode(key, val)
+  const result = props.state.result
+  if (!result?.rows.length) return []
+  return result.rows.map((row) => {
+    const source = row as Record<string, unknown>
+    const mapped: Record<string, unknown> = { ...source }
+    for (const col of result.columns) {
+      mapped[col] = resolveCode(col, getRowValue(source, col))
     }
     return mapped
   })
@@ -443,21 +479,22 @@ const chartConfig = computed(() => {
   const result = props.state.result
   const { vizType } = props.widget
   const vizCfg = parseVizConfig(props.widget.vizConfig)
+  // codeMap 변경 시 범례·축 레이블 재계산
+  const codeMap = props.codeMap
 
   if (!result || !result.rows.length) return {}
 
   const { columns } = result
   const rows = result.rows as Record<string, unknown>[]
-  const dRows = displayRows.value
 
   const readNum = (row: Record<string, unknown>, colKey: string) => Number(getRowValue(row, colKey)) || 0
-  const readLabel = (row: Record<string, unknown>, colKey: string) => String(getRowValue(row, colKey) ?? '')
+  const resolveCategoryLabel = (colKey: string, raw: string) => formatChartCategoryLabel(codeMap, colKey, raw)
 
   const { xKey, yKeys } = resolveChartAxisMapping(columns, vizCfg)
 
   const buildGroupedSeries = (groupKey: string) => {
     const rawCategories = buildRawCategories(rows, groupKey)
-    const categories = buildCategoryLabels(rawCategories, rows, dRows, groupKey, readLabel)
+    const categories = buildCategoryLabels(rawCategories, groupKey, resolveCategoryLabel)
     const valueMap = buildAggregatedValueMap(rows, groupKey, yKeys[0], readNum)
     const values = rawCategories.map((raw) => valueMap.get(raw) ?? 0)
     return { rawCategories, categories, values }
@@ -472,7 +509,7 @@ const chartConfig = computed(() => {
     const aggregatedValues = rawCategories.map((raw) => valueMap.get(raw) ?? 0)
     const total = aggregatedValues.reduce((sum, v) => sum + v, 0)
     if (aggregatedValues.some((v) => v < 0) || total <= 0) return {}
-    const labels = buildCategoryLabels(rawCategories, rows, dRows, xKey, readLabel)
+    const labels = buildCategoryLabels(rawCategories, xKey, resolveCategoryLabel)
     return {
       items: rawCategories.map((raw, i) => ({
         name: labels[i],

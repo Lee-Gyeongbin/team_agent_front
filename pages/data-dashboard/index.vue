@@ -44,6 +44,8 @@
               @reset-filters="onResetFilters"
               @delete="handleDeleteWidget"
               @change-viz-type="onChangeVizType"
+              @filter-toggle="onFilterToggle"
+              @filter-height-px="onFilterHeightPx"
             />
           </div>
         </div>
@@ -73,8 +75,12 @@
 
 <script setup lang="ts">
 import { useDataDashboardStore } from '~/composables/data-dashboard/useDataDashboardStore'
-import { useDataDashboardGridStack, GS_DEFAULT_LAYOUT } from '~/composables/data-dashboard/useDataDashboardGridStack'
-import type { DataDashboardLayout, DataDashboardVizType } from '~/types/data-dashboard'
+import {
+  useDataDashboardGridStack,
+  GS_DEFAULT_LAYOUT,
+  GS_CELL_HEIGHT,
+} from '~/composables/data-dashboard/useDataDashboardGridStack'
+import type { DataDashboardLayout, DataDashboardVizType, DataDashboardWidget } from '~/types/data-dashboard'
 
 definePageMeta({ layout: 'default' })
 
@@ -97,14 +103,34 @@ const {
   closeAddModal,
 } = useDataDashboardStore()
 
+const {
+  gridEl,
+  initGrid,
+  destroyGrid,
+  addWidget,
+  getGridNodes,
+  onGridChange,
+  onDragStop,
+  onResizeStop,
+  updateWidgetH,
+} = useDataDashboardGridStack()
 
-const { gridEl, initGrid, destroyGrid, addWidget, getGridNodes, onGridChange, onDragStop, onResizeStop } =
-  useDataDashboardGridStack()
+// ===== 필터 확장 상태 추적 =====
+// widgetId → 필터 열기 전 원래 GridStack h 값
+// 드래그·리사이즈 저장(autoSaveLayout) 시 이 값으로 복원하여 확장 높이가 DB에 저장되지 않도록 보호
+const filterOriginalH = new Map<string, number>()
+
+/** 필터 확장 중 GridStack change 이벤트로 layoutMap이 오염되지 않도록 억제 플래그 */
+let filterAdjusting = false
+
+// 디바운스 타이머 (ResizeObserver 다중 호출 방지)
+let filterDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
 // ===== GridStack 초기화 =====
 
 /**
  * 드래그/리사이즈 완료 시 현재 GridStack 상태를 DB에 자동 저장 (토스트 없음)
+ * 필터가 열린 위젯은 filterOriginalH의 원래 높이로 저장하여 확장 높이가 유지되지 않도록 보호.
  */
 const autoSaveLayout = async () => {
   const nodes = getGridNodes()
@@ -117,10 +143,54 @@ const autoSaveLayout = async () => {
       x: node.x ?? 0,
       y: node.y ?? 0,
       w: node.w ?? GS_DEFAULT_LAYOUT.w,
-      h: node.h ?? GS_DEFAULT_LAYOUT.h,
+      // 필터 열린 위젯 → 원래 h로 저장 (필터 확장 높이 저장 방지)
+      h: filterOriginalH.get(node.id as string) ?? node.h ?? GS_DEFAULT_LAYOUT.h,
       isVisible: true,
     }))
   await handleSaveLayout(layouts)
+}
+
+// ===== 필터 토글 핸들러 =====
+
+/**
+ * 필터 열기: 원래 h 저장, GridStack 높이는 filter-height-px 이벤트에서 동적 조정
+ * 필터 닫기: 원래 h로 복원
+ */
+const onFilterToggle = (widgetId: string, isOpen: boolean) => {
+  const el = gridEl.value?.querySelector(`.grid-stack-item[gs-id="${widgetId}"]`) as HTMLElement | null
+  if (!el) return
+
+  if (isOpen) {
+    const origH = layoutMap.value[widgetId]?.h ?? GS_DEFAULT_LAYOUT.h
+    filterOriginalH.set(widgetId, origH)
+  } else {
+    const origH = filterOriginalH.get(widgetId)
+    if (origH !== undefined) {
+      filterAdjusting = true
+      updateWidgetH(el, origH)
+      filterAdjusting = false
+      filterOriginalH.delete(widgetId)
+    }
+  }
+}
+
+/**
+ * 필터 DOM 높이(px) 변경 시 GridStack 높이를 동적으로 조정
+ * 원래 높이 + 필터 높이에 해당하는 셀 수만큼 확장 (소수점 올림 + 1버퍼)
+ */
+const onFilterHeightPx = (widgetId: string, filterHeightPx: number) => {
+  if (!filterOriginalH.has(widgetId)) return
+  if (filterDebounceTimer) clearTimeout(filterDebounceTimer)
+  filterDebounceTimer = setTimeout(() => {
+    const el = gridEl.value?.querySelector(`.grid-stack-item[gs-id="${widgetId}"]`) as HTMLElement | null
+    if (!el) return
+    const origH = filterOriginalH.get(widgetId)
+    if (origH === undefined) return
+    const extraUnits = Math.ceil(filterHeightPx / GS_CELL_HEIGHT) + 1
+    filterAdjusting = true
+    updateWidgetH(el, origH + extraUnits)
+    filterAdjusting = false
+  }, 80)
 }
 
 onMounted(async () => {
@@ -132,7 +202,9 @@ onMounted(async () => {
   initGrid()
 
   // GridStack change 이벤트 — layoutMap 로컬 동기화
+  // filterAdjusting 중 (필터 확장/복원 시)에는 layoutMap을 덮어쓰지 않음
   onGridChange((nodes) => {
+    if (filterAdjusting) return
     for (const node of nodes) {
       const id = node.id as string
       if (!id) continue
@@ -193,9 +265,7 @@ const onSaveWidget = async (data: Partial<DataDashboardWidget>) => {
   // 새로 추가된 위젯 요소를 GridStack에 등록
   const newWidget = widgetList.value.find((w) => !prevIds.has(w.widgetId))
   if (newWidget && gridEl.value) {
-    const el = gridEl.value.querySelector(
-      `.grid-stack-item[gs-id="${newWidget.widgetId}"]`,
-    ) as HTMLElement | null
+    const el = gridEl.value.querySelector(`.grid-stack-item[gs-id="${newWidget.widgetId}"]`) as HTMLElement | null
     if (el) {
       const layout = getWidgetLayout(newWidget.widgetId)
       // x/y 미지정 → float:false 이므로 GridStack이 빈 공간을 찾아 자동 배치
