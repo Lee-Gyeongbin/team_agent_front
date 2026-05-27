@@ -1,6 +1,6 @@
 import { useDataDashboardApi } from '~/composables/data-dashboard/useDataDashboardApi'
 import { GS_DEFAULT_LAYOUT } from '~/composables/data-dashboard/useDataDashboardGridStack'
-import { parseTtsqParam, extractSqlWhereValues } from '~/utils/dataDashboard/ttsqParamParser'
+import { parseTtsqParam, parseLastTtsqParams, extractSqlWhereValues } from '~/utils/dataDashboard/ttsqParamParser'
 import { parseVizConfig } from '~/utils/dataDashboard/vizConfigUtil'
 import type {
   DataDashboardSqlItem,
@@ -20,6 +20,7 @@ const {
   fetchLayoutList,
   fetchSaveLayoutBatch,
   fetchExecuteSql,
+  fetchSaveLastTtsqParams,
   fetchColCodeMap,
   fetchColNmMap,
 } = useDataDashboardApi()
@@ -51,6 +52,7 @@ const hydrateVariables = <
     vizConfig?: unknown
     variables?: DataDashboardWidget['variables']
     sqlContent?: string | null
+    lastTtsqParams?: unknown
   },
 >(
   item: T,
@@ -71,10 +73,13 @@ const hydrateVariables = <
   }
 
   item.vizConfig = parseVizConfig(item.vizConfig)
+  if ('lastTtsqParams' in item) {
+    ;(item as DataDashboardWidget).lastTtsqParams = parseLastTtsqParams(item.lastTtsqParams)
+  }
   return item
 }
 
-/** TTSQ_PARAM + SQL WHERE 추출값 기준 필터 초기값 */
+/** chat_log TTSQ 기준 필터 초기값 (초기화/리셋용) */
 const buildDefaultFilterValues = (variables: DataDashboardWidget['variables']): Record<string, string> => {
   const defaults: Record<string, string> = {}
   for (const v of variables ?? []) {
@@ -83,10 +88,18 @@ const buildDefaultFilterValues = (variables: DataDashboardWidget['variables']): 
   return defaults
 }
 
+/** 위젯 진입 시 필터값 — LAST_TTSQ_PARAMS 우선, 없으면 chat_log TTSQ 기본값 */
+const buildInitialFilterValues = (widget: DataDashboardWidget): Record<string, string> => {
+  const defaults = buildDefaultFilterValues(widget.variables)
+  const saved = widget.lastTtsqParams
+  if (!saved || Object.keys(saved).length === 0) return defaults
+  return { ...defaults, ...saved }
+}
+
 /** 위젯 상태 초기화 */
 const initWidgetState = (widget: DataDashboardWidget) => {
   widgetStates.value[widget.widgetId] = {
-    filterValues: buildDefaultFilterValues(widget.variables),
+    filterValues: buildInitialFilterValues(widget),
     result: null,
     loading: false,
     error: null,
@@ -136,6 +149,22 @@ const enrichWidgetDatamartId = (widget: DataDashboardWidget): DataDashboardWidge
   const datamartId = resolveWidgetDatamartId(widget)
   if (!datamartId || widget.datamartId?.trim() === datamartId) return widget
   return { ...widget, datamartId }
+}
+
+/** SQL 실행 성공 시 LAST_TTSQ_PARAMS · LAST_EXEC_DT 저장 (자동 저장 — 토스트 없음) */
+const persistLastTtsqParams = async (widgetId: string, params: Record<string, string>) => {
+  try {
+    const res = await fetchSaveLastTtsqParams(widgetId, params)
+    const idx = widgetList.value.findIndex((w) => w.widgetId === widgetId)
+    if (idx === -1) return
+    widgetList.value[idx] = {
+      ...widgetList.value[idx],
+      lastTtsqParams: { ...params },
+      lastExecDt: res.lastExecDt ?? new Date().toISOString(),
+    }
+  } catch {
+    openToast({ message: '필터 조건 저장에 실패했습니다.', type: 'error' })
+  }
 }
 
 // ===== 위젯 목록 조회 =====
@@ -195,6 +224,7 @@ const handleExecuteSql = async (widgetId: string) => {
 
     if (res.result === 'SUCCESS') {
       state.result = res.data ?? null
+      await persistLastTtsqParams(widgetId, state.filterValues)
     } else {
       state.error = res.msg ?? 'SQL 실행에 실패했습니다.'
     }

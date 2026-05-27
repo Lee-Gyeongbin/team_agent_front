@@ -49,6 +49,10 @@ export interface DataDashboardWidget {
   ttsqParam?: string | null
   /** widgetList 응답 시 TB_CHAT_LOG JOIN으로 함께 내려오는 SQL 본문 (필터 초기값 추출에 사용) */
   sqlContent?: string | null
+  /** 마지막 SQL 실행 시 사용한 WHERE 변수값 (TB_USER_DASHBOARD_WIDGET.LAST_TTSQ_PARAMS) */
+  lastTtsqParams?: Record<string, string> | null
+  /** 마지막 SQL 실행 일시 (TB_USER_DASHBOARD_WIDGET.LAST_EXEC_DT) */
+  lastExecDt?: string | null
   agentNm?: string
   datamartId?: string
   datamartNm?: string
