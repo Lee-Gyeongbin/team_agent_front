@@ -123,6 +123,19 @@ const getWidgetLayout = (widgetId: string): DataDashboardLayout => {
   }
 }
 
+/** widgetList에 datamartId가 없을 때 sqlList(logId)에서 보강 */
+const resolveWidgetDatamartId = (widget: DataDashboardWidget): string | undefined => {
+  const fromWidget = widget.datamartId?.trim()
+  if (fromWidget) return fromWidget
+  return sqlList.value.find((s) => s.logId === widget.logId)?.datamartId?.trim() || undefined
+}
+
+const enrichWidgetDatamartId = (widget: DataDashboardWidget): DataDashboardWidget => {
+  const datamartId = resolveWidgetDatamartId(widget)
+  if (!datamartId || widget.datamartId?.trim() === datamartId) return widget
+  return { ...widget, datamartId }
+}
+
 // ===== 위젯 목록 조회 =====
 
 const handleExecuteAllWidgets = async () => {
@@ -131,8 +144,9 @@ const handleExecuteAllWidgets = async () => {
 
 const handleSelectWidgetList = async () => {
   try {
-    const [widgetRes, layoutRes] = await Promise.all([fetchWidgetList(), fetchLayoutList()])
-    widgetList.value = sortWidgetsByOrd((widgetRes.list ?? []).map(hydrateVariables))
+    const [widgetRes, layoutRes, sqlRes] = await Promise.all([fetchWidgetList(), fetchLayoutList(), fetchSqlList()])
+    sqlList.value = (sqlRes.list ?? []).map((item) => hydrateVariables(item as DataDashboardSqlItem))
+    widgetList.value = sortWidgetsByOrd((widgetRes.list ?? []).map(hydrateVariables).map(enrichWidgetDatamartId))
     widgetList.value.forEach(initWidgetState)
     layoutMap.value = Object.fromEntries(
       (layoutRes.list ?? []).map((l) => [l.widgetId, { ...l, isVisible: l.isVisible !== false }]),
@@ -168,14 +182,12 @@ const handleExecuteSql = async (widgetId: string) => {
   state.loading = true
   state.error = null
   try {
-    const sqlPromise = fetchExecuteSql(widget.logId, state.filterValues)
-    const codeMapPromise = widget.datamartId
-      ? fetchColCodeMap(widget.datamartId).then((map) => {
-          state.codeMap = map
-        })
-      : Promise.resolve()
-
-    const [res] = await Promise.all([sqlPromise, codeMapPromise])
+    const datamartId = resolveWidgetDatamartId(widget)
+    const [res, codeMap] = await Promise.all([
+      fetchExecuteSql(widget.logId, state.filterValues),
+      datamartId ? fetchColCodeMap(datamartId) : Promise.resolve(undefined),
+    ])
+    if (codeMap) state.codeMap = codeMap
 
     if (res.result === 'SUCCESS') {
       state.result = res.data ?? null
@@ -257,7 +269,7 @@ const handleDeleteWidget = async (widgetId: string) => {
     await fetchDeleteWidget(widgetId)
     widgetList.value = widgetList.value.filter((w) => w.widgetId !== widgetId)
     widgetStates.value = Object.fromEntries(Object.entries(widgetStates.value).filter(([id]) => id !== widgetId))
-    delete layoutMap.value[widgetId]
+    layoutMap.value = Object.fromEntries(Object.entries(layoutMap.value).filter(([id]) => id !== widgetId))
     openToast({ message: '위젯이 삭제되었습니다.', type: 'success' })
   } catch {
     openToast({ message: '위젯 삭제에 실패했습니다.', type: 'error' })

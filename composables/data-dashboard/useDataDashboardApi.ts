@@ -1,5 +1,12 @@
 import { useApi } from '~/composables/com/useApi'
-import type { DataDashboardSqlItem, DataDashboardWidget, DataDashboardLayout, DataDashboardQueryResult, ColCodeMap } from '~/types/data-dashboard'
+import { buildColCodeMapFromList } from '~/utils/dataDashboard/colCodeMapUtil'
+import type {
+  DataDashboardSqlItem,
+  DataDashboardWidget,
+  DataDashboardLayout,
+  DataDashboardQueryResult,
+  ColCodeMap,
+} from '~/types/data-dashboard'
 
 export const useDataDashboardApi = () => {
   const { post } = useApi()
@@ -46,14 +53,10 @@ export const useDataDashboardApi = () => {
    */
   const fetchColCodeMap = async (datamartId: string): Promise<ColCodeMap> => {
     type RawItem = { colId: string; codeVal: string; codeKorNm: string }
-    const res = await post<{ list: RawItem[] }>('/datadashboard/colCodeMap.do', { datamartId })
-    const map: ColCodeMap = {}
-    for (const { colId, codeVal, codeKorNm } of res.list ?? []) {
-      const key = colId.toUpperCase()
-      if (!map[key]) map[key] = {}
-      map[key][codeVal] = codeKorNm
-    }
-    return map
+    const res = await post<{ list?: RawItem[]; dataList?: RawItem[] }>('/datadashboard/colCodeMap.do', {
+      datamartId,
+    })
+    return buildColCodeMapFromList(res.list ?? res.dataList)
   }
 
   /** SQL 실행 */
