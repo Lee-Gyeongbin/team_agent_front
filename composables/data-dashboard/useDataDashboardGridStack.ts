@@ -81,6 +81,26 @@ export const useDataDashboardGridStack = () => {
   }
 
   /**
+   * 새 위젯을 기존 위젯 아래(맨 뒤)에 배치할 x/y 계산
+   * @param w - 위젯 너비 (셀 단위)
+   */
+  const getNextWidgetPosition = (w: number): { x: number; y: number } => {
+    const nodes = grid?.engine?.nodes ?? []
+    if (nodes.length === 0) return { x: 0, y: 0 }
+
+    const maxY = nodes.reduce((max, node) => Math.max(max, node.y ?? 0), 0)
+    const bottomRowNodes = nodes.filter((node) => (node.y ?? 0) === maxY)
+    const usedWidth = bottomRowNodes.reduce((sum, node) => sum + (node.w ?? 0), 0)
+
+    if (usedWidth + w <= GS_COLUMNS) {
+      return { x: usedWidth, y: maxY }
+    }
+
+    const maxBottom = nodes.reduce((max, node) => Math.max(max, (node.y ?? 0) + (node.h ?? 0)), 0)
+    return { x: 0, y: maxBottom }
+  }
+
+  /**
    * 숨겨진 위젯을 GridStack에 추가
    * Vue v-for로 새로 추가된 DOM 요소를 GridStack 관리로 편입.
    * gs-* 속성을 먼저 갱신한 뒤 makeWidget으로 재등록한다.
@@ -94,6 +114,17 @@ export const useDataDashboardGridStack = () => {
     el.setAttribute('gs-w', String(cfg.w))
     el.setAttribute('gs-h', String(cfg.h))
     grid.makeWidget(el)
+    compact()
+  }
+
+  /**
+   * GridStack에서 위젯 제거 후 레이아웃 압축
+   * Vue v-for DOM 제거 전에 호출해야 엔진·빈 공간이 즉시 정리된다.
+   * @param el - .grid-stack-item 엘리먼트
+   */
+  const removeWidget = (el: HTMLElement) => {
+    if (!grid) return
+    grid.removeWidget(el, false)
     compact()
   }
 
@@ -146,6 +177,8 @@ export const useDataDashboardGridStack = () => {
     initGrid,
     destroyGrid,
     addWidget,
+    removeWidget,
+    getNextWidgetPosition,
     getGridNodes,
     onGridChange,
     onDragStop,
