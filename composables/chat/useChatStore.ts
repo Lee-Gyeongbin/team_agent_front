@@ -40,6 +40,7 @@ import {
   buildNewsCuratorSubmissionPrompt,
   createNewsCuratorMessage,
   handleLoadNewsCuratorCategories,
+  isValidNewsCuratorCategorySelection,
   NEWS_CURATOR_AGENT_ID,
   parseNewsCuratorPromptMeta,
   setNewsCuratorSubmitCardLogId,
@@ -512,18 +513,24 @@ export const useChatStore = () => {
     sendFn: (prompt: string) => Promise<boolean>,
   ): Promise<boolean> => {
     await handleLoadNewsCuratorCategories()
+
+    if (isNew) {
+      if (!isValidNewsCuratorCategorySelection(categories)) {
+        openToast({ message: '선택한 뉴스 분야를 확인해 주세요.', type: 'warning' })
+        return false
+      }
+      try {
+        await handleSaveUserNewsInterestCategories(categories)
+      } catch {
+        openToast({ message: '관심 뉴스 분야 저장에 실패했습니다.', type: 'warning' })
+        return false
+      }
+    }
+
     const prompt = buildNewsCuratorSubmissionPrompt(categories, { isNew })
-    if (!prompt) return false
     const sent = await sendFn(prompt)
     if (sent) {
       registerNewsCuratorRoom(chatRoom.value.roomId)
-      if (isNew) {
-        try {
-          await handleSaveUserNewsInterestCategories(categories)
-        } catch {
-          openToast({ message: '관심 뉴스 분야 저장에 실패했습니다.', type: 'warning' })
-        }
-      }
     }
     return sent
   }
