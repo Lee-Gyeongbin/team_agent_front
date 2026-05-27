@@ -181,6 +181,37 @@ export const parseTtsqParam = (ttsqParam: string | null | undefined): DataDashbo
     .filter(Boolean) as DataDashboardSqlVariable[]
 }
 
+/**
+ * LAST_TTSQ_PARAMS JSON → filterValues Record
+ * - 백엔드 JSON 문자열 또는 객체 모두 수용
+ * - 배열 값은 쉼표 구분 문자열로 정규화 (sqlParams 전송 형식과 동일)
+ */
+export const parseLastTtsqParams = (raw: unknown): Record<string, string> => {
+  if (!raw) return {}
+
+  let parsed: unknown = raw
+  if (typeof raw === 'string') {
+    try {
+      parsed = JSON.parse(raw)
+    } catch {
+      return {}
+    }
+  }
+
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return {}
+
+  const result: Record<string, string> = {}
+  for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
+    if (value == null) continue
+    if (Array.isArray(value)) {
+      result[key] = value.map(String).filter(Boolean).join(',')
+    } else {
+      result[key] = String(value)
+    }
+  }
+  return result
+}
+
 const mapItemToVariable = (item: unknown): DataDashboardSqlVariable | null => {
   if (typeof item !== 'object' || item === null) return null
   const p = item as Record<string, unknown>

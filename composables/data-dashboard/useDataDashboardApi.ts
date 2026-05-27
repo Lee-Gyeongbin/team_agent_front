@@ -72,6 +72,20 @@ export const useDataDashboardApi = () => {
     return buildColNmMapFromList(res.list ?? res.dataList)
   }
 
+  /**
+   * 위젯 마지막 SQL 실행 파라미터 저장 (LAST_TTSQ_PARAMS, LAST_EXEC_DT)
+   * - SQL 실행 성공 후 호출
+   */
+  const fetchSaveLastTtsqParams = async (
+    widgetId: string,
+    params: Record<string, string>,
+  ): Promise<{ lastExecDt?: string }> => {
+    return post<{ lastExecDt?: string }>('/datadashboard/widgetLastParamsSave.do', {
+      widgetId,
+      lastTtsqParams: JSON.stringify(params),
+    })
+  }
+
   /** SQL 실행 */
   const fetchExecuteSql = async (
     logId: string | number,
@@ -101,6 +115,7 @@ export const useDataDashboardApi = () => {
     fetchLayoutList,
     fetchSaveLayoutBatch,
     fetchExecuteSql,
+    fetchSaveLastTtsqParams,
     fetchColCodeMap,
     fetchColNmMap,
   }
