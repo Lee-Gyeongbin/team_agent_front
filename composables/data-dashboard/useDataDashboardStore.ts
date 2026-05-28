@@ -74,7 +74,7 @@ const hydrateVariables = <
 
   item.vizConfig = parseVizConfig(item.vizConfig)
   if ('lastTtsqParams' in item) {
-    ;(item as DataDashboardWidget).lastTtsqParams = parseLastTtsqParams(item.lastTtsqParams)
+    item.lastTtsqParams = parseLastTtsqParams(item.lastTtsqParams)
   }
   return item
 }

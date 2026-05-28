@@ -299,6 +299,18 @@ watch(
   },
 )
 
+// 화자 편집 등 외부에서 minutesContent가 변경되면 에디터에 반영
+watch(
+  () => currentMeeting.value?.minutesContent,
+  (newContent) => {
+    if (!editor.value || !newContent) return
+    const html = normalizeMinutesHtml(newContent)
+    if (editor.value.getHTML() !== html) {
+      editor.value.commands.setContent(html, { emitUpdate: false })
+    }
+  },
+)
+
 // 자식 컴포넌트(Toolbar/Body)에서 사용할 에디터 인스턴스 주입
 provide(meetingEditorKey, editor)
 

@@ -89,6 +89,17 @@
               placeholder="AI 제목 생성 시 참고할 내용을 입력하세요 (선택)"
             />
           </div>
+
+          <!-- 발언자 표시 옵션 -->
+          <div class="meeting-start-modal-field">
+            <label class="meeting-start-modal-ai-check">
+              <input
+                v-model="form.showSpeaker"
+                type="checkbox"
+              />
+              <span>결정사항에 핵심 발언자 표시</span>
+            </label>
+          </div>
         </div>
 
         <div class="meeting-start-modal-footer">
@@ -119,7 +130,7 @@ import type { MeetingUser } from '~/types/meeting'
 
 const emit = defineEmits<{
   close: []
-  confirm: [params: { meetingTitle: string; attendees: string; isAutoTitle: 'Y' | 'N' }]
+  confirm: [params: { meetingTitle: string; attendees: string; isAutoTitle: 'Y' | 'N'; showSpeakerYn: 'Y' | 'N' }]
 }>()
 
 const { userList, handleSelectUserList } = useMeetingStore()
@@ -130,6 +141,7 @@ const form = reactive({
   meetingTitle: '',
   description: '',
   isAutoTitle: false,
+  showSpeaker: true, // 발언자 표시 여부 (기본: 표시)
 })
 const attendeeSearchKeyword = ref('')
 const selectedAttendees = ref<MeetingUser[]>([])
@@ -168,6 +180,7 @@ const onConfirm = () => {
     meetingTitle: form.isAutoTitle ? '' : form.meetingTitle,
     attendees: attendeesJson,
     isAutoTitle: form.isAutoTitle ? 'Y' : 'N',
+    showSpeakerYn: form.showSpeaker ? 'Y' : 'N',
   })
 }
 </script>

@@ -100,11 +100,25 @@ const parseAreaRiskByGender = (
   return { male: parseGender('male'), female: parseGender('female') }
 }
 
+const parseProfileToRiskThreshold = (raw: unknown): SurveyRiskThreshold | null => {
+  if (!raw || typeof raw !== 'object') return null
+  const row = raw as Record<string, unknown>
+  if (Array.isArray(row.upperBounds) && row.upperBounds.length > 0) {
+    const bounds = row.upperBounds.map((n) => Number(n)).filter((n) => Number.isFinite(n))
+    if (bounds.length >= 2) return { normalMax: bounds[0], cautionMax: bounds[1] }
+    if (bounds.length === 1) return { normalMax: bounds[0], cautionMax: bounds[0] }
+  }
+  return parseRiskThreshold(raw)
+}
+
 const parseTotalRiskByGender = (riskRules: Record<string, unknown>): Record<SurveyGender, SurveyRiskThreshold> => {
   const totalScore = (riskRules.totalScore ?? {}) as Record<string, unknown>
+  const fallback = (raw: unknown, gender: SurveyGender) =>
+    parseProfileToRiskThreshold(raw) ??
+    (gender === 'male' ? { normalMax: 48.4, cautionMax: 54.7 } : { normalMax: 50.0, cautionMax: 55.6 })
   return {
-    male: parseRiskThreshold(totalScore.male) ?? { normalMax: 48.4, cautionMax: 54.7 },
-    female: parseRiskThreshold(totalScore.female) ?? { normalMax: 50.0, cautionMax: 55.6 },
+    male: fallback(totalScore.male, 'male'),
+    female: fallback(totalScore.female, 'female'),
   }
 }
 

@@ -12,6 +12,21 @@
         @update:model-value="onChange"
       />
     </div>
+
+    <div
+      v-if="modelValue === 'C'"
+      class="com-setting-field-row"
+    >
+      <label class="com-setting-label"><span class="is-required">*</span>세부 유형</label>
+      <UiSelect
+        :model-value="subTy"
+        :options="subTyOptions"
+        class="w-full"
+        size="sm"
+        placeholder="세부 유형을 선택하세요"
+        @update:model-value="onSubTyChange"
+      />
+    </div>
     <p
       v-if="typeDescription"
       class="com-setting-desc"
@@ -24,6 +39,7 @@
 <script setup lang="ts">
 interface Props {
   modelValue: string
+  subTy: string
   isEdit: boolean
 }
 
@@ -31,8 +47,11 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   'update:modelValue': [value: string | number]
+  'update:subTy': [value: string]
   change: [value: string]
 }>()
+
+const subTyOptions = [{ label: '설문', value: 'SURVEY' }]
 
 const codes = await getCodes('AT000001')
 const agentTypeOptions = [{ label: '선택', value: '' }, ...codes.map((c) => ({ label: c.codeNm, value: c.codeId }))]
@@ -47,5 +66,9 @@ const typeDescription = computed(() => typeDescriptions[props.modelValue] || '')
 const onChange = (value: string | number) => {
   emit('update:modelValue', value)
   emit('change', String(value))
+}
+
+const onSubTyChange = (value: string | number) => {
+  emit('update:subTy', String(value ?? ''))
 }
 </script>

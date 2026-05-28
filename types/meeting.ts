@@ -9,6 +9,7 @@ export interface Meeting {
   createUserId: string
   createDt: string
   integrateYn?: string // 'Y' | 'N'
+  showSpeakerYn?: string // 'Y' | 'N' — 결정사항 내 발언자 표시 여부
 }
 
 /** 통합 회의록의 원본 회의 항목 */
@@ -206,4 +207,5 @@ export interface MeetingViewModel {
   updatedAt: string
   status: string
   integrateYn: string // 'Y' | 'N' — 통합 회의록 여부
+  showSpeakerYn: string // 'Y' | 'N' — 결정사항 내 발언자 표시 여부
 }

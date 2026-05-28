@@ -48,6 +48,7 @@
         <!-- 시각화 유형 변경 -->
         <UiDropdownMenu
           :items="vizTypeMenuItems"
+          :active-value="widget.vizType"
           @select="onChangeVizType"
         >
           <template #trigger>
