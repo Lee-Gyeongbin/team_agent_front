@@ -9,6 +9,7 @@
       <!-- 섹션1: Agent 유형 -->
       <AgentSettingType
         v-model="form.svcTy"
+        v-model:sub-ty="form.subTy"
         :is-edit="isEmpty(agent?.agentId)"
         @change="onChangeAgentType"
       />
@@ -17,12 +18,15 @@
       <AgentSettingBasic
         v-model="basicForm"
         :svc-ty="form.svcTy"
+        :sub-ty="form.subTy"
         :rag-form="ragForm"
         :sql-form="sqlForm"
+        :survey-form="surveyForm"
         :sql-model-options="sqlModelOptions"
         :api-url-cd-options="apiUrlCdOptions"
         @update:rag-form="ragForm = $event"
         @update:sql-form="sqlForm = $event"
+        @update:survey-form="surveyForm = $event"
       />
 
       <!-- 섹션3: 데이터 연결 (svcTy 기반 분기) -->
@@ -60,9 +64,16 @@
 </template>
 
 <script setup lang="ts">
-import type { Agent, AgtDs, AgtDm } from '~/types/agent'
+import type { Agent, AgtDs, AgtDm, AgtSubAdditionalConfig } from '~/types/agent'
 import type { CodeItem } from '~/types/codes'
 import { useAgentStore } from '~/composables/agent/useAgentStore'
+import { SURVEY_SUB_TY, normalizeAgentSubCfg } from '~/utils/chat/surveyUtil'
+import {
+  buildSurveyAdditionalConfig,
+  emptySurveyConfigForm,
+  parseSurveyAdditionalConfigToForm,
+  type SurveyConfigForm,
+} from '~/utils/agent/surveyConfigUtil'
 
 interface Props {
   isOpen: boolean
@@ -93,6 +104,13 @@ const initApiUrlCdOptions = async () => {
 }
 
 const onChangeAgentType = async (svcTy: string) => {
+  if (svcTy !== 'C') {
+    form.value.subTy = ''
+  } else if (!form.value.subTy) {
+    form.value.subTy = SURVEY_SUB_TY
+    preservedSurveyConfig.value = null
+    surveyForm.value = emptySurveyConfigForm()
+  }
   const result = await handleChangeAgentType(svcTy)
   localDatasetList.value = result.datasetList
   localDatamartList.value = result.datamartList
@@ -107,7 +125,24 @@ const emit = defineEmits<{
 // 유형
 const form = ref({
   svcTy: '',
+  subTy: '',
 })
+
+// 설문(SURVEY) ADDITIONAL_CONFIG — UI 미편집 필드(문항·영역별 참고치 등) 보존용
+const preservedSurveyConfig = ref<AgtSubAdditionalConfig | null>(null)
+const surveyForm = ref<SurveyConfigForm>(emptySurveyConfigForm())
+
+const loadSurveyConfigFromAgent = (agent: Agent | null) => {
+  const subCfg = normalizeAgentSubCfg(agent?.subCfg)
+  const additional = subCfg?.additionalConfig
+  if (additional && typeof additional === 'object' && Object.keys(additional).length > 0) {
+    preservedSurveyConfig.value = { ...additional }
+    surveyForm.value = parseSurveyAdditionalConfigToForm(additional as Record<string, unknown>)
+    return
+  }
+  preservedSurveyConfig.value = null
+  surveyForm.value = emptySurveyConfigForm()
+}
 
 // 기본 설정 폼
 const basicForm = ref({
@@ -150,6 +185,13 @@ watch(
     await initApiUrlCdOptions()
     if (props.agent) {
       form.value.svcTy = props.agent.svcTy
+      form.value.subTy = normalizeAgentSubCfg(props.agent.subCfg)?.subTy ?? ''
+      if (props.agent.svcTy === 'C' && form.value.subTy === SURVEY_SUB_TY) {
+        loadSurveyConfigFromAgent(props.agent)
+      } else {
+        preservedSurveyConfig.value = null
+        surveyForm.value = emptySurveyConfigForm()
+      }
       basicForm.value = {
         agentNm: props.agent.agentNm,
         apiUrlCd: props.agent.apiUrlCd ?? '',
@@ -178,6 +220,9 @@ watch(
       nextTick(() => settingDataRef.value?.resetFilter())
     } else {
       form.value.svcTy = ''
+      form.value.subTy = ''
+      preservedSurveyConfig.value = null
+      surveyForm.value = emptySurveyConfigForm()
       basicForm.value = {
         agentNm: '',
         apiUrlCd: '',
@@ -208,6 +253,17 @@ const onSave = () => {
     Object.assign(base, ragForm.value, { datasetList: localDatasetList.value })
   } else if (form.value.svcTy === 'S') {
     Object.assign(base, sqlForm.value, { datamartList: localDatamartList.value })
+  } else if (form.value.svcTy === 'C' && form.value.subTy === SURVEY_SUB_TY) {
+    const existingSubCfg = normalizeAgentSubCfg(props.agent?.subCfg)
+    base.subCfg = {
+      subCfgId: existingSubCfg?.subCfgId ?? '',
+      agentId: props.agent?.agentId ?? '',
+      subTy: SURVEY_SUB_TY,
+      additionalConfig: buildSurveyAdditionalConfig(surveyForm.value, preservedSurveyConfig.value),
+      useYn: existingSubCfg?.useYn ?? 'Y',
+      createDt: existingSubCfg?.createDt ?? '',
+      modifyDt: existingSubCfg?.modifyDt ?? '',
+    }
   }
 
   emit('save', base)

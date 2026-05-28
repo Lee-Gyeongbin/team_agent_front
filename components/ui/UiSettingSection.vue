@@ -19,7 +19,7 @@
           fill="none"
         >
           <path
-            d="M4 10l4-4 4 4"
+            d="M4 6l4 4 4-4"
             stroke="currentColor"
             stroke-width="2"
             stroke-linecap="round"
