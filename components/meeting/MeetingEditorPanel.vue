@@ -243,7 +243,7 @@ const editor = useEditor({
     if (!currentMeeting.value) return
     const html = editor.getHTML()
     currentMeeting.value.minutesContent = html
-    triggerAutoSave(html)
+    // triggerAutoSave(html)
   },
   editorProps: {
     attributes: { class: 'meeting2-editor-body', spellcheck: 'false' },

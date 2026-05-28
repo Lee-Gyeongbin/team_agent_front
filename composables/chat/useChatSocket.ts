@@ -43,12 +43,32 @@ const isManualStreaming = (svcTy: string | undefined) => svcTy === 'M'
  */
 const parseAnswerSourceItems = (accumulated: string) => {
   try {
-    const parsed = JSON.parse(accumulated) as { items?: { url?: string; title?: string }[] }
+    const parsed = JSON.parse(accumulated) as {
+      items?: { url?: string; title?: string; docFileId?: string; fileName?: string }[]
+    }
     if (!Array.isArray(parsed.items)) return undefined
-    return parsed.items.map((it) => ({
-      url: String(it?.url ?? ''),
-      ...(it?.title != null && String(it.title).length > 0 ? { title: String(it.title) } : {}),
-    }))
+    return parsed.items
+      .map((it) => {
+        const url = String(it?.url ?? '').trim()
+        const title = String(it?.title ?? '').trim()
+        const docFileId = String(it?.docFileId ?? '').trim()
+        const fileName = String(it?.fileName ?? '').trim()
+
+        if (url.length > 0) {
+          return {
+            url,
+            ...(title.length > 0 ? { title } : {}),
+          }
+        }
+        if (fileName.length > 0) {
+          return {
+            ...(docFileId.length > 0 ? { docFileId } : {}),
+            fileName,
+          }
+        }
+        return undefined
+      })
+      .filter((it): it is NonNullable<typeof it> => it !== undefined)
   } catch {
     return undefined
   }

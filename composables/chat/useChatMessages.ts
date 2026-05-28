@@ -59,12 +59,32 @@ export const useChatMessages = () => {
     const wg = row.webGroundingJson
     if (typeof wg === 'string' && wg.trim().length > 0) {
       try {
-        const parsed = JSON.parse(wg) as { items?: { url?: string; title?: string }[] }
+        const parsed = JSON.parse(wg) as {
+          items?: { url?: string; title?: string; docFileId?: string; fileName?: string }[]
+        }
         if (Array.isArray(parsed.items)) {
-          groundingSources = parsed.items.map((it) => ({
-            url: String(it?.url ?? ''),
-            ...(it?.title != null && String(it.title).length > 0 ? { title: String(it.title) } : {}),
-          }))
+          groundingSources = parsed.items
+            .map((it) => {
+              const url = String(it?.url ?? '').trim()
+              const title = String(it?.title ?? '').trim()
+              const docFileId = String(it?.docFileId ?? '').trim()
+              const fileName = String(it?.fileName ?? '').trim()
+
+              if (url.length > 0) {
+                return {
+                  url,
+                  ...(title.length > 0 ? { title } : {}),
+                }
+              }
+              if (fileName.length > 0) {
+                return {
+                  ...(docFileId.length > 0 ? { docFileId } : {}),
+                  fileName,
+                }
+              }
+              return undefined
+            })
+            .filter((it): it is NonNullable<typeof it> => it !== undefined)
         }
       } catch {
         /* ignore */
