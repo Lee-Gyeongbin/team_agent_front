@@ -66,8 +66,10 @@ export interface ChatFileSaveResponse {
 
 /** Vertex/Google 검색 그라운딩 등 Web 출처 스트리밍 청크 */
 export interface ChatGroundingSourceItem {
-  url: string
+  url?: string
   title?: string
+  docFileId?: string
+  fileName?: string
 }
 
 export interface ChatSocketMessage {

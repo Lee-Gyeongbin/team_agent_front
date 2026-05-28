@@ -83,22 +83,31 @@
             @click="onMarkdownClick"
             v-html="renderedHtml"
           />
-          <ul
-            v-if="message.groundingSources?.length"
-            class="message-grounding-sources"
-          >
-            <li
-              v-for="(src, idx) in message.groundingSources"
-              :key="`${src.url}-${idx}`"
-            >
-              <a
-                :href="src.url"
-                target="_blank"
-                rel="noopener noreferrer"
-                >{{ getSourceLabel(src.title, src.url) }}</a
+          <template v-if="message.groundingSources?.length">
+            <p class="message-grounding-sources-head">
+              <UiBadge
+                variant="default"
+                size="sm"
               >
-            </li>
-          </ul>
+                출처
+              </UiBadge>
+            </p>
+            <ul class="message-grounding-sources">
+              <li
+                v-for="(src, idx) in message.groundingSources"
+                :key="getSourceKey(src, idx)"
+              >
+                <a
+                  v-if="isSourceLink(src)"
+                  :href="src.url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >{{ getSourceLabel(src) }}</a
+                >
+                <span v-else>{{ getSourceLabel(src) }}</span>
+              </li>
+            </ul>
+          </template>
         </template>
         <!-- 액션 + 패널 버튼 (한 줄) -->
         <div
@@ -276,6 +285,7 @@
 
 <script setup lang="ts">
 import type {
+  ChatGroundingSourceItem,
   ChatMessage,
   KnowledgeItem,
   LunchAgentFormPayload,
@@ -398,6 +408,8 @@ const onMarkdownClick = (e: MouseEvent) => {
   }
 }
 
+const renderMarkdownHtml = (value: string) => toHtmlContent(value)
+
 // ── SURVEY(showRadarChart) 렌더 상태 ────────────────────────────────────────────────────
 /** [방사형그래프] 마커 발견 여부 — 템플릿 분기 조건 */
 const markerFound = ref(false)
@@ -493,7 +505,7 @@ watch(
     }
 
     if (!isSurveyRadarAgent(agentId ?? '')) {
-      renderedHtml.value = toHtmlContent(raw)
+      renderedHtml.value = renderMarkdownHtml(raw)
       return
     }
 
@@ -501,7 +513,7 @@ watch(
 
     if (!found) {
       // 마커 미발견: 스트리밍 중에도 전체 내용 실시간 렌더
-      renderedHtml.value = toHtmlContent(removeKeywordLines(raw))
+      renderedHtml.value = renderMarkdownHtml(removeKeywordLines(raw))
       return
     }
 
@@ -509,11 +521,11 @@ watch(
     markerFound.value = true
 
     // 섹션 1~3 실시간 갱신 (스트리밍 중에도 계속 업데이트)
-    beforeChartHtml.value = toHtmlContent(removeKeywordLines(before))
+    beforeChartHtml.value = renderMarkdownHtml(removeKeywordLines(before))
 
     // 섹션 4~7: 스트리밍 중에는 Pexels 키워드 줄을 제거하지 않고 원문 표시 — 완료 후에만 이미지 주입
     if (!pexelsFetchDone && isStreaming) {
-      afterChartHtml.value = toHtmlContent(after)
+      afterChartHtml.value = renderMarkdownHtml(after)
     }
 
     // 마커 최초 발견 시 차트 데이터 — 캐시는 API 대기 없이 바로 올 수 있어 JSON 주입만 짧게 지연
@@ -555,10 +567,10 @@ watch(
       pexelsFetchDone = true
       const logIdForPexels = props.message.logId
       const { beforeText, afterText } = extractKeywordSection(after)
-      afterChartHtml.value = toHtmlContent(beforeText) + PEXELS_LOADING_HTML + toHtmlContent(afterText)
+      afterChartHtml.value = renderMarkdownHtml(beforeText) + PEXELS_LOADING_HTML + renderMarkdownHtml(afterText)
       fetchAndInjectPexelsImages(after, logIdForPexels).then(({ beforeText: bt, afterText: at, gridHtml }) => {
         if (!isMessageItemAlive || props.message.logId !== logIdForPexels) return
-        afterChartHtml.value = toHtmlContent(bt) + gridHtml + toHtmlContent(at)
+        afterChartHtml.value = renderMarkdownHtml(bt) + gridHtml + renderMarkdownHtml(at)
       })
     }
   },
@@ -803,10 +815,18 @@ const isMemeAnswerStreaming = computed(() => {
 })
 
 /** 출처 제목 앞 마크다운 헤더 기호(## 등) 제거 */
-const getSourceLabel = (title: string | undefined, url: string) => {
-  const raw = (title ?? '').trim()
-  if (!raw) return url
+const getSourceLabel = (source: ChatGroundingSourceItem) => {
+  const raw = String(source.fileName ?? source.title ?? source.url ?? '').trim()
+  if (!raw) return '출처'
   return raw.replace(/^#{1,6}\s+/u, '').trim()
+}
+
+const isSourceLink = (source: ChatGroundingSourceItem) => {
+  return String(source.url ?? '').trim().length > 0
+}
+
+const getSourceKey = (source: ChatGroundingSourceItem, idx: number) => {
+  return `${source.url ?? source.docFileId ?? source.fileName ?? source.title ?? 'source'}-${idx}`
 }
 
 /** ChatMessageActions는 categoryId만 넘김 — logId는 knowledgeActionsLogId(answer·연결 answer 공통) */
