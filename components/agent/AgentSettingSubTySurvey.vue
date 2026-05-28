@@ -270,24 +270,6 @@
               </div>
             </template>
           </div>
-
-          <div class="com-setting-row type-config-row survey-threshold-row">
-            <div class="type-config-col">
-              <label class="com-setting-label">상위 등급 영역 수</label>
-              <div class="com-setting-inline">
-                <UiInput
-                  :model-value="modelValue.highRiskAreaThreshold"
-                  size="sm"
-                  number-only
-                  @update:model-value="onUpdate('highRiskAreaThreshold', Number($event))"
-                />
-                <span class="com-setting-unit">개 이상</span>
-              </div>
-              <span class="com-setting-hint">
-                영역별 점수가 상위 등급에 해당하는 영역이 이 개수 이상이면 종합 판정을 최상위 등급으로 올립니다.
-              </span>
-            </div>
-          </div>
         </UiSettingSection>
       </div>
 

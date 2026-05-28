@@ -21,7 +21,6 @@ export interface SurveyConfigForm {
   requireGender: boolean
   showRadarChart: boolean
   showAiRecoveryImage: boolean
-  highRiskAreaThreshold: number
   totalThresholdsCommon: number[]
   totalThresholdsMale: number[]
   totalThresholdsFemale: number[]
@@ -49,7 +48,6 @@ export const emptySurveyConfigForm = (): SurveyConfigForm => ({
   requireGender: false,
   showRadarChart: false,
   showAiRecoveryImage: false,
-  highRiskAreaThreshold: 0,
   totalThresholdsCommon: [],
   totalThresholdsMale: [],
   totalThresholdsFemale: [],
@@ -218,7 +216,6 @@ export const parseSurveyAdditionalConfigToForm = (
     requireGender,
     showRadarChart: features.showRadarChart === true,
     showAiRecoveryImage: features.showAiRecoveryImage === true || features.showPexelsRecoveryImages === true,
-    highRiskAreaThreshold: Number(riskRules.highRiskAreaThreshold) || 0,
     totalThresholdsCommon: requireGender ? [] : maleBounds.length ? maleBounds : commonBounds,
     totalThresholdsMale: requireGender ? maleBounds : [],
     totalThresholdsFemale: requireGender ? femaleBounds : [],
@@ -279,7 +276,6 @@ export const buildSurveyAdditionalConfig = (
   const riskRules = {
     ...((preserved?.riskRules as Record<string, unknown>) ?? {}),
     riskLevels: buildRiskLevelsConfig(form.riskLevels),
-    highRiskAreaThreshold: form.highRiskAreaThreshold,
     totalScore: buildTotalScorePayload(form),
   }
 
