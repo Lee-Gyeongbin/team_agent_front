@@ -1,7 +1,8 @@
 <template>
   <div class="survey-categories-block">
     <p class="com-setting-hint survey-categories-block__desc">
-      채팅 설문 화면에 표시되는 영역·문항입니다. 역문항은 각 문항 옆에서 체크하며, 저장 시 문항 번호와 자동 동기화됩니다.
+      채팅 설문 화면에 표시되는 영역·문항입니다. 역문항은 각 문항 옆에서 체크하며, 저장 시 문항 번호와 자동
+      동기화됩니다.
     </p>
 
     <div class="survey-categories">
