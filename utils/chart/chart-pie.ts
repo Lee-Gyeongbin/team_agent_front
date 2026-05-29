@@ -8,7 +8,72 @@ import { Chart } from 'chart.js/auto'
 import { ChartColors } from './chart-colors'
 import { ChartConfig, getContrastColor } from './chart-config'
 
+const SVG_LABEL_FONT_FAMILY = 'Inter, Pretendard, sans-serif'
+let svgLabelMeasureCanvas: HTMLCanvasElement | null = null
+
+const getSvgLabelMeasureContext = () => {
+  if (typeof document === 'undefined') return null
+  if (!svgLabelMeasureCanvas) {
+    svgLabelMeasureCanvas = document.createElement('canvas')
+  }
+  return svgLabelMeasureCanvas.getContext('2d')
+}
+
 export const PieChartModule = {
+  /** SVG 라벨 텍스트 너비 측정 */
+  measureSvgTextWidth(text: string, fontSize: number, fontWeight: string | number = '400'): number {
+    const ctx = getSvgLabelMeasureContext()
+    if (!ctx) return text.length * fontSize * 0.55
+    ctx.font = `${fontWeight} ${fontSize}px ${SVG_LABEL_FONT_FAMILY}`
+    return ctx.measureText(text).width
+  },
+
+  /** SVG 라벨 이름 말줄임 (끝 공백 유지) */
+  truncateSvgLabelName(
+    name: string,
+    maxWidth: number,
+    fontSize: number,
+    fontWeight: string | number = '400',
+  ): { display: string; truncated: boolean } {
+    const fullDisplay = `${name} `
+    if (maxWidth <= 0) return { display: '… ', truncated: true }
+    if (this.measureSvgTextWidth(fullDisplay, fontSize, fontWeight) <= maxWidth) {
+      return { display: fullDisplay, truncated: false }
+    }
+
+    let trimmed = name
+    while (trimmed.length > 0) {
+      const candidate = `${trimmed}… `
+      if (this.measureSvgTextWidth(candidate, fontSize, fontWeight) <= maxWidth) {
+        return { display: candidate, truncated: true }
+      }
+      trimmed = trimmed.slice(0, -1)
+    }
+    return { display: '… ', truncated: true }
+  },
+
+  /** 인라인 라벨 이름 표시 문자열 */
+  getInlineNameDisplay(pos: any): { display: string; truncated: boolean } {
+    if (!pos.labelNameTruncate || pos.maxNameWidth == null) {
+      return { display: `${pos.name} `, truncated: false }
+    }
+    return this.truncateSvgLabelName(pos.name, pos.maxNameWidth, pos.nameFontSize || 12, '400')
+  },
+
+  /** 인라인 라벨 이름 가용 너비 */
+  calcInlineNameMaxWidth(pos: any, settings: any): number | undefined {
+    if (settings.labelLayout !== 'inline' || !settings.labelNameTruncate) return undefined
+
+    const padding = settings.labelPaddingX ?? 12
+    const labelTextX = pos.labelTextX ?? pos.labelX
+    const totalAvailable = pos.isLeftSide ? labelTextX - padding : settings.width - labelTextX - padding
+
+    const valueFontSize = settings.valueFontSize || 14
+    const valueWidth = this.measureSvgTextWidth(`${pos.value}%`, valueFontSize, '600')
+
+    return Math.max(0, totalAvailable - valueWidth)
+  },
+
   /** 색상 가져오기 */
   getColors(style: string): string[] {
     return (ChartColors.pie as any)[style] || ChartColors.pie.secondary
@@ -352,6 +417,10 @@ export const PieChartModule = {
       showCenterText: svgConfig.showCenterText,
       nameFontSize: svgConfig.nameFontSize,
       valueFontSize: svgConfig.valueFontSize,
+      labelLayout: svgConfig.labelLayout || 'stacked',
+      inlineLabelGap: svgConfig.inlineLabelGap ?? 0,
+      labelNameTruncate: svgConfig.labelNameTruncate ?? false,
+      labelPaddingX: svgConfig.labelPaddingX ?? 12,
     }
 
     const data = items.map((item: any, index: number) => ({
@@ -413,10 +482,10 @@ export const PieChartModule = {
       const isLeftSide = midAngle > Math.PI / 2 && midAngle < Math.PI * 1.5
       const horizontalEndX = isLeftSide ? diagonalEndX - horizontalLineLength : diagonalEndX + horizontalLineLength
       const horizontalEndY = diagonalEndY
+      const inlineGap = settings.labelLayout === 'inline' ? (settings.inlineLabelGap ?? 0) : 0
+      const labelTextX = isLeftSide ? horizontalEndX - inlineGap : horizontalEndX + inlineGap
 
-      currentAngle += angleSpan
-
-      return {
+      const position = {
         ...item,
         midAngle,
         midPointX,
@@ -424,13 +493,22 @@ export const PieChartModule = {
         diagonalEndX,
         diagonalEndY,
         labelX: horizontalEndX,
+        labelTextX,
         labelY: horizontalEndY,
         isLeftSide,
         textAnchor: isLeftSide ? 'end' : 'start',
         lineColor: ChartConfig.svgDonut.darkenColor(item.color, 25),
         nameFontSize: settings.nameFontSize,
         valueFontSize: settings.valueFontSize,
+        labelLayout: settings.labelLayout,
+        labelNameTruncate: settings.labelNameTruncate,
       }
+
+      position.maxNameWidth = this.calcInlineNameMaxWidth(position, settings)
+
+      currentAngle += angleSpan
+
+      return position
     })
   },
 
@@ -528,6 +606,78 @@ export const PieChartModule = {
     })
     group.appendChild(horizontalLine)
 
+    if (pos.labelLayout === 'inline') {
+      this.appendInlineSvgLabel(group, pos)
+    } else {
+      this.appendStackedSvgLabel(group, pos)
+    }
+
+    svg.appendChild(group)
+  },
+
+  /** SVG 라벨 — 한 줄 (이름 + 비율) */
+  appendInlineSvgLabel(group: SVGElement, pos: any) {
+    const nameFontSize = pos.nameFontSize || 12
+    const valueFontSize = pos.valueFontSize || 14
+    const { display: nameDisplay, truncated } = this.getInlineNameDisplay(pos)
+
+    const labelText = ChartConfig.svgDonut.createSVGElement('text', {
+      x: pos.labelTextX ?? pos.labelX,
+      y: pos.labelY,
+      'text-anchor': pos.textAnchor,
+      'dominant-baseline': 'middle',
+      'font-family': SVG_LABEL_FONT_FAMILY,
+      class: 'label-inline',
+    })
+
+    const nameTspan = ChartConfig.svgDonut.createSVGElement('tspan', {
+      'font-size': String(nameFontSize),
+      'font-weight': '400',
+      fill: 'rgba(0, 0, 0, 0.7)',
+      class: 'label-name',
+    })
+    if (truncated) {
+      const title = ChartConfig.svgDonut.createSVGElement('title')
+      title.textContent = pos.name
+      nameTspan.appendChild(title)
+    }
+    nameTspan.appendChild(document.createTextNode(nameDisplay))
+
+    const valueTspan = ChartConfig.svgDonut.createSVGElement('tspan', {
+      'font-size': String(valueFontSize),
+      'font-weight': '600',
+      fill: pos.lineColor,
+      class: 'label-value',
+    })
+    valueTspan.textContent = `${pos.value}%`
+
+    labelText.appendChild(nameTspan)
+    labelText.appendChild(valueTspan)
+    group.appendChild(labelText)
+  },
+
+  /** 인라인 라벨 텍스트 갱신 (리드로우) */
+  updateInlineSvgLabelText(inlineText: Element, pos: any) {
+    const nameTspan = inlineText.querySelector('.label-name')
+    const valueTspan = inlineText.querySelector('.label-value')
+    const { display: nameDisplay, truncated } = this.getInlineNameDisplay(pos)
+
+    if (nameTspan) {
+      nameTspan.textContent = ''
+      if (truncated) {
+        const title = ChartConfig.svgDonut.createSVGElement('title')
+        title.textContent = pos.name
+        nameTspan.appendChild(title)
+      }
+      nameTspan.appendChild(document.createTextNode(nameDisplay))
+    }
+    if (valueTspan) {
+      valueTspan.textContent = `${pos.value}%`
+    }
+  },
+
+  /** SVG 라벨 — 두 줄 (이름 / 비율) */
+  appendStackedSvgLabel(group: SVGElement, pos: any) {
     const nameFontSize = pos.nameFontSize || 12
     const valueFontSize = pos.valueFontSize || 14
 
@@ -556,8 +706,6 @@ export const PieChartModule = {
     })
     valueText.textContent = `${pos.value}%`
     group.appendChild(valueText)
-
-    svg.appendChild(group)
   },
 
   /** SVG 도넛 다시 그리기 (토글 시) */
@@ -619,6 +767,7 @@ export const PieChartModule = {
         const midPointCircle = labelGroup.querySelector('.label-midpoint')
         const diagonalLine = labelGroup.querySelector('.label-diagonal')
         const horizontalLine = labelGroup.querySelector('.label-horizontal')
+        const inlineText = labelGroup.querySelector('text.label-inline')
         const nameText = labelGroup.querySelector('.label-name')
         const valueText = labelGroup.querySelector('.label-value')
 
@@ -638,12 +787,17 @@ export const PieChartModule = {
           horizontalLine.setAttribute('x2', pos.labelX)
           horizontalLine.setAttribute('y2', pos.labelY)
         }
-        if (nameText) {
+        if (inlineText) {
+          inlineText.setAttribute('x', String(pos.labelTextX ?? pos.labelX))
+          inlineText.setAttribute('y', String(pos.labelY))
+          inlineText.setAttribute('text-anchor', pos.textAnchor)
+          this.updateInlineSvgLabelText(inlineText, pos)
+        } else if (nameText && nameText.tagName === 'text') {
           nameText.setAttribute('x', pos.labelX)
           nameText.setAttribute('y', String(pos.labelY - 5))
           nameText.setAttribute('text-anchor', pos.textAnchor)
         }
-        if (valueText) {
+        if (valueText && valueText.tagName === 'text') {
           valueText.setAttribute('x', pos.labelX)
           valueText.setAttribute('y', String(pos.labelY + 12))
           valueText.setAttribute('text-anchor', pos.textAnchor)
