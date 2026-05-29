@@ -329,13 +329,16 @@
       v-model:tmpl-html="generatedReportTmplHtml"
       :is-open="isCreateDocReportOpen"
       :tmpl-nm="selectedCreateDocTmplNm"
+      :svc-ty="displayData?.svcTy ?? ''"
       :refine-completed-at="reportRefineCompletedAt"
       :refined-html="refinedEditorHtml"
+      :r-content="displayData?.rcontent ?? ''"
       @close="handleCreateDocReportClose"
       @save-to-my-docs="onCreateDocSaveToMyDocs"
       @share-link="onCreateDocShareLink"
       @select-other-type="handleCreateDocSelectOtherType"
       @send-refine="onCreateDocSendRefine"
+      @request-insight="onCreateDocRequestInsight"
     />
 
     <!-- 공유 대상 사용자 선택 모달 -->
@@ -358,8 +361,14 @@ import {
 } from '~/utils/chat/lunchAgentUtil'
 import { NEWS_CURATOR_AGENT_ID, parseNewsCuratorItems, parseNewsCuratorPromptMeta } from '~/utils/chat/newsCuratorUtil'
 import { hasTodayMemeQcontent, isTodayMemeLibraryCard, parseTodayMemeItems } from '~/utils/chat/todayMemeUtil'
-import { parseSurveyAnswersFromPrompt, isSurveyAgent, parseSurveyConfigFromAgent, resolveSurveyConfigByAgentId } from '~/utils/chat/surveyUtil'
+import {
+  parseSurveyAnswersFromPrompt,
+  isSurveyAgent,
+  parseSurveyConfigFromAgent,
+  resolveSurveyConfigByAgentId,
+} from '~/utils/chat/surveyUtil'
 import type { LibraryCardDetail, DocItem, TableDataItem, ChartStatItem, ChartDetailCdItem } from '~/types/library'
+import type { LibraryReportInsightRequest } from '~/utils/library/libraryReportEditorUtil'
 import type { LunchRecommendationItem, VisualizationViewModel } from '~/types/chat'
 import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
 import { useFileStore } from '~/composables/com/useFileStore'
@@ -384,6 +393,7 @@ const {
   resetLibraryDetailCreateDocUi,
   handleCreateDocSelectOtherType,
   handleReAskReport,
+  handleInsightReport,
   handleShareCard,
 } = useLibraryStore()
 const { chatIndexAgents } = useChatStore()
@@ -674,6 +684,11 @@ const onCreateDocShareLink = () => {
 /** 보고서 보완 요청 — currentHtml: 현재 에디터 전체 HTML */
 const onCreateDocSendRefine = async (message: string, currentHtml: string) => {
   await handleReAskReport(message, currentHtml)
+}
+
+/** 보고서 인사이트 분석 요청 */
+const onCreateDocRequestInsight = async (payload: LibraryReportInsightRequest) => {
+  await handleInsightReport(payload)
 }
 
 const handleCopyResponse = async () => {

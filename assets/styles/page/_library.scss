@@ -488,7 +488,7 @@
   }
 }
 
-// 문서 생성 로딩 / 보고서 — 한 단계씩 위 스택($z-modal-stack-2, -3)
+// 문서 생성 로딩 / 보고서 — 한 단계씩 위 스택($z-modal-stack-2, -3, -4)
 .library-create-doc-loading-modal {
   &.modal-dialog {
     z-index: $z-modal-stack-2;
@@ -576,5 +576,12 @@
     max-height: none;
     min-height: 0;
     overflow: hidden;
+  }
+}
+
+// 보고서 에디터 위 인사이트 분석 선택 모달
+.library-report-insight-modal {
+  &.modal-dialog {
+    z-index: $z-modal-stack-4;
   }
 }

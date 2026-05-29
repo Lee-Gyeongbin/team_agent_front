@@ -127,3 +127,23 @@ export interface ShareCardPayload {
   userIds: string[]
   shareMsg?: string
 }
+
+/** 보고서 인사이트 분석 — 반영 위치 */
+export type LibraryInsightPlacement = 'NEW_SECTION' | 'REPLACE'
+
+/** 보고서 인사이트 분석 API 요청 */
+export interface LibraryInsightReportRequest {
+  roomId: string
+  insightPlacement: LibraryInsightPlacement
+  /** REPLACE일 때만 */
+  targetValueKey?: string
+  rContent: string
+  currentHtml: string
+}
+
+/** 보고서 인사이트 분석 API 응답 */
+export interface LibraryInsightReportResponse {
+  successYn: boolean
+  returnMsg: string
+  data: string
+}
