@@ -3,15 +3,161 @@
     <div class="agent-setting-sub-ty-survey-panel__header">
       <span class="com-setting-section-title">설문 구성</span>
       <p class="com-setting-hint agent-setting-sub-ty-survey-panel__summary">
-        설문·응답·평가 등급·기능 옵션을 아래 영역에서 설정합니다.
+        에이전트 정보·척도·영역·등급·출력 섹션·제약·기능 옵션을 아래 영역에서 설정합니다.
       </p>
     </div>
 
     <div class="agent-setting-sub-ty-survey-panel__accordions">
+      <!-- ① 에이전트 정보 -->
+      <div class="agent-setting-sub-ty-survey-accordion">
+        <UiSettingSection
+          title="에이전트 정보"
+          collapsible
+          label-width="100px"
+        >
+          <div class="com-setting-field-row">
+            <label class="com-setting-label">페르소나</label>
+            <UiInput
+              :model-value="modelValue.agentPersona"
+              placeholder="예: 전문 산업심리 상담사 및 멘탈 웰니스 코치"
+              size="sm"
+              @update:model-value="onUpdate('agentPersona', String($event ?? ''))"
+            />
+          </div>
+          <div class="com-setting-field-row is-top">
+            <label class="com-setting-label">임무 설명</label>
+            <UiTextarea
+              :model-value="modelValue.agentMission"
+              placeholder="사용자의 설문 결과를 분석하여 실질적인 가이드를 제공하는 것이 임무입니다."
+              :rows="3"
+              size="sm"
+              :border="true"
+              :auto-resize="true"
+              :max-rows="6"
+              @update:model-value="onUpdate('agentMission', String($event ?? ''))"
+            />
+          </div>
+          <div class="com-setting-field-row">
+            <label class="com-setting-label">출력 언어</label>
+            <UiInput
+              :model-value="modelValue.agentLanguageLabel"
+              placeholder="한국어"
+              size="sm"
+              @update:model-value="onUpdate('agentLanguageLabel', String($event ?? ''))"
+            />
+          </div>
+          <div class="com-setting-field-row">
+            <label class="com-setting-label">언어 예외</label>
+            <UiInput
+              :model-value="modelValue.agentLanguageExceptions"
+              placeholder="곡명·아티스트명·이미지 키워드는 영어 허용"
+              size="sm"
+              @update:model-value="onUpdate('agentLanguageExceptions', String($event ?? ''))"
+            />
+          </div>
+        </UiSettingSection>
+      </div>
+
+      <!-- ② 설문 UI 문구 -->
+      <div class="agent-setting-sub-ty-survey-accordion">
+        <UiSettingSection
+          title="설문 UI 문구"
+          collapsible
+          :default-collapsed="true"
+          label-width="100px"
+        >
+          <p class="com-setting-hint agent-setting-sub-ty-survey-panel__summary">
+            채팅 설문 화면에 표시되는 제목·출처·소개 문구입니다. 비워두면 설문 유형별 기본값이 적용됩니다.
+          </p>
+          <div class="com-setting-field-row">
+            <label class="com-setting-label">설문 제목</label>
+            <UiInput
+              :model-value="modelValue.surveyTitle"
+              placeholder="예: 한국인 직무스트레스 요인 평가"
+              size="sm"
+              @update:model-value="onUpdate('surveyTitle', String($event ?? ''))"
+            />
+          </div>
+          <div class="com-setting-field-row is-top">
+            <label class="com-setting-label">출처</label>
+            <UiInput
+              :model-value="modelValue.disclaimerSource"
+              placeholder="예: 출처 : 한국형 직무스트레스 평가도구 (KOSS-SF1) : 한국산업안전보건공단"
+              size="sm"
+              @update:model-value="onUpdate('disclaimerSource', String($event ?? ''))"
+            />
+          </div>
+          <div class="com-setting-field-row is-top">
+            <label class="com-setting-label">소개·면책</label>
+            <UiTextarea
+              :model-value="modelValue.disclaimerText"
+              placeholder="설문 도구 소개 및 면책 안내 문구"
+              :rows="4"
+              size="sm"
+              :border="true"
+              :auto-resize="true"
+              :max-rows="8"
+              @update:model-value="onUpdate('disclaimerText', String($event ?? ''))"
+            />
+          </div>
+          <div class="com-setting-field-row">
+            <label class="com-setting-label">인트로 제목</label>
+            <UiInput
+              :model-value="modelValue.introTitle"
+              placeholder="예: 심리 스트레스 진단"
+              size="sm"
+              @update:model-value="onUpdate('introTitle', String($event ?? ''))"
+            />
+          </div>
+          <div class="com-setting-field-row">
+            <label class="com-setting-label">인트로 부제</label>
+            <UiInput
+              :model-value="modelValue.introSubtitle"
+              placeholder="예: 상담 세션을 준비하고 있습니다..."
+              size="sm"
+              @update:model-value="onUpdate('introSubtitle', String($event ?? ''))"
+            />
+          </div>
+          <div class="com-setting-field-row">
+            <label class="com-setting-label">성별 선택 제목</label>
+            <UiInput
+              :model-value="modelValue.genderStepTitle"
+              placeholder="예: 진단 전 성별을 선택해 주세요"
+              size="sm"
+              @update:model-value="onUpdate('genderStepTitle', String($event ?? ''))"
+            />
+          </div>
+          <div class="com-setting-field-row is-top">
+            <label class="com-setting-label">성별 선택 설명</label>
+            <UiTextarea
+              :model-value="modelValue.genderStepDesc"
+              placeholder="성별 선택이 필요한 이유를 안내합니다."
+              :rows="2"
+              size="sm"
+              :border="true"
+              :auto-resize="true"
+              :max-rows="4"
+              @update:model-value="onUpdate('genderStepDesc', String($event ?? ''))"
+            />
+          </div>
+          <div class="com-setting-field-row">
+            <label class="com-setting-label">제출 버튼</label>
+            <UiInput
+              :model-value="modelValue.submitLabel"
+              placeholder="예: 진단 완료 후 상담 시작"
+              size="sm"
+              @update:model-value="onUpdate('submitLabel', String($event ?? ''))"
+            />
+          </div>
+        </UiSettingSection>
+      </div>
+
+      <!-- ③ 기본 · 척도 -->
       <div class="agent-setting-sub-ty-survey-accordion">
         <UiSettingSection
           title="기본 · 척도"
           collapsible
+          :default-collapsed="true"
           label-width="100px"
         >
           <div class="com-setting-field-row">
@@ -22,6 +168,18 @@
               size="sm"
               @update:model-value="onUpdate('surveyType', String($event ?? ''))"
             />
+          </div>
+          <div class="com-setting-field-row">
+            <label class="com-setting-label">핵심 원인 N개</label>
+            <div class="com-setting-field-input survey-topn-field">
+              <UiInput
+                :model-value="modelValue.topN"
+                number-only
+                size="sm"
+                @update:model-value="onUpdate('topN', Number($event ?? 2))"
+              />
+              <span class="com-setting-hint">상위 N개 영역을 핵심 원인으로 제시합니다.</span>
+            </div>
           </div>
 
           <div class="survey-score-options">
@@ -66,6 +224,7 @@
         </UiSettingSection>
       </div>
 
+      <!-- ④ 영역 · 문항 -->
       <div class="agent-setting-sub-ty-survey-accordion">
         <UiSettingSection
           title="영역 · 문항"
@@ -80,125 +239,75 @@
         </UiSettingSection>
       </div>
 
+      <!-- ⑤ 평가 등급 -->
       <div class="agent-setting-sub-ty-survey-accordion">
         <UiSettingSection
-          title="응답 출력 · 프롬프트"
-          collapsible
-          :default-collapsed="true"
-          label-width="100px"
-        >
-          <div class="com-setting-field-row is-top">
-            <label class="com-setting-label">프롬프트 역할</label>
-            <UiInput
-              :model-value="modelValue.promptRole"
-              placeholder="전문 산업심리 상담사 및 멘탈 웰니스 코치"
-              size="sm"
-              @update:model-value="onUpdate('promptRole', String($event ?? ''))"
-            />
-          </div>
-
-          <div class="com-setting-field-row">
-            <label class="com-setting-label">응답 언어</label>
-            <UiInput
-              :model-value="modelValue.promptLanguage"
-              placeholder="ko"
-              size="sm"
-              @update:model-value="onUpdate('promptLanguage', String($event ?? ''))"
-            />
-          </div>
-
-          <div class="survey-output-sections">
-            <div class="survey-output-sections__head">
-              <span class="com-setting-label">출력 섹션</span>
-              <UiButton
-                variant="line-secondary"
-                size="xs"
-                @click="onAddOutputSection"
-              >
-                섹션 추가
-              </UiButton>
-            </div>
-            <span class="com-setting-hint">진단 결과 본문의 마크다운 섹션 제목입니다.</span>
-            <p
-              v-if="!modelValue.outputSections.length"
-              class="com-setting-hint"
-            >
-              섹션을 추가해 주세요.
-            </p>
-            <div
-              v-for="(_, idx) in modelValue.outputSections"
-              :key="`output-section-${idx}`"
-              class="survey-output-sections__row"
-            >
-              <UiInput
-                :model-value="modelValue.outputSections[idx]"
-                size="sm"
-                placeholder="예: 종합 소견"
-                @update:model-value="onOutputSectionUpdate(idx, String($event ?? ''))"
-              />
-              <button
-                type="button"
-                class="survey-icon-btn"
-                title="섹션 삭제"
-                @click="onRemoveOutputSection(idx)"
-              >
-                <i class="icon-trashcan size-14" />
-              </button>
-            </div>
-          </div>
-        </UiSettingSection>
-      </div>
-
-      <div class="agent-setting-sub-ty-survey-accordion">
-        <UiSettingSection
-          title="평가 등급 구간"
+          title="평가 등급"
           collapsible
           :default-collapsed="true"
           label-width="100px"
         >
           <p class="com-setting-hint survey-section-lead">
-            등급 이름과 톤을 정의합니다. 구간 상한은 등급 수보다 1개 적게 입력합니다.
+            등급 이름과 LLM 톤을 정의합니다. 뱃지·상태 클래스는 채팅 결과 요약(현재 상태) 색상에 사용됩니다. 구간 상한은
+            등급 수보다 1개 적게 입력합니다.
           </p>
 
-          <div class="survey-risk-levels">
-            <div class="survey-risk-levels__head">
+          <div class="survey-result-tiers">
+            <div class="survey-result-tiers__head">
               <span class="com-setting-label">등급 목록</span>
               <UiButton
                 variant="line-secondary"
                 size="xs"
-                @click="onAddRiskLevel"
+                @click="onAddResultTier"
               >
                 등급 추가
               </UiButton>
             </div>
             <div
-              v-for="(level, idx) in modelValue.riskLevels"
-              :key="`level-${idx}`"
-              class="survey-risk-level-row"
+              v-for="(tier, idx) in modelValue.resultTiers"
+              :key="`tier-${idx}`"
+              class="survey-result-tier-card"
             >
+              <div class="survey-result-tier-card__head">
+                <UiInput
+                  :model-value="tier.label"
+                  size="sm"
+                  placeholder="등급명 (예: 정상군)"
+                  @update:model-value="onResultTierUpdate(idx, 'label', String($event ?? ''))"
+                />
+                <button
+                  v-if="modelValue.resultTiers.length > 2"
+                  type="button"
+                  class="survey-icon-btn"
+                  title="등급 삭제"
+                  @click="onRemoveResultTier(idx)"
+                >
+                  <i class="icon-trashcan size-14" />
+                </button>
+              </div>
               <UiInput
-                :model-value="level.label"
+                :model-value="tier.tone"
                 size="sm"
-                placeholder="등급명 (예: 정상)"
-                class="survey-risk-level-row__label"
-                @update:model-value="onRiskLevelUpdate(idx, 'label', String($event ?? ''))"
+                placeholder="LLM 톤 안내 (예: 공감 중심, 따듯하고 친근한 말투)"
+                @update:model-value="onResultTierUpdate(idx, 'tone', String($event ?? ''))"
               />
-              <UiInput
-                :model-value="level.tone"
-                size="sm"
-                placeholder="LLM 톤 안내"
-                class="survey-risk-level-row__tone"
-                @update:model-value="onRiskLevelUpdate(idx, 'tone', String($event ?? ''))"
-              />
-              <button
-                v-if="modelValue.riskLevels.length > 2"
-                type="button"
-                class="survey-icon-btn"
-                title="등급 삭제"
-                @click="onRemoveRiskLevel(idx)"
-              >
-                <i class="icon-trashcan size-14" />
-              </button>
+              <div class="survey-result-tier-card__style">
+                <span class="com-setting-hint">결과 요약 뱃지·상태 텍스트 CSS 클래스</span>
+                <div class="survey-result-tier-card__style-row">
+                  <UiInput
+                    :model-value="tier.badgeClass"
+                    size="sm"
+                    placeholder="뱃지 (risk-safe)"
+                    @update:model-value="onResultTierUpdate(idx, 'badgeClass', String($event ?? ''))"
+                  />
+                  <UiInput
+                    :model-value="tier.statusClass"
+                    size="sm"
+                    placeholder="상태 (risk-status--safe)"
+                    @update:model-value="onResultTierUpdate(idx, 'statusClass', String($event ?? ''))"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -217,7 +326,7 @@
                 class="com-setting-inline survey-threshold-inline"
               >
                 <span class="survey-threshold-inline__label">
-                  {{ modelValue.riskLevels[slot - 1]?.label || `등급 ${slot}` }} 이하
+                  {{ modelValue.resultTiers[slot - 1]?.label || `등급 ${slot}` }} 이하
                 </span>
                 <UiInput
                   :model-value="modelValue.totalThresholdsCommon[slot - 1]"
@@ -238,7 +347,7 @@
                   class="com-setting-inline survey-threshold-inline"
                 >
                   <span class="survey-threshold-inline__label">
-                    {{ modelValue.riskLevels[slot - 1]?.label || `등급 ${slot}` }} 이하
+                    {{ modelValue.resultTiers[slot - 1]?.label || `등급 ${slot}` }} 이하
                   </span>
                   <UiInput
                     :model-value="modelValue.totalThresholdsMale[slot - 1]"
@@ -257,7 +366,7 @@
                   class="com-setting-inline survey-threshold-inline"
                 >
                   <span class="survey-threshold-inline__label">
-                    {{ modelValue.riskLevels[slot - 1]?.label || `등급 ${slot}` }} 이하
+                    {{ modelValue.resultTiers[slot - 1]?.label || `등급 ${slot}` }} 이하
                   </span>
                   <UiInput
                     :model-value="modelValue.totalThresholdsFemale[slot - 1]"
@@ -273,6 +382,72 @@
         </UiSettingSection>
       </div>
 
+      <!-- ⑥ 출력 섹션 -->
+      <div class="agent-setting-sub-ty-survey-accordion">
+        <UiSettingSection
+          title="출력 섹션"
+          collapsible
+          :default-collapsed="true"
+          label-width="100px"
+        >
+          <AgentSettingSubTySurveyOutputSections
+            :model-value="modelValue"
+            @update:model-value="emit('update:modelValue', $event)"
+          />
+        </UiSettingSection>
+      </div>
+
+      <!-- ⑦ 제약 -->
+      <div class="agent-setting-sub-ty-survey-accordion">
+        <UiSettingSection
+          title="제약 (Constraints)"
+          collapsible
+          :default-collapsed="true"
+          label-width="100px"
+        >
+          <p class="com-setting-hint survey-section-lead">LLM이 반드시 준수해야 할 제약 사항을 한 줄씩 입력합니다.</p>
+          <div class="survey-constraints">
+            <div class="survey-constraints__head">
+              <span class="com-setting-label">제약 목록</span>
+              <UiButton
+                variant="line-secondary"
+                size="xs"
+                @click="onAddConstraint"
+              >
+                항목 추가
+              </UiButton>
+            </div>
+            <p
+              v-if="!modelValue.constraints.length"
+              class="com-setting-hint"
+            >
+              항목을 추가해 주세요.
+            </p>
+            <div
+              v-for="(_, idx) in modelValue.constraints"
+              :key="`constraint-${idx}`"
+              class="survey-constraints__row"
+            >
+              <UiInput
+                :model-value="modelValue.constraints[idx]"
+                size="sm"
+                placeholder="예: 의료 진단 금지. 약물처방 금지."
+                @update:model-value="onConstraintUpdate(idx, String($event ?? ''))"
+              />
+              <button
+                type="button"
+                class="survey-icon-btn"
+                title="삭제"
+                @click="onRemoveConstraint(idx)"
+              >
+                <i class="icon-trashcan size-14" />
+              </button>
+            </div>
+          </div>
+        </UiSettingSection>
+      </div>
+
+      <!-- ⑦ 기능 -->
       <div class="agent-setting-sub-ty-survey-accordion">
         <UiSettingSection
           title="기능"
@@ -305,7 +480,7 @@
 </template>
 
 <script setup lang="ts">
-import type { SurveyRiskLevelForm, SurveyScoreOptionForm } from '~/types/agentSurveyConfig'
+import type { SurveyResultTierForm, SurveyScoreOptionForm } from '~/types/agentSurveyConfig'
 import {
   ensureThresholdLength,
   thresholdSlotCount as calcThresholdSlots,
@@ -322,12 +497,13 @@ const emit = defineEmits<{
 
 const emitForm = (next: SurveyConfigForm) => emit('update:modelValue', next)
 
-const thresholdSlotCount = computed(() => calcThresholdSlots(props.modelValue.riskLevels.length))
+const thresholdSlotCount = computed(() => calcThresholdSlots(props.modelValue.resultTiers.length))
 
 const onUpdate = <K extends keyof SurveyConfigForm>(key: K, value: SurveyConfigForm[K]) => {
   emitForm({ ...props.modelValue, [key]: value })
 }
 
+// ── 척도 선택지 ──────────────────────────────────────────────
 const onAddScoreOption = () => {
   const maxVal = props.modelValue.scoreOptions.reduce((m, o) => Math.max(m, o.value), 0)
   const scoreOptions: SurveyScoreOptionForm[] = [...props.modelValue.scoreOptions, { value: maxVal + 1, label: '' }]
@@ -347,27 +523,9 @@ const onRemoveScoreOption = (idx: number) => {
   })
 }
 
-const onAddOutputSection = () => {
-  emitForm({
-    ...props.modelValue,
-    outputSections: [...props.modelValue.outputSections, ''],
-  })
-}
-
-const onOutputSectionUpdate = (idx: number, value: string) => {
-  const outputSections = props.modelValue.outputSections.map((s, i) => (i === idx ? value : s))
-  emitForm({ ...props.modelValue, outputSections })
-}
-
-const onRemoveOutputSection = (idx: number) => {
-  emitForm({
-    ...props.modelValue,
-    outputSections: props.modelValue.outputSections.filter((_, i) => i !== idx),
-  })
-}
-
+// ── 결과 등급 ──────────────────────────────────────────────
 const resizeThresholds = (form: SurveyConfigForm): SurveyConfigForm => {
-  const slots = calcThresholdSlots(form.riskLevels.length)
+  const slots = calcThresholdSlots(form.resultTiers.length)
   return {
     ...form,
     totalThresholdsCommon: ensureThresholdLength(form.totalThresholdsCommon, slots),
@@ -376,22 +534,26 @@ const resizeThresholds = (form: SurveyConfigForm): SurveyConfigForm => {
   }
 }
 
-const onAddRiskLevel = () => {
-  const riskLevels: SurveyRiskLevelForm[] = [...props.modelValue.riskLevels, { key: '', label: '', tone: '' }]
-  emitForm(resizeThresholds({ ...props.modelValue, riskLevels }))
+const onAddResultTier = () => {
+  const resultTiers: SurveyResultTierForm[] = [
+    ...props.modelValue.resultTiers,
+    { key: '', label: '', badgeClass: '', statusClass: '', tone: '' },
+  ]
+  emitForm(resizeThresholds({ ...props.modelValue, resultTiers }))
 }
 
-const onRemoveRiskLevel = (idx: number) => {
-  if (props.modelValue.riskLevels.length <= 2) return
-  const riskLevels = props.modelValue.riskLevels.filter((_, i) => i !== idx)
-  emitForm(resizeThresholds({ ...props.modelValue, riskLevels }))
+const onRemoveResultTier = (idx: number) => {
+  if (props.modelValue.resultTiers.length <= 2) return
+  const resultTiers = props.modelValue.resultTiers.filter((_, i) => i !== idx)
+  emitForm(resizeThresholds({ ...props.modelValue, resultTiers }))
 }
 
-const onRiskLevelUpdate = (idx: number, key: keyof SurveyRiskLevelForm, value: string) => {
-  const riskLevels = props.modelValue.riskLevels.map((l, i) => (i === idx ? { ...l, [key]: value } : l))
-  emitForm({ ...props.modelValue, riskLevels })
+const onResultTierUpdate = (idx: number, key: keyof SurveyResultTierForm, value: string) => {
+  const resultTiers = props.modelValue.resultTiers.map((t, i) => (i === idx ? { ...t, [key]: value } : t))
+  emitForm({ ...props.modelValue, resultTiers })
 }
 
+// ── 총점 구간 ──────────────────────────────────────────────
 const onCommonThresholdUpdate = (slotIdx: number, value: number) => {
   const bounds = [...props.modelValue.totalThresholdsCommon]
   bounds[slotIdx] = value
@@ -412,7 +574,7 @@ const onFemaleThresholdUpdate = (slotIdx: number, value: number) => {
 
 const onRequireGenderChange = (requireGender: boolean) => {
   const prev = props.modelValue
-  const slots = calcThresholdSlots(prev.riskLevels.length)
+  const slots = calcThresholdSlots(prev.resultTiers.length)
   if (requireGender) {
     emitForm(
       resizeThresholds({
@@ -443,6 +605,23 @@ const onRequireGenderChange = (requireGender: boolean) => {
       totalThresholdsFemale: [],
     }),
   )
+}
+
+// ── 제약 ──────────────────────────────────────────────────
+const onAddConstraint = () => {
+  emitForm({ ...props.modelValue, constraints: [...props.modelValue.constraints, ''] })
+}
+
+const onConstraintUpdate = (idx: number, value: string) => {
+  const constraints = props.modelValue.constraints.map((c, i) => (i === idx ? value : c))
+  emitForm({ ...props.modelValue, constraints })
+}
+
+const onRemoveConstraint = (idx: number) => {
+  emitForm({
+    ...props.modelValue,
+    constraints: props.modelValue.constraints.filter((_, i) => i !== idx),
+  })
 }
 </script>
 
@@ -490,13 +669,26 @@ const onRequireGenderChange = (requireGender: boolean) => {
   :deep(.com-setting-section-header) {
     padding-top: 2px;
   }
+
+  :deep(.com-setting-field-row) {
+    .ui-input-outer,
+    .ui-textarea {
+      flex: 1;
+      min-width: 0;
+    }
+  }
 }
 
 .survey-section-lead {
   margin: 0;
 }
 
-.survey-output-sections,
+.survey-topn-field {
+  flex: 0 0 auto;
+  width: 120px;
+}
+
+// ── 응답 척도 ──────────────────────────────────────────────
 .survey-score-options {
   display: flex;
   flex-direction: column;
@@ -527,20 +719,35 @@ const onRequireGenderChange = (requireGender: boolean) => {
   }
 }
 
-.survey-output-sections {
+// ── 결과 등급 ──────────────────────────────────────────────
+.survey-result-tiers {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-left: calc(var(--label-width) + 12px);
+
   &__head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
 
     .com-setting-label {
       width: auto;
       text-align: left;
     }
   }
+}
 
-  &__row {
+.survey-result-tier-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #dce4e9;
+  border-radius: $border-radius-base;
+  background: #fff;
+
+  &__head {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -550,44 +757,28 @@ const onRequireGenderChange = (requireGender: boolean) => {
       min-width: 0;
     }
   }
-}
 
-.survey-threshold-row,
-.survey-risk-levels {
-  margin-left: calc(var(--label-width) + 12px);
-}
-
-.survey-risk-levels {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-
-  &__head {
+  &__style {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 4px;
+    padding-top: 2px;
+  }
 
-    .com-setting-label {
-      width: auto;
-      text-align: left;
+  &__style-row {
+    display: flex;
+    gap: 8px;
+
+    :deep(.ui-input-outer) {
+      flex: 1;
+      min-width: 0;
     }
   }
 }
 
-.survey-risk-level-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  &__label {
-    flex: 0.9;
-    min-width: 0;
-  }
-
-  &__tone {
-    flex: 1.4;
-    min-width: 0;
-  }
+// ── 구간 상한 ──────────────────────────────────────────────
+.survey-threshold-row {
+  margin-left: calc(var(--label-width) + 12px);
 }
 
 .survey-threshold-inline {
@@ -619,6 +810,37 @@ const onRequireGenderChange = (requireGender: boolean) => {
   }
 }
 
+// ── 제약 ──────────────────────────────────────────────────
+.survey-constraints {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-left: calc(var(--label-width) + 12px);
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    .com-setting-label {
+      width: auto;
+      text-align: left;
+    }
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    :deep(.ui-input-outer) {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+}
+
+// ── 기능 ──────────────────────────────────────────────────
 .survey-feature-col {
   display: flex;
   flex-direction: column;
@@ -626,6 +848,7 @@ const onRequireGenderChange = (requireGender: boolean) => {
   margin-left: calc(var(--label-width) + 12px);
 }
 
+// ── 공통 아이콘 버튼 ──────────────────────────────────────
 .survey-icon-btn {
   flex-shrink: 0;
   display: inline-flex;

@@ -298,6 +298,7 @@ import type { Agent } from '~/types/agent'
 import {
   fetchAndInjectPexelsImages,
   extractKeywordSection,
+  hasImageKeywordLines,
   removeKeywordLines,
   PEXELS_LOADING_HTML,
   extractAiImageMarkerSection,
@@ -331,6 +332,7 @@ import {
   parseSurveyConfigFromAgent,
   resolveSurveyConfigByAgentId,
   setActiveSurveyConfig,
+  isSurveyPexelsAgentById,
   isSurveyRadarAgentById,
 } from '~/utils/chat/surveyUtil'
 
@@ -339,6 +341,7 @@ const { surveyGender } = usePsychologySurvey()
 const { user } = useAuth()
 
 const isSurveyRadarAgent = (agentId: string) => isSurveyRadarAgentById(agentId, chatIndexAgents.value)
+const isSurveyPexelsAgent = (agentId: string) => isSurveyPexelsAgentById(agentId, chatIndexAgents.value)
 interface Props {
   message: ChatMessage
   knowledgeList?: KnowledgeItem[]
@@ -435,21 +438,38 @@ const psychologyRadarChartConfig = computed<Record<string, unknown>>(() =>
 )
 
 let pexelsFetchDone = false
+let pexelsOnlyFetchDone = false
 let radarChartFetchDone = false
 
 /** F5 직후 chatIndexAgents 미로드 → 이후 재처리 트리거용 */
-let lastSurveyRadarGateKey = ''
+let lastSurveyAnswerGateKey = ''
 
-const resetSurveyRadarRenderState = () => {
+const resetSurveyAnswerRenderState = () => {
   markerFound.value = false
   beforeChartHtml.value = ''
   afterChartHtml.value = ''
   radarChartLoading.value = false
   radarChartData.value = null
   pexelsFetchDone = false
+  pexelsOnlyFetchDone = false
   radarChartFetchDone = false
   cancelPsychologyRadarUiInjection?.()
   cancelPsychologyRadarUiInjection = null
+}
+
+/** showPexelsRecoveryImages 전용 — 방사형 차트 없이 전체 응답에서 Pexels 주입 */
+const injectPexelsIntoRenderedHtml = (raw: string, logId: string) => {
+  if (!hasImageKeywordLines(raw)) {
+    renderedHtml.value = renderMarkdownHtml(raw)
+    return
+  }
+
+  const { beforeText, afterText } = extractKeywordSection(raw)
+  renderedHtml.value = renderMarkdownHtml(beforeText) + PEXELS_LOADING_HTML + renderMarkdownHtml(afterText)
+  fetchAndInjectPexelsImages(raw, logId).then(({ beforeText: bt, afterText: at, gridHtml }) => {
+    if (!isMessageItemAlive || props.message.logId !== logId) return
+    renderedHtml.value = renderMarkdownHtml(bt) + gridHtml + renderMarkdownHtml(at)
+  })
 }
 
 /** answer 행에 surveyAnswers가 없을 때(로그 재조회 등) 연결 question·survey 메시지에서 복원 */
@@ -497,14 +517,30 @@ watch(
     ] as const,
   ([, rContent, agentId, isStreaming]) => {
     const raw = rContent ?? ''
-    const gateKey = `${props.message.logId}:${isSurveyRadarAgentById(agentId ?? '', chatIndexAgents.value)}`
+    const agentIdStr = agentId ?? ''
+    const isRadar = isSurveyRadarAgent(agentIdStr)
+    const isPexels = isSurveyPexelsAgent(agentIdStr)
+    const gateKey = `${props.message.logId}:${isRadar}:${isPexels}`
 
-    if (gateKey !== lastSurveyRadarGateKey) {
-      resetSurveyRadarRenderState()
-      lastSurveyRadarGateKey = gateKey
+    if (gateKey !== lastSurveyAnswerGateKey) {
+      resetSurveyAnswerRenderState()
+      lastSurveyAnswerGateKey = gateKey
     }
 
-    if (!isSurveyRadarAgent(agentId ?? '')) {
+    // Pexels만 켠 SURVEY (showRadarChart: false) — 디지털 과부하 등
+    if (!isRadar && isPexels) {
+      if (isStreaming) {
+        renderedHtml.value = renderMarkdownHtml(removeKeywordLines(raw))
+        return
+      }
+      if (!pexelsOnlyFetchDone) {
+        pexelsOnlyFetchDone = true
+        injectPexelsIntoRenderedHtml(raw, props.message.logId)
+      }
+      return
+    }
+
+    if (!isRadar) {
       renderedHtml.value = renderMarkdownHtml(raw)
       return
     }

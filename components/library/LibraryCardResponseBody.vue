@@ -66,6 +66,12 @@
       />
     </template>
     <div
+      v-else-if="isSurveyPexelsOnlyResponse"
+      class="message-content markdown-body library-psychology-markdown"
+      @click="onPsychologyMarkdownClick"
+      v-html="surveyPexelsOnlyHtml"
+    />
+    <div
       v-else
       class="message-content markdown-body"
       v-html="responseRenderedHtml"
@@ -118,8 +124,10 @@ import {
   extractKeywordSection,
   PEXELS_LOADING_HTML,
   fetchAndInjectPexelsImages,
+  hasImageKeywordLines,
   usePsychologySurvey,
   isSurveyRadarAgentById,
+  isSurveyPexelsAgentById,
   isLikelySurveyResponseByQcontent,
   resolveSurveyConfigByAgentId,
   setActiveSurveyConfig,
@@ -187,15 +195,24 @@ const isTodayMemeResponse = computed(() => isTodayMemeLibraryCard(props.item) &&
 const isSurveyRadarLibraryCard = (agentId: string, qcontent: string) =>
   isSurveyRadarAgentById(agentId, chatIndexAgents.value) || isLikelySurveyResponseByQcontent(qcontent)
 
+const isSurveyPexelsLibraryCard = (agentId: string) =>
+  isSurveyPexelsAgentById(agentId, chatIndexAgents.value)
+
 const responseRenderedHtml = computed(() => {
   const raw = props.item.rcontent ?? ''
-  if (isSurveyRadarLibraryCard(props.item.agentId ?? '', props.item.qcontent ?? '')) {
+  const agentId = props.item.agentId ?? ''
+  const qcontent = props.item.qcontent ?? ''
+  if (isSurveyRadarLibraryCard(agentId, qcontent) || isSurveyPexelsLibraryCard(agentId)) {
     return toHtmlContent(removeKeywordLines(raw))
   }
   return toHtmlContent(raw)
 })
 
-// ── SURVEY(showRadarChart) 방사형 차트 (LibraryDetailModal 과 동일 로직) ──
+// ── SURVEY(showPexelsRecoveryImages) — 방사형 차트 없이 Pexels만 ──
+const surveyPexelsOnlyHtml = ref('')
+const isSurveyPexelsOnlyResponse = ref(false)
+
+// ── SURVEY(showRadarChart) 방사형 차트 ──
 const psychologyMarkerFound = ref(false)
 const psychologyBeforeChartHtml = ref('')
 const psychologyAfterChartHtml = ref('')
@@ -205,8 +222,23 @@ let cancelPsychologyRadarInjection: (() => void) | null = null
 let isLibraryCardAlive = true
 
 const isPsychologyRadarResponse = computed(
-  () => isSurveyRadarLibraryCard(props.item.agentId ?? '', props.item.qcontent ?? '') && psychologyMarkerFound.value,
+  () => isSurveyRadarAgentById(props.item.agentId ?? '', chatIndexAgents.value) && psychologyMarkerFound.value,
 )
+
+const injectLibraryPexelsHtml = (raw: string, cacheKey: string) => {
+  if (!hasImageKeywordLines(raw)) {
+    surveyPexelsOnlyHtml.value = toHtmlContent(raw)
+    return
+  }
+  const { beforeText, afterText } = extractKeywordSection(raw)
+  surveyPexelsOnlyHtml.value = toHtmlContent(beforeText) + PEXELS_LOADING_HTML + toHtmlContent(afterText)
+  fetchAndInjectPexelsImages(raw, cacheKey).then(({ beforeText: bt, afterText: at, gridHtml }) => {
+    if (!isLibraryCardAlive) return
+    const curKey = props.item.logId || props.item.cardId || ''
+    if (curKey !== cacheKey) return
+    surveyPexelsOnlyHtml.value = toHtmlContent(bt) + gridHtml + toHtmlContent(at)
+  })
+}
 
 const psychologyStressItems = computed<StressScoreItem[]>(() =>
   psychologyRadarData.value ? buildStressItemsFromRadarChartData(psychologyRadarData.value, surveyGender.value) : [],
@@ -239,6 +271,7 @@ watch(
       props.item.rcontent ?? '',
       props.item.qcontent ?? '',
       props.item.logId ?? '',
+      chatIndexAgents.value.map((a) => a.agentId).join(','),
     ] as const,
   ([cardId, agentId, rcontent, qcontent, logId]) => {
     pexelsModalUrl.value = ''
@@ -249,11 +282,26 @@ watch(
     psychologyAfterChartHtml.value = ''
     psychologyRadarData.value = null
     psychologyRadarLoading.value = false
+    isSurveyPexelsOnlyResponse.value = false
+    surveyPexelsOnlyHtml.value = ''
 
-    if (!cardId || !isSurveyRadarLibraryCard(agentId, qcontent)) return
+    if (!cardId) return
 
     const surveyConfig = resolveSurveyConfigByAgentId(agentId, chatIndexAgents.value)
     if (surveyConfig) setActiveSurveyConfig(surveyConfig)
+
+    const cacheKey = logId || cardId
+    const isRadar = isSurveyRadarAgentById(agentId, chatIndexAgents.value)
+    const isPexels = isSurveyPexelsLibraryCard(agentId)
+
+    // showRadarChart: false + showPexelsRecoveryImages: true (디지털 과부하 등)
+    if (!isRadar && isPexels) {
+      isSurveyPexelsOnlyResponse.value = true
+      injectLibraryPexelsHtml(rcontent, cacheKey)
+      return
+    }
+
+    if (!isSurveyRadarLibraryCard(agentId, qcontent)) return
 
     const { found, before, after } = extractAiImageMarkerSection(rcontent)
     if (!found) return
@@ -262,7 +310,6 @@ watch(
     psychologyBeforeChartHtml.value = toHtmlContent(removeKeywordLines(before))
 
     const answers = parseSurveyAnswersFromPrompt(qcontent)
-    const cacheKey = logId || cardId
 
     psychologyRadarLoading.value = true
     const cached = getRadarChartCache(cacheKey)

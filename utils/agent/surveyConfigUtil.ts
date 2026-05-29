@@ -1,23 +1,58 @@
 import type { AgtSubAdditionalConfig } from '~/types/agent'
 import type {
   SurveyCategoryForm,
+  SurveyOutputSectionBlock,
   SurveyQuestionForm,
+  SurveyResultTierForm,
   SurveyRiskLevelConfig,
-  SurveyRiskLevelForm,
   SurveyScoreOptionForm,
   SurveyTotalScoreProfileConfig,
+  SurveyUiConfig,
 } from '~/types/agentSurveyConfig'
+import {
+  parseSurveyClosingMessageBlock,
+  parseSurveyOutputSectionBlocks,
+} from '~/utils/agent/surveyOutputSectionUtil'
 
 /** Agent 설정 UI — SURVEY ADDITIONAL_CONFIG 편집 필드 */
 export interface SurveyConfigForm {
   surveyType: string
+  /** 핵심 원인 표시 상위 N개 */
+  topN: number
   categories: SurveyCategoryForm[]
   scoreOptions: SurveyScoreOptionForm[]
-  promptRole: string
-  promptLanguage: string
-  /** LLM 응답 마크다운 섹션 제목 (prompt.outputSections) */
-  outputSections: string[]
-  riskLevels: SurveyRiskLevelForm[]
+  /** 에이전트 페르소나 (신규: agent.persona / 기존: prompt.role) */
+  agentPersona: string
+  /** 에이전트 임무 설명 (신규: agent.mission) */
+  agentMission: string
+  /** 출력 언어 레이블 (신규: agent.languageLabel, 예: "한국어") */
+  agentLanguageLabel: string
+  /** 언어 예외 (신규: agent.languageExceptions) */
+  agentLanguageExceptions: string
+  /** 출력 섹션 블록 배열 */
+  outputSections: SurveyOutputSectionBlock[]
+  /** 마무리 응원 메시지 블록 (closingMessage 최상위 필드) */
+  closingMessage: SurveyOutputSectionBlock | null
+  /** 결과 등급 목록 (신규: resultTiers, badgeClass·statusClass·tone 포함) */
+  resultTiers: SurveyResultTierForm[]
+  /** 출력 제약 목록 (신규: constraints 배열) */
+  constraints: string[]
+  /** 설문 화면 제목 (ui.surveyTitle) */
+  surveyTitle: string
+  /** 출처 안내 (ui.disclaimerSource) */
+  disclaimerSource: string
+  /** 소개·면책 문구 (ui.disclaimerText) */
+  disclaimerText: string
+  /** 성별 선택 단계 제목 (ui.genderStepTitle) */
+  genderStepTitle: string
+  /** 성별 선택 단계 설명 (ui.genderStepDesc) */
+  genderStepDesc: string
+  /** 인트로 애니메이션 제목 (ui.introTitle) */
+  introTitle: string
+  /** 인트로 부제 (ui.introSubtitle) */
+  introSubtitle: string
+  /** 제출 버튼 라벨 (ui.submitLabel) */
+  submitLabel: string
   requireGender: boolean
   showRadarChart: boolean
   showAiRecoveryImage: boolean
@@ -26,14 +61,15 @@ export interface SurveyConfigForm {
   totalThresholdsFemale: number[]
 }
 
-const DEFAULT_RISK_LEVELS: SurveyRiskLevelForm[] = [
-  { key: 'normal', label: '정상', tone: '' },
-  { key: 'caution', label: '경계', tone: '' },
-  { key: 'high', label: '고위험', tone: '' },
+const DEFAULT_RESULT_TIERS: SurveyResultTierForm[] = [
+  { key: 'safe', label: '정상군', badgeClass: 'risk-safe', statusClass: 'risk-status--safe', tone: '' },
+  { key: 'caution', label: '경계군', badgeClass: 'risk-caution', statusClass: 'risk-status--caution', tone: '' },
+  { key: 'highrisk', label: '고위험군', badgeClass: 'risk-danger', statusClass: 'risk-status--danger', tone: '' },
 ]
 
 export const emptySurveyConfigForm = (): SurveyConfigForm => ({
   surveyType: '',
+  topN: 2,
   categories: [],
   scoreOptions: [
     { value: 1, label: '전혀 그렇지 않다' },
@@ -41,10 +77,22 @@ export const emptySurveyConfigForm = (): SurveyConfigForm => ({
     { value: 3, label: '그렇다' },
     { value: 4, label: '매우 그렇다' },
   ],
-  promptRole: '',
-  promptLanguage: '',
+  agentPersona: '',
+  agentMission: '',
+  agentLanguageLabel: '',
+  agentLanguageExceptions: '',
   outputSections: [],
-  riskLevels: DEFAULT_RISK_LEVELS.map((r) => ({ ...r })),
+  closingMessage: null,
+  resultTiers: DEFAULT_RESULT_TIERS.map((r) => ({ ...r })),
+  constraints: [],
+  surveyTitle: '',
+  disclaimerSource: '',
+  disclaimerText: '',
+  genderStepTitle: '',
+  genderStepDesc: '',
+  introTitle: '',
+  introSubtitle: '',
+  submitLabel: '',
   requireGender: false,
   showRadarChart: false,
   showAiRecoveryImage: false,
@@ -91,10 +139,34 @@ const parseUpperBounds = (profile: SurveyTotalScoreProfileConfig | null): number
   return bounds
 }
 
-const parseRiskLevels = (
+/**
+ * resultTiers 배열 파싱 (신규: cfg.resultTiers)
+ * 기존 riskRules.riskLevels + prompt.toneByRiskLevel 형식도 변환
+ */
+const parseResultTiers = (
   riskRules: Record<string, unknown>,
   toneByRiskLevel: Record<string, string>,
-): SurveyRiskLevelForm[] => {
+  cfgResultTiers: unknown,
+): SurveyResultTierForm[] => {
+  // 신규: cfg.resultTiers 배열
+  if (Array.isArray(cfgResultTiers) && cfgResultTiers.length > 0) {
+    const first = cfgResultTiers[0] as Record<string, unknown>
+    if (typeof first.badgeClass === 'string' || typeof first.statusClass === 'string') {
+      return cfgResultTiers.map((t, i) => {
+        const row = t as Record<string, unknown>
+        const label = String(row.label ?? '')
+        return {
+          key: String(row.key ?? slugKey(label, i)),
+          label,
+          badgeClass: String(row.badgeClass ?? ''),
+          statusClass: String(row.statusClass ?? ''),
+          tone: String(row.tone ?? toneByRiskLevel[label] ?? ''),
+        }
+      })
+    }
+  }
+
+  // 기존: riskRules.riskLevels
   const fromRules = riskRules.riskLevels
   if (Array.isArray(fromRules) && fromRules.length > 0) {
     return fromRules.map((row, i) => {
@@ -103,19 +175,26 @@ const parseRiskLevels = (
       return {
         key: String(item.key ?? slugKey(label, i)),
         label,
+        badgeClass: String(item.badgeClass ?? ''),
+        statusClass: String(item.statusClass ?? ''),
         tone: String(toneByRiskLevel[label] ?? item.tone ?? ''),
       }
     })
   }
+
+  // 기존: prompt.toneByRiskLevel 키만 있는 경우
   const toneEntries = Object.entries(toneByRiskLevel)
   if (toneEntries.length > 0) {
     return toneEntries.map(([label, tone], i) => ({
       key: slugKey(label, i),
       label,
+      badgeClass: '',
+      statusClass: '',
       tone: String(tone ?? ''),
     }))
   }
-  return DEFAULT_RISK_LEVELS.map((r) => ({ ...r }))
+
+  return DEFAULT_RESULT_TIERS.map((r) => ({ ...r }))
 }
 
 const parseCategories = (raw: unknown, reverseQuestionNos: number[]): SurveyCategoryForm[] => {
@@ -139,6 +218,7 @@ const parseCategories = (raw: unknown, reverseQuestionNos: number[]): SurveyCate
       key: String(row.key ?? `category${no}`),
       title: String(row.title ?? ''),
       titleEn: String(row.titleEn ?? ''),
+      elevatedLabel: String(row.elevatedLabel ?? ''),
       questions,
     }
   })
@@ -154,13 +234,71 @@ const parseScoreOptions = (raw: unknown): SurveyScoreOptionForm[] => {
   })
 }
 
-const buildToneByRiskLevel = (levels: SurveyRiskLevelForm[]): Record<string, string> => {
-  const result: Record<string, string> = {}
-  for (const level of levels) {
-    if (!level.label.trim()) continue
-    result[level.label.trim()] = level.tone
+const parseUiString = (uiRaw: Record<string, unknown>, cfg: Record<string, unknown>, key: keyof SurveyUiConfig) => {
+  const fromUi = uiRaw[key]
+  if (fromUi != null && String(fromUi).trim()) return String(fromUi).trim()
+  const fromTop = cfg[key]
+  if (fromTop != null && String(fromTop).trim()) return String(fromTop).trim()
+  return ''
+}
+
+/** ADDITIONAL_CONFIG → 설정 폼 */
+export const parseSurveyAdditionalConfigToForm = (
+  config: Record<string, unknown> | null | undefined,
+): SurveyConfigForm => {
+  if (!config || typeof config !== 'object') return emptySurveyConfigForm()
+
+  const isNew = !!(config.agent && typeof config.agent === 'object')
+  const agentInfo = isNew ? ((config.agent ?? {}) as Record<string, unknown>) : {}
+  const prompt = isNew ? {} : ((config.prompt ?? {}) as Record<string, unknown>)
+  const features = (config.features ?? {}) as Record<string, unknown>
+  const engine = isNew ? ((config.engine ?? {}) as Record<string, unknown>) : {}
+  const riskRules = ((isNew ? engine.riskRules : config.riskRules) ?? {}) as Record<string, unknown>
+  const totalScore = (riskRules.totalScore ?? {}) as Record<string, unknown>
+  const toneByRiskLevel = (prompt.toneByRiskLevel ?? {}) as Record<string, string>
+
+  const requireGender = features.requireGender === true
+  const resultTiers = parseResultTiers(riskRules, toneByRiskLevel, config.resultTiers)
+
+  const maleProfile = (totalScore.male ?? null) as SurveyTotalScoreProfileConfig | null
+  const femaleProfile = (totalScore.female ?? null) as SurveyTotalScoreProfileConfig | null
+  const defaultProfile = (totalScore.default ?? totalScore.common ?? null) as SurveyTotalScoreProfileConfig | null
+  const maleBounds = parseUpperBounds(maleProfile)
+  const femaleBounds = parseUpperBounds(femaleProfile)
+  const commonBounds = parseUpperBounds(defaultProfile)
+
+  const rawReverseNos = isNew ? (engine.reverseQuestionNos ?? config.reverseQuestionNos) : config.reverseQuestionNos
+  const reverseQuestionNos = parseReverseQuestionNos(rawReverseNos)
+  const uiRaw = (config.ui ?? {}) as Record<string, unknown>
+
+  return {
+    surveyType: String(config.surveyType ?? ''),
+    topN: Number(config.topN ?? 2),
+    categories: parseCategories(config.categories, reverseQuestionNos),
+    scoreOptions: parseScoreOptions(config.scoreOptions),
+    agentPersona: String(agentInfo.persona ?? prompt.role ?? ''),
+    agentMission: String(agentInfo.mission ?? ''),
+    agentLanguageLabel: String(agentInfo.languageLabel ?? config.language ?? ''),
+    agentLanguageExceptions: String(agentInfo.languageExceptions ?? ''),
+    outputSections: parseSurveyOutputSectionBlocks(config.outputSections ?? prompt.outputSections),
+    closingMessage: parseSurveyClosingMessageBlock(config.closingMessage),
+    resultTiers,
+    constraints: Array.isArray(config.constraints) ? config.constraints.map(String) : [],
+    surveyTitle: parseUiString(uiRaw, config, 'surveyTitle'),
+    disclaimerSource: parseUiString(uiRaw, config, 'disclaimerSource'),
+    disclaimerText: parseUiString(uiRaw, config, 'disclaimerText'),
+    genderStepTitle: parseUiString(uiRaw, config, 'genderStepTitle'),
+    genderStepDesc: parseUiString(uiRaw, config, 'genderStepDesc'),
+    introTitle: parseUiString(uiRaw, config, 'introTitle'),
+    introSubtitle: parseUiString(uiRaw, config, 'introSubtitle'),
+    submitLabel: parseUiString(uiRaw, config, 'submitLabel'),
+    requireGender,
+    showRadarChart: features.showRadarChart === true,
+    showAiRecoveryImage: features.showAiRecoveryImage === true || features.showPexelsRecoveryImages === true,
+    totalThresholdsCommon: requireGender ? [] : maleBounds.length ? maleBounds : commonBounds,
+    totalThresholdsMale: requireGender ? maleBounds : [],
+    totalThresholdsFemale: requireGender ? femaleBounds : [],
   }
-  return result
 }
 
 const buildProfilePayload = (upperBounds: number[]): SurveyTotalScoreProfileConfig => {
@@ -176,51 +314,13 @@ const buildCategoriesPayload = (categories: SurveyCategoryForm[]) =>
     key: cat.key,
     title: cat.title,
     titleEn: cat.titleEn,
+    elevatedLabel: cat.elevatedLabel,
     questionNos: cat.questions.map((q) => q.no),
     questions: cat.questions.map((q) => ({ no: q.no, text: q.text })),
   }))
 
 const calcTotalQuestions = (categories: SurveyCategoryForm[]) =>
   categories.reduce((sum, c) => sum + c.questions.length, 0)
-
-/** ADDITIONAL_CONFIG → 설정 폼 */
-export const parseSurveyAdditionalConfigToForm = (
-  config: Record<string, unknown> | null | undefined,
-): SurveyConfigForm => {
-  if (!config || typeof config !== 'object') return emptySurveyConfigForm()
-
-  const prompt = (config.prompt ?? {}) as Record<string, unknown>
-  const features = (config.features ?? {}) as Record<string, unknown>
-  const riskRules = (config.riskRules ?? {}) as Record<string, unknown>
-  const totalScore = (riskRules.totalScore ?? {}) as Record<string, unknown>
-  const toneByRiskLevel = (prompt.toneByRiskLevel ?? {}) as Record<string, string>
-  const requireGender = features.requireGender === true
-  const riskLevels = parseRiskLevels(riskRules, toneByRiskLevel)
-  const maleProfile = (totalScore.male ?? null) as SurveyTotalScoreProfileConfig | null
-  const femaleProfile = (totalScore.female ?? null) as SurveyTotalScoreProfileConfig | null
-  const defaultProfile = (totalScore.default ?? totalScore.common ?? null) as SurveyTotalScoreProfileConfig | null
-  const maleBounds = parseUpperBounds(maleProfile)
-  const femaleBounds = parseUpperBounds(femaleProfile)
-  const commonBounds = parseUpperBounds(defaultProfile)
-  const outputSections = Array.isArray(prompt.outputSections) ? prompt.outputSections.map(String) : []
-  const reverseQuestionNos = parseReverseQuestionNos(config.reverseQuestionNos)
-
-  return {
-    surveyType: String(config.surveyType ?? ''),
-    categories: parseCategories(config.categories, reverseQuestionNos),
-    scoreOptions: parseScoreOptions(config.scoreOptions),
-    promptRole: String(prompt.role ?? ''),
-    promptLanguage: String(prompt.language ?? ''),
-    outputSections,
-    riskLevels,
-    requireGender,
-    showRadarChart: features.showRadarChart === true,
-    showAiRecoveryImage: features.showAiRecoveryImage === true || features.showPexelsRecoveryImages === true,
-    totalThresholdsCommon: requireGender ? [] : maleBounds.length ? maleBounds : commonBounds,
-    totalThresholdsMale: requireGender ? maleBounds : [],
-    totalThresholdsFemale: requireGender ? femaleBounds : [],
-  }
-}
 
 const buildTotalScorePayload = (form: SurveyConfigForm) => {
   if (form.requireGender) {
@@ -239,30 +339,107 @@ const buildTotalScorePayload = (form: SurveyConfigForm) => {
   }
 }
 
-const buildRiskLevelsConfig = (levels: SurveyRiskLevelForm[]): SurveyRiskLevelConfig[] =>
-  levels
-    .filter((l) => l.label.trim())
-    .map((l, i) => ({
-      key: l.key.trim() || slugKey(l.label, i),
-      label: l.label.trim(),
+const buildRiskLevelsConfig = (tiers: SurveyResultTierForm[]): SurveyRiskLevelConfig[] =>
+  tiers
+    .filter((t) => t.label.trim())
+    .map((t, i) => ({
+      key: t.key.trim() || slugKey(t.label, i),
+      label: t.label.trim(),
     }))
 
-/** 설정 폼 + 기존 JSON(영역별 참고치 areaScore 등) → 저장용 ADDITIONAL_CONFIG */
+const buildResultTiersPayload = (tiers: SurveyResultTierForm[]) =>
+  tiers
+    .filter((t) => t.label.trim())
+    .map((t, i) => ({
+      key: t.key.trim() || slugKey(t.label, i),
+      label: t.label.trim(),
+      badgeClass: t.badgeClass.trim(),
+      statusClass: t.statusClass.trim(),
+      tone: t.tone,
+    }))
+
+const UI_CONFIG_KEYS: (keyof SurveyUiConfig)[] = [
+  'surveyTitle',
+  'genderStepTitle',
+  'genderStepDesc',
+  'disclaimerSource',
+  'disclaimerText',
+  'introTitle',
+  'introSubtitle',
+  'submitLabel',
+]
+
+const stripLegacyUiTopLevelKeys = (cfg: Record<string, unknown>): Record<string, unknown> => {
+  const next = { ...cfg }
+  for (const key of UI_CONFIG_KEYS) {
+    delete next[key]
+  }
+  return next
+}
+
+const buildUiPayload = (form: SurveyConfigForm, preserved?: AgtSubAdditionalConfig | null): SurveyUiConfig => {
+  const preservedRecord = (preserved ?? {}) as Record<string, unknown>
+  const prevUi: SurveyUiConfig = { ...((preservedRecord.ui ?? {}) as SurveyUiConfig) }
+
+  // 기존 최상위 키(surveyTitle 등) → ui 객체로 이전
+  for (const key of UI_CONFIG_KEYS) {
+    if (!prevUi[key]) {
+      const legacy = preservedRecord[key]
+      if (legacy != null && String(legacy).trim()) prevUi[key] = String(legacy).trim()
+    }
+  }
+
+  const next: SurveyUiConfig = { ...prevUi }
+
+  const assignIfSet = (key: keyof SurveyUiConfig, value: string) => {
+    const trimmed = value.trim()
+    if (trimmed) next[key] = trimmed
+    else delete next[key]
+  }
+
+  assignIfSet('surveyTitle', form.surveyTitle)
+  assignIfSet('disclaimerSource', form.disclaimerSource)
+  assignIfSet('disclaimerText', form.disclaimerText)
+  assignIfSet('genderStepTitle', form.genderStepTitle)
+  assignIfSet('genderStepDesc', form.genderStepDesc)
+  assignIfSet('introTitle', form.introTitle)
+  assignIfSet('introSubtitle', form.introSubtitle)
+  assignIfSet('submitLabel', form.submitLabel)
+
+  return next
+}
+
+/** 설정 폼 + 기존 JSON(영역별 참고치 areaScore 등) → 저장용 ADDITIONAL_CONFIG (신규 구조) */
 export const buildSurveyAdditionalConfig = (
   form: SurveyConfigForm,
   preserved?: AgtSubAdditionalConfig | null,
 ): AgtSubAdditionalConfig => {
-  const outputSections = form.outputSections.map((s) => s.trim()).filter(Boolean)
   const recoveryOn = form.showAiRecoveryImage
   const totalQuestions = calcTotalQuestions(form.categories)
   const reverseQuestionNos = collectReverseQuestionNos(form.categories)
+  const outputSectionBlocks = form.outputSections
 
-  const prompt = {
-    ...((preserved?.prompt as Record<string, unknown>) ?? {}),
-    role: form.promptRole,
-    language: form.promptLanguage,
-    outputSections,
-    toneByRiskLevel: buildToneByRiskLevel(form.riskLevels),
+  const closingMessagePayload = form.closingMessage ?? undefined
+
+  const agentPayload = {
+    ...((preserved?.agent as Record<string, unknown>) ?? {}),
+    persona: form.agentPersona,
+    mission: form.agentMission,
+    languageLabel: form.agentLanguageLabel,
+    languageExceptions: form.agentLanguageExceptions,
+  }
+
+  const engineRiskRules = {
+    ...((preserved?.engine as Record<string, unknown>)?.riskRules as Record<string, unknown> | undefined),
+    riskLevels: buildRiskLevelsConfig(form.resultTiers),
+    totalScore: buildTotalScorePayload(form),
+    splitByGender: form.requireGender,
+  }
+
+  const engine = {
+    ...((preserved?.engine as Record<string, unknown>) ?? {}),
+    riskRules: engineRiskRules,
+    reverseQuestionNos,
   }
 
   const features = {
@@ -273,26 +450,31 @@ export const buildSurveyAdditionalConfig = (
     showPexelsRecoveryImages: recoveryOn,
   }
 
-  const riskRules = {
-    ...((preserved?.riskRules as Record<string, unknown>) ?? {}),
-    riskLevels: buildRiskLevelsConfig(form.riskLevels),
-    totalScore: buildTotalScorePayload(form),
-  }
+  const ui = buildUiPayload(form, preserved)
 
   const base = {
+    agentType: 'survey',
     surveyType: form.surveyType,
+    topN: form.topN,
+    language: form.agentLanguageLabel === '한국어' ? 'ko' : form.agentLanguageLabel || 'ko',
+    agent: agentPayload,
+    engine,
     categories: buildCategoriesPayload(form.categories),
     scoreOptions: form.scoreOptions.map((o) => ({ ...o })),
     totalQuestions: totalQuestions > 0 ? totalQuestions : undefined,
-    reverseQuestionNos,
-    prompt,
+    resultTiers: buildResultTiersPayload(form.resultTiers),
+    outputSections: outputSectionBlocks,
+    ...(closingMessagePayload ? { closingMessage: closingMessagePayload } : {}),
+    constraints: form.constraints.filter(Boolean),
     features,
-    riskRules,
-    version: (preserved?.version as string) ?? undefined,
+    ui,
+    version: (preserved?.version as string) ?? '2.0',
   }
 
   if (preserved && typeof preserved === 'object') {
-    return { ...preserved, ...base }
+    const merged = stripLegacyUiTopLevelKeys({ ...preserved, ...base }) as Record<string, unknown>
+    if (!closingMessagePayload) delete merged.closingMessage
+    return merged as AgtSubAdditionalConfig
   }
 
   return base
