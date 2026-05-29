@@ -18,6 +18,8 @@ import { useTmplApi } from '~/composables/tmpl/useTmplApi'
 import type { TmplBaseInfo } from '~/types/tmpl'
 import type { OrgUserItem } from '~/types/org-manage'
 import type { LibraryReportInsightRequest } from '~/utils/library/libraryReportEditorUtil'
+import type { Agent } from '~/types/agent'
+import { normalizeAgentSubCfg } from '~/utils/chat/surveyUtil'
 import { useUserSelectStore } from '~/composables/com/useUserSelectStore'
 const { closeUserSelectModal } = useUserSelectStore()
 const {
@@ -42,9 +44,21 @@ const {
   fetchReAskReport,
   fetchInsightReport,
   fetchShareCard,
+  fetchSelectAgentListForLibrary,
 } = useLibraryApi()
 const { fetchTmplList } = useTmplApi()
 const errorMessage = ref('')
+
+/** 지식창고 카드·상세에서 설문/에이전트 UI 파싱용 (사용 중지 에이전트 포함) */
+const libraryAgents = ref<Agent[]>([])
+
+const normalizeLibraryAgents = (list: Agent[]) =>
+  list
+    .map((a) => ({
+      ...a,
+      subCfg: normalizeAgentSubCfg(a.subCfg),
+    }))
+    .sort((a, b) => a.sortOrd - b.sortOrd)
 
 const isModalOpen = ref(false)
 const isArchiveModalOpen = ref(false)
@@ -850,6 +864,18 @@ export const useLibraryStore = () => {
     refinedEditorHtml.value = ''
   }
 
+  /** 지식창고용 에이전트 설정 목록 조회 (비활성 에이전트 포함) */
+  const handleSelectLibraryAgents = async () => {
+    try {
+      const res = await fetchSelectAgentListForLibrary()
+      const list = res?.agentList ?? []
+      libraryAgents.value = normalizeLibraryAgents(list)
+    } catch {
+      libraryAgents.value = []
+      openToast({ message: '에이전트 설정을 불러오지 못했습니다.', type: 'error' })
+    }
+  }
+
   /** 보고서 모달에서 다른 유형 선택 */
   const handleCreateDocSelectOtherType = () => {
     isCreateDocReportOpen.value = false
@@ -933,5 +959,7 @@ export const useLibraryStore = () => {
     handleReAskReport,
     handleInsightReport,
     handleShareCard,
+    libraryAgents,
+    handleSelectLibraryAgents,
   }
 }

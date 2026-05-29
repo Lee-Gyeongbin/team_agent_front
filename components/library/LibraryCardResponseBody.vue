@@ -135,7 +135,7 @@ import {
 } from '~/utils/chat/surveyUtil'
 
 const { surveyGender } = usePsychologySurvey()
-const { chatIndexAgents } = useChatStore()
+const { libraryAgents } = useLibraryStore()
 
 const props = defineProps<{
   item: LibraryCardDetail
@@ -193,7 +193,7 @@ const memeList = computed(() => {
 const isTodayMemeResponse = computed(() => isTodayMemeLibraryCard(props.item) && memeList.value.length > 0)
 
 const isSurveyRadarCard = (agentId: string, qcontent: string) =>
-  isSurveyRadarLibraryCard(agentId, qcontent, chatIndexAgents.value)
+  isSurveyRadarLibraryCard(agentId, qcontent, libraryAgents.value)
 
 const responseRenderedHtml = computed(() => {
   const raw = props.item.rcontent ?? ''
@@ -201,7 +201,7 @@ const responseRenderedHtml = computed(() => {
   const qcontent = props.item.qcontent ?? ''
   if (
     isSurveyRadarCard(agentId, qcontent) ||
-    shouldLibrarySurveyPexelsInject(agentId, qcontent, raw, chatIndexAgents.value)
+    shouldLibrarySurveyPexelsInject(agentId, qcontent, raw, libraryAgents.value)
   ) {
     return toHtmlContent(removeKeywordLines(raw))
   }
@@ -272,7 +272,7 @@ watch(
       props.item.rcontent ?? '',
       props.item.qcontent ?? '',
       props.item.logId ?? '',
-      chatIndexAgents.value.map((a) => a.agentId).join(','),
+      libraryAgents.value.map((a) => a.agentId).join(','),
     ] as const,
   ([cardId, agentId, rcontent, qcontent, logId]) => {
     pexelsModalUrl.value = ''
@@ -288,12 +288,12 @@ watch(
 
     if (!cardId) return
 
-    const surveyConfig = resolveSurveyConfigByAgentId(agentId, chatIndexAgents.value)
+    const surveyConfig = resolveSurveyConfigByAgentId(agentId, libraryAgents.value)
     if (surveyConfig) setActiveSurveyConfig(surveyConfig)
 
     const cacheKey = logId || cardId
-    const isRadar = isSurveyRadarAgentById(agentId, chatIndexAgents.value)
-    const isPexels = shouldLibrarySurveyPexelsInject(agentId, qcontent, rcontent, chatIndexAgents.value)
+    const isRadar = isSurveyRadarAgentById(agentId, libraryAgents.value)
+    const isPexels = shouldLibrarySurveyPexelsInject(agentId, qcontent, rcontent, libraryAgents.value)
 
     // showRadarChart: false + showPexelsRecoveryImages: true (디지털 과부하 등)
     if (!isRadar && isPexels) {

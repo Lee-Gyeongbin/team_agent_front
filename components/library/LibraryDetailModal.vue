@@ -395,8 +395,9 @@ const {
   handleReAskReport,
   handleInsightReport,
   handleShareCard,
+  libraryAgents,
+  handleSelectLibraryAgents,
 } = useLibraryStore()
-const { chatIndexAgents, handleSelectChatIndexAgents } = useChatStore()
 const props = withDefaults(
   defineProps<{
     isOpen?: boolean
@@ -490,14 +491,14 @@ const visualizationView = computed<VisualizationViewModel | null>(() => {
 const displayData = ref<LibraryCardDetail | null>(props.cardDetail ?? null)
 const isSurveyLibraryCard = computed(() => {
   if (!displayData.value) return false
-  return isSurveyLibraryCardItem(displayData.value, chatIndexAgents.value)
+  return isSurveyLibraryCardItem(displayData.value, libraryAgents.value)
 })
 const surveyLibraryConfig = computed(() => {
   const agentId = displayData.value?.agentId
   if (!agentId) return null
-  const agent = chatIndexAgents.value.find((a) => a.agentId === agentId)
+  const agent = libraryAgents.value.find((a) => a.agentId === agentId)
   if (agent) return parseSurveyConfigFromAgent(agent)
-  return resolveSurveyConfigByAgentId(agentId, chatIndexAgents.value)
+  return resolveSurveyConfigByAgentId(agentId, libraryAgents.value)
 })
 const surveyReadonlyAnswers = computed<Record<number, number>>(() =>
   parseSurveyAnswersFromPrompt(displayData.value?.qcontent ?? ''),
@@ -627,8 +628,8 @@ watch(
 watch(
   () => props.isOpen,
   (open) => {
-    if (open && chatIndexAgents.value.length === 0) {
-      void handleSelectChatIndexAgents()
+    if (open && libraryAgents.value.length === 0) {
+      void handleSelectLibraryAgents()
     }
     if (!open) {
       displayData.value = null

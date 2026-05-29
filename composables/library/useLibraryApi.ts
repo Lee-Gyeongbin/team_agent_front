@@ -1,4 +1,5 @@
 import { useApi } from '~/composables/com/useApi'
+import type { Agent } from '~/types/agent'
 import type {
   LibraryCategory,
   LibraryCard,
@@ -151,6 +152,11 @@ export const useLibraryApi = () => {
     return post<{ result: string; msg: string }>('/library/shareCard.do', payload)
   }
 
+  /** 지식창고 설문·에이전트 카드 렌더용 에이전트 설정 목록 (사용 중지 포함) */
+  const fetchSelectAgentListForLibrary = async (): Promise<{ agentList: Agent[] }> => {
+    return get<{ agentList: Agent[] }>('/library/selectAgentListForLibrary.do')
+  }
+
   return {
     fetchCategoryList,
     fetchSaveCategory,
@@ -174,5 +180,6 @@ export const useLibraryApi = () => {
     fetchReAskReport,
     fetchInsightReport,
     fetchShareCard,
+    fetchSelectAgentListForLibrary,
   }
 }
