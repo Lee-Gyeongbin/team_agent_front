@@ -527,6 +527,7 @@ const chartConfig = computed(() => {
       })),
       style: 'analystatSet',
       type: 'outerLabel',
+      outerLabelConfig: { labelOffset: 4 },
     }
   }
 

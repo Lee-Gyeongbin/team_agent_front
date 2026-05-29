@@ -168,34 +168,49 @@
           </div>
 
           <div class="library-create-doc-report-side-chat">
-            <div
-              class="library-create-doc-chat-bar"
-              :class="{ 'is-active': !!refineDraft.trim() }"
-            >
-              <i
-                v-show="!refineDraft.trim()"
-                class="icon-sparkle size-20"
-              />
-              <UiInput
-                v-model="refineDraft"
-                size="md"
-                class="library-create-doc-chat-bar-field"
-                :spellcheck="false"
-                placeholder="예: 결론 부분을 좀 더 구체적으로 보완해주세요"
-                @enter="onSendRefine"
-              />
+            <div class="library-create-doc-chat-row">
+              <div
+                class="library-create-doc-chat-bar"
+                :class="{ 'is-active': !!refineDraft.trim() }"
+              >
+                <i
+                  v-show="!refineDraft.trim()"
+                  class="icon-sparkle size-20"
+                />
+                <UiInput
+                  v-model="refineDraft"
+                  size="md"
+                  class="library-create-doc-chat-bar-field"
+                  :spellcheck="false"
+                  placeholder="예: 결론 부분을 좀 더 구체적으로 보완해주세요"
+                  @enter="onSendRefine"
+                />
+                <UiButton
+                  variant="primary"
+                  size="md"
+                  icon-only
+                  class="btn-chat-send library-create-doc-chat-send"
+                  :disabled="!refineDraft.trim()"
+                  aria-label="전송"
+                  @click="onSendRefine"
+                >
+                  <template #icon-left>
+                    <i class="icon-send size-20" />
+                  </template>
+                </UiButton>
+              </div>
               <UiButton
-                variant="primary"
+                v-if="props.svcTy === 'S'"
+                variant="primary-line"
                 size="md"
-                icon-only
-                class="btn-chat-send library-create-doc-chat-send"
-                :disabled="!refineDraft.trim()"
-                aria-label="전송"
-                @click="onSendRefine"
+                class="library-create-doc-insight-btn"
+                title="인사이트 분석"
+                @click="onOpenInsightModal"
               >
                 <template #icon-left>
-                  <i class="icon-send size-20" />
+                  <i class="icon-chart-ai size-16" />
                 </template>
+                인사이트 분석
               </UiButton>
             </div>
           </div>
@@ -203,28 +218,48 @@
       </div>
     </div>
   </UiModal>
+
+  <LibraryReportInsightModal
+    :is-open="isInsightModalOpen"
+    :section-options="insightSectionOptions"
+    :current-html="editorHtml"
+    :r-content="props.rContent"
+    @close="onCloseInsightModal"
+    @confirm="onConfirmInsight"
+  />
 </template>
 
 <script setup lang="ts">
 import { openToast } from '~/composables/useToast'
 import type { LibraryGeneratedReportValues } from '~/types/library'
 import { getLibraryReportRows, printLibraryReportFromHtml } from '~/utils/library/libraryReportPrintUtil'
-import { buildReportEditorHtml, parseReportEditorHtml } from '~/utils/library/libraryReportEditorUtil'
+import {
+  buildReportEditorHtml,
+  getReportSectionOptionsFromHtml,
+  parseReportEditorHtml,
+} from '~/utils/library/libraryReportEditorUtil'
+import type { LibraryReportInsightRequest, LibraryReportSectionOption } from '~/utils/library/libraryReportEditorUtil'
 
 const props = withDefaults(
   defineProps<{
     isOpen: boolean
     tmplNm?: string
+    /** 원본 지식 카드 SVC_TY — S(데이터분석)일 때 인사이트 분석 UI 노출 */
+    svcTy?: string
     refineCompletedAt?: number
     tmplHtml?: string
     /** AI 보완 응답 HTML — 전체 에디터 HTML(표 외 텍스트 포함)로 에디터를 직접 교체 */
     refinedHtml?: string
+    /** 지식 카드 원본 답변 HTML — 인사이트 분석 API rContent */
+    rContent?: string
   }>(),
   {
     tmplNm: '',
+    svcTy: '',
     refineCompletedAt: 0,
     tmplHtml: '',
     refinedHtml: '',
+    rContent: '',
   },
 )
 
@@ -237,6 +272,8 @@ const emit = defineEmits<{
   'select-other-type': []
   /** 보완 요청 — message: 사용자 입력, currentHtml: 현재 에디터 전체 HTML */
   'send-refine': [message: string, currentHtml: string]
+  /** 인사이트 분석 요청 — API 연동 시 상위에서 처리 */
+  'request-insight': [payload: LibraryReportInsightRequest]
 }>()
 
 type RefineChatRole = 'user' | 'assistant'
@@ -257,6 +294,24 @@ const hasUserSentRefineThisSession = ref(false)
 const refineChatLog = ref<RefineChatEntry[]>([])
 const refineChatListRef = ref<HTMLElement | null>(null)
 let refineChatIdSeq = 0
+
+// ===== 인사이트 분석 선택 모달 =====
+const isInsightModalOpen = ref(false)
+const insightSectionOptions = ref<LibraryReportSectionOption[]>([])
+
+const onOpenInsightModal = () => {
+  insightSectionOptions.value = getReportSectionOptionsFromHtml(editorHtml.value)
+  isInsightModalOpen.value = true
+}
+
+const onCloseInsightModal = () => {
+  isInsightModalOpen.value = false
+}
+
+const onConfirmInsight = (payload: LibraryReportInsightRequest) => {
+  isInsightModalOpen.value = false
+  emit('request-insight', payload)
+}
 
 // ===== 웹에디터 HTML 상태 =====
 /** 에디터와 연결된 HTML 문자열 — 초기 tmplHtml/보완 결과를 표시하고, 편집 시 업데이트됨 */
@@ -344,6 +399,8 @@ watch(
       refineDraft.value = ''
       editorHtml.value = ''
       resetRefineSessionUi()
+      isInsightModalOpen.value = false
+      insightSectionOptions.value = []
       return
     }
     resetRefineSessionUi()
@@ -605,6 +662,23 @@ const onPrintReport = () => {
   margin-top: $spacing-sm;
   padding-top: $spacing-md;
   border-top: 1px solid $color-border;
+}
+
+.library-create-doc-chat-row {
+  display: flex;
+  align-items: stretch;
+  gap: $spacing-sm;
+  width: 100%;
+  min-width: 0;
+}
+
+.library-create-doc-insight-btn.ui-button {
+  flex-shrink: 0;
+  align-self: center;
+  min-height: 48px;
+  padding-left: 12px;
+  padding-right: 12px;
+  white-space: nowrap;
 }
 
 .library-create-doc-report-lead-row {
@@ -890,9 +964,10 @@ const onPrintReport = () => {
 // 보완 입력 바
 .library-create-doc-chat-bar {
   display: flex;
+  flex: 1 1 auto;
   align-items: center;
   gap: 10px;
-  width: 100%;
+  min-width: 0;
   min-height: 48px;
   padding: 8px 12px;
   box-sizing: border-box;

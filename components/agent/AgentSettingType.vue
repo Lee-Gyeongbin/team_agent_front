@@ -51,7 +51,10 @@ const emit = defineEmits<{
   change: [value: string]
 }>()
 
-const subTyOptions = [{ label: '설문', value: 'SURVEY' }]
+const subTyOptions = [
+  { label: '일반', value: '' },
+  { label: '설문', value: 'SURVEY' },
+]
 
 const codes = await getCodes('AT000001')
 const agentTypeOptions = [{ label: '선택', value: '' }, ...codes.map((c) => ({ label: c.codeNm, value: c.codeId }))]

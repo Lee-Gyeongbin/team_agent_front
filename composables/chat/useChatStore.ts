@@ -19,6 +19,7 @@ import {
   createSurveyMessage,
   buildDiagnosticPrompt,
   parseSurveyAnswersFromPrompt,
+  isSurveyDiagnosticPrompt,
   normalizeAgentSubCfg,
   handleSelectSurveyChatIndexAgent,
 } from '~/utils/chat/surveyUtil'
@@ -125,7 +126,7 @@ const messagesForDisplay = computed(() => {
     base = messages.value.filter((m) => {
       if (m.type === 'question' && !surveyPromptHidden) {
         const parsed = parseSurveyAnswersFromPrompt(m.qContent ?? '')
-        const isSurveyPrompt = Object.keys(parsed).length > 0
+        const isSurveyPrompt = Object.keys(parsed).length > 0 || isSurveyDiagnosticPrompt(m.qContent ?? '')
         if (isSurveyPrompt) {
           surveyPromptHidden = true
           return false
@@ -290,6 +291,13 @@ export const useChatStore = () => {
       await handleLoadNewsCuratorCategories()
       if (hasHiddenNewsPrompt) registerNewsCuratorRoom(roomId)
     }
+
+    // 설문 진단 프롬프트가 포함된 방 — question 숨김·survey UI 복원용
+    const hasSurveyLog = rawList.some((row) => {
+      const q = row.qcontent ?? ''
+      return Object.keys(parseSurveyAnswersFromPrompt(q)).length > 0 || isSurveyDiagnosticPrompt(q)
+    })
+    if (hasSurveyLog) registerSurveyRoom(roomId)
 
     // 채팅 로그 목록 → 메시지 리스트 변환
     /**

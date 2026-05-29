@@ -7,7 +7,7 @@ import type {
 } from '~/types/chat'
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import { parseChatAttachmentsFromLogRow } from '~/utils/chat/chatAttachmentDisplayUtil'
-import { parseSurveyAnswersFromPrompt } from '~/utils/chat/surveyUtil'
+import { parseSurveyAnswersFromPrompt, isSurveyDiagnosticPrompt } from '~/utils/chat/surveyUtil'
 import {
   normalizeLunchRecommendationImages,
   parseLunchPayloadFromPrompt,
@@ -119,7 +119,7 @@ export const useChatMessages = () => {
       },
     }
 
-    // SURVEY 에이전트: "진단 프롬프트"인 경우에만 readonly survey 메시지로 대체
+    // SURVEY 에이전트: "진단 프롬프트"인 경우 readonly survey 메시지로 대체
     const surveyAnswers = parseSurveyAnswersFromPrompt(row.qcontent ?? '')
     const isSurveyPrompt = Object.keys(surveyAnswers).length > 0
     if (isSurveyPrompt) {
@@ -134,6 +134,11 @@ export const useChatMessages = () => {
         },
         { ...answerMessage, surveyAnswers },
       ]
+    }
+
+    // V2 진단 프롬프트이나 Input Data가 없는 구 로그 — question 대신 답변만 표시
+    if (isSurveyDiagnosticPrompt(row.qcontent ?? '')) {
+      return [answerMessage]
     }
 
     // TodayMeme 에이전트: 프롬프트 패턴이면 readonly meme 메시지로 대체

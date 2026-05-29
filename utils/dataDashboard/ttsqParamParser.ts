@@ -11,7 +11,10 @@ import type { DataDashboardSqlVariable } from '~/types/data-dashboard'
  */
 /** 쉼표 구분 값 → SQL IN 목록 문자열 (`'v1', 'v2'` 형식) */
 const buildInList = (value: string): string => {
-  const parts = value.split(',').map((v) => v.trim()).filter(Boolean)
+  const parts = value
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean)
   return parts.length > 1 ? parts.map((v) => `'${v}'`).join(', ') : `'${parts[0] ?? value}'`
 }
 
@@ -22,10 +25,7 @@ export const substituteWhereValues = (sql: string, filterValues: Record<string, 
     const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     const isMulti = value.includes(',')
     // IN (...) → 멀티값이면 IN ('v1', 'v2'), 단일값이면 IN ('v')
-    result = result.replace(
-      new RegExp(`(\\b${escaped}\\s+IN\\s*\\()([^)]*)(\\))`, 'gi'),
-      `$1${buildInList(value)}$3`,
-    )
+    result = result.replace(new RegExp(`(\\b${escaped}\\s+IN\\s*\\()([^)]*)(\\))`, 'gi'), `$1${buildInList(value)}$3`)
     if (!isMulti) {
       const qv = `'${value}'`
       // = 'old' / = "old"
@@ -60,19 +60,31 @@ export const extractSqlWhereValues = (sql: string, keys: string[]): Record<strin
     const inBlock = new RegExp(`\\b${escaped}\\s+IN\\s*\\(([^)]*)\\)`, 'i').exec(sql)
     if (inBlock) {
       const vals = [...inBlock[1].matchAll(/'([^']*)'/g)].map((m) => m[1]).filter(Boolean)
-      if (vals.length) { result[key] = vals.join(','); continue }
+      if (vals.length) {
+        result[key] = vals.join(',')
+        continue
+      }
       // 숫자 IN (1, 2, ...)
       const numVals = [...inBlock[1].matchAll(/\b(\d+)\b/g)].map((m) => m[1])
-      if (numVals.length) { result[key] = numVals.join(','); continue }
+      if (numVals.length) {
+        result[key] = numVals.join(',')
+        continue
+      }
     }
 
     // 2. = 'value'
     const sq = new RegExp(`\\b${escaped}\\s*=\\s*'([^']*)'`, 'i').exec(sql)
-    if (sq) { result[key] = sq[1]; continue }
+    if (sq) {
+      result[key] = sq[1]
+      continue
+    }
 
     // 3. = "value"
     const dq = new RegExp(`\\b${escaped}\\s*=\\s*"([^"]*)"`, 'i').exec(sql)
-    if (dq) { result[key] = dq[1]; continue }
+    if (dq) {
+      result[key] = dq[1]
+      continue
+    }
 
     // 4. = 숫자 (컬럼 참조 제외)
     const num = new RegExp(`\\b${escaped}\\s*=\\s*(\\d+)(?![\\w.])`, 'i').exec(sql)

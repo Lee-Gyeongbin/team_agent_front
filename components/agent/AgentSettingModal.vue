@@ -107,7 +107,7 @@ const onChangeAgentType = async (svcTy: string) => {
   if (svcTy !== 'C') {
     form.value.subTy = ''
   } else if (!form.value.subTy) {
-    form.value.subTy = SURVEY_SUB_TY
+    form.value.subTy = ''
     preservedSurveyConfig.value = null
     surveyForm.value = emptySurveyConfigForm()
   }

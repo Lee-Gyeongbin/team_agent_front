@@ -3,12 +3,14 @@
 import { nextTick } from 'vue'
 import { useApi } from '~/composables/com/useApi'
 import type { Agent, AgtSubCfg } from '~/types/agent'
+import type { SurveyOutputSectionBlock, SurveyResultTierForm, SurveyUiConfig } from '~/types/agentSurveyConfig'
 import type { ChatMessage } from '~/types/chat'
 import type { StressLevel, StressScoreItem } from '~/types/stress'
 import type { SurveyCategory, SurveyRiskThreshold, SurveyScoreOption } from '~/types/survey'
 
 export type { SurveyCategory, SurveyScoreOption }
 export type { PsychologySurveyQuestion, PsychologySurveyCategory, PsychologySurveyScoreOption } from '~/types/survey'
+export type { SurveyOutputSectionBlock, SurveyResultTierForm as SurveyResultTierConfig }
 
 /** 설문 참고치 판정용 성별 */
 export type SurveyGender = 'male' | 'female'
@@ -29,10 +31,26 @@ export interface SurveyAgentConfig {
   reverseQuestionNos: number[]
   areaRiskByGender: Record<SurveyGender, Record<string, SurveyRiskThreshold>>
   totalRiskByGender: Record<SurveyGender, SurveyRiskThreshold>
+  /** 에이전트 페르소나 (agent.persona 또는 prompt.role) */
   promptRole: string
-  promptLanguage: string
-  outputSections: string[]
-  toneByRiskLevel: Record<string, string>
+  /** 에이전트 임무 설명 (agent.mission, 신규) */
+  agentMission: string
+  /** 출력 언어 레이블 (예: "한국어", agent.languageLabel, 신규) */
+  agentLanguageLabel: string
+  /** 언어 예외 (예: "곡명·아티스트명은 영어 허용", agent.languageExceptions, 신규) */
+  agentLanguageExceptions: string
+  /** 핵심 원인 상위 N개 (topN, 신규) */
+  topN: number
+  /** 출력 제약 목록 (constraints 배열, 신규) */
+  constraints: string[]
+  /** 결과 등급 목록 (resultTiers 배열, 신규) */
+  resultTiers: SurveyResultTierForm[]
+  /** 출력 섹션 블록 배열 (outputSections 블록 형식, 신규) */
+  outputSectionBlocks: SurveyOutputSectionBlock[]
+  /** 마무리 응원 메시지 블록 (closingMessage 최상위 필드, 신규) */
+  closingMessageBlock?: SurveyOutputSectionBlock
+  /** 카테고리 key → 기준 초과 표시 라벨 (elevatedLabel, 신규) */
+  elevatedLabelByArea: Record<string, string>
   features: {
     showRadarChart: boolean
     showAiRecoveryImage: boolean
@@ -142,8 +160,17 @@ const parseSurveyCategory = (cat: Record<string, unknown>, index: number): Surve
   return { no, key, title: String(cat.title ?? ''), titleEn: String(cat.titleEn ?? ''), questions, questionNos }
 }
 
+type SurveyUiTextKey = keyof Required<
+  Pick<
+    SurveyAgentConfig,
+    'surveyTitle' | 'genderStepTitle' | 'genderStepDesc' | 'introTitle' | 'introSubtitle' | 'submitLabel'
+  >
+>
+
+type SurveyUiOptionalKey = 'disclaimerSource' | 'disclaimerText'
+
 /** KOSS_SF1 설문 UI 기본 문구 */
-const buildKossUiDefaults = (agentNm: string) => ({
+const buildKossUiDefaults = (agentNm: string): Required<SurveyUiConfig> & { agentNm: string } => ({
   surveyTitle: '한국인 직무스트레스 요인 평가',
   genderStepTitle: '진단 전 성별을 선택해 주세요',
   genderStepDesc: 'KOSS-SF1 직무스트레스 척도는 성별에 따라 위험군 판정 기준이 다릅니다.',
@@ -155,18 +182,114 @@ const buildKossUiDefaults = (agentNm: string) => ({
   agentNm,
 })
 
+/** cfg.ui 또는 최상위 키 → 설문 UI 문구 (미설정 시 KOSS_SF1·일반 설문 기본값) */
+const parseSurveyUiConfig = (
+  cfg: Record<string, unknown>,
+  agentNm: string,
+  isKoss: boolean,
+): Pick<
+  SurveyAgentConfig,
+  | 'surveyTitle'
+  | 'genderStepTitle'
+  | 'genderStepDesc'
+  | 'disclaimerSource'
+  | 'disclaimerText'
+  | 'introTitle'
+  | 'introSubtitle'
+  | 'submitLabel'
+> => {
+  const uiRaw = (cfg.ui ?? {}) as Record<string, unknown>
+  const kossDefaults = buildKossUiDefaults(agentNm)
+
+  const pickText = (key: SurveyUiTextKey, nonKossFallback: string): string => {
+    const fromUi = uiRaw[key]
+    if (fromUi != null && String(fromUi).trim()) return String(fromUi).trim()
+    const fromTop = cfg[key]
+    if (fromTop != null && String(fromTop).trim()) return String(fromTop).trim()
+    if (isKoss) return String(kossDefaults[key])
+    return nonKossFallback
+  }
+
+  const pickOptional = (key: SurveyUiOptionalKey): string | undefined => {
+    const fromUi = uiRaw[key]
+    if (fromUi != null && String(fromUi).trim()) return String(fromUi).trim()
+    const fromTop = cfg[key]
+    if (fromTop != null && String(fromTop).trim()) return String(fromTop).trim()
+    if (isKoss) return kossDefaults[key]
+    return undefined
+  }
+
+  return {
+    surveyTitle: pickText('surveyTitle', agentNm || '설문'),
+    genderStepTitle: pickText('genderStepTitle', '설문 전 성별을 선택해 주세요'),
+    genderStepDesc: pickText('genderStepDesc', '설문 결과 해석을 위해 성별을 선택해 주세요.'),
+    disclaimerSource: pickOptional('disclaimerSource'),
+    disclaimerText: pickOptional('disclaimerText'),
+    introTitle: pickText('introTitle', agentNm || '설문'),
+    introSubtitle: pickText('introSubtitle', '설문을 준비하고 있습니다...'),
+    submitLabel: pickText('submitLabel', '설문 완료'),
+  }
+}
+
+/** resultTiers 배열 파싱 */
+const parseResultTiers = (raw: unknown): SurveyResultTierForm[] => {
+  if (!Array.isArray(raw) || raw.length === 0) return []
+  return raw.map((t) => {
+    const row = t as Record<string, unknown>
+    return {
+      key: String(row.key ?? ''),
+      label: String(row.label ?? ''),
+      badgeClass: String(row.badgeClass ?? ''),
+      statusClass: String(row.statusClass ?? ''),
+      tone: String(row.tone ?? ''),
+    }
+  })
+}
+
+/** outputSections 배열 → 블록 인스턴스 배열 파싱 (문자열 배열이면 빈 배열 반환) */
+const parseOutputSectionBlocks = (raw: unknown): SurveyOutputSectionBlock[] => {
+  if (!Array.isArray(raw) || raw.length === 0) return []
+  const first = raw[0]
+  if (typeof first === 'string') return []
+  return raw.map((s) => {
+    const row = s as Record<string, unknown>
+    return {
+      id: String(row.id ?? ''),
+      title: row.title != null ? String(row.title) : undefined,
+      blockType: String(row.blockType ?? ''),
+      instruction: row.instruction != null ? String(row.instruction) : undefined,
+      params: (row.params as Record<string, unknown>) ?? undefined,
+    }
+  })
+}
+
+/** categories raw 배열 → { key → elevatedLabel } 맵 */
+const parseElevatedLabelByArea = (categoriesRaw: unknown[]): Record<string, string> => {
+  const map: Record<string, string> = {}
+  for (const c of categoriesRaw) {
+    const row = c as Record<string, unknown>
+    const key = String(row.key ?? '')
+    const el = String(row.elevatedLabel ?? '')
+    if (key && el) map[key] = el
+  }
+  return map
+}
+
 /** Agent.subCfg.additionalConfig → SurveyAgentConfig (SURVEY 전용) */
 export const parseSurveyConfigFromAgent = (agent: Agent): SurveyAgentConfig | null => {
   if (!isSurveyAgent(agent)) return null
   const additional = agent.subCfg?.additionalConfig
   if (!additional || typeof additional !== 'object') return null
   const cfg = additional as Record<string, unknown>
+
   const surveyType = String(cfg.surveyType ?? '')
   const isKoss = surveyType === 'KOSS_SF1'
-  const ui = buildKossUiDefaults(agent.agentNm)
+  const ui = parseSurveyUiConfig(cfg, agent.agentNm, isKoss)
+
   const categoriesRaw = Array.isArray(cfg.categories) ? cfg.categories : []
   if (!categoriesRaw.length) return null
   const categories = categoriesRaw.map((c, i) => parseSurveyCategory(c as Record<string, unknown>, i))
+
   const scoreOptionsRaw = Array.isArray(cfg.scoreOptions) ? cfg.scoreOptions : []
   const scoreOptions =
     scoreOptionsRaw.length > 0
@@ -180,14 +303,51 @@ export const parseSurveyConfigFromAgent = (agent: Agent): SurveyAgentConfig | nu
           { value: 3, label: '그렇다' },
           { value: 4, label: '매우 그렇다' },
         ]
+
   const totalQuestions =
     Number(cfg.totalQuestions) > 0
       ? Number(cfg.totalQuestions)
       : categories.reduce((sum, c) => sum + c.questions.length, 0)
-  const reverseQuestionNos = Array.isArray(cfg.reverseQuestionNos) ? cfg.reverseQuestionNos.map((n) => Number(n)) : []
-  const riskRules = (cfg.riskRules ?? {}) as Record<string, unknown>
-  const prompt = (cfg.prompt ?? {}) as Record<string, unknown>
+
+  // engine.riskRules 우선, 없으면 top-level riskRules fallback (기존 데이터 호환)
+  const engine = (cfg.engine ?? {}) as Record<string, unknown>
+  const riskRules = (engine.riskRules ?? cfg.riskRules ?? {}) as Record<string, unknown>
+  const reverseQuestionNos = Array.isArray(engine.reverseQuestionNos)
+    ? engine.reverseQuestionNos.map((n) => Number(n))
+    : Array.isArray(cfg.reverseQuestionNos)
+      ? cfg.reverseQuestionNos.map((n) => Number(n))
+      : []
+
+  const agentInfo = (cfg.agent ?? {}) as Record<string, unknown>
   const features = (cfg.features ?? {}) as Record<string, unknown>
+
+  // persona: cfg.agent.persona → cfg.prompt.role(기존 데이터) → agent.description 순으로 fallback
+  const legacyPromptRole = ((cfg.prompt ?? {}) as Record<string, unknown>).role
+  const agentPersona = String(agentInfo.persona ?? legacyPromptRole ?? agent.description ?? '설문 분석 전문가')
+  const agentMission = String(agentInfo.mission ?? '')
+  const agentLanguageLabel = String(agentInfo.languageLabel ?? cfg.language ?? '')
+  const agentLanguageExceptions = String(agentInfo.languageExceptions ?? '')
+
+  const resultTiers = parseResultTiers(cfg.resultTiers)
+  const outputSectionBlocks = parseOutputSectionBlocks(cfg.outputSections)
+  const constraints = Array.isArray(cfg.constraints) ? cfg.constraints.map(String) : []
+  const topN = Number(cfg.topN ?? 2)
+
+  // closingMessage — 최상위 단독 필드 (outputSections 밖에 있어 번호·헤딩 없이 렌더링)
+  const closingMessageBlock = (() => {
+    const raw = cfg.closingMessage
+    if (!raw || typeof raw !== 'object') return undefined
+    const row = raw as Record<string, unknown>
+    if (typeof row.blockType !== 'string') return undefined
+    return {
+      id: String(row.id ?? 'closing'),
+      title: row.title != null ? String(row.title) : undefined,
+      blockType: String(row.blockType),
+      instruction: row.instruction != null ? String(row.instruction) : undefined,
+      params: (row.params as Record<string, unknown>) ?? undefined,
+    } satisfies SurveyOutputSectionBlock
+  })()
+
   return {
     agentId: agent.agentId,
     surveyType,
@@ -198,23 +358,22 @@ export const parseSurveyConfigFromAgent = (agent: Agent): SurveyAgentConfig | nu
     reverseQuestionNos,
     areaRiskByGender: parseAreaRiskByGender(riskRules),
     totalRiskByGender: parseTotalRiskByGender(riskRules),
-    promptRole: String(prompt.role ?? agent.description ?? '설문 분석 전문가'),
-    promptLanguage: String(prompt.language ?? 'ko'),
-    outputSections: Array.isArray(prompt.outputSections) ? prompt.outputSections.map(String) : [],
-    toneByRiskLevel: (prompt.toneByRiskLevel ?? {}) as Record<string, string>,
+    promptRole: agentPersona,
+    agentMission,
+    agentLanguageLabel,
+    agentLanguageExceptions,
+    topN,
+    constraints,
+    resultTiers,
+    outputSectionBlocks,
+    closingMessageBlock,
+    elevatedLabelByArea: parseElevatedLabelByArea(categoriesRaw),
     features: {
       showRadarChart: features.showRadarChart === true,
       showAiRecoveryImage: features.showAiRecoveryImage === true,
       showPexelsRecoveryImages: features.showPexelsRecoveryImages === true,
     },
-    surveyTitle: isKoss ? ui.surveyTitle : agent.agentNm || '설문',
-    genderStepTitle: isKoss ? ui.genderStepTitle : '설문 전 성별을 선택해 주세요',
-    genderStepDesc: isKoss ? ui.genderStepDesc : '설문 결과 해석을 위해 성별을 선택해 주세요.',
-    disclaimerSource: isKoss ? ui.disclaimerSource : undefined,
-    disclaimerText: isKoss ? ui.disclaimerText : undefined,
-    introTitle: isKoss ? ui.introTitle : agent.agentNm || '설문',
-    introSubtitle: isKoss ? ui.introSubtitle : '설문을 준비하고 있습니다...',
-    submitLabel: isKoss ? ui.submitLabel : '설문 완료',
+    ...ui,
   }
 }
 
@@ -227,6 +386,13 @@ export const resolveSurveyConfigByAgentId = (agentId: string, agents: Agent[]): 
 /** 해당 에이전트가 방사형 차트(showRadarChart) 기능을 켰는지 */
 export const isSurveyRadarAgentById = (agentId: string, agents: Agent[]): boolean =>
   resolveSurveyConfigByAgentId(agentId, agents)?.features.showRadarChart === true
+
+/** 해당 에이전트가 Pexels 회복 이미지(showPexelsRecoveryImages·showAiRecoveryImage) 기능을 켰는지 */
+export const isSurveyPexelsAgentById = (agentId: string, agents: Agent[]): boolean => {
+  const config = resolveSurveyConfigByAgentId(agentId, agents)
+  if (!config) return false
+  return config.features.showPexelsRecoveryImages === true || config.features.showAiRecoveryImage === true
+}
 
 const activeSurveyConfig = ref<SurveyAgentConfig | null>(null)
 
@@ -271,235 +437,231 @@ const toLegacyTotalRisk = (config: SurveyAgentConfig, gender: SurveyGender) => {
   return { 정상Max: t.normalMax, 경계Max: t.cautionMax }
 }
 
-/** 설문 응답·성별 → LLM 진단 분석 프롬프트 문자열 */
-export const buildDiagnosticPrompt = (answers: Record<number, number>, gender: SurveyGender | null): string => {
-  const config = activeSurveyConfig.value
-  if (!config) return ''
-  return buildSurveyPrompt(config, answers, gender)
+/** 블록 렌더링 규약 (고정 골격, 실제 클래스값 주입) */
+const buildBlockRenderingRules = (
+  blockTypes: Set<string>,
+  tier: SurveyResultTierForm,
+  outputSectionBlocks: SurveyOutputSectionBlock[],
+): string => {
+  const lines: string[] = ['# 블록 렌더링 규약 (고정)']
+  if (blockTypes.has('risk_badge_summary')) {
+    lines.push(
+      `- risk_badge_summary: 아래 두 줄을 연속 출력. 두 span 사이에 빈 줄·공백·들여쓰기 금지.\n` +
+        `  <span class="risk-badge ${tier.badgeClass}">${tier.label}</span>\n` +
+        `  <span class="risk-status ${tier.statusClass}">{지침에 따른 1~2문장}</span>\n` +
+        `  클래스명·라벨을 임의로 바꾸지 말 것.`,
+    )
+  }
+  if (blockTypes.has('state_breakdown')) {
+    lines.push(
+      `- state_breakdown: 각 항목을 \`- 라벨: 내용\`(한 줄 이상)으로. 본문 끝에 trailingMarker가 있으면\n` +
+        `  들여쓰기·공백 없이 단독 한 줄로 출력(생략·다른 텍스트 혼입 금지).`,
+    )
+  }
+  if (blockTypes.has('grouped_actions')) {
+    lines.push(`- grouped_actions: 각 그룹을 \`#### {title}\` 헤딩 + 목록으로. count/note 준수.`)
+  }
+  if (blockTypes.has('recommendation_list') || blockTypes.has('keyword_list')) {
+    lines.push(`- recommendation_list / keyword_list: params.format을 그대로 따르고 count개 빠짐없이 출력.`)
+  }
+  if (blockTypes.has('closing_message')) {
+    const block = outputSectionBlocks.find((b) => b.blockType === 'closing_message')
+    const tag = (block?.params?.tag as string) ?? 'h3'
+    lines.push(`- closing_message: 헤딩·라벨 없이 <${tag}> 태그 한 줄만.`)
+  }
+  return lines.join('\n')
 }
 
-/** KOSS-SF1 진단 프롬프트 본문 조립 (점수 사전계산·섹션 지시 포함) */
-const buildSurveyPrompt = (
+/** closingMessage 블록 → 번호·헤딩 없는 마무리 섹션 텍스트 */
+const buildClosingSection = (block: SurveyOutputSectionBlock): string => {
+  const tag = (block.params?.tag as string) ?? 'h3'
+  const instrText = block.instruction ?? '현재 심리 상태에 맞는 한 줄 응원 메시지.'
+  return `[blockType=${block.blockType}] 헤딩·번호 없이 <${tag}> 태그 한 줄만 출력합니다.\n` + `지침: ${instrText}`
+}
+
+/** 신규 JSON 구조(outputSectionBlocks 보유) 기반 프롬프트 빌더 */
+const buildSurveyPromptV2 = (
   config: SurveyAgentConfig,
   answers: Record<number, number>,
   gender: SurveyGender | null,
 ): string => {
   const reverseSet = new Set(config.reverseQuestionNos)
-  const inputDataJson =
-    '{\n' +
-    Array.from({ length: config.totalQuestions }, (_, i) => {
-      const no = i + 1
-      return ` "Q${no}": ${answers[no] ?? 1}`
-    }).join(',\n') +
-    '\n}'
+  const resolvedGender: SurveyGender = gender ?? 'male'
+  const genderLabel = gender === 'female' ? '여성' : '남성'
 
   const areaList = config.categories.map((cat) => ({
-    ko: cat.title.replace(/\s+/g, ''),
-    en: cat.key,
+    title: cat.title,
+    titleNospace: cat.title.replace(/\s+/g, ''),
+    key: cat.key,
+    elevatedLabel: config.elevatedLabelByArea[cat.key] ?? cat.title,
     stats: calcCategoryStats(cat.questionNos, answers, reverseSet),
   }))
+
   const totalScoreNum = areaList.reduce((acc, a) => acc + Number(a.stats.score100), 0) / areaList.length
   const totalScore = totalScoreNum.toFixed(2)
-  const genderLabel = gender === 'female' ? '여성' : '남성'
-  const resolvedGender: SurveyGender = gender ?? 'male'
+
   const totalRisk = toLegacyTotalRisk(config, resolvedGender)
+  const tierIdx = totalScoreNum <= totalRisk.정상Max ? 0 : totalScoreNum <= totalRisk.경계Max ? 1 : 2
+  const fallbackTiers: SurveyResultTierForm[] = [
+    { key: 'safe', label: '정상군', badgeClass: 'risk-safe', statusClass: 'risk-status--safe', tone: '' },
+    { key: 'caution', label: '경계군', badgeClass: 'risk-caution', statusClass: 'risk-status--caution', tone: '' },
+    { key: 'highrisk', label: '고위험군', badgeClass: 'risk-danger', statusClass: 'risk-status--danger', tone: '' },
+  ]
+  const matchingTier = config.resultTiers[tierIdx] ?? fallbackTiers[tierIdx]
 
-  const finalRiskLevel: RadarChartRiskLevel =
-    totalScoreNum <= totalRisk.정상Max ? '정상' : totalScoreNum <= totalRisk.경계Max ? '경계' : '고위험'
-  const finalRiskGroupLabel = `${finalRiskLevel}군`
+  // 기준 초과 영역 (경계 이상)
+  const elevatedAreas = areaList.filter((a) => {
+    const t = config.areaRiskByGender[resolvedGender][a.key]
+    return t ? Number(a.stats.score100) > t.normalMax : false
+  })
 
-  const badgeClass =
-    finalRiskLevel === '정상' ? 'risk-safe' : finalRiskLevel === '경계' ? 'risk-caution' : 'risk-danger'
-  const statusClass =
-    finalRiskLevel === '정상'
-      ? 'risk-status--safe'
-      : finalRiskLevel === '경계'
-        ? 'risk-status--caution'
-        : 'risk-status--danger'
+  // 상위 topN 영역 (동률 모두 포함)
+  const sortedByScore = [...areaList].sort((a, b) => Number(b.stats.score100) - Number(a.stats.score100))
+  const cutoffScore = Number(sortedByScore[config.topN - 1]?.stats.score100 ?? 0)
+  const topAreas = sortedByScore.filter((a, i) => i < config.topN || Number(a.stats.score100) === cutoffScore)
 
-  const areaScoresBlock = areaList.map((a) => `- ${a.ko}: ${a.stats.score100}`).join('\n')
+  const langLabel = config.agentLanguageLabel || '한국어'
+  const langExceptions = config.agentLanguageExceptions
+
+  const scaleStr = config.scoreOptions.map((o) => `${o.value}=${o.label}`).join(' / ')
+  const areaScoresBlock = areaList.map((a) => `- ${a.titleNospace}: ${a.stats.score100}`).join('\n')
+  const elevatedAreasStr = elevatedAreas.length
+    ? elevatedAreas.map((a) => a.elevatedLabel).join(' / ')
+    : '없음 (모든 영역 정상)'
+  const topAreasStr = topAreas.map((a) => a.titleNospace).join(' / ')
+
+  const blockTypes = new Set(config.outputSectionBlocks.map((b) => b.blockType))
+  if (config.closingMessageBlock) blockTypes.add(config.closingMessageBlock.blockType)
+
+  const outputSectionsText = config.outputSectionBlocks
+    .map((block, idx) => {
+      const sectionNo = idx + 1
+      const title = block.title ?? `섹션 ${sectionNo}`
+      const instrText = block.instruction ?? ''
+      const paramsStr = block.params ? `\n파라미터: ${JSON.stringify(block.params)}` : ''
+      return (
+        `### ${sectionNo}. ${title}\n` +
+        `[blockType=${block.blockType} 의 렌더링 규약을 따른다]\n` +
+        `지침: ${instrText}${paramsStr}`
+      )
+    })
+    .join('\n\n---\n\n')
+
+  // closingMessage — 섹션 번호·헤딩 없이 마지막에 단독 렌더링
+  const closingText = config.closingMessageBlock ? `\n\n---\n\n${buildClosingSection(config.closingMessageBlock)}` : ''
+
+  const allOutputSections = outputSectionsText + closingText
+
+  const renderingRules = buildBlockRenderingRules(blockTypes, matchingTier, [
+    ...config.outputSectionBlocks,
+    ...(config.closingMessageBlock ? [config.closingMessageBlock] : []),
+  ])
+
+  const constraintsText = config.constraints.length
+    ? config.constraints.map((c) => `- ${c}`).join('\n')
+    : '- 의료 진단 금지. 약물처방 금지. 과도한 긍정 금지. 비난 금지.'
+
+  const inputDataJson = buildSurveyInputDataJson(answers, gender)
 
   return `# Role
-당신은 기업 구성원의 심리적 웰빙을 책임지는 '${config.promptRole}'입니다.
-사용자가 작성한 ${config.surveyType || '설문'} 결과를 분석하여, 따뜻한 공감과 함께 실질적인 정신 건강 가이드를 제공하는 것이 당신의 임무입니다.
-모든 답변은 **${config.promptLanguage === 'ko' ? '한국어' : config.promptLanguage}**로 작성하세요. (곡명·아티스트명·이미지 키워드는 영어 허용)
+당신은 ${config.promptRole}입니다.
+${config.agentMission ? config.agentMission + '\n' : ''}모든 답변은 **${langLabel}**로 작성하세요.${langExceptions ? ` (예외: ${langExceptions})` : ''}
+그 외 언어는 절대 포함하지 마세요.
 
-# Scale
-1: 전혀 그렇지 않다 / 2: 그렇지 않다 / 3: 그렇다 / 4: 매우 그렇다
-
-# 문항 구조 (KOSS-SF1 26문항)
-A. 물리적 환경 (Q1~Q2)
-Q1 사고위험 / Q2 불편한자세
-
-B. 직무 요구 (Q3~Q6)
-Q3 시간압박 / Q4 업무량증가 / Q5 휴식부족[역] / Q6 멀티태스킹
-
-C. 직무 자율 (Q7~Q10, 모두 역코딩)
-Q7 창의력필요[역] / Q8 기술지식필요[역] / Q9 결정권한[역] / Q10 스케줄조절[역]
-
-D. 관계 갈등 (Q11~Q13, 모두 역코딩)
-Q11 상사도움[역] / Q12 동료도움[역] / Q13 이해공감[역]
-
-E. 직무 불안정 (Q14~Q15)
-Q14 미래불확실 / Q15 근무조건변화
-
-F. 조직 체계 (Q16~Q19, 모두 역코딩)
-Q16 인사공정성[역] / Q17 업무지원[역] / Q18 부서협조[역] / Q19 의견반영[역]
-
-G. 보상 부적절 (Q20~Q22, 모두 역코딩)
-Q20 존중신임[역] / Q21 미래기대[역] / Q22 능력발휘[역]
-
-H. 직장 문화 (Q23~Q26)
-Q23 회식불편 / Q24 업무지시일관성 / Q25 권위적분위기 / Q26 성차별
+# 설문 정보
+설문: ${config.surveyType} (총 ${config.totalQuestions}문항)
+척도: ${scaleStr}
 
 # Input Data
 ${inputDataJson}
 
-# Reverse Scoring
-[역] 표시 문항(Q5, Q7~Q13, Q16~Q22) 역코딩 후 계산
-(1점→4점, 2점→3점, 3점→2점, 4점→1점)
-
-# Pre-computed Scoring Result (시스템에서 KOSS-SF1 공식으로 사전 계산된 값 — 그대로 사용, 재계산 금지)
-아래 값들은 산업안전보건연구원 KOSS-SF1 PDF 공식으로 시스템이 직접 계산한 결과입니다.
-당신은 이 값을 **다시 계산하거나 검증하려 하지 마세요.** 종합 위험군 판정과 뱃지 클래스 선택에 이 값을 그대로 사용합니다.
-
-[영역별 환산 점수 (0~100, 소수 둘째 자리)]
+# 사전 계산 결과 (그대로 사용 — 재계산·검증 금지)
+아래 값은 시스템이 공식으로 확정한 결과입니다. 다시 계산하거나 바꾸지 마세요.
+[영역별 점수]
 ${areaScoresBlock}
+[총점] ${totalScore}
+[종합 판정] ${matchingTier.label}
+[섹션1 뱃지 클래스] ${matchingTier.badgeClass}  [상태 클래스] ${matchingTier.statusClass}
+[기준 초과(경계 이상) 영역] ${elevatedAreasStr}
+[핵심 영역(상위 ${config.topN})] ${topAreasStr}
 
-[총점 (8개 영역 환산 점수의 평균)]
-총점 = ${totalScore}
+⚠️ 위 「종합 판정」과 「뱃지·상태 클래스」는 시스템이 확정한 값입니다. 섹션 1의 span 클래스·라벨은 반드시 이 값을 그대로 사용하세요.
+본문 전체 톤(섹션 2 이후)은 「${matchingTier.label}」 기준에 맞춰 작성합니다.
 
-[종합 위험군 판정 (${genderLabel} KOSS-SF1 PDF 23p 총점 참고치 기준)]
-- 적용 임계값: ≤${totalRisk.정상Max} 정상 / ${(totalRisk.정상Max + 0.1).toFixed(1)}~${totalRisk.경계Max} 경계 / ≥${(totalRisk.경계Max + 0.1).toFixed(1)} 고위험
-- 총점 ${totalScore} → **종합 위험군: ${finalRiskGroupLabel}**
-- **섹션 1 뱃지 클래스: ${badgeClass} / 상태 클래스: ${statusClass}**
+# 작성 지침
+- 본문 전체 톤은 종합 판정(${matchingTier.label}) 기준에 맞춥니다: ${matchingTier.tone}
+- 영역별 점수가 아무리 높아도 종합 판정·뱃지/상태 클래스는 위 확정 값을 그대로 사용하세요.
+- 문항 번호·점수 수치는 절대 노출하지 말고, 각 영역이 나타내는 경험을 자연어로 서술하세요.
+- 채점 방법(점수체계·역코딩·환산공식)은 설명하지 마세요.
 
-⚠️ 위 「최종 종합 위험군」과 「뱃지 클래스」는 시스템이 PDF 공식으로 확정한 값입니다.
-- 섹션 1의 뱃지·상태 클래스는 반드시 위 값을 그대로 사용하세요.
-- 영역별 점수가 100점인 영역이 있어도, 총점 기준 판정을 바꾸지 마세요.
-- 본문 전체 톤(섹션 2~5)은 「${finalRiskGroupLabel}」 기준에 맞춰 작성합니다.
+# 출력 섹션 (순서대로, 각 섹션 사이에 반드시 --- 구분선)
+${allOutputSections}
 
-# Stress Type (KOSS-SF1 공식 영역명 기준 — 섹션 4 표기에만 사용)
-영역별 환산 점수가 해당 영역의 「정상」 임계값을 초과(경계 이상)한 영역을 섹션 4에 나열합니다.
-- 물리적환경 위험 / 직무요구 과부하 / 직무자율 결여 / 관계갈등(사회적 지지 부족) / 직무불안정 / 조직체계 불공정 / 보상 부적절 / 직장문화 갈등
+${renderingRules}
 
-# Priority (섹션 2 핵심 원인 — 종합 판정과는 별개)
-위 「영역별 환산 점수」에서 가장 높은 1~2개 영역 = 핵심 원인 (동률인 경우 해당 영역 모두 언급)
-※ 핵심 원인 영역의 점수가 100점이어도, 종합 판정은 위 「최종 종합 위험군」을 그대로 따릅니다.
+# 제약
+${constraintsText}
 
-# Output Format
-각 섹션 사이에는 반드시 --- 구분선을 삽입하세요.
+# 마크다운 규칙 (예외 없음)
+- 섹션 제목: 위 ### 헤딩 구조 그대로. 소제목: #### 사용. 강조: **볼드**.
+- 숫자를 헤딩 대용으로 쓰지 말 것. 각 섹션 사이 --- 구분선 유지.
 
-### 1. 현재 상태 요약
-위 「Pre-computed Scoring Result」의 종합 위험군은 **${finalRiskGroupLabel}** 이며, 뱃지 클래스는 **${badgeClass}**, 상태 클래스는 **${statusClass}** 로 사전 확정되어 있습니다.
-아래 형식을 그대로 사용해 두 줄만 출력하세요 (클래스명 변경 금지):
+# Tone (사전 확정된 종합 위험군: ${matchingTier.label} — 이 기준에 맞춰 본문 전체 작성)
+${matchingTier.tone || `- 공감 중심, 따듯하고 친근한 말투, 현실적, 행동 유도 (${genderLabel} ${config.surveyType})`}`
+}
 
-<span class="risk-badge ${badgeClass}">${finalRiskGroupLabel}</span>
-<span class="risk-status ${statusClass}">{종합 상태를 1~2문장으로 설명}</span>
+/** 설문 응답·성별 → LLM 진단 분석 프롬프트 문자열 */
+export const buildDiagnosticPrompt = (answers: Record<number, number>, gender: SurveyGender | null): string => {
+  const config = activeSurveyConfig.value
+  if (!config) return ''
+  return buildSurveyPromptV2(config, answers, gender)
+}
 
-⚠️ 두 span 태그 사이에 빈 줄·공백·들여쓰기를 절대 넣지 마세요. 반드시 연속된 두 줄로 출력하세요.
-⚠️ 뱃지/상태 클래스(${badgeClass} / ${statusClass}) 와 라벨(${finalRiskGroupLabel}) 을 임의로 다른 값으로 바꾸지 마세요.
+/** 설문 제출 qcontent·검색기록 복원용 — 문항별 raw 응답 JSON */
+export const buildSurveyInputDataJson = (answers: Record<number, number>, gender: SurveyGender | null): string => {
+  const payload: Record<string, number | string> = {}
+  for (const [no, score] of Object.entries(answers)) {
+    const qNo = Number(no)
+    if (!Number.isFinite(qNo) || qNo < 1) continue
+    if (typeof score === 'number' && score >= 1 && score <= 4) payload[`Q${qNo}`] = score
+  }
+  if (gender) payload.gender = gender
+  return JSON.stringify(payload)
+}
 
----
+/** V2 진단 프롬프트 형식 여부 (Input Data 유무와 무관) */
+export const isSurveyDiagnosticPrompt = (promptText: string): boolean => {
+  const text = promptText.trim()
+  if (!text) return false
+  return text.includes('# Role') && text.includes('# 설문 정보') && text.includes('[영역별 점수]')
+}
 
-### 2. 핵심 원인
-(상위 1~2개 영역 + 증상 중심 설명 — 문항 번호·점수 언급 없이 경험 내용만 서술)
+/** # Input Data 블록에서 JSON 객체 추출 */
+const extractSurveyInputDataJson = (promptText: string): string | null => {
+  const marker = '# Input Data'
+  const idx = promptText.indexOf(marker)
+  if (idx < 0) return null
+  const after = promptText.slice(idx + marker.length).trimStart()
+  if (!after.startsWith('{')) return null
 
----
-
-### 3. 심리 상태
-정서·인지·행동 세 항목을 다룰 때, **각 항목 앞에 반드시 말머리 기호(\`- \`)를 붙이고** 한 줄 이상으로 서술하세요.
-예: \`- 정서: …\`, \`- 인지: …\`, \`- 행동: …\` (하위 설명이 있으면 추가 줄도 모두 \`- \`로 시작)
-섹션 3 본문을 모두 작성한 뒤, 반드시 아래 마커를 단독으로 한 줄 출력하세요 (들여쓰기·공백 없이):
-[방사형그래프]
-
----
-
-### 4. 스트레스 유형
-
----
-
-### 5. 맞춤 처방
-회복을 위한 작은 가이드를 항목별로 출력합니다.
-#### ① 지금 가장 먼저 해보면 좋은 것 (1~2개)
-→ 가장 효과적인 행동 1개는 반드시 포함
-#### ② 생각을 조금 가볍게 바꾸는 방법 (2~3개)
-→ 해석/관점 전환 중심
-#### ③ 일상에서 바로 실천해볼 수 있는 것들 (2~3개)
-→ 업무/생활 행동
-#### ④ 몸과 마음을 편안하게 만드는 방법 (2~3개)
-→ 신체 + 감정 안정
-
----
-
-### 6. 심리 안정 음악
-현재 심리 상태에 맞는 음악 3곡을 아래 형식으로 빠짐없이 출력하세요.
-
-선곡 기준:
-- 대중적으로 유명한 곡보다 **심리 상태에 진짜 어울리는 곡**을 우선 선택하세요.
-- 장르·시대·국가를 다양하게 섞으세요 (예: 클래식, 재즈, 인디, 어쿠스틱, 앰비언트, 월드뮤직 등).
-- 매번 동일한 유명 곡(예: 비틀즈, 에드 시런 등 과도하게 반복되는 아티스트)은 피하고, 상대적으로 덜 알려진 곡도 적극 포함하세요.
-- 3곡이 서로 다른 장르·분위기여야 합니다.
-
-출력 형식:
-[번호]. 곡명 - 아티스트
-   이유: {지금 이 사람에게 왜 이 곡이 도움이 되는지 1~2문장}
-
----
-
-### 7. 회복에 도움이 되는 이미지
-현재 사용자의 심리 상태에 맞는 이미지 키워드 4개를 아래 형식으로 출력하세요.
-
-출력 형식:
-[번호]. 이미지키워드: {영어-키워드-하이픈연결}
-
-예시:
-1. 이미지키워드: peaceful-forest-path
-
----
-
-<h3>{현재 심리 상태에 맞는 한 줄 응원 메시지.}</h3>
-
-# Constraints (반드시 준수)
-- **출력 언어: 모든 본문은 한국어로 작성하세요. 단, 곡명·아티스트명·이미지 키워드는 영어 허용. 아랍어·중국어 등 그 외 언어는 절대 포함하지 마세요.**
-- 의료 진단 금지 (대신 심각할 경우 전문의 상담을 권고)
-- 약물처방 금지
-- 과도한 긍정 금지
-- 비난 금지
-- "열심히" 금지, "잠시 멈춰도 괜찮다"는 허용의 메시지 전달
-- 점수의 계산방법(점수체계, 역코딩, 환산공식 등)은 설명하지 마세요.
-- 섹션 3: 정서·인지·행동은 각 항목 \`- \` 말머리 목록으로 작성하고, 본문 마지막에 반드시 [방사형그래프] 한 줄만 출력하세요 (생략 불가, 다른 텍스트 혼입 금지).
-- 문항 번호(Q1, Q5~Q8 등) 및 점수 수치를 답변에 절대 노출하지 마세요. 대신 해당 문항이 나타내는 경험(사고위험, 시간압박 등)을 자연스러운 문장으로 서술하세요.
-
-# Markdown Format Rules (절대 준수 — 예외 없음)
-답변 작성 시 마크다운 형식을 다음과 같이 통일하세요:
-- 섹션 제목(1~7번): Output Format의 ### 헤딩 구조를 그대로 사용
-- 마지막 응원 메시지: 헤딩·레이블 없이 <h3> 태그 한 줄만 출력
-- 소제목: #### 헤딩 사용
-- 강조 텍스트: **볼드** 사용 (소제목 대용 금지)
-- 본문 내 일반 목록에서 숫자를 헤딩 대용으로 사용하지 마세요
-- 각 섹션 사이 --- 구분선 반드시 유지
-
-# Tone (사전 확정된 종합 위험군: ${finalRiskGroupLabel} — 이 기준에 맞춰 본문 전체 작성)
-- 공감 중심
-- 따듯하고 친근한 말투
-- 현실적
-- 행동 유도
-${
-  finalRiskLevel === '정상'
-    ? '- 종합 판정 = 정상군: 전반적으로 안정적이라는 점을 인정하면서, 점수가 높게 나온 일부 영역에 대해서만 가벼운 케어를 제안하세요. 과한 위기감·경고 톤 사용 금지. "주의가 필요한 상태"라는 표현은 사용하지 마세요.'
-    : finalRiskLevel === '경계'
-      ? '- 종합 판정 = 경계군: 주의가 필요한 시점임을 알리되, 위기감을 과장하지 말고 균형 잡힌 안내 톤을 유지하세요.'
-      : '- 종합 판정 = 고위험군: 위트 제거, 진지하고 명확한 안내 톤. 전문의 상담을 권고하세요.'
-}`
+  let depth = 0
+  for (let i = 0; i < after.length; i++) {
+    const ch = after[i]
+    if (ch === '{') depth++
+    else if (ch === '}') {
+      depth--
+      if (depth === 0) return after.slice(0, i + 1)
+    }
+  }
+  return null
 }
 
 /** 진단 프롬프트 # Input Data JSON에서 Qn→점수 파싱 */
 export const parseSurveyAnswersFromPrompt = (promptText: string, totalQuestions?: number): Record<number, number> => {
   try {
-    const match = promptText.match(/# Input Data\s*\n(\{[\s\S]*?\})/)
-    if (!match) return {}
-    const json = JSON.parse(match[1]) as Record<string, unknown>
+    const jsonText = extractSurveyInputDataJson(promptText)
+    if (!jsonText) return {}
+    const json = JSON.parse(jsonText) as Record<string, unknown>
     const answers: Record<number, number> = {}
     for (const [key, val] of Object.entries(json)) {
       const qMatch = key.match(/^Q(\d+)$/)
@@ -521,7 +683,7 @@ export const parseSurveyAnswersFromPrompt = (promptText: string, totalQuestions?
 
 /** 에이전트 목록 미동기화 시 qcontent만으로 SURVEY 응답 여부 추정 (라이브러리 카드용) */
 export const isLikelySurveyResponseByQcontent = (qcontent: string): boolean =>
-  Object.keys(parseSurveyAnswersFromPrompt(qcontent)).length > 0
+  Object.keys(parseSurveyAnswersFromPrompt(qcontent)).length > 0 || isSurveyDiagnosticPrompt(qcontent)
 
 /** 채팅 메시지 목록에 삽입할 type=survey 메시지 객체 생성 */
 export const createSurveyMessage = (
@@ -572,6 +734,10 @@ const KEYWORD_REGEX =
 /** 스트리밍 중 미완성 키워드 라인도 제거 (높이 번쩍임 방지) */
 export const removeKeywordLines = (answer: string): string =>
   answer.replace(/^[\s\-•*]*(?:\d+[.)]\s*)?\*{0,2}이미지키워드\*{0,2}[^\n\r]*/gmu, '')
+
+/** LLM 응답에 이미지키워드 라인이 포함됐는지 */
+export const hasImageKeywordLines = (answer: string): boolean =>
+  [...answer.matchAll(new RegExp(KEYWORD_REGEX.source, KEYWORD_REGEX.flags))].length > 0
 
 /** LLM 응답에서 이미지키워드 블록 앞/뒤 텍스트 분리 */
 export const extractKeywordSection = (answer: string): { beforeText: string; afterText: string } => {

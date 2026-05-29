@@ -10,12 +10,14 @@ import type {
   ChartStatItem,
   ChartDetailCdItem,
   LibraryGeneratedReportValues,
+  LibraryInsightReportRequest,
 } from '~/types/library'
 import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
 import { useLibraryApi } from '~/composables/library/useLibraryApi'
 import { useTmplApi } from '~/composables/tmpl/useTmplApi'
 import type { TmplBaseInfo } from '~/types/tmpl'
 import type { OrgUserItem } from '~/types/org-manage'
+import type { LibraryReportInsightRequest } from '~/utils/library/libraryReportEditorUtil'
 import { useUserSelectStore } from '~/composables/com/useUserSelectStore'
 const { closeUserSelectModal } = useUserSelectStore()
 const {
@@ -38,6 +40,7 @@ const {
   fetchCreateDoc,
   fetchCreateReportChatRoom,
   fetchReAskReport,
+  fetchInsightReport,
   fetchShareCard,
 } = useLibraryApi()
 const { fetchTmplList } = useTmplApi()
@@ -741,6 +744,59 @@ export const useLibraryStore = () => {
     }
   }
 
+  /** 보고서 인사이트 분석 — NEW_SECTION / REPLACE */
+  const handleInsightReport = async (request: LibraryReportInsightRequest) => {
+    if (!roomId.value?.trim()) {
+      openToast({ message: '채팅방 정보가 없습니다. 문서를 다시 생성해 주세요.', type: 'warning' })
+      return
+    }
+    if (!request.rContent?.trim()) {
+      openToast({ message: '원본 답변 내용이 없어 인사이트 분석을 요청할 수 없습니다.', type: 'warning' })
+      return
+    }
+
+    const insightPlacement = request.mode === 'add' ? 'NEW_SECTION' : 'REPLACE'
+    if (insightPlacement === 'REPLACE' && !request.valueKey?.trim()) {
+      openToast({ message: '교체할 항목을 선택해 주세요.', type: 'warning' })
+      return
+    }
+    const apiPayload: LibraryInsightReportRequest = {
+      roomId: roomId.value,
+      insightPlacement,
+      rContent: request.rContent,
+      currentHtml: request.currentHtml,
+    }
+    if (insightPlacement === 'REPLACE' && request.valueKey) {
+      apiPayload.targetValueKey = request.valueKey
+    }
+
+    try {
+      openLoading({
+        text: 'AI가 인사이트를 분석 중입니다...',
+        isDy: true,
+        intervalMs: 3000,
+        dyTexts: [
+          '데이터를 분석하고 있어요...',
+          '인사이트를 도출하는 중입니다...',
+          '보고서에 반영할 내용을 정리 중입니다...',
+          '거의 완성되었습니다...',
+        ],
+      })
+
+      const res = await fetchInsightReport(apiPayload)
+      const answer = res.data
+      if (answer) {
+        refinedEditorHtml.value = answer
+        reportRefineCompletedAt.value = Date.now()
+        openToast({ message: '인사이트 분석을 반영했습니다.', type: 'success' })
+      }
+      closeLoading()
+    } catch {
+      openToast({ message: '인사이트 분석 요청에 실패했습니다.', type: 'error' })
+      closeLoading()
+    }
+  }
+
   /** 보고서 채팅방 생성 */
   const handleCreateReportChatRoom = async () => {
     try {
@@ -875,6 +931,7 @@ export const useLibraryStore = () => {
     resetLibraryDetailCreateDocUi,
     handleCreateDocSelectOtherType,
     handleReAskReport,
+    handleInsightReport,
     handleShareCard,
   }
 }

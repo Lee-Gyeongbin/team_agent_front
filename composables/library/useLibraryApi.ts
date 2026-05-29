@@ -10,6 +10,8 @@ import type {
   ChartStatItem,
   ChartDetailCdItem,
   ShareCardPayload,
+  LibraryInsightReportRequest,
+  LibraryInsightReportResponse,
 } from '~/types/library'
 
 export const useLibraryApi = () => {
@@ -131,6 +133,11 @@ export const useLibraryApi = () => {
     })
   }
 
+  /** 보고서 인사이트 분석 API */
+  const fetchInsightReport = async (payload: LibraryInsightReportRequest): Promise<LibraryInsightReportResponse> => {
+    return post<LibraryInsightReportResponse>('/library/insightReport.do', payload)
+  }
+
   /** 채팅방 생성 API */
   const fetchCreateReportChatRoom = async (): Promise<{ roomId: string }> => {
     return post<{ roomId: string }>('/library/createReportChatRoom.do', {})
@@ -165,6 +172,7 @@ export const useLibraryApi = () => {
     fetchCreateDoc,
     fetchCreateReportChatRoom,
     fetchReAskReport,
+    fetchInsightReport,
     fetchShareCard,
   }
 }

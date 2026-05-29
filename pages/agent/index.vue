@@ -15,25 +15,29 @@
     />
 
     <!-- 에이전트 목록 (드래그 정렬) -->
-    <draggable
+    <div
       v-else
-      v-model="agentList"
-      class="com-card-list"
-      handle=".com-card-drag"
-      item-key="agentId"
-      animation="200"
-      @start="onAgentDragStart"
-      @end="onDragEnd"
+      class="com-card-list-wrap"
     >
-      <template #item="{ element }">
-        <AgentCard
-          :agent="element"
-          @click="onClickSetting(element)"
-          @delete="doDeleteAgent"
-          @toggle="onToggleActive"
-        />
-      </template>
-    </draggable>
+      <draggable
+        v-model="agentList"
+        class="com-card-list"
+        handle=".com-card-drag"
+        item-key="agentId"
+        animation="200"
+        @start="onAgentDragStart"
+        @end="onDragEnd"
+      >
+        <template #item="{ element }">
+          <AgentCard
+            :agent="element"
+            @click="onClickSetting(element)"
+            @delete="doDeleteAgent"
+            @toggle="onToggleActive"
+          />
+        </template>
+      </draggable>
+    </div>
     <!-- 설정 슬라이드 모달 -->
     <AgentSettingModal
       :is-open="isSettingOpen"
@@ -107,3 +111,9 @@ const onDragEnd = async () => {
   await handleUpdateAgentOrder(orderData)
 }
 </script>
+
+<style lang="scss" scoped>
+.com-card-list-wrap {
+  padding-bottom: $spacing-xl;
+}
+</style>

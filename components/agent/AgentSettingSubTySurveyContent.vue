@@ -59,6 +59,13 @@
             placeholder="영역명 (영문)"
             @update:model-value="onCategoryUpdate(catIdx, 'titleEn', String($event ?? ''))"
           />
+          <UiInput
+            :model-value="cat.elevatedLabel"
+            size="sm"
+            placeholder="초과 표시 라벨 (예: 직무요구 과부하)"
+            :desc="'기준 초과 시 스트레스 유형 섹션에 표시되는 라벨'"
+            @update:model-value="onCategoryUpdate(catIdx, 'elevatedLabel', String($event ?? ''))"
+          />
         </div>
         <div class="survey-category-card__questions">
           <div class="survey-category-card__questions-head">
@@ -128,7 +135,7 @@ const onAddCategory = () => {
   const no = nextCategoryNo()
   const categories: SurveyCategoryForm[] = [
     ...props.modelValue.categories,
-    { no, key: `category${no}`, title: '', titleEn: '', questions: [] },
+    { no, key: `category${no}`, title: '', titleEn: '', elevatedLabel: '', questions: [] },
   ]
   emitForm({ ...props.modelValue, categories })
 }
