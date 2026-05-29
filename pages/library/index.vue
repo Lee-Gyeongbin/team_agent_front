@@ -380,7 +380,6 @@ import draggable from 'vuedraggable'
 import defaultLibraryCardImg from '~/assets/images/test_images.png'
 import { useLibraryStore } from '~/composables/library/useLibraryStore'
 import { useNotifyStore } from '~/composables/com/useNotifyStore'
-import { useChatStore } from '~/composables/chat/useChatStore'
 import { resolveDataUrlImageSrc } from '~/utils/global/imageUtil'
 
 const {
@@ -437,10 +436,10 @@ const {
   handleTrashModalClose,
   handleRestoreCard,
   handleEmptyTrash,
+  handleSelectLibraryAgents,
 } = useLibraryStore()
 
 const { hasPendingKsNotify } = useNotifyStore()
-const { handleSelectChatIndexAgents } = useChatStore()
 
 /** KS 알림 배너 닫힘 상태 (페이지 내 로컬 — 이탈 후 재진입 시 초기화) */
 const isKsBannerDismissed = ref(false)
@@ -475,7 +474,7 @@ const onScrollRight = () => {
 
 onMounted(() => {
   handleFetchCategoryList()
-  void handleSelectChatIndexAgents()
+  void handleSelectLibraryAgents()
   nextTick(() => updateScrollState())
 })
 </script>

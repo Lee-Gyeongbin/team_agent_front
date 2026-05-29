@@ -686,10 +686,7 @@ export const isLikelySurveyResponseByQcontent = (qcontent: string): boolean =>
   Object.keys(parseSurveyAnswersFromPrompt(qcontent)).length > 0 || isSurveyDiagnosticPrompt(qcontent)
 
 /** 라이브러리 카드 질의 — 설문 readonly UI 표시 여부 (에이전트 목록 미로드 시 qcontent 폴백) */
-export const isSurveyLibraryCardItem = (
-  item: { agentId?: string; qcontent?: string },
-  agents: Agent[],
-): boolean => {
+export const isSurveyLibraryCardItem = (item: { agentId?: string; qcontent?: string }, agents: Agent[]): boolean => {
   const agentId = (item.agentId ?? '').trim()
   const qcontent = item.qcontent ?? ''
   if (agentId) {

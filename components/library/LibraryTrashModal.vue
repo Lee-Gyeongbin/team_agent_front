@@ -131,8 +131,7 @@
 import { parseSurveyAnswersFromPrompt, resolveSurveyConfigByAgentId, isSurveyLibraryCardItem } from '~/utils/chat/surveyUtil'
 import { hasTodayMemeQcontent, isTodayMemeLibraryCard } from '~/utils/chat/todayMemeUtil'
 import type { LibraryCardDetail } from '~/types/library'
-const { trashCardList } = useLibraryStore()
-const { chatIndexAgents } = useChatStore()
+const { trashCardList, libraryAgents } = useLibraryStore()
 
 interface Props {
   isOpen?: boolean
@@ -162,10 +161,10 @@ const filteredTrashCardList = computed(() => {
   })
 })
 
-const isSurveyLibraryCard = (item: LibraryCardDetail) => isSurveyLibraryCardItem(item, chatIndexAgents.value)
+const isSurveyLibraryCard = (item: LibraryCardDetail) => isSurveyLibraryCardItem(item, libraryAgents.value)
 
 const getSurveyLibraryConfig = (item: LibraryCardDetail) =>
-  resolveSurveyConfigByAgentId(item.agentId, chatIndexAgents.value)
+  resolveSurveyConfigByAgentId(item.agentId, libraryAgents.value)
 
 // 스크롤 상태
 const bodyRef = ref<HTMLElement | null>(null)
