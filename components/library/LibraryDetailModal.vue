@@ -363,9 +363,9 @@ import { NEWS_CURATOR_AGENT_ID, parseNewsCuratorItems, parseNewsCuratorPromptMet
 import { hasTodayMemeQcontent, isTodayMemeLibraryCard, parseTodayMemeItems } from '~/utils/chat/todayMemeUtil'
 import {
   parseSurveyAnswersFromPrompt,
-  isSurveyAgent,
   parseSurveyConfigFromAgent,
   resolveSurveyConfigByAgentId,
+  isSurveyLibraryCardItem,
 } from '~/utils/chat/surveyUtil'
 import type { LibraryCardDetail, DocItem, TableDataItem, ChartStatItem, ChartDetailCdItem } from '~/types/library'
 import type { LibraryReportInsightRequest } from '~/utils/library/libraryReportEditorUtil'
@@ -396,7 +396,7 @@ const {
   handleInsightReport,
   handleShareCard,
 } = useLibraryStore()
-const { chatIndexAgents } = useChatStore()
+const { chatIndexAgents, handleSelectChatIndexAgents } = useChatStore()
 const props = withDefaults(
   defineProps<{
     isOpen?: boolean
@@ -489,10 +489,8 @@ const visualizationView = computed<VisualizationViewModel | null>(() => {
 // 내부 표시용 데이터 (트랜지션 타이밍 제어용)
 const displayData = ref<LibraryCardDetail | null>(props.cardDetail ?? null)
 const isSurveyLibraryCard = computed(() => {
-  const agentId = displayData.value?.agentId
-  if (!agentId) return false
-  const agent = chatIndexAgents.value.find((a) => a.agentId === agentId)
-  return agent ? isSurveyAgent(agent) : false
+  if (!displayData.value) return false
+  return isSurveyLibraryCardItem(displayData.value, chatIndexAgents.value)
 })
 const surveyLibraryConfig = computed(() => {
   const agentId = displayData.value?.agentId
@@ -629,6 +627,9 @@ watch(
 watch(
   () => props.isOpen,
   (open) => {
+    if (open && chatIndexAgents.value.length === 0) {
+      void handleSelectChatIndexAgents()
+    }
     if (!open) {
       displayData.value = null
       isSqlCodeVisible.value = false

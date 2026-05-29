@@ -685,6 +685,34 @@ export const parseSurveyAnswersFromPrompt = (promptText: string, totalQuestions?
 export const isLikelySurveyResponseByQcontent = (qcontent: string): boolean =>
   Object.keys(parseSurveyAnswersFromPrompt(qcontent)).length > 0 || isSurveyDiagnosticPrompt(qcontent)
 
+/** 라이브러리 카드 질의 — 설문 readonly UI 표시 여부 (에이전트 목록 미로드 시 qcontent 폴백) */
+export const isSurveyLibraryCardItem = (
+  item: { agentId?: string; qcontent?: string },
+  agents: Agent[],
+): boolean => {
+  const agentId = (item.agentId ?? '').trim()
+  const qcontent = item.qcontent ?? ''
+  if (agentId) {
+    const agent = agents.find((a) => a.agentId === agentId)
+    if (agent) return isSurveyAgent(agent)
+  }
+  return isLikelySurveyResponseByQcontent(qcontent)
+}
+
+/** 라이브러리 응답 — 방사형 차트·마커 분리 렌더 대상 (에이전트 미동기화 시 qcontent 폴백) */
+export const isSurveyRadarLibraryCard = (agentId: string, qcontent: string, agents: Agent[]): boolean =>
+  isSurveyRadarAgentById(agentId, agents) || isLikelySurveyResponseByQcontent(qcontent)
+
+/** 라이브러리 응답 — Pexels 이미지 주입 대상 (에이전트 설정 또는 설문 qcontent + 이미지 키워드) */
+export const shouldLibrarySurveyPexelsInject = (
+  agentId: string,
+  qcontent: string,
+  rcontent: string,
+  agents: Agent[],
+): boolean =>
+  isSurveyPexelsAgentById(agentId, agents) ||
+  (isLikelySurveyResponseByQcontent(qcontent) && hasImageKeywordLines(rcontent))
+
 /** 채팅 메시지 목록에 삽입할 type=survey 메시지 객체 생성 */
 export const createSurveyMessage = (
   answers: Record<number, number>,
