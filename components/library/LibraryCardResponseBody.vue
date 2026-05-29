@@ -127,8 +127,8 @@ import {
   hasImageKeywordLines,
   usePsychologySurvey,
   isSurveyRadarAgentById,
-  isSurveyPexelsAgentById,
-  isLikelySurveyResponseByQcontent,
+  isSurveyRadarLibraryCard,
+  shouldLibrarySurveyPexelsInject,
   resolveSurveyConfigByAgentId,
   setActiveSurveyConfig,
   type RadarChartData,
@@ -192,17 +192,17 @@ const memeList = computed(() => {
 
 const isTodayMemeResponse = computed(() => isTodayMemeLibraryCard(props.item) && memeList.value.length > 0)
 
-const isSurveyRadarLibraryCard = (agentId: string, qcontent: string) =>
-  isSurveyRadarAgentById(agentId, chatIndexAgents.value) || isLikelySurveyResponseByQcontent(qcontent)
-
-const isSurveyPexelsLibraryCard = (agentId: string) =>
-  isSurveyPexelsAgentById(agentId, chatIndexAgents.value)
+const isSurveyRadarCard = (agentId: string, qcontent: string) =>
+  isSurveyRadarLibraryCard(agentId, qcontent, chatIndexAgents.value)
 
 const responseRenderedHtml = computed(() => {
   const raw = props.item.rcontent ?? ''
   const agentId = props.item.agentId ?? ''
   const qcontent = props.item.qcontent ?? ''
-  if (isSurveyRadarLibraryCard(agentId, qcontent) || isSurveyPexelsLibraryCard(agentId)) {
+  if (
+    isSurveyRadarCard(agentId, qcontent) ||
+    shouldLibrarySurveyPexelsInject(agentId, qcontent, raw, chatIndexAgents.value)
+  ) {
     return toHtmlContent(removeKeywordLines(raw))
   }
   return toHtmlContent(raw)
@@ -222,7 +222,8 @@ let cancelPsychologyRadarInjection: (() => void) | null = null
 let isLibraryCardAlive = true
 
 const isPsychologyRadarResponse = computed(
-  () => isSurveyRadarAgentById(props.item.agentId ?? '', chatIndexAgents.value) && psychologyMarkerFound.value,
+  () =>
+    isSurveyRadarCard(props.item.agentId ?? '', props.item.qcontent ?? '') && psychologyMarkerFound.value,
 )
 
 const injectLibraryPexelsHtml = (raw: string, cacheKey: string) => {
@@ -292,7 +293,7 @@ watch(
 
     const cacheKey = logId || cardId
     const isRadar = isSurveyRadarAgentById(agentId, chatIndexAgents.value)
-    const isPexels = isSurveyPexelsLibraryCard(agentId)
+    const isPexels = shouldLibrarySurveyPexelsInject(agentId, qcontent, rcontent, chatIndexAgents.value)
 
     // showRadarChart: false + showPexelsRecoveryImages: true (디지털 과부하 등)
     if (!isRadar && isPexels) {
@@ -301,7 +302,7 @@ watch(
       return
     }
 
-    if (!isSurveyRadarLibraryCard(agentId, qcontent)) return
+    if (!isSurveyRadarCard(agentId, qcontent)) return
 
     const { found, before, after } = extractAiImageMarkerSection(rcontent)
     if (!found) return

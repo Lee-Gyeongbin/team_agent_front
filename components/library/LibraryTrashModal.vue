@@ -128,8 +128,7 @@
 </template>
 
 <script setup lang="ts">
-import { parseSurveyAnswersFromPrompt } from '~/utils/chat/surveyUtil'
-import { isSurveyAgent, resolveSurveyConfigByAgentId } from '~/utils/chat/surveyUtil'
+import { parseSurveyAnswersFromPrompt, resolveSurveyConfigByAgentId, isSurveyLibraryCardItem } from '~/utils/chat/surveyUtil'
 import { hasTodayMemeQcontent, isTodayMemeLibraryCard } from '~/utils/chat/todayMemeUtil'
 import type { LibraryCardDetail } from '~/types/library'
 const { trashCardList } = useLibraryStore()
@@ -163,10 +162,7 @@ const filteredTrashCardList = computed(() => {
   })
 })
 
-const isSurveyLibraryCard = (item: LibraryCardDetail) => {
-  const agent = chatIndexAgents.value.find((a) => a.agentId === item.agentId)
-  return agent ? isSurveyAgent(agent) : false
-}
+const isSurveyLibraryCard = (item: LibraryCardDetail) => isSurveyLibraryCardItem(item, chatIndexAgents.value)
 
 const getSurveyLibraryConfig = (item: LibraryCardDetail) =>
   resolveSurveyConfigByAgentId(item.agentId, chatIndexAgents.value)
