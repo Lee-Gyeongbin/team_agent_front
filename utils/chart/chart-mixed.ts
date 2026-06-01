@@ -51,6 +51,7 @@ export const MixedChartModule = {
       maxValue2,
       yAxisStepSize,
       y1AxisStepSize,
+      scales: configScales,
       showLegend = false,
       hideDataLabels = false,
     } = config
@@ -136,12 +137,8 @@ export const MixedChartModule = {
                 return `${datasetLabel}: ${value.toLocaleString()}${tooltipValueSuffix}`
               }
               const unit = context.dataset.unit || ''
-
-              if (context.dataset.type === 'line') {
-                return `${datasetLabel}: ${value}%`
-              }
-              if (unit === '%') return `${datasetLabel}: ${value}%`
-              return `${datasetLabel}: ${value.toLocaleString()}원`
+              if (unit) return `${datasetLabel}: ${value.toLocaleString()}${unit}`
+              return `${datasetLabel}: ${value.toLocaleString()}`
             },
           },
         },
@@ -151,7 +148,10 @@ export const MixedChartModule = {
             return context.dataset.type === 'line'
           },
           formatter(value: any, context: any) {
-            if (context.dataset.type === 'line') return value + '%'
+            if (context.dataset.type === 'line') {
+              const unit = context.dataset.unit || ''
+              return unit ? `${value.toLocaleString()}${unit}` : `${value.toLocaleString()}`
+            }
             return null
           },
           anchor: 'end',
@@ -190,10 +190,10 @@ export const MixedChartModule = {
           type: 'linear',
           display: true,
           position: 'left',
-          beginAtZero: true,
-          max: maxValue,
+          min: configScales?.y?.min ?? 0,
+          max: configScales?.y?.max ?? maxValue,
           ticks: {
-            stepSize: yAxisStepSize || Math.floor(maxValue / 5),
+            stepSize: configScales?.y?.ticks?.stepSize ?? yAxisStepSize ?? Math.floor(maxValue / 5),
             callback: (value: number) => value.toLocaleString(),
             font: { size: ChartConfig.font.size.small, family: ChartConfig.font.family },
             color: '#6D7882',
@@ -204,11 +204,11 @@ export const MixedChartModule = {
           type: 'linear',
           display: true,
           position: 'right',
-          beginAtZero: true,
-          max: maxValue2,
+          min: configScales?.y1?.min ?? 0,
+          max: configScales?.y1?.max ?? maxValue2,
           ticks: {
-            stepSize: y1AxisStepSize || 20,
-            callback: (value: number) => value + '%',
+            stepSize: configScales?.y1?.ticks?.stepSize ?? y1AxisStepSize ?? 20,
+            callback: (value: number) => value.toLocaleString(),
             font: { size: ChartConfig.font.size.small, family: ChartConfig.font.family },
             color: '#6D7882',
           },

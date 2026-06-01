@@ -78,3 +78,74 @@ export interface AgtDm {
   tblCnt: number // TBL_CNT
   lastVerifyDt: string // LAST_VERIFY_DT
 }
+
+// ===== RECOMMEND 에이전트 타입 (SUB_TY = 'RECOMMEND') =====
+
+export interface RecommendUiConfig {
+  introTitle: string
+  introSubtitle: string
+  cardTitle: string
+  cardTitleResult: string
+  cardSubtitle: string
+  cardSubtitleReadonly: string
+  cardSubtitleResult: string
+  imageNotice?: string
+  pendingStatusTexts: string[]
+}
+
+export interface RecommendFormField {
+  key: string
+  label: string
+  type: 'chip_select'
+  required: boolean
+  options: string[]
+}
+
+export interface RecommendFormConfig {
+  useRegionSelect: boolean
+  regionSelectLabel?: string
+  fields: RecommendFormField[]
+}
+
+export interface RecommendResultFieldDef {
+  key: string
+  label: string
+  type?: 'link' | 'text'
+}
+
+export interface RecommendResultConfig {
+  topN: number
+  rankLabel: string
+  nameField: string
+  imageField?: string
+  fields: RecommendResultFieldDef[]
+}
+
+export interface RecommendFeatures {
+  useGeolocation: boolean
+  showThumbnailImages: boolean
+  showImageNotice: boolean
+}
+
+export interface RecommendAgentConfig {
+  agentType: 'recommend'
+  version: string
+  language: string
+  ui: RecommendUiConfig
+  form: RecommendFormConfig
+  result: RecommendResultConfig
+  features: RecommendFeatures
+  agent: {
+    id: string
+    name: string
+    persona: string
+    mission: string
+  }
+  constraints: string[]
+  engine?: {
+    outputSchema?: {
+      type: 'json_array'
+      itemFields: string[]
+    }
+  }
+}

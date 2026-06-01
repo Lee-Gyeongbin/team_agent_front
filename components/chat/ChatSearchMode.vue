@@ -68,7 +68,10 @@
               <i class="icon-close size-20" />
             </button>
           </div>
-          <div class="chat-mode-panel-card-grp">
+          <div
+            class="chat-mode-panel-card-grp"
+            :class="{ 'is-few': chatIndexAgents.length <= 3 }"
+          >
             <button
               v-for="agent in chatIndexAgents"
               :key="agent.agentId"
@@ -102,6 +105,7 @@
 <script setup lang="ts">
 import type { Agent } from '~/types/agent'
 import { isSurveyAgent } from '~/utils/chat/surveyUtil'
+import { isRecommendAgent } from '~/utils/chat/recommendAgentUtil'
 
 interface Props {
   disabled?: boolean
@@ -191,7 +195,11 @@ const toggleDropdown = () => {
 
 const onSelect = (agent: Agent) => {
   if (disabled.value) return
-  if (selectedChatAgentId.value === agent.agentId && !isSurveyAgent(agent)) {
+  if (
+    selectedChatAgentId.value === agent.agentId &&
+    !isSurveyAgent(agent) &&
+    !isRecommendAgent(agent)
+  ) {
     isOpen.value = false
     return
   }

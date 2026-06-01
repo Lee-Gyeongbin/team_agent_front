@@ -1,7 +1,18 @@
 <template>
   <div class="library-card-response-body">
+    <ChatRecommendAgentCard
+      v-if="isRecommendAgentResponse && recommendConfig"
+      readonly
+      display-mode="result"
+      :recommend-config="recommendConfig"
+      :recommendations="recommendList"
+      :enrichment-cache-key="recommendImageCacheKey"
+      :enrichment-r-content="recommendEnrichmentRContent"
+      :theme-icon-class-nm="item.iconClassNm ?? ''"
+      :theme-color-hex="item.colorHex ?? ''"
+    />
     <ChatLunchAgentCard
-      v-if="isLunchAgentResponse"
+      v-else-if="isLunchAgentResponse"
       readonly
       display-mode="result"
       :recommendations="lunchList"
@@ -108,6 +119,14 @@ import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import type { StressScoreItem } from '~/types/stress'
 import type { LibraryCardDetail } from '~/types/library'
 import { getLunchImageEnrichmentCacheKey, LUNCH_AGENT_ID, parseLunchJsonArray } from '~/utils/chat/lunchAgentUtil'
+import {
+  getRecommendImageEnrichmentCacheKey,
+  isRecommendAgentPrompt,
+  normalizeRecommendResultItems,
+  parseRecommendConfigFromAgent,
+  parseRecommendJsonArray,
+  resolveRecommendConfigByAgentId,
+} from '~/utils/chat/recommendAgentUtil'
 import { NEWS_CURATOR_AGENT_ID, parseNewsCuratorItems, parseNewsCuratorPromptMeta } from '~/utils/chat/newsCuratorUtil'
 import { isTodayMemeLibraryCard, parseTodayMemeItems } from '~/utils/chat/todayMemeUtil'
 import {
@@ -142,6 +161,33 @@ const props = defineProps<{
 }>()
 
 const lunchEnrichmentRContent = computed(() => String(props.item.rcontent ?? '').trim())
+
+const recommendEnrichmentRContent = computed(() => String(props.item.rcontent ?? '').trim())
+
+const recommendImageCacheKey = computed(() => {
+  const fromLog = getRecommendImageEnrichmentCacheKey({ logId: props.item.logId, recommendAnswerLogId: props.item.logId })
+  if (fromLog) return fromLog
+  return String(props.item.cardId ?? '').trim()
+})
+
+const recommendConfig = computed(() => {
+  const agentId = props.item.agentId ?? ''
+  if (!agentId) return null
+  const agent = libraryAgents.value.find((a) => a.agentId === agentId)
+  if (agent) return parseRecommendConfigFromAgent(agent)
+  return resolveRecommendConfigByAgentId(agentId, libraryAgents.value)
+})
+
+const recommendList = computed(() => {
+  if (!isRecommendAgentPrompt(props.item.qcontent ?? '')) return []
+  const raw = recommendEnrichmentRContent.value
+  if (!raw) return []
+  return normalizeRecommendResultItems(parseRecommendJsonArray(raw))
+})
+
+const isRecommendAgentResponse = computed(
+  () => isRecommendAgentPrompt(props.item.qcontent ?? '') && recommendList.value.length > 0 && !!recommendConfig.value,
+)
 
 const lunchImageCacheKey = computed(() => {
   const fromLog = getLunchImageEnrichmentCacheKey({ logId: props.item.logId })

@@ -240,6 +240,12 @@
       @update:model-value="emit('update:surveyForm', $event)"
     />
 
+    <AgentSettingSubTyRecommend
+      v-if="svcTy === 'C' && subTy === 'RECOMMEND'"
+      :model-value="recommendForm"
+      @update:model-value="emit('update:recommendForm', $event)"
+    />
+
     <AgentIconSelectModal
       :is-open="isIconModalOpen"
       :icons="themeIcons"
@@ -254,6 +260,7 @@
 <script setup lang="ts">
 import { useAgentStore } from '~/composables/agent/useAgentStore'
 import type { SurveyConfigForm } from '~/utils/agent/surveyConfigUtil'
+import type { RecommendConfigForm } from '~/utils/agent/recommendConfigUtil'
 
 interface BasicForm {
   agentNm: string
@@ -287,6 +294,7 @@ interface Props {
   ragForm: RagForm
   sqlForm: SqlForm
   surveyForm: SurveyConfigForm
+  recommendForm: RecommendConfigForm
   sqlModelOptions: { value: string; label: string }[]
   apiUrlCdOptions: { value: string | number; label: string }[]
 }
@@ -299,6 +307,7 @@ const emit = defineEmits<{
   'update:ragForm': [value: RagForm]
   'update:sqlForm': [value: SqlForm]
   'update:surveyForm': [value: SurveyConfigForm]
+  'update:recommendForm': [value: RecommendConfigForm]
 }>()
 
 const onUpdate = (key: keyof BasicForm, value: string | number | 'Y' | 'N') => {

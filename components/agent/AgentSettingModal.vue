@@ -22,11 +22,13 @@
         :rag-form="ragForm"
         :sql-form="sqlForm"
         :survey-form="surveyForm"
+        :recommend-form="recommendForm"
         :sql-model-options="sqlModelOptions"
         :api-url-cd-options="apiUrlCdOptions"
         @update:rag-form="ragForm = $event"
         @update:sql-form="sqlForm = $event"
         @update:survey-form="surveyForm = $event"
+        @update:recommend-form="recommendForm = $event"
       />
 
       <!-- 섹션3: 데이터 연결 (svcTy 기반 분기) -->
@@ -68,12 +70,19 @@ import type { Agent, AgtDs, AgtDm, AgtSubAdditionalConfig } from '~/types/agent'
 import type { CodeItem } from '~/types/codes'
 import { useAgentStore } from '~/composables/agent/useAgentStore'
 import { SURVEY_SUB_TY, normalizeAgentSubCfg } from '~/utils/chat/surveyUtil'
+import { RECOMMEND_SUB_TY } from '~/utils/chat/recommendAgentUtil'
 import {
   buildSurveyAdditionalConfig,
   emptySurveyConfigForm,
   parseSurveyAdditionalConfigToForm,
   type SurveyConfigForm,
 } from '~/utils/agent/surveyConfigUtil'
+import {
+  buildRecommendAdditionalConfig,
+  emptyRecommendConfigForm,
+  parseRecommendAdditionalConfigToForm,
+  type RecommendConfigForm,
+} from '~/utils/agent/recommendConfigUtil'
 
 interface Props {
   isOpen: boolean
@@ -109,7 +118,9 @@ const onChangeAgentType = async (svcTy: string) => {
   } else if (!form.value.subTy) {
     form.value.subTy = ''
     preservedSurveyConfig.value = null
+    preservedRecommendConfig.value = null
     surveyForm.value = emptySurveyConfigForm()
+    recommendForm.value = emptyRecommendConfigForm()
   }
   const result = await handleChangeAgentType(svcTy)
   localDatasetList.value = result.datasetList
@@ -132,6 +143,10 @@ const form = ref({
 const preservedSurveyConfig = ref<AgtSubAdditionalConfig | null>(null)
 const surveyForm = ref<SurveyConfigForm>(emptySurveyConfigForm())
 
+// 추천(RECOMMEND) ADDITIONAL_CONFIG — UI 미편집 필드 보존용
+const preservedRecommendConfig = ref<AgtSubAdditionalConfig | null>(null)
+const recommendForm = ref<RecommendConfigForm>(emptyRecommendConfigForm())
+
 const loadSurveyConfigFromAgent = (agent: Agent | null) => {
   const subCfg = normalizeAgentSubCfg(agent?.subCfg)
   const additional = subCfg?.additionalConfig
@@ -142,6 +157,25 @@ const loadSurveyConfigFromAgent = (agent: Agent | null) => {
   }
   preservedSurveyConfig.value = null
   surveyForm.value = emptySurveyConfigForm()
+}
+
+const loadRecommendConfigFromAgent = (agent: Agent | null) => {
+  const subCfg = normalizeAgentSubCfg(agent?.subCfg)
+  const additional = subCfg?.additionalConfig
+  if (additional && typeof additional === 'object' && Object.keys(additional).length > 0) {
+    preservedRecommendConfig.value = { ...additional }
+    recommendForm.value = parseRecommendAdditionalConfigToForm(additional as Record<string, unknown>)
+    return
+  }
+  preservedRecommendConfig.value = null
+  recommendForm.value = emptyRecommendConfigForm()
+}
+
+const resetSubTyConfigForms = () => {
+  preservedSurveyConfig.value = null
+  preservedRecommendConfig.value = null
+  surveyForm.value = emptySurveyConfigForm()
+  recommendForm.value = emptyRecommendConfigForm()
 }
 
 // 기본 설정 폼
@@ -188,9 +222,14 @@ watch(
       form.value.subTy = normalizeAgentSubCfg(props.agent.subCfg)?.subTy ?? ''
       if (props.agent.svcTy === 'C' && form.value.subTy === SURVEY_SUB_TY) {
         loadSurveyConfigFromAgent(props.agent)
-      } else {
+        preservedRecommendConfig.value = null
+        recommendForm.value = emptyRecommendConfigForm()
+      } else if (props.agent.svcTy === 'C' && form.value.subTy === RECOMMEND_SUB_TY) {
+        loadRecommendConfigFromAgent(props.agent)
         preservedSurveyConfig.value = null
         surveyForm.value = emptySurveyConfigForm()
+      } else {
+        resetSubTyConfigForms()
       }
       basicForm.value = {
         agentNm: props.agent.agentNm,
@@ -221,8 +260,7 @@ watch(
     } else {
       form.value.svcTy = ''
       form.value.subTy = ''
-      preservedSurveyConfig.value = null
-      surveyForm.value = emptySurveyConfigForm()
+      resetSubTyConfigForms()
       basicForm.value = {
         agentNm: '',
         apiUrlCd: '',
@@ -239,6 +277,36 @@ watch(
       sqlForm.value = { modelId: '', maxQrySec: 60, sqlValidYn: 'N', readonlyYn: 'N', userCfrmYn: 'N' }
       localDatasetList.value = []
       localDatamartList.value = []
+    }
+  },
+)
+
+watch(
+  () => form.value.subTy,
+  (subTy, prevSubTy) => {
+    if (!props.isOpen || subTy === prevSubTy) return
+    if (subTy === SURVEY_SUB_TY) {
+      if (
+        props.agent?.svcTy === 'C' &&
+        normalizeAgentSubCfg(props.agent.subCfg)?.subTy === SURVEY_SUB_TY
+      ) {
+        loadSurveyConfigFromAgent(props.agent)
+      } else {
+        preservedSurveyConfig.value = null
+        surveyForm.value = emptySurveyConfigForm()
+      }
+      return
+    }
+    if (subTy === RECOMMEND_SUB_TY) {
+      if (
+        props.agent?.svcTy === 'C' &&
+        normalizeAgentSubCfg(props.agent.subCfg)?.subTy === RECOMMEND_SUB_TY
+      ) {
+        loadRecommendConfigFromAgent(props.agent)
+      } else {
+        preservedRecommendConfig.value = null
+        recommendForm.value = emptyRecommendConfigForm()
+      }
     }
   },
 )
@@ -260,6 +328,17 @@ const onSave = () => {
       agentId: props.agent?.agentId ?? '',
       subTy: SURVEY_SUB_TY,
       additionalConfig: buildSurveyAdditionalConfig(surveyForm.value, preservedSurveyConfig.value),
+      useYn: existingSubCfg?.useYn ?? 'Y',
+      createDt: existingSubCfg?.createDt ?? '',
+      modifyDt: existingSubCfg?.modifyDt ?? '',
+    }
+  } else if (form.value.svcTy === 'C' && form.value.subTy === RECOMMEND_SUB_TY) {
+    const existingSubCfg = normalizeAgentSubCfg(props.agent?.subCfg)
+    base.subCfg = {
+      subCfgId: existingSubCfg?.subCfgId ?? '',
+      agentId: props.agent?.agentId ?? '',
+      subTy: RECOMMEND_SUB_TY,
+      additionalConfig: buildRecommendAdditionalConfig(recommendForm.value, preservedRecommendConfig.value),
       useYn: existingSubCfg?.useYn ?? 'Y',
       createDt: existingSubCfg?.createDt ?? '',
       modifyDt: existingSubCfg?.modifyDt ?? '',
