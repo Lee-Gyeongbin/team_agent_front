@@ -436,9 +436,11 @@ const sanitizeSelection = (
   schema: VisualizationSchema,
   selection: VisualizationChartSelection,
 ): VisualizationChartSelection => {
-  const chartType = schema.selectableOptions.chartTypes.includes(selection.chartType)
-    ? selection.chartType
-    : schema.defaultSelection.chartType
+  // 'mixed'는 이축 혼합 차트용으로 chartTypes 목록과 무관하게 허용
+  const chartType =
+    selection.chartType === 'mixed' || schema.selectableOptions.chartTypes.includes(selection.chartType)
+      ? selection.chartType
+      : schema.defaultSelection.chartType
   const chartTargetKey = schema.selectableOptions.chartTargetKeys.includes(selection.chartTargetKey)
     ? selection.chartTargetKey
     : schema.defaultSelection.chartTargetKey
@@ -480,6 +482,8 @@ const sanitizeSelection = (
     dualAxis,
     stack,
     statIdFilter,
+    ylChartType: selection.ylChartType,
+    yrChartType: selection.yrChartType,
   }
 }
 
@@ -651,22 +655,30 @@ export const buildChartModel = (
   if (yAxisKeys.length >= 2) {
     const datasets = yAxisKeys.slice(0, 2).map((yKey, index) => {
       const valueMap = buildSingleMetricValueMap(rowList, selection.chartTargetKey, yKey)
+      // 이축 모드에서 YL/YR 개별 차트 타입 적용
+      const perAxisType = index === 0 ? selection.ylChartType : selection.yrChartType
+      const resolvedType = selection.dualAxis && perAxisType ? perAxisType : selection.chartType
       return {
         label: resolveColumnLabel(yKey),
         data: categories.map((category) => valueMap.get(category) ?? 0),
-        colorKey: selection.chartType === 'line' ? 'line.analystatSet' : 'bar.analystatSet',
+        colorKey: resolvedType === 'line' ? 'line.analystatSet' : 'bar.analystatSet',
         colorIndex: index,
         yAxisID: selection.dualAxis ? (index === 0 ? 'y' : 'y1') : 'y',
+        ...(selection.dualAxis && perAxisType ? { type: perAxisType } : {}),
         ...(selection.stack ? { stack: 'total' } : {}),
       }
     })
     const config: Record<string, unknown> = { categories, datasets }
     if (selection.dualAxis) {
-      // bar 이축은 음수 존재 시에만 음수축 허용, line 이축은 기존 스케일(항상 allowNegative) 유지
-      const leftScale =
-        selection.chartType === 'bar' ? resolveYAxisScaleForBar([datasets[0]]) : resolveYAxisScale([datasets[0]])
-      const rightScale =
-        selection.chartType === 'bar' ? resolveYAxisScaleForBar([datasets[1]]) : resolveYAxisScale([datasets[1]])
+      // 차트 타입(bar/line)과 무관하게 실제 데이터에 음수가 있는지로만 스케일 결정
+      // → 동일한 데이터라면 YL/YR 모두 동일한 min/max 계산 보장
+      const leftScale = resolveYAxisScaleForBar([datasets[0]])
+      const rightScale = resolveYAxisScaleForBar([datasets[1]])
+      // mixed chart 모듈은 maxValue/maxValue2/stepSize를 직접 읽으므로 함께 세팅
+      config.maxValue = leftScale.max
+      config.maxValue2 = rightScale.max
+      config.yAxisStepSize = leftScale.stepSize
+      config.y1AxisStepSize = rightScale.stepSize
       config.scales = {
         y: {
           min: leftScale.min,

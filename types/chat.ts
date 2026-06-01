@@ -385,7 +385,7 @@ export const EMPTY_VISUALIZATION_DATA_ROW: VisualizationDataRow = {
 }
 
 export type VisualizationStatus = 'idle' | 'loading' | 'success' | 'empty' | 'error'
-export type VisualizationChartType = 'bar' | 'line' | 'pie'
+export type VisualizationChartType = 'bar' | 'line' | 'pie' | 'mixed'
 export interface VisualizationChartOptionPayload {
   chart?: VisualizationChartType
   x?: string[]
@@ -428,6 +428,10 @@ export interface VisualizationChartSelection {
   dualAxis: boolean
   /** STAT_ID 컬럼이 있을 때 필터할 통계 ID (없으면 미사용) */
   statIdFilter?: string
+  /** 이축 모드에서 YL 차트 타입 */
+  ylChartType?: 'bar' | 'line'
+  /** 이축 모드에서 YR 차트 타입 */
+  yrChartType?: 'bar' | 'line'
 }
 
 export interface VisualizationSchema {
