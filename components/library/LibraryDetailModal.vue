@@ -149,51 +149,10 @@
       <div class="library-detail-modal-body">
         <!-- 사용자 질문 -->
         <div class="content-box type-question">
-          <ChatSurvey
-            v-if="isSurveyLibraryCard && surveyLibraryConfig"
-            class="library-detail-survey-readonly"
-            readonly
-            :survey-config="surveyLibraryConfig"
-            :initial-answers="surveyReadonlyAnswers"
-            :theme-icon-class-nm="displayData?.iconClassNm ?? ''"
-            :theme-color-hex="displayData?.colorHex ?? ''"
+          <LibraryCardQuestionBody
+            v-if="displayData"
+            :item="displayData"
           />
-          <ChatLunchAgentCard
-            v-else-if="lunchQuestionPayload"
-            class="library-detail-lunch-readonly"
-            readonly
-            :initial-payload="lunchQuestionPayload"
-            :theme-icon-class-nm="displayData?.iconClassNm ?? ''"
-            :theme-color-hex="displayData?.colorHex ?? ''"
-          />
-          <ChatRecommendAgentCard
-            v-else-if="recommendQuestionConfig && recommendQuestionPayload"
-            class="library-detail-recommend-readonly"
-            readonly
-            display-mode="form"
-            :recommend-config="recommendQuestionConfig"
-            :initial-payload="recommendQuestionPayload"
-            :theme-icon-class-nm="displayData?.iconClassNm ?? ''"
-            :theme-color-hex="displayData?.colorHex ?? ''"
-          />
-          <ChatNewsCurator
-            v-else-if="newsQuestionCategories.length"
-            class="library-detail-news-readonly"
-            readonly
-            display-mode="form"
-            :news-is-new="newsQuestionIsNew"
-            :locked-selected-categories="newsQuestionCategories"
-            :theme-icon-class-nm="displayData?.iconClassNm ?? ''"
-            :theme-color-hex="displayData?.colorHex ?? ''"
-          />
-          <ChatTodayMeme
-            v-else-if="isTodayMemeQuestion && displayData && hasTodayMemeQcontent(displayData)"
-            class="library-detail-meme-request"
-            display-mode="request"
-            request-delivered
-            :theme-color-hex="displayData?.colorHex ?? ''"
-          />
-          <p v-else>{{ displayData?.qcontent }}</p>
         </div>
 
         <!-- 시스템 응답 -->
@@ -367,25 +326,11 @@
 import {
   isRecommendAgentPrompt,
   normalizeRecommendResultItems,
-  parseRecommendConfigFromAgent,
   parseRecommendJsonArray,
-  parseRecommendPayloadFromPrompt,
-  resolveRecommendConfigByAgentId,
 } from '~/utils/chat/recommendAgentUtil'
-import {
-  LUNCH_AGENT_ID,
-  normalizeLunchRecommendationImages,
-  parseLunchPayloadFromPrompt,
-  parseLunchJsonArray,
-} from '~/utils/chat/lunchAgentUtil'
-import { NEWS_CURATOR_AGENT_ID, parseNewsCuratorItems, parseNewsCuratorPromptMeta } from '~/utils/chat/newsCuratorUtil'
-import { hasTodayMemeQcontent, isTodayMemeLibraryCard, parseTodayMemeItems } from '~/utils/chat/todayMemeUtil'
-import {
-  parseSurveyAnswersFromPrompt,
-  parseSurveyConfigFromAgent,
-  resolveSurveyConfigByAgentId,
-  isSurveyLibraryCardItem,
-} from '~/utils/chat/surveyUtil'
+import { LUNCH_AGENT_ID, normalizeLunchRecommendationImages, parseLunchJsonArray } from '~/utils/chat/lunchAgentUtil'
+import { NEWS_CURATOR_AGENT_ID, parseNewsCuratorItems } from '~/utils/chat/newsCuratorUtil'
+import { isTodayMemeLibraryCard, parseTodayMemeItems } from '~/utils/chat/todayMemeUtil'
 import type { LibraryCardDetail, DocItem, TableDataItem, ChartStatItem, ChartDetailCdItem } from '~/types/library'
 import type { LibraryReportInsightRequest } from '~/utils/library/libraryReportEditorUtil'
 import type { LunchRecommendationItem, RecommendResultItem, VisualizationViewModel } from '~/types/chat'
@@ -508,38 +453,6 @@ const visualizationView = computed<VisualizationViewModel | null>(() => {
 
 // 내부 표시용 데이터 (트랜지션 타이밍 제어용)
 const displayData = ref<LibraryCardDetail | null>(props.cardDetail ?? null)
-const isSurveyLibraryCard = computed(() => {
-  if (!displayData.value) return false
-  return isSurveyLibraryCardItem(displayData.value, libraryAgents.value)
-})
-const surveyLibraryConfig = computed(() => {
-  const agentId = displayData.value?.agentId
-  if (!agentId) return null
-  const agent = libraryAgents.value.find((a) => a.agentId === agentId)
-  if (agent) return parseSurveyConfigFromAgent(agent)
-  return resolveSurveyConfigByAgentId(agentId, libraryAgents.value)
-})
-const surveyReadonlyAnswers = computed<Record<number, number>>(() =>
-  parseSurveyAnswersFromPrompt(displayData.value?.qcontent ?? ''),
-)
-/** 점심 추천 전송 프롬프트(qcontent) — 검색기록·채팅과 동일하게 제출 완료 카드로 표시 */
-const lunchQuestionPayload = computed(() => parseLunchPayloadFromPrompt(displayData.value?.qcontent ?? ''))
-
-/** RECOMMEND 에이전트 전송 프롬프트(qcontent) — readonly 폼 카드로 표시 */
-const recommendQuestionConfig = computed(() => {
-  const qcontent = displayData.value?.qcontent ?? ''
-  if (!isRecommendAgentPrompt(qcontent)) return null
-  const agentId = displayData.value?.agentId ?? ''
-  if (!agentId) return null
-  const agent = libraryAgents.value.find((a) => a.agentId === agentId)
-  if (agent) return parseRecommendConfigFromAgent(agent)
-  return resolveRecommendConfigByAgentId(agentId, libraryAgents.value)
-})
-const recommendQuestionPayload = computed(() => {
-  const config = recommendQuestionConfig.value
-  if (!config) return null
-  return parseRecommendPayloadFromPrompt(displayData.value?.qcontent ?? '', config)
-})
 
 /** 시스템 응답 복사 버튼 노출 — 점심·RECOMMEND JSON 답변은 별도 UI */
 const parsedLunchRecommendations = computed<LunchRecommendationItem[]>(() => {
@@ -557,27 +470,12 @@ const parsedRecommendItems = computed<RecommendResultItem[]>(() => {
   return normalizeRecommendResultItems(parseRecommendJsonArray(raw))
 })
 
-const newsQuestionMeta = computed(() => {
-  if (displayData.value?.agentId !== NEWS_CURATOR_AGENT_ID) {
-    return { categories: [] as string[], isNew: undefined as boolean | undefined }
-  }
-  return parseNewsCuratorPromptMeta(displayData.value?.qcontent ?? '')
-})
-
-const newsQuestionCategories = computed(() => newsQuestionMeta.value.categories)
-
-const newsQuestionIsNew = computed(
-  () => displayData.value?.agentId === NEWS_CURATOR_AGENT_ID && newsQuestionMeta.value.isNew === true,
-)
-
 const parsedNewsCuratorItems = computed(() => {
   if (displayData.value?.agentId !== NEWS_CURATOR_AGENT_ID) return []
   const raw = (displayData.value?.rcontent ?? '').trim()
   if (!raw) return []
   return parseNewsCuratorItems(raw)
 })
-
-const isTodayMemeQuestion = computed(() => (displayData.value ? isTodayMemeLibraryCard(displayData.value) : false))
 
 const parsedTodayMemeItems = computed(() => {
   if (!displayData.value || !isTodayMemeLibraryCard(displayData.value)) return []
@@ -745,36 +643,4 @@ const handleCopyResponse = async () => {
 </script>
 
 <style lang="scss" scoped>
-.library-detail-survey-readonly {
-  width: 100%;
-  max-width: 100%;
-  max-height: min(560px, calc(100vh - 280px));
-  overflow: hidden;
-}
-
-.library-detail-lunch-readonly {
-  width: 100%;
-  max-width: 100%;
-  max-height: min(560px, calc(100vh - 280px));
-  overflow: hidden;
-}
-
-.library-detail-recommend-readonly {
-  width: 100%;
-  max-width: 100%;
-  max-height: min(560px, calc(100vh - 280px));
-  overflow: hidden;
-}
-
-.library-detail-news-readonly {
-  width: 100%;
-  max-width: 100%;
-  max-height: min(560px, calc(100vh - 280px));
-  overflow: hidden;
-}
-
-.library-detail-meme-request {
-  width: 100%;
-  max-width: 100%;
-}
 </style>
