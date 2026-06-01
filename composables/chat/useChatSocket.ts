@@ -1,6 +1,8 @@
 import type { ChatSocketMessage, ChatSocketPayload } from '~/types/chat'
 import { useChatMessages } from '~/composables/chat/useChatMessages'
 import { getWebSocketUrl } from '~/utils/chat/chatWebSocketUtil'
+import { migrateLunchMessagesForAnswerLogId } from '~/utils/chat/lunchAgentUtil'
+import { migrateRecommendMessagesForAnswerLogId } from '~/utils/chat/recommendAgentUtil'
 const {
   messages,
   pendingMessageId,
@@ -117,6 +119,10 @@ const finalizeCompletedMessage = (streamingMessage: (typeof messages.value)[numb
     }
     // pendingMessageId도 서버 logId로 갱신 (finalizeStreamingMessage에서 조회 가능하도록)
     pendingMessageId.value = payload.logId
+    if (oldLogId !== payload.logId) {
+      migrateLunchMessagesForAnswerLogId(messages.value, oldLogId, payload.logId)
+      migrateRecommendMessagesForAnswerLogId(messages.value, oldLogId, payload.logId)
+    }
   }
   streamingMessage.hasSource = !!payload.docFileId
   streamingMessage.hasVisualization = !!payload.tableData

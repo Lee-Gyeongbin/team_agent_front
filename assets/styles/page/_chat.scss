@@ -971,31 +971,24 @@
 }
 
 .chat-mode-panel-card-grp {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   width: 100%;
   max-width: $chat-max-width;
   overflow-y: auto;
-  // 카드 160px * 3행 + gap 12px * 2 = 504px
+  // 카드 160px * 3행 + gap 12px * 2 = 504px (4열 초과 시 세로 스크롤)
   max-height: calc(160px * 3 + 12px * 2);
   @include custom-scrollbar;
 
   .chat-index-card {
     height: 160px;
+    width: calc((100% - 12px * 3) / 4);
   }
 
-  // 3개 이하일 때 flex 균등 분배
-  &:has(.chat-index-card:nth-child(4)) {
-    // 4개 이상이면 grid 유지
-  }
-
-  &:not(:has(.chat-index-card:nth-child(4))) {
-    display: flex;
-
-    .chat-index-card {
-      flex: 1;
-    }
+  &.is-few .chat-index-card {
+    flex: 1;
+    width: auto;
   }
 }
 

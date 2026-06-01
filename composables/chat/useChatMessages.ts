@@ -5,6 +5,7 @@ import type {
   ChatMessageAttachment,
   LunchAgentFormPayload,
 } from '~/types/chat'
+import type { Agent } from '~/types/agent'
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import { parseChatAttachmentsFromLogRow } from '~/utils/chat/chatAttachmentDisplayUtil'
 import { parseSurveyAnswersFromPrompt, isSurveyDiagnosticPrompt } from '~/utils/chat/surveyUtil'
@@ -13,6 +14,11 @@ import {
   parseLunchPayloadFromPrompt,
   parseLunchJsonArray,
 } from '~/utils/chat/lunchAgentUtil'
+import {
+  buildRecommendMessagesFromLogRow,
+  isRecommendAgentPrompt,
+  resolveRecommendConfigByAgentId,
+} from '~/utils/chat/recommendAgentUtil'
 import { isTodayMemePrompt, parseTodayMemeItems } from '~/utils/chat/todayMemeUtil'
 import {
   applyNewsDisplayItemsToSubmitCard,
@@ -41,7 +47,7 @@ const getMessagesForVisualization = () => {
 
 export const useChatMessages = () => {
   // API 로그 한 건 → question + answer 메시지 쌍으로 변환
-  const logRowToMessages = (row: ChatLogListRow): ChatMessage[] => {
+  const logRowToMessages = (row: ChatLogListRow, agents: Agent[] = []): ChatMessage[] => {
     const logId = String(row.logId ?? '')
     const createdAt = row.createDt ?? ''
     const svcTy = row.svcTy ?? 'C'
@@ -217,21 +223,32 @@ export const useChatMessages = () => {
       ]
     }
 
-    return [
-      {
-        logId,
-        type: 'question',
-        qContent: row.qcontent ?? '',
-        rContent: '',
-        createdAt,
-        svcTy,
-        modelId,
-        refId,
-        ...(agentId ? { agentId } : {}),
-        ...(attachments?.length ? { attachments } : {}),
-      },
-      answerMessage,
-    ]
+    // RECOMMEND 에이전트: q(폼) 카드 + r(추천) 카드 분리, answer 행은 숨김
+    const recommendConfig = agentId ? resolveRecommendConfigByAgentId(agentId, agents) : null
+    const recommendMessages = buildRecommendMessagesFromLogRow(row, answerMessage, recommendConfig)
+    if (recommendMessages) return recommendMessages
+
+    // 방에 RECOMMEND agentId가 남아 있어도 일반 질문이면 Q/A로 표시 (검색기록 재진입 시 answer 숨김 방지)
+    const qcontent = row.qcontent ?? ''
+    const isStaleRecommendAgentId = !!recommendConfig && !isRecommendAgentPrompt(qcontent)
+    const questionMessage: ChatMessage = {
+      logId,
+      type: 'question',
+      qContent: qcontent,
+      rContent: '',
+      createdAt,
+      svcTy,
+      modelId,
+      refId,
+      ...(agentId && !isStaleRecommendAgentId ? { agentId } : {}),
+      ...(attachments?.length ? { attachments } : {}),
+    }
+    if (isStaleRecommendAgentId) {
+      const { agentId: _omitAgentId, ...answerWithoutStaleAgent } = answerMessage
+      return [questionMessage, answerWithoutStaleAgent]
+    }
+
+    return [questionMessage, answerMessage]
   }
 
   // question 메시지 생성 + push

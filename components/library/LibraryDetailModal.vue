@@ -166,6 +166,16 @@
             :theme-icon-class-nm="displayData?.iconClassNm ?? ''"
             :theme-color-hex="displayData?.colorHex ?? ''"
           />
+          <ChatRecommendAgentCard
+            v-else-if="recommendQuestionConfig && recommendQuestionPayload"
+            class="library-detail-recommend-readonly"
+            readonly
+            display-mode="form"
+            :recommend-config="recommendQuestionConfig"
+            :initial-payload="recommendQuestionPayload"
+            :theme-icon-class-nm="displayData?.iconClassNm ?? ''"
+            :theme-color-hex="displayData?.colorHex ?? ''"
+          />
           <ChatNewsCurator
             v-else-if="newsQuestionCategories.length"
             class="library-detail-news-readonly"
@@ -191,6 +201,7 @@
           <UiButton
             v-if="
               parsedLunchRecommendations.length === 0 &&
+              parsedRecommendItems.length === 0 &&
               parsedNewsCuratorItems.length === 0 &&
               parsedTodayMemeItems.length === 0
             "
@@ -354,6 +365,14 @@
 
 <script setup lang="ts">
 import {
+  isRecommendAgentPrompt,
+  normalizeRecommendResultItems,
+  parseRecommendConfigFromAgent,
+  parseRecommendJsonArray,
+  parseRecommendPayloadFromPrompt,
+  resolveRecommendConfigByAgentId,
+} from '~/utils/chat/recommendAgentUtil'
+import {
   LUNCH_AGENT_ID,
   normalizeLunchRecommendationImages,
   parseLunchPayloadFromPrompt,
@@ -369,7 +388,7 @@ import {
 } from '~/utils/chat/surveyUtil'
 import type { LibraryCardDetail, DocItem, TableDataItem, ChartStatItem, ChartDetailCdItem } from '~/types/library'
 import type { LibraryReportInsightRequest } from '~/utils/library/libraryReportEditorUtil'
-import type { LunchRecommendationItem, VisualizationViewModel } from '~/types/chat'
+import type { LunchRecommendationItem, RecommendResultItem, VisualizationViewModel } from '~/types/chat'
 import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
 import { useFileStore } from '~/composables/com/useFileStore'
 import { useLibraryStore } from '~/composables/library/useLibraryStore'
@@ -506,12 +525,36 @@ const surveyReadonlyAnswers = computed<Record<number, number>>(() =>
 /** 점심 추천 전송 프롬프트(qcontent) — 검색기록·채팅과 동일하게 제출 완료 카드로 표시 */
 const lunchQuestionPayload = computed(() => parseLunchPayloadFromPrompt(displayData.value?.qcontent ?? ''))
 
-/** 시스템 응답 복사 버튼 노출 — 점심 JSON 답변은 별도 UI */
+/** RECOMMEND 에이전트 전송 프롬프트(qcontent) — readonly 폼 카드로 표시 */
+const recommendQuestionConfig = computed(() => {
+  const qcontent = displayData.value?.qcontent ?? ''
+  if (!isRecommendAgentPrompt(qcontent)) return null
+  const agentId = displayData.value?.agentId ?? ''
+  if (!agentId) return null
+  const agent = libraryAgents.value.find((a) => a.agentId === agentId)
+  if (agent) return parseRecommendConfigFromAgent(agent)
+  return resolveRecommendConfigByAgentId(agentId, libraryAgents.value)
+})
+const recommendQuestionPayload = computed(() => {
+  const config = recommendQuestionConfig.value
+  if (!config) return null
+  return parseRecommendPayloadFromPrompt(displayData.value?.qcontent ?? '', config)
+})
+
+/** 시스템 응답 복사 버튼 노출 — 점심·RECOMMEND JSON 답변은 별도 UI */
 const parsedLunchRecommendations = computed<LunchRecommendationItem[]>(() => {
   if (displayData.value?.agentId !== LUNCH_AGENT_ID) return []
   const raw = (displayData.value?.rcontent ?? '').trim()
   if (!raw) return []
   return normalizeLunchRecommendationImages(parseLunchJsonArray(raw))
+})
+
+const parsedRecommendItems = computed<RecommendResultItem[]>(() => {
+  const qcontent = displayData.value?.qcontent ?? ''
+  if (!isRecommendAgentPrompt(qcontent)) return []
+  const raw = (displayData.value?.rcontent ?? '').trim()
+  if (!raw) return []
+  return normalizeRecommendResultItems(parseRecommendJsonArray(raw))
 })
 
 const newsQuestionMeta = computed(() => {
@@ -710,6 +753,13 @@ const handleCopyResponse = async () => {
 }
 
 .library-detail-lunch-readonly {
+  width: 100%;
+  max-width: 100%;
+  max-height: min(560px, calc(100vh - 280px));
+  overflow: hidden;
+}
+
+.library-detail-recommend-readonly {
   width: 100%;
   max-width: 100%;
   max-height: min(560px, calc(100vh - 280px));

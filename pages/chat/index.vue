@@ -3,12 +3,24 @@
     class="chat-index s-center"
     :class="{
       'is-survey-mode':
-        isSurveyVisible || isGenderStepVisible || isLunchVisible || isTodayMemeVisible || isNewsCuratorVisible,
+        isSurveyVisible ||
+        isGenderStepVisible ||
+        isLunchVisible ||
+        isRecommendVisible ||
+        isTodayMemeVisible ||
+        isNewsCuratorVisible,
     }"
   >
     <!-- 헤더 (설문 모드에서 숨김) -->
     <div
-      v-if="!isSurveyVisible && !isGenderStepVisible && !isLunchVisible && !isTodayMemeVisible && !isNewsCuratorVisible"
+      v-if="
+        !isSurveyVisible &&
+        !isGenderStepVisible &&
+        !isLunchVisible &&
+        !isRecommendVisible &&
+        !isTodayMemeVisible &&
+        !isNewsCuratorVisible
+      "
       class="chat-index-header"
       data-aos="fade-up"
     >
@@ -34,6 +46,15 @@
       @close="handleCloseLunchAgent"
       @submit="handleIndexLunchSubmit"
     />
+    <ChatRecommendAgentCard
+      v-if="isRecommendVisible && currentRecommendConfig"
+      class="chat-index-survey"
+      :recommend-config="currentRecommendConfig"
+      :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? ''"
+      :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
+      @close="handleCloseRecommendAgent"
+      @submit="handleIndexRecommendSubmit"
+    />
     <ChatTodayMeme
       v-if="isTodayMemeVisible"
       class="chat-index-survey"
@@ -55,7 +76,12 @@
       class="chat-index-input-wrapper"
       :class="{
         'is-survey-locked':
-          isSurveyVisible || isGenderStepVisible || isLunchVisible || isTodayMemeVisible || isNewsCuratorVisible,
+          isSurveyVisible ||
+          isGenderStepVisible ||
+          isLunchVisible ||
+          isRecommendVisible ||
+          isTodayMemeVisible ||
+          isNewsCuratorVisible,
       }"
       data-aos="fade-up"
       data-aos-delay="200"
@@ -65,7 +91,14 @@
 
     <!-- 에이전트 카드 (설문 모드 아닐 때) -->
     <template
-      v-if="!isSurveyVisible && !isGenderStepVisible && !isLunchVisible && !isTodayMemeVisible && !isNewsCuratorVisible"
+      v-if="
+        !isSurveyVisible &&
+        !isGenderStepVisible &&
+        !isLunchVisible &&
+        !isRecommendVisible &&
+        !isTodayMemeVisible &&
+        !isNewsCuratorVisible
+      "
     >
       <div
         v-if="!isLoadingChatIndexAgents && chatIndexAgents.length > 0"
@@ -112,6 +145,7 @@
 
 <script setup lang="ts">
 import { parseSurveyConfigFromAgent } from '~/utils/chat/surveyUtil'
+import { parseRecommendConfigFromAgent } from '~/utils/chat/recommendAgentUtil'
 
 const { chatMessage, selectChatRoomList, selectModelOptions, resetChatRoom } = useChatRooms()
 const {
@@ -130,6 +164,9 @@ const {
   isLunchVisible,
   handleCloseLunchAgent,
   handleIndexLunchSubmit,
+  isRecommendVisible,
+  handleCloseRecommendAgent,
+  handleIndexRecommendSubmit,
   isTodayMemeVisible,
   handleTodayMemeIntroEnd,
   resetTodayMemePanel,
@@ -148,6 +185,10 @@ const currentSurveyConfig = computed(() => {
   const agent = currentSurveyAgent.value
   return agent ? parseSurveyConfigFromAgent(agent) : null
 })
+const currentRecommendConfig = computed(() => {
+  const agent = currentSurveyAgent.value
+  return agent ? parseRecommendConfigFromAgent(agent) : null
+})
 
 onMounted(async () => {
   // 시각화 패널에서 나와 다시 일반 채팅으로 들어올 때 이전 tableData가 남지 않게 초기화
@@ -155,6 +196,7 @@ onMounted(async () => {
   // 다른 메뉴 갔다 돌아올 때 설문 / 에이전트 선택 상태 초기화
   handleClosePsychologySurvey()
   handleCloseLunchAgent()
+  handleCloseRecommendAgent()
   handleCloseNewsCurator()
   resetTodayMemePanel()
   // 인덱스 진입 시점에 즉시 채팅방 상태를 초기화해

@@ -20,6 +20,8 @@
           @on-regenerate="emit('on-regenerate', $event)"
           @on-view-source="emit('on-view-source', $event)"
           @on-view-visualization="emit('on-view-visualization', $event)"
+          @on-submit-recommend-card="onSubmitRecommendCard"
+          @on-recommend-card-close="emit('on-recommend-card-close', $event)"
           @on-submit-lunch-card="onSubmitLunchCard"
           @on-submit-news-card="onSubmitNewsCard"
           @on-news-card-close="emit('on-news-card-close', $event)"
@@ -49,7 +51,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ChatMessage, KnowledgeItem, LunchAgentFormPayload } from '~/types/chat'
+import type { ChatMessage, KnowledgeItem, LunchAgentFormPayload, RecommendFormPayload } from '~/types/chat'
 
 interface Props {
   messages: ChatMessage[]
@@ -79,6 +81,8 @@ const emit = defineEmits<{
   'on-survey-close': [logId: string]
   'on-meme-intro-complete': [logId: string]
   'on-news-intro-complete': [logId: string]
+  'on-recommend-card-submit': [logId: string, payload: RecommendFormPayload]
+  'on-recommend-card-close': [logId: string]
   'on-lunch-card-submit': [logId: string, payload: LunchAgentFormPayload]
   'on-news-card-submit': [logId: string, categories: string[], options?: { isNew?: boolean }]
   'on-news-card-close': [logId: string]
@@ -86,6 +90,9 @@ const emit = defineEmits<{
   'on-lunch-card-close': [logId: string]
 }>()
 
+const onSubmitRecommendCard = (logId: string, payload: RecommendFormPayload) => {
+  emit('on-recommend-card-submit', logId, payload)
+}
 const onSubmitLunchCard = (logId: string, payload: LunchAgentFormPayload) => {
   emit('on-lunch-card-submit', logId, payload)
 }

@@ -11,6 +11,7 @@ import {
 import { useChatSendPipeline } from '~/composables/chat/useChatSendPipeline'
 import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
 import { parseLunchPayloadFromPrompt } from '~/utils/chat/lunchAgentUtil'
+import { isRecommendAgentPrompt } from '~/utils/chat/recommendAgentUtil'
 import { isTodayMemePrompt, TODAY_MEME_AGENT_ID, TODAY_MEME_MODEL_ID } from '~/utils/chat/todayMemeUtil'
 import { NEWS_CURATOR_AGENT_ID } from '~/utils/chat/newsCuratorUtil'
 
@@ -93,6 +94,7 @@ export const useChatRooms = () => {
     const lastAgentId = typeof lastRow?.agentId === 'string' ? lastRow.agentId.trim() : ''
     const isLunchPromptLog = !!parseLunchPayloadFromPrompt(String(lastRow?.qcontent ?? ''))
     const isTodayMemePromptLog = isTodayMemePrompt(String(lastRow?.qcontent ?? ''))
+    const isRecommendPromptLog = isRecommendAgentPrompt(String(lastRow?.qcontent ?? ''))
     if (svcTy === 'M') {
       activeSearchModes.value = ['M']
       selectedChatAgentId.value = lastAgentId || null
@@ -107,10 +109,11 @@ export const useChatRooms = () => {
       await selectModelOptions()
     } else {
       activeSearchModes.value = []
-      // TodayMeme·점심 카드 전용 로그는 UI상 에이전트 선택을 유지하지 않음(채팅방 재진입 시)
+      // TodayMeme·점심·RECOMMEND 카드 전용 로그는 UI상 에이전트 선택을 유지하지 않음(채팅방 재진입 시)
       selectedChatAgentId.value =
         isLunchPromptLog ||
         isTodayMemePromptLog ||
+        isRecommendPromptLog ||
         lastAgentId === TODAY_MEME_AGENT_ID ||
         lastAgentId === NEWS_CURATOR_AGENT_ID
           ? null
@@ -203,7 +206,13 @@ export const useChatRooms = () => {
       svcTy,
       modelId: isMemePrompt ? TODAY_MEME_MODEL_ID : selectedModelOption.value,
       refId: buildRefIdForPayload(),
-      agentId: isMemePrompt ? TODAY_MEME_AGENT_ID : (selectedChatAgentId.value ?? ''),
+      agentId: isMemePrompt
+        ? TODAY_MEME_AGENT_ID
+        : isRecommendAgentPrompt(qContent)
+          ? (selectedChatAgentId.value ?? '')
+          : resolveSvcTy() === 'C'
+            ? ''
+            : (selectedChatAgentId.value ?? ''),
       files,
       clearMessagesBefore: true,
     })

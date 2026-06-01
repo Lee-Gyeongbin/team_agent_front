@@ -1,19 +1,21 @@
 <template>
   <div
-    v-if="!isTodayMemeAnswer && !isLunchAgentAnswer"
+    v-if="!isTodayMemeAnswer && !isLunchAgentAnswer && !isRecommendAgentAnswer"
     class="chat-message-item"
     :class="[
       message.type === 'answer'
         ? 'role-assistant'
         : message.type === 'lunch'
           ? 'role-assistant'
-          : message.type === 'news'
-            ? 'role-news'
-            : message.type === 'meme'
-              ? 'role-meme'
-              : message.type === 'survey'
-                ? 'role-survey'
-                : 'role-user',
+          : message.type === 'recommend'
+            ? 'role-assistant'
+            : message.type === 'news'
+              ? 'role-news'
+              : message.type === 'meme'
+                ? 'role-meme'
+                : message.type === 'survey'
+                  ? 'role-survey'
+                  : 'role-user',
     ]"
   >
     <!-- assistant 메시지 -->
@@ -210,8 +212,25 @@
         <i class="icon-bot size-24"></i>
       </div>
       <div class="message-body">
+        <ChatRecommendAgentCard
+          v-if="message.type === 'recommend' && messageRecommendConfig"
+          :recommend-config="messageRecommendConfig"
+          :readonly="message.recommendSubmitted === true"
+          :display-mode="recommendCardDisplayMode"
+          :initial-payload="isRecommendFormCard ? message.recommendFormPayload : undefined"
+          :recommendations="!isRecommendFormCard ? resolvedRecommendations : []"
+          :is-recommendations-pending="!isRecommendFormCard && isRecommendationsPending"
+          :is-recommendation-response-streaming="!isRecommendFormCard && isRecommendationResponseStreaming"
+          :enrichment-cache-key="recommendImageEnrichmentCacheKeyForFetch"
+          :enrichment-r-content="recommendEnrichmentRContent"
+          :theme-icon-class-nm="themeAgent?.iconClassNm ?? ''"
+          :theme-color-hex="themeAgent?.colorHex ?? ''"
+          @submit="emit('on-submit-recommend-card', message.logId, $event)"
+          @close="emit('on-recommend-card-close', message.logId)"
+          @enriched="onRecommendationsEnriched"
+        />
         <ChatLunchAgentCard
-          v-if="message.type === 'lunch'"
+          v-else-if="message.type === 'lunch'"
           :readonly="message.lunchSubmitted === true"
           :display-mode="lunchCardDisplayMode"
           :initial-payload="isLunchFormCard ? message.lunchFormPayload : undefined"
@@ -291,10 +310,12 @@ import type {
   LunchAgentFormPayload,
   LunchRecommendationItem,
   NewsCuratorItem,
+  RecommendFormPayload,
+  RecommendResultItem,
 } from '~/types/chat'
 import type { StressScoreItem } from '~/types/stress'
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
-import type { Agent } from '~/types/agent'
+import type { Agent, RecommendAgentConfig } from '~/types/agent'
 import {
   fetchAndInjectPexelsImages,
   extractKeywordSection,
@@ -325,6 +346,18 @@ import {
   syncLunchResultRecommendationsFromAnswer,
 } from '~/utils/chat/lunchAgentUtil'
 import { parseTodayMemeItems, TODAY_MEME_AGENT_ID } from '~/utils/chat/todayMemeUtil'
+import {
+  parseRecommendConfigFromAgent,
+  resolveRecommendConfigByAgentId,
+  parseRecommendJsonArray,
+  normalizeRecommendResultItems,
+  findLinkedRecommendAnswerMessage,
+  getRecommendImageEnrichmentCacheKey,
+  migrateRecommendMessagesForAnswerLogId,
+  syncRecommendResultFromAnswer,
+  applyRecommendImageEnrichmentToResultMessage,
+  isRecommendPipelineAnswer,
+} from '~/utils/chat/recommendAgentUtil'
 import type { TodayMemeItem } from '~/utils/chat/todayMemeUtil'
 import { findLinkedNewsCuratorAnswer, resolveNewsCuratorItemsForCard } from '~/utils/chat/newsCuratorUtil'
 import { attachmentsRequireSummaryIndicator } from '~/utils/chat/chatAttachmentDisplayUtil'
@@ -336,7 +369,10 @@ import {
   isSurveyRadarAgentById,
 } from '~/utils/chat/surveyUtil'
 
-const { chatIndexAgents, messages } = useChatStore()
+import { useChatMessages } from '~/composables/chat/useChatMessages'
+
+const { messages: allMessages } = useChatMessages()
+const { chatIndexAgents } = useChatStore()
 const { surveyGender } = usePsychologySurvey()
 const { user } = useAuth()
 
@@ -373,6 +409,8 @@ const emit = defineEmits<{
   'on-select-category': [id: string, categoryValue: string, categoryNm: string]
   'on-view-source': [id: string]
   'on-view-visualization': [id: string]
+  'on-submit-recommend-card': [logId: string, payload: RecommendFormPayload]
+  'on-recommend-card-close': [logId: string]
   'on-submit-lunch-card': [logId: string, payload: LunchAgentFormPayload]
   'on-lunch-card-close': [logId: string]
   'on-survey-submit': [logId: string]
@@ -477,14 +515,14 @@ const resolveSurveyAnswersForRadar = (): Record<number, number> => {
   const direct = props.message.surveyAnswers
   if (direct && Object.keys(direct).length > 0) return direct
 
-  const surveyMsg = messages.value.find(
+  const surveyMsg = allMessages.value.find(
     (m) => m.type === 'survey' && m.surveySubmitted && (!props.message.agentId || m.agentId === props.message.agentId),
   )
   if (surveyMsg?.surveyAnswers && Object.keys(surveyMsg.surveyAnswers).length > 0) {
     return surveyMsg.surveyAnswers
   }
 
-  const questionMsg = messages.value.find((m) => {
+  const questionMsg = allMessages.value.find((m) => {
     if (m.type !== 'question') return false
     if (props.message.agentId && m.agentId && m.agentId !== props.message.agentId) return false
     return Object.keys(parseSurveyAnswersFromPrompt(m.qContent ?? '')).length > 0
@@ -637,6 +675,130 @@ const messageSurveyConfig = computed(() => {
 /** 점심 에이전트 answer 행 — 추천 JSON은 type=lunch 카드에서만 표시 */
 const isLunchAgentAnswer = computed(() => props.message.type === 'answer' && props.message.agentId === LUNCH_AGENT_ID)
 
+// ── RECOMMEND 에이전트 ───────────────────────────────────────────────────────
+
+/** RECOMMEND 파이프라인 answer — JSON은 recommend 카드에서만 표시 (일반 채팅 answer와 분리) */
+const isRecommendAgentAnswer = computed(
+  () => props.message.type === 'answer' && isRecommendPipelineAnswer(props.message, allMessages.value),
+)
+
+const messageRecommendConfig = computed((): RecommendAgentConfig | null => {
+  if (props.message.type !== 'recommend') return null
+  const agent = themeAgent.value
+  if (agent) return parseRecommendConfigFromAgent(agent)
+  if (props.message.agentId) {
+    return resolveRecommendConfigByAgentId(props.message.agentId, chatIndexAgents.value)
+  }
+  return null
+})
+
+const recommendCardDisplayMode = computed((): 'form' | 'result' | 'combined' => {
+  if (props.message.type !== 'recommend') return 'combined'
+  if (props.message.recommendCardRole === 'result') return 'result'
+  if (props.message.recommendCardRole === 'form' || !props.message.recommendSubmitted) return 'form'
+  return 'combined'
+})
+
+const isRecommendFormCard = computed(() => recommendCardDisplayMode.value === 'form')
+
+const linkedRecommendAnswerMessage = computed(() => {
+  if (props.message.type !== 'recommend' || isRecommendFormCard.value) return undefined
+  const linked = findLinkedRecommendAnswerMessage(allMessages.value, props.message)
+  if (linked) return linked
+  const answerLogId = getRecommendImageEnrichmentCacheKey(props.message)
+  if (!answerLogId) return undefined
+  return allMessages.value.find((m) => m.type === 'answer' && m.logId === answerLogId)
+})
+
+const recommendImageEnrichmentCacheKey = computed(() => {
+  if (props.message.type !== 'recommend' || isRecommendFormCard.value) return ''
+  return getRecommendImageEnrichmentCacheKey(props.message)
+})
+
+/** 스트리밍 완료 후에만 iTunes·Pexels 이미지 enrichment API 호출 */
+const recommendImageEnrichmentCacheKeyForFetch = computed(() => {
+  if (linkedRecommendAnswerMessage.value?.isStreaming === true) return ''
+  return recommendImageEnrichmentCacheKey.value
+})
+
+const resolvedRecommendations = computed<RecommendResultItem[]>(() => {
+  if (props.message.type !== 'recommend' || isRecommendFormCard.value) return []
+  const answer = linkedRecommendAnswerMessage.value
+  const parsedFromAnswer = answer
+    ? normalizeRecommendResultItems(parseRecommendJsonArray(String(answer.rContent ?? '')))
+    : []
+
+  // 스트리밍 중에는 answer.rContent를 매 청크마다 재파싱 (injected 캐시 무시)
+  if (answer?.isStreaming) return parsedFromAnswer
+
+  const injected = props.message.recommendDisplayRecommendations
+  if (Array.isArray(injected) && injected.length > 0) {
+    return normalizeRecommendResultItems(injected)
+  }
+  return parsedFromAnswer
+})
+
+const isRecommendationsPending = computed(
+  () =>
+    !isRecommendFormCard.value &&
+    linkedRecommendAnswerMessage.value?.isStreaming === true &&
+    resolvedRecommendations.value.length === 0,
+)
+
+const isRecommendationResponseStreaming = computed(
+  () =>
+    !isRecommendFormCard.value &&
+    linkedRecommendAnswerMessage.value?.isStreaming === true &&
+    resolvedRecommendations.value.length > 0,
+)
+
+const recommendEnrichmentRContent = computed(() => {
+  if (isRecommendFormCard.value) return ''
+  return String(linkedRecommendAnswerMessage.value?.rContent ?? '')
+})
+
+const onRecommendationsEnriched = (items: RecommendResultItem[]) => {
+  const target = allMessages.value.find((m) => m.logId === props.message.logId && m.type === 'recommend')
+  if (target) target.recommendDisplayRecommendations = [...items]
+}
+
+watch(
+  () =>
+    linkedRecommendAnswerMessage.value
+      ? [
+          linkedRecommendAnswerMessage.value.logId,
+          linkedRecommendAnswerMessage.value.rContent,
+          linkedRecommendAnswerMessage.value.isStreaming,
+        ]
+      : null,
+  (current, previous) => {
+    const answer = linkedRecommendAnswerMessage.value
+    if (!answer || props.message.type !== 'recommend' || isRecommendFormCard.value) return
+    const storedLinkId = String(props.message.recommendAnswerLogId ?? '').trim()
+    if (storedLinkId && storedLinkId !== answer.logId && isRecommendPipelineAnswer(answer, allMessages.value)) {
+      migrateRecommendMessagesForAnswerLogId(allMessages.value, storedLinkId, answer.logId)
+    }
+    syncRecommendResultFromAnswer(allMessages.value, answer)
+
+    const prevStreaming = previous?.[2] === true
+    const streamJustFinished = prevStreaming && answer.isStreaming !== true
+    if (streamJustFinished) {
+      const resultMsg = allMessages.value.find(
+        (m) =>
+          m.type === 'recommend' &&
+          m.recommendCardRole === 'result' &&
+          (m.recommendAnswerLogId === answer.logId || m.logId === `${answer.logId}-recommend-result`),
+      )
+      if (resultMsg) {
+        void applyRecommendImageEnrichmentToResultMessage(resultMsg, String(answer.rContent ?? ''), {
+          imageField: messageRecommendConfig.value?.result.imageField ?? 'imageUrl',
+        })
+      }
+    }
+  },
+  { immediate: true },
+)
+
 const lunchCardDisplayMode = computed((): 'form' | 'result' | 'combined' => {
   if (props.message.type !== 'lunch') return 'combined'
   if (props.message.lunchCardRole === 'result') return 'result'
@@ -648,11 +810,11 @@ const isLunchFormCard = computed(() => lunchCardDisplayMode.value === 'form')
 
 const linkedLunchAnswerMessage = computed(() => {
   if (props.message.type !== 'lunch' || isLunchFormCard.value) return undefined
-  const linked = findLinkedLunchAnswerMessage(messages.value, props.message)
+  const linked = findLinkedLunchAnswerMessage(allMessages.value, props.message)
   if (linked) return linked
   const answerLogId = getLunchImageEnrichmentCacheKey(props.message)
   if (!answerLogId) return undefined
-  return messages.value.find((m) => m.type === 'answer' && m.logId === answerLogId)
+  return allMessages.value.find((m) => m.type === 'answer' && m.logId === answerLogId)
 })
 
 const lunchImageEnrichmentCacheKey = computed(() => {
@@ -691,7 +853,7 @@ const lunchEnrichmentRContent = computed(() => {
 })
 
 const onLunchRecommendationsEnriched = (items: LunchRecommendationItem[]) => {
-  const target = messages.value.find((m) => m.logId === props.message.logId && m.type === 'lunch')
+  const target = allMessages.value.find((m) => m.logId === props.message.logId && m.type === 'lunch')
   if (target) target.lunchDisplayRecommendations = [...items]
 }
 
@@ -702,13 +864,13 @@ watch(
     if (!answer || props.message.type !== 'lunch' || isLunchFormCard.value) return
     const storedLinkId = String(props.message.lunchAnswerLogId ?? '').trim()
     if (storedLinkId && storedLinkId !== answer.logId) {
-      migrateLunchMessagesForAnswerLogId(messages.value, storedLinkId, answer.logId)
+      migrateLunchMessagesForAnswerLogId(allMessages.value, storedLinkId, answer.logId)
     }
-    syncLunchResultRecommendationsFromAnswer(messages.value, answer)
+    syncLunchResultRecommendationsFromAnswer(allMessages.value, answer)
 
     const streamJustFinished = prevAnswer?.isStreaming === true && answer.isStreaming !== true
     if (streamJustFinished) {
-      const resultMsg = findLunchResultMessageForAnswer(messages.value, answer.logId)
+      const resultMsg = findLunchResultMessageForAnswer(allMessages.value, answer.logId)
       if (resultMsg) {
         void applyLunchMenuImageEnrichmentToResultMessage(resultMsg, String(answer.rContent ?? ''))
       }
@@ -733,19 +895,21 @@ const resolvedTodayMemeItems = computed<TodayMemeItem[]>(() => {
     return []
   }
 
-  const memeIndex = messages.value.findIndex((m) => m.logId === props.message.logId)
-  const sourceList = memeIndex >= 0 ? messages.value.slice(memeIndex + 1) : messages.value
+  const memeIndex = allMessages.value.findIndex((m) => m.logId === props.message.logId)
+  const sourceList = memeIndex >= 0 ? allMessages.value.slice(memeIndex + 1) : allMessages.value
   const parsedFromFollowing = findParsedItems(sourceList)
   if (parsedFromFollowing.length) return parsedFromFollowing
-  return findParsedItems([...messages.value].reverse())
+  return findParsedItems([...allMessages.value].reverse())
 })
 
 const resolvedNewsCuratorItemsForNewsCard = computed<NewsCuratorItem[]>(() =>
-  props.message.type === 'news' ? resolveNewsCuratorItemsForCard(props.message, messages.value) : [],
+  props.message.type === 'news' ? resolveNewsCuratorItemsForCard(props.message, allMessages.value) : [],
 )
 
 /** 미제출 news 카드가 있으면 기존 뉴스픽 '새로운 카테고리 선택하기' 비활성 */
-const isNewsReselectDisabled = computed(() => messages.value.some((m) => m.type === 'news' && m.newsSubmitted !== true))
+const isNewsReselectDisabled = computed(() =>
+  allMessages.value.some((m) => m.type === 'news' && m.newsSubmitted !== true),
+)
 
 /** NewsCurator 카드 — `newsIsNew` / `newsReselect` */
 const newsCardIsNew = computed(() => (props.message.type === 'news' ? props.message.newsIsNew : undefined))
@@ -755,7 +919,11 @@ const newsCardReselect = computed(() => props.message.type === 'news' && props.m
 const isTodayMemeAnswer = computed(() => isTodayMemeAnswerMessage(props.message))
 
 const isAgentCardMessage = computed(
-  () => props.message.type === 'lunch' || props.message.type === 'meme' || props.message.type === 'news',
+  () =>
+    props.message.type === 'recommend' ||
+    props.message.type === 'lunch' ||
+    props.message.type === 'meme' ||
+    props.message.type === 'news',
 )
 
 /** answer 행 또는 에이전트 카드에 연결된 answer logId — 지식창고·반응 API 공통 */
@@ -769,18 +937,21 @@ const knowledgeActionsReaction = computed(() => {
   return agentCardFooterReaction.value
 })
 
-/** meme·news·점심(result) 카드에 대응하는 answer 행 — UI에서는 숨기고 푸터·지식저장에만 사용 */
+/** meme·news·점심·recommend(result) 카드에 대응하는 answer 행 */
 const linkedAgentCardAnswer = computed((): ChatMessage | undefined => {
+  if (props.message.type === 'recommend' && !isRecommendFormCard.value) {
+    return linkedRecommendAnswerMessage.value
+  }
   if (props.message.type === 'lunch' && !isLunchFormCard.value) {
     return linkedLunchAnswerMessage.value
   }
   if (props.message.type === 'meme') {
-    const cardIndex = messages.value.findIndex((m) => m.logId === props.message.logId)
+    const cardIndex = allMessages.value.findIndex((m) => m.logId === props.message.logId)
     if (cardIndex < 0) return undefined
-    return messages.value.slice(cardIndex + 1).find((m) => m.type === 'answer' && m.agentId === TODAY_MEME_AGENT_ID)
+    return allMessages.value.slice(cardIndex + 1).find((m) => m.type === 'answer' && m.agentId === TODAY_MEME_AGENT_ID)
   }
   if (props.message.type === 'news') {
-    return findLinkedNewsCuratorAnswer(messages.value, props.message.logId)
+    return findLinkedNewsCuratorAnswer(allMessages.value, props.message.logId)
   }
   return undefined
 })
@@ -789,6 +960,7 @@ const linkedAgentCardAnswer = computed((): ChatMessage | undefined => {
 const agentCardFooterLogId = computed(() => {
   const fromLinked = String(linkedAgentCardAnswer.value?.logId ?? '').trim()
   if (fromLinked) return fromLinked
+  if (props.message.type === 'recommend' && !isRecommendFormCard.value) return recommendImageEnrichmentCacheKey.value
   if (props.message.type === 'lunch' && !isLunchFormCard.value) return lunchImageEnrichmentCacheKey.value
   return ''
 })
@@ -798,7 +970,7 @@ const agentCardFooterReaction = computed(() => {
   if (linked?.chatLogReaction) return linked.chatLogReaction
   const logId = agentCardFooterLogId.value
   if (!logId) return undefined
-  return messages.value.find((m) => m.type === 'answer' && m.logId === logId)?.chatLogReaction
+  return allMessages.value.find((m) => m.type === 'answer' && m.logId === logId)?.chatLogReaction
 })
 
 /** 연결 answer 스트리밍 여부 — linked 미탐색 시 logId로 answer 재조회 */
@@ -807,12 +979,18 @@ const isLinkedAgentCardAnswerStreaming = computed(() => {
   if (linked?.isStreaming === true) return true
   const logId = agentCardFooterLogId.value
   if (!logId) return false
-  return messages.value.find((m) => m.type === 'answer' && m.logId === logId)?.isStreaming === true
+  return allMessages.value.find((m) => m.type === 'answer' && m.logId === logId)?.isStreaming === true
 })
 
 const isAgentCardAvatarStreaming = computed(() => {
   if (props.message.type === 'meme') return isMemeAnswerStreaming.value
   if (props.message.type === 'news') return isLinkedAgentCardAnswerStreaming.value
+  if (props.message.type === 'recommend' && !isRecommendFormCard.value) {
+    return isRecommendationsPending.value || isRecommendationResponseStreaming.value
+  }
+  if (props.message.type === 'lunch' && !isLunchFormCard.value) {
+    return isLunchRecommendationsPending.value || isLunchRecommendationResponseStreaming.value
+  }
   return false
 })
 
@@ -834,6 +1012,14 @@ const shouldShowAgentCardKnowledgeFooter = computed(() => {
       !isLunchRecommendationResponseStreaming.value
     )
   }
+  if (props.message.type === 'recommend' && !isRecommendFormCard.value) {
+    return (
+      props.message.recommendSubmitted === true &&
+      resolvedRecommendations.value.length > 0 &&
+      !isRecommendationsPending.value &&
+      !isRecommendationResponseStreaming.value
+    )
+  }
   return false
 })
 
@@ -843,9 +1029,9 @@ const shouldShowMessageFooter = computed(() => !props.message.isStreaming && !is
 /** 이 meme 메시지에 대응하는 TodayMeme 답변이 아직 스트리밍 중인지 */
 const isMemeAnswerStreaming = computed(() => {
   if (props.message.type !== 'meme') return false
-  const idx = messages.value.findIndex((m) => m.logId === props.message.logId)
+  const idx = allMessages.value.findIndex((m) => m.logId === props.message.logId)
   if (idx < 0) return false
-  const after = messages.value.slice(idx + 1)
+  const after = allMessages.value.slice(idx + 1)
   const ans = after.find((m) => m.type === 'answer' && m.agentId === TODAY_MEME_AGENT_ID)
   return ans?.isStreaming === true
 })

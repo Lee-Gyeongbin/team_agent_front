@@ -90,7 +90,7 @@ export interface ChatSocketMessage {
 export interface ChatMessage {
   id?: string
   logId: string
-  type: 'question' | 'answer' | 'survey' | 'meme' | 'lunch' | 'news'
+  type: 'question' | 'answer' | 'survey' | 'meme' | 'lunch' | 'recommend' | 'news'
   qContent?: string
   rContent?: string
   createdAt: string
@@ -152,8 +152,24 @@ export interface ChatMessage {
   lunchSubmitted?: boolean
   /** result 카드 ↔ answer logId 연결 (히스토리 logId `{answerLogId}-lunch-result`) */
   lunchAnswerLogId?: string
+  /** RECOMMEND 에이전트 카드 역할 — form: 선택 카드, result: 추천 결과 카드 */
+  recommendCardRole?: 'form' | 'result'
+  /** RECOMMEND 에이전트 카드 전용: 사용자 응답 (key=fieldKey, value=선택값) */
+  recommendFormPayload?: RecommendFormPayload
+  /** RECOMMEND 에이전트 카드 전용: 제출 완료 여부 */
+  recommendSubmitted?: boolean
+  /** RECOMMEND result 카드 ↔ answer logId 연결 */
+  recommendAnswerLogId?: string
+  /** RECOMMEND result 카드 표시용 추천 결과 목록 */
+  recommendDisplayRecommendations?: RecommendResultItem[]
   [key: string]: unknown
 }
+
+/** RECOMMEND 에이전트 폼 응답 — key: 필드 key, value: 선택값 */
+export type RecommendFormPayload = Record<string, string>
+
+/** RECOMMEND 에이전트 추천 결과 아이템 — JSON 필드 동적 */
+export type RecommendResultItem = Record<string, string>
 
 // 메세지 기본값
 export const EMPTY_CHAT_MESSAGE: ChatMessage = {

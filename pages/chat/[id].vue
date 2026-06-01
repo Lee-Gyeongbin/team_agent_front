@@ -23,6 +23,8 @@
         @on-survey-close="onSurveyMessageClose"
         @on-meme-intro-complete="handleTodayMemeIntroEnd"
         @on-news-intro-complete="handleNewsCuratorIntroEnd"
+        @on-recommend-card-submit="handleSubmitRecommendAgentForm"
+        @on-recommend-card-close="onRecommendMessageClose"
         @on-lunch-card-submit="handleSubmitLunchAgentForm"
         @on-news-card-submit="onNewsCuratorMessageSubmit"
         @on-news-card-close="onNewsMessageClose"
@@ -157,6 +159,8 @@ const {
   handleCloseNewsCurator,
   handleSubmitLunchAgentForm,
   handleCloseLunchAgent,
+  handleSubmitRecommendAgentForm,
+  handleCloseRecommendAgent,
 } = useChatStore()
 const { chatMessage, handleSetChatRoom } = useChatRooms()
 
@@ -194,11 +198,15 @@ const isSurveyInputLocked = computed(() =>
     (m) =>
       (m.type === 'survey' && !m.surveySubmitted) ||
       (m.type === 'lunch' && !m.lunchSubmitted) ||
+      (m.type === 'recommend' && !m.recommendSubmitted) ||
       (m.type === 'meme' && !m.memeSubmitted) ||
       (m.type === 'news' && !m.newsSubmitted),
   ),
 )
 
+const onRecommendMessageClose = (logId: string) => {
+  handleCloseRecommendAgent(logId)
+}
 /** 메시지 목록의 점심 카드 "닫기" 버튼 클릭 */
 const onLunchMessageClose = (logId: string) => {
   handleCloseLunchAgent(logId)
