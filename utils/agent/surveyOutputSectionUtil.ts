@@ -167,6 +167,25 @@ export const SURVEY_BLOCK_TYPE_CATALOG: SurveyBlockTypeMeta[] = [
     defaultInstruction: '이 섹션에서 출력할 내용과 형식을 자유롭게 지정한다.',
     paramFields: [],
   },
+  {
+    value: 'closing_message',
+    label: '마무리 메시지',
+    description: '결과 본문 맨 아래에 번호·헤딩 없이 단독 출력됩니다. (JSON 최상위 closingMessage 필드)',
+    defaultId: 'closing',
+    defaultTitle: '',
+    defaultInstruction:
+      '현재 심리 상태에 맞는 한 줄 응원 메시지. 헤딩·레이블 없이 <h3> 태그 한 줄만 출력.',
+    defaultParams: { tag: 'h3' },
+    paramFields: [
+      {
+        key: 'tag',
+        label: 'HTML 태그',
+        type: 'text',
+        hint: '출력에 사용할 태그 (기본: h3)',
+        placeholder: 'h3',
+      },
+    ],
+  },
 ]
 
 export const CLOSING_MESSAGE_BLOCK_TYPE = 'closing_message'
@@ -185,6 +204,13 @@ export const getSurveyBlockTypeMeta = (blockType: string): SurveyBlockTypeMeta |
 /** UiSelect 옵션 */
 export const getSurveyBlockTypeOptions = () =>
   SURVEY_BLOCK_TYPE_CATALOG.map((m) => ({
+    value: m.value,
+    label: `${m.label} (${m.value})`,
+  }))
+
+/** outputSections 추가용 — 마무리 유형 제외 */
+export const getSurveyOutputBlockTypeOptions = () =>
+  SURVEY_BLOCK_TYPE_CATALOG.filter((m) => m.value !== CLOSING_MESSAGE_BLOCK_TYPE).map((m) => ({
     value: m.value,
     label: `${m.label} (${m.value})`,
   }))

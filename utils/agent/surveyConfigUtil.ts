@@ -10,6 +10,7 @@ import type {
   SurveyUiConfig,
 } from '~/types/agentSurveyConfig'
 import {
+  DEFAULT_CLOSING_MESSAGE_BLOCK,
   parseSurveyClosingMessageBlock,
   parseSurveyOutputSectionBlocks,
 } from '~/utils/agent/surveyOutputSectionUtil'
@@ -32,7 +33,7 @@ export interface SurveyConfigForm {
   /** 출력 섹션 블록 배열 */
   outputSections: SurveyOutputSectionBlock[]
   /** 마무리 응원 메시지 블록 (closingMessage 최상위 필드) */
-  closingMessage: SurveyOutputSectionBlock | null
+  closingMessage: SurveyOutputSectionBlock
   /** 결과 등급 목록 (신규: resultTiers, badgeClass·statusClass·tone 포함) */
   resultTiers: SurveyResultTierForm[]
   /** 출력 제약 목록 (신규: constraints 배열) */
@@ -82,7 +83,7 @@ export const emptySurveyConfigForm = (): SurveyConfigForm => ({
   agentLanguageLabel: '',
   agentLanguageExceptions: '',
   outputSections: [],
-  closingMessage: null,
+  closingMessage: DEFAULT_CLOSING_MESSAGE_BLOCK(),
   resultTiers: DEFAULT_RESULT_TIERS.map((r) => ({ ...r })),
   constraints: [],
   surveyTitle: '',
@@ -281,7 +282,7 @@ export const parseSurveyAdditionalConfigToForm = (
     agentLanguageLabel: String(agentInfo.languageLabel ?? config.language ?? ''),
     agentLanguageExceptions: String(agentInfo.languageExceptions ?? ''),
     outputSections: parseSurveyOutputSectionBlocks(config.outputSections ?? prompt.outputSections),
-    closingMessage: parseSurveyClosingMessageBlock(config.closingMessage),
+    closingMessage: parseSurveyClosingMessageBlock(config.closingMessage) ?? DEFAULT_CLOSING_MESSAGE_BLOCK(),
     resultTiers,
     constraints: Array.isArray(config.constraints) ? config.constraints.map(String) : [],
     surveyTitle: parseUiString(uiRaw, config, 'surveyTitle'),
@@ -369,13 +370,10 @@ const UI_CONFIG_KEYS: (keyof SurveyUiConfig)[] = [
   'submitLabel',
 ]
 
-const stripLegacyUiTopLevelKeys = (cfg: Record<string, unknown>): Record<string, unknown> => {
-  const next = { ...cfg }
-  for (const key of UI_CONFIG_KEYS) {
-    delete next[key]
-  }
-  return next
-}
+const stripLegacyUiTopLevelKeys = (cfg: Record<string, unknown>): Record<string, unknown> =>
+  Object.fromEntries(
+    Object.entries(cfg).filter(([key]) => !UI_CONFIG_KEYS.includes(key as (typeof UI_CONFIG_KEYS)[number])),
+  )
 
 const buildUiPayload = (form: SurveyConfigForm, preserved?: AgtSubAdditionalConfig | null): SurveyUiConfig => {
   const preservedRecord = (preserved ?? {}) as Record<string, unknown>
@@ -389,12 +387,14 @@ const buildUiPayload = (form: SurveyConfigForm, preserved?: AgtSubAdditionalConf
     }
   }
 
-  const next: SurveyUiConfig = { ...prevUi }
+  let next: SurveyUiConfig = { ...prevUi }
+
+  const omitUiKey = (ui: SurveyUiConfig, key: keyof SurveyUiConfig): SurveyUiConfig =>
+    Object.fromEntries(Object.entries(ui).filter(([entryKey]) => entryKey !== key)) as SurveyUiConfig
 
   const assignIfSet = (key: keyof SurveyUiConfig, value: string) => {
     const trimmed = value.trim()
-    if (trimmed) next[key] = trimmed
-    else delete next[key]
+    next = trimmed ? { ...next, [key]: trimmed } : omitUiKey(next, key)
   }
 
   assignIfSet('surveyTitle', form.surveyTitle)
@@ -419,7 +419,7 @@ export const buildSurveyAdditionalConfig = (
   const reverseQuestionNos = collectReverseQuestionNos(form.categories)
   const outputSectionBlocks = form.outputSections
 
-  const closingMessagePayload = form.closingMessage ?? undefined
+  const closingMessagePayload = form.closingMessage
 
   const agentPayload = {
     ...((preserved?.agent as Record<string, unknown>) ?? {}),
@@ -464,7 +464,7 @@ export const buildSurveyAdditionalConfig = (
     totalQuestions: totalQuestions > 0 ? totalQuestions : undefined,
     resultTiers: buildResultTiersPayload(form.resultTiers),
     outputSections: outputSectionBlocks,
-    ...(closingMessagePayload ? { closingMessage: closingMessagePayload } : {}),
+    closingMessage: closingMessagePayload,
     constraints: form.constraints.filter(Boolean),
     features,
     ui,
@@ -472,9 +472,7 @@ export const buildSurveyAdditionalConfig = (
   }
 
   if (preserved && typeof preserved === 'object') {
-    const merged = stripLegacyUiTopLevelKeys({ ...preserved, ...base }) as Record<string, unknown>
-    if (!closingMessagePayload) delete merged.closingMessage
-    return merged as AgtSubAdditionalConfig
+    return stripLegacyUiTopLevelKeys({ ...preserved, ...base }) as AgtSubAdditionalConfig
   }
 
   return base
