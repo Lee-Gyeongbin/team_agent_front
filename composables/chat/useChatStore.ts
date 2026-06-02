@@ -101,6 +101,7 @@ const {
   selectedModelOption,
   isSearchModeMissingSubOptions,
   searchModeSubOptionsEmptyMessage,
+  isFileAttachEnabled,
 } = useChatSearchState()
 const {
   chatRoom,
@@ -1331,6 +1332,7 @@ export const useChatStore = () => {
     knowledgeList,
     isSearchModeMissingSubOptions,
     searchModeSubOptionsEmptyMessage,
+    isFileAttachEnabled,
     isSurveyVisible,
     isGenderStepVisible,
     surveyGender,

@@ -28,6 +28,7 @@
       <div class="chat-input-bottom flex justify-between items-center">
         <div class="chat-input-bottom-left flex gap-8 items-center">
           <UiButton
+            v-if="isFileAttachEnabled"
             type="button"
             variant="ghost"
             size="xlg"
@@ -42,6 +43,7 @@
             </template>
           </UiButton>
           <input
+            v-if="isFileAttachEnabled"
             ref="attachInputRef"
             type="file"
             class="chat-input-attach-hidden"
@@ -93,7 +95,7 @@
         </div>
       </div>
       <div
-        v-if="previewItems.length > 0"
+        v-if="isFileAttachEnabled && previewItems.length > 0"
         class="chat-input-attachments"
       >
         <ul
@@ -187,6 +189,7 @@ const {
   searchModeSubOptionsEmptyMessage,
   chatIndexAgents,
   selectedSubOptions,
+  isFileAttachEnabled,
 } = useChatStore()
 
 const DEFAULT_INPUT_PLACEHOLDER = '궁금하신 내용을 입력하세요.'
@@ -230,7 +233,7 @@ const revokePreviewUrl = (targetId: string) => {
 }
 
 const handleAttachClick = () => {
-  if (props.disabled) return
+  if (!isFileAttachEnabled.value || props.disabled) return
   attachInputRef.value?.click()
 }
 
@@ -332,6 +335,7 @@ const buildNextAttachFiles = (files: File[]) => {
 }
 
 const appendAttachmentPreview = (files: File[]) => {
+  if (!isFileAttachEnabled.value) return
   const nextFiles = buildNextAttachFiles(files)
 
   if (nextFiles.length === 0) {
@@ -356,7 +360,7 @@ const appendAttachmentPreview = (files: File[]) => {
 }
 
 const onAttachFileChange = (event: Event) => {
-  if (props.disabled) return
+  if (!isFileAttachEnabled.value || props.disabled) return
   const input = event.target as HTMLInputElement
   const fileList = input.files
   if (!fileList?.length) return
@@ -365,10 +369,12 @@ const onAttachFileChange = (event: Event) => {
 }
 
 const onAttachDragEnter = () => {
+  if (!isFileAttachEnabled.value) return
   isDragging.value = true
 }
 
 const onAttachDragOver = () => {
+  if (!isFileAttachEnabled.value) return
   isDragging.value = true
 }
 
@@ -385,7 +391,7 @@ const onAttachDragLeave = (event: DragEvent) => {
 
 const onAttachDrop = (event: DragEvent) => {
   isDragging.value = false
-  if (props.disabled) return
+  if (!isFileAttachEnabled.value || props.disabled) return
   const files = event.dataTransfer?.files
   if (!files?.length) return
   appendAttachmentPreview(Array.from(files))
@@ -407,6 +413,13 @@ const clearAttachments = () => {
   selectedFiles.value = []
 }
 
+watch(isFileAttachEnabled, (enabled) => {
+  if (!enabled) {
+    isDragging.value = false
+    clearAttachments()
+  }
+})
+
 onBeforeUnmount(() => {
   previewItems.value.forEach((item) => {
     if (item.previewUrl) {
@@ -419,14 +432,15 @@ const handleSend = async () => {
   if (isSending.value) return
   if (props.disabled) return
   if (isSearchModeMissingSubOptions.value) return
-  if (!validateAttachmentFiles(selectedFiles.value)) return
+  const filesToSend = isFileAttachEnabled.value ? selectedFiles.value : []
+  if (filesToSend.length > 0 && !validateAttachmentFiles(filesToSend)) return
   isSending.value = true
   try {
     let sent = false
     if (!chatRoom.value.roomId) {
-      sent = await createChatRoom(props.modelValue, selectedFiles.value)
+      sent = await createChatRoom(props.modelValue, filesToSend)
     } else {
-      sent = await onSend(selectedFiles.value)
+      sent = await onSend(filesToSend)
     }
     if (sent) {
       clearAttachments()
