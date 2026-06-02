@@ -33,6 +33,13 @@ const isSearchModeMissingSubOptions = computed(
   () => activeSearchModes.value.length > 0 && subOptions.value.length === 0,
 )
 
+/** 일반 질의(C)·매뉴얼 질의(M)에서만 채팅 파일 첨부 허용 */
+const isFileAttachEnabled = computed(() => {
+  if (activeSearchModes.value.includes('M')) return true
+  if (activeSearchModes.value.length > 0) return false
+  return !selectedChatAgentId.value
+})
+
 /** 서브 옵션이 없을 때 입력창·토스트에 쓰는 안내 문구 */
 const searchModeSubOptionsEmptyMessage = computed(() => {
   if (!isSearchModeMissingSubOptions.value) return ''
@@ -53,5 +60,6 @@ export const useChatSearchState = () => {
     resolveSvcTy,
     isSearchModeMissingSubOptions,
     searchModeSubOptionsEmptyMessage,
+    isFileAttachEnabled,
   }
 }
