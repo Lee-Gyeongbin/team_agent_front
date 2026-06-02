@@ -31,7 +31,12 @@
           v-if="message.isStreaming && !message.rContent"
           class="message-loading"
         >
-          <span class="typing-dot" /><span class="typing-dot" /><span class="typing-dot" />
+          <span class="message-loading__label">답변 생성 중</span>
+          <div class="message-loading__dots">
+            <span class="message-loading__dot" />
+            <span class="message-loading__dot" />
+            <span class="message-loading__dot" />
+          </div>
         </div>
         <template v-else>
           <!-- TodayMeme 답변 JSON 원문은 숨기고 카드 컴포넌트에서만 노출 -->
