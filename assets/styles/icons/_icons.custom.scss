@@ -347,6 +347,11 @@
   @include icon-file('icon-close');
 }
 
+// 닫기(원형 bg)
+.icon-close-bg {
+  @include icon-file('close-bg');
+}
+
 // 오른쪽 화살표
 .icon-arrow-right {
   @include icon-file-bg('arrow-right');
