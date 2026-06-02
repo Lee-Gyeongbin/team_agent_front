@@ -45,6 +45,22 @@
             :tables="metaModalTables"
             :relationships="metaModalRelationships"
           />
+          <DatamartMetaSynonymTab
+            v-else-if="activeTab === 'synonym'"
+            ref="synonymTabRef"
+            v-model:synonym-groups="metaModalSynonymGroups"
+            :datamart="datamart"
+            :error-message="metaModalSynonymListError"
+            @retry="onRetryTableList"
+          />
+          <DatamartMetaFewshotTab
+            v-else-if="activeTab === 'fewshot'"
+            v-model:fewshot-list="metaModalFewshotList"
+            :datamart="datamart"
+            :tables="metaModalTables"
+            :error-message="metaModalFewshotListError"
+            @retry="onRetryTableList"
+          />
         </div>
       </div>
     </div>
@@ -76,6 +92,8 @@ import DatamartMetaTableSelectTab from '~/components/datamart/DatamartMetaTableS
 import DatamartMetaColumnMetadataTab from '~/components/datamart/DatamartMetaColumnMetadataTab.vue'
 import DatamartMetaRelationshipTab from '~/components/datamart/DatamartMetaRelationshipTab.vue'
 import DatamartMetaCodeMappingTab from '~/components/datamart/DatamartMetaCodeMappingTab.vue'
+import DatamartMetaSynonymTab from '~/components/datamart/DatamartMetaSynonymTab.vue'
+import DatamartMetaFewshotTab from '~/components/datamart/DatamartMetaFewshotTab.vue'
 import { useDatamartStore } from '~/composables/datamart/useDatamartStore'
 
 const props = defineProps<{
@@ -91,8 +109,12 @@ const {
   metaModalTables,
   metaModalRelationships,
   metaModalTableListError,
+  metaModalSynonymListError,
   metaModalSelectedColumnTableId,
   metaModalCodeMappings,
+  metaModalSynonymGroups,
+  metaModalFewshotList,
+  metaModalFewshotListError,
   resetDatamartMetaModal,
   hydrateDatamartMetaModal,
   setDatamartMetaModalTableUseYn,
@@ -100,9 +122,17 @@ const {
   handleSaveMetaColumnSelection,
   handleSaveMetaRelationship,
   handleSaveMetaCodeMapping,
+  handleSaveMetaSynonym,
+  handleSaveMetaFewshot,
 } = useDatamartStore()
 
 const activeTab = defineModel<string>('activeTab', { default: 'table' })
+
+type SynonymTabExpose = {
+  onSavedUiFinalize: () => void
+}
+
+const synonymTabRef = ref<SynonymTabExpose | null>(null)
 
 const onRetryTableList = () => {
   void hydrateDatamartMetaModal(props.datamart?.datamartId ?? '')
@@ -122,6 +152,8 @@ const metaTabs = [
   { label: '컬럼 메타데이터', value: 'column' },
   { label: '관계 정의', value: 'relation' },
   { label: '코드값 매핑', value: 'code' },
+  { label: '동의어 관리', value: 'synonym' },
+  { label: '퓨샷 관리', value: 'fewshot' },
 ]
 
 const onSave = async () => {
@@ -140,6 +172,15 @@ const onSave = async () => {
   } else if (activeTab.value === 'code') {
     const datamartId = props.datamart?.datamartId ?? ''
     await handleSaveMetaCodeMapping(datamartId, metaModalCodeMappings.value)
+    return
+  } else if (activeTab.value === 'synonym') {
+    const datamartId = props.datamart?.datamartId ?? ''
+    const isSaved = await handleSaveMetaSynonym(datamartId, metaModalSynonymGroups.value)
+    if (isSaved) synonymTabRef.value?.onSavedUiFinalize()
+    return
+  } else if (activeTab.value === 'fewshot') {
+    const datamartId = props.datamart?.datamartId ?? ''
+    await handleSaveMetaFewshot(datamartId, metaModalFewshotList.value)
     return
   }
 

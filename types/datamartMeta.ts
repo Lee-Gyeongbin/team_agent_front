@@ -98,3 +98,54 @@ export const datamartMetaCodeMappingMasterColumns: TableColumn[] = [
   { key: 'entryCnt', label: '코드값 수', width: '12%', align: 'center', headerAlign: 'center' },
   { key: '_actions', label: '', width: '40px', align: 'center', headerAlign: 'center' },
 ]
+
+/** 메타 관리 > 동의어 그룹 내 항목 */
+export interface DatamartMetaSynonymItem {
+  datamartId?: string
+  synonymId?: string
+  synonymWord: string
+  representYn?: 'Y' | 'N'
+  sortOrd?: number | string
+  useYn?: 'Y' | 'N'
+  createDt?: string
+  modifyDt?: string
+}
+
+/** 메타 관리 > 동의어 그룹 (조회/저장) */
+export interface DatamartMetaSynonymGroup {
+  datamartId: string
+  synonymId?: string
+  /** UI 전용 — 저장 API payload에는 포함하지 않음 */
+  clientKey?: string
+  synonymList: DatamartMetaSynonymItem[]
+}
+
+/** 메타 관리 > 동의어 조회/저장 API DTO */
+export interface DatamartMetaSynonymPayload {
+  datamartId: string
+  synonymList: DatamartMetaSynonymItem[]
+  /** 조회 API — 그룹 단위 목록(있으면 flat synonymList 대신 우선) */
+  synonymGroupList?: DatamartMetaSynonymGroup[]
+  /** 조회 API — 일부 엔드포인트 dataList 명칭 */
+  dataList?: DatamartMetaSynonymGroup[]
+}
+
+/** 메타 관리 > 퓨샷 목록 조회 API */
+export interface DatamartMetaFewshot {
+  datamartId: string
+  fewshotId: string
+  userQuestion: string
+  aiUnderstand: string
+  aiRefExam: string
+  sqlExam: string
+  sortOrd?: number | string
+  useYn: 'Y' | 'N'
+  createDt: string
+  modifyDt: string
+}
+
+/** 메타 관리 > 퓨샷 저장 API DTO */
+export interface DatamartMetaFewshotPayload {
+  datamartId: string
+  fewshotList: DatamartMetaFewshot[]
+}

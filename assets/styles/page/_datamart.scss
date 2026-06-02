@@ -251,6 +251,36 @@
     width: 100%;
   }
 
+  &.is-fewshot-tab {
+    .modal-dialog-body {
+      min-height: min(620px, 70vh);
+    }
+  }
+
+  &.is-synonym-tab {
+    .modal-dialog-body {
+      min-height: min(560px, 65vh);
+    }
+
+    .datamart-meta-tab-panel,
+    .datamart-meta-synonym {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .datamart-meta-synonym-list-section {
+      flex: 1;
+      min-height: 0;
+    }
+
+    &.is-fullscreen .datamart-meta-synonym-list-body {
+      max-height: none;
+      flex: 1;
+    }
+  }
+
   &.is-fullscreen {
     .modal-dialog-content {
       display: flex;
@@ -274,5 +304,947 @@
       overflow: auto;
       @include custom-scrollbar;
     }
+  }
+
+}
+
+// 퓨샷 카드 ⋮ 메뉴 — Portal 렌더, 기본 $z-dropdown(100)보다 모달(451) 위
+.ui-dropdown-content.datamart-meta-fewshot-dropdown {
+  z-index: $z-modal-stack-2;
+}
+
+// ===================================
+// 메타 모달 — 퓨샷·동의어 탭 (공통 레이아웃)
+// ===================================
+.datamart-meta-section-header-static {
+  cursor: default;
+  user-select: text;
+  justify-content: flex-start;
+}
+
+.datamart-meta-fewshot-desc,
+.datamart-meta-synonym-desc {
+  margin: $spacing-xs 0 0;
+  font-size: $font-size-sm;
+  line-height: 1.5;
+  color: $color-text-secondary;
+}
+
+.datamart-meta-fewshot-toolbar,
+.datamart-meta-synonym-toolbar {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  width: 100%;
+}
+
+.datamart-meta-synonym-toolbar-actions {
+  flex-shrink: 0;
+}
+
+.datamart-meta-fewshot-search,
+.datamart-meta-synonym-search {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  max-width: none;
+}
+
+.datamart-meta-fewshot-error,
+.datamart-meta-synonym-error {
+  @include flex-center;
+  flex-direction: column;
+  min-height: 200px;
+  padding: $spacing-xl $spacing-md;
+  gap: $spacing-md;
+}
+
+.datamart-meta-fewshot-error-msg,
+.datamart-meta-synonym-error-msg {
+  @include typo($body-medium);
+  color: $color-error;
+  text-align: center;
+  margin: 0;
+}
+
+.datamart-meta-fewshot-count,
+.datamart-meta-synonym-count {
+  font-weight: $font-weight-medium;
+  color: $color-text-muted;
+}
+
+.datamart-meta-fewshot-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.datamart-meta-fewshot-change-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.datamart-meta-fewshot-change-badge,
+.datamart-meta-synonym-change-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid #ece8ff;
+  border-radius: 10px;
+  background: #f7f5ff;
+  @include typo($body-small);
+  color: $color-text-secondary;
+  white-space: nowrap;
+
+  i {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-primary);
+  }
+}
+
+.datamart-meta-synonym-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.datamart-meta-synonym-change-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+// ===================================
+// 동의어 관리
+// ===================================
+.datamart-meta-synonym {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.datamart-meta-synonym-list-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+.datamart-meta-synonym-list-body {
+  min-height: 0;
+  // 펼친 그룹 약 2개 분량 — 다른 메타 탭과 동일 min(px, vh) 패턴
+  max-height: min(560px, 58vh);
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 4px;
+  @include custom-scrollbar;
+}
+
+.synonym-empty {
+  padding: 48px 0;
+}
+
+.synonym-group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.synonym-group-card {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  border: 1px solid $color-border;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: border-color $transition-fast;
+
+  &.is-expanded {
+    border-color: #c6d2db;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  }
+}
+
+.synonym-group-header {
+  width: 100%;
+  min-width: 0;
+  padding: 18px 20px;
+  cursor: pointer;
+  user-select: none;
+
+  &:hover {
+    background: $color-surface;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px;
+  }
+}
+
+.synonym-group-representative {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+.synonym-group-representative-label {
+  @include typo($body-large);
+  color: $color-text-secondary;
+}
+
+.synonym-group-representative-text {
+  min-width: 0;
+  @include typo($body-large-bold);
+  color: $color-text-heading;
+  @include ellipsis(1);
+}
+
+.synonym-group-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-100;
+  background: $color-surface;
+  @include typo($body-small);
+  color: $color-text-muted;
+  white-space: nowrap;
+}
+
+.synonym-group-header-actions {
+  flex-shrink: 0;
+  min-width: 96px;
+  justify-content: flex-end;
+  color: $color-text-muted;
+}
+
+.synonym-group-chevron-btn {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  line-height: 0;
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: $border-radius-sm;
+  }
+}
+
+.synonym-group-chevron {
+  color: $color-text-muted;
+  transition: transform $transition-fast;
+
+  &.is-expanded {
+    transform: rotate(180deg);
+  }
+}
+
+.synonym-group-body {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 4px 20px 24px;
+  border-top: 1px solid $color-border-light;
+  background: #fafbfc;
+}
+
+.synonym-group-body-label {
+  @include typo($body-medium-bold);
+  color: $color-text-heading;
+  margin: 16px 0 12px;
+}
+
+.synonym-tag-box {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  background: #fff;
+}
+
+.synonym-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  box-sizing: border-box;
+
+  :deep(.ui-tag) {
+    flex: 0 0 auto;
+    max-width: 100%;
+  }
+}
+
+// 태그가 많아져도 입력·추가 버튼은 항상 다음 줄 전체 너비로 표시
+.synonym-tag-row-footer {
+  flex: 1 1 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.synonym-add-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+
+  .synonym-add-field-label {
+    flex-shrink: 0;
+    @include typo($body-medium);
+    color: $color-text-secondary;
+    white-space: nowrap;
+  }
+
+  :deep(.synonym-inline-input.ui-input-outer) {
+    flex: 0 0 auto;
+    width: 220px;
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+.synonym-inline-input-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.synonym-inline-input-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  line-height: 0;
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 1px;
+    border-radius: 2px;
+  }
+}
+
+.synonym-tag-add {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 6px 14px;
+  border: 1px dashed #c6d2db;
+  border-radius: $border-radius-100;
+  background: #fff;
+  @include typo($body-small);
+  color: $color-text-muted;
+  cursor: pointer;
+  transition:
+    border-color $transition-fast,
+    color $transition-fast;
+
+  &:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}
+
+// ===================================
+// 질문 예시(퓨샷) 관리
+// ===================================
+$fewshot-list-page-size: 6;
+$fewshot-card-gap: 8px;
+$fewshot-card-gap-total: $fewshot-card-gap * ($fewshot-list-page-size - 1);
+$fewshot-list-pagination-height: 36px;
+/** 상세 패널(폼+푸터) 열림 상태와 동일한 기본 높이 */
+$fewshot-split-min-height: min(536px, 58vh);
+$fewshot-detail-body-min-height: min(492px, 52vh);
+
+.datamart-meta-fewshot {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.datamart-meta-fewshot-body {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.datamart-meta-fewshot-split {
+  display: flex;
+  gap: $spacing-md;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+  min-height: $fewshot-split-min-height;
+}
+
+.datamart-meta-fewshot-list-section {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  flex-shrink: 0;
+  align-self: stretch;
+  width: 280px;
+  min-width: 280px;
+  max-width: 280px;
+  min-height: $fewshot-split-min-height;
+  box-sizing: border-box;
+}
+
+.datamart-meta-fewshot-list-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.fewshot-list-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.fewshot-list-empty {
+  padding: 24px 0;
+}
+
+.fewshot-card-list {
+  --fewshot-card-slot-count: #{$fewshot-list-page-size};
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: $fewshot-card-gap;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+
+  > li {
+    height: calc(
+      (100% - #{$fewshot-card-gap-total}) / var(--fewshot-card-slot-count, #{$fewshot-list-page-size})
+    );
+    min-height: calc(
+      (100% - #{$fewshot-card-gap-total}) / var(--fewshot-card-slot-count, #{$fewshot-list-page-size})
+    );
+    flex-shrink: 0;
+  }
+}
+
+.fewshot-list-pagination-wrap {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  min-height: $fewshot-list-pagination-height;
+}
+
+.fewshot-card {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 0;
+  border: 1px solid $color-border;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+  transition:
+    border-color $transition-fast,
+    background-color $transition-fast;
+
+  &:hover {
+    border-color: #c6d2db;
+    background: $color-surface;
+  }
+
+  &.is-selected {
+    border-color: var(--color-primary);
+    background: #f8fbff;
+
+    .fewshot-card-question {
+      color: var(--color-primary);
+    }
+
+    .fewshot-card-status.is-modified {
+      background: #fff;
+      border-color: #d9d0ff;
+    }
+  }
+}
+
+.fewshot-card-menu {
+  display: flex;
+  align-items: center;
+  align-self: center;
+  flex-shrink: 0;
+  margin-right: 10px;
+}
+
+.fewshot-card-select {
+  flex: 1;
+  min-width: 0;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  padding: 10px 8px 10px 14px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px;
+    border-radius: 0;
+  }
+}
+
+.fewshot-card-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.fewshot-card-status {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 4px;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 10px;
+  @include typo($body-small);
+  font-size: 11px;
+  line-height: 1;
+  white-space: nowrap;
+
+  i {
+    flex-shrink: 0;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+  }
+
+  &.is-new {
+    border: 1px solid $color-border;
+    background: $color-surface;
+    color: $color-text-secondary;
+
+    i {
+      background: #94a3b8;
+    }
+  }
+
+  &.is-modified {
+    border: 1px solid #ece8ff;
+    background: #f7f5ff;
+    color: var(--color-primary);
+
+    i {
+      background: var(--color-primary);
+    }
+  }
+}
+
+.fewshot-card-question {
+  @include typo($body-medium-bold);
+  color: $color-text-heading;
+  margin: 0;
+  line-height: 1.4;
+  @include ellipsis(1);
+
+  &.is-placeholder {
+    color: $color-text-secondary;
+    font-weight: $font-weight-medium;
+  }
+}
+
+.fewshot-card-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: $border-radius-sm;
+  background: transparent;
+  color: #aebccb;
+  cursor: pointer;
+
+  &:hover {
+    background: #ecf0f3;
+    color: $color-text-primary;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}
+
+.fewshot-list-pagination {
+  flex-shrink: 0;
+}
+
+.fewshot-page-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: $border-radius-sm;
+  background: transparent;
+  color: $color-text-secondary;
+  cursor: pointer;
+  transition: background-color $transition-fast;
+
+  .icon {
+    background-color: currentColor;
+  }
+
+  .is-flip-x {
+    transform: scaleX(-1);
+  }
+
+  &:hover:not(:disabled) {
+    background: #ecf0f3;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.fewshot-page-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-sm;
+  background: #fff;
+  @include typo($body-small);
+  color: $color-text-secondary;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.fewshot-page-num.is-active {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  font-weight: $font-weight-semibold;
+}
+
+.datamart-meta-fewshot-detail-section {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-self: stretch;
+  min-width: 0;
+  min-height: $fewshot-split-min-height;
+  box-sizing: border-box;
+}
+
+.datamart-meta-fewshot-detail-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: $fewshot-detail-body-min-height;
+
+  &:not(:has(.fewshot-detail-empty)) {
+    gap: $spacing-md;
+  }
+}
+
+.fewshot-detail-scroll {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.fewshot-detail-pane {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.fewshot-detail-empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: $fewshot-detail-body-min-height;
+  padding: 48px 24px;
+  box-sizing: border-box;
+}
+
+.fewshot-detail-view {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+  @include custom-scrollbar;
+}
+
+.fewshot-detail-view-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fewshot-detail-view-field--sql {
+  padding-top: 20px;
+  border-top: 1px solid $color-border-light;
+}
+
+.fewshot-detail-view-text {
+  @include typo($body-medium);
+  color: $color-text-primary;
+  margin: 0;
+  word-break: break-word;
+}
+
+.fewshot-detail-view-sql {
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  background: #f8fbff;
+  font-family: $font-family-mono, monospace;
+  font-size: $font-size-sm;
+  line-height: 1.5;
+  color: $color-text-primary;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.fewshot-detail-view-sql-text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  @include typo($body-medium);
+  color: $color-text-primary;
+  line-height: $line-height-base;
+  word-break: break-word;
+}
+
+.fewshot-sql-builder--readonly {
+  pointer-events: none;
+  user-select: text;
+
+  .fewshot-sql-builder-row {
+    align-items: center;
+    min-height: $height-sm;
+  }
+
+  .fewshot-sql-builder-keyword {
+    align-self: center;
+  }
+}
+
+.fewshot-form {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+  @include custom-scrollbar;
+}
+
+.fewshot-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fewshot-form-label {
+  @include typo($body-medium-bold);
+  color: $color-text-heading;
+}
+
+.fewshot-form-optional {
+  font-weight: $font-weight-medium;
+  color: $color-text-muted;
+}
+
+.fewshot-form-control {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fewshot-form-hint {
+  @include typo($body-small);
+  color: $color-text-muted;
+  margin: 0;
+}
+
+.fewshot-sql-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.fewshot-sql-toggle-btn {
+  flex-shrink: 0;
+}
+
+.fewshot-sql-textarea {
+  font-family: $font-family-mono, monospace;
+  font-size: $font-size-sm;
+}
+
+.fewshot-sql-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid $color-border-light;
+  border-radius: $border-radius-base;
+  background: $color-surface;
+}
+
+.fewshot-sql-builder-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.fewshot-sql-builder-keyword {
+  flex-shrink: 0;
+  width: 56px;
+  font-family: $font-family-base;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  line-height: $line-height-base;
+  color: var(--color-primary);
+}
+
+.fewshot-sql-builder-control {
+  flex: 1;
+  min-width: 0;
+}
+
+.fewshot-sql-builder-where-input {
+  :deep(.ui-input) {
+    font-family: $font-family-base;
+    font-size: $font-size-base;
+  }
+}
+
+.fewshot-sql-builder-hint {
+  margin-top: 8px;
+}
+
+.fewshot-form-footer {
+  flex-shrink: 0;
+  padding-top: 12px;
+  border-top: 1px solid $color-border-light;
+  background: #fff;
+}
+
+@include mobile {
+  .datamart-meta-fewshot-split {
+    flex-direction: column;
+  }
+
+  .datamart-meta-fewshot-list-section,
+  .datamart-meta-fewshot-detail-section {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
   }
 }
