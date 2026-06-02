@@ -12,7 +12,7 @@
     >
       <i :class="[selectedAgent.iconClassNm ? selectedAgent.iconClassNm : 'icon-search', 'size-20']" />
       <span class="ws-nowrap">{{ selectedAgent.agentNm }}</span>
-      <i class="icon-close-bg-selected size-16" />
+      <i class="icon-close-bg size-16" />
     </button>
 
     <!-- 트리거 버튼 (선택된 모드가 없고, 채팅 상세일 때만 표시) -->
