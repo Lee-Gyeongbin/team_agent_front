@@ -885,6 +885,14 @@
   &:hover {
     background: #dce4e9;
   }
+
+  .icon-close-bg {
+    background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='16' height='16' rx='8' fill='white'/%3E%3Cpath d='M3.67811 3.67811C3.91559 3.44063 4.30053 3.44063 4.53802 3.67811L12.3217 11.4618C12.5592 11.6993 12.5592 12.0842 12.3217 12.3217C12.0842 12.5592 11.6993 12.5592 11.4618 12.3217L3.67811 4.53802C3.44063 4.30053 3.44063 3.91559 3.67811 3.67811Z' fill='%235C6677'/%3E%3Cpath d='M3.67811 12.3219C3.44063 12.0844 3.44063 11.6995 3.67811 11.462L11.4618 3.6783C11.6993 3.44082 12.0842 3.44082 12.3217 3.6783C12.5592 3.91578 12.5592 4.30072 12.3217 4.53821L4.53802 12.3219C4.30053 12.5594 3.91559 12.5594 3.67811 12.3219Z' fill='%235C6677'/%3E%3C/svg%3E%0A");
+  }
+
+  .icon-close-bg-selected {
+    background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='16' height='16' rx='8' fill='white'/%3E%3Cpath d='M3.67811 3.67811C3.91559 3.44063 4.30053 3.44063 4.53802 3.67811L12.3217 11.4618C12.5592 11.6993 12.5592 12.0842 12.3217 12.3217C12.0842 12.5592 11.6993 12.5592 11.4618 12.3217L3.67811 4.53802C3.44063 4.30053 3.44063 3.91559 3.67811 3.67811Z' fill='%233C69DB'/%3E%3Cpath d='M3.67811 12.3219C3.44063 12.0844 3.44063 11.6995 3.67811 11.462L11.4618 3.6783C11.6993 3.44082 12.0842 3.44082 12.3217 3.6783C12.5592 3.91578 12.5592 4.30072 12.3217 4.53821L4.53802 12.3219C4.30053 12.5594 3.91559 12.5594 3.67811 12.3219Z' fill='%233C69DB'/%3E%3C/svg%3E%0A");
+  }
 }
 
 .chat-search-mode-trigger {
@@ -1741,12 +1749,17 @@
   @include typo($body-small);
   margin-bottom: $spacing-sm;
 
-  i { flex-shrink: 0; color: #22c55e; }
+  i {
+    flex-shrink: 0;
+    color: #22c55e;
+  }
 }
 
 .chat-vis-fade-enter-active,
 .chat-vis-fade-leave-active {
-  transition: opacity $transition-base, transform $transition-base;
+  transition:
+    opacity $transition-base,
+    transform $transition-base;
 }
 .chat-vis-fade-enter-from,
 .chat-vis-fade-leave-to {
