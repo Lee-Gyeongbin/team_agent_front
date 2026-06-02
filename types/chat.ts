@@ -85,6 +85,8 @@ export interface ChatSocketMessage {
   tableData?: string
   /** complete 시점 차트 기본 옵션 */
   chartOption?: VisualizationChartOptionPayload | string
+  /** status 이벤트 메시지 (예: "질문 분석중", "생성 진행중") */
+  statusMessage?: string
 }
 // 메세지
 export interface ChatMessage {
@@ -95,6 +97,7 @@ export interface ChatMessage {
   rContent?: string
   createdAt: string
   isStreaming?: boolean
+  streamingStatus?: string
   chatLogReaction?: ChatLogReaction
   hasSource?: boolean
   hasVisualization?: boolean

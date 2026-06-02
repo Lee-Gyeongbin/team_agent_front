@@ -31,7 +31,7 @@
           v-if="message.isStreaming && !message.rContent"
           class="message-loading"
         >
-          <span class="message-loading__label">답변 생성 중</span>
+          <span class="message-loading__label">{{ message.streamingStatus || '답변 생성 중' }}</span>
           <div class="message-loading__dots">
             <span class="message-loading__dot" />
             <span class="message-loading__dot" />

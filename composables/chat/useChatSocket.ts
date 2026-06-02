@@ -254,8 +254,16 @@ export const useChatSocket = () => {
 
     // WebSocket 메시지 타입에 따라 처리
     switch (payload.type) {
+      case 'status': {
+        if (payload.statusMessage) {
+          streamingMessage.streamingStatus = payload.statusMessage
+        }
+        break
+      }
       // 스트리밍 메시지 처리
       case 'chunk': {
+        // 답변 청크가 오면 status 텍스트 초기화
+        streamingMessage.streamingStatus = undefined
         // Web 출처 등 구조화 청크 — 답변 텍스트 버퍼에 합치지 않음
         if (payload.chunkEvent === 'answer_source' && payload.accumulated) {
           const sourceItems = parseAnswerSourceItems(payload.accumulated)
