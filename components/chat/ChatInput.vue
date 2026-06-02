@@ -158,6 +158,7 @@ const ATTACH_ALLOWED_EXTENSIONS = [
   'docx',
   'xlsx',
   'xls',
+  'csv',
   'md',
   'txt',
   'json',
