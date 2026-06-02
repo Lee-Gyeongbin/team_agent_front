@@ -2,9 +2,85 @@ import { useDatamartApi } from '~/composables/datamart/useDatamartApi'
 import type { Datamart, DatamartSummary } from '~/types/datamart'
 import type {
   DatamartMetaCodeColumnMapping,
+  DatamartMetaFewshot,
   DatamartMetaRelationship,
+  DatamartMetaSynonymGroup,
+  DatamartMetaSynonymItem,
+  DatamartMetaSynonymPayload,
   DatamartMetaTableItem,
 } from '~/types/datamartMeta'
+
+/** 폼 적용 전 빈 draft */
+const isEmptyDraftFewshotRow = (row: DatamartMetaFewshot) =>
+  !row.fewshotId?.trim() &&
+  !row.userQuestion?.trim() &&
+  !row.aiUnderstand?.trim() &&
+  !row.aiRefExam?.trim() &&
+  !row.sqlExam?.trim()
+
+const toFewshotSignature = (row: DatamartMetaFewshot) => {
+  const id = row.fewshotId?.trim() ?? ''
+  return [
+    id,
+    row.userQuestion?.trim() ?? '',
+    row.aiUnderstand?.trim() ?? '',
+    row.aiRefExam?.trim() ?? '',
+    row.sqlExam?.trim() ?? '',
+    row.useYn ?? 'Y',
+  ].join('|')
+}
+
+const toFewshotSignatureForChange = (row: DatamartMetaFewshot) =>
+  isEmptyDraftFewshotRow(row) ? '' : toFewshotSignature(row)
+
+const toSynonymItemSignature = (item: DatamartMetaSynonymItem) => {
+  const word = item.synonymWord?.trim() ?? ''
+  if (!word) return ''
+  return `${item.synonymId?.trim() ?? ''}|${word}|${item.representYn ?? 'N'}|${item.useYn ?? 'Y'}`
+}
+
+/** 동의어 그룹 변경 시그니처 */
+const toSynonymGroupSignature = (group: DatamartMetaSynonymGroup) => {
+  const groupId = group.synonymId?.trim() || group.clientKey?.trim() || ''
+  const itemSigs = group.synonymList
+    .filter((item) => item.synonymWord?.trim())
+    .map(toSynonymItemSignature)
+    .sort()
+    .join('||')
+  return `${groupId}|${itemSigs}`
+}
+
+/** 동의어 조회 응답 → UI 그룹 배열 */
+const parseMetaSynonymGroupsFromApi = (
+  res: DatamartMetaSynonymPayload | DatamartMetaSynonymGroup[] | null | undefined,
+  datamartId: string,
+): DatamartMetaSynonymGroup[] | null => {
+  if (!res) return null
+
+  if (Array.isArray(res)) {
+    if (res.length > 0 && res.every((group) => Array.isArray(group?.synonymList))) {
+      return res.map((group) => ({
+        ...group,
+        datamartId: group.datamartId?.trim() || datamartId,
+      }))
+    }
+    return null
+  }
+
+  const groupedList = res.synonymGroupList ?? res.dataList
+  if (Array.isArray(groupedList) && groupedList.length > 0) {
+    return groupedList.map((group) => ({
+      ...group,
+      datamartId: group.datamartId?.trim() || res.datamartId?.trim() || datamartId,
+    }))
+  }
+
+  if (Array.isArray(res.synonymList)) {
+    return [{ datamartId: res.datamartId?.trim() || datamartId, synonymList: res.synonymList }]
+  }
+
+  return null
+}
 
 const {
   fetchDatamartList,
@@ -19,6 +95,10 @@ const {
   fetchMetaRelationshipList,
   fetchSaveMetaCodeMapping,
   fetchMetaCodeMappingList,
+  fetchMetaSynonymList,
+  fetchSaveMetaSynonym,
+  fetchMetaFewshotList,
+  fetchSaveMetaFewshot,
 } = useDatamartApi()
 
 /** 상태 변수 */
@@ -28,8 +108,76 @@ const datamartList = ref<Datamart[]>([])
 const metaModalTables = ref<DatamartMetaTableItem[]>([])
 const metaModalRelationships = ref<DatamartMetaRelationship[]>([])
 const metaModalTableListError = ref<string | null>(null)
+const metaModalSynonymListError = ref<string | null>(null)
 const metaModalSelectedColumnTableId = ref('')
 const metaModalCodeMappings = ref<DatamartMetaCodeColumnMapping[]>([])
+const metaModalSynonymGroups = ref<DatamartMetaSynonymGroup[]>([])
+const metaModalFewshotList = ref<DatamartMetaFewshot[]>([])
+const metaModalFewshotListError = ref<string | null>(null)
+
+const cloneMetaModalFewshotList = (rows: DatamartMetaFewshot[]) => rows.map((row) => ({ ...row }))
+
+const cloneMetaModalSynonymGroups = (groups: DatamartMetaSynonymGroup[]): DatamartMetaSynonymGroup[] =>
+  groups.map((group) => ({
+    ...group,
+    synonymList: group.synonymList.map((item) => ({ ...item })),
+  }))
+
+/** 동일 시그니처 수정은 1건으로 집계 */
+const countSignatureListDiff = (base: string[], current: string[]): number => {
+  const toCountMap = (sigs: string[]) => sigs.reduce((m, s) => m.set(s, (m.get(s) ?? 0) + 1), new Map<string, number>())
+  const baseMap = toCountMap(base)
+  const currentMap = toCountMap(current)
+  const allKeys = new Set([...baseMap.keys(), ...currentMap.keys()])
+  let added = 0
+  let removed = 0
+  allKeys.forEach((key) => {
+    const b = baseMap.get(key) ?? 0
+    const c = currentMap.get(key) ?? 0
+    if (c > b) added += c - b
+    else if (b > c) removed += b - c
+  })
+  return Math.max(added, removed)
+}
+
+/** 메타 모달 탭 — baseline·미저장 변경 건수 (퓨샷/동의어 공통) */
+const createMetaModalDraftTracker = <T>(
+  current: Ref<T[]>,
+  options: { clone: (items: T[]) => T[]; toSignatures: (items: T[]) => string[] },
+) => {
+  const initial = ref<T[]>([]) as Ref<T[]>
+  const ready = ref(false)
+
+  const pendingChangeCount = computed(() => {
+    if (!ready.value) return 0
+    return countSignatureListDiff(options.toSignatures(initial.value), options.toSignatures(current.value))
+  })
+  const hasPendingChanges = computed(() => pendingChangeCount.value > 0)
+
+  const commitBaseline = () => {
+    initial.value = options.clone(current.value)
+    ready.value = true
+  }
+  const revert = () => {
+    current.value = options.clone(initial.value)
+  }
+  const clear = () => {
+    ready.value = false
+    initial.value = []
+  }
+
+  return { initial, ready, pendingChangeCount, hasPendingChanges, commitBaseline, revert, clear }
+}
+
+const metaModalFewshotDraft = createMetaModalDraftTracker(metaModalFewshotList, {
+  clone: cloneMetaModalFewshotList,
+  toSignatures: (rows) => rows.map(toFewshotSignatureForChange).filter(Boolean),
+})
+
+const metaModalSynonymDraft = createMetaModalDraftTracker(metaModalSynonymGroups, {
+  clone: cloneMetaModalSynonymGroups,
+  toSignatures: (groups) => groups.map(toSynonymGroupSignature),
+})
 
 const summary = ref<DatamartSummary>({
   totalCount: 0,
@@ -170,8 +318,14 @@ const resetDatamartMetaModal = () => {
   metaModalTables.value = []
   metaModalRelationships.value = []
   metaModalTableListError.value = null
+  metaModalSynonymListError.value = null
   metaModalSelectedColumnTableId.value = ''
   metaModalCodeMappings.value = []
+  metaModalSynonymGroups.value = []
+  metaModalFewshotList.value = []
+  metaModalFewshotListError.value = null
+  metaModalFewshotDraft.clear()
+  metaModalSynonymDraft.clear()
 }
 
 /** 모달 오픈·테이블 탭 재시도 — 테이블 스키마 + JOIN 관계 목록 조회 후 스토어 상태 반영 */
@@ -195,6 +349,30 @@ const hydrateDatamartMetaModal = async (datamartId: string) => {
 
   const codes = await handleFetchMetaCodeMappingList(id)
   metaModalCodeMappings.value = Array.isArray(codes) ? codes : []
+
+  const synonymRes = await handleFetchMetaSynonymList(id)
+  const parsedSynonymGroups = parseMetaSynonymGroupsFromApi(synonymRes, id)
+  if (parsedSynonymGroups) {
+    metaModalSynonymGroups.value = parsedSynonymGroups
+    metaModalSynonymListError.value = null
+    /** baseline은 동의어 탭 normalize 후 commit (flat → 카드 변환 시 오탐 방지) */
+    metaModalSynonymDraft.clear()
+  } else {
+    metaModalSynonymGroups.value = []
+    metaModalSynonymListError.value = '동의어 목록을 불러오지 못했습니다.'
+    metaModalSynonymDraft.clear()
+  }
+
+  const fewshots = await handleFetchMetaFewshotList(id)
+  if (fewshots === undefined) {
+    metaModalFewshotList.value = []
+    metaModalFewshotListError.value = '질문 예시 목록을 불러오지 못했습니다.'
+    metaModalFewshotDraft.clear()
+    return
+  }
+  metaModalFewshotList.value = fewshots
+  metaModalFewshotListError.value = null
+  metaModalFewshotDraft.commitBaseline()
 }
 
 /** 메타 관리 모달 — 테이블 사용 상태 변경 */
@@ -315,6 +493,100 @@ const handleFetchMetaCodeMappingList = async (datamartId: string) => {
   }
 }
 
+/** 동의어 목록 조회 */
+const handleFetchMetaSynonymList = async (datamartId: string) => {
+  try {
+    openLoading({ text: '동의어 목록 조회 중...' })
+    const res = await fetchMetaSynonymList(datamartId)
+    return res
+  } catch {
+    openToast({ message: '동의어 목록 조회에 실패했습니다.', type: 'error' })
+  } finally {
+    closeLoading()
+  }
+}
+
+/** 퓨샷 목록 조회 — 성공 시 배열(빈 배열 포함), HTTP 실패 시 undefined */
+const handleFetchMetaFewshotList = async (datamartId: string) => {
+  try {
+    openLoading({ text: '질문 예시 목록 조회 중...' })
+    const res = await fetchMetaFewshotList(datamartId)
+    return Array.isArray(res?.fewshotList) ? res.fewshotList : []
+  } catch {
+    openToast({ message: '질문 예시 목록 조회에 실패했습니다.', type: 'error' })
+    return undefined
+  } finally {
+    closeLoading()
+  }
+}
+
+/** 퓨샷 저장 */
+const handleSaveMetaFewshot = async (datamartId: string, fewshotList: DatamartMetaFewshot[]) => {
+  if (!datamartId) {
+    openToast({ message: '데이터마트 정보가 없습니다.', type: 'warning' })
+    return false
+  }
+
+  /** 미입력 신규 draft(빈 fewshotId·질문 없음)는 저장 요청에서 제외 */
+  const payloadList = fewshotList.filter((row) => row.fewshotId?.trim() || row.userQuestion?.trim())
+
+  const payload = {
+    datamartId,
+    fewshotList: payloadList,
+  }
+
+  try {
+    await fetchSaveMetaFewshot(payload)
+    const fewshots = await handleFetchMetaFewshotList(datamartId)
+    if (fewshots === undefined) {
+      metaModalFewshotListError.value = '질문 예시 목록을 불러오지 못했습니다.'
+      openToast({ message: '저장 후 목록 갱신에 실패했습니다.', type: 'error' })
+      return false
+    }
+    metaModalFewshotList.value = fewshots
+    metaModalFewshotListError.value = null
+    metaModalFewshotDraft.commitBaseline()
+    openToast({ message: '질문 예시 저장에 성공했습니다.', type: 'success' })
+    return true
+  } catch {
+    openToast({ message: '질문 예시 저장에 실패했습니다.', type: 'error' })
+    return false
+  }
+}
+
+/** 동의어 저장 */
+const handleSaveMetaSynonym = async (datamartId: string, synonymGroups: DatamartMetaSynonymGroup[]) => {
+  if (!datamartId) {
+    openToast({ message: '데이터마트 정보가 없습니다.', type: 'warning' })
+    return false
+  }
+
+  const payload = {
+    datamartId,
+    synonymList: synonymGroups.flatMap((group) => group.synonymList),
+  }
+
+  try {
+    await fetchSaveMetaSynonym(payload)
+    const synonymRes = await handleFetchMetaSynonymList(datamartId)
+    const parsedSynonymGroups = parseMetaSynonymGroupsFromApi(synonymRes, datamartId)
+    if (parsedSynonymGroups) {
+      metaModalSynonymGroups.value = parsedSynonymGroups
+      metaModalSynonymListError.value = null
+    } else {
+      metaModalSynonymGroups.value = []
+      metaModalSynonymListError.value = '동의어 목록을 불러오지 못했습니다.'
+      openToast({ message: '저장 후 목록 갱신에 실패했습니다.', type: 'error' })
+      return false
+    }
+    openToast({ message: '동의어 저장에 성공했습니다.', type: 'success' })
+    return true
+  } catch {
+    openToast({ message: '동의어 저장에 실패했습니다.', type: 'error' })
+    return false
+  }
+}
+
 export const useDatamartStore = () => {
   return {
     datamartList,
@@ -322,8 +594,14 @@ export const useDatamartStore = () => {
     metaModalTables,
     metaModalRelationships,
     metaModalTableListError,
+    metaModalSynonymListError,
     metaModalSelectedColumnTableId,
     metaModalCodeMappings,
+    metaModalSynonymGroups,
+    metaModalFewshotList,
+    metaModalFewshotListError,
+    metaModalFewshotDraft,
+    metaModalSynonymDraft,
     handleSelectAll,
     handleSaveDatamart,
     handleDeleteDatamart,
@@ -338,5 +616,7 @@ export const useDatamartStore = () => {
     handleSaveMetaColumnSelection,
     handleSaveMetaRelationship,
     handleSaveMetaCodeMapping,
+    handleSaveMetaSynonym,
+    handleSaveMetaFewshot,
   }
 }

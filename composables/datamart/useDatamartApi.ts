@@ -3,7 +3,9 @@ import { useApi } from '~/composables/com/useApi'
 import type {
   DatamartMetaCodeColumnMapping,
   DatamartMetaRelationship,
+  DatamartMetaSynonymPayload,
   DatamartMetaTableItem,
+  DatamartMetaFewshotPayload,
 } from '~/types/datamartMeta'
 const { get, post } = useApi()
 
@@ -82,6 +84,26 @@ export const useDatamartApi = () => {
     return post<{ dataList: DatamartMetaCodeColumnMapping[] }>('/datamart/metaCodeMappingList.do', { datamartId })
   }
 
+  /** 메타 관리 > 동의어 목록 조회 API */
+  const fetchMetaSynonymList = async (datamartId: string): Promise<DatamartMetaSynonymPayload> => {
+    return post<DatamartMetaSynonymPayload>('/datamart/metaSynonymList.do', { datamartId })
+  }
+
+  /** 메타 관리 > 동의어 저장/수정 API */
+  const fetchSaveMetaSynonym = async (payload: DatamartMetaSynonymPayload): Promise<void> => {
+    return post('/datamart/metaSynonymSave.do', payload)
+  }
+
+  /** 메타관리 > 퓨샷 목록 조회 API — 응답: { datamartId, fewshotList } */
+  const fetchMetaFewshotList = async (datamartId: string): Promise<DatamartMetaFewshotPayload> => {
+    return post<DatamartMetaFewshotPayload>('/datamart/metaFewshotList.do', { datamartId })
+  }
+
+  /** 메타 관리 > 퓨샷 저장 API */
+  const fetchSaveMetaFewshot = async (payload: DatamartMetaFewshotPayload): Promise<void> => {
+    return post('/datamart/metaFewshotSave.do', payload)
+  }
+
   return {
     fetchDatamartList,
     fetchDatamartSummary,
@@ -95,5 +117,9 @@ export const useDatamartApi = () => {
     fetchMetaRelationshipList,
     fetchSaveMetaCodeMapping,
     fetchMetaCodeMappingList,
+    fetchMetaSynonymList,
+    fetchSaveMetaSynonym,
+    fetchMetaFewshotList,
+    fetchSaveMetaFewshot,
   }
 }

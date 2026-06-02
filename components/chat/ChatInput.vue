@@ -154,6 +154,8 @@ interface AttachmentPreviewItem {
 const ATTACH_ALLOWED_EXTENSIONS = [
   'pdf',
   'docx',
+  'xlsx',
+  'xls',
   'md',
   'txt',
   'json',
