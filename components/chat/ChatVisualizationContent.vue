@@ -122,7 +122,7 @@
       >
         <div class="chat-vis-section-header-left">
           <span class="chat-vis-section-title">차트 추가</span>
-          <span class="chat-vis-section-subtitle">조회결과 컬럼을 축으로 지정해 새 차트 만들기</span>
+          <span class="chat-vis-section-subtitle">범례·축을 선택해 새 차트를 생성합니다</span>
         </div>
         <i
           class="icon-chevron-down size-24 chat-vis-section-arrow"
@@ -134,8 +134,20 @@
         class="chat-vis-section-body"
       >
         <div class="chat-vis-add-chart">
+          <!-- 차트 생성 성공 메시지 -->
+          <Transition name="chat-vis-fade">
+            <div
+              v-if="showAddSuccessMsg"
+              class="chat-vis-add-success"
+            >
+              <i class="icon-check-circle size-14"></i>
+              차트가 추가되었습니다. 아래에서 축을 수정할 수 있습니다.
+            </div>
+          </Transition>
+
+          <!-- 헤더: 레이블 + 차트 생성 버튼 -->
           <div class="chat-vis-add-chart-header">
-            <span class="chat-vis-add-chart-label">표 컬럼 선택으로 차트 구성</span>
+            <span class="chat-vis-add-chart-label">범례·축 선택으로 차트 구성</span>
             <UiButton
               variant="primary"
               size="sm"
@@ -148,6 +160,7 @@
               차트 생성
             </UiButton>
           </div>
+
           <!-- 통계 ID 먼저 지정 (복수 통계 조회 시) -->
           <div
             v-if="hasStatIdColumn && uniqueStatIdsForChart.length"
@@ -169,80 +182,151 @@
               </button>
             </div>
           </div>
-          <!-- 축 설정 행 -->
-          <div class="chat-vis-axis-row">
-            <div class="chat-vis-axis-icon">
-              <i class="icon-axis-arrow size-16"></i>
-              <span>축 설정</span>
-              <UiTooltip
-                side="bottom"
-                align="start"
-                :show-arrow="false"
-                content-class="chat-vis-axis-tooltip"
-              >
-                <div class="chat-vis-axis-tooltip-trigger">
-                  <i class="icon icon-info size-16" />
-                </div>
-                <template #content>
-                  <span>※ 결과값이 모두 동일한 컬럼은 축 후보에서 제외됩니다.</span>
+
+          <!-- 셀렉박스 기반 축 설정 폼 -->
+          <div class="chat-vis-add-form">
+            <!-- 1+2+4. 범례 / X축 / Y축 한 줄 -->
+            <div class="chat-vis-add-form-selectors">
+              <!-- 범례 -->
+              <div class="chat-vis-add-form-field">
+                <span class="chat-vis-add-form-label"> <i class="icon-axis-arrow size-14"></i>범례 </span>
+                <UiSelect
+                  v-model="addLegend"
+                  :options="legendOptions"
+                  placeholder="범례 선택"
+                  size="sm"
+                />
+              </div>
+              <!-- X축 -->
+              <div class="chat-vis-add-form-field">
+                <span class="chat-vis-add-form-label"> <i class="icon-axis-arrow size-14"></i>X축 </span>
+                <UiSelect
+                  v-model="addXAxis"
+                  :options="xAxisOptions"
+                  placeholder="X축 선택"
+                  size="sm"
+                  :disabled="!addLegend"
+                />
+              </div>
+              <!-- Y축 -->
+              <div class="chat-vis-add-form-field">
+                <span class="chat-vis-add-form-label">Y축</span>
+                <!-- 단일 Y축 모드 -->
+                <template v-if="!isMultiYMode">
+                  <UiSelect
+                    v-model="addYAxis"
+                    :options="yAxisOptions"
+                    placeholder="Y축 선택"
+                    size="sm"
+                  />
                 </template>
-              </UiTooltip>
+                <!-- 복수 Y축 모드 -->
+                <template v-else>
+                  <div class="chat-vis-add-y-wrap">
+                    <div class="chat-vis-add-y-select">
+                      <UiSelect
+                        model-value=""
+                        :options="[]"
+                        :placeholder="isYModalApplied ? yModalAppliedLabel : '복수 후보: 톱니바퀴로 설정'"
+                        size="sm"
+                        disabled
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      class="chat-vis-add-y-gear"
+                      :class="{ 'is-applied': isYModalApplied }"
+                      title="Y축 설정"
+                      @click="isYAxisModalOpen = true"
+                    >
+                      <i class="icon-settings size-16"></i>
+                    </button>
+                  </div>
+                </template>
+              </div>
             </div>
-            <div class="chat-vis-axis-columns">
-              <div
-                v-for="col in addAxisSettings"
-                :key="col.key"
-                class="chat-vis-axis-col"
-              >
-                <div class="chat-vis-axis-col-label">
-                  <span class="chat-vis-axis-col-name">{{ col.label }}</span>
-                  <span
-                    v-if="col.key === getInferredSeriesKeyForAdd()"
-                    class="chat-vis-axis-series-badge"
-                    title="그룹 막대의 시리즈(범례)로 자동 사용됩니다"
-                    >시리즈</span
-                  >
-                </div>
-                <div class="chat-vis-axis-buttons">
-                  <button
-                    type="button"
-                    class="chat-vis-axis-btn"
-                    :class="{ 'is-active': col.role === 'X' }"
-                    @click="onToggleAxisRole(addAxisSettings, col.key, 'X')"
-                  >
-                    X
-                  </button>
-                  <button
-                    type="button"
-                    class="chat-vis-axis-btn"
-                    :class="{ 'is-active': col.role === 'YL' }"
-                    :disabled="!col.canMetric"
-                    @click="onToggleAxisRole(addAxisSettings, col.key, 'YL')"
-                  >
-                    YL
-                  </button>
-                  <button
-                    v-if="showAxisYRButton"
-                    type="button"
-                    class="chat-vis-axis-btn"
-                    :class="{ 'is-active': col.role === 'YR' }"
-                    :disabled="!col.canMetric"
-                    @click="onToggleAxisRole(addAxisSettings, col.key, 'YR')"
-                  >
-                    YR
-                  </button>
-                </div>
+
+            <!-- 3. 케이스 안내 박스 -->
+            <div
+              v-if="showModeHint"
+              class="chat-vis-mode-hint"
+              :class="isGroupMode ? 'is-group' : 'is-aggregate'"
+            >
+              <i class="icon-info size-14"></i>
+              <div class="chat-vis-mode-hint-text">
+                <template v-if="isGroupMode">
+                  <strong>그룹 모드</strong> — X축 항목 안에서 범례 기준으로 그룹핑됩니다.<br />
+                  <span class="chat-vis-mode-hint-example">
+                    예: {{ resolveColumnLabel(addXAxis) }} × {{ resolveColumnLabel(addLegend) }} →
+                    {{ resolveColumnLabel(addXAxis) }} 항목당 {{ resolveColumnLabel(addLegend) }} 수만큼 막대 생성
+                  </span>
+                </template>
+                <template v-else>
+                  <strong>집계 모드</strong> — X축 항목별 합산 값을 단일 막대/선으로 표시합니다.<br />
+                  <span class="chat-vis-mode-hint-example">
+                    예: {{ resolveColumnLabel(addXAxis) }} = {{ resolveColumnLabel(addLegend) }} →
+                    {{ resolveColumnLabel(addXAxis) }} 항목당 막대 1개
+                  </span>
+                </template>
+              </div>
+            </div>
+
+            <!-- Y축 복수 모드 안내 -->
+            <div
+              v-if="isMultiYMode && !isYModalApplied"
+              class="chat-vis-y-hint"
+            >
+              <i class="icon-info size-14"></i>
+              <span
+                >Y축 후보가 여러 개입니다.
                 <button
                   type="button"
-                  class="chat-vis-axis-reset"
-                  title="축 해제"
-                  @click="onResetAxisRole(addAxisSettings, col.key)"
+                  class="chat-vis-y-hint-btn"
+                  @click="isYAxisModalOpen = true"
                 >
-                  <i class="icon-subtract size-12"></i>
+                  톱니바퀴</button
+                >를 눌러 YL·YR 축을 설정해 주세요.</span
+              >
+            </div>
+
+            <!-- 5. 차트 종류 버튼 그룹 (단일 Y축 모드이고 범례 + X축 선택 후) -->
+            <div
+              v-if="showModeHint && !isMultiYMode"
+              class="chat-vis-add-form-row"
+            >
+              <span class="chat-vis-add-form-label">차트</span>
+              <div class="chat-vis-chart-type-buttons">
+                <button
+                  type="button"
+                  class="chat-vis-type-btn"
+                  :class="{ 'is-active': addChartType === 'bar' }"
+                  title="막대 차트"
+                  @click="addChartType = 'bar'"
+                >
+                  <i class="icon-bar-chart size-20"></i>
+                </button>
+                <button
+                  type="button"
+                  class="chat-vis-type-btn"
+                  :class="{ 'is-active': addChartType === 'line' }"
+                  title="라인 차트"
+                  @click="addChartType = 'line'"
+                >
+                  <i class="icon-line-chart size-20"></i>
+                </button>
+                <button
+                  type="button"
+                  class="chat-vis-type-btn"
+                  :class="{ 'is-active': addChartType === 'pie' }"
+                  title="파이 차트"
+                  @click="addChartType = 'pie'"
+                >
+                  <i class="icon-pie-chart size-20"></i>
                 </button>
               </div>
             </div>
           </div>
+
           <!-- 유효성 에러 -->
           <div
             v-if="addChartError"
@@ -251,6 +335,18 @@
             {{ addChartError }}
           </div>
         </div>
+
+        <!-- Y축 설정 모달 -->
+        <ChartYAxisModal
+          :is-open="isYAxisModalOpen"
+          :options="yAxisOptions"
+          :initial-y-l="addYL"
+          :initial-y-r="addYR"
+          :initial-y-l-type="addYLType"
+          :initial-y-r-type="addYRType"
+          @close="isYAxisModalOpen = false"
+          @apply="onApplyYAxisModal"
+        />
       </div>
     </div>
 
@@ -262,8 +358,8 @@
         @click="toggleSection('charts')"
       >
         <div class="chat-vis-section-header-left">
-          <span class="chat-vis-section-title">차트</span>
-          <span class="chat-vis-section-subtitle">생성된 차트 축을 바꾸거나 차트 유형을 변경하여 볼 수 있습니다</span>
+          <span class="chat-vis-section-title">생성된 차트</span>
+          <span class="chat-vis-section-subtitle">축 또는 차트 유형을 변경할 수 있습니다</span>
         </div>
         <i
           class="icon-chevron-down size-24 chat-vis-section-arrow"
@@ -296,6 +392,10 @@
                 class="chat-vis-card-badge"
                 >{{ badge }}</span
               >
+              <span class="chat-vis-card-edit-label">
+                <i class="icon-adjustments-horizontal size-11"></i>
+                축 수정
+              </span>
             </div>
             <button
               type="button"
@@ -327,90 +427,121 @@
               </button>
             </div>
           </div>
-          <!-- 축 설정 + 차트 타입 -->
-          <div class="chat-vis-card-toolbar">
-            <div class="chat-vis-axis-row">
-              <div class="chat-vis-axis-icon">
-                <i class="icon-axis-arrow size-14"></i>
-                <span>축 설정</span>
-              </div>
-              <div class="chat-vis-axis-columns">
-                <div
-                  v-for="col in card.axisSettings"
-                  :key="col.key"
-                  class="chat-vis-axis-col"
-                >
-                  <div class="chat-vis-axis-col-label">
-                    <span class="chat-vis-axis-col-name">{{ col.label }}</span>
-                    <span
-                      v-if="col.key === getInferredSeriesKeyForCard(card)"
-                      class="chat-vis-axis-series-badge"
-                      title="그룹 막대의 시리즈(범례)로 자동 사용됩니다"
-                      >시리즈</span
-                    >
-                  </div>
-                  <div class="chat-vis-axis-buttons">
-                    <button
-                      type="button"
-                      class="chat-vis-axis-btn"
-                      :class="{ 'is-active': col.role === 'X' }"
-                      @click="onToggleCardAxisRole(card, col.key, 'X')"
-                    >
-                      X
-                    </button>
-                    <button
-                      type="button"
-                      class="chat-vis-axis-btn"
-                      :class="{ 'is-active': col.role === 'YL' }"
-                      :disabled="!col.canMetric"
-                      @click="onToggleCardAxisRole(card, col.key, 'YL')"
-                    >
-                      YL
-                    </button>
-                    <button
-                      v-if="showAxisYRButton"
-                      type="button"
-                      class="chat-vis-axis-btn"
-                      :class="{ 'is-active': col.role === 'YR' }"
-                      :disabled="!col.canMetric"
-                      @click="onToggleCardAxisRole(card, col.key, 'YR')"
-                    >
-                      YR
-                    </button>
-                  </div>
+          <!-- 축 수정 (셀렉박스 기반) -->
+          <div
+            v-if="cardEditState[card.id]"
+            class="chat-vis-card-toolbar"
+          >
+            <div class="chat-vis-add-form">
+              <!-- 범례 / X축 / Y축 한 줄 -->
+              <div class="chat-vis-add-form-selectors">
+                <!-- 범례 -->
+                <div class="chat-vis-add-form-field">
+                  <span class="chat-vis-add-form-label"> <i class="icon-axis-arrow size-14"></i>범례 </span>
+                  <UiSelect
+                    v-model="cardEditState[card.id].legend"
+                    :options="legendOptions"
+                    placeholder="범례 선택"
+                    size="sm"
+                    @update:model-value="onCardFormChange(card)"
+                  />
+                </div>
+                <!-- X축 -->
+                <div class="chat-vis-add-form-field">
+                  <span class="chat-vis-add-form-label"> <i class="icon-axis-arrow size-14"></i>X축 </span>
+                  <UiSelect
+                    v-model="cardEditState[card.id].xAxis"
+                    :options="xAxisOptions"
+                    placeholder="X축 선택"
+                    size="sm"
+                    @update:model-value="onCardFormChange(card)"
+                  />
+                </div>
+                <!-- Y축 -->
+                <div class="chat-vis-add-form-field">
+                  <span class="chat-vis-add-form-label">Y축</span>
+                  <!-- 단일 Y축 -->
+                  <template v-if="!isMultiYMode">
+                    <UiSelect
+                      v-model="cardEditState[card.id].yAxis"
+                      :options="yAxisOptions"
+                      placeholder="Y축 선택"
+                      size="sm"
+                      @update:model-value="onCardFormChange(card)"
+                    />
+                  </template>
+                  <!-- 복수 Y축 -->
+                  <template v-else>
+                    <div class="chat-vis-add-y-wrap">
+                      <div class="chat-vis-add-y-select">
+                        <UiSelect
+                          model-value=""
+                          :options="[]"
+                          :placeholder="
+                            cardEditState[card.id].isYModalApplied ? cardYModalLabel(card.id) : '톱니바퀴로 설정'
+                          "
+                          size="sm"
+                          disabled
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        class="chat-vis-add-y-gear"
+                        :class="{ 'is-applied': cardEditState[card.id].isYModalApplied }"
+                        title="Y축 설정"
+                        @click="cardEditState[card.id].isYModalOpen = true"
+                      >
+                        <i class="icon-settings size-16"></i>
+                      </button>
+                    </div>
+                  </template>
                 </div>
               </div>
+              <!-- 차트 타입 버튼 (단일 Y축 모드만) -->
+              <div
+                v-if="!isMultiYMode"
+                class="chat-vis-chart-type-buttons"
+              >
+                <button
+                  type="button"
+                  class="chat-vis-type-btn"
+                  :class="{ 'is-active': card.chartType === 'bar' }"
+                  title="막대 차트"
+                  @click="onChangeCardChartType(card, 'bar')"
+                >
+                  <i class="icon-bar-chart size-20"></i>
+                </button>
+                <button
+                  type="button"
+                  class="chat-vis-type-btn"
+                  :class="{ 'is-active': card.chartType === 'line' }"
+                  title="라인 차트"
+                  @click="onChangeCardChartType(card, 'line')"
+                >
+                  <i class="icon-line-chart size-20"></i>
+                </button>
+                <button
+                  type="button"
+                  class="chat-vis-type-btn"
+                  :class="{ 'is-active': card.chartType === 'pie' }"
+                  title="파이 차트"
+                  @click="onChangeCardChartType(card, 'pie')"
+                >
+                  <i class="icon-pie-chart size-20"></i>
+                </button>
+              </div>
             </div>
-            <!-- 차트 타입 아이콘 -->
-            <div class="chat-vis-chart-type-buttons">
-              <button
-                type="button"
-                class="chat-vis-type-btn"
-                :class="{ 'is-active': card.chartType === 'bar' }"
-                title="막대 차트"
-                @click="onChangeCardChartType(card, 'bar')"
-              >
-                <i class="icon-bar-chart size-20"></i>
-              </button>
-              <button
-                type="button"
-                class="chat-vis-type-btn"
-                :class="{ 'is-active': card.chartType === 'line' }"
-                title="라인 차트"
-                @click="onChangeCardChartType(card, 'line')"
-              >
-                <i class="icon-line-chart size-20"></i>
-              </button>
-              <button
-                type="button"
-                class="chat-vis-type-btn"
-                :class="{ 'is-active': card.chartType === 'pie' }"
-                title="파이 차트"
-                @click="onChangeCardChartType(card, 'pie')"
-              >
-                <i class="icon-pie-chart size-20"></i>
-              </button>
-            </div>
+            <!-- 카드별 Y축 설정 모달 -->
+            <ChartYAxisModal
+              :is-open="cardEditState[card.id].isYModalOpen"
+              :options="yAxisOptions"
+              :initial-y-l="cardEditState[card.id].yL"
+              :initial-y-r="cardEditState[card.id].yR"
+              :initial-y-l-type="cardEditState[card.id].yLType"
+              :initial-y-r-type="cardEditState[card.id].yRType"
+              @close="cardEditState[card.id].isYModalOpen = false"
+              @apply="onCardYModalApply(card, $event)"
+            />
           </div>
           <!-- 차트 영역 -->
           <div
@@ -445,10 +576,17 @@
 </template>
 
 <script setup lang="ts">
-import type { VisualizationChartSelection, VisualizationChartType, VisualizationViewModel } from '~/types/chat'
+import type {
+  VisualizationChartSelection,
+  VisualizationChartType,
+  VisualizationSelectOption,
+  VisualizationViewModel,
+} from '~/types/chat'
 import type { TableColumn } from '~/types/table'
 import {
   buildChartModel,
+  buildChartTargetOptions,
+  buildMetricOptions,
   buildTableModel,
   getUniqueStatIdsFromRows,
   inferSeriesKeyFromChartTargets,
@@ -485,12 +623,109 @@ interface ChartCardState {
   axisSettings: ColumnAxisSetting[]
   configVersion: number
   statIdFilter: string
+  /** 새 UI에서 생성 시 저장되는 selection (카드 축 수동 편집 전까지 사용) */
+  initialSelection?: VisualizationChartSelection
 }
 
-const addAxisSettings = ref<ColumnAxisSetting[]>([])
+interface CardEditState {
+  legend: string
+  xAxis: string
+  yAxis: string
+  yL: string
+  yR: string
+  yLType: 'bar' | 'line'
+  yRType: 'bar' | 'line'
+  isYModalOpen: boolean
+  isYModalApplied: boolean
+}
+
+// ===== 카드 편집 폼 상태 (카드 id → 폼 상태) =====
+const cardEditState = ref<Record<string, CardEditState>>({})
+
+const initCardEditState = (cardId: string, sel?: VisualizationChartSelection) => {
+  const yOpts = yAxisOptions.value
+  cardEditState.value[cardId] = {
+    legend: sel?.seriesKey ?? legendOptions.value[0]?.value ?? '',
+    xAxis: sel?.chartTargetKey ?? xAxisOptions.value[0]?.value ?? '',
+    yAxis: (!sel?.dualAxis ? sel?.yAxisKeys[0] : undefined) ?? yOpts[0]?.value ?? '',
+    yL: (sel?.dualAxis ? sel?.yAxisKeys[0] : undefined) ?? yOpts[0]?.value ?? '',
+    yR: (sel?.dualAxis ? sel?.yAxisKeys[1] : undefined) ?? yOpts[1]?.value ?? yOpts[0]?.value ?? '',
+    yLType: sel?.ylChartType ?? 'bar',
+    yRType: sel?.yrChartType ?? 'line',
+    isYModalOpen: false,
+    isYModalApplied: !!sel?.dualAxis,
+  }
+}
+
+const cardYModalLabel = (cardId: string) => {
+  const s = cardEditState.value[cardId]
+  if (!s) return ''
+  const ylLabel = yAxisOptions.value.find((o) => o.value === s.yL)?.label ?? s.yL
+  const yrLabel = yAxisOptions.value.find((o) => o.value === s.yR)?.label ?? s.yR
+  const ylT = s.yLType === 'bar' ? '막대' : '라인'
+  const yrT = s.yRType === 'bar' ? '막대' : '라인'
+  return `YL: ${ylLabel}(${ylT}) / YR: ${yrLabel}(${yrT})`
+}
+
+const onCardFormChange = (card: ChartCardState) => {
+  const edit = cardEditState.value[card.id]
+  if (!edit) return
+  const isGroup = edit.legend !== edit.xAxis
+  const isDualAxis = isMultiYMode.value && !isGroup
+  const yKeys = isDualAxis ? [edit.yL, edit.yR].filter(Boolean) : [edit.yAxis]
+  const effectiveType: VisualizationChartType = isDualAxis
+    ? edit.yLType === edit.yRType
+      ? edit.yLType
+      : 'mixed'
+    : card.chartType
+  card.initialSelection = {
+    chartType: effectiveType,
+    chartTargetKey: edit.xAxis,
+    yAxisKeys: yKeys,
+    seriesKey: edit.legend,
+    stack: false,
+    dualAxis: isDualAxis,
+    statIdFilter: card.statIdFilter || undefined,
+    ylChartType: isDualAxis ? edit.yLType : undefined,
+    yrChartType: isDualAxis ? edit.yRType : undefined,
+  }
+  card.chartType = effectiveType
+  card.axisSettings = buildAxisSettingsFromNewState(edit.xAxis, edit.yAxis, edit.yL, edit.yR)
+  card.configVersion++
+}
+
+const onCardYModalApply = (
+  card: ChartCardState,
+  value: { yl: string; yr: string; ylChartType: 'bar' | 'line'; yrChartType: 'bar' | 'line' },
+) => {
+  const edit = cardEditState.value[card.id]
+  if (!edit) return
+  edit.yL = value.yl
+  edit.yR = value.yr
+  edit.yLType = value.ylChartType
+  edit.yRType = value.yrChartType
+  edit.isYModalApplied = true
+  edit.isYModalOpen = false
+  onCardFormChange(card)
+}
+
+// ===== 차트 추가 폼 상태 (셀렉박스 기반) =====
+const addLegend = ref('')
+const addXAxis = ref('')
+const addYAxis = ref('') // 단일 Y축 모드
+const showAddSuccessMsg = ref(false)
+const addYL = ref('') // 복수 Y축 모드 — YL 컬럼
+const addYR = ref('') // 복수 Y축 모드 — YR 컬럼
+const addYLType = ref<'bar' | 'line'>('bar') // 복수 Y축 모드 — YL 차트 타입
+const addYRType = ref<'bar' | 'line'>('line') // 복수 Y축 모드 — YR 차트 타입
+const addChartType = ref<VisualizationChartType>('bar')
 const addChartError = ref('')
+const isYAxisModalOpen = ref(false)
+const isYModalApplied = ref(false)
+
 const chartCards = ref<ChartCardState[]>([])
 const selectedStatIdForAdd = ref('')
+const addFormInitialized = ref(false)
 
 const canRefresh = computed(() => typeof props.onRefresh === 'function')
 const currentVisualizationView = computed(() => props.viewModel)
@@ -505,6 +740,43 @@ const chartTargetKeysFromSchema = computed(
   () => currentVisualizationView.value?.schema?.selectableOptions.chartTargetKeys ?? [],
 )
 const hasStatIdColumn = computed(() => !!currentVisualizationView.value?.schema?.statIdColumnKey)
+
+// ===== 셀렉박스 옵션 =====
+const legendOptions = computed<VisualizationSelectOption[]>(() =>
+  buildChartTargetOptions(currentVisualizationView.value?.schema ?? null),
+)
+const xAxisOptions = computed<VisualizationSelectOption[]>(() =>
+  buildChartTargetOptions(currentVisualizationView.value?.schema ?? null),
+)
+const yAxisOptions = computed<VisualizationSelectOption[]>(() =>
+  buildMetricOptions(currentVisualizationView.value?.schema ?? null),
+)
+
+// 복수 Y축 모드 여부 (y 후보가 2개 이상)
+const isMultiYMode = computed(() => currentVisualizationView.value?.schema?.selectableOptions.canDualAxis === true)
+
+// 케이스 안내 표시 조건
+const showModeHint = computed(() => !!addLegend.value && !!addXAxis.value)
+const isGroupMode = computed(() => showModeHint.value && addLegend.value !== addXAxis.value)
+
+// 복수 Y축 적용 후 플레이스홀더 레이블
+const yModalAppliedLabel = computed(() => {
+  if (!isYModalApplied.value) return ''
+  const ylLabel = yAxisOptions.value.find((o) => o.value === addYL.value)?.label ?? addYL.value
+  const yrLabel = yAxisOptions.value.find((o) => o.value === addYR.value)?.label ?? addYR.value
+  const ylTypeLabel = addYLType.value === 'bar' ? '막대' : '라인'
+  const yrTypeLabel = addYRType.value === 'bar' ? '막대' : '라인'
+  return `YL: ${ylLabel}(${ylTypeLabel}) / YR: ${yrLabel}(${yrTypeLabel})`
+})
+
+// 차트 생성 버튼 활성화 조건
+const canCreateChart = computed(() => {
+  if (!addLegend.value || !addXAxis.value) return false
+  if (isMultiYMode.value && !isYModalApplied.value) return false
+  if (!isMultiYMode.value && !addYAxis.value) return false
+  if (hasStatIdColumn.value && uniqueStatIdsForChart.value.length > 1 && !selectedStatIdForAdd.value) return false
+  return true
+})
 
 const uniqueStatIdsForChart = computed(() => {
   const vm = currentVisualizationView.value
@@ -528,21 +800,6 @@ watch(
   },
   { immediate: true },
 )
-
-const clearYRRoles = (settings: ColumnAxisSetting[]) => {
-  settings.forEach((s) => {
-    if (s.role === 'YR') s.role = ''
-  })
-}
-
-watch(showAxisYRButton, (show) => {
-  if (show) return
-  clearYRRoles(addAxisSettings.value)
-  chartCards.value.forEach((card) => {
-    clearYRRoles(card.axisSettings)
-    card.configVersion++
-  })
-})
 
 const errorMessage = computed(
   () => currentVisualizationView.value?.errorMessage ?? '시각화 데이터를 불러오지 못했습니다.',
@@ -572,78 +829,9 @@ const tableColumns = computed(() => {
 })
 const tableData = computed(() => tableModel.value.data)
 
-const buildAxisSettingsFromSchema = (): ColumnAxisSetting[] => {
-  const schema = currentVisualizationView.value?.schema
-  if (!schema) return []
-
-  const metricKeySet = new Set(schema.metricKeys)
-  const defaultSel = schema.defaultSelection
-  const displayKeys: string[] = []
-  const added = new Set<string>()
-
-  schema.selectableOptions.chartTargetKeys.forEach((key) => {
-    if (!added.has(key)) {
-      displayKeys.push(key)
-      added.add(key)
-    }
-  })
-
-  schema.selectableOptions.yAxisKeys.forEach((key) => {
-    if (!added.has(key)) {
-      displayKeys.push(key)
-      added.add(key)
-    }
-  })
-
-  return displayKeys.map((key) => {
-    let role: AxisRole = ''
-    if (key === defaultSel.chartTargetKey) role = 'X'
-    else {
-      const yIndex = defaultSel.yAxisKeys.indexOf(key)
-      if (yIndex === 0) role = 'YL'
-      if (yIndex === 1 && showAxisYRButton.value) role = 'YR'
-    }
-    return {
-      key,
-      label: resolveColumnLabel(key),
-      role,
-      canMetric: metricKeySet.has(key),
-    }
-  })
-}
-
-const onToggleAxisRole = (settings: ColumnAxisSetting[], key: string, role: AxisRole) => {
-  if (role === 'YR' && !showAxisYRButton.value) return
-
-  const setting = settings.find((s) => s.key === key)
-  if (!setting) return
-
-  if (setting.role === role) {
-    setting.role = ''
-    return
-  }
-
-  if (role === 'X') {
-    settings.forEach((s) => {
-      if (s.role === 'X') s.role = ''
-    })
-  }
-
-  setting.role = role
-}
-
-const onResetAxisRole = (settings: ColumnAxisSetting[], key: string) => {
-  const setting = settings.find((s) => s.key === key)
-  if (setting) setting.role = ''
-}
-
-const onToggleCardAxisRole = (card: ChartCardState, key: string, role: AxisRole) => {
-  onToggleAxisRole(card.axisSettings, key, role)
-  card.configVersion++
-}
-
 const onChangeCardChartType = (card: ChartCardState, chartType: VisualizationChartType) => {
   card.chartType = chartType
+  if (card.initialSelection) card.initialSelection = { ...card.initialSelection, chartType }
   card.configVersion++
 }
 
@@ -672,14 +860,18 @@ const axisSettingsToSelection = (
   }
 }
 
+/**
+ * 카드의 시리즈 키 반환.
+ * initialSelection이 있으면 그 값 기준 (새 UI에서 생성된 카드),
+ * 없으면 axisSettings에서 추론 (수동 편집된 카드).
+ */
 const getInferredSeriesKeyForCard = (card: ChartCardState) => {
+  if (card.initialSelection) {
+    const { seriesKey, chartTargetKey } = card.initialSelection
+    // seriesKey === chartTargetKey인 경우(집계 모드) sanitizeSelection이 ''으로 처리하므로 여기도 ''
+    return seriesKey !== chartTargetKey ? seriesKey : ''
+  }
   const xKey = card.axisSettings.find((s) => s.role === 'X')?.key ?? ''
-  if (!xKey) return ''
-  return inferSeriesKeyFromChartTargets(chartTargetKeysFromSchema.value, xKey)
-}
-
-const getInferredSeriesKeyForAdd = () => {
-  const xKey = addAxisSettings.value.find((s) => s.role === 'X')?.key ?? ''
   if (!xKey) return ''
   return inferSeriesKeyFromChartTargets(chartTargetKeysFromSchema.value, xKey)
 }
@@ -691,33 +883,68 @@ const isPieChartUnavailableForCard = (card: ChartCardState) => {
   const vm = currentVisualizationView.value
   const schema = vm?.schema
   if (!vm || !schema || card.chartType !== 'pie') return false
-  const selection = axisSettingsToSelection(
-    card.axisSettings,
-    card.chartType,
-    schema.selectableOptions.canDualAxis,
-    schema.selectableOptions.chartTargetKeys,
-    card.statIdFilter ?? '',
-  )
+  const selection = card.initialSelection
+    ? card.initialSelection
+    : axisSettingsToSelection(
+        card.axisSettings,
+        card.chartType,
+        schema.selectableOptions.canDualAxis,
+        schema.selectableOptions.chartTargetKeys,
+        card.statIdFilter ?? '',
+      )
   return isPieChartUnavailable(vm, selection)
 }
 
-const canCreateChart = computed(() => {
-  const hasX = addAxisSettings.value.some((s) => s.role === 'X')
-  const hasY = addAxisSettings.value.some((s) => s.role === 'YL' || s.role === 'YR')
-  if (!hasX || !hasY) return false
-  if (hasStatIdColumn.value && uniqueStatIdsForChart.value.length === 0) return false
-  if (hasStatIdColumn.value && uniqueStatIdsForChart.value.length > 1 && !selectedStatIdForAdd.value) {
-    return false
-  }
-  return true
-})
-
 const createCardId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 
+/**
+ * 새 UI 상태 → axisSettings 변환.
+ * 카드 툴바(섹션 3) 표시용으로만 사용하며 렌더링은 initialSelection을 따른다.
+ */
+const buildAxisSettingsFromNewState = (
+  xKey: string,
+  yKey: string,
+  ylKey: string,
+  yrKey: string,
+): ColumnAxisSetting[] => {
+  const schema = currentVisualizationView.value?.schema
+  if (!schema) return []
+  const isMulti = isMultiYMode.value
+  const metricKeySet = new Set(schema.metricKeys)
+  const displayKeys: string[] = []
+  const added = new Set<string>()
+  schema.selectableOptions.chartTargetKeys.forEach((k) => {
+    if (!added.has(k)) {
+      displayKeys.push(k)
+      added.add(k)
+    }
+  })
+  schema.selectableOptions.yAxisKeys.forEach((k) => {
+    if (!added.has(k)) {
+      displayKeys.push(k)
+      added.add(k)
+    }
+  })
+  return displayKeys.map((key) => {
+    let role: AxisRole = ''
+    if (key === xKey) role = 'X'
+    else if (!isMulti && key === yKey) role = 'YL'
+    else if (isMulti && key === ylKey) role = 'YL'
+    else if (isMulti && key === yrKey) role = 'YR'
+    return { key, label: resolveColumnLabel(key), role, canMetric: metricKeySet.has(key) }
+  })
+}
+
+// ===== 차트 생성 =====
 const onCreateChart = () => {
   if (!canCreateChart.value) {
-    addChartError.value = 'X축과 Y축을 각각 1개 이상 선택해주세요.'
-    if (hasStatIdColumn.value && uniqueStatIdsForChart.value.length > 1 && !selectedStatIdForAdd.value) {
+    if (!addLegend.value || !addXAxis.value) {
+      addChartError.value = '범례와 X축을 선택해주세요.'
+    } else if (isMultiYMode.value && !isYModalApplied.value) {
+      addChartError.value = '톱니바퀴를 눌러 Y축 설정을 완료해주세요.'
+    } else if (!isMultiYMode.value && !addYAxis.value) {
+      addChartError.value = 'Y축을 선택해주세요.'
+    } else if (hasStatIdColumn.value && uniqueStatIdsForChart.value.length > 1 && !selectedStatIdForAdd.value) {
       addChartError.value = '차트를 만들 통계를 먼저 선택해주세요.'
     }
     return
@@ -731,23 +958,58 @@ const onCreateChart = () => {
         ? uniqueStatIdsForChart.value[0]
         : ''
 
-  const newCard: ChartCardState = {
+  const yKeys = isMultiYMode.value ? [addYL.value, addYR.value].filter(Boolean) : [addYAxis.value]
+  const isGroup = addLegend.value !== addXAxis.value
+  const isDualAxis = isMultiYMode.value && !isGroup
+
+  // 이축 모드 차트 타입: YL·YR이 같으면 단일 타입, 다르면 'mixed'
+  const effectiveChartType: VisualizationChartType = isDualAxis
+    ? addYLType.value === addYRType.value
+      ? addYLType.value
+      : 'mixed'
+    : addChartType.value
+
+  // initialSelection: 새 UI 선택 → VisualizationChartSelection 직접 구성
+  // seriesKey = addLegend (집계 모드 시 sanitizeSelection이 '' 처리)
+  const initialSelection: VisualizationChartSelection = {
+    chartType: effectiveChartType,
+    chartTargetKey: addXAxis.value,
+    yAxisKeys: yKeys,
+    seriesKey: addLegend.value,
+    stack: false,
+    dualAxis: isDualAxis,
+    statIdFilter: statId || undefined,
+    ylChartType: isDualAxis ? addYLType.value : undefined,
+    yrChartType: isDualAxis ? addYRType.value : undefined,
+  }
+
+  chartCards.value.push({
     id: createCardId(),
-    chartType: currentVisualizationView.value?.schema?.defaultSelection.chartType ?? 'bar',
-    axisSettings: JSON.parse(JSON.stringify(addAxisSettings.value)) as ColumnAxisSetting[],
+    chartType: effectiveChartType,
+    axisSettings: buildAxisSettingsFromNewState(addXAxis.value, addYAxis.value, addYL.value, addYR.value),
     configVersion: 0,
     statIdFilter: statId,
-  }
-  chartCards.value.push(newCard)
+    initialSelection,
+  })
+
+  const newCard = chartCards.value[chartCards.value.length - 1]
+  initCardEditState(newCard.id, initialSelection)
+
+  showAddSuccessMsg.value = true
+  setTimeout(() => {
+    showAddSuccessMsg.value = false
+  }, 2000)
 }
 
 const onSelectCardStatId = (card: ChartCardState, statId: string) => {
   card.statIdFilter = statId
+  if (card.initialSelection) card.initialSelection = { ...card.initialSelection, statIdFilter: statId || undefined }
   card.configVersion++
 }
 
 const onRemoveChart = (id: string) => {
   chartCards.value = chartCards.value.filter((card) => card.id !== id)
+  delete cardEditState.value[id]
 }
 
 const getChartBadges = (card: ChartCardState): string[] => {
@@ -776,13 +1038,17 @@ const chartConfigMap = computed<Record<string, Record<string, unknown>>>(() => {
       mapped[card.id] = cached.config
       return
     }
-    const selection = axisSettingsToSelection(
-      card.axisSettings,
-      card.chartType,
-      canDualAxis,
-      schema.selectableOptions.chartTargetKeys,
-      card.statIdFilter ?? '',
-    )
+    // initialSelection이 있으면 직접 사용 (새 UI 생성 카드)
+    // 없으면 axisSettings에서 파생 (수동 편집된 카드)
+    const selection = card.initialSelection
+      ? card.initialSelection
+      : axisSettingsToSelection(
+          card.axisSettings,
+          card.chartType,
+          canDualAxis,
+          schema.selectableOptions.chartTargetKeys,
+          card.statIdFilter ?? '',
+        )
     const config = buildChartModel(vm, selection)
     if (config) {
       configCache.set(card.id, { version: card.configVersion, config })
@@ -809,6 +1075,43 @@ const emptyChartMessage = computed(() => {
   return '위 "차트 추가" 영역에서 축을 설정한 뒤 차트를 생성하세요.'
 })
 
+// ===== Y축 설정 모달 =====
+const onApplyYAxisModal = (value: {
+  yl: string
+  yr: string
+  ylChartType: 'bar' | 'line'
+  yrChartType: 'bar' | 'line'
+}) => {
+  addYL.value = value.yl
+  addYR.value = value.yr
+  addYLType.value = value.ylChartType
+  addYRType.value = value.yrChartType
+  isYModalApplied.value = true
+  isYAxisModalOpen.value = false
+}
+
+// ===== 폼 초기화 =====
+const initAddForm = () => {
+  const schema = currentVisualizationView.value?.schema
+  if (!schema) return
+
+  addChartType.value = schema.defaultSelection.chartType
+  addLegend.value = legendOptions.value[0]?.value ?? ''
+  addXAxis.value = xAxisOptions.value[0]?.value ?? ''
+  addChartError.value = ''
+
+  if (isMultiYMode.value) {
+    addYL.value = yAxisOptions.value[0]?.value ?? ''
+    addYR.value = yAxisOptions.value[1]?.value ?? yAxisOptions.value[0]?.value ?? ''
+    addYLType.value = 'bar'
+    addYRType.value = 'line'
+    isYModalApplied.value = false
+    isYAxisModalOpen.value = false
+  } else {
+    addYAxis.value = yAxisOptions.value[0]?.value ?? ''
+  }
+}
+
 const toggleSection = (section: 'result' | 'addChart' | 'charts') => {
   sectionOpen[section] = !sectionOpen[section]
 }
@@ -822,36 +1125,36 @@ const handleRefresh = async () => {
   await props.onRefresh()
 }
 
-const initAxisSettings = () => {
-  addAxisSettings.value = buildAxisSettingsFromSchema()
-  addChartError.value = ''
-}
-
+// 패널 열기/messageId 변경 시 차트 카드 + 폼 초기화
 watch(
   () => [props.open, props.viewModel?.messageId] as const,
   ([open]) => {
     chartCards.value = []
+    cardEditState.value = {}
     configCache.clear()
+    addFormInitialized.value = false // messageId 변경 시 폼 재초기화 트리거
     if (!open) {
       selectedStatIdForAdd.value = ''
       addChartError.value = ''
       isSqlOpen.value = false
+      isYAxisModalOpen.value = false
+      isYModalApplied.value = false
     }
   },
   { immediate: true },
 )
 
-const axisInitialized = ref(false)
+// viewModel status가 success가 되면 폼 초기화 (최초 1회)
 watch(
   () => [props.viewModel?.messageId, props.open, currentVisualizationView.value?.status] as const,
   () => {
     if (!props.open || !currentVisualizationView.value || currentVisualizationView.value.status !== 'success') {
-      axisInitialized.value = false
+      addFormInitialized.value = false
       return
     }
-    if (!axisInitialized.value) {
-      initAxisSettings()
-      axisInitialized.value = true
+    if (!addFormInitialized.value) {
+      initAddForm()
+      addFormInitialized.value = true
     }
   },
   { immediate: true },

@@ -8,12 +8,50 @@
       v-if="!modelValue.outputSections.length"
       class="com-setting-hint survey-output-sections__empty"
     >
-      아래에서 섹션 유형을 선택한 뒤 「섹션 추가」를 눌러 주세요.
+      위에서 섹션 유형을 선택한 뒤 「섹션 추가」를 눌러 주세요.
     </p>
 
     <div class="survey-output-sections__list">
+      <!-- 섹션 추가 (맨 위 고정) -->
+      <article class="survey-output-section-card survey-output-section-card--add">
+        <header class="survey-output-section-card__head">
+          <div class="survey-output-section-card__head-main">
+            <span class="survey-output-section-card__order is-add">+</span>
+            <span class="survey-output-section-card__type-badge">섹션 추가</span>
+            <span class="survey-output-section-card__preview">{{ addSectionTypeLabel }}</span>
+          </div>
+        </header>
+        <div class="survey-output-section-card__body">
+          <div class="survey-output-section-card__field">
+            <label class="survey-output-section-card__label">섹션 유형</label>
+            <UiSelect
+              v-model="newBlockType"
+              :options="outputBlockTypeOptions"
+              placeholder="추가할 섹션 유형 선택"
+              size="sm"
+            />
+            <p
+              v-if="getBlockMeta(newBlockType)"
+              class="com-setting-hint survey-output-section-card__type-desc"
+            >
+              {{ getBlockMeta(newBlockType)?.description }}
+            </p>
+          </div>
+          <div class="survey-output-section-card__add-action">
+            <UiButton
+              variant="line-secondary"
+              size="xs"
+              @click="onAddSection"
+            >
+              섹션 추가
+            </UiButton>
+          </div>
+        </div>
+      </article>
+
       <article
         v-for="(block, idx) in modelValue.outputSections"
+        :id="`survey-output-section-${idx}`"
         :key="`${block.id}-${idx}`"
         class="survey-output-section-card"
       >
@@ -200,66 +238,104 @@
           </div>
         </div>
       </article>
-    </div>
 
-    <div class="survey-output-sections__add">
-      <UiSelect
-        v-model="newBlockType"
-        :options="blockTypeOptions"
-        placeholder="추가할 섹션 유형 선택"
-        size="sm"
-      />
-      <UiButton
-        variant="line-secondary"
-        size="xs"
-        @click="onAddSection"
-      >
-        섹션 추가
-      </UiButton>
-    </div>
+      <!-- 마무리 메시지 (closingMessage 최상위 필드) -->
+      <article class="survey-output-section-card survey-output-section-card--closing">
+        <header class="survey-output-section-card__head">
+          <div class="survey-output-section-card__head-main">
+            <span class="survey-output-section-card__order">{{ closingSectionOrder }}</span>
+            <span class="survey-output-section-card__type-badge">{{ getBlockLabel(closingBlock.blockType) }}</span>
+            <span class="survey-output-section-card__preview">{{ closingPreview }}</span>
+          </div>
+        </header>
 
-    <section class="survey-output-closing">
-      <div class="survey-output-closing__head">
-        <span class="com-setting-label">마무리 메시지</span>
-        <UiCheckbox
-          :model-value="hasClosingMessage"
-          label="마무리 응원 메시지 사용"
-          @update:model-value="onClosingToggle"
-        />
-      </div>
-      <p class="com-setting-hint">
-        결과 본문 맨 아래에 번호·헤딩 없이 &lt;h3&gt; 태그 한 줄로 출력되는 단독 블록입니다. (closingMessage 필드)
-      </p>
+        <div class="survey-output-section-card__body">
+          <p class="com-setting-hint survey-output-section-card__type-desc">
+            결과 본문 맨 아래에 번호·헤딩 없이 단독 출력됩니다. (JSON 최상위 closingMessage 필드)
+          </p>
 
-      <div
-        v-if="hasClosingMessage && closingBlock"
-        class="survey-output-closing__body"
-      >
-        <div class="survey-output-section-card__field">
-          <label class="survey-output-section-card__label">HTML 태그</label>
-          <UiInput
-            :model-value="String(closingBlock.params?.tag ?? 'h3')"
-            size="sm"
-            placeholder="h3"
-            @update:model-value="onClosingParamUpdate('tag', String($event ?? 'h3'))"
-          />
-          <span class="com-setting-hint">출력에 사용할 태그 (기본: h3)</span>
+          <div class="survey-output-section-card__field">
+            <label class="survey-output-section-card__label">섹션 유형</label>
+            <UiSelect
+              :model-value="closingBlock.blockType"
+              :options="closingBlockTypeOptions"
+              size="sm"
+              @update:model-value="onClosingBlockTypeChange(String($event ?? ''))"
+            />
+            <p
+              v-if="getBlockMeta(closingBlock.blockType)"
+              class="com-setting-hint survey-output-section-card__type-desc"
+            >
+              {{ getBlockMeta(closingBlock.blockType)?.description }}
+            </p>
+          </div>
+
+          <div class="survey-output-section-card__row">
+            <div class="survey-output-section-card__field is-half">
+              <label class="survey-output-section-card__label">ID</label>
+              <UiInput
+                :model-value="closingBlock.id"
+                size="sm"
+                placeholder="예: closing"
+                @update:model-value="onClosingSectionUpdate('id', String($event ?? ''))"
+              />
+              <span class="com-setting-hint">JSON 식별자 (영문)</span>
+            </div>
+            <div class="survey-output-section-card__field is-half">
+              <label class="survey-output-section-card__label">섹션 제목</label>
+              <UiInput
+                :model-value="closingBlock.title ?? ''"
+                size="sm"
+                placeholder="채팅 결과 헤딩 미사용 시 비워둠"
+                @update:model-value="onClosingSectionUpdate('title', String($event ?? ''))"
+              />
+              <span class="com-setting-hint">마무리 블록은 헤딩 없이 출력</span>
+            </div>
+          </div>
+
+          <div class="survey-output-section-card__field">
+            <label class="survey-output-section-card__label">LLM 출력 지침</label>
+            <UiTextarea
+              :model-value="closingBlock.instruction ?? ''"
+              :rows="3"
+              size="sm"
+              :border="true"
+              :auto-resize="true"
+              :max-rows="6"
+              placeholder="현재 심리 상태에 맞는 한 줄 응원 메시지."
+              @update:model-value="onClosingSectionUpdate('instruction', String($event ?? ''))"
+            />
+          </div>
+
+          <div
+            v-if="getParamFields(closingBlock.blockType).length"
+            class="survey-output-section-card__params"
+          >
+            <span class="survey-output-section-card__params-title">추가 옵션 (params)</span>
+            <div
+              v-for="field in getParamFields(closingBlock.blockType)"
+              :key="`closing-${field.key}`"
+              class="survey-output-section-card__field"
+            >
+              <label class="survey-output-section-card__label">{{ field.label }}</label>
+              <UiInput
+                v-if="field.type === 'text'"
+                :model-value="String(getBlockParamValue(closingBlock, field.key) ?? '')"
+                size="sm"
+                :placeholder="field.placeholder"
+                @update:model-value="onClosingParamUpdate(field.key, String($event ?? ''))"
+              />
+              <span
+                v-if="field.hint"
+                class="com-setting-hint"
+              >
+                {{ field.hint }}
+              </span>
+            </div>
+          </div>
         </div>
-        <div class="survey-output-section-card__field">
-          <label class="survey-output-section-card__label">LLM 출력 지침</label>
-          <UiTextarea
-            :model-value="closingBlock.instruction ?? ''"
-            :rows="2"
-            size="sm"
-            :border="true"
-            :auto-resize="true"
-            :max-rows="4"
-            placeholder="현재 심리 상태에 맞는 한 줄 응원 메시지."
-            @update:model-value="onClosingInstructionUpdate(String($event ?? ''))"
-          />
-        </div>
-      </div>
-    </section>
+      </article>
+    </div>
   </div>
 </template>
 
@@ -267,11 +343,12 @@
 import type { SurveyOutputSectionBlock } from '~/types/agentSurveyConfig'
 import type { SurveyConfigForm } from '~/utils/agent/surveyConfigUtil'
 import {
+  CLOSING_MESSAGE_BLOCK_TYPE,
   createSurveyOutputSectionBlock,
-  DEFAULT_CLOSING_MESSAGE_BLOCK,
   getBlockParamValue,
   getSurveyBlockTypeMeta,
   getSurveyBlockTypeOptions,
+  getSurveyOutputBlockTypeOptions,
   joinTagsParam,
   parseJsonParam,
   setBlockParamValue,
@@ -288,9 +365,14 @@ const emit = defineEmits<{
 }>()
 
 const blockTypeOptions = getSurveyBlockTypeOptions()
+const outputBlockTypeOptions = getSurveyOutputBlockTypeOptions()
+const closingBlockTypeOptions = blockTypeOptions.filter((o) => o.value === CLOSING_MESSAGE_BLOCK_TYPE)
 const newBlockType = ref('risk_badge_summary')
 const jsonParamErrors = ref<Record<string, string>>({})
 const jsonParamDraft = ref<Record<string, string>>({})
+
+const omitRecordKey = (record: Record<string, string>, key: string): Record<string, string> =>
+  Object.fromEntries(Object.entries(record).filter(([entryKey]) => entryKey !== key))
 
 const emitForm = (next: SurveyConfigForm) => emit('update:modelValue', next)
 
@@ -298,8 +380,14 @@ const getBlockMeta = (blockType: string) => getSurveyBlockTypeMeta(blockType)
 const getBlockLabel = (blockType: string) => getSurveyBlockTypeMeta(blockType)?.label ?? blockType
 const getParamFields = (blockType: string) => getSurveyBlockTypeMeta(blockType)?.paramFields ?? []
 
-const hasClosingMessage = computed(() => props.modelValue.closingMessage != null)
+const addSectionTypeLabel = computed(() => getBlockLabel(newBlockType.value))
+
 const closingBlock = computed(() => props.modelValue.closingMessage)
+const closingSectionOrder = computed(() => props.modelValue.outputSections.length + 1)
+const closingPreview = computed(() => {
+  const block = closingBlock.value
+  return block.instruction?.trim() || block.id || '마무리 메시지'
+})
 
 const getJsonParamText = (block: SurveyOutputSectionBlock, key: string) => {
   const draftKey = `${block.id}-${key}`
@@ -318,7 +406,6 @@ const onBlockTypeChange = (idx: number, blockType: string) => {
   const meta = getSurveyBlockTypeMeta(blockType)
   if (!meta) return
 
-  const current = props.modelValue.outputSections[idx]
   const params = meta.defaultParams ? { ...meta.defaultParams } : undefined
   if (blockType === 'cause_analysis' && params) {
     params.topN = props.modelValue.topN
@@ -356,8 +443,8 @@ const onJsonParamUpdate = (idx: number, key: string, raw: string) => {
     return
   }
 
-  delete jsonParamErrors.value[errorKey]
-  delete jsonParamDraft.value[`${block.id}-${key}`]
+  jsonParamErrors.value = omitRecordKey(jsonParamErrors.value, errorKey)
+  jsonParamDraft.value = omitRecordKey(jsonParamDraft.value, `${block.id}-${key}`)
   onParamUpdate(idx, key, parsed)
 }
 
@@ -368,9 +455,32 @@ const onApplyJsonTemplate = (idx: number, blockType: string, key: string) => {
   onParamUpdate(idx, key, template)
 }
 
+/** 섹션 추가 후 해당 카드로 스크롤 */
+const pendingScrollToSectionIdx = ref<number | null>(null)
+
+const scrollToOutputSection = async (idx: number) => {
+  await nextTick()
+  document.getElementById(`survey-output-section-${idx}`)?.scrollIntoView({
+    behavior: 'smooth',
+    block: 'nearest',
+  })
+}
+
+watch(
+  () => props.modelValue.outputSections.length,
+  async (len, prevLen) => {
+    const idx = pendingScrollToSectionIdx.value
+    if (idx == null || len <= prevLen) return
+    await scrollToOutputSection(idx)
+    pendingScrollToSectionIdx.value = null
+  },
+)
+
 const onAddSection = () => {
   if (!newBlockType.value) return
+  const newIdx = props.modelValue.outputSections.length
   const block = createSurveyOutputSectionBlock(newBlockType.value, props.modelValue.topN)
+  pendingScrollToSectionIdx.value = newIdx
   emitForm({
     ...props.modelValue,
     outputSections: [...props.modelValue.outputSections, block],
@@ -392,26 +502,34 @@ const onMoveSection = (idx: number, direction: -1 | 1) => {
   emitForm({ ...props.modelValue, outputSections: next })
 }
 
-const onClosingToggle = (enabled: boolean) => {
+const onClosingSectionUpdate = (key: keyof SurveyOutputSectionBlock, value: string) => {
   emitForm({
     ...props.modelValue,
-    closingMessage: enabled ? (props.modelValue.closingMessage ?? DEFAULT_CLOSING_MESSAGE_BLOCK()) : null,
+    closingMessage: { ...closingBlock.value, [key]: value },
   })
 }
 
-const onClosingInstructionUpdate = (instruction: string) => {
-  if (!props.modelValue.closingMessage) return
+const onClosingBlockTypeChange = (blockType: string) => {
+  const meta = getSurveyBlockTypeMeta(blockType)
+  if (!meta) return
+  const params = meta.defaultParams ? { ...meta.defaultParams } : undefined
   emitForm({
     ...props.modelValue,
-    closingMessage: { ...props.modelValue.closingMessage, instruction },
+    closingMessage: {
+      ...closingBlock.value,
+      blockType,
+      id: closingBlock.value.id || meta.defaultId,
+      title: closingBlock.value.title || meta.defaultTitle,
+      instruction: closingBlock.value.instruction || meta.defaultInstruction,
+      params,
+    },
   })
 }
 
-const onClosingParamUpdate = (key: string, value: string) => {
-  if (!props.modelValue.closingMessage) return
+const onClosingParamUpdate = (key: string, value: unknown) => {
   emitForm({
     ...props.modelValue,
-    closingMessage: setBlockParamValue(props.modelValue.closingMessage, key, value),
+    closingMessage: setBlockParamValue(closingBlock.value, key, value),
   })
 }
 </script>
@@ -439,19 +557,6 @@ const onClosingParamUpdate = (key: string, value: string) => {
     display: flex;
     flex-direction: column;
     gap: 10px;
-  }
-
-  &__add {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding-top: 4px;
-
-    :deep(.ui-select-wrap) {
-      flex: 1;
-      min-width: 0;
-      max-width: 320px;
-    }
   }
 }
 
@@ -497,6 +602,19 @@ const onClosingParamUpdate = (key: string, value: string) => {
     color: #fff;
     font-size: 11px;
     font-weight: $font-weight-semibold;
+
+    &.is-add {
+      background: #e2e8f0;
+      color: $color-text-secondary;
+      font-size: 14px;
+      line-height: 1;
+    }
+  }
+
+  &__add-action {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 4px;
   }
 
   &__type-badge {
@@ -614,33 +732,8 @@ const onClosingParamUpdate = (key: string, value: string) => {
   }
 }
 
-.survey-output-closing {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  border: 1px solid #dce4e9;
-  border-radius: $border-radius-base;
-  background: #fff;
-
-  &__head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-
-    .com-setting-label {
-      width: auto;
-      text-align: left;
-    }
-  }
-
-  &__body {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding-top: 4px;
-    border-top: 1px solid #e2e8f0;
-  }
+.survey-output-section-card--add {
+  border-style: dashed;
+  background: #f8fafc;
 }
 </style>

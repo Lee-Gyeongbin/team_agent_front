@@ -54,6 +54,7 @@ const emit = defineEmits<{
 const subTyOptions = [
   { label: '일반', value: '' },
   { label: '설문', value: 'SURVEY' },
+  { label: '추천', value: 'RECOMMEND' },
 ]
 
 const codes = await getCodes('AT000001')

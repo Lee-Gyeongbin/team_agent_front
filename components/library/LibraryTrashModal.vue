@@ -89,23 +89,7 @@
         <div class="library-trash-card-body">
           <!-- 사용자 질문 -->
           <div class="content-box type-question">
-            <ChatSurvey
-              v-if="isSurveyLibraryCard(item) && getSurveyLibraryConfig(item)"
-              class="library-trash-survey-readonly"
-              readonly
-              :survey-config="getSurveyLibraryConfig(item)!"
-              :initial-answers="parseSurveyAnswersFromPrompt(item.qcontent ?? '')"
-              :theme-icon-class-nm="item.iconClassNm ?? ''"
-              :theme-color-hex="item.colorHex ?? ''"
-            />
-            <ChatTodayMeme
-              v-else-if="isTodayMemeLibraryCard(item) && hasTodayMemeQcontent(item)"
-              class="library-trash-meme-request"
-              display-mode="request"
-              request-delivered
-              :theme-color-hex="item.colorHex ?? ''"
-            />
-            <p v-else>{{ item.qcontent }}</p>
+            <LibraryCardQuestionBody :item="item" />
           </div>
 
           <!-- 시스템 응답 -->
@@ -128,10 +112,8 @@
 </template>
 
 <script setup lang="ts">
-import { parseSurveyAnswersFromPrompt, resolveSurveyConfigByAgentId, isSurveyLibraryCardItem } from '~/utils/chat/surveyUtil'
-import { hasTodayMemeQcontent, isTodayMemeLibraryCard } from '~/utils/chat/todayMemeUtil'
 import type { LibraryCardDetail } from '~/types/library'
-const { trashCardList, libraryAgents } = useLibraryStore()
+const { trashCardList } = useLibraryStore()
 
 interface Props {
   isOpen?: boolean
@@ -160,11 +142,6 @@ const filteredTrashCardList = computed(() => {
     return title.includes(keyword) || qcontent.includes(keyword)
   })
 })
-
-const isSurveyLibraryCard = (item: LibraryCardDetail) => isSurveyLibraryCardItem(item, libraryAgents.value)
-
-const getSurveyLibraryConfig = (item: LibraryCardDetail) =>
-  resolveSurveyConfigByAgentId(item.agentId, libraryAgents.value)
 
 // 스크롤 상태
 const bodyRef = ref<HTMLElement | null>(null)
@@ -206,13 +183,3 @@ const onEmptyTrash = () => {
   emit('emptyTrash')
 }
 </script>
-
-<style lang="scss" scoped>
-.library-trash-survey-readonly,
-.library-trash-meme-request {
-  width: 100%;
-  max-width: 100%;
-  max-height: min(560px, calc(100vh - 280px));
-  overflow: hidden;
-}
-</style>

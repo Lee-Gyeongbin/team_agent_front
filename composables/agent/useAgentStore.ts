@@ -198,12 +198,6 @@ const validateAgentSave = (agent: Partial<Agent>) => {
       msg = '사용자 확인 여부를 선택해주세요.'
       return { valid, msg }
     }
-  } else if (agent.svcTy === 'C') {
-    if (isEmpty(agent.subCfg?.subTy)) {
-      valid = false
-      msg = '세부 유형을 선택해주세요.'
-      return { valid, msg }
-    }
   }
 
   return { valid, msg }
