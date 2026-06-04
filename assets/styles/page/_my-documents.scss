@@ -1,0 +1,283 @@
+@use '../utils/variables' as *;
+@use '../utils/mixins' as *;
+
+// 내 문서보관함 — 지식창고 레이아웃(전폭 배너 + l-center 본문)
+.my-documents-index {
+  height: calc(100vh - #{$header-height});
+  background-color: #fff;
+
+  // 신규 문서 안내 배너 — library-ks-banner 동일
+  .banner-slide-up-leave-active {
+    transition:
+      transform 0.28s ease-in,
+      opacity 0.28s ease-in;
+  }
+
+  .banner-slide-up-leave-to {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+
+  .my-doc-new-banner {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: 10px $spacing-md;
+    background-color: rgba(var(--color-primary-rgb), 0.08);
+    border-bottom: 1px solid rgba(var(--color-primary-rgb), 0.2);
+    color: var(--color-primary);
+    font-size: $font-size-sm;
+
+    &__text {
+      flex: 1;
+      font-weight: $font-weight-medium;
+    }
+
+    &__close {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      border: none;
+      background: none;
+      color: var(--color-primary);
+      cursor: pointer;
+      opacity: 0.6;
+      transition: opacity $transition-fast;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
+  }
+
+  .my-doc-body {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+    padding-top: $spacing-md;
+    padding-bottom: $spacing-xl;
+  }
+
+  .my-doc-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-sm;
+  }
+
+  .my-doc-top-title {
+    font-size: $font-size-2xl;
+    font-weight: $font-weight-bold;
+    color: $color-text-heading-sub;
+  }
+
+  .my-doc-header-right {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: $spacing-sm;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .my-doc-total {
+    font-size: $font-size-base;
+    color: $color-text-secondary;
+    white-space: nowrap;
+
+    strong {
+      color: $color-text-primary;
+    }
+  }
+
+  .my-doc-search {
+    flex: 1;
+    min-width: 160px;
+    max-width: 400px;
+  }
+
+  .my-doc-sort {
+    flex-shrink: 0;
+    width: 140px;
+  }
+
+  .btn-my-doc-archive {
+    position: relative;
+
+    &.is-active {
+      background: rgba(var(--color-primary-rgb), 0.08);
+      color: var(--color-primary);
+    }
+
+    .badge-num {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      min-width: 16px;
+      height: 16px;
+      padding: 0 4px;
+      border-radius: 8px;
+      background: var(--color-primary);
+      color: #fff;
+      font-size: 10px;
+      font-weight: $font-weight-bold;
+      line-height: 16px;
+      text-align: center;
+    }
+  }
+
+  .my-doc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+
+  .my-doc-grid-empty {
+    grid-column: 1 / -1;
+    min-height: 280px;
+  }
+
+  .my-doc-card {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+    min-height: 96px;
+    padding: 12px;
+    border-radius: $border-radius-lg;
+    border: 1px solid #c6d2db;
+    background: #fff;
+    box-shadow: 4px 4px 4px 0 rgba(30, 50, 77, 0.08);
+    cursor: pointer;
+    transition:
+      border-color $transition-slow,
+      box-shadow $transition-slow,
+      transform $transition-fast;
+
+    &:hover {
+      border-color: #94a3b8;
+      transform: translateY(-2px);
+    }
+
+    &.is-active {
+      border-color: #94a3b8;
+      box-shadow:
+        4px 4px 4px 0 rgba(30, 50, 77, 0.08),
+        inset 0 0 0 1px #94a3b8;
+    }
+
+    &.is-archived {
+      opacity: 0.85;
+    }
+  }
+
+  .my-doc-card-doc {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    border-radius: 6px;
+    background: var(--card-icon-bg, #ecf0f3);
+    color: var(--card-icon-color, #6f7a93);
+
+    &.is-default {
+      background: #ecf0f3;
+      color: #6f7a93;
+    }
+  }
+
+  .my-doc-card-main {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .my-doc-card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: $spacing-xs;
+    min-width: 0;
+  }
+
+  .my-doc-card-title {
+    flex: 1;
+    min-width: 0;
+    color: #33363d;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 150%;
+    @include ellipsis(2);
+  }
+
+  .my-doc-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: auto;
+    min-height: 28px;
+  }
+
+  .my-doc-card-date {
+    flex-shrink: 0;
+    color: #94a3b8;
+    font-size: $font-size-sm;
+    white-space: nowrap;
+  }
+
+  .my-doc-card-new-tag {
+    margin-right: auto;
+    border-radius: 32px;
+    background: #ffd2d2;
+    padding: 0 4px;
+    color: #f64848;
+    font-size: 8px;
+    font-weight: 700;
+    height: 12px;
+    line-height: 12px;
+  }
+
+  .my-doc-card-agent-wrap {
+    display: inline-flex;
+    flex-shrink: 0;
+  }
+
+  .my-doc-card-agent {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: $border-radius-lg;
+    color: #6f7a93;
+    background: #f4f7f9;
+    cursor: default;
+    transition:
+      background-color $transition-fast,
+      color $transition-fast,
+      transform $transition-fast;
+
+    &:hover {
+      background: #eef3f8;
+      color: #556377;
+      transform: scale(1.05);
+    }
+  }
+
+}
+
+// 에이전트명 툴팁 — Radix 포탈용 글로벌 클래스
+.my-doc-agent-tooltip {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  letter-spacing: -0.01em;
+}

@@ -211,6 +211,19 @@ const buildPrintHostStyles = (): string => `
   #${PRINT_HOST_ID} .report-print-value thead th {
     background: #f1f5f9 !important;
   }
+  #${PRINT_HOST_ID} .report-print-value th,
+  #${PRINT_HOST_ID} .report-print-value td {
+    overflow: hidden !important;
+    min-width: 0 !important;
+  }
+  #${PRINT_HOST_ID} .report-print-value td img,
+  #${PRINT_HOST_ID} .report-print-value th img {
+    max-width: 100% !important;
+    height: auto !important;
+    box-sizing: border-box !important;
+    object-fit: contain !important;
+    float: none !important;
+  }
 
   /* 에디터 HTML 직접 인쇄 — 화면 미리보기보다 한 단계 작게(페이지 분산 완화) */
   #${PRINT_HOST_ID} .report-print-editor-body {
@@ -371,6 +384,8 @@ const buildPrintHostStyles = (): string => `
     text-align: left !important;
     vertical-align: top !important;
     color: #334155 !important;
+    overflow: hidden !important;
+    min-width: 0 !important;
   }
   #${PRINT_HOST_ID} .report-print-editor-body td {
     padding: 5px 8px !important;
@@ -379,6 +394,8 @@ const buildPrintHostStyles = (): string => `
     vertical-align: top !important;
     text-align: left !important;
     word-break: break-word !important;
+    overflow: hidden !important;
+    min-width: 0 !important;
   }
   #${PRINT_HOST_ID} .report-print-editor-body td h1,
   #${PRINT_HOST_ID} .report-print-editor-body td h2,
@@ -400,22 +417,121 @@ const buildPrintHostStyles = (): string => `
   #${PRINT_HOST_ID} .report-print-editor-body img {
     max-width: 100% !important;
     height: auto !important;
-    display: block !important;
+    /* block이면 width 미지정 시 셀 전체로 늘어남 → 인라인 width(px·%) 유지 */
+    display: inline-block !important;
+    vertical-align: top !important;
+    box-sizing: border-box !important;
+    object-fit: contain !important;
   }
+  /* 표 셀 안 이미지 — 인라인 px width·figure 래퍼가 셀 밖으로 나가는 것 방지 */
+  #${PRINT_HOST_ID} .report-print-editor-body td img,
+  #${PRINT_HOST_ID} .report-print-editor-body th img {
+    max-width: 100% !important;
+    float: none !important;
+    clear: both !important;
+  }
+  #${PRINT_HOST_ID} .report-print-editor-body td figure,
+  #${PRINT_HOST_ID} .report-print-editor-body th figure {
+    display: block !important;
+    max-width: 100% !important;
+    width: auto !important;
+    margin-top: 4px !important;
+    margin-bottom: 4px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+  #${PRINT_HOST_ID} .report-print-editor-body td figure img,
+  #${PRINT_HOST_ID} .report-print-editor-body th figure img {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+  /* 가운데/우측 정렬 — block + margin auto (inline-block에서는 margin auto 무효) */
   #${PRINT_HOST_ID} .report-print-editor-body img[data-align="center"] {
+    display: block !important;
     margin-left: auto !important;
     margin-right: auto !important;
   }
   #${PRINT_HOST_ID} .report-print-editor-body img[data-align="right"] {
+    display: block !important;
     margin-left: auto !important;
     margin-right: 0 !important;
   }
   #${PRINT_HOST_ID} .report-print-editor-body img[data-align="left"] {
+    display: block !important;
+    margin-left: 0 !important;
+    margin-right: auto !important;
+  }
+  #${PRINT_HOST_ID} .report-print-editor-body figure[data-align="center"] {
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+  #${PRINT_HOST_ID} .report-print-editor-body figure[data-align="right"] {
+    margin-left: auto !important;
+    margin-right: 0 !important;
+  }
+  #${PRINT_HOST_ID} .report-print-editor-body figure[data-align="left"] {
     margin-left: 0 !important;
     margin-right: auto !important;
   }
 }
 `
+
+const applyImageAlignForPrint = (el: HTMLImageElement) => {
+  const align = el.getAttribute('data-align') || 'left'
+  el.style.setProperty('display', 'block')
+  if (align === 'center') {
+    el.style.setProperty('margin-left', 'auto')
+    el.style.setProperty('margin-right', 'auto')
+  } else if (align === 'right') {
+    el.style.setProperty('margin-left', 'auto')
+    el.style.setProperty('margin-right', '0')
+  } else {
+    el.style.setProperty('margin-left', '0')
+    el.style.setProperty('margin-right', 'auto')
+  }
+}
+
+const applyFigureAlignForPrint = (fig: HTMLElement, align: string) => {
+  fig.setAttribute('data-align', align)
+  fig.style.setProperty('display', 'block')
+  if (align === 'center') {
+    fig.style.setProperty('margin-left', 'auto')
+    fig.style.setProperty('margin-right', 'auto')
+  } else if (align === 'right') {
+    fig.style.setProperty('margin-left', 'auto')
+    fig.style.setProperty('margin-right', '0')
+  } else {
+    fig.style.setProperty('margin-left', '0')
+    fig.style.setProperty('margin-right', 'auto')
+  }
+}
+
+/** 인쇄 전 이미지 — width 유지·정렬·셀 overflow 방지 */
+const normalizeImagesForPrint = (root: HTMLElement) => {
+  root.querySelectorAll('img').forEach((img) => {
+    const el = img as HTMLImageElement
+    el.style.setProperty('max-width', '100%')
+    el.style.setProperty('height', 'auto')
+    el.style.setProperty('box-sizing', 'border-box')
+    el.style.setProperty('float', 'none')
+    el.removeAttribute('width')
+    el.removeAttribute('height')
+    applyImageAlignForPrint(el)
+  })
+
+  root.querySelectorAll('figure').forEach((fig) => {
+    const el = fig as HTMLElement
+    const inner = el.querySelector('img')
+    const align = inner?.getAttribute('data-align') || 'left'
+    const imgWidth = inner?.style.width?.trim() || inner?.getAttribute('width') || ''
+    el.style.setProperty('max-width', '100%')
+    el.style.setProperty('box-sizing', 'border-box')
+    if (!el.style.width?.trim() && imgWidth) {
+      el.style.setProperty('width', imgWidth)
+    }
+    applyFigureAlignForPrint(el, align)
+  })
+}
 
 const removeEl = (id: string) => {
   document.getElementById(id)?.remove()
@@ -439,6 +555,7 @@ export const printLibraryReportFromHtml = (editorHtml: string): boolean => {
   host.setAttribute('aria-hidden', 'true')
   host.innerHTML = `<div class="report-print-editor-body">${editorHtml}</div>`
   document.body.appendChild(host)
+  normalizeImagesForPrint(host)
 
   const cleanup = () => {
     removeEl(PRINT_STYLE_ID)
@@ -477,6 +594,7 @@ export const printLibraryReport = (values: LibraryGeneratedReportValues, reportT
   host.setAttribute('aria-hidden', 'true')
   host.innerHTML = buildPrintHostInnerHtml(rows, values, formatYyyyMmDdDots(new Date()), reportTitle)
   document.body.appendChild(host)
+  normalizeImagesForPrint(host)
 
   const cleanup = () => {
     removeEl(PRINT_STYLE_ID)

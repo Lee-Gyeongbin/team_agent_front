@@ -50,10 +50,10 @@
 import type { LibraryCardDetail } from '~/types/library'
 import { useLibraryStore } from '~/composables/library/useLibraryStore'
 import {
-  isRecommendAgentPrompt,
-  parseRecommendConfigFromAgent,
+  isRecommendLibraryCardItem,
+  parseRecommendConfigFromAgentForLibrary,
   parseRecommendPayloadFromPrompt,
-  resolveRecommendConfigByAgentId,
+  resolveRecommendConfigByAgentIdForLibrary,
 } from '~/utils/chat/recommendAgentUtil'
 import { parseLunchPayloadFromPrompt } from '~/utils/chat/lunchAgentUtil'
 import { NEWS_CURATOR_AGENT_ID, parseNewsCuratorPromptMeta } from '~/utils/chat/newsCuratorUtil'
@@ -87,14 +87,15 @@ const surveyAnswers = computed(() => parseSurveyAnswersFromPrompt(item.value.qco
 
 const lunchPayload = computed(() => parseLunchPayloadFromPrompt(item.value.qcontent ?? ''))
 
+const isRecommendCard = computed(() => isRecommendLibraryCardItem(item.value, libraryAgents.value))
+
 const recommendConfig = computed(() => {
-  const qcontent = item.value.qcontent ?? ''
-  if (!isRecommendAgentPrompt(qcontent)) return null
+  if (!isRecommendCard.value) return null
   const agentId = item.value.agentId ?? ''
   if (!agentId) return null
   const agent = libraryAgents.value.find((a) => a.agentId === agentId)
-  if (agent) return parseRecommendConfigFromAgent(agent)
-  return resolveRecommendConfigByAgentId(agentId, libraryAgents.value)
+  if (agent) return parseRecommendConfigFromAgentForLibrary(agent)
+  return resolveRecommendConfigByAgentIdForLibrary(agentId, libraryAgents.value)
 })
 
 const recommendPayload = computed(() => {
