@@ -121,11 +121,11 @@ import type { LibraryCardDetail } from '~/types/library'
 import { getLunchImageEnrichmentCacheKey, LUNCH_AGENT_ID, parseLunchJsonArray } from '~/utils/chat/lunchAgentUtil'
 import {
   getRecommendImageEnrichmentCacheKey,
-  isRecommendAgentPrompt,
+  isRecommendLibraryCardItem,
   normalizeRecommendResultItems,
-  parseRecommendConfigFromAgent,
+  parseRecommendConfigFromAgentForLibrary,
   parseRecommendJsonArray,
-  resolveRecommendConfigByAgentId,
+  resolveRecommendConfigByAgentIdForLibrary,
 } from '~/utils/chat/recommendAgentUtil'
 import { NEWS_CURATOR_AGENT_ID, parseNewsCuratorItems, parseNewsCuratorPromptMeta } from '~/utils/chat/newsCuratorUtil'
 import { isTodayMemeLibraryCard, parseTodayMemeItems } from '~/utils/chat/todayMemeUtil'
@@ -170,23 +170,26 @@ const recommendImageCacheKey = computed(() => {
   return String(props.item.cardId ?? '').trim()
 })
 
+const isRecommendCard = computed(() => isRecommendLibraryCardItem(props.item, libraryAgents.value))
+
 const recommendConfig = computed(() => {
+  if (!isRecommendCard.value) return null
   const agentId = props.item.agentId ?? ''
   if (!agentId) return null
   const agent = libraryAgents.value.find((a) => a.agentId === agentId)
-  if (agent) return parseRecommendConfigFromAgent(agent)
-  return resolveRecommendConfigByAgentId(agentId, libraryAgents.value)
+  if (agent) return parseRecommendConfigFromAgentForLibrary(agent)
+  return resolveRecommendConfigByAgentIdForLibrary(agentId, libraryAgents.value)
 })
 
 const recommendList = computed(() => {
-  if (!isRecommendAgentPrompt(props.item.qcontent ?? '')) return []
+  if (!isRecommendCard.value) return []
   const raw = recommendEnrichmentRContent.value
   if (!raw) return []
   return normalizeRecommendResultItems(parseRecommendJsonArray(raw))
 })
 
 const isRecommendAgentResponse = computed(
-  () => isRecommendAgentPrompt(props.item.qcontent ?? '') && recommendList.value.length > 0 && !!recommendConfig.value,
+  () => isRecommendCard.value && recommendList.value.length > 0 && !!recommendConfig.value,
 )
 
 const lunchImageCacheKey = computed(() => {

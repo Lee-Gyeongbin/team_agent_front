@@ -19,9 +19,15 @@ export const RECOMMEND_SUB_TY = 'RECOMMEND'
 
 // ━━━ 에이전트 판별 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-/** svcTy=C · USE_YN=Y · subTy=RECOMMEND (설문 isSurveyAgent와 동일한 기준) */
+/** svcTy=C · USE_YN=Y · subTy=RECOMMEND — 채팅 에이전트 선택·전송용 */
 export const isRecommendAgent = (agent: Agent | null | undefined): boolean => {
   if (!agent || agent.useYn !== 'Y' || agent.svcTy !== 'C') return false
+  return getAgentSubTy(agent.subCfg) === RECOMMEND_SUB_TY
+}
+
+/** svcTy=C · subTy=RECOMMEND — 지식창고 상세·카드 UI용 (useYn 무관, isSurveyAgent와 동일) */
+export const isRecommendAgentForLibrary = (agent: Pick<Agent, 'svcTy' | 'subCfg'> | null | undefined): boolean => {
+  if (!agent || agent.svcTy !== 'C') return false
   return getAgentSubTy(agent.subCfg) === RECOMMEND_SUB_TY
 }
 
@@ -36,8 +42,7 @@ export const resolveNormalChatAgentId = (selectedAgentId: string | null | undefi
 
 // ━━━ Config 파서 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-export const parseRecommendConfigFromAgent = (agent: Agent): RecommendAgentConfig | null => {
-  if (!isRecommendAgent(agent)) return null
+const parseRecommendConfigCore = (agent: Agent): RecommendAgentConfig | null => {
   const raw = agent.subCfg?.additionalConfig
   if (!raw) return null
   const config = typeof raw === 'string' ? JSON.parse(raw) : raw
@@ -45,10 +50,45 @@ export const parseRecommendConfigFromAgent = (agent: Agent): RecommendAgentConfi
   return config as RecommendAgentConfig
 }
 
+export const parseRecommendConfigFromAgent = (agent: Agent): RecommendAgentConfig | null => {
+  if (!isRecommendAgent(agent)) return null
+  return parseRecommendConfigCore(agent)
+}
+
+/** 지식창고 — selectAgentListForLibrary 에이전트는 useYn과 무관하게 폼·결과 카드 재현 */
+export const parseRecommendConfigFromAgentForLibrary = (agent: Agent): RecommendAgentConfig | null => {
+  if (!isRecommendAgentForLibrary(agent)) return null
+  return parseRecommendConfigCore(agent)
+}
+
 export const resolveRecommendConfigByAgentId = (agentId: string, agents: Agent[]): RecommendAgentConfig | null => {
   const agent = agents.find((a) => a.agentId === agentId)
   if (!agent) return null
   return parseRecommendConfigFromAgent(agent)
+}
+
+export const resolveRecommendConfigByAgentIdForLibrary = (
+  agentId: string,
+  agents: Agent[],
+): RecommendAgentConfig | null => {
+  const agent = agents.find((a) => a.agentId === agentId)
+  if (!agent) return null
+  return parseRecommendConfigFromAgentForLibrary(agent)
+}
+
+/** 라이브러리 카드 — RECOMMEND readonly UI 표시 여부 (에이전트 미로드 시 qcontent 폴백) */
+export const isRecommendLibraryCardItem = (
+  item: { agentId?: string; qcontent?: string },
+  agents: Agent[],
+): boolean => {
+  const qcontent = item.qcontent ?? ''
+  if (!isRecommendAgentPrompt(qcontent)) return false
+  const agentId = (item.agentId ?? '').trim()
+  if (agentId) {
+    const agent = agents.find((a) => a.agentId === agentId)
+    if (agent) return isRecommendAgentForLibrary(agent)
+  }
+  return true
 }
 
 // ━━━ 폼 초기값 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
