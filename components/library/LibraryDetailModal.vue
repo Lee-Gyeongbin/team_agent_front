@@ -356,6 +356,7 @@ const {
   handleCreateDocReportClose,
   resetLibraryDetailCreateDocUi,
   handleCreateDocSelectOtherType,
+  handleSaveReportToMyDocs,
   handleReAskReport,
   handleInsightReport,
   handleShareCard,
@@ -616,8 +617,8 @@ const handleCreateDoc = () => {
   isCreateDocModalOpen.value = true
 }
 
-const onCreateDocSaveToMyDocs = () => {
-  openToast({ message: '내 문서보관함 저장을 추후 연동 예정입니다.', type: 'warning' })
+const onCreateDocSaveToMyDocs = async (docHtml: string) => {
+  await handleSaveReportToMyDocs(docHtml)
 }
 
 const onCreateDocShareLink = () => {

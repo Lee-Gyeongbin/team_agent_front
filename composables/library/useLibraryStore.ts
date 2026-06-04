@@ -18,10 +18,15 @@ import { useTmplApi } from '~/composables/tmpl/useTmplApi'
 import type { TmplBaseInfo } from '~/types/tmpl'
 import type { OrgUserItem } from '~/types/org-manage'
 import type { LibraryReportInsightRequest } from '~/utils/library/libraryReportEditorUtil'
+import { buildReportEditorHtml } from '~/utils/library/libraryReportEditorUtil'
+import { getLibraryReportRows } from '~/utils/library/libraryReportPrintUtil'
+import { useMyDocStore } from '~/composables/my-documents/useMyDocStore'
+import type { MyDocSaveReportPayload } from '~/types/mydoc'
 import type { Agent } from '~/types/agent'
 import { normalizeAgentSubCfg } from '~/utils/chat/surveyUtil'
 import { useUserSelectStore } from '~/composables/com/useUserSelectStore'
 const { closeUserSelectModal } = useUserSelectStore()
+const { handleSaveReport } = useMyDocStore()
 const {
   fetchCategoryList,
   fetchCardList,
@@ -119,6 +124,9 @@ const isCreateDocReportOpen = ref(false)
 const generatedReport = ref<LibraryGeneratedReportValues>({})
 const generatedReportTmplHtml = ref('')
 const selectedCreateDocTmplNm = ref('')
+const selectedCreateDocTmplId = ref('')
+/** AI 최초 생성 HTML — 내 문서보관함 ORIGIN_HTML (복원용, 세션 동안 고정) */
+const originReportHtml = ref('')
 const roomId = ref('')
 const reportRefineCompletedAt = ref(0)
 /** AI 보완 응답 HTML — LibraryCreateDocReportModal에서 에디터에 직접 적용 */
@@ -682,6 +690,7 @@ export const useLibraryStore = () => {
 
     isCreateDocModalOpen.value = false
     generatedReport.value = {}
+    selectedCreateDocTmplId.value = tmplId
     selectedCreateDocTmplNm.value = tmplList.value.find((tmpl) => tmpl.tmplId === tmplId)?.tmplNm ?? ''
     openLoading({
       text: 'AI가 문서를 작성 중입니다...',
@@ -715,6 +724,12 @@ export const useLibraryStore = () => {
         }
       }
       generatedReportTmplHtml.value = tmplHtml
+      if (tmplHtml?.trim()) {
+        originReportHtml.value = tmplHtml
+      } else {
+        const rows = getLibraryReportRows(generatedReport.value)
+        originReportHtml.value = buildReportEditorHtml(generatedReport.value, rows)
+      }
       closeLoading()
       await nextTick()
       openToast({ message: `'${selectedCreateDocTmplNm.value}' 문서를 생성했습니다.`, type: 'success' })
@@ -821,10 +836,26 @@ export const useLibraryStore = () => {
     }
   }
 
+  /** 보고서 편집 내용 — 내 문서보관함 저장 */
+  const handleSaveReportToMyDocs = async (docHtml: string) => {
+    const payload: MyDocSaveReportPayload = {
+      tmplId: selectedCreateDocTmplId.value || undefined,
+      docNm: '',
+      docHtml,
+      originHtml: originReportHtml.value,
+      svcTy: selectedCard.value?.svcTy || undefined,
+      rContent: selectedCard.value?.rcontent || undefined,
+      docStatus: 'SAVED',
+    }
+    await handleSaveReport(payload)
+  }
+
   const handleCreateDocReportClose = () => {
     isCreateDocReportOpen.value = false
     generatedReport.value = {}
     selectedCreateDocTmplNm.value = ''
+    selectedCreateDocTmplId.value = ''
+    originReportHtml.value = ''
     roomId.value = ''
     reportRefineCompletedAt.value = 0
     refinedEditorHtml.value = ''
@@ -859,6 +890,8 @@ export const useLibraryStore = () => {
     isCreateDocReportOpen.value = false
     generatedReport.value = {}
     selectedCreateDocTmplNm.value = ''
+    selectedCreateDocTmplId.value = ''
+    originReportHtml.value = ''
     roomId.value = ''
     reportRefineCompletedAt.value = 0
     refinedEditorHtml.value = ''
@@ -881,6 +914,8 @@ export const useLibraryStore = () => {
     isCreateDocReportOpen.value = false
     generatedReport.value = {}
     selectedCreateDocTmplNm.value = ''
+    selectedCreateDocTmplId.value = ''
+    originReportHtml.value = ''
     roomId.value = ''
     reportRefineCompletedAt.value = 0
     refinedEditorHtml.value = ''
@@ -954,6 +989,7 @@ export const useLibraryStore = () => {
     handleCreateDocTypeModalClose,
     handleCreateDocGenerate,
     handleCreateDocReportClose,
+    handleSaveReportToMyDocs,
     resetLibraryDetailCreateDocUi,
     handleCreateDocSelectOtherType,
     handleReAskReport,

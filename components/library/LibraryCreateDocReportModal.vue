@@ -59,7 +59,7 @@
                 size="md"
                 icon-only
                 title="내 문서보관함 저장"
-                @click="emit('save-to-my-docs')"
+                @click="onSaveToMyDocs"
               >
                 <template #icon-left>
                   <i class="icon icon-archive size-16" />
@@ -267,7 +267,8 @@ const report = defineModel<LibraryGeneratedReportValues>('report', { required: t
 
 const emit = defineEmits<{
   close: []
-  'save-to-my-docs': []
+  /** 현재 에디터 HTML — 내 문서보관함 DOC_HTML */
+  'save-to-my-docs': [docHtml: string]
   'share-link': []
   'select-other-type': []
   /** 보완 요청 — message: 사용자 입력, currentHtml: 현재 에디터 전체 HTML */
@@ -316,6 +317,10 @@ const onConfirmInsight = (payload: LibraryReportInsightRequest) => {
 // ===== 웹에디터 HTML 상태 =====
 /** 에디터와 연결된 HTML 문자열 — 초기 tmplHtml/보완 결과를 표시하고, 편집 시 업데이트됨 */
 const editorHtml = ref('')
+
+const onSaveToMyDocs = () => {
+  emit('save-to-my-docs', editorHtml.value)
+}
 /** 외부(AI 보완/초기 로딩)에서 에디터를 업데이트하는 동안 write-back을 막는 플래그 */
 let isExternalEditorUpdate = false
 let writebackTimer: ReturnType<typeof setTimeout> | null = null
