@@ -1,7 +1,37 @@
 import { useMyDocApi } from '~/composables/my-documents/useMyDocApi'
-import type { MyDocSaveReportPayload } from '~/types/mydoc'
+import type { MyDoc, MyDocListRequest, MyDocSaveReportPayload, MyDocStatus } from '~/types/mydoc'
 
-const { fetchSaveReport } = useMyDocApi()
+const { fetchList, fetchSaveReport } = useMyDocApi()
+
+const docList = ref<MyDoc[]>([])
+const archivedDocList = ref<MyDoc[]>([])
+
+/** 내 문서 목록 조회 — docStatus에 따라 docList / archivedDocList 분기 저장 (미지정 시 SAVED) */
+const handleSelectMyDocList = async (params: MyDocListRequest) => {
+  const docStatus: MyDocStatus = params.docStatus === 'ARCHIVED' ? 'ARCHIVED' : 'SAVED'
+  const isArchived = docStatus === 'ARCHIVED'
+  const requestParams = { ...params, docStatus }
+
+  try {
+    openLoading({ text: '문서를 불러오는 중...' })
+    const response = await fetchList(requestParams)
+    const list = response?.dataList ?? []
+    if (isArchived) {
+      archivedDocList.value = list
+    } else {
+      docList.value = list
+    }
+  } catch {
+    openToast({ message: '문서 목록을 불러오는데 실패했습니다.', type: 'error' })
+    if (isArchived) {
+      archivedDocList.value = []
+    } else {
+      docList.value = []
+    }
+  } finally {
+    closeLoading()
+  }
+}
 
 /** 내 문서보관함 — AI 보고서 저장 */
 const handleSaveReport = async (payload: MyDocSaveReportPayload) => {
@@ -44,5 +74,10 @@ const handleSaveReport = async (payload: MyDocSaveReportPayload) => {
 }
 
 export const useMyDocStore = () => {
-  return { handleSaveReport }
+  return {
+    docList,
+    archivedDocList,
+    handleSelectMyDocList,
+    handleSaveReport,
+  }
 }

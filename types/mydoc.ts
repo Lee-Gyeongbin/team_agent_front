@@ -6,17 +6,35 @@ export interface MyDoc {
   docId: string
   userId: string
   tmplId?: string | null
+  agentId?: string | null
+  agentNm?: string | null
+  iconClassNm?: string | null
+  colorHex?: string | null
   docNm: string
   docHtml?: string | null
   originHtml?: string | null
   svcTy?: string | null
   rContent?: string | null
   docStatus: MyDocStatus
+  newYn?: string
   sortOrd: number
   createDt: string
   modifyDt?: string | null
-  crtrId: string
+  crtrId?: string
   mdfdId?: string | null
+}
+
+/** list.do 요청 */
+export interface MyDocListRequest {
+  searchDocNm?: string
+  docStatus?: MyDocStatus
+  svcTy?: string
+  searchSort?: string
+}
+
+/** list.do 응답 */
+export interface MyDocListResponse {
+  dataList: MyDoc[]
 }
 
 /**
@@ -31,6 +49,7 @@ export interface MyDocSaveReportPayload {
   originHtml: string
   svcTy?: string
   rContent?: string
+  agentId?: string | null
   docStatus?: MyDocStatus
   sortOrd?: number
 }

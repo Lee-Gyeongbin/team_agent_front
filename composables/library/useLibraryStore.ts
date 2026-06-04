@@ -845,6 +845,7 @@ export const useLibraryStore = () => {
       originHtml: originReportHtml.value,
       svcTy: selectedCard.value?.svcTy || undefined,
       rContent: selectedCard.value?.rcontent || undefined,
+      agentId: selectedCard.value?.agentId?.trim() || null,
       docStatus: 'SAVED',
     }
     await handleSaveReport(payload)
