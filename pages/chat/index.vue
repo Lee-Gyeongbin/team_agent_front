@@ -114,7 +114,7 @@
           class="chat-index-card"
           :class="{ 'is-active': selectedChatAgentId === agent.agentId }"
           :style="getChatIndexAgentColorStyle(agent.colorHex ?? '')"
-          @click="selectChatIndexAgent(agent)"
+          @click="onClickChatIndexAgent(agent)"
         >
           <div class="chat-index-card-default">
             <span class="icon-circle"
@@ -140,12 +140,20 @@
         사용 가능한 에이전트가 없습니다. 에이전트 관리에서 등록해 주세요.
       </p>
     </template>
+    <!-- 메일 브리핑 로그인 모달 -->
+    <MailLoginModal
+      :is-open="isLoginModalOpen"
+      @close="closeLoginModal"
+      @success="onMailLoginSuccess"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { parseSurveyConfigFromAgent } from '~/utils/chat/surveyUtil'
 import { parseRecommendConfigFromAgent } from '~/utils/chat/recommendAgentUtil'
+import { useMailStore } from '~/composables/mail/useMailStore'
+import type { Agent } from '~/types/agent'
 
 const { chatMessage, selectChatRoomList, selectModelOptions, resetChatRoom } = useChatRooms()
 const {
@@ -176,6 +184,26 @@ const {
 } = useChatStore()
 const { startChatSocket, stopChatSocket } = useChatSocket()
 const { user } = useAuth()
+const { isLoginModalOpen, openLoginModal, closeLoginModal } = useMailStore()
+
+/** 메일 브리핑 카드 클릭 → 로그인 모달 표시 */
+const openMailLoginModal = () => openLoginModal()
+
+/** 카드 클릭 분기: 메일(svcTy=A)은 로그인 모달, 그 외는 기존 에이전트 선택 */
+const onClickChatIndexAgent = (agent: Agent) => {
+  if (agent.svcTy === 'A') {
+    openMailLoginModal()
+    return
+  }
+  void selectChatIndexAgent(agent)
+}
+
+/** 로그인 성공 → 메일 대시보드로 이동 */
+const onMailLoginSuccess = async () => {
+  closeLoginModal()
+  await nextTick()
+  await navigateTo('/mail', { replace: true })
+}
 
 const isMountedChatIndex = ref(true)
 const currentSurveyAgent = computed(

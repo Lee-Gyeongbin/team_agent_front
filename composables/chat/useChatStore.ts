@@ -189,7 +189,11 @@ const chatIndexAgents = ref<Agent[]>([])
 const isLoadingChatIndexAgents = ref(true)
 const normalizeChatAgents = (list: Agent[]) =>
   list
-    .filter((a) => a.useYn === 'Y' && (a.svcTy === 'M' || a.svcTy === 'S' || a.svcTy === 'T' || a.svcTy === 'C'))
+    .filter(
+      (a) =>
+        a.useYn === 'Y' &&
+        (a.svcTy === 'M' || a.svcTy === 'S' || a.svcTy === 'T' || a.svcTy === 'C' || a.svcTy === 'A'),
+    )
     .map((a) => ({
       ...a,
       subCfg: normalizeAgentSubCfg(a.subCfg),
@@ -229,6 +233,7 @@ const SVC_TY_SUB_LABEL: Record<string, string> = {
   S: '검색모드-to-SQL Agent',
   T: '실시간 음성인식(STT) Agent',
   C: '일반 채팅 Agent',
+  A: '메일 브리핑 Agent',
 }
 const getChatIndexAgentSubLabel = (agent: Agent) => SVC_TY_SUB_LABEL[agent.svcTy] ?? ''
 

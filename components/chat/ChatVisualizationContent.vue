@@ -595,7 +595,7 @@ import {
 import { resolveColumnLabel, resolveDisplayValue } from '~/utils/chat/visualizationLabelMap'
 
 interface Props {
-  open: boolean
+  open?: boolean
   viewModel: VisualizationViewModel | null
   onRefresh?: () => void | Promise<void>
 }
@@ -735,10 +735,6 @@ const isError = computed(() => currentVisualizationView.value?.status === 'error
 const isEmpty = computed(() => currentVisualizationView.value?.status === 'empty')
 const hasSchema = computed(() => !!currentVisualizationView.value?.schema)
 
-const showAxisYRButton = computed(() => currentVisualizationView.value?.schema?.selectableOptions?.canDualAxis === true)
-const chartTargetKeysFromSchema = computed(
-  () => currentVisualizationView.value?.schema?.selectableOptions.chartTargetKeys ?? [],
-)
 const hasStatIdColumn = computed(() => !!currentVisualizationView.value?.schema?.statIdColumnKey)
 
 // ===== 셀렉박스 옵션 =====
@@ -858,22 +854,6 @@ const axisSettingsToSelection = (
     dualAxis: canDualAxis && yrCols.length > 0 && !seriesKey,
     statIdFilter: statIdFilter || undefined,
   }
-}
-
-/**
- * 카드의 시리즈 키 반환.
- * initialSelection이 있으면 그 값 기준 (새 UI에서 생성된 카드),
- * 없으면 axisSettings에서 추론 (수동 편집된 카드).
- */
-const getInferredSeriesKeyForCard = (card: ChartCardState) => {
-  if (card.initialSelection) {
-    const { seriesKey, chartTargetKey } = card.initialSelection
-    // seriesKey === chartTargetKey인 경우(집계 모드) sanitizeSelection이 ''으로 처리하므로 여기도 ''
-    return seriesKey !== chartTargetKey ? seriesKey : ''
-  }
-  const xKey = card.axisSettings.find((s) => s.role === 'X')?.key ?? ''
-  if (!xKey) return ''
-  return inferSeriesKeyFromChartTargets(chartTargetKeysFromSchema.value, xKey)
 }
 
 const pieChartUnavailableDescription = `1. 데이터값에 음수(-)가 들어가는 경우
@@ -1009,7 +989,7 @@ const onSelectCardStatId = (card: ChartCardState, statId: string) => {
 
 const onRemoveChart = (id: string) => {
   chartCards.value = chartCards.value.filter((card) => card.id !== id)
-  delete cardEditState.value[id]
+  cardEditState.value = Object.fromEntries(Object.entries(cardEditState.value).filter(([key]) => key !== id))
 }
 
 const getChartBadges = (card: ChartCardState): string[] => {
