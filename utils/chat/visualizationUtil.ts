@@ -554,7 +554,8 @@ const buildSingleMetricValueMap = (rows: Array<Record<string, unknown>>, xAxisKe
   return valueMap
 }
 
-const resolveYAxisScale = (datasets: Array<{ data: number[] }>) => {
+/** 라인 차트: 데이터 구간 기준 Y축 (0 고정 없음 — 추세 가독성) */
+const resolveYAxisScaleForLine = (datasets: Array<{ data: number[] }>) => {
   const values = datasets.flatMap((dataset) => dataset.data).filter((value) => Number.isFinite(value))
   return calculateChartScale(values, 0.1, true)
 }
@@ -565,6 +566,19 @@ const resolveYAxisScaleForBar = (datasets: Array<{ data: number[] }>) => {
   if (values.length === 0) return { min: 0, max: 100, stepSize: 20 }
   const hasNegative = values.some((v) => v < 0)
   return calculateChartScale(values, 0.1, hasNegative)
+}
+
+const resolveYAxisScaleByChartType = (chartType: VisualizationChartType, datasets: Array<{ data: number[] }>) => {
+  return chartType === 'line' ? resolveYAxisScaleForLine(datasets) : resolveYAxisScaleForBar(datasets)
+}
+
+const applyYScaleToConfig = (
+  config: Record<string, unknown>,
+  yScale: { min: number; max: number; stepSize: number },
+) => {
+  config.minValue = yScale.min
+  config.maxValue = yScale.max
+  config.yAxisStepSize = yScale.stepSize
 }
 
 export const buildChartModel = (
@@ -629,14 +643,12 @@ export const buildChartModel = (
       }
     })
 
-    const yScale = resolveYAxisScaleForBar(datasets)
+    const yScale = resolveYAxisScaleByChartType(selection.chartType, datasets)
     const config: Record<string, unknown> = {
       categories,
       datasets,
-      minValue: yScale.min,
-      maxValue: yScale.max,
-      yAxisStepSize: yScale.stepSize,
     }
+    applyYScaleToConfig(config, yScale)
     if (selection.stack) {
       config.scales = {
         x: { stacked: true },
@@ -698,9 +710,7 @@ export const buildChartModel = (
       }
     } else if (selection.stack) {
       const yScale = resolveYAxisScaleForBar(datasets)
-      config.minValue = yScale.min
-      config.maxValue = yScale.max
-      config.yAxisStepSize = yScale.stepSize
+      applyYScaleToConfig(config, yScale)
       config.scales = {
         x: { stacked: true },
         y: {
@@ -711,6 +721,8 @@ export const buildChartModel = (
           beginAtZero: yScale.min >= 0,
         },
       }
+    } else if (selection.chartType === 'line') {
+      applyYScaleToConfig(config, resolveYAxisScaleForLine(datasets))
     }
     return config
   }
@@ -719,10 +731,12 @@ export const buildChartModel = (
   const valueMap = buildSingleMetricValueMap(rowList, selection.chartTargetKey, metricKey)
   const data = categories.map((category) => valueMap.get(category) ?? 0)
   if (selection.chartType === 'line') {
-    return {
+    const config: Record<string, unknown> = {
       categories,
       datasets: [{ label: resolveColumnLabel(metricKey), data, colorKey: 'line.analystatSet', colorIndex: 0 }],
     }
+    applyYScaleToConfig(config, resolveYAxisScaleForLine([{ data }]))
+    return config
   }
   const hasNegative = data.some((v) => Number.isFinite(v) && v < 0)
   const yScale = calculateChartScale(data, 0.1, hasNegative)
