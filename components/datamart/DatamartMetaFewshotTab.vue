@@ -163,17 +163,18 @@
             <div class="com-setting-section-header datamart-meta-section-header-static">
               <div class="datamart-meta-fewshot-detail-header">
                 <span class="com-setting-section-title">{{ detailTitle }}</span>
-                <div
-                  v-if="metaModalFewshotDraft.hasPendingChanges"
-                  class="datamart-meta-fewshot-change-actions"
-                >
-                  <span class="datamart-meta-fewshot-change-badge">
+                <div class="datamart-meta-fewshot-change-actions">
+                  <span
+                    v-if="fewshotPendingChangeCount > 0"
+                    class="datamart-meta-fewshot-change-badge"
+                  >
                     <i aria-hidden="true" />
-                    변경사항 {{ metaModalFewshotDraft.pendingChangeCount }}건 (저장되지 않음)
+                    변경사항 {{ fewshotPendingChangeCount }}건 (저장되지 않음)
                   </span>
                   <UiButton
                     variant="line-secondary"
                     size="sm"
+                    :disabled="fewshotPendingChangeCount <= 0"
                     @click="onResetChanges"
                   >
                     변경 취소
@@ -457,6 +458,9 @@ const emit = defineEmits<{
 const fewshotListModel = defineModel<DatamartMetaFewshot[]>('fewshotList', { default: () => [] })
 
 const { metaModalFewshotDraft } = useDatamartStore()
+
+/** 템플릿용 변경 사항 카운트 */
+const fewshotPendingChangeCount = computed(() => metaModalFewshotDraft.pendingChangeCount.value)
 
 type FewshotListEntry = { uiKey: string; row: DatamartMetaFewshot }
 

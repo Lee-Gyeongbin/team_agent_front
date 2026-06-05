@@ -60,16 +60,16 @@
             </span>
             <div class="datamart-meta-synonym-change-actions">
               <span
-                v-if="metaModalSynonymDraft.hasPendingChanges"
+                v-if="synonymPendingChangeCount > 0"
                 class="datamart-meta-synonym-change-badge"
               >
                 <i aria-hidden="true" />
-                변경사항 {{ metaModalSynonymDraft.pendingChangeCount }}건 (저장되지 않음)
+                변경사항 {{ synonymPendingChangeCount }}건 (저장되지 않음)
               </span>
               <UiButton
                 variant="line-secondary"
                 size="sm"
-                :disabled="!metaModalSynonymDraft.hasPendingChanges"
+                :disabled="synonymPendingChangeCount <= 0"
                 @click="onResetChanges"
               >
                 변경 취소
@@ -354,6 +354,9 @@ const emit = defineEmits<{
 const synonymGroups = defineModel<DatamartMetaSynonymGroup[]>('synonymGroups', { default: () => [] })
 
 const { metaModalSynonymDraft } = useDatamartStore()
+
+/** 템플릿용 변경 사항 카운트 */
+const synonymPendingChangeCount = computed(() => metaModalSynonymDraft.pendingChangeCount.value)
 
 type SynonymEditState = {
   groupId: string
