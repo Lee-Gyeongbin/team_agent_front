@@ -249,11 +249,32 @@
     display: flex;
     flex-direction: column;
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
 
   &.is-fewshot-tab {
     .modal-dialog-body {
       min-height: min(620px, 70vh);
+    }
+
+    .datamart-meta-tab-panel,
+    .datamart-meta-fewshot {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      min-width: 0;
+    }
+
+    .datamart-meta-fewshot-body {
+      flex: 1;
+      min-height: 0;
+    }
+
+    &.is-fullscreen .datamart-meta-fewshot-list-body {
+      max-height: none;
+      flex: 1;
     }
   }
 
@@ -377,15 +398,25 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 8px 12px;
   width: 100%;
+  min-width: 0;
+
+  > .com-setting-section-title {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
 }
 
 .datamart-meta-fewshot-change-actions {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 8px;
-  flex-shrink: 0;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .datamart-meta-fewshot-change-badge,
@@ -727,30 +758,37 @@ $fewshot-detail-body-min-height: min(492px, 52vh);
   display: flex;
   flex-direction: column;
   width: 100%;
+  max-width: 100%;
   min-width: 0;
   min-height: 0;
+  overflow: hidden;
 }
 
 .datamart-meta-fewshot-split {
   display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
   gap: $spacing-md;
   align-items: stretch;
   width: 100%;
+  max-width: 100%;
   min-width: 0;
   min-height: $fewshot-split-min-height;
+  overflow: hidden;
 }
 
 .datamart-meta-fewshot-list-section {
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
-  flex-shrink: 0;
+  flex: 0 1 280px;
   align-self: stretch;
   width: 280px;
-  min-width: 280px;
+  min-width: 0;
   max-width: 280px;
   min-height: $fewshot-split-min-height;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .datamart-meta-fewshot-list-body {
@@ -765,6 +803,7 @@ $fewshot-detail-body-min-height: min(492px, 52vh);
   flex: 1;
   flex-direction: column;
   gap: 0;
+  min-width: 0;
   min-height: 0;
   overflow: hidden;
 }
@@ -779,20 +818,22 @@ $fewshot-detail-body-min-height: min(492px, 52vh);
   flex: 1;
   flex-direction: column;
   gap: $fewshot-card-gap;
+  min-width: 0;
   min-height: 0;
   margin: 0;
   padding: 0;
   list-style: none;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  @include custom-scrollbar;
 
   > li {
-    height: calc(
+    flex: 1 1 0;
+    min-height: 44px;
+    max-height: calc(
       (100% - #{$fewshot-card-gap-total}) / var(--fewshot-card-slot-count, #{$fewshot-list-page-size})
     );
-    min-height: calc(
-      (100% - #{$fewshot-card-gap-total}) / var(--fewshot-card-slot-count, #{$fewshot-list-page-size})
-    );
-    flex-shrink: 0;
+    height: auto;
   }
 }
 
@@ -844,8 +885,9 @@ $fewshot-detail-body-min-height: min(492px, 52vh);
   display: flex;
   align-items: center;
   align-self: center;
-  flex-shrink: 0;
-  margin-right: 10px;
+  flex: 0 0 38px;
+  justify-content: center;
+  margin-right: 6px;
 }
 
 .fewshot-card-select {
@@ -1020,12 +1062,14 @@ $fewshot-detail-body-min-height: min(492px, 52vh);
 
 .datamart-meta-fewshot-detail-section {
   display: flex;
-  flex: 1;
+  flex: 1 1 0;
   flex-direction: column;
   align-self: stretch;
   min-width: 0;
+  max-width: 100%;
   min-height: $fewshot-split-min-height;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .datamart-meta-fewshot-detail-body {
@@ -1236,15 +1280,3 @@ $fewshot-detail-body-min-height: min(492px, 52vh);
   background: #fff;
 }
 
-@include mobile {
-  .datamart-meta-fewshot-split {
-    flex-direction: column;
-  }
-
-  .datamart-meta-fewshot-list-section,
-  .datamart-meta-fewshot-detail-section {
-    width: 100%;
-    min-width: 0;
-    max-width: none;
-  }
-}

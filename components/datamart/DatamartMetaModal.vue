@@ -3,7 +3,7 @@
     :is-open="isOpen"
     title="메타 관리"
     max-width="960px"
-    custom-class="datamart-meta-modal"
+    :custom-class="metaModalCustomClass"
     show-fullscreen
     @close="$emit('close')"
   >
@@ -44,6 +44,7 @@
             :datamart="datamart"
             :tables="metaModalTables"
             :relationships="metaModalRelationships"
+            :code-group-list="metaModalCodeGroupList"
           />
           <DatamartMetaSynonymTab
             v-else-if="activeTab === 'synonym'"
@@ -112,6 +113,7 @@ const {
   metaModalSynonymListError,
   metaModalSelectedColumnTableId,
   metaModalCodeMappings,
+  metaModalCodeGroupList,
   metaModalSynonymGroups,
   metaModalFewshotList,
   metaModalFewshotListError,
@@ -127,6 +129,13 @@ const {
 } = useDatamartStore()
 
 const activeTab = defineModel<string>('activeTab', { default: 'table' })
+
+const metaModalCustomClass = computed(() => {
+  const classes = ['datamart-meta-modal']
+  if (activeTab.value === 'fewshot') classes.push('is-fewshot-tab')
+  if (activeTab.value === 'synonym') classes.push('is-synonym-tab')
+  return classes.join(' ')
+})
 
 type SynonymTabExpose = {
   onSavedUiFinalize: () => void

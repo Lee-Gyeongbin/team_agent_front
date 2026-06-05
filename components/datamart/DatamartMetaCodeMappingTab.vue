@@ -43,18 +43,20 @@
           <div class="datamart-meta-code-combined">
             <div class="datamart-meta-code-add-block">
               <p class="datamart-meta-code-section-hint">
-                테이블·컬럼 선택 후 「컬럼 추가」로 목록에 행을 넣고, 행을 클릭한 뒤 아래에서 코드값·설명을 편집합니다.
+                테이블·컬럼·코드그룹 선택 후 「컬럼 추가」로 목록에 행을 넣고, 행을 클릭해 코드값·매핑 AI 힌트를
+                편집합니다.<br />
+                코드그룹 생성·그룹 정보 수정은 '코드그룹 관리' 메뉴에서 하세요.
               </p>
               <div class="datamart-meta-code-add-toolbar">
                 <div class="datamart-meta-code-add-selects">
                   <div class="com-setting-field-row datamart-meta-code-add-field">
                     <label class="com-setting-label">테이블</label>
                     <UiSelect
-                      v-model="pickTableId"
+                      v-model="pickTblId"
                       :options="tableOptions"
                       size="sm"
                       placeholder="테이블 선택"
-                      @update:model-value="pickColId = ''"
+                      @update:model-value="onPickTableChange"
                     />
                   </div>
                   <div class="com-setting-field-row datamart-meta-code-add-field">
@@ -64,7 +66,19 @@
                       :options="pickColumnOptions"
                       size="sm"
                       placeholder="컬럼 선택"
-                      :disabled="!pickTableId"
+                      :disabled="!pickTblId"
+                      @update:model-value="onPickColumnChange"
+                    />
+                  </div>
+                  <div class="com-setting-field-row datamart-meta-code-add-field">
+                    <label class="com-setting-label">코드그룹</label>
+                    <UiSelect
+                      v-model="pickCodeGrpId"
+                      :options="pickCodeGroupOptions"
+                      size="sm"
+                      placeholder="코드그룹 선택"
+                      :disabled="!pickColId"
+                      @update:model-value="onPickCodeGroupChange"
                     />
                   </div>
                 </div>
@@ -74,7 +88,7 @@
                   type="button"
                   title="컬럼 추가"
                   aria-label="컬럼 추가"
-                  :disabled="!pickTableId || !pickColId"
+                  :disabled="!pickTblId || !pickColId || !pickCodeGrpId"
                   @click="onAddCodeColumn"
                 >
                   <template #icon-left>
@@ -128,21 +142,42 @@
               <template v-else>
                 <div class="datamart-meta-code-editor-body">
                   <div class="datamart-meta-code-entry-topbar">
-                    <UiButton
-                      variant="primary"
-                      size="sm"
-                      type="button"
-                      title="코드값 추가"
-                      aria-label="코드값 추가"
-                      @click="onAddEntry"
-                    >
-                      <template #icon-left>
-                        <i class="icon-plus size-16" />
-                      </template>
-                      코드값 추가
-                    </UiButton>
+                    <span class="datamart-meta-code-grp-label">
+                      {{ activeCodeGrpLabel }}
+                    </span>
+                    <div class="datamart-meta-code-entry-topbar-actions">
+                      <div class="picker-wrap datamart-meta-code-grp-aihint-picker">
+                        <button
+                          type="button"
+                          class="picker-btn"
+                          :class="{
+                            'is-placeholder': !aiHintHasValue(activeMapping),
+                            'is-filled': aiHintHasValue(activeMapping),
+                          }"
+                          title="코드값 매핑 AI 힌트 편집"
+                          aria-label="코드값 매핑 AI 힌트 편집"
+                          @click="openAiHintModal"
+                        >
+                          <i class="icon-edit-version size-16" />
+                        </button>
+                      </div>
+                      <UiButton
+                        variant="primary"
+                        size="sm"
+                        type="button"
+                        title="코드값 추가"
+                        aria-label="코드값 추가"
+                        @click="onAddEntry"
+                      >
+                        <template #icon-left>
+                          <i class="icon-plus size-16" />
+                        </template>
+                        코드값 추가
+                      </UiButton>
+                    </div>
                   </div>
                   <draggable
+                    v-if="activeEntries.length > 0"
                     v-model="activeEntries"
                     item-key="sortOrd"
                     handle=".datamart-meta-code-entry-drag-handle"
@@ -162,7 +197,7 @@
                           <span class="datamart-meta-code-entry-side is-code">
                             <span class="datamart-meta-code-entry-text-label">코드</span>
                             <UiInput
-                              v-model="entry.codeVal"
+                              v-model="entry.codeId"
                               size="sm"
                               class="datamart-meta-code-entry-code"
                               placeholder="코드값"
@@ -176,7 +211,7 @@
                           <span class="datamart-meta-code-entry-side is-label">
                             <span class="datamart-meta-code-entry-text-label">코드값(설명)</span>
                             <UiInput
-                              v-model="entry.codeKorNm"
+                              v-model="entry.codeNm"
                               size="sm"
                               class="datamart-meta-code-entry-label"
                               placeholder="설명"
@@ -192,7 +227,7 @@
                             class="datamart-meta-code-entry-remove"
                             title="이 코드 행 삭제"
                             aria-label="이 코드 행 삭제"
-                            @click="onRemoveEntry(activeMapping.tblId, activeMapping.colId, entry.sortOrd)"
+                            @click="onRemoveEntry(entry.sortOrd)"
                           >
                             <template #icon-left>
                               <i class="icon-trashcan size-16" />
@@ -202,6 +237,13 @@
                       </div>
                     </template>
                   </draggable>
+                  <UiEmpty
+                    v-else
+                    icon="icon-database"
+                    title="코드값이 없습니다."
+                    description="「코드값 추가」로 등록하거나 연동된 코드그룹에 코드를 추가하세요."
+                    class="datamart-meta-code-entry-empty"
+                  />
                 </div>
               </template>
             </div>
@@ -232,18 +274,64 @@
         </div>
       </div>
     </template>
+
+    <UiDialogModal
+      :is-open="aiHintModalOpen"
+      title="코드값 매핑 AI 힌트"
+      max-width="min(480px, 92vw)"
+      custom-class="datamart-meta-aihint-dialog"
+      confirm-text="적용"
+      cancel-text="취소"
+      @close="onAiHintModalClose"
+      @confirm="onAiHintModalConfirm"
+    >
+      <div class="datamart-meta-aihint-modal">
+        <div
+          v-if="aiHintModalContext"
+          class="datamart-meta-aihint-modal-context"
+        >
+          <div class="datamart-meta-aihint-modal-context-row">
+            <span class="datamart-meta-aihint-modal-context-key">매핑 대상</span>
+            <span class="datamart-meta-aihint-modal-context-val">
+              {{ aiHintModalContext.tableCol }}
+              <span
+                v-if="aiHintModalContext.tableColSub"
+                class="datamart-meta-aihint-modal-context-sub"
+              >
+                ({{ aiHintModalContext.tableColSub }})
+              </span>
+            </span>
+          </div>
+          <div class="datamart-meta-aihint-modal-context-row">
+            <span class="datamart-meta-aihint-modal-context-key">연결 코드그룹</span>
+            <span class="datamart-meta-aihint-modal-context-val">{{ aiHintModalContext.codeGrp }}</span>
+          </div>
+        </div>
+        <UiTextarea
+          v-model="aiHintDraft"
+          class="datamart-meta-aihint-modal-textarea"
+          placeholder="이 테이블·컬럼이 해당 코드를 참조할 때 AI가 참고할 설명을 입력하세요."
+          :rows="8"
+          :auto-resize="false"
+          border
+          size="md"
+        />
+      </div>
+    </UiDialogModal>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { Datamart } from '~/types/datamart'
 import type {
-  DatamartMetaCodeColumnMapping,
   DatamartMetaCodeValueRow,
+  DatamartMetaCodeWithEntries,
   DatamartMetaJoinTy,
   DatamartMetaRelationship,
   DatamartMetaTableItem,
 } from '~/types/datamartMeta'
+import type { CodeGroupItem } from '~/types/codes'
+import { buildCodeMappingEntriesFromGroup } from '~/composables/datamart/useDatamartStore'
 import { datamartMetaCodeMappingMasterColumns } from '~/types/datamartMeta'
 import draggable from 'vuedraggable'
 
@@ -251,9 +339,10 @@ const props = defineProps<{
   datamart: Datamart | null
   tables: DatamartMetaTableItem[]
   relationships: DatamartMetaRelationship[]
+  codeGroupList: CodeGroupItem[]
 }>()
 
-const codeMappings = defineModel<DatamartMetaCodeColumnMapping[]>('codeMappings', { default: () => [] })
+const codeMappings = defineModel<DatamartMetaCodeWithEntries[]>('codeMappings', { default: () => [] })
 
 /** 마스터 테이블 행 타입 (템플릿 캐스트용) */
 interface MappingMasterRow {
@@ -265,10 +354,14 @@ interface MappingMasterRow {
 }
 
 const selectedMappingId = ref('')
-const pickTableId = ref('')
+/** 추가 툴바 — DatamartMetaCode.tblId / colId / codeGrpId 와 동일 키 */
+const pickTblId = ref('')
 const pickColId = ref('')
+const pickCodeGrpId = ref('')
 
 const buildMappingId = (tblId: string, colId: string) => `${tblId}::${colId}`
+
+const findMappingById = (id: string) => codeMappings.value.find((m) => buildMappingId(m.tblId, m.colId) === id)
 
 const sectionCollapsed = reactive({
   aiContextPreview: false,
@@ -279,36 +372,139 @@ const activeTables = computed(() => props.tables.filter((t) => t.useYn === 'Y'))
 const tableOptions = computed(() => [
   { label: '선택', value: '' },
   ...activeTables.value.map((t) => ({
-    label: `${t.physicalNm} ${t.logicalNm ? `· ${t.logicalNm}` : ''}`,
+    label: `${t.physicalNm} · ${t.logicalNm}`,
     value: t.id,
   })),
 ])
 
 const pickColumnOptions = computed(() => {
-  const t = activeTables.value.find((row) => row.id === pickTableId.value)
-  if (!t) return [{ label: '선택', value: '' }]
+  const table = activeTables.value.find((row) => row.id === pickTblId.value)
+  if (!table) return [{ label: '선택', value: '' }]
   return [
     { label: '선택', value: '' },
-    ...t.columns.map((c) => ({ label: c.colPhyNm || c.colKorNm || c.colId, value: c.colId })),
+    ...table.columns.map((c) => ({
+      label: c.colPhyNm || c.colKorNm || c.colId,
+      value: c.colId,
+    })),
   ]
 })
+
+const pickCodeGroupOptions = computed(() => [
+  { label: '선택', value: '' },
+  ...props.codeGroupList.map((g) => ({
+    label: g.codeGrpNm || g.codeGrpId,
+    value: g.codeGrpId,
+  })),
+])
+
+const onPickTableChange = () => {
+  pickColId.value = ''
+  pickCodeGrpId.value = ''
+}
+
+const onPickColumnChange = () => {
+  pickCodeGrpId.value = ''
+}
+
+/** 추가 툴바 선택이 현재 편집 중인 매핑과 동일할 때만 코드그룹 변경 반영 */
+const isPickTargetingSelectedMapping = () => {
+  const mapping = activeMapping.value
+  if (!mapping || !pickTblId.value || !pickColId.value) return false
+  return mapping.tblId === pickTblId.value && mapping.colId === pickColId.value
+}
+
+const isVisibleCodeEntry = (entry: DatamartMetaCodeValueRow) => entry.useYn !== 'N'
+const isVisibleCodeMapping = (mapping: DatamartMetaCodeWithEntries) => mapping.useYn !== 'N'
+
+/** 신규 매핑을 목록 맨 아래에 붙이기 위한 sortOrd */
+const getNextBottomSortOrd = () => {
+  const orders = codeMappings.value.filter(isVisibleCodeMapping).map((item) => Number(item.sortOrd) || 0)
+  return orders.length === 0 ? 1 : Math.max(...orders) + 1
+}
+
+const createEmptyCodeEntry = (codeGrpId = '', sortOrd = 0): DatamartMetaCodeValueRow => ({
+  codeGrpId,
+  codeId: '',
+  codeNm: '',
+  description: '',
+  sortOrd,
+  useYn: 'Y',
+})
+
+const resolveCodeGrpNm = (codeGrpId: string) =>
+  props.codeGroupList.find((group) => group.codeGrpId === codeGrpId)?.codeGrpNm?.trim() ?? ''
+
+const formatCodeGrpLabel = (codeGrpId: string, codeGrpNm?: string) => {
+  const grpNm = codeGrpNm?.trim() || resolveCodeGrpNm(codeGrpId)
+  const grpId = codeGrpId?.trim()
+  if (grpNm && grpId) return `${grpNm} (${grpId})`
+  return grpId || grpNm || '—'
+}
+
+const syncEntriesAcrossSameCodeGroup = (codeGrpId: string, entries: DatamartMetaCodeValueRow[]) => {
+  const grpId = codeGrpId?.trim()
+  if (!grpId) return
+  const snapshot = entries.map((entry) => ({ ...entry }))
+  for (const mapping of codeMappings.value) {
+    if (mapping.useYn !== 'N' && mapping.codeGrpId?.trim() === grpId) {
+      mapping.entries = snapshot.map((entry) => ({ ...entry }))
+    }
+  }
+}
+
+const applyLinkedCodeGroupEntries = async (mapping: DatamartMetaCodeWithEntries) => {
+  const codeGrpId = mapping.codeGrpId?.trim()
+  if (!codeGrpId) {
+    mapping.entries = []
+    return
+  }
+
+  mapping.codeGrpNm = mapping.codeGrpNm?.trim() || resolveCodeGrpNm(codeGrpId)
+
+  try {
+    const entries = await buildCodeMappingEntriesFromGroup(codeGrpId)
+    syncEntriesAcrossSameCodeGroup(codeGrpId, entries)
+  } catch {
+    syncEntriesAcrossSameCodeGroup(codeGrpId, [])
+    openToast({ message: '코드그룹 코드를 불러오지 못했습니다.', type: 'error' })
+  }
+}
 
 const activeMapping = computed(() => {
   const id = selectedMappingId.value
   if (!id) return null
-  return codeMappings.value.find((m) => buildMappingId(m.tblId, m.colId) === id) ?? null
+  const mapping = findMappingById(id) ?? null
+  if (!mapping || !isVisibleCodeMapping(mapping)) return null
+  return mapping
 })
 
 const activeEntries = computed<DatamartMetaCodeValueRow[]>({
-  get: () => activeMapping.value?.entries ?? [],
-  set: (entries) => {
-    const m = activeMapping.value
-    if (!m) return
-    m.entries = entries.map((entry, index) => ({
-      ...entry,
-      sortOrd: index + 1,
-    }))
+  get: () => {
+    const mapping = activeMapping.value
+    if (!mapping) return []
+    return mapping.entries.filter(isVisibleCodeEntry).sort((a, b) => a.sortOrd - b.sortOrd)
   },
+  set: (visibleEntries) => {
+    const mapping = activeMapping.value
+    if (!mapping) return
+    const inactiveEntries = mapping.entries.filter((entry) => entry.useYn === 'N')
+    mapping.entries = [
+      ...visibleEntries.map((entry, index) => ({
+        ...entry,
+        codeGrpId: entry.codeGrpId?.trim() || mapping.codeGrpId,
+        sortOrd: index + 1,
+        useYn: 'Y' as const,
+      })),
+      ...inactiveEntries,
+    ]
+    syncEntriesAcrossSameCodeGroup(mapping.codeGrpId, mapping.entries)
+  },
+})
+
+const activeCodeGrpLabel = computed(() => {
+  const mapping = activeMapping.value
+  if (!mapping) return ''
+  return formatCodeGrpLabel(mapping.codeGrpId, mapping.codeGrpNm)
 })
 
 /** 컬럼 메타 탭 「테이블 정보 · physicalNm」과 동일 톤 — 앞에 중점 */
@@ -327,21 +523,32 @@ const resolveTableCol = (tableId: string, columnId: string) => {
 }
 
 const mappingMasterRows = computed((): MappingMasterRow[] =>
-  codeMappings.value.map((m) => {
+  codeMappings.value.filter(isVisibleCodeMapping).map((m) => {
     const { table, col } = resolveTableCol(m.tblId, m.colId)
     return {
       mappingId: buildMappingId(m.tblId, m.colId),
       tableNm: table?.physicalNm ?? m.tblId,
       colPhyNm: col?.colPhyNm ?? m.colId,
       colDesc: col?.colDesc?.trim() ? col.colDesc : '—',
-      entryCnt: String(m.entries.length),
+      entryCnt: String(m.entries.filter(isVisibleCodeEntry).length),
     }
   }),
 )
 
-const onMappingMasterRowClick = (row: Record<string, unknown>) => {
+const onMappingMasterRowClick = async (row: Record<string, unknown>) => {
   const id = row.mappingId as string
-  if (id) selectedMappingId.value = id
+  if (!id) return
+  selectedMappingId.value = id
+  const current = findMappingById(id)
+  if (!current) return
+
+  // 추가 툴바와 선택 행 동기화 — 동일 행일 때만 코드그룹 변경이 편집에 반영됨
+  pickTblId.value = current.tblId
+  pickColId.value = current.colId
+  pickCodeGrpId.value = current.codeGrpId ?? ''
+
+  if (!current.codeGrpId?.trim() || current.entries.some(isVisibleCodeEntry)) return
+  await applyLinkedCodeGroupEntries(current)
 }
 
 const joinTypeLabel = (ty: DatamartMetaJoinTy) => {
@@ -362,12 +569,13 @@ const formatTableCol = (tableId: string, colId: string) => {
   return `${phys}.${colNm}`
 }
 
-const formatMappingValues = (m: DatamartMetaCodeColumnMapping) => {
-  if (m.entries.length === 0) return '(없음)'
-  return m.entries
+const formatMappingValues = (m: DatamartMetaCodeWithEntries) => {
+  const visibleEntries = m.entries.filter(isVisibleCodeEntry)
+  if (visibleEntries.length === 0) return '(없음)'
+  return visibleEntries
     .map((e) => {
-      const q = e.codeVal.includes("'") ? e.codeVal.replace(/'/g, "''") : e.codeVal
-      return `'${q}'=${e.codeKorNm || '(미입력)'}`
+      const q = e.codeId.includes("'") ? e.codeId.replace(/'/g, "''") : e.codeId
+      return `'${q}'=${e.codeNm || '(미입력)'}`
     })
     .join(', ')
 }
@@ -388,6 +596,13 @@ const previewAiContext = computed(() => {
       lines.push(`테이블: ${table.physicalNm} (${tableKo})`)
       lines.push(`컬럼: ${col.colPhyNm} ${col.colDesc?.trim() ? `— ${col.colDesc}` : ''}`)
       lines.push(`타입: ${col.dataType} `)
+      if (cur.aiHint?.trim()) {
+        lines.push(`매핑 AI 힌트: ${cur.aiHint.trim()}`)
+      }
+      const grpNm = cur.codeGrpNm?.trim() || resolveCodeGrpNm(cur.codeGrpId)
+      if (cur.codeGrpId?.trim()) {
+        lines.push(`코드그룹: ${grpNm || '—'} (${cur.codeGrpId})`)
+      }
       lines.push(`  값: ${formatMappingValues(cur)}`)
     } else {
       lines.push('테이블: —')
@@ -411,75 +626,120 @@ const previewAiContext = computed(() => {
   return lines.join('\n')
 })
 
-const onAddCodeColumn = () => {
-  if (!pickTableId.value || !pickColId.value) return
-  const table = activeTables.value.find((t) => t.id === pickTableId.value)
+const onAddCodeColumn = async () => {
+  if (!pickTblId.value || !pickColId.value || !pickCodeGrpId.value) return
+  const table = activeTables.value.find((t) => t.id === pickTblId.value)
   const col = table?.columns.find((c) => c.colId === pickColId.value)
   if (!table || !col) return
 
-  const dup = codeMappings.value.some((m) => m.tblId === table.id && m.colId === col.colId)
-  if (dup) {
-    openToast({ message: '이미 추가된 컬럼입니다.', type: 'warning' })
-    return
+  const tblId = table.id
+  const colId = col.colId
+  const codeGrpId = pickCodeGrpId.value
+  const existing = codeMappings.value.find((m) => m.tblId === tblId && m.colId === colId)
+
+  const codeGrpNm = resolveCodeGrpNm(codeGrpId)
+  let target: DatamartMetaCodeWithEntries
+  if (existing) {
+    existing.useYn = 'Y'
+    existing.codeGrpId = codeGrpId
+    existing.codeGrpNm = codeGrpNm
+    target = existing
+  } else {
+    target = {
+      tblId,
+      colId,
+      codeGrpId,
+      codeGrpNm,
+      aiHint: '',
+      sortOrd: getNextBottomSortOrd(),
+      entries: [],
+      useYn: 'Y',
+    }
+    codeMappings.value = [...codeMappings.value, target]
   }
 
-  codeMappings.value = [
-    ...codeMappings.value,
-    {
-      tblId: table.id,
-      colId: col.colId,
-      entries: [
-        {
-          datamartId: props.datamart?.datamartId ?? '',
-          tblId: table.id,
-          colId: col.colId,
-          codeVal: '',
-          codeKorNm: '',
-          codeDesc: '',
-          sortOrd: 1,
-          useYn: 'Y',
-          createDt: '',
-          modifyDt: '',
-        },
-      ],
-    },
-  ]
-  selectedMappingId.value = buildMappingId(table.id, col.colId)
+  await applyLinkedCodeGroupEntries(target)
+  selectedMappingId.value = buildMappingId(tblId, colId)
+  pickTblId.value = ''
   pickColId.value = ''
+  pickCodeGrpId.value = ''
+}
+
+const onPickCodeGroupChange = async () => {
+  if (!isPickTargetingSelectedMapping() || !pickCodeGrpId.value) return
+
+  const current = activeMapping.value
+  if (!current) return
+
+  current.codeGrpId = pickCodeGrpId.value
+  current.codeGrpNm = resolveCodeGrpNm(pickCodeGrpId.value)
+  await applyLinkedCodeGroupEntries(current)
 }
 
 const onRemoveMapping = (mappingId: string) => {
-  codeMappings.value = codeMappings.value.filter((m) => buildMappingId(m.tblId, m.colId) !== mappingId)
+  const mapping = findMappingById(mappingId)
+  if (!mapping) return
+  mapping.useYn = 'N'
   if (selectedMappingId.value === mappingId) selectedMappingId.value = ''
 }
 
-const onAddEntry = () => {
-  const m = activeMapping.value
-  if (!m) return
-  const row: DatamartMetaCodeValueRow = {
-    datamartId: props.datamart?.datamartId ?? '',
-    tblId: m.tblId,
-    colId: m.colId,
-    codeVal: '',
-    codeKorNm: '',
-    codeDesc: '',
-    sortOrd: m.entries.length + 1,
-    useYn: 'Y',
-    createDt: '',
-    modifyDt: '',
+const aiHintHasValue = (mapping: DatamartMetaCodeWithEntries) => Boolean(String(mapping.aiHint ?? '').trim())
+
+const aiHintModalOpen = ref(false)
+const aiHintDraft = ref('')
+
+/** 모달 상단 — 테이블·컬럼 / 코드그룹 매핑 맥락 */
+const aiHintModalContext = computed(() => {
+  const mapping = activeMapping.value
+  if (!mapping) return null
+
+  const { table, col } = resolveTableCol(mapping.tblId, mapping.colId)
+  const tableNm = table?.physicalNm ?? mapping.tblId
+  const colNm = col?.colPhyNm ?? mapping.colId
+  const tableColSub = [table?.logicalNm?.trim(), col?.colKorNm?.trim() || col?.colDesc?.trim()]
+    .filter(Boolean)
+    .join(' · ')
+
+  return {
+    tableCol: `${tableNm} · ${colNm}`,
+    tableColSub: tableColSub || '',
+    codeGrp: formatCodeGrpLabel(mapping.codeGrpId, mapping.codeGrpNm),
   }
-  m.entries = [...m.entries, row]
+})
+
+const openAiHintModal = () => {
+  const mapping = activeMapping.value
+  if (!mapping) return
+  aiHintDraft.value = mapping.aiHint ?? ''
+  aiHintModalOpen.value = true
 }
 
-const onRemoveEntry = (tblId: string, colId: string, sortOrd: number) => {
-  const m = codeMappings.value.find((x) => x.tblId === tblId && x.colId === colId)
-  if (!m) return
-  m.entries = m.entries
-    .filter((e) => e.sortOrd !== sortOrd)
-    .map((entry, index) => ({
-      ...entry,
-      sortOrd: index + 1,
-    }))
+const onAiHintModalConfirm = () => {
+  const mapping = activeMapping.value
+  if (mapping) mapping.aiHint = aiHintDraft.value.trim()
+}
+
+const onAiHintModalClose = () => {
+  aiHintModalOpen.value = false
+  aiHintDraft.value = ''
+}
+
+const onAddEntry = () => {
+  const mapping = activeMapping.value
+  if (!mapping) return
+  const visibleCnt = mapping.entries.filter(isVisibleCodeEntry).length
+  const row = createEmptyCodeEntry(mapping.codeGrpId, visibleCnt + 1)
+  mapping.entries = [...mapping.entries, row]
+  syncEntriesAcrossSameCodeGroup(mapping.codeGrpId, mapping.entries)
+}
+
+const onRemoveEntry = (sortOrd: number) => {
+  const mapping = activeMapping.value
+  if (!mapping) return
+  const entry = mapping.entries.find((item) => item.sortOrd === sortOrd && isVisibleCodeEntry(item))
+  if (!entry) return
+  entry.useYn = 'N'
+  syncEntriesAcrossSameCodeGroup(mapping.codeGrpId, mapping.entries)
 }
 </script>
 
@@ -507,13 +767,6 @@ const onRemoveEntry = (tblId: string, colId: string, sortOrd: number) => {
   :deep(.com-setting-section-body) {
     gap: 6px;
   }
-}
-
-.datamart-meta-code-mapping-title {
-  margin: 0 0 2px;
-  font-size: $font-size-lg;
-  font-weight: $font-weight-bold;
-  color: $color-text-heading;
 }
 
 .datamart-meta-code-mapping-desc {
@@ -556,6 +809,8 @@ const onRemoveEntry = (tblId: string, colId: string, sortOrd: number) => {
 }
 
 .datamart-meta-code-add-block {
+  --label-width: 56px;
+
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -718,9 +973,27 @@ const onRemoveEntry = (tblId: string, colId: string, sortOrd: number) => {
 .datamart-meta-code-entry-topbar {
   display: flex;
   flex-shrink: 0;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   padding: 6px 10px 4px;
   box-sizing: border-box;
+}
+
+.datamart-meta-code-grp-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $color-text-secondary;
+  word-break: break-all;
+}
+
+.datamart-meta-code-entry-topbar-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
 }
 
 .datamart-meta-code-entry-list {
@@ -776,19 +1049,6 @@ const onRemoveEntry = (tblId: string, colId: string, sortOrd: number) => {
   min-width: 0;
 }
 
-.datamart-meta-code-entry-inline-label {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  height: 22px;
-  padding: 0 8px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: $font-weight-medium;
-  color: #5d6983;
-  background: #f2f5fb;
-}
-
 .datamart-meta-code-entry-text-label {
   display: inline-flex;
   flex-shrink: 0;
@@ -832,6 +1092,79 @@ const onRemoveEntry = (tblId: string, colId: string, sortOrd: number) => {
 :deep(.datamart-meta-code-entry-code .ui-input-wrap),
 :deep(.datamart-meta-code-entry-label .ui-input-wrap) {
   border-radius: $border-radius-sm;
+}
+
+.datamart-meta-code-grp-aihint-picker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  .picker-btn {
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid #dce4e9;
+    border-radius: $border-radius-base;
+    background: #fff;
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+    appearance: none;
+    transition:
+      border-color 0.2s ease,
+      background 0.2s ease,
+      box-shadow 0.2s ease;
+
+    i {
+      display: block;
+      line-height: 1;
+      transition: color 0.2s ease;
+    }
+
+    &:hover {
+      border-color: #c3ced6;
+    }
+
+    &.is-placeholder {
+      border-style: dashed;
+      border-color: #cbd5e1;
+      background: #f8fafc;
+
+      i {
+        color: #94a3b8;
+      }
+
+      &:hover {
+        border-color: #94a3b8;
+        background: #f1f5f9;
+
+        i {
+          color: #64748b;
+        }
+      }
+    }
+
+    &.is-filled {
+      border-style: solid;
+      border-color: rgba(var(--color-primary-rgb, 99, 102, 241), 0.55);
+      background: rgba(var(--color-primary-rgb, 99, 102, 241), 0.07);
+      box-shadow: 0 0 0 1px rgba(var(--color-primary-rgb, 99, 102, 241), 0.12);
+
+      i {
+        color: var(--color-primary, #6366f1);
+      }
+
+      &:hover {
+        border-color: var(--color-primary, #6366f1);
+        background: rgba(var(--color-primary-rgb, 99, 102, 241), 0.1);
+      }
+    }
+  }
 }
 
 .datamart-meta-code-entry-actions {
@@ -880,6 +1213,83 @@ const onRemoveEntry = (tblId: string, colId: string, sortOrd: number) => {
 
   :deep(.ui-code-block-pre) {
     max-height: 100%;
+  }
+}
+
+.datamart-meta-aihint-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.datamart-meta-aihint-modal-context {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  background: #f8fafc;
+}
+
+.datamart-meta-aihint-modal-context-row {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.datamart-meta-aihint-modal-context-key {
+  flex-shrink: 0;
+  width: 76px;
+  font-size: 11px;
+  font-weight: $font-weight-semibold;
+  color: $color-text-muted;
+  line-height: 1.4;
+}
+
+.datamart-meta-aihint-modal-context-val {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.datamart-meta-aihint-modal-context-sub {
+  font-size: 11px;
+  font-weight: $font-weight-normal;
+  color: $color-text-secondary;
+}
+
+.datamart-meta-aihint-modal-textarea {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-height: 160px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+</style>
+<!-- Teleport 로 body 아래 렌더 — scoped 조상이 없어 동일 선택자는 비-scoped 로만 적용됨 -->
+<style lang="scss">
+.modal-dialog.datamart-meta-aihint-dialog {
+  .modal-dialog-content {
+    width: 100%;
+  }
+
+  .modal-dialog-body {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    min-width: 0;
   }
 }
 </style>

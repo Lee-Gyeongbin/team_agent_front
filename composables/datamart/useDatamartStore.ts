@@ -1,7 +1,11 @@
 import { useDatamartApi } from '~/composables/datamart/useDatamartApi'
+import { useCodesApi } from '~/composables/codes/useCodesApi'
+import type { CodeGroupItem, CodeItem } from '~/types/codes'
 import type { Datamart, DatamartSummary } from '~/types/datamart'
 import type {
-  DatamartMetaCodeColumnMapping,
+  DatamartMetaCode,
+  DatamartMetaCodeValueRow,
+  DatamartMetaCodeWithEntries,
   DatamartMetaFewshot,
   DatamartMetaRelationship,
   DatamartMetaSynonymGroup,
@@ -101,6 +105,35 @@ const {
   fetchSaveMetaFewshot,
 } = useDatamartApi()
 
+const { fetchCodeGroupList, fetchCodeList, fetchSaveCode } = useCodesApi()
+
+/** codes API(list.do) → 메타 코드값 매핑 탭 entries */
+export const buildCodeMappingEntriesFromGroup = async (codeGrpId: string): Promise<DatamartMetaCodeValueRow[]> => {
+  const response = await fetchCodeList(codeGrpId)
+  return (response.dataList ?? [])
+    .filter((item) => item.useYn === 'Y')
+    .map((item) => ({
+      codeGrpId,
+      codeId: item.codeId,
+      codeNm: item.codeNm,
+      description: item.description?.trim() ?? '',
+      sortOrd: Number(item.sortOrd) || 0,
+      useYn: 'Y' as const,
+    }))
+}
+
+/** 코드값 행 → codes API(saveCode.do) payload */
+const toCodeSaveItem = (codeGrpId: string, entry: DatamartMetaCodeValueRow): CodeItem => ({
+  codeGrpId,
+  codeId: entry.codeId?.trim() ?? '',
+  codeNm: entry.codeNm?.trim() ?? '',
+  sortOrd: Number(entry.sortOrd) || 0,
+  useYn: entry.useYn,
+  description: entry.description?.trim() ?? '',
+  etc1: '',
+  etc2: '',
+})
+
 /** 상태 변수 */
 const datamartList = ref<Datamart[]>([])
 
@@ -110,7 +143,8 @@ const metaModalRelationships = ref<DatamartMetaRelationship[]>([])
 const metaModalTableListError = ref<string | null>(null)
 const metaModalSynonymListError = ref<string | null>(null)
 const metaModalSelectedColumnTableId = ref('')
-const metaModalCodeMappings = ref<DatamartMetaCodeColumnMapping[]>([])
+const metaModalCodeMappings = ref<DatamartMetaCodeWithEntries[]>([])
+const metaModalCodeGroupList = ref<CodeGroupItem[]>([])
 const metaModalSynonymGroups = ref<DatamartMetaSynonymGroup[]>([])
 const metaModalFewshotList = ref<DatamartMetaFewshot[]>([])
 const metaModalFewshotListError = ref<string | null>(null)
@@ -321,6 +355,7 @@ const resetDatamartMetaModal = () => {
   metaModalSynonymListError.value = null
   metaModalSelectedColumnTableId.value = ''
   metaModalCodeMappings.value = []
+  metaModalCodeGroupList.value = []
   metaModalSynonymGroups.value = []
   metaModalFewshotList.value = []
   metaModalFewshotListError.value = null
@@ -347,8 +382,18 @@ const hydrateDatamartMetaModal = async (datamartId: string) => {
   const rels = await handleFetchMetaRelationshipList(id)
   metaModalRelationships.value = Array.isArray(rels) ? rels : []
 
-  const codes = await handleFetchMetaCodeMappingList(id)
-  metaModalCodeMappings.value = Array.isArray(codes) ? codes : []
+  try {
+    const groupRes = await fetchCodeGroupList()
+    metaModalCodeGroupList.value = groupRes.dataList ?? []
+  } catch {
+    metaModalCodeGroupList.value = []
+    openToast({ message: '코드그룹 목록을 불러오지 못했습니다.', type: 'error' })
+  }
+
+  const codes = await handleFetchMetaCodeMappingList(id, { silent: true })
+  const mappings = Array.isArray(codes) ? codes : []
+  await hydrateCodeMappingEntries(mappings)
+  metaModalCodeMappings.value = mappings
 
   const synonymRes = await handleFetchMetaSynonymList(id)
   const parsedSynonymGroups = parseMetaSynonymGroupsFromApi(synonymRes, id)
@@ -460,18 +505,127 @@ const handleSaveMetaRelationship = async (datamartId: string, relationships: Dat
   }
 }
 
+/** 코드 매핑 UI 기본값 — 조회·신규 추가 시 API 값으로 채움 */
+const createEmptyMetaCodeWithEntries = (): DatamartMetaCodeWithEntries => ({
+  tblId: '',
+  colId: '',
+  codeGrpId: '',
+  codeGrpNm: '',
+  aiHint: '',
+  sortOrd: 0,
+  useYn: 'Y',
+  entries: [],
+})
+
+/** 코드 매핑 조회 dataList[] → UI 모델 (entries는 codes API로 별도 hydrate) */
+const parseMetaCodeMappingListItem = (item: DatamartMetaCode): DatamartMetaCodeWithEntries => {
+  const empty = createEmptyMetaCodeWithEntries()
+  return {
+    ...empty,
+    tblId: item.tblId?.trim() ?? empty.tblId,
+    colId: item.colId?.trim() ?? empty.colId,
+    codeGrpId: item.codeGrpId?.trim() ?? empty.codeGrpId,
+    codeGrpNm: item.codeGrpNm?.trim() ?? empty.codeGrpNm,
+    aiHint: item.aiHint?.trim() ?? empty.aiHint,
+    sortOrd: Number(item.sortOrd ?? empty.sortOrd),
+    useYn: item.useYn === 'N' ? 'N' : 'Y',
+  }
+}
+
+/** 활성 매핑의 코드값 목록 — codes API hydrate (동일 codeGrpId 중복 조회 방지) */
+const hydrateCodeMappingEntries = async (mappings: DatamartMetaCodeWithEntries[]) => {
+  const activeMappings = mappings.filter((mapping) => mapping.useYn !== 'N' && mapping.codeGrpId?.trim())
+  const uniqueGrpIds = [...new Set(activeMappings.map((mapping) => mapping.codeGrpId.trim()))]
+  const entriesByGrp = new Map<string, DatamartMetaCodeValueRow[]>()
+
+  await Promise.all(
+    uniqueGrpIds.map(async (grpId) => {
+      try {
+        entriesByGrp.set(grpId, await buildCodeMappingEntriesFromGroup(grpId))
+      } catch {
+        entriesByGrp.set(grpId, [])
+      }
+    }),
+  )
+
+  for (const mapping of activeMappings) {
+    const grpId = mapping.codeGrpId.trim()
+    mapping.entries = (entriesByGrp.get(grpId) ?? []).map((entry) => ({ ...entry }))
+  }
+}
+
+/** 매핑 탭에서 편집한 코드값 — codes API(saveCode.do) 저장 */
+const saveCodeEntriesForMappings = async (mappings: DatamartMetaCodeWithEntries[]) => {
+  const entriesByGrp = new Map<string, { codeGrpNm: string; items: CodeItem[] }>()
+  for (const { useYn, codeGrpId, codeGrpNm, entries } of mappings) {
+    if (useYn === 'N') continue
+    const grpId = codeGrpId?.trim()
+    const grpNm = codeGrpNm?.trim()
+    if (!grpId) {
+      openToast({ message: '코드그룹 ID가 없습니다. 코드그룹을 다시 선택해주세요.', type: 'warning' })
+      return false
+    }
+    if (!grpNm) {
+      openToast({ message: `코드그룹(${grpId}) 이름이 없습니다. 코드그룹을 다시 선택해주세요.`, type: 'warning' })
+      return false
+    }
+    if (entriesByGrp.has(grpId)) continue
+    entriesByGrp.set(grpId, {
+      codeGrpNm: grpNm,
+      items: entries.map((e) => toCodeSaveItem(grpId, e)),
+    })
+  }
+
+  const validatedItems: CodeItem[] = []
+  for (const [codeGrpId, { codeGrpNm, items }] of entriesByGrp) {
+    const grpLabel = codeGrpNm ? `${codeGrpNm} (${codeGrpId})` : codeGrpId
+    for (const item of items) {
+      if (item.useYn !== 'N' && (!item.codeId || !item.codeNm)) {
+        openToast({ message: `코드그룹(${grpLabel})의 코드·코드명을 입력해주세요.`, type: 'warning' })
+        return false
+      }
+      if (!item.codeId) continue
+      validatedItems.push(item)
+    }
+  }
+
+  for (const item of validatedItems) {
+    await fetchSaveCode(item)
+  }
+
+  return true
+}
+
+/** 코드 매핑 UI 모델 → 저장 payload */
+const toMetaCodeMappingSaveItem = (mapping: DatamartMetaCodeWithEntries): DatamartMetaCode => ({
+  tblId: mapping.tblId,
+  colId: mapping.colId,
+  codeGrpId: mapping.codeGrpId?.trim() ?? '',
+  aiHint: mapping.aiHint?.trim() ?? '',
+  sortOrd: mapping.sortOrd,
+  useYn: mapping.useYn === 'N' ? 'N' : 'Y',
+})
+
 /** 코드 매핑 메타데이터 저장 */
-const handleSaveMetaCodeMapping = async (datamartId: string, mappings: DatamartMetaCodeColumnMapping[]) => {
+const handleSaveMetaCodeMapping = async (datamartId: string, mappings: DatamartMetaCodeWithEntries[]) => {
   if (!datamartId) {
     openToast({ message: '데이터마트 정보가 없습니다.', type: 'warning' })
     return false
   }
-  const payload = {
-    datamartId,
-    codeColumnMappingList: mappings,
-  }
+
   try {
-    await fetchSaveMetaCodeMapping(payload)
+    const isCodeSaved = await saveCodeEntriesForMappings(mappings)
+    if (!isCodeSaved) return false
+
+    const codeColumnMappingList = mappings.map((mapping) => toMetaCodeMappingSaveItem(mapping))
+    const payload = {
+      datamartId,
+      codeColumnMappingList,
+    }
+    const res = await fetchSaveMetaCodeMapping(payload)
+    const savedMappings = (res.dataList ?? []).map((item) => parseMetaCodeMappingListItem(item))
+    await hydrateCodeMappingEntries(savedMappings)
+    metaModalCodeMappings.value = savedMappings
     openToast({ message: '코드 매핑 메타데이터 저장에 성공했습니다.', type: 'success' })
     return true
   } catch {
@@ -480,16 +634,20 @@ const handleSaveMetaCodeMapping = async (datamartId: string, mappings: DatamartM
   }
 }
 
-/** 코드 매핑 메타데터 목록 조회 */
-const handleFetchMetaCodeMappingList = async (datamartId: string) => {
+/** 코드 매핑 메타데이터 목록 조회 */
+const handleFetchMetaCodeMappingList = async (datamartId: string, options?: { silent?: boolean }) => {
   try {
-    openLoading({ text: '코드 매핑 메타데터 목록 조회 중...' })
+    if (!options?.silent) {
+      openLoading({ text: '코드 매핑 메타데이터 목록 조회 중...' })
+    }
     const res = await fetchMetaCodeMappingList(datamartId)
-    return res.dataList
+    return (res.dataList ?? []).map((item) => parseMetaCodeMappingListItem(item))
   } catch {
-    openToast({ message: '코드 매핑 메타데터 목록 조회에 실패했습니다.', type: 'error' })
+    openToast({ message: '코드 매핑 메타데이터 목록 조회에 실패했습니다.', type: 'error' })
   } finally {
-    closeLoading()
+    if (!options?.silent) {
+      closeLoading()
+    }
   }
 }
 
@@ -597,6 +755,7 @@ export const useDatamartStore = () => {
     metaModalSynonymListError,
     metaModalSelectedColumnTableId,
     metaModalCodeMappings,
+    metaModalCodeGroupList,
     metaModalSynonymGroups,
     metaModalFewshotList,
     metaModalFewshotListError,

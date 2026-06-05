@@ -1,7 +1,7 @@
 import type { Datamart, DatamartSummary } from '~/types/datamart'
 import { useApi } from '~/composables/com/useApi'
 import type {
-  DatamartMetaCodeColumnMapping,
+  DatamartMetaCode,
   DatamartMetaRelationship,
   DatamartMetaSynonymPayload,
   DatamartMetaTableItem,
@@ -72,16 +72,14 @@ export const useDatamartApi = () => {
   /** 메타 관리 > 코드 매핑 메타데이터 저장 API */
   const fetchSaveMetaCodeMapping = async (payload: {
     datamartId: string
-    codeColumnMappingList: DatamartMetaCodeColumnMapping[]
-  }): Promise<void> => {
-    return post('/datamart/metaCodeMappingSave.do', payload)
+    codeColumnMappingList: DatamartMetaCode[]
+  }): Promise<{ dataList: DatamartMetaCode[] }> => {
+    return post<{ dataList: DatamartMetaCode[] }>('/datamart/metaCodeMappingSave.do', payload)
   }
 
   /** 메타 관리 > 코드 매핑 메타데이터 목록 조회 API */
-  const fetchMetaCodeMappingList = async (
-    datamartId: string,
-  ): Promise<{ dataList: DatamartMetaCodeColumnMapping[] }> => {
-    return post<{ dataList: DatamartMetaCodeColumnMapping[] }>('/datamart/metaCodeMappingList.do', { datamartId })
+  const fetchMetaCodeMappingList = async (datamartId: string): Promise<{ dataList: DatamartMetaCode[] }> => {
+    return post<{ dataList: DatamartMetaCode[] }>('/datamart/metaCodeMappingList.do', { datamartId })
   }
 
   /** 메타 관리 > 동의어 목록 조회 API */

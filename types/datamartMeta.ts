@@ -69,24 +69,31 @@ export interface DatamartMetaRelationship {
   modifyDt: string
 }
 
-/** 메타 관리 > 코드값 매핑 탭 — 코드 한 줄 */
+/** 메타 관리 > 코드값 매핑 탭 — codes API hydrate 표시용 (저장 payload 미포함) */
 export interface DatamartMetaCodeValueRow {
-  datamartId: string
-  tblId: string
-  colId: string
-  codeVal: string
-  codeKorNm: string
-  codeDesc: string
+  codeGrpId: string
+  codeId: string
+  codeNm: string
+  description: string
   sortOrd: number
   useYn: 'Y' | 'N'
-  createDt: string
-  modifyDt: string
 }
 
-/** 메타 관리 > 코드값 매핑 탭 — 코드성 컬럼별 매핑 묶음 */
-export interface DatamartMetaCodeColumnMapping {
+/** 메타 관리 > 코드값 매핑 — metaCodeMappingList/save 공통 */
+export interface DatamartMetaCode {
   tblId: string
   colId: string
+  codeGrpId: string
+  /** 조회 API JOIN 표시용 — 저장 시 미전송 */
+  codeGrpNm?: string
+  /** AI 참고용 코드값 매핑 힌트 (AI_HINT) — DB NULL 허용, 조회·저장 시 미입력은 '' */
+  aiHint: string
+  sortOrd: number
+  useYn: 'Y' | 'N'
+}
+
+/** 메타 관리 > 코드값 매핑 탭 — UI (entries는 codes API로 hydrate) */
+export interface DatamartMetaCodeWithEntries extends DatamartMetaCode {
   entries: DatamartMetaCodeValueRow[]
 }
 
