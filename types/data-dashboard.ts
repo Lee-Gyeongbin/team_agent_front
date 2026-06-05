@@ -14,6 +14,7 @@ export interface DataDashboardSqlItem {
   sqlTitle: string
   sqlContent: string
   ttsqParam: string | null
+  ttsqPeriodParam: string | null
   /** LLM이 추천한 시각화 옵션 JSON 문자열 (TB_CHAT_LOG.CHART_OPTION) — { chart, x, y } */
   chartOption?: string | null
   agentId?: string
@@ -34,6 +35,8 @@ export interface DataDashboardSqlVariable {
   options?: { label: string; value: string }[]
   /** 코드 다중 선택 여부 (codeMap 기반으로 enrichedVariables에서 주입) */
   multiple?: boolean
+  /** ttsqPeriodParam에 포함된 기간 관련 변수 여부 */
+  isPeriod?: boolean
 }
 
 /** 사용자가 배치한 위젯 인스턴스 (TB_USER_DASHBOARD_WIDGET 기반) */
@@ -47,6 +50,7 @@ export interface DataDashboardWidget {
   sortOrd: number
   variables: DataDashboardSqlVariable[]
   ttsqParam?: string | null
+  ttsqPeriodParam?: string | null
   /** widgetList 응답 시 TB_CHAT_LOG JOIN으로 함께 내려오는 SQL 본문 (필터 초기값 추출에 사용) */
   sqlContent?: string | null
   /** 마지막 SQL 실행 시 사용한 WHERE 변수값 (TB_USER_DASHBOARD_WIDGET.LAST_TTSQ_PARAMS) */

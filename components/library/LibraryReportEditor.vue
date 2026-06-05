@@ -1098,6 +1098,7 @@ const removePlaceholderByJsonKey = (jsonKey: string) => {
 
 defineExpose<{
   editor: typeof editor
+  getCurrentHtml: () => string
   insertContentAtLastSelection: (content: string) => void
   removePlaceholderByJsonKey: (jsonKey: string) => void
   renderTmplFieldByState: (opts: {
@@ -1117,6 +1118,7 @@ defineExpose<{
   removeTmplMultilineSection: (fieldId: string) => void
 }>({
   editor,
+  getCurrentHtml: () => editor.value?.getHTML() ?? html.value,
   insertContentAtLastSelection,
   removePlaceholderByJsonKey,
   renderTmplFieldByState,

@@ -63,6 +63,8 @@ const { executeSendPipeline } = useChatSendPipeline()
 // 채팅방 관련
 const chatRoom = ref<ChatRoom>({ ...EMPTY_CHAT_ROOM })
 const chatRoomList = ref<ChatRoom[]>([])
+/** selectChatRoomList({ resetHistorySlice: true }) 호출 시 사이드바 검색기록 표시 개수 초기화 */
+const chatRoomListSliceResetPending = ref(false)
 const chatMessage = ref('')
 const sharedMessages = ref<ChatMessage[]>([])
 /** 공유 페이지에서 조회된 원본 로그 행(대화 이어가기 시 svcTy·시드 질문 등 판별용) */
@@ -137,7 +139,7 @@ export const useChatRooms = () => {
     }
   }
   // 채팅방 목록 조회
-  const selectChatRoomList = async (options?: { skipLoading?: boolean }) => {
+  const selectChatRoomList = async (options?: { skipLoading?: boolean; resetHistorySlice?: boolean }) => {
     try {
       const userId = user.value?.userId
       if (!userId) return []
@@ -154,6 +156,9 @@ export const useChatRooms = () => {
         }
       }
       chatRoomList.value = dedupeChatRoomsByNormalizedId(res.list ?? [])
+      if (options?.resetHistorySlice) {
+        chatRoomListSliceResetPending.value = true
+      }
       return chatRoomList.value
     } catch (error) {
       console.error('채팅방 목록 조회 실패:', error)
@@ -193,11 +198,6 @@ export const useChatRooms = () => {
       fixYn: 'N',
     }
     chatRoom.value = createdRoom
-    // 고정 검색기록 위에 새 방이 오지 않도록: 고정 목록 아래(비고정 구역 선두)에 삽입
-    const prev = chatRoomList.value.filter((room) => normalizeChatRoomId(room.roomId) !== newRoomId)
-    const pinned = prev.filter((room) => room.fixYn === 'Y')
-    const unpinned = prev.filter((room) => room.fixYn !== 'Y')
-    chatRoomList.value = dedupeChatRoomsByNormalizedId([...pinned, createdRoom, ...unpinned])
 
     const isMemePrompt = isTodayMemePrompt(qContent)
     const sent = await executeSendPipeline({
@@ -206,19 +206,16 @@ export const useChatRooms = () => {
       svcTy,
       modelId: isMemePrompt ? TODAY_MEME_MODEL_ID : selectedModelOption.value,
       refId: buildRefIdForPayload(),
-      agentId: isMemePrompt
-        ? TODAY_MEME_AGENT_ID
-        : isRecommendAgentPrompt(qContent)
-          ? (selectedChatAgentId.value ?? '')
-          : resolveSvcTy() === 'C'
-            ? ''
-            : (selectedChatAgentId.value ?? ''),
+      // 일반 질의(C·에이전트 미선택)는 '' — 설문·추천 등 svcTy=C 에이전트 선택 시 selectedChatAgentId 전송
+      agentId: isMemePrompt ? TODAY_MEME_AGENT_ID : (selectedChatAgentId.value ?? ''),
       files,
       clearMessagesBefore: true,
     })
+    chatMessage.value = ''
+    await selectChatRoomList({ skipLoading: true, resetHistorySlice: true })
+
     if (!sent) return false
 
-    chatMessage.value = ''
     // out-in 페이지 전환 중 로컬 상태를 동시에 갱신하면 언마운트된 vnode 패치 오류가 날 수 있어 await
     await navigateTo(`/chat/${chatRoom.value.roomId}`)
     return true
@@ -485,6 +482,7 @@ export const useChatRooms = () => {
     shareTxt,
     chatMessage,
     chatRoomList,
+    chatRoomListSliceResetPending,
     selectChatRoomList,
     createChatRoom,
     selectModelOptions,

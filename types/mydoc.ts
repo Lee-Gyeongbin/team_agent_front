@@ -37,6 +37,16 @@ export interface MyDocListResponse {
   dataList: MyDoc[]
 }
 
+/** detail.do 요청 */
+export interface MyDocDetailRequest {
+  docId: string
+}
+
+/** detail.do 응답 */
+export interface MyDocDetailResponse {
+  data: MyDoc
+}
+
 /**
  * saveReport.do 요청 — 지식창고 AI 보고서 → 내 문서보관함 저장
  * docId·userId·감사필드·일시는 서버에서 세팅(수정 시 docId 포함)
@@ -59,4 +69,16 @@ export interface MyDocSaveReportResponse {
   successYn: boolean
   returnMsg: string
   docId?: string
+}
+
+/** updateNewYn.do 요청 */
+export interface MyDocUpdateNewYnRequest {
+  docId: string
+  newYn: 'Y' | 'N'
+}
+
+/** updateNewYn.do 응답 */
+export interface MyDocUpdateNewYnResponse {
+  successYn: boolean
+  returnMsg: string
 }

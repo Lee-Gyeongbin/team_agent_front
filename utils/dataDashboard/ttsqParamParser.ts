@@ -224,6 +224,92 @@ export const parseLastTtsqParams = (raw: unknown): Record<string, string> => {
   return result
 }
 
+/**
+ * TTSQ_PERIOD_PARAM JSON 문자열 → 기간 관련 컬럼 키 목록
+ * 예: '["year", "mon"]'
+ */
+export const parseTtsqPeriodParam = (ttsqPeriodParam: string | null | undefined): string[] => {
+  if (!ttsqPeriodParam) return []
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(ttsqPeriodParam)
+  } catch {
+    return []
+  }
+
+  if (!Array.isArray(parsed)) return []
+
+  return parsed.map((item) => String(item).trim()).filter(Boolean)
+}
+
+/** 기간 파라미터 키 목록에 포함되는지 확인 (대소문자 무시) */
+export const isPeriodParamKey = (key: string, periodKeys: string[]): boolean => {
+  if (!periodKeys.length) return false
+  const normalized = key.trim().toLowerCase()
+  return periodKeys.some((pk) => pk.trim().toLowerCase() === normalized)
+}
+
+/** variables에 isPeriod 플래그 주입 */
+export const markPeriodVariables = (
+  variables: DataDashboardSqlVariable[],
+  periodKeys: string[],
+): DataDashboardSqlVariable[] => {
+  if (!periodKeys.length) return variables
+  return variables.map((v) => ({
+    ...v,
+    isPeriod: isPeriodParamKey(v.key, periodKeys),
+  }))
+}
+
+/**
+ * 오늘(또는 referenceDate) 기준 기간 변수값 생성
+ * - 변수 type(date/month) 및 컬럼명(year, mon 등) 휴리스틱 적용
+ */
+export const buildTodayPeriodValues = (
+  variables: Pick<DataDashboardSqlVariable, 'key' | 'type'>[],
+  referenceDate: Date = new Date(),
+): Record<string, string> => {
+  const year = referenceDate.getFullYear()
+  const month = referenceDate.getMonth() + 1
+  const day = referenceDate.getDate()
+  const quarter = Math.ceil(month / 3)
+  const monthPadded = String(month).padStart(2, '0')
+  const dayPadded = String(day).padStart(2, '0')
+
+  const result: Record<string, string> = {}
+
+  for (const v of variables) {
+    const keyLower = v.key.trim().toLowerCase()
+
+    if (v.type === 'date') {
+      result[v.key] = `${year}-${monthPadded}-${dayPadded}`
+      continue
+    }
+    if (v.type === 'month') {
+      result[v.key] = `${year}-${monthPadded}`
+      continue
+    }
+
+    // 기간 변수 처리 (시스템에 따라 case 추가 필요)
+    if (keyLower === 'year' || keyLower === 'yyyy' || keyLower.endsWith('_year')) {
+      result[v.key] = String(year)
+    } else if (keyLower === 'mon' || keyLower === 'month' || keyLower.endsWith('_mon') || keyLower.endsWith('_month')) {
+      result[v.key] = String(month)
+    } else if (keyLower === 'day' || keyLower === 'dd' || keyLower.endsWith('_day')) {
+      result[v.key] = String(day)
+    } else if (keyLower.includes('quarter') || keyLower === 'qtr' || keyLower === 'qrt') {
+      result[v.key] = String(quarter)
+    } else if (keyLower.includes('start') && keyLower.includes('date')) {
+      result[v.key] = `${year}-${monthPadded}-01`
+    } else if (keyLower.includes('end') && keyLower.includes('date')) {
+      result[v.key] = `${year}-${monthPadded}-${dayPadded}`
+    }
+  }
+
+  return result
+}
+
 const mapItemToVariable = (item: unknown): DataDashboardSqlVariable | null => {
   if (typeof item !== 'object' || item === null) return null
   const p = item as Record<string, unknown>

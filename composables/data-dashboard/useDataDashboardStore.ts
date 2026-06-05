@@ -1,6 +1,12 @@
 import { useDataDashboardApi } from '~/composables/data-dashboard/useDataDashboardApi'
 import { GS_DEFAULT_LAYOUT } from '~/composables/data-dashboard/useDataDashboardGridStack'
-import { parseTtsqParam, parseLastTtsqParams, extractSqlWhereValues } from '~/utils/dataDashboard/ttsqParamParser'
+import {
+  parseTtsqParam,
+  parseTtsqPeriodParam,
+  markPeriodVariables,
+  parseLastTtsqParams,
+  extractSqlWhereValues,
+} from '~/utils/dataDashboard/ttsqParamParser'
 import { parseVizConfig } from '~/utils/dataDashboard/vizConfigUtil'
 import type {
   DataDashboardSqlItem,
@@ -49,6 +55,7 @@ const isAddModalOpen = ref(false)
 const hydrateVariables = <
   T extends {
     ttsqParam?: string | null
+    ttsqPeriodParam?: string | null
     vizConfig?: unknown
     variables?: DataDashboardWidget['variables']
     sqlContent?: string | null
@@ -57,7 +64,8 @@ const hydrateVariables = <
 >(
   item: T,
 ): T => {
-  const vars = parseTtsqParam(item.ttsqParam ?? null)
+  const periodKeys = parseTtsqPeriodParam(item.ttsqPeriodParam ?? null)
+  const vars = markPeriodVariables(parseTtsqParam(item.ttsqParam ?? null), periodKeys)
 
   if (item.sqlContent) {
     const whereValues = extractSqlWhereValues(
@@ -151,6 +159,14 @@ const enrichWidgetDatamartId = (widget: DataDashboardWidget): DataDashboardWidge
   return { ...widget, datamartId }
 }
 
+/** widgetList에 ttsqPeriodParam이 없을 때 sqlList(logId)에서 보강 */
+const enrichWidgetPeriodParam = (widget: DataDashboardWidget): DataDashboardWidget => {
+  if (widget.ttsqPeriodParam?.trim()) return widget
+  const fromSql = sqlList.value.find((s) => s.logId === widget.logId)?.ttsqPeriodParam
+  if (!fromSql?.trim()) return widget
+  return { ...widget, ttsqPeriodParam: fromSql }
+}
+
 /** SQL 실행 성공 시 LAST_TTSQ_PARAMS · LAST_EXEC_DT 저장 (자동 저장 — 토스트 없음) */
 const persistLastTtsqParams = async (widgetId: string, params: Record<string, string>) => {
   try {
@@ -177,7 +193,9 @@ const handleSelectWidgetList = async () => {
   try {
     const [widgetRes, layoutRes, sqlRes] = await Promise.all([fetchWidgetList(), fetchLayoutList(), fetchSqlList()])
     sqlList.value = (sqlRes.list ?? []).map((item) => hydrateVariables(item as DataDashboardSqlItem))
-    widgetList.value = sortWidgetsByOrd((widgetRes.list ?? []).map(hydrateVariables).map(enrichWidgetDatamartId))
+    widgetList.value = sortWidgetsByOrd(
+      (widgetRes.list ?? []).map(enrichWidgetDatamartId).map(enrichWidgetPeriodParam).map(hydrateVariables),
+    )
     widgetList.value.forEach(initWidgetState)
     layoutMap.value = Object.fromEntries(
       (layoutRes.list ?? []).map((l) => [l.widgetId, { ...l, isVisible: l.isVisible !== false }]),
@@ -268,6 +286,7 @@ const toWidgetPayload = (widget: Partial<DataDashboardWidget>): Record<string, u
       ? JSON.stringify(widget.vizConfig)
       : (widget.vizConfig ?? null),
   ttsqParam: widget.ttsqParam ?? null,
+  ttsqPeriodParam: widget.ttsqPeriodParam ?? null,
   sortOrd: widget.sortOrd,
 })
 
