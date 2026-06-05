@@ -228,6 +228,7 @@ import type { ChatRoom } from '~/types/chat'
 import { normalizeChatRoomId, parseChatRoomIdFromChatPath } from '~/utils/chat/chatRoomIdUtil'
 const {
   chatRoomList,
+  chatRoomListSliceResetPending,
   selectChatRoomList,
   handleRenameChatRoom,
   handleDeleteChatRoom,
@@ -324,7 +325,13 @@ function resetSearchHistoryLoadMoreUi() {
   searchHistoryRevealIdSet.value = new Set()
 }
 
-watch(chatRoomList, resetSearchHistoryLoadMoreUi)
+watch(chatRoomList, () => {
+  resetSearchHistoryLoadMoreUi()
+  if (chatRoomListSliceResetPending.value) {
+    searchHistoryVisibleCount.value = Math.min(SEARCH_HISTORY_INITIAL, chatRoomList.value.length)
+    chatRoomListSliceResetPending.value = false
+  }
+})
 
 watch(
   () => chatRoomList.value.length,
