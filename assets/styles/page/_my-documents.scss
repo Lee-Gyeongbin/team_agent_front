@@ -281,3 +281,84 @@
   font-weight: $font-weight-medium;
   letter-spacing: -0.01em;
 }
+
+// 내 문서 상세 모달 — library-create-doc-report-modal과 동일 크기
+.my-doc-detail-modal {
+  &.modal-dialog {
+    z-index: $z-modal-stack-3;
+  }
+
+  .modal-dialog-content {
+    display: flex;
+    flex-direction: column;
+    width: min(1720px, calc(100vw - 32px));
+    max-width: min(1720px, calc(100vw - 32px)) !important;
+    height: min(94vh, calc(100vh - 32px));
+    max-height: min(94vh, calc(100vh - 32px));
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .modal-dialog-header {
+    flex-shrink: 0;
+  }
+
+  .modal-dialog-body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    padding-right: 20px;
+    padding-left: 6px;
+    scrollbar-gutter: stable;
+    box-sizing: border-box;
+  }
+
+  &.doc-dataset-create-modal .modal-dialog-body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .doc-dataset-create-form {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    width: 100%;
+    max-width: 100%;
+    min-height: 0;
+    padding-right: 8px;
+    max-height: none;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  &.doc-dataset-create-modal.is-fullscreen .modal-dialog-content {
+    width: calc(100vw - 40px);
+    max-width: calc(100vw - 40px) !important;
+    max-height: calc(100vh - 40px);
+    height: calc(100vh - 40px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  &.doc-dataset-create-modal.is-fullscreen .modal-dialog-body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    height: 0;
+    overflow: hidden;
+  }
+
+  &.doc-dataset-create-modal.is-fullscreen .doc-dataset-create-form {
+    flex: 1 1 auto;
+    height: 100%;
+    max-height: none;
+    min-height: 0;
+    overflow: hidden;
+  }
+}

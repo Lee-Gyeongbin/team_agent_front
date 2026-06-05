@@ -21,6 +21,9 @@ export default defineNuxtConfig({
   css: ['gridstack/dist/gridstack.min.css', '~/assets/styles/main.scss'],
 
   vite: {
+    optimizeDeps: {
+      include: ['exceljs', 'html-to-image'],
+    },
     // Vite가 클라이언트에서 import.meta.server → false 치환 후에도
     // manifest.js dead branch의 import("#app-manifest")를 분석하며 실패하는 경우 대비
     // (@nuxt/vite-builder의 clientAliases와 동일, nuxt/nuxt#30461·#33606)
