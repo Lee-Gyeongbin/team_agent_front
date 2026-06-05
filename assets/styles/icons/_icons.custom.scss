@@ -506,6 +506,11 @@
   @include icon-file-bg('setting-agent');
 }
 
+// 이메일
+.icon-email {
+  @include icon-file-bg('email');
+}
+
 // 데이터셋 카드 아이콘
 .icon-document {
   @include icon-file-bg('icon-document');
