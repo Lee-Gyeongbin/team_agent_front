@@ -98,6 +98,12 @@
                 class="filter-field"
                 :class="variable.type === 'select' ? 'filter-field--select' : 'filter-field--compact'"
               >
+                <span
+                  v-if="variable.isPeriod"
+                  class="period-badge"
+                >
+                  기간
+                </span>
                 <label class="filter-label">{{ variable.label }}</label>
                 <!-- 멀티셀렉트 (코드맵 기반 변수) -->
                 <UiMultiSelect
@@ -139,32 +145,48 @@
             </template>
           </div>
           <div class="widget-filter-actions">
-            <UiButton
-              variant="outline"
-              size="sm"
-              icon-only
-              class="widget-filter-reset"
-              title="초기값 복원"
-              aria-label="초기값 복원"
-              @click="onResetFilters"
-            >
-              <template #icon-left>
-                <i class="icon-refresh size-16" />
-              </template>
-            </UiButton>
-            <UiButton
-              variant="primary"
-              size="sm"
-              icon-only
-              class="widget-filter-execute"
-              title="실행"
-              aria-label="조회 실행"
-              @click="onExecute"
-            >
-              <template #icon-left>
-                <i class="icon-play size-16" />
-              </template>
-            </UiButton>
+            <div class="widget-filter-action-group">
+              <UiButton
+                v-if="periodVariables.length"
+                variant="outline"
+                size="sm"
+                icon-only
+                class="widget-filter-today"
+                title="오늘 기준"
+                aria-label="오늘 날짜 기준으로 기간 값 설정"
+                @click="onApplyTodayPeriod"
+              >
+                <template #icon-left>
+                  <i class="icon-calendar size-16" />
+                </template>
+              </UiButton>
+              <UiButton
+                variant="outline"
+                size="sm"
+                icon-only
+                class="widget-filter-reset"
+                title="초기값 복원"
+                aria-label="초기값 복원"
+                @click="onResetFilters"
+              >
+                <template #icon-left>
+                  <i class="icon-refresh size-16" />
+                </template>
+              </UiButton>
+              <UiButton
+                variant="primary"
+                size="sm"
+                icon-only
+                class="widget-filter-execute"
+                title="실행"
+                aria-label="조회 실행"
+                @click="onExecute"
+              >
+                <template #icon-left>
+                  <i class="icon-play size-16" />
+                </template>
+              </UiButton>
+            </div>
           </div>
         </div>
 
@@ -255,7 +277,7 @@
 </template>
 
 <script setup lang="ts">
-import { substituteWhereValues } from '~/utils/dataDashboard/ttsqParamParser'
+import { substituteWhereValues, buildTodayPeriodValues } from '~/utils/dataDashboard/ttsqParamParser'
 import { copyToClipboard } from '~/utils/global/clipboardUtil'
 import { formatSql } from '~/utils/global/codeUtil'
 import {
@@ -379,6 +401,8 @@ const enrichedVariables = computed<typeof props.widget.variables>(() => {
   })
 })
 
+const periodVariables = computed(() => enrichedVariables.value.filter((v) => v.isPeriod))
+
 // ===== 로컬 필터 값 =====
 
 const localFilterValues = ref<Record<string, string>>({ ...props.state.filterValues })
@@ -444,6 +468,16 @@ const onCopyPreviewSql = async () => {
 
 const onResetFilters = () => {
   emit('reset-filters', props.widget.widgetId)
+}
+
+/** 기간 변수를 오늘 날짜 기준값으로 설정 */
+const onApplyTodayPeriod = () => {
+  if (!periodVariables.value.length) return
+  const todayValues = buildTodayPeriodValues(periodVariables.value)
+  localFilterValues.value = {
+    ...localFilterValues.value,
+    ...todayValues,
+  }
 }
 
 const onExecute = () => {

@@ -197,6 +197,7 @@
                 <p class="config-hint">
                   SQL 재활용 시 값을 변경할 수 있는 변수 컬럼입니다. 대시보드 화면에서 값을 수정해 조회할 수 있습니다.
                 </p>
+
                 <div class="param-tags param-tags--readonly">
                   <span
                     v-for="param in parsedParams"
@@ -204,6 +205,12 @@
                     class="param-tag"
                   >
                     {{ param.key.toUpperCase() }}
+                    <span
+                      v-if="param.isPeriod"
+                      class="period-badge"
+                    >
+                      기간
+                    </span>
                   </span>
                   <span
                     v-if="!parsedParams.length"
@@ -253,7 +260,7 @@
 </template>
 
 <script setup lang="ts">
-import { parseTtsqParam } from '~/utils/dataDashboard/ttsqParamParser'
+import { parseTtsqParam, parseTtsqPeriodParam, markPeriodVariables } from '~/utils/dataDashboard/ttsqParamParser'
 import { copyToClipboard } from '~/utils/global/clipboardUtil'
 import { formatSql } from '~/utils/global/codeUtil'
 import type {
@@ -282,6 +289,7 @@ const emit = defineEmits<{
       vizConfig: DataDashboardVizConfig
       variables: DataDashboardSqlItem['variables']
       ttsqParam?: string | null
+      ttsqPeriodParam?: string | null
     },
   ]
 }>()
@@ -327,9 +335,10 @@ const AXIS_CHART_VIZ_TYPES: DataDashboardVizType[] = ['bar', 'line', 'horizontal
 
 const isAxisChartViz = computed(() => AXIS_CHART_VIZ_TYPES.includes(form.vizType))
 
-/** ttsqParam 파싱 + LLM 추천 뱃지 상태 반영 */
-const applyTtsqParam = (ttsqParam: string | null | undefined) => {
-  parsedParams.value = parseTtsqParam(ttsqParam)
+/** ttsqParam 파싱 + 기간 파라미터 분류 */
+const applyTtsqParam = (ttsqParam: string | null | undefined, ttsqPeriodParam: string | null | undefined) => {
+  const periodKeys = parseTtsqPeriodParam(ttsqPeriodParam)
+  parsedParams.value = markPeriodVariables(parseTtsqParam(ttsqParam), periodKeys)
 }
 
 const isColumnMappingValid = computed(() => {
@@ -430,7 +439,7 @@ const onSelectSql = (sql: DataDashboardSqlItem) => {
   applyChartOption(parseChartOption(sql.chartOption))
 
   // LLM이 추출한 SQL 파라미터 자동 세팅
-  applyTtsqParam(sql.ttsqParam)
+  applyTtsqParam(sql.ttsqParam, sql.ttsqPeriodParam)
 }
 
 const onSave = () => {
@@ -444,6 +453,7 @@ const onSave = () => {
     vizConfig: buildSaveVizConfig(),
     variables: parsedParams.value.length ? parsedParams.value : selectedSql.value.variables,
     ttsqParam: selectedSql.value.ttsqParam,
+    ttsqPeriodParam: selectedSql.value.ttsqPeriodParam,
   })
 }
 
@@ -571,8 +581,8 @@ watch(
   display: flex;
   flex-wrap: wrap;
   align-content: flex-start;
-  gap: 6px;
-  padding: 10px 12px;
+  gap: 8px 6px;
+  padding: 12px 12px 10px;
   border: 1px solid var(--color-border, #dce4e9);
   border-radius: 8px;
   background: var(--color-bg-subtle, #f8fafc);
@@ -584,10 +594,11 @@ watch(
 }
 
 .param-tag {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  padding: 4px 5px 4px 10px;
+  padding: 4px 10px;
   border-radius: 6px;
   border: 1px solid var(--color-primary-border, #c7d6f7);
   background: var(--color-primary-light, #eff3ff);
@@ -596,6 +607,23 @@ watch(
   font-weight: 600;
   font-family: $font-family-mono;
   letter-spacing: 0.04em;
+}
+
+.period-badge {
+  position: absolute;
+  top: -6px;
+  right: -4px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: #fef3c7;
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  color: #92400e;
+  font-size: 9px;
+  font-weight: 700;
+  font-family: inherit;
+  letter-spacing: 0;
+  line-height: 14px;
+  white-space: nowrap;
 }
 
 .param-empty {
