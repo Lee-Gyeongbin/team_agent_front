@@ -241,16 +241,12 @@ const memeList = computed(() => {
 
 const isTodayMemeResponse = computed(() => isTodayMemeLibraryCard(props.item) && memeList.value.length > 0)
 
-const isSurveyRadarCard = (agentId: string, qcontent: string) =>
-  isSurveyRadarLibraryCard(agentId, qcontent, libraryAgents.value)
-
 const responseRenderedHtml = computed(() => {
   const raw = props.item.rcontent ?? ''
   const agentId = props.item.agentId ?? ''
-  const qcontent = props.item.qcontent ?? ''
   if (
-    isSurveyRadarCard(agentId, qcontent) ||
-    shouldLibrarySurveyPexelsInject(agentId, qcontent, raw, libraryAgents.value)
+    isSurveyRadarLibraryCard(agentId, libraryAgents.value) ||
+    shouldLibrarySurveyPexelsInject(agentId, libraryAgents.value)
   ) {
     return toHtmlContent(removeKeywordLines(raw))
   }
@@ -271,8 +267,7 @@ let cancelPsychologyRadarInjection: (() => void) | null = null
 let isLibraryCardAlive = true
 
 const isPsychologyRadarResponse = computed(
-  () =>
-    isSurveyRadarCard(props.item.agentId ?? '', props.item.qcontent ?? '') && psychologyMarkerFound.value,
+  () => isSurveyRadarLibraryCard(props.item.agentId ?? '', libraryAgents.value) && psychologyMarkerFound.value,
 )
 
 const injectLibraryPexelsHtml = (raw: string, cacheKey: string) => {
@@ -342,7 +337,7 @@ watch(
 
     const cacheKey = logId || cardId
     const isRadar = isSurveyRadarAgentById(agentId, libraryAgents.value)
-    const isPexels = shouldLibrarySurveyPexelsInject(agentId, qcontent, rcontent, libraryAgents.value)
+    const isPexels = shouldLibrarySurveyPexelsInject(agentId, libraryAgents.value)
 
     // showRadarChart: false + showPexelsRecoveryImages: true (디지털 과부하 등)
     if (!isRadar && isPexels) {
@@ -351,7 +346,7 @@ watch(
       return
     }
 
-    if (!isSurveyRadarCard(agentId, qcontent)) return
+    if (!isRadar) return
 
     const { found, before, after } = extractAiImageMarkerSection(rcontent)
     if (!found) return

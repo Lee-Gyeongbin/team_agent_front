@@ -272,6 +272,8 @@ watch(
     // handleSetChatRoom 보다 먼저 로그를 조회해야
     // handleSelectChatLogList 내부의 isSameRoom 비교가 "이전 방 vs 새 방"으로 올바르게 동작한다.
     // (handleSetChatRoom을 먼저 호출하면 isSameRoom이 항상 true가 되어 이전 방 메시지가 잔류하는 버그 발생)
+    // 설문 subCfg·Pexels 파싱을 위해 에이전트 목록을 로그 조회와 함께 보장 (handleSelectChatLogList 내부에서도 재호출)
+    await handleSelectChatIndexAgents()
     await handleSelectChatLogList(roomId, { preserveLocalWhenEmpty: true })
     handleSetChatRoom(roomId)
   },

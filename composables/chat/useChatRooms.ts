@@ -206,13 +206,8 @@ export const useChatRooms = () => {
       svcTy,
       modelId: isMemePrompt ? TODAY_MEME_MODEL_ID : selectedModelOption.value,
       refId: buildRefIdForPayload(),
-      agentId: isMemePrompt
-        ? TODAY_MEME_AGENT_ID
-        : isRecommendAgentPrompt(qContent)
-          ? (selectedChatAgentId.value ?? '')
-          : resolveSvcTy() === 'C'
-            ? ''
-            : (selectedChatAgentId.value ?? ''),
+      // 일반 질의(C·에이전트 미선택)는 '' — 설문·추천 등 svcTy=C 에이전트 선택 시 selectedChatAgentId 전송
+      agentId: isMemePrompt ? TODAY_MEME_AGENT_ID : (selectedChatAgentId.value ?? ''),
       files,
       clearMessagesBefore: true,
     })

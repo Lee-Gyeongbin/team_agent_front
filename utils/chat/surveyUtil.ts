@@ -377,6 +377,23 @@ export const parseSurveyConfigFromAgent = (agent: Agent): SurveyAgentConfig | nu
   }
 }
 
+/** agentId로 agents 목록에서 svcTy=C·subTy=SURVEY 에이전트 여부 */
+export const isSurveyAgentById = (agentId: string, agents: Agent[]): boolean => {
+  const id = agentId.trim()
+  if (!id) return false
+  const agent = agents.find((a) => a.agentId === id)
+  return agent ? isSurveyAgent(agent) : false
+}
+
+/** 채팅 로그 행이 svcTy=C 설문(SURVEY) 질의응답인지 — selectAgentListForChat agentId 매핑 */
+export const isSurveyChatLogRow = (
+  row: { svcTy?: string; agentId?: string },
+  agents: Agent[],
+): boolean => {
+  if ((row.svcTy ?? 'C') !== 'C') return false
+  return isSurveyAgentById(String(row.agentId ?? ''), agents)
+}
+
 /** agentId로 agents 목록에서 설문 설정 조회 */
 export const resolveSurveyConfigByAgentId = (agentId: string, agents: Agent[]): SurveyAgentConfig | null => {
   const agent = agents.find((a) => a.agentId === agentId)
@@ -681,34 +698,19 @@ export const parseSurveyAnswersFromPrompt = (promptText: string, totalQuestions?
   }
 }
 
-/** 에이전트 목록 미동기화 시 qcontent만으로 SURVEY 응답 여부 추정 (라이브러리 카드용) */
-export const isLikelySurveyResponseByQcontent = (qcontent: string): boolean =>
-  Object.keys(parseSurveyAnswersFromPrompt(qcontent)).length > 0 || isSurveyDiagnosticPrompt(qcontent)
-
-/** 라이브러리 카드 질의 — 설문 readonly UI 표시 여부 (에이전트 목록 미로드 시 qcontent 폴백) */
-export const isSurveyLibraryCardItem = (item: { agentId?: string; qcontent?: string }, agents: Agent[]): boolean => {
-  const agentId = (item.agentId ?? '').trim()
-  const qcontent = item.qcontent ?? ''
-  if (agentId) {
-    const agent = agents.find((a) => a.agentId === agentId)
-    if (agent) return isSurveyAgent(agent)
-  }
-  return isLikelySurveyResponseByQcontent(qcontent)
+/** 라이브러리 카드 질의 — svcTy=C·subTy=SURVEY 에이전트면 설문 readonly UI */
+export const isSurveyLibraryCardItem = (item: { svcTy?: string; agentId?: string }, agents: Agent[]): boolean => {
+  if ((item.svcTy ?? 'C') !== 'C') return false
+  return isSurveyAgentById(String(item.agentId ?? ''), agents)
 }
 
-/** 라이브러리 응답 — 방사형 차트·마커 분리 렌더 대상 (에이전트 미동기화 시 qcontent 폴백) */
-export const isSurveyRadarLibraryCard = (agentId: string, qcontent: string, agents: Agent[]): boolean =>
-  isSurveyRadarAgentById(agentId, agents) || isLikelySurveyResponseByQcontent(qcontent)
+/** 라이브러리 응답 — 방사형 차트(showRadarChart) 분리 렌더 대상 */
+export const isSurveyRadarLibraryCard = (agentId: string, agents: Agent[]): boolean =>
+  isSurveyRadarAgentById(agentId, agents)
 
-/** 라이브러리 응답 — Pexels 이미지 주입 대상 (에이전트 설정 또는 설문 qcontent + 이미지 키워드) */
-export const shouldLibrarySurveyPexelsInject = (
-  agentId: string,
-  qcontent: string,
-  rcontent: string,
-  agents: Agent[],
-): boolean =>
-  isSurveyPexelsAgentById(agentId, agents) ||
-  (isLikelySurveyResponseByQcontent(qcontent) && hasImageKeywordLines(rcontent))
+/** 라이브러리 응답 — Pexels 이미지 주입 대상 (showPexelsRecoveryImages·showAiRecoveryImage) */
+export const shouldLibrarySurveyPexelsInject = (agentId: string, agents: Agent[]): boolean =>
+  isSurveyPexelsAgentById(agentId, agents)
 
 /** 채팅 메시지 목록에 삽입할 type=survey 메시지 객체 생성 */
 export const createSurveyMessage = (

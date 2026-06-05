@@ -19,8 +19,8 @@ import {
   usePsychologySurvey,
   createSurveyMessage,
   buildDiagnosticPrompt,
-  parseSurveyAnswersFromPrompt,
   isSurveyDiagnosticPrompt,
+  isSurveyChatLogRow,
   normalizeAgentSubCfg,
   handleSelectSurveyChatIndexAgent,
 } from '~/utils/chat/surveyUtil'
@@ -60,7 +60,7 @@ import {
   setNewsCuratorSubmitCardLogId,
   useNewsCurator,
 } from '~/utils/chat/newsCuratorUtil'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useChatApi } from '~/composables/chat/useChatApi'
 import { clearBodyChartFullscreen } from '~/utils/chat/visualizationChartUtil'
 import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
@@ -139,13 +139,9 @@ const messagesForDisplay = computed(() => {
   if (isSurveyRoom(chatRoom.value.roomId)) {
     let surveyPromptHidden = false
     base = messages.value.filter((m) => {
-      if (m.type === 'question' && !surveyPromptHidden) {
-        const parsed = parseSurveyAnswersFromPrompt(m.qContent ?? '')
-        const isSurveyPrompt = Object.keys(parsed).length > 0 || isSurveyDiagnosticPrompt(m.qContent ?? '')
-        if (isSurveyPrompt) {
-          surveyPromptHidden = true
-          return false
-        }
+      if (m.type === 'question' && !surveyPromptHidden && isSurveyDiagnosticPrompt(m.qContent ?? '')) {
+        surveyPromptHidden = true
+        return false
       }
       return true
     })
@@ -184,9 +180,14 @@ const messagesForDisplay = computed(() => {
 const { fetchSelectChatLogList, fetchSelectChatRef, fetchSelectTableDataList, fetchSelectAgentListForChat } =
   useChatApi()
 
-/** /chat 인덱스용 에이전트 목록 */
+/** /chat 인덱스용 에이전트 목록 (selectAgentListForChat.do — subCfg 포함) */
 const chatIndexAgents = ref<Agent[]>([])
 const isLoadingChatIndexAgents = ref(true)
+/** 동시 호출 시 단일 요청만 수행 */
+let chatIndexAgentsLoadPromise: Promise<void> | null = null
+/** 검색기록 재파싱용 — 마지막으로 로드한 raw 로그·roomId */
+const lastLoadedChatLogRows = ref<ChatLogListRow[]>([])
+const lastLoadedChatLogRoomId = ref('')
 const normalizeChatAgents = (list: Agent[]) =>
   list
     .filter(
@@ -199,6 +200,28 @@ const normalizeChatAgents = (list: Agent[]) =>
       subCfg: normalizeAgentSubCfg(a.subCfg),
     }))
     .sort((a, b) => a.sortOrd - b.sortOrd)
+
+/** raw 로그 → 메시지 변환 (에이전트 subCfg 반영) */
+const applyChatLogRowsToMessages = (rawList: ChatLogListRow[], roomId: string) => {
+  const flattened = rawList.flatMap((row) => logRowToMessages(row, chatIndexAgents.value))
+  flattened.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+  messages.value = flattened
+
+  const hasSurveyLog = rawList.some((row) => isSurveyChatLogRow(row, chatIndexAgents.value))
+  if (hasSurveyLog) registerSurveyRoom(roomId)
+}
+
+/** 에이전트 목록 로드 후 설문·Pexels 파싱이 누락되지 않도록 메시지 재구성 */
+watch(
+  () => chatIndexAgents.value.map((a) => a.agentId).join(','),
+  () => {
+    if (lastLoadedChatLogRows.value.length === 0) return
+    const roomId = lastLoadedChatLogRoomId.value
+    if (!roomId) return
+    if (normalizeChatRoomId(chatRoom.value.roomId) !== normalizeChatRoomId(roomId)) return
+    applyChatLogRowsToMessages(lastLoadedChatLogRows.value, roomId)
+  },
+)
 
 const selectedLogId = ref<string | null>(null)
 // pdf 뷰어 or 시각화
@@ -282,6 +305,8 @@ export const useChatStore = () => {
   ) => {
     if (!roomId) {
       messages.value = []
+      lastLoadedChatLogRows.value = []
+      lastLoadedChatLogRoomId.value = ''
       return
     }
     // 기존 채팅방 로드 시 성별 선택 단계 초기화 (이전 미완료 상태가 남지 않도록)
@@ -310,6 +335,8 @@ export const useChatStore = () => {
       if (preserve && hasLocalMessages && isSameRoom) return
       // 로컬 메시지 초기화
       messages.value = []
+      lastLoadedChatLogRows.value = []
+      lastLoadedChatLogRoomId.value = ''
       return
     }
     // 뉴스 큐레이터 로그 재구성 시 분야 코드(NC000001) 검증·숨김 질문 방 등록
@@ -327,31 +354,15 @@ export const useChatStore = () => {
       if (hasHiddenNewsPrompt) registerNewsCuratorRoom(roomId)
     }
 
-    // 설문 진단 프롬프트가 포함된 방 — question 숨김·survey UI 복원용
-    const hasSurveyLog = rawList.some((row) => {
-      const q = row.qcontent ?? ''
-      return Object.keys(parseSurveyAnswersFromPrompt(q)).length > 0 || isSurveyDiagnosticPrompt(q)
-    })
-    if (hasSurveyLog) registerSurveyRoom(roomId)
+    // 검색기록·채팅방 진입 시 항상 subCfg 포함 에이전트 목록 선조회
+    await handleSelectChatIndexAgents()
 
     const hasRecommendLog = rawList.some((row) => isRecommendAgentPrompt(String(row.qcontent ?? '')))
     if (hasRecommendLog) registerRecommendRoom(roomId)
 
-    // 채팅 로그 목록 → 메시지 리스트 변환
-
-    if (chatIndexAgents.value.length === 0) {
-      await handleSelectChatIndexAgents()
-    }
-
-    /**
-     * rawList.flateMap의 인자는 콜백 함수임.
-     * rawList.flatMap(logRowToMessages) : 각 row에 대해 logRowToMessages 함수를 호출하고 그 결과를 배열로 반환.
-     */
-    const flattened = rawList.flatMap((row) => logRowToMessages(row, chatIndexAgents.value))
-    // 메시지 정렬
-    flattened.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-    // 메시지 설정
-    messages.value = flattened
+    lastLoadedChatLogRows.value = rawList
+    lastLoadedChatLogRoomId.value = roomId
+    applyChatLogRowsToMessages(rawList, roomId)
 
     // 검색모드·서브옵션 동기화
     await syncSearchModeFromLastLog(rawList[rawList.length - 1])
@@ -1271,24 +1282,31 @@ export const useChatStore = () => {
     return visualizationViewMap.value[messageId] ?? getEmptyVisualizationViewModel(messageId)
   })
 
-  /** /chat 인덱스 에이전트 버튼 목록 조회 */
+  /** /chat 인덱스·검색기록용 에이전트 목록 조회 (selectAgentListForChat.do) */
   const handleSelectChatIndexAgents = async () => {
-    isLoadingChatIndexAgents.value = true
-    try {
-      const res = await fetchSelectAgentListForChat()
-      const list = res?.agentList ?? []
-      chatIndexAgents.value = normalizeChatAgents(list)
-      const selectedId = selectedChatAgentId.value
-      if (selectedId) {
-        const selected = chatIndexAgents.value.find((a) => a.agentId === selectedId)
-        if (selected && isRecommendAgent(selected)) selectedChatAgentId.value = null
+    if (chatIndexAgentsLoadPromise) return chatIndexAgentsLoadPromise
+
+    chatIndexAgentsLoadPromise = (async () => {
+      isLoadingChatIndexAgents.value = true
+      try {
+        const res = await fetchSelectAgentListForChat()
+        const list = res?.agentList ?? []
+        chatIndexAgents.value = normalizeChatAgents(list)
+        const selectedId = selectedChatAgentId.value
+        if (selectedId) {
+          const selected = chatIndexAgents.value.find((a) => a.agentId === selectedId)
+          if (selected && isRecommendAgent(selected)) selectedChatAgentId.value = null
+        }
+      } catch {
+        chatIndexAgents.value = []
+        openToast({ message: '에이전트 목록을 불러오지 못했습니다.', type: 'error' })
+      } finally {
+        isLoadingChatIndexAgents.value = false
+        chatIndexAgentsLoadPromise = null
       }
-    } catch {
-      chatIndexAgents.value = []
-      openToast({ message: '에이전트 목록을 불러오지 못했습니다.', type: 'error' })
-    } finally {
-      isLoadingChatIndexAgents.value = false
-    }
+    })()
+
+    return chatIndexAgentsLoadPromise
   }
 
   /** 링크형 에이전트 외부 링크 열기 */

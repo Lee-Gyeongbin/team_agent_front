@@ -8,7 +8,7 @@ import type {
 import type { Agent } from '~/types/agent'
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import { parseChatAttachmentsFromLogRow } from '~/utils/chat/chatAttachmentDisplayUtil'
-import { parseSurveyAnswersFromPrompt, isSurveyDiagnosticPrompt } from '~/utils/chat/surveyUtil'
+import { parseSurveyAnswersFromPrompt, isSurveyChatLogRow } from '~/utils/chat/surveyUtil'
 import {
   normalizeLunchRecommendationImages,
   parseLunchPayloadFromPrompt,
@@ -125,10 +125,9 @@ export const useChatMessages = () => {
       },
     }
 
-    // SURVEY 에이전트: "진단 프롬프트"인 경우 readonly survey 메시지로 대체
-    const surveyAnswers = parseSurveyAnswersFromPrompt(row.qcontent ?? '')
-    const isSurveyPrompt = Object.keys(surveyAnswers).length > 0
-    if (isSurveyPrompt) {
+    // svcTy=C + subTy=SURVEY 에이전트 — 질의를 readonly survey 메시지로 렌더
+    if (isSurveyChatLogRow(row, agents)) {
+      const surveyAnswers = parseSurveyAnswersFromPrompt(row.qcontent ?? '')
       return [
         {
           logId: `${logId}-survey`,
@@ -138,13 +137,11 @@ export const useChatMessages = () => {
           surveyAnswers,
           surveySubmitted: true,
         },
-        { ...answerMessage, surveyAnswers },
+        {
+          ...answerMessage,
+          ...(Object.keys(surveyAnswers).length > 0 ? { surveyAnswers } : {}),
+        },
       ]
-    }
-
-    // V2 진단 프롬프트이나 Input Data가 없는 구 로그 — question 대신 답변만 표시
-    if (isSurveyDiagnosticPrompt(row.qcontent ?? '')) {
-      return [answerMessage]
     }
 
     // TodayMeme 에이전트: 프롬프트 패턴이면 readonly meme 메시지로 대체
