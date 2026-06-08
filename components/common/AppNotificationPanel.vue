@@ -62,9 +62,9 @@
             </div>
             <div class="notif-title">{{ item.title }}</div>
             <p class="notif-message">{{ item.content }}</p>
-            <!-- KS(지식 공유) 알림: 받기 버튼 -->
+            <!-- KS(지식 공유) / MD(내 문서 공유) 알림: 받기 버튼 -->
             <div
-              v-if="item.notifyTyCd === 'KS'"
+              v-if="item.notifyTyCd === 'KS' || item.notifyTyCd === 'MD'"
               class="notif-receive-wrap"
             >
               <button
@@ -124,11 +124,29 @@
       @confirm="onKsCategoryConfirm"
     />
   </UiModal>
+
+  <!-- MD(내 문서 공유) 받기 모달 -->
+  <UiModal
+    :is-open="isMdModalOpen"
+    title="내 문서 받기"
+    position="center"
+    max-width="420px"
+    custom-class="modal-md-receive"
+    @close="handleCloseMdModal"
+  >
+    <ReceiveMyDocModal
+      :doc="mdDocDetail"
+      :loading="mdModalLoading"
+      @close="handleCloseMdModal"
+      @confirm="handleReceiveMyDoc"
+    />
+  </UiModal>
 </template>
 
 <script setup lang="ts">
 import type { Notify } from '~/types/global'
 import ReceiveCategoryModal from '~/components/common/ReceiveCategoryModal.vue'
+import ReceiveMyDocModal from '~/components/common/ReceiveMyDocModal.vue'
 
 const {
   notifyList,
@@ -147,6 +165,12 @@ const {
   handleOpenKsModal,
   handleCloseKsModal,
   handleReceiveKnowledge,
+  isMdModalOpen,
+  mdModalLoading,
+  mdDocDetail,
+  handleOpenMdModal,
+  handleCloseMdModal,
+  handleReceiveMyDoc,
 } = useNotifyStore()
 
 const notificationWrapRef = ref<HTMLElement | null>(null)
@@ -161,9 +185,13 @@ const onClickOutside = (e: MouseEvent) => {
   }
 }
 
-/** KS 알림 받기 — 패널 닫고 카테고리 모달 오픈 */
+/** 알림 받기 — 타입별 모달 분기 (KS: 카테고리 선택 / MD: 문서 미리보기) */
 const onClickReceive = (item: Notify) => {
   isNotificationOpen.value = false
+  if (item.notifyTyCd === 'MD') {
+    handleOpenMdModal(item)
+    return
+  }
   handleOpenKsModal(item)
 }
 
@@ -431,7 +459,8 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside))
 <style lang="scss">
 @use '~/assets/styles/utils/variables' as *;
 
-.modal-ks-receive {
+.modal-ks-receive,
+.modal-md-receive {
   z-index: 460 !important;
 }
 </style>

@@ -52,6 +52,83 @@
           <div class="my-doc-detail-side-panels">
             <section
               class="my-doc-detail-side-panel"
+              aria-label="문서명"
+            >
+              <div class="my-doc-detail-side-head">
+                <h3 class="my-doc-detail-side-title">문서명</h3>
+                <p class="my-doc-detail-side-desc">목록·다운로드 파일명에 사용됩니다.</p>
+              </div>
+
+              <div class="my-doc-detail-name-row">
+                <UiInput
+                  v-model="editorDocNm"
+                  size="md"
+                  placeholder="문서명 입력"
+                  :disabled="!doc?.docId"
+                  @enter="onApplyDocNm"
+                />
+                <UiButton
+                  variant="outline"
+                  size="md"
+                  class="my-doc-detail-name-apply"
+                  :disabled="!canApplyDocNm"
+                  @click="onApplyDocNm"
+                >
+                  적용
+                </UiButton>
+              </div>
+            </section>
+
+            <section
+              class="my-doc-detail-side-panel"
+              aria-label="편집 되돌리기"
+            >
+              <div class="my-doc-detail-side-head">
+                <h3 class="my-doc-detail-side-title">편집 되돌리기</h3>
+                <p class="my-doc-detail-side-desc">저장하지 않은 변경 또는 AI 원본으로 되돌릴 수 있습니다.</p>
+              </div>
+
+              <div class="my-doc-detail-action-list">
+                <button
+                  type="button"
+                  class="my-doc-detail-action-btn"
+                  :disabled="!canRevertToSaved"
+                  @click="onRevertToSaved"
+                >
+                  <span
+                    class="my-doc-detail-download-btn-icon is-revert-saved"
+                    aria-hidden="true"
+                  >
+                    <i class="icon icon-refresh size-24" />
+                  </span>
+                  <span class="my-doc-detail-download-btn-text">
+                    <span class="my-doc-detail-download-btn-label">마지막 저장본으로 되돌리기</span>
+                    <span class="my-doc-detail-download-btn-ext">저장하지 않은 편집 내용이 사라집니다</span>
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  class="my-doc-detail-action-btn"
+                  :disabled="!canRestoreOrigin"
+                  @click="onRestoreOriginHtml"
+                >
+                  <span
+                    class="my-doc-detail-download-btn-icon is-restore"
+                    aria-hidden="true"
+                  >
+                    <i class="icon icon-regenerate size-24" />
+                  </span>
+                  <span class="my-doc-detail-download-btn-text">
+                    <span class="my-doc-detail-download-btn-label">AI 최초 생성본으로 되돌리기</span>
+                    <span class="my-doc-detail-download-btn-ext">저장·편집 내용이 모두 초기화됩니다</span>
+                  </span>
+                </button>
+              </div>
+            </section>
+
+            <section
+              class="my-doc-detail-side-panel"
               aria-label="파일로 저장"
             >
               <div class="my-doc-detail-side-head">
@@ -89,28 +166,28 @@
 
             <section
               class="my-doc-detail-side-panel"
-              aria-label="AI 생성본 복원"
+              aria-label="문서 공유"
             >
               <div class="my-doc-detail-side-head">
-                <h3 class="my-doc-detail-side-title">AI 생성본 복원</h3>
-                <p class="my-doc-detail-side-desc">수정 전 AI가 최초 생성한 보고서로 되돌립니다.</p>
+                <h3 class="my-doc-detail-side-title">문서 공유</h3>
+                <p class="my-doc-detail-side-desc">조직 내 사용자에게 이 문서를 공유할 수 있습니다.</p>
               </div>
 
               <button
                 type="button"
-                class="my-doc-detail-restore-btn"
-                :disabled="!canRestoreOrigin"
-                @click="onRestoreOriginHtml"
+                class="my-doc-detail-action-btn"
+                :disabled="!doc?.docId"
+                @click="onOpenShareModal"
               >
                 <span
-                  class="my-doc-detail-download-btn-icon is-restore"
+                  class="my-doc-detail-download-btn-icon is-share"
                   aria-hidden="true"
                 >
-                  <i class="icon icon-regenerate size-24" />
+                  <i class="icon icon-sidebar-share size-24" />
                 </span>
                 <span class="my-doc-detail-download-btn-text">
-                  <span class="my-doc-detail-download-btn-label">AI 최초 생성본으로 되돌리기</span>
-                  <span class="my-doc-detail-download-btn-ext">현재 편집 내용이 초기화됩니다</span>
+                  <span class="my-doc-detail-download-btn-label">문서 공유하기</span>
+                  <span class="my-doc-detail-download-btn-ext">조직도에서 공유 대상을 선택합니다</span>
                 </span>
               </button>
             </section>
@@ -134,10 +211,21 @@
       </div>
     </div>
   </UiModal>
+
+  <!-- 공유 대상 사용자 선택 모달 -->
+  <UserSelectModal
+    :is-open="isUserSelectModalOpen"
+    title="공유 대상 선택"
+    confirm-text="공유하기"
+    @close="closeUserSelectModal"
+    @confirm="onShareConfirm"
+  />
 </template>
 
 <script setup lang="ts">
 import { useMyDocStore } from '~/composables/my-documents/useMyDocStore'
+import { useUserSelectStore } from '~/composables/com/useUserSelectStore'
+import type { OrgUserItem } from '~/types/org-manage'
 import type { MyDoc } from '~/types/mydoc'
 import { formatDateTimeDisplay } from '~/utils/global/dateUtil'
 import {
@@ -157,9 +245,11 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const { handleSaveMyDoc, handleRestoreMyDocOrigin } = useMyDocStore()
+const { handleSaveMyDoc, handleRestoreMyDocOrigin, handleRenameMyDoc, handleShareMyDoc } = useMyDocStore()
+const { isUserSelectModalOpen, openUserSelectModal, closeUserSelectModal } = useUserSelectStore()
 
 const editorHtml = ref('')
+const editorDocNm = ref('')
 const reportEditorRef = ref<{ getCurrentHtml: () => string } | null>(null)
 const reportSheetRef = ref<HTMLElement | null>(null)
 
@@ -167,12 +257,24 @@ const hasDocContent = computed(() => !!editorHtml.value.trim())
 
 const savedDocHtml = computed(() => props.doc?.docHtml?.trim() ?? '')
 
+const savedDocNm = computed(() => props.doc?.docNm?.trim() ?? '')
+
 const isDocDirty = computed(() => {
   if (!hasDocContent.value) return false
   return getDownloadHtml() !== savedDocHtml.value
 })
 
+const isDocNmDirty = computed(() => {
+  const current = editorDocNm.value.trim()
+  if (!current) return false
+  return current !== savedDocNm.value
+})
+
+const canApplyDocNm = computed(() => !!props.doc?.docId && isDocNmDirty.value)
+
 const canSaveDoc = computed(() => !!props.doc?.docId && hasDocContent.value && isDocDirty.value)
+
+const canRevertToSaved = computed(() => hasDocContent.value && isDocDirty.value)
 
 const hasOriginHtml = computed(() => !!props.doc?.originHtml?.trim())
 
@@ -227,6 +329,43 @@ const onSaveDoc = async () => {
   if (!docId) return
   await handleSaveMyDoc(docId, getDownloadHtml())
 }
+
+const onApplyDocNm = async () => {
+  const docId = props.doc?.docId
+  if (!docId || !canApplyDocNm.value) return
+
+  const trimmed = editorDocNm.value.trim()
+  if (!trimmed) {
+    openToast({ message: '문서명을 입력해주세요.', type: 'warning' })
+    return
+  }
+
+  const ok = await handleRenameMyDoc(docId, trimmed)
+  if (ok) {
+    editorDocNm.value = trimmed
+  }
+}
+
+const onRevertToSaved = async () => {
+  if (!canRevertToSaved.value) return
+
+  const ok = await openConfirm({
+    title: '마지막 저장본으로 되돌리기',
+    message: '저장하지 않은 편집 내용이 사라집니다. 계속하시겠습니까?',
+    confirmText: '되돌리기',
+  })
+  if (!ok) return
+
+  editorHtml.value = savedDocHtml.value
+  openToast({ message: '마지막 저장본으로 되돌렸습니다.', type: 'success' })
+}
+
+const onOpenShareModal = () => {
+  if (!props.doc?.docId) return
+  openUserSelectModal()
+}
+
+const onShareConfirm = (users: OrgUserItem[]) => handleShareMyDoc(users)
 
 const onRestoreOriginHtml = async () => {
   const docId = props.doc?.docId
@@ -311,13 +450,16 @@ const downloadItems: DownloadItem[] = [
 ]
 
 watch(
-  () => [props.isOpen, props.doc?.docId, props.doc?.docHtml] as const,
-  ([open, , docHtml]) => {
+  () => [props.isOpen, props.doc?.docId, props.doc?.docHtml, props.doc?.docNm] as const,
+  ([open, , docHtml, docNm]) => {
     if (!open) {
       editorHtml.value = ''
+      editorDocNm.value = ''
+      closeUserSelectModal()
       return
     }
     editorHtml.value = docHtml?.trim() ?? ''
+    editorDocNm.value = docNm ?? ''
   },
   { immediate: true },
 )
@@ -361,6 +503,7 @@ watch(
   max-width: 100%;
   min-height: 0;
   padding-left: $spacing-md;
+  padding-right: $spacing-xs;
   border-left: 1px solid $color-border;
   box-sizing: border-box;
 }
@@ -369,6 +512,8 @@ watch(
   flex-shrink: 0;
   margin-top: auto;
   padding-top: $spacing-md;
+  padding-right: $spacing-sm;
+  box-sizing: border-box;
 }
 
 .my-doc-detail-side-panels {
@@ -378,6 +523,11 @@ watch(
   gap: $spacing-md;
   min-height: 0;
   overflow-y: auto;
+  padding-right: $spacing-sm;
+  padding-bottom: $spacing-xl;
+  scrollbar-gutter: stable;
+  box-sizing: border-box;
+  @include custom-scrollbar(4px);
 }
 
 .my-doc-detail-side-panel {
@@ -406,6 +556,30 @@ watch(
   font-size: $font-size-sm;
   color: $color-text-muted;
   line-height: 1.45;
+}
+
+.my-doc-detail-name-row {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-sm;
+
+  :deep(.ui-input-wrap) {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+.my-doc-detail-name-apply {
+  flex-shrink: 0;
+  min-width: 56px;
+  padding-left: $spacing-md;
+  padding-right: $spacing-md;
+}
+
+.my-doc-detail-action-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
 }
 
 .my-doc-detail-download-list {
@@ -481,9 +655,19 @@ watch(
     background: rgba(124, 58, 237, 0.1);
     color: #7c3aed;
   }
+
+  &.is-revert-saved {
+    background: rgba(37, 99, 235, 0.1);
+    color: #2563eb;
+  }
+
+  &.is-share {
+    background: rgba(14, 165, 233, 0.1);
+    color: #0ea5e9;
+  }
 }
 
-.my-doc-detail-restore-btn {
+.my-doc-detail-action-btn {
   display: flex;
   align-items: center;
   gap: $spacing-sm;

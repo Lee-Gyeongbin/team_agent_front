@@ -1,7 +1,10 @@
 import { useMyDocApi } from '~/composables/my-documents/useMyDocApi'
+import { useUserSelectStore } from '~/composables/com/useUserSelectStore'
+import type { OrgUserItem } from '~/types/org-manage'
 import type { MyDoc, MyDocListRequest, MyDocSaveReportPayload, MyDocStatus } from '~/types/mydoc'
 
-const { fetchList, fetchDetail, fetchSaveReport, fetchUpdateNewYn } = useMyDocApi()
+const { fetchList, fetchDetail, fetchSaveReport, fetchUpdateNewYn, fetchUpdateDocNm, fetchShareDoc } = useMyDocApi()
+const { closeUserSelectModal } = useUserSelectStore()
 
 const docList = ref<MyDoc[]>([])
 const archivedDocList = ref<MyDoc[]>([])
@@ -167,7 +170,39 @@ const buildMyDocSaveReportPayload = (doc: MyDoc, docHtml: string): MyDocSaveRepo
   }
 }
 
-/** saveReport.do 공통 호출 */
+/** 목록에서 docId로 문서 찾기 */
+const findMyDocInLists = (docId: string): MyDoc | undefined =>
+  docList.value.find((item) => item.docId === docId) ?? archivedDocList.value.find((item) => item.docId === docId)
+
+/** 마지막 목록 조회 조건으로 목록만 재조회 */
+const refreshMyDocListAfterMutation = async () => {
+  if (!lastListRequestParams.value) return
+  await handleRefreshMyDocListQuiet(lastListRequestParams.value)
+}
+
+/** 상세 모달 — 목록 재조회 후 메타 필드만 목록 기준 동기화 (docHtml 등은 유지) */
+const syncSelectedDocDetailFromList = (docId: string) => {
+  if (selectedDocDetail.value?.docId !== docId) return
+
+  const fromList = findMyDocInLists(docId)
+  if (!fromList) return
+
+  selectedDocDetail.value = {
+    ...selectedDocDetail.value,
+    docNm: fromList.docNm,
+    modifyDt: fromList.modifyDt,
+    newYn: fromList.newYn,
+    docStatus: fromList.docStatus,
+  }
+}
+
+/** 상세 모달 — 저장된 HTML만 반영 (목록 API에 HTML 없음) */
+const applySelectedDocHtml = (docId: string, docHtml: string) => {
+  if (selectedDocDetail.value?.docId !== docId) return
+  selectedDocDetail.value = { ...selectedDocDetail.value, docHtml }
+}
+
+/** saveReport.do 공통 호출 (상세 모달 열림 상태 전제) */
 const submitMyDocSaveReport = async (
   docId: string,
   docHtml: string,
@@ -190,7 +225,9 @@ const submitMyDocSaveReport = async (
       return false
     }
 
-    applyMyDocHtmlUpdate(docId, docHtml)
+    applySelectedDocHtml(docId, docHtml)
+    await refreshMyDocListAfterMutation()
+    syncSelectedDocDetailFromList(docId)
     openToast({ message: res.returnMsg || messages.success, type: 'success' })
     return true
   } catch {
@@ -199,24 +236,6 @@ const submitMyDocSaveReport = async (
   } finally {
     closeLoading()
   }
-}
-
-/** 상세 모달·목록에 반영할 문서 HTML 갱신 */
-const applyMyDocHtmlUpdate = (docId: string, docHtml: string, modifyDt?: string | null) => {
-  const patch = { docHtml, ...(modifyDt ? { modifyDt } : {}) }
-
-  if (selectedDocDetail.value?.docId === docId) {
-    selectedDocDetail.value = { ...selectedDocDetail.value, ...patch }
-  }
-
-  const updateListItem = (list: MyDoc[]) => {
-    const index = list.findIndex((item) => item.docId === docId)
-    if (index < 0) return
-    list[index] = { ...list[index], ...patch }
-  }
-
-  updateListItem(docList.value)
-  updateListItem(archivedDocList.value)
 }
 
 /** 내 문서 — 편집 내용 저장 */
@@ -249,6 +268,67 @@ const handleRestoreMyDocOrigin = async (docId: string): Promise<boolean> => {
   })
 }
 
+/**
+ * 내 문서 공유 확인 핸들러 (UserSelectModal @confirm 이벤트 직접 연결)
+ * - 선택된 사용자 목록으로 문서 공유 API 호출
+ */
+const handleShareMyDoc = async (users: OrgUserItem[]) => {
+  const docId = selectedDocDetail.value?.docId
+  if (!docId || !users.length) {
+    openToast({ message: '문서 또는 사용자 정보가 없습니다.', type: 'warning' })
+    return
+  }
+
+  const userIds = users.map((u) => u.userId)
+  try {
+    openLoading({ text: '문서를 공유하는 중...' })
+    const res = await fetchShareDoc({ docId, userIds, shareMsg: '' })
+    if (res.successYn === false) {
+      openToast({ message: res.returnMsg || '문서 공유에 실패했습니다.', type: 'error' })
+      return
+    }
+    openToast({ message: res.returnMsg || '문서를 공유했습니다.', type: 'success' })
+  } catch {
+    openToast({ message: '문서 공유에 실패했습니다.', type: 'error' })
+  } finally {
+    closeLoading()
+    closeUserSelectModal()
+  }
+}
+
+/** 내 문서 — 문서명만 변경 (updateDocNm.do) */
+const handleRenameMyDoc = async (docId: string, docNm: string): Promise<boolean> => {
+  const trimmed = docNm.trim()
+  if (!trimmed) {
+    openToast({ message: '문서명을 입력해주세요.', type: 'warning' })
+    return false
+  }
+
+  const currentDocNm =
+    (selectedDocDetail.value?.docId === docId ? selectedDocDetail.value.docNm : findMyDocInLists(docId)?.docNm) ?? ''
+
+  if (currentDocNm.trim() === trimmed) return true
+
+  try {
+    openLoading({ text: '문서명을 변경하는 중...' })
+    const res = await fetchUpdateDocNm({ docId, docNm: trimmed })
+    if (res.successYn === false) {
+      openToast({ message: res.returnMsg || '문서명 변경에 실패했습니다.', type: 'error' })
+      return false
+    }
+
+    await refreshMyDocListAfterMutation()
+    syncSelectedDocDetailFromList(docId)
+    openToast({ message: res.returnMsg || '문서명을 변경했습니다.', type: 'success' })
+    return true
+  } catch {
+    openToast({ message: '문서명 변경에 실패했습니다.', type: 'error' })
+    return false
+  } finally {
+    closeLoading()
+  }
+}
+
 export const useMyDocStore = () => {
   return {
     docList,
@@ -261,5 +341,8 @@ export const useMyDocStore = () => {
     handleSaveReport,
     handleSaveMyDoc,
     handleRestoreMyDocOrigin,
+    handleRenameMyDoc,
+    handleShareMyDoc,
+    refreshMyDocListAfterMutation,
   }
 }
