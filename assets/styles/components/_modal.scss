@@ -134,6 +134,17 @@
   }
 }
 
+//MailLoginModal.vue 모달 style
+.modal-dialog.mail-login-modal-dialog {
+  .modal-dialog-content {
+    padding: 22px 20px;
+  }
+
+  .modal-dialog-body {
+    padding: 0;
+  }
+}
+
 // 전체화면 상태
 .modal-dialog.is-fullscreen {
   .modal-dialog-content {

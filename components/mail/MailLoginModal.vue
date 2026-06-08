@@ -4,7 +4,8 @@
     position="center"
     :show-close="true"
     :show-overlay="true"
-    max-width="440px"
+    max-width="410px"
+    custom-class="mail-login-modal-dialog"
     @close="emit('close')"
   >
     <template #header>
@@ -152,13 +153,22 @@ watch(
 
 <style lang="scss" scoped>
 .mail-login-modal-header {
+  position: relative;
   display: flex;
-  align-items: flex-start;
-  gap: $spacing-md;
-  padding: $spacing-lg $spacing-lg $spacing-md;
+  align-items: center;
+  gap: 14px;
+  background: $color-surface;
+  margin-bottom: 14px;
+  padding: 13px 15px;
+  border-radius: 8px;
+  border: 1px solid $color-border-light;
 
-  .btn-modal-close {
-    margin-left: auto;
+  .btn.btn-modal-close {
+    position: absolute;
+    top: 8px;
+    left: auto;
+    right: 8px;
+    margin-left: 0;
     flex-shrink: 0;
   }
 }
@@ -188,7 +198,8 @@ watch(
   display: flex;
   flex-direction: column;
   gap: $spacing-md;
-  padding: 0 $spacing-lg $spacing-lg;
+  padding: 0;
+  width: 100%;
 }
 
 .mail-login-modal-field {
