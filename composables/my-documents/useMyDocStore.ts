@@ -5,10 +5,12 @@ import type { MyDoc, MyDocListRequest, MyDocSaveReportPayload } from '~/types/my
 
 const { fetchList, fetchDetail, fetchSaveReport, fetchUpdateNewYn, fetchUpdateDocNm, fetchDeleteDoc, fetchShareDoc } =
   useMyDocApi()
-const { closeUserSelectModal } = useUserSelectStore()
+const { openUserSelectModal, closeUserSelectModal } = useUserSelectStore()
 
 const docList = ref<MyDoc[]>([])
 const selectedDocDetail = ref<MyDoc | null>(null)
+/** 카드 드롭다운 등 상세 모달 없이 공유할 때 사용 */
+const sharingDocId = ref<string | null>(null)
 const isDetailModalOpen = ref(false)
 const lastListRequestParams = ref<MyDocListRequest | null>(null)
 
@@ -246,12 +248,25 @@ const handleRestoreMyDocOrigin = async (docId: string): Promise<boolean> => {
   })
 }
 
+/** 공유 대상 사용자 선택 모달 열기 */
+const handleOpenMyDocShareModal = async (docId: string) => {
+  if (!docId) return
+  sharingDocId.value = docId
+  await openUserSelectModal()
+}
+
+/** 공유 모달 닫기 — 선택 취소 시 sharingDocId 초기화 */
+const handleCloseMyDocShareModal = () => {
+  closeUserSelectModal()
+  sharingDocId.value = null
+}
+
 /**
  * 내 문서 공유 확인 핸들러 (UserSelectModal @confirm 이벤트 직접 연결)
  * - 선택된 사용자 목록으로 문서 공유 API 호출
  */
 const handleShareMyDoc = async (users: OrgUserItem[]) => {
-  const docId = selectedDocDetail.value?.docId
+  const docId = sharingDocId.value ?? selectedDocDetail.value?.docId
   if (!docId || !users.length) {
     openToast({ message: '문서 또는 사용자 정보가 없습니다.', type: 'warning' })
     return
@@ -271,6 +286,7 @@ const handleShareMyDoc = async (users: OrgUserItem[]) => {
   } finally {
     closeLoading()
     closeUserSelectModal()
+    sharingDocId.value = null
   }
 }
 
@@ -356,6 +372,8 @@ export const useMyDocStore = () => {
     handleRestoreMyDocOrigin,
     handleRenameMyDoc,
     handleDeleteMyDoc,
+    handleOpenMyDocShareModal,
+    handleCloseMyDocShareModal,
     handleShareMyDoc,
     refreshMyDocListAfterMutation,
   }

@@ -48,6 +48,7 @@ export const getMyDocMenuItems = (): DropdownMenuItemDef[] => {
   const items: DropdownMenuItemDef[] = [
     { label: '열기', icon: 'icon-document', value: 'open' },
     { label: '이름 변경', icon: 'icon-edit', value: 'rename' },
+    { label: '공유', icon: 'icon-sidebar-share', value: 'share' },
     { label: '삭제', icon: 'icon-delete', value: 'delete', color: 'danger' },
   ]
   return items

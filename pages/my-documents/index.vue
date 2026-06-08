@@ -48,11 +48,21 @@
         @close="onCloseRenameModal"
       />
     </UiModal>
+
+    <!-- 공유 대상 사용자 선택 모달 (카드 드롭다운·상세 모달 공통) -->
+    <UserSelectModal
+      :is-open="isUserSelectModalOpen"
+      title="공유 대상 선택"
+      confirm-text="공유하기"
+      @close="onCloseUserSelectModal"
+      @confirm="handleShareMyDoc"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { useMyDocStore } from '~/composables/my-documents/useMyDocStore'
+import { useUserSelectStore } from '~/composables/com/useUserSelectStore'
 import type { MyDoc, MyDocListRequest } from '~/types/mydoc'
 
 definePageMeta({ layout: 'default' })
@@ -66,8 +76,12 @@ const {
   handleCloseMyDocDetailModal,
   handleRenameMyDoc,
   handleDeleteMyDoc,
+  handleOpenMyDocShareModal,
+  handleCloseMyDocShareModal,
+  handleShareMyDoc,
 } = useMyDocStore()
 
+const { isUserSelectModalOpen } = useUserSelectStore()
 const { hasPendingMdNotify } = useNotifyStore()
 
 const searchKeyword = ref('')
@@ -135,7 +149,12 @@ const onOpenDoc = async (doc: MyDoc) => {
 
 const onCloseDetailModal = () => {
   selectedDocId.value = null
+  handleCloseMyDocShareModal()
   handleCloseMyDocDetailModal()
+}
+
+const onCloseUserSelectModal = () => {
+  handleCloseMyDocShareModal()
 }
 
 const onCloseRenameModal = () => {
@@ -168,6 +187,10 @@ const onDocMenuSelect = async (doc: MyDoc, action: string) => {
   if (action === 'rename') {
     renamingDoc.value = doc
     isRenameModalOpen.value = true
+    return
+  }
+  if (action === 'share') {
+    await handleOpenMyDocShareModal(doc.docId)
     return
   }
   if (action === 'delete') {

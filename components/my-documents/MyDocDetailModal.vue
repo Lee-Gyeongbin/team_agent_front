@@ -211,21 +211,10 @@
       </div>
     </div>
   </UiModal>
-
-  <!-- 공유 대상 사용자 선택 모달 -->
-  <UserSelectModal
-    :is-open="isUserSelectModalOpen"
-    title="공유 대상 선택"
-    confirm-text="공유하기"
-    @close="closeUserSelectModal"
-    @confirm="onShareConfirm"
-  />
 </template>
 
 <script setup lang="ts">
 import { useMyDocStore } from '~/composables/my-documents/useMyDocStore'
-import { useUserSelectStore } from '~/composables/com/useUserSelectStore'
-import type { OrgUserItem } from '~/types/org-manage'
 import type { MyDoc } from '~/types/mydoc'
 import { formatDateTimeDisplay } from '~/utils/global/dateUtil'
 import {
@@ -245,8 +234,8 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const { handleSaveMyDoc, handleRestoreMyDocOrigin, handleRenameMyDoc, handleShareMyDoc } = useMyDocStore()
-const { isUserSelectModalOpen, openUserSelectModal, closeUserSelectModal } = useUserSelectStore()
+const { handleSaveMyDoc, handleRestoreMyDocOrigin, handleRenameMyDoc, handleOpenMyDocShareModal, handleCloseMyDocShareModal } =
+  useMyDocStore()
 
 const editorHtml = ref('')
 const editorDocNm = ref('')
@@ -361,11 +350,10 @@ const onRevertToSaved = async () => {
 }
 
 const onOpenShareModal = () => {
-  if (!props.doc?.docId) return
-  openUserSelectModal()
+  const docId = props.doc?.docId
+  if (!docId) return
+  handleOpenMyDocShareModal(docId)
 }
-
-const onShareConfirm = (users: OrgUserItem[]) => handleShareMyDoc(users)
 
 const onRestoreOriginHtml = async () => {
   const docId = props.doc?.docId
@@ -455,7 +443,7 @@ watch(
     if (!open) {
       editorHtml.value = ''
       editorDocNm.value = ''
-      closeUserSelectModal()
+      handleCloseMyDocShareModal()
       return
     }
     editorHtml.value = docHtml?.trim() ?? ''
