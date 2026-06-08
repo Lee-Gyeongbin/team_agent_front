@@ -2,9 +2,10 @@
   <div class="my-documents-index">
     <Transition name="banner-slide-up">
       <MyDocNewBanner
-        v-if="hasNewDocs && !isNewBannerDismissed && listFilter === 'saved'"
+        v-if="showBanner"
+        :variant="bannerVariant"
         :new-doc-count="newDocCount"
-        @close="isNewBannerDismissed = true"
+        @close="onBannerClose"
       />
     </Transition>
 
@@ -12,16 +13,15 @@
       <MyDocHeader
         v-model:search-keyword="searchKeyword"
         v-model:search-sort="searchSort"
-        :total-count="displayDocList.length"
+        :total-count="docList.length"
         :sort-options="sortOptions"
         @search="onSearch"
         @sort-change="onFetchList"
       />
 
       <MyDocGrid
-        :docs="displayDocList"
+        :docs="docList"
         :selected-doc-id="selectedDocId"
-        :list-filter="listFilter"
         :empty-title="emptyTitle"
         :empty-description="emptyDescription"
         @open-doc="onOpenDoc"
@@ -57,24 +57,24 @@ import type { MyDoc, MyDocListRequest } from '~/types/mydoc'
 
 definePageMeta({ layout: 'default' })
 
-type ListFilter = 'saved' | 'archived'
-
 const {
   docList,
-  archivedDocList,
   selectedDocDetail,
   isDetailModalOpen,
   handleSelectMyDocList,
   handleSelectMyDocDetail,
   handleCloseMyDocDetailModal,
   handleRenameMyDoc,
+  handleDeleteMyDoc,
 } = useMyDocStore()
+
+const { hasPendingMdNotify } = useNotifyStore()
 
 const searchKeyword = ref('')
 const appliedKeyword = ref('')
 const searchSort = ref('latest')
-const listFilter = ref<ListFilter>('saved')
 const selectedDocId = ref<string | null>(null)
+const isMdBannerDismissed = ref(false)
 const isNewBannerDismissed = ref(false)
 const isRenameModalOpen = ref(false)
 const renamingDoc = ref<MyDoc | null>(null)
@@ -85,27 +85,36 @@ const sortOptions = [
   { label: '이름순', value: 'name' },
 ]
 
-const displayDocList = computed(() => (listFilter.value === 'archived' ? archivedDocList.value : docList.value))
-
 const newDocCount = computed(() => docList.value.filter((d) => d.newYn === 'Y').length)
 
 const hasNewDocs = computed(() => newDocCount.value > 0)
 
+/** MD 공유 알림 배너 — 신규 문서 배너보다 우선 표시 (library KS 배너와 동일 패턴) */
+const showMdShareBanner = computed(() => hasPendingMdNotify.value && !isMdBannerDismissed.value)
+const showNewDocBanner = computed(() => !showMdShareBanner.value && hasNewDocs.value && !isNewBannerDismissed.value)
+const showBanner = computed(() => showMdShareBanner.value || showNewDocBanner.value)
+const bannerVariant = computed(() => (showMdShareBanner.value ? 'md-share' : 'new'))
+
+const onBannerClose = () => {
+  if (bannerVariant.value === 'md-share') {
+    isMdBannerDismissed.value = true
+    return
+  }
+  isNewBannerDismissed.value = true
+}
+
 const emptyTitle = computed(() => {
-  if (listFilter.value === 'archived') return '보관된 문서가 없습니다.'
   if (appliedKeyword.value.trim()) return '검색 결과가 없습니다.'
   return '저장된 문서가 없습니다.'
 })
 
 const emptyDescription = computed(() => {
-  if (listFilter.value === 'archived') return '보관한 문서는 여기에서 다시 꺼낼 수 있어요.'
   if (appliedKeyword.value.trim()) return '다른 검색어로 시도해 보세요.'
   return '지식창고에서 AI 보고서를 만들고 「내 문서에 저장」하면 이곳에 모여요.'
 })
 
 const getListFetchParams = (): MyDocListRequest => ({
   searchDocNm: appliedKeyword.value,
-  docStatus: listFilter.value === 'archived' ? 'ARCHIVED' : 'SAVED',
   svcTy: '',
   searchSort: searchSort.value,
 })
@@ -144,7 +153,14 @@ const onSaveRename = async (docNm: string) => {
   }
 }
 
-const onDocMenuSelect = (doc: MyDoc, action: string) => {
+const onDeleteDoc = async (doc: MyDoc) => {
+  const ok = await handleDeleteMyDoc(doc.docId)
+  if (ok && selectedDocId.value === doc.docId) {
+    selectedDocId.value = null
+  }
+}
+
+const onDocMenuSelect = async (doc: MyDoc, action: string) => {
   if (action === 'open') {
     onOpenDoc(doc)
     return
@@ -154,7 +170,9 @@ const onDocMenuSelect = (doc: MyDoc, action: string) => {
     isRenameModalOpen.value = true
     return
   }
-  openToast({ message: `「${doc.docNm}」 ${action} — API 연동 예정입니다.`, type: 'info' })
+  if (action === 'delete') {
+    await onDeleteDoc(doc)
+  }
 }
 
 onMounted(() => {

@@ -1,10 +1,7 @@
 <template>
   <article
     class="my-doc-card"
-    :class="{
-      'is-active': isActive,
-      'is-archived': doc.docStatus === 'ARCHIVED',
-    }"
+    :class="{ 'is-active': isActive }"
     @click="emit('open', doc)"
   >
     <div
@@ -41,7 +38,7 @@
 
       <div class="my-doc-card-footer">
         <span
-          v-if="doc.newYn === 'Y' && doc.docStatus === 'SAVED'"
+          v-if="doc.newYn === 'Y'"
           class="my-doc-card-new-tag"
           >NEW</span
         >
@@ -96,5 +93,5 @@ const emit = defineEmits<{
 const docAreaStyle = computed(() => getMyDocDocAreaStyle(props.doc))
 const agentLabel = computed(() => getMyDocAgentLabel(props.doc))
 const agentIconClass = computed(() => getMyDocAgentIconClass(props.doc))
-const menuItems = computed(() => getMyDocMenuItems(props.doc))
+const menuItems = computed(() => getMyDocMenuItems())
 </script>

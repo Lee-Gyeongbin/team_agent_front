@@ -61,7 +61,7 @@ export const downloadMyDocAsPng = async (sheetElement: HTMLElement | null, docNm
   const scrollEl = sheetElement.querySelector('.library-report-editor-scroll') as HTMLElement | null
   const restoreFns: Array<() => void> = []
 
-  const applyTempStyle = (el: HTMLElement, styles: Partial<CSSStyleDeclaration>) => {
+  const applyTempStyle = (el: HTMLElement, styles: Record<string, string>) => {
     const prev = new Map<string, string>()
     Object.entries(styles).forEach(([key, value]) => {
       prev.set(key, el.style.getPropertyValue(key))

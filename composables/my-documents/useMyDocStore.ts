@@ -1,40 +1,28 @@
 import { useMyDocApi } from '~/composables/my-documents/useMyDocApi'
 import { useUserSelectStore } from '~/composables/com/useUserSelectStore'
 import type { OrgUserItem } from '~/types/org-manage'
-import type { MyDoc, MyDocListRequest, MyDocSaveReportPayload, MyDocStatus } from '~/types/mydoc'
+import type { MyDoc, MyDocListRequest, MyDocSaveReportPayload } from '~/types/mydoc'
 
-const { fetchList, fetchDetail, fetchSaveReport, fetchUpdateNewYn, fetchUpdateDocNm, fetchShareDoc } = useMyDocApi()
+const { fetchList, fetchDetail, fetchSaveReport, fetchUpdateNewYn, fetchUpdateDocNm, fetchDeleteDoc, fetchShareDoc } =
+  useMyDocApi()
 const { closeUserSelectModal } = useUserSelectStore()
 
 const docList = ref<MyDoc[]>([])
-const archivedDocList = ref<MyDoc[]>([])
 const selectedDocDetail = ref<MyDoc | null>(null)
 const isDetailModalOpen = ref(false)
 const lastListRequestParams = ref<MyDocListRequest | null>(null)
 
-/** 목록 응답을 docStatus에 맞는 store에 반영 */
-const applyMyDocListResponse = (params: MyDocListRequest, list: MyDoc[]) => {
-  const docStatus: MyDocStatus = params.docStatus === 'ARCHIVED' ? 'ARCHIVED' : 'SAVED'
-  if (docStatus === 'ARCHIVED') {
-    archivedDocList.value = list
-  } else {
-    docList.value = list
-  }
-}
-
-/** 내 문서 목록 조회 — docStatus에 따라 docList / archivedDocList 분기 저장 (미지정 시 SAVED) */
+/** 내 문서 목록 조회 */
 const handleSelectMyDocList = async (params: MyDocListRequest) => {
-  const docStatus: MyDocStatus = params.docStatus === 'ARCHIVED' ? 'ARCHIVED' : 'SAVED'
-  const requestParams = { ...params, docStatus }
-  lastListRequestParams.value = requestParams
+  lastListRequestParams.value = { ...params }
 
   try {
     openLoading({ text: '문서를 불러오는 중...' })
-    const response = await fetchList(requestParams)
-    applyMyDocListResponse(requestParams, response?.dataList ?? [])
+    const response = await fetchList(lastListRequestParams.value)
+    docList.value = response?.dataList ?? []
   } catch {
     openToast({ message: '문서 목록을 불러오는데 실패했습니다.', type: 'error' })
-    applyMyDocListResponse(requestParams, [])
+    docList.value = []
   } finally {
     closeLoading()
   }
@@ -42,12 +30,11 @@ const handleSelectMyDocList = async (params: MyDocListRequest) => {
 
 /** 로딩 없이 목록만 재조회 (newYn 갱신 후 배지 동기화) */
 const handleRefreshMyDocListQuiet = async (params: MyDocListRequest) => {
-  const docStatus: MyDocStatus = params.docStatus === 'ARCHIVED' ? 'ARCHIVED' : 'SAVED'
-  const requestParams = { ...params, docStatus }
+  const requestParams = { ...params }
 
   try {
     const response = await fetchList(requestParams)
-    applyMyDocListResponse(requestParams, response?.dataList ?? [])
+    docList.value = response?.dataList ?? []
   } catch {
     // 상세 모달은 유지 — 목록 갱신 실패는 조용히 무시
   }
@@ -59,14 +46,9 @@ const applyMyDocNewYnUpdate = (docId: string, newYn: 'Y' | 'N') => {
     selectedDocDetail.value = { ...selectedDocDetail.value, newYn }
   }
 
-  const patchList = (list: MyDoc[]) => {
-    const index = list.findIndex((item) => item.docId === docId)
-    if (index < 0) return
-    list[index] = { ...list[index], newYn }
-  }
-
-  patchList(docList.value)
-  patchList(archivedDocList.value)
+  const index = docList.value.findIndex((item) => item.docId === docId)
+  if (index < 0) return
+  docList.value[index] = { ...docList.value[index], newYn }
 }
 
 /** 신규 문서 열람 처리 — newYn N 갱신 후 목록 재조회 */
@@ -136,7 +118,6 @@ const handleSaveReport = async (payload: MyDocSaveReportPayload) => {
     })
     const res = await fetchSaveReport({
       ...payload,
-      docStatus: payload.docStatus ?? 'SAVED',
       sortOrd: payload.sortOrd ?? 0,
     })
     if (res.successYn === false) {
@@ -165,14 +146,12 @@ const buildMyDocSaveReportPayload = (doc: MyDoc, docHtml: string): MyDocSaveRepo
     svcTy: doc.svcTy ?? undefined,
     rContent: doc.rContent ?? undefined,
     agentId: doc.agentId ?? null,
-    docStatus: doc.docStatus,
     sortOrd: doc.sortOrd,
   }
 }
 
 /** 목록에서 docId로 문서 찾기 */
-const findMyDocInLists = (docId: string): MyDoc | undefined =>
-  docList.value.find((item) => item.docId === docId) ?? archivedDocList.value.find((item) => item.docId === docId)
+const findMyDocInLists = (docId: string): MyDoc | undefined => docList.value.find((item) => item.docId === docId)
 
 /** 마지막 목록 조회 조건으로 목록만 재조회 */
 const refreshMyDocListAfterMutation = async () => {
@@ -192,7 +171,6 @@ const syncSelectedDocDetailFromList = (docId: string) => {
     docNm: fromList.docNm,
     modifyDt: fromList.modifyDt,
     newYn: fromList.newYn,
-    docStatus: fromList.docStatus,
   }
 }
 
@@ -296,6 +274,42 @@ const handleShareMyDoc = async (users: OrgUserItem[]) => {
   }
 }
 
+/** 내 문서 삭제 (deleteDoc.do) */
+const handleDeleteMyDoc = async (docId: string): Promise<boolean> => {
+  const doc = findMyDocInLists(docId)
+  const docNm = doc?.docNm ?? '문서'
+
+  const confirmed = await openConfirm({
+    title: '문서 삭제',
+    message: `${docNm} 문서를 삭제하시겠습니까?`,
+    confirmText: '삭제',
+  })
+  if (!confirmed) return false
+
+  try {
+    openLoading({ text: '문서를 삭제하는 중...' })
+    const res = await fetchDeleteDoc({ docId })
+    if (res.successYn === false) {
+      openToast({ message: res.returnMsg || '문서 삭제에 실패했습니다.', type: 'error' })
+      return false
+    }
+
+    docList.value = docList.value.filter((item) => item.docId !== docId)
+
+    if (selectedDocDetail.value?.docId === docId) {
+      handleCloseMyDocDetailModal()
+    }
+
+    openToast({ message: res.returnMsg || '문서를 삭제했습니다.', type: 'success' })
+    return true
+  } catch {
+    openToast({ message: '문서 삭제에 실패했습니다.', type: 'error' })
+    return false
+  } finally {
+    closeLoading()
+  }
+}
+
 /** 내 문서 — 문서명만 변경 (updateDocNm.do) */
 const handleRenameMyDoc = async (docId: string, docNm: string): Promise<boolean> => {
   const trimmed = docNm.trim()
@@ -332,7 +346,6 @@ const handleRenameMyDoc = async (docId: string, docNm: string): Promise<boolean>
 export const useMyDocStore = () => {
   return {
     docList,
-    archivedDocList,
     selectedDocDetail,
     isDetailModalOpen,
     handleSelectMyDocList,
@@ -342,6 +355,7 @@ export const useMyDocStore = () => {
     handleSaveMyDoc,
     handleRestoreMyDocOrigin,
     handleRenameMyDoc,
+    handleDeleteMyDoc,
     handleShareMyDoc,
     refreshMyDocListAfterMutation,
   }

@@ -27,9 +27,7 @@ export const htmlFragmentToPlainText = (html: string): string => {
     if (tag === 'br') return '\n'
     if (tag === 'table') return ''
 
-    const inner = Array.from(el.childNodes)
-      .map(walk)
-      .join('')
+    const inner = Array.from(el.childNodes).map(walk).join('')
     return blockTags.has(tag) ? `${inner}\n` : inner
   }
 
@@ -234,9 +232,7 @@ export const htmlDocumentToPlainText = (html: string): string => {
     const tag = el.tagName.toLowerCase()
     if (tag === 'br') return '\n'
 
-    const inner = Array.from(el.childNodes)
-      .map(walk)
-      .join('')
+    const inner = Array.from(el.childNodes).map(walk).join('')
     return blockTags.has(tag) ? `${inner}\n` : inner
   }
 

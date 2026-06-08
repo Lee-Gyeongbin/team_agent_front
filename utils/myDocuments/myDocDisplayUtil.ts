@@ -44,16 +44,11 @@ export const getMyDocAgentIconClass = (doc: MyDoc): string => {
   return 'icon-search'
 }
 
-export const getMyDocMenuItems = (doc: MyDoc): DropdownMenuItemDef[] => {
+export const getMyDocMenuItems = (): DropdownMenuItemDef[] => {
   const items: DropdownMenuItemDef[] = [
     { label: '열기', icon: 'icon-document', value: 'open' },
     { label: '이름 변경', icon: 'icon-edit', value: 'rename' },
+    { label: '삭제', icon: 'icon-delete', value: 'delete', color: 'danger' },
   ]
-  if (doc.docStatus === 'SAVED') {
-    items.push({ label: '보관', icon: 'icon-archive', value: 'archive' })
-  } else {
-    items.push({ label: '보관 해제', icon: 'icon-archive', value: 'restore' })
-  }
-  items.push({ label: '삭제', icon: 'icon-delete', value: 'delete', color: 'danger' })
   return items
 }

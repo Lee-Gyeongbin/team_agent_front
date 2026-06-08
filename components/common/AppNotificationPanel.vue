@@ -5,7 +5,10 @@
   >
     <button
       class="header-btn notif-trigger-btn"
-      :class="{ 'is-active': isNotificationOpen }"
+      :class="{
+        'is-active': isNotificationOpen,
+        'has-unread': unreadCount > 0 && !isNotificationOpen,
+      }"
       title="알림"
       @click="toggleNotification"
     >
@@ -13,8 +16,23 @@
       <span
         v-if="unreadCount > 0"
         class="notif-badge"
-      />
+        aria-hidden="true"
+      >
+        <span class="notif-badge-pulse" />
+      </span>
     </button>
+
+    <!-- 미읽음 알림 안내 — 잠시 표시 후 자동 사라짐 -->
+    <Transition name="notif-hint">
+      <div
+        v-if="showUnreadHint && unreadCount > 0 && !isNotificationOpen"
+        class="notif-unread-hint"
+        role="status"
+        aria-live="polite"
+      >
+        읽지 않은 알림 {{ unreadCount }}건
+      </div>
+    </Transition>
 
     <!-- 알림 패널 -->
     <div
@@ -175,6 +193,28 @@ const {
 
 const notificationWrapRef = ref<HTMLElement | null>(null)
 
+/** 미읽음 알림 힌트 말풍선 표시 여부 */
+const showUnreadHint = ref(false)
+let unreadHintTimer: ReturnType<typeof setTimeout> | null = null
+
+const clearUnreadHintTimer = () => {
+  if (unreadHintTimer) {
+    clearTimeout(unreadHintTimer)
+    unreadHintTimer = null
+  }
+}
+
+/** 미읽음 알림 힌트 — 패널 닫힌 상태에서만 잠시 노출 */
+const triggerUnreadHint = () => {
+  if (isNotificationOpen.value || unreadCount.value <= 0) return
+  showUnreadHint.value = true
+  clearUnreadHintTimer()
+  unreadHintTimer = setTimeout(() => {
+    showUnreadHint.value = false
+    unreadHintTimer = null
+  }, 2800)
+}
+
 const toggleNotification = () => {
   isNotificationOpen.value = !isNotificationOpen.value
 }
@@ -200,8 +240,34 @@ const onKsCategoryConfirm = (categoryId: string) => {
   handleReceiveKnowledge(categoryId)
 }
 
-onMounted(() => document.addEventListener('click', onClickOutside))
-onUnmounted(() => document.removeEventListener('click', onClickOutside))
+watch(unreadCount, (next, prev) => {
+  if (next > prev && next > 0) {
+    triggerUnreadHint()
+  }
+  if (next <= 0) {
+    showUnreadHint.value = false
+    clearUnreadHintTimer()
+  }
+})
+
+watch(isNotificationOpen, (open) => {
+  if (open) {
+    showUnreadHint.value = false
+    clearUnreadHintTimer()
+  }
+})
+
+onMounted(() => {
+  document.addEventListener('click', onClickOutside)
+  if (unreadCount.value > 0) {
+    setTimeout(() => triggerUnreadHint(), 600)
+  }
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', onClickOutside)
+  clearUnreadHintTimer()
+})
 </script>
 
 <style lang="scss" scoped>
@@ -217,17 +283,104 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside))
     background-color: #e6e8ea;
     color: #58616a;
   }
+
+  &.has-unread {
+    animation: notif-bell-nudge 4s ease-in-out infinite;
+  }
 }
 
 .notif-badge {
   position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 6px;
-  height: 6px;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
   border-radius: $border-radius-full;
   background-color: $color-error;
-  border: 1px solid #fff;
+  border: 1.5px solid #fff;
+  z-index: 1;
+}
+
+.notif-badge-pulse {
+  position: absolute;
+  inset: -2px;
+  border-radius: $border-radius-full;
+  background-color: $color-error;
+  animation: notif-badge-pulse 2s ease-out infinite;
+  pointer-events: none;
+}
+
+.notif-unread-hint {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  padding: 5px 10px;
+  border-radius: $border-radius-sm;
+  background-color: $color-text-dark;
+  color: #fff;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.14);
+  z-index: $z-dropdown;
+  pointer-events: none;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    right: 10px;
+    width: 8px;
+    height: 8px;
+    background-color: $color-text-dark;
+    transform: rotate(45deg);
+  }
+}
+
+.notif-hint-enter-active,
+.notif-hint-leave-active {
+  transition:
+    opacity 0.28s ease,
+    transform 0.28s ease;
+}
+
+.notif-hint-enter-from,
+.notif-hint-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+@keyframes notif-badge-pulse {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.55;
+  }
+
+  70%,
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+@keyframes notif-bell-nudge {
+  0%,
+  88%,
+  100% {
+    transform: rotate(0);
+  }
+
+  91% {
+    transform: rotate(7deg);
+  }
+
+  94% {
+    transform: rotate(-5deg);
+  }
+
+  97% {
+    transform: rotate(3deg);
+  }
 }
 
 .notification-panel {

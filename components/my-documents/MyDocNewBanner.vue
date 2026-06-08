@@ -1,27 +1,1 @@
-<template>
-  <div class="my-doc-new-banner">
-    <i class="icon-notification size-16" />
-    <span class="my-doc-new-banner__text">
-      새로 저장된 문서가 {{ newDocCount }}개 있어요. 지식창고에서 만든 AI 보고서를 확인해 보세요.
-    </span>
-    <button
-      class="my-doc-new-banner__close"
-      title="닫기"
-      @click="emit('close')"
-    >
-      <i class="icon-close size-12" />
-    </button>
-  </div>
-</template>
-
-<script setup lang="ts">
-interface Props {
-  newDocCount: number
-}
-
-defineProps<Props>()
-
-const emit = defineEmits<{
-  close: []
-}>()
-</script>
+<template>  <div class="my-doc-new-banner">    <i class="icon-notification size-16" />    <span class="my-doc-new-banner__text">{{ bannerText }}</span>    <button      class="my-doc-new-banner__close"      title="닫기"      @click="emit('close')"    >      <i class="icon-close size-12" />    </button>  </div></template><script setup lang="ts">type BannerVariant = 'md-share' | 'new'interface Props {  variant: BannerVariant  newDocCount?: number}const props = withDefaults(defineProps<Props>(), {  newDocCount: 0,})const emit = defineEmits<{  close: []}>()const bannerText = computed(() => {  if (props.variant === 'md-share') {    return '공유받은 문서가 있습니다. 상단 알림에서 확인하고 받아보세요.'  }  return `새로 저장된 문서가 ${props.newDocCount}개 있어요. 지식창고에서 만든 AI 보고서를 확인해 보세요.`})</script>

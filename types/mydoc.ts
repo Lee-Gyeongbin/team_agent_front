@@ -1,5 +1,5 @@
-/** 내 문서보관함 상태 — tb_my_doc.DOC_STATUS */
-export type MyDocStatus = 'SAVED' | 'ARCHIVED'
+/** 내 문서보관함 상태 — tb_my_doc.DOC_STATUS (DB 기본값 SAVED) */
+export type MyDocStatus = 'SAVED'
 
 /** 내 문서보관함 — tb_my_doc (DB 컬럼 camelCase) */
 export interface MyDoc {
@@ -27,7 +27,6 @@ export interface MyDoc {
 /** list.do 요청 */
 export interface MyDocListRequest {
   searchDocNm?: string
-  docStatus?: MyDocStatus
   svcTy?: string
   searchSort?: string
 }
@@ -70,7 +69,6 @@ export interface MyDocSaveReportPayload {
   svcTy?: string
   rContent?: string
   agentId?: string | null
-  docStatus?: MyDocStatus
   sortOrd?: number
 }
 
@@ -104,6 +102,17 @@ export interface MyDocUpdateDocNmResponse {
   successYn: boolean
   returnMsg: string
   modifyDt?: string | null
+}
+
+/** deleteDoc.do 요청 */
+export interface MyDocDeleteRequest {
+  docId: string
+}
+
+/** deleteDoc.do 응답 */
+export interface MyDocDeleteResponse {
+  successYn: boolean
+  returnMsg: string
 }
 
 /** shareDoc.do 요청 — 내 문서 공유 */

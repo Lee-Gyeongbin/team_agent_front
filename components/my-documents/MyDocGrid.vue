@@ -14,7 +14,7 @@
       class="my-doc-grid-empty"
     >
       <UiEmpty
-        :icon="listFilter === 'archived' ? 'icon-archive' : 'icon-document'"
+        icon="icon-document"
         :title="emptyTitle"
         :description="emptyDescription"
       />
@@ -25,12 +25,9 @@
 <script setup lang="ts">
 import type { MyDoc } from '~/types/mydoc'
 
-type ListFilter = 'saved' | 'archived'
-
 interface Props {
   docs: MyDoc[]
   selectedDocId?: string | null
-  listFilter: ListFilter
   emptyTitle: string
   emptyDescription: string
 }

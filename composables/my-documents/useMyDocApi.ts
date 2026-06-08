@@ -1,6 +1,8 @@
 import { useApi } from '~/composables/com/useApi'
 import type { Notify } from '~/types/global'
 import type {
+  MyDocDeleteRequest,
+  MyDocDeleteResponse,
   MyDocDetailRequest,
   MyDocDetailResponse,
   MyDocListRequest,
@@ -53,6 +55,11 @@ export const useMyDocApi = () => {
     return post<MyDocUpdateDocNmResponse>('/mydocuments/updateDocNm.do', payload)
   }
 
+  /** 내 문서 삭제 */
+  const fetchDeleteDoc = async (payload: MyDocDeleteRequest) => {
+    return post<MyDocDeleteResponse>('/mydocuments/deleteDoc.do', payload)
+  }
+
   /** 내 문서 공유 */
   const fetchShareDoc = async (payload: MyDocSharePayload) => {
     return post<MyDocShareResponse>('/mydocuments/shareDoc.do', payload)
@@ -70,6 +77,7 @@ export const useMyDocApi = () => {
     fetchSaveReport,
     fetchUpdateNewYn,
     fetchUpdateDocNm,
+    fetchDeleteDoc,
     fetchShareDoc,
     fetchReceiveMyDoc,
   }

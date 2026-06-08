@@ -20,6 +20,9 @@ const isNotificationOpen = ref(false)
 /** notifyTyCd==='KS' && saveYn==='N' 인 미수신 지식공유 알림 존재 여부 */
 const hasPendingKsNotify = computed(() => notifyList.value.some((n) => n.notifyTyCd === 'KS' && n.saveYn === 'N'))
 
+/** notifyTyCd==='MD' && saveYn==='N' 인 미수신 내 문서 공유 알림 존재 여부 */
+const hasPendingMdNotify = computed(() => notifyList.value.some((n) => n.notifyTyCd === 'MD' && n.saveYn === 'N'))
+
 // ── KS(지식 공유) 받기 모달 상태 (모듈 레벨) ──
 const isKsModalOpen = ref(false)
 const ksModalLoading = ref(false)
@@ -225,6 +228,7 @@ export const useNotifyStore = () => {
     unreadCount,
     isNotificationOpen,
     hasPendingKsNotify,
+    hasPendingMdNotify,
     getInitials,
     getAvatarColor,
     handleFetchNotifyList,
