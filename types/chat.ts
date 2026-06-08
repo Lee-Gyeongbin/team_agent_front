@@ -82,6 +82,8 @@ export interface ChatSocketMessage {
   docFileId?: string
   /** 완료 시 서버에서 내려주는 로그 ID (있으면 스트리밍 메시지에 반영) */
   logId?: string
+  /** complete 시점 시각화 SQL */
+  sql?: string
   tableData?: string
   /** complete 시점 차트 기본 옵션 */
   chartOption?: VisualizationChartOptionPayload | string

@@ -133,6 +133,16 @@ const finalizeCompletedMessage = (streamingMessage: (typeof messages.value)[numb
   if (parsedChartOption) {
     streamingMessage.chartOption = parsedChartOption
   }
+  if (typeof payload.sql === 'string') {
+    streamingMessage.visualizationData = {
+      ...(streamingMessage.visualizationData ?? {}),
+      sql: payload.sql,
+      chartTitle:
+        typeof streamingMessage.visualizationData?.chartTitle === 'string'
+          ? streamingMessage.visualizationData.chartTitle
+          : '',
+    }
+  }
   // 스트리밍 메시지 완료 처리
   finalizeStreamingMessage()
 }
