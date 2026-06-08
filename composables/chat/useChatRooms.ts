@@ -382,7 +382,7 @@ export const useChatRooms = () => {
         return
       }
       sharedChatLogRows.value = rawList
-      const flattened = rawList.flatMap(logRowToMessages)
+      const flattened = rawList.flatMap((row) => logRowToMessages(row))
       flattened.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
       sharedMessages.value = flattened
     } catch {
