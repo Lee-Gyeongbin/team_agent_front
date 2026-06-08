@@ -34,6 +34,20 @@
       :doc="selectedDocDetail"
       @close="onCloseDetailModal"
     />
+
+    <UiModal
+      :is-open="isRenameModalOpen"
+      title="문서명 변경"
+      position="center"
+      max-width="420px"
+      @close="onCloseRenameModal"
+    >
+      <MyDocRenameModal
+        :doc="renamingDoc"
+        @save="onSaveRename"
+        @close="onCloseRenameModal"
+      />
+    </UiModal>
   </div>
 </template>
 
@@ -53,6 +67,7 @@ const {
   handleSelectMyDocList,
   handleSelectMyDocDetail,
   handleCloseMyDocDetailModal,
+  handleRenameMyDoc,
 } = useMyDocStore()
 
 const searchKeyword = ref('')
@@ -61,6 +76,8 @@ const searchSort = ref('latest')
 const listFilter = ref<ListFilter>('saved')
 const selectedDocId = ref<string | null>(null)
 const isNewBannerDismissed = ref(false)
+const isRenameModalOpen = ref(false)
+const renamingDoc = ref<MyDoc | null>(null)
 
 const sortOptions = [
   { label: '최신순', value: 'latest' },
@@ -112,9 +129,29 @@ const onCloseDetailModal = () => {
   handleCloseMyDocDetailModal()
 }
 
+const onCloseRenameModal = () => {
+  isRenameModalOpen.value = false
+  renamingDoc.value = null
+}
+
+const onSaveRename = async (docNm: string) => {
+  const doc = renamingDoc.value
+  if (!doc) return
+
+  const ok = await handleRenameMyDoc(doc.docId, docNm)
+  if (ok) {
+    onCloseRenameModal()
+  }
+}
+
 const onDocMenuSelect = (doc: MyDoc, action: string) => {
   if (action === 'open') {
     onOpenDoc(doc)
+    return
+  }
+  if (action === 'rename') {
+    renamingDoc.value = doc
+    isRenameModalOpen.value = true
     return
   }
   openToast({ message: `「${doc.docNm}」 ${action} — API 연동 예정입니다.`, type: 'info' })

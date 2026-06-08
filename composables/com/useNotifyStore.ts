@@ -5,6 +5,9 @@ import type { KnowledgeItem } from '~/types/chat'
 import type { LibraryCard } from '~/types/library'
 import { useNotifyApi } from '~/composables/com/useNotifyApi'
 import { useLibraryStore } from '~/composables/library/useLibraryStore'
+import { useMyDocApi } from '~/composables/my-documents/useMyDocApi'
+import { useMyDocStore } from '~/composables/my-documents/useMyDocStore'
+import type { MyDoc } from '~/types/mydoc'
 
 // ── 전역 상태 (모듈 레벨) ──
 const notifyList = ref<Notify[]>([])
@@ -23,6 +26,12 @@ const ksModalLoading = ref(false)
 const ksKnowledgeList = ref<KnowledgeItem[]>([])
 const selectedKsNotify = ref<Notify | null>(null)
 const ksCardDetail = ref<LibraryCard | null>(null)
+
+// ── MD(내 문서 공유) 받기 모달 상태 (모듈 레벨) ──
+const isMdModalOpen = ref(false)
+const mdModalLoading = ref(false)
+const selectedMdNotify = ref<Notify | null>(null)
+const mdDocDetail = ref<MyDoc | null>(null)
 
 /** sendUserId / sendUserNm 에서 성(첫 글자) 추출 */
 const getInitials = (notify: Notify): string => {
@@ -49,6 +58,7 @@ export const useNotifyStore = () => {
     fetchReceiveKnowledge,
     fetchSharedCardDetail,
   } = useNotifyApi()
+  const { fetchSharedDocDetail, fetchReceiveMyDoc } = useMyDocApi()
 
   /** 미읽음 알림 수 */
   const unreadCount = computed(() => notifyList.value.filter((n) => n.readYn === 'N').length)
@@ -139,6 +149,56 @@ export const useNotifyStore = () => {
     ksCardDetail.value = null
   }
 
+  /** 내 문서 공유 알림 '받기' 버튼 클릭 — 문서 상세 조회 후 모달 오픈 */
+  const handleOpenMdModal = async (notify: Notify) => {
+    selectedMdNotify.value = notify
+    mdDocDetail.value = null
+    isMdModalOpen.value = true
+    mdModalLoading.value = true
+
+    handleMarkRead(notify.notifyId)
+
+    try {
+      if (notify.refId) {
+        mdDocDetail.value = await fetchSharedDocDetail({ refId: notify.refId })
+      }
+    } catch {
+      openToast({ message: '문서 정보 조회에 실패했습니다.', type: 'error' })
+      isMdModalOpen.value = false
+    } finally {
+      mdModalLoading.value = false
+    }
+  }
+
+  /** 내 문서 공유 받기 모달 닫기 */
+  const handleCloseMdModal = () => {
+    isMdModalOpen.value = false
+    selectedMdNotify.value = null
+    mdDocDetail.value = null
+  }
+
+  /** 내 문서 공유 받기 확정 */
+  const handleReceiveMyDoc = async () => {
+    if (!selectedMdNotify.value) return
+    const notify = selectedMdNotify.value
+    try {
+      const res = await fetchReceiveMyDoc(notify)
+      if (res.successYn === false) {
+        openToast({ message: res.returnMsg || '문서 저장에 실패했습니다.', type: 'error' })
+        return
+      }
+      openToast({ message: res.returnMsg || '문서가 내 문서보관함에 저장되었습니다.', type: 'success' })
+      handleCloseMdModal()
+      await handleFetchNotifyList()
+      if (router.currentRoute.value.path.startsWith('/my-documents')) {
+        const { refreshMyDocListAfterMutation } = useMyDocStore()
+        await refreshMyDocListAfterMutation()
+      }
+    } catch (e) {
+      openToast({ message: e instanceof Error ? e.message : '문서 저장에 실패했습니다.', type: 'error' })
+    }
+  }
+
   /** 지식공유 카테고리 확정 — 선택한 카테고리로 지식 카드 복사 저장 */
   const handleReceiveKnowledge = async (categoryId: string) => {
     if (!selectedKsNotify.value) return
@@ -179,5 +239,12 @@ export const useNotifyStore = () => {
     handleOpenKsModal,
     handleCloseKsModal,
     handleReceiveKnowledge,
+    isMdModalOpen,
+    mdModalLoading,
+    mdDocDetail,
+    selectedMdNotify,
+    handleOpenMdModal,
+    handleCloseMdModal,
+    handleReceiveMyDoc,
   }
 }
