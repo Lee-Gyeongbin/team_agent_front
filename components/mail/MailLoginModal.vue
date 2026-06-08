@@ -11,7 +11,7 @@
     <template #header>
       <div class="mail-login-modal-header">
         <div class="mail-login-modal-icon">
-          <i class="icon-mail size-28" />
+          <i class="icon-email size-28" />
         </div>
         <div>
           <h2 class="mail-login-modal-title">아마란스10 계정으로 로그인</h2>
