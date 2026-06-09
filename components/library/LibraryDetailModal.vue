@@ -3,278 +3,281 @@
     class="library-detail-modal"
     :class="{ 'is-show': isOpen && !isTransitioning }"
   >
-    <!-- 왼쪽 리사이즈 핸들 -->
     <div
-      ref="contentRef"
-      class="library-detail-modal-content"
+      class="library-detail-modal-panel"
       :style="{ maxWidth: modalWidth + 'px', height: contentHeight }"
-      @scroll="handleScroll"
     >
-      <!-- 왼쪽 리사이즈 핸들 — 콘텐츠 내부에 두어 헤더·버튼보다 아래 레이어(클릭 가로막힘 방지) -->
+      <!-- 왼쪽 리사이즈 핸들 — 스크롤 영역 밖, y축 스크롤과 무관하게 고정 -->
       <div
         class="library-detail-modal-resize-handle"
         :class="{ 'is-dragging': isResizing }"
         @mousedown="onResizeStart"
       ></div>
-      <!-- 상단 헤더 -->
-      <div class="library-detail-modal-header">
-        <!-- 뱃지 -->
-        <div class="library-detail-modal-badge-wrapper flex">
-          <UiButton
-            v-if="displayData?.pinYn === 'Y'"
-            icon-only
-            variant="ghost"
-            class="btn-star is-active"
-          >
-            <template #icon-left>
-              <i class="icon icon-star-fill size-12"></i>
-            </template>
-          </UiButton>
-          <UiBadge variant="default">
-            <template #icon-left>
-              <i class="icon icon-diamond-small size-12"></i>
-            </template>
-            {{ displayData?.categoryNm }}
-          </UiBadge>
-          <UiBadge
-            v-if="displayData?.svcTy === 'C' || displayData?.agentId"
-            :variant="displayData?.svcTy === 'C' ? 'basic-chat' : 'default'"
-            :color-hex="displayData?.svcTy === 'C' ? '' : displayData?.colorHex"
-          >
-            <template #icon-left>
-              <i
-                :class="`icon ${displayData?.svcTy === 'C' ? 'icon-comment-other' : displayData?.iconClassNm} size-14`"
-              ></i>
-            </template>
-            {{ displayData?.svcTy === 'C' ? '기본대화' : displayData?.agentNm }}
-          </UiBadge>
-        </div>
-
-        <!-- 제목 행(제목+날짜) + 태그 + 액션 행 — 한 블록 -->
-        <div class="library-detail-modal-title-section">
-          <div class="library-detail-modal-title-row">
-            <h2 class="library-detail-modal-title">{{ displayData?.title }}</h2>
-            <p class="library-detail-modal-date">
-              {{ formatDateTimeDisplay(displayData?.createDt ?? '') }}
-            </p>
-          </div>
-          <div class="library-detail-modal-tags-actions-row">
-            <div class="library-detail-modal-tags">
-              <span
-                v-for="tag in displayData?.tags?.split(',')"
-                :key="tag"
-                class="library-detail-modal-tag"
-              >
-                #{{ tag }}
-              </span>
-            </div>
-            <div class="library-detail-modal-actions">
-              <!-- 지식 제목 변경 -->
-              <UiButton
-                variant="ghost"
-                size="xxs"
-                icon-only
-                class="btn-custom-white"
-                title="지식 제목 변경"
-                @click="handleRenameTitle"
-              >
-                <template #icon-left>
-                  <i class="icon icon-edit-version size-16"></i>
-                </template>
-              </UiButton>
-              <!-- 카테고리 이동 -->
-              <UiButton
-                variant="ghost"
-                size="xxs"
-                icon-only
-                class="btn-custom-white"
-                title="카테고리 이동"
-                @click="handleMove"
-              >
-                <template #icon-left>
-                  <i class="icon icon-transfer size-16"></i>
-                </template>
-              </UiButton>
-              <!-- 문서만들기 -->
-              <UiButton
-                variant="ghost"
-                size="xxs"
-                icon-only
-                class="btn-custom-white"
-                title="문서만들기"
-                @click="handleCreateDoc"
-              >
-                <template #icon-left>
-                  <i class="icon icon-dropdown-document size-16"></i>
-                </template>
-              </UiButton>
-              <UiButton
-                variant="ghost"
-                size="xxs"
-                icon-only
-                class="btn-custom-white"
-                title="공유하기"
-                @click="handleShare"
-              >
-                <template #icon-left>
-                  <i class="icon icon-sidebar-share size-16"></i>
-                </template>
-              </UiButton>
-              <!-- 삭제 btn -->
-              <UiButton
-                variant="ghost"
-                size="xxs"
-                icon-only
-                class="btn-custom-light-gray"
-                title="삭제"
-                @click="handleDelete"
-              >
-                <template #icon-left>
-                  <i class="icon icon-delete-bg size-16"></i>
-                </template>
-              </UiButton>
-            </div>
-          </div>
-        </div>
-        <!-- 닫기 -->
-        <button
-          class="btn btn-modal-close type-library-detail"
-          @click="handleClose"
-        >
-          <i class="icon icon-close-gray size-20"></i>
-        </button>
-      </div>
-
-      <!-- 본문 -->
-      <div class="library-detail-modal-body">
-        <!-- 사용자 질문 -->
-        <div class="content-box type-question">
-          <LibraryCardQuestionBody
-            v-if="displayData"
-            :item="displayData"
-          />
-        </div>
-
-        <!-- 시스템 응답 -->
-        <div class="content-box type-response">
-          <UiButton
-            v-if="
-              parsedLunchRecommendations.length === 0 &&
-              parsedRecommendItems.length === 0 &&
-              parsedNewsCuratorItems.length === 0 &&
-              parsedTodayMemeItems.length === 0
-            "
-            variant="ghost"
-            size="xxs"
-            icon-only
-            class="btn-copy btn-copy-white"
-            @click="handleCopyResponse"
-          >
-            <template #icon-left>
-              <i class="icon icon-copy size-16"></i>
-            </template>
-          </UiButton>
-          <UiButton
-            v-if="displayData?.svcTy === 'S'"
-            variant="ghost"
-            size="xxs"
-            icon-only
-            class="btn-copy btn-custom-gray"
-            style="right: 44px"
-            :aria-pressed="isSqlCodeVisible"
-            @click="toggleSqlCodeVisible"
-          >
-            <template #icon-left>
-              <i class="icon icon-sql size-16"></i>
-            </template>
-          </UiButton>
-
-          <LibraryCardResponseBody
-            v-if="displayData"
-            :item="displayData"
-          />
-        </div>
-
-        <!-- 참조 매뉴얼 (매뉴얼AI 타입) -->
-        <div
-          v-if="displayData?.svcTy === 'M'"
-          class="content-box type-reference"
-        >
-          <div class="reference-header">
-            <span class="reference-title">참조 매뉴얼</span>
-          </div>
-          <ul class="reference-list">
-            <li
-              v-for="item in refItems"
-              :key="item.docFileId"
-              class="reference-list-item"
+      <div
+        ref="contentRef"
+        class="library-detail-modal-content"
+        @scroll="handleScroll"
+      >
+        <!-- 상단 헤더 -->
+        <div class="library-detail-modal-header">
+          <!-- 뱃지 -->
+          <div class="library-detail-modal-badge-wrapper flex">
+            <UiButton
+              v-if="displayData?.pinYn === 'Y'"
+              icon-only
+              variant="ghost"
+              class="btn-star is-active"
             >
-              <div
-                class="reference-item"
-                :class="{ 'is-active': expandedRefKey === refDocKey(item) }"
-                role="button"
-                tabindex="0"
-                @click="onReferenceRowClick(item)"
-                @keydown.enter.prevent="onReferenceRowClick(item)"
-                @keydown.space.prevent="onReferenceRowClick(item)"
-              >
-                <i class="icon icon-document size-20 reference-doc-icon"></i>
-                <div class="reference-item-info">
-                  <span class="reference-item-title">{{ item.fileName }}</span>
-                  <span class="reference-item-page">{{ item.relatedPages ? `p.${item.relatedPages}` : '' }}</span>
-                </div>
-                <button
-                  class="btn-reference-link"
-                  type="button"
-                  @click.stop="onReferenceLink(item)"
+              <template #icon-left>
+                <i class="icon icon-star-fill size-12"></i>
+              </template>
+            </UiButton>
+            <UiBadge variant="default">
+              <template #icon-left>
+                <i class="icon icon-diamond-small size-12"></i>
+              </template>
+              {{ displayData?.categoryNm }}
+            </UiBadge>
+            <UiBadge
+              v-if="displayData?.svcTy === 'C' || displayData?.agentId"
+              :variant="displayData?.svcTy === 'C' ? 'basic-chat' : 'default'"
+              :color-hex="displayData?.svcTy === 'C' ? '' : displayData?.colorHex"
+            >
+              <template #icon-left>
+                <i
+                  :class="`icon ${displayData?.svcTy === 'C' ? 'icon-comment-other' : displayData?.iconClassNm} size-14`"
+                ></i>
+              </template>
+              {{ displayData?.svcTy === 'C' ? '기본대화' : displayData?.agentNm }}
+            </UiBadge>
+          </div>
+
+          <!-- 제목 행(제목+날짜) + 태그 + 액션 행 — 한 블록 -->
+          <div class="library-detail-modal-title-section">
+            <div class="library-detail-modal-title-row">
+              <h2 class="library-detail-modal-title">{{ displayData?.title }}</h2>
+              <p class="library-detail-modal-date">
+                {{ formatDateTimeDisplay(displayData?.createDt ?? '') }}
+              </p>
+            </div>
+            <div class="library-detail-modal-tags-actions-row">
+              <div class="library-detail-modal-tags">
+                <span
+                  v-for="tag in displayData?.tags?.split(',')"
+                  :key="tag"
+                  class="library-detail-modal-tag"
                 >
-                  <i class="icon icon-link-agent size-16"></i>
-                </button>
+                  #{{ tag }}
+                </span>
               </div>
-              <LibraryReferencePdfViewer
-                v-if="expandedRefKey === refDocKey(item)"
-                :key="refDocKey(item)"
-                :item="item"
-                :open="true"
-              />
-            </li>
-          </ul>
-        </div>
-        <!-- SQL 코드 블록 -->
-        <div
-          v-if="displayData?.svcTy === 'S'"
-          ref="sqlCodeRef"
-          class="chat-vis-sql-area"
-          :class="{ 'is-open': isSqlCodeVisible }"
-        >
-          <UiCodeBlock
-            :code="displayData?.ttsq"
-            format-sql
-          />
+              <div class="library-detail-modal-actions">
+                <!-- 지식 제목 변경 -->
+                <UiButton
+                  variant="ghost"
+                  size="xxs"
+                  icon-only
+                  class="btn-custom-white"
+                  title="지식 제목 변경"
+                  @click="handleRenameTitle"
+                >
+                  <template #icon-left>
+                    <i class="icon icon-edit-version size-16"></i>
+                  </template>
+                </UiButton>
+                <!-- 카테고리 이동 -->
+                <UiButton
+                  variant="ghost"
+                  size="xxs"
+                  icon-only
+                  class="btn-custom-white"
+                  title="카테고리 이동"
+                  @click="handleMove"
+                >
+                  <template #icon-left>
+                    <i class="icon icon-transfer size-16"></i>
+                  </template>
+                </UiButton>
+                <!-- 문서만들기 -->
+                <UiButton
+                  variant="ghost"
+                  size="xxs"
+                  icon-only
+                  class="btn-custom-white"
+                  title="문서만들기"
+                  @click="handleCreateDoc"
+                >
+                  <template #icon-left>
+                    <i class="icon icon-dropdown-document size-16"></i>
+                  </template>
+                </UiButton>
+                <UiButton
+                  variant="ghost"
+                  size="xxs"
+                  icon-only
+                  class="btn-custom-white"
+                  title="공유하기"
+                  @click="handleShare"
+                >
+                  <template #icon-left>
+                    <i class="icon icon-sidebar-share size-16"></i>
+                  </template>
+                </UiButton>
+                <!-- 삭제 btn -->
+                <UiButton
+                  variant="ghost"
+                  size="xxs"
+                  icon-only
+                  class="btn-custom-light-gray"
+                  title="삭제"
+                  @click="handleDelete"
+                >
+                  <template #icon-left>
+                    <i class="icon icon-delete-bg size-16"></i>
+                  </template>
+                </UiButton>
+              </div>
+            </div>
+          </div>
+          <!-- 닫기 -->
           <button
-            class="chat-vis-sql-toggle"
-            type="button"
-            @click="toggleSqlCodeVisible"
+            class="btn btn-modal-close type-library-detail"
+            @click="handleClose"
           >
-            <i
-              class="icon-chevron-down size-12"
-              :class="{ 'is-flipped': isSqlCodeVisible }"
-            ></i>
+            <i class="icon icon-close-gray size-20"></i>
           </button>
         </div>
-        <!-- 데이터 시각화 (데이터분석 타입) -->
-        <div
-          v-if="displayData?.svcTy === 'S'"
-          class="content-box type-visualization"
-        >
-          <LibraryVisualizationContent
-            :open="isOpen"
-            :view-model="visualizationView"
-            :initial-charts="knowChartList"
-            :on-save-chart="onVisSaveChart"
-            :on-update-chart="onVisUpdateChart"
-            :on-delete-chart="handleDeleteKnowChart"
-          />
+
+        <!-- 본문 -->
+        <div class="library-detail-modal-body">
+          <!-- 사용자 질문 -->
+          <div class="content-box type-question">
+            <LibraryCardQuestionBody
+              v-if="displayData"
+              :item="displayData"
+            />
+          </div>
+
+          <!-- 시스템 응답 -->
+          <div class="content-box type-response">
+            <UiButton
+              v-if="
+                parsedLunchRecommendations.length === 0 &&
+                parsedRecommendItems.length === 0 &&
+                parsedNewsCuratorItems.length === 0 &&
+                parsedTodayMemeItems.length === 0
+              "
+              variant="ghost"
+              size="xxs"
+              icon-only
+              class="btn-copy btn-copy-white"
+              @click="handleCopyResponse"
+            >
+              <template #icon-left>
+                <i class="icon icon-copy size-16"></i>
+              </template>
+            </UiButton>
+            <UiButton
+              v-if="displayData?.svcTy === 'S'"
+              variant="ghost"
+              size="xxs"
+              icon-only
+              class="btn-copy btn-custom-gray"
+              style="right: 44px"
+              :aria-pressed="isSqlCodeVisible"
+              @click="toggleSqlCodeVisible"
+            >
+              <template #icon-left>
+                <i class="icon icon-sql size-16"></i>
+              </template>
+            </UiButton>
+
+            <LibraryCardResponseBody
+              v-if="displayData"
+              :item="displayData"
+            />
+          </div>
+
+          <!-- 참조 매뉴얼 (매뉴얼AI 타입) -->
+          <div
+            v-if="displayData?.svcTy === 'M'"
+            class="content-box type-reference"
+          >
+            <div class="reference-header">
+              <span class="reference-title">참조 매뉴얼</span>
+            </div>
+            <ul class="reference-list">
+              <li
+                v-for="item in refItems"
+                :key="item.docFileId"
+                class="reference-list-item"
+              >
+                <div
+                  class="reference-item"
+                  :class="{ 'is-active': expandedRefKey === refDocKey(item) }"
+                  role="button"
+                  tabindex="0"
+                  @click="onReferenceRowClick(item)"
+                  @keydown.enter.prevent="onReferenceRowClick(item)"
+                  @keydown.space.prevent="onReferenceRowClick(item)"
+                >
+                  <i class="icon icon-document size-20 reference-doc-icon"></i>
+                  <div class="reference-item-info">
+                    <span class="reference-item-title">{{ item.fileName }}</span>
+                    <span class="reference-item-page">{{ item.relatedPages ? `p.${item.relatedPages}` : '' }}</span>
+                  </div>
+                  <button
+                    class="btn-reference-link"
+                    type="button"
+                    @click.stop="onReferenceLink(item)"
+                  >
+                    <i class="icon icon-link-agent size-16"></i>
+                  </button>
+                </div>
+                <LibraryReferencePdfViewer
+                  v-if="expandedRefKey === refDocKey(item)"
+                  :key="refDocKey(item)"
+                  :item="item"
+                  :open="true"
+                />
+              </li>
+            </ul>
+          </div>
+          <!-- SQL 코드 블록 -->
+          <div
+            v-if="displayData?.svcTy === 'S'"
+            ref="sqlCodeRef"
+            class="chat-vis-sql-area"
+            :class="{ 'is-open': isSqlCodeVisible }"
+          >
+            <UiCodeBlock
+              :code="displayData?.ttsq"
+              format-sql
+            />
+            <button
+              class="chat-vis-sql-toggle"
+              type="button"
+              @click="toggleSqlCodeVisible"
+            >
+              <i
+                class="icon-chevron-down size-12"
+                :class="{ 'is-flipped': isSqlCodeVisible }"
+              ></i>
+            </button>
+          </div>
+          <!-- 데이터 시각화 (데이터분석 타입) -->
+          <div
+            v-if="displayData?.svcTy === 'S'"
+            class="content-box type-visualization"
+          >
+            <LibraryVisualizationContent
+              :open="isOpen"
+              :view-model="visualizationView"
+              :initial-charts="knowChartList"
+              :on-save-chart="onVisSaveChart"
+              :on-update-chart="onVisUpdateChart"
+              :on-delete-chart="handleDeleteKnowChart"
+            />
+          </div>
         </div>
       </div>
     </div>
