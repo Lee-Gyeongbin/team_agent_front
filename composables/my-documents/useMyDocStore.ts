@@ -133,10 +133,10 @@ const handleSaveReport = async (payload: MyDocSaveReportPayload) => {
       sortOrd: payload.sortOrd ?? 0,
     })
     if (res.successYn === false) {
-      openToast({ message: res.returnMsg || '내 문서보관함 저장에 실패했습니다.', type: 'error' })
+      openToast({ message: '내 문서보관함 저장에 실패했습니다.', type: 'error' })
       return
     }
-    openToast({ message: res.returnMsg || '내 문서보관함에 저장했습니다.', type: 'success' })
+    openToast({ message: '내 문서보관함에 저장했습니다.', type: 'success' })
   } catch {
     openToast({ message: '내 문서보관함 저장에 실패했습니다.', type: 'error' })
   } finally {
@@ -211,14 +211,14 @@ const submitMyDocSaveReport = async (
     openLoading({ text: messages.loading })
     const res = await fetchSaveReport(payload)
     if (res.successYn === false) {
-      openToast({ message: res.returnMsg || messages.error, type: 'error' })
+      openToast({ message: messages.error, type: 'error' })
       return false
     }
 
     applySelectedDocHtml(docId, docHtml)
     await refreshMyDocListAfterMutation()
     syncSelectedDocDetailFromList(docId)
-    openToast({ message: res.returnMsg || messages.success, type: 'success' })
+    openToast({ message: messages.success, type: 'success' })
     return true
   } catch {
     openToast({ message: messages.error, type: 'error' })
@@ -287,10 +287,10 @@ const handleShareMyDoc = async (users: OrgUserItem[]) => {
     openLoading({ text: '문서를 공유하는 중...' })
     const res = await fetchShareDoc({ docId, userIds, shareMsg: '' })
     if (res.successYn === false) {
-      openToast({ message: res.returnMsg || '문서 공유에 실패했습니다.', type: 'error' })
+      openToast({ message: '문서 공유에 실패했습니다.', type: 'error' })
       return
     }
-    openToast({ message: res.returnMsg || '문서를 공유했습니다.', type: 'success' })
+    openToast({ message: '문서를 공유했습니다.', type: 'success' })
   } catch {
     openToast({ message: '문서 공유에 실패했습니다.', type: 'error' })
   } finally {
@@ -316,7 +316,7 @@ const handleDeleteMyDoc = async (docId: string): Promise<boolean> => {
     openLoading({ text: '문서를 삭제하는 중...' })
     const res = await fetchDeleteDoc({ docId })
     if (res.successYn === false) {
-      openToast({ message: res.returnMsg || '문서 삭제에 실패했습니다.', type: 'error' })
+      openToast({ message: '문서 삭제에 실패했습니다.', type: 'error' })
       return false
     }
 
@@ -326,7 +326,7 @@ const handleDeleteMyDoc = async (docId: string): Promise<boolean> => {
       handleCloseMyDocDetailModal()
     }
 
-    openToast({ message: res.returnMsg || '문서를 삭제했습니다.', type: 'success' })
+    openToast({ message: '문서를 삭제했습니다.', type: 'success' })
     return true
   } catch {
     openToast({ message: '문서 삭제에 실패했습니다.', type: 'error' })
@@ -395,13 +395,13 @@ const handleRenameMyDoc = async (docId: string, docNm: string): Promise<boolean>
     openLoading({ text: '문서명을 변경하는 중...' })
     const res = await fetchUpdateDocNm({ docId, docNm: trimmed })
     if (res.successYn === false) {
-      openToast({ message: res.returnMsg || '문서명 변경에 실패했습니다.', type: 'error' })
+      openToast({ message: '문서명 변경에 실패했습니다.', type: 'error' })
       return false
     }
 
     await refreshMyDocListAfterMutation()
     syncSelectedDocDetailFromList(docId)
-    openToast({ message: res.returnMsg || '문서명을 변경했습니다.', type: 'success' })
+    openToast({ message: '문서명을 변경했습니다.', type: 'success' })
     return true
   } catch {
     openToast({ message: '문서명 변경에 실패했습니다.', type: 'error' })

@@ -69,7 +69,11 @@
               :side-offset="8"
               content-class="my-doc-agent-tooltip"
             >
-              <span class="my-doc-card-agent">
+              <span
+                class="my-doc-card-agent"
+                :class="{ 'is-default': !docAreaStyle }"
+                :style="docAreaStyle"
+              >
                 <i :class="['icon', agentIconClass, 'size-14']" />
               </span>
             </UiTooltip>

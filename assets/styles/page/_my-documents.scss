@@ -302,17 +302,20 @@
     width: 28px;
     height: 28px;
     border-radius: $border-radius-lg;
-    color: #6f7a93;
-    background: #f4f7f9;
+    color: var(--card-icon-color, #6f7a93);
+    background: var(--card-icon-bg, #f4f7f9);
     cursor: default;
     transition:
       background-color $transition-fast,
       color $transition-fast,
       transform $transition-fast;
 
-    &:hover {
+    &.is-default:hover {
       background: #eef3f8;
       color: #556377;
+    }
+
+    &:hover {
       transform: scale(1.05);
     }
   }
