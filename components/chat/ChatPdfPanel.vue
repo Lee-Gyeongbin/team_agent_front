@@ -398,7 +398,7 @@ const ensureRelatedPdfDoc = async (docKey: string): Promise<PdfDocumentProxy | n
       if (!url) return null
       const lib = await loadPdfJs()
       lib.GlobalWorkerOptions.workerSrc = '/pdfjs/build/pdf.worker.js'
-      const loadedPdf = await lib.getDocument({ url }).promise
+      const loadedPdf = await lib.getDocument({ url, cMapUrl: '/pdfjs/cmaps/', cMapPacked: true }).promise
       relatedPdfDocMap.set(docKey, loadedPdf)
       return loadedPdf
     } finally {

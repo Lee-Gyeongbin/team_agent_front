@@ -165,7 +165,10 @@ const lunchEnrichmentRContent = computed(() => String(props.item.rcontent ?? '')
 const recommendEnrichmentRContent = computed(() => String(props.item.rcontent ?? '').trim())
 
 const recommendImageCacheKey = computed(() => {
-  const fromLog = getRecommendImageEnrichmentCacheKey({ logId: props.item.logId, recommendAnswerLogId: props.item.logId })
+  const fromLog = getRecommendImageEnrichmentCacheKey({
+    logId: props.item.logId,
+    recommendAnswerLogId: props.item.logId,
+  })
   if (fromLog) return fromLog
   return String(props.item.cardId ?? '').trim()
 })

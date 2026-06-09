@@ -113,9 +113,7 @@ const newsQuestionMeta = computed(() => {
 
 const newsCategories = computed(() => newsQuestionMeta.value.categories)
 
-const newsIsNew = computed(
-  () => item.value.agentId === NEWS_CURATOR_AGENT_ID && newsQuestionMeta.value.isNew === true,
-)
+const newsIsNew = computed(() => item.value.agentId === NEWS_CURATOR_AGENT_ID && newsQuestionMeta.value.isNew === true)
 
 const isTodayMemeCard = computed(() => isTodayMemeLibraryCard(item.value))
 </script>

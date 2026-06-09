@@ -77,10 +77,7 @@ export const resolveRecommendConfigByAgentIdForLibrary = (
 }
 
 /** 라이브러리 카드 — RECOMMEND readonly UI 표시 여부 (에이전트 미로드 시 qcontent 폴백) */
-export const isRecommendLibraryCardItem = (
-  item: { agentId?: string; qcontent?: string },
-  agents: Agent[],
-): boolean => {
+export const isRecommendLibraryCardItem = (item: { agentId?: string; qcontent?: string }, agents: Agent[]): boolean => {
   const qcontent = item.qcontent ?? ''
   if (!isRecommendAgentPrompt(qcontent)) return false
   const agentId = (item.agentId ?? '').trim()
@@ -806,10 +803,14 @@ export const buildRecommendMessagesFromLogRow = (
   ]
 }
 
-export const getRecommendImageEnrichmentCacheKey = (msg: ChatMessage): string => {
-  const answerLogId = String(msg.recommendAnswerLogId ?? '').trim()
+/** answer·result 카드 연결·썸네일 캐시 키 (answer logId) */
+export const getRecommendImageEnrichmentCacheKey = (source: {
+  recommendAnswerLogId?: string | null
+  logId?: string | null
+}): string => {
+  const answerLogId = String(source.recommendAnswerLogId ?? '').trim()
   if (answerLogId) return answerLogId
-  const logId = String(msg.logId ?? '').trim()
+  const logId = String(source.logId ?? '').trim()
   return logId.replace(/-recommend-result$/, '')
 }
 

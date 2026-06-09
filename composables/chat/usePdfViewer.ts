@@ -75,7 +75,7 @@ export const usePdfViewer = (options: {
       const lib = await loadPdfJs()
       lib.GlobalWorkerOptions.workerSrc = '/pdfjs/build/pdf.worker.js'
 
-      const loadingTask = lib.getDocument({ url: filePath.value })
+      const loadingTask = lib.getDocument({ url: filePath.value, cMapUrl: '/pdfjs/cmaps/', cMapPacked: true })
       const loadedPdf = await loadingTask.promise
       if (gen !== loadGeneration.value) return
 

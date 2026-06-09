@@ -507,7 +507,7 @@ export interface PdfDocumentProxy {
 
 export interface PdfJsLib {
   GlobalWorkerOptions: { workerSrc: string }
-  getDocument: (params: { url: string }) => { promise: Promise<PdfDocumentProxy> }
+  getDocument: (params: { url: string; cMapUrl?: string; cMapPacked?: boolean }) => { promise: Promise<PdfDocumentProxy> }
 }
 
 declare global {
