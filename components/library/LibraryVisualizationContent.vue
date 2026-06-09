@@ -1,5 +1,8 @@
 <template>
-  <div class="chat-vis-body">
+  <div
+    ref="rootEl"
+    class="chat-vis-body"
+  >
     <!-- 전체 로딩 오버레이 -->
     <UiLoading
       v-if="isLoading"
@@ -1137,6 +1140,38 @@ const initAddForm = () => {
 const toggleSection = (section: 'result' | 'addChart' | 'charts') => {
   sectionOpen[section] = !sectionOpen[section]
 }
+
+const rootEl = ref<HTMLElement | null>(null)
+
+/**
+ * 현재 렌더된 모든 차트를 base64 PNG로 캡처.
+ * 차트 섹션이 접혀 있으면 잠시 펼쳤다가 복원한다.
+ */
+const captureChartImages = async (): Promise<string[]> => {
+  if (chartCards.value.length === 0) return []
+  const wasOpen = sectionOpen.charts
+  if (!wasOpen) {
+    sectionOpen.charts = true
+    await nextTick()
+    await new Promise<void>((r) => setTimeout(r, 300))
+  }
+  const images: string[] = []
+  if (rootEl.value) {
+    rootEl.value.querySelectorAll<HTMLCanvasElement>('.chat-vis-chart-area canvas').forEach((canvas) => {
+      if (canvas.width > 0) {
+        try {
+          images.push(canvas.toDataURL('image/png'))
+        } catch {
+          // cross-origin 등 캡처 불가 시 무시
+        }
+      }
+    })
+  }
+  if (!wasOpen) sectionOpen.charts = false
+  return images
+}
+
+defineExpose({ captureChartImages })
 
 const toggleSql = () => {
   isSqlOpen.value = !isSqlOpen.value

@@ -270,6 +270,7 @@
             class="content-box type-visualization"
           >
             <LibraryVisualizationContent
+              ref="visContentRef"
               :open="isOpen"
               :view-model="visualizationView"
               :initial-charts="knowChartList"
@@ -297,7 +298,7 @@
       :tmpl-list="tmplList"
       :card-id="displayData?.cardId ?? ''"
       @close="handleCreateDocTypeModalClose"
-      @generate="handleCreateDocGenerate"
+      @generate="handleCreateDocGenerateWithCharts"
     />
 
     <!-- AI 생성 보고서 편집 -->
@@ -353,6 +354,9 @@ import { useUserSelectStore } from '~/composables/com/useUserSelectStore'
 import type { OrgUserItem } from '~/types/org-manage'
 const { handleViewFileUrl } = useFileStore()
 const { isUserSelectModalOpen, openUserSelectModal, closeUserSelectModal } = useUserSelectStore()
+
+/** LibraryVisualizationContent 컴포넌트 참조 — 차트 캡처용 */
+const visContentRef = ref<{ captureChartImages: () => Promise<string[]> } | null>(null)
 const {
   handleSelectTmplList,
   tmplList,
@@ -647,6 +651,17 @@ const onReferenceLink = async (item: DocItem) => {
 const handleCreateDoc = () => {
   handleSelectTmplList()
   isCreateDocModalOpen.value = true
+}
+
+/**
+ * svcTy='S'인 경우 차트 이미지를 캡처해 백엔드로 함께 전달한다.
+ * 백엔드에서 extractedImgTags에 추가 → LLM 프롬프트에 토큰 지시 → 보고서 본문에 배치.
+ */
+const handleCreateDocGenerateWithCharts = async (payload: { cardId: string; tmplId: string }) => {
+  const chartImages =
+    displayData.value?.svcTy === 'S' ? await (visContentRef.value?.captureChartImages() ?? Promise.resolve([])) : []
+
+  await handleCreateDocGenerate({ ...payload, chartImages: chartImages.length ? chartImages : undefined })
 }
 
 const onCreateDocSaveToMyDocs = async (docHtml: string) => {

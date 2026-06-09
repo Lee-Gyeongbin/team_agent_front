@@ -693,8 +693,8 @@ export const useLibraryStore = () => {
   }
 
   /** 문서 생성하기 — 로딩 → API 응답 → 보고서 모달 */
-  const handleCreateDocGenerate = async (payload: { cardId: string; tmplId: string }) => {
-    const { cardId, tmplId } = payload
+  const handleCreateDocGenerate = async (payload: { cardId: string; tmplId: string; chartImages?: string[] }) => {
+    const { cardId, tmplId, chartImages } = payload
     if (!cardId?.trim() || !tmplId?.trim()) {
       openToast({ message: '카드 또는 템플릿 정보가 없습니다.', type: 'warning' })
       return
@@ -720,7 +720,7 @@ export const useLibraryStore = () => {
     try {
       await handleCreateReportChatRoom()
       await nextTick()
-      const res = await fetchCreateDoc(cardId, tmplId, roomId.value)
+      const res = await fetchCreateDoc(cardId, tmplId, roomId.value, chartImages)
       const answer = res.data
       const tmplHtml = res.tmplHtml ?? ''
       if (answer) {
