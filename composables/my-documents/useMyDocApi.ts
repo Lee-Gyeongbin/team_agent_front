@@ -18,6 +18,8 @@ import type {
   MyDocUpdateDocNmResponse,
   MyDocUpdateNewYnRequest,
   MyDocUpdateNewYnResponse,
+  MyDocUpdateSortOrdRequest,
+  MyDocUpdateSortOrdResponse,
 } from '~/types/mydoc'
 
 export const useMyDocApi = () => {
@@ -55,6 +57,11 @@ export const useMyDocApi = () => {
     return post<MyDocUpdateDocNmResponse>('/mydocuments/updateDocNm.do', payload)
   }
 
+  /** 정렬순서 변경 — sortOrd만 일괄 수정 */
+  const fetchUpdateSortOrd = async (payload: MyDocUpdateSortOrdRequest) => {
+    return post<MyDocUpdateSortOrdResponse>('/mydocuments/updateSortOrd.do', payload)
+  }
+
   /** 내 문서 삭제 */
   const fetchDeleteDoc = async (payload: MyDocDeleteRequest) => {
     return post<MyDocDeleteResponse>('/mydocuments/deleteDoc.do', payload)
@@ -77,6 +84,7 @@ export const useMyDocApi = () => {
     fetchSaveReport,
     fetchUpdateNewYn,
     fetchUpdateDocNm,
+    fetchUpdateSortOrd,
     fetchDeleteDoc,
     fetchShareDoc,
     fetchReceiveMyDoc,

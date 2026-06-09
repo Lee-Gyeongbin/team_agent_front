@@ -28,3 +28,6 @@ logs
 
 # Playwright MCP 검증 흔적
 .playwright-mcp
+
+# 개인용 Cursor rule (팀 공유 제외)
+.cursor/rules/lint-scope.mdc

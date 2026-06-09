@@ -104,6 +104,23 @@ export interface MyDocUpdateDocNmResponse {
   modifyDt?: string | null
 }
 
+/** updateSortOrd.do — 정렬순서 변경 항목 */
+export interface MyDocSortOrdItem {
+  docId: string
+  sortOrd: number
+}
+
+/** updateSortOrd.do 요청 — sortOrd만 일괄 변경 */
+export interface MyDocUpdateSortOrdRequest {
+  items: MyDocSortOrdItem[]
+}
+
+/** updateSortOrd.do 응답 */
+export interface MyDocUpdateSortOrdResponse {
+  successYn: boolean
+  returnMsg: string
+}
+
 /** deleteDoc.do 요청 */
 export interface MyDocDeleteRequest {
   docId: string

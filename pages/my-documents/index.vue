@@ -20,12 +20,14 @@
       />
 
       <MyDocGrid
-        :docs="docList"
+        v-model:docs="docList"
         :selected-doc-id="selectedDocId"
         :empty-title="emptyTitle"
         :empty-description="emptyDescription"
         @open-doc="onOpenDoc"
         @menu-select="onDocMenuSelect"
+        @drag-start="onMyDocDragStart"
+        @drag-end="handleUpdateMyDocSortOrd"
       />
     </div>
 
@@ -79,6 +81,8 @@ const {
   handleOpenMyDocShareModal,
   handleCloseMyDocShareModal,
   handleShareMyDoc,
+  onMyDocDragStart,
+  handleUpdateMyDocSortOrd,
 } = useMyDocStore()
 
 const { isUserSelectModalOpen } = useUserSelectStore()
