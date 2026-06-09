@@ -101,9 +101,10 @@ export interface DatamartMetaCodeWithEntries extends DatamartMetaCode {
 export const datamartMetaCodeMappingMasterColumns: TableColumn[] = [
   { key: 'tableNm', label: '테이블', width: '20%', align: 'left', headerAlign: 'center' },
   { key: 'colPhyNm', label: '컬럼', width: '18%', align: 'left', headerAlign: 'center' },
-  { key: 'colDesc', label: '설명', width: 'auto', align: 'left', headerAlign: 'center' },
+  { key: 'colDesc', label: '설명', align: 'left', headerAlign: 'center' },
   { key: 'entryCnt', label: '코드값 수', width: '12%', align: 'center', headerAlign: 'center' },
-  { key: '_actions', label: '', width: '40px', align: 'center', headerAlign: 'center' },
+  { key: 'aiHint', label: 'AI 힌트', width: '7%', align: 'center', headerAlign: 'center' },
+  { key: '_actions', label: '삭제', width: '7%', align: 'center', headerAlign: 'center' },
 ]
 
 /** 메타 관리 > 동의어 그룹 내 항목 */

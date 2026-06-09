@@ -45,7 +45,7 @@
               <p class="datamart-meta-code-section-hint">
                 테이블·컬럼·코드그룹 선택 후 「컬럼 추가」로 목록에 행을 넣고, 행을 클릭해 코드값·매핑 AI 힌트를
                 편집합니다.<br />
-                코드그룹 생성·그룹 정보 수정은 '코드그룹 관리' 메뉴에서 하세요.
+                코드그룹 생성·그룹 정보 수정은 '공통코드' 메뉴에서 진행할 수 있습니다.
               </p>
               <div class="datamart-meta-code-add-toolbar">
                 <div class="datamart-meta-code-add-selects">
@@ -110,20 +110,36 @@
                 empty-text="등록된 코드 매핑이 없습니다."
                 @row-click="onMappingMasterRowClick"
               >
+                <template #cell-aiHint="{ row }">
+                  <div class="picker-wrap datamart-meta-code-aihint-picker">
+                    <button
+                      type="button"
+                      class="picker-btn"
+                      :class="{
+                        'is-placeholder': !aiHintHasValue(resolveMappingFromMasterRow(row as MappingMasterRow)),
+                        'is-filled': aiHintHasValue(resolveMappingFromMasterRow(row as MappingMasterRow)),
+                      }"
+                      title="AI 힌트 편집"
+                      aria-label="AI 힌트 편집"
+                      @click.stop="onOpenAiHintFromMasterRow(row as MappingMasterRow)"
+                    >
+                      <i class="icon-edit-version size-16" />
+                    </button>
+                  </div>
+                </template>
                 <template #cell-_actions="{ row }">
-                  <div class="datamart-meta-code-master-actions">
+                  <div class="datamart-meta-code-master-actions-cell">
                     <UiButton
                       variant="line-secondary"
-                      size="xxs"
+                      size="sm"
                       icon-only
                       type="button"
                       title="이 매핑 삭제"
                       aria-label="이 매핑 삭제"
-                      class="datamart-meta-code-master-trash-btn"
                       @click.stop="onRemoveMapping((row as MappingMasterRow).mappingId)"
                     >
                       <template #icon-left>
-                        <i class="icon-trashcan size-12" />
+                        <i class="icon-trashcan size-16" />
                       </template>
                     </UiButton>
                   </div>
@@ -146,21 +162,6 @@
                       {{ activeCodeGrpLabel }}
                     </span>
                     <div class="datamart-meta-code-entry-topbar-actions">
-                      <div class="picker-wrap datamart-meta-code-grp-aihint-picker">
-                        <button
-                          type="button"
-                          class="picker-btn"
-                          :class="{
-                            'is-placeholder': !aiHintHasValue(activeMapping),
-                            'is-filled': aiHintHasValue(activeMapping),
-                          }"
-                          title="코드값 매핑 AI 힌트 편집"
-                          aria-label="코드값 매핑 AI 힌트 편집"
-                          @click="openAiHintModal"
-                        >
-                          <i class="icon-edit-version size-16" />
-                        </button>
-                      </div>
                       <UiButton
                         variant="primary"
                         size="sm"
@@ -683,14 +684,18 @@ const onRemoveMapping = (mappingId: string) => {
   if (selectedMappingId.value === mappingId) selectedMappingId.value = ''
 }
 
-const aiHintHasValue = (mapping: DatamartMetaCodeWithEntries) => Boolean(String(mapping.aiHint ?? '').trim())
+const resolveMappingFromMasterRow = (row: MappingMasterRow) => findMappingById(row.mappingId) ?? null
+
+const aiHintHasValue = (mapping: DatamartMetaCodeWithEntries | null | undefined) =>
+  Boolean(String(mapping?.aiHint ?? '').trim())
 
 const aiHintModalOpen = ref(false)
 const aiHintDraft = ref('')
+const aiHintEditingMapping = ref<DatamartMetaCodeWithEntries | null>(null)
 
 /** 모달 상단 — 테이블·컬럼 / 코드그룹 매핑 맥락 */
 const aiHintModalContext = computed(() => {
-  const mapping = activeMapping.value
+  const mapping = aiHintEditingMapping.value
   if (!mapping) return null
 
   const { table, col } = resolveTableCol(mapping.tblId, mapping.colId)
@@ -707,20 +712,26 @@ const aiHintModalContext = computed(() => {
   }
 })
 
-const openAiHintModal = () => {
-  const mapping = activeMapping.value
-  if (!mapping) return
+const openAiHintModal = (mapping: DatamartMetaCodeWithEntries) => {
+  aiHintEditingMapping.value = mapping
   aiHintDraft.value = mapping.aiHint ?? ''
   aiHintModalOpen.value = true
 }
 
+const onOpenAiHintFromMasterRow = (row: MappingMasterRow) => {
+  const mapping = resolveMappingFromMasterRow(row)
+  if (!mapping) return
+  openAiHintModal(mapping)
+}
+
 const onAiHintModalConfirm = () => {
-  const mapping = activeMapping.value
+  const mapping = aiHintEditingMapping.value
   if (mapping) mapping.aiHint = aiHintDraft.value.trim()
 }
 
 const onAiHintModalClose = () => {
   aiHintModalOpen.value = false
+  aiHintEditingMapping.value = null
   aiHintDraft.value = ''
 }
 
@@ -917,18 +928,87 @@ const onRemoveEntry = (sortOrd: number) => {
   :deep(.ui-table-wrap.is-sm .ui-table tbody td:last-child) {
     white-space: nowrap;
   }
-}
 
-.datamart-meta-code-master-actions {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  :deep(.datamart-meta-code-master-actions-cell) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 
-  :deep(.datamart-meta-code-master-trash-btn.ui-button.is-icon-only.size-btn-xxs) {
-    width: 22px;
-    height: 22px;
-    min-width: 22px;
-    border-radius: $border-radius-sm;
+  /* DatamartMetaColumnMetadataTab.vue `.datamart-meta-col-aihint-picker` 와 동일 */
+  :deep(.datamart-meta-code-aihint-picker) {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+    padding: 0 2px;
+  }
+
+  :deep(.datamart-meta-code-aihint-picker .picker-btn) {
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid #dce4e9;
+    border-radius: $border-radius-base;
+    background: #fff;
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+    appearance: none;
+    transition:
+      border-color 0.2s ease,
+      background 0.2s ease,
+      box-shadow 0.2s ease;
+
+    i {
+      display: block;
+      line-height: 1;
+      transition: color 0.2s ease;
+    }
+
+    &:hover {
+      border-color: #c3ced6;
+    }
+
+    &.is-placeholder {
+      border-style: dashed;
+      border-color: #cbd5e1;
+      background: #f8fafc;
+
+      i {
+        color: #94a3b8;
+      }
+
+      &:hover {
+        border-color: #94a3b8;
+        background: #f1f5f9;
+
+        i {
+          color: #64748b;
+        }
+      }
+    }
+
+    &.is-filled {
+      border-style: solid;
+      border-color: rgba(var(--color-primary-rgb, 99, 102, 241), 0.55);
+      background: rgba(var(--color-primary-rgb, 99, 102, 241), 0.07);
+      box-shadow: 0 0 0 1px rgba(var(--color-primary-rgb, 99, 102, 241), 0.12);
+
+      i {
+        color: var(--color-primary, #6366f1);
+      }
+
+      &:hover {
+        border-color: var(--color-primary, #6366f1);
+        background: rgba(var(--color-primary-rgb, 99, 102, 241), 0.1);
+      }
+    }
   }
 }
 
@@ -1092,79 +1172,6 @@ const onRemoveEntry = (sortOrd: number) => {
 :deep(.datamart-meta-code-entry-code .ui-input-wrap),
 :deep(.datamart-meta-code-entry-label .ui-input-wrap) {
   border-radius: $border-radius-sm;
-}
-
-.datamart-meta-code-grp-aihint-picker {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-
-  .picker-btn {
-    width: 28px;
-    height: 28px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border: 1px solid #dce4e9;
-    border-radius: $border-radius-base;
-    background: #fff;
-    cursor: pointer;
-    font: inherit;
-    color: inherit;
-    appearance: none;
-    transition:
-      border-color 0.2s ease,
-      background 0.2s ease,
-      box-shadow 0.2s ease;
-
-    i {
-      display: block;
-      line-height: 1;
-      transition: color 0.2s ease;
-    }
-
-    &:hover {
-      border-color: #c3ced6;
-    }
-
-    &.is-placeholder {
-      border-style: dashed;
-      border-color: #cbd5e1;
-      background: #f8fafc;
-
-      i {
-        color: #94a3b8;
-      }
-
-      &:hover {
-        border-color: #94a3b8;
-        background: #f1f5f9;
-
-        i {
-          color: #64748b;
-        }
-      }
-    }
-
-    &.is-filled {
-      border-style: solid;
-      border-color: rgba(var(--color-primary-rgb, 99, 102, 241), 0.55);
-      background: rgba(var(--color-primary-rgb, 99, 102, 241), 0.07);
-      box-shadow: 0 0 0 1px rgba(var(--color-primary-rgb, 99, 102, 241), 0.12);
-
-      i {
-        color: var(--color-primary, #6366f1);
-      }
-
-      &:hover {
-        border-color: var(--color-primary, #6366f1);
-        background: rgba(var(--color-primary-rgb, 99, 102, 241), 0.1);
-      }
-    }
-  }
 }
 
 .datamart-meta-code-entry-actions {
