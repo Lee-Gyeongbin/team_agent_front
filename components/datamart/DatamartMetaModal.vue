@@ -48,11 +48,12 @@
           />
           <DatamartMetaSynonymTab
             v-else-if="activeTab === 'synonym'"
-            ref="synonymTabRef"
             v-model:synonym-groups="metaModalSynonymGroups"
             :datamart="datamart"
             :error-message="metaModalSynonymListError"
+            :pending-change-count="metaModalSynonymPendingChangeCount"
             @retry="onRetryTableList"
+            @reset-changes="onResetSynonymChanges"
           />
           <DatamartMetaFewshotTab
             v-else-if="activeTab === 'fewshot'"
@@ -60,7 +61,10 @@
             :datamart="datamart"
             :tables="metaModalTables"
             :error-message="metaModalFewshotListError"
+            :pending-change-count="metaModalFewshotPendingChangeCount"
+            :initial-fewshot-list="metaModalInitialFewshotList"
             @retry="onRetryTableList"
+            @reset-changes="onResetFewshotChanges"
           />
         </div>
       </div>
@@ -117,6 +121,8 @@ const {
   metaModalSynonymGroups,
   metaModalFewshotList,
   metaModalFewshotListError,
+  metaModalFewshotDraft,
+  metaModalSynonymDraft,
   resetDatamartMetaModal,
   hydrateDatamartMetaModal,
   setDatamartMetaModalTableUseYn,
@@ -137,14 +143,20 @@ const metaModalCustomClass = computed(() => {
   return classes.join(' ')
 })
 
-type SynonymTabExpose = {
-  onSavedUiFinalize: () => void
-}
-
-const synonymTabRef = ref<SynonymTabExpose | null>(null)
+const metaModalFewshotPendingChangeCount = computed(() => metaModalFewshotDraft.pendingChangeCount.value)
+const metaModalSynonymPendingChangeCount = computed(() => metaModalSynonymDraft.pendingChangeCount.value)
+const metaModalInitialFewshotList = computed(() => metaModalFewshotDraft.initial.value)
 
 const onRetryTableList = () => {
   void hydrateDatamartMetaModal(props.datamart?.datamartId ?? '')
+}
+
+const onResetFewshotChanges = () => {
+  metaModalFewshotDraft.revert()
+}
+
+const onResetSynonymChanges = () => {
+  metaModalSynonymDraft.revert()
 }
 
 watch(
@@ -184,8 +196,7 @@ const onSave = async () => {
     return
   } else if (activeTab.value === 'synonym') {
     const datamartId = props.datamart?.datamartId ?? ''
-    const isSaved = await handleSaveMetaSynonym(datamartId, metaModalSynonymGroups.value)
-    if (isSaved) synonymTabRef.value?.onSavedUiFinalize()
+    await handleSaveMetaSynonym(datamartId, metaModalSynonymGroups.value)
     return
   } else if (activeTab.value === 'fewshot') {
     const datamartId = props.datamart?.datamartId ?? ''

@@ -338,25 +338,24 @@
 </template>
 
 <script setup lang="ts">
-import { useDatamartStore } from '~/composables/datamart/useDatamartStore'
 import type { Datamart } from '~/types/datamart'
 import type { DatamartMetaSynonymGroup, DatamartMetaSynonymItem } from '~/types/datamartMeta'
 
 const props = defineProps<{
   datamart: Datamart | null
   errorMessage?: string | null
+  pendingChangeCount?: number
 }>()
 
 const emit = defineEmits<{
   retry: []
+  resetChanges: []
 }>()
 
 const synonymGroups = defineModel<DatamartMetaSynonymGroup[]>('synonymGroups', { default: () => [] })
 
-const { metaModalSynonymDraft } = useDatamartStore()
-
 /** 템플릿용 변경 사항 카운트 */
-const synonymPendingChangeCount = computed(() => metaModalSynonymDraft.pendingChangeCount.value)
+const synonymPendingChangeCount = computed(() => props.pendingChangeCount ?? 0)
 
 type SynonymEditState = {
   groupId: string
@@ -492,9 +491,13 @@ const isAlreadyUiGrouped = (raw: DatamartMetaSynonymGroup[]) => raw.length > 1
 const normalizeSynonymGroupsFromStore = () => {
   if (isAlreadyUiGrouped(synonymGroups.value)) return
   if (isFlatSynonymPayload(synonymGroups.value)) {
-    synonymGroups.value = buildGroupedSynonyms(synonymGroups.value)
+    const grouped = buildGroupedSynonyms(synonymGroups.value)
+    if (JSON.stringify(synonymGroups.value) === JSON.stringify(grouped)) return
+    synonymGroups.value = grouped
   }
 }
+
+watch(synonymGroups, () => normalizeSynonymGroupsFromStore(), { immediate: true })
 
 const resetSynonymPanelUiState = () => {
   expandedGroupIds.value = []
@@ -502,28 +505,15 @@ const resetSynonymPanelUiState = () => {
   onCancelAddGroup()
 }
 
-const onSavedUiFinalize = () => {
-  resetSynonymPanelUiState()
-  normalizeSynonymGroupsFromStore()
-  metaModalSynonymDraft.commitBaseline()
-}
+const onResetChanges = async () => {
+  const confirmed = await openConfirm({
+    message: '변경 내용을 모두 삭제하시겠습니까?',
+  })
+  if (!confirmed) return
 
-defineExpose({
-  onSavedUiFinalize,
-})
-
-const onResetChanges = () => {
-  metaModalSynonymDraft.revert()
+  emit('resetChanges')
   resetSynonymPanelUiState()
 }
-
-/** flat payload → UI 카드 배열 후 baseline 설정 (hydrate는 normalize 전이라 baseline 미설정) */
-onMounted(() => {
-  normalizeSynonymGroupsFromStore()
-  if (!metaModalSynonymDraft.ready.value) {
-    metaModalSynonymDraft.commitBaseline()
-  }
-})
 
 const isGroupExpanded = (groupId: string) => expandedGroupIds.value.includes(groupId)
 
@@ -676,12 +666,29 @@ const onConfirmEditSource = (group: DatamartMetaSynonymGroup) => {
     const removedItems = baseSynonyms.filter(
       (synonym) => synonym.useYn !== 'N' && !synonymWords.includes(synonym.synonymWord),
     )
+    const activeSynonymsByWord = baseSynonyms.reduce((map, synonym) => {
+      if (synonym.useYn === 'N') return map
+      const word = synonym.synonymWord?.trim()
+      if (!word) return map
+      map.set(word, [...(map.get(word) ?? []), synonym])
+      return map
+    }, new Map<string, DatamartMetaSynonymItem[]>())
+    const nextSynonymItems = synonymWords.map((word) => {
+      const existingItems = activeSynonymsByWord.get(word) ?? []
+      const existingItem = existingItems.shift()
+      if (existingItems.length > 0) activeSynonymsByWord.set(word, existingItems)
+      else activeSynonymsByWord.delete(word)
+
+      return existingItem
+        ? { ...existingItem, synonymWord: word, representYn: 'N' as const, useYn: 'Y' as const }
+        : createSynonymItem(word, 'N')
+    })
 
     return {
       ...item,
       synonymList: [
         { ...representative, synonymWord: sourceText, representYn: 'Y', useYn: 'Y' },
-        ...synonymWords.map((word) => createSynonymItem(word, 'N')),
+        ...nextSynonymItems,
         ...removedItems.map((synonym) => ({ ...synonym, representYn: 'N' as const, useYn: 'N' as const })),
       ],
     }
@@ -735,9 +742,4 @@ const onDeleteGroup = (group: DatamartMetaSynonymGroup) => {
 const onRetry = () => {
   emit('retry')
 }
-
-onBeforeUnmount(() => {
-  if (!metaModalSynonymDraft.hasPendingChanges.value) return
-  onResetChanges()
-})
 </script>

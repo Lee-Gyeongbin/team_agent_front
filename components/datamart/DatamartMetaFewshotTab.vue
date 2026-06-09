@@ -441,26 +441,33 @@
 
 <script setup lang="ts">
 import type { SelectOption } from '~/components/ui/UiSelect.vue'
-import { useDatamartStore } from '~/composables/datamart/useDatamartStore'
 import type { Datamart } from '~/types/datamart'
 import type { DatamartMetaFewshot, DatamartMetaTableItem } from '~/types/datamartMeta'
 
-const props = defineProps<{
-  datamart: Datamart | null
-  tables: DatamartMetaTableItem[]
-  errorMessage?: string | null
-}>()
+const props = withDefaults(
+  defineProps<{
+    datamart: Datamart | null
+    tables: DatamartMetaTableItem[]
+    errorMessage?: string | null
+    pendingChangeCount?: number
+    initialFewshotList?: DatamartMetaFewshot[]
+  }>(),
+  {
+    errorMessage: null,
+    pendingChangeCount: 0,
+    initialFewshotList: () => [],
+  },
+)
 
 const emit = defineEmits<{
   retry: []
+  resetChanges: []
 }>()
 
 const fewshotListModel = defineModel<DatamartMetaFewshot[]>('fewshotList', { default: () => [] })
 
-const { metaModalFewshotDraft } = useDatamartStore()
-
 /** 템플릿용 변경 사항 카운트 */
-const fewshotPendingChangeCount = computed(() => metaModalFewshotDraft.pendingChangeCount.value)
+const fewshotPendingChangeCount = computed(() => props.pendingChangeCount)
 
 type FewshotListEntry = { uiKey: string; row: DatamartMetaFewshot }
 
@@ -531,7 +538,7 @@ const updateFewshotRowByUiKey = (uiKey: string, updater: (row: DatamartMetaFewsh
 
 const initialSignatureByFewshotId = computed(() => {
   const map = new Map<string, string>()
-  metaModalFewshotDraft.initial.value.forEach((row) => {
+  props.initialFewshotList.forEach((row) => {
     const id = row.fewshotId?.trim() ?? ''
     if (id) map.set(id, toFewshotSignature(row))
   })
@@ -557,8 +564,13 @@ const getFewshotCardStatusMeta = (uiKey: string): { status: FewshotCardStatus | 
   return toFewshotSignature(row) !== initialSig ? { status: 'modified', label: '수정됨' } : { status: null, label: '' }
 }
 
-const onResetChanges = () => {
-  metaModalFewshotDraft.revert()
+const onResetChanges = async () => {
+  const confirmed = await openConfirm({
+    message: '변경 내용을 모두 삭제하시겠습니까?',
+  })
+  if (!confirmed) return
+
+  emit('resetChanges')
   detailMode.value = 'view'
   editForm.value = createEmptyForm()
   isSqlManualInput.value = false
@@ -949,9 +961,4 @@ const onSqlFromTableChange = (table: string | number) => {
 const onRetry = () => {
   emit('retry')
 }
-
-onBeforeUnmount(() => {
-  if (!metaModalFewshotDraft.hasPendingChanges.value) return
-  onResetChanges()
-})
 </script>
