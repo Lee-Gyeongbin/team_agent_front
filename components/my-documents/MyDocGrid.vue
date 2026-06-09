@@ -1,28 +1,39 @@
 <template>
-  <div class="my-doc-grid">
-    <MyDocCard
-      v-for="doc in docs"
-      :key="doc.docId"
-      :doc="doc"
-      :is-active="selectedDocId === doc.docId"
-      @open="emit('openDoc', $event)"
-      @menu-select="(doc, action) => emit('menuSelect', doc, action)"
-    />
-
-    <div
-      v-if="docs.length === 0"
-      class="my-doc-grid-empty"
-    >
-      <UiEmpty
-        icon="icon-document"
-        :title="emptyTitle"
-        :description="emptyDescription"
+  <draggable
+    v-if="docs.length > 0"
+    v-model="docsModel"
+    class="my-doc-grid"
+    item-key="docId"
+    handle=".my-doc-card-drag"
+    animation="200"
+    :disabled="docs.length < 2"
+    @start="emit('dragStart')"
+    @end="emit('dragEnd')"
+  >
+    <template #item="{ element: doc }">
+      <MyDocCard
+        :doc="doc"
+        :is-active="selectedDocId === doc.docId"
+        @open="emit('openDoc', $event)"
+        @menu-select="(item, action) => emit('menuSelect', item, action)"
       />
-    </div>
+    </template>
+  </draggable>
+
+  <div
+    v-else
+    class="my-doc-grid-empty"
+  >
+    <UiEmpty
+      icon="icon-document"
+      :title="emptyTitle"
+      :description="emptyDescription"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+import draggable from 'vuedraggable'
 import type { MyDoc } from '~/types/mydoc'
 
 interface Props {
@@ -32,12 +43,20 @@ interface Props {
   emptyDescription: string
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   selectedDocId: null,
 })
 
 const emit = defineEmits<{
+  'update:docs': [docs: MyDoc[]]
   openDoc: [doc: MyDoc]
   menuSelect: [doc: MyDoc, action: string]
+  dragStart: []
+  dragEnd: []
 }>()
+
+const docsModel = computed({
+  get: () => props.docs,
+  set: (value) => emit('update:docs', value),
+})
 </script>

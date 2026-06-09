@@ -3,8 +3,16 @@ import { useUserSelectStore } from '~/composables/com/useUserSelectStore'
 import type { OrgUserItem } from '~/types/org-manage'
 import type { MyDoc, MyDocListRequest, MyDocSaveReportPayload } from '~/types/mydoc'
 
-const { fetchList, fetchDetail, fetchSaveReport, fetchUpdateNewYn, fetchUpdateDocNm, fetchDeleteDoc, fetchShareDoc } =
-  useMyDocApi()
+const {
+  fetchList,
+  fetchDetail,
+  fetchSaveReport,
+  fetchUpdateNewYn,
+  fetchUpdateDocNm,
+  fetchUpdateSortOrd,
+  fetchDeleteDoc,
+  fetchShareDoc,
+} = useMyDocApi()
 const { openUserSelectModal, closeUserSelectModal } = useUserSelectStore()
 
 const docList = ref<MyDoc[]>([])
@@ -13,6 +21,8 @@ const selectedDocDetail = ref<MyDoc | null>(null)
 const sharingDocId = ref<string | null>(null)
 const isDetailModalOpen = ref(false)
 const lastListRequestParams = ref<MyDocListRequest | null>(null)
+/** 드래그 정렬 취소 시 복원용 */
+const docListBeforeDrag = ref<MyDoc[]>([])
 
 /** 내 문서 목록 조회 */
 const handleSelectMyDocList = async (params: MyDocListRequest) => {
@@ -326,6 +336,48 @@ const handleDeleteMyDoc = async (docId: string): Promise<boolean> => {
   }
 }
 
+/** 문서 드래그 시작 — 순서 저장 (취소 시 복원용) */
+const onMyDocDragStart = () => {
+  docListBeforeDrag.value = [...docList.value]
+}
+
+/** 문서 드래그 종료 — sortOrd 일괄 변경 (updateSortOrd.do) */
+const handleUpdateMyDocSortOrd = async () => {
+  openConfirm({
+    message: '문서 순서를 변경하시겠습니까?',
+    onConfirm: async () => {
+      const items = docList.value.map((doc, index) => ({
+        docId: doc.docId,
+        sortOrd: index + 1,
+      }))
+
+      try {
+        openLoading({ text: '문서 순서를 변경하는 중...' })
+        const res = await fetchUpdateSortOrd({ items })
+        if (res.successYn === false) {
+          docList.value = [...docListBeforeDrag.value]
+          openToast({ message: '문서 순서 변경에 실패했습니다.', type: 'error' })
+          return
+        }
+
+        docList.value = docList.value.map((doc, index) => ({
+          ...doc,
+          sortOrd: index + 1,
+        }))
+        openToast({ message: '문서 순서가 변경되었습니다.', type: 'success' })
+      } catch {
+        docList.value = [...docListBeforeDrag.value]
+        openToast({ message: '문서 순서 변경에 실패했습니다.', type: 'error' })
+      } finally {
+        closeLoading()
+      }
+    },
+    onCancel: () => {
+      docList.value = [...docListBeforeDrag.value]
+    },
+  })
+}
+
 /** 내 문서 — 문서명만 변경 (updateDocNm.do) */
 const handleRenameMyDoc = async (docId: string, docNm: string): Promise<boolean> => {
   const trimmed = docNm.trim()
@@ -376,5 +428,7 @@ export const useMyDocStore = () => {
     handleCloseMyDocShareModal,
     handleShareMyDoc,
     refreshMyDocListAfterMutation,
+    onMyDocDragStart,
+    handleUpdateMyDocSortOrd,
   }
 }

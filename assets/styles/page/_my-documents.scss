@@ -135,6 +135,10 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 12px;
+
+    > .sortable-ghost {
+      opacity: 0.4;
+    }
   }
 
   .my-doc-grid-empty {
@@ -144,10 +148,10 @@
 
   .my-doc-card {
     display: flex;
-    align-items: stretch;
-    gap: 12px;
-    min-height: 96px;
-    padding: 12px;
+    align-items: center;
+    gap: 2px;
+    min-height: 88px;
+    padding: 10px 12px 10px 4px;
     border-radius: $border-radius-lg;
     border: 1px solid #c6d2db;
     background: #fff;
@@ -156,19 +160,51 @@
     transition:
       border-color $transition-slow,
       box-shadow $transition-slow,
-      transform $transition-fast;
+      transform $transition-fast,
+      background-color $transition-fast;
 
     &:hover {
       border-color: #94a3b8;
+      background: #fafbfc;
       transform: translateY(-2px);
     }
 
     &.is-active {
       border-color: #94a3b8;
+      background: #fafbfc;
       box-shadow:
         4px 4px 4px 0 rgba(30, 50, 77, 0.08),
         inset 0 0 0 1px #94a3b8;
     }
+  }
+
+  .my-doc-card-drag {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    align-self: stretch;
+    width: 20px;
+    border-radius: 4px;
+    color: #b1b8be;
+    cursor: grab;
+
+    &:hover {
+      color: #6f7a93;
+      background: #f0f3f6;
+    }
+
+    &:active {
+      cursor: grabbing;
+    }
+  }
+
+  .my-doc-card-body {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
   }
 
   .my-doc-card-doc {
@@ -176,8 +212,9 @@
     flex-shrink: 0;
     align-items: center;
     justify-content: center;
-    width: 72px;
-    border-radius: 6px;
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
     background: var(--card-icon-bg, #ecf0f3);
     color: var(--card-icon-color, #6f7a93);
 
@@ -191,7 +228,8 @@
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: 6px;
+    justify-content: center;
+    gap: 8px;
     min-width: 0;
   }
 
@@ -199,7 +237,7 @@
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: $spacing-xs;
+    gap: 4px;
     min-width: 0;
   }
 
@@ -209,29 +247,39 @@
     color: #33363d;
     font-size: 14px;
     font-weight: 700;
-    line-height: 150%;
+    line-height: 1.4;
     @include ellipsis(2);
+  }
+
+  .my-doc-card-menu {
+    flex-shrink: 0;
+    margin: -4px -6px -4px 0;
   }
 
   .my-doc-card-footer {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: auto;
+    justify-content: space-between;
+    gap: 8px;
     min-height: 28px;
   }
 
+  .my-doc-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
   .my-doc-card-date {
-    flex-shrink: 0;
     color: #94a3b8;
     font-size: $font-size-sm;
     white-space: nowrap;
+    @include ellipsis(1);
   }
 
   .my-doc-card-new-tag {
-    margin-right: auto;
+    flex-shrink: 0;
     border-radius: 32px;
     background: #ffd2d2;
     padding: 0 4px;
