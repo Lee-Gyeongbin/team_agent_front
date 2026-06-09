@@ -52,7 +52,7 @@
                   <div class="com-setting-field-row datamart-meta-code-add-field">
                     <label class="com-setting-label">테이블</label>
                     <UiSelect
-                      v-model="pickTblId"
+                      v-model="mappingDraft.tblId"
                       :options="tableOptions"
                       size="sm"
                       placeholder="테이블 선택"
@@ -62,23 +62,22 @@
                   <div class="com-setting-field-row datamart-meta-code-add-field">
                     <label class="com-setting-label">컬럼명</label>
                     <UiSelect
-                      v-model="pickColId"
+                      v-model="mappingDraft.colId"
                       :options="pickColumnOptions"
                       size="sm"
                       placeholder="컬럼 선택"
-                      :disabled="!pickTblId"
+                      :disabled="!mappingDraft.tblId"
                       @update:model-value="onPickColumnChange"
                     />
                   </div>
                   <div class="com-setting-field-row datamart-meta-code-add-field">
                     <label class="com-setting-label">코드그룹</label>
                     <UiSelect
-                      v-model="pickCodeGrpId"
+                      v-model="mappingDraft.codeGrpId"
                       :options="pickCodeGroupOptions"
                       size="sm"
                       placeholder="코드그룹 선택"
-                      :disabled="!pickColId"
-                      @update:model-value="onPickCodeGroupChange"
+                      :disabled="!mappingDraft.colId"
                     />
                   </div>
                 </div>
@@ -88,7 +87,7 @@
                   type="button"
                   title="컬럼 추가"
                   aria-label="컬럼 추가"
-                  :disabled="!pickTblId || !pickColId || !pickCodeGrpId"
+                  :disabled="!mappingDraft.tblId || !mappingDraft.colId || !mappingDraft.codeGrpId"
                   @click="onAddCodeColumn"
                 >
                   <template #icon-left>
@@ -355,9 +354,12 @@ interface MappingMasterRow {
 }
 
 const selectedMappingId = ref('')
-const pickTblId = ref('')
-const pickColId = ref('')
-const pickCodeGrpId = ref('')
+
+const mappingDraft = reactive({
+  tblId: '',
+  colId: '',
+  codeGrpId: '',
+})
 
 const buildMappingId = (tblId: string, colId: string) => `${tblId}::${colId}`
 
@@ -378,7 +380,7 @@ const tableOptions = computed(() => [
 ])
 
 const pickColumnOptions = computed(() => {
-  const table = activeTables.value.find((row) => row.id === pickTblId.value)
+  const table = activeTables.value.find((row) => row.id === mappingDraft.tblId)
   if (!table) return [{ label: '선택', value: '' }]
   return [
     { label: '선택', value: '' },
@@ -398,27 +400,28 @@ const pickCodeGroupOptions = computed(() => [
 ])
 
 const onPickTableChange = () => {
-  pickColId.value = ''
-  pickCodeGrpId.value = ''
+  mappingDraft.colId = ''
+  mappingDraft.codeGrpId = ''
 }
 
 const onPickColumnChange = () => {
-  pickCodeGrpId.value = ''
+  mappingDraft.codeGrpId = ''
 }
 
-/** 추가 툴바 선택이 현재 편집 중인 매핑과 동일할 때만 코드그룹 변경 반영 */
-const isPickTargetingSelectedMapping = () => {
-  const mapping = activeMapping.value
-  if (!mapping || !pickTblId.value || !pickColId.value) return false
-  return mapping.tblId === pickTblId.value && mapping.colId === pickColId.value
+const resetMappingDraft = () => {
+  mappingDraft.tblId = ''
+  mappingDraft.colId = ''
+  mappingDraft.codeGrpId = ''
 }
 
 const isVisibleCodeEntry = (entry: DatamartMetaCodeValueRow) => entry.useYn !== 'N'
 const isVisibleCodeMapping = (mapping: DatamartMetaCodeWithEntries) => mapping.useYn !== 'N'
 
+const visibleCodeMappings = computed(() => codeMappings.value.filter(isVisibleCodeMapping))
+
 /** 신규 매핑을 목록 맨 아래에 붙이기 위한 sortOrd */
 const getNextBottomSortOrd = () => {
-  const orders = codeMappings.value.filter(isVisibleCodeMapping).map((item) => Number(item.sortOrd) || 0)
+  const orders = visibleCodeMappings.value.map((item) => Number(item.sortOrd) || 0)
   return orders.length === 0 ? 1 : Math.max(...orders) + 1
 }
 
@@ -441,15 +444,25 @@ const formatCodeGrpLabel = (codeGrpId: string, codeGrpNm?: string) => {
   return grpId || grpNm || '—'
 }
 
+const cloneCodeEntries = (entries: DatamartMetaCodeValueRow[]) => entries.map((entry) => ({ ...entry }))
+
+const getVisibleCodeEntries = (mapping: DatamartMetaCodeWithEntries) =>
+  mapping.entries.filter(isVisibleCodeEntry).sort((a, b) => a.sortOrd - b.sortOrd)
+
 const syncEntriesAcrossSameCodeGroup = (codeGrpId: string, entries: DatamartMetaCodeValueRow[]) => {
   const grpId = codeGrpId?.trim()
   if (!grpId) return
-  const snapshot = entries.map((entry) => ({ ...entry }))
+  const snapshot = cloneCodeEntries(entries)
   for (const mapping of codeMappings.value) {
     if (mapping.useYn !== 'N' && mapping.codeGrpId?.trim() === grpId) {
-      mapping.entries = snapshot.map((entry) => ({ ...entry }))
+      mapping.entries = cloneCodeEntries(snapshot)
     }
   }
+}
+
+const setMappingEntries = (mapping: DatamartMetaCodeWithEntries, entries: DatamartMetaCodeValueRow[]) => {
+  mapping.entries = entries
+  syncEntriesAcrossSameCodeGroup(mapping.codeGrpId, entries)
 }
 
 const applyLinkedCodeGroupEntries = async (mapping: DatamartMetaCodeWithEntries) => {
@@ -459,7 +472,7 @@ const applyLinkedCodeGroupEntries = async (mapping: DatamartMetaCodeWithEntries)
     return
   }
 
-  mapping.codeGrpNm = mapping.codeGrpNm?.trim() || resolveCodeGrpNm(codeGrpId)
+  mapping.codeGrpNm = resolveCodeGrpNm(codeGrpId) || mapping.codeGrpNm?.trim() || ''
 
   try {
     const entries = await buildCodeMappingEntriesFromGroup(codeGrpId)
@@ -482,13 +495,13 @@ const activeEntries = computed<DatamartMetaCodeValueRow[]>({
   get: () => {
     const mapping = activeMapping.value
     if (!mapping) return []
-    return mapping.entries.filter(isVisibleCodeEntry).sort((a, b) => a.sortOrd - b.sortOrd)
+    return getVisibleCodeEntries(mapping)
   },
   set: (visibleEntries) => {
     const mapping = activeMapping.value
     if (!mapping) return
     const inactiveEntries = mapping.entries.filter((entry) => entry.useYn === 'N')
-    mapping.entries = [
+    const normalizedEntries = [
       ...visibleEntries.map((entry, index) => ({
         ...entry,
         codeGrpId: entry.codeGrpId?.trim() || mapping.codeGrpId,
@@ -497,7 +510,7 @@ const activeEntries = computed<DatamartMetaCodeValueRow[]>({
       })),
       ...inactiveEntries,
     ]
-    syncEntriesAcrossSameCodeGroup(mapping.codeGrpId, mapping.entries)
+    setMappingEntries(mapping, normalizedEntries)
   },
 })
 
@@ -523,14 +536,14 @@ const resolveTableCol = (tableId: string, columnId: string) => {
 }
 
 const mappingMasterRows = computed((): MappingMasterRow[] =>
-  codeMappings.value.filter(isVisibleCodeMapping).map((m) => {
+  visibleCodeMappings.value.map((m) => {
     const { table, col } = resolveTableCol(m.tblId, m.colId)
     return {
       mappingId: buildMappingId(m.tblId, m.colId),
       tableNm: table?.physicalNm ?? m.tblId,
       colPhyNm: col?.colPhyNm ?? m.colId,
       colDesc: col?.colDesc?.trim() ? col.colDesc : '—',
-      entryCnt: String(m.entries.filter(isVisibleCodeEntry).length),
+      entryCnt: String(getVisibleCodeEntries(m).length),
     }
   }),
 )
@@ -541,11 +554,6 @@ const onMappingMasterRowClick = async (row: Record<string, unknown>) => {
   selectedMappingId.value = id
   const current = findMappingById(id)
   if (!current) return
-
-  // 추가 툴바와 선택 행 동기화 — 동일 행일 때만 코드그룹 변경이 편집에 반영됨
-  pickTblId.value = current.tblId
-  pickColId.value = current.colId
-  pickCodeGrpId.value = current.codeGrpId ?? ''
 
   if (!current.codeGrpId?.trim() || current.entries.some(isVisibleCodeEntry)) return
   await applyLinkedCodeGroupEntries(current)
@@ -627,14 +635,14 @@ const previewAiContext = computed(() => {
 })
 
 const onAddCodeColumn = async () => {
-  if (!pickTblId.value || !pickColId.value || !pickCodeGrpId.value) return
-  const table = activeTables.value.find((t) => t.id === pickTblId.value)
-  const col = table?.columns.find((c) => c.colId === pickColId.value)
+  if (!mappingDraft.tblId || !mappingDraft.colId || !mappingDraft.codeGrpId) return
+  const table = activeTables.value.find((t) => t.id === mappingDraft.tblId)
+  const col = table?.columns.find((c) => c.colId === mappingDraft.colId)
   if (!table || !col) return
 
   const tblId = table.id
   const colId = col.colId
-  const codeGrpId = pickCodeGrpId.value
+  const codeGrpId = mappingDraft.codeGrpId
   const existing = codeMappings.value.find((m) => m.tblId === tblId && m.colId === colId)
 
   const codeGrpNm = resolveCodeGrpNm(codeGrpId)
@@ -660,20 +668,7 @@ const onAddCodeColumn = async () => {
 
   await applyLinkedCodeGroupEntries(target)
   selectedMappingId.value = buildMappingId(tblId, colId)
-  pickTblId.value = ''
-  pickColId.value = ''
-  pickCodeGrpId.value = ''
-}
-
-const onPickCodeGroupChange = async () => {
-  if (!isPickTargetingSelectedMapping() || !pickCodeGrpId.value) return
-
-  const current = activeMapping.value
-  if (!current) return
-
-  current.codeGrpId = pickCodeGrpId.value
-  current.codeGrpNm = resolveCodeGrpNm(pickCodeGrpId.value)
-  await applyLinkedCodeGroupEntries(current)
+  resetMappingDraft()
 }
 
 const onRemoveMapping = (mappingId: string) => {
@@ -737,19 +732,19 @@ const onAiHintModalClose = () => {
 const onAddEntry = () => {
   const mapping = activeMapping.value
   if (!mapping) return
-  const visibleCnt = mapping.entries.filter(isVisibleCodeEntry).length
+  const visibleCnt = getVisibleCodeEntries(mapping).length
   const row = createEmptyCodeEntry(mapping.codeGrpId, visibleCnt + 1)
-  mapping.entries = [...mapping.entries, row]
-  syncEntriesAcrossSameCodeGroup(mapping.codeGrpId, mapping.entries)
+  setMappingEntries(mapping, [...mapping.entries, row])
 }
 
 const onRemoveEntry = (sortOrd: number) => {
   const mapping = activeMapping.value
   if (!mapping) return
-  const entry = mapping.entries.find((item) => item.sortOrd === sortOrd && isVisibleCodeEntry(item))
-  if (!entry) return
-  entry.useYn = 'N'
-  syncEntriesAcrossSameCodeGroup(mapping.codeGrpId, mapping.entries)
+  const nextEntries = mapping.entries.map((entry) => {
+    if (entry.sortOrd !== sortOrd || !isVisibleCodeEntry(entry)) return entry
+    return { ...entry, useYn: 'N' as const }
+  })
+  setMappingEntries(mapping, nextEntries)
 }
 </script>
 
