@@ -430,13 +430,116 @@ const emit = defineEmits<{
 // ── 공통 ──────────────────────────────────────────────────────────────────
 const renderedHtml = ref('')
 const imagePreview = ref<{ src: string; title: string; mimeType: string } | null>(null)
+const HTML_PREVIEW_BLOCK_SELECTOR = '.html-preview-block'
+const HTML_PREVIEW_MENU_SELECTOR = '.html-preview-menu'
+const HTML_PREVIEW_COPY_ACTION = 'copy-html-code'
+const HTML_PREVIEW_DOWNLOAD_ACTION = 'download-html-file'
 
 const onImagePreviewOpenChange = (open: boolean) => {
   if (!open) imagePreview.value = null
 }
 
+const closeHtmlPreviewMenus = (scope?: ParentNode | null) => {
+  const root = scope ?? document
+  root.querySelectorAll<HTMLElement>(`${HTML_PREVIEW_MENU_SELECTOR}.is-open`).forEach((menu) => {
+    menu.classList.remove('is-open')
+  })
+}
+
+const decodeHtmlPreviewCode = (encodedHtml: string) => {
+  try {
+    return decodeURIComponent(encodedHtml)
+  } catch {
+    return ''
+  }
+}
+
+const getHtmlPreviewCodeFromTarget = (target: HTMLElement) => {
+  const previewBlock = target.closest<HTMLElement>(HTML_PREVIEW_BLOCK_SELECTOR)
+  if (!previewBlock) return ''
+  return decodeHtmlPreviewCode(String(previewBlock.dataset.htmlCode ?? ''))
+}
+
+const copyHtmlPreviewCode = async (target: HTMLElement) => {
+  const rawHtml = getHtmlPreviewCodeFromTarget(target)
+  if (!rawHtml) {
+    openToast({ message: '복사할 HTML 코드가 없습니다.', type: 'warning' })
+    return
+  }
+  try {
+    await navigator.clipboard.writeText(rawHtml)
+    openToast({ message: 'HTML 코드가 복사되었습니다.', type: 'success' })
+  } catch {
+    openToast({ message: 'HTML 코드 복사에 실패했습니다.', type: 'error' })
+  }
+}
+
+const downloadHtmlPreviewCode = (target: HTMLElement) => {
+  const rawHtml = getHtmlPreviewCodeFromTarget(target)
+  if (!rawHtml) {
+    openToast({ message: '다운로드할 HTML 코드가 없습니다.', type: 'warning' })
+    return
+  }
+
+  const blob = new Blob([rawHtml], { type: 'text/html;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  const stamp = new Date()
+    .toISOString()
+    .replace(/[-:.TZ]/g, '')
+    .slice(0, 14)
+  link.href = url
+  link.download = `preview-${stamp}.html`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+  openToast({ message: 'HTML 파일을 다운로드했습니다.', type: 'success' })
+}
+
+const onDocumentClickForHtmlPreview = (event: MouseEvent) => {
+  const target = event.target as HTMLElement | null
+  if (target?.closest(HTML_PREVIEW_BLOCK_SELECTOR)) return
+  closeHtmlPreviewMenus()
+}
+
 const onMarkdownClick = (e: MouseEvent) => {
   const target = e.target as HTMLElement
+  const actionTarget = target.closest<HTMLElement>('[data-action]')
+  const action = String(actionTarget?.dataset.action ?? '')
+
+  if (actionTarget && action) {
+    if (action === 'toggle-html-preview-menu') {
+      e.preventDefault()
+      e.stopPropagation()
+      const previewBlock = actionTarget.closest<HTMLElement>(HTML_PREVIEW_BLOCK_SELECTOR)
+      const menu = previewBlock?.querySelector<HTMLElement>(HTML_PREVIEW_MENU_SELECTOR)
+      if (menu) {
+        const willOpen = !menu.classList.contains('is-open')
+        closeHtmlPreviewMenus(previewBlock?.closest('.message-content') ?? document)
+        if (willOpen) menu.classList.add('is-open')
+      }
+      return
+    }
+
+    if (action === HTML_PREVIEW_COPY_ACTION) {
+      e.preventDefault()
+      e.stopPropagation()
+      void copyHtmlPreviewCode(actionTarget)
+      closeHtmlPreviewMenus(actionTarget.closest('.message-content'))
+      return
+    }
+
+    if (action === HTML_PREVIEW_DOWNLOAD_ACTION) {
+      e.preventDefault()
+      e.stopPropagation()
+      downloadHtmlPreviewCode(actionTarget)
+      closeHtmlPreviewMenus(actionTarget.closest('.message-content'))
+      return
+    }
+  }
+
+  closeHtmlPreviewMenus(target.closest('.message-content'))
   if (target.tagName !== 'IMG') return
   const img = target as HTMLImageElement
   let src = ''
@@ -544,8 +647,13 @@ let isMessageItemAlive = true
 
 onBeforeUnmount(() => {
   isMessageItemAlive = false
+  document.removeEventListener('click', onDocumentClickForHtmlPreview)
   cancelPsychologyRadarUiInjection?.()
   cancelPsychologyRadarUiInjection = null
+})
+
+onMounted(() => {
+  document.addEventListener('click', onDocumentClickForHtmlPreview)
 })
 
 watch(

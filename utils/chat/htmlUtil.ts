@@ -11,7 +11,32 @@ marked.setOptions({
 
 /** 코드 블록 syntax highlighting — 언어 지정 시 hljs로, 없으면 plaintext */
 const renderer = new marked.Renderer()
+const HTML_PREVIEW_LANG_SET = new Set(['html', 'htm'])
+
+const escapeHtmlAttribute = (value: string) =>
+  value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
 renderer.code = ({ text, lang }) => {
+  const normalizedLang = String(lang ?? '')
+    .trim()
+    .toLowerCase()
+  if (HTML_PREVIEW_LANG_SET.has(normalizedLang)) {
+    const encodedHtml = escapeHtmlAttribute(encodeURIComponent(text))
+    const previewHtml = DOMPurify.sanitize(text, { ADD_ATTR: ['target'] })
+    return [
+      `<div class="html-preview-block" data-html-code="${encodedHtml}">`,
+      '<button type="button" class="html-preview-menu-trigger" data-action="toggle-html-preview-menu" aria-label="HTML 미리보기 메뉴">',
+      '<i class="icon icon-more-vertical size-16"></i>',
+      '</button>',
+      '<div class="html-preview-menu">',
+      '<button type="button" class="html-preview-menu-item" data-action="copy-html-code">copy to clipboard</button>',
+      '<button type="button" class="html-preview-menu-item" data-action="download-html-file">download file</button>',
+      '</div>',
+      `<div class="html-preview-content">${previewHtml}</div>`,
+      '</div>',
+    ].join('')
+  }
+
   const language = lang && hljs.getLanguage(lang) ? lang : 'plaintext'
   const highlighted = hljs.highlight(text, { language }).value
   return `<pre><code class="hljs language-${language}">${highlighted}</code></pre>`
