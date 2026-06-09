@@ -267,9 +267,13 @@
           v-if="displayData?.svcTy === 'S'"
           class="content-box type-visualization"
         >
-          <ChatVisualizationContent
+          <LibraryVisualizationContent
             :open="isOpen"
             :view-model="visualizationView"
+            :initial-charts="knowChartList"
+            :on-save-chart="onVisSaveChart"
+            :on-update-chart="onVisUpdateChart"
+            :on-delete-chart="handleDeleteKnowChart"
           />
         </div>
       </div>
@@ -333,7 +337,12 @@ import { NEWS_CURATOR_AGENT_ID, parseNewsCuratorItems } from '~/utils/chat/newsC
 import { isTodayMemeLibraryCard, parseTodayMemeItems } from '~/utils/chat/todayMemeUtil'
 import type { LibraryCardDetail, DocItem, TableDataItem, ChartStatItem, ChartDetailCdItem } from '~/types/library'
 import type { LibraryReportInsightRequest } from '~/utils/library/libraryReportEditorUtil'
-import type { LunchRecommendationItem, RecommendResultItem, VisualizationViewModel } from '~/types/chat'
+import type {
+  LunchRecommendationItem,
+  RecommendResultItem,
+  VisualizationChartSelection,
+  VisualizationViewModel,
+} from '~/types/chat'
 import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
 import { useFileStore } from '~/composables/com/useFileStore'
 import { useLibraryStore } from '~/composables/library/useLibraryStore'
@@ -362,7 +371,27 @@ const {
   handleShareCard,
   libraryAgents,
   handleSelectLibraryAgents,
+  knowChartList,
+  handleSaveKnowChart,
+  handleUpdateKnowChart,
+  handleDeleteKnowChart,
 } = useLibraryStore()
+
+/** LibraryVisualizationContent의 onSaveChart 콜백 — 현재 카드 ID를 클로저로 바인딩 */
+const onVisSaveChart = async (selection: VisualizationChartSelection, sortOrd: number): Promise<string> => {
+  const cardId = displayData.value?.cardId
+  if (!cardId) throw new Error('cardId 없음')
+  return handleSaveKnowChart(cardId, selection, sortOrd)
+}
+
+/** LibraryVisualizationContent의 onUpdateChart 콜백 */
+const onVisUpdateChart = async (
+  chartId: string,
+  selection: VisualizationChartSelection,
+  sortOrd: number,
+): Promise<void> => {
+  return handleUpdateKnowChart(chartId, selection, sortOrd)
+}
 const props = withDefaults(
   defineProps<{
     isOpen?: boolean

@@ -147,3 +147,50 @@ export interface LibraryInsightReportResponse {
   returnMsg: string
   data: string
 }
+
+/** 지식카드 차트 설정 (TB_KNOW_CARD_CHART) */
+export interface KnowChartItem {
+  chartId: string
+  cardId: string
+  chartType: string
+  chartTargetKey: string
+  yAxisKeys: string[]
+  seriesKey: string
+  statIdFilter: string
+  stackYn: 'Y' | 'N'
+  dualAxisYn: 'Y' | 'N'
+  ylChartType?: string | null
+  yrChartType?: string | null
+  sortOrd: number
+  createDt: string
+}
+
+/** 지식카드 차트 저장 요청 payload */
+export interface KnowChartSavePayload {
+  cardId: string
+  chartType: string
+  chartTargetKey: string
+  yAxisKeys: string[]
+  seriesKey: string
+  statIdFilter: string
+  stackYn: 'Y' | 'N'
+  dualAxisYn: 'Y' | 'N'
+  ylChartType?: string | null
+  yrChartType?: string | null
+  sortOrd: number
+}
+
+/** 지식카드 차트 수정 요청 payload */
+export interface KnowChartUpdatePayload {
+  chartId: string
+  chartType: string
+  chartTargetKey: string
+  yAxisKeys: string[]
+  seriesKey: string
+  statIdFilter: string
+  stackYn: 'Y' | 'N'
+  dualAxisYn: 'Y' | 'N'
+  ylChartType?: string | null
+  yrChartType?: string | null
+  sortOrd: number
+}

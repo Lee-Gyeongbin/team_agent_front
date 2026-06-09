@@ -11,7 +11,11 @@ import type {
   ChartDetailCdItem,
   LibraryGeneratedReportValues,
   LibraryInsightReportRequest,
+  KnowChartItem,
+  KnowChartSavePayload,
+  KnowChartUpdatePayload,
 } from '~/types/library'
+import type { VisualizationChartSelection } from '~/types/chat'
 import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
 import { useLibraryApi } from '~/composables/library/useLibraryApi'
 import { useTmplApi } from '~/composables/tmpl/useTmplApi'
@@ -50,6 +54,10 @@ const {
   fetchInsightReport,
   fetchShareCard,
   fetchSelectAgentListForLibrary,
+  fetchKnowChartList,
+  fetchSaveKnowChart,
+  fetchUpdateKnowChart,
+  fetchDeleteKnowChart,
 } = useLibraryApi()
 const { fetchTmplList } = useTmplApi()
 const errorMessage = ref('')
@@ -113,6 +121,7 @@ const refItems = ref<DocItem[]>([]) // 참조 매뉴얼 목록
 const tableData = ref<TableDataItem | null>(null) // 테이블 데이터 목록
 const chartStatItems = ref<ChartStatItem[]>([]) // 차트 통계 항목 목록 TODO : 프로토타입 시연용
 const chartDetailCdItems = ref<ChartDetailCdItem[]>([]) // 차트 상세 코드 항목 목록 TODO : 프로토타입 시연용
+const knowChartList = ref<KnowChartItem[]>([]) // 지식카드에 저장된 차트 목록
 const newCategoryNm = ref('')
 const searchTitle = ref('')
 const searchSort = ref('custom')
@@ -565,6 +574,8 @@ export const useLibraryStore = () => {
         const chartResponse = await fetchChartLabel(selectedCard.value.logId)
         chartStatItems.value = chartResponse.statList ?? []
         chartDetailCdItems.value = chartResponse.detailCdList ?? []
+        const knowChartRes = await fetchKnowChartList(cardId)
+        knowChartList.value = knowChartRes.dataList ?? []
       }
       // 매뉴얼 참조 문서 조회
       if (selectedCard.value?.svcTy === 'M') {
@@ -584,6 +595,7 @@ export const useLibraryStore = () => {
     isModalOpen.value = false
     selectedCardId.value = null
     selectedCard.value = null
+    knowChartList.value = []
   }
 
   /** 카드 이동 모달 열기 */
@@ -897,6 +909,70 @@ export const useLibraryStore = () => {
     refinedEditorHtml.value = ''
   }
 
+  /**
+   * 지식카드 차트 저장 — VisualizationChartSelection → DB 저장 → 새 chartId 반환
+   * LibraryVisualizationContent의 onSaveChart 콜백으로 주입
+   */
+  const handleSaveKnowChart = async (
+    cardId: string,
+    selection: VisualizationChartSelection,
+    sortOrd: number,
+  ): Promise<string> => {
+    const payload: KnowChartSavePayload = {
+      cardId,
+      chartType: selection.chartType,
+      chartTargetKey: selection.chartTargetKey,
+      yAxisKeys: selection.yAxisKeys,
+      seriesKey: selection.seriesKey,
+      statIdFilter: selection.statIdFilter ?? '',
+      stackYn: selection.stack ? 'Y' : 'N',
+      dualAxisYn: selection.dualAxis ? 'Y' : 'N',
+      ylChartType: selection.ylChartType ?? null,
+      yrChartType: selection.yrChartType ?? null,
+      sortOrd,
+    }
+    const res = await fetchSaveKnowChart(payload)
+    return res.chartId
+  }
+
+  /** 지식카드 차트 수정 — LibraryVisualizationContent의 onUpdateChart 콜백으로 주입 */
+  const handleUpdateKnowChart = async (
+    chartId: string,
+    selection: VisualizationChartSelection,
+    sortOrd: number,
+  ): Promise<void> => {
+    const payload: KnowChartUpdatePayload = {
+      chartId,
+      chartType: selection.chartType,
+      chartTargetKey: selection.chartTargetKey,
+      yAxisKeys: selection.yAxisKeys,
+      seriesKey: selection.seriesKey,
+      statIdFilter: selection.statIdFilter ?? '',
+      stackYn: selection.stack ? 'Y' : 'N',
+      dualAxisYn: selection.dualAxis ? 'Y' : 'N',
+      ylChartType: selection.ylChartType ?? null,
+      yrChartType: selection.yrChartType ?? null,
+      sortOrd,
+    }
+    await fetchUpdateKnowChart(payload)
+  }
+
+  /** 지식카드 차트 삭제 — LibraryVisualizationContent의 onDeleteChart 콜백으로 주입 */
+  const handleDeleteKnowChart = async (chartId: string): Promise<void> => {
+    const confirmed = await openConfirm({
+      message: '차트를 삭제하시겠습니까?',
+    })
+    if (!confirmed) return
+
+    try {
+      await fetchDeleteKnowChart(chartId)
+      openToast({ message: '차트가 삭제되었습니다.', type: 'success' })
+    } catch {
+      openToast({ message: '차트 삭제에 실패했습니다.', type: 'error' })
+      throw new Error('차트 삭제 실패')
+    }
+  }
+
   /** 지식창고용 에이전트 설정 목록 조회 (비활성 에이전트 포함) */
   const handleSelectLibraryAgents = async () => {
     try {
@@ -952,6 +1028,7 @@ export const useLibraryStore = () => {
     tableData,
     chartStatItems,
     chartDetailCdItems,
+    knowChartList,
     handleFetchCategoryList,
     handleFetchCardList,
     handleAddCategory,
@@ -997,5 +1074,8 @@ export const useLibraryStore = () => {
     handleShareCard,
     libraryAgents,
     handleSelectLibraryAgents,
+    handleSaveKnowChart,
+    handleUpdateKnowChart,
+    handleDeleteKnowChart,
   }
 }

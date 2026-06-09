@@ -13,6 +13,9 @@ import type {
   ShareCardPayload,
   LibraryInsightReportRequest,
   LibraryInsightReportResponse,
+  KnowChartItem,
+  KnowChartSavePayload,
+  KnowChartUpdatePayload,
 } from '~/types/library'
 
 export const useLibraryApi = () => {
@@ -157,6 +160,26 @@ export const useLibraryApi = () => {
     return get<{ agentList: Agent[] }>('/library/selectAgentListForLibrary.do')
   }
 
+  /** 지식카드 차트 목록 조회 */
+  const fetchKnowChartList = async (cardId: string): Promise<{ dataList: KnowChartItem[] }> => {
+    return post<{ dataList: KnowChartItem[] }>('/library/knowChartList.do', { cardId })
+  }
+
+  /** 지식카드 차트 저장 (신규 insert) */
+  const fetchSaveKnowChart = async (payload: KnowChartSavePayload): Promise<{ chartId: string }> => {
+    return post<{ chartId: string }>('/library/saveKnowChart.do', payload)
+  }
+
+  /** 지식카드 차트 수정 */
+  const fetchUpdateKnowChart = async (payload: KnowChartUpdatePayload): Promise<void> => {
+    await post('/library/updateKnowChart.do', payload)
+  }
+
+  /** 지식카드 차트 삭제 */
+  const fetchDeleteKnowChart = async (chartId: string): Promise<void> => {
+    await post('/library/deleteKnowChart.do', { chartId })
+  }
+
   return {
     fetchCategoryList,
     fetchSaveCategory,
@@ -181,5 +204,9 @@ export const useLibraryApi = () => {
     fetchInsightReport,
     fetchShareCard,
     fetchSelectAgentListForLibrary,
+    fetchKnowChartList,
+    fetchSaveKnowChart,
+    fetchUpdateKnowChart,
+    fetchDeleteKnowChart,
   }
 }
