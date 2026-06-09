@@ -35,7 +35,7 @@
           <span class="com-setting-section-title">
             매핑 목록 · 코드값
             <template v-if="activeMappingChipLabel">
-              <span class="datamart-meta-column-metadata-table-chip">{{ activeMappingChipLabel }}</span>
+              <span class="datamart-meta-code-mapping-chip">{{ activeMappingChipLabel }}</span>
             </template>
           </span>
         </div>
@@ -355,7 +355,6 @@ interface MappingMasterRow {
 }
 
 const selectedMappingId = ref('')
-/** 추가 툴바 — DatamartMetaCode.tblId / colId / codeGrpId 와 동일 키 */
 const pickTblId = ref('')
 const pickColId = ref('')
 const pickCodeGrpId = ref('')
@@ -755,8 +754,78 @@ const onRemoveEntry = (sortOrd: number) => {
 </script>
 
 <style lang="scss" scoped>
+@mixin meta-code-hint-caption {
+  font-size: 11px;
+  line-height: 1.35;
+  color: #6f7a93;
+}
+
+@mixin meta-code-aihint-picker-btn {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid #dce4e9;
+  border-radius: $border-radius-base;
+  background: #fff;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  appearance: none;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+
+  i {
+    display: block;
+    line-height: 1;
+    transition: color 0.2s ease;
+  }
+
+  &:hover {
+    border-color: #c3ced6;
+  }
+
+  &.is-placeholder {
+    border-style: dashed;
+    border-color: #cbd5e1;
+    background: #f8fafc;
+
+    i {
+      color: #94a3b8;
+    }
+
+    &:hover {
+      border-color: #94a3b8;
+      background: #f1f5f9;
+
+      i {
+        color: #64748b;
+      }
+    }
+  }
+
+  &.is-filled {
+    border-style: solid;
+    border-color: rgba(var(--color-primary-rgb, 99, 102, 241), 0.55);
+    background: rgba(var(--color-primary-rgb, 99, 102, 241), 0.07);
+    box-shadow: 0 0 0 1px rgba(var(--color-primary-rgb, 99, 102, 241), 0.12);
+
+    i {
+      color: var(--color-primary, #6366f1);
+    }
+
+    &:hover {
+      border-color: var(--color-primary, #6366f1);
+      background: rgba(var(--color-primary-rgb, 99, 102, 241), 0.1);
+    }
+  }
+}
+
 .datamart-meta-code-mapping {
-  /* 목록·코드값 패널 — 모달 안 세로 여유 확보 */
   --datamart-meta-code-panel-h: min(120px, 16vh);
   --datamart-meta-code-editor-h: min(180px, 26vh);
   --datamart-meta-ai-context-h: min(120px, 16.5vh);
@@ -792,24 +861,25 @@ const onRemoveEntry = (sortOrd: number) => {
   color: $color-text-muted;
 }
 
-/* DatamartMetaColumnMetadataTab.vue `.datamart-meta-column-metadata-table-chip` 와 동일 */
-.datamart-meta-column-metadata-table-chip {
+.datamart-meta-code-mapping-chip {
   font-weight: $font-weight-medium;
   color: $color-text-secondary;
 }
 
-/* 매핑 목록·코드값 — 접기 없음: 클릭/포인터 커서 제거 */
 .datamart-meta-code-section-header-static {
   cursor: default;
   user-select: text;
   justify-content: flex-start;
 }
 
-.datamart-meta-code-section-hint {
+.datamart-meta-code-section-hint,
+.datamart-meta-code-ai-context-hint {
+  @include meta-code-hint-caption;
   margin: 0 0 2px;
-  font-size: 11px;
-  line-height: 1.35;
-  color: #6f7a93;
+}
+
+.datamart-meta-code-ai-context-hint {
+  margin-bottom: 4px;
 }
 
 .datamart-meta-code-combined {
@@ -836,7 +906,6 @@ const onRemoveEntry = (sortOrd: number) => {
     margin: 0;
   }
 
-  /* 관계 정의 탭 datamart-meta-rel-form-panel 과 동일 — placeholder↔선택값 바뀔 때 행·트리거 높이 고정 */
   :deep(.datamart-meta-code-add-field) {
     align-items: center;
     box-sizing: border-box;
@@ -883,16 +952,12 @@ const onRemoveEntry = (sortOrd: number) => {
   overflow: hidden;
 
   &.is-table {
-    display: flex;
-    flex-direction: column;
     height: var(--datamart-meta-code-panel-h);
     min-height: var(--datamart-meta-code-panel-h);
     max-height: var(--datamart-meta-code-panel-h);
   }
 
   &.is-editor {
-    display: flex;
-    flex-direction: column;
     height: var(--datamart-meta-code-editor-h);
     min-height: var(--datamart-meta-code-editor-h);
     max-height: var(--datamart-meta-code-editor-h);
@@ -909,7 +974,6 @@ const onRemoveEntry = (sortOrd: number) => {
     vertical-align: middle;
   }
 
-  /* sm 테이블 바디: 텍스트가 비었다가 채워져도 행 높이 고정 (말줄임) */
   :deep(.ui-table-wrap.is-sm .ui-table tbody td) {
     height: 28px;
     min-height: 28px;
@@ -935,7 +999,6 @@ const onRemoveEntry = (sortOrd: number) => {
     justify-content: center;
   }
 
-  /* DatamartMetaColumnMetadataTab.vue `.datamart-meta-col-aihint-picker` 와 동일 */
   :deep(.datamart-meta-code-aihint-picker) {
     position: relative;
     display: flex;
@@ -944,70 +1007,9 @@ const onRemoveEntry = (sortOrd: number) => {
     width: 100%;
     min-width: 0;
     padding: 0 2px;
-  }
 
-  :deep(.datamart-meta-code-aihint-picker .picker-btn) {
-    width: 28px;
-    height: 28px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border: 1px solid #dce4e9;
-    border-radius: $border-radius-base;
-    background: #fff;
-    cursor: pointer;
-    font: inherit;
-    color: inherit;
-    appearance: none;
-    transition:
-      border-color 0.2s ease,
-      background 0.2s ease,
-      box-shadow 0.2s ease;
-
-    i {
-      display: block;
-      line-height: 1;
-      transition: color 0.2s ease;
-    }
-
-    &:hover {
-      border-color: #c3ced6;
-    }
-
-    &.is-placeholder {
-      border-style: dashed;
-      border-color: #cbd5e1;
-      background: #f8fafc;
-
-      i {
-        color: #94a3b8;
-      }
-
-      &:hover {
-        border-color: #94a3b8;
-        background: #f1f5f9;
-
-        i {
-          color: #64748b;
-        }
-      }
-    }
-
-    &.is-filled {
-      border-style: solid;
-      border-color: rgba(var(--color-primary-rgb, 99, 102, 241), 0.55);
-      background: rgba(var(--color-primary-rgb, 99, 102, 241), 0.07);
-      box-shadow: 0 0 0 1px rgba(var(--color-primary-rgb, 99, 102, 241), 0.12);
-
-      i {
-        color: var(--color-primary, #6366f1);
-      }
-
-      &:hover {
-        border-color: var(--color-primary, #6366f1);
-        background: rgba(var(--color-primary-rgb, 99, 102, 241), 0.1);
-      }
+    .picker-btn {
+      @include meta-code-aihint-picker-btn;
     }
   }
 }
@@ -1127,6 +1129,14 @@ const onRemoveEntry = (sortOrd: number) => {
   align-items: center;
   gap: 6px;
   min-width: 0;
+
+  &.is-code {
+    flex: 1 1 0;
+  }
+
+  &.is-label {
+    flex: 1 1 auto;
+  }
 }
 
 .datamart-meta-code-entry-text-label {
@@ -1139,17 +1149,14 @@ const onRemoveEntry = (sortOrd: number) => {
   line-height: 1;
 }
 
-.datamart-meta-code-entry-side.is-code {
-  flex: 1 1 0;
-}
-
-.datamart-meta-code-entry-side.is-label {
-  flex: 1 1 auto;
-}
-
-.datamart-meta-code-entry-code {
+.datamart-meta-code-entry-code,
+.datamart-meta-code-entry-label {
   flex: 1 1 auto;
   min-width: 0;
+}
+
+.datamart-meta-code-entry-label {
+  max-width: none;
 }
 
 .datamart-meta-code-entry-arrow {
@@ -1161,12 +1168,6 @@ const onRemoveEntry = (sortOrd: number) => {
   font-size: 12px;
   color: #8f99ad;
   line-height: 1;
-}
-
-.datamart-meta-code-entry-label {
-  flex: 1 1 auto;
-  min-width: 0;
-  max-width: none;
 }
 
 :deep(.datamart-meta-code-entry-code .ui-input-wrap),
@@ -1191,13 +1192,6 @@ const onRemoveEntry = (sortOrd: number) => {
 
 .datamart-meta-code-entry-list :deep(.sortable-ghost) {
   opacity: 0.45;
-}
-
-.datamart-meta-code-ai-context-hint {
-  margin: 0 0 4px;
-  font-size: 11px;
-  line-height: 1.35;
-  color: #6f7a93;
 }
 
 .datamart-meta-code-ai-context-block-wrap {
@@ -1284,19 +1278,20 @@ const onRemoveEntry = (sortOrd: number) => {
   box-sizing: border-box;
 }
 </style>
-<!-- Teleport 로 body 아래 렌더 — scoped 조상이 없어 동일 선택자는 비-scoped 로만 적용됨 -->
+<!-- Teleport 로 body 아래 렌더 — scoped 조상이 없어 dialog 레이아웃만 비-scoped -->
 <style lang="scss">
 .modal-dialog.datamart-meta-aihint-dialog {
-  .modal-dialog-content {
+  .modal-dialog-content,
+  .modal-dialog-body {
     width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
 
   .modal-dialog-body {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    width: 100%;
-    min-width: 0;
   }
 }
 </style>
