@@ -1136,8 +1136,10 @@ const shouldShowAgentCardKnowledgeFooter = computed(() => {
   return false
 })
 
-/** 답변 액션 푸터 노출 조건을 한곳에서 관리 */
-const shouldShowMessageFooter = computed(() => !props.message.isStreaming && !isTodayMemeAnswer.value)
+/** 답변 액션 푸터 노출 조건을 한곳에서 관리 (로그 미저장 시 좋아요/싫어요 등 액션 숨김) */
+const shouldShowMessageFooter = computed(
+  () => !props.message.isStreaming && !isTodayMemeAnswer.value && !props.message.chatLogMissing,
+)
 
 /** 이 meme 메시지에 대응하는 TodayMeme 답변이 아직 스트리밍 중인지 */
 const isMemeAnswerStreaming = computed(() => {

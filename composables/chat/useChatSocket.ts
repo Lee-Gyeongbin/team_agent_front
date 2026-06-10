@@ -124,6 +124,8 @@ const finalizeCompletedMessage = (streamingMessage: (typeof messages.value)[numb
       migrateRecommendMessagesForAnswerLogId(messages.value, oldLogId, payload.logId)
     }
   }
+  // 서버 logId가 없으면(예: 정지 등으로 로그 미저장) 좋아요/싫어요 등 액션 숨김 처리
+  streamingMessage.chatLogMissing = !payload.logId
   streamingMessage.hasSource = !!payload.docFileId
   streamingMessage.hasVisualization = !!payload.tableData
   if (payload.tableData !== undefined && payload.tableData !== '') {

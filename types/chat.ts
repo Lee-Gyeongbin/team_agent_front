@@ -100,6 +100,8 @@ export interface ChatMessage {
   createdAt: string
   isStreaming?: boolean
   streamingStatus?: string
+  /** 스트리밍 정지 등으로 서버에 로그가 저장되지 않은 응답 (좋아요/싫어요 등 액션 비활성화) */
+  chatLogMissing?: boolean
   chatLogReaction?: ChatLogReaction
   hasSource?: boolean
   hasVisualization?: boolean
