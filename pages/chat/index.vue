@@ -65,6 +65,7 @@
     <ChatNewsCurator
       v-if="isNewsCuratorVisible"
       class="chat-index-survey chat-index-news-curator"
+      :config="currentCurationConfig"
       :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? ''"
       :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
       @close="handleCloseNewsCurator"
@@ -152,6 +153,7 @@
 <script setup lang="ts">
 import { parseSurveyConfigFromAgent } from '~/utils/chat/surveyUtil'
 import { parseRecommendConfigFromAgent } from '~/utils/chat/recommendAgentUtil'
+import { parseCurationConfigFromAgent } from '~/utils/chat/newsCuratorUtil'
 import { useMailStore } from '~/composables/mail/useMailStore'
 import type { Agent } from '~/types/agent'
 
@@ -216,6 +218,10 @@ const currentSurveyConfig = computed(() => {
 const currentRecommendConfig = computed(() => {
   const agent = currentSurveyAgent.value
   return agent ? parseRecommendConfigFromAgent(agent) : null
+})
+const currentCurationConfig = computed(() => {
+  const agent = currentSurveyAgent.value
+  return agent ? parseCurationConfigFromAgent(agent) : null
 })
 
 onMounted(async () => {

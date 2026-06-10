@@ -51,7 +51,7 @@ import {
   useTodayMeme,
 } from '~/utils/chat/todayMemeUtil'
 import {
-  buildNewsCuratorSubmissionPrompt,
+  buildCurationPrompt,
   createNewsCuratorMessage,
   handleLoadNewsCuratorCategories,
   isValidNewsCuratorCategorySelection,
@@ -59,6 +59,7 @@ import {
   parseNewsCuratorPromptMeta,
   setNewsCuratorSubmitCardLogId,
   useNewsCurator,
+  useNewsCuratorAgentConfig,
 } from '~/utils/chat/newsCuratorUtil'
 import { ref, watch } from 'vue'
 import { useChatApi } from '~/composables/chat/useChatApi'
@@ -599,7 +600,8 @@ export const useChatStore = () => {
       }
     }
 
-    const prompt = buildNewsCuratorSubmissionPrompt(categories, { isNew })
+    const { newsCuratorAgentConfig } = useNewsCuratorAgentConfig()
+    const prompt = buildCurationPrompt(newsCuratorAgentConfig.value, { isNew })
     const sent = await sendFn(prompt)
     if (sent) {
       registerNewsCuratorRoom(chatRoom.value.roomId)

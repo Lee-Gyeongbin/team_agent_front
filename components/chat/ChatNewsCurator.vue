@@ -20,7 +20,7 @@
                 <i :class="[themeIconClassNm || 'icon-bot', 'size-24']" />
               </div>
               <div class="chat-news-curator__header-copy">
-                <p class="chat-news-curator__header-title">{{ NEWS_INTRO_TITLE }}</p>
+                <p class="chat-news-curator__header-title">{{ introTitle }}</p>
                 <p class="chat-news-curator__header-subtitle">{{ readonlyCategoryHint }}</p>
               </div>
             </div>
@@ -122,28 +122,27 @@
                     <h4 class="chat-news-curator__title">{{ item.title }}</h4>
                   </div>
                   <dl class="chat-news-curator__meta">
-                    <div class="chat-news-curator__meta-row">
-                      <dt>언론사</dt>
-                      <dd>{{ item.source || '-' }}</dd>
-                    </div>
-                    <div class="chat-news-curator__meta-row">
-                      <dt>카테고리</dt>
-                      <dd>{{ item.category || '-' }}</dd>
-                    </div>
-                    <div class="chat-news-curator__meta-row">
-                      <dt>요약</dt>
-                      <dd class="chat-news-curator__summary">{{ item.summary || '-' }}</dd>
+                    <div
+                      v-for="field in metaFields"
+                      :key="field.key"
+                      class="chat-news-curator__meta-row"
+                    >
+                      <dt>{{ field.label }}</dt>
+                      <dd class="chat-news-curator__summary">{{ resolveItemFieldValue(item, field.key) }}</dd>
                     </div>
                   </dl>
-                  <div class="chat-news-curator__item-action">
+                  <div
+                    v-if="linkField"
+                    class="chat-news-curator__item-action"
+                  >
                     <a
-                      v-if="item.sourceUrl"
+                      v-if="resolveItemFieldValue(item, linkField.key) !== '-'"
                       class="chat-news-curator__link-btn"
-                      :href="item.sourceUrl"
+                      :href="resolveItemFieldValue(item, linkField.key)"
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      기사보기
+                      {{ linkField.label }}
                     </a>
                   </div>
                 </div>
@@ -161,14 +160,14 @@
               v-else
               class="chat-news-curator__panel-empty"
             >
-              아직 표시할 뉴스가 없습니다. 잠시 후 다시 확인해 주세요.
+              {{ emptyResultMessage }}
             </p>
 
             <p
               v-if="hasNewsResult"
               class="chat-news-curator__summary-notice"
             >
-              ※ 기사에 대한 설명은 AI가 제작한 참고용으로 정확하지 않을 수 있습니다.
+              {{ summaryNoticeText }}
             </p>
           </div>
 
@@ -245,7 +244,7 @@
               <i :class="[themeIconClassNm || 'icon-bot', 'size-24']" />
             </div>
             <div class="chat-news-curator__header-copy">
-              <p class="chat-news-curator__header-title">{{ NEWS_INTRO_TITLE }}</p>
+              <p class="chat-news-curator__header-title">{{ introTitle }}</p>
               <p class="chat-news-curator__header-subtitle">{{ preSubmitCategoryHint }}</p>
             </div>
           </div>
@@ -324,10 +323,12 @@
 
 <script setup lang="ts">
 import type { NewsCuratorItem } from '~/types/chat'
+import type { CurationAgentConfig, CurationResultFieldDef } from '~/types/agent'
 import {
-  NEWS_CURATOR_MAX_CATEGORY_COUNT,
   isNewsCuratorLockedCategorySelected,
   useNewsCuratorCategories,
+  useNewsCuratorAgentConfig,
+  setNewsCuratorAgentConfig,
   parseInterestCodeIdsFromResponse,
   type NewsCuratorCategoryOption,
 } from '~/utils/chat/newsCuratorUtil'
@@ -352,6 +353,8 @@ interface Props {
   newsIsNew?: boolean
   /** 「새로운 카테고리 선택하기」 미제출 카드 — 저장 관심분야 API 자동 제출 스킵 */
   newsReselect?: boolean
+  /** SUB_TY=CURATION ADDITIONAL_CONFIG — 문구·결과필드·카테고리 설정 */
+  config?: CurationAgentConfig | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -366,6 +369,7 @@ const props = withDefaults(defineProps<Props>(), {
   reselectDisabled: false,
   newsIsNew: undefined,
   newsReselect: false,
+  config: null,
 })
 
 const emit = defineEmits<{
@@ -376,13 +380,65 @@ const emit = defineEmits<{
 }>()
 
 const DEFAULT_THEME_HEX = '#4b5bd6'
-const preSubmitCategoryHint = `보고 싶은 뉴스 종류를 선택해주세요! (최대 ${NEWS_CURATOR_MAX_CATEGORY_COUNT}개)`
-const readonlyCategoryHint = '선택하신 뉴스 분야입니다.'
-const footerTipText = `TIP. 최대 ${NEWS_CURATOR_MAX_CATEGORY_COUNT}개까지 선택할 수 있으며, 선택한 분야를 기반으로 맞춤 뉴스를 추천해드립니다.`
-const NEWS_INTRO_TITLE = '오늘의 뉴스픽'
-const NEWS_INTRO_SUBTITLE = '오늘의 뉴스픽을 준비 중입니다...'
-const introTitleChars = NEWS_INTRO_TITLE.split('')
-const introSubtitleChars = NEWS_INTRO_SUBTITLE.split('')
+const DEFAULT_RESULT_FIELDS: CurationResultFieldDef[] = [
+  { key: 'source', label: '언론사' },
+  { key: 'category', label: '카테고리' },
+  { key: 'summary', label: '요약' },
+  { key: 'sourceUrl', label: '기사보기', type: 'link' },
+]
+
+const { newsCuratorMaxCategoryCount } = useNewsCuratorAgentConfig()
+const ui = computed(() => props.config?.ui ?? null)
+
+const introTitle = computed(() => ui.value?.introTitle || '오늘의 뉴스픽')
+const introSubtitle = computed(() => ui.value?.introSubtitle || '오늘의 뉴스픽을 준비 중입니다...')
+const cardTitle = computed(() => ui.value?.cardTitle || introTitle.value)
+const readonlyCategoryHint = computed(() => ui.value?.selectionHint || '선택하신 뉴스 분야입니다.')
+const preSubmitCategoryHint = computed(
+  () => `보고 싶은 뉴스 종류를 선택해주세요! (최대 ${newsCuratorMaxCategoryCount.value}개)`,
+)
+const footerTipText = computed(() => {
+  const template =
+    ui.value?.footerTip || 'TIP. 최대 {max}개까지 선택할 수 있으며, 선택한 분야를 기반으로 맞춤 뉴스를 추천해드립니다.'
+  return template.replace('{max}', String(newsCuratorMaxCategoryCount.value))
+})
+const emptyResultMessage = computed(
+  () => ui.value?.emptyMessage || '아직 표시할 뉴스가 없습니다. 잠시 후 다시 확인해 주세요.',
+)
+const summaryNoticeText = computed(
+  () => ui.value?.summaryNotice || '※ 기사에 대한 설명은 AI가 제작한 참고용으로 정확하지 않을 수 있습니다.',
+)
+const introTitleChars = computed(() => introTitle.value.split(''))
+const introSubtitleChars = computed(() => introSubtitle.value.split(''))
+
+const resultFields = computed(() =>
+  props.config?.result?.fields?.length ? props.config.result.fields : DEFAULT_RESULT_FIELDS,
+)
+const metaFields = computed(() => resultFields.value.filter((field) => field.type !== 'link'))
+const linkField = computed(() => resultFields.value.find((field) => field.type === 'link') ?? null)
+const resolveItemFieldValue = (item: NewsCuratorItem, key: string): string => {
+  const value = (item as unknown as Record<string, unknown>)[key]
+  return value ? String(value) : '-'
+}
+
+// ━━━ 진행 중 안내 문구 로테이션 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const NEWS_PENDING_INTERVAL_MS = 3000
+const pendingStatusTextIndex = ref(0)
+const pendingStatusTexts = computed(() => ui.value?.pendingStatusTexts ?? [])
+const pendingStatusText = computed(() => pendingStatusTexts.value[pendingStatusTextIndex.value] ?? '')
+let pendingStatusTimer: ReturnType<typeof setInterval> | null = null
+const clearPendingStatusTimer = () => {
+  if (pendingStatusTimer) clearInterval(pendingStatusTimer)
+  pendingStatusTimer = null
+}
+const startPendingStatusRotation = () => {
+  clearPendingStatusTimer()
+  pendingStatusTextIndex.value = 0
+  if (pendingStatusTexts.value.length <= 1) return
+  pendingStatusTimer = setInterval(() => {
+    pendingStatusTextIndex.value = (pendingStatusTextIndex.value + 1) % pendingStatusTexts.value.length
+  }, NEWS_PENDING_INTERVAL_MS)
+}
 
 const {
   categoryOptions,
@@ -470,8 +526,9 @@ const visibleNewsItems = computed(() => {
 
 const activeCategoryEmptyMessage = computed(() => {
   const activeTab = newsCategoryTabs.value.find((tab) => tab.value === activeNewsCategoryTab.value)
-  if (activeTab) return `${activeTab.label} 분야에 표시할 뉴스가 없습니다.`
-  return '표시할 뉴스가 없습니다.'
+  const template = ui.value?.categoryEmptyMessage || '{category} 분야에 표시할 뉴스가 없습니다.'
+  if (activeTab) return template.replace('{category}', activeTab.label)
+  return emptyResultMessage.value
 })
 
 watch(
@@ -508,7 +565,7 @@ const isPreSubmitLoading = computed(() => {
 })
 
 const newsResultsPanelTitle = computed(() =>
-  hasNewsResult.value ? `${NEWS_INTRO_TITLE} ${props.newsItems.length}건` : NEWS_INTRO_TITLE,
+  hasNewsResult.value ? `${cardTitle.value} ${props.newsItems.length}건` : cardTitle.value,
 )
 const selectedCategoryDisplayNames = computed(() =>
   lockedSelectedCategoriesList.value
@@ -517,10 +574,11 @@ const selectedCategoryDisplayNames = computed(() =>
 )
 const bottomCardSubtitle = computed(() => {
   if (hasNewsResult.value) {
-    return `골라주신 ${selectedCategoryDisplayNames.value.join(', ')} 카테고리를 통해 선정한 뉴스픽입니다!`
+    const template = ui.value?.cardSubtitleResult || '골라주신 {categories} 카테고리를 통해 선정한 뉴스픽입니다!'
+    return template.replace('{categories}', selectedCategoryDisplayNames.value.join(', '))
   }
-  if (props.isAnswerStreaming) return 'AI가 맞춤 기사를 선정하는 중입니다…'
-  return '추천 뉴스를 준비 중입니다.'
+  if (props.isAnswerStreaming) return pendingStatusText.value || 'AI가 맞춤 기사를 선정하는 중입니다…'
+  return introSubtitle.value
 })
 /** 제출 완료(combined) 결과 패널 — 인트로 중에는 숨김 */
 const showResultsReselectFooter = computed(
@@ -539,7 +597,7 @@ const onRetryLoadCategories = () => {
   handleLoadNewsCuratorCategories()
 }
 const isCategoryDisabled = (category: string) =>
-  !selectedCategories.value.includes(category) && selectedCategories.value.length >= NEWS_CURATOR_MAX_CATEGORY_COUNT
+  !selectedCategories.value.includes(category) && selectedCategories.value.length >= newsCuratorMaxCategoryCount.value
 const toggleCategory = (category: string) => {
   if (isCategoryDisabled(category)) return
   selectedCategories.value = selectedCategories.value.includes(category)
@@ -639,12 +697,25 @@ watch(
   { immediate: true },
 )
 
+watch(
+  () => props.isAnswerStreaming,
+  (streaming) => {
+    if (streaming) startPendingStatusRotation()
+    else clearPendingStatusTimer()
+  },
+  { immediate: true },
+)
+
 onMounted(() => {
+  setNewsCuratorAgentConfig(props.config ?? null)
+  // 관리 메뉴에서 NC000001 공통코드를 변경할 수 있으므로, 카드 진입마다 최신 분야 목록을 다시 조회
+  resetNewsCuratorCategoriesCache()
   handleInitNewsInterestFlow()
 })
 
 onUnmounted(() => {
   isIntroPlaying.value = false
+  clearPendingStatusTimer()
 })
 </script>
 
@@ -884,7 +955,7 @@ onUnmounted(() => {
   }
 
   &__selector {
-    padding: 0 $spacing-lg;
+    padding: 0 $spacing-lg $spacing-md;
   }
 
   &__selector-state {

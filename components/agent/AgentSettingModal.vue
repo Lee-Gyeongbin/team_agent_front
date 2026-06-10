@@ -23,12 +23,14 @@
         :sql-form="sqlForm"
         :survey-form="surveyForm"
         :recommend-form="recommendForm"
+        :curation-form="curationForm"
         :sql-model-options="sqlModelOptions"
         :api-url-cd-options="apiUrlCdOptions"
         @update:rag-form="ragForm = $event"
         @update:sql-form="sqlForm = $event"
         @update:survey-form="surveyForm = $event"
         @update:recommend-form="recommendForm = $event"
+        @update:curation-form="curationForm = $event"
       />
 
       <!-- 섹션3: 데이터 연결 (svcTy 기반 분기) -->
@@ -71,6 +73,7 @@ import type { CodeItem } from '~/types/codes'
 import { useAgentStore } from '~/composables/agent/useAgentStore'
 import { SURVEY_SUB_TY, normalizeAgentSubCfg } from '~/utils/chat/surveyUtil'
 import { RECOMMEND_SUB_TY } from '~/utils/chat/recommendAgentUtil'
+import { CURATION_SUB_TY } from '~/utils/chat/newsCuratorUtil'
 import {
   buildSurveyAdditionalConfig,
   emptySurveyConfigForm,
@@ -83,6 +86,12 @@ import {
   parseRecommendAdditionalConfigToForm,
   type RecommendConfigForm,
 } from '~/utils/agent/recommendConfigUtil'
+import {
+  buildCurationAdditionalConfig,
+  emptyCurationConfigForm,
+  parseCurationAdditionalConfigToForm,
+  type CurationConfigForm,
+} from '~/utils/agent/curationConfigUtil'
 
 interface Props {
   isOpen: boolean
@@ -119,8 +128,10 @@ const onChangeAgentType = async (svcTy: string) => {
     form.value.subTy = ''
     preservedSurveyConfig.value = null
     preservedRecommendConfig.value = null
+    preservedCurationConfig.value = null
     surveyForm.value = emptySurveyConfigForm()
     recommendForm.value = emptyRecommendConfigForm()
+    curationForm.value = emptyCurationConfigForm()
   }
   const result = await handleChangeAgentType(svcTy)
   localDatasetList.value = result.datasetList
@@ -147,6 +158,10 @@ const surveyForm = ref<SurveyConfigForm>(emptySurveyConfigForm())
 const preservedRecommendConfig = ref<AgtSubAdditionalConfig | null>(null)
 const recommendForm = ref<RecommendConfigForm>(emptyRecommendConfigForm())
 
+// 큐레이션(CURATION) ADDITIONAL_CONFIG — UI 미편집 필드 보존용
+const preservedCurationConfig = ref<AgtSubAdditionalConfig | null>(null)
+const curationForm = ref<CurationConfigForm>(emptyCurationConfigForm())
+
 const loadSurveyConfigFromAgent = (agent: Agent | null) => {
   const subCfg = normalizeAgentSubCfg(agent?.subCfg)
   const additional = subCfg?.additionalConfig
@@ -171,11 +186,25 @@ const loadRecommendConfigFromAgent = (agent: Agent | null) => {
   recommendForm.value = emptyRecommendConfigForm()
 }
 
+const loadCurationConfigFromAgent = (agent: Agent | null) => {
+  const subCfg = normalizeAgentSubCfg(agent?.subCfg)
+  const additional = subCfg?.additionalConfig
+  if (additional && typeof additional === 'object' && Object.keys(additional).length > 0) {
+    preservedCurationConfig.value = { ...additional }
+    curationForm.value = parseCurationAdditionalConfigToForm(additional as Record<string, unknown>)
+    return
+  }
+  preservedCurationConfig.value = null
+  curationForm.value = emptyCurationConfigForm()
+}
+
 const resetSubTyConfigForms = () => {
   preservedSurveyConfig.value = null
   preservedRecommendConfig.value = null
+  preservedCurationConfig.value = null
   surveyForm.value = emptySurveyConfigForm()
   recommendForm.value = emptyRecommendConfigForm()
+  curationForm.value = emptyCurationConfigForm()
 }
 
 // 기본 설정 폼
@@ -223,11 +252,21 @@ watch(
       if (props.agent.svcTy === 'C' && form.value.subTy === SURVEY_SUB_TY) {
         loadSurveyConfigFromAgent(props.agent)
         preservedRecommendConfig.value = null
+        preservedCurationConfig.value = null
         recommendForm.value = emptyRecommendConfigForm()
+        curationForm.value = emptyCurationConfigForm()
       } else if (props.agent.svcTy === 'C' && form.value.subTy === RECOMMEND_SUB_TY) {
         loadRecommendConfigFromAgent(props.agent)
         preservedSurveyConfig.value = null
+        preservedCurationConfig.value = null
         surveyForm.value = emptySurveyConfigForm()
+        curationForm.value = emptyCurationConfigForm()
+      } else if (props.agent.svcTy === 'C' && form.value.subTy === CURATION_SUB_TY) {
+        loadCurationConfigFromAgent(props.agent)
+        preservedSurveyConfig.value = null
+        preservedRecommendConfig.value = null
+        surveyForm.value = emptySurveyConfigForm()
+        recommendForm.value = emptyRecommendConfigForm()
       } else {
         resetSubTyConfigForms()
       }
@@ -307,6 +346,18 @@ watch(
         preservedRecommendConfig.value = null
         recommendForm.value = emptyRecommendConfigForm()
       }
+      return
+    }
+    if (subTy === CURATION_SUB_TY) {
+      if (
+        props.agent?.svcTy === 'C' &&
+        normalizeAgentSubCfg(props.agent.subCfg)?.subTy === CURATION_SUB_TY
+      ) {
+        loadCurationConfigFromAgent(props.agent)
+      } else {
+        preservedCurationConfig.value = null
+        curationForm.value = emptyCurationConfigForm()
+      }
     }
   },
 )
@@ -339,6 +390,17 @@ const onSave = () => {
       agentId: props.agent?.agentId ?? '',
       subTy: RECOMMEND_SUB_TY,
       additionalConfig: buildRecommendAdditionalConfig(recommendForm.value, preservedRecommendConfig.value),
+      useYn: existingSubCfg?.useYn ?? 'Y',
+      createDt: existingSubCfg?.createDt ?? '',
+      modifyDt: existingSubCfg?.modifyDt ?? '',
+    }
+  } else if (form.value.svcTy === 'C' && form.value.subTy === CURATION_SUB_TY) {
+    const existingSubCfg = normalizeAgentSubCfg(props.agent?.subCfg)
+    base.subCfg = {
+      subCfgId: existingSubCfg?.subCfgId ?? '',
+      agentId: props.agent?.agentId ?? '',
+      subTy: CURATION_SUB_TY,
+      additionalConfig: buildCurationAdditionalConfig(curationForm.value, preservedCurationConfig.value),
       useYn: existingSubCfg?.useYn ?? 'Y',
       createDt: existingSubCfg?.createDt ?? '',
       modifyDt: existingSubCfg?.modifyDt ?? '',

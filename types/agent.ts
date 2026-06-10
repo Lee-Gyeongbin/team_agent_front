@@ -149,3 +149,74 @@ export interface RecommendAgentConfig {
     }
   }
 }
+
+// ===== CURATION 에이전트 타입 (SUB_TY = 'CURATION') =====
+
+export interface CurationUiConfig {
+  introTitle: string
+  introSubtitle: string
+  cardTitle: string
+  cardSubtitleResult: string
+  cardSubtitleReadonly: string
+  selectionHint: string
+  footerTip: string
+  emptyMessage: string
+  categoryEmptyMessage: string
+  summaryNotice: string
+  pendingStatusTexts: string[]
+}
+
+export interface CurationFormConfig {
+  categorySource: {
+    type: 'code_group'
+    codeGrpId: string
+  }
+  maxCategoryCount: number
+}
+
+export interface CurationCandidateSource {
+  codeId: string
+  rssCategory: string
+  feedUrl: string
+}
+
+export interface CurationResultFieldDef {
+  key: string
+  label: string
+  type?: 'link' | 'text'
+}
+
+export interface CurationResultConfig {
+  topN: number
+  nameField: string
+  imageField?: string
+  fields: CurationResultFieldDef[]
+}
+
+export interface CurationAgentConfig {
+  agentType: 'curation'
+  version: string
+  language: string
+  agent: {
+    id: string
+    name: string
+    persona: string
+    mission: string
+  }
+  ui: CurationUiConfig
+  form: CurationFormConfig
+  candidateSources: CurationCandidateSource[]
+  engine: {
+    candidateFetch: {
+      type: 'rss'
+      pressLabel: string
+      snippetMaxLength: number
+    }
+    outputSchema: {
+      type: 'json_array'
+      itemFields: string[]
+    }
+  }
+  result: CurationResultConfig
+  constraints: string[]
+}

@@ -2,12 +2,33 @@ import { ref } from 'vue'
 import { getCodes } from '~/utils/global/comCodesUtil'
 import type { ChatMessage, NewsCuratorItem } from '~/types/chat'
 import type { CodeItem } from '~/types/codes'
+import type { Agent, CurationAgentConfig } from '~/types/agent'
+import { getAgentSubTy } from '~/utils/chat/surveyUtil'
 
 /** 채팅·로그 재구성 시 에이전트 식별 — 변경 시 useChatStore AGENT_ID_NEWS 와 동기화 */
 export const NEWS_CURATOR_AGENT_ID = 'AG000012'
 
-/** 뉴스 큐레이터 분야 공통코드 그룹 — `ChatNewsCurator`·프롬프트 검증과 동기화 */
-export const NEWS_CURATOR_CATEGORY_CODE_GRP_ID = 'NC000001'
+/** Agent 관리 메뉴 — TB_AGT_SUB_CFG.SUB_TY 값 */
+export const CURATION_SUB_TY = 'CURATION'
+
+/** svcTy=C · USE_YN=Y · subTy=CURATION — 채팅 에이전트 선택·전송용 */
+export const isCurationAgent = (agent: Agent | null | undefined): boolean => {
+  if (!agent || agent.useYn !== 'Y' || agent.svcTy !== 'C') return false
+  return getAgentSubTy(agent.subCfg) === CURATION_SUB_TY
+}
+
+/** subCfg.additionalConfig(JSON) → CurationAgentConfig — agentType 불일치·미설정 시 null */
+export const parseCurationConfigFromAgent = (agent: Agent | null | undefined): CurationAgentConfig | null => {
+  if (!isCurationAgent(agent)) return null
+  const raw = agent?.subCfg?.additionalConfig
+  if (!raw) return null
+  const config = typeof raw === 'string' ? JSON.parse(raw) : raw
+  if (config?.agentType !== 'curation') return null
+  return config as CurationAgentConfig
+}
+
+/** 뉴스 큐레이터 분야 공통코드 그룹 — ADDITIONAL_CONFIG.form.categorySource.codeGrpId로 덮어쓰기 가능 (기본값) */
+const newsCuratorCategoryCodeGrpId = ref('NC000001')
 
 export type NewsCuratorCategoryOption = {
   /** 공통코드 codeId — 제출·프롬프트 JSON에 사용 */
@@ -75,7 +96,7 @@ export const handleLoadNewsCuratorCategories = async (): Promise<NewsCuratorCate
 
   categoryLoadPromise = (async () => {
     try {
-      const codes = await getCodes(NEWS_CURATOR_CATEGORY_CODE_GRP_ID)
+      const codes = await getCodes(newsCuratorCategoryCodeGrpId.value)
       categoryOptions.value = codes
         .filter((code) => code.useYn === 'Y')
         .map(mapCodeToCategoryOption)
@@ -106,15 +127,37 @@ export const useNewsCuratorCategories = () => ({
   resolveNewsCuratorCategoryLabel,
 })
 
-/** 뉴스픽 UI·숨김 질문 파서 — 최대 선택 분야 개수 */
-export const NEWS_CURATOR_MAX_CATEGORY_COUNT = 5
+/** 뉴스픽 UI·숨김 질문 파서 — 최대 선택 분야 개수 (ADDITIONAL_CONFIG.form.maxCategoryCount로 덮어쓰기 가능, 기본값) */
+const newsCuratorMaxCategoryCount = ref(5)
+
+/** SUB_TY=CURATION ADDITIONAL_CONFIG — `ChatNewsCurator`에 전달되는 전체 설정 */
+const newsCuratorAgentConfig = ref<CurationAgentConfig | null>(null)
+
+/** Agent 관리 메뉴에서 정의한 카테고리 코드그룹·최대 선택 개수·UI 문구 등을 런타임에 반영 */
+export const setNewsCuratorAgentConfig = (config: CurationAgentConfig | null) => {
+  newsCuratorAgentConfig.value = config
+
+  const nextCodeGrpId = config?.form?.categorySource?.codeGrpId?.trim() || 'NC000001'
+  if (nextCodeGrpId !== newsCuratorCategoryCodeGrpId.value) {
+    newsCuratorCategoryCodeGrpId.value = nextCodeGrpId
+    resetNewsCuratorCategoriesCache()
+  }
+
+  newsCuratorMaxCategoryCount.value = config?.form?.maxCategoryCount || 5
+}
+
+/** `ChatNewsCurator` — 현재 적용된 CURATION ADDITIONAL_CONFIG (없으면 null) */
+export const useNewsCuratorAgentConfig = () => ({
+  newsCuratorAgentConfig,
+  newsCuratorMaxCategoryCount,
+})
 
 /** NEW 제출·저장 API용 분야 codeId 검증 (프롬프트 본문에는 분야 미포함) */
 export const isValidNewsCuratorCategorySelection = (categories: string[]) => {
   const codeIds = categories.map((c) => normalizeCategoryToken(String(c))).filter(Boolean)
   return (
     codeIds.length > 0 &&
-    codeIds.length <= NEWS_CURATOR_MAX_CATEGORY_COUNT &&
+    codeIds.length <= newsCuratorMaxCategoryCount.value &&
     new Set(codeIds).size === codeIds.length &&
     codeIds.every((codeId) => isNewsCuratorCategoryKnown(codeId))
   )
@@ -176,59 +219,54 @@ const parseNewsCuratorItemsFromJsonText = (jsonText: string): NewsCuratorItem[] 
   return rows.map(mapRow).filter((it) => it.title && it.summary)
 }
 
-/** 사용자 제출 시 WS로 보내는 뉴스 큐레이션 시스템 프롬프트 — 선정 대상 카테고리·후보 기사는 서버 주입 */
-export const buildNewsCuratorSubmissionPrompt = (_categories: string[], options?: { isNew?: boolean }): string => {
+/** ADDITIONAL_CONFIG 미적용 시 사용하는 기본 제약 — DEFAULT_CONSTRAINTS(curationConfigUtil)와 동기화 */
+const DEFAULT_CURATION_PROMPT_CONSTRAINTS = [
+  '반드시 후보 기사 목록(JSON 배열)에 있는 기사 중에서만 선택할 것. 새로운 기사를 생성하거나 변형하지 말 것.',
+  '같은 주제 또는 유사한 내용의 기사는 중복 선택하지 말 것.',
+  '각 카테고리당 topN개의 기사를 선정할 것.',
+  'summary는 기사 snippet을 바탕으로 과장·추측·허위 표현 없이 1~2문장(최대 150자)으로 요약할 것.',
+  'category 필드에는 후보 기사의 rssCategory 값을 그대로 사용할 것.',
+  'source·sourceUrl·imageUrl은 후보 기사의 값을 그대로 사용할 것 (생성 금지).',
+  '반드시 JSON 배열만 출력. 코드블록·마크다운·설명 텍스트 금지.',
+]
+
+const DEFAULT_CURATION_OUTPUT_FIELDS = ['source', 'title', 'summary', 'sourceUrl', 'imageUrl', 'category']
+
+/** 사용자 제출 시 WS로 보내는 뉴스 큐레이션 시스템 프롬프트 — 선정 대상 카테고리·후보 기사는 서버가 [역할] 직전에 주입 */
+export const buildCurationPrompt = (config: CurationAgentConfig | null, options?: { isNew?: boolean }): string => {
   const submitTypeLine = options?.isNew === false ? '- 카테고리 제출 유형: SAVED' : '- 카테고리 제출 유형: NEW'
+  const topN = config?.result?.topN || 5
+  const mission =
+    config?.agent?.mission?.trim() || '후보 기사 목록 중에서 선정 대상 카테고리에서 관련성이 높은 기사를 선정한다.'
+  const itemFields = config?.engine?.outputSchema?.itemFields?.length
+    ? config.engine.outputSchema.itemFields
+    : DEFAULT_CURATION_OUTPUT_FIELDS
+  const outputFields = ['rank', ...itemFields.filter((field) => field !== 'rank')]
+  const constraints = (config?.constraints?.length ? config.constraints : DEFAULT_CURATION_PROMPT_CONSTRAINTS).map(
+    (constraint) => constraint.replace(/topN/g, String(topN)),
+  )
 
-  return `너는 뉴스 큐레이션 편집자이다.
+  const lines: string[] = []
+  lines.push('너는 뉴스 큐레이션 편집자이다.')
+  lines.push('')
+  lines.push('[입력 데이터]')
+  lines.push(submitTypeLine)
+  lines.push('(선정 대상 카테고리·후보 기사 목록은 서버가 [역할] 직전에 주입한다.)')
+  lines.push('')
+  lines.push('[역할]')
+  lines.push(mission)
+  lines.push('')
+  lines.push('[제약]')
+  constraints.forEach((constraint) => lines.push(`- ${constraint}`))
+  lines.push('')
+  lines.push('[출력 규칙]')
+  lines.push('1. 반드시 JSON 배열만 출력한다. 설명, 마크다운, 코드블록, 추가 텍스트는 절대 출력하지 않는다.')
+  lines.push(`2. rank 값은 선정 대상 카테고리에서 1부터 순서대로 ${topN}까지 출력한다.`)
+  lines.push(`3. 배열 원소 개수는 반드시 정확히 ${topN}개이다.`)
+  lines.push('4. 출력 필드는 아래만 사용한다.')
+  outputFields.forEach((field) => lines.push(`   - ${field}`))
 
-[입력 데이터]
-${submitTypeLine}
-(선정 대상 카테고리·후보 기사 목록은 서버가 [역할] 직전에 주입한다.)
-
-[역할]
-후보 기사 목록 중에서 선정 대상 카테고리에서 관련성이 높은 기사를 선정한다.
-
-[전제 조건]
-1. 반드시 후보 기사 목록 안에 존재하는 기사만 사용한다.
-2. 존재하지 않는 기사나 값을 임의 생성하지 않는다.
-3. source, title, sourceUrl, imageUrl 값은 입력 데이터를 그대로 사용한다.
-4. imageUrl은 기사 원본 데이터의 imageUrl 값을 그대로 사용한다.
-5. 선정 대상 카테고리에서 관련성이 높은 기사를 5개 선정한다.
-6. category는 후보 기사의 rssCategory 값을 그대로 사용한다.
-
-[작업 규칙]
-1. 같은 주제 또는 유사한 내용의 기사는 중복 선택하지 않는다.
-2. summary만 새롭게 작성하며, 기사 내용을 자연스럽게 축약한 한국어 두 문장으로 작성한다.
-3. summary는 최대 150자 이내로 간결하게 작성한다.
-4. summary에는 과장, 추측, 허위 표현을 사용하지 않는다.
-
-[출력 규칙]
-1. 반드시 JSON 배열만 출력한다.
-2. 설명, 마크다운, 코드블록, 추가 텍스트는 절대 출력하지 않는다.
-3. rank 값은 선정 대상 카테고리에서 1부터 순서대로 5까지 출력한다.
-4. 배열 원소 개수는 반드시 정확히 5개이다.
-5. 출력 필드는 아래만 사용한다.
-   - rank
-   - source
-   - title
-   - summary
-   - sourceUrl
-   - imageUrl
-   - category
-
-[출력 예시]
-[
-  {
-    "rank": 1,
-    "source": "전자신문",
-    "title": "삼성전자 AI 반도체 투자 확대",
-    "summary": "삼성전자가 AI 반도체 투자를 확대한다. 생산 역량 강화에 나선다.",
-    "sourceUrl": "https://www.etnews.com/20260507000353",
-    "imageUrl": "https://image.example.com/sample.jpg",
-    "category": "경제"
-  }
-]`
+  return lines.join('\n')
 }
 
 /**
@@ -247,7 +285,7 @@ export const parseNewsCuratorPromptMeta = (questionPromptText: string) => {
   if (labelMatch?.[1]) {
     try {
       const parsed = JSON.parse(labelMatch[1])
-      if (Array.isArray(parsed) && parsed.length > 0 && parsed.length <= NEWS_CURATOR_MAX_CATEGORY_COUNT) {
+      if (Array.isArray(parsed) && parsed.length > 0 && parsed.length <= newsCuratorMaxCategoryCount.value) {
         const codeIds: string[] = []
         const seen = new Set<string>()
         let valid = true
