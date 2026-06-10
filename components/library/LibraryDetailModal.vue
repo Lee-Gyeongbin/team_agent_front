@@ -313,7 +313,6 @@
       :r-content="displayData?.rcontent ?? ''"
       @close="handleCreateDocReportClose"
       @save-to-my-docs="onCreateDocSaveToMyDocs"
-      @share-link="onCreateDocShareLink"
       @select-other-type="handleCreateDocSelectOtherType"
       @send-refine="onCreateDocSendRefine"
       @request-insight="onCreateDocRequestInsight"
@@ -666,10 +665,6 @@ const handleCreateDocGenerateWithCharts = async (payload: { cardId: string; tmpl
 
 const onCreateDocSaveToMyDocs = async (docHtml: string) => {
   await handleSaveReportToMyDocs(docHtml)
-}
-
-const onCreateDocShareLink = () => {
-  openToast({ message: '공유 링크는 추후 연동 예정입니다.', type: 'warning' })
 }
 
 /** 보고서 보완 요청 — currentHtml: 현재 에디터 전체 HTML */

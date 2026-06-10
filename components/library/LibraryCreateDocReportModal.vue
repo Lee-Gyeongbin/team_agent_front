@@ -79,17 +79,6 @@
               <UiButton
                 variant="outline"
                 size="md"
-                icon-only
-                title="공유 링크"
-                @click="emit('share-link')"
-              >
-                <template #icon-left>
-                  <i class="icon icon-sidebar-share size-16" />
-                </template>
-              </UiButton>
-              <UiButton
-                variant="outline"
-                size="md"
                 class="library-create-doc-report-toolbar-wide"
                 @click="emit('select-other-type')"
               >
@@ -269,7 +258,6 @@ const emit = defineEmits<{
   close: []
   /** 현재 에디터 HTML — 내 문서보관함 DOC_HTML */
   'save-to-my-docs': [docHtml: string]
-  'share-link': []
   'select-other-type': []
   /** 보완 요청 — message: 사용자 입력, currentHtml: 현재 에디터 전체 HTML */
   'send-refine': [message: string, currentHtml: string]

@@ -234,8 +234,13 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const { handleSaveMyDoc, handleRestoreMyDocOrigin, handleRenameMyDoc, handleOpenMyDocShareModal, handleCloseMyDocShareModal } =
-  useMyDocStore()
+const {
+  handleSaveMyDoc,
+  handleRestoreMyDocOrigin,
+  handleRenameMyDoc,
+  handleOpenMyDocShareModal,
+  handleCloseMyDocShareModal,
+} = useMyDocStore()
 
 const editorHtml = ref('')
 const editorDocNm = ref('')
@@ -403,7 +408,7 @@ const downloadItems: DownloadItem[] = [
     iconClass: 'icon-file-pdf',
     iconTone: 'is-pdf',
     onClick: () =>
-      runDownload(downloadMyDocAsPdf, '인쇄 창이 열렸습니다. 「PDF로 저장」을 선택하세요.', 'PDF 생성에 실패했습니다.'),
+      runDownload(downloadMyDocAsPdf, '인쇄 창이 열렸습니다. PDF로 저장을 선택하세요.', 'PDF 생성에 실패했습니다.'),
   },
   {
     id: 'excel',
