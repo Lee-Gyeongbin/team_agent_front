@@ -1,8 +1,9 @@
 <template>
   <article
     class="my-doc-card"
-    :class="{ 'is-active': isActive }"
+    :class="{ 'is-active': isActive, 'is-preview-target': isPreviewTarget }"
     @click="emit('open', doc)"
+    @mouseenter="emit('preview', doc)"
   >
     <div
       class="my-doc-card-drag"
@@ -97,14 +98,17 @@ import { formatDateTimeDisplay } from '~/utils/global/dateUtil'
 interface Props {
   doc: MyDoc
   isActive?: boolean
+  isPreviewTarget?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   isActive: false,
+  isPreviewTarget: false,
 })
 
 const emit = defineEmits<{
   open: [doc: MyDoc]
+  preview: [doc: MyDoc]
   menuSelect: [doc: MyDoc, action: string]
 }>()
 

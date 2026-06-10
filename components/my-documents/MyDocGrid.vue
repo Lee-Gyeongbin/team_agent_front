@@ -14,7 +14,9 @@
       <MyDocCard
         :doc="doc"
         :is-active="selectedDocId === doc.docId"
+        :is-preview-target="previewDocId === doc.docId"
         @open="emit('openDoc', $event)"
+        @preview="emit('previewDoc', $event)"
         @menu-select="(item, action) => emit('menuSelect', item, action)"
       />
     </template>
@@ -39,17 +41,20 @@ import type { MyDoc } from '~/types/mydoc'
 interface Props {
   docs: MyDoc[]
   selectedDocId?: string | null
+  previewDocId?: string | null
   emptyTitle: string
   emptyDescription: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   selectedDocId: null,
+  previewDocId: null,
 })
 
 const emit = defineEmits<{
   'update:docs': [docs: MyDoc[]]
   openDoc: [doc: MyDoc]
+  previewDoc: [doc: MyDoc]
   menuSelect: [doc: MyDoc, action: string]
   dragStart: []
   dragEnd: []

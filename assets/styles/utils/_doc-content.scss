@@ -292,6 +292,52 @@ $doc-content-logo: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAAA/CA
     }
   }
 
+  // ResizableImage 저장 HTML — data-align (에디터 NodeView margin auto 와 동일)
+  img[data-align='center'] {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  img[data-align='right'] {
+    display: block;
+    margin-left: auto;
+    margin-right: 0;
+  }
+
+  img[data-align='left'] {
+    display: block;
+    margin-left: 0;
+    margin-right: auto;
+  }
+
+  figure[data-align='center'],
+  figure:has(> img[data-align='center']) {
+    display: block;
+    width: fit-content;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  figure[data-align='right'],
+  figure:has(> img[data-align='right']) {
+    display: block;
+    width: fit-content;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: 0;
+  }
+
+  figure[data-align='left'],
+  figure:has(> img[data-align='left']) {
+    display: block;
+    width: fit-content;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: auto;
+  }
+
   a {
     color: var(--color-primary);
     text-decoration: underline;

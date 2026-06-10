@@ -19,16 +19,24 @@
         @sort-change="onFetchList"
       />
 
-      <MyDocGrid
-        v-model:docs="docList"
-        :selected-doc-id="selectedDocId"
-        :empty-title="emptyTitle"
-        :empty-description="emptyDescription"
-        @open-doc="onOpenDoc"
-        @menu-select="onDocMenuSelect"
-        @drag-start="onMyDocDragStart"
-        @drag-end="handleUpdateMyDocSortOrd"
-      />
+      <div class="my-doc-layout">
+        <div class="my-doc-layout-main">
+          <MyDocGrid
+            v-model:docs="docList"
+            :selected-doc-id="selectedDocId"
+            :preview-doc-id="previewDocId"
+            :empty-title="emptyTitle"
+            :empty-description="emptyDescription"
+            @open-doc="onOpenDoc"
+            @preview-doc="onPreviewDoc"
+            @menu-select="onDocMenuSelect"
+            @drag-start="onMyDocDragStart"
+            @drag-end="handleUpdateMyDocSortOrd"
+          />
+        </div>
+
+        <MyDocPreviewPanel :doc="previewDoc" />
+      </div>
     </div>
 
     <MyDocDetailModal
@@ -92,6 +100,7 @@ const searchKeyword = ref('')
 const appliedKeyword = ref('')
 const searchSort = ref('latest')
 const selectedDocId = ref<string | null>(null)
+const previewDocId = ref<string | null>(null)
 const isMdBannerDismissed = ref(false)
 const isNewBannerDismissed = ref(false)
 const isRenameModalOpen = ref(false)
@@ -104,6 +113,11 @@ const sortOptions = [
 ]
 
 const newDocCount = computed(() => docList.value.filter((d) => d.newYn === 'Y').length)
+
+const previewDoc = computed(() => {
+  if (!previewDocId.value) return null
+  return docList.value.find((doc) => doc.docId === previewDocId.value) ?? null
+})
 
 const hasNewDocs = computed(() => newDocCount.value > 0)
 
@@ -148,7 +162,12 @@ const onSearch = () => {
 
 const onOpenDoc = async (doc: MyDoc) => {
   selectedDocId.value = doc.docId
+  previewDocId.value = doc.docId
   await handleSelectMyDocDetail(doc.docId)
+}
+
+const onPreviewDoc = (doc: MyDoc) => {
+  previewDocId.value = doc.docId
 }
 
 const onCloseDetailModal = () => {
