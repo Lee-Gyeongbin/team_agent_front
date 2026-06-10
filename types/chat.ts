@@ -5,11 +5,11 @@ import type { TodayMemeItem } from '~/utils/chat/todayMemeUtil'
 
 export interface ChatSocketPayload {
   type: string
-  query: string
+  query?: string
   threadId: string
-  svcTy: string
-  modelId: string
-  refId: string
+  svcTy?: string
+  modelId?: string
+  refId?: string
   agentId?: string
   attachments?: ChatAttachmentMeta[]
 }

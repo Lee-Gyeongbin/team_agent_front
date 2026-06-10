@@ -24,3 +24,11 @@ export const buildQuestionPayload = (params: BuildQuestionPayloadParams): ChatSo
     attachments,
   }
 }
+
+/** 응답 중단(stop) 소켓 payload 조립 */
+export const buildStopPayload = (threadId: string): ChatSocketPayload => {
+  return {
+    type: 'stop',
+    threadId,
+  }
+}

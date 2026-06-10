@@ -74,15 +74,21 @@
             icon-only
             class="btn-chat-send"
             :loading="isSending"
-            :aria-label="isSending ? '전송 중' : '메시지 전송'"
+            :aria-label="isAnswerStreaming ? '응답 중단' : isSending ? '전송 중' : '메시지 전송'"
             :disabled="
-              props.disabled || !modelValue.trim() || isSearchModeMissingSubOptions || selectedSubOptions.length === 0
+              isAnswerStreaming
+                ? false
+                : props.disabled || !modelValue.trim() || isSearchModeMissingSubOptions || selectedSubOptions.length === 0
             "
-            @click="handleSend"
+            @click="isAnswerStreaming ? handleStop() : handleSend()"
           >
             <template #icon-left>
+              <i
+                v-if="isAnswerStreaming"
+                class="icon-stop"
+              />
               <span
-                v-if="isSending"
+                v-else-if="isSending"
                 class="btn-chat-send-spinner"
                 aria-hidden="true"
               />
@@ -143,6 +149,9 @@
 
 <script setup lang="ts">
 import { getChatAttachmentExtension, getChatFileIconClass } from '~/utils/chat/chatAttachmentDisplayUtil'
+import { buildStopPayload } from '~/utils/chat/chatSocketPayloadUtil'
+import { useChatSocket } from '~/composables/chat/useChatSocket'
+import { useChatMessages } from '~/composables/chat/useChatMessages'
 
 interface AttachmentPreviewItem {
   id: string
@@ -192,6 +201,10 @@ const {
   selectedSubOptions,
   isFileAttachEnabled,
 } = useChatStore()
+
+const { ensureWebSocketAndSend } = useChatSocket()
+const { getStreamingMessage } = useChatMessages()
+const isAnswerStreaming = computed(() => !!getStreamingMessage()?.isStreaming)
 
 const DEFAULT_INPUT_PLACEHOLDER = '궁금하신 내용을 입력하세요.'
 
@@ -429,6 +442,11 @@ onBeforeUnmount(() => {
   })
 })
 
+const handleStop = async () => {
+  if (!chatRoom.value.roomId) return
+  await ensureWebSocketAndSend(buildStopPayload(chatRoom.value.roomId))
+}
+
 const handleSend = async () => {
   if (isSending.value) return
   if (props.disabled) return
@@ -469,5 +487,14 @@ const handleSend = async () => {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* 응답 중단: 전송 아이콘 대신 정지(사각형) 아이콘 */
+.icon-stop {
+  display: block;
+  width: 14px;
+  height: 14px;
+  background-color: #fff;
+  border-radius: $border-radius-sm;
 }
 </style>

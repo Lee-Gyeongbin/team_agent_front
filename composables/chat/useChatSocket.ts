@@ -225,189 +225,190 @@ const markCompleteAndMaybeFinalize = (
   scheduleStreamingRender(streamingMessage.logId)
 }
 
-export const useChatSocket = () => {
-  // 웹소켓 관련 (WebSocket은 앱 전역에서 단일 인스턴스로 공유)
-  const WEBSOCKET_OPEN = 1
-  const WEBSOCKET_CONNECTING = 0
-  const chatbotSocket = shallowRef<WebSocket | null>(null)
+// 웹소켓 관련 (WebSocket은 앱 전역에서 단일 인스턴스로 공유)
+const WEBSOCKET_OPEN = 1
+const WEBSOCKET_CONNECTING = 0
+const chatbotSocket = shallowRef<WebSocket | null>(null)
 
-  // WebSocket 연결 확인 + 페이로드 전송 (실패 시 false 반환)
-  const ensureWebSocketAndSend = async (payload: ChatSocketPayload): Promise<boolean> => {
-    if (!chatbotSocket.value || chatbotSocket.value.readyState !== WEBSOCKET_OPEN) {
-      openLoading({ text: '서버에 연결하는 중...' })
-      try {
-        await connectWebSocket()
-      } finally {
-        closeLoading()
-      }
-    }
-    if (chatbotSocket.value?.readyState !== WEBSOCKET_OPEN) {
-      updateStreamingError('연결 오류가 발생했습니다. 다시 시도해주세요.')
-      return false
-    }
+// WebSocket 연결 확인 + 페이로드 전송 (실패 시 false 반환)
+const ensureWebSocketAndSend = async (payload: ChatSocketPayload): Promise<boolean> => {
+  if (!chatbotSocket.value || chatbotSocket.value.readyState !== WEBSOCKET_OPEN) {
+    openLoading({ text: '서버에 연결하는 중...' })
     try {
-      chatbotSocket.value.send(JSON.stringify(payload))
-      return true
-    } catch (error) {
-      console.error('웹소켓 메시지 전송 실패:', error)
-      updateStreamingError('메시지 전송에 실패했습니다. 잠시 후 다시 시도해주세요.')
-      return false
+      await connectWebSocket()
+    } finally {
+      closeLoading()
     }
   }
-  // WebSocket 메시지 처리
-  const handleWebSocketMessage = (payload: ChatSocketMessage) => {
-    // connected, question_received는 답변 메시지가 없어도 처리 가능
-    if (payload.type === 'connected' || payload.type === 'question_received') return
-    // 현재 스트리밍 메시지 찾기
-    const streamingMessage = getStreamingMessage()
-    if (!streamingMessage) return
+  if (chatbotSocket.value?.readyState !== WEBSOCKET_OPEN) {
+    updateStreamingError('연결 오류가 발생했습니다. 다시 시도해주세요.')
+    return false
+  }
+  try {
+    chatbotSocket.value.send(JSON.stringify(payload))
+    return true
+  } catch (error) {
+    console.error('웹소켓 메시지 전송 실패:', error)
+    updateStreamingError('메시지 전송에 실패했습니다. 잠시 후 다시 시도해주세요.')
+    return false
+  }
+}
+// WebSocket 메시지 처리
+const handleWebSocketMessage = (payload: ChatSocketMessage) => {
+  // connected, question_received는 답변 메시지가 없어도 처리 가능
+  if (payload.type === 'connected' || payload.type === 'question_received') return
+  // 현재 스트리밍 메시지 찾기
+  const streamingMessage = getStreamingMessage()
+  if (!streamingMessage) return
 
-    // WebSocket 메시지 타입에 따라 처리
-    switch (payload.type) {
-      case 'status': {
-        if (payload.statusMessage) {
-          streamingMessage.streamingStatus = payload.statusMessage
-        }
-        break
+  // WebSocket 메시지 타입에 따라 처리
+  switch (payload.type) {
+    case 'status': {
+      if (payload.statusMessage) {
+        streamingMessage.streamingStatus = payload.statusMessage
       }
-      // 스트리밍 메시지 처리
-      case 'chunk': {
-        // 답변 청크가 오면 status 텍스트 초기화
-        streamingMessage.streamingStatus = undefined
-        // Web 출처 등 구조화 청크 — 답변 텍스트 버퍼에 합치지 않음
-        if (payload.chunkEvent === 'answer_source' && payload.accumulated) {
-          const sourceItems = parseAnswerSourceItems(payload.accumulated)
-          if (sourceItems) streamingMessage.groundingSources = sourceItems
-          streamingMessage.isStreaming = true
-          break
-        }
-        // 일반 텍스트 delta는 버퍼에 누적
-        appendStreamingChunk(streamingMessage.logId, payload.content ?? '')
+      break
+    }
+    // 스트리밍 메시지 처리
+    case 'chunk': {
+      // 답변 청크가 오면 status 텍스트 초기화
+      streamingMessage.streamingStatus = undefined
+      // Web 출처 등 구조화 청크 — 답변 텍스트 버퍼에 합치지 않음
+      if (payload.chunkEvent === 'answer_source' && payload.accumulated) {
+        const sourceItems = parseAnswerSourceItems(payload.accumulated)
+        if (sourceItems) streamingMessage.groundingSources = sourceItems
         streamingMessage.isStreaming = true
-        if (isManualStreaming(streamingMessage.svcTy)) {
-          // 매뉴얼채팅(M)만 속도 제어 적용
-          scheduleStreamingRender(streamingMessage.logId)
-        } else {
-          // 그 외 모드는 기존처럼 즉시 표시
-          streamingMessage.rContent = messageBufferMap.value[streamingMessage.logId] || ''
-        }
         break
       }
-      case 'complete': {
-        if (isManualStreaming(streamingMessage.svcTy)) {
-          // 매뉴얼채팅(M)은 점진 렌더를 끝까지 보여준 뒤 finalize
-          markCompleteAndMaybeFinalize(streamingMessage, payload, payload.content ?? '')
-        } else {
-          // 그 외 모드는 complete 시 최종 본문 즉시 반영 후 finalize
-          const completeContent = payload.content ?? ''
-          if (completeContent && !hasAnyRenderedContent(streamingMessage.logId, streamingMessage.rContent)) {
-            messageBufferMap.value[streamingMessage.logId] = completeContent
-          }
-          streamingMessage.rContent = messageBufferMap.value[streamingMessage.logId] || completeContent
-          finalizeCompletedMessage(streamingMessage, payload)
-        }
-        break
+      // 일반 텍스트 delta는 버퍼에 누적
+      appendStreamingChunk(streamingMessage.logId, payload.content ?? '')
+      streamingMessage.isStreaming = true
+      if (isManualStreaming(streamingMessage.svcTy)) {
+        // 매뉴얼채팅(M)만 속도 제어 적용
+        scheduleStreamingRender(streamingMessage.logId)
+      } else {
+        // 그 외 모드는 기존처럼 즉시 표시
+        streamingMessage.rContent = messageBufferMap.value[streamingMessage.logId] || ''
       }
-      case 'error': {
-        // 이미 답변이 조금이라도 렌더링/버퍼링 된 상태면
-        // 사용자 경험상 "오류"로 덮어쓰지 말고 무시(또는 경고로만)
-        if (!hasAnyRenderedContent(streamingMessage.logId, streamingMessage.rContent)) {
-          updateStreamingError(payload.content || '응답 처리 중 오류가 발생했습니다.')
-        } else {
-          // 필요하면 콘솔만 남기기
-          console.warn('[chat] streaming error after partial content:', payload.content)
-        }
-        // 에러 이후 잔여 RAF가 남아 콘텐츠를 덮어쓰지 않도록 강제 정리
-        flushStreamingRender(streamingMessage.logId)
-        break
-      }
-      default:
-        break
+      break
     }
+    case 'complete': {
+      if (isManualStreaming(streamingMessage.svcTy)) {
+        // 매뉴얼채팅(M)은 점진 렌더를 끝까지 보여준 뒤 finalize
+        markCompleteAndMaybeFinalize(streamingMessage, payload, payload.content ?? '')
+      } else {
+        // 그 외 모드는 complete 시 최종 본문 즉시 반영 후 finalize
+        const completeContent = payload.content ?? ''
+        if (completeContent && !hasAnyRenderedContent(streamingMessage.logId, streamingMessage.rContent)) {
+          messageBufferMap.value[streamingMessage.logId] = completeContent
+        }
+        streamingMessage.rContent = messageBufferMap.value[streamingMessage.logId] || completeContent
+        finalizeCompletedMessage(streamingMessage, payload)
+      }
+      break
+    }
+    case 'error': {
+      // 이미 답변이 조금이라도 렌더링/버퍼링 된 상태면
+      // 사용자 경험상 "오류"로 덮어쓰지 말고 무시(또는 경고로만)
+      if (!hasAnyRenderedContent(streamingMessage.logId, streamingMessage.rContent)) {
+        updateStreamingError(payload.content || '응답 처리 중 오류가 발생했습니다.')
+      } else {
+        // 필요하면 콘솔만 남기기
+        console.warn('[chat] streaming error after partial content:', payload.content)
+      }
+      // 에러 이후 잔여 RAF가 남아 콘텐츠를 덮어쓰지 않도록 강제 정리
+      flushStreamingRender(streamingMessage.logId)
+      break
+    }
+    default:
+      break
   }
+}
 
-  // WebSocket 연결 종료
-  const disconnectWebSocket = () => {
-    if (chatbotSocket.value) {
-      chatbotSocket.value.close()
+// WebSocket 연결 종료
+const disconnectWebSocket = () => {
+  if (chatbotSocket.value) {
+    chatbotSocket.value.close()
+    chatbotSocket.value = null
+  }
+}
+
+// WebSocket 연결
+const connectWebSocket = (): Promise<void> => {
+  // WebSocket 연결 상태 확인
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined') {
+      resolve()
+      return
+    }
+
+    // 현재 WebSocket 연결 상태 확인
+    const currentSocket = chatbotSocket.value
+    if (currentSocket?.readyState === WEBSOCKET_OPEN) {
+      resolve()
+      return
+    }
+    // WebSocket 연결 중인 경우
+    if (currentSocket?.readyState === WEBSOCKET_CONNECTING) {
+      const onOpen = () => {
+        currentSocket.removeEventListener('open', onOpen)
+        resolve()
+      }
+      currentSocket.addEventListener('open', onOpen)
+      return
+    }
+
+    // 기존 WebSocket 연결이 있으면 닫기
+    if (currentSocket) {
+      currentSocket.close()
       chatbotSocket.value = null
     }
-  }
 
-  // WebSocket 연결
-  const connectWebSocket = (): Promise<void> => {
-    // WebSocket 연결 상태 확인
-    return new Promise((resolve) => {
-      if (typeof window === 'undefined') {
-        resolve()
-        return
-      }
+    try {
+      // WebSocket 연결 시도
+      const socket = new WebSocket(getWebSocketUrl())
+      chatbotSocket.value = socket
 
-      // 현재 WebSocket 연결 상태 확인
-      const currentSocket = chatbotSocket.value
-      if (currentSocket?.readyState === WEBSOCKET_OPEN) {
-        resolve()
-        return
-      }
-      // WebSocket 연결 중인 경우
-      if (currentSocket?.readyState === WEBSOCKET_CONNECTING) {
-        const onOpen = () => {
-          currentSocket.removeEventListener('open', onOpen)
-          resolve()
+      // WebSocket 연결 성공 시
+      socket.onopen = () => resolve()
+
+      // WebSocket 메시지 수신 시
+      socket.onmessage = (event) => {
+        try {
+          // WebSocket 메시지 파싱
+          const payload = JSON.parse(event.data) as ChatSocketMessage
+          // WebSocket 메시지 처리
+          handleWebSocketMessage(payload)
+        } catch (error) {
+          console.error('웹소켓 메시지 파싱 오류:', error)
         }
-        currentSocket.addEventListener('open', onOpen)
-        return
       }
 
-      // 기존 WebSocket 연결이 있으면 닫기
-      if (currentSocket) {
-        currentSocket.close()
+      socket.onerror = (error) => {
+        console.error('웹소켓 연결 오류:', error)
+      }
+
+      socket.onclose = () => {
         chatbotSocket.value = null
       }
+    } catch (error) {
+      console.error('WebSocket 초기화 실패:', error)
+      resolve()
+    }
+  })
+}
 
-      try {
-        // WebSocket 연결 시도
-        const socket = new WebSocket(getWebSocketUrl())
-        chatbotSocket.value = socket
+// WebSocket 연결 시작
+const startChatSocket = () => {
+  void connectWebSocket()
+}
 
-        // WebSocket 연결 성공 시
-        socket.onopen = () => resolve()
+// WebSocket 연결 종료
+const stopChatSocket = () => {
+  disconnectWebSocket()
+}
 
-        // WebSocket 메시지 수신 시
-        socket.onmessage = (event) => {
-          try {
-            // WebSocket 메시지 파싱
-            const payload = JSON.parse(event.data) as ChatSocketMessage
-            // WebSocket 메시지 처리
-            handleWebSocketMessage(payload)
-          } catch (error) {
-            console.error('웹소켓 메시지 파싱 오류:', error)
-          }
-        }
-
-        socket.onerror = (error) => {
-          console.error('웹소켓 연결 오류:', error)
-        }
-
-        socket.onclose = () => {
-          chatbotSocket.value = null
-        }
-      } catch (error) {
-        console.error('WebSocket 초기화 실패:', error)
-        resolve()
-      }
-    })
-  }
-
-  // WebSocket 연결 시작
-  const startChatSocket = () => {
-    void connectWebSocket()
-  }
-
-  // WebSocket 연결 종료
-  const stopChatSocket = () => {
-    disconnectWebSocket()
-  }
+export const useChatSocket = () => {
   return {
     chatbotSocket,
     startChatSocket,
