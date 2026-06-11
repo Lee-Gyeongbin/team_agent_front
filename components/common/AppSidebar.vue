@@ -44,22 +44,84 @@
         v-if="isExpanded"
         class="sidebar-section"
       >
-        <button
-          class="sidebar-section-head"
-          @click="isSearchHistoryOpen = !isSearchHistoryOpen"
+        <div
+          class="sidebar-section-head-row"
+          :class="{ 'has-active-filter': isHistoryAgentFilterActive }"
         >
-          <span class="sidebar-section-title">검색기록</span>
-          <i
-            class="icon-sidebar-arrow-down size-12 section-chevron"
-            :class="{ 'is-open': isSearchHistoryOpen }"
-          />
-        </button>
+          <button
+            type="button"
+            class="sidebar-section-head"
+            @click="isSearchHistoryOpen = !isSearchHistoryOpen"
+          >
+            <span class="sidebar-section-title">검색기록</span>
+            <i
+              class="icon-sidebar-arrow-down size-12 section-chevron"
+              :class="{ 'is-open': isSearchHistoryOpen }"
+            />
+          </button>
+          <DropdownMenuRoot
+            v-if="hasHistoryAgentFilter"
+            v-model:open="isHistoryAgentFilterOpen"
+          >
+            <DropdownMenuTrigger as-child>
+              <button
+                type="button"
+                class="search-history-filter-btn"
+                :class="{ 'is-active': isHistoryAgentFilterActive }"
+                :title="historyAgentFilterBtnTitle"
+                :aria-label="historyAgentFilterBtnTitle"
+                @click.stop
+              >
+                <i class="icon-sliders size-16 search-history-filter-icon" />
+                <span
+                  v-if="isHistoryAgentFilterActive"
+                  class="search-history-filter-badge"
+                  aria-hidden="true"
+                >
+                  {{ selectedHistoryAgentIds.length }}
+                </span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuPortal>
+              <DropdownMenuContent
+                class="sidebar-dropdown-content sidebar-history-filter-menu"
+                side="bottom"
+                align="end"
+                :side-offset="4"
+                :collision-padding="8"
+              >
+                <div class="sidebar-history-filter-list">
+                  <DropdownMenuItem
+                    v-for="opt in historyAgentFilterOptions"
+                    :key="opt.agentId || HISTORY_AGENT_FILTER_GENERAL"
+                    class="sidebar-dropdown-item search-history-filter-item"
+                    :class="{ 'is-selected': isHistoryAgentFilterSelected(opt.agentId) }"
+                    @select="(event) => onToggleHistoryAgentFilter(opt.agentId, event)"
+                  >
+                    <span class="search-history-filter-label">{{ opt.label }}</span>
+                    <i
+                      class="icon-check size-14 search-history-filter-check"
+                      :class="{ 'is-visible': isHistoryAgentFilterSelected(opt.agentId) }"
+                      aria-hidden="true"
+                    />
+                  </DropdownMenuItem>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenuPortal>
+          </DropdownMenuRoot>
+        </div>
         <div
           v-show="isSearchHistoryOpen"
           ref="searchHistoryScrollEl"
           class="sidebar-section-body"
           @scroll="onSearchHistoryScroll"
         >
+          <p
+            v-if="!displayedChatRooms.length && !isSearchHistoryLoadingMore"
+            class="search-history-empty"
+          >
+            검색기록이 없습니다.
+          </p>
           <div
             v-for="(entry, historyIdx) in displayedChatRooms"
             :key="chatRoomRowKey(entry, historyIdx)"
@@ -228,6 +290,7 @@ import type { ChatRoom } from '~/types/chat'
 import { normalizeChatRoomId, parseChatRoomIdFromChatPath } from '~/utils/chat/chatRoomIdUtil'
 const {
   chatRoomList,
+  agtFilterList,
   chatRoomListSliceResetPending,
   selectChatRoomList,
   handleRenameChatRoom,
@@ -252,8 +315,13 @@ const SEARCH_HISTORY_NEAR_BOTTOM_PX = 40
  * 반드시 `SEARCH_HISTORY_NEAR_BOTTOM_PX`보다 커야, 힌트 적용 후에도 연속 로드가 다시 걸리지 않음.
  */
 const SEARCH_HISTORY_TAIL_HINT_GAP_PX = SEARCH_HISTORY_NEAR_BOTTOM_PX + 24
+/** 에이전트 필터 — agentId가 null/'' 인 일반질의 채팅방용 sentinel */
+const HISTORY_AGENT_FILTER_GENERAL = '__GENERAL__'
 
 const searchHistoryVisibleCount = ref(SEARCH_HISTORY_INITIAL)
+/** 에이전트 필터 — 빈 배열이면 전체 표시 */
+const selectedHistoryAgentIds = ref<string[]>([])
+const isHistoryAgentFilterOpen = ref(false)
 const isSearchHistoryLoadingMore = ref(false)
 const pendingSearchHistorySkeletonCount = ref(0)
 const searchHistoryRevealIdSet = shallowRef<Set<string>>(new Set())
@@ -264,8 +332,67 @@ function chatRoomRowKey(entry: ChatRoom, idx: number) {
   return id ? id : `room-unknown-${idx}`
 }
 
+function normalizeHistoryAgentId(id?: string | null) {
+  return String(id ?? '').trim()
+}
+
+const sortedAgtFilterList = computed(() => [...agtFilterList.value].sort((a, b) => a.sortOrd - b.sortOrd))
+
+const hasHistoryAgentFilter = computed(
+  () =>
+    sortedAgtFilterList.value.length > 0 || chatRoomList.value.some((room) => !normalizeHistoryAgentId(room.agentId)),
+)
+
+const historyAgentFilterOptions = computed(() => [
+  { agentId: HISTORY_AGENT_FILTER_GENERAL, label: '일반검색' },
+  ...sortedAgtFilterList.value.map((item) => ({
+    agentId: item.agentId,
+    label: item.agentNm,
+  })),
+])
+
+const isHistoryAgentFilterActive = computed(() => selectedHistoryAgentIds.value.length > 0)
+
+const historyAgentFilterBtnTitle = computed(() => {
+  if (!isHistoryAgentFilterActive.value) return '에이전트 필터'
+  return `에이전트 필터 (${selectedHistoryAgentIds.value.length}개 적용)`
+})
+
+const selectedHistoryAgentIdSet = computed(() => new Set(selectedHistoryAgentIds.value))
+
+function resolveHistoryAgentFilterId(agentId: string) {
+  if (agentId === HISTORY_AGENT_FILTER_GENERAL) return HISTORY_AGENT_FILTER_GENERAL
+  return normalizeHistoryAgentId(agentId)
+}
+
+function isHistoryAgentFilterSelected(agentId: string) {
+  return selectedHistoryAgentIdSet.value.has(resolveHistoryAgentFilterId(agentId))
+}
+
+const filteredChatRoomList = computed(() => {
+  const filterIds = selectedHistoryAgentIdSet.value
+  if (!filterIds.size) return chatRoomList.value
+  return chatRoomList.value.filter((room) => {
+    const roomAgentId = normalizeHistoryAgentId(room.agentId)
+    if (filterIds.has(HISTORY_AGENT_FILTER_GENERAL) && !roomAgentId) return true
+    return !!roomAgentId && filterIds.has(roomAgentId)
+  })
+})
+
+function onToggleHistoryAgentFilter(agentId: string, event: Event) {
+  event.preventDefault()
+  const id = resolveHistoryAgentFilterId(agentId)
+  if (!id) return
+  const current = selectedHistoryAgentIds.value
+  if (current.includes(id)) {
+    selectedHistoryAgentIds.value = current.filter((item) => item !== id)
+    return
+  }
+  selectedHistoryAgentIds.value = [...current, id]
+}
+
 const displayedChatRooms = computed(() => {
-  const list = chatRoomList.value
+  const list = filteredChatRoomList.value
   const n = Math.min(searchHistoryVisibleCount.value, list.length)
   return list.slice(0, n)
 })
@@ -305,7 +432,7 @@ function adjustSearchHistoryScrollAfterLoadMore() {
   if (!el) return
   applySearchHistoryScrollLayout(() => {
     const maxScroll = Math.max(0, el.scrollHeight - el.clientHeight)
-    const hasMoreBelow = searchHistoryVisibleCount.value < chatRoomList.value.length
+    const hasMoreBelow = searchHistoryVisibleCount.value < filteredChatRoomList.value.length
     const gapPx = hasMoreBelow ? SEARCH_HISTORY_TAIL_HINT_GAP_PX : 0
     el.scrollTop = Math.max(0, maxScroll - gapPx)
   })
@@ -328,13 +455,18 @@ function resetSearchHistoryLoadMoreUi() {
 watch(chatRoomList, () => {
   resetSearchHistoryLoadMoreUi()
   if (chatRoomListSliceResetPending.value) {
-    searchHistoryVisibleCount.value = Math.min(SEARCH_HISTORY_INITIAL, chatRoomList.value.length)
+    searchHistoryVisibleCount.value = Math.min(SEARCH_HISTORY_INITIAL, filteredChatRoomList.value.length)
     chatRoomListSliceResetPending.value = false
   }
 })
 
+watch(selectedHistoryAgentIds, () => {
+  resetSearchHistoryLoadMoreUi()
+  searchHistoryVisibleCount.value = Math.min(SEARCH_HISTORY_INITIAL, filteredChatRoomList.value.length)
+})
+
 watch(
-  () => chatRoomList.value.length,
+  () => filteredChatRoomList.value.length,
   (len) => {
     if (searchHistoryVisibleCount.value > len) {
       searchHistoryVisibleCount.value = len
@@ -344,7 +476,7 @@ watch(
 
 function finishSearchHistoryLoadMore() {
   searchHistoryLoadMoreTimer = null
-  const list = chatRoomList.value
+  const list = filteredChatRoomList.value
   const prev = searchHistoryVisibleCount.value
   const total = list.length
   const add = Math.min(SEARCH_HISTORY_LOAD_MORE, total - prev)
@@ -374,7 +506,7 @@ function finishSearchHistoryLoadMore() {
 function beginSearchHistoryLoadMore() {
   if (isSearchHistoryLoadingMore.value) return
   const prev = searchHistoryVisibleCount.value
-  const total = chatRoomList.value.length
+  const total = filteredChatRoomList.value.length
   if (prev >= total) return
 
   const add = Math.min(SEARCH_HISTORY_LOAD_MORE, total - prev)
@@ -395,12 +527,12 @@ function onSearchHistoryScroll(ev: Event) {
   const el = ev.target as HTMLElement
   const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
   if (distanceFromBottom > SEARCH_HISTORY_NEAR_BOTTOM_PX) return
-  if (searchHistoryVisibleCount.value >= chatRoomList.value.length) return
+  if (searchHistoryVisibleCount.value >= filteredChatRoomList.value.length) return
   if (searchHistoryLoadMoreRaf) return
 
   searchHistoryLoadMoreRaf = requestAnimationFrame(() => {
     searchHistoryLoadMoreRaf = 0
-    if (searchHistoryVisibleCount.value >= chatRoomList.value.length) return
+    if (searchHistoryVisibleCount.value >= filteredChatRoomList.value.length) return
     beginSearchHistoryLoadMore()
   })
 }
@@ -448,11 +580,11 @@ async function onClickHistory(entry: ChatRoom) {
 /** 라우트상 활성 방이 클라이언트 슬라이스 밖이면 표시 개수를 늘려 하이라이트·클릭 대상이 일치하도록 함 */
 function ensureSearchHistoryShowsRoom(roomIdNorm: string) {
   if (!roomIdNorm) return
-  const idx = chatRoomList.value.findIndex((r) => normalizeChatRoomId(r.roomId) === roomIdNorm)
+  const idx = filteredChatRoomList.value.findIndex((r) => normalizeChatRoomId(r.roomId) === roomIdNorm)
   if (idx < 0) return
   const need = idx + 1
   if (searchHistoryVisibleCount.value < need) {
-    searchHistoryVisibleCount.value = Math.min(need, chatRoomList.value.length)
+    searchHistoryVisibleCount.value = Math.min(need, filteredChatRoomList.value.length)
   }
 }
 
@@ -468,7 +600,7 @@ function scrollActiveHistoryRowIntoView(roomIdNorm: string) {
   row?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
 }
 
-watch([activeRoomId, chatRoomList, isExpanded, isSearchHistoryOpen], async ([id]) => {
+watch([activeRoomId, filteredChatRoomList, isExpanded, isSearchHistoryOpen], async ([id]) => {
   ensureSearchHistoryShowsRoom(id)
   await nextTick()
   requestAnimationFrame(() => scrollActiveHistoryRowIntoView(id))

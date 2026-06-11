@@ -3,6 +3,7 @@ import type {
   ModelOption,
   SubOption,
   ChatRoom,
+  AgtFilterItem,
   ChatLogListRow,
   ChatRefRow,
   VisualizationStatDetailItem,
@@ -23,8 +24,12 @@ import type { FileMeta, FileUploadResponse } from '~/types/file'
 export const useChatApi = () => {
   const { get, post } = useApi()
   // 채팅방 목록 조회
-  const fetchSelectChatRoomList = async (userId: string): Promise<{ list: ChatRoom[] }> => {
-    return get<{ list: ChatRoom[] }>(`/ai/chatbot/selectChatRoomList.do?userId=${encodeURIComponent(userId)}`)
+  const fetchSelectChatRoomList = async (
+    userId: string,
+  ): Promise<{ list: ChatRoom[]; agtFilterList: AgtFilterItem[] }> => {
+    return get<{ list: ChatRoom[]; agtFilterList: AgtFilterItem[] }>(
+      `/ai/chatbot/selectChatRoomList.do?userId=${encodeURIComponent(userId)}`,
+    )
   }
   // 채팅 화면용 에이전트 목록 조회
   const fetchSelectAgentListForChat = async (): Promise<{ agentList: Agent[] }> => {

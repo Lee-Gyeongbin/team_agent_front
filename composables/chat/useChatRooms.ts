@@ -2,6 +2,7 @@ import { useAuth } from '~/composables/com/useAuth'
 import {
   EMPTY_CHAT_ROOM,
   type ChatRoom,
+  type AgtFilterItem,
   type ChatLogListRow,
   type SubOption,
   type ModelOption,
@@ -63,6 +64,7 @@ const { executeSendPipeline } = useChatSendPipeline()
 // 채팅방 관련
 const chatRoom = ref<ChatRoom>({ ...EMPTY_CHAT_ROOM })
 const chatRoomList = ref<ChatRoom[]>([])
+const agtFilterList = ref<AgtFilterItem[]>([])
 /** selectChatRoomList({ resetHistorySlice: true }) 호출 시 사이드바 검색기록 표시 개수 초기화 */
 const chatRoomListSliceResetPending = ref(false)
 const chatMessage = ref('')
@@ -147,7 +149,7 @@ export const useChatRooms = () => {
       if (!skipLoading) {
         openLoading({ text: '채팅방 목록을 불러오는 중...' })
       }
-      let res: { list: ChatRoom[] }
+      let res: { list: ChatRoom[]; agtFilterList: AgtFilterItem[] }
       try {
         res = await fetchSelectChatRoomList(userId)
       } finally {
@@ -156,6 +158,7 @@ export const useChatRooms = () => {
         }
       }
       chatRoomList.value = dedupeChatRoomsByNormalizedId(res.list ?? [])
+      agtFilterList.value = res.agtFilterList ?? []
       if (options?.resetHistorySlice) {
         chatRoomListSliceResetPending.value = true
       }
@@ -482,6 +485,7 @@ export const useChatRooms = () => {
     shareTxt,
     chatMessage,
     chatRoomList,
+    agtFilterList,
     chatRoomListSliceResetPending,
     selectChatRoomList,
     createChatRoom,

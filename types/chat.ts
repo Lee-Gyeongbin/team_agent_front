@@ -286,6 +286,14 @@ export interface RegionTreeResponse {
   selected?: RegionSelectedLocation
 }
 
+/** 채팅방 목록 조회 시 에이전트 필터 옵션 (TB_AGT) */
+export interface AgtFilterItem {
+  agentId: string // AGENT_ID
+  agentNm: string // AGENT_NM
+  svcTy: string // SVC_TY
+  sortOrd: number // SORT_ORD
+}
+
 export interface ChatRoom {
   roomId: string
   title: string
@@ -294,6 +302,7 @@ export interface ChatRoom {
   createdAt: string
   roomTitle: string
   fixYn: 'Y' | 'N'
+  agentId?: string
 }
 
 /** 빈 대화방 기본값 — 리셋, 초기화 시 재사용 */
@@ -509,7 +518,9 @@ export interface PdfDocumentProxy {
 
 export interface PdfJsLib {
   GlobalWorkerOptions: { workerSrc: string }
-  getDocument: (params: { url: string; cMapUrl?: string; cMapPacked?: boolean }) => { promise: Promise<PdfDocumentProxy> }
+  getDocument: (params: { url: string; cMapUrl?: string; cMapPacked?: boolean }) => {
+    promise: Promise<PdfDocumentProxy>
+  }
 }
 
 declare global {
