@@ -65,7 +65,7 @@
           :key="item.notifyId"
           class="notif-item"
           :class="{ 'is-unread': item.readYn === 'N' }"
-          @click="handleMarkRead(item.notifyId)"
+          @click="onClickNotifyItem(item)"
         >
           <div
             class="notif-avatar"
@@ -83,20 +83,32 @@
             <!-- KS(지식 공유) / MD(내 문서 공유) 알림: 받기 버튼 -->
             <div
               v-if="item.notifyTyCd === 'KS' || item.notifyTyCd === 'MD'"
-              class="notif-receive-wrap"
+              class="notif-action-wrap"
             >
               <button
                 v-if="item.saveYn === 'N'"
-                class="notif-receive-btn"
+                class="notif-action-btn"
                 @click.stop="onClickReceive(item)"
               >
                 받기
               </button>
               <span
                 v-else
-                class="notif-receive-done"
+                class="notif-action-done"
                 >공유완료</span
               >
+            </div>
+            <!-- MC(멘탈케어 면담 요청) 알림: 상세보기 버튼 -->
+            <div
+              v-else-if="item.notifyTyCd === 'MC' && item.refId"
+              class="notif-action-wrap"
+            >
+              <button
+                class="notif-action-btn"
+                @click.stop="onClickMtlcareDetail(item)"
+              >
+                상세보기
+              </button>
             </div>
           </div>
           <button
@@ -223,6 +235,19 @@ const onClickOutside = (e: MouseEvent) => {
   if (notificationWrapRef.value && !notificationWrapRef.value.contains(e.target as Node)) {
     isNotificationOpen.value = false
   }
+}
+
+/** 알림 클릭 — 읽음 처리 */
+const onClickNotifyItem = (item: Notify) => {
+  handleMarkRead(item.notifyId)
+}
+
+/** MC(멘탈케어 면담 요청) 상세보기 — 리포트 페이지로 이동 */
+const onClickMtlcareDetail = (item: Notify) => {
+  if (!item.refId) return
+  handleMarkRead(item.notifyId)
+  isNotificationOpen.value = false
+  navigateTo(`/mtlcare/report/${item.refId}`)
 }
 
 /** 알림 받기 — 타입별 모달 분기 (KS: 카테고리 선택 / MD: 문서 미리보기) */
@@ -539,7 +564,7 @@ onUnmounted(() => {
   @include ellipsis(2);
 }
 
-.notif-receive-btn {
+.notif-action-btn {
   display: inline-flex;
   align-items: center;
   padding: 3px 10px;
@@ -560,12 +585,12 @@ onUnmounted(() => {
   }
 }
 
-.notif-receive-wrap {
+.notif-action-wrap {
   margin-top: 6px;
   text-align: right;
 }
 
-.notif-receive-done {
+.notif-action-done {
   display: inline-flex;
   align-items: center;
   padding: 3px 10px;

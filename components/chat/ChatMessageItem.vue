@@ -126,11 +126,14 @@
             :chat-log-reaction="message.chatLogReaction"
             :knowledge-list="knowledgeList"
             :is-share="isShare"
+            :show-mtlcare-request="isSurveyRadarAnswer && markerFound && !!radarChartData"
+            :mtlcare-requesting="mtlcareRequesting"
             @on-copy="emit('on-copy', message.logId)"
             @on-like="emit('on-like', message.logId)"
             @on-dislike="emit('on-dislike', message.logId)"
             @on-regenerate="emit('on-regenerate', message.logId)"
             @on-select-category="onSelectCategory"
+            @on-mtlcare-request="onRequestMtlcareInterview"
           />
           <div
             v-if="message.hasSource || message.hasVisualization"
@@ -305,6 +308,13 @@
     :is-share="isShare"
     @update:is-open="onImagePreviewOpenChange"
   />
+
+  <MtlcareRequestModal
+    v-if="isMtlcareModalOpen"
+    :is-open="isMtlcareModalOpen"
+    :result-id="mtlcareResultId"
+    @close="isMtlcareModalOpen = false"
+  />
 </template>
 
 <script setup lang="ts">
@@ -375,8 +385,10 @@ import {
 } from '~/utils/chat/surveyUtil'
 
 import { useChatMessages } from '~/composables/chat/useChatMessages'
+import { useMtlcareStore } from '~/composables/mtlcare/useMtlcareStore'
 
 const { messages: allMessages } = useChatMessages()
+const { handleSaveResult } = useMtlcareStore()
 const { chatIndexAgents } = useChatStore()
 const { surveyGender } = usePsychologySurvey()
 const { user } = useAuth()
@@ -573,6 +585,27 @@ const radarChartLoading = ref(false)
  * — API 응답 후 채워짐, 차트 컴포넌트 퍼블리싱 후 템플릿에서 바인딩
  */
 const radarChartData = ref<RadarChartData | null>(null)
+
+// ── 멘탈케어 면담 요청 ──────────────────────────────────────────────────────
+const mtlcareRequesting = ref(false)
+const isMtlcareModalOpen = ref(false)
+const mtlcareResultId = ref<string | null>(null)
+
+const onRequestMtlcareInterview = async () => {
+  if (!radarChartData.value) return
+  mtlcareRequesting.value = true
+  try {
+    const resultId = await handleSaveResult(radarChartData.value)
+    if (!resultId) {
+      openToast({ message: '진단 결과 저장에 실패했습니다.', type: 'warning' })
+      return
+    }
+    mtlcareResultId.value = resultId
+    isMtlcareModalOpen.value = true
+  } finally {
+    mtlcareRequesting.value = false
+  }
+}
 
 /** guide/ui-chart Radar + StressScoreGrid 동일 구성 — 성별별 PDF 23p 영역별 참고치로 단계 판정 */
 const psychologyStressItems = computed<StressScoreItem[]>(() =>

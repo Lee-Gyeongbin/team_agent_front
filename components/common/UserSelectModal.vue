@@ -3,7 +3,7 @@
   <Teleport to="body">
     <div
       class="user-select-modal"
-      :class="{ 'is-show': isOpen }"
+      :class="{ 'is-show': isOpen, 'is-single-select': singleSelect }"
     >
       <!-- 오버레이 -->
       <div
@@ -34,7 +34,11 @@
               v-if="orgListLoading"
               class="us-state-box"
             >
-              <UiSpinner size="sm" />
+              <div
+                class="us-spinner"
+                role="status"
+                aria-label="불러오는 중"
+              />
             </div>
 
             <!-- 에러 -->
@@ -83,7 +87,11 @@
                   v-if="orgUserListLoading"
                   class="us-state-box"
                 >
-                  <UiSpinner size="sm" />
+                  <div
+                    class="us-spinner"
+                    role="status"
+                    aria-label="불러오는 중"
+                  />
                 </div>
 
                 <!-- 사용자 목록 에러 -->
@@ -114,11 +122,17 @@
                     :class="{ 'is-selected': isUserSelected(orgMember.userId) }"
                     @click="onUserClick(orgMember)"
                   >
-                    <UiAvatar
-                      :src="orgMember.profileImgUrl ?? ''"
-                      :alt="orgMember.userNm"
-                      size="sm"
-                    />
+                    <div class="us-user-avatar">
+                      <img
+                        v-if="orgMember.profileImgUrl"
+                        :src="orgMember.profileImgUrl"
+                        :alt="orgMember.userNm"
+                      />
+                      <i
+                        v-else
+                        class="icon icon-user size-16"
+                      />
+                    </div>
                     <div class="us-user-info">
                       <span class="us-user-name">{{ orgMember.userNm }}</span>
                       <span class="us-user-email">{{ orgMember.email }}</span>
@@ -137,15 +151,15 @@
           <div class="us-panel us-panel-selected">
             <div class="us-panel-label-row">
               <p class="us-panel-label">
-                선택된 사용자
+                {{ singleSelect ? '선택된 매니저' : '선택된 사용자' }}
                 <span
-                  v-if="selectedUsers.length > 0"
+                  v-if="!singleSelect && selectedUsers.length > 0"
                   class="us-selected-count"
                   >{{ selectedUsers.length }}</span
                 >
               </p>
               <button
-                v-if="selectedUsers.length > 0"
+                v-if="selectedUsers.length > 0 && !singleSelect"
                 class="btn-us-clear"
                 @click="clearSelectedUsers"
               >
@@ -171,11 +185,17 @@
                 :key="selectedRow.userId"
                 class="us-selected-item"
               >
-                <UiAvatar
-                  :src="selectedRow.profileImgUrl ?? ''"
-                  :alt="selectedRow.userNm"
-                  size="sm"
-                />
+                <div class="us-user-avatar">
+                  <img
+                    v-if="selectedRow.profileImgUrl"
+                    :src="selectedRow.profileImgUrl"
+                    :alt="selectedRow.userNm"
+                  />
+                  <i
+                    v-else
+                    class="icon icon-user size-16"
+                  />
+                </div>
                 <div class="us-user-info">
                   <span class="us-user-name">{{ selectedRow.userNm }}</span>
                   <span class="us-user-email">{{ selectedRow.email }}</span>
@@ -216,18 +236,21 @@
 import type { OrgUserItem } from '~/types/org-manage'
 import { useUserSelectStore } from '~/composables/com/useUserSelectStore'
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     isOpen?: boolean
     /** 모달 제목 */
     title?: string
     /** 확인 버튼 텍스트 */
     confirmText?: string
+    /** true면 한 명만 선택 가능 (기본: 다중 선택) */
+    singleSelect?: boolean
   }>(),
   {
     isOpen: false,
     title: '사용자 선택',
     confirmText: '확인',
+    singleSelect: false,
   },
 )
 
@@ -264,11 +287,21 @@ const visibleOrgUserList = computed(() => {
 
 const isUserSelected = (userId: string) => selectedUsers.value.some((u) => u.userId === userId)
 
-const onUserClick = (user: OrgUserItem) => {
-  if (isUserSelected(user.userId)) {
-    removeSelectedUser(user.userId)
+const onUserClick = (clickedUser: OrgUserItem) => {
+  if (props.singleSelect) {
+    if (isUserSelected(clickedUser.userId)) {
+      removeSelectedUser(clickedUser.userId)
+      return
+    }
+    clearSelectedUsers()
+    addSelectedUser(clickedUser)
+    return
+  }
+
+  if (isUserSelected(clickedUser.userId)) {
+    removeSelectedUser(clickedUser.userId)
   } else {
-    addSelectedUser(user)
+    addSelectedUser(clickedUser)
   }
 }
 
@@ -478,6 +511,38 @@ const onConfirm = () => {
   flex: 1;
   overflow: hidden;
   min-height: 0;
+}
+
+.us-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #ecf0f3;
+  border-top-color: var(--color-primary, $color-primary);
+  border-radius: 50%;
+  animation: us-spin 0.8s linear infinite;
+}
+
+@keyframes us-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.us-user-avatar {
+  @include flex-center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: $border-radius-full;
+  background: #f1f6fe;
+  color: #5e87d7;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 }
 
 // 상태 박스 (로딩/에러/빈상태)

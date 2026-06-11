@@ -73,6 +73,20 @@
         </UiButton>
       </template>
     </UiDropdownMenu>
+    <!-- 멘탈케어(심리상담) 진단 결과 메시지에서만 노출 — 매니저에게 면담 요청 -->
+    <UiButton
+      v-if="showMtlcareRequest"
+      variant="ghost"
+      size="xs"
+      icon-only
+      title="면담 요청"
+      :loading="mtlcareRequesting"
+      @click="emit('on-mtlcare-request')"
+    >
+      <template #icon-left>
+        <i class="icon-heart size-20" />
+      </template>
+    </UiButton>
   </div>
 </template>
 
@@ -84,11 +98,17 @@ interface Props {
   knowledgeList?: KnowledgeItem[]
   /** 공유 보기 페이지: 복사·카테고리만 표시 (원본/시각화는 ChatMessageItem 패널 버튼) */
   isShare?: boolean
+  /** 멘탈케어(심리상담) 진단 결과 메시지 — 면담 요청 버튼 노출 여부 */
+  showMtlcareRequest?: boolean
+  /** 면담 요청 처리 중 (버튼 로딩) */
+  mtlcareRequesting?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   knowledgeList: () => [],
   isShare: false,
+  showMtlcareRequest: false,
+  mtlcareRequesting: false,
 })
 
 const emit = defineEmits<{
@@ -99,6 +119,8 @@ const emit = defineEmits<{
   'on-favorite': []
   /** 라이브러리 카테고리 선택 — value만 전달 (어느 메시지인지는 상위 ChatMessageItem에서 logId와 합침) */
   'on-select-category': [value: string]
+  /** 멘탈케어 면담 요청 클릭 */
+  'on-mtlcare-request': []
 }>()
 
 const categoryMenuItems = computed<DropdownMenuItemDef[]>(() =>
