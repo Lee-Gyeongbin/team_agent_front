@@ -86,6 +86,7 @@
             <button
               type="button"
               class="btn-login"
+              @click="onFindId"
             >
               아이디 찾기
             </button>
@@ -96,6 +97,7 @@
             <button
               type="button"
               class="btn-login"
+              @click="onFindPassword"
             >
               비밀번호 찾기
             </button>
@@ -223,14 +225,13 @@ const onRetryLoginNotice = () => {
   handleSelectLoginNoticeList()
 }
 
-// 🔽 아이디/비밀번호 찾기 — 페이지 준비 시 라우트 연결
-// const onFindId = () => {
-//   navigateTo('/find-id')
-// }
+const onFindId = () => {
+  openToast({ message: '관리자에게 문의하세요.', type: 'warning' })
+}
 
-// const onFindPassword = () => {
-//   navigateTo('/find-password')
-// }
+const onFindPassword = () => {
+  openToast({ message: '관리자에게 문의하세요.', type: 'warning' })
+}
 
 const onNavigateSignup = () => {
   navigateTo('/signup')
