@@ -28,6 +28,8 @@ const isEligibleForNextQuestions = (message: ChatMessage) => {
   if (!message.svcTy || !NEXT_QUESTIONS_ELIGIBLE_SVC_TYPES.has(message.svcTy)) return false
   if (message.hiddenFromDisplay) return false
   const agentId = typeof message.agentId === 'string' ? message.agentId.trim() : ''
+  // 일반질의(C)는 agentId가 없는 순수 일반질의에서만 노출 (agentId가 있으면 에이전트 질의)
+  if (message.svcTy === 'C' && agentId) return false
   if (agentId && NEXT_QUESTIONS_EXCLUDED_AGENT_IDS.has(agentId)) return false
   return true
 }

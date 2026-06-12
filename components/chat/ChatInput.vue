@@ -555,7 +555,7 @@ const handleSend = async () => {
   border: none;
   background: none;
   cursor: pointer;
-  @include typo($body-xsmall, $color-text-secondary);
+  @include typo($body-small, $color-text-secondary);
   text-decoration: underline;
   text-decoration-color: transparent;
   text-underline-offset: 2px;
