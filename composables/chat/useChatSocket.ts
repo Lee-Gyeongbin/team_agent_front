@@ -1,8 +1,10 @@
-import type { ChatSocketMessage, ChatSocketPayload } from '~/types/chat'
+import type { ChatMessage, ChatSocketMessage, ChatSocketPayload } from '~/types/chat'
 import { useChatMessages } from '~/composables/chat/useChatMessages'
 import { getWebSocketUrl } from '~/utils/chat/chatWebSocketUtil'
-import { migrateLunchMessagesForAnswerLogId } from '~/utils/chat/lunchAgentUtil'
+import { LUNCH_AGENT_ID, migrateLunchMessagesForAnswerLogId } from '~/utils/chat/lunchAgentUtil'
 import { migrateRecommendMessagesForAnswerLogId } from '~/utils/chat/recommendAgentUtil'
+import { TODAY_MEME_AGENT_ID } from '~/utils/chat/todayMemeUtil'
+import { NEWS_CURATOR_AGENT_ID } from '~/utils/chat/newsCuratorUtil'
 const {
   messages,
   pendingMessageId,
@@ -10,7 +12,25 @@ const {
   getStreamingMessage,
   finalizeStreamingMessage,
   updateStreamingError,
+  startWaitingNextQuestions,
+  setNextQuestions,
+  resetNextQuestions,
+  stoppedByUser,
 } = useChatMessages()
+
+// 답변 완료 후 다음 추천 질문 생성 대상에서 제외할 에이전트 (점심/투데이밈/뉴스 큐레이터 등 특수 카드 플로우)
+const NEXT_QUESTIONS_EXCLUDED_AGENT_IDS = new Set([LUNCH_AGENT_ID, TODAY_MEME_AGENT_ID, NEWS_CURATOR_AGENT_ID])
+
+// 일반 채팅(C) / 데이터분석(S) / 매뉴얼(M) 답변에 한해 다음 추천 질문 생성을 대기한다
+const NEXT_QUESTIONS_ELIGIBLE_SVC_TYPES = new Set(['C', 'S', 'M'])
+
+const isEligibleForNextQuestions = (message: ChatMessage) => {
+  if (!message.svcTy || !NEXT_QUESTIONS_ELIGIBLE_SVC_TYPES.has(message.svcTy)) return false
+  if (message.hiddenFromDisplay) return false
+  const agentId = typeof message.agentId === 'string' ? message.agentId.trim() : ''
+  if (agentId && NEXT_QUESTIONS_EXCLUDED_AGENT_IDS.has(agentId)) return false
+  return true
+}
 
 // 스트리밍 렌더 큐: 청크가 한 번에 몰려와도 RAF 기준으로 조금씩 화면에 드러냄
 // 매뉴얼/지식채팅(M) 전용 체감 속도
@@ -147,6 +167,20 @@ const finalizeCompletedMessage = (streamingMessage: (typeof messages.value)[numb
   }
   // 스트리밍 메시지 완료 처리
   finalizeStreamingMessage()
+
+  // 사용자가 응답 중단 버튼을 누른 경우 다음 추천 질문을 생성하지 않음
+  if (stoppedByUser.value) {
+    stoppedByUser.value = false
+    resetNextQuestions()
+    return
+  }
+
+  // 일반 채팅 답변 완료 후 다음 추천 질문 비동기 생성 대기 시작 (서버에서 recommend_questions로 별도 전송)
+  if (isEligibleForNextQuestions(streamingMessage)) {
+    startWaitingNextQuestions()
+  } else {
+    resetNextQuestions()
+  }
 }
 
 const tickStreamingRender = (logId: string) => {
@@ -259,6 +293,15 @@ const ensureWebSocketAndSend = async (payload: ChatSocketPayload): Promise<boole
 const handleWebSocketMessage = (payload: ChatSocketMessage) => {
   // connected, question_received는 답변 메시지가 없어도 처리 가능
   if (payload.type === 'connected' || payload.type === 'question_received') return
+  // 다음 추천 질문: 메인 응답(complete) 종료 후 pendingMessageId가 비워진 상태에서 도착하므로 별도 처리
+  if (payload.type === 'recommend_questions') {
+    if (Array.isArray(payload.questions) && payload.questions.length > 0) {
+      setNextQuestions(payload.questions)
+    } else {
+      resetNextQuestions()
+    }
+    return
+  }
   // 현재 스트리밍 메시지 찾기
   const streamingMessage = getStreamingMessage()
   if (!streamingMessage) return

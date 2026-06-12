@@ -125,6 +125,7 @@ const {
   subOptions,
   selectedSubOptions,
 } = useChatStore()
+const { resetNextQuestions } = useChatMessages()
 
 const disabled = computed(() => props.disabled)
 
@@ -190,7 +191,9 @@ watch(disabled, (nextDisabled) => {
 const toggleDropdown = () => {
   if (disabled.value) return
   if (isChatIndex.value) return
-  isOpen.value = !isOpen.value
+  const willOpen = !isOpen.value
+  isOpen.value = willOpen
+  if (willOpen) resetNextQuestions()
 }
 
 const onSelect = (agent: Agent) => {

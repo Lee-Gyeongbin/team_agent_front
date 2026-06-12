@@ -75,7 +75,8 @@ function agentTypeToSearchMode(svcTy: string): SearchModeValue | null {
 }
 
 const { messages } = useChatSocket()
-const { logRowToMessages, getMessagesForVisualization, setStreamingLunchPayload } = useChatMessages()
+const { logRowToMessages, getMessagesForVisualization, setStreamingLunchPayload, resetNextQuestions } =
+  useChatMessages()
 const {
   closePsychologySurvey,
   isSurveyRoom,
@@ -304,6 +305,8 @@ export const useChatStore = () => {
       preserveLocalWhenEmpty?: boolean
     },
   ) => {
+    // 채팅방 전환 시 이전 방의 다음 추천 질문 상태는 더 이상 유효하지 않으므로 초기화
+    resetNextQuestions()
     if (!roomId) {
       messages.value = []
       lastLoadedChatLogRows.value = []
@@ -1014,6 +1017,7 @@ export const useChatStore = () => {
 
   // /chat(index)로 복귀할 때, 이전에 열어봤던 시각화/테이블 상태가 남지 않도록 초기화
   const handleResetChatPanels = () => {
+    resetNextQuestions()
     clearBodyChartFullscreen()
     activePanelType.value = 'none'
     isPanelFullscreen.value = false
@@ -1080,6 +1084,7 @@ export const useChatStore = () => {
 
   /** 에이전트 관리 목록 기준 모드 선택 (/chat 인덱스 버튼) — 동일 모드 여러 에이전트 간 전환 지원 */
   const selectChatIndexAgent = async (agent: Agent) => {
+    resetNextQuestions()
     if (agent.svcTy === 'T') {
       // 회의록 에이전트 → 내부 회의 페이지로 이동
       await navigateTo('/meeting')

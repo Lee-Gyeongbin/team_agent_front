@@ -89,6 +89,8 @@ export interface ChatSocketMessage {
   chartOption?: VisualizationChartOptionPayload | string
   /** status 이벤트 메시지 (예: "질문 분석중", "생성 진행중") */
   statusMessage?: string
+  /** recommend_questions 시점 — 다음 추천 질문 목록 */
+  questions?: string[]
 }
 // 메세지
 export interface ChatMessage {

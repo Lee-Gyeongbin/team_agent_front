@@ -57,7 +57,7 @@ const {
   isSearchModeMissingSubOptions,
   searchModeSubOptionsEmptyMessage,
 } = useChatSearchState()
-const { logRowToMessages } = useChatMessages()
+const { logRowToMessages, resetNextQuestions } = useChatMessages()
 const { stopChatSocket } = useChatSocket()
 const { executeSendPipeline } = useChatSendPipeline()
 
@@ -82,6 +82,7 @@ export const useChatRooms = () => {
 
   // 채팅방 초기화 (roomId 등 리셋, 검색모드 디폴트 C)
   const resetChatRoom = () => {
+    resetNextQuestions()
     chatRoom.value = { ...EMPTY_CHAT_ROOM }
     activeSearchModes.value = []
     selectedChatAgentId.value = null

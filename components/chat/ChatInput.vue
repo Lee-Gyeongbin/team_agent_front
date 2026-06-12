@@ -1,6 +1,32 @@
 <template>
   <div class="chat-input">
     <div
+      v-if="isGeneratingNextQuestions || nextQuestions.length > 0"
+      class="chat-next-questions"
+    >
+      <div
+        v-if="isGeneratingNextQuestions"
+        class="chat-next-questions-loading"
+      >
+        <span class="chat-next-questions-loading-dots"> <i></i><i></i><i></i> </span>
+        다음 질문을 만드는 중...
+      </div>
+      <div
+        v-else
+        class="chat-next-questions-list"
+      >
+        <button
+          v-for="(question, idx) in nextQuestions"
+          :key="idx"
+          type="button"
+          class="chat-next-question-btn"
+          @click="handleSelectNextQuestion(question)"
+        >
+          {{ question }}
+        </button>
+      </div>
+    </div>
+    <div
       class="chat-input-inner"
       :class="{ 'is-active': modelValue.trim(), 'is-dragging': isDragging, 'is-disabled': props.disabled }"
       @dragenter.prevent="onAttachDragEnter"
@@ -78,7 +104,10 @@
             :disabled="
               isAnswerStreaming
                 ? false
-                : props.disabled || !modelValue.trim() || isSearchModeMissingSubOptions || selectedSubOptions.length === 0
+                : props.disabled ||
+                  !modelValue.trim() ||
+                  isSearchModeMissingSubOptions ||
+                  selectedSubOptions.length === 0
             "
             @click="isAnswerStreaming ? handleStop() : handleSend()"
           >
@@ -203,8 +232,13 @@ const {
 } = useChatStore()
 
 const { ensureWebSocketAndSend } = useChatSocket()
-const { getStreamingMessage } = useChatMessages()
+const { getStreamingMessage, nextQuestions, isGeneratingNextQuestions, markStoppedByUser } = useChatMessages()
 const isAnswerStreaming = computed(() => !!getStreamingMessage()?.isStreaming)
+
+// 다음 추천 질문 텍스트 클릭 시 검색창에 텍스트 채우기
+const handleSelectNextQuestion = (question: string) => {
+  emit('update:modelValue', question)
+}
 
 const DEFAULT_INPUT_PLACEHOLDER = '궁금하신 내용을 입력하세요.'
 
@@ -444,6 +478,8 @@ onBeforeUnmount(() => {
 
 const handleStop = async () => {
   if (!chatRoom.value.roomId) return
+  // 응답 중단 시 다음 추천 질문은 생성하지 않음
+  markStoppedByUser()
   await ensureWebSocketAndSend(buildStopPayload(chatRoom.value.roomId))
 }
 
@@ -471,6 +507,85 @@ const handleSend = async () => {
 </script>
 
 <style lang="scss" scoped>
+/* 다음 추천 질문 — 검색창 위 텍스트 링크 */
+.chat-next-questions {
+  margin-bottom: $spacing-xs;
+  padding: 0 $spacing-xs;
+
+  &-loading {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    @include typo($body-xsmall, $color-text-muted);
+  }
+
+  &-loading-dots {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+
+    i {
+      display: block;
+      width: 4px;
+      height: 4px;
+      background-color: $color-text-muted;
+      border-radius: 50%;
+      animation: chat-next-question-dot 1.2s ease-in-out infinite;
+
+      &:nth-child(2) {
+        animation-delay: 0.15s;
+      }
+
+      &:nth-child(3) {
+        animation-delay: 0.3s;
+      }
+    }
+  }
+
+  &-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px $spacing-md;
+  }
+}
+
+.chat-next-question-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  @include typo($body-xsmall, $color-text-secondary);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 2px;
+  transition:
+    color $transition-fast,
+    text-decoration-color $transition-fast;
+
+  &:hover {
+    color: var(--color-primary);
+    text-decoration-color: rgba(var(--color-primary-rgb, 60, 105, 219), 0.45);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: $border-radius-sm;
+  }
+}
+
+@keyframes chat-next-question-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.3;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
 /* 전송 중: 전송 아이콘 대신 버튼 안에 맞는 스피너 */
 .btn-chat-send-spinner {
   display: block;

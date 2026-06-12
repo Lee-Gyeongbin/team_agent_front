@@ -33,6 +33,52 @@ const messages = ref<ChatMessage[]>([])
 const pendingMessageId = ref<string | null>(null)
 const messageBufferMap = ref<Record<string, string>>({})
 
+// 다음 추천 질문 — 답변 완료 후 별도 비동기 메시지로 수신, 검색창 위에 작게 표시
+const nextQuestions = ref<string[]>([])
+const isGeneratingNextQuestions = ref(false)
+const NEXT_QUESTIONS_TIMEOUT_MS = 20000
+let nextQuestionsTimeoutId: ReturnType<typeof setTimeout> | null = null
+
+// 사용자가 응답 중단 버튼을 눌렀는지 여부 — 중단된 응답에는 다음 추천 질문을 생성하지 않음
+const stoppedByUser = ref(false)
+
+// 응답 중단 버튼 클릭 시 호출 (다음 complete 처리 시 1회 소비)
+const markStoppedByUser = () => {
+  stoppedByUser.value = true
+}
+
+const clearNextQuestionsTimeout = () => {
+  if (nextQuestionsTimeoutId !== null) {
+    clearTimeout(nextQuestionsTimeoutId)
+    nextQuestionsTimeoutId = null
+  }
+}
+
+// 다음 추천 질문 상태 초기화 (새 질문 전송, 채팅방 전환 시)
+const resetNextQuestions = () => {
+  clearNextQuestionsTimeout()
+  nextQuestions.value = []
+  isGeneratingNextQuestions.value = false
+}
+
+// 답변 완료 후 다음 추천 질문 생성 대기 시작 — 타임아웃 내 응답 없으면 자동 종료
+const startWaitingNextQuestions = () => {
+  clearNextQuestionsTimeout()
+  nextQuestions.value = []
+  isGeneratingNextQuestions.value = true
+  nextQuestionsTimeoutId = setTimeout(() => {
+    isGeneratingNextQuestions.value = false
+    nextQuestionsTimeoutId = null
+  }, NEXT_QUESTIONS_TIMEOUT_MS)
+}
+
+// 다음 추천 질문 수신 완료
+const setNextQuestions = (questions: string[]) => {
+  clearNextQuestionsTimeout()
+  nextQuestions.value = questions
+  isGeneratingNextQuestions.value = false
+}
+
 /** 공유 채팅 등 메인 `messages` 외에 시각화를 띄울 때 조회할 로그 소스 (null이면 messages 사용) */
 let messagesForVisualizationGetter: (() => ChatMessage[]) | null = null
 
@@ -259,6 +305,9 @@ export const useChatMessages = () => {
   ): string => {
     const logId = Date.now().toString()
     const trimmedAgentId = typeof agentId === 'string' ? agentId.trim() : ''
+    // 새 질문 전송 시 이전 답변에 대한 다음 추천 질문은 더 이상 의미 없으므로 초기화
+    resetNextQuestions()
+    stoppedByUser.value = false
     messages.value.push({
       id: logId,
       logId,
@@ -342,6 +391,13 @@ export const useChatMessages = () => {
     messages,
     pendingMessageId,
     messageBufferMap,
+    nextQuestions,
+    isGeneratingNextQuestions,
+    resetNextQuestions,
+    startWaitingNextQuestions,
+    setNextQuestions,
+    stoppedByUser,
+    markStoppedByUser,
     getMessagesForVisualization,
     toHtmlContent,
     logRowToMessages,
