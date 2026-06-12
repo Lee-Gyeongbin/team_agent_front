@@ -1,21 +1,19 @@
 <template>
   <div
-    v-if="!isTodayMemeAnswer && !isLunchAgentAnswer && !isRecommendAgentAnswer"
+    v-if="!isTodayMemeAnswer && !isRecommendAgentAnswer"
     class="chat-message-item"
     :class="[
       message.type === 'answer'
         ? 'role-assistant'
-        : message.type === 'lunch'
+        : message.type === 'recommend'
           ? 'role-assistant'
-          : message.type === 'recommend'
-            ? 'role-assistant'
-            : message.type === 'news'
-              ? 'role-news'
-              : message.type === 'meme'
-                ? 'role-meme'
-                : message.type === 'survey'
-                  ? 'role-survey'
-                  : 'role-user',
+          : message.type === 'news'
+            ? 'role-news'
+            : message.type === 'meme'
+              ? 'role-meme'
+              : message.type === 'survey'
+                ? 'role-survey'
+                : 'role-user',
     ]"
   >
     <!-- assistant 메시지 -->
@@ -237,22 +235,6 @@
           @close="emit('on-recommend-card-close', message.logId)"
           @enriched="onRecommendationsEnriched"
         />
-        <ChatLunchAgentCard
-          v-else-if="message.type === 'lunch'"
-          :readonly="message.lunchSubmitted === true"
-          :display-mode="lunchCardDisplayMode"
-          :initial-payload="isLunchFormCard ? message.lunchFormPayload : undefined"
-          :recommendations="!isLunchFormCard ? resolvedLunchRecommendations : []"
-          :is-recommendations-pending="!isLunchFormCard && isLunchRecommendationsPending"
-          :is-recommendation-response-streaming="!isLunchFormCard && isLunchRecommendationResponseStreaming"
-          :enrichment-cache-key="!isLunchFormCard ? lunchImageEnrichmentCacheKey : ''"
-          :enrichment-r-content="lunchEnrichmentRContent"
-          :theme-icon-class-nm="themeAgent?.iconClassNm ?? ''"
-          :theme-color-hex="themeAgent?.colorHex ?? ''"
-          @submit="emit('on-submit-lunch-card', message.logId, $event)"
-          @close="emit('on-lunch-card-close', message.logId)"
-          @enriched="onLunchRecommendationsEnriched"
-        />
         <ChatTodayMeme
           v-else-if="message.type === 'meme'"
           :readonly="isShare || message.memeSubmitted === true"
@@ -322,8 +304,6 @@ import type {
   ChatGroundingSourceItem,
   ChatMessage,
   KnowledgeItem,
-  LunchAgentFormPayload,
-  LunchRecommendationItem,
   NewsCuratorItem,
   RecommendFormPayload,
   RecommendResultItem,
@@ -349,17 +329,6 @@ import {
   parseSurveyAnswersFromPrompt,
   type RadarChartData,
 } from '~/utils/chat/surveyUtil'
-import {
-  applyLunchMenuImageEnrichmentToResultMessage,
-  findLinkedLunchAnswerMessage,
-  findLunchResultMessageForAnswer,
-  getLunchImageEnrichmentCacheKey,
-  LUNCH_AGENT_ID,
-  migrateLunchMessagesForAnswerLogId,
-  normalizeLunchRecommendationImages,
-  parseLunchJsonArray,
-  syncLunchResultRecommendationsFromAnswer,
-} from '~/utils/chat/lunchAgentUtil'
 import { parseTodayMemeItems, TODAY_MEME_AGENT_ID } from '~/utils/chat/todayMemeUtil'
 import {
   parseRecommendConfigFromAgent,
@@ -428,8 +397,6 @@ const emit = defineEmits<{
   'on-view-visualization': [id: string]
   'on-submit-recommend-card': [logId: string, payload: RecommendFormPayload]
   'on-recommend-card-close': [logId: string]
-  'on-submit-lunch-card': [logId: string, payload: LunchAgentFormPayload]
-  'on-lunch-card-close': [logId: string]
   'on-survey-submit': [logId: string]
   'on-survey-close': [logId: string]
   'on-meme-intro-complete': [logId: string]
@@ -818,9 +785,6 @@ const messageSurveyConfig = computed(() => {
   return null
 })
 
-/** 점심 에이전트 answer 행 — 추천 JSON은 type=lunch 카드에서만 표시 */
-const isLunchAgentAnswer = computed(() => props.message.type === 'answer' && props.message.agentId === LUNCH_AGENT_ID)
-
 // ── RECOMMEND 에이전트 ───────────────────────────────────────────────────────
 
 /** RECOMMEND 파이프라인 answer — JSON은 recommend 카드에서만 표시 (일반 채팅 answer와 분리) */
@@ -945,86 +909,6 @@ watch(
   { immediate: true },
 )
 
-const lunchCardDisplayMode = computed((): 'form' | 'result' | 'combined' => {
-  if (props.message.type !== 'lunch') return 'combined'
-  if (props.message.lunchCardRole === 'result') return 'result'
-  if (props.message.lunchCardRole === 'form' || !props.message.lunchSubmitted) return 'form'
-  return 'combined'
-})
-
-const isLunchFormCard = computed(() => lunchCardDisplayMode.value === 'form')
-
-const linkedLunchAnswerMessage = computed(() => {
-  if (props.message.type !== 'lunch' || isLunchFormCard.value) return undefined
-  const linked = findLinkedLunchAnswerMessage(allMessages.value, props.message)
-  if (linked) return linked
-  const answerLogId = getLunchImageEnrichmentCacheKey(props.message)
-  if (!answerLogId) return undefined
-  return allMessages.value.find((m) => m.type === 'answer' && m.logId === answerLogId)
-})
-
-const lunchImageEnrichmentCacheKey = computed(() => {
-  if (props.message.type !== 'lunch' || isLunchFormCard.value) return ''
-  return getLunchImageEnrichmentCacheKey(props.message)
-})
-
-const resolvedLunchRecommendations = computed<LunchRecommendationItem[]>(() => {
-  if (props.message.type !== 'lunch' || isLunchFormCard.value) return []
-  const injected = props.message.lunchDisplayRecommendations
-  if (Array.isArray(injected) && injected.length > 0) {
-    return normalizeLunchRecommendationImages(injected)
-  }
-  const answer = linkedLunchAnswerMessage.value
-  if (!answer) return []
-  return normalizeLunchRecommendationImages(parseLunchJsonArray(String(answer.rContent ?? '')))
-})
-
-const isLunchRecommendationsPending = computed(
-  () =>
-    !isLunchFormCard.value &&
-    linkedLunchAnswerMessage.value?.isStreaming === true &&
-    resolvedLunchRecommendations.value.length === 0,
-)
-
-const isLunchRecommendationResponseStreaming = computed(
-  () =>
-    !isLunchFormCard.value &&
-    linkedLunchAnswerMessage.value?.isStreaming === true &&
-    resolvedLunchRecommendations.value.length > 0,
-)
-
-const lunchEnrichmentRContent = computed(() => {
-  if (isLunchFormCard.value) return ''
-  return String(linkedLunchAnswerMessage.value?.rContent ?? '')
-})
-
-const onLunchRecommendationsEnriched = (items: LunchRecommendationItem[]) => {
-  const target = allMessages.value.find((m) => m.logId === props.message.logId && m.type === 'lunch')
-  if (target) target.lunchDisplayRecommendations = [...items]
-}
-
-/** complete 후 answer logId만 바뀐 경우 — socket 외부에서 lunch 카드 연결 보정 */
-watch(
-  linkedLunchAnswerMessage,
-  (answer, prevAnswer) => {
-    if (!answer || props.message.type !== 'lunch' || isLunchFormCard.value) return
-    const storedLinkId = String(props.message.lunchAnswerLogId ?? '').trim()
-    if (storedLinkId && storedLinkId !== answer.logId) {
-      migrateLunchMessagesForAnswerLogId(allMessages.value, storedLinkId, answer.logId)
-    }
-    syncLunchResultRecommendationsFromAnswer(allMessages.value, answer)
-
-    const streamJustFinished = prevAnswer?.isStreaming === true && answer.isStreaming !== true
-    if (streamJustFinished) {
-      const resultMsg = findLunchResultMessageForAnswer(allMessages.value, answer.logId)
-      if (resultMsg) {
-        void applyLunchMenuImageEnrichmentToResultMessage(resultMsg, String(answer.rContent ?? ''))
-      }
-    }
-  },
-  { immediate: true },
-)
-
 const isTodayMemeAnswerMessage = (message: ChatMessage) =>
   message.type === 'answer' && message.agentId === TODAY_MEME_AGENT_ID
 const resolvedTodayMemeItems = computed<TodayMemeItem[]>(() => {
@@ -1065,11 +949,7 @@ const newsCardReselect = computed(() => props.message.type === 'news' && props.m
 const isTodayMemeAnswer = computed(() => isTodayMemeAnswerMessage(props.message))
 
 const isAgentCardMessage = computed(
-  () =>
-    props.message.type === 'recommend' ||
-    props.message.type === 'lunch' ||
-    props.message.type === 'meme' ||
-    props.message.type === 'news',
+  () => props.message.type === 'recommend' || props.message.type === 'meme' || props.message.type === 'news',
 )
 
 /** answer 행 또는 에이전트 카드에 연결된 answer logId — 지식창고·반응 API 공통 */
@@ -1083,13 +963,10 @@ const knowledgeActionsReaction = computed(() => {
   return agentCardFooterReaction.value
 })
 
-/** meme·news·점심·recommend(result) 카드에 대응하는 answer 행 */
+/** meme·news·recommend(result) 카드에 대응하는 answer 행 */
 const linkedAgentCardAnswer = computed((): ChatMessage | undefined => {
   if (props.message.type === 'recommend' && !isRecommendFormCard.value) {
     return linkedRecommendAnswerMessage.value
-  }
-  if (props.message.type === 'lunch' && !isLunchFormCard.value) {
-    return linkedLunchAnswerMessage.value
   }
   if (props.message.type === 'meme') {
     const cardIndex = allMessages.value.findIndex((m) => m.logId === props.message.logId)
@@ -1102,12 +979,11 @@ const linkedAgentCardAnswer = computed((): ChatMessage | undefined => {
   return undefined
 })
 
-/** 지식창고·반응 API logId — 연결 answer 우선, 점심은 lunchAnswerLogId 폴백 */
+/** 지식창고·반응 API logId — 연결 answer 우선 */
 const agentCardFooterLogId = computed(() => {
   const fromLinked = String(linkedAgentCardAnswer.value?.logId ?? '').trim()
   if (fromLinked) return fromLinked
   if (props.message.type === 'recommend' && !isRecommendFormCard.value) return recommendImageEnrichmentCacheKey.value
-  if (props.message.type === 'lunch' && !isLunchFormCard.value) return lunchImageEnrichmentCacheKey.value
   return ''
 })
 
@@ -1134,9 +1010,6 @@ const isAgentCardAvatarStreaming = computed(() => {
   if (props.message.type === 'recommend' && !isRecommendFormCard.value) {
     return isRecommendationsPending.value || isRecommendationResponseStreaming.value
   }
-  if (props.message.type === 'lunch' && !isLunchFormCard.value) {
-    return isLunchRecommendationsPending.value || isLunchRecommendationResponseStreaming.value
-  }
   return false
 })
 
@@ -1149,14 +1022,6 @@ const shouldShowAgentCardKnowledgeFooter = computed(() => {
   }
   if (props.message.type === 'news') {
     return resolvedNewsCuratorItemsForNewsCard.value.length > 0 && props.message.newsSubmitted === true
-  }
-  if (props.message.type === 'lunch' && !isLunchFormCard.value) {
-    return (
-      props.message.lunchSubmitted === true &&
-      resolvedLunchRecommendations.value.length > 0 &&
-      !isLunchRecommendationsPending.value &&
-      !isLunchRecommendationResponseStreaming.value
-    )
   }
   if (props.message.type === 'recommend' && !isRecommendFormCard.value) {
     return (

@@ -161,7 +161,6 @@
           <div class="content-box type-response">
             <UiButton
               v-if="
-                parsedLunchRecommendations.length === 0 &&
                 parsedRecommendItems.length === 0 &&
                 parsedNewsCuratorItems.length === 0 &&
                 parsedTodayMemeItems.length === 0
@@ -335,17 +334,11 @@ import {
   normalizeRecommendResultItems,
   parseRecommendJsonArray,
 } from '~/utils/chat/recommendAgentUtil'
-import { LUNCH_AGENT_ID, normalizeLunchRecommendationImages, parseLunchJsonArray } from '~/utils/chat/lunchAgentUtil'
 import { NEWS_CURATOR_AGENT_ID, parseNewsCuratorItems } from '~/utils/chat/newsCuratorUtil'
 import { isTodayMemeLibraryCard, parseTodayMemeItems } from '~/utils/chat/todayMemeUtil'
 import type { LibraryCardDetail, DocItem, TableDataItem, ChartStatItem, ChartDetailCdItem } from '~/types/library'
 import type { LibraryReportInsightRequest } from '~/utils/library/libraryReportEditorUtil'
-import type {
-  LunchRecommendationItem,
-  RecommendResultItem,
-  VisualizationChartSelection,
-  VisualizationViewModel,
-} from '~/types/chat'
+import type { RecommendResultItem, VisualizationChartSelection, VisualizationViewModel } from '~/types/chat'
 import { buildVisualizationViewModel } from '~/utils/chat/visualizationUtil'
 import { useFileStore } from '~/composables/com/useFileStore'
 import { useLibraryStore } from '~/composables/library/useLibraryStore'
@@ -490,14 +483,7 @@ const visualizationView = computed<VisualizationViewModel | null>(() => {
 // 내부 표시용 데이터 (트랜지션 타이밍 제어용)
 const displayData = ref<LibraryCardDetail | null>(props.cardDetail ?? null)
 
-/** 시스템 응답 복사 버튼 노출 — 점심·RECOMMEND JSON 답변은 별도 UI */
-const parsedLunchRecommendations = computed<LunchRecommendationItem[]>(() => {
-  if (displayData.value?.agentId !== LUNCH_AGENT_ID) return []
-  const raw = (displayData.value?.rcontent ?? '').trim()
-  if (!raw) return []
-  return normalizeLunchRecommendationImages(parseLunchJsonArray(raw))
-})
-
+/** 시스템 응답 복사 버튼 노출 — RECOMMEND JSON 답변은 별도 UI */
 const parsedRecommendItems = computed<RecommendResultItem[]>(() => {
   const qcontent = displayData.value?.qcontent ?? ''
   if (!isRecommendAgentPrompt(qcontent)) return []

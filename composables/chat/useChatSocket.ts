@@ -1,7 +1,6 @@
 import type { ChatMessage, ChatSocketMessage, ChatSocketPayload } from '~/types/chat'
 import { useChatMessages } from '~/composables/chat/useChatMessages'
 import { getWebSocketUrl } from '~/utils/chat/chatWebSocketUtil'
-import { LUNCH_AGENT_ID, migrateLunchMessagesForAnswerLogId } from '~/utils/chat/lunchAgentUtil'
 import { migrateRecommendMessagesForAnswerLogId } from '~/utils/chat/recommendAgentUtil'
 import { TODAY_MEME_AGENT_ID } from '~/utils/chat/todayMemeUtil'
 import { NEWS_CURATOR_AGENT_ID } from '~/utils/chat/newsCuratorUtil'
@@ -18,8 +17,8 @@ const {
   stoppedByUser,
 } = useChatMessages()
 
-// 답변 완료 후 다음 추천 질문 생성 대상에서 제외할 에이전트 (점심/투데이밈/뉴스 큐레이터 등 특수 카드 플로우)
-const NEXT_QUESTIONS_EXCLUDED_AGENT_IDS = new Set([LUNCH_AGENT_ID, TODAY_MEME_AGENT_ID, NEWS_CURATOR_AGENT_ID])
+// 답변 완료 후 다음 추천 질문 생성 대상에서 제외할 에이전트 (투데이밈/뉴스 큐레이터 등 특수 카드 플로우)
+const NEXT_QUESTIONS_EXCLUDED_AGENT_IDS = new Set([TODAY_MEME_AGENT_ID, NEWS_CURATOR_AGENT_ID])
 
 // 일반 채팅(C) / 데이터분석(S) / 매뉴얼(M) 답변에 한해 다음 추천 질문 생성을 대기한다
 const NEXT_QUESTIONS_ELIGIBLE_SVC_TYPES = new Set(['C', 'S', 'M'])
@@ -142,7 +141,6 @@ const finalizeCompletedMessage = (streamingMessage: (typeof messages.value)[numb
     // pendingMessageId도 서버 logId로 갱신 (finalizeStreamingMessage에서 조회 가능하도록)
     pendingMessageId.value = payload.logId
     if (oldLogId !== payload.logId) {
-      migrateLunchMessagesForAnswerLogId(messages.value, oldLogId, payload.logId)
       migrateRecommendMessagesForAnswerLogId(messages.value, oldLogId, payload.logId)
     }
   }

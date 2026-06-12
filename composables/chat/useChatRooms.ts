@@ -11,7 +11,6 @@ import {
 } from '~/types/chat'
 import { useChatSendPipeline } from '~/composables/chat/useChatSendPipeline'
 import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
-import { parseLunchPayloadFromPrompt } from '~/utils/chat/lunchAgentUtil'
 import { isRecommendAgentPrompt } from '~/utils/chat/recommendAgentUtil'
 import { isTodayMemePrompt, TODAY_MEME_AGENT_ID, TODAY_MEME_MODEL_ID } from '~/utils/chat/todayMemeUtil'
 import { NEWS_CURATOR_AGENT_ID } from '~/utils/chat/newsCuratorUtil'
@@ -97,7 +96,6 @@ export const useChatRooms = () => {
   const syncSearchModeFromLastLog = async (lastRow: ChatLogListRow | undefined) => {
     const svcTy = lastRow?.svcTy ?? 'C'
     const lastAgentId = typeof lastRow?.agentId === 'string' ? lastRow.agentId.trim() : ''
-    const isLunchPromptLog = !!parseLunchPayloadFromPrompt(String(lastRow?.qcontent ?? ''))
     const isTodayMemePromptLog = isTodayMemePrompt(String(lastRow?.qcontent ?? ''))
     const isRecommendPromptLog = isRecommendAgentPrompt(String(lastRow?.qcontent ?? ''))
     if (svcTy === 'M') {
@@ -114,9 +112,8 @@ export const useChatRooms = () => {
       await selectModelOptions()
     } else {
       activeSearchModes.value = []
-      // TodayMeme·점심·RECOMMEND 카드 전용 로그는 UI상 에이전트 선택을 유지하지 않음(채팅방 재진입 시)
+      // TodayMeme·RECOMMEND 카드 전용 로그는 UI상 에이전트 선택을 유지하지 않음(채팅방 재진입 시)
       selectedChatAgentId.value =
-        isLunchPromptLog ||
         isTodayMemePromptLog ||
         isRecommendPromptLog ||
         lastAgentId === TODAY_MEME_AGENT_ID ||

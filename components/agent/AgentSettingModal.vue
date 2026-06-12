@@ -325,10 +325,7 @@ watch(
   (subTy, prevSubTy) => {
     if (!props.isOpen || subTy === prevSubTy) return
     if (subTy === SURVEY_SUB_TY) {
-      if (
-        props.agent?.svcTy === 'C' &&
-        normalizeAgentSubCfg(props.agent.subCfg)?.subTy === SURVEY_SUB_TY
-      ) {
+      if (props.agent?.svcTy === 'C' && normalizeAgentSubCfg(props.agent.subCfg)?.subTy === SURVEY_SUB_TY) {
         loadSurveyConfigFromAgent(props.agent)
       } else {
         preservedSurveyConfig.value = null
@@ -337,10 +334,7 @@ watch(
       return
     }
     if (subTy === RECOMMEND_SUB_TY) {
-      if (
-        props.agent?.svcTy === 'C' &&
-        normalizeAgentSubCfg(props.agent.subCfg)?.subTy === RECOMMEND_SUB_TY
-      ) {
+      if (props.agent?.svcTy === 'C' && normalizeAgentSubCfg(props.agent.subCfg)?.subTy === RECOMMEND_SUB_TY) {
         loadRecommendConfigFromAgent(props.agent)
       } else {
         preservedRecommendConfig.value = null
@@ -349,10 +343,7 @@ watch(
       return
     }
     if (subTy === CURATION_SUB_TY) {
-      if (
-        props.agent?.svcTy === 'C' &&
-        normalizeAgentSubCfg(props.agent.subCfg)?.subTy === CURATION_SUB_TY
-      ) {
+      if (props.agent?.svcTy === 'C' && normalizeAgentSubCfg(props.agent.subCfg)?.subTy === CURATION_SUB_TY) {
         loadCurationConfigFromAgent(props.agent)
       } else {
         preservedCurationConfig.value = null

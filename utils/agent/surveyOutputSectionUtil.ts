@@ -27,7 +27,8 @@ export const SURVEY_BLOCK_TYPE_CATALOG: SurveyBlockTypeMeta[] = [
   {
     value: 'risk_badge_summary',
     label: '위험군 요약',
-    description: '종합 판정 뱃지(정상군·경계군·고위험군)와 상태 설명 1~2문장을 출력합니다. 평가 등급의 CSS 클래스·라벨을 그대로 사용합니다.',
+    description:
+      '종합 판정 뱃지(정상군·경계군·고위험군)와 상태 설명 1~2문장을 출력합니다. 평가 등급의 CSS 클래스·라벨을 그대로 사용합니다.',
     defaultId: 'summary',
     defaultTitle: '현재 상태 요약',
     defaultInstruction:
@@ -51,7 +52,8 @@ export const SURVEY_BLOCK_TYPE_CATALOG: SurveyBlockTypeMeta[] = [
   {
     value: 'state_breakdown',
     label: '심리 상태',
-    description: '정서·인지·행동 등 항목별로 현재 심리 상태를 서술합니다. 방사형 차트 연동 시 trailingMarker를 사용합니다.',
+    description:
+      '정서·인지·행동 등 항목별로 현재 심리 상태를 서술합니다. 방사형 차트 연동 시 trailingMarker를 사용합니다.',
     defaultId: 'state',
     defaultTitle: '심리 상태',
     defaultInstruction:
@@ -173,8 +175,7 @@ export const SURVEY_BLOCK_TYPE_CATALOG: SurveyBlockTypeMeta[] = [
     description: '결과 본문 맨 아래에 번호·헤딩 없이 단독 출력됩니다. (JSON 최상위 closingMessage 필드)',
     defaultId: 'closing',
     defaultTitle: '',
-    defaultInstruction:
-      '현재 심리 상태에 맞는 한 줄 응원 메시지. 헤딩·레이블 없이 <h3> 태그 한 줄만 출력.',
+    defaultInstruction: '현재 심리 상태에 맞는 한 줄 응원 메시지. 헤딩·레이블 없이 <h3> 태그 한 줄만 출력.',
     defaultParams: { tag: 'h3' },
     paramFields: [
       {
@@ -301,8 +302,7 @@ export const parseJsonParam = (value: string): Record<string, unknown> | unknown
 }
 
 /** 블록 params에서 필드 값 읽기 */
-export const getBlockParamValue = (block: SurveyOutputSectionBlock, key: string): unknown =>
-  block.params?.[key]
+export const getBlockParamValue = (block: SurveyOutputSectionBlock, key: string): unknown => block.params?.[key]
 
 /** 블록 params 필드 값 설정 */
 export const setBlockParamValue = (

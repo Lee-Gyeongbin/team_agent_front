@@ -1,10 +1,10 @@
-import DOMPurify from 'dompurify'
+import DOMPurify, { type Config } from 'dompurify'
 
 /** 미리보기 — 에디터 HTML 기준 가상 폭(px) */
 export const MY_DOC_PREVIEW_BASE_WIDTH = 720
 
 /** Tiptap 보고서 HTML — v-html 미리보기용 sanitize */
-const MY_DOC_PREVIEW_PURIFY_CONFIG: DOMPurify.Config = {
+const MY_DOC_PREVIEW_PURIFY_CONFIG: Config = {
   ADD_ATTR: [
     'target',
     'style',
@@ -33,10 +33,7 @@ export const sanitizeMyDocPreviewHtml = (html: string | null | undefined): strin
 }
 
 /** 미리보기 — 패널 너비에 맞춤 (세로는 허용 높이까지 상단만 표시) */
-export const getMyDocPreviewWidthFitScale = (
-  viewportWidth: number,
-  baseWidth = MY_DOC_PREVIEW_BASE_WIDTH,
-): number => {
+export const getMyDocPreviewWidthFitScale = (viewportWidth: number, baseWidth = MY_DOC_PREVIEW_BASE_WIDTH): number => {
   if (viewportWidth <= 0) return 0.4
   return Math.min(viewportWidth / baseWidth, 1) * 0.98
 }

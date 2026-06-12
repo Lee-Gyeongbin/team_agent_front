@@ -11,16 +11,6 @@
       :theme-icon-class-nm="item.iconClassNm ?? ''"
       :theme-color-hex="item.colorHex ?? ''"
     />
-    <ChatLunchAgentCard
-      v-else-if="isLunchAgentResponse"
-      readonly
-      display-mode="result"
-      :recommendations="lunchList"
-      :enrichment-cache-key="lunchImageCacheKey"
-      :enrichment-r-content="lunchEnrichmentRContent"
-      :theme-icon-class-nm="item.iconClassNm ?? ''"
-      :theme-color-hex="item.colorHex ?? ''"
-    />
     <ChatNewsCurator
       v-else-if="isNewsCuratorResponse"
       readonly
@@ -118,7 +108,6 @@
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import type { StressScoreItem } from '~/types/stress'
 import type { LibraryCardDetail } from '~/types/library'
-import { getLunchImageEnrichmentCacheKey, LUNCH_AGENT_ID, parseLunchJsonArray } from '~/utils/chat/lunchAgentUtil'
 import {
   getRecommendImageEnrichmentCacheKey,
   isRecommendLibraryCardItem,
@@ -160,8 +149,6 @@ const props = defineProps<{
   item: LibraryCardDetail
 }>()
 
-const lunchEnrichmentRContent = computed(() => String(props.item.rcontent ?? '').trim())
-
 const recommendEnrichmentRContent = computed(() => String(props.item.rcontent ?? '').trim())
 
 const recommendImageCacheKey = computed(() => {
@@ -194,21 +181,6 @@ const recommendList = computed(() => {
 const isRecommendAgentResponse = computed(
   () => isRecommendCard.value && recommendList.value.length > 0 && !!recommendConfig.value,
 )
-
-const lunchImageCacheKey = computed(() => {
-  const fromLog = getLunchImageEnrichmentCacheKey({ logId: props.item.logId })
-  if (fromLog) return fromLog
-  return String(props.item.cardId ?? '').trim()
-})
-
-const lunchList = computed(() => {
-  if (props.item.agentId !== LUNCH_AGENT_ID) return []
-  const raw = lunchEnrichmentRContent.value
-  if (!raw) return []
-  return parseLunchJsonArray(raw)
-})
-
-const isLunchAgentResponse = computed(() => props.item.agentId === LUNCH_AGENT_ID && lunchList.value.length > 0)
 
 const newsPromptMeta = computed(() =>
   props.item.agentId === NEWS_CURATOR_AGENT_ID

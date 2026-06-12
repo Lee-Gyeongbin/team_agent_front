@@ -8,14 +8,6 @@
     :theme-icon-class-nm="item.iconClassNm ?? ''"
     :theme-color-hex="item.colorHex ?? ''"
   />
-  <ChatLunchAgentCard
-    v-else-if="lunchPayload"
-    class="library-card-question-body__lunch"
-    readonly
-    :initial-payload="lunchPayload"
-    :theme-icon-class-nm="item.iconClassNm ?? ''"
-    :theme-color-hex="item.colorHex ?? ''"
-  />
   <ChatRecommendAgentCard
     v-else-if="recommendConfig && recommendPayload"
     class="library-card-question-body__recommend"
@@ -55,7 +47,6 @@ import {
   parseRecommendPayloadFromPrompt,
   resolveRecommendConfigByAgentIdForLibrary,
 } from '~/utils/chat/recommendAgentUtil'
-import { parseLunchPayloadFromPrompt } from '~/utils/chat/lunchAgentUtil'
 import { NEWS_CURATOR_AGENT_ID, parseNewsCuratorPromptMeta } from '~/utils/chat/newsCuratorUtil'
 import { hasTodayMemeQcontent, isTodayMemeLibraryCard } from '~/utils/chat/todayMemeUtil'
 import {
@@ -84,8 +75,6 @@ const surveyConfig = computed(() => {
 })
 
 const surveyAnswers = computed(() => parseSurveyAnswersFromPrompt(item.value.qcontent ?? ''))
-
-const lunchPayload = computed(() => parseLunchPayloadFromPrompt(item.value.qcontent ?? ''))
 
 const isRecommendCard = computed(() => isRecommendLibraryCardItem(item.value, libraryAgents.value))
 
@@ -120,7 +109,6 @@ const isTodayMemeCard = computed(() => isTodayMemeLibraryCard(item.value))
 
 <style lang="scss" scoped>
 .library-card-question-body__survey,
-.library-card-question-body__lunch,
 .library-card-question-body__recommend,
 .library-card-question-body__news {
   width: 100%;

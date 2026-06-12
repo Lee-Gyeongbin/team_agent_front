@@ -96,7 +96,7 @@ export interface ChatSocketMessage {
 export interface ChatMessage {
   id?: string
   logId: string
-  type: 'question' | 'answer' | 'survey' | 'meme' | 'lunch' | 'recommend' | 'news'
+  type: 'question' | 'answer' | 'survey' | 'meme' | 'recommend' | 'news'
   qContent?: string
   rContent?: string
   createdAt: string
@@ -152,15 +152,6 @@ export interface ChatMessage {
    */
   memeDisplayItems?: TodayMemeItem[]
   newsDisplayItems?: NewsCuratorItem[]
-  lunchDisplayRecommendations?: LunchRecommendationItem[]
-  /** 점심 카드 역할 — form: q(설문) 카드, result: r(추천) 카드 */
-  lunchCardRole?: 'form' | 'result'
-  /** 점심 추천 카드 전용: 사용자 응답 */
-  lunchFormPayload?: LunchAgentFormPayload
-  /** 점심 추천 카드 전용: 제출 완료 여부 */
-  lunchSubmitted?: boolean
-  /** result 카드 ↔ answer logId 연결 (히스토리 logId `{answerLogId}-lunch-result`) */
-  lunchAnswerLogId?: string
   /** RECOMMEND 에이전트 카드 역할 — form: 선택 카드, result: 추천 결과 카드 */
   recommendCardRole?: 'form' | 'result'
   /** RECOMMEND 에이전트 카드 전용: 사용자 응답 (key=fieldKey, value=선택값) */
@@ -246,16 +237,6 @@ export interface DmListResponse {
   [key: string]: unknown
 }
 
-export interface LunchAgentFormPayload {
-  sido: string
-  sigungu: string
-  dong: string
-  mood: string
-  budget: string
-  peopleCount: string
-  cuisineType: string
-}
-
 export interface LunchRecommendationItem {
   restaurant: string
   location: string
@@ -278,7 +259,7 @@ export interface NewsCuratorItem {
 /** 시도 > 시군구 > 동 구조 지역 맵 */
 export type RegionLocationMap = Record<string, Record<string, string[]>>
 
-export type RegionSelectedLocation = Partial<Pick<LunchAgentFormPayload, 'sido' | 'sigungu' | 'dong'>>
+export type RegionSelectedLocation = Partial<{ sido: string; sigungu: string; dong: string }>
 
 /** /region/selectRegionTree.do 응답 — selected는 lat/lng 쿼리 쌍이 있을 때만 채워질 수 있음 */
 export interface RegionTreeResponse {

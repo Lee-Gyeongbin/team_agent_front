@@ -202,7 +202,7 @@ const memeList = computed<TodayMemeItem[]>(() => props.memeItems)
 const isRequestOnly = computed(() => props.displayMode === 'request')
 const showRequestComplete = computed(() => isRequestOnly.value || props.requestDelivered)
 
-/** 추천 밈 카드가 있으면 하단 설문 액션(받기) 숨김 — ChatLunchAgentCard와 동일 패턴 */
+/** 추천 밈 카드가 있으면 하단 설문 액션(받기) 숨김 */
 const hasResultRecommendations = computed(() => memeList.value.length > 0)
 
 const hexToRgb = (hex: string) => {

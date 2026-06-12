@@ -125,6 +125,8 @@ export interface RecommendFeatures {
   useGeolocation: boolean
   showThumbnailImages: boolean
   showImageNotice: boolean
+  addressEnrichment?: 'kakao'
+  imageEnrichment?: 'aiGenerate'
 }
 
 export interface RecommendAgentConfig {

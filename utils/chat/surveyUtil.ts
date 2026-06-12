@@ -386,10 +386,7 @@ export const isSurveyAgentById = (agentId: string, agents: Agent[]): boolean => 
 }
 
 /** 채팅 로그 행이 svcTy=C 설문(SURVEY) 질의응답인지 — selectAgentListForChat agentId 매핑 */
-export const isSurveyChatLogRow = (
-  row: { svcTy?: string; agentId?: string },
-  agents: Agent[],
-): boolean => {
+export const isSurveyChatLogRow = (row: { svcTy?: string; agentId?: string }, agents: Agent[]): boolean => {
   if ((row.svcTy ?? 'C') !== 'C') return false
   return isSurveyAgentById(String(row.agentId ?? ''), agents)
 }

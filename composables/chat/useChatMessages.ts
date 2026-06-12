@@ -1,19 +1,8 @@
-import type {
-  ChatGroundingSourceItem,
-  ChatLogListRow,
-  ChatMessage,
-  ChatMessageAttachment,
-  LunchAgentFormPayload,
-} from '~/types/chat'
+import type { ChatGroundingSourceItem, ChatLogListRow, ChatMessage, ChatMessageAttachment } from '~/types/chat'
 import type { Agent } from '~/types/agent'
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import { parseChatAttachmentsFromLogRow } from '~/utils/chat/chatAttachmentDisplayUtil'
 import { parseSurveyAnswersFromPrompt, isSurveyChatLogRow } from '~/utils/chat/surveyUtil'
-import {
-  normalizeLunchRecommendationImages,
-  parseLunchPayloadFromPrompt,
-  parseLunchJsonArray,
-} from '~/utils/chat/lunchAgentUtil'
 import {
   buildRecommendMessagesFromLogRow,
   isRecommendAgentPrompt,
@@ -225,47 +214,6 @@ export const useChatMessages = () => {
       ]
     }
 
-    // 점심 추천 에이전트: q(폼) 카드 + r(추천) 카드 분리, answer 행은 숨김
-    const lunchPayload = parseLunchPayloadFromPrompt(row.qcontent ?? '')
-    if (lunchPayload) {
-      const lunchDisplayRecommendations = normalizeLunchRecommendationImages(
-        parseLunchJsonArray(String(row.rcontent ?? '')),
-      )
-      const lunchAgentFields = {
-        createdAt,
-        svcTy,
-        modelId,
-        refId,
-        ...(agentId ? { agentId } : {}),
-        hasSource: false,
-        hasVisualization: false,
-      }
-      return [
-        {
-          logId: `${logId}-lunch-form`,
-          type: 'lunch',
-          lunchCardRole: 'form',
-          qContent: '',
-          rContent: '',
-          lunchSubmitted: true,
-          lunchFormPayload: { ...lunchPayload },
-          ...lunchAgentFields,
-        },
-        {
-          logId: `${logId}-lunch-result`,
-          type: 'lunch',
-          lunchCardRole: 'result',
-          qContent: '',
-          rContent: '',
-          lunchSubmitted: true,
-          lunchDisplayRecommendations,
-          lunchAnswerLogId: logId,
-          ...lunchAgentFields,
-        },
-        { ...answerMessage, hiddenFromDisplay: true },
-      ]
-    }
-
     // RECOMMEND 에이전트: q(폼) 카드 + r(추천) 카드 분리, answer 행은 숨김
     const recommendConfig = agentId ? resolveRecommendConfigByAgentId(agentId, agents) : null
     const recommendMessages = buildRecommendMessagesFromLogRow(row, answerMessage, recommendConfig)
@@ -347,11 +295,6 @@ export const useChatMessages = () => {
     return logId
   }
 
-  /** 점심 추천 */
-  const setStreamingLunchPayload = (payload: LunchAgentFormPayload) => {
-    const msg = getStreamingMessage()
-    if (msg) msg.lunchFormPayload = { ...payload }
-  }
   // 스트리밍 메시지 찾기
   const getStreamingMessage = () => {
     if (pendingMessageId.value) {
@@ -403,7 +346,6 @@ export const useChatMessages = () => {
     logRowToMessages,
     pushQuestionMessage,
     pushAnswerPlaceholder,
-    setStreamingLunchPayload,
     getStreamingMessage,
     finalizeStreamingMessage,
     updateStreamingError,

@@ -142,15 +142,8 @@ const emit = defineEmits<{
   requested: []
 }>()
 
-const {
-  selectedUsers,
-  handleFetchOrgList,
-  addSelectedUser,
-  clearSelectedUsers,
-  selectedOrgId,
-  orgUserList,
-  orgTree,
-} = useUserSelectStore()
+const { selectedUsers, handleFetchOrgList, addSelectedUser, clearSelectedUsers, selectedOrgId, orgUserList, orgTree } =
+  useUserSelectStore()
 const { handleRequestReport } = useMtlcareStore()
 
 const selectedManager = ref<OrgUserItem | null>(null)

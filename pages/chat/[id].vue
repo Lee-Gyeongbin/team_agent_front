@@ -25,11 +25,9 @@
         @on-news-intro-complete="handleNewsCuratorIntroEnd"
         @on-recommend-card-submit="handleSubmitRecommendAgentForm"
         @on-recommend-card-close="onRecommendMessageClose"
-        @on-lunch-card-submit="handleSubmitLunchAgentForm"
         @on-news-card-submit="onNewsCuratorMessageSubmit"
         @on-news-card-close="onNewsMessageClose"
         @on-news-card-reselect="onNewsMessageReselect"
-        @on-lunch-card-close="onLunchMessageClose"
       />
       <ChatInput
         v-model="chatMessage"
@@ -157,8 +155,6 @@ const {
   onNewsCuratorMessageSubmit,
   handleNewsCuratorReselectCategories,
   handleCloseNewsCurator,
-  handleSubmitLunchAgentForm,
-  handleCloseLunchAgent,
   handleSubmitRecommendAgentForm,
   handleCloseRecommendAgent,
 } = useChatStore()
@@ -197,7 +193,6 @@ const isSurveyInputLocked = computed(() =>
   messages.value.some(
     (m) =>
       (m.type === 'survey' && !m.surveySubmitted) ||
-      (m.type === 'lunch' && !m.lunchSubmitted) ||
       (m.type === 'recommend' && !m.recommendSubmitted) ||
       (m.type === 'meme' && !m.memeSubmitted) ||
       (m.type === 'news' && !m.newsSubmitted),
@@ -206,10 +201,6 @@ const isSurveyInputLocked = computed(() =>
 
 const onRecommendMessageClose = (logId: string) => {
   handleCloseRecommendAgent(logId)
-}
-/** 메시지 목록의 점심 카드 "닫기" 버튼 클릭 */
-const onLunchMessageClose = (logId: string) => {
-  handleCloseLunchAgent(logId)
 }
 /** 메시지 목록의 뉴스 카드 "닫기" 버튼 클릭 */
 const onNewsMessageClose = (logId: string) => {

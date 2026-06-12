@@ -424,9 +424,7 @@
           :default-collapsed="true"
           label-width="100px"
         >
-          <p class="com-setting-hint recommend-section-lead">
-            LLM JSON 배열 출력에 포함할 필드 키 목록입니다.
-          </p>
+          <p class="com-setting-hint recommend-section-lead">LLM JSON 배열 출력에 포함할 필드 키 목록입니다.</p>
           <div class="recommend-list-block">
             <div class="recommend-list-block__head">
               <span class="com-setting-label">itemFields</span>
@@ -486,6 +484,16 @@
               label="이미지 안내 문구 표시"
               @update:model-value="onUpdate('showImageNotice', $event)"
             />
+            <UiCheckbox
+              :model-value="modelValue.addressEnrichment === 'kakao'"
+              label="카카오 주소 보강 사용 (식당명+지역 → 카카오 지도 링크로 변환)"
+              @update:model-value="onUpdate('addressEnrichment', $event ? 'kakao' : '')"
+            />
+            <UiCheckbox
+              :model-value="modelValue.imageEnrichment === 'aiGenerate'"
+              label="AI 이미지 생성 보강 사용 (메뉴명 → AI 생성 이미지)"
+              @update:model-value="onUpdate('imageEnrichment', $event ? 'aiGenerate' : '')"
+            />
           </div>
         </UiSettingSection>
       </div>
@@ -498,7 +506,9 @@
           :default-collapsed="true"
           label-width="100px"
         >
-          <p class="com-setting-hint recommend-section-lead">LLM이 반드시 준수해야 할 제약 사항을 한 줄씩 입력합니다.</p>
+          <p class="com-setting-hint recommend-section-lead">
+            LLM이 반드시 준수해야 할 제약 사항을 한 줄씩 입력합니다.
+          </p>
           <div class="recommend-list-block">
             <div class="recommend-list-block__head">
               <span class="com-setting-label">제약 목록</span>
@@ -544,7 +554,11 @@
 </template>
 
 <script setup lang="ts">
-import type { RecommendConfigForm, RecommendFormFieldForm, RecommendResultFieldForm } from '~/utils/agent/recommendConfigUtil'
+import type {
+  RecommendConfigForm,
+  RecommendFormFieldForm,
+  RecommendResultFieldForm,
+} from '~/utils/agent/recommendConfigUtil'
 
 const props = defineProps<{
   modelValue: RecommendConfigForm
@@ -647,8 +661,7 @@ const onResultFieldUpdate = (idx: number, key: keyof RecommendResultFieldForm, v
     if (i !== idx) return f
     if (key === 'type') {
       const typeVal = String(value)
-      const type: RecommendResultFieldForm['type'] =
-        typeVal === 'link' || typeVal === 'text' ? typeVal : ''
+      const type: RecommendResultFieldForm['type'] = typeVal === 'link' || typeVal === 'text' ? typeVal : ''
       return { ...f, type }
     }
     return { ...f, [key]: value }

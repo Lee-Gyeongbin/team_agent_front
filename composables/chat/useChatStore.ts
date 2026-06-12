@@ -2,7 +2,6 @@
 import type {
   ChatLogListRow,
   ChatRefRow,
-  LunchAgentFormPayload,
   PanelType,
   RecommendFormPayload,
   SearchModeValue,
@@ -24,13 +23,6 @@ import {
   normalizeAgentSubCfg,
   handleSelectSurveyChatIndexAgent,
 } from '~/utils/chat/surveyUtil'
-import {
-  buildLunchRecommendationPrompt,
-  createLunchCardMessage,
-  createLunchResultCardMessage,
-  LUNCH_AGENT_ID,
-  useLunchAgent,
-} from '~/utils/chat/lunchAgentUtil'
 import {
   isRecommendAgent,
   resolveNormalChatAgentId,
@@ -75,8 +67,7 @@ function agentTypeToSearchMode(svcTy: string): SearchModeValue | null {
 }
 
 const { messages } = useChatSocket()
-const { logRowToMessages, getMessagesForVisualization, setStreamingLunchPayload, resetNextQuestions } =
-  useChatMessages()
+const { logRowToMessages, getMessagesForVisualization, resetNextQuestions } = useChatMessages()
 const {
   closePsychologySurvey,
   isSurveyRoom,
@@ -89,7 +80,6 @@ const {
 const { isTodayMemeVisible, isTodayMemeRoom, registerTodayMemeRoom } = useTodayMeme()
 const { isNewsCuratorVisible, isNewsCuratorRoom, registerNewsCuratorRoom, openNewsCurator, closeNewsCurator } =
   useNewsCurator()
-const { isLunchVisible, openLunchAgent, closeLunchAgent } = useLunchAgent()
 const { isRecommendVisible, openRecommendAgent, closeRecommendAgent, registerRecommendRoom, isRecommendRoom } =
   useRecommendAgent()
 const {
@@ -239,19 +229,6 @@ const isModalOpen = ref(false)
 const modalMessage = ref('')
 const modalTitle = ref('')
 const modalPlaceholder = ref('')
-const createReadonlyLunchMessage = (payload: LunchAgentFormPayload, agentId = selectedChatAgentId.value ?? '') => {
-  const lunchMsg = createLunchCardMessage({
-    createdAt: new Date().toISOString(),
-    svcTy: 'C',
-    refId: '',
-    agentId,
-  })
-  lunchMsg.lunchFormPayload = { ...payload }
-  lunchMsg.lunchSubmitted = true
-  lunchMsg.lunchCardRole = 'form'
-  return lunchMsg
-}
-
 /** /chat 인덱스 에이전트 카드 서브타이틀 — svcTy 기반 */
 const SVC_TY_SUB_LABEL: Record<string, string> = {
   M: '문서검색증강(RAG) Agent',
@@ -275,7 +252,6 @@ const getChatIndexAgentColorStyle = (colorHex: string) => {
   }
 }
 
-const AGENT_ID_LUNCH = LUNCH_AGENT_ID
 const AGENT_ID_MEME = TODAY_MEME_AGENT_ID
 const AGENT_ID_NEWS = NEWS_CURATOR_AGENT_ID
 
@@ -370,9 +346,6 @@ export const useChatStore = () => {
 
     // 검색모드·서브옵션 동기화
     await syncSearchModeFromLastLog(rawList[rawList.length - 1])
-    if (selectedChatAgentId.value === AGENT_ID_LUNCH) {
-      appendLunchSelectionCardIfNeeded(AGENT_ID_LUNCH)
-    }
   }
 
   // 메시지 전송
@@ -456,29 +429,6 @@ export const useChatStore = () => {
     const firstQ = msgs.find((m) => m.type === 'question')
     if (firstQ) firstQ.hiddenFromDisplay = true
     messages.value = [surveyMsg, ...msgs]
-  }
-
-  /** index.vue에서 점심 카드 제출 후 새 채팅방 진입 시 readonly 점심 카드를 메시지 목록 앞에 주입 */
-  const addInlineLunchMessage = (payload: LunchAgentFormPayload) => {
-    const lunchFormMsg = createReadonlyLunchMessage(payload)
-    const msgs = [...messages.value]
-    const firstQ = msgs.find((m) => m.type === 'question')
-    if (firstQ) firstQ.hiddenFromDisplay = true
-    const linkedAnswer =
-      msgs.find((m) => m.type === 'answer' && m.isStreaming) ?? [...msgs].reverse().find((m) => m.type === 'answer')
-    const prefix = [lunchFormMsg]
-    if (linkedAnswer) {
-      prefix.push(
-        createLunchResultCardMessage({
-          answerLogId: linkedAnswer.logId,
-          createdAt: linkedAnswer.createdAt,
-          svcTy: linkedAnswer.svcTy,
-          refId: linkedAnswer.refId,
-          agentId: linkedAnswer.agentId ?? AGENT_ID_LUNCH,
-        }),
-      )
-    }
-    messages.value = [...prefix, ...msgs]
   }
 
   /** index.vue에서 TodayMeme 제출 후 새 채팅방 진입 시 readonly TodayMeme 카드를 메시지 목록 앞에 주입 */
@@ -647,18 +597,6 @@ export const useChatStore = () => {
       setNewsCuratorSubmitCardLogId(null)
     }
     return sent
-  }
-
-  /**
-   * 점심 카드 닫기 — 에이전트 선택 상태를 초기화하고 오버레이를 닫는다
-   * @param lunchMessageLogId - 제거할 lunch 메시지 logId (없으면 메시지 목록 그대로)
-   */
-  const handleCloseLunchAgent = (lunchMessageLogId?: string) => {
-    selectedChatAgentId.value = null
-    closeLunchAgent()
-    if (lunchMessageLogId) {
-      messages.value = messages.value.filter((m) => m.logId !== lunchMessageLogId)
-    }
   }
 
   /**
@@ -833,77 +771,6 @@ export const useChatStore = () => {
     isTodayMemeVisible.value = false
   }
 
-  /**
-   * 점심 추천 프롬프트 전송 — question 메시지를 화면에 노출하지 않는다.
-   * @param content - 전송할 프롬프트 문자열
-   * @param lunchMessageLogId - 제출 완료로 전환할 lunch-card 메시지 logId
-   * @param payload - readonly 카드에 표시할 사용자 응답 데이터
-   */
-  const onSendLunch = async (
-    content: string,
-    lunchMessageLogId?: string,
-    payload?: LunchAgentFormPayload,
-  ): Promise<boolean> => {
-    if (!content.trim() || isSearchModeMissingSubOptions.value || !chatRoom.value.roomId) return false
-
-    const markLunchSubmitted = () => {
-      if (!lunchMessageLogId) return
-      const lunchMsg = messages.value.find((m) => m.logId === lunchMessageLogId && m.type === 'lunch')
-      if (!lunchMsg) return
-      lunchMsg.lunchFormPayload = payload ? { ...payload } : lunchMsg.lunchFormPayload
-      lunchMsg.lunchSubmitted = true
-      lunchMsg.lunchCardRole = 'form'
-    }
-    markLunchSubmitted()
-
-    const prevLen = messages.value.length
-    const sent = await executeSendPipeline({
-      content: content.trim(),
-      roomId: chatRoom.value.roomId,
-      svcTy: resolveSvcTy(),
-      modelId: selectedModelOption.value,
-      refId: buildRefIdForPayload(),
-      agentId: selectedChatAgentId.value ?? '',
-      files: [],
-    })
-    if (sent && payload) {
-      setStreamingLunchPayload(payload)
-    }
-    if (sent) {
-      const newMessages = messages.value.slice(prevLen)
-      const newQuestion = newMessages.find((m) => m.type === 'question')
-      if (newQuestion) newQuestion.hiddenFromDisplay = true
-      const newAnswer = newMessages.find((m) => m.type === 'answer')
-      if (newAnswer && lunchMessageLogId) {
-        const formIndex = messages.value.findIndex((m) => m.logId === lunchMessageLogId && m.type === 'lunch')
-        const resultMsg = createLunchResultCardMessage({
-          answerLogId: newAnswer.logId,
-          createdAt: newAnswer.createdAt,
-          svcTy: newAnswer.svcTy,
-          refId: newAnswer.refId,
-          agentId: newAnswer.agentId ?? selectedChatAgentId.value ?? AGENT_ID_LUNCH,
-        })
-        if (formIndex >= 0) {
-          messages.value.splice(formIndex + 1, 0, resultMsg)
-        } else {
-          messages.value.push(resultMsg)
-        }
-      }
-      selectedChatAgentId.value = null
-    }
-    return sent
-  }
-
-  const handleSubmitLunchAgentForm = async (logId: string, payload: LunchAgentFormPayload) => {
-    if (!chatRoom.value.roomId) {
-      return await handleIndexLunchSubmit(payload)
-    }
-
-    const content = buildLunchRecommendationPrompt(payload)
-    const sent = await onSendLunch(content, logId, payload)
-    if (!sent) return
-  }
-
   const getEmptyVisualizationViewModel = (messageId: string): VisualizationViewModel => ({
     messageId,
     status: 'empty',
@@ -1027,59 +894,17 @@ export const useChatStore = () => {
     visualizationViewMap.value = {}
   }
 
-  /** 채팅방 내 미제출 점심 선택 카드가 없으면 추가 */
-  const appendLunchSelectionCardIfNeeded = (agentId: string) => {
-    if (!chatRoom.value.roomId || agentId !== AGENT_ID_LUNCH) return
-    const alreadyHasLunchCard = messages.value.some((m) => m.type === 'lunch' && !m.lunchSubmitted)
-    if (alreadyHasLunchCard) return
-    messages.value = [
-      ...messages.value,
-      createLunchCardMessage({
-        createdAt: new Date().toISOString(),
-        svcTy: 'C',
-        refId: '',
-        agentId,
-      }),
-    ]
-  }
-
   const handleSelectChatIndexAgentForC = async (agent: Agent) => {
-    const isLunchAgent = agent.agentId === AGENT_ID_LUNCH
-    const isRecommend = isRecommendAgent(agent)
     const isDeselecting = selectedChatAgentId.value === agent.agentId && activeSearchModes.value.length === 0
 
     if (isDeselecting) {
       selectedChatAgentId.value = null
-      if (isLunchAgent) {
-        closeLunchAgent()
-        messages.value = messages.value.filter((m) => m.type !== 'lunch')
-      } else if (isRecommend) {
-        messages.value = messages.value.filter((m) => m.type !== 'recommend' || m.recommendSubmitted)
-      }
     } else {
       selectedChatAgentId.value = agent.agentId
     }
     activeSearchModes.value = []
     subOptions.value = []
     await selectModelOptions()
-    if (isDeselecting) return
-
-    if (isRecommend) {
-      if (chatRoom.value.roomId) {
-        appendRecommendCardIfNeeded(agent)
-      } else {
-        openRecommendAgent()
-      }
-      return
-    }
-
-    if (!isLunchAgent) return
-
-    if (chatRoom.value.roomId) {
-      appendLunchSelectionCardIfNeeded(agent.agentId)
-      return
-    }
-    openLunchAgent()
   }
 
   /** 에이전트 관리 목록 기준 모드 선택 (/chat 인덱스 버튼) — 동일 모드 여러 에이전트 간 전환 지원 */
@@ -1228,19 +1053,6 @@ export const useChatStore = () => {
     return sent
   }
 
-  /** /chat 인덱스에서 점심 카드 제출 — 방 생성·인라인 주입·닫기 */
-  const handleIndexLunchSubmit = async (payload: LunchAgentFormPayload): Promise<boolean> => {
-    const content = buildLunchRecommendationPrompt(payload)
-    const submittedPayload = { ...payload }
-    const sent = await createChatRoom(content)
-    if (sent) {
-      setStreamingLunchPayload(submittedPayload)
-      addInlineLunchMessage(submittedPayload)
-      handleCloseLunchAgent()
-    }
-    return sent
-  }
-
   /** /chat 인덱스에서 TodayMeme 제출(에이전트 클릭 즉시) — 방 생성·인라인 주입·등록·오버레이 초기화 */
   const handleIndexTodayMemeSubmit = async (): Promise<boolean> => {
     const content = TODAY_MEME_PROMPT
@@ -1366,7 +1178,6 @@ export const useChatStore = () => {
     isSurveyVisible,
     isGenderStepVisible,
     surveyGender,
-    isLunchVisible,
     isRecommendVisible,
     isTodayMemeVisible,
     isNewsCuratorVisible,
@@ -1383,8 +1194,6 @@ export const useChatStore = () => {
     handleIndexTodayMemeSubmit,
     handleIndexNewsCuratorSubmit,
     addInlineSurveyMessage,
-    handleIndexLunchSubmit,
-    addInlineLunchMessage,
     handleIndexRecommendSubmit,
     handleSubmitRecommendAgentForm,
     handleCloseRecommendAgent,
@@ -1393,8 +1202,6 @@ export const useChatStore = () => {
     handleSyncNewsCard,
     handleNewsCuratorReselectCategories,
     resetTodayMemePanel,
-    handleSubmitLunchAgentForm,
-    handleCloseLunchAgent,
     handleCloseNewsCurator,
     selectChatIndexAgent,
     handleClosePsychologySurvey,

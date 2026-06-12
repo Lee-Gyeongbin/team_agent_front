@@ -483,8 +483,7 @@ const getItemImageUrl = (item: RecommendResultItem): string => {
   return String(item[field] ?? '').trim()
 }
 
-const resolveItemLinkUrl = (item: RecommendResultItem, fieldKey: string) =>
-  resolveRecommendItemLinkUrl(item, fieldKey)
+const resolveItemLinkUrl = (item: RecommendResultItem, fieldKey: string) => resolveRecommendItemLinkUrl(item, fieldKey)
 
 const getItemLinkLabel = (item: RecommendResultItem, fieldKey: string) =>
   getRecommendLinkDisplayLabel(item, fieldKey, resolveItemLinkUrl(item, fieldKey))

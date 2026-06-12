@@ -882,7 +882,7 @@ export const registerRecommendRoom = (roomId: string) => {
 
 export const isRecommendRoom = (roomId: string) => recommendRoomIds.value.has(String(roomId ?? '').trim())
 
-// ━━━ 인덱스 오버레이 상태 (useLunchAgent 패턴과 동일) ━━━━━━━━━━━━━━━━━━━━━━━━
+// ━━━ 인덱스 오버레이 상태 ━━━━━━━━━━━━━━━━━━━━━━━━
 
 const isRecommendVisible = ref(false)
 

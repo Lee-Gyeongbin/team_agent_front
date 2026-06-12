@@ -3,23 +3,13 @@
     class="chat-index s-center"
     :class="{
       'is-survey-mode':
-        isSurveyVisible ||
-        isGenderStepVisible ||
-        isLunchVisible ||
-        isRecommendVisible ||
-        isTodayMemeVisible ||
-        isNewsCuratorVisible,
+        isSurveyVisible || isGenderStepVisible || isRecommendVisible || isTodayMemeVisible || isNewsCuratorVisible,
     }"
   >
     <!-- 헤더 (설문 모드에서 숨김) -->
     <div
       v-if="
-        !isSurveyVisible &&
-        !isGenderStepVisible &&
-        !isLunchVisible &&
-        !isRecommendVisible &&
-        !isTodayMemeVisible &&
-        !isNewsCuratorVisible
+        !isSurveyVisible && !isGenderStepVisible && !isRecommendVisible && !isTodayMemeVisible && !isNewsCuratorVisible
       "
       class="chat-index-header"
       data-aos="fade-up"
@@ -37,14 +27,6 @@
       :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
       @close="handleClosePsychologySurvey"
       @submit="handleIndexSurveySubmit"
-    />
-    <ChatLunchAgentCard
-      v-if="isLunchVisible"
-      class="chat-index-survey"
-      :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? ''"
-      :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
-      @close="handleCloseLunchAgent"
-      @submit="handleIndexLunchSubmit"
     />
     <ChatRecommendAgentCard
       v-if="isRecommendVisible && currentRecommendConfig"
@@ -77,12 +59,7 @@
       class="chat-index-input-wrapper"
       :class="{
         'is-survey-locked':
-          isSurveyVisible ||
-          isGenderStepVisible ||
-          isLunchVisible ||
-          isRecommendVisible ||
-          isTodayMemeVisible ||
-          isNewsCuratorVisible,
+          isSurveyVisible || isGenderStepVisible || isRecommendVisible || isTodayMemeVisible || isNewsCuratorVisible,
       }"
       data-aos="fade-up"
       data-aos-delay="200"
@@ -93,12 +70,7 @@
     <!-- 에이전트 카드 (설문 모드 아닐 때) -->
     <template
       v-if="
-        !isSurveyVisible &&
-        !isGenderStepVisible &&
-        !isLunchVisible &&
-        !isRecommendVisible &&
-        !isTodayMemeVisible &&
-        !isNewsCuratorVisible
+        !isSurveyVisible && !isGenderStepVisible && !isRecommendVisible && !isTodayMemeVisible && !isNewsCuratorVisible
       "
     >
       <div
@@ -171,9 +143,6 @@ const {
   isSurveyVisible,
   isGenderStepVisible,
   handleIndexSurveySubmit,
-  isLunchVisible,
-  handleCloseLunchAgent,
-  handleIndexLunchSubmit,
   isRecommendVisible,
   handleCloseRecommendAgent,
   handleIndexRecommendSubmit,
@@ -229,7 +198,6 @@ onMounted(async () => {
   handleResetChatPanels()
   // 다른 메뉴 갔다 돌아올 때 설문 / 에이전트 선택 상태 초기화
   handleClosePsychologySurvey()
-  handleCloseLunchAgent()
   handleCloseRecommendAgent()
   handleCloseNewsCurator()
   resetTodayMemePanel()
