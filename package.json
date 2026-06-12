@@ -39,6 +39,8 @@
     "highlight.js": "^11.11.1",
     "html-docx-js-typescript": "^0.1.5",
     "html-to-image": "^1.11.13",
+    "jspdf": "^4.2.1",
+    "jszip": "^3.10.1",
     "marked": "^17.0.5",
     "nuxt": "^3.16.0",
     "radix-vue": "^1.9.17",

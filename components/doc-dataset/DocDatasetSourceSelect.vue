@@ -32,7 +32,6 @@
         :use-document="modelValue.useDocument"
         :selected-doc-file-ids="modelValue.selectedDocFileIds"
         :doc-list="docList"
-        :category-list="categoryList"
         @update:use-document="onUpdate('useDocument', $event)"
         @update:selected-doc-file-ids="onUpdate('selectedDocFileIds', $event)"
       />
@@ -54,11 +53,10 @@
 import { toRaw } from 'vue'
 import DocDatasetSourceDoc from '~/components/doc-dataset/DocDatasetSourceDoc.vue'
 import DocDatasetSourceUrl from '~/components/doc-dataset/DocDatasetSourceUrl.vue'
-import type { CategoryItem, DocDatasetForm, DocDatasetSelectedDoc, DocDatasetSelectedUrl } from '~/types/doc-dataset'
+import type { DocDatasetForm, DocDatasetSelectedDoc, DocDatasetSelectedUrl } from '~/types/doc-dataset'
 
 interface Props {
   modelValue: DocDatasetForm
-  categoryList: CategoryItem[]
   docList: DocDatasetSelectedDoc[]
   urlList: DocDatasetSelectedUrl[]
   collapsed?: boolean

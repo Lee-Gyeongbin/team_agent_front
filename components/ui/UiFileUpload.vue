@@ -352,6 +352,7 @@ const onRemoveAttachedFile = (file: FileItem, index: number) => {
   @include typo($body-xsmall);
   color: $color-text-muted;
   margin-top: 4px;
+  white-space: pre-line;
 }
 
 // 파일 목록

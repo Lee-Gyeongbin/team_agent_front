@@ -64,7 +64,7 @@
           :max-file-size="fileUploadMaxSize"
           :accept="fileAccept"
           :allowed-extensions="fileUploadAllowedExt"
-          hint="최대 30개 / 파일당 최대 100MB"
+          :hint="fileUploadHint"
         />
       </div>
       <div
@@ -164,4 +164,18 @@ const fileUploadModalFilesModel = computed({
   get: () => props.fileUploadModalFiles,
   set: (value: File[]) => emit('update:fileUploadModalFiles', value),
 })
+
+const fileUploadAllowedExtText = computed(() => {
+  if (!props.fileUploadAllowedExt.length) return '-'
+  return props.fileUploadAllowedExt.map((ext) => (ext.startsWith('.') ? ext : `.${ext}`)).join(', ')
+})
+
+const fileUploadMaxSizeText = computed(() => {
+  const mb = Math.floor(props.fileUploadMaxSize / (1024 * 1024))
+  return `${mb}MB`
+})
+
+const fileUploadHint = computed(
+  () => `파일당 최대 ${fileUploadMaxSizeText.value}\n첨부 가능 확장자: ${fileUploadAllowedExtText.value}`,
+)
 </script>

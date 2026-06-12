@@ -19,7 +19,6 @@
       <!-- 데이터 소스 선택 -->
       <DocDatasetSourceSelect
         :model-value="formData"
-        :category-list="selectedDatasetCategoryList ?? []"
         :doc-list="selectedDatasetDocList ?? []"
         :url-list="selectedDatasetUrlList ?? []"
         :collapsed="sectionCollapsed[1]"
@@ -86,7 +85,6 @@ import DocDatasetPreprocess from '~/components/doc-dataset/DocDatasetPreprocess.
 import DocDatasetEmbedding from '~/components/doc-dataset/DocDatasetEmbedding.vue'
 import type { DocDatasetForm } from '~/types/doc-dataset'
 const {
-  selectedDatasetCategoryList,
   selectedDatasetDocList,
   selectedDatasetUrlList,
   formData,

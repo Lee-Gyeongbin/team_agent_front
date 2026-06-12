@@ -1,5 +1,11 @@
 import type { ActionResponse } from '~/types/global'
-import type { CategoryItem, FileLibraryItem, FileLibrarySavePayload, UrlItem } from '~/types/repository'
+import type {
+  CategoryItem,
+  CategoryOrderSortItem,
+  FileLibraryItem,
+  FileLibrarySavePayload,
+  UrlItem,
+} from '~/types/repository'
 import type { FileMeta, FileUploadResponse } from '~/types/file'
 
 // 🔽 Mock — 백엔드 API 완성 시 useApi 패턴으로 교체
@@ -45,6 +51,11 @@ export const useRepositoryApi = () => {
 
   const fetchDeleteCategory = async (categoryId: string): Promise<ActionResponse> => {
     return post<ActionResponse>('/repository/deleteCategory.do', { categoryId })
+  }
+
+  /** 카테고리 순서·부모 일괄 변경 (드래그 정렬 + 부모 변경) */
+  const fetchUpdateCategoryOrder = async (items: CategoryOrderSortItem[]): Promise<void> => {
+    await post('/repository/updateCategoryOrder.do', { dataList: items })
   }
 
   // ===== 파일 =====
@@ -133,6 +144,7 @@ export const useRepositoryApi = () => {
     fetchSaveCategory,
     fetchRenameCategory,
     fetchDeleteCategory,
+    fetchUpdateCategoryOrder,
     fetchSaveDocumentFile,
     fetchUrlList,
     fetchSaveUrl,

@@ -304,8 +304,14 @@ defineExpose({ focus })
 
   // 비활성
   &.is-disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+    background-color: #f5f7fa;
+    border-color: #dce4e9;
+    cursor: default;
+
+    .ui-input {
+      color: $color-text-disabled;
+      cursor: default;
+    }
   }
 }
 
@@ -325,7 +331,7 @@ defineExpose({ focus })
   }
 
   &:disabled {
-    cursor: not-allowed;
+    cursor: default;
   }
 }
 

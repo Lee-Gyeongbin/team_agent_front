@@ -32,7 +32,7 @@
               variant="ghost"
               size="xxs"
               class="btn-add-category"
-              @click="openCategorySelectModal"
+              @click="onToggleExpandAll"
             >
               <template #icon-left>
                 <i class="icon icon-sliders size-16" />
@@ -52,7 +52,7 @@
           </UiButton>
         </div>
         <div
-          v-if="isCategoryInputVisible"
+          v-if="isCategoryInputVisible && !categoryInputParentId"
           class="category-input-wrap"
         >
           <UiInput
@@ -77,11 +77,21 @@
               :editing-category-id="editingCategoryId"
               :editing-name="editingName"
               :menu-items="categoryMenuItems"
+              :is-category-input-visible="isCategoryInputVisible"
+              :category-input-parent-id="categoryInputParentId"
+              :category-input-value="categoryInputValue"
+              :category-input-placeholder="categoryInputPlaceholder"
+              :dragging-id="draggingCategoryId"
               @toggle="toggleExpand"
               @select="onCategorySelect"
               @menu-select="onCategoryMenuSelect"
               @update:editing-name="editingName = $event"
               @save-rename="saveCategoryRename"
+              @update:category-input-value="categoryInputValue = $event"
+              @add-subcategory="onCategoryInputEnter"
+              @reorder="onTreeReorder"
+              @drag-start="onTreeDragStart"
+              @drag-end="onTreeDragEnd"
             />
           </ul>
         </div>
@@ -273,18 +283,11 @@
       :doc-file-options="filePreviewDocFileOptions"
       @close="onCloseFilePreview"
     />
-
-    <CategorySelectModal
-      :is-open="isCategorySelectModalOpen"
-      @close="isCategorySelectModalOpen = false"
-      @confirm="onCategorySelectConfirm"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
 import FilePreviewModal from '~/components/file/FilePreviewModal.vue'
-import CategorySelectModal from '~/components/repository/CategorySelectModal.vue'
 import CategoryTreeNode from '~/components/repository/CategoryTreeNode.vue'
 import RepositoryFileFormModal from '~/components/repository/RepositoryFileFormModal.vue'
 import { useCategoryStore } from '~/composables/repository/useCategoryStore'
@@ -319,25 +322,61 @@ const {
 
 const {
   isCategoryInputVisible,
-  isCategorySelectModalOpen,
   categoryInputValue,
   categoryInputRef,
+  categoryInputParentId,
   editingCategoryId,
   editingName,
   categoryInputPlaceholder,
   categoryMenuItems,
   filteredCategoryList,
   selectedCategoryIds,
-  onCategorySelectConfirm,
   handleSelectCategoryList,
   toggleExpand,
   onCategorySelect,
   onCategoryMenuSelect,
   saveCategoryRename,
-  openCategorySelectModal,
   toggleCategoryInput,
   onCategoryInputEnter,
+  handleUpdateCategoryOrder,
 } = useCategoryStore()
+
+const draggingCategoryId = ref<string | null>(null)
+
+const onTreeDragStart = (categoryId: string) => {
+  draggingCategoryId.value = categoryId
+}
+
+const onTreeDragEnd = () => {
+  draggingCategoryId.value = null
+}
+
+const onTreeReorder = async (payload: {
+  draggedId: string
+  targetId: string
+  position: 'before' | 'after' | 'inside'
+}) => {
+  draggingCategoryId.value = null
+  const ok = await handleUpdateCategoryOrder(payload)
+  if (!ok) {
+    await handleSelectCategoryList({ preserveFileSelection: true })
+    return
+  }
+  openToast({ message: '카테고리 순서가 저장되었습니다.', type: 'success' })
+}
+
+const setAllExpanded = (list: CategoryTreeItem[], value: boolean) => {
+  for (const item of list) {
+    item.expanded = value
+    if (item.children?.length) setAllExpanded(item.children, value)
+  }
+}
+
+const allExpanded = ref(true)
+const onToggleExpandAll = () => {
+  allExpanded.value = !allExpanded.value
+  setAllExpanded(filteredCategoryList.value, allExpanded.value)
+}
 
 const isFormModalOpen = ref(false)
 const editingDocFileId = ref('')

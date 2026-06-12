@@ -1,4 +1,4 @@
-import { useMeetingApi } from '~/composables/meeting/useMeetingApi'
+import { useMeetingApi, type MeetingListFilter } from '~/composables/meeting/useMeetingApi'
 import { buildMeetingPrintCss, MEETING_DOCX_CSS } from '~/composables/meeting/meetingExportStyles'
 import { useFileStore } from '~/composables/com/useFileStore'
 import type {
@@ -262,16 +262,133 @@ const handleSelectUserList = async () => {
   }
 }
 
-const handleSelectMeetingList = async () => {
+const handleSelectMeetingList = async (filter?: MeetingListFilter) => {
   isLoadingList.value = true
   try {
-    const res = await fetchMeetingList()
+    const res = await fetchMeetingList(filter)
     meetingList.value = res?.list ?? []
   } catch {
     openToast({ message: '회의 목록 조회 실패', type: 'error' })
     meetingList.value = []
   } finally {
     isLoadingList.value = false
+  }
+}
+
+/** 다중 선택 일괄 삭제 (기존 handleDeleteMeeting과 별개의 신규 함수) */
+const handleBulkDeleteMeetings = async (meetingIds: string[]): Promise<boolean> => {
+  if (meetingIds.length === 0) return false
+  const confirmed = await openConfirm({
+    title: '일괄 삭제',
+    message: `선택한 ${meetingIds.length}개의 회의를 삭제하시겠습니까?\n회의록도 함께 삭제됩니다.`,
+  })
+  if (!confirmed) return false
+
+  try {
+    await Promise.all(meetingIds.map((id) => fetchDeleteMeeting(Number(id))))
+    meetingList.value = meetingList.value.filter((m) => !meetingIds.includes(String(m.meetingId)))
+    openToast({ message: '삭제되었습니다.' })
+    return true
+  } catch {
+    openToast({ message: '삭제에 실패했습니다.', type: 'error' })
+    return false
+  }
+}
+
+// ===== 일괄 PDF 내보내기 =====
+
+/** HTML을 렌더링해 jsPDF Blob으로 변환하는 로컬 헬퍼 */
+const renderHtmlToPdfBlob = async (
+  html: string,
+  toPng: (node: HTMLElement, opts?: object) => Promise<string>,
+  JsPDF: new (opts: object) => { addImage: (...args: unknown[]) => void; output: (type: string) => Blob },
+): Promise<Blob | null> => {
+  const styleEl = document.createElement('style')
+  styleEl.textContent = buildMeetingPrintCss('pdf-render-host')
+  document.head.appendChild(styleEl)
+
+  const host = document.createElement('div')
+  host.id = 'pdf-render-host'
+  host.style.cssText =
+    'position:fixed;top:0;left:-9999px;width:794px;background:#fff;padding:48px;box-sizing:border-box;'
+  host.innerHTML = html
+  document.body.appendChild(host)
+
+  const images = Array.from(host.querySelectorAll<HTMLImageElement>('img'))
+  await Promise.all(
+    images.map(
+      (img) =>
+        new Promise<void>((resolve) => {
+          if (img.complete) resolve()
+          else {
+            img.onload = () => resolve()
+            img.onerror = () => resolve()
+          }
+        }),
+    ),
+  )
+
+  try {
+    const dataUrl = await toPng(host, { pixelRatio: 2, skipFonts: true })
+    const W = host.offsetWidth
+    const H = host.offsetHeight
+    const pdf = new JsPDF({
+      orientation: W > H ? 'landscape' : 'portrait',
+      unit: 'px',
+      format: [W, H],
+      hotfixes: ['px_scaling'],
+    })
+    pdf.addImage(dataUrl, 'PNG', 0, 0, W, H)
+    return pdf.output('blob')
+  } finally {
+    host.remove()
+    styleEl.remove()
+  }
+}
+
+const handleBulkExportPdf = async (meetingIds: string[]) => {
+  if (meetingIds.length === 0) return
+  openLoading({ text: 'PDF를 생성하는 중...' })
+  try {
+    const [{ toPng }, { jsPDF: JsPDF }, { default: JSZip }] = await Promise.all([
+      import('html-to-image'),
+      import('jspdf'),
+      import('jszip'),
+    ])
+    const zip = new JSZip()
+    for (let i = 0; i < meetingIds.length; i++) {
+      const meetingId = Number(meetingIds[i])
+      updateLoadingText(`PDF 생성 중... (${i + 1}/${meetingIds.length})`)
+      try {
+        const detail = await fetchMeetingDetail(meetingId)
+        const title = detail.meeting?.meetingTitle ?? `회의록_${meetingId}`
+        const html = detail.minutes?.editedContent || detail.minutes?.generatedContent || ''
+        if (!html.trim()) continue
+        const pdfBlob = await renderHtmlToPdfBlob(html, toPng, JsPDF as never)
+        if (pdfBlob) zip.file(`${title}.pdf`, pdfBlob)
+      } catch {
+        continue
+      }
+    }
+    if (Object.keys(zip.files).length === 0) {
+      openToast({ message: '내보낼 회의록 내용이 없습니다.', type: 'warning' })
+      return
+    }
+    const zipBlob = await zip.generateAsync({ type: 'blob' })
+    const url = URL.createObjectURL(zipBlob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `회의록_${new Date().toISOString().slice(0, 10)}.zip`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    openToast({ message: `PDF ${Object.keys(zip.files).length}개를 ZIP으로 내보냈습니다.` })
+  } catch (err) {
+    console.error('[handleBulkExportPdf]', err)
+    openToast({ message: 'PDF 내보내기에 실패했습니다.', type: 'error' })
+  } finally {
+    closeLoading()
   }
 }
 
@@ -1033,6 +1150,8 @@ export const useMeetingStore = () => {
     toggleSearch,
     handleSelectUserList,
     handleSelectMeetingList,
+    handleBulkDeleteMeetings,
+    handleBulkExportPdf,
     handleSelectMeetingDetail,
     handleStreamInfographic,
     handleCreateMeeting,

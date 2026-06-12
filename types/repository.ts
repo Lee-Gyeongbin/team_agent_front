@@ -16,6 +16,14 @@ export interface CategoryTreeItem extends CategoryItem {
   expanded?: boolean
 }
 
+/** 카테고리 정렬 순서·부모 일괄 업데이트 요청 항목 */
+export interface CategoryOrderSortItem {
+  categoryId: string
+  categoryName: string
+  parnCatId: string | null
+  sortOrd: number
+}
+
 /** 첨부 파일 항목 (UiFileUpload 등 공통 UI에서 사용) */
 export interface FileItem {
   docFileId: string

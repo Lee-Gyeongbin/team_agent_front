@@ -849,6 +849,307 @@
   border-top: 1px solid $color-border;
 }
 
+// ---- 필터 바 ----
+.meeting2-filter-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  background: $color-surface;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+}
+
+.meeting2-filter-chips {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  flex-wrap: wrap;
+}
+
+.meeting2-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid $color-border;
+  border-radius: 20px;
+  background: #fff;
+  @include typo($body-small, $color-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all $transition-fast;
+
+  &:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  &.is-active {
+    border-color: var(--color-primary);
+    background: rgba(var(--color-primary-rgb), 0.1);
+    color: var(--color-primary);
+    font-weight: $font-weight-bold;
+  }
+}
+
+.meeting2-filter-divider {
+  width: 1px;
+  height: 20px;
+  background: $color-border;
+  flex-shrink: 0;
+}
+
+.meeting2-filter-select {
+  height: 30px;
+  padding: 0 $spacing-sm;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  background: #fff;
+  @include typo($body-small, $color-text-dark);
+  cursor: pointer;
+  outline: none;
+  transition: border-color $transition-fast;
+
+  &:hover,
+  &:focus {
+    border-color: var(--color-primary);
+  }
+}
+
+.meeting2-filter-date {
+  height: 30px;
+  padding: 0 $spacing-sm;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  background: #fff;
+  @include typo($body-small, $color-text-dark);
+  outline: none;
+  transition: border-color $transition-fast;
+
+  &:hover,
+  &:focus {
+    border-color: var(--color-primary);
+  }
+}
+
+.meeting2-filter-date-sep {
+  @include typo($body-small, $color-text-muted);
+  flex-shrink: 0;
+}
+
+.meeting2-view-toggle {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.meeting2-view-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  background: #fff;
+  color: $color-text-muted;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  &.is-active {
+    border-color: var(--color-primary);
+    background: rgba(var(--color-primary-rgb), 0.1);
+    color: var(--color-primary);
+  }
+}
+
+// ---- 활성 필터 태그 ----
+.meeting2-filter-tags {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+}
+
+.meeting2-filter-tag-list {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  flex-wrap: wrap;
+}
+
+.meeting2-filter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 4px 0 10px;
+  border: 1px solid $color-border;
+  border-radius: 20px;
+  background: #fff;
+  @include typo($body-xsmall, $color-text-dark);
+}
+
+.meeting2-filter-tag-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: $color-text-muted;
+  cursor: pointer;
+  padding: 0;
+  transition: all $transition-fast;
+
+  &:hover {
+    background: $color-border-light;
+    color: $color-text-dark;
+  }
+}
+
+.meeting2-filter-count {
+  @include typo($body-small-bold, $color-text-secondary);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+// ---- 목록 뷰 ----
+.meeting2-list-rows {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.meeting2-list-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-sm $spacing-md;
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  cursor: pointer;
+  transition:
+    border-color $transition-fast,
+    box-shadow $transition-fast;
+
+  &:hover {
+    border-color: var(--color-primary);
+    box-shadow: $shadow-sm;
+  }
+
+  &.is-integrate-mode {
+    padding-left: calc(#{$spacing-md} + 26px);
+  }
+
+  &.is-selected {
+    border-color: var(--color-primary);
+  }
+}
+
+.meeting2-list-row-check {
+  position: absolute;
+  left: $spacing-sm;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid $color-border;
+  border-radius: 50%;
+  @include typo($body-small-bold, $color-text-muted);
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.meeting2-list-row.is-selected .meeting2-list-row-check {
+  border-color: var(--color-primary);
+  background: rgba(var(--color-primary-rgb), 0.08);
+  color: var(--color-primary);
+}
+
+.meeting2-list-row-title {
+  @include typo($body-medium-bold, $color-text-dark);
+  flex: 1;
+  @include ellipsis(1);
+  min-width: 0;
+}
+
+.meeting2-list-row-date {
+  @include typo($body-small, $color-text-muted);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.meeting2-list-row-meta {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  flex-shrink: 0;
+}
+
+.meeting2-list-row-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  flex-shrink: 0;
+}
+
+// ---- 일괄 작업 바 ----
+.meeting2-bulk-bar {
+  position: fixed;
+  bottom: $spacing-xl;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-sm $spacing-lg;
+  background: $color-text-dark;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-lg;
+  z-index: $z-sticky;
+  white-space: nowrap;
+}
+
+.meeting2-bulk-count {
+  @include typo($body-small-bold);
+  color: #fff;
+}
+
+.meeting2-bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+}
+
+// 일괄 작업 바 트랜지션
+.meeting2-bulk-slide-enter-active,
+.meeting2-bulk-slide-leave-active {
+  transition:
+    opacity $transition-base,
+    transform $transition-base;
+}
+
+.meeting2-bulk-slide-enter-from,
+.meeting2-bulk-slide-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(12px);
+}
+
 // ---- migrated from _meeting2.scss ----
 
 // ===================================

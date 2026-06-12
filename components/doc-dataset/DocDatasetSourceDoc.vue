@@ -43,7 +43,7 @@
       v-if="isExpanded && useDocument"
       class="doc-dataset-source-panel-body"
     >
-      <!-- 검색 + 결과 수 뱃지 -->
+      <!-- 검색 -->
       <div class="doc-dataset-source-search-row">
         <UiInput
           v-model="searchKeyword"
@@ -55,19 +55,35 @@
             <i class="icon-search size-16" />
           </template>
         </UiInput>
-        <UiSelect
-          v-model="selectedCategory"
-          :options="categoryOptions"
-          size="sm"
-          class="doc-dataset-source-category-select"
-        />
       </div>
 
-      <!-- 2분할: 트리뷰(좌) + 파일리스트(우) -->
+      <!-- 2분할: 카테고리 트리(좌) + 파일리스트(우) -->
       <div class="doc-dataset-source-doc-split">
-        <!-- 좌측: 트리뷰 영역 (TODO) -->
+        <!-- 좌측: 카테고리 트리 -->
         <div class="doc-dataset-source-doc-tree">
-          <span class="doc-dataset-source-doc-tree-placeholder">트리뷰 영역</span>
+          <div
+            class="doc-dataset-category-all"
+            :class="{ 'is-selected': !selectedCategoryId }"
+            @click="selectedCategoryId = ''"
+          >
+            <i class="icon icon-folder-close size-16" />
+            <span>전체</span>
+          </div>
+          <ul class="category-tree">
+            <CategoryTreeNode
+              v-for="cat in categoryTree"
+              :key="cat.categoryId"
+              :item="cat"
+              :depth="1"
+              selectable
+              :selected-ids="selectedCategoryId ? [selectedCategoryId] : []"
+              :show-check-icon="false"
+              :menu-items="[]"
+              reorder-disabled
+              @toggle="onCategoryTreeToggle"
+              @select="onCategoryTreeSelect"
+            />
+          </ul>
         </div>
 
         <!-- 우측: 파일 리스트 -->
@@ -122,13 +138,16 @@
 </template>
 
 <script setup lang="ts">
+import CategoryTreeNode from '~/components/repository/CategoryTreeNode.vue'
+import { useRepositoryApi } from '~/composables/repository/useRepositoryApi'
 import type { CategoryItem, DocDatasetSelectedDoc } from '~/types/doc-dataset'
+
+import type { CategoryTreeItem } from '~/types/repository'
 
 interface Props {
   useDocument: boolean
   selectedDocFileIds: string[]
   docList: DocDatasetSelectedDoc[]
-  categoryList: CategoryItem[]
 }
 
 const props = defineProps<Props>()
@@ -138,27 +157,96 @@ const emit = defineEmits<{
   'update:selectedDocFileIds': [value: string[]]
 }>()
 
+const { fetchCategoryList } = useRepositoryApi()
+
 const isExpanded = ref(true)
 const searchKeyword = ref('')
-const selectedCategory = ref('all')
+const selectedCategoryId = ref('')
 
-// 카테고리 필터 옵션
-const categoryOptions = computed(() => {
-  const sortedCategoryOptions = props.categoryList
-    .map((c) => ({ label: c.categoryName, value: c.categoryId }))
-    .sort((a, b) => String(a.value).localeCompare(String(b.value)))
+// ===== 카테고리 트리 =====
+const categoryTree = ref<CategoryTreeItem[]>([])
 
-  return [{ label: '전체 카테고리', value: 'all' }, ...sortedCategoryOptions]
+function buildCategoryTree(flat: CategoryItem[]): CategoryTreeItem[] {
+  const byId = new Map<string, CategoryTreeItem>()
+  for (const row of flat) {
+    byId.set(row.categoryId, {
+      categoryId: row.categoryId,
+      categoryName: row.categoryName,
+      parnCatId: row.parnCatId ?? null,
+      catLvl: String(row.catLvl ?? 1),
+      sortOrd: String(row.sortOrd ?? 0),
+      sortPath: '',
+      depth: String(row.catLvl ?? 1),
+      children: [],
+      expanded: true,
+    })
+  }
+  const roots: CategoryTreeItem[] = []
+  for (const row of flat) {
+    const node = byId.get(row.categoryId)
+    if (!node) continue
+    const parentId = row.parnCatId
+    if (!parentId) {
+      roots.push(node)
+    } else if (byId.has(parentId)) {
+      byId.get(parentId)!.children!.push(node)
+    } else {
+      roots.push(node)
+    }
+  }
+  const sortSiblings = (nodes: CategoryTreeItem[]) => {
+    nodes.sort((a, b) => {
+      const ao = Number(a.sortOrd) || 0
+      const bo = Number(b.sortOrd) || 0
+      if (ao !== bo) return ao - bo
+      return String(a.sortPath).localeCompare(String(b.sortPath), undefined, { numeric: true })
+    })
+    for (const n of nodes) if (n.children?.length) sortSiblings(n.children)
+  }
+  const computeSortPaths = (nodes: CategoryTreeItem[], parentPath = '') => {
+    for (const n of nodes) {
+      const padded = String(Number(n.sortOrd) || 0).padStart(10, '0')
+      n.sortPath = parentPath ? `${parentPath}.${padded}` : padded
+      if (n.children?.length) computeSortPaths(n.children, n.sortPath)
+    }
+  }
+  sortSiblings(roots)
+  computeSortPaths(roots)
+  sortSiblings(roots)
+  return roots
+}
+
+onMounted(async () => {
+  const res = await fetchCategoryList()
+  categoryTree.value = buildCategoryTree((res.dataList ?? []) as CategoryItem[])
 })
-// 필터링된 리스트
+
+function findTreeNode(nodes: CategoryTreeItem[], id: string): CategoryTreeItem | null {
+  for (const n of nodes) {
+    if (n.categoryId === id) return n
+    if (n.children?.length) {
+      const found = findTreeNode(n.children, id)
+      if (found) return found
+    }
+  }
+  return null
+}
+
+const onCategoryTreeToggle = (item: CategoryTreeItem) => {
+  const node = findTreeNode(categoryTree.value, item.categoryId)
+  if (node?.children?.length) node.expanded = !node.expanded
+}
+
+const onCategoryTreeSelect = (item: CategoryTreeItem) => {
+  selectedCategoryId.value = selectedCategoryId.value === item.categoryId ? '' : item.categoryId
+}
+
+// ===== 필터링 =====
 const filteredList = computed(() => {
   return props.docList.filter((d) => {
-    const isMatchedCategory = selectedCategory.value === 'all' || String(d.categoryId ?? '') === selectedCategory.value
-
+    const isMatchedCategory = !selectedCategoryId.value || String(d.categoryId ?? '') === selectedCategoryId.value
     if (!isMatchedCategory) return false
-
     if (!searchKeyword.value) return true
-
     const keyword = searchKeyword.value.toLowerCase()
     return String(d.fileName || d.docTitle || '')
       .toLowerCase()

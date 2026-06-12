@@ -80,14 +80,14 @@ const getDefaultForm = (): DocDatasetForm => ({
   chunkOptHtmlTagsText: '',
   chunkOptHeaderPathSeparator: '/',
   chunkOptMinTokens: 300,
-  useLowercasing: true,
+  useLowercasing: false,
   useWhitespaceNorm: false,
   useSpecialCharRemoval: false,
   useSingleCellText: true,
   promptId: '',
   llmCd: '',
   embeddingModel: '',
-  vectorDb: '',
+  vectorDb: '004',
 })
 
 // 코드 옵션 목록
@@ -102,8 +102,6 @@ const llmOptions = ref<{ label: string; value: string }[]>([])
 
 // 선택 데이터셋 상세
 const selectedDatasetDetail = ref<DocDatasetDetail | null>(null)
-// 선택 데이터셋 카테고리 목록
-const selectedDatasetCategoryList = ref<DocDatasetSourceListResponse['categoryList']>([])
 // 선택 데이터셋 문서 목록
 const selectedDatasetDocList = ref<DocDatasetSourceListResponse['docList']>([])
 // 선택 데이터셋 URL 목록
@@ -470,8 +468,6 @@ const openCreateModal = async () => {
 }
 // 테스트
 const onTest = async (id: string) => {
-  console.warn('[TODO] 데이터셋 테스트:', id)
-
   // 카드에서는 datasetId만 넘기므로, 클릭 시점에 dsNm을 확정하기 위해 상세 조회 후 메시지 생성
   const res = await handleSelectDocDataset(id)
   const datasetNm = res.data?.dsNm ?? selectedDatasetDetail.value?.dsNm ?? ''
@@ -528,8 +524,6 @@ const handleSelectDatasetSrcList = async () => {
   openLoading({ text: '데이터소스를 불러오는 중...' })
   try {
     const res = await fetchDatasetSrcList()
-    // 카테고리 목록 세팅
-    selectedDatasetCategoryList.value = res.categoryList ?? []
     // 문서 목록 세팅
     selectedDatasetDocList.value = res.docList ?? []
     // URL 목록 세팅
@@ -1138,7 +1132,6 @@ export const useDocDatasetStore = () => {
     datasetList,
     summary,
     selectedDatasetDetail,
-    selectedDatasetCategoryList,
     handleSelectAll,
     handleSelectDocDataset,
     handleSelectDatasetSrcList,

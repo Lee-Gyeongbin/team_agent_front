@@ -8,6 +8,7 @@ const {
   fetchSaveCategory,
   fetchRenameCategory,
   fetchDeleteCategory,
+  fetchUpdateCategoryOrder,
   fetchSelectDocFileLibraryList,
 } = useRepositoryApi()
 
@@ -84,6 +85,35 @@ function buildCategoryTreeFromFlat(flat: CategoryItem[]): CategoryTreeItem[] {
   return pruneLeaves(roots)
 }
 
+/** node 의 자손 중 targetId 가 있으면 true */
+function isDescendantOf(node: CategoryTreeItem, targetId: string): boolean {
+  for (const child of node.children ?? []) {
+    if (child.categoryId === targetId) return true
+    if (isDescendantOf(child, targetId)) return true
+  }
+  return false
+}
+
+/** 트리에서 categoryId가 속한 형제 배열/인덱스/직계 상위 ID 탐색 */
+function findCategorySiblingContext(
+  nodes: CategoryTreeItem[],
+  categoryId: string,
+  parentCategoryId: string | null,
+): { siblings: CategoryTreeItem[]; index: number; parentCategoryId: string | null } | null {
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i]!
+    if (node.categoryId === categoryId) {
+      return { siblings: nodes, index: i, parentCategoryId }
+    }
+    const children = node.children ?? []
+    if (children.length > 0) {
+      const found = findCategorySiblingContext(children, categoryId, node.categoryId)
+      if (found) return found
+    }
+  }
+  return null
+}
+
 export const useCategoryStore = () => {
   const { fileSelectedCategoryId, fileCurrentPage, fileTotalCount, fileSearchKeyword, handleSelectFileLibraryList } =
     useRepositoryStore()
@@ -144,14 +174,31 @@ export const useCategoryStore = () => {
     })
   }
   const toggleCategoryInput = () => {
-    isCategoryInputVisible.value = !isCategoryInputVisible.value
+    const selectedParentId = fileSelectedCategoryId.value || null
+
     if (!isCategoryInputVisible.value) {
+      isCategoryInputVisible.value = true
+      categoryInputValue.value = ''
+      categoryInputParentId.value = selectedParentId
+      if (!selectedParentId) focusCategoryInputField()
+      return
+    }
+
+    // 입력창이 이미 열려 있을 때:
+    // - 같은 대상(선택 카테고리/루트)이면 닫기
+    // - 다른 대상을 선택한 상태면 해당 대상으로 위치 이동
+    const isSameTarget = categoryInputParentId.value === selectedParentId
+    if (isSameTarget) {
+      isCategoryInputVisible.value = false
       categoryInputValue.value = ''
       categoryInputParentId.value = null
-    } else {
-      categoryInputParentId.value = null
-      focusCategoryInputField()
+      return
     }
+
+    categoryInputValue.value = ''
+    categoryInputParentId.value = selectedParentId
+    isCategoryInputVisible.value = true
+    if (!selectedParentId) focusCategoryInputField()
   }
   const onCategoryInputEnter = async () => {
     if (!categoryInputValue.value.trim()) return
@@ -187,7 +234,6 @@ export const useCategoryStore = () => {
       categoryInputParentId.value = cat.categoryId
       isCategoryInputVisible.value = true
       categoryInputValue.value = ''
-      focusCategoryInputField()
     } else if (value === 'delete') {
       if (fileSelectedCategoryId.value === cat.categoryId && fileTotalCount.value > 0) {
         openToast({ message: '파일이 등록된 카테고리는 삭제할 수 없습니다.', type: 'warning' })
@@ -222,6 +268,131 @@ export const useCategoryStore = () => {
       fileSelectedCategoryId.value = ''
       fileCurrentPage.value = 1
       handleSelectFileLibraryList()
+    }
+  }
+
+  /**
+   * 트리 D&D 정렬: 부모 변경 및 같은 부모 간 정렬 모두 허용.
+   * position: 'before' | 'after' — 대상 앞/뒤 삽입 (부모 변경 가능)
+   * position: 'inside'           — 대상 노드의 자식으로 이동
+   */
+  const handleUpdateCategoryOrder = async ({
+    draggedId,
+    targetId,
+    position,
+  }: {
+    draggedId: string
+    targetId: string
+    position: 'before' | 'after' | 'inside'
+  }): Promise<boolean> => {
+    if (draggedId === targetId) return false
+
+    const tree = categoryList.value
+    const ctxDrag = findCategorySiblingContext(tree, draggedId, null)
+    const ctxTarget = findCategorySiblingContext(tree, targetId, null)
+    if (!ctxDrag || !ctxTarget) return false
+
+    const dragNode = ctxDrag.siblings[ctxDrag.index]
+    if (!dragNode) return false
+
+    // 자기 자손 내부로 이동 불가
+    if (position === 'inside' && isDescendantOf(dragNode, targetId)) return false
+
+    let affectedItems: { categoryId: string; categoryName: string; parnCatId: string | null; sortOrd: number }[] = []
+
+    if (position === 'inside') {
+      const targetNode = ctxTarget.siblings[ctxTarget.index]!
+
+      // 기존 형제에서 제거 후 sortOrd 재정렬
+      ctxDrag.siblings.splice(ctxDrag.index, 1)
+      ctxDrag.siblings.forEach((n, i) => { n.sortOrd = String(i + 1) })
+
+      // 드래그 노드 부모 변경
+      dragNode.parnCatId = targetNode.categoryId
+
+      // 대상 노드의 자식 끝에 추가
+      if (!targetNode.children) targetNode.children = []
+      targetNode.expanded = true
+      targetNode.children.push(dragNode)
+      targetNode.children.forEach((n, i) => { n.sortOrd = String(i + 1) })
+
+      affectedItems = [
+        ...ctxDrag.siblings.map((n, i) => ({
+          categoryId: n.categoryId,
+          categoryName: n.categoryName,
+          parnCatId: ctxDrag.parentCategoryId,
+          sortOrd: i + 1,
+        })),
+        ...targetNode.children.map((n, i) => ({
+          categoryId: n.categoryId,
+          categoryName: n.categoryName,
+          parnCatId: targetNode.categoryId,
+          sortOrd: i + 1,
+        })),
+      ]
+    } else {
+      const isSameParent = ctxDrag.parentCategoryId === ctxTarget.parentCategoryId
+
+      // 기존 위치에서 제거
+      ctxDrag.siblings.splice(ctxDrag.index, 1)
+
+      if (isSameParent) {
+        // 같은 부모: 인덱스 보정 후 삽입
+        let tgtIdx = ctxTarget.index
+        if (ctxDrag.index < tgtIdx) tgtIdx -= 1
+        const insertIdx = position === 'before' ? tgtIdx : tgtIdx + 1
+        ctxDrag.siblings.splice(insertIdx, 0, dragNode)
+        ctxDrag.siblings.forEach((n, i) => { n.sortOrd = String(i + 1) })
+
+        affectedItems = ctxDrag.siblings.map((n, i) => ({
+          categoryId: n.categoryId,
+          categoryName: n.categoryName,
+          parnCatId: ctxDrag.parentCategoryId,
+          sortOrd: i + 1,
+        }))
+      } else {
+        // 다른 부모: 기존 형제 sortOrd 재정렬
+        ctxDrag.siblings.forEach((n, i) => { n.sortOrd = String(i + 1) })
+
+        // 드래그 노드 부모 변경
+        dragNode.parnCatId = ctxTarget.parentCategoryId
+
+        // 새 위치에 삽입
+        const insertIdx = position === 'before' ? ctxTarget.index : ctxTarget.index + 1
+        ctxTarget.siblings.splice(insertIdx, 0, dragNode)
+        ctxTarget.siblings.forEach((n, i) => { n.sortOrd = String(i + 1) })
+
+        affectedItems = [
+          ...ctxDrag.siblings.map((n, i) => ({
+            categoryId: n.categoryId,
+            categoryName: n.categoryName,
+            parnCatId: ctxDrag.parentCategoryId,
+            sortOrd: i + 1,
+          })),
+          ...ctxTarget.siblings.map((n, i) => ({
+            categoryId: n.categoryId,
+            categoryName: n.categoryName,
+            parnCatId: ctxTarget.parentCategoryId,
+            sortOrd: i + 1,
+          })),
+        ]
+      }
+    }
+
+    // 중복 제거
+    const seen = new Set<string>()
+    const items = affectedItems.filter(({ categoryId }) => {
+      if (seen.has(categoryId)) return false
+      seen.add(categoryId)
+      return true
+    })
+
+    try {
+      await fetchUpdateCategoryOrder(items)
+      return true
+    } catch (error) {
+      console.error(error)
+      return false
     }
   }
 
@@ -377,6 +548,7 @@ export const useCategoryStore = () => {
     openCategorySelectModal,
     toggleCategoryInput,
     onCategoryInputEnter,
+    handleUpdateCategoryOrder,
     handleSaveCategory,
     handleRenameCategory,
     handleDeleteCategory,
