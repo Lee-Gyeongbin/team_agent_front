@@ -53,6 +53,34 @@
           <p class="chat-translate-card__subtitle">{{ translateConfig.ui.introSubtitle }}</p>
         </div>
       </div>
+      <div
+        v-if="!props.readonly"
+        class="chat-translate-card__instant-toggle-wrap"
+      >
+        <button
+          type="button"
+          class="chat-translate-card__instant-toggle"
+          :class="{ 'is-active': isInstantTranslateActive }"
+          @click="onToggleInstantTranslate"
+        >
+          <i class="icon-agent-translate size-16" />
+          {{ isInstantTranslateActive ? '즉시번역 사용 중' : '즉시번역' }}
+        </button>
+        <div
+          v-if="isInstantTranslateActive"
+          class="chat-translate-card__instant-tooltip"
+        >
+          <p class="chat-translate-card__instant-tooltip-title">즉시번역 옵션</p>
+          <div class="chat-translate-card__instant-tooltip-row">
+            <span class="chat-translate-card__instant-tooltip-label">목표 언어</span>
+            <span class="chat-translate-card__instant-tooltip-value">{{ targetLangLabel }}</span>
+          </div>
+          <div class="chat-translate-card__instant-tooltip-row">
+            <span class="chat-translate-card__instant-tooltip-label">톤</span>
+            <span class="chat-translate-card__instant-tooltip-value">{{ toneLabel }}</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- 제출 완료 후 — 요청 내용 요약 -->
@@ -293,7 +321,7 @@
 <script setup lang="ts">
 import type { TranslateAgentConfig } from '~/types/agent'
 import type { TranslateFormPayload } from '~/types/chat'
-import { createEmptyTranslateFormPayload } from '~/utils/chat/translateAgentUtil'
+import { createEmptyTranslateFormPayload, useInstantTranslate } from '~/utils/chat/translateAgentUtil'
 import { copyToClipboard } from '~/utils/global/clipboardUtil'
 import { openToast } from '~/composables/useToast'
 
@@ -332,6 +360,25 @@ watch(
   },
   { immediate: true },
 )
+
+// ━━━ 즉시번역(전역 드래그 번역) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const { isInstantTranslateActive, enableInstantTranslate, updateInstantTranslateOptions, disableInstantTranslate } =
+  useInstantTranslate()
+
+const onToggleInstantTranslate = () => {
+  if (isInstantTranslateActive.value) {
+    disableInstantTranslate()
+  } else {
+    enableInstantTranslate({ targetLangLabel: targetLangLabel.value, toneLabel: toneLabel.value })
+  }
+}
+
+// 즉시번역 활성 중 목표 언어/톤 변경 시 전역 옵션도 함께 갱신
+watch([() => form.targetLang, () => form.tone], () => {
+  if (!isInstantTranslateActive.value) return
+  updateInstantTranslateOptions({ targetLangLabel: targetLangLabel.value, toneLabel: toneLabel.value })
+})
 
 const languageOptions = computed(() => props.translateConfig.languages.map((l) => ({ label: l.label, value: l.value })))
 const toneOptions = computed(() => props.translateConfig.tones.map((t) => ({ label: t.label, value: t.value })))
@@ -571,6 +618,101 @@ const onSubmitClick = () => {
     display: flex;
     align-items: center;
     gap: $spacing-sm;
+  }
+
+  &__instant-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    padding: 6px 12px;
+    border: 1px solid $color-border;
+    border-radius: $border-radius-100;
+    background: #fff;
+    cursor: pointer;
+    transition:
+      background-color $transition-fast,
+      color $transition-fast,
+      border-color $transition-fast;
+    @include typo($body-small, $color-text-secondary);
+
+    i {
+      color: $color-text-muted;
+      transition: color $transition-fast;
+    }
+
+    &:hover:not(.is-active) {
+      background: rgba(var(--translate-theme-rgb), 0.06);
+      color: $color-text-primary;
+    }
+
+    &.is-active {
+      border-color: var(--translate-theme-color);
+      background: rgba(var(--translate-theme-rgb), 0.08);
+      @include typo($body-small-bold, var(--translate-theme-color));
+
+      i {
+        color: var(--translate-theme-color);
+      }
+    }
+  }
+
+  &__instant-toggle-wrap {
+    position: relative;
+    flex-shrink: 0;
+
+    &:hover .chat-translate-card__instant-tooltip {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+  }
+
+  &__instant-tooltip {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 5;
+    width: 180px;
+    padding: $spacing-sm $spacing-md;
+    border: 1px solid rgba(var(--translate-theme-rgb), 0.18);
+    border-radius: $border-radius-base;
+    background: #fff;
+    box-shadow: $shadow-lg;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-4px);
+    transition:
+      opacity $transition-fast,
+      transform $transition-fast,
+      visibility $transition-fast;
+    pointer-events: none;
+  }
+
+  &__instant-tooltip-title {
+    margin: 0 0 6px;
+    @include typo($body-xsmall-bold, var(--translate-theme-color));
+  }
+
+  &__instant-tooltip-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-sm;
+    padding: 3px 0;
+
+    & + & {
+      border-top: 1px solid $color-border;
+    }
+  }
+
+  &__instant-tooltip-label {
+    @include typo($body-xsmall, $color-text-muted);
+  }
+
+  &__instant-tooltip-value {
+    @include typo($body-xsmall-bold, $color-text-heading);
+    text-align: right;
   }
 
   &__avatar {

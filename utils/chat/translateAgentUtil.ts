@@ -229,6 +229,51 @@ export const useTranslateAgent = () => {
   }
 }
 
+// ━━━ 즉시번역(전역 드래그 번역) 상태 ━━━━━━━━━━━━━━━━━━━━━━━━
+
+export interface InstantTranslateOptions {
+  targetLangLabel: string
+  toneLabel: string
+}
+
+const isInstantTranslateActive = ref(false)
+const instantTranslateOptions = ref<InstantTranslateOptions>({ targetLangLabel: '', toneLabel: '' })
+
+export const useInstantTranslate = () => {
+  const enableInstantTranslate = (options: InstantTranslateOptions) => {
+    instantTranslateOptions.value = options
+    isInstantTranslateActive.value = true
+  }
+  const updateInstantTranslateOptions = (options: InstantTranslateOptions) => {
+    instantTranslateOptions.value = options
+  }
+  const disableInstantTranslate = () => {
+    isInstantTranslateActive.value = false
+  }
+  return {
+    isInstantTranslateActive,
+    instantTranslateOptions,
+    enableInstantTranslate,
+    updateInstantTranslateOptions,
+    disableInstantTranslate,
+  }
+}
+
+// ━━━ 즉시번역 API 호출 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+/** 드래그 선택 텍스트를 즉시 번역 — 채팅 로그를 남기지 않는 동기 호출 */
+export const requestInstantTranslate = async (content: string, options: InstantTranslateOptions): Promise<string> => {
+  const { post } = useApi()
+  const res = await post<{ success: boolean; translatedText?: string; message?: string }>(
+    '/ai/chatbot/instantTranslate.do',
+    { content, targetLang: options.targetLangLabel, tone: options.toneLabel },
+  )
+  if (!res.success || !res.translatedText) {
+    throw new Error(res.message || '번역에 실패했습니다.')
+  }
+  return res.translatedText
+}
+
 // ━━━ 번역 결과 파일 다운로드 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 /** 번역 에이전트 답변(텍스트/파일 업로드 모드 공통) — 형식 선택 후 파일 다운로드 컨트롤을 노출할 대상인지 판별 */
