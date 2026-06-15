@@ -5,22 +5,22 @@
         <UiButton
           variant="outline"
           size="md"
-          @click="openExcelUploadModal"
-        >
-          <template #icon-left>
-            <i class="icon icon-document-search size-16" />
-          </template>
-          엑셀 업로드
-        </UiButton>
-        <UiButton
-          variant="outline"
-          size="md"
           @click="handleDownloadOrgExcel"
         >
           <template #icon-left>
             <i class="icon icon-download size-16" />
           </template>
           엑셀 다운로드
+        </UiButton>
+        <UiButton
+          variant="outline"
+          size="md"
+          @click="openExcelUploadModal"
+        >
+          <template #icon-left>
+            <i class="icon icon-document-search size-16" />
+          </template>
+          엑셀 업로드
         </UiButton>
         <div class="org-manage-header-search">
           <UiInput
