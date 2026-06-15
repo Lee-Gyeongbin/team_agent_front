@@ -452,6 +452,27 @@ const createSynonymGroup = (sourceText: string, synonyms: string[]): DatamartMet
   synonymList: [createSynonymItem(sourceText, 'Y'), ...synonyms.map((word) => createSynonymItem(word, 'N'))],
 })
 
+/** 단어 중복 검사 */
+const hasOverlapInAllSynonymWords = (sourceText: string, synonymWords: string[], excludeGroupId?: string) => {
+  const groupWords = [sourceText, ...synonymWords].map((word) => word.trim()).filter(Boolean)
+  if (new Set(groupWords).size !== groupWords.length) return true
+
+  const existingSet = new Set(
+    visibleSynonymGroups.value
+      .filter((group) => !excludeGroupId || getGroupUiId(group) !== excludeGroupId)
+      .flatMap((group) => [
+        getGroupSourceText(group).trim(),
+        ...getGroupSynonymItems(group).map((item) => item.synonymWord.trim()),
+      ])
+      .filter(Boolean),
+  )
+  return groupWords.some((word) => existingSet.has(word))
+}
+
+const showSynonymOverlapToast = () => {
+  openToast({ message: '동의어 중복 검사 결과 중복 단어가 있습니다.', type: 'warning' })
+}
+
 /** 스토어 payload(flat synonymList) → UI용 그룹 배열 */
 function buildGroupedSynonyms(raw: DatamartMetaSynonymGroup[]): DatamartMetaSynonymGroup[] {
   const flatItems = raw
@@ -586,6 +607,10 @@ const onCancelAddGroup = () => {
 const onConfirmAddFormSynonym = () => {
   const value = addFormSynonymInput.value.trim()
   if (!value) return
+  if (hasOverlapInAllSynonymWords(addFormSourceText.value, [...addFormSynonyms.value, value])) {
+    showSynonymOverlapToast()
+    return
+  }
   addFormSynonyms.value.push(value)
   addFormSynonymInput.value = ''
   nextTick(() => addFormSynonymInputRef.value?.focus())
@@ -602,6 +627,10 @@ const onRemoveAddFormSynonym = (index: number) => {
 const onSaveAddGroup = () => {
   if (!isAddFormSaveEnabled.value) return
   const sourceText = addFormSourceText.value.trim()
+  if (hasOverlapInAllSynonymWords(sourceText, addFormSynonyms.value)) {
+    showSynonymOverlapToast()
+    return
+  }
   const newGroup = createSynonymGroup(sourceText, [...addFormSynonyms.value])
   synonymGroups.value = [newGroup, ...synonymGroups.value]
   ensureGroupExpanded(getGroupUiId(newGroup))
@@ -645,6 +674,11 @@ const onConfirmEditSource = (group: DatamartMetaSynonymGroup) => {
   if (!sourceText) {
     editState.value = null
     ensureGroupExpanded(groupId)
+    return
+  }
+
+  if (hasOverlapInAllSynonymWords(sourceText, synonymWords, groupId)) {
+    showSynonymOverlapToast()
     return
   }
 
@@ -713,6 +747,10 @@ const onConfirmAddSynonym = () => {
   if (!state) return
   const value = state.newSynonymInput.trim()
   if (!value) return
+  if (hasOverlapInAllSynonymWords(state.sourceText, [...state.synonymWords, value], state.groupId)) {
+    showSynonymOverlapToast()
+    return
+  }
   editState.value = {
     ...state,
     synonymWords: [...state.synonymWords, value],
