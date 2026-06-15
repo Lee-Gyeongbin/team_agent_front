@@ -113,7 +113,7 @@ interface Props {
   isOpen?: boolean
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   isOpen: false,
 })
 
@@ -139,6 +139,9 @@ const filteredArchiveCardList = computed(() => {
 // 스크롤 상태
 const bodyRef = ref<HTMLElement | null>(null)
 const isScrolled = ref(false)
+
+const isModalTopBtnShown = computed(() => props.isOpen && isScrolled.value)
+useModalTopBtnSync(isModalTopBtnShown)
 
 // 스크롤 이벤트 핸들러
 const handleScroll = () => {

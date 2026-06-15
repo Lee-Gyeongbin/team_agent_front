@@ -434,6 +434,9 @@ const onReferenceRowClick = (item: DocItem) => {
 const contentRef = ref<HTMLElement | null>(null)
 const isScrolled = ref(false)
 
+const isModalTopBtnShown = computed(() => props.isOpen && isScrolled.value)
+useModalTopBtnSync(isModalTopBtnShown)
+
 // KS 배너 오프셋을 반영한 패널 높이 — SCSS calc(100vh - 102px) 기준에서 banner만큼 추가 차감
 const contentHeight = computed(() => `calc(100vh - ${102 + props.bannerOffset}px)`)
 

@@ -3,6 +3,7 @@
     <div
       v-if="isInstantTranslateActive"
       class="instant-translate-badge"
+      :style="badgeStyle"
     >
       <i class="icon-agent-translate size-16" />
       <span>즉시번역 사용 중</span>
@@ -49,14 +50,26 @@
     >
       <div class="instant-translate-popover__header">
         <span class="instant-translate-popover__title">번역 결과</span>
-        <button
-          type="button"
-          class="instant-translate-popover__close"
-          aria-label="닫기"
-          @click="closePopover"
-        >
-          <i class="icon-close size-12" />
-        </button>
+        <div class="instant-translate-popover__header-actions">
+          <button
+            type="button"
+            class="instant-translate-popover__icon-btn"
+            title="번역 결과 복사"
+            aria-label="번역 결과 복사"
+            :disabled="!canCopyResult"
+            @click="onCopyResult"
+          >
+            <i class="icon-copy size-12" />
+          </button>
+          <button
+            type="button"
+            class="instant-translate-popover__icon-btn"
+            aria-label="닫기"
+            @click="closePopover"
+          >
+            <i class="icon-close size-12" />
+          </button>
+        </div>
       </div>
       <div class="instant-translate-popover__body">
         <p
@@ -84,8 +97,14 @@
 
 <script setup lang="ts">
 import { useInstantTranslate, requestInstantTranslate } from '~/utils/chat/translateAgentUtil'
+import { copyToClipboard } from '~/utils/global/clipboardUtil'
 
 const { isInstantTranslateActive, instantTranslateOptions, disableInstantTranslate } = useInstantTranslate()
+const { isTopBtnVisible, floatingBottomAboveTopBtn } = useTopBtnState()
+
+const badgeStyle = computed(() =>
+  isTopBtnVisible.value ? { bottom: `${floatingBottomAboveTopBtn.value}px` } : undefined,
+)
 
 const showTranslateButton = ref(false)
 const showResultPopover = ref(false)
@@ -107,6 +126,8 @@ const popoverStyle = computed(() => ({
   top: `${popoverPos.value.top}px`,
   left: `${popoverPos.value.left}px`,
 }))
+
+const canCopyResult = computed(() => !isTranslating.value && !errorMessage.value && !!translatedText.value.trim())
 
 const resetPopupState = () => {
   showTranslateButton.value = false
@@ -183,6 +204,21 @@ const closePopover = () => {
   resetPopupState()
 }
 
+const onCopyResult = async () => {
+  const text = translatedText.value.trim()
+  if (!text) {
+    openToast({ message: '복사할 내용이 없습니다.', type: 'warning' })
+    return
+  }
+
+  try {
+    await copyToClipboard(text)
+    openToast({ message: '클립보드에 복사되었습니다.', type: 'success' })
+  } catch {
+    openToast({ message: '클립보드에 복사하지 못했습니다.', type: 'error' })
+  }
+}
+
 onMounted(() => {
   document.addEventListener('selectionchange', onSelectionChange)
   document.addEventListener('mousedown', onDocumentMouseDown)
@@ -204,6 +240,7 @@ watch(isInstantTranslateActive, (active) => {
   right: $spacing-lg;
   bottom: $spacing-lg;
   z-index: $z-toast;
+  transition: bottom $transition-base;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -348,7 +385,13 @@ watch(isInstantTranslateActive, (active) => {
   @include typo($body-small-bold, $color-text-heading);
 }
 
-.instant-translate-popover__close {
+.instant-translate-popover__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.instant-translate-popover__icon-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -364,9 +407,14 @@ watch(isInstantTranslateActive, (active) => {
     color $transition-fast,
     background-color $transition-fast;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: $color-background;
     color: $color-text-primary;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 }
 
