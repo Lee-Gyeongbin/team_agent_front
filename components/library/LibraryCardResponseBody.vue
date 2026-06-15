@@ -72,6 +72,29 @@
       @click="onPsychologyMarkdownClick"
       v-html="surveyPexelsOnlyHtml"
     />
+    <template v-else-if="isTranslateResponse">
+      <!-- eslint-disable vue/no-v-html — toHtmlContent 내 안전 처리 적용 -->
+      <div
+        class="message-content markdown-body"
+        v-html="responseRenderedHtml"
+      />
+      <!-- eslint-enable vue/no-v-html -->
+      <div class="message-translate-download library-translate-download">
+        <UiSelect
+          v-model="translateDownloadFormat"
+          :options="translateDownloadFormatOptions"
+        />
+        <UiButton
+          variant="primary-dark"
+          @click="onDownloadTranslationResult"
+        >
+          다운로드
+          <template #icon-right>
+            <i class="icon-download size-20"></i>
+          </template>
+        </UiButton>
+      </div>
+    </template>
     <div
       v-else
       class="message-content markdown-body"
@@ -118,6 +141,7 @@ import {
 } from '~/utils/chat/recommendAgentUtil'
 import { NEWS_CURATOR_AGENT_ID, parseNewsCuratorItems, parseNewsCuratorPromptMeta } from '~/utils/chat/newsCuratorUtil'
 import { isTodayMemeLibraryCard, parseTodayMemeItems } from '~/utils/chat/todayMemeUtil'
+import { downloadTranslationResult, isTranslateLibraryCardItem } from '~/utils/chat/translateAgentUtil'
 import {
   parseSurveyAnswersFromPrompt,
   extractAiImageMarkerSection,
@@ -215,6 +239,19 @@ const memeList = computed(() => {
 })
 
 const isTodayMemeResponse = computed(() => isTodayMemeLibraryCard(props.item) && memeList.value.length > 0)
+
+const isTranslateResponse = computed(() => isTranslateLibraryCardItem(props.item, libraryAgents.value))
+
+const translateDownloadFormat = ref<string>('docx')
+const translateDownloadFormatOptions = [
+  { label: '.docx', value: 'docx' },
+  { label: '.txt', value: 'txt' },
+]
+
+const onDownloadTranslationResult = () => {
+  const text = (props.item.rcontent ?? '').replace(/<[^>]*>/g, '')
+  void downloadTranslationResult(text, translateDownloadFormat.value, '번역결과')
+}
 
 const responseRenderedHtml = computed(() => {
   const raw = props.item.rcontent ?? ''
@@ -367,6 +404,11 @@ watch(
 <style lang="scss" scoped>
 .library-card-response-body {
   width: 100%;
+}
+
+.library-translate-download {
+  margin-top: $spacing-md;
+  justify-content: flex-end;
 }
 
 // 방사형 차트 + StressScoreGrid — 채팅 대비 약 70% (403×224, 그리드 zoom 0.7)

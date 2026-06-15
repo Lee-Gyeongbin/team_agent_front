@@ -3,13 +3,23 @@
     class="chat-index s-center"
     :class="{
       'is-survey-mode':
-        isSurveyVisible || isGenderStepVisible || isRecommendVisible || isTodayMemeVisible || isNewsCuratorVisible,
+        isSurveyVisible ||
+        isGenderStepVisible ||
+        isRecommendVisible ||
+        isTranslateVisible ||
+        isTodayMemeVisible ||
+        isNewsCuratorVisible,
     }"
   >
     <!-- 헤더 (설문 모드에서 숨김) -->
     <div
       v-if="
-        !isSurveyVisible && !isGenderStepVisible && !isRecommendVisible && !isTodayMemeVisible && !isNewsCuratorVisible
+        !isSurveyVisible &&
+        !isGenderStepVisible &&
+        !isRecommendVisible &&
+        !isTranslateVisible &&
+        !isTodayMemeVisible &&
+        !isNewsCuratorVisible
       "
       class="chat-index-header"
       data-aos="fade-up"
@@ -37,6 +47,15 @@
       @close="handleCloseRecommendAgent"
       @submit="handleIndexRecommendSubmit"
     />
+    <ChatTranslateCard
+      v-if="isTranslateVisible && currentTranslateConfig"
+      class="chat-index-survey"
+      :translate-config="currentTranslateConfig"
+      :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? ''"
+      :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
+      @close="handleCloseTranslateAgent"
+      @submit="handleIndexTranslateSubmit"
+    />
     <ChatTodayMeme
       v-if="isTodayMemeVisible"
       class="chat-index-survey"
@@ -59,7 +78,12 @@
       class="chat-index-input-wrapper"
       :class="{
         'is-survey-locked':
-          isSurveyVisible || isGenderStepVisible || isRecommendVisible || isTodayMemeVisible || isNewsCuratorVisible,
+          isSurveyVisible ||
+          isGenderStepVisible ||
+          isRecommendVisible ||
+          isTranslateVisible ||
+          isTodayMemeVisible ||
+          isNewsCuratorVisible,
       }"
       data-aos="fade-up"
       data-aos-delay="200"
@@ -70,7 +94,12 @@
     <!-- 에이전트 카드 (설문 모드 아닐 때) -->
     <template
       v-if="
-        !isSurveyVisible && !isGenderStepVisible && !isRecommendVisible && !isTodayMemeVisible && !isNewsCuratorVisible
+        !isSurveyVisible &&
+        !isGenderStepVisible &&
+        !isRecommendVisible &&
+        !isTranslateVisible &&
+        !isTodayMemeVisible &&
+        !isNewsCuratorVisible
       "
     >
       <div
@@ -125,6 +154,7 @@
 <script setup lang="ts">
 import { parseSurveyConfigFromAgent } from '~/utils/chat/surveyUtil'
 import { parseRecommendConfigFromAgent } from '~/utils/chat/recommendAgentUtil'
+import { parseTranslateConfigFromAgent } from '~/utils/chat/translateAgentUtil'
 import { parseCurationConfigFromAgent } from '~/utils/chat/newsCuratorUtil'
 import { useMailStore } from '~/composables/mail/useMailStore'
 import type { Agent } from '~/types/agent'
@@ -146,6 +176,9 @@ const {
   isRecommendVisible,
   handleCloseRecommendAgent,
   handleIndexRecommendSubmit,
+  isTranslateVisible,
+  handleCloseTranslateAgent,
+  handleIndexTranslateSubmit,
   isTodayMemeVisible,
   handleTodayMemeIntroEnd,
   resetTodayMemePanel,
@@ -188,6 +221,10 @@ const currentRecommendConfig = computed(() => {
   const agent = currentSurveyAgent.value
   return agent ? parseRecommendConfigFromAgent(agent) : null
 })
+const currentTranslateConfig = computed(() => {
+  const agent = currentSurveyAgent.value
+  return agent ? parseTranslateConfigFromAgent(agent) : null
+})
 const currentCurationConfig = computed(() => {
   const agent = currentSurveyAgent.value
   return agent ? parseCurationConfigFromAgent(agent) : null
@@ -199,6 +236,7 @@ onMounted(async () => {
   // 다른 메뉴 갔다 돌아올 때 설문 / 에이전트 선택 상태 초기화
   handleClosePsychologySurvey()
   handleCloseRecommendAgent()
+  handleCloseTranslateAgent()
   handleCloseNewsCurator()
   resetTodayMemePanel()
   // 인덱스 진입 시점에 즉시 채팅방 상태를 초기화해

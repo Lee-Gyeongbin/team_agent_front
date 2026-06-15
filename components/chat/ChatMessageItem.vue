@@ -7,13 +7,15 @@
         ? 'role-assistant'
         : message.type === 'recommend'
           ? 'role-assistant'
-          : message.type === 'news'
-            ? 'role-news'
-            : message.type === 'meme'
-              ? 'role-meme'
-              : message.type === 'survey'
-                ? 'role-survey'
-                : 'role-user',
+          : message.type === 'translation'
+            ? 'role-assistant'
+            : message.type === 'news'
+              ? 'role-news'
+              : message.type === 'meme'
+                ? 'role-meme'
+                : message.type === 'survey'
+                  ? 'role-survey'
+                  : 'role-user',
     ]"
   >
     <!-- assistant 메시지 -->
@@ -134,6 +136,24 @@
             @on-mtlcare-request="onRequestMtlcareInterview"
           />
           <div
+            v-if="isTranslateResultAnswer"
+            class="message-translate-download"
+          >
+            <UiSelect
+              v-model="translateDownloadFormat"
+              :options="translateDownloadFormatOptions"
+            />
+            <UiButton
+              variant="primary-dark"
+              @click="onDownloadTranslationResult"
+            >
+              다운로드
+              <template #icon-right>
+                <i class="icon-download size-20"></i>
+              </template>
+            </UiButton>
+          </div>
+          <div
             v-if="message.hasSource || message.hasVisualization"
             class="message-panel-buttons"
           >
@@ -235,6 +255,16 @@
           @close="emit('on-recommend-card-close', message.logId)"
           @enriched="onRecommendationsEnriched"
         />
+        <ChatTranslateCard
+          v-else-if="message.type === 'translation' && messageTranslateConfig"
+          :translate-config="messageTranslateConfig"
+          :readonly="message.translateSubmitted === true"
+          :initial-payload="message.translateFormPayload"
+          :theme-icon-class-nm="themeAgent?.iconClassNm ?? ''"
+          :theme-color-hex="themeAgent?.colorHex ?? ''"
+          @submit="emit('on-submit-translate-card', message.logId, $event)"
+          @close="emit('on-translate-card-close', message.logId)"
+        />
         <ChatTodayMeme
           v-else-if="message.type === 'meme'"
           :readonly="isShare || message.memeSubmitted === true"
@@ -307,10 +337,11 @@ import type {
   NewsCuratorItem,
   RecommendFormPayload,
   RecommendResultItem,
+  TranslateFormPayload,
 } from '~/types/chat'
 import type { StressScoreItem } from '~/types/stress'
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
-import type { Agent, RecommendAgentConfig } from '~/types/agent'
+import type { Agent, RecommendAgentConfig, TranslateAgentConfig } from '~/types/agent'
 import {
   fetchAndInjectPexelsImages,
   extractKeywordSection,
@@ -342,6 +373,12 @@ import {
   applyRecommendImageEnrichmentToResultMessage,
   isRecommendPipelineAnswer,
 } from '~/utils/chat/recommendAgentUtil'
+import {
+  parseTranslateConfigFromAgent,
+  resolveTranslateConfigByAgentId,
+  isTranslateTextResultAnswer,
+  downloadTranslationResult,
+} from '~/utils/chat/translateAgentUtil'
 import type { TodayMemeItem } from '~/utils/chat/todayMemeUtil'
 import { findLinkedNewsCuratorAnswer, resolveNewsCuratorItemsForCard } from '~/utils/chat/newsCuratorUtil'
 import { attachmentsRequireSummaryIndicator } from '~/utils/chat/chatAttachmentDisplayUtil'
@@ -397,6 +434,8 @@ const emit = defineEmits<{
   'on-view-visualization': [id: string]
   'on-submit-recommend-card': [logId: string, payload: RecommendFormPayload]
   'on-recommend-card-close': [logId: string]
+  'on-submit-translate-card': [logId: string, payload: TranslateFormPayload]
+  'on-translate-card-close': [logId: string]
   'on-survey-submit': [logId: string]
   'on-survey-close': [logId: string]
   'on-meme-intro-complete': [logId: string]
@@ -802,6 +841,18 @@ const messageRecommendConfig = computed((): RecommendAgentConfig | null => {
   return null
 })
 
+// ── TRANSLATE 에이전트 ───────────────────────────────────────────────────────
+
+const messageTranslateConfig = computed((): TranslateAgentConfig | null => {
+  if (props.message.type !== 'translation') return null
+  const agent = themeAgent.value
+  if (agent) return parseTranslateConfigFromAgent(agent)
+  if (props.message.agentId) {
+    return resolveTranslateConfigByAgentId(props.message.agentId, chatIndexAgents.value)
+  }
+  return null
+})
+
 const recommendCardDisplayMode = computed((): 'form' | 'result' | 'combined' => {
   if (props.message.type !== 'recommend') return 'combined'
   if (props.message.recommendCardRole === 'result') return 'result'
@@ -949,7 +1000,11 @@ const newsCardReselect = computed(() => props.message.type === 'news' && props.m
 const isTodayMemeAnswer = computed(() => isTodayMemeAnswerMessage(props.message))
 
 const isAgentCardMessage = computed(
-  () => props.message.type === 'recommend' || props.message.type === 'meme' || props.message.type === 'news',
+  () =>
+    props.message.type === 'recommend' ||
+    props.message.type === 'meme' ||
+    props.message.type === 'news' ||
+    props.message.type === 'translation',
 )
 
 /** answer 행 또는 에이전트 카드에 연결된 answer logId — 지식창고·반응 API 공통 */
@@ -1038,6 +1093,19 @@ const shouldShowAgentCardKnowledgeFooter = computed(() => {
 const shouldShowMessageFooter = computed(
   () => !props.message.isStreaming && !isTodayMemeAnswer.value && !props.message.chatLogMissing,
 )
+
+/** 텍스트 입력 번역 결과 답변 — 형식 선택 후 파일 다운로드 컨트롤 노출 대상 */
+const isTranslateResultAnswer = computed(() => isTranslateTextResultAnswer(props.message, chatIndexAgents.value))
+
+const translateDownloadFormat = ref<string>('docx')
+const translateDownloadFormatOptions = [
+  { label: '.docx', value: 'docx' },
+  { label: '.txt', value: 'txt' },
+]
+
+const onDownloadTranslationResult = () => {
+  downloadTranslationResult(props.message.rContent ?? '', translateDownloadFormat.value, '번역결과')
+}
 
 /** 이 meme 메시지에 대응하는 TodayMeme 답변이 아직 스트리밍 중인지 */
 const isMemeAnswerStreaming = computed(() => {

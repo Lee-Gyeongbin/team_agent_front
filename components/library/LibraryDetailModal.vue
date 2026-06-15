@@ -163,7 +163,8 @@
               v-if="
                 parsedRecommendItems.length === 0 &&
                 parsedNewsCuratorItems.length === 0 &&
-                parsedTodayMemeItems.length === 0
+                parsedTodayMemeItems.length === 0 &&
+                !isTranslateLibraryCard
               "
               variant="ghost"
               size="xxs"
@@ -336,6 +337,7 @@ import {
 } from '~/utils/chat/recommendAgentUtil'
 import { NEWS_CURATOR_AGENT_ID, parseNewsCuratorItems } from '~/utils/chat/newsCuratorUtil'
 import { isTodayMemeLibraryCard, parseTodayMemeItems } from '~/utils/chat/todayMemeUtil'
+import { isTranslateLibraryCardItem } from '~/utils/chat/translateAgentUtil'
 import type { LibraryCardDetail, DocItem, TableDataItem, ChartStatItem, ChartDetailCdItem } from '~/types/library'
 import type { LibraryReportInsightRequest } from '~/utils/library/libraryReportEditorUtil'
 import type { RecommendResultItem, VisualizationChartSelection, VisualizationViewModel } from '~/types/chat'
@@ -504,6 +506,11 @@ const parsedTodayMemeItems = computed(() => {
   const raw = (displayData.value?.rcontent ?? '').trim()
   if (!raw) return []
   return parseTodayMemeItems(raw)
+})
+
+const isTranslateLibraryCard = computed(() => {
+  if (!displayData.value) return false
+  return isTranslateLibraryCardItem(displayData.value, libraryAgents.value)
 })
 // SQL 코드 블록 표시 (데이터분석 타입에서 SQL 버튼으로 토글, 초기 숨김)
 const isSqlCodeVisible = ref(false)

@@ -96,7 +96,7 @@ export interface ChatSocketMessage {
 export interface ChatMessage {
   id?: string
   logId: string
-  type: 'question' | 'answer' | 'survey' | 'meme' | 'recommend' | 'news'
+  type: 'question' | 'answer' | 'survey' | 'meme' | 'recommend' | 'news' | 'translation'
   qContent?: string
   rContent?: string
   createdAt: string
@@ -162,7 +162,22 @@ export interface ChatMessage {
   recommendAnswerLogId?: string
   /** RECOMMEND result 카드 표시용 추천 결과 목록 */
   recommendDisplayRecommendations?: RecommendResultItem[]
+  /** TRANSLATE 에이전트 카드 전용: 사용자 입력 (목표 언어/톤/원문) */
+  translateFormPayload?: TranslateFormPayload
+  /** TRANSLATE 에이전트 카드 전용: 제출 완료 여부 */
+  translateSubmitted?: boolean
   [key: string]: unknown
+}
+
+/** TRANSLATE 에이전트 폼 응답 */
+export interface TranslateFormPayload {
+  sourceText: string
+  targetLang: string
+  tone: string
+  /** 파일 업로드 모드에서 선택한 파일 (제출 시에만 사용, 직렬화 대상 아님) */
+  file?: File
+  /** 파일 업로드 모드에서 readonly 카드에 표시할 파일명 */
+  fileName?: string
 }
 
 /** RECOMMEND 에이전트 폼 응답 — key: 필드 key, value: 선택값 */
