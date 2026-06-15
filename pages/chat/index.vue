@@ -286,7 +286,10 @@ onBeforeRouteLeave((to) => {
 .chat-index-survey {
   flex: 1;
   min-height: 0;
+  min-width: 0;
   width: 100%;
+  max-width: 760px;
+  align-self: stretch;
   margin-bottom: $spacing-md;
 }
 

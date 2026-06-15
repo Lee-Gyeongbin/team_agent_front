@@ -190,7 +190,7 @@
             <UiTextarea
               v-model="form.sourceText"
               :placeholder="translateConfig.ui.textPlaceholder"
-              :rows="8"
+              :rows="4"
               :auto-resize="false"
               border
             />
@@ -543,13 +543,15 @@ const onSubmitClick = () => {
   flex-direction: column;
   width: 100%;
   max-width: 760px;
+  height: 100%;
+  min-width: 0;
   border: 1px solid $color-border;
   border-radius: $border-radius-lg;
   background: #fff;
   overflow: hidden;
 
   &.is-content-visible {
-    min-height: 460px;
+    min-height: min(480px, calc(100vh - #{$header-height} - 120px));
   }
 
   &__intro {
@@ -590,13 +592,16 @@ const onSubmitClick = () => {
     flex-direction: column;
     gap: $spacing-md;
     min-height: 0;
+    min-width: 0;
     padding: $spacing-lg;
+    overflow: hidden;
   }
 
   &__options-panel {
     display: flex;
     flex-direction: column;
     gap: $spacing-sm;
+    min-width: 0;
     padding: $spacing-md;
     border: 1px solid rgba(var(--translate-theme-rgb), 0.18);
     border-radius: $border-radius-lg;
@@ -714,7 +719,9 @@ const onSubmitClick = () => {
     flex: 1;
     display: flex;
     flex-direction: column;
-    min-height: var(--translate-card-content-height);
+    min-height: 0;
+    min-width: 0;
+    width: 100%;
   }
 
   &__content-panel {
@@ -722,20 +729,29 @@ const onSubmitClick = () => {
     display: flex;
     flex-direction: column;
     gap: $spacing-xs;
-    min-height: var(--translate-card-content-height);
+    min-height: 0;
+    min-width: 0;
+    width: 100%;
   }
 
   &__textarea-wrap {
     flex: 1;
     display: flex;
+    flex-direction: column;
     min-height: 0;
+    min-width: 0;
+    width: 100%;
 
     :deep(.ui-textarea) {
       flex: 1;
-      min-height: var(--translate-card-content-height);
-      height: 100%;
+      width: 100%;
+      max-width: 100%;
+      min-height: 120px;
+      height: auto;
       padding: $spacing-sm $spacing-md;
       resize: none;
+      overflow-y: auto;
+      @include custom-scrollbar(4px);
     }
   }
 
@@ -744,7 +760,9 @@ const onSubmitClick = () => {
     flex: 1;
     display: flex;
     flex-direction: column;
-    min-height: var(--translate-card-content-height);
+    min-height: 0;
+    min-width: 0;
+    width: 100%;
   }
 
   &__copy-btn {
@@ -865,7 +883,9 @@ const onSubmitClick = () => {
   &__file-zone {
     flex: 1;
     display: flex;
-    min-height: var(--translate-card-content-height);
+    min-height: 0;
+    min-width: 0;
+    width: 100%;
     border: 2px dashed $color-border;
     border-radius: $border-radius-lg;
     background: $color-surface;
