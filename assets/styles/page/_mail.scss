@@ -80,6 +80,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: $spacing-md;
+  align-items: start;
 }
 
 // ─── 공통 패널 ──────────────────────────────────────────────
@@ -91,6 +92,14 @@
   background: #fff;
   border: 1px solid $color-border;
   border-radius: $border-radius-lg;
+}
+
+.mail-briefing-panel,
+.mail-inbox-panel {
+  min-height: 250px;
+  height: 100%;
+  max-height: 250px;
+  overflow: hidden;
 }
 
 .mail-panel-header {
@@ -128,6 +137,14 @@
 }
 
 // ─── 액션 아이템 ────────────────────────────────────────────
+.mail-action-panel {
+  min-height: 420px;
+  height: 100%;
+  max-height: 420px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
 .mail-action-item {
   display: flex;
   align-items: flex-start;
@@ -190,6 +207,20 @@
   white-space: pre-wrap;
 }
 
+.mail-briefing-content,
+.mail-inbox-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  @include custom-scrollbar(4px);
+}
+
+.mail-inbox-content {
+  margin-right: -$spacing-md;
+  padding-right: $spacing-md;
+}
+
 .mail-briefing-list {
   margin: 0;
   padding-left: 18px;
@@ -207,6 +238,8 @@
 .mail-chat-panel {
   min-height: 420px;
   height: 100%;
+  max-height: 420px;
+  overflow: hidden;
   gap: 0;
 }
 

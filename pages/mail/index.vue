@@ -44,7 +44,7 @@
     </div>
 
     <!-- 상단 전체폭: AI 메일 브리핑 -->
-    <div class="mail-panel">
+    <div class="mail-panel mail-briefing-panel">
       <div class="mail-panel-header">
         <h2 class="mail-panel-title">AI 메일 브리핑</h2>
         <div class="mail-ai-badge">
@@ -53,42 +53,44 @@
         </div>
       </div>
 
-      <template v-if="isLoadingSummary">
-        <div class="mail-briefing-skeleton">
-          <span
-            v-for="i in 5"
-            :key="i"
-            class="mail-skeleton mail-skeleton-line"
-            :style="{ width: i % 2 === 0 ? '80%' : '100%' }"
-          />
+      <div class="mail-briefing-content">
+        <template v-if="isLoadingSummary">
+          <div class="mail-briefing-skeleton">
+            <span
+              v-for="i in 5"
+              :key="i"
+              class="mail-skeleton mail-skeleton-line"
+              :style="{ width: i % 2 === 0 ? '80%' : '100%' }"
+            />
+          </div>
+        </template>
+
+        <div
+          v-else-if="briefing.length > 0"
+          class="mail-briefing-text"
+        >
+          <ul class="mail-briefing-list">
+            <li
+              v-for="(line, idx) in briefing"
+              :key="`briefing-${idx}`"
+              class="mail-briefing-item"
+            >
+              {{ line }}
+            </li>
+          </ul>
         </div>
-      </template>
 
-      <div
-        v-else-if="briefing.length > 0"
-        class="mail-briefing-text"
-      >
-        <ul class="mail-briefing-list">
-          <li
-            v-for="(line, idx) in briefing"
-            :key="`briefing-${idx}`"
-            class="mail-briefing-item"
-          >
-            {{ line }}
-          </li>
-        </ul>
+        <UiEmpty
+          v-else
+          title="브리핑 내용이 없습니다"
+        />
       </div>
-
-      <UiEmpty
-        v-else
-        title="브리핑 내용이 없습니다"
-      />
     </div>
 
     <!-- 2컬럼: 액션 아이템 + 메일 컨텍스트 채팅 -->
     <div class="mail-middle-row">
       <!-- 왼쪽: 오늘의 액션 아이템 -->
-      <div class="mail-panel">
+      <div class="mail-panel mail-action-panel">
         <div class="mail-panel-header">
           <h2 class="mail-panel-title">오늘의 액션 아이템</h2>
         </div>
@@ -224,61 +226,63 @@
     </div>
 
     <!-- 받은메일함 목록 -->
-    <div class="mail-panel">
+    <div class="mail-panel mail-inbox-panel">
       <div class="mail-panel-header">
         <h2 class="mail-panel-title">받은메일함</h2>
         <span class="mail-count-badge">{{ totalCount }}개</span>
       </div>
 
-      <template v-if="isLoadingList">
-        <div
-          v-for="i in 5"
-          :key="i"
-          class="mail-item-skeleton"
-        >
-          <span class="mail-skeleton mail-skeleton-avatar" />
-          <div class="mail-item-skeleton-lines">
-            <span class="mail-skeleton mail-skeleton-line" />
-            <span class="mail-skeleton mail-skeleton-line-sm" />
-          </div>
-        </div>
-      </template>
-
-      <template v-else-if="mails.length > 0">
-        <div
-          v-for="mail in mails"
-          :key="mail.from + mail.receivedDate"
-          class="mail-item"
-          :class="{ 'is-unread': !mail.isRead }"
-        >
+      <div class="mail-inbox-content">
+        <template v-if="isLoadingList">
           <div
-            class="mail-item-avatar"
-            :style="{ background: getAvatarColor(mail.fromName) }"
+            v-for="i in 5"
+            :key="i"
+            class="mail-item-skeleton"
           >
-            {{ getInitial(mail.fromName) }}
-          </div>
-
-          <div class="mail-item-content">
-            <div class="mail-item-top">
-              <span class="mail-item-from">{{ mail.fromName || mail.from }}</span>
-              <span class="mail-item-time">{{ formatDate(mail.receivedDate) }}</span>
+            <span class="mail-skeleton mail-skeleton-avatar" />
+            <div class="mail-item-skeleton-lines">
+              <span class="mail-skeleton mail-skeleton-line" />
+              <span class="mail-skeleton mail-skeleton-line-sm" />
             </div>
-            <p class="mail-item-subject">{{ mail.subject }}</p>
-            <p class="mail-item-preview">{{ truncate(mail.body, 80) }}</p>
           </div>
+        </template>
 
-          <span
-            v-if="!mail.isRead"
-            class="mail-item-unread-dot"
-          />
-        </div>
-      </template>
+        <template v-else-if="mails.length > 0">
+          <div
+            v-for="mail in mails"
+            :key="mail.from + mail.receivedDate"
+            class="mail-item"
+            :class="{ 'is-unread': !mail.isRead }"
+          >
+            <div
+              class="mail-item-avatar"
+              :style="{ background: getAvatarColor(mail.fromName) }"
+            >
+              {{ getInitial(mail.fromName) }}
+            </div>
 
-      <UiEmpty
-        v-else
-        icon="icon-mail"
-        title="받은 메일이 없습니다"
-      />
+            <div class="mail-item-content">
+              <div class="mail-item-top">
+                <span class="mail-item-from">{{ mail.fromName || mail.from }}</span>
+                <span class="mail-item-time">{{ formatDate(mail.receivedDate) }}</span>
+              </div>
+              <p class="mail-item-subject">{{ mail.subject }}</p>
+              <p class="mail-item-preview">{{ truncate(mail.body, 80) }}</p>
+            </div>
+
+            <span
+              v-if="!mail.isRead"
+              class="mail-item-unread-dot"
+            />
+          </div>
+        </template>
+
+        <UiEmpty
+          v-else
+          icon="icon-mail"
+          title="받은 메일이 없습니다"
+        />
+      </div>
     </div>
   </div>
 </template>
