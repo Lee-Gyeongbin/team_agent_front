@@ -2,12 +2,16 @@ import type { Datamart, DatamartSummary } from '~/types/datamart'
 import { useApi } from '~/composables/com/useApi'
 import type {
   DatamartMetaCode,
+  DatamartMetaColumnExcelUploadResponse,
   DatamartMetaRelationship,
   DatamartMetaSynonymPayload,
   DatamartMetaTableItem,
   DatamartMetaFewshotPayload,
 } from '~/types/datamartMeta'
-const { get, post } = useApi()
+import { useApi_multipart } from '~/composables/com/useApi_multipart'
+import { downloadBlobAsFile } from '~/utils/global/fileDownloadUtil'
+import { formatYyyyMmDdFromDate } from '~/utils/global/dateUtil'
+const { get, post, getBlob } = useApi()
 
 export const useDatamartApi = () => {
   /** 데이터마트 목록 조회 API */
@@ -102,6 +106,29 @@ export const useDatamartApi = () => {
     return post('/datamart/metaFewshotSave.do', payload)
   }
 
+  /** 메타 관리 > 컬럼 메타 엑셀 다운로드 — GET metaColumnDownloadExcel.do?datamartId= */
+  const fetchDownloadMetaColumnExcel = async (datamartId: string, dmNm?: string): Promise<void> => {
+    const query = new URLSearchParams({ datamartId })
+    const blob = await getBlob(`/datamart/metaColumnDownloadExcel.do?${query.toString()}`)
+    const label = dmNm?.trim() || '데이터마트'
+    const fileName = `${formatYyyyMmDdFromDate(new Date())}_${label}_컬럼메타.xlsx`
+    downloadBlobAsFile(blob, fileName)
+  }
+
+  /** 메타 관리 > 컬럼 메타 엑셀 업로드 — POST multipart (datamartId, uploadFile), 검증·미리보기만(DB 저장 없음) */
+  const fetchUploadMetaColumnExcel = async (
+    datamartId: string,
+    uploadFile: File,
+  ): Promise<DatamartMetaColumnExcelUploadResponse> => {
+    const formData = new FormData()
+    formData.append('datamartId', datamartId)
+    formData.append('uploadFile', uploadFile)
+    return useApi_multipart<DatamartMetaColumnExcelUploadResponse>('/datamart/metaColumnUploadExcel.do', {
+      method: 'POST',
+      body: formData,
+    })
+  }
+
   return {
     fetchDatamartList,
     fetchDatamartSummary,
@@ -119,5 +146,7 @@ export const useDatamartApi = () => {
     fetchSaveMetaSynonym,
     fetchMetaFewshotList,
     fetchSaveMetaFewshot,
+    fetchDownloadMetaColumnExcel,
+    fetchUploadMetaColumnExcel,
   }
 }

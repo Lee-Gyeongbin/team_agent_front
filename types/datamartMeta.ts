@@ -19,6 +19,24 @@ export interface DatamartMetaColumnRow {
   modifyDt: string
 }
 
+/** 메타 관리 > 컬럼 메타 엑셀 업로드 API 응답 data (uploadResult) */
+export interface DatamartMetaColumnExcelUploadData {
+  datamartId: string
+  failDetails: unknown[]
+  returnMsg?: string
+  tableList: {
+    id: string
+    columns?: DatamartMetaColumnRow[]
+  }[]
+}
+
+/** 메타 관리 > 컬럼 메타 엑셀 업로드 API 응답 (jsonView) */
+export interface DatamartMetaColumnExcelUploadResponse {
+  successYn?: boolean
+  returnMsg?: string
+  data?: DatamartMetaColumnExcelUploadData
+}
+
 /** 메타 관리 > 컬럼 메타데이터 탭 — UiTable 컬럼 정의 */
 export const datamartMetaColumnTableColumns: TableColumn[] = [
   { key: 'colPhyNm', label: '컬럼ID', width: '8%', align: 'left', headerAlign: 'center' },

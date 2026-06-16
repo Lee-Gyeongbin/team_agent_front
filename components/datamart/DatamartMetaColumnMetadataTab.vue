@@ -16,6 +16,37 @@
             <span class="datamart-meta-column-metadata-desc-dm"> ({{ datamart.dmNm }})</span>
           </template>
         </p>
+        <div class="datamart-meta-column-metadata-header-actions">
+          <UiButton
+            class="datamart-meta-col-excel-btn"
+            variant="outline"
+            size="sm"
+            type="button"
+            title="컬럼 메타 엑셀 다운로드"
+            aria-label="컬럼 메타 엑셀 다운로드"
+            :disabled="isExcelDownloading"
+            @click="onDownloadColumnMetaExcel"
+          >
+            <template #icon-left>
+              <i class="icon-download size-16" />
+            </template>
+            엑셀 다운로드
+          </UiButton>
+          <UiButton
+            class="datamart-meta-col-excel-btn"
+            variant="outline"
+            size="sm"
+            type="button"
+            title="컬럼 메타 엑셀 업로드"
+            aria-label="컬럼 메타 엑셀 업로드"
+            @click="openExcelUploadModal"
+          >
+            <template #icon-left>
+              <i class="icon-document-search size-16" />
+            </template>
+            엑셀 업로드
+          </UiButton>
+        </div>
       </div>
 
       <div
@@ -82,20 +113,22 @@
               <p class="datamart-meta-col-footer-hint">
                 저장정보가 없는 컬럼 정보는 DB 스키마 원본 정보를 기준으로 조회됩니다.
               </p>
-              <UiButton
-                class="datamart-meta-col-add-btn"
-                variant="primary"
-                size="sm"
-                type="button"
-                title="컬럼 추가"
-                aria-label="컬럼 추가"
-                @click="onAddColumn"
-              >
-                <template #icon-left>
-                  <i class="icon-plus size-16" />
-                </template>
-                컬럼 추가
-              </UiButton>
+              <div class="datamart-meta-col-editor-toolbar-actions">
+                <UiButton
+                  class="datamart-meta-col-add-btn"
+                  variant="primary"
+                  size="sm"
+                  type="button"
+                  title="컬럼 추가"
+                  aria-label="컬럼 추가"
+                  @click="onAddColumn"
+                >
+                  <template #icon-left>
+                    <i class="icon-plus size-16" />
+                  </template>
+                  컬럼 추가
+                </UiButton>
+              </div>
             </div>
             <div class="datamart-meta-col-table-wrap">
               <UiTable
@@ -235,13 +268,25 @@
         />
       </div>
     </UiDialogModal>
+
+    <DatamartMetaColumnExcelUploadModal
+      :is-open="excelUploadModalOpen"
+      :uploading="isExcelUploading"
+      @close="excelUploadModalOpen = false"
+      @upload="onUploadColumnMetaExcel"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+import DatamartMetaColumnExcelUploadModal from '~/components/datamart/DatamartMetaColumnExcelUploadModal.vue'
+import { useDatamartApi } from '~/composables/datamart/useDatamartApi'
+import { useDatamartStore } from '~/composables/datamart/useDatamartStore'
 import type { Datamart } from '~/types/datamart'
 import {
   datamartMetaColumnTableColumns,
+  type DatamartMetaColumnExcelUploadData,
+  type DatamartMetaColumnExcelUploadResponse,
   type DatamartMetaColumnRow,
   type DatamartMetaTableItem,
 } from '~/types/datamartMeta'
@@ -268,6 +313,24 @@ const resolvedSelectedId = computed(() => {
 const selectedTable = computed(
   () => props.tables.find((t) => t.id === resolvedSelectedId.value && t.useYn === 'Y') ?? null,
 )
+
+const datamartId = computed(() => props.datamart?.datamartId?.trim() ?? '')
+
+const { fetchDownloadMetaColumnExcel, fetchUploadMetaColumnExcel } = useDatamartApi()
+const { metaModalTables } = useDatamartStore()
+
+const applyUploadedColumnMeta = (uploadedTables: DatamartMetaColumnExcelUploadData['tableList']) => {
+  const uploadedMap = new Map(uploadedTables.map((table) => [table.id, table]))
+  metaModalTables.value = metaModalTables.value.map((table) => {
+    const uploaded = uploadedMap.get(table.id)
+    if (!uploaded?.columns?.length) return table
+    return {
+      ...table,
+      columns: uploaded.columns,
+      colCnt: uploaded.columns.length,
+    }
+  })
+}
 
 const dataTypeOptions = [
   { label: 'BIGINT', value: 'BIGINT' },
@@ -359,6 +422,71 @@ const onAiHintModalClose = () => {
   aiHintEditingCol.value = null
   aiHintDraft.value = ''
 }
+
+const excelUploadModalOpen = ref(false)
+const isExcelUploading = ref(false)
+const isExcelDownloading = ref(false)
+
+const requireDatamartId = (): string | null => {
+  if (!datamartId.value) {
+    openToast({ message: '데이터마트 정보가 없습니다.', type: 'warning' })
+    return null
+  }
+  return datamartId.value
+}
+
+const openExcelUploadModal = () => {
+  if (!requireDatamartId()) return
+  excelUploadModalOpen.value = true
+}
+
+const onDownloadColumnMetaExcel = async () => {
+  const id = requireDatamartId()
+  if (!id) return
+
+  isExcelDownloading.value = true
+  try {
+    await fetchDownloadMetaColumnExcel(id, props.datamart?.dmNm?.trim())
+    openToast({ message: '컬럼 메타 엑셀을 다운로드했습니다.' })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '엑셀 다운로드 중 오류가 발생했습니다.'
+    openToast({ message, type: 'error' })
+  } finally {
+    isExcelDownloading.value = false
+  }
+}
+
+const getColumnExcelUploadFailMessage = (res: DatamartMetaColumnExcelUploadResponse) =>
+  String(res.returnMsg ?? res.data?.returnMsg ?? '컬럼 메타 엑셀 업로드 검증에 실패했습니다.')
+
+const onUploadColumnMetaExcel = async (file: File) => {
+  const id = requireDatamartId()
+  if (!id) return
+
+  isExcelUploading.value = true
+  try {
+    const res = await fetchUploadMetaColumnExcel(id, file)
+    if (res?.successYn === false) {
+      openToast({ message: getColumnExcelUploadFailMessage(res), type: 'error' })
+      return
+    }
+
+    const uploadedTables = res.data?.tableList
+    if (Array.isArray(uploadedTables) && uploadedTables.length > 0) {
+      applyUploadedColumnMeta(uploadedTables)
+    }
+
+    openToast({
+      message: '엑셀 업로드가 완료되었습니다. 컬럼 목록을 확인 후 저장해 주세요.',
+    })
+    excelUploadModalOpen.value = false
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '엑셀 업로드 중 오류가 발생했습니다.'
+    openToast({ message, type: 'error' })
+  } finally {
+    isExcelUploading.value = false
+  }
+}
 </script>
 
 <style lang="scss" scoped>
@@ -407,8 +535,28 @@ const onAiHintModalClose = () => {
   color: $color-text-heading;
 }
 
+.datamart-meta-column-metadata-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-top: $spacing-xs;
+}
+
+.datamart-meta-column-metadata-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .datamart-meta-column-metadata-desc {
-  margin: $spacing-xs 0 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
   font-size: $font-size-sm;
   line-height: 1.5;
   color: $color-text-secondary;
@@ -510,9 +658,22 @@ const onAiHintModalClose = () => {
   gap: 8px 12px;
   margin: 0 0 4px;
 
+  .datamart-meta-col-editor-toolbar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
   .datamart-meta-col-add-btn {
     flex-shrink: 0;
   }
+}
+
+.datamart-meta-col-excel-btn {
+  flex-shrink: 0;
 }
 
 /* pages/user-manage 톤 + 행 유무와 관계없이 목록 영역 높이 고정 */
