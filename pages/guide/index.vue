@@ -713,6 +713,7 @@ const iconGroups = [
       { class: 'icon-agent-knowledge' },
       { class: 'icon-agent-database' },
       { class: 'icon-agent-microphone' },
+      { class: 'icon-agent-translate' },
       { class: 'icon-minus' },
       { class: 'icon-plus-zoom' },
       { class: 'icon-download' },

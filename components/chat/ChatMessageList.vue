@@ -22,6 +22,8 @@
           @on-view-visualization="emit('on-view-visualization', $event)"
           @on-submit-recommend-card="onSubmitRecommendCard"
           @on-recommend-card-close="emit('on-recommend-card-close', $event)"
+          @on-submit-translate-card="onSubmitTranslateCard"
+          @on-translate-card-close="emit('on-translate-card-close', $event)"
           @on-submit-news-card="onSubmitNewsCard"
           @on-news-card-close="emit('on-news-card-close', $event)"
           @on-news-card-reselect="emit('on-news-card-reselect', $event)"
@@ -49,7 +51,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ChatMessage, KnowledgeItem, RecommendFormPayload } from '~/types/chat'
+import type { ChatMessage, KnowledgeItem, RecommendFormPayload, TranslateFormPayload } from '~/types/chat'
 
 interface Props {
   messages: ChatMessage[]
@@ -81,6 +83,8 @@ const emit = defineEmits<{
   'on-news-intro-complete': [logId: string]
   'on-recommend-card-submit': [logId: string, payload: RecommendFormPayload]
   'on-recommend-card-close': [logId: string]
+  'on-translate-card-submit': [logId: string, payload: TranslateFormPayload]
+  'on-translate-card-close': [logId: string]
   'on-news-card-submit': [logId: string, categories: string[], options?: { isNew?: boolean }]
   'on-news-card-close': [logId: string]
   'on-news-card-reselect': [logId: string]
@@ -88,6 +92,9 @@ const emit = defineEmits<{
 
 const onSubmitRecommendCard = (logId: string, payload: RecommendFormPayload) => {
   emit('on-recommend-card-submit', logId, payload)
+}
+const onSubmitTranslateCard = (logId: string, payload: TranslateFormPayload) => {
+  emit('on-translate-card-submit', logId, payload)
 }
 const onSubmitNewsCard = (logId: string, categories: string[], options?: { isNew?: boolean }) => {
   emit('on-news-card-submit', logId, categories, options)

@@ -24,6 +24,7 @@
         :survey-form="surveyForm"
         :recommend-form="recommendForm"
         :curation-form="curationForm"
+        :translate-form="translateForm"
         :sql-model-options="sqlModelOptions"
         :api-url-cd-options="apiUrlCdOptions"
         @update:rag-form="ragForm = $event"
@@ -31,6 +32,7 @@
         @update:survey-form="surveyForm = $event"
         @update:recommend-form="recommendForm = $event"
         @update:curation-form="curationForm = $event"
+        @update:translate-form="translateForm = $event"
       />
 
       <!-- 섹션3: 데이터 연결 (svcTy 기반 분기) -->
@@ -74,6 +76,7 @@ import { useAgentStore } from '~/composables/agent/useAgentStore'
 import { SURVEY_SUB_TY, normalizeAgentSubCfg } from '~/utils/chat/surveyUtil'
 import { RECOMMEND_SUB_TY } from '~/utils/chat/recommendAgentUtil'
 import { CURATION_SUB_TY } from '~/utils/chat/newsCuratorUtil'
+import { TRANSLATE_SUB_TY } from '~/utils/chat/translateAgentUtil'
 import {
   buildSurveyAdditionalConfig,
   emptySurveyConfigForm,
@@ -92,6 +95,12 @@ import {
   parseCurationAdditionalConfigToForm,
   type CurationConfigForm,
 } from '~/utils/agent/curationConfigUtil'
+import {
+  buildTranslateAdditionalConfig,
+  emptyTranslateConfigForm,
+  parseTranslateAdditionalConfigToForm,
+  type TranslateConfigForm,
+} from '~/utils/agent/translateConfigUtil'
 
 interface Props {
   isOpen: boolean
@@ -162,6 +171,10 @@ const recommendForm = ref<RecommendConfigForm>(emptyRecommendConfigForm())
 const preservedCurationConfig = ref<AgtSubAdditionalConfig | null>(null)
 const curationForm = ref<CurationConfigForm>(emptyCurationConfigForm())
 
+// 번역(TRANSLATE) ADDITIONAL_CONFIG — UI 미편집 필드 보존용
+const preservedTranslateConfig = ref<AgtSubAdditionalConfig | null>(null)
+const translateForm = ref<TranslateConfigForm>(emptyTranslateConfigForm())
+
 const loadSurveyConfigFromAgent = (agent: Agent | null) => {
   const subCfg = normalizeAgentSubCfg(agent?.subCfg)
   const additional = subCfg?.additionalConfig
@@ -198,13 +211,27 @@ const loadCurationConfigFromAgent = (agent: Agent | null) => {
   curationForm.value = emptyCurationConfigForm()
 }
 
+const loadTranslateConfigFromAgent = (agent: Agent | null) => {
+  const subCfg = normalizeAgentSubCfg(agent?.subCfg)
+  const additional = subCfg?.additionalConfig
+  if (additional && typeof additional === 'object' && Object.keys(additional).length > 0) {
+    preservedTranslateConfig.value = { ...additional }
+    translateForm.value = parseTranslateAdditionalConfigToForm(additional as Record<string, unknown>)
+    return
+  }
+  preservedTranslateConfig.value = null
+  translateForm.value = emptyTranslateConfigForm()
+}
+
 const resetSubTyConfigForms = () => {
   preservedSurveyConfig.value = null
   preservedRecommendConfig.value = null
   preservedCurationConfig.value = null
+  preservedTranslateConfig.value = null
   surveyForm.value = emptySurveyConfigForm()
   recommendForm.value = emptyRecommendConfigForm()
   curationForm.value = emptyCurationConfigForm()
+  translateForm.value = emptyTranslateConfigForm()
 }
 
 // 기본 설정 폼
@@ -253,20 +280,34 @@ watch(
         loadSurveyConfigFromAgent(props.agent)
         preservedRecommendConfig.value = null
         preservedCurationConfig.value = null
+        preservedTranslateConfig.value = null
         recommendForm.value = emptyRecommendConfigForm()
         curationForm.value = emptyCurationConfigForm()
+        translateForm.value = emptyTranslateConfigForm()
       } else if (props.agent.svcTy === 'C' && form.value.subTy === RECOMMEND_SUB_TY) {
         loadRecommendConfigFromAgent(props.agent)
         preservedSurveyConfig.value = null
         preservedCurationConfig.value = null
+        preservedTranslateConfig.value = null
         surveyForm.value = emptySurveyConfigForm()
         curationForm.value = emptyCurationConfigForm()
+        translateForm.value = emptyTranslateConfigForm()
       } else if (props.agent.svcTy === 'C' && form.value.subTy === CURATION_SUB_TY) {
         loadCurationConfigFromAgent(props.agent)
         preservedSurveyConfig.value = null
         preservedRecommendConfig.value = null
+        preservedTranslateConfig.value = null
         surveyForm.value = emptySurveyConfigForm()
         recommendForm.value = emptyRecommendConfigForm()
+        translateForm.value = emptyTranslateConfigForm()
+      } else if (props.agent.svcTy === 'W' && form.value.subTy === TRANSLATE_SUB_TY) {
+        loadTranslateConfigFromAgent(props.agent)
+        preservedSurveyConfig.value = null
+        preservedRecommendConfig.value = null
+        preservedCurationConfig.value = null
+        surveyForm.value = emptySurveyConfigForm()
+        recommendForm.value = emptyRecommendConfigForm()
+        curationForm.value = emptyCurationConfigForm()
       } else {
         resetSubTyConfigForms()
       }
@@ -349,6 +390,15 @@ watch(
         preservedCurationConfig.value = null
         curationForm.value = emptyCurationConfigForm()
       }
+      return
+    }
+    if (subTy === TRANSLATE_SUB_TY) {
+      if (props.agent?.svcTy === 'W' && normalizeAgentSubCfg(props.agent.subCfg)?.subTy === TRANSLATE_SUB_TY) {
+        loadTranslateConfigFromAgent(props.agent)
+      } else {
+        preservedTranslateConfig.value = null
+        translateForm.value = emptyTranslateConfigForm()
+      }
     }
   },
 )
@@ -392,6 +442,17 @@ const onSave = () => {
       agentId: props.agent?.agentId ?? '',
       subTy: CURATION_SUB_TY,
       additionalConfig: buildCurationAdditionalConfig(curationForm.value, preservedCurationConfig.value),
+      useYn: existingSubCfg?.useYn ?? 'Y',
+      createDt: existingSubCfg?.createDt ?? '',
+      modifyDt: existingSubCfg?.modifyDt ?? '',
+    }
+  } else if (form.value.svcTy === 'W' && form.value.subTy === TRANSLATE_SUB_TY) {
+    const existingSubCfg = normalizeAgentSubCfg(props.agent?.subCfg)
+    base.subCfg = {
+      subCfgId: existingSubCfg?.subCfgId ?? '',
+      agentId: props.agent?.agentId ?? '',
+      subTy: TRANSLATE_SUB_TY,
+      additionalConfig: buildTranslateAdditionalConfig(translateForm.value, preservedTranslateConfig.value),
       useYn: existingSubCfg?.useYn ?? 'Y',
       createDt: existingSubCfg?.createDt ?? '',
       modifyDt: existingSubCfg?.modifyDt ?? '',

@@ -222,3 +222,35 @@ export interface CurationAgentConfig {
   result: CurationResultConfig
   constraints: string[]
 }
+
+// ===== TRANSLATE 에이전트 타입 (SUB_TY = 'TRANSLATE') =====
+
+export interface TranslateUiConfig {
+  introTitle: string
+  introSubtitle: string
+  textPlaceholder: string
+  submitLabel: string
+}
+
+export interface TranslateLanguageOption {
+  value: string
+  label: string
+}
+
+export interface TranslateToneOption {
+  value: string
+  label: string
+}
+
+export interface TranslateFileConfig {
+  enabled: boolean
+  acceptExt: string[]
+}
+
+export interface TranslateAgentConfig {
+  agentType: 'translate'
+  ui: TranslateUiConfig
+  languages: TranslateLanguageOption[]
+  tones: TranslateToneOption[]
+  file: TranslateFileConfig
+}

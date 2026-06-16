@@ -35,6 +35,15 @@
     request-delivered
     :theme-color-hex="item.colorHex ?? ''"
   />
+  <ChatTranslateCard
+    v-else-if="translateConfig && translatePayload"
+    class="library-card-question-body__translate"
+    readonly
+    :translate-config="translateConfig"
+    :initial-payload="translatePayload"
+    :theme-icon-class-nm="item.iconClassNm ?? ''"
+    :theme-color-hex="item.colorHex ?? ''"
+  />
   <p v-else>{{ item.qcontent }}</p>
 </template>
 
@@ -55,6 +64,13 @@ import {
   parseSurveyConfigFromAgent,
   resolveSurveyConfigByAgentId,
 } from '~/utils/chat/surveyUtil'
+import {
+  createEmptyTranslateFormPayload,
+  isTranslateLibraryCardItem,
+  parseTranslateConfigFromAgentForLibrary,
+  parseTranslatePayloadFromPrompt,
+  resolveTranslateConfigByAgentIdForLibrary,
+} from '~/utils/chat/translateAgentUtil'
 
 const props = defineProps<{
   item: LibraryCardDetail
@@ -105,12 +121,31 @@ const newsCategories = computed(() => newsQuestionMeta.value.categories)
 const newsIsNew = computed(() => item.value.agentId === NEWS_CURATOR_AGENT_ID && newsQuestionMeta.value.isNew === true)
 
 const isTodayMemeCard = computed(() => isTodayMemeLibraryCard(item.value))
+
+const isTranslateCard = computed(() => isTranslateLibraryCardItem(item.value, libraryAgents.value))
+
+const translateConfig = computed(() => {
+  if (!isTranslateCard.value) return null
+  const agentId = item.value.agentId ?? ''
+  if (!agentId) return null
+  const agent = libraryAgents.value.find((a) => a.agentId === agentId)
+  if (agent) return parseTranslateConfigFromAgentForLibrary(agent)
+  return resolveTranslateConfigByAgentIdForLibrary(agentId, libraryAgents.value)
+})
+
+const translatePayload = computed(() => {
+  const config = translateConfig.value
+  if (!config) return null
+  const defaultPayload = createEmptyTranslateFormPayload(config)
+  return parseTranslatePayloadFromPrompt(item.value.qcontent ?? '', defaultPayload)
+})
 </script>
 
 <style lang="scss" scoped>
 .library-card-question-body__survey,
 .library-card-question-body__recommend,
-.library-card-question-body__news {
+.library-card-question-body__news,
+.library-card-question-body__translate {
   width: 100%;
   max-width: 100%;
   max-height: min(560px, calc(100vh - 280px));

@@ -25,6 +25,8 @@
         @on-news-intro-complete="handleNewsCuratorIntroEnd"
         @on-recommend-card-submit="handleSubmitRecommendAgentForm"
         @on-recommend-card-close="onRecommendMessageClose"
+        @on-translate-card-submit="handleSubmitTranslateAgentForm"
+        @on-translate-card-close="onTranslateMessageClose"
         @on-news-card-submit="onNewsCuratorMessageSubmit"
         @on-news-card-close="onNewsMessageClose"
         @on-news-card-reselect="onNewsMessageReselect"
@@ -157,6 +159,8 @@ const {
   handleCloseNewsCurator,
   handleSubmitRecommendAgentForm,
   handleCloseRecommendAgent,
+  handleSubmitTranslateAgentForm,
+  handleCloseTranslateAgent,
 } = useChatStore()
 const { chatMessage, handleSetChatRoom } = useChatRooms()
 
@@ -194,6 +198,7 @@ const isSurveyInputLocked = computed(() =>
     (m) =>
       (m.type === 'survey' && !m.surveySubmitted) ||
       (m.type === 'recommend' && !m.recommendSubmitted) ||
+      (m.type === 'translation' && !m.translateSubmitted) ||
       (m.type === 'meme' && !m.memeSubmitted) ||
       (m.type === 'news' && !m.newsSubmitted),
   ),
@@ -201,6 +206,10 @@ const isSurveyInputLocked = computed(() =>
 
 const onRecommendMessageClose = (logId: string) => {
   handleCloseRecommendAgent(logId)
+}
+
+const onTranslateMessageClose = (logId: string) => {
+  handleCloseTranslateAgent(logId)
 }
 /** 메시지 목록의 뉴스 카드 "닫기" 버튼 클릭 */
 const onNewsMessageClose = (logId: string) => {

@@ -252,6 +252,12 @@
       @update:model-value="emit('update:curationForm', $event)"
     />
 
+    <AgentSettingSubTyTranslate
+      v-if="svcTy === 'W' && subTy === 'TRANSLATE'"
+      :model-value="translateForm"
+      @update:model-value="emit('update:translateForm', $event)"
+    />
+
     <AgentIconSelectModal
       :is-open="isIconModalOpen"
       :icons="themeIcons"
@@ -268,6 +274,7 @@ import { useAgentStore } from '~/composables/agent/useAgentStore'
 import type { SurveyConfigForm } from '~/utils/agent/surveyConfigUtil'
 import type { RecommendConfigForm } from '~/utils/agent/recommendConfigUtil'
 import type { CurationConfigForm } from '~/utils/agent/curationConfigUtil'
+import type { TranslateConfigForm } from '~/utils/agent/translateConfigUtil'
 
 interface BasicForm {
   agentNm: string
@@ -303,6 +310,7 @@ interface Props {
   surveyForm: SurveyConfigForm
   recommendForm: RecommendConfigForm
   curationForm: CurationConfigForm
+  translateForm: TranslateConfigForm
   sqlModelOptions: { value: string; label: string }[]
   apiUrlCdOptions: { value: string | number; label: string }[]
 }
@@ -317,6 +325,7 @@ const emit = defineEmits<{
   'update:surveyForm': [value: SurveyConfigForm]
   'update:recommendForm': [value: RecommendConfigForm]
   'update:curationForm': [value: CurationConfigForm]
+  'update:translateForm': [value: TranslateConfigForm]
 }>()
 
 const onUpdate = (key: keyof BasicForm, value: string | number | 'Y' | 'N') => {

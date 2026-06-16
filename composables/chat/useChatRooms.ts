@@ -110,6 +110,11 @@ export const useChatRooms = () => {
       selectedChatAgentId.value = lastAgentId || null
       await selectDmList()
       await selectModelOptions()
+    } else if (svcTy === 'W') {
+      // 번역 에이전트 채팅방 — 에이전트 선택 상태 복원 안 함
+      activeSearchModes.value = []
+      selectedChatAgentId.value = null
+      await selectModelOptions()
     } else {
       activeSearchModes.value = []
       // TodayMeme·RECOMMEND 카드 전용 로그는 UI상 에이전트 선택을 유지하지 않음(채팅방 재진입 시)
@@ -168,7 +173,7 @@ export const useChatRooms = () => {
   }
 
   // 채팅방 생성 (content: 호출부에서 전달 가능, 미전달 시 chatMessage 사용)
-  const createChatRoom = async (content?: string, files: File[] = []): Promise<boolean> => {
+  const createChatRoom = async (content?: string, files: File[] = [], svcTyOverride?: string): Promise<boolean> => {
     const qContent = (content ?? chatMessage.value).trim()
     if (!qContent) {
       chatRoom.value = { ...EMPTY_CHAT_ROOM, qContent: '' }
@@ -180,7 +185,7 @@ export const useChatRooms = () => {
       return false
     }
 
-    const svcTy = resolveSvcTy()
+    const svcTy = svcTyOverride ?? resolveSvcTy()
     openLoading({ text: '채팅방을 생성하는 중...' })
     let res: { data: ChatRoom }
     try {

@@ -5,6 +5,7 @@ import type {
   PanelType,
   RecommendFormPayload,
   SearchModeValue,
+  TranslateFormPayload,
   VisualizationViewModel,
 } from '~/types/chat'
 import type { Agent } from '~/types/agent'
@@ -34,6 +35,16 @@ import {
   isRecommendAgentPrompt,
   useRecommendAgent,
 } from '~/utils/chat/recommendAgentUtil'
+import {
+  isTranslateAgent,
+  parseTranslateConfigFromAgent,
+  buildTranslatePrompt,
+  buildTranslateFileInstruction,
+  createTranslateCardMessage,
+  createReadonlyTranslateMessage,
+  isTranslateAgentPrompt,
+  useTranslateAgent,
+} from '~/utils/chat/translateAgentUtil'
 import {
   createTodayMemeMessage,
   isTodayMemePrompt,
@@ -82,6 +93,8 @@ const { isNewsCuratorVisible, isNewsCuratorRoom, registerNewsCuratorRoom, openNe
   useNewsCurator()
 const { isRecommendVisible, openRecommendAgent, closeRecommendAgent, registerRecommendRoom, isRecommendRoom } =
   useRecommendAgent()
+const { isTranslateVisible, openTranslateAgent, closeTranslateAgent, registerTranslateRoom, isTranslateRoom } =
+  useTranslateAgent()
 const {
   activeSearchModes,
   selectedChatAgentId,
@@ -162,6 +175,19 @@ const messagesForDisplay = computed(() => {
       return true
     })
   }
+  if (isTranslateRoom(chatRoom.value.roomId)) {
+    let translatePromptHidden = false
+    base = base.filter((m) => {
+      if (m.type === 'question' && !translatePromptHidden) {
+        const matchedAgent = chatIndexAgents.value.find((a) => a.agentId === m.agentId)
+        if (isTranslateAgent(matchedAgent)) {
+          translatePromptHidden = true
+          return false
+        }
+      }
+      return true
+    })
+  }
   return base.filter((m) => {
     if (m.hiddenFromDisplay) return false
     return true
@@ -185,7 +211,12 @@ const normalizeChatAgents = (list: Agent[]) =>
     .filter(
       (a) =>
         a.useYn === 'Y' &&
-        (a.svcTy === 'M' || a.svcTy === 'S' || a.svcTy === 'T' || a.svcTy === 'C' || a.svcTy === 'A'),
+        (a.svcTy === 'M' ||
+          a.svcTy === 'S' ||
+          a.svcTy === 'T' ||
+          a.svcTy === 'C' ||
+          a.svcTy === 'A' ||
+          a.svcTy === 'W'),
     )
     .map((a) => ({
       ...a,
@@ -236,6 +267,7 @@ const SVC_TY_SUB_LABEL: Record<string, string> = {
   T: '실시간 음성인식(STT) Agent',
   C: '일반 채팅 Agent',
   A: '메일 브리핑 Agent',
+  W: '번역 Agent',
 }
 const getChatIndexAgentSubLabel = (agent: Agent) => SVC_TY_SUB_LABEL[agent.svcTy] ?? ''
 
@@ -340,11 +372,18 @@ export const useChatStore = () => {
     const hasRecommendLog = rawList.some((row) => isRecommendAgentPrompt(String(row.qcontent ?? '')))
     if (hasRecommendLog) registerRecommendRoom(roomId)
 
+    // TRANSLATE 에이전트 로그 감지 — agentId 기반으로 방 등록
+    const hasTranslateLog = rawList.some((row) => {
+      const agent = chatIndexAgents.value.find((a) => a.agentId === String(row.agentId ?? '').trim())
+      return isTranslateAgent(agent)
+    })
+    if (hasTranslateLog) registerTranslateRoom(roomId)
+
     lastLoadedChatLogRows.value = rawList
     lastLoadedChatLogRoomId.value = roomId
     applyChatLogRowsToMessages(rawList, roomId)
 
-    // 검색모드·서브옵션 동기화
+    // 검색모드·서브옵션 동기화 (svcTy='W' 분기에서 selectedChatAgentId null 처리 포함)
     await syncSearchModeFromLastLog(rawList[rawList.length - 1])
   }
 
@@ -754,6 +793,130 @@ export const useChatStore = () => {
   }
 
   /**
+   * TRANSLATE 에이전트 닫기 — 인덱스 오버레이 + 채팅방 카드 모두 처리
+   * @param logId - 제거할 translation 메시지 logId (채팅방 카드 닫기 시)
+   */
+  const handleCloseTranslateAgent = (logId?: string) => {
+    selectedChatAgentId.value = null
+    closeTranslateAgent()
+    if (logId) {
+      messages.value = messages.value.filter((m) => m.logId !== logId)
+    }
+  }
+
+  /**
+   * TRANSLATE 에이전트 폼 제출 → 합성 prompt 전송 → 번역 결과는 일반 answer로 표시
+   */
+  const onSendTranslate = async (
+    content: string,
+    formMessageLogId?: string,
+    payload?: TranslateFormPayload,
+    agentId?: string,
+  ): Promise<boolean> => {
+    if (!content.trim() || isSearchModeMissingSubOptions.value || !chatRoom.value.roomId) return false
+
+    if (formMessageLogId) {
+      const formMsg = messages.value.find((m) => m.logId === formMessageLogId && m.type === 'translation')
+      if (formMsg) {
+        if (payload) formMsg.translateFormPayload = { ...payload }
+        formMsg.translateSubmitted = true
+      }
+    }
+
+    const prevLen = messages.value.length
+    const sent = await executeSendPipeline({
+      content: content.trim(),
+      roomId: chatRoom.value.roomId,
+      svcTy: 'W',
+      modelId: selectedModelOption.value,
+      refId: buildRefIdForPayload(),
+      agentId: agentId ?? selectedChatAgentId.value ?? '',
+      files: payload?.file ? [payload.file] : [],
+    })
+
+    if (sent) {
+      const newMessages = messages.value.slice(prevLen)
+      const newQuestion = newMessages.find((m) => m.type === 'question')
+      if (newQuestion) newQuestion.hiddenFromDisplay = true
+
+      selectedChatAgentId.value = null
+      if (chatRoom.value.roomId) registerTranslateRoom(chatRoom.value.roomId)
+    }
+    return sent
+  }
+
+  const handleSubmitTranslateAgentForm = async (logId: string, payload: TranslateFormPayload) => {
+    if (!chatRoom.value.roomId) {
+      return await handleIndexTranslateSubmit(payload)
+    }
+
+    const agent =
+      chatIndexAgents.value.find((a) => a.agentId === selectedChatAgentId.value) ??
+      chatIndexAgents.value.find((a) => messages.value.some((m) => m.logId === logId && m.agentId === a.agentId))
+    if (!agent) return
+
+    const config = parseTranslateConfigFromAgent(agent)
+    if (!config) return
+
+    const content = payload.file
+      ? buildTranslateFileInstruction(payload, config)
+      : buildTranslatePrompt(payload, config)
+    await onSendTranslate(content, logId, payload, agent.agentId)
+  }
+
+  /** index.vue에서 TRANSLATE 폼 제출 후 새 채팅방 진입 시 카드를 메시지 목록 앞에 주입 */
+  const addInlineTranslateMessage = (payload: TranslateFormPayload, agentId: string) => {
+    const roMsg = createReadonlyTranslateMessage(payload, {
+      agentId,
+      createdAt: new Date().toISOString(),
+      svcTy: 'C',
+    })
+    const msgs = [...messages.value]
+    const firstQ = msgs.find((m) => m.type === 'question')
+    if (firstQ) firstQ.hiddenFromDisplay = true
+    messages.value = [roMsg, ...msgs]
+  }
+
+  /** /chat 인덱스에서 TRANSLATE 폼 제출 — 방 생성·인라인 주입·닫기 */
+  const handleIndexTranslateSubmit = async (payload: TranslateFormPayload): Promise<boolean> => {
+    const agentId = selectedChatAgentId.value ?? ''
+    const agent = chatIndexAgents.value.find((a) => a.agentId === agentId)
+    if (!agent) return false
+
+    const config = parseTranslateConfigFromAgent(agent)
+    if (!config) return false
+
+    const content = payload.file
+      ? buildTranslateFileInstruction(payload, config)
+      : buildTranslatePrompt(payload, config)
+    const sent = await createChatRoom(content, payload.file ? [payload.file] : [], 'W')
+    if (sent) {
+      addInlineTranslateMessage(payload, agentId)
+      handleCloseTranslateAgent()
+      if (chatRoom.value.roomId) registerTranslateRoom(chatRoom.value.roomId)
+    }
+    return sent
+  }
+
+  /** 채팅방 내 미제출 TRANSLATE 카드가 없으면 추가 */
+  const appendTranslateCardIfNeeded = (agent: Parameters<typeof parseTranslateConfigFromAgent>[0]) => {
+    if (!chatRoom.value.roomId) return
+    const alreadyHasCard = messages.value.some((m) => m.type === 'translation' && !m.translateSubmitted)
+    if (alreadyHasCard) return
+    const config = parseTranslateConfigFromAgent(agent)
+    if (!config) return
+    messages.value = [
+      ...messages.value,
+      createTranslateCardMessage({
+        agentId: agent.agentId,
+        createdAt: new Date().toISOString(),
+        svcTy: 'C',
+        config,
+      }),
+    ]
+  }
+
+  /**
    * 뉴스 큐레이터 닫기 — 에이전트 선택 상태를 초기화하고 오버레이를 닫는다
    * @param newsMessageLogId - 제거할 news 메시지 logId (없으면 메시지 목록 그대로)
    */
@@ -944,6 +1107,19 @@ export const useChatStore = () => {
       return
     }
 
+    if (agent.svcTy === 'W' && isTranslateAgent(agent)) {
+      activeSearchModes.value = []
+      subOptions.value = []
+      selectedChatAgentId.value = agent.agentId
+      await selectModelOptions()
+      if (chatRoom.value.roomId) {
+        appendTranslateCardIfNeeded(agent)
+      } else {
+        openTranslateAgent()
+      }
+      return
+    }
+
     if (agent.agentId === AGENT_ID_MEME) {
       activeSearchModes.value = []
       subOptions.value = []
@@ -1114,7 +1290,7 @@ export const useChatStore = () => {
         const selectedId = selectedChatAgentId.value
         if (selectedId) {
           const selected = chatIndexAgents.value.find((a) => a.agentId === selectedId)
-          if (selected && isRecommendAgent(selected)) selectedChatAgentId.value = null
+          if (selected && (isRecommendAgent(selected) || isTranslateAgent(selected))) selectedChatAgentId.value = null
         }
       } catch {
         chatIndexAgents.value = []
@@ -1179,6 +1355,7 @@ export const useChatStore = () => {
     isGenderStepVisible,
     surveyGender,
     isRecommendVisible,
+    isTranslateVisible,
     isTodayMemeVisible,
     isNewsCuratorVisible,
     // 액션
@@ -1197,6 +1374,10 @@ export const useChatStore = () => {
     handleIndexRecommendSubmit,
     handleSubmitRecommendAgentForm,
     handleCloseRecommendAgent,
+    handleIndexTranslateSubmit,
+    handleSubmitTranslateAgentForm,
+    handleCloseTranslateAgent,
+    addInlineTranslateMessage,
     addInlineTodayMemeMessage,
     addInlineNewsMessage,
     handleSyncNewsCard,

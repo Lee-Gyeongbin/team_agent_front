@@ -8,6 +8,12 @@ import {
   isRecommendAgentPrompt,
   resolveRecommendConfigByAgentId,
 } from '~/utils/chat/recommendAgentUtil'
+import {
+  createEmptyTranslateFormPayload,
+  createReadonlyTranslateMessage,
+  parseTranslatePayloadFromPrompt,
+  resolveTranslateConfigByAgentId,
+} from '~/utils/chat/translateAgentUtil'
 import { isTodayMemePrompt, parseTodayMemeItems } from '~/utils/chat/todayMemeUtil'
 import {
   applyNewsDisplayItemsToSubmitCard,
@@ -219,9 +225,26 @@ export const useChatMessages = () => {
     const recommendMessages = buildRecommendMessagesFromLogRow(row, answerMessage, recommendConfig)
     if (recommendMessages) return recommendMessages
 
-    // 방에 RECOMMEND agentId가 남아 있어도 일반 질문이면 Q/A로 표시 (검색기록 재진입 시 answer 숨김 방지)
+    const translateConfig = agentId ? resolveTranslateConfigByAgentId(agentId, agents) : null
     const qcontent = row.qcontent ?? ''
+    if (translateConfig) {
+      const defaultPayload = createEmptyTranslateFormPayload(translateConfig)
+      const parsedPayload = parseTranslatePayloadFromPrompt(qcontent, defaultPayload, attachments ?? [])
+      return [
+        createReadonlyTranslateMessage(parsedPayload, {
+          agentId,
+          createdAt,
+          svcTy,
+          refId,
+        }),
+        answerMessage,
+      ]
+    }
+
+    // 방에 RECOMMEND agentId가 남아 있어도 일반 질문이면 Q/A로 표시 (검색기록 재진입 시 answer 숨김 방지)
     const isStaleRecommendAgentId = !!recommendConfig && !isRecommendAgentPrompt(qcontent)
+    const isStaleTranslateAgentId = false // translateConfig 있으면 위에서 이미 return
+    const shouldOmitAgentId = isStaleRecommendAgentId || isStaleTranslateAgentId
     const questionMessage: ChatMessage = {
       logId,
       type: 'question',
@@ -231,10 +254,10 @@ export const useChatMessages = () => {
       svcTy,
       modelId,
       refId,
-      ...(agentId && !isStaleRecommendAgentId ? { agentId } : {}),
+      ...(agentId && !shouldOmitAgentId ? { agentId } : {}),
       ...(attachments?.length ? { attachments } : {}),
     }
-    if (isStaleRecommendAgentId) {
+    if (shouldOmitAgentId) {
       const { agentId: _omitAgentId, ...answerWithoutStaleAgent } = answerMessage
       return [questionMessage, answerWithoutStaleAgent]
     }

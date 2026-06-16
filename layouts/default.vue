@@ -29,6 +29,7 @@
 const contentRef = ref<HTMLElement | null>(null)
 const isShowTopBtn = ref(false)
 const isScrolled = ref(false)
+const { setTopBtnVisible } = useTopBtnState()
 
 // 스크롤 상태를 하위 컴포넌트에 공유
 provide('isScrolled', isScrolled)
@@ -38,7 +39,12 @@ const onScroll = () => {
   const scrollTop = contentRef.value.scrollTop
   isShowTopBtn.value = scrollTop > 200
   isScrolled.value = scrollTop > 10
+  setTopBtnVisible(isShowTopBtn.value)
 }
+
+onUnmounted(() => {
+  setTopBtnVisible(false)
+})
 
 const onScrollTop = () => {
   contentRef.value?.scrollTo({ top: 0, behavior: 'smooth' })

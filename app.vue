@@ -36,6 +36,9 @@
     overlay
     :text="globalLoadingText"
   />
+
+  <!-- 즉시번역(전역 드래그 번역) 오버레이 -->
+  <InstantTranslateOverlay />
 </template>
 
 <script setup lang="ts">

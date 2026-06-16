@@ -858,6 +858,14 @@
   pointer-events: auto;
 }
 
+// 번역 결과 다운로드 컨트롤 (형식 선택 + 다운로드 버튼)
+.message-translate-download {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-left: auto;
+}
+
 // 액션 버튼만 hover 시 표시
 .chat-message-item .chat-message-actions {
   opacity: 0;

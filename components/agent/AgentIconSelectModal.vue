@@ -6,7 +6,7 @@
     custom-class="agent-icon-select-modal modal-dialog--above-side-panel"
     @close="$emit('close')"
   >
-    <div class="icon-grid">
+    <div class="icon-select-grid">
       <button
         v-for="icon in icons"
         :key="icon.iconId"
@@ -43,7 +43,7 @@ defineEmits<{
 </script>
 
 <style lang="scss" scoped>
-.icon-grid {
+.icon-select-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(34px, 34px));
   width: 100%;
@@ -76,15 +76,5 @@ defineEmits<{
   &:hover {
     border-color: #c3ced6;
   }
-}
-
-:deep(.agent-icon-select-modal .modal-dialog-content) {
-  max-width: 420px;
-}
-
-:deep(.agent-icon-select-modal .modal-dialog-body) {
-  display: block;
-  min-height: 0;
-  padding: 12px 0 0;
 }
 </style>

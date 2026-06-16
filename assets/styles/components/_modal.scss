@@ -145,6 +145,19 @@
   }
 }
 
+// AgentIconSelectModal.vue — Teleport 모달이라 컴포넌트 scoped :deep() 미적용
+.modal-dialog.agent-icon-select-modal {
+  .modal-dialog-content {
+    max-width: 420px;
+  }
+
+  .modal-dialog-body {
+    display: block;
+    min-height: 0;
+    padding: 12px 0 0;
+  }
+}
+
 // 전체화면 상태
 .modal-dialog.is-fullscreen {
   .modal-dialog-content {
