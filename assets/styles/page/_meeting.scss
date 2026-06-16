@@ -920,17 +920,38 @@
 
 .meeting2-filter-date {
   height: 30px;
-  padding: 0 $spacing-sm;
-  border: 1px solid $color-border;
-  border-radius: $border-radius-base;
-  background: #fff;
   @include typo($body-small, $color-text-dark);
-  outline: none;
-  transition: border-color $transition-fast;
 
-  &:hover,
-  &:focus {
-    border-color: var(--color-primary);
+  // native input fallback
+  &:not(.ui-datepicker-wrap) {
+    padding: 0 $spacing-sm;
+    border: 1px solid $color-border;
+    border-radius: $border-radius-base;
+    background: #fff;
+    outline: none;
+    transition: border-color $transition-fast;
+
+    &:hover,
+    &:focus {
+      border-color: var(--color-primary);
+    }
+  }
+
+  // UiDatePicker 적용 스타일
+  &.ui-datepicker-wrap {
+    width: 140px;
+    height: auto;
+  }
+
+  &.ui-datepicker-wrap .ui-datepicker-field {
+    height: 30px;
+    padding: 0 $spacing-sm;
+    border-color: $color-border;
+  }
+
+  &.ui-datepicker-wrap .ui-datepicker-segment,
+  &.ui-datepicker-wrap .ui-datepicker-literal {
+    @include typo($body-small, $color-text-dark);
   }
 }
 

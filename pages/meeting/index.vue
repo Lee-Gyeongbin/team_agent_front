@@ -75,15 +75,15 @@
       </select>
       <!-- 직접 설정 날짜 입력 -->
       <template v-if="filterPeriod === 'custom'">
-        <input
-          v-model="filterStartDate"
-          type="date"
+        <UiDatePicker
+          v-model="filterStartDateValue"
+          size="xs"
           class="meeting2-filter-date"
         />
         <span class="meeting2-filter-date-sep">~</span>
-        <input
-          v-model="filterEndDate"
-          type="date"
+        <UiDatePicker
+          v-model="filterEndDateValue"
+          size="xs"
           class="meeting2-filter-date"
         />
       </template>
@@ -348,6 +348,7 @@
 </template>
 
 <script setup lang="ts">
+import { CalendarDate, toCalendarDateTime, type DateValue } from '@internationalized/date'
 import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
 import type { MeetingStep } from '~/types/meeting'
 
@@ -387,7 +388,6 @@ const STATUS_CHIPS = [
   { value: '', label: '전체' },
   { value: '001', label: '진행중' },
   { value: '002', label: '녹음 완료' },
-  { value: '002_minutes', label: '회의록 생성' },
   { value: 'integrate', label: '통합 회의록' },
 ] as const
 
@@ -414,6 +414,38 @@ const filterPeriod = ref<PeriodValue>('')
 const filterSort = ref<SortValue>('CREATE_DT_DESC')
 const filterStartDate = ref('')
 const filterEndDate = ref('')
+
+const parseYyyyMmDdToDateValue = (value: string): DateValue | undefined => {
+  if (!value) return undefined
+  const [yearText, monthText, dayText] = value.split('-')
+  const year = Number(yearText)
+  const month = Number(monthText)
+  const day = Number(dayText)
+  if (!year || !month || !day) return undefined
+  return new CalendarDate(year, month, day)
+}
+
+const formatDateValueToYyyyMmDd = (value: DateValue | undefined): string => {
+  if (!value) return ''
+  const { year, month, day } = toCalendarDateTime(value)
+  const monthText = String(month).padStart(2, '0')
+  const dayText = String(day).padStart(2, '0')
+  return `${year}-${monthText}-${dayText}`
+}
+
+const filterStartDateValue = computed<DateValue | undefined>({
+  get: () => parseYyyyMmDdToDateValue(filterStartDate.value),
+  set: (value) => {
+    filterStartDate.value = formatDateValueToYyyyMmDd(value)
+  },
+})
+
+const filterEndDateValue = computed<DateValue | undefined>({
+  get: () => parseYyyyMmDdToDateValue(filterEndDate.value),
+  set: (value) => {
+    filterEndDate.value = formatDateValueToYyyyMmDd(value)
+  },
+})
 
 // 기간 옵션 → 날짜 변환
 const getPeriodDates = (period: PeriodValue): { start: string; end: string } => {
@@ -445,16 +477,12 @@ const buildApiParams = () => {
   const { sortField, sortOrder } = parseSortValue(filterSort.value)
 
   let statusCd = ''
-  let hasMeetingMinutes = ''
   let integrateYn = ''
 
   if (filterStatus.value === '001') {
     statusCd = '001'
   } else if (filterStatus.value === '002') {
     statusCd = '002'
-  } else if (filterStatus.value === '002_minutes') {
-    statusCd = '002'
-    hasMeetingMinutes = 'Y'
   } else if (filterStatus.value === 'integrate') {
     integrateYn = 'Y'
   }
@@ -470,11 +498,21 @@ const buildApiParams = () => {
     endDate = dates.end
   }
 
-  return { statusCd, startDate, endDate, sortField, sortOrder, hasMeetingMinutes, integrateYn }
+  return { statusCd, startDate, endDate, sortField, sortOrder, integrateYn }
+}
+
+const validateCustomDateRange = () => {
+  if (filterPeriod.value !== 'custom') return true
+  if (!filterStartDate.value || !filterEndDate.value) return true
+  if (filterStartDate.value <= filterEndDate.value) return true
+  openToast({ message: '시작일은 종료일보다 늦을 수 없습니다.', type: 'warning' })
+  return false
 }
 
 const fetchWithFilters = () => {
+  if (!validateCustomDateRange()) return false
   handleSelectMeetingList(buildApiParams())
+  return true
 }
 
 const onSelectStatus = (val: StatusChipValue) => {

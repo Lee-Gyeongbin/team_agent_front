@@ -12,9 +12,20 @@ marked.setOptions({
 /** 코드 블록 syntax highlighting — 언어 지정 시 hljs로, 없으면 plaintext */
 const renderer = new marked.Renderer()
 const HTML_PREVIEW_LANG_SET = new Set(['html', 'htm'])
+const CHAT_HTML_SANITIZE_CONFIG = {
+  ADD_TAGS: ['iframe', 'button'],
+  ADD_ATTR: ['target', 'rel', 'class', 'data-html-code', 'data-action', 'sandbox', 'type'],
+}
 
 const escapeHtmlAttribute = (value: string) =>
   value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+const HTML_CODE_FENCE_REGEX = /```(?:html|htm)\b[^\n]*\n?[\s\S]*?(?:```|$)/gi
+const STREAMING_HTML_LOADING_BLOCK = [
+  '<div class="html-preview-loading">',
+  '<p class="html-preview-loading__label">시각화 생성 중...</p>',
+  '<div class="html-preview-loading__track"><span class="html-preview-loading__bar"></span></div>',
+  '</div>',
+].join('')
 
 renderer.code = ({ text, lang }) => {
   const normalizedLang = String(lang ?? '')
@@ -22,17 +33,16 @@ renderer.code = ({ text, lang }) => {
     .toLowerCase()
   if (HTML_PREVIEW_LANG_SET.has(normalizedLang)) {
     const encodedHtml = escapeHtmlAttribute(encodeURIComponent(text))
-    const previewHtml = DOMPurify.sanitize(text, { ADD_ATTR: ['target'] })
     return [
       `<div class="html-preview-block" data-html-code="${encodedHtml}">`,
-      '<button type="button" class="html-preview-menu-trigger" data-action="toggle-html-preview-menu" aria-label="HTML 미리보기 메뉴">',
-      '<i class="icon icon-more-vertical size-16"></i>',
+      '<button class="html-preview-menu-trigger" type="button" data-action="toggle-html-preview-menu" aria-label="HTML 미리보기 옵션 열기">',
+      '<i class="icon-more-vertical size-16"></i>',
       '</button>',
       '<div class="html-preview-menu">',
-      '<button type="button" class="html-preview-menu-item" data-action="copy-html-code">copy to clipboard</button>',
-      '<button type="button" class="html-preview-menu-item" data-action="download-html-file">download file</button>',
+      '<button class="html-preview-menu-item" type="button" data-action="copy-html-code">HTML 코드 복사</button>',
+      '<button class="html-preview-menu-item" type="button" data-action="download-html-file">HTML 파일 다운로드</button>',
       '</div>',
-      `<div class="html-preview-content">${previewHtml}</div>`,
+      '<iframe class="html-preview-content" sandbox="allow-scripts"></iframe>',
       '</div>',
     ].join('')
   }
@@ -49,6 +59,13 @@ renderer.link = ({ href, title, text }) => {
   return `<a href="${href}"${titleAttr}${targetAttr}>${text}</a>`
 }
 marked.use({ renderer })
+
+/**
+ * 스트리밍 중 html 코드블록은 중간 청크에서 열림/닫힘이 흔들려 깜빡임이 생길 수 있어
+ * 완료 전까지 로딩 플레이스홀더로 치환한다.
+ */
+export const replaceHtmlCodeBlocksWithLoading = (text: string): string =>
+  text.replace(HTML_CODE_FENCE_REGEX, STREAMING_HTML_LOADING_BLOCK)
 
 /** 이미 `![](url)` 또는 `<img src>` 안인지 */
 const isInsideMarkdownOrHtmlImage = (text: string, offset: number): boolean => {
@@ -207,5 +224,5 @@ export const toHtmlContent = (value: string) => {
   // DOMPurify로 XSS 방지 (v-html 전제)
   // ADD_ATTR에 target 추가: marked가 생성한 외부 링크의 target="_blank" 유지
   const html = marked.parse(markdown, { async: false }) as string
-  return DOMPurify.sanitize(html, { ADD_ATTR: ['target'] })
+  return DOMPurify.sanitize(html, CHAT_HTML_SANITIZE_CONFIG)
 }

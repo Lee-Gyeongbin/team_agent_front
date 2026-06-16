@@ -105,7 +105,11 @@
                         <strong>{{ result.similarity }}</strong>
                       </span>
                     </div>
-                    <p class="doc-dataset-test-result-content">{{ result.content }}</p>
+                    <!-- eslint-disable vue/no-v-html — toHtmlContent 내 안전 처리 적용 -->
+                    <div
+                      class="doc-dataset-test-result-content"
+                      v-html="result.content"
+                    />
                     <div class="doc-dataset-test-result-meta">
                       <span class="doc-dataset-test-result-meta-item">
                         <span class="doc-dataset-test-result-meta-label">출처</span>
@@ -162,6 +166,7 @@
 import { useDocDatasetApi } from '~/composables/doc-dataset/useDocDatasetApi'
 import { useDocDatasetStore } from '~/composables/doc-dataset/useDocDatasetStore'
 import type { DocDatasetSearchResult, DocDatasetSearchSummary } from '~/types/doc-dataset'
+import { toHtmlContent } from '~/utils/chat/htmlUtil'
 
 interface Props {
   datasetId: string
@@ -215,6 +220,25 @@ watch(
   },
 )
 
+// content 전처리 (페이지 마커, 이미지 placeholder, 불필요 개행 정리)
+const cleanContent = (raw: string): string => {
+  return raw
+    .replace(/\r\n/g, '\n')
+    .replace(/\[\[PAGE:[^\]]*\]\]/g, '') // [[PAGE: 61]] 형태 제거
+    .replace(/<image>/gi, '') // <image> 태그 제거
+    .replace(/^\s*[①-⑳]\s*$/gmu, '') // 단독 숫자 마커 라인 제거
+    .replace(/\n{3,}/g, '\n\n') // 과도한 빈 줄 정리
+    .trim()
+}
+
+const renderResultContent = (raw: string): string => {
+  const cleaned = cleanContent(raw)
+  if (!cleaned) return ''
+  return toHtmlContent(cleaned)
+    .replace(/<table\b/gi, '<div class="doc-dataset-table-wrap"><table')
+    .replace(/<\/table>/gi, '</table></div>')
+}
+
 // RAG 응답 행 매핑 (store의 mapDocDatasetTestSearchRow와 동일)
 const mapSearchRow = (row: Record<string, unknown>): DocDatasetSearchResult => {
   const meta =
@@ -252,7 +276,7 @@ const mapSearchRow = (row: Record<string, unknown>): DocDatasetSearchResult => {
 
   return {
     chunkId: pickStr(['chunkId', 'chunk_id', 'id']),
-    content: pickStr(['content', 'text', 'chunk_text', 'chunk']),
+    content: renderResultContent(pickStr(['content', 'text', 'chunk_text', 'chunk'])),
     source,
     page: Math.max(0, Math.floor(pickNum(['page', 'page_no', 'pageNum', 'page_number']))),
     similarity: pickNum(['similarity', 'score', 'sml', 'sml_score', 'cosine_similarity']),
@@ -289,7 +313,6 @@ const onSearch = async () => {
       query: text,
       topK: Number(topK.value) || 5,
       threshold: Number(threshold.value) || 0.7,
-      rerank: 'none',
     })
     const rawList = Array.isArray(res.data) ? res.data : []
     const results = rawList.map((item) =>
@@ -307,7 +330,7 @@ const onSearch = async () => {
         summary: buildSummary(results),
       }
     }
-  } catch (e) {
+  } catch {
     const idx = testMessages.value.findIndex((m) => m.id === assistantMsgId)
     if (idx > -1) {
       testMessages.value[idx] = {

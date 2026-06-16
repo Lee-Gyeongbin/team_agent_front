@@ -1,6 +1,7 @@
 <template>
   <div
     v-if="!isTodayMemeAnswer && !isRecommendAgentAnswer"
+    ref="messageRootRef"
     class="chat-message-item"
     :class="[
       message.type === 'answer'
@@ -340,7 +341,7 @@ import type {
   TranslateFormPayload,
 } from '~/types/chat'
 import type { StressScoreItem } from '~/types/stress'
-import { toHtmlContent } from '~/utils/chat/htmlUtil'
+import { replaceHtmlCodeBlocksWithLoading, toHtmlContent } from '~/utils/chat/htmlUtil'
 import type { Agent, RecommendAgentConfig, TranslateAgentConfig } from '~/types/agent'
 import {
   fetchAndInjectPexelsImages,
@@ -448,8 +449,10 @@ const emit = defineEmits<{
 // ── 공통 ──────────────────────────────────────────────────────────────────
 const renderedHtml = ref('')
 const imagePreview = ref<{ src: string; title: string; mimeType: string } | null>(null)
+const messageRootRef = ref<HTMLElement | null>(null)
 const HTML_PREVIEW_BLOCK_SELECTOR = '.html-preview-block'
 const HTML_PREVIEW_MENU_SELECTOR = '.html-preview-menu'
+const HTML_PREVIEW_IFRAME_SELECTOR = '.html-preview-content'
 const HTML_PREVIEW_COPY_ACTION = 'copy-html-code'
 const HTML_PREVIEW_DOWNLOAD_ACTION = 'download-html-file'
 
@@ -476,6 +479,23 @@ const getHtmlPreviewCodeFromTarget = (target: HTMLElement) => {
   const previewBlock = target.closest<HTMLElement>(HTML_PREVIEW_BLOCK_SELECTOR)
   if (!previewBlock) return ''
   return decodeHtmlPreviewCode(String(previewBlock.dataset.htmlCode ?? ''))
+}
+
+// 미리보기 iframe에 원본 HTML을 srcdoc로 주입 (sanitize 단계에서 srcdoc가 제거되므로 렌더 후 주입)
+// - 이 컴포넌트(메시지 1건) 루트로 범위 한정 → 문서 전체 스캔 방지
+// - data-hydrated 플래그로 이미 주입된 iframe은 디코드 없이 즉시 skip
+const hydrateHtmlPreviewIframes = () => {
+  const root = messageRootRef.value
+  if (!root) return
+  root.querySelectorAll<HTMLIFrameElement>(HTML_PREVIEW_IFRAME_SELECTOR).forEach((iframe) => {
+    if (iframe.dataset.hydrated === '1') return
+    const previewBlock = iframe.closest<HTMLElement>(HTML_PREVIEW_BLOCK_SELECTOR)
+    if (!previewBlock) return
+    const rawHtml = decodeHtmlPreviewCode(String(previewBlock.dataset.htmlCode ?? ''))
+    if (!rawHtml) return
+    iframe.srcdoc = rawHtml
+    iframe.dataset.hydrated = '1'
+  })
 }
 
 const copyHtmlPreviewCode = async (target: HTMLElement) => {
@@ -575,7 +595,10 @@ const onMarkdownClick = (e: MouseEvent) => {
   }
 }
 
-const renderMarkdownHtml = (value: string) => toHtmlContent(value)
+const renderMarkdownHtml = (value: string) => {
+  const normalized = props.message.isStreaming ? replaceHtmlCodeBlocksWithLoading(value) : value
+  return toHtmlContent(normalized)
+}
 
 // ── SURVEY(showRadarChart) 렌더 상태 ────────────────────────────────────────────────────
 /** [방사형그래프] 마커 발견 여부 — 템플릿 분기 조건 */
@@ -693,6 +716,12 @@ onBeforeUnmount(() => {
 
 onMounted(() => {
   document.addEventListener('click', onDocumentClickForHtmlPreview)
+  void nextTick(hydrateHtmlPreviewIframes)
+})
+
+// 미리보기가 포함될 수 있는 본문 HTML이 실제로 바뀔 때만 주입 (onUpdated 전체 트리거 대비 호출 최소화)
+watch([renderedHtml, beforeChartHtml, afterChartHtml], () => {
+  void nextTick(hydrateHtmlPreviewIframes)
 })
 
 watch(
