@@ -4,7 +4,7 @@
     <div class="mail-page-header">
       <div class="mail-page-header-left">
         <div class="mail-page-header-icon">
-          <i class="icon-search size-22" />
+          <i class="icon-meeting-mail size-24" />
         </div>
         <div>
           <h1 class="mail-page-title">메일 브리핑</h1>
