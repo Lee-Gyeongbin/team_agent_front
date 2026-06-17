@@ -88,21 +88,6 @@ export const isRecommendLibraryCardItem = (item: { agentId?: string; qcontent?: 
   return true
 }
 
-// ━━━ 폼 초기값 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-export const createEmptyRecommendFormPayload = (config: RecommendAgentConfig): RecommendFormPayload => {
-  const base: RecommendFormPayload = {}
-  if (config.form.useRegionSelect) {
-    base['sido'] = ''
-    base['sigungu'] = ''
-    base['dong'] = ''
-  }
-  for (const field of config.form.fields) {
-    base[field.key] = ''
-  }
-  return base
-}
-
 // ━━━ 프롬프트 빌더 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export const buildRecommendPrompt = (formValues: RecommendFormPayload, config: RecommendAgentConfig): string => {
@@ -671,7 +656,6 @@ export const createRecommendCardMessage = (opts: {
   createdAt: string
   svcTy?: string
   refId?: string
-  config: RecommendAgentConfig
 }): ChatMessage => ({
   logId: genRecommendLogId('rec-form'),
   type: 'recommend',
@@ -680,7 +664,6 @@ export const createRecommendCardMessage = (opts: {
   svcTy: opts.svcTy ?? 'C',
   refId: opts.refId ?? '',
   recommendCardRole: 'form',
-  recommendFormPayload: createEmptyRecommendFormPayload(opts.config),
   recommendSubmitted: false,
 })
 

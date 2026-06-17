@@ -787,7 +787,6 @@ export const useChatStore = () => {
         agentId: agent.agentId,
         createdAt: new Date().toISOString(),
         svcTy: 'C',
-        config,
       }),
     ]
   }

@@ -244,7 +244,9 @@
           :recommend-config="messageRecommendConfig"
           :readonly="message.recommendSubmitted === true"
           :display-mode="recommendCardDisplayMode"
-          :initial-payload="isRecommendFormCard ? message.recommendFormPayload : undefined"
+          :initial-payload="
+            isRecommendFormCard && message.recommendSubmitted ? message.recommendFormPayload : undefined
+          "
           :recommendations="!isRecommendFormCard ? resolvedRecommendations : []"
           :is-recommendations-pending="!isRecommendFormCard && isRecommendationsPending"
           :is-recommendation-response-streaming="!isRecommendFormCard && isRecommendationResponseStreaming"
