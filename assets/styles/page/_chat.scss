@@ -1419,7 +1419,8 @@
 
   // 드래그 중 transition 비활성화
   .chat-pdf-panel,
-  .chat-vis-panel {
+  .chat-vis-panel,
+  .chat-report-panel {
     transition: none;
   }
 }
@@ -2792,4 +2793,106 @@
 .pexels-modal-enter-from,
 .pexels-modal-leave-to {
   opacity: 0;
+}
+
+// ===================================
+// 리서치 리포트 패널
+// ===================================
+
+.chat-report-panel {
+  @extend %chat-side-panel;
+}
+
+.chat-report-header {
+  @extend %chat-panel-header;
+}
+
+.chat-report-title {
+  @extend %chat-panel-title;
+}
+
+.chat-report-header-actions {
+  @extend %chat-panel-header-actions;
+}
+
+.chat-report-download-grp {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  margin-right: $spacing-xs;
+  padding-right: $spacing-sm;
+  border-right: 1px solid $color-border;
+}
+
+.chat-report-download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  background: #fff;
+  cursor: pointer;
+  transition:
+    border-color $transition-base,
+    background-color $transition-base,
+    box-shadow $transition-base;
+
+  &:hover {
+    border-color: #94a3b8;
+    background: #f8fafc;
+    box-shadow: 0 1px 3px rgba(30, 50, 77, 0.08);
+  }
+
+  &:active {
+    background: #f1f5f9;
+  }
+}
+
+.chat-report-download-btn-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: $border-radius-sm;
+
+  .is-docx & {
+    background: rgba(60, 105, 219, 0.1);
+    color: #3c69db;
+  }
+
+  .is-pdf & {
+    background: rgba(219, 59, 118, 0.1);
+    color: #db3b76;
+  }
+
+  .is-archive & {
+    background: rgba(124, 58, 237, 0.1);
+    color: #7c3aed;
+  }
+}
+
+.chat-report-download-btn-label {
+  @include typo($body-caption);
+  font-weight: $font-weight-semibold;
+  color: $color-text-secondary;
+  letter-spacing: -0.02em;
+}
+
+.chat-report-content {
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: $spacing-md;
+
+  // LibraryReportEditor가 영역을 가득 채우도록
+  .library-report-editor {
+    flex: 1;
+    min-height: 0;
+  }
 }

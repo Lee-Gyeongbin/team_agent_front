@@ -49,6 +49,11 @@ export interface FileUploadResponse {
 export interface FileUrlResponse {
   url: string
   reason: string
+  /** 변환 실패 등으로 미리보기 불가 시 다운로드용 URL */
+  downloadUrl?: string
+  /** 응답 보기 유형 (VIEW | DOWNLOAD 등) */
+  viewType?: string
+  fileName?: string
 }
 
 // /repository/downloadDocumentFile.do 응답 항목 (docFileId 미지정 시 다건)

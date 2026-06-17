@@ -18,6 +18,7 @@
         @on-copy="onCopy"
         @on-view-source="onViewSource"
         @on-view-visualization="onViewVisualization"
+        @on-view-report="onViewReport"
         @on-select-category="handleCreateKnowledge"
       />
       <div
@@ -67,6 +68,13 @@
       @update:open="onPanelClose"
       @update:fullscreen="isPanelFullscreen = $event"
     />
+    <!-- 리서치 리포트 사이드 패널 -->
+    <ChatReportPanel
+      :open="activePanelType === 'report'"
+      :message-id="activePanelMessageId"
+      @update:open="onPanelClose"
+      @update:fullscreen="isPanelFullscreen = $event"
+    />
   </div>
 </template>
 
@@ -91,6 +99,7 @@ const {
   pdfRefList,
   onViewSource,
   onViewVisualization,
+  onViewReport,
   onPanelClose,
   handleSelectChatIndexAgents,
 } = useChatStore()

@@ -1026,6 +1026,13 @@ export const useChatStore = () => {
     await handleSelectVisualizationData(id)
   }
 
+  // 리서치 리포트 보기 버튼 클릭 시(리포트 패널 열기)
+  const onViewReport = (id: string) => {
+    isPanelFullscreen.value = false
+    activePanelType.value = 'report'
+    activePanelMessageId.value = id
+  }
+
   const onPanelClose = (value: boolean) => {
     if (!value) {
       clearBodyChartFullscreen()
@@ -1391,6 +1398,7 @@ export const useChatStore = () => {
     // 패널
     onViewSource,
     onViewVisualization,
+    onViewReport,
     handleSelectVisualizationData,
     handleSelectChatPdfFileUrl,
     onPanelClose,

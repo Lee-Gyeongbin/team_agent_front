@@ -325,6 +325,13 @@ const handleWebSocketMessage = (payload: ChatSocketMessage) => {
         streamingMessage.isStreaming = true
         break
       }
+      // 리서치 리포트 HTML — 사이드 패널용
+      if (payload.chunkEvent === 'report_html' && payload.content) {
+        streamingMessage.reportHtml = payload.content
+        streamingMessage.hasReport = true
+        streamingMessage.isStreaming = true
+        break
+      }
       // 일반 텍스트 delta는 버퍼에 누적
       appendStreamingChunk(streamingMessage.logId, payload.content ?? '')
       streamingMessage.isStreaming = true

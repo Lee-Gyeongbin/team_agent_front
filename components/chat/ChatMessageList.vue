@@ -20,6 +20,7 @@
           @on-regenerate="emit('on-regenerate', $event)"
           @on-view-source="emit('on-view-source', $event)"
           @on-view-visualization="emit('on-view-visualization', $event)"
+          @on-view-report="emit('on-view-report', $event)"
           @on-submit-recommend-card="onSubmitRecommendCard"
           @on-recommend-card-close="emit('on-recommend-card-close', $event)"
           @on-submit-translate-card="onSubmitTranslateCard"
@@ -77,6 +78,7 @@ const emit = defineEmits<{
   'on-select-category': [logId: string, categoryValue: string, categoryNm: string]
   'on-view-source': [id: string]
   'on-view-visualization': [id: string]
+  'on-view-report': [id: string]
   'on-survey-submit': [logId: string]
   'on-survey-close': [logId: string]
   'on-meme-intro-complete': [logId: string]

@@ -155,7 +155,7 @@
             </UiButton>
           </div>
           <div
-            v-if="message.hasSource || message.hasVisualization"
+            v-if="message.hasSource || message.hasVisualization || message.hasReport"
             class="message-panel-buttons"
           >
             <UiButton
@@ -174,6 +174,16 @@
               @click="emit('on-view-visualization', message.logId)"
             >
               시각화 보기
+              <template #icon-right>
+                <i class="icon-arrow-right size-20"></i>
+              </template>
+            </UiButton>
+            <UiButton
+              v-show="message.hasReport"
+              variant="primary-dark"
+              @click="emit('on-view-report', message.logId)"
+            >
+              리서치 리포트 보기
               <template #icon-right>
                 <i class="icon-arrow-right size-20"></i>
               </template>
@@ -435,6 +445,7 @@ const emit = defineEmits<{
   'on-select-category': [id: string, categoryValue: string, categoryNm: string]
   'on-view-source': [id: string]
   'on-view-visualization': [id: string]
+  'on-view-report': [id: string]
   'on-submit-recommend-card': [logId: string, payload: RecommendFormPayload]
   'on-recommend-card-close': [logId: string]
   'on-submit-translate-card': [logId: string, payload: TranslateFormPayload]

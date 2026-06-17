@@ -18,6 +18,7 @@
         @on-regenerate="onRegenerate"
         @on-view-source="onViewSource"
         @on-view-visualization="onViewVisualization"
+        @on-view-report="onViewReport"
         @on-select-category="onSelectCategory"
         @on-survey-submit="onSurveyMessageSubmit"
         @on-survey-close="onSurveyMessageClose"
@@ -53,6 +54,13 @@
     <!-- 시각화 사이드 패널 -->
     <ChatVisualizationPanel
       :open="activePanelType === 'visualization'"
+      :message-id="activePanelMessageId"
+      @update:open="onPanelClose"
+      @update:fullscreen="isPanelFullscreen = $event"
+    />
+    <!-- 리서치 리포트 사이드 패널 -->
+    <ChatReportPanel
+      :open="activePanelType === 'report'"
       :message-id="activePanelMessageId"
       @update:open="onPanelClose"
       @update:fullscreen="isPanelFullscreen = $event"
@@ -145,6 +153,7 @@ const {
   knowledgeList,
   onViewSource,
   onViewVisualization,
+  onViewReport,
   onPanelClose,
   handleResetChatPanels,
   handleSelectKnowledge,

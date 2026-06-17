@@ -130,6 +130,10 @@ export interface ChatMessage {
   attachments?: ChatMessageAttachment[]
   /** Web 검색/그라운딩 출처 (answer_source 스트리밍 청크로 수신) */
   groundingSources?: ChatGroundingSourceItem[]
+  /** 리서치 리포트 HTML (report_html 스트리밍 이벤트로 수신) */
+  reportHtml?: string
+  /** 리포트 존재 여부 */
+  hasReport?: boolean
   /** 클라이언트 전용: 설문 진단 프롬프트 등 화면에 노출하지 않을 메시지 */
   hiddenFromDisplay?: boolean
   /** 산업심리 설문 메시지(type=survey) 전용: 사용자 응답 */
@@ -210,7 +214,7 @@ export const EMPTY_CHAT_MESSAGE: ChatMessage = {
   docExist: 'N',
 }
 
-export type PanelType = 'none' | 'pdf' | 'visualization'
+export type PanelType = 'none' | 'pdf' | 'visualization' | 'report'
 
 export interface ModelOption {
   label: string
@@ -342,6 +346,8 @@ export interface ChatLogListRow {
   chartOption?: VisualizationChartOptionPayload | string
   /** Web 그라운딩 출처 JSON 문자열 — {"items":[{"url","title"},...]} */
   webGroundingJson?: string
+  /** 리서치 리포트 HTML */
+  reportHtml?: string
   /** 만족도 Y/N (목록 조회 시) */
   satisYn?: string
   satisContent?: string
