@@ -258,6 +258,13 @@
       @update:model-value="emit('update:translateForm', $event)"
     />
 
+    <AgentSettingSubTyResearcher
+      v-if="svcTy === 'M' && subTy === 'RESEARCHER'"
+      :model-value="researcherForm"
+      :tmpl-id-options="tmplIdOptions"
+      @update:model-value="emit('update:researcherForm', $event)"
+    />
+
     <AgentIconSelectModal
       :is-open="isIconModalOpen"
       :icons="themeIcons"
@@ -275,6 +282,7 @@ import type { SurveyConfigForm } from '~/utils/agent/surveyConfigUtil'
 import type { RecommendConfigForm } from '~/utils/agent/recommendConfigUtil'
 import type { CurationConfigForm } from '~/utils/agent/curationConfigUtil'
 import type { TranslateConfigForm } from '~/utils/agent/translateConfigUtil'
+import type { ResearcherConfigForm } from '~/utils/agent/researcherConfigUtil'
 
 interface BasicForm {
   agentNm: string
@@ -311,8 +319,10 @@ interface Props {
   recommendForm: RecommendConfigForm
   curationForm: CurationConfigForm
   translateForm: TranslateConfigForm
+  researcherForm: ResearcherConfigForm
   sqlModelOptions: { value: string; label: string }[]
   apiUrlCdOptions: { value: string | number; label: string }[]
+  tmplIdOptions: { value: string; label: string }[]
 }
 
 const props = defineProps<Props>()
@@ -326,6 +336,7 @@ const emit = defineEmits<{
   'update:recommendForm': [value: RecommendConfigForm]
   'update:curationForm': [value: CurationConfigForm]
   'update:translateForm': [value: TranslateConfigForm]
+  'update:researcherForm': [value: ResearcherConfigForm]
 }>()
 
 const onUpdate = (key: keyof BasicForm, value: string | number | 'Y' | 'N') => {

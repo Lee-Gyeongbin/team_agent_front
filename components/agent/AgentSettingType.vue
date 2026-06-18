@@ -14,7 +14,7 @@
     </div>
 
     <div
-      v-if="modelValue === 'C'"
+      v-if="modelValue === 'C' || modelValue === 'M'"
       class="com-setting-field-row"
     >
       <label class="com-setting-label"><span class="is-required">*</span>세부 유형</label>
@@ -51,12 +51,23 @@ const emit = defineEmits<{
   change: [value: string]
 }>()
 
-const subTyOptions = [
+const cSubTyOptions = [
   { label: '일반', value: '' },
   { label: '설문', value: 'SURVEY' },
   { label: '추천', value: 'RECOMMEND' },
   { label: '큐레이션', value: 'CURATION' },
 ]
+
+const mSubTyOptions = [
+  { label: '일반', value: '' },
+  { label: '리서처', value: 'RESEARCHER' },
+]
+
+const subTyOptions = computed(() => {
+  if (props.modelValue === 'C') return cSubTyOptions
+  if (props.modelValue === 'M') return mSubTyOptions
+  return [{ label: '일반', value: '' }]
+})
 
 const codes = await getCodes('AT000001')
 const agentTypeOptions = [{ label: '선택', value: '' }, ...codes.map((c) => ({ label: c.codeNm, value: c.codeId }))]
