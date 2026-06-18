@@ -45,6 +45,7 @@ import {
   isTranslateAgentPrompt,
   useTranslateAgent,
 } from '~/utils/chat/translateAgentUtil'
+import { isRiskAgent } from '~/utils/agent/riskConfigUtil'
 import {
   createTodayMemeMessage,
   isTodayMemePrompt,
@@ -107,6 +108,7 @@ const {
   isSearchModeMissingSubOptions,
   searchModeSubOptionsEmptyMessage,
   isFileAttachEnabled,
+  riskAgentActive,
 } = useChatSearchState()
 const {
   chatRoom,
@@ -216,7 +218,8 @@ const normalizeChatAgents = (list: Agent[]) =>
           a.svcTy === 'T' ||
           a.svcTy === 'C' ||
           a.svcTy === 'A' ||
-          a.svcTy === 'W'),
+          a.svcTy === 'W' ||
+          a.svcTy === 'D'),
     )
     .map((a) => ({
       ...a,
@@ -1079,6 +1082,9 @@ export const useChatStore = () => {
   /** 에이전트 관리 목록 기준 모드 선택 (/chat 인덱스 버튼) — 동일 모드 여러 에이전트 간 전환 지원 */
   const selectChatIndexAgent = async (agent: Agent) => {
     resetNextQuestions()
+    // 에이전트 전환 시 RISK 활성 상태는 기본 해제하고, D 분기에서만 다시 켠다. (토글 판별용 직전 상태 보존)
+    const wasRiskActive = riskAgentActive.value
+    riskAgentActive.value = false
     if (agent.svcTy === 'T') {
       // 회의록 에이전트 → 내부 회의 페이지로 이동
       await navigateTo('/meeting')
@@ -1123,6 +1129,25 @@ export const useChatStore = () => {
       } else {
         openTranslateAgent()
       }
+      return
+    }
+
+    // RISK(프로젝트 리스크진단·D): 리서처(M)처럼 데이터셋 콤보·첨부를 노출하되 svcTy='D'로 전송.
+    // 토글(같은 에이전트 재클릭) 시 해제한다.
+    if (agent.svcTy === 'D' && isRiskAgent(agent)) {
+      if (selectedChatAgentId.value === agent.agentId && wasRiskActive) {
+        // 같은 RISK 에이전트 재클릭 → 해제 (riskAgentActive는 위에서 이미 false)
+        activeSearchModes.value = []
+        selectedChatAgentId.value = null
+        subOptions.value = []
+        await selectModelOptions()
+        return
+      }
+      selectedChatAgentId.value = agent.agentId
+      riskAgentActive.value = true
+      activeSearchModes.value = ['M'] // 데이터셋 콤보·첨부 UI 재사용 목적
+      await selectRagDsList() // 자사 역량 RAG 데이터셋 콤보 채우기
+      await selectModelOptions()
       return
     }
 
@@ -1357,6 +1382,7 @@ export const useChatStore = () => {
     isSearchModeMissingSubOptions,
     searchModeSubOptionsEmptyMessage,
     isFileAttachEnabled,
+    riskAgentActive,
     isSurveyVisible,
     isGenderStepVisible,
     surveyGender,

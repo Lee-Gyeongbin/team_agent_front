@@ -26,6 +26,7 @@
         :curation-form="curationForm"
         :translate-form="translateForm"
         :researcher-form="researcherForm"
+        :risk-form="riskForm"
         :sql-model-options="sqlModelOptions"
         :api-url-cd-options="apiUrlCdOptions"
         :tmpl-id-options="tmplIdOptions"
@@ -36,11 +37,12 @@
         @update:curation-form="curationForm = $event"
         @update:translate-form="translateForm = $event"
         @update:researcher-form="researcherForm = $event"
+        @update:risk-form="riskForm = $event"
       />
 
-      <!-- 섹션3: 데이터 연결 (svcTy 기반 분기) -->
+      <!-- 섹션3: 데이터 연결 (svcTy 기반 분기) — D(RISK)는 자사 역량 RAG 데이터셋 연결 -->
       <AgentSettingData
-        v-if="form.svcTy === 'M' || form.svcTy === 'S'"
+        v-if="form.svcTy === 'M' || form.svcTy === 'S' || (form.svcTy === 'D' && form.subTy === 'RISK')"
         ref="settingDataRef"
         :svc-ty="form.svcTy"
         :dataset-list="localDatasetList"
@@ -111,6 +113,13 @@ import {
   parseResearcherAdditionalConfigToForm,
   type ResearcherConfigForm,
 } from '~/utils/agent/researcherConfigUtil'
+import {
+  RISK_SUB_TY,
+  buildRiskAdditionalConfig,
+  emptyRiskConfigForm,
+  parseRiskAdditionalConfigToForm,
+  type RiskConfigForm,
+} from '~/utils/agent/riskConfigUtil'
 
 interface Props {
   isOpen: boolean
@@ -136,6 +145,7 @@ const tmplListLoaded = ref(false)
 let tmplListLoadPromise: Promise<void> | null = null
 
 const isResearcherAgentForm = () => form.value.svcTy === 'M' && form.value.subTy === RESEARCHER_SUB_TY
+const isRiskAgentForm = () => form.value.svcTy === 'D' && form.value.subTy === RISK_SUB_TY
 const initApiUrlCdOptions = async () => {
   const codes = await getCodes('AA000001')
   apiUrlCdOptions.value = [
@@ -168,9 +178,9 @@ const initTmplIdOptions = async () => {
   }
 }
 
-/** RESEARCHER 세부 유형일 때만 tb_tmpl 목록 조회 (동시 호출 dedup) */
+/** RESEARCHER/RISK 등 템플릿 기반 세부 유형일 때만 tb_tmpl 목록 조회 (동시 호출 dedup) */
 const ensureTmplIdOptionsIfResearcher = (): Promise<void> => {
-  if (!isResearcherAgentForm()) return Promise.resolve()
+  if (!isResearcherAgentForm() && !isRiskAgentForm()) return Promise.resolve()
   if (tmplListLoaded.value) return Promise.resolve()
   if (tmplListLoadPromise) return tmplListLoadPromise
 
@@ -198,6 +208,7 @@ const onChangeAgentType = async (svcTy: string) => {
     curationForm.value = emptyCurationConfigForm()
     researcherForm.value = emptyResearcherConfigForm()
   }
+  // M·D는 데이터셋, S는 데이터마트 — handleChangeAgentType가 svcTy로 분기 처리한다.
   const result = await handleChangeAgentType(svcTy)
   localDatasetList.value = result.datasetList
   localDatamartList.value = result.datamartList
@@ -234,6 +245,10 @@ const translateForm = ref<TranslateConfigForm>(emptyTranslateConfigForm())
 // 리서처(RESEARCHER) ADDITIONAL_CONFIG — UI 미편집 필드 보존용
 const preservedResearcherConfig = ref<AgtSubAdditionalConfig | null>(null)
 const researcherForm = ref<ResearcherConfigForm>(emptyResearcherConfigForm())
+
+// 리스크진단(RISK) ADDITIONAL_CONFIG — UI 미편집 필드 보존용
+const preservedRiskConfig = ref<AgtSubAdditionalConfig | null>(null)
+const riskForm = ref<RiskConfigForm>(emptyRiskConfigForm())
 
 const loadSurveyConfigFromAgent = (agent: Agent | null) => {
   const subCfg = normalizeAgentSubCfg(agent?.subCfg)
@@ -295,6 +310,18 @@ const loadResearcherConfigFromAgent = (agent: Agent | null) => {
   researcherForm.value = emptyResearcherConfigForm()
 }
 
+const loadRiskConfigFromAgent = (agent: Agent | null) => {
+  const subCfg = normalizeAgentSubCfg(agent?.subCfg)
+  const additional = subCfg?.additionalConfig
+  if (additional && typeof additional === 'object' && Object.keys(additional).length > 0) {
+    preservedRiskConfig.value = { ...additional }
+    riskForm.value = parseRiskAdditionalConfigToForm(additional as Record<string, unknown>)
+    return
+  }
+  preservedRiskConfig.value = null
+  riskForm.value = emptyRiskConfigForm()
+}
+
 const resetSubTyConfigForms = () => {
   preservedSurveyConfig.value = null
   preservedRecommendConfig.value = null
@@ -306,6 +333,8 @@ const resetSubTyConfigForms = () => {
   curationForm.value = emptyCurationConfigForm()
   translateForm.value = emptyTranslateConfigForm()
   researcherForm.value = emptyResearcherConfigForm()
+  preservedRiskConfig.value = null
+  riskForm.value = emptyRiskConfigForm()
 }
 
 // 기본 설정 폼
@@ -404,6 +433,18 @@ watch(
         surveyForm.value = emptySurveyConfigForm()
         recommendForm.value = emptyRecommendConfigForm()
         curationForm.value = emptyCurationConfigForm()
+        researcherForm.value = emptyResearcherConfigForm()
+      } else if (props.agent.svcTy === 'D' && form.value.subTy === RISK_SUB_TY) {
+        loadRiskConfigFromAgent(props.agent)
+        preservedSurveyConfig.value = null
+        preservedRecommendConfig.value = null
+        preservedCurationConfig.value = null
+        preservedTranslateConfig.value = null
+        preservedResearcherConfig.value = null
+        surveyForm.value = emptySurveyConfigForm()
+        recommendForm.value = emptyRecommendConfigForm()
+        curationForm.value = emptyCurationConfigForm()
+        translateForm.value = emptyTranslateConfigForm()
         researcherForm.value = emptyResearcherConfigForm()
       } else {
         resetSubTyConfigForms()
@@ -509,6 +550,18 @@ watch(
       if (form.value.svcTy === 'M') {
         ensureTmplIdOptionsIfResearcher()
       }
+      return
+    }
+    if (subTy === RISK_SUB_TY) {
+      if (props.agent?.svcTy === 'D' && normalizeAgentSubCfg(props.agent.subCfg)?.subTy === RISK_SUB_TY) {
+        loadRiskConfigFromAgent(props.agent)
+      } else {
+        preservedRiskConfig.value = null
+        riskForm.value = emptyRiskConfigForm()
+      }
+      if (form.value.svcTy === 'D') {
+        ensureTmplIdOptionsIfResearcher()
+      }
     }
   },
 )
@@ -580,6 +633,21 @@ const onSave = () => {
       createDt: existingSubCfg?.createDt ?? '',
       modifyDt: existingSubCfg?.modifyDt ?? '',
     }
+  }
+
+  if (form.value.svcTy === 'D' && form.value.subTy === RISK_SUB_TY) {
+    const existingSubCfg = normalizeAgentSubCfg(props.agent?.subCfg)
+    base.subCfg = {
+      subCfgId: existingSubCfg?.subCfgId ?? '',
+      agentId: props.agent?.agentId ?? '',
+      subTy: RISK_SUB_TY,
+      additionalConfig: buildRiskAdditionalConfig(riskForm.value, preservedRiskConfig.value),
+      useYn: existingSubCfg?.useYn ?? 'Y',
+      createDt: existingSubCfg?.createDt ?? '',
+      modifyDt: existingSubCfg?.modifyDt ?? '',
+    }
+    // 자사 역량 RAG 데이터셋 연결 (채팅 데이터셋 콤보는 에이전트에 연결된 데이터셋을 노출)
+    base.datasetList = localDatasetList.value
   }
 
   emit('save', base)

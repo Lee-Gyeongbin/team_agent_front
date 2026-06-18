@@ -265,6 +265,13 @@
       @update:model-value="emit('update:researcherForm', $event)"
     />
 
+    <AgentSettingSubTyRisk
+      v-if="svcTy === 'D' && subTy === 'RISK'"
+      :model-value="riskForm"
+      :tmpl-id-options="tmplIdOptions"
+      @update:model-value="emit('update:riskForm', $event)"
+    />
+
     <AgentIconSelectModal
       :is-open="isIconModalOpen"
       :icons="themeIcons"
@@ -283,6 +290,7 @@ import type { RecommendConfigForm } from '~/utils/agent/recommendConfigUtil'
 import type { CurationConfigForm } from '~/utils/agent/curationConfigUtil'
 import type { TranslateConfigForm } from '~/utils/agent/translateConfigUtil'
 import type { ResearcherConfigForm } from '~/utils/agent/researcherConfigUtil'
+import type { RiskConfigForm } from '~/utils/agent/riskConfigUtil'
 
 interface BasicForm {
   agentNm: string
@@ -320,6 +328,7 @@ interface Props {
   curationForm: CurationConfigForm
   translateForm: TranslateConfigForm
   researcherForm: ResearcherConfigForm
+  riskForm: RiskConfigForm
   sqlModelOptions: { value: string; label: string }[]
   apiUrlCdOptions: { value: string | number; label: string }[]
   tmplIdOptions: { value: string; label: string }[]
@@ -337,6 +346,7 @@ const emit = defineEmits<{
   'update:curationForm': [value: CurationConfigForm]
   'update:translateForm': [value: TranslateConfigForm]
   'update:researcherForm': [value: ResearcherConfigForm]
+  'update:riskForm': [value: RiskConfigForm]
 }>()
 
 const onUpdate = (key: keyof BasicForm, value: string | number | 'Y' | 'N') => {

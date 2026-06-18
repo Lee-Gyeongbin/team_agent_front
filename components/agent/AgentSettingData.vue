@@ -24,7 +24,7 @@
 
     <!-- 목록 -->
     <draggable
-      v-if="svcTy === 'M'"
+      v-if="isDatasetType"
       v-model="draggableList"
       class="agent-setting-data-list"
       handle=".agent-data-card-drag"
@@ -74,13 +74,16 @@ const emit = defineEmits<{
   'update:datamartList': [list: AgtDm[]]
 }>()
 
+// M(지식검색)·D(리스크진단)는 RAG 데이터셋, S(데이터분석)는 데이터마트
+const isDatasetType = computed(() => props.svcTy === 'M' || props.svcTy === 'D')
+
 // 현재 타입에 맞는 아이템 목록
-const items = computed(() => (props.svcTy === 'M' ? props.datasetList : props.datamartList))
+const items = computed(() => (isDatasetType.value ? props.datasetList : props.datamartList))
 
 // 섹션 텍스트
-const sectionTitle = computed(() => (props.svcTy === 'M' ? 'RAG 데이터셋 연결' : '데이터마트 연결'))
+const sectionTitle = computed(() => (isDatasetType.value ? 'RAG 데이터셋 연결' : '데이터마트 연결'))
 const sectionDesc = computed(() =>
-  props.svcTy === 'M' ? 'Agent가 참조할 데이터셋(벡터DB)을 선택합니다.' : 'Agent가 참조할 데이터마트를 선택합니다.',
+  isDatasetType.value ? 'Agent가 참조할 데이터셋(벡터DB)을 선택합니다.' : 'Agent가 참조할 데이터마트를 선택합니다.',
 )
 
 // 필터
@@ -127,7 +130,7 @@ const onDragEnd = () => {
 const onToggleItem = (target: AgtDs | AgtDm) => {
   const newConnYn = target.connYn === 'Y' ? 'N' : 'Y'
 
-  if (props.svcTy === 'M') {
+  if (isDatasetType.value) {
     const updated = props.datasetList.map((d) =>
       d.datasetId === (target as AgtDs).datasetId ? ({ ...d, connYn: newConnYn } as AgtDs) : d,
     )

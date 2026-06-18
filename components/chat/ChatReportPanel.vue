@@ -4,7 +4,7 @@
     :class="{ 'is-open': open, 'is-fullscreen': isFullscreen }"
   >
     <div class="chat-report-header">
-      <span class="chat-report-title">리서치 리포트</span>
+      <span class="chat-report-title">리포트</span>
       <div class="chat-report-header-actions">
         <div class="chat-report-download-grp">
           <button
@@ -309,7 +309,7 @@ const extractTitle = (obj: Record<string, unknown>): string => {
   for (const key of ['title', '제목', '주제']) {
     if (typeof obj[key] === 'string') return obj[key] as string
   }
-  return '리서치 리포트'
+  return '리포트'
 }
 
 /** JSON 객체를 리서치 리포트 HTML로 변환 */
@@ -402,13 +402,13 @@ const onClose = () => {
 const onDownloadDocx = async () => {
   const html = editorHtml.value || normalizedHtml.value
   if (!html) return
-  await downloadReportAsDocx(html, '리서치_리포트')
+  await downloadReportAsDocx(html, '리포트')
 }
 
 const onDownloadPdf = async () => {
   const html = editorHtml.value || normalizedHtml.value
   if (!html) return
-  await downloadReportAsPdf(html, '리서치_리포트')
+  await downloadReportAsPdf(html, '리포트')
 }
 
 const onSaveToMyDocs = async () => {

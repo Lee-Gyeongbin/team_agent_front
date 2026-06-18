@@ -229,6 +229,7 @@ const {
   chatIndexAgents,
   selectedSubOptions,
   isFileAttachEnabled,
+  riskAgentActive,
 } = useChatStore()
 
 const { ensureWebSocketAndSend } = useChatSocket()
@@ -488,6 +489,11 @@ const handleSend = async () => {
   if (props.disabled) return
   if (isSearchModeMissingSubOptions.value) return
   const filesToSend = isFileAttachEnabled.value ? selectedFiles.value : []
+  // RISK(리스크진단): RFP 파일 첨부 필수 — 데이터셋만 선택하고 전송 시 업로드 요청
+  if (riskAgentActive.value && filesToSend.length === 0) {
+    openToast({ message: 'RFP 파일을 업로드한 뒤 진단을 요청하세요.', type: 'warning' })
+    return
+  }
   if (filesToSend.length > 0 && !validateAttachmentFiles(filesToSend)) return
   isSending.value = true
   try {

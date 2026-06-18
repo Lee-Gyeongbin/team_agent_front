@@ -55,6 +55,7 @@ const {
   selectedModelOption,
   isSearchModeMissingSubOptions,
   searchModeSubOptionsEmptyMessage,
+  riskAgentActive,
 } = useChatSearchState()
 const { logRowToMessages, resetNextQuestions } = useChatMessages()
 const { stopChatSocket } = useChatSocket()
@@ -98,7 +99,16 @@ export const useChatRooms = () => {
     const lastAgentId = typeof lastRow?.agentId === 'string' ? lastRow.agentId.trim() : ''
     const isTodayMemePromptLog = isTodayMemePrompt(String(lastRow?.qcontent ?? ''))
     const isRecommendPromptLog = isRecommendAgentPrompt(String(lastRow?.qcontent ?? ''))
-    if (svcTy === 'M') {
+    // 방 전환 시 RISK 활성 상태는 기본 해제하고, 아래 D 분기에서만 복원한다.
+    riskAgentActive.value = false
+    if (svcTy === 'D') {
+      // 리스크진단(D) 채팅방 재진입 — 에이전트 선택·데이터셋 콤보 복원 (M 머신 재사용)
+      riskAgentActive.value = true
+      activeSearchModes.value = ['M']
+      selectedChatAgentId.value = lastAgentId || null
+      await selectRagDsList()
+      await selectModelOptions()
+    } else if (svcTy === 'M') {
       activeSearchModes.value = ['M']
       selectedChatAgentId.value = lastAgentId || null
       // 지식검색 시 라그 데이터셋 조회

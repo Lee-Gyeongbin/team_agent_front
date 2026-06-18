@@ -147,9 +147,7 @@ const finalizeCompletedMessage = (streamingMessage: (typeof messages.value)[numb
   // 서버 logId가 없으면(예: 정지 등으로 로그 미저장) 좋아요/싫어요 등 액션 숨김 처리
   streamingMessage.chatLogMissing = !payload.logId
   streamingMessage.hasSource =
-    !!payload.docFileId ||
-    streamingMessage.hasSource === true ||
-    (streamingMessage.groundingSources?.length ?? 0) > 0
+    !!payload.docFileId || streamingMessage.hasSource === true || (streamingMessage.groundingSources?.length ?? 0) > 0
   streamingMessage.hasVisualization = !!payload.tableData
   if (payload.tableData !== undefined && payload.tableData !== '') {
     streamingMessage.tableData = payload.tableData

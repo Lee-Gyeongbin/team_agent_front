@@ -88,7 +88,8 @@ const handleFetchAgentDetailDataList = async (agent: Agent) => {
   try {
     const response = await fetchAgentDetailDataList(agent)
     if (!selectedAgent.value) return
-    if (agent.svcTy === 'M') {
+    // M(지식검색)·D(리스크진단)는 RAG 데이터셋, S(데이터분석)는 데이터마트
+    if (agent.svcTy === 'M' || agent.svcTy === 'D') {
       selectedAgent.value.datasetList = (response?.dataList as AgtDs[]) ?? []
     } else if (agent.svcTy === 'S') {
       selectedAgent.value.datamartList = (response?.dataList as AgtDm[]) ?? []
@@ -208,7 +209,8 @@ const handleChangeAgentType = async (svcTy: string) => {
   try {
     const response = await fetchAgentDetailDataList({ svcTy } as Agent)
     return {
-      datasetList: svcTy === 'M' ? ((response?.dataList as AgtDs[]) ?? []) : [],
+      // M(지식검색)·D(리스크진단)는 RAG 데이터셋, S(데이터분석)는 데이터마트
+      datasetList: svcTy === 'M' || svcTy === 'D' ? ((response?.dataList as AgtDs[]) ?? []) : [],
       datamartList: svcTy === 'S' ? ((response?.dataList as AgtDm[]) ?? []) : [],
     }
   } catch {

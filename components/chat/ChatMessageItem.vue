@@ -183,7 +183,7 @@
               variant="primary-dark"
               @click="emit('on-view-report', message.logId)"
             >
-              리서치 리포트 보기
+              리포트 보기
               <template #icon-right>
                 <i class="icon-arrow-right size-20"></i>
               </template>

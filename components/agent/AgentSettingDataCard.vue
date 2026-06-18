@@ -69,7 +69,8 @@ defineEmits<{
   toggle: [item: AgtDs | AgtDm]
 }>()
 
-const isRag = computed(() => props.svcTy === 'M')
+// M(지식검색)·D(리스크진단)는 RAG 데이터셋 카드, S(데이터분석)는 데이터마트 카드
+const isRag = computed(() => props.svcTy === 'M' || props.svcTy === 'D')
 const ds = computed(() => props.item as AgtDs)
 const dm = computed(() => props.item as AgtDm)
 </script>

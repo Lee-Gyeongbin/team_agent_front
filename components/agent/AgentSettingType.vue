@@ -14,7 +14,7 @@
     </div>
 
     <div
-      v-if="modelValue === 'C' || modelValue === 'M'"
+      v-if="modelValue === 'C' || modelValue === 'M' || modelValue === 'D'"
       class="com-setting-field-row"
     >
       <label class="com-setting-label"><span class="is-required">*</span>세부 유형</label>
@@ -63,9 +63,15 @@ const mSubTyOptions = [
   { label: '리서처', value: 'RESEARCHER' },
 ]
 
+const dSubTyOptions = [
+  { label: '일반', value: '' },
+  { label: '리스크진단', value: 'RISK' },
+]
+
 const subTyOptions = computed(() => {
   if (props.modelValue === 'C') return cSubTyOptions
   if (props.modelValue === 'M') return mSubTyOptions
+  if (props.modelValue === 'D') return dSubTyOptions
   return [{ label: '일반', value: '' }]
 })
 
