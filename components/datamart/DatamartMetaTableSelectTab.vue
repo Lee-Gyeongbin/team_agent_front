@@ -12,13 +12,6 @@
         <p class="datamart-meta-table-select-error-msg">
           {{ errorMessage }}
         </p>
-        <UiButton
-          variant="line-secondary"
-          size="sm"
-          @click="emit('retry')"
-        >
-          다시 시도
-        </UiButton>
       </div>
     </template>
 
@@ -152,7 +145,6 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  retry: []
   /** 테이블 활성(useYn) 변경 */
   'set-table-use-yn': [payload: { id: string; useYn: 'Y' | 'N' }]
 }>()

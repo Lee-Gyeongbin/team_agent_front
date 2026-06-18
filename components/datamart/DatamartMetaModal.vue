@@ -23,7 +23,6 @@
             :datamart="datamart"
             :tables="metaModalTables"
             :error-message="metaModalTableListError"
-            @retry="onRetryTableList"
             @set-table-use-yn="setDatamartMetaModalTableUseYn"
           />
           <DatamartMetaColumnMetadataTab
@@ -48,23 +47,19 @@
           />
           <DatamartMetaSynonymTab
             v-else-if="activeTab === 'synonym'"
+            ref="synonymTabRef"
             v-model:synonym-groups="metaModalSynonymGroups"
             :datamart="datamart"
             :error-message="metaModalSynonymListError"
-            :pending-change-count="metaModalSynonymPendingChangeCount"
-            @retry="onRetryTableList"
-            @reset-changes="onResetSynonymChanges"
+            :synonym-api-res="metaModalSynonymApiRes"
           />
           <DatamartMetaFewshotTab
             v-else-if="activeTab === 'fewshot'"
+            ref="fewshotTabRef"
             v-model:fewshot-list="metaModalFewshotList"
             :datamart="datamart"
             :tables="metaModalTables"
             :error-message="metaModalFewshotListError"
-            :pending-change-count="metaModalFewshotPendingChangeCount"
-            :initial-fewshot-list="metaModalInitialFewshotList"
-            @retry="onRetryTableList"
-            @reset-changes="onResetFewshotChanges"
           />
         </div>
       </div>
@@ -93,6 +88,7 @@
 
 <script setup lang="ts">
 import type { Datamart } from '~/types/datamart'
+import type { DatamartMetaFewshot, DatamartMetaSynonymItem } from '~/types/datamartMeta'
 import DatamartMetaTableSelectTab from '~/components/datamart/DatamartMetaTableSelectTab.vue'
 import DatamartMetaColumnMetadataTab from '~/components/datamart/DatamartMetaColumnMetadataTab.vue'
 import DatamartMetaRelationshipTab from '~/components/datamart/DatamartMetaRelationshipTab.vue'
@@ -119,10 +115,9 @@ const {
   metaModalCodeMappings,
   metaModalCodeGroupList,
   metaModalSynonymGroups,
+  metaModalSynonymApiRes,
   metaModalFewshotList,
   metaModalFewshotListError,
-  metaModalFewshotDraft,
-  metaModalSynonymDraft,
   resetDatamartMetaModal,
   hydrateDatamartMetaModal,
   setDatamartMetaModalTableUseYn,
@@ -136,28 +131,15 @@ const {
 
 const activeTab = defineModel<string>('activeTab', { default: 'table' })
 
+const synonymTabRef = ref<{ buildSavePayload: () => DatamartMetaSynonymItem[] | null } | null>(null)
+const fewshotTabRef = ref<{ buildSavePayload: () => DatamartMetaFewshot[] | null } | null>(null)
+
 const metaModalCustomClass = computed(() => {
   const classes = ['datamart-meta-modal']
   if (activeTab.value === 'fewshot') classes.push('is-fewshot-tab')
   if (activeTab.value === 'synonym') classes.push('is-synonym-tab')
   return classes.join(' ')
 })
-
-const metaModalFewshotPendingChangeCount = computed(() => metaModalFewshotDraft.pendingChangeCount.value)
-const metaModalSynonymPendingChangeCount = computed(() => metaModalSynonymDraft.pendingChangeCount.value)
-const metaModalInitialFewshotList = computed(() => metaModalFewshotDraft.initial.value)
-
-const onRetryTableList = () => {
-  void hydrateDatamartMetaModal(props.datamart?.datamartId ?? '')
-}
-
-const onResetFewshotChanges = () => {
-  metaModalFewshotDraft.revert()
-}
-
-const onResetSynonymChanges = () => {
-  metaModalSynonymDraft.revert()
-}
 
 watch(
   () => props.isOpen,
@@ -196,11 +178,15 @@ const onSave = async () => {
     return
   } else if (activeTab.value === 'synonym') {
     const datamartId = props.datamart?.datamartId ?? ''
-    await handleSaveMetaSynonym(datamartId, metaModalSynonymGroups.value)
+    const synonymList = synonymTabRef.value?.buildSavePayload()
+    if (!synonymList) return
+    await handleSaveMetaSynonym(datamartId, synonymList)
     return
   } else if (activeTab.value === 'fewshot') {
     const datamartId = props.datamart?.datamartId ?? ''
-    await handleSaveMetaFewshot(datamartId, metaModalFewshotList.value)
+    const fewshotList = fewshotTabRef.value?.buildSavePayload()
+    if (!fewshotList) return
+    await handleSaveMetaFewshot(datamartId, fewshotList)
     return
   }
 

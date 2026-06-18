@@ -10,85 +10,8 @@ import type {
   DatamartMetaRelationship,
   DatamartMetaSynonymGroup,
   DatamartMetaSynonymItem,
-  DatamartMetaSynonymPayload,
   DatamartMetaTableItem,
 } from '~/types/datamartMeta'
-
-/** 폼 적용 전 빈 draft */
-const isEmptyDraftFewshotRow = (row: DatamartMetaFewshot) =>
-  !row.fewshotId?.trim() &&
-  !row.userQuestion?.trim() &&
-  !row.aiUnderstand?.trim() &&
-  !row.aiRefExam?.trim() &&
-  !row.sqlExam?.trim()
-
-const toFewshotSignature = (row: DatamartMetaFewshot) => {
-  const id = row.fewshotId?.trim() ?? ''
-  return [
-    id,
-    row.userQuestion?.trim() ?? '',
-    row.aiUnderstand?.trim() ?? '',
-    row.aiRefExam?.trim() ?? '',
-    row.sqlExam?.trim() ?? '',
-    row.useYn ?? 'Y',
-  ].join('|')
-}
-
-const toFewshotSignatureForChange = (row: DatamartMetaFewshot) =>
-  isEmptyDraftFewshotRow(row) ? '' : toFewshotSignature(row)
-
-const toSynonymItemSignature = (item: DatamartMetaSynonymItem) => {
-  const word = item.synonymWord?.trim() ?? ''
-  if (!word) return ''
-  return `${item.synonymId?.trim() ?? ''}|${word}|${item.representYn ?? 'N'}|${item.useYn ?? 'Y'}`
-}
-
-/** 동의어 변경 시그니처 — flat 응답과 탭 UI 그룹이 같은 변경으로 집계되도록 항목 기준 비교 */
-const toSynonymSignaturesForChange = (groups: DatamartMetaSynonymGroup[]) =>
-  groups
-    .flatMap((group) => group.synonymList)
-    .filter((item) => item.synonymWord?.trim())
-    .map(toSynonymItemSignature)
-    .sort()
-
-/** 동의어 조회 응답 → 탭 모델 배열 */
-const parseMetaSynonymGroupsFromApi = (
-  res: DatamartMetaSynonymPayload | DatamartMetaSynonymGroup[] | null | undefined,
-  datamartId: string,
-): DatamartMetaSynonymGroup[] | null => {
-  if (!res) return null
-
-  if (Array.isArray(res)) {
-    if (res.length === 0) return []
-    if (res.every((group) => Array.isArray(group?.synonymList))) {
-      return res.map((group) => ({
-        ...group,
-        datamartId: group.datamartId?.trim() || datamartId,
-      }))
-    }
-    return null
-  }
-
-  const groupedList = res.synonymGroupList ?? res.dataList
-  if (Array.isArray(groupedList)) {
-    const sourceDatamartId = res.datamartId?.trim() || datamartId
-    return groupedList.map((group) => ({
-      ...group,
-      datamartId: group.datamartId?.trim() || sourceDatamartId,
-    }))
-  }
-
-  if (Array.isArray(res.synonymList)) {
-    return [
-      {
-        datamartId: res.datamartId?.trim() || datamartId,
-        synonymList: res.synonymList,
-      },
-    ]
-  }
-
-  return null
-}
 
 const {
   fetchDatamartList,
@@ -150,72 +73,9 @@ const metaModalSelectedColumnTableId = ref('')
 const metaModalCodeMappings = ref<DatamartMetaCodeWithEntries[]>([])
 const metaModalCodeGroupList = ref<CodeGroupItem[]>([])
 const metaModalSynonymGroups = ref<DatamartMetaSynonymGroup[]>([])
+const metaModalSynonymApiRes = ref<unknown>(null)
 const metaModalFewshotList = ref<DatamartMetaFewshot[]>([])
 const metaModalFewshotListError = ref<string | null>(null)
-
-const cloneMetaModalFewshotList = (rows: DatamartMetaFewshot[]) => rows.map((row) => ({ ...row }))
-
-const cloneMetaModalSynonymGroups = (groups: DatamartMetaSynonymGroup[]): DatamartMetaSynonymGroup[] =>
-  groups.map((group) => ({
-    ...group,
-    synonymList: group.synonymList.map((item) => ({ ...item })),
-  }))
-
-/** 동일 시그니처 수정은 1건으로 집계 */
-const countSignatureListDiff = (base: string[], current: string[]): number => {
-  const toCountMap = (sigs: string[]) => sigs.reduce((m, s) => m.set(s, (m.get(s) ?? 0) + 1), new Map<string, number>())
-  const baseMap = toCountMap(base)
-  const currentMap = toCountMap(current)
-  const allKeys = new Set([...baseMap.keys(), ...currentMap.keys()])
-  let added = 0
-  let removed = 0
-  allKeys.forEach((key) => {
-    const b = baseMap.get(key) ?? 0
-    const c = currentMap.get(key) ?? 0
-    if (c > b) added += c - b
-    else if (b > c) removed += b - c
-  })
-  return Math.max(added, removed)
-}
-
-/** 메타 모달 탭 — baseline·미저장 변경 건수 (퓨샷/동의어 공통) */
-const createMetaModalDraftTracker = <T>(
-  current: Ref<T[]>,
-  options: { clone: (items: T[]) => T[]; toSignatures: (items: T[]) => string[] },
-) => {
-  const initial = ref<T[]>([]) as Ref<T[]>
-  const ready = ref(false)
-
-  const pendingChangeCount = computed(() => {
-    if (!ready.value) return 0
-    return countSignatureListDiff(options.toSignatures(initial.value), options.toSignatures(current.value))
-  })
-  const hasPendingChanges = computed(() => pendingChangeCount.value > 0)
-
-  const commitBaseline = () => {
-    initial.value = options.clone(current.value)
-    ready.value = true
-  }
-  const revert = () => {
-    current.value = options.clone(initial.value)
-  }
-  const clear = () => {
-    ready.value = false
-    initial.value = []
-  }
-
-  return { initial, ready, pendingChangeCount, hasPendingChanges, commitBaseline, revert, clear }
-}
-
-const metaModalFewshotDraft = createMetaModalDraftTracker(metaModalFewshotList, {
-  clone: cloneMetaModalFewshotList,
-  toSignatures: (rows) => rows.map(toFewshotSignatureForChange).filter(Boolean),
-})
-
-const metaModalSynonymDraft = createMetaModalDraftTracker(metaModalSynonymGroups, {
-  clone: cloneMetaModalSynonymGroups,
-  toSignatures: toSynonymSignaturesForChange,
-})
 
 const summary = ref<DatamartSummary>({
   totalCount: 0,
@@ -361,10 +221,9 @@ const resetDatamartMetaModal = () => {
   metaModalCodeMappings.value = []
   metaModalCodeGroupList.value = []
   metaModalSynonymGroups.value = []
+  metaModalSynonymApiRes.value = null
   metaModalFewshotList.value = []
   metaModalFewshotListError.value = null
-  metaModalFewshotDraft.clear()
-  metaModalSynonymDraft.clear()
 }
 
 /** 모달 오픈·테이블 탭 재시도 — 테이블 스키마 + JOIN 관계 목록 조회 후 스토어 상태 반영 */
@@ -400,27 +259,22 @@ const hydrateDatamartMetaModal = async (datamartId: string) => {
   metaModalCodeMappings.value = mappings
 
   const synonymRes = await handleFetchMetaSynonymList(id)
-  const parsedSynonymGroups = parseMetaSynonymGroupsFromApi(synonymRes, id)
-  if (parsedSynonymGroups) {
-    metaModalSynonymGroups.value = parsedSynonymGroups
-    metaModalSynonymListError.value = null
-    metaModalSynonymDraft.commitBaseline()
-  } else {
-    metaModalSynonymGroups.value = []
+  if (synonymRes === undefined) {
+    metaModalSynonymApiRes.value = null
     metaModalSynonymListError.value = '동의어 목록을 불러오지 못했습니다.'
-    metaModalSynonymDraft.clear()
+  } else {
+    metaModalSynonymApiRes.value = synonymRes
+    metaModalSynonymListError.value = null
   }
 
   const fewshots = await handleFetchMetaFewshotList(id)
   if (fewshots === undefined) {
     metaModalFewshotList.value = []
     metaModalFewshotListError.value = '질문 예시 목록을 불러오지 못했습니다.'
-    metaModalFewshotDraft.clear()
     return
   }
   metaModalFewshotList.value = fewshots
   metaModalFewshotListError.value = null
-  metaModalFewshotDraft.commitBaseline()
 }
 
 /** 메타 관리 모달 — 테이블 사용 상태 변경 */
@@ -658,10 +512,10 @@ const handleFetchMetaCodeMappingList = async (datamartId: string, options?: { si
 const handleFetchMetaSynonymList = async (datamartId: string) => {
   try {
     openLoading({ text: '동의어 목록 조회 중...' })
-    const res = await fetchMetaSynonymList(datamartId)
-    return res
+    return await fetchMetaSynonymList(datamartId)
   } catch {
     openToast({ message: '동의어 목록 조회에 실패했습니다.', type: 'error' })
+    return undefined
   } finally {
     closeLoading()
   }
@@ -683,21 +537,8 @@ const handleFetchMetaFewshotList = async (datamartId: string) => {
 
 /** 퓨샷 저장 */
 const handleSaveMetaFewshot = async (datamartId: string, fewshotList: DatamartMetaFewshot[]) => {
-  if (!datamartId) {
-    openToast({ message: '데이터마트 정보가 없습니다.', type: 'warning' })
-    return false
-  }
-
-  /** 미입력 신규 draft(빈 fewshotId·질문 없음)는 저장 요청에서 제외 */
-  const payloadList = fewshotList.filter((row) => row.fewshotId?.trim() || row.userQuestion?.trim())
-
-  const payload = {
-    datamartId,
-    fewshotList: payloadList,
-  }
-
   try {
-    await fetchSaveMetaFewshot(payload)
+    await fetchSaveMetaFewshot({ datamartId, fewshotList })
     const fewshots = await handleFetchMetaFewshotList(datamartId)
     if (fewshots === undefined) {
       metaModalFewshotListError.value = '질문 예시 목록을 불러오지 못했습니다.'
@@ -706,7 +547,6 @@ const handleSaveMetaFewshot = async (datamartId: string, fewshotList: DatamartMe
     }
     metaModalFewshotList.value = fewshots
     metaModalFewshotListError.value = null
-    metaModalFewshotDraft.commitBaseline()
     openToast({ message: '질문 예시 저장에 성공했습니다.', type: 'success' })
     return true
   } catch {
@@ -716,31 +556,17 @@ const handleSaveMetaFewshot = async (datamartId: string, fewshotList: DatamartMe
 }
 
 /** 동의어 저장 */
-const handleSaveMetaSynonym = async (datamartId: string, synonymGroups: DatamartMetaSynonymGroup[]) => {
-  if (!datamartId) {
-    openToast({ message: '데이터마트 정보가 없습니다.', type: 'warning' })
-    return false
-  }
-
-  const payload = {
-    datamartId,
-    synonymList: synonymGroups.flatMap((group) => group.synonymList),
-  }
-
+const handleSaveMetaSynonym = async (datamartId: string, synonymList: DatamartMetaSynonymItem[]) => {
   try {
-    await fetchSaveMetaSynonym(payload)
+    await fetchSaveMetaSynonym({ datamartId, synonymList })
     const synonymRes = await handleFetchMetaSynonymList(datamartId)
-    const parsedSynonymGroups = parseMetaSynonymGroupsFromApi(synonymRes, datamartId)
-    if (parsedSynonymGroups) {
-      metaModalSynonymGroups.value = parsedSynonymGroups
-      metaModalSynonymListError.value = null
-    } else {
-      metaModalSynonymGroups.value = []
+    if (synonymRes === undefined) {
       metaModalSynonymListError.value = '동의어 목록을 불러오지 못했습니다.'
       openToast({ message: '저장 후 목록 갱신에 실패했습니다.', type: 'error' })
       return false
     }
-    metaModalSynonymDraft.commitBaseline()
+    metaModalSynonymApiRes.value = synonymRes
+    metaModalSynonymListError.value = null
     openToast({ message: '동의어 저장에 성공했습니다.', type: 'success' })
     return true
   } catch {
@@ -761,10 +587,9 @@ export const useDatamartStore = () => {
     metaModalCodeMappings,
     metaModalCodeGroupList,
     metaModalSynonymGroups,
+    metaModalSynonymApiRes,
     metaModalFewshotList,
     metaModalFewshotListError,
-    metaModalFewshotDraft,
-    metaModalSynonymDraft,
     handleSelectAll,
     handleSaveDatamart,
     handleDeleteDatamart,

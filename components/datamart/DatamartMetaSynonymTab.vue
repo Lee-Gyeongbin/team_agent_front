@@ -3,13 +3,6 @@
     <template v-if="props.errorMessage">
       <div class="datamart-meta-synonym-error">
         <p class="datamart-meta-synonym-error-msg">{{ props.errorMessage }}</p>
-        <UiButton
-          variant="line-secondary"
-          size="sm"
-          @click="onRetry"
-        >
-          다시 시도
-        </UiButton>
       </div>
     </template>
 
@@ -53,29 +46,10 @@
 
       <div class="com-setting-section datamart-meta-synonym-list-section">
         <div class="com-setting-section-header datamart-meta-section-header-static">
-          <div class="datamart-meta-synonym-section-header">
-            <span class="com-setting-section-title">
-              동의어 그룹
-              <span class="datamart-meta-synonym-count">({{ visibleSynonymGroups.length }})</span>
-            </span>
-            <div class="datamart-meta-synonym-change-actions">
-              <span
-                v-if="synonymPendingChangeCount > 0"
-                class="datamart-meta-synonym-change-badge"
-              >
-                <i aria-hidden="true" />
-                변경사항 {{ synonymPendingChangeCount }}건 (저장되지 않음)
-              </span>
-              <UiButton
-                variant="line-secondary"
-                size="sm"
-                :disabled="synonymPendingChangeCount <= 0"
-                @click="onResetChanges"
-              >
-                변경 취소
-              </UiButton>
-            </div>
-          </div>
+          <span class="com-setting-section-title">
+            동의어 그룹
+            <span class="datamart-meta-synonym-count">({{ synonymGroups.length }})</span>
+          </span>
         </div>
         <div class="com-setting-section-body datamart-meta-synonym-list-body">
           <UiEmpty
@@ -89,143 +63,29 @@
             class="synonym-group-list"
           >
             <li
-              v-if="isAddGroupMode"
-              class="synonym-group-card is-expanded"
-            >
-              <div class="synonym-group-header flex items-center justify-between gap-12">
-                <p class="synonym-group-representative flex items-center gap-8 min-w-0">
-                  <span class="synonym-group-representative-label shrink-0">대표 표현 :</span>
-                  <UiInput
-                    v-model="addFormSourceText"
-                    size="sm"
-                    class="synonym-source-input"
-                    placeholder="대표 표현 입력"
-                  />
-                </p>
-                <div class="synonym-group-header-actions flex items-center gap-8 shrink-0">
-                  <UiButton
-                    variant="outline"
-                    size="sm"
-                    :disabled="!isAddFormSaveEnabled"
-                    @click.stop="onSaveAddGroup"
-                  >
-                    완료
-                  </UiButton>
-                  <UiButton
-                    variant="line-secondary"
-                    size="sm"
-                    @click.stop="onCancelAddGroup"
-                  >
-                    취소
-                  </UiButton>
-                </div>
-              </div>
-              <div class="synonym-group-body">
-                <p class="synonym-group-body-label">같은 의미로 이해할 표현</p>
-                <div class="synonym-tag-box">
-                  <div class="synonym-tag-row">
-                    <UiTag
-                      v-for="(word, idx) in addFormSynonyms"
-                      :key="`new-${word}-${idx}`"
-                      variant="primary"
-                      size="md"
-                      closable
-                      @close="onRemoveAddFormSynonym(idx)"
-                    >
-                      {{ word }}
-                    </UiTag>
-                    <div class="synonym-tag-row-footer">
-                      <div class="synonym-add-field">
-                        <span class="synonym-add-field-label">추가할 동의어 :</span>
-                        <UiInput
-                          ref="addFormSynonymInputRef"
-                          v-model="addFormSynonymInput"
-                          size="sm"
-                          class="synonym-inline-input"
-                          placeholder="동의어 입력 후 Enter"
-                          @enter="onConfirmAddFormSynonym"
-                        >
-                          <template #icon-right>
-                            <div class="synonym-inline-input-actions">
-                              <button
-                                type="button"
-                                class="synonym-inline-input-action"
-                                aria-label="동의어 추가"
-                                @mousedown.prevent
-                                @click="onConfirmAddFormSynonym"
-                              >
-                                <i class="icon icon-check size-14" />
-                              </button>
-                              <button
-                                type="button"
-                                class="synonym-inline-input-action"
-                                aria-label="입력 초기화"
-                                @mousedown.prevent
-                                @click="onCancelAddFormSynonymInput"
-                              >
-                                <i class="icon icon-close size-10" />
-                              </button>
-                            </div>
-                          </template>
-                        </UiInput>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </li>
-
-            <li
               v-for="group in filteredSynonymGroupList"
               :key="getGroupUiId(group)"
               class="synonym-group-card"
               :class="{ 'is-expanded': isGroupExpanded(getGroupUiId(group)) }"
             >
               <div
-                class="synonym-group-header flex items-center justify-between gap-12"
+                v-if="!isGroupExpanded(getGroupUiId(group))"
+                class="synonym-group-header synonym-group-header--collapsed flex items-center justify-between gap-12"
                 role="button"
                 tabindex="0"
-                @click="onToggleGroup(getGroupUiId(group))"
-                @keydown.enter.prevent="onToggleGroup(getGroupUiId(group))"
-                @keydown.space.prevent="onToggleGroup(getGroupUiId(group))"
+                @click="onOpenGroup(getGroupUiId(group))"
+                @keydown.enter.prevent="onOpenGroup(getGroupUiId(group))"
+                @keydown.space.prevent="onOpenGroup(getGroupUiId(group))"
               >
                 <p class="synonym-group-representative flex items-center gap-8 min-w-0">
                   <span class="synonym-group-representative-label shrink-0">대표 표현 :</span>
-                  <UiInput
-                    v-if="isEditingGroup(group)"
-                    :model-value="editState!.sourceText"
-                    size="sm"
-                    class="synonym-source-input"
-                    placeholder="대표 표현 입력"
-                    @update:model-value="onEditSourceTextInput"
-                    @click.stop
-                    @enter="onConfirmEditSource(group)"
-                  />
-                  <strong
-                    v-else
-                    class="synonym-group-representative-text"
-                  >
-                    {{ getGroupSourceText(group) }}
+                  <strong class="synonym-group-representative-text">
+                    {{ getGroupSourceText(group) || '—' }}
                   </strong>
-                  <span class="synonym-group-count-badge">{{ getDisplaySynonymWords(group).length }}</span>
+                  <span class="synonym-group-count-badge">{{ getGroupSynonymWords(group).length }}</span>
                 </p>
 
                 <div class="synonym-group-header-actions flex items-center gap-8 shrink-0">
-                  <UiButton
-                    variant="outline"
-                    size="sm"
-                    class="btn-synonym-edit"
-                    @mousedown.prevent
-                    @click.stop="onEditGroup(group)"
-                  >
-                    <template #icon-left>
-                      <i
-                        class="icon size-14"
-                        :class="isEditingGroup(group) ? 'icon-check' : 'icon-edit'"
-                      />
-                    </template>
-                    {{ isEditingGroup(group) ? '완료' : '수정' }}
-                  </UiButton>
                   <UiButton
                     variant="line-secondary"
                     size="sm"
@@ -240,13 +100,61 @@
                   <button
                     type="button"
                     class="synonym-group-chevron-btn"
-                    :aria-expanded="isGroupExpanded(getGroupUiId(group))"
-                    :aria-label="isGroupExpanded(getGroupUiId(group)) ? '접기' : '펼치기'"
-                    @click.stop="onToggleGroup(getGroupUiId(group))"
+                    aria-expanded="false"
+                    aria-label="펼치기"
+                    @click.stop="onOpenGroup(getGroupUiId(group))"
                   >
                     <i
                       class="icon icon-arrow-down size-20 synonym-group-chevron"
-                      :class="{ 'is-expanded': isGroupExpanded(getGroupUiId(group)) }"
+                      aria-hidden="true"
+                    />
+                  </button>
+                </div>
+              </div>
+
+              <div
+                v-else
+                class="synonym-group-header synonym-group-header--expanded flex items-center justify-between gap-12"
+                role="button"
+                tabindex="0"
+                @click="onCloseGroup(getGroupUiId(group))"
+                @keydown.enter.prevent="onCloseGroup(getGroupUiId(group))"
+                @keydown.space.prevent="onCloseGroup(getGroupUiId(group))"
+              >
+                <p class="synonym-group-representative flex items-center gap-8 min-w-0">
+                  <span class="synonym-group-representative-label shrink-0">대표 표현 :</span>
+                  <UiInput
+                    :model-value="getGroupSourceText(group)"
+                    size="sm"
+                    class="synonym-source-input"
+                    placeholder="대표 표현 입력"
+                    @update:model-value="onUpdateGroupSourceText(group, $event)"
+                    @click.stop
+                  />
+                  <span class="synonym-group-count-badge">{{ getGroupSynonymWords(group).length }}</span>
+                </p>
+
+                <div class="synonym-group-header-actions flex items-center gap-8 shrink-0">
+                  <UiButton
+                    variant="line-secondary"
+                    size="sm"
+                    class="btn-synonym-delete"
+                    @click.stop="onDeleteGroup(group)"
+                  >
+                    <template #icon-left>
+                      <i class="icon icon-trashcan size-14" />
+                    </template>
+                    삭제
+                  </UiButton>
+                  <button
+                    type="button"
+                    class="synonym-group-chevron-btn"
+                    aria-expanded="true"
+                    aria-label="접기"
+                    @click.stop="onCloseGroup(getGroupUiId(group))"
+                  >
+                    <i
+                      class="icon icon-arrow-down size-20 synonym-group-chevron is-expanded"
                       aria-hidden="true"
                     />
                   </button>
@@ -262,32 +170,27 @@
                 <div class="synonym-tag-box">
                   <div class="synonym-tag-row">
                     <UiTag
-                      v-for="(word, wordIndex) in getDisplaySynonymWords(group)"
+                      v-for="(word, wordIndex) in getGroupSynonymWords(group)"
                       :key="`${getGroupUiId(group)}-${word}-${wordIndex}`"
                       variant="primary"
                       size="md"
-                      :closable="isEditingGroup(group)"
-                      @close="onRemoveSynonym(wordIndex)"
+                      closable
+                      @close="onRemoveSynonym(group, wordIndex)"
                     >
                       {{ word }}
                     </UiTag>
-                    <div
-                      v-if="isEditingGroup(group)"
-                      class="synonym-tag-row-footer"
-                    >
+                    <div class="synonym-tag-row-footer">
                       <div
-                        v-if="editState!.isAddingSynonym"
+                        v-if="isAddingSynonymToGroup(getGroupUiId(group))"
                         class="synonym-add-field"
                       >
-                        <span class="synonym-add-field-label">추가할 동의어 :</span>
                         <UiInput
                           ref="addSynonymInputRef"
-                          :model-value="editState!.newSynonymInput"
+                          v-model="newSynonymInput"
                           size="sm"
                           class="synonym-inline-input"
                           placeholder="동의어 입력 후 Enter"
-                          @update:model-value="onEditNewSynonymInput"
-                          @enter="onConfirmAddSynonym"
+                          @enter="onConfirmAddSynonym(group)"
                         >
                           <template #icon-right>
                             <div class="synonym-inline-input-actions">
@@ -296,7 +199,7 @@
                                 class="synonym-inline-input-action"
                                 aria-label="동의어 추가"
                                 @mousedown.prevent
-                                @click="onConfirmAddSynonym"
+                                @click="onConfirmAddSynonym(group)"
                               >
                                 <i class="icon icon-check size-14" />
                               </button>
@@ -317,7 +220,7 @@
                         v-else
                         type="button"
                         class="synonym-tag-add"
-                        @click="onStartAddSynonym"
+                        @click="onStartAddSynonym(getGroupUiId(group))"
                       >
                         <i
                           class="icon icon-plus size-14"
@@ -339,78 +242,121 @@
 
 <script setup lang="ts">
 import type { Datamart } from '~/types/datamart'
-import type { DatamartMetaSynonymGroup, DatamartMetaSynonymItem } from '~/types/datamartMeta'
+import type {
+  DatamartMetaSynonymGroup,
+  DatamartMetaSynonymItem,
+  DatamartMetaSynonymPayload,
+} from '~/types/datamartMeta'
 
 const props = defineProps<{
   datamart: Datamart | null
   errorMessage?: string | null
-  pendingChangeCount?: number
-}>()
-
-const emit = defineEmits<{
-  retry: []
-  resetChanges: []
+  synonymApiRes?: unknown
 }>()
 
 const synonymGroups = defineModel<DatamartMetaSynonymGroup[]>('synonymGroups', { default: () => [] })
 
-/** 템플릿용 변경 사항 카운트 */
-const synonymPendingChangeCount = computed(() => props.pendingChangeCount ?? 0)
-
-type SynonymEditState = {
-  groupId: string
-  sourceText: string
-  synonymWords: string[]
-  isAddingSynonym: boolean
-  newSynonymInput: string
-}
-
-const searchKeyword = ref('')
-const expandedGroupIds = ref<string[]>([])
-const editState = ref<SynonymEditState | null>(null)
-const isAddGroupMode = ref(false)
-const addFormSourceText = ref('')
-const addFormSynonyms = ref<string[]>([])
-const addFormSynonymInput = ref('')
-
-type UiInputExpose = { focus: () => void }
-const addSynonymInputRef = ref<UiInputExpose | null>(null)
-const addFormSynonymInputRef = ref<UiInputExpose | null>(null)
-
-const datamartId = computed(() => props.datamart?.datamartId?.trim() ?? '')
-
-const isAddFormSaveEnabled = computed(() => Boolean(addFormSourceText.value.trim() && addFormSynonyms.value.length > 0))
-
-const getGroupUiId = (group: DatamartMetaSynonymGroup) => group.synonymId?.trim() || group.clientKey?.trim() || ''
-
-const isRepresentativeItem = (item: DatamartMetaSynonymItem) =>
+const isRepresentativeSynonymItem = (item: DatamartMetaSynonymItem) =>
   String(item.representYn ?? '')
     .trim()
     .toUpperCase() === 'Y'
 
+const createSynonymClientKey = () => `client-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+
+const getRepresentativeSynonymItem = (group: DatamartMetaSynonymGroup) =>
+  group.synonymList.find(isRepresentativeSynonymItem) ?? group.synonymList[0]
+
+/** API 조회 응답 → 탭 UI 그룹 목록 */
+const parseSynonymGroupsFromApi = (
+  res: DatamartMetaSynonymPayload | DatamartMetaSynonymGroup[] | null | undefined,
+  datamartId: string,
+): DatamartMetaSynonymGroup[] | null => {
+  if (!res) return null
+
+  const attachDatamartId = (groups: DatamartMetaSynonymGroup[], id: string) =>
+    groups.map((group) => ({ ...group, datamartId: group.datamartId?.trim() || id }))
+
+  const toUiGroups = (groups: DatamartMetaSynonymGroup[], id: string): DatamartMetaSynonymGroup[] => {
+    if (!groups.length) return []
+    const withId = attachDatamartId(groups, id)
+    if (groups.length > 1 || !(groups[0]?.synonymList?.length ?? 0)) return withId
+
+    const flatItems = groups
+      .flatMap((group) => group.synonymList)
+      .filter((item) => item.synonymWord?.trim())
+      .map((item) => ({ ...item, synonymWord: item.synonymWord.trim() }))
+
+    if (!flatItems.length) return []
+
+    const grouped: DatamartMetaSynonymGroup[] = []
+    let current: DatamartMetaSynonymGroup | null = null
+
+    flatItems.forEach((item) => {
+      if (isRepresentativeSynonymItem(item) || !current) {
+        const serverId = item.synonymId?.trim() ?? ''
+        current = {
+          datamartId: id,
+          ...(serverId ? { synonymId: serverId } : { clientKey: createSynonymClientKey() }),
+          synonymList: [{ ...item, representYn: 'Y' as const }],
+        }
+        grouped.push(current)
+        return
+      }
+      current.synonymList.push({ ...item, representYn: 'N' as const })
+    })
+
+    return grouped
+  }
+
+  if (Array.isArray(res)) {
+    if (!res.length) return []
+    if (!res.every((group) => Array.isArray(group?.synonymList))) return null
+    return toUiGroups(attachDatamartId(res, datamartId), datamartId)
+  }
+
+  const sourceDatamartId = res.datamartId?.trim() || datamartId
+  const groupedList = res.synonymGroupList ?? res.dataList
+  if (Array.isArray(groupedList)) {
+    return toUiGroups(attachDatamartId(groupedList, sourceDatamartId), sourceDatamartId)
+  }
+
+  if (Array.isArray(res.synonymList)) {
+    return toUiGroups(
+      attachDatamartId([{ datamartId: sourceDatamartId, synonymList: res.synonymList }], sourceDatamartId),
+      sourceDatamartId,
+    )
+  }
+
+  return null
+}
+
+const searchKeyword = ref('')
+const expandedGroupIds = ref<string[]>([])
+const addingSynonymGroupId = ref<string | null>(null)
+const newSynonymInput = ref('')
+
+type UiInputExpose = { focus: () => void }
+const addSynonymInputRef = ref<UiInputExpose | null>(null)
+
+const datamartId = computed(() => props.datamart?.datamartId?.trim() ?? '')
+
+const getGroupUiId = (group: DatamartMetaSynonymGroup) => group.synonymId?.trim() || group.clientKey?.trim() || ''
+
 const getGroupSourceText = (group: DatamartMetaSynonymGroup) =>
-  group.synonymList.find(isRepresentativeItem)?.synonymWord ?? group.synonymList[0]?.synonymWord ?? ''
+  getRepresentativeSynonymItem(group)?.synonymWord?.trim() ?? ''
 
 const getGroupSynonymItems = (group: DatamartMetaSynonymGroup) => {
-  const representative = group.synonymList.find(isRepresentativeItem) ?? group.synonymList[0]
+  const representative = getRepresentativeSynonymItem(group)
   if (!representative) return []
-  return group.synonymList.filter((item) => item !== representative && item.useYn !== 'N')
+  return group.synonymList.filter((item) => item !== representative)
 }
 
-const isEditingGroup = (group: DatamartMetaSynonymGroup) => editState.value?.groupId === getGroupUiId(group)
-
-const getDisplaySynonymWords = (group: DatamartMetaSynonymGroup) => {
-  if (isEditingGroup(group)) return [...editState.value!.synonymWords]
-  return getGroupSynonymItems(group).map((item) => item.synonymWord)
-}
-
-const isVisibleSynonymItem = (item: DatamartMetaSynonymItem) => item.useYn !== 'N'
-const isVisibleSynonymGroup = (group: DatamartMetaSynonymGroup) => group.synonymList.some(isVisibleSynonymItem)
-const visibleSynonymGroups = computed(() => synonymGroups.value.filter(isVisibleSynonymGroup))
+const getGroupSynonymWords = (group: DatamartMetaSynonymGroup) =>
+  getGroupSynonymItems(group).map((item) => item.synonymWord)
 
 const filteredSynonymGroupList = computed(() => {
   const keyword = searchKeyword.value.trim().toLowerCase()
-  const groups = visibleSynonymGroups.value
+  const groups = synonymGroups.value
   if (!keyword) return groups
   return groups.filter((group) => {
     const sourceText = getGroupSourceText(group).toLowerCase()
@@ -422,8 +368,7 @@ const filteredSynonymGroupList = computed(() => {
 })
 
 const listEmptyState = computed<'none' | 'no-data' | 'no-search'>(() => {
-  if (isAddGroupMode.value) return 'none'
-  if (visibleSynonymGroups.value.length === 0) return 'no-data'
+  if (synonymGroups.value.length === 0) return 'no-data'
   if (filteredSynonymGroupList.value.length === 0) return 'no-search'
   return 'none'
 })
@@ -431,8 +376,6 @@ const listEmptyState = computed<'none' | 'no-data' | 'no-search'>(() => {
 const listEmptyDescription = computed(() =>
   listEmptyState.value === 'no-search' ? '검색 결과가 없습니다.' : '등록된 동의어가 없습니다.',
 )
-
-const createSynonymClientKey = () => `client-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 
 const updateGroupByUiId = (groupId: string, updater: (group: DatamartMetaSynonymGroup) => DatamartMetaSynonymGroup) => {
   synonymGroups.value = synonymGroups.value.map((group) => {
@@ -446,19 +389,13 @@ const createSynonymItem = (synonymWord: string, representYn: 'Y' | 'N'): Datamar
   representYn,
 })
 
-const createSynonymGroup = (sourceText: string, synonyms: string[]): DatamartMetaSynonymGroup => ({
-  datamartId: datamartId.value,
-  clientKey: createSynonymClientKey(),
-  synonymList: [createSynonymItem(sourceText, 'Y'), ...synonyms.map((word) => createSynonymItem(word, 'N'))],
-})
-
 /** 단어 중복 검사 */
 const hasOverlapInAllSynonymWords = (sourceText: string, synonymWords: string[], excludeGroupId?: string) => {
   const groupWords = [sourceText, ...synonymWords].map((word) => word.trim()).filter(Boolean)
   if (new Set(groupWords).size !== groupWords.length) return true
 
   const existingSet = new Set(
-    visibleSynonymGroups.value
+    synonymGroups.value
       .filter((group) => !excludeGroupId || getGroupUiId(group) !== excludeGroupId)
       .flatMap((group) => [
         getGroupSourceText(group).trim(),
@@ -467,73 +404,6 @@ const hasOverlapInAllSynonymWords = (sourceText: string, synonymWords: string[],
       .filter(Boolean),
   )
   return groupWords.some((word) => existingSet.has(word))
-}
-
-const showSynonymOverlapToast = () => {
-  openToast({ message: '동의어 중복 검사 결과 중복 단어가 있습니다.', type: 'warning' })
-}
-
-/** 스토어 payload(flat synonymList) → UI용 그룹 배열 */
-function buildGroupedSynonyms(raw: DatamartMetaSynonymGroup[]): DatamartMetaSynonymGroup[] {
-  const flatItems = raw
-    .flatMap((g) => g.synonymList)
-    .filter((item) => item.synonymWord?.trim())
-    .map((item) => ({ ...item, synonymWord: item.synonymWord.trim() }))
-
-  if (!flatItems.length) return []
-
-  const grouped: DatamartMetaSynonymGroup[] = []
-  let current: DatamartMetaSynonymGroup | null = null
-
-  flatItems.forEach((item) => {
-    if (isRepresentativeItem(item) || !current) {
-      const serverId = item.synonymId?.trim() ?? ''
-      current = {
-        datamartId: datamartId.value,
-        ...(serverId ? { synonymId: serverId } : { clientKey: createSynonymClientKey() }),
-        synonymList: [{ ...item, representYn: 'Y' as const }],
-      }
-      grouped.push(current)
-      return
-    }
-    current.synonymList.push({ ...item, representYn: 'N' as const })
-  })
-
-  return grouped
-}
-
-/** 스토어 flat payload [ { synonymList } ] — UI 카드 배열로 분할 */
-const isFlatSynonymPayload = (raw: DatamartMetaSynonymGroup[]) =>
-  raw.length === 1 && (raw[0]?.synonymList?.length ?? 0) > 0
-
-const isAlreadyUiGrouped = (raw: DatamartMetaSynonymGroup[]) => raw.length > 1
-
-/** 조회·저장 후 flat payload → UI 카드 배열 (편집 가드 없음) */
-const normalizeSynonymGroupsFromStore = () => {
-  if (isAlreadyUiGrouped(synonymGroups.value)) return
-  if (isFlatSynonymPayload(synonymGroups.value)) {
-    const grouped = buildGroupedSynonyms(synonymGroups.value)
-    if (JSON.stringify(synonymGroups.value) === JSON.stringify(grouped)) return
-    synonymGroups.value = grouped
-  }
-}
-
-watch(synonymGroups, () => normalizeSynonymGroupsFromStore(), { immediate: true })
-
-const resetSynonymPanelUiState = () => {
-  expandedGroupIds.value = []
-  editState.value = null
-  onCancelAddGroup()
-}
-
-const onResetChanges = async () => {
-  const confirmed = await openConfirm({
-    message: '변경 내용을 모두 삭제하시겠습니까?',
-  })
-  if (!confirmed) return
-
-  emit('resetChanges')
-  resetSynonymPanelUiState()
 }
 
 const isGroupExpanded = (groupId: string) => expandedGroupIds.value.includes(groupId)
@@ -564,150 +434,49 @@ const onExpandAllGroups = () => {
 
 const onCollapseAllGroups = () => {
   expandedGroupIds.value = []
-  editState.value = null
+  addingSynonymGroupId.value = null
+  newSynonymInput.value = ''
 }
 
-const ensureGroupExpanded = (groupId: string) => {
+const onOpenGroup = (groupId: string) => {
   if (!expandedGroupIds.value.includes(groupId)) {
     expandedGroupIds.value = [...expandedGroupIds.value, groupId]
   }
 }
 
-const clearGroupPanelState = (groupId: string) => {
+const onCloseGroup = (groupId: string) => {
   expandedGroupIds.value = expandedGroupIds.value.filter((id) => id !== groupId)
-  if (editState.value?.groupId === groupId) {
-    editState.value = null
+  if (addingSynonymGroupId.value === groupId) {
+    addingSynonymGroupId.value = null
+    newSynonymInput.value = ''
   }
 }
 
-const onToggleGroup = (groupId: string) => {
-  if (isGroupExpanded(groupId)) {
-    clearGroupPanelState(groupId)
-    return
-  }
-  ensureGroupExpanded(groupId)
-}
+const isAddingSynonymToGroup = (groupId: string) => addingSynonymGroupId.value === groupId
 
-const resetAddForm = () => {
-  addFormSourceText.value = ''
-  addFormSynonyms.value = []
-  addFormSynonymInput.value = ''
-}
-
-const onAddGroup = () => {
-  isAddGroupMode.value = true
-  resetAddForm()
-}
-
-const onCancelAddGroup = () => {
-  isAddGroupMode.value = false
-  resetAddForm()
-}
-
-const onConfirmAddFormSynonym = () => {
-  const value = addFormSynonymInput.value.trim()
-  if (!value) return
-  if (hasOverlapInAllSynonymWords(addFormSourceText.value, [...addFormSynonyms.value, value])) {
-    showSynonymOverlapToast()
-    return
-  }
-  addFormSynonyms.value.push(value)
-  addFormSynonymInput.value = ''
-  nextTick(() => addFormSynonymInputRef.value?.focus())
-}
-
-const onCancelAddFormSynonymInput = () => {
-  addFormSynonymInput.value = ''
-}
-
-const onRemoveAddFormSynonym = (index: number) => {
-  addFormSynonyms.value.splice(index, 1)
-}
-
-const onSaveAddGroup = () => {
-  if (!isAddFormSaveEnabled.value) return
-  const sourceText = addFormSourceText.value.trim()
-  if (hasOverlapInAllSynonymWords(sourceText, addFormSynonyms.value)) {
-    showSynonymOverlapToast()
-    return
-  }
-  const newGroup = createSynonymGroup(sourceText, [...addFormSynonyms.value])
-  synonymGroups.value = [newGroup, ...synonymGroups.value]
-  ensureGroupExpanded(getGroupUiId(newGroup))
-  onCancelAddGroup()
-}
-
-const onEditGroup = (group: DatamartMetaSynonymGroup) => {
-  const groupId = getGroupUiId(group)
-  if (editState.value?.groupId === groupId) {
-    onConfirmEditSource(group)
-    return
-  }
-  ensureGroupExpanded(groupId)
-  editState.value = {
-    groupId,
-    sourceText: getGroupSourceText(group),
-    synonymWords: getGroupSynonymItems(group).map((item) => item.synonymWord),
-    isAddingSynonym: false,
-    newSynonymInput: '',
-  }
-}
-
-const onEditSourceTextInput = (value: string) => {
-  if (!editState.value) return
-  editState.value = { ...editState.value, sourceText: value }
-}
-
-const onEditNewSynonymInput = (value: string) => {
-  if (!editState.value) return
-  editState.value = { ...editState.value, newSynonymInput: value }
-}
-
-const onConfirmEditSource = (group: DatamartMetaSynonymGroup) => {
-  const state = editState.value
-  const groupId = getGroupUiId(group)
-  if (!state || state.groupId !== groupId) return
-
-  const sourceText = state.sourceText.trim()
-  const synonymWords = [...new Set(state.synonymWords.map((word) => word.trim()).filter(Boolean))]
-
-  if (!sourceText) {
-    editState.value = null
-    ensureGroupExpanded(groupId)
-    return
-  }
-
-  if (hasOverlapInAllSynonymWords(sourceText, synonymWords, groupId)) {
-    showSynonymOverlapToast()
-    return
-  }
-
-  const sourceChanged = sourceText !== getGroupSourceText(group)
-  const currentWords = getGroupSynonymItems(group).map((item) => item.synonymWord)
-  const wordsChanged = currentWords.join('\u0000') !== synonymWords.join('\u0000')
-
-  if (!sourceChanged && !wordsChanged) {
-    editState.value = null
-    ensureGroupExpanded(groupId)
-    return
-  }
+const applyGroupSynonymChanges = (groupId: string, sourceText: string, synonymWords: string[]) => {
+  const normalizedWords = [...new Set(synonymWords.map((word) => word.trim()).filter(Boolean))]
 
   updateGroupByUiId(groupId, (item) => {
-    const representative = item.synonymList.find(isRepresentativeItem) ?? item.synonymList[0]
-    if (!representative) return item
+    const representative = getRepresentativeSynonymItem(item)
+    if (!representative) {
+      return {
+        ...item,
+        synonymList: [
+          createSynonymItem(sourceText, 'Y'),
+          ...normalizedWords.map((word) => createSynonymItem(word, 'N')),
+        ],
+      }
+    }
 
     const baseSynonyms = item.synonymList.filter((synonym) => synonym !== representative)
-    const removedItems = baseSynonyms.filter(
-      (synonym) => synonym.useYn !== 'N' && !synonymWords.includes(synonym.synonymWord),
-    )
     const activeSynonymsByWord = baseSynonyms.reduce((map, synonym) => {
-      if (synonym.useYn === 'N') return map
       const word = synonym.synonymWord?.trim()
       if (!word) return map
       map.set(word, [...(map.get(word) ?? []), synonym])
       return map
     }, new Map<string, DatamartMetaSynonymItem[]>())
-    const nextSynonymItems = synonymWords.map((word) => {
+    const nextSynonymItems = normalizedWords.map((word) => {
       const existingItems = activeSynonymsByWord.get(word) ?? []
       const existingItem = existingItems.shift()
       if (existingItems.length > 0) activeSynonymsByWord.set(word, existingItems)
@@ -720,64 +489,106 @@ const onConfirmEditSource = (group: DatamartMetaSynonymGroup) => {
 
     return {
       ...item,
-      synonymList: [
-        { ...representative, synonymWord: sourceText, representYn: 'Y', useYn: 'Y' },
-        ...nextSynonymItems,
-        ...removedItems.map((synonym) => ({ ...synonym, representYn: 'N' as const, useYn: 'N' as const })),
-      ],
+      synonymList: [{ ...representative, synonymWord: sourceText, representYn: 'Y', useYn: 'Y' }, ...nextSynonymItems],
     }
   })
-  editState.value = null
-  ensureGroupExpanded(groupId)
 }
 
-const onStartAddSynonym = () => {
-  if (!editState.value) return
-  editState.value = { ...editState.value, isAddingSynonym: true, newSynonymInput: '' }
+const addSynonymToGroup = (group: DatamartMetaSynonymGroup, value: string) => {
+  const token = value.trim()
+  if (!token) return false
+
+  const groupId = getGroupUiId(group)
+  const sourceText = getGroupSourceText(group)
+  const synonymWords = getGroupSynonymWords(group)
+
+  if (hasOverlapInAllSynonymWords(sourceText, [...synonymWords, token], groupId)) {
+    openToast({ message: '동의어 중복 검사 결과 중복 단어가 있습니다.', type: 'warning' })
+    return false
+  }
+
+  applyGroupSynonymChanges(groupId, sourceText, [...synonymWords, token])
+  return true
+}
+
+const onAddGroup = () => {
+  const newGroup: DatamartMetaSynonymGroup = {
+    datamartId: datamartId.value,
+    clientKey: createSynonymClientKey(),
+    synonymList: [{ synonymWord: '', representYn: 'Y', useYn: 'Y' }],
+  }
+  onOpenGroup(getGroupUiId(newGroup))
+  synonymGroups.value = [newGroup, ...synonymGroups.value]
+}
+
+const onUpdateGroupSourceText = (group: DatamartMetaSynonymGroup, value: string) => {
+  const groupId = getGroupUiId(group)
+  const synonymWords = getGroupSynonymWords(group)
+  const nextSourceText = value.trim()
+
+  if (nextSourceText && hasOverlapInAllSynonymWords(nextSourceText, synonymWords, groupId)) {
+    openToast({ message: '동의어 중복 검사 결과 중복 단어가 있습니다.', type: 'warning' })
+    return
+  }
+
+  applyGroupSynonymChanges(groupId, value, synonymWords)
+}
+
+const onStartAddSynonym = (groupId: string) => {
+  addingSynonymGroupId.value = groupId
+  newSynonymInput.value = ''
   nextTick(() => addSynonymInputRef.value?.focus())
 }
 
 const onCancelAddSynonymInput = () => {
-  if (!editState.value) return
-  editState.value = { ...editState.value, isAddingSynonym: false, newSynonymInput: '' }
+  addingSynonymGroupId.value = null
+  newSynonymInput.value = ''
 }
 
-const onConfirmAddSynonym = () => {
-  const state = editState.value
-  if (!state) return
-  const value = state.newSynonymInput.trim()
-  if (!value) return
-  if (hasOverlapInAllSynonymWords(state.sourceText, [...state.synonymWords, value], state.groupId)) {
-    showSynonymOverlapToast()
-    return
-  }
-  editState.value = {
-    ...state,
-    synonymWords: [...state.synonymWords, value],
-    newSynonymInput: '',
-    isAddingSynonym: false,
-  }
+const onConfirmAddSynonym = (group: DatamartMetaSynonymGroup) => {
+  if (!addSynonymToGroup(group, newSynonymInput.value)) return
+  newSynonymInput.value = ''
   nextTick(() => addSynonymInputRef.value?.focus())
 }
 
-const onRemoveSynonym = (index: number) => {
-  if (!editState.value) return
-  if (index < 0 || index >= editState.value.synonymWords.length) return
-  const synonymWords = [...editState.value.synonymWords]
+const onRemoveSynonym = (group: DatamartMetaSynonymGroup, index: number) => {
+  const groupId = getGroupUiId(group)
+  const synonymWords = [...getGroupSynonymWords(group)]
+  if (index < 0 || index >= synonymWords.length) return
   synonymWords.splice(index, 1)
-  editState.value = { ...editState.value, synonymWords }
+  applyGroupSynonymChanges(groupId, getGroupSourceText(group), synonymWords)
 }
 
 const onDeleteGroup = (group: DatamartMetaSynonymGroup) => {
   const groupId = getGroupUiId(group)
-  updateGroupByUiId(groupId, (item) => ({
-    ...item,
-    synonymList: item.synonymList.map((synonym) => ({ ...synonym, useYn: 'N' })),
-  }))
-  clearGroupPanelState(groupId)
+  synonymGroups.value = synonymGroups.value.filter((item) => getGroupUiId(item) !== groupId)
+  onCloseGroup(groupId)
 }
 
-const onRetry = () => {
-  emit('retry')
+watch(
+  () => [props.synonymApiRes, props.errorMessage] as const,
+  ([res, errorMessage]) => {
+    if (errorMessage) {
+      synonymGroups.value = []
+      return
+    }
+    if (res === null || res === undefined) return
+    synonymGroups.value =
+      parseSynonymGroupsFromApi(
+        res as DatamartMetaSynonymPayload | DatamartMetaSynonymGroup[] | null | undefined,
+        datamartId.value,
+      ) ?? []
+  },
+  { immediate: true },
+)
+
+const buildSavePayload = (): DatamartMetaSynonymItem[] | null => {
+  if (!datamartId.value) {
+    openToast({ message: '데이터마트 정보가 없습니다.', type: 'warning' })
+    return null
+  }
+  return synonymGroups.value.flatMap((group) => group.synonymList)
 }
+
+defineExpose({ buildSavePayload })
 </script>

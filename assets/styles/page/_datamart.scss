@@ -329,11 +329,6 @@
 
 }
 
-// 퓨샷 카드 ⋮ 메뉴 — Portal 렌더, 기본 $z-dropdown(100)보다 모달(451) 위
-.ui-dropdown-content.datamart-meta-fewshot-dropdown {
-  z-index: $z-modal-stack-2;
-}
-
 // ===================================
 // 메타 모달 — 퓨샷·동의어 탭 (공통 레이아웃)
 // ===================================
@@ -392,67 +387,6 @@
 .datamart-meta-synonym-count {
   font-weight: $font-weight-medium;
   color: $color-text-muted;
-}
-
-.datamart-meta-fewshot-detail-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  width: 100%;
-  min-width: 0;
-
-  > .com-setting-section-title {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-}
-
-.datamart-meta-fewshot-change-actions {
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
-  max-width: 100%;
-  min-width: 0;
-}
-
-.datamart-meta-fewshot-change-badge,
-.datamart-meta-synonym-change-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 12px;
-  border: 1px solid #ece8ff;
-  border-radius: 10px;
-  background: #f7f5ff;
-  @include typo($body-small);
-  color: $color-text-secondary;
-  white-space: nowrap;
-
-  i {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--color-primary);
-  }
-}
-
-.datamart-meta-synonym-section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-}
-
-.datamart-meta-synonym-change-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
 }
 
 // ===================================
@@ -523,16 +457,38 @@
   width: 100%;
   min-width: 0;
   padding: 18px 20px;
-  cursor: pointer;
-  user-select: none;
 
-  &:hover {
-    background: $color-surface;
+  &--collapsed {
+    cursor: pointer;
+    user-select: none;
+
+    &:hover {
+      background: $color-surface;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: -2px;
+    }
   }
 
-  &:focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: -2px;
+  &--expanded {
+    cursor: pointer;
+    user-select: none;
+
+    &:hover {
+      background: $color-surface;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: -2px;
+    }
+
+    .synonym-source-input {
+      cursor: text;
+      user-select: text;
+    }
   }
 }
 
@@ -661,7 +617,6 @@
 .synonym-add-field {
   display: flex;
   align-items: center;
-  gap: 8px;
   width: auto;
   max-width: 100%;
   min-width: 0;
@@ -679,6 +634,20 @@
     width: 220px;
     min-width: 0;
     max-width: 100%;
+
+    .ui-input-wrap {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .ui-input-wrap.has-icon-right .ui-input {
+      padding-right: 4px;
+    }
+
+    .ui-input-icon.is-right {
+      flex-shrink: 0;
+      padding-right: 8px;
+    }
   }
 }
 
@@ -704,6 +673,16 @@
     outline: 2px solid var(--color-primary);
     outline-offset: 1px;
     border-radius: 2px;
+  }
+}
+
+.synonym-source-input {
+  flex: 1 1 auto;
+  min-width: 120px;
+  max-width: 280px;
+
+  :deep(.ui-input-outer) {
+    width: 100%;
   }
 }
 
@@ -873,21 +852,7 @@ $fewshot-detail-body-min-height: min(492px, 52vh);
     .fewshot-card-question {
       color: var(--color-primary);
     }
-
-    .fewshot-card-status.is-modified {
-      background: #fff;
-      border-color: #d9d0ff;
-    }
   }
-}
-
-.fewshot-card-menu {
-  display: flex;
-  align-items: center;
-  align-self: center;
-  flex: 0 0 38px;
-  justify-content: center;
-  margin-right: 6px;
 }
 
 .fewshot-card-select {
@@ -896,7 +861,7 @@ $fewshot-detail-body-min-height: min(492px, 52vh);
   align-self: stretch;
   display: flex;
   align-items: center;
-  padding: 10px 8px 10px 14px;
+  padding: 10px 14px;
   border: none;
   background: none;
   text-align: left;
@@ -915,49 +880,7 @@ $fewshot-detail-body-min-height: min(492px, 52vh);
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 6px;
   overflow: hidden;
-}
-
-.fewshot-card-status {
-  display: inline-flex;
-  align-items: center;
-  align-self: flex-start;
-  gap: 4px;
-  height: 20px;
-  padding: 0 8px;
-  border-radius: 10px;
-  @include typo($body-small);
-  font-size: 11px;
-  line-height: 1;
-  white-space: nowrap;
-
-  i {
-    flex-shrink: 0;
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-  }
-
-  &.is-new {
-    border: 1px solid $color-border;
-    background: $color-surface;
-    color: $color-text-secondary;
-
-    i {
-      background: #94a3b8;
-    }
-  }
-
-  &.is-modified {
-    border: 1px solid #ece8ff;
-    background: #f7f5ff;
-    color: var(--color-primary);
-
-    i {
-      background: var(--color-primary);
-    }
-  }
 }
 
 .fewshot-card-question {
@@ -970,31 +893,6 @@ $fewshot-detail-body-min-height: min(492px, 52vh);
   &.is-placeholder {
     color: $color-text-secondary;
     font-weight: $font-weight-medium;
-  }
-}
-
-.fewshot-card-menu-trigger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: none;
-  border-radius: $border-radius-sm;
-  background: transparent;
-  color: #aebccb;
-  cursor: pointer;
-
-  &:hover {
-    background: #ecf0f3;
-    color: $color-text-primary;
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 2px;
   }
 }
 
@@ -1106,73 +1004,6 @@ $fewshot-detail-body-min-height: min(492px, 52vh);
   min-height: $fewshot-detail-body-min-height;
   padding: 48px 24px;
   box-sizing: border-box;
-}
-
-.fewshot-detail-view {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 20px;
-  min-height: 0;
-  overflow-y: auto;
-  padding-right: 4px;
-  @include custom-scrollbar;
-}
-
-.fewshot-detail-view-field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.fewshot-detail-view-field--sql {
-  padding-top: 20px;
-  border-top: 1px solid $color-border-light;
-}
-
-.fewshot-detail-view-text {
-  @include typo($body-medium);
-  color: $color-text-primary;
-  margin: 0;
-  word-break: break-word;
-}
-
-.fewshot-detail-view-sql {
-  margin: 0;
-  padding: 12px 16px;
-  border: 1px solid $color-border;
-  border-radius: $border-radius-lg;
-  background: #f8fbff;
-  font-family: $font-family-mono, monospace;
-  font-size: $font-size-sm;
-  line-height: 1.5;
-  color: $color-text-primary;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.fewshot-detail-view-sql-text {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  @include typo($body-medium);
-  color: $color-text-primary;
-  line-height: $line-height-base;
-  word-break: break-word;
-}
-
-.fewshot-sql-builder--readonly {
-  pointer-events: none;
-  user-select: text;
-
-  .fewshot-sql-builder-row {
-    align-items: center;
-    min-height: $height-sm;
-  }
-
-  .fewshot-sql-builder-keyword {
-    align-self: center;
-  }
 }
 
 .fewshot-form {
