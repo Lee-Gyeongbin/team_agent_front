@@ -389,6 +389,10 @@
   @include icon-file-bg('agent-translate');
 }
 
+.icon-agent-researcher {
+  @include icon-file-bg('agent-researcher');
+}
+
 // 마이너스 (줌아웃)
 .icon-minus {
   @include icon-file('icon-minus');
