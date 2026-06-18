@@ -25,14 +25,17 @@
         :recommend-form="recommendForm"
         :curation-form="curationForm"
         :translate-form="translateForm"
+        :researcher-form="researcherForm"
         :sql-model-options="sqlModelOptions"
         :api-url-cd-options="apiUrlCdOptions"
+        :tmpl-id-options="tmplIdOptions"
         @update:rag-form="ragForm = $event"
         @update:sql-form="sqlForm = $event"
         @update:survey-form="surveyForm = $event"
         @update:recommend-form="recommendForm = $event"
         @update:curation-form="curationForm = $event"
         @update:translate-form="translateForm = $event"
+        @update:researcher-form="researcherForm = $event"
       />
 
       <!-- 섹션3: 데이터 연결 (svcTy 기반 분기) -->
@@ -73,6 +76,7 @@
 import type { Agent, AgtDs, AgtDm, AgtSubAdditionalConfig } from '~/types/agent'
 import type { CodeItem } from '~/types/codes'
 import { useAgentStore } from '~/composables/agent/useAgentStore'
+import { useTmplApi } from '~/composables/tmpl/useTmplApi'
 import { SURVEY_SUB_TY, normalizeAgentSubCfg } from '~/utils/chat/surveyUtil'
 import { RECOMMEND_SUB_TY } from '~/utils/chat/recommendAgentUtil'
 import { CURATION_SUB_TY } from '~/utils/chat/newsCuratorUtil'
@@ -101,6 +105,12 @@ import {
   parseTranslateAdditionalConfigToForm,
   type TranslateConfigForm,
 } from '~/utils/agent/translateConfigUtil'
+import {
+  buildResearcherAdditionalConfig,
+  emptyResearcherConfigForm,
+  parseResearcherAdditionalConfigToForm,
+  type ResearcherConfigForm,
+} from '~/utils/agent/researcherConfigUtil'
 
 interface Props {
   isOpen: boolean
@@ -110,6 +120,8 @@ interface Props {
 const props = defineProps<Props>()
 
 const { modelOptions, handleChangeAgentType } = useAgentStore()
+const { fetchTmplList } = useTmplApi()
+const RESEARCHER_SUB_TY = 'RESEARCHER'
 
 const settingDataRef = ref<{ resetFilter: () => void } | null>(null)
 
@@ -119,6 +131,11 @@ const sqlModelOptions = computed(() => [
 ])
 
 const apiUrlCdOptions = ref<{ label: string; value: string }[]>([{ label: '선택', value: '' }])
+const tmplIdOptions = ref<{ label: string; value: string }[]>([{ label: '선택', value: '' }])
+const tmplListLoaded = ref(false)
+let tmplListLoadPromise: Promise<void> | null = null
+
+const isResearcherAgentForm = () => form.value.svcTy === 'M' && form.value.subTy === RESEARCHER_SUB_TY
 const initApiUrlCdOptions = async () => {
   const codes = await getCodes('AA000001')
   apiUrlCdOptions.value = [
@@ -130,17 +147,56 @@ const initApiUrlCdOptions = async () => {
   ]
 }
 
+const initTmplIdOptions = async () => {
+  try {
+    const res = await fetchTmplList()
+    const rows = res.dataList ?? []
+    tmplIdOptions.value = [
+      { label: '선택', value: '' },
+      ...rows
+        .filter((row) => row.useYn !== 'N')
+        .map((row) => ({
+          label: row.tmplNm?.trim() || row.tmplId,
+          value: row.tmplId,
+        })),
+    ]
+    tmplListLoaded.value = true
+  } catch {
+    tmplIdOptions.value = [{ label: '선택', value: '' }]
+    tmplListLoaded.value = false
+    openToast({ message: '템플릿 목록 조회 실패', type: 'error' })
+  }
+}
+
+/** RESEARCHER 세부 유형일 때만 tb_tmpl 목록 조회 (동시 호출 dedup) */
+const ensureTmplIdOptionsIfResearcher = (): Promise<void> => {
+  if (!isResearcherAgentForm()) return Promise.resolve()
+  if (tmplListLoaded.value) return Promise.resolve()
+  if (tmplListLoadPromise) return tmplListLoadPromise
+
+  tmplListLoadPromise = initTmplIdOptions().finally(() => {
+    tmplListLoadPromise = null
+  })
+  return tmplListLoadPromise
+}
+
 const onChangeAgentType = async (svcTy: string) => {
-  if (svcTy !== 'C') {
+  if (svcTy !== 'C' && svcTy !== 'M') {
+    form.value.subTy = ''
+  } else if (svcTy === 'M' && form.value.subTy !== '' && form.value.subTy !== RESEARCHER_SUB_TY) {
+    form.value.subTy = ''
+  } else if (svcTy === 'C' && form.value.subTy === RESEARCHER_SUB_TY) {
     form.value.subTy = ''
   } else if (!form.value.subTy) {
     form.value.subTy = ''
     preservedSurveyConfig.value = null
     preservedRecommendConfig.value = null
     preservedCurationConfig.value = null
+    preservedResearcherConfig.value = null
     surveyForm.value = emptySurveyConfigForm()
     recommendForm.value = emptyRecommendConfigForm()
     curationForm.value = emptyCurationConfigForm()
+    researcherForm.value = emptyResearcherConfigForm()
   }
   const result = await handleChangeAgentType(svcTy)
   localDatasetList.value = result.datasetList
@@ -174,6 +230,10 @@ const curationForm = ref<CurationConfigForm>(emptyCurationConfigForm())
 // 번역(TRANSLATE) ADDITIONAL_CONFIG — UI 미편집 필드 보존용
 const preservedTranslateConfig = ref<AgtSubAdditionalConfig | null>(null)
 const translateForm = ref<TranslateConfigForm>(emptyTranslateConfigForm())
+
+// 리서처(RESEARCHER) ADDITIONAL_CONFIG — UI 미편집 필드 보존용
+const preservedResearcherConfig = ref<AgtSubAdditionalConfig | null>(null)
+const researcherForm = ref<ResearcherConfigForm>(emptyResearcherConfigForm())
 
 const loadSurveyConfigFromAgent = (agent: Agent | null) => {
   const subCfg = normalizeAgentSubCfg(agent?.subCfg)
@@ -223,15 +283,29 @@ const loadTranslateConfigFromAgent = (agent: Agent | null) => {
   translateForm.value = emptyTranslateConfigForm()
 }
 
+const loadResearcherConfigFromAgent = (agent: Agent | null) => {
+  const subCfg = normalizeAgentSubCfg(agent?.subCfg)
+  const additional = subCfg?.additionalConfig
+  if (additional && typeof additional === 'object' && Object.keys(additional).length > 0) {
+    preservedResearcherConfig.value = { ...additional }
+    researcherForm.value = parseResearcherAdditionalConfigToForm(additional as Record<string, unknown>)
+    return
+  }
+  preservedResearcherConfig.value = null
+  researcherForm.value = emptyResearcherConfigForm()
+}
+
 const resetSubTyConfigForms = () => {
   preservedSurveyConfig.value = null
   preservedRecommendConfig.value = null
   preservedCurationConfig.value = null
   preservedTranslateConfig.value = null
+  preservedResearcherConfig.value = null
   surveyForm.value = emptySurveyConfigForm()
   recommendForm.value = emptyRecommendConfigForm()
   curationForm.value = emptyCurationConfigForm()
   translateForm.value = emptyTranslateConfigForm()
+  researcherForm.value = emptyResearcherConfigForm()
 }
 
 // 기본 설정 폼
@@ -271,7 +345,12 @@ const localDatamartList = ref<AgtDm[]>([])
 watch(
   () => props.isOpen,
   async (open) => {
-    if (!open) return
+    if (!open) {
+      tmplListLoaded.value = false
+      tmplListLoadPromise = null
+      tmplIdOptions.value = [{ label: '선택', value: '' }]
+      return
+    }
     await initApiUrlCdOptions()
     if (props.agent) {
       form.value.svcTy = props.agent.svcTy
@@ -281,33 +360,51 @@ watch(
         preservedRecommendConfig.value = null
         preservedCurationConfig.value = null
         preservedTranslateConfig.value = null
+        preservedResearcherConfig.value = null
         recommendForm.value = emptyRecommendConfigForm()
         curationForm.value = emptyCurationConfigForm()
         translateForm.value = emptyTranslateConfigForm()
+        researcherForm.value = emptyResearcherConfigForm()
       } else if (props.agent.svcTy === 'C' && form.value.subTy === RECOMMEND_SUB_TY) {
         loadRecommendConfigFromAgent(props.agent)
         preservedSurveyConfig.value = null
         preservedCurationConfig.value = null
         preservedTranslateConfig.value = null
+        preservedResearcherConfig.value = null
         surveyForm.value = emptySurveyConfigForm()
         curationForm.value = emptyCurationConfigForm()
         translateForm.value = emptyTranslateConfigForm()
+        researcherForm.value = emptyResearcherConfigForm()
       } else if (props.agent.svcTy === 'C' && form.value.subTy === CURATION_SUB_TY) {
         loadCurationConfigFromAgent(props.agent)
         preservedSurveyConfig.value = null
         preservedRecommendConfig.value = null
         preservedTranslateConfig.value = null
+        preservedResearcherConfig.value = null
         surveyForm.value = emptySurveyConfigForm()
         recommendForm.value = emptyRecommendConfigForm()
+        translateForm.value = emptyTranslateConfigForm()
+        researcherForm.value = emptyResearcherConfigForm()
+      } else if (props.agent.svcTy === 'M' && form.value.subTy === RESEARCHER_SUB_TY) {
+        loadResearcherConfigFromAgent(props.agent)
+        preservedSurveyConfig.value = null
+        preservedRecommendConfig.value = null
+        preservedCurationConfig.value = null
+        preservedTranslateConfig.value = null
+        surveyForm.value = emptySurveyConfigForm()
+        recommendForm.value = emptyRecommendConfigForm()
+        curationForm.value = emptyCurationConfigForm()
         translateForm.value = emptyTranslateConfigForm()
       } else if (props.agent.svcTy === 'W' && form.value.subTy === TRANSLATE_SUB_TY) {
         loadTranslateConfigFromAgent(props.agent)
         preservedSurveyConfig.value = null
         preservedRecommendConfig.value = null
         preservedCurationConfig.value = null
+        preservedResearcherConfig.value = null
         surveyForm.value = emptySurveyConfigForm()
         recommendForm.value = emptyRecommendConfigForm()
         curationForm.value = emptyCurationConfigForm()
+        researcherForm.value = emptyResearcherConfigForm()
       } else {
         resetSubTyConfigForms()
       }
@@ -336,6 +433,7 @@ watch(
       }
       localDatasetList.value = [...(props.agent.datasetList ?? [])]
       localDatamartList.value = [...(props.agent.datamartList ?? [])]
+      await ensureTmplIdOptionsIfResearcher()
       nextTick(() => settingDataRef.value?.resetFilter())
     } else {
       form.value.svcTy = ''
@@ -399,6 +497,18 @@ watch(
         preservedTranslateConfig.value = null
         translateForm.value = emptyTranslateConfigForm()
       }
+      return
+    }
+    if (subTy === RESEARCHER_SUB_TY) {
+      if (props.agent?.svcTy === 'M' && normalizeAgentSubCfg(props.agent.subCfg)?.subTy === RESEARCHER_SUB_TY) {
+        loadResearcherConfigFromAgent(props.agent)
+      } else {
+        preservedResearcherConfig.value = null
+        researcherForm.value = emptyResearcherConfigForm()
+      }
+      if (form.value.svcTy === 'M') {
+        ensureTmplIdOptionsIfResearcher()
+      }
     }
   },
 )
@@ -453,6 +563,19 @@ const onSave = () => {
       agentId: props.agent?.agentId ?? '',
       subTy: TRANSLATE_SUB_TY,
       additionalConfig: buildTranslateAdditionalConfig(translateForm.value, preservedTranslateConfig.value),
+      useYn: existingSubCfg?.useYn ?? 'Y',
+      createDt: existingSubCfg?.createDt ?? '',
+      modifyDt: existingSubCfg?.modifyDt ?? '',
+    }
+  }
+
+  if (form.value.svcTy === 'M' && form.value.subTy === RESEARCHER_SUB_TY) {
+    const existingSubCfg = normalizeAgentSubCfg(props.agent?.subCfg)
+    base.subCfg = {
+      subCfgId: existingSubCfg?.subCfgId ?? '',
+      agentId: props.agent?.agentId ?? '',
+      subTy: RESEARCHER_SUB_TY,
+      additionalConfig: buildResearcherAdditionalConfig(researcherForm.value, preservedResearcherConfig.value),
       useYn: existingSubCfg?.useYn ?? 'Y',
       createDt: existingSubCfg?.createDt ?? '',
       modifyDt: existingSubCfg?.modifyDt ?? '',
