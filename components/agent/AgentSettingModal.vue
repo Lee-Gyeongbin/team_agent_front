@@ -132,6 +132,10 @@ const sqlModelOptions = computed(() => [
 
 const apiUrlCdOptions = ref<{ label: string; value: string }[]>([{ label: '선택', value: '' }])
 const tmplIdOptions = ref<{ label: string; value: string }[]>([{ label: '선택', value: '' }])
+const tmplListLoaded = ref(false)
+let tmplListLoadPromise: Promise<void> | null = null
+
+const isResearcherAgentForm = () => form.value.svcTy === 'M' && form.value.subTy === RESEARCHER_SUB_TY
 const initApiUrlCdOptions = async () => {
   const codes = await getCodes('AA000001')
   apiUrlCdOptions.value = [
@@ -156,10 +160,24 @@ const initTmplIdOptions = async () => {
           value: row.tmplId,
         })),
     ]
+    tmplListLoaded.value = true
   } catch {
     tmplIdOptions.value = [{ label: '선택', value: '' }]
+    tmplListLoaded.value = false
     openToast({ message: '템플릿 목록 조회 실패', type: 'error' })
   }
+}
+
+/** RESEARCHER 세부 유형일 때만 tb_tmpl 목록 조회 (동시 호출 dedup) */
+const ensureTmplIdOptionsIfResearcher = (): Promise<void> => {
+  if (!isResearcherAgentForm()) return Promise.resolve()
+  if (tmplListLoaded.value) return Promise.resolve()
+  if (tmplListLoadPromise) return tmplListLoadPromise
+
+  tmplListLoadPromise = initTmplIdOptions().finally(() => {
+    tmplListLoadPromise = null
+  })
+  return tmplListLoadPromise
 }
 
 const onChangeAgentType = async (svcTy: string) => {
@@ -327,8 +345,13 @@ const localDatamartList = ref<AgtDm[]>([])
 watch(
   () => props.isOpen,
   async (open) => {
-    if (!open) return
-    await Promise.all([initApiUrlCdOptions(), initTmplIdOptions()])
+    if (!open) {
+      tmplListLoaded.value = false
+      tmplListLoadPromise = null
+      tmplIdOptions.value = [{ label: '선택', value: '' }]
+      return
+    }
+    await initApiUrlCdOptions()
     if (props.agent) {
       form.value.svcTy = props.agent.svcTy
       form.value.subTy = normalizeAgentSubCfg(props.agent.subCfg)?.subTy ?? ''
@@ -410,6 +433,7 @@ watch(
       }
       localDatasetList.value = [...(props.agent.datasetList ?? [])]
       localDatamartList.value = [...(props.agent.datamartList ?? [])]
+      await ensureTmplIdOptionsIfResearcher()
       nextTick(() => settingDataRef.value?.resetFilter())
     } else {
       form.value.svcTy = ''
@@ -481,6 +505,9 @@ watch(
       } else {
         preservedResearcherConfig.value = null
         researcherForm.value = emptyResearcherConfigForm()
+      }
+      if (form.value.svcTy === 'M') {
+        ensureTmplIdOptionsIfResearcher()
       }
     }
   },
