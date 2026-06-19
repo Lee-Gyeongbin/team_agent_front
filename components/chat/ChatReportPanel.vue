@@ -93,7 +93,7 @@ import { downloadReportAsDocx, downloadReportAsPdf } from '~/utils/chat/reportEx
 import { useChatMessages } from '~/composables/chat/useChatMessages'
 import { useMyDocStore } from '~/composables/my-documents/useMyDocStore'
 
-const { messages } = useChatMessages()
+const { getMessagesForVisualization } = useChatMessages()
 const { handleSaveReport } = useMyDocStore()
 
 // 출처 링크는 native target="_blank"로 처리한다.
@@ -123,10 +123,11 @@ const originReportHtml = ref('')
 const reportMessage = computed(() => {
   const id = props.messageId
   if (!id) return null
+  const source = getMessagesForVisualization()
   return (
-    messages.value.find((m) => m.logId === id && m.reportHtml) ??
-    messages.value.find((m) => m.logId === id && m.type === 'answer') ??
-    messages.value.find((m) => m.logId === id) ??
+    source.find((m) => m.logId === id && m.reportHtml) ??
+    source.find((m) => m.logId === id && m.type === 'answer') ??
+    source.find((m) => m.logId === id) ??
     null
   )
 })
