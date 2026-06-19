@@ -6,6 +6,10 @@ import type {
   MailListParams,
   MailChatRequest,
   MailChatResponse,
+  SentMailListResponse,
+  FollowupStatusResponse,
+  FollowupDraftRequest,
+  FollowupDraftResponse,
 } from '~/types/mail'
 
 const { get, post } = useApi()
@@ -24,6 +28,14 @@ export const useMailApi = () => {
     return get<MailListResponse>(`/mail/list.do?${query.toString()}`)
   }
 
+  /** 날짜 범위 기반 보낸메일함 조회 */
+  const fetchSentMailList = async (params: MailListParams): Promise<SentMailListResponse> => {
+    const query = new URLSearchParams()
+    query.append('startDate', params.startDate)
+    query.append('endDate', params.endDate)
+    return get<SentMailListResponse>(`/mail/sent.do?${query.toString()}`)
+  }
+
   /** AI 메일 브리핑 요약 생성 */
   const fetchMailSummary = async (): Promise<MailSummaryResponse> => {
     return post<MailSummaryResponse>('/mail/summary.do', {})
@@ -34,5 +46,26 @@ export const useMailApi = () => {
     return post<MailChatResponse>('/mail/chat.do', body)
   }
 
-  return { fetchMailAuth, fetchMailList, fetchMailSummary, fetchMailChat }
+  /** 팔로업 상태 조회 (보낸 메일 vs 받은 메일 교차 분석) */
+  const fetchFollowupStatus = async (params: MailListParams): Promise<FollowupStatusResponse> => {
+    const query = new URLSearchParams()
+    query.append('startDate', params.startDate)
+    query.append('endDate', params.endDate)
+    return get<FollowupStatusResponse>(`/mail/followup-status.do?${query.toString()}`)
+  }
+
+  /** AI 독촉 메일 초안 생성 */
+  const fetchFollowupDraft = async (body: FollowupDraftRequest): Promise<FollowupDraftResponse> => {
+    return post<FollowupDraftResponse>('/mail/followup-draft.do', body)
+  }
+
+  return {
+    fetchMailAuth,
+    fetchMailList,
+    fetchSentMailList,
+    fetchMailSummary,
+    fetchMailChat,
+    fetchFollowupStatus,
+    fetchFollowupDraft,
+  }
 }

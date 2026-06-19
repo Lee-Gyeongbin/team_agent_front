@@ -53,3 +53,58 @@ export interface MailChatResponse {
   result: string
   answer: string
 }
+
+export interface SentMail {
+  subject: string
+  to: string
+  toName: string
+  sentDate: string | null
+  body: string
+}
+
+export interface SentMailListResponse {
+  result: string
+  mails: SentMail[]
+  totalCount: number
+}
+
+export interface FollowupItem {
+  to: string
+  toEmail: string
+  subject: string
+  sentDate: string | null
+  daysElapsed: number
+}
+
+export interface FollowupCompleted {
+  to: string
+  toEmail: string
+  subject: string
+  sentDate: string | null
+  replyDate: string | null
+  daysElapsed: number
+}
+
+export interface FollowupStats {
+  pendingCount: number
+  avgWaitDays: number
+  completedThisWeek: number
+}
+
+export interface FollowupStatusResponse {
+  result: string
+  pending: FollowupItem[]
+  completed: FollowupCompleted[]
+  stats: FollowupStats
+}
+
+export interface FollowupDraftRequest {
+  to: string
+  subject: string
+  originalDate: string
+}
+
+export interface FollowupDraftResponse {
+  result: string
+  draft: string
+}

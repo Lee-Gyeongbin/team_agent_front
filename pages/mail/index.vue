@@ -31,258 +31,91 @@
 
         <button
           class="btn btn-outline mail-refresh-btn"
-          :disabled="isLoadingList || isLoadingSummary || isLoadingChat"
+          :disabled="isLoadingList || isLoadingSummary || isLoadingChat || isLoadingFollowup"
           @click="onRefreshClick"
         >
           <i
             class="icon-refresh size-16"
-            :class="{ 'is-spinning': isLoadingList || isLoadingSummary || isLoadingChat }"
+            :class="{ 'is-spinning': isLoadingList || isLoadingSummary || isLoadingChat || isLoadingFollowup }"
           />
           새로고침
         </button>
       </div>
     </div>
 
-    <!-- 상단 전체폭: AI 메일 브리핑 -->
-    <div class="mail-panel mail-briefing-panel">
-      <div class="mail-panel-header">
-        <h2 class="mail-panel-title">AI 메일 브리핑</h2>
-        <div class="mail-ai-badge">
-          <i class="icon-ai size-14" />
-          AI 요약
-        </div>
-      </div>
-
-      <div class="mail-briefing-content">
-        <template v-if="isLoadingSummary">
-          <div class="mail-briefing-skeleton">
-            <span
-              v-for="i in 5"
-              :key="i"
-              class="mail-skeleton mail-skeleton-line"
-              :style="{ width: i % 2 === 0 ? '80%' : '100%' }"
-            />
-          </div>
-        </template>
-
-        <div
-          v-else-if="briefing.length > 0"
-          class="mail-briefing-text"
+    <!-- 탭 -->
+    <div class="mail-tab-bar">
+      <button
+        class="mail-tab-btn"
+        :class="{ 'is-active': activeTab === 'inbox' }"
+        @click="onTabClick('inbox')"
+      >
+        받은 메일함
+      </button>
+      <button
+        class="mail-tab-btn"
+        :class="{ 'is-active': activeTab === 'followup' }"
+        @click="onTabClick('followup')"
+      >
+        보낸 메일함 · 팔로업 트래커
+        <span
+          v-if="followupStats.pendingCount > 0"
+          class="mail-tab-badge"
         >
-          <ul class="mail-briefing-list">
-            <li
-              v-for="(line, idx) in briefing"
-              :key="`briefing-${idx}`"
-              class="mail-briefing-item"
-            >
-              {{ line }}
-            </li>
-          </ul>
-        </div>
-
-        <UiEmpty
-          v-else
-          title="브리핑 내용이 없습니다"
-        />
-      </div>
+          {{ followupStats.pendingCount }}
+        </span>
+      </button>
     </div>
 
-    <!-- 2컬럼: 액션 아이템 + 메일 컨텍스트 채팅 -->
-    <div class="mail-middle-row">
-      <!-- 왼쪽: 오늘의 액션 아이템 -->
-      <div class="mail-panel mail-action-panel">
-        <div class="mail-panel-header">
-          <h2 class="mail-panel-title">오늘의 액션 아이템</h2>
-        </div>
+    <!-- 탭 1: 받은 메일함 -->
+    <div
+      v-show="activeTab === 'inbox'"
+      class="mail-tab-content"
+    >
+      <!-- AI 메일 브리핑 -->
+      <MailBriefingPanel
+        :is-loading="isLoadingSummary"
+        :briefing="briefing"
+      />
 
-        <template v-if="isLoadingSummary">
-          <div
-            v-for="i in 3"
-            :key="i"
-            class="mail-action-skeleton"
-          >
-            <span class="mail-skeleton mail-skeleton-dot" />
-            <div class="mail-action-skeleton-lines">
-              <span class="mail-skeleton mail-skeleton-line" />
-              <span class="mail-skeleton mail-skeleton-line-sm" />
-            </div>
-          </div>
-        </template>
-
-        <template v-else-if="actionItems.length > 0">
-          <div
-            v-for="(item, idx) in actionItems"
-            :key="idx"
-            class="mail-action-item"
-          >
-            <span
-              class="mail-action-dot"
-              :class="`priority-${item.priority}`"
-            />
-            <div class="mail-action-content">
-              <p class="mail-action-text">{{ item.text }}</p>
-              <div class="mail-action-meta">
-                <span class="mail-action-from">{{ item.from }}</span>
-                <span class="mail-action-time">{{ item.time }}</span>
-                <span
-                  class="mail-action-badge"
-                  :class="`priority-${item.priority}`"
-                  >{{ priorityLabel(item.priority) }}</span
-                >
-              </div>
-            </div>
-          </div>
-        </template>
-
-        <UiEmpty
-          v-else
-          title="액션 아이템이 없습니다"
+      <!-- 2컬럼: 액션 아이템 + 메일 AI 채팅 -->
+      <div class="mail-middle-row">
+        <MailActionPanel
+          :is-loading="isLoadingSummary"
+          :action-items="actionItems"
+        />
+        <MailChatPanel
+          ref="chatPanelRef"
+          :mails="mails"
         />
       </div>
 
-      <!-- 오른쪽: 메일 컨텍스트 채팅 -->
-      <div class="mail-panel mail-chat-panel">
-        <div class="mail-panel-header">
-          <h2 class="mail-panel-title">메일 AI 채팅</h2>
-          <div class="mail-ai-badge">
-            <i class="icon-ai size-14" />
-            메일 컨텍스트
-          </div>
-        </div>
-
-        <div
-          ref="chatListRef"
-          class="mail-chat-log"
-        >
-          <ul class="mail-chat-list">
-            <li
-              v-for="entry in chatMessages"
-              :key="entry.id"
-              class="mail-chat-item"
-              :class="entry.role === 'user' ? 'role-user' : 'role-assistant'"
-            >
-              <i
-                v-if="entry.role === 'assistant'"
-                class="mail-chat-avatar icon-bot size-20"
-              />
-              <div class="mail-chat-message-wrap">
-                <p class="mail-chat-bubble">
-                  {{ entry.content }}
-                </p>
-                <span
-                  v-if="entry.role === 'user'"
-                  class="mail-chat-time"
-                >
-                  {{ entry.timeLabel }}
-                </span>
-              </div>
-            </li>
-            <li
-              v-if="isLoadingChat"
-              class="mail-chat-item role-assistant"
-            >
-              <i class="mail-chat-avatar icon-bot size-20" />
-              <div class="mail-chat-message-wrap">
-                <p class="mail-chat-bubble">답변 생성 중...</p>
-              </div>
-            </li>
-          </ul>
-        </div>
-
-        <div class="mail-chat-input-row">
-          <div
-            class="mail-chat-input-bar"
-            :class="{ 'is-active': !!chatDraft.trim() }"
-          >
-            <i
-              v-show="!chatDraft.trim()"
-              class="icon-sparkle size-20"
-            />
-            <UiInput
-              v-model="chatDraft"
-              size="md"
-              class="mail-chat-input-field"
-              :spellcheck="false"
-              :disabled="isLoadingChat"
-              placeholder="예: 지금 당장 처리해야 할 메일이 무엇인가요?"
-              @enter="onSendChat"
-            />
-            <UiButton
-              variant="primary"
-              size="md"
-              icon-only
-              class="btn-chat-send mail-chat-send"
-              :disabled="!chatDraft.trim() || isLoadingChat"
-              aria-label="전송"
-              @click="onSendChat"
-            >
-              <template #icon-left>
-                <i class="icon-send size-20" />
-              </template>
-            </UiButton>
-          </div>
-        </div>
-      </div>
+      <!-- 받은메일함 목록 -->
+      <MailInboxPanel
+        :is-loading="isLoadingList"
+        :mails="mails"
+        :total-count="totalCount"
+      />
     </div>
 
-    <!-- 받은메일함 목록 -->
-    <div class="mail-panel mail-inbox-panel">
-      <div class="mail-panel-header">
-        <h2 class="mail-panel-title">받은메일함</h2>
-        <span class="mail-count-badge">{{ totalCount }}개</span>
-      </div>
+    <!-- 탭 2: 보낸 메일함 · 팔로업 트래커 -->
+    <div
+      v-show="activeTab === 'followup'"
+      class="mail-tab-content"
+    >
+      <!-- 보낸메일함 목록 -->
+      <MailSentPanel
+        :is-loading="isLoadingSentList"
+        :sent-mails="sentMails"
+        :sent-total-count="sentTotalCount"
+      />
 
-      <div class="mail-inbox-content">
-        <template v-if="isLoadingList">
-          <div
-            v-for="i in 5"
-            :key="i"
-            class="mail-item-skeleton"
-          >
-            <span class="mail-skeleton mail-skeleton-avatar" />
-            <div class="mail-item-skeleton-lines">
-              <span class="mail-skeleton mail-skeleton-line" />
-              <span class="mail-skeleton mail-skeleton-line-sm" />
-            </div>
-          </div>
-        </template>
-
-        <template v-else-if="mails.length > 0">
-          <div
-            v-for="mail in mails"
-            :key="mail.from + mail.receivedDate"
-            class="mail-item"
-            :class="{ 'is-unread': !mail.isRead }"
-          >
-            <div
-              class="mail-item-avatar"
-              :style="{ background: getAvatarColor(mail.fromName) }"
-            >
-              {{ getInitial(mail.fromName) }}
-            </div>
-
-            <div class="mail-item-content">
-              <div class="mail-item-top">
-                <span class="mail-item-from">{{ mail.fromName || mail.from }}</span>
-                <span class="mail-item-time">{{ formatDate(mail.receivedDate) }}</span>
-              </div>
-              <p class="mail-item-subject">{{ mail.subject }}</p>
-              <p class="mail-item-preview">{{ truncate(mail.body, 80) }}</p>
-            </div>
-
-            <span
-              v-if="!mail.isRead"
-              class="mail-item-unread-dot"
-            />
-          </div>
-        </template>
-
-        <UiEmpty
-          v-else
-          icon="icon-mail"
-          title="받은 메일이 없습니다"
-        />
-      </div>
+      <MailFollowupPanel
+        :is-loading="isLoadingFollowup"
+        :pending="followupPending"
+        :completed="followupCompleted"
+        :stats="followupStats"
+      />
     </div>
   </div>
 </template>
@@ -292,69 +125,43 @@ import { getLocalTimeZone, today, toCalendarDate, toCalendarDateTime } from '@in
 import type { DateValue } from '@internationalized/date'
 import { useMailStore } from '~/composables/mail/useMailStore'
 import { openToast } from '~/composables/useToast'
-import type { ActionItem, Mail, MailChatHistoryItem } from '~/types/mail'
+import MailChatPanel from '~/components/mail/MailChatPanel.vue'
 
 definePageMeta({ layout: 'default' })
 
 const {
   isLoadingList,
+  isLoadingSentList,
   isLoadingSummary,
   isLoadingChat,
+  isLoadingFollowup,
   mails,
   totalCount,
+  sentMails,
+  sentTotalCount,
   briefing,
   actionItems,
+  followupPending,
+  followupCompleted,
+  followupStats,
   handleFetchMailList,
+  handleFetchSentMailList,
   handleFetchMailSummary,
-  handleFetchMailChat,
+  handleFetchFollowupStatus,
 } = useMailStore()
 
-const INITIAL_CHAT_MESSAGE = `안녕하세요! 메일 내용에 대해 궁금한 게 있으시면 물어보세요.
-예) 지금 당장 해야 할 일이 뭔가요? / 오늘 중요한 메일 요약해줘`
-
-type MailChatMessage = MailChatHistoryItem & {
-  id: string
-  timeLabel: string
-}
-
-const chatIdSeq = ref(0)
+const chatPanelRef = ref<InstanceType<typeof MailChatPanel>>()
 const startDateFilter = ref<DateValue | undefined>()
 const endDateFilter = ref<DateValue | undefined>()
-const chatMessages = ref<MailChatMessage[]>([])
-const chatDraft = ref('')
-const chatListRef = ref<HTMLElement>()
 const isFilterWatcherReady = ref(false)
 const isInitializingPage = ref(false)
 const hasInitializedPage = ref(false)
+const activeTab = ref<'inbox' | 'followup'>('inbox')
 
-const nextChatId = () => {
-  chatIdSeq.value += 1
-  return `mail-chat-${chatIdSeq.value}`
-}
-
-const formatChatTime = () =>
-  new Date().toLocaleTimeString('ko-KR', {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-
-const resetChatHistory = () => {
-  chatMessages.value = [
-    {
-      id: nextChatId(),
-      role: 'assistant',
-      content: INITIAL_CHAT_MESSAGE,
-      timeLabel: '',
-    },
-  ]
-  chatDraft.value = ''
-}
-
+// ─── 날짜 범위 ────────────────────────────────────────────
 const toYyyyMmDd = (value: DateValue) => {
   const { year, month, day } = toCalendarDateTime(value)
-  const mm = String(month).padStart(2, '0')
-  const dd = String(day).padStart(2, '0')
-  return `${year}-${mm}-${dd}`
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 }
 
 const shiftMonth = (value: DateValue, monthOffset: number) => {
@@ -386,120 +193,62 @@ const isOverOneMonthRange = computed(() => {
   const start = startDateFilter.value
   const end = endDateFilter.value
   if (!start || !end) return false
-  const maxEnd = shiftMonth(start, 1)
-  return toCalendarDate(toCalendarDateTime(end)).compare(toCalendarDate(toCalendarDateTime(maxEnd))) > 0
+  return toCalendarDate(toCalendarDateTime(end)).compare(toCalendarDate(toCalendarDateTime(shiftMonth(start, 1)))) > 0
 })
 
+// ─── 조회 ─────────────────────────────────────────────────
 const doRefresh = async () => {
   const params = getDateRangeParams()
   if (!params) return
   if (isInvalidDateRange.value) {
-    openToast({
-      message: '시작일이 종료일보다 늦습니다. 날짜를 다시 선택해 주세요.',
-      type: 'warning',
-    })
+    openToast({ message: '시작일이 종료일보다 늦습니다. 날짜를 다시 선택해 주세요.', type: 'warning' })
     return
   }
   if (isOverOneMonthRange.value) {
-    openToast({
-      message: '조회 기간은 최대 1개월까지 선택할 수 있습니다.',
-      type: 'warning',
-    })
+    openToast({ message: '조회 기간은 최대 1개월까지 선택할 수 있습니다.', type: 'warning' })
     return
   }
-  await handleFetchMailList(params)
-  await handleFetchMailSummary()
-}
 
-const buildMailContext = (mailRows: Mail[]) => {
-  if (!mailRows.length) return '조회된 메일이 없습니다.'
-  return mailRows
-    .map((mail, idx) => {
-      const summary = truncate(mail.body, 200)
-      const dateText = formatMailContextDate(mail.receivedDate)
-      return `${idx + 1}. 제목: ${mail.subject || '-'} | 발신자: ${mail.fromName || mail.from || '-'} | 날짜: ${dateText} | 본문요약: ${summary || '-'}`
-    })
-    .join('\n')
-}
-
-const toChatHistoryForApi = () =>
-  chatMessages.value.slice(-10).map((entry) => ({
-    role: entry.role,
-    content: entry.content,
-  }))
-
-const scrollChatToBottom = () => {
-  nextTick(() => {
-    if (!chatListRef.value) return
-    chatListRef.value.scrollTop = chatListRef.value.scrollHeight
-  })
-}
-
-const onSendChat = async () => {
-  const message = chatDraft.value.trim()
-  if (!message || isLoadingChat.value) return
-
-  const previousHistory = toChatHistoryForApi()
-  chatMessages.value.push({
-    id: nextChatId(),
-    role: 'user',
-    content: message,
-    timeLabel: formatChatTime(),
-  })
-  chatDraft.value = ''
-  scrollChatToBottom()
-
-  const answer = await handleFetchMailChat({
-    message,
-    mailContext: buildMailContext(mails.value),
-    chatHistory: previousHistory,
-  })
-
-  chatMessages.value.push({
-    id: nextChatId(),
-    role: 'assistant',
-    content: answer || '답변을 생성하지 못했습니다. 다시 시도해 주세요.',
-    timeLabel: '',
-  })
-  scrollChatToBottom()
+  if (activeTab.value === 'followup') {
+    await handleFetchFollowupStatus(params)
+  } else {
+    await handleFetchMailList(params)
+    await handleFetchSentMailList(params)
+    await handleFetchMailSummary()
+  }
 }
 
 const onRefreshClick = async () => {
-  resetChatHistory()
+  chatPanelRef.value?.resetChatHistory()
   await doRefresh()
 }
 
-watch(
-  () => [startDateFilter.value, endDateFilter.value],
-  async () => {
-    if (!isFilterWatcherReady.value) return
-    if (!startDateFilter.value || !endDateFilter.value) return
-    if (isInvalidDateRange.value || isOverOneMonthRange.value) return
-    resetChatHistory()
-    await doRefresh()
-  },
-)
+// ─── 탭 전환 ──────────────────────────────────────────────
+const onTabClick = (tab: 'inbox' | 'followup') => {
+  activeTab.value = tab
+}
 
-watch(
-  () => chatMessages.value.length,
-  () => {
-    scrollChatToBottom()
-  },
-)
-
+// ─── 초기화 ───────────────────────────────────────────────
 const handleInitializeMailPage = async () => {
   if (isInitializingPage.value) return
   isInitializingPage.value = true
 
   const rangeEnd = today(getLocalTimeZone())
-  const rangeStart = rangeEnd.subtract({ days: 7 })
-  startDateFilter.value = rangeStart
+  startDateFilter.value = rangeEnd.subtract({ days: 7 })
   endDateFilter.value = rangeEnd
-  resetChatHistory()
+  chatPanelRef.value?.resetChatHistory()
+
+  const params = {
+    startDate: toYyyyMmDd(startDateFilter.value),
+    endDate: toYyyyMmDd(endDateFilter.value),
+  }
 
   openLoading()
   try {
-    await doRefresh()
+    await handleFetchMailList(params)
+    await handleFetchSentMailList(params)
+    await handleFetchMailSummary()
+    await handleFetchFollowupStatus(params)
     isFilterWatcherReady.value = true
     hasInitializedPage.value = true
   } finally {
@@ -512,52 +261,19 @@ onMounted(() => {
   void handleInitializeMailPage()
 })
 
-// keep-alive로 캐시된 뒤 다시 활성화되는 경우에도 초기 조회를 재실행
 onActivated(() => {
   if (!hasInitializedPage.value) return
   void handleInitializeMailPage()
 })
 
-// ─── 우선순위 라벨 ────────────────────────────────────────
-const priorityLabel = (p: ActionItem['priority']) => {
-  const map = { urgent: '긴급', this_week: '이번 주', normal: '일반' }
-  return map[p] ?? p
-}
-
-// ─── 날짜 포맷 ────────────────────────────────────────────
-const formatDate = (dateStr: string | null) => {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  const now = new Date()
-  if (d.toDateString() === now.toDateString()) {
-    return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
-  }
-  return d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
-}
-
-const formatMailContextDate = (dateStr: string | null) => {
-  if (!dateStr) return '-'
-  const d = new Date(dateStr)
-  if (Number.isNaN(d.getTime())) return '-'
-  const yyyy = d.getFullYear()
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const dd = String(d.getDate()).padStart(2, '0')
-  return `${yyyy}-${mm}-${dd}`
-}
-
-// ─── 아바타 ───────────────────────────────────────────────
-const getInitial = (name: string) => (name ? name.trim().charAt(0).toUpperCase() : '?')
-
-const AVATAR_COLORS = ['#3c69db', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899']
-const getAvatarColor = (name: string) => {
-  if (!name) return AVATAR_COLORS[0]
-  const code = [...name].reduce((acc, c) => acc + c.charCodeAt(0), 0)
-  return AVATAR_COLORS[code % AVATAR_COLORS.length]
-}
-
-// ─── 텍스트 말줄임 ────────────────────────────────────────
-const truncate = (text: string, len: number) => {
-  if (!text) return ''
-  return text.length > len ? text.slice(0, len) + '...' : text
-}
+watch(
+  () => [startDateFilter.value, endDateFilter.value],
+  async () => {
+    if (!isFilterWatcherReady.value) return
+    if (!startDateFilter.value || !endDateFilter.value) return
+    if (isInvalidDateRange.value || isOverOneMonthRange.value) return
+    chatPanelRef.value?.resetChatHistory()
+    await doRefresh()
+  },
+)
 </script>

@@ -1,12 +1,30 @@
 import { useMailApi } from '~/composables/mail/useMailApi'
 import { openToast } from '~/composables/useToast'
-import type { Mail, ActionItem, MailListParams, MailChatRequest } from '~/types/mail'
+import type {
+  Mail,
+  SentMail,
+  ActionItem,
+  MailListParams,
+  MailChatRequest,
+  FollowupItem,
+  FollowupCompleted,
+  FollowupStats,
+} from '~/types/mail'
 
-const { fetchMailAuth, fetchMailList, fetchMailSummary, fetchMailChat } = useMailApi()
+const {
+  fetchMailAuth,
+  fetchMailList,
+  fetchSentMailList,
+  fetchMailSummary,
+  fetchMailChat,
+  fetchFollowupStatus,
+  fetchFollowupDraft,
+} = useMailApi()
 
 // ─── 공유 상태 (모듈 스코프) ─────────────────────────────────
 const isLoginModalOpen = ref(false)
 const isLoadingList = ref(false)
+const isLoadingSentList = ref(false)
 const isLoadingSummary = ref(false)
 const isLoadingChat = ref(false)
 
@@ -14,8 +32,14 @@ const mails = ref<Mail[]>([])
 const totalCount = ref(0)
 const unreadCount = ref(0)
 const todayCount = ref(0)
+const sentMails = ref<SentMail[]>([])
+const sentTotalCount = ref(0)
 const briefing = ref<string[]>([])
 const actionItems = ref<ActionItem[]>([])
+const isLoadingFollowup = ref(false)
+const followupPending = ref<FollowupItem[]>([])
+const followupCompleted = ref<FollowupCompleted[]>([])
+const followupStats = ref<FollowupStats>({ pendingCount: 0, avgWaitDays: 0, completedThisWeek: 0 })
 
 export const useMailStore = () => {
   // ─── 로그인 모달 제어 ─────────────────────────────────────
@@ -37,7 +61,7 @@ export const useMailStore = () => {
     }
   }
 
-  // ─── 메일 목록 조회 ───────────────────────────────────────
+  // ─── 받은 메일 목록 조회 ──────────────────────────────────
   const handleFetchMailList = async (params: MailListParams) => {
     isLoadingList.value = true
     try {
@@ -53,6 +77,20 @@ export const useMailStore = () => {
     }
   }
 
+  // ─── 보낸 메일 목록 조회 ──────────────────────────────────
+  const handleFetchSentMailList = async (params: MailListParams) => {
+    isLoadingSentList.value = true
+    try {
+      const res = await fetchSentMailList(params)
+      sentMails.value = res.mails ?? []
+      sentTotalCount.value = res.totalCount ?? 0
+    } catch {
+      openToast({ message: '보낸 메일 목록 조회에 실패했습니다.', type: 'error' })
+    } finally {
+      isLoadingSentList.value = false
+    }
+  }
+
   // ─── AI 요약 조회 ─────────────────────────────────────────
   const handleFetchMailSummary = async () => {
     isLoadingSummary.value = true
@@ -64,6 +102,32 @@ export const useMailStore = () => {
       openToast({ message: 'AI 브리핑 생성에 실패했습니다.', type: 'error' })
     } finally {
       isLoadingSummary.value = false
+    }
+  }
+
+  // ─── 팔로업 상태 조회 ─────────────────────────────────────
+  const handleFetchFollowupStatus = async (params: MailListParams) => {
+    isLoadingFollowup.value = true
+    try {
+      const res = await fetchFollowupStatus(params)
+      followupPending.value = res.pending ?? []
+      followupCompleted.value = res.completed ?? []
+      followupStats.value = res.stats ?? { pendingCount: 0, avgWaitDays: 0, completedThisWeek: 0 }
+    } catch {
+      openToast({ message: '팔로업 상태 조회에 실패했습니다.', type: 'error' })
+    } finally {
+      isLoadingFollowup.value = false
+    }
+  }
+
+  // ─── AI 독촉 메일 초안 생성 ───────────────────────────────
+  const handleFetchFollowupDraft = async (to: string, subject: string, originalDate: string): Promise<string> => {
+    try {
+      const res = await fetchFollowupDraft({ to, subject, originalDate })
+      return res.draft ?? ''
+    } catch {
+      openToast({ message: '독촉 메일 초안 생성에 실패했습니다.', type: 'error' })
+      return ''
     }
   }
 
@@ -85,20 +149,30 @@ export const useMailStore = () => {
     // 상태
     isLoginModalOpen,
     isLoadingList,
+    isLoadingSentList,
     isLoadingSummary,
     isLoadingChat,
     mails,
     totalCount,
     unreadCount,
     todayCount,
+    sentMails,
+    sentTotalCount,
     briefing,
     actionItems,
+    isLoadingFollowup,
+    followupPending,
+    followupCompleted,
+    followupStats,
     // 액션
     openLoginModal,
     closeLoginModal,
     handleMailAuth,
     handleFetchMailList,
+    handleFetchSentMailList,
     handleFetchMailSummary,
     handleFetchMailChat,
+    handleFetchFollowupStatus,
+    handleFetchFollowupDraft,
   }
 }
