@@ -8,7 +8,12 @@
 
     <template v-else>
       <div class="datamart-meta-fewshot-header">
-        <p class="datamart-meta-fewshot-desc">AI가 사용자 질문을 이해하도록 예시를 등록 관리합니다.</p>
+        <p class="datamart-meta-fewshot-desc">
+          AI가 사용자 질문을 이해하도록 예시를 등록 관리합니다.
+          <template v-if="datamart?.dmNm">
+            <span class="datamart-meta-fewshot-desc-dm"> ({{ datamart.dmNm }})</span>
+          </template>
+        </p>
       </div>
 
       <div class="datamart-meta-fewshot-toolbar">
@@ -328,6 +333,8 @@ const fewshotList = defineModel<DatamartMetaFewshot[]>('fewshotList', { default:
 
 type FewshotEditableField = 'userQuestion' | 'aiUnderstand' | 'aiRefExam' | 'sqlExam'
 
+type FewshotRequiredField = Exclude<FewshotEditableField, 'sqlExam'>
+
 type SqlBuilderState = {
   fromTable: string
   selectColumns: string[]
@@ -588,31 +595,51 @@ const onSqlFromTableChange = (table: string | number) => {
   }
 }
 
+const FEWSHOT_REQUIRED_VALIDATIONS: {
+  field: FewshotRequiredField
+  message: string
+  focusId: string
+}[] = [
+  { field: 'userQuestion', message: '사용자 질문을 입력해주세요.', focusId: 'fewshot-question' },
+  { field: 'aiUnderstand', message: 'AI가 이해해야 할 의미를 입력해주세요.', focusId: 'fewshot-meaning' },
+  { field: 'aiRefExam', message: '참조 조회 방법을 입력해주세요.', focusId: 'fewshot-lookup' },
+]
+
+const focusFewshotValidationField = (uiKey: string, focusId: string) => {
+  const index = filteredFewshotList.value.findIndex((row) => getFewshotUiKey(row) === uiKey)
+  if (index >= 0) {
+    currentPage.value = Math.floor(index / PAGE_SIZE) + 1
+  }
+
+  selectedFewshotKey.value = uiKey
+  isSqlManualInput.value = false
+  const row = findFewshotRowByUiKey(uiKey)
+  sqlBuilder.value = parseExampleSqlToBuilder(row?.sqlExam ?? '')
+
+  nextTick(() => {
+    const el = document.getElementById(focusId)
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    el?.focus()
+  })
+}
+
 const buildSavePayload = (): DatamartMetaFewshot[] | null => {
   if (!datamartId.value) {
     openToast({ message: '데이터마트 정보가 없습니다.', type: 'warning' })
     return null
   }
 
-  const payloadList = fewshotList.value
-    .map(normalizeFewshotForSave)
-    .filter((row) => row.userQuestion || row.aiUnderstand || row.aiRefExam || row.sqlExam)
-
-  const validations = [
-    { invalid: (row: DatamartMetaFewshot) => !row.userQuestion, message: '사용자 질문을 입력해주세요.' },
-    { invalid: (row: DatamartMetaFewshot) => !row.aiUnderstand, message: 'AI가 이해해야 할 의미를 입력해주세요.' },
-    { invalid: (row: DatamartMetaFewshot) => !row.aiRefExam, message: '참조 조회 방법을 입력해주세요.' },
-  ]
-
-  for (const row of payloadList) {
-    const failed = validations.find((v) => v.invalid(row))
+  for (const row of fewshotList.value) {
+    const normalized = normalizeFewshotForSave(row)
+    const failed = FEWSHOT_REQUIRED_VALIDATIONS.find((validation) => !normalized[validation.field])
     if (failed) {
       openToast({ message: failed.message, type: 'warning' })
+      focusFewshotValidationField(getFewshotUiKey(row), failed.focusId)
       return null
     }
   }
 
-  return payloadList
+  return fewshotList.value.map(normalizeFewshotForSave)
 }
 
 defineExpose({ buildSavePayload })
