@@ -271,6 +271,7 @@ const SVC_TY_SUB_LABEL: Record<string, string> = {
   C: '일반 채팅 Agent',
   A: '메일 브리핑 Agent',
   W: '번역 Agent',
+  D: '프로젝트 리스크 진단 Agent',
 }
 const getChatIndexAgentSubLabel = (agent: Agent) => SVC_TY_SUB_LABEL[agent.svcTy] ?? ''
 
@@ -391,8 +392,8 @@ export const useChatStore = () => {
   }
 
   // 메시지 전송
-  const onSend = async (files: File[] = []): Promise<boolean> => {
-    const content = chatMessage.value.trim()
+  const onSend = async (files: File[] = [], contentOverride?: string): Promise<boolean> => {
+    const content = (contentOverride ?? chatMessage.value).trim()
     if (!content || isSearchModeMissingSubOptions.value || !chatRoom.value.roomId) return false
 
     const sent = await executeSendPipeline({

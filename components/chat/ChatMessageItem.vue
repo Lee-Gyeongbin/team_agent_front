@@ -155,11 +155,11 @@
             </UiButton>
           </div>
           <div
-            v-if="message.hasSource || message.hasVisualization || message.hasReport"
+            v-if="message.hasSource || message.svcTy === 'D' || message.hasVisualization || message.hasReport"
             class="message-panel-buttons"
           >
             <UiButton
-              v-show="message.hasSource"
+              v-show="message.hasSource || message.svcTy === 'D'"
               variant="primary-dark"
               @click="emit('on-view-source', message.logId)"
             >

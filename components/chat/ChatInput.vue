@@ -43,7 +43,7 @@
           :model-value="modelValue"
           class="inp-chat-search"
           :placeholder="inputPlaceholder"
-          :disabled="props.disabled || isSearchModeMissingSubOptions"
+          :disabled="props.disabled || isSearchModeMissingSubOptions || riskAgentActive"
           :auto-resize="true"
           :max-rows="6"
           @update:model-value="emit('update:modelValue', $event)"
@@ -53,21 +53,27 @@
 
       <div class="chat-input-bottom flex justify-between items-center">
         <div class="chat-input-bottom-left flex gap-8 items-center">
-          <UiButton
+          <UiTooltip
             v-if="isFileAttachEnabled"
-            type="button"
-            variant="ghost"
-            size="xlg"
-            icon-only
-            class="btn-chat-attach"
-            aria-label="파일 첨부"
-            :disabled="isSending || props.disabled"
-            @click="handleAttachClick"
+            :content="riskAgentActive ? 'PDF 파일만 첨부할 수 있습니다.' : '파일 첨부'"
+            side="top"
           >
-            <template #icon-left>
-              <i class="icon-attach-file size-24" />
-            </template>
-          </UiButton>
+            <UiButton
+              type="button"
+              variant="ghost"
+              size="xlg"
+              icon-only
+              class="btn-chat-attach"
+              :class="{ 'is-pdf-only': riskAgentActive }"
+              :aria-label="riskAgentActive ? 'PDF 파일 첨부' : '파일 첨부'"
+              :disabled="isSending || props.disabled"
+              @click="handleAttachClick"
+            >
+              <template #icon-left>
+                <i :class="riskAgentActive ? 'icon-file-pdf size-24' : 'icon-attach-file size-24'" />
+              </template>
+            </UiButton>
+          </UiTooltip>
           <input
             v-if="isFileAttachEnabled"
             ref="attachInputRef"
@@ -100,14 +106,21 @@
             icon-only
             class="btn-chat-send"
             :loading="isSending"
-            :aria-label="isAnswerStreaming ? '응답 중단' : isSending ? '전송 중' : '메시지 전송'"
+            :aria-label="
+              isAnswerStreaming
+                ? '응답 중단'
+                : isSending
+                  ? '전송 중'
+                  : riskAgentActive
+                    ? '리스크 진단 시작'
+                    : '메시지 전송'
+            "
             :disabled="
               isAnswerStreaming
                 ? false
                 : props.disabled ||
-                  !modelValue.trim() ||
                   isSearchModeMissingSubOptions ||
-                  selectedSubOptions.length === 0
+                  (riskAgentActive ? previewItems.length === 0 : !modelValue.trim() || selectedSubOptions.length === 0)
             "
             @click="isAnswerStreaming ? handleStop() : handleSend()"
           >
@@ -120,6 +133,10 @@
                 v-else-if="isSending"
                 class="btn-chat-send-spinner"
                 aria-hidden="true"
+              />
+              <i
+                v-else-if="riskAgentActive"
+                class="icon-play-circle size-20"
               />
               <i
                 v-else
@@ -211,9 +228,12 @@ const ATTACH_ALLOWED_EXTENSIONS = [
   'webp',
 ]
 const GEMINI_ALLOWED_EXTENSIONS = ['png', 'jpeg', 'jpg', 'webp', 'heic', 'heif', 'pdf', 'txt', 'csv']
+// RISK(리스크진단) 에이전트는 PDF만 첨부 허용
+const RISK_ALLOWED_EXTENSIONS = ['pdf']
 const IMAGE_EXTENSION_SET = new Set(['png', 'jpg', 'jpeg', 'webp', 'heic', 'heif'])
 const ATTACH_EXTENSION_SET = new Set(ATTACH_ALLOWED_EXTENSIONS)
 const GEMINI_ATTACH_EXTENSION_SET = new Set(GEMINI_ALLOWED_EXTENSIONS)
+const RISK_ATTACH_EXTENSION_SET = new Set(RISK_ALLOWED_EXTENSIONS)
 const MAX_ATTACH_FILE_COUNT = 5
 const MAX_ATTACH_FILE_SIZE_MB = 15
 const MAX_ATTACH_FILE_SIZE_BYTES = MAX_ATTACH_FILE_SIZE_MB * 1024 * 1024
@@ -242,10 +262,13 @@ const handleSelectNextQuestion = (question: string) => {
 }
 
 const DEFAULT_INPUT_PLACEHOLDER = '궁금하신 내용을 입력하세요.'
+const RISK_INPUT_PLACEHOLDER = 'RFP(PDF)를 첨부한 뒤 진단 시작을 눌러주세요.'
 
-const inputPlaceholder = computed(() =>
-  isSearchModeMissingSubOptions.value ? searchModeSubOptionsEmptyMessage.value : DEFAULT_INPUT_PLACEHOLDER,
-)
+const inputPlaceholder = computed(() => {
+  if (riskAgentActive.value) return RISK_INPUT_PLACEHOLDER
+  if (isSearchModeMissingSubOptions.value) return searchModeSubOptionsEmptyMessage.value
+  return DEFAULT_INPUT_PLACEHOLDER
+})
 
 interface Props {
   modelValue: string
@@ -267,9 +290,10 @@ const isDragging = ref(false)
 const isSending = ref(false)
 const isSingleImageAttachment = computed(() => previewItems.value.length === 1 && previewItems.value[0]?.isImage)
 const isGeminiModelSelected = computed(() => selectedModelOption.value.toLowerCase().includes('gemini'))
-const currentAllowedExtensions = computed(() =>
-  isGeminiModelSelected.value ? GEMINI_ALLOWED_EXTENSIONS : ATTACH_ALLOWED_EXTENSIONS,
-)
+const currentAllowedExtensions = computed(() => {
+  if (riskAgentActive.value) return RISK_ALLOWED_EXTENSIONS
+  return isGeminiModelSelected.value ? GEMINI_ALLOWED_EXTENSIONS : ATTACH_ALLOWED_EXTENSIONS
+})
 const attachAccept = computed(() => currentAllowedExtensions.value.map((ext) => `.${ext}`).join(','))
 
 const isSameFile = (a: File, b: File) => a.name === b.name && a.size === b.size && a.lastModified === b.lastModified
@@ -287,7 +311,11 @@ const handleAttachClick = () => {
 }
 
 const validateAttachmentFiles = (files: File[]) => {
-  const allowedExtensionSet = isGeminiModelSelected.value ? GEMINI_ATTACH_EXTENSION_SET : ATTACH_EXTENSION_SET
+  const allowedExtensionSet = riskAgentActive.value
+    ? RISK_ATTACH_EXTENSION_SET
+    : isGeminiModelSelected.value
+      ? GEMINI_ATTACH_EXTENSION_SET
+      : ATTACH_EXTENSION_SET
   const invalidExtensions = new Set<string>()
   let hasOversizeFile = false
   let hasExceededFileCount = false
@@ -335,7 +363,11 @@ const validateAttachmentFiles = (files: File[]) => {
 
 const buildNextAttachFiles = (files: File[]) => {
   const nextFiles: File[] = []
-  const allowedExtensionSet = isGeminiModelSelected.value ? GEMINI_ATTACH_EXTENSION_SET : ATTACH_EXTENSION_SET
+  const allowedExtensionSet = riskAgentActive.value
+    ? RISK_ATTACH_EXTENSION_SET
+    : isGeminiModelSelected.value
+      ? GEMINI_ATTACH_EXTENSION_SET
+      : ATTACH_EXTENSION_SET
   let hasInvalidExtension = false
   let hasOversizeFile = false
   let hasExceededFileCount = false
@@ -495,13 +527,22 @@ const handleSend = async () => {
     return
   }
   if (filesToSend.length > 0 && !validateAttachmentFiles(filesToSend)) return
+
+  // RISK 에이전트: 텍스트 입력이 없을 때 첨부 파일명 기반 content 자동 생성
+  const riskAutoContent =
+    riskAgentActive.value && !props.modelValue.trim()
+      ? filesToSend[0]?.name
+        ? `${filesToSend[0].name} 리스크 진단 요청`
+        : 'RFP 리스크 진단 요청'
+      : undefined
+
   isSending.value = true
   try {
     let sent = false
     if (!chatRoom.value.roomId) {
-      sent = await createChatRoom(props.modelValue, filesToSend)
+      sent = await createChatRoom(riskAutoContent ?? props.modelValue, filesToSend)
     } else {
-      sent = await onSend(filesToSend)
+      sent = await onSend(filesToSend, riskAutoContent)
     }
     if (sent) {
       clearAttachments()
