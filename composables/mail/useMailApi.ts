@@ -15,6 +15,11 @@ import type {
 const { get, post } = useApi()
 
 export const useMailApi = () => {
+  /** 서버 세션에 메일 자격증명이 살아있는지 확인 (IMAP 재연결 없음) */
+  const fetchMailAuthCheck = async (): Promise<{ result: string }> => {
+    return get<{ result: string }>('/mail/auth-check.do')
+  }
+
   /** IMAP 인증 — 성공 시 서버 세션에 자격증명 저장 */
   const fetchMailAuth = async (body: MailAuthRequest): Promise<{ result: string }> => {
     return post<{ result: string }>('/mail/auth.do', body)
@@ -60,6 +65,7 @@ export const useMailApi = () => {
   }
 
   return {
+    fetchMailAuthCheck,
     fetchMailAuth,
     fetchMailList,
     fetchSentMailList,

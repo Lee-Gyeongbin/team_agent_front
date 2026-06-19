@@ -188,15 +188,17 @@ const {
 } = useChatStore()
 const { startChatSocket, stopChatSocket } = useChatSocket()
 const { user } = useAuth()
-const { isLoginModalOpen, openLoginModal, closeLoginModal } = useMailStore()
+const { isLoginModalOpen, openLoginModal, closeLoginModal, checkMailAuth } = useMailStore()
 
-/** 메일 브리핑 카드 클릭 → 로그인 모달 표시 */
-const openMailLoginModal = () => openLoginModal()
-
-/** 카드 클릭 분기: 메일(svcTy=A)은 로그인 모달, 그 외는 기존 에이전트 선택 */
-const onClickChatIndexAgent = (agent: Agent) => {
+/** 카드 클릭 분기: 메일(svcTy=A)은 인증 확인 후 이동 or 로그인 모달, 그 외는 기존 에이전트 선택 */
+const onClickChatIndexAgent = async (agent: Agent) => {
   if (agent.svcTy === 'A') {
-    openMailLoginModal()
+    const authed = await checkMailAuth()
+    if (authed) {
+      await navigateTo('/mail')
+    } else {
+      openLoginModal()
+    }
     return
   }
   void selectChatIndexAgent(agent)

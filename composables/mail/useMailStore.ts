@@ -12,6 +12,7 @@ import type {
 } from '~/types/mail'
 
 const {
+  fetchMailAuthCheck,
   fetchMailAuth,
   fetchMailList,
   fetchSentMailList,
@@ -23,6 +24,7 @@ const {
 
 // ─── 공유 상태 (모듈 스코프) ─────────────────────────────────
 const isLoginModalOpen = ref(false)
+const isMailAuthed = ref(false) // 한 번 인증 성공 시 true, 페이지 이동 간 로그인 모달 재표시 방지
 const isLoadingList = ref(false)
 const isLoadingSentList = ref(false)
 const isLoadingSummary = ref(false)
@@ -50,11 +52,35 @@ export const useMailStore = () => {
     isLoginModalOpen.value = false
   }
 
+  // ─── 인증 상태 확인 ──────────────────────────────────────
+  /**
+   * 메일 에이전트 클릭 시 호출.
+   * 모듈 캐시(isMailAuthed)가 true이면 API 호출 없이 즉시 true 반환.
+   * 아니면 서버 세션 확인 후 결과를 캐싱.
+   */
+  const checkMailAuth = async (): Promise<boolean> => {
+    if (isMailAuthed.value) return true
+    try {
+      const res = await fetchMailAuthCheck()
+      if (res.result === 'SUCCESS') {
+        isMailAuthed.value = true
+        return true
+      }
+      return false
+    } catch {
+      return false
+    }
+  }
+
   // ─── IMAP 인증 ────────────────────────────────────────────
   const handleMailAuth = async (email: string, password: string): Promise<boolean> => {
     try {
       const res = await fetchMailAuth({ email, password })
-      return res.result === 'SUCCESS'
+      if (res.result === 'SUCCESS') {
+        isMailAuthed.value = true
+        return true
+      }
+      return false
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : '인증 중 오류가 발생했습니다.'
       throw new Error(msg)
@@ -165,6 +191,10 @@ export const useMailStore = () => {
     followupCompleted,
     followupStats,
     // 액션
+    checkMailAuth,
+    clearMailAuth: () => {
+      isMailAuthed.value = false
+    },
     openLoginModal,
     closeLoginModal,
     handleMailAuth,

@@ -1,4 +1,5 @@
 import type { LoginResponse, SignupForm, SignupResponse, UserInfo } from '~/types/auth'
+import { useMailStore } from '~/composables/mail/useMailStore'
 
 const COOKIE_NAME = 'ta_user'
 
@@ -32,6 +33,7 @@ export const useAuth = () => {
     }
     userCookie.value = null
     clearMenuList()
+    useMailStore().clearMailAuth()
     navigateTo('/login')
   }
 
