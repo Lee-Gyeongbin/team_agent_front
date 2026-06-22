@@ -197,6 +197,12 @@
             />
           </div>
 
+          <!-- 생성 보고서 HTML (reportHtml) -->
+          <LibraryCardReportPreview
+            v-if="displayData?.reportHtml?.trim()"
+            :report-html="displayData.reportHtml"
+          />
+
           <!-- 참조 매뉴얼 (매뉴얼AI 타입) -->
           <div
             v-if="displayData?.svcTy === 'M'"
