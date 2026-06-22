@@ -1,6 +1,7 @@
 @use 'sass:color';
 @use '../utils/variables' as *;
 @use '../utils/mixins' as *;
+@use '../utils/doc-content' as *;
 
 // ===================================
 // 모달 공통
@@ -534,6 +535,91 @@
     gap: 12px;
     flex: 1;
     padding: $spacing-md 0 0;
+  }
+
+  // 생성 보고서 HTML 미리보기 (reportHtml)
+  .library-card-report-preview {
+    flex-shrink: 0;
+  }
+
+  .library-card-report-preview-frame {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #c6d2db;
+    border-radius: $border-radius-lg;
+    background: #fff;
+    overflow: hidden;
+    box-shadow: 4px 4px 4px 0 rgba(30, 50, 77, 0.06);
+  }
+
+  .library-card-report-preview-head {
+    flex-shrink: 0;
+    padding: 14px $spacing-md 12px;
+    background: linear-gradient(180deg, #f8fafc 0%, #fff 100%);
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .library-card-report-preview-head-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .library-card-report-preview-icon-wrap {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1px solid #dce4e9;
+    background: #f4f7f9;
+    color: #6f7a93;
+
+    .icon {
+      background-color: #6f7a93;
+    }
+  }
+
+  .library-card-report-preview-head-text {
+    min-width: 0;
+  }
+
+  .library-card-report-preview-title {
+    margin: 0;
+    font-size: $font-size-base;
+    font-weight: $font-weight-bold;
+    color: $color-text-heading-sub;
+    line-height: 1.35;
+  }
+
+  .library-card-report-preview-desc {
+    margin: 4px 0 0;
+    font-size: $font-size-xs;
+    color: $color-text-muted;
+    line-height: 1.45;
+  }
+
+  .library-card-report-preview-body {
+    background: #fafbfc;
+    padding: 12px;
+  }
+
+  .library-card-report-preview-content {
+    border: 1px solid #eef2f6;
+    border-radius: $border-radius-base;
+    background: #fff;
+    box-shadow: inset 0 1px 2px rgba(30, 50, 77, 0.04);
+    overflow-x: auto;
+    @include doc-content-styles;
+
+    img,
+    figure img {
+      max-width: 100%;
+      height: auto;
+    }
   }
 
   // 응답 영역 — 우상단 복사/SQL 버튼과 텍스트 겹침 방지 + 마크다운(채팅 assistant 본문과 동일 시각)

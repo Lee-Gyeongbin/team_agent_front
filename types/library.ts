@@ -52,6 +52,7 @@ export interface LibraryCardDetail {
   qcontent: string
   rcontent: string
   ttsq: string
+  reportHtml: string
   agentId: string
   agentNm: string
   iconClassNm: string

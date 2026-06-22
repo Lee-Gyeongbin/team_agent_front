@@ -70,7 +70,16 @@
               @click="handleAttachClick"
             >
               <template #icon-left>
-                <i :class="riskAgentActive ? 'icon-file-pdf size-24' : 'icon-attach-file size-24'" />
+                <span class="btn-chat-attach-icon-wrap">
+                  <i class="icon-attach-file size-24" />
+                  <span
+                    v-if="riskAgentActive"
+                    class="btn-chat-attach-pdf-badge"
+                    aria-hidden="true"
+                  >
+                    PDF
+                  </span>
+                </span>
               </template>
             </UiButton>
           </UiTooltip>
@@ -631,6 +640,35 @@ const handleSend = async () => {
   40% {
     opacity: 1;
   }
+}
+
+/* 첨부 버튼: PDF 전용 모드일 때 아이콘 우상단 뱃지 */
+.btn-chat-attach-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-chat-attach-pdf-badge {
+  position: absolute;
+  top: -4px;
+  right: -7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 12px;
+  padding: 0 3px;
+  border: 1px solid #fff;
+  border-radius: 999px;
+  background: #db3b76;
+  color: #fff;
+  font-size: 7px;
+  font-weight: $font-weight-bold;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  pointer-events: none;
 }
 
 /* 전송 중: 전송 아이콘 대신 버튼 안에 맞는 스피너 */
