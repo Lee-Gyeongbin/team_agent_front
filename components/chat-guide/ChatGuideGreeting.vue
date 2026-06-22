@@ -96,27 +96,31 @@
           <span>미리보기</span>
         </div>
 
-        <div class="chat-guide-preview-body">
-          <!-- 봇 헤더 -->
-          <div class="chat-guide-preview-bot">
-            <div class="chat-guide-preview-bot-avatar">T</div>
-            <div class="chat-guide-preview-bot-info">
-              <span class="chat-guide-preview-bot-name">TeamAgent</span>
-              <span class="chat-guide-preview-bot-status">온라인</span>
-            </div>
+        <div class="chat-guide-preview-body cgp-index-body">
+          <!-- 타이틀 + 인사멘트 (실제 채팅 화면과 동일한 레이아웃) -->
+          <div class="cgp-index-center">
+            <h2 class="cgp-index-title">TeamAgent</h2>
+            <p class="cgp-index-desc">{{ previewGreetingMessage }}</p>
           </div>
 
-          <!-- 메시지 영역 -->
-          <div class="chat-guide-preview-messages">
-            <div class="chat-guide-preview-message">
-              <p>{{ previewGreetingMessage }}</p>
+          <!-- 입력창 목업 -->
+          <div class="cgp-index-input-wrap">
+            <div class="cgp-index-input">
+              <div class="cgp-index-input-top">
+                <i class="icon-sparkle size-16" />
+                <span class="cgp-index-placeholder">궁금하신 내용을 입력하세요.</span>
+              </div>
+              <div class="cgp-index-input-bottom">
+                <i class="icon-attach-file size-16" />
+                <div class="cgp-index-input-right">
+                  <span class="cgp-index-model">GPT-5.3-Chat</span>
+                  <i class="icon-chevron-down size-12" />
+                  <span class="cgp-index-send-btn">
+                    <i class="icon-send size-14" />
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
-
-          <!-- 입력 영역 -->
-          <div class="chat-guide-preview-input">
-            <span class="chat-guide-preview-input-placeholder">메시지를 입력하세요...</span>
-            <i class="icon-send size-20" />
           </div>
         </div>
       </div>
@@ -200,3 +204,113 @@ onMounted(() => {
   handleLoad()
 })
 </script>
+
+<style lang="scss" scoped>
+@use '~/assets/styles/utils/variables' as *;
+@use '~/assets/styles/utils/mixins' as *;
+
+// 미리보기 바디: 실제 채팅 인덱스 페이지와 동일한 구조
+.cgp-index-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: $spacing-md;
+  padding: $spacing-lg $spacing-md $spacing-md;
+  background: #fff;
+}
+
+// 타이틀 + 인사멘트 영역
+.cgp-index-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  flex: 1;
+  justify-content: center;
+  padding: 0 $spacing-sm;
+  min-height: 300px;
+}
+
+.cgp-index-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: $color-text-heading;
+  letter-spacing: -0.02em;
+}
+
+.cgp-index-desc {
+  font-size: 12px;
+  line-height: 1.6;
+  color: $color-text-secondary;
+  white-space: pre-line;
+  word-break: keep-all;
+}
+
+// 입력창 목업
+.cgp-index-input-wrap {
+  width: 100%;
+  padding: 0 0 $spacing-sm;
+}
+
+.cgp-index-input {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px 8px;
+  border: 1px solid $color-border;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+}
+
+.cgp-index-input-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: $color-text-disabled;
+
+  .icon-sparkle {
+    flex-shrink: 0;
+    color: $color-text-disabled;
+  }
+}
+
+.cgp-index-placeholder {
+  font-size: 11px;
+  color: $color-text-disabled;
+}
+
+.cgp-index-input-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: $color-text-muted;
+}
+
+.cgp-index-input-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cgp-index-model {
+  font-size: 10px;
+  color: $color-text-secondary;
+  font-weight: 500;
+}
+
+.cgp-index-send-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--color-primary);
+  color: #fff;
+  margin-left: 2px;
+}
+</style>

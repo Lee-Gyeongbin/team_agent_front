@@ -393,6 +393,11 @@
   @include icon-file-bg('agent-researcher');
 }
 
+// 지구본 (웹 검색) — agent-researcher에서 돋보기 제외한 globe만 분리
+.icon-globe {
+  @include icon-file-bg('globe');
+}
+
 // 마이너스 (줌아웃)
 .icon-minus {
   @include icon-file('icon-minus');

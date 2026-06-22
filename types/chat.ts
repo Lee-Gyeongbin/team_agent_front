@@ -89,6 +89,8 @@ export interface ChatSocketMessage {
   chartOption?: VisualizationChartOptionPayload | string
   /** status 이벤트 메시지 (예: "질문 분석중", "생성 진행중") */
   statusMessage?: string
+  /** status 이벤트 코드 (예: "searching_web") — 단계별 아이콘 표시용 */
+  statusCode?: string
   /** recommend_questions 시점 — 다음 추천 질문 목록 */
   questions?: string[]
 }
@@ -102,6 +104,8 @@ export interface ChatMessage {
   createdAt: string
   isStreaming?: boolean
   streamingStatus?: string
+  /** status 이벤트 코드 (예: "searching_web") — 단계별 로딩 아이콘 표시용 */
+  streamingStatusCode?: string
   /** 스트리밍 정지 등으로 서버에 로그가 저장되지 않은 응답 (좋아요/싫어요 등 액션 비활성화) */
   chatLogMissing?: boolean
   chatLogReaction?: ChatLogReaction

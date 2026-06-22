@@ -450,11 +450,10 @@ onUnmounted(() => {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-start;
+  display: grid;
+  grid-template-columns: repeat(6, 20px);
   gap: 6px;
-  width: fit-content;
+  width: calc(6 * 20px + 5 * 6px + 12px); // 부모(28px) 너비 제약 회피
   padding: 6px;
   border: 1px solid #dce4e9;
   border-radius: $border-radius-base;
