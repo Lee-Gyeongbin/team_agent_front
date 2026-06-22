@@ -751,10 +751,9 @@
 // ===================================
 // 질문 예시(퓨샷) 관리
 // ===================================
-$fewshot-list-page-size: 6;
+$fewshot-list-visible-count: 6;
 $fewshot-card-gap: 8px;
-$fewshot-card-gap-total: $fewshot-card-gap * ($fewshot-list-page-size - 1);
-$fewshot-list-pagination-height: 36px;
+$fewshot-card-gap-total: $fewshot-card-gap * ($fewshot-list-visible-count - 1);
 /** 상세 패널(폼+푸터) 열림 상태와 동일한 기본 높이 */
 $fewshot-split-min-height: min(536px, 58vh);
 $fewshot-detail-body-min-height: min(492px, 52vh);
@@ -801,6 +800,16 @@ $fewshot-detail-body-min-height: min(492px, 52vh);
   min-height: $fewshot-split-min-height;
   box-sizing: border-box;
   overflow: hidden;
+
+  .com-setting-section-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 0;
+    min-height: 0;
+    min-width: 0;
+    width: 100%;
+  }
 }
 
 .datamart-meta-fewshot-list-body {
@@ -808,16 +817,24 @@ $fewshot-detail-body-min-height: min(492px, 52vh);
   flex: 1;
   flex-direction: column;
   min-height: $fewshot-detail-body-min-height;
+  min-width: 0;
+  width: 100%;
 }
 
 .fewshot-list-body {
+  container-type: size;
+  container-name: fewshot-list;
   display: flex;
   flex: 1;
   flex-direction: column;
   gap: 0;
   min-width: 0;
   min-height: 0;
-  overflow: hidden;
+  width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-sizing: border-box;
+  @include custom-scrollbar;
 }
 
 .fewshot-list-empty {
@@ -830,36 +847,25 @@ $fewshot-detail-body-min-height: min(492px, 52vh);
 }
 
 .fewshot-card-list {
-  --fewshot-card-slot-count: #{$fewshot-list-page-size};
   display: flex;
-  flex: 1;
   flex-direction: column;
   gap: $fewshot-card-gap;
+  align-self: stretch;
+  width: 100%;
   min-width: 0;
-  min-height: 0;
   margin: 0;
   padding: 0;
   list-style: none;
-  overflow-x: hidden;
-  overflow-y: auto;
-  @include custom-scrollbar;
+  box-sizing: border-box;
 
   > li {
-    flex: 1 1 0;
+    align-self: stretch;
+    width: 100%;
+    box-sizing: border-box;
+    flex: 0 0 auto;
+    height: calc((100cqh - #{$fewshot-card-gap-total}) / #{$fewshot-list-visible-count});
     min-height: 44px;
-    max-height: calc(
-      (100% - #{$fewshot-card-gap-total}) / var(--fewshot-card-slot-count, #{$fewshot-list-page-size})
-    );
-    height: auto;
   }
-}
-
-.fewshot-list-pagination-wrap {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  min-height: $fewshot-list-pagination-height;
 }
 
 .fewshot-card {
@@ -932,68 +938,6 @@ $fewshot-detail-body-min-height: min(492px, 52vh);
     color: $color-text-secondary;
     font-weight: $font-weight-medium;
   }
-}
-
-.fewshot-list-pagination {
-  flex-shrink: 0;
-}
-
-.fewshot-page-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 28px;
-  height: 28px;
-  padding: 0;
-  border: none;
-  border-radius: $border-radius-sm;
-  background: transparent;
-  color: $color-text-secondary;
-  cursor: pointer;
-  transition: background-color $transition-fast;
-
-  .icon {
-    background-color: currentColor;
-  }
-
-  .is-flip-x {
-    transform: scaleX(-1);
-  }
-
-  &:hover:not(:disabled) {
-    background: #ecf0f3;
-  }
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-}
-
-.fewshot-page-num {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 28px;
-  height: 28px;
-  padding: 0 6px;
-  border: 1px solid $color-border;
-  border-radius: $border-radius-sm;
-  background: #fff;
-  @include typo($body-small);
-  color: $color-text-secondary;
-  cursor: pointer;
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-}
-
-.fewshot-page-num.is-active {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-  font-weight: $font-weight-semibold;
 }
 
 .datamart-meta-fewshot-detail-section {

@@ -58,12 +58,10 @@
                 v-else
                 class="fewshot-list-body"
               >
-                <ul
-                  class="fewshot-card-list"
-                  :style="{ '--fewshot-card-slot-count': PAGE_SIZE }"
-                >
+                <ul class="fewshot-card-list">
                   <li
-                    v-for="row in paginatedList"
+                    v-for="row in filteredFewshotList"
+                    :id="`fewshot-card-${getFewshotUiKey(row)}`"
                     :key="getFewshotUiKey(row)"
                   >
                     <div
@@ -87,42 +85,6 @@
                     </div>
                   </li>
                 </ul>
-
-                <div class="fewshot-list-pagination-wrap">
-                  <div
-                    v-if="totalPages > 1"
-                    class="fewshot-list-pagination flex items-center justify-center gap-4"
-                  >
-                    <button
-                      type="button"
-                      class="fewshot-page-btn"
-                      :disabled="currentPage <= 1"
-                      aria-label="이전 페이지"
-                      @click="onPageChange(currentPage - 1)"
-                    >
-                      <i class="icon icon-arrow-right size-16 is-flip-x" />
-                    </button>
-                    <button
-                      v-for="page in totalPages"
-                      :key="page"
-                      type="button"
-                      class="fewshot-page-num"
-                      :class="{ 'is-active': page === currentPage }"
-                      @click="onPageChange(page)"
-                    >
-                      {{ page }}
-                    </button>
-                    <button
-                      type="button"
-                      class="fewshot-page-btn"
-                      :disabled="currentPage >= totalPages"
-                      aria-label="다음 페이지"
-                      @click="onPageChange(currentPage + 1)"
-                    >
-                      <i class="icon icon-arrow-right size-16" />
-                    </button>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -323,53 +285,64 @@ import type { SelectOption } from '~/components/ui/UiSelect.vue'
 import type { Datamart } from '~/types/datamart'
 import type { DatamartMetaFewshot, DatamartMetaTableItem } from '~/types/datamartMeta'
 
+/** datamart: 현재 데이터마트, tables: 간편 SQL용 메타 테이블, errorMessage: 조회 실패 시 에러 */
 const props = defineProps<{
   datamart: Datamart | null
   tables: DatamartMetaTableItem[]
   errorMessage?: string | null
 }>()
 
+/** 부모 모달과 양방향 바인딩되는 퓨샷 목록 */
 const fewshotList = defineModel<DatamartMetaFewshot[]>('fewshotList', { default: () => [] })
 
+/** 상세 폼에서 편집 가능한 필드 */
 type FewshotEditableField = 'userQuestion' | 'aiUnderstand' | 'aiRefExam' | 'sqlExam'
 
+/** 저장 시 필수 검증 대상 필드 (sqlExam 제외) */
 type FewshotRequiredField = Exclude<FewshotEditableField, 'sqlExam'>
 
+/** 간편 SQL 입력 UI 상태 */
 type SqlBuilderState = {
   fromTable: string
   selectColumns: string[]
   whereClause: string
 }
 
-const FEWSHOT_TEXT_MAX = 100
-const PAGE_SIZE = 6
-const DRAFT_FEWSHOT_ID_PREFIX = '__draft_'
-const FEWSHOT_FROM_TABLE_PLACEHOLDER_VALUE = ''
+const FEWSHOT_TEXT_MAX = 100 // 텍스트 필드 최대 글자 수
+const DRAFT_FEWSHOT_ID_PREFIX = '__draft_' // 저장 전 임시 행 ID 접두사
+const FEWSHOT_FROM_TABLE_PLACEHOLDER_VALUE = '' // FROM 드롭다운 placeholder value
 
+// 검색·선택·SQL 입력 모드 UI 상태
 const searchKeyword = ref('')
-const currentPage = ref(1)
 const selectedFewshotKey = ref<string | null>(null)
 const sqlBuilder = ref<SqlBuilderState>(createEmptySqlBuilder())
 const isSqlManualInput = ref(false)
 
+/** 저장 API에 사용할 datamartId */
 const datamartId = computed(() => props.datamart?.datamartId?.trim() ?? '')
 
+/** 신규 행용 임시 fewshotId 생성 — 저장 전까지 서버 ID 없음 */
 const createDraftFewshotId = () => `${DRAFT_FEWSHOT_ID_PREFIX}${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
 
+/** 임시 ID 여부 — 빈 문자열 또는 __draft_ 접두사 */
 const isDraftFewshotId = (fewshotId: string) => {
   const id = fewshotId?.trim() ?? ''
   return !id || id.startsWith(DRAFT_FEWSHOT_ID_PREFIX)
 }
 
+/** v-for key·선택 상태 식별자 */
 const getFewshotUiKey = (row: DatamartMetaFewshot) => row.fewshotId?.trim() ?? ''
 
+/** 좌측 카드에 표시할 라벨 — 임시 행은 '새 퓨샷' */
 const getFewshotCardLabel = (row: DatamartMetaFewshot) => {
   if (isDraftFewshotId(row.fewshotId ?? '')) return '새 퓨샷'
   return row.userQuestion?.trim() ?? ''
 }
 
+/** UI key로 목록에서 행 조회 */
 const findFewshotRowByUiKey = (uiKey: string) => fewshotList.value.find((row) => getFewshotUiKey(row) === uiKey)
 
+/** 특정 행의 편집 필드만 불변 갱신 */
 const patchFewshot = (uiKey: string, patch: Partial<Pick<DatamartMetaFewshot, FewshotEditableField>>) => {
   fewshotList.value = fewshotList.value.map((row) => {
     if (getFewshotUiKey(row) !== uiKey) return row
@@ -377,6 +350,7 @@ const patchFewshot = (uiKey: string, patch: Partial<Pick<DatamartMetaFewshot, Fe
   })
 }
 
+/** API 저장 전송용 필드 정규화 — 임시 ID는 빈 문자열로 변환 */
 const normalizeFewshotForSave = (row: DatamartMetaFewshot): DatamartMetaFewshot => {
   const fewshotId = row.fewshotId?.trim() ?? ''
   return {
@@ -389,18 +363,22 @@ const normalizeFewshotForSave = (row: DatamartMetaFewshot): DatamartMetaFewshot 
   }
 }
 
+/** 간편 SQL 빌더 초기 상태 */
 function createEmptySqlBuilder(): SqlBuilderState {
   return { fromTable: '', selectColumns: [], whereClause: '' }
 }
 
+/** 메타 테이블 컬럼 드롭다운용 물리명 목록 */
 function getMetaTableColumnNames(table: DatamartMetaTableItem): string[] {
   return table.columns.map((column) => column.colPhyNm || column.colId)
 }
 
+/** 물리 테이블명으로 메타 테이블 조회 */
 function findMetaTableByPhysicalName(physicalName: string, metaTables: DatamartMetaTableItem[]) {
   return metaTables.find((table) => table.physicalNm === physicalName)
 }
 
+/** 간편 입력 상태 → 예시 SQL 문자열 생성 */
 function buildExampleSqlFromBuilder(state: SqlBuilderState): string {
   const { fromTable, selectColumns, whereClause } = state
   if (!fromTable) return ''
@@ -411,6 +389,11 @@ function buildExampleSqlFromBuilder(state: SqlBuilderState): string {
   return lines.join('\n')
 }
 
+/**
+ * 예시 SQL → 간편 입력 상태 파싱
+ * - 단일 테이블 SELECT/FROM/WHERE 패턴만 지원
+ * - JOIN·GROUP BY 등 복잡한 SQL은 파싱 실패 시 빈 빌더 반환
+ */
 function parseExampleSqlToBuilder(sql: string): SqlBuilderState {
   const empty = createEmptySqlBuilder()
   const trimmed = sql.trim()
@@ -442,6 +425,7 @@ function parseExampleSqlToBuilder(sql: string): SqlBuilderState {
   return { fromTable, selectColumns, whereClause }
 }
 
+/** 검색어로 질문·의미·참조·SQL 필드를 필터링한 목록 */
 const filteredFewshotList = computed(() => {
   const keyword = searchKeyword.value.trim().toLowerCase()
   const list = fewshotList.value
@@ -459,6 +443,7 @@ const filteredFewshotList = computed(() => {
   })
 })
 
+/** 빈 목록 UI 구분 — 데이터 없음 / 검색 결과 없음 */
 const listEmptyState = computed<'none' | 'no-data' | 'no-search'>(() => {
   if (fewshotList.value.length === 0) return 'no-data'
   if (filteredFewshotList.value.length === 0) return 'no-search'
@@ -469,19 +454,16 @@ const listEmptyDescription = computed(() =>
   listEmptyState.value === 'no-search' ? '검색 결과가 없습니다.' : '등록된 질문 예시가 없습니다.',
 )
 
-const totalPages = computed(() => Math.max(1, Math.ceil(filteredFewshotList.value.length / PAGE_SIZE)))
-
-const paginatedList = computed(() => {
-  const start = (currentPage.value - 1) * PAGE_SIZE
-  return filteredFewshotList.value.slice(start, start + PAGE_SIZE)
-})
-
+/** 우측 상세 폼에 바인딩할 선택된 행 */
 const selectedFewshot = computed(() => findFewshotRowByUiKey(selectedFewshotKey.value ?? '') ?? null)
 
+/** 우측 상세 섹션 제목 */
 const detailTitle = computed(() => (selectedFewshot.value ? '질문 예시 수정' : '상세보기'))
 
+/** 테이블 선택 탭에서 useYn=Y인 활성 메타 테이블 */
 const activeMetaTables = computed(() => props.tables.filter((table) => table.useYn === 'Y'))
 
+/** 간편 SQL FROM 드롭다운 옵션 */
 const fromTableOptions = computed<SelectOption[]>(() => [
   { label: '테이블 선택', value: FEWSHOT_FROM_TABLE_PLACEHOLDER_VALUE },
   ...activeMetaTables.value.map((table) => ({
@@ -490,12 +472,14 @@ const fromTableOptions = computed<SelectOption[]>(() => [
   })),
 ])
 
+/** 선택된 FROM 테이블의 SELECT 컬럼 드롭다운 옵션 */
 const selectColumnOptions = computed<SelectOption[]>(() => {
   const table = findMetaTableByPhysicalName(sqlBuilder.value.fromTable, activeMetaTables.value)
   if (!table) return []
   return getMetaTableColumnNames(table).map((col) => ({ label: col, value: col }))
 })
 
+/** 간편 입력 모드에서 빌더 변경 시 sqlExam 필드 자동 동기화 */
 watch(
   sqlBuilder,
   () => {
@@ -507,6 +491,7 @@ watch(
   { deep: true },
 )
 
+/** 퓨샷 선택 — SQL 입력 모드 초기화 및 기존 SQL 파싱 */
 const selectFewshot = (uiKey: string | null) => {
   if (selectedFewshotKey.value === uiKey) return
   selectedFewshotKey.value = uiKey
@@ -515,52 +500,50 @@ const selectFewshot = (uiKey: string | null) => {
   sqlBuilder.value = parseExampleSqlToBuilder(row?.sqlExam ?? '')
 }
 
+/**
+ * 목록 필터 변경 후 선택 상태 보정
+ * - 필터 결과 없으면 선택 해제
+ * - 현재 선택이 필터 밖이면 첫 행 자동 선택
+ */
 const ensureSelection = () => {
   if (filteredFewshotList.value.length === 0) {
     selectFewshot(null)
     return
   }
 
-  if (currentPage.value > totalPages.value) {
-    currentPage.value = totalPages.value
-  }
-
   if (filteredFewshotList.value.some((row) => getFewshotUiKey(row) === selectedFewshotKey.value)) return
 
-  const nextRow = paginatedList.value[0] ?? filteredFewshotList.value[0] ?? null
+  const nextRow = filteredFewshotList.value[0] ?? null
   if (nextRow) selectFewshot(getFewshotUiKey(nextRow))
 }
 
-watch([filteredFewshotList, currentPage], () => ensureSelection(), { immediate: true })
+watch(filteredFewshotList, () => ensureSelection(), { immediate: true })
 
-watch(searchKeyword, () => {
-  currentPage.value = 1
-})
-
+/** 상세 폼 필드 입력 핸들러 */
 const onUpdateFewshotField = (field: FewshotEditableField, value: string) => {
   const uiKey = selectedFewshotKey.value
   if (!uiKey) return
   patchFewshot(uiKey, { [field]: value })
 }
 
+/** 간편 입력 ↔ 직접 입력 모드 전환 */
 const onToggleSqlManualInput = () => {
   const uiKey = selectedFewshotKey.value
   if (!uiKey) return
 
   if (!isSqlManualInput.value) {
+    // 간편 → 직접: 빌더 상태를 SQL 문자열로 반영
     patchFewshot(uiKey, { sqlExam: buildExampleSqlFromBuilder(sqlBuilder.value) })
     isSqlManualInput.value = true
     return
   }
 
+  // 직접 → 간편: 기존 SQL을 빌더 상태로 파싱
   isSqlManualInput.value = false
   sqlBuilder.value = parseExampleSqlToBuilder(selectedFewshot.value?.sqlExam ?? '')
 }
 
-const onPageChange = (page: number) => {
-  currentPage.value = Math.max(1, Math.min(page, totalPages.value))
-}
-
+/** 임시 행을 목록 맨 앞에 추가하고 상세 폼으로 포커스 */
 const onAdd = () => {
   const newRow: DatamartMetaFewshot = {
     datamartId: datamartId.value,
@@ -576,10 +559,10 @@ const onAdd = () => {
 
   fewshotList.value = [newRow, ...fewshotList.value]
   searchKeyword.value = ''
-  currentPage.value = 1
   selectFewshot(getFewshotUiKey(newRow))
 }
 
+/** 선택된 행 삭제 후 다음 행 자동 선택 */
 const onDelete = () => {
   const uiKey = selectedFewshotKey.value
   if (!uiKey) return
@@ -587,6 +570,7 @@ const onDelete = () => {
   ensureSelection()
 }
 
+/** FROM 테이블 변경 시 SELECT·WHERE 초기화 */
 const onSqlFromTableChange = (table: string | number) => {
   sqlBuilder.value = {
     fromTable: String(table).trim() || FEWSHOT_FROM_TABLE_PLACEHOLDER_VALUE,
@@ -595,6 +579,7 @@ const onSqlFromTableChange = (table: string | number) => {
   }
 }
 
+/** 저장 시 필수 필드 검증 규칙 */
 const FEWSHOT_REQUIRED_VALIDATIONS: {
   field: FewshotRequiredField
   message: string
@@ -605,24 +590,23 @@ const FEWSHOT_REQUIRED_VALIDATIONS: {
   { field: 'aiRefExam', message: '참조 조회 방법을 입력해주세요.', focusId: 'fewshot-lookup' },
 ]
 
+/** 유효성 검사 실패 시 해당 행·필드로 스크롤·포커스 */
 const focusFewshotValidationField = (uiKey: string, focusId: string) => {
-  const index = filteredFewshotList.value.findIndex((row) => getFewshotUiKey(row) === uiKey)
-  if (index >= 0) {
-    currentPage.value = Math.floor(index / PAGE_SIZE) + 1
-  }
-
   selectedFewshotKey.value = uiKey
   isSqlManualInput.value = false
   const row = findFewshotRowByUiKey(uiKey)
   sqlBuilder.value = parseExampleSqlToBuilder(row?.sqlExam ?? '')
 
   nextTick(() => {
+    document.getElementById(`fewshot-card-${uiKey}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+
     const el = document.getElementById(focusId)
     el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     el?.focus()
   })
 }
 
+/** 부모 모달 저장 시 호출 — 전체 행 필수 검증 후 정규화된 목록 반환 */
 const buildSavePayload = (): DatamartMetaFewshot[] | null => {
   if (!datamartId.value) {
     openToast({ message: '데이터마트 정보가 없습니다.', type: 'warning' })
