@@ -715,6 +715,7 @@ const iconGroups = [
       { class: 'icon-agent-microphone' },
       { class: 'icon-agent-translate' },
       { class: 'icon-agent-researcher' },
+      { class: 'icon-agent-risk' },
       { class: 'icon-minus' },
       { class: 'icon-plus-zoom' },
       { class: 'icon-download' },
