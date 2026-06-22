@@ -32,6 +32,10 @@
           v-if="message.isStreaming && !message.rContent"
           class="message-loading"
         >
+          <i
+            v-if="message.streamingStatusCode === 'searching_web'"
+            class="icon-globe size-16 message-loading__icon"
+          />
           <span class="message-loading__label">{{ message.streamingStatus || '답변 생성 중' }}</span>
           <div class="message-loading__dots">
             <span class="message-loading__dot" />
