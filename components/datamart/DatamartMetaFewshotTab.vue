@@ -9,7 +9,7 @@
     <template v-else>
       <div class="datamart-meta-fewshot-header">
         <p class="datamart-meta-fewshot-desc">
-          AI가 사용자 질문을 이해하도록 예시를 등록 관리합니다.
+          AI가 사용자 질문의 의도와 SQL 생성 방식을 학습할 수 있도록 질문 예시를 등록·관리합니다.
           <template v-if="datamart?.dmNm">
             <span class="datamart-meta-fewshot-desc-dm"> ({{ datamart.dmNm }})</span>
           </template>
