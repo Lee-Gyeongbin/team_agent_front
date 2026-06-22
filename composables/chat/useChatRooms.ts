@@ -86,6 +86,9 @@ export const useChatRooms = () => {
     chatRoom.value = { ...EMPTY_CHAT_ROOM }
     activeSearchModes.value = []
     selectedChatAgentId.value = null
+    // RISK(리스크진단) 활성 상태도 함께 해제: 메뉴 재진입 시 PDF 첨부·진단 버튼·입력창 비활성화가 남는 문제 방지
+    riskAgentActive.value = false
+    selectedSubOptions.value = ['all']
   }
 
   // 채팅방 roomId 동기화 (/chat/[id] 진입 시 사용)
