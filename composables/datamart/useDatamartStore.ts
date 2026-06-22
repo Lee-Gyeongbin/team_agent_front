@@ -3,6 +3,8 @@ import { useCodesApi } from '~/composables/codes/useCodesApi'
 import type { CodeGroupItem, CodeItem } from '~/types/codes'
 import type { Datamart, DatamartSummary } from '~/types/datamart'
 import type {
+  DatamartMetaAbbrevItem,
+  DatamartMetaAbbrevPayload,
   DatamartMetaCode,
   DatamartMetaCodeValueRow,
   DatamartMetaCodeWithEntries,
@@ -10,6 +12,7 @@ import type {
   DatamartMetaRelationship,
   DatamartMetaSynonymGroup,
   DatamartMetaSynonymItem,
+  DatamartMetaSynonymPayload,
   DatamartMetaTableItem,
 } from '~/types/datamartMeta'
 
@@ -30,6 +33,8 @@ const {
   fetchSaveMetaSynonym,
   fetchMetaFewshotList,
   fetchSaveMetaFewshot,
+  fetchMetaAbbrevList,
+  fetchSaveMetaAbbrev,
 } = useDatamartApi()
 
 const { fetchCodeGroupList, fetchCodeList, fetchSaveCode } = useCodesApi()
@@ -73,9 +78,12 @@ const metaModalSelectedColumnTableId = ref('')
 const metaModalCodeMappings = ref<DatamartMetaCodeWithEntries[]>([])
 const metaModalCodeGroupList = ref<CodeGroupItem[]>([])
 const metaModalSynonymGroups = ref<DatamartMetaSynonymGroup[]>([])
-const metaModalSynonymApiRes = ref<unknown>(null)
+const metaModalSynonymApiRes = ref<DatamartMetaSynonymPayload | null>(null)
 const metaModalFewshotList = ref<DatamartMetaFewshot[]>([])
 const metaModalFewshotListError = ref<string | null>(null)
+const metaModalAbbrevList = ref<DatamartMetaAbbrevItem[]>([])
+const metaModalAbbrevListError = ref<string | null>(null)
+const metaModalAbbrevApiRes = ref<DatamartMetaAbbrevPayload | null>(null)
 
 const summary = ref<DatamartSummary>({
   totalCount: 0,
@@ -224,6 +232,9 @@ const resetDatamartMetaModal = () => {
   metaModalSynonymApiRes.value = null
   metaModalFewshotList.value = []
   metaModalFewshotListError.value = null
+  metaModalAbbrevList.value = []
+  metaModalAbbrevListError.value = null
+  metaModalAbbrevApiRes.value = null
 }
 
 /** 모달 오픈·테이블 탭 재시도 — 테이블 스키마 + JOIN 관계 목록 조회 후 스토어 상태 반영 */
@@ -258,6 +269,15 @@ const hydrateDatamartMetaModal = async (datamartId: string) => {
   await hydrateCodeMappingEntries(mappings)
   metaModalCodeMappings.value = mappings
 
+  const abbrevRes = await handleFetchMetaAbbrevList(id)
+  if (abbrevRes === undefined) {
+    metaModalAbbrevApiRes.value = null
+    metaModalAbbrevListError.value = '약어사전 목록을 불러오지 못했습니다.'
+  } else {
+    metaModalAbbrevApiRes.value = abbrevRes
+    metaModalAbbrevListError.value = null
+  }
+
   const synonymRes = await handleFetchMetaSynonymList(id)
   if (synonymRes === undefined) {
     metaModalSynonymApiRes.value = null
@@ -271,10 +291,10 @@ const hydrateDatamartMetaModal = async (datamartId: string) => {
   if (fewshots === undefined) {
     metaModalFewshotList.value = []
     metaModalFewshotListError.value = '질문 예시 목록을 불러오지 못했습니다.'
-    return
+  } else {
+    metaModalFewshotList.value = fewshots
+    metaModalFewshotListError.value = null
   }
-  metaModalFewshotList.value = fewshots
-  metaModalFewshotListError.value = null
 }
 
 /** 메타 관리 모달 — 테이블 사용 상태 변경 */
@@ -555,6 +575,39 @@ const handleSaveMetaFewshot = async (datamartId: string, fewshotList: DatamartMe
   }
 }
 
+/** 약어사전 목록 조회 */
+const handleFetchMetaAbbrevList = async (datamartId: string) => {
+  try {
+    openLoading({ text: '약어사전 목록 조회 중...' })
+    return await fetchMetaAbbrevList(datamartId)
+  } catch {
+    openToast({ message: '약어사전 목록 조회에 실패했습니다.', type: 'error' })
+    return undefined
+  } finally {
+    closeLoading()
+  }
+}
+
+/** 약어사전 저장 */
+const handleSaveMetaAbbrev = async (datamartId: string, abbrevList: DatamartMetaAbbrevItem[]) => {
+  try {
+    await fetchSaveMetaAbbrev({ datamartId, abbrDictList: abbrevList })
+    const abbrevRes = await handleFetchMetaAbbrevList(datamartId)
+    if (abbrevRes === undefined) {
+      metaModalAbbrevListError.value = '약어사전 목록을 불러오지 못했습니다.'
+      openToast({ message: '저장 후 목록 갱신에 실패했습니다.', type: 'error' })
+      return false
+    }
+    metaModalAbbrevApiRes.value = abbrevRes
+    metaModalAbbrevListError.value = null
+    openToast({ message: '약어사전 저장에 성공했습니다.', type: 'success' })
+    return true
+  } catch {
+    openToast({ message: '약어사전 저장에 실패했습니다.', type: 'error' })
+    return false
+  }
+}
+
 /** 동의어 저장 */
 const handleSaveMetaSynonym = async (datamartId: string, synonymList: DatamartMetaSynonymItem[]) => {
   try {
@@ -590,6 +643,9 @@ export const useDatamartStore = () => {
     metaModalSynonymApiRes,
     metaModalFewshotList,
     metaModalFewshotListError,
+    metaModalAbbrevList,
+    metaModalAbbrevListError,
+    metaModalAbbrevApiRes,
     handleSelectAll,
     handleSaveDatamart,
     handleDeleteDatamart,
@@ -606,5 +662,6 @@ export const useDatamartStore = () => {
     handleSaveMetaCodeMapping,
     handleSaveMetaSynonym,
     handleSaveMetaFewshot,
+    handleSaveMetaAbbrev,
   }
 }

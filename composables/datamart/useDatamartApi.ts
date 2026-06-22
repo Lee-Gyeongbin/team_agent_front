@@ -1,6 +1,7 @@
 import type { Datamart, DatamartSummary } from '~/types/datamart'
 import { useApi } from '~/composables/com/useApi'
 import type {
+  DatamartMetaAbbrevPayload,
   DatamartMetaCode,
   DatamartMetaColumnExcelUploadResponse,
   DatamartMetaRelationship,
@@ -106,6 +107,16 @@ export const useDatamartApi = () => {
     return post('/datamart/metaFewshotSave.do', payload)
   }
 
+  /** 메타 관리 > 약어사전 목록 조회 API */
+  const fetchMetaAbbrevList = async (datamartId: string): Promise<DatamartMetaAbbrevPayload> => {
+    return post<DatamartMetaAbbrevPayload>('/datamart/metaAbbrDictList.do', { datamartId })
+  }
+
+  /** 메타 관리 > 약어사전 저장 API */
+  const fetchSaveMetaAbbrev = async (payload: DatamartMetaAbbrevPayload): Promise<void> => {
+    return post('/datamart/metaAbbrDictSave.do', payload)
+  }
+
   /** 메타 관리 > 컬럼 메타 엑셀 다운로드 — GET metaColumnDownloadExcel.do?datamartId= */
   const fetchDownloadMetaColumnExcel = async (datamartId: string, dmNm?: string): Promise<void> => {
     const query = new URLSearchParams({ datamartId })
@@ -146,6 +157,8 @@ export const useDatamartApi = () => {
     fetchSaveMetaSynonym,
     fetchMetaFewshotList,
     fetchSaveMetaFewshot,
+    fetchMetaAbbrevList,
+    fetchSaveMetaAbbrev,
     fetchDownloadMetaColumnExcel,
     fetchUploadMetaColumnExcel,
   }

@@ -45,3 +45,9 @@ export const isValidCodeFormat = (val: unknown): boolean => {
   if (typeof val !== 'string') return false
   return /^[A-Z]{2}\d{6}$/.test(val)
 }
+
+/** 영문 형식 검증 — 영문 알파벳·공백만 허용 */
+export const isEnglishOnly = (value: string): boolean => /^[A-Za-z\s]*$/.test(value)
+
+/** 한글 형식 검증 — 완성형 한글·공백 */
+export const isKoreanOnly = (value: string): boolean => /^[가-힣\s]*$/.test(value)

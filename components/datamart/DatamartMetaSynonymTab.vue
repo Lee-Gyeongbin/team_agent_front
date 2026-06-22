@@ -255,7 +255,7 @@ import type {
 const props = defineProps<{
   datamart: Datamart | null
   errorMessage?: string | null
-  synonymApiRes?: unknown
+  synonymApiRes?: DatamartMetaSynonymPayload | null
 }>()
 
 /** 부모와 양방향 바인딩 — 동의어 그룹 편집 상태 */
@@ -276,7 +276,7 @@ const getRepresentativeSynonymItem = (group: DatamartMetaSynonymGroup) =>
 
 /**
  * API 조회 응답 → 탭 UI 그룹 목록
- * - 배열 / synonymGroupList / dataList / flat synonymList 등 응답 형태를 통합 처리
+ * - 배열 / synonymGroupList / flat synonymList 등 응답 형태를 통합 처리
  * - flat 목록은 representYn 기준으로 UI 그룹으로 재구성
  */
 const parseSynonymGroupsFromApi = (
@@ -337,8 +337,7 @@ const parseSynonymGroupsFromApi = (
   }
 
   const sourceDatamartId = res.datamartId?.trim() || datamartId
-  const groupedList = res.synonymGroupList ?? res.dataList
-  // synonymGroupList / dataList 형태
+  const groupedList = res.synonymGroupList
   if (Array.isArray(groupedList)) {
     return toUiGroups(attachDatamartId(groupedList, sourceDatamartId), sourceDatamartId)
   }
@@ -639,11 +638,7 @@ watch(
       return
     }
     if (res === null || res === undefined) return
-    synonymGroups.value =
-      parseSynonymGroupsFromApi(
-        res as DatamartMetaSynonymPayload | DatamartMetaSynonymGroup[] | null | undefined,
-        datamartId.value,
-      ) ?? []
+    synonymGroups.value = parseSynonymGroupsFromApi(res, datamartId.value) ?? []
   },
   { immediate: true },
 )

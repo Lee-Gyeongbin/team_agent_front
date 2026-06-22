@@ -45,6 +45,14 @@
             :relationships="metaModalRelationships"
             :code-group-list="metaModalCodeGroupList"
           />
+          <DatamartMetaAbbrDictTab
+            v-else-if="activeTab === 'abbrDict'"
+            ref="abbrDictTabRef"
+            v-model:abbrev-list="metaModalAbbrevList"
+            :datamart="datamart"
+            :error-message="metaModalAbbrevListError"
+            :abbrev-api-res="metaModalAbbrevApiRes"
+          />
           <DatamartMetaSynonymTab
             v-else-if="activeTab === 'synonym'"
             ref="synonymTabRef"
@@ -88,12 +96,13 @@
 
 <script setup lang="ts">
 import type { Datamart } from '~/types/datamart'
-import type { DatamartMetaFewshot, DatamartMetaSynonymItem } from '~/types/datamartMeta'
+import type { DatamartMetaAbbrevItem, DatamartMetaFewshot, DatamartMetaSynonymItem } from '~/types/datamartMeta'
 import DatamartMetaTableSelectTab from '~/components/datamart/DatamartMetaTableSelectTab.vue'
 import DatamartMetaColumnMetadataTab from '~/components/datamart/DatamartMetaColumnMetadataTab.vue'
 import DatamartMetaRelationshipTab from '~/components/datamart/DatamartMetaRelationshipTab.vue'
 import DatamartMetaCodeMappingTab from '~/components/datamart/DatamartMetaCodeMappingTab.vue'
 import DatamartMetaSynonymTab from '~/components/datamart/DatamartMetaSynonymTab.vue'
+import DatamartMetaAbbrDictTab from '~/components/datamart/DatamartMetaAbbrDictTab.vue'
 import DatamartMetaFewshotTab from '~/components/datamart/DatamartMetaFewshotTab.vue'
 import { useDatamartStore } from '~/composables/datamart/useDatamartStore'
 
@@ -116,6 +125,9 @@ const {
   metaModalCodeGroupList,
   metaModalSynonymGroups,
   metaModalSynonymApiRes,
+  metaModalAbbrevList,
+  metaModalAbbrevListError,
+  metaModalAbbrevApiRes,
   metaModalFewshotList,
   metaModalFewshotListError,
   resetDatamartMetaModal,
@@ -126,18 +138,21 @@ const {
   handleSaveMetaRelationship,
   handleSaveMetaCodeMapping,
   handleSaveMetaSynonym,
+  handleSaveMetaAbbrev,
   handleSaveMetaFewshot,
 } = useDatamartStore()
 
 const activeTab = defineModel<string>('activeTab', { default: 'table' })
 
 const synonymTabRef = ref<{ buildSavePayload: () => DatamartMetaSynonymItem[] | null } | null>(null)
+const abbrDictTabRef = ref<{ buildSavePayload: () => DatamartMetaAbbrevItem[] | null } | null>(null)
 const fewshotTabRef = ref<{ buildSavePayload: () => DatamartMetaFewshot[] | null } | null>(null)
 
 const metaModalCustomClass = computed(() => {
   const classes = ['datamart-meta-modal']
   if (activeTab.value === 'fewshot') classes.push('is-fewshot-tab')
   if (activeTab.value === 'synonym') classes.push('is-synonym-tab')
+  if (activeTab.value === 'abbrDict') classes.push('is-abbr-dict-tab')
   return classes.join(' ')
 })
 
@@ -155,6 +170,7 @@ const metaTabs = [
   { label: '컬럼 메타데이터', value: 'column' },
   { label: '관계 정의', value: 'relation' },
   { label: '코드값 매핑', value: 'code' },
+  { label: '약어사전', value: 'abbrDict' },
   { label: '동의어 관리', value: 'synonym' },
   { label: '퓨샷 관리', value: 'fewshot' },
 ]
@@ -181,6 +197,12 @@ const onSave = async () => {
     const synonymList = synonymTabRef.value?.buildSavePayload()
     if (!synonymList) return
     await handleSaveMetaSynonym(datamartId, synonymList)
+    return
+  } else if (activeTab.value === 'abbrDict') {
+    const datamartId = props.datamart?.datamartId ?? ''
+    const abbrevList = abbrDictTabRef.value?.buildSavePayload()
+    if (!abbrevList) return
+    await handleSaveMetaAbbrev(datamartId, abbrevList)
     return
   } else if (activeTab.value === 'fewshot') {
     const datamartId = props.datamart?.datamartId ?? ''

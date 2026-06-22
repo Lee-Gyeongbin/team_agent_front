@@ -152,8 +152,6 @@ export interface DatamartMetaSynonymPayload {
   synonymList: DatamartMetaSynonymItem[]
   /** 조회 API — 그룹 단위 목록(있으면 flat synonymList 대신 우선) */
   synonymGroupList?: DatamartMetaSynonymGroup[]
-  /** 조회 API — 일부 엔드포인트 dataList 명칭 */
-  dataList?: DatamartMetaSynonymGroup[]
 }
 
 /** 메타 관리 > 퓨샷 목록 조회 API */
@@ -175,3 +173,30 @@ export interface DatamartMetaFewshotPayload {
   datamartId: string
   fewshotList: DatamartMetaFewshot[]
 }
+
+/** 메타 관리 > 약어사전 항목 */
+export interface DatamartMetaAbbrevItem {
+  datamartId?: string
+  abbrId?: string
+  abbrNm: string
+  fullNmEng: string
+  fullNmKor: string
+  useYn?: 'Y' | 'N'
+  sortOrd?: number | string
+  createDt?: string
+  modifyDt?: string
+}
+
+/** 메타 관리 > 약어사전 조회/저장 API DTO */
+export interface DatamartMetaAbbrevPayload {
+  datamartId: string
+  abbrDictList: DatamartMetaAbbrevItem[]
+}
+
+/** 메타 관리 > 약어사전 탭 — UiTable 컬럼 정의 */
+export const datamartMetaAbbrevTableColumns: TableColumn[] = [
+  { key: 'abbrNm', label: '약어', width: '14%', align: 'left', headerAlign: 'center' },
+  { key: 'fullNmEng', label: '영문 전체명', width: '32%', align: 'left', headerAlign: 'center' },
+  { key: 'fullNmKor', label: '한글 전체명', align: 'left', headerAlign: 'center' },
+  { key: '_actions', label: '삭제', width: '7%', align: 'center', headerAlign: 'center' },
+]

@@ -278,25 +278,36 @@
     }
   }
 
-  &.is-synonym-tab {
+  &.is-synonym-tab,
+  &.is-abbr-dict-tab {
     .modal-dialog-body {
+      display: flex;
+      flex-direction: column;
       min-height: min(560px, 65vh);
     }
 
+    .datamart-meta-modal-inner {
+      flex: 1;
+      min-height: 0;
+    }
+
     .datamart-meta-tab-panel,
-    .datamart-meta-synonym {
+    .datamart-meta-synonym,
+    .datamart-meta-abbrev {
       display: flex;
       flex-direction: column;
       flex: 1;
       min-height: 0;
     }
 
-    .datamart-meta-synonym-list-section {
+    .datamart-meta-synonym-list-section,
+    .datamart-meta-abbrev-list-section {
       flex: 1;
       min-height: 0;
     }
 
-    &.is-fullscreen .datamart-meta-synonym-list-body {
+    &.is-fullscreen .datamart-meta-synonym-list-body,
+    &.is-fullscreen .datamart-meta-abbrev-list-body {
       max-height: none;
       flex: 1;
     }
@@ -330,7 +341,7 @@
 }
 
 // ===================================
-// 메타 모달 — 퓨샷·동의어 탭 (공통 레이아웃)
+// 메타 모달 — 퓨샷·동의어·약어 탭 (공통 레이아웃)
 // ===================================
 .datamart-meta-section-header-static {
   cursor: default;
@@ -339,7 +350,8 @@
 }
 
 .datamart-meta-fewshot-desc,
-.datamart-meta-synonym-desc {
+.datamart-meta-synonym-desc,
+.datamart-meta-abbrev-desc {
   margin: $spacing-xs 0 0;
   font-size: $font-size-sm;
   line-height: 1.5;
@@ -347,7 +359,8 @@
 }
 
 .datamart-meta-fewshot-toolbar,
-.datamart-meta-synonym-toolbar {
+.datamart-meta-synonym-toolbar,
+.datamart-meta-abbrev-toolbar {
   display: flex;
   align-items: center;
   gap: $spacing-sm;
@@ -359,7 +372,8 @@
 }
 
 .datamart-meta-fewshot-search,
-.datamart-meta-synonym-search {
+.datamart-meta-synonym-search,
+.datamart-meta-abbrev-search {
   flex: 1;
   min-width: 0;
   width: 100%;
@@ -367,7 +381,8 @@
 }
 
 .datamart-meta-fewshot-error,
-.datamart-meta-synonym-error {
+.datamart-meta-synonym-error,
+.datamart-meta-abbrev-error {
   @include flex-center;
   flex-direction: column;
   min-height: 200px;
@@ -376,7 +391,8 @@
 }
 
 .datamart-meta-fewshot-error-msg,
-.datamart-meta-synonym-error-msg {
+.datamart-meta-synonym-error-msg,
+.datamart-meta-abbrev-error-msg {
   @include typo($body-medium);
   color: $color-error;
   text-align: center;
@@ -384,15 +400,18 @@
 }
 
 .datamart-meta-fewshot-count,
-.datamart-meta-synonym-count {
+.datamart-meta-synonym-count,
+.datamart-meta-abbrev-count {
+  margin-left: 4px;
   font-weight: $font-weight-medium;
   color: $color-text-muted;
 }
 
 // ===================================
-// 동의어 관리
+// 동의어·약어사전 (공통 목록 레이아웃)
 // ===================================
-.datamart-meta-synonym {
+.datamart-meta-synonym,
+.datamart-meta-abbrev {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -402,17 +421,26 @@
   min-height: 0;
 }
 
-.datamart-meta-synonym-list-section {
+.datamart-meta-synonym-list-section,
+.datamart-meta-abbrev-list-section {
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
   min-width: 0;
+
+  .com-setting-section-body {
+    flex: 1;
+    min-height: 0;
+  }
 }
 
-.datamart-meta-synonym-list-body {
-  min-height: 0;
-  // 펼친 그룹 약 2개 분량 — 다른 메타 탭과 동일 min(px, vh) 패턴
+.datamart-meta-synonym-list-body,
+.datamart-meta-abbrev-list-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: min(420px, 50vh);
   max-height: min(560px, 58vh);
   overflow-x: hidden;
   overflow-y: auto;
@@ -420,8 +448,13 @@
   @include custom-scrollbar;
 }
 
-.synonym-empty {
-  padding: 48px 0;
+.synonym-empty,
+.abbrev-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
 }
 
 .synonym-group-list {
@@ -774,7 +807,7 @@ $fewshot-detail-body-min-height: min(492px, 52vh);
   display: flex;
   flex: 1;
   flex-direction: column;
-  min-height: 0;
+  min-height: $fewshot-detail-body-min-height;
 }
 
 .fewshot-list-body {
@@ -788,7 +821,12 @@ $fewshot-detail-body-min-height: min(492px, 52vh);
 }
 
 .fewshot-list-empty {
-  padding: 24px 0;
+  flex: 1;
+  align-self: stretch;
+  min-height: 100%;
+  justify-content: center;
+  padding: 48px 16px;
+  box-sizing: border-box;
 }
 
 .fewshot-card-list {
