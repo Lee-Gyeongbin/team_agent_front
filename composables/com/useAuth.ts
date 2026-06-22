@@ -6,6 +6,7 @@ const COOKIE_NAME = 'ta_user'
 export const useAuth = () => {
   const { post, get } = useApi()
   const { fetchMenuList, clearMenuList } = useMenu()
+  const { fetchChatGuideList, clearChatGuideList } = useChatGuide()
   const userCookie = useCookie<UserInfo | null>(COOKIE_NAME, {
     path: '/',
     default: () => null,
@@ -19,7 +20,7 @@ export const useAuth = () => {
 
     if (res.success && res.user) {
       userCookie.value = res.user
-      await fetchMenuList()
+      await Promise.all([fetchMenuList(), fetchChatGuideList()])
     }
 
     return res
@@ -33,6 +34,7 @@ export const useAuth = () => {
     }
     userCookie.value = null
     clearMenuList()
+    clearChatGuideList()
     useMailStore().clearMailAuth()
     navigateTo('/login')
   }
@@ -42,7 +44,7 @@ export const useAuth = () => {
       const res = await get<LoginResponse>('/session/user.do')
       if (res.success && res.user) {
         userCookie.value = res.user
-        await fetchMenuList()
+        await Promise.all([fetchMenuList(), fetchChatGuideList()])
         return true
       }
       userCookie.value = null

@@ -25,7 +25,7 @@
       data-aos="fade-up"
     >
       <h1 class="chat-index-title f-center">TeamAgent</h1>
-      <p class="chat-index-description f-center">{{ user?.userNm + '님, ' || '' }}어떤게 궁금하세요?</p>
+      <p class="chat-index-description f-center">{{ greetingText }}</p>
     </div>
 
     <!-- 설문 에이전트 (svcTy C + subCfg SURVEY) -->
@@ -189,6 +189,16 @@ const {
 const { startChatSocket, stopChatSocket } = useChatSocket()
 const { user } = useAuth()
 const { isLoginModalOpen, openLoginModal, closeLoginModal, checkMailAuth } = useMailStore()
+const { getChatGuideByType, fetchChatGuideList } = useChatGuide()
+
+/** guideTpCd '001' 인사 멘트 — 있으면 content의 {{userName}} 치환, 없으면 기존 텍스트 */
+const greetingText = computed(() => {
+  const greetGuide = getChatGuideByType('001').find((item) => item.enblYn === 'Y')
+  if (greetGuide?.content) {
+    return greetGuide.content.replace('{{userName}}', user.value?.userNm ?? '')
+  }
+  return (user.value?.userNm ? user.value.userNm + '님, ' : '') + '어떤게 궁금하세요?'
+})
 
 /** 카드 클릭 분기: 메일(svcTy=A)은 인증 확인 후 이동 or 로그인 모달, 그 외는 기존 에이전트 선택 */
 const onClickChatIndexAgent = async (agent: Agent) => {
@@ -244,7 +254,8 @@ onMounted(async () => {
   // 인덱스 진입 시점에 즉시 채팅방 상태를 초기화해
   // 비동기 로딩 완료 시점의 늦은 reset으로 인한 레이스를 방지한다.
   resetChatRoom()
-  await Promise.all([selectChatRoomList(), handleSelectChatIndexAgents(), selectModelOptions()])
+  // 챗봇 가이드 최신화 — chat-guide 설정 수정 후 재진입 시 반영
+  await Promise.all([selectChatRoomList(), handleSelectChatIndexAgents(), selectModelOptions(), fetchChatGuideList()])
   // /chat에서 /chat/[id]로 이미 이동한 뒤 비동기 완료 시 reset이 늦게 실행되어
   // 방금 생성한 방의 로컬 메시지가 지워지는 레이스 컨디션을 방지한다.
   if (!isMountedChatIndex.value) return
