@@ -629,15 +629,23 @@ const onDeleteGroup = (group: DatamartMetaSynonymGroup) => {
   onCloseGroup(groupId)
 }
 
-/** API 조회 결과·에러 변경 시 synonymGroups 동기화 */
+/**
+ * API 조회 결과 → synonymGroups 동기화
+ * - 탭 재마운트(immediate, prev 없음) + 편집 데이터 있음 → 유지
+ * - API 응답 변경(저장 후 재조회 등) → 서버 데이터로 갱신
+ */
 watch(
   () => [props.synonymApiRes, props.errorMessage] as const,
-  ([res, errorMessage]) => {
+  ([res, errorMessage], prev) => {
     if (errorMessage) {
       synonymGroups.value = []
       return
     }
     if (res === null || res === undefined) return
+
+    const prevRes = prev?.[0]
+    if (synonymGroups.value.length > 0 && prevRes === undefined) return
+
     synonymGroups.value = parseSynonymGroupsFromApi(res, datamartId.value) ?? []
   },
   { immediate: true },

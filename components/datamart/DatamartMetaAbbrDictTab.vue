@@ -332,15 +332,23 @@ const onDeleteRow = (row: DatamartMetaAbbrevItem) => {
   abbrevList.value = abbrevList.value.filter((item) => getRowUiId(item) !== rowId)
 }
 
-/** API 조회 결과·에러 변경 시 abbrevList 동기화 */
+/**
+ * API 조회 결과 → abbrevList 동기화
+ * - 탭 재마운트(immediate, prev 없음) + 편집 데이터 있음 → 유지
+ * - API 응답 변경(저장 후 재조회 등) → 서버 데이터로 갱신
+ */
 watch(
   () => [props.abbrevApiRes, props.errorMessage] as const,
-  ([res, errorMessage]) => {
+  ([res, errorMessage], prev) => {
     if (errorMessage) {
       abbrevList.value = []
       return
     }
     if (res === null || res === undefined) return
+
+    const prevRes = prev?.[0]
+    if (abbrevList.value.length > 0 && prevRes === undefined) return
+
     abbrevList.value = parseAbbrevListFromApi(res, datamartId.value) ?? []
   },
   { immediate: true },
