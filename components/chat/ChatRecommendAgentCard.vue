@@ -74,6 +74,12 @@
     </Transition>
 
     <div
+      v-if="isRecommendationsPending && !isFormOnlyCard"
+      class="chat-recommend-agent-card__pending-spacer"
+      aria-hidden="true"
+    />
+
+    <div
       v-if="showCardHeader"
       class="chat-recommend-agent-card__header"
     >
@@ -540,7 +546,12 @@ const applyRecommendationImages = async (list: RecommendResultItem[], runId: num
   if (runId !== syncRecommendationRunId) return
   markThumbsPreloaded(list)
   displayRecommendations.value = list
-  emit('enriched', list)
+  const isSameAsProps =
+    createRecommendationDigest(list, recommendImageField.value) ===
+    createRecommendationDigest(props.recommendations ?? [], recommendImageField.value)
+  if (!isSameAsProps) {
+    emit('enriched', list)
+  }
 }
 
 const syncRecommendationImages = async () => {
@@ -601,17 +612,33 @@ const scheduleSyncImages = () => {
   }, 0)
 }
 
+const createRecommendationDigest = (items: RecommendResultItem[], imageField: string): string =>
+  items
+    .map((item) => {
+      const title = String(item['title'] ?? '').trim()
+      const artist = String(item['artist'] ?? '').trim()
+      const baseKey =
+        title && artist ? `${title}::${artist}` : String(item[props.recommendConfig.result.nameField] ?? '').trim()
+      const image = String(item[imageField] ?? '').trim()
+      return `${baseKey}::${image}`
+    })
+    .join('||')
+
+const recommendationDigest = computed(() =>
+  createRecommendationDigest(props.recommendations ?? [], recommendImageField.value),
+)
+
 watch(
   () =>
     [
-      props.recommendations,
+      recommendationDigest.value,
       props.enrichmentCacheKey,
       props.enrichmentRContent,
       props.displayMode,
       props.isRecommendationResponseStreaming,
     ] as const,
   scheduleSyncImages,
-  { immediate: true, deep: true },
+  { immediate: true },
 )
 
 const visibleRecommendations = computed(() => displayRecommendations.value)
@@ -884,6 +911,16 @@ const onSubmitClick = () => {
 
   &.is-result-phase:not(.is-intro-playing) {
     min-height: 0;
+  }
+
+  // result-only + pending 단계에서 인트로 오버레이(absolute)가 잘리지 않도록 최소 높이 보장
+  &.is-result-phase.is-intro-playing {
+    min-height: min(520px, calc(100vh - #{$header-height} - 220px));
+  }
+
+  &__pending-spacer {
+    flex: 1 1 auto;
+    min-height: min(520px, calc(100vh - #{$header-height} - 220px));
   }
 
   &__header {

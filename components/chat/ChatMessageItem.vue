@@ -387,7 +387,6 @@ import {
   getRecommendImageEnrichmentCacheKey,
   migrateRecommendMessagesForAnswerLogId,
   syncRecommendResultFromAnswer,
-  applyRecommendImageEnrichmentToResultMessage,
   isRecommendPipelineAnswer,
 } from '~/utils/chat/recommendAgentUtil'
 import {
@@ -978,7 +977,7 @@ watch(
           linkedRecommendAnswerMessage.value.isStreaming,
         ]
       : null,
-  (current, previous) => {
+  () => {
     const answer = linkedRecommendAnswerMessage.value
     if (!answer || props.message.type !== 'recommend' || isRecommendFormCard.value) return
     const storedLinkId = String(props.message.recommendAnswerLogId ?? '').trim()
@@ -986,22 +985,6 @@ watch(
       migrateRecommendMessagesForAnswerLogId(allMessages.value, storedLinkId, answer.logId)
     }
     syncRecommendResultFromAnswer(allMessages.value, answer)
-
-    const prevStreaming = previous?.[2] === true
-    const streamJustFinished = prevStreaming && answer.isStreaming !== true
-    if (streamJustFinished) {
-      const resultMsg = allMessages.value.find(
-        (m) =>
-          m.type === 'recommend' &&
-          m.recommendCardRole === 'result' &&
-          (m.recommendAnswerLogId === answer.logId || m.logId === `${answer.logId}-recommend-result`),
-      )
-      if (resultMsg) {
-        void applyRecommendImageEnrichmentToResultMessage(resultMsg, String(answer.rContent ?? ''), {
-          imageField: messageRecommendConfig.value?.result.imageField ?? 'imageUrl',
-        })
-      }
-    }
   },
   { immediate: true },
 )
