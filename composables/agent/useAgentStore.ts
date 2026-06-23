@@ -134,9 +134,14 @@ const handleSaveAgent = async (agent: Partial<Agent>) => {
 const validateAgentSave = (agent: Partial<Agent>) => {
   let valid = true
   let msg = ''
+  if (isEmpty(agent.cncptTy)) {
+    valid = false
+    msg = '테마 유형을 선택해주세요.'
+    return { valid, msg }
+  }
   if (isEmpty(agent.svcTy)) {
     valid = false
-    msg = '에이전트 유형을 선택해주세요.'
+    msg = '기능 유형을 선택해주세요.'
     return { valid, msg }
   }
   if (isEmpty(agent.agentNm)) {

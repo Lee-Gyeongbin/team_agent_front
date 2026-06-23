@@ -5,16 +5,16 @@
       <p class="codes-description">시스템에서 사용하는 공통코드를 그룹별로 조회하고 관리할 수 있습니다.</p>
     </div>
 
-    <!-- 로딩 -->
+    <!-- 최초 로딩 -->
     <UiLoading
-      v-if="isLoading"
+      v-if="isGroupListLoading && !hasGroupListFetched"
       overlay
       text="공통코드를 불러오는 중..."
     />
 
     <!-- 에러 -->
     <div
-      v-else-if="errorMessage"
+      v-else-if="errorMessage && !hasGroupListFetched"
       class="codes-error"
     >
       <p class="codes-error__message">{{ errorMessage }}</p>
@@ -71,6 +71,11 @@
           </div>
         </div>
         <div class="codes-left-table-wrap">
+          <UiLoading
+            v-if="isGroupListLoading"
+            class="codes-panel-loading"
+            text="그룹 목록을 불러오는 중..."
+          />
           <UiTable
             :columns="codeGroupColumns"
             :data="codeGroupTableDataWithActions"
@@ -166,6 +171,11 @@
           </div>
         </div>
         <div class="codes-right-table-wrap">
+          <UiLoading
+            v-if="isCodeListLoading"
+            class="codes-panel-loading"
+            text="상세코드를 불러오는 중..."
+          />
           <!-- 그룹 미선택 상태 -->
           <div
             v-if="!selectedGroupCode"
@@ -316,7 +326,9 @@ const {
   selectedGroupName,
   searchKeyword,
   searchKeywordGroup,
-  isLoading,
+  isGroupListLoading,
+  isCodeListLoading,
+  hasGroupListFetched,
   errorMessage,
   filteredList,
   filteredGroupList,

@@ -1,6 +1,71 @@
 @use '../utils/variables' as *;
 @use '../utils/mixins' as *;
 
+// 좌·우 코드 테이블 공통 — 콘텐츠 길이에 맞게 컬럼 확장 + 넘칠 때 ellipsis
+@mixin codes-data-table {
+  .ui-table-wrap,
+  .ui-drag-table-wrap {
+    height: 100%;
+  }
+
+  .ui-table,
+  .ui-drag-table {
+    table-layout: auto !important;
+    width: max-content;
+    min-width: 100%;
+  }
+
+  .ui-table thead th,
+  .ui-table tbody td,
+  .ui-drag-table thead th,
+  .ui-drag-table tbody td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 56px;
+    max-width: 320px;
+  }
+
+  // 슬롯으로 렌더된 텍스트 콘텐츠도 셀 경계 내 처리
+  .ui-table tbody td > *:not(.cell-actions-wrap):not(.codes-drag-handle),
+  .ui-drag-table tbody td > *:not(.cell-actions-wrap):not(.codes-drag-handle) {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // 드래그 핸들 컬럼 — 고정 너비, 말줄임 없음
+  .ui-drag-table thead th:first-child,
+  .ui-drag-table tbody td:first-child {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+    padding-inline: 0;
+    overflow: visible;
+    text-overflow: clip;
+
+    .codes-drag-handle {
+      overflow: visible;
+      text-overflow: clip;
+    }
+  }
+
+  // 관리(actions) 컬럼
+  .ui-table thead th.is-last,
+  .ui-table tbody td.is-last,
+  .ui-drag-table thead th.is-last,
+  .ui-drag-table tbody td.is-last {
+    width: 48px;
+    min-width: 48px;
+    max-width: 48px;
+    padding-inline: 4px;
+    overflow: visible;
+    text-overflow: clip;
+  }
+}
+
 .codes-index {
   padding: $spacing-md;
   min-height: calc(100vh - #{$header-height});
@@ -84,6 +149,9 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  position: relative;
+
+  @include codes-data-table;
 }
 
 .codes-right {
@@ -129,10 +197,59 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  position: relative;
+
+  @include codes-data-table;
+
+  // 코드·코드명 — 콘텐츠 길이만큼 셀 확장 (말줄임 없음, 옆 셀 침범 없음)
+  .ui-table col:nth-child(1),
+  .ui-table col:nth-child(2),
+  .ui-drag-table col:nth-child(2),
+  .ui-drag-table col:nth-child(3) {
+    width: auto;
+  }
+
+  .ui-table thead th:nth-child(1),
+  .ui-table thead th:nth-child(2),
+  .ui-table tbody td:nth-child(1),
+  .ui-table tbody td:nth-child(2),
+  .ui-drag-table thead th:nth-child(2),
+  .ui-drag-table thead th:nth-child(3),
+  .ui-drag-table tbody td:nth-child(2),
+  .ui-drag-table tbody td:nth-child(3) {
+    width: max-content;
+    min-width: max-content;
+    max-width: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: clip;
+
+    > *:not(.cell-actions-wrap):not(.codes-drag-handle) {
+      display: inline;
+      max-width: none;
+      overflow: visible;
+      text-overflow: clip;
+      white-space: nowrap;
+    }
+  }
+}
+
+// 패널 내부 로딩 — 테이블은 유지하고 오버레이만 표시 (스크롤 위치 보존)
+.codes-panel-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  min-height: 0;
+  background: rgba(255, 255, 255, 0.72);
 }
 
 .codes-status {
   display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
   padding: 2px 8px;
   border-radius: $border-radius-full;
   font-size: $font-size-sm;

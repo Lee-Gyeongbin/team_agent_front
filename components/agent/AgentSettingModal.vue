@@ -9,6 +9,7 @@
       <!-- 섹션1: Agent 유형 -->
       <AgentSettingType
         v-model="form.svcTy"
+        v-model:cncpt-ty="form.cncptTy"
         v-model:sub-ty="form.subTy"
         :is-edit="isEmpty(agent?.agentId)"
         @change="onChangeAgentType"
@@ -222,6 +223,7 @@ const emit = defineEmits<{
 
 // 유형
 const form = ref({
+  cncptTy: '',
   svcTy: '',
   subTy: '',
 })
@@ -382,6 +384,7 @@ watch(
     }
     await initApiUrlCdOptions()
     if (props.agent) {
+      form.value.cncptTy = props.agent.cncptTy ?? ''
       form.value.svcTy = props.agent.svcTy
       form.value.subTy = normalizeAgentSubCfg(props.agent.subCfg)?.subTy ?? ''
       if (props.agent.svcTy === 'C' && form.value.subTy === SURVEY_SUB_TY) {
@@ -477,6 +480,7 @@ watch(
       await ensureTmplIdOptionsIfResearcher()
       nextTick(() => settingDataRef.value?.resetFilter())
     } else {
+      form.value.cncptTy = ''
       form.value.svcTy = ''
       form.value.subTy = ''
       resetSubTyConfigForms()
@@ -568,6 +572,7 @@ watch(
 
 const onSave = () => {
   const base: Partial<Agent> = {
+    cncptTy: form.value.cncptTy,
     svcTy: form.value.svcTy,
     ...basicForm.value,
   }
