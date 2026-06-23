@@ -145,12 +145,39 @@
 // ===================================
 // 홈 페이지
 // ===================================
+
+// 풀너비 기준 래퍼 — .content 영역을 가득 채우며 화살표 버튼의 absolute 기준점
+// 빈 영역 hover 시 grab 커서로 드래그 가능 표시
+.chat-page-wrap {
+  position: relative;
+  width: 100%;
+  min-height: calc(100vh - #{$header-height});
+  cursor: grab;
+
+  // 드래그 진행 중 — carousel에서 body에 클래스 추가
+  &.is-theme-dragging,
+  .is-theme-dragging & {
+    cursor: grabbing;
+    user-select: none;
+  }
+
+  // 클릭 가능한 요소 위에서는 pointer 커서로 재정의
+  button:not(.chat-index-theme-arrow),
+  a,
+  [role='tab'],
+  [role='button'] {
+    cursor: pointer;
+  }
+}
+
 .chat-index {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: calc(100vh - #{$header-height});
+  min-height: calc(100vh - #{$header-height});
+  // 배경은 .layout-default 전체 그라데이션을 투과 — 독립 배경 없음
+  background: transparent;
 
   .chat-index-header {
     margin-bottom: 27px;
@@ -178,7 +205,7 @@
     margin-bottom: 40px;
   }
 
-  // 에이전트 카드 그리드
+  // 에이전트 카드 그리드 (기존 — 하위 호환)
   .chat-index-card-grp {
     display: flex;
     flex-wrap: wrap;
@@ -201,5 +228,59 @@
         flex: 1;
       }
     }
+  }
+
+  // 테마 캐러셀 래퍼 — 홈 스코프 내 최대 폭 제한
+  .chat-theme-carousel {
+    width: $chat-max-width;
+  }
+}
+
+// ===================================
+// 테마 캐러셀 좌우 화살표 (콘텐츠 영역 양 끝)
+// ===================================
+
+// 버튼 래퍼 — 항상 DOM에 존재 (v-show 처리), 포지셔닝 컨텍스트 없음
+.chat-index-theme-arrows {
+  pointer-events: none; // 래퍼 자체는 클릭 비활성
+}
+
+.chat-index-theme-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 14px;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  font-weight: 300;
+  line-height: 1;
+  color: $color-text-muted;
+  cursor: pointer; // 클릭 커서 — 드래그 핸들이 아닌 클릭 버튼
+  pointer-events: auto; // 래퍼의 pointer-events: none 재정의
+  user-select: none;
+  transition:
+    color $transition-fast,
+    opacity $transition-fast;
+
+  &:hover:not(:disabled) {
+    color: var(--color-primary);
+  }
+
+  &:disabled {
+    opacity: 0.2;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  &--prev {
+    left: 0;
+  }
+
+  &--next {
+    right: 0;
   }
 }

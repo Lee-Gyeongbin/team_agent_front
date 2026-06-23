@@ -116,6 +116,8 @@ const onSubmit = () => {
 .code-group-form-modal {
   padding: $spacing-md;
   width: 100%;
+  align-self: stretch;
+  min-width: 0;
 }
 
 .code-group-form-body {
@@ -154,6 +156,12 @@ const onSubmit = () => {
   :deep(.ui-input-wrap),
   :deep(.ui-select-wrap) {
     width: 100%;
+    min-width: 0;
   }
+}
+
+.modal-dialog-footer {
+  margin-top: $spacing-md;
+  border-top: none;
 }
 </style>

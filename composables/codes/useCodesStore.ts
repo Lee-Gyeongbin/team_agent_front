@@ -32,7 +32,9 @@ const codeList = ref<CodeItem[]>([])
 const selectedGroupCode = ref('')
 const searchKeyword = ref('')
 const searchKeywordGroup = ref('')
-const isLoading = ref(false)
+const isGroupListLoading = ref(false)
+const isCodeListLoading = ref(false)
+const hasGroupListFetched = ref(false)
 const errorMessage = ref('')
 const modalErrorMessage = ref('')
 
@@ -104,7 +106,7 @@ export const useCodesStore = () => {
   /** 공통코드 그룹 목록 조회 */
   const handleFetchCodeGroupList = async () => {
     errorMessage.value = ''
-    isLoading.value = true
+    isGroupListLoading.value = true
     try {
       const response = await fetchCodeGroupList()
       codeGroupList.value = response.dataList ?? []
@@ -115,7 +117,8 @@ export const useCodesStore = () => {
     } catch {
       errorMessage.value = '그룹코드 목록을 불러오는데 실패했습니다.'
     } finally {
-      isLoading.value = false
+      isGroupListLoading.value = false
+      hasGroupListFetched.value = true
     }
   }
 
@@ -126,14 +129,14 @@ export const useCodesStore = () => {
       return
     }
     errorMessage.value = ''
-    isLoading.value = true
+    isCodeListLoading.value = true
     try {
       const response = await fetchCodeList(selectedGroupCode.value as string)
       codeList.value = response.dataList ?? []
     } catch {
       errorMessage.value = '상세코드 목록을 불러오는데 실패했습니다.'
     } finally {
-      isLoading.value = false
+      isCodeListLoading.value = false
     }
   }
 
@@ -144,6 +147,7 @@ export const useCodesStore = () => {
 
   /** 그룹 행 클릭 시 선택 및 상세코드 로드 */
   const handleSelectGroup = (group: CodeGroupItem) => {
+    if (selectedGroupCode.value === group.codeGrpId) return
     selectedGroupCode.value = group.codeGrpId
     handleFetchCodeList()
   }
@@ -176,6 +180,12 @@ export const useCodesStore = () => {
     modalErrorMessage.value = ''
   }
 
+  /** 신규 그룹코드가 기존 목록과 중복되는지 확인 */
+  const isDuplicateGroupCode = (codeGrpId: string): boolean => {
+    const normalizedId = codeGrpId.trim().toLowerCase()
+    return codeGroupList.value.some((group) => group.codeGrpId.toLowerCase() === normalizedId)
+  }
+
   /** 그룹코드 폼 유효성 검사 */
   const validateGroupForm = (_form: Partial<CodeGroupItem>): boolean => {
     if (isEmpty(_form.codeGrpId)) {
@@ -186,6 +196,11 @@ export const useCodesStore = () => {
     if (!isValidCodeFormat(_form.codeGrpId)) {
       modalErrorMessage.value =
         '그룹코드 형식이 올바르지 않습니다.\n앞 2자리 대문자 영문 + 뒤 6자리 숫자로 입력해주세요.'
+      return false
+    }
+
+    if (!isGroupEditMode.value && isDuplicateGroupCode(_form.codeGrpId)) {
+      modalErrorMessage.value = '이미 사용 중인 그룹코드입니다.\n다른 그룹코드를 입력해주세요.'
       return false
     }
 
@@ -205,7 +220,7 @@ export const useCodesStore = () => {
       openConfirm({
         message: '그룹코드를 저장하시겠습니까?',
         onConfirm: async () => {
-          isLoading.value = true
+          isGroupListLoading.value = true
           await fetchSaveCodeGroup(_form as CodeGroupItem)
           handleGroupModalClose()
           await handleFetchCodeGroupList()
@@ -215,7 +230,7 @@ export const useCodesStore = () => {
     } catch {
       openAlert({ message: '그룹코드 저장에 실패했습니다.' })
     } finally {
-      isLoading.value = false
+      isGroupListLoading.value = false
     }
   }
 
@@ -259,7 +274,7 @@ export const useCodesStore = () => {
   const handleGroupUseYnUpdate = async (group: CodeGroupItem, useYn: 'Y' | 'N') => {
     const actionLabel = useYn === 'Y' ? '복구' : '삭제'
     try {
-      isLoading.value = true
+      isGroupListLoading.value = true
       const _form: CodeGroupItem = {
         codeGrpId: group.codeGrpId,
         codeGrpNm: group.codeGrpNm,
@@ -273,7 +288,7 @@ export const useCodesStore = () => {
       openAlert({ message: `그룹코드 ${actionLabel}에 실패했습니다.` })
     } finally {
       await handleFetchCodeGroupList()
-      isLoading.value = false
+      isGroupListLoading.value = false
     }
   }
 
@@ -319,7 +334,7 @@ export const useCodesStore = () => {
       openConfirm({
         message: '상세코드를 저장하시겠습니까?',
         onConfirm: async () => {
-          isLoading.value = true
+          isCodeListLoading.value = true
           await fetchSaveCode({ ..._form, codeGrpId: selectedGroupCode.value as string } as CodeItem)
           await handleFetchCodeList()
           handleModalClose()
@@ -329,7 +344,7 @@ export const useCodesStore = () => {
     } catch {
       openAlert({ message: '상세코드 저장에 실패했습니다.' })
     } finally {
-      isLoading.value = false
+      isCodeListLoading.value = false
     }
   }
 
@@ -372,13 +387,13 @@ export const useCodesStore = () => {
     }
     try {
       errorMessage.value = ''
-      isLoading.value = true
+      isCodeListLoading.value = true
       await fetchSaveCode(_form)
       openAlert({ message: `상세코드가 ${actionLabel}되었습니다.` })
     } catch {
       errorMessage.value = `상세코드 ${actionLabel}에 실패했습니다.`
     } finally {
-      isLoading.value = false
+      isCodeListLoading.value = false
       await handleFetchCodeList()
       deletingCode.value = null
       pendingCodeUseYn.value = null
@@ -392,13 +407,13 @@ export const useCodesStore = () => {
       codeId: item.codeId,
       sortOrd: index + 1,
     }))
-    isLoading.value = true
+    isCodeListLoading.value = true
     try {
       await fetchUpdateCodeSortOrder(selectedGroupCode.value as string, items)
     } catch {
       errorMessage.value = '정렬순서 저장에 실패했습니다.'
     } finally {
-      isLoading.value = false
+      isCodeListLoading.value = false
       handleFetchCodeList()
     }
   }
@@ -409,7 +424,9 @@ export const useCodesStore = () => {
     selectedGroupCode,
     searchKeyword,
     searchKeywordGroup,
-    isLoading,
+    isGroupListLoading,
+    isCodeListLoading,
+    hasGroupListFetched,
     errorMessage,
     modalErrorMessage,
     filteredList,

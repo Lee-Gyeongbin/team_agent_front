@@ -3,6 +3,18 @@
     <div class="com-setting-section-title">Agent 유형</div>
 
     <div class="com-setting-field-row">
+      <label class="com-setting-label"><span class="is-required">*</span>테마 유형</label>
+      <UiSelect
+        :model-value="cncptTy"
+        :options="cncptTyOptions"
+        class="w-full"
+        size="sm"
+        placeholder="테마 유형을 선택하세요"
+        @update:model-value="onCncptTyChange"
+      />
+    </div>
+    <div class="com-setting-field-row">
+      <label class="com-setting-label"><span class="is-required">*</span>기능 유형</label>
       <UiSelect
         :model-value="modelValue"
         :options="agentTypeOptions"
@@ -39,6 +51,7 @@
 <script setup lang="ts">
 interface Props {
   modelValue: string
+  cncptTy: string
   subTy: string
   isEdit: boolean
 }
@@ -47,9 +60,18 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   'update:modelValue': [value: string | number]
+  'update:cncptTy': [value: string]
   'update:subTy': [value: string]
   change: [value: string]
 }>()
+
+const cncptTyOptions = [
+  { label: '선택', value: '' },
+  { label: '워크', value: 'WORK' },
+  { label: '지식관리', value: 'KM' },
+  { label: '라이프', value: 'LIFE' },
+  { label: '멘탈케어', value: 'MENTAL' },
+]
 
 const cSubTyOptions = [
   { label: '일반', value: '' },
@@ -88,6 +110,10 @@ const typeDescription = computed(() => typeDescriptions[props.modelValue] || '')
 const onChange = (value: string | number) => {
   emit('update:modelValue', value)
   emit('change', String(value))
+}
+
+const onCncptTyChange = (value: string | number) => {
+  emit('update:cncptTy', String(value ?? ''))
 }
 
 const onSubTyChange = (value: string | number) => {

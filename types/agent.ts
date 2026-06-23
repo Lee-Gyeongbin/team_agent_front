@@ -1,6 +1,7 @@
 export interface Agent extends AgtRagCfg, AgtDs, AgtSqlCfg, AgtDm {
   agentId: string // AGENT_ID
   agentNm: string // AGENT_NM
+  cncptTy: string // CNCPT_TY
   svcTy: string // SVC_TY
   svcTyNm: string // SVC_TY_NM
   temperature: number // TEMPERATURE

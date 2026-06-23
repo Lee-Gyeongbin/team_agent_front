@@ -450,8 +450,6 @@
 <script setup lang="ts">
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import { StarterKit } from '@tiptap/starter-kit'
-import { Underline } from '@tiptap/extension-underline'
-import { Link } from '@tiptap/extension-link'
 import { Table } from '@tiptap/extension-table'
 import { TableRow } from '@tiptap/extension-table-row'
 import { OrderedList } from '@tiptap/extension-ordered-list'
@@ -705,14 +703,14 @@ const editor = useEditor({
       heading: false,
       paragraph: false,
       orderedList: false,
+      // StarterKit 내장 확장 설정으로 중복 등록(link/underline) 경고를 방지
+      link: {
+        openOnClick: false,
+        HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
+      },
     }),
     ReportTemplateHeading,
     ReportTemplateParagraph,
-    Underline,
-    Link.configure({
-      openOnClick: false,
-      HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
-    }),
     TextAlign.configure({ types: ['heading', 'paragraph'] }),
     // allowBase64: data URL 형태의 src 를 schema 에서 허용
     ResizableImage.configure({ allowBase64: true }),
