@@ -1,85 +1,12 @@
 <template>
-  <div ref="chatPageRef" class="chat-page-wrap">
   <div
-    class="chat-index s-center"
-    :class="{
-      'is-survey-mode':
-        isSurveyVisible ||
-        isGenderStepVisible ||
-        isRecommendVisible ||
-        isTranslateVisible ||
-        isTodayMemeVisible ||
-        isNewsCuratorVisible,
-    }"
-    :style="activeThemeStyle"
+    ref="chatPageRef"
+    class="chat-page-wrap"
   >
-    <!-- 헤더 (설문 모드에서 숨김) -->
     <div
-      v-if="
-        !isSurveyVisible &&
-        !isGenderStepVisible &&
-        !isRecommendVisible &&
-        !isTranslateVisible &&
-        !isTodayMemeVisible &&
-        !isNewsCuratorVisible
-      "
-      class="chat-index-header"
-      data-aos="fade-up"
-    >
-      <h1 class="chat-index-title f-center">TeamAgent</h1>
-      <p class="chat-index-description f-center">{{ greetingText }}</p>
-    </div>
-
-    <!-- 설문 에이전트 (svcTy C + subCfg SURVEY) -->
-    <ChatSurvey
-      v-if="(isSurveyVisible || isGenderStepVisible) && currentSurveyConfig"
-      class="chat-index-survey"
-      :survey-config="currentSurveyConfig"
-      :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? ''"
-      :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
-      @close="handleClosePsychologySurvey"
-      @submit="handleIndexSurveySubmit"
-    />
-    <ChatRecommendAgentCard
-      v-if="isRecommendVisible && currentRecommendConfig"
-      class="chat-index-survey"
-      :recommend-config="currentRecommendConfig"
-      :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? ''"
-      :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
-      @close="handleCloseRecommendAgent"
-      @submit="handleIndexRecommendSubmit"
-    />
-    <ChatTranslateCard
-      v-if="isTranslateVisible && currentTranslateConfig"
-      class="chat-index-survey"
-      :translate-config="currentTranslateConfig"
-      :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? ''"
-      :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
-      @close="handleCloseTranslateAgent"
-      @submit="handleIndexTranslateSubmit"
-    />
-    <ChatTodayMeme
-      v-if="isTodayMemeVisible"
-      class="chat-index-survey"
-      :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? ''"
-      :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
-      @intro-complete="handleTodayMemeIntroEnd"
-    />
-    <ChatNewsCurator
-      v-if="isNewsCuratorVisible"
-      class="chat-index-survey chat-index-news-curator"
-      :config="currentCurationConfig"
-      :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? ''"
-      :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
-      @close="handleCloseNewsCurator"
-      @submit="handleIndexNewsCuratorSubmit"
-    />
-
-    <!-- 채팅 입력창 (설문 진행 중 비활성화) -->
-    <div
-      class="chat-index-input-wrapper"
+      class="chat-index s-center"
       :class="{
-        'is-survey-locked':
+        'is-survey-mode':
           isSurveyVisible ||
           isGenderStepVisible ||
           isRecommendVisible ||
@@ -87,79 +14,156 @@
           isTodayMemeVisible ||
           isNewsCuratorVisible,
       }"
-      data-aos="fade-up"
-      data-aos-delay="200"
+      :style="activeThemeStyle"
     >
-      <ChatInput v-model="chatMessage" />
+      <div class="chat-index-main">
+        <!-- 헤더 (설문 모드에서 숨김) -->
+        <div
+          v-if="
+            !isSurveyVisible &&
+            !isGenderStepVisible &&
+            !isRecommendVisible &&
+            !isTranslateVisible &&
+            !isTodayMemeVisible &&
+            !isNewsCuratorVisible
+          "
+          class="chat-index-header"
+          data-aos="fade-up"
+        >
+          <h1 class="chat-index-title f-center">TeamAgent</h1>
+          <p class="chat-index-description f-center">{{ greetingText }}</p>
+        </div>
+
+        <!-- 채팅 입력창 (설문 진행 중 비활성화) -->
+        <div
+          class="chat-index-input-wrapper"
+          :class="{
+            'is-survey-locked':
+              isSurveyVisible ||
+              isGenderStepVisible ||
+              isRecommendVisible ||
+              isTranslateVisible ||
+              isTodayMemeVisible ||
+              isNewsCuratorVisible,
+          }"
+          data-aos="fade-up"
+          data-aos-delay="200"
+        >
+          <ChatInput v-model="chatMessage" />
+        </div>
+      </div>
+
+      <!-- 설문 에이전트 (svcTy C + subCfg SURVEY) -->
+      <ChatSurvey
+        v-if="(isSurveyVisible || isGenderStepVisible) && currentSurveyConfig"
+        class="chat-index-survey"
+        :survey-config="currentSurveyConfig"
+        :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? ''"
+        :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
+        @close="handleClosePsychologySurvey"
+        @submit="handleIndexSurveySubmit"
+      />
+      <ChatRecommendAgentCard
+        v-if="isRecommendVisible && currentRecommendConfig"
+        class="chat-index-survey"
+        :recommend-config="currentRecommendConfig"
+        :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? ''"
+        :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
+        @close="handleCloseRecommendAgent"
+        @submit="handleIndexRecommendSubmit"
+      />
+      <ChatTranslateCard
+        v-if="isTranslateVisible && currentTranslateConfig"
+        class="chat-index-survey"
+        :translate-config="currentTranslateConfig"
+        :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? ''"
+        :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
+        @close="handleCloseTranslateAgent"
+        @submit="handleIndexTranslateSubmit"
+      />
+      <ChatTodayMeme
+        v-if="isTodayMemeVisible"
+        class="chat-index-survey"
+        :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? ''"
+        :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
+        @intro-complete="handleTodayMemeIntroEnd"
+      />
+      <ChatNewsCurator
+        v-if="isNewsCuratorVisible"
+        class="chat-index-survey chat-index-news-curator"
+        :config="currentCurationConfig"
+        :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? ''"
+        :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
+        @close="handleCloseNewsCurator"
+        @submit="handleIndexNewsCuratorSubmit"
+      />
+
+      <!-- 에이전트 카드 (설문 모드 아닐 때) -->
+      <template
+        v-if="
+          !isSurveyVisible &&
+          !isGenderStepVisible &&
+          !isRecommendVisible &&
+          !isTranslateVisible &&
+          !isTodayMemeVisible &&
+          !isNewsCuratorVisible
+        "
+      >
+        <!-- 테마 캐러셀 (4테마 에이전트) -->
+        <ChatThemeCarousel
+          v-if="isLoadingChatIndexAgents || hasThemeAgents"
+          v-model:active-key="activeThemeKey"
+          :agents="chatIndexAgents"
+          :selected-agent-id="selectedChatAgentId"
+          :is-loading="isLoadingChatIndexAgents"
+          data-aos="fade-up"
+          data-aos-delay="400"
+          @select="onClickChatIndexAgent"
+        />
+        <p
+          v-else
+          class="chat-index-agent-hint f-center"
+          data-aos="fade-up"
+          data-aos-delay="400"
+        >
+          사용 가능한 에이전트가 없습니다. 에이전트 관리에서 등록해 주세요.
+        </p>
+      </template>
+      <!-- 메일 브리핑 로그인 모달 -->
+      <MailLoginModal
+        :is-open="isLoginModalOpen"
+        @close="closeLoginModal"
+        @success="onMailLoginSuccess"
+      />
     </div>
 
-    <!-- 에이전트 카드 (설문 모드 아닐 때) -->
-    <template
-      v-if="
-        !isSurveyVisible &&
-        !isGenderStepVisible &&
-        !isRecommendVisible &&
-        !isTranslateVisible &&
-        !isTodayMemeVisible &&
-        !isNewsCuratorVisible
-      "
+    <!-- 테마 좌우 이동 버튼 래퍼 — 항상 DOM에 존재해야 루트 프래그먼트 경고가 발생하지 않음 -->
+    <!-- v-if 대신 v-show 사용: 조건부 DOM 추가/제거로 인한 Vue 블록 불안정 방지 -->
+    <div
+      class="chat-index-theme-arrows"
+      :aria-hidden="!showThemeArrows || undefined"
     >
-      <!-- 테마 캐러셀 (4테마 에이전트) -->
-      <ChatThemeCarousel
-        v-if="isLoadingChatIndexAgents || hasThemeAgents"
-        v-model:active-key="activeThemeKey"
-        :agents="chatIndexAgents"
-        :selected-agent-id="selectedChatAgentId"
-        :is-loading="isLoadingChatIndexAgents"
-        data-aos="fade-up"
-        data-aos-delay="400"
-        @select="onClickChatIndexAgent"
-      />
-      <p
-        v-else
-        class="chat-index-agent-hint f-center"
-        data-aos="fade-up"
-        data-aos-delay="400"
+      <button
+        v-show="showThemeArrows"
+        type="button"
+        class="chat-index-theme-arrow chat-index-theme-arrow--prev"
+        :disabled="activeThemeIndex === 0"
+        aria-label="이전 테마"
+        @click="moveToPrevTheme"
       >
-        사용 가능한 에이전트가 없습니다. 에이전트 관리에서 등록해 주세요.
-      </p>
-
-    </template>
-    <!-- 메일 브리핑 로그인 모달 -->
-    <MailLoginModal
-      :is-open="isLoginModalOpen"
-      @close="closeLoginModal"
-      @success="onMailLoginSuccess"
-    />
-  </div>
-
-  <!-- 테마 좌우 이동 버튼 래퍼 — 항상 DOM에 존재해야 루트 프래그먼트 경고가 발생하지 않음 -->
-  <!-- v-if 대신 v-show 사용: 조건부 DOM 추가/제거로 인한 Vue 블록 불안정 방지 -->
-  <div
-    class="chat-index-theme-arrows"
-    :aria-hidden="!showThemeArrows || undefined"
-  >
-    <button
-      v-show="showThemeArrows"
-      type="button"
-      class="chat-index-theme-arrow chat-index-theme-arrow--prev"
-      :disabled="activeThemeIndex === 0"
-      aria-label="이전 테마"
-      @click="moveToPrevTheme"
-    >
-      ‹
-    </button>
-    <button
-      v-show="showThemeArrows"
-      type="button"
-      class="chat-index-theme-arrow chat-index-theme-arrow--next"
-      :disabled="activeThemeIndex === CHAT_THEMES.length - 1"
-      aria-label="다음 테마"
-      @click="moveToNextTheme"
-    >
-      ›
-    </button>
-  </div>
+        ‹
+      </button>
+      <button
+        v-show="showThemeArrows"
+        type="button"
+        class="chat-index-theme-arrow chat-index-theme-arrow--next"
+        :disabled="activeThemeIndex === CHAT_THEMES.length - 1"
+        aria-label="다음 테마"
+        @click="moveToNextTheme"
+      >
+        ›
+      </button>
+    </div>
   </div>
 </template>
 
@@ -168,12 +172,7 @@ import { parseSurveyConfigFromAgent } from '~/utils/chat/surveyUtil'
 import { parseRecommendConfigFromAgent } from '~/utils/chat/recommendAgentUtil'
 import { parseTranslateConfigFromAgent } from '~/utils/chat/translateAgentUtil'
 import { parseCurationConfigFromAgent } from '~/utils/chat/newsCuratorUtil'
-import {
-  CHAT_THEMES,
-  groupAgentsByTheme,
-  getInitialThemeKey,
-  findThemeByKey,
-} from '~/utils/chat/chatThemeUtil'
+import { CHAT_THEMES, groupAgentsByTheme, getInitialThemeKey, findThemeByKey } from '~/utils/chat/chatThemeUtil'
 import { useMailStore } from '~/composables/mail/useMailStore'
 import type { Agent } from '~/types/agent'
 
@@ -216,13 +215,10 @@ const chatPageRef = ref<HTMLElement | null>(null)
 const activeThemeKey = ref(CHAT_THEMES[0].key)
 
 /** 활성 테마 인덱스 */
-const activeThemeIndex = computed(() =>
-  CHAT_THEMES.findIndex((t) => t.key === activeThemeKey.value),
-)
+const activeThemeIndex = computed(() => CHAT_THEMES.findIndex((t) => t.key === activeThemeKey.value))
 
 const moveToPrevTheme = () => {
-  if (activeThemeIndex.value > 0)
-    activeThemeKey.value = CHAT_THEMES[activeThemeIndex.value - 1].key
+  if (activeThemeIndex.value > 0) activeThemeKey.value = CHAT_THEMES[activeThemeIndex.value - 1].key
 }
 
 const moveToNextTheme = () => {
@@ -234,19 +230,18 @@ const moveToNextTheme = () => {
 const groupedAgents = computed(() => groupAgentsByTheme(chatIndexAgents.value))
 
 /** 4테마 중 에이전트가 1개 이상 있으면 true */
-const hasThemeAgents = computed(() =>
-  CHAT_THEMES.some((t) => (groupedAgents.value[t.key]?.length ?? 0) > 0),
-)
+const hasThemeAgents = computed(() => CHAT_THEMES.some((t) => (groupedAgents.value[t.key]?.length ?? 0) > 0))
 
 /** 화살표 버튼 표시 여부 — v-show 전용 (v-if 사용 시 DOM 동적 추가/제거로 Nuxt 루트 경고 발생) */
-const showThemeArrows = computed(() =>
-  (isLoadingChatIndexAgents.value || hasThemeAgents.value) &&
-  !isSurveyVisible.value &&
-  !isGenderStepVisible.value &&
-  !isRecommendVisible.value &&
-  !isTranslateVisible.value &&
-  !isTodayMemeVisible.value &&
-  !isNewsCuratorVisible.value,
+const showThemeArrows = computed(
+  () =>
+    (isLoadingChatIndexAgents.value || hasThemeAgents.value) &&
+    !isSurveyVisible.value &&
+    !isGenderStepVisible.value &&
+    !isRecommendVisible.value &&
+    !isTranslateVisible.value &&
+    !isTodayMemeVisible.value &&
+    !isNewsCuratorVisible.value,
 )
 
 /** 활성 테마 CSS 변수 스타일 — .chat-index 스코프에 주입 (primary 계열 변수) */
@@ -293,9 +288,13 @@ watch(
 )
 
 /** activeThemeKey 변경 시 전역 배경 즉시 반영 */
-watch(activeThemeKey, (key) => {
-  applyGlobalThemeBg(key)
-}, { immediate: true })
+watch(
+  activeThemeKey,
+  (key) => {
+    applyGlobalThemeBg(key)
+  },
+  { immediate: true },
+)
 
 /** guideTpCd '001' 인사 멘트 — 있으면 content의 {{userName}} 치환, 없으면 기존 텍스트 */
 const greetingText = computed(() => {
@@ -390,14 +389,36 @@ onBeforeRouteLeave((to) => {
   color: $color-text-muted;
 }
 
+.chat-index-main {
+  width: 100%;
+}
+
+.chat-index:not(.is-survey-mode) {
+  .chat-index-main {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .chat-index-input-wrapper {
+    margin-bottom: $spacing-md;
+  }
+}
+
 // 설문 모드: 카드 상단 · 채팅 입력창 뷰포트 하단 고정
 .chat-index.is-survey-mode {
   justify-content: flex-start;
   padding-top: $spacing-lg;
   min-height: calc(100vh - #{$header-height});
 
-  .chat-index-input-wrapper {
+  .chat-index-main {
+    width: 100%;
     margin-top: auto;
+    flex-shrink: 0;
+  }
+
+  .chat-index-input-wrapper {
+    margin-top: $spacing-md;
     margin-bottom: $spacing-lg;
     flex-shrink: 0;
     width: 100%;

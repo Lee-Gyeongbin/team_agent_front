@@ -408,9 +408,12 @@ const trackStyle = computed(() => {
   flex-wrap: wrap;
   gap: 12px;
   width: 100%;
-  // 3행 + gap × 2 최대 높이
-  max-height: calc(140px * 3 + 12px * 2);
+  box-sizing: border-box;
+  padding-right: 6px;
+  // 1행(4개)만 기본 노출하고 초과는 내부 세로 스크롤
+  max-height: 140px;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   @include custom-scrollbar;
 
   // 카드 너비 고정: 4열 기준 고정값 (카드 수 적어도 늘어나지 않음)
