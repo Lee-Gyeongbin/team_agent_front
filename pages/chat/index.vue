@@ -109,25 +109,50 @@
           !isNewsCuratorVisible
         "
       >
-        <!-- 테마 캐러셀 (4테마 에이전트) -->
-        <ChatThemeCarousel
-          v-if="isLoadingChatIndexAgents || hasThemeAgents"
-          v-model:active-key="activeThemeKey"
-          :agents="chatIndexAgents"
-          :selected-agent-id="selectedChatAgentId"
-          :is-loading="isLoadingChatIndexAgents"
-          data-aos="fade-up"
-          data-aos-delay="400"
-          @select="onClickChatIndexAgent"
-        />
-        <p
-          v-else
-          class="chat-index-agent-hint f-center"
-          data-aos="fade-up"
-          data-aos-delay="400"
+        <div
+          class="chat-index-theme-section"
+          :aria-hidden="!showThemeArrows || undefined"
         >
-          사용 가능한 에이전트가 없습니다. 에이전트 관리에서 등록해 주세요.
-        </p>
+          <button
+            v-show="showThemeArrows"
+            type="button"
+            class="chat-index-theme-arrow chat-index-theme-arrow--prev"
+            :disabled="activeThemeIndex === 0"
+            aria-label="이전 테마"
+            @click="moveToPrevTheme"
+          >
+            ‹
+          </button>
+          <!-- 테마 캐러셀 (4테마 에이전트) -->
+          <ChatThemeCarousel
+            v-if="isLoadingChatIndexAgents || hasThemeAgents"
+            v-model:active-key="activeThemeKey"
+            :agents="chatIndexAgents"
+            :selected-agent-id="selectedChatAgentId"
+            :is-loading="isLoadingChatIndexAgents"
+            data-aos="fade-up"
+            data-aos-delay="400"
+            @select="onClickChatIndexAgent"
+          />
+          <p
+            v-else
+            class="chat-index-agent-hint f-center"
+            data-aos="fade-up"
+            data-aos-delay="400"
+          >
+            사용 가능한 에이전트가 없습니다. 에이전트 관리에서 등록해 주세요.
+          </p>
+          <button
+            v-show="showThemeArrows"
+            type="button"
+            class="chat-index-theme-arrow chat-index-theme-arrow--next"
+            :disabled="activeThemeIndex === CHAT_THEMES.length - 1"
+            aria-label="다음 테마"
+            @click="moveToNextTheme"
+          >
+            ›
+          </button>
+        </div>
       </template>
       <!-- 메일 브리핑 로그인 모달 -->
       <MailLoginModal
@@ -135,34 +160,6 @@
         @close="closeLoginModal"
         @success="onMailLoginSuccess"
       />
-    </div>
-
-    <!-- 테마 좌우 이동 버튼 래퍼 — 항상 DOM에 존재해야 루트 프래그먼트 경고가 발생하지 않음 -->
-    <!-- v-if 대신 v-show 사용: 조건부 DOM 추가/제거로 인한 Vue 블록 불안정 방지 -->
-    <div
-      class="chat-index-theme-arrows"
-      :aria-hidden="!showThemeArrows || undefined"
-    >
-      <button
-        v-show="showThemeArrows"
-        type="button"
-        class="chat-index-theme-arrow chat-index-theme-arrow--prev"
-        :disabled="activeThemeIndex === 0"
-        aria-label="이전 테마"
-        @click="moveToPrevTheme"
-      >
-        ‹
-      </button>
-      <button
-        v-show="showThemeArrows"
-        type="button"
-        class="chat-index-theme-arrow chat-index-theme-arrow--next"
-        :disabled="activeThemeIndex === CHAT_THEMES.length - 1"
-        aria-label="다음 테마"
-        @click="moveToNextTheme"
-      >
-        ›
-      </button>
     </div>
   </div>
 </template>

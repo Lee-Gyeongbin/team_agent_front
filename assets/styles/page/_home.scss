@@ -237,22 +237,25 @@
 }
 
 // ===================================
-// 테마 캐러셀 좌우 화살표 (콘텐츠 영역 양 끝)
+// 테마 캐러셀 좌우 화살표 (에이전트 목록 바로 좌/우)
 // ===================================
 
-// 버튼 래퍼 — 항상 DOM에 존재 (v-show 처리), 포지셔닝 컨텍스트 없음
-.chat-index-theme-arrows {
-  pointer-events: none; // 래퍼 자체는 클릭 비활성
-}
-
-.chat-index-theme-arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
+.chat-index-theme-section {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px 14px;
+  gap: 8px;
+  width: 100%;
+}
+
+.chat-index-theme-arrow {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
   background: none;
   border: none;
   font-size: 2rem;
@@ -276,11 +279,8 @@
     pointer-events: none;
   }
 
-  &--prev {
-    left: 0;
-  }
-
-  &--next {
-    right: 0;
+  @include mobile {
+    width: 40px;
+    height: 40px;
   }
 }
