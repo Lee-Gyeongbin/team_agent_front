@@ -209,6 +209,29 @@
     }
   }
 
+  // 타이틀 클릭 버튼 래퍼
+  .widget-title-btn {
+    display: inline-flex;
+    align-items: center;
+    min-width: 0;
+    max-width: 100%;
+    padding: 2px 4px;
+    border: none;
+    border-radius: $border-radius-sm;
+    background: transparent;
+    cursor: pointer;
+    transition: background $transition-fast;
+
+    &:hover {
+      background: $color-background;
+
+      .widget-title {
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+    }
+  }
+
   .widget-title {
     @include typo($body-medium-bold);
     color: $color-text-heading;
@@ -218,6 +241,7 @@
   .widget-sql-query-btn {
     flex-shrink: 0;
     color: var(--color-primary);
+    cursor: default;  // hover 툴팁 전용 — 클릭 액션 없음
 
     .icon-comment-other {
       background-image: none;
@@ -526,8 +550,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 52px;
-  height: 52px;
+  width: 42px;
+  height: 42px;
   border: 1px solid rgba(69, 137, 224, 0.35);
   border-radius: 50%;
   background: #f0f6fe;
@@ -965,6 +989,29 @@
 
 // 모달 푸터
 .widget-add-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+  padding: 12px 20px;
+}
+
+// ===================================
+// 위젯 이름 변경 모달
+// ===================================
+.widget-rename-body {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  padding: 24px 24px 12px;
+  width: 100%;
+}
+
+.widget-rename-label {
+  @include typo($body-small);
+  color: $color-text-secondary;
+}
+
+.widget-rename-footer {
   display: flex;
   justify-content: flex-end;
   gap: $spacing-sm;

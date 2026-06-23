@@ -48,6 +48,7 @@
               @filter-toggle="onFilterToggle"
               @filter-height-px="onFilterHeightPx"
               @widget-mounted="onWidgetMounted"
+              @rename-title="onRenameTitle"
             />
           </div>
         </div>
@@ -95,6 +96,7 @@ const {
   handleUpdateFilterValues,
   handleResetFilterValues,
   handleSaveWidget,
+  handleRenameWidgetTitle,
   handleDeleteWidget,
   handleChangeVizType,
   handleSaveLayout,
@@ -247,6 +249,11 @@ onBeforeUnmount(() => {
 })
 
 // ===== 이벤트 핸들러 =====
+
+// 위젯 이름 변경
+const onRenameTitle = async (widgetId: string, title: string) => {
+  await handleRenameWidgetTitle(widgetId, title)
+}
 
 // SQL 실행
 const onExecute = async (widgetId: string, filterValues: Record<string, string>) => {

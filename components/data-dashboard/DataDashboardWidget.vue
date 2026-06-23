@@ -23,18 +23,25 @@
           :delay-duration="150"
           content-class="widget-sql-query-tooltip"
         >
-          <button
-            type="button"
+          <span
             class="btn btn-widget-action widget-sql-query-btn"
             :aria-label="`사용자 질의: ${widget.sqlTitle}`"
+            tabindex="0"
           >
             <i class="icon-comment-other size-16" />
-          </button>
+          </span>
           <template #content>
             {{ widget.sqlTitle }}
           </template>
         </UiTooltip>
-        <span class="widget-title">{{ widget.title }}</span>
+        <button
+          type="button"
+          class="widget-title-btn"
+          :title="`'${widget.title}' 이름 변경`"
+          @click="openRenameModal"
+        >
+          <span class="widget-title">{{ widget.title }}</span>
+        </button>
       </div>
 
       <div class="widget-header-actions">
@@ -233,7 +240,7 @@
             aria-label="현재 시점 기준 위젯 정보"
             title="현재 시점 기준 위젯"
           >
-            <i class="icon-calendar size-28" />
+            <i class="icon-calendar size-24" />
           </button>
         </PopoverTrigger>
         <PopoverPortal>
@@ -312,6 +319,41 @@
         title="조회 버튼을 눌러 데이터를 확인하세요."
       />
     </div>
+
+    <!-- ===== 위젯 이름 변경 모달 ===== -->
+    <UiModal
+      :is-open="isRenameModalOpen"
+      title="위젯 이름 변경"
+      max-width="400px"
+      @close="closeRenameModal"
+    >
+      <div class="widget-rename-body">
+        <label class="widget-rename-label">위젯 이름</label>
+        <UiInput
+          ref="renameTitleInputRef"
+          v-model="renameTitle"
+          placeholder="위젯 이름을 입력하세요"
+          @keydown.enter="onRenameConfirm"
+        />
+      </div>
+      <template #footer>
+        <div class="widget-rename-footer">
+          <UiButton
+            variant="outline"
+            @click="closeRenameModal"
+          >
+            취소
+          </UiButton>
+          <UiButton
+            variant="primary"
+            :loading="isRenameSaving"
+            @click="onRenameConfirm"
+          >
+            저장
+          </UiButton>
+        </div>
+      </template>
+    </UiModal>
   </div>
 </template>
 
@@ -377,12 +419,45 @@ const emit = defineEmits<{
   'filter-height-px': [widgetId: string, heightPx: number]
   /** Vue 마운트 완료 — GridStack 드래그 핸들 재바인딩용 */
   'widget-mounted': [widgetId: string]
+  /** 위젯 이름 변경 요청 */
+  'rename-title': [widgetId: string, title: string]
 }>()
 
 const isFilterOpen = ref(false)
 const isPeriodInfoOpen = ref(false)
 const contentEl = ref<HTMLElement | null>(null)
 const filterEl = ref<HTMLElement | null>(null)
+
+// ===== 위젯 이름 변경 =====
+const isRenameModalOpen = ref(false)
+const isRenameSaving = ref(false)
+const renameTitle = ref('')
+
+const openRenameModal = () => {
+  renameTitle.value = props.widget.title
+  isRenameModalOpen.value = true
+}
+
+const closeRenameModal = () => {
+  isRenameModalOpen.value = false
+}
+
+const onRenameConfirm = async () => {
+  const trimmed = renameTitle.value.trim()
+  if (!trimmed) {
+    openToast({ message: '위젯 이름을 입력해 주세요.', type: 'warning' })
+    return
+  }
+  if (trimmed === props.widget.title) {
+    closeRenameModal()
+    return
+  }
+  isRenameSaving.value = true
+  emit('rename-title', props.widget.widgetId, trimmed)
+  // 저장 완료는 부모가 처리하므로 모달만 닫음
+  closeRenameModal()
+  isRenameSaving.value = false
+}
 
 // ===== 필터 ResizeObserver — 열릴 때 높이 변화를 부모에 전달 =====
 let filterResizeObserver: ResizeObserver | null = null

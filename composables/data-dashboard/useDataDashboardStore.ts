@@ -313,6 +313,24 @@ const handleSaveWidget = async (widget: Partial<DataDashboardWidget>): Promise<D
   return saved ?? null
 }
 
+// ===== 위젯 이름 변경 =====
+
+const handleRenameWidgetTitle = async (widgetId: string, title: string) => {
+  const widget = widgetList.value.find((w) => w.widgetId === widgetId)
+  if (!widget) return
+  try {
+    // LOG_ID 등 필수 컬럼 누락 방지 — 기존 위젯 전체 payload에 title만 교체하여 전송
+    await fetchSaveWidget(toWidgetPayload({ ...widget, title }) as Partial<DataDashboardWidget>)
+    const idx = widgetList.value.findIndex((w) => w.widgetId === widgetId)
+    if (idx !== -1) {
+      widgetList.value[idx] = { ...widgetList.value[idx], title }
+    }
+    openToast({ message: '위젯 이름이 변경되었습니다.', type: 'success' })
+  } catch {
+    openToast({ message: '위젯 이름 변경에 실패했습니다.', type: 'error' })
+  }
+}
+
 // ===== 위젯 삭제 =====
 
 const handleDeleteWidget = async (
@@ -411,6 +429,7 @@ export const useDataDashboardStore = () => {
 
     // 위젯 CRUD
     handleSaveWidget,
+    handleRenameWidgetTitle,
     handleDeleteWidget,
     handleChangeVizType,
 
