@@ -499,10 +499,7 @@ const handleSaveMetaCodeMapping = async (datamartId: string, mappings: DatamartM
       datamartId,
       codeColumnMappingList,
     }
-    const res = await fetchSaveMetaCodeMapping(payload)
-    const savedMappings = (res.dataList ?? []).map((item) => parseMetaCodeMappingListItem(item))
-    await hydrateCodeMappingEntries(savedMappings)
-    metaModalCodeMappings.value = savedMappings
+    await fetchSaveMetaCodeMapping(payload)
     openToast({ message: '코드 매핑 메타데이터 저장에 성공했습니다.', type: 'success' })
     return true
   } catch {
@@ -592,14 +589,6 @@ const handleFetchMetaAbbrevList = async (datamartId: string) => {
 const handleSaveMetaAbbrev = async (datamartId: string, abbrevList: DatamartMetaAbbrevItem[]) => {
   try {
     await fetchSaveMetaAbbrev({ datamartId, abbrDictList: abbrevList })
-    const abbrevRes = await handleFetchMetaAbbrevList(datamartId)
-    if (abbrevRes === undefined) {
-      metaModalAbbrevListError.value = '약어사전 목록을 불러오지 못했습니다.'
-      openToast({ message: '저장 후 목록 갱신에 실패했습니다.', type: 'error' })
-      return false
-    }
-    metaModalAbbrevApiRes.value = abbrevRes
-    metaModalAbbrevListError.value = null
     openToast({ message: '약어사전 저장에 성공했습니다.', type: 'success' })
     return true
   } catch {

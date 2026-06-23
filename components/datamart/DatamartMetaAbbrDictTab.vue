@@ -335,7 +335,7 @@ const onDeleteRow = (row: DatamartMetaAbbrevItem) => {
 /**
  * API 조회 결과 → abbrevList 동기화
  * - 탭 재마운트(immediate, prev 없음) + 편집 데이터 있음 → 유지
- * - API 응답 변경(저장 후 재조회 등) → 서버 데이터로 갱신
+ * - API 응답 변경(모달 오픈 시 hydrate 등) → 서버 데이터로 갱신
  */
 watch(
   () => [props.abbrevApiRes, props.errorMessage] as const,
