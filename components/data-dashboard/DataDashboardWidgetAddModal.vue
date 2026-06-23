@@ -106,13 +106,6 @@
               <div class="config-field">
                 <div class="config-label-row">
                   <label class="config-label">시각화 유형</label>
-                  <span
-                    v-if="isLlmAutoFilled"
-                    class="config-ai-badge"
-                  >
-                    <i class="icon-ai-stars size-12" />
-                    AI 추천
-                  </span>
                 </div>
                 <div class="viz-type-group">
                   <UiTooltip
@@ -136,6 +129,14 @@
                           class="size-18"
                         />
                         <span>{{ opt.label }}</span>
+                        <!-- AI 추천 뱃지: 추천 타입과 일치하는 버튼에만 표시 -->
+                        <span
+                          v-if="opt.value === llmRecommendedVizType"
+                          class="viz-type-ai-badge"
+                        >
+                          <i class="icon-ai-stars size-10" />
+                          AI 추천
+                        </span>
                       </button>
                     </div>
                     <template #content>
@@ -145,6 +146,89 @@
                       </div>
                     </template>
                   </UiTooltip>
+                </div>
+              </div>
+            </section>
+
+            <!-- 콤비네이션 전용: 좌/우 Y축 및 차트 타입 설정 -->
+            <section
+              v-if="form.vizType === 'combination'"
+              class="config-section config-section--combi"
+            >
+              <div class="config-field">
+                <div class="config-label-row">
+                  <label class="config-label">축 설정</label>
+                  <span class="config-ai-badge config-ai-badge--setting">
+                    <i class="icon-ai-stars size-12" />
+                    AI 설정
+                  </span>
+                </div>
+                <p class="config-hint">왼쪽·오른쪽 Y축에 사용할 컬럼과 차트 유형을 선택하세요.</p>
+              </div>
+              <!-- 왼쪽 Y축 -->
+              <div class="combi-axis-row">
+                <span class="combi-axis-dot is-left">●</span>
+                <span class="combi-axis-label">왼쪽 Y축 (YL)</span>
+                <div class="combi-axis-select">
+                  <UiSelect
+                    v-model="combiLeftKey"
+                    :options="combiAxisOptions"
+                    placeholder="컬럼 선택"
+                    size="sm"
+                  />
+                </div>
+                <div class="combi-type-toggle">
+                  <button
+                    type="button"
+                    class="combi-type-btn"
+                    :class="{ 'is-active': combiLeftType === 'bar' }"
+                    title="막대 차트"
+                    @click="combiLeftType = 'bar'"
+                  >
+                    <i class="icon-bar-chart size-16" />
+                  </button>
+                  <button
+                    type="button"
+                    class="combi-type-btn"
+                    :class="{ 'is-active': combiLeftType === 'line' }"
+                    title="라인 차트"
+                    @click="combiLeftType = 'line'"
+                  >
+                    <i class="icon-line-chart size-16" />
+                  </button>
+                </div>
+              </div>
+              <!-- 오른쪽 Y축 -->
+              <div class="combi-axis-row">
+                <span class="combi-axis-dot is-right">●</span>
+                <span class="combi-axis-label">오른쪽 Y축 (YR)</span>
+                <div class="combi-axis-select">
+                  <UiSelect
+                    v-model="combiRightKey"
+                    :options="combiAxisOptions"
+                    placeholder="컬럼 선택"
+                    size="sm"
+                  />
+                </div>
+                <div class="combi-type-toggle">
+                  <button
+                    type="button"
+                    class="combi-type-btn"
+                    :class="{ 'is-active': combiRightType === 'bar' }"
+                    title="막대 차트"
+                    @click="combiRightType = 'bar'"
+                  >
+                    <i class="icon-bar-chart size-16" />
+                  </button>
+                  <button
+                    type="button"
+                    class="combi-type-btn"
+                    :class="{ 'is-active': combiRightType === 'line' }"
+                    title="라인 차트"
+                    @click="combiRightType = 'line'"
+                  >
+                    <i class="icon-line-chart size-16" />
+                  </button>
                 </div>
               </div>
             </section>
@@ -314,11 +398,20 @@ const selectedSql = ref<DataDashboardSqlItem | null>(null)
 
 const yAxisKeysInput = ref('')
 
-/** LLM chartOption 자동 세팅 여부 (시각화 유형 뱃지) */
-const isLlmAutoFilled = ref(false)
+/** LLM이 추천한 시각화 유형 (해당 버튼에 AI 추천 뱃지 표시) */
+const llmRecommendedVizType = ref<DataDashboardVizType | null>(null)
 
 /** LLM이 추출한 SQL 파라미터 컬럼 목록 (읽기 전용) */
 const parsedParams = ref<DataDashboardSqlVariable[]>([])
+
+/** 콤비네이션 전용: 왼쪽 Y축 컬럼 */
+const combiLeftKey = ref('')
+/** 콤비네이션 전용: 오른쪽 Y축 컬럼 */
+const combiRightKey = ref('')
+/** 콤비네이션 전용: 왼쪽 차트 타입 */
+const combiLeftType = ref<'bar' | 'line'>('bar')
+/** 콤비네이션 전용: 오른쪽 차트 타입 */
+const combiRightType = ref<'bar' | 'line'>('line')
 
 const form = reactive<{
   title: string
@@ -330,10 +423,19 @@ const form = reactive<{
   vizConfig: { xAxisKey: '' },
 })
 
-/** 컬럼 매핑 필수 시각화 (막대·라인·가로막대) */
-const AXIS_CHART_VIZ_TYPES: DataDashboardVizType[] = ['bar', 'line', 'horizontalBar']
+/** 컬럼 매핑 필수 시각화 (막대·라인·가로막대·콤비네이션) */
+const AXIS_CHART_VIZ_TYPES: DataDashboardVizType[] = ['bar', 'line', 'horizontalBar', 'combination']
 
 const isAxisChartViz = computed(() => AXIS_CHART_VIZ_TYPES.includes(form.vizType))
+
+/** 콤비네이션 좌/우 축 선택 옵션 (yAxisKeys 기반) */
+const combiAxisOptions = computed(() => {
+  const keys = yAxisKeysInput.value
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  return keys.map((k) => ({ label: k, value: k }))
+})
 
 /** ttsqParam 파싱 + 기간 파라미터 분류 */
 const applyTtsqParam = (ttsqParam: string | null | undefined, ttsqPeriodParam: string | null | undefined) => {
@@ -348,7 +450,10 @@ const isColumnMappingValid = computed(() => {
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean)
-  return !!x && yKeys.length > 0
+  if (!x || yKeys.length === 0) return false
+  // 콤비네이션: 좌/우 축 모두 선택되어야 함
+  if (form.vizType === 'combination') return !!combiLeftKey.value && !!combiRightKey.value
+  return true
 })
 
 const canSave = computed(() => !!selectedSql.value && isColumnMappingValid.value)
@@ -375,22 +480,31 @@ const parseChartOption = (raw: string | null | undefined): VisualizationChartOpt
 /** chartOption으로 form을 자동 세팅 */
 const applyChartOption = (chartOption: VisualizationChartOptionPayload | null) => {
   if (!chartOption) {
-    isLlmAutoFilled.value = false
+    llmRecommendedVizType.value = null
     return
   }
 
   const { chart, x = [], y = [] } = chartOption
   if (!chart && x.length === 0 && y.length === 0) {
-    isLlmAutoFilled.value = false
+    llmRecommendedVizType.value = null
     return
   }
-
-  if (chart) form.vizType = chart as DataDashboardVizType
 
   form.vizConfig.xAxisKey = x[0] ?? ''
   yAxisKeysInput.value = y.join(', ')
 
-  isLlmAutoFilled.value = true
+  // Y축이 2개 이상이면 콤비네이션으로 AI 추천
+  if (y.length >= 2) {
+    form.vizType = 'combination'
+    combiLeftKey.value = y[0]
+    combiRightKey.value = y[1]
+    combiLeftType.value = 'bar'
+    combiRightType.value = 'line'
+    llmRecommendedVizType.value = 'combination'
+  } else {
+    if (chart) form.vizType = chart as DataDashboardVizType
+    llmRecommendedVizType.value = chart ? (chart as DataDashboardVizType) : null
+  }
 }
 
 const filteredSqlList = computed(() => {
@@ -401,13 +515,24 @@ const filteredSqlList = computed(() => {
   )
 })
 
-const vizTypeOptions: { label: string; value: DataDashboardVizType; icon: string }[] = [
-  { label: '막대 차트', value: 'bar', icon: 'icon-bar-chart' },
-  { label: '라인 차트', value: 'line', icon: 'icon-line-chart' },
-  { label: '파이 차트', value: 'pie', icon: 'icon-pie-chart' },
-  { label: '가로 막대', value: 'horizontalBar', icon: 'icon-bar-chart' },
-  { label: '테이블', value: 'table', icon: 'icon-sql' },
-]
+/** Y축이 2개 이상이면 콤비네이션 옵션 포함 */
+const vizTypeOptions = computed<{ label: string; value: DataDashboardVizType; icon: string }[]>(() => {
+  const yKeys = yAxisKeysInput.value
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  const base: { label: string; value: DataDashboardVizType; icon: string }[] = [
+    { label: '막대 차트', value: 'bar', icon: 'icon-bar-chart' },
+    { label: '라인 차트', value: 'line', icon: 'icon-line-chart' },
+    { label: '파이 차트', value: 'pie', icon: 'icon-pie-chart' },
+    { label: '가로 막대', value: 'horizontalBar', icon: 'icon-bar-chart' },
+    { label: '테이블', value: 'table', icon: 'icon-sql' },
+  ]
+  if (yKeys.length >= 2) {
+    base.splice(2, 0, { label: '막대/라인 차트', value: 'combination', icon: 'icon-chart' })
+  }
+  return base
+})
 
 const onSelectVizType = (vizType: DataDashboardVizType) => {
   form.vizType = vizType
@@ -423,6 +548,13 @@ const buildSaveVizConfig = (): DataDashboardVizConfig => {
   const cfg: DataDashboardVizConfig = {}
   if (xAxisKey) cfg.xAxisKey = xAxisKey
   if (yAxisKeys.length) cfg.yAxisKeys = yAxisKeys
+  // 콤비네이션 전용 설정
+  if (form.vizType === 'combination') {
+    if (combiLeftKey.value) cfg.leftAxisKey = combiLeftKey.value
+    if (combiRightKey.value) cfg.rightAxisKey = combiRightKey.value
+    cfg.leftChartType = combiLeftType.value
+    cfg.rightChartType = combiRightType.value
+  }
   return cfg
 }
 
@@ -434,6 +566,11 @@ const onSelectSql = (sql: DataDashboardSqlItem) => {
   // 객체 참조 유지하여 reactivity 보장
   form.vizConfig.xAxisKey = ''
   yAxisKeysInput.value = ''
+  llmRecommendedVizType.value = null
+  combiLeftKey.value = ''
+  combiRightKey.value = ''
+  combiLeftType.value = 'bar'
+  combiRightType.value = 'line'
 
   // LLM 추천 chartOption 자동 세팅
   applyChartOption(parseChartOption(sql.chartOption))
@@ -466,11 +603,15 @@ watch(
     selectedLogId.value = null
     selectedSql.value = null
     yAxisKeysInput.value = ''
-    isLlmAutoFilled.value = false
+    llmRecommendedVizType.value = null
     parsedParams.value = []
     form.title = ''
     form.vizType = 'bar'
     form.vizConfig.xAxisKey = ''
+    combiLeftKey.value = ''
+    combiRightKey.value = ''
+    combiLeftType.value = 'bar'
+    combiRightType.value = 'line'
   },
 )
 </script>
@@ -630,5 +771,102 @@ watch(
   font-size: 12px;
   color: var(--color-text-secondary, #999);
   align-self: center;
+}
+
+// ===== 시각화 유형 버튼 — AI 추천 뱃지 =====
+.viz-type-btn {
+  position: relative;
+}
+
+.viz-type-ai-badge {
+  position: absolute;
+  top: -7px;
+  right: -4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 5px;
+  border-radius: 8px;
+  background: var(--color-primary, #5b73e8);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+// ===== 콤비네이션 축 설정 =====
+.config-section--combi {
+  background: var(--color-bg-subtle, #f8fafc);
+  border: 1px solid var(--color-border, #dce4e9);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.combi-axis-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.combi-axis-dot {
+  font-size: 14px;
+  flex-shrink: 0;
+
+  &.is-left {
+    color: #258cec;
+  }
+
+  &.is-right {
+    color: #725fea;
+  }
+}
+
+.combi-axis-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-primary, #222);
+  white-space: nowrap;
+  min-width: 100px;
+}
+
+.combi-axis-select {
+  flex: 1;
+  min-width: 0;
+}
+
+.combi-type-toggle {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.combi-type-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--color-border, #dce4e9);
+  border-radius: 6px;
+  background: var(--color-bg-white, #fff);
+  color: var(--color-text-secondary, #8b95a5);
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover {
+    border-color: var(--color-primary, #5b73e8);
+    color: var(--color-primary, #5b73e8);
+  }
+
+  &.is-active {
+    border-color: var(--color-primary, #5b73e8);
+    background: var(--color-primary-light, #eff3ff);
+    color: var(--color-primary, #5b73e8);
+  }
 }
 </style>

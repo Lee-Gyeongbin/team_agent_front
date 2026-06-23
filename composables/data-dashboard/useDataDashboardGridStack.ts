@@ -1,5 +1,5 @@
 import { GridStack } from 'gridstack'
-import type { GridStackNode } from 'gridstack'
+import type { GridItemHTMLElement, GridStackNode } from 'gridstack'
 
 /** GridStack 6열 그리드 기준 셀 높이 (px) */
 export const GS_CELL_HEIGHT = 100
@@ -35,6 +35,22 @@ export const GS_DEFAULT_LAYOUT = {
 export const useDataDashboardGridStack = () => {
   const gridEl = ref<HTMLElement | null>(null)
   let grid: GridStack | null = null
+
+  /**
+   * Vue가 위젯 DOM을 렌더한 뒤 커스텀 드래그 핸들을 다시 바인딩
+   * (init/makeWidget 시점에 .widget-drag-handle이 없으면 드래그가 동작하지 않음)
+   */
+  const refreshWidgetDragDrop = (el: HTMLElement) => {
+    if (!grid) return
+    grid.prepareDragDrop(el as GridItemHTMLElement, true)
+  }
+
+  const refreshAllWidgetDragDrop = () => {
+    if (!gridEl.value) return
+    gridEl.value.querySelectorAll('.grid-stack-item').forEach((el) => {
+      refreshWidgetDragDrop(el as HTMLElement)
+    })
+  }
 
   /**
    * GridStack 초기화
@@ -114,6 +130,7 @@ export const useDataDashboardGridStack = () => {
     el.setAttribute('gs-w', String(cfg.w))
     el.setAttribute('gs-h', String(cfg.h))
     grid.makeWidget(el)
+    refreshWidgetDragDrop(el)
     compact()
   }
 
@@ -184,5 +201,7 @@ export const useDataDashboardGridStack = () => {
     onDragStop,
     onResizeStop,
     updateWidgetH,
+    refreshWidgetDragDrop,
+    refreshAllWidgetDragDrop,
   }
 }

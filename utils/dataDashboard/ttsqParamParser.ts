@@ -310,6 +310,43 @@ export const buildTodayPeriodValues = (
   return result
 }
 
+/** 기간 변수 필터값이 referenceDate(기본: 오늘) 기준과 일치하는지 확인 */
+export const isTodayPeriodFilterValues = (
+  variables: Pick<DataDashboardSqlVariable, 'key' | 'type' | 'isPeriod'>[],
+  filterValues: Record<string, string>,
+  referenceDate: Date = new Date(),
+): boolean => {
+  const periodVars = variables.filter((v) => v.isPeriod)
+  if (!periodVars.length) return false
+
+  const todayValues = buildTodayPeriodValues(periodVars, referenceDate)
+
+  for (const v of periodVars) {
+    const expected = todayValues[v.key]
+    if (expected === undefined) return false
+    const current = (filterValues[v.key] ?? '').trim()
+    if (current !== expected) return false
+  }
+
+  return true
+}
+
+/** 기간 변수 필터값 요약 (툴팁·뱃지 보조 텍스트) */
+export const formatPeriodFilterSummary = (
+  variables: Pick<DataDashboardSqlVariable, 'key' | 'label' | 'isPeriod'>[],
+  filterValues: Record<string, string>,
+): string => {
+  const parts = variables
+    .filter((v) => v.isPeriod)
+    .map((v) => {
+      const value = (filterValues[v.key] ?? '').trim()
+      return value ? `${v.label}: ${value}` : ''
+    })
+    .filter(Boolean)
+
+  return parts.join(' · ')
+}
+
 const mapItemToVariable = (item: unknown): DataDashboardSqlVariable | null => {
   if (typeof item !== 'object' || item === null) return null
   const p = item as Record<string, unknown>

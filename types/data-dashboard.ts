@@ -62,12 +62,20 @@ export interface DataDashboardWidget {
   datamartNm?: string
 }
 
-export type DataDashboardVizType = 'bar' | 'line' | 'pie' | 'horizontalBar' | 'table'
+export type DataDashboardVizType = 'bar' | 'line' | 'pie' | 'horizontalBar' | 'table' | 'combination'
 
 /** 시각화 컬럼 매핑 설정 (파이·막대·라인 공통 — xAxisKey / yAxisKeys) */
 export interface DataDashboardVizConfig {
   xAxisKey?: string
   yAxisKeys?: string[]
+  /** 콤비네이션(막대+라인 혼합) 전용: 왼쪽 Y축 컬럼 키 */
+  leftAxisKey?: string
+  /** 콤비네이션 전용: 오른쪽 Y축 컬럼 키 */
+  rightAxisKey?: string
+  /** 콤비네이션 전용: 왼쪽 Y축 차트 타입 */
+  leftChartType?: 'bar' | 'line'
+  /** 콤비네이션 전용: 오른쪽 Y축 차트 타입 */
+  rightChartType?: 'bar' | 'line'
 }
 
 /**

@@ -170,6 +170,81 @@
       />
     </template>
 
+    <!-- 막대/라인 콤비네이션 -->
+    <template v-else-if="type === 'combination'">
+      <rect
+        x="0"
+        y="0"
+        width="140"
+        height="84"
+        rx="6"
+        fill="#f8fafc"
+      />
+      <line
+        x1="18"
+        y1="68"
+        x2="126"
+        y2="68"
+        stroke="#dce4e9"
+        stroke-width="1"
+      />
+      <!-- 막대 (YL 왼쪽) -->
+      <rect
+        x="26"
+        y="38"
+        width="14"
+        height="30"
+        rx="2"
+        fill="#258CEC"
+      />
+      <rect
+        x="48"
+        y="24"
+        width="14"
+        height="44"
+        rx="2"
+        fill="#258CEC"
+        opacity="0.75"
+      />
+      <rect
+        x="70"
+        y="32"
+        width="14"
+        height="36"
+        rx="2"
+        fill="#258CEC"
+        opacity="0.55"
+      />
+      <rect
+        x="92"
+        y="18"
+        width="14"
+        height="50"
+        rx="2"
+        fill="#258CEC"
+        opacity="0.4"
+      />
+      <!-- 라인 (YR 오른쪽) -->
+      <polyline
+        points="33,44 55,30 77,38 99,22"
+        fill="none"
+        stroke="#725FEA"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+      <circle
+        v-for="(point, idx) in combinationLinePoints"
+        :key="idx"
+        :cx="point.x"
+        :cy="point.y"
+        r="3"
+        fill="#fff"
+        stroke="#725FEA"
+        stroke-width="2"
+      />
+    </template>
+
     <!-- 테이블 -->
     <template v-else>
       <rect
@@ -277,6 +352,13 @@ const linePoints = [
   { x: 68, y: 42 },
   { x: 90, y: 22 },
   { x: 112, y: 30 },
+]
+
+const combinationLinePoints = [
+  { x: 33, y: 44 },
+  { x: 55, y: 30 },
+  { x: 77, y: 38 },
+  { x: 99, y: 22 },
 ]
 
 const tableRows = [44, 62, 74]

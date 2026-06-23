@@ -149,3 +149,53 @@ export const buildDualAxisScales = (
     },
   }
 }
+
+/**
+ * 콤비네이션 차트(막대+라인 혼합)용 이축 스케일 빌더
+ * - MixedChartModule이 직접 읽는 maxValue/maxValue2/yAxisStepSize/y1AxisStepSize 와
+ *   Chart.js scales:{y,y1} 설정을 함께 반환
+ *
+ * buildLineYScale 대신 buildPositiveYScale 사용:
+ *   buildLineYScale은 allowNegative=true 고정이라
+ *   "minValue < (maxValue-minValue)×0.1" 조건에서 음수 눈금이 생김.
+ *   buildPositiveYScale은 데이터에 실제 음수가 없으면 min=0으로 강제해
+ *   라인 타입이라도 양수 데이터에서 음수 축이 표시되는 문제를 방지.
+ */
+export const buildCombinationScales = (
+  leftData: number[],
+  rightData: number[],
+  _leftType: 'bar' | 'line',
+  _rightType: 'bar' | 'line',
+): {
+  maxValue: number
+  maxValue2: number
+  yAxisStepSize: number
+  y1AxisStepSize: number
+  scales: Record<string, unknown>
+} => {
+  const left = buildPositiveYScale(leftData)
+  const right = buildPositiveYScale(rightData)
+  return {
+    maxValue: left.max,
+    maxValue2: right.max,
+    yAxisStepSize: left.stepSize,
+    y1AxisStepSize: right.stepSize,
+    scales: {
+      y: {
+        min: left.min,
+        max: left.max,
+        ticks: { stepSize: left.stepSize },
+        position: 'left',
+        beginAtZero: left.min >= 0,
+      },
+      y1: {
+        min: right.min,
+        max: right.max,
+        ticks: { stepSize: right.stepSize },
+        position: 'right',
+        grid: { drawOnChartArea: false },
+        beginAtZero: right.min >= 0,
+      },
+    },
+  }
+}

@@ -47,6 +47,7 @@
               @change-viz-type="onChangeVizType"
               @filter-toggle="onFilterToggle"
               @filter-height-px="onFilterHeightPx"
+              @widget-mounted="onWidgetMounted"
             />
           </div>
         </div>
@@ -117,6 +118,8 @@ const {
   onDragStop,
   onResizeStop,
   updateWidgetH,
+  refreshWidgetDragDrop,
+  refreshAllWidgetDragDrop,
 } = useDataDashboardGridStack()
 
 // ===== 필터 확장 상태 추적 =====
@@ -197,6 +200,14 @@ const onFilterHeightPx = (widgetId: string, filterHeightPx: number) => {
   }, 80)
 }
 
+/** Vue 위젯 마운트 후 GridStack 드래그 핸들 재바인딩 */
+const onWidgetMounted = (widgetId: string) => {
+  nextTick(() => {
+    const el = gridEl.value?.querySelector(`.grid-stack-item[gs-id="${widgetId}"]`) as HTMLElement | null
+    if (el) refreshWidgetDragDrop(el)
+  })
+}
+
 onMounted(async () => {
   await handleSelectWidgetList()
   await nextTick()
@@ -204,6 +215,8 @@ onMounted(async () => {
   // layoutMap 기반 gs-* 속성이 Vue에 의해 이미 DOM에 반영된 후 init 호출 →
   // GridStack이 gs-x/y/w/h 속성을 직접 읽어 위치를 복원하므로 별도의 applyLayout 불필요.
   initGrid()
+  await nextTick()
+  refreshAllWidgetDragDrop()
 
   // GridStack change 이벤트 — layoutMap 로컬 동기화
   // filterAdjusting 중 (필터 확장/복원 시)에는 layoutMap을 덮어쓰지 않음

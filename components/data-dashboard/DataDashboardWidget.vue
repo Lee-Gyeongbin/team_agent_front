@@ -7,9 +7,13 @@
     <div class="widget-header">
       <div class="widget-header-left">
         <!-- 드래그 핸들 (편집 모드일 때만 활성화) -->
-        <i
-          class="icon-move-handle size-20 widget-drag-handle"
+        <button
+          type="button"
+          class="widget-drag-handle icon-move-handle size-20"
           :class="{ 'is-disabled': !isEditMode }"
+          :tabindex="isEditMode ? 0 : -1"
+          :aria-disabled="!isEditMode"
+          aria-label="위젯 이동"
         />
         <!-- SQL 질의 툴팁 -->
         <UiTooltip
@@ -89,6 +93,50 @@
         class="widget-filter"
       >
         <div class="widget-filter-main">
+          <div class="widget-filter-actions">
+            <div class="widget-filter-action-group">
+              <UiButton
+                v-if="periodVariables.length"
+                variant="outline"
+                size="sm"
+                icon-only
+                class="widget-filter-today"
+                title="오늘 날짜 기준으로 기간 값 설정"
+                aria-label="오늘 날짜 기준으로 기간 값 설정"
+                @click="onApplyTodayPeriod"
+              >
+                <template #icon-left>
+                  <i class="icon-calendar size-16" />
+                </template>
+              </UiButton>
+              <UiButton
+                variant="outline"
+                size="sm"
+                icon-only
+                class="widget-filter-reset"
+                title="초기값 복원"
+                aria-label="초기값 복원"
+                @click="onResetFilters"
+              >
+                <template #icon-left>
+                  <i class="icon-refresh size-16" />
+                </template>
+              </UiButton>
+              <UiButton
+                variant="primary"
+                size="sm"
+                icon-only
+                class="widget-filter-execute"
+                title="실행"
+                aria-label="조회 실행"
+                @click="onExecute"
+              >
+                <template #icon-left>
+                  <i class="icon-play size-16" />
+                </template>
+              </UiButton>
+            </div>
+          </div>
           <div class="widget-filter-fields">
             <template
               v-for="variable in enrichedVariables"
@@ -144,50 +192,6 @@
               </div>
             </template>
           </div>
-          <div class="widget-filter-actions">
-            <div class="widget-filter-action-group">
-              <UiButton
-                v-if="periodVariables.length"
-                variant="outline"
-                size="sm"
-                icon-only
-                class="widget-filter-today"
-                title="오늘 기준"
-                aria-label="오늘 날짜 기준으로 기간 값 설정"
-                @click="onApplyTodayPeriod"
-              >
-                <template #icon-left>
-                  <i class="icon-calendar size-16" />
-                </template>
-              </UiButton>
-              <UiButton
-                variant="outline"
-                size="sm"
-                icon-only
-                class="widget-filter-reset"
-                title="초기값 복원"
-                aria-label="초기값 복원"
-                @click="onResetFilters"
-              >
-                <template #icon-left>
-                  <i class="icon-refresh size-16" />
-                </template>
-              </UiButton>
-              <UiButton
-                variant="primary"
-                size="sm"
-                icon-only
-                class="widget-filter-execute"
-                title="실행"
-                aria-label="조회 실행"
-                @click="onExecute"
-              >
-                <template #icon-left>
-                  <i class="icon-play size-16" />
-                </template>
-              </UiButton>
-            </div>
-          </div>
         </div>
 
         <!-- 실행 SQL 미리보기 -->
@@ -216,6 +220,41 @@
       ref="contentEl"
       class="widget-content"
     >
+      <!-- 현재 시점 위젯 — 큰 아이콘 + 클릭 시 정보 팝오버 -->
+      <PopoverRoot
+        v-if="isTodayPeriodFilter"
+        v-model:open="isPeriodInfoOpen"
+      >
+        <PopoverTrigger as-child>
+          <button
+            type="button"
+            class="widget-period-today-icon"
+            :class="{ 'is-active': isPeriodInfoOpen }"
+            aria-label="현재 시점 기준 위젯 정보"
+            title="현재 시점 기준 위젯"
+          >
+            <i class="icon-calendar size-28" />
+          </button>
+        </PopoverTrigger>
+        <PopoverPortal>
+          <PopoverContent
+            class="widget-period-today-popover"
+            side="left"
+            align="start"
+            :side-offset="10"
+          >
+            <p class="widget-period-today-popover-title">현재 시점 기준 위젯</p>
+            <p class="widget-period-today-popover-desc">오늘 날짜를 기준으로 조회되는 데이터입니다.</p>
+            <p
+              v-if="todayPeriodSummary"
+              class="widget-period-today-popover-summary"
+            >
+              {{ todayPeriodSummary }}
+            </p>
+          </PopoverContent>
+        </PopoverPortal>
+      </PopoverRoot>
+
       <!-- 로딩 -->
       <UiLoading
         v-if="state.loading"
@@ -244,8 +283,8 @@
         :style="{ height: `${chartBodyHeightPx}px` }"
       >
         <UiChart
-          :key="`${widget.widgetId}-${chartBodyHeightPx}-${chartVizType}`"
-          :type="chartVizType"
+          :key="`${widget.widgetId}-${chartBodyHeightPx}-${uiChartType}`"
+          :type="uiChartType"
           :config="chartConfig"
           show-legend
         />
@@ -277,7 +316,13 @@
 </template>
 
 <script setup lang="ts">
-import { substituteWhereValues, buildTodayPeriodValues } from '~/utils/dataDashboard/ttsqParamParser'
+import {
+  substituteWhereValues,
+  buildTodayPeriodValues,
+  isTodayPeriodFilterValues,
+  formatPeriodFilterSummary,
+} from '~/utils/dataDashboard/ttsqParamParser'
+import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'radix-vue'
 import { copyToClipboard } from '~/utils/global/clipboardUtil'
 import { formatSql } from '~/utils/global/codeUtil'
 import {
@@ -285,10 +330,12 @@ import {
   getRowValue,
   buildPositiveYScale,
   buildDualAxisScales,
+  buildCombinationScales,
   buildRawCategories,
   buildCategoryLabels,
   buildAggregatedValueMap,
   resolveChartAxisMapping,
+  resolveColumnKey,
 } from '~/utils/dataDashboard/vizConfigUtil'
 import {
   normalizeColIdForCodeMap,
@@ -328,9 +375,12 @@ const emit = defineEmits<{
   'filter-toggle': [widgetId: string, isOpen: boolean]
   /** 필터 DOM 높이 변경 시 실제 픽셀값 전달 (ResizeObserver 기반) */
   'filter-height-px': [widgetId: string, heightPx: number]
+  /** Vue 마운트 완료 — GridStack 드래그 핸들 재바인딩용 */
+  'widget-mounted': [widgetId: string]
 }>()
 
 const isFilterOpen = ref(false)
+const isPeriodInfoOpen = ref(false)
 const contentEl = ref<HTMLElement | null>(null)
 const filterEl = ref<HTMLElement | null>(null)
 
@@ -375,6 +425,8 @@ const updateChartHeight = () => {
 }
 
 onMounted(() => {
+  emit('widget-mounted', props.widget.widgetId)
+
   if (!contentEl.value) return
   resizeObserver = new ResizeObserver(() => {
     updateChartHeight()
@@ -414,6 +466,14 @@ watch(
   },
   { deep: true },
 )
+
+/** 기간 필터가 오늘 날짜 기준값과 일치할 때 헤더에 표시 */
+const isTodayPeriodFilter = computed(() => {
+  if (!periodVariables.value.length) return false
+  return isTodayPeriodFilterValues(enrichedVariables.value, localFilterValues.value)
+})
+
+const todayPeriodSummary = computed(() => formatPeriodFilterSummary(enrichedVariables.value, localFilterValues.value))
 
 const resolveCode = (colKey: string, val: unknown): string => {
   return resolveColCodeLabel(props.codeMap, colKey, val)
@@ -493,6 +553,7 @@ const onChangeVizType = (value: string) => {
 const vizTypeMenuItems = [
   { label: '막대 차트', value: 'bar', icon: 'icon-bar-chart' },
   { label: '라인 차트', value: 'line', icon: 'icon-line-chart' },
+  { label: '막대/라인 콤비네이션', value: 'combination', icon: 'icon-chart' },
   { label: '파이 차트', value: 'pie', icon: 'icon-pie-chart' },
   { label: '가로 막대', value: 'horizontalBar', icon: 'icon-bar-chart' },
   { label: '테이블', value: 'table', icon: 'icon-sql' },
@@ -500,7 +561,13 @@ const vizTypeMenuItems = [
 
 const chartVizType = computed((): Exclude<DataDashboardVizType, 'table'> => {
   const { vizType } = props.widget
-  return vizType === 'table' ? 'bar' : vizType
+  if (vizType === 'table') return 'bar'
+  return vizType
+})
+
+/** UiChart :type 용 — combination은 UiChart가 모르므로 mixed로 변환 */
+const uiChartType = computed(() => {
+  return chartVizType.value === 'combination' ? 'mixed' : chartVizType.value
 })
 
 // ===== 테이블 컬럼 =====
@@ -566,6 +633,50 @@ const chartConfig = computed(() => {
   }
 
   const { rawCategories, categories, values: groupedValues } = buildGroupedSeries(xKey)
+
+  // 콤비네이션 차트 (막대 + 라인 혼합)
+  if (vizType === 'combination') {
+    const leftKey =
+      (vizCfg.leftAxisKey ? resolveColumnKey(columns, vizCfg.leftAxisKey) : undefined) ?? yKeys[0] ?? columns[1]
+    const rightKey =
+      (vizCfg.rightAxisKey ? resolveColumnKey(columns, vizCfg.rightAxisKey) : undefined) ??
+      yKeys[1] ??
+      columns[2] ??
+      columns[1]
+    const leftType = vizCfg.leftChartType ?? 'bar'
+    const rightType = vizCfg.rightChartType ?? 'line'
+
+    const leftMap = buildAggregatedValueMap(rows, xKey, leftKey, readNum)
+    const rightMap = buildAggregatedValueMap(rows, xKey, rightKey, readNum)
+    const leftData = rawCategories.map((raw) => leftMap.get(raw) ?? 0)
+    const rightData = rawCategories.map((raw) => rightMap.get(raw) ?? 0)
+
+    const datasets = [
+      {
+        label: leftKey,
+        data: leftData,
+        type: leftType,
+        colorKey: leftType === 'line' ? 'line.analystatSet' : 'bar.analystatSet',
+        colorIndex: 0,
+        yAxisID: 'y',
+      },
+      {
+        label: rightKey,
+        data: rightData,
+        type: rightType,
+        colorKey: rightType === 'line' ? 'line.analystatSet' : 'bar.analystatSet',
+        colorIndex: 1,
+        yAxisID: 'y1',
+      },
+    ]
+
+    const scales = buildCombinationScales(leftData, rightData, leftType, rightType)
+    return {
+      categories,
+      datasets,
+      ...scales,
+    }
+  }
 
   // 가로 막대
   if (vizType === 'horizontalBar') {
