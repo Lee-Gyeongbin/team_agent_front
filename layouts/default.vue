@@ -58,6 +58,11 @@ const onScrollTop = () => {
   min-width: 1024px; // PC 레이아웃 최소 너비 보장
   overflow-x: auto; // 축소 시 가로 스크롤
   overflow-y: hidden;
+  // 채팅 테마 전환 시 전체 레이아웃 배경에 적용 (chat 페이지에서만 CSS 변수 세팅됨)
+  // background-attachment: fixed → 뷰포트 기준으로 그라데이션이 고정되어 박스 잘림 없음
+  background: var(--chat-theme-bg, transparent);
+  background-attachment: fixed;
+  transition: background 300ms ease;
 
   @include mobile {
     min-width: auto; // 모바일은 유동 레이아웃

@@ -105,8 +105,6 @@
 <script setup lang="ts">
 import { useEditor } from '@tiptap/vue-3'
 import { StarterKit } from '@tiptap/starter-kit'
-import { Underline } from '@tiptap/extension-underline'
-import { Link } from '@tiptap/extension-link'
 import { TextAlign } from '@tiptap/extension-text-align'
 import { ResizableImage } from '~/composables/meeting/resizableImage'
 import { TableShortcuts } from '~/composables/meeting/tableShortcuts'
@@ -218,11 +216,12 @@ const MinutesTableCell = TableCell.extend({
 
 const editor = useEditor({
   extensions: [
-    StarterKit.configure({}),
-    Underline,
-    Link.configure({
-      openOnClick: false,
-      HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
+    StarterKit.configure({
+      // StarterKit 내장 확장 설정으로 중복 등록(link/underline) 경고를 방지
+      link: {
+        openOnClick: false,
+        HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
+      },
     }),
     TextAlign.configure({ types: ['heading', 'paragraph'] }),
     // 템플릿(tmplHtml)의 data:image;base64 로고가 파싱 시 제거되지 않도록 허용

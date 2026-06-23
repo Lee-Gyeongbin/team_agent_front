@@ -1,4 +1,5 @@
 <template>
+  <div ref="chatPageRef" class="chat-page-wrap">
   <div
     class="chat-index s-center"
     :class="{
@@ -10,6 +11,7 @@
         isTodayMemeVisible ||
         isNewsCuratorVisible,
     }"
+    :style="activeThemeStyle"
   >
     <!-- 헤더 (설문 모드에서 숨김) -->
     <div
@@ -102,45 +104,26 @@
         !isNewsCuratorVisible
       "
     >
-      <div
-        v-if="!isLoadingChatIndexAgents && chatIndexAgents.length > 0"
-        class="chat-index-card-grp"
-        :class="{ 'is-few': chatIndexAgents.length <= 3 }"
+      <!-- 테마 캐러셀 (4테마 에이전트) -->
+      <ChatThemeCarousel
+        v-if="isLoadingChatIndexAgents || hasThemeAgents"
+        v-model:active-key="activeThemeKey"
+        :agents="chatIndexAgents"
+        :selected-agent-id="selectedChatAgentId"
+        :is-loading="isLoadingChatIndexAgents"
         data-aos="fade-up"
         data-aos-delay="400"
-      >
-        <button
-          v-for="agent in chatIndexAgents"
-          :key="agent.agentId"
-          type="button"
-          class="chat-index-card"
-          :class="{ 'is-active': selectedChatAgentId === agent.agentId }"
-          :style="getChatIndexAgentColorStyle(agent.colorHex ?? '')"
-          @click="onClickChatIndexAgent(agent)"
-        >
-          <div class="chat-index-card-default">
-            <span class="icon-circle"
-              ><i :class="[agent.iconClassNm ? agent.iconClassNm : 'icon-search', 'size-24']"
-            /></span>
-            <div class="chat-index-card-info">
-              <p class="chat-index-card-name">{{ agent.agentNm }}</p>
-              <p class="chat-index-card-sub">{{ getChatIndexAgentSubLabel(agent) }}</p>
-            </div>
-          </div>
-          <div class="chat-index-card-hover">
-            <p class="chat-index-card-hover-desc">{{ agent.description }}</p>
-            <span class="chat-index-card-hover-action">시작하기 <i class="icon-chevron-right-sm size-12" /></span>
-          </div>
-        </button>
-      </div>
+        @select="onClickChatIndexAgent"
+      />
       <p
-        v-else-if="!isLoadingChatIndexAgents && chatIndexAgents.length === 0"
+        v-else
         class="chat-index-agent-hint f-center"
         data-aos="fade-up"
         data-aos-delay="400"
       >
         사용 가능한 에이전트가 없습니다. 에이전트 관리에서 등록해 주세요.
       </p>
+
     </template>
     <!-- 메일 브리핑 로그인 모달 -->
     <MailLoginModal
@@ -149,6 +132,35 @@
       @success="onMailLoginSuccess"
     />
   </div>
+
+  <!-- 테마 좌우 이동 버튼 래퍼 — 항상 DOM에 존재해야 루트 프래그먼트 경고가 발생하지 않음 -->
+  <!-- v-if 대신 v-show 사용: 조건부 DOM 추가/제거로 인한 Vue 블록 불안정 방지 -->
+  <div
+    class="chat-index-theme-arrows"
+    :aria-hidden="!showThemeArrows || undefined"
+  >
+    <button
+      v-show="showThemeArrows"
+      type="button"
+      class="chat-index-theme-arrow chat-index-theme-arrow--prev"
+      :disabled="activeThemeIndex === 0"
+      aria-label="이전 테마"
+      @click="moveToPrevTheme"
+    >
+      ‹
+    </button>
+    <button
+      v-show="showThemeArrows"
+      type="button"
+      class="chat-index-theme-arrow chat-index-theme-arrow--next"
+      :disabled="activeThemeIndex === CHAT_THEMES.length - 1"
+      aria-label="다음 테마"
+      @click="moveToNextTheme"
+    >
+      ›
+    </button>
+  </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -156,6 +168,12 @@ import { parseSurveyConfigFromAgent } from '~/utils/chat/surveyUtil'
 import { parseRecommendConfigFromAgent } from '~/utils/chat/recommendAgentUtil'
 import { parseTranslateConfigFromAgent } from '~/utils/chat/translateAgentUtil'
 import { parseCurationConfigFromAgent } from '~/utils/chat/newsCuratorUtil'
+import {
+  CHAT_THEMES,
+  groupAgentsByTheme,
+  getInitialThemeKey,
+  findThemeByKey,
+} from '~/utils/chat/chatThemeUtil'
 import { useMailStore } from '~/composables/mail/useMailStore'
 import type { Agent } from '~/types/agent'
 
@@ -166,8 +184,6 @@ const {
   handleResetChatPanels,
   chatIndexAgents,
   isLoadingChatIndexAgents,
-  getChatIndexAgentSubLabel,
-  getChatIndexAgentColorStyle,
   handleSelectChatIndexAgents,
   handleClosePsychologySurvey,
   isSurveyVisible,
@@ -190,6 +206,96 @@ const { startChatSocket, stopChatSocket } = useChatSocket()
 const { user } = useAuth()
 const { isLoginModalOpen, openLoginModal, closeLoginModal, checkMailAuth } = useMailStore()
 const { getChatGuideByType, fetchChatGuideList } = useChatGuide()
+
+// ===== 테마 캐러셀 상태 =====
+
+/** 풀너비 페이지 래퍼 ref — 드래그 및 화살표 버튼 기준점 */
+const chatPageRef = ref<HTMLElement | null>(null)
+
+/** 현재 활성 테마 키 */
+const activeThemeKey = ref(CHAT_THEMES[0].key)
+
+/** 활성 테마 인덱스 */
+const activeThemeIndex = computed(() =>
+  CHAT_THEMES.findIndex((t) => t.key === activeThemeKey.value),
+)
+
+const moveToPrevTheme = () => {
+  if (activeThemeIndex.value > 0)
+    activeThemeKey.value = CHAT_THEMES[activeThemeIndex.value - 1].key
+}
+
+const moveToNextTheme = () => {
+  if (activeThemeIndex.value < CHAT_THEMES.length - 1)
+    activeThemeKey.value = CHAT_THEMES[activeThemeIndex.value + 1].key
+}
+
+/** 테마별로 그룹핑된 에이전트 */
+const groupedAgents = computed(() => groupAgentsByTheme(chatIndexAgents.value))
+
+/** 4테마 중 에이전트가 1개 이상 있으면 true */
+const hasThemeAgents = computed(() =>
+  CHAT_THEMES.some((t) => (groupedAgents.value[t.key]?.length ?? 0) > 0),
+)
+
+/** 화살표 버튼 표시 여부 — v-show 전용 (v-if 사용 시 DOM 동적 추가/제거로 Nuxt 루트 경고 발생) */
+const showThemeArrows = computed(() =>
+  (isLoadingChatIndexAgents.value || hasThemeAgents.value) &&
+  !isSurveyVisible.value &&
+  !isGenderStepVisible.value &&
+  !isRecommendVisible.value &&
+  !isTranslateVisible.value &&
+  !isTodayMemeVisible.value &&
+  !isNewsCuratorVisible.value,
+)
+
+/** 활성 테마 CSS 변수 스타일 — .chat-index 스코프에 주입 (primary 계열 변수) */
+const activeThemeStyle = computed(() => {
+  const theme = findThemeByKey(activeThemeKey.value)
+  if (!theme) return undefined
+  return {
+    '--color-primary': theme.primary,
+    '--color-primary-hover': theme.primaryHover,
+    '--color-primary-dark': theme.primaryDark,
+    '--color-primary-dark-hover': theme.primaryDarkHover,
+    '--color-primary-rgb': theme.primaryRgb,
+    '--color-primary-bg': theme.primaryBg,
+  }
+})
+
+/** document.documentElement에 테마 배경 CSS 변수를 전역 적용한다 */
+const applyGlobalThemeBg = (themeKey: string) => {
+  const theme = findThemeByKey(themeKey)
+  const root = document.documentElement
+  if (theme) {
+    root.style.setProperty('--chat-theme-bg', theme.bgGradient)
+    root.style.setProperty('--chat-theme-sidebar-bg', theme.sidebarBg)
+  } else {
+    root.style.removeProperty('--chat-theme-bg')
+    root.style.removeProperty('--chat-theme-sidebar-bg')
+  }
+}
+
+const clearGlobalThemeBg = () => {
+  const root = document.documentElement
+  root.style.removeProperty('--chat-theme-bg')
+  root.style.removeProperty('--chat-theme-sidebar-bg')
+}
+
+/** 에이전트 로드 완료 후 에이전트가 있는 첫 테마로 이동 */
+watch(
+  () => isLoadingChatIndexAgents.value,
+  (loading) => {
+    if (!loading) {
+      activeThemeKey.value = getInitialThemeKey(groupedAgents.value)
+    }
+  },
+)
+
+/** activeThemeKey 변경 시 전역 배경 즉시 반영 */
+watch(activeThemeKey, (key) => {
+  applyGlobalThemeBg(key)
+}, { immediate: true })
 
 /** guideTpCd '001' 인사 멘트 — 있으면 content의 {{userName}} 치환, 없으면 기존 텍스트 */
 const greetingText = computed(() => {
@@ -268,6 +374,9 @@ onUnmounted(() => {
 })
 
 onBeforeRouteLeave((to) => {
+  // 페이지 전환 시작 전에 테마 CSS 변수를 즉시 제거 — 사이드바/헤더 색상 원복
+  // onUnmounted는 전환 애니메이션 종료 후 호출되어 늦으므로 여기서 처리
+  clearGlobalThemeBg()
   if (!String(to.path).startsWith('/chat')) {
     stopChatSocket()
   }

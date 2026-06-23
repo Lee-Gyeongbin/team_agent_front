@@ -8,10 +8,14 @@
   flex-direction: column;
   align-items: flex-start;
   padding: 12px 8px;
-  background-color: $color-background;
+  // chat 테마 진입 시 --chat-theme-sidebar-bg CSS 변수가 주입됨(미세 틴트)
+  // 미설정 시 기존 배경색 유지, 전환 시 그라데이션이 사이드바 영역까지 자연스럽게 스며듦
+  background-color: var(--chat-theme-sidebar-bg, #{$color-background});
   border-right: 1px solid $color-border-light;
   gap: 8px;
-  transition: width $transition-base;
+  transition:
+    width $transition-base,
+    background-color 300ms ease;
 
   &.is-expanded {
     width: $sidebar-width;
