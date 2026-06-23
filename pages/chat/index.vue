@@ -205,6 +205,8 @@ const { startChatSocket, stopChatSocket } = useChatSocket()
 const { user } = useAuth()
 const { isLoginModalOpen, openLoginModal, closeLoginModal, checkMailAuth } = useMailStore()
 const { getChatGuideByType, fetchChatGuideList } = useChatGuide()
+const THEME_BG_FADE_MS = 1000
+let themeBgFadeTimer: ReturnType<typeof window.setTimeout> | null = null
 
 // ===== 테마 캐러셀 상태 =====
 
@@ -262,19 +264,68 @@ const activeThemeStyle = computed(() => {
 const applyGlobalThemeBg = (themeKey: string) => {
   const theme = findThemeByKey(themeKey)
   const root = document.documentElement
-  if (theme) {
-    root.style.setProperty('--chat-theme-bg', theme.bgGradient)
-    root.style.setProperty('--chat-theme-sidebar-bg', theme.sidebarBg)
-  } else {
-    root.style.removeProperty('--chat-theme-bg')
-    root.style.removeProperty('--chat-theme-sidebar-bg')
+  if (!theme) return
+
+  const nextBg = theme.bgGradient
+  const nextSidebarBg = theme.sidebarBg
+
+  const currentBg = root.style.getPropertyValue('--chat-theme-bg-base').trim()
+  const currentSidebarBg = root.style.getPropertyValue('--chat-theme-sidebar-bg-base').trim()
+
+  // 첫 적용은 즉시 반영 (초기 진입 시 깜빡임 방지)
+  if (!currentBg && !currentSidebarBg) {
+    root.style.setProperty('--chat-theme-bg-base', nextBg)
+    root.style.setProperty('--chat-theme-sidebar-bg-base', nextSidebarBg)
+    root.style.setProperty('--chat-theme-bg-overlay-opacity', '0')
+    root.style.setProperty('--chat-theme-bg-overlay-scale', '0')
+    root.style.setProperty('--chat-theme-sidebar-bg-overlay-opacity', '0')
+    root.style.setProperty('--chat-theme-sidebar-bg-overlay-scale', '0')
+    return
   }
+
+  // 동일 테마 재적용은 무시
+  if (currentBg === nextBg && currentSidebarBg === nextSidebarBg) return
+
+  // 새 테마는 base에 즉시 반영하고, 이전 테마를 overlay로 올려 위에서 아래로 걷어낸다.
+  // 반투명 그라데이션끼리 겹쳐 진해지는 현상을 방지한다.
+  root.style.setProperty('--chat-theme-bg-base', nextBg)
+  root.style.setProperty('--chat-theme-sidebar-bg-base', nextSidebarBg)
+  root.style.setProperty('--chat-theme-bg-overlay', currentBg)
+  root.style.setProperty('--chat-theme-sidebar-bg-overlay', currentSidebarBg)
+  root.style.setProperty('--chat-theme-bg-overlay-opacity', '1')
+  root.style.setProperty('--chat-theme-sidebar-bg-overlay-opacity', '1')
+  root.style.setProperty('--chat-theme-bg-overlay-scale', '1')
+  root.style.setProperty('--chat-theme-sidebar-bg-overlay-scale', '1')
+
+  // transition 트리거를 위해 reflow 보장 후 scale 축소
+  void root.offsetHeight
+  root.style.setProperty('--chat-theme-bg-overlay-scale', '0')
+  root.style.setProperty('--chat-theme-sidebar-bg-overlay-scale', '0')
+
+  if (themeBgFadeTimer) window.clearTimeout(themeBgFadeTimer)
+  themeBgFadeTimer = window.setTimeout(() => {
+    root.style.setProperty('--chat-theme-bg-overlay-opacity', '0')
+    root.style.setProperty('--chat-theme-bg-overlay-scale', '0')
+    root.style.setProperty('--chat-theme-sidebar-bg-overlay-opacity', '0')
+    root.style.setProperty('--chat-theme-sidebar-bg-overlay-scale', '0')
+    themeBgFadeTimer = null
+  }, THEME_BG_FADE_MS)
 }
 
 const clearGlobalThemeBg = () => {
   const root = document.documentElement
-  root.style.removeProperty('--chat-theme-bg')
-  root.style.removeProperty('--chat-theme-sidebar-bg')
+  if (themeBgFadeTimer) {
+    window.clearTimeout(themeBgFadeTimer)
+    themeBgFadeTimer = null
+  }
+  root.style.removeProperty('--chat-theme-bg-base')
+  root.style.removeProperty('--chat-theme-bg-overlay')
+  root.style.removeProperty('--chat-theme-bg-overlay-opacity')
+  root.style.removeProperty('--chat-theme-bg-overlay-scale')
+  root.style.removeProperty('--chat-theme-sidebar-bg-base')
+  root.style.removeProperty('--chat-theme-sidebar-bg-overlay')
+  root.style.removeProperty('--chat-theme-sidebar-bg-overlay-opacity')
+  root.style.removeProperty('--chat-theme-sidebar-bg-overlay-scale')
 }
 
 /** 에이전트 로드 완료 후 에이전트가 있는 첫 테마로 이동 */
@@ -410,16 +461,18 @@ onBeforeRouteLeave((to) => {
   justify-content: flex-start;
   padding-top: $spacing-lg;
   min-height: calc(100vh - #{$header-height});
+  gap: $spacing-md;
 
   .chat-index-main {
+    order: 2;
     width: 100%;
-    margin-top: auto;
+    margin-top: 0;
     flex-shrink: 0;
   }
 
   .chat-index-input-wrapper {
-    margin-top: $spacing-md;
-    margin-bottom: $spacing-lg;
+    margin-top: 0;
+    margin-bottom: $spacing-md;
     flex-shrink: 0;
     width: 100%;
   }
@@ -427,13 +480,17 @@ onBeforeRouteLeave((to) => {
 
 // 설문 컴포넌트: 남은 세로 공간을 모두 차지, 입력창과 간격 확보
 .chat-index-survey {
-  flex: 1;
+  order: 1;
+  flex: 0 0 auto;
+  height: min(640px, calc(100vh - #{$header-height} - 180px));
+  max-height: min(640px, calc(100vh - #{$header-height} - 180px));
   min-height: 0;
   min-width: 0;
   width: 100%;
   max-width: 760px;
   align-self: stretch;
-  margin-bottom: $spacing-md;
+  margin-bottom: 0;
+  overflow: hidden;
 }
 
 /** 뉴스픽 분야 선택 — 콘텐츠 높이만큼만 (하단 여백 방지) */

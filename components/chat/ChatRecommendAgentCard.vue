@@ -858,8 +858,8 @@ const onSubmitClick = () => {
   flex-direction: column;
   width: 100%;
   max-width: 760px;
-  height: auto;
-  min-height: min(640px, 78vh);
+  height: 100%;
+  min-height: 0;
   border: 1px solid $color-border;
   border-radius: $border-radius-lg;
   background: #fff;
@@ -868,7 +868,7 @@ const onSubmitClick = () => {
   --recommend-content-shift: 8px;
 
   &.is-intro-playing {
-    min-height: min(640px, 78vh);
+    min-height: 0;
     border-color: transparent;
   }
 

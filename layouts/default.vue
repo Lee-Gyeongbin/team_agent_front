@@ -53,6 +53,7 @@ const onScrollTop = () => {
 
 <style lang="scss" scoped>
 .layout-default {
+  position: relative;
   display: flex;
   height: 100vh;
   min-width: 1024px; // PC 레이아웃 최소 너비 보장
@@ -60,9 +61,24 @@ const onScrollTop = () => {
   overflow-y: hidden;
   // 채팅 테마 전환 시 전체 레이아웃 배경에 적용 (chat 페이지에서만 CSS 변수 세팅됨)
   // background-attachment: fixed → 뷰포트 기준으로 그라데이션이 고정되어 박스 잘림 없음
-  background: var(--chat-theme-bg, transparent);
+  background: var(--chat-theme-bg-base, transparent);
   background-attachment: fixed;
-  transition: background 300ms ease;
+  transition: background 1000ms ease-in-out;
+  isolation: isolate;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: var(--chat-theme-bg-overlay, transparent);
+    background-attachment: fixed;
+    opacity: var(--chat-theme-bg-overlay-opacity, 0);
+    transform-origin: bottom center;
+    transform: scaleY(var(--chat-theme-bg-overlay-scale, 0));
+    transition: transform 1000ms ease-in-out;
+  }
 
   @include mobile {
     min-width: auto; // 모바일은 유동 레이아웃
@@ -70,6 +86,8 @@ const onScrollTop = () => {
   }
 
   .main {
+    position: relative;
+    z-index: 1;
     width: calc(100% - #{$sidebar-width}); // 사이드바를 뺀 나머지 너비
     flex: 1;
     display: flex;

@@ -57,6 +57,7 @@
         <div
           v-if="isOpen"
           class="chat-mode-panel"
+          :style="chatModePanelThemeStyle"
         >
           <div class="chat-mode-panel-header">
             <h3 class="chat-mode-panel-title">에이전트 선택</h3>
@@ -68,12 +69,28 @@
               <i class="icon-close-bg size-20" />
             </button>
           </div>
+          <div class="chat-mode-panel-theme-nav">
+            <button
+              v-for="theme in CHAT_THEMES"
+              :key="theme.key"
+              type="button"
+              class="chat-mode-panel-theme-tab"
+              :class="{ 'is-active': panelActiveThemeKey === theme.key }"
+              :style="panelActiveThemeKey === theme.key ? { '--tab-color': theme.primary } : undefined"
+              @click="onSelectPanelTheme(theme.key)"
+            >
+              <i :class="[theme.iconClassNm, 'size-16']" />
+              <span>{{ theme.label }}</span>
+            </button>
+          </div>
+          <p class="chat-mode-panel-theme-tagline">
+            {{ panelActiveTheme?.tagline ?? '' }}
+          </p>
           <div
             class="chat-mode-panel-card-grp"
-            :class="{ 'is-few': chatIndexAgents.length <= 3 }"
           >
             <button
-              v-for="agent in chatIndexAgents"
+              v-for="agent in panelThemeAgents"
               :key="agent.agentId"
               type="button"
               class="chat-index-card"
@@ -95,6 +112,13 @@
                 <span class="chat-index-card-hover-action">시작하기 <i class="icon-chevron-right-sm size-12" /></span>
               </div>
             </button>
+            <div
+              v-if="panelThemeAgents.length === 0"
+              class="chat-mode-panel-empty"
+            >
+              <i class="icon-search size-24" />
+              <p>이 테마에 사용 가능한 에이전트가 없습니다.</p>
+            </div>
           </div>
         </div>
       </Transition>
@@ -106,6 +130,12 @@
 import type { Agent } from '~/types/agent'
 import { isSurveyAgent } from '~/utils/chat/surveyUtil'
 import { isRecommendAgent } from '~/utils/chat/recommendAgentUtil'
+import {
+  CHAT_THEMES,
+  findThemeByKey,
+  getInitialThemeKey,
+  groupAgentsByTheme,
+} from '~/utils/chat/chatThemeUtil'
 
 interface Props {
   disabled?: boolean
@@ -170,6 +200,13 @@ const onSubOptionsMultiChange = (next: Array<string | number>) => {
 const route = useRoute()
 const isOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
+const panelActiveThemeKey = ref(CHAT_THEMES[0].key)
+const THEME_PANEL_FADE_MS = 1000
+const panelThemeBgBase = ref('none')
+const panelThemeBgOverlay = ref('none')
+const panelThemeBgOverlayOpacity = ref('0')
+const panelThemeBgOverlayScale = ref('0')
+let panelThemeFadeTimer: ReturnType<typeof window.setTimeout> | null = null
 
 const selectedSurveyAgent = computed(
   () => chatIndexAgents.value.find((a) => a.agentId === selectedChatAgentId.value && isSurveyAgent(a)) ?? null,
@@ -183,10 +220,68 @@ const selectedAgent = computed(() => {
 const isSearchModeActive = computed(() => activeSearchModes.value.length > 0)
 
 const isChatIndex = computed(() => route.path === '/chat')
+const groupedAgentsByTheme = computed(() => groupAgentsByTheme(chatIndexAgents.value))
+
+const panelActiveTheme = computed(() => findThemeByKey(panelActiveThemeKey.value))
+
+const panelThemeAgents = computed(() => groupedAgentsByTheme.value[panelActiveThemeKey.value] ?? [])
+
+const chatModePanelThemeStyle = computed(() => ({
+  '--chat-mode-panel-theme-bg-base': panelThemeBgBase.value,
+  '--chat-mode-panel-theme-bg-overlay': panelThemeBgOverlay.value,
+  '--chat-mode-panel-theme-bg-overlay-opacity': panelThemeBgOverlayOpacity.value,
+  '--chat-mode-panel-theme-bg-overlay-scale': panelThemeBgOverlayScale.value,
+}))
+
+watch(
+  panelActiveTheme,
+  async (theme) => {
+    const nextBg = theme?.bgGradient ?? 'none'
+    if (!panelThemeBgBase.value || panelThemeBgBase.value === 'none') {
+      panelThemeBgBase.value = nextBg
+      panelThemeBgOverlay.value = 'none'
+      panelThemeBgOverlayOpacity.value = '0'
+      panelThemeBgOverlayScale.value = '0'
+      return
+    }
+    if (panelThemeBgBase.value === nextBg) return
+
+    // 새 테마를 base에 즉시 반영하고, 이전 테마 overlay를 위에서 아래로 걷어낸다.
+    const prevBg = panelThemeBgBase.value
+    panelThemeBgBase.value = nextBg
+    panelThemeBgOverlay.value = prevBg
+    panelThemeBgOverlayOpacity.value = '1'
+    panelThemeBgOverlayScale.value = '1'
+    await nextTick()
+    panelThemeBgOverlayScale.value = '0'
+
+    if (panelThemeFadeTimer) window.clearTimeout(panelThemeFadeTimer)
+    panelThemeFadeTimer = window.setTimeout(() => {
+      panelThemeBgOverlayOpacity.value = '0'
+      panelThemeBgOverlayScale.value = '0'
+      panelThemeFadeTimer = null
+    }, THEME_PANEL_FADE_MS)
+  },
+  { immediate: true },
+)
 
 watch(disabled, (nextDisabled) => {
   if (nextDisabled) isOpen.value = false
 })
+
+watch(
+  isOpen,
+  (opened) => {
+    if (!opened) return
+    const selectedThemeKey = chatIndexAgents.value.find((a) => a.agentId === selectedChatAgentId.value)?.cncptTy
+    if (selectedThemeKey && groupedAgentsByTheme.value[selectedThemeKey]?.length) {
+      panelActiveThemeKey.value = selectedThemeKey
+      return
+    }
+    panelActiveThemeKey.value = getInitialThemeKey(groupedAgentsByTheme.value)
+  },
+  { immediate: true },
+)
 
 const toggleDropdown = () => {
   if (disabled.value) return
@@ -211,6 +306,17 @@ const onRemove = () => {
   if (!selectedAgent.value) return
   selectChatIndexAgent(selectedAgent.value)
 }
+
+const onSelectPanelTheme = (themeKey: string) => {
+  panelActiveThemeKey.value = themeKey
+}
+
+onUnmounted(() => {
+  if (panelThemeFadeTimer) {
+    window.clearTimeout(panelThemeFadeTimer)
+    panelThemeFadeTimer = null
+  }
+})
 </script>
 <style scoped lang="scss">
 .ref-select {

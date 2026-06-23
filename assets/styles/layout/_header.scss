@@ -2,6 +2,7 @@
 @use '../utils/mixins' as *;
 
 .app-header {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -10,9 +11,28 @@
   padding: 0 $spacing-md;
   z-index: $z-header;
   // 테마 색상 변수가 있을 때 사이드바와 동일한 미세 틴트 적용, 없으면 흰색 폴백
-  background-color: var(--chat-theme-sidebar-bg, #fff);
+  background-color: var(--chat-theme-sidebar-bg-base, #fff);
   border-bottom: 1px solid $color-border;
-  transition: background-color 300ms ease;
+  transition: background-color 1000ms ease-in-out;
+  isolation: isolate;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-color: var(--chat-theme-sidebar-bg-overlay, transparent);
+    opacity: var(--chat-theme-sidebar-bg-overlay-opacity, 0);
+    transform-origin: bottom center;
+    transform: scaleY(var(--chat-theme-sidebar-bg-overlay-scale, 0));
+    transition: transform 1000ms ease-in-out;
+  }
+
+  > * {
+    position: relative;
+    z-index: 1;
+  }
 
   .header-title-wrap {
     display: flex;
