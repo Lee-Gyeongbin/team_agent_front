@@ -528,6 +528,11 @@
   @include icon-file-bg('lunch-agent');
 }
 
+// 위켄더
+.icon-weekender-agent {
+  @include icon-file-bg('weekender-agent');
+}
+
 // 이메일
 .icon-email {
   @include icon-file-bg('email');
