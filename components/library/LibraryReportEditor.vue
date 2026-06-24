@@ -705,7 +705,7 @@ const editor = useEditor({
       orderedList: false,
       // StarterKit 내장 확장 설정으로 중복 등록(link/underline) 경고를 방지
       link: {
-        openOnClick: false,
+        openOnClick: true,
         HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
       },
     }),
