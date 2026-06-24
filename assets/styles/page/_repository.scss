@@ -587,55 +587,6 @@
 }
 
 // ===================================
-// 카테고리 선택 모달
-// ===================================
-
-.modal-category-select {
-  .modal-dialog-content {
-    max-width: 720px;
-    border-radius: 12px;
-  }
-
-  .modal-dialog-body {
-    display: block;
-    min-height: 0;
-    padding: 0;
-  }
-}
-
-.modal-category-select__body {
-  padding: 0;
-}
-
-.modal-category-select__search {
-  margin-top: 12px;
-  margin-bottom: 12px;
-
-  .search-input {
-    width: 100%;
-  }
-}
-
-.modal-category-select__tree-wrap {
-  max-height: 360px;
-  overflow-y: auto;
-  padding-right: 4px;
-  border: none;
-  padding: 0;
-  width: 100%;
-  height: auto;
-}
-
-.modal-category-select__footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid $color-border;
-}
-
-// ===================================
 // URL 등록 패널 (오른쪽 슬라이드)
 // ===================================
 

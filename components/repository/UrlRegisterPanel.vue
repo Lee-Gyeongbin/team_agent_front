@@ -2,7 +2,7 @@
   <UiModal
     :is-open="isOpen"
     position="right"
-    title="URL 등록"
+    :title="editingUrl ? 'URL 수정' : 'URL 등록'"
     @close="$emit('close')"
   >
     <div class="com-setting-form">
@@ -19,7 +19,7 @@
       <div class="url-reg-field">
         <label class="url-reg-label">카테고리</label>
         <UiSelect
-          v-model="form.category"
+          v-model="form.categoryId"
           :options="categoryOptions"
           placeholder="카테고리 선택"
           size="md"
@@ -41,8 +41,8 @@
       <div class="url-reg-field">
         <label class="url-reg-label">URL 주소 <span class="required">*</span></label>
         <UiInput
-          ref="urlAddressRef"
-          v-model="form.urlAddress"
+          ref="urlAddrRef"
+          v-model="form.urlAddr"
           placeholder="https://example.com"
           size="md"
         />
@@ -53,7 +53,7 @@
         <div class="url-reg-col">
           <label class="url-reg-label">수집 주기</label>
           <UiSelect
-            v-model="form.collectionCycle"
+            v-model="form.crawlIntvl"
             :options="cycleOptions"
             size="md"
           />
@@ -61,7 +61,7 @@
         <div class="url-reg-col">
           <label class="url-reg-label">스크래핑 단계</label>
           <UiSelect
-            v-model="form.scrapingDepth"
+            v-model="form.crawlDpth"
             :options="depthOptions"
             size="md"
           />
@@ -91,10 +91,14 @@
 </template>
 
 <script setup lang="ts">
+import type { UrlItem } from '~/types/repository'
 import { openToast } from '~/composables/useToast'
 
-defineProps<{
+const props = defineProps<{
   isOpen: boolean
+  categoryOptions: { label: string; value: string }[]
+  initialCategoryId?: string
+  editingUrl?: UrlItem | null
 }>()
 
 const emit = defineEmits<{
@@ -103,7 +107,7 @@ const emit = defineEmits<{
 }>()
 
 const urlNameRef = ref<{ focus?: () => void; $el?: HTMLElement } | null>(null)
-const urlAddressRef = ref<{ focus?: () => void; $el?: HTMLElement } | null>(null)
+const urlAddrRef = ref<{ focus?: () => void; $el?: HTMLElement } | null>(null)
 
 const focusField = (fieldRef: typeof urlNameRef) => {
   nextTick(() => {
@@ -117,27 +121,19 @@ const focusField = (fieldRef: typeof urlNameRef) => {
 }
 
 const form = ref({
+  urlId: '',
   active: true,
-  category: '',
+  categoryId: '',
   urlName: '',
-  urlAddress: '',
-  collectionCycle: 'daily',
-  scrapingDepth: '1',
+  urlAddr: '',
+  crawlIntvl: 'DAILY',
+  crawlDpth: '1',
 })
 
-const categoryOptions = [
-  { label: '블로그', value: '블로그' },
-  { label: '뉴스', value: '뉴스' },
-  { label: '문서', value: '문서' },
-  { label: '지원센터', value: '지원센터' },
-  { label: '위키', value: '위키' },
-]
-
 const cycleOptions = [
-  { label: '매일', value: 'daily' },
-  { label: '매주', value: 'weekly' },
-  { label: '매월', value: 'monthly' },
-  { label: '수동', value: 'manual' },
+  { label: '매일', value: 'DAILY' },
+  { label: '매주', value: 'WEEKLY' },
+  { label: '수동', value: 'MANUAL' },
 ]
 
 const depthOptions = [
@@ -147,15 +143,35 @@ const depthOptions = [
 ]
 
 const resetForm = () => {
-  form.value = {
-    active: true,
-    category: '',
-    urlName: '',
-    urlAddress: '',
-    collectionCycle: 'daily',
-    scrapingDepth: '1',
+  if (props.editingUrl) {
+    form.value = {
+      urlId: props.editingUrl.urlId,
+      active: props.editingUrl.useYn === 'Y',
+      categoryId: props.editingUrl.categoryId ?? '',
+      urlName: props.editingUrl.urlName,
+      urlAddr: props.editingUrl.urlAddr,
+      crawlIntvl: props.editingUrl.crawlIntvl || 'DAILY',
+      crawlDpth: String(props.editingUrl.crawlDpth ?? '1'),
+    }
+  } else {
+    form.value = {
+      urlId: '',
+      active: true,
+      categoryId: props.initialCategoryId ?? '',
+      urlName: '',
+      urlAddr: '',
+      crawlIntvl: 'DAILY',
+      crawlDpth: '1',
+    }
   }
 }
+
+watch(
+  () => props.isOpen,
+  (val) => {
+    if (val) resetForm()
+  },
+)
 
 const onSave = () => {
   if (!form.value.urlName.trim()) {
@@ -163,9 +179,9 @@ const onSave = () => {
     focusField(urlNameRef)
     return
   }
-  if (!form.value.urlAddress.trim()) {
+  if (!form.value.urlAddr.trim()) {
     openToast({ message: 'URL 주소를 입력해주세요.', type: 'warning' })
-    focusField(urlAddressRef)
+    focusField(urlAddrRef)
     return
   }
   emit('save', { ...form.value })

@@ -8,18 +8,6 @@ import type {
 } from '~/types/repository'
 import type { FileMeta, FileUploadResponse } from '~/types/file'
 
-// 🔽 Mock — 백엔드 API 완성 시 useApi 패턴으로 교체
-const MOCK_BASE = '/mock/repository'
-
-const mockPost = async <T>(url: string, body: unknown = {}): Promise<T> => {
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  return res.json()
-}
-
 export const useRepositoryApi = () => {
   const { post } = useApi()
   /**
@@ -76,6 +64,8 @@ export const useRepositoryApi = () => {
     useYn?: 'Y' | 'N'
     page?: number
     pageSize?: number
+    /** true: URL_ID IS NOT NULL (URL탭 수집 파일), 미전달: URL_ID IS NULL (파일탭) */
+    urlIdNotNull?: boolean
   }) => {
     return post<{ dataList: FileLibraryItem[]; totalCnt: number }>('/repository/selectDocFileLibraryList.do', params)
   }
@@ -118,25 +108,33 @@ export const useRepositoryApi = () => {
 
   // ===== URL =====
   const fetchUrlList = async (params: {
-    keyword?: string
-    status?: string
-    category?: string
+    findContent?: string
+    useYn?: string
+    categoryId?: string
     page?: number
     pageSize?: number
   }) => {
-    return mockPost<{ list: UrlItem[]; total: number }>(`${MOCK_BASE}/url/list`, params)
+    return post<{ dataList: UrlItem[]; totalCnt: number }>('/repository/selectUrlList.do', params)
   }
 
   const fetchSaveUrl = async (data: Partial<UrlItem>) => {
-    return mockPost<{ data: UrlItem }>(`${MOCK_BASE}/url/save`, data)
+    return post<{ successYn: boolean; returnMsg?: string; urlId?: string }>('/repository/saveUrl.do', data)
   }
 
-  const fetchDeleteUrl = async (ids: string[]) => {
-    return mockPost<{ data: { ids: string[] } }>(`${MOCK_BASE}/url/delete`, { ids })
+  const fetchDeleteUrl = async (urlIdList: string[]) => {
+    return post<{ successYn: boolean; returnMsg?: string }>('/repository/deleteUrl.do', { urlIdList })
   }
 
-  const fetchToggleUrlStatus = async (id: string, active: boolean) => {
-    return mockPost<{ data: UrlItem }>(`${MOCK_BASE}/url/toggle-status`, { id, active })
+  const fetchUpdateUrl = async (data: Partial<UrlItem>) => {
+    return post<{ successYn: boolean; returnMsg?: string }>('/repository/updateUrl.do', data)
+  }
+
+  const fetchToggleUrlStatus = async (urlId: string, useYn: string) => {
+    return post<{ successYn: boolean; returnMsg?: string }>('/repository/updateUrlUseYn.do', { urlId, useYn })
+  }
+
+  const fetchBatchScraping = async () => {
+    return post<{ successYn: boolean; returnMsg?: string }>('/repository/batchScraping.do', {})
   }
 
   return {
@@ -148,8 +146,10 @@ export const useRepositoryApi = () => {
     fetchSaveDocumentFile,
     fetchUrlList,
     fetchSaveUrl,
+    fetchUpdateUrl,
     fetchDeleteUrl,
     fetchToggleUrlStatus,
+    fetchBatchScraping,
     fetchSelectDocFileLibraryList,
     /** @deprecated 이름 통일용 별칭 — `fetchSelectDocFileLibraryList` 와 동일 */
     fetchFileLibraryList: fetchSelectDocFileLibraryList,

@@ -15,27 +15,9 @@ const {
 /** 스토어 간 공유 — useRepositoryStore가 순환 없이 트리 참조 */
 export const categoryList = ref<CategoryTreeItem[]>([])
 export const filteredCategoryList = ref<CategoryTreeItem[]>([])
-const visibleCategoryId = ref('')
-
-function buildFilteredTree(items: CategoryTreeItem[], id: string): CategoryTreeItem[] {
-  return items.reduce<CategoryTreeItem[]>((acc, item) => {
-    const filteredChildren = item.children ? buildFilteredTree(item.children, id) : []
-    if (item.categoryId === id || filteredChildren.length > 0) {
-      acc.push({ ...item, children: filteredChildren.length > 0 ? filteredChildren : item.children })
-    }
-    return acc
-  }, [])
-}
-
-function updateFilteredCategoryList() {
-  if (!visibleCategoryId.value) {
-    filteredCategoryList.value = categoryList.value
-  } else {
-    filteredCategoryList.value = buildFilteredTree(categoryList.value, visibleCategoryId.value)
-  }
-}
-
-watch([categoryList, visibleCategoryId], () => updateFilteredCategoryList(), { immediate: true, deep: true })
+watch(categoryList, () => {
+  filteredCategoryList.value = categoryList.value
+}, { immediate: true, deep: true })
 
 /** 루트 여부 (TB_CONTENT_CAT 루트는 PARN_CAT_ID IS NULL) */
 function isRootParnCat(parnCatId: string | null | undefined): boolean {
@@ -115,11 +97,19 @@ function findCategorySiblingContext(
 }
 
 export const useCategoryStore = () => {
-  const { fileSelectedCategoryId, fileCurrentPage, fileTotalCount, fileSearchKeyword, handleSelectFileLibraryList } =
-    useRepositoryStore()
+  const {
+    fileSelectedCategoryId,
+    fileCurrentPage,
+    fileTotalCount,
+    fileSearchKeyword,
+    handleSelectFileLibraryList,
+    activeRepositoryTab,
+    urlCategoryFilter,
+    urlCurrentPage,
+    handleSelectUrlList,
+  } = useRepositoryStore()
   // ===== 카테고리 =====
   const isCategoryInputVisible = ref(false)
-  const isCategorySelectModalOpen = ref(false)
   const categoryInputValue = ref('')
   const categoryInputRef = ref<{ focus: () => void } | null>(null)
   /** 상단 입력으로 추가할 때 부모 카테고리 ID (null이면 최상위) */
@@ -135,8 +125,13 @@ export const useCategoryStore = () => {
     { label: '하위 카테고리 추가', value: 'addSubcategory', icon: 'icon-folder-close' },
     { label: '카테고리 삭제', value: 'delete', icon: 'icon-trashcan', color: 'danger' as const },
   ]
-  // 카테고리 선택 → 파일 필터링
-  const selectedCategoryIds = computed(() => (fileSelectedCategoryId.value ? [fileSelectedCategoryId.value] : []))
+  // 카테고리 선택 → 탭별 필터링
+  const selectedCategoryIds = computed(() => {
+    if (activeRepositoryTab.value === 'url') {
+      return urlCategoryFilter.value && urlCategoryFilter.value !== 'all' ? [urlCategoryFilter.value] : []
+    }
+    return fileSelectedCategoryId.value ? [fileSelectedCategoryId.value] : []
+  })
   /** id로 categoryList 원본 노드 찾기 */
   const findCategoryNodeById = (items: CategoryTreeItem[], id: string): CategoryTreeItem | null => {
     for (const item of items) {
@@ -152,14 +147,17 @@ export const useCategoryStore = () => {
     if (item.children?.length) {
       const node = findCategoryNodeById(categoryList.value, item.categoryId)
       if (node?.children?.length) node.expanded = !node.expanded
+    }
+
+    if (activeRepositoryTab.value === 'url') {
+      urlCategoryFilter.value = item.categoryId
+      urlCurrentPage.value = 1
+      handleSelectUrlList()
+    } else {
       fileSelectedCategoryId.value = item.categoryId
       fileCurrentPage.value = 1
       handleSelectFileLibraryList()
-      return
     }
-    fileSelectedCategoryId.value = item.categoryId
-    fileCurrentPage.value = 1
-    handleSelectFileLibraryList()
   }
   // 카테고리 펼침 토글
   const toggleExpand = (item: CategoryTreeItem) => {
@@ -259,18 +257,6 @@ export const useCategoryStore = () => {
       if (confirmed) await handleDeleteCategory(cat.categoryId)
     }
   }
-  const openCategorySelectModal = () => {
-    isCategorySelectModalOpen.value = true
-  }
-  const onCategorySelectConfirm = (selectedId: string) => {
-    visibleCategoryId.value = selectedId
-    if (fileSelectedCategoryId.value && selectedId && fileSelectedCategoryId.value !== selectedId) {
-      fileSelectedCategoryId.value = ''
-      fileCurrentPage.value = 1
-      handleSelectFileLibraryList()
-    }
-  }
-
   /**
    * 트리 D&D 정렬: 부모 변경 및 같은 부모 간 정렬 모두 허용.
    * position: 'before' | 'after' — 대상 앞/뒤 삽입 (부모 변경 가능)
@@ -529,7 +515,6 @@ export const useCategoryStore = () => {
 
   return {
     isCategoryInputVisible,
-    isCategorySelectModalOpen,
     categoryInputValue,
     categoryInputRef,
     categoryInputParentId,
@@ -539,13 +524,11 @@ export const useCategoryStore = () => {
     categoryMenuItems,
     filteredCategoryList,
     selectedCategoryIds,
-    onCategorySelectConfirm,
     handleSelectCategoryList,
     toggleExpand,
     onCategorySelect,
     onCategoryMenuSelect,
     saveCategoryRename,
-    openCategorySelectModal,
     toggleCategoryInput,
     onCategoryInputEnter,
     handleUpdateCategoryOrder,
@@ -554,6 +537,5 @@ export const useCategoryStore = () => {
     handleDeleteCategory,
     collectDescendantIds,
     categoryList,
-    visibleCategoryId,
   }
 }

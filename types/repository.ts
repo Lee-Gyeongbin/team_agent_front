@@ -66,14 +66,24 @@ export interface FileLibrarySavePayload {
   docSrc?: string
 }
 
-/** URL 항목 */
+/** URL 항목 (TB_CNT_URL) */
 export interface UrlItem {
-  id: string
-  category: string
-  urlAddress: string
+  urlId: string
   urlName: string
-  collectionCycle: string
-  lastCollectedAt: string
-  active: boolean
-  categoryId?: string
+  urlAddr: string
+  categoryId: string | null
+  categoryName?: string
+  /** 수집 주기: DAILY / WEEKLY / MANUAL */
+  crawlIntvl: string
+  crawlDpth: number
+  /** 사용 여부: Y / N */
+  useYn: string
+  lastCrawlDt: string | null
+  urlCrawlStatusCd?: string | null
+  /** 이 URL을 사용하는 데이터셋 수 (TB_DS_URL JOIN) */
+  activeDsCnt?: number
+  /** 이 URL을 사용하는 데이터셋명 목록 (콤마 구분) */
+  dsNm?: string
+  createDt?: string
+  modifyDt?: string
 }

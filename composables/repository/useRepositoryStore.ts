@@ -5,8 +5,10 @@ const { handleUploadByPresignedUrl, onDownloadFile } = useFileStore()
 const {
   fetchUrlList,
   fetchSaveUrl,
+  fetchUpdateUrl,
   fetchDeleteUrl,
   fetchToggleUrlStatus,
+  fetchBatchScraping,
   fetchSaveDocumentFile,
   fetchSelectDocFileLibraryList,
   fetchSaveFileLibraryBatch,
@@ -15,6 +17,9 @@ const {
   fetchDeleteFileLibrary,
 } = useRepositoryApi()
 const isLoading = ref(false)
+
+/** 저장소 페이지 활성 탭 — useCategoryStore와 공유 */
+const activeRepositoryTab = ref<'file' | 'url'>('file')
 
 const secLvlOptions = ref<{ label: string; value: string }[]>([])
 
@@ -49,6 +54,7 @@ const handleSelectFileLibraryList = async () => {
       useYn: fileUseYn.value,
       page: fileCurrentPage.value,
       pageSize: filePageSize.value,
+      urlIdNotNull: activeRepositoryTab.value === 'url' ? true : undefined,
     })
     fileLibraryList.value = res.dataList ?? []
     fileTotalCount.value = res.totalCnt ?? 0
@@ -249,17 +255,16 @@ const handleUpdateFileLibrary = async (data: {
 // ===== URL 액션 =====
 const handleSelectUrlList = async () => {
   openLoading({ text: 'URL 목록을 불러오는 중...' })
-  let res: { list: UrlItem[]; total: number }
   try {
-    res = await fetchUrlList({
-      keyword: urlSearchKeyword.value || undefined,
-      status: urlStatusFilter.value,
-      category: urlCategoryFilter.value,
+    const res = await fetchUrlList({
+      findContent: urlSearchKeyword.value || undefined,
+      useYn: urlStatusFilter.value === 'all' ? undefined : urlStatusFilter.value,
+      categoryId: urlCategoryFilter.value === 'all' ? undefined : urlCategoryFilter.value,
       page: urlCurrentPage.value,
       pageSize: urlPageSize,
     })
-    urlList.value = res.list
-    urlTotalCount.value = res.total
+    urlList.value = res.dataList ?? []
+    urlTotalCount.value = res.totalCnt ?? 0
   } finally {
     closeLoading()
   }
@@ -276,7 +281,11 @@ const handleSaveUrl = async (data: Partial<UrlItem>) => {
 
   openLoading({ text: 'URL을 저장하는 중...' })
   try {
-    await fetchSaveUrl(data)
+    const res = await fetchSaveUrl(data)
+    if (!res.successYn) {
+      openToast({ message: res.returnMsg ?? 'URL 저장에 실패했습니다.', type: 'error' })
+      return false
+    }
   } finally {
     closeLoading()
   }
@@ -284,8 +293,31 @@ const handleSaveUrl = async (data: Partial<UrlItem>) => {
   return true
 }
 
-const handleDeleteUrl = async (ids: string[]) => {
-  const validIds = (Array.isArray(ids) ? ids : []).map((id) => String(id ?? '').trim()).filter(Boolean)
+const handleUpdateUrl = async (data: Partial<UrlItem>) => {
+  const urlName = String(data.urlName ?? '').trim()
+  const targetName = urlName ? `'${urlName}'` : '이 URL'
+  const confirmed = await openConfirm({
+    title: 'URL 수정',
+    message: `${targetName}을(를) 수정하시겠습니까?`,
+  })
+  if (!confirmed) return false
+
+  openLoading({ text: 'URL을 수정하는 중...' })
+  try {
+    const res = await fetchUpdateUrl(data)
+    if (!res.successYn) {
+      openToast({ message: res.returnMsg ?? 'URL 수정에 실패했습니다.', type: 'error' })
+      return false
+    }
+  } finally {
+    closeLoading()
+  }
+  await handleSelectUrlList()
+  return true
+}
+
+const handleDeleteUrl = async (urlIds: string[]) => {
+  const validIds = (Array.isArray(urlIds) ? urlIds : []).map((id) => String(id ?? '').trim()).filter(Boolean)
   if (validIds.length === 0) return false
 
   const confirmed = await openConfirm({
@@ -297,11 +329,10 @@ const handleDeleteUrl = async (ids: string[]) => {
   openLoading({ text: 'URL을 삭제하는 중...' })
   try {
     const res = await fetchDeleteUrl(validIds)
-    const affected = typeof res.data === 'number' ? res.data : 0
-    if (affected > 0) {
+    if (res.successYn) {
       openToast({ message: 'URL이 삭제되었습니다.', type: 'success' })
     } else {
-      openToast({ message: 'URL 삭제에 실패했습니다.', type: 'error' })
+      openToast({ message: res.returnMsg ?? 'URL 삭제에 실패했습니다.', type: 'error' })
     }
   } finally {
     closeLoading()
@@ -310,7 +341,27 @@ const handleDeleteUrl = async (ids: string[]) => {
   return true
 }
 
-const handleToggleUrlStatus = async (id: string, active: boolean) => {
+const handleBatchScraping = async () => {
+  openLoading({ text: '배치 스크래핑을 요청하는 중...' })
+  try {
+    const res = await fetchBatchScraping()
+    if (res.successYn) {
+      openToast({ message: res.returnMsg ?? '스크래핑 요청이 완료되었습니다.', type: 'success' })
+      await handleSelectUrlList()
+      return true
+    }
+    openToast({ message: res.returnMsg ?? '스크래핑 요청에 실패했습니다.', type: 'error' })
+    return false
+  } catch {
+    openToast({ message: '스크래핑 요청 중 오류가 발생했습니다.', type: 'error' })
+    return false
+  } finally {
+    closeLoading()
+  }
+}
+
+const handleToggleUrlStatus = async (urlId: string, active: boolean) => {
+  const useYn = active ? 'Y' : 'N'
   const nextLabel = active ? '활성화' : '비활성화'
   const confirmed = await openConfirm({
     title: 'URL 상태 변경',
@@ -320,7 +371,7 @@ const handleToggleUrlStatus = async (id: string, active: boolean) => {
 
   openLoading({ text: 'URL 상태를 변경하는 중...' })
   try {
-    await fetchToggleUrlStatus(id, active)
+    await fetchToggleUrlStatus(urlId, useYn)
   } finally {
     closeLoading()
   }
@@ -395,6 +446,7 @@ const getDocIconName = (fileType: string) => {
 export const useRepositoryStore = () => {
   return {
     isLoading,
+    activeRepositoryTab,
     // URL
     urlList,
     urlTotalCount,
@@ -405,8 +457,10 @@ export const useRepositoryStore = () => {
     urlPageSize,
     handleSelectUrlList,
     handleSaveUrl,
+    handleUpdateUrl,
     handleDeleteUrl,
     handleToggleUrlStatus,
+    handleBatchScraping,
     handleOpenFileLibraryPreview,
     handleDownloadFileLibraryRow,
     isFilePreviewOpen,
