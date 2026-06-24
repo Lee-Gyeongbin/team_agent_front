@@ -189,6 +189,11 @@
               :src="getThumbDisplaySrc(item)"
               :alt="`${item[recommendConfig.result.nameField]} 이미지`"
               class="chat-recommend-agent-card__result-thumb-img"
+              role="button"
+              tabindex="0"
+              title="클릭하면 크게 볼 수 있어요"
+              @click="openImageModal(item)"
+              @keydown.enter.prevent="openImageModal(item)"
               @load="onThumbImgLoad(idx, item)"
               @error="onThumbImgError(idx, item)"
             />
@@ -200,11 +205,17 @@
             >
               <div class="pexels-loading__spinner" />
             </div>
-            <i
+            <div
               v-if="!hasThumbUrl(item) && !showThumbLoadingOverlay(idx, item)"
-              class="icon-image size-20"
-              aria-hidden="true"
-            />
+              class="chat-recommend-agent-card__result-thumb-empty"
+              aria-label="대표 이미지 없음"
+            >
+              <i
+                class="icon-image size-20"
+                aria-hidden="true"
+              />
+              <span>이미지 없음</span>
+            </div>
           </div>
           <div class="chat-recommend-agent-card__result-content">
             <div class="chat-recommend-agent-card__result-item-head">
@@ -276,6 +287,30 @@
         </UiButton>
       </template>
     </div>
+
+    <!-- 썸네일 확대 라이트박스 (채팅·지식창고 공통) -->
+    <Teleport to="body">
+      <Transition name="pexels-modal">
+        <div
+          v-if="imageModalUrl"
+          class="pexels-modal"
+          @click.self="imageModalUrl = ''"
+        >
+          <button
+            class="pexels-modal__close"
+            type="button"
+            @click="imageModalUrl = ''"
+          >
+            <i class="icon-close size-20"></i>
+          </button>
+          <img
+            class="pexels-modal__img"
+            :src="imageModalUrl"
+            alt="확대 이미지"
+          />
+        </div>
+      </Transition>
+    </Teleport>
   </section>
 </template>
 
@@ -500,6 +535,31 @@ const hasThumbUrl = (item: RecommendResultItem): boolean => {
 }
 
 const getThumbDisplaySrc = (item: RecommendResultItem): string => getRecommendThumbDisplaySrc(getItemImageUrl(item))
+
+// ── 썸네일 확대 라이트박스 ──────────────────────────────────
+const imageModalUrl = ref('')
+
+const openImageModal = (item: RecommendResultItem) => {
+  const src = getThumbDisplaySrc(item)
+  if (src) imageModalUrl.value = src
+}
+
+const onImageModalKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Escape') imageModalUrl.value = ''
+}
+
+watch(imageModalUrl, (url) => {
+  if (typeof window === 'undefined') return
+  if (url) {
+    window.addEventListener('keydown', onImageModalKeydown)
+  } else {
+    window.removeEventListener('keydown', onImageModalKeydown)
+  }
+})
+
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') window.removeEventListener('keydown', onImageModalKeydown)
+})
 
 const isThumbAwaitingUrlInFlight = (item: RecommendResultItem) =>
   !hasThumbUrl(item) && shouldRenderResultList.value && !isImageEnrichmentSettled.value
@@ -1066,6 +1126,7 @@ const onSubmitClick = () => {
       display: block;
       opacity: 0;
       transition: opacity 0.2s ease;
+      cursor: zoom-in;
     }
 
     &.is-loaded > &-img {
@@ -1093,6 +1154,22 @@ const onSubmitClick = () => {
       border-style: dashed;
       background: rgba(var(--recommend-theme-rgb), 0.06);
       animation: recommend-result-thumb-pulse 1.2s ease-in-out infinite;
+    }
+  }
+
+  // 대표 이미지가 없을 때 — 아이콘 + 안내 문구
+  &__result-thumb-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 100%;
+    height: 100%;
+    color: $color-text-muted;
+
+    span {
+      @include typo($body-caption);
     }
   }
 

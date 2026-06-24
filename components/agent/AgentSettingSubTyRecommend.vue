@@ -486,14 +486,18 @@
             />
             <UiCheckbox
               :model-value="modelValue.addressEnrichment === 'kakao'"
-              label="카카오 주소 보강 사용 (식당명+지역 → 카카오 지도 링크로 변환)"
+              label="카카오 주소 보강 사용 (장소명+지역 → 카카오 지도 링크로 변환)"
               @update:model-value="onUpdate('addressEnrichment', $event ? 'kakao' : '')"
             />
-            <UiCheckbox
-              :model-value="modelValue.imageEnrichment === 'aiGenerate'"
-              label="AI 이미지 생성 보강 사용 (메뉴명 → AI 생성 이미지)"
-              @update:model-value="onUpdate('imageEnrichment', $event ? 'aiGenerate' : '')"
-            />
+            <div class="recommend-feature-select-row">
+              <span class="recommend-feature-select-label">이미지 보강</span>
+              <UiSelect
+                :model-value="modelValue.imageEnrichment || ''"
+                :options="imageEnrichmentOptions"
+                size="sm"
+                @update:model-value="onImageEnrichmentChange(String($event ?? ''))"
+              />
+            </div>
           </div>
         </UiSettingSection>
       </div>
@@ -573,6 +577,19 @@ const resultFieldTypeOptions = [
   { label: '링크', value: 'link' },
   { label: '텍스트', value: 'text' },
 ]
+
+// 이미지 보강 방식 — 없음 / AI 생성(음식 등) / 카카오 이미지 검색(실제 사진)
+const imageEnrichmentOptions = [
+  { label: '사용 안 함', value: '' },
+  { label: 'AI 이미지 생성 (메뉴명 → AI 생성 이미지)', value: 'aiGenerate' },
+  { label: '카카오 이미지 검색 (장소·행사명 → 실제 사진)', value: 'kakaoImage' },
+]
+
+const onImageEnrichmentChange = (value: string) => {
+  const next: RecommendConfigForm['imageEnrichment'] =
+    value === 'aiGenerate' ? 'aiGenerate' : value === 'kakaoImage' ? 'kakaoImage' : ''
+  onUpdate('imageEnrichment', next)
+}
 
 const emitForm = (next: RecommendConfigForm) => emit('update:modelValue', next)
 
@@ -893,6 +910,22 @@ const onRemoveConstraint = (idx: number) => {
   flex-direction: column;
   gap: 12px;
   margin-left: calc(var(--label-width) + 12px);
+}
+
+.recommend-feature-select-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .recommend-feature-select-label {
+    @include typo($body-small);
+    color: $color-text-secondary;
+    flex-shrink: 0;
+  }
+
+  :deep(.ui-select) {
+    min-width: 260px;
+  }
 }
 
 .type-config-row {

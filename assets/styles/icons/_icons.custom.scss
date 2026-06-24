@@ -307,6 +307,10 @@
   @include icon-file('view');
 }
 
+.icon-image {
+  @include icon-file-bg('image');
+}
+
 .icon-transfer {
   @include icon-file('transfer');
 }
@@ -517,6 +521,11 @@
 // 설정
 .icon-setting-agent {
   @include icon-file-bg('setting-agent');
+}
+
+// 점심
+.icon-lunch-agent {
+  @include icon-file-bg('lunch-agent');
 }
 
 // 이메일

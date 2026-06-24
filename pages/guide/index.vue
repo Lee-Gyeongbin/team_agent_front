@@ -756,6 +756,7 @@ const iconGroups = [
       { class: 'icon-link-agent' },
       { class: 'icon-edit-agent' },
       { class: 'icon-setting-agent' },
+      { class: 'icon-lunch-agent' },
       { class: 'icon-document' },
       { class: 'icon-chunk' },
       { class: 'icon-sync' },

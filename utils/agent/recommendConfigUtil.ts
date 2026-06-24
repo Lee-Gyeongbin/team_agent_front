@@ -42,7 +42,7 @@ export interface RecommendConfigForm {
   showThumbnailImages: boolean
   showImageNotice: boolean
   addressEnrichment: 'kakao' | ''
-  imageEnrichment: 'aiGenerate' | ''
+  imageEnrichment: 'aiGenerate' | 'kakaoImage' | ''
   language: string
   version: string
   constraints: string[]
@@ -222,7 +222,12 @@ export const parseRecommendAdditionalConfigToForm = (
     showThumbnailImages: features.showThumbnailImages !== false,
     showImageNotice: features.showImageNotice !== false,
     addressEnrichment: features.addressEnrichment === 'kakao' ? 'kakao' : '',
-    imageEnrichment: features.imageEnrichment === 'aiGenerate' ? 'aiGenerate' : '',
+    imageEnrichment:
+      features.imageEnrichment === 'aiGenerate'
+        ? 'aiGenerate'
+        : features.imageEnrichment === 'kakaoImage'
+          ? 'kakaoImage'
+          : '',
     language: String(config.language ?? empty.language),
     version: String(config.version ?? empty.version),
     constraints: parseStringArray(config.constraints, empty.constraints),
@@ -306,7 +311,11 @@ export const buildRecommendAdditionalConfig = (
       showThumbnailImages: form.showThumbnailImages,
       showImageNotice: form.showImageNotice,
       ...(form.addressEnrichment === 'kakao' ? { addressEnrichment: 'kakao' as const } : {}),
-      ...(form.imageEnrichment === 'aiGenerate' ? { imageEnrichment: 'aiGenerate' as const } : {}),
+      ...(form.imageEnrichment === 'aiGenerate'
+        ? { imageEnrichment: 'aiGenerate' as const }
+        : form.imageEnrichment === 'kakaoImage'
+          ? { imageEnrichment: 'kakaoImage' as const }
+          : {}),
     },
     constraints: form.constraints.map((c) => c.trim()).filter(Boolean),
   }

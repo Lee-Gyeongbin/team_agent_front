@@ -127,7 +127,7 @@ export interface RecommendFeatures {
   showThumbnailImages: boolean
   showImageNotice: boolean
   addressEnrichment?: 'kakao'
-  imageEnrichment?: 'aiGenerate'
+  imageEnrichment?: 'aiGenerate' | 'kakaoImage'
 }
 
 export interface RecommendAgentConfig {

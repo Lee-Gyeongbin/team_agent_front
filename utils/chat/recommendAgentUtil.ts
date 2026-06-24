@@ -403,6 +403,13 @@ export const shouldFetchMusicRecommendImages = (items: RecommendResultItem[], im
     (item) => isMusicRecommendResultItem(item) && isRecommendImagePlaceholderUrl(String(item[imageField] ?? '')),
   )
 
+/**
+ * AI 이미지 생성(getLunchMenuImageData.do) 대상 여부 — `[음식이미지]` placeholder가 있는 행이 하나라도 있을 때만.
+ * 카카오 등으로 채워진 실제 https/data 이미지는 대상이 아니므로 AI 생성으로 덮어쓰지 않는다.
+ */
+const shouldFetchAiGenerateRecommendImages = (items: RecommendResultItem[], imageField = 'imageUrl'): boolean =>
+  items.some((item) => RECOMMEND_FOOD_IMAGE_PLACEHOLDER_REGEX.test(String(item[imageField] ?? '').trim()))
+
 /** lunch 썸네일 API 호출용 — 동적 RecommendResultItem은 menu·imageUrl만 사용 */
 const asLunchItemsForImageApi = (items: RecommendResultItem[]): LunchRecommendationItem[] =>
   items as unknown as LunchRecommendationItem[]
@@ -599,6 +606,9 @@ export const tryGetRecommendImageEnrichmentFromCache = (
     return tryGetMusicRecommendImageEnrichmentFromCache(logId, rContent, items, imageField)
   }
 
+  // 실제 이미지(카카오 등)가 채워진 경우 AI 생성 보강을 건너뛰고 원본 그대로 표시한다.
+  if (!shouldFetchAiGenerateRecommendImages(items, imageField)) return items
+
   const cached = tryGetLunchMenuImageEnrichmentFromCache(logId, rContent, asLunchItemsForImageApi(items))
   if (!cached?.length) return null
   return mergeRecommendImageEnrichment(items, cached as unknown as RecommendResultItem[], imageField)
@@ -617,6 +627,9 @@ export const resolveRecommendImageEnrichment = async (
     if (!enriched?.length) return null
     return mergeRecommendImageEnrichment(items, enriched, imageField)
   }
+
+  // AI 생성은 `[음식이미지]` placeholder가 있을 때만 — 실제 https/data 이미지는 유지한다.
+  if (!shouldFetchAiGenerateRecommendImages(items, imageField)) return items
 
   const enriched = await resolveLunchMenuImageEnrichment(logId, rContent, asLunchItemsForImageApi(items))
   if (!enriched?.length) return null
