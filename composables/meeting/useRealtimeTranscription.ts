@@ -97,6 +97,8 @@ const sendSessionUpdate = () => {
     JSON.stringify({
       type: 'session.update',
       session: {
+        type: 'realtime',
+        model: 'gpt-realtime-2',
         audio: {
           input: {
             transcription: {
