@@ -563,10 +563,10 @@ const handleSend = async () => {
 </script>
 
 <style lang="scss" scoped>
-/* 다음 추천 질문 — 검색창 위 텍스트 링크 */
+/* 다음 추천 질문 — 검색창 위 칩 버튼 */
 .chat-next-questions {
-  margin-bottom: $spacing-xs;
-  padding: 0 $spacing-xs;
+  margin-bottom: $spacing-sm;
+  padding: 0 44px;
 
   &-loading {
     display: flex;
@@ -602,32 +602,32 @@ const handleSend = async () => {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 4px $spacing-md;
+    gap: $spacing-sm;
   }
 }
 
 .chat-next-question-btn {
-  padding: 0;
-  border: none;
-  background: none;
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  background: #fff;
   cursor: pointer;
-  @include typo($body-small, $color-text-secondary);
-  text-decoration: underline;
-  text-decoration-color: transparent;
-  text-underline-offset: 2px;
+  text-align: left;
+  @include typo($body-small, $color-text-heading-sub);
   transition:
-    color $transition-fast,
-    text-decoration-color $transition-fast;
+    border-color $transition-fast,
+    background-color $transition-fast;
 
   &:hover {
-    color: var(--color-primary);
-    text-decoration-color: rgba(var(--color-primary-rgb, 60, 105, 219), 0.45);
+    border-color: var(--color-primary);
+    background: rgba(var(--color-primary-rgb, 60, 105, 219), 0.04);
   }
 
   &:focus-visible {
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;
-    border-radius: $border-radius-sm;
   }
 }
 
