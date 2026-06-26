@@ -1,13 +1,13 @@
 <template>
-  <div class="dashboard-card dashboard-category">
+  <div class="dashboard-card dashboard-keyword">
     <div class="dashboard-card-header">
-      <div class="category-title-group">
-        <span class="card-title">사용자 관심 카테고리</span>
+      <div class="keyword-title-group">
+        <span class="card-title">사용자 관심 키워드</span>
       </div>
       <div
-        class="category-period-buttons"
+        class="keyword-period-buttons"
         role="group"
-        aria-label="집계 기간"
+        aria-label="사용자 관심 키워드 집계 기간"
       >
         <UiButton
           v-for="opt in periodOptions"
@@ -22,23 +22,23 @@
         </UiButton>
       </div>
     </div>
-    <div class="category-badge-area">
+    <div class="keyword-badge-area">
       <UiLoading
-        v-if="categoryTrendLoading"
-        text="카테고리 데이터를 불러오는 중..."
+        v-if="keywordTrendLoading"
+        text="사용자 관심 키워드 데이터를 불러오는 중..."
       />
       <ul
-        v-else-if="categoryTrend.length"
-        class="category-badge-list"
+        v-else-if="keywordTrend.length"
+        class="keyword-badge-list"
       >
         <li
-          v-for="(item, idx) in categoryTrend.slice(0, 5)"
-          :key="`${item.categoryNm}-${idx}`"
-          class="category-row"
+          v-for="(item, idx) in keywordTrend.slice(0, 5)"
+          :key="`${item.llmKeyword}-${idx}`"
+          class="keyword-row"
         >
-          <div class="category-row-left">
+          <div class="keyword-row-left">
             <span
-              class="category-rank"
+              class="keyword-rank"
               :aria-label="`${idx + 1}`"
             >
               {{ idx + 1 }}
@@ -47,26 +47,26 @@
               variant="default"
               size="lg"
             >
-              {{ item.categoryNm }}
+              {{ item.llmKeyword }}
             </UiBadge>
           </div>
-          <span class="category-cnt">{{ item.categoryCnt.toLocaleString() }}건</span>
+          <span class="keyword-cnt">{{ item.keywordCnt.toLocaleString() }}건</span>
         </li>
       </ul>
       <p
         v-else
-        class="category-empty"
+        class="keyword-empty"
       >
-        표시할 카테고리가 없습니다.
+        표시할 사용자 관심 키워드가 없습니다.
       </p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { CATEGORY_TREND_DEFAULT_DAY_CNT } from '~/composables/dashboard/useDashboardStore'
+import { KEYWORD_TREND_DEFAULT_DAY_CNT } from '~/composables/dashboard/useDashboardStore'
 
-const { categoryTrend, categoryTrendLoading, handleSelectDashboardCategoryTrend } = useDashboardStore()
+const { keywordTrend, keywordTrendLoading, handleSelectDashboardKeywordTrend } = useDashboardStore()
 
 /** 집계 기간 옵션 */
 const periodOptions = [
@@ -75,7 +75,7 @@ const periodOptions = [
   { label: '7일', value: 7 },
 ]
 
-const selectedDayCnt = ref<number>(CATEGORY_TREND_DEFAULT_DAY_CNT)
+const selectedDayCnt = ref<number>(KEYWORD_TREND_DEFAULT_DAY_CNT)
 
 const onSelectPeriod = async (dayCnt: number) => {
   if (selectedDayCnt.value === dayCnt) {
@@ -83,13 +83,13 @@ const onSelectPeriod = async (dayCnt: number) => {
   }
 
   selectedDayCnt.value = dayCnt
-  await handleSelectDashboardCategoryTrend(dayCnt)
+  await handleSelectDashboardKeywordTrend(dayCnt)
 }
 </script>
 
 <style lang="scss" scoped>
-.dashboard-category {
-  .category-title-group {
+.dashboard-keyword {
+  .keyword-title-group {
     display: flex;
     align-items: baseline;
     flex-wrap: wrap;
@@ -97,7 +97,7 @@ const onSelectPeriod = async (dayCnt: number) => {
     min-width: 0;
   }
 
-  .category-period-buttons {
+  .keyword-period-buttons {
     display: flex;
     align-items: center;
     gap: $spacing-sm;
@@ -109,13 +109,13 @@ const onSelectPeriod = async (dayCnt: number) => {
     }
   }
 
-  .category-badge-area {
+  .keyword-badge-area {
     display: flex;
     flex-direction: column;
     min-height: 120px;
   }
 
-  .category-badge-list {
+  .keyword-badge-list {
     margin: 0;
     padding: 0;
     list-style: none;
@@ -124,7 +124,7 @@ const onSelectPeriod = async (dayCnt: number) => {
     gap: $spacing-sm;
   }
 
-  .category-row {
+  .keyword-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -132,7 +132,7 @@ const onSelectPeriod = async (dayCnt: number) => {
     min-width: 0;
   }
 
-  .category-row-left {
+  .keyword-row-left {
     display: flex;
     align-items: center;
     flex: 1;
@@ -140,25 +140,25 @@ const onSelectPeriod = async (dayCnt: number) => {
     min-width: 0;
   }
 
-  .category-rank,
-  .category-cnt,
-  .category-empty {
+  .keyword-rank,
+  .keyword-cnt,
+  .keyword-empty {
     @include typo($body-medium-medium);
     color: $color-text-secondary;
   }
 
-  .category-rank,
-  .category-cnt {
+  .keyword-rank,
+  .keyword-cnt {
     flex-shrink: 0;
     text-align: right;
   }
 
-  .category-rank {
+  .keyword-rank {
     min-width: 28px;
     font-variant-numeric: tabular-nums;
   }
 
-  .category-empty {
+  .keyword-empty {
     margin: 0;
     padding: $spacing-xl 0;
     text-align: center;

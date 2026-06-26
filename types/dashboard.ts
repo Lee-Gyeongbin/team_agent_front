@@ -37,9 +37,8 @@ export interface DashboardVisitorTrend {
   successCnt: number
 }
 
-/** 사용자 관심 카테고리 */
-export interface DashboardCategoryTrend {
-  categoryNm: string
-  categoryCnt: number
-  dayCnt: number
+/** 키워드 집계 */
+export interface DashboardKeywordTrend {
+  llmKeyword: string
+  keywordCnt: number
 }

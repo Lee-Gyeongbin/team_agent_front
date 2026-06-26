@@ -1,6 +1,6 @@
 import { useDashboardApi } from '~/composables/dashboard/useDashboardApi'
 import type {
-  DashboardCategoryTrend,
+  DashboardKeywordTrend,
   DashboardNoticeItem,
   DashboardQueryRatio,
   DashboardStatSummary,
@@ -15,10 +15,10 @@ const {
   fetchDashboardNoticeList,
   fetchDashboardTokenUsage,
   fetchDashboardVisitorTrend,
-  fetchDashboardCategoryTrend,
+  fetchDashboardKeywordTrend,
 } = useDashboardApi()
 
-export const CATEGORY_TREND_DEFAULT_DAY_CNT = 1
+export const KEYWORD_TREND_DEFAULT_DAY_CNT = 1
 
 const statSummary = ref<DashboardStatSummary | null>(null)
 const queryRatio = ref<DashboardQueryRatio | null>(null)
@@ -90,8 +90,8 @@ const tokenUsageChartConfig = computed(() => {
   }
 })
 const visitorTrend = ref<DashboardVisitorTrend[]>([])
-const categoryTrend = ref<DashboardCategoryTrend[]>([])
-const categoryTrendLoading = ref<boolean>(false)
+const keywordTrend = ref<DashboardKeywordTrend[]>([])
+const keywordTrendLoading = ref<boolean>(false)
 
 const visitorTrendChartConfig = computed(() => {
   const list = visitorTrend.value ?? []
@@ -174,17 +174,17 @@ const handleSelectDashboardVisitorTrend = async () => {
   }
 }
 
-/** 사용자 관심 카테고리 (keyword -> category 수정) */
-const handleSelectDashboardCategoryTrend = async (dayCnt: number) => {
-  categoryTrendLoading.value = true
+/** 사용자 관심 키워드 */
+const handleSelectDashboardKeywordTrend = async (dayCnt: number) => {
+  keywordTrendLoading.value = true
   try {
-    const res = await fetchDashboardCategoryTrend(dayCnt)
-    categoryTrend.value = res.dataList ?? []
+    const res = await fetchDashboardKeywordTrend(dayCnt)
+    keywordTrend.value = res.dataList ?? []
   } catch {
-    categoryTrend.value = []
-    openToast({ message: '카테고리 추이 조회에 실패했습니다.', type: 'error' })
+    keywordTrend.value = []
+    openToast({ message: '사용자 관심 키워드 조회에 실패했습니다.', type: 'error' })
   } finally {
-    categoryTrendLoading.value = false
+    keywordTrendLoading.value = false
   }
 }
 
@@ -198,7 +198,7 @@ const handleSelectDashboardAll = async () => {
     handleSelectDashboardNoticeList(),
     handleSelectDashboardTokenUsage(currentYm),
     handleSelectDashboardVisitorTrend(),
-    handleSelectDashboardCategoryTrend(CATEGORY_TREND_DEFAULT_DAY_CNT),
+    handleSelectDashboardKeywordTrend(KEYWORD_TREND_DEFAULT_DAY_CNT),
   ])
 }
 
@@ -215,14 +215,14 @@ export const useDashboardStore = () => {
     tokenUsageChartConfig,
     visitorTrend,
     visitorTrendChartConfig,
-    categoryTrend,
-    categoryTrendLoading,
+    keywordTrend,
+    keywordTrendLoading,
     handleSelectDashboardStatSummary,
     handleSelectDashboardQueryRatio,
     handleSelectDashboardNoticeList,
     handleSelectDashboardTokenUsage,
     handleSelectDashboardVisitorTrend,
-    handleSelectDashboardCategoryTrend,
+    handleSelectDashboardKeywordTrend,
     handleSelectDashboardAll,
   }
 }

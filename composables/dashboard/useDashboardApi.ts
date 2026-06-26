@@ -5,7 +5,7 @@ import type {
   DashboardStatSummary,
   DashboardTokenUsage,
   DashboardVisitorTrend,
-  DashboardCategoryTrend,
+  DashboardKeywordTrend,
 } from '~/types/dashboard'
 
 /**
@@ -39,9 +39,9 @@ export const useDashboardApi = () => {
     return get<{ dataList: DashboardVisitorTrend[] }>('/dashboard/visitor-trend.do')
   }
 
-  /** 사용자 관심 카테고리 */
-  const fetchDashboardCategoryTrend = async (dayCnt: number): Promise<{ dataList: DashboardCategoryTrend[] }> => {
-    return post<{ dataList: DashboardCategoryTrend[] }>('/dashboard/category-trend.do', { dayCnt: dayCnt })
+  /** 사용자 관심 키워드 */
+  const fetchDashboardKeywordTrend = async (dayCnt: number): Promise<{ dataList: DashboardKeywordTrend[] }> => {
+    return post<{ dataList: DashboardKeywordTrend[] }>('/dashboard/keyword-trend.do', { dayCnt: dayCnt })
   }
 
   return {
@@ -50,6 +50,6 @@ export const useDashboardApi = () => {
     fetchDashboardNoticeList,
     fetchDashboardTokenUsage,
     fetchDashboardVisitorTrend,
-    fetchDashboardCategoryTrend,
+    fetchDashboardKeywordTrend,
   }
 }

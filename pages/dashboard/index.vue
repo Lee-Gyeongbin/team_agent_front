@@ -29,9 +29,9 @@
       />
     </div>
 
-    <!-- 하단: 사용자 관심 카테고리 -->
+    <!-- 하단: 사용자 관심 키워드 -->
     <div class="dashboard-bottom-row is-single">
-      <DashboardCategoryTrend />
+      <DashboardKeywordTrend />
     </div>
   </div>
 </template>
