@@ -4,14 +4,20 @@
     class="dq-guide"
     :style="guideThemeStyle"
   >
-    <div class="dq-guide__summary">
+    <div
+      class="dq-guide__summary"
+      :class="{
+        'is-required-missing': requiredMissingCount > 0,
+        'is-just-passed': justPassed,
+      }"
+    >
       <div class="dq-guide__summary-left">
         <i :class="[resolvedThemeIconClass, 'size-14']" />
         <span
           class="dq-guide__summary-score"
-          :class="{ 'is-pass': score.passed }"
+          :class="{ 'is-pass': isReadyPass }"
         >
-          {{ score.passed ? '완성도 통과' : `완성도 ${score.score}점` }}
+          {{ summaryLabel }}
         </span>
         <span
           v-if="requiredMissingCount > 0"
@@ -33,11 +39,37 @@
         />
       </button>
     </div>
-    <div class="dq-guide__progress">
-      <div
-        class="dq-guide__progress-fill"
-        :style="{ width: `${score.score}%` }"
-      />
+    <div
+      v-if="hasSupplement"
+      class="dq-guide__supplement"
+      :class="`is-${diagnosis?.status.toLowerCase()}`"
+    >
+      <template v-if="diagnosis?.status === 'OUT_OF_SCOPE'">
+        <p class="dq-guide__supplement-msg">현재 데이터로는 답하기 어려운 질문이에요. 이런 통계는 조회할 수 있어요.</p>
+        <div class="dq-guide__chip-row">
+          <button
+            v-for="(alt, i) in diagnosis?.alternatives ?? []"
+            :key="i"
+            type="button"
+            class="dq-guide__chip"
+            @click="applyAlternative(alt)"
+          >
+            {{ alt }}
+          </button>
+        </div>
+      </template>
+      <template v-else>
+        <p class="dq-guide__supplement-msg">아래 내용을 질문에 더해 다시 검증해 주세요.</p>
+        <ul class="dq-guide__clarify-list">
+          <li
+            v-for="cq in diagnosis?.clarificationQuestions ?? []"
+            :key="cq.item"
+            class="dq-guide__clarify-item"
+          >
+            {{ cq.question }}
+          </li>
+        </ul>
+      </template>
     </div>
 
     <Transition name="dq-guide-fold">
@@ -53,7 +85,10 @@
               class="dq-guide__crit"
               :class="{ 'is-met': c.met, 'is-req': c.required && !c.met }"
             >
-              <i class="size-10" :class="c.met ? 'icon-check' : 'icon-close'" />
+              <i
+                class="size-10"
+                :class="c.met ? 'icon-check' : 'icon-close'"
+              />
               {{ c.label }}
             </span>
           </div>
@@ -78,7 +113,10 @@
             </button>
           </div>
 
-          <Transition name="dq-tab" mode="out-in">
+          <Transition
+            name="dq-tab"
+            mode="out-in"
+          >
             <div
               :key="activeTabId"
               class="dq-guide__tabpanel"
@@ -94,7 +132,10 @@
                       class="dq-guide__ex-skeleton"
                     />
                   </template>
-                  <div v-else class="dq-guide__ex-list">
+                  <div
+                    v-else
+                    class="dq-guide__ex-list"
+                  >
                     <button
                       v-for="item in fewshotList"
                       :key="item.fewshotId"
@@ -182,17 +223,41 @@ const props = withDefaults(defineProps<Props>(), {
 const { chatMessage } = useChatRooms()
 const { subOptions, selectedSubOptions, activeSearchModes, riskAgentActive } = useChatStore()
 const { fetchMetaFewshotList } = useDatamartApi()
+const { showDiagnosis, diagnosis, applyAlternative } = useDataQuestionGate()
 const isOpen = ref(false)
+
+/** 검증 결과 노출 — 통과 외(보완/범위밖/용어모호)일 때 액션 카드 표시 */
+const hasSupplement = computed(() => showDiagnosis.value && !!diagnosis.value && diagnosis.value.status !== 'READY')
+
+/** 검증 통과 상태 (요약 라벨용) */
+const isReadyPass = computed(() => showDiagnosis.value && diagnosis.value?.status === 'READY')
+
+/** 요약 라벨 — 검증 후엔 진단 점수 노출 (검증 전엔 점수 미표시) */
+const summaryLabel = computed(() => {
+  if (!showDiagnosis.value || !diagnosis.value) return '질의 작성 가이드'
+  const sc = Math.round(diagnosis.value.readinessScore ?? 0)
+  return isReadyPass.value ? `검증 통과 · ${sc}점` : `검증 점수 ${sc}점 · 보완 필요`
+})
+
+// 보완이 필요한 진단이 나오면 가이드를 자동으로 펼쳐 사용자가 바로 보게 함
+watch(hasSupplement, (next) => {
+  if (next) isOpen.value = true
+})
+
+/** 검증 통과 순간 헤더 강조 — 한 번만 재생 */
+const justPassed = ref(false)
+watch(isReadyPass, (next, prev) => {
+  if (next && prev === false) {
+    justPassed.value = true
+    window.setTimeout(() => (justPassed.value = false), 900)
+  }
+})
 
 // ── 노출 게이트 ────────────────────────────────────────────────────────────
 
-const isDataQuestionActive = computed(
-  () => activeSearchModes.value.includes('S') && !riskAgentActive.value,
-)
+const isDataQuestionActive = computed(() => activeSearchModes.value.includes('S') && !riskAgentActive.value)
 
-const requiredMissingCount = computed(
-  () => score.value.criteria.filter((c) => c.required && !c.met).length,
-)
+const requiredMissingCount = computed(() => score.value.criteria.filter((c) => c.required && !c.met).length)
 
 watch(isDataQuestionActive, (active) => {
   if (!active) return
@@ -201,7 +266,13 @@ watch(isDataQuestionActive, (active) => {
 
 const hexToRgb = (hex: string): string => {
   const normalized = hex.replace('#', '').trim()
-  const full = normalized.length === 3 ? normalized.split('').map((c) => c + c).join('') : normalized
+  const full =
+    normalized.length === 3
+      ? normalized
+          .split('')
+          .map((c) => c + c)
+          .join('')
+      : normalized
   if (!/^[0-9a-fA-F]{6}$/.test(full)) return '46, 163, 242'
   const r = Number.parseInt(full.slice(0, 2), 16)
   const g = Number.parseInt(full.slice(2, 4), 16)
@@ -225,7 +296,10 @@ const score = computed(() => scoreFromText(chatMessage.value))
 
 // ── 선택 데이터마트 탭 ─────────────────────────────────────────────────────
 
-interface DatamartTab { id: string; label: string }
+interface DatamartTab {
+  id: string
+  label: string
+}
 
 /**
  * 노출할 데이터마트 탭 목록.
@@ -235,9 +309,7 @@ interface DatamartTab { id: string; label: string }
 const datamartTabs = computed<DatamartTab[]>(() => {
   const opts = subOptions.value
   const selectedIds = selectedSubOptions.value.filter((id) => id && id !== 'all')
-  const source = selectedIds.length
-    ? opts.filter((o) => selectedIds.includes(String(o.value)))
-    : opts
+  const source = selectedIds.length ? opts.filter((o) => selectedIds.includes(String(o.value))) : opts
   return source.map((o) => ({ id: String(o.value), label: o.label }))
 })
 
@@ -249,13 +321,18 @@ const activeTabId = ref('')
 watch(
   datamartTabs,
   (tabs) => {
-    if (!tabs.length) { activeTabId.value = ''; return }
+    if (!tabs.length) {
+      activeTabId.value = ''
+      return
+    }
     if (!tabs.some((t) => t.id === activeTabId.value)) activeTabId.value = tabs[0].id
   },
   { immediate: true },
 )
 
-const onSelectTab = (id: string) => { activeTabId.value = id }
+const onSelectTab = (id: string) => {
+  activeTabId.value = id
+}
 
 // ── 용어사전 (활성 탭 기준) ────────────────────────────────────────────────
 
@@ -267,7 +344,10 @@ const fewshotList = ref<DatamartMetaFewshot[]>([])
 const isFewshotLoading = ref(false)
 
 const loadFewshots = async (datamartId: string) => {
-  if (!datamartId) { fewshotList.value = []; return }
+  if (!datamartId) {
+    fewshotList.value = []
+    return
+  }
   isFewshotLoading.value = true
   try {
     const res = await fetchMetaFewshotList(datamartId)
@@ -286,20 +366,14 @@ watch(activeTabId, (id) => void loadFewshots(id), { immediate: true })
 const MAX_VOCAB = 8
 const metricTerms = computed(() => suggestMetric('').slice(0, MAX_VOCAB))
 const dimensionTerms = computed(() => suggestDimension('').slice(0, MAX_VOCAB))
-const hasVocabSuggestions = computed(
-  () => metricTerms.value.length > 0 || dimensionTerms.value.length > 0,
-)
+const hasVocabSuggestions = computed(() => metricTerms.value.length > 0 || dimensionTerms.value.length > 0)
 
 // ── 탭 본문 상태 ───────────────────────────────────────────────────────────
 
 const isTabLoading = computed(() => isFewshotLoading.value || isLoadingVocabulary.value)
-const hasTabMeta = computed(
-  () => fewshotList.value.length > 0 || hasVocabSuggestions.value,
-)
+const hasTabMeta = computed(() => fewshotList.value.length > 0 || hasVocabSuggestions.value)
 /** 다중 탭에서 현재 탭에 노출할 메타가 전혀 없는지 (안내 문구용) */
-const isTabPanelEmpty = computed(
-  () => !isTabLoading.value && !hasTabMeta.value,
-)
+const isTabPanelEmpty = computed(() => !isTabLoading.value && !hasTabMeta.value)
 </script>
 
 <style lang="scss" scoped>
@@ -341,12 +415,53 @@ const isTabPanelEmpty = computed(
     justify-content: space-between;
     gap: $spacing-xs;
     padding: 7px $spacing-md;
-    background: linear-gradient(
-      180deg,
-      rgba(var(--dq-theme-rgb, 46, 163, 242), 0.05) 0%,
-      #f8fbfd 100%
-    );
+    background: linear-gradient(180deg, rgba(var(--dq-theme-rgb, 46, 163, 242), 0.05) 0%, #f8fbfd 100%);
     border-bottom: 1px solid $color-border-light;
+
+    &.is-required-missing {
+      background: linear-gradient(180deg, rgba(226, 85, 85, 0.08) 0%, #fdf9f9 100%);
+      border-bottom-color: rgba(226, 85, 85, 0.12);
+    }
+
+    &.is-just-passed {
+      position: relative;
+      overflow: hidden;
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: rgba(var(--dq-theme-rgb, 46, 163, 242), 0.14);
+        animation: dq-guide-pass-flash 0.85s ease-out forwards;
+        pointer-events: none;
+      }
+    }
+  }
+
+  &__summary.is-just-passed &__summary-score.is-pass {
+    animation: dq-guide-pass-label 0.85s cubic-bezier(0.34, 1.2, 0.64, 1);
+  }
+
+  @keyframes dq-guide-pass-flash {
+    0% {
+      opacity: 0;
+    }
+    28% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes dq-guide-pass-label {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    35% {
+      transform: scale(1.04);
+    }
   }
 
   &__summary-left {
@@ -378,6 +493,86 @@ const isTabPanelEmpty = computed(
 
   &__summary-missing {
     @include typo($body-caption, #e25555);
+  }
+
+  // ── 검증 결과 보완 카드 (선택형) ──────────────────────────────────────────
+  &__supplement {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px $spacing-md 12px;
+    border-top: 1px solid $color-border-light;
+    background: rgba(var(--dq-theme-rgb, 46, 163, 242), 0.04);
+
+    &.is-out_of_scope {
+      background: rgba(226, 85, 85, 0.05);
+    }
+  }
+
+  &__supplement-msg {
+    @include typo($body-small, $color-text-secondary);
+  }
+
+  &__clarify {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    &-q {
+      @include typo($body-caption-bold, $color-text-primary);
+    }
+  }
+
+  &__clarify-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__clarify-item {
+    position: relative;
+    padding-left: 12px;
+    @include typo($body-small, $color-text-primary);
+    line-height: 1.45;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 8px;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--dq-theme-color, var(--color-primary, #{$color-primary}));
+    }
+  }
+
+  &__chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  &__chip {
+    padding: 5px 10px;
+    border: 1px solid $color-border;
+    border-radius: 999px;
+    background: #fff;
+    cursor: pointer;
+    @include typo($body-caption, $color-text-secondary);
+    transition:
+      color 0.15s,
+      border-color 0.15s,
+      background-color 0.15s;
+
+    &:hover {
+      color: var(--dq-theme-color, var(--color-primary, #{$color-primary}));
+      border-color: var(--dq-theme-color, var(--color-primary, #{$color-primary}));
+      background: rgba(var(--dq-theme-rgb, 46, 163, 242), 0.08);
+    }
   }
 
   &__toggle {
@@ -486,7 +681,9 @@ const isTabPanelEmpty = computed(
       color: #2ea66b;
       border-color: rgba(46, 166, 107, 0.25);
       background: rgba(46, 166, 107, 0.04);
-      i { opacity: 1; }
+      i {
+        opacity: 1;
+      }
     }
 
     &.is-req {
@@ -494,7 +691,9 @@ const isTabPanelEmpty = computed(
       border-color: rgba(226, 85, 85, 0.25);
       background: rgba(226, 85, 85, 0.04);
       font-weight: 700;
-      i { opacity: 1; }
+      i {
+        opacity: 1;
+      }
     }
   }
 
@@ -610,22 +809,25 @@ const isTabPanelEmpty = computed(
     display: block;
     height: 20px;
     border-radius: $border-radius-sm;
-    background: linear-gradient(
-      90deg,
-      $color-background 25%,
-      $color-border-light 50%,
-      $color-background 75%
-    );
+    background: linear-gradient(90deg, $color-background 25%, $color-border-light 50%, $color-background 75%);
     background-size: 200% 100%;
     animation: dq-shimmer 1.4s infinite;
 
-    &:nth-child(2) { width: 80%; }
-    &:nth-child(3) { width: 65%; }
+    &:nth-child(2) {
+      width: 80%;
+    }
+    &:nth-child(3) {
+      width: 65%;
+    }
   }
 
   @keyframes dq-shimmer {
-    0%   { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
   }
 
   &__ex-list {

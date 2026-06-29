@@ -31,3 +31,34 @@ export interface QuestionScore {
   /** 미충족 안내 문구 모음 */
   missingHints: string[]
 }
+
+// ===== Tier 2: 백엔드 LLM 진단 계약 (검증 버튼 → 진단 응답) =====
+
+export type QuestionDiagnosisStatus =
+  | 'READY' // 실행 가능 — SQL 생성 허용
+  | 'CLARIFICATION_REQUIRED' // 조건 보완 필요
+  | 'TERM_AMBIGUOUS' // 용어 정의 선택 필요
+  | 'OUT_OF_SCOPE' // 데이터로 답 불가
+
+/** 보완 질문 — 핵심 누락 안내 (선택지 미제공, 질문 텍스트만) */
+export interface ClarificationQuestion {
+  item: string
+  question: string
+}
+
+/** 진단 응답 envelope (프론트는 status만 보고 렌더 — 데이터마트 무관) */
+export interface QuestionDiagnosis {
+  status: QuestionDiagnosisStatus
+  /** 백엔드 종합 점수 (0~100) */
+  readinessScore: number
+  /** 해석한 의도 */
+  interpretedIntent?: string
+  /** READY 시 실행할 재작성 질문 */
+  rewrittenQuestion?: string | null
+  /** 보완 필요 시 선택형 질문 */
+  clarificationQuestions?: ClarificationQuestion[]
+  /** 범위 밖일 때 대체 통계 안내 */
+  alternatives?: string[]
+  /** SQL 생성 허용 여부 (최종 게이트) */
+  sqlGenerationAllowed: boolean
+}
