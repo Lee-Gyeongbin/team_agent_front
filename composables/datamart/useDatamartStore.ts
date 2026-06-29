@@ -14,6 +14,7 @@ import type {
   DatamartMetaSynonymItem,
   DatamartMetaSynonymPayload,
   DatamartMetaTableItem,
+  DatamartMetaTermItem,
 } from '~/types/datamartMeta'
 
 const {
@@ -35,6 +36,8 @@ const {
   fetchSaveMetaFewshot,
   fetchMetaAbbrevList,
   fetchSaveMetaAbbrev,
+  fetchMetaTermDictList,
+  fetchSaveMetaTermDict,
 } = useDatamartApi()
 
 const { fetchCodeGroupList, fetchCodeList, fetchSaveCode } = useCodesApi()
@@ -84,6 +87,8 @@ const metaModalFewshotListError = ref<string | null>(null)
 const metaModalAbbrevList = ref<DatamartMetaAbbrevItem[]>([])
 const metaModalAbbrevListError = ref<string | null>(null)
 const metaModalAbbrevApiRes = ref<DatamartMetaAbbrevPayload | null>(null)
+const metaModalTermList = ref<DatamartMetaTermItem[]>([])
+const metaModalTermListError = ref<string | null>(null)
 
 const summary = ref<DatamartSummary>({
   totalCount: 0,
@@ -235,6 +240,8 @@ const resetDatamartMetaModal = () => {
   metaModalAbbrevList.value = []
   metaModalAbbrevListError.value = null
   metaModalAbbrevApiRes.value = null
+  metaModalTermList.value = []
+  metaModalTermListError.value = null
 }
 
 /** 모달 오픈·테이블 탭 재시도 — 테이블 스키마 + JOIN 관계 목록 조회 후 스토어 상태 반영 */
@@ -294,6 +301,15 @@ const hydrateDatamartMetaModal = async (datamartId: string) => {
   } else {
     metaModalFewshotList.value = fewshots
     metaModalFewshotListError.value = null
+  }
+
+  const terms = await handleFetchMetaTermDictList(id)
+  if (terms === undefined) {
+    metaModalTermList.value = []
+    metaModalTermListError.value = '용어사전 목록을 불러오지 못했습니다.'
+  } else {
+    metaModalTermList.value = terms
+    metaModalTermListError.value = null
   }
 }
 
@@ -597,6 +613,40 @@ const handleSaveMetaAbbrev = async (datamartId: string, abbrevList: DatamartMeta
   }
 }
 
+/** 용어사전 목록 조회 */
+const handleFetchMetaTermDictList = async (datamartId: string) => {
+  try {
+    openLoading({ text: '용어사전 목록 조회 중...' })
+    const res = await fetchMetaTermDictList(datamartId)
+    return Array.isArray(res?.termList) ? res.termList : []
+  } catch {
+    openToast({ message: '용어사전 목록 조회에 실패했습니다.', type: 'error' })
+    return undefined
+  } finally {
+    closeLoading()
+  }
+}
+
+/** 용어사전 저장 */
+const handleSaveMetaTerm = async (datamartId: string, termList: DatamartMetaTermItem[]) => {
+  try {
+    await fetchSaveMetaTermDict({ datamartId, termList })
+    const termRes = await handleFetchMetaTermDictList(datamartId)
+    if (termRes === undefined) {
+      metaModalTermListError.value = '용어사전 목록을 불러오지 못했습니다.'
+      openToast({ message: '저장 후 목록 갱신에 실패했습니다.', type: 'error' })
+      return false
+    }
+    metaModalTermList.value = termRes
+    metaModalTermListError.value = null
+    openToast({ message: '용어사전 저장에 성공했습니다.', type: 'success' })
+    return true
+  } catch {
+    openToast({ message: '용어사전 저장에 실패했습니다.', type: 'error' })
+    return false
+  }
+}
+
 /** 동의어 저장 */
 const handleSaveMetaSynonym = async (datamartId: string, synonymList: DatamartMetaSynonymItem[]) => {
   try {
@@ -635,6 +685,8 @@ export const useDatamartStore = () => {
     metaModalAbbrevList,
     metaModalAbbrevListError,
     metaModalAbbrevApiRes,
+    metaModalTermList,
+    metaModalTermListError,
     handleSelectAll,
     handleSaveDatamart,
     handleDeleteDatamart,
@@ -652,5 +704,6 @@ export const useDatamartStore = () => {
     handleSaveMetaSynonym,
     handleSaveMetaFewshot,
     handleSaveMetaAbbrev,
+    handleSaveMetaTerm,
   }
 }

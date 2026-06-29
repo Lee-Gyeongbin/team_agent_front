@@ -69,6 +69,13 @@
             :tables="metaModalTables"
             :error-message="metaModalFewshotListError"
           />
+          <DatamartMetaTermTab
+            v-else-if="activeTab === 'term'"
+            ref="termTabRef"
+            v-model:term-list="metaModalTermList"
+            :datamart="datamart"
+            :error-message="metaModalTermListError"
+          />
         </div>
       </div>
     </div>
@@ -96,7 +103,12 @@
 
 <script setup lang="ts">
 import type { Datamart } from '~/types/datamart'
-import type { DatamartMetaAbbrevItem, DatamartMetaFewshot, DatamartMetaSynonymItem } from '~/types/datamartMeta'
+import type {
+  DatamartMetaAbbrevItem,
+  DatamartMetaFewshot,
+  DatamartMetaSynonymItem,
+  DatamartMetaTermItem,
+} from '~/types/datamartMeta'
 import DatamartMetaTableSelectTab from '~/components/datamart/DatamartMetaTableSelectTab.vue'
 import DatamartMetaColumnMetadataTab from '~/components/datamart/DatamartMetaColumnMetadataTab.vue'
 import DatamartMetaRelationshipTab from '~/components/datamart/DatamartMetaRelationshipTab.vue'
@@ -104,6 +116,7 @@ import DatamartMetaCodeMappingTab from '~/components/datamart/DatamartMetaCodeMa
 import DatamartMetaSynonymTab from '~/components/datamart/DatamartMetaSynonymTab.vue'
 import DatamartMetaAbbrDictTab from '~/components/datamart/DatamartMetaAbbrDictTab.vue'
 import DatamartMetaFewshotTab from '~/components/datamart/DatamartMetaFewshotTab.vue'
+import DatamartMetaTermTab from '~/components/datamart/DatamartMetaTermTab.vue'
 import { useDatamartStore } from '~/composables/datamart/useDatamartStore'
 
 const props = defineProps<{
@@ -130,6 +143,8 @@ const {
   metaModalAbbrevApiRes,
   metaModalFewshotList,
   metaModalFewshotListError,
+  metaModalTermList,
+  metaModalTermListError,
   resetDatamartMetaModal,
   hydrateDatamartMetaModal,
   setDatamartMetaModalTableUseYn,
@@ -140,6 +155,7 @@ const {
   handleSaveMetaSynonym,
   handleSaveMetaAbbrev,
   handleSaveMetaFewshot,
+  handleSaveMetaTerm,
 } = useDatamartStore()
 
 const activeTab = defineModel<string>('activeTab', { default: 'table' })
@@ -147,6 +163,7 @@ const activeTab = defineModel<string>('activeTab', { default: 'table' })
 const synonymTabRef = ref<{ buildSavePayload: () => DatamartMetaSynonymItem[] | null } | null>(null)
 const abbrDictTabRef = ref<{ buildSavePayload: () => DatamartMetaAbbrevItem[] | null } | null>(null)
 const fewshotTabRef = ref<{ buildSavePayload: () => DatamartMetaFewshot[] | null } | null>(null)
+const termTabRef = ref<{ buildSavePayload: () => DatamartMetaTermItem[] | null } | null>(null)
 
 const metaModalCustomClass = computed(() => {
   const classes = ['datamart-meta-modal']
@@ -173,6 +190,7 @@ const metaTabs = [
   { label: '약어사전', value: 'abbrDict' },
   { label: '동의어 관리', value: 'synonym' },
   { label: '퓨샷 관리', value: 'fewshot' },
+  { label: '용어사전', value: 'term' },
 ]
 
 const onSave = async () => {
@@ -209,6 +227,12 @@ const onSave = async () => {
     const fewshotList = fewshotTabRef.value?.buildSavePayload()
     if (!fewshotList) return
     await handleSaveMetaFewshot(datamartId, fewshotList)
+    return
+  } else if (activeTab.value === 'term') {
+    const datamartId = props.datamart?.datamartId ?? ''
+    const termList = termTabRef.value?.buildSavePayload()
+    if (!termList) return
+    await handleSaveMetaTerm(datamartId, termList)
     return
   }
 
