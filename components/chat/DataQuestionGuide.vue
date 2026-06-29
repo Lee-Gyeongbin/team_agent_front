@@ -29,7 +29,7 @@
       >
         <i
           class="size-14 dq-guide__toggle-icon icon-chevron-down"
-          :style="{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }"
+          :style="{ transform: isOpen ? 'rotate(0deg)' : 'rotate(180deg)' }"
         />
       </button>
     </div>
@@ -43,104 +43,122 @@
     <Transition name="dq-guide-fold">
       <div
         v-if="isOpen"
-        class="dq-guide__body"
+        class="dq-guide__fold"
       >
-        <div class="dq-guide__criteria">
-          <span
-            v-for="c in score.criteria"
-            :key="c.key"
-            class="dq-guide__crit"
-            :class="{ 'is-met': c.met, 'is-req': c.required && !c.met }"
+        <div class="dq-guide__body">
+          <div class="dq-guide__criteria">
+            <span
+              v-for="c in score.criteria"
+              :key="c.key"
+              class="dq-guide__crit"
+              :class="{ 'is-met': c.met, 'is-req': c.required && !c.met }"
+            >
+              <i class="size-10" :class="c.met ? 'icon-check' : 'icon-close'" />
+              {{ c.label }}
+            </span>
+          </div>
+
+          <div
+            v-if="showTabs"
+            class="dq-guide__tabs"
+            role="tablist"
           >
-            <i class="size-10" :class="c.met ? 'icon-check' : 'icon-close'" />
-            {{ c.label }}
-          </span>
+            <button
+              v-for="tab in datamartTabs"
+              :key="tab.id"
+              type="button"
+              role="tab"
+              class="dq-guide__tab"
+              :class="{ 'is-active': tab.id === activeTabId }"
+              :aria-selected="tab.id === activeTabId"
+              :title="tab.label"
+              @click="onSelectTab(tab.id)"
+            >
+              {{ tab.label }}
+            </button>
+          </div>
+
+          <Transition name="dq-tab" mode="out-in">
+            <div
+              :key="activeTabId"
+              class="dq-guide__tabpanel"
+            >
+              <template v-if="isFewshotLoading || fewshotList.length > 0">
+                <div class="dq-guide__sep" />
+                <div class="dq-guide__section">
+                  <span class="dq-guide__label">질의 예시</span>
+                  <template v-if="isFewshotLoading">
+                    <span
+                      v-for="n in 3"
+                      :key="n"
+                      class="dq-guide__ex-skeleton"
+                    />
+                  </template>
+                  <div v-else class="dq-guide__ex-list">
+                    <button
+                      v-for="item in fewshotList"
+                      :key="item.fewshotId"
+                      type="button"
+                      class="dq-guide__ex-item"
+                      :class="{ 'is-active': chatMessage === item.userQuestion }"
+                      :title="item.userQuestion"
+                      @click="chatMessage = item.userQuestion"
+                    >
+                      <span class="dq-guide__ex-text">{{ item.userQuestion }}</span>
+                      <i class="icon-arrow-right size-12 dq-guide__ex-arrow" />
+                    </button>
+                  </div>
+                </div>
+              </template>
+
+              <template v-if="!isLoadingVocabulary && hasVocabSuggestions">
+                <div class="dq-guide__sep" />
+                <div class="dq-guide__section">
+                  <div class="dq-guide__vocab-grid">
+                    <div
+                      v-if="metricTerms.length"
+                      class="dq-guide__vocab-row"
+                    >
+                      <span class="dq-guide__vocab-title">지표</span>
+                      <ul class="dq-guide__term-list">
+                        <li
+                          v-for="term in metricTerms"
+                          :key="`metric-${term}`"
+                          class="dq-guide__term-item"
+                        >
+                          {{ term }}
+                        </li>
+                      </ul>
+                    </div>
+                    <div
+                      v-if="dimensionTerms.length"
+                      class="dq-guide__vocab-row"
+                    >
+                      <span class="dq-guide__vocab-title">구분</span>
+                      <ul class="dq-guide__term-list">
+                        <li
+                          v-for="term in dimensionTerms"
+                          :key="`dimension-${term}`"
+                          class="dq-guide__term-item"
+                        >
+                          {{ term }}
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </template>
+
+              <div
+                v-if="showTabs && isTabPanelEmpty"
+                class="dq-guide__tab-empty"
+              >
+                <i class="icon-info size-14" />
+                이 데이터마트에 등록된 참고 정보가 없습니다.
+              </div>
+            </div>
+          </Transition>
         </div>
-
-        <template v-if="!isLoadingVocabulary && hasAutocomplete">
-          <div class="dq-guide__sep" />
-          <div class="dq-guide__section">
-            <span class="dq-guide__label">자동완성</span>
-            <div class="dq-guide__ac-list">
-              <button
-                v-for="item in autocompleteItems"
-                :key="item.term"
-                type="button"
-                class="dq-guide__ac-item"
-                @click="selectAutocomplete(item.term)"
-              >
-                <span class="dq-guide__ac-type">{{ item.type === 'METRIC' ? '지표' : '구분' }} ·</span>
-                {{ item.term }}
-              </button>
-            </div>
-          </div>
-        </template>
-
-        <template v-if="isFewshotLoading || fewshotList.length > 0">
-          <div class="dq-guide__sep" />
-          <div class="dq-guide__section">
-            <span class="dq-guide__label">질의 예시</span>
-            <template v-if="isFewshotLoading">
-              <span
-                v-for="n in 3"
-                :key="n"
-                class="dq-guide__ex-skeleton"
-              />
-            </template>
-            <div v-else class="dq-guide__ex-list">
-              <button
-                v-for="item in fewshotList"
-                :key="item.fewshotId"
-                type="button"
-                class="dq-guide__ex-item"
-                :class="{ 'is-active': chatMessage === item.userQuestion }"
-                :title="item.userQuestion"
-                @click="chatMessage = item.userQuestion"
-              >
-                <span class="dq-guide__ex-text">{{ item.userQuestion }}</span>
-                <i class="icon-arrow-right size-12 dq-guide__ex-arrow" />
-              </button>
-            </div>
-          </div>
-        </template>
-
-        <template v-if="!isLoadingVocabulary && hasVocabSuggestions">
-          <div class="dq-guide__sep" />
-          <div class="dq-guide__section">
-            <div class="dq-guide__vocab-grid">
-              <div
-                v-if="metricTerms.length"
-                class="dq-guide__vocab-row"
-              >
-                <span class="dq-guide__vocab-title">지표</span>
-                <ul class="dq-guide__term-list">
-                  <li
-                    v-for="term in metricTerms"
-                    :key="`metric-${term}`"
-                    class="dq-guide__term-item"
-                  >
-                    {{ term }}
-                  </li>
-                </ul>
-              </div>
-              <div
-                v-if="dimensionTerms.length"
-                class="dq-guide__vocab-row"
-              >
-                <span class="dq-guide__vocab-title">구분</span>
-                <ul class="dq-guide__term-list">
-                  <li
-                    v-for="term in dimensionTerms"
-                    :key="`dimension-${term}`"
-                    class="dq-guide__term-item"
-                  >
-                    {{ term }}
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </template>
       </div>
     </Transition>
   </div>
@@ -163,7 +181,6 @@ const props = withDefaults(defineProps<Props>(), {
 
 const { chatMessage } = useChatRooms()
 const { subOptions, selectedSubOptions, activeSearchModes, riskAgentActive } = useChatStore()
-const { isLoadingVocabulary, suggestMetric, suggestDimension } = useDatamartVocabulary()
 const { fetchMetaFewshotList } = useDatamartApi()
 const isOpen = ref(false)
 
@@ -206,14 +223,45 @@ const guideThemeStyle = computed(() => {
 
 const score = computed(() => scoreFromText(chatMessage.value))
 
-// ── 현재 선택 데이터마트 ───────────────────────────────────────────────────
+// ── 선택 데이터마트 탭 ─────────────────────────────────────────────────────
 
-const currentDatamartId = computed(() => {
-  const selected = selectedSubOptions.value.find((id) => id && id !== 'all')
-  return selected ?? String(subOptions.value[0]?.value ?? '')
+interface DatamartTab { id: string; label: string }
+
+/**
+ * 노출할 데이터마트 탭 목록.
+ * - 특정 데이터마트를 1개 이상 체크한 경우: 체크된 것만 (subOptions 순서 유지)
+ * - 'all' 또는 미선택: 선택 가능한 전체 데이터마트
+ */
+const datamartTabs = computed<DatamartTab[]>(() => {
+  const opts = subOptions.value
+  const selectedIds = selectedSubOptions.value.filter((id) => id && id !== 'all')
+  const source = selectedIds.length
+    ? opts.filter((o) => selectedIds.includes(String(o.value)))
+    : opts
+  return source.map((o) => ({ id: String(o.value), label: o.label }))
 })
 
-// ── 퓨샷 예시 조회 (전체) ────────────────────────────────────────────────
+/** 탭은 2개 이상일 때만 노출 (단일 선택은 탭 없이 본문만) */
+const showTabs = computed(() => datamartTabs.value.length > 1)
+
+const activeTabId = ref('')
+
+watch(
+  datamartTabs,
+  (tabs) => {
+    if (!tabs.length) { activeTabId.value = ''; return }
+    if (!tabs.some((t) => t.id === activeTabId.value)) activeTabId.value = tabs[0].id
+  },
+  { immediate: true },
+)
+
+const onSelectTab = (id: string) => { activeTabId.value = id }
+
+// ── 용어사전 (활성 탭 기준) ────────────────────────────────────────────────
+
+const { isLoadingVocabulary, suggestMetric, suggestDimension } = useDatamartVocabulary(activeTabId)
+
+// ── 퓨샷 예시 조회 (활성 탭 기준) ─────────────────────────────────────────
 
 const fewshotList = ref<DatamartMetaFewshot[]>([])
 const isFewshotLoading = ref(false)
@@ -231,34 +279,7 @@ const loadFewshots = async (datamartId: string) => {
   }
 }
 
-watch(currentDatamartId, (id) => void loadFewshots(id), { immediate: true })
-
-// ── 타이핑 기반 자동완성 ──────────────────────────────────────────────────
-
-interface AutocompleteItem { term: string; type: 'METRIC' | 'DIMENSION' }
-
-const currentToken = computed(() => {
-  const text = chatMessage.value
-  if (!text || text.endsWith(' ')) return ''
-  return text.split(/\s+/).at(-1) ?? ''
-})
-
-const autocompleteItems = computed((): AutocompleteItem[] => {
-  const token = currentToken.value
-  if (token.length < 1) return []
-  return [
-    ...suggestMetric(token).slice(0, 3).map((term) => ({ term, type: 'METRIC' as const })),
-    ...suggestDimension(token).slice(0, 3).map((term) => ({ term, type: 'DIMENSION' as const })),
-  ]
-})
-
-const hasAutocomplete = computed(() => autocompleteItems.value.length > 0)
-
-const selectAutocomplete = (term: string) => {
-  const text = chatMessage.value
-  const idx = text.lastIndexOf(' ')
-  chatMessage.value = idx === -1 ? term : text.slice(0, idx + 1) + term
-}
+watch(activeTabId, (id) => void loadFewshots(id), { immediate: true })
 
 // ── 참고 용어 (비인터랙티브) ──────────────────────────────────────────────
 
@@ -268,6 +289,17 @@ const dimensionTerms = computed(() => suggestDimension('').slice(0, MAX_VOCAB))
 const hasVocabSuggestions = computed(
   () => metricTerms.value.length > 0 || dimensionTerms.value.length > 0,
 )
+
+// ── 탭 본문 상태 ───────────────────────────────────────────────────────────
+
+const isTabLoading = computed(() => isFewshotLoading.value || isLoadingVocabulary.value)
+const hasTabMeta = computed(
+  () => fewshotList.value.length > 0 || hasVocabSuggestions.value,
+)
+/** 다중 탭에서 현재 탭에 노출할 메타가 전혀 없는지 (안내 문구용) */
+const isTabPanelEmpty = computed(
+  () => !isTabLoading.value && !hasTabMeta.value,
+)
 </script>
 
 <style lang="scss" scoped>
@@ -276,11 +308,7 @@ const hasVocabSuggestions = computed(
   margin-bottom: 8px;
   background: #fff;
   border: 1px solid $color-border;
-  border-bottom: 0;
-  border-top-left-radius: $border-radius-lg;
-  border-top-right-radius: $border-radius-lg;
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
+  border-radius: $border-radius-lg;
   box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
   overflow: hidden;
   animation: dq-guide-drop 0.48s cubic-bezier(0.16, 1, 0.3, 1);
@@ -379,25 +407,49 @@ const hasVocabSuggestions = computed(
   }
 
   &__toggle-icon {
-    transition: transform 0.42s cubic-bezier(0.22, 0.61, 0.36, 1);
+    transition: transform 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  // ── 펼침/접힘 컨테이너 (grid-rows 0fr↔1fr 트릭) ──────────────────────────
+  &__fold {
+    display: grid;
+    grid-template-rows: 1fr;
+    will-change: grid-template-rows;
   }
 
   &__body {
+    min-height: 0;
     max-height: min(340px, 36vh);
     overflow-y: auto;
     @include custom-scrollbar;
   }
 
-  :deep(.dq-guide-fold-enter-active),
+  // 열림: 끝에서 부드럽게 감속하며 "펼쳐지는" 느낌
+  :deep(.dq-guide-fold-enter-active) {
+    transition:
+      grid-template-rows 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+      opacity 0.6s ease 0.2s;
+
+    .dq-guide__body {
+      overflow: hidden;
+    }
+  }
+
+  // 닫힘: 동일한 속도로 일정하게 "닫히는" 느낌
   :deep(.dq-guide-fold-leave-active) {
-    transition: all 0.52s cubic-bezier(0.22, 0.61, 0.36, 1);
-    transform-origin: top;
+    transition:
+      grid-template-rows 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+      opacity 0.5s ease;
+
+    .dq-guide__body {
+      overflow: hidden;
+    }
   }
 
   :deep(.dq-guide-fold-enter-from),
   :deep(.dq-guide-fold-leave-to) {
+    grid-template-rows: 0fr;
     opacity: 0;
-    transform: translateY(-10px);
   }
 
   &__criteria {
@@ -451,6 +503,91 @@ const hasVocabSuggestions = computed(
     background: $color-border-light;
   }
 
+  // ── 데이터마트 탭 (다중 선택 시) ──────────────────────────────────────────
+  &__tabs {
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+    padding: 4px $spacing-md 0;
+    border-top: 1px solid $color-border-light;
+    overflow-x: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  &__tab {
+    position: relative;
+    flex-shrink: 0;
+    max-width: 160px;
+    padding: 6px 10px 8px;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    @include typo($body-caption, $color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.15s ease;
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: 6px;
+      right: 6px;
+      bottom: 0;
+      height: 2px;
+      border-radius: 2px;
+      background: var(--dq-theme-color, var(--color-primary, #{$color-primary}));
+      transform: scaleX(0);
+      transform-origin: center;
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    &:hover {
+      color: $color-text-secondary;
+    }
+
+    &.is-active {
+      color: var(--dq-theme-color, var(--color-primary, #{$color-primary}));
+      font-weight: 700;
+
+      &::after {
+        transform: scaleX(1);
+      }
+    }
+  }
+
+  &__tabpanel {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__tab-empty {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 14px $spacing-md;
+    @include typo($body-caption, $color-text-muted);
+
+    i {
+      opacity: 0.6;
+    }
+  }
+
+  // 탭 전환 시 부드러운 페이드
+  :deep(.dq-tab-enter-active),
+  :deep(.dq-tab-leave-active) {
+    transition: opacity 0.18s ease;
+  }
+
+  :deep(.dq-tab-enter-from),
+  :deep(.dq-tab-leave-to) {
+    opacity: 0;
+  }
+
   // ── 공통 라벨 ─────────────────────────────────────────────────────────────
 
   &__label {
@@ -467,37 +604,6 @@ const hasVocabSuggestions = computed(
     align-items: flex-start;
     gap: $spacing-sm;
     padding: 8px $spacing-md;
-  }
-
-  &__ac-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-
-  &__ac-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 3px 10px 3px 6px;
-    border: 1px solid $color-border;
-    border-radius: 999px;
-    background: #fff;
-    cursor: pointer;
-    @include typo($body-caption, $color-text-primary);
-    transition:
-      border-color 0.12s,
-      background-color 0.12s;
-
-    &:hover {
-      border-color: var(--dq-theme-color, var(--color-primary, #{$color-primary}));
-      background: rgba(var(--dq-theme-rgb, 0, 102, 204), 0.08);
-    }
-  }
-
-  &__ac-type {
-    flex-shrink: 0;
-    @include typo($body-caption-bold, $color-text-muted);
   }
 
   &__ex-skeleton {

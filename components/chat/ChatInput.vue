@@ -26,6 +26,36 @@
         </button>
       </div>
     </div>
+    <Transition name="chat-data-ac-fade">
+      <div
+        v-if="hasDataAutocomplete"
+        class="chat-next-questions chat-data-ac"
+        :style="dataAutocompleteTheme ? { '--chat-ac-theme': dataAutocompleteTheme } : undefined"
+      >
+        <div class="chat-next-questions-list">
+          <button
+            v-for="(term, idx) in dataAutocompleteItems"
+            :key="idx"
+            type="button"
+            class="chat-next-question-btn chat-data-ac-btn"
+            @click="applyDataAutocomplete(term)"
+          >
+            <span class="chat-data-ac-term">
+              <template
+                v-for="(part, i) in dataAutocompleteHighlight(term)"
+                :key="i"
+              >
+                <mark
+                  v-if="part.hit"
+                  class="chat-data-ac-hit"
+                >{{ part.text }}</mark>
+                <template v-else>{{ part.text }}</template>
+              </template>
+            </span>
+          </button>
+        </div>
+      </div>
+    </Transition>
     <div
       class="chat-input-inner"
       :class="{ 'is-active': modelValue.trim(), 'is-dragging': isDragging, 'is-disabled': props.disabled }"
@@ -264,6 +294,15 @@ const {
 const { ensureWebSocketAndSend } = useChatSocket()
 const { getStreamingMessage, nextQuestions, isGeneratingNextQuestions, markStoppedByUser } = useChatMessages()
 const isAnswerStreaming = computed(() => !!getStreamingMessage()?.isStreaming)
+
+// 데이터분석(S) 모드 인라인 자동완성 — 다음질문 추천과 동일한 틀로 입력창 위에 노출
+const {
+  items: dataAutocompleteItems,
+  hasItems: hasDataAutocomplete,
+  themeColorHex: dataAutocompleteTheme,
+  highlightParts: dataAutocompleteHighlight,
+  applyItem: applyDataAutocomplete,
+} = useDataAutocomplete()
 
 // 다음 추천 질문 텍스트 클릭 시 검색창에 텍스트 채우기
 const handleSelectNextQuestion = (question: string) => {
@@ -629,6 +668,32 @@ const handleSend = async () => {
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;
   }
+}
+
+/* 데이터분석 인라인 자동완성 — 다음질문 틀 재사용 + 일치 글자 테마색 하이라이트 */
+.chat-data-ac-btn:hover {
+  border-color: var(--chat-ac-theme, var(--color-primary));
+}
+
+.chat-data-ac-term {
+  @include typo($body-small, $color-text-heading);
+  font-weight: 600;
+}
+
+.chat-data-ac-hit {
+  background: transparent;
+  color: var(--chat-ac-theme, var(--color-primary));
+  font-weight: 800;
+}
+
+.chat-data-ac-fade-enter-active,
+.chat-data-ac-fade-leave-active {
+  transition: opacity 0.18s ease;
+}
+
+.chat-data-ac-fade-enter-from,
+.chat-data-ac-fade-leave-to {
+  opacity: 0;
 }
 
 @keyframes chat-next-question-dot {
