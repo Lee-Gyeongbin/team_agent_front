@@ -18,7 +18,15 @@ export default defineNuxtConfig({
 
   components: [{ path: '~/components', pathPrefix: false }],
 
-  css: ['gridstack/dist/gridstack.min.css', '~/assets/styles/main.scss'],
+  css: [
+    '@leechanyong/ispark-ui/style.css',
+    'gridstack/dist/gridstack.min.css',
+    '~/assets/styles/main.scss',
+  ],
+
+  build: {
+    transpile: ['@leechanyong/ispark-ui'],
+  },
 
   vite: {
     optimizeDeps: {
