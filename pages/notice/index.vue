@@ -164,6 +164,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiInput, UiSelect, UiButton, UiLoading, UiTable, UiPagination } from '@leechanyong/ispark-ui'
 import type { NoticeRow } from '~/types/notice'
 import { noticeColumns } from '~/types/notice'
 
