@@ -133,6 +133,7 @@
               :total-count="normalTotalCount"
               :page-size="noticeNormalPageSize"
               total-label="개 공지사항"
+              align="center"
               class="notice-pagination"
             />
           </div>
