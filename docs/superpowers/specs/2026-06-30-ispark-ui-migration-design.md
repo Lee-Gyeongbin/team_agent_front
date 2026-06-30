@@ -140,7 +140,12 @@ import { UiButton, UiInput, UiSelect, UiLoading, UiTable, UiPagination } from '@
 - **UiDatePicker**: 그대로 동작. `@internationalized/date` 명시 의존성 추가만 필수. 신규 `triggerLabel?`.
 
 ### 4.6 1차 미검증(저위험 추정, Phase 2에서 diff 확정)
-UiTextarea, UiLoading, UiEmpty, UiCheckbox, UiToggle, UiBadge, UiTooltip, UiDropdownMenu, UiPagination — additive 추정이나 **교체 전 prop/emit diff 1회 필수**.
+UiTextarea, UiEmpty, UiCheckbox, UiToggle, UiBadge, UiTooltip, UiDropdownMenu — additive 추정이나 **교체 전 prop/emit diff 1회 필수**.
+
+### 4.7 파일럿에서 실측 확정(호환)
+- **UiLoading** (Task 5 실측): 라이브러리 props는 `text?: string`(default '불러오는 중...'), `overlay?: boolean`(default false)뿐. /notice 사용(`overlay`, `text`) **완전 호환**.
+- **UiPagination** (Task 5 실측): 라이브러리 props `modelValue:number`(v-model), `totalCount:number`, `pageSize?:number`(default 10), `totalLabel?:string`(default '개') + emit `update:modelValue`. /notice 사용(`v-model`/`total-count`/`page-size`/`total-label`) **완전 호환**.
+- 결론: **/notice 6종(Input·Select·Button·Loading·Table·Pagination) 모두 prop 호환 — template 변경 0건**.
 
 ---
 
@@ -222,3 +227,36 @@ UiTextarea, UiLoading, UiEmpty, UiCheckbox, UiToggle, UiBadge, UiTooltip, UiDrop
 3. 삭제된 Button variant(`dark` 등)의 정확한 대체 디자인 매핑 — 디자인팀 확인.
 4. meeting의 UiSkeleton 실제 사용처/구현 확인(로컬 파일 부재).
 5. Phase 3에서 라이브러리 전역 등록 방식(Nuxt plugin vs 페이지별 import 유지) 결정.
+
+---
+
+## 9. 파일럿(/notice) 결과 — 2026-06-30 실행
+
+브랜치 `feature/ispark-ui-pilot`에서 Phase 0~1을 서브에이전트 주도로 실행한 결과.
+
+### 9.1 실행 요약
+| Task | 내용 | 결과 |
+|---|---|---|
+| 0-1 | `@leechanyong/ispark-ui` `file:../ispark-ui` + peer(`@internationalized/date`, `@lucide/vue`) 설치 | ✅ 링크·peer 해석 정상. `@lucide/vue`는 소스/peerDeps로 패키지명 확정 |
+| 0-2 | nuxt.config: lib CSS 전역 등록(맨 앞) + `build.transpile` | ✅ dev 정상 기동 |
+| 0-3 | 스모크(라이브러리 UiButton 렌더 + `npm run build`) | ✅ 빌드 성공(2.26MB), 콘솔 에러 0 |
+| 1-5 | UiLoading/UiPagination prop 호환 실측 | ✅ /notice 6종 전부 호환(§4.7) |
+| 1-6 | /notice alias import 추가 | ✅ **import 1줄만**, prop 변경 0건, 빌드 통과 |
+| 1-7 | 기능 + 시각 회귀 검증 | ✅ 아래 9.2 |
+
+### 9.2 핵심 검증 결과
+- **CSS 전역주입 회귀 = 0건** (가장 큰 우려 해소): lib CSS OFF(State A) vs ON(State B)로 `/agent`·`/login`(라이브러리 미사용 페이지) 비교 → **IDENTICAL**(/login·/agent 바이트 단위 동일). ispark-ui 글로벌 CSS(reset + :root 토큰)가 앱 기존 스타일에 **누수 없음**.
+- **/notice 시각 = 픽셀 동일**: 로컬 컴포넌트(B) vs 라이브러리(C) 전체 비교 → 헤더/검색/셀렉트/버튼/테이블(핀 아이콘·날짜셀)/페이지네이션 모두 동일.
+- **/notice 기능 = 전부 정상**: 검색(19→2건 필터), 카테고리 셀렉트(6옵션, 12건 필터), 페이지네이션(2페이지 이동), 새로고침(재조회), 행클릭(상세 패널) — 5개 상호작용 모두 동작. 마이그레이션 관련 콘솔 에러 0.
+
+### 9.3 검증된 핵심 가설
+1. **드롭인 호환 성립**: ispark-ui가 team_agent_front 컴포넌트에서 파생되어, 사용 prop이 겹치는 페이지는 **import 한 줄**로 교체 가능(template 무변경). PDF의 "16개 즉시 교체"는 *사용 prop이 호환되는 범위에서* 사실로 확인됨.
+2. **alias import 격리 유효**: 한 페이지만 라이브러리로 바꿔도 타 페이지 영향 없음(코드). CSS는 전역이나 회귀 없음.
+3. **빌드/런타임 안정**: `file:` 링크 + `transpile` + 전역 CSS 조합이 dev·prod 빌드 모두 통과.
+
+### 9.4 판정: **GO** ✅
+파일럿 성공. Phase 2(전사 확대) 진입 가능. 단 파괴군(Button `dark`/`primary-line`/`size=xxs,xlg`, Input `radius→shape`/`spellcheck`, Modal `isOpen→v-model:open`/`position=right→UiDrawer`)은 §4 매핑표대로 **사용처 grep 후 치환**이 필요하며, /notice처럼 항상 무변경은 아님. Phase 2 플랜은 컴포넌트별 사용처 조사 후 별도 작성.
+
+### 9.5 후속 확인사항 갱신(§8 대비)
+- §8-1 해소: CSS는 nuxt.config `css` 배열 명시 등록으로 주입(side-effect 의존 안 함). 전역주입 회귀 없음 실측.
+- §8-2~3(Input radius 매핑, Button variant 대체)·§8-4(UiSkeleton)·§8-5(전역 등록 방식)는 Phase 2~3에서 계속.
