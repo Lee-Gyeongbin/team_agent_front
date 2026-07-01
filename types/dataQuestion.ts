@@ -40,10 +40,21 @@ export type QuestionDiagnosisStatus =
   | 'TERM_AMBIGUOUS' // 용어 정의 선택 필요
   | 'OUT_OF_SCOPE' // 데이터로 답 불가
 
-/** 보완 질문 — 핵심 누락 안내 (선택지 미제공, 질문 텍스트만) */
+/** 보완 질문 선택지 */
+export interface ClarificationOption {
+  value: string
+  label: string
+}
+
+/** 보완 질문 — 슬롯별 안내 + 선택지(백엔드 제공 시) */
+export type ClarificationIntent = 'missing' | 'refine'
+
 export interface ClarificationQuestion {
   item: string
   question: string
+  /** missing: 슬롯 없음 / refine: 있으나 구체화 필요 (미전달 시 Tier1 met 여부로 추론) */
+  intent?: ClarificationIntent
+  options?: ClarificationOption[]
 }
 
 /** 진단 응답 envelope (프론트는 status만 보고 렌더 — 데이터마트 무관) */

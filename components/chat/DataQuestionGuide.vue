@@ -124,20 +124,16 @@
               <template v-if="isFewshotLoading || fewshotList.length > 0">
                 <div class="dq-guide__sep" />
                 <div class="dq-guide__section">
-                  <span class="dq-guide__label">질의 예시</span>
+                  <span class="dq-guide__label">모범 질의</span>
                   <template v-if="isFewshotLoading">
-                    <span
-                      v-for="n in 3"
-                      :key="n"
-                      class="dq-guide__ex-skeleton"
-                    />
+                    <span class="dq-guide__ex-skeleton" />
                   </template>
                   <div
                     v-else
                     class="dq-guide__ex-list"
                   >
                     <button
-                      v-for="item in fewshotList"
+                      v-for="item in fewshotList.slice(0, 1)"
                       :key="item.fewshotId"
                       type="button"
                       class="dq-guide__ex-item"
@@ -800,25 +796,19 @@ const isTabPanelEmpty = computed(() => !isTabLoading.value && !hasTabMeta.value)
 
   &__section {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: $spacing-sm;
     padding: 8px $spacing-md;
   }
 
   &__ex-skeleton {
     display: block;
+    flex: 1;
     height: 20px;
     border-radius: $border-radius-sm;
     background: linear-gradient(90deg, $color-background 25%, $color-border-light 50%, $color-background 75%);
     background-size: 200% 100%;
     animation: dq-shimmer 1.4s infinite;
-
-    &:nth-child(2) {
-      width: 80%;
-    }
-    &:nth-child(3) {
-      width: 65%;
-    }
   }
 
   @keyframes dq-shimmer {
