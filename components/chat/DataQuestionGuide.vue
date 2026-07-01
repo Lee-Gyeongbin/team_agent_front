@@ -148,44 +148,6 @@
                 </div>
               </template>
 
-              <template v-if="!isLoadingVocabulary && hasVocabSuggestions">
-                <div class="dq-guide__sep" />
-                <div class="dq-guide__section">
-                  <div class="dq-guide__vocab-grid">
-                    <div
-                      v-if="metricTerms.length"
-                      class="dq-guide__vocab-row"
-                    >
-                      <span class="dq-guide__vocab-title">지표</span>
-                      <ul class="dq-guide__term-list">
-                        <li
-                          v-for="term in metricTerms"
-                          :key="`metric-${term}`"
-                          class="dq-guide__term-item"
-                        >
-                          {{ term }}
-                        </li>
-                      </ul>
-                    </div>
-                    <div
-                      v-if="dimensionTerms.length"
-                      class="dq-guide__vocab-row"
-                    >
-                      <span class="dq-guide__vocab-title">구분</span>
-                      <ul class="dq-guide__term-list">
-                        <li
-                          v-for="term in dimensionTerms"
-                          :key="`dimension-${term}`"
-                          class="dq-guide__term-item"
-                        >
-                          {{ term }}
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </template>
-
               <div
                 v-if="showTabs && isTabPanelEmpty"
                 class="dq-guide__tab-empty"
@@ -330,10 +292,6 @@ const onSelectTab = (id: string) => {
   activeTabId.value = id
 }
 
-// ── 용어사전 (활성 탭 기준) ────────────────────────────────────────────────
-
-const { isLoadingVocabulary, suggestMetric, suggestDimension } = useDatamartVocabulary(activeTabId)
-
 // ── 퓨샷 예시 조회 (활성 탭 기준) ─────────────────────────────────────────
 
 const fewshotList = ref<DatamartMetaFewshot[]>([])
@@ -357,19 +315,11 @@ const loadFewshots = async (datamartId: string) => {
 
 watch(activeTabId, (id) => void loadFewshots(id), { immediate: true })
 
-// ── 참고 용어 (비인터랙티브) ──────────────────────────────────────────────
-
-const MAX_VOCAB = 8
-const metricTerms = computed(() => suggestMetric('').slice(0, MAX_VOCAB))
-const dimensionTerms = computed(() => suggestDimension('').slice(0, MAX_VOCAB))
-const hasVocabSuggestions = computed(() => metricTerms.value.length > 0 || dimensionTerms.value.length > 0)
-
 // ── 탭 본문 상태 ───────────────────────────────────────────────────────────
 
-const isTabLoading = computed(() => isFewshotLoading.value || isLoadingVocabulary.value)
-const hasTabMeta = computed(() => fewshotList.value.length > 0 || hasVocabSuggestions.value)
+const hasTabMeta = computed(() => fewshotList.value.length > 0)
 /** 다중 탭에서 현재 탭에 노출할 메타가 전혀 없는지 (안내 문구용) */
-const isTabPanelEmpty = computed(() => !isTabLoading.value && !hasTabMeta.value)
+const isTabPanelEmpty = computed(() => !isFewshotLoading.value && !hasTabMeta.value)
 </script>
 
 <style lang="scss" scoped>
@@ -873,70 +823,9 @@ const isTabPanelEmpty = computed(() => !isTabLoading.value && !hasTabMeta.value)
     }
   }
 
-  &__vocab-row {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 6px;
-    height: 100%;
-    min-height: 108px;
-    padding: 7px 10px;
-    border: 1px solid $color-border-light;
-    border-radius: $border-radius-sm;
-    background: #fff;
-  }
-
-  &__vocab-grid {
-    width: 100%;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  &__vocab-title {
-    @include typo($body-caption-bold, $color-text-muted);
-    font-size: 11px;
-    letter-spacing: 0.02em;
-  }
-
-  &__term-list {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    max-height: 68px; // 약 3개 라벨 노출
-    overflow-y: auto;
-    @include custom-scrollbar;
-  }
-
-  &__term-item {
-    position: relative;
-    padding-left: 10px;
-    @include typo($body-caption, $color-text-muted);
-    line-height: 1.45;
-    word-break: break-word;
-
-    &::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 7px;
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-      background: rgba(var(--dq-theme-rgb, 46, 163, 242), 0.65);
-    }
-  }
-
   @include mobile {
     &__criteria {
       grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    &__vocab-grid {
-      grid-template-columns: 1fr;
     }
   }
 }
