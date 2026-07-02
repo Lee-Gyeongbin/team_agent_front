@@ -175,6 +175,7 @@ const initWebSocket = (token: string) => {
   ws.onclose = () => {
     isConnecting.value = false
     // 녹음 중에 WS가 끊기면 재연결 시도 (자동저장 시 네트워크 부하 등으로 끊길 수 있음)
+    // ⚠️ reconnectAttempts는 재연결 성공 후에도 리셋하지 않음 — 리셋 시 무한 루프 발생 가능
     if (isRecording.value && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
       const delay = Math.min(2000 * 2 ** reconnectAttempts, 30000)
       console.warn(
@@ -186,8 +187,8 @@ const initWebSocket = (token: string) => {
           const tokenRes = await fetchRealtimeToken()
           if (!tokenRes.token) throw new Error('토큰 발급 실패')
           initWebSocket(tokenRes.token)
-          console.info('[Realtime] WS 재연결 성공')
-          reconnectAttempts = 0
+          console.info(`[Realtime] WS 재연결 성공 (시도 ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`)
+          // ❌ reconnectAttempts = 0 제거 — 리셋 시 재연결 성공 후 또 끊기면 무한 루프로 과금 폭발
         } catch (e) {
           console.warn('[Realtime] WS 재연결 실패:', e)
         }

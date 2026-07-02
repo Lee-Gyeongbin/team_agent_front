@@ -36,22 +36,27 @@ export const useFileStore = () => {
 
   /**
    * 파일 보기용 URL 조회 (PDF 뷰어 등에서 사용)
+   * - 일반 파일: { url: presignedUrl, externalUrl: null }
+   * - URL 수집 파일: { url: null, externalUrl: 원본웹주소 }
    */
-  const handleViewFileUrl = async (docFileId: string): Promise<string | null> => {
+  const handleViewFileUrl = async (docFileId: string): Promise<{ url: string | null; externalUrl: string | null }> => {
     fileError.value = ''
     viewUrl.value = null
     try {
-      const { url, reason } = await fetchViewFileUrl(docFileId)
-      if (reason) {
-        fileError.value = reason
-        return null
+      const res = await fetchViewFileUrl(docFileId)
+      if (res.reason) {
+        fileError.value = res.reason
+        return { url: null, externalUrl: null }
       }
-      viewUrl.value = url
-      return url
+      if (res.externalUrl) {
+        return { url: null, externalUrl: res.externalUrl }
+      }
+      viewUrl.value = res.url
+      return { url: res.url, externalUrl: null }
     } catch (error) {
       const message = error instanceof Error ? error.message : '파일 보기 URL을 가져오는데 실패했습니다.'
       fileError.value = message
-      return null
+      return { url: null, externalUrl: null }
     }
   }
 

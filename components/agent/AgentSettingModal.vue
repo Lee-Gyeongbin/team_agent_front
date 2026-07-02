@@ -28,6 +28,7 @@
         :translate-form="translateForm"
         :researcher-form="researcherForm"
         :risk-form="riskForm"
+        :planner-form="plannerForm"
         :sql-model-options="sqlModelOptions"
         :api-url-cd-options="apiUrlCdOptions"
         :tmpl-id-options="tmplIdOptions"
@@ -39,6 +40,7 @@
         @update:translate-form="translateForm = $event"
         @update:researcher-form="researcherForm = $event"
         @update:risk-form="riskForm = $event"
+        @update:planner-form="plannerForm = $event"
       />
 
       <!-- 섹션3: 데이터 연결 (svcTy 기반 분기) — D(RISK)는 자사 역량 RAG 데이터셋 연결 -->
@@ -121,6 +123,13 @@ import {
   parseRiskAdditionalConfigToForm,
   type RiskConfigForm,
 } from '~/utils/agent/riskConfigUtil'
+import { PLANNER_SUB_TY } from '~/utils/chat/plannerAgentUtil'
+import {
+  buildPlannerAdditionalConfig,
+  emptyPlannerConfigForm,
+  parsePlannerAdditionalConfigToForm,
+  type PlannerConfigForm,
+} from '~/utils/agent/plannerConfigUtil'
 
 interface Props {
   isOpen: boolean
@@ -147,6 +156,7 @@ let tmplListLoadPromise: Promise<void> | null = null
 
 const isResearcherAgentForm = () => form.value.svcTy === 'M' && form.value.subTy === RESEARCHER_SUB_TY
 const isRiskAgentForm = () => form.value.svcTy === 'D' && form.value.subTy === RISK_SUB_TY
+const isPlannerAgentForm = () => form.value.svcTy === 'C' && form.value.subTy === PLANNER_SUB_TY
 const initApiUrlCdOptions = async () => {
   const codes = await getCodes('AA000001')
   apiUrlCdOptions.value = [
@@ -179,9 +189,9 @@ const initTmplIdOptions = async () => {
   }
 }
 
-/** RESEARCHER/RISK 등 템플릿 기반 세부 유형일 때만 tb_tmpl 목록 조회 (동시 호출 dedup) */
+/** RESEARCHER/RISK/PLANNER 등 템플릿 기반 세부 유형일 때만 tb_tmpl 목록 조회 (동시 호출 dedup) */
 const ensureTmplIdOptionsIfResearcher = (): Promise<void> => {
-  if (!isResearcherAgentForm() && !isRiskAgentForm()) return Promise.resolve()
+  if (!isResearcherAgentForm() && !isRiskAgentForm() && !isPlannerAgentForm()) return Promise.resolve()
   if (tmplListLoaded.value) return Promise.resolve()
   if (tmplListLoadPromise) return tmplListLoadPromise
 
@@ -251,6 +261,10 @@ const researcherForm = ref<ResearcherConfigForm>(emptyResearcherConfigForm())
 // 리스크진단(RISK) ADDITIONAL_CONFIG — UI 미편집 필드 보존용
 const preservedRiskConfig = ref<AgtSubAdditionalConfig | null>(null)
 const riskForm = ref<RiskConfigForm>(emptyRiskConfigForm())
+
+// 기획서·PT(PLANNER) ADDITIONAL_CONFIG — UI 미편집 필드 보존용
+const preservedPlannerConfig = ref<AgtSubAdditionalConfig | null>(null)
+const plannerForm = ref<PlannerConfigForm>(emptyPlannerConfigForm())
 
 const loadSurveyConfigFromAgent = (agent: Agent | null) => {
   const subCfg = normalizeAgentSubCfg(agent?.subCfg)
@@ -324,6 +338,18 @@ const loadRiskConfigFromAgent = (agent: Agent | null) => {
   riskForm.value = emptyRiskConfigForm()
 }
 
+const loadPlannerConfigFromAgent = (agent: Agent | null) => {
+  const subCfg = normalizeAgentSubCfg(agent?.subCfg)
+  const additional = subCfg?.additionalConfig
+  if (additional && typeof additional === 'object' && Object.keys(additional).length > 0) {
+    preservedPlannerConfig.value = { ...additional }
+    plannerForm.value = parsePlannerAdditionalConfigToForm(additional as Record<string, unknown>)
+    return
+  }
+  preservedPlannerConfig.value = null
+  plannerForm.value = emptyPlannerConfigForm()
+}
+
 const resetSubTyConfigForms = () => {
   preservedSurveyConfig.value = null
   preservedRecommendConfig.value = null
@@ -337,6 +363,8 @@ const resetSubTyConfigForms = () => {
   researcherForm.value = emptyResearcherConfigForm()
   preservedRiskConfig.value = null
   riskForm.value = emptyRiskConfigForm()
+  preservedPlannerConfig.value = null
+  plannerForm.value = emptyPlannerConfigForm()
 }
 
 // 기본 설정 폼
@@ -444,11 +472,28 @@ watch(
         preservedCurationConfig.value = null
         preservedTranslateConfig.value = null
         preservedResearcherConfig.value = null
+        preservedPlannerConfig.value = null
         surveyForm.value = emptySurveyConfigForm()
         recommendForm.value = emptyRecommendConfigForm()
         curationForm.value = emptyCurationConfigForm()
         translateForm.value = emptyTranslateConfigForm()
         researcherForm.value = emptyResearcherConfigForm()
+        plannerForm.value = emptyPlannerConfigForm()
+      } else if (props.agent.svcTy === 'C' && form.value.subTy === PLANNER_SUB_TY) {
+        loadPlannerConfigFromAgent(props.agent)
+        preservedSurveyConfig.value = null
+        preservedRecommendConfig.value = null
+        preservedCurationConfig.value = null
+        preservedTranslateConfig.value = null
+        preservedResearcherConfig.value = null
+        preservedRiskConfig.value = null
+        surveyForm.value = emptySurveyConfigForm()
+        recommendForm.value = emptyRecommendConfigForm()
+        curationForm.value = emptyCurationConfigForm()
+        translateForm.value = emptyTranslateConfigForm()
+        researcherForm.value = emptyResearcherConfigForm()
+        riskForm.value = emptyRiskConfigForm()
+        await ensureTmplIdOptionsIfResearcher()
       } else {
         resetSubTyConfigForms()
       }
@@ -566,6 +611,18 @@ watch(
       if (form.value.svcTy === 'D') {
         ensureTmplIdOptionsIfResearcher()
       }
+      return
+    }
+    if (subTy === PLANNER_SUB_TY) {
+      if (props.agent?.svcTy === 'C' && normalizeAgentSubCfg(props.agent.subCfg)?.subTy === PLANNER_SUB_TY) {
+        loadPlannerConfigFromAgent(props.agent)
+      } else {
+        preservedPlannerConfig.value = null
+        plannerForm.value = emptyPlannerConfigForm()
+      }
+      if (form.value.svcTy === 'C') {
+        ensureTmplIdOptionsIfResearcher()
+      }
     }
   },
 )
@@ -653,6 +710,19 @@ const onSave = () => {
     }
     // 자사 역량 RAG 데이터셋 연결 (채팅 데이터셋 콤보는 에이전트에 연결된 데이터셋을 노출)
     base.datasetList = localDatasetList.value
+  }
+
+  if (form.value.svcTy === 'C' && form.value.subTy === PLANNER_SUB_TY) {
+    const existingSubCfg = normalizeAgentSubCfg(props.agent?.subCfg)
+    base.subCfg = {
+      subCfgId: existingSubCfg?.subCfgId ?? '',
+      agentId: props.agent?.agentId ?? '',
+      subTy: PLANNER_SUB_TY,
+      additionalConfig: buildPlannerAdditionalConfig(plannerForm.value, preservedPlannerConfig.value),
+      useYn: existingSubCfg?.useYn ?? 'Y',
+      createDt: existingSubCfg?.createDt ?? '',
+      modifyDt: existingSubCfg?.modifyDt ?? '',
+    }
   }
 
   emit('save', base)

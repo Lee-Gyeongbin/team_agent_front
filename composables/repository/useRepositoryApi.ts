@@ -137,6 +137,10 @@ export const useRepositoryApi = () => {
     return post<{ successYn: boolean; returnMsg?: string }>('/repository/batchScraping.do', {})
   }
 
+  const fetchSelectedScraping = async (urlIdList: string[]) => {
+    return post<{ successYn: boolean; returnMsg?: string }>('/repository/batchScraping.do', { urlIdList })
+  }
+
   return {
     fetchCategoryList,
     fetchSaveCategory,
@@ -150,6 +154,7 @@ export const useRepositoryApi = () => {
     fetchDeleteUrl,
     fetchToggleUrlStatus,
     fetchBatchScraping,
+    fetchSelectedScraping,
     fetchSelectDocFileLibraryList,
     /** @deprecated 이름 통일용 별칭 — `fetchSelectDocFileLibraryList` 와 동일 */
     fetchFileLibraryList: fetchSelectDocFileLibraryList,

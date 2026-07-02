@@ -544,7 +544,22 @@
   flex-shrink: 0;
 }
 
-// URL 리스트
+// URL 아이템 (트리 분할 레이아웃용)
+.doc-dataset-source-url-name-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.doc-dataset-source-url-addr {
+  @include typo($body-xsmall);
+  color: #aebccb;
+  @include ellipsis(1);
+}
+
+// URL 리스트 (구 드롭다운 방식, 미사용)
 .doc-dataset-source-url-list {
   border: 1px solid #dce4e9;
   border-radius: $border-radius-base;

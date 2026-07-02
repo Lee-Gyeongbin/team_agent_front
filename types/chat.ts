@@ -138,6 +138,10 @@ export interface ChatMessage {
   reportHtml?: string
   /** 리포트 존재 여부 */
   hasReport?: boolean
+  /** PLANNER PT 슬라이드 JSON (pptx_data 스트리밍 이벤트로 수신) */
+  pptxData?: string
+  /** PPTX 다운로드 가능 여부 */
+  hasPptx?: boolean
   /** 클라이언트 전용: 설문 진단 프롬프트 등 화면에 노출하지 않을 메시지 */
   hiddenFromDisplay?: boolean
   /** 산업심리 설문 메시지(type=survey) 전용: 사용자 응답 */
@@ -376,6 +380,8 @@ export interface ChatRefRow {
   filePath: string
   showDocFileId: string
   showPageNo: string
+  /** vectorDB 검색에 사용된 쿼리 (TB_CHAT_LOG.RETRIEVER_QUERY) — 외부 URL Text Fragment 하이라이팅용 */
+  retrieverQuery?: string
 }
 
 /** 좋아요/싫어요 등록 API 응답 한 건 */
