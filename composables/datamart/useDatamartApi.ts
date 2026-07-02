@@ -8,6 +8,7 @@ import type {
   DatamartMetaSynonymPayload,
   DatamartMetaTableItem,
   DatamartMetaFewshotPayload,
+  DatamartMetaTermPayload,
 } from '~/types/datamartMeta'
 import { useApi_multipart } from '~/composables/com/useApi_multipart'
 import { downloadBlobAsFile } from '~/utils/global/fileDownloadUtil'
@@ -117,6 +118,16 @@ export const useDatamartApi = () => {
     return post('/datamart/metaAbbrDictSave.do', payload)
   }
 
+  /** 메타 관리 > 용어사전 목록 조회 API — 응답: { datamartId, termList } */
+  const fetchMetaTermDictList = async (datamartId: string): Promise<DatamartMetaTermPayload> => {
+    return post<DatamartMetaTermPayload>('/datamart/metaTermDictList.do', { datamartId })
+  }
+
+  /** 메타 관리 > 용어사전 저장 API */
+  const fetchSaveMetaTermDict = async (payload: DatamartMetaTermPayload): Promise<void> => {
+    return post('/datamart/metaTermDictSave.do', payload)
+  }
+
   /** 메타 관리 > 컬럼 메타 엑셀 다운로드 — GET metaColumnDownloadExcel.do?datamartId= */
   const fetchDownloadMetaColumnExcel = async (datamartId: string, dmNm?: string): Promise<void> => {
     const query = new URLSearchParams({ datamartId })
@@ -159,6 +170,8 @@ export const useDatamartApi = () => {
     fetchSaveMetaFewshot,
     fetchMetaAbbrevList,
     fetchSaveMetaAbbrev,
+    fetchMetaTermDictList,
+    fetchSaveMetaTermDict,
     fetchDownloadMetaColumnExcel,
     fetchUploadMetaColumnExcel,
   }

@@ -34,7 +34,7 @@
           <p class="chat-index-description f-center">{{ greetingText }}</p>
         </div>
 
-        <!-- 채팅 입력창 (설문 진행 중 비활성화) -->
+        <!-- 채팅 입력창 (설문 진행 중 비활성화, 데이터분석 모드는 잠금 제외) -->
         <div
           class="chat-index-input-wrapper"
           :class="{
@@ -49,6 +49,10 @@
           data-aos="fade-up"
           data-aos-delay="200"
         >
+          <DataQuestionGuide
+            :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? 'icon-chart-ai'"
+            :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
+          />
           <ChatInput v-model="chatMessage" />
         </div>
       </div>
@@ -97,7 +101,6 @@
         @close="handleCloseNewsCurator"
         @submit="handleIndexNewsCuratorSubmit"
       />
-
       <!-- 에이전트 카드 (설문 모드 아닐 때) -->
       <template
         v-if="
@@ -438,7 +441,16 @@ onBeforeRouteLeave((to) => {
 }
 
 .chat-index-main {
+  position: relative;
   width: 100%;
+
+  :deep(.dq-guide) {
+    top: 8px;
+  }
+}
+
+.chat-index-input-wrapper {
+  position: relative;
 }
 
 .chat-index:not(.is-survey-mode) {

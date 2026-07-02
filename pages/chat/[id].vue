@@ -32,10 +32,16 @@
         @on-news-card-close="onNewsMessageClose"
         @on-news-card-reselect="onNewsMessageReselect"
       />
-      <ChatInput
-        v-model="chatMessage"
-        :disabled="isSurveyInputLocked"
-      />
+      <div class="chat-input-guide-wrap">
+        <DataQuestionGuide
+          :theme-icon-class-nm="currentDataAnalysisAgent?.iconClassNm ?? 'icon-chart-ai'"
+          :theme-color-hex="currentDataAnalysisAgent?.colorHex ?? ''"
+        />
+        <ChatInput
+          v-model="chatMessage"
+          :disabled="isSurveyInputLocked"
+        />
+      </div>
     </div>
     <!-- 리사이즈 핸들 -->
     <div
@@ -170,6 +176,8 @@ const {
   handleCloseRecommendAgent,
   handleSubmitTranslateAgentForm,
   handleCloseTranslateAgent,
+  selectedChatAgentId,
+  chatIndexAgents,
 } = useChatStore()
 const { chatMessage, handleSetChatRoom } = useChatRooms()
 
@@ -211,6 +219,10 @@ const isSurveyInputLocked = computed(() =>
       (m.type === 'meme' && !m.memeSubmitted) ||
       (m.type === 'news' && !m.newsSubmitted),
   ),
+)
+
+const currentDataAnalysisAgent = computed(
+  () => chatIndexAgents.value.find((agent) => agent.agentId === selectedChatAgentId.value) ?? null,
 )
 
 const onRecommendMessageClose = (logId: string) => {
@@ -419,4 +431,9 @@ const onSelectCategory = async (logId: string, categoryValue: string, categoryNm
     min-height: 72px;
   }
 }
+
+.chat-input-guide-wrap {
+  width: 100%;
+}
+
 </style>

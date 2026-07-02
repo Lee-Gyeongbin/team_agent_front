@@ -193,6 +193,34 @@ export interface DatamartMetaAbbrevPayload {
   abbrDictList: DatamartMetaAbbrevItem[]
 }
 
+/** 메타 관리 > 용어사전 유형 — METRIC(지표) | DIMENSION(구분) */
+export type DatamartMetaTermType = 'METRIC' | 'DIMENSION'
+
+/** 메타 관리 > 용어사전 항목 */
+export interface DatamartMetaTermItem {
+  datamartId?: string
+  termId?: string
+  termType: DatamartMetaTermType
+  /** 대표 용어 (예: 매출액, 지역) */
+  termNm: string
+  /** 정의/설명 */
+  termDesc?: string
+  /** 구분의 예시 값 (콤마구분, 예: 대전,서울,부산) */
+  sampleValues?: string
+  /** 사용자표현·유사어 (콤마구분) — 매칭·유도용 */
+  synonyms?: string
+  sortOrd?: number | string
+  useYn?: 'Y' | 'N'
+  createDt?: string
+  modifyDt?: string
+}
+
+/** 메타 관리 > 용어사전 조회/저장 API DTO */
+export interface DatamartMetaTermPayload {
+  datamartId: string
+  termList: DatamartMetaTermItem[]
+}
+
 /** 메타 관리 > 약어사전 탭 — UiTable 컬럼 정의 */
 export const datamartMetaAbbrevTableColumns: TableColumn[] = [
   { key: 'abbrNm', label: '약어', width: '14%', align: 'left', headerAlign: 'center' },

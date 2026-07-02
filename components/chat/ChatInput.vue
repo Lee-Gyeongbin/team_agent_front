@@ -26,6 +26,37 @@
         </button>
       </div>
     </div>
+    <Transition name="chat-data-ac-fade">
+      <div
+        v-if="hasDataAutocomplete"
+        class="chat-next-questions chat-data-ac"
+        :style="dataAutocompleteTheme ? { '--chat-ac-theme': dataAutocompleteTheme } : undefined"
+      >
+        <div class="chat-next-questions-list">
+          <button
+            v-for="(term, idx) in dataAutocompleteItems"
+            :key="idx"
+            type="button"
+            class="chat-next-question-btn chat-data-ac-btn"
+            @click="applyDataAutocomplete(term)"
+          >
+            <span class="chat-data-ac-term">
+              <template
+                v-for="(part, i) in dataAutocompleteHighlight(term)"
+                :key="i"
+              >
+                <mark
+                  v-if="part.hit"
+                  class="chat-data-ac-hit"
+                  >{{ part.text }}</mark
+                >
+                <template v-else>{{ part.text }}</template>
+              </template>
+            </span>
+          </button>
+        </div>
+      </div>
+    </Transition>
     <div
       class="chat-input-inner"
       :class="{ 'is-active': modelValue.trim(), 'is-dragging': isDragging, 'is-disabled': props.disabled }"
@@ -47,7 +78,7 @@
           :auto-resize="true"
           :max-rows="6"
           @update:model-value="emit('update:modelValue', $event)"
-          @keydown.enter.exact.prevent="handleSend"
+          @keydown.enter.exact.prevent="onPrimaryEnter"
         />
       </div>
 
@@ -114,24 +145,23 @@
             size="xlg"
             icon-only
             class="btn-chat-send"
-            :loading="isSending"
+            :class="{ 'is-validate-mode': isValidateMode, 'is-just-unlocked': justUnlocked }"
+            :loading="isSending || isValidating"
             :aria-label="
               isAnswerStreaming
                 ? '응답 중단'
                 : isSending
                   ? '전송 중'
-                  : riskAgentActive
-                    ? '리스크 진단 시작'
-                    : '메시지 전송'
+                  : isValidating
+                    ? '질의 검증 중'
+                    : isValidateMode
+                      ? '질의 검증'
+                      : riskAgentActive
+                        ? '리스크 진단 시작'
+                        : '메시지 전송'
             "
-            :disabled="
-              isAnswerStreaming
-                ? false
-                : props.disabled ||
-                  isSearchModeMissingSubOptions ||
-                  (riskAgentActive ? previewItems.length === 0 : !modelValue.trim() || selectedSubOptions.length === 0)
-            "
-            @click="isAnswerStreaming ? handleStop() : handleSend()"
+            :disabled="isPrimaryDisabled"
+            @click="onPrimaryClick"
           >
             <template #icon-left>
               <i
@@ -139,9 +169,13 @@
                 class="icon-stop"
               />
               <span
-                v-else-if="isSending"
+                v-else-if="isSending || isValidating"
                 class="btn-chat-send-spinner"
                 aria-hidden="true"
+              />
+              <i
+                v-else-if="isValidateMode"
+                class="icon-sidebar-database size-20"
               />
               <i
                 v-else-if="riskAgentActive"
@@ -265,10 +299,65 @@ const { ensureWebSocketAndSend } = useChatSocket()
 const { getStreamingMessage, nextQuestions, isGeneratingNextQuestions, markStoppedByUser } = useChatMessages()
 const isAnswerStreaming = computed(() => !!getStreamingMessage()?.isStreaming)
 
+// 데이터분석(S) 모드 인라인 자동완성 — 다음질문 추천과 동일한 틀로 입력창 위에 노출
+const {
+  items: dataAutocompleteItems,
+  hasItems: hasDataAutocomplete,
+  themeColorHex: dataAutocompleteTheme,
+  highlightParts: dataAutocompleteHighlight,
+  applyItem: applyDataAutocomplete,
+} = useDataAutocomplete()
+
 // 다음 추천 질문 텍스트 클릭 시 검색창에 텍스트 채우기
 const handleSelectNextQuestion = (question: string) => {
   emit('update:modelValue', question)
 }
+
+// ===== 데이터분석(S) 질문 품질 게이트 — 검증 통과 전 전송 차단 =====
+const { isGateActive, isValidating, canSend, requiredFilled, validate } = useDataQuestionGate()
+
+/** 검증 단계 버튼 모드 — 게이트 활성 + 미통과 + 응답중 아님 */
+const isValidateMode = computed(() => isGateActive.value && !canSend.value && !isAnswerStreaming.value)
+
+/** 전송 버튼 비활성 — 게이트 활성 시 검증 통과 전엔 전송 불가(검증 모드일 땐 검증 가능 여부로 판정) */
+const isPrimaryDisabled = computed(() => {
+  if (isAnswerStreaming.value) return false
+  const baseDisabled =
+    props.disabled ||
+    isSearchModeMissingSubOptions.value ||
+    (riskAgentActive.value
+      ? previewItems.value.length === 0
+      : !props.modelValue.trim() || selectedSubOptions.value.length === 0)
+  if (baseDisabled) return true
+  // 검증 모드: 필수항목(무엇을·기간) 미충족이면 검증 요청 불가
+  if (isValidateMode.value && !requiredFilled.value) return true
+  return false
+})
+
+/** 버튼 클릭 — 응답중지 / 검증 / 전송 분기 */
+const onPrimaryClick = () => {
+  if (isAnswerStreaming.value) return handleStop()
+  if (isValidateMode.value) return void validate()
+  return void handleSend()
+}
+
+/** Enter — 검증 모드면 검증(필수항목 충족 시), 아니면 전송 */
+const onPrimaryEnter = () => {
+  if (isValidateMode.value) {
+    if (!requiredFilled.value) return
+    return void validate()
+  }
+  return void handleSend()
+}
+
+// 검증 통과 순간 버튼(검증→요청) 전환 강조 애니메이션
+const justUnlocked = ref(false)
+watch(canSend, (next, prev) => {
+  if (isGateActive.value && next && !prev) {
+    justUnlocked.value = true
+    window.setTimeout(() => (justUnlocked.value = false), 800)
+  }
+})
 
 const DEFAULT_INPUT_PLACEHOLDER = '궁금하신 내용을 입력하세요.'
 const RISK_INPUT_PLACEHOLDER = 'RFP(PDF)를 첨부한 뒤 진단 시작을 눌러주세요.'
@@ -631,6 +720,32 @@ const handleSend = async () => {
   }
 }
 
+/* 데이터분석 인라인 자동완성 — 다음질문 틀 재사용 + 일치 글자 테마색 하이라이트 */
+.chat-data-ac-btn:hover {
+  border-color: var(--chat-ac-theme, var(--color-primary));
+}
+
+.chat-data-ac-term {
+  @include typo($body-small, $color-text-heading);
+  font-weight: 600;
+}
+
+.chat-data-ac-hit {
+  background: transparent;
+  color: var(--chat-ac-theme, var(--color-primary));
+  font-weight: 800;
+}
+
+.chat-data-ac-fade-enter-active,
+.chat-data-ac-fade-leave-active {
+  transition: opacity 0.18s ease;
+}
+
+.chat-data-ac-fade-enter-from,
+.chat-data-ac-fade-leave-to {
+  opacity: 0;
+}
+
 @keyframes chat-next-question-dot {
   0%,
   80%,
@@ -696,5 +811,33 @@ const handleSend = async () => {
   height: 14px;
   background-color: #fff;
   border-radius: $border-radius-sm;
+}
+
+/* 데이터분석 게이트: 검증 모드 — 전송과 동일 스타일, 아이콘만 다름 (살짝 톤 구분) */
+.btn-chat-send.is-validate-mode {
+  filter: saturate(0.92);
+}
+
+/* 검증 통과 → 요청 버튼 전환 강조 (한 번 펄스 + 글로우) */
+.btn-chat-send.is-just-unlocked {
+  animation: chat-send-unlock 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes chat-send-unlock {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(var(--color-primary-rgb, 60, 105, 219), 0.55);
+  }
+  35% {
+    transform: scale(1.16);
+    box-shadow: 0 0 0 8px rgba(var(--color-primary-rgb, 60, 105, 219), 0);
+  }
+  60% {
+    transform: scale(0.96);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(var(--color-primary-rgb, 60, 105, 219), 0);
+  }
 }
 </style>
