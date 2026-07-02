@@ -1,39 +1,24 @@
-/**
- * 데이터분석 질문 설계 — Tier 1 품질 게이트 타입
- *
- * Tier 1: 클라이언트 구조 완성도 점수 (메타·데이터마트 무관, 범용)
- */
+export type QuestionCriterionKey = 'period' | 'metric' | 'groupBy' | 'calculation' | 'analysis' | 'comparison'
 
-/** 좋은 질문의 구조 요소 (참고 기준: 기간/지표/구분/집계/비교) */
-export type QuestionCriterionKey = 'period' | 'metric' | 'groupBy' | 'aggregation' | 'comparison'
-
-/** 단일 요소 평가 결과 */
 export interface CriterionResult {
   key: QuestionCriterionKey
   label: string
-  /** 충족 여부 */
   met: boolean
-  /** 필수 요소 여부 */
   required: boolean
-  /** 배점 */
-  weight: number
-  /** 미충족 시 사용자 안내 문구 */
-  hint: string
 }
 
-/** Tier 1 점수 결과 */
 export interface QuestionScore {
-  /** 0~100 */
-  score: number
-  /** 임계점수 통과 여부 (Text-to-SQL 게이트) */
-  passed: boolean
   criteria: CriterionResult[]
-  /** 미충족 안내 문구 모음 */
-  missingHints: string[]
 }
 
-// ===== Tier 2: 백엔드 LLM 진단 계약 (검증 버튼 → 진단 응답) =====
-
+/**
+ * diagnoseQuestion.do 응답 status
+ *
+ * - READY: SQL 생성 허용
+ * - CLARIFICATION_REQUIRED: 조건 보완 필요
+ * - TERM_AMBIGUOUS: 용어 정의 선택 필요
+ * - OUT_OF_SCOPE: 데이터로 답 불가
+ */
 export type QuestionDiagnosisStatus =
   | 'READY' // 실행 가능 — SQL 생성 허용
   | 'CLARIFICATION_REQUIRED' // 조건 보완 필요
@@ -50,6 +35,7 @@ export interface ClarificationOption {
 export type ClarificationIntent = 'missing' | 'refine'
 
 export interface ClarificationQuestion {
+  /** 슬롯 키 — 예: period, metric, target */
   item: string
   question: string
   /** missing: 슬롯 없음 / refine: 있으나 구체화 필요 (미전달 시 Tier1 met 여부로 추론) */
@@ -57,19 +43,62 @@ export interface ClarificationQuestion {
   options?: ClarificationOption[]
 }
 
-/** 진단 응답 envelope (프론트는 status만 보고 렌더 — 데이터마트 무관) */
+/**
+ * 진단 응답 envelope (프론트는 status만 보고 렌더 — 데이터마트 무관)
+ *
+ * - rewrittenQuestion: READY일 때 정제된 질문, 그 외 null
+ * - clarificationQuestions: 핵심 보완 항목 (question 필수, intent/options 선택)
+ * - alternatives: 대체 가능 용어(모호·오인 지표 등) — 칩 선택 시 채팅 질문 내 치환
+ */
 export interface QuestionDiagnosis {
   status: QuestionDiagnosisStatus
-  /** 백엔드 종합 점수 (0~100) */
   readinessScore: number
-  /** 해석한 의도 */
   interpretedIntent?: string
-  /** READY 시 실행할 재작성 질문 */
   rewrittenQuestion?: string | null
-  /** 보완 필요 시 선택형 질문 */
   clarificationQuestions?: ClarificationQuestion[]
-  /** 범위 밖일 때 대체 통계 안내 */
   alternatives?: string[]
-  /** SQL 생성 허용 여부 (최종 게이트) */
   sqlGenerationAllowed: boolean
+}
+
+export const FORMULA_DISPLAY_LABELS: Record<QuestionCriterionKey, string> = {
+  period: '기간',
+  metric: '무엇을',
+  groupBy: '구분 단위',
+  calculation: '계산',
+  analysis: '분석',
+  comparison: '비교',
+}
+
+export interface FormulaDisplayItem {
+  key: QuestionCriterionKey
+  label: string
+  required: boolean
+  met: boolean
+}
+
+export interface QuestionDraft {
+  period: string
+  metric: string
+  groupBy: string
+  calculationLabel: string
+  calculationPhrase: string
+  analysisLabel: string
+  analysisPhrase: string
+  comparisonLabel: string
+  comparisonPhrase: string
+}
+
+export interface DatamartTab {
+  id: string
+  label: string
+}
+
+export type MandatorySlotKey = 'period' | 'target'
+
+export interface MandatorySlotCard {
+  key: MandatorySlotKey
+  label: string
+  icon: string
+  question: string
+  item: string
 }

@@ -78,6 +78,7 @@
           :auto-resize="true"
           :max-rows="6"
           @update:model-value="emit('update:modelValue', $event)"
+          @focusin="onChatInputFocusIn"
           @keydown.enter.exact.prevent="onPrimaryEnter"
         />
       </div>
@@ -314,7 +315,12 @@ const handleSelectNextQuestion = (question: string) => {
 }
 
 // ===== 데이터분석(S) 질문 품질 게이트 — 검증 통과 전 전송 차단 =====
-const { isGateActive, isValidating, canSend, requiredFilled, validate } = useDataQuestionGate()
+const { isGateActive, isValidating, canSend, requiredFilled, validate, setFormulaValidationSource } =
+  useDataQuestionGate()
+
+const onChatInputFocusIn = () => {
+  if (isGateActive.value) setFormulaValidationSource('chat')
+}
 
 /** 검증 단계 버튼 모드 — 게이트 활성 + 미통과 + 응답중 아님 */
 const isValidateMode = computed(() => isGateActive.value && !canSend.value && !isAnswerStreaming.value)
