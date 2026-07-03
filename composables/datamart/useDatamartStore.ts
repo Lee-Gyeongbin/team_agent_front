@@ -153,7 +153,13 @@ const handleDeleteDatamart = async (id: string) => {
 
 /** 데이터마트 활성화 상태 변경 */
 const handleToggleActiveDatamart = async (datamart: Datamart) => {
-  const saveData: Partial<Datamart> = { ...datamart, useYn: datamart.useYn === 'Y' ? 'N' : 'Y' }
+  const nextUseYn = datamart.useYn === 'Y' ? 'N' : 'Y'
+  if (nextUseYn === 'Y' && datamart.activeTblCnt === 0) {
+    openToast({ message: '메타 관리에서 테이블을 활성화해주세요.', type: 'warning' })
+    return
+  }
+
+  const saveData: Partial<Datamart> = { ...datamart, useYn: nextUseYn }
   try {
     await fetchSaveDatamart(saveData)
     await handleSelectAll()

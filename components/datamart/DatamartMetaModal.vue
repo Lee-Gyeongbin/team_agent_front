@@ -156,6 +156,7 @@ const {
   handleSaveMetaAbbrev,
   handleSaveMetaFewshot,
   handleSaveMetaTerm,
+  handleSelectAll,
 } = useDatamartStore()
 
 const activeTab = defineModel<string>('activeTab', { default: 'table' })
@@ -194,49 +195,38 @@ const metaTabs = [
 ]
 
 const onSave = async () => {
+  const datamartId = props.datamart?.datamartId ?? ''
+  let isSaved = false
+
   if (activeTab.value === 'table') {
-    const datamartId = props.datamart?.datamartId ?? ''
-    await handleSaveMetaTableSelection(datamartId, metaModalTables.value)
-    return
+    isSaved = await handleSaveMetaTableSelection(datamartId, metaModalTables.value)
   } else if (activeTab.value === 'column') {
-    const datamartId = props.datamart?.datamartId ?? ''
-    await handleSaveMetaColumnSelection(datamartId, metaModalTables.value)
-    return
+    isSaved = await handleSaveMetaColumnSelection(datamartId, metaModalTables.value)
   } else if (activeTab.value === 'relation') {
-    const datamartId = props.datamart?.datamartId ?? ''
-    await handleSaveMetaRelationship(datamartId, metaModalRelationships.value)
-    return
+    isSaved = await handleSaveMetaRelationship(datamartId, metaModalRelationships.value)
   } else if (activeTab.value === 'code') {
-    const datamartId = props.datamart?.datamartId ?? ''
-    await handleSaveMetaCodeMapping(datamartId, metaModalCodeMappings.value)
-    return
+    isSaved = await handleSaveMetaCodeMapping(datamartId, metaModalCodeMappings.value)
   } else if (activeTab.value === 'synonym') {
-    const datamartId = props.datamart?.datamartId ?? ''
     const synonymList = synonymTabRef.value?.buildSavePayload()
     if (!synonymList) return
-    await handleSaveMetaSynonym(datamartId, synonymList)
-    return
+    isSaved = await handleSaveMetaSynonym(datamartId, synonymList)
   } else if (activeTab.value === 'abbrDict') {
-    const datamartId = props.datamart?.datamartId ?? ''
     const abbrevList = abbrDictTabRef.value?.buildSavePayload()
     if (!abbrevList) return
-    await handleSaveMetaAbbrev(datamartId, abbrevList)
-    return
+    isSaved = await handleSaveMetaAbbrev(datamartId, abbrevList)
   } else if (activeTab.value === 'fewshot') {
-    const datamartId = props.datamart?.datamartId ?? ''
     const fewshotList = fewshotTabRef.value?.buildSavePayload()
     if (!fewshotList) return
-    await handleSaveMetaFewshot(datamartId, fewshotList)
-    return
+    isSaved = await handleSaveMetaFewshot(datamartId, fewshotList)
   } else if (activeTab.value === 'term') {
-    const datamartId = props.datamart?.datamartId ?? ''
     const termList = termTabRef.value?.buildSavePayload()
     if (!termList) return
-    await handleSaveMetaTerm(datamartId, termList)
-    return
+    isSaved = await handleSaveMetaTerm(datamartId, termList)
   }
 
-  openToast({ message: '현재 탭 저장 기능은 개발 중입니다.', type: 'warning' })
+  if (isSaved) {
+    await handleSelectAll()
+  }
 }
 </script>
 
