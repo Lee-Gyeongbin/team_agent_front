@@ -23,7 +23,7 @@
             :datamart="datamart"
             :tables="metaModalTables"
             :error-message="metaModalTableListError"
-            @set-table-use-yn="setDatamartMetaModalTableUseYn"
+            @set-table-use-yn="setDatamartMetaModalTable"
           />
           <DatamartMetaColumnMetadataTab
             v-else-if="activeTab === 'column'"
@@ -147,7 +147,7 @@ const {
   metaModalTermListError,
   resetDatamartMetaModal,
   hydrateDatamartMetaModal,
-  setDatamartMetaModalTableUseYn,
+  setDatamartMetaModalTable,
   handleSaveMetaTableSelection,
   handleSaveMetaColumnSelection,
   handleSaveMetaRelationship,

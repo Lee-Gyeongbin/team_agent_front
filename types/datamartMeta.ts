@@ -44,6 +44,7 @@ export interface DatamartMetaTableExcelUploadData {
   returnMsg?: string
   tableList: {
     id: string
+    logicalNm?: string
     useYn?: 'Y' | 'N'
   }[]
 }

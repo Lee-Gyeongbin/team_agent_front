@@ -314,12 +314,19 @@ const hydrateDatamartMetaModal = async (datamartId: string) => {
 }
 
 /** 메타 관리 모달 — 테이블 사용 상태 변경 */
-const setDatamartMetaModalTableUseYn = (payload: { id: string; useYn: 'Y' | 'N' }) => {
+const setDatamartMetaModalTable = (payload: { id: string; logicalNm?: string; useYn?: 'Y' | 'N' }) => {
   const row = metaModalTables.value.find((t) => t.id === payload.id)
-  if (!row || row.useYn === payload.useYn) return
-  row.useYn = payload.useYn
-  if (payload.useYn === 'N' && metaModalSelectedColumnTableId.value === payload.id) {
+  if (!row) return
+
+  if (payload.logicalNm !== undefined) row.logicalNm = payload.logicalNm
+
+  const nextUseYn = payload.useYn === 'Y' || payload.useYn === 'N' ? payload.useYn : undefined
+  if (nextUseYn !== undefined) row.useYn = nextUseYn
+
+  if (nextUseYn === 'N' && metaModalSelectedColumnTableId.value === payload.id) {
     metaModalSelectedColumnTableId.value = metaModalTables.value.find((t) => t.useYn === 'Y')?.id ?? ''
+  } else if (nextUseYn === 'Y' && !metaModalSelectedColumnTableId.value) {
+    metaModalSelectedColumnTableId.value = payload.id
   }
 }
 
@@ -696,7 +703,7 @@ export const useDatamartStore = () => {
     handleFetchMetaRelationshipList,
     resetDatamartMetaModal,
     hydrateDatamartMetaModal,
-    setDatamartMetaModalTableUseYn,
+    setDatamartMetaModalTable,
     handleSaveMetaTableSelection,
     handleSaveMetaColumnSelection,
     handleSaveMetaRelationship,

@@ -26,8 +26,8 @@
     <template v-else>
       <div class="datamart-meta-table-select-header">
         <p class="datamart-meta-table-select-desc">
-          AI에게 노출할 테이블만 선택하세요. 전체 {{ totalTableCount }}개 중 필요한 테이블만 포함하면 쿼리 정확도가
-          높아집니다.
+          AI에게 노출할 테이블만 선택하고 각 테이블 설명을 작성하면, 전체 {{ totalTableCount }}개 중 필요한 테이블만
+          활용해 쿼리 정확도와 성능을 높일 수 있습니다.
         </p>
       </div>
 
@@ -133,7 +133,13 @@
             >
               <div class="agent-data-card-info">
                 <div class="agent-data-card-title">{{ row.physicalNm }}</div>
-                <p class="agent-data-card-desc">{{ row.logicalNm }}</p>
+                <UiInput
+                  :key="`${row.id}-${row.logicalNm ?? ''}`"
+                  v-model="row.logicalNm"
+                  size="xs"
+                  placeholder="테이블 한글명 입력"
+                  class="datamart-meta-table-select-logical-input"
+                />
                 <div class="agent-data-card-meta">
                   <span class="agent-data-card-meta-item">
                     <i class="icon-database size-12" />
@@ -199,7 +205,7 @@ const emit = defineEmits<{
 const datamartId = computed(() => props.datamart?.datamartId?.trim() ?? '')
 
 const { fetchDownloadMetaTableExcel, fetchUploadMetaTableExcel } = useDatamartApi()
-const { metaModalTables, setDatamartMetaModalTableUseYn } = useDatamartStore()
+const { setDatamartMetaModalTable } = useDatamartStore()
 
 const excelUploadModalOpen = ref(false)
 const isExcelUploading = ref(false)
@@ -214,11 +220,12 @@ const requireDatamartId = (): string | null => {
 }
 
 const applyUploadedTableSelection = (uploadedTables: DatamartMetaTableExcelUploadData['tableList']) => {
-  const uploadedMap = new Map(uploadedTables.map((table) => [table.id, table]))
-  for (const table of metaModalTables.value) {
-    const uploaded = uploadedMap.get(table.id)
-    if (!uploaded?.useYn || table.useYn === uploaded.useYn) continue
-    setDatamartMetaModalTableUseYn({ id: table.id, useYn: uploaded.useYn })
+  for (const uploaded of uploadedTables) {
+    if (!uploaded.id?.trim()) continue
+    setDatamartMetaModalTable({
+      ...uploaded,
+      id: uploaded.id.trim(),
+    })
   }
 }
 
@@ -481,5 +488,9 @@ const onToggleActivateAllFiltered = () => {
 .datamart-meta-table-select-summary-active {
   font-weight: $font-weight-semibold;
   color: $color-primary;
+}
+
+.datamart-meta-table-select-logical-input {
+  width: 100%;
 }
 </style>
