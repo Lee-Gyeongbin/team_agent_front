@@ -221,6 +221,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiLoading } from '@leechanyong/ispark-ui'
 import type { DateValue } from '@internationalized/date'
 import type { CodeItem } from '~/types/codes'
 import type { ChatGuideMaintenanceItem } from '~/types/chat-guide'

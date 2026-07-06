@@ -125,6 +125,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiLoading } from '@leechanyong/ispark-ui'
 import type { Datamart } from '~/types/datamart'
 import type { DatamartMetaTableItem } from '~/types/datamartMeta'
 

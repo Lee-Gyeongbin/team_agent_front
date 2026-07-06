@@ -154,6 +154,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiLoading } from '@leechanyong/ispark-ui'
 import type { OrgUserItem } from '~/types/org-manage'
 import { formatDateTimeDisplay } from '~/utils/global/dateUtil'
 import { formatPhone } from '~/utils/global/numberUtil'

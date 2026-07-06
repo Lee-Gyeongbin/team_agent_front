@@ -153,6 +153,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiLoading } from '@leechanyong/ispark-ui'
 definePageMeta({ layout: 'default' })
 
 const activeTab = ref('account')

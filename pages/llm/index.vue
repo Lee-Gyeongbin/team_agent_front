@@ -58,6 +58,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiLoading } from '@leechanyong/ispark-ui'
 import draggable from 'vuedraggable'
 import { useLlmStore } from '~/composables/llm/useLlmStore'
 import type { LlmModel } from '~/types/llm'

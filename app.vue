@@ -42,6 +42,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiLoading } from '@leechanyong/ispark-ui'
 const { initTheme } = useTheme()
 const { dialogType, dialogOptions, closeDialog } = useDialogState()
 const { isLoading: isGlobalLoading, loadingText: globalLoadingText } = useLoadingState()
