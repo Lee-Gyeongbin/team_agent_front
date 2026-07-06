@@ -7,41 +7,49 @@
   >
     <div
       class="dq-guide__header"
+      role="button"
+      tabindex="0"
       :class="{
         'is-required-missing': requiredMissingCount > 0,
         'is-just-passed': justPassed,
       }"
+      :aria-expanded="isOpen"
+      :aria-label="isOpen ? '가이드 접기' : '가이드 펼치기'"
+      @click="onToggleGuide"
+      @keydown.enter.prevent="onToggleGuide"
+      @keydown.space.prevent="onToggleGuide"
     >
       <div class="dq-guide__header-text">
-        <h2 class="dq-guide__title">질의 전 가이드</h2>
-        <p class="dq-guide__subtitle">단계별로 입력하면 더 정확한 데이터를 조회할 수 있어요</p>
-        <p
-          v-if="showDiagnosis"
-          class="dq-guide__score"
-          :class="{ 'is-pass': isReadyPass }"
-        >
-          <i :class="[resolvedThemeIconClass, 'size-12']" />
-          {{ summaryLabel }}
-        </p>
-        <p
-          v-if="requiredMissingCount > 0"
-          class="dq-guide__score-missing"
-        >
-          필수 {{ requiredMissingCount }}개 미충족
-        </p>
+        <div class="dq-guide__header-main">
+          <h2 class="dq-guide__title">질의 전 가이드</h2>
+          <p class="dq-guide__subtitle">단계별로 입력하면 더 정확한 데이터를 조회할 수 있어요</p>
+        </div>
+        <div class="dq-guide__header-status">
+          <p
+            v-if="showDiagnosis"
+            class="dq-guide__score"
+            :class="{ 'is-pass': isReadyPass }"
+          >
+            <i :class="[resolvedThemeIconClass, 'size-12']" />
+            {{ summaryLabel }}
+          </p>
+          <p
+            v-if="requiredMissingCount > 0"
+            class="dq-guide__score-missing"
+          >
+            필수 {{ requiredMissingCount }}개 미충족
+          </p>
+        </div>
       </div>
-      <button
-        type="button"
+      <span
         class="dq-guide__toggle"
-        :aria-label="isOpen ? '가이드 접기' : '가이드 펼치기'"
-        :title="isOpen ? '가이드 접기' : '가이드 펼치기'"
-        @click="onToggleGuide"
+        aria-hidden="true"
       >
         <i
           class="size-14 dq-guide__toggle-icon icon-chevron-down"
           :style="{ transform: isOpen ? 'rotate(0deg)' : 'rotate(180deg)' }"
         />
-      </button>
+      </span>
     </div>
 
     <Transition name="dq-guide-fold">
@@ -49,88 +57,222 @@
         v-if="isOpen"
         class="dq-guide__content"
       >
-        <div class="dq-guide__formula-card">
-          <div class="dq-guide__formula-head">
-            <i :class="[resolvedThemeIconClass, 'size-18 dq-guide__formula-icon']" />
-            <h3 class="dq-guide__formula-title">질문 작성 공식</h3>
-          </div>
-          <div class="dq-guide__formula-row">
-            <template
-              v-for="(item, index) in formulaItems"
-              :key="item.key"
-            >
-              <span
-                v-if="index > 0"
-                class="dq-guide__formula-plus"
-              >
-                +
-              </span>
-              <button
-                v-if="isFormulaItemClickable(item.key)"
-                type="button"
-                class="dq-guide__formula-pill"
-                :class="{
-                  'is-met': item.met,
-                  'is-active': activeFormulaControl === item.key,
-                }"
-                @click="onSelectFormulaItem(item.key)"
-              >
-                <span class="dq-guide__formula-label">{{ item.label }}</span>
-              </button>
-              <span
-                v-else
-                class="dq-guide__formula-pill"
-                :class="{ 'is-met': item.met }"
-              >
-                <span class="dq-guide__formula-label">{{ item.label }}</span>
-              </span>
-            </template>
-          </div>
-          <div class="dq-guide__formula-example">
-            <span class="dq-guide__formula-example-label">예시</span>
-            <button
-              type="button"
-              class="dq-guide__formula-example-text"
-              @click="onApplyFormulaExample"
-            >
-              {{ formulaExampleQuestion }}
-            </button>
-          </div>
-          <section class="dq-guide__formula-panel">
-            <div class="dq-guide__formula-panel-head">
-              <h4 class="dq-guide__formula-panel-title">{{ activeFormulaTitle }}</h4>
-              <p class="dq-guide__formula-panel-desc">{{ activeFormulaDesc }}</p>
+        <div class="dq-guide__formula-example">
+          <span class="dq-guide__formula-example-label">예시</span>
+          <button
+            type="button"
+            class="dq-guide__formula-example-text"
+            @click="onApplyFormulaExample"
+          >
+            {{ formulaExampleQuestion }}
+          </button>
+        </div>
+
+        <div class="dq-guide__content-inner">
+          <div class="dq-guide__formula-card">
+            <div class="dq-guide__formula-head">
+              <i :class="[resolvedThemeIconClass, 'size-18 dq-guide__formula-icon']" />
+              <h3 class="dq-guide__formula-title">질문 작성 공식</h3>
             </div>
-            <div
-              v-if="activeFormulaControl === 'groupBy' && isLoadingVocabulary"
-              class="dq-guide__formula-panel-state"
-            >
-              <UiLoading text="" />
-              <span>구분 목록을 불러오는 중입니다</span>
+            <div class="dq-guide__formula-row">
+              <template
+                v-for="(item, index) in formulaItems"
+                :key="item.key"
+              >
+                <span
+                  v-if="index > 0"
+                  class="dq-guide__formula-plus"
+                >
+                  +
+                </span>
+                <button
+                  v-if="isFormulaItemClickable(item.key)"
+                  type="button"
+                  class="dq-guide__formula-pill"
+                  :class="{
+                    'is-met': item.met,
+                    'is-active': activeFormulaControl === item.key,
+                  }"
+                  @click="onSelectFormulaItem(item.key)"
+                >
+                  <span class="dq-guide__formula-label">{{ item.label }}</span>
+                </button>
+                <span
+                  v-else
+                  class="dq-guide__formula-pill"
+                  :class="{ 'is-met': item.met }"
+                >
+                  <span class="dq-guide__formula-label">{{ item.label }}</span>
+                </span>
+              </template>
             </div>
-            <ul
-              v-else
-              class="dq-guide__formula-option-list"
-              role="listbox"
-              :aria-label="`${activeFormulaTitle} 선택`"
-            >
-              <li
-                v-for="option in activeFormulaOptions"
-                :key="option.value"
+          </div>
+
+          <div class="dq-guide__content-inner-right">
+            <template v-if="!hasSupplement && hasDatamartConfigured">
+              <div
+                v-if="showTabs"
+                class="dq-guide__tabs"
+                role="tablist"
               >
                 <button
+                  v-for="tab in datamartTabs"
+                  :key="tab.id"
                   type="button"
-                  role="option"
-                  class="dq-guide__formula-option"
-                  :class="{ 'is-selected': isFormulaOptionSelected(option) }"
-                  :aria-selected="isFormulaOptionSelected(option)"
-                  @click="onSelectFormulaOption(option)"
+                  role="tab"
+                  class="dq-guide__tab"
+                  :class="{ 'is-active': tab.id === activeTabId }"
+                  :aria-selected="tab.id === activeTabId"
+                  :title="tab.label"
+                  @click="onSelectTab(tab.id)"
                 >
-                  {{ option.label }}
+                  {{ tab.label }}
                 </button>
-              </li>
-            </ul>
-          </section>
+              </div>
+
+              <section class="dq-guide__period-row">
+                <h4 class="dq-guide__period-title">기간</h4>
+                <ul
+                  class="dq-guide__period-list"
+                  role="listbox"
+                  aria-label="기간 선택"
+                >
+                  <li
+                    v-for="period in periodOptions"
+                    :key="period"
+                  >
+                    <button
+                      type="button"
+                      role="option"
+                      class="dq-guide__period-option"
+                      :class="{ 'is-selected': isPeriodSelected(period) }"
+                      :aria-selected="isPeriodSelected(period)"
+                      @click="onSelectPeriod(period)"
+                    >
+                      {{ period }}
+                    </button>
+                  </li>
+                </ul>
+              </section>
+
+              <div class="dq-guide__columns">
+                <section class="dq-guide__col">
+                  <header class="dq-guide__col-head">
+                    <i class="icon-chat-open-book size-18 dq-guide__col-icon" />
+                    <div class="dq-guide__col-head-text">
+                      <h4 class="dq-guide__col-title">무엇을 조회할까요?</h4>
+                      <p class="dq-guide__col-desc">필요한 정보를 선택해 주세요.</p>
+                    </div>
+                  </header>
+                  <div class="dq-guide__col-body">
+                    <div
+                      v-if="isLoadingVocabulary"
+                      class="dq-guide__col-state"
+                    >
+                      <UiLoading text="" />
+                      <span>지표 목록을 불러오는 중입니다</span>
+                    </div>
+                    <div
+                      v-else-if="metricTerms.length === 0"
+                      class="dq-guide__col-state is-empty"
+                    >
+                      <i class="icon-info size-14" />
+                      <span>등록된 지표(METRIC) 용어가 없습니다</span>
+                    </div>
+                    <ul
+                      v-else
+                      class="dq-guide__option-list"
+                      role="listbox"
+                      aria-label="지표 선택"
+                    >
+                      <li
+                        v-for="(term, index) in metricTerms"
+                        :key="term"
+                      >
+                        <button
+                          type="button"
+                          role="option"
+                          class="dq-guide__option"
+                          :class="{ 'is-selected': isMetricSelected(term) }"
+                          :aria-selected="isMetricSelected(term)"
+                          @click="onSelectMetric(term)"
+                        >
+                          <span class="dq-guide__option-radio" />
+                          <span class="dq-guide__option-label">{{ term }}</span>
+                          <span
+                            v-if="index === 0"
+                            class="dq-guide__option-badge"
+                          >
+                            추천
+                          </span>
+                        </button>
+                      </li>
+                    </ul>
+                  </div>
+                </section>
+
+                <section class="dq-guide__col dq-guide__col--preview">
+                  <header class="dq-guide__col-head">
+                    <i class="icon-sparkle size-18 dq-guide__col-icon" />
+                    <div class="dq-guide__col-head-text">
+                      <h4 class="dq-guide__col-title">완성된 질문 미리보기</h4>
+                      <p class="dq-guide__col-desc">선택한 항목과 기준으로 최적의 질문을 제안해요.</p>
+                    </div>
+                  </header>
+                  <div class="dq-guide__preview-card">
+                    <p class="dq-guide__preview-question">
+                      {{ composedQuestion }}
+                    </p>
+                    <p class="dq-guide__preview-tags">{{ previewTags }}</p>
+                    <button
+                      type="button"
+                      class="dq-guide__preview-action"
+                      @click="onApplyComposedQuestion"
+                    >
+                      <i class="icon-sparkle size-16" />
+                      이 질문으로 조회하기
+                    </button>
+                  </div>
+                </section>
+              </div>
+            </template>
+
+            <section class="dq-guide__formula-panel">
+              <div class="dq-guide__formula-panel-head">
+                <h4 class="dq-guide__formula-panel-title">{{ activeFormulaTitle }}</h4>
+                <p class="dq-guide__formula-panel-desc">{{ activeFormulaDesc }}</p>
+              </div>
+              <div
+                v-if="activeFormulaControl === 'groupBy' && isLoadingVocabulary"
+                class="dq-guide__formula-panel-state"
+              >
+                <UiLoading text="" />
+                <span>구분 목록을 불러오는 중입니다</span>
+              </div>
+              <ul
+                v-else
+                class="dq-guide__formula-option-list"
+                role="listbox"
+                :aria-label="`${activeFormulaTitle} 선택`"
+              >
+                <li
+                  v-for="option in activeFormulaOptions"
+                  :key="option.value"
+                >
+                  <button
+                    type="button"
+                    role="option"
+                    class="dq-guide__formula-option"
+                    :class="{ 'is-selected': isFormulaOptionSelected(option) }"
+                    :aria-selected="isFormulaOptionSelected(option)"
+                    @click="onSelectFormulaOption(option)"
+                  >
+                    {{ option.label }}
+                  </button>
+                </li>
+              </ul>
+            </section>
+          </div>
         </div>
 
         <div
@@ -215,151 +357,24 @@
           <p>설정된 데이터마트가 없습니다. 데이터마트를 선택해주세요.</p>
         </div>
 
-        <template v-else>
-          <div
-            v-if="showTabs"
-            class="dq-guide__tabs"
-            role="tablist"
+        <section
+          v-if="!hasSupplement && hasDatamartConfigured"
+          class="dq-guide__faq-row"
+          aria-label="자주 묻는 질문"
+        >
+          <h4 class="dq-guide__faq-title">자주 묻는 질문</h4>
+          <button
+            type="button"
+            class="dq-guide__faq-item"
+            @click="onApplyComposedQuestion"
           >
-            <button
-              v-for="tab in datamartTabs"
-              :key="tab.id"
-              type="button"
-              role="tab"
-              class="dq-guide__tab"
-              :class="{ 'is-active': tab.id === activeTabId }"
-              :aria-selected="tab.id === activeTabId"
-              :title="tab.label"
-              @click="onSelectTab(tab.id)"
-            >
-              {{ tab.label }}
-            </button>
-          </div>
-
-          <section class="dq-guide__period-row">
-            <h4 class="dq-guide__period-title">기간</h4>
-            <ul
-              class="dq-guide__period-list"
-              role="listbox"
-              aria-label="기간 선택"
-            >
-              <li
-                v-for="period in periodOptions"
-                :key="period"
-              >
-                <button
-                  type="button"
-                  role="option"
-                  class="dq-guide__period-option"
-                  :class="{ 'is-selected': isPeriodSelected(period) }"
-                  :aria-selected="isPeriodSelected(period)"
-                  @click="onSelectPeriod(period)"
-                >
-                  {{ period }}
-                </button>
-              </li>
-            </ul>
-          </section>
-
-          <div class="dq-guide__columns">
-            <section class="dq-guide__col">
-              <header class="dq-guide__col-head">
-                <i class="icon-chat-open-book size-18 dq-guide__col-icon" />
-                <div class="dq-guide__col-head-text">
-                  <h4 class="dq-guide__col-title">무엇을 조회할까요?</h4>
-                  <p class="dq-guide__col-desc">필요한 정보를 선택해 주세요.</p>
-                </div>
-              </header>
-              <div class="dq-guide__col-body">
-                <div
-                  v-if="isLoadingVocabulary"
-                  class="dq-guide__col-state"
-                >
-                  <UiLoading text="" />
-                  <span>지표 목록을 불러오는 중입니다</span>
-                </div>
-                <div
-                  v-else-if="metricTerms.length === 0"
-                  class="dq-guide__col-state is-empty"
-                >
-                  <i class="icon-info size-14" />
-                  <span>등록된 지표(METRIC) 용어가 없습니다</span>
-                </div>
-                <ul
-                  v-else
-                  class="dq-guide__option-list"
-                  role="listbox"
-                  aria-label="지표 선택"
-                >
-                  <li
-                    v-for="(term, index) in metricTerms"
-                    :key="term"
-                  >
-                    <button
-                      type="button"
-                      role="option"
-                      class="dq-guide__option"
-                      :class="{ 'is-selected': isMetricSelected(term) }"
-                      :aria-selected="isMetricSelected(term)"
-                      @click="onSelectMetric(term)"
-                    >
-                      <span class="dq-guide__option-radio" />
-                      <span class="dq-guide__option-label">{{ term }}</span>
-                      <span
-                        v-if="index === 0"
-                        class="dq-guide__option-badge"
-                      >
-                        추천
-                      </span>
-                    </button>
-                  </li>
-                </ul>
-              </div>
-            </section>
-
-            <section class="dq-guide__col dq-guide__col--preview">
-              <header class="dq-guide__col-head">
-                <i class="icon-sparkle size-18 dq-guide__col-icon" />
-                <div class="dq-guide__col-head-text">
-                  <h4 class="dq-guide__col-title">완성된 질문 미리보기</h4>
-                  <p class="dq-guide__col-desc">선택한 항목과 기준으로 최적의 질문을 제안해요.</p>
-                </div>
-              </header>
-              <div class="dq-guide__preview-card">
-                <p class="dq-guide__preview-question">
-                  {{ composedQuestion }}
-                </p>
-                <p class="dq-guide__preview-tags">{{ previewTags }}</p>
-                <button
-                  type="button"
-                  class="dq-guide__preview-action"
-                  @click="onApplyComposedQuestion"
-                >
-                  <i class="icon-sparkle size-16" />
-                  이 질문으로 조회하기
-                </button>
-              </div>
-            </section>
-          </div>
-
-          <section
-            class="dq-guide__faq-row"
-            aria-label="자주 묻는 질문"
-          >
-            <h4 class="dq-guide__faq-title">자주 묻는 질문</h4>
-            <button
-              type="button"
-              class="dq-guide__faq-item"
-              @click="onApplyComposedQuestion"
-            >
-              <i class="icon-sparkle size-16 dq-guide__faq-icon" />
-              <span class="dq-guide__faq-text">
-                <span class="dq-guide__faq-question">{{ composedQuestion }}</span>
-                <span class="dq-guide__faq-tags">{{ previewTags }}</span>
-              </span>
-            </button>
-          </section>
-        </template>
+            <i class="icon-sparkle size-16 dq-guide__faq-icon" />
+            <span class="dq-guide__faq-text">
+              <span class="dq-guide__faq-question">{{ composedQuestion }}</span>
+              <span class="dq-guide__faq-tags">{{ previewTags }}</span>
+            </span>
+          </button>
+        </section>
       </div>
     </Transition>
   </div>
@@ -432,22 +447,22 @@ const {
   width: 100%;
   margin-bottom: 8px;
   background: #fff;
-  border: 1px solid $color-border;
-  border-radius: $border-radius-lg;
-  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+  border: 1px solid #c6d2db;
+  border-radius: 20px;
+  box-shadow: 0 4px 15px rgba(15, 23, 42, 0.06);
   overflow: hidden;
   animation: dq-guide-drop 0.48s cubic-bezier(0.16, 1, 0.3, 1);
 
-  &::before {
-    content: '';
-    display: block;
-    height: 1px;
-    background: linear-gradient(
-      90deg,
-      var(--dq-theme-color, var(--color-primary, #{$color-primary})) 0%,
-      rgba(var(--dq-theme-rgb, 46, 163, 242), 0.35) 100%
-    );
-  }
+  // &::before {
+  //   content: '';
+  //   display: block;
+  //   height: 1px;
+  //   background: linear-gradient(
+  //     90deg,
+  //     var(--dq-theme-color, var(--color-primary, #{$color-primary})) 0%,
+  //     rgba(var(--dq-theme-rgb, 46, 163, 242), 0.35) 100%
+  //   );
+  // }
 
   &.is-collapsed .dq-guide__header {
     border-bottom: 0;
@@ -465,13 +480,15 @@ const {
   }
 
   &__header {
-    position: relative;
+    width: 100%;
     display: flex;
     align-items: center;
-    justify-content: center;
-    padding: 18px 52px 16px;
+    gap: 15px;
+    padding: 12px 20px;
     border-bottom: 1px solid $color-border-light;
     background: linear-gradient(180deg, rgba(var(--dq-theme-rgb, 46, 163, 242), 0.05) 0%, #f8fbfd 100%);
+    cursor: pointer;
+    outline: none;
 
     &.is-required-missing {
       background: linear-gradient(180deg, rgba(226, 85, 85, 0.08) 0%, #fdf9f9 100%);
@@ -480,6 +497,11 @@ const {
 
     &.is-just-passed .dq-guide__score.is-pass {
       animation: dq-guide-pass-label 0.85s cubic-bezier(0.34, 1.2, 0.64, 1);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--dq-theme-color, var(--color-primary, #{$color-primary}));
+      outline-offset: -2px;
     }
   }
 
@@ -498,8 +520,25 @@ const {
   }
 
   &__header-text {
+    flex: 1;
     min-width: 0;
-    text-align: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  &__header-main {
+    min-width: 0;
+    text-align: left;
+  }
+
+  &__header-status {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex-shrink: 0;
+    text-align: right;
   }
 
   &__title {
@@ -509,17 +548,19 @@ const {
   }
 
   &__subtitle {
-    margin: 4px 0 0;
+    margin: 2px 0 0;
     @include typo($body-small, $color-text-secondary);
+    font-size: 13px;
   }
 
   &__score {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-end;
     gap: 6px;
-    margin: 8px 0 0;
+    margin: 0;
     @include typo($body-caption-bold, $color-text-secondary);
+    font-size: 13px;
 
     &.is-pass {
       color: var(--dq-theme-color, var(--color-primary, #{$color-primary}));
@@ -527,15 +568,20 @@ const {
   }
 
   &__score-missing {
-    margin: 4px 0 0;
-    @include typo($body-caption, #e25555);
+    display: inline-flex;
+    align-items: center;
+    margin: 2px 0 0;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: #e25555;
+    color: #fff;
     font-weight: 500;
+    font-size: 13px;
+    line-height: 1.2;
   }
 
   &__toggle {
-    position: absolute;
-    top: 50%;
-    right: 16px;
+    flex-shrink: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -545,9 +591,7 @@ const {
     border-radius: 999px;
     background: #fff;
     padding: 0;
-    cursor: pointer;
     color: $color-text-secondary;
-    transform: translateY(-50%);
     transition:
       border-color 0.25s ease,
       color 0.25s ease,
@@ -568,6 +612,21 @@ const {
     display: flex;
     flex-direction: column;
     padding: 16px 20px 20px;
+  }
+
+  &__content-inner {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding-top: 10px;
+  }
+
+  &__content-inner-right {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
 
   :deep(.dq-guide-fold-enter-active) {
@@ -599,8 +658,9 @@ const {
   }
 
   &__formula-card {
+    display: flex;
+    flex-direction: column;
     padding: 16px 18px 14px;
-    margin-bottom: 14px;
     border-radius: $border-radius-lg;
   }
 
@@ -627,6 +687,7 @@ const {
 
   &__formula-row {
     display: flex;
+    flex-direction: column;
     flex-wrap: wrap;
     align-items: center;
     align-content: center;
@@ -687,7 +748,6 @@ const {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-top: 14px;
     padding: 12px 14px;
     border-radius: $border-radius-base;
     background: rgba(var(--dq-theme-rgb, 46, 163, 242), 0.06);
@@ -726,7 +786,6 @@ const {
   }
 
   &__formula-panel {
-    margin-top: 14px;
     padding: 12px;
     border-radius: $border-radius-base;
     background: rgba(var(--dq-theme-rgb, 46, 163, 242), 0.04);
@@ -801,7 +860,7 @@ const {
   }
 
   &__post-validate {
-    margin-bottom: 14px;
+    margin-top: 14px;
 
     &.is-out_of_scope .dq-guide__validation {
       border-color: rgba(226, 85, 85, 0.12);
@@ -905,6 +964,7 @@ const {
     justify-content: center;
     gap: 10px;
     min-height: 180px;
+    margin-top: 14px;
     padding: 24px 16px;
     border-radius: $border-radius-base;
     background: $color-surface;
@@ -952,7 +1012,6 @@ const {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: 12px;
     padding: 10px 12px;
     border-radius: $border-radius-base;
     background: rgba(var(--dq-theme-rgb, 46, 163, 242), 0.03);
@@ -1003,8 +1062,8 @@ const {
   }
 
   &__columns {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(280px, 0.9fr);
+    display: flex;
+    flex-direction: column;
     gap: 12px;
   }
 
@@ -1245,7 +1304,7 @@ const {
 
   @include mobile {
     &__header {
-      padding: 16px 48px 14px;
+      padding: 16px 20px 14px;
     }
 
     &__content {
@@ -1256,6 +1315,10 @@ const {
       justify-content: flex-start;
     }
 
+    &__content-inner {
+      flex-direction: column;
+    }
+
     &__period-row,
     &__faq-row,
     &__faq-text {
@@ -1263,7 +1326,6 @@ const {
       flex-direction: column;
     }
 
-    &__columns,
     &__validation-cards {
       grid-template-columns: 1fr;
     }
