@@ -116,6 +116,32 @@
             </template>
             일괄 삭제
           </UiButton>
+          <div
+            v-if="isScrapingInProgress"
+            class="scraping-progress-wrap"
+          >
+            <div class="scraping-progress-header flex items-center justify-between">
+              <span class="scraping-progress-label">
+                수집 중 {{ scrapingProgress.current }} / {{ scrapingProgress.total }}
+              </span>
+              <button
+                type="button"
+                class="scraping-progress-stop"
+                @click="stopScrapingStream"
+              >
+                중단
+              </button>
+            </div>
+            <div class="scraping-progress-bar-track">
+              <div
+                class="scraping-progress-bar-fill"
+                :style="{
+                  width:
+                    scrapingProgress.total > 0 ? `${(scrapingProgress.current / scrapingProgress.total) * 100}%` : '0%',
+                }"
+              />
+            </div>
+          </div>
           <div class="url-scraping-info flex items-center">
             <span class="scraping-text"
               >마지막 실행 : <span class="scraping-date">{{ lastScrapingAt }}</span></span
@@ -153,12 +179,24 @@
             variant="line-secondary"
             size="xxs"
             class="batch-bar-btn"
+            :disabled="selectedUrlIds.length === 0"
+            @click="onSelectedScraping"
+          >
+            <template #icon-left>
+              <i class="icon icon-version size-12" />
+            </template>
+            선택 스크래핑
+          </UiButton>
+          <UiButton
+            variant="line-secondary"
+            size="xxs"
+            class="batch-bar-btn"
             @click="onBatchScraping"
           >
             <template #icon-left>
               <i class="icon icon-version size-12" />
             </template>
-            배치 스크래핑
+            전체 스크래핑
           </UiButton>
         </div>
 
@@ -178,10 +216,12 @@
             />
           </template>
           <template #cell-select="{ row }">
-            <UiCheckbox
-              :model-value="selectedUrlIds.includes(row.urlId)"
-              @update:model-value="(v) => toggleSelectRowUrl(row.urlId, v)"
-            />
+            <div @click.stop>
+              <UiCheckbox
+                :model-value="selectedUrlIds.includes(row.urlId)"
+                @update:model-value="(v) => toggleSelectRowUrl(row.urlId, v)"
+              />
+            </div>
           </template>
           <template #cell-categoryName="{ value }">
             {{ value || '-' }}
@@ -194,6 +234,30 @@
           </template>
           <template #cell-crawlIntvl="{ value }">
             {{ { DAILY: '매일', WEEKLY: '매주', MANUAL: '수동' }[value as string] ?? value }}
+          </template>
+          <template #cell-urlCrawlStatusCd="{ value }">
+            <span
+              v-if="value === '002'"
+              class="crawl-status-badge is-processing"
+            >
+              <i class="icon-refresh size-12 is-spinning" />
+              수집 중
+            </span>
+            <span
+              v-else-if="value === '003'"
+              class="crawl-status-badge is-done"
+              >완료</span
+            >
+            <span
+              v-else-if="value === '004'"
+              class="crawl-status-badge is-error"
+              >오류</span
+            >
+            <span
+              v-else
+              class="crawl-status-badge"
+              >-</span
+            >
           </template>
           <template #cell-lastCrawlDt="{ value }">
             <span class="cell-last-collected">{{ value || '-' }}</span>
@@ -294,6 +358,10 @@ const {
   handleDeleteUrl,
   handleToggleUrlStatus,
   handleBatchScraping,
+  handleSelectedScraping,
+  isScrapingInProgress,
+  scrapingProgress,
+  stopScrapingStream,
 } = useRepositoryStore()
 
 const {
@@ -383,6 +451,7 @@ const urlTableColumns: TableColumn[] = [
   { key: 'urlAddr', label: 'URL 주소', width: 'auto', align: 'left', headerAlign: 'left' },
   { key: 'urlName', label: 'URL 이름', width: '120px', align: 'left', headerAlign: 'left' },
   { key: 'crawlIntvl', label: '수집 주기', width: '90px', align: 'center', headerAlign: 'center' },
+  { key: 'urlCrawlStatusCd', label: '수집 상태', width: '100px', align: 'center', headerAlign: 'center' },
   { key: 'lastCrawlDt', label: '마지막 수집일', width: '140px', align: 'center', headerAlign: 'center' },
   { key: 'ragUse', label: 'RAG사용', width: '90px', align: 'center', headerAlign: 'center' },
   { key: 'status', label: '상태', width: '80px', align: 'center', headerAlign: 'center' },
@@ -487,13 +556,22 @@ const onBatchLog = () => {
   openAlert({ title: '배치 로그', message: '배치 로그 기능은 추후 구현 예정입니다.' })
 }
 
+const onSelectedScraping = async () => {
+  const confirmed = await openConfirm({
+    title: '선택 스크래핑',
+    message: `선택한 ${selectedUrlIds.value.length}개 URL에 대해 스크래핑을 실행하시겠습니까?`,
+  })
+  if (!confirmed) return
+  handleSelectedScraping(selectedUrlIds.value)
+}
+
 const onBatchScraping = async () => {
   const confirmed = await openConfirm({
-    title: '배치 스크래핑',
+    title: '전체 스크래핑',
     message: '활성 상태인 모든 URL에 대해 스크래핑을 실행하시겠습니까?',
   })
   if (!confirmed) return
-  await handleBatchScraping()
+  handleBatchScraping()
 }
 
 const onUrlRowActionSelect = async (value: string, row: Record<string, unknown>) => {
@@ -504,7 +582,11 @@ const onUrlRowActionSelect = async (value: string, row: Record<string, unknown>)
       selectedUrlIds.value = selectedUrlIds.value.filter((id) => id !== selectedRow.urlId)
     }
   } else if (value === 'collect') {
-    openAlert({ title: '즉시 수집', message: `'${selectedRow.urlName}' 수집 기능은 추후 구현 예정입니다.` })
+    const confirmed = await openConfirm({
+      title: '즉시 수집',
+      message: `'${selectedRow.urlName}' URL의 스크래핑을 실행하시겠습니까?`,
+    })
+    if (confirmed) handleSelectedScraping([selectedRow.urlId])
   } else if (value === 'history') {
     openAlert({ title: '수집 내역', message: '수집 내역 기능은 추후 구현 예정입니다.' })
   } else if (value === 'edit') {
@@ -523,5 +605,79 @@ const onUrlRowActionSelect = async (value: string, row: Record<string, unknown>)
   display: block;
   width: 100%;
   @include ellipsis(1);
+}
+
+/* 수집 상태 배지 */
+.crawl-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: $border-radius-base;
+  @include typo($body-xsmall-bold);
+
+  &.is-processing {
+    background: rgba(var(--color-primary-rgb, 60, 105, 219), 0.1);
+    color: var(--color-primary);
+
+    .icon-refresh.is-spinning {
+      animation: spin 1s linear infinite;
+    }
+  }
+
+  &.is-done {
+    background: rgba(22, 163, 74, 0.1);
+    color: #16a34a;
+  }
+
+  &.is-error {
+    background: rgba(220, 38, 38, 0.1);
+    color: #dc2626;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 배치 바 — 스크래핑 프로그레스바 */
+.scraping-progress-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 200px;
+}
+
+.scraping-progress-header {
+  @include typo($body-xsmall, $color-text-muted);
+}
+
+.scraping-progress-stop {
+  @include typo($body-xsmall-bold, $color-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+
+  &:hover {
+    color: $color-text-primary;
+  }
+}
+
+.scraping-progress-bar-track {
+  height: 4px;
+  background: $color-border;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.scraping-progress-bar-fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 999px;
+  transition: width 0.3s ease;
 }
 </style>

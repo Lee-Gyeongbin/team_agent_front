@@ -79,6 +79,8 @@ export interface DocDatasetSelectedUrl {
   urlId: string
   urlName: string
   urlAddr: string
+  /** URL별 연결 docFileId 목록 (콤마 구분) — 데이터셋 구축 시 add/delete 파라미터 산출용 */
+  docFileIds?: string
 }
 
 // 데이터셋-파일 매핑 목록 아이템

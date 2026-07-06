@@ -159,11 +159,25 @@
             </UiButton>
           </div>
           <div
+            v-if="message.hasPptx"
+            class="message-translate-download"
+          >
+            <UiButton
+              variant="primary-dark"
+              @click="onDownloadPlannerPptx"
+            >
+              PPTX 다운로드
+              <template #icon-right>
+                <i class="icon-download size-20"></i>
+              </template>
+            </UiButton>
+          </div>
+          <div
             v-if="message.hasSource || message.svcTy === 'D' || message.hasVisualization || message.hasReport"
             class="message-panel-buttons"
           >
             <UiButton
-              v-show="message.hasSource || message.svcTy === 'D'"
+              v-show="(message.hasSource || message.svcTy === 'D') && !message.hasPptx"
               variant="primary-dark"
               @click="emit('on-view-source', message.logId)"
             >
@@ -395,6 +409,8 @@ import {
   isTranslateTextResultAnswer,
   downloadTranslationResult,
 } from '~/utils/chat/translateAgentUtil'
+import { downloadBlobAsFile } from '~/utils/global/fileDownloadUtil'
+import { useApi } from '~/composables/com/useApi'
 import type { TodayMemeItem } from '~/utils/chat/todayMemeUtil'
 import { findLinkedNewsCuratorAnswer, resolveNewsCuratorItemsForCard } from '~/utils/chat/newsCuratorUtil'
 import { attachmentsRequireSummaryIndicator } from '~/utils/chat/chatAttachmentDisplayUtil'
@@ -1134,6 +1150,38 @@ const translateDownloadFormatOptions = [
 
 const onDownloadTranslationResult = () => {
   downloadTranslationResult(props.message.rContent ?? '', translateDownloadFormat.value, '번역결과')
+}
+
+/** pptxData JSON에 slideDesign 필드가 있으면 PROPOSAL 에이전트의 제안서 PPTX */
+const isProposalPptx = computed(() => {
+  const json = props.message.pptxData ?? ''
+  if (!json) return false
+  try {
+    const parsed = JSON.parse(json)
+    return !!parsed.slideDesign
+  } catch {
+    return false
+  }
+})
+
+const onDownloadPlannerPptx = async () => {
+  const slidesJson = props.message.pptxData ?? ''
+  if (!slidesJson) {
+    openToast({ message: 'PPTX 데이터가 없습니다.', type: 'warning' })
+    return
+  }
+  const { postBlob } = useApi()
+
+  if (isProposalPptx.value) {
+    // PROPOSAL 에이전트: 이미지 생성 포함 (시간 소요 안내)
+    openToast({ message: '슬라이드 이미지를 생성 중입니다. 잠시 기다려주세요.', type: 'info' })
+    const blob = await postBlob('/ai/chatbot/exportProposalPptx.do', { content: slidesJson, fileName: '제안서' })
+    downloadBlobAsFile(blob, '제안서.pptx')
+  } else {
+    // PLANNER 에이전트: 기존 텍스트 PPTX
+    const blob = await postBlob('/ai/chatbot/exportPlannerPptx.do', { content: slidesJson, fileName: 'PT초안' })
+    downloadBlobAsFile(blob, 'PT초안.pptx')
+  }
 }
 
 /** 이 meme 메시지에 대응하는 TodayMeme 답변이 아직 스트리밍 중인지 */

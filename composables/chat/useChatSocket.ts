@@ -337,6 +337,13 @@ const handleWebSocketMessage = (payload: ChatSocketMessage) => {
         streamingMessage.isStreaming = true
         break
       }
+      // PLANNER PT 슬라이드 JSON — PPTX 다운로드 버튼 표시용
+      if (payload.chunkEvent === 'pptx_data' && payload.content) {
+        streamingMessage.pptxData = payload.content
+        streamingMessage.hasPptx = true
+        streamingMessage.isStreaming = true
+        break
+      }
       // 일반 텍스트 delta는 버퍼에 누적
       appendStreamingChunk(streamingMessage.logId, payload.content ?? '')
       streamingMessage.isStreaming = true

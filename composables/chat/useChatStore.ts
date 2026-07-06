@@ -46,6 +46,7 @@ import {
   useTranslateAgent,
 } from '~/utils/chat/translateAgentUtil'
 import { isRiskAgent } from '~/utils/agent/riskConfigUtil'
+import { isProposalAgent } from '~/utils/chat/proposalAgentUtil'
 import {
   createTodayMemeMessage,
   isTodayMemePrompt,
@@ -256,6 +257,8 @@ const isPanelFullscreen = ref(false)
 const activePanelMessageId = ref<string | null>(null)
 const pdfRefList = ref<ChatRefRow[]>([])
 const chatPdfFileUrlMap = ref<Record<string, string>>({})
+/** URL 수집 파일(urlId != null)인 docFileId Set — 외부 URL 여부 판별용 */
+const chatPdfExternalDocSet = ref(new Set<string>())
 const visualizationViewMap = ref<Record<string, VisualizationViewModel>>({})
 
 // 좋아요/싫어요 모달 상태
@@ -297,14 +300,20 @@ export const useChatStore = () => {
     if (!normalizedId) return null
     const cached = chatPdfFileUrlMap.value[normalizedId]
     if (cached) return cached
-    const url = await handleViewFileUrl(normalizedId)
-    if (!url) return null
-    chatPdfFileUrlMap.value = { ...chatPdfFileUrlMap.value, [normalizedId]: url }
-    return url
+    const { url, externalUrl } = await handleViewFileUrl(normalizedId)
+    const finalUrl = externalUrl || url
+    if (!finalUrl) return null
+    if (externalUrl) chatPdfExternalDocSet.value = new Set([...chatPdfExternalDocSet.value, normalizedId])
+    chatPdfFileUrlMap.value = { ...chatPdfFileUrlMap.value, [normalizedId]: finalUrl }
+    return finalUrl
   }
+
+  /** URL 수집 파일(외부 URL)인지 여부 판별 — handleSelectChatPdfFileUrl 호출 후 유효 */
+  const isChatPdfExternalDoc = (docFileId: string) => chatPdfExternalDocSet.value.has(String(docFileId ?? '').trim())
 
   const handleResetChatPdfFileUrlMap = () => {
     chatPdfFileUrlMap.value = {}
+    chatPdfExternalDocSet.value = new Set()
   }
 
   // 채팅 로그 조회 (roomId 기준)
@@ -1152,6 +1161,25 @@ export const useChatStore = () => {
       return
     }
 
+    // PROPOSAL(제안서·D): 파일 첨부(RFP) UI 노출을 위해 svcTy='D'로 전송.
+    // 토글(같은 에이전트 재클릭) 시 해제한다.
+    if (agent.svcTy === 'D' && isProposalAgent(agent)) {
+      if (selectedChatAgentId.value === agent.agentId && wasRiskActive) {
+        // 같은 PROPOSAL 에이전트 재클릭 → 해제
+        activeSearchModes.value = []
+        selectedChatAgentId.value = null
+        subOptions.value = []
+        await selectModelOptions()
+        return
+      }
+      selectedChatAgentId.value = agent.agentId
+      riskAgentActive.value = true
+      activeSearchModes.value = ['M'] // 파일 첨부 UI 재사용 목적
+      await selectRagDsList() // 자사 역량 RAG 데이터셋 콤보 채우기
+      await selectModelOptions()
+      return
+    }
+
     if (agent.agentId === AGENT_ID_MEME) {
       activeSearchModes.value = []
       subOptions.value = []
@@ -1428,6 +1456,7 @@ export const useChatStore = () => {
     onViewReport,
     handleSelectVisualizationData,
     handleSelectChatPdfFileUrl,
+    isChatPdfExternalDoc,
     onPanelClose,
     handleResetChatPanels,
     isModalOpen,

@@ -86,9 +86,7 @@
           <p class="chat-mode-panel-theme-tagline">
             {{ panelActiveTheme?.tagline ?? '' }}
           </p>
-          <div
-            class="chat-mode-panel-card-grp"
-          >
+          <div class="chat-mode-panel-card-grp">
             <button
               v-for="agent in panelThemeAgents"
               :key="agent.agentId"
@@ -130,12 +128,7 @@
 import type { Agent } from '~/types/agent'
 import { isSurveyAgent } from '~/utils/chat/surveyUtil'
 import { isRecommendAgent } from '~/utils/chat/recommendAgentUtil'
-import {
-  CHAT_THEMES,
-  findThemeByKey,
-  getInitialThemeKey,
-  groupAgentsByTheme,
-} from '~/utils/chat/chatThemeUtil'
+import { CHAT_THEMES, findThemeByKey, getInitialThemeKey, groupAgentsByTheme } from '~/utils/chat/chatThemeUtil'
 
 interface Props {
   disabled?: boolean

@@ -308,7 +308,7 @@ const emit = defineEmits<{
 const getDefaultForm = (): DatamartForm => ({
   dmNm: '',
   description: '',
-  useYn: 'Y',
+  useYn: 'N',
   sortOrd: 0,
   dbType: 'MySQL',
   dbVersion: '',
@@ -382,6 +382,7 @@ const formToMap = (form: DatamartForm): Datamart => ({
   ipWlistYn: form.ipWlistYn,
   sslYn: form.sslYn,
   tblCnt: form.tblCnt,
+  activeTblCnt: props.editData?.activeTblCnt ?? 0,
   lastVerifyDt: props.editData?.lastVerifyDt ?? '',
   createDt: props.editData?.createDt ?? '',
   modifyDt: props.editData?.modifyDt ?? '',

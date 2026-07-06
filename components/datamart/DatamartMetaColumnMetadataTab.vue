@@ -269,7 +269,8 @@
       </div>
     </UiDialogModal>
 
-    <DatamartMetaColumnExcelUploadModal
+    <DatamartMetaExcelUpload
+      kind="column"
       :is-open="excelUploadModalOpen"
       :uploading="isExcelUploading"
       @close="excelUploadModalOpen = false"
@@ -279,7 +280,7 @@
 </template>
 
 <script setup lang="ts">
-import DatamartMetaColumnExcelUploadModal from '~/components/datamart/DatamartMetaColumnExcelUploadModal.vue'
+import DatamartMetaExcelUpload from '~/components/datamart/DatamartMetaExcelUpload.vue'
 import { useDatamartApi } from '~/composables/datamart/useDatamartApi'
 import { useDatamartStore } from '~/composables/datamart/useDatamartStore'
 import type { Datamart } from '~/types/datamart'

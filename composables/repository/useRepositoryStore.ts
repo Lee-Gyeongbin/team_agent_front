@@ -9,6 +9,7 @@ const {
   fetchDeleteUrl,
   fetchToggleUrlStatus,
   fetchBatchScraping,
+  fetchSelectedScraping,
   fetchSaveDocumentFile,
   fetchSelectDocFileLibraryList,
   fetchSaveFileLibraryBatch,
@@ -341,23 +342,67 @@ const handleDeleteUrl = async (urlIds: string[]) => {
   return true
 }
 
-const handleBatchScraping = async () => {
-  openLoading({ text: '배치 스크래핑을 요청하는 중...' })
-  try {
-    const res = await fetchBatchScraping()
-    if (res.successYn) {
-      openToast({ message: res.returnMsg ?? '스크래핑 요청이 완료되었습니다.', type: 'success' })
-      await handleSelectUrlList()
-      return true
-    }
-    openToast({ message: res.returnMsg ?? '스크래핑 요청에 실패했습니다.', type: 'error' })
-    return false
-  } catch {
-    openToast({ message: '스크래핑 요청 중 오류가 발생했습니다.', type: 'error' })
-    return false
-  } finally {
-    closeLoading()
+// ===== 스크래핑 SSE 스트림 =====
+const scrapingStream = ref<EventSource | null>(null)
+const isScrapingInProgress = ref(false)
+const scrapingProgress = ref({ current: 0, total: 0 })
+
+const closeScrapingStream = () => {
+  if (scrapingStream.value) {
+    scrapingStream.value.close()
+    scrapingStream.value = null
   }
+}
+
+const startScrapingStream = (urlIdList?: string[]) => {
+  closeScrapingStream()
+
+  const params = new URLSearchParams()
+  if (urlIdList && urlIdList.length > 0) {
+    urlIdList.forEach((id) => params.append('urlIdList', id))
+  }
+  const qs = params.toString()
+  const stream = new EventSource(`/api/repository/scrapingStream.do${qs ? '?' + qs : ''}`)
+  scrapingStream.value = stream
+  isScrapingInProgress.value = true
+
+  stream.addEventListener('progress', (e: MessageEvent) => {
+    const data = JSON.parse(e.data) as { urlId: string; urlAddr: string; status: string; current: number; total: number }
+    scrapingProgress.value = { current: data.current, total: data.total }
+
+    // 목록 전체 재조회 없이 해당 row만 인메모리 업데이트 → 깜빡임 없음
+    const statusCd = data.status === 'processing' ? '002' : data.status === 'done' ? '003' : '004'
+    const idx = urlList.value.findIndex((u) => u.urlId === data.urlId)
+    if (idx !== -1) {
+      urlList.value[idx] = { ...urlList.value[idx], urlCrawlStatusCd: statusCd }
+    }
+  })
+
+  stream.addEventListener('done', async () => {
+    isScrapingInProgress.value = false
+    closeScrapingStream()
+    openToast({ message: '스크래핑이 완료되었습니다.' })
+    await handleSelectUrlList() // 최종 상태(마지막 수집일 등) 반영
+  })
+
+  stream.onerror = () => {
+    isScrapingInProgress.value = false
+    closeScrapingStream()
+    openToast({ message: '스크래핑 중 연결이 끊어졌습니다.', type: 'error' })
+  }
+}
+
+const handleBatchScraping = () => {
+  startScrapingStream()
+}
+
+const handleSelectedScraping = (urlIdList: string[]) => {
+  startScrapingStream(urlIdList)
+}
+
+const stopScrapingStream = () => {
+  closeScrapingStream()
+  isScrapingInProgress.value = false
 }
 
 const handleToggleUrlStatus = async (urlId: string, active: boolean) => {
@@ -461,6 +506,10 @@ export const useRepositoryStore = () => {
     handleDeleteUrl,
     handleToggleUrlStatus,
     handleBatchScraping,
+    handleSelectedScraping,
+    isScrapingInProgress,
+    scrapingProgress,
+    stopScrapingStream,
     handleOpenFileLibraryPreview,
     handleDownloadFileLibraryRow,
     isFilePreviewOpen,

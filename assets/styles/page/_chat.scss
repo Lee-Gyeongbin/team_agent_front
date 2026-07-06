@@ -1698,6 +1698,17 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
+
+  &.is-external {
+    display: block;
+  }
+}
+
+.chat-pdf-external-iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: none;
 }
 
 .chat-pdf-main {

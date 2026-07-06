@@ -27,8 +27,11 @@
       </div>
     </div>
 
-    <!-- 툴바 + 탭 -->
-    <div class="chat-pdf-toolbar">
+    <!-- 툴바 + 탭 (외부 URL 뷰에서는 숨김) -->
+    <div
+      v-if="!isExternalView"
+      class="chat-pdf-toolbar"
+    >
       <!-- 가운데: 페이지 네비 + 줌 -->
       <div class="chat-pdf-toolbar-center">
         <div class="chat-pdf-toolbar-group">
@@ -124,10 +127,21 @@
         </button>
       </div>
       <div
-        v-else-if="!hasData"
+        v-else-if="!hasData && !isExternalView"
         class="chat-pdf-status"
       >
         표시할 PDF가 없습니다.
+      </div>
+      <div
+        v-else-if="isExternalView"
+        class="chat-pdf-content is-external"
+      >
+        <iframe
+          :src="currentExternalUrl"
+          class="chat-pdf-external-iframe"
+          sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          title="외부 웹페이지 미리보기"
+        ></iframe>
       </div>
       <div
         v-else
@@ -235,7 +249,7 @@ import type { ChatPdfPanelProps, ChatRefRow, PdfDocumentProxy } from '~/types/ch
 import { useChatStore } from '~/composables/chat/useChatStore'
 import { loadPdfJs } from '~/utils/chat/pdfJsLoader'
 
-const { handleSelectChatPdfFileUrl } = useChatStore()
+const { handleSelectChatPdfFileUrl, isChatPdfExternalDoc } = useChatStore()
 
 const props = withDefaults(defineProps<ChatPdfPanelProps>(), {
   messageId: null,
@@ -251,6 +265,27 @@ const emit = defineEmits<{
 const selectedDocKey = ref<string>('')
 // 현재 PDF 실제 URL (viewFile.do → presigned URL)
 const currentFilePath = ref('')
+// URL 수집 파일인 경우 원본 외부 URL (PDF 뷰어 대신 iframe으로 표시)
+const currentExternalUrl = ref('')
+
+/** 현재 선택 문서가 외부 URL 타입인지 (PDF 뷰어 vs iframe 분기) */
+const isExternalView = computed(() => !!currentExternalUrl.value)
+
+/**
+ * 외부 URL에 Text Fragment(#:~:text=) 붙이기
+ * - Chrome/Edge 80+ 에서 해당 텍스트로 자동 스크롤 + 노란 하이라이팅
+ * - retrieverQuery(vectorDB 검색어)를 사용해 페이지 내 관련 텍스트 위치로 이동
+ */
+const buildExternalUrlWithFragment = (baseUrl: string, refRow: ChatRefRow | undefined): string => {
+  if (!baseUrl) return ''
+  const query = refRow?.retrieverQuery?.trim()
+  if (!query) return baseUrl
+  // URL에 이미 hash가 있으면 Text Fragment 추가 불가 (브라우저 스펙상 fragment는 하나)
+  if (baseUrl.includes('#')) return baseUrl
+  // 검색어 중 앞 100자만 사용 (URL 길이 제한 + 매칭 정확도 균형)
+  const fragment = encodeURIComponent(query.slice(0, 100))
+  return `${baseUrl}#:~:text=${fragment}`
+}
 
 // RELATED_PAGES 파싱: "[63, 75, 88]" JSON 배열 또는 "1,3,5" 쉼표 구분 모두 대응
 const parseRelatedPages = (raw: string): number[] => {
@@ -397,6 +432,8 @@ const ensureRelatedPdfDoc = async (docKey: string): Promise<PdfDocumentProxy | n
     try {
       const url = await ensureRelatedDocUrl(docKey)
       if (!url) return null
+      // 외부 URL 타입은 pdf.js로 로드 불가 — 썸네일 없음
+      if (isChatPdfExternalDoc(docKey)) return null
       const lib = await loadPdfJs()
       lib.GlobalWorkerOptions.workerSrc = '/pdfjs/build/pdf.worker.js'
       const loadedPdf = await lib.getDocument({ url, cMapUrl: '/pdfjs/cmaps/', cMapPacked: true }).promise
@@ -475,6 +512,15 @@ const isRelatedEntryActive = (entry: RelatedPageEntry) =>
   entry.docKey === selectedDocKey.value && entry.pageNum === currentPage.value
 
 const onClickRelatedEntry = async (entry: RelatedPageEntry) => {
+  // URL 수집 파일 — Text Fragment 포함 URL을 새 탭으로 열기
+  const url = await ensureRelatedDocUrl(entry.docKey)
+  if (isChatPdfExternalDoc(entry.docKey)) {
+    const row = getDocRowByKey(entry.docKey)
+    const fragmentUrl = buildExternalUrlWithFragment(url || '', row)
+    if (fragmentUrl) window.open(fragmentUrl, '_blank', 'noopener,noreferrer')
+    return
+  }
+
   pendingTargetPage.value = entry.pageNum
   if (selectedDocKey.value !== entry.docKey) {
     selectedDocKey.value = entry.docKey
@@ -520,16 +566,28 @@ const onClose = () => {
   emit('update:open', false)
 }
 
-// presigned URL 조회 + PDF 로드 후 목표 페이지로 이동하는 헬퍼
+// presigned URL 조회 + PDF 로드(또는 외부 URL iframe) 후 목표 페이지로 이동하는 헬퍼
 const loadAndGoToTargetPage = async () => {
   if (!props.open || !selectedRef.value) return
 
-  // 1) /repository/viewDocumentFile.do 로 presigned URL 조회
-  const url = await handleSelectChatPdfFileUrl(selectedRef.value.docFileId)
+  const docFileId = selectedRef.value.docFileId
+
+  // 1) /repository/viewDocumentFile.do 로 URL 조회
+  const url = await handleSelectChatPdfFileUrl(docFileId)
+
+  // 2) URL 수집 파일인 경우 → 외부 URL을 iframe으로 표시 (Text Fragment 하이라이팅 적용)
+  if (isChatPdfExternalDoc(docFileId)) {
+    currentExternalUrl.value = buildExternalUrlWithFragment(url || '', selectedRef.value)
+    currentFilePath.value = ''
+    pendingTargetPage.value = null
+    return
+  }
+
+  // 3) 일반 파일 → PDF 로드 후 목표 페이지로 이동
+  currentExternalUrl.value = ''
   currentFilePath.value = url || ''
   if (!currentFilePath.value) return
 
-  // 2) PDF 로드 + 목표 페이지(관련페이지 클릭 대상 또는 첫 페이지)로 이동
   await loadPdf()
   const targetPage = pendingTargetPage.value ?? 1
   pendingTargetPage.value = null

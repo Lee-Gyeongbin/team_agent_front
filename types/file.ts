@@ -54,6 +54,8 @@ export interface FileUrlResponse {
   /** 응답 보기 유형 (VIEW | DOWNLOAD 등) */
   viewType?: string
   fileName?: string
+  /** URL 수집 파일인 경우 원본 외부 URL (tb_cnt_url.URL_ADDR) */
+  externalUrl?: string
 }
 
 // /repository/downloadDocumentFile.do 응답 항목 (docFileId 미지정 시 다건)

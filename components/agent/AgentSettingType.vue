@@ -78,6 +78,7 @@ const cSubTyOptions = [
   { label: '설문', value: 'SURVEY' },
   { label: '추천', value: 'RECOMMEND' },
   { label: '큐레이션', value: 'CURATION' },
+  { label: '기획서·PT', value: 'PLANNER' },
 ]
 
 const mSubTyOptions = [
@@ -88,6 +89,7 @@ const mSubTyOptions = [
 const dSubTyOptions = [
   { label: '일반', value: '' },
   { label: '리스크진단', value: 'RISK' },
+  { label: '제안서', value: 'PROPOSAL' },
 ]
 
 const subTyOptions = computed(() => {

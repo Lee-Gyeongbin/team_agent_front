@@ -302,6 +302,19 @@ const buildPreprocessSignature = (form: DocDatasetForm): string => {
 
 const toSortedDocFileIds = (docFileIds: string[]) => [...new Set((docFileIds ?? []).map(String))].sort()
 
+/** 선택된 URL ID 목록으로부터 연결된 docFileId 배열을 추출 */
+const getUrlDocFileIds = (urlIds: string[]): string[] => {
+  const urlSet = new Set(urlIds)
+  const ids: string[] = []
+  for (const url of selectedDatasetUrlList.value ?? []) {
+    if (!urlSet.has(url.urlId) || !url.docFileIds) continue
+    url.docFileIds.split(',').forEach((id) => {
+      if (id.trim()) ids.push(id.trim())
+    })
+  }
+  return ids
+}
+
 const hasDocSourceChanged = (currentDocFileIds: string[]): boolean => {
   if (modalMode.value !== 'edit') return true
   const prev = toSortedDocFileIds(initialSelectedDocFileIds.value)
@@ -324,12 +337,16 @@ const hasEmbeddingChanged = (form: DocDatasetForm): boolean => {
 }
 
 const hasBuildConfigChanges = (form: DocDatasetForm): boolean => {
-  return hasDocSourceChanged(form.selectedDocFileIds ?? []) || hasPreprocessChanged(form) || hasEmbeddingChanged(form)
+  const urlDocFileIds = getUrlDocFileIds(form.selectedUrlIds ?? [])
+  const allCurrentDocFileIds = [...(form.selectedDocFileIds ?? []), ...urlDocFileIds]
+  return hasDocSourceChanged(allCurrentDocFileIds) || hasPreprocessChanged(form) || hasEmbeddingChanged(form)
 }
 
 // 데이터셋 구축 진행 스트림 시작 파라미터 생성
 const createBuildStreamStartParams = (form: DocDatasetForm): BuildStreamStartParams => {
-  const currentDocFileIds = form.selectedDocFileIds ?? []
+  // 수동 문서 + URL 연결 파일 ID를 합산하여 실제 구축 대상 파일 ID 집합 구성
+  const urlDocFileIds = getUrlDocFileIds(form.selectedUrlIds ?? [])
+  const currentDocFileIds = [...(form.selectedDocFileIds ?? []), ...urlDocFileIds]
   const prevSet = new Set((initialSelectedDocFileIds.value ?? []).map(String))
   const currentSet = new Set((currentDocFileIds ?? []).map(String))
   const addDocFileIds = [...currentSet].filter((docFileId) => !prevSet.has(docFileId))
@@ -339,9 +356,11 @@ const createBuildStreamStartParams = (form: DocDatasetForm): BuildStreamStartPar
     modalMode.value === 'edit' && initialVectorDbCd.value !== String(form.vectorDb ?? '') ? 'Y' : 'N'
 
   if (isPreprocessChanged || prevSet.size === 0) {
+    // init 타입에도 현재 전체 파일 ID를 전달 — Python 빌드 API가 DB 경로(TB_DS_URL→TB_DOC_FILE)를
+    // 직접 조회하지 않을 때도 URL 연결 파일을 올바르게 구축할 수 있도록 함
     return {
       updateType: 'init',
-      addDocFileIds: [],
+      addDocFileIds: [...currentSet],
       deleteDocFileIds: [],
       vectorDiffYn,
     }
@@ -708,11 +727,11 @@ const onSaveCreate = (data: DocDatasetForm, startBuild: boolean) => {
         wspNormYn: data.useWhitespaceNorm ? 'Y' : 'N',
         specChrRmYn: data.useSpecialCharRemoval ? 'Y' : 'N',
         singleCellText: data.useSingleCellText ? 'Y' : 'N',
-        docFileIdList: data.selectedDocFileIds.map((id) => ({
+        docFileIdList: [...data.selectedDocFileIds, ...getUrlDocFileIds(data.selectedUrlIds ?? [])].map((id) => ({
           docFileId: id,
           datasetId: editingDatasetId.value ?? '',
         })),
-        urlIdList: data.selectedUrlIds.map((id) => ({ urlId: id, datasetId: editingDatasetId.value ?? '' })),
+        urlIdList: [],
       }
 
       // 데이터셋 저장
@@ -787,10 +806,16 @@ const onEdit = async (dataset: DocDataset) => {
   await handleSelectDatasetSrcList()
 
   // 데이터셋과 매핑된 문서, URL ID 목록 세팅
-  const dsDocFileIds = (res.dsDocList ?? []).map((item) => String(item.docFileId ?? ''))
+  // TB_DS_DOC이 수동 문서 + URL 연결 파일을 모두 관리하므로 dsDocList에 전체 포함됨
+  const dsAllDocFileIds = (res.dsDocList ?? []).map((item) => String(item.docFileId ?? ''))
   const dsUrlIds = (res.dsUrlList ?? []).map((item) => String(item.urlId))
-  initialSelectedDocFileIds.value = [...dsDocFileIds]
-  const mappedForm = mapDetailToForm(data, dsDocFileIds, dsUrlIds)
+  // initialSelectedDocFileIds: diff 계산용이므로 전체(수동+URL) doc_file_id 보관
+  initialSelectedDocFileIds.value = [...dsAllDocFileIds]
+  // selectedDocFileIds: DocDatasetSourceDoc 카운트/선택 표시용이므로 수동 문서만 필터링
+  // (selectedDatasetDocList는 URL_ID IS NULL 파일만 포함)
+  const manualDocFileIdSet = new Set((selectedDatasetDocList.value ?? []).map((d) => String(d.docFileId ?? '')))
+  const manualDocFileIds = dsAllDocFileIds.filter((id) => manualDocFileIdSet.has(id))
+  const mappedForm = mapDetailToForm(data, manualDocFileIds, dsUrlIds)
   initialPreprocessSignature.value = buildPreprocessSignature(mappedForm)
   initialEmbeddingModelCd.value = mappedForm.embeddingModel ?? ''
   initialVectorDbCd.value = mappedForm.vectorDb ?? ''

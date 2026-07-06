@@ -37,14 +37,13 @@
       />
 
       <!-- URL 패널 -->
-      <!-- <DocDatasetSourceUrl
+      <DocDatasetSourceUrl
         :use-url="modelValue.useUrl"
         :selected-url-ids="modelValue.selectedUrlIds"
         :url-list="urlList"
-        :category-list="categoryList"
         @update:use-url="onUpdate('useUrl', $event)"
         @update:selected-url-ids="onUpdate('selectedUrlIds', $event)"
-      /> -->
+      />
     </div>
   </div>
 </template>
