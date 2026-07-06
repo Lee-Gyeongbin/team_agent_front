@@ -14,7 +14,11 @@ import {
   parseTranslatePayloadFromPrompt,
   resolveTranslateConfigByAgentId,
 } from '~/utils/chat/translateAgentUtil'
-import { isTodayMemePrompt, parseTodayMemeItems } from '~/utils/chat/todayMemeUtil'
+import {
+  isAutoRecommendAgent,
+  isAutoRecommendAgentForLibrary,
+  parseAutoRecommendItems,
+} from '~/utils/chat/autoRecommendUtil'
 import {
   applyNewsDisplayItemsToSubmitCard,
   isNewsCuratorAnswerMessage,
@@ -188,17 +192,20 @@ export const useChatMessages = () => {
       ]
     }
 
-    // TodayMeme 에이전트: 프롬프트 패턴이면 readonly meme 메시지로 대체
-    if (agentId === 'AG000011' && isTodayMemePrompt(row.qcontent ?? '')) {
-      const memeDisplayItems = parseTodayMemeItems(String(row.rcontent ?? ''))
+    // AUTO_RECOMMEND: 프롬프트가 있으면 readonly autoRecommend 카드로 대체
+    const autoRecommendAgent = agentId ? agents.find((a) => a.agentId === agentId) : undefined
+    const isAutoRecommendLog =
+      isAutoRecommendAgent(autoRecommendAgent) || isAutoRecommendAgentForLibrary(autoRecommendAgent)
+    if (isAutoRecommendLog && String(row.qcontent ?? '').trim()) {
+      const autoRecommendDisplayItems = parseAutoRecommendItems(String(row.rcontent ?? ''))
       return [
         {
-          logId: `${logId}-today-meme`,
-          type: 'meme',
+          logId: `${logId}-auto-recommend`,
+          type: 'autoRecommend',
           createdAt,
           agentId,
-          memeSubmitted: true,
-          ...(memeDisplayItems.length > 0 ? { memeDisplayItems } : {}),
+          autoRecommendSubmitted: true,
+          ...(autoRecommendDisplayItems.length > 0 ? { autoRecommendDisplayItems } : {}),
         },
         answerMessage,
       ]

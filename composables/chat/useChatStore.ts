@@ -47,13 +47,13 @@ import {
 } from '~/utils/chat/translateAgentUtil'
 import { isRiskAgent } from '~/utils/agent/riskConfigUtil'
 import {
-  createTodayMemeMessage,
-  isTodayMemePrompt,
-  TODAY_MEME_AGENT_ID,
-  TODAY_MEME_MODEL_ID,
-  TODAY_MEME_PROMPT,
-  useTodayMeme,
-} from '~/utils/chat/todayMemeUtil'
+  createAutoRecommendMessage,
+  isAutoRecommendAgent,
+  isAutoRecommendPromptText,
+  resolveAutoRecommendModelId,
+  resolveAutoRecommendPrompt,
+  useAutoRecommend,
+} from '~/utils/chat/autoRecommendUtil'
 import {
   buildCurationPrompt,
   createNewsCuratorMessage,
@@ -89,7 +89,7 @@ const {
   isSurveyVisible,
   isGenderStepVisible,
 } = usePsychologySurvey()
-const { isTodayMemeVisible, isTodayMemeRoom, registerTodayMemeRoom } = useTodayMeme()
+const { isAutoRecommendVisible, isAutoRecommendRoom, registerAutoRecommendRoom } = useAutoRecommend()
 const { isNewsCuratorVisible, isNewsCuratorRoom, registerNewsCuratorRoom, openNewsCurator, closeNewsCurator } =
   useNewsCurator()
 const { isRecommendVisible, openRecommendAgent, closeRecommendAgent, registerRecommendRoom, isRecommendRoom } =
@@ -153,16 +153,15 @@ const messagesForDisplay = computed(() => {
       return true
     })
   }
-  if (isTodayMemeRoom(chatRoom.value.roomId)) {
-    let memePromptHidden = false
+  if (isAutoRecommendRoom(chatRoom.value.roomId)) {
     base = base.filter((m) => {
-      if (m.type === 'question' && !memePromptHidden) {
-        if (isTodayMemePrompt(m.qContent ?? '')) {
-          memePromptHidden = true
-          return false
-        }
+      if (m.type !== 'question') return true
+      const agentId = String(m.agentId ?? '').trim()
+      if (agentId) {
+        const agent = chatIndexAgents.value.find((a) => a.agentId === agentId)
+        if (isAutoRecommendAgent(agent)) return false
       }
-      return true
+      return !isAutoRecommendPromptText(m.qContent ?? '', chatIndexAgents.value)
     })
   }
   if (isRecommendRoom(chatRoom.value.roomId)) {
@@ -290,10 +289,12 @@ const getChatIndexAgentColorStyle = (colorHex: string) => {
   }
 }
 
-const AGENT_ID_MEME = TODAY_MEME_AGENT_ID
 const AGENT_ID_NEWS = NEWS_CURATOR_AGENT_ID
 
 export const useChatStore = () => {
+  const getSelectedAutoRecommendAgent = () =>
+    chatIndexAgents.value.find((a) => a.agentId === selectedChatAgentId.value && isAutoRecommendAgent(a)) ?? null
+
   const handleSelectChatPdfFileUrl = async (docFileId: string): Promise<string | null> => {
     const normalizedId = String(docFileId ?? '').trim()
     if (!normalizedId) return null
@@ -384,6 +385,12 @@ export const useChatStore = () => {
     const hasRecommendLog = rawList.some((row) => isRecommendAgentPrompt(String(row.qcontent ?? '')))
     if (hasRecommendLog) registerRecommendRoom(roomId)
 
+    const hasAutoRecommendLog = rawList.some((row) => {
+      const agent = chatIndexAgents.value.find((a) => a.agentId === String(row.agentId ?? '').trim())
+      return isAutoRecommendAgent(agent)
+    })
+    if (hasAutoRecommendLog) registerAutoRecommendRoom(roomId)
+
     // TRANSLATE 에이전트 로그 감지 — agentId 기반으로 방 등록
     const hasTranslateLog = rawList.some((row) => {
       const agent = chatIndexAgents.value.find((a) => a.agentId === String(row.agentId ?? '').trim())
@@ -396,7 +403,7 @@ export const useChatStore = () => {
     applyChatLogRowsToMessages(rawList, roomId)
 
     // 검색모드·서브옵션 동기화 (svcTy='W' 분기에서 selectedChatAgentId null 처리 포함)
-    await syncSearchModeFromLastLog(rawList[rawList.length - 1])
+    await syncSearchModeFromLastLog(rawList[rawList.length - 1], chatIndexAgents.value)
   }
 
   // 메시지 전송
@@ -482,28 +489,30 @@ export const useChatStore = () => {
     messages.value = [surveyMsg, ...msgs]
   }
 
-  /** index.vue에서 TodayMeme 제출 후 새 채팅방 진입 시 readonly TodayMeme 카드를 메시지 목록 앞에 주입 */
-  const addInlineTodayMemeMessage = () => {
-    const memeMsg = createTodayMemeMessage(true)
+  /** /chat 인덱스에서 AUTO_RECOMMEND 제출 후 readonly 카드를 메시지 목록 앞에 주입 */
+  const addInlineAutoRecommendMessage = (agentId: string) => {
+    const cardMsg = createAutoRecommendMessage(true, agentId)
     const msgs = [...messages.value]
     const firstQ = msgs.find((m) => m.type === 'question')
     if (firstQ) firstQ.hiddenFromDisplay = true
-    messages.value = [memeMsg, ...msgs]
+    messages.value = [cardMsg, ...msgs]
   }
 
   /**
-   * TodayMeme 프롬프트 전송 — question 메시지를 화면에 노출하지 않는다.
-   * @param content - 전송할 프롬프트 문자열
-   * @param memeMessageLogId - 제출 완료로 전환할 meme 메시지 logId
+   * AUTO_RECOMMEND 프롬프트 전송 — question 메시지를 화면에 노출하지 않는다.
    */
-  const onSendTodayMeme = async (content: string, memeMessageLogId?: string): Promise<boolean> => {
+  const onSendAutoRecommend = async (content: string, cardMessageLogId?: string): Promise<boolean> => {
     if (!content.trim() || isSearchModeMissingSubOptions.value || !chatRoom.value.roomId) return false
+    const agent = getSelectedAutoRecommendAgent()
+    if (!agent) {
+      openToast({ message: '에이전트 설정을 불러오지 못했습니다. 다시 선택해 주세요.', type: 'warning' })
+      return false
+    }
+    const agentId = agent.agentId
 
-    if (memeMessageLogId) {
-      const memeMsg = messages.value.find((m) => m.logId === memeMessageLogId && m.type === 'meme')
-      if (memeMsg) {
-        memeMsg.memeSubmitted = true
-      }
+    if (cardMessageLogId) {
+      const cardMsg = messages.value.find((m) => m.logId === cardMessageLogId && m.type === 'autoRecommend')
+      if (cardMsg) cardMsg.autoRecommendSubmitted = true
     }
 
     const prevLen = messages.value.length
@@ -511,24 +520,29 @@ export const useChatStore = () => {
       content: content.trim(),
       roomId: chatRoom.value.roomId,
       svcTy: resolveSvcTy(),
-      modelId: TODAY_MEME_MODEL_ID,
+      modelId: resolveAutoRecommendModelId(agent, selectedModelOption.value),
       refId: buildRefIdForPayload(),
-      agentId: AGENT_ID_MEME,
+      agentId,
       files: [],
     })
     if (sent) {
       const newQuestion = messages.value.slice(prevLen).find((m) => m.type === 'question')
       if (newQuestion) newQuestion.hiddenFromDisplay = true
-      registerTodayMemeRoom(chatRoom.value.roomId)
+      registerAutoRecommendRoom(chatRoom.value.roomId)
       selectedChatAgentId.value = null
     }
     return sent
   }
 
-  /** 메시지 목록 내 TodayMeme 컴포넌트 제출 — 프롬프트 빌드 후 전송 */
-  const onTodayMemeMessageSubmit = async (logId: string): Promise<boolean> => {
-    const prompt = TODAY_MEME_PROMPT
-    return await onSendTodayMeme(prompt, logId)
+  /** 메시지 목록 내 AUTO_RECOMMEND 카드 제출 */
+  const onAutoRecommendMessageSubmit = async (logId: string): Promise<boolean> => {
+    const agent = getSelectedAutoRecommendAgent()
+    const prompt = resolveAutoRecommendPrompt(agent)
+    if (!prompt) {
+      openToast({ message: '에이전트 프롬프트가 설정되지 않았습니다.', type: 'warning' })
+      return false
+    }
+    return await onSendAutoRecommend(prompt, logId)
   }
 
   /** 새로운 카테고리 선택 */
@@ -939,10 +953,10 @@ export const useChatStore = () => {
     }
   }
 
-  /** /chat 인덱스·라우트 이탈 시 TodayMeme 오버레이·에이전트 선택 초기화 */
-  const resetTodayMemePanel = () => {
+  /** /chat 인덱스·라우트 이탈 시 AUTO_RECOMMEND 오버레이·에이전트 선택 초기화 */
+  const resetAutoRecommendPanel = () => {
     selectedChatAgentId.value = null
-    isTodayMemeVisible.value = false
+    isAutoRecommendVisible.value = false
   }
 
   const getEmptyVisualizationViewModel = (messageId: string): VisualizationViewModel => ({
@@ -1160,21 +1174,28 @@ export const useChatStore = () => {
       return
     }
 
-    if (agent.agentId === AGENT_ID_MEME) {
+    if (isAutoRecommendAgent(agent)) {
       activeSearchModes.value = []
       subOptions.value = []
       selectedChatAgentId.value = agent.agentId
       await selectModelOptions()
 
+      const prompt = resolveAutoRecommendPrompt(agent)
+      if (!prompt) {
+        openToast({ message: '에이전트 프롬프트가 설정되지 않았습니다.', type: 'warning' })
+        selectedChatAgentId.value = null
+        return
+      }
+
       if (chatRoom.value.roomId) {
-        const alreadyHasMeme = messages.value.some((m) => m.type === 'meme' && !m.memeSubmitted)
-        if (!alreadyHasMeme) {
-          const memeMsg = createTodayMemeMessage(false)
-          messages.value = [...messages.value, memeMsg]
-          await onTodayMemeMessageSubmit(memeMsg.logId)
+        const alreadyHasCard = messages.value.some((m) => m.type === 'autoRecommend' && !m.autoRecommendSubmitted)
+        if (!alreadyHasCard) {
+          const cardMsg = createAutoRecommendMessage(false, agent.agentId)
+          messages.value = [...messages.value, cardMsg]
+          await onAutoRecommendMessageSubmit(cardMsg.logId)
         }
       } else {
-        await handleIndexTodayMemeSubmit()
+        await handleIndexAutoRecommendSubmit()
       }
       return
     }
@@ -1269,14 +1290,23 @@ export const useChatStore = () => {
     return sent
   }
 
-  /** /chat 인덱스에서 TodayMeme 제출(에이전트 클릭 즉시) — 방 생성·인라인 주입·등록·오버레이 초기화 */
-  const handleIndexTodayMemeSubmit = async (): Promise<boolean> => {
-    const content = TODAY_MEME_PROMPT
-    const sent = await createChatRoom(content)
+  /** /chat 인덱스에서 AUTO_RECOMMEND 제출(에이전트 클릭 즉시) — 방 생성·인라인 주입·등록·패널 초기화 */
+  const handleIndexAutoRecommendSubmit = async (): Promise<boolean> => {
+    const agent = getSelectedAutoRecommendAgent()
+    if (!agent) return false
+    const content = resolveAutoRecommendPrompt(agent)
+    if (!content) {
+      openToast({ message: '에이전트 프롬프트가 설정되지 않았습니다.', type: 'warning' })
+      return false
+    }
+    const sent = await createChatRoom(content, [], undefined, {
+      agentId: agent.agentId,
+      modelId: resolveAutoRecommendModelId(agent, selectedModelOption.value),
+    })
     if (sent) {
-      addInlineTodayMemeMessage()
-      registerTodayMemeRoom(chatRoom.value.roomId)
-      resetTodayMemePanel()
+      addInlineAutoRecommendMessage(agent.agentId)
+      registerAutoRecommendRoom(chatRoom.value.roomId)
+      resetAutoRecommendPanel()
     }
     return sent
   }
@@ -1297,9 +1327,10 @@ export const useChatStore = () => {
     })
   }
 
-  /** TodayMeme 인트로 종료·건너뛰기 후 하단 에이전트 선택 해제(카드·메시지는 유지) */
-  const handleTodayMemeIntroEnd = () => {
-    if (selectedChatAgentId.value === AGENT_ID_MEME) {
+  /** AUTO_RECOMMEND 인트로 종료 후 하단 에이전트 선택 해제(카드·메시지는 유지) */
+  const handleAutoRecommendIntroEnd = () => {
+    const selected = chatIndexAgents.value.find((a) => a.agentId === selectedChatAgentId.value)
+    if (isAutoRecommendAgent(selected)) {
       selectedChatAgentId.value = null
     }
   }
@@ -1330,7 +1361,12 @@ export const useChatStore = () => {
         const selectedId = selectedChatAgentId.value
         if (selectedId) {
           const selected = chatIndexAgents.value.find((a) => a.agentId === selectedId)
-          if (selected && (isRecommendAgent(selected) || isTranslateAgent(selected))) selectedChatAgentId.value = null
+          if (
+            selected &&
+            (isRecommendAgent(selected) || isTranslateAgent(selected) || isAutoRecommendAgent(selected))
+          ) {
+            selectedChatAgentId.value = null
+          }
         }
       } catch {
         chatIndexAgents.value = []
@@ -1397,7 +1433,7 @@ export const useChatStore = () => {
     surveyGender,
     isRecommendVisible,
     isTranslateVisible,
-    isTodayMemeVisible,
+    isAutoRecommendVisible,
     isNewsCuratorVisible,
     // 액션
     createChatRoom,
@@ -1405,11 +1441,11 @@ export const useChatStore = () => {
     onSend,
     onSendSurvey,
     onSurveyMessageSubmit,
-    onSendTodayMeme,
-    onTodayMemeMessageSubmit,
+    onSendAutoRecommend,
+    onAutoRecommendMessageSubmit,
     onNewsCuratorMessageSubmit,
     handleIndexSurveySubmit,
-    handleIndexTodayMemeSubmit,
+    handleIndexAutoRecommendSubmit,
     handleIndexNewsCuratorSubmit,
     addInlineSurveyMessage,
     handleIndexRecommendSubmit,
@@ -1419,15 +1455,15 @@ export const useChatStore = () => {
     handleSubmitTranslateAgentForm,
     handleCloseTranslateAgent,
     addInlineTranslateMessage,
-    addInlineTodayMemeMessage,
+    addInlineAutoRecommendMessage,
     addInlineNewsMessage,
     handleSyncNewsCard,
     handleNewsCuratorReselectCategories,
-    resetTodayMemePanel,
+    resetAutoRecommendPanel,
     handleCloseNewsCurator,
     selectChatIndexAgent,
     handleClosePsychologySurvey,
-    handleTodayMemeIntroEnd,
+    handleAutoRecommendIntroEnd,
     handleNewsCuratorIntroEnd,
     handleSelectChatIndexAgents,
     // 패널

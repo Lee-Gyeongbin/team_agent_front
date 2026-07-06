@@ -11,7 +11,7 @@
           isGenderStepVisible ||
           isRecommendVisible ||
           isTranslateVisible ||
-          isTodayMemeVisible ||
+          isAutoRecommendVisible ||
           isNewsCuratorVisible,
       }"
       :style="activeThemeStyle"
@@ -24,7 +24,7 @@
             !isGenderStepVisible &&
             !isRecommendVisible &&
             !isTranslateVisible &&
-            !isTodayMemeVisible &&
+            !isAutoRecommendVisible &&
             !isNewsCuratorVisible
           "
           class="chat-index-header"
@@ -43,7 +43,7 @@
               isGenderStepVisible ||
               isRecommendVisible ||
               isTranslateVisible ||
-              isTodayMemeVisible ||
+              isAutoRecommendVisible ||
               isNewsCuratorVisible,
           }"
           data-aos="fade-up"
@@ -85,12 +85,13 @@
         @close="handleCloseTranslateAgent"
         @submit="handleIndexTranslateSubmit"
       />
-      <ChatTodayMeme
-        v-if="isTodayMemeVisible"
+      <ChatAutoRecommendCard
+        v-if="isAutoRecommendVisible && currentAutoRecommendConfig"
         class="chat-index-survey"
+        :config="currentAutoRecommendConfig"
         :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? ''"
         :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
-        @intro-complete="handleTodayMemeIntroEnd"
+        @intro-complete="handleAutoRecommendIntroEnd"
       />
       <ChatNewsCurator
         v-if="isNewsCuratorVisible"
@@ -108,7 +109,7 @@
           !isGenderStepVisible &&
           !isRecommendVisible &&
           !isTranslateVisible &&
-          !isTodayMemeVisible &&
+          !isAutoRecommendVisible &&
           !isNewsCuratorVisible
         "
       >
@@ -172,6 +173,7 @@ import { parseSurveyConfigFromAgent } from '~/utils/chat/surveyUtil'
 import { parseRecommendConfigFromAgent } from '~/utils/chat/recommendAgentUtil'
 import { parseTranslateConfigFromAgent } from '~/utils/chat/translateAgentUtil'
 import { parseCurationConfigFromAgent } from '~/utils/chat/newsCuratorUtil'
+import { parseAutoRecommendConfigFromAgent } from '~/utils/chat/autoRecommendUtil'
 import { CHAT_THEMES, groupAgentsByTheme, getInitialThemeKey, findThemeByKey } from '~/utils/chat/chatThemeUtil'
 import { useMailStore } from '~/composables/mail/useMailStore'
 import type { Agent } from '~/types/agent'
@@ -194,9 +196,9 @@ const {
   isTranslateVisible,
   handleCloseTranslateAgent,
   handleIndexTranslateSubmit,
-  isTodayMemeVisible,
-  handleTodayMemeIntroEnd,
-  resetTodayMemePanel,
+  isAutoRecommendVisible,
+  handleAutoRecommendIntroEnd,
+  resetAutoRecommendPanel,
   isNewsCuratorVisible,
   handleCloseNewsCurator,
   handleIndexNewsCuratorSubmit,
@@ -242,7 +244,7 @@ const showThemeArrows = computed(
     !isGenderStepVisible.value &&
     !isRecommendVisible.value &&
     !isTranslateVisible.value &&
-    !isTodayMemeVisible.value &&
+    !isAutoRecommendVisible.value &&
     !isNewsCuratorVisible.value,
 )
 
@@ -397,6 +399,10 @@ const currentCurationConfig = computed(() => {
   const agent = currentSurveyAgent.value
   return agent ? parseCurationConfigFromAgent(agent) : null
 })
+const currentAutoRecommendConfig = computed(() => {
+  const agent = currentSurveyAgent.value
+  return agent ? parseAutoRecommendConfigFromAgent(agent) : null
+})
 
 onMounted(async () => {
   // 시각화 패널에서 나와 다시 일반 채팅으로 들어올 때 이전 tableData가 남지 않게 초기화
@@ -406,7 +412,7 @@ onMounted(async () => {
   handleCloseRecommendAgent()
   handleCloseTranslateAgent()
   handleCloseNewsCurator()
-  resetTodayMemePanel()
+  resetAutoRecommendPanel()
   // 인덱스 진입 시점에 즉시 채팅방 상태를 초기화해
   // 비동기 로딩 완료 시점의 늦은 reset으로 인한 레이스를 방지한다.
   resetChatRoom()

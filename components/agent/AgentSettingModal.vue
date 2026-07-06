@@ -29,6 +29,7 @@
         :researcher-form="researcherForm"
         :risk-form="riskForm"
         :planner-form="plannerForm"
+        :auto-recommend-form="autoRecommendForm"
         :sql-model-options="sqlModelOptions"
         :api-url-cd-options="apiUrlCdOptions"
         :tmpl-id-options="tmplIdOptions"
@@ -41,6 +42,7 @@
         @update:researcher-form="researcherForm = $event"
         @update:risk-form="riskForm = $event"
         @update:planner-form="plannerForm = $event"
+        @update:auto-recommend-form="autoRecommendForm = $event"
       />
 
       <!-- 섹션3: 데이터 연결 (svcTy 기반 분기) — D(RISK)는 자사 역량 RAG 데이터셋 연결 -->
@@ -130,6 +132,13 @@ import {
   parsePlannerAdditionalConfigToForm,
   type PlannerConfigForm,
 } from '~/utils/agent/plannerConfigUtil'
+import { AUTO_RECOMMEND_SUB_TY } from '~/utils/chat/autoRecommendUtil'
+import {
+  buildAutoRecommendAdditionalConfig,
+  emptyAutoRecommendConfigForm,
+  parseAutoRecommendAdditionalConfigToForm,
+  type AutoRecommendConfigForm,
+} from '~/utils/agent/autoRecommendConfigUtil'
 
 interface Props {
   isOpen: boolean
@@ -213,10 +222,12 @@ const onChangeAgentType = async (svcTy: string) => {
     preservedSurveyConfig.value = null
     preservedRecommendConfig.value = null
     preservedCurationConfig.value = null
+    preservedAutoRecommendConfig.value = null
     preservedResearcherConfig.value = null
     surveyForm.value = emptySurveyConfigForm()
     recommendForm.value = emptyRecommendConfigForm()
     curationForm.value = emptyCurationConfigForm()
+    autoRecommendForm.value = emptyAutoRecommendConfigForm()
     researcherForm.value = emptyResearcherConfigForm()
   }
   // M·D는 데이터셋, S는 데이터마트 — handleChangeAgentType가 svcTy로 분기 처리한다.
@@ -265,6 +276,10 @@ const riskForm = ref<RiskConfigForm>(emptyRiskConfigForm())
 // 기획서·PT(PLANNER) ADDITIONAL_CONFIG — UI 미편집 필드 보존용
 const preservedPlannerConfig = ref<AgtSubAdditionalConfig | null>(null)
 const plannerForm = ref<PlannerConfigForm>(emptyPlannerConfigForm())
+
+// 자동추천(AUTO_RECOMMEND) ADDITIONAL_CONFIG — UI 미편집 필드 보존용
+const preservedAutoRecommendConfig = ref<AgtSubAdditionalConfig | null>(null)
+const autoRecommendForm = ref<AutoRecommendConfigForm>(emptyAutoRecommendConfigForm())
 
 const loadSurveyConfigFromAgent = (agent: Agent | null) => {
   const subCfg = normalizeAgentSubCfg(agent?.subCfg)
@@ -350,15 +365,29 @@ const loadPlannerConfigFromAgent = (agent: Agent | null) => {
   plannerForm.value = emptyPlannerConfigForm()
 }
 
+const loadAutoRecommendConfigFromAgent = (agent: Agent | null) => {
+  const subCfg = normalizeAgentSubCfg(agent?.subCfg)
+  const additional = subCfg?.additionalConfig
+  if (additional && typeof additional === 'object' && Object.keys(additional).length > 0) {
+    preservedAutoRecommendConfig.value = { ...additional }
+    autoRecommendForm.value = parseAutoRecommendAdditionalConfigToForm(additional as Record<string, unknown>)
+    return
+  }
+  preservedAutoRecommendConfig.value = null
+  autoRecommendForm.value = emptyAutoRecommendConfigForm()
+}
+
 const resetSubTyConfigForms = () => {
   preservedSurveyConfig.value = null
   preservedRecommendConfig.value = null
   preservedCurationConfig.value = null
+  preservedAutoRecommendConfig.value = null
   preservedTranslateConfig.value = null
   preservedResearcherConfig.value = null
   surveyForm.value = emptySurveyConfigForm()
   recommendForm.value = emptyRecommendConfigForm()
   curationForm.value = emptyCurationConfigForm()
+  autoRecommendForm.value = emptyAutoRecommendConfigForm()
   translateForm.value = emptyTranslateConfigForm()
   researcherForm.value = emptyResearcherConfigForm()
   preservedRiskConfig.value = null
@@ -439,10 +468,24 @@ watch(
         loadCurationConfigFromAgent(props.agent)
         preservedSurveyConfig.value = null
         preservedRecommendConfig.value = null
+        preservedAutoRecommendConfig.value = null
         preservedTranslateConfig.value = null
         preservedResearcherConfig.value = null
         surveyForm.value = emptySurveyConfigForm()
         recommendForm.value = emptyRecommendConfigForm()
+        autoRecommendForm.value = emptyAutoRecommendConfigForm()
+        translateForm.value = emptyTranslateConfigForm()
+        researcherForm.value = emptyResearcherConfigForm()
+      } else if (props.agent.svcTy === 'C' && form.value.subTy === AUTO_RECOMMEND_SUB_TY) {
+        loadAutoRecommendConfigFromAgent(props.agent)
+        preservedSurveyConfig.value = null
+        preservedRecommendConfig.value = null
+        preservedCurationConfig.value = null
+        preservedTranslateConfig.value = null
+        preservedResearcherConfig.value = null
+        surveyForm.value = emptySurveyConfigForm()
+        recommendForm.value = emptyRecommendConfigForm()
+        curationForm.value = emptyCurationConfigForm()
         translateForm.value = emptyTranslateConfigForm()
         researcherForm.value = emptyResearcherConfigForm()
       } else if (props.agent.svcTy === 'M' && form.value.subTy === RESEARCHER_SUB_TY) {
@@ -580,6 +623,15 @@ watch(
       }
       return
     }
+    if (subTy === AUTO_RECOMMEND_SUB_TY) {
+      if (props.agent?.svcTy === 'C' && normalizeAgentSubCfg(props.agent.subCfg)?.subTy === AUTO_RECOMMEND_SUB_TY) {
+        loadAutoRecommendConfigFromAgent(props.agent)
+      } else {
+        preservedAutoRecommendConfig.value = null
+        autoRecommendForm.value = emptyAutoRecommendConfigForm()
+      }
+      return
+    }
     if (subTy === TRANSLATE_SUB_TY) {
       if (props.agent?.svcTy === 'W' && normalizeAgentSubCfg(props.agent.subCfg)?.subTy === TRANSLATE_SUB_TY) {
         loadTranslateConfigFromAgent(props.agent)
@@ -667,6 +719,17 @@ const onSave = () => {
       agentId: props.agent?.agentId ?? '',
       subTy: CURATION_SUB_TY,
       additionalConfig: buildCurationAdditionalConfig(curationForm.value, preservedCurationConfig.value),
+      useYn: existingSubCfg?.useYn ?? 'Y',
+      createDt: existingSubCfg?.createDt ?? '',
+      modifyDt: existingSubCfg?.modifyDt ?? '',
+    }
+  } else if (form.value.svcTy === 'C' && form.value.subTy === AUTO_RECOMMEND_SUB_TY) {
+    const existingSubCfg = normalizeAgentSubCfg(props.agent?.subCfg)
+    base.subCfg = {
+      subCfgId: existingSubCfg?.subCfgId ?? '',
+      agentId: props.agent?.agentId ?? '',
+      subTy: AUTO_RECOMMEND_SUB_TY,
+      additionalConfig: buildAutoRecommendAdditionalConfig(autoRecommendForm.value, preservedAutoRecommendConfig.value),
       useYn: existingSubCfg?.useYn ?? 'Y',
       createDt: existingSubCfg?.createDt ?? '',
       modifyDt: existingSubCfg?.modifyDt ?? '',

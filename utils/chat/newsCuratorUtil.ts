@@ -409,7 +409,7 @@ export const resolveNewsCuratorItemsForCard = (
 }
 
 // ============================================================
-// 모듈 스코프 반응형 상태 (usePsychologySurvey / useTodayMeme 와 동일 패턴)
+// 모듈 스코프 반응형 상태 (usePsychologySurvey / useAutoRecommend 와 동일 패턴)
 // ============================================================
 const isNewsCuratorVisible = ref(false)
 

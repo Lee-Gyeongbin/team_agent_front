@@ -28,9 +28,9 @@
     :theme-icon-class-nm="item.iconClassNm ?? ''"
     :theme-color-hex="item.colorHex ?? ''"
   />
-  <ChatTodayMeme
-    v-else-if="isTodayMemeCard && hasTodayMemeQcontent(item)"
-    class="library-card-question-body__meme"
+  <ChatAutoRecommendCard
+    v-else-if="isAutoRecommendCard && hasAutoRecommendQcontent(item)"
+    class="library-card-question-body__auto-recommend"
     display-mode="request"
     request-delivered
     :theme-color-hex="item.colorHex ?? ''"
@@ -57,7 +57,7 @@ import {
   resolveRecommendConfigByAgentIdForLibrary,
 } from '~/utils/chat/recommendAgentUtil'
 import { NEWS_CURATOR_AGENT_ID, parseNewsCuratorPromptMeta } from '~/utils/chat/newsCuratorUtil'
-import { hasTodayMemeQcontent, isTodayMemeLibraryCard } from '~/utils/chat/todayMemeUtil'
+import { hasAutoRecommendQcontent, isAutoRecommendLibraryCardItem } from '~/utils/chat/autoRecommendUtil'
 import {
   isSurveyLibraryCardItem,
   parseSurveyAnswersFromPrompt,
@@ -120,7 +120,7 @@ const newsCategories = computed(() => newsQuestionMeta.value.categories)
 
 const newsIsNew = computed(() => item.value.agentId === NEWS_CURATOR_AGENT_ID && newsQuestionMeta.value.isNew === true)
 
-const isTodayMemeCard = computed(() => isTodayMemeLibraryCard(item.value))
+const isAutoRecommendCard = computed(() => isAutoRecommendLibraryCardItem(item.value, libraryAgents.value))
 
 const isTranslateCard = computed(() => isTranslateLibraryCardItem(item.value, libraryAgents.value))
 
@@ -152,7 +152,7 @@ const translatePayload = computed(() => {
   overflow: hidden;
 }
 
-.library-card-question-body__meme {
+.library-card-question-body__auto-recommend {
   width: 100%;
   max-width: 100%;
 }

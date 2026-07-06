@@ -2,7 +2,6 @@ import type { ChatMessage, ChatSocketMessage, ChatSocketPayload } from '~/types/
 import { useChatMessages } from '~/composables/chat/useChatMessages'
 import { getWebSocketUrl } from '~/utils/chat/chatWebSocketUtil'
 import { migrateRecommendMessagesForAnswerLogId } from '~/utils/chat/recommendAgentUtil'
-import { TODAY_MEME_AGENT_ID } from '~/utils/chat/todayMemeUtil'
 import { NEWS_CURATOR_AGENT_ID } from '~/utils/chat/newsCuratorUtil'
 const {
   messages,
@@ -17,8 +16,8 @@ const {
   stoppedByUser,
 } = useChatMessages()
 
-// 답변 완료 후 다음 추천 질문 생성 대상에서 제외할 에이전트 (투데이밈/뉴스 큐레이터 등 특수 카드 플로우)
-const NEXT_QUESTIONS_EXCLUDED_AGENT_IDS = new Set([TODAY_MEME_AGENT_ID, NEWS_CURATOR_AGENT_ID])
+// 답변 완료 후 다음 추천 질문 생성 대상에서 제외할 에이전트 (뉴스 큐레이터 등 특수 카드 플로우)
+const NEXT_QUESTIONS_EXCLUDED_AGENT_IDS = new Set([NEWS_CURATOR_AGENT_ID])
 
 // 일반 채팅(C) / 데이터분석(S) / 매뉴얼(M) 답변에 한해 다음 추천 질문 생성을 대기한다
 const NEXT_QUESTIONS_ELIGIBLE_SVC_TYPES = new Set(['C', 'S', 'M'])

@@ -21,10 +21,11 @@
       :theme-icon-class-nm="item.iconClassNm ?? ''"
       :theme-color-hex="item.colorHex ?? ''"
     />
-    <ChatTodayMeme
-      v-else-if="isTodayMemeResponse"
+    <ChatAutoRecommendCard
+      v-else-if="isAutoRecommendResponse"
       readonly
-      :meme-items="memeList"
+      :items="autoRecommendList"
+      :config="autoRecommendConfig"
       :theme-icon-class-nm="item.iconClassNm ?? ''"
       :theme-color-hex="item.colorHex ?? ''"
     />
@@ -140,7 +141,12 @@ import {
   resolveRecommendConfigByAgentIdForLibrary,
 } from '~/utils/chat/recommendAgentUtil'
 import { NEWS_CURATOR_AGENT_ID, parseNewsCuratorItems, parseNewsCuratorPromptMeta } from '~/utils/chat/newsCuratorUtil'
-import { isTodayMemeLibraryCard, parseTodayMemeItems } from '~/utils/chat/todayMemeUtil'
+import {
+  isAutoRecommendLibraryCardItem,
+  parseAutoRecommendConfigFromAgent,
+  parseAutoRecommendItems,
+  resolveAutoRecommendConfigByAgentId,
+} from '~/utils/chat/autoRecommendUtil'
 import { downloadTranslationResult, isTranslateLibraryCardItem } from '~/utils/chat/translateAgentUtil'
 import {
   parseSurveyAnswersFromPrompt,
@@ -231,14 +237,24 @@ const isNewsCuratorResponse = computed(
     (newsList.value.length > 0 || newsSelectedCategories.value.length > 0),
 )
 
-const memeList = computed(() => {
-  if (!isTodayMemeLibraryCard(props.item)) return []
+const autoRecommendList = computed(() => {
+  if (!isAutoRecommendLibraryCardItem(props.item, libraryAgents.value)) return []
   const raw = String(props.item.rcontent ?? '').trim()
   if (!raw) return []
-  return parseTodayMemeItems(raw)
+  return parseAutoRecommendItems(raw)
 })
 
-const isTodayMemeResponse = computed(() => isTodayMemeLibraryCard(props.item) && memeList.value.length > 0)
+const autoRecommendConfig = computed(() => {
+  const agentId = props.item.agentId ?? ''
+  if (!agentId) return null
+  const agent = libraryAgents.value.find((a) => a.agentId === agentId)
+  if (agent) return parseAutoRecommendConfigFromAgent(agent)
+  return resolveAutoRecommendConfigByAgentId(agentId, libraryAgents.value)
+})
+
+const isAutoRecommendResponse = computed(
+  () => isAutoRecommendLibraryCardItem(props.item, libraryAgents.value) && autoRecommendList.value.length > 0,
+)
 
 const isTranslateResponse = computed(() => isTranslateLibraryCardItem(props.item, libraryAgents.value))
 
