@@ -90,7 +90,7 @@
 </template>
 
 <script setup lang="ts">
-import { UiLoading, UiDatePicker } from '@leechanyong/ispark-ui'
+import { UiButton, UiInput, UiSelect, UiTable, UiLoading, UiDatePicker } from '@leechanyong/ispark-ui'
 import { getLocalTimeZone, today, toCalendarDate, toCalendarDateTime, CalendarDateTime } from '@internationalized/date'
 import type { DateValue } from '@internationalized/date'
 import { historyColumns, type MyPageHistoryParams } from '~/types/my-page'

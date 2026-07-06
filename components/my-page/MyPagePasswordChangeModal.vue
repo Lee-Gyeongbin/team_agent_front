@@ -2,7 +2,6 @@
   <UiModal
     :is-open="isOpen"
     title="비밀번호 변경"
-    position="center"
     @close="onModalClose"
   >
     <div class="com-setting-form">
@@ -48,7 +47,7 @@
         <UiButton
           class="btn-modal-dialog"
           variant="outline"
-          size="xlg"
+          size="lg"
           @click="onModalClose"
         >
           취소
@@ -56,7 +55,7 @@
         <UiButton
           class="btn-modal-dialog"
           variant="primary"
-          size="xlg"
+          size="lg"
           :disabled="!canSubmit"
           @click="onSubmit"
         >
@@ -68,6 +67,8 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiInput, UiModal } from '@leechanyong/ispark-ui'
+
 defineProps<{ isOpen: boolean }>()
 
 const emit = defineEmits<{

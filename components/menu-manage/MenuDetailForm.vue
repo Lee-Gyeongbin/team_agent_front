@@ -138,7 +138,7 @@
 </template>
 
 <script setup lang="ts">
-import { UiToggle } from '@leechanyong/ispark-ui'
+import { UiButton, UiInput, UiSelect, UiToggle } from '@leechanyong/ispark-ui'
 import AgentIconSelectModal from '~/components/agent/AgentIconSelectModal.vue'
 import { useAgentStore } from '~/composables/agent/useAgentStore'
 import type { MenuTreeItem } from '~/types/menu'

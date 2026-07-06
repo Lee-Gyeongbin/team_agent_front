@@ -32,7 +32,7 @@
           <UiButton
             icon-only
             variant="ghost"
-            size="xxs"
+            size="xs"
             @click="onExpandAll"
           >
             <template #icon-left>
@@ -103,7 +103,7 @@
 </template>
 
 <script setup lang="ts">
-import { UiLoading } from '@leechanyong/ispark-ui'
+import { UiButton, UiEmpty, UiInput, UiLoading } from '@leechanyong/ispark-ui'
 import MenuDetailForm from '~/components/menu-manage/MenuDetailForm.vue'
 import MenuTreeNode from '~/components/menu-manage/MenuTreeNode.vue'
 import type { MenuTreeItem, MenuTreeReorderPayload } from '~/types/menu'

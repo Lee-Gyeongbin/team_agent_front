@@ -161,6 +161,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiInput, UiSelect } from '@leechanyong/ispark-ui'
 import { formatPhone, toPhoneDigits } from '~/utils/global/numberUtil'
 
 const {
