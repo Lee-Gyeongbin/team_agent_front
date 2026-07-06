@@ -9,3 +9,15 @@ export const isProposalAgent = (agent: Agent | null | undefined): boolean => {
   if (!agent || agent.useYn !== 'Y' || agent.svcTy !== 'D') return false
   return getAgentSubTy(agent.subCfg) === PROPOSAL_SUB_TY
 }
+
+/** PROPOSAL 제안서 슬라이드 JSON 여부 — slideDesign 필드로 판별 */
+export const isProposalSlideJson = (json: string): boolean => {
+  const raw = json.trim()
+  if (!raw) return false
+  try {
+    const parsed = JSON.parse(raw) as { slideDesign?: unknown }
+    return !!parsed.slideDesign
+  } catch {
+    return false
+  }
+}

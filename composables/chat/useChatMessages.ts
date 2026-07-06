@@ -22,6 +22,7 @@ import {
   parseNewsCuratorItems,
   parseNewsCuratorPromptMeta,
 } from '~/utils/chat/newsCuratorUtil'
+import { isProposalSlideJson } from '~/utils/chat/proposalAgentUtil'
 
 // 채팅 메시지/스트리밍 상태는 모듈 레벨에서 단일 인스턴스로 공유
 const messages = ref<ChatMessage[]>([])
@@ -137,6 +138,12 @@ export const useChatMessages = () => {
         /* ignore */
       }
     }
+    const reportHtmlRaw = typeof row.reportHtml === 'string' ? row.reportHtml.trim() : ''
+    const pptxDataRaw = typeof row.pptxData === 'string' ? row.pptxData.trim() : ''
+    // PROPOSAL: DB REPORT_HTML 컬럼에 슬라이드 JSON 저장 — 스트리밍 pptx_data와 동일하게 복원
+    const proposalPptxFromReport = isProposalSlideJson(reportHtmlRaw) ? reportHtmlRaw : ''
+    const pptxData = pptxDataRaw || proposalPptxFromReport
+
     const answerMessage: ChatMessage = {
       logId,
       type: 'answer',
@@ -158,9 +165,8 @@ export const useChatMessages = () => {
       tableData: typeof row.tableData === 'string' ? row.tableData : undefined,
       chartOption: typeof row.chartOption === 'string' ? row.chartOption : undefined,
       ...(groundingSources?.length ? { groundingSources } : {}),
-      ...(typeof row.reportHtml === 'string' && row.reportHtml.trim()
-        ? { reportHtml: row.reportHtml, hasReport: true }
-        : {}),
+      ...(reportHtmlRaw && !proposalPptxFromReport ? { reportHtml: reportHtmlRaw, hasReport: true } : {}),
+      ...(pptxData ? { pptxData, hasPptx: true } : {}),
       chatLogReaction: {
         logId,
         satisYn: satisYnVal,

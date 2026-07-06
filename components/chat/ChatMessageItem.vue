@@ -424,6 +424,7 @@ import {
 
 import { useChatMessages } from '~/composables/chat/useChatMessages'
 import { useMtlcareStore } from '~/composables/mtlcare/useMtlcareStore'
+import { isProposalSlideJson } from '~/utils/chat/proposalAgentUtil'
 
 const { messages: allMessages } = useChatMessages()
 const { handleSaveResult } = useMtlcareStore()
@@ -1152,18 +1153,6 @@ const onDownloadTranslationResult = () => {
   downloadTranslationResult(props.message.rContent ?? '', translateDownloadFormat.value, '번역결과')
 }
 
-/** pptxData JSON에 slideDesign 필드가 있으면 PROPOSAL 에이전트의 제안서 PPTX */
-const isProposalPptx = computed(() => {
-  const json = props.message.pptxData ?? ''
-  if (!json) return false
-  try {
-    const parsed = JSON.parse(json)
-    return !!parsed.slideDesign
-  } catch {
-    return false
-  }
-})
-
 const onDownloadPlannerPptx = async () => {
   const slidesJson = props.message.pptxData ?? ''
   if (!slidesJson) {
@@ -1172,7 +1161,7 @@ const onDownloadPlannerPptx = async () => {
   }
   const { postBlob } = useApi()
 
-  if (isProposalPptx.value) {
+  if (isProposalSlideJson(slidesJson)) {
     // PROPOSAL 에이전트: 이미지 생성 포함 (시간 소요 안내)
     openToast({ message: '슬라이드 이미지를 생성 중입니다. 잠시 기다려주세요.', type: 'info' })
     const blob = await postBlob('/ai/chatbot/exportProposalPptx.do', { content: slidesJson, fileName: '제안서' })
