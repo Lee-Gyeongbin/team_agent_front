@@ -20,7 +20,6 @@
           <UiSelect
             id="date-range"
             v-model="dateRangeOption"
-            name="date-range"
             :options="loginHistoryDateRangeOptions"
             size="md"
             @change="handleFetchLoginHistory"
@@ -87,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import { UiLoading, UiTable } from '@leechanyong/ispark-ui'
+import { UiLoading, UiTable, UiButton, UiInput, UiSelect } from '@leechanyong/ispark-ui'
 import { loginHistoryColumns, loginHistoryDateRangeOptions } from '~/types/login-history'
 
 const {

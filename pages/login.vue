@@ -177,6 +177,8 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiCheckbox, UiInput } from '@leechanyong/ispark-ui'
+
 definePageMeta({ layout: 'auth' })
 
 const { login } = useAuth()

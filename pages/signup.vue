@@ -148,6 +148,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiInput } from '@leechanyong/ispark-ui'
 import type { SignupForm } from '~/types/auth'
 import { createEmptySignupForm } from '~/types/auth'
 
