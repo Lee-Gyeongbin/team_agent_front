@@ -1093,38 +1093,3 @@ $fewshot-detail-body-min-height: min(492px, 52vh);
   background: #fff;
 }
 
-// ===== 컬럼 메타 — 엑셀 업로드 모달 (UiModal 본문) =====
-.datamart-meta-col-excel-upload-modal {
-  .modal-dialog-body {
-    display: block;
-    width: 100%;
-    min-height: 0;
-    padding: 12px 0;
-  }
-
-  .datamart-meta-col-excel-upload-body {
-    display: flex;
-    flex-direction: column;
-    gap: $spacing-md;
-    width: 100%;
-  }
-
-  .datamart-meta-col-excel-upload-target {
-    margin: 0;
-    font-size: $font-size-sm;
-    line-height: 1.5;
-    color: $color-text-secondary;
-
-    strong {
-      color: $color-text-dark;
-      font-weight: $font-weight-semibold;
-    }
-  }
-
-  .ui-file-upload,
-  .ui-file-upload-dropzone {
-    width: 100%;
-    box-sizing: border-box;
-  }
-}
-

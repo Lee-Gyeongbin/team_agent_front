@@ -26,8 +26,8 @@
     <template v-else>
       <div class="datamart-meta-table-select-header">
         <p class="datamart-meta-table-select-desc">
-          AI에게 노출할 테이블만 선택하세요. 전체 {{ totalTableCount }}개 중 필요한 테이블만 포함하면 쿼리 정확도가
-          높아집니다.
+          AI에게 노출할 테이블만 선택하고 각 테이블 설명을 작성하면, 전체 {{ totalTableCount }}개 중 필요한 테이블만
+          활용해 쿼리 정확도와 성능을 높일 수 있습니다.
         </p>
       </div>
 
@@ -39,31 +39,62 @@
           size="sm"
           class="datamart-meta-table-select-search"
         />
-        <UiButton
-          variant="line-secondary"
-          size="sm"
-          icon-only
-          class="datamart-meta-table-select-select-all"
-          type="button"
-          :disabled="filteredTables.length === 0"
-          :title="isFilteredAllActive ? '필터 결과 전체 비활성' : '필터 결과 전체 활성'"
-          :aria-label="isFilteredAllActive ? '필터 결과 전체 비활성' : '필터 결과 전체 활성'"
-          @click="onToggleActivateAllFiltered"
-        >
-          <template #icon-left>
-            <span
-              class="datamart-meta-table-select-link-icon"
-              :class="{ 'is-all-selected': isFilteredAllActive }"
-            >
-              <i class="icon-link-agent size-16" />
+        <div class="datamart-meta-table-select-toolbar-actions">
+          <UiButton
+            class="datamart-meta-table-select-excel-btn"
+            variant="outline"
+            size="sm"
+            type="button"
+            title="테이블 선택 엑셀 다운로드"
+            aria-label="테이블 선택 엑셀 다운로드"
+            :disabled="isExcelDownloading"
+            @click="onDownloadTableSelectExcel"
+          >
+            <template #icon-left>
+              <i class="icon-download size-16" />
+            </template>
+            엑셀 다운로드
+          </UiButton>
+          <UiButton
+            class="datamart-meta-table-select-excel-btn"
+            variant="outline"
+            size="sm"
+            type="button"
+            title="테이블 선택 엑셀 업로드"
+            aria-label="테이블 선택 엑셀 업로드"
+            @click="openExcelUploadModal"
+          >
+            <template #icon-left>
+              <i class="icon-document-search size-16" />
+            </template>
+            엑셀 업로드
+          </UiButton>
+          <UiButton
+            variant="line-secondary"
+            size="sm"
+            icon-only
+            class="datamart-meta-table-select-select-all"
+            type="button"
+            :disabled="filteredTables.length === 0"
+            :title="isFilteredAllActive ? '필터 결과 전체 비활성' : '필터 결과 전체 활성'"
+            :aria-label="isFilteredAllActive ? '필터 결과 전체 비활성' : '필터 결과 전체 활성'"
+            @click="onToggleActivateAllFiltered"
+          >
+            <template #icon-left>
               <span
-                v-if="isFilteredAllActive"
-                class="datamart-meta-table-select-link-slash"
-                aria-hidden="true"
-              />
-            </span>
-          </template>
-        </UiButton>
+                class="datamart-meta-table-select-link-icon"
+                :class="{ 'is-all-selected': isFilteredAllActive }"
+              >
+                <i class="icon-link-agent size-16" />
+                <span
+                  v-if="isFilteredAllActive"
+                  class="datamart-meta-table-select-link-slash"
+                  aria-hidden="true"
+                />
+              </span>
+            </template>
+          </UiButton>
+        </div>
       </div>
 
       <div class="datamart-meta-table-select-list-wrap">
@@ -102,7 +133,13 @@
             >
               <div class="agent-data-card-info">
                 <div class="agent-data-card-title">{{ row.physicalNm }}</div>
-                <p class="agent-data-card-desc">{{ row.logicalNm }}</p>
+                <UiInput
+                  :key="`${row.id}-${row.logicalNm ?? ''}`"
+                  v-model="row.logicalNm"
+                  size="xs"
+                  placeholder="테이블 한글명 입력"
+                  class="datamart-meta-table-select-logical-input"
+                />
                 <div class="agent-data-card-meta">
                   <span class="agent-data-card-meta-item">
                     <i class="icon-database size-12" />
@@ -121,12 +158,28 @@
         </div>
       </div>
     </template>
+
+    <DatamartMetaExcelUpload
+      kind="table"
+      :is-open="excelUploadModalOpen"
+      :uploading="isExcelUploading"
+      @close="excelUploadModalOpen = false"
+      @upload="onUploadTableSelectExcel"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+import DatamartMetaExcelUpload from '~/components/datamart/DatamartMetaExcelUpload.vue'
+import { useDatamartApi } from '~/composables/datamart/useDatamartApi'
+import { useDatamartStore } from '~/composables/datamart/useDatamartStore'
+import { openToast } from '~/composables/useToast'
 import type { Datamart } from '~/types/datamart'
-import type { DatamartMetaTableItem } from '~/types/datamartMeta'
+import type {
+  DatamartMetaTableExcelUploadData,
+  DatamartMetaTableExcelUploadResponse,
+  DatamartMetaTableItem,
+} from '~/types/datamartMeta'
 
 const props = withDefaults(
   defineProps<{
@@ -148,6 +201,86 @@ const emit = defineEmits<{
   /** 테이블 활성(useYn) 변경 */
   'set-table-use-yn': [payload: { id: string; useYn: 'Y' | 'N' }]
 }>()
+
+const datamartId = computed(() => props.datamart?.datamartId?.trim() ?? '')
+
+const { fetchDownloadMetaTableExcel, fetchUploadMetaTableExcel } = useDatamartApi()
+const { setDatamartMetaModalTable } = useDatamartStore()
+
+const excelUploadModalOpen = ref(false)
+const isExcelUploading = ref(false)
+const isExcelDownloading = ref(false)
+
+const requireDatamartId = (): string | null => {
+  if (!datamartId.value) {
+    openToast({ message: '데이터마트 정보가 없습니다.', type: 'warning' })
+    return null
+  }
+  return datamartId.value
+}
+
+const applyUploadedTableSelection = (uploadedTables: DatamartMetaTableExcelUploadData['tableList']) => {
+  for (const uploaded of uploadedTables) {
+    if (!uploaded.id?.trim()) continue
+    setDatamartMetaModalTable({
+      ...uploaded,
+      id: uploaded.id.trim(),
+    })
+  }
+}
+
+const openExcelUploadModal = () => {
+  if (!requireDatamartId()) return
+  excelUploadModalOpen.value = true
+}
+
+const onDownloadTableSelectExcel = async () => {
+  const id = requireDatamartId()
+  if (!id) return
+
+  isExcelDownloading.value = true
+  try {
+    await fetchDownloadMetaTableExcel(id, props.datamart?.dmNm?.trim())
+    openToast({ message: '테이블 선택 엑셀을 다운로드했습니다.' })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '엑셀 다운로드 중 오류가 발생했습니다.'
+    openToast({ message, type: 'error' })
+  } finally {
+    isExcelDownloading.value = false
+  }
+}
+
+const getTableExcelUploadFailMessage = (res: DatamartMetaTableExcelUploadResponse) =>
+  String(res.returnMsg ?? res.data?.returnMsg ?? '테이블 선택 엑셀 업로드 검증에 실패했습니다.')
+
+const onUploadTableSelectExcel = async (file: File) => {
+  const id = requireDatamartId()
+  if (!id) return
+
+  isExcelUploading.value = true
+  try {
+    const res = await fetchUploadMetaTableExcel(id, file)
+    if (res?.successYn === false) {
+      openToast({ message: getTableExcelUploadFailMessage(res), type: 'error' })
+      return
+    }
+
+    const uploadedTables = res.data?.tableList
+    if (Array.isArray(uploadedTables) && uploadedTables.length > 0) {
+      applyUploadedTableSelection(uploadedTables)
+    }
+
+    openToast({
+      message: '엑셀 업로드가 완료되었습니다. 테이블 활성 상태를 확인 후 저장해 주세요.',
+    })
+    excelUploadModalOpen.value = false
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '엑셀 업로드 중 오류가 발생했습니다.'
+    openToast({ message, type: 'error' })
+  } finally {
+    isExcelUploading.value = false
+  }
+}
 
 /** 전체 테이블 수(스키마 기준). 연동 시 API/메타 기준으로 교체 */
 const totalTableCount = computed(() => {
@@ -263,6 +396,17 @@ const onToggleActivateAllFiltered = () => {
   width: 100%;
 }
 
+.datamart-meta-table-select-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-shrink: 0;
+}
+
+.datamart-meta-table-select-excel-btn {
+  flex-shrink: 0;
+}
+
 .datamart-meta-table-select-search {
   flex: 1;
   min-width: 0;
@@ -344,5 +488,9 @@ const onToggleActivateAllFiltered = () => {
 .datamart-meta-table-select-summary-active {
   font-weight: $font-weight-semibold;
   color: $color-primary;
+}
+
+.datamart-meta-table-select-logical-input {
+  width: 100%;
 }
 </style>

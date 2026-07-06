@@ -15,7 +15,8 @@ export interface Datamart {
   readonlyYn: 'Y' | 'N'
   ipWlistYn: 'Y' | 'N'
   sslYn: 'Y' | 'N'
-  tblCnt: number
+  tblCnt: number // TBL_CNT
+  activeTblCnt: number // ACTIVE_TBL_CNT
   lastVerifyDt: string
   sortOrd: number
   useYn: 'Y' | 'N'

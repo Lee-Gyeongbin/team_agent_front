@@ -4,6 +4,7 @@ import type {
   DatamartMetaAbbrevPayload,
   DatamartMetaCode,
   DatamartMetaColumnExcelUploadResponse,
+  DatamartMetaTableExcelUploadResponse,
   DatamartMetaRelationship,
   DatamartMetaSynonymPayload,
   DatamartMetaTableItem,
@@ -151,6 +152,29 @@ export const useDatamartApi = () => {
     })
   }
 
+  /** 메타 관리 > 테이블 선택 엑셀 다운로드 — GET metaTableDownloadExcel.do?datamartId= */
+  const fetchDownloadMetaTableExcel = async (datamartId: string, dmNm?: string): Promise<void> => {
+    const query = new URLSearchParams({ datamartId })
+    const blob = await getBlob(`/datamart/metaTableDownloadExcel.do?${query.toString()}`)
+    const label = dmNm?.trim() || '데이터마트'
+    const fileName = `${formatYyyyMmDdFromDate(new Date())}_${label}_테이블선택.xlsx`
+    downloadBlobAsFile(blob, fileName)
+  }
+
+  /** 메타 관리 > 테이블 선택 엑셀 업로드 — POST multipart (datamartId, uploadFile), 검증·미리보기만(DB 저장 없음) */
+  const fetchUploadMetaTableExcel = async (
+    datamartId: string,
+    uploadFile: File,
+  ): Promise<DatamartMetaTableExcelUploadResponse> => {
+    const formData = new FormData()
+    formData.append('datamartId', datamartId)
+    formData.append('uploadFile', uploadFile)
+    return useApi_multipart<DatamartMetaTableExcelUploadResponse>('/datamart/metaTableUploadExcel.do', {
+      method: 'POST',
+      body: formData,
+    })
+  }
+
   return {
     fetchDatamartList,
     fetchDatamartSummary,
@@ -174,5 +198,7 @@ export const useDatamartApi = () => {
     fetchSaveMetaTermDict,
     fetchDownloadMetaColumnExcel,
     fetchUploadMetaColumnExcel,
+    fetchDownloadMetaTableExcel,
+    fetchUploadMetaTableExcel,
   }
 }
