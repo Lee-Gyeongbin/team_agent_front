@@ -80,7 +80,7 @@
 </template>
 
 <script setup lang="ts">
-import { UiLoading } from '@leechanyong/ispark-ui'
+import { UiLoading, UiEmpty } from '@leechanyong/ispark-ui'
 import AOS from 'aos'
 import DatamartSummary from '~/components/datamart/DatamartSummary.vue'
 import DatamartCard from '~/components/datamart/DatamartCard.vue'

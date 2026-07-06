@@ -96,7 +96,7 @@
 </template>
 
 <script setup lang="ts">
-import { UiLoading } from '@leechanyong/ispark-ui'
+import { UiLoading, UiEmpty } from '@leechanyong/ispark-ui'
 import DocDatasetSummary from '~/components/doc-dataset/DocDatasetSummary.vue'
 import DocDatasetCard from '~/components/doc-dataset/DocDatasetCard.vue'
 import DocDatasetCreateModal from '~/components/doc-dataset/DocDatasetCreateModal.vue'

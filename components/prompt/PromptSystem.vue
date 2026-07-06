@@ -54,6 +54,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiEmpty } from '@leechanyong/ispark-ui'
 import type { SystemPrompt } from '~/types/prompt'
 import { usePromptStore } from '~/composables/prompt/usePromptStore'
 

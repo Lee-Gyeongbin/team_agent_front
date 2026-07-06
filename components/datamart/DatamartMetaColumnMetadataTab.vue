@@ -280,6 +280,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiEmpty } from '@leechanyong/ispark-ui'
 import DatamartMetaExcelUpload from '~/components/datamart/DatamartMetaExcelUpload.vue'
 import { useDatamartApi } from '~/composables/datamart/useDatamartApi'
 import { useDatamartStore } from '~/composables/datamart/useDatamartStore'

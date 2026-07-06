@@ -71,6 +71,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiEmpty } from '@leechanyong/ispark-ui'
 import { plainTextFromHtml } from '~/utils/global/htmlUtil'
 
 interface Props {

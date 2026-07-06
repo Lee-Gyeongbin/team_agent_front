@@ -131,6 +131,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiEmpty } from '@leechanyong/ispark-ui'
 import { useMtlcareStore } from '~/composables/mtlcare/useMtlcareStore'
 import { downloadMtlcareReportAsPdf } from '~/utils/mtlcare/mtlcareReportExportUtil'
 import { buildPsychologyRadarUiChartConfig, buildStressItemsFromRadarChartData } from '~/utils/chat/surveyUtil'

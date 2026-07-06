@@ -285,6 +285,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiEmpty } from '@leechanyong/ispark-ui'
 import type { FollowupItem, FollowupCompleted, FollowupStats } from '~/types/mail'
 import { useMailStore } from '~/composables/mail/useMailStore'
 

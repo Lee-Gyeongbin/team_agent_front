@@ -287,7 +287,7 @@
 </template>
 
 <script setup lang="ts">
-import { UiLoading } from '@leechanyong/ispark-ui'
+import { UiLoading, UiEmpty } from '@leechanyong/ispark-ui'
 import FilePreviewModal from '~/components/file/FilePreviewModal.vue'
 import CategoryTreeNode from '~/components/repository/CategoryTreeNode.vue'
 import RepositoryFileFormModal from '~/components/repository/RepositoryFileFormModal.vue'

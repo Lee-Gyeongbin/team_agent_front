@@ -171,7 +171,7 @@
 </template>
 
 <script setup lang="ts">
-import { UiLoading } from '@leechanyong/ispark-ui'
+import { UiLoading, UiEmpty } from '@leechanyong/ispark-ui'
 import { onMounted, ref } from 'vue'
 import { toYn, useChatGuideStore } from '~/composables/chat-guide/useChatGuideStore'
 

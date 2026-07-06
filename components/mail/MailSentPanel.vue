@@ -67,6 +67,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiEmpty } from '@leechanyong/ispark-ui'
 import type { SentMail } from '~/types/mail'
 import { plainTextFromHtml } from '~/utils/global/htmlUtil'
 

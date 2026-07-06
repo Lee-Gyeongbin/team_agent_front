@@ -134,6 +134,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiEmpty } from '@leechanyong/ispark-ui'
 import CategoryTreeNode from '~/components/repository/CategoryTreeNode.vue'
 import { useRepositoryApi } from '~/composables/repository/useRepositoryApi'
 import type { CategoryItem, DocDatasetSelectedUrl } from '~/types/doc-dataset'

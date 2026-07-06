@@ -118,6 +118,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiEmpty } from '@leechanyong/ispark-ui'
 import type { Datamart } from '~/types/datamart'
 import type { DatamartMetaAbbrevItem, DatamartMetaAbbrevPayload } from '~/types/datamartMeta'
 import { datamartMetaAbbrevTableColumns } from '~/types/datamartMeta'
