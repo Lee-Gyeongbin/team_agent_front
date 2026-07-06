@@ -1,8 +1,10 @@
 import { ref } from 'vue'
 import type { Agent } from '~/types/agent'
-import type { ChatMessage } from '~/types/chat'
+import type { ChatLogListRow, ChatMessage } from '~/types/chat'
 import { getAgentSubTy } from '~/utils/chat/surveyUtil'
 import { DEFAULT_AUTO_RECOMMEND_CONSTRAINTS } from '~/utils/agent/autoRecommendConfigUtil'
+
+// ━━━ 상수 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export const AUTO_RECOMMEND_SUB_TY = 'AUTO_RECOMMEND'
 
@@ -58,8 +60,22 @@ export interface AutoRecommendItem {
   confidence?: '높음' | '중간' | '낮음'
 }
 
-const parseAutoRecommendConfigCore = (agent: Agent | null | undefined): AutoRecommendAgentConfig | null => {
-  const raw = agent?.subCfg?.additionalConfig
+// ━━━ 에이전트 판별 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export const isAutoRecommendAgent = (agent: Agent | null | undefined): boolean => {
+  if (!agent || agent.useYn !== 'Y' || agent.svcTy !== 'C') return false
+  return getAgentSubTy(agent.subCfg) === AUTO_RECOMMEND_SUB_TY
+}
+
+export const isAutoRecommendAgentForLibrary = (agent: Pick<Agent, 'svcTy' | 'subCfg'> | null | undefined): boolean => {
+  if (!agent || agent.svcTy !== 'C') return false
+  return getAgentSubTy(agent.subCfg) === AUTO_RECOMMEND_SUB_TY
+}
+
+// ━━━ Config 파서 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const parseAutoRecommendConfigCore = (agent: Agent): AutoRecommendAgentConfig | null => {
+  const raw = agent.subCfg?.additionalConfig
   if (!raw) return null
   try {
     const config = typeof raw === 'string' ? JSON.parse(raw) : raw
@@ -70,20 +86,15 @@ const parseAutoRecommendConfigCore = (agent: Agent | null | undefined): AutoReco
   }
 }
 
-/** svcTy=C · USE_YN=Y · subTy=AUTO_RECOMMEND */
-export const isAutoRecommendAgent = (agent: Agent | null | undefined): boolean => {
-  if (!agent || agent.useYn !== 'Y' || agent.svcTy !== 'C') return false
-  return getAgentSubTy(agent.subCfg) === AUTO_RECOMMEND_SUB_TY
-}
-
-/** 지식창고 — useYn 무관 */
-export const isAutoRecommendAgentForLibrary = (agent: Pick<Agent, 'svcTy' | 'subCfg'> | null | undefined): boolean => {
-  if (!agent || agent.svcTy !== 'C') return false
-  return getAgentSubTy(agent.subCfg) === AUTO_RECOMMEND_SUB_TY
-}
-
 export const parseAutoRecommendConfigFromAgent = (agent: Agent | null | undefined): AutoRecommendAgentConfig | null => {
-  if (!isAutoRecommendAgent(agent) && !isAutoRecommendAgentForLibrary(agent)) return null
+  if (!agent || !isAutoRecommendAgent(agent)) return null
+  return parseAutoRecommendConfigCore(agent)
+}
+
+export const parseAutoRecommendConfigFromAgentForLibrary = (
+  agent: Agent | null | undefined,
+): AutoRecommendAgentConfig | null => {
+  if (!agent || !isAutoRecommendAgentForLibrary(agent)) return null
   return parseAutoRecommendConfigCore(agent)
 }
 
@@ -96,6 +107,20 @@ export const resolveAutoRecommendConfigByAgentId = (
   return parseAutoRecommendConfigFromAgent(agent)
 }
 
+export const resolveAutoRecommendConfigByAgentIdForLibrary = (
+  agentId: string,
+  agents: Agent[],
+): AutoRecommendAgentConfig | null => {
+  const agent = agents.find((a) => a.agentId === agentId)
+  if (!agent) return null
+  return parseAutoRecommendConfigFromAgentForLibrary(agent)
+}
+
+const resolveAutoRecommendConfig = (agent: Agent | null | undefined): AutoRecommendAgentConfig | null =>
+  parseAutoRecommendConfigFromAgent(agent) ?? parseAutoRecommendConfigFromAgentForLibrary(agent)
+
+// ━━━ 프롬프트 빌더 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 export const buildAutoRecommendPrompt = (config: AutoRecommendAgentConfig | null): string => {
   if (!config) return ''
 
@@ -106,6 +131,7 @@ export const buildAutoRecommendPrompt = (config: AutoRecommendAgentConfig | null
   const constraints = (config.constraints?.length ? config.constraints : DEFAULT_AUTO_RECOMMEND_CONSTRAINTS)
     .map((line) => line.trim())
     .filter(Boolean)
+    .map((constraint) => constraint.replace(/topN/g, String(topN)))
 
   const lines: string[] = [...constraints]
   if (itemFields.length > 0) {
@@ -122,7 +148,7 @@ export const buildAutoRecommendPrompt = (config: AutoRecommendAgentConfig | null
 }
 
 export const resolveAutoRecommendPrompt = (agent: Agent | null | undefined): string => {
-  const config = parseAutoRecommendConfigFromAgent(agent)
+  const config = resolveAutoRecommendConfig(agent)
   if (!config) return ''
   const legacyPrompt = String(config.engine?.prompt ?? '').trim()
   if (legacyPrompt && !config.constraints?.length) return legacyPrompt
@@ -130,25 +156,25 @@ export const resolveAutoRecommendPrompt = (agent: Agent | null | undefined): str
 }
 
 export const resolveAutoRecommendModelId = (agent: Agent | null | undefined, fallbackModelId = ''): string => {
-  const fromConfig = String(parseAutoRecommendConfigFromAgent(agent)?.engine?.defaultModelId ?? '').trim()
+  const fromConfig = String(resolveAutoRecommendConfig(agent)?.engine?.defaultModelId ?? '').trim()
   return fromConfig || String(fallbackModelId ?? '').trim()
 }
 
-/** 에이전트 목록 기준 숨김 프롬프트(qcontent) 여부 */
-export const isAutoRecommendPromptText = (promptText: string, agents: Agent[]): boolean => {
+// ━━━ 프롬프트·로그 판별 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export const isAutoRecommendAgentPrompt = (promptText: string, agents: Agent[]): boolean => {
   const trimmed = String(promptText ?? '').trim()
   if (!trimmed) return false
   return agents.some((agent) => isAutoRecommendAgent(agent) && resolveAutoRecommendPrompt(agent) === trimmed)
 }
 
-/** 채팅 로그 한 건이 AUTO_RECOMMEND 에이전트 질의인지 */
 export const isAutoRecommendLogRow = (row: { agentId?: string; qcontent?: string }, agents: Agent[]): boolean => {
   const agentId = String(row.agentId ?? '').trim()
   if (agentId) {
     const agent = agents.find((a) => a.agentId === agentId)
     if (isAutoRecommendAgent(agent) || isAutoRecommendAgentForLibrary(agent)) return true
   }
-  return isAutoRecommendPromptText(String(row.qcontent ?? ''), agents)
+  return isAutoRecommendAgentPrompt(String(row.qcontent ?? ''), agents)
 }
 
 export const isAutoRecommendLibraryCardItem = (item: { agentId?: string }, agents: Agent[]): boolean => {
@@ -158,10 +184,8 @@ export const isAutoRecommendLibraryCardItem = (item: { agentId?: string }, agent
   return isAutoRecommendAgentForLibrary(agent)
 }
 
-/** 요청(qcontent) 영역 — 전달 완료 UI 노출 여부 */
 export const hasAutoRecommendQcontent = (item: { qcontent?: string }) => String(item.qcontent ?? '').trim().length > 0
 
-/** 설명 영역 좌측 라벨과 포인트 문구를 행 단위로 묶음 */
 export const getAutoRecommendPointRows = (item: AutoRecommendItem) => {
   const labels = ['특정 상황', '사용 패턴', '확산 흐름'] as const
   return item.points.map((text, idx) => ({
@@ -169,6 +193,8 @@ export const getAutoRecommendPointRows = (item: AutoRecommendItem) => {
     text,
   }))
 }
+
+// ━━━ JSON 파싱 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const rowsFromJsonRoot = (parsed: unknown): unknown[] | null => {
   if (Array.isArray(parsed)) return parsed
@@ -225,7 +251,7 @@ const mapRawRowToItem = (row: unknown, idx: number): AutoRecommendItem => {
   }
 }
 
-export const parseAutoRecommendItems = (raw: string): AutoRecommendItem[] => {
+export const parseAutoRecommendJsonArray = (raw: string): AutoRecommendItem[] => {
   const text = String(raw ?? '').trim()
   if (!text) return []
   try {
@@ -258,16 +284,31 @@ export const parseAutoRecommendItems = (raw: string): AutoRecommendItem[] => {
   }
 }
 
-export const createAutoRecommendMessage = (submitted: boolean, agentId: string): ChatMessage => ({
-  logId: `auto-recommend-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+// ━━━ 메시지 생성 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const genAutoRecommendLogId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+
+export const createAutoRecommendCardMessage = (opts: {
+  agentId: string
+  createdAt: string
+  svcTy?: string
+  refId?: string
+  submitted?: boolean
+  displayItems?: AutoRecommendItem[]
+}): ChatMessage => ({
+  logId: genAutoRecommendLogId('auto-rec'),
   type: 'autoRecommend',
-  createdAt: new Date().toISOString(),
-  agentId,
-  autoRecommendSubmitted: submitted,
+  agentId: opts.agentId,
+  createdAt: opts.createdAt,
+  svcTy: opts.svcTy ?? 'C',
+  refId: opts.refId ?? '',
+  autoRecommendSubmitted: opts.submitted ?? false,
+  ...(opts.displayItems?.length ? { autoRecommendDisplayItems: opts.displayItems } : {}),
 })
 
-/** AUTO_RECOMMEND 파이프라인 answer — 카드에서만 JSON 표시 */
-export const isAutoRecommendAnswerMessage = (message: ChatMessage, agents: Agent[]): boolean => {
+// ━━━ 메시지 연결 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export const isAutoRecommendPipelineAnswer = (message: ChatMessage, agents: Agent[]): boolean => {
   if (message.type !== 'answer') return false
   const agentId = String(message.agentId ?? '').trim()
   if (!agentId) return false
@@ -275,8 +316,47 @@ export const isAutoRecommendAnswerMessage = (message: ChatMessage, agents: Agent
   return isAutoRecommendAgent(agent) || isAutoRecommendAgentForLibrary(agent)
 }
 
+export const buildAutoRecommendMessagesFromLogRow = (
+  row: ChatLogListRow,
+  answerMessage: ChatMessage,
+  agents: Agent[] = [],
+): ChatMessage[] | null => {
+  if (!isAutoRecommendLogRow(row, agents)) return null
+  if (!String(row.qcontent ?? '').trim()) return null
+
+  const logId = String(row.logId ?? '')
+  const createdAt = row.createDt ?? ''
+  const agentId = typeof row.agentId === 'string' ? row.agentId.trim() : ''
+  const displayItems = parseAutoRecommendJsonArray(String(row.rcontent ?? ''))
+
+  return [
+    {
+      logId: `${logId}-auto-recommend`,
+      type: 'autoRecommend',
+      createdAt,
+      agentId,
+      autoRecommendSubmitted: true,
+      ...(displayItems.length > 0 ? { autoRecommendDisplayItems: displayItems } : {}),
+    },
+    answerMessage,
+  ]
+}
+
+// ━━━ 방 등록 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const autoRecommendRoomIds = ref<Set<string>>(new Set())
+
+export const registerAutoRecommendRoom = (roomId: string) => {
+  const id = String(roomId ?? '').trim()
+  if (!id) return
+  autoRecommendRoomIds.value = new Set([...autoRecommendRoomIds.value, id])
+}
+
+export const isAutoRecommendRoom = (roomId: string) => autoRecommendRoomIds.value.has(String(roomId ?? '').trim())
+
+// ━━━ 인덱스 오버레이 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 const isAutoRecommendVisible = ref(false)
-const autoRecommendRoomIdSet = ref<Set<string>>(new Set())
 
 export const useAutoRecommend = () => {
   const openAutoRecommend = () => {
@@ -286,14 +366,6 @@ export const useAutoRecommend = () => {
   const closeAutoRecommend = () => {
     isAutoRecommendVisible.value = false
   }
-
-  const registerAutoRecommendRoom = (roomId: string) => {
-    const id = String(roomId ?? '').trim()
-    if (!id) return
-    autoRecommendRoomIdSet.value = new Set([...autoRecommendRoomIdSet.value, id])
-  }
-
-  const isAutoRecommendRoom = (roomId: string) => autoRecommendRoomIdSet.value.has(String(roomId ?? '').trim())
 
   return {
     isAutoRecommendVisible,

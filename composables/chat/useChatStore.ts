@@ -47,9 +47,10 @@ import {
 } from '~/utils/chat/translateAgentUtil'
 import { isRiskAgent } from '~/utils/agent/riskConfigUtil'
 import {
-  createAutoRecommendMessage,
+  createAutoRecommendCardMessage,
   isAutoRecommendAgent,
-  isAutoRecommendPromptText,
+  isAutoRecommendAgentPrompt,
+  isAutoRecommendLogRow,
   resolveAutoRecommendModelId,
   resolveAutoRecommendPrompt,
   useAutoRecommend,
@@ -161,7 +162,7 @@ const messagesForDisplay = computed(() => {
         const agent = chatIndexAgents.value.find((a) => a.agentId === agentId)
         if (isAutoRecommendAgent(agent)) return false
       }
-      return !isAutoRecommendPromptText(m.qContent ?? '', chatIndexAgents.value)
+      return !isAutoRecommendAgentPrompt(m.qContent ?? '', chatIndexAgents.value)
     })
   }
   if (isRecommendRoom(chatRoom.value.roomId)) {
@@ -385,10 +386,7 @@ export const useChatStore = () => {
     const hasRecommendLog = rawList.some((row) => isRecommendAgentPrompt(String(row.qcontent ?? '')))
     if (hasRecommendLog) registerRecommendRoom(roomId)
 
-    const hasAutoRecommendLog = rawList.some((row) => {
-      const agent = chatIndexAgents.value.find((a) => a.agentId === String(row.agentId ?? '').trim())
-      return isAutoRecommendAgent(agent)
-    })
+    const hasAutoRecommendLog = rawList.some((row) => isAutoRecommendLogRow(row, chatIndexAgents.value))
     if (hasAutoRecommendLog) registerAutoRecommendRoom(roomId)
 
     // TRANSLATE 에이전트 로그 감지 — agentId 기반으로 방 등록
@@ -491,7 +489,12 @@ export const useChatStore = () => {
 
   /** /chat 인덱스에서 AUTO_RECOMMEND 제출 후 readonly 카드를 메시지 목록 앞에 주입 */
   const addInlineAutoRecommendMessage = (agentId: string) => {
-    const cardMsg = createAutoRecommendMessage(true, agentId)
+    const cardMsg = createAutoRecommendCardMessage({
+      agentId,
+      createdAt: new Date().toISOString(),
+      svcTy: 'C',
+      submitted: true,
+    })
     const msgs = [...messages.value]
     const firstQ = msgs.find((m) => m.type === 'question')
     if (firstQ) firstQ.hiddenFromDisplay = true
@@ -1190,7 +1193,12 @@ export const useChatStore = () => {
       if (chatRoom.value.roomId) {
         const alreadyHasCard = messages.value.some((m) => m.type === 'autoRecommend' && !m.autoRecommendSubmitted)
         if (!alreadyHasCard) {
-          const cardMsg = createAutoRecommendMessage(false, agent.agentId)
+          const cardMsg = createAutoRecommendCardMessage({
+            agentId: agent.agentId,
+            createdAt: new Date().toISOString(),
+            svcTy: 'C',
+            submitted: false,
+          })
           messages.value = [...messages.value, cardMsg]
           await onAutoRecommendMessageSubmit(cardMsg.logId)
         }
@@ -1361,10 +1369,7 @@ export const useChatStore = () => {
         const selectedId = selectedChatAgentId.value
         if (selectedId) {
           const selected = chatIndexAgents.value.find((a) => a.agentId === selectedId)
-          if (
-            selected &&
-            (isRecommendAgent(selected) || isTranslateAgent(selected) || isAutoRecommendAgent(selected))
-          ) {
+          if (selected && (isRecommendAgent(selected) || isTranslateAgent(selected) || isAutoRecommendAgent(selected))) {
             selectedChatAgentId.value = null
           }
         }

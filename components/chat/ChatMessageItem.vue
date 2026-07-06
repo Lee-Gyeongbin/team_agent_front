@@ -393,9 +393,9 @@ import {
   type RadarChartData,
 } from '~/utils/chat/surveyUtil'
 import {
-  isAutoRecommendAnswerMessage,
+  isAutoRecommendPipelineAnswer,
   parseAutoRecommendConfigFromAgent,
-  parseAutoRecommendItems,
+  parseAutoRecommendJsonArray,
   resolveAutoRecommendConfigByAgentId,
   type AutoRecommendItem,
 } from '~/utils/chat/autoRecommendUtil'
@@ -1011,8 +1011,13 @@ watch(
   { immediate: true },
 )
 
-const isAutoRecommendAnswerMessageLocal = (message: ChatMessage) =>
-  isAutoRecommendAnswerMessage(message, chatIndexAgents.value)
+// ── AUTO_RECOMMEND 에이전트 ─────────────────────────────────────────────────
+
+/** AUTO_RECOMMEND 파이프라인 answer — JSON은 autoRecommend 카드에서만 표시 */
+const isAutoRecommendPipelineAnswerLocal = (message: ChatMessage) =>
+  isAutoRecommendPipelineAnswer(message, chatIndexAgents.value)
+
+const isAutoRecommendAnswer = computed(() => isAutoRecommendPipelineAnswerLocal(props.message))
 
 const messageAutoRecommendConfig = computed(() => {
   if (props.message.type !== 'autoRecommend') return null
@@ -1024,25 +1029,26 @@ const messageAutoRecommendConfig = computed(() => {
   return null
 })
 
+const linkedAutoRecommendAnswerMessage = computed(() => {
+  if (props.message.type !== 'autoRecommend') return undefined
+  const cardIndex = allMessages.value.findIndex((m) => m.logId === props.message.logId)
+  if (cardIndex < 0) return undefined
+  const nextAnswer = allMessages.value.slice(cardIndex + 1).find((m) => m.type === 'answer')
+  if (!nextAnswer || !isAutoRecommendPipelineAnswerLocal(nextAnswer)) return undefined
+  return nextAnswer
+})
+
 const resolvedAutoRecommendItems = computed<AutoRecommendItem[]>(() => {
   if (props.message.type !== 'autoRecommend') return []
+  const answer = linkedAutoRecommendAnswerMessage.value
+  const parsedFromAnswer = answer ? parseAutoRecommendJsonArray(String(answer.rContent ?? '')) : []
+
+  // 스트리밍 중에는 answer.rContent를 매 청크마다 재파싱 (injected 캐시 무시)
+  if (answer?.isStreaming) return parsedFromAnswer
+
   const injected = props.message.autoRecommendDisplayItems
   if (Array.isArray(injected) && injected.length > 0) return injected
-
-  const findParsedItems = (list: ChatMessage[]): AutoRecommendItem[] => {
-    for (const msg of list) {
-      if (!isAutoRecommendAnswerMessageLocal(msg)) continue
-      const parsed = parseAutoRecommendItems(String(msg.rContent ?? ''))
-      if (parsed.length) return parsed
-    }
-    return []
-  }
-
-  const cardIndex = allMessages.value.findIndex((m) => m.logId === props.message.logId)
-  const sourceList = cardIndex >= 0 ? allMessages.value.slice(cardIndex + 1) : allMessages.value
-  const parsedFromFollowing = findParsedItems(sourceList)
-  if (parsedFromFollowing.length) return parsedFromFollowing
-  return findParsedItems([...allMessages.value].reverse())
+  return parsedFromAnswer
 })
 
 const resolvedNewsCuratorItemsForNewsCard = computed<NewsCuratorItem[]>(() =>
@@ -1057,9 +1063,6 @@ const isNewsReselectDisabled = computed(() =>
 /** NewsCurator 카드 — `newsIsNew` / `newsReselect` */
 const newsCardIsNew = computed(() => (props.message.type === 'news' ? props.message.newsIsNew : undefined))
 const newsCardReselect = computed(() => props.message.type === 'news' && props.message.newsReselect === true)
-
-/** AUTO_RECOMMEND 에이전트 답변 행 식별 */
-const isAutoRecommendAnswer = computed(() => isAutoRecommendAnswerMessageLocal(props.message))
 
 const isAgentCardMessage = computed(
   () =>
@@ -1086,9 +1089,7 @@ const linkedAgentCardAnswer = computed((): ChatMessage | undefined => {
     return linkedRecommendAnswerMessage.value
   }
   if (props.message.type === 'autoRecommend') {
-    const cardIndex = allMessages.value.findIndex((m) => m.logId === props.message.logId)
-    if (cardIndex < 0) return undefined
-    return allMessages.value.slice(cardIndex + 1).find(isAutoRecommendAnswerMessageLocal)
+    return linkedAutoRecommendAnswerMessage.value
   }
   if (props.message.type === 'news') {
     return findLinkedNewsCuratorAnswer(allMessages.value, props.message.logId)
@@ -1183,11 +1184,7 @@ const onDownloadPlannerPptx = async () => {
 /** AUTO_RECOMMEND 카드에 대응하는 answer가 아직 스트리밍 중인지 */
 const isAutoRecommendAnswerStreaming = computed(() => {
   if (props.message.type !== 'autoRecommend') return false
-  const idx = allMessages.value.findIndex((m) => m.logId === props.message.logId)
-  if (idx < 0) return false
-  const after = allMessages.value.slice(idx + 1)
-  const ans = after.find(isAutoRecommendAnswerMessageLocal)
-  return ans?.isStreaming === true
+  return linkedAutoRecommendAnswerMessage.value?.isStreaming === true
 })
 
 /** 출처 제목 앞 마크다운 헤더 기호(## 등) 제거 */

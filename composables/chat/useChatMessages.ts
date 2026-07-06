@@ -14,11 +14,7 @@ import {
   parseTranslatePayloadFromPrompt,
   resolveTranslateConfigByAgentId,
 } from '~/utils/chat/translateAgentUtil'
-import {
-  isAutoRecommendAgent,
-  isAutoRecommendAgentForLibrary,
-  parseAutoRecommendItems,
-} from '~/utils/chat/autoRecommendUtil'
+import { buildAutoRecommendMessagesFromLogRow } from '~/utils/chat/autoRecommendUtil'
 import {
   applyNewsDisplayItemsToSubmitCard,
   isNewsCuratorAnswerMessage,
@@ -193,23 +189,8 @@ export const useChatMessages = () => {
     }
 
     // AUTO_RECOMMEND: 프롬프트가 있으면 readonly autoRecommend 카드로 대체
-    const autoRecommendAgent = agentId ? agents.find((a) => a.agentId === agentId) : undefined
-    const isAutoRecommendLog =
-      isAutoRecommendAgent(autoRecommendAgent) || isAutoRecommendAgentForLibrary(autoRecommendAgent)
-    if (isAutoRecommendLog && String(row.qcontent ?? '').trim()) {
-      const autoRecommendDisplayItems = parseAutoRecommendItems(String(row.rcontent ?? ''))
-      return [
-        {
-          logId: `${logId}-auto-recommend`,
-          type: 'autoRecommend',
-          createdAt,
-          agentId,
-          autoRecommendSubmitted: true,
-          ...(autoRecommendDisplayItems.length > 0 ? { autoRecommendDisplayItems } : {}),
-        },
-        answerMessage,
-      ]
-    }
+    const autoRecommendMessages = buildAutoRecommendMessagesFromLogRow(row, answerMessage, agents)
+    if (autoRecommendMessages) return autoRecommendMessages
 
     // NewsCurator: question을 readonly news 카드로 대체, answer 행은 숨김(점심 카드와 동일)
     const newsPromptMeta = parseNewsCuratorPromptMeta(row.qcontent ?? '')

@@ -143,9 +143,9 @@ import {
 import { NEWS_CURATOR_AGENT_ID, parseNewsCuratorItems, parseNewsCuratorPromptMeta } from '~/utils/chat/newsCuratorUtil'
 import {
   isAutoRecommendLibraryCardItem,
-  parseAutoRecommendConfigFromAgent,
-  parseAutoRecommendItems,
-  resolveAutoRecommendConfigByAgentId,
+  parseAutoRecommendConfigFromAgentForLibrary,
+  parseAutoRecommendJsonArray,
+  resolveAutoRecommendConfigByAgentIdForLibrary,
 } from '~/utils/chat/autoRecommendUtil'
 import { downloadTranslationResult, isTranslateLibraryCardItem } from '~/utils/chat/translateAgentUtil'
 import {
@@ -241,15 +241,15 @@ const autoRecommendList = computed(() => {
   if (!isAutoRecommendLibraryCardItem(props.item, libraryAgents.value)) return []
   const raw = String(props.item.rcontent ?? '').trim()
   if (!raw) return []
-  return parseAutoRecommendItems(raw)
+  return parseAutoRecommendJsonArray(raw)
 })
 
 const autoRecommendConfig = computed(() => {
   const agentId = props.item.agentId ?? ''
   if (!agentId) return null
   const agent = libraryAgents.value.find((a) => a.agentId === agentId)
-  if (agent) return parseAutoRecommendConfigFromAgent(agent)
-  return resolveAutoRecommendConfigByAgentId(agentId, libraryAgents.value)
+  if (agent) return parseAutoRecommendConfigFromAgentForLibrary(agent)
+  return resolveAutoRecommendConfigByAgentIdForLibrary(agentId, libraryAgents.value)
 })
 
 const isAutoRecommendResponse = computed(
