@@ -600,6 +600,7 @@
   display: block;
   @include typo($body-large-bold);
   color: $color-text-primary;
+  margin-bottom: 6px;
 
   .required {
     color: $color-error;
