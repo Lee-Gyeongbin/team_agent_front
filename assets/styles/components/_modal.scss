@@ -135,6 +135,13 @@
   }
 }
 
+// ispark-ui UiModal 전환 시: 라이브러리 .ui-modal-footer가 padding/border-top을 이미 제공하므로
+// 그 안의 레거시 .modal-dialog-footer 중복(이중 border-top·상단 패딩)을 제거. 로컬 모달(.ui-modal-footer 없음)은 무영향.
+.ui-modal-footer .modal-dialog-footer {
+  padding-top: 0;
+  border-top: none;
+}
+
 //MailLoginModal.vue 모달 style
 .modal-dialog.mail-login-modal-dialog {
   .modal-dialog-content {
