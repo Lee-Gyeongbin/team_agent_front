@@ -29,6 +29,7 @@
         :researcher-form="researcherForm"
         :risk-form="riskForm"
         :planner-form="plannerForm"
+        :proposal-form="proposalForm"
         :sql-model-options="sqlModelOptions"
         :api-url-cd-options="apiUrlCdOptions"
         :tmpl-id-options="tmplIdOptions"
@@ -41,11 +42,12 @@
         @update:researcher-form="researcherForm = $event"
         @update:risk-form="riskForm = $event"
         @update:planner-form="plannerForm = $event"
+        @update:proposal-form="proposalForm = $event"
       />
 
-      <!-- 섹션3: 데이터 연결 (svcTy 기반 분기) — D(RISK)는 자사 역량 RAG 데이터셋 연결 -->
+      <!-- 섹션3: 데이터 연결 (svcTy 기반 분기) — D(RISK/PROPOSAL)는 자사 역량 RAG 데이터셋 연결 -->
       <AgentSettingData
-        v-if="form.svcTy === 'M' || form.svcTy === 'S' || (form.svcTy === 'D' && form.subTy === 'RISK')"
+        v-if="form.svcTy === 'M' || form.svcTy === 'S' || (form.svcTy === 'D' && (form.subTy === 'RISK' || form.subTy === 'PROPOSAL'))"
         ref="settingDataRef"
         :svc-ty="form.svcTy"
         :dataset-list="localDatasetList"
@@ -130,6 +132,13 @@ import {
   parsePlannerAdditionalConfigToForm,
   type PlannerConfigForm,
 } from '~/utils/agent/plannerConfigUtil'
+import { PROPOSAL_SUB_TY } from '~/utils/chat/proposalAgentUtil'
+import {
+  buildProposalAdditionalConfig,
+  emptyProposalConfigForm,
+  parseProposalAdditionalConfigToForm,
+  type ProposalConfigForm,
+} from '~/utils/agent/proposalConfigUtil'
 
 interface Props {
   isOpen: boolean
@@ -157,6 +166,7 @@ let tmplListLoadPromise: Promise<void> | null = null
 const isResearcherAgentForm = () => form.value.svcTy === 'M' && form.value.subTy === RESEARCHER_SUB_TY
 const isRiskAgentForm = () => form.value.svcTy === 'D' && form.value.subTy === RISK_SUB_TY
 const isPlannerAgentForm = () => form.value.svcTy === 'C' && form.value.subTy === PLANNER_SUB_TY
+const isProposalAgentForm = () => form.value.svcTy === 'D' && form.value.subTy === PROPOSAL_SUB_TY
 const initApiUrlCdOptions = async () => {
   const codes = await getCodes('AA000001')
   apiUrlCdOptions.value = [
@@ -189,9 +199,9 @@ const initTmplIdOptions = async () => {
   }
 }
 
-/** RESEARCHER/RISK/PLANNER 등 템플릿 기반 세부 유형일 때만 tb_tmpl 목록 조회 (동시 호출 dedup) */
+/** RESEARCHER/RISK/PLANNER/PROPOSAL 등 템플릿 기반 세부 유형일 때만 tb_tmpl 목록 조회 (동시 호출 dedup) */
 const ensureTmplIdOptionsIfResearcher = (): Promise<void> => {
-  if (!isResearcherAgentForm() && !isRiskAgentForm() && !isPlannerAgentForm()) return Promise.resolve()
+  if (!isResearcherAgentForm() && !isRiskAgentForm() && !isPlannerAgentForm() && !isProposalAgentForm()) return Promise.resolve()
   if (tmplListLoaded.value) return Promise.resolve()
   if (tmplListLoadPromise) return tmplListLoadPromise
 
@@ -265,6 +275,10 @@ const riskForm = ref<RiskConfigForm>(emptyRiskConfigForm())
 // 기획서·PT(PLANNER) ADDITIONAL_CONFIG — UI 미편집 필드 보존용
 const preservedPlannerConfig = ref<AgtSubAdditionalConfig | null>(null)
 const plannerForm = ref<PlannerConfigForm>(emptyPlannerConfigForm())
+
+// 제안서(PROPOSAL) ADDITIONAL_CONFIG — UI 미편집 필드 보존용
+const preservedProposalConfig = ref<AgtSubAdditionalConfig | null>(null)
+const proposalForm = ref<ProposalConfigForm>(emptyProposalConfigForm())
 
 const loadSurveyConfigFromAgent = (agent: Agent | null) => {
   const subCfg = normalizeAgentSubCfg(agent?.subCfg)
@@ -350,6 +364,18 @@ const loadPlannerConfigFromAgent = (agent: Agent | null) => {
   plannerForm.value = emptyPlannerConfigForm()
 }
 
+const loadProposalConfigFromAgent = (agent: Agent | null) => {
+  const subCfg = normalizeAgentSubCfg(agent?.subCfg)
+  const additional = subCfg?.additionalConfig
+  if (additional && typeof additional === 'object' && Object.keys(additional).length > 0) {
+    preservedProposalConfig.value = { ...additional }
+    proposalForm.value = parseProposalAdditionalConfigToForm(additional as Record<string, unknown>)
+    return
+  }
+  preservedProposalConfig.value = null
+  proposalForm.value = emptyProposalConfigForm()
+}
+
 const resetSubTyConfigForms = () => {
   preservedSurveyConfig.value = null
   preservedRecommendConfig.value = null
@@ -365,6 +391,8 @@ const resetSubTyConfigForms = () => {
   riskForm.value = emptyRiskConfigForm()
   preservedPlannerConfig.value = null
   plannerForm.value = emptyPlannerConfigForm()
+  preservedProposalConfig.value = null
+  proposalForm.value = emptyProposalConfigForm()
 }
 
 // 기본 설정 폼
@@ -487,12 +515,31 @@ watch(
         preservedTranslateConfig.value = null
         preservedResearcherConfig.value = null
         preservedRiskConfig.value = null
+        preservedProposalConfig.value = null
         surveyForm.value = emptySurveyConfigForm()
         recommendForm.value = emptyRecommendConfigForm()
         curationForm.value = emptyCurationConfigForm()
         translateForm.value = emptyTranslateConfigForm()
         researcherForm.value = emptyResearcherConfigForm()
         riskForm.value = emptyRiskConfigForm()
+        proposalForm.value = emptyProposalConfigForm()
+        await ensureTmplIdOptionsIfResearcher()
+      } else if (props.agent.svcTy === 'D' && form.value.subTy === PROPOSAL_SUB_TY) {
+        loadProposalConfigFromAgent(props.agent)
+        preservedSurveyConfig.value = null
+        preservedRecommendConfig.value = null
+        preservedCurationConfig.value = null
+        preservedTranslateConfig.value = null
+        preservedResearcherConfig.value = null
+        preservedRiskConfig.value = null
+        preservedPlannerConfig.value = null
+        surveyForm.value = emptySurveyConfigForm()
+        recommendForm.value = emptyRecommendConfigForm()
+        curationForm.value = emptyCurationConfigForm()
+        translateForm.value = emptyTranslateConfigForm()
+        researcherForm.value = emptyResearcherConfigForm()
+        riskForm.value = emptyRiskConfigForm()
+        plannerForm.value = emptyPlannerConfigForm()
         await ensureTmplIdOptionsIfResearcher()
       } else {
         resetSubTyConfigForms()
@@ -623,6 +670,18 @@ watch(
       if (form.value.svcTy === 'C') {
         ensureTmplIdOptionsIfResearcher()
       }
+      return
+    }
+    if (subTy === PROPOSAL_SUB_TY) {
+      if (props.agent?.svcTy === 'D' && normalizeAgentSubCfg(props.agent.subCfg)?.subTy === PROPOSAL_SUB_TY) {
+        loadProposalConfigFromAgent(props.agent)
+      } else {
+        preservedProposalConfig.value = null
+        proposalForm.value = emptyProposalConfigForm()
+      }
+      if (form.value.svcTy === 'D') {
+        ensureTmplIdOptionsIfResearcher()
+      }
     }
   },
 )
@@ -723,6 +782,21 @@ const onSave = () => {
       createDt: existingSubCfg?.createDt ?? '',
       modifyDt: existingSubCfg?.modifyDt ?? '',
     }
+  }
+
+  if (form.value.svcTy === 'D' && form.value.subTy === PROPOSAL_SUB_TY) {
+    const existingSubCfg = normalizeAgentSubCfg(props.agent?.subCfg)
+    base.subCfg = {
+      subCfgId: existingSubCfg?.subCfgId ?? '',
+      agentId: props.agent?.agentId ?? '',
+      subTy: PROPOSAL_SUB_TY,
+      additionalConfig: buildProposalAdditionalConfig(proposalForm.value, preservedProposalConfig.value),
+      useYn: existingSubCfg?.useYn ?? 'Y',
+      createDt: existingSubCfg?.createDt ?? '',
+      modifyDt: existingSubCfg?.modifyDt ?? '',
+    }
+    // 자사 역량 RAG 데이터셋 연결
+    base.datasetList = localDatasetList.value
   }
 
   emit('save', base)

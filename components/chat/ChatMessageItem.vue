@@ -1152,6 +1152,18 @@ const onDownloadTranslationResult = () => {
   downloadTranslationResult(props.message.rContent ?? '', translateDownloadFormat.value, '번역결과')
 }
 
+/** pptxData JSON에 slideDesign 필드가 있으면 PROPOSAL 에이전트의 제안서 PPTX */
+const isProposalPptx = computed(() => {
+  const json = props.message.pptxData ?? ''
+  if (!json) return false
+  try {
+    const parsed = JSON.parse(json)
+    return !!parsed.slideDesign
+  } catch {
+    return false
+  }
+})
+
 const onDownloadPlannerPptx = async () => {
   const slidesJson = props.message.pptxData ?? ''
   if (!slidesJson) {
@@ -1159,8 +1171,17 @@ const onDownloadPlannerPptx = async () => {
     return
   }
   const { postBlob } = useApi()
-  const blob = await postBlob('/ai/chatbot/exportPlannerPptx.do', { content: slidesJson, fileName: 'PT초안' })
-  downloadBlobAsFile(blob, 'PT초안.pptx')
+
+  if (isProposalPptx.value) {
+    // PROPOSAL 에이전트: 이미지 생성 포함 (시간 소요 안내)
+    openToast({ message: '슬라이드 이미지를 생성 중입니다. 잠시 기다려주세요.', type: 'info' })
+    const blob = await postBlob('/ai/chatbot/exportProposalPptx.do', { content: slidesJson, fileName: '제안서' })
+    downloadBlobAsFile(blob, '제안서.pptx')
+  } else {
+    // PLANNER 에이전트: 기존 텍스트 PPTX
+    const blob = await postBlob('/ai/chatbot/exportPlannerPptx.do', { content: slidesJson, fileName: 'PT초안' })
+    downloadBlobAsFile(blob, 'PT초안.pptx')
+  }
 }
 
 /** 이 meme 메시지에 대응하는 TodayMeme 답변이 아직 스트리밍 중인지 */
