@@ -335,7 +335,7 @@
 </template>
 
 <script setup lang="ts">
-import { UiToggle, UiCheckbox } from '@leechanyong/ispark-ui'
+import { UiToggle, UiCheckbox, UiPagination } from '@leechanyong/ispark-ui'
 import type { TableColumn } from '~/types/table'
 import type { CategoryTreeItem, UrlItem } from '~/types/repository'
 import CategoryTreeNode from '~/components/repository/CategoryTreeNode.vue'
