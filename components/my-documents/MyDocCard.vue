@@ -86,6 +86,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiTooltip } from '@leechanyong/ispark-ui'
 import type { MyDoc } from '~/types/mydoc'
 import {
   getMyDocAgentIconClass,

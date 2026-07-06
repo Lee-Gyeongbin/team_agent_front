@@ -228,6 +228,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiCheckbox } from '@leechanyong/ispark-ui'
 import type { TranslateLanguageOption, TranslateToneOption } from '~/types/agent'
 import type { TranslateConfigForm } from '~/utils/agent/translateConfigUtil'
 

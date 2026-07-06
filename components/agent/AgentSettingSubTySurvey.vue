@@ -480,6 +480,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiCheckbox } from '@leechanyong/ispark-ui'
 import type { SurveyResultTierForm, SurveyScoreOptionForm } from '~/types/agentSurveyConfig'
 import {
   ensureThresholdLength,

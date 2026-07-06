@@ -69,6 +69,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiToggle } from '@leechanyong/ispark-ui'
 import type { LlmModel } from '~/types/llm'
 
 interface Props {

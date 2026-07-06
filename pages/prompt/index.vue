@@ -34,6 +34,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiTab } from '@leechanyong/ispark-ui'
 import AOS from 'aos'
 
 const activeTab = ref('system')

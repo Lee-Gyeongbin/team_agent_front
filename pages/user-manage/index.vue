@@ -164,7 +164,7 @@
 </template>
 
 <script setup lang="ts">
-import { UiLoading } from '@leechanyong/ispark-ui'
+import { UiLoading, UiTable } from '@leechanyong/ispark-ui'
 import { userColumns, type UserItem } from '~/types/user-manage'
 import { useUserManageStore } from '~/composables/user-manage/useUserManageStore'
 import { useOrgManageStore } from '~/composables/org-manage/useOrgManageStore'

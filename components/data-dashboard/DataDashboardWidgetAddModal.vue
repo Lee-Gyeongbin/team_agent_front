@@ -344,6 +344,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiTooltip } from '@leechanyong/ispark-ui'
 import { parseTtsqParam, parseTtsqPeriodParam, markPeriodVariables } from '~/utils/dataDashboard/ttsqParamParser'
 import { copyToClipboard } from '~/utils/global/clipboardUtil'
 import { formatSql } from '~/utils/global/codeUtil'

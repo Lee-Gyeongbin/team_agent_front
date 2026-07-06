@@ -322,7 +322,7 @@
 </template>
 
 <script setup lang="ts">
-import { UiLoading } from '@leechanyong/ispark-ui'
+import { UiLoading, UiTab } from '@leechanyong/ispark-ui'
 import type { NewsCuratorItem } from '~/types/chat'
 import type { CurationAgentConfig, CurationResultFieldDef } from '~/types/agent'
 import {

@@ -340,6 +340,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiCheckbox } from '@leechanyong/ispark-ui'
 import type { SurveyOutputSectionBlock } from '~/types/agentSurveyConfig'
 import type { SurveyConfigForm } from '~/utils/agent/surveyConfigUtil'
 import {

@@ -87,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-import { UiLoading } from '@leechanyong/ispark-ui'
+import { UiLoading, UiTable } from '@leechanyong/ispark-ui'
 import { loginHistoryColumns, loginHistoryDateRangeOptions } from '~/types/login-history'
 
 const {

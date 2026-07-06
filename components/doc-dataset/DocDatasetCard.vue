@@ -159,6 +159,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiToggle } from '@leechanyong/ispark-ui'
 import { computed } from 'vue'
 import type { DocDataset } from '~/types/doc-dataset'
 

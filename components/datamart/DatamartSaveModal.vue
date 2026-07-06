@@ -269,6 +269,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiCheckbox } from '@leechanyong/ispark-ui'
 import type { Datamart, DatamartForm } from '~/types/datamart'
 import { useDatamartStore } from '~/composables/datamart/useDatamartStore'
 import { openToast } from '~/composables/useToast'

@@ -104,6 +104,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiCheckbox } from '@leechanyong/ispark-ui'
 import type { PlannerConfigForm } from '~/utils/agent/plannerConfigUtil'
 
 const props = defineProps<{

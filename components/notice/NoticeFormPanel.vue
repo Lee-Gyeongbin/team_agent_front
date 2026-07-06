@@ -89,6 +89,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiCheckbox } from '@leechanyong/ispark-ui'
 import { openToast } from '~/composables/useToast'
 import type { NoticeFormData } from '~/types/notice'
 

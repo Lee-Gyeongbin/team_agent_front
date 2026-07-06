@@ -170,7 +170,7 @@
 </template>
 
 <script setup lang="ts">
-import { UiLoading, UiEmpty } from '@leechanyong/ispark-ui'
+import { UiLoading, UiEmpty, UiToggle } from '@leechanyong/ispark-ui'
 import DatamartMetaExcelUpload from '~/components/datamart/DatamartMetaExcelUpload.vue'
 import { useDatamartApi } from '~/composables/datamart/useDatamartApi'
 import { useDatamartStore } from '~/composables/datamart/useDatamartStore'

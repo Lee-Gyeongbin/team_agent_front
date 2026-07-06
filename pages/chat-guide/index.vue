@@ -24,6 +24,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiTab } from '@leechanyong/ispark-ui'
 import ChatGuideGreeting from '~/components/chat-guide/ChatGuideGreeting.vue'
 import ChatGuideNotice from '~/components/chat-guide/ChatGuideNotice.vue'
 import ChatGuideError from '~/components/chat-guide/ChatGuideError.vue'

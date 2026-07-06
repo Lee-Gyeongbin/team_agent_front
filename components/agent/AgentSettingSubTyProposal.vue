@@ -158,6 +158,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiCheckbox } from '@leechanyong/ispark-ui'
 import { useDocDatasetApi } from '~/composables/doc-dataset/useDocDatasetApi'
 import type { ProposalConfigForm, ProposalSlideDesign } from '~/utils/agent/proposalConfigUtil'
 

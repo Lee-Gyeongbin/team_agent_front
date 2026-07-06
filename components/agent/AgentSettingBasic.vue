@@ -298,6 +298,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiCheckbox } from '@leechanyong/ispark-ui'
 import { useAgentStore } from '~/composables/agent/useAgentStore'
 import type { SurveyConfigForm } from '~/utils/agent/surveyConfigUtil'
 import type { RecommendConfigForm } from '~/utils/agent/recommendConfigUtil'

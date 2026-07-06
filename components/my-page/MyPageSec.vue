@@ -78,6 +78,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiToggle } from '@leechanyong/ispark-ui'
 type TwoFactorMethod = 'totp' | 'sms' | 'email'
 
 const isTwoFactorEnabled = ref(false)
