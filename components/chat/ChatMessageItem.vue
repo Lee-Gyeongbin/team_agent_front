@@ -430,6 +430,7 @@ import {
 
 import { useChatMessages } from '~/composables/chat/useChatMessages'
 import { useMtlcareStore } from '~/composables/mtlcare/useMtlcareStore'
+import { isProposalSlideJson } from '~/utils/chat/proposalAgentUtil'
 
 const { messages: allMessages } = useChatMessages()
 const { handleSaveResult } = useMtlcareStore()
@@ -1177,8 +1178,17 @@ const onDownloadPlannerPptx = async () => {
     return
   }
   const { postBlob } = useApi()
-  const blob = await postBlob('/ai/chatbot/exportPlannerPptx.do', { content: slidesJson, fileName: 'PT초안' })
-  downloadBlobAsFile(blob, 'PT초안.pptx')
+
+  if (isProposalSlideJson(slidesJson)) {
+    // PROPOSAL 에이전트: 이미지 생성 포함 (시간 소요 안내)
+    openToast({ message: '슬라이드 이미지를 생성 중입니다. 잠시 기다려주세요.', type: 'info' })
+    const blob = await postBlob('/ai/chatbot/exportProposalPptx.do', { content: slidesJson, fileName: '제안서' })
+    downloadBlobAsFile(blob, '제안서.pptx')
+  } else {
+    // PLANNER 에이전트: 기존 텍스트 PPTX
+    const blob = await postBlob('/ai/chatbot/exportPlannerPptx.do', { content: slidesJson, fileName: 'PT초안' })
+    downloadBlobAsFile(blob, 'PT초안.pptx')
+  }
 }
 
 /** AUTO_RECOMMEND 카드에 대응하는 answer가 아직 스트리밍 중인지 */

@@ -90,6 +90,7 @@ const mSubTyOptions = [
 const dSubTyOptions = [
   { label: '일반', value: '' },
   { label: '리스크진단', value: 'RISK' },
+  { label: '제안서', value: 'PROPOSAL' },
 ]
 
 const subTyOptions = computed(() => {
