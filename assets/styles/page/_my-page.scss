@@ -404,6 +404,7 @@ $my-page-tab-body-viewport-gap: 260px;
   display: flex;
   flex-direction: column;
   gap: $spacing-xs;
+  margin-bottom: $spacing-md; // 새 비밀번호 확인 영역 아래 여백 (푸터와 간격)
 }
 
 .password-field__helper {
