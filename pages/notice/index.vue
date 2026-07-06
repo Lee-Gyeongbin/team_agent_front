@@ -133,6 +133,7 @@
               :total-count="normalTotalCount"
               :page-size="noticeNormalPageSize"
               total-label="개 공지사항"
+              align="center"
               class="notice-pagination"
             />
           </div>
@@ -164,6 +165,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiInput, UiSelect, UiButton, UiLoading, UiTable, UiPagination } from '@leechanyong/ispark-ui'
 import type { NoticeRow } from '~/types/notice'
 import { noticeColumns } from '~/types/notice'
 
