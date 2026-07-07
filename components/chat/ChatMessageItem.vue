@@ -282,8 +282,11 @@
           :enrichment-r-content="recommendEnrichmentRContent"
           :theme-icon-class-nm="themeAgent?.iconClassNm ?? ''"
           :theme-color-hex="themeAgent?.colorHex ?? ''"
+          :enable-retry="!isShare && message.recommendCardRole === 'result'"
+          :retry-disabled="isRecommendRetryDisabled"
           @submit="emit('on-submit-recommend-card', message.logId, $event)"
           @close="emit('on-recommend-card-close', message.logId)"
+          @retry="emit('on-recommend-card-retry', message.logId)"
           @enriched="onRecommendationsEnriched"
         />
         <ChatTranslateCard
@@ -474,6 +477,7 @@ const emit = defineEmits<{
   'on-view-report': [id: string]
   'on-submit-recommend-card': [logId: string, payload: RecommendFormPayload]
   'on-recommend-card-close': [logId: string]
+  'on-recommend-card-retry': [logId: string]
   'on-submit-translate-card': [logId: string, payload: TranslateFormPayload]
   'on-translate-card-close': [logId: string]
   'on-survey-submit': [logId: string]
@@ -929,6 +933,11 @@ const recommendCardDisplayMode = computed((): 'form' | 'result' | 'combined' => 
 })
 
 const isRecommendFormCard = computed(() => recommendCardDisplayMode.value === 'form')
+
+/** 미제출 recommend 폼 카드가 있으면 '다시 추천받기' 비활성 */
+const isRecommendRetryDisabled = computed(() =>
+  allMessages.value.some((m) => m.type === 'recommend' && m.recommendSubmitted !== true),
+)
 
 const linkedRecommendAnswerMessage = computed(() => {
   if (props.message.type !== 'recommend' || isRecommendFormCard.value) return undefined

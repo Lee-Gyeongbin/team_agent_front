@@ -259,14 +259,34 @@
     </p>
 
     <div
+      v-if="showRetryFooter"
+      class="chat-recommend-agent-card__footer chat-recommend-agent-card__footer--results"
+    >
+      <UiButton
+        variant="line-secondary"
+        size="sm"
+        :disabled="props.retryDisabled"
+        @click="onRetryClick"
+      >
+        다시 추천받기
+      </UiButton>
+    </div>
+
+    <div
       v-if="!hasResultRecommendations && (props.readonly || !isRecommendationsPending)"
       class="chat-recommend-agent-card__footer"
     >
       <template v-if="props.readonly">
-        <span class="chat-recommend-agent-card__submitted-badge">
-          <i class="icon-check size-16" />
+        <UiButton
+          variant="line-secondary"
+          size="sm"
+          disabled
+        >
+          <template #icon-left>
+            <i class="icon-check size-16" />
+          </template>
           제출 완료
-        </span>
+        </UiButton>
       </template>
       <template v-else>
         <UiButton
@@ -343,6 +363,10 @@ interface Props {
   themeColorHex?: string
   enrichmentCacheKey?: string
   enrichmentRContent?: string
+  /** 추천 완료 후 '다시 추천받기' 노출 (채팅방 result 카드) */
+  enableRetry?: boolean
+  /** 미제출 추천 폼 카드가 있으면 비활성 */
+  retryDisabled?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -356,12 +380,15 @@ const props = withDefaults(defineProps<Props>(), {
   themeColorHex: '',
   enrichmentCacheKey: '',
   enrichmentRContent: '',
+  enableRetry: false,
+  retryDisabled: false,
 })
 
 const emit = defineEmits<{
   submit: [payload: RecommendFormPayload]
   close: []
   enriched: [items: RecommendResultItem[]]
+  retry: []
 }>()
 
 const { fetchSelectRegionTree } = useChatApi()
@@ -740,6 +767,20 @@ const showCardHeader = computed(() => {
   return isContentVisible.value && (isFormOnlyCard.value || !isRecommendationsPending.value)
 })
 
+/** 추천 결과 표시 완료 후 다시 추천받기 */
+const showRetryFooter = computed(
+  () =>
+    props.enableRetry &&
+    shouldRenderResultList.value &&
+    !isRecommendationsPending.value &&
+    !props.isRecommendationResponseStreaming,
+)
+
+const onRetryClick = () => {
+  if (props.retryDisabled) return
+  emit('retry')
+}
+
 // ━━━ 인트로 애니메이션 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const introTitleChars = computed(() => (props.recommendConfig?.ui.introTitle ?? '').split(''))
@@ -1070,6 +1111,10 @@ const onSubmitClick = () => {
     background: $color-surface;
     flex-shrink: 0;
     @include recommend-content-reveal(0.28s, 0.08s);
+
+    &--results {
+      margin-top: 0;
+    }
   }
 
   &__result-list {
@@ -1242,19 +1287,6 @@ const onSubmitClick = () => {
       text-decoration: underline;
       text-underline-offset: 2px;
     }
-  }
-
-  &__submitted-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: $spacing-xs;
-    padding: 3.5px 10px;
-    border-radius: 6px;
-    border: 1px solid rgba(var(--recommend-theme-rgb), 0.22);
-    background: rgba(var(--recommend-theme-rgb), 0.08);
-    color: var(--recommend-theme-color);
-    @include typo($body-large);
-    font-weight: $font-weight-medium;
   }
 
   &.is-readonly {

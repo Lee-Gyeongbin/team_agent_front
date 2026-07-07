@@ -23,6 +23,7 @@
           @on-view-report="emit('on-view-report', $event)"
           @on-submit-recommend-card="onSubmitRecommendCard"
           @on-recommend-card-close="emit('on-recommend-card-close', $event)"
+          @on-recommend-card-retry="emit('on-recommend-card-retry', $event)"
           @on-submit-translate-card="onSubmitTranslateCard"
           @on-translate-card-close="emit('on-translate-card-close', $event)"
           @on-submit-news-card="onSubmitNewsCard"
@@ -85,6 +86,7 @@ const emit = defineEmits<{
   'on-news-intro-complete': [logId: string]
   'on-recommend-card-submit': [logId: string, payload: RecommendFormPayload]
   'on-recommend-card-close': [logId: string]
+  'on-recommend-card-retry': [logId: string]
   'on-translate-card-submit': [logId: string, payload: TranslateFormPayload]
   'on-translate-card-close': [logId: string]
   'on-news-card-submit': [logId: string, categories: string[], options?: { isNew?: boolean }]

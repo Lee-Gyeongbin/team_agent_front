@@ -26,6 +26,7 @@
         @on-news-intro-complete="handleNewsCuratorIntroEnd"
         @on-recommend-card-submit="handleSubmitRecommendAgentForm"
         @on-recommend-card-close="onRecommendMessageClose"
+        @on-recommend-card-retry="onRecommendMessageRetry"
         @on-translate-card-submit="handleSubmitTranslateAgentForm"
         @on-translate-card-close="onTranslateMessageClose"
         @on-news-card-submit="onNewsCuratorMessageSubmit"
@@ -173,6 +174,7 @@ const {
   handleNewsCuratorReselectCategories,
   handleCloseNewsCurator,
   handleSubmitRecommendAgentForm,
+  handleRecommendAgentRetry,
   handleCloseRecommendAgent,
   handleSubmitTranslateAgentForm,
   handleCloseTranslateAgent,
@@ -227,6 +229,13 @@ const currentDataAnalysisAgent = computed(
 
 const onRecommendMessageClose = (logId: string) => {
   handleCloseRecommendAgent(logId)
+}
+
+const onRecommendMessageRetry = async (logId: string) => {
+  const newLogId = handleRecommendAgentRetry(logId)
+  if (!newLogId) return
+  await nextTick()
+  chatMessageListRef.value?.scrollToMessage(newLogId)
 }
 
 const onTranslateMessageClose = (logId: string) => {

@@ -758,6 +758,29 @@ export const useChatStore = () => {
     await onSendRecommend(content, logId, payload, agent.agentId)
   }
 
+  /** 추천 완료 result 카드 — 새 추천 폼 카드 생성 */
+  const handleRecommendAgentRetry = (resultMessageLogId: string): string | null => {
+    if (messages.value.some((m) => m.type === 'recommend' && m.recommendSubmitted !== true)) return null
+
+    const resultMsg = messages.value.find(
+      (m) => m.logId === resultMessageLogId && m.type === 'recommend' && m.recommendCardRole === 'result',
+    )
+    if (!resultMsg) return null
+
+    const agentId = String(resultMsg.agentId ?? '').trim()
+    if (!agentId) return null
+
+    const newMsg = createRecommendCardMessage({
+      agentId,
+      createdAt: new Date().toISOString(),
+      svcTy: resultMsg.svcTy,
+      refId: resultMsg.refId,
+    })
+    messages.value = [...messages.value, newMsg]
+    selectedChatAgentId.value = agentId
+    return newMsg.logId
+  }
+
   /** index.vue에서 RECOMMEND 폼 제출 후 새 채팅방 진입 시 카드를 메시지 목록 앞에 주입 */
   const addInlineRecommendMessage = (payload: RecommendFormPayload, agentId: string) => {
     const roMsg = createReadonlyRecommendMessage(payload, {
@@ -1475,6 +1498,7 @@ export const useChatStore = () => {
     addInlineSurveyMessage,
     handleIndexRecommendSubmit,
     handleSubmitRecommendAgentForm,
+    handleRecommendAgentRetry,
     handleCloseRecommendAgent,
     handleIndexTranslateSubmit,
     handleSubmitTranslateAgentForm,
