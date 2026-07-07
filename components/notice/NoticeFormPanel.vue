@@ -1,9 +1,9 @@
 <template>
-  <UiModal
-    :is-open="isOpen"
+  <UiDrawer
+    :open="isOpen"
     :title="`공지 ${panelActionLabel}`"
     position="right"
-    @close="$emit('close')"
+    @update:open="(value) => { if (!value) $emit('close') }"
   >
     <div class="com-setting-form">
       <div class="url-reg-field">
@@ -60,6 +60,7 @@
           placeholder="공지 내용을 입력하세요"
           :rows="10"
           border
+          size="lg"
           :auto-resize="true"
           :max-rows="10"
           @update:model-value="(value) => onFieldChange('content', value)"
@@ -70,7 +71,7 @@
     <template #footer>
       <div class="modal-side-footer">
         <UiButton
-          variant="line-secondary"
+          variant="outline"
           size="md"
           @click="$emit('close')"
         >
@@ -85,11 +86,11 @@
         </UiButton>
       </div>
     </template>
-  </UiModal>
+  </UiDrawer>
 </template>
 
 <script setup lang="ts">
-import { UiCheckbox } from '@leechanyong/ispark-ui'
+import { UiDrawer, UiInput, UiSelect, UiCheckbox, UiTextarea, UiButton } from '@leechanyong/ispark-ui'
 import { openToast } from '~/composables/useToast'
 import type { NoticeFormData } from '~/types/notice'
 

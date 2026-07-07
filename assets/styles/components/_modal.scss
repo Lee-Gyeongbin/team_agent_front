@@ -147,6 +147,14 @@
   border-top: none;
 }
 
+// ispark-ui UiDrawer 전환 시: .modal-side-footer의 flex/gap은 .modal-side 하위 전용이라
+// UiDrawer(.ui-drawer-footer)에선 버튼 간격이 사라지므로 여기서 복원. (.ui-drawer-footer가 padding/border 제공)
+.ui-drawer-footer .modal-side-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 //MailLoginModal.vue 모달 style
 .modal-dialog.mail-login-modal-dialog {
   .modal-dialog-content {
