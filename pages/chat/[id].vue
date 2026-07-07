@@ -22,7 +22,7 @@
         @on-select-category="onSelectCategory"
         @on-survey-submit="onSurveyMessageSubmit"
         @on-survey-close="onSurveyMessageClose"
-        @on-meme-intro-complete="handleTodayMemeIntroEnd"
+        @on-auto-recommend-intro-complete="handleAutoRecommendIntroEnd"
         @on-news-intro-complete="handleNewsCuratorIntroEnd"
         @on-recommend-card-submit="handleSubmitRecommendAgentForm"
         @on-recommend-card-close="onRecommendMessageClose"
@@ -166,8 +166,8 @@ const {
   handleSelectChatIndexAgents,
   onSurveyMessageSubmit,
   handleClosePsychologySurvey,
-  resetTodayMemePanel,
-  handleTodayMemeIntroEnd,
+  resetAutoRecommendPanel,
+  handleAutoRecommendIntroEnd,
   handleNewsCuratorIntroEnd,
   onNewsCuratorMessageSubmit,
   handleNewsCuratorReselectCategories,
@@ -216,7 +216,7 @@ const isSurveyInputLocked = computed(() =>
       (m.type === 'survey' && !m.surveySubmitted) ||
       (m.type === 'recommend' && !m.recommendSubmitted) ||
       (m.type === 'translation' && !m.translateSubmitted) ||
-      (m.type === 'meme' && !m.memeSubmitted) ||
+      (m.type === 'autoRecommend' && !m.autoRecommendSubmitted) ||
       (m.type === 'news' && !m.newsSubmitted),
   ),
 )
@@ -309,7 +309,7 @@ watch(
     const lastMsg = messages.value[messages.value.length - 1]
     if (
       (lastMsg?.type === 'survey' && !lastMsg.surveySubmitted) ||
-      (lastMsg?.type === 'meme' && !lastMsg.memeSubmitted) ||
+      (lastMsg?.type === 'autoRecommend' && !lastMsg.autoRecommendSubmitted) ||
       (lastMsg?.type === 'news' && !lastMsg.newsSubmitted)
     ) {
       // ResizeObserver(scrollToBottomInstant)가 먼저 실행된 뒤에 survey 상단으로 이동해야 하므로
@@ -335,7 +335,7 @@ onBeforeRouteLeave((to) => {
   // chat 영역 밖으로 나갈 때 열려 있을 수 있는 설문 닫기
   if (!String(to.path).startsWith('/chat')) {
     handleClosePsychologySurvey()
-    resetTodayMemePanel()
+    resetAutoRecommendPanel()
     stopChatSocket()
   }
 })
@@ -435,5 +435,4 @@ const onSelectCategory = async (logId: string, categoryValue: string, categoryNm
 .chat-input-guide-wrap {
   width: 100%;
 }
-
 </style>

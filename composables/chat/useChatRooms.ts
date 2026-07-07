@@ -12,7 +12,8 @@ import {
 import { useChatSendPipeline } from '~/composables/chat/useChatSendPipeline'
 import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
 import { isRecommendAgentPrompt } from '~/utils/chat/recommendAgentUtil'
-import { isTodayMemePrompt, TODAY_MEME_AGENT_ID, TODAY_MEME_MODEL_ID } from '~/utils/chat/todayMemeUtil'
+import type { Agent } from '~/types/agent'
+import { isAutoRecommendLogRow } from '~/utils/chat/autoRecommendUtil'
 import { NEWS_CURATOR_AGENT_ID } from '~/utils/chat/newsCuratorUtil'
 
 /** 목록에 동일 방이 문자열/숫자 등 다른 형태로 중복되면 사이드바에서 활성 행이 여러 개로 보일 수 있어 통일·중복 제거 */
@@ -97,10 +98,10 @@ export const useChatRooms = () => {
   }
 
   // 마지막 로그 기준 검색모드·서브옵션 동기화: C=디폴트([]), M=지식검색, S=데이터분석
-  const syncSearchModeFromLastLog = async (lastRow: ChatLogListRow | undefined) => {
+  const syncSearchModeFromLastLog = async (lastRow: ChatLogListRow | undefined, agents: Agent[] = []) => {
     const svcTy = lastRow?.svcTy ?? 'C'
     const lastAgentId = typeof lastRow?.agentId === 'string' ? lastRow.agentId.trim() : ''
-    const isTodayMemePromptLog = isTodayMemePrompt(String(lastRow?.qcontent ?? ''))
+    const isAutoRecommendLog = lastRow ? isAutoRecommendLogRow(lastRow, agents) : false
     const isRecommendPromptLog = isRecommendAgentPrompt(String(lastRow?.qcontent ?? ''))
     // 방 전환 시 RISK 활성 상태는 기본 해제하고, 아래 D 분기에서만 복원한다.
     riskAgentActive.value = false
@@ -130,14 +131,9 @@ export const useChatRooms = () => {
       await selectModelOptions()
     } else {
       activeSearchModes.value = []
-      // TodayMeme·RECOMMEND 카드 전용 로그는 UI상 에이전트 선택을 유지하지 않음(채팅방 재진입 시)
+      // AUTO_RECOMMEND·RECOMMEND 카드 전용 로그는 UI상 에이전트 선택을 유지하지 않음(채팅방 재진입 시)
       selectedChatAgentId.value =
-        isTodayMemePromptLog ||
-        isRecommendPromptLog ||
-        lastAgentId === TODAY_MEME_AGENT_ID ||
-        lastAgentId === NEWS_CURATOR_AGENT_ID
-          ? null
-          : lastAgentId || null
+        isAutoRecommendLog || isRecommendPromptLog || lastAgentId === NEWS_CURATOR_AGENT_ID ? null : lastAgentId || null
       // 일반 질의 시 모델 옵션 조회
       await selectModelOptions()
     }
@@ -186,7 +182,12 @@ export const useChatRooms = () => {
   }
 
   // 채팅방 생성 (content: 호출부에서 전달 가능, 미전달 시 chatMessage 사용)
-  const createChatRoom = async (content?: string, files: File[] = [], svcTyOverride?: string): Promise<boolean> => {
+  const createChatRoom = async (
+    content?: string,
+    files: File[] = [],
+    svcTyOverride?: string,
+    options?: { modelId?: string; agentId?: string },
+  ): Promise<boolean> => {
     const qContent = (content ?? chatMessage.value).trim()
     if (!qContent) {
       chatRoom.value = { ...EMPTY_CHAT_ROOM, qContent: '' }
@@ -218,15 +219,13 @@ export const useChatRooms = () => {
     }
     chatRoom.value = createdRoom
 
-    const isMemePrompt = isTodayMemePrompt(qContent)
     const sent = await executeSendPipeline({
       content: qContent,
       roomId: createdRoom.roomId,
       svcTy,
-      modelId: isMemePrompt ? TODAY_MEME_MODEL_ID : selectedModelOption.value,
+      modelId: options?.modelId ?? selectedModelOption.value,
       refId: buildRefIdForPayload(),
-      // 일반 질의(C·에이전트 미선택)는 '' — 설문·추천 등 svcTy=C 에이전트 선택 시 selectedChatAgentId 전송
-      agentId: isMemePrompt ? TODAY_MEME_AGENT_ID : (selectedChatAgentId.value ?? ''),
+      agentId: options?.agentId ?? selectedChatAgentId.value ?? '',
       files,
       clearMessagesBefore: true,
     })

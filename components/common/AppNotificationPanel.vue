@@ -204,6 +204,7 @@ const {
 } = useNotifyStore()
 
 const notificationWrapRef = ref<HTMLElement | null>(null)
+const route = useRoute()
 
 /** 미읽음 알림 힌트 말풍선 표시 여부 */
 const showUnreadHint = ref(false)
@@ -275,6 +276,16 @@ watch(unreadCount, (next, prev) => {
   }
 })
 
+/** 페이지 이동 시 미읽음 알림이 남아 있으면 말풍선 힌트 노출 */
+watch(
+  () => route.path,
+  () => {
+    if (unreadCount.value > 0 && !isNotificationOpen.value) {
+      triggerUnreadHint()
+    }
+  },
+)
+
 watch(isNotificationOpen, (open) => {
   if (open) {
     showUnreadHint.value = false
@@ -284,9 +295,6 @@ watch(isNotificationOpen, (open) => {
 
 onMounted(() => {
   document.addEventListener('click', onClickOutside)
-  if (unreadCount.value > 0) {
-    setTimeout(() => triggerUnreadHint(), 600)
-  }
 })
 
 onUnmounted(() => {

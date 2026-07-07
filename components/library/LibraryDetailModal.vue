@@ -163,7 +163,7 @@
               v-if="
                 parsedRecommendItems.length === 0 &&
                 parsedNewsCuratorItems.length === 0 &&
-                parsedTodayMemeItems.length === 0 &&
+                parsedAutoRecommendItems.length === 0 &&
                 !isTranslateLibraryCard
               "
               variant="ghost"
@@ -342,7 +342,7 @@ import {
   parseRecommendJsonArray,
 } from '~/utils/chat/recommendAgentUtil'
 import { NEWS_CURATOR_AGENT_ID, parseNewsCuratorItems } from '~/utils/chat/newsCuratorUtil'
-import { isTodayMemeLibraryCard, parseTodayMemeItems } from '~/utils/chat/todayMemeUtil'
+import { isAutoRecommendLibraryCardItem, parseAutoRecommendJsonArray } from '~/utils/chat/autoRecommendUtil'
 import { isTranslateLibraryCardItem } from '~/utils/chat/translateAgentUtil'
 import type { LibraryCardDetail, DocItem, TableDataItem, ChartStatItem, ChartDetailCdItem } from '~/types/library'
 import type { LibraryReportInsightRequest } from '~/utils/library/libraryReportEditorUtil'
@@ -510,11 +510,11 @@ const parsedNewsCuratorItems = computed(() => {
   return parseNewsCuratorItems(raw)
 })
 
-const parsedTodayMemeItems = computed(() => {
-  if (!displayData.value || !isTodayMemeLibraryCard(displayData.value)) return []
+const parsedAutoRecommendItems = computed(() => {
+  if (!displayData.value || !isAutoRecommendLibraryCardItem(displayData.value, libraryAgents.value)) return []
   const raw = (displayData.value?.rcontent ?? '').trim()
   if (!raw) return []
-  return parseTodayMemeItems(raw)
+  return parseAutoRecommendJsonArray(raw)
 })
 
 const isTranslateLibraryCard = computed(() => {
@@ -645,7 +645,7 @@ const onReferenceLink = async (item: DocItem) => {
     openToast({ message: '참조 매뉴얼 파일을 찾을 수 없습니다.', type: 'error' })
     return
   }
-  await copyToClipboard(url)
+  await copyToClipboard(url.url ?? '')
   openToast({ message: '참조 매뉴얼 링크가 복사되었습니다.', type: 'success' })
 }
 

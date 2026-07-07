@@ -17,6 +17,9 @@ const notifyError = ref('')
 // ── 알림 패널 열림 상태 (모듈 레벨 — 외부 페이지에서도 제어 가능) ──
 const isNotificationOpen = ref(false)
 
+/** 화면 첫 진입 시 미읽음 알림 패널 자동 오픈 여부 (세션당 1회) */
+const hasAutoOpenedOnFirstEntry = ref(false)
+
 /** notifyTyCd==='KS' && saveYn==='N' 인 미수신 지식공유 알림 존재 여부 */
 const hasPendingKsNotify = computed(() => notifyList.value.some((n) => n.notifyTyCd === 'KS' && n.saveYn === 'N'))
 
@@ -73,6 +76,14 @@ export const useNotifyStore = () => {
     try {
       const res = await fetchNotifyList()
       notifyList.value = res.list ?? []
+
+      // 화면 첫 진입 시 미읽음 알림이 있으면 알림 패널 자동 오픈
+      if (import.meta.client && !hasAutoOpenedOnFirstEntry.value) {
+        hasAutoOpenedOnFirstEntry.value = true
+        if (notifyList.value.some((n) => n.readYn === 'N')) {
+          isNotificationOpen.value = true
+        }
+      }
     } catch (e) {
       notifyError.value = e instanceof Error ? e.message : '알림 목록 조회에 실패했습니다.'
     } finally {

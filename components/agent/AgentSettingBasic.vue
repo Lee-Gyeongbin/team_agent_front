@@ -252,6 +252,12 @@
       @update:model-value="emit('update:curationForm', $event)"
     />
 
+    <AgentSettingSubTyAutoRecommend
+      v-if="svcTy === 'C' && subTy === 'AUTO_RECOMMEND'"
+      :model-value="autoRecommendForm"
+      @update:model-value="emit('update:autoRecommendForm', $event)"
+    />
+
     <AgentSettingSubTyTranslate
       v-if="svcTy === 'W' && subTy === 'TRANSLATE'"
       :model-value="translateForm"
@@ -307,6 +313,7 @@ import type { TranslateConfigForm } from '~/utils/agent/translateConfigUtil'
 import type { ResearcherConfigForm } from '~/utils/agent/researcherConfigUtil'
 import type { RiskConfigForm } from '~/utils/agent/riskConfigUtil'
 import type { PlannerConfigForm } from '~/utils/agent/plannerConfigUtil'
+import type { AutoRecommendConfigForm } from '~/utils/agent/autoRecommendConfigUtil'
 import type { ProposalConfigForm } from '~/utils/agent/proposalConfigUtil'
 
 interface BasicForm {
@@ -347,6 +354,7 @@ interface Props {
   researcherForm: ResearcherConfigForm
   riskForm: RiskConfigForm
   plannerForm: PlannerConfigForm
+  autoRecommendForm: AutoRecommendConfigForm
   proposalForm: ProposalConfigForm
   sqlModelOptions: { value: string; label: string }[]
   apiUrlCdOptions: { value: string | number; label: string }[]
@@ -367,6 +375,7 @@ const emit = defineEmits<{
   'update:researcherForm': [value: ResearcherConfigForm]
   'update:riskForm': [value: RiskConfigForm]
   'update:plannerForm': [value: PlannerConfigForm]
+  'update:autoRecommendForm': [value: AutoRecommendConfigForm]
   'update:proposalForm': [value: ProposalConfigForm]
 }>()
 

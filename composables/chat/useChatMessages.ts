@@ -14,7 +14,7 @@ import {
   parseTranslatePayloadFromPrompt,
   resolveTranslateConfigByAgentId,
 } from '~/utils/chat/translateAgentUtil'
-import { isTodayMemePrompt, parseTodayMemeItems } from '~/utils/chat/todayMemeUtil'
+import { buildAutoRecommendMessagesFromLogRow } from '~/utils/chat/autoRecommendUtil'
 import {
   applyNewsDisplayItemsToSubmitCard,
   isNewsCuratorAnswerMessage,
@@ -22,6 +22,7 @@ import {
   parseNewsCuratorItems,
   parseNewsCuratorPromptMeta,
 } from '~/utils/chat/newsCuratorUtil'
+import { isProposalSlideJson } from '~/utils/chat/proposalAgentUtil'
 
 // 채팅 메시지/스트리밍 상태는 모듈 레벨에서 단일 인스턴스로 공유
 const messages = ref<ChatMessage[]>([])
@@ -137,6 +138,12 @@ export const useChatMessages = () => {
         /* ignore */
       }
     }
+    const reportHtmlRaw = typeof row.reportHtml === 'string' ? row.reportHtml.trim() : ''
+    const pptxDataRaw = typeof row.pptxData === 'string' ? row.pptxData.trim() : ''
+    // PROPOSAL: DB REPORT_HTML 컬럼에 슬라이드 JSON 저장 — 스트리밍 pptx_data와 동일하게 복원
+    const proposalPptxFromReport = isProposalSlideJson(reportHtmlRaw) ? reportHtmlRaw : ''
+    const pptxData = pptxDataRaw || proposalPptxFromReport
+
     const answerMessage: ChatMessage = {
       logId,
       type: 'answer',
@@ -158,9 +165,8 @@ export const useChatMessages = () => {
       tableData: typeof row.tableData === 'string' ? row.tableData : undefined,
       chartOption: typeof row.chartOption === 'string' ? row.chartOption : undefined,
       ...(groundingSources?.length ? { groundingSources } : {}),
-      ...(typeof row.reportHtml === 'string' && row.reportHtml.trim()
-        ? { reportHtml: row.reportHtml, hasReport: true }
-        : {}),
+      ...(reportHtmlRaw && !proposalPptxFromReport ? { reportHtml: reportHtmlRaw, hasReport: true } : {}),
+      ...(pptxData ? { pptxData, hasPptx: true } : {}),
       chatLogReaction: {
         logId,
         satisYn: satisYnVal,
@@ -188,21 +194,9 @@ export const useChatMessages = () => {
       ]
     }
 
-    // TodayMeme 에이전트: 프롬프트 패턴이면 readonly meme 메시지로 대체
-    if (agentId === 'AG000011' && isTodayMemePrompt(row.qcontent ?? '')) {
-      const memeDisplayItems = parseTodayMemeItems(String(row.rcontent ?? ''))
-      return [
-        {
-          logId: `${logId}-today-meme`,
-          type: 'meme',
-          createdAt,
-          agentId,
-          memeSubmitted: true,
-          ...(memeDisplayItems.length > 0 ? { memeDisplayItems } : {}),
-        },
-        answerMessage,
-      ]
-    }
+    // AUTO_RECOMMEND: 프롬프트가 있으면 readonly autoRecommend 카드로 대체
+    const autoRecommendMessages = buildAutoRecommendMessagesFromLogRow(row, answerMessage, agents)
+    if (autoRecommendMessages) return autoRecommendMessages
 
     // NewsCurator: question을 readonly news 카드로 대체, answer 행은 숨김(점심 카드와 동일)
     const newsPromptMeta = parseNewsCuratorPromptMeta(row.qcontent ?? '')

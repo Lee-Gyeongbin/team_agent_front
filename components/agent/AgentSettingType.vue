@@ -77,6 +77,7 @@ const cSubTyOptions = [
   { label: '일반', value: '' },
   { label: '설문', value: 'SURVEY' },
   { label: '추천', value: 'RECOMMEND' },
+  { label: '자동추천', value: 'AUTO_RECOMMEND' },
   { label: '큐레이션', value: 'CURATION' },
   { label: '기획서·PT', value: 'PLANNER' },
 ]

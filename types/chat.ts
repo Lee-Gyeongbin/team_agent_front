@@ -1,7 +1,7 @@
 // ============================================
 // 타입 정의
 // ============================================
-import type { TodayMemeItem } from '~/utils/chat/todayMemeUtil'
+import type { AutoRecommendItem } from '~/utils/chat/autoRecommendUtil'
 
 export interface ChatSocketPayload {
   type: string
@@ -98,7 +98,7 @@ export interface ChatSocketMessage {
 export interface ChatMessage {
   id?: string
   logId: string
-  type: 'question' | 'answer' | 'survey' | 'meme' | 'recommend' | 'news' | 'translation'
+  type: 'question' | 'answer' | 'survey' | 'autoRecommend' | 'recommend' | 'news' | 'translation'
   qContent?: string
   rContent?: string
   createdAt: string
@@ -148,8 +148,8 @@ export interface ChatMessage {
   surveyAnswers?: Record<number, number>
   /** 산업심리 설문 메시지(type=survey) 전용: 제출 완료 여부 */
   surveySubmitted?: boolean
-  /** TodayMeme 메시지(type=meme) 전용: 제출 완료 여부 */
-  memeSubmitted?: boolean
+  /** AUTO_RECOMMEND 메시지(type=autoRecommend) 전용: 제출 완료 여부 */
+  autoRecommendSubmitted?: boolean
   /** NewsCurator 메시지(type=news) 전용: 제출 완료 여부 */
   newsSubmitted?: boolean
   /** NewsCurator 메시지(type=news) 전용: 사용자가 제출한 뉴스 분야 codeId(최대 5) */
@@ -162,7 +162,7 @@ export interface ChatMessage {
    * 로그 API → 메시지 변환 시 동일 row 답변(rcontent)에서 추출한 표시용 데이터
    * (설문 surveyAnswers와 동일 패턴 — 카드·답변 행에 주입, 스레드 검색 없이 렌더)
    */
-  memeDisplayItems?: TodayMemeItem[]
+  autoRecommendDisplayItems?: AutoRecommendItem[]
   newsDisplayItems?: NewsCuratorItem[]
   /** RECOMMEND 에이전트 카드 역할 — form: 선택 카드, result: 추천 결과 카드 */
   recommendCardRole?: 'form' | 'result'

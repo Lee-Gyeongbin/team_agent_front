@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="!isTodayMemeAnswer && !isRecommendAgentAnswer"
+    v-if="!isAutoRecommendAnswer && !isRecommendAgentAnswer"
     ref="messageRootRef"
     class="chat-message-item"
     :class="[
@@ -12,8 +12,8 @@
             ? 'role-assistant'
             : message.type === 'news'
               ? 'role-news'
-              : message.type === 'meme'
-                ? 'role-meme'
+              : message.type === 'autoRecommend'
+                ? 'role-auto-recommend'
                 : message.type === 'survey'
                   ? 'role-survey'
                   : 'role-user',
@@ -44,9 +44,9 @@
           </div>
         </div>
         <template v-else>
-          <!-- TodayMeme 답변 JSON 원문은 숨기고 카드 컴포넌트에서만 노출 -->
+          <!-- AUTO_RECOMMEND 답변 JSON 원문은 숨기고 카드 컴포넌트에서만 노출 -->
           <div
-            v-if="isTodayMemeAnswer"
+            v-if="isAutoRecommendAnswer"
             class="message-content"
           />
           <!-- eslint-disable vue/no-v-html — toHtmlContent 내 안전 처리 적용 -->
@@ -296,15 +296,16 @@
           @submit="emit('on-submit-translate-card', message.logId, $event)"
           @close="emit('on-translate-card-close', message.logId)"
         />
-        <ChatTodayMeme
-          v-else-if="message.type === 'meme'"
-          :readonly="isShare || message.memeSubmitted === true"
-          :request-delivered="message.memeSubmitted === true"
-          :meme-items="resolvedTodayMemeItems"
-          :is-answer-streaming="isMemeAnswerStreaming"
+        <ChatAutoRecommendCard
+          v-else-if="message.type === 'autoRecommend'"
+          :readonly="isShare || message.autoRecommendSubmitted === true"
+          :request-delivered="message.autoRecommendSubmitted === true"
+          :items="resolvedAutoRecommendItems"
+          :config="messageAutoRecommendConfig"
+          :is-answer-streaming="isAutoRecommendAnswerStreaming"
           :theme-icon-class-nm="themeAgent?.iconClassNm ?? ''"
           :theme-color-hex="themeAgent?.colorHex ?? ''"
-          @intro-complete="emit('on-meme-intro-complete', message.logId)"
+          @intro-complete="emit('on-auto-recommend-intro-complete', message.logId)"
         />
         <ChatNewsCurator
           v-else-if="message.type === 'news'"
@@ -391,7 +392,13 @@ import {
   parseSurveyAnswersFromPrompt,
   type RadarChartData,
 } from '~/utils/chat/surveyUtil'
-import { parseTodayMemeItems, TODAY_MEME_AGENT_ID } from '~/utils/chat/todayMemeUtil'
+import {
+  isAutoRecommendPipelineAnswer,
+  parseAutoRecommendConfigFromAgent,
+  parseAutoRecommendJsonArray,
+  resolveAutoRecommendConfigByAgentId,
+  type AutoRecommendItem,
+} from '~/utils/chat/autoRecommendUtil'
 import {
   parseRecommendConfigFromAgent,
   resolveRecommendConfigByAgentId,
@@ -411,7 +418,6 @@ import {
 } from '~/utils/chat/translateAgentUtil'
 import { downloadBlobAsFile } from '~/utils/global/fileDownloadUtil'
 import { useApi } from '~/composables/com/useApi'
-import type { TodayMemeItem } from '~/utils/chat/todayMemeUtil'
 import { findLinkedNewsCuratorAnswer, resolveNewsCuratorItemsForCard } from '~/utils/chat/newsCuratorUtil'
 import { attachmentsRequireSummaryIndicator } from '~/utils/chat/chatAttachmentDisplayUtil'
 import {
@@ -424,6 +430,7 @@ import {
 
 import { useChatMessages } from '~/composables/chat/useChatMessages'
 import { useMtlcareStore } from '~/composables/mtlcare/useMtlcareStore'
+import { isProposalSlideJson } from '~/utils/chat/proposalAgentUtil'
 
 const { messages: allMessages } = useChatMessages()
 const { handleSaveResult } = useMtlcareStore()
@@ -471,7 +478,7 @@ const emit = defineEmits<{
   'on-translate-card-close': [logId: string]
   'on-survey-submit': [logId: string]
   'on-survey-close': [logId: string]
-  'on-meme-intro-complete': [logId: string]
+  'on-auto-recommend-intro-complete': [logId: string]
   'on-submit-news-card': [logId: string, categories: string[], options?: { isNew?: boolean }]
   'on-news-card-close': [logId: string]
   'on-news-card-reselect': [logId: string]
@@ -1005,27 +1012,44 @@ watch(
   { immediate: true },
 )
 
-const isTodayMemeAnswerMessage = (message: ChatMessage) =>
-  message.type === 'answer' && message.agentId === TODAY_MEME_AGENT_ID
-const resolvedTodayMemeItems = computed<TodayMemeItem[]>(() => {
-  if (props.message.type !== 'meme') return []
-  const injected = props.message.memeDisplayItems
-  if (Array.isArray(injected) && injected.length > 0) return injected
+// ── AUTO_RECOMMEND 에이전트 ─────────────────────────────────────────────────
 
-  const findParsedItems = (list: ChatMessage[]): TodayMemeItem[] => {
-    for (const msg of list) {
-      if (!isTodayMemeAnswerMessage(msg)) continue
-      const parsed = parseTodayMemeItems(String(msg.rContent ?? ''))
-      if (parsed.length) return parsed
-    }
-    return []
+/** AUTO_RECOMMEND 파이프라인 answer — JSON은 autoRecommend 카드에서만 표시 */
+const isAutoRecommendPipelineAnswerLocal = (message: ChatMessage) =>
+  isAutoRecommendPipelineAnswer(message, chatIndexAgents.value)
+
+const isAutoRecommendAnswer = computed(() => isAutoRecommendPipelineAnswerLocal(props.message))
+
+const messageAutoRecommendConfig = computed(() => {
+  if (props.message.type !== 'autoRecommend') return null
+  const agent = themeAgent.value
+  if (agent) return parseAutoRecommendConfigFromAgent(agent)
+  if (props.message.agentId) {
+    return resolveAutoRecommendConfigByAgentId(props.message.agentId, chatIndexAgents.value)
   }
+  return null
+})
 
-  const memeIndex = allMessages.value.findIndex((m) => m.logId === props.message.logId)
-  const sourceList = memeIndex >= 0 ? allMessages.value.slice(memeIndex + 1) : allMessages.value
-  const parsedFromFollowing = findParsedItems(sourceList)
-  if (parsedFromFollowing.length) return parsedFromFollowing
-  return findParsedItems([...allMessages.value].reverse())
+const linkedAutoRecommendAnswerMessage = computed(() => {
+  if (props.message.type !== 'autoRecommend') return undefined
+  const cardIndex = allMessages.value.findIndex((m) => m.logId === props.message.logId)
+  if (cardIndex < 0) return undefined
+  const nextAnswer = allMessages.value.slice(cardIndex + 1).find((m) => m.type === 'answer')
+  if (!nextAnswer || !isAutoRecommendPipelineAnswerLocal(nextAnswer)) return undefined
+  return nextAnswer
+})
+
+const resolvedAutoRecommendItems = computed<AutoRecommendItem[]>(() => {
+  if (props.message.type !== 'autoRecommend') return []
+  const answer = linkedAutoRecommendAnswerMessage.value
+  const parsedFromAnswer = answer ? parseAutoRecommendJsonArray(String(answer.rContent ?? '')) : []
+
+  // 스트리밍 중에는 answer.rContent를 매 청크마다 재파싱 (injected 캐시 무시)
+  if (answer?.isStreaming) return parsedFromAnswer
+
+  const injected = props.message.autoRecommendDisplayItems
+  if (Array.isArray(injected) && injected.length > 0) return injected
+  return parsedFromAnswer
 })
 
 const resolvedNewsCuratorItemsForNewsCard = computed<NewsCuratorItem[]>(() =>
@@ -1041,13 +1065,10 @@ const isNewsReselectDisabled = computed(() =>
 const newsCardIsNew = computed(() => (props.message.type === 'news' ? props.message.newsIsNew : undefined))
 const newsCardReselect = computed(() => props.message.type === 'news' && props.message.newsReselect === true)
 
-/** TodayMeme 에이전트 답변 행 식별 */
-const isTodayMemeAnswer = computed(() => isTodayMemeAnswerMessage(props.message))
-
 const isAgentCardMessage = computed(
   () =>
     props.message.type === 'recommend' ||
-    props.message.type === 'meme' ||
+    props.message.type === 'autoRecommend' ||
     props.message.type === 'news' ||
     props.message.type === 'translation',
 )
@@ -1068,10 +1089,8 @@ const linkedAgentCardAnswer = computed((): ChatMessage | undefined => {
   if (props.message.type === 'recommend' && !isRecommendFormCard.value) {
     return linkedRecommendAnswerMessage.value
   }
-  if (props.message.type === 'meme') {
-    const cardIndex = allMessages.value.findIndex((m) => m.logId === props.message.logId)
-    if (cardIndex < 0) return undefined
-    return allMessages.value.slice(cardIndex + 1).find((m) => m.type === 'answer' && m.agentId === TODAY_MEME_AGENT_ID)
+  if (props.message.type === 'autoRecommend') {
+    return linkedAutoRecommendAnswerMessage.value
   }
   if (props.message.type === 'news') {
     return findLinkedNewsCuratorAnswer(allMessages.value, props.message.logId)
@@ -1105,7 +1124,7 @@ const isLinkedAgentCardAnswerStreaming = computed(() => {
 })
 
 const isAgentCardAvatarStreaming = computed(() => {
-  if (props.message.type === 'meme') return isMemeAnswerStreaming.value
+  if (props.message.type === 'autoRecommend') return isAutoRecommendAnswerStreaming.value
   if (props.message.type === 'news') return isLinkedAgentCardAnswerStreaming.value
   if (props.message.type === 'recommend' && !isRecommendFormCard.value) {
     return isRecommendationsPending.value || isRecommendationResponseStreaming.value
@@ -1117,8 +1136,8 @@ const isAgentCardAvatarStreaming = computed(() => {
 const shouldShowAgentCardKnowledgeFooter = computed(() => {
   if (!agentCardFooterLogId.value || isLinkedAgentCardAnswerStreaming.value) return false
 
-  if (props.message.type === 'meme') {
-    return resolvedTodayMemeItems.value.length > 0 && props.message.memeSubmitted === true
+  if (props.message.type === 'autoRecommend') {
+    return resolvedAutoRecommendItems.value.length > 0 && props.message.autoRecommendSubmitted === true
   }
   if (props.message.type === 'news') {
     return resolvedNewsCuratorItemsForNewsCard.value.length > 0 && props.message.newsSubmitted === true
@@ -1136,7 +1155,7 @@ const shouldShowAgentCardKnowledgeFooter = computed(() => {
 
 /** 답변 액션 푸터 노출 조건을 한곳에서 관리 (로그 미저장 시 좋아요/싫어요 등 액션 숨김) */
 const shouldShowMessageFooter = computed(
-  () => !props.message.isStreaming && !isTodayMemeAnswer.value && !props.message.chatLogMissing,
+  () => !props.message.isStreaming && !isAutoRecommendAnswer.value && !props.message.chatLogMissing,
 )
 
 /** 텍스트 입력 번역 결과 답변 — 형식 선택 후 파일 다운로드 컨트롤 노출 대상 */
@@ -1152,18 +1171,6 @@ const onDownloadTranslationResult = () => {
   downloadTranslationResult(props.message.rContent ?? '', translateDownloadFormat.value, '번역결과')
 }
 
-/** pptxData JSON에 slideDesign 필드가 있으면 PROPOSAL 에이전트의 제안서 PPTX */
-const isProposalPptx = computed(() => {
-  const json = props.message.pptxData ?? ''
-  if (!json) return false
-  try {
-    const parsed = JSON.parse(json)
-    return !!parsed.slideDesign
-  } catch {
-    return false
-  }
-})
-
 const onDownloadPlannerPptx = async () => {
   const slidesJson = props.message.pptxData ?? ''
   if (!slidesJson) {
@@ -1172,7 +1179,7 @@ const onDownloadPlannerPptx = async () => {
   }
   const { postBlob } = useApi()
 
-  if (isProposalPptx.value) {
+  if (isProposalSlideJson(slidesJson)) {
     // PROPOSAL 에이전트: 이미지 생성 포함 (시간 소요 안내)
     openToast({ message: '슬라이드 이미지를 생성 중입니다. 잠시 기다려주세요.', type: 'info' })
     const blob = await postBlob('/ai/chatbot/exportProposalPptx.do', { content: slidesJson, fileName: '제안서' })
@@ -1184,14 +1191,10 @@ const onDownloadPlannerPptx = async () => {
   }
 }
 
-/** 이 meme 메시지에 대응하는 TodayMeme 답변이 아직 스트리밍 중인지 */
-const isMemeAnswerStreaming = computed(() => {
-  if (props.message.type !== 'meme') return false
-  const idx = allMessages.value.findIndex((m) => m.logId === props.message.logId)
-  if (idx < 0) return false
-  const after = allMessages.value.slice(idx + 1)
-  const ans = after.find((m) => m.type === 'answer' && m.agentId === TODAY_MEME_AGENT_ID)
-  return ans?.isStreaming === true
+/** AUTO_RECOMMEND 카드에 대응하는 answer가 아직 스트리밍 중인지 */
+const isAutoRecommendAnswerStreaming = computed(() => {
+  if (props.message.type !== 'autoRecommend') return false
+  return linkedAutoRecommendAnswerMessage.value?.isStreaming === true
 })
 
 /** 출처 제목 앞 마크다운 헤더 기호(## 등) 제거 */

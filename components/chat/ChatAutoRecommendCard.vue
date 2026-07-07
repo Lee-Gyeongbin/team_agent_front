@@ -1,29 +1,27 @@
 <template>
   <section
-    class="chat-today-meme"
+    class="chat-auto-recommend"
     :class="{
       'is-request-only': isRequestOnly,
       'is-intro-playing': isIntroPlaying,
       'is-content-visible': isContentVisible,
     }"
     :style="themeStyle"
-    :data-meme-model-id="TODAY_MEME_MODEL_ID"
   >
     <div
       v-if="showRequestComplete"
-      class="chat-today-meme__request-complete"
+      class="chat-auto-recommend__request-complete"
     >
-      <span class="chat-today-meme__request-badge">
+      <span class="chat-auto-recommend__request-badge">
         <i
           class="icon-check size-16"
           aria-hidden="true"
         />
         전달 완료
       </span>
-      <h3 class="chat-today-meme__request-title">요청한 밈을 안전하게 전달했어요!</h3>
-      <p class="chat-today-meme__request-desc">
-        밈 배달부가 오늘의 밈을 잘 전달했어요.<br />
-        아래에서 맞춤 밈을 확인해보세요!
+      <h3 class="chat-auto-recommend__request-title">{{ requestCompleteTitle }}</h3>
+      <p class="chat-auto-recommend__request-desc">
+        {{ requestCompleteDesc }}
       </p>
     </div>
 
@@ -31,28 +29,28 @@
       <Transition name="agent-intro">
         <div
           v-if="isIntroPlaying"
-          class="chat-today-meme__intro"
+          class="chat-auto-recommend__intro"
           aria-live="polite"
         >
-          <div class="chat-today-meme__intro-inner">
-            <div class="chat-today-meme__intro-avatar">
+          <div class="chat-auto-recommend__intro-inner">
+            <div class="chat-auto-recommend__intro-avatar">
               <i :class="[themeIconClassNm || 'icon-bot', 'size-24']" />
             </div>
-            <p class="chat-today-meme__intro-title">
+            <p class="chat-auto-recommend__intro-title">
               <span
                 v-for="(char, index) in introTitleChars"
                 :key="`intro-title-${index}`"
-                class="chat-today-meme__intro-char"
+                class="chat-auto-recommend__intro-char"
                 :style="{ '--intro-char-delay': `${index * 0.03}s` }"
               >
                 {{ char === ' ' ? '\u00A0' : char }}
               </span>
             </p>
-            <p class="chat-today-meme__intro-subtitle">
+            <p class="chat-auto-recommend__intro-subtitle">
               <span
                 v-for="(char, index) in introSubtitleChars"
                 :key="`intro-subtitle-${index}`"
-                class="chat-today-meme__intro-char"
+                class="chat-auto-recommend__intro-char"
                 :style="{ '--intro-char-delay': `${0.12 + index * 0.024}s` }"
               >
                 {{ char === ' ' ? '\u00A0' : char }}
@@ -64,73 +62,73 @@
 
       <div
         v-if="!showRequestComplete"
-        class="chat-today-meme__header"
+        class="chat-auto-recommend__header"
       >
-        <div class="chat-today-meme__header-info">
-          <div class="chat-today-meme__avatar">
+        <div class="chat-auto-recommend__header-info">
+          <div class="chat-auto-recommend__avatar">
             <i :class="[themeIconClassNm || 'icon-bot', 'size-24']" />
           </div>
           <div>
-            <p class="chat-today-meme__title">{{ TODAY_MEME_TITLE }}</p>
-            <p class="chat-today-meme__subtitle">
-              {{ props.readonly ? '최신 유행 밈들을 선별했어요!' : '오늘의 밈 추천을 시작해 보세요.' }}
+            <p class="chat-auto-recommend__title">{{ cardTitle }}</p>
+            <p class="chat-auto-recommend__subtitle">
+              {{ cardSubtitle }}
             </p>
           </div>
         </div>
       </div>
 
-      <div class="chat-today-meme__body">
-        <div class="chat-today-meme__list">
+      <div class="chat-auto-recommend__body">
+        <div class="chat-auto-recommend__list">
           <article
-            v-for="item in memeList"
+            v-for="item in itemList"
             :key="`${item.rank}-${item.title}`"
-            class="meme-card"
+            class="auto-recommend-card"
           >
-            <div class="meme-card__top">
-              <div class="meme-card__badges-left">
-                <span class="meme-card__rank-badge">{{ item.rank }}</span>
+            <div class="auto-recommend-card__top">
+              <div class="auto-recommend-card__badges-left">
+                <span class="auto-recommend-card__rank-badge">{{ item.rank }}</span>
                 <span
                   v-if="item.contextLabel"
-                  class="meme-card__pill"
+                  class="auto-recommend-card__pill"
                 >
                   {{ item.contextLabel }}
                 </span>
               </div>
               <span
                 v-if="item.confidence"
-                class="meme-card__pill"
+                class="auto-recommend-card__pill"
               >
                 신뢰도: <strong>{{ item.confidence }}</strong>
               </span>
             </div>
 
-            <h3 class="meme-card__title">{{ item.title }}</h3>
-            <p class="meme-card__source">{{ item.source }}</p>
-            <div class="meme-card__divider" />
+            <h3 class="auto-recommend-card__title">{{ item.title }}</h3>
+            <p class="auto-recommend-card__source">{{ item.source }}</p>
+            <div class="auto-recommend-card__divider" />
 
-            <section class="meme-card__explain">
-              <h4 class="meme-card__explain-heading">설명</h4>
-              <div class="meme-card__explain-box">
+            <section class="auto-recommend-card__explain">
+              <h4 class="auto-recommend-card__explain-heading">설명</h4>
+              <div class="auto-recommend-card__explain-box">
                 <div
-                  v-for="(row, idx) in getTodayMemePointRows(item)"
+                  v-for="(row, idx) in getAutoRecommendPointRows(item)"
                   :key="`${item.rank}-pt-${idx}`"
-                  class="meme-card__explain-row"
+                  class="auto-recommend-card__explain-row"
                 >
-                  <span class="meme-card__explain-label">{{ row.label }}</span>
+                  <span class="auto-recommend-card__explain-label">{{ row.label }}</span>
                   <span
-                    class="meme-card__explain-vbar"
+                    class="auto-recommend-card__explain-vbar"
                     aria-hidden="true"
                   />
-                  <p class="meme-card__explain-text">{{ row.text }}</p>
+                  <p class="auto-recommend-card__explain-text">{{ row.text }}</p>
                 </div>
               </div>
             </section>
 
-            <footer class="meme-card__footer">
-              <div class="meme-card__footer-inner">
-                <div class="meme-card__footer-block">
-                  <span class="meme-card__footer-key">카테고리</span>
-                  <span class="meme-card__footer-val">{{ item.contextLabel?.trim() || '반응 표현' }}</span>
+            <footer class="auto-recommend-card__footer">
+              <div class="auto-recommend-card__footer-inner">
+                <div class="auto-recommend-card__footer-block">
+                  <span class="auto-recommend-card__footer-key">카테고리</span>
+                  <span class="auto-recommend-card__footer-val">{{ item.contextLabel?.trim() || '반응 표현' }}</span>
                 </div>
               </div>
             </footer>
@@ -140,15 +138,15 @@
 
       <!-- 인덱스·방: 제출 전 사용자 액션(설문 ChatPsychologySurvey 푸터와 동일 역할) -->
       <div
-        v-if="isContentVisible && !props.readonly && props.awaitingUserSubmit && !hasResultRecommendations"
-        class="chat-today-meme__footer-actions"
+        v-if="isContentVisible && !props.readonly && props.awaitingUserSubmit && !hasResultItems"
+        class="chat-auto-recommend__footer-actions"
       >
         <UiButton
           variant="dark"
           size="sm"
           @click="emit('submit')"
         >
-          오늘의 밈 받기
+          {{ submitButtonLabel }}
           <template #icon-right>
             <i class="icon-arrow-right size-16" />
           </template>
@@ -159,13 +157,17 @@
 </template>
 
 <script setup lang="ts">
-import { getTodayMemePointRows, TODAY_MEME_MODEL_ID, type TodayMemeItem } from '~/utils/chat/todayMemeUtil'
+import {
+  getAutoRecommendPointRows,
+  type AutoRecommendAgentConfig,
+  type AutoRecommendItem,
+} from '~/utils/chat/autoRecommendUtil'
 
-type TodayMemeDisplayMode = 'card' | 'request'
+type AutoRecommendDisplayMode = 'card' | 'request'
 
 interface Props {
   /** card: 채팅 카드 전체, request: 라이브러리 q_content(질문) 전달 완료 UI만 */
-  displayMode?: TodayMemeDisplayMode
+  displayMode?: AutoRecommendDisplayMode
   readonly?: boolean
   /** q_content 전송 완료 — 요청 영역 전달 완료 UI */
   requestDelivered?: boolean
@@ -174,7 +176,8 @@ interface Props {
   isAnswerStreaming?: boolean
   themeIconClassNm?: string
   themeColorHex?: string
-  memeItems?: TodayMemeItem[]
+  items?: AutoRecommendItem[]
+  config?: AutoRecommendAgentConfig | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -185,25 +188,42 @@ const props = withDefaults(defineProps<Props>(), {
   isAnswerStreaming: false,
   themeIconClassNm: '',
   themeColorHex: '',
-  memeItems: () => [],
+  items: () => [],
+  config: null,
 })
 
 const emit = defineEmits<{
   introComplete: []
   submit: []
 }>()
-const TODAY_MEME_TITLE = '오늘의 밈 배달부'
-const TODAY_MEME_INTRO_SUBTITLE = '오늘의 밈을 고르는 중입니다...'
-const introTitleChars = TODAY_MEME_TITLE.split('')
-const introSubtitleChars = TODAY_MEME_INTRO_SUBTITLE.split('')
 
-const memeList = computed<TodayMemeItem[]>(() => props.memeItems)
+const cardTitle = computed(() => String(props.config?.ui?.cardTitle ?? '').trim() || '자동 추천')
+const cardSubtitle = computed(() => {
+  if (props.readonly) {
+    return String(props.config?.ui?.cardSubtitleReadonly ?? '').trim() || '추천 결과를 확인해 보세요.'
+  }
+  return String(props.config?.ui?.cardSubtitle ?? '').trim() || '추천을 시작해 보세요.'
+})
+const introSubtitle = computed(
+  () => String(props.config?.ui?.introSubtitle ?? '').trim() || '추천 결과를 준비하고 있습니다...',
+)
+const requestCompleteTitle = computed(
+  () => String(props.config?.ui?.requestCompleteTitle ?? '').trim() || '요청을 안전하게 전달했어요!',
+)
+const requestCompleteDesc = computed(
+  () => String(props.config?.ui?.requestCompleteDesc ?? '').trim() || '아래에서 추천 결과를 확인해 보세요.',
+)
+const submitButtonLabel = computed(() => String(props.config?.ui?.submitButtonLabel ?? '').trim() || '추천 받기')
+
+const introTitleChars = computed(() => cardTitle.value.split(''))
+const introSubtitleChars = computed(() => introSubtitle.value.split(''))
+
+const itemList = computed<AutoRecommendItem[]>(() => props.items)
 
 const isRequestOnly = computed(() => props.displayMode === 'request')
 const showRequestComplete = computed(() => isRequestOnly.value || props.requestDelivered)
 
-/** 추천 밈 카드가 있으면 하단 설문 액션(받기) 숨김 */
-const hasResultRecommendations = computed(() => memeList.value.length > 0)
+const hasResultItems = computed(() => itemList.value.length > 0)
 
 const hexToRgb = (hex: string) => {
   const cleanedHex = String(hex || '')
@@ -216,19 +236,19 @@ const hexToRgb = (hex: string) => {
 const themeStyle = computed(() => {
   const hex = String(props.themeColorHex).trim() || '#6d5bd0'
   return {
-    '--today-meme-theme-color': hex,
-    '--today-meme-theme-rgb': hexToRgb(hex),
-    '--today-meme-request-theme-color': hex,
+    '--auto-recommend-theme-color': hex,
+    '--auto-recommend-theme-rgb': hexToRgb(hex),
+    '--auto-recommend-request-theme-color': hex,
   }
 })
 const themeIconClassNm = computed(() => String(props.themeIconClassNm || '').trim())
 
-const TODAY_MEME_INTRO_MIN_MS = 3100
-const hasMemeResponse = computed(() => memeList.value.length > 0 && !props.isAnswerStreaming)
+const INTRO_MIN_MS = 3100
+const hasItemResponse = computed(() => itemList.value.length > 0 && !props.isAnswerStreaming)
 const canShowContent = computed(
   () =>
     !props.isAnswerStreaming &&
-    (props.requestDelivered || props.readonly || hasMemeResponse.value || props.awaitingUserSubmit === true),
+    (props.requestDelivered || props.readonly || hasItemResponse.value || props.awaitingUserSubmit === true),
 )
 const isIntroPlaying = ref(!canShowContent.value)
 const isContentVisible = ref(canShowContent.value)
@@ -265,7 +285,7 @@ const startIntroSequence = () => {
     introMinTimer = null
     isIntroMinElapsed.value = true
     tryFinishIntroSequence()
-  }, TODAY_MEME_INTRO_MIN_MS)
+  }, INTRO_MIN_MS)
 }
 
 watch(
@@ -289,12 +309,12 @@ onUnmounted(() => {
 <style lang="scss" scoped>
 @use '@/assets/styles/utils/agent-intro' as *;
 
-.chat-today-meme {
-  --today-meme-content-opacity: 0;
-  --today-meme-content-shift: #{$spacing-sm};
-  --meme-card-navy: #1a2b4b;
-  --meme-card-pill-bg: #{$color-surface};
-  --meme-card-footer-bg: #f4f6f8;
+.chat-auto-recommend {
+  --auto-recommend-content-opacity: 0;
+  --auto-recommend-content-shift: #{$spacing-sm};
+  --auto-recommend-card-navy: #1a2b4b;
+  --auto-recommend-card-pill-bg: #{$color-surface};
+  --auto-recommend-card-footer-bg: #f4f6f8;
 
   position: relative;
   display: flex;
@@ -316,13 +336,13 @@ onUnmounted(() => {
   }
 
   &.is-intro-playing:not(.is-content-visible) {
-    --today-meme-content-opacity: 0;
-    --today-meme-content-shift: #{$spacing-sm};
+    --auto-recommend-content-opacity: 0;
+    --auto-recommend-content-shift: #{$spacing-sm};
   }
 
   &.is-content-visible {
-    --today-meme-content-opacity: 1;
-    --today-meme-content-shift: 0;
+    --auto-recommend-content-opacity: 1;
+    --auto-recommend-content-shift: 0;
   }
 
   &.is-request-only {
@@ -333,7 +353,7 @@ onUnmounted(() => {
     box-shadow: none;
     background: transparent;
 
-    .chat-today-meme__request-complete {
+    .chat-auto-recommend__request-complete {
       padding: 0;
       border-bottom: none;
       background: transparent;
@@ -353,8 +373,8 @@ onUnmounted(() => {
     padding: $spacing-xl;
     border-bottom: 1px solid $color-border;
     background: $color-surface;
-    opacity: var(--today-meme-content-opacity);
-    transform: translateY(var(--today-meme-content-shift));
+    opacity: var(--auto-recommend-content-opacity);
+    transform: translateY(var(--auto-recommend-content-shift));
     transition:
       opacity 0.32s ease,
       transform 0.32s ease;
@@ -366,8 +386,8 @@ onUnmounted(() => {
     gap: 6px;
     padding: 6px 12px;
     border-radius: 8px;
-    background: color-mix(in srgb, var(--today-meme-request-theme-color) 14%, #fff);
-    color: var(--today-meme-request-theme-color);
+    background: color-mix(in srgb, var(--auto-recommend-request-theme-color) 14%, #fff);
+    color: var(--auto-recommend-request-theme-color);
     @include typo($body-small);
     font-weight: $font-weight-semibold;
   }
@@ -394,8 +414,8 @@ onUnmounted(() => {
     border-bottom: 1px solid $color-border;
     background: $color-surface;
     flex-shrink: 0;
-    opacity: var(--today-meme-content-opacity);
-    transform: translateY(var(--today-meme-content-shift));
+    opacity: var(--auto-recommend-content-opacity);
+    transform: translateY(var(--auto-recommend-content-shift));
     transition:
       opacity 0.32s ease,
       transform 0.32s ease;
@@ -414,7 +434,7 @@ onUnmounted(() => {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: var(--today-meme-theme-color);
+    background: var(--auto-recommend-theme-color);
     color: #fff;
   }
 
@@ -438,8 +458,8 @@ onUnmounted(() => {
     display: flex;
     flex-direction: column;
     gap: $spacing-md;
-    opacity: var(--today-meme-content-opacity);
-    transform: translateY(var(--today-meme-content-shift));
+    opacity: var(--auto-recommend-content-opacity);
+    transform: translateY(var(--auto-recommend-content-shift));
     transition:
       opacity 0.36s ease 0.04s,
       transform 0.36s ease 0.04s;
@@ -462,15 +482,15 @@ onUnmounted(() => {
     padding: $spacing-md $spacing-xl $spacing-lg;
     border-top: 1px solid $color-border;
     background: $color-surface;
-    opacity: var(--today-meme-content-opacity);
-    transform: translateY(var(--today-meme-content-shift));
+    opacity: var(--auto-recommend-content-opacity);
+    transform: translateY(var(--auto-recommend-content-shift));
     transition:
       opacity 0.36s ease 0.04s,
       transform 0.36s ease 0.04s;
   }
 
   /* 개별 밈 카드 — 시안: 랭크/필, 제목·출처, 설명 테이블, 하단 메타 */
-  .meme-card {
+  .auto-recommend-card {
     border: 1px solid $color-border;
     border-radius: 14px;
     background: #fff;
@@ -500,7 +520,7 @@ onUnmounted(() => {
       height: 28px;
       padding: 0 8px;
       border-radius: 6px;
-      background: var(--meme-card-navy);
+      background: var(--auto-recommend-card-navy);
       color: #fff;
       font-size: $font-size-sm;
       font-weight: $font-weight-bold;
@@ -512,14 +532,14 @@ onUnmounted(() => {
       align-items: center;
       padding: 4px 12px;
       border-radius: 999px;
-      background: var(--meme-card-pill-bg);
+      background: var(--auto-recommend-card-pill-bg);
       border: 1px solid $color-border;
       @include typo($body-xsmall);
       color: $color-text-secondary;
 
       strong {
         font-weight: $font-weight-semibold;
-        color: var(--meme-card-navy);
+        color: var(--auto-recommend-card-navy);
       }
     }
 
@@ -527,7 +547,7 @@ onUnmounted(() => {
       margin: 0 0 $spacing-xs;
       font-size: $font-size-xl;
       font-weight: $font-weight-bold;
-      color: var(--meme-card-navy);
+      color: var(--auto-recommend-card-navy);
       line-height: 1.35;
       letter-spacing: -0.02em;
     }
@@ -548,7 +568,7 @@ onUnmounted(() => {
       margin: 0 0 $spacing-sm;
       font-size: $font-size-lg;
       font-weight: $font-weight-bold;
-      color: var(--meme-card-navy);
+      color: var(--auto-recommend-card-navy);
     }
 
     &__explain-box {
@@ -573,7 +593,7 @@ onUnmounted(() => {
     &__explain-label {
       font-size: $font-size-base;
       font-weight: $font-weight-bold;
-      color: var(--meme-card-navy);
+      color: var(--auto-recommend-card-navy);
       line-height: 1.45;
       padding-right: 2px;
       word-break: keep-all;
@@ -598,7 +618,7 @@ onUnmounted(() => {
       margin-left: -$spacing-xl;
       margin-right: -$spacing-xl;
       padding: $spacing-md $spacing-xl;
-      background: var(--meme-card-footer-bg);
+      background: var(--auto-recommend-card-footer-bg);
       border-top: 1px solid $color-border;
       border-radius: 0 0 13px 13px;
     }
@@ -627,35 +647,35 @@ onUnmounted(() => {
     &__footer-val {
       @include typo($body-small);
       font-weight: $font-weight-medium;
-      color: var(--meme-card-navy);
+      color: var(--auto-recommend-card-navy);
     }
   }
 
   @media (max-width: 767px) {
-    .meme-card__explain-row {
+    .auto-recommend-card__explain-row {
       grid-template-columns: 1fr;
       gap: $spacing-xs;
 
-      .meme-card__explain-vbar {
+      .auto-recommend-card__explain-vbar {
         display: none;
       }
 
-      .meme-card__explain-label {
+      .auto-recommend-card__explain-label {
         margin-bottom: -4px;
       }
     }
   }
 }
 
-@include agent-card-intro('chat-today-meme', 'intro', '--today-meme-theme-color', '--today-meme-theme-rgb');
+@include agent-card-intro('chat-auto-recommend', 'intro', '--auto-recommend-theme-color', '--auto-recommend-theme-rgb');
 @include agent-card-intro-keyframes;
 @include agent-intro-transition;
 
 @media (prefers-reduced-motion: reduce) {
-  .chat-today-meme__intro-inner,
-  .chat-today-meme__intro-avatar,
-  .chat-today-meme__intro-title,
-  .chat-today-meme__intro-subtitle {
+  .chat-auto-recommend__intro-inner,
+  .chat-auto-recommend__intro-avatar,
+  .chat-auto-recommend__intro-title,
+  .chat-auto-recommend__intro-subtitle {
     animation: none;
   }
 }
