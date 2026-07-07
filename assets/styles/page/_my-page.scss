@@ -410,6 +410,9 @@ $my-page-tab-body-viewport-gap: 260px;
 .password-field__helper {
   font-size: $font-size-sm;
   color: $color-text-secondary;
+  &:nth-of-type(1) {
+    margin-top: 15px;
+  }
 }
 
 .my-page-security-auth-wrap {

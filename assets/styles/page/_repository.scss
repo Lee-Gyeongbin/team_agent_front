@@ -398,7 +398,7 @@
   }
 
   .cell-document {
-    gap: 8px;
+    gap: 4px;
 
     .doc-icon {
       flex-shrink: 0;
@@ -600,7 +600,7 @@
   display: block;
   @include typo($body-large-bold);
   color: $color-text-primary;
-  margin-bottom: 6px;
+  // margin-bottom: 6px;
 
   .required {
     color: $color-error;
