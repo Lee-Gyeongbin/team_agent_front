@@ -1,5 +1,17 @@
 import type { AgtSubAdditionalConfig, RecommendFormField, RecommendResultFieldDef } from '~/types/agent'
 
+/** 추천·자동추천 에이전트 result.topN 상한 */
+export const AGENT_RECOMMEND_TOP_N_MAX = 10
+
+export const clampAgentRecommendTopN = (raw: string | number, fallback = 5): number => {
+  const num = Number(raw)
+  if (!Number.isFinite(num) || num <= 0) return fallback
+  return Math.min(AGENT_RECOMMEND_TOP_N_MAX, Math.floor(num))
+}
+
+export const isAgentRecommendTopNValid = (value: number): boolean =>
+  Number.isFinite(value) && value > 0 && value <= AGENT_RECOMMEND_TOP_N_MAX
+
 /** Agent 설정 UI — RECOMMEND ADDITIONAL_CONFIG 편집 필드 */
 export interface RecommendFormFieldForm {
   key: string

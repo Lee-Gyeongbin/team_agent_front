@@ -333,7 +333,9 @@
                 :model-value="modelValue.resultTopN"
                 number-only
                 size="sm"
-                @update:model-value="onUpdate('resultTopN', Number($event ?? 5))"
+                :min="1"
+                :max="10"
+                @update:model-value="onResultTopNUpdate"
               />
             </div>
           </div>
@@ -558,10 +560,11 @@
 </template>
 
 <script setup lang="ts">
-import type {
-  RecommendConfigForm,
-  RecommendFormFieldForm,
-  RecommendResultFieldForm,
+import {
+  clampAgentRecommendTopN,
+  type RecommendConfigForm,
+  type RecommendFormFieldForm,
+  type RecommendResultFieldForm,
 } from '~/utils/agent/recommendConfigUtil'
 
 const props = defineProps<{
@@ -595,6 +598,10 @@ const emitForm = (next: RecommendConfigForm) => emit('update:modelValue', next)
 
 const onUpdate = <K extends keyof RecommendConfigForm>(key: K, value: RecommendConfigForm[K]) => {
   emitForm({ ...props.modelValue, [key]: value })
+}
+
+const onResultTopNUpdate = (raw: string | number) => {
+  onUpdate('resultTopN', clampAgentRecommendTopN(raw))
 }
 
 // ── 대기 상태 문구 ──────────────────────────────────────────
