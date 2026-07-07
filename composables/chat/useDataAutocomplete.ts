@@ -10,19 +10,10 @@ import { useChatRooms } from '~/composables/chat/useChatRooms'
  */
 export const useDataAutocomplete = () => {
   const { chatMessage } = useChatRooms()
-  const {
-    activeSearchModes,
-    riskAgentActive,
-    subOptions,
-    selectedSubOptions,
-    chatIndexAgents,
-    selectedChatAgentId,
-  } = useChatStore()
+  const { activeSearchModes, riskAgentActive, subOptions, selectedSubOptions, selectedChatThemeAgent } = useChatStore()
 
   /** 데이터분석 질문 모드 활성 여부 */
-  const isActive = computed(
-    () => activeSearchModes.value.includes('S') && !riskAgentActive.value,
-  )
+  const isActive = computed(() => activeSearchModes.value.includes('S') && !riskAgentActive.value)
 
   /** 추천 대상 데이터마트 — 체크된 것 전체(없으면 선택 가능한 전체). 비활성 모드에선 불러오지 않음 */
   const datamartIds = computed<string[]>(() => {
@@ -35,10 +26,7 @@ export const useDataAutocomplete = () => {
   const { suggestMetric, suggestDimension } = useDatamartVocabulary(datamartIds)
 
   /** 현재 에이전트 테마 색상 (하이라이트용) */
-  const themeColorHex = computed(() => {
-    const agent = chatIndexAgents.value.find((a) => a.agentId === selectedChatAgentId.value)
-    return agent?.colorHex?.trim() || ''
-  })
+  const themeColorHex = computed(() => selectedChatThemeAgent.value?.colorHex?.trim() || '')
 
   /** 입력 중인 마지막 토큰 (공백으로 끝나면 추천 안 함) */
   const currentToken = computed(() => {

@@ -1,4 +1,10 @@
-import type { CriterionResult, FormulaDisplayItem, QuestionCriterionKey, QuestionScore } from '~/types/dataQuestion'
+import type {
+  CriterionResult,
+  FormulaDisplayItem,
+  FormulaDisplayKey,
+  QuestionCriterionKey,
+  QuestionScore,
+} from '~/types/dataQuestion'
 import { FORMULA_DISPLAY_LABELS } from '~/types/dataQuestion'
 
 interface CriterionDef {
@@ -48,27 +54,34 @@ const CRITERIA: CriterionDef[] = [
   },
 ]
 
-export const FORMULA_CRITERIA_ORDER: QuestionCriterionKey[] = [
-  'period',
+export const FORMULA_DISPLAY_ORDER: FormulaDisplayKey[] = [
   'metric',
+  'period',
   'groupBy',
-  'calculation',
-  'analysis',
+  'calculationAnalysis',
   'comparison',
 ]
 
-/** 질문 작성 공식 카드에 표시할 만점(6요소 충족) 예시 질문 */
+/** 질문 작성 공식 카드에 표시할 만점(5요소 충족) 예시 질문 */
 export const FORMULA_EXAMPLE_QUESTION =
   '2025년 3월 동안 광고 매출액을 채널별 합계로 집계하고, 전월 대비 증감 추이를 분석해줘'
 
-export const FORMULA_CLICKABLE_KEYS = ['groupBy', 'calculation', 'analysis', 'comparison'] as const
-
-export const isFormulaItemClickable = (key: QuestionCriterionKey): boolean =>
-  (FORMULA_CLICKABLE_KEYS as readonly string[]).includes(key)
-
 export const buildFormulaItems = (score: QuestionScore): FormulaDisplayItem[] => {
   const criteriaMap = new Map(score.criteria.map((c) => [c.key, c]))
-  return FORMULA_CRITERIA_ORDER.map((key) => {
+
+  const isCalculationAnalysisMet = () =>
+    Boolean(criteriaMap.get('calculation')?.met || criteriaMap.get('analysis')?.met)
+
+  return FORMULA_DISPLAY_ORDER.map((key) => {
+    if (key === 'calculationAnalysis') {
+      return {
+        key,
+        label: FORMULA_DISPLAY_LABELS[key],
+        required: false,
+        met: isCalculationAnalysisMet(),
+      }
+    }
+
     const criterion = criteriaMap.get(key)
     return {
       key,
@@ -81,6 +94,28 @@ export const buildFormulaItems = (score: QuestionScore): FormulaDisplayItem[] =>
 
 export const countRequiredMissing = (score: QuestionScore): number =>
   score.criteria.filter((c) => c.required && !c.met).length
+
+const DEFAULT_DATA_QUESTION_THEME_HEX = '#2ea3f2'
+const DEFAULT_DATA_QUESTION_THEME_RGB = '46, 163, 242'
+
+export const resolveDataQuestionThemeIconClass = (iconClassNm?: string): string =>
+  String(iconClassNm || '').trim() || 'icon-chart-ai'
+
+const hexToRgb = (hex: string): string => {
+  const cleaned = String(hex || '')
+    .trim()
+    .replace('#', '')
+  if (!/^[0-9a-fA-F]{6}$/.test(cleaned)) return DEFAULT_DATA_QUESTION_THEME_RGB
+  return `${parseInt(cleaned.slice(0, 2), 16)}, ${parseInt(cleaned.slice(2, 4), 16)}, ${parseInt(cleaned.slice(4, 6), 16)}`
+}
+
+export const buildDataQuestionThemeStyle = (colorHex?: string): Record<string, string> => {
+  const color = String(colorHex || '').trim() || DEFAULT_DATA_QUESTION_THEME_HEX
+  return {
+    '--dq-theme-color': color,
+    '--dq-theme-rgb': hexToRgb(color),
+  }
+}
 
 export const scoreFromText = (text: string): QuestionScore => {
   const trimmed = text.trim()

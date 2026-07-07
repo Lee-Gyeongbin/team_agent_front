@@ -50,8 +50,8 @@
           data-aos-delay="200"
         >
           <DataQuestionGuide
-            :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? 'icon-chart-ai'"
-            :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
+            :theme-icon-class-nm="selectedChatThemeAgent?.iconClassNm ?? 'icon-chart-ai'"
+            :theme-color-hex="selectedChatThemeAgent?.colorHex ?? ''"
           />
           <ChatInput v-model="chatMessage" />
         </div>
@@ -62,8 +62,8 @@
         v-if="(isSurveyVisible || isGenderStepVisible) && currentSurveyConfig"
         class="chat-index-survey"
         :survey-config="currentSurveyConfig"
-        :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? ''"
-        :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
+        :theme-icon-class-nm="selectedChatThemeAgent?.iconClassNm ?? ''"
+        :theme-color-hex="selectedChatThemeAgent?.colorHex ?? ''"
         @close="handleClosePsychologySurvey"
         @submit="handleIndexSurveySubmit"
       />
@@ -71,8 +71,8 @@
         v-if="isRecommendVisible && currentRecommendConfig"
         class="chat-index-survey"
         :recommend-config="currentRecommendConfig"
-        :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? ''"
-        :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
+        :theme-icon-class-nm="selectedChatThemeAgent?.iconClassNm ?? ''"
+        :theme-color-hex="selectedChatThemeAgent?.colorHex ?? ''"
         @close="handleCloseRecommendAgent"
         @submit="handleIndexRecommendSubmit"
       />
@@ -80,24 +80,24 @@
         v-if="isTranslateVisible && currentTranslateConfig"
         class="chat-index-survey"
         :translate-config="currentTranslateConfig"
-        :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? ''"
-        :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
+        :theme-icon-class-nm="selectedChatThemeAgent?.iconClassNm ?? ''"
+        :theme-color-hex="selectedChatThemeAgent?.colorHex ?? ''"
         @close="handleCloseTranslateAgent"
         @submit="handleIndexTranslateSubmit"
       />
       <ChatTodayMeme
         v-if="isTodayMemeVisible"
         class="chat-index-survey"
-        :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? ''"
-        :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
+        :theme-icon-class-nm="selectedChatThemeAgent?.iconClassNm ?? ''"
+        :theme-color-hex="selectedChatThemeAgent?.colorHex ?? ''"
         @intro-complete="handleTodayMemeIntroEnd"
       />
       <ChatNewsCurator
         v-if="isNewsCuratorVisible"
         class="chat-index-survey chat-index-news-curator"
         :config="currentCurationConfig"
-        :theme-icon-class-nm="currentSurveyAgent?.iconClassNm ?? ''"
-        :theme-color-hex="currentSurveyAgent?.colorHex ?? ''"
+        :theme-icon-class-nm="selectedChatThemeAgent?.iconClassNm ?? ''"
+        :theme-color-hex="selectedChatThemeAgent?.colorHex ?? ''"
         @close="handleCloseNewsCurator"
         @submit="handleIndexNewsCuratorSubmit"
       />
@@ -174,11 +174,14 @@ import { parseTranslateConfigFromAgent } from '~/utils/chat/translateAgentUtil'
 import { parseCurationConfigFromAgent } from '~/utils/chat/newsCuratorUtil'
 import { CHAT_THEMES, groupAgentsByTheme, getInitialThemeKey, findThemeByKey } from '~/utils/chat/chatThemeUtil'
 import { useMailStore } from '~/composables/mail/useMailStore'
+import { useDataQuestionGate } from '~/composables/chat/useDataQuestionGate'
 import type { Agent } from '~/types/agent'
 
 const { chatMessage, selectChatRoomList, selectModelOptions, resetChatRoom } = useChatRooms()
+const { resetGate } = useDataQuestionGate()
 const {
   selectedChatAgentId,
+  selectedChatThemeAgent,
   selectChatIndexAgent,
   handleResetChatPanels,
   chatIndexAgents,
@@ -378,29 +381,27 @@ const onMailLoginSuccess = async () => {
 }
 
 const isMountedChatIndex = ref(true)
-const currentSurveyAgent = computed(
-  () => chatIndexAgents.value.find((agent) => agent.agentId === selectedChatAgentId.value) ?? null,
-)
 const currentSurveyConfig = computed(() => {
-  const agent = currentSurveyAgent.value
+  const agent = selectedChatThemeAgent.value
   return agent ? parseSurveyConfigFromAgent(agent) : null
 })
 const currentRecommendConfig = computed(() => {
-  const agent = currentSurveyAgent.value
+  const agent = selectedChatThemeAgent.value
   return agent ? parseRecommendConfigFromAgent(agent) : null
 })
 const currentTranslateConfig = computed(() => {
-  const agent = currentSurveyAgent.value
+  const agent = selectedChatThemeAgent.value
   return agent ? parseTranslateConfigFromAgent(agent) : null
 })
 const currentCurationConfig = computed(() => {
-  const agent = currentSurveyAgent.value
+  const agent = selectedChatThemeAgent.value
   return agent ? parseCurationConfigFromAgent(agent) : null
 })
 
 onMounted(async () => {
   // 시각화 패널에서 나와 다시 일반 채팅으로 들어올 때 이전 tableData가 남지 않게 초기화
   handleResetChatPanels()
+  resetGate()
   // 다른 메뉴 갔다 돌아올 때 설문 / 에이전트 선택 상태 초기화
   handleClosePsychologySurvey()
   handleCloseRecommendAgent()

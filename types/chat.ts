@@ -2,6 +2,7 @@
 // 타입 정의
 // ============================================
 import type { TodayMemeItem } from '~/utils/chat/todayMemeUtil'
+import type { QuestionDiagnosis } from '~/types/dataQuestion'
 
 export interface ChatSocketPayload {
   type: string
@@ -98,7 +99,7 @@ export interface ChatSocketMessage {
 export interface ChatMessage {
   id?: string
   logId: string
-  type: 'question' | 'answer' | 'survey' | 'meme' | 'recommend' | 'news' | 'translation'
+  type: 'question' | 'answer' | 'survey' | 'meme' | 'recommend' | 'news' | 'translation' | 'dataQuestionClarification'
   qContent?: string
   rContent?: string
   createdAt: string
@@ -174,6 +175,10 @@ export interface ChatMessage {
   translateFormPayload?: TranslateFormPayload
   /** TRANSLATE 에이전트 카드 전용: 제출 완료 여부 */
   translateSubmitted?: boolean
+  /** 데이터 질의 검증 미리보기(type=dataQuestionClarification) — 서버 로그 미저장 */
+  dataQuestionDiagnosis?: QuestionDiagnosis
+  /** 검증 미리보기 원본 질문 */
+  dataQuestionOriginalQuestion?: string
   [key: string]: unknown
 }
 

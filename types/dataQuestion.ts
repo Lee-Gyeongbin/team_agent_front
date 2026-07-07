@@ -25,80 +25,59 @@ export type QuestionDiagnosisStatus =
   | 'TERM_AMBIGUOUS' // 용어 정의 선택 필요
   | 'OUT_OF_SCOPE' // 데이터로 답 불가
 
-/** 보완 질문 선택지 */
+/** UI 선택지 — 백엔드 options 문자열 배열을 화면용으로 정규화 */
 export interface ClarificationOption {
   value: string
   label: string
 }
 
-/** 보완 질문 — 슬롯별 안내 + 선택지(백엔드 제공 시) */
+/** 보완 질문 — 슬롯별 안내 + 선택지(백엔드 제공) */
 export type ClarificationIntent = 'missing' | 'refine'
 
 export interface ClarificationQuestion {
   /** 슬롯 키 — 예: period, metric, target */
   item: string
   question: string
-  /** missing: 슬롯 없음 / refine: 있으나 구체화 필요 (미전달 시 Tier1 met 여부로 추론) */
+  /** questionPreview 내 플레이스홀더 라벨 — 백엔드 제공 값 그대로 사용 (`매출액` 또는 `{매출액}`) */
+  placeholder?: string
   intent?: ClarificationIntent
-  options?: ClarificationOption[]
+  /** 선택 가능한 값 목록 */
+  options?: string[]
 }
 
 /**
- * 진단 응답 envelope (프론트는 status만 보고 렌더 — 데이터마트 무관)
+ * 진단 응답 envelope (diagnoseQuestion.do)
  *
- * - rewrittenQuestion: READY일 때 정제된 질문, 그 외 null
- * - clarificationQuestions: 핵심 보완 항목 (question 필수, intent/options 선택)
- * - alternatives: 대체 가능 용어(모호·오인 지표 등) — 칩 선택 시 채팅 질문 내 치환
+ * - rewrittenQuestion: READY일 때 완성된 최종 질문, 그 외 null
+ * - questionPreview: 보완 미리보기 문장 (`{매출액}` 등 플레이스홀더 포함)
+ * - clarificationQuestions: 보완 질문 + options 선택지
+ * - alternatives: 대체 가능 용어(모호·오인 지표 등)
  */
 export interface QuestionDiagnosis {
   status: QuestionDiagnosisStatus
   readinessScore: number
   interpretedIntent?: string
   rewrittenQuestion?: string | null
+  questionPreview?: string | null
   clarificationQuestions?: ClarificationQuestion[]
   alternatives?: string[]
   sqlGenerationAllowed: boolean
 }
 
-export const FORMULA_DISPLAY_LABELS: Record<QuestionCriterionKey, string> = {
+/** 질문 작성 공식 pill 키 — 내부 scoring key(calculation/analysis)와 분리 */
+export type FormulaDisplayKey = 'period' | 'metric' | 'groupBy' | 'calculationAnalysis' | 'comparison'
+
+export const FORMULA_DISPLAY_LABELS: Record<FormulaDisplayKey, string> = {
   period: '기간',
-  metric: '무엇을',
+  metric: '무엇을 (지표·대상)',
   groupBy: '구분 단위',
-  calculation: '계산',
-  analysis: '분석',
-  comparison: '비교',
+  calculationAnalysis: '계산·분석 방식',
+  comparison: '비교 기준',
 }
 
 export interface FormulaDisplayItem {
-  key: QuestionCriterionKey
+  key: FormulaDisplayKey
   label: string
   required: boolean
   met: boolean
-}
-
-export interface QuestionDraft {
-  period: string
-  metric: string
-  groupBy: string
-  calculationLabel: string
-  calculationPhrase: string
-  analysisLabel: string
-  analysisPhrase: string
-  comparisonLabel: string
-  comparisonPhrase: string
-}
-
-export interface DatamartTab {
-  id: string
-  label: string
-}
-
-export type MandatorySlotKey = 'period' | 'target'
-
-export interface MandatorySlotCard {
-  key: MandatorySlotKey
-  label: string
-  icon: string
-  question: string
-  item: string
 }
