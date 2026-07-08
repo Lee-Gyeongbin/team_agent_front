@@ -57,7 +57,7 @@
       <UiButton
         class="btn-modal-dialog"
         variant="outline"
-        size="xlg"
+        size="lg"
         @click="emit('close')"
       >
         취소
@@ -65,7 +65,7 @@
       <UiButton
         class="btn-modal-dialog"
         variant="primary"
-        size="xlg"
+        size="lg"
         @click="onSubmit"
       >
         저장
@@ -75,6 +75,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiInput, UiSelect, UiButton } from '@leechanyong/ispark-ui'
 import type { CodeItem } from '~/types/codes'
 import { saveCodeForm } from '~/types/codes'
 import { useCodesStore, useYnOptions } from '~/composables/codes/useCodesStore'
@@ -173,12 +174,6 @@ const onSubmit = () => {
     font-size: $font-size-sm;
     font-weight: $font-weight-medium;
     color: $color-text-primary;
-  }
-
-  :deep(.ui-input-wrap),
-  :deep(.ui-select-wrap) {
-    width: 100%;
-    min-width: 0;
   }
 }
 
