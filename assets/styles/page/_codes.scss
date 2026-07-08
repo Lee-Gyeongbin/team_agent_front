@@ -3,22 +3,16 @@
 
 // 좌·우 코드 테이블 공통 — 콘텐츠 길이에 맞게 컬럼 확장 + 넘칠 때 ellipsis
 @mixin codes-data-table {
-  .ui-table-wrap,
-  .ui-drag-table-wrap {
+  .ui-table-wrap {
     height: 100%;
   }
 
-  .ui-table,
-  .ui-drag-table {
-    // table-layout: auto !important;
-    // width: max-content;
+  .ui-table {
     min-width: 100%;
   }
 
   .ui-table thead th,
-  .ui-table tbody td,
-  .ui-drag-table thead th,
-  .ui-drag-table tbody td {
+  .ui-table tbody td {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -27,8 +21,7 @@
   }
 
   // 슬롯으로 렌더된 텍스트 콘텐츠도 셀 경계 내 처리
-  .ui-table tbody td > *:not(.cell-actions-wrap):not(.codes-drag-handle):not(.ui-badge),
-  .ui-drag-table tbody td > *:not(.cell-actions-wrap):not(.codes-drag-handle):not(.ui-badge) {
+  .ui-table tbody td > *:not(.cell-actions-wrap):not(.codes-drag-handle):not(.ui-badge) {
     display: block;
     max-width: 100%;
     overflow: hidden;
@@ -36,27 +29,9 @@
     white-space: nowrap;
   }
 
-  // 드래그 핸들 컬럼 — 고정 너비, 말줄임 없음
-  .ui-drag-table thead th:first-child,
-  .ui-drag-table tbody td:first-child {
-    width: 40px;
-    min-width: 40px;
-    max-width: 40px;
-    padding-inline: 0;
-    overflow: visible;
-    text-overflow: clip;
-
-    .codes-drag-handle {
-      overflow: visible;
-      text-overflow: clip;
-    }
-  }
-
   // 관리(actions) 컬럼
   .ui-table thead th.is-last,
-  .ui-table tbody td.is-last,
-  .ui-drag-table thead th.is-last,
-  .ui-drag-table tbody td.is-last {
+  .ui-table tbody td.is-last {
     width: 48px;
     min-width: 48px;
     max-width: 48px;
@@ -202,20 +177,14 @@
 
   // 코드·코드명 — 콘텐츠 길이만큼 셀 확장 (말줄임 없음, 옆 셀 침범 없음)
   .ui-table col:nth-child(1),
-  .ui-table col:nth-child(2),
-  .ui-drag-table col:nth-child(2),
-  .ui-drag-table col:nth-child(3) {
+  .ui-table col:nth-child(2) {
     width: auto;
   }
 
   .ui-table thead th:nth-child(1),
   .ui-table thead th:nth-child(2),
   .ui-table tbody td:nth-child(1),
-  .ui-table tbody td:nth-child(2),
-  .ui-drag-table thead th:nth-child(2),
-  .ui-drag-table thead th:nth-child(3),
-  .ui-drag-table tbody td:nth-child(2),
-  .ui-drag-table tbody td:nth-child(3) {
+  .ui-table tbody td:nth-child(2) {
     width: max-content;
     min-width: max-content;
     max-width: none;
