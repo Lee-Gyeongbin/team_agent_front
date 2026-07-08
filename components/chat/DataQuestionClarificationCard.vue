@@ -42,7 +42,7 @@
         >
           <div class="dq-clarification__section-head">
             <i
-              :class="[resolvedThemeIconClass, 'size-18 dq-clarification__section-icon']"
+              :class="[resolvedThemeIconClass, 'size-20 dq-clarification__section-icon']"
               aria-hidden="true"
             />
             <p class="dq-clarification__section-title">{{ section.warning }}</p>
@@ -129,7 +129,7 @@
         <section class="dq-clarification__section-card">
           <div class="dq-clarification__section-head">
             <i
-              :class="[resolvedThemeIconClass, 'size-18 dq-clarification__section-icon']"
+              :class="[resolvedThemeIconClass, 'size-20 dq-clarification__section-icon']"
               aria-hidden="true"
             />
             <p class="dq-clarification__section-title">보완 사항</p>
@@ -357,15 +357,15 @@ const onRetryQuestion = () => {
   &__content {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 14px;
     padding: 16px 20px 20px;
   }
 
   &__section-card {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 14px;
+    gap: 14px;
+    padding: 18px;
     border: 1px solid rgba(226, 85, 85, 0.18);
     border-radius: $border-radius-lg;
     background: rgba(226, 85, 85, 0.03);
@@ -390,8 +390,9 @@ const onRetryQuestion = () => {
 
   &__section-title {
     margin: 0;
-    @include typo($body-small-bold, #e25555);
-    line-height: 1.5;
+    @include typo($body-medium-bold, #e25555);
+    font-size: 15px;
+    line-height: 1.55;
   }
 
   &__section-card.is-filled &__section-title {
@@ -403,7 +404,7 @@ const onRetryQuestion = () => {
     flex-wrap: wrap;
     align-items: center;
     justify-content: flex-start;
-    gap: 8px;
+    gap: 10px;
     margin: 0;
     padding: 0;
     list-style: none;
@@ -414,15 +415,16 @@ const onRetryQuestion = () => {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    min-height: 32px;
-    padding: 0 10px;
+    min-height: 40px;
+    padding: 0 14px;
     border: 1px solid $color-border-light;
     border-radius: $border-radius-base;
     background: #fff;
     cursor: pointer;
     line-height: 1;
     font: inherit;
-    @include typo($body-small, $color-text-secondary);
+    @include typo($body-medium, $color-text-secondary);
+    font-size: 14px;
 
     &.is-selected {
       border-color: rgba(var(--dq-theme-rgb, 46, 163, 242), 0.45);
@@ -454,8 +456,8 @@ const onRetryQuestion = () => {
   &__preview {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 12px 14px;
+    gap: 12px;
+    padding: 16px 18px;
     border-radius: $border-radius-base;
     background: rgba(var(--dq-theme-rgb, 46, 163, 242), 0.06);
   }
@@ -465,20 +467,22 @@ const onRetryQuestion = () => {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    min-height: 22px;
-    padding: 2px 8px;
+    min-height: 28px;
+    padding: 4px 12px;
     border-radius: 999px;
     background: rgba(var(--dq-theme-rgb, 46, 163, 242), 0.14);
     line-height: 1;
-    @include typo($body-caption-bold, var(--dq-theme-color, var(--color-primary, #{$color-primary})));
+    @include typo($body-small-bold, var(--dq-theme-color, var(--color-primary, #{$color-primary})));
+    font-size: 13px;
   }
 
   &__preview-text {
     flex: 1;
     min-width: 0;
     margin: 0;
-    line-height: $line-height-base;
-    @include typo($body-small, $color-text-primary);
+    line-height: 1.55;
+    @include typo($body-medium, $color-text-primary);
+    font-size: 15px;
   }
 
   &__preview-placeholder {

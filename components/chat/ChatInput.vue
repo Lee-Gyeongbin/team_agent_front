@@ -316,7 +316,8 @@ const handleSelectNextQuestion = (question: string) => {
 }
 
 // ===== 데이터분석(S) 질문 품질 게이트 — 검증 통과 전 전송 차단 =====
-const { isGateActive, isValidating, canSend, requiredFilled, validate } = useDataQuestionGate()
+const { isGateActive, isValidating, canSend, requiredFilled, validate, finalizeDataQuestionSend } =
+  useDataQuestionGate()
 const isValidateMode = computed(() => isGateActive.value && !canSend.value && !isAnswerStreaming.value)
 
 /** 전송 버튼 비활성 — 게이트 활성 시 검증 통과 전엔 전송 불가(검증 모드일 땐 검증 가능 여부로 판정) */
@@ -643,6 +644,9 @@ const handleSend = async () => {
       sent = await onSend(filesToSend, riskAutoContent)
     }
     if (sent) {
+      if (isGateActive.value) {
+        finalizeDataQuestionSend()
+      }
       clearAttachments()
     }
   } finally {

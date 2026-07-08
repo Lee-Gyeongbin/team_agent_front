@@ -32,6 +32,7 @@ const diagnosis = ref<QuestionDiagnosis | null>(null)
 const validatedQuestion = ref('')
 const isValidating = ref(false)
 const clarificationSelections = ref<Record<string, string>>({})
+const isGuideDismissed = ref(false)
 
 const normalize = (s: string) => s.trim().replace(/\s+/g, ' ')
 
@@ -382,7 +383,6 @@ export const useDataQuestionGate = () => {
       gateStatus.value = result.status === 'READY' && result.sqlGenerationAllowed ? 'passed' : 'needs_fix'
 
       if (gateStatus.value === 'passed') {
-        removeValidationPreviewMessages()
         return
       }
 
@@ -401,6 +401,14 @@ export const useDataQuestionGate = () => {
     gateStatus.value = 'idle'
     diagnosis.value = null
     validatedQuestion.value = ''
+    isGuideDismissed.value = false
+  }
+
+  /** 실제 질의 전송 성공 시 — 보완 미리보기·가이드 정리 */
+  const finalizeDataQuestionSend = () => {
+    if (!isGateActive.value) return
+    removeValidationPreviewMessages()
+    isGuideDismissed.value = true
   }
 
   const applyClarificationSelection = (selectionKey: string, option: ClarificationOption) => {
@@ -423,7 +431,6 @@ export const useDataQuestionGate = () => {
 
     chatMessage.value = finalQuestion
     clarificationSelections.value = {}
-    removeValidationPreviewMessages()
     resetGate()
   }
 
@@ -464,6 +471,7 @@ export const useDataQuestionGate = () => {
     retryClarifiedQuestion,
     clearValidationPreview,
     resetGate,
+    finalizeDataQuestionSend,
   }
 }
 
@@ -497,11 +505,17 @@ export const useDataQuestionGuide = (props: DataQuestionGuideProps) => {
     }
   })
 
-  const isDataQuestionActive = isGateActive
+  const isDataQuestionActive = computed(() => isGateActive.value && !isGuideDismissed.value)
 
   const onToggleGuide = () => {
     isOpen.value = !isOpen.value
   }
+
+  watch(chatMessage, (next) => {
+    if (isGuideDismissed.value && next.trim()) {
+      isGuideDismissed.value = false
+    }
+  })
 
   watch(isDataQuestionActive, (active) => {
     if (!active) return

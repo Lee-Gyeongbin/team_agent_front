@@ -386,8 +386,8 @@ const {
   &__formula-example {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 12px 14px;
+    gap: 12px;
+    padding: 16px 18px;
     border-radius: $border-radius-base;
     background: rgba(var(--dq-theme-rgb, 46, 163, 242), 0.06);
   }
@@ -398,12 +398,13 @@ const {
     justify-content: center;
     flex-shrink: 0;
     align-self: center;
-    min-height: 22px;
-    padding: 2px 8px;
+    min-height: 28px;
+    padding: 4px 12px;
     border-radius: 999px;
     background: rgba(var(--dq-theme-rgb, 46, 163, 242), 0.14);
     line-height: 1;
-    @include typo($body-caption-bold, var(--dq-theme-color, var(--color-primary, #{$color-primary})));
+    @include typo($body-small-bold, var(--dq-theme-color, var(--color-primary, #{$color-primary})));
+    font-size: 13px;
   }
 
   &__formula-example-text {
@@ -415,8 +416,9 @@ const {
     background: transparent;
     text-align: left;
     cursor: pointer;
-    line-height: $line-height-base;
-    @include typo($body-small, $color-text-primary);
+    line-height: 1.55;
+    @include typo($body-medium, $color-text-primary);
+    font-size: 15px;
 
     &:hover {
       color: var(--dq-theme-color, var(--color-primary, #{$color-primary}));
