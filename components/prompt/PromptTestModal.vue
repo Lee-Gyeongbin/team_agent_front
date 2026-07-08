@@ -31,7 +31,7 @@
       <UiButton
         class="prompt-test-run-btn"
         variant="primary"
-        size="xlg"
+        size="lg"
         full-width
         :disabled="isTestStreaming || !testPrompt.trim()"
         @click="onRunTest"
@@ -71,6 +71,8 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiTextarea } from '@leechanyong/ispark-ui'
+
 interface Props {
   isOpen: boolean
   promptContent: string

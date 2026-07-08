@@ -24,7 +24,7 @@
       <UiButton
         class="btn-modal-dialog"
         variant="outline"
-        size="xlg"
+        size="lg"
         @click="emit('close')"
       >
         취소
@@ -32,7 +32,7 @@
       <UiButton
         class="btn-modal-dialog"
         variant="primary"
-        size="xlg"
+        size="lg"
         :disabled="!selectedCategoryId || moveTargetOptions.length === 0"
         @click="onMove"
       >
@@ -43,8 +43,9 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiSelect } from '@leechanyong/ispark-ui'
 import type { LibraryCard } from '~/types/library'
-import type { SelectOption } from '~/components/ui/UiSelect.vue'
+import type { SelectOption } from '@leechanyong/ispark-ui'
 
 interface Props {
   card: LibraryCard | null
@@ -113,11 +114,6 @@ const onMove = () => {
     font-size: $font-size-sm;
     font-weight: $font-weight-medium;
     color: $color-text-primary;
-  }
-
-  :deep(.ui-select-wrap) {
-    width: 100%;
-    min-width: 0;
   }
 }
 </style>

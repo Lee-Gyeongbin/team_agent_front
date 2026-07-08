@@ -79,7 +79,7 @@
       <UiButton
         class="btn-modal-dialog"
         variant="outline"
-        size="xlg"
+        size="lg"
         @click="emit('close')"
       >
         취소
@@ -87,7 +87,7 @@
       <UiButton
         class="btn-modal-dialog"
         variant="primary"
-        size="xlg"
+        size="lg"
         :disabled="!selectedCategoryId || loading"
         @click="onConfirm"
       >
@@ -98,9 +98,10 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiSelect } from '@leechanyong/ispark-ui'
 import type { KnowledgeItem } from '~/types/chat'
 import type { LibraryCard } from '~/types/library'
-import type { SelectOption } from '~/components/ui/UiSelect.vue'
+import type { SelectOption } from '@leechanyong/ispark-ui'
 import defaultLibraryCardImg from '~/assets/images/test_images.png'
 import { resolveDataUrlImageSrc } from '~/utils/global/imageUtil'
 import { formatDateTimeDisplay } from '~/utils/global/dateUtil'
@@ -189,11 +190,6 @@ const onConfirm = () => {
     font-size: $font-size-sm;
     font-weight: $font-weight-medium;
     color: $color-text-primary;
-  }
-
-  :deep(.ui-select-wrap) {
-    width: 100%;
-    min-width: 0;
   }
 }
 

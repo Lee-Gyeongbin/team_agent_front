@@ -103,7 +103,7 @@
         <UiButton
           class="btn-modal-dialog"
           variant="outline"
-          size="xlg"
+          size="lg"
           @click="onClose"
         >
           취소
@@ -111,7 +111,7 @@
         <UiButton
           class="btn-modal-dialog"
           variant="primary"
-          size="xlg"
+          size="lg"
           :disabled="!checkSave"
           @click="onConfirm"
         >
@@ -123,6 +123,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiInput, UiSelect } from '@leechanyong/ispark-ui'
 import type { UserItem } from '~/types/user-manage'
 import { useUserManageStore } from '~/composables/user-manage/useUserManageStore'
 import { useOrgManageStore } from '~/composables/org-manage/useOrgManageStore'
@@ -219,11 +220,6 @@ const onConfirm = async () => {
 
   .user-modal__row-double > td:first-of-type {
     padding-right: $spacing-lg;
-  }
-
-  :deep(.ui-input-wrap),
-  :deep(.ui-select-wrap) {
-    width: 100%;
   }
 }
 

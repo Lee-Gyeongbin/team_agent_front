@@ -21,7 +21,7 @@
       <UiButton
         class="btn-modal-dialog"
         variant="outline"
-        size="xlg"
+        size="lg"
         @click="emit('close')"
       >
         취소
@@ -29,7 +29,7 @@
       <UiButton
         class="btn-modal-dialog"
         variant="primary"
-        size="xlg"
+        size="lg"
         :disabled="!canSubmit"
         @click="onSubmit"
       >
@@ -40,6 +40,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiInput } from '@leechanyong/ispark-ui'
 import type { MyDoc } from '~/types/mydoc'
 
 interface Props {
@@ -130,11 +131,6 @@ const onSubmit = () => {
     font-size: $font-size-sm;
     font-weight: $font-weight-medium;
     color: $color-text-primary;
-  }
-
-  :deep(.ui-input-wrap) {
-    width: 100%;
-    min-width: 0;
   }
 }
 
