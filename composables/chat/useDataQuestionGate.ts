@@ -34,6 +34,18 @@ const isValidating = ref(false)
 const clarificationSelections = ref<Record<string, string>>({})
 const isGuideDismissed = ref(false)
 
+const DQ_GUIDE_ALWAYS_COLLAPSED_KEY = 'dqGuideAlwaysCollapsed'
+
+/** localStorage — 미설정 시 기존 동작(펼친 상태) 유지 */
+const readAlwaysCollapsedPreference = (): boolean => {
+  if (typeof localStorage === 'undefined') return false
+  const saved = localStorage.getItem(DQ_GUIDE_ALWAYS_COLLAPSED_KEY)
+  if (saved === null) return false
+  return saved === 'true'
+}
+
+const alwaysCollapsed = ref(readAlwaysCollapsedPreference())
+
 const normalize = (s: string) => s.trim().replace(/\s+/g, ' ')
 
 /** 검증 미리보기 채팅방 제목 — 길면 말줄임 */
@@ -492,7 +504,7 @@ export const useDataQuestionGuide = (props: DataQuestionGuideProps) => {
     applySuggestedQuestion,
   } = useDataQuestionGate()
 
-  const isOpen = ref(false)
+  const isOpen = ref(!alwaysCollapsed.value)
 
   const isReadyPass = computed(() => showDiagnosis.value && diagnosis.value?.status === 'READY')
   const summaryLabel = computed(() => getDiagnosisSummaryLabel(showDiagnosis.value, diagnosis.value, isReadyPass.value))
@@ -511,6 +523,14 @@ export const useDataQuestionGuide = (props: DataQuestionGuideProps) => {
     isOpen.value = !isOpen.value
   }
 
+  const onAlwaysCollapsedChange = (value: boolean) => {
+    alwaysCollapsed.value = value
+    localStorage.setItem(DQ_GUIDE_ALWAYS_COLLAPSED_KEY, String(value))
+    if (value) {
+      isOpen.value = false
+    }
+  }
+
   watch(chatMessage, (next) => {
     if (isGuideDismissed.value && next.trim()) {
       isGuideDismissed.value = false
@@ -519,7 +539,7 @@ export const useDataQuestionGuide = (props: DataQuestionGuideProps) => {
 
   watch(isDataQuestionActive, (active) => {
     if (!active) return
-    isOpen.value = false
+    isOpen.value = !alwaysCollapsed.value
   })
 
   const resolvedThemeIconClass = computed(() => resolveDataQuestionThemeIconClass(props.themeIconClassNm))
@@ -552,7 +572,9 @@ export const useDataQuestionGuide = (props: DataQuestionGuideProps) => {
     summaryLabel,
     formulaItems,
     formulaExampleQuestion: FORMULA_EXAMPLE_QUESTION,
+    alwaysCollapsed,
     onToggleGuide,
+    onAlwaysCollapsedChange,
     onApplyFormulaExample,
   }
 }

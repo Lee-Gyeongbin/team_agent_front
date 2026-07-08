@@ -93,6 +93,17 @@
             {{ formulaExampleQuestion }}
           </button>
         </div>
+
+        <div
+          class="dq-guide__preference"
+          @click.stop
+        >
+          <UiCheckbox
+            :model-value="alwaysCollapsed"
+            label="항상 접힌 상태로 보기"
+            @update:model-value="onAlwaysCollapsedChange"
+          />
+        </div>
       </div>
     </Transition>
   </div>
@@ -123,7 +134,9 @@ const {
   summaryLabel,
   formulaItems,
   formulaExampleQuestion,
+  alwaysCollapsed,
   onToggleGuide,
+  onAlwaysCollapsedChange,
   onApplyFormulaExample,
 } = useDataQuestionGuide(props)
 </script>
@@ -160,7 +173,7 @@ const {
     align-items: center;
     gap: 15px;
     padding: 12px 20px;
-    border-bottom: 1px solid $color-border-light;
+    border-bottom: 0;
     background: linear-gradient(180deg, rgba(var(--dq-theme-rgb, 46, 163, 242), 0.05) 0%, #f8fbfd 100%);
     cursor: pointer;
     outline: none;
@@ -281,6 +294,12 @@ const {
 
   &__toggle-icon {
     transition: transform 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  &__preference {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 4px;
   }
 
   &__content {
