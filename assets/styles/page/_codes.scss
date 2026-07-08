@@ -291,25 +291,6 @@
   }
 }
 
-// 그룹 미선택 빈 상태
-.codes-empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  min-height: 240px;
-  color: $color-text-disabled;
-
-  i {
-    opacity: 0.5;
-  }
-
-  p {
-    font-size: $font-size-sm;
-  }
-}
-
 // kebab 메뉴 버튼 hover
 .cell-actions-wrap {
   display: flex;
