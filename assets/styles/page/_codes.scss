@@ -11,7 +11,7 @@
   .ui-table,
   .ui-drag-table {
     table-layout: auto !important;
-    width: max-content;
+    // width: max-content;
     min-width: 100%;
   }
 
@@ -27,8 +27,8 @@
   }
 
   // 슬롯으로 렌더된 텍스트 콘텐츠도 셀 경계 내 처리
-  .ui-table tbody td > *:not(.cell-actions-wrap):not(.codes-drag-handle),
-  .ui-drag-table tbody td > *:not(.cell-actions-wrap):not(.codes-drag-handle) {
+  .ui-table tbody td > *:not(.cell-actions-wrap):not(.codes-drag-handle):not(.ui-badge),
+  .ui-drag-table tbody td > *:not(.cell-actions-wrap):not(.codes-drag-handle):not(.ui-badge) {
     display: block;
     max-width: 100%;
     overflow: hidden;
@@ -83,7 +83,6 @@
   padding: 12px 0;
   margin-bottom: $spacing-md;
 }
-
 
 .codes-error {
   @include flex-center;
@@ -241,30 +240,6 @@
   z-index: 2;
   min-height: 0;
   background: rgba(255, 255, 255, 0.72);
-}
-
-.codes-status {
-  display: inline-block;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  vertical-align: middle;
-  padding: 2px 8px;
-  border-radius: $border-radius-full;
-  font-size: $font-size-sm;
-  font-weight: $font-weight-medium;
-
-  &.is-use {
-    background: rgba($color-success, 0.12);
-    color: $color-success;
-  }
-
-  &.is-unuse {
-    background: rgba($color-text-disabled, 0.08);
-    color: $color-text-disabled;
-    opacity: 0.7;
-  }
 }
 
 // 오른쪽 그룹명 표시

@@ -88,12 +88,9 @@
             @row-click="(row) => handleSelectGroup(row as CodeGroupItem)"
           >
             <template #cell-useYn="{ value }">
-              <span
-                class="codes-status"
-                :class="value === 'Y' ? 'is-use' : 'is-unuse'"
-              >
+              <UiBadge :variant="value === 'Y' ? 'success' : 'default'">
                 {{ value === 'Y' ? '사용' : '미사용' }}
-              </span>
+              </UiBadge>
             </template>
             <template #cell-actions="{ row }">
               <div
@@ -201,12 +198,9 @@
               </span>
             </template>
             <template #cell-useYn="{ value }">
-              <span
-                class="codes-status"
-                :class="value === 'Y' ? 'is-use' : 'is-unuse'"
-              >
+              <UiBadge :variant="value === 'Y' ? 'success' : 'default'">
                 {{ value === 'Y' ? '사용' : '미사용' }}
-              </span>
+              </UiBadge>
             </template>
             <template #cell-actions="{ row }">
               <div
@@ -244,12 +238,9 @@
             empty-text="조회된 공통코드가 없습니다."
           >
             <template #cell-useYn="{ value }">
-              <span
-                class="codes-status"
-                :class="value === 'Y' ? 'is-use' : 'is-unuse'"
-              >
+              <UiBadge :variant="value === 'Y' ? 'success' : 'default'">
                 {{ value === 'Y' ? '사용' : '미사용' }}
-              </span>
+              </UiBadge>
             </template>
             <template #cell-actions="{ row }">
               <div
@@ -315,7 +306,7 @@
 </template>
 
 <script setup lang="ts">
-import { UiButton, UiInput, UiTable, UiDropdownMenu, UiEmpty, UiLoading } from '@leechanyong/ispark-ui'
+import { UiBadge, UiButton, UiInput, UiTable, UiDropdownMenu, UiEmpty, UiLoading } from '@leechanyong/ispark-ui'
 import type { CodeGroupItem, CodeItem } from '~/types/codes'
 import { codeGroupColumns, codesColumns, codesColumnsWithDrag } from '~/types/codes'
 import { getCodeGroupRowMenuItems, getCodesRowMenuItems, useCodesStore } from '~/composables/codes/useCodesStore'
