@@ -30,7 +30,9 @@ export default defineNuxtConfig({
 
   vite: {
     optimizeDeps: {
-      include: ['exceljs', 'html-to-image'],
+      // vuedraggable: @leechanyong/ispark-ui UiTable(draggable)이 동적 import →
+      // Vite가 자동 발견 못 하므로 명시 등록(미등록 시 raw UMD 로드로 Vue 참조 실패)
+      include: ['exceljs', 'html-to-image', 'vuedraggable'],
     },
     // Vite가 클라이언트에서 import.meta.server → false 치환 후에도
     // manifest.js dead branch의 import("#app-manifest")를 분석하며 실패하는 경우 대비

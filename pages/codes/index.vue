@@ -181,16 +181,17 @@
           />
 
           <!-- 드래그 정렬 가능 시 -->
-          <UiDragTable
+          <UiTable
             v-else-if="canDrag"
-            v-model="codeList"
+            draggable
+            v-model:data="codeList"
             :columns="codesColumnsWithDrag"
             item-key="codeId"
-            handle=".codes-drag-handle"
+            drag-handle=".codes-drag-handle"
             sticky-header
             max-height="calc(100vh - 280px)"
             empty-text="조회된 공통코드가 없습니다."
-            @drag-end="handleUpdateSortOrder"
+            @reorder-end="handleUpdateSortOrder"
           >
             <template #cell-_drag>
               <span class="codes-drag-handle">
@@ -226,7 +227,7 @@
                 </UiDropdownMenu>
               </div>
             </template>
-          </UiDragTable>
+          </UiTable>
 
           <!-- 드래그 비활성 시 (검색 중) -->
           <UiTable
