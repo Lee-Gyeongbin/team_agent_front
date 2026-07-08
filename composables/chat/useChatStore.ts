@@ -67,10 +67,10 @@ import {
   useNewsCurator,
   useNewsCuratorAgentConfig,
 } from '~/utils/chat/newsCuratorUtil'
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useChatApi } from '~/composables/chat/useChatApi'
 import { clearBodyChartFullscreen } from '~/utils/chat/visualizationChartUtil'
-import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
+import { isEphemeralValidationRoomId, normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
 import { useFileStore } from '~/composables/com/useFileStore'
 
 /** 에이전트 SVC_TY → 채팅 검색모드 (M=RAG·지식, S=SQL·데이터마트) */
@@ -203,6 +203,10 @@ const { fetchSelectChatLogList, fetchSelectChatRef, fetchSelectTableDataList, fe
 
 /** /chat 인덱스용 에이전트 목록 (selectAgentListForChat.do — subCfg 포함) */
 const chatIndexAgents = ref<Agent[]>([])
+/** 선택된 채팅 에이전트 — 테마 아이콘·색상 공통 */
+const selectedChatThemeAgent = computed(
+  () => chatIndexAgents.value.find((agent) => agent.agentId === selectedChatAgentId.value) ?? null,
+)
 const isLoadingChatIndexAgents = ref(true)
 /** 동시 호출 시 단일 요청만 수행 */
 let chatIndexAgentsLoadPromise: Promise<void> | null = null
@@ -328,6 +332,18 @@ export const useChatStore = () => {
       preserveLocalWhenEmpty?: boolean
     },
   ) => {
+    // 검증 미리보기 방 — 서버 로그 조회 없이 로컬 메시지만 유지
+    if (isEphemeralValidationRoomId(roomId)) {
+      resetNextQuestions()
+      const isSameRoom = normalizeChatRoomId(chatRoom.value.roomId) === normalizeChatRoomId(roomId)
+      const hasPreviewMessages = messages.value.some(
+        (message) =>
+          message.type === 'dataQuestionClarification' || (message.chatLogMissing && message.type === 'question'),
+      )
+      if (!isSameRoom && !hasPreviewMessages) messages.value = []
+      return
+    }
+
     // 채팅방 전환 시 이전 방의 다음 추천 질문 상태는 더 이상 유효하지 않으므로 초기화
     resetNextQuestions()
     if (!roomId) {
@@ -1463,6 +1479,7 @@ export const useChatStore = () => {
     modelOptions,
     activeSearchModes,
     selectedChatAgentId,
+    selectedChatThemeAgent,
     chatIndexAgents,
     isLoadingChatIndexAgents,
     getChatIndexAgentSubLabel,
