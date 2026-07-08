@@ -119,7 +119,10 @@
         <p class="chat-recommend-agent-card__label">
           {{ recommendConfig.form.regionSelectLabel || '지역을 선택해주세요' }}
         </p>
-        <div class="chat-recommend-agent-card__location-grid">
+        <div
+          class="chat-recommend-agent-card__location-grid"
+          :style="{ '--location-field-count': visibleLocationFieldCount }"
+        >
           <UiSelect
             :model-value="form['sido']"
             :options="sidoSelectOptions"
@@ -127,12 +130,14 @@
             @update:model-value="!props.readonly && setFormValue('sido', String($event))"
           />
           <UiSelect
+            v-if="showSigunguSelect"
             :model-value="form['sigungu']"
             :options="sigunguSelectOptions"
             :disabled="props.readonly || isRegionLoading || !hasSelectedSido"
             @update:model-value="!props.readonly && setFormValue('sigungu', String($event))"
           />
           <UiSelect
+            v-if="showDongSelect"
             :model-value="form['dong']"
             :options="dongSelectOptions"
             :disabled="props.readonly || isRegionLoading || !hasSelectedSigungu"
@@ -346,6 +351,8 @@ import {
   resolveRecommendItemLinkUrl,
   tryGetRecommendImageEnrichmentFromCache,
   getRecommendGeolocationCoords,
+  normalizeRecommendRegionSelectDepth,
+  isRecommendRegionSelectionComplete,
 } from '~/utils/chat/recommendAgentUtil'
 import { normalizeLunchLocationMap } from '~/utils/chat/lunchAgentUtil'
 import { useChatApi } from '~/composables/chat/useChatApi'
@@ -447,13 +454,30 @@ const dongSelectOptions = computed(() =>
     : toSelectOptions(dongList.value),
 )
 
-const isLocationAnswered = computed(() => !!form['sido'] && !!form['sigungu'] && !!form['dong'])
+const regionSelectDepth = computed(() =>
+  normalizeRecommendRegionSelectDepth(props.recommendConfig.form.regionSelectDepth),
+)
+const isLocationAnswered = computed(() => isRecommendRegionSelectionComplete(form, regionSelectDepth.value))
+const showSigunguSelect = computed(() => {
+  if (props.readonly) return !!(form['sigungu'] ?? '').trim() || regionSelectDepth.value !== 'sido'
+  return regionSelectDepth.value !== 'sido'
+})
+const showDongSelect = computed(() => {
+  if (props.readonly) return !!(form['dong'] ?? '').trim() || regionSelectDepth.value === 'dong'
+  return regionSelectDepth.value === 'dong'
+})
+const visibleLocationFieldCount = computed(() => {
+  let count = 1
+  if (showSigunguSelect.value) count += 1
+  if (showDongSelect.value) count += 1
+  return count
+})
 const hasSelectedSido = computed(() => !!form['sido'])
 const hasSelectedSigungu = computed(() => !!form['sigungu'])
 
 watch(
-  [sidoList, sigunguList, dongList],
-  ([sidos, sigungus, dongs]) => {
+  [sidoList, sigunguList, dongList, regionSelectDepth],
+  ([sidos, sigungus, dongs, depth]) => {
     if (props.readonly || !props.recommendConfig.form.useRegionSelect) return
     if (!sidos.length || !sidos.includes(form['sido'] ?? '')) {
       form['sido'] = ''
@@ -461,8 +485,17 @@ watch(
       form['dong'] = ''
       return
     }
+    if (depth === 'sido') {
+      form['sigungu'] = ''
+      form['dong'] = ''
+      return
+    }
     if (!sigungus.length || !sigungus.includes(form['sigungu'] ?? '')) {
       form['sigungu'] = ''
+      form['dong'] = ''
+      return
+    }
+    if (depth === 'sigungu') {
       form['dong'] = ''
       return
     }
@@ -500,13 +533,30 @@ const fetchRegionTree = async () => {
 }
 
 const applySelectedLocationToForm = (selected?: { sido?: string; sigungu?: string; dong?: string }) => {
+  const depth = regionSelectDepth.value
   const sido = String(selected?.sido ?? '').trim()
   const sigungu = String(selected?.sigungu ?? '').trim()
   const dong = String(selected?.dong ?? '').trim()
-  if (!sido || !sigungu || !dong) return
+  if (!sido) return
   if (form['sido'] || form['sigungu'] || form['dong']) return
+  if (!locationMap.value[sido]) return
+
+  if (depth === 'sido') {
+    form['sido'] = sido
+    return
+  }
+
+  if (!sigungu) return
   const sigunguMap = locationMap.value[sido]
-  if (!sigunguMap) return
+  if (!sigunguMap || !Object.prototype.hasOwnProperty.call(sigunguMap, sigungu)) return
+
+  if (depth === 'sigungu') {
+    form['sido'] = sido
+    form['sigungu'] = sigungu
+    return
+  }
+
+  if (!dong) return
   const dongListBySigungu = sigunguMap[sigungu]
   if (!Array.isArray(dongListBySigungu) || !dongListBySigungu.includes(dong)) return
   form['sido'] = sido
@@ -1091,7 +1141,7 @@ const onSubmitClick = () => {
 
   &__location-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--location-field-count, 3), minmax(0, 1fr));
     gap: $spacing-sm;
   }
 

@@ -230,6 +230,18 @@
               @update:model-value="onUpdate('regionSelectLabel', String($event ?? ''))"
             />
           </div>
+          <div
+            v-if="modelValue.useRegionSelect"
+            class="com-setting-field-row"
+          >
+            <label class="com-setting-label">필수 선택 범위</label>
+            <UiSelect
+              :model-value="modelValue.regionSelectDepth"
+              :options="regionSelectDepthOptions"
+              size="sm"
+              @update:model-value="onRegionSelectDepthChange(String($event ?? ''))"
+            />
+          </div>
 
           <div class="recommend-form-fields">
             <div class="recommend-form-fields__head">
@@ -566,6 +578,7 @@ import {
   type RecommendFormFieldForm,
   type RecommendResultFieldForm,
 } from '~/utils/agent/recommendConfigUtil'
+import { normalizeRecommendRegionSelectDepth } from '~/utils/chat/recommendAgentUtil'
 
 const props = defineProps<{
   modelValue: RecommendConfigForm
@@ -579,6 +592,12 @@ const resultFieldTypeOptions = [
   { label: '기본', value: '' },
   { label: '링크', value: 'link' },
   { label: '텍스트', value: 'text' },
+]
+
+const regionSelectDepthOptions = [
+  { label: '시·도까지', value: 'sido' },
+  { label: '시·군·구까지', value: 'sigungu' },
+  { label: '읍·면·동까지', value: 'dong' },
 ]
 
 // 이미지 보강 방식 — 없음 / AI 생성(음식 등) / 카카오 이미지 검색(실제 사진)
@@ -602,6 +621,10 @@ const onUpdate = <K extends keyof RecommendConfigForm>(key: K, value: RecommendC
 
 const onResultTopNUpdate = (raw: string | number) => {
   onUpdate('resultTopN', clampAgentRecommendTopN(raw))
+}
+
+const onRegionSelectDepthChange = (value: string) => {
+  onUpdate('regionSelectDepth', normalizeRecommendRegionSelectDepth(value))
 }
 
 // ── 대기 상태 문구 ──────────────────────────────────────────
