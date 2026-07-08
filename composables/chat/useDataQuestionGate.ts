@@ -420,7 +420,6 @@ export const useDataQuestionGate = () => {
   const finalizeDataQuestionSend = () => {
     if (!isGateActive.value) return
     removeValidationPreviewMessages()
-    isGuideDismissed.value = true
   }
 
   const applyClarificationSelection = (selectionKey: string, option: ClarificationOption) => {
@@ -430,7 +429,7 @@ export const useDataQuestionGate = () => {
     }
   }
 
-  /** 보완 완료 후 최종 질문을 입력창에만 반영 (자동 검증·전송 없음) */
+  /** 보완 완료 후 최종 질문을 입력창에만 반영 (자동 검증·전송 없음, 선택 상태 유지) */
   const submitClarifiedQuestion = () => {
     const clarificationMessage = messages.value.find((message) => message.type === 'dataQuestionClarification')
     const diag = clarificationMessage?.dataQuestionDiagnosis ?? diagnosis.value
@@ -441,9 +440,11 @@ export const useDataQuestionGate = () => {
     const finalQuestion = buildClarificationPreviewText(originalQuestion, diag, clarificationSelections.value)
     if (!finalQuestion) return
 
+    // 이미 선택한 기준은 유지하고 입력창에만 복사 — 선택 초기화하면 "보완 N개 남음"으로 되돌아감
     chatMessage.value = finalQuestion
-    clarificationSelections.value = {}
-    resetGate()
+    validatedQuestion.value = ''
+    gateStatus.value = 'idle'
+    diagnosis.value = null
   }
 
   /** 보완 질문 없을 때 — 원래 질문을 입력창에 복원하고 다시 작성 */
