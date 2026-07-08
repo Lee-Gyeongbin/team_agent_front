@@ -100,18 +100,17 @@
             {{ getOrgName(value) }}
           </template>
           <template #cell-acctStatusDesc="{ row }">
-            <span
-              class="user-manage-status"
-              :class="
+            <UiBadge
+              :variant="
                 (row as UserItem).acctStatusDesc === '잠금'
-                  ? 'is-lock'
+                  ? 'warning'
                   : (row as UserItem).acctStatusDesc === '비활성'
-                    ? 'is-inactive'
-                    : 'is-active'
+                    ? 'default'
+                    : 'success'
               "
             >
               {{ (row as UserItem).acctStatusDesc }}
-            </span>
+            </UiBadge>
           </template>
           <template #cell-actions="{ row }">
             <div
@@ -164,7 +163,7 @@
 </template>
 
 <script setup lang="ts">
-import { UiLoading, UiTable } from '@leechanyong/ispark-ui'
+import { UiBadge, UiButton, UiInput, UiLoading, UiTable } from '@leechanyong/ispark-ui'
 import { userColumns, type UserItem } from '~/types/user-manage'
 import { useUserManageStore } from '~/composables/user-manage/useUserManageStore'
 import { useOrgManageStore } from '~/composables/org-manage/useOrgManageStore'
