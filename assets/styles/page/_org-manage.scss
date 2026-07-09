@@ -397,34 +397,11 @@
   }
 }
 
-.org-manage-member-status {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: $border-radius-full;
-  font-size: $font-size-base;
-  font-weight: $font-weight-medium;
-
-  &.is-active {
-    background: rgba($color-success, 0.12);
-    color: $color-success;
-  }
-
-  &.is-inactive {
-    background: rgba($color-text-secondary, 0.12);
-    color: $color-text-secondary;
-  }
-
-  &.is-lock {
-    background: rgba($color-warning, 0.12);
-    color: $color-warning;
-  }
-}
-
 // ===== 조직 모달 공통 (UiModal 본문) =====
 .org-manage-add-org-modal,
 .org-manage-parent-select-modal,
 .org-manage-excel-upload-modal {
-  .modal-dialog-body {
+  .ui-modal-body {
     display: block;
     width: 100%;
   }
@@ -532,17 +509,17 @@
 }
 
 .org-manage-parent-select-modal {
-  .modal-dialog-content {
+  .ui-modal-content {
     // 세로 고정 구간 (뷰포트 계산 없음)
     min-height: 400px;
     max-height: 460px;
   }
 
-  .modal-dialog-header {
+  .ui-modal-header {
     flex-shrink: 0;
   }
 
-  .modal-dialog-body {
+  .ui-modal-body {
     flex: 1 1 auto;
     align-self: stretch;
     min-height: 0;

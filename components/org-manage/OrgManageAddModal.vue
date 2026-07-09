@@ -2,7 +2,6 @@
   <UiModal
     :is-open="isOpen"
     :title="mode === 'edit' ? '조직 수정' : '조직 추가'"
-    position="center"
     custom-class="org-manage-add-org-modal"
     @close="onCloseMainModal"
   >
@@ -68,7 +67,6 @@
   <UiModal
     :is-open="isParentSelectModalOpen"
     title="상위 조직 선택"
-    position="center"
     max-width="400px"
     custom-class="org-manage-parent-select-modal"
     @close="isParentSelectModalOpen = false"
@@ -101,6 +99,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiModal, UiButton, UiInput } from '@leechanyong/ispark-ui'
 import type { OrgOption, OrgTreeItem } from '~/types/org-manage'
 import OrgManageTreeNode from '~/components/org-manage/OrgManageTreeNode.vue'
 

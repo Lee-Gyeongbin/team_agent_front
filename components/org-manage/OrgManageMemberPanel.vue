@@ -125,12 +125,9 @@
               <div class="org-manage-member-meta-item">
                 <dt>활성상태</dt>
                 <dd>
-                  <span
-                    class="org-manage-member-status"
-                    :class="getMemberStatusClass(member.acctStatusDesc)"
-                  >
+                  <UiBadge :variant="getMemberStatusVariant(member.acctStatusDesc)">
                     {{ member.acctStatusDesc || '-' }}
-                  </span>
+                  </UiBadge>
                 </dd>
               </div>
             </dl>
@@ -154,7 +151,8 @@
 </template>
 
 <script setup lang="ts">
-import { UiLoading, UiEmpty } from '@leechanyong/ispark-ui'
+import { UiBadge, UiButton, UiLoading, UiEmpty } from '@leechanyong/ispark-ui'
+import type { BadgeVariant } from '@leechanyong/ispark-ui'
 import type { OrgUserItem } from '~/types/org-manage'
 import { formatDateTimeDisplay } from '~/utils/global/dateUtil'
 import { formatPhone } from '~/utils/global/numberUtil'
@@ -179,9 +177,9 @@ const lastReflectDtDisplay = computed(() => {
   return formatDateTimeDisplay(dt) || dt
 })
 
-const getMemberStatusClass = (status: string): string => {
-  if (status === '잠금') return 'is-lock'
-  if (status === '비활성') return 'is-inactive'
-  return 'is-active'
+const getMemberStatusVariant = (status: string): BadgeVariant => {
+  if (status === '잠금') return 'warning'
+  if (status === '비활성') return 'default'
+  return 'success'
 }
 </script>

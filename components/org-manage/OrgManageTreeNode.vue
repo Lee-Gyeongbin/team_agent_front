@@ -99,6 +99,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton } from '@leechanyong/ispark-ui'
 import draggable from 'vuedraggable'
 import type { OrgTreeItem } from '~/types/org-manage'
 import OrgManageTreeNode from '~/components/org-manage/OrgManageTreeNode.vue'
