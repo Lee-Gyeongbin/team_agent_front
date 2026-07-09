@@ -2,203 +2,107 @@
   <div
     v-if="isDataQuestionActive"
     class="dq-guide"
+    :class="{ 'is-collapsed': !isOpen }"
     :style="guideThemeStyle"
   >
     <div
-      class="dq-guide__summary"
+      class="dq-guide__header"
+      role="button"
+      tabindex="0"
       :class="{
         'is-required-missing': requiredMissingCount > 0,
         'is-just-passed': justPassed,
       }"
+      :aria-expanded="isOpen"
+      :aria-label="isOpen ? '가이드 접기' : '가이드 펼치기'"
+      @click="onToggleGuide"
+      @keydown.enter.prevent="onToggleGuide"
+      @keydown.space.prevent="onToggleGuide"
     >
-      <div class="dq-guide__summary-left">
-        <i :class="[resolvedThemeIconClass, 'size-14']" />
-        <span
-          class="dq-guide__summary-score"
-          :class="{ 'is-pass': isReadyPass }"
-        >
-          {{ summaryLabel }}
-        </span>
-        <span
-          v-if="requiredMissingCount > 0"
-          class="dq-guide__summary-missing"
-        >
-          필수 {{ requiredMissingCount }}개 미충족
-        </span>
+      <div class="dq-guide__header-text">
+        <div class="dq-guide__header-main">
+          <h2 class="dq-guide__title">질의 전 가이드</h2>
+          <p class="dq-guide__subtitle">단계별로 입력하면 더 정확한 데이터를 조회할 수 있어요</p>
+        </div>
+        <div class="dq-guide__header-status">
+          <p
+            v-if="showDiagnosis"
+            class="dq-guide__score"
+            :class="{ 'is-pass': isReadyPass }"
+          >
+            <i :class="[resolvedThemeIconClass, 'size-12']" />
+            {{ summaryLabel }}
+          </p>
+          <p
+            v-if="requiredMissingCount > 0"
+            class="dq-guide__score-missing"
+          >
+            필수 {{ requiredMissingCount }}개 미충족
+          </p>
+        </div>
       </div>
-      <button
-        type="button"
+      <span
         class="dq-guide__toggle"
-        :aria-label="isOpen ? '가이드 접기' : '가이드 펼치기'"
-        :title="isOpen ? '가이드 접기' : '가이드 펼치기'"
-        @click="isOpen = !isOpen"
+        aria-hidden="true"
       >
         <i
           class="size-14 dq-guide__toggle-icon icon-chevron-down"
           :style="{ transform: isOpen ? 'rotate(0deg)' : 'rotate(180deg)' }"
         />
-      </button>
-    </div>
-    <div
-      v-if="hasSupplement"
-      class="dq-guide__supplement"
-      :class="`is-${diagnosis?.status.toLowerCase()}`"
-    >
-      <template v-if="diagnosis?.status === 'OUT_OF_SCOPE'">
-        <p class="dq-guide__supplement-msg">현재 데이터로는 답하기 어려운 질문이에요. 이런 통계는 조회할 수 있어요.</p>
-        <div class="dq-guide__chip-row">
-          <button
-            v-for="(alt, i) in diagnosis?.alternatives ?? []"
-            :key="i"
-            type="button"
-            class="dq-guide__chip"
-            @click="applyAlternative(alt)"
-          >
-            {{ alt }}
-          </button>
-        </div>
-      </template>
-      <template v-else>
-        <p class="dq-guide__supplement-msg">아래 내용을 질문에 더해 다시 검증해 주세요.</p>
-        <ul class="dq-guide__clarify-list">
-          <li
-            v-for="cq in diagnosis?.clarificationQuestions ?? []"
-            :key="cq.item"
-            class="dq-guide__clarify-item"
-          >
-            {{ cq.question }}
-          </li>
-        </ul>
-      </template>
+      </span>
     </div>
 
     <Transition name="dq-guide-fold">
       <div
         v-if="isOpen"
-        class="dq-guide__fold"
+        class="dq-guide__content"
       >
-        <div class="dq-guide__body">
-          <div class="dq-guide__criteria">
-            <span
-              v-for="c in score.criteria"
-              :key="c.key"
-              class="dq-guide__crit"
-              :class="{ 'is-met': c.met, 'is-req': c.required && !c.met }"
-            >
-              <i
-                class="size-10"
-                :class="c.met ? 'icon-check' : 'icon-close'"
-              />
-              {{ c.label }}
-            </span>
+        <section class="dq-guide__formula-card">
+          <div class="dq-guide__formula-head">
+            <i :class="[resolvedThemeIconClass, 'size-18 dq-guide__formula-icon']" />
+            <h3 class="dq-guide__formula-title">질문 작성 공식</h3>
           </div>
-
-          <div
-            v-if="showTabs"
-            class="dq-guide__tabs"
-            role="tablist"
-          >
-            <button
-              v-for="tab in datamartTabs"
-              :key="tab.id"
-              type="button"
-              role="tab"
-              class="dq-guide__tab"
-              :class="{ 'is-active': tab.id === activeTabId }"
-              :aria-selected="tab.id === activeTabId"
-              :title="tab.label"
-              @click="onSelectTab(tab.id)"
+          <div class="dq-guide__formula-row">
+            <template
+              v-for="(item, index) in formulaItems"
+              :key="item.key"
             >
-              {{ tab.label }}
-            </button>
-          </div>
-
-          <Transition
-            name="dq-tab"
-            mode="out-in"
-          >
-            <div
-              :key="activeTabId"
-              class="dq-guide__tabpanel"
-            >
-              <template v-if="isFewshotLoading || fewshotList.length > 0">
-                <div class="dq-guide__sep" />
-                <div class="dq-guide__section">
-                  <span class="dq-guide__label">질의 예시</span>
-                  <template v-if="isFewshotLoading">
-                    <span
-                      v-for="n in 3"
-                      :key="n"
-                      class="dq-guide__ex-skeleton"
-                    />
-                  </template>
-                  <div
-                    v-else
-                    class="dq-guide__ex-list"
-                  >
-                    <button
-                      v-for="item in fewshotList"
-                      :key="item.fewshotId"
-                      type="button"
-                      class="dq-guide__ex-item"
-                      :class="{ 'is-active': chatMessage === item.userQuestion }"
-                      :title="item.userQuestion"
-                      @click="chatMessage = item.userQuestion"
-                    >
-                      <span class="dq-guide__ex-text">{{ item.userQuestion }}</span>
-                      <i class="icon-arrow-right size-12 dq-guide__ex-arrow" />
-                    </button>
-                  </div>
-                </div>
-              </template>
-
-              <template v-if="!isLoadingVocabulary && hasVocabSuggestions">
-                <div class="dq-guide__sep" />
-                <div class="dq-guide__section">
-                  <div class="dq-guide__vocab-grid">
-                    <div
-                      v-if="metricTerms.length"
-                      class="dq-guide__vocab-row"
-                    >
-                      <span class="dq-guide__vocab-title">지표</span>
-                      <ul class="dq-guide__term-list">
-                        <li
-                          v-for="term in metricTerms"
-                          :key="`metric-${term}`"
-                          class="dq-guide__term-item"
-                        >
-                          {{ term }}
-                        </li>
-                      </ul>
-                    </div>
-                    <div
-                      v-if="dimensionTerms.length"
-                      class="dq-guide__vocab-row"
-                    >
-                      <span class="dq-guide__vocab-title">구분</span>
-                      <ul class="dq-guide__term-list">
-                        <li
-                          v-for="term in dimensionTerms"
-                          :key="`dimension-${term}`"
-                          class="dq-guide__term-item"
-                        >
-                          {{ term }}
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </template>
-
-              <div
-                v-if="showTabs && isTabPanelEmpty"
-                class="dq-guide__tab-empty"
+              <span
+                v-if="index > 0"
+                class="dq-guide__formula-plus"
               >
-                <i class="icon-info size-14" />
-                이 데이터마트에 등록된 참고 정보가 없습니다.
-              </div>
-            </div>
-          </Transition>
+                +
+              </span>
+              <span
+                class="dq-guide__formula-pill"
+                :class="{ 'is-met': item.met }"
+              >
+                <span class="dq-guide__formula-label">{{ item.label }}</span>
+              </span>
+            </template>
+          </div>
+        </section>
+
+        <div class="dq-guide__formula-example">
+          <span class="dq-guide__formula-example-label">예시</span>
+          <button
+            type="button"
+            class="dq-guide__formula-example-text"
+            @click="onApplyFormulaExample"
+          >
+            {{ formulaExampleQuestion }}
+          </button>
+        </div>
+
+        <div
+          class="dq-guide__preference"
+          @click.stop
+        >
+          <UiCheckbox
+            :model-value="alwaysCollapsed"
+            label="항상 접힌 상태로 보기"
+            @update:model-value="onAlwaysCollapsedChange"
+          />
         </div>
       </div>
     </Transition>
@@ -206,9 +110,7 @@
 </template>
 
 <script setup lang="ts">
-import type { DatamartMetaFewshot } from '~/types/datamartMeta'
-import { useDatamartApi } from '~/composables/datamart/useDatamartApi'
-import { scoreFromText } from '~/utils/chat/dataQuestionRubric'
+import { useDataQuestionGuide } from '~/composables/chat/useDataQuestionGate'
 
 interface Props {
   themeIconClassNm?: string
@@ -220,160 +122,23 @@ const props = withDefaults(defineProps<Props>(), {
   themeColorHex: '',
 })
 
-const { chatMessage } = useChatRooms()
-const { subOptions, selectedSubOptions, activeSearchModes, riskAgentActive } = useChatStore()
-const { fetchMetaFewshotList } = useDatamartApi()
-const { showDiagnosis, diagnosis, applyAlternative } = useDataQuestionGate()
-const isOpen = ref(false)
-
-/** 검증 결과 노출 — 통과 외(보완/범위밖/용어모호)일 때 액션 카드 표시 */
-const hasSupplement = computed(() => showDiagnosis.value && !!diagnosis.value && diagnosis.value.status !== 'READY')
-
-/** 검증 통과 상태 (요약 라벨용) */
-const isReadyPass = computed(() => showDiagnosis.value && diagnosis.value?.status === 'READY')
-
-/** 요약 라벨 — 검증 후엔 진단 점수 노출 (검증 전엔 점수 미표시) */
-const summaryLabel = computed(() => {
-  if (!showDiagnosis.value || !diagnosis.value) return '질의 작성 가이드'
-  const sc = Math.round(diagnosis.value.readinessScore ?? 0)
-  return isReadyPass.value ? `검증 통과 · ${sc}점` : `검증 점수 ${sc}점 · 보완 필요`
-})
-
-// 보완이 필요한 진단이 나오면 가이드를 자동으로 펼쳐 사용자가 바로 보게 함
-watch(hasSupplement, (next) => {
-  if (next) isOpen.value = true
-})
-
-/** 검증 통과 순간 헤더 강조 — 한 번만 재생 */
-const justPassed = ref(false)
-watch(isReadyPass, (next, prev) => {
-  if (next && prev === false) {
-    justPassed.value = true
-    window.setTimeout(() => (justPassed.value = false), 900)
-  }
-})
-
-// ── 노출 게이트 ────────────────────────────────────────────────────────────
-
-const isDataQuestionActive = computed(() => activeSearchModes.value.includes('S') && !riskAgentActive.value)
-
-const requiredMissingCount = computed(() => score.value.criteria.filter((c) => c.required && !c.met).length)
-
-watch(isDataQuestionActive, (active) => {
-  if (!active) return
-  isOpen.value = false
-})
-
-const hexToRgb = (hex: string): string => {
-  const normalized = hex.replace('#', '').trim()
-  const full =
-    normalized.length === 3
-      ? normalized
-          .split('')
-          .map((c) => c + c)
-          .join('')
-      : normalized
-  if (!/^[0-9a-fA-F]{6}$/.test(full)) return '46, 163, 242'
-  const r = Number.parseInt(full.slice(0, 2), 16)
-  const g = Number.parseInt(full.slice(2, 4), 16)
-  const b = Number.parseInt(full.slice(4, 6), 16)
-  return `${r}, ${g}, ${b}`
-}
-
-const resolvedThemeIconClass = computed(() => props.themeIconClassNm || 'icon-chart-ai')
-const guideThemeStyle = computed(() => {
-  const color = props.themeColorHex?.trim()
-  if (!color) return undefined
-  return {
-    '--dq-theme-color': color,
-    '--dq-theme-rgb': hexToRgb(color),
-  }
-})
-
-// ── 실시간 채점 ────────────────────────────────────────────────────────────
-
-const score = computed(() => scoreFromText(chatMessage.value))
-
-// ── 선택 데이터마트 탭 ─────────────────────────────────────────────────────
-
-interface DatamartTab {
-  id: string
-  label: string
-}
-
-/**
- * 노출할 데이터마트 탭 목록.
- * - 특정 데이터마트를 1개 이상 체크한 경우: 체크된 것만 (subOptions 순서 유지)
- * - 'all' 또는 미선택: 선택 가능한 전체 데이터마트
- */
-const datamartTabs = computed<DatamartTab[]>(() => {
-  const opts = subOptions.value
-  const selectedIds = selectedSubOptions.value.filter((id) => id && id !== 'all')
-  const source = selectedIds.length ? opts.filter((o) => selectedIds.includes(String(o.value))) : opts
-  return source.map((o) => ({ id: String(o.value), label: o.label }))
-})
-
-/** 탭은 2개 이상일 때만 노출 (단일 선택은 탭 없이 본문만) */
-const showTabs = computed(() => datamartTabs.value.length > 1)
-
-const activeTabId = ref('')
-
-watch(
-  datamartTabs,
-  (tabs) => {
-    if (!tabs.length) {
-      activeTabId.value = ''
-      return
-    }
-    if (!tabs.some((t) => t.id === activeTabId.value)) activeTabId.value = tabs[0].id
-  },
-  { immediate: true },
-)
-
-const onSelectTab = (id: string) => {
-  activeTabId.value = id
-}
-
-// ── 용어사전 (활성 탭 기준) ────────────────────────────────────────────────
-
-const { isLoadingVocabulary, suggestMetric, suggestDimension } = useDatamartVocabulary(activeTabId)
-
-// ── 퓨샷 예시 조회 (활성 탭 기준) ─────────────────────────────────────────
-
-const fewshotList = ref<DatamartMetaFewshot[]>([])
-const isFewshotLoading = ref(false)
-
-const loadFewshots = async (datamartId: string) => {
-  if (!datamartId) {
-    fewshotList.value = []
-    return
-  }
-  isFewshotLoading.value = true
-  try {
-    const res = await fetchMetaFewshotList(datamartId)
-    fewshotList.value = (res.fewshotList ?? []).filter((f) => f.useYn === 'Y')
-  } catch {
-    fewshotList.value = []
-  } finally {
-    isFewshotLoading.value = false
-  }
-}
-
-watch(activeTabId, (id) => void loadFewshots(id), { immediate: true })
-
-// ── 참고 용어 (비인터랙티브) ──────────────────────────────────────────────
-
-const MAX_VOCAB = 8
-const metricTerms = computed(() => suggestMetric('').slice(0, MAX_VOCAB))
-const dimensionTerms = computed(() => suggestDimension('').slice(0, MAX_VOCAB))
-const hasVocabSuggestions = computed(() => metricTerms.value.length > 0 || dimensionTerms.value.length > 0)
-
-// ── 탭 본문 상태 ───────────────────────────────────────────────────────────
-
-const isTabLoading = computed(() => isFewshotLoading.value || isLoadingVocabulary.value)
-const hasTabMeta = computed(() => fewshotList.value.length > 0 || hasVocabSuggestions.value)
-/** 다중 탭에서 현재 탭에 노출할 메타가 전혀 없는지 (안내 문구용) */
-const isTabPanelEmpty = computed(() => !isTabLoading.value && !hasTabMeta.value)
+const {
+  isDataQuestionActive,
+  isOpen,
+  requiredMissingCount,
+  justPassed,
+  resolvedThemeIconClass,
+  guideThemeStyle,
+  showDiagnosis,
+  isReadyPass,
+  summaryLabel,
+  formulaItems,
+  formulaExampleQuestion,
+  alwaysCollapsed,
+  onToggleGuide,
+  onAlwaysCollapsedChange,
+  onApplyFormulaExample,
+} = useDataQuestionGuide(props)
 </script>
 
 <style lang="scss" scoped>
@@ -381,21 +146,14 @@ const isTabPanelEmpty = computed(() => !isTabLoading.value && !hasTabMeta.value)
   width: 100%;
   margin-bottom: 8px;
   background: #fff;
-  border: 1px solid $color-border;
-  border-radius: $border-radius-lg;
-  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+  border: 1px solid #c6d2db;
+  border-radius: 20px;
+  box-shadow: 0 4px 15px rgba(15, 23, 42, 0.06);
   overflow: hidden;
   animation: dq-guide-drop 0.48s cubic-bezier(0.16, 1, 0.3, 1);
 
-  &::before {
-    content: '';
-    display: block;
-    height: 1px;
-    background: linear-gradient(
-      90deg,
-      var(--dq-theme-color, var(--color-primary, #{$color-primary})) 0%,
-      rgba(var(--dq-theme-rgb, 46, 163, 242), 0.35) 100%
-    );
+  &.is-collapsed .dq-guide__header {
+    border-bottom: 0;
   }
 
   @keyframes dq-guide-drop {
@@ -409,173 +167,109 @@ const isTabPanelEmpty = computed(() => !isTabLoading.value && !hasTabMeta.value)
     }
   }
 
-  &__summary {
+  &__header {
+    width: 100%;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: $spacing-xs;
-    padding: 7px $spacing-md;
+    gap: 15px;
+    padding: 12px 20px;
+    border-bottom: 0;
     background: linear-gradient(180deg, rgba(var(--dq-theme-rgb, 46, 163, 242), 0.05) 0%, #f8fbfd 100%);
-    border-bottom: 1px solid $color-border-light;
+    cursor: pointer;
+    outline: none;
 
     &.is-required-missing {
       background: linear-gradient(180deg, rgba(226, 85, 85, 0.08) 0%, #fdf9f9 100%);
       border-bottom-color: rgba(226, 85, 85, 0.12);
     }
 
-    &.is-just-passed {
-      position: relative;
-      overflow: hidden;
-
-      &::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: rgba(var(--dq-theme-rgb, 46, 163, 242), 0.14);
-        animation: dq-guide-pass-flash 0.85s ease-out forwards;
-        pointer-events: none;
-      }
+    &.is-just-passed .dq-guide__score.is-pass {
+      animation: dq-guide-pass-label 0.85s cubic-bezier(0.34, 1.2, 0.64, 1);
     }
-  }
 
-  &__summary.is-just-passed &__summary-score.is-pass {
-    animation: dq-guide-pass-label 0.85s cubic-bezier(0.34, 1.2, 0.64, 1);
-  }
-
-  @keyframes dq-guide-pass-flash {
-    0% {
-      opacity: 0;
-    }
-    28% {
-      opacity: 1;
-    }
-    100% {
-      opacity: 0;
+    &:focus-visible {
+      outline: 2px solid var(--dq-theme-color, var(--color-primary, #{$color-primary}));
+      outline-offset: -2px;
     }
   }
 
   @keyframes dq-guide-pass-label {
-    0%,
+    0% {
+      transform: scale(0.92);
+      opacity: 0.6;
+    }
+    45% {
+      transform: scale(1.06);
+    }
     100% {
       transform: scale(1);
-    }
-    35% {
-      transform: scale(1.04);
+      opacity: 1;
     }
   }
 
-  &__summary-left {
+  &__header-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  &__header-main {
+    min-width: 0;
+    text-align: left;
+  }
+
+  &__header-status {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex-shrink: 0;
+    text-align: right;
+  }
+
+  &__title {
+    margin: 0;
+    @include typo($body-large-bold, $color-text-heading);
+    font-size: 18px;
+  }
+
+  &__subtitle {
+    margin: 2px 0 0;
+    @include typo($body-small, $color-text-secondary);
+    font-size: 13px;
+  }
+
+  &__score {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    min-width: 0;
-    color: var(--dq-theme-color, var(--color-primary, #{$color-primary}));
-  }
-
-  &__summary-score {
+    justify-content: flex-end;
+    gap: 6px;
+    margin: 0;
     @include typo($body-caption-bold, $color-text-secondary);
+    font-size: 13px;
 
     &.is-pass {
       color: var(--dq-theme-color, var(--color-primary, #{$color-primary}));
     }
   }
 
-  &__progress {
-    height: 2px;
-    background: $color-border-light;
-  }
-
-  &__progress-fill {
-    height: 100%;
-    background: var(--dq-theme-color, var(--color-primary, #{$color-primary}));
-    transition: width 0.35s ease;
-  }
-
-  &__summary-missing {
-    @include typo($body-caption, #e25555);
-  }
-
-  // ── 검증 결과 보완 카드 (선택형) ──────────────────────────────────────────
-  &__supplement {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 10px $spacing-md 12px;
-    border-top: 1px solid $color-border-light;
-    background: rgba(var(--dq-theme-rgb, 46, 163, 242), 0.04);
-
-    &.is-out_of_scope {
-      background: rgba(226, 85, 85, 0.05);
-    }
-  }
-
-  &__supplement-msg {
-    @include typo($body-small, $color-text-secondary);
-  }
-
-  &__clarify {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-
-    &-q {
-      @include typo($body-caption-bold, $color-text-primary);
-    }
-  }
-
-  &__clarify-list {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  &__clarify-item {
-    position: relative;
-    padding-left: 12px;
-    @include typo($body-small, $color-text-primary);
-    line-height: 1.45;
-
-    &::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 8px;
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-      background: var(--dq-theme-color, var(--color-primary, #{$color-primary}));
-    }
-  }
-
-  &__chip-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  &__chip {
-    padding: 5px 10px;
-    border: 1px solid $color-border;
+  &__score-missing {
+    display: inline-flex;
+    align-items: center;
+    margin: 2px 0 0;
+    padding: 4px 12px;
     border-radius: 999px;
-    background: #fff;
-    cursor: pointer;
-    @include typo($body-caption, $color-text-secondary);
-    transition:
-      color 0.15s,
-      border-color 0.15s,
-      background-color 0.15s;
-
-    &:hover {
-      color: var(--dq-theme-color, var(--color-primary, #{$color-primary}));
-      border-color: var(--dq-theme-color, var(--color-primary, #{$color-primary}));
-      background: rgba(var(--dq-theme-rgb, 46, 163, 242), 0.08);
-    }
+    background: #e25555;
+    color: #fff;
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 1.2;
   }
 
   &__toggle {
+    flex-shrink: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -585,19 +279,16 @@ const isTabPanelEmpty = computed(() => !isTabLoading.value && !hasTabMeta.value)
     border-radius: 999px;
     background: #fff;
     padding: 0;
-    cursor: pointer;
     color: $color-text-secondary;
     transition:
       border-color 0.25s ease,
       color 0.25s ease,
-      background-color 0.25s ease,
-      transform 0.25s ease;
+      background-color 0.25s ease;
 
     &:hover {
       border-color: var(--dq-theme-color, var(--color-primary, #{$color-primary}));
       color: var(--dq-theme-color, var(--color-primary, #{$color-primary}));
-      background: rgba(var(--dq-theme-rgb, 0, 102, 204), 0.08);
-      transform: translateY(-1px);
+      background: rgba(var(--dq-theme-rgb, 46, 163, 242), 0.08);
     }
   }
 
@@ -605,348 +296,162 @@ const isTabPanelEmpty = computed(() => !isTabLoading.value && !hasTabMeta.value)
     transition: transform 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
-  // ── 펼침/접힘 컨테이너 (grid-rows 0fr↔1fr 트릭) ──────────────────────────
-  &__fold {
-    display: grid;
-    grid-template-rows: 1fr;
-    will-change: grid-template-rows;
+  &__preference {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 4px;
   }
 
-  &__body {
-    min-height: 0;
-    max-height: min(340px, 36vh);
-    overflow-y: auto;
-    @include custom-scrollbar;
+  &__content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px 20px 20px;
   }
 
-  // 열림: 끝에서 부드럽게 감속하며 "펼쳐지는" 느낌
   :deep(.dq-guide-fold-enter-active) {
     transition:
-      grid-template-rows 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-      opacity 0.6s ease 0.2s;
-
-    .dq-guide__body {
-      overflow: hidden;
-    }
+      opacity 0.35s ease,
+      transform 0.35s ease;
   }
 
-  // 닫힘: 동일한 속도로 일정하게 "닫히는" 느낌
   :deep(.dq-guide-fold-leave-active) {
     transition:
-      grid-template-rows 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-      opacity 0.5s ease;
-
-    .dq-guide__body {
-      overflow: hidden;
-    }
+      opacity 0.25s ease,
+      transform 0.25s ease;
   }
 
   :deep(.dq-guide-fold-enter-from),
   :deep(.dq-guide-fold-leave-to) {
-    grid-template-rows: 0fr;
     opacity: 0;
+    transform: translateY(-8px);
   }
 
-  &__criteria {
-    padding: 6px $spacing-md;
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 6px;
+  &__formula-card {
+    border: 1px solid $color-border-light;
+    background: #fff;
   }
 
-  &__crit {
+  &__formula-card {
+    display: flex;
+    flex-direction: column;
+    padding: 16px 18px 14px;
+    border-radius: $border-radius-lg;
+  }
+
+  &__formula-head {
     display: flex;
     align-items: center;
-    gap: 6px;
-    min-height: 28px;
-    padding: 0 6px;
-    border: 1px solid $color-border-light;
-    border-radius: $border-radius-sm;
-    background: #fff;
-    @include typo($body-caption, $color-text-muted);
-    transition:
-      color 0.15s,
-      border-color 0.15s,
-      background-color 0.15s;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-
-    i {
-      opacity: 0.5;
-      flex-shrink: 0;
-    }
-
-    &.is-met {
-      color: #2ea66b;
-      border-color: rgba(46, 166, 107, 0.25);
-      background: rgba(46, 166, 107, 0.04);
-      i {
-        opacity: 1;
-      }
-    }
-
-    &.is-req {
-      color: #e25555;
-      border-color: rgba(226, 85, 85, 0.25);
-      background: rgba(226, 85, 85, 0.04);
-      font-weight: 700;
-      i {
-        opacity: 1;
-      }
-    }
+    gap: 8px;
+    margin-bottom: 14px;
   }
 
-  &__sep {
-    height: 1px;
-    background: $color-border-light;
-  }
-
-  // ── 데이터마트 탭 (다중 선택 시) ──────────────────────────────────────────
-  &__tabs {
-    display: flex;
-    align-items: stretch;
-    gap: 2px;
-    padding: 4px $spacing-md 0;
-    border-top: 1px solid $color-border-light;
-    overflow-x: auto;
-    scrollbar-width: none;
-
-    &::-webkit-scrollbar {
-      display: none;
-    }
-  }
-
-  &__tab {
-    position: relative;
+  &__formula-icon {
     flex-shrink: 0;
-    max-width: 160px;
-    padding: 6px 10px 8px;
-    border: 0;
-    background: transparent;
-    cursor: pointer;
-    @include typo($body-caption, $color-text-muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    transition: color 0.15s ease;
-
-    &::after {
-      content: '';
-      position: absolute;
-      left: 6px;
-      right: 6px;
-      bottom: 0;
-      height: 2px;
-      border-radius: 2px;
-      background: var(--dq-theme-color, var(--color-primary, #{$color-primary}));
-      transform: scaleX(0);
-      transform-origin: center;
-      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    &:hover {
-      color: $color-text-secondary;
-    }
-
-    &.is-active {
-      color: var(--dq-theme-color, var(--color-primary, #{$color-primary}));
-      font-weight: 700;
-
-      &::after {
-        transform: scaleX(1);
-      }
-    }
+    color: var(--dq-theme-color, var(--color-primary, #{$color-primary}));
   }
 
-  &__tabpanel {
-    display: flex;
-    flex-direction: column;
+  &__formula-title {
+    margin: 0;
+    line-height: 1;
+    @include typo($body-medium-bold, $color-text-heading);
   }
 
-  &__tab-empty {
+  &__formula-row {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 6px;
-    padding: 14px $spacing-md;
-    @include typo($body-caption, $color-text-muted);
-
-    i {
-      opacity: 0.6;
-    }
-  }
-
-  // 탭 전환 시 부드러운 페이드
-  :deep(.dq-tab-enter-active),
-  :deep(.dq-tab-leave-active) {
-    transition: opacity 0.18s ease;
-  }
-
-  :deep(.dq-tab-enter-from),
-  :deep(.dq-tab-leave-to) {
-    opacity: 0;
-  }
-
-  // ── 공통 라벨 ─────────────────────────────────────────────────────────────
-
-  &__label {
-    flex-shrink: 0;
-    @include typo($body-caption-bold, $color-text-muted);
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    opacity: 0.7;
-  }
-
-  &__section {
-    display: flex;
-    align-items: flex-start;
-    gap: $spacing-sm;
-    padding: 8px $spacing-md;
-  }
-
-  &__ex-skeleton {
-    display: block;
-    height: 20px;
-    border-radius: $border-radius-sm;
-    background: linear-gradient(90deg, $color-background 25%, $color-border-light 50%, $color-background 75%);
-    background-size: 200% 100%;
-    animation: dq-shimmer 1.4s infinite;
-
-    &:nth-child(2) {
-      width: 80%;
-    }
-    &:nth-child(3) {
-      width: 65%;
-    }
-  }
-
-  @keyframes dq-shimmer {
-    0% {
-      background-position: 200% 0;
-    }
-    100% {
-      background-position: -200% 0;
-    }
-  }
-
-  &__ex-list {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    max-height: 96px;
-    overflow-y: auto;
-    @include custom-scrollbar;
-  }
-
-  &__ex-item {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: center;
-    column-gap: 8px;
-    width: 100%;
-    min-height: 34px;
-    padding: 6px 10px;
-    border: 1px solid $color-border-light;
-    border-radius: $border-radius-sm;
-    background: #fff;
-    text-align: left;
-    @include typo($body-small, $color-text-secondary);
-    cursor: pointer;
-    transition:
-      color 0.12s,
-      border-color 0.12s,
-      background-color 0.12s;
-
-    &:hover {
-      color: $color-text-heading;
-      border-color: var(--dq-theme-color, var(--color-primary, #{$color-primary}));
-      background: rgba(var(--dq-theme-rgb, 0, 102, 204), 0.06);
-    }
-
-    .dq-guide__ex-text {
-      @include ellipsis(2);
-      line-height: 1.35;
-    }
-
-    .dq-guide__ex-arrow {
-      color: $color-text-muted;
-      opacity: 0.7;
-    }
-
-    &.is-active {
-      color: var(--color-primary, #{$color-primary});
-      font-weight: 600;
-      border-color: var(--dq-theme-color, var(--color-primary, #{$color-primary}));
-      background: rgba(var(--dq-theme-rgb, 0, 102, 204), 0.08);
-    }
-  }
-
-  &__vocab-row {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 6px;
-    height: 100%;
-    min-height: 108px;
-    padding: 7px 10px;
-    border: 1px solid $color-border-light;
-    border-radius: $border-radius-sm;
-    background: #fff;
-  }
-
-  &__vocab-grid {
-    width: 100%;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-content: center;
     gap: 8px;
   }
 
-  &__vocab-title {
-    @include typo($body-caption-bold, $color-text-muted);
-    font-size: 11px;
-    letter-spacing: 0.02em;
+  &__formula-plus {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    min-height: 36px;
+    line-height: 1;
+    @include typo($body-medium-bold, $color-text-muted);
   }
 
-  &__term-list {
+  &__formula-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    min-height: 36px;
+    padding: 0 12px;
+    border: 1px solid rgba(var(--dq-theme-rgb, 46, 163, 242), 0.35);
+    border-radius: $border-radius-base;
+    background: #fff;
+    color: var(--dq-theme-color, var(--color-primary, #{$color-primary}));
+    line-height: 1;
+    vertical-align: middle;
+    font: inherit;
+
+    &.is-met {
+      background: rgba(var(--dq-theme-rgb, 46, 163, 242), 0.12);
+    }
+  }
+
+  &__formula-label {
+    display: block;
+    line-height: 1;
+    @include typo($body-small-bold, inherit);
+  }
+
+  &__formula-example {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 18px;
+    border-radius: $border-radius-base;
+    background: rgba(var(--dq-theme-rgb, 46, 163, 242), 0.06);
+  }
+
+  &__formula-example-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    align-self: center;
+    min-height: 28px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: rgba(var(--dq-theme-rgb, 46, 163, 242), 0.14);
+    line-height: 1;
+    @include typo($body-small-bold, var(--dq-theme-color, var(--color-primary, #{$color-primary})));
+    font-size: 13px;
+  }
+
+  &__formula-example-text {
+    flex: 1;
+    min-width: 0;
     margin: 0;
     padding: 0;
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    max-height: 68px; // 약 3개 라벨 노출
-    overflow-y: auto;
-    @include custom-scrollbar;
-  }
+    border: 0;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    line-height: 1.55;
+    @include typo($body-medium, $color-text-primary);
+    font-size: 15px;
 
-  &__term-item {
-    position: relative;
-    padding-left: 10px;
-    @include typo($body-caption, $color-text-muted);
-    line-height: 1.45;
-    word-break: break-word;
-
-    &::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 7px;
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-      background: rgba(var(--dq-theme-rgb, 46, 163, 242), 0.65);
+    &:hover {
+      color: var(--dq-theme-color, var(--color-primary, #{$color-primary}));
+      text-decoration: underline;
     }
   }
 
   @include mobile {
-    &__criteria {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+    &__header {
+      padding: 16px 20px 14px;
     }
 
-    &__vocab-grid {
-      grid-template-columns: 1fr;
+    &__content {
+      padding: 14px 16px 16px;
     }
   }
 }

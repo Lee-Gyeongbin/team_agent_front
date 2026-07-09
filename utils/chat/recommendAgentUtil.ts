@@ -1,4 +1,4 @@
-import type { Agent, RecommendAgentConfig } from '~/types/agent'
+import type { Agent, RecommendAgentConfig, RecommendRegionSelectDepth } from '~/types/agent'
 import { getAgentSubTy } from '~/utils/chat/surveyUtil'
 import type {
   ChatLogListRow,
@@ -16,6 +16,40 @@ import {
 // ━━━ 상수 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export const RECOMMEND_SUB_TY = 'RECOMMEND'
+
+/** 지역 선택 필수 깊이 정규화 (미설정·잘못된 값 → dong) */
+export const normalizeRecommendRegionSelectDepth = (value?: string | null): RecommendRegionSelectDepth => {
+  const normalized = String(value ?? '').trim()
+  if (normalized === 'sido' || normalized === 'sigungu') return normalized
+  return 'dong'
+}
+
+const RECOMMEND_REGION_KEYS = ['sido', 'sigungu', 'dong'] as const
+
+/** 깊이에 따른 필수 지역 필드 키 */
+export const getRecommendRegionRequiredKeys = (
+  depth: RecommendRegionSelectDepth,
+): Array<(typeof RECOMMEND_REGION_KEYS)[number]> => {
+  if (depth === 'sido') return ['sido']
+  if (depth === 'sigungu') return ['sido', 'sigungu']
+  return [...RECOMMEND_REGION_KEYS]
+}
+
+/** 지역 선택 완료 여부 (설정 깊이 기준) */
+export const isRecommendRegionSelectionComplete = (
+  formValues: RecommendFormPayload,
+  depth: RecommendRegionSelectDepth,
+): boolean => getRecommendRegionRequiredKeys(depth).every((key) => Boolean(String(formValues[key] ?? '').trim()))
+
+/** 프롬프트·표시용 위치 문자열 (깊이까지 조합) */
+export const formatRecommendRegionLocation = (
+  formValues: RecommendFormPayload,
+  depth: RecommendRegionSelectDepth,
+): string =>
+  getRecommendRegionRequiredKeys(depth)
+    .map((key) => String(formValues[key] ?? '').trim())
+    .filter(Boolean)
+    .join(' ')
 
 // ━━━ 에이전트 판별 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -99,10 +133,8 @@ export const buildRecommendPrompt = (formValues: RecommendFormPayload, config: R
   lines.push('## 사용자 조건')
 
   if (config.form.useRegionSelect) {
-    const location = ['sido', 'sigungu', 'dong']
-      .map((k) => formValues[k] ?? '')
-      .filter(Boolean)
-      .join(' ')
+    const depth = normalizeRecommendRegionSelectDepth(config.form.regionSelectDepth)
+    const location = formatRecommendRegionLocation(formValues, depth)
     if (location) lines.push(`- 위치: ${location}`)
   }
 
@@ -146,12 +178,14 @@ export const parseRecommendPayloadFromPrompt = (
   const lines = conditionBlock.split('\n').filter((l) => l.startsWith('- '))
 
   if (config.form.useRegionSelect) {
+    const depth = normalizeRecommendRegionSelectDepth(config.form.regionSelectDepth)
     const locationLine = lines.find((l) => l.startsWith('- 위치:'))
     if (locationLine) {
       const parts = locationLine.replace('- 위치:', '').trim().split(' ')
-      result['sido'] = parts[0] ?? ''
-      result['sigungu'] = parts[1] ?? ''
-      result['dong'] = parts[2] ?? ''
+      const keys = getRecommendRegionRequiredKeys(depth)
+      keys.forEach((key, index) => {
+        result[key] = parts[index] ?? ''
+      })
     }
   }
 

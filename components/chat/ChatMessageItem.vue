@@ -4,7 +4,7 @@
     ref="messageRootRef"
     class="chat-message-item"
     :class="[
-      message.type === 'answer'
+      message.type === 'answer' || message.type === 'dataQuestionClarification'
         ? 'role-assistant'
         : message.type === 'recommend'
           ? 'role-assistant'
@@ -211,6 +211,25 @@
       </div>
     </template>
 
+    <!-- 데이터 질의 검증 보완 카드 (로그 미저장 미리보기) -->
+    <template v-else-if="message.type === 'dataQuestionClarification' && message.dataQuestionDiagnosis">
+      <div class="avatar">
+        <i class="icon-bot size-24"></i>
+      </div>
+      <div class="message-body">
+        <DataQuestionClarificationCard
+          :diagnosis="message.dataQuestionDiagnosis"
+          :original-question="message.dataQuestionOriginalQuestion ?? ''"
+          :selections="clarificationSelections"
+          :theme-icon-class-nm="themeAgent?.iconClassNm ?? ''"
+          :theme-color-hex="themeAgent?.colorHex ?? ''"
+          @select-option="applyClarificationSelection"
+          @submit-question="submitClarifiedQuestion"
+          @retry-question="retryClarifiedQuestion"
+        />
+      </div>
+    </template>
+
     <!-- user 메시지 -->
     <template v-else-if="message.type === 'question'">
       <div class="message-body">
@@ -282,8 +301,11 @@
           :enrichment-r-content="recommendEnrichmentRContent"
           :theme-icon-class-nm="themeAgent?.iconClassNm ?? ''"
           :theme-color-hex="themeAgent?.colorHex ?? ''"
+          :enable-retry="!isShare && message.recommendCardRole === 'result'"
+          :retry-disabled="isRecommendRetryDisabled"
           @submit="emit('on-submit-recommend-card', message.logId, $event)"
           @close="emit('on-recommend-card-close', message.logId)"
+          @retry="emit('on-recommend-card-retry', message.logId)"
           @enriched="onRecommendationsEnriched"
         />
         <ChatTranslateCard
@@ -429,12 +451,15 @@ import {
 } from '~/utils/chat/surveyUtil'
 
 import { useChatMessages } from '~/composables/chat/useChatMessages'
+import { useDataQuestionGate } from '~/composables/chat/useDataQuestionGate'
 import { useMtlcareStore } from '~/composables/mtlcare/useMtlcareStore'
 import { isProposalSlideJson } from '~/utils/chat/proposalAgentUtil'
 
 const { messages: allMessages } = useChatMessages()
+const { clarificationSelections, applyClarificationSelection, submitClarifiedQuestion, retryClarifiedQuestion } =
+  useDataQuestionGate()
 const { handleSaveResult } = useMtlcareStore()
-const { chatIndexAgents } = useChatStore()
+const { chatIndexAgents, selectedChatThemeAgent } = useChatStore()
 const { surveyGender } = usePsychologySurvey()
 const { user } = useAuth()
 
@@ -474,6 +499,7 @@ const emit = defineEmits<{
   'on-view-report': [id: string]
   'on-submit-recommend-card': [logId: string, payload: RecommendFormPayload]
   'on-recommend-card-close': [logId: string]
+  'on-recommend-card-retry': [logId: string]
   'on-submit-translate-card': [logId: string, payload: TranslateFormPayload]
   'on-translate-card-close': [logId: string]
   'on-survey-submit': [logId: string]
@@ -873,9 +899,15 @@ watch(
 
 // ── 기타 computed / 유틸 ──────────────────────────────────────────────────
 /** 현재 메시지 agentId에 해당하는 에이전트 정보 — 테마 아이콘·색상 공통 */
-const themeAgent = computed<Agent | null>(
-  () => chatIndexAgents.value.find((a) => a.agentId === props.message.agentId) ?? null,
-)
+const themeAgent = computed<Agent | null>(() => {
+  if (props.message.agentId) {
+    return chatIndexAgents.value.find((a) => a.agentId === props.message.agentId) ?? null
+  }
+  if (props.message.type === 'dataQuestionClarification') {
+    return selectedChatThemeAgent.value
+  }
+  return null
+})
 
 const isSurveyRadarAnswer = computed(
   () => props.message.type === 'answer' && isSurveyRadarAgent(props.message.agentId ?? ''),
@@ -929,6 +961,11 @@ const recommendCardDisplayMode = computed((): 'form' | 'result' | 'combined' => 
 })
 
 const isRecommendFormCard = computed(() => recommendCardDisplayMode.value === 'form')
+
+/** 미제출 recommend 폼 카드가 있으면 '다시 추천받기' 비활성 */
+const isRecommendRetryDisabled = computed(() =>
+  allMessages.value.some((m) => m.type === 'recommend' && m.recommendSubmitted !== true),
+)
 
 const linkedRecommendAnswerMessage = computed(() => {
   if (props.message.type !== 'recommend' || isRecommendFormCard.value) return undefined
