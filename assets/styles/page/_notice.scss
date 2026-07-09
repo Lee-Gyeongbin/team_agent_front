@@ -144,8 +144,10 @@
   }
 }
 
-// 공지 상세 우측 모달(NoticeDetailPanel) — Teleport 로 body 하위에 붙음
-.notice-detail-modal {
+// 공지 상세 우측 드로어(NoticeDetailPanel = ispark UiDrawer) — Teleport 로 body 하위에 붙음
+// UiDrawer는 커스텀 class를 못 받으므로(멀티루트) 실제 존재하는 .ui-drawer를 앵커로 사용
+// (하위 .notice-detail-* 클래스가 이 컴포넌트 고유라 다른 드로어엔 영향 없음)
+.ui-drawer {
   .notice-detail-panel {
     display: flex;
     flex-direction: column;

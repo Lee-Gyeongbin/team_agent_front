@@ -1,10 +1,11 @@
 <template>
-  <UiModal
-    :is-open="isOpen"
+  <UiDrawer
+    :open="isOpen"
     :title="displayValue(noticeTitle)"
     position="right"
-    custom-class="notice-detail-modal"
-    @close="$emit('close')"
+    width="680px"
+    :confirm-before-close="false"
+    @update:open="(v) => !v && $emit('close')"
   >
     <div class="notice-detail-panel">
       <div class="notice-detail-header">
@@ -65,10 +66,11 @@
         </UiButton>
       </div>
     </template>
-  </UiModal>
+  </UiDrawer>
 </template>
 
 <script setup lang="ts">
+import { UiDrawer } from '@leechanyong/ispark-ui'
 import type { NoticeItem } from '~/types/notice'
 
 interface Props {
