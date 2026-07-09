@@ -42,6 +42,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton } from '@leechanyong/ispark-ui'
 import { openToast } from '~/composables/useToast'
 
 const props = defineProps<{

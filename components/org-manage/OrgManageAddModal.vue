@@ -101,6 +101,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiInput } from '@leechanyong/ispark-ui'
 import type { OrgOption, OrgTreeItem } from '~/types/org-manage'
 import OrgManageTreeNode from '~/components/org-manage/OrgManageTreeNode.vue'
 

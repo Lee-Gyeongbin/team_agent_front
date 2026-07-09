@@ -397,29 +397,6 @@
   }
 }
 
-.org-manage-member-status {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: $border-radius-full;
-  font-size: $font-size-base;
-  font-weight: $font-weight-medium;
-
-  &.is-active {
-    background: rgba($color-success, 0.12);
-    color: $color-success;
-  }
-
-  &.is-inactive {
-    background: rgba($color-text-secondary, 0.12);
-    color: $color-text-secondary;
-  }
-
-  &.is-lock {
-    background: rgba($color-warning, 0.12);
-    color: $color-warning;
-  }
-}
-
 // ===== 조직 모달 공통 (UiModal 본문) =====
 .org-manage-add-org-modal,
 .org-manage-parent-select-modal,

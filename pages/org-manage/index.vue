@@ -57,6 +57,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiInput } from '@leechanyong/ispark-ui'
 import { computed, ref } from 'vue'
 import OrgManageExcelUploadModal from '~/components/org-manage/OrgManageExcelUploadModal.vue'
 import OrgManageMemberPanel from '~/components/org-manage/OrgManageMemberPanel.vue'
