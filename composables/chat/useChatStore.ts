@@ -209,6 +209,16 @@ let chatIndexAgentsLoadPromise: Promise<void> | null = null
 /** 검색기록 재파싱용 — 마지막으로 로드한 raw 로그·roomId */
 const lastLoadedChatLogRows = ref<ChatLogListRow[]>([])
 const lastLoadedChatLogRoomId = ref('')
+/**
+ * 에이전트 종류
+ * M: 문서검색증강(RAG) Agent
+ * S: 검색모드-to-SQL Agent
+ * T: 실시간 음성인식(STT) Agent
+ * C: 일반 채팅 Agent
+ * A: 메일 브리핑 Agent
+ * W: 번역 Agent
+ * D: 프로젝트 리스크 진단 Agent
+ */
 const normalizeChatAgents = (list: Agent[]) =>
   list
     .filter(
@@ -1389,7 +1399,10 @@ export const useChatStore = () => {
         const selectedId = selectedChatAgentId.value
         if (selectedId) {
           const selected = chatIndexAgents.value.find((a) => a.agentId === selectedId)
-          if (selected && (isRecommendAgent(selected) || isTranslateAgent(selected) || isAutoRecommendAgent(selected))) {
+          if (
+            selected &&
+            (isRecommendAgent(selected) || isTranslateAgent(selected) || isAutoRecommendAgent(selected))
+          ) {
             selectedChatAgentId.value = null
           }
         }
