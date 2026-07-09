@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@internationalized/date": "^3.5.0",
-    "@leechanyong/ispark-ui": "github:box3101/ispark-ui#d49d2aad87657ae8bb54f86501544cf11441c24a",
+    "@leechanyong/ispark-ui": "github:box3101/ispark-ui#f8d8e0ea4ee48f7d28ff51640ad4e6d10d7beb6d",
     "@lucide/vue": ">=1.0.0",
     "@tiptap/extension-color": "^3.22.4",
     "@tiptap/extension-heading": "^3.22.4",

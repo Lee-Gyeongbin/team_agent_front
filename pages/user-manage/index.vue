@@ -129,7 +129,7 @@
                 수정
               </UiButton>
               <UiButton
-                variant="outline"
+                :variant="(row as UserItem).acctStatusDesc === '비활성' ? 'outline' : 'danger-line'"
                 size="xs"
                 @click="handleToggleUserManageStatus(row as UserItem)"
               >

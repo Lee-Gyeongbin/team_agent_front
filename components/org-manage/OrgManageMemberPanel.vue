@@ -33,14 +33,13 @@
           조직 수정
         </UiButton>
         <UiButton
-          class="org-manage-delete-btn"
-          variant="outline"
+          variant="danger-line"
           size="sm"
           :disabled="!selectedOrgId"
           @click="handleDeleteOrg"
         >
           <template #icon-left>
-            <i class="icon icon-trashcan size-14" />
+            <UiIcon name="trash-2" size="14" />
           </template>
           삭제
         </UiButton>
@@ -151,7 +150,7 @@
 </template>
 
 <script setup lang="ts">
-import { UiBadge, UiButton, UiLoading, UiEmpty } from '@leechanyong/ispark-ui'
+import { UiBadge, UiButton, UiIcon, UiLoading, UiEmpty } from '@leechanyong/ispark-ui'
 import type { BadgeVariant } from '@leechanyong/ispark-ui'
 import type { OrgUserItem } from '~/types/org-manage'
 import { formatDateTimeDisplay } from '~/utils/global/dateUtil'

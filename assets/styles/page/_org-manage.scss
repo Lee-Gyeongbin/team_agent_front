@@ -444,16 +444,6 @@
   color: $color-text-primary;
 }
 
-.org-manage-delete-btn {
-  color: $color-error;
-  border-color: rgba($color-error, 0.5);
-
-  &:hover {
-    background: rgba($color-error, 0.06);
-    border-color: rgba($color-error, 0.7);
-  }
-}
-
 .org-manage-parent-picker {
   position: relative;
 }

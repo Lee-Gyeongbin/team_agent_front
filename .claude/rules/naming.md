@@ -51,6 +51,29 @@
 - **삭제 버튼/드롭다운**: `icon-trashcan` 통일 (`icon-delete`는 배경색 필요 시에만 `icon-delete-bg`로 사용)
 - 드롭다운 메뉴 항목에서 삭제는 반드시 `color: 'danger'` 지정
 
+> 위 표는 **레거시(미마이그레이션) 페이지** 기준. ispark-ui 전환 페이지는 아래 표준을 따른다.
+
+### 삭제 버튼 — ispark-ui 표준 (danger-line + UiIcon)
+
+ispark-ui 전환 페이지의 **삭제 버튼은 공통 패턴으로 통일**한다:
+
+```vue
+<UiButton variant="danger-line" size="sm" @click="doDelete">
+  <template #icon-left>
+    <UiIcon name="trash-2" size="14" />
+  </template>
+  삭제
+</UiButton>
+```
+
+- **variant `danger-line`** (빨간 테두리+빨간 글씨, subtle) — 인라인 파괴 액션(행/카드 삭제) 전용. 꽉 찬 `danger`(solid)는 **모달 최종 "삭제 확정" 버튼**에만.
+- **아이콘 `<UiIcon name="trash-2" size="14" />`** (lucide) — 로컬 `icon-trashcan` 대신 UiIcon 사용. `danger-line` 버튼 안이면 currentColor로 자동 빨강.
+- **삭제↔복구 토글 버튼**: 복구 상태는 비파괴이므로 `outline` 유지 → `:variant="상태 === '비활성' ? 'outline' : 'danger-line'"`.
+- **비파괴 액션**(수정/비밀번호 초기화/조직 수정 등)은 중립 `outline` → 파괴(빨강)와 위계 분리.
+- 드롭다운 메뉴의 삭제 항목은 `color: 'danger'` + `icon: 'icon-trashcan'`.
+
+> 근거: `danger-line`은 ispark-ui `UiButton` variant(v0.6.5+). 삭제 신호를 앱 전역에서 일관되게. 컴포넌트 계약(variant 의미)은 ispark-ui가, 이 조합 규칙은 team_agent가 소유.
+
 ## Props 순서
 
 1. 식별자 (id, name)
