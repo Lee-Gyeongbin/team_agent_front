@@ -1,9 +1,15 @@
 <template>
-  <UiModal
-    :is-open="isOpen"
-    position="right"
+  <UiDrawer
+    :open="isOpen"
     :title="model ? 'LLM 모델 수정' : 'LLM 모델 추가'"
-    @close="$emit('close')"
+    position="right"
+    width="680px"
+    :close-on-overlay-click="false"
+    :confirm-before-close="false"
+    :show-fullscreen="false"
+    :show-resize="false"
+    :resizable="false"
+    @update:open="(v) => !v && $emit('close')"
   >
     <div
       ref="formRef"
@@ -42,10 +48,11 @@
         </UiButton>
       </div>
     </template>
-  </UiModal>
+  </UiDrawer>
 </template>
 
 <script setup lang="ts">
+import { UiDrawer } from '@leechanyong/ispark-ui'
 import type { LlmModel } from '~/types/llm'
 
 const { handleFetchProviderOptions } = useLlmStore()
@@ -145,13 +152,13 @@ watch(
             .join(',') ||
             'ROLE_ADMIN,ROLE_PREMIUM,ROLE_USER'),
       }
-      nextTick(() => formRef.value?.closest('.modal-side-body')?.scrollTo(0, 0))
+      nextTick(() => formRef.value?.closest('.ui-drawer-body')?.scrollTo(0, 0))
     } else {
       sectionKey.value += 1
       basicForm.value = defaultBasic()
       apiParamForm.value = defaultApiParam()
       usageForm.value = defaultUsage()
-      nextTick(() => formRef.value?.closest('.modal-side-body')?.scrollTo(0, 0))
+      nextTick(() => formRef.value?.closest('.ui-drawer-body')?.scrollTo(0, 0))
     }
   },
 )
