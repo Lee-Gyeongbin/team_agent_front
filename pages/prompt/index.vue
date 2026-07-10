@@ -5,10 +5,11 @@
         v-model="activeTab"
         :tabs="tabs"
         align="left"
+        content-max-width="800px"
       />
     </div>
 
-    <div class="prompt-page-body s-center">
+    <div class="prompt-page-body">
       <!-- 탭별 본문: key로 교체 시 AOS가 새 요소로 인식해 fade-up 재생 -->
       <div
         :key="activeTab"
