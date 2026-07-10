@@ -1,7 +1,6 @@
 <template>
   <UiModal
     :is-open="isOpen"
-    position="center"
     title="프롬프트 테스트"
     max-width="560px"
     @close="$emit('close')"
@@ -71,7 +70,7 @@
 </template>
 
 <script setup lang="ts">
-import { UiButton, UiTextarea } from '@leechanyong/ispark-ui'
+import { UiButton, UiModal, UiTextarea } from '@leechanyong/ispark-ui'
 
 interface Props {
   isOpen: boolean

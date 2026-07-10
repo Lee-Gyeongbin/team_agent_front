@@ -4,6 +4,7 @@
       <UiTab
         v-model="activeTab"
         :tabs="tabs"
+        align="left"
       />
     </div>
 

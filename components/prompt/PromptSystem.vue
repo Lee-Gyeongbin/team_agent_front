@@ -54,7 +54,7 @@
 </template>
 
 <script setup lang="ts">
-import { UiEmpty } from '@leechanyong/ispark-ui'
+import { UiEmpty, UiSelect } from '@leechanyong/ispark-ui'
 import type { SystemPrompt } from '~/types/prompt'
 import { usePromptStore } from '~/composables/prompt/usePromptStore'
 
@@ -152,6 +152,7 @@ const onCopy = async (prompt: SystemPrompt) => {
 
 .prompt-saved-agent-select {
   width: 220px;
-  flex-shrink: 0;
+  max-width: 220px;
+  flex: 0 0 220px;
 }
 </style>

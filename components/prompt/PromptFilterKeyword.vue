@@ -48,6 +48,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiInput } from '@leechanyong/ispark-ui'
 import type { banWordItem } from '~/types/prompt'
 
 interface Props {
