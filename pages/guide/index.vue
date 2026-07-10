@@ -639,7 +639,7 @@ const iconGroups = [
   },
   {
     title: '로그인 아이콘',
-    icons: [{ class: 'icon-error' }],
+    icons: [{ class: 'icon-error' }, { class: 'icon-warning-triangle' }],
   },
   {
     title: 'chat 아이콘',

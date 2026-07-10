@@ -148,6 +148,11 @@
   @include icon-file('system-danger');
 }
 
+// 경고 삼각형
+.icon-warning-triangle {
+  @include icon-file-bg('warning-triangle');
+}
+
 // ===================================
 // chat 아이콘
 // ===================================
