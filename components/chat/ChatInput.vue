@@ -57,6 +57,8 @@
         </div>
       </div>
     </Transition>
+    <!-- 추천 질문 칩 아래 · 입력창 위 (입력 방법 가이드 등) -->
+    <slot name="above-input" />
     <div
       class="chat-input-inner"
       :class="{ 'is-active': modelValue.trim(), 'is-dragging': isDragging, 'is-disabled': props.disabled }"

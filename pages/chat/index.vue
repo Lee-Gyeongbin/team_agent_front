@@ -53,7 +53,11 @@
             :theme-icon-class-nm="selectedChatThemeAgent?.iconClassNm ?? 'icon-chart-ai'"
             :theme-color-hex="selectedChatThemeAgent?.colorHex ?? ''"
           />
-          <ChatInput v-model="chatMessage" />
+          <ChatInput v-model="chatMessage">
+            <template #above-input>
+              <ChatInputGuide />
+            </template>
+          </ChatInput>
         </div>
       </div>
 
@@ -164,6 +168,14 @@
         @close="closeLoginModal"
         @success="onMailLoginSuccess"
       />
+      <!-- 사용 가능 기능 안내 (NOTICE_FEATURE, enblYn=Y) -->
+      <ChatFeatureNoticeModal
+        :is-open="isFeatureNoticeOpen"
+        :content="featureNoticeContent"
+        @close="closeFeatureNotice"
+        @confirm="closeFeatureNotice"
+        @hide="hideFeatureNoticeForever"
+      />
     </div>
   </div>
 </template>
@@ -177,6 +189,7 @@ import { parseAutoRecommendConfigFromAgent } from '~/utils/chat/autoRecommendUti
 import { CHAT_THEMES, groupAgentsByTheme, getInitialThemeKey, findThemeByKey } from '~/utils/chat/chatThemeUtil'
 import { useMailStore } from '~/composables/mail/useMailStore'
 import { useDataQuestionGate } from '~/composables/chat/useDataQuestionGate'
+import { useChatFeatureNotice } from '~/composables/chat/useChatFeatureNotice'
 import type { Agent } from '~/types/agent'
 
 const { chatMessage, selectChatRoomList, selectModelOptions, resetChatRoom } = useChatRooms()
@@ -210,6 +223,13 @@ const { startChatSocket, stopChatSocket } = useChatSocket()
 const { user } = useAuth()
 const { isLoginModalOpen, openLoginModal, closeLoginModal, checkMailAuth } = useMailStore()
 const { getChatGuideByType, fetchChatGuideList } = useChatGuide()
+const {
+  isOpen: isFeatureNoticeOpen,
+  content: featureNoticeContent,
+  closeModal: closeFeatureNotice,
+  hideForever: hideFeatureNoticeForever,
+  initFeatureNotice,
+} = useChatFeatureNotice()
 const THEME_BG_FADE_MS = 1000
 let themeBgFadeTimer: ReturnType<typeof window.setTimeout> | null = null
 
@@ -422,6 +442,8 @@ onMounted(async () => {
   // /chat에서 /chat/[id]로 이미 이동한 뒤 비동기 완료 시 reset이 늦게 실행되어
   // 방금 생성한 방의 로컬 메시지가 지워지는 레이스 컨디션을 방지한다.
   if (!isMountedChatIndex.value) return
+  // NOTICE_FEATURE — enblYn=Y 이고 표시 조건 충족 시 모달
+  initFeatureNotice()
   // 채팅소켓 시작
   startChatSocket()
 })

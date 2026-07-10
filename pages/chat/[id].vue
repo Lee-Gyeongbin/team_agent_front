@@ -41,7 +41,11 @@
         <ChatInput
           v-model="chatMessage"
           :disabled="isSurveyInputLocked"
-        />
+        >
+          <template #above-input>
+            <ChatInputGuide />
+          </template>
+        </ChatInput>
       </div>
     </div>
     <!-- 리사이즈 핸들 -->
