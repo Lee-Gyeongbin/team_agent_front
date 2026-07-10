@@ -8,7 +8,7 @@
           <span class="prompt-box-sub">자주 사용하는 질문/응답 템플릿을 관리합니다.</span>
         </div>
         <UiButton
-          variant="secondary"
+          variant="solid-muted"
           size="sm"
           @click="onAdd"
         >
@@ -57,6 +57,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton } from '@leechanyong/ispark-ui'
 import type { PromptTemplate } from '~/types/prompt'
 import { usePromptStore } from '~/composables/prompt/usePromptStore'
 

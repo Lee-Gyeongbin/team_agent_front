@@ -35,6 +35,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton } from '@leechanyong/ispark-ui'
 import type { PromptVersion } from '~/types/prompt'
 
 interface Props {
