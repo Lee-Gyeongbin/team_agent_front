@@ -35,7 +35,18 @@ team-agent/
 
 ## Commands
 
+- **Sync (작업 시작 전 필수): `npm run sync`**
 - Dev: `npm run dev`
 - Build: `npm run build`
 - Lint: `npm run lint:fix`
 - Format: `npm run format`
+
+### `npm run sync` — 작업 시작 전 한 번
+
+이 브랜치와 `@leechanyong/ispark-ui` 둘 다 **팀원과 동시 작업 중**이다. 코드를 만지기 전에 반드시 실행한다.
+
+1. `git fetch` 후 현재 브랜치가 origin보다 뒤처졌으면 **merge**
+2. `package.json`의 ispark 핀 ↔ `node_modules` 설치본 비교 후 **`npm install`로 동기화**
+3. ispark 버전이 바뀌었으면 **dev 서버 재시작 안내** (Vite 의존성 재최적화 필요)
+
+> 왜: "package.json 핀은 최신인데 node_modules는 구버전"인 stale 상태가 반복 발생했다. 그 상태로 작업하면 새 컴포넌트/variant가 없어 화면이 깨진다.
