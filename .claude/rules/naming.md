@@ -74,6 +74,55 @@ ispark-ui 전환 페이지의 **삭제 버튼은 공통 패턴으로 통일**한
 
 > 근거: `danger-line`은 ispark-ui `UiButton` variant(v0.6.5+). 삭제 신호를 앱 전역에서 일관되게. 컴포넌트 계약(variant 의미)은 ispark-ui가, 이 조합 규칙은 team_agent가 소유.
 
+### 아이콘 — `UiIcon`(lucide) 표준
+
+ispark-ui 전환 페이지는 **로컬 `icon-*` 클래스 대신 `<UiIcon>`**(lucide 기반)을 사용한다.
+
+```vue
+<UiIcon name="refresh-cw" size="16" />   <!-- name은 kebab-case -->
+```
+
+| 액션 | `UiIcon name` | 비고 |
+|------|---------------|------|
+| 다운로드 | `download` | |
+| 업로드 | `upload` | |
+| 새로고침 | `refresh-cw` | |
+| 삭제 | `trash-2` | `danger-line` 버튼 안에서 currentColor로 빨강 |
+| 추가 | `plus` | |
+| 펼침(드롭다운) | `chevron-down` | |
+
+- **size**: 버튼 안에서 `16`(md/sm), 작은 버튼(xs)은 `14`.
+- **색**: 지정하지 않으면 **currentColor** → 버튼 텍스트 색을 자동 상속. `danger-line` 안이면 빨강.
+- **예외**: `UiDropdownMenu`의 `items[].icon`은 UiIcon이 아니라 **ispark 아이콘 클래스**(`'icon-download'`, `'icon-upload'`)를 받는다.
+
+> 근거: 로컬 아이콘과 lucide가 한 화면에 섞이면 선 굵기·스타일이 어긋난다. 전환 페이지는 UiIcon으로 통일한다.
+
+### 헤더 액션 버튼 — 위계
+
+리스트/관리 페이지 헤더의 액션 버튼은 **중요도에 따라 variant를 나눈다.**
+
+| 액션 | variant | 예시 |
+|------|---------|------|
+| 주 액션(추가/생성) | `primary` | 사용자 추가, 조직 추가 |
+| 보조 액션 | `outline` | 다시 시도 |
+| **유틸리티** | **`ghost`** | **새로고침, 엑셀 ▾** |
+
+```vue
+<!-- 새로고침 = 유틸 → ghost + UiIcon -->
+<UiButton variant="ghost" size="md" @click="handleRefresh">
+  <template #icon-left>
+    <UiIcon name="refresh-cw" size="16" />
+  </template>
+  새로고침
+</UiButton>
+```
+
+- **엑셀 다운/업로드는 개별 버튼 2개로 노출하지 않는다.** `UiDropdownMenu` 하나(`엑셀 ▾`, ghost)로 묶는다:
+  `items: [{ label: '다운로드', value: 'download', icon: 'icon-download' }, { label: '업로드', value: 'upload', icon: 'icon-upload' }]`
+- 유틸 버튼(ghost)이 주 액션(primary)과 **같은 무게를 갖지 않게** 한다.
+
+> 근거: 헤더가 outline 버튼으로 도배되면 주 액션이 묻히고 노이즈가 커진다. 유틸은 ghost로 낮춰 위계를 만든다.
+
 ## Props 순서
 
 1. 식별자 (id, name)

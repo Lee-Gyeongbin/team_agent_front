@@ -27,10 +27,13 @@
           />
         </div>
         <UiButton
-          variant="outline"
+          variant="ghost"
           size="md"
           @click="handleRefreshOrgManage"
         >
+          <template #icon-left>
+            <UiIcon name="refresh-cw" size="16" />
+          </template>
           새로고침
         </UiButton>
       </div>

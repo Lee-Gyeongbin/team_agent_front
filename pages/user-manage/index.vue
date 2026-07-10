@@ -38,7 +38,7 @@
           @click="handleFetchUserManageList"
         >
           <template #icon-left>
-            <i class="icon icon-refresh size-16" />
+            <UiIcon name="refresh-cw" size="16" />
           </template>
           새로고침
         </UiButton>
