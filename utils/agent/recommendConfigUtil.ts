@@ -1,4 +1,21 @@
-import type { AgtSubAdditionalConfig, RecommendFormField, RecommendResultFieldDef } from '~/types/agent'
+import type {
+  AgtSubAdditionalConfig,
+  RecommendFormField,
+  RecommendRegionSelectDepth,
+  RecommendResultFieldDef,
+} from '~/types/agent'
+
+/** 추천·자동추천 에이전트 result.topN 상한 */
+export const AGENT_RECOMMEND_TOP_N_MAX = 10
+
+export const clampAgentRecommendTopN = (raw: string | number, fallback = 5): number => {
+  const num = Number(raw)
+  if (!Number.isFinite(num) || num <= 0) return fallback
+  return Math.min(AGENT_RECOMMEND_TOP_N_MAX, Math.floor(num))
+}
+
+export const isAgentRecommendTopNValid = (value: number): boolean =>
+  Number.isFinite(value) && value > 0 && value <= AGENT_RECOMMEND_TOP_N_MAX
 
 /** Agent 설정 UI — RECOMMEND ADDITIONAL_CONFIG 편집 필드 */
 export interface RecommendFormFieldForm {
@@ -31,6 +48,7 @@ export interface RecommendConfigForm {
   pendingStatusTexts: string[]
   useRegionSelect: boolean
   regionSelectLabel: string
+  regionSelectDepth: RecommendRegionSelectDepth
   formFields: RecommendFormFieldForm[]
   resultTopN: number
   rankLabel: string
@@ -128,6 +146,7 @@ export const emptyRecommendConfigForm = (): RecommendConfigForm => ({
   pendingStatusTexts: [...DEFAULT_PENDING_STATUS_TEXTS],
   useRegionSelect: false,
   regionSelectLabel: '',
+  regionSelectDepth: 'dong',
   formFields: cloneFormFields(DEFAULT_FORM_FIELDS),
   resultTopN: 5,
   rankLabel: '추천',
@@ -179,6 +198,12 @@ const parseStringArray = (raw: unknown, fallback: string[]): string[] => {
   return raw.map(String).filter(Boolean)
 }
 
+const parseRegionSelectDepth = (raw: unknown): RecommendRegionSelectDepth => {
+  const value = String(raw ?? '').trim()
+  if (value === 'sido' || value === 'sigungu') return value
+  return 'dong'
+}
+
 /** ADDITIONAL_CONFIG → 설정 폼 */
 export const parseRecommendAdditionalConfigToForm = (
   config: Record<string, unknown> | null | undefined,
@@ -211,6 +236,7 @@ export const parseRecommendAdditionalConfigToForm = (
     pendingStatusTexts: parseStringArray(ui.pendingStatusTexts, empty.pendingStatusTexts),
     useRegionSelect: form.useRegionSelect === true,
     regionSelectLabel: String(form.regionSelectLabel ?? ''),
+    regionSelectDepth: parseRegionSelectDepth(form.regionSelectDepth),
     formFields: parseFormFields(form.fields),
     resultTopN: Number(result.topN ?? empty.resultTopN) || empty.resultTopN,
     rankLabel: String(result.rankLabel ?? empty.rankLabel),
@@ -265,6 +291,7 @@ export const buildRecommendAdditionalConfig = (
   const formPayload = {
     useRegionSelect: form.useRegionSelect,
     ...(form.regionSelectLabel.trim() ? { regionSelectLabel: form.regionSelectLabel.trim() } : {}),
+    ...(form.useRegionSelect ? { regionSelectDepth: form.regionSelectDepth } : {}),
     fields: buildFormFieldsPayload(form.formFields),
   }
 

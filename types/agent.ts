@@ -102,9 +102,14 @@ export interface RecommendFormField {
   options: string[]
 }
 
+/** 지역 선택 필수 깊이 — 시·도 / 시·군·구 / 읍·면·동 */
+export type RecommendRegionSelectDepth = 'sido' | 'sigungu' | 'dong'
+
 export interface RecommendFormConfig {
   useRegionSelect: boolean
   regionSelectLabel?: string
+  /** useRegionSelect 시 필수 선택 깊이 (기본: dong) */
+  regionSelectDepth?: RecommendRegionSelectDepth
   fields: RecommendFormField[]
 }
 

@@ -119,7 +119,10 @@
         <p class="chat-recommend-agent-card__label">
           {{ recommendConfig.form.regionSelectLabel || '지역을 선택해주세요' }}
         </p>
-        <div class="chat-recommend-agent-card__location-grid">
+        <div
+          class="chat-recommend-agent-card__location-grid"
+          :style="{ '--location-field-count': visibleLocationFieldCount }"
+        >
           <UiSelect
             :model-value="form['sido']"
             :options="sidoSelectOptions"
@@ -127,12 +130,14 @@
             @update:model-value="!props.readonly && setFormValue('sido', String($event))"
           />
           <UiSelect
+            v-if="showSigunguSelect"
             :model-value="form['sigungu']"
             :options="sigunguSelectOptions"
             :disabled="props.readonly || isRegionLoading || !hasSelectedSido"
             @update:model-value="!props.readonly && setFormValue('sigungu', String($event))"
           />
           <UiSelect
+            v-if="showDongSelect"
             :model-value="form['dong']"
             :options="dongSelectOptions"
             :disabled="props.readonly || isRegionLoading || !hasSelectedSigungu"
@@ -259,14 +264,34 @@
     </p>
 
     <div
+      v-if="showRetryFooter"
+      class="chat-recommend-agent-card__footer chat-recommend-agent-card__footer--results"
+    >
+      <UiButton
+        variant="line-secondary"
+        size="sm"
+        :disabled="props.retryDisabled"
+        @click="onRetryClick"
+      >
+        다시 추천받기
+      </UiButton>
+    </div>
+
+    <div
       v-if="!hasResultRecommendations && (props.readonly || !isRecommendationsPending)"
       class="chat-recommend-agent-card__footer"
     >
       <template v-if="props.readonly">
-        <span class="chat-recommend-agent-card__submitted-badge">
-          <i class="icon-check size-16" />
+        <UiButton
+          variant="line-secondary"
+          size="sm"
+          disabled
+        >
+          <template #icon-left>
+            <i class="icon-check size-16" />
+          </template>
           제출 완료
-        </span>
+        </UiButton>
       </template>
       <template v-else>
         <UiButton
@@ -326,6 +351,8 @@ import {
   resolveRecommendItemLinkUrl,
   tryGetRecommendImageEnrichmentFromCache,
   getRecommendGeolocationCoords,
+  normalizeRecommendRegionSelectDepth,
+  isRecommendRegionSelectionComplete,
 } from '~/utils/chat/recommendAgentUtil'
 import { normalizeLunchLocationMap } from '~/utils/chat/lunchAgentUtil'
 import { useChatApi } from '~/composables/chat/useChatApi'
@@ -343,6 +370,10 @@ interface Props {
   themeColorHex?: string
   enrichmentCacheKey?: string
   enrichmentRContent?: string
+  /** 추천 완료 후 '다시 추천받기' 노출 (채팅방 result 카드) */
+  enableRetry?: boolean
+  /** 미제출 추천 폼 카드가 있으면 비활성 */
+  retryDisabled?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -356,12 +387,15 @@ const props = withDefaults(defineProps<Props>(), {
   themeColorHex: '',
   enrichmentCacheKey: '',
   enrichmentRContent: '',
+  enableRetry: false,
+  retryDisabled: false,
 })
 
 const emit = defineEmits<{
   submit: [payload: RecommendFormPayload]
   close: []
   enriched: [items: RecommendResultItem[]]
+  retry: []
 }>()
 
 const { fetchSelectRegionTree } = useChatApi()
@@ -420,13 +454,30 @@ const dongSelectOptions = computed(() =>
     : toSelectOptions(dongList.value),
 )
 
-const isLocationAnswered = computed(() => !!form['sido'] && !!form['sigungu'] && !!form['dong'])
+const regionSelectDepth = computed(() =>
+  normalizeRecommendRegionSelectDepth(props.recommendConfig.form.regionSelectDepth),
+)
+const isLocationAnswered = computed(() => isRecommendRegionSelectionComplete(form, regionSelectDepth.value))
+const showSigunguSelect = computed(() => {
+  if (props.readonly) return !!(form['sigungu'] ?? '').trim() || regionSelectDepth.value !== 'sido'
+  return regionSelectDepth.value !== 'sido'
+})
+const showDongSelect = computed(() => {
+  if (props.readonly) return !!(form['dong'] ?? '').trim() || regionSelectDepth.value === 'dong'
+  return regionSelectDepth.value === 'dong'
+})
+const visibleLocationFieldCount = computed(() => {
+  let count = 1
+  if (showSigunguSelect.value) count += 1
+  if (showDongSelect.value) count += 1
+  return count
+})
 const hasSelectedSido = computed(() => !!form['sido'])
 const hasSelectedSigungu = computed(() => !!form['sigungu'])
 
 watch(
-  [sidoList, sigunguList, dongList],
-  ([sidos, sigungus, dongs]) => {
+  [sidoList, sigunguList, dongList, regionSelectDepth],
+  ([sidos, sigungus, dongs, depth]) => {
     if (props.readonly || !props.recommendConfig.form.useRegionSelect) return
     if (!sidos.length || !sidos.includes(form['sido'] ?? '')) {
       form['sido'] = ''
@@ -434,8 +485,17 @@ watch(
       form['dong'] = ''
       return
     }
+    if (depth === 'sido') {
+      form['sigungu'] = ''
+      form['dong'] = ''
+      return
+    }
     if (!sigungus.length || !sigungus.includes(form['sigungu'] ?? '')) {
       form['sigungu'] = ''
+      form['dong'] = ''
+      return
+    }
+    if (depth === 'sigungu') {
       form['dong'] = ''
       return
     }
@@ -473,13 +533,30 @@ const fetchRegionTree = async () => {
 }
 
 const applySelectedLocationToForm = (selected?: { sido?: string; sigungu?: string; dong?: string }) => {
+  const depth = regionSelectDepth.value
   const sido = String(selected?.sido ?? '').trim()
   const sigungu = String(selected?.sigungu ?? '').trim()
   const dong = String(selected?.dong ?? '').trim()
-  if (!sido || !sigungu || !dong) return
+  if (!sido) return
   if (form['sido'] || form['sigungu'] || form['dong']) return
+  if (!locationMap.value[sido]) return
+
+  if (depth === 'sido') {
+    form['sido'] = sido
+    return
+  }
+
+  if (!sigungu) return
   const sigunguMap = locationMap.value[sido]
-  if (!sigunguMap) return
+  if (!sigunguMap || !Object.prototype.hasOwnProperty.call(sigunguMap, sigungu)) return
+
+  if (depth === 'sigungu') {
+    form['sido'] = sido
+    form['sigungu'] = sigungu
+    return
+  }
+
+  if (!dong) return
   const dongListBySigungu = sigunguMap[sigungu]
   if (!Array.isArray(dongListBySigungu) || !dongListBySigungu.includes(dong)) return
   form['sido'] = sido
@@ -739,6 +816,20 @@ const showCardHeader = computed(() => {
   if (!isResultOnlyCard.value && !hasResultRecommendations.value) return true
   return isContentVisible.value && (isFormOnlyCard.value || !isRecommendationsPending.value)
 })
+
+/** 추천 결과 표시 완료 후 다시 추천받기 */
+const showRetryFooter = computed(
+  () =>
+    props.enableRetry &&
+    shouldRenderResultList.value &&
+    !isRecommendationsPending.value &&
+    !props.isRecommendationResponseStreaming,
+)
+
+const onRetryClick = () => {
+  if (props.retryDisabled) return
+  emit('retry')
+}
 
 // ━━━ 인트로 애니메이션 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -1050,7 +1141,7 @@ const onSubmitClick = () => {
 
   &__location-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--location-field-count, 3), minmax(0, 1fr));
     gap: $spacing-sm;
   }
 
@@ -1070,6 +1161,10 @@ const onSubmitClick = () => {
     background: $color-surface;
     flex-shrink: 0;
     @include recommend-content-reveal(0.28s, 0.08s);
+
+    &--results {
+      margin-top: 0;
+    }
   }
 
   &__result-list {
@@ -1242,19 +1337,6 @@ const onSubmitClick = () => {
       text-decoration: underline;
       text-underline-offset: 2px;
     }
-  }
-
-  &__submitted-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: $spacing-xs;
-    padding: 3.5px 10px;
-    border-radius: 6px;
-    border: 1px solid rgba(var(--recommend-theme-rgb), 0.22);
-    background: rgba(var(--recommend-theme-rgb), 0.08);
-    color: var(--recommend-theme-color);
-    @include typo($body-large);
-    font-weight: $font-weight-medium;
   }
 
   &.is-readonly {

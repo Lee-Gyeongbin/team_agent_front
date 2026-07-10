@@ -242,6 +242,8 @@ import { getChatAttachmentExtension, getChatFileIconClass } from '~/utils/chat/c
 import { buildStopPayload } from '~/utils/chat/chatSocketPayloadUtil'
 import { useChatSocket } from '~/composables/chat/useChatSocket'
 import { useChatMessages } from '~/composables/chat/useChatMessages'
+import { isEphemeralValidationRoomId } from '~/utils/chat/chatRoomIdUtil'
+import { useDataQuestionGate } from '~/composables/chat/useDataQuestionGate'
 
 interface AttachmentPreviewItem {
   id: string
@@ -315,9 +317,8 @@ const handleSelectNextQuestion = (question: string) => {
 }
 
 // ===== 데이터분석(S) 질문 품질 게이트 — 검증 통과 전 전송 차단 =====
-const { isGateActive, isValidating, canSend, requiredFilled, validate } = useDataQuestionGate()
-
-/** 검증 단계 버튼 모드 — 게이트 활성 + 미통과 + 응답중 아님 */
+const { isGateActive, isValidating, canSend, requiredFilled, validate, finalizeDataQuestionSend } =
+  useDataQuestionGate()
 const isValidateMode = computed(() => isGateActive.value && !canSend.value && !isAnswerStreaming.value)
 
 /** 전송 버튼 비활성 — 게이트 활성 시 검증 통과 전엔 전송 불가(검증 모드일 땐 검증 가능 여부로 판정) */
@@ -638,12 +639,15 @@ const handleSend = async () => {
   isSending.value = true
   try {
     let sent = false
-    if (!chatRoom.value.roomId) {
+    if (!chatRoom.value.roomId || isEphemeralValidationRoomId(chatRoom.value.roomId)) {
       sent = await createChatRoom(riskAutoContent ?? props.modelValue, filesToSend)
     } else {
       sent = await onSend(filesToSend, riskAutoContent)
     }
     if (sent) {
+      if (isGateActive.value) {
+        finalizeDataQuestionSend()
+      }
       clearAttachments()
     }
   } finally {

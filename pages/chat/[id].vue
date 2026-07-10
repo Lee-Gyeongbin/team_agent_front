@@ -26,6 +26,7 @@
         @on-news-intro-complete="handleNewsCuratorIntroEnd"
         @on-recommend-card-submit="handleSubmitRecommendAgentForm"
         @on-recommend-card-close="onRecommendMessageClose"
+        @on-recommend-card-retry="onRecommendMessageRetry"
         @on-translate-card-submit="handleSubmitTranslateAgentForm"
         @on-translate-card-close="onTranslateMessageClose"
         @on-news-card-submit="onNewsCuratorMessageSubmit"
@@ -34,8 +35,8 @@
       />
       <div class="chat-input-guide-wrap">
         <DataQuestionGuide
-          :theme-icon-class-nm="currentDataAnalysisAgent?.iconClassNm ?? 'icon-chart-ai'"
-          :theme-color-hex="currentDataAnalysisAgent?.colorHex ?? ''"
+          :theme-icon-class-nm="selectedChatThemeAgent?.iconClassNm ?? 'icon-chart-ai'"
+          :theme-color-hex="selectedChatThemeAgent?.colorHex ?? ''"
         />
         <ChatInput
           v-model="chatMessage"
@@ -142,7 +143,8 @@
 
 <script setup lang="ts">
 import { RadioGroupIndicator, RadioGroupItem, RadioGroupRoot } from 'radix-vue'
-import { normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
+import { useDataQuestionGate } from '~/composables/chat/useDataQuestionGate'
+import { isEphemeralValidationRoomId, normalizeChatRoomId } from '~/utils/chat/chatRoomIdUtil'
 
 /** 방 id가 바뀔 때마다 페이지 인스턴스 분리 — 전환 트랜지션(out-in)·조합형 라우트에서 상태 잔류 완화 */
 definePageMeta({
@@ -173,13 +175,14 @@ const {
   handleNewsCuratorReselectCategories,
   handleCloseNewsCurator,
   handleSubmitRecommendAgentForm,
+  handleRecommendAgentRetry,
   handleCloseRecommendAgent,
   handleSubmitTranslateAgentForm,
   handleCloseTranslateAgent,
-  selectedChatAgentId,
-  chatIndexAgents,
+  selectedChatThemeAgent,
 } = useChatStore()
 const { chatMessage, handleSetChatRoom } = useChatRooms()
+const { clearValidationPreview, resetGate } = useDataQuestionGate()
 
 /** 메시지 목록의 설문 컴포넌트 "닫기" 버튼 클릭 */
 const onSurveyMessageClose = (logId: string) => {
@@ -221,12 +224,15 @@ const isSurveyInputLocked = computed(() =>
   ),
 )
 
-const currentDataAnalysisAgent = computed(
-  () => chatIndexAgents.value.find((agent) => agent.agentId === selectedChatAgentId.value) ?? null,
-)
-
 const onRecommendMessageClose = (logId: string) => {
   handleCloseRecommendAgent(logId)
+}
+
+const onRecommendMessageRetry = async (logId: string) => {
+  const newLogId = handleRecommendAgentRetry(logId)
+  if (!newLogId) return
+  await nextTick()
+  chatMessageListRef.value?.scrollToMessage(newLogId)
 }
 
 const onTranslateMessageClose = (logId: string) => {
@@ -288,6 +294,9 @@ watch(
   async (id) => {
     const roomId = String(id || '').trim()
     if (!roomId) return
+    if (!isEphemeralValidationRoomId(roomId)) {
+      resetGate()
+    }
     // 채팅방/로그 id가 바뀌면 이전에 열어둔 시각화/테이블 상태를 닫는다.
     handleResetChatPanels()
     // handleSetChatRoom 보다 먼저 로그를 조회해야
@@ -330,6 +339,10 @@ onBeforeRouteLeave((to) => {
   // /chat(index)로 복귀할 때는 패널 상태/테이블 데이터가 남지 않게 초기화
   if (String(to.path) === '/chat') {
     handleResetChatPanels()
+    if (isEphemeralValidationRoomId(route.params.id)) {
+      clearValidationPreview()
+    }
+    resetGate()
   }
 
   // chat 영역 밖으로 나갈 때 열려 있을 수 있는 설문 닫기

@@ -225,9 +225,7 @@
           :default-collapsed="true"
           label-width="120px"
         >
-          <p class="com-setting-hint auto-recommend-section-lead">
-            LLM JSON 배열 출력에 포함할 필드 키 목록입니다.
-          </p>
+          <p class="com-setting-hint auto-recommend-section-lead">LLM JSON 배열 출력에 포함할 필드 키 목록입니다.</p>
           <div class="auto-recommend-list-block auto-recommend-list-block--flush">
             <div class="auto-recommend-list-block__head">
               <span class="com-setting-label">itemFields</span>
@@ -279,7 +277,9 @@
                 placeholder="5"
                 size="sm"
                 number-only
-                @update:model-value="onUpdate('resultTopN', Number($event) || 5)"
+                :min="1"
+                :max="AGENT_RECOMMEND_TOP_N_MAX"
+                @update:model-value="onResultTopNUpdate"
               />
             </div>
             <div class="type-config-col">
@@ -383,6 +383,7 @@
 
 <script setup lang="ts">
 import type { AutoRecommendConfigForm } from '~/utils/agent/autoRecommendConfigUtil'
+import { AGENT_RECOMMEND_TOP_N_MAX, clampAgentRecommendTopN } from '~/utils/agent/recommendConfigUtil'
 
 const props = defineProps<{
   modelValue: AutoRecommendConfigForm
@@ -402,9 +403,12 @@ const onUpdate = <K extends keyof AutoRecommendConfigForm>(key: K, value: AutoRe
   emit('update:modelValue', { ...props.modelValue, [key]: value })
 }
 
+const onResultTopNUpdate = (raw: string | number) => {
+  onUpdate('resultTopN', clampAgentRecommendTopN(raw))
+}
+
 const onApiModeChange = (value: string) => {
-  const apiMode: AutoRecommendConfigForm['apiMode'] =
-    value === 'searchOnly' || value === 'default' ? value : ''
+  const apiMode: AutoRecommendConfigForm['apiMode'] = value === 'searchOnly' || value === 'default' ? value : ''
   onUpdate('apiMode', apiMode)
 }
 
