@@ -57,6 +57,7 @@ const executeSendPipeline = async (params: SendPipelineParams): Promise<boolean>
 
   let attachments: ChatAttachmentMeta[] = []
   if (files.length > 0) {
+    // 질문 전송 직전, 첨부 파일을 업로드
     const uploaded = await handleUploadChatAttachments(files, roomId)
     if (uploaded === null) return false
     attachments = uploaded

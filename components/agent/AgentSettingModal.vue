@@ -49,7 +49,11 @@
 
       <!-- 섹션3: 데이터 연결 (svcTy 기반 분기) — D(RISK/PROPOSAL)는 자사 역량 RAG 데이터셋 연결 -->
       <AgentSettingData
-        v-if="form.svcTy === 'M' || form.svcTy === 'S' || (form.svcTy === 'D' && (form.subTy === 'RISK' || form.subTy === 'PROPOSAL'))"
+        v-if="
+          form.svcTy === 'M' ||
+          form.svcTy === 'S' ||
+          (form.svcTy === 'D' && (form.subTy === 'RISK' || form.subTy === 'PROPOSAL'))
+        "
         ref="settingDataRef"
         :svc-ty="form.svcTy"
         :dataset-list="localDatasetList"
@@ -99,6 +103,7 @@ import {
 import {
   buildRecommendAdditionalConfig,
   emptyRecommendConfigForm,
+  isAgentRecommendTopNValid,
   parseRecommendAdditionalConfigToForm,
   type RecommendConfigForm,
 } from '~/utils/agent/recommendConfigUtil'
@@ -210,7 +215,9 @@ const initTmplIdOptions = async () => {
 
 /** RESEARCHER/RISK/PLANNER/PROPOSAL 등 템플릿 기반 세부 유형일 때만 tb_tmpl 목록 조회 (동시 호출 dedup) */
 const ensureTmplIdOptionsIfResearcher = (): Promise<void> => {
-  if (!isResearcherAgentForm() && !isRiskAgentForm() && !isPlannerAgentForm() && !isProposalAgentForm()) return Promise.resolve()
+  if (!isResearcherAgentForm() && !isRiskAgentForm() && !isPlannerAgentForm() && !isProposalAgentForm()) {
+    return Promise.resolve()
+  }
   if (tmplListLoaded.value) return Promise.resolve()
   if (tmplListLoadPromise) return tmplListLoadPromise
 
@@ -739,6 +746,23 @@ watch(
 )
 
 const onSave = () => {
+  if (
+    form.value.svcTy === 'C' &&
+    form.value.subTy === RECOMMEND_SUB_TY &&
+    !isAgentRecommendTopNValid(recommendForm.value.resultTopN)
+  ) {
+    openAlert({ message: 'topN은 10 이하로만 작성해주세요' })
+    return
+  }
+  if (
+    form.value.svcTy === 'C' &&
+    form.value.subTy === AUTO_RECOMMEND_SUB_TY &&
+    !isAgentRecommendTopNValid(autoRecommendForm.value.resultTopN)
+  ) {
+    openAlert({ message: 'topN은 10 이하로만 작성해주세요' })
+    return
+  }
+
   const base: Partial<Agent> = {
     cncptTy: form.value.cncptTy,
     svcTy: form.value.svcTy,
