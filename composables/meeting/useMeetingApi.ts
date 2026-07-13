@@ -26,13 +26,13 @@ const mockPost = async <T>(url: string, body: unknown = {}): Promise<T> => {
 
 /** 회의 목록 조회 필터 파라미터 */
 export interface MeetingListFilter {
-  statusCd?: string         // 상태 코드 (001/002), 전체이면 빈 문자열
-  startDate?: string        // yyyy-MM-dd
-  endDate?: string          // yyyy-MM-dd
-  sortField?: string        // CREATE_DT | MEETING_TITLE
-  sortOrder?: string        // ASC | DESC
+  statusCd?: string // 상태 코드 (001/002), 전체이면 빈 문자열
+  startDate?: string // yyyy-MM-dd
+  endDate?: string // yyyy-MM-dd
+  sortField?: string // CREATE_DT | MEETING_TITLE
+  sortOrder?: string // ASC | DESC
   hasMeetingMinutes?: string // Y: 회의록 있는 것만, 빈 문자열: 전체
-  integrateYn?: string      // Y: 통합 회의록만, 빈 문자열: 전체
+  integrateYn?: string // Y: 통합 회의록만, 빈 문자열: 전체
 }
 
 export const useMeetingApi = () => {
@@ -47,9 +47,7 @@ export const useMeetingApi = () => {
   const fetchMeetingList = async (filter?: MeetingListFilter): Promise<{ list: ApiMeeting[] }> => {
     let url = '/ai/meeting/selectMeetingList.do'
     if (filter) {
-      const nonEmpty = Object.fromEntries(
-        Object.entries(filter).filter(([, v]) => v !== '' && v != null),
-      )
+      const nonEmpty = Object.fromEntries(Object.entries(filter).filter(([, v]) => v !== '' && v != null))
       const qs = new URLSearchParams(nonEmpty as Record<string, string>).toString()
       if (qs) url += '?' + qs
     }

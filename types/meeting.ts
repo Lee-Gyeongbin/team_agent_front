@@ -109,10 +109,30 @@ export type TranscriptStatus =
  */
 export interface TranscriptBlock {
   id: string
+  /** OpenAI item_id — delta/completed 이벤트 매핑에 사용 */
+  itemId?: string
   status: TranscriptStatus
   text: string
   speaker?: string // 화자 분리 완료 후 채워짐 (화자1, 홍길동 등)
+  /** speech_started 이벤트 기준 발화 시작 시각 (ms, 회의 시작 기준) */
+  startMs?: number
+  /** speech_stopped 이벤트 기준 발화 종료 시각 (ms, 회의 시작 기준) */
+  endMs?: number
 }
+
+/** item_id별 VAD 타이밍 정보 */
+export interface SpeechTiming {
+  startMs?: number
+  endMs?: number
+}
+
+/** 실시간 전사 연결 상태 */
+export type TranscriptionConnectionStatus =
+  | 'idle'         // 미연결
+  | 'connecting'   // 연결 중
+  | 'connected'    // 정상 연결
+  | 'reconnecting' // 재연결 시도 중 (녹음은 계속됨)
+  | 'failed'       // 재연결 한도 초과 (녹음은 계속됨)
 
 // ─── Meeting2 이관 타입 ───────────────────────────────────────────
 
