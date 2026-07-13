@@ -352,6 +352,15 @@ const onClickFinish = async () => {
     return
   }
 
+  // 발화 내용 없이 종료 시 확인 (무음 녹음으로 빈 회의록 생성 방지)
+  if (blocks.value.length === 0) {
+    const confirmed = await openConfirm({
+      title: '발화 내용 없음',
+      message: '녹음된 발화 내용이 없습니다.\n계속 진행하시겠습니까?',
+    })
+    if (!confirmed) return
+  }
+
   const success = await handleFinishMeetingWithAudio({
     meetingId: meetingId.value,
     audioBlob,
