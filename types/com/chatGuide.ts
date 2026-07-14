@@ -22,5 +22,5 @@ export interface ChatGuideListResponse {
   dataList?: ChatGuideItem[]
 }
 
-/** 로그인 점검 공지 종류 — 긴급 / 정기 */
-export type MaintNoticeKind = 'emergency' | 'scheduled'
+/** 로그인 점검 공지 종류 — 긴급 / 정기 / 복구 */
+export type MaintNoticeKind = 'emergency' | 'scheduled' | 'recovery'
