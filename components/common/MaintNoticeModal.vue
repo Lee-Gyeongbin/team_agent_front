@@ -77,6 +77,11 @@ const HEADER_META = {
     desc: '시스템 점검 안내입니다.',
     icon: 'icon-info size-24',
   },
+  recovery: {
+    title: '서비스 복구',
+    desc: '점검/장애 종료 후 정상화 안내입니다.',
+    icon: 'icon-check size-24',
+  },
 } as const satisfies Record<MaintNoticeKind, { title: string; desc: string; icon: string }>
 
 interface Props {

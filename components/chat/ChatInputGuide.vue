@@ -40,7 +40,31 @@
         v-if="isOpen"
         class="chat-input-guide__content"
       >
-        {{ content }}
+        <!-- 상단: 서비스 제한 안내 (스크롤) -->
+        <section
+          v-if="hasLimitation"
+          class="chat-input-guide__panel chat-input-guide__panel--limit"
+        >
+          <div class="chat-input-guide__panel-head">
+            <div class="chat-input-guide__panel-title">서비스 제한 안내</div>
+          </div>
+          <div class="chat-input-guide__panel-body chat-input-guide__panel-body--scroll">
+            <p class="chat-input-guide__text">{{ limitationContent }}</p>
+          </div>
+        </section>
+
+        <!-- 하단: 사용 가능 기능 안내 (스크롤 없음) -->
+        <section
+          v-if="hasFeature"
+          class="chat-input-guide__panel chat-input-guide__panel--feature"
+        >
+          <div class="chat-input-guide__panel-head">
+            <div class="chat-input-guide__panel-title">사용 가능 기능 안내</div>
+          </div>
+          <div class="chat-input-guide__panel-body">
+            <p class="chat-input-guide__text">{{ featureContent }}</p>
+          </div>
+        </section>
       </div>
     </Transition>
   </div>
@@ -55,13 +79,19 @@ const { getChatGuideByKey } = useChatGuide()
 const { selectedChatAgentId, activeSearchModes, riskAgentActive } = useChatStore()
 
 const inputGuide = computed(() => getChatGuideByKey(CHAT_GUIDE_NOTICE_DEFAULT_GUIDE_KEYS.guide))
+const limitationGuide = computed(() => getChatGuideByKey(CHAT_GUIDE_NOTICE_DEFAULT_GUIDE_KEYS.limitation))
+const featureGuide = computed(() => getChatGuideByKey(CHAT_GUIDE_NOTICE_DEFAULT_GUIDE_KEYS.feature))
 
-const content = computed(() => String(inputGuide.value?.content ?? '').trim())
+const limitationContent = computed(() => String(limitationGuide.value?.content ?? '').trim())
+const featureContent = computed(() => String(featureGuide.value?.content ?? '').trim())
 
-/** 일반 채팅(에이전트 미선택) + NOTICE_INPUT 활성일 때만 표시 */
+const hasLimitation = computed(() => limitationGuide.value?.enblYn === 'Y' && !!limitationContent.value)
+const hasFeature = computed(() => featureGuide.value?.enblYn === 'Y' && !!featureContent.value)
+
+/** 일반 채팅(에이전트 미선택) + 입력 가이드 활성 + 표시할 섹션이 있을 때만 */
 const isVisible = computed(() => {
   if (inputGuide.value?.enblYn !== 'Y') return false
-  if (!content.value) return false
+  if (!hasLimitation.value && !hasFeature.value) return false
   if (selectedChatAgentId.value) return false
   if (riskAgentActive.value) return false
   if (activeSearchModes.value.length > 0) return false
@@ -166,7 +196,50 @@ const onToggle = () => {
 }
 
 .chat-input-guide__content {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
   padding: 4px 20px 16px;
+}
+
+.chat-input-guide__panel {
+  min-width: 0;
+}
+
+.chat-input-guide__panel--limit {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #f3f6f9;
+  border: 1px solid #e3eaf0;
+}
+
+.chat-input-guide__panel--limit + .chat-input-guide__panel--feature {
+  padding-top: 4px;
+  border-top: 1px solid #e8eef3;
+}
+
+.chat-input-guide__panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  margin-bottom: 10px;
+}
+
+.chat-input-guide__panel-title {
+  min-width: 0;
+  @include typo($body-medium-bold, $color-text-heading);
+}
+
+.chat-input-guide__panel-body--scroll {
+  max-height: 140px;
+  overflow-y: auto;
+  padding-right: 4px;
+  @include custom-scrollbar;
+}
+
+.chat-input-guide__text {
+  margin: 0;
   @include typo($body-medium, $color-text-dark);
   white-space: pre-line;
   line-height: 1.7;
