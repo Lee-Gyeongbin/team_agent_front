@@ -1,17 +1,19 @@
 <template>
-  <UiModal
-    :is-open="isOpen"
+  <UiDrawer
+    :open="isOpen"
     position="right"
-    :show-close="false"
-    custom-class="library-trash-modal"
-    @close="handleClose"
+    width="680px"
+    :confirm-before-close="false"
+    :show-fullscreen="false"
+    :show-resize="false"
+    :resizable="false"
+    @update:open="(v) => !v && handleClose()"
   >
-    <!-- 커스텀 헤더 -->
-    <template #header>
+    <!-- SCSS 루트 .library-trash-modal 하위 셀렉터가 먹도록 헤더+본문을 한 래퍼로 감쌈 -->
+    <div class="library-trash-modal">
       <div class="library-trash-modal-header">
         <div class="header-top-grp flex items-start justify-between">
           <h2 class="library-trash-modal-title">휴지통</h2>
-          <!-- 닫기 버튼 -->
           <button
             class="btn btn-modal-close"
             @click="handleClose"
@@ -19,8 +21,6 @@
             <i class="icon icon-close-gray size-20"></i>
           </button>
         </div>
-
-        <!-- 검색바 + 휴지통 비우기 -->
         <div class="library-trash-modal-search">
           <UiInput
             v-model="trashFilterTitle"
@@ -36,83 +36,76 @@
           </button>
         </div>
       </div>
-    </template>
 
-    <!-- 삭제된 아이템 리스트 -->
-    <div
-      ref="bodyRef"
-      class="library-trash-modal-body"
-      @scroll="handleScroll"
-    >
       <div
-        v-for="(item, index) in filteredTrashCardList"
-        :key="item.cardId"
-        class="library-trash-card"
-        :class="{ 'is-show': expandedCards[index] }"
+        ref="bodyRef"
+        class="library-trash-modal-body"
+        @scroll="handleScroll"
       >
         <div
-          class="library-trash-card-content flex justify-between items-center gap-8"
-          @click="toggleCard(index)"
+          v-for="(item, index) in filteredTrashCardList"
+          :key="item.cardId"
+          class="library-trash-card"
+          :class="{ 'is-show': expandedCards[index] }"
         >
-          <div>
-            <!-- 태그 영역 -->
-            <div class="library-trash-card-badges flex flex-wrap gap-4">
-              <UiBadge
-                v-if="item.svcTy === 'C' || item.agentId"
-                :variant="item.svcTy === 'C' ? 'basic-chat' : 'default'"
-                :color-hex="item.svcTy === 'C' ? '' : item.colorHex"
-              >
-                <template #icon-left>
-                  <i :class="`icon ${item.svcTy === 'C' ? 'icon-comment-other' : item.iconClassNm} size-14`"></i>
-                </template>
-                {{ item.svcTy === 'C' ? '기본대화' : item.agentNm }}
-              </UiBadge>
-            </div>
-            <!-- 제목 -->
-            <h3 class="library-trash-card-title">{{ item.title }}</h3>
-            <!-- 삭제일 -->
-            <p class="library-trash-card-date">삭제일 {{ item.modifyDt }}</p>
-          </div>
-
-          <!-- 복원 버튼 -->
-          <UiButton
-            variant="outline"
-            size="sm"
-            class="btn-library-trash-card-action"
-            @click.stop
-            @click="onRestore(item)"
+          <div
+            class="library-trash-card-content flex justify-between items-center gap-8"
+            @click="toggleCard(index)"
           >
-            복원
-          </UiButton>
-        </div>
+            <div>
+              <div class="library-trash-card-badges flex flex-wrap gap-4">
+                <UiBadge
+                  v-if="item.svcTy === 'C' || item.agentId"
+                  variant="default"
+                  :color-hex="item.svcTy === 'C' ? '#ac5e00' : item.colorHex"
+                >
+                  <template #icon-left>
+                    <i :class="`icon ${item.svcTy === 'C' ? 'icon-comment-other' : item.iconClassNm} size-14`"></i>
+                  </template>
+                  {{ item.svcTy === 'C' ? '기본대화' : item.agentNm }}
+                </UiBadge>
+              </div>
+              <h3 class="library-trash-card-title">{{ item.title }}</h3>
+              <p class="library-trash-card-date">삭제일 {{ item.modifyDt }}</p>
+            </div>
 
-        <div class="library-trash-card-body">
-          <!-- 사용자 질문 -->
-          <div class="content-box type-question">
-            <LibraryCardQuestionBody :item="item" />
+            <UiButton
+              variant="outline"
+              size="sm"
+              class="btn-library-trash-card-action"
+              @click.stop
+              @click="onRestore(item)"
+            >
+              복원
+            </UiButton>
           </div>
 
-          <!-- 시스템 응답 -->
-          <div class="content-box type-response">
-            <LibraryCardResponseBody :item="item" />
+          <div class="library-trash-card-body">
+            <div class="content-box type-question">
+              <LibraryCardQuestionBody :item="item" />
+            </div>
+            <div class="content-box type-response">
+              <LibraryCardResponseBody :item="item" />
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- 탑 버튼 -->
-    <button
-      class="btn btn-modal-top"
-      :class="{ 'is-show': isScrolled }"
-      @click="handleScrollToTop"
-    >
-      <i class="icon icon-arrow-down size-20"></i>
-    </button>
-  </UiModal>
+      <button
+        class="btn btn-modal-top"
+        :class="{ 'is-show': isScrolled }"
+        @click="handleScrollToTop"
+      >
+        <i class="icon icon-arrow-down size-20"></i>
+      </button>
+    </div>
+  </UiDrawer>
 </template>
 
 <script setup lang="ts">
+import { UiDrawer, UiInput, UiBadge, UiButton } from '@leechanyong/ispark-ui'
 import type { LibraryCardDetail } from '~/types/library'
+
 const { trashCardList } = useLibraryStore()
 
 interface Props {
@@ -129,7 +122,6 @@ const emit = defineEmits<{
   emptyTrash: []
 }>()
 
-// 카드 확장 상태 관리
 const expandedCards = ref<Record<number, boolean>>({})
 const trashFilterTitle = ref('')
 
@@ -143,20 +135,17 @@ const filteredTrashCardList = computed(() => {
   })
 })
 
-// 스크롤 상태
 const bodyRef = ref<HTMLElement | null>(null)
 const isScrolled = ref(false)
 
 const isModalTopBtnShown = computed(() => props.isOpen && isScrolled.value)
 useModalTopBtnSync(isModalTopBtnShown)
 
-// 스크롤 이벤트 핸들러
 const handleScroll = () => {
   if (!bodyRef.value) return
   isScrolled.value = bodyRef.value.scrollTop > 50
 }
 
-// 탑 버튼 클릭 핸들러
 const handleScrollToTop = () => {
   if (!bodyRef.value) return
   bodyRef.value.scrollTo({
@@ -165,12 +154,10 @@ const handleScrollToTop = () => {
   })
 }
 
-// 카드 토글 핸들러
 const toggleCard = (index: number) => {
   expandedCards.value[index] = !expandedCards.value[index]
 }
 
-// 이벤트 핸들러
 const handleClose = () => {
   trashFilterTitle.value = ''
   emit('close')

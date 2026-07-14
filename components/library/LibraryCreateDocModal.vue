@@ -3,7 +3,7 @@
     :is-open="isOpen"
     title="문서 만들기"
     max-width="720px"
-    custom-class="doc-dataset-create-modal library-create-doc-modal"
+    custom-class="doc-dataset-create-modal library-create-doc-modal modal-dialog"
     show-fullscreen
     @close="emit('close')"
   >
@@ -99,6 +99,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiModal, UiButton } from '@leechanyong/ispark-ui'
 import type { TmplBaseInfo } from '~/types/tmpl'
 
 const props = withDefaults(

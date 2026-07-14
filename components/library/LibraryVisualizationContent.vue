@@ -24,7 +24,7 @@
         <div class="chat-vis-section-header-right">
           <UiButton
             v-if="sqlQuery"
-            size="xxs"
+            size="xs"
             variant="secondary"
             class="chat-vis-sql-btn"
             @click.stop="toggleSql"
@@ -381,7 +381,7 @@
             <div class="chat-vis-card-header-right">
               <UiButton
                 v-if="onSaveChart"
-                size="xxs"
+                size="xs"
                 :variant="card.dbChartId ? 'secondary' : 'primary'"
                 :disabled="card.isSavingCard"
                 @click="onSaveCardToDb(card)"
@@ -557,7 +557,7 @@
 </template>
 
 <script setup lang="ts">
-import { UiLoading, UiEmpty, UiTable } from '@leechanyong/ispark-ui'
+import { UiLoading, UiEmpty, UiTable, UiButton, UiSelect } from '@leechanyong/ispark-ui'
 import type {
   VisualizationChartSelection,
   VisualizationChartType,

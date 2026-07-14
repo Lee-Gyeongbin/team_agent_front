@@ -86,7 +86,7 @@
           :options="translateDownloadFormatOptions"
         />
         <UiButton
-          variant="primary-dark"
+          variant="dark"
           @click="onDownloadTranslationResult"
         >
           다운로드
@@ -129,6 +129,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiSelect, UiButton } from '@leechanyong/ispark-ui'
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import type { StressScoreItem } from '~/types/stress'
 import type { LibraryCardDetail } from '~/types/library'

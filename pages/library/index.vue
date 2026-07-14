@@ -46,7 +46,7 @@
               v-model="searchTitle"
               type="search"
               placeholder="검색어를 입력하세요"
-              @keyup.enter="handleFetchCardList"
+              @enter="handleFetchCardList"
               @search="handleFetchCardList"
             />
           </div>
@@ -330,7 +330,6 @@
       <UiModal
         :is-open="isRenameModalOpen"
         title="카테고리명 변경"
-        position="center"
         max-width="420px"
         @close="handleRenameModalClose"
       >
@@ -345,7 +344,6 @@
       <UiModal
         :is-open="isCardTitleRenameModalOpen"
         title="지식 제목 변경"
-        position="center"
         max-width="420px"
         @close="handleCardTitleRenameModalClose"
       >
@@ -360,7 +358,6 @@
       <UiModal
         :is-open="isMoveModalOpen"
         title="카테고리 이동"
-        position="center"
         max-width="420px"
         @close="handleMoveModalClose"
       >
@@ -376,6 +373,13 @@
 </template>
 
 <script setup lang="ts">
+import {
+  UiButton,
+  UiInput,
+  UiSelect,
+  UiDropdownMenu,
+  UiModal,
+} from '@leechanyong/ispark-ui'
 import draggable from 'vuedraggable'
 import defaultLibraryCardImg from '~/assets/images/test_images.png'
 import { useLibraryStore } from '~/composables/library/useLibraryStore'

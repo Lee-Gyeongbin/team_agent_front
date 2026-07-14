@@ -40,8 +40,8 @@
             </UiBadge>
             <UiBadge
               v-if="displayData?.svcTy === 'C' || displayData?.agentId"
-              :variant="displayData?.svcTy === 'C' ? 'basic-chat' : 'default'"
-              :color-hex="displayData?.svcTy === 'C' ? '' : displayData?.colorHex"
+              variant="default"
+              :color-hex="displayData?.svcTy === 'C' ? '#ac5e00' : displayData?.colorHex"
             >
               <template #icon-left>
                 <i
@@ -74,7 +74,7 @@
                 <!-- 지식 제목 변경 -->
                 <UiButton
                   variant="ghost"
-                  size="xxs"
+                  size="xs"
                   icon-only
                   class="btn-custom-white"
                   title="지식 제목 변경"
@@ -87,7 +87,7 @@
                 <!-- 카테고리 이동 -->
                 <UiButton
                   variant="ghost"
-                  size="xxs"
+                  size="xs"
                   icon-only
                   class="btn-custom-white"
                   title="카테고리 이동"
@@ -100,7 +100,7 @@
                 <!-- 문서만들기 -->
                 <UiButton
                   variant="ghost"
-                  size="xxs"
+                  size="xs"
                   icon-only
                   class="btn-custom-white"
                   title="문서만들기"
@@ -112,7 +112,7 @@
                 </UiButton>
                 <UiButton
                   variant="ghost"
-                  size="xxs"
+                  size="xs"
                   icon-only
                   class="btn-custom-white"
                   title="공유하기"
@@ -125,7 +125,7 @@
                 <!-- 삭제 btn -->
                 <UiButton
                   variant="ghost"
-                  size="xxs"
+                  size="xs"
                   icon-only
                   class="btn-custom-light-gray"
                   title="삭제"
@@ -167,7 +167,7 @@
                 !isTranslateLibraryCard
               "
               variant="ghost"
-              size="xxs"
+              size="xs"
               icon-only
               class="btn-copy btn-copy-white"
               @click="handleCopyResponse"
@@ -179,7 +179,7 @@
             <UiButton
               v-if="displayData?.svcTy === 'S'"
               variant="ghost"
-              size="xxs"
+              size="xs"
               icon-only
               class="btn-copy btn-custom-gray"
               style="right: 44px"
@@ -336,6 +336,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiBadge } from '@leechanyong/ispark-ui'
 import {
   isRecommendAgentPrompt,
   normalizeRecommendResultItems,

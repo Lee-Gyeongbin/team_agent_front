@@ -3,7 +3,7 @@
     :is-open="isOpen"
     title="인사이트 분석"
     max-width="520px"
-    custom-class="library-report-insight-modal"
+    custom-class="library-report-insight-modal modal-dialog"
     @close="emit('close')"
   >
     <div class="library-report-insight-form com-setting-form">
@@ -101,7 +101,8 @@
 </template>
 
 <script setup lang="ts">
-import type { SelectOption } from '~/components/ui/UiSelect.vue'
+import { UiModal, UiSelect, UiButton } from '@leechanyong/ispark-ui'
+import type { SelectOption } from '@leechanyong/ispark-ui'
 import type {
   LibraryReportInsightMode,
   LibraryReportInsightRequest,
@@ -279,6 +280,7 @@ const onConfirm = () => {
     color: $color-text-primary;
   }
 
+  :deep(.ui-select-outer),
   :deep(.ui-select-wrap) {
     width: 100%;
     min-width: 0;

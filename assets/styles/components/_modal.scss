@@ -1197,15 +1197,31 @@
   }
 }
 
+// UiDrawer 본문 — 보관함/휴지통 래퍼가 있을 때 drawer 기본 padding/스크롤 제거
+.ui-drawer-body:has(.library-archive-modal),
+.ui-drawer-body:has(.library-trash-modal) {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
 // ===================================
 // 라이브러리 보관함 모달
 // ===================================
 .library-archive-modal {
-  @extend .modal-side;
+  // UiDrawer 내부 래퍼 — @extend .modal-side 제거 (drawer와 충돌)
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
 
-  // 모달 컨텐츠
+  // 모달 컨텐츠 (레거시 호환 클래스명 유지)
   .library-archive-modal-content {
-    @extend .modal-side-content;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
   }
 
   // 헤더
@@ -1243,7 +1259,7 @@
     flex: 1;
     overflow-y: auto;
     height: calc(100vh - 113px);
-    // padding: 0 16px 16px;
+    padding: 0 16px 16px;
     @include custom-scrollbar;
   }
 
@@ -1317,10 +1333,17 @@
 // 라이브러리 휴지통 모달
 // ===================================
 .library-trash-modal {
-  @extend .modal-side;
+  // UiDrawer 내부 래퍼 — @extend .modal-side 제거 (drawer와 충돌)
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
 
   .library-trash-modal-content {
-    @extend .modal-side-content;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
   }
 
   .library-trash-modal-header {
@@ -1380,6 +1403,7 @@
     flex: 1;
     overflow-y: auto;
     height: calc(100vh - 113px);
+    padding: 0 16px 16px;
     @include custom-scrollbar;
   }
 
