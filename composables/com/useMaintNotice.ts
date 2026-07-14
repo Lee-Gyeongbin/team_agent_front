@@ -2,37 +2,31 @@ import type { ChatGuideItem, MaintNoticeKind } from '~/types/com/chatGuide'
 import { useChatGuideApi } from '~/composables/com/useChatGuideApi'
 import { CHAT_GUIDE_MAINTENANCE_DEFAULT_GUIDE_KEYS } from '~/types/chat-guide'
 
-// ─── localStorage (다시 보지 않기 — 자동 팝업만 차단) ───────────────────────
-
+/** localStorage — 점검 공지 "다시 보지 않기" (자동 팝업만 차단, 값은 modifyDt) */
 const HIDE_STORAGE_PREFIX = 'ta_maintNoticeHide:'
 
 const getGuideId = (item: ChatGuideItem | null | undefined) => String(item?.guideId ?? '').trim()
 
-const getHideStorageKey = (guideId: string) => `${HIDE_STORAGE_PREFIX}${guideId || 'MAINT'}`
-
 const getNoticeVersion = (item: ChatGuideItem | null | undefined) => String(item?.modifyDt ?? '').trim()
 
-const isHiddenByUser = (item: ChatGuideItem | null | undefined): boolean => {
-  const guideId = getGuideId(item)
-  const version = getNoticeVersion(item)
+const getHideStorageKey = (guideId: string) => `${HIDE_STORAGE_PREFIX}${guideId}`
+
+const isHiddenByUser = (guideId: string, version: string): boolean => {
   if (!guideId || !version || typeof localStorage === 'undefined') return false
   return localStorage.getItem(getHideStorageKey(guideId)) === version
 }
 
-const setHiddenByUser = (item: ChatGuideItem) => {
-  const guideId = getGuideId(item)
-  const version = getNoticeVersion(item)
+const setHiddenByUser = (guideId: string, version: string) => {
   if (!guideId || !version || typeof localStorage === 'undefined') return
   localStorage.setItem(getHideStorageKey(guideId), version)
 }
 
 const clearHiddenByUser = (guideId: string) => {
-  if (typeof localStorage === 'undefined') return
+  if (!guideId || typeof localStorage === 'undefined') return
   localStorage.removeItem(getHideStorageKey(guideId))
 }
 
-// ─── 날짜·기간 ─────────────────────────────────────────────────────────────
-
+/** API datetime 문자열 → Date (없거나 유효하지 않으면 null) */
 const parseApiDateTime = (value: string | null | undefined): Date | null => {
   const raw = String(value ?? '').trim()
   if (!raw) return null
@@ -41,81 +35,42 @@ const parseApiDateTime = (value: string | null | undefined): Date | null => {
   return Number.isNaN(d.getTime()) ? null : d
 }
 
-const formatMaintDate = (dateTime: string | null | undefined, style: 'modal' | 'banner'): string => {
-  const d = parseApiDateTime(dateTime)
-  if (!d) return ''
-  if (style === 'banner') {
+/** 표시 기간 라벨 — startDt·endDt */
+const buildPeriodLabel = (item: ChatGuideItem | null | undefined): string => {
+  if (!item) return ''
+
+  const formatDate = (dateTime: string | null | undefined): string => {
+    const d = parseApiDateTime(dateTime)
+    if (!d) return ''
     const month = String(d.getMonth() + 1).padStart(2, '0')
     const day = String(d.getDate()).padStart(2, '0')
-    return `${d.getFullYear()}-${month}-${day}`
+    return `${d.getFullYear()}.${month}.${day}`
   }
-  return `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}.`
-}
 
-const buildPeriodLabel = (item: ChatGuideItem | null | undefined, style: 'modal' | 'banner'): string => {
-  if (!item) return ''
-  const start = formatMaintDate(item.startDt, style)
-  const end = formatMaintDate(item.endDt, style)
+  const start = formatDate(item.startDt)
+  const end = formatDate(item.endDt)
   if (start && end) return `${start} ~ ${end}`
   if (start) return `${start} ~`
   if (end) return `~ ${end}`
   return ''
 }
 
-const parseAdvanceNoticeDays = (code: string | null | undefined): number | null => {
-  const raw = String(code ?? '').trim()
-  if (!raw) return null
-  const match = raw.match(/(\d+)/)
-  if (!match) return null
-  const days = Number(match[1])
-  return Number.isFinite(days) && days >= 0 ? days : null
+/** 종류별 배지·제목 fallback */
+const MAINT_NOTICE_KIND_META: Record<MaintNoticeKind, { badge: string; fallbackTitle: string }> = {
+  emergency: { badge: '긴급', fallbackTitle: '긴급 공지' },
+  scheduled: { badge: '점검', fallbackTitle: '정기 점검 안내' },
+  recovery: { badge: '복구', fallbackTitle: '서비스 복구 안내' },
 }
 
-// ─── 공지 판별·표시 문구 ─────────────────────────────────────────────────────
-
-const getMaintNoticeKind = (item: ChatGuideItem): MaintNoticeKind =>
-  item.guideKey === CHAT_GUIDE_MAINTENANCE_DEFAULT_GUIDE_KEYS.scheduled ? 'scheduled' : 'emergency'
-
-const getDisplayTitle = (item: ChatGuideItem): string => {
-  const title = String(item.title ?? '').trim()
-  if (title) return title
-  return getMaintNoticeKind(item) === 'scheduled' ? '정기 점검 안내' : '긴급 공지'
+const getMaintNoticeKind = (item: ChatGuideItem): MaintNoticeKind => {
+  if (item.guideKey === CHAT_GUIDE_MAINTENANCE_DEFAULT_GUIDE_KEYS.scheduled) return 'scheduled'
+  if (item.guideKey === CHAT_GUIDE_MAINTENANCE_DEFAULT_GUIDE_KEYS.recovery) return 'recovery'
+  return 'emergency'
 }
 
-/** 모달 본문 제목 — 긴급: API title 원문 / 정기: fallback 포함 */
-const getModalBodyTitle = (item: ChatGuideItem): string => {
-  if (getMaintNoticeKind(item) === 'emergency') {
-    return String(item.title ?? '').trim()
-  }
-  return getDisplayTitle(item)
-}
-
-const getMaintNoticeBadge = (kind: MaintNoticeKind) => (kind === 'emergency' ? '긴급' : '점검')
-
-const isMaintNoticeActive = (item: ChatGuideItem | null | undefined): boolean => {
-  if (!item || item.enblYn !== 'Y') return false
-  const title = String(item.title ?? '').trim()
-  const content = String(item.content ?? '').trim()
-  if (!title && !content) return false
-
-  const now = Date.now()
-  const start = parseApiDateTime(item.startDt)
-  const end = parseApiDateTime(item.endDt)
-
-  if (end && now > end.getTime()) return false
-
-  if (getMaintNoticeKind(item) === 'scheduled') {
-    if (!start) return true
-    const advanceDays = parseAdvanceNoticeDays(item.advanceNoticeCd) ?? 0
-    const showFrom = start.getTime() - advanceDays * 24 * 60 * 60 * 1000
-    return now >= showFrom
-  }
-
-  if (start && now < start.getTime()) return false
-  return true
-}
-
-// ─── 배너 ───────────────────────────────────────────────────────────────────
+/** 배너·모달 공통 제목 — API title 없으면 종류별 fallback */
+const getDisplayTitle = (item: ChatGuideItem): string =>
+  String(item.title ?? '').trim() || MAINT_NOTICE_KIND_META[getMaintNoticeKind(item)].fallbackTitle
 
 interface MaintNoticeBannerItem {
   item: ChatGuideItem
@@ -130,52 +85,38 @@ const toBannerItem = (item: ChatGuideItem): MaintNoticeBannerItem => {
   return {
     item,
     kind,
-    badge: getMaintNoticeBadge(kind),
+    badge: MAINT_NOTICE_KIND_META[kind].badge,
     title: getDisplayTitle(item),
-    periodLabel: buildPeriodLabel(item, 'banner'),
+    periodLabel: buildPeriodLabel(item),
   }
 }
 
-const pickActiveMaintNotices = (apiList: ChatGuideItem[]): ChatGuideItem[] => {
-  const emergency = apiList.find((item) => item.guideKey === CHAT_GUIDE_MAINTENANCE_DEFAULT_GUIDE_KEYS.emergency)
-  const scheduled = apiList.find((item) => item.guideKey === CHAT_GUIDE_MAINTENANCE_DEFAULT_GUIDE_KEYS.scheduled)
-  return [emergency, scheduled].filter((item): item is ChatGuideItem => !!item && isMaintNoticeActive(item))
-}
-
-// ─── composable ─────────────────────────────────────────────────────────────
-
 /**
- * 로그인 점검 공지
- * - 배너: 활성 기간 동안 항상 표시
- * - 자동 팝업: 긴급 → 정기 순
- * - 다시 보지 않기: 자동 팝업만 차단 (배너·수동 클릭 유지)
- * - 체크 해제 후 확인: 자동 팝업 재허용
- * - modifyDt 변경 시 숨김 설정 초기화
+ * 로그인 점검·복구 공지
+ * - 목록/활성 여부는 백엔드(chatGuideMaintList)가 필터해서 전달
+ * - 프론트: 배너·모달 표시 + 다시 보지 않기(localStorage)만 담당
  */
 export const useMaintNotice = () => {
   const { fetchChatGuideMaintList } = useChatGuideApi()
 
-  const list = ref<ChatGuideItem[]>([])
+  const maintList = ref<ChatGuideItem[]>([])
   const autoOpenQueue = ref<ChatGuideItem[]>([])
   const notice = ref<ChatGuideItem | null>(null)
   const isOpen = ref(false)
 
-  const bannerItems = computed(() => list.value.map(toBannerItem))
+  const bannerItems = computed(() => maintList.value.map(toBannerItem))
 
-  const kind = computed<MaintNoticeKind>(() => (notice.value ? getMaintNoticeKind(notice.value) : 'emergency'))
-  const title = computed(() => (notice.value ? getModalBodyTitle(notice.value) : ''))
-  const content = computed(() => String(notice.value?.content ?? '').trim())
-  const periodLabel = computed(() => buildPeriodLabel(notice.value, 'modal'))
-  const hideByUser = computed(() => isHiddenByUser(notice.value))
-
-  const modalProps = computed(() => ({
-    isOpen: isOpen.value,
-    kind: kind.value,
-    title: title.value,
-    content: content.value,
-    periodLabel: periodLabel.value,
-    hideByUser: hideByUser.value,
-  }))
+  const modalProps = computed(() => {
+    const item = notice.value
+    return {
+      isOpen: isOpen.value,
+      kind: item ? getMaintNoticeKind(item) : ('emergency' as MaintNoticeKind),
+      title: item ? getDisplayTitle(item) : '',
+      content: String(item?.content ?? '').trim(),
+      periodLabel: buildPeriodLabel(item),
+      hideByUser: isHiddenByUser(getGuideId(item), getNoticeVersion(item)),
+    }
+  })
 
   const openNextAuto = async () => {
     const next = autoOpenQueue.value.shift()
@@ -211,23 +152,21 @@ export const useMaintNotice = () => {
   const hideForever = () => {
     if (!notice.value) return
     const id = getGuideId(notice.value)
-    setHiddenByUser(notice.value)
+    setHiddenByUser(id, getNoticeVersion(notice.value))
     autoOpenQueue.value = autoOpenQueue.value.filter((row) => getGuideId(row) !== id)
     finishModal()
   }
 
   const handleSelectMaintNotice = async () => {
     try {
-      const apiList = await fetchChatGuideMaintList()
-      const nextList = pickActiveMaintNotices(apiList)
-
-      list.value = nextList
-      autoOpenQueue.value = nextList.filter((item) => !isHiddenByUser(item))
+      const list = await fetchChatGuideMaintList()
+      maintList.value = list
+      autoOpenQueue.value = list.filter((item) => !isHiddenByUser(getGuideId(item), getNoticeVersion(item)))
       notice.value = null
       isOpen.value = false
       openNextAuto()
     } catch {
-      list.value = []
+      maintList.value = []
       autoOpenQueue.value = []
       notice.value = null
       isOpen.value = false
