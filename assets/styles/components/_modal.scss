@@ -147,6 +147,15 @@
   border-top: none;
 }
 
+// 전역 Alert/Confirm — 사이드 패널·중첩 모달 위 (ispark UiModal)
+body:has(.ui-modal-content.ui-dialog-global) .ui-modal-overlay {
+  z-index: $z-dialog-global;
+}
+
+.ui-modal-content.ui-dialog-global {
+  z-index: $z-dialog-global + 1;
+}
+
 // ispark-ui UiDrawer 전환 시: .modal-side-footer의 flex/gap은 .modal-side 하위 전용이라
 // UiDrawer(.ui-drawer-footer)에선 버튼 간격이 사라지므로 여기서 복원. (.ui-drawer-footer가 padding/border 제공)
 .ui-drawer-footer .modal-side-footer {
@@ -1041,6 +1050,10 @@
     position: absolute;
     top: 12px;
     right: 12px;
+
+    &.btn-no-border {
+      border: none !important;
+    }
   }
 }
 

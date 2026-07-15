@@ -74,7 +74,7 @@
                 <!-- 지식 제목 변경 -->
                 <UiButton
                   variant="ghost"
-                  size="xs"
+                  size="xxs"
                   icon-only
                   class="btn-custom-white"
                   title="지식 제목 변경"
@@ -87,7 +87,7 @@
                 <!-- 카테고리 이동 -->
                 <UiButton
                   variant="ghost"
-                  size="xs"
+                  size="xxs"
                   icon-only
                   class="btn-custom-white"
                   title="카테고리 이동"
@@ -100,7 +100,7 @@
                 <!-- 문서만들기 -->
                 <UiButton
                   variant="ghost"
-                  size="xs"
+                  size="xxs"
                   icon-only
                   class="btn-custom-white"
                   title="문서만들기"
@@ -112,7 +112,7 @@
                 </UiButton>
                 <UiButton
                   variant="ghost"
-                  size="xs"
+                  size="xxs"
                   icon-only
                   class="btn-custom-white"
                   title="공유하기"
@@ -125,7 +125,7 @@
                 <!-- 삭제 btn -->
                 <UiButton
                   variant="ghost"
-                  size="xs"
+                  size="xxs"
                   icon-only
                   class="btn-custom-light-gray"
                   title="삭제"
@@ -166,10 +166,10 @@
                 parsedAutoRecommendItems.length === 0 &&
                 !isTranslateLibraryCard
               "
-              variant="ghost"
+              variant="line-secondary"
               size="xs"
               icon-only
-              class="btn-copy btn-copy-white"
+              class="btn-copy btn-no-border"
               @click="handleCopyResponse"
             >
               <template #icon-left>
@@ -178,10 +178,10 @@
             </UiButton>
             <UiButton
               v-if="displayData?.svcTy === 'S'"
-              variant="ghost"
+              variant="solid-muted"
               size="xs"
               icon-only
-              class="btn-copy btn-custom-gray"
+              class="btn-copy btn-no-border"
               style="right: 44px"
               :aria-pressed="isSqlCodeVisible"
               @click="toggleSqlCodeVisible"

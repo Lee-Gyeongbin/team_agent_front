@@ -2,41 +2,37 @@
   <UiModal
     :is-open="isOpen"
     :title="title"
-    position="center"
-    :max-width="maxWidth"
+    size="sm"
+    :max-width="maxWidth || undefined"
     :custom-class="customClass"
     @close="handleClose"
   >
-    <!-- 본문 -->
     <slot>
-      <span class="modal-message">{{ message }}</span>
+      <p class="ui-dialog-message">{{ message }}</p>
     </slot>
 
-    <!-- 푸터 -->
     <template #footer>
-      <div class="modal-dialog-footer">
-        <UiButton
-          class="btn-modal-dialog"
-          variant="outline"
-          size="xlg"
-          @click="handleCancel"
-        >
-          {{ cancelText }}
-        </UiButton>
-        <UiButton
-          class="btn-modal-dialog"
-          variant="primary"
-          size="xlg"
-          @click="handleConfirm"
-        >
-          {{ confirmText }}
-        </UiButton>
-      </div>
+      <UiButton
+        variant="secondary"
+        size="lg"
+        @click="handleCancel"
+      >
+        {{ cancelText }}
+      </UiButton>
+      <UiButton
+        variant="primary"
+        size="lg"
+        @click="handleConfirm"
+      >
+        {{ confirmText }}
+      </UiButton>
     </template>
   </UiModal>
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiModal } from '@leechanyong/ispark-ui'
+
 interface Props {
   isOpen?: boolean
   title?: string
@@ -45,11 +41,11 @@ interface Props {
   confirmText?: string
   /** 예: `720px` — 본문(슬롯)이 넓을 때 `UiModal`과 동일 */
   maxWidth?: string
-  /** `UiModal` 루트에 추가 — 본문 레이아웃 오버라이드 등 */
+  /** `UiModal` 루트에 추가 — 전역 z-index 등 */
   customClass?: string
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   isOpen: false,
   title: '확인',
   message: '',
@@ -65,7 +61,6 @@ const emit = defineEmits<{
   confirm: []
 }>()
 
-// 이벤트 핸들러
 const handleClose = () => {
   emit('close')
 }
@@ -82,7 +77,8 @@ const handleConfirm = () => {
 </script>
 
 <style lang="scss" scoped>
-.modal-message {
+.ui-dialog-message {
+  margin: 0;
   white-space: pre-line;
 }
 </style>

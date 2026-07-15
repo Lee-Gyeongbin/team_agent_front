@@ -138,7 +138,7 @@
                       <UiButton
                         icon-only
                         variant="ghost"
-                        size="md"
+                        size="xxs"
                         class="btn btn-library-card-add type-white"
                       >
                         <template #icon-left>
@@ -194,7 +194,7 @@
                                   <UiButton
                                     icon-only
                                     variant="ghost"
-                                    size="md"
+                                    size="xxs"
                                     class="btn btn-library-card-add type-white"
                                   >
                                     <template #icon-left>
@@ -327,18 +327,12 @@
       />
 
       <!-- 카테고리명 변경 모달 -->
-      <UiModal
+      <LibraryCategoryRenameModal
         :is-open="isRenameModalOpen"
-        title="카테고리명 변경"
-        max-width="420px"
+        :category="renamingCategory"
+        @save="handleSaveRename"
         @close="handleRenameModalClose"
-      >
-        <LibraryCategoryRenameModal
-          :category="renamingCategory"
-          @save="handleSaveRename"
-          @close="handleRenameModalClose"
-        />
-      </UiModal>
+      />
 
       <!-- 카드 제목 변경 모달 -->
       <UiModal

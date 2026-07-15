@@ -7,7 +7,7 @@
   <UiConfirmModal
     v-if="dialogType === 'alert'"
     :is-open="true"
-    custom-class="modal-dialog--global"
+    custom-class="ui-dialog-global"
     :title="dialogOptions.title"
     :message="dialogOptions.message"
     :confirm-text="dialogOptions.confirmText"
@@ -17,7 +17,7 @@
   <UiDialogModal
     v-if="dialogType === 'confirm'"
     :is-open="true"
-    custom-class="modal-dialog--global"
+    custom-class="ui-dialog-global"
     :title="dialogOptions.title"
     :message="dialogOptions.message"
     :cancel-text="dialogOptions.cancelText"

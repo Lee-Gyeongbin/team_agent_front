@@ -2,32 +2,29 @@
   <UiModal
     :is-open="isOpen"
     :title="title"
-    position="center"
+    size="sm"
     :custom-class="customClass"
     @close="handleClose"
   >
-    <!-- 본문 -->
     <slot>
-      <span class="modal-message">{{ message }}</span>
+      <p class="ui-dialog-message">{{ message }}</p>
     </slot>
 
-    <!-- 푸터 -->
     <template #footer>
-      <div class="modal-dialog-footer">
-        <UiButton
-          class="btn-modal-dialog"
-          variant="primary"
-          size="xlg"
-          @click="handleConfirm"
-        >
-          {{ confirmText }}
-        </UiButton>
-      </div>
+      <UiButton
+        variant="primary"
+        size="lg"
+        @click="handleConfirm"
+      >
+        {{ confirmText }}
+      </UiButton>
     </template>
   </UiModal>
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiModal } from '@leechanyong/ispark-ui'
+
 interface Props {
   isOpen?: boolean
   title?: string
@@ -50,7 +47,6 @@ const emit = defineEmits<{
   confirm: []
 }>()
 
-// 이벤트 핸들러
 const handleClose = () => {
   emit('close')
 }
@@ -62,7 +58,8 @@ const handleConfirm = () => {
 </script>
 
 <style lang="scss" scoped>
-.modal-message {
+.ui-dialog-message {
+  margin: 0;
   white-space: pre-line;
 }
 </style>
