@@ -36,7 +36,11 @@ $my-page-tab-body-viewport-gap: 260px;
 
 .my-page-header {
   @extend %my-page-narrow;
-  margin-bottom: $spacing-lg;
+  margin-bottom: 20px;
+}
+
+.my-page-title {
+  margin-bottom: 4px;
 }
 
 .my-page-description {
@@ -120,7 +124,7 @@ $my-page-tab-body-viewport-gap: 260px;
   }
 
   .my-page-actions {
-    margin-top: auto;
+    margin-top: 12px;
     flex-shrink: 0;
 
     .ui-button {
@@ -140,16 +144,21 @@ $my-page-tab-body-viewport-gap: 260px;
 .my-page-right,
 .my-page-left {
   min-width: 0;
-  padding: $spacing-lg;
   border: 1px solid $color-border;
   border-radius: $border-radius-lg;
   background: #fff;
   box-shadow: $shadow-sm;
 }
 
+.my-page-left {
+  padding: $spacing-lg;
+}
+
 .my-page-right {
+  padding: 0;
+
   .ui-tab {
-    margin: (-$spacing-lg) (-$spacing-lg) $spacing-md;
+    margin: 0 0 $spacing-md;
 
     .ui-tab-inner {
       max-width: none;
@@ -164,6 +173,10 @@ $my-page-tab-body-viewport-gap: 260px;
       text-align: center;
       font-size: $font-size-lg;
     }
+  }
+
+  .my-page-tab-panel__body {
+    padding: 0 24px 24px;
   }
 }
 
@@ -342,7 +355,7 @@ $my-page-tab-body-viewport-gap: 260px;
   display: flex;
   justify-content: flex-end;
   gap: $spacing-sm;
-  margin-top: $spacing-lg;
+  margin-top: 12px;
 }
 
 .my-page-error {
@@ -361,29 +374,6 @@ $my-page-tab-body-viewport-gap: 260px;
   font-size: $font-size-sm;
   color: $color-text-secondary;
   text-align: center;
-}
-
-.my-page-status {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: $border-radius-full;
-  font-size: $font-size-base;
-  font-weight: $font-weight-medium;
-
-  &.is-active {
-    background: rgba($color-success, 0.12);
-    color: $color-success;
-  }
-
-  &.is-inactive {
-    background: rgba($color-text-secondary, 0.12);
-    color: $color-text-secondary;
-  }
-
-  &.is-lock {
-    background: rgba($color-warning, 0.12);
-    color: $color-warning;
-  }
 }
 
 .password-field {
@@ -440,48 +430,12 @@ $my-page-tab-body-viewport-gap: 260px;
   justify-content: flex-start;
 }
 
-.my-page-security-auth-option {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: $font-size-lg;
-  color: $color-text-primary;
-  cursor: pointer;
+.my-page-security-device-table {
+  width: 100%;
 
-  &.is-disabled {
-    color: $color-text-secondary;
-    cursor: not-allowed;
+  .ui-table-wrap {
+    width: 100%;
   }
-}
-
-.my-page-security-auth-radio {
-  margin: 0;
-}
-
-.my-page-security-device-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  @include my-page--flex-column;
-  gap: $spacing-md;
-  width: 100%;
-}
-
-.my-page-security-device-item {
-  display: flex;
-  justify-content: space-between;
-  gap: $spacing-lg;
-  width: 100%;
-}
-
-.my-page-security-device-name {
-  color: $color-text-primary;
-  font-weight: $font-weight-medium;
-}
-
-.my-page-security-device-meta {
-  color: $color-text-secondary;
-  font-size: $font-size-lg;
 }
 
 .my-page-security-tab {
@@ -523,8 +477,13 @@ $my-page-tab-body-viewport-gap: 260px;
   &-filters {
     display: flex;
     flex-wrap: wrap;
-    align-items: flex-end;
-    gap: 12px $spacing-md;
+    justify-content: space-between;
+
+    .my-page-login-history-filter-group {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+    }
   }
 
   &-filter-item {
@@ -533,8 +492,14 @@ $my-page-tab-body-viewport-gap: 260px;
     min-width: 140px;
 
     &--grow {
-      flex: 1;
-      min-width: 180px;
+      flex: 0 0 250px;
+      width: 250px;
+      min-width: 250px;
+      max-width: 250px;
+
+      .ui-input-outer {
+        width: 100%;
+      }
     }
   }
 

@@ -15,21 +15,15 @@
                   <span class="my-page-field-text">{{ isTwoFactorEnabled ? '사용' : '미사용' }}</span>
                 </div>
                 <div class="my-page-security-auth-options">
-                  <label
+                  <UiRadio
                     v-for="item in twoFactorOptions"
                     :key="item.value"
-                    class="my-page-security-auth-option"
-                    :class="{ 'is-disabled': !isTwoFactorEnabled }"
-                  >
-                    <input
-                      v-model="selectedTwoFactorMethod"
-                      type="radio"
-                      class="my-page-security-auth-radio"
-                      :value="item.value"
-                      :disabled="!isTwoFactorEnabled"
-                    />
-                    <span>{{ item.label }}</span>
-                  </label>
+                    v-model="selectedTwoFactorMethod"
+                    :value="item.value"
+                    :label="item.label"
+                    name="my-page-two-factor-method"
+                    :disabled="!isTwoFactorEnabled"
+                  />
                 </div>
               </div>
             </td>
@@ -37,16 +31,14 @@
           <tr>
             <th scope="row">연동 기종 확인</th>
             <td>
-              <ul class="my-page-security-device-list">
-                <li
-                  v-for="device in linkedDevices"
-                  :key="device.id"
-                  class="my-page-security-device-item"
-                >
-                  <span class="my-page-security-device-name">{{ device.name }}</span>
-                  <span class="my-page-security-device-meta">{{ device.lastLogin }}</span>
-                </li>
-              </ul>
+              <UiTable
+                class="my-page-security-device-table"
+                :columns="deviceColumns"
+                :data="linkedDevices"
+                :bordered="false"
+                size="sm"
+                empty-text="연동된 기기가 없습니다."
+              />
             </td>
           </tr>
           <tr>
@@ -78,7 +70,8 @@
 </template>
 
 <script setup lang="ts">
-import { UiButton, UiToggle } from '@leechanyong/ispark-ui'
+import { UiButton, UiRadio, UiTable, UiToggle } from '@leechanyong/ispark-ui'
+import type { TableColumn } from '@leechanyong/ispark-ui'
 type TwoFactorMethod = 'totp' | 'sms' | 'email'
 
 const isTwoFactorEnabled = ref(false)
@@ -88,6 +81,11 @@ const twoFactorOptions: { label: string; value: TwoFactorMethod }[] = [
   { label: 'TOTP', value: 'totp' },
   { label: 'SMS', value: 'sms' },
   { label: 'EMAIL', value: 'email' },
+]
+
+const deviceColumns: TableColumn[] = [
+  { key: 'name', label: '기기', align: 'left', headerAlign: 'left' },
+  { key: 'lastLogin', label: '최근 접속', align: 'right', headerAlign: 'right' },
 ]
 
 // 🔽 더미 데이터 — 백엔드 연결 시 API로 교체

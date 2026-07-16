@@ -48,13 +48,13 @@
             </td>
             <th scope="row">계정 상태</th>
             <td>
-              <span
+              <UiBadge
                 v-if="acctStatusLabel"
-                class="my-page-status"
-                :class="acctStatusClass"
+                :variant="acctStatusVariant"
+                size="sm"
               >
                 {{ acctStatusLabel }}
-              </span>
+              </UiBadge>
               <span
                 v-else
                 class="my-page-field-text"
@@ -161,7 +161,8 @@
 </template>
 
 <script setup lang="ts">
-import { UiButton, UiInput, UiSelect } from '@leechanyong/ispark-ui'
+import { UiBadge, UiButton, UiInput, UiSelect } from '@leechanyong/ispark-ui'
+import type { BadgeVariant } from '@leechanyong/ispark-ui'
 import { formatPhone, toPhoneDigits } from '~/utils/global/numberUtil'
 
 const {
@@ -185,10 +186,10 @@ const phoneDisplay = computed({
 
 const acctStatusLabel = computed(() => form.value.acctStatusDesc?.trim() || '')
 
-const acctStatusClass = computed(() => {
+const acctStatusVariant = computed((): BadgeVariant => {
   const label = acctStatusLabel.value
-  if (label === '잠금') return 'is-lock'
-  if (label === '비활성') return 'is-inactive'
-  return 'is-active'
+  if (label === '잠금') return 'warning'
+  if (label === '비활성') return 'default'
+  return 'success'
 })
 </script>

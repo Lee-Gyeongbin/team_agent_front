@@ -26,48 +26,52 @@
         class="my-page-login-history-body"
       >
         <div class="my-page-login-history-filters">
-          <div class="my-page-login-history-filter-item">
-            <span class="my-page-login-history-filter-label">시작일</span>
-            <UiDatePicker
-              v-model="filterDateStart"
-              size="sm"
-            />
+          <div class="my-page-login-history-filter-group">
+            <div class="my-page-login-history-filter-item">
+              <span class="my-page-login-history-filter-label">시작일</span>
+              <UiDatePicker
+                v-model="filterDateStart"
+                size="sm"
+              />
+            </div>
+            <div class="my-page-login-history-filter-item">
+              <span class="my-page-login-history-filter-label">종료일</span>
+              <UiDatePicker
+                v-model="filterDateEnd"
+                size="sm"
+              />
+            </div>
           </div>
-          <div class="my-page-login-history-filter-item">
-            <span class="my-page-login-history-filter-label">종료일</span>
-            <UiDatePicker
-              v-model="filterDateEnd"
-              size="sm"
-            />
-          </div>
-          <div class="my-page-login-history-filter-item my-page-login-history-filter-item--grow">
-            <span class="my-page-login-history-filter-label">IP 주소</span>
-            <UiInput
-              v-model="filterIpKeyword"
-              type="search"
-              placeholder="IP 입력"
-              size="sm"
-              @search="onSearch"
-              @enter="onSearch"
-            />
-          </div>
-          <div class="my-page-login-history-filter-item">
-            <span class="my-page-login-history-filter-label">결과</span>
-            <UiSelect
-              v-model="filterResult"
-              :options="resultFilterOptions"
-              placeholder="전체"
-              size="sm"
-            />
-          </div>
-          <div class="my-page-login-history-filter-actions">
-            <UiButton
-              variant="primary"
-              size="sm"
-              @click="onSearch"
-            >
-              조회
-            </UiButton>
+          <div class="my-page-login-history-filter-group">
+            <div class="my-page-login-history-filter-item my-page-login-history-filter-item--grow">
+              <span class="my-page-login-history-filter-label">IP 주소</span>
+              <UiInput
+                v-model="filterIpKeyword"
+                type="search"
+                placeholder="IP 입력"
+                size="sm"
+                @search="onSearch"
+                @enter="onSearch"
+              />
+            </div>
+            <div class="my-page-login-history-filter-item">
+              <span class="my-page-login-history-filter-label">결과</span>
+              <UiSelect
+                v-model="filterResult"
+                :options="resultFilterOptions"
+                placeholder="전체"
+                size="sm"
+              />
+            </div>
+            <div class="my-page-login-history-filter-actions">
+              <UiButton
+                variant="primary"
+                size="sm"
+                @click="onSearch"
+              >
+                조회
+              </UiButton>
+            </div>
           </div>
         </div>
 
@@ -82,6 +86,11 @@
             <template #cell-createDt="{ value }">
               {{ formatDateTimeDisplay(String(value ?? '')) }}
             </template>
+            <template #cell-result="{ value }">
+              <UiBadge :variant="getLoginHistoryResultVariant(value)">
+                {{ value }}
+              </UiBadge>
+            </template>
           </UiTable>
         </div>
       </div>
@@ -90,7 +99,8 @@
 </template>
 
 <script setup lang="ts">
-import { UiButton, UiInput, UiSelect, UiTable, UiLoading, UiDatePicker } from '@leechanyong/ispark-ui'
+import { UiBadge, UiButton, UiInput, UiSelect, UiTable, UiLoading, UiDatePicker } from '@leechanyong/ispark-ui'
+import type { BadgeVariant } from '@leechanyong/ispark-ui'
 import { getLocalTimeZone, today, toCalendarDate, toCalendarDateTime, CalendarDateTime } from '@internationalized/date'
 import type { DateValue } from '@internationalized/date'
 import { historyColumns, type MyPageHistoryParams } from '~/types/my-page'
@@ -161,6 +171,15 @@ const resultFilterOptions = [
   { label: 'SUCCESS', value: 'SUCCESS' },
   { label: 'FAIL', value: 'FAIL' },
 ]
+
+const getLoginHistoryResultVariant = (value: unknown): BadgeVariant => {
+  const normalized = String(value ?? '')
+    .trim()
+    .toUpperCase()
+  if (normalized === 'SUCCESS' || normalized === '성공') return 'success'
+  if (normalized === 'FAIL' || normalized === '실패') return 'danger'
+  return 'default'
+}
 
 const onRetry = () => {
   void handleLoadHistory(lastParams.value)
