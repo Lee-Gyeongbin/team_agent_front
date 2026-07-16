@@ -71,6 +71,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiEmpty } from '@leechanyong/ispark-ui'
 import type { MyDoc } from '~/types/mydoc'
 import {
   getMyDocPreviewWidthFitScale,

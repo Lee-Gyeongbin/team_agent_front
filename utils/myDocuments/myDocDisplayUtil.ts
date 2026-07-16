@@ -1,4 +1,4 @@
-import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
+import type { DropdownMenuItemDef } from '@leechanyong/ispark-ui'
 import type { MyDoc } from '~/types/mydoc'
 
 /** 기본대화(svcTy C) — UiBadge basic-chat 테마 (API colorHex 없을 때) */
