@@ -214,6 +214,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiModal, UiInput, UiButton } from '@leechanyong/ispark-ui'
 import { useMyDocStore } from '~/composables/my-documents/useMyDocStore'
 import type { MyDoc } from '~/types/mydoc'
 import { formatDateTimeDisplay } from '~/utils/global/dateUtil'
