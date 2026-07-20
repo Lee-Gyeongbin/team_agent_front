@@ -47,12 +47,12 @@
         @update:proposal-form="proposalForm = $event"
       />
 
-      <!-- 섹션3: 데이터 연결 (svcTy 기반 분기) — D(RISK/PROPOSAL)는 자사 역량 RAG 데이터셋 연결 -->
+      <!-- 섹션3: 데이터 연결 (svcTy 기반 분기) — D(RISK)는 자사 역량 RAG 데이터셋 연결 -->
       <AgentSettingData
         v-if="
           form.svcTy === 'M' ||
           form.svcTy === 'S' ||
-          (form.svcTy === 'D' && (form.subTy === 'RISK' || form.subTy === 'PROPOSAL'))
+          (form.svcTy === 'D' && form.subTy === 'RISK')
         "
         ref="settingDataRef"
         :svc-ty="form.svcTy"
@@ -882,8 +882,6 @@ const onSave = () => {
       createDt: existingSubCfg?.createDt ?? '',
       modifyDt: existingSubCfg?.modifyDt ?? '',
     }
-    // 자사 역량 RAG 데이터셋 연결
-    base.datasetList = localDatasetList.value
   }
 
   emit('save', base)

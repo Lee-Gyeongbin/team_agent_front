@@ -1,0 +1,1223 @@
+@use 'sass:color';
+@use '../utils/variables' as *;
+@use '../utils/mixins' as *;
+
+// =============================================
+// PT 제안 에이전트
+// =============================================
+
+// ---- 목록 페이지 ----
+.pt-list-page {
+  padding: $spacing-lg;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.pt-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-md;
+}
+
+.pt-list-title {
+  @include typo($body-xlarge-bold);
+  color: $color-text-heading;
+  margin: 0;
+}
+
+// ---- 필터 칩 ----
+.pt-filter-chips {
+  display: flex;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+}
+
+.pt-filter-chip {
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid $color-border;
+  background: #fff;
+  cursor: pointer;
+  @include typo($body-small);
+  color: $color-text-dark;
+  transition: background $transition-fast, border-color $transition-fast, color $transition-fast;
+
+  &.is-active {
+    background: var(--color-primary-bg);
+    color: var(--color-primary-dark);
+    border-color: var(--color-primary-bg);
+    font-weight: $font-weight-semibold;
+  }
+
+  &:hover:not(.is-active) {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+}
+
+// ---- 카드 그리드 ----
+.pt-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: $spacing-sm + 2;
+}
+
+.pt-card {
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  padding: $spacing-md;
+  cursor: pointer;
+  transition: border-color $transition-base, box-shadow $transition-base;
+
+  &:hover {
+    border-color: var(--color-primary);
+    box-shadow: $shadow-md;
+  }
+
+  &.is-skeleton {
+    cursor: default;
+    &:hover {
+      border-color: $color-border;
+      box-shadow: none;
+    }
+  }
+}
+
+.pt-card-title {
+  @include typo($body-small-bold);
+  color: $color-text-heading;
+  margin: $spacing-sm 0 4px;
+  line-height: 1.4;
+}
+
+.pt-card-meta {
+  @include typo($body-xsmall);
+  color: $color-text-muted;
+  margin-bottom: $spacing-sm;
+}
+
+// ---- 상태 뱃지 ----
+.pt-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  @include typo($body-xsmall-bold);
+  padding: 2px 8px;
+  border-radius: 12px;
+
+  &.status-PT000001 { // 작성중
+    background: #FFF3E3;
+    color: $color-warning;
+  }
+  &.status-PT000002 { // 검토중
+    background: var(--color-primary-bg);
+    color: var(--color-primary-dark);
+  }
+  &.status-PT000003 { // 완료
+    background: rgba($color-success, 0.12);
+    color: color.adjust($color-success, $lightness: -10%);
+  }
+}
+
+// ---- 진행률 바 ----
+.pt-progress-bar {
+  height: 4px;
+  border-radius: 4px;
+  background: $color-border;
+  overflow: hidden;
+  margin-top: $spacing-sm;
+}
+
+.pt-progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--color-primary);
+  transition: width $transition-slow;
+}
+
+// =============================================
+// 모달
+// =============================================
+.pt-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 18, 40, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: $z-modal;
+}
+
+.pt-modal {
+  background: #fff;
+  border-radius: $border-radius-lg + 4;
+  width: 520px;
+  max-height: 88vh;
+  overflow-y: auto;
+  box-shadow: $shadow-lg;
+}
+
+.pt-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-lg $spacing-lg $spacing-md;
+  border-bottom: 1px solid $color-border;
+}
+
+.pt-modal-title {
+  @include typo($body-large-bold);
+  color: $color-text-heading;
+  margin: 0;
+}
+
+.pt-modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: $border-radius-base;
+  cursor: pointer;
+  color: $color-text-dark;
+
+  &:hover {
+    background: $color-surface;
+  }
+}
+
+.pt-modal-body {
+  padding: $spacing-lg;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.pt-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+  padding: $spacing-md $spacing-lg;
+  border-top: 1px solid $color-border;
+}
+
+// ---- 폼 공통 ----
+.pt-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pt-form-label {
+  @include typo($body-small-bold);
+  color: $color-text-dark;
+}
+
+.pt-req {
+  color: $color-error;
+}
+
+.pt-textarea {
+  width: 100%;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  padding: 9px 11px;
+  @include typo($body-small);
+  font-family: $font-family-base;
+  background: $color-surface;
+  resize: vertical;
+  min-height: 72px;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    background: #fff;
+  }
+}
+
+// ---- 토글 ----
+.pt-toggle-row {
+  display: flex;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  overflow: hidden;
+  width: fit-content;
+}
+
+.pt-toggle-opt {
+  padding: 7px 18px;
+  @include typo($body-small);
+  cursor: pointer;
+  color: $color-text-dark;
+  border: none;
+  background: transparent;
+  transition: background $transition-fast, color $transition-fast;
+
+  &.is-active {
+    background: var(--color-primary);
+    color: #fff;
+    font-weight: $font-weight-semibold;
+  }
+
+  &:hover:not(.is-active) {
+    background: $color-surface;
+  }
+}
+
+// =============================================
+// 상세 페이지
+// =============================================
+.pt-detail-page {
+  padding: $spacing-lg;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.pt-detail-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pt-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  @include typo($body-small);
+  color: $color-text-dark;
+  padding: 0;
+  width: fit-content;
+
+  &:hover {
+    color: var(--color-primary);
+  }
+}
+
+.pt-detail-org {
+  @include typo($body-xsmall);
+  color: $color-text-muted;
+}
+
+.pt-detail-title {
+  @include typo($body-xlarge-bold);
+  color: $color-text-heading;
+}
+
+// ---- 스텝바 ----
+.pt-stepbar {
+  display: flex;
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  overflow: hidden;
+}
+
+.pt-stepbar-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  border-right: 1px solid $color-border;
+  cursor: pointer;
+  text-align: left;
+  transition: background $transition-fast;
+
+  &:last-child {
+    border-right: none;
+  }
+
+  &:hover:not(:disabled):not(.is-locked) {
+    background: $color-surface;
+  }
+
+  &.is-done {
+    .pt-stepbar-num {
+      background: $color-success;
+      color: #fff;
+    }
+  }
+
+  &.is-current {
+    background: var(--color-primary-bg);
+
+    .pt-stepbar-num {
+      background: var(--color-primary);
+      color: #fff;
+    }
+
+    .pt-stepbar-text small {
+      color: var(--color-primary-dark);
+      font-weight: $font-weight-semibold;
+    }
+  }
+
+  &.is-locked,
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.pt-stepbar-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  @include typo($body-xsmall-bold);
+  background: $color-border;
+  color: $color-text-dark;
+  flex-shrink: 0;
+}
+
+.pt-stepbar-text {
+  b {
+    display: block;
+    @include typo($body-small-bold);
+    color: $color-text-heading;
+  }
+
+  small {
+    @include typo($body-xsmall);
+    color: $color-text-muted;
+  }
+}
+
+// ---- 단계 콘텐츠 공통 패널 ----
+.pt-panel {
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  padding: $spacing-lg;
+}
+
+.pt-panel-title {
+  @include typo($body-medium-bold);
+  color: $color-text-heading;
+  margin: 0 0 4px;
+}
+
+.pt-panel-desc {
+  @include typo($body-small);
+  color: $color-text-muted;
+  margin: 0 0 $spacing-md;
+}
+
+.pt-panel-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: $spacing-lg;
+}
+
+.pt-section-label {
+  @include typo($body-small-bold);
+  color: $color-text-heading;
+  margin: 0 0 10px;
+}
+
+.pt-hint {
+  @include typo($body-xsmall);
+  color: $color-text-muted;
+  margin-top: 6px;
+}
+
+// =============================================
+// Step A — 템플릿
+// =============================================
+.pt-option-row {
+  display: flex;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+}
+
+.pt-option-card {
+  flex: 1;
+  border: 1.5px solid $color-border;
+  border-radius: $border-radius-lg;
+  padding: $spacing-sm + 4;
+  cursor: pointer;
+  transition: border-color $transition-fast, background $transition-fast;
+
+  &.is-selected {
+    border-color: var(--color-primary);
+    background: var(--color-primary-bg);
+  }
+
+  b {
+    display: block;
+    @include typo($body-small-bold);
+    color: $color-text-heading;
+    margin-bottom: 3px;
+  }
+
+  span {
+    @include typo($body-xsmall);
+    color: $color-text-muted;
+  }
+}
+
+.pt-dropzone {
+  border: 1.5px dashed $color-border;
+  border-radius: $border-radius-lg;
+  padding: $spacing-md;
+  text-align: center;
+  @include typo($body-small);
+  color: $color-text-muted;
+  margin-bottom: $spacing-md;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: border-color $transition-fast, color $transition-fast;
+
+  &:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+}
+
+.pt-dropzone-file {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pt-dropzone-remove {
+  display: flex;
+  align-items: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: $color-text-muted;
+  padding: 2px;
+  border-radius: $border-radius-sm;
+
+  &:hover {
+    color: $color-error;
+  }
+}
+
+.pt-rfp-upload-btn {
+  margin-top: $spacing-sm;
+}
+
+.pt-size-row {
+  display: flex;
+  gap: $spacing-sm;
+}
+
+.pt-size-card {
+  flex: 1;
+  border: 1.5px solid $color-border;
+  border-radius: $border-radius-lg;
+  padding: $spacing-sm;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color $transition-fast, background $transition-fast;
+
+  &.is-selected {
+    border-color: var(--color-primary);
+    background: var(--color-primary-bg);
+    color: var(--color-primary-dark);
+  }
+
+  b {
+    display: block;
+    @include typo($body-xsmall-bold);
+    margin-bottom: 2px;
+  }
+
+  span {
+    @include typo($body-xsmall);
+    color: $color-text-muted;
+  }
+}
+
+.pt-size-ratio {
+  border: 1.5px solid currentColor;
+  border-radius: 3px;
+  margin: 0 auto 6px;
+}
+
+.pt-size-a4 .pt-size-ratio { width: 22px; height: 30px; }
+.pt-size-169 .pt-size-ratio { width: 46px; height: 26px; }
+.pt-size-43 .pt-size-ratio { width: 38px; height: 28px; }
+
+// =============================================
+// Step B — 목차
+// =============================================
+
+// RFP 첨부 영역
+.pt-toc-rfp-opt {
+  @include typo($body-xsmall);
+  color: $color-text-muted;
+  font-weight: $font-weight-normal;
+  margin-left: 4px;
+}
+
+.pt-toc-rfp-zone {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1.5px dashed $color-border;
+  border-radius: $border-radius-lg;
+  padding: 10px $spacing-sm;
+  @include typo($body-small);
+  color: $color-text-muted;
+  cursor: pointer;
+  margin-bottom: $spacing-sm;
+  transition: border-color $transition-fast, color $transition-fast, background $transition-fast;
+
+  &:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  &.is-attached {
+    border-style: solid;
+    border-color: $color-border;
+    background: $color-surface;
+    color: $color-text-heading;
+
+    &:hover {
+      border-color: var(--color-primary);
+    }
+  }
+}
+
+.pt-toc-rfp-name {
+  flex: 1;
+  @include ellipsis(1);
+}
+
+.pt-toc-rfp-remove {
+  display: flex;
+  align-items: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: $color-text-muted;
+  padding: 3px;
+  border-radius: $border-radius-sm;
+  flex-shrink: 0;
+
+  &:hover {
+    color: $color-error;
+  }
+}
+
+.pt-toc-toolbar {
+  display: flex;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-sm;
+}
+
+.pt-toc-list {
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.pt-toc-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: 10px $spacing-sm;
+  border-bottom: 1px solid $color-border;
+  background: #fff;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &.is-sub {
+    padding-left: 28px;
+    background: $color-surface;
+  }
+}
+
+.pt-toc-drag {
+  color: $color-text-muted;
+  cursor: grab;
+  flex-shrink: 0;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.pt-toc-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  @include typo($body-small);
+  color: $color-text-heading;
+  padding: 3px 4px;
+  min-width: 0;
+
+  &:focus {
+    outline: none;
+    background: var(--color-primary-bg);
+    border-radius: $border-radius-sm;
+  }
+}
+
+.pt-toc-tag {
+  @include typo($body-caption-bold);
+  padding: 2px 7px;
+  border-radius: 8px;
+  flex-shrink: 0;
+
+  &.is-rfp {
+    background: var(--color-primary-bg);
+    color: var(--color-primary-dark);
+  }
+
+  &.is-user {
+    background: rgba($color-warning, 0.12);
+    color: color.adjust($color-warning, $lightness: -8%);
+  }
+}
+
+.pt-toc-del {
+  display: flex;
+  align-items: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: $color-text-muted;
+  padding: 3px;
+  border-radius: $border-radius-sm;
+  flex-shrink: 0;
+
+  &:hover {
+    color: $color-error;
+  }
+}
+
+.pt-toc-add-sub {
+  padding: 10px $spacing-sm;
+  @include typo($body-xsmall);
+  color: var(--color-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #fff;
+
+  &:hover {
+    background: var(--color-primary-bg);
+  }
+}
+
+// =============================================
+// Step C — 설정
+// =============================================
+.pt-settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $spacing-md;
+}
+
+.pt-settings-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pt-settings-full {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pt-settings-label {
+  @include typo($body-small-bold);
+  color: $color-text-dark;
+}
+
+.pt-mini-upload {
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  padding: 9px $spacing-sm;
+  @include typo($body-xsmall);
+  color: $color-text-muted;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: border-color $transition-fast;
+
+  &:hover {
+    border-color: var(--color-primary);
+  }
+
+  &--add {
+    justify-content: flex-start;
+    gap: 4px;
+  }
+}
+
+.pt-file-chip-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pt-file-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px $spacing-sm;
+  background: $color-surface;
+  border-radius: $border-radius-sm;
+  @include typo($body-xsmall);
+  color: $color-text-primary;
+
+  .pt-file-chip-name {
+    flex: 1;
+    @include ellipsis(1);
+  }
+
+  .pt-file-chip-remove {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: $color-text-muted;
+    padding: 0;
+
+    &:hover {
+      color: $color-error;
+    }
+  }
+}
+
+.pt-color-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.pt-color-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.pt-color-clabel {
+  @include typo($body-xsmall);
+  color: $color-text-muted;
+  width: 90px;
+  flex-shrink: 0;
+}
+
+.pt-color-rank {
+  @include typo($body-caption);
+  color: $color-text-muted;
+  width: 70px;
+}
+
+.pt-color-picker {
+  width: 30px;
+  height: 30px;
+  padding: 2px;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-sm;
+  background: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+// =============================================
+// Step D — 본문 생성 (3단 레이아웃)
+// =============================================
+.pt-stepD-layout {
+  display: grid;
+  grid-template-columns: 210px 1fr 300px;
+  gap: $spacing-md;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+// 좌측: 소목차 리스트
+.pt-sec-list {
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  overflow: hidden;
+  background: #fff;
+  max-height: 620px;
+  overflow-y: auto;
+  @include custom-scrollbar;
+}
+
+.pt-sec-item {
+  padding: 11px $spacing-sm;
+  border-bottom: 1px solid $color-border;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  @include typo($body-xsmall);
+  color: $color-text-heading;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &.is-active {
+    background: var(--color-primary-bg);
+
+    .pt-sec-dot { background: var(--color-primary); }
+  }
+
+  &.is-done {
+    .pt-sec-dot { background: $color-success; }
+  }
+}
+
+.pt-sec-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: $color-border;
+  flex-shrink: 0;
+  transition: background $transition-fast;
+}
+
+.pt-sec-title {
+  &.is-bold { font-weight: $font-weight-semibold; }
+}
+
+// 중앙: 미리보기 패널
+.pt-gen-panel {
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  background: #fff;
+  padding: $spacing-md;
+  display: flex;
+  flex-direction: column;
+  min-height: 620px;
+}
+
+.pt-gen-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: $spacing-md;
+}
+
+.pt-gen-title {
+  @include typo($body-medium-bold);
+  color: $color-text-heading;
+}
+
+.pt-gen-sub {
+  @include typo($body-xsmall);
+  color: $color-text-muted;
+  margin-top: 2px;
+}
+
+.pt-slide-preview {
+  flex: 1;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  background: linear-gradient(180deg, #fafafe, #f3f2fb);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-md;
+  margin-bottom: $spacing-md;
+  min-height: 240px;
+}
+
+.pt-slide-mock {
+  width: 100%;
+  max-width: 460px;
+  aspect-ratio: 16/9;
+  background: #fff;
+  border-radius: $border-radius-base;
+  box-shadow: $shadow-lg;
+  padding: $spacing-md;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.pt-slide-eyebrow {
+  @include typo($body-caption-bold);
+  color: var(--color-primary);
+  letter-spacing: 0.06em;
+}
+
+.pt-slide-ttl {
+  @include typo($body-small-bold);
+  color: $color-text-heading;
+}
+
+.pt-slide-bars {
+  display: flex;
+  gap: 6px;
+  margin-top: auto;
+
+  i {
+    flex: 1;
+    height: 38px;
+    border-radius: 5px;
+    background: var(--color-primary-bg);
+
+    &:nth-child(2) { background: color.adjust(#5B4FE9, $lightness: 30%); }
+    &:nth-child(3) { background: color.adjust(#5B4FE9, $lightness: 42%); }
+  }
+}
+
+.pt-gen-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: $spacing-sm;
+}
+
+// =============================================
+// 채팅 사이드 (Step D, E 공용)
+// =============================================
+.pt-chat-side {
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  height: 620px;
+}
+
+.pt-chat-head {
+  padding: $spacing-sm $spacing-sm;
+  border-bottom: 1px solid $color-border;
+  @include typo($body-small-bold);
+  color: $color-text-heading;
+  flex-shrink: 0;
+}
+
+.pt-chat-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: $spacing-sm;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  @include custom-scrollbar;
+}
+
+.pt-chat-msg {
+  max-width: 88%;
+  padding: 8px $spacing-sm;
+  border-radius: $border-radius-lg;
+  @include typo($body-xsmall);
+  line-height: 1.5;
+
+  &.is-user {
+    align-self: flex-end;
+    background: var(--color-primary);
+    color: #fff;
+    border-bottom-right-radius: 2px;
+  }
+
+  &.is-ai {
+    align-self: flex-start;
+    background: $color-surface;
+    color: $color-text-heading;
+    border-bottom-left-radius: 2px;
+  }
+}
+
+.pt-chat-typing {
+  display: flex;
+  gap: 4px;
+  padding: 12px;
+
+  span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: $color-text-muted;
+    animation: pt-typing 1.2s infinite ease-in-out;
+
+    &:nth-child(2) { animation-delay: 0.2s; }
+    &:nth-child(3) { animation-delay: 0.4s; }
+  }
+}
+
+@keyframes pt-typing {
+  0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+  40% { transform: scale(1.1); opacity: 1; }
+}
+
+.pt-chat-input {
+  border-top: 1px solid $color-border;
+  padding: $spacing-sm;
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.pt-chat-input-field {
+  flex: 1;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  padding: 7px 10px;
+  @include typo($body-xsmall);
+  font-family: $font-family-base;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  }
+}
+
+// =============================================
+// Step E — 검토 (2단 레이아웃)
+// =============================================
+.pt-stepE-layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: $spacing-md;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+
+  .pt-chat-side {
+    height: 600px;
+  }
+}
+
+.pt-thumb-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $spacing-sm;
+  margin-top: $spacing-sm;
+}
+
+.pt-thumb {
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  overflow: hidden;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color $transition-fast;
+
+  &:hover {
+    border-color: var(--color-primary);
+  }
+}
+
+.pt-thumb-img {
+  aspect-ratio: 16/9;
+  background: linear-gradient(135deg, #f4f3fc, #eceafc);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-sm;
+}
+
+.pt-thumb-mini {
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: $shadow-sm;
+  padding: $spacing-sm;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.pt-thumb-l1 {
+  width: 40%;
+  height: 5px;
+  background: var(--color-primary-bg);
+  border-radius: 2px;
+}
+
+.pt-thumb-l2 {
+  width: 70%;
+  height: 7px;
+  background: #ddd9fb;
+  border-radius: 2px;
+}
+
+.pt-thumb-cap {
+  padding: 8px $spacing-sm;
+  @include typo($body-xsmall);
+  border-top: 1px solid $color-border;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: $color-text-heading;
+
+  b { font-weight: $font-weight-semibold; }
+}
+
+// =============================================
+// Step F — 출력
+// =============================================
+.pt-final-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 50px $spacing-md;
+  text-align: center;
+}
+
+.pt-final-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: $border-radius-lg;
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: $spacing-md;
+}
+
+.pt-final-title {
+  @include typo($body-large-bold);
+  color: $color-text-heading;
+  margin: 0 0 6px;
+}
+
+.pt-final-desc {
+  @include typo($body-small);
+  color: $color-text-muted;
+  margin: 0 0 $spacing-lg;
+}
+
+.pt-final-actions {
+  display: flex;
+  gap: $spacing-sm;
+}

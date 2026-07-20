@@ -151,7 +151,6 @@
 .chat-page-wrap {
   position: relative;
   width: 100%;
-  min-height: calc(100vh - #{$header-height});
   cursor: grab;
 
   // 드래그 진행 중 — carousel에서 body에 클래스 추가
@@ -176,6 +175,7 @@
   align-items: center;
   justify-content: center;
   min-height: calc(100vh - #{$header-height});
+  padding: 30px 16px;
   // 배경은 .layout-default 전체 그라데이션을 투과 — 독립 배경 없음
   background: transparent;
 

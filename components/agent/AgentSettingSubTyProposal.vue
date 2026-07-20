@@ -3,7 +3,7 @@
     <div class="agent-setting-sub-ty-proposal-panel__header">
       <span class="com-setting-section-title">제안서 구성</span>
       <p class="com-setting-hint agent-setting-sub-ty-proposal-panel__summary">
-        RFP(요구사항) 업로드 시 생성할 제안서 슬라이드의 페르소나·디자인·데이터를 설정합니다.
+        PT 제안 에이전트의 기본 페르소나·언어·템플릿을 설정합니다. 자사/경쟁사 RAG, 컬러 등은 프로젝트별로 설정 화면(Step C)에서 지정합니다.
       </p>
     </div>
 
@@ -45,94 +45,11 @@
         </UiSettingSection>
       </div>
 
-      <!-- ② 경쟁업체 데이터 -->
-      <div class="agent-setting-sub-ty-proposal-accordion">
-        <UiSettingSection
-          title="경쟁업체 데이터"
-          collapsible
-          label-width="120px"
-        >
-          <div class="com-setting-field-row">
-            <label class="com-setting-label">경쟁업체 RAG</label>
-            <UiSelect
-              :model-value="modelValue.competitorDatasetId"
-              :options="datasetOptions"
-              placeholder="데이터셋을 선택하세요 (없으면 미사용)"
-              size="sm"
-              @update:model-value="onUpdate('competitorDatasetId', String($event ?? ''))"
-            />
-          </div>
-          <div class="com-setting-field-row">
-            <label class="com-setting-label">웹서치 폴백</label>
-            <UiCheckbox
-              :model-value="modelValue.webSearch"
-              label="경쟁업체 RAG 없을 때 웹 검색으로 정보 수집"
-              @update:model-value="onUpdate('webSearch', $event)"
-            />
-          </div>
-        </UiSettingSection>
-      </div>
+      <!-- ② 경쟁업체 데이터 — 프로젝트 단위로 이동됨 (Step C 설정 화면) -->
+      <!-- 자사 RAG (ownDatasetId), 경쟁업체 RAG (competitorDatasetId), 웹서치 폴백 (webSearch) 제거 -->
 
-      <!-- ③ 슬라이드 디자인 -->
-      <div class="agent-setting-sub-ty-proposal-accordion">
-        <UiSettingSection
-          title="슬라이드 디자인"
-          collapsible
-          label-width="120px"
-        >
-          <div class="com-setting-field-row">
-            <label class="com-setting-label">배경 색상</label>
-            <div class="proposal-color-row">
-              <input
-                type="color"
-                class="proposal-color-picker"
-                :value="modelValue.slideDesign.bgColor"
-                @input="onColorUpdate('bgColor', ($event.target as HTMLInputElement).value)"
-              />
-              <UiInput
-                :model-value="modelValue.slideDesign.bgColor"
-                placeholder="#FFFFFF"
-                size="sm"
-                @update:model-value="onColorUpdate('bgColor', String($event ?? '#FFFFFF'))"
-              />
-            </div>
-          </div>
-          <div class="com-setting-field-row">
-            <label class="com-setting-label">기본 색조</label>
-            <div class="proposal-color-row">
-              <input
-                type="color"
-                class="proposal-color-picker"
-                :value="modelValue.slideDesign.baseColor"
-                @input="onColorUpdate('baseColor', ($event.target as HTMLInputElement).value)"
-              />
-              <UiInput
-                :model-value="modelValue.slideDesign.baseColor"
-                placeholder="#003087"
-                size="sm"
-                @update:model-value="onColorUpdate('baseColor', String($event ?? '#003087'))"
-              />
-            </div>
-          </div>
-          <div class="com-setting-field-row">
-            <label class="com-setting-label">강조 색상</label>
-            <div class="proposal-color-row">
-              <input
-                type="color"
-                class="proposal-color-picker"
-                :value="modelValue.slideDesign.accentColor"
-                @input="onColorUpdate('accentColor', ($event.target as HTMLInputElement).value)"
-              />
-              <UiInput
-                :model-value="modelValue.slideDesign.accentColor"
-                placeholder="#0066CC"
-                size="sm"
-                @update:model-value="onColorUpdate('accentColor', String($event ?? '#0066CC'))"
-              />
-            </div>
-          </div>
-        </UiSettingSection>
-      </div>
+      <!-- ③ 슬라이드 디자인 — 프로젝트 단위로 이동됨 (Step C 설정 화면, 새 컬러 체계) -->
+      <!-- bgColor / baseColor / accentColor 제거 -->
 
       <!-- ④ 기능 -->
       <div class="agent-setting-sub-ty-proposal-accordion">
@@ -158,8 +75,7 @@
 </template>
 
 <script setup lang="ts">
-import { useDocDatasetApi } from '~/composables/doc-dataset/useDocDatasetApi'
-import type { ProposalConfigForm, ProposalSlideDesign } from '~/utils/agent/proposalConfigUtil'
+import type { ProposalConfigForm } from '~/utils/agent/proposalConfigUtil'
 
 const props = defineProps<{
   modelValue: ProposalConfigForm
@@ -169,22 +85,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: ProposalConfigForm]
 }>()
-
-const { fetchDocDatasetList } = useDocDatasetApi()
-
-const datasetOptions = ref<{ value: string; label: string }[]>([{ label: '미사용', value: '' }])
-
-onMounted(async () => {
-  try {
-    const res = await fetchDocDatasetList()
-    datasetOptions.value = [
-      { label: '미사용', value: '' },
-      ...(res.dataList ?? []).map((d) => ({ label: d.dsNm, value: d.datasetId })),
-    ]
-  } catch {
-    // 조회 실패 시 미사용 옵션만 유지
-  }
-})
 
 const audienceOptions = [
   { label: '발주기관 평가위원', value: '발주기관 평가위원' },
@@ -200,13 +100,6 @@ const langOptions = [
 
 const onUpdate = <K extends keyof ProposalConfigForm>(key: K, value: ProposalConfigForm[K]) => {
   emit('update:modelValue', { ...props.modelValue, [key]: value })
-}
-
-const onColorUpdate = (key: keyof ProposalSlideDesign, value: string) => {
-  emit('update:modelValue', {
-    ...props.modelValue,
-    slideDesign: { ...props.modelValue.slideDesign, [key]: value },
-  })
 }
 </script>
 
@@ -265,22 +158,4 @@ const onColorUpdate = (key: keyof ProposalSlideDesign, value: string) => {
   }
 }
 
-.proposal-color-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  min-width: 0;
-}
-
-.proposal-color-picker {
-  width: 32px;
-  height: 32px;
-  padding: 2px;
-  border: 1px solid #dce4e9;
-  border-radius: $border-radius-sm;
-  background: none;
-  cursor: pointer;
-  flex-shrink: 0;
-}
 </style>
