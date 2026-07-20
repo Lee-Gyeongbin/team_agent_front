@@ -183,8 +183,11 @@
                             <!-- 제목 -->
                             <h3 class="library-card-title">{{ card.title }}</h3>
 
-                            <!-- 카드 드롭다운 메뉴 -->
-                            <div @click.stop>
+                            <!-- 카드 드롭다운 메뉴 — @click.stop: 카드 openModal 버블링 방지 -->
+                            <div
+                              class="library-card-menu"
+                              @click.stop
+                            >
                               <UiDropdownMenu
                                 :items="getCardMenuItems(card)"
                                 align="end"

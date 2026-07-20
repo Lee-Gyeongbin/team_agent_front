@@ -153,6 +153,7 @@
   width: 100%;
   min-height: calc(100vh - #{$header-height});
   cursor: grab;
+  padding: 30px 0 20px;
 
   // 드래그 진행 중 — carousel에서 body에 클래스 추가
   &.is-theme-dragging,

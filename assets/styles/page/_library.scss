@@ -314,6 +314,10 @@
         }
 
         .library-card-top {
+          .library-card-menu {
+            height: 20px;
+          }
+
           .ui-dropdown-trigger-wrap {
             display: flex;
           }
