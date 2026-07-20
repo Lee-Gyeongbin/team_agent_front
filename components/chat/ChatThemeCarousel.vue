@@ -159,15 +159,10 @@ let startX = 0
 const dragDelta = ref(0)
 const isDragging = ref(false)
 
-const setDraggingClass = (active: boolean) => {
-  document.querySelector('.chat-page-wrap')?.classList.toggle('is-theme-dragging', active)
-}
-
 const resetDragState = () => {
   isDragging.value = false
   dragDelta.value = 0
   pointerId = -1
-  setDraggingClass(false)
 }
 
 const onPointerDown = (e: PointerEvent) => {
@@ -178,6 +173,8 @@ const onPointerDown = (e: PointerEvent) => {
   startX = e.clientX
   dragDelta.value = 0
   isDragging.value = false
+  // 뷰포트 밖으로 포인터가 나가도 추적 유지
+  viewportRef.value?.setPointerCapture?.(e.pointerId)
 }
 
 const onPointerMove = (e: PointerEvent) => {
@@ -185,7 +182,6 @@ const onPointerMove = (e: PointerEvent) => {
   const delta = e.clientX - startX
   if (!isDragging.value && Math.abs(delta) > 8) {
     isDragging.value = true
-    setDraggingClass(true)
   }
   if (isDragging.value) {
     dragDelta.value = delta
@@ -218,32 +214,31 @@ const onVisibilityChange = () => {
   if (document.hidden && pointerId !== -1) resetDragState()
 }
 
-// 드래그 이벤트를 .content 영역(사이드바 제외)에만 등록
-let dragTarget: Element | Document = document
+// 드래그: 슬라이드 뷰포트 내부만 (페이지 전체 grab 불필요)
+let viewportEl: HTMLElement | null = null
 
 onMounted(() => {
-  dragTarget = document.querySelector('.content') ?? document
-  dragTarget.addEventListener('pointerdown', onPointerDown as EventListener)
-  dragTarget.addEventListener('pointermove', onPointerMove as EventListener)
-  dragTarget.addEventListener('pointerup', onPointerUp as EventListener)
-  dragTarget.addEventListener('pointercancel', onPointerCancel)
-  window.addEventListener('pointerup', onPointerUp as EventListener)
-  window.addEventListener('pointercancel', onPointerCancel as EventListener)
+  viewportEl = viewportRef.value
+  if (!viewportEl) return
+  viewportEl.addEventListener('pointerdown', onPointerDown)
+  viewportEl.addEventListener('pointermove', onPointerMove)
+  viewportEl.addEventListener('pointerup', onPointerUp)
+  viewportEl.addEventListener('pointercancel', onPointerCancel)
   window.addEventListener('blur', onWindowBlur)
   document.addEventListener('visibilitychange', onVisibilityChange)
 })
 
 onUnmounted(() => {
-  dragTarget.removeEventListener('pointerdown', onPointerDown as EventListener)
-  dragTarget.removeEventListener('pointermove', onPointerMove as EventListener)
-  dragTarget.removeEventListener('pointerup', onPointerUp as EventListener)
-  dragTarget.removeEventListener('pointercancel', onPointerCancel)
-  window.removeEventListener('pointerup', onPointerUp as EventListener)
-  window.removeEventListener('pointercancel', onPointerCancel as EventListener)
+  if (viewportEl) {
+    viewportEl.removeEventListener('pointerdown', onPointerDown)
+    viewportEl.removeEventListener('pointermove', onPointerMove)
+    viewportEl.removeEventListener('pointerup', onPointerUp)
+    viewportEl.removeEventListener('pointercancel', onPointerCancel)
+    viewportEl = null
+  }
   window.removeEventListener('blur', onWindowBlur)
   document.removeEventListener('visibilitychange', onVisibilityChange)
   resetDragState()
-  dragTarget = document
 })
 
 /** 트랙 transform 스타일 */
@@ -321,11 +316,10 @@ const trackStyle = computed(() => {
 
     i {
       color: #fff;
+      background-color: #fff; // mask 아이콘 틴트 (currentColor만으로 부족한 경우 대비)
     }
   }
 }
-
-// ===== 뷰포트 커서 — 드래그 가능 표시 제거 (전역 드래그이므로 불필요) =====
 
 // ===== 태그라인 =====
 .chat-theme-carousel__tagline {
@@ -337,12 +331,25 @@ const trackStyle = computed(() => {
   transition: opacity $transition-base;
 }
 
-// ===== 슬라이드 뷰포트 =====
+// ===== 슬라이드 뷰포트 (스와이프 영역 — grab 커서 한정) =====
 .chat-theme-carousel__viewport {
   width: 100%;
   max-width: $chat-max-width;
   overflow: hidden;
   touch-action: pan-y;
+  cursor: grab;
+
+  &:active,
+  &:has(.chat-theme-carousel__track.is-dragging) {
+    cursor: grabbing;
+    user-select: none;
+  }
+
+  // 카드·버튼은 클릭 커서 유지
+  button,
+  [role='button'] {
+    cursor: pointer;
+  }
 }
 
 // ===== 슬라이드 트랙 =====
