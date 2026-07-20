@@ -12,27 +12,32 @@
     <template v-else>
       <div class="meeting2-panel-header">
         <span class="meeting2-panel-title">실시간 녹음 / STT</span>
-        <!-- 녹음 상태 배지 -->
+        <!-- 재연결 중일 때만 배지 표시 (녹음 중/연결 중/타이머는 하단 MeetingRecordControl에서 표시) -->
         <span
-          v-if="isRecording"
-          class="meeting2-record-badge is-recording"
+          v-if="isRecording && connectionStatus === 'reconnecting'"
+          class="meeting2-record-badge is-reconnecting"
         >
           <i class="meeting2-record-dot" />
-          녹음 중
+          자막 재연결 중...
         </span>
-        <span
-          v-else-if="isConnecting"
-          class="meeting2-record-badge is-connecting"
-        >
-          연결 중...
-        </span>
-        <!-- 타이머 -->
-        <span
-          v-if="isRecording || isConnecting"
-          class="meeting2-record-timer"
-        >
-          {{ timerDisplay }}
-        </span>
+      </div>
+
+      <!-- 실시간 자막 연결 실패 안내 -->
+      <div
+        v-if="connectionStatus === 'failed' && isRecording"
+        class="meeting2-record-notice is-warning"
+      >
+        <i class="icon-warning size-16" />
+        실시간 자막 연결이 끊겼습니다. 녹음은 계속 저장되고 있습니다.
+      </div>
+
+      <!-- 실시간 자막 재연결 안내 (헤더 아래 별도 표시) -->
+      <div
+        v-else-if="connectionStatus === 'reconnecting' && isRecording"
+        class="meeting2-record-notice is-info"
+      >
+        <i class="icon-refresh size-16" />
+        실시간 자막 재연결 시도 중입니다. 녹음은 계속 저장되고 있습니다.
       </div>
 
       <!-- 미지원 안내 -->
@@ -92,6 +97,7 @@ const meetingId = computed(() => Number(route.params.id))
 const {
   isRecording,
   isConnecting,
+  connectionStatus,
   isSupported,
   blocks,
   checkSupport,
@@ -344,6 +350,15 @@ const onClickFinish = async () => {
   if (!audioBlob) {
     openToast({ message: '녹음된 오디오가 없습니다. 녹음 후 종료해 주세요.', type: 'warning' })
     return
+  }
+
+  // 발화 내용 없이 종료 시 확인 (무음 녹음으로 빈 회의록 생성 방지)
+  if (blocks.value.length === 0) {
+    const confirmed = await openConfirm({
+      title: '발화 내용 없음',
+      message: '녹음된 발화 내용이 없습니다.\n계속 진행하시겠습니까?',
+    })
+    if (!confirmed) return
   }
 
   const success = await handleFinishMeetingWithAudio({

@@ -16,7 +16,11 @@ export interface ChatGuideItem {
   autoDetectYn: 'Y' | 'N'
 }
 
-/** /chatGuideList.do API 응답 */
+/** /chatGuideList.do · /chatGuideMaintList.do API 응답 */
 export interface ChatGuideListResponse {
   list?: ChatGuideItem[]
+  dataList?: ChatGuideItem[]
 }
+
+/** 로그인 점검 공지 종류 — 긴급 / 정기 / 복구 */
+export type MaintNoticeKind = 'emergency' | 'scheduled' | 'recovery'

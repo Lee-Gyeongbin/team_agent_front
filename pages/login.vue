@@ -117,51 +117,41 @@
 
         <!-- 공지사항 -->
         <div class="login-notice-wrap">
-          <p
-            v-if="isLoginNoticeLoading"
-            class="login-notice-status"
-          >
-            공지를 불러오는 중...
-          </p>
           <div
-            v-else-if="loginNoticeErrorMessage"
-            class="login-notice-status login-notice-status--error"
+            v-if="maintBannerItems.length > 0"
+            class="login-maint-banner-list"
           >
-            <span>{{ loginNoticeErrorMessage }}</span>
             <button
+              v-for="banner in maintBannerItems"
+              :key="banner.item.guideId || banner.kind"
               type="button"
-              class="btn-login"
-              @click="onRetryLoginNotice"
+              class="login-maint-banner"
+              @click="openMaintNotice(banner.item)"
             >
-              다시 시도
+              <span class="login-maint-banner-badge">{{ banner.badge }}</span>
+              <span class="login-maint-banner-body">
+                <span class="login-maint-banner-title">{{ banner.title }}</span>
+                <span
+                  v-if="banner.periodLabel"
+                  class="login-maint-banner-period"
+                >
+                  {{ banner.periodLabel }}
+                </span>
+              </span>
+              <i class="icon-chevron-right-sm size-12 login-maint-banner-chevron" />
             </button>
           </div>
-          <p
-            v-else-if="loginNoticeList.length === 0"
-            class="login-notice-status"
-          >
-            등록된 공지가 없습니다.
-          </p>
-          <div
-            v-else
-            class="notice-list"
-          >
-            <div
-              v-for="notice in loginNoticeList"
-              :key="notice.noticeId"
-              class="notice-item"
-            >
-              <button
-                type="button"
-                class="notice-item-main"
-                @click="onOpenNoticeDetail(notice)"
-              >
-                <span class="notice-item-content type">{{ getNoticeTypeBracketed(notice) }}</span>
-                <span class="notice-item-content title">{{ notice.title }}</span>
-              </button>
-              <span class="notice-item-content date">{{ getNoticeDateLabel(notice.createDt) }}</span>
-            </div>
-          </div>
+
+          <LoginGeneralNoticeList
+            :notices="loginNoticeList"
+            :is-loading="isLoginNoticeLoading"
+            :error-message="loginNoticeErrorMessage"
+            :has-maint-banner="maintBannerItems.length > 0"
+            :get-type-bracketed="getNoticeTypeBracketed"
+            :get-date-label="getNoticeDateLabel"
+            @select="onOpenNoticeDetail"
+            @retry="onRetryLoginNotice"
+          />
         </div>
       </div>
     </div>
@@ -172,6 +162,12 @@
       :notice="selectedNotice"
       :notice-title="`${getNoticeTypeBracketed(selectedNotice)} ${selectedNotice.title}`.trim()"
       @close="isNoticeDetailPanelOpen = false"
+    />
+
+    <MaintNoticeModal
+      v-bind="maintNoticeModalProps"
+      @confirm="closeMaintNotice"
+      @hide="hideMaintNoticeForever"
     />
   </div>
 </template>
@@ -195,6 +191,14 @@ const {
   selectedNotice,
   onOpenNoticeDetail,
 } = useNoticeStore()
+const {
+  bannerItems: maintBannerItems,
+  modalProps: maintNoticeModalProps,
+  openModal: openMaintNotice,
+  closeModal: closeMaintNotice,
+  hideForever: hideMaintNoticeForever,
+  handleSelectMaintNotice,
+} = useMaintNotice()
 
 /** 로그인 정보 저장 쿠키 */
 const savedLoginIdCookie = useCookie<string | null>('ta_saved_login_id', {
@@ -220,7 +224,7 @@ onMounted(() => {
     loginId.value = saved
     saveLoginInfo.value = true
   }
-  void Promise.all([handleSelectNoticeTypeOptions(), handleSelectLoginNoticeList()])
+  void Promise.all([handleSelectNoticeTypeOptions(), handleSelectLoginNoticeList(), handleSelectMaintNotice()])
 })
 
 const onRetryLoginNotice = () => {
@@ -278,21 +282,6 @@ const onSubmit = async () => {
 
   :deep(.ui-input-wrap.is-focused:not(.is-disabled)) {
     border-width: 2px;
-  }
-
-  .login-notice-status {
-    margin: 0;
-    font-size: 14px;
-    color: $color-text-muted;
-    line-height: 150%;
-  }
-
-  .login-notice-status--error {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px 12px;
-    color: $color-text-dark;
   }
 }
 </style>

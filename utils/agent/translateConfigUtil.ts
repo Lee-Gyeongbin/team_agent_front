@@ -12,14 +12,14 @@ export interface TranslateConfigForm {
   fileAcceptExt: string[]
 }
 
-const DEFAULT_LANGUAGES: TranslateLanguageOption[] = [
+export const DEFAULT_LANGUAGES: TranslateLanguageOption[] = [
   { label: '한국어', value: 'ko' },
   { label: '영어', value: 'en' },
   { label: '일본어', value: 'ja' },
   { label: '중국어(간체)', value: 'zh' },
 ]
 
-const DEFAULT_TONES: TranslateToneOption[] = [
+export const DEFAULT_TONES: TranslateToneOption[] = [
   { label: '비즈니스(격식)', value: 'business' },
   { label: '자연스럽게', value: 'natural' },
   { label: '직역', value: 'literal' },

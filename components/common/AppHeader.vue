@@ -44,6 +44,9 @@
         </div>
       </div>
 
+      <!-- 즉시번역 설정 -->
+      <AppInstantTranslatePanel />
+
       <!-- 알림 -->
       <AppNotificationPanel />
 
@@ -70,6 +73,7 @@
 </template>
 
 <script setup lang="ts">
+import AppInstantTranslatePanel from '~/components/common/AppInstantTranslatePanel.vue'
 import type { ThemeColor } from '~/composables/useTheme'
 import type { MenuItem } from '~/types/menu'
 

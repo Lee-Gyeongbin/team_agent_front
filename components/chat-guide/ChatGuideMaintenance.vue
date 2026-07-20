@@ -85,7 +85,10 @@
         </div>
 
         <div class="maint-field-row">
-          <div class="maint-field">
+          <div
+            ref="emergencyStartFieldRef"
+            class="maint-field"
+          >
             <label class="maint-label">표시 시작</label>
             <UiDatePicker
               v-model="emergencyStartDt"
@@ -120,7 +123,10 @@
 
         <div class="maint-field">
           <label class="maint-label">점검 일시</label>
-          <div class="maint-field-row">
+          <div
+            ref="scheduledStartFieldRef"
+            class="maint-field-row"
+          >
             <UiDatePicker
               v-model="scheduledStartDt"
               type="datetime"
@@ -226,7 +232,7 @@ import type { DateValue } from '@internationalized/date'
 import type { CodeItem } from '~/types/codes'
 import type { ChatGuideMaintenanceItem } from '~/types/chat-guide'
 import { CHAT_GUIDE_MAINTENANCE_DEFAULT_GUIDE_KEYS, CHAT_GUIDE_MAINTENANCE_INCIDENT_UI_SLOTS } from '~/types/chat-guide'
-import { computed, onMounted, ref, type ComputedRef } from 'vue'
+import { computed, nextTick, onMounted, ref, type ComputedRef } from 'vue'
 import { apiStringFromDateValue, dateValueFromApiString } from '~/utils/global/dateUtil'
 import { toYn, useChatGuideStore } from '~/composables/chat-guide/useChatGuideStore'
 
@@ -269,6 +275,26 @@ const emergencyEndDt = maintenanceDateComputed(emergencyRow, 'endDt')
 const scheduledStartDt = maintenanceDateComputed(scheduledRow, 'startDt')
 const scheduledEndDt = maintenanceDateComputed(scheduledRow, 'endDt')
 
+const emergencyStartFieldRef = ref<HTMLElement | null>(null)
+const scheduledStartFieldRef = ref<HTMLElement | null>(null)
+
+/** 저장 전 — 시작 일시가 종료 일시보다 늦으면 안 됨 (둘 다 있을 때만) */
+const validateMaintPeriod = (): boolean => {
+  const invalidField = [
+    { start: emergencyStartDt.value, end: emergencyEndDt.value, el: emergencyStartFieldRef },
+    { start: scheduledStartDt.value, end: scheduledEndDt.value, el: scheduledStartFieldRef },
+  ].find(({ start, end }) => !!start && !!end && start.compare(end) > 0)?.el.value
+
+  if (!invalidField) return true
+
+  openToast({ message: '시작 일시가 종료 일시보다 늦을 수 없습니다.', type: 'warning' })
+  nextTick(() => {
+    invalidField.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    ;(invalidField.querySelector('button, input') as HTMLElement | null)?.focus()
+  })
+  return false
+}
+
 /** 장애 유형 섹션 토글 (동일 enblYn 유지) */
 const incidentSectionOn = computed({
   get: () => rowByGuideKey(CHAT_GUIDE_MAINTENANCE_DEFAULT_GUIDE_KEYS.incidentSystem).enblYn === 'Y',
@@ -309,6 +335,8 @@ const handleLoad = async () => {
 }
 
 const onSave = async () => {
+  if (!validateMaintPeriod()) return
+
   const confirmed = await openConfirm({
     title: '점검/장애 안내 저장',
     message: '변경된 점검/장애 안내 내용을 저장하시겠습니까?',

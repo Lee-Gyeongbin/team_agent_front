@@ -31,7 +31,7 @@
         </SelectIcon>
       </SelectTrigger>
 
-      <SelectPortal>
+      <SelectPortal :disabled="disablePortal">
         <SelectContent
           class="ui-select-content"
           position="popper"
@@ -82,6 +82,7 @@ interface Props {
   id?: string
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xlg'
   radius?: 'sm' | 'base' | 'lg'
+  disablePortal?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -92,6 +93,7 @@ const props = withDefaults(defineProps<Props>(), {
   id: undefined,
   size: 'md',
   radius: 'base',
+  disablePortal: false,
 })
 
 const emit = defineEmits<{
@@ -119,6 +121,10 @@ const onUpdate = (val: string) => {
 
 <!-- 트리거: scoped -->
 <style lang="scss" scoped>
+.ui-select-wrap {
+  position: relative;
+}
+
 .ui-select-trigger {
   display: inline-flex;
   align-items: center;
