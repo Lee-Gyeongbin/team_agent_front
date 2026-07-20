@@ -1,5 +1,10 @@
 <template>
-  <div class="my-doc-rename-modal">
+  <UiModal
+    :is-open="isOpen"
+    title="문서명 변경"
+    max-width="420px"
+    @close="emit('close')"
+  >
     <div class="my-doc-rename-body">
       <div class="form-row">
         <label class="form-label">문서명</label>
@@ -7,7 +12,7 @@
           v-model="docNmDraft"
           type="text"
           placeholder="문서명 입력"
-          @enter="onSubmit"
+          @keydown.enter="onSubmit"
         />
       </div>
     </div>
@@ -17,17 +22,16 @@
     >
       <p class="my-doc-rename-error__message">{{ modalErrorMessage }}</p>
     </div>
-    <div class="modal-dialog-footer">
+
+    <template #footer>
       <UiButton
-        class="btn-modal-dialog"
-        variant="outline"
+        variant="secondary"
         size="lg"
         @click="emit('close')"
       >
         취소
       </UiButton>
       <UiButton
-        class="btn-modal-dialog"
         variant="primary"
         size="lg"
         :disabled="!canSubmit"
@@ -35,19 +39,22 @@
       >
         저장
       </UiButton>
-    </div>
-  </div>
+    </template>
+  </UiModal>
 </template>
 
 <script setup lang="ts">
-import { UiButton, UiInput } from '@leechanyong/ispark-ui'
+import { UiButton, UiInput, UiModal } from '@leechanyong/ispark-ui'
 import type { MyDoc } from '~/types/mydoc'
 
 interface Props {
+  isOpen?: boolean
   doc: MyDoc | null
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  isOpen: false,
+})
 
 const emit = defineEmits<{
   save: [docNm: string]
@@ -93,13 +100,6 @@ const onSubmit = () => {
 </script>
 
 <style lang="scss" scoped>
-.my-doc-rename-modal {
-  padding: $spacing-md;
-  width: 100%;
-  align-self: stretch;
-  min-width: 0;
-}
-
 .my-doc-rename-body {
   display: flex;
   flex-direction: column;
@@ -132,9 +132,5 @@ const onSubmit = () => {
     font-weight: $font-weight-medium;
     color: $color-text-primary;
   }
-}
-
-.modal-dialog-footer {
-  border-top: none;
 }
 </style>

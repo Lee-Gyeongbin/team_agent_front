@@ -331,6 +331,7 @@ const trackStyle = computed(() => {
 .chat-theme-carousel__tagline {
   @include typo($body-small);
   color: $color-text-muted;
+  margin-top: 3px;
   margin-bottom: 16px;
   height: 18px;
   text-align: center;

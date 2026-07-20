@@ -45,19 +45,12 @@
       @close="onCloseDetailModal"
     />
 
-    <UiModal
+    <MyDocRenameModal
       :is-open="isRenameModalOpen"
-      title="문서명 변경"
-      position="center"
-      max-width="420px"
+      :doc="renamingDoc"
+      @save="onSaveRename"
       @close="onCloseRenameModal"
-    >
-      <MyDocRenameModal
-        :doc="renamingDoc"
-        @save="onSaveRename"
-        @close="onCloseRenameModal"
-      />
-    </UiModal>
+    />
 
     <!-- 공유 대상 사용자 선택 모달 (카드 드롭다운·상세 모달 공통) -->
     <UserSelectModal
