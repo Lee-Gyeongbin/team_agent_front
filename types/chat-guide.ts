@@ -122,7 +122,6 @@ export const CHAT_GUIDE_MAINTENANCE_INCIDENT_UI_SLOTS = [
 
 /** 안내멘트 — 표시 조건 셀렉트 (퍼블리싱용 고정 옵션) */
 export const CHAT_GUIDE_NOTICE_CONDITION_OPTIONS: ChatGuideSelectOption[] = [
-  { label: '사용자가 "기능" 또는 "도움말" 입력 시', value: 'keyword' },
   { label: '첫 방문 시 자동 표시', value: 'first_visit' },
   { label: '항상 표시', value: 'always' },
 ]
