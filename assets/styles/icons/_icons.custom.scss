@@ -239,9 +239,9 @@
   @include icon-file('notification');
 }
 
-// 유저 프로필
+// 유저 프로필 — mask + currentColor (활성 탭 등 부모 color 상속)
 .icon-user {
-  @include icon-file('user');
+  @include icon-file-bg('user');
 }
 // ===================================
 // library 아이콘
