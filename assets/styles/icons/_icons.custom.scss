@@ -153,6 +153,11 @@
   @include icon-file-bg('warning-triangle');
 }
 
+// 네트워크 연결 끊김
+.icon-wifi-off {
+  @include icon-file-bg('wifi-off');
+}
+
 // ===================================
 // chat 아이콘
 // ===================================
