@@ -138,11 +138,15 @@
             :agents="chatIndexAgents"
             :selected-agent-id="selectedChatAgentId"
             :is-loading="isLoadingChatIndexAgents"
+            data-aos="fade-up"
+            data-aos-delay="400"
             @select="onClickChatIndexAgent"
           />
           <p
             v-else
             class="chat-index-agent-hint f-center"
+            data-aos="fade-up"
+            data-aos-delay="400"
           >
             사용 가능한 에이전트가 없습니다. 에이전트 관리에서 등록해 주세요.
           </p>
