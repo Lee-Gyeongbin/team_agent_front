@@ -1,4 +1,6 @@
 import type { FetchOptions } from 'ofetch'
+import { notifyApiError } from '~/composables/com/useApiErrorNotice'
+import { isNetworkError, notifyNetworkError } from '~/composables/com/useNetworkErrorNotice'
 
 type Method = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
 
@@ -62,6 +64,16 @@ export const useApi_multipart = <T = unknown>(url: string, options: ApiOptions =
       // }
     },
 
+    // 요청 자체 실패 (네트워크 단절 등)
+    onRequestError({ error, options }) {
+      const opts = options as ApiOptions
+      if (opts.skipLoading !== true && loadingCount.value > 0) {
+        loadingCount.value--
+      }
+
+      if (isNetworkError(error)) notifyNetworkError()
+    },
+
     // 에러 발생 시 후처리
     onResponseError({ response, options }) {
       const opts = options as ApiOptions
@@ -70,21 +82,16 @@ export const useApi_multipart = <T = unknown>(url: string, options: ApiOptions =
       }
 
       const errorData = response._data
-      let errorMessage = '처리 중 문제가 발생했습니다.'
-
-      if (typeof errorData === 'string') {
-        errorMessage = errorData
-      } else if (errorData?.msg) {
-        errorMessage = errorData.msg
-      }
-
-      if (errorData?.errorType === 'sessionExpired' || response.status === 401) {
-        navigateTo('/login')
-        return
-      }
 
       if (errorData?.errorType === 'secure') {
         return
+      }
+
+      // chatGuide API 오류 문구 toast (500/429/408/401·403)
+      notifyApiError(response.status)
+
+      if (errorData?.errorType === 'sessionExpired' || response.status === 401) {
+        navigateTo('/login')
       }
     },
   }

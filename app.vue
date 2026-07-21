@@ -39,12 +39,40 @@
 
   <!-- 즉시번역(전역 드래그 번역) 오버레이 -->
   <InstantTranslateOverlay />
+
+  <!-- 네트워크 오류 모달 — 전역 UI 최상단 -->
+  <NetworkErrorModal
+    :is-open="networkErrorOpen"
+    :is-retrying="networkErrorRetrying"
+    :message="networkErrorMessage"
+    :status-message="networkErrorStatusMessage"
+    :status-message-type="networkErrorStatusMessageType"
+    :retry-text="networkErrorRetryText"
+    :close-text="networkErrorCloseText"
+    @close="closeNetworkError"
+    @retry="retryNetworkError"
+  />
 </template>
 
 <script setup lang="ts">
+import { useNetworkErrorNoticeState, useNetworkErrorOfflineListener } from '~/composables/com/useNetworkErrorNotice'
+
 const { initTheme } = useTheme()
 const { dialogType, dialogOptions, closeDialog } = useDialogState()
 const { isLoading: isGlobalLoading, loadingText: globalLoadingText } = useLoadingState()
+const {
+  isOpen: networkErrorOpen,
+  isRetrying: networkErrorRetrying,
+  message: networkErrorMessage,
+  statusMessage: networkErrorStatusMessage,
+  statusMessageType: networkErrorStatusMessageType,
+  retryText: networkErrorRetryText,
+  closeText: networkErrorCloseText,
+  close: closeNetworkError,
+  retry: retryNetworkError,
+} = useNetworkErrorNoticeState()
+
+useNetworkErrorOfflineListener()
 
 onMounted(() => initTheme())
 </script>

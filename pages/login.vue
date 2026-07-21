@@ -173,6 +173,8 @@
 </template>
 
 <script setup lang="ts">
+import { isNetworkError } from '~/composables/com/useNetworkErrorNotice'
+
 definePageMeta({ layout: 'auth' })
 
 const { login } = useAuth()
@@ -261,8 +263,10 @@ const onSubmit = async () => {
     } else {
       errorMessage.value = res.message || '로그인에 실패했습니다.'
     }
-  } catch {
-    errorMessage.value = '서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.'
+  } catch (err) {
+    if (!isNetworkError(err)) {
+      errorMessage.value = '서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.'
+    }
   } finally {
     isLoading.value = false
   }

@@ -145,6 +145,14 @@ export const CHAT_GUIDE_ERROR_CATALOG = {
   ],
 } as const
 
+/** API HTTP 오류 메시지 guideKey (chatGuideList · errorMessage 공통) */
+export const CHAT_GUIDE_API_ERROR_KEYS = {
+  status500: 'API_500',
+  status429: 'API_429',
+  status408: 'API_408',
+  status401_403: 'API_401_403',
+} as const
+
 // ============================================
 // 빈 폼·기본값·복제·헬퍼
 // ============================================
