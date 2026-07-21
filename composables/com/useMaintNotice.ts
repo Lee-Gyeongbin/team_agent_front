@@ -1,5 +1,5 @@
 import type { ChatGuideItem, MaintNoticeKind } from '~/types/com/chatGuide'
-import { useChatGuideApi } from '~/composables/com/useChatGuideApi'
+import { useChatGuideApi } from '~/composables/chat-guide/useChatGuideApi'
 import { setNetworkIncidentGuideFromMaint } from '~/composables/com/useNetworkErrorNotice'
 import { CHAT_GUIDE_MAINTENANCE_DEFAULT_GUIDE_KEYS } from '~/types/chat-guide'
 
