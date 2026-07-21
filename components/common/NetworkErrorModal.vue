@@ -145,6 +145,8 @@ const emit = defineEmits<{
 <!-- Teleport(body) 모달 — scoped 미적용 -->
 <style lang="scss">
 .modal-dialog.network-error-modal {
+  z-index: $z-network-error;
+
   .modal-dialog-header {
     display: none;
   }

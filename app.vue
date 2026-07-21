@@ -37,7 +37,10 @@
     :text="globalLoadingText"
   />
 
-  <!-- 네트워크 오류 모달 -->
+  <!-- 즉시번역(전역 드래그 번역) 오버레이 -->
+  <InstantTranslateOverlay />
+
+  <!-- 네트워크 오류 모달 — 전역 UI 최상단 -->
   <NetworkErrorModal
     :is-open="networkErrorOpen"
     :is-retrying="networkErrorRetrying"
@@ -49,9 +52,6 @@
     @close="closeNetworkError"
     @retry="retryNetworkError"
   />
-
-  <!-- 즉시번역(전역 드래그 번역) 오버레이 -->
-  <InstantTranslateOverlay />
 </template>
 
 <script setup lang="ts">
