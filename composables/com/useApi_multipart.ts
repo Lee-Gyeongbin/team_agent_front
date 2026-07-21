@@ -1,4 +1,5 @@
 import type { FetchOptions } from 'ofetch'
+import { notifyApiError } from '~/composables/com/useApiErrorNotice'
 import { isNetworkError, notifyNetworkError } from '~/composables/com/useNetworkErrorNotice'
 
 type Method = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
@@ -82,13 +83,15 @@ export const useApi_multipart = <T = unknown>(url: string, options: ApiOptions =
 
       const errorData = response._data
 
-      if (errorData?.errorType === 'sessionExpired' || response.status === 401) {
-        navigateTo('/login')
+      if (errorData?.errorType === 'secure') {
         return
       }
 
-      if (errorData?.errorType === 'secure') {
-        return
+      // chatGuide API 오류 문구 toast (500/429/408/401·403)
+      notifyApiError(response.status)
+
+      if (errorData?.errorType === 'sessionExpired' || response.status === 401) {
+        navigateTo('/login')
       }
     },
   }

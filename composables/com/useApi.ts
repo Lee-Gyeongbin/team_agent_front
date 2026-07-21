@@ -1,3 +1,4 @@
+import { notifyApiError } from '~/composables/com/useApiErrorNotice'
 import { isNetworkError, notifyNetworkError } from '~/composables/com/useNetworkErrorNotice'
 
 export const useApi = () => {
@@ -11,22 +12,18 @@ export const useApi = () => {
   }
 
   const handleResponse = async (response: Response): Promise<Response> => {
-    if (response.status === 401) {
+    if (response.ok) return response
+
+    const error = await response.json().catch(() => ({}))
+    const errorData = error as { errorType?: string; message?: string }
+    const guideMessage = notifyApiError(response.status)
+
+    if (response.status === 401 || errorData.errorType === 'sessionExpired') {
       clearSessionAndRedirect()
-      throw new Error('인증이 만료되었습니다')
+      throw new Error(guideMessage || '인증이 만료되었습니다')
     }
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}))
-      const errorData = error as { errorType?: string; message?: string }
-      if (errorData.errorType === 'sessionExpired') {
-        clearSessionAndRedirect()
-        throw new Error('로그인 세션이 만료되었습니다')
-      }
-      throw new Error(errorData.message || '요청에 실패했습니다')
-    }
-
-    return response
+    throw new Error(guideMessage || errorData.message || '요청에 실패했습니다')
   }
 
   const withNetworkNotice = async <T>(execute: () => Promise<T>): Promise<T> => {
