@@ -53,16 +53,16 @@
           </div>
         </section>
 
-        <!-- 하단: 사용 가능 기능 안내 (스크롤 없음) -->
+        <!-- 하단: 입력 방법 가이드 메시지 -->
         <section
-          v-if="hasFeature"
-          class="chat-input-guide__panel chat-input-guide__panel--feature"
+          v-if="hasInputContent"
+          class="chat-input-guide__panel chat-input-guide__panel--input"
         >
           <div class="chat-input-guide__panel-head">
-            <div class="chat-input-guide__panel-title">사용 가능 기능 안내</div>
+            <div class="chat-input-guide__panel-title">질문 팁</div>
           </div>
           <div class="chat-input-guide__panel-body">
-            <p class="chat-input-guide__text">{{ featureContent }}</p>
+            <p class="chat-input-guide__text">{{ inputContent }}</p>
           </div>
         </section>
       </div>
@@ -80,18 +80,17 @@ const { selectedChatAgentId, activeSearchModes, riskAgentActive } = useChatStore
 
 const inputGuide = computed(() => getChatGuideByKey(CHAT_GUIDE_NOTICE_DEFAULT_GUIDE_KEYS.guide))
 const limitationGuide = computed(() => getChatGuideByKey(CHAT_GUIDE_NOTICE_DEFAULT_GUIDE_KEYS.limitation))
-const featureGuide = computed(() => getChatGuideByKey(CHAT_GUIDE_NOTICE_DEFAULT_GUIDE_KEYS.feature))
 
+const inputContent = computed(() => String(inputGuide.value?.content ?? '').trim())
 const limitationContent = computed(() => String(limitationGuide.value?.content ?? '').trim())
-const featureContent = computed(() => String(featureGuide.value?.content ?? '').trim())
 
+const hasInputContent = computed(() => !!inputContent.value)
 const hasLimitation = computed(() => limitationGuide.value?.enblYn === 'Y' && !!limitationContent.value)
-const hasFeature = computed(() => featureGuide.value?.enblYn === 'Y' && !!featureContent.value)
 
 /** 일반 채팅(에이전트 미선택) + 입력 가이드 활성 + 표시할 섹션이 있을 때만 */
 const isVisible = computed(() => {
   if (inputGuide.value?.enblYn !== 'Y') return false
-  if (!hasLimitation.value && !hasFeature.value) return false
+  if (!hasInputContent.value && !hasLimitation.value) return false
   if (selectedChatAgentId.value) return false
   if (riskAgentActive.value) return false
   if (activeSearchModes.value.length > 0) return false
@@ -213,7 +212,7 @@ const onToggle = () => {
   border: 1px solid #e3eaf0;
 }
 
-.chat-input-guide__panel--limit + .chat-input-guide__panel--feature {
+.chat-input-guide__panel--limit + .chat-input-guide__panel--input {
   padding-top: 4px;
   border-top: 1px solid #e8eef3;
 }
