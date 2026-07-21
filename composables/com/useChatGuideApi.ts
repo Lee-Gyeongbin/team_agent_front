@@ -16,18 +16,14 @@ export const useChatGuideApi = () => {
    * 401 리다이렉트 없이 실패 시 빈 배열 (로그인 화면용)
    */
   const fetchChatGuideMaintList = async (): Promise<ChatGuideItem[]> => {
-    try {
-      const response = await fetch('/api/chatGuideMaintList.do', {
-        method: 'GET',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-      })
-      if (!response.ok) return []
-      const res = (await response.json()) as ChatGuideListResponse
-      return res.list ?? res.dataList ?? []
-    } catch {
-      return []
-    }
+    const response = await fetch('/api/chatGuideMaintList.do', {
+      method: 'GET',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    })
+    if (!response.ok) return []
+    const res = (await response.json()) as ChatGuideListResponse
+    return res.list ?? res.dataList ?? []
   }
 
   return { fetchChatGuideList, fetchChatGuideMaintList }

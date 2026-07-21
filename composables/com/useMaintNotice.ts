@@ -1,5 +1,6 @@
 import type { ChatGuideItem, MaintNoticeKind } from '~/types/com/chatGuide'
 import { useChatGuideApi } from '~/composables/com/useChatGuideApi'
+import { setNetworkIncidentGuideFromMaint } from '~/composables/com/useNetworkErrorNotice'
 import { CHAT_GUIDE_MAINTENANCE_DEFAULT_GUIDE_KEYS } from '~/types/chat-guide'
 
 /** localStorage — 점검 공지 "다시 보지 않기" (자동 팝업만 차단, 값은 modifyDt) */
@@ -62,15 +63,31 @@ const MAINT_NOTICE_KIND_META: Record<MaintNoticeKind, { badge: string; fallbackT
   recovery: { badge: '복구', fallbackTitle: '서비스 복구 안내' },
 }
 
-const getMaintNoticeKind = (item: ChatGuideItem): MaintNoticeKind => {
+/** 배너·자동 팝업 대상 */
+const getMaintNoticeKind = (item: ChatGuideItem): MaintNoticeKind | null => {
+  if (item.guideKey === CHAT_GUIDE_MAINTENANCE_DEFAULT_GUIDE_KEYS.emergency) return 'emergency'
   if (item.guideKey === CHAT_GUIDE_MAINTENANCE_DEFAULT_GUIDE_KEYS.scheduled) return 'scheduled'
   if (item.guideKey === CHAT_GUIDE_MAINTENANCE_DEFAULT_GUIDE_KEYS.recovery) return 'recovery'
-  return 'emergency'
+  return null
+}
+
+/**
+ * 비로그인 화면용 — 네트워크 오류 모달 가이드만 동기화
+ * (회원가입 직진입 등 점검 배너가 없는 페이지)
+ */
+export const handleSyncNetworkIncidentGuide = async () => {
+  try {
+    const { fetchChatGuideMaintList } = useChatGuideApi()
+    const list = await fetchChatGuideMaintList()
+    setNetworkIncidentGuideFromMaint(list)
+  } catch {
+    // 캐시 유지
+  }
 }
 
 /** 배너·모달 공통 제목 — API title 없으면 종류별 fallback */
-const getDisplayTitle = (item: ChatGuideItem): string =>
-  String(item.title ?? '').trim() || MAINT_NOTICE_KIND_META[getMaintNoticeKind(item)].fallbackTitle
+const getDisplayTitle = (item: ChatGuideItem, kind: MaintNoticeKind): string =>
+  String(item.title ?? '').trim() || MAINT_NOTICE_KIND_META[kind].fallbackTitle
 
 interface MaintNoticeBannerItem {
   item: ChatGuideItem
@@ -80,13 +97,14 @@ interface MaintNoticeBannerItem {
   periodLabel: string
 }
 
-const toBannerItem = (item: ChatGuideItem): MaintNoticeBannerItem => {
+const toBannerItem = (item: ChatGuideItem): MaintNoticeBannerItem | null => {
   const kind = getMaintNoticeKind(item)
+  if (!kind) return null
   return {
     item,
     kind,
     badge: MAINT_NOTICE_KIND_META[kind].badge,
-    title: getDisplayTitle(item),
+    title: getDisplayTitle(item, kind),
     periodLabel: buildPeriodLabel(item),
   }
 }
@@ -94,6 +112,7 @@ const toBannerItem = (item: ChatGuideItem): MaintNoticeBannerItem => {
 /**
  * 로그인 점검·복구 공지
  * - 목록/활성 여부는 백엔드(chatGuideMaintList)가 필터해서 전달
+ * - MAINT_INCIDENT_NETWORK(enblYn=Y)도 리스트에 포함 → 네트워크 오류 모달용 캐시만 동기화
  * - 프론트: 배너·모달 표시 + 다시 보지 않기(localStorage)만 담당
  */
 export const useMaintNotice = () => {
@@ -104,14 +123,17 @@ export const useMaintNotice = () => {
   const notice = ref<ChatGuideItem | null>(null)
   const isOpen = ref(false)
 
-  const bannerItems = computed(() => maintList.value.map(toBannerItem))
+  const bannerItems = computed(() =>
+    maintList.value.map(toBannerItem).filter((row): row is MaintNoticeBannerItem => row != null),
+  )
 
   const modalProps = computed(() => {
     const item = notice.value
+    const kind = item ? getMaintNoticeKind(item) : null
     return {
       isOpen: isOpen.value,
-      kind: item ? getMaintNoticeKind(item) : ('emergency' as MaintNoticeKind),
-      title: item ? getDisplayTitle(item) : '',
+      kind: kind ?? ('emergency' as MaintNoticeKind),
+      title: item && kind ? getDisplayTitle(item, kind) : '',
       content: String(item?.content ?? '').trim(),
       periodLabel: buildPeriodLabel(item),
       hideByUser: isHiddenByUser(getGuideId(item), getNoticeVersion(item)),
@@ -160,12 +182,16 @@ export const useMaintNotice = () => {
   const handleSelectMaintNotice = async () => {
     try {
       const list = await fetchChatGuideMaintList()
-      maintList.value = list
-      autoOpenQueue.value = list.filter((item) => !isHiddenByUser(getGuideId(item), getNoticeVersion(item)))
+      setNetworkIncidentGuideFromMaint(list)
+
+      const displayList = list.filter((item) => getMaintNoticeKind(item) != null)
+      maintList.value = displayList
+      autoOpenQueue.value = displayList.filter((item) => !isHiddenByUser(getGuideId(item), getNoticeVersion(item)))
       notice.value = null
       isOpen.value = false
       openNextAuto()
     } catch {
+      // 네트워크 가이드 캐시는 유지 — offline 시 모달 문구로 사용
       maintList.value = []
       autoOpenQueue.value = []
       notice.value = null

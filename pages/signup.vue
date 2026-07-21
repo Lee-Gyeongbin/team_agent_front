@@ -150,6 +150,8 @@
 <script setup lang="ts">
 import type { SignupForm } from '~/types/auth'
 import { createEmptySignupForm } from '~/types/auth'
+import { handleSyncNetworkIncidentGuide } from '~/composables/com/useMaintNotice'
+import { isNetworkError } from '~/composables/com/useNetworkErrorNotice'
 
 definePageMeta({ layout: 'auth' })
 
@@ -157,6 +159,10 @@ const form = reactive<SignupForm>(createEmptySignupForm())
 const { signup } = useSignup()
 const errorMessage = ref('')
 const isLoading = ref(false)
+
+onMounted(() => {
+  void handleSyncNetworkIncidentGuide()
+})
 
 const onSubmit = async () => {
   errorMessage.value = ''
@@ -182,15 +188,21 @@ const onSubmit = async () => {
   }
 
   isLoading.value = true
-
-  const res = await signup(form)
-  if (res.success) {
-    openAlert({ message: '회원가입이 완료되었습니다.\n 로그인 후 이용해주세요.' })
-    navigateTo('/login')
-  } else {
-    errorMessage.value = res.message || '회원가입에 실패했습니다. 잠시 후 다시 시도해주세요.'
+  try {
+    const res = await signup(form)
+    if (res.success) {
+      openAlert({ message: '회원가입이 완료되었습니다.\n 로그인 후 이용해주세요.' })
+      navigateTo('/login')
+    } else {
+      errorMessage.value = res.message || '회원가입에 실패했습니다. 잠시 후 다시 시도해주세요.'
+    }
+  } catch (err) {
+    if (!isNetworkError(err)) {
+      errorMessage.value = '서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.'
+    }
+  } finally {
+    isLoading.value = false
   }
-  isLoading.value = false
 }
 </script>
 
