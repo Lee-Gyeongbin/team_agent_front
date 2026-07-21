@@ -155,11 +155,24 @@
 <script setup lang="ts">
 import draggable from 'vuedraggable'
 import { openToast } from '~/composables/useToast'
+import { openConfirm } from '~/composables/useDialog'
+import { openLoading, updateLoadingText, closeLoading } from '~/composables/useLoading'
 import { useProposalToc } from '~/composables/proposal/useProposalToc'
 import { useProposalFileStore } from '~/composables/proposal/useProposalFileStore'
 
+const STAGE1_STEP_MESSAGES: Record<string, string> = {
+  extract: 'RFP 파일에서 텍스트를 추출하는 중...',
+  condense: 'RFP 내용을 요약하는 중...',
+  prompt: '프롬프트를 준비하는 중...',
+  llm: 'AI가 RFP를 분석하는 중...',
+  parse: '분석 결과를 검증하는 중...',
+  save: '결과를 저장하는 중...',
+}
+
 interface Props {
   ptProjectId: string
+  modelId: string
+  agentId: string
 }
 
 const props = defineProps<Props>()
@@ -171,6 +184,7 @@ const emit = defineEmits<{
 const ptProjectIdRef = computed(() => props.ptProjectId)
 
 const { handleUploadPtFile } = useProposalFileStore()
+const { streamExtractStage1 } = useProposalApi()
 
 // ── RFP 파일 업로드 ────────────────────────────────────────────────────────────
 const rfpInputRef = ref<HTMLInputElement | null>(null)
@@ -193,7 +207,22 @@ const onUploadRfp = async () => {
       openToast({ message: 'RFP 파일 업로드에 실패했습니다.', type: 'error' })
       return
     }
-    openToast({ message: 'RFP 파일이 업로드되었습니다.' })
+    openLoading({ text: 'RFP 분석을 시작하는 중...' })
+    streamExtractStage1(props.ptProjectId, props.modelId, props.agentId, {
+      onProgress: (data) => {
+        const msg = STAGE1_STEP_MESSAGES[data.step]
+        if (msg) updateLoadingText(msg)
+      },
+      onDone: () => {
+        closeLoading()
+        openToast({ message: 'RFP 분석이 완료되었습니다.' })
+        handleSelectTocList()
+      },
+      onError: () => {
+        closeLoading()
+        openToast({ message: 'RFP 분석 중 오류가 발생했습니다.', type: 'error' })
+      },
+    })
   } catch {
     openToast({ message: '업로드 중 오류가 발생했습니다.', type: 'error' })
   } finally {
@@ -219,6 +248,13 @@ onMounted(() => {
 })
 
 const onAutoExtract = async () => {
+  if (tocList.value.length > 0) {
+    const confirmed = await openConfirm({
+      title: 'RFP 목차 자동 추출',
+      message: `기존 목차 ${tocList.value.length}개가 모두 대체됩니다. 계속하시겠습니까?`,
+    })
+    if (!confirmed) return
+  }
   const msg = await handleAutoExtractToc()
   if (msg) {
     openToast({ message: msg, type: 'warning' })

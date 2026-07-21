@@ -1,6 +1,15 @@
 import type { PtSection, PtSlide, SectionGenProgressData, SectionGenDoneData } from '~/types/proposal'
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
 import { openToast } from '~/composables/useToast'
+import { openLoading, updateLoadingText, closeLoading } from '~/composables/useLoading'
+
+const SECTION_GEN_STEP_MESSAGES: Record<string, string> = {
+  load: '섹션 데이터를 불러오는 중...',
+  llm: 'AI가 슬라이드 내용을 생성하는 중...',
+  parse: '슬라이드 구조를 분석하는 중...',
+  save: '슬라이드를 저장하는 중...',
+  render: '슬라이드 스타일을 조립하는 중...',
+}
 
 export const useProposalSections = (ptProjectId: Ref<string>) => {
   const { fetchSelectTocList, streamGenerateSection, fetchSelectSectionSlides, fetchConfirmSection } = useProposalApi()
@@ -69,17 +78,21 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
     return new Promise((resolve, reject) => {
       isGenerating.value = true
       genProgressMsg.value = '슬라이드 생성 시작 중...'
+      openLoading({ text: '슬라이드 생성 시작 중...' })
 
       // 캐시 무효화
-      delete slidesCache.value[tocId]
+      slidesCache.value = Object.fromEntries(Object.entries(slidesCache.value).filter(([key]) => key !== tocId))
 
       streamGenerateSection(ptProjectId.value, tocId, modelId, agentId, {
         onProgress: (data: SectionGenProgressData) => {
-          genProgressMsg.value = data.message ?? ''
+          const msg = SECTION_GEN_STEP_MESSAGES[data.step] ?? ''
+          genProgressMsg.value = msg
+          if (msg) updateLoadingText(msg)
         },
         onDone: (data: SectionGenDoneData) => {
           isGenerating.value = false
           genProgressMsg.value = ''
+          closeLoading()
           // 캐시 재조회 트리거 (비동기, 결과 대기 안 함)
           handleSelectSlides(tocId)
           resolve(data)
@@ -87,7 +100,8 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
         onError: (message: string) => {
           isGenerating.value = false
           genProgressMsg.value = ''
-          openToast({ message: message ?? '슬라이드 생성 중 오류가 발생했습니다.', type: 'error' })
+          closeLoading()
+          openToast({ message: '슬라이드 생성 중 오류가 발생했습니다.', type: 'error' })
           reject(new Error(message))
         },
       })
