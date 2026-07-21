@@ -512,6 +512,15 @@
   }
 }
 
+.pt-rfp-btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-md;
+  margin-top: $spacing-sm;
+  margin-bottom: $spacing-lg;
+}
+
 .pt-rfp-upload-btn {
   margin-top: $spacing-sm;
 }
@@ -623,7 +632,9 @@
 
 .pt-toc-toolbar {
   display: flex;
-  gap: $spacing-sm;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-md;
   margin-bottom: $spacing-sm;
 }
 

@@ -25,7 +25,7 @@
               class="pt-file-chip"
             >
               <i class="icon-document size-12" />
-              <span class="pt-file-chip-name">{{ f.fileNm }}</span>
+              <span class="pt-file-chip-name">{{ f.fileName }}</span>
               <button
                 class="pt-file-chip-remove"
                 @click="removeFile('company', f.ptFileId)"
@@ -61,7 +61,7 @@
               class="pt-file-chip"
             >
               <i class="icon-document size-12" />
-              <span class="pt-file-chip-name">{{ f.fileNm }}</span>
+              <span class="pt-file-chip-name">{{ f.fileName }}</span>
               <button
                 class="pt-file-chip-remove"
                 @click="removeFile('competitor', f.ptFileId)"
@@ -97,7 +97,7 @@
               class="pt-file-chip"
             >
               <i class="icon-document size-12" />
-              <span class="pt-file-chip-name">{{ f.fileNm }}</span>
+              <span class="pt-file-chip-name">{{ f.fileName }}</span>
               <button
                 class="pt-file-chip-remove"
                 @click="removeFile('etcRef', f.ptFileId)"
@@ -244,10 +244,10 @@ const targetTypeCd = ref<PtTargetTypeCd>('G')
 const writingStyle = ref<PtWritingStyle>('formal')
 const colorValues = ref<string[]>(['#5B4FE9', '#8B7FFF', '#EFECFE', '#E08A2C', '#22A06B'])
 
-// 파일 목록: { ptFileId, fileNm }
-const companyFiles = ref<{ ptFileId: string; fileNm: string }[]>([])
-const competitorFiles = ref<{ ptFileId: string; fileNm: string }[]>([])
-const etcRefFiles = ref<{ ptFileId: string; fileNm: string }[]>([])
+// 파일 목록: { ptFileId, fileName }
+const companyFiles = ref<{ ptFileId: string; fileName: string }[]>([])
+const competitorFiles = ref<{ ptFileId: string; fileName: string }[]>([])
+const etcRefFiles = ref<{ ptFileId: string; fileName: string }[]>([])
 
 const companyInputRef = ref<HTMLInputElement | null>(null)
 const competitorInputRef = ref<HTMLInputElement | null>(null)
@@ -290,7 +290,7 @@ const onFileChange = async (slot: FileSlot, e: Event) => {
         openToast({ message: `${file.name} 업로드에 실패했습니다.`, type: 'error' })
         continue
       }
-      fileList.value.push({ ptFileId: res.ptFileId, fileNm: res.fileNm })
+      fileList.value.push({ ptFileId: res.ptFileId, fileName: res.fileName })
     } catch {
       openToast({ message: `${file.name} 업로드에 실패했습니다.`, type: 'error' })
     }

@@ -25,6 +25,12 @@ import type {
   PtFileSaveResponse,
 } from '~/types/proposal'
 
+/** parentTocId 빈 문자열 → null (대목차) 정규화 */
+const normalizeParentTocId = (parentTocId: string | null | undefined): string | null => {
+  const trimmed = parentTocId?.trim()
+  return trimmed ? trimmed : null
+}
+
 /** 백엔드 TocVO → 프론트 PtTocItem 매핑 헬퍼 (source는 호출부에서 지정) */
 const mapTocVO = (
   vo: {
@@ -38,7 +44,7 @@ const mapTocVO = (
 ): PtTocItem => ({
   tocId: vo.tocId,
   ptProjectId: vo.ptProjectId,
-  parentId: vo.parentTocId ?? null,
+  parentId: normalizeParentTocId(vo.parentTocId),
   title: vo.sectionNm ?? '',
   order: vo.sortOrd ?? 0,
   source,
@@ -55,6 +61,13 @@ export const useProposalApi = () => {
   /** PT 파일 메타 저장 (NCP 업로드 완료 후 TB_PT_FILE INSERT) */
   const fetchSavePtFile = async (payload: PtFileSavePayload): Promise<PtFileSaveResponse> => {
     return post<PtFileSaveResponse>('/ai/proposal/savePtFile.do', payload)
+  }
+
+  /** PT 프로젝트 단건 조회 (상세 페이지 진입 시) */
+  const fetchSelectPtProject = async (ptProjectId: string): Promise<{ result: string; data: PtProject }> => {
+    return get<{ result: string; data: PtProject }>(
+      `/ai/proposal/selectPtProject.do?ptProjectId=${encodeURIComponent(ptProjectId)}`,
+    )
   }
 
   /** PT 제안서 목록 조회 */
@@ -202,6 +215,20 @@ export const useProposalApi = () => {
       ptProjectId,
       items: items.map((item, idx) => ({ tocId: item.tocId, sortOrd: idx })),
     })
+  }
+
+  /**
+   * 프로젝트 용도별 파일 단건 조회 (최근 등록 기준, 없으면 data=null)
+   * @param filePurposeCd 001=RFP원문(기본값), 003=템플릿 등
+   */
+  const fetchSelectPtRfpFile = async (
+    ptProjectId: string,
+    filePurposeCd = '001',
+  ): Promise<{ result: string; data: { ptFileId: string; fileName: string } | null }> => {
+    const params = new URLSearchParams({ ptProjectId, filePurposeCd })
+    return get<{ result: string; data: { ptFileId: string; fileName: string } | null }>(
+      `/ai/proposal/selectPtRfpFile.do?${params.toString()}`,
+    )
   }
 
   /** Stage1 결과 조회 */
@@ -455,12 +482,14 @@ export const useProposalApi = () => {
   return {
     fetchCreatePtFileUploadUrl,
     fetchSavePtFile,
+    fetchSelectPtProject,
     fetchPtProjectList,
     fetchSavePtProject,
     fetchUpdateProjectTemplate,
     fetchSelectProjectSettings,
     fetchUpdateProjectSettings,
     fetchUpdateProjectTargetType,
+    fetchSelectPtRfpFile,
     fetchAutoExtractToc,
     fetchSelectTocList,
     fetchInsertTocItem,

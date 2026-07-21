@@ -22,7 +22,7 @@ const buildPtFileStorePath = (userId: string, ptProjectId: string | undefined, s
 
 const toPtFileSaveResult = (
   saved: PtFileSaveResponse,
-  fallback: { fileNm: string; filePath: string },
+  fallback: { fileName: string; filePath: string },
 ): PtFileSaveResponse => {
   const ptFileId = String(saved.ptFileId ?? '').trim()
   if (!ptFileId) {
@@ -32,7 +32,7 @@ const toPtFileSaveResult = (
     result: String(saved.result ?? 'OK'),
     ptFileId,
     filePath: String(saved.filePath ?? fallback.filePath),
-    fileNm: String(saved.fileNm ?? fallback.fileNm),
+    fileName: String(saved.fileName ?? fallback.fileName),
   }
 }
 
@@ -95,7 +95,7 @@ export const useProposalFileStore = () => {
     }
 
     const res = await fetchSavePtFile(payload)
-    return toPtFileSaveResult(res, { fileNm: file.name, filePath })
+    return toPtFileSaveResult(res, { fileName: file.name, filePath })
   }
 
   return { handleUploadPtFile }

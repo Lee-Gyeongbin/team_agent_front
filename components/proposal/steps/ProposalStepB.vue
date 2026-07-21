@@ -14,10 +14,10 @@
       @dragover.prevent
       @drop.prevent="onDropRfp"
     >
-      <i class="icon-attach size-18" />
-      <span v-if="!rfpFile"> <b>RFP 파일</b>을 첨부하세요 (.pdf, .hwp, .hwpx, .docx) </span>
+      <i class="icon-attach-file size-18" />
+      <!-- 새로 선택한 파일 -->
       <span
-        v-else
+        v-if="rfpFile"
         class="pt-dropzone-file"
       >
         <i class="icon-document size-14" />
@@ -29,6 +29,17 @@
           <i class="icon-close size-12" />
         </button>
       </span>
+      <!-- DB에 이미 저장된 파일 -->
+      <span
+        v-else-if="savedRfpFileNm"
+        class="pt-dropzone-file"
+      >
+        <i class="icon-document size-14" />
+        {{ savedRfpFileNm }}
+        <span class="pt-dropzone-tag">저장됨</span>
+      </span>
+      <!-- 파일 없음 -->
+      <span v-else> <b>RFP 파일</b>을 첨부하세요 (.pdf, .hwp, .hwpx, .docx) </span>
       <input
         ref="rfpInputRef"
         type="file"
@@ -37,19 +48,32 @@
         @change="onRfpFileChange"
       />
     </div>
-    <UiButton
-      variant="primary-line"
-      size="sm"
-      class="pt-rfp-upload-btn"
-      :loading="isUploading"
-      :disabled="!rfpFile"
-      @click="onUploadRfp"
-    >
-      <template #icon-left>
-        <i class="icon-upload size-14" />
-      </template>
-      RFP 업로드
-    </UiButton>
+    <div class="pt-rfp-btn-row">
+      <UiButton
+        variant="primary-line"
+        size="sm"
+        :loading="isUploading"
+        :disabled="!rfpFile"
+        @click="onUploadRfp"
+      >
+        <template #icon-left>
+          <i class="icon-attach-file size-14" />
+        </template>
+        RFP 업로드
+      </UiButton>
+      <UiButton
+        variant="primary"
+        size="sm"
+        :loading="isAnalyzing"
+        :disabled="!savedRfpFileNm || isAnalyzing"
+        @click="onExtractStage1"
+      >
+        <template #icon-left>
+          <i class="icon-ai-stars size-14" />
+        </template>
+        RFP 데이터 추출
+      </UiButton>
+    </div>
 
     <!-- 툴바 -->
     <div class="pt-toc-toolbar">
@@ -60,7 +84,7 @@
         @click="onAutoExtract"
       >
         <template #icon-left>
-          <i class="icon-lightning size-14" />
+          <i class="icon-document-search size-14" />
         </template>
         RFP에서 목차 자동 추출
       </UiButton>
@@ -173,6 +197,7 @@ interface Props {
   ptProjectId: string
   modelId: string
   agentId: string
+  writingGuidelineJson?: string // 이미 추출된 내역 여부 판단용
 }
 
 const props = defineProps<Props>()
@@ -184,12 +209,14 @@ const emit = defineEmits<{
 const ptProjectIdRef = computed(() => props.ptProjectId)
 
 const { handleUploadPtFile } = useProposalFileStore()
-const { streamExtractStage1 } = useProposalApi()
+const { streamExtractStage1, fetchSelectPtRfpFile } = useProposalApi()
 
 // ── RFP 파일 업로드 ────────────────────────────────────────────────────────────
 const rfpInputRef = ref<HTMLInputElement | null>(null)
 const rfpFile = ref<File | null>(null)
+const savedRfpFileNm = ref<string | null>(null) // DB에 이미 저장된 RFP 파일명
 const isUploading = ref(false)
+const isAnalyzing = ref(false) // Stage1 추출 진행 중
 
 const onClickRfpDropzone = () => rfpInputRef.value?.click()
 const onRfpFileChange = (e: Event) => {
@@ -198,36 +225,55 @@ const onRfpFileChange = (e: Event) => {
 const onDropRfp = (e: DragEvent) => {
   rfpFile.value = e.dataTransfer?.files?.[0] ?? null
 }
+
+/** 순수 파일 업로드만 수행 (Stage1 추출 없음) */
 const onUploadRfp = async () => {
   if (!rfpFile.value) return
   isUploading.value = true
+  const uploadingFileName = rfpFile.value.name
   try {
     const res = await handleUploadPtFile(rfpFile.value, '001', props.ptProjectId)
     if (!res || res.result !== 'OK') {
       openToast({ message: 'RFP 파일 업로드에 실패했습니다.', type: 'error' })
       return
     }
-    openLoading({ text: 'RFP 분석을 시작하는 중...' })
-    streamExtractStage1(props.ptProjectId, props.modelId, props.agentId, {
-      onProgress: (data) => {
-        const msg = STAGE1_STEP_MESSAGES[data.step]
-        if (msg) updateLoadingText(msg)
-      },
-      onDone: () => {
-        closeLoading()
-        openToast({ message: 'RFP 분석이 완료되었습니다.' })
-        handleSelectTocList()
-      },
-      onError: () => {
-        closeLoading()
-        openToast({ message: 'RFP 분석 중 오류가 발생했습니다.', type: 'error' })
-      },
-    })
+    savedRfpFileNm.value = res.fileNm || uploadingFileName
+    rfpFile.value = null
+    openToast({ message: 'RFP 파일이 업로드되었습니다. "RFP 데이터 추출" 버튼을 눌러 분석을 시작하세요.' })
   } catch {
     openToast({ message: '업로드 중 오류가 발생했습니다.', type: 'error' })
   } finally {
     isUploading.value = false
   }
+}
+
+/** Stage1 LLM 추출 */
+const onExtractStage1 = async () => {
+  const message = props.writingGuidelineJson
+    ? '이미 추출된 내역이 존재합니다. 그래도 추출하시겠습니까?'
+    : '업로드한 RFP 파일의 데이터를 추출하시겠습니까?'
+  const confirmed = await openConfirm({ title: 'RFP 데이터 추출', message })
+  if (!confirmed) return
+
+  isAnalyzing.value = true
+  openLoading({ text: 'RFP 분석을 시작하는 중...' })
+  streamExtractStage1(props.ptProjectId, props.modelId, props.agentId, {
+    onProgress: (data) => {
+      const msg = STAGE1_STEP_MESSAGES[data.step]
+      if (msg) updateLoadingText(msg)
+    },
+    onDone: () => {
+      closeLoading()
+      isAnalyzing.value = false
+      openToast({ message: 'RFP 분석이 완료되었습니다.' })
+      handleSelectTocList()
+    },
+    onError: () => {
+      closeLoading()
+      isAnalyzing.value = false
+      openToast({ message: 'RFP 분석 중 오류가 발생했습니다.', type: 'error' })
+    },
+  })
 }
 // ──────────────────────────────────────────────────────────────────────────────
 
@@ -243,8 +289,11 @@ const {
   handleReorderToc,
 } = useProposalToc(ptProjectIdRef)
 
-onMounted(() => {
-  handleSelectTocList()
+onMounted(async () => {
+  const [, rfpRes] = await Promise.all([handleSelectTocList(), fetchSelectPtRfpFile(props.ptProjectId)])
+  if (rfpRes?.result === 'OK' && rfpRes.data?.fileName) {
+    savedRfpFileNm.value = rfpRes.data.fileName
+  }
 })
 
 const onAutoExtract = async () => {

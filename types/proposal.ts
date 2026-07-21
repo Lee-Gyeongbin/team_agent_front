@@ -52,7 +52,7 @@ export interface PtFileSaveResponse {
   result: string
   ptFileId: string
   filePath: string
-  fileNm: string
+  fileName: string
 }
 
 // ── TB_PT_REQUIREMENT ──────────────────────────────────────────────────────────
@@ -164,6 +164,8 @@ export interface PtProject {
   statusCd: PtProjectStatusCd // STATUS_CD
   statusNm: string // 작성중 | 검수중 | 완료 | 보류
   writingGuidelineJson?: string // 작성지침 JSON (raw)
+  projectConfigJson?: string // PROJECT_CONFIG_JSON (template/settings raw)
+  stage1DoneYn?: 'Y' | 'N' // Stage1(RFP 분석) 완료 여부 — 목록 조회에서만 반환
   createDt: string
   modifyDt: string
   createUserId?: string
@@ -282,11 +284,11 @@ export interface ProjectSettingsData {
   /** PROJECT_CONFIG_JSON.settings.writingStyle */
   writingStyle: PtWritingStyle
   /** FILE_PURPOSE_CD='005' 자사 정보 파일 목록 */
-  companyFiles: { ptFileId: string; fileNm: string }[]
+  companyFiles: { ptFileId: string; fileName: string }[]
   /** FILE_PURPOSE_CD='006' 경쟁사 정보 파일 목록 */
-  competitorFiles: { ptFileId: string; fileNm: string }[]
+  competitorFiles: { ptFileId: string; fileName: string }[]
   /** FILE_PURPOSE_CD='004' 기타 참고자료 파일 목록 */
-  etcRefFiles: { ptFileId: string; fileNm: string }[]
+  etcRefFiles: { ptFileId: string; fileName: string }[]
   /** 기본색조 hex 3개 */
   baseColors: [string, string, string]
   /** 강조색조 hex 2개 */

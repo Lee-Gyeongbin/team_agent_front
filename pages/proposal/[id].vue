@@ -30,6 +30,7 @@
       <ProposalStepA
         v-if="currentStep === 0"
         :pt-project-id="ptProjectId"
+        :project-config-json="currentProject?.projectConfigJson"
         @next="onAdvance"
       />
       <ProposalStepB
@@ -37,6 +38,7 @@
         :pt-project-id="ptProjectId"
         :model-id="modelId"
         :agent-id="agentId"
+        :writing-guideline-json="currentProject?.writingGuidelineJson"
         :toc-list="tocList"
         :is-loading="isTocLoading"
         @next="onAdvance"
@@ -85,7 +87,6 @@
 
 <script setup lang="ts">
 import type { PtStep, PtProject, PtSlide } from '~/types/proposal'
-import { useProposalProjectsStore } from '~/composables/proposal/useProposalProjectsStore'
 import { useProposalToc } from '~/composables/proposal/useProposalToc'
 import { useProposalSections } from '~/composables/proposal/useProposalSections'
 import { useProposalSectionChat } from '~/composables/proposal/useProposalSectionChat'
@@ -104,10 +105,7 @@ const modelId = ref(PT_PROPOSAL_DEFAULT_MODEL_ID)
 const agentId = ref(PT_PROPOSAL_DEFAULT_AGENT_ID)
 
 // ---- 프로젝트 ----
-const { ptProjectList, handleSelectPtProjectList } = useProposalProjectsStore()
-const currentProject = computed<PtProject | null>(
-  () => ptProjectList.value.find((p) => p.ptProjectId === ptProjectId.value) ?? null,
-)
+const currentProject = ref<PtProject | null>(null)
 
 // ---- 스텝바 ----
 const STEP_DEFS = [
@@ -144,7 +142,7 @@ const onAdvance = () => {
 // D-0: Stage2 전략분석 1회 자동 실행 여부
 const stage2Triggered = ref(false)
 
-const { streamAnalyzeStage2 } = useProposalApi()
+const { fetchSelectPtProject, streamAnalyzeStage2 } = useProposalApi()
 
 const STAGE2_STEP_MESSAGES: Record<string, string> = {
   analyze: '전략 분석을 수행하는 중...',
@@ -250,7 +248,14 @@ const onConfirmSection = async (sectionId: string) => {
 
 // ---- 초기 로드 ----
 onMounted(async () => {
-  await handleSelectPtProjectList()
+  const res = await fetchSelectPtProject(ptProjectId.value)
+  if (res.result === 'OK') {
+    currentProject.value = res.data
+    // Stage1(RFP 분석) 완료 여부로 해제된 스텝 복원
+    if (res.data.writingGuidelineJson) {
+      maxUnlockedStep.value = Math.max(maxUnlockedStep.value, 1)
+    }
+  }
   onStepChanged(currentStep.value)
 })
 </script>
