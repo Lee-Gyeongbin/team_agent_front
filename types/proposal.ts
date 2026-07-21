@@ -161,8 +161,6 @@ export interface PtProject {
   projectOverview?: string // 사업개요
   targetTypeCd: PtTargetTypeCd // 제안 구분 G/P
   dueDt: string // 제출 마감일 YYYY-MM-DD (없으면 '')
-  rfpFileId?: string // TB_PT_FILE.PT_FILE_ID (RFP원문)
-  evalTableFileId?: string // TB_PT_FILE.PT_FILE_ID (평가표)
   statusCd: PtProjectStatusCd // STATUS_CD
   statusNm: string // 작성중 | 검수중 | 완료 | 보류
   writingGuidelineJson?: string // 작성지침 JSON (raw)

@@ -35,6 +35,8 @@
       <ProposalStepB
         v-else-if="currentStep === 1"
         :pt-project-id="ptProjectId"
+        :model-id="modelId"
+        :agent-id="agentId"
         :toc-list="tocList"
         :is-loading="isTocLoading"
         @next="onAdvance"
@@ -88,6 +90,7 @@ import { useProposalToc } from '~/composables/proposal/useProposalToc'
 import { useProposalSections } from '~/composables/proposal/useProposalSections'
 import { useProposalSectionChat } from '~/composables/proposal/useProposalSectionChat'
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
+import { PT_PROPOSAL_DEFAULT_AGENT_ID, PT_PROPOSAL_DEFAULT_MODEL_ID } from '~/utils/proposal/proposalLlmUtil'
 
 const route = useRoute()
 const router = useRouter()
@@ -95,10 +98,10 @@ const router = useRouter()
 const ptProjectId = computed(() => String(route.params.id))
 
 // ---- LLM 모델 / 에이전트 설정 ----
-// 프로젝트 설정(Step C)에서 사용한 모델·에이전트를 여기서 관리
-// 실제 값은 프로젝트 설정 조회 또는 에이전트 목록에서 로드해야 함
-const modelId = ref('')
-const agentId = ref('')
+// 상세 페이지 공통 설정 — Step B/D 등 하위 스텝에 props로 전달
+// TODO: 프로젝트 설정 조회 또는 생성 시 선택값으로 교체
+const modelId = ref(PT_PROPOSAL_DEFAULT_MODEL_ID)
+const agentId = ref(PT_PROPOSAL_DEFAULT_AGENT_ID)
 
 // ---- 프로젝트 ----
 const { ptProjectList, handleSelectPtProjectList } = useProposalProjectsStore()
@@ -143,16 +146,27 @@ const stage2Triggered = ref(false)
 
 const { streamAnalyzeStage2 } = useProposalApi()
 
+const STAGE2_STEP_MESSAGES: Record<string, string> = {
+  analyze: '전략 분석을 수행하는 중...',
+}
+
 const runStage2 = () => {
   if (stage2Triggered.value) return
   stage2Triggered.value = true
+  openLoading({ text: '전략 분석을 시작하는 중...' })
   streamAnalyzeStage2(ptProjectId.value, modelId.value, agentId.value, {
+    onProgress: (data) => {
+      const msg = STAGE2_STEP_MESSAGES[data.step]
+      if (msg) updateLoadingText(msg)
+    },
     onDone: (data) => {
+      closeLoading()
       if (!data.skipped) {
         console.warn('[Stage2] 전략분석 완료:', data)
       }
     },
     onError: (msg) => {
+      closeLoading()
       console.warn('[Stage2] 전략분석 실패:', msg)
       // 재실행 허용 (실패 시 다음 진입에서 재시도 가능하도록)
       stage2Triggered.value = false
