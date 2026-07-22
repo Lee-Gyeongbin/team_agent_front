@@ -52,8 +52,9 @@
           label="이 알림 다시 보지 않기"
         />
         <UiButton
-          class="btn-modal-dialog maint-notice-confirm"
+          variant="primary"
           size="xlg"
+          class="maint-notice-confirm"
           @click="onConfirm"
         >
           확인
@@ -64,6 +65,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiCheckbox } from '@leechanyong/ispark-ui'
 import type { MaintNoticeKind } from '~/types/com/chatGuide'
 
 const HEADER_META = {
@@ -128,9 +130,9 @@ const bodyTitle = computed(() => String(props.title ?? '').trim())
 .maint-notice-header {
   display: flex;
   align-items: center;
-  gap: $spacing-sm;
-  padding: 14px 16px;
-  margin: -4px 0 0;
+  gap: 10px;
+  padding: 12px 14px;
+  margin: 0;
   border-radius: $border-radius-base;
   background: var(--color-primary-bg);
 }
@@ -151,16 +153,16 @@ const bodyTitle = computed(() => String(props.title ?? '').trim())
 }
 
 .maint-notice-header-desc {
-  margin: 2px 0 0;
+  margin: 0;
   @include typo($body-small, $color-text-secondary);
 }
 
 .maint-notice-body {
   display: flex;
   flex-direction: column;
-  gap: $spacing-md;
+  gap: 2px;
   width: 100%;
-  padding-top: $spacing-md;
+  padding: 16px 0;
 }
 
 .maint-notice-title {
@@ -181,7 +183,7 @@ const bodyTitle = computed(() => String(props.title ?? '').trim())
   align-items: center;
   flex-wrap: wrap;
   gap: 6px 8px;
-  margin-bottom: $spacing-sm;
+  margin-top: 8px;
   padding: 12px 14px;
   border: 1px solid $color-border-light;
   border-radius: $border-radius-base;
@@ -214,15 +216,7 @@ const bodyTitle = computed(() => String(props.title ?? '').trim())
 }
 
 .maint-notice-confirm {
-  background: var(--color-primary) !important;
-  border-color: var(--color-primary) !important;
-  color: #fff !important;
   flex-shrink: 0;
-
-  &:hover:not(:disabled) {
-    background: var(--color-primary-hover) !important;
-    border-color: var(--color-primary-hover) !important;
-  }
 }
 </style>
 

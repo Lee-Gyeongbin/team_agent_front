@@ -147,63 +147,61 @@
 // 공지 상세 우측 드로어(NoticeDetailPanel = ispark UiDrawer) — Teleport 로 body 하위에 붙음
 // UiDrawer는 커스텀 class를 못 받으므로(멀티루트) 실제 존재하는 .ui-drawer를 앵커로 사용
 // (하위 .notice-detail-* 클래스가 이 컴포넌트 고유라 다른 드로어엔 영향 없음)
-.ui-drawer {
-  .notice-detail-panel {
-    display: flex;
-    flex-direction: column;
-    gap: $spacing-md;
+.notice-detail-panel {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
 
-    .notice-detail-header {
-      padding-bottom: $spacing-sm;
-      border-bottom: 1px solid $color-border-light;
-    }
-
-    .notice-detail-meta {
-      gap: $spacing-xs;
-      margin-top: $spacing-xs;
-      color: $color-text-secondary;
-      font-size: $font-size-base;
-    }
-
-    .notice-detail-divider {
-      color: $color-text-disabled;
-      line-height: 1;
-    }
-
-    .notice-detail-flag-group {
-      flex-wrap: wrap;
-      gap: $spacing-xs;
-    }
-
-    .notice-detail-body {
-      min-width: 0;
-    }
-
-    .notice-content-box {
-      min-width: 0;
-      max-width: 100%;
-      min-height: 180px;
-      margin: 0;
-      padding: $spacing-sm;
-      border: 1px solid $color-border;
-      border-radius: $border-radius-base;
-      background: $color-background;
-      color: $color-text-primary;
-      font-size: $font-size-lg;
-      line-height: $line-height-base;
-      white-space: pre-wrap;
-      word-break: break-word;
-      overflow-wrap: anywhere;
-      overflow-y: auto;
-    }
+  .notice-detail-header {
+    padding-bottom: $spacing-sm;
+    border-bottom: 1px solid $color-border-light;
   }
 
-  .modal-side-header {
-    .modal-side-title {
-      white-space: normal;
-      word-break: break-word;
-      overflow-wrap: anywhere;
-    }
+  .notice-detail-meta {
+    gap: $spacing-xs;
+    margin-top: $spacing-xs;
+    color: $color-text-secondary;
+    font-size: $font-size-base;
+  }
+
+  .notice-detail-divider {
+    color: $color-text-disabled;
+    line-height: 1;
+  }
+
+  .notice-detail-flag-group {
+    flex-wrap: wrap;
+    gap: $spacing-xs;
+  }
+
+  .notice-detail-body {
+    min-width: 0;
+  }
+
+  .notice-content-box {
+    min-width: 0;
+    max-width: 100%;
+    min-height: 180px;
+    margin: 0;
+    padding: $spacing-sm;
+    border: 1px solid $color-border;
+    border-radius: $border-radius-base;
+    background: $color-background;
+    color: $color-text-primary;
+    font-size: $font-size-lg;
+    line-height: $line-height-base;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    overflow-y: auto;
+  }
+}
+
+.modal-side-header {
+  .modal-side-title {
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
   }
 }
 
