@@ -35,6 +35,7 @@
         :disabled="disabled"
         :readonly="readonly"
         :name="name"
+        :autocomplete="autocomplete"
         :maxlength="maxLength"
         :min="min"
         :max="max"
@@ -82,6 +83,8 @@ interface Props {
   disabled?: boolean
   readonly?: boolean
   name?: string
+  /** 브라우저 자동완성 힌트 (채팅 등: off) */
+  autocomplete?: string
   id?: string
   maxLength?: number
   /** number/range 등 네이티브 제약과 동일한 의미. `number-only`는 type=text라 blur 시 아래 로직으로 보정 */
@@ -105,6 +108,7 @@ const props = withDefaults(defineProps<Props>(), {
   disabled: false,
   readonly: false,
   name: undefined,
+  autocomplete: undefined,
   id: undefined,
   maxLength: undefined,
   min: undefined,

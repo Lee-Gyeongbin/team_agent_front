@@ -42,7 +42,8 @@
             <span
               v-if="senderEmail && senderEmail !== senderName"
               class="mail-detail-sender-email"
-            >&lt;{{ senderEmail }}&gt;</span>
+              >&lt;{{ senderEmail }}&gt;</span
+            >
           </div>
         </div>
         <div class="mail-detail-meta-row">

@@ -108,3 +108,162 @@ export interface FollowupDraftResponse {
   result: string
   draft: string
 }
+
+// ─── 신규: KPI / 분류 메일함 / 팔로업 DB ─────────────────────
+
+export interface MailKpi {
+  totalCount: number
+  replyRequiredCount: number
+  urgentCount: number
+  todayDueCount: number
+}
+
+export interface MailKpiResponse {
+  result: string
+  msg?: string
+  totalCount?: number
+  replyRequiredCount?: number
+  urgentCount?: number
+  todayDueCount?: number
+  /** @deprecated API는 최상위 필드로 반환 — 하위 호환용 */
+  kpi?: MailKpi
+}
+
+export interface ClassifiedMail {
+  mailId: string
+  subject: string
+  fromAddr: string
+  fromName: string
+  mailDt: string | null
+  mailPurposeCd: string
+  mailPurposeNm: string
+  actionRequiredCd: string
+  actionRequiredNm: string
+  urgencyCd: string
+  urgencyNm: string
+  importanceCd: string
+  importanceNm: string
+  workCategoryCd: string
+  workCategoryNm: string
+  dueDt: string | null
+  summary: string
+  actionCompleteYn: string
+  folderCd: string
+  bodyText: string
+}
+
+export interface ClassifiedMailListResponse {
+  result: string
+  list: ClassifiedMail[]
+  totalCount: number
+  tabCounts: { all: number; action: number; reply: number }
+}
+
+export interface ClassifiedMailListParams {
+  tabType: 'all' | 'action' | 'reply'
+  searchField: string
+  searchKeyword: string
+  purposeCds: string[]
+  actionCds: string[]
+  urgencyCds: string[]
+  importanceCds: string[]
+  categoryCds: string[]
+  pageNum: number
+  pageSize: number
+}
+
+export interface MailDetailMail {
+  mailId: string
+  accountId?: string
+  folderCd: string
+  subject: string
+  fromAddr: string
+  fromName: string
+  mailDt: string | number | null
+  bodyText: string
+  hasAttachYn?: string
+}
+
+export interface MailAnalysis {
+  mailId: string
+  mailPurposeCd: string
+  actionRequiredCd: string
+  urgencyCd: string
+  importanceCd: string
+  workCategoryCd: string
+  dueDt: string | number | null
+  summary: string
+  actionCompleteYn: string
+  actionCompleteDt?: string | number | null
+  analyzedDt?: string | number | null
+}
+
+export interface MailDetailResponse {
+  result: string
+  msg?: string
+  mail: MailDetailMail
+  analysis: MailAnalysis | null
+}
+
+export interface ReplyDraftRequest {
+  mailId: string
+}
+
+export interface ReplyDraftResponse {
+  result: string
+  msg?: string
+  draftId?: string
+  draftContent?: string
+  /** @deprecated API는 draftContent로 반환 — 하위 호환용 */
+  draft?: string
+}
+
+export interface ActionCompleteRequest {
+  mailId: string
+  actionCompleteYn: string
+}
+
+export interface WorkCategory {
+  cd: string
+  nm: string
+}
+
+export interface FollowupDbItem {
+  followupId: string
+  sentMailId: string
+  recipientAddr: string
+  expectedReplyDt: string | null
+  statusCd: string
+  statusNm: string
+  repliedMailId: string | null
+  subject: string
+  fromName: string
+  mailDt: string | null
+}
+
+export interface FollowupListResponse {
+  result: string
+  list: FollowupDbItem[]
+  totalCount: number
+}
+
+export interface FollowupRegisterRequest {
+  sentMailId: string
+  recipientAddr: string
+  expectedReplyDt: string
+}
+
+export interface FollowupStatusUpdateRequest {
+  followupId: string
+  statusCd: string
+}
+
+export interface MailSyncResponse {
+  result: string
+  syncedCount: number
+}
+
+export interface WorkCategoryListResponse {
+  result: string
+  list: WorkCategory[]
+}

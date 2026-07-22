@@ -89,7 +89,9 @@
             </div>
             <button
               class="btn btn-outline btn-sm mail-followup-draft-btn"
-              :disabled="isDraftLoading && draftTarget?.toEmail === item.toEmail && draftTarget?.sentDate === item.sentDate"
+              :disabled="
+                isDraftLoading && draftTarget?.toEmail === item.toEmail && draftTarget?.sentDate === item.sentDate
+              "
               @click="openDraftModal(item)"
             >
               독촉 메일 초안
@@ -145,7 +147,9 @@
                 <span class="mail-followup-elapsed-badge is-success">완료</span>
               </div>
               <p class="mail-item-subject">{{ item.subject }}</p>
-              <span class="mail-item-time">발송 {{ item.sentDate }} / 답장 {{ item.replyDate }} ({{ item.daysElapsed }}일 소요)</span>
+              <span class="mail-item-time"
+                >발송 {{ item.sentDate }} / 답장 {{ item.replyDate }} ({{ item.daysElapsed }}일 소요)</span
+              >
             </div>
           </div>
         </template>
@@ -330,7 +334,10 @@ const aiInsights = computed(() => {
   const insights: { type: 'urgent' | 'warning' | 'positive'; text: string }[] = []
 
   if (s.pendingCount >= 5) {
-    insights.push({ type: 'urgent', text: `${s.pendingCount}건의 미답장이 쌓이고 있습니다. 우선순위를 정해 빠르게 처리하세요.` })
+    insights.push({
+      type: 'urgent',
+      text: `${s.pendingCount}건의 미답장이 쌓이고 있습니다. 우선순위를 정해 빠르게 처리하세요.`,
+    })
   } else if (s.pendingCount >= 2) {
     insights.push({ type: 'warning', text: `현재 ${s.pendingCount}건의 답장을 기다리고 있습니다.` })
   } else {
@@ -338,7 +345,10 @@ const aiInsights = computed(() => {
   }
 
   if (s.avgWaitDays >= 3) {
-    insights.push({ type: 'warning', text: `평균 대기 기간이 ${s.avgWaitDays}일로 길어지고 있습니다. 독촉 메일을 고려해보세요.` })
+    insights.push({
+      type: 'warning',
+      text: `평균 대기 기간이 ${s.avgWaitDays}일로 길어지고 있습니다. 독촉 메일을 고려해보세요.`,
+    })
   } else if (s.avgWaitDays > 0) {
     insights.push({ type: 'positive', text: `평균 ${s.avgWaitDays}일 이내에 답장이 오고 있습니다.` })
   } else {
