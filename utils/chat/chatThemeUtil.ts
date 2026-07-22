@@ -100,6 +100,11 @@ export const groupAgentsByTheme = (agents: Agent[]): Record<string, Agent[]> => 
   return result
 }
 
+/** 에이전트가 1개 이상 있는 테마만 반환 */
+export const getVisibleThemes = (grouped: Record<string, Agent[]>): ChatTheme[] => {
+  return CHAT_THEMES.filter((t) => (grouped[t.key]?.length ?? 0) > 0)
+}
+
 /** 에이전트가 있는 첫 번째 테마 키를 반환. 모두 비어있으면 첫 테마 키 반환. */
 export const getInitialThemeKey = (grouped: Record<string, Agent[]>): string => {
   for (const theme of CHAT_THEMES) {
