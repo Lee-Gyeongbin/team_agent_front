@@ -2,9 +2,12 @@
   <div class="chat-theme-carousel">
     <!-- 테마 탭 (화살표 제거 — 전역 고정 버튼으로 이동) -->
     <div class="chat-theme-carousel__nav">
-      <div class="chat-theme-carousel__tabs" role="tablist">
+      <div
+        class="chat-theme-carousel__tabs"
+        role="tablist"
+      >
         <button
-          v-for="theme in CHAT_THEMES"
+          v-for="theme in visibleThemes"
           :key="theme.key"
           type="button"
           role="tab"
@@ -12,7 +15,7 @@
           class="chat-theme-carousel__tab"
           :class="{ 'is-active': activeKey === theme.key }"
           :style="activeKey === theme.key ? { '--tab-color': theme.primary } : undefined"
-          @click="moveTo(CHAT_THEMES.findIndex((t) => t.key === theme.key))"
+          @click="moveTo(visibleThemes.findIndex((t) => t.key === theme.key))"
         >
           <i :class="[theme.iconClassNm, 'size-16']" />
           <span>{{ theme.label }}</span>
@@ -36,13 +39,16 @@
         :style="trackStyle"
       >
         <div
-          v-for="theme in CHAT_THEMES"
+          v-for="theme in visibleThemes"
           :key="theme.key"
           role="tabpanel"
           class="chat-theme-carousel__panel"
         >
           <!-- 로딩 -->
-          <div v-if="isLoading" class="chat-theme-carousel__panel-loading">
+          <div
+            v-if="isLoading"
+            class="chat-theme-carousel__panel-loading"
+          >
             <div
               v-for="n in 4"
               :key="n"
@@ -85,9 +91,7 @@
               </div>
               <div class="chat-index-card-hover">
                 <p class="chat-index-card-hover-desc">{{ agent.description }}</p>
-                <span class="chat-index-card-hover-action">
-                  시작하기 <i class="icon-chevron-right-sm size-12" />
-                </span>
+                <span class="chat-index-card-hover-action"> 시작하기 <i class="icon-chevron-right-sm size-12" /> </span>
               </div>
             </button>
           </div>
@@ -96,9 +100,12 @@
     </div>
 
     <!-- 도트 인디케이터 -->
-    <div class="chat-theme-carousel__dots" aria-hidden="true">
+    <div
+      class="chat-theme-carousel__dots"
+      aria-hidden="true"
+    >
       <span
-        v-for="(theme, i) in CHAT_THEMES"
+        v-for="(theme, i) in visibleThemes"
         :key="theme.key"
         class="chat-theme-carousel__dot"
         :class="{ 'is-active': i === activeIndex }"
@@ -106,16 +113,11 @@
       />
     </div>
   </div>
-
 </template>
 
 <script setup lang="ts">
 import type { Agent } from '~/types/agent'
-import {
-  CHAT_THEMES,
-  groupAgentsByTheme,
-  findThemeByKey,
-} from '~/utils/chat/chatThemeUtil'
+import { CHAT_THEMES, groupAgentsByTheme, getVisibleThemes, findThemeByKey } from '~/utils/chat/chatThemeUtil'
 
 interface Props {
   agents: Agent[]
@@ -127,7 +129,7 @@ interface Props {
 const props = defineProps<Props>()
 const emit = defineEmits<{
   'update:activeKey': [key: string]
-  'select': [agent: Agent]
+  select: [agent: Agent]
 }>()
 
 const { getChatIndexAgentSubLabel, getChatIndexAgentColorStyle } = useChatStore()
@@ -137,18 +139,19 @@ const viewportRef = ref<HTMLElement | null>(null)
 /** 그룹핑된 에이전트 */
 const groupedAgents = computed(() => groupAgentsByTheme(props.agents))
 
+/** 에이전트가 있는 테마만 노출 (로딩 중에는 전체 표시) */
+const visibleThemes = computed(() => (props.isLoading ? CHAT_THEMES : getVisibleThemes(groupedAgents.value)))
+
 /** 현재 활성 테마 인덱스 */
-const activeIndex = computed(() =>
-  CHAT_THEMES.findIndex((t) => t.key === props.activeKey),
-)
+const activeIndex = computed(() => visibleThemes.value.findIndex((t) => t.key === props.activeKey))
 
 /** 현재 활성 테마 객체 */
 const activeTheme = computed(() => findThemeByKey(props.activeKey))
 
 /** 특정 인덱스로 이동 */
 const moveTo = (index: number) => {
-  if (index < 0 || index >= CHAT_THEMES.length) return
-  emit('update:activeKey', CHAT_THEMES[index].key)
+  if (index < 0 || index >= visibleThemes.value.length) return
+  emit('update:activeKey', visibleThemes.value[index].key)
 }
 
 // ===== 드래그 제스처 =====
@@ -391,8 +394,12 @@ const trackStyle = computed(() => {
 }
 
 @keyframes skeleton-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 // ===== 빈 상태 =====
@@ -453,4 +460,3 @@ const trackStyle = computed(() => {
   }
 }
 </style>
-
