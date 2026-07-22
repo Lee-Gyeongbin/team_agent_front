@@ -167,6 +167,17 @@
   [role='button'] {
     cursor: pointer;
   }
+
+  // 채팅 입력창 — grab/grabbing 커서 제외 (텍스트 입력 영역)
+  .chat-index-input-wrapper,
+  .chat-input {
+    cursor: auto;
+  }
+
+  &.is-theme-dragging .chat-index-input-wrapper,
+  &.is-theme-dragging .chat-input {
+    cursor: auto;
+  }
 }
 
 .chat-index {

@@ -163,6 +163,12 @@ const setDraggingClass = (active: boolean) => {
   document.querySelector('.chat-page-wrap')?.classList.toggle('is-theme-dragging', active)
 }
 
+/** 채팅 입력창 등은 테마 스와이프 제외 */
+const isThemeDragExcluded = (target: EventTarget | null): boolean => {
+  if (!(target instanceof Element)) return false
+  return Boolean(target.closest('.chat-index-input-wrapper, .chat-input'))
+}
+
 const resetDragState = () => {
   isDragging.value = false
   dragDelta.value = 0
@@ -174,6 +180,8 @@ const onPointerDown = (e: PointerEvent) => {
   if (e.button !== 0) return
   // 이미 다른 포인터 추적 중이면 무시
   if (pointerId !== -1) return
+  // 채팅 입력창(텍스트 선택·파일 DnD 등)에서는 테마 드래그 시작하지 않음
+  if (isThemeDragExcluded(e.target)) return
   pointerId = e.pointerId
   startX = e.clientX
   dragDelta.value = 0
