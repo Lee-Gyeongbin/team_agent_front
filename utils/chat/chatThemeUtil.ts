@@ -32,8 +32,8 @@ export const CHAT_THEMES: ChatTheme[] = [
     primaryDarkHover: '#054653',
     primaryRgb: '11, 114, 133',
     primaryBg: '#d8f1f6',
-    bgGradient: 'linear-gradient(180deg, rgba(11,114,133,0.12) 0%, rgba(11,114,133,0.04) 50%, transparent 100%)',
-    sidebarBg: '#e9f4f7',
+    bgGradient: 'none',
+    sidebarBg: '#f4f7f9',
   },
   {
     key: 'WORK',
