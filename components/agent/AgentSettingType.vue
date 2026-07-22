@@ -70,7 +70,8 @@ const cncptTyOptions = [
   { label: '워크', value: 'WORK' },
   { label: '지식관리', value: 'KM' },
   { label: '라이프', value: 'LIFE' },
-  { label: '멘탈케어', value: 'MENTAL' },
+  // TODO : 멘탈케어 탭 임시 비활성화
+  // { label: '멘탈케어', value: 'MENTAL' },
 ]
 
 const cSubTyOptions = [
