@@ -7,7 +7,8 @@
   flex-direction: column;
   gap: $spacing-md;
   padding: $spacing-md;
-  max-width: 1200px;
+  width: 85%;
+  box-sizing: border-box;
 
   .mail-page-tab.ui-tab .ui-tab-inner {
     max-width: none;

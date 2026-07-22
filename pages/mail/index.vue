@@ -1,5 +1,5 @@
 <template>
-  <div class="mail-page l-center">
+  <div class="mail-page wide-center">
     <!-- 페이지 헤더 -->
     <div class="mail-page-header">
       <div class="mail-page-header-left">
