@@ -1,4 +1,5 @@
 import { useMailApi } from '~/composables/mail/useMailApi'
+import { useCommonCodesApi } from '~/composables/com/useCommonCodesApi'
 import { openToast } from '~/composables/useToast'
 import type {
   Mail,
@@ -9,6 +10,15 @@ import type {
   FollowupItem,
   FollowupCompleted,
   FollowupStats,
+  MailKpi,
+  ClassifiedMail,
+  ClassifiedMailListParams,
+  WorkCategory,
+  MailDetailMail,
+  MailAnalysis,
+  FollowupDbItem,
+  FollowupRegisterRequest,
+  FollowupStatusUpdateRequest,
 } from '~/types/mail'
 
 const {
@@ -20,7 +30,18 @@ const {
   fetchMailChat,
   fetchFollowupStatus,
   fetchFollowupDraft,
+  fetchMailSync,
+  fetchMailKpi,
+  fetchInboxClassified,
+  fetchMailDetail,
+  fetchReplyDraft,
+  fetchActionComplete,
+  fetchFollowupRegister,
+  fetchFollowupList,
+  fetchFollowupStatusUpdate,
 } = useMailApi()
+
+const { fetchCodes } = useCommonCodesApi()
 
 // ─── 공유 상태 (모듈 스코프) ─────────────────────────────────
 const isLoginModalOpen = ref(false)
@@ -42,6 +63,23 @@ const isLoadingFollowup = ref(false)
 const followupPending = ref<FollowupItem[]>([])
 const followupCompleted = ref<FollowupCompleted[]>([])
 const followupStats = ref<FollowupStats>({ pendingCount: 0, avgWaitDays: 0, completedThisWeek: 0 })
+
+// ─── 신규 상태 (모듈 스코프) ─────────────────────────────────
+const kpi = ref<MailKpi | null>(null)
+const classifiedMails = ref<ClassifiedMail[]>([])
+const classifiedTotalCount = ref(0)
+const classifiedTabCounts = ref({ all: 0, action: 0, reply: 0 })
+const selectedMail = ref<ClassifiedMail | null>(null)
+const workCategories = ref<WorkCategory[]>([])
+const purposeOptions = ref<WorkCategory[]>([])
+const actionOptions = ref<WorkCategory[]>([])
+const urgencyOptions = ref<WorkCategory[]>([])
+const importanceOptions = ref<WorkCategory[]>([])
+const isLoadingKpi = ref(false)
+const isLoadingClassified = ref(false)
+const isLoadingSync = ref(false)
+const followupDbList = ref<FollowupDbItem[]>([])
+const isLoadingFollowupList = ref(false)
 
 export const useMailStore = () => {
   // ─── 로그인 모달 제어 ─────────────────────────────────────
@@ -171,8 +209,211 @@ export const useMailStore = () => {
     }
   }
 
+  // ─── 메일 동기화 ─────────────────────────────────────────
+  const handleMailSync = async (options?: { silent?: boolean }) => {
+    isLoadingSync.value = true
+    try {
+      const res = await fetchMailSync()
+      if (res.result === 'SUCCESS' && !options?.silent) {
+        openToast({ message: `메일 동기화가 완료되었습니다. (${res.syncedCount}건)` })
+      }
+    } catch {
+      if (!options?.silent) {
+        openToast({ message: '메일 동기화에 실패했습니다.', type: 'error' })
+      }
+    } finally {
+      isLoadingSync.value = false
+    }
+  }
+
+  // ─── KPI 조회 ─────────────────────────────────────────────
+  const handleFetchMailKpi = async () => {
+    isLoadingKpi.value = true
+    try {
+      const res = await fetchMailKpi()
+      kpi.value = res.kpi ?? {
+        totalCount: res.totalCount ?? 0,
+        replyRequiredCount: res.replyRequiredCount ?? 0,
+        urgentCount: res.urgentCount ?? 0,
+        todayDueCount: res.todayDueCount ?? 0,
+      }
+    } catch {
+      openToast({ message: 'KPI 조회에 실패했습니다.', type: 'error' })
+    } finally {
+      isLoadingKpi.value = false
+    }
+  }
+
+  // ─── 필터 코드 목록 조회 (공통코드 API 사용) ─────────────
+  // ML000001=메일목적, ML000002=필요조치, ML000003=긴급도, ML000004=중요도, ML000008=업무영역
+  const handleFetchWorkCategories = async () => {
+    try {
+      const toOptions = (items: import('~/types/codes').CodeItem[]): WorkCategory[] =>
+        items.filter((c) => c.useYn === 'Y').map((c) => ({ cd: c.codeId, nm: c.codeNm }))
+
+      const [r1, r2, r3, r4, r5] = await Promise.all([
+        fetchCodes('ML000001'),
+        fetchCodes('ML000002'),
+        fetchCodes('ML000003'),
+        fetchCodes('ML000004'),
+        fetchCodes('ML000008'),
+      ])
+      purposeOptions.value = toOptions(r1.dataList ?? [])
+      actionOptions.value = toOptions(r2.dataList ?? [])
+      urgencyOptions.value = toOptions(r3.dataList ?? [])
+      importanceOptions.value = toOptions(r4.dataList ?? [])
+      workCategories.value = toOptions(r5.dataList ?? [])
+    } catch {
+      openToast({ message: '필터 코드 목록 조회에 실패했습니다.', type: 'error' })
+    }
+  }
+
+  // ─── AI 분류된 받은메일함 조회 ───────────────────────────
+  const handleFetchInboxClassified = async (params: ClassifiedMailListParams) => {
+    isLoadingClassified.value = true
+    try {
+      const res = await fetchInboxClassified(params)
+      classifiedMails.value = res.list ?? []
+      classifiedTotalCount.value = res.totalCount ?? 0
+      classifiedTabCounts.value = res.tabCounts ?? { all: 0, action: 0, reply: 0 }
+    } catch {
+      openToast({ message: '분류된 메일 목록 조회에 실패했습니다.', type: 'error' })
+    } finally {
+      isLoadingClassified.value = false
+    }
+  }
+
+  // ─── 상세 응답(mail + analysis) → ClassifiedMail 병합 ─────
+  const normalizeMailDate = (value: string | number | null | undefined): string | null => {
+    if (value === null || value === undefined || value === '') return null
+    if (typeof value === 'number') return new Date(value).toISOString()
+    return value
+  }
+
+  const resolveCodeName = (options: WorkCategory[], cd?: string) => {
+    if (!cd) return ''
+    return options.find((o) => o.cd === cd)?.nm ?? ''
+  }
+
+  const mergeMailDetail = (
+    mail: MailDetailMail,
+    analysis: MailAnalysis | null | undefined,
+    fallback?: ClassifiedMail | null,
+  ): ClassifiedMail => {
+    const mailPurposeCd = analysis?.mailPurposeCd ?? fallback?.mailPurposeCd ?? ''
+    const actionRequiredCd = analysis?.actionRequiredCd ?? fallback?.actionRequiredCd ?? ''
+    const urgencyCd = analysis?.urgencyCd ?? fallback?.urgencyCd ?? ''
+    const importanceCd = analysis?.importanceCd ?? fallback?.importanceCd ?? ''
+    const workCategoryCd = analysis?.workCategoryCd ?? fallback?.workCategoryCd ?? ''
+
+    return {
+      mailId: mail.mailId,
+      subject: mail.subject,
+      fromAddr: mail.fromAddr,
+      fromName: mail.fromName,
+      mailDt: normalizeMailDate(mail.mailDt) ?? fallback?.mailDt ?? null,
+      bodyText: mail.bodyText ?? fallback?.bodyText ?? '',
+      folderCd: mail.folderCd ?? fallback?.folderCd ?? '',
+      summary: analysis?.summary ?? fallback?.summary ?? '',
+      actionCompleteYn: analysis?.actionCompleteYn ?? fallback?.actionCompleteYn ?? 'N',
+      dueDt: normalizeMailDate(analysis?.dueDt) ?? fallback?.dueDt ?? null,
+      mailPurposeCd,
+      mailPurposeNm: resolveCodeName(purposeOptions.value, mailPurposeCd) || fallback?.mailPurposeNm || '',
+      actionRequiredCd,
+      actionRequiredNm: resolveCodeName(actionOptions.value, actionRequiredCd) || fallback?.actionRequiredNm || '',
+      urgencyCd,
+      urgencyNm: resolveCodeName(urgencyOptions.value, urgencyCd) || fallback?.urgencyNm || '',
+      importanceCd,
+      importanceNm: resolveCodeName(importanceOptions.value, importanceCd) || fallback?.importanceNm || '',
+      workCategoryCd,
+      workCategoryNm: resolveCodeName(workCategories.value, workCategoryCd) || fallback?.workCategoryNm || '',
+    }
+  }
+
+  // ─── 메일 상세 조회 ───────────────────────────────────────
+  const handleFetchMailDetail = async (mailId: string, fallbackMail?: ClassifiedMail) => {
+    const fromList = fallbackMail ?? classifiedMails.value.find((m) => m.mailId === mailId) ?? null
+    if (fromList) {
+      selectedMail.value = fromList
+    }
+
+    try {
+      const res = await fetchMailDetail(mailId)
+      if (res.mail) {
+        selectedMail.value = mergeMailDetail(res.mail, res.analysis, fromList)
+      }
+    } catch {
+      if (!selectedMail.value) {
+        openToast({ message: '메일 상세 조회에 실패했습니다.', type: 'error' })
+      }
+    }
+  }
+
+  // ─── AI 회신 초안 생성 ────────────────────────────────────
+  const handleFetchReplyDraft = async (mailId: string): Promise<string> => {
+    try {
+      const res = await fetchReplyDraft({ mailId })
+      return res.draftContent ?? res.draft ?? ''
+    } catch {
+      openToast({ message: '회신 초안 생성에 실패했습니다.', type: 'error' })
+      return ''
+    }
+  }
+
+  // ─── 조치 완료 토글 ───────────────────────────────────────
+  const handleToggleActionComplete = async (mailId: string, currentYn: string) => {
+    const newYn = currentYn === 'Y' ? 'N' : 'Y'
+    try {
+      await fetchActionComplete({ mailId, actionCompleteYn: newYn })
+      // 목록에서 해당 메일 상태 업데이트
+      const idx = classifiedMails.value.findIndex((m) => m.mailId === mailId)
+      if (idx !== -1) {
+        classifiedMails.value[idx] = { ...classifiedMails.value[idx], actionCompleteYn: newYn }
+      }
+      // 선택된 메일도 업데이트
+      if (selectedMail.value?.mailId === mailId) {
+        selectedMail.value = { ...selectedMail.value, actionCompleteYn: newYn }
+      }
+    } catch {
+      openToast({ message: '조치 완료 상태 변경에 실패했습니다.', type: 'error' })
+    }
+  }
+
+  // ─── 팔로업 DB 등록 ───────────────────────────────────────
+  const handleFollowupRegister = async (req: FollowupRegisterRequest) => {
+    try {
+      await fetchFollowupRegister(req)
+      openToast({ message: '팔로업이 등록되었습니다.' })
+    } catch {
+      openToast({ message: '팔로업 등록에 실패했습니다.', type: 'error' })
+    }
+  }
+
+  // ─── 팔로업 DB 목록 조회 ──────────────────────────────────
+  const handleFetchFollowupList = async () => {
+    isLoadingFollowupList.value = true
+    try {
+      const res = await fetchFollowupList()
+      followupDbList.value = res.list ?? []
+    } catch {
+      openToast({ message: '팔로업 목록 조회에 실패했습니다.', type: 'error' })
+    } finally {
+      isLoadingFollowupList.value = false
+    }
+  }
+
+  // ─── 팔로업 상태 업데이트 ─────────────────────────────────
+  const handleFollowupStatusUpdate = async (req: FollowupStatusUpdateRequest) => {
+    try {
+      await fetchFollowupStatusUpdate(req)
+      await handleFetchFollowupList()
+    } catch {
+      openToast({ message: '팔로업 상태 변경에 실패했습니다.', type: 'error' })
+    }
+  }
+
   return {
-    // 상태
+    // 기존 상태
     isLoginModalOpen,
     isLoadingList,
     isLoadingSentList,
@@ -190,7 +431,23 @@ export const useMailStore = () => {
     followupPending,
     followupCompleted,
     followupStats,
-    // 액션
+    // 신규 상태
+    kpi,
+    classifiedMails,
+    classifiedTotalCount,
+    classifiedTabCounts,
+    selectedMail,
+    workCategories,
+    purposeOptions,
+    actionOptions,
+    urgencyOptions,
+    importanceOptions,
+    isLoadingKpi,
+    isLoadingClassified,
+    isLoadingSync,
+    followupDbList,
+    isLoadingFollowupList,
+    // 기존 액션
     checkMailAuth,
     clearMailAuth: () => {
       isMailAuthed.value = false
@@ -204,5 +461,16 @@ export const useMailStore = () => {
     handleFetchMailChat,
     handleFetchFollowupStatus,
     handleFetchFollowupDraft,
+    // 신규 액션
+    handleMailSync,
+    handleFetchMailKpi,
+    handleFetchWorkCategories,
+    handleFetchInboxClassified,
+    handleFetchMailDetail,
+    handleFetchReplyDraft,
+    handleToggleActionComplete,
+    handleFollowupRegister,
+    handleFetchFollowupList,
+    handleFollowupStatusUpdate,
   }
 }

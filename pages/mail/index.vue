@@ -1,5 +1,5 @@
 <template>
-  <div class="mail-page l-center">
+  <div class="mail-page wide-center">
     <!-- 페이지 헤더 -->
     <div class="mail-page-header">
       <div class="mail-page-header-left">
@@ -7,8 +7,8 @@
           <i class="icon-meeting-mail size-24" />
         </div>
         <div>
-          <h1 class="mail-page-title">메일 브리핑</h1>
-          <p class="mail-page-subtitle">받은메일함 AI 요약 리포트</p>
+          <h1 class="mail-page-title">메일 에이전트</h1>
+          <p class="mail-page-subtitle">AI가 분류·분석한 받은메일함</p>
         </div>
       </div>
 
@@ -31,12 +31,12 @@
 
         <button
           class="btn btn-outline mail-refresh-btn"
-          :disabled="isLoadingList || isLoadingSummary || isLoadingChat || isLoadingFollowup"
+          :disabled="isLoadingClassified || isLoadingKpi || isLoadingFollowup"
           @click="onRefreshClick"
         >
           <i
             class="icon-refresh size-16"
-            :class="{ 'is-spinning': isLoadingList || isLoadingSummary || isLoadingChat || isLoadingFollowup }"
+            :class="{ 'is-spinning': isLoadingClassified || isLoadingKpi || isLoadingFollowup }"
           />
           새로고침
         </button>
@@ -44,58 +44,64 @@
     </div>
 
     <!-- 탭 -->
-    <div class="mail-tab-bar">
-      <button
-        class="mail-tab-btn"
-        :class="{ 'is-active': activeTab === 'inbox' }"
-        @click="onTabClick('inbox')"
-      >
-        받은 메일함
-      </button>
-      <button
-        class="mail-tab-btn"
-        :class="{ 'is-active': activeTab === 'followup' }"
-        @click="onTabClick('followup')"
-      >
-        보낸 메일함 · 팔로업 트래커
-        <span
-          v-if="followupStats.pendingCount > 0"
-          class="mail-tab-badge"
-        >
-          {{ followupStats.pendingCount }}
-        </span>
-      </button>
-    </div>
+    <UiTab
+      v-model="activeTab"
+      :tabs="mailTabItems"
+      class="mail-page-tab"
+    />
 
     <!-- 탭 1: 받은 메일함 -->
     <div
       v-show="activeTab === 'inbox'"
       class="mail-tab-content"
     >
-      <!-- AI 메일 브리핑 -->
-      <MailBriefingPanel
-        :is-loading="isLoadingSummary"
-        :briefing="briefing"
+      <!-- KPI 행 -->
+      <MailKpiPanel
+        :kpi="kpi"
+        :is-loading="isLoadingKpi"
       />
 
-      <!-- 2컬럼: 액션 아이템 + 메일 AI 채팅 -->
-      <div class="mail-middle-row">
-        <MailActionPanel
-          :is-loading="isLoadingSummary"
-          :action-items="actionItems"
+      <!-- 작업 영역: 테이블 + 사이드 패널 -->
+      <div class="mail-workzone">
+        <!-- 좌측: 분류된 받은메일함 테이블 -->
+        <MailInboxPanel
+          :is-loading="isLoadingClassified"
+          :mails="classifiedMails"
+          :total-count="classifiedTotalCount"
+          :tab-counts="classifiedTabCounts"
+          :work-categories="workCategories"
+          :purpose-options="purposeOptions"
+          :action-options="actionOptions"
+          :urgency-options="urgencyOptions"
+          :importance-options="importanceOptions"
+          :selected-mail-id="selectedMail?.mailId ?? null"
+          @select="onMailSelect"
+          @search="onSearch"
+          @tab-change="onSubTabChange"
         />
-        <MailChatPanel
-          ref="chatPanelRef"
-          :mails="mails"
-        />
+
+        <!-- 우측: 분석 패널 + 채팅 -->
+        <div
+          class="mail-side-panel"
+          :class="{ 'is-chat-expanded': isAnalysisCollapsed }"
+        >
+          <MailAnalysisPanel
+            :mail="selectedMail"
+            :is-loading="isLoadingClassified && classifiedMails.length === 0"
+            :collapsed="isAnalysisCollapsed"
+            @reply-draft="onReplyDraft"
+            @toggle-complete="onToggleComplete"
+            @toggle-analysis="onToggleAnalysisPanel"
+            @expand="isAnalysisCollapsed = false"
+          />
+          <MailChatPanel
+            ref="chatPanelRef"
+            :mails="adaptedMailsForChat"
+            :is-analysis-collapsed="isAnalysisCollapsed"
+            @toggle-analysis="onToggleAnalysisPanel"
+          />
+        </div>
       </div>
-
-      <!-- 받은메일함 목록 -->
-      <MailInboxPanel
-        :is-loading="isLoadingList"
-        :mails="mails"
-        :total-count="totalCount"
-      />
     </div>
 
     <!-- 탭 2: 보낸 메일함 · 팔로업 트래커 -->
@@ -117,6 +123,61 @@
         :stats="followupStats"
       />
     </div>
+
+    <!-- 메일 로그인 모달 -->
+    <MailLoginModal
+      :is-open="isLoginModalOpen"
+      @close="closeLoginModal"
+      @success="onLoginSuccess"
+    />
+
+    <!-- 회신 초안 모달 -->
+    <UiModal
+      :is-open="isReplyDraftModalOpen"
+      position="center"
+      :show-close="true"
+      :show-overlay="true"
+      max-width="600px"
+      @close="isReplyDraftModalOpen = false"
+    >
+      <template #header>
+        <div class="mail-draft-modal-header">
+          <h2 class="mail-detail-modal-title">AI 회신 초안</h2>
+          <button
+            class="btn btn-modal-close"
+            @click="isReplyDraftModalOpen = false"
+          >
+            <i class="icon icon-close-gray size-20" />
+          </button>
+        </div>
+      </template>
+
+      <div class="mail-draft-modal-body">
+        <div
+          v-if="isReplyDraftLoading"
+          class="mail-draft-loading"
+        >
+          <div class="mail-briefing-skeleton">
+            <span
+              v-for="i in 6"
+              :key="i"
+              class="mail-skeleton mail-skeleton-line"
+              :style="{ width: i % 3 === 0 ? '70%' : '100%' }"
+            />
+          </div>
+        </div>
+        <p
+          v-else-if="replyDraftContent"
+          class="mail-draft-content"
+        >
+          {{ replyDraftContent }}
+        </p>
+        <UiEmpty
+          v-else
+          title="초안을 생성할 수 없습니다"
+        />
+      </div>
+    </UiModal>
   </div>
 </template>
 
@@ -125,38 +186,92 @@ import { getLocalTimeZone, today, toCalendarDate, toCalendarDateTime } from '@in
 import type { DateValue } from '@internationalized/date'
 import { useMailStore } from '~/composables/mail/useMailStore'
 import { openToast } from '~/composables/useToast'
+import MailKpiPanel from '~/components/mail/MailKpiPanel.vue'
+import MailInboxPanel from '~/components/mail/MailInboxPanel.vue'
+import MailAnalysisPanel from '~/components/mail/MailAnalysisPanel.vue'
 import MailChatPanel from '~/components/mail/MailChatPanel.vue'
+import MailLoginModal from '~/components/mail/MailLoginModal.vue'
+import type { ClassifiedMail, ClassifiedMailListParams } from '~/types/mail'
 
 definePageMeta({ layout: 'default' })
 
 const {
-  isLoadingList,
+  // 인증
+  isLoginModalOpen,
+  openLoginModal,
+  closeLoginModal,
+  checkMailAuth,
+  // 기존 상태
   isLoadingSentList,
-  isLoadingSummary,
-  isLoadingChat,
   isLoadingFollowup,
-  mails,
-  totalCount,
   sentMails,
   sentTotalCount,
-  briefing,
-  actionItems,
   followupPending,
   followupCompleted,
   followupStats,
-  handleFetchMailList,
   handleFetchSentMailList,
-  handleFetchMailSummary,
   handleFetchFollowupStatus,
+  // 신규 상태
+  kpi,
+  classifiedMails,
+  classifiedTotalCount,
+  classifiedTabCounts,
+  selectedMail,
+  workCategories,
+  purposeOptions,
+  actionOptions,
+  urgencyOptions,
+  importanceOptions,
+  isLoadingKpi,
+  isLoadingClassified,
+  // 신규 액션
+  handleMailSync,
+  handleFetchMailKpi,
+  handleFetchWorkCategories,
+  handleFetchInboxClassified,
+  handleFetchMailDetail,
+  handleFetchReplyDraft,
+  handleToggleActionComplete,
 } = useMailStore()
 
 const chatPanelRef = ref<InstanceType<typeof MailChatPanel>>()
+const isAnalysisCollapsed = ref(false)
+
 const startDateFilter = ref<DateValue | undefined>()
 const endDateFilter = ref<DateValue | undefined>()
 const isFilterWatcherReady = ref(false)
 const isInitializingPage = ref(false)
 const hasInitializedPage = ref(false)
 const activeTab = ref<'inbox' | 'followup'>('inbox')
+
+const mailTabItems = computed(() => [
+  { label: '받은 메일함', value: 'inbox' },
+  {
+    label:
+      followupStats.value.pendingCount > 0
+        ? `보낸 메일함 · 팔로업 트래커 (${followupStats.value.pendingCount})`
+        : '보낸 메일함 · 팔로업 트래커',
+    value: 'followup',
+  },
+])
+
+// 회신 초안 모달 상태
+const isReplyDraftModalOpen = ref(false)
+const isReplyDraftLoading = ref(false)
+const replyDraftContent = ref('')
+
+// ─── ClassifiedMail → Mail 어댑터 (MailChatPanel용) ──────
+// MailChatPanel은 Mail[] 타입을 기대하므로 ClassifiedMail을 변환
+const adaptedMailsForChat = computed(() =>
+  classifiedMails.value.map((m) => ({
+    subject: m.subject,
+    from: m.fromAddr,
+    fromName: m.fromName,
+    receivedDate: m.mailDt,
+    body: m.bodyText,
+    isRead: true,
+  })),
+)
 
 // ─── 날짜 범위 ────────────────────────────────────────────
 const toYyyyMmDd = (value: DateValue) => {
@@ -196,6 +311,21 @@ const isOverOneMonthRange = computed(() => {
   return toCalendarDate(toCalendarDateTime(end)).compare(toCalendarDate(toCalendarDateTime(shiftMonth(start, 1)))) > 0
 })
 
+// ─── 기본 분류 메일함 조회 파라미터 ──────────────────────
+const buildDefaultClassifiedParams = (overrides: Partial<ClassifiedMailListParams> = {}): ClassifiedMailListParams => ({
+  tabType: 'all',
+  searchField: 'subject',
+  searchKeyword: '',
+  purposeCds: [],
+  actionCds: [],
+  urgencyCds: [],
+  importanceCds: [],
+  categoryCds: [],
+  pageNum: 1,
+  pageSize: 50,
+  ...overrides,
+})
+
 // ─── 조회 ─────────────────────────────────────────────────
 const doRefresh = async () => {
   const params = getDateRangeParams()
@@ -211,21 +341,94 @@ const doRefresh = async () => {
 
   if (activeTab.value === 'followup') {
     await handleFetchFollowupStatus(params)
-  } else {
-    await handleFetchMailList(params)
     await handleFetchSentMailList(params)
-    await handleFetchMailSummary()
+  } else {
+    await Promise.all([handleFetchMailKpi(), handleFetchInboxClassified(buildDefaultClassifiedParams())])
   }
 }
 
 const onRefreshClick = async () => {
+  const authed = await checkMailAuth()
+  if (!authed) {
+    openLoginModal()
+    return
+  }
   chatPanelRef.value?.resetChatHistory()
   await doRefresh()
 }
 
-// ─── 탭 전환 ──────────────────────────────────────────────
-const onTabClick = (tab: 'inbox' | 'followup') => {
-  activeTab.value = tab
+const onToggleAnalysisPanel = () => {
+  isAnalysisCollapsed.value = !isAnalysisCollapsed.value
+}
+
+// ─── 메일 선택 ────────────────────────────────────────────
+const onMailSelect = async (mail: ClassifiedMail) => {
+  await handleFetchMailDetail(mail.mailId, mail)
+}
+
+// ─── 검색 ─────────────────────────────────────────────────
+const onSearch = async (params: ClassifiedMailListParams) => {
+  await handleFetchInboxClassified(params)
+}
+
+// ─── 서브탭 변경 ──────────────────────────────────────────
+const onSubTabChange = async (tab: 'all' | 'action' | 'reply') => {
+  await handleFetchInboxClassified(buildDefaultClassifiedParams({ tabType: tab }))
+}
+
+// ─── 회신 초안 ────────────────────────────────────────────
+const onReplyDraft = async () => {
+  if (!selectedMail.value) return
+  isReplyDraftModalOpen.value = true
+  isReplyDraftLoading.value = true
+  replyDraftContent.value = ''
+  replyDraftContent.value = await handleFetchReplyDraft(selectedMail.value.mailId)
+  isReplyDraftLoading.value = false
+}
+
+// ─── 조치 완료 토글 ───────────────────────────────────────
+const onToggleComplete = async (mailId: string, currentYn: string) => {
+  await handleToggleActionComplete(mailId, currentYn)
+}
+
+// ─── 로그인 성공 콜백 ─────────────────────────────────────
+const onLoginSuccess = async () => {
+  closeLoginModal()
+  await loadMailData()
+}
+
+// ─── 데이터 로드 (인증 후 호출) ───────────────────────────
+const loadMailData = async () => {
+  const rangeEnd = today(getLocalTimeZone())
+  startDateFilter.value = rangeEnd.subtract({ days: 7 })
+  endDateFilter.value = rangeEnd
+  chatPanelRef.value?.resetChatHistory()
+
+  const dateParams = {
+    startDate: toYyyyMmDd(startDateFilter.value),
+    endDate: toYyyyMmDd(endDateFilter.value),
+  }
+
+  openLoading()
+  try {
+    // 동기화는 백그라운드에서 조용히 실행 (blocking하지 않음)
+    handleMailSync({ silent: true }).catch(() => {})
+
+    // KPI + 분류 메일함 + 업무카테고리 병렬 조회
+    await Promise.all([
+      handleFetchMailKpi(),
+      handleFetchInboxClassified(buildDefaultClassifiedParams()),
+      handleFetchWorkCategories(),
+    ])
+
+    // 보낸메일함 + 팔로업
+    await Promise.all([handleFetchSentMailList(dateParams), handleFetchFollowupStatus(dateParams)])
+
+    isFilterWatcherReady.value = true
+    hasInitializedPage.value = true
+  } finally {
+    closeLoading()
+  }
 }
 
 // ─── 초기화 ───────────────────────────────────────────────
@@ -233,26 +436,16 @@ const handleInitializeMailPage = async () => {
   if (isInitializingPage.value) return
   isInitializingPage.value = true
 
-  const rangeEnd = today(getLocalTimeZone())
-  startDateFilter.value = rangeEnd.subtract({ days: 7 })
-  endDateFilter.value = rangeEnd
-  chatPanelRef.value?.resetChatHistory()
-
-  const params = {
-    startDate: toYyyyMmDd(startDateFilter.value),
-    endDate: toYyyyMmDd(endDateFilter.value),
-  }
-
-  openLoading()
   try {
-    await handleFetchMailList(params)
-    await handleFetchSentMailList(params)
-    await handleFetchMailSummary()
-    await handleFetchFollowupStatus(params)
-    isFilterWatcherReady.value = true
-    hasInitializedPage.value = true
+    // 인증 확인 → 미인증이면 로그인 모달 표시 후 종료
+    const authed = await checkMailAuth()
+    if (!authed) {
+      openLoginModal()
+      return
+    }
+
+    await loadMailData()
   } finally {
-    closeLoading()
     isInitializingPage.value = false
   }
 }
@@ -262,7 +455,7 @@ onMounted(() => {
 })
 
 onActivated(() => {
-  if (!hasInitializedPage.value) return
+  if (hasInitializedPage.value) return
   void handleInitializeMailPage()
 })
 

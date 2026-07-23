@@ -1,12 +1,37 @@
 <template>
   <UiModal
     :is-open="isOpen"
-    :title="modalTitle"
     position="center"
     :max-width="'min(96vw, 900px)'"
     custom-class="chat-attachment-preview-modal"
     @close="onClose"
   >
+    <template #header>
+      <div class="modal-dialog-header">
+        <h2 class="modal-dialog-title">{{ modalTitle }}</h2>
+        <div class="btn-modal-header-actions">
+          <button
+            v-if="canDownload"
+            type="button"
+            class="btn btn-modal-close"
+            title="다운로드"
+            :disabled="isDownloading"
+            @click="onDownload"
+          >
+            <i class="icon icon-download size-20" />
+          </button>
+          <button
+            type="button"
+            class="btn btn-modal-close"
+            title="닫기"
+            @click="onClose"
+          >
+            <i class="icon icon-close-gray size-20" />
+          </button>
+        </div>
+      </div>
+    </template>
+
     <div class="chat-attachment-preview-body">
       <UiLoading
         v-if="loadStatus === 'loading'"
@@ -49,12 +74,13 @@
       >
         <p>이 형식은 브라우저에서 바로 열 수 없습니다. 다운로드하여 확인해 주세요.</p>
         <UiButton
-          v-if="downloadUrl"
+          v-if="canDownload"
           variant="primary"
           size="md"
-          @click="openDownload"
+          :disabled="isDownloading"
+          @click="onDownload"
         >
-          다운로드
+          {{ isDownloading ? '다운로드 중...' : '다운로드' }}
         </UiButton>
       </div>
     </div>
@@ -63,6 +89,7 @@
 
 <script setup lang="ts">
 import type { ChatFileViewResponse } from '~/types/chat'
+import { downloadBlobAsFile } from '~/utils/global/fileDownloadUtil'
 
 interface Props {
   isOpen: boolean
@@ -86,6 +113,7 @@ const emit = defineEmits<{
 }>()
 
 const { fetchViewChatFile, fetchViewChatFileShare } = useChatApi()
+const { handleDownloadByUrl } = useFileStore()
 
 /** 공유 페이지 여부에 따라 적절한 API 호출 */
 const fetchFileView = (chatFileId: string) =>
@@ -100,6 +128,15 @@ const viewerKind = ref<ViewerKind>('idle')
 const viewerUrl = ref('')
 const textContent = ref('')
 const downloadUrl = ref('')
+const resolvedFileName = ref('')
+const isDownloading = ref(false)
+
+/** 다운로드 가능한 소스(URL 또는 텍스트)가 있을 때 */
+const canDownload = computed(() => {
+  if (loadStatus.value !== 'ready') return false
+  if (viewerKind.value === 'text') return true
+  return Boolean(downloadUrl.value || viewerUrl.value)
+})
 
 const onClose = () => {
   emit('update:isOpen', false)
@@ -111,19 +148,37 @@ const resetViewer = () => {
   viewerUrl.value = ''
   textContent.value = ''
   downloadUrl.value = ''
+  resolvedFileName.value = ''
+  isDownloading.value = false
+}
+
+const getDownloadFileName = (): string => {
+  const name = resolvedFileName.value.trim() || props.fileName?.trim() || 'attachment'
+  if (viewerKind.value === 'text' && !/\.[a-z0-9]+$/i.test(name)) {
+    return `${name}.txt`
+  }
+  return name
 }
 
 const applyResponse = (res: ChatFileViewResponse) => {
   const vt = String(res.viewType ?? '').toUpperCase()
-  if (vt === 'IMAGE' && res.url) {
+  const apiFileName = String(res.fileName ?? '').trim()
+  if (apiFileName) resolvedFileName.value = apiFileName
+
+  const url = String(res.url ?? '').trim()
+  const dl = String(res.downloadUrl ?? '').trim()
+
+  if (vt === 'IMAGE' && url) {
     viewerKind.value = 'image'
-    viewerUrl.value = res.url
+    viewerUrl.value = url
+    downloadUrl.value = dl || url
     loadStatus.value = 'ready'
     return
   }
-  if (vt === 'PDF' && res.url) {
+  if (vt === 'PDF' && url) {
     viewerKind.value = 'pdf'
-    viewerUrl.value = res.url
+    viewerUrl.value = url
+    downloadUrl.value = dl || url
     loadStatus.value = 'ready'
     return
   }
@@ -135,7 +190,7 @@ const applyResponse = (res: ChatFileViewResponse) => {
   }
   if (vt === 'DOWNLOAD') {
     viewerKind.value = 'download'
-    downloadUrl.value = String(res.downloadUrl ?? '').trim()
+    downloadUrl.value = dl
     loadStatus.value = 'ready'
     return
   }
@@ -154,6 +209,7 @@ const useLocalImageFirst = () => {
 
   viewerKind.value = 'image'
   viewerUrl.value = url
+  downloadUrl.value = url
   loadStatus.value = 'ready'
   return true
 }
@@ -179,9 +235,57 @@ const loadPreview = async () => {
   }
 }
 
-const openDownload = () => {
-  if (!downloadUrl.value) return
-  window.open(downloadUrl.value, '_blank', 'noopener,noreferrer')
+/** URL → Blob 저장 시도 후 실패 시 iframe 다운로드로 폴백 */
+const downloadFromUrl = async (url: string, fileName: string) => {
+  try {
+    const res = await fetch(url)
+    if (!res.ok) throw new Error('다운로드에 실패했습니다.')
+    const blob = await res.blob()
+    downloadBlobAsFile(blob, fileName)
+    return true
+  } catch {
+    return handleDownloadByUrl(url)
+  }
+}
+
+const onDownload = async () => {
+  if (isDownloading.value || !canDownload.value) return
+
+  const fileName = getDownloadFileName()
+  isDownloading.value = true
+  try {
+    if (viewerKind.value === 'text') {
+      const blob = new Blob([`\uFEFF${textContent.value}`], { type: 'text/plain;charset=utf-8' })
+      downloadBlobAsFile(blob, fileName)
+      return
+    }
+
+    const url = (downloadUrl.value || viewerUrl.value).trim()
+    if (!url) {
+      openToast({ message: '다운로드 URL이 없습니다.', type: 'warning' })
+      return
+    }
+
+    // data: / blob: 은 fetch 없이 바로 저장
+    if (url.startsWith('data:') || url.startsWith('blob:')) {
+      const res = await fetch(url)
+      const blob = await res.blob()
+      downloadBlobAsFile(blob, fileName)
+      return
+    }
+
+    const ok = await downloadFromUrl(url, fileName)
+    if (!ok) {
+      openToast({ message: '다운로드에 실패했습니다.', type: 'error' })
+    }
+  } catch (e) {
+    openToast({
+      message: e instanceof Error ? e.message : '다운로드에 실패했습니다.',
+      type: 'error',
+    })
+  } finally {
+    isDownloading.value = false
+  }
 }
 
 watch(
@@ -199,6 +303,7 @@ watch(
 
 <style lang="scss" scoped>
 @use '~/assets/styles/utils/variables' as *;
+@use '~/assets/styles/utils/mixins' as *;
 
 .chat-attachment-preview-body {
   position: relative;

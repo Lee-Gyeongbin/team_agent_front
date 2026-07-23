@@ -10,6 +10,17 @@ import type {
   FollowupStatusResponse,
   FollowupDraftRequest,
   FollowupDraftResponse,
+  MailSyncResponse,
+  MailKpiResponse,
+  ClassifiedMailListParams,
+  ClassifiedMailListResponse,
+  MailDetailResponse,
+  ReplyDraftRequest,
+  ReplyDraftResponse,
+  ActionCompleteRequest,
+  FollowupRegisterRequest,
+  FollowupListResponse,
+  FollowupStatusUpdateRequest,
 } from '~/types/mail'
 
 const { get, post } = useApi()
@@ -64,6 +75,62 @@ export const useMailApi = () => {
     return post<FollowupDraftResponse>('/mail/followup-draft.do', body)
   }
 
+  /** 메일 동기화 (수신함 최신 메일 동기화) */
+  const fetchMailSync = async (): Promise<MailSyncResponse> => {
+    return post<MailSyncResponse>('/mail/sync.do', {})
+  }
+
+  /** KPI 요약 조회 */
+  const fetchMailKpi = async (): Promise<MailKpiResponse> => {
+    return get<MailKpiResponse>('/mail/kpi.do')
+  }
+
+  /** AI 분류된 받은메일함 목록 조회 */
+  const fetchInboxClassified = async (params: ClassifiedMailListParams): Promise<ClassifiedMailListResponse> => {
+    const query = new URLSearchParams()
+    query.append('tabType', params.tabType)
+    query.append('searchField', params.searchField)
+    if (params.searchKeyword) query.append('searchKeyword', params.searchKeyword)
+    if (params.purposeCds?.length) query.append('purposeCds', params.purposeCds.join(','))
+    if (params.actionCds?.length) query.append('actionCds', params.actionCds.join(','))
+    if (params.urgencyCds?.length) query.append('urgencyCds', params.urgencyCds.join(','))
+    if (params.importanceCds?.length) query.append('importanceCds', params.importanceCds.join(','))
+    if (params.categoryCds?.length) query.append('categoryCds', params.categoryCds.join(','))
+    query.append('pageNum', String(params.pageNum ?? 1))
+    query.append('pageSize', String(params.pageSize ?? 50))
+    return get<ClassifiedMailListResponse>(`/mail/inbox-classified.do?${query.toString()}`)
+  }
+
+  /** 분류된 메일 상세 조회 */
+  const fetchMailDetail = async (mailId: string): Promise<MailDetailResponse> => {
+    return get<MailDetailResponse>(`/mail/inbox-detail.do?mailId=${mailId}`)
+  }
+
+  /** AI 회신 초안 생성 */
+  const fetchReplyDraft = async (req: ReplyDraftRequest): Promise<ReplyDraftResponse> => {
+    return post<ReplyDraftResponse>('/mail/reply-draft.do', req)
+  }
+
+  /** 조치 완료 여부 업데이트 */
+  const fetchActionComplete = async (req: ActionCompleteRequest): Promise<{ result: string }> => {
+    return post<{ result: string }>('/mail/action-complete.do', req)
+  }
+
+  /** 팔로업 DB 등록 */
+  const fetchFollowupRegister = async (req: FollowupRegisterRequest): Promise<{ result: string }> => {
+    return post<{ result: string }>('/mail/followup-register.do', req)
+  }
+
+  /** 팔로업 DB 목록 조회 */
+  const fetchFollowupList = async (): Promise<FollowupListResponse> => {
+    return get<FollowupListResponse>('/mail/followup-list.do')
+  }
+
+  /** 팔로업 상태 업데이트 */
+  const fetchFollowupStatusUpdate = async (req: FollowupStatusUpdateRequest): Promise<{ result: string }> => {
+    return post<{ result: string }>('/mail/followup-status-update.do', req)
+  }
+
   return {
     fetchMailAuthCheck,
     fetchMailAuth,
@@ -73,5 +140,14 @@ export const useMailApi = () => {
     fetchMailChat,
     fetchFollowupStatus,
     fetchFollowupDraft,
+    fetchMailSync,
+    fetchMailKpi,
+    fetchInboxClassified,
+    fetchMailDetail,
+    fetchReplyDraft,
+    fetchActionComplete,
+    fetchFollowupRegister,
+    fetchFollowupList,
+    fetchFollowupStatusUpdate,
   }
 }
