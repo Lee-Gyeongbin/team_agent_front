@@ -31,13 +31,16 @@
 
         <button
           class="btn btn-outline mail-refresh-btn"
-          :disabled="isLoadingClassified || isLoadingKpi || isLoadingSentClassified || isLoadingSentSidebar"
+          :disabled="
+            isRefreshing || isLoadingClassified || isLoadingKpi || isLoadingSentClassified || isLoadingSentSidebar
+          "
           @click="onRefreshClick"
         >
           <i
             class="icon-refresh size-16"
             :class="{
-              'is-spinning': isLoadingClassified || isLoadingKpi || isLoadingSentClassified || isLoadingSentSidebar,
+              'is-spinning':
+                isRefreshing || isLoadingClassified || isLoadingKpi || isLoadingSentClassified || isLoadingSentSidebar,
             }"
           />
           새로고침
@@ -279,6 +282,7 @@ const isAnalysisCollapsed = ref(false)
 const startDateFilter = ref<DateValue | undefined>()
 const endDateFilter = ref<DateValue | undefined>()
 const isFilterWatcherReady = ref(false)
+const isRefreshing = ref(false)
 const isInitializingPage = ref(false)
 const hasInitializedPage = ref(false)
 const activeTab = ref<'inbox' | 'followup'>('inbox')
@@ -387,11 +391,14 @@ const doRefresh = async () => {
     openToast({ message: '조회 기간은 최대 1개월까지 선택할 수 있습니다.', type: 'warning' })
     return
   }
+  if (isRefreshing.value) return
 
-  if (activeTab.value === 'followup') {
-    // 받은메일함과 동일하게: 해당 범위 미동기화 메일 먼저 IMAP → DB 동기화 후 재조회
-    handleSyncRange(params.startDate, params.endDate).then(() =>
-      Promise.all([
+  isRefreshing.value = true
+  openLoading({ text: '메일을 동기화하는 중...' })
+  try {
+    if (activeTab.value === 'followup') {
+      await handleSyncRange(params.startDate, params.endDate)
+      await Promise.all([
         handleFetchSentClassified({
           tabType: currentSentTab.value,
           pageNum: 1,
@@ -400,13 +407,14 @@ const doRefresh = async () => {
           endDate: params.endDate,
         }),
         handleFetchSentSidebar(params.startDate, params.endDate),
-      ]),
-    )
-  } else {
-    // 해당 날짜 범위 중 DB에 없는 메일을 먼저 동기화 (조용히, 블로킹 없음)
-    handleSyncRange(params.startDate, params.endDate).then(() => doFetchInbox(buildDefaultClassifiedParams()))
-    // KPI는 즉시 갱신
-    await handleFetchMailKpi()
+      ])
+    } else {
+      await handleSyncRange(params.startDate, params.endDate)
+      await Promise.all([doFetchInbox(buildDefaultClassifiedParams()), handleFetchMailKpi()])
+    }
+  } finally {
+    isRefreshing.value = false
+    closeLoading()
   }
 }
 

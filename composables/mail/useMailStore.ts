@@ -240,10 +240,7 @@ export const useMailStore = () => {
   const handleMailSync = async (options?: { silent?: boolean }) => {
     isLoadingSync.value = true
     try {
-      const res = await fetchMailSync()
-      if (res.result === 'SUCCESS' && !options?.silent) {
-        openToast({ message: `메일 동기화가 완료되었습니다. (${res.syncedCount}건)` })
-      }
+      await fetchMailSync()
     } catch {
       if (!options?.silent) {
         openToast({ message: '메일 동기화에 실패했습니다.', type: 'error' })
@@ -452,12 +449,11 @@ export const useMailStore = () => {
   const handleSyncRange = async (startDate: string, endDate: string) => {
     isLoadingSync.value = true
     try {
-      const res = await fetchSyncRange(startDate, endDate)
-      if (res.result === 'SUCCESS') {
-        openToast({ message: `메일 동기화가 완료되었습니다. (${res.newCount}건)` })
-      }
+      await fetchSyncRange(startDate, endDate)
     } catch {
-      // 백그라운드 동기화 실패는 조용히 처리
+      openToast({ message: '메일 동기화에 실패했습니다.', type: 'error' })
+    } finally {
+      isLoadingSync.value = false
     }
   }
 
