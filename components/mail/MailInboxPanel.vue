@@ -176,11 +176,7 @@
           v-for="mail in mails"
           :key="mail.mailId"
           class="mail-classified-item"
-          :class="{
-            'is-selected': mail.mailId === selectedMailId,
-            'is-urgent': mail.urgencyCd === '001',
-          }"
-          @click="emit('select', mail)"
+          :class="{ 'is-urgent': mail.urgencyCd === '001' }"
         >
           <div
             class="mail-item-avatar"
@@ -196,7 +192,7 @@
                 class="mail-classified-due"
                 :class="{ 'is-today': isToday(mail.dueDt) }"
               >
-                {{ formatDue(mail.dueDt) }}
+                · {{ formatDue(mail.dueDt) }}
               </span>
             </div>
             <p class="mail-item-subject">{{ mail.subject }}</p>
@@ -215,6 +211,24 @@
                 {{ [mail.importanceNm, mail.workCategoryNm].filter(Boolean).join(' · ') }}
               </span>
             </div>
+          </div>
+
+          <!-- 행 액션 버튼 -->
+          <div class="mail-classified-actions">
+            <UiButton
+              variant="outline"
+              size="sm"
+              @click.stop="emit('detail', mail)"
+            >
+              상세보기
+            </UiButton>
+            <UiButton
+              variant="primary"
+              size="sm"
+              @click.stop="emit('analysis', mail)"
+            >
+              AI 분석
+            </UiButton>
           </div>
         </div>
       </template>
@@ -242,11 +256,11 @@ const props = defineProps<{
   actionOptions: WorkCategory[]
   urgencyOptions: WorkCategory[]
   importanceOptions: WorkCategory[]
-  selectedMailId: string | null
 }>()
 
 const emit = defineEmits<{
-  select: [mail: ClassifiedMail]
+  detail: [mail: ClassifiedMail]
+  analysis: [mail: ClassifiedMail]
   search: [params: ClassifiedMailListParams]
   'tab-change': [tab: 'all' | 'action' | 'reply']
 }>()

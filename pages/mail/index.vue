@@ -31,12 +31,14 @@
 
         <button
           class="btn btn-outline mail-refresh-btn"
-          :disabled="isLoadingClassified || isLoadingKpi || isLoadingFollowup"
+          :disabled="isLoadingClassified || isLoadingKpi || isLoadingSentClassified || isLoadingSentSidebar"
           @click="onRefreshClick"
         >
           <i
             class="icon-refresh size-16"
-            :class="{ 'is-spinning': isLoadingClassified || isLoadingKpi || isLoadingFollowup }"
+            :class="{
+              'is-spinning': isLoadingClassified || isLoadingKpi || isLoadingSentClassified || isLoadingSentSidebar,
+            }"
           />
           새로고침
         </button>
@@ -74,23 +76,21 @@
           :action-options="actionOptions"
           :urgency-options="urgencyOptions"
           :importance-options="importanceOptions"
-          :selected-mail-id="selectedMail?.mailId ?? null"
-          @select="onMailSelect"
+          @detail="onMailDetail"
+          @analysis="onMailAnalysis"
           @search="onSearch"
           @tab-change="onSubTabChange"
         />
 
-        <!-- 우측: 분석 패널 + 채팅 -->
+        <!-- 우측: AI 요약 패널 + 채팅 -->
         <div
           class="mail-side-panel"
           :class="{ 'is-chat-expanded': isAnalysisCollapsed }"
         >
           <MailAnalysisPanel
-            :mail="selectedMail"
-            :is-loading="isLoadingClassified && classifiedMails.length === 0"
+            :summary="inboxSummary"
+            :is-loading="isLoadingInboxSummary"
             :collapsed="isAnalysisCollapsed"
-            @reply-draft="onReplyDraft"
-            @toggle-complete="onToggleComplete"
             @toggle-analysis="onToggleAnalysisPanel"
             @expand="isAnalysisCollapsed = false"
           />
@@ -109,19 +109,26 @@
       v-show="activeTab === 'followup'"
       class="mail-tab-content"
     >
-      <!-- 보낸메일함 목록 -->
-      <MailSentPanel
-        :is-loading="isLoadingSentList"
-        :sent-mails="sentMails"
-        :sent-total-count="sentTotalCount"
-      />
+      <div class="mail-followup-grid">
+        <!-- 좌측: 보낸메일함 분류 목록 -->
+        <MailSentPanel
+          :is-loading="isLoadingSentClassified"
+          :mails="sentClassifiedList"
+          :tab-counts="sentClassifiedTabCounts"
+          :selected-tab="currentSentTab"
+          @tab-change="onSentTabChange"
+        />
 
-      <MailFollowupPanel
-        :is-loading="isLoadingFollowup"
-        :pending="followupPending"
-        :completed="followupCompleted"
-        :stats="followupStats"
-      />
+        <!-- 우측: 팔로업 AI 사이드바 -->
+        <MailFollowupPanel
+          :is-loading="isLoadingSentSidebar"
+          :top-recipients="sentTopRecipients"
+          :weekly-stats="sentWeeklyStats"
+          :pending-mails="sentClassifiedList"
+          @draft-overdue="onDraftOverdue"
+          @view-pending="onViewPending"
+        />
+      </div>
     </div>
 
     <!-- 메일 로그인 모달 -->
@@ -129,6 +136,29 @@
       :is-open="isLoginModalOpen"
       @close="closeLoginModal"
       @success="onLoginSuccess"
+    />
+
+    <!-- 메일 상세 모달 -->
+    <MailDetailModal
+      v-if="selectedMail"
+      :is-open="isDetailModalOpen"
+      :subject="selectedMail.subject"
+      sender-label="발신자"
+      :sender-name="selectedMail.fromName || selectedMail.fromAddr"
+      :sender-email="parseSenderEmail(selectedMail.fromAddr)"
+      date-label="수신일"
+      :date="toModalDate(selectedMail.mailDt)"
+      :body="selectedMail.bodyText"
+      @close="isDetailModalOpen = false"
+    />
+
+    <!-- AI 분석 모달 -->
+    <MailAnalysisModal
+      :is-open="isAnalysisModalOpen"
+      :mail="selectedMail"
+      @close="isAnalysisModalOpen = false"
+      @reply-draft="onAnalysisReplyDraft"
+      @toggle-complete="onToggleComplete"
     />
 
     <!-- 회신 초안 모달 -->
@@ -189,8 +219,12 @@ import { openToast } from '~/composables/useToast'
 import MailKpiPanel from '~/components/mail/MailKpiPanel.vue'
 import MailInboxPanel from '~/components/mail/MailInboxPanel.vue'
 import MailAnalysisPanel from '~/components/mail/MailAnalysisPanel.vue'
+import MailAnalysisModal from '~/components/mail/MailAnalysisModal.vue'
+import MailDetailModal from '~/components/mail/MailDetailModal.vue'
 import MailChatPanel from '~/components/mail/MailChatPanel.vue'
 import MailLoginModal from '~/components/mail/MailLoginModal.vue'
+import MailSentPanel from '~/components/mail/MailSentPanel.vue'
+import MailFollowupPanel from '~/components/mail/MailFollowupPanel.vue'
 import type { ClassifiedMail, ClassifiedMailListParams } from '~/types/mail'
 
 definePageMeta({ layout: 'default' })
@@ -201,17 +235,7 @@ const {
   openLoginModal,
   closeLoginModal,
   checkMailAuth,
-  // 기존 상태
-  isLoadingSentList,
-  isLoadingFollowup,
-  sentMails,
-  sentTotalCount,
-  followupPending,
-  followupCompleted,
-  followupStats,
-  handleFetchSentMailList,
-  handleFetchFollowupStatus,
-  // 신규 상태
+  // 받은메일함 상태
   kpi,
   classifiedMails,
   classifiedTotalCount,
@@ -224,14 +248,29 @@ const {
   importanceOptions,
   isLoadingKpi,
   isLoadingClassified,
-  // 신규 액션
+  inboxSummary,
+  isLoadingInboxSummary,
+  // 받은메일함 액션
   handleMailSync,
   handleFetchMailKpi,
   handleFetchWorkCategories,
   handleFetchInboxClassified,
+  handleFetchInboxSummary,
+  handleSyncRange,
   handleFetchMailDetail,
   handleFetchReplyDraft,
   handleToggleActionComplete,
+  setSelectedMail,
+  // 보낸메일함 상태
+  sentClassifiedList,
+  sentClassifiedTabCounts,
+  sentTopRecipients,
+  sentWeeklyStats,
+  isLoadingSentClassified,
+  isLoadingSentSidebar,
+  // 보낸메일함 액션
+  handleFetchSentClassified,
+  handleFetchSentSidebar,
 } = useMailStore()
 
 const chatPanelRef = ref<InstanceType<typeof MailChatPanel>>()
@@ -244,24 +283,27 @@ const isInitializingPage = ref(false)
 const hasInitializedPage = ref(false)
 const activeTab = ref<'inbox' | 'followup'>('inbox')
 
+// 모달 상태
+const isDetailModalOpen = ref(false)
+const isAnalysisModalOpen = ref(false)
+const isReplyDraftModalOpen = ref(false)
+const isReplyDraftLoading = ref(false)
+const replyDraftContent = ref('')
+
+const currentSentTab = ref<'all' | 'pending' | 'done'>('all')
+
 const mailTabItems = computed(() => [
   { label: '받은 메일함', value: 'inbox' },
   {
     label:
-      followupStats.value.pendingCount > 0
-        ? `보낸 메일함 · 팔로업 트래커 (${followupStats.value.pendingCount})`
+      sentClassifiedTabCounts.value.pending > 0
+        ? `보낸 메일함 · 팔로업 트래커 (${sentClassifiedTabCounts.value.pending})`
         : '보낸 메일함 · 팔로업 트래커',
     value: 'followup',
   },
 ])
 
-// 회신 초안 모달 상태
-const isReplyDraftModalOpen = ref(false)
-const isReplyDraftLoading = ref(false)
-const replyDraftContent = ref('')
-
 // ─── ClassifiedMail → Mail 어댑터 (MailChatPanel용) ──────
-// MailChatPanel은 Mail[] 타입을 기대하므로 ClassifiedMail을 변환
 const adaptedMailsForChat = computed(() =>
   classifiedMails.value.map((m) => ({
     subject: m.subject,
@@ -323,8 +365,15 @@ const buildDefaultClassifiedParams = (overrides: Partial<ClassifiedMailListParam
   categoryCds: [],
   pageNum: 1,
   pageSize: 50,
+  startDate: startDateFilter.value ? toYyyyMmDd(startDateFilter.value) : undefined,
+  endDate: endDateFilter.value ? toYyyyMmDd(endDateFilter.value) : undefined,
   ...overrides,
 })
+
+// ─── 받은메일함 + AI 요약 병렬 조회 헬퍼 ────────────────
+const doFetchInbox = async (params: ClassifiedMailListParams) => {
+  await Promise.all([handleFetchInboxClassified(params), handleFetchInboxSummary(params)])
+}
 
 // ─── 조회 ─────────────────────────────────────────────────
 const doRefresh = async () => {
@@ -340,10 +389,24 @@ const doRefresh = async () => {
   }
 
   if (activeTab.value === 'followup') {
-    await handleFetchFollowupStatus(params)
-    await handleFetchSentMailList(params)
+    // 받은메일함과 동일하게: 해당 범위 미동기화 메일 먼저 IMAP → DB 동기화 후 재조회
+    handleSyncRange(params.startDate, params.endDate).then(() =>
+      Promise.all([
+        handleFetchSentClassified({
+          tabType: currentSentTab.value,
+          pageNum: 1,
+          pageSize: 50,
+          startDate: params.startDate,
+          endDate: params.endDate,
+        }),
+        handleFetchSentSidebar(params.startDate, params.endDate),
+      ]),
+    )
   } else {
-    await Promise.all([handleFetchMailKpi(), handleFetchInboxClassified(buildDefaultClassifiedParams())])
+    // 해당 날짜 범위 중 DB에 없는 메일을 먼저 동기화 (조용히, 블로킹 없음)
+    handleSyncRange(params.startDate, params.endDate).then(() => doFetchInbox(buildDefaultClassifiedParams()))
+    // KPI는 즉시 갱신
+    await handleFetchMailKpi()
   }
 }
 
@@ -361,23 +424,33 @@ const onToggleAnalysisPanel = () => {
   isAnalysisCollapsed.value = !isAnalysisCollapsed.value
 }
 
-// ─── 메일 선택 ────────────────────────────────────────────
-const onMailSelect = async (mail: ClassifiedMail) => {
-  await handleFetchMailDetail(mail.mailId, mail)
+// ─── 메일 상세 보기 ───────────────────────────────────────
+const onMailDetail = async (mail: ClassifiedMail) => {
+  setSelectedMail(mail)
+  isDetailModalOpen.value = true
+  // 전체 본문을 위해 상세 조회 (백그라운드)
+  void handleFetchMailDetail(mail.mailId, mail)
+}
+
+// ─── AI 분석 보기 ─────────────────────────────────────────
+const onMailAnalysis = (mail: ClassifiedMail) => {
+  setSelectedMail(mail)
+  isAnalysisModalOpen.value = true
 }
 
 // ─── 검색 ─────────────────────────────────────────────────
 const onSearch = async (params: ClassifiedMailListParams) => {
-  await handleFetchInboxClassified(params)
+  await doFetchInbox(params)
 }
 
 // ─── 서브탭 변경 ──────────────────────────────────────────
 const onSubTabChange = async (tab: 'all' | 'action' | 'reply') => {
-  await handleFetchInboxClassified(buildDefaultClassifiedParams({ tabType: tab }))
+  await doFetchInbox(buildDefaultClassifiedParams({ tabType: tab }))
 }
 
-// ─── 회신 초안 ────────────────────────────────────────────
-const onReplyDraft = async () => {
+// ─── 회신 초안 (AI 분석 모달 → 회신 초안 모달) ──────────
+const onAnalysisReplyDraft = async () => {
+  isAnalysisModalOpen.value = false
   if (!selectedMail.value) return
   isReplyDraftModalOpen.value = true
   isReplyDraftLoading.value = true
@@ -391,10 +464,54 @@ const onToggleComplete = async (mailId: string, currentYn: string) => {
   await handleToggleActionComplete(mailId, currentYn)
 }
 
+// ─── 보낸메일함 서브탭 변경 ───────────────────────────────
+const onSentTabChange = async (tab: 'all' | 'pending' | 'done') => {
+  currentSentTab.value = tab
+  const dateRange = getDateRangeParams()
+  await handleFetchSentClassified({
+    tabType: tab,
+    pageNum: 1,
+    pageSize: 50,
+    startDate: dateRange?.startDate,
+    endDate: dateRange?.endDate,
+  })
+}
+
+// ─── 팔로업 사이드바 이벤트 ───────────────────────────────
+const onViewPending = async () => {
+  currentSentTab.value = 'pending'
+  const dateRange = getDateRangeParams()
+  await handleFetchSentClassified({
+    tabType: 'pending',
+    pageNum: 1,
+    pageSize: 50,
+    startDate: dateRange?.startDate,
+    endDate: dateRange?.endDate,
+  })
+}
+
+const onDraftOverdue = () => {
+  onViewPending()
+}
+
 // ─── 로그인 성공 콜백 ─────────────────────────────────────
 const onLoginSuccess = async () => {
   closeLoginModal()
   await loadMailData()
+}
+
+// ─── 모달 헬퍼 ───────────────────────────────────────────
+const parseSenderEmail = (fromAddr: string) => {
+  const match = fromAddr.match(/<([^>]+)>/)
+  if (match) return match[1]
+  return fromAddr.includes('@') ? fromAddr : ''
+}
+
+const toModalDate = (value: string | number | null) => {
+  if (value === null || value === undefined || value === '') return null
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return null
+  return d.toISOString()
 }
 
 // ─── 데이터 로드 (인증 후 호출) ───────────────────────────
@@ -414,15 +531,20 @@ const loadMailData = async () => {
     // 동기화는 백그라운드에서 조용히 실행 (blocking하지 않음)
     handleMailSync({ silent: true }).catch(() => {})
 
-    // KPI + 분류 메일함 + 업무카테고리 병렬 조회
-    await Promise.all([
-      handleFetchMailKpi(),
-      handleFetchInboxClassified(buildDefaultClassifiedParams()),
-      handleFetchWorkCategories(),
-    ])
+    // KPI + 분류 메일함 + AI 요약 + 업무카테고리 병렬 조회
+    await Promise.all([handleFetchMailKpi(), doFetchInbox(buildDefaultClassifiedParams()), handleFetchWorkCategories()])
 
-    // 보낸메일함 + 팔로업
-    await Promise.all([handleFetchSentMailList(dateParams), handleFetchFollowupStatus(dateParams)])
+    // 보낸메일함 분류 + 사이드바
+    await Promise.all([
+      handleFetchSentClassified({
+        tabType: 'all',
+        pageNum: 1,
+        pageSize: 50,
+        startDate: dateParams.startDate,
+        endDate: dateParams.endDate,
+      }),
+      handleFetchSentSidebar(dateParams.startDate, dateParams.endDate),
+    ])
 
     isFilterWatcherReady.value = true
     hasInitializedPage.value = true
@@ -437,13 +559,11 @@ const handleInitializeMailPage = async () => {
   isInitializingPage.value = true
 
   try {
-    // 인증 확인 → 미인증이면 로그인 모달 표시 후 종료
     const authed = await checkMailAuth()
     if (!authed) {
       openLoginModal()
       return
     }
-
     await loadMailData()
   } finally {
     isInitializingPage.value = false

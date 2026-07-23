@@ -21,6 +21,11 @@ import type {
   FollowupRegisterRequest,
   FollowupListResponse,
   FollowupStatusUpdateRequest,
+  InboxSummaryResponse,
+  SentClassifiedListParams,
+  SentClassifiedListResponse,
+  SentTopRecipientsResponse,
+  SentWeeklyStatsResponse,
 } from '~/types/mail'
 
 const { get, post } = useApi()
@@ -98,6 +103,8 @@ export const useMailApi = () => {
     if (params.categoryCds?.length) query.append('categoryCds', params.categoryCds.join(','))
     query.append('pageNum', String(params.pageNum ?? 1))
     query.append('pageSize', String(params.pageSize ?? 50))
+    if (params.startDate) query.append('startDate', params.startDate)
+    if (params.endDate) query.append('endDate', params.endDate)
     return get<ClassifiedMailListResponse>(`/mail/inbox-classified.do?${query.toString()}`)
   }
 
@@ -131,6 +138,40 @@ export const useMailApi = () => {
     return post<{ result: string }>('/mail/followup-status-update.do', req)
   }
 
+  /** 날짜 범위 동기화 (DB에 없는 메일만 IMAP → AI 분류) */
+  const fetchSyncRange = async (startDate: string, endDate: string): Promise<{ result: string; newCount: number }> => {
+    return post<{ result: string; newCount: number }>('/mail/sync-range.do', { startDate, endDate })
+  }
+
+  /** 현재 필터 조건 메일 전체 AI 요약 */
+  const fetchInboxSummary = async (params: ClassifiedMailListParams): Promise<InboxSummaryResponse> => {
+    return post<InboxSummaryResponse>('/mail/inbox-summary.do', params)
+  }
+
+  /** 보낸메일함 분류 목록 조회 (LLM 기반, 서브탭/페이징 지원) */
+  const fetchSentClassified = async (params: SentClassifiedListParams): Promise<SentClassifiedListResponse> => {
+    const query = new URLSearchParams()
+    query.append('tabType', params.tabType)
+    query.append('pageNum', String(params.pageNum ?? 1))
+    query.append('pageSize', String(params.pageSize ?? 50))
+    if (params.startDate) query.append('startDate', params.startDate)
+    if (params.endDate) query.append('endDate', params.endDate)
+    return get<SentClassifiedListResponse>(`/mail/sent-classified.do?${query.toString()}`)
+  }
+
+  /** 답장 대기 많은 상대 조회 */
+  const fetchSentTopRecipients = async (startDate?: string, endDate?: string): Promise<SentTopRecipientsResponse> => {
+    const query = new URLSearchParams()
+    if (startDate) query.append('startDate', startDate)
+    if (endDate) query.append('endDate', endDate)
+    return get<SentTopRecipientsResponse>(`/mail/sent-top-recipients.do?${query.toString()}`)
+  }
+
+  /** 이번 주 / 전주 회신 통계 조회 */
+  const fetchSentWeeklyStats = async (): Promise<SentWeeklyStatsResponse> => {
+    return get<SentWeeklyStatsResponse>('/mail/sent-weekly-stats.do')
+  }
+
   return {
     fetchMailAuthCheck,
     fetchMailAuth,
@@ -149,5 +190,10 @@ export const useMailApi = () => {
     fetchFollowupRegister,
     fetchFollowupList,
     fetchFollowupStatusUpdate,
+    fetchInboxSummary,
+    fetchSyncRange,
+    fetchSentClassified,
+    fetchSentTopRecipients,
+    fetchSentWeeklyStats,
   }
 }

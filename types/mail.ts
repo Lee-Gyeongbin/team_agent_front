@@ -170,6 +170,8 @@ export interface ClassifiedMailListParams {
   categoryCds: string[]
   pageNum: number
   pageSize: number
+  startDate?: string
+  endDate?: string
 }
 
 export interface MailDetailMail {
@@ -266,4 +268,68 @@ export interface MailSyncResponse {
 export interface WorkCategoryListResponse {
   result: string
   list: WorkCategory[]
+}
+
+export interface InboxSummaryResponse {
+  result: string
+  summary: string
+}
+
+// ─── 보낸메일함 분류 (LLM 기반) ──────────────────────────────
+
+export interface SentClassifiedItem {
+  mailId: string
+  subject: string
+  toName: string
+  toAddr: string
+  mailDt: string | null
+  replyExpectedYn: 'Y' | 'N'
+  repliedYn: 'Y' | 'N'
+  elapsedDays: number
+  replyElapsedHours: number | null
+}
+
+export interface SentClassifiedListResponse {
+  result: string
+  list: SentClassifiedItem[]
+  totalCount: number
+  tabCounts: { all: number; pending: number; done: number }
+}
+
+export interface SentClassifiedListParams {
+  tabType: 'all' | 'pending' | 'done'
+  startDate?: string
+  endDate?: string
+  pageNum: number
+  pageSize: number
+}
+
+export interface SentTopRecipient {
+  toAddr: string
+  toName: string
+  pendingCount: number
+}
+
+export interface SentTopRecipientsResponse {
+  result: string
+  list: SentTopRecipient[]
+}
+
+export interface SentWeeklyStats {
+  avgReplyDays: number
+  prevAvgReplyDays: number
+  replyRate: number
+  prevReplyRate: number
+  pendingCount: number
+  doneCount: number
+}
+
+export interface SentWeeklyStatsResponse {
+  result: string
+  avgReplyDays: number
+  prevAvgReplyDays: number
+  replyRate: number
+  prevReplyRate: number
+  pendingCount: number
+  doneCount: number
 }

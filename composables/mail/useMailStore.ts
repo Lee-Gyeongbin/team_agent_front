@@ -19,6 +19,10 @@ import type {
   FollowupDbItem,
   FollowupRegisterRequest,
   FollowupStatusUpdateRequest,
+  SentClassifiedItem,
+  SentClassifiedListParams,
+  SentTopRecipient,
+  SentWeeklyStats,
 } from '~/types/mail'
 
 const {
@@ -39,6 +43,11 @@ const {
   fetchFollowupRegister,
   fetchFollowupList,
   fetchFollowupStatusUpdate,
+  fetchInboxSummary,
+  fetchSyncRange,
+  fetchSentClassified,
+  fetchSentTopRecipients,
+  fetchSentWeeklyStats,
 } = useMailApi()
 
 const { fetchCodes } = useCommonCodesApi()
@@ -80,6 +89,24 @@ const isLoadingClassified = ref(false)
 const isLoadingSync = ref(false)
 const followupDbList = ref<FollowupDbItem[]>([])
 const isLoadingFollowupList = ref(false)
+const inboxSummary = ref<string>('')
+const isLoadingInboxSummary = ref(false)
+
+// ─── 보낸메일함 분류 (LLM 기반) ─────────────────────────────
+const sentClassifiedList = ref<SentClassifiedItem[]>([])
+const sentClassifiedTotalCount = ref(0)
+const sentClassifiedTabCounts = ref<{ all: number; pending: number; done: number }>({ all: 0, pending: 0, done: 0 })
+const sentTopRecipients = ref<SentTopRecipient[]>([])
+const sentWeeklyStats = ref<SentWeeklyStats>({
+  avgReplyDays: 0,
+  prevAvgReplyDays: 0,
+  replyRate: 0,
+  prevReplyRate: 0,
+  pendingCount: 0,
+  doneCount: 0,
+})
+const isLoadingSentClassified = ref(false)
+const isLoadingSentSidebar = ref(false)
 
 export const useMailStore = () => {
   // ─── 로그인 모달 제어 ─────────────────────────────────────
@@ -402,6 +429,77 @@ export const useMailStore = () => {
     }
   }
 
+  // ─── selectedMail 직접 설정 ───────────────────────────────
+  const setSelectedMail = (mail: ClassifiedMail | null) => {
+    selectedMail.value = mail
+  }
+
+  // ─── 현재 필터 조건 메일 전체 AI 요약 ────────────────────
+  const handleFetchInboxSummary = async (params: ClassifiedMailListParams) => {
+    isLoadingInboxSummary.value = true
+    inboxSummary.value = ''
+    try {
+      const res = await fetchInboxSummary(params)
+      inboxSummary.value = res.summary ?? ''
+    } catch {
+      // 요약 실패는 조용히 처리 (UX 방해 안 함)
+    } finally {
+      isLoadingInboxSummary.value = false
+    }
+  }
+
+  // ─── 날짜 범위 동기화 (DB 없는 것만 IMAP → AI 분류) ─────────
+  const handleSyncRange = async (startDate: string, endDate: string) => {
+    isLoadingSync.value = true
+    try {
+      const res = await fetchSyncRange(startDate, endDate)
+      if (res.result === 'SUCCESS') {
+        openToast({ message: `메일 동기화가 완료되었습니다. (${res.newCount}건)` })
+      }
+    } catch {
+      // 백그라운드 동기화 실패는 조용히 처리
+    }
+  }
+
+  // ─── 보낸메일함 분류 목록 조회 ────────────────────────────
+  const handleFetchSentClassified = async (params: SentClassifiedListParams) => {
+    isLoadingSentClassified.value = true
+    try {
+      const res = await fetchSentClassified(params)
+      sentClassifiedList.value = res.list ?? []
+      sentClassifiedTotalCount.value = res.totalCount ?? 0
+      sentClassifiedTabCounts.value = res.tabCounts ?? { all: 0, pending: 0, done: 0 }
+    } catch {
+      openToast({ message: '보낸메일함 조회에 실패했습니다.', type: 'error' })
+    } finally {
+      isLoadingSentClassified.value = false
+    }
+  }
+
+  // ─── 사이드바 데이터 (상위수신자 + 주간통계) 병렬 조회 ────
+  const handleFetchSentSidebar = async (startDate?: string, endDate?: string) => {
+    isLoadingSentSidebar.value = true
+    try {
+      const [recipientsRes, statsRes] = await Promise.all([
+        fetchSentTopRecipients(startDate, endDate),
+        fetchSentWeeklyStats(),
+      ])
+      sentTopRecipients.value = recipientsRes.list ?? []
+      sentWeeklyStats.value = {
+        avgReplyDays: statsRes.avgReplyDays ?? 0,
+        prevAvgReplyDays: statsRes.prevAvgReplyDays ?? 0,
+        replyRate: statsRes.replyRate ?? 0,
+        prevReplyRate: statsRes.prevReplyRate ?? 0,
+        pendingCount: statsRes.pendingCount ?? 0,
+        doneCount: statsRes.doneCount ?? 0,
+      }
+    } catch {
+      // 사이드바 실패는 조용히 처리
+    } finally {
+      isLoadingSentSidebar.value = false
+    }
+  }
+
   // ─── 팔로업 상태 업데이트 ─────────────────────────────────
   const handleFollowupStatusUpdate = async (req: FollowupStatusUpdateRequest) => {
     try {
@@ -447,6 +545,8 @@ export const useMailStore = () => {
     isLoadingSync,
     followupDbList,
     isLoadingFollowupList,
+    inboxSummary,
+    isLoadingInboxSummary,
     // 기존 액션
     checkMailAuth,
     clearMailAuth: () => {
@@ -472,5 +572,18 @@ export const useMailStore = () => {
     handleFollowupRegister,
     handleFetchFollowupList,
     handleFollowupStatusUpdate,
+    setSelectedMail,
+    handleFetchInboxSummary,
+    handleSyncRange,
+    // 보낸메일함 분류
+    sentClassifiedList,
+    sentClassifiedTotalCount,
+    sentClassifiedTabCounts,
+    sentTopRecipients,
+    sentWeeklyStats,
+    isLoadingSentClassified,
+    isLoadingSentSidebar,
+    handleFetchSentClassified,
+    handleFetchSentSidebar,
   }
 }
