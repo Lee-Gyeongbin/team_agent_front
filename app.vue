@@ -40,37 +40,40 @@
   <!-- 즉시번역(전역 드래그 번역) 오버레이 -->
   <InstantTranslateOverlay />
 
-  <!-- 네트워크 오류 모달 — 전역 UI 최상단 -->
-  <NetworkErrorModal
-    :is-open="networkErrorOpen"
-    :is-retrying="networkErrorRetrying"
-    :message="networkErrorMessage"
-    :status-message="networkErrorStatusMessage"
-    :status-message-type="networkErrorStatusMessageType"
-    :retry-text="networkErrorRetryText"
-    :close-text="networkErrorCloseText"
-    @close="closeNetworkError"
-    @retry="retryNetworkError"
+  <!-- 장애 오류 모달 (네트워크 / 시스템 / DB) — 전역 UI 최상단 -->
+  <IncidentErrorModal
+    v-if="incidentErrorOpen"
+    :is-open="incidentErrorOpen"
+    :is-retrying="incidentErrorRetrying"
+    :error-type="incidentErrorType"
+    :message="incidentErrorMessage"
+    :status-message="incidentErrorStatusMessage"
+    :status-message-type="incidentErrorStatusMessageType"
+    :retry-text="incidentErrorRetryText"
+    :close-text="incidentErrorCloseText"
+    @close="closeIncidentError"
+    @retry="retryIncidentError"
   />
 </template>
 
 <script setup lang="ts">
-import { useNetworkErrorNoticeState, useNetworkErrorOfflineListener } from '~/composables/com/useNetworkErrorNotice'
+import { useIncidentErrorNoticeState, useNetworkErrorOfflineListener } from '~/composables/com/useIncidentErrorNotice'
 
 const { initTheme } = useTheme()
 const { dialogType, dialogOptions, closeDialog } = useDialogState()
 const { isLoading: isGlobalLoading, loadingText: globalLoadingText } = useLoadingState()
 const {
-  isOpen: networkErrorOpen,
-  isRetrying: networkErrorRetrying,
-  message: networkErrorMessage,
-  statusMessage: networkErrorStatusMessage,
-  statusMessageType: networkErrorStatusMessageType,
-  retryText: networkErrorRetryText,
-  closeText: networkErrorCloseText,
-  close: closeNetworkError,
-  retry: retryNetworkError,
-} = useNetworkErrorNoticeState()
+  isOpen: incidentErrorOpen,
+  isRetrying: incidentErrorRetrying,
+  errorType: incidentErrorType,
+  message: incidentErrorMessage,
+  statusMessage: incidentErrorStatusMessage,
+  statusMessageType: incidentErrorStatusMessageType,
+  retryText: incidentErrorRetryText,
+  closeText: incidentErrorCloseText,
+  close: closeIncidentError,
+  retry: retryIncidentError,
+} = useIncidentErrorNoticeState()
 
 useNetworkErrorOfflineListener()
 

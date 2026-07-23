@@ -1,5 +1,10 @@
 import { notifyApiError } from '~/composables/com/useApiErrorNotice'
-import { isNetworkError, notifyNetworkError } from '~/composables/com/useNetworkErrorNotice'
+import {
+  isNetworkError,
+  notifyIncidentError,
+  notifyIncidentFromApiBody,
+  resolveFatalServerError,
+} from '~/composables/com/useIncidentErrorNotice'
 
 export const useApi = () => {
   const baseURL = '/api'
@@ -12,10 +17,23 @@ export const useApi = () => {
   }
 
   const handleResponse = async (response: Response): Promise<Response> => {
-    if (response.ok) return response
+    const isHtmlResponse = response.headers.get('content-type')?.includes('text/html') === true
+    if (response.ok && !isHtmlResponse) return response
 
-    const error = await response.json().catch(() => ({}))
+    const error = isHtmlResponse ? {} : await response.json().catch(() => ({}))
     const errorData = error as { errorType?: string; message?: string }
+    const fatalServerError = resolveFatalServerError(response)
+
+    if (fatalServerError) {
+      const fatalError = createError({
+        ...fatalServerError,
+        message: errorData.message || '서버 오류가 발생했습니다.',
+        fatal: true,
+      })
+      showError(fatalError)
+      throw fatalError
+    }
+
     const guideMessage = notifyApiError(response.status)
 
     if (response.status === 401 || errorData.errorType === 'sessionExpired') {
@@ -30,7 +48,7 @@ export const useApi = () => {
     try {
       return await execute()
     } catch (err) {
-      if (isNetworkError(err)) notifyNetworkError()
+      if (isNetworkError(err)) notifyIncidentError()
       throw err
     }
   }
@@ -47,7 +65,10 @@ export const useApi = () => {
         ...options,
       })
       await handleResponse(response)
-      return response.json() as Promise<T>
+      const data = (await response.json()) as T
+      // HTTP 200 + result FAIL + RESP_SYS_ERROR / RESP_DB_ERROR → 장애 모달
+      notifyIncidentFromApiBody(data)
+      return data
     })
   }
 

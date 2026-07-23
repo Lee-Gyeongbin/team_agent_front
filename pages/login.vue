@@ -173,7 +173,7 @@
 </template>
 
 <script setup lang="ts">
-import { isNetworkError } from '~/composables/com/useNetworkErrorNotice'
+import { isIncidentApiBody, isIncidentHandledError } from '~/composables/com/useIncidentErrorNotice'
 
 definePageMeta({ layout: 'auth' })
 
@@ -260,11 +260,11 @@ const onSubmit = async () => {
       savedLoginIdCookie.value = saveLoginInfo.value ? loginId.value.trim() : null
       const redirect = (route.query.redirect as string) || '/chat'
       navigateTo(redirect)
-    } else {
+    } else if (!isIncidentApiBody(res)) {
       errorMessage.value = res.message || '로그인에 실패했습니다.'
     }
   } catch (err) {
-    if (!isNetworkError(err)) {
+    if (!isIncidentHandledError(err)) {
       errorMessage.value = '서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.'
     }
   } finally {
