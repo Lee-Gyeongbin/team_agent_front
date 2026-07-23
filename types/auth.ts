@@ -8,6 +8,8 @@ export interface UserInfo {
 
 export interface LoginResponse {
   success: boolean
+  result?: 'SUCCESS' | 'FAIL'
+  errorCode?: string
   errorType?: string
   message?: string
   user?: UserInfo
@@ -34,6 +36,8 @@ export const createEmptySignupForm = (): SignupForm => ({
 
 export interface SignupResponse {
   success: boolean
+  result?: 'SUCCESS' | 'FAIL'
+  errorCode?: string
   errorType?: string
   message?: string
 }

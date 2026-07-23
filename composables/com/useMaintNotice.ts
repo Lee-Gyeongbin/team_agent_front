@@ -1,6 +1,6 @@
 import type { ChatGuideItem, MaintNoticeKind } from '~/types/com/chatGuide'
 import { useChatGuideApi } from '~/composables/chat-guide/useChatGuideApi'
-import { setNetworkIncidentGuideFromMaint } from '~/composables/com/useNetworkErrorNotice'
+import { setIncidentGuideFromMaint } from '~/composables/com/useIncidentErrorNotice'
 import { CHAT_GUIDE_MAINTENANCE_DEFAULT_GUIDE_KEYS } from '~/types/chat-guide'
 
 /** localStorage — 점검 공지 "다시 보지 않기" (자동 팝업만 차단, 값은 modifyDt) */
@@ -72,14 +72,14 @@ const getMaintNoticeKind = (item: ChatGuideItem): MaintNoticeKind | null => {
 }
 
 /**
- * 비로그인 화면용 — 네트워크 오류 모달 가이드만 동기화
+ * 비로그인 화면용 — 장애 모달 가이드 동기화
  * (회원가입 직진입 등 점검 배너가 없는 페이지)
  */
-export const handleSyncNetworkIncidentGuide = async () => {
+export const handleSyncIncidentGuide = async () => {
   try {
     const { fetchChatGuideMaintList } = useChatGuideApi()
     const list = await fetchChatGuideMaintList()
-    setNetworkIncidentGuideFromMaint(list)
+    setIncidentGuideFromMaint(list)
   } catch {
     // 캐시 유지
   }
@@ -112,7 +112,7 @@ const toBannerItem = (item: ChatGuideItem): MaintNoticeBannerItem | null => {
 /**
  * 로그인 점검·복구 공지
  * - 목록/활성 여부는 백엔드(chatGuideMaintList)가 필터해서 전달
- * - MAINT_INCIDENT_NETWORK(enblYn=Y)도 리스트에 포함 → 네트워크 오류 모달용 캐시만 동기화
+ * - MAINT_INCIDENT_*(enblYn=Y)도 리스트에 포함 → 장애 모달(네트워크/시스템/DB) 문구 캐시 동기화
  * - 프론트: 배너·모달 표시 + 다시 보지 않기(localStorage)만 담당
  */
 export const useMaintNotice = () => {
@@ -182,7 +182,7 @@ export const useMaintNotice = () => {
   const handleSelectMaintNotice = async () => {
     try {
       const list = await fetchChatGuideMaintList()
-      setNetworkIncidentGuideFromMaint(list)
+      setIncidentGuideFromMaint(list)
 
       const displayList = list.filter((item) => getMaintNoticeKind(item) != null)
       maintList.value = displayList
@@ -191,7 +191,7 @@ export const useMaintNotice = () => {
       isOpen.value = false
       openNextAuto()
     } catch {
-      // 네트워크 가이드 캐시는 유지 — offline 시 모달 문구로 사용
+      // 장애 가이드 캐시는 유지 — offline 시 모달 문구로 사용
       maintList.value = []
       autoOpenQueue.value = []
       notice.value = null
