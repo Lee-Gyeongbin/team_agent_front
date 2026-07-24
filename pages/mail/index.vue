@@ -130,6 +130,7 @@
           :selected-tab="currentSentTab"
           @tab-change="onSentTabChange"
           @detail="onSentMailDetail"
+          @draft-click="onFollowupDraftClick"
           @followup-changed="onFollowupChanged"
         />
 
@@ -138,6 +139,7 @@
           :is-loading="isLoadingSentSidebar"
           :top-recipients="sentTopRecipients"
           :pending-mails="sentClassifiedList"
+          @draft-click="onFollowupDraftClick"
         />
       </div>
     </div>
@@ -186,73 +188,15 @@
       @toggle-complete="onToggleComplete"
     />
 
-    <!-- 회신 초안 모달 -->
-    <UiModal
-      :is-open="isReplyDraftModalOpen"
-      position="center"
-      :show-close="true"
-      :show-overlay="true"
-      max-width="600px"
-      @close="isReplyDraftModalOpen = false"
-    >
-      <template #header>
-        <div class="mail-draft-modal-header">
-          <h2 class="mail-detail-modal-title">AI 회신 초안</h2>
-          <button
-            class="btn btn-modal-close"
-            @click="isReplyDraftModalOpen = false"
-          >
-            <i class="icon icon-close-gray size-20" />
-          </button>
-        </div>
-      </template>
-
-      <div class="mail-draft-modal-body">
-        <div
-          v-if="isReplyDraftLoading"
-          class="mail-draft-loading"
-        >
-          <div class="mail-briefing-skeleton">
-            <span
-              v-for="i in 6"
-              :key="i"
-              class="mail-skeleton mail-skeleton-line"
-              :style="{ width: i % 3 === 0 ? '70%' : '100%' }"
-            />
-          </div>
-        </div>
-        <p
-          v-else-if="replyDraftContent"
-          class="mail-draft-content"
-        >
-          {{ replyDraftContent }}
-        </p>
-        <UiEmpty
-          v-else
-          title="초안을 생성할 수 없습니다"
-        />
-
-        <div
-          v-if="replyDraftContent && !isReplyDraftLoading"
-          class="mail-draft-modal-footer"
-        >
-          <p class="mail-draft-copy-hint">
-            <i class="icon-info size-14" />
-            바로가기 클릭 시 내용이 클립보드에 자동 복사됩니다. 메일 작성창에서 Ctrl+V로 붙여넣기 해주세요.
-          </p>
-          <UiButton
-            variant="primary"
-            size="lg"
-            @click="onOpenOfficeMail"
-          >
-            <template #icon-left>
-              <i class="icon-link-agent size-16" />
-            </template>
-            바로가기
-          </UiButton>
-        </div>
-      </div>
-    </UiModal>
+    <!-- AI 메일 초안 모달 (회신 / 독촉 공통) -->
+    <MailDraftModal
+      :is-open="isDraftModalOpen"
+      :title="draftModalTitle"
+      :is-loading="isDraftLoading"
+      :content="draftContent"
+      @close="closeDraftModal"
+      @open-office-mail="onDraftOpenOfficeMail"
+    />
   </div>
 </template>
 
@@ -261,17 +205,18 @@ import { getLocalTimeZone, today, toCalendarDate, toCalendarDateTime } from '@in
 import type { DateValue } from '@internationalized/date'
 import { useMailStore } from '~/composables/mail/useMailStore'
 import { openToast } from '~/composables/useToast'
-import { copyToClipboard } from '~/utils/global/clipboardUtil'
 import MailKpiPanel from '~/components/mail/MailKpiPanel.vue'
 import MailInboxPanel from '~/components/mail/MailInboxPanel.vue'
 import MailAnalysisPanel from '~/components/mail/MailAnalysisPanel.vue'
 import MailAnalysisModal from '~/components/mail/MailAnalysisModal.vue'
 import MailDetailModal from '~/components/mail/MailDetailModal.vue'
+import MailDraftModal from '~/components/mail/MailDraftModal.vue'
 import MailChatPanel from '~/components/mail/MailChatPanel.vue'
 import MailLoginModal from '~/components/mail/MailLoginModal.vue'
 import MailSentPanel from '~/components/mail/MailSentPanel.vue'
 import MailFollowupPanel from '~/components/mail/MailFollowupPanel.vue'
 import type { ClassifiedMail, ClassifiedMailListParams, SentClassifiedItem } from '~/types/mail'
+import { copyDraftBodyToClipboard } from '~/utils/mail/mailDraftUtil'
 
 definePageMeta({ layout: 'default' })
 
@@ -307,6 +252,7 @@ const {
   handleFetchMailDetail,
   handleFetchMailBodyText,
   handleFetchReplyDraft,
+  handleFetchFollowupDraft,
   handleToggleActionComplete,
   setSelectedMail,
   // 보낸메일함 상태
@@ -337,9 +283,12 @@ const isSentDetailModalOpen = ref(false)
 const selectedSentMail = ref<SentClassifiedItem | null>(null)
 const sentDetailBody = ref('')
 const isAnalysisModalOpen = ref(false)
-const isReplyDraftModalOpen = ref(false)
-const isReplyDraftLoading = ref(false)
-const replyDraftContent = ref('')
+const isDraftModalOpen = ref(false)
+const isDraftLoading = ref(false)
+const draftContent = ref('')
+const draftModalTitle = ref('')
+const draftModalMode = ref<'reply' | 'followup'>('reply')
+const selectedFollowupMail = ref<SentClassifiedItem | null>(null)
 
 const OFFICE_MAIL_BASE_URL = 'https://office.ispark.kr/#/UD/UDA/UDA0000'
 
@@ -515,54 +464,83 @@ const onSubTabChange = async (tab: 'all' | 'action' | 'reply') => {
   await doFetchInbox(buildDefaultClassifiedParams({ tabType: tab }))
 }
 
-// ─── 회신 초안 (AI 분석 모달 → 회신 초안 모달) ──────────
+// ─── AI 메일 초안 (회신 / 독촉 공통) ───────────────────────
+const closeDraftModal = () => {
+  isDraftModalOpen.value = false
+  draftContent.value = ''
+  selectedFollowupMail.value = null
+}
+
 const onAnalysisReplyDraft = async () => {
   isAnalysisModalOpen.value = false
   if (!selectedMail.value) return
-  isReplyDraftModalOpen.value = true
-  isReplyDraftLoading.value = true
-  replyDraftContent.value = ''
-  replyDraftContent.value = await handleFetchReplyDraft(selectedMail.value.mailId)
-  isReplyDraftLoading.value = false
+  draftModalTitle.value = 'AI 회신 초안'
+  draftModalMode.value = 'reply'
+  isDraftModalOpen.value = true
+  isDraftLoading.value = true
+  draftContent.value = ''
+  draftContent.value = await handleFetchReplyDraft(selectedMail.value.mailId)
+  isDraftLoading.value = false
 }
 
-const onOpenOfficeMail = async () => {
+const onFollowupDraftClick = async (mail: SentClassifiedItem) => {
+  selectedFollowupMail.value = mail
+  draftModalTitle.value = '독촉 메일 초안'
+  draftModalMode.value = 'followup'
+  isDraftModalOpen.value = true
+  isDraftLoading.value = true
+  draftContent.value = ''
+  draftContent.value = await handleFetchFollowupDraft(mail.toName || mail.toAddr, mail.subject, mail.mailDt ?? '')
+  isDraftLoading.value = false
+}
+
+const onDraftOpenOfficeMail = async () => {
+  if (draftModalMode.value === 'followup') {
+    const mail = selectedFollowupMail.value
+    if (!mail) return
+
+    if (draftContent.value) {
+      await copyDraftBodyToClipboard(draftContent.value)
+    }
+
+    const params = new URLSearchParams({
+      specialLnb: 'Y',
+      moduleCode: 'UD',
+      menuCode: 'UDA',
+      pageCode: 'UDA0140',
+      boxnameSeq: String(inboxUidValidity.value),
+      fromFlag: 'false',
+      mailKind: 'new',
+      mailTo: mail.toAddr,
+      popType: 'N',
+    })
+    window.open(`${OFFICE_MAIL_BASE_URL}?${params.toString()}`, '_blank', 'noopener,noreferrer')
+    return
+  }
+
   if (!selectedMail.value) {
     window.open(OFFICE_MAIL_BASE_URL, '_blank', 'noopener,noreferrer')
     return
   }
 
   const mail = selectedMail.value
-  const fromEmail = parseSenderEmail(mail.fromAddr)
+  if (draftContent.value) {
+    await copyDraftBodyToClipboard(draftContent.value)
+  }
+
   const params = new URLSearchParams({
     specialLnb: 'Y',
     moduleCode: 'UD',
     menuCode: 'UDA',
     pageCode: 'UDA0140',
-    boxnameSeq: String(inboxUidValidity.value ?? '511'),
+    boxnameSeq: String(inboxUidValidity.value),
     fromFlag: 'false',
     mailKind: 're',
-    mailTo: fromEmail,
+    mailTo: parseSenderEmail(mail.fromAddr),
     mbox: 'INBOX',
     popType: 'N',
     uid: mail.imapUid,
   })
-
-  if (replyDraftContent.value) {
-    const lines = replyDraftContent.value.split('\n')
-    let startIdx = 0
-    if (lines[0]?.startsWith('제목:')) {
-      startIdx = 1
-      while (startIdx < lines.length && lines[startIdx].trim() === '') startIdx++
-    }
-    const bodyOnly = lines.slice(startIdx).join('\n').trim()
-    try {
-      await copyToClipboard(bodyOnly)
-    } catch {
-      // 클립보드 실패 시 무시 (안내 문구가 이미 표시되어 있음)
-    }
-  }
-
   window.open(`${OFFICE_MAIL_BASE_URL}?${params.toString()}`, '_blank', 'noopener,noreferrer')
 }
 

@@ -1760,6 +1760,7 @@
 }
 
 .mail-followup-recipients-card,
+.mail-followup-urgent-card,
 .mail-followup-insights-card {
   width: 100%;
 }
@@ -1769,6 +1770,76 @@
   flex-direction: column;
   gap: $spacing-sm;
   padding-top: $spacing-xs;
+}
+
+// 독촉이 필요한 메일
+.mail-followup-urgent-body {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  padding-top: $spacing-xs;
+}
+
+.mail-followup-urgent-badge {
+  @include typo($body-small-bold, $color-error);
+  padding: 2px 8px;
+  background: #fef2f2;
+  border-radius: $border-radius-100;
+  flex-shrink: 0;
+}
+
+.mail-followup-urgent-item {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  background: #fff;
+  border: 1px solid $color-border-light;
+  border-left: 3px solid $color-error;
+  border-radius: $border-radius-base;
+}
+
+.mail-followup-urgent-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.mail-followup-urgent-name {
+  @include typo($body-medium-bold, $color-text-heading);
+  @include ellipsis(1);
+}
+
+.mail-followup-urgent-subject {
+  @include typo($body-small, $color-text-dark);
+  line-height: 1.5;
+  margin: 0;
+  @include ellipsis(2);
+}
+
+.mail-followup-urgent-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  padding-top: $spacing-sm;
+  border-top: 1px solid $color-border-light;
+}
+
+.mail-followup-urgent-days {
+  @include typo($body-small-bold, $color-error);
+  padding: 2px 8px;
+  background: #fef2f2;
+  border-radius: $border-radius-100;
+  flex-shrink: 0;
+}
+
+.mail-followup-urgent-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  padding: $spacing-sm $spacing-md;
 }
 
 .mail-skeleton-bar {

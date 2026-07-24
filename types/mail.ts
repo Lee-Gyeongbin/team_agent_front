@@ -252,7 +252,7 @@ export interface FollowupListResponse {
 }
 
 export interface FollowupRegisterRequest {
-  sentMailId: string
+  mailId: string
   recipientAddr: string
   expectedReplyDt: string
 }

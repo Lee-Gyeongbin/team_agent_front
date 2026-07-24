@@ -75,7 +75,7 @@
           >
             <div class="mail-followup-urgent-info">
               <span class="mail-followup-urgent-name">{{ mail.toName || mail.toAddr }}</span>
-              <span class="mail-followup-urgent-subject">{{ mail.subject }}</span>
+              <p class="mail-followup-urgent-subject">{{ mail.subject }}</p>
             </div>
             <div class="mail-followup-urgent-meta">
               <span class="mail-followup-urgent-days">{{ mail.elapsedDays }}일 경과</span>
@@ -97,59 +97,10 @@
       </div>
     </div>
   </div>
-
-  <!-- 독촉 메일 초안 모달 -->
-  <UiModal
-    :is-open="isDraftModalOpen"
-    position="center"
-    :show-close="true"
-    :show-overlay="true"
-    max-width="600px"
-    @close="closeDraftModal"
-  >
-    <template #header>
-      <div class="mail-draft-modal-header">
-        <h2 class="mail-detail-modal-title">독촉 메일 초안</h2>
-        <button
-          class="btn btn-modal-close"
-          @click="closeDraftModal"
-        >
-          <i class="icon icon-close-gray size-20" />
-        </button>
-      </div>
-    </template>
-
-    <div class="mail-draft-modal-body">
-      <div
-        v-if="isDraftLoading"
-        class="mail-draft-loading"
-      >
-        <div class="mail-briefing-skeleton">
-          <span
-            v-for="i in 6"
-            :key="i"
-            class="mail-skeleton mail-skeleton-line"
-            :style="{ width: i % 3 === 0 ? '70%' : '100%' }"
-          />
-        </div>
-      </div>
-      <p
-        v-else-if="draftContent"
-        class="mail-draft-content"
-      >
-        {{ draftContent }}
-      </p>
-      <UiEmpty
-        v-else
-        title="초안을 생성할 수 없습니다"
-      />
-    </div>
-  </UiModal>
 </template>
 
 <script setup lang="ts">
 import type { SentTopRecipient, SentClassifiedItem } from '~/types/mail'
-import { useMailStore } from '~/composables/mail/useMailStore'
 
 const props = defineProps<{
   isLoading: boolean
@@ -157,7 +108,9 @@ const props = defineProps<{
   pendingMails: SentClassifiedItem[]
 }>()
 
-const { handleFetchFollowupDraft } = useMailStore()
+const emit = defineEmits<{
+  (e: 'draft-click', mail: SentClassifiedItem): void
+}>()
 
 // ─── 최대값 (바 차트 비율 계산) ──────────────────────────────
 const maxPendingCount = computed(() => Math.max(...props.topRecipients.map((r) => r.pendingCount), 1))
@@ -170,21 +123,8 @@ const urgentMails = computed(() =>
     .slice(0, 3),
 )
 
-// ─── 독촉 초안 모달 ──────────────────────────────────────────
-const isDraftModalOpen = ref(false)
-const isDraftLoading = ref(false)
-const draftContent = ref('')
-
-const onDraftClick = async (mail: SentClassifiedItem) => {
-  isDraftModalOpen.value = true
-  isDraftLoading.value = true
-  draftContent.value = ''
-  draftContent.value = await handleFetchFollowupDraft(mail.toName || mail.toAddr, mail.subject, mail.mailDt ?? '')
-  isDraftLoading.value = false
-}
-
-const closeDraftModal = () => {
-  isDraftModalOpen.value = false
-  draftContent.value = ''
+// ─── 독촉 초안 ──────────────────────────────────────────────
+const onDraftClick = (mail: SentClassifiedItem) => {
+  emit('draft-click', mail)
 }
 </script>

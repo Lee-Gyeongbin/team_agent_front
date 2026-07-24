@@ -186,54 +186,6 @@
       />
     </div>
   </div>
-
-  <!-- 독촉 메일 초안 모달 -->
-  <UiModal
-    :is-open="isDraftModalOpen"
-    position="center"
-    :show-close="true"
-    :show-overlay="true"
-    max-width="600px"
-    @close="closeDraftModal"
-  >
-    <template #header>
-      <div class="mail-draft-modal-header">
-        <h2 class="mail-detail-modal-title">독촉 메일 초안</h2>
-        <button
-          class="btn btn-modal-close"
-          @click="closeDraftModal"
-        >
-          <i class="icon icon-close-gray size-20" />
-        </button>
-      </div>
-    </template>
-
-    <div class="mail-draft-modal-body">
-      <div
-        v-if="isDraftLoading"
-        class="mail-draft-loading"
-      >
-        <div class="mail-briefing-skeleton">
-          <span
-            v-for="i in 6"
-            :key="i"
-            class="mail-skeleton mail-skeleton-line"
-            :style="{ width: i % 3 === 0 ? '70%' : '100%' }"
-          />
-        </div>
-      </div>
-      <p
-        v-else-if="draftContent"
-        class="mail-draft-content"
-      >
-        {{ draftContent }}
-      </p>
-      <UiEmpty
-        v-else
-        title="초안을 생성할 수 없습니다"
-      />
-    </div>
-  </UiModal>
 </template>
 
 <script setup lang="ts">
@@ -250,11 +202,11 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'tab-change', tab: 'all' | 'pending' | 'done'): void
-  (e: 'detail', mail: SentClassifiedItem): void
+  (e: 'detail' | 'draft-click', mail: SentClassifiedItem): void
   (e: 'followup-changed'): void
 }>()
 
-const { handleFetchFollowupDraft, handleFollowupRegister, handleFollowupDismiss, handleFollowupCancel } = useMailStore()
+const { handleFollowupRegister, handleFollowupDismiss, handleFollowupCancel } = useMailStore()
 
 // ─── 서브탭 ────────────────────────────────────────────────
 const activeTab = ref<'all' | 'pending' | 'done'>(props.selectedTab ?? 'all')
@@ -305,23 +257,10 @@ const getAvatarColor = (name: string) => {
   return AVATAR_COLORS[code % AVATAR_COLORS.length]
 }
 
-// ─── 독촉 메일 초안 모달 ────────────────────────────────────
-const isDraftModalOpen = ref(false)
-const isDraftLoading = ref(false)
-const draftContent = ref('')
-
-const onDraftClick = async (mail: SentClassifiedItem) => {
+// ─── 독촉 메일 초안 ────────────────────────────────────────────
+const onDraftClick = (mail: SentClassifiedItem) => {
   if (mail.repliedYn === 'Y') return
-  isDraftModalOpen.value = true
-  isDraftLoading.value = true
-  draftContent.value = ''
-  draftContent.value = await handleFetchFollowupDraft(mail.toName || mail.toAddr, mail.subject, mail.mailDt ?? '')
-  isDraftLoading.value = false
-}
-
-const closeDraftModal = () => {
-  isDraftModalOpen.value = false
-  draftContent.value = ''
+  emit('draft-click', mail)
 }
 
 // ─── 팔로업 등록 / 해제 ──────────────────────────────────────
@@ -343,7 +282,7 @@ const onFollowupRegister = async (mail: SentClassifiedItem) => {
   })
   if (!confirmed) return
   await handleFollowupRegister({
-    sentMailId: mail.mailId,
+    mailId: mail.mailId,
     recipientAddr: mail.toAddr,
     expectedReplyDt: getExpectedReplyDt(mail.mailDt),
   })
