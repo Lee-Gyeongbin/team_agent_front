@@ -281,6 +281,8 @@ export interface InboxSummaryResponse {
 
 export interface SentClassifiedItem {
   mailId: string
+  imapUid: string // tb_mail_msg.IMAP_UID — 그룹웨어 메일 URL의 uid 파라미터
+  uidValidity: number | null // tb_mail_sync_state.UID_VALIDITY (SENT 메일박스) — boxnameSeq 파라미터
   subject: string
   toName: string
   toAddr: string

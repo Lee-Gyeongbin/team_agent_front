@@ -508,11 +508,13 @@ const onDraftOpenOfficeMail = async () => {
       moduleCode: 'UD',
       menuCode: 'UDA',
       pageCode: 'UDA0140',
-      boxnameSeq: String(inboxUidValidity.value),
+      boxnameSeq: String(mail.uidValidity ?? ''),
       fromFlag: 'false',
-      mailKind: 'new',
+      mailKind: 're',
       mailTo: mail.toAddr,
+      mbox: 'SENT',
       popType: 'N',
+      uid: mail.imapUid,
     })
     window.open(`${OFFICE_MAIL_BASE_URL}?${params.toString()}`, '_blank', 'noopener,noreferrer')
     return
