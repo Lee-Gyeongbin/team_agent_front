@@ -22,7 +22,6 @@ import type {
   SentClassifiedItem,
   SentClassifiedListParams,
   SentTopRecipient,
-  SentWeeklyStats,
 } from '~/types/mail'
 
 const {
@@ -47,7 +46,8 @@ const {
   fetchSyncRange,
   fetchSentClassified,
   fetchSentTopRecipients,
-  fetchSentWeeklyStats,
+  fetchFollowupDismiss,
+  fetchFollowupCancel,
 } = useMailApi()
 
 const { fetchCodes } = useCommonCodesApi()
@@ -84,6 +84,7 @@ const purposeOptions = ref<WorkCategory[]>([])
 const actionOptions = ref<WorkCategory[]>([])
 const urgencyOptions = ref<WorkCategory[]>([])
 const importanceOptions = ref<WorkCategory[]>([])
+const inboxUidValidity = ref<number | null>(null)
 const isLoadingKpi = ref(false)
 const isLoadingClassified = ref(false)
 const isLoadingSync = ref(false)
@@ -97,14 +98,6 @@ const sentClassifiedList = ref<SentClassifiedItem[]>([])
 const sentClassifiedTotalCount = ref(0)
 const sentClassifiedTabCounts = ref<{ all: number; pending: number; done: number }>({ all: 0, pending: 0, done: 0 })
 const sentTopRecipients = ref<SentTopRecipient[]>([])
-const sentWeeklyStats = ref<SentWeeklyStats>({
-  avgReplyDays: 0,
-  prevAvgReplyDays: 0,
-  replyRate: 0,
-  prevReplyRate: 0,
-  pendingCount: 0,
-  doneCount: 0,
-})
 const isLoadingSentClassified = ref(false)
 const isLoadingSentSidebar = ref(false)
 
@@ -251,15 +244,18 @@ export const useMailStore = () => {
   }
 
   // ─── KPI 조회 ─────────────────────────────────────────────
-  const handleFetchMailKpi = async () => {
+  const handleFetchMailKpi = async (startDate?: string, endDate?: string) => {
     isLoadingKpi.value = true
     try {
-      const res = await fetchMailKpi()
+      const res = await fetchMailKpi(startDate, endDate)
       kpi.value = res.kpi ?? {
         totalCount: res.totalCount ?? 0,
         replyRequiredCount: res.replyRequiredCount ?? 0,
         urgentCount: res.urgentCount ?? 0,
         todayDueCount: res.todayDueCount ?? 0,
+      }
+      if (res.inboxUidValidity != null) {
+        inboxUidValidity.value = res.inboxUidValidity
       }
     } catch {
       openToast({ message: 'KPI 조회에 실패했습니다.', type: 'error' })
@@ -332,6 +328,7 @@ export const useMailStore = () => {
 
     return {
       mailId: mail.mailId,
+      imapUid: fallback?.imapUid ?? '',
       subject: mail.subject,
       fromAddr: mail.fromAddr,
       fromName: mail.fromName,
@@ -355,6 +352,16 @@ export const useMailStore = () => {
   }
 
   // ─── 메일 상세 조회 ───────────────────────────────────────
+  const handleFetchMailBodyText = async (mailId: string): Promise<string> => {
+    try {
+      const res = await fetchMailDetail(mailId)
+      return res.mail?.bodyText ?? ''
+    } catch {
+      openToast({ message: '메일 상세 조회에 실패했습니다.', type: 'error' })
+      return ''
+    }
+  }
+
   const handleFetchMailDetail = async (mailId: string, fallbackMail?: ClassifiedMail) => {
     const fromList = fallbackMail ?? classifiedMails.value.find((m) => m.mailId === mailId) ?? null
     if (fromList) {
@@ -472,23 +479,12 @@ export const useMailStore = () => {
     }
   }
 
-  // ─── 사이드바 데이터 (상위수신자 + 주간통계) 병렬 조회 ────
+  // ─── 사이드바 데이터 (상위수신자) 조회 ─────────────────────
   const handleFetchSentSidebar = async (startDate?: string, endDate?: string) => {
     isLoadingSentSidebar.value = true
     try {
-      const [recipientsRes, statsRes] = await Promise.all([
-        fetchSentTopRecipients(startDate, endDate),
-        fetchSentWeeklyStats(),
-      ])
+      const recipientsRes = await fetchSentTopRecipients(startDate, endDate)
       sentTopRecipients.value = recipientsRes.list ?? []
-      sentWeeklyStats.value = {
-        avgReplyDays: statsRes.avgReplyDays ?? 0,
-        prevAvgReplyDays: statsRes.prevAvgReplyDays ?? 0,
-        replyRate: statsRes.replyRate ?? 0,
-        prevReplyRate: statsRes.prevReplyRate ?? 0,
-        pendingCount: statsRes.pendingCount ?? 0,
-        doneCount: statsRes.doneCount ?? 0,
-      }
     } catch {
       // 사이드바 실패는 조용히 처리
     } finally {
@@ -503,6 +499,28 @@ export const useMailStore = () => {
       await handleFetchFollowupList()
     } catch {
       openToast({ message: '팔로업 상태 변경에 실패했습니다.', type: 'error' })
+    }
+  }
+
+  // ─── AI 무시 등록 ────────────────────────────────────────
+  const handleFollowupDismiss = async (mailId: string, afterRefresh?: () => void) => {
+    try {
+      await fetchFollowupDismiss(mailId)
+      openToast({ message: '회신 불필요로 처리되었습니다.' })
+      afterRefresh?.()
+    } catch {
+      openToast({ message: '처리에 실패했습니다.', type: 'error' })
+    }
+  }
+
+  // ─── 팔로업/무시 취소(삭제) ───────────────────────────────
+  const handleFollowupCancel = async (followupId: string, afterRefresh?: () => void) => {
+    try {
+      await fetchFollowupCancel(followupId)
+      openToast({ message: '팔로업이 해제되었습니다.' })
+      afterRefresh?.()
+    } catch {
+      openToast({ message: '팔로업 해제에 실패했습니다.', type: 'error' })
     }
   }
 
@@ -527,6 +545,7 @@ export const useMailStore = () => {
     followupStats,
     // 신규 상태
     kpi,
+    inboxUidValidity,
     classifiedMails,
     classifiedTotalCount,
     classifiedTabCounts,
@@ -562,6 +581,7 @@ export const useMailStore = () => {
     handleFetchMailKpi,
     handleFetchWorkCategories,
     handleFetchInboxClassified,
+    handleFetchMailBodyText,
     handleFetchMailDetail,
     handleFetchReplyDraft,
     handleToggleActionComplete,
@@ -576,10 +596,11 @@ export const useMailStore = () => {
     sentClassifiedTotalCount,
     sentClassifiedTabCounts,
     sentTopRecipients,
-    sentWeeklyStats,
     isLoadingSentClassified,
     isLoadingSentSidebar,
     handleFetchSentClassified,
     handleFetchSentSidebar,
+    handleFollowupDismiss,
+    handleFollowupCancel,
   }
 }

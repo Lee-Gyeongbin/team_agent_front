@@ -29,22 +29,31 @@
           />
         </div>
 
-        <button
-          class="btn btn-outline mail-refresh-btn"
-          :disabled="
-            isRefreshing || isLoadingClassified || isLoadingKpi || isLoadingSentClassified || isLoadingSentSidebar
-          "
-          @click="onRefreshClick"
-        >
-          <i
-            class="icon-refresh size-16"
-            :class="{
-              'is-spinning':
-                isRefreshing || isLoadingClassified || isLoadingKpi || isLoadingSentClassified || isLoadingSentSidebar,
-            }"
-          />
-          새로고침
-        </button>
+        <div class="mail-sync-btn-wrap">
+          <UiButton
+            variant="outline"
+            size="sm"
+            :disabled="
+              isRefreshing || isLoadingClassified || isLoadingKpi || isLoadingSentClassified || isLoadingSentSidebar
+            "
+            @click="onRefreshClick"
+          >
+            <template #icon-left>
+              <i
+                class="icon-refresh size-16"
+                :class="{
+                  'is-spinning':
+                    isRefreshing ||
+                    isLoadingClassified ||
+                    isLoadingKpi ||
+                    isLoadingSentClassified ||
+                    isLoadingSentSidebar,
+                }"
+              />
+            </template>
+            메일 동기화
+          </UiButton>
+        </div>
       </div>
     </div>
 
@@ -120,16 +129,15 @@
           :tab-counts="sentClassifiedTabCounts"
           :selected-tab="currentSentTab"
           @tab-change="onSentTabChange"
+          @detail="onSentMailDetail"
+          @followup-changed="onFollowupChanged"
         />
 
-        <!-- 우측: 팔로업 AI 사이드바 -->
+        <!-- 우측: 팔로업 사이드바 -->
         <MailFollowupPanel
           :is-loading="isLoadingSentSidebar"
           :top-recipients="sentTopRecipients"
-          :weekly-stats="sentWeeklyStats"
           :pending-mails="sentClassifiedList"
-          @draft-overdue="onDraftOverdue"
-          @view-pending="onViewPending"
         />
       </div>
     </div>
@@ -153,6 +161,20 @@
       :date="toModalDate(selectedMail.mailDt)"
       :body="selectedMail.bodyText"
       @close="isDetailModalOpen = false"
+    />
+
+    <!-- 보낸 메일 상세 모달 -->
+    <MailDetailModal
+      v-if="selectedSentMail"
+      :is-open="isSentDetailModalOpen"
+      :subject="selectedSentMail.subject"
+      sender-label="수신자"
+      :sender-name="selectedSentMail.toName || selectedSentMail.toAddr"
+      :sender-email="parseSenderEmail(selectedSentMail.toAddr)"
+      date-label="발송일"
+      :date="toModalDate(selectedSentMail.mailDt)"
+      :body="sentDetailBody"
+      @close="isSentDetailModalOpen = false"
     />
 
     <!-- AI 분석 모달 -->
@@ -209,6 +231,26 @@
           v-else
           title="초안을 생성할 수 없습니다"
         />
+
+        <div
+          v-if="replyDraftContent && !isReplyDraftLoading"
+          class="mail-draft-modal-footer"
+        >
+          <p class="mail-draft-copy-hint">
+            <i class="icon-info size-14" />
+            바로가기 클릭 시 내용이 클립보드에 자동 복사됩니다. 메일 작성창에서 Ctrl+V로 붙여넣기 해주세요.
+          </p>
+          <UiButton
+            variant="primary"
+            size="lg"
+            @click="onOpenOfficeMail"
+          >
+            <template #icon-left>
+              <i class="icon-link-agent size-16" />
+            </template>
+            바로가기
+          </UiButton>
+        </div>
       </div>
     </UiModal>
   </div>
@@ -219,6 +261,7 @@ import { getLocalTimeZone, today, toCalendarDate, toCalendarDateTime } from '@in
 import type { DateValue } from '@internationalized/date'
 import { useMailStore } from '~/composables/mail/useMailStore'
 import { openToast } from '~/composables/useToast'
+import { copyToClipboard } from '~/utils/global/clipboardUtil'
 import MailKpiPanel from '~/components/mail/MailKpiPanel.vue'
 import MailInboxPanel from '~/components/mail/MailInboxPanel.vue'
 import MailAnalysisPanel from '~/components/mail/MailAnalysisPanel.vue'
@@ -228,7 +271,7 @@ import MailChatPanel from '~/components/mail/MailChatPanel.vue'
 import MailLoginModal from '~/components/mail/MailLoginModal.vue'
 import MailSentPanel from '~/components/mail/MailSentPanel.vue'
 import MailFollowupPanel from '~/components/mail/MailFollowupPanel.vue'
-import type { ClassifiedMail, ClassifiedMailListParams } from '~/types/mail'
+import type { ClassifiedMail, ClassifiedMailListParams, SentClassifiedItem } from '~/types/mail'
 
 definePageMeta({ layout: 'default' })
 
@@ -250,6 +293,7 @@ const {
   urgencyOptions,
   importanceOptions,
   isLoadingKpi,
+  inboxUidValidity,
   isLoadingClassified,
   inboxSummary,
   isLoadingInboxSummary,
@@ -261,6 +305,7 @@ const {
   handleFetchInboxSummary,
   handleSyncRange,
   handleFetchMailDetail,
+  handleFetchMailBodyText,
   handleFetchReplyDraft,
   handleToggleActionComplete,
   setSelectedMail,
@@ -268,7 +313,6 @@ const {
   sentClassifiedList,
   sentClassifiedTabCounts,
   sentTopRecipients,
-  sentWeeklyStats,
   isLoadingSentClassified,
   isLoadingSentSidebar,
   // 보낸메일함 액션
@@ -289,10 +333,15 @@ const activeTab = ref<'inbox' | 'followup'>('inbox')
 
 // 모달 상태
 const isDetailModalOpen = ref(false)
+const isSentDetailModalOpen = ref(false)
+const selectedSentMail = ref<SentClassifiedItem | null>(null)
+const sentDetailBody = ref('')
 const isAnalysisModalOpen = ref(false)
 const isReplyDraftModalOpen = ref(false)
 const isReplyDraftLoading = ref(false)
 const replyDraftContent = ref('')
+
+const OFFICE_MAIL_BASE_URL = 'https://office.ispark.kr/#/UD/UDA/UDA0000'
 
 const currentSentTab = ref<'all' | 'pending' | 'done'>('all')
 
@@ -410,7 +459,10 @@ const doRefresh = async () => {
       ])
     } else {
       await handleSyncRange(params.startDate, params.endDate)
-      await Promise.all([doFetchInbox(buildDefaultClassifiedParams()), handleFetchMailKpi()])
+      await Promise.all([
+        doFetchInbox(buildDefaultClassifiedParams()),
+        handleFetchMailKpi(params.startDate, params.endDate),
+      ])
     }
   } finally {
     isRefreshing.value = false
@@ -440,6 +492,13 @@ const onMailDetail = async (mail: ClassifiedMail) => {
   void handleFetchMailDetail(mail.mailId, mail)
 }
 
+const onSentMailDetail = async (mail: SentClassifiedItem) => {
+  selectedSentMail.value = mail
+  sentDetailBody.value = ''
+  isSentDetailModalOpen.value = true
+  sentDetailBody.value = await handleFetchMailBodyText(mail.mailId)
+}
+
 // ─── AI 분석 보기 ─────────────────────────────────────────
 const onMailAnalysis = (mail: ClassifiedMail) => {
   setSelectedMail(mail)
@@ -465,6 +524,46 @@ const onAnalysisReplyDraft = async () => {
   replyDraftContent.value = ''
   replyDraftContent.value = await handleFetchReplyDraft(selectedMail.value.mailId)
   isReplyDraftLoading.value = false
+}
+
+const onOpenOfficeMail = async () => {
+  if (!selectedMail.value) {
+    window.open(OFFICE_MAIL_BASE_URL, '_blank', 'noopener,noreferrer')
+    return
+  }
+
+  const mail = selectedMail.value
+  const fromEmail = parseSenderEmail(mail.fromAddr)
+  const params = new URLSearchParams({
+    specialLnb: 'Y',
+    moduleCode: 'UD',
+    menuCode: 'UDA',
+    pageCode: 'UDA0140',
+    boxnameSeq: String(inboxUidValidity.value ?? '511'),
+    fromFlag: 'false',
+    mailKind: 're',
+    mailTo: fromEmail,
+    mbox: 'INBOX',
+    popType: 'N',
+    uid: mail.imapUid,
+  })
+
+  if (replyDraftContent.value) {
+    const lines = replyDraftContent.value.split('\n')
+    let startIdx = 0
+    if (lines[0]?.startsWith('제목:')) {
+      startIdx = 1
+      while (startIdx < lines.length && lines[startIdx].trim() === '') startIdx++
+    }
+    const bodyOnly = lines.slice(startIdx).join('\n').trim()
+    try {
+      await copyToClipboard(bodyOnly)
+    } catch {
+      // 클립보드 실패 시 무시 (안내 문구가 이미 표시되어 있음)
+    }
+  }
+
+  window.open(`${OFFICE_MAIL_BASE_URL}?${params.toString()}`, '_blank', 'noopener,noreferrer')
 }
 
 // ─── 조치 완료 토글 ───────────────────────────────────────
@@ -498,8 +597,19 @@ const onViewPending = async () => {
   })
 }
 
-const onDraftOverdue = () => {
-  onViewPending()
+// 팔로업 등록/해제 후 목록 + 사이드바 리프레시
+const onFollowupChanged = async () => {
+  const dateRange = getDateRangeParams()
+  await Promise.all([
+    handleFetchSentClassified({
+      tabType: currentSentTab.value,
+      pageNum: 1,
+      pageSize: 50,
+      startDate: dateRange?.startDate,
+      endDate: dateRange?.endDate,
+    }),
+    handleFetchSentSidebar(dateRange?.startDate, dateRange?.endDate),
+  ])
 }
 
 // ─── 로그인 성공 콜백 ─────────────────────────────────────
@@ -524,23 +634,30 @@ const toModalDate = (value: string | number | null) => {
 
 // ─── 데이터 로드 (인증 후 호출) ───────────────────────────
 const loadMailData = async () => {
+  // 기본 날짜 범위 설정
   const rangeEnd = today(getLocalTimeZone())
   startDateFilter.value = rangeEnd.subtract({ days: 7 })
   endDateFilter.value = rangeEnd
   chatPanelRef.value?.resetChatHistory()
 
+  // 날짜 범위 파라미터
   const dateParams = {
     startDate: toYyyyMmDd(startDateFilter.value),
     endDate: toYyyyMmDd(endDateFilter.value),
   }
 
-  openLoading()
+  // 로딩 표시
+  openLoading({ text: '메일을 동기화하는 중...' })
   try {
-    // 동기화는 백그라운드에서 조용히 실행 (blocking하지 않음)
-    handleMailSync({ silent: true }).catch(() => {})
+    // 날짜 범위 내 미동기화 메일 IMAP → AI 분류 (await 후 조회해야 새 메일 반영됨)
+    await handleSyncRange(dateParams.startDate, dateParams.endDate)
 
     // KPI + 분류 메일함 + AI 요약 + 업무카테고리 병렬 조회
-    await Promise.all([handleFetchMailKpi(), doFetchInbox(buildDefaultClassifiedParams()), handleFetchWorkCategories()])
+    await Promise.all([
+      handleFetchMailKpi(dateParams.startDate, dateParams.endDate),
+      doFetchInbox(buildDefaultClassifiedParams()),
+      handleFetchWorkCategories(),
+    ])
 
     // 보낸메일함 분류 + 사이드바
     await Promise.all([

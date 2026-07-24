@@ -190,9 +190,9 @@
               <span class="mail-item-from">{{ mail.fromName || mail.fromAddr }}</span>
               <span
                 class="mail-classified-due"
-                :class="{ 'is-today': isToday(mail.dueDt) }"
+                :class="{ 'is-today': isToday(mail.mailDt) }"
               >
-                · {{ formatDue(mail.dueDt) }}
+                · {{ formatReceivedDate(mail.mailDt) }}
               </span>
             </div>
             <p class="mail-item-subject">{{ mail.subject }}</p>
@@ -269,9 +269,9 @@ const emit = defineEmits<{
 const activeSubTab = ref<'all' | 'action' | 'reply'>('all')
 
 const subTabItems = computed(() => [
-  { label: `분류된 메일함 (${props.tabCounts.all})`, value: 'all' },
-  { label: `액션 아이템 (${props.tabCounts.action})`, value: 'action' },
-  { label: `회신 필요 (${props.tabCounts.reply})`, value: 'reply' },
+  { label: `전체 (${props.tabCounts.all})`, value: 'all' },
+  { label: `처리 필요 (${props.tabCounts.action})`, value: 'action' },
+  { label: `답장 필요 (${props.tabCounts.reply})`, value: 'reply' },
 ])
 
 const onSubTabChange = (value: string) => {
@@ -386,10 +386,14 @@ const isToday = (dateStr: string | null) => {
   return new Date(dateStr).toDateString() === new Date().toDateString()
 }
 
-const formatDue = (dateStr: string | null) => {
-  if (!dateStr) return '기한 없음'
+const formatReceivedDate = (dateStr: string | null) => {
+  if (!dateStr) return ''
   const d = new Date(dateStr)
-  if (Number.isNaN(d.getTime())) return '기한 없음'
+  if (Number.isNaN(d.getTime())) return ''
+  const now = new Date()
+  if (d.toDateString() === now.toDateString()) {
+    return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+  }
   return d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
 }
 

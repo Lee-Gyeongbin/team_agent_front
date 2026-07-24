@@ -125,12 +125,14 @@ export interface MailKpiResponse {
   replyRequiredCount?: number
   urgentCount?: number
   todayDueCount?: number
+  inboxUidValidity?: number | null
   /** @deprecated API는 최상위 필드로 반환 — 하위 호환용 */
   kpi?: MailKpi
 }
 
 export interface ClassifiedMail {
   mailId: string
+  imapUid: string
   subject: string
   fromAddr: string
   fromName: string
@@ -287,6 +289,12 @@ export interface SentClassifiedItem {
   repliedYn: 'Y' | 'N'
   elapsedDays: number
   replyElapsedHours: number | null
+  // 팔로업 통합 필드
+  followupId: string | null
+  followupStatusCd: '001' | '002' | '003' | null // 001: 대기, 002: 회신됨, 003: 무시
+  expectedReplyDt: string | null
+  followupRecipientAddr: string | null
+  trackSource: 'USER' | 'AI' | 'DISMISSED' | 'NONE' // USER: 사용자 팔로업, AI: AI 회신기대, DISMISSED: AI 무시, NONE: 없음
 }
 
 export interface SentClassifiedListResponse {

@@ -57,19 +57,17 @@
   @include typo($body-medium, $color-text-muted);
 }
 
-.mail-refresh-btn {
-  display: flex;
-  align-items: center;
-  gap: $spacing-xs;
-  @include typo($body-medium-bold);
-  flex-shrink: 0;
-}
-
 .mail-page-header-actions {
   display: flex;
-  align-items: center;
-  gap: $spacing-sm;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: $spacing-xs;
   margin-left: auto;
+}
+
+.mail-sync-btn-wrap {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .mail-date-range-wrap {
@@ -653,13 +651,12 @@
 @include mobile {
   .mail-page-header-actions {
     width: 100%;
-    justify-content: space-between;
+    align-items: flex-end;
     margin-left: 0;
   }
 
   .mail-date-range-wrap {
-    flex: 1;
-    min-width: 0;
+    width: 100%;
   }
 
   .mail-middle-row,
@@ -873,6 +870,26 @@
   line-height: 1.8;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.mail-draft-modal-footer {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  margin-top: $spacing-md;
+  padding-top: $spacing-md;
+  border-top: 1px solid $color-border;
+
+  .mail-draft-copy-hint {
+    @include typo($body-small, $color-text-muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .ui-button {
+    width: 100%;
+  }
 }
 
 // ─── 반응형 (팔로업 추가분) ──────────────────────────────────
@@ -1299,14 +1316,9 @@
 }
 
 .mail-classified-due {
-  @include typo($body-small, $color-text-muted);
+  @include typo($body-small, $color-text-primary);
   flex-shrink: 0;
   white-space: nowrap;
-
-  &.is-today {
-    color: $color-error;
-    font-weight: $font-weight-bold;
-  }
 }
 
 // mail-item-from 말줄임 (이름이 길 경우)

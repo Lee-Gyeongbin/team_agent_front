@@ -74,7 +74,12 @@ const emit = defineEmits<{
   expand: []
 }>()
 
-const renderedSummary = computed(() => toHtmlContent(props.summary))
+const renderedSummary = computed(() => {
+  // 단일 \n + 불릿(-/*/+) 조합은 marked가 리스트로 인식 못함 (breaks:true 환경)
+  // → 불릿 앞에 빈 줄(\n\n) 보장
+  const normalized = props.summary.replace(/([^\n])\n([ \t]*[-*+] )/g, '$1\n\n$2')
+  return toHtmlContent(normalized)
+})
 
 const onHeadClick = () => {
   // collapsed 상태에서 헤더 클릭 시 펼치기

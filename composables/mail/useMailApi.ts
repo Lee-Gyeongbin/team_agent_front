@@ -86,8 +86,11 @@ export const useMailApi = () => {
   }
 
   /** KPI 요약 조회 */
-  const fetchMailKpi = async (): Promise<MailKpiResponse> => {
-    return get<MailKpiResponse>('/mail/kpi.do')
+  const fetchMailKpi = async (startDate?: string, endDate?: string): Promise<MailKpiResponse> => {
+    const query = new URLSearchParams()
+    if (startDate) query.append('startDate', startDate)
+    if (endDate) query.append('endDate', endDate)
+    return get<MailKpiResponse>(`/mail/kpi.do?${query.toString()}`)
   }
 
   /** AI 분류된 받은메일함 목록 조회 */
@@ -172,6 +175,16 @@ export const useMailApi = () => {
     return get<SentWeeklyStatsResponse>('/mail/sent-weekly-stats.do')
   }
 
+  /** AI 회신기대 무시 (STATUS_CD=003으로 INSERT) */
+  const fetchFollowupDismiss = async (mailId: string): Promise<{ result: string }> => {
+    return post<{ result: string }>('/mail/followup-dismiss.do', { mailId })
+  }
+
+  /** 팔로업 취소(삭제) — 무시 해제도 이 API 재사용 */
+  const fetchFollowupCancel = async (followupId: string): Promise<{ result: string }> => {
+    return post<{ result: string }>('/mail/followup-cancel.do', { followupId })
+  }
+
   return {
     fetchMailAuthCheck,
     fetchMailAuth,
@@ -195,5 +208,7 @@ export const useMailApi = () => {
     fetchSentClassified,
     fetchSentTopRecipients,
     fetchSentWeeklyStats,
+    fetchFollowupDismiss,
+    fetchFollowupCancel,
   }
 }

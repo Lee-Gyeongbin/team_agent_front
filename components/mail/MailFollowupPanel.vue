@@ -44,129 +44,147 @@
       </div>
     </div>
 
-    <!-- AI 인사이트 -->
-    <div class="mail-panel mail-followup-insights-card">
+    <!-- 독촉이 필요한 메일 -->
+    <div class="mail-panel mail-followup-urgent-card">
       <div class="mail-panel-header">
-        <h2 class="mail-panel-title">AI 인사이트</h2>
-        <div class="mail-ai-badge">
-          <i class="icon-ai size-14" />
-          AI
-        </div>
+        <h2 class="mail-panel-title">독촉이 필요한 메일</h2>
+        <span
+          v-if="urgentMails.length > 0"
+          class="mail-followup-urgent-badge"
+        >
+          {{ urgentMails.length }}건
+        </span>
       </div>
-
-      <div class="mail-followup-insights-body">
+      <div class="mail-followup-urgent-body">
         <template v-if="isLoading">
-          <div class="mail-followup-insight-skeleton is-danger">
-            <span class="mail-skeleton mail-skeleton-line" />
-            <span class="mail-skeleton mail-skeleton-line-sm" />
-          </div>
-          <div class="mail-followup-insight-skeleton is-success">
+          <div
+            v-for="i in 3"
+            :key="i"
+            class="mail-followup-urgent-skeleton"
+          >
             <span class="mail-skeleton mail-skeleton-line" />
             <span class="mail-skeleton mail-skeleton-line-sm" />
           </div>
         </template>
 
-        <template v-else>
-          <!-- 팔로업 권장 카드 -->
-          <div class="mail-insight-block is-danger">
-            <div class="mail-insight-block-header">
-              <i class="mail-insight-icon is-danger" />
-              <span class="mail-insight-label">팔로업 권장</span>
+        <template v-else-if="urgentMails.length > 0">
+          <div
+            v-for="mail in urgentMails"
+            :key="mail.mailId"
+            class="mail-followup-urgent-item"
+          >
+            <div class="mail-followup-urgent-info">
+              <span class="mail-followup-urgent-name">{{ mail.toName || mail.toAddr }}</span>
+              <span class="mail-followup-urgent-subject">{{ mail.subject }}</span>
             </div>
-            <p class="mail-insight-desc">
-              <strong>{{ overdueCount }}건</strong>의 메일이 7일 이상 답장을 기다리고 있습니다.
-            </p>
-            <div class="mail-insight-actions">
-              <button
-                class="mail-insight-chip is-danger"
-                @click="emit('draft-overdue')"
+            <div class="mail-followup-urgent-meta">
+              <span class="mail-followup-urgent-days">{{ mail.elapsedDays }}일 경과</span>
+              <UiButton
+                variant="outline"
+                size="sm"
+                @click="onDraftClick(mail)"
               >
-                재촉 메일 작성
-              </button>
-              <button
-                class="mail-insight-chip"
-                @click="emit('view-pending')"
-              >
-                목록 보기
-              </button>
-            </div>
-          </div>
-
-          <!-- 이번 주 회신 통계 카드 -->
-          <div class="mail-insight-block is-success">
-            <div class="mail-insight-block-header">
-              <i class="mail-insight-icon is-success" />
-              <span class="mail-insight-label">이번 주 회신 통계</span>
-            </div>
-            <div class="mail-insight-stats-row">
-              <div class="mail-insight-stat">
-                <span class="mail-insight-stat-label">평균 회신 소요</span>
-                <div class="mail-insight-stat-value-row">
-                  <span class="mail-insight-stat-value">{{ weeklyStats.avgReplyDays.toFixed(1) }}일</span>
-                  <span
-                    class="mail-insight-stat-delta"
-                    :class="avgReplyDaysDelta <= 0 ? 'is-good' : 'is-bad'"
-                  >
-                    {{ avgReplyDaysDelta > 0 ? '+' : '' }}{{ avgReplyDaysDelta.toFixed(1) }}일
-                  </span>
-                </div>
-              </div>
-              <div class="mail-insight-stat">
-                <span class="mail-insight-stat-label">회신율</span>
-                <div class="mail-insight-stat-value-row">
-                  <span class="mail-insight-stat-value">{{ weeklyStats.replyRate }}%</span>
-                  <span
-                    class="mail-insight-stat-delta"
-                    :class="replyRateDelta >= 0 ? 'is-good' : 'is-bad'"
-                  >
-                    {{ replyRateDelta > 0 ? '+' : '' }}{{ replyRateDelta }}%
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div class="mail-insight-mini-counts">
-              <span class="mail-insight-mini-count is-done">완료 {{ weeklyStats.doneCount }}건</span>
-              <span class="mail-insight-mini-count is-pending">대기 {{ weeklyStats.pendingCount }}건</span>
+                독촉 초안
+              </UiButton>
             </div>
           </div>
         </template>
+
+        <UiEmpty
+          v-else
+          title="독촉이 필요한 메일이 없습니다"
+        />
       </div>
     </div>
   </div>
+
+  <!-- 독촉 메일 초안 모달 -->
+  <UiModal
+    :is-open="isDraftModalOpen"
+    position="center"
+    :show-close="true"
+    :show-overlay="true"
+    max-width="600px"
+    @close="closeDraftModal"
+  >
+    <template #header>
+      <div class="mail-draft-modal-header">
+        <h2 class="mail-detail-modal-title">독촉 메일 초안</h2>
+        <button
+          class="btn btn-modal-close"
+          @click="closeDraftModal"
+        >
+          <i class="icon icon-close-gray size-20" />
+        </button>
+      </div>
+    </template>
+
+    <div class="mail-draft-modal-body">
+      <div
+        v-if="isDraftLoading"
+        class="mail-draft-loading"
+      >
+        <div class="mail-briefing-skeleton">
+          <span
+            v-for="i in 6"
+            :key="i"
+            class="mail-skeleton mail-skeleton-line"
+            :style="{ width: i % 3 === 0 ? '70%' : '100%' }"
+          />
+        </div>
+      </div>
+      <p
+        v-else-if="draftContent"
+        class="mail-draft-content"
+      >
+        {{ draftContent }}
+      </p>
+      <UiEmpty
+        v-else
+        title="초안을 생성할 수 없습니다"
+      />
+    </div>
+  </UiModal>
 </template>
 
 <script setup lang="ts">
-import type { SentTopRecipient, SentWeeklyStats, SentClassifiedItem } from '~/types/mail'
+import type { SentTopRecipient, SentClassifiedItem } from '~/types/mail'
+import { useMailStore } from '~/composables/mail/useMailStore'
 
 const props = defineProps<{
   isLoading: boolean
   topRecipients: SentTopRecipient[]
-  weeklyStats: SentWeeklyStats
   pendingMails: SentClassifiedItem[]
 }>()
 
-const emit = defineEmits<{
-  (e: 'draft-overdue' | 'view-pending'): void
-}>()
+const { handleFetchFollowupDraft } = useMailStore()
 
 // ─── 최대값 (바 차트 비율 계산) ──────────────────────────────
 const maxPendingCount = computed(() => Math.max(...props.topRecipients.map((r) => r.pendingCount), 1))
 
-// ─── 7일 이상 경과 메일 수 ───────────────────────────────────
-const overdueCount = computed(
-  () => props.pendingMails.filter((m) => m.replyExpectedYn === 'Y' && m.repliedYn === 'N' && m.elapsedDays >= 7).length,
+// ─── 독촉 필요 메일: 사용자/AI 트래킹 중 7일 이상 경과, 경과일 내림차순 top 3 ──
+const urgentMails = computed(() =>
+  props.pendingMails
+    .filter((m) => (m.trackSource === 'AI' || m.trackSource === 'USER') && m.repliedYn === 'N' && m.elapsedDays >= 7)
+    .sort((a, b) => b.elapsedDays - a.elapsedDays)
+    .slice(0, 3),
 )
 
-// ─── 전주 대비 델타 ──────────────────────────────────────────
-const avgReplyDaysDelta = computed(() => {
-  const s = props.weeklyStats
-  if (!s) return 0
-  return +(s.avgReplyDays - s.prevAvgReplyDays).toFixed(1)
-})
+// ─── 독촉 초안 모달 ──────────────────────────────────────────
+const isDraftModalOpen = ref(false)
+const isDraftLoading = ref(false)
+const draftContent = ref('')
 
-const replyRateDelta = computed(() => {
-  const s = props.weeklyStats
-  if (!s) return 0
-  return s.replyRate - s.prevReplyRate
-})
+const onDraftClick = async (mail: SentClassifiedItem) => {
+  isDraftModalOpen.value = true
+  isDraftLoading.value = true
+  draftContent.value = ''
+  draftContent.value = await handleFetchFollowupDraft(mail.toName || mail.toAddr, mail.subject, mail.mailDt ?? '')
+  isDraftLoading.value = false
+}
+
+const closeDraftModal = () => {
+  isDraftModalOpen.value = false
+  draftContent.value = ''
+}
 </script>
