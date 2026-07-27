@@ -50,17 +50,17 @@
                 title="답장 완료"
                 >✓</span
               >
-              <template v-else-if="mail.trackSource !== 'NONE'">
+              <template v-else-if="mail.replyExpectedYn === 'Y'">
                 <span
                   v-if="mail.elapsedDays >= 7"
                   class="mail-sent-status-badge is-overdue"
-                  :title="`${mail.trackSource === 'USER' ? '팔로업' : 'AI 회신 대기'} · 7일 이상 경과`"
+                  :title="`AI 회신 대기 · 7일 이상 경과`"
                   >⌛</span
                 >
                 <span
                   v-else
                   class="mail-sent-status-badge is-pending"
-                  :title="`${mail.trackSource === 'USER' ? '팔로업' : 'AI 회신 대기'} · ${mail.elapsedDays}일 경과`"
+                  :title="`AI 회신 대기 · ${mail.elapsedDays}일 경과`"
                   >⌛</span
                 >
               </template>
@@ -80,30 +80,15 @@
                   · {{ formatReplyElapsed(mail.replyElapsedHours) }}
                 </template>
               </span>
-              <!-- 사용자 팔로업 대기 -->
+              <!-- AI 회신 대기 -->
               <span
-                v-else-if="mail.trackSource === 'USER'"
+                v-else-if="mail.replyExpectedYn === 'Y'"
                 class="mail-tag"
                 :class="mail.elapsedDays >= 7 ? 'tag-urgent' : mail.elapsedDays >= 1 ? 'tag-warn' : 'tag-gray'"
               >
-                📌 팔로업 · {{ mail.elapsedDays }}일 경과
+                회신 대기 · {{ mail.elapsedDays }}일 경과
               </span>
-              <!-- AI 회신기대 대기 -->
-              <span
-                v-else-if="mail.trackSource === 'AI'"
-                class="mail-tag"
-                :class="mail.elapsedDays >= 7 ? 'tag-urgent' : mail.elapsedDays >= 1 ? 'tag-warn' : 'tag-gray'"
-              >
-                AI 회신 대기 · {{ mail.elapsedDays }}일 경과
-              </span>
-              <!-- AI 무시됨 -->
-              <span
-                v-else-if="mail.trackSource === 'DISMISSED'"
-                class="mail-tag tag-gray"
-              >
-                회신 불필요 처리됨
-              </span>
-              <!-- 트래킹 없음 -->
+              <!-- 회신 불필요 -->
               <span
                 v-else
                 class="mail-tag tag-gray"
@@ -122,58 +107,32 @@
             >
               상세보기
             </UiButton>
-            <!-- 독촉 초안: 대기 중이면 표시 -->
+            <!-- 독촉 초안: AI 회신 대기 중이면 표시 -->
             <UiButton
-              v-if="mail.repliedYn === 'N' && mail.trackSource !== 'NONE'"
+              v-if="mail.repliedYn === 'N' && mail.replyExpectedYn === 'Y'"
               variant="outline"
               size="sm"
               @click.stop="onDraftClick(mail)"
             >
               독촉 초안
             </UiButton>
-            <!-- 팔로업 해제: 사용자 팔로업 대기 중 -->
+            <!-- 회신 불필요: AI 회신 대기 중 -->
             <UiButton
-              v-if="mail.followupId && mail.followupStatusCd === '001'"
+              v-if="mail.repliedYn === 'N' && mail.replyExpectedYn === 'Y'"
               variant="outline"
               size="sm"
-              @click.stop="onFollowupCancel(mail)"
+              @click.stop="onReplyNotNeeded(mail)"
             >
-              팔로업 해제
+              회신 불필요
             </UiButton>
-            <!-- 무시 해제: AI 무시 상태 (003) -->
+            <!-- 회신 필요: 회신 불필요 처리된 메일 복원 -->
             <UiButton
-              v-else-if="mail.followupId && mail.followupStatusCd === '003'"
+              v-if="mail.repliedYn === 'N' && mail.replyExpectedYn === 'N'"
               variant="outline"
               size="sm"
-              @click.stop="onFollowupCancel(mail)"
+              @click.stop="onReplyNeeded(mail)"
             >
-              무시 해제
-            </UiButton>
-            <!-- AI 추천 메일: 회신 불필요(무시) 또는 팔로업 등록 선택 -->
-            <template v-else-if="!mail.followupId && mail.repliedYn === 'N' && mail.trackSource === 'AI'">
-              <UiButton
-                variant="outline"
-                size="sm"
-                @click.stop="onFollowupDismiss(mail)"
-              >
-                회신 불필요
-              </UiButton>
-              <UiButton
-                variant="outline"
-                size="sm"
-                @click.stop="onFollowupRegister(mail)"
-              >
-                팔로업 등록
-              </UiButton>
-            </template>
-            <!-- 그 외 미회신: 팔로업 등록 -->
-            <UiButton
-              v-else-if="!mail.followupId && mail.repliedYn === 'N'"
-              variant="outline"
-              size="sm"
-              @click.stop="onFollowupRegister(mail)"
-            >
-              팔로업 등록
+              회신 필요
             </UiButton>
           </div>
         </div>
@@ -206,7 +165,7 @@ const emit = defineEmits<{
   (e: 'followup-changed'): void
 }>()
 
-const { handleFollowupRegister, handleFollowupDismiss, handleFollowupCancel } = useMailStore()
+const { handleReplyNotNeeded, handleReplyNeeded } = useMailStore()
 
 // ─── 서브탭 ────────────────────────────────────────────────
 const activeTab = ref<'all' | 'pending' | 'done'>(props.selectedTab ?? 'all')
@@ -263,51 +222,22 @@ const onDraftClick = (mail: SentClassifiedItem) => {
   emit('draft-click', mail)
 }
 
-// ─── 팔로업 등록 / 해제 ──────────────────────────────────────
-const toYyyyMmDd = (date: Date) =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-
-/** 발송일 기준 7일 후를 회신 예정일로 사용 */
-const getExpectedReplyDt = (mailDt: string | null) => {
-  const base = mailDt ? new Date(mailDt) : new Date()
-  if (Number.isNaN(base.getTime())) return toYyyyMmDd(new Date())
-  base.setDate(base.getDate() + 7)
-  return toYyyyMmDd(base)
-}
-
-const onFollowupRegister = async (mail: SentClassifiedItem) => {
-  const confirmed = await openConfirm({
-    title: '팔로업 등록',
-    message: `"${mail.subject}" 메일을 팔로업으로 등록하시겠습니까?`,
-  })
-  if (!confirmed) return
-  await handleFollowupRegister({
-    mailId: mail.mailId,
-    recipientAddr: mail.toAddr,
-    expectedReplyDt: getExpectedReplyDt(mail.mailDt),
-  })
-  emit('followup-changed')
-}
-
-const onFollowupDismiss = async (mail: SentClassifiedItem) => {
+// ─── 회신 불필요 / 필요 처리 ───────────────────────────────
+const onReplyNotNeeded = async (mail: SentClassifiedItem) => {
   const confirmed = await openConfirm({
     title: '회신 불필요',
     message: `"${mail.subject}" 메일을 회신 불필요로 처리하시겠습니까?\n회신 대기 목록에서 제외됩니다.`,
   })
   if (!confirmed) return
-  await handleFollowupDismiss(mail.mailId, () => emit('followup-changed'))
+  await handleReplyNotNeeded(mail.mailId, () => emit('followup-changed'))
 }
 
-const onFollowupCancel = async (mail: SentClassifiedItem) => {
-  if (!mail.followupId) return
-  const isUser = mail.followupStatusCd === '001'
+const onReplyNeeded = async (mail: SentClassifiedItem) => {
   const confirmed = await openConfirm({
-    title: isUser ? '팔로업 해제' : '무시 해제',
-    message: isUser
-      ? `"${mail.subject}" 메일의 팔로업을 해제하시겠습니까?`
-      : `"${mail.subject}" 메일의 회신 불필요 처리를 취소하시겠습니까?`,
+    title: '회신 필요',
+    message: `"${mail.subject}" 메일을 다시 회신 대기로 변경하시겠습니까?`,
   })
   if (!confirmed) return
-  await handleFollowupCancel(mail.followupId, () => emit('followup-changed'))
+  await handleReplyNeeded(mail.mailId, () => emit('followup-changed'))
 }
 </script>

@@ -216,13 +216,6 @@
           <!-- 행 액션 버튼 -->
           <div class="mail-classified-actions">
             <UiButton
-              variant="outline"
-              size="sm"
-              @click.stop="emit('detail', mail)"
-            >
-              상세보기
-            </UiButton>
-            <UiButton
               variant="primary"
               size="sm"
               @click.stop="emit('analysis', mail)"
@@ -259,7 +252,6 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  detail: [mail: ClassifiedMail]
   analysis: [mail: ClassifiedMail]
   search: [params: ClassifiedMailListParams]
   'tab-change': [tab: 'all' | 'action' | 'reply']

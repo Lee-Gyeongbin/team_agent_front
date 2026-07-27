@@ -185,7 +185,6 @@ export interface MailDetailMail {
   fromName: string
   mailDt: string | number | null
   bodyText: string
-  hasAttachYn?: string
 }
 
 export interface MailAnalysis {
@@ -232,36 +231,6 @@ export interface WorkCategory {
   nm: string
 }
 
-export interface FollowupDbItem {
-  followupId: string
-  sentMailId: string
-  recipientAddr: string
-  expectedReplyDt: string | null
-  statusCd: string
-  statusNm: string
-  repliedMailId: string | null
-  subject: string
-  fromName: string
-  mailDt: string | null
-}
-
-export interface FollowupListResponse {
-  result: string
-  list: FollowupDbItem[]
-  totalCount: number
-}
-
-export interface FollowupRegisterRequest {
-  mailId: string
-  recipientAddr: string
-  expectedReplyDt: string
-}
-
-export interface FollowupStatusUpdateRequest {
-  followupId: string
-  statusCd: string
-}
-
 export interface MailSyncResponse {
   result: string
   syncedCount: number
@@ -287,16 +256,10 @@ export interface SentClassifiedItem {
   toName: string
   toAddr: string
   mailDt: string | null
-  replyExpectedYn: 'Y' | 'N'
-  repliedYn: 'Y' | 'N'
+  replyExpectedYn: 'Y' | 'N' // AI 분석 — 사용자가 N으로 직접 변경 가능
+  repliedYn: 'Y' | 'N' // IN_REPLY_TO 매칭 기반
   elapsedDays: number
   replyElapsedHours: number | null
-  // 팔로업 통합 필드
-  followupId: string | null
-  followupStatusCd: '001' | '002' | '003' | null // 001: 대기, 002: 회신됨, 003: 무시
-  expectedReplyDt: string | null
-  followupRecipientAddr: string | null
-  trackSource: 'USER' | 'AI' | 'DISMISSED' | 'NONE' // USER: 사용자 팔로업, AI: AI 회신기대, DISMISSED: AI 무시, NONE: 없음
 }
 
 export interface SentClassifiedListResponse {

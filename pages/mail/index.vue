@@ -88,7 +88,6 @@
           :action-options="actionOptions"
           :urgency-options="urgencyOptions"
           :importance-options="importanceOptions"
-          @detail="onMailDetail"
           @analysis="onMailAnalysis"
           @search="onSearch"
           @tab-change="onSubTabChange"
@@ -184,6 +183,7 @@
       :is-open="isAnalysisModalOpen"
       :mail="selectedMail"
       @close="isAnalysisModalOpen = false"
+      @detail="onAnalysisMailDetail"
       @reply-draft="onAnalysisReplyDraft"
       @toggle-complete="onToggleComplete"
     />
@@ -299,8 +299,8 @@ const mailTabItems = computed(() => [
   {
     label:
       sentClassifiedTabCounts.value.pending > 0
-        ? `보낸 메일함 · 팔로업 트래커 (${sentClassifiedTabCounts.value.pending})`
-        : '보낸 메일함 · 팔로업 트래커',
+        ? `보낸 메일함 (${sentClassifiedTabCounts.value.pending})`
+        : '보낸 메일함',
     value: 'followup',
   },
 ])
@@ -452,6 +452,12 @@ const onSentMailDetail = async (mail: SentClassifiedItem) => {
 const onMailAnalysis = (mail: ClassifiedMail) => {
   setSelectedMail(mail)
   isAnalysisModalOpen.value = true
+}
+
+const onAnalysisMailDetail = async () => {
+  isAnalysisModalOpen.value = false
+  if (!selectedMail.value) return
+  await onMailDetail(selectedMail.value)
 }
 
 // ─── 검색 ─────────────────────────────────────────────────

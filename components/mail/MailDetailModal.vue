@@ -4,7 +4,7 @@
     position="center"
     :show-close="true"
     :show-overlay="true"
-    max-width="640px"
+    max-width="800px"
     custom-class="mail-detail-modal-dialog"
     @close="emit('close')"
   >

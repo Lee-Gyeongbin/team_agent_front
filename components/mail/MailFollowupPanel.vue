@@ -115,10 +115,10 @@ const emit = defineEmits<{
 // ─── 최대값 (바 차트 비율 계산) ──────────────────────────────
 const maxPendingCount = computed(() => Math.max(...props.topRecipients.map((r) => r.pendingCount), 1))
 
-// ─── 독촉 필요 메일: 사용자/AI 트래킹 중 7일 이상 경과, 경과일 내림차순 top 3 ──
+// ─── 독촉 필요 메일: 회신 대기(replyExpectedYn=Y) 중 7일 이상 경과, 경과일 내림차순 top 3 ──
 const urgentMails = computed(() =>
   props.pendingMails
-    .filter((m) => (m.trackSource === 'AI' || m.trackSource === 'USER') && m.repliedYn === 'N' && m.elapsedDays >= 7)
+    .filter((m) => m.replyExpectedYn === 'Y' && m.repliedYn === 'N' && m.elapsedDays >= 7)
     .sort((a, b) => b.elapsedDays - a.elapsedDays)
     .slice(0, 3),
 )

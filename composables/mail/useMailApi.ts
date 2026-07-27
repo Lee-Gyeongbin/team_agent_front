@@ -18,9 +18,6 @@ import type {
   ReplyDraftRequest,
   ReplyDraftResponse,
   ActionCompleteRequest,
-  FollowupRegisterRequest,
-  FollowupListResponse,
-  FollowupStatusUpdateRequest,
   InboxSummaryResponse,
   SentClassifiedListParams,
   SentClassifiedListResponse,
@@ -126,21 +123,6 @@ export const useMailApi = () => {
     return post<{ result: string }>('/mail/action-complete.do', req)
   }
 
-  /** 팔로업 DB 등록 */
-  const fetchFollowupRegister = async (req: FollowupRegisterRequest): Promise<{ result: string }> => {
-    return post<{ result: string }>('/mail/followup-register.do', req)
-  }
-
-  /** 팔로업 DB 목록 조회 */
-  const fetchFollowupList = async (): Promise<FollowupListResponse> => {
-    return get<FollowupListResponse>('/mail/followup-list.do')
-  }
-
-  /** 팔로업 상태 업데이트 */
-  const fetchFollowupStatusUpdate = async (req: FollowupStatusUpdateRequest): Promise<{ result: string }> => {
-    return post<{ result: string }>('/mail/followup-status-update.do', req)
-  }
-
   /** 날짜 범위 동기화 (DB에 없는 메일만 IMAP → AI 분류) */
   const fetchSyncRange = async (startDate: string, endDate: string): Promise<{ result: string; newCount: number }> => {
     return post<{ result: string; newCount: number }>('/mail/sync-range.do', { startDate, endDate })
@@ -175,14 +157,14 @@ export const useMailApi = () => {
     return get<SentWeeklyStatsResponse>('/mail/sent-weekly-stats.do')
   }
 
-  /** AI 회신기대 무시 (STATUS_CD=003으로 INSERT) */
-  const fetchFollowupDismiss = async (mailId: string): Promise<{ result: string }> => {
-    return post<{ result: string }>('/mail/followup-dismiss.do', { mailId })
+  /** 회신 불필요 처리 (REPLY_EXPECTED_YN = 'N' UPDATE) */
+  const fetchReplyNotNeeded = async (mailId: string): Promise<{ result: string }> => {
+    return post<{ result: string }>('/mail/reply-not-needed.do', { mailId })
   }
 
-  /** 팔로업 취소(삭제) — 무시 해제도 이 API 재사용 */
-  const fetchFollowupCancel = async (followupId: string): Promise<{ result: string }> => {
-    return post<{ result: string }>('/mail/followup-cancel.do', { followupId })
+  /** 회신 필요 복원 (REPLY_EXPECTED_YN = 'Y' UPDATE) */
+  const fetchReplyNeeded = async (mailId: string): Promise<{ result: string }> => {
+    return post<{ result: string }>('/mail/reply-needed.do', { mailId })
   }
 
   return {
@@ -200,15 +182,12 @@ export const useMailApi = () => {
     fetchMailDetail,
     fetchReplyDraft,
     fetchActionComplete,
-    fetchFollowupRegister,
-    fetchFollowupList,
-    fetchFollowupStatusUpdate,
     fetchInboxSummary,
     fetchSyncRange,
     fetchSentClassified,
     fetchSentTopRecipients,
     fetchSentWeeklyStats,
-    fetchFollowupDismiss,
-    fetchFollowupCancel,
+    fetchReplyNotNeeded,
+    fetchReplyNeeded,
   }
 }
