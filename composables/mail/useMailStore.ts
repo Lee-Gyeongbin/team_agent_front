@@ -16,9 +16,6 @@ import type {
   WorkCategory,
   MailDetailMail,
   MailAnalysis,
-  FollowupDbItem,
-  FollowupRegisterRequest,
-  FollowupStatusUpdateRequest,
   SentClassifiedItem,
   SentClassifiedListParams,
   SentTopRecipient,
@@ -39,15 +36,12 @@ const {
   fetchMailDetail,
   fetchReplyDraft,
   fetchActionComplete,
-  fetchFollowupRegister,
-  fetchFollowupList,
-  fetchFollowupStatusUpdate,
   fetchInboxSummary,
   fetchSyncRange,
   fetchSentClassified,
   fetchSentTopRecipients,
-  fetchFollowupDismiss,
-  fetchFollowupCancel,
+  fetchReplyNotNeeded,
+  fetchReplyNeeded,
 } = useMailApi()
 
 const { fetchCodes } = useCommonCodesApi()
@@ -88,8 +82,6 @@ const inboxUidValidity = ref<number | null>(null)
 const isLoadingKpi = ref(false)
 const isLoadingClassified = ref(false)
 const isLoadingSync = ref(false)
-const followupDbList = ref<FollowupDbItem[]>([])
-const isLoadingFollowupList = ref(false)
 const inboxSummary = ref<string>('')
 const isLoadingInboxSummary = ref(false)
 
@@ -410,29 +402,6 @@ export const useMailStore = () => {
     }
   }
 
-  // ─── 팔로업 DB 등록 ───────────────────────────────────────
-  const handleFollowupRegister = async (req: FollowupRegisterRequest) => {
-    try {
-      await fetchFollowupRegister(req)
-      openToast({ message: '팔로업이 등록되었습니다.' })
-    } catch {
-      openToast({ message: '팔로업 등록에 실패했습니다.', type: 'error' })
-    }
-  }
-
-  // ─── 팔로업 DB 목록 조회 ──────────────────────────────────
-  const handleFetchFollowupList = async () => {
-    isLoadingFollowupList.value = true
-    try {
-      const res = await fetchFollowupList()
-      followupDbList.value = res.list ?? []
-    } catch {
-      openToast({ message: '팔로업 목록 조회에 실패했습니다.', type: 'error' })
-    } finally {
-      isLoadingFollowupList.value = false
-    }
-  }
-
   // ─── selectedMail 직접 설정 ───────────────────────────────
   const setSelectedMail = (mail: ClassifiedMail | null) => {
     selectedMail.value = mail
@@ -492,20 +461,14 @@ export const useMailStore = () => {
     }
   }
 
-  // ─── 팔로업 상태 업데이트 ─────────────────────────────────
-  const handleFollowupStatusUpdate = async (req: FollowupStatusUpdateRequest) => {
+  // ─── 회신 불필요 처리 ─────────────────────────────────────
+  const handleReplyNotNeeded = async (mailId: string, afterRefresh?: () => void) => {
     try {
-      await fetchFollowupStatusUpdate(req)
-      await handleFetchFollowupList()
-    } catch {
-      openToast({ message: '팔로업 상태 변경에 실패했습니다.', type: 'error' })
-    }
-  }
-
-  // ─── AI 무시 등록 ────────────────────────────────────────
-  const handleFollowupDismiss = async (mailId: string, afterRefresh?: () => void) => {
-    try {
-      await fetchFollowupDismiss(mailId)
+      await fetchReplyNotNeeded(mailId)
+      const idx = sentClassifiedList.value.findIndex((m) => m.mailId === mailId)
+      if (idx !== -1) {
+        sentClassifiedList.value[idx] = { ...sentClassifiedList.value[idx], replyExpectedYn: 'N' }
+      }
       openToast({ message: '회신 불필요로 처리되었습니다.' })
       afterRefresh?.()
     } catch {
@@ -513,14 +476,18 @@ export const useMailStore = () => {
     }
   }
 
-  // ─── 팔로업/무시 취소(삭제) ───────────────────────────────
-  const handleFollowupCancel = async (followupId: string, afterRefresh?: () => void) => {
+  // ─── 회신 필요 복원 ───────────────────────────────────────
+  const handleReplyNeeded = async (mailId: string, afterRefresh?: () => void) => {
     try {
-      await fetchFollowupCancel(followupId)
-      openToast({ message: '팔로업이 해제되었습니다.' })
+      await fetchReplyNeeded(mailId)
+      const idx = sentClassifiedList.value.findIndex((m) => m.mailId === mailId)
+      if (idx !== -1) {
+        sentClassifiedList.value[idx] = { ...sentClassifiedList.value[idx], replyExpectedYn: 'Y' }
+      }
+      openToast({ message: '회신 대기로 변경되었습니다.' })
       afterRefresh?.()
     } catch {
-      openToast({ message: '팔로업 해제에 실패했습니다.', type: 'error' })
+      openToast({ message: '처리에 실패했습니다.', type: 'error' })
     }
   }
 
@@ -558,8 +525,6 @@ export const useMailStore = () => {
     isLoadingKpi,
     isLoadingClassified,
     isLoadingSync,
-    followupDbList,
-    isLoadingFollowupList,
     inboxSummary,
     isLoadingInboxSummary,
     // 기존 액션
@@ -585,9 +550,6 @@ export const useMailStore = () => {
     handleFetchMailDetail,
     handleFetchReplyDraft,
     handleToggleActionComplete,
-    handleFollowupRegister,
-    handleFetchFollowupList,
-    handleFollowupStatusUpdate,
     setSelectedMail,
     handleFetchInboxSummary,
     handleSyncRange,
@@ -600,7 +562,7 @@ export const useMailStore = () => {
     isLoadingSentSidebar,
     handleFetchSentClassified,
     handleFetchSentSidebar,
-    handleFollowupDismiss,
-    handleFollowupCancel,
+    handleReplyNotNeeded,
+    handleReplyNeeded,
   }
 }

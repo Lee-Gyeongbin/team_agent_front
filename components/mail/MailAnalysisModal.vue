@@ -4,7 +4,7 @@
     position="center"
     :show-close="true"
     :show-overlay="true"
-    max-width="560px"
+    max-width="700px"
     @close="emit('close')"
   >
     <template #header>
@@ -76,8 +76,16 @@
           </div>
         </div>
 
-        <!-- 회신 초안 버튼 -->
+        <!-- 액션 버튼 -->
         <div class="mail-analysis-modal-footer">
+          <UiButton
+            variant="outline"
+            size="lg"
+            full-width
+            @click="emit('detail')"
+          >
+            상세보기
+          </UiButton>
           <UiButton
             variant="primary"
             size="lg"
@@ -109,6 +117,7 @@ const { purposeOptions, actionOptions } = useMailStore()
 
 const emit = defineEmits<{
   close: []
+  detail: []
   'reply-draft': []
   'toggle-complete': [mailId: string, currentYn: string]
 }>()
