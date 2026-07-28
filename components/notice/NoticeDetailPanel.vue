@@ -29,12 +29,14 @@
         <UiBadge
           v-if="notice?.featuredYn === 'Y'"
           variant="default"
+          size="sm"
         >
           대시보드 표시
         </UiBadge>
         <UiBadge
           v-if="notice?.pinYn === 'Y'"
           variant="default"
+          size="sm"
         >
           상단 고정
         </UiBadge>
@@ -70,7 +72,7 @@
 </template>
 
 <script setup lang="ts">
-import { UiDrawer } from '@leechanyong/ispark-ui'
+import { UiBadge, UiButton, UiDrawer } from '@leechanyong/ispark-ui'
 import type { NoticeItem } from '~/types/notice'
 
 interface Props {
