@@ -877,7 +877,7 @@
   }
 }
 
-// 좌측: 소목차 리스트
+// 좌측: 목차 트리 리스트
 .pt-sec-list {
   border: 1px solid $color-border;
   border-radius: $border-radius-lg;
@@ -888,27 +888,44 @@
   @include custom-scrollbar;
 }
 
+// 대목차 헤더 (클릭 불가)
+.pt-sec-group-title {
+  padding: 7px $spacing-sm;
+  border-bottom: 1px solid $color-border;
+  @include typo($body-xsmall);
+  font-weight: $font-weight-semibold;
+  color: $color-text-muted;
+  background: $color-surface;
+  user-select: none;
+  letter-spacing: 0.01em;
+}
+
+// 소목차 (클릭 가능, 들여쓰기)
 .pt-sec-item {
-  padding: 11px $spacing-sm;
+  padding: 10px $spacing-sm 10px ($spacing-sm + 12px);
   border-bottom: 1px solid $color-border;
   display: flex;
   align-items: center;
   gap: 9px;
   @include typo($body-xsmall);
   color: $color-text-heading;
+  cursor: pointer;
+  transition: background $transition-fast;
 
   &:last-child {
     border-bottom: none;
   }
 
+  &:hover {
+    background: $color-surface;
+  }
+
   &.is-active {
     background: var(--color-primary-bg);
 
-    .pt-sec-dot { background: var(--color-primary); }
-  }
-
-  &.is-done {
-    .pt-sec-dot { background: $color-success; }
+    &:hover {
+      background: var(--color-primary-bg);
+    }
   }
 }
 
@@ -919,10 +936,31 @@
   background: $color-border;
   flex-shrink: 0;
   transition: background $transition-fast;
+
+  &.is-active { background: var(--color-primary); }
+  &.is-done { background: $color-success; }
 }
 
 .pt-sec-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   &.is-bold { font-weight: $font-weight-semibold; }
+}
+
+// 슬라이드 생성 완료 수 뱃지
+.pt-sec-slide-badge {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 999px;
+  @include typo($body-xsmall);
+  font-size: 10px;
+  font-weight: $font-weight-semibold;
+  color: var(--color-primary);
+  background: var(--color-primary-bg);
+  line-height: 1.6;
 }
 
 // 중앙: 미리보기 패널
@@ -960,11 +998,82 @@
   border-radius: $border-radius-lg;
   background: linear-gradient(180deg, #fafafe, #f3f2fb);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: $spacing-md;
   margin-bottom: $spacing-md;
   min-height: 240px;
+  gap: $spacing-sm;
+}
+
+// 인포그래픽 이미지 상태 (이미지 보기 버튼 / 생성 중 안내)
+.pt-slide-image-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pt-slide-image-rendering {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  @include typo($body-small);
+  font-weight: $font-weight-semibold;
+  color: var(--color-primary);
+  background: var(--color-primary-bg);
+  padding: 8px $spacing-md;
+  border-radius: 999px;
+}
+
+@keyframes pt-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pt-spin {
+  animation: pt-spin 1s linear infinite;
+  display: inline-block;
+}
+
+// 인포그래픽 이미지 단독 모달
+.pt-image-modal {
+  background: #fff;
+  border-radius: $border-radius-lg;
+  width: min(800px, 100%);
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: $shadow-lg;
+}
+
+.pt-image-modal-body {
+  position: relative;
+  flex: 1;
+  min-height: 200px;
+  overflow: auto;
+  padding: $spacing-md;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  @include custom-scrollbar;
+
+  img {
+    width: 100%;
+    height: auto;
+    border-radius: $border-radius-base;
+    display: block;
+  }
+}
+
+.pt-image-modal-error {
+  @include typo($body-medium);
+  color: $color-text-secondary;
+  text-align: center;
+  padding: $spacing-lg;
 }
 
 .pt-slide-mock {
@@ -978,6 +1087,23 @@
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
+  overflow: hidden;
+
+  // colorIndex 기반 CSS 변수 주입 (슬라이드 렌더러 컴포넌트에 상속)
+  &.is-color-0 {
+    --slide-base-color: #5b4fe9;
+    --slide-accent-color: #e08a2c;
+  }
+
+  &.is-color-1 {
+    --slide-base-color: #8b7fff;
+    --slide-accent-color: #22a06b;
+  }
+
+  &.is-color-2 {
+    --slide-base-color: #5b4fe9;
+    --slide-accent-color: #e08a2c;
+  }
 }
 
 .pt-slide-eyebrow {
@@ -989,6 +1115,164 @@
 .pt-slide-ttl {
   @include typo($body-small-bold);
   color: $color-text-heading;
+}
+
+.pt-slide-sub {
+  @include typo($body-xsmall);
+  color: $color-text-muted;
+}
+
+.pt-slide-banner {
+  @include typo($body-xsmall-bold);
+  color: #fff;
+  background: var(--slide-base-color, #5b4fe9);
+  border-radius: 4px;
+  padding: 4px 8px;
+  text-align: center;
+}
+
+.pt-slide-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.pt-slide-ribbon {
+  @include typo($body-caption-bold);
+  color: #fff;
+  background: var(--slide-accent-color, #e08a2c);
+  border-radius: 4px;
+  padding: 4px 8px;
+  text-align: center;
+  margin-top: auto;
+}
+
+.pt-slide-fail {
+  @include typo($body-caption);
+  color: $color-error;
+  text-align: center;
+  padding: 4px;
+}
+
+.pt-slide-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: $border-radius-base;
+}
+
+// 캐러셀 레이아웃
+.pt-slide-carousel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+// 썸네일 스트립
+.pt-slide-strip {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 4px 0;
+  @include custom-scrollbar;
+}
+
+.pt-slide-thumb {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 44px;
+  padding: 6px 8px;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  cursor: pointer;
+  transition: border-color $transition-fast;
+
+  &:hover {
+    border-color: var(--color-primary);
+  }
+
+  &.is-active {
+    border-color: var(--color-primary);
+    background: var(--color-primary-bg);
+  }
+
+  &.is-fail {
+    border-color: $color-error;
+    background: #fff5f5;
+  }
+}
+
+.pt-slide-thumb-no {
+  @include typo($body-caption-bold);
+  color: $color-text-heading;
+}
+
+.pt-slide-thumb-title {
+  @include typo($body-caption);
+  color: $color-text-muted;
+  max-width: 80px;
+  @include ellipsis(1);
+}
+
+// 생성 진행 표시
+.pt-gen-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-xl;
+}
+
+.pt-gen-progress-bar {
+  width: 100%;
+  height: 3px;
+  background: $color-border;
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: -40%;
+    width: 40%;
+    height: 100%;
+    background: var(--color-primary);
+    border-radius: 2px;
+    animation: pt-progress-slide 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes pt-progress-slide {
+  0% { left: -40%; }
+  100% { left: 100%; }
+}
+
+.pt-gen-progress-msg {
+  @include typo($body-xsmall);
+  color: $color-text-muted;
+}
+
+// 슬라이드 빈 상태
+.pt-slide-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// 채팅 힌트
+.pt-chat-hint {
+  @include typo($body-xsmall);
+  color: $color-text-muted;
+  line-height: 1.8;
+  text-align: center;
+  padding: $spacing-md;
 }
 
 .pt-slide-bars {
@@ -1126,11 +1410,396 @@
   }
 }
 
+// ---- 패널 헤더 행 (타이틀 + 렌더 현황) ----
+.pt-panel-head-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+}
+
+.pt-render-summary {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-shrink: 0;
+}
+
+.pt-render-count {
+  @include typo($body-xsmall);
+  color: $color-text-muted;
+  white-space: nowrap;
+}
+
+// ---- 로딩 스켈레톤 ----
+.pt-review-section-skeleton {
+  height: 120px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+  border-radius: $border-radius-lg;
+  margin-bottom: $spacing-sm;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+// ---- 소목차 섹션 ----
+.pt-review-section {
+  margin-bottom: $spacing-lg;
+}
+
+.pt-review-sec-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  @include typo($body-small-bold);
+  color: $color-text-heading;
+  margin-bottom: $spacing-sm;
+  padding-bottom: 6px;
+  border-bottom: 1px solid $color-border;
+}
+
+.pt-review-sec-icon {
+  flex-shrink: 0;
+
+  &.is-done { color: $color-success; }
+  &.is-rendering { color: var(--color-primary); }
+}
+
+.pt-review-sec-count {
+  margin-left: auto;
+  @include typo($body-xsmall);
+  color: $color-text-muted;
+}
+
+// ---- 슬라이드 가로 스크롤 행 ----
+.pt-review-slides {
+  display: flex;
+  gap: $spacing-sm;
+  overflow-x: auto;
+  padding-bottom: 4px;
+
+  @include custom-scrollbar;
+}
+
+// ---- 슬라이드 썸네일 카드 ----
+.pt-review-slide {
+  position: relative;
+  flex-shrink: 0;
+  width: 160px;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  overflow: hidden;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color $transition-fast, box-shadow $transition-fast;
+
+  &:hover {
+    border-color: var(--color-primary);
+    box-shadow: $shadow-sm;
+  }
+}
+
+.pt-review-slide-img {
+  width: 100%;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+  display: block;
+}
+
+// JSON 목업 미니 프리뷰
+.pt-review-slide-mock {
+  width: 100%;
+  aspect-ratio: 4/3;
+  padding: $spacing-sm;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: linear-gradient(135deg, #f4f3fc, #eceafc);
+
+  &.is-color-1 { background: linear-gradient(135deg, #fdf3e8, #fce4c0); }
+  &.is-color-2 { background: linear-gradient(135deg, #e8f5ee, #c5e8d5); }
+}
+
+.pt-review-slide-eyebrow {
+  @include typo($body-caption);
+  color: var(--color-primary);
+  font-weight: $font-weight-semibold;
+  @include ellipsis(1);
+}
+
+.pt-review-slide-title {
+  @include typo($body-caption-bold);
+  color: $color-text-heading;
+  @include ellipsis(3);
+  line-height: 1.4;
+}
+
+// ---- 렌더 상태 배지 ----
+.pt-render-badge {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  @include typo($body-caption);
+  font-weight: $font-weight-semibold;
+  line-height: 1.6;
+
+  &.is-wait {
+    background: $color-surface;
+    color: $color-text-muted;
+  }
+
+  &.is-rendering {
+    background: var(--color-primary-bg);
+    color: var(--color-primary-dark);
+  }
+
+  &.is-done {
+    background: #e6f4ec;
+    color: $color-success;
+  }
+
+  &.is-fail {
+    background: #fdecea;
+    color: $color-error;
+  }
+}
+
+// =============================================
+// Step E — 슬라이드 풀사이즈 뷰어 모달
+// =============================================
+
+// 썸네일 호버 오버레이
+.pt-review-slide-hover {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  opacity: 0;
+  transition: opacity $transition-fast;
+  border-radius: $border-radius-base;
+  pointer-events: none;
+}
+
+.pt-review-slide:hover .pt-review-slide-hover {
+  opacity: 1;
+}
+
+// 페이드 트랜지션
+.pt-viewer-fade-enter-active,
+.pt-viewer-fade-leave-active {
+  transition: opacity $transition-base;
+}
+
+.pt-viewer-fade-enter-from,
+.pt-viewer-fade-leave-to {
+  opacity: 0;
+}
+
+// 오버레이
+.pt-slide-viewer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: $z-modal;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-md;
+}
+
+// 뷰어 컨테이너
+.pt-slide-viewer {
+  background: #fff;
+  border-radius: $border-radius-lg;
+  width: min(900px, 100%);
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: $shadow-lg;
+}
+
+// 뷰어 헤더
+.pt-slide-viewer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-sm $spacing-md;
+  border-bottom: 1px solid $color-border;
+  flex-shrink: 0;
+}
+
+.pt-slide-viewer-info {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.pt-slide-viewer-section {
+  @include typo($body-small-bold);
+  color: $color-text-heading;
+}
+
+.pt-slide-viewer-pos {
+  @include typo($body-xsmall);
+  color: $color-text-muted;
+}
+
+.pt-slide-viewer-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  border-radius: $border-radius-base;
+  color: $color-text-muted;
+  cursor: pointer;
+  transition: background $transition-fast, color $transition-fast;
+
+  &:hover {
+    background: $color-surface;
+    color: $color-text-primary;
+  }
+}
+
+// 뷰어 본문 (화살표 + 슬라이드 스테이지)
+.pt-slide-viewer-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-md;
+  overflow: hidden;
+  min-height: 0;
+}
+
+// 이전/다음 버튼
+.pt-slide-viewer-nav {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid $color-border;
+  background: #fff;
+  border-radius: 50%;
+  cursor: pointer;
+  color: $color-text-primary;
+  transition: background $transition-fast, border-color $transition-fast;
+
+  &:hover:not(:disabled) {
+    background: $color-surface;
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+}
+
+// 슬라이드 표시 영역
+.pt-slide-viewer-stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  min-height: 0;
+
+  @include custom-scrollbar;
+
+  // 슬라이드 목업을 뷰어 안에서 더 크게
+  .pt-slide-mock {
+    width: 100%;
+    max-width: 720px;
+    min-height: 400px;
+  }
+}
+
+// 렌더링된 이미지 풀사이즈
+.pt-slide-viewer-img {
+  width: 100%;
+  max-width: 720px;
+  height: auto;
+  border-radius: $border-radius-base;
+  display: block;
+}
+
+// 썸네일 스트립
+.pt-slide-viewer-strip {
+  display: flex;
+  gap: $spacing-xs;
+  overflow-x: auto;
+  padding: $spacing-sm $spacing-md;
+  border-top: 1px solid $color-border;
+  flex-shrink: 0;
+
+  @include custom-scrollbar;
+}
+
+.pt-slide-viewer-thumb {
+  flex-shrink: 0;
+  width: 72px;
+  height: 54px;
+  border: 2px solid $color-border;
+  border-radius: $border-radius-sm;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color $transition-fast;
+
+  &:hover {
+    border-color: var(--color-primary-hover);
+  }
+
+  &.is-active {
+    border-color: var(--color-primary);
+  }
+}
+
+.pt-slide-viewer-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pt-slide-viewer-thumb-mock {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f4f3fc, #eceafc);
+  @include typo($body-caption-bold);
+  color: var(--color-primary);
+
+  &.is-color-1 { background: linear-gradient(135deg, #fdf3e8, #fce4c0); color: #c07800; }
+  &.is-color-2 { background: linear-gradient(135deg, #e8f5ee, #c5e8d5); color: #2e7d5a; }
+}
+
+// ---- 소목차 썸네일 그리드 ----
 .pt-thumb-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: $spacing-sm;
-  margin-top: $spacing-sm;
+  gap: 14px;
 }
 
 .pt-thumb {
@@ -1139,58 +1808,108 @@
   overflow: hidden;
   background: #fff;
   cursor: pointer;
-  transition: border-color $transition-fast;
+  transition: border-color $transition-fast, box-shadow $transition-fast;
 
   &:hover {
     border-color: var(--color-primary);
+    box-shadow: $shadow-sm;
   }
 }
 
 .pt-thumb-img {
-  aspect-ratio: 16/9;
+  aspect-ratio: 16 / 9;
   background: linear-gradient(135deg, #f4f3fc, #eceafc);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: $spacing-sm;
+  padding: 14px;
+  overflow: hidden;
 }
 
+.pt-thumb-actual-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: $border-radius-sm;
+}
+
+// 이미지 없을 때 보여주는 미니 슬라이드 목업
 .pt-thumb-mini {
   width: 100%;
   height: 100%;
   background: #fff;
-  border-radius: 4px;
-  box-shadow: $shadow-sm;
-  padding: $spacing-sm;
+  border-radius: $border-radius-sm;
+  box-shadow: 0 2px 8px rgba(30, 20, 80, 0.08);
+  padding: 10px;
   display: flex;
   flex-direction: column;
   gap: 5px;
 }
 
-.pt-thumb-l1 {
+.pt-thumb-mini-l1 {
   width: 40%;
   height: 5px;
   background: var(--color-primary-bg);
   border-radius: 2px;
 }
 
-.pt-thumb-l2 {
+.pt-thumb-mini-l2 {
   width: 70%;
   height: 7px;
   background: #ddd9fb;
   border-radius: 2px;
 }
 
+.pt-thumb-mini-bars {
+  display: flex;
+  gap: 5px;
+  margin-top: auto;
+
+  span {
+    flex: 1;
+    height: 20px;
+    border-radius: 3px;
+    background: var(--color-primary-bg);
+
+    &:nth-child(2) { background: #e5e2fb; }
+    &:nth-child(3) { background: #eeedfb; }
+  }
+}
+
 .pt-thumb-cap {
-  padding: 8px $spacing-sm;
-  @include typo($body-xsmall);
+  padding: 9px 12px;
   border-top: 1px solid $color-border;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  color: $color-text-heading;
+  justify-content: space-between;
+  gap: 8px;
 
-  b { font-weight: $font-weight-semibold; }
+  b {
+    flex: 1;
+    @include typo($body-xsmall-bold);
+    color: $color-text-heading;
+    @include ellipsis(1);
+  }
+}
+
+.pt-thumb-cap-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  @include typo($body-xsmall);
+  color: $color-text-muted;
+
+  .is-done-icon { color: $color-success; }
+}
+
+.pt-thumb-skeleton {
+  border-radius: $border-radius-lg;
+  height: 160px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
 }
 
 // =============================================

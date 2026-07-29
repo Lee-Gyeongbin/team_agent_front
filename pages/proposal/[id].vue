@@ -6,7 +6,7 @@
         class="pt-back-btn"
         @click="router.push('/proposal')"
       >
-        <i class="icon-arrow-left size-16" />
+        <i class="icon-arrow-left-sm size-14" />
         PT 제안서
       </button>
       <div
@@ -18,7 +18,7 @@
       </div>
     </div>
 
-    <!-- 6단계 스텝바 -->
+    <!-- 5단계 스텝바 -->
     <ProposalStepper
       :steps="steps"
       :max-unlocked-step="maxUnlockedStep"
@@ -55,6 +55,8 @@
       <ProposalStepD
         v-else-if="currentStep === 3"
         :section-list="sectionList"
+        :raw-toc-list="rawTocList"
+        :slides-cache="slidesCache"
         :active-section="activeSection"
         :active-section-index="activeSectionIndex"
         :current-messages="currentMessages"
@@ -65,21 +67,17 @@
         :pt-project-id="ptProjectId"
         :model-id="modelId"
         :agent-id="agentId"
+        @select-section="goToSection"
         @prev-section="goToPrevSection"
         @confirm-section="onConfirmSection"
         @send-chat="handleSendMessage"
         @generate-section="onGenerateSection"
         @slides-updated="onSlidesUpdated"
       />
-      <ProposalStepE
-        v-else-if="currentStep === 4"
-        :section-list="sectionList"
-        :pt-project-id="ptProjectId"
-        @next="onAdvance"
-      />
       <ProposalStepF
-        v-else-if="currentStep === 5"
+        v-else-if="currentStep === 4"
         :pt-project-id="ptProjectId"
+        :agent-id="agentId"
       />
     </div>
   </div>
@@ -113,7 +111,6 @@ const STEP_DEFS = [
   { key: 'toc' as const, label: '목차', sub: 'TOC 구성' },
   { key: 'settings' as const, label: '설정', sub: '자료·스타일·컬러' },
   { key: 'generate' as const, label: '본문 생성', sub: '소목차별 순차 진행' },
-  { key: 'review' as const, label: '검토', sub: '전체 확인·보완' },
   { key: 'export' as const, label: '출력', sub: 'PDF 추출' },
 ]
 
@@ -136,13 +133,15 @@ const onAdvance = () => {
   const next = Math.min(currentStep.value + 1, STEP_DEFS.length - 1)
   currentStep.value = next
   maxUnlockedStep.value = Math.max(maxUnlockedStep.value, next)
+  // Step B(→2) 등 자체 저장 API 없는 단계 커버 (A·C·D는 서버에서 이미 처리, GREATEST로 중복 무해)
+  fetchUpdateMaxStepNo(ptProjectId.value, next)
   onStepChanged(next)
 }
 
 // D-0: Stage2 전략분석 1회 자동 실행 여부
 const stage2Triggered = ref(false)
 
-const { fetchSelectPtProject, streamAnalyzeStage2 } = useProposalApi()
+const { fetchSelectPtProject, streamAnalyzeStage2, fetchUpdateMaxStepNo } = useProposalApi()
 
 const STAGE2_STEP_MESSAGES: Record<string, string> = {
   analyze: '전략 분석을 수행하는 중...',
@@ -194,6 +193,7 @@ const {
 // ---- 소목차 생성 ----
 const {
   sectionList,
+  rawTocList,
   activeSection,
   activeSectionIndex,
   isGenerating,
@@ -203,6 +203,7 @@ const {
   handleSelectSlides,
   handleGenerateSection,
   handleConfirmSection,
+  goToSection,
   goToPrevSection,
 } = useProposalSections(ptProjectId)
 
@@ -241,7 +242,7 @@ const onGenerateSection = async (tocId: string) => {
 const onConfirmSection = async (sectionId: string) => {
   const allDone = await handleConfirmSection(sectionId)
   if (allDone) {
-    // 모든 소목차 완료 → 검토 단계(Step E)로 자동 이동
+    // 모든 소목차 완료 → 출력 단계(Step F)로 자동 이동
     onAdvance()
   }
 }
@@ -251,11 +252,11 @@ onMounted(async () => {
   const res = await fetchSelectPtProject(ptProjectId.value)
   if (res.result === 'OK') {
     currentProject.value = res.data
-    // Stage1(RFP 분석) 완료 여부로 해제된 스텝 복원
-    if (res.data.writingGuidelineJson) {
-      maxUnlockedStep.value = Math.max(maxUnlockedStep.value, 1)
-    }
+    // 저장된 최대 단계로 복원 (없으면 0)
+    const savedStep = res.data.maxStepNo ?? 0
+    maxUnlockedStep.value = savedStep
+    currentStep.value = savedStep
+    onStepChanged(savedStep)
   }
-  onStepChanged(currentStep.value)
 })
 </script>

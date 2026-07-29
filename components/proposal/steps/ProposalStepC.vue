@@ -160,6 +160,16 @@
           </div>
         </div>
 
+        <!-- 제안사명 -->
+        <div class="pt-settings-full">
+          <div class="pt-settings-label">제안사명</div>
+          <UiInput
+            v-model="submitterNm"
+            placeholder="출력물 푸터에 표시될 제안사명을 입력하세요 (선택)"
+            desc="입력하지 않으면 출력물 푸터 우측이 공란으로 처리됩니다."
+          />
+        </div>
+
         <!-- 컬러 지정 -->
         <div class="pt-settings-full">
           <div class="pt-settings-label">컬러 지정</div>
@@ -242,6 +252,7 @@ const isTargetSaving = ref(false)
 
 const targetTypeCd = ref<PtTargetTypeCd>('G')
 const writingStyle = ref<PtWritingStyle>('formal')
+const submitterNm = ref('')
 const colorValues = ref<string[]>(['#5B4FE9', '#8B7FFF', '#EFECFE', '#E08A2C', '#22A06B'])
 
 // 파일 목록: { ptFileId, fileName }
@@ -324,6 +335,7 @@ const loadSettings = async () => {
     const d = res.data
     targetTypeCd.value = d.targetTypeCd
     writingStyle.value = d.writingStyle
+    submitterNm.value = d.submitterNm ?? ''
     companyFiles.value = d.companyFiles ?? []
     competitorFiles.value = d.competitorFiles ?? []
     etcRefFiles.value = d.etcRefFiles ?? []
@@ -348,6 +360,7 @@ const onNext = async () => {
       writingStyle: writingStyle.value,
       baseColors: [colorValues.value[0], colorValues.value[1], colorValues.value[2]] as [string, string, string],
       accentColors: [colorValues.value[3], colorValues.value[4]] as [string, string],
+      submitterNm: submitterNm.value.trim() || undefined,
     })
     emit('next')
   } catch {

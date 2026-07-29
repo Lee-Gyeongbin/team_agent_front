@@ -135,7 +135,7 @@ export interface Stage1Result {
   evalCriteria: PtEvalCriteria[]
 }
 
-export type PtStepKey = 'template' | 'toc' | 'settings' | 'generate' | 'review' | 'export'
+export type PtStepKey = 'template' | 'toc' | 'settings' | 'generate' | 'export'
 export type PtStepStatus = 'wait' | 'current' | 'done'
 
 export interface PtStep {
@@ -166,6 +166,7 @@ export interface PtProject {
   writingGuidelineJson?: string // 작성지침 JSON (raw)
   projectConfigJson?: string // PROJECT_CONFIG_JSON (template/settings raw)
   stage1DoneYn?: 'Y' | 'N' // Stage1(RFP 분석) 완료 여부 — 목록 조회에서만 반환
+  maxStepNo?: number // 사용자가 도달한 최대 단계 번호 (0=A~5=F) — 상세 조회에서 반환
   createDt: string
   modifyDt: string
   createUserId?: string
@@ -206,27 +207,74 @@ export interface PtSlide {
   tocId: string
   slideNo: number
   colorIndex: number
-  layoutType: string | null
-  /** 슬라이드 JSON 골격 (raw JSON string) */
-  slideJson: string | null
+  layoutType: 'cover' | 'section_divider' | 'infographic' | null
+  reqIdsJson: string | null
+  eyebrowTxt: string | null
+  titleTxt: string
+  subtitleTxt: string | null
+  highlightBannerTxt: string | null
+  componentsJson: string | null
+  stepFlowBarJson: string | null
+  conclusionRibbonTxt: string | null
   imageGenHint: string | null
   renderedImagePath: string | null
   /** 001=대기, 002=생성중, 003=완료, 004=실패 */
   renderStatusCd: '001' | '002' | '003' | '004'
+  sortOrd: number
   createDt: string
   modifyDt: string | null
 }
 
-/** 파싱된 슬라이드 JSON 구조 */
-export interface PtSlideContent {
-  layoutType: string
-  eyebrow: string | null
-  title: string
-  subtitle: string | null
-  highlightBanner: string | null
-  components: unknown[]
-  stepFlowBar: unknown | null
-  conclusionRibbon: string | null
+// ── 슬라이드 본문 컴포넌트 콘텐츠 스키마 ─────────────────────────────────────
+
+export interface CardGridContent {
+  cards: { title: string; desc: string }[]
+}
+
+export interface ProcessFlowContent {
+  steps: { title: string; desc: string }[]
+}
+
+export interface RequirementTableContent {
+  rows: { reqNo: string; reqContent: string; response: string }[]
+}
+
+export interface CredentialGridContent {
+  items: { title: string; desc: string }[]
+}
+
+export interface IconChipGroupContent {
+  chips: string[]
+}
+
+export interface StepFlowBarContent {
+  steps: { label: string; active?: boolean }[]
+}
+
+export interface CalloutBoxContent {
+  text: string
+  tone?: 'info' | 'warning'
+}
+
+export type SlideComponentContent =
+  | CardGridContent
+  | ProcessFlowContent
+  | RequirementTableContent
+  | CredentialGridContent
+  | IconChipGroupContent
+  | StepFlowBarContent
+  | CalloutBoxContent
+
+export interface SlideComponent {
+  type:
+    | 'card_grid'
+    | 'process_flow'
+    | 'requirement_table'
+    | 'credential_grid'
+    | 'icon_chip_group'
+    | 'step_flow_bar'
+    | 'callout_box'
+  content: SlideComponentContent
 }
 
 /** Stage2 SSE 이벤트 */
@@ -254,6 +302,21 @@ export interface SectionGenDoneData {
   slideCount: number
   successCount: number
   failCount: number
+}
+
+/** D-5 이미지 렌더링 SSE — 슬라이드별 진행 이벤트 */
+export interface SlideRenderProgressData {
+  slideId: string
+  /** 003=완료, 004=실패 */
+  renderStatusCd: '003' | '004'
+  /** 완료 시 NCP 이미지 URL */
+  renderedImagePath?: string
+}
+
+/** D-5 이미지 렌더링 SSE — 완료 이벤트 */
+export interface SlideRenderDoneData {
+  total: number
+  success: number
 }
 
 /** D-4 소목차 확인 결과 */
@@ -293,6 +356,8 @@ export interface ProjectSettingsData {
   baseColors: [string, string, string]
   /** 강조색조 hex 2개 */
   accentColors: [string, string]
+  /** 제안사명 (출력물 푸터 우측) */
+  submitterNm?: string
 }
 
 /** Step C 설정 저장 요청 (updateProjectSettings.do) */
@@ -304,6 +369,51 @@ export interface ProjectSettingsSaveRequest {
   writingStyle: PtWritingStyle
   baseColors: [string, string, string]
   accentColors: [string, string]
+  /** 제안사명 (출력물 푸터 우측) */
+  submitterNm?: string
+}
+
+/** /ai/proposal/viewSlideImage.do 응답 (FileService 뷰 응답과 동일 구조) */
+export interface SlideImageViewResponse {
+  viewType?: string
+  url?: string
+  fileName?: string
+  reason?: string
+  downloadUrl?: string
+}
+
+// ── Step F: 출력 ───────────────────────────────────────────────────────────────
+
+/**
+ * TB_PT_EXPORT - BUILD_STATUS_CD (코드 PT000010)
+ * 001=대기, 002=이미지생성중, 003=PPT조립중, 004=완료, 005=실패
+ */
+export type PtExportBuildStatusCd = '001' | '002' | '003' | '004' | '005'
+
+/** TB_PT_EXPORT - EXPORT_TYPE_CD (PT_EXPORT_TYPE): 001=PPTX, 002=PDF */
+export type PtExportTypeCd = '001' | '002'
+
+/** /ai/proposal/startExport.do · selectExportStatus.do 응답 데이터 */
+export interface PtExportVO {
+  exportId: string
+  ptProjectId: string
+  exportTypeCd: PtExportTypeCd
+  buildStatusCd: PtExportBuildStatusCd
+  totalSlideCnt?: number
+  renderedSlideCnt?: number
+  fileNm?: string
+  filePath?: string
+  fileSize?: number
+  errorMsg?: string
+  completeDt?: string
+  /** presigned 다운로드 URL — DB 미저장, 완료 시 동적 발급 */
+  downloadUrl?: string
+}
+
+/** /ai/proposal/startExport.do 요청 */
+export interface PtExportRequest {
+  ptProjectId: string
+  agentId: string
 }
 
 /** @deprecated types/proposal.ts 내부 정렬용 — 실제 Step C 에는 ProjectSettingsData 사용 */

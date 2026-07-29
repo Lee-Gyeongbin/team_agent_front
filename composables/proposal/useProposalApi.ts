@@ -20,9 +20,14 @@ import type {
   SectionGenDoneData,
   SectionConfirmResult,
   SectionChatResult,
+  SlideRenderProgressData,
+  SlideRenderDoneData,
   PtFileUploadUrlRequest,
   PtFileSavePayload,
   PtFileSaveResponse,
+  SlideImageViewResponse,
+  PtExportVO,
+  PtExportRequest,
 } from '~/types/proposal'
 
 /** parentTocId 빈 문자열 → null (대목차) 정규화 */
@@ -276,6 +281,7 @@ export const useProposalApi = () => {
     const params = new URLSearchParams({ ptProjectId, modelId, agentId })
     const es = new EventSource(`/api/ai/proposal/streamExtractStage1.do?${params.toString()}`)
 
+    debugger
     es.addEventListener('progress', (e) => {
       try {
         const data = JSON.parse(e.data) as Stage1ProgressData
@@ -464,6 +470,52 @@ export const useProposalApi = () => {
   }
 
   /**
+   * D-5: 소목차 이미지 렌더링 SSE (confirmSection 완료 후 구독)
+   * 슬라이드별 progress 이벤트 → done 이벤트 순서로 수신.
+   */
+  const streamRenderSectionImages = (
+    ptProjectId: string,
+    tocId: string,
+    callbacks: {
+      onProgress?: (data: SlideRenderProgressData) => void
+      onDone?: (data: SlideRenderDoneData) => void
+      onError?: (message: string) => void
+    },
+  ): EventSource => {
+    const params = new URLSearchParams({ ptProjectId, tocId })
+    const es = new EventSource(`/api/ai/proposal/streamRenderSectionImages.do?${params.toString()}`)
+
+    es.addEventListener('progress', (e) => {
+      try {
+        callbacks.onProgress?.(JSON.parse((e as MessageEvent).data) as SlideRenderProgressData)
+      } catch {
+        /* ignore */
+      }
+    })
+    es.addEventListener('done', (e) => {
+      try {
+        callbacks.onDone?.(JSON.parse((e as MessageEvent).data) as SlideRenderDoneData)
+      } catch {
+        /* ignore */
+      } finally {
+        es.close()
+      }
+    })
+    es.addEventListener('error', (e) => {
+      try {
+        const me = e as MessageEvent
+        callbacks.onError?.(me.data ? (JSON.parse(me.data) as { message: string }).message : 'SSE 연결 오류')
+      } catch {
+        callbacks.onError?.('SSE 연결 오류')
+      } finally {
+        es.close()
+      }
+    })
+
+    return es
+  }
+
+  /**
    * D-4: 소목차 확인 → 다음 소목차 전환
    * 미완료 슬라이드 있으면 confirm 거부.
    * done=true 시 Step E로 이동.
@@ -476,6 +528,41 @@ export const useProposalApi = () => {
     return post<{ result: string; data: SectionConfirmResult; msg?: string }>(
       `/ai/proposal/confirmSection.do?${params.toString()}`,
       {},
+    )
+  }
+
+  /** 최대 단계 번호 업데이트 (Step B·E처럼 별도 저장 API 없는 단계의 다음 버튼용) */
+  const fetchUpdateMaxStepNo = async (ptProjectId: string, maxStepNo: number): Promise<{ result: string }> => {
+    return post<{ result: string }>('/ai/proposal/updateMaxStepNo.do', { ptProjectId, maxStepNo })
+  }
+
+  /** Step E: 프로젝트 전체 슬라이드 목록 조회 (tocId 기준으로 그룹화해서 사용) */
+  const fetchSelectAllProjectSlides = async (ptProjectId: string): Promise<{ result: string; list: PtSlide[] }> => {
+    return get<{ result: string; list: PtSlide[] }>(
+      `/ai/proposal/selectAllProjectSlides.do?ptProjectId=${encodeURIComponent(ptProjectId)}`,
+    )
+  }
+
+  /** 슬라이드 인포그래픽 이미지 presigned URL 조회 */
+  const fetchViewSlideImage = async (slideId: string): Promise<SlideImageViewResponse> => {
+    return post<SlideImageViewResponse>('/ai/proposal/viewSlideImage.do', { slideId })
+  }
+
+  // ── Step F: 출력 ────────────────────────────────────────────────────────────
+
+  /** F — 출력 시작 (PPTX / PDF). 캐시 재사용 판단 후 신규 빌드 또는 즉시 반환. */
+  const fetchStartExport = async (
+    req: PtExportRequest,
+  ): Promise<{ result: string; data: PtExportVO; msg?: string }> => {
+    return post<{ result: string; data: PtExportVO; msg?: string }>('/ai/proposal/startExport.do', req)
+  }
+
+  /** F — 출력 상태 조회 (폴링용). 완료(004)/캐시재사용(003) 시 downloadUrl 포함. */
+  const fetchSelectExportStatus = async (
+    exportId: string,
+  ): Promise<{ result: string; data: PtExportVO; msg?: string }> => {
+    return get<{ result: string; data: PtExportVO; msg?: string }>(
+      `/ai/proposal/selectExportStatus.do?exportId=${encodeURIComponent(exportId)}`,
     )
   }
 
@@ -496,6 +583,8 @@ export const useProposalApi = () => {
     fetchUpdateTocItem,
     fetchDeleteTocItem,
     fetchReorderTocItems,
+    fetchUpdateMaxStepNo,
+    fetchSelectAllProjectSlides,
     fetchSelectStage1Result,
     fetchUpdateRequirement,
     fetchUpdateEvalCriteria,
@@ -505,6 +594,10 @@ export const useProposalApi = () => {
     streamGenerateSection,
     fetchSelectSectionSlides,
     fetchChatSection,
+    streamRenderSectionImages,
     fetchConfirmSection,
+    fetchViewSlideImage,
+    fetchStartExport,
+    fetchSelectExportStatus,
   }
 }

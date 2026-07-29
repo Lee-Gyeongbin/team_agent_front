@@ -1,4 +1,11 @@
-import type { PtSection, PtSlide, SectionGenProgressData, SectionGenDoneData } from '~/types/proposal'
+import type {
+  PtSection,
+  PtSlide,
+  PtTocItem,
+  SectionGenProgressData,
+  SectionGenDoneData,
+  SlideRenderProgressData,
+} from '~/types/proposal'
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
 import { openToast } from '~/composables/useToast'
 import { openLoading, updateLoadingText, closeLoading } from '~/composables/useLoading'
@@ -12,10 +19,21 @@ const SECTION_GEN_STEP_MESSAGES: Record<string, string> = {
 }
 
 export const useProposalSections = (ptProjectId: Ref<string>) => {
-  const { fetchSelectTocList, streamGenerateSection, fetchSelectSectionSlides, fetchConfirmSection } = useProposalApi()
+  const {
+    fetchSelectTocList,
+    streamGenerateSection,
+    fetchSelectSectionSlides,
+    fetchConfirmSection,
+    streamRenderSectionImages,
+  } = useProposalApi()
 
   const sectionList = ref<PtSection[]>([])
+  // 트리 사이드바 표시용 — 대목차(root)까지 포함한 전체 flat list
+  const rawTocList = ref<PtTocItem[]>([])
   const isLoading = ref(false)
+
+  // 현재 보고 있는 소목차 인덱스 (status와 분리 — done 마크 유지하면서 자유 이동)
+  const activeSectionIndexRef = ref(0)
 
   // 소목차별 슬라이드 캐시 (소목차 전환해도 유지)
   const slidesCache = ref<Record<string, PtSlide[]>>({})
@@ -33,6 +51,8 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
     isLoading.value = true
     try {
       const res = await fetchSelectTocList(ptProjectId.value)
+      // 전체 목록 저장 (트리 표시용)
+      rawTocList.value = res.list ?? []
       const leafItems = (res.list ?? []).filter((item) => item.parentId !== null)
       sectionList.value = leafItems.map((item, idx) => ({
         sectionId: item.tocId,
@@ -40,9 +60,19 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
         tocId: item.tocId,
         title: item.title,
         order: idx,
-        status: idx === 0 ? 'active' : ('todo' as PtSection['status']),
+        status: 'todo' as PtSection['status'],
         previewContent: null,
       }))
+      activeSectionIndexRef.value = 0
+      // Step D 진입 시 첫 번째 소목차 슬라이드 즉시 조회
+      const firstTocId = sectionList.value[0]?.tocId
+      if (firstTocId) {
+        fetchSelectSectionSlides(firstTocId)
+          .then((res) => {
+            slidesCache.value[firstTocId] = res.list ?? []
+          })
+          .catch(() => {})
+      }
     } catch (e) {
       console.warn('[useProposalSections] TOC 조회 실패:', e)
     } finally {
@@ -93,8 +123,8 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
           isGenerating.value = false
           genProgressMsg.value = ''
           closeLoading()
-          // 캐시 재조회 트리거 (비동기, 결과 대기 안 함)
-          handleSelectSlides(tocId)
+          // 캐시 재조회 후 이미지 렌더링 SSE 구독 (캐시가 채워진 뒤 SSE 이벤트 수신해야 slideId 매칭됨)
+          handleSelectSlides(tocId).then(() => startImageRenderStream(tocId))
           resolve(data)
         },
         onError: (message: string) => {
@@ -111,6 +141,7 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
   /**
    * D-4: 소목차 확인 → 다음 소목차 활성화
    * 미완료 슬라이드 있으면 거부 메시지 표시.
+   * 확인 성공 시 D-5 이미지 렌더링 SSE를 백그라운드로 구독하여 슬라이드 캐시를 업데이트한다.
    *
    * @returns true: 모든 소목차 완료(Step E로), false: 다음 소목차로 이동
    */
@@ -134,27 +165,75 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
 
     if (data.done) return true
 
-    // 다음 소목차 active 처리
+    // 다음 소목차로 이동
     if (data.nextTocId) {
       const nextIdx = sectionList.value.findIndex((s) => s.tocId === data.nextTocId)
-      if (nextIdx > -1) sectionList.value[nextIdx].status = 'active'
+      if (nextIdx > -1) goToSection(nextIdx)
     }
 
     return false
   }
 
-  const goToPrevSection = () => {
-    const idx = sectionList.value.findIndex((s) => s.status === 'active')
-    if (idx <= 0) return
-    sectionList.value[idx].status = 'todo'
-    sectionList.value[idx - 1].status = 'active'
+  /**
+   * D-5: 이미지 렌더링 SSE 구독 (백그라운드)
+   * 스트림 시작 즉시 캐시 슬라이드를 '002'(생성중)으로 미리 표시하고,
+   * progress 이벤트마다 배열 교체로 reactivity를 확실히 트리거.
+   */
+  const startImageRenderStream = (tocId: string) => {
+    // 렌더링 시작 즉시 전체 슬라이드를 '002'로 표시 → UI에 바로 반영
+    const initial = slidesCache.value[tocId]
+    if (initial?.length) {
+      slidesCache.value[tocId] = initial.map((s) => (s.renderedImagePath ? s : { ...s, renderStatusCd: '002' }))
+    }
+
+    streamRenderSectionImages(ptProjectId.value, tocId, {
+      onProgress: (progressData: SlideRenderProgressData) => {
+        const cached = slidesCache.value[tocId]
+        if (!cached) return
+        const idx = cached.findIndex((s) => s.slideId === progressData.slideId)
+        if (idx > -1) {
+          // 배열 교체 방식으로 Vue reactivity 확실하게 트리거
+          const updated = { ...cached[idx], renderStatusCd: progressData.renderStatusCd }
+          if (progressData.renderedImagePath) updated.renderedImagePath = progressData.renderedImagePath
+          slidesCache.value[tocId] = [...cached.slice(0, idx), updated, ...cached.slice(idx + 1)]
+        }
+      },
+      onDone: (doneData) => {
+        console.warn(`[PT Image] 이미지 렌더링 완료 (tocId=${tocId}, 성공: ${doneData.success}/${doneData.total})`)
+      },
+      onError: (message) => {
+        console.warn(`[PT Image] 이미지 렌더링 SSE 오류 (tocId=${tocId}): ${message}`)
+      },
+    })
   }
 
-  const activeSection = computed(() => sectionList.value.find((s) => s.status === 'active') ?? null)
-  const activeSectionIndex = computed(() => sectionList.value.findIndex((s) => s.status === 'active'))
+  /**
+   * 특정 소목차 인덱스로 직접 이동 (자유 이동 — done 상태 유지)
+   * 이동할 때마다 DB에서 최신 슬라이드를 조회하여 캐시 갱신 (LLM 호출 아님)
+   */
+  const goToSection = (index: number) => {
+    if (index < 0 || index >= sectionList.value.length) return
+    activeSectionIndexRef.value = index
+    const tocId = sectionList.value[index]?.tocId
+    if (!tocId) return
+    // 항상 DB에서 최신 슬라이드 조회 (캐시 우선 아님)
+    fetchSelectSectionSlides(tocId)
+      .then((res) => {
+        slidesCache.value[tocId] = res.list ?? []
+      })
+      .catch((e) => console.warn('[useProposalSections] 슬라이드 조회 실패:', e))
+  }
+
+  const goToPrevSection = () => {
+    goToSection(activeSectionIndexRef.value - 1)
+  }
+
+  const activeSection = computed(() => sectionList.value[activeSectionIndexRef.value] ?? null)
+  const activeSectionIndex = computed(() => activeSectionIndexRef.value)
 
   return {
     sectionList,
+    rawTocList,
     isLoading,
     slidesCache,
     isGenerating,
@@ -165,6 +244,8 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
     handleSelectSlides,
     handleGenerateSection,
     handleConfirmSection,
+    startImageRenderStream,
+    goToSection,
     goToPrevSection,
   }
 }
