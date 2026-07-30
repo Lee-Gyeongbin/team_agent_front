@@ -901,21 +901,11 @@
   flex-shrink: 0;
 }
 
-.meeting2-filter-select {
-  height: 30px;
-  padding: 0 $spacing-sm;
-  border: 1px solid $color-border;
-  border-radius: $border-radius-base;
-  background: #fff;
-  @include typo($body-small, $color-text-dark);
-  cursor: pointer;
-  outline: none;
-  transition: border-color $transition-fast;
-
-  &:hover,
-  &:focus {
-    border-color: var(--color-primary);
-  }
+// UiSelect 래퍼 — 라이브러리 .ui-select-outer { flex: 1 } 해제 후 고정 폭
+.meeting2-filter-bar .meeting2-filter-select-wrap.ui-select-outer {
+  flex: none;
+  width: 120px;
+  flex-shrink: 0;
 }
 
 .meeting2-filter-date {
@@ -1087,19 +1077,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
-  border: 1px solid $color-border;
-  border-radius: 50%;
-  @include typo($body-small-bold, $color-text-muted);
-  background: #fff;
   flex-shrink: 0;
-}
-
-.meeting2-list-row.is-selected .meeting2-list-row-check {
-  border-color: var(--color-primary);
-  background: rgba(var(--color-primary-rgb), 0.08);
-  color: var(--color-primary);
+  z-index: 1;
+  // 표시만 — 클릭은 행으로 전달 (기존 O 표시와 동일)
+  pointer-events: none;
 }
 
 .meeting2-list-row-title {
@@ -1120,6 +1101,11 @@
   align-items: center;
   gap: $spacing-xs;
   flex-shrink: 0;
+
+  // 그리드와 동일 — 목록 뷰 뱃지도 일반 굵기
+  .ui-badge {
+    font-weight: 400;
+  }
 }
 
 .meeting2-list-row-actions {
@@ -1215,6 +1201,11 @@
   gap: $spacing-sm;
 }
 
+.meeting2-list-search {
+  width: 220px;
+  flex-shrink: 0;
+}
+
 .meeting2-list-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -1257,19 +1248,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
-  border: 1px solid $color-border;
-  border-radius: 50%;
-  @include typo($body-small-bold, $color-text-muted);
-  line-height: 1;
-  background: #fff;
-}
-
-.meeting2-list-card.is-selected .meeting2-list-card-check {
-  border-color: var(--color-primary);
-  background: rgba(var(--color-primary-rgb), 0.08);
-  color: var(--color-primary);
+  z-index: 1;
+  // 표시만 — 클릭은 카드로 전달 (기존 O 표시와 동일)
+  pointer-events: none;
 }
 
 .meeting2-list-card-title {
@@ -1286,6 +1267,11 @@
   align-items: center;
   gap: $spacing-xs;
   flex-wrap: wrap;
+
+  // ispark-ui UiBadge 기본 font-weight: 600 — 이 페이지만 일반 굵기로
+  .ui-badge {
+    font-weight: 400;
+  }
 }
 
 .meeting2-list-card-actions {
