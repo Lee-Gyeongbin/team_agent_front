@@ -865,6 +865,300 @@
 }
 
 // =============================================
+// Step E (신규) — 템플릿 생성 (3단 레이아웃)
+// =============================================
+.pt-template-gen-panel {
+  min-height: 560px;
+}
+
+.pt-template-gen-empty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: $spacing-xl 0;
+}
+
+// 3단 레이아웃: 좌(현황) / 중(미리보기) / 우(채팅)
+.pt-template-gen-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr 280px;
+  gap: $spacing-md;
+  align-items: start;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+// ---- 좌측 패널 ----
+.pt-template-gen-left {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+// 생성 현황 pill 목록
+.pt-template-status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pt-template-status-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+}
+
+.pt-template-status-label {
+  @include typo($body-xsmall);
+  color: $color-text-muted;
+}
+
+.pt-template-status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  @include typo($body-xsmall-bold);
+
+  &.is-done {
+    background: rgba($color-success, 0.12);
+    color: $color-success;
+  }
+
+  &.is-fail {
+    background: rgba($color-error, 0.1);
+    color: $color-error;
+  }
+
+  &.is-wait {
+    background: $color-surface;
+    color: $color-text-muted;
+  }
+}
+
+// 컬러 스와치
+.pt-template-colors {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pt-template-color-swatches {
+  display: flex;
+  gap: 8px;
+}
+
+.pt-template-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: $border-radius-sm;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+// 액션 버튼 영역
+.pt-template-gen-actions {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  margin-top: auto;
+}
+
+// ---- 중앙 패널 ----
+.pt-template-gen-center {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  overflow: hidden;
+  background: #fff;
+  min-height: 480px;
+}
+
+// 탭 헤더
+.pt-template-tabs {
+  display: flex;
+  border-bottom: 1px solid $color-border;
+  flex-shrink: 0;
+}
+
+.pt-template-tab {
+  flex: 1;
+  padding: 10px $spacing-md;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  @include typo($body-small);
+  color: $color-text-muted;
+  transition: background $transition-fast, color $transition-fast;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+
+  &:hover:not(.is-active) {
+    color: $color-text-primary;
+    background: $color-surface;
+  }
+
+  &.is-active {
+    color: var(--color-primary-dark);
+    font-weight: $font-weight-semibold;
+    border-bottom-color: var(--color-primary);
+  }
+}
+
+// 미리보기 탭: 슬라이드 레이아웃 (헤더 / 본문 / 푸터)
+.pt-template-preview {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.pt-template-preview-header,
+.pt-template-preview-footer {
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.pt-template-preview-body {
+  flex: 1;
+  background: #f3f2fb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+}
+
+.pt-template-body-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-xs;
+  @include typo($body-xsmall);
+  color: $color-text-muted;
+}
+
+.pt-template-preview-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  @include typo($body-xsmall);
+  color: $color-text-muted;
+  font-style: italic;
+}
+
+// 개별 슬롯 (position:absolute, inline style로 배치)
+.pt-template-slot {
+  overflow: hidden;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.pt-template-divider {
+  width: 100%;
+  height: 100%;
+}
+
+// 슬롯 편집 탭
+.pt-template-slots-view {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  padding: $spacing-md;
+  flex: 1;
+}
+
+.pt-template-slot-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pt-template-slot-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pt-slot-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--color-primary-bg);
+  @include typo($body-xsmall);
+  color: var(--color-primary-dark);
+
+  b {
+    font-weight: $font-weight-semibold;
+  }
+}
+
+.pt-slot-tag-placeholder {
+  @include typo($body-caption);
+  color: $color-text-muted;
+  font-weight: $font-weight-normal;
+}
+
+// ---- 우측 패널 (보완요청 채팅) ----
+.pt-template-gen-right {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  background: #fff;
+  padding: $spacing-md;
+  min-height: 480px;
+}
+
+.pt-template-chat-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  overflow-y: auto;
+  @include custom-scrollbar;
+  min-height: 0;
+}
+
+.pt-template-chat-msg {
+  max-width: 90%;
+  padding: 8px $spacing-sm;
+  border-radius: $border-radius-lg;
+  @include typo($body-xsmall);
+  line-height: 1.5;
+
+  &.is-user {
+    align-self: flex-end;
+    background: var(--color-primary);
+    color: #fff;
+    border-bottom-right-radius: 2px;
+  }
+
+  &.is-ai {
+    align-self: flex-start;
+    background: $color-surface;
+    color: $color-text-heading;
+    border-bottom-left-radius: 2px;
+  }
+}
+
+.pt-template-chat-input {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+// =============================================
 // Step D — 본문 생성 (3단 레이아웃)
 // =============================================
 .pt-stepD-layout {

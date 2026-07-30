@@ -28,6 +28,8 @@ import type {
   SlideImageViewResponse,
   PtExportVO,
   PtExportRequest,
+  PtTemplate,
+  PtTemplateRegenerateRequest,
 } from '~/types/proposal'
 
 /** parentTocId 빈 문자열 → null (대목차) 정규화 */
@@ -566,6 +568,44 @@ export const useProposalApi = () => {
     )
   }
 
+  // ── Step E: 템플릿 생성 ────────────────────────────────────────────────────
+
+  /** E — 템플릿 단건 조회 (PT_PROJECT_ID 기준) */
+  const fetchSelectPtTemplate = async (
+    ptProjectId: string,
+  ): Promise<{ result: string; data: PtTemplate | null; msg?: string }> => {
+    return get<{ result: string; data: PtTemplate | null; msg?: string }>(
+      `/ai/proposal/selectPtTemplate.do?ptProjectId=${encodeURIComponent(ptProjectId)}`,
+    )
+  }
+
+  /** E — 템플릿 생성 (최초 / 전체 재생성) */
+  const fetchGeneratePtTemplate = async (
+    ptProjectId: string,
+    modelId: string,
+    agentId: string,
+  ): Promise<{ result: string; data: PtTemplate; msg?: string }> => {
+    const params = new URLSearchParams({ ptProjectId, modelId, agentId })
+    return post<{ result: string; data: PtTemplate; msg?: string }>(
+      `/ai/proposal/generatePtTemplate.do?${params.toString()}`,
+      {},
+    )
+  }
+
+  /** E — 템플릿 재생성 (보완요청 반영) */
+  const fetchRegeneratePtTemplate = async (
+    ptProjectId: string,
+    refineInstruction: string,
+    modelId: string,
+    agentId: string,
+  ): Promise<{ result: string; data: PtTemplate; msg?: string }> => {
+    const params = new URLSearchParams({ modelId, agentId })
+    return post<{ result: string; data: PtTemplate; msg?: string }>(
+      `/ai/proposal/regeneratePtTemplate.do?${params.toString()}`,
+      { ptProjectId, refineInstruction },
+    )
+  }
+
   return {
     fetchCreatePtFileUploadUrl,
     fetchSavePtFile,
@@ -599,5 +639,8 @@ export const useProposalApi = () => {
     fetchViewSlideImage,
     fetchStartExport,
     fetchSelectExportStatus,
+    fetchSelectPtTemplate,
+    fetchGeneratePtTemplate,
+    fetchRegeneratePtTemplate,
   }
 }

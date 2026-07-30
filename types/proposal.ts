@@ -135,7 +135,7 @@ export interface Stage1Result {
   evalCriteria: PtEvalCriteria[]
 }
 
-export type PtStepKey = 'template' | 'toc' | 'settings' | 'generate' | 'export'
+export type PtStepKey = 'template' | 'toc' | 'settings' | 'template-gen' | 'generate' | 'export'
 export type PtStepStatus = 'wait' | 'current' | 'done'
 
 export interface PtStep {
@@ -414,6 +414,32 @@ export interface PtExportVO {
 export interface PtExportRequest {
   ptProjectId: string
   agentId: string
+}
+
+// ── Step E: 템플릿 생성 ───────────────────────────────────────────────────────
+
+/** TB_PT_TEMPLATE.GEN_STATUS_CD */
+export type PtTemplateGenStatusCd = '001' | '002' | '003' | '004'
+// 001=대기, 002=생성중, 003=완료, 004=실패
+
+/** TB_PT_TEMPLATE - PT 헤더/푸터 템플릿 */
+export interface PtTemplate {
+  templateId: string
+  ptProjectId: string
+  headerComponentsJson: string | null
+  footerComponentsJson: string | null
+  colorJson: string | null
+  /** 001=대기, 002=생성중, 003=완료, 004=실패 */
+  genStatusCd: PtTemplateGenStatusCd
+  errorMsg: string | null
+  createDt: string
+  modifyDt: string | null
+}
+
+/** 템플릿 재생성 요청 */
+export interface PtTemplateRegenerateRequest {
+  ptProjectId: string
+  refineInstruction?: string
 }
 
 /** @deprecated types/proposal.ts 내부 정렬용 — 실제 Step C 에는 ProjectSettingsData 사용 */

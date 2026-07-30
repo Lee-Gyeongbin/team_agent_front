@@ -52,8 +52,15 @@
         :pt-project-id="ptProjectId"
         @next="onAdvance"
       />
-      <ProposalStepD
+      <ProposalStepE
         v-else-if="currentStep === 3"
+        :pt-project-id="ptProjectId"
+        :model-id="modelId"
+        :agent-id="agentId"
+        @next="onAdvance"
+      />
+      <ProposalStepD
+        v-else-if="currentStep === 4"
         :section-list="sectionList"
         :raw-toc-list="rawTocList"
         :slides-cache="slidesCache"
@@ -75,7 +82,7 @@
         @slides-updated="onSlidesUpdated"
       />
       <ProposalStepF
-        v-else-if="currentStep === 4"
+        v-else-if="currentStep === 5"
         :pt-project-id="ptProjectId"
         :agent-id="agentId"
       />
@@ -110,6 +117,7 @@ const STEP_DEFS = [
   { key: 'template' as const, label: '템플릿', sub: '보완/생성' },
   { key: 'toc' as const, label: '목차', sub: 'TOC 구성' },
   { key: 'settings' as const, label: '설정', sub: '자료·스타일·컬러' },
+  { key: 'template-gen' as const, label: '템플릿 생성', sub: '헤더·푸터 레이아웃' },
   { key: 'generate' as const, label: '본문 생성', sub: '소목차별 순차 진행' },
   { key: 'export' as const, label: '출력', sub: 'PDF 추출' },
 ]
@@ -173,7 +181,7 @@ const runStage2 = () => {
 
 const onStepChanged = (step: number) => {
   if (step === 1) handleSelectTocList()
-  if (step === 3) {
+  if (step === 4) {
     handleSelectSectionList()
     runStage2()
   }
