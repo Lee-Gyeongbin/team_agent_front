@@ -11,6 +11,7 @@
           <UiInput
             v-model="searchKeyword"
             type="search"
+            size="sm"
             placeholder="제목 또는 작성자 검색"
             @search="onSearch"
             @enter="onSearch"
@@ -21,13 +22,13 @@
             v-model="searchCategory"
             :options="categoryOptions"
             placeholder="카테고리 선택"
-            size="md"
+            size="sm"
           />
         </div>
         <div class="notice-btn-grp flex items-center shrink-0 gap-2">
           <UiButton
             variant="primary"
-            size="md"
+            size="sm"
             @click="onRegisterNotice"
           >
             <template #icon-left>
@@ -37,7 +38,7 @@
           </UiButton>
           <UiButton
             variant="outline"
-            size="md"
+            size="sm"
             @click="handleSelectNoticeList"
           >
             <template #icon-left>
