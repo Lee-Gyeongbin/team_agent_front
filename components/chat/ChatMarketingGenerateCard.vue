@@ -659,7 +659,7 @@ const goToNextStep = () => {
 
 const validateReference = () => {
   if (form.referenceMode === 'FILE' && form.referenceFiles.length > 5) {
-    openToast({ message: '참고 일 최대 5개까지 첨부할 수 있습니다.', type: 'warning' })
+    openToast({ message: '참고 파일은 최대 5개까지 첨부할 수 있습니다.', type: 'warning' })
     focusField('referenceFiles', 2)
     return false
   }
@@ -667,7 +667,7 @@ const validateReference = () => {
 
   const urls = form.referenceUrls.map((value) => value.trim()).filter(Boolean)
   if (urls.length > 5) {
-    openToast({ message: '참고 URL 최대 5개까지 입력할 수 있습니다.', type: 'warning' })
+    openToast({ message: '참고 URL은 최대 5개까지 입력할 수 있습니다.', type: 'warning' })
     focusField('referenceUrls', 2)
     return false
   }
