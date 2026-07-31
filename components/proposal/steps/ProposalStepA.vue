@@ -185,7 +185,7 @@ const onClickNext = async () => {
         return
       }
       templateFileId = uploadRes.ptFileId
-      savedTemplateFileNm.value = uploadRes.fileNm || uploadingName
+      savedTemplateFileNm.value = uploadRes.fileName || uploadingName
       attachedFile.value = null
     }
 

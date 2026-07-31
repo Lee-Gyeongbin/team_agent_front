@@ -29,7 +29,11 @@
       <template v-else>
         <!-- 빌드 중 (대기/이미지생성중/PPT조립중) -->
         <div
-          v-if="exportData.buildStatusCd === '001' || exportData.buildStatusCd === '002' || exportData.buildStatusCd === '003'"
+          v-if="
+            exportData.buildStatusCd === '001' ||
+            exportData.buildStatusCd === '002' ||
+            exportData.buildStatusCd === '003'
+          "
           class="pt-final-status is-building"
         >
           <i class="icon-spinner size-20" />
@@ -77,7 +81,11 @@
           <UiButton
             variant="ghost"
             size="md"
-            :disabled="exportData.buildStatusCd === '001' || exportData.buildStatusCd === '002' || exportData.buildStatusCd === '003'"
+            :disabled="
+              exportData.buildStatusCd === '001' ||
+              exportData.buildStatusCd === '002' ||
+              exportData.buildStatusCd === '003'
+            "
             @click="resetExport"
           >
             다시 내보내기
@@ -109,10 +117,14 @@ let pollTimer: ReturnType<typeof setInterval> | null = null
 
 const buildStatusLabel = computed(() => {
   switch (exportData.value?.buildStatusCd) {
-    case '001': return '대기'
-    case '002': return '이미지 생성'
-    case '003': return 'PPT 조립'
-    default:    return '처리'
+    case '001':
+      return '대기'
+    case '002':
+      return '이미지 생성'
+    case '003':
+      return 'PPT 조립'
+    default:
+      return '처리'
   }
 })
 

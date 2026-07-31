@@ -147,10 +147,6 @@ export interface ChatMessage {
   reportHtml?: string
   /** 리포트 존재 여부 */
   hasReport?: boolean
-  /** PLANNER PT 슬라이드 JSON (pptx_data 스트리밍 이벤트로 수신) */
-  pptxData?: string
-  /** PPTX 다운로드 가능 여부 */
-  hasPptx?: boolean
   /** 클라이언트 전용: 설문 진단 프롬프트 등 화면에 노출하지 않을 메시지 */
   hiddenFromDisplay?: boolean
   /** 산업심리 설문 메시지(type=survey) 전용: 사용자 응답 */

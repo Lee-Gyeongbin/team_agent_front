@@ -57,6 +57,9 @@
         :pt-project-id="ptProjectId"
         :model-id="modelId"
         :agent-id="agentId"
+        :project-nm="currentProject?.projectNm"
+        :org-nm="currentProject?.orgNm"
+        :doc-size="docSize"
         @next="onAdvance"
       />
       <ProposalStepD
@@ -111,6 +114,15 @@ const agentId = ref(PT_PROPOSAL_DEFAULT_AGENT_ID)
 
 // ---- 프로젝트 ----
 const currentProject = ref<PtProject | null>(null)
+
+const docSize = computed<'169' | '43' | 'a4'>(() => {
+  try {
+    const cfg = JSON.parse(currentProject.value?.projectConfigJson ?? '{}')
+    const val = cfg?.template?.docSize
+    if (val === '169' || val === '43' || val === 'a4') return val
+  } catch { /* ignore */ }
+  return '169'
+})
 
 // ---- 스텝바 ----
 const STEP_DEFS = [

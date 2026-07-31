@@ -140,6 +140,17 @@
                 </template>
                 인포그래픽 이미지 보기
               </UiButton>
+              <UiButton
+                variant="outline"
+                size="sm"
+                :loading="isRegeneratingImage"
+                @click="onRegenerateImage"
+              >
+                <template #icon-left>
+                  <i class="icon-refresh size-14" />
+                </template>
+                인포그래픽 재생성
+              </UiButton>
             </template>
             <template v-else-if="activeSlide.renderStatusCd === '002'">
               <span class="pt-slide-image-rendering">
@@ -309,9 +320,10 @@
 <script setup lang="ts">
 import type { PtSection, PtSectionChatMessage, PtSlide, PtTocItem, SlideComponent } from '~/types/proposal'
 import { useProposalSectionChat } from '~/composables/proposal/useProposalSectionChat'
+import { openToast } from '~/composables/useToast'
 import SlideComponentRenderer from '~/components/proposal/SlideComponentRenderer.vue'
 
-const { fetchViewSlideImage } = useProposalApi()
+const { fetchViewSlideImage, streamRenderSectionImages } = useProposalApi()
 
 interface Props {
   sectionList: PtSection[]
@@ -329,6 +341,7 @@ interface Props {
   currentSlides: PtSlide[]
   modelId: string
   agentId: string
+  ptProjectId: string
 }
 
 const props = defineProps<Props>()
@@ -355,6 +368,10 @@ const isImageModalOpen = ref(false)
 const imageModalStatus = ref<'loading' | 'ready' | 'error'>('loading')
 const imageModalUrl = ref('')
 const imageModalError = ref('')
+
+// 인포그래픽 이미지 재생성
+const isRegeneratingImage = ref(false)
+let renderEventSource: EventSource | null = null
 
 const openImageModal = async () => {
   if (!activeSlide.value?.slideId) return
@@ -431,6 +448,33 @@ const onSendChat = () => {
   chatInput.value = ''
 }
 
+const onRegenerateImage = () => {
+  if (!props.activeSection || isRegeneratingImage.value) return
+  isRegeneratingImage.value = true
+
+  // 기존 SSE 연결 정리
+  renderEventSource?.close()
+  renderEventSource = streamRenderSectionImages(props.ptProjectId, props.activeSection.tocId, {
+    onProgress: (data) => {
+      // 해당 슬라이드의 렌더 상태·이미지 경로를 업데이트해 부모에 전달
+      const updated = props.currentSlides.map((s) =>
+        s.slideId === data.slideId
+          ? { ...s, renderStatusCd: data.renderStatusCd, renderedImagePath: data.renderedImagePath }
+          : s,
+      )
+      emit('slides-updated', updated as PtSlide[])
+    },
+    onDone: () => {
+      isRegeneratingImage.value = false
+      openToast({ message: '인포그래픽 이미지가 재생성되었습니다.' })
+    },
+    onError: (message) => {
+      isRegeneratingImage.value = false
+      openToast({ message: message || '이미지 재생성 중 오류가 발생했습니다.', type: 'error' })
+    },
+  })
+}
+
 const onGenerate = () => {
   if (!props.activeSection || props.isGenerating) return
   emit('generate-section', props.activeSection.tocId)
@@ -440,4 +484,8 @@ const onConfirm = () => {
   if (!props.activeSection) return
   emit('confirm-section', props.activeSection.sectionId)
 }
+
+onUnmounted(() => {
+  renderEventSource?.close()
+})
 </script>

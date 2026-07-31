@@ -538,13 +538,6 @@ export const useProposalApi = () => {
     return post<{ result: string }>('/ai/proposal/updateMaxStepNo.do', { ptProjectId, maxStepNo })
   }
 
-  /** Step E: 프로젝트 전체 슬라이드 목록 조회 (tocId 기준으로 그룹화해서 사용) */
-  const fetchSelectAllProjectSlides = async (ptProjectId: string): Promise<{ result: string; list: PtSlide[] }> => {
-    return get<{ result: string; list: PtSlide[] }>(
-      `/ai/proposal/selectAllProjectSlides.do?ptProjectId=${encodeURIComponent(ptProjectId)}`,
-    )
-  }
-
   /** 슬라이드 인포그래픽 이미지 presigned URL 조회 */
   const fetchViewSlideImage = async (slideId: string): Promise<SlideImageViewResponse> => {
     return post<SlideImageViewResponse>('/ai/proposal/viewSlideImage.do', { slideId })
@@ -592,6 +585,24 @@ export const useProposalApi = () => {
     )
   }
 
+  /** E — 템플릿 직접 저장 (드래그 편집 확정) */
+  const fetchUpdatePtTemplate = async (
+    ptProjectId: string,
+    headerComponentsJson: string,
+    footerComponentsJson: string,
+    colorJson: string,
+    modifyUserId: string,
+  ): Promise<{ result: string; msg?: string }> => {
+    return post<{ result: string; msg?: string }>('/ai/proposal/updatePtTemplate.do', {
+      ptProjectId,
+      headerComponentsJson,
+      footerComponentsJson,
+      colorJson,
+      genStatusCd: '003',
+      modifyUserId,
+    })
+  }
+
   /** E — 템플릿 재생성 (보완요청 반영) */
   const fetchRegeneratePtTemplate = async (
     ptProjectId: string,
@@ -624,7 +635,6 @@ export const useProposalApi = () => {
     fetchDeleteTocItem,
     fetchReorderTocItems,
     fetchUpdateMaxStepNo,
-    fetchSelectAllProjectSlides,
     fetchSelectStage1Result,
     fetchUpdateRequirement,
     fetchUpdateEvalCriteria,
@@ -642,5 +652,6 @@ export const useProposalApi = () => {
     fetchSelectPtTemplate,
     fetchGeneratePtTemplate,
     fetchRegeneratePtTemplate,
+    fetchUpdatePtTemplate,
   }
 }
