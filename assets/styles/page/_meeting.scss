@@ -3295,15 +3295,36 @@
     background $transition-fast,
     color $transition-fast;
 
+  // UiButton(ghost) 기본 스타일 위에 탭 톤 유지
+  &.ui-button {
+    min-width: auto;
+    font-weight: inherit;
+
+    .ui-button-text {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+  }
+
   &:hover {
     background: $color-surface;
     color: $color-text-dark;
   }
 
-  &.is-active {
+  // UiButton scoped(.variant-ghost[data-v])보다 특이도 높게 — ispark 수정 없이 페이지 SCSS로 덮음
+  &.ui-button.variant-ghost.is-active {
     background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    background-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
     color: var(--color-primary);
-    font-weight: $font-weight-semibold;
+    font-weight: 600;
+
+    &:hover,
+    &:active {
+      background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+      background-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
+      color: var(--color-primary);
+    }
   }
 }
 

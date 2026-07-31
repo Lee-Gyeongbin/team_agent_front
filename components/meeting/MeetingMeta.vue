@@ -11,7 +11,7 @@
         @click="onClickEdit"
       >
         <template #icon-left>
-          <i class="icon-edit size-14" />
+          <i class="icon-edit size-14"></i>
         </template>
         편집
       </UiButton>
@@ -58,6 +58,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton } from '@leechanyong/ispark-ui'
 import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
 
 const { currentMeeting, openInfoEditModal } = useMeetingStore()

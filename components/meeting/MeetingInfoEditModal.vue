@@ -99,6 +99,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiInput, UiModal, UiTextarea } from '@leechanyong/ispark-ui'
 import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
 
 const { isInfoEditOpen, currentMeeting, handleSaveMeeting } = useMeetingStore()
