@@ -14,7 +14,6 @@ export interface MarketingAuthoringConfigForm {
   submitLabel: string
   version: string
   language: string
-  variantCount: number
   contentTypes: MarketingAuthoringOption[]
   /** 공통 워크플로 (목적·독자·톤·분량·출력 구성) */
   workflow: MarketingAuthoringWorkflowConfig
@@ -185,7 +184,6 @@ export const getDefaultMarketingAuthoringWorkflow = (): MarketingAuthoringWorkfl
 export const getDefaultMarketingAuthoringConfig = (): MarketingAuthoringAgentConfig => ({
   version: '1.0',
   language: 'ko',
-  variantCount: 3,
   ui: { ...MARKETING_AUTHORING_DEFAULT_UI },
   contentTypes: cloneContentOptions(MARKETING_AUTHORING_CONTENT_TYPES),
   workflow: getDefaultMarketingAuthoringWorkflow(),
@@ -241,11 +239,9 @@ export const parseMarketingAuthoringAgentConfig = (
   const ui = (config.ui ?? {}) as Record<string, unknown>
   const channelsByContentType = parseChannelsByType(config.channelsByContentType, defaults.channelsByContentType)
 
-  const rawVariantCount = Number(config.variantCount ?? defaults.variantCount)
   return {
     version: String(config.version ?? defaults.version),
     language: String(config.language ?? defaults.language),
-    variantCount: Number.isFinite(rawVariantCount) ? Math.min(5, Math.max(1, rawVariantCount)) : defaults.variantCount,
     ui: {
       introTitle: String(ui.introTitle ?? defaults.ui.introTitle),
       introSubtitle: String(ui.introSubtitle ?? defaults.ui.introSubtitle),
@@ -267,7 +263,6 @@ export const emptyMarketingAuthoringConfigForm = (): MarketingAuthoringConfigFor
     submitLabel: defaults.ui.submitLabel,
     version: defaults.version,
     language: defaults.language,
-    variantCount: defaults.variantCount,
     contentTypes: cloneContentOptions(defaults.contentTypes),
     workflow: cloneWorkflow(defaults.workflow),
     channelsByContentType: cloneChannelsByType(defaults.channelsByContentType),
@@ -281,7 +276,6 @@ const toMarketingAuthoringConfigForm = (config: MarketingAuthoringAgentConfig): 
   submitLabel: config.ui.submitLabel,
   version: config.version,
   language: config.language,
-  variantCount: config.variantCount,
   contentTypes: cloneContentOptions(config.contentTypes),
   workflow: cloneWorkflow(config.workflow),
   channelsByContentType: cloneChannelsByType(config.channelsByContentType),
@@ -311,7 +305,6 @@ export const buildMarketingAuthoringAdditionalConfig = (
   const base: AgtSubAdditionalConfig = {
     version: form.version.trim() || '1.0',
     language: form.language.trim() || 'ko',
-    variantCount: Math.min(5, Math.max(1, form.variantCount || 3)),
     ui: {
       introTitle: form.introTitle.trim() || MARKETING_AUTHORING_DEFAULT_UI.introTitle,
       introSubtitle: form.introSubtitle.trim(),
@@ -327,6 +320,7 @@ export const buildMarketingAuthoringAdditionalConfig = (
   if (preserved && typeof preserved === 'object') {
     const merged = { ...preserved, ...base } as AgtSubAdditionalConfig
     delete merged.agentType
+    delete (merged as Record<string, unknown>).variantCount
     return merged
   }
   return base

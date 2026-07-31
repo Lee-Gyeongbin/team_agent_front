@@ -480,7 +480,7 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const form = reactive(createEmptyMarketingAuthoringPayload(props.config))
+const form = reactive(createEmptyMarketingAuthoringPayload())
 const currentStep = ref(0)
 const bodyRef = ref<HTMLElement | null>(null)
 

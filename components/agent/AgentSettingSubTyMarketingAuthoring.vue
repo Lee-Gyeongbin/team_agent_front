@@ -43,16 +43,6 @@
               @update:model-value="onUpdate('submitLabel', String($event ?? ''))"
             />
           </div>
-          <div class="com-setting-field-row">
-            <label class="com-setting-label">기본 시안 개수</label>
-            <UiInput
-              :model-value="String(modelValue.variantCount)"
-              size="sm"
-              number-only
-              placeholder="1~5"
-              @update:model-value="onVariantCountUpdate(String($event ?? ''))"
-            />
-          </div>
           <div class="com-setting-row ca-meta-row">
             <div class="ca-meta-col">
               <label class="com-setting-label">언어 코드</label>
@@ -425,15 +415,6 @@ const emitForm = (next: MarketingAuthoringConfigForm) => emit('update:modelValue
 
 const onUpdate = <K extends keyof MarketingAuthoringConfigForm>(key: K, value: MarketingAuthoringConfigForm[K]) => {
   emitForm({ ...props.modelValue, [key]: value })
-}
-
-const onVariantCountUpdate = (raw: string) => {
-  const n = Number(String(raw).trim())
-  if (!Number.isFinite(n) || n < 1) {
-    onUpdate('variantCount', 1)
-    return
-  }
-  onUpdate('variantCount', Math.min(5, Math.floor(n)))
 }
 
 const emptyOption = (): MarketingAuthoringOption => ({ value: '', label: '', description: '' })

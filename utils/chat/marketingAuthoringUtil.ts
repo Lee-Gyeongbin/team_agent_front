@@ -72,16 +72,14 @@ export const parseMarketingAuthoringConfigFromAgent = (agent: Agent): MarketingA
   }
 }
 
-/** 시안 개수 클램프 (채팅 폼·설정 1~5) */
+/** 시안 개수 클램프 (채팅 폼 1~5) */
 export const clampMarketingAuthoringVariantCount = (raw: unknown): number => {
   const n = Number(raw)
   if (!Number.isFinite(n) || n < 1) return 0
   return Math.min(MARKETING_AUTHORING_VARIANT_COUNT_MAX, Math.floor(n))
 }
 
-export const createEmptyMarketingAuthoringPayload = (
-  config?: MarketingAuthoringAgentConfig | null,
-): MarketingAuthoringFormPayload => ({
+export const createEmptyMarketingAuthoringPayload = (): MarketingAuthoringFormPayload => ({
   contentType: '',
   purpose: '',
   audience: '',
@@ -102,7 +100,7 @@ export const createEmptyMarketingAuthoringPayload = (
   additionalRequirements: '',
   outputSections: [],
   includeHashtags: 'Y',
-  variantCount: clampMarketingAuthoringVariantCount(config?.variantCount) || 0,
+  variantCount: 0,
 })
 
 const optionLabel = (options: MarketingAuthoringOption[], value: string): string =>

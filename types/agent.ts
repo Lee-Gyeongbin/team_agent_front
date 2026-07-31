@@ -292,5 +292,4 @@ export interface MarketingAuthoringAgentConfig {
   workflow: MarketingAuthoringWorkflowConfig
   channelsByContentType: Record<string, MarketingAuthoringOption[]>
   constraints: string[]
-  variantCount: number
 }
