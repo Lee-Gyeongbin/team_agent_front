@@ -12,6 +12,22 @@
 
     <div class="marketing-image-maker__body">
       <div class="marketing-image-maker__field">
+        <label><i>*</i> 용도</label>
+        <div class="marketing-image-maker__option-grid">
+          <button
+            v-for="option in imageUsageOptions"
+            :key="option.value"
+            type="button"
+            :class="{ 'is-selected': form.imageUsage === option.value }"
+            @click="form.imageUsage = option.value"
+          >
+            <strong>{{ option.label }}</strong>
+            <small>{{ option.description }}</small>
+          </button>
+        </div>
+      </div>
+
+      <div class="marketing-image-maker__field">
         <label><i>*</i> 이미지 유형</label>
         <div class="marketing-image-maker__option-grid">
           <button
@@ -51,19 +67,11 @@
           ref="visualStyleFieldRef"
           class="marketing-image-maker__field"
         >
-          <label><i>*</i> 비주얼 스타일</label>
+          <label><i>*</i> 분위기</label>
           <UiSelect
             v-model="form.visualStyle"
-            :options="visualStyleOptions"
-            placeholder="스타일을 선택하세요"
-            size="sm"
-            @update:model-value="onVisualStyleChange"
-          />
-          <UiInput
-            v-if="form.visualStyle === 'OTHER'"
-            ref="customVisualStyleInputRef"
-            v-model="form.customVisualStyle"
-            placeholder="원하는 비주얼 스타일을 직접 입력해 주세요."
+            :options="atmosphereOptions"
+            placeholder="분위기를 선택하세요"
             size="sm"
           />
         </div>
@@ -131,14 +139,14 @@
       </div>
 
       <div class="marketing-image-maker__field">
-        <label>참고 이미지 <small>(선택)</small></label>
+        <label>참고 파일 <small>(선택)</small></label>
         <UiFileUpload
           v-model="form.referenceFiles"
-          accept=".png,.jpg,.jpeg,.webp"
-          :allowed-extensions="['png', 'jpg', 'jpeg', 'webp']"
-          :max-files="3"
+          :accept="referenceAccept"
+          :allowed-extensions="referenceAllowedExtensions"
+          :max-files="5"
           multiple
-          hint="PNG, JPG, JPEG, WEBP 참고 이미지를 최대 3개까지 첨부할 수 있습니다."
+          hint="브랜드 가이드·로고·참고 이미지 등 문서·이미지 파일을 최대 5개까지 첨부할 수 있습니다."
         />
       </div>
 
@@ -175,7 +183,11 @@
 
 <script setup lang="ts">
 import { openToast } from '~/composables/useToast'
-import { MARKETING_IMAGE_TYPES } from '~/utils/agent/marketingAuthoringConfigUtil'
+import {
+  MARKETING_IMAGE_ATMOSPHERES,
+  MARKETING_IMAGE_TYPES,
+  MARKETING_IMAGE_USAGES,
+} from '~/utils/agent/marketingAuthoringConfigUtil'
 import type { MarketingImageFormPayload } from '~/types/chat'
 
 const props = withDefaults(
@@ -192,15 +204,13 @@ const emit = defineEmits<{
   submit: [payload: MarketingImageFormPayload]
 }>()
 
+const imageUsageOptions = MARKETING_IMAGE_USAGES
 const imageTypeOptions = MARKETING_IMAGE_TYPES
-const visualStyleOptions = [
+const referenceAllowedExtensions = 'pdf,doc,docx,ppt,pptx,xls,xlsx,hwp,csv,txt,png,jpg,jpeg,webp'.split(',')
+const referenceAccept = referenceAllowedExtensions.map((ext) => `.${ext}`).join(',')
+const atmosphereOptions = [
   { label: '선택', value: '' },
-  { label: '미니멀·클린', value: '미니멀하고 정돈된 스타일' },
-  { label: '프리미엄', value: '고급스럽고 세련된 스타일' },
-  { label: '밝고 친근한', value: '밝고 친근하며 생동감 있는 스타일' },
-  { label: '전문적', value: '신뢰감을 주는 전문적인 스타일' },
-  { label: '감성적', value: '감성적이고 분위기 있는 스타일' },
-  { label: '기타 직접 입력', value: 'OTHER' },
+  ...MARKETING_IMAGE_ATMOSPHERES.map((item) => ({ label: item.label, value: item.value })),
 ]
 const aspectRatioOptions = [
   { label: '선택', value: '' },
@@ -212,11 +222,11 @@ const aspectRatioOptions = [
 ]
 
 const form = reactive<MarketingImageFormPayload>({
+  imageUsage: '',
   imageType: '',
   purpose: '',
   audience: '',
   visualStyle: '',
-  customVisualStyle: '',
   aspectRatio: '',
   customAspectRatio: '',
   imageText: '',
@@ -227,9 +237,7 @@ const form = reactive<MarketingImageFormPayload>({
   referenceFiles: [],
 })
 
-const visualStyleFieldRef = ref<HTMLElement | null>(null)
 const aspectRatioFieldRef = ref<HTMLElement | null>(null)
-const customVisualStyleInputRef = ref<{ focus: () => void } | null>(null)
 const customAspectRatioInputRef = ref<{ focus: () => void } | null>(null)
 
 const themeStyle = computed(() => ({
@@ -242,16 +250,13 @@ const focusField = async (fieldEl: HTMLElement | null, input?: { focus: () => vo
   input?.focus()
 }
 
-const onVisualStyleChange = (value: string | number) => {
-  if (String(value) !== 'OTHER') form.customVisualStyle = ''
-}
-
 const onAspectRatioChange = (value: string | number) => {
   if (String(value) !== 'OTHER') form.customAspectRatio = ''
 }
 
 const onSubmit = async () => {
   if (
+    !form.imageUsage ||
     !form.imageType ||
     !form.purpose.trim() ||
     !form.audience.trim() ||
@@ -261,12 +266,6 @@ const onSubmit = async () => {
     !form.coreMessage.trim()
   ) {
     openToast({ message: '이미지 제작의 필수 항목을 모두 입력해 주세요.', type: 'warning' })
-    return
-  }
-
-  if (form.visualStyle === 'OTHER' && !form.customVisualStyle.trim()) {
-    openToast({ message: '비주얼 스타일을 직접 입력해 주세요.', type: 'warning' })
-    await focusField(visualStyleFieldRef.value, customVisualStyleInputRef.value)
     return
   }
 

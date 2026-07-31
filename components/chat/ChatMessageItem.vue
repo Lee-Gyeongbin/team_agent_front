@@ -51,6 +51,7 @@
             :is-share="isShare"
             :theme-color-hex="themeAgent?.colorHex ?? ''"
             @reopen="emit('on-marketing-authoring-reopen', message.logId)"
+            @preview-image="openMarketingImagePreview"
           />
           <div
             v-else-if="isMarketingAuthoringAnswer"
@@ -543,6 +544,14 @@ const emit = defineEmits<{
 // ── 공통 ──────────────────────────────────────────────────────────────────
 const renderedHtml = ref('')
 const imagePreview = ref<{ src: string; title: string; mimeType: string } | null>(null)
+
+const openMarketingImagePreview = (src: string) => {
+  imagePreview.value = {
+    src,
+    title: '생성된 마케팅 이미지',
+    mimeType: 'image/png',
+  }
+}
 const messageRootRef = ref<HTMLElement | null>(null)
 const HTML_PREVIEW_BLOCK_SELECTOR = '.html-preview-block'
 const HTML_PREVIEW_MENU_SELECTOR = '.html-preview-menu'

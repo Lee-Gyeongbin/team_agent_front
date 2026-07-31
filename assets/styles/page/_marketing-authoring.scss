@@ -1155,6 +1155,29 @@
   }
 }
 
+.chat-marketing-authoring-result__image {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  cursor: zoom-in;
+
+  img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 720px;
+    object-fit: contain;
+  }
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--marketing-authoring-color) 45%, #e2e8f0);
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+  }
+}
+
 @media (max-width: 900px) {
   .chat-marketing-authoring-result {
     &__header,

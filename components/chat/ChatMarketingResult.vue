@@ -10,7 +10,9 @@
             <i class="icon-check size-16" />
           </span>
           <div>
-            <h3 class="chat-marketing-authoring-result__title">콘텐츠 생성 완료</h3>
+            <h3 class="chat-marketing-authoring-result__title">
+              {{ isImageResult ? '마케팅 이미지 생성 완료' : '콘텐츠 생성 완료' }}
+            </h3>
             <p class="chat-marketing-authoring-result__subtitle">{{ result.summary }}</p>
           </div>
         </div>
@@ -48,16 +50,65 @@
     </div>
 
     <div class="chat-marketing-authoring-result__tabs">
+      <template v-if="isImageResult">
+        <button
+          type="button"
+          class="chat-marketing-authoring-result__tab is-active"
+        >
+          시안 1 · 이미지
+          <em>추천</em>
+        </button>
+      </template>
+      <template v-else>
+        <button
+          v-for="variant in result.variants"
+          :key="variant.id"
+          type="button"
+          class="chat-marketing-authoring-result__tab"
+          :class="{ 'is-active': variant.id === activeVariantId }"
+          @click="selectVariant(variant.id)"
+        >
+          시안 {{ variant.id }} · {{ variant.label }}
+          <em v-if="variant.recommended">추천</em>
+        </button>
+      </template>
+    </div>
+
+    <div
+      v-if="isImageResult && result.imageDataUrl"
+      class="chat-marketing-authoring-result__draft"
+    >
+      <div class="chat-marketing-authoring-result__draft-toolbar">
+        <p
+          v-if="keyMessage"
+          class="chat-marketing-authoring-result__draft-subject"
+          :title="keyMessage"
+        >
+          주제 : {{ keyMessage }}
+        </p>
+        <div
+          v-if="!isShare"
+          class="chat-marketing-authoring-result__draft-actions"
+        >
+          <button
+            type="button"
+            @click="downloadImage"
+          >
+            <i class="icon-download size-16" />
+            다운로드하기
+          </button>
+        </div>
+      </div>
       <button
-        v-for="variant in result.variants"
-        :key="variant.id"
         type="button"
-        class="chat-marketing-authoring-result__tab"
-        :class="{ 'is-active': variant.id === activeVariantId }"
-        @click="selectVariant(variant.id)"
+        class="chat-marketing-authoring-result__image"
+        title="이미지 크게 보기"
+        @click="openImagePreview"
       >
-        시안 {{ variant.id }} · {{ variant.label }}
-        <em v-if="variant.recommended">추천</em>
+        <img
+          :src="result.imageDataUrl"
+          alt="생성된 마케팅 이미지"
+        />
       </button>
     </div>
 
@@ -158,11 +209,14 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   reopen: []
+  previewImage: [src: string]
 }>()
 
 const themeStyle = computed(() => ({
   '--marketing-authoring-color': props.themeColorHex || 'var(--color-primary)',
 }))
+
+const isImageResult = computed(() => props.result.mode === 'IMAGE' && !!props.result.imageDataUrl)
 
 const activeVariantId = ref(props.result.variants.find((item) => item.recommended)?.id ?? props.result.variants[0]?.id)
 const isEditing = ref(false)
@@ -189,6 +243,17 @@ const activeContent = computed(() => {
 
 const metaItems = computed(() => {
   const conditions = props.result.conditions
+  if (isImageResult.value) {
+    return [
+      { label: '용도', value: conditions.channel },
+      { label: '이미지 유형', value: conditions.contentType },
+      { label: '제작 목적', value: conditions.purpose },
+      { label: '대상 고객', value: conditions.audience },
+      { label: '분위기', value: conditions.tones },
+      { label: '화면 비율', value: conditions.length },
+      { label: '추가 요청', value: conditions.additionalRequirements },
+    ].filter((item): item is { label: string; value: string } => !!item.value)
+  }
   return [
     { label: '콘텐츠 유형', value: conditions.contentType },
     { label: '작성 목적', value: conditions.purpose },
@@ -255,5 +320,18 @@ const onCopy = async () => {
   } catch {
     openToast({ message: '복사에 실패했습니다.', type: 'error' })
   }
+}
+
+const openImagePreview = () => {
+  if (!props.result.imageDataUrl) return
+  emit('previewImage', props.result.imageDataUrl)
+}
+
+const downloadImage = () => {
+  if (!props.result.imageDataUrl) return
+  const anchor = document.createElement('a')
+  anchor.href = props.result.imageDataUrl
+  anchor.download = `marketing-image-${Date.now()}.png`
+  anchor.click()
 }
 </script>

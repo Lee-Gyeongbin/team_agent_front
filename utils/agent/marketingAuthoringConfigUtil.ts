@@ -105,12 +105,31 @@ export const MARKETING_AUTHORING_CONTENT_TYPES: MarketingAuthoringOption[] = [
   option('PRODUCT_DESCRIPTION', '상품·서비스 소개', '특징과 혜택, 차별점을 설명하는 소개 문안'),
 ]
 
-/** 이미지 제작은 텍스트 콘텐츠와 출력 구조가 달라 별도 작업 흐름으로 관리한다. */
-export const MARKETING_IMAGE_TYPES: MarketingAuthoringOption[] = [
+/** 이미지 제작 — 용도 (배너·썸네일 등) */
+export const MARKETING_IMAGE_USAGES: MarketingAuthoringOption[] = [
   option('BANNER', '배너 이미지', '캠페인과 프로모션에 사용할 가로형 비주얼'),
   option('THUMBNAIL', '썸네일', '콘텐츠의 핵심을 한눈에 전달하는 대표 이미지'),
   option('PRODUCT_DETAIL', '상품 상세 이미지', '상품의 특징과 혜택을 보여주는 상세 비주얼'),
-  option('SNS_VISUAL', 'SNS 비주얼', '소셜 채널 게시물과 함께 사용할 이미지'),
+  option('SNS_VISUAL', 'SNS 게시물 이미지', '소셜 채널 게시물과 함께 사용할 이미지'),
+]
+
+/** 이미지 제작 — 표현 유형 (실사·일러스트 등) */
+export const MARKETING_IMAGE_TYPES: MarketingAuthoringOption[] = [
+  option('REAL_PHOTO', '실사 사진', '실제 촬영한 듯한 사실적인 사진 비주얼'),
+  option('CHARACTER_ILLUST', '캐릭터 일러스트', '캐릭터·마스코트 중심의 일러스트'),
+  option('GENERAL_ILLUST', '일반 일러스트', '장면·상황을 표현하는 일반 일러스트'),
+  option('GRAPHIC_3D', '3D 그래픽', '입체감 있는 3D 렌더링 비주얼'),
+  option('GRAPHIC_DESIGN', '그래픽 디자인', '레이아웃·도형 중심의 그래픽 디자인'),
+  option('TYPOGRAPHY', '타이포그래피 중심', '문구·타이포가 주가 되는 비주얼'),
+]
+
+/** 이미지 제작 — 분위기 */
+export const MARKETING_IMAGE_ATMOSPHERES: MarketingAuthoringOption[] = [
+  option('MINIMAL_CLEAN', '미니멀·클린'),
+  option('PREMIUM', '프리미엄'),
+  option('BRIGHT_FRIENDLY', '밝고 친근한'),
+  option('PROFESSIONAL', '전문적인'),
+  option('EMOTIONAL', '감성적인'),
 ]
 
 /** 콘텐츠 유형별 게시 채널 기본값 */

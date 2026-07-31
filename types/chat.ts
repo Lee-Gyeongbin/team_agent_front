@@ -233,11 +233,14 @@ export interface MarketingAuthoringFormPayload {
 
 /** MARKETING_AUTHORING 이미지 제작 폼 */
 export interface MarketingImageFormPayload {
+  /** 용도 — 배너·썸네일 등 */
+  imageUsage: string
+  /** 표현 유형 — 실사·일러스트 등 */
   imageType: string
   purpose: string
   audience: string
+  /** 분위기 */
   visualStyle: string
-  customVisualStyle: string
   aspectRatio: string
   customAspectRatio: string
   imageText: string
@@ -279,6 +282,10 @@ export interface MarketingAuthoringResult {
   summary: string
   conditions: MarketingAuthoringConditionSummary
   variants: MarketingAuthoringVariant[]
+  /** 이미지 제작 결과인 경우 IMAGE. 기존 문구 결과는 생략되거나 TEXT */
+  mode?: 'TEXT' | 'IMAGE'
+  /** IMAGE 결과에 표시할 data URL */
+  imageDataUrl?: string
 }
 
 /** RECOMMEND 에이전트 폼 응답 — key: 필드 key, value: 선택값 */

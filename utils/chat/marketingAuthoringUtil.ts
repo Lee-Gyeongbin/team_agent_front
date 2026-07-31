@@ -13,7 +13,9 @@ import {
   MARKETING_AUTHORING_CONTENT_TYPES,
   MARKETING_AUTHORING_DEFAULT_CONSTRAINTS,
   MARKETING_AUTHORING_SUB_TY,
+  MARKETING_IMAGE_ATMOSPHERES,
   MARKETING_IMAGE_TYPES,
+  MARKETING_IMAGE_USAGES,
   getDefaultMarketingAuthoringConfig,
   parseMarketingAuthoringAgentConfig,
 } from '~/utils/agent/marketingAuthoringConfigUtil'
@@ -197,8 +199,14 @@ export const buildMarketingAuthoringPrompt = (
     .join('\n')
 }
 
-const marketingImageOptionLabel = (value: string) =>
+const marketingImageUsageLabel = (value: string) =>
+  MARKETING_IMAGE_USAGES.find((item) => item.value === value)?.label ?? value
+
+const marketingImageTypeLabel = (value: string) =>
   MARKETING_IMAGE_TYPES.find((item) => item.value === value)?.label ?? value
+
+const marketingImageAtmosphereLabel = (value: string) =>
+  MARKETING_IMAGE_ATMOSPHERES.find((item) => item.value === value)?.label ?? value
 
 const resolveMarketingImageSelection = (value: string, customValue: string) =>
   value === 'OTHER' ? customValue.trim() : value.trim()
@@ -207,10 +215,11 @@ export const buildMarketingImagePrompt = (payload: MarketingImageFormPayload): s
   [
     'agentType: marketingImage',
     '## 이미지 제작 조건',
-    `- 이미지 유형: ${marketingImageOptionLabel(payload.imageType)}`,
+    `- 용도: ${marketingImageUsageLabel(payload.imageUsage)}`,
+    `- 이미지 유형: ${marketingImageTypeLabel(payload.imageType)}`,
     `- 제작 목적: ${payload.purpose.trim()}`,
     `- 대상 고객: ${payload.audience.trim()}`,
-    `- 비주얼 스타일: ${resolveMarketingImageSelection(payload.visualStyle, payload.customVisualStyle)}`,
+    `- 분위기: ${marketingImageAtmosphereLabel(payload.visualStyle)}`,
     `- 화면 비율: ${resolveMarketingImageSelection(payload.aspectRatio, payload.customAspectRatio)}`,
     payload.brandColors.trim() ? `- 브랜드 컬러: ${payload.brandColors.trim()}` : '',
     payload.imageText.trim() ? `- 이미지 내 문구: ${payload.imageText.trim()}` : '- 이미지 내 문구: 사용하지 않음',
@@ -219,11 +228,12 @@ export const buildMarketingImagePrompt = (payload: MarketingImageFormPayload): s
     '\n## 핵심 메시지',
     payload.coreMessage.trim(),
     payload.referenceFiles.length
-      ? `\n## 첨부 참고 이미지\n${payload.referenceFiles.map((file) => `- ${file.name}`).join('\n')}`
+      ? `\n## 첨부 참고자료\n${payload.referenceFiles.map((file) => `- ${file.name}`).join('\n')}`
       : '',
     payload.additionalRequirements.trim() ? `\n## 추가 요청사항\n${payload.additionalRequirements.trim()}` : '',
     '\n## 생성 요구사항',
     '- 위 조건을 반영한 완성형 마케팅 이미지를 생성할 것',
+    '- 첨부 참고자료가 있으면 브랜드·이미지·문구 가이드를 우선 반영할 것',
     '- 이미지 안의 텍스트는 요청된 문구만 사용하고, 임의의 글자나 워터마크를 추가하지 말 것',
     '- 결과 설명이나 JSON 대신 생성된 이미지를 반환할 것',
   ]
@@ -271,6 +281,39 @@ export const parseMarketingAuthoringConditionsFromPrompt = (
     callToAction: pickPromptSection(promptText, '유도할 행동') || undefined,
     promotionInformation: pickPromptSection(promptText, '홍보할 상품·서비스') || undefined,
     additionalRequirements: pickPromptSection(promptText, '추가 요청사항') || undefined,
+  }
+}
+
+const parseMarketingImageConditionsFromPrompt = (promptText: string): MarketingAuthoringConditionSummary | null => {
+  if (!isMarketingImagePrompt(promptText)) return null
+  const block = promptText.match(/## 이미지 제작 조건\n([\s\S]*?)(?=\n## |$)/)?.[1] ?? ''
+  const pick = (label: string) => {
+    const line = block.split('\n').find((item) => item.startsWith(`- ${label}:`))
+    return line ? line.slice(label.length + 3).trim() : ''
+  }
+  return {
+    contentType: pick('이미지 유형'),
+    purpose: pick('제작 목적'),
+    audience: pick('대상 고객'),
+    tones: pick('분위기'),
+    length: pick('화면 비율'),
+    channel: pick('용도') || undefined,
+    keyMessage: pickPromptSection(promptText, '핵심 메시지') || undefined,
+    promotionInformation: pickPromptSection(promptText, '홍보할 상품·서비스') || undefined,
+    additionalRequirements: pickPromptSection(promptText, '추가 요청사항') || undefined,
+  }
+}
+
+const parseMarketingImageResult = (rContent: string, promptText: string): MarketingAuthoringResult | null => {
+  const imageDataUrl = String(rContent ?? '').match(/data:image\/[a-z0-9+.-]+;base64,[a-z0-9+/=]+/i)?.[0]
+  const conditions = parseMarketingImageConditionsFromPrompt(promptText)
+  if (!imageDataUrl || !conditions) return null
+  return {
+    mode: 'IMAGE',
+    summary: '요청하신 조건으로 마케팅 이미지를 생성했습니다.',
+    conditions,
+    variants: [],
+    imageDataUrl,
   }
 }
 
@@ -379,11 +422,11 @@ export const linkMarketingAuthoringMessagePair = (messages: ChatMessage[]): bool
   return true
 }
 
-/** 마케팅 문구·콘텐츠 작성 파이프라인 answer (일반 채팅·이미지 결과와 구분) */
+/** 마케팅 문구·이미지 제작 파이프라인 answer */
 export const isMarketingAuthoringAnswer = (answerMsg: ChatMessage, messages: ChatMessage[]): boolean => {
   if (answerMsg.type !== 'answer') return false
   const question = findLinkedMarketingAuthoringQuestion(messages, answerMsg)
-  return !!(question && isMarketingTextPrompt(question.qContent ?? ''))
+  return !!(question && isMarketingAuthoringPrompt(question.qContent ?? ''))
 }
 
 /**
@@ -395,11 +438,16 @@ export const resolveMarketingAuthoringResult = (
   messages: ChatMessage[],
 ): MarketingAuthoringResult | null => {
   if (!isMarketingAuthoringAnswer(answerMsg, messages)) return null
+  const question = findLinkedMarketingAuthoringQuestion(messages, answerMsg)
+  const questionContent = question?.qContent ?? ''
+  if (isMarketingImagePrompt(questionContent)) {
+    return parseMarketingImageResult(String(answerMsg.rContent ?? ''), questionContent)
+  }
+
   const parsed = parseMarketingAuthoringResult(String(answerMsg.rContent ?? ''))
   if (!parsed) return null
 
-  const question = findLinkedMarketingAuthoringQuestion(messages, answerMsg)
-  const promptConditions = parseMarketingAuthoringConditionsFromPrompt(question?.qContent ?? '')
+  const promptConditions = parseMarketingAuthoringConditionsFromPrompt(questionContent)
   if (!promptConditions) return parsed
 
   return {
