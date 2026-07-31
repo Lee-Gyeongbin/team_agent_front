@@ -15,6 +15,7 @@ import { isRecommendAgentPrompt } from '~/utils/chat/recommendAgentUtil'
 import type { Agent } from '~/types/agent'
 import { isAutoRecommendLogRow } from '~/utils/chat/autoRecommendUtil'
 import { NEWS_CURATOR_AGENT_ID } from '~/utils/chat/newsCuratorUtil'
+import { isMarketingAuthoringPrompt } from '~/utils/chat/marketingAuthoringUtil'
 
 /** 목록에 동일 방이 문자열/숫자 등 다른 형태로 중복되면 사이드바에서 활성 행이 여러 개로 보일 수 있어 통일·중복 제거 */
 function dedupeChatRoomsByNormalizedId(list: ChatRoom[]): ChatRoom[] {
@@ -103,6 +104,7 @@ export const useChatRooms = () => {
     const lastAgentId = typeof lastRow?.agentId === 'string' ? lastRow.agentId.trim() : ''
     const isAutoRecommendLog = lastRow ? isAutoRecommendLogRow(lastRow, agents) : false
     const isRecommendPromptLog = isRecommendAgentPrompt(String(lastRow?.qcontent ?? ''))
+    const isMarketingAuthoringPromptLog = isMarketingAuthoringPrompt(String(lastRow?.qcontent ?? ''))
     // 방 전환 시 RISK 활성 상태는 기본 해제하고, 아래 D 분기에서만 복원한다.
     riskAgentActive.value = false
     if (svcTy === 'D') {
@@ -131,9 +133,14 @@ export const useChatRooms = () => {
       await selectModelOptions()
     } else {
       activeSearchModes.value = []
-      // AUTO_RECOMMEND·RECOMMEND 카드 전용 로그는 UI상 에이전트 선택을 유지하지 않음(채팅방 재진입 시)
+      // AUTO_RECOMMEND·RECOMMEND·MARKETING_AUTHORING 카드 전용 로그는 UI상 에이전트 선택을 유지하지 않음(채팅방 재진입 시)
       selectedChatAgentId.value =
-        isAutoRecommendLog || isRecommendPromptLog || lastAgentId === NEWS_CURATOR_AGENT_ID ? null : lastAgentId || null
+        isAutoRecommendLog ||
+        isRecommendPromptLog ||
+        isMarketingAuthoringPromptLog ||
+        lastAgentId === NEWS_CURATOR_AGENT_ID
+          ? null
+          : lastAgentId || null
       // 일반 질의 시 모델 옵션 조회
       await selectModelOptions()
     }

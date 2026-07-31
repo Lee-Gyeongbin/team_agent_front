@@ -11,6 +11,7 @@
           isGenderStepVisible ||
           isRecommendVisible ||
           isTranslateVisible ||
+          isMarketingAgentVisible ||
           isAutoRecommendVisible ||
           isNewsCuratorVisible,
       }"
@@ -24,6 +25,7 @@
             !isGenderStepVisible &&
             !isRecommendVisible &&
             !isTranslateVisible &&
+            !isMarketingAgentVisible &&
             !isAutoRecommendVisible &&
             !isNewsCuratorVisible
           "
@@ -43,6 +45,7 @@
               isGenderStepVisible ||
               isRecommendVisible ||
               isTranslateVisible ||
+              isMarketingAgentVisible ||
               isAutoRecommendVisible ||
               isNewsCuratorVisible,
           }"
@@ -89,6 +92,15 @@
         @close="handleCloseTranslateAgent"
         @submit="handleIndexTranslateSubmit"
       />
+      <ChatMarketingAuthoringCard
+        v-if="isMarketingAgentVisible && currentMarketingAuthoringConfig"
+        class="chat-index-survey"
+        :config="currentMarketingAuthoringConfig"
+        :theme-icon-class-nm="selectedChatThemeAgent?.iconClassNm ?? ''"
+        :theme-color-hex="selectedChatThemeAgent?.colorHex ?? ''"
+        @close="handleCloseMarketingAuthoring"
+        @submit="handleIndexMarketingAuthoringSubmit"
+      />
       <ChatAutoRecommendCard
         v-if="isAutoRecommendVisible && currentAutoRecommendConfig"
         class="chat-index-survey"
@@ -113,6 +125,7 @@
           !isGenderStepVisible &&
           !isRecommendVisible &&
           !isTranslateVisible &&
+          !isMarketingAgentVisible &&
           !isAutoRecommendVisible &&
           !isNewsCuratorVisible
         "
@@ -186,6 +199,7 @@ import { parseRecommendConfigFromAgent } from '~/utils/chat/recommendAgentUtil'
 import { parseTranslateConfigFromAgent } from '~/utils/chat/translateAgentUtil'
 import { parseCurationConfigFromAgent } from '~/utils/chat/newsCuratorUtil'
 import { parseAutoRecommendConfigFromAgent } from '~/utils/chat/autoRecommendUtil'
+import { parseMarketingAuthoringConfigFromAgent } from '~/utils/chat/marketingAuthoringUtil'
 import {
   CHAT_THEMES,
   groupAgentsByTheme,
@@ -218,6 +232,9 @@ const {
   isTranslateVisible,
   handleCloseTranslateAgent,
   handleIndexTranslateSubmit,
+  isMarketingAgentVisible,
+  handleCloseMarketingAuthoring,
+  handleIndexMarketingAuthoringSubmit,
   isAutoRecommendVisible,
   handleAutoRecommendIntroEnd,
   resetAutoRecommendPanel,
@@ -278,6 +295,7 @@ const showThemeArrows = computed(
     !isGenderStepVisible.value &&
     !isRecommendVisible.value &&
     !isTranslateVisible.value &&
+    !isMarketingAgentVisible.value &&
     !isAutoRecommendVisible.value &&
     !isNewsCuratorVisible.value,
 )
@@ -426,6 +444,10 @@ const currentTranslateConfig = computed(() => {
   const agent = selectedChatThemeAgent.value
   return agent ? parseTranslateConfigFromAgent(agent) : null
 })
+const currentMarketingAuthoringConfig = computed(() => {
+  const agent = selectedChatThemeAgent.value
+  return agent ? parseMarketingAuthoringConfigFromAgent(agent) : null
+})
 const currentCurationConfig = computed(() => {
   const agent = selectedChatThemeAgent.value
   return agent ? parseCurationConfigFromAgent(agent) : null
@@ -443,6 +465,7 @@ onMounted(async () => {
   handleClosePsychologySurvey()
   handleCloseRecommendAgent()
   handleCloseTranslateAgent()
+  handleCloseMarketingAuthoring()
   handleCloseNewsCurator()
   resetAutoRecommendPanel()
   // 인덱스 진입 시점에 즉시 채팅방 상태를 초기화해

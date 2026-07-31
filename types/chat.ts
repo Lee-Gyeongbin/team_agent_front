@@ -107,6 +107,7 @@ export interface ChatMessage {
     | 'recommend'
     | 'news'
     | 'translation'
+    | 'marketingAuthoring'
     | 'dataQuestionClarification'
   qContent?: string
   rContent?: string
@@ -203,6 +204,81 @@ export interface TranslateFormPayload {
   file?: File
   /** 파일 업로드 모드에서 readonly 카드에 표시할 파일명 */
   fileName?: string
+}
+
+/** MARKETING_AUTHORING 문구·콘텐츠 작성 폼 */
+export interface MarketingAuthoringFormPayload {
+  contentType: string
+  purpose: string
+  audience: string
+  tones: string[]
+  length: string
+  customLength: string
+  channel: string
+  customChannel: string
+  promotionInformation: string
+  keyMessage: string
+  customCallToAction: string
+  customPurpose: string
+  customAudience: string
+  customTone: string
+  referenceMode: '' | 'FILE' | 'WEB'
+  referenceFiles: File[]
+  referenceUrls: string[]
+  additionalRequirements: string
+  outputSections: string[]
+  includeHashtags: 'Y' | 'N'
+  variantCount: number
+}
+
+/** MARKETING_AUTHORING 이미지 제작 폼 */
+export interface MarketingImageFormPayload {
+  imageType: string
+  purpose: string
+  audience: string
+  visualStyle: string
+  customVisualStyle: string
+  aspectRatio: string
+  customAspectRatio: string
+  imageText: string
+  coreMessage: string
+  productInformation: string
+  brandColors: string
+  additionalRequirements: string
+  referenceFiles: File[]
+}
+
+export type MarketingAuthoringSubmitPayload =
+  | { mode: 'TEXT'; data: MarketingAuthoringFormPayload }
+  | { mode: 'IMAGE'; data: MarketingImageFormPayload }
+
+/** 마케팅 콘텐츠 결과 — 작성 조건 요약 */
+export interface MarketingAuthoringConditionSummary {
+  contentType: string
+  purpose: string
+  audience: string
+  tones: string
+  length: string
+  channel?: string
+  keyMessage?: string
+  callToAction?: string
+  promotionInformation?: string
+  additionalRequirements?: string
+}
+
+export interface MarketingAuthoringVariant {
+  id: number
+  label: string
+  recommended: boolean
+  content: string
+  charCount: number
+}
+
+/** MARKETING_AUTHORING 답변 파싱 결과 */
+export interface MarketingAuthoringResult {
+  summary: string
+  conditions: MarketingAuthoringConditionSummary
+  variants: MarketingAuthoringVariant[]
 }
 
 /** RECOMMEND 에이전트 폼 응답 — key: 필드 key, value: 선택값 */

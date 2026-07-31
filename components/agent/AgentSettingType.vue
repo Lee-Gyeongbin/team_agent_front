@@ -81,6 +81,7 @@ const cSubTyOptions = [
   { label: '자동추천', value: 'AUTO_RECOMMEND' },
   { label: '큐레이션', value: 'CURATION' },
   { label: '기획서·PT', value: 'PLANNER' },
+  { label: '마케팅 콘텐츠 작성', value: 'MARKETING_AUTHORING' },
 ]
 
 const mSubTyOptions = [

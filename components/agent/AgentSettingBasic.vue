@@ -257,6 +257,11 @@
       :model-value="autoRecommendForm"
       @update:model-value="emit('update:autoRecommendForm', $event)"
     />
+    <AgentSettingSubTyMarketingAuthoring
+      v-if="svcTy === 'C' && subTy === 'MARKETING_AUTHORING'"
+      :model-value="marketingAuthoringForm"
+      @update:model-value="emit('update:marketingAuthoringForm', $event)"
+    />
 
     <AgentSettingSubTyTranslate
       v-if="svcTy === 'W' && subTy === 'TRANSLATE'"
@@ -314,6 +319,7 @@ import type { RiskConfigForm } from '~/utils/agent/riskConfigUtil'
 import type { PlannerConfigForm } from '~/utils/agent/plannerConfigUtil'
 import type { AutoRecommendConfigForm } from '~/utils/agent/autoRecommendConfigUtil'
 import type { ProposalConfigForm } from '~/utils/agent/proposalConfigUtil'
+import type { MarketingAuthoringConfigForm } from '~/utils/agent/marketingAuthoringConfigUtil'
 
 interface BasicForm {
   agentNm: string
@@ -355,6 +361,7 @@ interface Props {
   plannerForm: PlannerConfigForm
   autoRecommendForm: AutoRecommendConfigForm
   proposalForm: ProposalConfigForm
+  marketingAuthoringForm: MarketingAuthoringConfigForm
   sqlModelOptions: { value: string; label: string }[]
   apiUrlCdOptions: { value: string | number; label: string }[]
   tmplIdOptions: { value: string; label: string }[]
@@ -376,6 +383,7 @@ const emit = defineEmits<{
   'update:plannerForm': [value: PlannerConfigForm]
   'update:autoRecommendForm': [value: AutoRecommendConfigForm]
   'update:proposalForm': [value: ProposalConfigForm]
+  'update:marketingAuthoringForm': [value: MarketingAuthoringConfigForm]
 }>()
 
 const onUpdate = (key: keyof BasicForm, value: string | number | 'Y' | 'N') => {

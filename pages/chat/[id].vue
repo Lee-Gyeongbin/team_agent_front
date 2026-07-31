@@ -32,6 +32,9 @@
         @on-news-card-submit="onNewsCuratorMessageSubmit"
         @on-news-card-close="onNewsMessageClose"
         @on-news-card-reselect="onNewsMessageReselect"
+        @on-marketing-authoring-card-submit="handleRoomMarketingAuthoringSubmit"
+        @on-marketing-authoring-close="onMarketingAuthoringMessageClose"
+        @on-marketing-authoring-reopen="handleMarketingAuthoringReopen"
       />
       <div class="chat-input-guide-wrap">
         <DataQuestionGuide
@@ -183,6 +186,9 @@ const {
   handleCloseRecommendAgent,
   handleSubmitTranslateAgentForm,
   handleCloseTranslateAgent,
+  handleRoomMarketingAuthoringSubmit,
+  handleMarketingAuthoringReopen,
+  handleCloseMarketingAuthoring,
   selectedChatThemeAgent,
 } = useChatStore()
 const { chatMessage, handleSetChatRoom } = useChatRooms()
@@ -223,6 +229,7 @@ const isSurveyInputLocked = computed(() =>
       (m.type === 'survey' && !m.surveySubmitted) ||
       (m.type === 'recommend' && !m.recommendSubmitted) ||
       (m.type === 'translation' && !m.translateSubmitted) ||
+      (m.type === 'marketingAuthoring' && !m.marketingAuthoringSubmitted) ||
       (m.type === 'autoRecommend' && !m.autoRecommendSubmitted) ||
       (m.type === 'news' && !m.newsSubmitted),
   ),
@@ -241,6 +248,9 @@ const onRecommendMessageRetry = async (logId: string) => {
 
 const onTranslateMessageClose = (logId: string) => {
   handleCloseTranslateAgent(logId)
+}
+const onMarketingAuthoringMessageClose = (logId: string) => {
+  handleCloseMarketingAuthoring(logId)
 }
 /** 메시지 목록의 뉴스 카드 "닫기" 버튼 클릭 */
 const onNewsMessageClose = (logId: string) => {
@@ -303,6 +313,7 @@ watch(
     }
     // 채팅방/로그 id가 바뀌면 이전에 열어둔 시각화/테이블 상태를 닫는다.
     handleResetChatPanels()
+    handleCloseMarketingAuthoring()
     // handleSetChatRoom 보다 먼저 로그를 조회해야
     // handleSelectChatLogList 내부의 isSameRoom 비교가 "이전 방 vs 새 방"으로 올바르게 동작한다.
     // (handleSetChatRoom을 먼저 호출하면 isSameRoom이 항상 true가 되어 이전 방 메시지가 잔류하는 버그 발생)
@@ -352,6 +363,7 @@ onBeforeRouteLeave((to) => {
   // chat 영역 밖으로 나갈 때 열려 있을 수 있는 설문 닫기
   if (!String(to.path).startsWith('/chat')) {
     handleClosePsychologySurvey()
+    handleCloseMarketingAuthoring()
     resetAutoRecommendPanel()
     stopChatSocket()
   }

@@ -25,6 +25,7 @@ import { useRecommendAgentActions } from '~/composables/chat/agents/useRecommend
 import { useTranslateAgentActions } from '~/composables/chat/agents/useTranslateAgentActions'
 import { useAutoRecommendAgentActions } from '~/composables/chat/agents/useAutoRecommendAgentActions'
 import { useNewsCuratorAgentActions } from '~/composables/chat/agents/useNewsCuratorAgentActions'
+import { useMarketingAuthoringAgentActions } from '~/composables/chat/agents/useMarketingAuthoringAgentActions'
 import {
   usePsychologySurvey,
   isSurveyDiagnosticPrompt,
@@ -38,6 +39,12 @@ import {
   useRecommendAgent,
 } from '~/utils/chat/recommendAgentUtil'
 import { isTranslateAgent, useTranslateAgent } from '~/utils/chat/translateAgentUtil'
+import {
+  isMarketingAuthoringAgent,
+  isMarketingAuthoringPrompt,
+  parseMarketingAuthoringConfigFromAgent,
+  useMarketingAuthoring,
+} from '~/utils/chat/marketingAuthoringUtil'
 import { isRiskAgent } from '~/utils/agent/riskConfigUtil'
 import { isProposalAgent } from '~/utils/chat/proposalAgentUtil'
 import {
@@ -73,6 +80,7 @@ const { isAutoRecommendRoom, registerAutoRecommendRoom } = useAutoRecommend()
 const { isNewsCuratorRoom, registerNewsCuratorRoom, openNewsCurator } = useNewsCurator()
 const { isRecommendRoom, registerRecommendRoom } = useRecommendAgent()
 const { isTranslateRoom, registerTranslateRoom } = useTranslateAgent()
+const { isMarketingAuthoringRoom, registerMarketingAuthoringRoom } = useMarketingAuthoring()
 const {
   activeSearchModes,
   selectedChatAgentId,
@@ -189,6 +197,18 @@ const messagesForDisplay = computed(() => {
       return true
     })
   }
+  if (isMarketingAuthoringRoom(chatRoom.value.roomId)) {
+    let marketingAuthoringPromptHidden = false
+    base = base.filter((m) => {
+      if (m.type === 'question' && !marketingAuthoringPromptHidden) {
+        if (isMarketingAuthoringPrompt(m.qContent ?? '')) {
+          marketingAuthoringPromptHidden = true
+          return false
+        }
+      }
+      return true
+    })
+  }
   return base.filter((m) => {
     if (m.hiddenFromDisplay) return false
     return true
@@ -240,6 +260,16 @@ export const useChatStore = () => {
     appendTranslateCardIfNeeded,
     handleCloseTranslateAgent,
   } = useTranslateAgentActions()
+
+  const {
+    isMarketingAgentVisible,
+    openMarketingAgent,
+    handleIndexMarketingAuthoringSubmit,
+    handleRoomMarketingAuthoringSubmit,
+    appendMarketingAuthoringCardIfNeeded,
+    handleMarketingAuthoringReopen,
+    handleCloseMarketingAuthoring,
+  } = useMarketingAuthoringAgentActions()
 
   const {
     isAutoRecommendVisible,
@@ -361,6 +391,9 @@ export const useChatStore = () => {
     })
     if (hasTranslateLog) registerTranslateRoom(roomId)
 
+    const hasMarketingAuthoringLog = rawList.some((row) => isMarketingAuthoringPrompt(String(row.qcontent ?? '')))
+    if (hasMarketingAuthoringLog) registerMarketingAuthoringRoom(roomId)
+
     lastLoadedChatLogRows.value = rawList
     lastLoadedChatLogRoomId.value = roomId
     applyChatLogRowsToMessages(rawList, roomId)
@@ -442,6 +475,28 @@ export const useChatStore = () => {
         appendRecommendCardIfNeeded(agent)
       } else {
         openRecommendAgent()
+      }
+      return
+    }
+
+    if (isMarketingAuthoringAgent(agent)) {
+      const config = parseMarketingAuthoringConfigFromAgent(agent)
+      if (!config) {
+        openToast({
+          message: '콘텐츠 작성·편집 설정이 없습니다. 에이전트 설정에서 저장해 주세요.',
+          type: 'warning',
+        })
+        return
+      }
+      activeSearchModes.value = []
+      subOptions.value = []
+      selectedChatAgentId.value = agent.agentId
+      await selectModelOptions()
+      // 채팅방에서는 메시지 목록에 인라인 카드를 추가
+      if (chatRoom.value.roomId) {
+        appendMarketingAuthoringCardIfNeeded(agent.agentId)
+      } else {
+        openMarketingAgent('select')
       }
       return
     }
@@ -634,6 +689,7 @@ export const useChatStore = () => {
     surveyGender,
     isRecommendVisible,
     isTranslateVisible,
+    isMarketingAgentVisible,
     isAutoRecommendVisible,
     isNewsCuratorVisible,
     // 액션
@@ -649,6 +705,7 @@ export const useChatStore = () => {
     handleIndexAutoRecommendSubmit,
     handleIndexNewsCuratorSubmit,
     addInlineSurveyMessage,
+    addInlineRecommendMessage,
     handleIndexRecommendSubmit,
     handleSubmitRecommendAgentForm,
     handleRecommendAgentRetry,
@@ -656,6 +713,10 @@ export const useChatStore = () => {
     handleIndexTranslateSubmit,
     handleSubmitTranslateAgentForm,
     handleCloseTranslateAgent,
+    handleIndexMarketingAuthoringSubmit,
+    handleRoomMarketingAuthoringSubmit,
+    handleCloseMarketingAuthoring,
+    handleMarketingAuthoringReopen,
     addInlineTranslateMessage,
     addInlineAutoRecommendMessage,
     addInlineNewsMessage,

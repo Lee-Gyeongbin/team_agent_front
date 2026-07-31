@@ -260,3 +260,37 @@ export interface TranslateAgentConfig {
   tones: TranslateToneOption[]
   file: TranslateFileConfig
 }
+
+// ===== 마케팅 콘텐츠 작성 에이전트 타입 (SUB_TY = 'MARKETING_AUTHORING') =====
+
+export interface MarketingAuthoringOption {
+  value: string
+  label: string
+  description?: string
+}
+
+export interface MarketingAuthoringUiConfig {
+  introTitle: string
+  introSubtitle: string
+  submitLabel: string
+}
+
+export interface MarketingAuthoringWorkflowConfig {
+  purposes: MarketingAuthoringOption[]
+  audiences: MarketingAuthoringOption[]
+  tones: MarketingAuthoringOption[]
+  lengths: MarketingAuthoringOption[]
+  outputSections: MarketingAuthoringOption[]
+  defaultOutputSections: string[]
+}
+
+export interface MarketingAuthoringAgentConfig {
+  version: string
+  language: string
+  ui: MarketingAuthoringUiConfig
+  contentTypes: MarketingAuthoringOption[]
+  workflow: MarketingAuthoringWorkflowConfig
+  channelsByContentType: Record<string, MarketingAuthoringOption[]>
+  constraints: string[]
+  variantCount: number
+}

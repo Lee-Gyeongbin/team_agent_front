@@ -31,6 +31,7 @@
         :planner-form="plannerForm"
         :auto-recommend-form="autoRecommendForm"
         :proposal-form="proposalForm"
+        :marketing-authoring-form="marketingAuthoringForm"
         :sql-model-options="sqlModelOptions"
         :api-url-cd-options="apiUrlCdOptions"
         :tmpl-id-options="tmplIdOptions"
@@ -45,15 +46,12 @@
         @update:planner-form="plannerForm = $event"
         @update:auto-recommend-form="autoRecommendForm = $event"
         @update:proposal-form="proposalForm = $event"
+        @update:marketing-authoring-form="marketingAuthoringForm = $event"
       />
 
       <!-- 섹션3: 데이터 연결 (svcTy 기반 분기) — D(RISK)는 자사 역량 RAG 데이터셋 연결 -->
       <AgentSettingData
-        v-if="
-          form.svcTy === 'M' ||
-          form.svcTy === 'S' ||
-          (form.svcTy === 'D' && form.subTy === 'RISK')
-        "
+        v-if="form.svcTy === 'M' || form.svcTy === 'S' || (form.svcTy === 'D' && form.subTy === 'RISK')"
         ref="settingDataRef"
         :svc-ty="form.svcTy"
         :dataset-list="localDatasetList"
@@ -153,6 +151,13 @@ import {
   parseProposalAdditionalConfigToForm,
   type ProposalConfigForm,
 } from '~/utils/agent/proposalConfigUtil'
+import {
+  MARKETING_AUTHORING_SUB_TY,
+  buildMarketingAuthoringAdditionalConfig,
+  emptyMarketingAuthoringConfigForm,
+  parseMarketingAuthoringAdditionalConfigToForm,
+  type MarketingAuthoringConfigForm,
+} from '~/utils/agent/marketingAuthoringConfigUtil'
 
 interface Props {
   isOpen: boolean
@@ -302,6 +307,10 @@ const autoRecommendForm = ref<AutoRecommendConfigForm>(emptyAutoRecommendConfigF
 const preservedProposalConfig = ref<AgtSubAdditionalConfig | null>(null)
 const proposalForm = ref<ProposalConfigForm>(emptyProposalConfigForm())
 
+// 마케팅 콘텐츠 작성 (MARKETING_AUTHORING) ADDITIONAL_CONFIG — UI 미편집 필드 보존용
+const preservedMarketingAuthoringConfig = ref<AgtSubAdditionalConfig | null>(null)
+const marketingAuthoringForm = ref<MarketingAuthoringConfigForm>(emptyMarketingAuthoringConfigForm())
+
 const loadSurveyConfigFromAgent = (agent: Agent | null) => {
   const subCfg = normalizeAgentSubCfg(agent?.subCfg)
   const additional = subCfg?.additionalConfig
@@ -410,12 +419,25 @@ const loadProposalConfigFromAgent = (agent: Agent | null) => {
   proposalForm.value = emptyProposalConfigForm()
 }
 
+const loadMarketingAuthoringConfigFromAgent = (agent: Agent | null) => {
+  const subCfg = normalizeAgentSubCfg(agent?.subCfg)
+  const additional = subCfg?.additionalConfig
+  if (additional && typeof additional === 'object' && Object.keys(additional).length > 0) {
+    preservedMarketingAuthoringConfig.value = { ...additional }
+    marketingAuthoringForm.value = parseMarketingAuthoringAdditionalConfigToForm(additional as Record<string, unknown>)
+    return
+  }
+  preservedMarketingAuthoringConfig.value = null
+  marketingAuthoringForm.value = emptyMarketingAuthoringConfigForm()
+}
+
 const resetSubTyConfigForms = () => {
   preservedSurveyConfig.value = null
   preservedRecommendConfig.value = null
   preservedCurationConfig.value = null
   preservedAutoRecommendConfig.value = null
   preservedTranslateConfig.value = null
+  preservedMarketingAuthoringConfig.value = null
   preservedResearcherConfig.value = null
   surveyForm.value = emptySurveyConfigForm()
   recommendForm.value = emptyRecommendConfigForm()
@@ -429,6 +451,7 @@ const resetSubTyConfigForms = () => {
   plannerForm.value = emptyPlannerConfigForm()
   preservedProposalConfig.value = null
   proposalForm.value = emptyProposalConfigForm()
+  marketingAuthoringForm.value = emptyMarketingAuthoringConfigForm()
 }
 
 // 기본 설정 폼
@@ -517,10 +540,26 @@ watch(
         preservedRecommendConfig.value = null
         preservedCurationConfig.value = null
         preservedTranslateConfig.value = null
+        preservedMarketingAuthoringConfig.value = null
         preservedResearcherConfig.value = null
         surveyForm.value = emptySurveyConfigForm()
         recommendForm.value = emptyRecommendConfigForm()
         curationForm.value = emptyCurationConfigForm()
+        translateForm.value = emptyTranslateConfigForm()
+        marketingAuthoringForm.value = emptyMarketingAuthoringConfigForm()
+        researcherForm.value = emptyResearcherConfigForm()
+      } else if (props.agent.svcTy === 'C' && form.value.subTy === MARKETING_AUTHORING_SUB_TY) {
+        loadMarketingAuthoringConfigFromAgent(props.agent)
+        preservedSurveyConfig.value = null
+        preservedRecommendConfig.value = null
+        preservedCurationConfig.value = null
+        preservedAutoRecommendConfig.value = null
+        preservedTranslateConfig.value = null
+        preservedResearcherConfig.value = null
+        surveyForm.value = emptySurveyConfigForm()
+        recommendForm.value = emptyRecommendConfigForm()
+        curationForm.value = emptyCurationConfigForm()
+        autoRecommendForm.value = emptyAutoRecommendConfigForm()
         translateForm.value = emptyTranslateConfigForm()
         researcherForm.value = emptyResearcherConfigForm()
       } else if (props.agent.svcTy === 'M' && form.value.subTy === RESEARCHER_SUB_TY) {
@@ -686,6 +725,18 @@ watch(
       }
       return
     }
+    if (subTy === MARKETING_AUTHORING_SUB_TY) {
+      if (
+        props.agent?.svcTy === 'C' &&
+        normalizeAgentSubCfg(props.agent.subCfg)?.subTy === MARKETING_AUTHORING_SUB_TY
+      ) {
+        loadMarketingAuthoringConfigFromAgent(props.agent)
+      } else {
+        preservedMarketingAuthoringConfig.value = null
+        marketingAuthoringForm.value = emptyMarketingAuthoringConfigForm()
+      }
+      return
+    }
     if (subTy === TRANSLATE_SUB_TY) {
       if (props.agent?.svcTy === 'W' && normalizeAgentSubCfg(props.agent.subCfg)?.subTy === TRANSLATE_SUB_TY) {
         loadTranslateConfigFromAgent(props.agent)
@@ -813,6 +864,20 @@ const onSave = () => {
       agentId: props.agent?.agentId ?? '',
       subTy: AUTO_RECOMMEND_SUB_TY,
       additionalConfig: buildAutoRecommendAdditionalConfig(autoRecommendForm.value, preservedAutoRecommendConfig.value),
+      useYn: existingSubCfg?.useYn ?? 'Y',
+      createDt: existingSubCfg?.createDt ?? '',
+      modifyDt: existingSubCfg?.modifyDt ?? '',
+    }
+  } else if (form.value.svcTy === 'C' && form.value.subTy === MARKETING_AUTHORING_SUB_TY) {
+    const existingSubCfg = normalizeAgentSubCfg(props.agent?.subCfg)
+    base.subCfg = {
+      subCfgId: existingSubCfg?.subCfgId ?? '',
+      agentId: props.agent?.agentId ?? '',
+      subTy: MARKETING_AUTHORING_SUB_TY,
+      additionalConfig: buildMarketingAuthoringAdditionalConfig(
+        marketingAuthoringForm.value,
+        preservedMarketingAuthoringConfig.value,
+      ),
       useYn: existingSubCfg?.useYn ?? 'Y',
       createDt: existingSubCfg?.createDt ?? '',
       modifyDt: existingSubCfg?.modifyDt ?? '',
