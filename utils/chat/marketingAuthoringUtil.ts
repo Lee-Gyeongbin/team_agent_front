@@ -14,6 +14,7 @@ import {
   MARKETING_AUTHORING_DEFAULT_CONSTRAINTS,
   MARKETING_AUTHORING_SUB_TY,
   MARKETING_IMAGE_ATMOSPHERES,
+  MARKETING_IMAGE_SNS_PLATFORMS,
   MARKETING_IMAGE_TYPES,
   MARKETING_IMAGE_USAGES,
   getDefaultMarketingAuthoringConfig,
@@ -202,6 +203,9 @@ export const buildMarketingAuthoringPrompt = (
 const marketingImageUsageLabel = (value: string) =>
   MARKETING_IMAGE_USAGES.find((item) => item.value === value)?.label ?? value
 
+const marketingImageSnsPlatformLabel = (value: string) =>
+  MARKETING_IMAGE_SNS_PLATFORMS.find((item) => item.value === value)?.label ?? value
+
 const marketingImageTypeLabel = (value: string) =>
   MARKETING_IMAGE_TYPES.find((item) => item.value === value)?.label ?? value
 
@@ -211,16 +215,24 @@ const marketingImageAtmosphereLabel = (value: string) =>
 const resolveMarketingImageSelection = (value: string, customValue: string) =>
   value === 'OTHER' ? customValue.trim() : value.trim()
 
-export const buildMarketingImagePrompt = (payload: MarketingImageFormPayload): string =>
-  [
+const resolveMarketingImageChannelLabel = (payload: MarketingImageFormPayload) => {
+  const usageLabel = marketingImageUsageLabel(payload.imageUsage)
+  if (payload.imageUsage !== 'SNS_VISUAL' || !payload.snsPlatform.trim()) return usageLabel
+  return `${usageLabel} · ${marketingImageSnsPlatformLabel(payload.snsPlatform)}`
+}
+
+export const buildMarketingImagePrompt = (payload: MarketingImageFormPayload): string => {
+  const variantCount = clampMarketingAuthoringVariantCount(payload.variantCount)
+  return [
     'agentType: marketingImage',
     '## 이미지 제작 조건',
-    `- 용도: ${marketingImageUsageLabel(payload.imageUsage)}`,
-    `- 이미지 유형: ${marketingImageTypeLabel(payload.imageType)}`,
+    `- 사용 채널: ${resolveMarketingImageChannelLabel(payload)}`,
+    `- 표현 방식: ${marketingImageTypeLabel(payload.imageType)}`,
     `- 제작 목적: ${payload.purpose.trim()}`,
     `- 대상 고객: ${payload.audience.trim()}`,
     `- 분위기: ${marketingImageAtmosphereLabel(payload.visualStyle)}`,
     `- 화면 비율: ${resolveMarketingImageSelection(payload.aspectRatio, payload.customAspectRatio)}`,
+    `- 시안 개수: ${variantCount}`,
     payload.brandColors.trim() ? `- 브랜드 컬러: ${payload.brandColors.trim()}` : '',
     payload.imageText.trim() ? `- 이미지 내 문구: ${payload.imageText.trim()}` : '- 이미지 내 문구: 사용하지 않음',
     '\n## 홍보할 상품·서비스',
@@ -232,13 +244,15 @@ export const buildMarketingImagePrompt = (payload: MarketingImageFormPayload): s
       : '',
     payload.additionalRequirements.trim() ? `\n## 추가 요청사항\n${payload.additionalRequirements.trim()}` : '',
     '\n## 생성 요구사항',
-    '- 위 조건을 반영한 완성형 마케팅 이미지를 생성할 것',
+    `- 위 조건을 반영한 완성형 마케팅 이미지 시안을 정확히 ${variantCount}개 생성할 것. 더 적거나 많으면 안 됨`,
+    '- 시안마다 구도·표현·강조점을 다르게 해 비교 선택할 수 있게 할 것',
     '- 첨부 참고자료가 있으면 브랜드·이미지·문구 가이드를 우선 반영할 것',
     '- 이미지 안의 텍스트는 요청된 문구만 사용하고, 임의의 글자나 워터마크를 추가하지 말 것',
     '- 결과 설명이나 JSON 대신 생성된 이미지를 반환할 것',
   ]
     .filter(Boolean)
     .join('\n')
+}
 
 export const isMarketingImagePrompt = (promptText: string): boolean =>
   String(promptText ?? '').includes('agentType: marketingImage')
@@ -292,12 +306,12 @@ const parseMarketingImageConditionsFromPrompt = (promptText: string): MarketingA
     return line ? line.slice(label.length + 3).trim() : ''
   }
   return {
-    contentType: pick('이미지 유형'),
+    contentType: pick('표현 방식'),
     purpose: pick('제작 목적'),
     audience: pick('대상 고객'),
     tones: pick('분위기'),
     length: pick('화면 비율'),
-    channel: pick('용도') || undefined,
+    channel: pick('사용 채널') || undefined,
     keyMessage: pickPromptSection(promptText, '핵심 메시지') || undefined,
     promotionInformation: pickPromptSection(promptText, '홍보할 상품·서비스') || undefined,
     additionalRequirements: pickPromptSection(promptText, '추가 요청사항') || undefined,

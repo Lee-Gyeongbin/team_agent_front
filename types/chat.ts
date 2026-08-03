@@ -233,13 +233,11 @@ export interface MarketingAuthoringFormPayload {
 
 /** MARKETING_AUTHORING 이미지 제작 폼 */
 export interface MarketingImageFormPayload {
-  /** 용도 — 배너·썸네일 등 */
   imageUsage: string
-  /** 표현 유형 — 실사·일러스트 등 */
+  snsPlatform: string
   imageType: string
   purpose: string
   audience: string
-  /** 분위기 */
   visualStyle: string
   aspectRatio: string
   customAspectRatio: string
@@ -249,6 +247,7 @@ export interface MarketingImageFormPayload {
   brandColors: string
   additionalRequirements: string
   referenceFiles: File[]
+  variantCount: number
 }
 
 export type MarketingAuthoringSubmitPayload =

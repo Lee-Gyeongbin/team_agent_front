@@ -105,7 +105,7 @@ export const MARKETING_AUTHORING_CONTENT_TYPES: MarketingAuthoringOption[] = [
   option('PRODUCT_DESCRIPTION', '상품·서비스 소개', '특징과 혜택, 차별점을 설명하는 소개 문안'),
 ]
 
-/** 이미지 제작 — 용도 (배너·썸네일 등) */
+/** 이미지 제작 — 사용 채널 (배너·썸네일 등) */
 export const MARKETING_IMAGE_USAGES: MarketingAuthoringOption[] = [
   option('BANNER', '배너 이미지', '캠페인과 프로모션에 사용할 가로형 비주얼'),
   option('THUMBNAIL', '썸네일', '콘텐츠의 핵심을 한눈에 전달하는 대표 이미지'),
@@ -113,7 +113,27 @@ export const MARKETING_IMAGE_USAGES: MarketingAuthoringOption[] = [
   option('SNS_VISUAL', 'SNS 게시물 이미지', '소셜 채널 게시물과 함께 사용할 이미지'),
 ]
 
-/** 이미지 제작 — 표현 유형 (실사·일러스트 등) */
+/** 이미지 제작 — SNS 게시물 하위 채널 */
+export const MARKETING_IMAGE_SNS_PLATFORMS: MarketingAuthoringOption[] = [
+  option('INSTAGRAM_FEED', '인스타그램 피드', '정사각 피드 게시물'),
+  option('INSTAGRAM_STORY', '인스타그램 스토리·릴스', '세로형 풀스크린'),
+  option('FACEBOOK', '페이스북', '피드 게시물'),
+  option('LINKEDIN', '링크드인', '전문 네트워크 게시물'),
+  option('X', 'X', '타임라인 게시물'),
+  option('YOUTUBE_COMMUNITY', '유튜브 커뮤니티', '커뮤니티 게시물'),
+]
+
+/** SNS별 기본 화면 비율 */
+export const MARKETING_IMAGE_SNS_DEFAULT_ASPECT_RATIO: Record<string, string> = {
+  INSTAGRAM_FEED: '1:1',
+  INSTAGRAM_STORY: '9:16',
+  FACEBOOK: '1:1',
+  LINKEDIN: '16:9',
+  X: '16:9',
+  YOUTUBE_COMMUNITY: '16:9',
+}
+
+/** 이미지 제작 — 표현 방식 (실사·일러스트 등) */
 export const MARKETING_IMAGE_TYPES: MarketingAuthoringOption[] = [
   option('REAL_PHOTO', '실사 사진', '실제 촬영한 듯한 사실적인 사진 비주얼'),
   option('CHARACTER_ILLUST', '캐릭터 일러스트', '캐릭터·마스코트 중심의 일러스트'),

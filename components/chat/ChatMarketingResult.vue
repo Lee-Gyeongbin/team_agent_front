@@ -243,26 +243,29 @@ const activeContent = computed(() => {
 
 const metaItems = computed(() => {
   const conditions = props.result.conditions
-  if (isImageResult.value) {
-    return [
-      { label: '용도', value: conditions.channel },
-      { label: '이미지 유형', value: conditions.contentType },
-      { label: '제작 목적', value: conditions.purpose },
-      { label: '대상 고객', value: conditions.audience },
-      { label: '분위기', value: conditions.tones },
-      { label: '화면 비율', value: conditions.length },
-      { label: '추가 요청', value: conditions.additionalRequirements },
-    ].filter((item): item is { label: string; value: string } => !!item.value)
-  }
-  return [
-    { label: '콘텐츠 유형', value: conditions.contentType },
-    { label: '작성 목적', value: conditions.purpose },
-    { label: '대상 독자', value: conditions.audience },
-    { label: '톤앤매너', value: conditions.tones },
-    { label: '분량', value: conditions.length },
-    { label: '채널', value: conditions.channel },
-    { label: '추가 요청', value: conditions.additionalRequirements },
-  ].filter((item): item is { label: string; value: string } => !!item.value)
+  const rows = isImageResult.value
+    ? [
+        { label: '사용 채널', value: conditions.channel },
+        { label: '화면 비율', value: conditions.length },
+        { label: '제작 목적', value: conditions.purpose },
+        { label: '대상 고객', value: conditions.audience },
+        { label: '표현 방식', value: conditions.contentType },
+        { label: '분위기', value: conditions.tones },
+        { label: '추가 요청', value: conditions.additionalRequirements },
+      ]
+    : [
+        { label: '콘텐츠 유형', value: conditions.contentType },
+        { label: '작성 목적', value: conditions.purpose },
+        { label: '대상 독자', value: conditions.audience },
+        { label: '톤앤매너', value: conditions.tones },
+        { label: '분량', value: conditions.length },
+        { label: '채널', value: conditions.channel },
+        { label: '추가 요청', value: conditions.additionalRequirements },
+      ]
+
+  return rows
+    .map((item) => ({ label: item.label, value: String(item.value ?? '').trim() }))
+    .filter((item) => !!item.value)
 })
 
 /** 시안 툴바 좌측에 표기할 주제 (핵심 메시지) */

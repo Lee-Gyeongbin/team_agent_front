@@ -173,8 +173,11 @@ const isContentVisible = ref(false)
 let introStartTimer: ReturnType<typeof setTimeout> | null = null
 let introEndTimer: ReturnType<typeof setTimeout> | null = null
 
-const headerTitle = computed(() => props.config.ui.introTitle.trim() || '마케팅')
-const introTitleChars = computed(() => headerTitle.value.split(''))
+const headerTitle = computed(() => {
+  if (marketingAgentMode.value === 'image') return '마케팅 이미지 제작'
+  return props.config.ui.introTitle.trim() || '마케팅'
+})
+const introTitleChars = computed(() => (props.config.ui.introTitle.trim() || '마케팅').split(''))
 const introSubtitleChars = computed(() =>
   (props.config.ui.introSubtitle.trim() || '콘텐츠 생성을 준비 중입니다.').split(''),
 )
@@ -206,7 +209,9 @@ const headerSubtitle = computed(() => {
   if (marketingAgentMode.value === 'text') {
     return props.config.ui.introSubtitle.trim()
   }
-  if (marketingAgentMode.value === 'image') return '용도와 채널에 맞는 마케팅 이미지를 제작합니다.'
+  if (marketingAgentMode.value === 'image') {
+    return '사용 채널과 브랜드 정보를 입력하면 채널에 맞는 이미지를 생성합니다.'
+  }
   return MARKETING_AGENT_SELECT_SUBTITLE
 })
 
