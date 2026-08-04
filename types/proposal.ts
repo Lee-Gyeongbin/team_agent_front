@@ -68,12 +68,6 @@ export interface PtRequirement {
   mandatoryYn: 'Y' | 'N'
   /** 출처 유형 코드 (PT000004: 001=사실, 002=전략적해석, 003=확인필요) */
   sourceTypeCd: '001' | '002' | '003'
-  rfpPageRef: string | null
-  evalImpact: string | null
-  responseDirection: string | null
-  requiredEvidence: string | null
-  confirmNeededYn: 'Y' | 'N'
-  confirmNeededNote: string | null
   sortOrd: number
   createDt: string
 }

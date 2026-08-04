@@ -158,6 +158,19 @@
                 인포그래픽 생성 중...
               </span>
             </template>
+            <template v-else>
+              <UiButton
+                variant="outline"
+                size="sm"
+                :loading="isRegeneratingImage"
+                @click="onRegenerateImage"
+              >
+                <template #icon-left>
+                  <i class="icon-refresh size-14" />
+                </template>
+                인포그래픽 이미지 생성
+              </UiButton>
+            </template>
           </div>
         </div>
 
@@ -369,9 +382,12 @@ const imageModalStatus = ref<'loading' | 'ready' | 'error'>('loading')
 const imageModalUrl = ref('')
 const imageModalError = ref('')
 
-// 인포그래픽 이미지 재생성
+// 인포그래픽 이미지 생성/재생성
 const isRegeneratingImage = ref(false)
 let renderEventSource: EventSource | null = null
+
+// 현재 소목차에 이미 생성된 이미지가 하나라도 있는지
+const hasSectionImages = computed(() => props.currentSlides.some((s) => s.renderedImagePath))
 
 const openImageModal = async () => {
   if (!activeSlide.value?.slideId) return
@@ -399,10 +415,43 @@ const openImageModal = async () => {
 const activeSlide = computed<PtSlide | null>(() => props.currentSlides[activeSlideIndex.value] ?? null)
 
 // componentsJson 안전 파싱
+// 백엔드가 세 가지 포맷으로 내려올 수 있으므로 통일된 { type, content } 구조로 정규화
+// 포맷 1 (표준): { type: "card_grid", content: { cards: [...] } }
+// 포맷 2 (flat):  { type: "card_grid", cards: [...] }
+// 포맷 3 (키형): { card_grid: { cards: [...] } }
+const SLIDE_COMPONENT_TYPES = new Set<string>([
+  'card_grid',
+  'process_flow',
+  'requirement_table',
+  'credential_grid',
+  'icon_chip_group',
+  'step_flow_bar',
+  'callout_box',
+])
+
 const activeSlideComponents = computed<SlideComponent[]>(() => {
   if (!activeSlide.value?.componentsJson) return []
   try {
-    return JSON.parse(activeSlide.value.componentsJson) as SlideComponent[]
+    const raw = JSON.parse(activeSlide.value.componentsJson) as Record<string, unknown>[]
+    return raw
+      .map((item): SlideComponent | null => {
+        // 포맷 1: type + content 모두 있음
+        if (typeof item.type === 'string' && item.content !== undefined) {
+          return item as unknown as SlideComponent
+        }
+        // 포맷 2: type 있지만 content 없음 → 나머지 키들이 content
+        if (typeof item.type === 'string') {
+          const { type, ...rest } = item
+          return { type, content: rest } as unknown as SlideComponent
+        }
+        // 포맷 3: 타입명이 키로 쓰임 → 첫 번째로 매칭되는 키를 type으로 사용
+        const typeKey = Object.keys(item).find((k) => SLIDE_COMPONENT_TYPES.has(k))
+        if (typeKey) {
+          return { type: typeKey, content: item[typeKey] } as unknown as SlideComponent
+        }
+        return null
+      })
+      .filter((item): item is SlideComponent => item !== null)
   } catch {
     return []
   }
@@ -452,6 +501,13 @@ const onRegenerateImage = () => {
   if (!props.activeSection || isRegeneratingImage.value) return
   isRegeneratingImage.value = true
 
+  // progress 이벤트 후 hasSectionImages가 true로 바뀌기 전에 미리 캡처
+  const isFirstGeneration = !hasSectionImages.value
+
+  // 즉시 전체 슬라이드를 '002'(생성중)으로 표시 → "인포그래픽 생성 중..." UI 즉시 반영
+  const initializing = props.currentSlides.map((s) => ({ ...s, renderStatusCd: '002' as const }))
+  emit('slides-updated', initializing as PtSlide[])
+
   // 기존 SSE 연결 정리
   renderEventSource?.close()
   renderEventSource = streamRenderSectionImages(props.ptProjectId, props.activeSection.tocId, {
@@ -466,11 +522,13 @@ const onRegenerateImage = () => {
     },
     onDone: () => {
       isRegeneratingImage.value = false
-      openToast({ message: '인포그래픽 이미지가 재생성되었습니다.' })
+      openToast({
+        message: isFirstGeneration ? '인포그래픽 이미지가 생성되었습니다.' : '인포그래픽 이미지가 재생성되었습니다.',
+      })
     },
     onError: (message) => {
       isRegeneratingImage.value = false
-      openToast({ message: message || '이미지 재생성 중 오류가 발생했습니다.', type: 'error' })
+      openToast({ message: message || '이미지 생성 중 오류가 발생했습니다.', type: 'error' })
     },
   })
 }

@@ -123,8 +123,8 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
           isGenerating.value = false
           genProgressMsg.value = ''
           closeLoading()
-          // 캐시 재조회 후 이미지 렌더링 SSE 구독 (캐시가 채워진 뒤 SSE 이벤트 수신해야 slideId 매칭됨)
-          handleSelectSlides(tocId).then(() => startImageRenderStream(tocId))
+          // 슬라이드 캐시 갱신 (이미지 생성은 사용자가 직접 시작)
+          handleSelectSlides(tocId)
           resolve(data)
         },
         onError: (message: string) => {
