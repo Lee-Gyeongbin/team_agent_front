@@ -192,7 +192,7 @@ export interface PtSectionChatMessage {
   createdAt: string
 }
 
-// ── Step D: 슬라이드 ───────────────────────────────────────────────────────────
+// ── Step E: 슬라이드 ───────────────────────────────────────────────────────────
 
 /** TB_PT_SLIDE - 생성된 슬라이드 */
 export interface PtSlide {
@@ -212,7 +212,7 @@ export interface PtSlide {
   conclusionRibbonTxt: string | null
   imageGenHint: string | null
   renderedImagePath: string | null
-  /** 템플릿 프레임 + 인포그래픽 합성 이미지 (Step D 미리보기용) */
+  /** 템플릿 프레임 + 인포그래픽 합성 이미지 (Step E 미리보기용) */
   compositeImagePath: string | null
   /** 001=대기, 002=생성중, 003=완료, 004=실패 */
   renderStatusCd: '001' | '002' | '003' | '004'
@@ -412,7 +412,7 @@ export interface PtExportRequest {
   agentId: string
 }
 
-// ── Step E: 템플릿 생성 ───────────────────────────────────────────────────────
+// ── Step D: 템플릿 생성 ───────────────────────────────────────────────────────
 
 /** TB_PT_TEMPLATE.GEN_STATUS_CD */
 export type PtTemplateGenStatusCd = '001' | '002' | '003' | '004'
@@ -428,7 +428,7 @@ export interface PtTemplate {
   /** 001=대기, 002=생성중, 003=완료, 004=실패 */
   genStatusCd: PtTemplateGenStatusCd
   errorMsg: string | null
-  /** 템플릿 프레임 이미지 NCP 경로 (Step E 확정 후 비동기 생성) */
+  /** 템플릿 프레임 이미지 NCP 경로 (Step D 확정 후 비동기 생성) */
   frameImagePath: string | null
   createDt: string
   modifyDt: string | null

@@ -53,7 +53,7 @@
         :pt-project-id="ptProjectId"
         @next="onAdvance"
       />
-      <ProposalStepE
+      <ProposalStepD
         v-else-if="currentStep === 3"
         :pt-project-id="ptProjectId"
         :model-id="modelId"
@@ -63,7 +63,7 @@
         :doc-size="docSize"
         @next="onAdvance"
       />
-      <ProposalStepD
+      <ProposalStepE
         v-else-if="currentStep === 4"
         :section-list="sectionList"
         :raw-toc-list="rawTocList"
@@ -108,7 +108,7 @@ const router = useRouter()
 const ptProjectId = computed(() => String(route.params.id))
 
 // ---- LLM 모델 / 에이전트 설정 ----
-// 상세 페이지 공통 설정 — Step B/D 등 하위 스텝에 props로 전달
+// 상세 페이지 공통 설정 — Step B/E 등 하위 스텝에 props로 전달
 // TODO: 프로젝트 설정 조회 또는 생성 시 선택값으로 교체
 const modelId = ref(PT_PROPOSAL_DEFAULT_MODEL_ID)
 const agentId = ref(PT_PROPOSAL_DEFAULT_AGENT_ID)
@@ -121,7 +121,9 @@ const docSize = computed<'169' | '43' | 'a4'>(() => {
     const cfg = JSON.parse(currentProject.value?.projectConfigJson ?? '{}')
     const val = cfg?.template?.docSize
     if (val === '169' || val === '43' || val === 'a4') return val
-  } catch { /* ignore */ }
+  } catch {
+    console.error('docSize 조회 오류: 기본값 169 적용')
+  }
   return '169'
 })
 
@@ -159,7 +161,7 @@ const onAdvance = () => {
   onStepChanged(next)
 }
 
-// D-0: Stage2 전략분석 1회 자동 실행 여부
+// E-0: Stage2 전략분석 1회 자동 실행 여부 (본문 생성 단계)
 const stage2Triggered = ref(false)
 
 const { fetchSelectPtProject, streamAnalyzeStage2, fetchUpdateMaxStepNo } = useProposalApi()
@@ -251,7 +253,7 @@ const { currentMessages, isSending, handleSendMessage } = useProposalSectionChat
   onSlidesUpdated,
 )
 
-// D-1: 슬라이드 생성 → onDone 내부에서 handleSelectSlides(tocId) 자동 호출로 slidesCache 갱신
+// E-1: 슬라이드 생성 → onDone 내부에서 handleSelectSlides(tocId) 자동 호출로 slidesCache 갱신
 const onGenerateSection = async (tocId: string) => {
   try {
     await handleGenerateSection(tocId, modelId.value, agentId.value)

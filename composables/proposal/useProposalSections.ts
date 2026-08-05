@@ -64,7 +64,7 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
         previewContent: null,
       }))
       activeSectionIndexRef.value = 0
-      // Step D 진입 시 첫 번째 소목차 슬라이드 즉시 조회
+      // Step E 진입 시 첫 번째 소목차 슬라이드 즉시 조회
       const firstTocId = sectionList.value[0]?.tocId
       if (firstTocId) {
         fetchSelectSectionSlides(firstTocId)
@@ -139,11 +139,11 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
   }
 
   /**
-   * D-4: 소목차 확인 → 다음 소목차 활성화
+   * E-4: 소목차 확인 → 다음 소목차 활성화
    * 미완료 슬라이드 있으면 거부 메시지 표시.
-   * 확인 성공 시 D-5 이미지 렌더링 SSE를 백그라운드로 구독하여 슬라이드 캐시를 업데이트한다.
+   * 확인 성공 시 E-5 이미지 렌더링 SSE를 백그라운드로 구독하여 슬라이드 캐시를 업데이트한다.
    *
-   * @returns true: 모든 소목차 완료(Step E로), false: 다음 소목차로 이동
+   * @returns true: 모든 소목차 완료(출력 단계로), false: 다음 소목차로 이동
    */
   const handleConfirmSection = async (tocId: string): Promise<boolean> => {
     const res = await fetchConfirmSection(ptProjectId.value, tocId)

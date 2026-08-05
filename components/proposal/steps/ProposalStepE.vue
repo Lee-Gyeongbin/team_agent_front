@@ -1,996 +1,599 @@
 <template>
-  <div class="pt-panel pt-template-gen-panel">
-    <!-- 생성 전 초기 상태 -->
-    <template v-if="!template">
-      <h3 class="pt-panel-title">템플릿 생성</h3>
-      <p class="pt-panel-desc">
-        Step3에서 확정한 컬러와 스타일을 기반으로, AI가 슬라이드 헤더와 푸터 레이아웃을 생성합니다.
-      </p>
-      <div class="pt-template-gen-empty">
-        <UiButton
-          variant="primary"
-          size="md"
-          :disabled="isGenerating"
-          @click="onGenerate"
+  <div
+    ref="layoutRef"
+    class="pt-stepD-layout"
+    :style="layoutStyle"
+  >
+    <!-- 좌측: 목차 트리 (대목차=헤더/클릭불가, 소목차=클릭가능) -->
+    <div class="pt-stepD-left">
+      <div class="pt-sec-list">
+        <template
+          v-for="item in rawTocList"
+          :key="item.tocId"
         >
-          {{ isGenerating ? '생성 중...' : '템플릿 생성 시작' }}
-        </UiButton>
-      </div>
-    </template>
-
-    <!-- 생성 완료 상태 -->
-    <template v-else>
-      <div class="pt-template-gen-layout">
-        <!-- 좌측 패널: 현황 · 컬러 · 액션 -->
-        <div class="pt-template-gen-left">
-          <h3 class="pt-panel-title">템플릿 생성</h3>
-
-          <!-- 생성 현황 pills -->
-          <div class="pt-template-status-list">
-            <div class="pt-template-status-item">
-              <span class="pt-template-status-label">생성방식</span>
-              <span class="pt-template-status-pill is-done">AI 생성</span>
-            </div>
-            <div class="pt-template-status-item">
-              <span class="pt-template-status-label">헤더</span>
-              <span
-                :class="[
-                  'pt-template-status-pill',
-                  headerStatus === 'done' ? 'is-done' : headerStatus === 'fail' ? 'is-fail' : 'is-wait',
-                ]"
-              >
-                {{ headerStatus === 'done' ? '완료' : headerStatus === 'fail' ? '실패' : '대기' }}
-              </span>
-            </div>
-            <div class="pt-template-status-item">
-              <span class="pt-template-status-label">푸터</span>
-              <span
-                :class="[
-                  'pt-template-status-pill',
-                  footerStatus === 'done' ? 'is-done' : footerStatus === 'fail' ? 'is-fail' : 'is-wait',
-                ]"
-              >
-                {{ footerStatus === 'done' ? '완료' : footerStatus === 'fail' ? '실패' : '대기' }}
-              </span>
-            </div>
-          </div>
-
-          <!-- 적용 컬러 스와치 -->
+          <!-- 대목차: 클릭 불가 헤더 -->
           <div
-            v-if="templateColors"
-            class="pt-template-colors"
+            v-if="item.parentId === null"
+            class="pt-sec-group-title"
           >
-            <div class="pt-settings-label">적용 컬러</div>
-            <div class="pt-template-color-swatches">
-              <div
-                class="pt-template-swatch"
-                :style="{ background: templateColors.baseColor }"
-                :title="'기본색: ' + templateColors.baseColor"
-              />
-              <div
-                class="pt-template-swatch"
-                :style="{ background: templateColors.accentColor }"
-                :title="'강조색: ' + templateColors.accentColor"
-              />
-            </div>
+            {{ item.title }}
           </div>
-
-          <!-- 액션 버튼들 -->
-          <div class="pt-template-gen-actions">
-            <UiButton
-              variant="secondary"
-              size="sm"
-              :disabled="isGenerating"
-              @click="onRegenerate"
-            >
-              {{ isGenerating ? '재생성 중...' : '템플릿 재생성' }}
-            </UiButton>
-
-            <UiButton
-              variant="primary"
-              size="md"
-              :disabled="template?.genStatusCd !== '003' || isSaving"
-              @click="onConfirm"
-            >
-              {{ isSaving ? '저장 중...' : '이 템플릿 확정 · 다음 진행' }}
-              <template #icon-right>
-                <i class="icon-arrow-right size-14" />
-              </template>
-            </UiButton>
-          </div>
-        </div>
-
-        <!-- 중앙 패널: 미리보기 / 슬롯 편집 탭 -->
-        <div class="pt-template-gen-center">
-          <!-- 헤더 행: 레이아웃 토글(좌) + 미리보기/슬롯편집 탭(우) -->
-          <div class="pt-template-center-head">
-            <div class="pt-layout-toggle">
-              <button
-                :class="['pt-layout-toggle-btn', { 'is-active': selectedLayoutType === 'body' }]"
-                @click="selectedLayoutType = 'body'"
-              >
-                본문형
-              </button>
-              <button
-                :class="['pt-layout-toggle-btn', { 'is-active': selectedLayoutType === 'cover' }]"
-                @click="selectedLayoutType = 'cover'"
-              >
-                표지형
-              </button>
-            </div>
-            <UiTab
-              v-model="activeTab"
-              :tabs="[
-                { label: '미리보기', value: 'preview' },
-                { label: '슬롯 편집', value: 'slots' },
-              ]"
-            />
-          </div>
-
-          <!-- 미리보기 탭 -->
-          <div
-            v-if="activeTab === 'preview'"
-            class="pt-template-preview"
-            :style="{ aspectRatio: previewAspectRatio }"
-          >
-            <!-- 헤더 미리보기 — editableSlotCssStyle 사용으로 위치·스타일 모두 동기화 -->
-            <div
-              class="pt-template-preview-header"
-              :style="headerPreviewStyle"
-            >
-              <template v-if="editableHeaderSlots.length > 0">
-                <div
-                  v-for="slot in editableHeaderSlots"
-                  :key="slot.key"
-                  class="pt-template-slot"
-                  :style="editableSlotCssStyle(slot)"
-                >
-                  <span v-if="slot.key !== 'divider'">{{ resolveSlotText(slot) }}</span>
-                </div>
-              </template>
-              <div
-                v-else
-                class="pt-template-preview-placeholder"
-              >
-                헤더 생성 중...
-              </div>
-            </div>
-
-            <!-- 본문 영역 더미 콘텐츠 (미리보기 전용, 저장 대상 아님) -->
-            <div
-              class="pt-template-preview-body"
-              :style="dummyColorStyle"
-            >
-              <template v-if="selectedLayoutType === 'body'">
-                <div class="pt-dummy-body">
-                  <div class="pt-dummy-eyebrow">1. 사업이해도</div>
-                  <div class="pt-dummy-title">과업 배경 및 추진 방향</div>
-                  <div class="pt-dummy-grid">
-                    <ul class="pt-dummy-list">
-                      <li>핵심 요구사항 요약 문구가 이 위치에 표시됩니다</li>
-                      <li>두 번째 항목 예시 텍스트입니다</li>
-                      <li>세 번째 항목 예시 텍스트입니다</li>
-                      <li>네 번째 항목 예시 텍스트입니다</li>
-                    </ul>
-                    <div>
-                      <div class="pt-dummy-chart">
-                        <div
-                          class="pt-dummy-bar"
-                          style="height: 40%"
-                        />
-                        <div
-                          class="pt-dummy-bar is-accent"
-                          style="height: 65%"
-                        />
-                        <div
-                          class="pt-dummy-bar"
-                          style="height: 52%"
-                        />
-                        <div
-                          class="pt-dummy-bar is-accent"
-                          style="height: 88%"
-                        />
-                        <div
-                          class="pt-dummy-bar"
-                          style="height: 70%"
-                        />
-                      </div>
-                      <div class="pt-dummy-caption">연도별 처리 현황 (예시 데이터)</div>
-                    </div>
-                  </div>
-                </div>
-              </template>
-              <template v-else>
-                <div class="pt-dummy-cover">
-                  <div class="pt-dummy-cover-logo" />
-                  <div class="pt-dummy-cover-title">{{ props.projectNm || '프로젝트명' }}</div>
-                  <div class="pt-dummy-cover-sub">기술 제안서</div>
-                </div>
-              </template>
-            </div>
-
-            <!-- 푸터 미리보기 — editableSlotCssStyle 사용으로 위치·스타일 모두 동기화 -->
-            <div
-              class="pt-template-preview-footer"
-              :style="footerPreviewStyle"
-            >
-              <template v-if="editableFooterSlots.length > 0">
-                <div
-                  v-for="slot in editableFooterSlots"
-                  :key="slot.key"
-                  class="pt-template-slot"
-                  :style="editableSlotCssStyle(slot)"
-                >
-                  <span>{{ resolveSlotText(slot) }}</span>
-                </div>
-              </template>
-              <div
-                v-else
-                class="pt-template-preview-placeholder"
-              >
-                푸터 생성 중...
-              </div>
-            </div>
-          </div>
-
-          <!-- 슬롯 편집 탭 — 미리보기와 동일한 컨테이너, 슬롯만 드래그·텍스트 편집 가능 -->
+          <!-- 소목차: 클릭 가능 -->
           <div
             v-else
-            class="pt-template-preview pt-template-editor"
-            :style="{ aspectRatio: previewAspectRatio }"
+            :class="['pt-sec-item', { 'is-active': isLeafActive(item.tocId), 'is-done': isLeafDone(item.tocId) }]"
+            @click="onSelectLeaf(item.tocId)"
           >
-            <!-- 헤더 편집 영역 (미리보기와 동일한 크기·배경) -->
-            <div
-              ref="headerEditorRef"
-              class="pt-template-preview-header"
-              :style="headerPreviewStyle"
+            <span
+              :class="['pt-sec-dot', isLeafDone(item.tocId) ? 'is-done' : isLeafActive(item.tocId) ? 'is-active' : '']"
+            />
+            <span :class="['pt-sec-title', { 'is-bold': isLeafActive(item.tocId) }]">
+              {{ item.title }}
+            </span>
+            <span
+              v-if="leafSlideCount(item.tocId)"
+              class="pt-sec-slide-badge"
             >
-              <template v-if="editableHeaderSlots.length > 0">
-                <div
-                  v-for="slot in editableHeaderSlots"
-                  :key="slot.key"
-                  :class="[
-                    'pt-wysiwyg-slot',
-                    {
-                      'is-active': draggingKey === slot.key && draggingZone === 'header',
-                      'is-selected': selectedKey === slot.key && selectedZone === 'header' && slot.key !== 'divider',
-                      'is-divider': slot.key === 'divider',
-                    },
-                  ]"
-                  :style="editableSlotCssStyle(slot)"
-                  @mousedown.prevent="onSlotMouseDown($event, slot.key, 'header')"
-                >
-                  <template v-if="slot.key !== 'divider'">
-                    <span
-                      class="pt-wysiwyg-text"
-                      contenteditable="true"
-                      @focus="onTextFocus($event, slot, 'header')"
-                      @blur="onTextBlur($event, slot.key, 'header')"
-                      @mousedown.stop
-                      @keydown.enter.prevent
-                      >{{ resolveSlotText(slot) }}</span
-                    >
-                  </template>
-                </div>
-              </template>
+              {{ leafSlideCount(item.tocId) }}장
+            </span>
+          </div>
+        </template>
+        <UiEmpty
+          v-if="rawTocList.length === 0"
+          title="소목차가 없습니다."
+        />
+      </div>
+    </div>
+
+    <!-- 리사이저 1 -->
+    <div
+      class="pt-stepD-resizer"
+      :class="{ 'is-resizing': resizingTarget === 'left' }"
+      @mousedown="onResizeStart('left', $event)"
+    />
+
+    <!-- 중앙: 현재 소목차 미리보기 -->
+    <div class="pt-stepD-center">
+      <div
+        v-if="activeSection"
+        class="pt-gen-panel"
+      >
+        <div class="pt-gen-head">
+          <div>
+            <div class="pt-gen-title">{{ activeSection.title }}</div>
+            <div class="pt-gen-sub">
+              소목차 {{ activeSectionIndex + 1 }} / {{ sectionList.length }}
+              <template v-if="currentSlides.length"> · {{ currentSlides.length }}장</template>
+            </div>
+          </div>
+          <!-- 생성/재생성 버튼 -->
+          <UiButton
+            variant="outline"
+            size="sm"
+            :loading="isGenerating"
+            @click="onGenerate"
+          >
+            <template #icon-left>
+              <i class="icon-refresh size-14" />
+            </template>
+            {{ currentSlides.length ? '재생성' : '슬라이드 생성' }}
+          </UiButton>
+        </div>
+
+        <!-- 생성 중 진행 표시 -->
+        <div
+          v-if="isGenerating"
+          class="pt-gen-progress"
+        >
+          <div class="pt-gen-progress-bar" />
+          <span class="pt-gen-progress-msg">{{ genProgressMsg || '생성 중...' }}</span>
+        </div>
+
+        <!-- 슬라이드 캐러셀 -->
+        <div
+          v-else-if="currentSlides.length"
+          class="pt-slide-carousel"
+        >
+          <!-- 현재 슬라이드 미리보기 -->
+          <div class="pt-slide-preview">
+            <div
+              v-if="activeSlide"
+              class="pt-slide-mock"
+              :class="`is-color-${activeSlide.colorIndex}`"
+            >
+              <!-- 항상 JSON 기반 목업 표시 (내용 검토용) -->
+              <div class="pt-slide-eyebrow">{{ activeSlide.eyebrowTxt ?? 'PREVIEW' }}</div>
+              <div class="pt-slide-ttl">{{ activeSlide.titleTxt ?? activeSection.title }}</div>
               <div
-                v-else
-                class="pt-template-preview-placeholder"
+                v-if="activeSlide.subtitleTxt"
+                class="pt-slide-sub"
               >
-                헤더 슬롯이 없습니다.
+                {{ activeSlide.subtitleTxt }}
+              </div>
+              <div
+                v-if="activeSlide.highlightBannerTxt"
+                class="pt-slide-banner"
+              >
+                {{ activeSlide.highlightBannerTxt }}
+              </div>
+              <div class="pt-slide-body">
+                <SlideComponentRenderer
+                  v-for="(comp, idx) in activeSlideComponents"
+                  :key="idx"
+                  :component="comp"
+                />
+              </div>
+              <div
+                v-if="activeSlide.conclusionRibbonTxt"
+                class="pt-slide-ribbon"
+              >
+                {{ activeSlide.conclusionRibbonTxt }}
+              </div>
+              <!-- 실패 표시 -->
+              <div
+                v-if="activeSlide.renderStatusCd === '004'"
+                class="pt-slide-fail"
+              >
+                렌더링 실패 — 재생성 버튼을 눌러주세요
               </div>
             </div>
 
-            <!-- 본문 영역 더미 콘텐츠 (편집 불가, 미리보기와 동일) -->
+            <!-- 인포그래픽 이미지 상태 표시 -->
             <div
-              class="pt-template-preview-body"
-              :style="dummyColorStyle"
+              v-if="activeSlide"
+              class="pt-slide-image-status"
             >
-              <template v-if="selectedLayoutType === 'body'">
-                <div class="pt-dummy-body">
-                  <div class="pt-dummy-eyebrow">1. 사업이해도</div>
-                  <div class="pt-dummy-title">과업 배경 및 추진 방향</div>
-                  <div class="pt-dummy-grid">
-                    <ul class="pt-dummy-list">
-                      <li>핵심 요구사항 요약 문구가 이 위치에 표시됩니다</li>
-                      <li>두 번째 항목 예시 텍스트입니다</li>
-                      <li>세 번째 항목 예시 텍스트입니다</li>
-                      <li>네 번째 항목 예시 텍스트입니다</li>
-                    </ul>
-                    <div>
-                      <div class="pt-dummy-chart">
-                        <div
-                          class="pt-dummy-bar"
-                          style="height: 40%"
-                        />
-                        <div
-                          class="pt-dummy-bar is-accent"
-                          style="height: 65%"
-                        />
-                        <div
-                          class="pt-dummy-bar"
-                          style="height: 52%"
-                        />
-                        <div
-                          class="pt-dummy-bar is-accent"
-                          style="height: 88%"
-                        />
-                        <div
-                          class="pt-dummy-bar"
-                          style="height: 70%"
-                        />
-                      </div>
-                      <div class="pt-dummy-caption">연도별 처리 현황 (예시 데이터)</div>
-                    </div>
-                  </div>
-                </div>
+              <template v-if="activeSlide.renderedImagePath">
+                <UiButton
+                  variant="outline"
+                  size="sm"
+                  @click="openImageModal"
+                >
+                  <template #icon-left>
+                    <i class="icon-view size-14" />
+                  </template>
+                  인포그래픽 이미지 보기
+                </UiButton>
+                <UiButton
+                  variant="outline"
+                  size="sm"
+                  :loading="isRegeneratingImage"
+                  @click="onRegenerateImage"
+                >
+                  <template #icon-left>
+                    <i class="icon-refresh size-14" />
+                  </template>
+                  인포그래픽 재생성
+                </UiButton>
+              </template>
+              <template v-else-if="activeSlide.renderStatusCd === '002'">
+                <span class="pt-slide-image-rendering">
+                  <i class="icon-sync size-16 pt-spin" />
+                  인포그래픽 생성 중...
+                </span>
               </template>
               <template v-else>
-                <div class="pt-dummy-cover">
-                  <div class="pt-dummy-cover-logo" />
-                  <div class="pt-dummy-cover-title">{{ props.projectNm || '프로젝트명' }}</div>
-                  <div class="pt-dummy-cover-sub">기술 제안서</div>
-                </div>
-              </template>
-            </div>
-
-            <!-- 푸터 편집 영역 (미리보기와 동일한 크기·배경) -->
-            <div
-              ref="footerEditorRef"
-              class="pt-template-preview-footer"
-              :style="footerPreviewStyle"
-            >
-              <template v-if="editableFooterSlots.length > 0">
-                <div
-                  v-for="slot in editableFooterSlots"
-                  :key="slot.key"
-                  :class="[
-                    'pt-wysiwyg-slot',
-                    {
-                      'is-active': draggingKey === slot.key && draggingZone === 'footer',
-                      'is-selected': selectedKey === slot.key && selectedZone === 'footer',
-                    },
-                  ]"
-                  :style="editableSlotCssStyle(slot)"
-                  @mousedown.prevent="onSlotMouseDown($event, slot.key, 'footer')"
+                <UiButton
+                  variant="outline"
+                  size="sm"
+                  :loading="isRegeneratingImage"
+                  @click="onRegenerateImage"
                 >
-                  <span
-                    class="pt-wysiwyg-text"
-                    contenteditable="true"
-                    @focus="onTextFocus($event, slot, 'footer')"
-                    @blur="onTextBlur($event, slot.key, 'footer')"
-                    @mousedown.stop
-                    @keydown.enter.prevent
-                    >{{ resolveSlotText(slot) }}</span
-                  >
-                </div>
+                  <template #icon-left>
+                    <i class="icon-refresh size-14" />
+                  </template>
+                  인포그래픽 이미지 생성
+                </UiButton>
               </template>
-              <div
-                v-else
-                class="pt-template-preview-placeholder"
-              >
-                푸터 슬롯이 없습니다.
-              </div>
             </div>
           </div>
 
-          <!-- 슬롯 스타일 편집 패널 — 캔버스 외부, .pt-template-gen-center 직계 자식 -->
-          <Transition name="pt-style-panel">
+          <!-- 썸네일 스트립 -->
+          <div class="pt-slide-strip">
             <div
-              v-if="activeTab === 'slots' && selectedSlot && selectedSlot.key !== 'divider'"
-              class="pt-slot-style-panel"
+              v-for="(slide, idx) in currentSlides"
+              :key="slide.slideId"
+              :class="[
+                'pt-slide-thumb',
+                { 'is-active': idx === activeSlideIndex, 'is-fail': slide.renderStatusCd === '004' },
+              ]"
+              @click="activeSlideIndex = idx"
             >
-              <span class="pt-slot-style-panel-title">스타일 편집</span>
-
-              <div class="pt-slot-style-panel-row">
-                <span class="pt-slot-style-panel-key">크기</span>
-                <div class="pt-slot-style-panel-ctrl">
-                  <input
-                    class="pt-slot-style-number-input"
-                    :value="selectedSlot.fontSize ?? 13"
-                    @change="
-                      (e) => updateSelectedSlotStyle({ fontSize: parseInt((e.target as HTMLInputElement).value) || 13 })
-                    "
-                  />
-                  <span class="pt-slot-style-panel-unit">px</span>
-                </div>
-              </div>
-
-              <div class="pt-slot-style-panel-row">
-                <span class="pt-slot-style-panel-key">굵기</span>
-                <button
-                  :class="[
-                    'pt-slot-style-weight-btn',
-                    { 'is-active': selectedSlot.fontWeight === 'bold' || selectedSlot.fontWeight === '700' },
-                  ]"
-                  @click="
-                    updateSelectedSlotStyle({
-                      fontWeight:
-                        selectedSlot.fontWeight === 'bold' || selectedSlot.fontWeight === '700' ? 'normal' : 'bold',
-                    })
-                  "
-                >
-                  B
-                </button>
-              </div>
-
-              <div class="pt-slot-style-panel-row">
-                <span class="pt-slot-style-panel-key">색상</span>
-                <div class="pt-slot-style-panel-ctrl">
-                  <input
-                    type="color"
-                    class="pt-slot-style-color-input"
-                    :value="selectedSlot.color ?? '#333333'"
-                    @input="(e) => updateSelectedSlotStyle({ color: (e.target as HTMLInputElement).value })"
-                  />
-                  <span class="pt-slot-style-panel-color-val">{{ selectedSlot.color ?? '#333333' }}</span>
-                </div>
-              </div>
-
-              <button
-                class="pt-slot-style-panel-close"
-                @click="selectedKey = null"
+              <span class="pt-slide-thumb-no">{{ slide.slideNo }}</span>
+              <span
+                v-if="slide.titleTxt"
+                class="pt-slide-thumb-title"
+                >{{ slide.titleTxt }}</span
               >
-                <i class="icon-close size-12" />
-              </button>
             </div>
-          </Transition>
+          </div>
+        </div>
+
+        <!-- 슬라이드 미생성 상태 -->
+        <div
+          v-else
+          class="pt-slide-empty"
+        >
+          <UiEmpty
+            icon="icon-document"
+            title="슬라이드를 생성하세요."
+          />
+        </div>
+
+        <!-- 하단 액션 -->
+        <div class="pt-gen-actions">
+          <UiButton
+            variant="ghost"
+            size="md"
+            :disabled="activeSectionIndex === 0"
+            @click="emit('prev-section')"
+          >
+            <template #icon-left>
+              <i class="icon-arrow-left-sm size-14" />
+            </template>
+            이전 소목차
+          </UiButton>
+          <UiButton
+            variant="primary"
+            size="md"
+            :disabled="!currentSlides.length || isGenerating"
+            @click="onConfirm"
+          >
+            이 소목차 확인 · 다음 진행
+            <template #icon-right>
+              <i class="icon-arrow-right size-14" />
+            </template>
+          </UiButton>
         </div>
       </div>
-    </template>
+    </div>
+
+    <!-- 리사이저 2 -->
+    <div
+      class="pt-stepD-resizer"
+      :class="{ 'is-resizing': resizingTarget === 'right' }"
+      @mousedown="onResizeStart('right', $event)"
+    />
+
+    <!-- 우측: 소목차별 보완요청 채팅 -->
+    <div class="pt-stepD-right">
+      <div
+        v-if="activeSection"
+        class="pt-chat-side"
+      >
+        <div class="pt-chat-head">💬 "{{ activeSection.title }}" 보완요청</div>
+        <div
+          ref="chatBodyRef"
+          class="pt-chat-body"
+        >
+          <div
+            v-for="(msg, idx) in currentMessages"
+            :key="idx"
+            :class="['pt-chat-msg', `is-${msg.role}`]"
+          >
+            {{ msg.text }}
+          </div>
+          <div
+            v-if="isSending"
+            class="pt-chat-msg is-ai pt-chat-typing"
+          >
+            <span /><span /><span />
+          </div>
+          <div
+            v-if="!currentMessages.length && !isSending"
+            class="pt-chat-hint"
+          >
+            예) 차별점을 구체적 수치로 강조해줘<br />예) 3번 슬라이드 제목을 더 강렬하게
+          </div>
+        </div>
+        <div class="pt-chat-input">
+          <input
+            v-model="chatInput"
+            class="pt-chat-input-field"
+            placeholder="보완 요청을 입력하세요"
+            :disabled="!currentSlides.length || isSending"
+            @keydown.enter="onSendChat"
+          />
+          <UiButton
+            variant="primary"
+            size="sm"
+            :loading="isSending"
+            :disabled="!currentSlides.length"
+            @click="onSendChat"
+          >
+            전송
+          </UiButton>
+        </div>
+      </div>
+    </div>
   </div>
+
+  <!-- 인포그래픽 이미지 모달 -->
+  <UiModal
+    :is-open="isImageModalOpen"
+    :title="activeSlide?.titleTxt ?? '인포그래픽 이미지'"
+    max-width="800px"
+    @close="isImageModalOpen = false"
+  >
+    <UiLoading
+      v-if="imageModalStatus === 'loading'"
+      overlay
+      text="이미지 불러오는 중..."
+    />
+    <div
+      v-else-if="imageModalStatus === 'error'"
+      class="pt-image-modal-error"
+    >
+      {{ imageModalError }}
+    </div>
+    <div
+      v-else-if="imageModalStatus === 'ready' && imageModalUrl"
+      class="pt-image-modal-img-wrap"
+    >
+      <img
+        :src="imageModalUrl"
+        class="pt-slide-viewer-img"
+        :alt="activeSlide?.titleTxt"
+      />
+    </div>
+  </UiModal>
 </template>
 
 <script setup lang="ts">
-import { useProposalApi } from '~/composables/proposal/useProposalApi'
+import type { PtSection, PtSectionChatMessage, PtSlide, PtTocItem, SlideComponent } from '~/types/proposal'
+import { useProposalSectionChat } from '~/composables/proposal/useProposalSectionChat'
 import { openToast } from '~/composables/useToast'
-import type { PtTemplate } from '~/types/proposal'
+import SlideComponentRenderer from '~/components/proposal/SlideComponentRenderer.vue'
 
-const props = defineProps<{
-  ptProjectId: string
+const { fetchViewSlideImage, streamRenderSectionImages } = useProposalApi()
+
+interface Props {
+  sectionList: PtSection[]
+  /** 트리 사이드바용 전체 TOC 목록 (대목차 + 소목차) */
+  rawTocList: PtTocItem[]
+  /** 소목차별 슬라이드 캐시 (슬라이드 생성 여부 표시용) */
+  slidesCache: Record<string, PtSlide[]>
+  activeSection: PtSection | null
+  activeSectionIndex: number
+  currentMessages: PtSectionChatMessage[]
+  isSending: boolean
+  isGenerating: boolean
+  genProgressMsg: string
+  /** 현재 활성 소목차의 슬라이드 목록 */
+  currentSlides: PtSlide[]
   modelId: string
   agentId: string
-  projectNm?: string
-  orgNm?: string
-  /** "169"=16:9, "43"=4:3, "a4"=A4 세로  */
-  docSize?: '169' | '43' | 'a4'
-}>()
+  ptProjectId: string
+}
+
+const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  next: []
+  /** 소목차 리스트 클릭 시 해당 인덱스로 직접 이동 */
+  'select-section': [index: number]
+  'prev-section': []
+  'confirm-section': [sectionId: string]
+  'send-chat': [text: string]
+  'generate-section': [tocId: string]
+  /** 채팅 재생성 후 슬라이드 갱신 */
+  'slides-updated': [slides: PtSlide[]]
 }>()
 
-const { fetchSelectPtTemplate, fetchGeneratePtTemplate, fetchRegeneratePtTemplate, fetchUpdatePtTemplate } =
-  useProposalApi()
+const chatInput = ref('')
+const chatBodyRef = ref<HTMLElement | null>(null)
 
-// ── 탭 / 로딩 상태 ─────────────────────────────────────────────────────────────
+// 현재 보고 있는 슬라이드 인덱스
+const activeSlideIndex = ref(0)
 
-const template = ref<PtTemplate | null>(null)
-const activeTab = ref<'preview' | 'slots'>('preview')
-const selectedLayoutType = ref<'body' | 'cover'>('body')
-const isGenerating = ref(false)
-const isSaving = ref(false)
+// ── 레이아웃 리사이즈 (meeting2 동일 패턴) ──────────────────────────
+const leftWidth = ref(22)
+const rightWidth = ref(24)
+const resizingTarget = ref<'left' | 'right' | null>(null)
+const layoutRef = ref<HTMLElement | null>(null)
 
-// ── 파생 상태 ─────────────────────────────────────────────────────────────────
+const layoutStyle = computed(() => ({
+  '--stepD-left': `${leftWidth.value}%`,
+  '--stepD-right': `${rightWidth.value}%`,
+}))
 
-interface TemplateSlot {
-  key: string
-  placeholder?: string
-  type?: string
-  thickness?: number
-  fontSize?: number
-  fontWeight?: string
-  color?: string
-  bgColor?: string
-  align?: string
-  borderRadius?: number
+const onResizeStart = (target: 'left' | 'right', e: MouseEvent) => {
+  e.preventDefault()
+  resizingTarget.value = target
+  document.body.classList.add('is-resizing')
+
+  const onMouseMove = (ev: MouseEvent) => {
+    const rect = layoutRef.value?.getBoundingClientRect()
+    const baseWidth = rect?.width || window.innerWidth
+    const baseLeft = rect?.left || 0
+    if (target === 'left') {
+      const percent = ((ev.clientX - baseLeft) / baseWidth) * 100
+      leftWidth.value = Math.min(32, Math.max(16, percent))
+    } else {
+      const percent = ((baseLeft + baseWidth - ev.clientX) / baseWidth) * 100
+      rightWidth.value = Math.min(34, Math.max(18, percent))
+    }
+  }
+
+  const onMouseUp = () => {
+    resizingTarget.value = null
+    document.body.classList.remove('is-resizing')
+    document.removeEventListener('mousemove', onMouseMove)
+    document.removeEventListener('mouseup', onMouseUp)
+  }
+
+  document.addEventListener('mousemove', onMouseMove)
+  document.addEventListener('mouseup', onMouseUp)
 }
 
-interface ColorJson {
-  baseColor: string
-  accentColor: string
-}
+// 인포그래픽 이미지 모달
+const isImageModalOpen = ref(false)
+const imageModalStatus = ref<'loading' | 'ready' | 'error'>('loading')
+const imageModalUrl = ref('')
+const imageModalError = ref('')
 
-const templateColors = computed<ColorJson | null>(() => {
-  if (!template.value?.colorJson) return null
+// 인포그래픽 이미지 생성/재생성
+const isRegeneratingImage = ref(false)
+let renderEventSource: EventSource | null = null
+
+// 현재 소목차에 이미 생성된 이미지가 하나라도 있는지
+const hasSectionImages = computed(() => props.currentSlides.some((s) => s.renderedImagePath))
+
+const openImageModal = async () => {
+  if (!activeSlide.value?.slideId) return
+  isImageModalOpen.value = true
+  imageModalStatus.value = 'loading'
+  imageModalUrl.value = ''
+  imageModalError.value = ''
+
   try {
-    return JSON.parse(template.value.colorJson)
+    const res = await fetchViewSlideImage(activeSlide.value.slideId)
+    const vt = String(res.viewType ?? '').toUpperCase()
+    if (vt === 'IMAGE' && res.url) {
+      imageModalUrl.value = res.url
+      imageModalStatus.value = 'ready'
+    } else {
+      imageModalError.value = res.reason?.trim() || '이미지를 불러올 수 없습니다.'
+      imageModalStatus.value = 'error'
+    }
   } catch {
-    return null
-  }
-})
-
-// 더미 본문 콘텐츠에 실제 확정 컬러를 CSS 변수로 주입
-const dummyColorStyle = computed(() => ({
-  '--base-color': templateColors.value?.baseColor ?? '#1a237e',
-  '--accent-color': templateColors.value?.accentColor ?? '#E08A2C',
-}))
-
-// CSS 변수를 실제 컬러 값으로 치환
-const resolveColor = (val: string | undefined): string | undefined => {
-  if (!val) return undefined
-  if (val === 'var(--accent-color)') return templateColors.value?.accentColor ?? val
-  if (val === 'var(--base-color)') return templateColors.value?.baseColor ?? val
-  return val
-}
-
-interface ComponentEntry {
-  text?: string
-  type?: string
-  x?: number
-  y?: number
-  style?: {
-    fontSize?: number
-    fontWeight?: string
-    color?: string
-    bg?: string
-    align?: string
-    borderRadius?: number
-    thickness?: number
+    imageModalError.value = '이미지를 불러오는 중 오류가 발생했습니다.'
+    imageModalStatus.value = 'error'
   }
 }
 
-const headerStatus = computed(() => {
-  if (!template.value) return 'wait'
-  if (template.value.genStatusCd === '003' && template.value.headerComponentsJson) return 'done'
-  if (template.value.genStatusCd === '004') return 'fail'
-  return 'wait'
-})
+const activeSlide = computed<PtSlide | null>(() => props.currentSlides[activeSlideIndex.value] ?? null)
 
-const footerStatus = computed(() => {
-  if (!template.value) return 'wait'
-  if (template.value.genStatusCd === '003' && template.value.footerComponentsJson) return 'done'
-  if (template.value.genStatusCd === '004') return 'fail'
-  return 'wait'
-})
+// componentsJson 안전 파싱
+// 백엔드가 세 가지 포맷으로 내려올 수 있으므로 통일된 { type, content } 구조로 정규화
+// 포맷 1 (표준): { type: "card_grid", content: { cards: [...] } }
+// 포맷 2 (flat):  { type: "card_grid", cards: [...] }
+// 포맷 3 (키형): { card_grid: { cards: [...] } }
+const SLIDE_COMPONENT_TYPES = new Set<string>([
+  'card_grid',
+  'process_flow',
+  'requirement_table',
+  'credential_grid',
+  'icon_chip_group',
+  'step_flow_bar',
+  'callout_box',
+])
 
-/**
- * docSize별 슬라이드 원본 해상도 (pt 단위)
- *   "169" → 720×405  (16:9)
- *   "43"  → 720×540  (4:3)
- *   "a4"  → 595×842  (A4 세로)
- *
- * 헤더: 슬라이드 높이의 9%
- * 푸터: 슬라이드 높이의 5%
- * 미리보기 컨테이너 너비는 CSS로 고정, 높이만 aspect-ratio로 결정
- */
-const slideSpec = computed(() => {
-  switch (props.docSize) {
-    case 'a4':
-      return { w: 595, h: 842, ratio: 595 / 842 }
-    case '43':
-      return { w: 720, h: 540, ratio: 720 / 540 }
-    default:
-      return { w: 720, h: 405, ratio: 720 / 405 } // '169' 기본
-  }
-})
-
-/** 미리보기 컨테이너 aspect-ratio (CSS) */
-const previewAspectRatio = computed(() => {
-  const { w, h } = slideSpec.value
-  return `${w} / ${h}`
-})
-
-/** 헤더 높이 비율 (슬라이드 높이의 9%) — CSS percent */
-const headerHeightPct = 9 // %
-const footerHeightPct = 5 // %
-
-const headerPreviewStyle = computed(() => ({
-  height: `${headerHeightPct}%`,
-  position: 'relative' as const,
-  background: '#fff',
-  borderBottom: '1px solid #e0e0e0',
-  display: 'flex',
-  alignItems: 'center',
-  padding: '0 16px',
-  gap: '8px',
-  flexWrap: 'wrap' as const,
-  flexShrink: '0',
-}))
-
-const footerPreviewStyle = computed(() => ({
-  height: `${footerHeightPct}%`,
-  position: 'relative' as const,
-  background: '#f8f9fa',
-  borderTop: '1px solid #e0e0e0',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  padding: '0 16px',
-  flexShrink: '0',
-}))
-
-// ── 슬롯 텍스트 바인딩 (예시 값으로 치환) ─────────────────────────────────────
-
-// 실제 프로젝트 정보를 예시값에 반영 (props 연동)
-const exampleValues = computed<Record<string, string>>(() => ({
-  '{chapter_no}': 'Ⅱ',
-  '{project_nm}': props.projectNm || '스마트 공공서비스 구축 사업',
-  '{chapter_title}': '기술 제안',
-  '{breadcrumb}': '1. 사업이해도',
-  '{page_number}': 'Ⅱ-1',
-  '{org_nm}': props.orgNm || '○○청',
-  '{submitter_nm}': '(주)제안사',
-}))
-
-const FOOTER_TYPE_LABELS: Record<string, string> = {
-  org_name: '○○청',
-  page_number: 'Ⅱ-1',
-  company_name: '(주)제안사',
-}
-
-// TemplateSlot(미리보기)과 EditableSlot(WYSIWYG 편집기) 모두 처리
-// - TemplateSlot: placeholder 필드에 변수명({project_nm} 등) 보유
-// - EditableSlot : text 필드에 동일 값 보유 (placeholder 없음 → slot.key 노출 버그 방지)
-const resolveSlotText = (slot: TemplateSlot | EditableSlot): string => {
-  if (slot.type) return FOOTER_TYPE_LABELS[slot.type] ?? slot.type
-  const raw = (slot as TemplateSlot).placeholder ?? (slot as EditableSlot).text ?? ''
-  if (!raw) return slot.key
-  return exampleValues.value[raw] ?? raw
-}
-
-// ── WYSIWYG 편집기 상태 ────────────────────────────────────────────────────────
-
-interface EditableSlot {
-  key: string
-  text: string
-  x: number // % 단위
-  y: number // % 단위
-  type?: string
-  fontSize?: number
-  fontWeight?: string
-  color?: string
-  bgColor?: string
-  align?: string
-  borderRadius?: number
-  thickness?: number
-}
-
-const headerEditorRef = ref<HTMLElement | null>(null)
-const footerEditorRef = ref<HTMLElement | null>(null)
-const editableHeaderSlots = ref<EditableSlot[]>([])
-const editableFooterSlots = ref<EditableSlot[]>([])
-
-// 드래그 상태
-const draggingKey = ref<string | null>(null)
-const draggingZone = ref<'header' | 'footer' | null>(null)
-const dragStartMouse = ref({ x: 0, y: 0 })
-const dragStartSlot = ref({ x: 0, y: 0 })
-
-// 선택 상태 (스타일 패널 표시 대상)
-const selectedKey = ref<string | null>(null)
-const selectedZone = ref<'header' | 'footer' | null>(null)
-
-const selectedSlot = computed<EditableSlot | null>(() => {
-  if (!selectedKey.value || !selectedZone.value) return null
-  const slots = selectedZone.value === 'header' ? editableHeaderSlots.value : editableFooterSlots.value
-  return slots.find((s) => s.key === selectedKey.value) ?? null
-})
-
-// ── 기본 위치 계산 (kac_proposal_chapter_template.html 레이아웃 기반) ──────────
-
-/**
- * 헤더 슬롯 기본 x 위치 — 아이템을 가로로 균등 분배
- * 미리보기의 flex 레이아웃과 시각적으로 동일하게 맞추기 위해
- * 모든 아이템을 같은 행에 배치하고 x만 분산
- */
-const getDefaultHeaderX = (key: string, idx: number, total: number = 4): number => {
-  if (key === 'divider') return 0
-  if (total <= 1) return 2
-  // 배지(idx=0): 왼쪽 / 나머지: 간격 두고 배치
-  const positions: Record<number, number[]> = {
-    2: [2, 50],
-    3: [2, 35, 68],
-    4: [2, 22, 48, 72],
-    5: [2, 20, 40, 60, 78],
-  }
-  return (positions[total] ?? positions[4])[idx] ?? Math.round(2 + (idx / (total - 1)) * 86)
-}
-
-/**
- * 헤더 슬롯 기본 y 위치
- * 캔버스 height=64px 기준 단일 행 수직 중앙: y=35%
- */
-const getDefaultHeaderY = (key: string): number => {
-  if (key === 'divider') return 88
-  return 35 // 64px 캔버스에서 ~22px 위쪽 = 시각적 수직 중앙
-}
-
-/**
- * 푸터 슬롯 기본 x 위치: 3개 기준 좌·중·우
- */
-const getDefaultFooterX = (idx: number, total: number): number => {
-  if (total <= 1) return 2
-  if (total === 2) return [2, 80][idx] ?? 2
-  if (total === 3) return [2, 44, 82][idx] ?? 2
-  return Math.round(2 + (idx / (total - 1)) * 88)
-}
-
-// ── JSON 파싱 (body/cover 구조 + 레거시 하위호환) ────────────────────────────
-
-const parseLayoutAwareJson = (
-  raw: string | undefined,
-): { body: Record<string, ComponentEntry>; cover: Record<string, ComponentEntry> } => {
-  if (!raw) return { body: {}, cover: {} }
+const activeSlideComponents = computed<SlideComponent[]>(() => {
+  if (!activeSlide.value?.componentsJson) return []
   try {
-    const json = JSON.parse(raw) as Record<string, unknown>
-    if ('body' in json || 'cover' in json) {
-      return {
-        body: (json.body as Record<string, ComponentEntry>) ?? {},
-        cover: (json.cover as Record<string, ComponentEntry>) ?? {},
-      }
-    }
-    // 레거시: 최상위 객체 전체를 body로 취급, cover는 빈 객체
-    return { body: json as Record<string, ComponentEntry>, cover: {} }
+    const raw = JSON.parse(activeSlide.value.componentsJson) as Record<string, unknown>[]
+    return raw
+      .map((item): SlideComponent | null => {
+        // 포맷 1: type + content 모두 있음
+        if (typeof item.type === 'string' && item.content !== undefined) {
+          return item as unknown as SlideComponent
+        }
+        // 포맷 2: type 있지만 content 없음 → 나머지 키들이 content
+        if (typeof item.type === 'string') {
+          const { type, ...rest } = item
+          return { type, content: rest } as unknown as SlideComponent
+        }
+        // 포맷 3: 타입명이 키로 쓰임 → 첫 번째로 매칭되는 키를 type으로 사용
+        const typeKey = Object.keys(item).find((k) => SLIDE_COMPONENT_TYPES.has(k))
+        if (typeKey) {
+          return { type: typeKey, content: item[typeKey] } as unknown as SlideComponent
+        }
+        return null
+      })
+      .filter((item): item is SlideComponent => item !== null)
   } catch {
-    return { body: {}, cover: {} }
+    return []
   }
-}
-
-// ── 편집 가능 슬롯 초기화 ─────────────────────────────────────────────────────
-
-const initEditableSlots = () => {
-  // 레이아웃 전환·재생성 시 선택 초기화
-  selectedKey.value = null
-  selectedZone.value = null
-
-  // 헤더
-  const headerParsed = parseLayoutAwareJson(template.value?.headerComponentsJson)
-  const headerEntries = Object.entries(headerParsed[selectedLayoutType.value])
-  editableHeaderSlots.value = headerEntries.map(([key, val], idx) => ({
-    key,
-    text: val.text ?? '',
-    x: val.x ?? getDefaultHeaderX(key, idx, headerEntries.length),
-    y: val.y ?? getDefaultHeaderY(key),
-    type: val.type,
-    fontSize: val.style?.fontSize,
-    fontWeight: val.style?.fontWeight,
-    color: resolveColor(val.style?.color),
-    bgColor: resolveColor(val.style?.bg),
-    align: val.style?.align,
-    borderRadius: val.style?.borderRadius,
-    thickness: val.style?.thickness,
-  }))
-
-  // 푸터
-  const footerParsed = parseLayoutAwareJson(template.value?.footerComponentsJson)
-  const footerEntries = Object.entries(footerParsed[selectedLayoutType.value])
-  editableFooterSlots.value = footerEntries.map(([key, val], idx) => ({
-    key,
-    text: val.text ?? '',
-    x: val.x ?? getDefaultFooterX(idx, footerEntries.length),
-    y: val.y ?? 30,
-    type: val.type,
-    fontSize: val.style?.fontSize,
-    fontWeight: val.style?.fontWeight,
-    color: resolveColor(val.style?.color),
-    bgColor: resolveColor(val.style?.bg),
-    align: val.style?.align,
-    borderRadius: val.style?.borderRadius,
-  }))
-}
-
-// template 또는 selectedLayoutType 변경 시 editable 슬롯 재초기화
-watch([template, selectedLayoutType], () => {
-  initEditableSlots()
 })
 
-// ── WYSIWYG CSS 스타일 ────────────────────────────────────────────────────────
+// ── 트리 사이드바 헬퍼 ──────────────────────────────────────────────────────────
 
-const editableSlotCssStyle = (slot: EditableSlot) => {
-  if (slot.key === 'divider') {
-    return {
-      position: 'absolute' as const,
-      left: `${slot.x}%`,
-      top: `${slot.y}%`,
-      width: '100%',
-      height: `${slot.thickness ?? 1}px`,
-      background: slot.bgColor ?? templateColors.value?.accentColor ?? '#E08A2C',
-      cursor: 'ns-resize',
-    }
-  }
-  return {
-    position: 'absolute' as const,
-    left: `${slot.x}%`,
-    top: `${slot.y}%`,
-    fontSize: slot.fontSize ? `${slot.fontSize}px` : '10px',
-    fontWeight: slot.fontWeight ?? 'normal',
-    color: slot.color ?? '#333',
-    background: slot.bgColor,
-    borderRadius: slot.borderRadius ? `${slot.borderRadius}px` : undefined,
-  }
+/** 소목차(tocId)가 현재 활성 소목차인지 확인 */
+const isLeafActive = (tocId: string) => props.sectionList[props.activeSectionIndex]?.tocId === tocId
+
+/** 소목차(tocId)가 완료 상태인지 확인 */
+const isLeafDone = (tocId: string) => props.sectionList.find((s) => s.tocId === tocId)?.status === 'done'
+
+/** 소목차 클릭 → sectionList 인덱스로 변환하여 emit */
+const onSelectLeaf = (tocId: string) => {
+  const idx = props.sectionList.findIndex((s) => s.tocId === tocId)
+  if (idx > -1) emit('select-section', idx)
 }
 
-// ── 드래그 이벤트 핸들러 ──────────────────────────────────────────────────────
+/** 소목차(tocId)의 생성된 슬라이드 수 (0이면 미생성) */
+const leafSlideCount = (tocId: string) => props.slidesCache[tocId]?.length ?? 0
 
-const updateSelectedSlotStyle = (patch: Partial<EditableSlot>) => {
-  if (!selectedKey.value || !selectedZone.value) return
-  const slots = selectedZone.value === 'header' ? editableHeaderSlots.value : editableFooterSlots.value
-  const slot = slots.find((s) => s.key === selectedKey.value)
-  if (slot) Object.assign(slot, patch)
+// 소목차 전환 시 첫 슬라이드로 리셋
+watch(
+  () => props.activeSection?.tocId,
+  () => {
+    activeSlideIndex.value = 0
+  },
+)
+
+// 메시지 추가 시 자동 스크롤
+watch(
+  () => props.currentMessages.length,
+  async () => {
+    await nextTick()
+    if (chatBodyRef.value) chatBodyRef.value.scrollTop = chatBodyRef.value.scrollHeight
+  },
+)
+
+const onSendChat = () => {
+  if (!chatInput.value.trim() || props.isSending) return
+  emit('send-chat', chatInput.value.trim())
+  chatInput.value = ''
 }
 
-const onSlotMouseDown = (e: MouseEvent, key: string, zone: 'header' | 'footer') => {
-  // 클릭한 슬롯을 선택 (스타일 패널 표시)
-  selectedKey.value = key
-  selectedZone.value = zone
-  draggingKey.value = key
-  draggingZone.value = zone
-  dragStartMouse.value = { x: e.clientX, y: e.clientY }
+const onRegenerateImage = () => {
+  if (!props.activeSection || isRegeneratingImage.value) return
+  isRegeneratingImage.value = true
 
-  const slots = zone === 'header' ? editableHeaderSlots.value : editableFooterSlots.value
-  const slot = slots.find((s) => s.key === key)
-  if (slot) dragStartSlot.value = { x: slot.x, y: slot.y }
+  // progress 이벤트 후 hasSectionImages가 true로 바뀌기 전에 미리 캡처
+  const isFirstGeneration = !hasSectionImages.value
 
-  window.addEventListener('mousemove', onDragMove)
-  window.addEventListener('mouseup', onDragEnd)
-}
+  // 즉시 전체 슬라이드를 '002'(생성중)으로 표시 → "인포그래픽 생성 중..." UI 즉시 반영
+  const initializing = props.currentSlides.map((s) => ({ ...s, renderStatusCd: '002' as const }))
+  emit('slides-updated', initializing as PtSlide[])
 
-const onDragMove = (e: MouseEvent) => {
-  if (!draggingKey.value || !draggingZone.value) return
-
-  const editorEl = draggingZone.value === 'header' ? headerEditorRef.value : footerEditorRef.value
-  if (!editorEl) return
-
-  const rect = editorEl.getBoundingClientRect()
-  const dx = ((e.clientX - dragStartMouse.value.x) / rect.width) * 100
-  const dy = ((e.clientY - dragStartMouse.value.y) / rect.height) * 100
-
-  const slots = draggingZone.value === 'header' ? editableHeaderSlots.value : editableFooterSlots.value
-  const slot = slots.find((s) => s.key === draggingKey.value)
-  if (slot) {
-    slot.x = Math.max(0, Math.min(90, dragStartSlot.value.x + dx))
-    slot.y = Math.max(0, Math.min(90, dragStartSlot.value.y + dy))
-  }
-}
-
-const onDragEnd = () => {
-  draggingKey.value = null
-  draggingZone.value = null
-  window.removeEventListener('mousemove', onDragMove)
-  window.removeEventListener('mouseup', onDragEnd)
-}
-
-// ── 텍스트 인라인 편집 ────────────────────────────────────────────────────────
-
-/**
- * focus 시 raw 값 표시 (placeholder 포함)
- * blur 시 resolveSlotText(예시값)로 복원
- */
-const onTextFocus = (e: FocusEvent, slot: EditableSlot, zone: 'header' | 'footer') => {
-  const target = e.target as HTMLElement
-  // 포커스 시 화면에 보이던 값 그대로 유지 (raw 변수명 노출 방지)
-  target.innerText = resolveSlotText(slot)
-  // 텍스트 클릭 시 @mousedown.stop으로 onSlotMouseDown이 막히므로, 여기서 선택 상태 설정
-  selectedKey.value = slot.key
-  selectedZone.value = zone
-}
-
-const onTextBlur = (e: Event, key: string, zone: 'header' | 'footer') => {
-  const target = e.target as HTMLElement
-  const newText = target.innerText.trim()
-  const slots = zone === 'header' ? editableHeaderSlots.value : editableFooterSlots.value
-  const slot = slots.find((s) => s.key === key)
-  if (slot) {
-    // 빈 값이면 기존 유지, 아니면 사용자가 입력한 텍스트를 그대로 저장
-    if (newText) slot.text = newText
-    // blur 후에도 동일한 값 표시 (resolveSlotText가 slot.text를 그대로 반환)
-    target.innerText = resolveSlotText(slot)
-  }
-}
-
-// ── 확정 저장 ─────────────────────────────────────────────────────────────────
-
-/**
- * 편집된 슬롯을 레이아웃 타입별 객체로 조립 (JSON.stringify는 호출부에서)
- */
-const buildUpdatedJson = (slots: EditableSlot[]): Record<string, unknown> => {
-  const json: Record<string, unknown> = {}
-  slots.forEach((slot) => {
-    json[slot.key] = {
-      text: slot.text,
-      type: slot.type,
-      x: Math.round(slot.x),
-      y: Math.round(slot.y),
-      style: {
-        fontSize: slot.fontSize,
-        fontWeight: slot.fontWeight,
-        color: slot.color,
-        bg: slot.bgColor,
-        align: slot.align,
-        borderRadius: slot.borderRadius,
-        thickness: slot.thickness,
-      },
-    }
+  // 기존 SSE 연결 정리
+  renderEventSource?.close()
+  renderEventSource = streamRenderSectionImages(props.ptProjectId, props.activeSection.tocId, {
+    onProgress: (data) => {
+      // 해당 슬라이드의 렌더 상태·이미지 경로를 업데이트해 부모에 전달
+      const updated = props.currentSlides.map((s) =>
+        s.slideId === data.slideId
+          ? { ...s, renderStatusCd: data.renderStatusCd, renderedImagePath: data.renderedImagePath }
+          : s,
+      )
+      emit('slides-updated', updated as PtSlide[])
+    },
+    onDone: () => {
+      isRegeneratingImage.value = false
+      openToast({
+        message: isFirstGeneration ? '인포그래픽 이미지가 생성되었습니다.' : '인포그래픽 이미지가 재생성되었습니다.',
+      })
+    },
+    onError: (message) => {
+      isRegeneratingImage.value = false
+      openToast({ message: message || '이미지 생성 중 오류가 발생했습니다.', type: 'error' })
+    },
   })
-  return json
 }
 
-const onConfirm = async () => {
-  if (!template.value) return
-  isSaving.value = true
-  try {
-    // 편집하지 않은 레이아웃 타입의 기존 데이터를 보존한 채 병합 저장
-    const existingHeader = parseLayoutAwareJson(template.value.headerComponentsJson)
-    const existingFooter = parseLayoutAwareJson(template.value.footerComponentsJson)
-
-    const mergedHeader = {
-      ...existingHeader,
-      [selectedLayoutType.value]: buildUpdatedJson(editableHeaderSlots.value),
-    }
-    const mergedFooter = {
-      ...existingFooter,
-      [selectedLayoutType.value]: buildUpdatedJson(editableFooterSlots.value),
-    }
-
-    const res = await fetchUpdatePtTemplate(
-      props.ptProjectId,
-      JSON.stringify(mergedHeader),
-      JSON.stringify(mergedFooter),
-      template.value.colorJson ?? '{}',
-      '', // modifyUserId — 서버에서 세션으로 처리
-    )
-    if (res.result === 'OK') {
-      emit('next')
-    } else {
-      openToast({ message: res.msg ?? '템플릿 저장에 실패했습니다.', type: 'error' })
-    }
-  } catch {
-    openToast({ message: '저장 중 오류가 발생했습니다.', type: 'error' })
-  } finally {
-    isSaving.value = false
-  }
+const onGenerate = () => {
+  if (!props.activeSection || props.isGenerating) return
+  emit('generate-section', props.activeSection.tocId)
 }
 
-// ── API 호출 ──────────────────────────────────────────────────────────────────
-
-const onGenerate = async () => {
-  isGenerating.value = true
-  try {
-    const res = await fetchGeneratePtTemplate(props.ptProjectId, props.modelId, props.agentId)
-    if (res.result === 'OK') {
-      template.value = res.data
-    } else {
-      openToast({ message: res.msg ?? '템플릿 생성에 실패했습니다.', type: 'error' })
-    }
-  } catch {
-    openToast({ message: '템플릿 생성 중 오류가 발생했습니다.', type: 'error' })
-  } finally {
-    isGenerating.value = false
-  }
+const onConfirm = () => {
+  if (!props.activeSection) return
+  emit('confirm-section', props.activeSection.sectionId)
 }
-
-const onRegenerate = async () => {
-  isGenerating.value = true
-  try {
-    const res = await fetchRegeneratePtTemplate(props.ptProjectId, '', props.modelId, props.agentId)
-    if (res.result === 'OK') {
-      template.value = res.data
-    } else {
-      openToast({ message: res.msg ?? '재생성에 실패했습니다.', type: 'error' })
-    }
-  } catch {
-    openToast({ message: '재생성 중 오류가 발생했습니다.', type: 'error' })
-  } finally {
-    isGenerating.value = false
-  }
-}
-
-// ── 초기 로드 ─────────────────────────────────────────────────────────────────
-
-onMounted(async () => {
-  try {
-    const res = await fetchSelectPtTemplate(props.ptProjectId)
-    if (res.result === 'OK' && res.data) {
-      template.value = res.data
-    }
-  } catch {
-    // 없으면 null 유지 (초기 상태)
-  }
-})
 
 onUnmounted(() => {
-  window.removeEventListener('mousemove', onDragMove)
-  window.removeEventListener('mouseup', onDragEnd)
+  renderEventSource?.close()
+  document.body.classList.remove('is-resizing') // 안전 정리
 })
 </script>

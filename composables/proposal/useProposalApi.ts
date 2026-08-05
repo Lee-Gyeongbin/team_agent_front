@@ -332,11 +332,11 @@ export const useProposalApi = () => {
     return es
   }
 
-  // ── Step D: 본문 생성 ────────────────────────────────────────────────────────
+  // ── Step E: 본문 생성 ────────────────────────────────────────────────────────
 
   /**
-   * D-0: Stage2 전략분석 SSE 스트림
-   * Step D 최초 진입 시 자동 호출. 이미 실행됐으면 skip 이벤트로 즉시 완료.
+   * E-0: Stage2 전략분석 SSE 스트림
+   * Step E 최초 진입 시 자동 호출. 이미 실행됐으면 skip 이벤트로 즉시 완료.
    *
    * @param ptProjectId      프로젝트 ID
    * @param modelId          LLM 모델 ID
@@ -388,7 +388,7 @@ export const useProposalApi = () => {
   }
 
   /**
-   * D-1: 소목차 슬라이드 생성 SSE 스트림 (Stage3 + Stage3.5)
+   * E-1: 소목차 슬라이드 생성 SSE 스트림 (Stage3 + Stage3.5)
    * 이미 슬라이드가 있으면 삭제 후 재생성.
    *
    * @param ptProjectId 프로젝트 ID
@@ -441,7 +441,7 @@ export const useProposalApi = () => {
   }
 
   /**
-   * D-1: 소목차 슬라이드 목록 조회 (SLIDE_NO 순)
+   * E-1: 소목차 슬라이드 목록 조회 (SLIDE_NO 순)
    * 캐러셀/썸네일 스트립 표시용.
    */
   const fetchSelectSectionSlides = async (tocId: string): Promise<{ result: string; list: PtSlide[] }> => {
@@ -451,7 +451,7 @@ export const useProposalApi = () => {
   }
 
   /**
-   * D-3: 소목차 보완요청 채팅
+   * E-3: 소목차 보완요청 채팅
    * 특정 슬라이드 지목 시 해당 슬라이드만 재생성, 지목 없으면 소목차 전체 재생성.
    */
   const fetchChatSection = async (
@@ -471,7 +471,7 @@ export const useProposalApi = () => {
   }
 
   /**
-   * D-5: 소목차 이미지 렌더링 SSE (confirmSection 완료 후 구독)
+   * E-5: 소목차 이미지 렌더링 SSE (confirmSection 완료 후 구독)
    * 슬라이드별 progress 이벤트 → done 이벤트 순서로 수신.
    */
   const streamRenderSectionImages = (
@@ -517,9 +517,9 @@ export const useProposalApi = () => {
   }
 
   /**
-   * D-4: 소목차 확인 → 다음 소목차 전환
+   * E-4: 소목차 확인 → 다음 소목차 전환
    * 미완료 슬라이드 있으면 confirm 거부.
-   * done=true 시 Step E로 이동.
+   * done=true 시 출력 단계(Step F)로 이동.
    */
   const fetchConfirmSection = async (
     ptProjectId: string,
@@ -532,7 +532,7 @@ export const useProposalApi = () => {
     )
   }
 
-  /** 최대 단계 번호 업데이트 (Step B·E처럼 별도 저장 API 없는 단계의 다음 버튼용) */
+  /** 최대 단계 번호 업데이트 (Step B·D처럼 별도 저장 API 없는 단계의 다음 버튼용) */
   const fetchUpdateMaxStepNo = async (ptProjectId: string, maxStepNo: number): Promise<{ result: string }> => {
     return post<{ result: string }>('/ai/proposal/updateMaxStepNo.do', { ptProjectId, maxStepNo })
   }
@@ -560,9 +560,9 @@ export const useProposalApi = () => {
     )
   }
 
-  // ── Step E: 템플릿 생성 ────────────────────────────────────────────────────
+  // ── Step D: 템플릿 생성 ────────────────────────────────────────────────────
 
-  /** E — 템플릿 단건 조회 (PT_PROJECT_ID 기준) */
+  /** D — 템플릿 단건 조회 (PT_PROJECT_ID 기준) */
   const fetchSelectPtTemplate = async (
     ptProjectId: string,
   ): Promise<{ result: string; data: PtTemplate | null; msg?: string }> => {
@@ -571,7 +571,7 @@ export const useProposalApi = () => {
     )
   }
 
-  /** E — 템플릿 생성 (최초 / 전체 재생성) */
+  /** D — 템플릿 생성 (최초 / 전체 재생성) */
   const fetchGeneratePtTemplate = async (
     ptProjectId: string,
     modelId: string,
@@ -584,7 +584,7 @@ export const useProposalApi = () => {
     )
   }
 
-  /** E — 템플릿 직접 저장 (드래그 편집 확정) */
+  /** D — 템플릿 직접 저장 (드래그 편집 확정) */
   const fetchUpdatePtTemplate = async (
     ptProjectId: string,
     headerComponentsJson: string,
@@ -602,7 +602,7 @@ export const useProposalApi = () => {
     })
   }
 
-  /** E — 템플릿 재생성 (보완요청 반영) */
+  /** D — 템플릿 재생성 (보완요청 반영) */
   const fetchRegeneratePtTemplate = async (
     ptProjectId: string,
     refineInstruction: string,
@@ -638,7 +638,7 @@ export const useProposalApi = () => {
     fetchUpdateRequirement,
     fetchUpdateEvalCriteria,
     streamExtractStage1,
-    // Step D
+    // Step E (본문 생성)
     streamAnalyzeStage2,
     streamGenerateSection,
     fetchSelectSectionSlides,
@@ -648,6 +648,7 @@ export const useProposalApi = () => {
     fetchViewSlideImage,
     fetchStartExport,
     fetchSelectExportStatus,
+    // Step D (템플릿 생성)
     fetchSelectPtTemplate,
     fetchGeneratePtTemplate,
     fetchRegeneratePtTemplate,
