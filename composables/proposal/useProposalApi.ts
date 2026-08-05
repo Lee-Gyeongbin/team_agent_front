@@ -283,7 +283,6 @@ export const useProposalApi = () => {
     const params = new URLSearchParams({ ptProjectId, modelId, agentId })
     const es = new EventSource(`/api/ai/proposal/streamExtractStage1.do?${params.toString()}`)
 
-    debugger
     es.addEventListener('progress', (e) => {
       try {
         const data = JSON.parse(e.data) as Stage1ProgressData

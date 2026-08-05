@@ -26,7 +26,7 @@ defineProps<{ content: StepFlowBarContent }>()
 .slide-flow-bar-step {
   flex: 1;
   text-align: center;
-  font-size: 11px;
+  font-size: 13px;
   padding: 6px 4px;
   border-radius: 6px;
   color: #9ca3af;

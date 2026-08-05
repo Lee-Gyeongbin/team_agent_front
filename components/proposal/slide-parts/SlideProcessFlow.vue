@@ -42,7 +42,7 @@ defineProps<{ content: ProcessFlowContent }>()
   border-radius: 50%;
   background: var(--slide-base-color, #5b4fe9);
   color: #fff;
-  font-size: 11px;
+  font-size: 13px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -51,11 +51,11 @@ defineProps<{ content: ProcessFlowContent }>()
 
 .slide-flow-title {
   font-weight: 600;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .slide-flow-desc {
-  font-size: 11px;
+  font-size: 13px;
   color: #6b7280;
 }
 

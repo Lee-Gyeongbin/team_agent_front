@@ -31,12 +31,12 @@ defineProps<{ content: CardGridContent }>()
 
 .slide-card-title {
   font-weight: 600;
-  font-size: 13px;
+  font-size: 15px;
   margin-bottom: 4px;
 }
 
 .slide-card-desc {
-  font-size: 12px;
+  font-size: 14px;
   color: #6b7280;
 }
 </style>

@@ -8,52 +8,236 @@
 
 // ---- 목록 페이지 ----
 .pt-list-page {
-  padding: $spacing-lg;
-  max-width: 1200px;
-  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  padding: $spacing-md;
+  box-sizing: border-box;
 }
 
 .pt-list-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: $spacing-md;
+  gap: $spacing-md;
+  flex-wrap: wrap;
+}
+
+.pt-list-header-left {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+}
+
+.pt-list-toolbar {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.pt-list-header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: $border-radius-lg;
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+  flex-shrink: 0;
 }
 
 .pt-list-title {
-  @include typo($body-xlarge-bold);
-  color: $color-text-heading;
+  @include typo($body-xlarge-bold, $color-text-heading);
   margin: 0;
 }
 
-// ---- 필터 칩 ----
+.pt-list-subtitle {
+  @include typo($body-medium, $color-text-muted);
+}
+
+// ---- 필터 바 ----
+.pt-filter-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  background: $color-surface;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+}
+
 .pt-filter-chips {
   display: flex;
-  gap: $spacing-sm;
-  margin-bottom: $spacing-md;
+  align-items: center;
+  gap: $spacing-xs;
+  flex-wrap: wrap;
 }
 
 .pt-filter-chip {
-  padding: 5px 12px;
-  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 12px;
   border: 1px solid $color-border;
+  border-radius: 20px;
   background: #fff;
+  @include typo($body-small, $color-text-secondary);
   cursor: pointer;
-  @include typo($body-small);
-  color: $color-text-dark;
-  transition: background $transition-fast, border-color $transition-fast, color $transition-fast;
+  white-space: nowrap;
+  transition: all $transition-fast;
 
-  &.is-active {
-    background: var(--color-primary-bg);
-    color: var(--color-primary-dark);
-    border-color: var(--color-primary-bg);
-    font-weight: $font-weight-semibold;
-  }
-
-  &:hover:not(.is-active) {
+  &:hover {
     border-color: var(--color-primary);
     color: var(--color-primary);
   }
+
+  &.is-active {
+    border-color: var(--color-primary);
+    background: rgba(var(--color-primary-rgb), 0.1);
+    color: var(--color-primary);
+    font-weight: $font-weight-bold;
+  }
+}
+
+.pt-filter-divider {
+  width: 1px;
+  height: 20px;
+  background: $color-border;
+  flex-shrink: 0;
+}
+
+.pt-filter-select {
+  height: 30px;
+  padding: 0 $spacing-sm;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  background: #fff;
+  @include typo($body-small, $color-text-dark);
+  cursor: pointer;
+  outline: none;
+  transition: border-color $transition-fast;
+
+  &:hover,
+  &:focus {
+    border-color: var(--color-primary);
+  }
+}
+
+.pt-filter-date {
+  height: 30px;
+  @include typo($body-small, $color-text-dark);
+
+  &.ui-datepicker-wrap {
+    width: 140px;
+    height: auto;
+  }
+
+  &.ui-datepicker-wrap .ui-datepicker-field {
+    height: 30px;
+    padding: 0 $spacing-sm;
+    border-color: $color-border;
+  }
+
+  &.ui-datepicker-wrap .ui-datepicker-segment,
+  &.ui-datepicker-wrap .ui-datepicker-literal {
+    @include typo($body-small, $color-text-dark);
+  }
+}
+
+.pt-filter-date-sep {
+  @include typo($body-small, $color-text-muted);
+  flex-shrink: 0;
+}
+
+// ---- 뷰 토글 ----
+.pt-view-toggle {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.pt-view-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  background: #fff;
+  color: $color-text-muted;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  &.is-active {
+    border-color: var(--color-primary);
+    background: rgba(var(--color-primary-rgb), 0.1);
+    color: var(--color-primary);
+  }
+}
+
+// ---- 활성 필터 태그 ----
+.pt-filter-tags {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+}
+
+.pt-filter-tag-list {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  flex-wrap: wrap;
+}
+
+.pt-filter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 4px 0 10px;
+  border: 1px solid $color-border;
+  border-radius: 20px;
+  background: #fff;
+  @include typo($body-xsmall, $color-text-dark);
+}
+
+.pt-filter-tag-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: $color-text-muted;
+  cursor: pointer;
+  padding: 0;
+  transition: all $transition-fast;
+
+  &:hover {
+    background: $color-border-light;
+    color: $color-text-dark;
+  }
+}
+
+.pt-filter-count {
+  @include typo($body-small-bold, $color-text-secondary);
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 // ---- 카드 그리드 ----
@@ -96,6 +280,45 @@
   @include typo($body-xsmall);
   color: $color-text-muted;
   margin-bottom: $spacing-sm;
+}
+
+// ---- 목록 뷰 ----
+.pt-list-rows {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.pt-list-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-sm $spacing-md;
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  cursor: pointer;
+  transition:
+    border-color $transition-fast,
+    box-shadow $transition-fast;
+
+  &:hover {
+    border-color: var(--color-primary);
+    box-shadow: $shadow-sm;
+  }
+}
+
+.pt-list-row-title {
+  @include typo($body-medium-bold, $color-text-dark);
+  flex: 1;
+  @include ellipsis(1);
+  min-width: 0;
+}
+
+.pt-list-row-meta {
+  @include typo($body-small, $color-text-muted);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 // ---- 상태 뱃지 ----
@@ -269,99 +492,158 @@
 }
 
 // =============================================
-// 상세 페이지
+// 상세 페이지 — Meeting(meeting2) 동일 셸
 // =============================================
 .pt-detail-page {
-  padding: $spacing-lg;
   display: flex;
   flex-direction: column;
-  gap: $spacing-md;
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 16px 20px;
+  gap: 12px;
+  background: $color-background;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .pt-detail-head {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  gap: $spacing-sm;
+  min-height: 32px;
+  flex-shrink: 0;
 }
 
 .pt-back-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  border: none;
+  gap: 7px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: $border-radius-base;
   background: transparent;
   cursor: pointer;
+  color: $color-text-muted;
+  white-space: nowrap;
+  flex-shrink: 0;
   @include typo($body-small);
-  color: $color-text-dark;
-  padding: 0;
-  width: fit-content;
+  transition: all $transition-fast;
 
   &:hover {
-    color: var(--color-primary);
+    background: $color-border-light;
+    color: #4d5462;
+    font-weight: 500;
+    border-color: $color-border;
   }
 }
 
+.pt-detail-head-divider {
+  display: inline-block;
+  width: 1px;
+  height: 16px;
+  background: $color-border;
+  flex-shrink: 0;
+}
+
+.pt-detail-title-wrap {
+  display: inline-flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 0 1 auto;
+  max-width: 100%;
+}
+
 .pt-detail-org {
-  @include typo($body-xsmall);
-  color: $color-text-muted;
+  @include typo($body-caption, $color-text-muted);
 }
 
 .pt-detail-title {
-  @include typo($body-xlarge-bold);
-  color: $color-text-heading;
+  @include typo($body-large-bold, $color-text-dark);
+  @include ellipsis(1);
+  margin: 0;
 }
 
-// ---- 스텝바 ----
+// ---- 스텝바 (meeting2-stepper 동일) ----
 .pt-stepbar {
   display: flex;
+  align-items: stretch;
+  gap: $spacing-xs;
+  padding: 12px $spacing-md;
   background: #fff;
   border: 1px solid $color-border;
   border-radius: $border-radius-lg;
-  overflow: hidden;
+  flex-shrink: 0;
+  transition: padding $transition-fast;
+
+  &.is-collapsed {
+    align-items: center;
+    padding: 8px $spacing-md;
+  }
+}
+
+.pt-stepbar-summary {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex: 1;
+  min-width: 0;
+}
+
+.pt-stepbar-summary-label {
+  @include typo($body-small-bold, $color-text-dark);
+  @include ellipsis(1);
+}
+
+.pt-stepbar-summary-status {
+  @include typo($body-xsmall);
+  color: var(--color-primary);
+  flex-shrink: 0;
 }
 
 .pt-stepbar-item {
-  flex: 1;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  padding: 10px $spacing-md;
   border: none;
-  background: transparent;
-  border-right: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  background: $color-surface;
   cursor: pointer;
   text-align: left;
   transition: background $transition-fast;
 
-  &:last-child {
-    border-right: none;
-  }
-
   &:hover:not(:disabled):not(.is-locked) {
-    background: $color-surface;
-  }
-
-  &.is-done {
-    .pt-stepbar-num {
-      background: $color-success;
-      color: #fff;
-    }
+    background: color.adjust($color-surface, $lightness: -3%);
   }
 
   &.is-current {
-    background: var(--color-primary-bg);
+    background: rgba(var(--color-primary-rgb), 0.08);
 
-    .pt-stepbar-num {
+    .pt-stepbar-icon {
       background: var(--color-primary);
       color: #fff;
     }
 
-    .pt-stepbar-text small {
-      color: var(--color-primary-dark);
-      font-weight: $font-weight-semibold;
+    .pt-stepbar-sub {
+      color: var(--color-primary);
+      font-weight: $font-weight-bold;
     }
+  }
+
+  &.is-done {
+    background: #f0faf5;
+
+    .pt-stepbar-icon {
+      background: #d6f3e3;
+      color: #0d8a5b;
+    }
+
+    .pt-stepbar-label { color: #0d8a5b; }
+    .pt-stepbar-sub { color: #0d8a5b; font-weight: $font-weight-bold; }
   }
 
   &.is-locked,
@@ -371,29 +653,95 @@
   }
 }
 
-.pt-stepbar-num {
-  width: 26px;
-  height: 26px;
+.pt-stepbar-icon {
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  @include typo($body-xsmall-bold);
-  background: $color-border;
-  color: $color-text-dark;
+  background: $color-border-light;
+  color: $color-text-muted;
+  @include typo($body-medium-bold);
   flex-shrink: 0;
+  transition: background $transition-fast, color $transition-fast;
 }
 
 .pt-stepbar-text {
-  b {
-    display: block;
-    @include typo($body-small-bold);
-    color: $color-text-heading;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pt-stepbar-label {
+  @include typo($body-medium-bold, $color-text-dark);
+  @include ellipsis(1);
+}
+
+.pt-stepbar-sub {
+  @include typo($body-small, $color-text-muted);
+  @include ellipsis(1);
+}
+
+.pt-stepbar-arrow {
+  display: flex;
+  align-items: center;
+  color: #cbd5e1;
+  flex-shrink: 0;
+  padding: 0 $spacing-xs;
+}
+
+.pt-stepbar-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  background: transparent;
+  color: $color-text-muted;
+  cursor: pointer;
+  transition:
+    background $transition-fast,
+    border-color $transition-fast;
+
+  &:hover {
+    background: $color-surface;
+    border-color: $color-text-muted;
+  }
+}
+
+.pt-stepbar-toggle-icon {
+  transition: transform $transition-fast;
+  transform: rotate(180deg); // 펼친 상태: 위 화살표
+
+  &.is-collapsed { transform: rotate(0deg); } // 접힌 상태: 아래 화살표
+}
+
+// ---- 스텝 콘텐츠 영역 ----
+.pt-step-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  // 일반 단계 (A, B, C, E, F): 내부 스크롤
+  > * {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    @include custom-scrollbar;
   }
 
-  small {
-    @include typo($body-xsmall);
-    color: $color-text-muted;
+  // StepD: meeting2-layout처럼 패딩 없이 높이 채움
+  > .pt-stepD-layout {
+    overflow: hidden;
+    padding: 0;
   }
 }
 
@@ -1559,35 +1907,185 @@
 }
 
 // =============================================
-// Step D — 본문 생성 (3단 레이아웃)
+// Step D — 본문 생성 (meeting2-layout 동일 3단)
 // =============================================
 .pt-stepD-layout {
   display: grid;
-  grid-template-columns: 210px 1fr 300px;
-  gap: $spacing-md;
+  grid-template-columns: var(--stepD-left, 22%) 6px 1fr 6px var(--stepD-right, 24%);
+  gap: 0;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 
   @include mobile {
     grid-template-columns: 1fr;
+    height: auto;
+    min-height: 0;
+
+    > * {
+      height: auto;
+      max-height: 60vh;
+      overflow: auto;
+    }
+
+    > .pt-stepD-resizer {
+      display: none;
+    }
   }
+}
+
+.pt-stepD-left,
+.pt-stepD-center,
+.pt-stepD-right {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  overflow: hidden;
+}
+
+.pt-stepD-left {
+  > .pt-sec-list {
+    flex: 1;
+    min-height: 0;
+    border: none;
+    border-radius: 0;
+    overflow-y: auto;
+    @include custom-scrollbar;
+  }
+}
+
+.pt-stepD-center {
+  > .pt-gen-panel {
+    flex: 1;
+    min-height: 0;
+    border: none;
+    border-radius: 0;
+  }
+
+  // 중앙 패널 — 좌측 목차와 동일 비율로 타이포 상향
+  .pt-gen-title {
+    @include typo($body-large-bold);
+  }
+
+  .pt-gen-sub {
+    @include typo($body-small);
+  }
+
+  .pt-gen-progress-msg {
+    @include typo($body-small);
+  }
+
+  .pt-slide-image-rendering {
+    @include typo($body-medium);
+  }
+
+  .pt-slide-eyebrow {
+    @include typo($body-small-bold);
+  }
+
+  .pt-slide-ttl {
+    @include typo($body-medium-bold);
+  }
+
+  .pt-slide-sub {
+    @include typo($body-small);
+  }
+
+  .pt-slide-banner,
+  .pt-slide-ribbon {
+    @include typo($body-small-bold);
+  }
+
+  .pt-slide-fail {
+    @include typo($body-small);
+  }
+
+  .pt-slide-thumb-no {
+    @include typo($body-small-bold);
+  }
+
+  .pt-slide-thumb-title {
+    @include typo($body-xsmall);
+  }
+}
+
+.pt-stepD-right {
+  > .pt-chat-side {
+    flex: 1;
+    min-height: 0;
+    border: none;
+    border-radius: 0;
+  }
+
+  // 우측 채팅 패널 — 좌측 목차와 동일 비율로 타이포 상향
+  .pt-chat-head {
+    @include typo($body-medium-bold);
+  }
+
+  .pt-chat-msg {
+    @include typo($body-medium);
+    padding: 10px $spacing-sm;
+  }
+
+  .pt-chat-hint {
+    @include typo($body-small);
+  }
+
+  .pt-chat-input-field {
+    @include typo($body-small);
+    padding: 9px 12px;
+  }
+}
+
+.pt-stepD-resizer {
+  cursor: col-resize;
+  background: transparent;
+  position: relative;
+  z-index: 1;
+  width: 6px;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    background: transparent;
+    transition: background $transition-fast;
+  }
+
+  &:hover::after,
+  &.is-resizing::after {
+    background: var(--color-primary);
+  }
+}
+
+// 리사이즈 중 전역 커서·선택 방지
+body.is-resizing {
+  cursor: col-resize;
+  user-select: none;
 }
 
 // 좌측: 목차 트리 리스트
 .pt-sec-list {
   border: 1px solid $color-border;
   border-radius: $border-radius-lg;
-  overflow: hidden;
   background: #fff;
-  max-height: 620px;
   overflow-y: auto;
   @include custom-scrollbar;
 }
 
 // 대목차 헤더 (클릭 불가)
 .pt-sec-group-title {
-  padding: 7px $spacing-sm;
+  padding: 8px $spacing-sm;
   border-bottom: 1px solid $color-border;
-  @include typo($body-xsmall);
-  font-weight: $font-weight-semibold;
+  @include typo($body-small-bold);
   color: $color-text-muted;
   background: $color-surface;
   user-select: none;
@@ -1596,12 +2094,12 @@
 
 // 소목차 (클릭 가능, 들여쓰기)
 .pt-sec-item {
-  padding: 10px $spacing-sm 10px ($spacing-sm + 12px);
+  padding: 11px $spacing-sm 11px ($spacing-sm + 12px);
   border-bottom: 1px solid $color-border;
   display: flex;
   align-items: center;
   gap: 9px;
-  @include typo($body-xsmall);
+  @include typo($body-medium);
   color: $color-text-heading;
   cursor: pointer;
   transition: background $transition-fast;
@@ -1647,11 +2145,9 @@
 // 슬라이드 생성 완료 수 뱃지
 .pt-sec-slide-badge {
   flex-shrink: 0;
-  padding: 1px 6px;
+  padding: 2px 7px;
   border-radius: 999px;
-  @include typo($body-xsmall);
-  font-size: 10px;
-  font-weight: $font-weight-semibold;
+  @include typo($body-xsmall-bold);
   color: var(--color-primary);
   background: var(--color-primary-bg);
   line-height: 1.6;
@@ -1665,14 +2161,17 @@
   padding: $spacing-md;
   display: flex;
   flex-direction: column;
-  min-height: 620px;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .pt-gen-head {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: $spacing-md;
+  margin-bottom: $spacing-sm;
+  flex-shrink: 0;
 }
 
 .pt-gen-title {
@@ -1694,10 +2193,12 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  padding: $spacing-md;
-  margin-bottom: $spacing-md;
-  min-height: 240px;
+  padding: $spacing-sm;
+  margin-bottom: $spacing-sm;
+  min-height: 0;
   gap: $spacing-sm;
+  overflow-y: auto;
+  @include custom-scrollbar;
 }
 
 // 인포그래픽 이미지 상태 (이미지 보기 버튼 / 생성 중 안내)
@@ -1770,10 +2271,24 @@
   padding: $spacing-lg;
 }
 
+// UiModal 내부 이미지 스크롤 래퍼
+.pt-image-modal-img-wrap {
+  max-height: 70vh;
+  overflow-y: auto;
+  @include custom-scrollbar;
+
+  img {
+    width: 100%;
+    height: auto;
+    border-radius: $border-radius-base;
+    display: block;
+  }
+}
+
 .pt-slide-mock {
   width: 100%;
   flex: 1;
-  min-height: 300px;
+  min-height: 180px;
   background: #fff;
   border-radius: $border-radius-base;
   box-shadow: $shadow-lg;
@@ -1864,6 +2379,8 @@
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 // 썸네일 스트립
@@ -1872,6 +2389,7 @@
   gap: 6px;
   overflow-x: auto;
   padding: 4px 0;
+  flex-shrink: 0;
   @include custom-scrollbar;
 }
 
@@ -1920,8 +2438,11 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: $spacing-sm;
   padding: $spacing-xl;
+  flex: 1;
+  min-height: 0;
 }
 
 .pt-gen-progress-bar {
@@ -1960,6 +2481,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 0;
+  overflow: auto;
 }
 
 // 채팅 힌트
@@ -1991,6 +2514,7 @@
   display: flex;
   justify-content: space-between;
   margin-top: $spacing-sm;
+  flex-shrink: 0;
 }
 
 // =============================================
@@ -2002,7 +2526,9 @@
   background: #fff;
   display: flex;
   flex-direction: column;
-  height: 620px;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .pt-chat-head {
@@ -2020,6 +2546,7 @@
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
+  min-height: 0;
   @include custom-scrollbar;
 }
 

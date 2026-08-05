@@ -42,11 +42,11 @@ defineProps<{ content: CredentialGridContent }>()
 
 .slide-credential-title {
   font-weight: 600;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .slide-credential-desc {
-  font-size: 11px;
+  font-size: 13px;
   color: #6b7280;
 }
 </style>

@@ -1,333 +1,342 @@
 <template>
-  <div class="pt-stepD-layout">
+  <div
+    ref="layoutRef"
+    class="pt-stepD-layout"
+    :style="layoutStyle"
+  >
     <!-- 좌측: 목차 트리 (대목차=헤더/클릭불가, 소목차=클릭가능) -->
-    <div class="pt-sec-list">
-      <template
-        v-for="item in rawTocList"
-        :key="item.tocId"
-      >
-        <!-- 대목차: 클릭 불가 헤더 -->
-        <div
-          v-if="item.parentId === null"
-          class="pt-sec-group-title"
+    <div class="pt-stepD-left">
+      <div class="pt-sec-list">
+        <template
+          v-for="item in rawTocList"
+          :key="item.tocId"
         >
-          {{ item.title }}
-        </div>
-        <!-- 소목차: 클릭 가능 -->
-        <div
-          v-else
-          :class="['pt-sec-item', { 'is-active': isLeafActive(item.tocId), 'is-done': isLeafDone(item.tocId) }]"
-          @click="onSelectLeaf(item.tocId)"
-        >
-          <span
-            :class="['pt-sec-dot', isLeafDone(item.tocId) ? 'is-done' : isLeafActive(item.tocId) ? 'is-active' : '']"
-          />
-          <span :class="['pt-sec-title', { 'is-bold': isLeafActive(item.tocId) }]">
-            {{ item.title }}
-          </span>
-          <span
-            v-if="leafSlideCount(item.tocId)"
-            class="pt-sec-slide-badge"
+          <!-- 대목차: 클릭 불가 헤더 -->
+          <div
+            v-if="item.parentId === null"
+            class="pt-sec-group-title"
           >
-            {{ leafSlideCount(item.tocId) }}장
-          </span>
-        </div>
-      </template>
-      <UiEmpty
-        v-if="rawTocList.length === 0"
-        title="소목차가 없습니다."
-      />
+            {{ item.title }}
+          </div>
+          <!-- 소목차: 클릭 가능 -->
+          <div
+            v-else
+            :class="['pt-sec-item', { 'is-active': isLeafActive(item.tocId), 'is-done': isLeafDone(item.tocId) }]"
+            @click="onSelectLeaf(item.tocId)"
+          >
+            <span
+              :class="['pt-sec-dot', isLeafDone(item.tocId) ? 'is-done' : isLeafActive(item.tocId) ? 'is-active' : '']"
+            />
+            <span :class="['pt-sec-title', { 'is-bold': isLeafActive(item.tocId) }]">
+              {{ item.title }}
+            </span>
+            <span
+              v-if="leafSlideCount(item.tocId)"
+              class="pt-sec-slide-badge"
+            >
+              {{ leafSlideCount(item.tocId) }}장
+            </span>
+          </div>
+        </template>
+        <UiEmpty
+          v-if="rawTocList.length === 0"
+          title="소목차가 없습니다."
+        />
+      </div>
     </div>
+
+    <!-- 리사이저 1 -->
+    <div
+      class="pt-stepD-resizer"
+      :class="{ 'is-resizing': resizingTarget === 'left' }"
+      @mousedown="onResizeStart('left', $event)"
+    />
 
     <!-- 중앙: 현재 소목차 미리보기 -->
-    <div
-      v-if="activeSection"
-      class="pt-gen-panel"
-    >
-      <div class="pt-gen-head">
-        <div>
-          <div class="pt-gen-title">{{ activeSection.title }}</div>
-          <div class="pt-gen-sub">
-            소목차 {{ activeSectionIndex + 1 }} / {{ sectionList.length }}
-            <template v-if="currentSlides.length"> · {{ currentSlides.length }}장</template>
-          </div>
-        </div>
-        <!-- 생성/재생성 버튼 -->
-        <UiButton
-          variant="outline"
-          size="sm"
-          :loading="isGenerating"
-          @click="onGenerate"
-        >
-          <template #icon-left>
-            <i class="icon-refresh size-14" />
-          </template>
-          {{ currentSlides.length ? '재생성' : '슬라이드 생성' }}
-        </UiButton>
-      </div>
-
-      <!-- 생성 중 진행 표시 -->
+    <div class="pt-stepD-center">
       <div
-        v-if="isGenerating"
-        class="pt-gen-progress"
+        v-if="activeSection"
+        class="pt-gen-panel"
       >
-        <div class="pt-gen-progress-bar" />
-        <span class="pt-gen-progress-msg">{{ genProgressMsg || '생성 중...' }}</span>
-      </div>
-
-      <!-- 슬라이드 캐러셀 -->
-      <div
-        v-else-if="currentSlides.length"
-        class="pt-slide-carousel"
-      >
-        <!-- 현재 슬라이드 미리보기 -->
-        <div class="pt-slide-preview">
-          <div
-            v-if="activeSlide"
-            class="pt-slide-mock"
-            :class="`is-color-${activeSlide.colorIndex}`"
-          >
-            <!-- 항상 JSON 기반 목업 표시 (내용 검토용) -->
-            <div class="pt-slide-eyebrow">{{ activeSlide.eyebrowTxt ?? 'PREVIEW' }}</div>
-            <div class="pt-slide-ttl">{{ activeSlide.titleTxt ?? activeSection.title }}</div>
-            <div
-              v-if="activeSlide.subtitleTxt"
-              class="pt-slide-sub"
-            >
-              {{ activeSlide.subtitleTxt }}
-            </div>
-            <div
-              v-if="activeSlide.highlightBannerTxt"
-              class="pt-slide-banner"
-            >
-              {{ activeSlide.highlightBannerTxt }}
-            </div>
-            <div class="pt-slide-body">
-              <SlideComponentRenderer
-                v-for="(comp, idx) in activeSlideComponents"
-                :key="idx"
-                :component="comp"
-              />
-            </div>
-            <div
-              v-if="activeSlide.conclusionRibbonTxt"
-              class="pt-slide-ribbon"
-            >
-              {{ activeSlide.conclusionRibbonTxt }}
-            </div>
-            <!-- 실패 표시 -->
-            <div
-              v-if="activeSlide.renderStatusCd === '004'"
-              class="pt-slide-fail"
-            >
-              렌더링 실패 — 재생성 버튼을 눌러주세요
+        <div class="pt-gen-head">
+          <div>
+            <div class="pt-gen-title">{{ activeSection.title }}</div>
+            <div class="pt-gen-sub">
+              소목차 {{ activeSectionIndex + 1 }} / {{ sectionList.length }}
+              <template v-if="currentSlides.length"> · {{ currentSlides.length }}장</template>
             </div>
           </div>
-
-          <!-- 인포그래픽 이미지 상태 표시 -->
-          <div
-            v-if="activeSlide"
-            class="pt-slide-image-status"
+          <!-- 생성/재생성 버튼 -->
+          <UiButton
+            variant="outline"
+            size="sm"
+            :loading="isGenerating"
+            @click="onGenerate"
           >
-            <template v-if="activeSlide.renderedImagePath">
-              <UiButton
-                variant="outline"
-                size="sm"
-                @click="openImageModal"
-              >
-                <template #icon-left>
-                  <i class="icon-view size-14" />
-                </template>
-                인포그래픽 이미지 보기
-              </UiButton>
-              <UiButton
-                variant="outline"
-                size="sm"
-                :loading="isRegeneratingImage"
-                @click="onRegenerateImage"
-              >
-                <template #icon-left>
-                  <i class="icon-refresh size-14" />
-                </template>
-                인포그래픽 재생성
-              </UiButton>
+            <template #icon-left>
+              <i class="icon-refresh size-14" />
             </template>
-            <template v-else-if="activeSlide.renderStatusCd === '002'">
-              <span class="pt-slide-image-rendering">
-                <i class="icon-sync size-16 pt-spin" />
-                인포그래픽 생성 중...
-              </span>
-            </template>
-            <template v-else>
-              <UiButton
-                variant="outline"
-                size="sm"
-                :loading="isRegeneratingImage"
-                @click="onRegenerateImage"
-              >
-                <template #icon-left>
-                  <i class="icon-refresh size-14" />
-                </template>
-                인포그래픽 이미지 생성
-              </UiButton>
-            </template>
-          </div>
+            {{ currentSlides.length ? '재생성' : '슬라이드 생성' }}
+          </UiButton>
         </div>
 
-        <!-- 썸네일 스트립 -->
-        <div class="pt-slide-strip">
-          <div
-            v-for="(slide, idx) in currentSlides"
-            :key="slide.slideId"
-            :class="[
-              'pt-slide-thumb',
-              { 'is-active': idx === activeSlideIndex, 'is-fail': slide.renderStatusCd === '004' },
-            ]"
-            @click="activeSlideIndex = idx"
-          >
-            <span class="pt-slide-thumb-no">{{ slide.slideNo }}</span>
-            <span
-              v-if="slide.titleTxt"
-              class="pt-slide-thumb-title"
-              >{{ slide.titleTxt }}</span
+        <!-- 생성 중 진행 표시 -->
+        <div
+          v-if="isGenerating"
+          class="pt-gen-progress"
+        >
+          <div class="pt-gen-progress-bar" />
+          <span class="pt-gen-progress-msg">{{ genProgressMsg || '생성 중...' }}</span>
+        </div>
+
+        <!-- 슬라이드 캐러셀 -->
+        <div
+          v-else-if="currentSlides.length"
+          class="pt-slide-carousel"
+        >
+          <!-- 현재 슬라이드 미리보기 -->
+          <div class="pt-slide-preview">
+            <div
+              v-if="activeSlide"
+              class="pt-slide-mock"
+              :class="`is-color-${activeSlide.colorIndex}`"
             >
+              <!-- 항상 JSON 기반 목업 표시 (내용 검토용) -->
+              <div class="pt-slide-eyebrow">{{ activeSlide.eyebrowTxt ?? 'PREVIEW' }}</div>
+              <div class="pt-slide-ttl">{{ activeSlide.titleTxt ?? activeSection.title }}</div>
+              <div
+                v-if="activeSlide.subtitleTxt"
+                class="pt-slide-sub"
+              >
+                {{ activeSlide.subtitleTxt }}
+              </div>
+              <div
+                v-if="activeSlide.highlightBannerTxt"
+                class="pt-slide-banner"
+              >
+                {{ activeSlide.highlightBannerTxt }}
+              </div>
+              <div class="pt-slide-body">
+                <SlideComponentRenderer
+                  v-for="(comp, idx) in activeSlideComponents"
+                  :key="idx"
+                  :component="comp"
+                />
+              </div>
+              <div
+                v-if="activeSlide.conclusionRibbonTxt"
+                class="pt-slide-ribbon"
+              >
+                {{ activeSlide.conclusionRibbonTxt }}
+              </div>
+              <!-- 실패 표시 -->
+              <div
+                v-if="activeSlide.renderStatusCd === '004'"
+                class="pt-slide-fail"
+              >
+                렌더링 실패 — 재생성 버튼을 눌러주세요
+              </div>
+            </div>
+
+            <!-- 인포그래픽 이미지 상태 표시 -->
+            <div
+              v-if="activeSlide"
+              class="pt-slide-image-status"
+            >
+              <template v-if="activeSlide.renderedImagePath">
+                <UiButton
+                  variant="outline"
+                  size="sm"
+                  @click="openImageModal"
+                >
+                  <template #icon-left>
+                    <i class="icon-view size-14" />
+                  </template>
+                  인포그래픽 이미지 보기
+                </UiButton>
+                <UiButton
+                  variant="outline"
+                  size="sm"
+                  :loading="isRegeneratingImage"
+                  @click="onRegenerateImage"
+                >
+                  <template #icon-left>
+                    <i class="icon-refresh size-14" />
+                  </template>
+                  인포그래픽 재생성
+                </UiButton>
+              </template>
+              <template v-else-if="activeSlide.renderStatusCd === '002'">
+                <span class="pt-slide-image-rendering">
+                  <i class="icon-sync size-16 pt-spin" />
+                  인포그래픽 생성 중...
+                </span>
+              </template>
+              <template v-else>
+                <UiButton
+                  variant="outline"
+                  size="sm"
+                  :loading="isRegeneratingImage"
+                  @click="onRegenerateImage"
+                >
+                  <template #icon-left>
+                    <i class="icon-refresh size-14" />
+                  </template>
+                  인포그래픽 이미지 생성
+                </UiButton>
+              </template>
+            </div>
+          </div>
+
+          <!-- 썸네일 스트립 -->
+          <div class="pt-slide-strip">
+            <div
+              v-for="(slide, idx) in currentSlides"
+              :key="slide.slideId"
+              :class="[
+                'pt-slide-thumb',
+                { 'is-active': idx === activeSlideIndex, 'is-fail': slide.renderStatusCd === '004' },
+              ]"
+              @click="activeSlideIndex = idx"
+            >
+              <span class="pt-slide-thumb-no">{{ slide.slideNo }}</span>
+              <span
+                v-if="slide.titleTxt"
+                class="pt-slide-thumb-title"
+                >{{ slide.titleTxt }}</span
+              >
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- 슬라이드 미생성 상태 -->
-      <div
-        v-else
-        class="pt-slide-empty"
-      >
-        <UiEmpty
-          icon="icon-document"
-          title="슬라이드를 생성하세요."
-        />
-      </div>
+        <!-- 슬라이드 미생성 상태 -->
+        <div
+          v-else
+          class="pt-slide-empty"
+        >
+          <UiEmpty
+            icon="icon-document"
+            title="슬라이드를 생성하세요."
+          />
+        </div>
 
-      <!-- 하단 액션 -->
-      <div class="pt-gen-actions">
-        <UiButton
-          variant="ghost"
-          size="md"
-          :disabled="activeSectionIndex === 0"
-          @click="emit('prev-section')"
-        >
-          <template #icon-left>
-            <i class="icon-arrow-left-sm size-14" />
-          </template>
-          이전 소목차
-        </UiButton>
-        <UiButton
-          variant="primary"
-          size="md"
-          :disabled="!currentSlides.length || isGenerating"
-          @click="onConfirm"
-        >
-          이 소목차 확인 · 다음 진행
-          <template #icon-right>
-            <i class="icon-arrow-right size-14" />
-          </template>
-        </UiButton>
+        <!-- 하단 액션 -->
+        <div class="pt-gen-actions">
+          <UiButton
+            variant="ghost"
+            size="md"
+            :disabled="activeSectionIndex === 0"
+            @click="emit('prev-section')"
+          >
+            <template #icon-left>
+              <i class="icon-arrow-left-sm size-14" />
+            </template>
+            이전 소목차
+          </UiButton>
+          <UiButton
+            variant="primary"
+            size="md"
+            :disabled="!currentSlides.length || isGenerating"
+            @click="onConfirm"
+          >
+            이 소목차 확인 · 다음 진행
+            <template #icon-right>
+              <i class="icon-arrow-right size-14" />
+            </template>
+          </UiButton>
+        </div>
       </div>
     </div>
 
-    <!-- 우측: 소목차별 보완요청 채팅 -->
+    <!-- 리사이저 2 -->
     <div
-      v-if="activeSection"
-      class="pt-chat-side"
-    >
-      <div class="pt-chat-head">💬 "{{ activeSection.title }}" 보완요청</div>
+      class="pt-stepD-resizer"
+      :class="{ 'is-resizing': resizingTarget === 'right' }"
+      @mousedown="onResizeStart('right', $event)"
+    />
+
+    <!-- 우측: 소목차별 보완요청 채팅 -->
+    <div class="pt-stepD-right">
       <div
-        ref="chatBodyRef"
-        class="pt-chat-body"
+        v-if="activeSection"
+        class="pt-chat-side"
       >
+        <div class="pt-chat-head">💬 "{{ activeSection.title }}" 보완요청</div>
         <div
-          v-for="(msg, idx) in currentMessages"
-          :key="idx"
-          :class="['pt-chat-msg', `is-${msg.role}`]"
+          ref="chatBodyRef"
+          class="pt-chat-body"
         >
-          {{ msg.text }}
+          <div
+            v-for="(msg, idx) in currentMessages"
+            :key="idx"
+            :class="['pt-chat-msg', `is-${msg.role}`]"
+          >
+            {{ msg.text }}
+          </div>
+          <div
+            v-if="isSending"
+            class="pt-chat-msg is-ai pt-chat-typing"
+          >
+            <span /><span /><span />
+          </div>
+          <div
+            v-if="!currentMessages.length && !isSending"
+            class="pt-chat-hint"
+          >
+            예) 차별점을 구체적 수치로 강조해줘<br />예) 3번 슬라이드 제목을 더 강렬하게
+          </div>
         </div>
-        <div
-          v-if="isSending"
-          class="pt-chat-msg is-ai pt-chat-typing"
-        >
-          <span /><span /><span />
+        <div class="pt-chat-input">
+          <input
+            v-model="chatInput"
+            class="pt-chat-input-field"
+            placeholder="보완 요청을 입력하세요"
+            :disabled="!currentSlides.length || isSending"
+            @keydown.enter="onSendChat"
+          />
+          <UiButton
+            variant="primary"
+            size="sm"
+            :loading="isSending"
+            :disabled="!currentSlides.length"
+            @click="onSendChat"
+          >
+            전송
+          </UiButton>
         </div>
-        <div
-          v-if="!currentMessages.length && !isSending"
-          class="pt-chat-hint"
-        >
-          예) 차별점을 구체적 수치로 강조해줘<br />예) 3번 슬라이드 제목을 더 강렬하게
-        </div>
-      </div>
-      <div class="pt-chat-input">
-        <input
-          v-model="chatInput"
-          class="pt-chat-input-field"
-          placeholder="보완 요청을 입력하세요"
-          :disabled="!currentSlides.length || isSending"
-          @keydown.enter="onSendChat"
-        />
-        <UiButton
-          variant="primary"
-          size="sm"
-          :loading="isSending"
-          :disabled="!currentSlides.length"
-          @click="onSendChat"
-        >
-          전송
-        </UiButton>
       </div>
     </div>
   </div>
 
   <!-- 인포그래픽 이미지 모달 -->
-  <Teleport to="body">
-    <Transition name="pt-viewer-fade">
-      <div
-        v-if="isImageModalOpen"
-        class="pt-slide-viewer-overlay"
-        @click.self="isImageModalOpen = false"
-      >
-        <div class="pt-image-modal">
-          <div class="pt-slide-viewer-head">
-            <div class="pt-slide-viewer-info">
-              <span class="pt-slide-viewer-section">{{ activeSlide?.titleTxt }}</span>
-              <span class="pt-slide-viewer-pos">인포그래픽 이미지</span>
-            </div>
-            <button
-              class="pt-slide-viewer-close"
-              @click="isImageModalOpen = false"
-            >
-              <i class="icon icon-close-gray size-20" />
-            </button>
-          </div>
-          <div class="pt-image-modal-body">
-            <UiLoading
-              v-if="imageModalStatus === 'loading'"
-              overlay
-              text="이미지 불러오는 중..."
-            />
-            <div
-              v-else-if="imageModalStatus === 'error'"
-              class="pt-image-modal-error"
-            >
-              {{ imageModalError }}
-            </div>
-            <img
-              v-else-if="imageModalStatus === 'ready' && imageModalUrl"
-              :src="imageModalUrl"
-              class="pt-slide-viewer-img"
-              :alt="activeSlide?.titleTxt"
-            />
-          </div>
-        </div>
-      </div>
-    </Transition>
-  </Teleport>
+  <UiModal
+    :is-open="isImageModalOpen"
+    :title="activeSlide?.titleTxt ?? '인포그래픽 이미지'"
+    max-width="800px"
+    @close="isImageModalOpen = false"
+  >
+    <UiLoading
+      v-if="imageModalStatus === 'loading'"
+      overlay
+      text="이미지 불러오는 중..."
+    />
+    <div
+      v-else-if="imageModalStatus === 'error'"
+      class="pt-image-modal-error"
+    >
+      {{ imageModalError }}
+    </div>
+    <div
+      v-else-if="imageModalStatus === 'ready' && imageModalUrl"
+      class="pt-image-modal-img-wrap"
+    >
+      <img
+        :src="imageModalUrl"
+        class="pt-slide-viewer-img"
+        :alt="activeSlide?.titleTxt"
+      />
+    </div>
+  </UiModal>
 </template>
 
 <script setup lang="ts">
@@ -375,6 +384,46 @@ const chatBodyRef = ref<HTMLElement | null>(null)
 
 // 현재 보고 있는 슬라이드 인덱스
 const activeSlideIndex = ref(0)
+
+// ── 레이아웃 리사이즈 (meeting2 동일 패턴) ──────────────────────────
+const leftWidth = ref(22)
+const rightWidth = ref(24)
+const resizingTarget = ref<'left' | 'right' | null>(null)
+const layoutRef = ref<HTMLElement | null>(null)
+
+const layoutStyle = computed(() => ({
+  '--stepD-left': `${leftWidth.value}%`,
+  '--stepD-right': `${rightWidth.value}%`,
+}))
+
+const onResizeStart = (target: 'left' | 'right', e: MouseEvent) => {
+  e.preventDefault()
+  resizingTarget.value = target
+  document.body.classList.add('is-resizing')
+
+  const onMouseMove = (ev: MouseEvent) => {
+    const rect = layoutRef.value?.getBoundingClientRect()
+    const baseWidth = rect?.width || window.innerWidth
+    const baseLeft = rect?.left || 0
+    if (target === 'left') {
+      const percent = ((ev.clientX - baseLeft) / baseWidth) * 100
+      leftWidth.value = Math.min(32, Math.max(16, percent))
+    } else {
+      const percent = ((baseLeft + baseWidth - ev.clientX) / baseWidth) * 100
+      rightWidth.value = Math.min(34, Math.max(18, percent))
+    }
+  }
+
+  const onMouseUp = () => {
+    resizingTarget.value = null
+    document.body.classList.remove('is-resizing')
+    document.removeEventListener('mousemove', onMouseMove)
+    document.removeEventListener('mouseup', onMouseUp)
+  }
+
+  document.addEventListener('mousemove', onMouseMove)
+  document.addEventListener('mouseup', onMouseUp)
+}
 
 // 인포그래픽 이미지 모달
 const isImageModalOpen = ref(false)
@@ -545,5 +594,6 @@ const onConfirm = () => {
 
 onUnmounted(() => {
   renderEventSource?.close()
+  document.body.classList.remove('is-resizing') // 안전 정리
 })
 </script>

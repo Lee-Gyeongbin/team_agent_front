@@ -6,15 +6,16 @@
         class="pt-back-btn"
         @click="router.push('/proposal')"
       >
-        <i class="icon-arrow-left-sm size-14" />
+        <i class="icon-arrow-left-sm size-16" />
         PT 제안서
       </button>
+      <span class="pt-detail-head-divider" />
       <div
         v-if="currentProject"
-        class="pt-detail-info"
+        class="pt-detail-title-wrap"
       >
-        <div class="pt-detail-org">{{ currentProject.orgNm }}</div>
-        <div class="pt-detail-title">{{ currentProject.projectNm }}</div>
+        <span class="pt-detail-org">{{ currentProject.orgNm }}</span>
+        <h2 class="pt-detail-title">{{ currentProject.projectNm }}</h2>
       </div>
     </div>
 

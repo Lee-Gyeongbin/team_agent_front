@@ -22,7 +22,7 @@ defineProps<{ content: IconChipGroupContent }>()
 }
 
 .slide-chip {
-  font-size: 11px;
+  font-size: 13px;
   padding: 4px 10px;
   border-radius: 999px;
   background: var(--slide-base-color, #5b4fe9);

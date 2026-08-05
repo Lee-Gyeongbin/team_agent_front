@@ -20,7 +20,7 @@ defineProps<{ content: CalloutBoxContent }>()
   gap: 8px;
   padding: 10px 12px;
   border-radius: 8px;
-  font-size: 12px;
+  font-size: 14px;
 
   &.is-info {
     background: #eff6ff;

@@ -29,7 +29,7 @@ defineProps<{ content: RequirementTableContent }>()
 .slide-req-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .slide-req-table th {
