@@ -1,5 +1,5 @@
 <template>
-  <div class="pt-panel">
+  <div class="pt-panel pt-panel--lg">
     <h3 class="pt-panel-title">제안 설정</h3>
     <p class="pt-panel-desc">본문 생성에 사용할 참고 자료와 스타일을 지정하세요.</p>
 

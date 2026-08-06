@@ -1230,6 +1230,78 @@
   flex-shrink: 0;
 }
 
+// Step A / C ? ?? ??? ? ?? ?? (B?Strategy?D ?? ??)
+.pt-panel--lg {
+  .pt-panel-title {
+    @include typo($body-large-bold);
+  }
+
+  .pt-panel-desc {
+    @include typo($body-medium);
+  }
+
+  .pt-section-label {
+    @include typo($body-medium-bold);
+  }
+
+  .pt-hint {
+    @include typo($body-small);
+  }
+
+  .pt-option-card {
+    b {
+      @include typo($body-medium-bold);
+    }
+
+    span {
+      @include typo($body-small);
+    }
+  }
+
+  .pt-dropzone {
+    @include typo($body-medium);
+  }
+
+  .pt-size-card {
+    b {
+      @include typo($body-small-bold);
+    }
+
+    span {
+      @include typo($body-small);
+    }
+  }
+
+  .pt-settings-label {
+    @include typo($body-medium-bold);
+  }
+
+  .pt-mini-upload {
+    @include typo($body-small);
+  }
+
+  .pt-file-chip {
+    @include typo($body-small);
+  }
+
+  .pt-toggle-opt {
+    @include typo($body-medium);
+  }
+
+  .pt-color-clabel {
+    @include typo($body-small);
+    width: 110px;
+  }
+
+  .pt-color-rank {
+    @include typo($body-xsmall);
+  }
+
+  .ui-input-desc {
+    @include typo($body-medium);
+  }
+}
+
 // =============================================
 // Step D ?????????? (3????????)
 // =============================================

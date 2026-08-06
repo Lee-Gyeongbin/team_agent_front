@@ -1,5 +1,5 @@
 <template>
-  <div class="pt-panel pt-step-b">
+  <div class="pt-panel pt-panel--lg pt-step-b">
     <h3 class="pt-panel-title">목차·요구사항</h3>
     <p class="pt-panel-desc">
       RFP에서 자동 추출된 목차와 함께, 같은 분석으로 함께 추출된 요구사항·평가기준·현황이슈를 확인하고 직접 보완할 수

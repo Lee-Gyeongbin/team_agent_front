@@ -1,5 +1,5 @@
 <template>
-  <div class="pt-panel">
+  <div class="pt-panel pt-panel--lg">
     <h3 class="pt-panel-title">템플릿 설정</h3>
     <p class="pt-panel-desc">제안서에 적용할 헤더/푸터 템플릿과 문서 사이즈를 지정하세요.</p>
 
