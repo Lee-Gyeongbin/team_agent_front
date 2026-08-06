@@ -145,14 +145,7 @@ export interface Stage1Result {
   rfpIssues: PtRfpIssue[]
 }
 
-export type PtStepKey =
-  | 'template'
-  | 'toc'
-  | 'settings'
-  | 'template-gen'
-  | 'strategy'
-  | 'generate'
-  | 'export'
+export type PtStepKey = 'template' | 'toc' | 'settings' | 'template-gen' | 'strategy' | 'generate' | 'export'
 
 // ── Stage2 전략검토 ─────────────────────────────────────────────────────────
 
