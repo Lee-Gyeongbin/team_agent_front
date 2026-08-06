@@ -188,6 +188,8 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
 
     streamRenderSectionImages(ptProjectId.value, tocId, {
       onProgress: (progressData: SlideRenderProgressData) => {
+        // step 전용 이벤트(slideId 없음)는 캐시 갱신 불필요
+        if (!progressData.slideId) return
         const cached = slidesCache.value[tocId]
         if (!cached) return
         const idx = cached.findIndex((s) => s.slideId === progressData.slideId)

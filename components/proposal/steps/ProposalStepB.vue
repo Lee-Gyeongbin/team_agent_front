@@ -189,6 +189,8 @@ const STAGE1_STEP_MESSAGES: Record<string, string> = {
   condense: 'RFP 내용을 요약하는 중...',
   prompt: '프롬프트를 준비하는 중...',
   llm: 'AI가 RFP를 분석하는 중...',
+  chunk_extract: '대용량 RFP를 분할하여 추출하는 중...',
+  chunk: '청크 단위로 분석하는 중...',
   parse: '분석 결과를 검증하는 중...',
   save: '결과를 저장하는 중...',
 }
@@ -237,7 +239,7 @@ const onUploadRfp = async () => {
       openToast({ message: 'RFP 파일 업로드에 실패했습니다.', type: 'error' })
       return
     }
-    savedRfpFileNm.value = res.fileNm || uploadingFileName
+    savedRfpFileNm.value = res.fileName || uploadingFileName
     rfpFile.value = null
     openToast({ message: 'RFP 파일이 업로드되었습니다. "RFP 데이터 추출" 버튼을 눌러 분석을 시작하세요.' })
   } catch {

@@ -343,7 +343,13 @@
 import type { PtSection, PtSectionChatMessage, PtSlide, PtTocItem, SlideComponent } from '~/types/proposal'
 import { useProposalSectionChat } from '~/composables/proposal/useProposalSectionChat'
 import { openToast } from '~/composables/useToast'
+import { openLoading, updateLoadingText, closeLoading } from '~/composables/useLoading'
 import SlideComponentRenderer from '~/components/proposal/SlideComponentRenderer.vue'
+
+const RENDER_IMAGE_STEP_MESSAGES: Record<string, string> = {
+  load: '슬라이드 목록을 불러오는 중...',
+  render: '이미지를 생성하는 중...',
+}
 
 const { fetchViewSlideImage, streamRenderSectionImages } = useProposalApi()
 
@@ -557,27 +563,43 @@ const onRegenerateImage = () => {
   const initializing = props.currentSlides.map((s) => ({ ...s, renderStatusCd: '002' as const }))
   emit('slides-updated', initializing as PtSlide[])
 
+  openLoading({ text: '이미지를 생성하는 중...' })
+
   // 기존 SSE 연결 정리
   renderEventSource?.close()
   renderEventSource = streamRenderSectionImages(props.ptProjectId, props.activeSection.tocId, {
     onProgress: (data) => {
-      // 해당 슬라이드의 렌더 상태·이미지 경로를 업데이트해 부모에 전달
-      const updated = props.currentSlides.map((s) =>
-        s.slideId === data.slideId
-          ? { ...s, renderStatusCd: data.renderStatusCd, renderedImagePath: data.renderedImagePath }
-          : s,
-      )
-      emit('slides-updated', updated as PtSlide[])
+      // 1. step 이벤트 → 로딩 텍스트 갱신
+      if (data.step) {
+        if (data.current != null && data.total != null) {
+          updateLoadingText(`이미지를 생성하는 중... (${data.current}/${data.total}장)`)
+        } else {
+          const msg = RENDER_IMAGE_STEP_MESSAGES[data.step]
+          if (msg) updateLoadingText(msg)
+        }
+      }
+
+      // 2. 슬라이드별 진행 이벤트 → 슬라이드 상태 갱신
+      if (data.slideId) {
+        const updated = props.currentSlides.map((s) =>
+          s.slideId === data.slideId
+            ? { ...s, renderStatusCd: data.renderStatusCd, renderedImagePath: data.renderedImagePath }
+            : s,
+        )
+        emit('slides-updated', updated as PtSlide[])
+      }
     },
     onDone: () => {
+      closeLoading()
       isRegeneratingImage.value = false
       openToast({
         message: isFirstGeneration ? '인포그래픽 이미지가 생성되었습니다.' : '인포그래픽 이미지가 재생성되었습니다.',
       })
     },
-    onError: (message) => {
+    onError: () => {
+      closeLoading()
       isRegeneratingImage.value = false
-      openToast({ message: message || '이미지 생성 중 오류가 발생했습니다.', type: 'error' })
+      openToast({ message: '이미지 생성 중 오류가 발생했습니다.', type: 'error' })
     },
   })
 }

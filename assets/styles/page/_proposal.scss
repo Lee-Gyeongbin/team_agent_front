@@ -270,14 +270,14 @@
 }
 
 .pt-card-title {
-  @include typo($body-small-bold);
+  @include typo($body-medium-bold);
   color: $color-text-heading;
   margin: $spacing-sm 0 4px;
   line-height: 1.4;
 }
 
 .pt-card-meta {
-  @include typo($body-xsmall);
+  @include typo($body-small);
   color: $color-text-muted;
   margin-bottom: $spacing-sm;
 }
@@ -326,8 +326,8 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  @include typo($body-xsmall-bold);
-  padding: 2px 8px;
+  @include typo($body-small-bold);
+  padding: 3px 9px;
   border-radius: 12px;
 
   &.status-PT000001 { // 작성중

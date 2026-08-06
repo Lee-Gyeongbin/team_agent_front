@@ -167,7 +167,14 @@ const stage2Triggered = ref(false)
 const { fetchSelectPtProject, streamAnalyzeStage2, fetchUpdateMaxStepNo } = useProposalApi()
 
 const STAGE2_STEP_MESSAGES: Record<string, string> = {
-  analyze: '전략 분석을 수행하는 중...',
+  load: '분석 데이터를 불러오는 중...',
+  prompt: '전략 분석 프롬프트를 준비하는 중...',
+  problem_def: '문제 정의를 생성하는 중...',
+  parse: '분석 결과를 검증하는 중...',
+  req_mapping: '요구사항 매핑 중...',
+  extract_ref: '레퍼런스 자료를 분석하는 중...',
+  win_theme: '핵심 전략을 생성하는 중...',
+  save: '분석 결과를 저장하는 중...',
 }
 
 const runStage2 = () => {

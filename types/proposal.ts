@@ -300,13 +300,20 @@ export interface SectionGenDoneData {
   failCount: number
 }
 
-/** D-5 이미지 렌더링 SSE — 슬라이드별 진행 이벤트 */
+/** D-5 이미지 렌더링 SSE — 진행 이벤트 (step 이벤트 또는 슬라이드별 진행 이벤트) */
 export interface SlideRenderProgressData {
-  slideId: string
+  /** step 이벤트: 'load' | 'render' */
+  step?: string
+  /** 슬라이드별 이벤트: slideId 있음 */
+  slideId?: string
   /** 003=완료, 004=실패 */
-  renderStatusCd: '003' | '004'
+  renderStatusCd?: '003' | '004'
   /** 완료 시 NCP 이미지 URL */
   renderedImagePath?: string
+  /** 현재 처리된 슬라이드 순번 */
+  current?: number
+  /** 전체 슬라이드 수 */
+  total?: number
 }
 
 /** D-5 이미지 렌더링 SSE — 완료 이벤트 */
