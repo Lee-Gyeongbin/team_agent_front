@@ -157,25 +157,6 @@ export const useProposalApi = () => {
 
   // ── Step B: TOC(목차) ────────────────────────────────────────────────────────
 
-  /**
-   * Step B: mandatedToc 기반 목차 자동추출 (LLM 없음)
-   * @returns list — 추출된 PtTocItem 목록 (빈 배열이면 RFP에 명시 없음), msg — 안내 메시지
-   */
-  const fetchAutoExtractToc = async (
-    ptProjectId: string,
-  ): Promise<{ result: string; list: PtTocItem[]; msg?: string }> => {
-    const params = new URLSearchParams({ ptProjectId })
-    const raw = await post<{ result: string; list: Record<string, unknown>[]; msg?: string }>(
-      `/ai/proposal/autoExtractToc.do?${params.toString()}`,
-      {},
-    )
-    return {
-      result: raw.result,
-      list: (raw.list ?? []).map((vo) => mapTocVO(vo as Parameters<typeof mapTocVO>[0], 'rfp')),
-      msg: raw.msg,
-    }
-  }
-
   /** Step B: TOC 목록 조회 (flat, SORT_ORD 기준) */
   const fetchSelectTocList = async (ptProjectId: string): Promise<{ result: string; list: PtTocItem[] }> => {
     const raw = await get<{ result: string; list: Record<string, unknown>[] }>(
@@ -746,7 +727,6 @@ export const useProposalApi = () => {
     fetchUpdateProjectSettings,
     fetchUpdateProjectTargetType,
     fetchSelectPtRfpFile,
-    fetchAutoExtractToc,
     fetchSelectTocList,
     fetchInsertTocItem,
     fetchUpdateTocItem,

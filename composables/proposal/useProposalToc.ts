@@ -4,7 +4,6 @@ import type { PtTocItem } from '~/types/proposal'
 export const useProposalToc = (ptProjectId: Ref<string>) => {
   const {
     fetchSelectTocList,
-    fetchAutoExtractToc,
     fetchInsertTocItem,
     fetchUpdateTocItem,
     fetchDeleteTocItem,
@@ -13,7 +12,6 @@ export const useProposalToc = (ptProjectId: Ref<string>) => {
 
   const tocList = ref<PtTocItem[]>([])
   const isLoading = ref(false)
-  const isExtracting = ref(false)
 
   /** TOC 목록 로드 */
   const handleSelectTocList = async () => {
@@ -24,22 +22,6 @@ export const useProposalToc = (ptProjectId: Ref<string>) => {
       tocList.value = res.list
     } finally {
       isLoading.value = false
-    }
-  }
-
-  /**
-   * mandatedToc 기반 자동추출 (LLM 없음)
-   * @returns msg — RFP에 명시된 목차가 없을 때 안내 메시지, undefined이면 성공
-   */
-  const handleAutoExtractToc = async (): Promise<string | undefined> => {
-    isExtracting.value = true
-    try {
-      const res = await fetchAutoExtractToc(ptProjectId.value)
-      if (res.result !== 'OK') return res.msg ?? '자동 추출에 실패했습니다.'
-      tocList.value = res.list
-      return res.list.length === 0 ? (res.msg ?? 'RFP에 명시된 목차가 없습니다.') : undefined
-    } finally {
-      isExtracting.value = false
     }
   }
 
@@ -89,9 +71,7 @@ export const useProposalToc = (ptProjectId: Ref<string>) => {
   return {
     tocList,
     isLoading,
-    isExtracting,
     handleSelectTocList,
-    handleAutoExtractToc,
     handleAddTocItem,
     handleUpdateTocTitle,
     handleDeleteTocItem,

@@ -62,8 +62,8 @@ export interface PtRequirement {
   requirementId: string
   ptProjectId: string
   reqNo: string | null
-  /** 요구사항 분류 코드 (PT000003: 001~015, null 허용) */
-  reqCategoryCd: string | null
+  /** 요구사항 분류 원문 (RFP 표의 구분/유형 컬럼 값, 없으면 null) */
+  reqCategoryTxt: string | null
   reqContent: string
   mandatoryYn: 'Y' | 'N'
   /** 출처 유형 코드 (PT000004: 001=사실, 002=전략적해석, 003=확인필요, 999=직접입력) */

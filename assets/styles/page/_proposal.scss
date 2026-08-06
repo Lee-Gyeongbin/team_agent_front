@@ -3,10 +3,10 @@
 @use '../utils/mixins' as *;
 
 // =============================================
-// PT ?œì•ˆ ?ì´?„íŠ¸
+// PT ??? ??????
 // =============================================
 
-// ---- ëª©ë¡ ?˜ì´ì§€ ----
+// ---- ?? ???? ----
 .pt-list-page {
   display: flex;
   flex-direction: column;
@@ -58,7 +58,7 @@
   @include typo($body-medium, $color-text-muted);
 }
 
-// ---- ?„í„° ë°?----
+// ---- ??? ??----
 .pt-filter-bar {
   display: flex;
   align-items: center;
@@ -153,7 +153,7 @@
   flex-shrink: 0;
 }
 
-// ---- ë·?? ê? ----
+// ---- ?????? ----
 .pt-view-toggle {
   display: flex;
   align-items: center;
@@ -186,7 +186,7 @@
   }
 }
 
-// ---- ?œì„± ?„í„° ?œê·¸ ----
+// ---- ??? ??? ??? ----
 .pt-filter-tags {
   display: flex;
   align-items: center;
@@ -240,7 +240,7 @@
   margin-left: auto;
 }
 
-// ---- ì¹´ë“œ ê·¸ë¦¬??----
+// ---- ?? ????----
 .pt-card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -282,7 +282,7 @@
   margin-bottom: $spacing-sm;
 }
 
-// ---- ëª©ë¡ ë·?----
+// ---- ?? ??----
 .pt-list-rows {
   display: flex;
   flex-direction: column;
@@ -321,7 +321,7 @@
   white-space: nowrap;
 }
 
-// ---- ?íƒœ ë±ƒì? ----
+// ---- ??? ??? ----
 .pt-status-badge {
   display: inline-flex;
   align-items: center;
@@ -330,21 +330,21 @@
   padding: 3px 9px;
   border-radius: 12px;
 
-  &.status-PT000001 { // ?‘ì„±ì¤?
+  &.status-PT000001 { // ?????
     background: #FFF3E3;
     color: $color-warning;
   }
-  &.status-PT000002 { // ê²€? ì¤‘
+  &.status-PT000002 { // ????
     background: var(--color-primary-bg);
     color: var(--color-primary-dark);
   }
-  &.status-PT000003 { // ?„ë£Œ
+  &.status-PT000003 { // ???
     background: rgba($color-success, 0.12);
     color: color.adjust($color-success, $lightness: -10%);
   }
 }
 
-// ---- ì§„í–‰ë¥?ë°?----
+// ---- ??????----
 .pt-progress-bar {
   height: 4px;
   border-radius: 4px;
@@ -361,7 +361,7 @@
 }
 
 // =============================================
-// ëª¨ë‹¬
+// ??
 // =============================================
 .pt-modal-overlay {
   position: fixed;
@@ -428,7 +428,7 @@
   border-top: 1px solid $color-border;
 }
 
-// ---- ??ê³µí†µ ----
+// ---- ???? ----
 .pt-form-field {
   display: flex;
   flex-direction: column;
@@ -462,7 +462,7 @@
   }
 }
 
-// ---- ? ê? ----
+// ---- ???? ----
 .pt-toggle-row {
   display: flex;
   border: 1px solid $color-border;
@@ -492,7 +492,7 @@
 }
 
 // =============================================
-// ?ì„¸ ?˜ì´ì§€ ??Meeting(meeting2) ?™ì¼ ??
+// ??? ???? ??Meeting(meeting2) ??? ??
 // =============================================
 .pt-detail-page {
   display: flex;
@@ -505,6 +505,24 @@
   background: $color-background;
   overflow: hidden;
   box-sizing: border-box;
+
+  // Step B: ?? ?? ??? ?? ? ????(.content) ??? ??
+  &.is-page-scroll {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+
+    .pt-step-content {
+      overflow: visible;
+      flex: none;
+
+      > .pt-step-b {
+        overflow: visible;
+        flex: none;
+        min-height: auto;
+      }
+    }
+  }
 }
 
 .pt-detail-head {
@@ -565,7 +583,7 @@
   margin: 0;
 }
 
-// ---- ?¤í…ë°?(meeting2-stepper ?™ì¼) ----
+// ---- ?????(meeting2-stepper ???) ----
 .pt-stepbar {
   display: flex;
   align-items: stretch;
@@ -717,12 +735,12 @@
 
 .pt-stepbar-toggle-icon {
   transition: transform $transition-fast;
-  transform: rotate(180deg); // ?¼ì¹œ ?íƒœ: ???”ì‚´??
+  transform: rotate(180deg); // ??? ???: ???????
 
-  &.is-collapsed { transform: rotate(0deg); } // ?‘íŒ ?íƒœ: ?„ë˜ ?”ì‚´??
+  &.is-collapsed { transform: rotate(0deg); } // ??? ???: ??? ?????
 }
 
-// ---- ?¤í… ì½˜í…ì¸??ì—­ ----
+// ---- ??? ??????? ----
 .pt-step-content {
   flex: 1;
   min-height: 0;
@@ -730,7 +748,7 @@
   display: flex;
   flex-direction: column;
 
-  // ?¼ë°˜ ?¨ê³„ (A, B, C, E, F): ?´ë? ?¤í¬ë¡?
+  // ??? ??? (A, B, C, E, F): ???? ?????
   > * {
     flex: 1;
     min-height: 0;
@@ -738,14 +756,14 @@
     @include custom-scrollbar;
   }
 
-  // Step E: meeting2-layoutì²˜ëŸ¼ ?¨ë”© ?†ì´ ?’ì´ ì±„ì?
+  // Step E: meeting2-layout?? ??? ??? ??? ???
   > .pt-stepD-layout {
     overflow: hidden;
     padding: 0;
   }
 }
 
-// ---- ?¨ê³„ ì½˜í…ì¸?ê³µí†µ ?¨ë„ ----
+// ---- ??? ?????? ??? ----
 .pt-panel {
   background: #fff;
   border: 1px solid $color-border;
@@ -784,7 +802,7 @@
 }
 
 // =============================================
-// Step A ???œí”Œë¦?
+// Step A ???????
 // =============================================
 .pt-option-row {
   display: flex;
@@ -916,10 +934,10 @@
 .pt-size-43 .pt-size-ratio { width: 38px; height: 28px; }
 
 // =============================================
-// Step B ??ëª©ì°¨
+// Step B ????
 // =============================================
 
-// RFP ì²¨ë? ?ì—­
+// RFP ??? ???
 .pt-toc-rfp-opt {
   @include typo($body-xsmall);
   color: $color-text-muted;
@@ -1086,7 +1104,7 @@
 }
 
 // =============================================
-// Step C ???¤ì •
+// Step C ?????
 // =============================================
 .pt-settings-grid {
   display: grid;
@@ -1213,7 +1231,7 @@
 }
 
 // =============================================
-// Step D ???œí”Œë¦??ì„± (3???ˆì´?„ì›ƒ)
+// Step D ?????????? (3????????)
 // =============================================
 .pt-template-gen-panel {
   min-height: 560px;
@@ -1226,7 +1244,7 @@
   padding: $spacing-xl 0;
 }
 
-// 2???ˆì´?„ì›ƒ: ì¢??„í™©) / ì¤?ë¯¸ë¦¬ë³´ê¸°+WYSIWYG)
+// 2????????: ?????) / ??????+WYSIWYG)
 .pt-template-gen-layout {
   display: grid;
   grid-template-columns: 220px 1fr;
@@ -1238,14 +1256,14 @@
   }
 }
 
-// ---- ì¢Œì¸¡ ?¨ë„ ----
+// ---- ?? ??? ----
 .pt-template-gen-left {
   display: flex;
   flex-direction: column;
   gap: $spacing-md;
 }
 
-// ?ì„± ?„í™© pill ëª©ë¡
+// ??? ??? pill ??
 .pt-template-status-list {
   display: flex;
   flex-direction: column;
@@ -1287,7 +1305,7 @@
   }
 }
 
-// ì»¬ëŸ¬ ?¤ì?ì¹?
+// ?? ??????
 .pt-template-colors {
   display: flex;
   flex-direction: column;
@@ -1307,7 +1325,7 @@
   flex-shrink: 0;
 }
 
-// ?¡ì…˜ ë²„íŠ¼ ?ì—­
+// ??? ?? ???
 .pt-template-gen-actions {
   display: flex;
   flex-direction: column;
@@ -1315,7 +1333,7 @@
   margin-top: auto;
 }
 
-// ---- ì¤‘ì•™ ?¨ë„ ----
+// ---- ?? ??? ----
 .pt-template-gen-center {
   display: flex;
   flex-direction: column;
@@ -1325,8 +1343,8 @@
   background: #fff;
 }
 
-// ?¤ë” ?? ?ˆì´?„ì›ƒ ? ê?(ì¢? + UiTab(?? ??ì¤?
-// UiTab ?ì²´??border-bottom ???ˆìœ¼ë¯€ë¡??¬ê¸°??border ?†ìŒ
+// ??? ?? ?????? ????(?? + UiTab(?? ????
+// UiTab ?????border-bottom ?????????????border ???
 .pt-template-center-head {
   display: flex;
   align-items: center;
@@ -1336,7 +1354,7 @@
   padding: $spacing-sm $spacing-md;
   flex-shrink: 0;
 
-  // UiTab ?´ë? ?¬ë°±Â·max-widthÂ·?¬ê¸° ì´ˆê¸°??(flex ???ˆì—???¬ìš©)
+  // UiTab ???? ????max-width???? ????(flex ??????????)
   :deep(.ui-tab) {
     border-bottom: none;
   }
@@ -1353,7 +1371,7 @@
   }
 }
 
-// ?ˆì´?„ì›ƒ ?€??? ê? (ë³¸ë¬¸??/ ?œì??? ??pill ?¤í???
+// ?????? ???????? (????/ ?????? ??pill ??????
 .pt-layout-toggle {
   display: flex;
   background: $color-surface;
@@ -1382,8 +1400,8 @@
   }
 }
 
-// ë¯¸ë¦¬ë³´ê¸° ?? ?¬ë¼?´ë“œ ?ˆì´?„ì›ƒ (?¤ë” / ë³¸ë¬¸ / ?¸í„°)
-// aspect-ratio ???¸ë¼???¤í??¼ë¡œ docSize???°ë¼ ì£¼ì…??
+// ???? ?? ?????? ?????? (??? / ?? / ???)
+// aspect-ratio ?????????????? docSize????? ????
 .pt-template-preview {
   display: flex;
   flex-direction: column;
@@ -1426,8 +1444,8 @@
   font-style: italic;
 }
 
-// ?”ë? ë³¸ë¬¸ ì½˜í…ì¸???ë¯¸ë¦¬ë³´ê¸° ?„ìš©, ?€???€???„ë‹˜
-// CSS ë³€??--base-color / --accent-color ??ë¶€ëª??¸ë¼???¤í??¼ë¡œ ì£¼ì…??
+// ???? ?? ?????????? ???, ???????????
+// CSS ???--base-color / --accent-color ????????????????? ????
 
 .pt-dummy-body {
   width: 100%;
@@ -1550,7 +1568,7 @@
   }
 }
 
-// ê°œë³„ ?¬ë¡¯ (position:absolute, inline styleë¡?ë°°ì¹˜)
+// ?? ??? (position:absolute, inline style????)
 .pt-template-slot {
   overflow: hidden;
   white-space: nowrap;
@@ -1562,9 +1580,9 @@
   height: 100%;
 }
 
-// ?¸ì§‘ ëª¨ë“œ ??ë¯¸ë¦¬ë³´ê¸°?€ ?™ì¼ êµ¬ì¡°???¸ì§‘ ?¸í„°?™ì…˜ë§?ì¶”ê?
+// ??? ?? ???????? ??? ??????? ???????????
 .pt-template-editor {
-  // ?¤ë”Â·?¸í„° ?ì—­???¸ì§‘ ê°€?¥í•¨???˜í??´ëŠ” ?ì„  ë§?
+  // ??????? ???????? ????????????? ??? ??
   .pt-template-preview-header,
   .pt-template-preview-footer {
     outline: 1.5px dashed $color-border;
@@ -1576,7 +1594,7 @@
   }
 }
 
-// ?¬ë¡¯ ?¸ì§‘ ??(?œê·¸ ëª©ë¡ ???˜ìœ„ ?¸í™˜ ë³´ì¡´)
+// ??? ??? ??(??? ?? ????? ??? ??)
 .pt-template-slots-view {
   display: flex;
   flex-direction: column;
@@ -1618,7 +1636,7 @@
   font-weight: $font-weight-normal;
 }
 
-// ---- WYSIWYG ?œë˜ê·??¸ì§‘ê¸?----
+// ---- WYSIWYG ??????????----
 .pt-wysiwyg-wrap {
   display: flex;
   flex-direction: column;
@@ -1635,7 +1653,7 @@
   flex-shrink: 0;
 }
 
-// ?œë˜ê·?ê°€?¥í•œ ìº”ë²„???ì—­
+// ????????? ???????
 .pt-wysiwyg-canvas {
   position: relative;
   background: #fff;
@@ -1653,7 +1671,7 @@
   }
 }
 
-// ê°??¬ë¡¯ ?”ì†Œ (absolute ?„ì¹˜)
+// ????? ??? (absolute ???)
 .pt-wysiwyg-slot {
   position: absolute;
   border: 1.5px dashed $color-border;
@@ -1681,7 +1699,7 @@
     z-index: 5;
   }
 
-  // êµ¬ë¶„???¬ë¡¯: ?ì„ ???„ì²´ ?ˆë¹„ë¡??œì‹œ
+  // ???????: ???????? ????????
   &.is-divider {
     padding: 0;
     border-style: dashed;
@@ -1691,7 +1709,7 @@
   }
 }
 
-// ?¸ë¼???ìŠ¤???¸ì§‘ ?ì—­
+// ????????????? ???
 .pt-wysiwyg-text {
   outline: none;
   cursor: text;
@@ -1701,7 +1719,7 @@
   line-height: inherit;
 }
 
-// ë³¸ë¬¸ êµ¬ë¶„ ?ì—­ (?¸ì§‘ ë¶ˆê?)
+// ?? ?? ??? (??? ???)
 .pt-wysiwyg-body-gap {
   background: #f3f2fb;
   border-radius: $border-radius-sm;
@@ -1717,7 +1735,7 @@
   }
 }
 
-// ?¬ë¡¯ ?¤í????¸ì§‘ ?¨ë„ (?¬ë¡¯ ?´ë¦­ ??ìº”ë²„???˜ë‹¨???œì‹œ)
+// ??? ????????? ??? (??? ??? ??????????????)
 .pt-slot-style-panel {
   flex-shrink: 0;
   display: flex;
@@ -1832,7 +1850,7 @@
   }
 }
 
-// ?¤í????¨ë„ ?¬ë¼?´ë“œ ???„ì›ƒ ?¸ëœì§€??
+// ????????? ?????? ????? ??????
 .pt-style-panel-enter-active,
 .pt-style-panel-leave-active {
   transition: max-height $transition-base, opacity $transition-base;
@@ -1855,7 +1873,7 @@
   height: 48px;
 }
 
-// ---- ?°ì¸¡ ?¨ë„ (ë³´ì™„?”ì²­ ì±„íŒ…) ----
+// ---- ??? ??? (????? ??) ----
 .pt-template-gen-right {
   display: flex;
   flex-direction: column;
@@ -1907,7 +1925,7 @@
 }
 
 // =============================================
-// Step E ??ë³¸ë¬¸ ?ì„± (meeting2-layout ?™ì¼ 3??
+// Step E ???? ??? (meeting2-layout ??? 3??
 // =============================================
 .pt-stepD-layout {
   display: grid;
@@ -1966,7 +1984,7 @@
     border-radius: 0;
   }
 
-  // ì¤‘ì•™ ?¨ë„ ??ì¢Œì¸¡ ëª©ì°¨?€ ?™ì¼ ë¹„ìœ¨ë¡??€?´í¬ ?í–¥
+  // ?? ??? ???? ???? ??? ????????? ???
   .pt-gen-title {
     @include typo($body-large-bold);
   }
@@ -2021,7 +2039,7 @@
     border-radius: 0;
   }
 
-  // ?°ì¸¡ ì±„íŒ… ?¨ë„ ??ì¢Œì¸¡ ëª©ì°¨?€ ?™ì¼ ë¹„ìœ¨ë¡??€?´í¬ ?í–¥
+  // ??? ?? ??? ???? ???? ??? ????????? ???
   .pt-chat-head {
     @include typo($body-medium-bold);
   }
@@ -2066,13 +2084,13 @@
   }
 }
 
-// ë¦¬ì‚¬?´ì¦ˆ ì¤??„ì—­ ì»¤ì„œÂ·? íƒ ë°©ì?
+// ????? ????? ?????? ???
 body.is-resizing {
   cursor: col-resize;
   user-select: none;
 }
 
-// ì¢Œì¸¡: ëª©ì°¨ ?¸ë¦¬ ë¦¬ìŠ¤??
+// ??: ?? ??? ????
 .pt-sec-list {
   border: 1px solid $color-border;
   border-radius: $border-radius-lg;
@@ -2081,7 +2099,7 @@ body.is-resizing {
   @include custom-scrollbar;
 }
 
-// ?€ëª©ì°¨ ?¤ë” (?´ë¦­ ë¶ˆê?)
+// ???? ??? (??? ???)
 .pt-sec-group-title {
   padding: 8px $spacing-sm;
   border-bottom: 1px solid $color-border;
@@ -2092,7 +2110,7 @@ body.is-resizing {
   letter-spacing: 0.01em;
 }
 
-// ?Œëª©ì°?(?´ë¦­ ê°€?? ?¤ì—¬?°ê¸°)
+// ?????(??? ??? ??????)
 .pt-sec-item {
   padding: 11px $spacing-sm 11px ($spacing-sm + 12px);
   border-bottom: 1px solid $color-border;
@@ -2142,7 +2160,7 @@ body.is-resizing {
   &.is-bold { font-weight: $font-weight-semibold; }
 }
 
-// ?¬ë¼?´ë“œ ?ì„± ?„ë£Œ ??ë±ƒì?
+// ?????? ??? ??? ?????
 .pt-sec-slide-badge {
   flex-shrink: 0;
   padding: 2px 7px;
@@ -2153,7 +2171,7 @@ body.is-resizing {
   line-height: 1.6;
 }
 
-// ì¤‘ì•™: ë¯¸ë¦¬ë³´ê¸° ?¨ë„
+// ??: ???? ???
 .pt-gen-panel {
   border: 1px solid $color-border;
   border-radius: $border-radius-lg;
@@ -2201,7 +2219,7 @@ body.is-resizing {
   @include custom-scrollbar;
 }
 
-// ?¸í¬ê·¸ë˜???´ë?ì§€ ?íƒœ (?´ë?ì§€ ë³´ê¸° ë²„íŠ¼ / ?ì„± ì¤??ˆë‚´)
+// ???????????? ??? (????? ?? ?? / ??? ?????)
 .pt-slide-image-status {
   display: flex;
   align-items: center;
@@ -2232,7 +2250,7 @@ body.is-resizing {
   display: inline-block;
 }
 
-// ?¸í¬ê·¸ë˜???´ë?ì§€ ?¨ë… ëª¨ë‹¬
+// ???????????? ??? ??
 .pt-image-modal {
   background: #fff;
   border-radius: $border-radius-lg;
@@ -2271,7 +2289,7 @@ body.is-resizing {
   padding: $spacing-lg;
 }
 
-// UiModal ?´ë? ?´ë?ì§€ ?¤í¬ë¡??˜í¼
+// UiModal ???? ????? ????????
 .pt-image-modal-img-wrap {
   max-height: 70vh;
   overflow-y: auto;
@@ -2300,7 +2318,7 @@ body.is-resizing {
   overflow-y: auto;
   @include custom-scrollbar;
 
-  // colorIndex ê¸°ë°˜ CSS ë³€??ì£¼ì… (?¬ë¼?´ë“œ ?Œë”??ì»´í¬?ŒíŠ¸???ì†)
+  // colorIndex ?? CSS ????? (?????? ???????????????)
   &.is-color-0 {
     --slide-base-color: #5b4fe9;
     --slide-accent-color: #e08a2c;
@@ -2374,7 +2392,7 @@ body.is-resizing {
   border-radius: $border-radius-base;
 }
 
-// ìºëŸ¬?€ ?ˆì´?„ì›ƒ
+// ???? ??????
 .pt-slide-carousel {
   display: flex;
   flex-direction: column;
@@ -2383,7 +2401,7 @@ body.is-resizing {
   overflow: hidden;
 }
 
-// ?¸ë„¤???¤íŠ¸ë¦?
+// ??????????
 .pt-slide-strip {
   display: flex;
   gap: 6px;
@@ -2433,7 +2451,7 @@ body.is-resizing {
   @include ellipsis(1);
 }
 
-// ?ì„± ì§„í–‰ ?œì‹œ
+// ??? ?? ???
 .pt-gen-progress {
   display: flex;
   flex-direction: column;
@@ -2475,7 +2493,7 @@ body.is-resizing {
   color: $color-text-muted;
 }
 
-// ?¬ë¼?´ë“œ ë¹??íƒœ
+// ?????? ?????
 .pt-slide-empty {
   flex: 1;
   display: flex;
@@ -2485,7 +2503,7 @@ body.is-resizing {
   overflow: auto;
 }
 
-// ì±„íŒ… ?ŒíŠ¸
+// ?? ???
 .pt-chat-hint {
   @include typo($body-xsmall);
   color: $color-text-muted;
@@ -2518,7 +2536,7 @@ body.is-resizing {
 }
 
 // =============================================
-// ì±„íŒ… ?¬ì´??(Step E)
+// ?? ?????(Step E)
 // =============================================
 .pt-chat-side {
   border: 1px solid $color-border;
@@ -2617,7 +2635,7 @@ body.is-resizing {
 }
 
 // =============================================
-// (?ˆê±°?? ê²€??2???ˆì´?„ì›ƒ
+// (????? ???2????????
 // =============================================
 .pt-stepE-layout {
   display: grid;
@@ -2633,7 +2651,7 @@ body.is-resizing {
   }
 }
 
-// ---- ?¨ë„ ?¤ë” ??(?€?´í? + ?Œë” ?„í™©) ----
+// ---- ??? ??? ??(?????? + ??? ???) ----
 .pt-panel-head-row {
   display: flex;
   align-items: flex-start;
@@ -2655,7 +2673,7 @@ body.is-resizing {
   white-space: nowrap;
 }
 
-// ---- ë¡œë”© ?¤ì¼ˆ?ˆí†¤ ----
+// ---- ?? ?????? ----
 .pt-review-section-skeleton {
   height: 120px;
   background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
@@ -2670,7 +2688,7 @@ body.is-resizing {
   100% { background-position: -200% 0; }
 }
 
-// ---- ?Œëª©ì°??¹ì…˜ ----
+// ---- ???????? ----
 .pt-review-section {
   margin-bottom: $spacing-lg;
 }
@@ -2699,7 +2717,7 @@ body.is-resizing {
   color: $color-text-muted;
 }
 
-// ---- ?¬ë¼?´ë“œ ê°€ë¡??¤í¬ë¡???----
+// ---- ?????? ??????????----
 .pt-review-slides {
   display: flex;
   gap: $spacing-sm;
@@ -2709,7 +2727,7 @@ body.is-resizing {
   @include custom-scrollbar;
 }
 
-// ---- ?¬ë¼?´ë“œ ?¸ë„¤??ì¹´ë“œ ----
+// ---- ?????? ??????? ----
 .pt-review-slide {
   position: relative;
   flex-shrink: 0;
@@ -2734,7 +2752,7 @@ body.is-resizing {
   display: block;
 }
 
-// JSON ëª©ì—… ë¯¸ë‹ˆ ?„ë¦¬ë·?
+// JSON ?? ?? ?????
 .pt-review-slide-mock {
   width: 100%;
   aspect-ratio: 4/3;
@@ -2762,7 +2780,7 @@ body.is-resizing {
   line-height: 1.4;
 }
 
-// ---- ?Œë” ?íƒœ ë°°ì? ----
+// ---- ??? ??? ??? ----
 .pt-render-badge {
   position: absolute;
   bottom: 4px;
@@ -2798,10 +2816,10 @@ body.is-resizing {
 }
 
 // =============================================
-// (?ˆê±°?? ?¬ë¼?´ë“œ ?€?¬ì´ì¦?ë·°ì–´ ëª¨ë‹¬
+// (????? ?????? ????????? ??
 // =============================================
 
-// ?¸ë„¤???¸ë²„ ?¤ë²„?ˆì´
+// ???????? ??????
 .pt-review-slide-hover {
   position: absolute;
   inset: 0;
@@ -2820,7 +2838,7 @@ body.is-resizing {
   opacity: 1;
 }
 
-// ?˜ì´???¸ëœì§€??
+// ???????????
 .pt-viewer-fade-enter-active,
 .pt-viewer-fade-leave-active {
   transition: opacity $transition-base;
@@ -2831,7 +2849,7 @@ body.is-resizing {
   opacity: 0;
 }
 
-// ?¤ë²„?ˆì´
+// ??????
 .pt-slide-viewer-overlay {
   position: fixed;
   inset: 0;
@@ -2843,7 +2861,7 @@ body.is-resizing {
   padding: $spacing-md;
 }
 
-// ë·°ì–´ ì»¨í…Œ?´ë„ˆ
+// ?? ?????
 .pt-slide-viewer {
   background: #fff;
   border-radius: $border-radius-lg;
@@ -2855,7 +2873,7 @@ body.is-resizing {
   box-shadow: $shadow-lg;
 }
 
-// ë·°ì–´ ?¤ë”
+// ?? ???
 .pt-slide-viewer-head {
   display: flex;
   align-items: center;
@@ -2900,7 +2918,7 @@ body.is-resizing {
   }
 }
 
-// ë·°ì–´ ë³¸ë¬¸ (?”ì‚´??+ ?¬ë¼?´ë“œ ?¤í…Œ?´ì?)
+// ?? ?? (?????+ ?????? ???????)
 .pt-slide-viewer-body {
   flex: 1;
   display: flex;
@@ -2911,7 +2929,7 @@ body.is-resizing {
   min-height: 0;
 }
 
-// ?´ì „/?¤ìŒ ë²„íŠ¼
+// ???/??? ??
 .pt-slide-viewer-nav {
   flex-shrink: 0;
   width: 40px;
@@ -2938,7 +2956,7 @@ body.is-resizing {
   }
 }
 
-// ?¬ë¼?´ë“œ ?œì‹œ ?ì—­
+// ?????? ??? ???
 .pt-slide-viewer-stage {
   flex: 1;
   display: flex;
@@ -2949,7 +2967,7 @@ body.is-resizing {
 
   @include custom-scrollbar;
 
-  // ?¬ë¼?´ë“œ ëª©ì—…??ë·°ì–´ ?ˆì—?????¬ê²Œ
+  // ?????? ?????? ??????????
   .pt-slide-mock {
     width: 100%;
     max-width: 720px;
@@ -2957,7 +2975,7 @@ body.is-resizing {
   }
 }
 
-// ?Œë”ë§ëœ ?´ë?ì§€ ?€?¬ì´ì¦?
+// ????? ????? ???????
 .pt-slide-viewer-img {
   width: 100%;
   max-width: 720px;
@@ -2966,7 +2984,7 @@ body.is-resizing {
   display: block;
 }
 
-// ?¸ë„¤???¤íŠ¸ë¦?
+// ??????????
 .pt-slide-viewer-strip {
   display: flex;
   gap: $spacing-xs;
@@ -3018,7 +3036,7 @@ body.is-resizing {
   &.is-color-2 { background: linear-gradient(135deg, #e8f5ee, #c5e8d5); color: #2e7d5a; }
 }
 
-// ---- ?Œëª©ì°??¸ë„¤??ê·¸ë¦¬??----
+// ---- ??????????????----
 .pt-thumb-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -3057,7 +3075,7 @@ body.is-resizing {
   border-radius: $border-radius-sm;
 }
 
-// ?´ë?ì§€ ?†ì„ ??ë³´ì—¬ì£¼ëŠ” ë¯¸ë‹ˆ ?¬ë¼?´ë“œ ëª©ì—…
+// ????? ??? ?????? ?? ?????? ??
 .pt-thumb-mini {
   width: 100%;
   height: 100%;
@@ -3136,7 +3154,7 @@ body.is-resizing {
 }
 
 // =============================================
-// Step F ??ì¶œë ¥
+// Step F ????
 // =============================================
 .pt-final-box {
   display: flex;
@@ -3176,7 +3194,7 @@ body.is-resizing {
 }
 
 // =============================================
-// Step2 / Step5 ???œë¸Œ??Â· ?„ëµê²€??
+// Step2 / Step5 ???????? ??????
 // =============================================
 .pt-subtabs {
   display: flex;
@@ -3361,8 +3379,29 @@ body.is-resizing {
   border: 1px solid $color-border;
   border-top: none;
   background: #fff;
+  transition: background $transition-fast;
 
   &:last-child { border-radius: 0 0 8px 8px; }
+
+  &.is-open {
+    background: var(--color-primary-bg);
+
+    .pt-ec-head {
+      border-bottom: 1px solid $color-border;
+    }
+
+    .pt-ec-chev {
+      background: #fff;
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+  }
+
+  &.is-editing {
+    .pt-ec-head {
+      cursor: default;
+    }
+  }
 }
 
 .pt-ec-head {
@@ -3371,6 +3410,16 @@ body.is-resizing {
   gap: 12px;
   padding: 12px 14px;
   cursor: pointer;
+  transition: background $transition-fast;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.02);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px;
+  }
 }
 
 .pt-ec-score {
@@ -3384,33 +3433,138 @@ body.is-resizing {
   justify-content: center;
   font-weight: 800;
   flex-shrink: 0;
+
+  &.is-editing {
+    width: 64px;
+    height: 48px;
+    border-radius: 24px;
+    padding: 0 4px;
+    background: #fff;
+    border: 1px solid var(--color-primary);
+
+    .ui-input-outer {
+      width: 100%;
+    }
+
+    .ui-input-wrap {
+      border: none;
+      background: transparent;
+      box-shadow: none;
+      min-height: 0;
+      padding: 0;
+    }
+
+    .ui-input {
+      text-align: center;
+      font-weight: 800;
+      color: var(--color-primary);
+      padding: 0;
+    }
+  }
+}
+
+.pt-ec-name-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .pt-ec-name {
-  flex: 1;
-  border: none;
-  background: transparent;
   font-weight: 700;
   font: inherit;
+  line-height: 1.4;
+  @include ellipsis(1);
 }
 
-.pt-ec-chev { color: $color-text-muted; }
+.pt-ec-name-input {
+  width: 100%;
+
+  .ui-input {
+    font-weight: 700;
+  }
+}
+
+.pt-ec-hint {
+  @include typo($body-xsmall);
+  color: $color-text-muted;
+  padding: 0 4px;
+  pointer-events: none;
+}
+
+.pt-ec-chev {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  background: $color-surface;
+  color: $color-text-muted;
+  cursor: pointer;
+  transition:
+    background $transition-fast,
+    border-color $transition-fast,
+    color $transition-fast;
+
+  &:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    background: #fff;
+  }
+
+  .icon-chevron-down {
+    transition: transform $transition-fast;
+
+    &.is-open {
+      transform: rotate(180deg);
+    }
+  }
+}
+
 .pt-ec-detail {
-  padding: 0 16px 14px 74px;
+  padding: 10px 14px 14px;
+  background: #fff;
+
   label {
     display: block;
     font-size: 11px;
     color: $color-text-muted;
     font-weight: 700;
-    margin: 8px 0 4px;
+    margin: 10px 0 4px;
+
+    &:first-child {
+      margin-top: 0;
+    }
   }
-  textarea {
-    width: 100%;
-    border: 1px solid $color-border;
-    border-radius: 6px;
-    padding: 8px 10px;
-    font: inherit;
-    resize: vertical;
+}
+
+.pt-ec-detail-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.pt-ec-view-text {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid $color-border-light;
+  border-radius: 6px;
+  background: $color-surface;
+  @include typo($body-small);
+  color: $color-text-primary;
+  white-space: pre-wrap;
+  word-break: break-word;
+  min-height: 44px;
+  line-height: 1.5;
+
+  &.is-empty {
+    color: $color-text-muted;
   }
 }
 
@@ -3422,6 +3576,7 @@ body.is-resizing {
   background: #fff;
 
   &.is-focus { border-color: var(--color-primary); background: var(--color-primary-bg); }
+  &.is-editing { border-color: var(--color-primary); }
 }
 .pt-issue-top {
   display: flex;
@@ -3429,32 +3584,52 @@ body.is-resizing {
   gap: 8px;
   margin-bottom: 8px;
 }
-.pt-issue-label {
+.pt-issue-label-text {
   flex: 1;
-  border: 1px solid transparent;
-  border-radius: 5px;
   font-weight: 700;
-  font: inherit;
-  background: transparent;
-  &:hover, &:focus { border-color: $color-border; outline: none; }
+  @include typo($body-small-bold);
+  color: $color-text-heading;
+  min-width: 0;
+  word-break: break-word;
 }
-.pt-issue-content {
+.pt-issue-label-input {
+  flex: 1;
+  min-width: 0;
+}
+.pt-issue-view-text {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid $color-border-light;
+  border-radius: 6px;
+  background: $color-surface;
+  @include typo($body-small);
+  color: $color-text-primary;
+  white-space: pre-wrap;
+  word-break: break-word;
+  min-height: 44px;
+  line-height: 1.5;
+
+  &.is-empty {
+    color: $color-text-muted;
+  }
+}
+.pt-issue-content-edit {
   width: 100%;
-  border: 1px solid transparent;
-  border-radius: 5px;
-  font: inherit;
-  resize: vertical;
-  color: $color\-text-primary;
-  background: transparent;
-  &:hover, &:focus { border-color: $color-border; outline: none; background: #fff; }
 }
 .pt-issue-meta {
   margin-top: 8px;
   @include typo($body-xsmall);
   color: $color-text-muted;
 }
+.pt-issue-detail-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
 
-// ---- ?„ëµê²€??----
+// ---- ??????----
 .pt-strategy { max-width: 1440px; }
 .pt-s4-wrap {
   display: grid;

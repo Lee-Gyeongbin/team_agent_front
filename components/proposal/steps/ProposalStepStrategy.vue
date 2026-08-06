@@ -2,8 +2,8 @@
   <div class="pt-panel pt-strategy">
     <h3 class="pt-panel-title">전략검토</h3>
     <p class="pt-panel-desc">
-      템플릿 생성이 확정되면 RFP 분석 결과를 바탕으로 문제정의·Win Theme·요구사항 매핑이 자동
-      생성됩니다. 본문생성으로 넘어가기 전 이 화면에서 결과를 확인하고 보완할 수 있습니다.
+      템플릿 생성이 확정되면 RFP 분석 결과를 바탕으로 문제정의·Win Theme·요구사항 매핑이 자동 생성됩니다. 본문생성으로
+      넘어가기 전 이 화면에서 결과를 확인하고 보완할 수 있습니다.
     </p>
 
     <!-- 최초 진입 로딩 -->
@@ -14,10 +14,7 @@
       <div class="pt-s4-loading-box">
         <div class="pt-s4-loading-spinner" />
         <h3>전략 분석 중입니다</h3>
-        <p>
-          RFP 분석 결과를 바탕으로 문제정의·요구사항 매핑·Win Theme을 생성하고 있어요. 잠시만
-          기다려주세요.
-        </p>
+        <p>RFP 분석 결과를 바탕으로 문제정의·요구사항 매핑·Win Theme을 생성하고 있어요. 잠시만 기다려주세요.</p>
         <div class="pt-s4-loading-steps">
           <div
             v-for="(s, i) in loadingSteps"
@@ -69,7 +66,9 @@
           <span class="nm">목차매핑</span>
           <span
             class="pt-badge"
-            :class="summary?.uncoveredRequirementCount ? 'is-warn' : summary?.stage2StatusCd === '003' ? 'is-ok' : 'is-gray'"
+            :class="
+              summary?.uncoveredRequirementCount ? 'is-warn' : summary?.stage2StatusCd === '003' ? 'is-ok' : 'is-gray'
+            "
           >
             {{
               summary?.uncoveredRequirementCount
@@ -120,7 +119,8 @@
             <span
               v-if="summary?.winThemeStaleCount"
               class="pt-subtab-count is-warn"
-            >{{ summary.winThemeStaleCount }}</span>
+              >{{ summary.winThemeStaleCount }}</span
+            >
           </button>
           <button
             type="button"
@@ -132,7 +132,8 @@
             <span
               v-if="summary?.uncoveredRequirementCount"
               class="pt-subtab-count is-warn"
-            >{{ summary.uncoveredRequirementCount }}</span>
+              >{{ summary.uncoveredRequirementCount }}</span
+            >
           </button>
         </div>
 
@@ -199,7 +200,7 @@
               <div class="pt-src-badges">
                 <button
                   v-for="id in activePd.sourceIssueIds"
-                  :key="'i'+id"
+                  :key="'i' + id"
                   type="button"
                   class="pt-src-badge is-issue"
                   @click="emit('go-step2', { tab: 'issue', id })"
@@ -208,7 +209,7 @@
                 </button>
                 <button
                   v-for="id in activePd.sourceRequirementIds"
-                  :key="'r'+id"
+                  :key="'r' + id"
                   type="button"
                   class="pt-src-badge is-req"
                   @click="emit('go-step2', { tab: 'req', id })"
@@ -218,7 +219,8 @@
                 <span
                   v-if="!activePd.sourceIssueIds.length && !activePd.sourceRequirementIds.length"
                   class="pt-muted"
-                >근거 없음 (수동 작성)</span>
+                  >근거 없음 (수동 작성)</span
+                >
               </div>
             </div>
             <div class="pt-pd-actions">
@@ -277,9 +279,7 @@
         </div>
 
         <!-- Win Theme -->
-        <div
-          v-show="activeTab === 'wt'"
-        >
+        <div v-show="activeTab === 'wt'">
           <div class="pt-toolbar">
             <span />
             <UiButton
@@ -300,7 +300,8 @@
               <span
                 v-if="wt.stale"
                 class="pt-wt-stale-badge"
-              >{{ staleBadgeText(wt) }}</span>
+                >{{ staleBadgeText(wt) }}</span
+              >
               <button
                 type="button"
                 class="pt-wt-del"
@@ -374,8 +375,8 @@
             </div>
           </div>
           <p class="pt-hint">
-            각 카드는 겨냥한 문제정의를 근거로 참조합니다. 근거 문제정의가 수정되면 해당 카드에만
-            stale 배지가 표시됩니다.
+            각 카드는 겨냥한 문제정의를 근거로 참조합니다. 근거 문제정의가 수정되면 해당 카드에만 stale 배지가
+            표시됩니다.
           </p>
         </div>
 
@@ -471,13 +472,7 @@
 import { openToast } from '~/composables/useToast'
 import { openConfirm } from '~/composables/useDialog'
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
-import type {
-  Stage2Summary,
-  ProblemDefinition,
-  WinTheme,
-  TocMappingResult,
-  TocMappingNode,
-} from '~/types/proposal'
+import type { Stage2Summary, ProblemDefinition, WinTheme, TocMappingResult, TocMappingNode } from '~/types/proposal'
 
 const props = defineProps<{
   ptProjectId: string
@@ -518,9 +513,27 @@ const PROBLEM_TYPE_MAP: Record<string, string> = {
 }
 
 const loadingSteps = [
-  { key: 'pd', title: '문제정의 분석', doneMsg: '발주기관 핵심 문제 도출 완료', activeMsg: '문제 정의 생성 중…', waitMsg: '대기 중' },
-  { key: 'map', title: '요구사항·목차 매핑', doneMsg: '소목차별 요구사항 배정 완료', activeMsg: '소목차별 관련 요구사항 배정 중…', waitMsg: '대기 중' },
-  { key: 'wt', title: 'Win Theme 도출', doneMsg: 'Win Theme 도출 완료', activeMsg: '자사·경쟁사 자료 분석 중…', waitMsg: '대기 중' },
+  {
+    key: 'pd',
+    title: '문제정의 분석',
+    doneMsg: '발주기관 핵심 문제 도출 완료',
+    activeMsg: '문제 정의 생성 중…',
+    waitMsg: '대기 중',
+  },
+  {
+    key: 'map',
+    title: '요구사항·목차 매핑',
+    doneMsg: '소목차별 요구사항 배정 완료',
+    activeMsg: '소목차별 관련 요구사항 배정 중…',
+    waitMsg: '대기 중',
+  },
+  {
+    key: 'wt',
+    title: 'Win Theme 도출',
+    doneMsg: 'Win Theme 도출 완료',
+    activeMsg: '자사·경쟁사 자료 분석 중…',
+    waitMsg: '대기 중',
+  },
 ]
 
 const summary = ref<Stage2Summary | null>(null)
@@ -856,7 +869,11 @@ const onSaveWt = async (wt: WinTheme) => {
 }
 
 const onAddWt = async () => {
-  const src = activeProblemId.value ? [activeProblemId.value] : problemDefs.value[0] ? [problemDefs.value[0].problemId] : []
+  const src = activeProblemId.value
+    ? [activeProblemId.value]
+    : problemDefs.value[0]
+      ? [problemDefs.value[0].problemId]
+      : []
   if (!src.length) {
     openToast({ message: '먼저 문제정의를 추가하세요.', type: 'warning' })
     return
@@ -893,7 +910,11 @@ const onRegenerateWt = async () => {
     if (res.result === 'OK') {
       winThemes.value = res.data
       await loadAll()
-    } else openToast({ message: res.errorCd === 'PROBLEM_DEFINITION_REQUIRED' ? '문제정의가 먼저 필요합니다.' : '재생성 실패', type: 'error' })
+    } else
+      openToast({
+        message: res.errorCd === 'PROBLEM_DEFINITION_REQUIRED' ? '문제정의가 먼저 필요합니다.' : '재생성 실패',
+        type: 'error',
+      })
   } finally {
     regeneratingWtId.value = null
   }
