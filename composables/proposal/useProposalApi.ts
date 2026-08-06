@@ -5,6 +5,7 @@ import type {
   PtProjectListFilter,
   PtRequirement,
   PtEvalCriteria,
+  PtRfpIssue,
   PtTocItem,
   PtTargetTypeCd,
   ProjectSettingsData,
@@ -16,6 +17,11 @@ import type {
   PtSlide,
   Stage2ProgressData,
   Stage2DoneData,
+  Stage2Summary,
+  ProblemDefinition,
+  WinTheme,
+  TocMappingResult,
+  TocMappingNode,
   SectionGenProgressData,
   SectionGenDoneData,
   SectionConfirmResult,
@@ -258,6 +264,119 @@ export const useProposalApi = () => {
   ): Promise<{ result: string }> => {
     return post<{ result: string }>('/ai/proposal/updateEvalCriteria.do', vo)
   }
+
+  const fetchInsertRequirement = async (vo: Partial<PtRequirement> & { ptProjectId: string; reqContent: string }) =>
+    post<{ result: string; data: PtRequirement }>('/ai/proposal/insertRequirement.do', vo)
+
+  const fetchDeleteRequirement = async (requirementId: string) =>
+    post<{ result: string }>(`/ai/proposal/deleteRequirement.do?requirementId=${encodeURIComponent(requirementId)}`, {})
+
+  const fetchInsertEvalCriteria = async (vo: Partial<PtEvalCriteria> & { ptProjectId: string; evalItemNm: string }) =>
+    post<{ result: string; data: PtEvalCriteria }>('/ai/proposal/insertEvalCriteria.do', vo)
+
+  const fetchDeleteEvalCriteria = async (evalCriteriaId: string) =>
+    post<{ result: string }>(
+      `/ai/proposal/deleteEvalCriteria.do?evalCriteriaId=${encodeURIComponent(evalCriteriaId)}`,
+      {},
+    )
+
+  const fetchInsertRfpIssue = async (vo: Partial<PtRfpIssue> & { ptProjectId: string; issueContent: string }) =>
+    post<{ result: string; data: PtRfpIssue }>('/ai/proposal/insertRfpIssue.do', vo)
+
+  const fetchUpdateRfpIssue = async (vo: Partial<PtRfpIssue> & { issueId: string }) =>
+    post<{ result: string }>('/ai/proposal/updateRfpIssue.do', vo)
+
+  const fetchDeleteRfpIssue = async (issueId: string) =>
+    post<{ result: string }>(`/ai/proposal/deleteRfpIssue.do?issueId=${encodeURIComponent(issueId)}`, {})
+
+  // ── Stage2 전략검토 ─────────────────────────────────────────────────────
+
+  const fetchSelectStage2Summary = async (ptProjectId: string) =>
+    get<{ result: string; data: Stage2Summary }>(
+      `/ai/proposal/selectStage2Summary.do?ptProjectId=${encodeURIComponent(ptProjectId)}`,
+    )
+
+  const fetchSelectStage2ProblemDefinitions = async (ptProjectId: string) =>
+    get<{ result: string; data: ProblemDefinition[] }>(
+      `/ai/proposal/selectStage2ProblemDefinitions.do?ptProjectId=${encodeURIComponent(ptProjectId)}`,
+    )
+
+  const fetchSelectStage2WinThemes = async (ptProjectId: string) =>
+    get<{ result: string; data: WinTheme[] }>(
+      `/ai/proposal/selectStage2WinThemes.do?ptProjectId=${encodeURIComponent(ptProjectId)}`,
+    )
+
+  const fetchSelectStage2TocMapping = async (ptProjectId: string) =>
+    get<{ result: string; data: TocMappingResult }>(
+      `/ai/proposal/selectStage2TocMapping.do?ptProjectId=${encodeURIComponent(ptProjectId)}`,
+    )
+
+  const fetchRegenerateStage2ProblemDefinitions = async (vo: {
+    ptProjectId: string
+    modelId: string
+    agentId: string
+    userFeedback?: string
+    totalSlideBudget?: number
+  }) => post<{ result: string; data: ProblemDefinition[] }>('/ai/proposal/regenerateStage2ProblemDefinitions.do', vo)
+
+  const fetchRefineStage2ProblemDefinition = async (vo: {
+    ptProjectId: string
+    problemId: string
+    userFeedback: string
+    modelId: string
+    agentId: string
+  }) => post<{ result: string; data: ProblemDefinition }>('/ai/proposal/refineStage2ProblemDefinition.do', vo)
+
+  const fetchRegenerateStage2WinThemes = async (vo: {
+    ptProjectId: string
+    modelId: string
+    agentId: string
+    userFeedback?: string
+  }) => post<{ result: string; data: WinTheme[]; errorCd?: string }>('/ai/proposal/regenerateStage2WinThemes.do', vo)
+
+  const fetchRegenerateStage2Mapping = async (vo: {
+    ptProjectId: string
+    modelId: string
+    agentId: string
+    totalSlideBudget?: number
+  }) => post<{ result: string; data: TocMappingResult }>('/ai/proposal/regenerateStage2Mapping.do', vo)
+
+  const fetchResetStage2Status = async (ptProjectId: string) =>
+    post<{ result: string }>(`/ai/proposal/resetStage2Status.do?ptProjectId=${encodeURIComponent(ptProjectId)}`, {})
+
+  const fetchUpdateStage2ProblemDefinition = async (
+    vo: Partial<ProblemDefinition> & { ptProjectId: string; problemId: string },
+  ) => post<{ result: string; data: ProblemDefinition }>('/ai/proposal/updateStage2ProblemDefinition.do', vo)
+
+  const fetchInsertStage2ProblemDefinition = async (vo: Partial<ProblemDefinition> & { ptProjectId: string }) =>
+    post<{ result: string; data: ProblemDefinition }>('/ai/proposal/insertStage2ProblemDefinition.do', vo)
+
+  const fetchDeleteStage2ProblemDefinition = async (ptProjectId: string, problemId: string) =>
+    post<{ result: string }>(
+      `/ai/proposal/deleteStage2ProblemDefinition.do?ptProjectId=${encodeURIComponent(ptProjectId)}&problemId=${encodeURIComponent(problemId)}`,
+      {},
+    )
+
+  const fetchUpdateStage2WinTheme = async (vo: Partial<WinTheme> & { ptProjectId: string; winThemeId: string }) =>
+    post<{ result: string; data: WinTheme }>('/ai/proposal/updateStage2WinTheme.do', vo)
+
+  const fetchInsertStage2WinTheme = async (vo: Partial<WinTheme> & { ptProjectId: string }) =>
+    post<{ result: string; data: WinTheme }>('/ai/proposal/insertStage2WinTheme.do', vo)
+
+  const fetchDeleteStage2WinTheme = async (ptProjectId: string, winThemeId: string) =>
+    post<{ result: string }>(
+      `/ai/proposal/deleteStage2WinTheme.do?ptProjectId=${encodeURIComponent(ptProjectId)}&winThemeId=${encodeURIComponent(winThemeId)}`,
+      {},
+    )
+
+  const fetchUpdateStage2TocMapping = async (
+    ptProjectId: string,
+    vo: { tocId: string; coveredReqIds: string[]; linkedEvalCriteriaId: string | null },
+  ) =>
+    post<{ result: string; data: TocMappingNode }>(
+      `/ai/proposal/updateStage2TocMapping.do?ptProjectId=${encodeURIComponent(ptProjectId)}`,
+      vo,
+    )
 
   /**
    * Stage1 추출 — SSE 스트림
@@ -637,7 +756,31 @@ export const useProposalApi = () => {
     fetchSelectStage1Result,
     fetchUpdateRequirement,
     fetchUpdateEvalCriteria,
+    fetchInsertRequirement,
+    fetchDeleteRequirement,
+    fetchInsertEvalCriteria,
+    fetchDeleteEvalCriteria,
+    fetchInsertRfpIssue,
+    fetchUpdateRfpIssue,
+    fetchDeleteRfpIssue,
     streamExtractStage1,
+    // Stage2 전략검토
+    fetchSelectStage2Summary,
+    fetchSelectStage2ProblemDefinitions,
+    fetchSelectStage2WinThemes,
+    fetchSelectStage2TocMapping,
+    fetchRegenerateStage2ProblemDefinitions,
+    fetchRefineStage2ProblemDefinition,
+    fetchRegenerateStage2WinThemes,
+    fetchRegenerateStage2Mapping,
+    fetchResetStage2Status,
+    fetchUpdateStage2ProblemDefinition,
+    fetchInsertStage2ProblemDefinition,
+    fetchDeleteStage2ProblemDefinition,
+    fetchUpdateStage2WinTheme,
+    fetchInsertStage2WinTheme,
+    fetchDeleteStage2WinTheme,
+    fetchUpdateStage2TocMapping,
     // Step E (본문 생성)
     streamAnalyzeStage2,
     streamGenerateSection,

@@ -19,7 +19,7 @@
       </div>
     </div>
 
-    <!-- 5단계 스텝바 -->
+    <!-- 7단계 스텝바 -->
     <ProposalStepper
       :steps="steps"
       :max-unlocked-step="maxUnlockedStep"
@@ -40,13 +40,10 @@
         :model-id="modelId"
         :agent-id="agentId"
         :writing-guideline-json="currentProject?.writingGuidelineJson"
-        :toc-list="tocList"
-        :is-loading="isTocLoading"
+        :focus-tab="stepBFocusTab"
+        :focus-id="stepBFocusId"
         @next="onAdvance"
-        @auto-extract="handleAutoExtractToc"
-        @add-item="handleAddTocItem"
-        @delete-item="handleDeleteTocItem"
-        @update-title="handleUpdateTocTitle"
+        @focus-cleared="clearStepBFocus"
       />
       <ProposalStepC
         v-else-if="currentStep === 2"
@@ -63,8 +60,16 @@
         :doc-size="docSize"
         @next="onAdvance"
       />
-      <ProposalStepE
+      <ProposalStepStrategy
         v-else-if="currentStep === 4"
+        :pt-project-id="ptProjectId"
+        :model-id="modelId"
+        :agent-id="agentId"
+        @next="onAdvance"
+        @go-step2="onGoStep2DeepLink"
+      />
+      <ProposalStepE
+        v-else-if="currentStep === 5"
         :section-list="sectionList"
         :raw-toc-list="rawTocList"
         :slides-cache="slidesCache"
@@ -86,7 +91,7 @@
         @slides-updated="onSlidesUpdated"
       />
       <ProposalStepF
-        v-else-if="currentStep === 5"
+        v-else-if="currentStep === 6"
         :pt-project-id="ptProjectId"
         :agent-id="agentId"
       />
@@ -128,17 +133,32 @@ const docSize = computed<'169' | '43' | 'a4'>(() => {
 })
 
 // ---- 스텝바 ----
+// 0템플릿 → 1목차·요구사항 → 2설정 → 3템플릿생성 → 4전략검토 → 5본문생성 → 6출력
 const STEP_DEFS = [
   { key: 'template' as const, label: '템플릿', sub: '보완/생성' },
-  { key: 'toc' as const, label: '목차', sub: 'TOC 구성' },
+  { key: 'toc' as const, label: '목차·요구사항', sub: 'TOC / 요구사항 / 평가기준 / 현황이슈' },
   { key: 'settings' as const, label: '설정', sub: '자료·스타일·컬러' },
   { key: 'template-gen' as const, label: '템플릿 생성', sub: '헤더·푸터 레이아웃' },
+  { key: 'strategy' as const, label: '전략검토', sub: '문제정의 / Win Theme / 목차매핑' },
   { key: 'generate' as const, label: '본문 생성', sub: '소목차별 순차 진행' },
   { key: 'export' as const, label: '출력', sub: 'PDF 추출' },
 ]
 
 const currentStep = ref(0)
 const maxUnlockedStep = ref(0)
+
+/** Step2 딥링크 (전략검토 source 배지 → 요구사항/이슈 탭) */
+const stepBFocusTab = ref<'toc' | 'req' | 'ec' | 'issue' | null>(null)
+const stepBFocusId = ref<string | null>(null)
+const clearStepBFocus = () => {
+  stepBFocusTab.value = null
+  stepBFocusId.value = null
+}
+const onGoStep2DeepLink = (payload: { tab: 'toc' | 'req' | 'ec' | 'issue'; id?: string }) => {
+  stepBFocusTab.value = payload.tab
+  stepBFocusId.value = payload.id ?? null
+  onGoStep(1)
+}
 
 const steps = computed<PtStep[]>(() =>
   STEP_DEFS.map((def, idx) => ({
@@ -161,64 +181,16 @@ const onAdvance = () => {
   onStepChanged(next)
 }
 
-// E-0: Stage2 전략분석 1회 자동 실행 여부 (본문 생성 단계)
-const stage2Triggered = ref(false)
-
-const { fetchSelectPtProject, streamAnalyzeStage2, fetchUpdateMaxStepNo } = useProposalApi()
-
-const STAGE2_STEP_MESSAGES: Record<string, string> = {
-  load: '분석 데이터를 불러오는 중...',
-  prompt: '전략 분석 프롬프트를 준비하는 중...',
-  problem_def: '문제 정의를 생성하는 중...',
-  parse: '분석 결과를 검증하는 중...',
-  req_mapping: '요구사항 매핑 중...',
-  extract_ref: '레퍼런스 자료를 분석하는 중...',
-  win_theme: '핵심 전략을 생성하는 중...',
-  save: '분석 결과를 저장하는 중...',
-}
-
-const runStage2 = () => {
-  if (stage2Triggered.value) return
-  stage2Triggered.value = true
-  openLoading({ text: '전략 분석을 시작하는 중...' })
-  streamAnalyzeStage2(ptProjectId.value, modelId.value, agentId.value, {
-    onProgress: (data) => {
-      const msg = STAGE2_STEP_MESSAGES[data.step]
-      if (msg) updateLoadingText(msg)
-    },
-    onDone: (data) => {
-      closeLoading()
-      if (!data.skipped) {
-        console.warn('[Stage2] 전략분석 완료:', data)
-      }
-    },
-    onError: (msg) => {
-      closeLoading()
-      console.warn('[Stage2] 전략분석 실패:', msg)
-      // 재실행 허용 (실패 시 다음 진입에서 재시도 가능하도록)
-      stage2Triggered.value = false
-    },
-  })
-}
+const { fetchSelectPtProject, fetchUpdateMaxStepNo } = useProposalApi()
 
 const onStepChanged = (step: number) => {
   if (step === 1) handleSelectTocList()
-  if (step === 4) {
-    handleSelectSectionList()
-    runStage2()
-  }
+  // 본문생성(5): 섹션 목록만 로드 — Stage2는 전략검토(4)에서 처리
+  if (step === 5) handleSelectSectionList()
 }
 
-// ---- TOC ----
-const {
-  tocList,
-  isLoading: isTocLoading,
-  handleSelectTocList,
-  handleAutoExtractToc,
-  handleAddTocItem,
-  handleDeleteTocItem,
-  handleUpdateTocTitle,
-} = useProposalToc(ptProjectId)
+// ---- TOC (Step B 진입 시 선행 로드; 상세 CRUD는 ProposalStepB 내부) ----
+const { handleSelectTocList } = useProposalToc(ptProjectId)
 
 // ---- 소목차 생성 ----
 const {

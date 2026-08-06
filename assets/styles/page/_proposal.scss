@@ -3,10 +3,10 @@
 @use '../utils/mixins' as *;
 
 // =============================================
-// PT 제안 에이전트
+// PT ?�안 ?�이?�트
 // =============================================
 
-// ---- 목록 페이지 ----
+// ---- 목록 ?�이지 ----
 .pt-list-page {
   display: flex;
   flex-direction: column;
@@ -58,7 +58,7 @@
   @include typo($body-medium, $color-text-muted);
 }
 
-// ---- 필터 바 ----
+// ---- ?�터 �?----
 .pt-filter-bar {
   display: flex;
   align-items: center;
@@ -153,7 +153,7 @@
   flex-shrink: 0;
 }
 
-// ---- 뷰 토글 ----
+// ---- �??��? ----
 .pt-view-toggle {
   display: flex;
   align-items: center;
@@ -186,7 +186,7 @@
   }
 }
 
-// ---- 활성 필터 태그 ----
+// ---- ?�성 ?�터 ?�그 ----
 .pt-filter-tags {
   display: flex;
   align-items: center;
@@ -240,7 +240,7 @@
   margin-left: auto;
 }
 
-// ---- 카드 그리드 ----
+// ---- 카드 그리??----
 .pt-card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -282,7 +282,7 @@
   margin-bottom: $spacing-sm;
 }
 
-// ---- 목록 뷰 ----
+// ---- 목록 �?----
 .pt-list-rows {
   display: flex;
   flex-direction: column;
@@ -321,7 +321,7 @@
   white-space: nowrap;
 }
 
-// ---- 상태 뱃지 ----
+// ---- ?�태 뱃�? ----
 .pt-status-badge {
   display: inline-flex;
   align-items: center;
@@ -330,21 +330,21 @@
   padding: 3px 9px;
   border-radius: 12px;
 
-  &.status-PT000001 { // 작성중
+  &.status-PT000001 { // ?�성�?
     background: #FFF3E3;
     color: $color-warning;
   }
-  &.status-PT000002 { // 검토중
+  &.status-PT000002 { // 검?�중
     background: var(--color-primary-bg);
     color: var(--color-primary-dark);
   }
-  &.status-PT000003 { // 완료
+  &.status-PT000003 { // ?�료
     background: rgba($color-success, 0.12);
     color: color.adjust($color-success, $lightness: -10%);
   }
 }
 
-// ---- 진행률 바 ----
+// ---- 진행�?�?----
 .pt-progress-bar {
   height: 4px;
   border-radius: 4px;
@@ -428,7 +428,7 @@
   border-top: 1px solid $color-border;
 }
 
-// ---- 폼 공통 ----
+// ---- ??공통 ----
 .pt-form-field {
   display: flex;
   flex-direction: column;
@@ -462,7 +462,7 @@
   }
 }
 
-// ---- 토글 ----
+// ---- ?��? ----
 .pt-toggle-row {
   display: flex;
   border: 1px solid $color-border;
@@ -492,7 +492,7 @@
 }
 
 // =============================================
-// 상세 페이지 — Meeting(meeting2) 동일 셸
+// ?�세 ?�이지 ??Meeting(meeting2) ?�일 ??
 // =============================================
 .pt-detail-page {
   display: flex;
@@ -565,7 +565,7 @@
   margin: 0;
 }
 
-// ---- 스텝바 (meeting2-stepper 동일) ----
+// ---- ?�텝�?(meeting2-stepper ?�일) ----
 .pt-stepbar {
   display: flex;
   align-items: stretch;
@@ -717,12 +717,12 @@
 
 .pt-stepbar-toggle-icon {
   transition: transform $transition-fast;
-  transform: rotate(180deg); // 펼친 상태: 위 화살표
+  transform: rotate(180deg); // ?�친 ?�태: ???�살??
 
-  &.is-collapsed { transform: rotate(0deg); } // 접힌 상태: 아래 화살표
+  &.is-collapsed { transform: rotate(0deg); } // ?�힌 ?�태: ?�래 ?�살??
 }
 
-// ---- 스텝 콘텐츠 영역 ----
+// ---- ?�텝 콘텐�??�역 ----
 .pt-step-content {
   flex: 1;
   min-height: 0;
@@ -730,7 +730,7 @@
   display: flex;
   flex-direction: column;
 
-  // 일반 단계 (A, B, C, E, F): 내부 스크롤
+  // ?�반 ?�계 (A, B, C, E, F): ?��? ?�크�?
   > * {
     flex: 1;
     min-height: 0;
@@ -738,14 +738,14 @@
     @include custom-scrollbar;
   }
 
-  // Step E: meeting2-layout처럼 패딩 없이 높이 채움
+  // Step E: meeting2-layout처럼 ?�딩 ?�이 ?�이 채�?
   > .pt-stepD-layout {
     overflow: hidden;
     padding: 0;
   }
 }
 
-// ---- 단계 콘텐츠 공통 패널 ----
+// ---- ?�계 콘텐�?공통 ?�널 ----
 .pt-panel {
   background: #fff;
   border: 1px solid $color-border;
@@ -784,7 +784,7 @@
 }
 
 // =============================================
-// Step A — 템플릿
+// Step A ???�플�?
 // =============================================
 .pt-option-row {
   display: flex;
@@ -916,10 +916,10 @@
 .pt-size-43 .pt-size-ratio { width: 38px; height: 28px; }
 
 // =============================================
-// Step B — 목차
+// Step B ??목차
 // =============================================
 
-// RFP 첨부 영역
+// RFP 첨�? ?�역
 .pt-toc-rfp-opt {
   @include typo($body-xsmall);
   color: $color-text-muted;
@@ -1086,7 +1086,7 @@
 }
 
 // =============================================
-// Step C — 설정
+// Step C ???�정
 // =============================================
 .pt-settings-grid {
   display: grid;
@@ -1213,7 +1213,7 @@
 }
 
 // =============================================
-// Step D — 템플릿 생성 (3단 레이아웃)
+// Step D ???�플�??�성 (3???�이?�웃)
 // =============================================
 .pt-template-gen-panel {
   min-height: 560px;
@@ -1226,7 +1226,7 @@
   padding: $spacing-xl 0;
 }
 
-// 2단 레이아웃: 좌(현황) / 중(미리보기+WYSIWYG)
+// 2???�이?�웃: �??�황) / �?미리보기+WYSIWYG)
 .pt-template-gen-layout {
   display: grid;
   grid-template-columns: 220px 1fr;
@@ -1238,14 +1238,14 @@
   }
 }
 
-// ---- 좌측 패널 ----
+// ---- 좌측 ?�널 ----
 .pt-template-gen-left {
   display: flex;
   flex-direction: column;
   gap: $spacing-md;
 }
 
-// 생성 현황 pill 목록
+// ?�성 ?�황 pill 목록
 .pt-template-status-list {
   display: flex;
   flex-direction: column;
@@ -1287,7 +1287,7 @@
   }
 }
 
-// 컬러 스와치
+// 컬러 ?��?�?
 .pt-template-colors {
   display: flex;
   flex-direction: column;
@@ -1307,7 +1307,7 @@
   flex-shrink: 0;
 }
 
-// 액션 버튼 영역
+// ?�션 버튼 ?�역
 .pt-template-gen-actions {
   display: flex;
   flex-direction: column;
@@ -1315,7 +1315,7 @@
   margin-top: auto;
 }
 
-// ---- 중앙 패널 ----
+// ---- 중앙 ?�널 ----
 .pt-template-gen-center {
   display: flex;
   flex-direction: column;
@@ -1325,8 +1325,8 @@
   background: #fff;
 }
 
-// 헤더 행: 레이아웃 토글(좌) + UiTab(우) 한 줄
-// UiTab 자체에 border-bottom 이 있으므로 여기선 border 없음
+// ?�더 ?? ?�이?�웃 ?��?(�? + UiTab(?? ??�?
+// UiTab ?�체??border-bottom ???�으므�??�기??border ?�음
 .pt-template-center-head {
   display: flex;
   align-items: center;
@@ -1336,7 +1336,7 @@
   padding: $spacing-sm $spacing-md;
   flex-shrink: 0;
 
-  // UiTab 내부 여백·max-width·크기 초기화 (flex 행 안에서 사용)
+  // UiTab ?��? ?�백·max-width·?�기 초기??(flex ???�에???�용)
   :deep(.ui-tab) {
     border-bottom: none;
   }
@@ -1353,7 +1353,7 @@
   }
 }
 
-// 레이아웃 타입 토글 (본문형 / 표지형) — pill 스타일
+// ?�이?�웃 ?�???��? (본문??/ ?��??? ??pill ?��???
 .pt-layout-toggle {
   display: flex;
   background: $color-surface;
@@ -1382,8 +1382,8 @@
   }
 }
 
-// 미리보기 탭: 슬라이드 레이아웃 (헤더 / 본문 / 푸터)
-// aspect-ratio 는 인라인 스타일로 docSize에 따라 주입됨
+// 미리보기 ?? ?�라?�드 ?�이?�웃 (?�더 / 본문 / ?�터)
+// aspect-ratio ???�라???��??�로 docSize???�라 주입??
 .pt-template-preview {
   display: flex;
   flex-direction: column;
@@ -1426,8 +1426,8 @@
   font-style: italic;
 }
 
-// 더미 본문 콘텐츠 — 미리보기 전용, 저장 대상 아님
-// CSS 변수 --base-color / --accent-color 는 부모 인라인 스타일로 주입됨
+// ?��? 본문 콘텐�???미리보기 ?�용, ?�???�???�님
+// CSS 변??--base-color / --accent-color ??부�??�라???��??�로 주입??
 
 .pt-dummy-body {
   width: 100%;
@@ -1550,7 +1550,7 @@
   }
 }
 
-// 개별 슬롯 (position:absolute, inline style로 배치)
+// 개별 ?�롯 (position:absolute, inline style�?배치)
 .pt-template-slot {
   overflow: hidden;
   white-space: nowrap;
@@ -1562,9 +1562,9 @@
   height: 100%;
 }
 
-// 편집 모드 — 미리보기와 동일 구조에 편집 인터랙션만 추가
+// ?�집 모드 ??미리보기?� ?�일 구조???�집 ?�터?�션�?추�?
 .pt-template-editor {
-  // 헤더·푸터 영역에 편집 가능함을 나타내는 점선 링
+  // ?�더·?�터 ?�역???�집 가?�함???��??�는 ?�선 �?
   .pt-template-preview-header,
   .pt-template-preview-footer {
     outline: 1.5px dashed $color-border;
@@ -1576,7 +1576,7 @@
   }
 }
 
-// 슬롯 편집 탭 (태그 목록 — 하위 호환 보존)
+// ?�롯 ?�집 ??(?�그 목록 ???�위 ?�환 보존)
 .pt-template-slots-view {
   display: flex;
   flex-direction: column;
@@ -1618,7 +1618,7 @@
   font-weight: $font-weight-normal;
 }
 
-// ---- WYSIWYG 드래그 편집기 ----
+// ---- WYSIWYG ?�래�??�집�?----
 .pt-wysiwyg-wrap {
   display: flex;
   flex-direction: column;
@@ -1635,7 +1635,7 @@
   flex-shrink: 0;
 }
 
-// 드래그 가능한 캔버스 영역
+// ?�래�?가?�한 캔버???�역
 .pt-wysiwyg-canvas {
   position: relative;
   background: #fff;
@@ -1653,7 +1653,7 @@
   }
 }
 
-// 각 슬롯 요소 (absolute 위치)
+// �??�롯 ?�소 (absolute ?�치)
 .pt-wysiwyg-slot {
   position: absolute;
   border: 1.5px dashed $color-border;
@@ -1681,7 +1681,7 @@
     z-index: 5;
   }
 
-  // 구분선 슬롯: 점선이 전체 너비로 표시
+  // 구분???�롯: ?�선???�체 ?�비�??�시
   &.is-divider {
     padding: 0;
     border-style: dashed;
@@ -1691,7 +1691,7 @@
   }
 }
 
-// 인라인 텍스트 편집 영역
+// ?�라???�스???�집 ?�역
 .pt-wysiwyg-text {
   outline: none;
   cursor: text;
@@ -1701,7 +1701,7 @@
   line-height: inherit;
 }
 
-// 본문 구분 영역 (편집 불가)
+// 본문 구분 ?�역 (?�집 불�?)
 .pt-wysiwyg-body-gap {
   background: #f3f2fb;
   border-radius: $border-radius-sm;
@@ -1717,7 +1717,7 @@
   }
 }
 
-// 슬롯 스타일 편집 패널 (슬롯 클릭 시 캔버스 하단에 표시)
+// ?�롯 ?��????�집 ?�널 (?�롯 ?�릭 ??캔버???�단???�시)
 .pt-slot-style-panel {
   flex-shrink: 0;
   display: flex;
@@ -1832,7 +1832,7 @@
   }
 }
 
-// 스타일 패널 슬라이드 인/아웃 트랜지션
+// ?��????�널 ?�라?�드 ???�웃 ?�랜지??
 .pt-style-panel-enter-active,
 .pt-style-panel-leave-active {
   transition: max-height $transition-base, opacity $transition-base;
@@ -1855,7 +1855,7 @@
   height: 48px;
 }
 
-// ---- 우측 패널 (보완요청 채팅) ----
+// ---- ?�측 ?�널 (보완?�청 채팅) ----
 .pt-template-gen-right {
   display: flex;
   flex-direction: column;
@@ -1907,7 +1907,7 @@
 }
 
 // =============================================
-// Step E — 본문 생성 (meeting2-layout 동일 3단)
+// Step E ??본문 ?�성 (meeting2-layout ?�일 3??
 // =============================================
 .pt-stepD-layout {
   display: grid;
@@ -1966,7 +1966,7 @@
     border-radius: 0;
   }
 
-  // 중앙 패널 — 좌측 목차와 동일 비율로 타이포 상향
+  // 중앙 ?�널 ??좌측 목차?� ?�일 비율�??�?�포 ?�향
   .pt-gen-title {
     @include typo($body-large-bold);
   }
@@ -2021,7 +2021,7 @@
     border-radius: 0;
   }
 
-  // 우측 채팅 패널 — 좌측 목차와 동일 비율로 타이포 상향
+  // ?�측 채팅 ?�널 ??좌측 목차?� ?�일 비율�??�?�포 ?�향
   .pt-chat-head {
     @include typo($body-medium-bold);
   }
@@ -2066,13 +2066,13 @@
   }
 }
 
-// 리사이즈 중 전역 커서·선택 방지
+// 리사?�즈 �??�역 커서·?�택 방�?
 body.is-resizing {
   cursor: col-resize;
   user-select: none;
 }
 
-// 좌측: 목차 트리 리스트
+// 좌측: 목차 ?�리 리스??
 .pt-sec-list {
   border: 1px solid $color-border;
   border-radius: $border-radius-lg;
@@ -2081,7 +2081,7 @@ body.is-resizing {
   @include custom-scrollbar;
 }
 
-// 대목차 헤더 (클릭 불가)
+// ?�목차 ?�더 (?�릭 불�?)
 .pt-sec-group-title {
   padding: 8px $spacing-sm;
   border-bottom: 1px solid $color-border;
@@ -2092,7 +2092,7 @@ body.is-resizing {
   letter-spacing: 0.01em;
 }
 
-// 소목차 (클릭 가능, 들여쓰기)
+// ?�목�?(?�릭 가?? ?�여?�기)
 .pt-sec-item {
   padding: 11px $spacing-sm 11px ($spacing-sm + 12px);
   border-bottom: 1px solid $color-border;
@@ -2142,7 +2142,7 @@ body.is-resizing {
   &.is-bold { font-weight: $font-weight-semibold; }
 }
 
-// 슬라이드 생성 완료 수 뱃지
+// ?�라?�드 ?�성 ?�료 ??뱃�?
 .pt-sec-slide-badge {
   flex-shrink: 0;
   padding: 2px 7px;
@@ -2153,7 +2153,7 @@ body.is-resizing {
   line-height: 1.6;
 }
 
-// 중앙: 미리보기 패널
+// 중앙: 미리보기 ?�널
 .pt-gen-panel {
   border: 1px solid $color-border;
   border-radius: $border-radius-lg;
@@ -2201,7 +2201,7 @@ body.is-resizing {
   @include custom-scrollbar;
 }
 
-// 인포그래픽 이미지 상태 (이미지 보기 버튼 / 생성 중 안내)
+// ?�포그래???��?지 ?�태 (?��?지 보기 버튼 / ?�성 �??�내)
 .pt-slide-image-status {
   display: flex;
   align-items: center;
@@ -2232,7 +2232,7 @@ body.is-resizing {
   display: inline-block;
 }
 
-// 인포그래픽 이미지 단독 모달
+// ?�포그래???��?지 ?�독 모달
 .pt-image-modal {
   background: #fff;
   border-radius: $border-radius-lg;
@@ -2271,7 +2271,7 @@ body.is-resizing {
   padding: $spacing-lg;
 }
 
-// UiModal 내부 이미지 스크롤 래퍼
+// UiModal ?��? ?��?지 ?�크�??�퍼
 .pt-image-modal-img-wrap {
   max-height: 70vh;
   overflow-y: auto;
@@ -2300,7 +2300,7 @@ body.is-resizing {
   overflow-y: auto;
   @include custom-scrollbar;
 
-  // colorIndex 기반 CSS 변수 주입 (슬라이드 렌더러 컴포넌트에 상속)
+  // colorIndex 기반 CSS 변??주입 (?�라?�드 ?�더??컴포?�트???�속)
   &.is-color-0 {
     --slide-base-color: #5b4fe9;
     --slide-accent-color: #e08a2c;
@@ -2374,7 +2374,7 @@ body.is-resizing {
   border-radius: $border-radius-base;
 }
 
-// 캐러셀 레이아웃
+// 캐러?� ?�이?�웃
 .pt-slide-carousel {
   display: flex;
   flex-direction: column;
@@ -2383,7 +2383,7 @@ body.is-resizing {
   overflow: hidden;
 }
 
-// 썸네일 스트립
+// ?�네???�트�?
 .pt-slide-strip {
   display: flex;
   gap: 6px;
@@ -2433,7 +2433,7 @@ body.is-resizing {
   @include ellipsis(1);
 }
 
-// 생성 진행 표시
+// ?�성 진행 ?�시
 .pt-gen-progress {
   display: flex;
   flex-direction: column;
@@ -2475,7 +2475,7 @@ body.is-resizing {
   color: $color-text-muted;
 }
 
-// 슬라이드 빈 상태
+// ?�라?�드 �??�태
 .pt-slide-empty {
   flex: 1;
   display: flex;
@@ -2485,7 +2485,7 @@ body.is-resizing {
   overflow: auto;
 }
 
-// 채팅 힌트
+// 채팅 ?�트
 .pt-chat-hint {
   @include typo($body-xsmall);
   color: $color-text-muted;
@@ -2518,7 +2518,7 @@ body.is-resizing {
 }
 
 // =============================================
-// 채팅 사이드 (Step E)
+// 채팅 ?�이??(Step E)
 // =============================================
 .pt-chat-side {
   border: 1px solid $color-border;
@@ -2617,7 +2617,7 @@ body.is-resizing {
 }
 
 // =============================================
-// (레거시) 검토 2단 레이아웃
+// (?�거?? 검??2???�이?�웃
 // =============================================
 .pt-stepE-layout {
   display: grid;
@@ -2633,7 +2633,7 @@ body.is-resizing {
   }
 }
 
-// ---- 패널 헤더 행 (타이틀 + 렌더 현황) ----
+// ---- ?�널 ?�더 ??(?�?��? + ?�더 ?�황) ----
 .pt-panel-head-row {
   display: flex;
   align-items: flex-start;
@@ -2655,7 +2655,7 @@ body.is-resizing {
   white-space: nowrap;
 }
 
-// ---- 로딩 스켈레톤 ----
+// ---- 로딩 ?�켈?�톤 ----
 .pt-review-section-skeleton {
   height: 120px;
   background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
@@ -2670,7 +2670,7 @@ body.is-resizing {
   100% { background-position: -200% 0; }
 }
 
-// ---- 소목차 섹션 ----
+// ---- ?�목�??�션 ----
 .pt-review-section {
   margin-bottom: $spacing-lg;
 }
@@ -2699,7 +2699,7 @@ body.is-resizing {
   color: $color-text-muted;
 }
 
-// ---- 슬라이드 가로 스크롤 행 ----
+// ---- ?�라?�드 가�??�크�???----
 .pt-review-slides {
   display: flex;
   gap: $spacing-sm;
@@ -2709,7 +2709,7 @@ body.is-resizing {
   @include custom-scrollbar;
 }
 
-// ---- 슬라이드 썸네일 카드 ----
+// ---- ?�라?�드 ?�네??카드 ----
 .pt-review-slide {
   position: relative;
   flex-shrink: 0;
@@ -2734,7 +2734,7 @@ body.is-resizing {
   display: block;
 }
 
-// JSON 목업 미니 프리뷰
+// JSON 목업 미니 ?�리�?
 .pt-review-slide-mock {
   width: 100%;
   aspect-ratio: 4/3;
@@ -2762,7 +2762,7 @@ body.is-resizing {
   line-height: 1.4;
 }
 
-// ---- 렌더 상태 배지 ----
+// ---- ?�더 ?�태 배�? ----
 .pt-render-badge {
   position: absolute;
   bottom: 4px;
@@ -2798,10 +2798,10 @@ body.is-resizing {
 }
 
 // =============================================
-// (레거시) 슬라이드 풀사이즈 뷰어 모달
+// (?�거?? ?�라?�드 ?�?�이�?뷰어 모달
 // =============================================
 
-// 썸네일 호버 오버레이
+// ?�네???�버 ?�버?�이
 .pt-review-slide-hover {
   position: absolute;
   inset: 0;
@@ -2820,7 +2820,7 @@ body.is-resizing {
   opacity: 1;
 }
 
-// 페이드 트랜지션
+// ?�이???�랜지??
 .pt-viewer-fade-enter-active,
 .pt-viewer-fade-leave-active {
   transition: opacity $transition-base;
@@ -2831,7 +2831,7 @@ body.is-resizing {
   opacity: 0;
 }
 
-// 오버레이
+// ?�버?�이
 .pt-slide-viewer-overlay {
   position: fixed;
   inset: 0;
@@ -2843,7 +2843,7 @@ body.is-resizing {
   padding: $spacing-md;
 }
 
-// 뷰어 컨테이너
+// 뷰어 컨테?�너
 .pt-slide-viewer {
   background: #fff;
   border-radius: $border-radius-lg;
@@ -2855,7 +2855,7 @@ body.is-resizing {
   box-shadow: $shadow-lg;
 }
 
-// 뷰어 헤더
+// 뷰어 ?�더
 .pt-slide-viewer-head {
   display: flex;
   align-items: center;
@@ -2900,7 +2900,7 @@ body.is-resizing {
   }
 }
 
-// 뷰어 본문 (화살표 + 슬라이드 스테이지)
+// 뷰어 본문 (?�살??+ ?�라?�드 ?�테?��?)
 .pt-slide-viewer-body {
   flex: 1;
   display: flex;
@@ -2911,7 +2911,7 @@ body.is-resizing {
   min-height: 0;
 }
 
-// 이전/다음 버튼
+// ?�전/?�음 버튼
 .pt-slide-viewer-nav {
   flex-shrink: 0;
   width: 40px;
@@ -2938,7 +2938,7 @@ body.is-resizing {
   }
 }
 
-// 슬라이드 표시 영역
+// ?�라?�드 ?�시 ?�역
 .pt-slide-viewer-stage {
   flex: 1;
   display: flex;
@@ -2949,7 +2949,7 @@ body.is-resizing {
 
   @include custom-scrollbar;
 
-  // 슬라이드 목업을 뷰어 안에서 더 크게
+  // ?�라?�드 목업??뷰어 ?�에?????�게
   .pt-slide-mock {
     width: 100%;
     max-width: 720px;
@@ -2957,7 +2957,7 @@ body.is-resizing {
   }
 }
 
-// 렌더링된 이미지 풀사이즈
+// ?�더링된 ?��?지 ?�?�이�?
 .pt-slide-viewer-img {
   width: 100%;
   max-width: 720px;
@@ -2966,7 +2966,7 @@ body.is-resizing {
   display: block;
 }
 
-// 썸네일 스트립
+// ?�네???�트�?
 .pt-slide-viewer-strip {
   display: flex;
   gap: $spacing-xs;
@@ -3018,7 +3018,7 @@ body.is-resizing {
   &.is-color-2 { background: linear-gradient(135deg, #e8f5ee, #c5e8d5); color: #2e7d5a; }
 }
 
-// ---- 소목차 썸네일 그리드 ----
+// ---- ?�목�??�네??그리??----
 .pt-thumb-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -3057,7 +3057,7 @@ body.is-resizing {
   border-radius: $border-radius-sm;
 }
 
-// 이미지 없을 때 보여주는 미니 슬라이드 목업
+// ?��?지 ?�을 ??보여주는 미니 ?�라?�드 목업
 .pt-thumb-mini {
   width: 100%;
   height: 100%;
@@ -3136,7 +3136,7 @@ body.is-resizing {
 }
 
 // =============================================
-// Step F — 출력
+// Step F ??출력
 // =============================================
 .pt-final-box {
   display: flex;
@@ -3173,4 +3173,691 @@ body.is-resizing {
 .pt-final-actions {
   display: flex;
   gap: $spacing-sm;
+}
+
+// =============================================
+// Step2 / Step5 ???�브??· ?�략검??
+// =============================================
+.pt-subtabs {
+  display: flex;
+  gap: 4px;
+  background: $color\-surface;
+  padding: 4px;
+  border-radius: 10px;
+  width: fit-content;
+  margin: $spacing-md 0 $spacing-md;
+}
+
+.pt-subtab {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  @include typo($body-small-bold);
+  color: $color-text-muted;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  &.active {
+    background: #fff;
+    color: $color-text-heading;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.pt-subtab-count {
+  background: $color-border;
+  color: $color\-text-primary;
+  font-size: 11px;
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-weight: 700;
+
+  &.is-warn {
+    background: rgba(#e0762c, 0.15);
+    color: #e0762c;
+  }
+
+  .pt-subtab.active & {
+    background: var(--color-primary-bg);
+    color: var(--color-primary);
+  }
+}
+
+.pt-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 5px;
+  padding: 2px 7px;
+
+  &.is-gray { background: $color\-surface; color: $color\-text-primary; }
+  &.is-blue { background: var(--color-primary-bg); color: var(--color-primary); }
+  &.is-warn { background: rgba(#e0762c, 0.12); color: #e0762c; }
+  &.is-ok { background: rgba(#1e9e6b, 0.12); color: #1e9e6b; }
+  &.is-danger { background: rgba(#d64545, 0.12); color: #d64545; }
+  &.is-accent { background: rgba(#e08a2c, 0.12); color: #e08a2c; }
+}
+
+.pt-alertbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(#e0762c, 0.1);
+  color: #c45f16;
+  border: 1px solid rgba(#e0762c, 0.25);
+  border-radius: 8px;
+  padding: 10px 14px;
+  @include typo($body-small-bold);
+  margin-bottom: 12px;
+
+  .ui-button { margin-left: auto; }
+}
+
+.pt-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.pt-card-table {
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  overflow: hidden;
+  background: #fff;
+}
+
+.pt-datatable {
+  width: 100%;
+  border-collapse: collapse;
+  @include typo($body-small);
+
+  th {
+    text-align: left;
+    background: $color\-surface;
+    color: $color-text-muted;
+    font-weight: 600;
+    font-size: 11px;
+    padding: 10px 12px;
+    border-bottom: 1px solid $color-border;
+  }
+
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid $color-border;
+    vertical-align: top;
+  }
+
+  tr.is-focus td { background: var(--color-primary-bg); }
+}
+
+.pt-editable {
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  padding: 4px 6px;
+  font: inherit;
+  resize: vertical;
+  background: transparent;
+
+  &:hover { border-color: $color-border; background: $color\-surface; }
+  &:focus { outline: none; border-color: var(--color-primary); background: #fff; }
+}
+
+.pt-toggle {
+  display: inline-flex;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid $color-border;
+  padding: 0;
+  background: #fff;
+  cursor: pointer;
+
+  span {
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    color: $color-text-muted;
+
+    &.on {
+      background: var(--color-primary);
+      color: #fff;
+    }
+  }
+}
+
+.pt-rowdel {
+  border: none;
+  background: none;
+  color: $color-text-muted;
+  cursor: pointer;
+  font-size: 14px;
+  &:hover { color: #d64545; }
+}
+
+.pt-ec-sumbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: rgba(#1e9e6b, 0.1);
+  border: 1px solid $color-border;
+  border-radius: 8px 8px 0 0;
+
+  &.bad {
+    background: rgba(#d64545, 0.08);
+    b { color: #d64545; }
+  }
+
+  b { color: #1e9e6b; }
+  span { @include typo($body-xsmall); color: $color-text-muted; }
+}
+
+.pt-ec-row {
+  border: 1px solid $color-border;
+  border-top: none;
+  background: #fff;
+
+  &:last-child { border-radius: 0 0 8px 8px; }
+}
+
+.pt-ec-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+
+.pt-ec-score {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.pt-ec-name {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-weight: 700;
+  font: inherit;
+}
+
+.pt-ec-chev { color: $color-text-muted; }
+.pt-ec-detail {
+  padding: 0 16px 14px 74px;
+  label {
+    display: block;
+    font-size: 11px;
+    color: $color-text-muted;
+    font-weight: 700;
+    margin: 8px 0 4px;
+  }
+  textarea {
+    width: 100%;
+    border: 1px solid $color-border;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font: inherit;
+    resize: vertical;
+  }
+}
+
+.pt-issue-grid { display: flex; flex-direction: column; gap: 10px; }
+.pt-issue-card {
+  border: 1px solid $color-border;
+  border-radius: 8px;
+  padding: 14px 16px;
+  background: #fff;
+
+  &.is-focus { border-color: var(--color-primary); background: var(--color-primary-bg); }
+}
+.pt-issue-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.pt-issue-label {
+  flex: 1;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  font-weight: 700;
+  font: inherit;
+  background: transparent;
+  &:hover, &:focus { border-color: $color-border; outline: none; }
+}
+.pt-issue-content {
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  font: inherit;
+  resize: vertical;
+  color: $color\-text-primary;
+  background: transparent;
+  &:hover, &:focus { border-color: $color-border; outline: none; background: #fff; }
+}
+.pt-issue-meta {
+  margin-top: 8px;
+  @include typo($body-xsmall);
+  color: $color-text-muted;
+}
+
+// ---- ?�략검??----
+.pt-strategy { max-width: 1440px; }
+.pt-s4-wrap {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+.pt-s4-status {
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  padding: 16px;
+  position: sticky;
+  top: 0;
+}
+.pt-s4-status-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid $color-border;
+  @include typo($body-xsmall);
+  .nm { font-weight: 600; color: $color\-text-primary; }
+}
+.pt-s4-status-btn {
+  width: 100%;
+  margin-top: 8px;
+  justify-content: center;
+}
+
+.pt-s4-loading {
+  display: flex;
+  justify-content: center;
+  padding: 60px 20px;
+}
+.pt-s4-loading-box {
+  width: 420px;
+  text-align: center;
+  h3 { margin: 0 0 8px; }
+  p { @include typo($body-small); color: $color-text-muted; margin: 0 0 28px; }
+}
+.pt-s4-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid $color-border;
+  border-top-color: var(--color-primary);
+  margin: 0 auto 20px;
+  animation: pt-s4spin 0.9s linear infinite;
+}
+@keyframes pt-s4spin { to { transform: rotate(360deg); } }
+.pt-s4-loading-steps {
+  text-align: left;
+  border: 1px solid $color-border;
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+}
+.pt-s4l-step {
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid $color-border;
+  &:last-child { border-bottom: none; }
+  b { display: block; font-size: 12.5px; color: $color-text-muted; }
+  small { display: block; font-size: 11.5px; color: $color-text-muted; margin-top: 2px; }
+  &.done .pt-s4l-dot { background: rgba(#1e9e6b, 0.15); color: #1e9e6b; }
+  &.done b { color: $color\-text-primary; }
+  &.active .pt-s4l-dot { background: var(--color-primary); color: #fff; }
+  &.active b { color: $color-text-heading; }
+  &.active small { color: var(--color-primary); }
+}
+.pt-s4l-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: $color\-surface;
+  color: $color-text-muted;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.pt-pd-wrap {
+  display: grid;
+  grid-template-columns: 230px 1fr 260px;
+  gap: 0;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  overflow: hidden;
+  background: #fff;
+  min-height: 520px;
+}
+.pt-pd-list {
+  border-right: 1px solid $color-border;
+  padding: 10px;
+  overflow-y: auto;
+}
+.pt-pd-cat {
+  font-size: 11px;
+  color: $color-text-muted;
+  font-weight: 700;
+  margin: 10px 6px 4px;
+}
+.pt-pd-item {
+  padding: 10px;
+  border-radius: 7px;
+  font-size: 12.5px;
+  cursor: pointer;
+  color: $color\-text-primary;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  &:hover { background: $color\-surface; }
+  &.active {
+    background: var(--color-primary-bg);
+    color: var(--color-primary);
+    font-weight: 700;
+    .dot { background: var(--color-primary); }
+  }
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: $color-border;
+    display: inline-block;
+    margin-right: 6px;
+  }
+}
+.pt-pd-del {
+  opacity: 0;
+  border: none;
+  background: none;
+  color: $color-text-muted;
+  cursor: pointer;
+  .pt-pd-item:hover & { opacity: 1; }
+  &:hover { color: #d64545; }
+}
+.pt-pd-list-add {
+  margin: 12px 6px 4px;
+  width: calc(100% - 12px);
+  border: 1px dashed $color-border;
+  background: none;
+  color: $color-text-muted;
+  border-radius: 7px;
+  padding: 9px;
+  font-size: 12px;
+  cursor: pointer;
+  &:hover { border-color: var(--color-primary); color: var(--color-primary); }
+}
+.pt-pd-detail {
+  padding: 22px 26px;
+  overflow-y: auto;
+  h2 {
+    font-size: 16px;
+    margin: 0 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+.pt-pd-field {
+  margin-bottom: 14px;
+  label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: $color-text-muted;
+    margin-bottom: 5px;
+  }
+}
+.pt-pd-textarea {
+  width: 100%;
+  border: 1px solid $color-border;
+  border-radius: 6px;
+  padding: 9px 11px;
+  font: inherit;
+  line-height: 1.6;
+  resize: vertical;
+  min-height: 42px;
+  &:focus { outline: none; border-color: var(--color-primary); }
+}
+.pt-src-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.pt-src-badge {
+  border: none;
+  border-radius: 5px;
+  padding: 3px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  &.is-req { background: var(--color-primary-bg); color: var(--color-primary); }
+  &.is-issue { background: rgba(#e08a2c, 0.15); color: #c45f16; }
+}
+.pt-pd-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid $color-border;
+}
+.pt-pd-chat {
+  border-left: 1px solid $color-border;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  h3 { font-size: 13px; margin: 0 0 12px; color: $color\-text-primary; }
+}
+.pt-pd-chat-hint {
+  background: $color\-surface;
+  border-radius: 8px;
+  padding: 12px;
+  @include typo($body-xsmall);
+  color: $color-text-muted;
+  line-height: 1.8;
+  flex: 1;
+}
+.pt-pd-chat-input {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+  input {
+    flex: 1;
+    border: 1px solid $color-border;
+    border-radius: 7px;
+    padding: 9px 11px;
+    font: inherit;
+  }
+}
+.pt-muted { @include typo($body-small); color: $color-text-muted; }
+
+.pt-wt-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.pt-wt-card {
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  padding: 18px;
+  position: relative;
+  &.stale {
+    border-color: rgba(#e0762c, 0.4);
+    background: #fffcf8;
+  }
+}
+.pt-wt-stale-badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: rgba(#e0762c, 0.12);
+  color: #e0762c;
+  font-size: 10.5px;
+  font-weight: 700;
+  border-radius: 5px;
+  padding: 3px 8px;
+}
+.pt-wt-del {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: $color-text-muted;
+  .pt-wt-card.stale & { right: 170px; }
+}
+.pt-wt-target {
+  display: inline-block;
+  background: $color\-surface;
+  color: $color\-text-primary;
+  font-size: 11px;
+  border-radius: 5px;
+  padding: 2px 8px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  &:hover { background: var(--color-primary-bg); color: var(--color-primary); }
+}
+.pt-wt-core {
+  font-size: 14.5px;
+  font-weight: 700;
+  margin: 0 0 10px;
+  line-height: 1.5;
+  padding-right: 90px;
+}
+.pt-wt-row {
+  margin-bottom: 10px;
+  label {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: $color-text-muted;
+    margin-bottom: 3px;
+  }
+  .v {
+    font-size: 12.5px;
+    color: $color\-text-primary;
+    line-height: 1.55;
+    &.is-missing {
+      color: #e0762c;
+      font-weight: 700;
+      background: rgba(#e0762c, 0.12);
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 5px;
+    }
+  }
+}
+.pt-wt-foot {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid $color-border;
+}
+
+.pt-tocmap-tree {
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+}
+.pt-tocmap-h1 {
+  background: $color\-surface;
+  padding: 11px 16px;
+  font-weight: 700;
+  font-size: 13px;
+  border-bottom: 1px solid $color-border;
+  border-top: 1px solid $color-border;
+  &:first-child { border-top: none; }
+}
+.pt-tocmap-row {
+  display: flex;
+  gap: 14px;
+  padding: 14px 16px 14px 30px;
+  border-bottom: 1px solid $color-border;
+  &:last-child { border-bottom: none; }
+}
+.pt-tocmap-title {
+  width: 170px;
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 600;
+  padding-top: 6px;
+}
+.pt-tocmap-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pt-tocmap-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  label {
+    font-size: 11px;
+    color: $color-text-muted;
+    font-weight: 700;
+    width: 52px;
+  }
+}
+.pt-chip {
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 4px 6px 4px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  .x {
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: inherit;
+    opacity: 0.6;
+    &:hover { opacity: 1; }
+  }
+}
+.pt-chip-add {
+  border: 1px dashed $color-border;
+  color: $color-text-muted;
+  font-size: 12px;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  background: none;
+  &:hover { border-color: var(--color-primary); color: var(--color-primary); }
+}
+.pt-ec-select {
+  border: 1px solid $color-border;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font: inherit;
+  color: $color\-text-primary;
+}
+
+@media (max-width: 1100px) {
+  .pt-s4-wrap { grid-template-columns: 1fr; }
+  .pt-pd-wrap { grid-template-columns: 1fr; }
+  .pt-wt-grid { grid-template-columns: 1fr; }
 }

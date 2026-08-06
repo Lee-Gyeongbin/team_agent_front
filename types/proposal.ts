@@ -66,8 +66,23 @@ export interface PtRequirement {
   reqCategoryCd: string | null
   reqContent: string
   mandatoryYn: 'Y' | 'N'
-  /** 출처 유형 코드 (PT000004: 001=사실, 002=전략적해석, 003=확인필요) */
-  sourceTypeCd: '001' | '002' | '003'
+  /** 출처 유형 코드 (PT000004: 001=사실, 002=전략적해석, 003=확인필요, 999=직접입력) */
+  sourceTypeCd: '001' | '002' | '003' | '999'
+  confirmNeededYn?: 'Y' | 'N'
+  sortOrd: number
+  createDt: string
+}
+
+/** TB_PT_RFP_ISSUE - RFP 현황/이슈 */
+export interface PtRfpIssue {
+  issueId: string
+  ptProjectId: string
+  /** 001=문제점, 002=개선방향, 003=추진배경/필요성 */
+  issueTypeCd: '001' | '002' | '003'
+  issueContent: string
+  issueLabel: string | null
+  sourceSection: string | null
+  sourcePage: number | null
   sortOrd: number
   createDt: string
 }
@@ -127,9 +142,91 @@ export interface Stage1Result {
   writingGuidelineJson: string | null
   requirements: PtRequirement[]
   evalCriteria: PtEvalCriteria[]
+  rfpIssues: PtRfpIssue[]
 }
 
-export type PtStepKey = 'template' | 'toc' | 'settings' | 'template-gen' | 'generate' | 'export'
+export type PtStepKey =
+  | 'template'
+  | 'toc'
+  | 'settings'
+  | 'template-gen'
+  | 'strategy'
+  | 'generate'
+  | 'export'
+
+// ── Stage2 전략검토 ─────────────────────────────────────────────────────────
+
+export interface Stage2Summary {
+  stage2StatusCd: '001' | '002' | '003' | '004' | string
+  problemDefinitionCount: number
+  winThemeCount: number
+  winThemeStaleCount: number
+  uncoveredRequirementCount: number
+  problemDefinitionsGeneratedDt: string | null
+  winThemesGeneratedDt: string | null
+}
+
+export interface ProblemDefinition {
+  problemId: string
+  ptProjectId?: string
+  problemTypeCd: string
+  currentProblem: string
+  rootCause: string
+  riskIfIgnored: string
+  goal: string
+  requiredCapability: string
+  strategySummary: string
+  kpi: string
+  sourceTypeCd: string
+  sourceIssueIds: string[]
+  sourceRequirementIds: string[]
+  generatedDt: string | null
+  modifyDt: string | null
+  manualYn: 'Y' | 'N'
+}
+
+export interface WinThemeStaleDetail {
+  problemId?: string
+  reason: 'MODIFIED' | 'DELETED'
+  problemModifyDt?: string
+}
+
+export interface WinTheme {
+  winThemeId: string
+  ptProjectId?: string
+  coreMessage: string
+  customerProblem: string
+  proposalStrategy: string
+  evidence: string
+  expectedEffect: string
+  differentiation: string
+  sourceProblemDefinitionIds: string[]
+  generatedDt: string | null
+  modifyDt: string | null
+  stale: boolean
+  staleDetails: WinThemeStaleDetail[]
+}
+
+export interface TocMappingNode {
+  tocId: string
+  title: string
+  parentTocId: string | null
+  coveredReqIds: string[]
+  linkedEvalCriteriaId: string | null
+  sortOrd: number
+}
+
+export interface EvalCriteriaOption {
+  evalCriteriaId: string
+  evalItemNm: string
+  score: number
+}
+
+export interface TocMappingResult {
+  tocNodes: TocMappingNode[]
+  unassignedRequirementIds: string[]
+  evalCriteriaOptions: EvalCriteriaOption[]
+}
 export type PtStepStatus = 'wait' | 'current' | 'done'
 
 export interface PtStep {
