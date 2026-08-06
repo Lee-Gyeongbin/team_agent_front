@@ -365,7 +365,7 @@ export interface SlideComponent {
 
 /** Stage2 SSE 이벤트 */
 export interface Stage2ProgressData {
-  step: 'analyze'
+  step: 'analyze' | 'problem_def' | 'prompt' | 'req_mapping' | 'win_theme' | 'extract_ref' | 'save'
   message: string
 }
 

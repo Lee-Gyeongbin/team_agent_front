@@ -1,5 +1,5 @@
 <template>
-  <div class="pt-panel pt-template-gen-panel">
+  <div class="pt-panel pt-panel--lg pt-template-gen-panel">
     <!-- 생성 전 초기 상태 -->
     <template v-if="!template">
       <h3 class="pt-panel-title">템플릿 생성</h3>

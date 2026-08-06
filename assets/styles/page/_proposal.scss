@@ -761,6 +761,11 @@
     overflow: hidden;
     padding: 0;
   }
+
+  // Step Strategy: ??? ???, ?? ??? ?? ?? ??
+  > .pt-strategy {
+    overflow: hidden;
+  }
 }
 
 // ---- ??? ?????? ??? ----
@@ -1299,6 +1304,51 @@
 
   .ui-input-desc {
     @include typo($body-medium);
+  }
+
+  // Step D UI ?? (???? ????/?? ??? ??)
+  .pt-template-status-label {
+    @include typo($body-small);
+  }
+
+  .pt-template-status-pill {
+    @include typo($body-small-bold);
+  }
+
+  .pt-layout-toggle-btn {
+    @include typo($body-small-bold);
+  }
+
+  .pt-template-center-head {
+    :deep(.ui-tab-item) {
+      @include typo($body-small-bold);
+    }
+  }
+
+  .pt-template-preview-placeholder,
+  .pt-template-body-placeholder {
+    @include typo($body-small);
+  }
+
+  .pt-slot-tag {
+    @include typo($body-small);
+  }
+
+  .pt-slot-style-panel {
+    .pt-slot-style-panel-title {
+      @include typo($body-small-bold);
+    }
+
+    .pt-slot-style-panel-key,
+    .pt-slot-style-panel-unit,
+    .pt-slot-style-panel-color-val {
+      @include typo($body-small);
+    }
+
+    .pt-slot-style-number-input,
+    .pt-slot-style-weight-btn {
+      font-size: $font-size-base;
+    }
   }
 }
 
@@ -3266,56 +3316,8 @@ body.is-resizing {
 }
 
 // =============================================
-// Step2 / Step5 ???????? ??????
+// Step2 / Step5 ?? ??
 // =============================================
-.pt-subtabs {
-  display: flex;
-  gap: 4px;
-  background: $color\-surface;
-  padding: 4px;
-  border-radius: 10px;
-  width: fit-content;
-  margin: $spacing-md 0 $spacing-md;
-}
-
-.pt-subtab {
-  padding: 8px 14px;
-  border-radius: 8px;
-  border: none;
-  background: transparent;
-  @include typo($body-small-bold);
-  color: $color-text-muted;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-
-  &.active {
-    background: #fff;
-    color: $color-text-heading;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  }
-}
-
-.pt-subtab-count {
-  background: $color-border;
-  color: $color\-text-primary;
-  font-size: 11px;
-  border-radius: 10px;
-  padding: 1px 7px;
-  font-weight: 700;
-
-  &.is-warn {
-    background: rgba(#e0762c, 0.15);
-    color: #e0762c;
-  }
-
-  .pt-subtab.active & {
-    background: var(--color-primary-bg);
-    color: var(--color-primary);
-  }
-}
-
 .pt-badge {
   display: inline-flex;
   align-items: center;
@@ -3352,6 +3354,12 @@ body.is-resizing {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 12px;
+}
+
+.pt-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .pt-card-table {
@@ -3701,44 +3709,45 @@ body.is-resizing {
   margin-top: 14px;
 }
 
-// ---- ??????----
-.pt-strategy { max-width: 1440px; }
-.pt-s4-wrap {
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  gap: 20px;
-  align-items: start;
-}
-.pt-s4-status {
-  background: #fff;
-  border: 1px solid $color-border;
-  border-radius: $border-radius-lg;
-  padding: 16px;
-  position: sticky;
-  top: 0;
-}
-.pt-s4-status-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 9px 0;
-  border-bottom: 1px solid $color-border;
-  @include typo($body-xsmall);
-  .nm { font-weight: 600; color: $color\-text-primary; }
-}
-.pt-s4-status-btn {
+// ---- ???? ----
+.pt-strategy {
   width: 100%;
-  margin-top: 8px;
-  justify-content: center;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+.pt-s4-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.pt-s4-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  @include custom-scrollbar;
+}
+.pt-strategy-actions {
+  flex-shrink: 0;
+  margin-top: 0;
+  padding-top: $spacing-md;
+  border-top: 1px solid $color-border;
 }
 
 .pt-s4-loading {
+  flex: 1;
   display: flex;
   justify-content: center;
-  padding: 60px 20px;
+  align-items: center;
+  padding: 40px 24px;
+  min-height: 0;
 }
 .pt-s4-loading-box {
-  width: 420px;
+  width: 100%;
+  max-width: 560px;
   text-align: center;
   h3 { margin: 0 0 8px; }
   p { @include typo($body-small); color: $color-text-muted; margin: 0 0 28px; }
@@ -3858,13 +3867,6 @@ body.is-resizing {
 .pt-pd-detail {
   padding: 22px 26px;
   overflow-y: auto;
-  h2 {
-    font-size: 16px;
-    margin: 0 0 14px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
 }
 .pt-pd-field {
   margin-bottom: 14px;
@@ -3909,27 +3911,56 @@ body.is-resizing {
   padding: 16px;
   display: flex;
   flex-direction: column;
-  h3 { font-size: 13px; margin: 0 0 12px; color: $color\-text-primary; }
+  min-height: 0;
+  h3 {
+    @include typo($body-small-bold);
+    margin: 0 0 12px;
+    color: $color-text-primary;
+    flex-shrink: 0;
+  }
 }
 .pt-pd-chat-hint {
-  background: $color\-surface;
+  background: $color-surface;
   border-radius: 8px;
   padding: 12px;
   @include typo($body-xsmall);
   color: $color-text-muted;
   line-height: 1.8;
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 .pt-pd-chat-input {
   display: flex;
-  gap: 6px;
+  flex-direction: column;
+  gap: 8px;
   margin-top: 12px;
+  flex-shrink: 0;
+
   input {
-    flex: 1;
+    width: 100%;
+    box-sizing: border-box;
     border: 1px solid $color-border;
-    border-radius: 7px;
-    padding: 9px 11px;
+    border-radius: $border-radius-base;
+    padding: 10px 12px;
     font: inherit;
+    @include typo($body-small);
+    color: $color-text-primary;
+    outline: none;
+
+    &:focus {
+      border-color: var(--color-primary);
+    }
+
+    &:disabled {
+      background: $color-surface;
+      color: $color-text-muted;
+    }
+  }
+
+  .pt-pd-chat-send {
+    width: 100%;
+    justify-content: center;
   }
 }
 .pt-muted { @include typo($body-small); color: $color-text-muted; }
@@ -4104,7 +4135,6 @@ body.is-resizing {
 }
 
 @media (max-width: 1100px) {
-  .pt-s4-wrap { grid-template-columns: 1fr; }
   .pt-pd-wrap { grid-template-columns: 1fr; }
   .pt-wt-grid { grid-template-columns: 1fr; }
 }
