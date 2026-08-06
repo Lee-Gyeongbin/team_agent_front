@@ -34,7 +34,6 @@
         @on-news-card-reselect="onNewsMessageReselect"
         @on-marketing-authoring-card-submit="handleRoomMarketingAuthoringSubmit"
         @on-marketing-authoring-close="onMarketingAuthoringMessageClose"
-        @on-marketing-authoring-reopen="handleMarketingAuthoringReopen"
       />
       <div class="chat-input-guide-wrap">
         <DataQuestionGuide
@@ -187,7 +186,6 @@ const {
   handleSubmitTranslateAgentForm,
   handleCloseTranslateAgent,
   handleRoomMarketingAuthoringSubmit,
-  handleMarketingAuthoringReopen,
   handleCloseMarketingAuthoring,
   selectedChatThemeAgent,
 } = useChatStore()

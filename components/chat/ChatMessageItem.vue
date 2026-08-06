@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="!isAutoRecommendAnswer && !isRecommendAgentAnswer"
+    v-if="!isAutoRecommendAnswer && !isRecommendAgentAnswer && !hideMarketingTextAnswerInBoth"
     ref="messageRootRef"
     class="chat-message-item"
     :class="[
@@ -29,7 +29,7 @@
       </div>
       <div class="message-body">
         <div
-          v-if="(message.isStreaming && !message.rContent) || isMarketingAuthoringStreaming"
+          v-if="(message.isStreaming && !message.rContent && !isMarketingImageAnswer) || isMarketingAuthoringStreaming"
           class="message-loading"
         >
           <i
@@ -44,14 +44,13 @@
           </div>
         </div>
         <template v-else>
-          <!-- 마케팅 결과 카드 (스트리밍 중·미파싱 시 원문 비표시) -->
+          <!-- 마케팅 결과 카드 (이미지 생성 중에는 카드 + 내부 스피너) -->
           <ChatMarketingResult
-            v-if="marketingAuthoringResult && !message.isStreaming"
-            :result="marketingAuthoringResult"
+            v-if="marketingAuthoringDisplayResult"
+            :result="marketingAuthoringDisplayResult"
+            :is-loading="isMarketingResultLoading"
             :is-share="isShare"
             :theme-color-hex="themeAgent?.colorHex ?? ''"
-            @reopen="emit('on-marketing-authoring-reopen', message.logId)"
-            @preview-image="openMarketingImagePreview"
           />
           <div
             v-else-if="isMarketingAuthoringAnswer"
@@ -302,7 +301,6 @@
         <ChatMarketingAuthoringCard
           v-if="message.type === 'marketingAuthoring' && messageMarketingAuthoringConfig"
           :config="messageMarketingAuthoringConfig"
-          :theme-icon-class-nm="themeAgent?.iconClassNm ?? ''"
           :theme-color-hex="themeAgent?.colorHex ?? ''"
           @close="emit('on-marketing-authoring-close', message.logId)"
           @submit="emit('on-submit-marketing-authoring-card', message.logId, $event)"
@@ -462,8 +460,9 @@ import {
 } from '~/utils/chat/translateAgentUtil'
 import {
   isMarketingAuthoringAnswer as isMarketingAuthoringAnswerMessage,
+  isMarketingImageAnswer as isMarketingImageAnswerMessage,
   parseMarketingAuthoringConfigFromAgent,
-  resolveMarketingAuthoringResult,
+  resolveMarketingInlineDisplayForAnswer,
 } from '~/utils/chat/marketingAuthoringUtil'
 import { downloadBlobAsFile } from '~/utils/global/fileDownloadUtil'
 import { useApi } from '~/composables/com/useApi'
@@ -535,7 +534,6 @@ const emit = defineEmits<{
   'on-submit-news-card': [logId: string, categories: string[], options?: { isNew?: boolean }]
   'on-news-card-close': [logId: string]
   'on-news-card-reselect': [logId: string]
-  'on-marketing-authoring-reopen': [logId: string]
   'on-submit-marketing-authoring-card': [logId: string, payload: MarketingAuthoringSubmitPayload]
   'on-marketing-authoring-close': [logId: string]
   'on-news-intro-complete': [logId: string]
@@ -544,14 +542,6 @@ const emit = defineEmits<{
 // ── 공통 ──────────────────────────────────────────────────────────────────
 const renderedHtml = ref('')
 const imagePreview = ref<{ src: string; title: string; mimeType: string } | null>(null)
-
-const openMarketingImagePreview = (src: string) => {
-  imagePreview.value = {
-    src,
-    title: '생성된 마케팅 이미지',
-    mimeType: 'image/png',
-  }
-}
 const messageRootRef = ref<HTMLElement | null>(null)
 const HTML_PREVIEW_BLOCK_SELECTOR = '.html-preview-block'
 const HTML_PREVIEW_MENU_SELECTOR = '.html-preview-menu'
@@ -965,13 +955,23 @@ const messageSurveyConfig = computed(() => {
 // ── MARKETING AUTHORING 에이전트 ─────────────────────────────────────────────
 
 const isMarketingAuthoringAnswer = computed(() => isMarketingAuthoringAnswerMessage(props.message, allMessages.value))
+const isMarketingImageAnswer = computed(() => isMarketingImageAnswerMessage(props.message, allMessages.value))
 
 /** 결과 카드는 파싱 완료 후 렌더 — 스트리밍 중에는 JSON 원문 대신 로딩 유지 */
 const isMarketingAuthoringStreaming = computed(
-  () => props.message.isStreaming === true && isMarketingAuthoringAnswer.value,
+  () => props.message.isStreaming === true && isMarketingAuthoringAnswer.value && !isMarketingImageAnswer.value,
 )
 
-const marketingAuthoringResult = computed(() => resolveMarketingAuthoringResult(props.message, allMessages.value))
+/** 마케팅 이미지 응답 대기 — 카드 내부 스피너 */
+const isMarketingImageStreaming = computed(() => props.message.isStreaming === true && isMarketingImageAnswer.value)
+
+/** 통합(문구+이미지): 문구·이미지 answer를 합쳐 표시, 문구 단독 카드는 숨김 */
+const marketingInlineDisplay = computed(() => resolveMarketingInlineDisplayForAnswer(props.message, allMessages.value))
+const marketingAuthoringDisplayResult = computed(() => marketingInlineDisplay.value.result)
+const hideMarketingTextAnswerInBoth = computed(() => marketingInlineDisplay.value.hideAnswer)
+const isMarketingResultLoading = computed(
+  () => marketingInlineDisplay.value.isImageLoading || isMarketingImageStreaming.value,
+)
 
 // ── RECOMMEND 에이전트 ───────────────────────────────────────────────────────
 

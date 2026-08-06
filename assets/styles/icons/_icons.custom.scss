@@ -85,6 +85,10 @@
   @include icon-file-bg('document-search');
 }
 
+.icon-document-edit {
+  @include icon-file-bg('document-edit');
+}
+
 // 사이드바 드롭다운 아이콘 ======================
 .icon-sidebar-community {
   @include icon-file-bg('sidebar-community');
@@ -410,6 +414,11 @@
 // 지구본 (웹 검색) — agent-researcher에서 돋보기 제외한 globe만 분리
 .icon-globe {
   @include icon-file-bg('globe');
+}
+
+// SNS / 소셜 콘텐츠
+.icon-sns {
+  @include icon-file-bg('sns');
 }
 
 // 마이너스 (줌아웃)

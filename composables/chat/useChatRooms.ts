@@ -15,7 +15,6 @@ import { isRecommendAgentPrompt } from '~/utils/chat/recommendAgentUtil'
 import type { Agent } from '~/types/agent'
 import { isAutoRecommendLogRow } from '~/utils/chat/autoRecommendUtil'
 import { NEWS_CURATOR_AGENT_ID } from '~/utils/chat/newsCuratorUtil'
-import { isMarketingAuthoringPrompt } from '~/utils/chat/marketingAuthoringUtil'
 
 /** 목록에 동일 방이 문자열/숫자 등 다른 형태로 중복되면 사이드바에서 활성 행이 여러 개로 보일 수 있어 통일·중복 제거 */
 function dedupeChatRoomsByNormalizedId(list: ChatRoom[]): ChatRoom[] {
@@ -104,7 +103,6 @@ export const useChatRooms = () => {
     const lastAgentId = typeof lastRow?.agentId === 'string' ? lastRow.agentId.trim() : ''
     const isAutoRecommendLog = lastRow ? isAutoRecommendLogRow(lastRow, agents) : false
     const isRecommendPromptLog = isRecommendAgentPrompt(String(lastRow?.qcontent ?? ''))
-    const isMarketingAuthoringPromptLog = isMarketingAuthoringPrompt(String(lastRow?.qcontent ?? ''))
     // 방 전환 시 RISK 활성 상태는 기본 해제하고, 아래 D 분기에서만 복원한다.
     riskAgentActive.value = false
     if (svcTy === 'D') {
@@ -126,21 +124,16 @@ export const useChatRooms = () => {
       selectedChatAgentId.value = lastAgentId || null
       await selectDmList()
       await selectModelOptions()
-    } else if (svcTy === 'W') {
-      // 번역 에이전트 채팅방 — 에이전트 선택 상태 복원 안 함
+    } else if (svcTy === 'W' || svcTy === 'K') {
+      // 번역(W)·마케팅(K) 채팅방 — 에이전트 선택 상태 복원 안 함
       activeSearchModes.value = []
       selectedChatAgentId.value = null
       await selectModelOptions()
     } else {
       activeSearchModes.value = []
-      // AUTO_RECOMMEND·RECOMMEND·MARKETING_AUTHORING 카드 전용 로그는 UI상 에이전트 선택을 유지하지 않음(채팅방 재진입 시)
+      // AUTO_RECOMMEND·RECOMMEND 카드 전용 로그는 UI상 에이전트 선택을 유지하지 않음(채팅방 재진입 시)
       selectedChatAgentId.value =
-        isAutoRecommendLog ||
-        isRecommendPromptLog ||
-        isMarketingAuthoringPromptLog ||
-        lastAgentId === NEWS_CURATOR_AGENT_ID
-          ? null
-          : lastAgentId || null
+        isAutoRecommendLog || isRecommendPromptLog || lastAgentId === NEWS_CURATOR_AGENT_ID ? null : lastAgentId || null
       // 일반 질의 시 모델 옵션 조회
       await selectModelOptions()
     }
@@ -189,11 +182,13 @@ export const useChatRooms = () => {
   }
 
   // 채팅방 생성 (content: 호출부에서 전달 가능, 미전달 시 chatMessage 사용)
+  // skipNavigate: 마케팅 전용 페이지 등에서 방 생성 후 /chat/[id]로 이동하지 않을 때 사용
+  // skipLoading: 전용 페이지에서 결과 카드를 바로 보여줄 때 전역 로딩 생략
   const createChatRoom = async (
     content?: string,
     files: File[] = [],
     svcTyOverride?: string,
-    options?: { modelId?: string; agentId?: string },
+    options?: { modelId?: string; agentId?: string; skipNavigate?: boolean; skipLoading?: boolean },
   ): Promise<boolean> => {
     const qContent = (content ?? chatMessage.value).trim()
     if (!qContent) {
@@ -207,12 +202,13 @@ export const useChatRooms = () => {
     }
 
     const svcTy = svcTyOverride ?? resolveSvcTy()
-    openLoading({ text: '채팅방을 생성하는 중...' })
+    const showLoading = !options?.skipLoading
+    if (showLoading) openLoading({ text: '채팅방을 생성하는 중...' })
     let res: { data: ChatRoom }
     try {
       res = await fetchCreateChatRoom(qContent, svcTy)
     } finally {
-      closeLoading()
+      if (showLoading) closeLoading()
     }
     const newRoomId = normalizeChatRoomId(res.data.roomId)
     const createdRoom: ChatRoom = {
@@ -223,6 +219,7 @@ export const useChatRooms = () => {
       svcTy,
       roomTitle: res.data.roomTitle,
       fixYn: 'N',
+      agentId: options?.agentId ?? selectedChatAgentId.value ?? '',
     }
     chatRoom.value = createdRoom
 
@@ -241,8 +238,10 @@ export const useChatRooms = () => {
 
     if (!sent) return false
 
-    // out-in 페이지 전환 중 로컬 상태를 동시에 갱신하면 언마운트된 vnode 패치 오류가 날 수 있어 await
-    await navigateTo(`/chat/${chatRoom.value.roomId}`)
+    if (!options?.skipNavigate) {
+      // out-in 페이지 전환 중 로컬 상태를 동시에 갱신하면 언마운트된 vnode 패치 오류가 날 수 있어 await
+      await navigateTo(`/chat/${chatRoom.value.roomId}`)
+    }
     return true
   }
 
@@ -448,7 +447,7 @@ export const useChatRooms = () => {
     let svcTy = String(lastRow?.svcTy ?? 'C')
       .trim()
       .toUpperCase()
-    if (svcTy !== 'M' && svcTy !== 'S') svcTy = 'C'
+    if (svcTy !== 'M' && svcTy !== 'S' && svcTy !== 'K' && svcTy !== 'W' && svcTy !== 'D') svcTy = 'C'
 
     openLoading({ text: '내 대화로 가져오는 중...' })
     try {

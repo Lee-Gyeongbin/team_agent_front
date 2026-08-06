@@ -206,53 +206,65 @@ export interface TranslateFormPayload {
   fileName?: string
 }
 
-/** MARKETING_AUTHORING 문구·콘텐츠 작성 폼 */
-export interface MarketingAuthoringFormPayload {
+/** 마케팅 생성 출력 종류 */
+export type MarketingOutputKind = 'TEXT' | 'IMAGE'
+
+/** 글·그림 공통 입력 */
+export interface MarketingAuthoringSharedFields {
   contentType: string
-  purpose: string
-  audience: string
-  tones: string[]
-  length: string
-  customLength: string
   channel: string
   customChannel: string
+  purpose: string
+  customPurpose: string
+  audience: string
+  customAudience: string
   promotionInformation: string
   keyMessage: string
-  customCallToAction: string
-  customPurpose: string
-  customAudience: string
-  customTone: string
-  referenceMode: '' | 'FILE' | 'WEB'
-  referenceFiles: File[]
-  referenceUrls: string[]
   additionalRequirements: string
-  outputSections: string[]
-  includeHashtags: 'Y' | 'N'
+  referenceFiles: File[]
   variantCount: number
 }
 
-/** MARKETING_AUTHORING 이미지 제작 폼 */
-export interface MarketingImageFormPayload {
+/** 글(문구) 전용 입력 */
+export interface MarketingAuthoringTextOnlyFields {
+  tones: string[]
+  length: string
+  customLength: string
+  customCallToAction: string
+  customTone: string
+  referenceMode: '' | 'FILE' | 'WEB'
+  referenceUrls: string[]
+  outputSections: string[]
+  includeHashtags: 'Y' | 'N'
+}
+
+/** 그림(이미지) 전용 입력 */
+export interface MarketingAuthoringImageOnlyFields {
   imageUsage: string
   snsPlatform: string
   imageType: string
-  purpose: string
-  audience: string
   visualStyle: string
   aspectRatio: string
   customAspectRatio: string
   imageText: string
-  coreMessage: string
-  productInformation: string
   brandColors: string
-  additionalRequirements: string
-  referenceFiles: File[]
-  variantCount: number
 }
 
-export type MarketingAuthoringSubmitPayload =
-  | { mode: 'TEXT'; data: MarketingAuthoringFormPayload }
-  | { mode: 'IMAGE'; data: MarketingImageFormPayload }
+/** 문구 프롬프트용 슬라이스 */
+export type MarketingAuthoringFormPayload = MarketingAuthoringSharedFields & MarketingAuthoringTextOnlyFields
+
+/** 이미지 프롬프트용 슬라이스 */
+export type MarketingImageFormPayload = MarketingAuthoringSharedFields & MarketingAuthoringImageOnlyFields
+
+/** 통합 마법사 폼 — 공통 + 글 + 그림 + 출력 선택 */
+export type MarketingUnifiedFormPayload = MarketingAuthoringSharedFields &
+  MarketingAuthoringTextOnlyFields &
+  MarketingAuthoringImageOnlyFields & {
+    outputs: MarketingOutputKind[]
+  }
+
+/** 통합 마법사 제출 — outputs로 TEXT / IMAGE / BOTH 판별 */
+export type MarketingAuthoringSubmitPayload = MarketingUnifiedFormPayload
 
 /** 마케팅 콘텐츠 결과 — 작성 조건 요약 */
 export interface MarketingAuthoringConditionSummary {
@@ -280,11 +292,13 @@ export interface MarketingAuthoringVariant {
 export interface MarketingAuthoringResult {
   summary: string
   conditions: MarketingAuthoringConditionSummary
+  /** BOTH일 때 이미지 전용 조건(표현 방식·분위기·화면 비율 등) */
+  imageConditions?: MarketingAuthoringConditionSummary
   variants: MarketingAuthoringVariant[]
-  /** 이미지 제작 결과인 경우 IMAGE. 기존 문구 결과는 생략되거나 TEXT */
-  mode?: 'TEXT' | 'IMAGE'
-  /** IMAGE 결과에 표시할 data URL */
-  imageDataUrl?: string
+  /** TEXT | IMAGE | BOTH */
+  mode?: 'TEXT' | 'IMAGE' | 'BOTH'
+  /** IMAGE/BOTH 결과에 표시할 data URL 목록 (시안별) */
+  imageDataUrls?: string[]
 }
 
 /** RECOMMEND 에이전트 폼 응답 — key: 필드 key, value: 선택값 */

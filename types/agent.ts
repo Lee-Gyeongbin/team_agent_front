@@ -261,7 +261,7 @@ export interface TranslateAgentConfig {
   file: TranslateFileConfig
 }
 
-// ===== 마케팅 콘텐츠 작성 에이전트 타입 (SUB_TY = 'MARKETING_AUTHORING') =====
+// ===== 마케팅 콘텐츠 작성 에이전트 타입 (SVC_TY = 'K') =====
 
 export interface MarketingAuthoringOption {
   value: string

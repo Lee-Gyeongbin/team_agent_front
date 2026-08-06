@@ -39,11 +39,11 @@ import {
   useRecommendAgent,
 } from '~/utils/chat/recommendAgentUtil'
 import { isTranslateAgent, useTranslateAgent } from '~/utils/chat/translateAgentUtil'
+import { useMarketingAuthoring } from '~/composables/chat/useMarketingAuthoring'
 import {
   isMarketingAuthoringAgent,
   isMarketingAuthoringPrompt,
-  parseMarketingAuthoringConfigFromAgent,
-  useMarketingAuthoring,
+  MARKETING_AUTHORING_SVC_TY,
 } from '~/utils/chat/marketingAuthoringUtil'
 import { isRiskAgent } from '~/utils/agent/riskConfigUtil'
 import { isProposalAgent } from '~/utils/chat/proposalAgentUtil'
@@ -261,15 +261,8 @@ export const useChatStore = () => {
     handleCloseTranslateAgent,
   } = useTranslateAgentActions()
 
-  const {
-    isMarketingAgentVisible,
-    openMarketingAgent,
-    handleIndexMarketingAuthoringSubmit,
-    handleRoomMarketingAuthoringSubmit,
-    appendMarketingAuthoringCardIfNeeded,
-    handleMarketingAuthoringReopen,
-    handleCloseMarketingAuthoring,
-  } = useMarketingAuthoringAgentActions()
+  const { handleMarketingPageSubmit, handleRoomMarketingAuthoringSubmit, handleCloseMarketingAuthoring } =
+    useMarketingAuthoringAgentActions()
 
   const {
     isAutoRecommendVisible,
@@ -391,7 +384,17 @@ export const useChatStore = () => {
     })
     if (hasTranslateLog) registerTranslateRoom(roomId)
 
-    const hasMarketingAuthoringLog = rawList.some((row) => isMarketingAuthoringPrompt(String(row.qcontent ?? '')))
+    const hasMarketingAuthoringLog = rawList.some((row) => {
+      if (
+        String(row.svcTy ?? '')
+          .trim()
+          .toUpperCase() === MARKETING_AUTHORING_SVC_TY
+      ) {
+        return true
+      }
+      const agent = chatIndexAgents.value.find((a) => a.agentId === String(row.agentId ?? '').trim())
+      return isMarketingAuthoringAgent(agent)
+    })
     if (hasMarketingAuthoringLog) registerMarketingAuthoringRoom(roomId)
 
     lastLoadedChatLogRows.value = rawList
@@ -479,25 +482,10 @@ export const useChatStore = () => {
       return
     }
 
+    // 마케팅(K): 전용 페이지로 이동
     if (isMarketingAuthoringAgent(agent)) {
-      const config = parseMarketingAuthoringConfigFromAgent(agent)
-      if (!config) {
-        openToast({
-          message: '콘텐츠 작성·편집 설정이 없습니다. 에이전트 설정에서 저장해 주세요.',
-          type: 'warning',
-        })
-        return
-      }
-      activeSearchModes.value = []
-      subOptions.value = []
       selectedChatAgentId.value = agent.agentId
-      await selectModelOptions()
-      // 채팅방에서는 메시지 목록에 인라인 카드를 추가
-      if (chatRoom.value.roomId) {
-        appendMarketingAuthoringCardIfNeeded(agent.agentId)
-      } else {
-        openMarketingAgent('select')
-      }
+      await navigateTo({ path: '/marketing', query: { agentId: agent.agentId } })
       return
     }
 
@@ -689,7 +677,6 @@ export const useChatStore = () => {
     surveyGender,
     isRecommendVisible,
     isTranslateVisible,
-    isMarketingAgentVisible,
     isAutoRecommendVisible,
     isNewsCuratorVisible,
     // 액션
@@ -713,10 +700,9 @@ export const useChatStore = () => {
     handleIndexTranslateSubmit,
     handleSubmitTranslateAgentForm,
     handleCloseTranslateAgent,
-    handleIndexMarketingAuthoringSubmit,
+    handleMarketingPageSubmit,
     handleRoomMarketingAuthoringSubmit,
     handleCloseMarketingAuthoring,
-    handleMarketingAuthoringReopen,
     addInlineTranslateMessage,
     addInlineAutoRecommendMessage,
     addInlineNewsMessage,

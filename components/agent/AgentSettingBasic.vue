@@ -258,7 +258,7 @@
       @update:model-value="emit('update:autoRecommendForm', $event)"
     />
     <AgentSettingSubTyMarketingAuthoring
-      v-if="svcTy === 'C' && subTy === 'MARKETING_AUTHORING'"
+      v-if="svcTy === 'K'"
       :model-value="marketingAuthoringForm"
       @update:model-value="emit('update:marketingAuthoringForm', $event)"
     />

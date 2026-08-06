@@ -152,7 +152,6 @@ import {
   type ProposalConfigForm,
 } from '~/utils/agent/proposalConfigUtil'
 import {
-  MARKETING_AUTHORING_SUB_TY,
   buildMarketingAuthoringAdditionalConfig,
   emptyMarketingAuthoringConfigForm,
   parseMarketingAuthoringAdditionalConfigToForm,
@@ -233,7 +232,7 @@ const ensureTmplIdOptionsIfResearcher = (): Promise<void> => {
 }
 
 const onChangeAgentType = async (svcTy: string) => {
-  if (svcTy !== 'C' && svcTy !== 'M') {
+  if (svcTy !== 'C' && svcTy !== 'M' && svcTy !== 'D') {
     form.value.subTy = ''
   } else if (svcTy === 'M' && form.value.subTy !== '' && form.value.subTy !== RESEARCHER_SUB_TY) {
     form.value.subTy = ''
@@ -548,7 +547,7 @@ watch(
         translateForm.value = emptyTranslateConfigForm()
         marketingAuthoringForm.value = emptyMarketingAuthoringConfigForm()
         researcherForm.value = emptyResearcherConfigForm()
-      } else if (props.agent.svcTy === 'C' && form.value.subTy === MARKETING_AUTHORING_SUB_TY) {
+      } else if (props.agent.svcTy === 'K') {
         loadMarketingAuthoringConfigFromAgent(props.agent)
         preservedSurveyConfig.value = null
         preservedRecommendConfig.value = null
@@ -725,18 +724,6 @@ watch(
       }
       return
     }
-    if (subTy === MARKETING_AUTHORING_SUB_TY) {
-      if (
-        props.agent?.svcTy === 'C' &&
-        normalizeAgentSubCfg(props.agent.subCfg)?.subTy === MARKETING_AUTHORING_SUB_TY
-      ) {
-        loadMarketingAuthoringConfigFromAgent(props.agent)
-      } else {
-        preservedMarketingAuthoringConfig.value = null
-        marketingAuthoringForm.value = emptyMarketingAuthoringConfigForm()
-      }
-      return
-    }
     if (subTy === TRANSLATE_SUB_TY) {
       if (props.agent?.svcTy === 'W' && normalizeAgentSubCfg(props.agent.subCfg)?.subTy === TRANSLATE_SUB_TY) {
         loadTranslateConfigFromAgent(props.agent)
@@ -868,12 +855,12 @@ const onSave = () => {
       createDt: existingSubCfg?.createDt ?? '',
       modifyDt: existingSubCfg?.modifyDt ?? '',
     }
-  } else if (form.value.svcTy === 'C' && form.value.subTy === MARKETING_AUTHORING_SUB_TY) {
+  } else if (form.value.svcTy === 'K') {
     const existingSubCfg = normalizeAgentSubCfg(props.agent?.subCfg)
     base.subCfg = {
       subCfgId: existingSubCfg?.subCfgId ?? '',
       agentId: props.agent?.agentId ?? '',
-      subTy: MARKETING_AUTHORING_SUB_TY,
+      subTy: existingSubCfg?.subTy ?? '',
       additionalConfig: buildMarketingAuthoringAdditionalConfig(
         marketingAuthoringForm.value,
         preservedMarketingAuthoringConfig.value,

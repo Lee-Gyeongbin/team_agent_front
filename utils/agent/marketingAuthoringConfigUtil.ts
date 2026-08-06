@@ -5,7 +5,8 @@ import type {
   MarketingAuthoringWorkflowConfig,
 } from '~/types/agent'
 
-export const MARKETING_AUTHORING_SUB_TY = 'MARKETING_AUTHORING'
+/** 마케팅 콘텐츠 작성 에이전트 기능 유형 (SVC_TY) */
+export const MARKETING_AUTHORING_SVC_TY = 'K'
 
 /** Agent 설정 UI — MARKETING_AUTHORING ADDITIONAL_CONFIG 편집 필드 */
 export interface MarketingAuthoringConfigForm {
@@ -105,6 +106,18 @@ export const MARKETING_AUTHORING_CONTENT_TYPES: MarketingAuthoringOption[] = [
   option('PRODUCT_DESCRIPTION', '상품·서비스 소개', '특징과 혜택, 차별점을 설명하는 소개 문안'),
 ]
 
+/** 유도할 행동(CTA) 프리셋 */
+export const MARKETING_CTA_PRESETS = ['자세히 보기', '신청하기', '문의하기', '지금 구매하기', '무료 체험하기'] as const
+
+/** 홍보할 상품·서비스 입력 팁 */
+export const MARKETING_PROMOTION_INPUT_TIPS = [
+  '상품·서비스명과 핵심 기능을 구체적으로 적어 주세요.',
+  '경쟁사 대비 차별점·혜택을 함께 적으면 설득력이 높아집니다.',
+  '가격·프로모션·기간 정보가 있다면 함께 입력해 주세요.',
+  '타겟이 공감할 문제·니즈를 한 줄로 요약해 주세요.',
+  '참고 자료를 추가했을 경우, 각 자료가 어떤 역할인지 알려주세요.',
+] as const
+
 /** 이미지 제작 — 사용 채널 (배너·썸네일 등) */
 export const MARKETING_IMAGE_USAGES: MarketingAuthoringOption[] = [
   option('BANNER', '배너 이미지', '캠페인과 프로모션에 사용할 가로형 비주얼'),
@@ -143,13 +156,16 @@ export const MARKETING_IMAGE_TYPES: MarketingAuthoringOption[] = [
   option('TYPOGRAPHY', '타이포그래피 중심', '문구·타이포가 주가 되는 비주얼'),
 ]
 
-/** 이미지 제작 — 분위기 */
+/** 이미지 제작 — 분위기 (복수 선택, 최대 2개) */
 export const MARKETING_IMAGE_ATMOSPHERES: MarketingAuthoringOption[] = [
-  option('MINIMAL_CLEAN', '미니멀·클린'),
-  option('PREMIUM', '프리미엄'),
-  option('BRIGHT_FRIENDLY', '밝고 친근한'),
+  option('BRIGHT_CHEERFUL', '밝고 경쾌한'),
   option('PROFESSIONAL', '전문적인'),
+  option('TRUSTWORTHY', '신뢰감 있는'),
+  option('LUXURIOUS', '고급스러운'),
   option('EMOTIONAL', '감성적인'),
+  option('DYNAMIC', '역동적인'),
+  option('MINIMAL', '미니멀한'),
+  option('WARM', '따뜻한'),
 ]
 
 /** 콘텐츠 유형별 게시 채널 기본값 */
@@ -184,7 +200,7 @@ export const MARKETING_AUTHORING_DEFAULT_CONSTRAINTS = [
 export const MARKETING_AUTHORING_DEFAULT_UI = {
   introTitle: '마케팅 콘텐츠 생성',
   introSubtitle: '목적과 채널에 맞는 문구와 이미지를 빠르게 제작해보세요.',
-  submitLabel: '콘텐츠 생성',
+  submitLabel: '내용 생성',
 } as const
 
 /** 공통 워크플로 시드 (설정·채팅 폴백) */
@@ -200,6 +216,7 @@ const DEFAULT_MARKETING_AUTHORING_WORKFLOW: MarketingAuthoringWorkflowConfig = {
     option('PROSPECT', '잠재 고객', '제품이나 서비스에 관심을 가질 가능성이 있는 독자'),
     option('CUSTOMER', '기존 고객', '이미 제품이나 서비스를 이용 중인 고객'),
     option('INDUSTRY', '업계 관계자', '관련 분야의 배경지식과 전문성을 갖춘 독자'),
+    option('OTHER', '직접 입력', '타겟 고객을 직접 입력합니다'),
   ],
   tones: COMMON_TONES,
   lengths: lengthOptions('약 800자', '약 1,500자', '약 2,500자'),

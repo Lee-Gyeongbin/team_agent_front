@@ -32,6 +32,7 @@ const SVC_TY_SUB_LABEL: Record<string, string> = {
   A: '메일 브리핑 Agent',
   W: '번역 Agent',
   D: '프로젝트 리스크 진단 Agent',
+  K: '마케팅 콘텐츠 작성 Agent',
 }
 
 /** /chat 인덱스 에이전트 카드 아이콘 색상 스타일 — colorId 기반 */
@@ -49,6 +50,7 @@ const hexToRgb = (hex: string) => {
  * A: 메일 브리핑 Agent
  * W: 번역 Agent
  * D: 프로젝트 리스크 진단 Agent
+ * K: 마케팅 콘텐츠 작성 Agent
  */
 export const normalizeChatAgents = (list: Agent[]) =>
   list
@@ -61,7 +63,8 @@ export const normalizeChatAgents = (list: Agent[]) =>
           a.svcTy === 'C' ||
           a.svcTy === 'A' ||
           a.svcTy === 'W' ||
-          a.svcTy === 'D'),
+          a.svcTy === 'D' ||
+          a.svcTy === 'K'),
     )
     .map((a) => ({
       ...a,
