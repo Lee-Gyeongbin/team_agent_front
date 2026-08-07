@@ -218,7 +218,6 @@ const {
   isTranslateVisible,
   handleCloseTranslateAgent,
   handleIndexTranslateSubmit,
-  handleCloseMarketingAuthoring,
   isAutoRecommendVisible,
   handleAutoRecommendIntroEnd,
   resetAutoRecommendPanel,
@@ -444,7 +443,6 @@ onMounted(async () => {
   handleClosePsychologySurvey()
   handleCloseRecommendAgent()
   handleCloseTranslateAgent()
-  handleCloseMarketingAuthoring()
   handleCloseNewsCurator()
   resetAutoRecommendPanel()
   // 인덱스 진입 시점에 즉시 채팅방 상태를 초기화해

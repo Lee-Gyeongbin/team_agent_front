@@ -288,7 +288,6 @@ import {
 import type { MenuItem } from '~/types/menu'
 import type { ChatRoom } from '~/types/chat'
 import { normalizeChatRoomId, parseChatRoomIdFromChatPath } from '~/utils/chat/chatRoomIdUtil'
-import { isMarketingAuthoringAgent, isMarketingAuthoringChatRoom } from '~/utils/chat/marketingAuthoringUtil'
 const {
   chatRoomList,
   agtFilterList,
@@ -300,7 +299,6 @@ const {
   handleCheckRoomAttachment,
   handleBuildShareToken,
 } = useChatRooms()
-const { chatIndexAgents } = useChatStore()
 const route = useRoute()
 const { menuList } = useMenu()
 const SETTING_MENU_ID = 'ME000003'
@@ -338,25 +336,11 @@ function normalizeHistoryAgentId(id?: string | null) {
   return String(id ?? '').trim()
 }
 
-const marketingAgentIdSet = computed(
-  () => new Set(chatIndexAgents.value.filter((item) => isMarketingAuthoringAgent(item)).map((item) => item.agentId)),
-)
-
-/** 마케팅 제작 내역은 /marketing 전용 목록으로 — 사이드바 검색기록에서 제외 */
-const generalChatRoomList = computed(() =>
-  chatRoomList.value.filter((room) => !isMarketingAuthoringChatRoom(room, marketingAgentIdSet.value)),
-)
-
-const sortedAgtFilterList = computed(() =>
-  [...agtFilterList.value]
-    .filter((item) => !marketingAgentIdSet.value.has(String(item.agentId ?? '').trim()))
-    .sort((a, b) => a.sortOrd - b.sortOrd),
-)
+const sortedAgtFilterList = computed(() => [...agtFilterList.value].sort((a, b) => a.sortOrd - b.sortOrd))
 
 const hasHistoryAgentFilter = computed(
   () =>
-    sortedAgtFilterList.value.length > 0 ||
-    generalChatRoomList.value.some((room) => !normalizeHistoryAgentId(room.agentId)),
+    sortedAgtFilterList.value.length > 0 || chatRoomList.value.some((room) => !normalizeHistoryAgentId(room.agentId)),
 )
 
 const historyAgentFilterOptions = computed(() => [
@@ -387,8 +371,8 @@ function isHistoryAgentFilterSelected(agentId: string) {
 
 const filteredChatRoomList = computed(() => {
   const filterIds = selectedHistoryAgentIdSet.value
-  if (!filterIds.size) return generalChatRoomList.value
-  return generalChatRoomList.value.filter((room) => {
+  if (!filterIds.size) return chatRoomList.value
+  return chatRoomList.value.filter((room) => {
     const roomAgentId = normalizeHistoryAgentId(room.agentId)
     if (filterIds.has(HISTORY_AGENT_FILTER_GENERAL) && !roomAgentId) return true
     return !!roomAgentId && filterIds.has(roomAgentId)

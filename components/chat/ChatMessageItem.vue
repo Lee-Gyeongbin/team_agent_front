@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="!isAutoRecommendAnswer && !isRecommendAgentAnswer && !hideMarketingTextAnswerInBoth"
+    v-if="!isAutoRecommendAnswer && !isRecommendAgentAnswer"
     ref="messageRootRef"
     class="chat-message-item"
     :class="[
@@ -8,15 +8,13 @@
       message.type === 'dataQuestionClarification' ||
       message.type === 'recommend' ||
       message.type === 'translation' ||
-      message.type === 'marketingAuthoring'
-        ? 'role-assistant'
-        : message.type === 'news'
-          ? 'role-news'
-          : message.type === 'autoRecommend'
-            ? 'role-auto-recommend'
-            : message.type === 'survey'
-              ? 'role-survey'
-              : 'role-user',
+      message.type === 'news'
+        ? 'role-news'
+        : message.type === 'autoRecommend'
+          ? 'role-auto-recommend'
+          : message.type === 'survey'
+            ? 'role-survey'
+            : 'role-user',
     ]"
   >
     <!-- assistant 메시지 -->
@@ -29,7 +27,7 @@
       </div>
       <div class="message-body">
         <div
-          v-if="(message.isStreaming && !message.rContent && !isMarketingImageAnswer) || isMarketingAuthoringStreaming"
+          v-if="message.isStreaming && !message.rContent"
           class="message-loading"
         >
           <i
@@ -45,20 +43,9 @@
         </div>
         <template v-else>
           <!-- 마케팅 결과 카드 (이미지 생성 중에는 카드 + 내부 스피너) -->
-          <ChatMarketingResult
-            v-if="marketingAuthoringDisplayResult"
-            :result="marketingAuthoringDisplayResult"
-            :is-loading="isMarketingResultLoading"
-            :is-share="isShare"
-            :theme-color-hex="themeAgent?.colorHex ?? ''"
-          />
-          <div
-            v-else-if="isMarketingAuthoringAnswer"
-            class="message-content"
-          />
           <!-- AUTO_RECOMMEND 답변 JSON 원문은 숨기고 카드 컴포넌트에서만 노출 -->
           <div
-            v-else-if="isAutoRecommendAnswer"
+            v-if="isAutoRecommendAnswer"
             class="message-content"
           />
           <!-- eslint-disable vue/no-v-html — toHtmlContent 내 안전 처리 적용 -->
@@ -298,13 +285,6 @@
         <i class="icon-bot size-24"></i>
       </div>
       <div class="message-body">
-        <ChatMarketingAuthoringCard
-          v-if="message.type === 'marketingAuthoring' && messageMarketingAuthoringConfig"
-          :config="messageMarketingAuthoringConfig"
-          :theme-color-hex="themeAgent?.colorHex ?? ''"
-          @close="emit('on-marketing-authoring-close', message.logId)"
-          @submit="emit('on-submit-marketing-authoring-card', message.logId, $event)"
-        />
         <ChatRecommendAgentCard
           v-if="message.type === 'recommend' && messageRecommendConfig"
           :recommend-config="messageRecommendConfig"
@@ -408,7 +388,6 @@ import type {
   ChatMessage,
   KnowledgeItem,
   NewsCuratorItem,
-  MarketingAuthoringSubmitPayload,
   RecommendFormPayload,
   RecommendResultItem,
   TranslateFormPayload,
@@ -458,12 +437,6 @@ import {
   isTranslateTextResultAnswer,
   downloadTranslationResult,
 } from '~/utils/chat/translateAgentUtil'
-import {
-  isMarketingAuthoringAnswer as isMarketingAuthoringAnswerMessage,
-  isMarketingImageAnswer as isMarketingImageAnswerMessage,
-  parseMarketingAuthoringConfigFromAgent,
-  resolveMarketingInlineDisplayForAnswer,
-} from '~/utils/chat/marketingAuthoringUtil'
 import { downloadBlobAsFile } from '~/utils/global/fileDownloadUtil'
 import { useApi } from '~/composables/com/useApi'
 import { findLinkedNewsCuratorAnswer, resolveNewsCuratorItemsForCard } from '~/utils/chat/newsCuratorUtil'
@@ -534,8 +507,6 @@ const emit = defineEmits<{
   'on-submit-news-card': [logId: string, categories: string[], options?: { isNew?: boolean }]
   'on-news-card-close': [logId: string]
   'on-news-card-reselect': [logId: string]
-  'on-submit-marketing-authoring-card': [logId: string, payload: MarketingAuthoringSubmitPayload]
-  'on-marketing-authoring-close': [logId: string]
   'on-news-intro-complete': [logId: string]
 }>()
 
@@ -954,25 +925,9 @@ const messageSurveyConfig = computed(() => {
 
 // ── MARKETING AUTHORING 에이전트 ─────────────────────────────────────────────
 
-const isMarketingAuthoringAnswer = computed(() => isMarketingAuthoringAnswerMessage(props.message, allMessages.value))
-const isMarketingImageAnswer = computed(() => isMarketingImageAnswerMessage(props.message, allMessages.value))
-
 /** 결과 카드는 파싱 완료 후 렌더 — 스트리밍 중에는 JSON 원문 대신 로딩 유지 */
-const isMarketingAuthoringStreaming = computed(
-  () => props.message.isStreaming === true && isMarketingAuthoringAnswer.value && !isMarketingImageAnswer.value,
-)
-
 /** 마케팅 이미지 응답 대기 — 카드 내부 스피너 */
-const isMarketingImageStreaming = computed(() => props.message.isStreaming === true && isMarketingImageAnswer.value)
-
 /** 통합(문구+이미지): 문구·이미지 answer를 합쳐 표시, 문구 단독 카드는 숨김 */
-const marketingInlineDisplay = computed(() => resolveMarketingInlineDisplayForAnswer(props.message, allMessages.value))
-const marketingAuthoringDisplayResult = computed(() => marketingInlineDisplay.value.result)
-const hideMarketingTextAnswerInBoth = computed(() => marketingInlineDisplay.value.hideAnswer)
-const isMarketingResultLoading = computed(
-  () => marketingInlineDisplay.value.isImageLoading || isMarketingImageStreaming.value,
-)
-
 // ── RECOMMEND 에이전트 ───────────────────────────────────────────────────────
 
 /** RECOMMEND 파이프라인 answer — JSON은 recommend 카드에서만 표시 (일반 채팅 answer와 분리) */
@@ -1153,18 +1108,11 @@ const newsCardReselect = computed(() => props.message.type === 'news' && props.m
 
 const isAgentCardMessage = computed(
   () =>
-    props.message.type === 'marketingAuthoring' ||
     props.message.type === 'recommend' ||
     props.message.type === 'autoRecommend' ||
     props.message.type === 'news' ||
     props.message.type === 'translation',
 )
-
-const messageMarketingAuthoringConfig = computed(() => {
-  if (props.message.type !== 'marketingAuthoring') return null
-  const agent = themeAgent.value
-  return agent ? parseMarketingAuthoringConfigFromAgent(agent) : null
-})
 
 /** answer 행 또는 에이전트 카드에 연결된 answer logId — 지식창고·반응 API 공통 */
 const knowledgeActionsLogId = computed(() => {
@@ -1248,11 +1196,7 @@ const shouldShowAgentCardKnowledgeFooter = computed(() => {
 
 /** 답변 액션 푸터 노출 조건을 한곳에서 관리 (로그 미저장 시 좋아요/싫어요 등 액션 숨김) */
 const shouldShowMessageFooter = computed(
-  () =>
-    !props.message.isStreaming &&
-    !isAutoRecommendAnswer.value &&
-    !isMarketingAuthoringAnswer.value &&
-    !props.message.chatLogMissing,
+  () => !props.message.isStreaming && !isAutoRecommendAnswer.value && !props.message.chatLogMissing,
 )
 
 /** 텍스트 입력 번역 결과 답변 — 형식 선택 후 파일 다운로드 컨트롤 노출 대상 */

@@ -29,8 +29,6 @@
           @on-submit-news-card="onSubmitNewsCard"
           @on-news-card-close="emit('on-news-card-close', $event)"
           @on-news-card-reselect="emit('on-news-card-reselect', $event)"
-          @on-submit-marketing-authoring-card="onSubmitMarketingAuthoringCard"
-          @on-marketing-authoring-close="emit('on-marketing-authoring-close', $event)"
           @on-select-category="
             (logId: string, categoryValue: string, categoryNm: string) =>
               emit('on-select-category', logId, categoryValue, categoryNm)
@@ -55,13 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import type {
-  ChatMessage,
-  KnowledgeItem,
-  MarketingAuthoringSubmitPayload,
-  RecommendFormPayload,
-  TranslateFormPayload,
-} from '~/types/chat'
+import type { ChatMessage, KnowledgeItem, RecommendFormPayload, TranslateFormPayload } from '~/types/chat'
 
 interface Props {
   messages: ChatMessage[]
@@ -100,8 +92,6 @@ const emit = defineEmits<{
   'on-news-card-submit': [logId: string, categories: string[], options?: { isNew?: boolean }]
   'on-news-card-close': [logId: string]
   'on-news-card-reselect': [logId: string]
-  'on-marketing-authoring-card-submit': [logId: string, payload: MarketingAuthoringSubmitPayload]
-  'on-marketing-authoring-close': [logId: string]
 }>()
 
 const onSubmitRecommendCard = (logId: string, payload: RecommendFormPayload) => {
@@ -109,9 +99,6 @@ const onSubmitRecommendCard = (logId: string, payload: RecommendFormPayload) => 
 }
 const onSubmitTranslateCard = (logId: string, payload: TranslateFormPayload) => {
   emit('on-translate-card-submit', logId, payload)
-}
-const onSubmitMarketingAuthoringCard = (logId: string, payload: MarketingAuthoringSubmitPayload) => {
-  emit('on-marketing-authoring-card-submit', logId, payload)
 }
 const onSubmitNewsCard = (logId: string, categories: string[], options?: { isNew?: boolean }) => {
   emit('on-news-card-submit', logId, categories, options)

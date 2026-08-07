@@ -23,7 +23,6 @@ import {
   parseNewsCuratorPromptMeta,
 } from '~/utils/chat/newsCuratorUtil'
 import { isProposalSlideJson } from '~/utils/chat/proposalAgentUtil'
-import { isMarketingAuthoringPrompt } from '~/utils/chat/marketingAuthoringUtil'
 
 // 채팅 메시지/스트리밍 상태는 모듈 레벨에서 단일 인스턴스로 공유
 const messages = ref<ChatMessage[]>([])
@@ -254,10 +253,10 @@ export const useChatMessages = () => {
       refId,
       ...(agentId && !shouldOmitAgentId ? { agentId } : {}),
       ...(attachments?.length ? { attachments } : {}),
-      ...(isMarketingAuthoringPrompt(qcontent) ? { hiddenFromDisplay: true } : {}),
     }
     if (shouldOmitAgentId) {
-      const { agentId: _omitAgentId, ...answerWithoutStaleAgent } = answerMessage
+      const answerWithoutStaleAgent = { ...answerMessage }
+      delete answerWithoutStaleAgent.agentId
       return [questionMessage, answerWithoutStaleAgent]
     }
 

@@ -25,7 +25,6 @@ import { useRecommendAgentActions } from '~/composables/chat/agents/useRecommend
 import { useTranslateAgentActions } from '~/composables/chat/agents/useTranslateAgentActions'
 import { useAutoRecommendAgentActions } from '~/composables/chat/agents/useAutoRecommendAgentActions'
 import { useNewsCuratorAgentActions } from '~/composables/chat/agents/useNewsCuratorAgentActions'
-import { useMarketingAuthoringAgentActions } from '~/composables/chat/agents/useMarketingAuthoringAgentActions'
 import {
   usePsychologySurvey,
   isSurveyDiagnosticPrompt,
@@ -39,12 +38,7 @@ import {
   useRecommendAgent,
 } from '~/utils/chat/recommendAgentUtil'
 import { isTranslateAgent, useTranslateAgent } from '~/utils/chat/translateAgentUtil'
-import { useMarketingAuthoring } from '~/composables/chat/useMarketingAuthoring'
-import {
-  isMarketingAuthoringAgent,
-  isMarketingAuthoringPrompt,
-  MARKETING_AUTHORING_SVC_TY,
-} from '~/utils/chat/marketingAuthoringUtil'
+import { isMarketingAuthoringAgent } from '~/utils/marketing/marketingUtil'
 import { isRiskAgent } from '~/utils/agent/riskConfigUtil'
 import { isProposalAgent } from '~/utils/chat/proposalAgentUtil'
 import {
@@ -80,7 +74,6 @@ const { isAutoRecommendRoom, registerAutoRecommendRoom } = useAutoRecommend()
 const { isNewsCuratorRoom, registerNewsCuratorRoom, openNewsCurator } = useNewsCurator()
 const { isRecommendRoom, registerRecommendRoom } = useRecommendAgent()
 const { isTranslateRoom, registerTranslateRoom } = useTranslateAgent()
-const { isMarketingAuthoringRoom, registerMarketingAuthoringRoom } = useMarketingAuthoring()
 const {
   activeSearchModes,
   selectedChatAgentId,
@@ -197,18 +190,6 @@ const messagesForDisplay = computed(() => {
       return true
     })
   }
-  if (isMarketingAuthoringRoom(chatRoom.value.roomId)) {
-    let marketingAuthoringPromptHidden = false
-    base = base.filter((m) => {
-      if (m.type === 'question' && !marketingAuthoringPromptHidden) {
-        if (isMarketingAuthoringPrompt(m.qContent ?? '')) {
-          marketingAuthoringPromptHidden = true
-          return false
-        }
-      }
-      return true
-    })
-  }
   return base.filter((m) => {
     if (m.hiddenFromDisplay) return false
     return true
@@ -260,9 +241,6 @@ export const useChatStore = () => {
     appendTranslateCardIfNeeded,
     handleCloseTranslateAgent,
   } = useTranslateAgentActions()
-
-  const { handleMarketingPageSubmit, handleRoomMarketingAuthoringSubmit, handleCloseMarketingAuthoring } =
-    useMarketingAuthoringAgentActions()
 
   const {
     isAutoRecommendVisible,
@@ -383,19 +361,6 @@ export const useChatStore = () => {
       return isTranslateAgent(agent)
     })
     if (hasTranslateLog) registerTranslateRoom(roomId)
-
-    const hasMarketingAuthoringLog = rawList.some((row) => {
-      if (
-        String(row.svcTy ?? '')
-          .trim()
-          .toUpperCase() === MARKETING_AUTHORING_SVC_TY
-      ) {
-        return true
-      }
-      const agent = chatIndexAgents.value.find((a) => a.agentId === String(row.agentId ?? '').trim())
-      return isMarketingAuthoringAgent(agent)
-    })
-    if (hasMarketingAuthoringLog) registerMarketingAuthoringRoom(roomId)
 
     lastLoadedChatLogRows.value = rawList
     lastLoadedChatLogRoomId.value = roomId
@@ -700,9 +665,6 @@ export const useChatStore = () => {
     handleIndexTranslateSubmit,
     handleSubmitTranslateAgentForm,
     handleCloseTranslateAgent,
-    handleMarketingPageSubmit,
-    handleRoomMarketingAuthoringSubmit,
-    handleCloseMarketingAuthoring,
     addInlineTranslateMessage,
     addInlineAutoRecommendMessage,
     addInlineNewsMessage,
