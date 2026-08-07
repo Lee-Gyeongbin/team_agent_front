@@ -312,7 +312,8 @@
   <UiModal
     :is-open="isImageModalOpen"
     :title="activeSlide?.titleTxt ?? '인포그래픽 이미지'"
-    max-width="800px"
+    custom-class="pt-image-view-modal"
+    max-width="960px"
     @close="isImageModalOpen = false"
   >
     <UiLoading
@@ -332,7 +333,7 @@
     >
       <img
         :src="imageModalUrl"
-        class="pt-slide-viewer-img"
+        class="pt-image-modal-img"
         :alt="activeSlide?.titleTxt"
       />
     </div>

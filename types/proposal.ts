@@ -65,6 +65,8 @@ export interface PtRequirement {
   /** 요구사항 분류 원문 (RFP 표의 구분/유형 컬럼 값, 없으면 null) */
   reqCategoryTxt: string | null
   reqContent: string
+  /** 요구사항 상세설명 (RFP 상세설명 항목 원문, 없으면 null) */
+  reqDetailTxt: string | null
   mandatoryYn: 'Y' | 'N'
   /** 출처 유형 코드 (PT000004: 001=사실, 002=전략적해석, 003=확인필요, 999=직접입력) */
   sourceTypeCd: '001' | '002' | '003' | '999'
@@ -363,18 +365,29 @@ export interface SlideComponent {
   content: SlideComponentContent
 }
 
-/** Stage2 SSE 이벤트 */
+/** Stage2 전략 SSE 이벤트 */
 export interface Stage2ProgressData {
-  step: 'analyze' | 'problem_def' | 'prompt' | 'req_mapping' | 'win_theme' | 'extract_ref' | 'save'
+  step: 'load' | 'problem_def' | 'prompt' | 'parse' | 'win_theme' | 'save'
   message: string
 }
 
 export interface Stage2DoneData {
   ptProjectId: string
   skipped: boolean
-  tocCount?: number
   winThemeCount?: number
   problemDefCount?: number
+}
+
+/** Stage2 세부목차 SSE 이벤트 */
+export interface Stage2TocProgressData {
+  step: 'load' | 'req_mapping' | 'extract_ref' | 'save'
+  message: string
+}
+
+export interface Stage2TocDoneData {
+  ptProjectId: string
+  skipped: boolean
+  tocCount?: number
 }
 
 /** D-1 슬라이드 생성 SSE 이벤트 */

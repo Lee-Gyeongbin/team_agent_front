@@ -273,15 +273,28 @@
           </div>
 
           <div class="pt-req-edit-field">
-            <label class="pt-req-edit-label">내용</label>
+            <label class="pt-req-edit-label">요구사항 명칭</label>
             <UiTextarea
               v-model="editReqContent"
-              class="pt-req-edit-textarea"
-              :rows="10"
+              class="pt-req-edit-textarea pt-req-edit-textarea--name"
+              :rows="2"
               :auto-resize="false"
               border
               size="md"
-              placeholder="요구사항 내용을 입력하세요"
+              placeholder="요구사항 명칭을 입력하세요"
+            />
+          </div>
+
+          <div class="pt-req-edit-field">
+            <label class="pt-req-edit-label">세부내용</label>
+            <UiTextarea
+              v-model="editReqDetailTxt"
+              class="pt-req-edit-textarea pt-req-edit-textarea--detail"
+              :rows="6"
+              :auto-resize="false"
+              border
+              size="md"
+              placeholder="RFP 상세설명 원문 (없으면 비워두세요)"
             />
           </div>
 
@@ -772,7 +785,7 @@ const subTabs = computed(() => [
 const reqColumns: TableColumn[] = [
   { key: 'reqNo', label: '번호', width: '90px', align: 'center', headerAlign: 'center' },
   { key: 'reqCategoryTxt', label: '분류', width: '120px', align: 'center', headerAlign: 'center' },
-  { key: 'reqContent', label: '내용', align: 'left', headerAlign: 'left' },
+  { key: 'reqContent', label: '요구사항 명칭', align: 'left', headerAlign: 'left' },
   { key: 'mandatoryYn', label: '필수', width: '84px', align: 'center', headerAlign: 'center' },
   { key: 'sourceTypeCd', label: '출처', width: '80px', align: 'center', headerAlign: 'center' },
   { key: '_actions', label: '', width: '110px', align: 'center', headerAlign: 'center' },
@@ -782,6 +795,7 @@ const isReqEditOpen = ref(false)
 const isReqSaving = ref(false)
 const editingReq = ref<PtRequirement | null>(null)
 const editReqContent = ref('')
+const editReqDetailTxt = ref<string>('')
 const editMandatoryYn = ref<'Y' | 'N'>('Y')
 
 const rfpInputRef = ref<HTMLInputElement | null>(null)
@@ -912,6 +926,7 @@ const issueTypeBadge = (cd: string) => (cd === '001' ? 'is-danger' : cd === '002
 const openReqEdit = (req: PtRequirement) => {
   editingReq.value = req
   editReqContent.value = req.reqContent
+  editReqDetailTxt.value = req.reqDetailTxt ?? ''
   editMandatoryYn.value = req.mandatoryYn
   isReqEditOpen.value = true
 }
@@ -929,7 +944,7 @@ const onReqEditConfirm = async () => {
 
   const reqContent = editReqContent.value.trim()
   if (!reqContent) {
-    openToast({ message: '요구사항 내용을 입력하세요.', type: 'warning' })
+    openToast({ message: '요구사항 명칭을 입력하세요.', type: 'warning' })
     return
   }
 
@@ -944,6 +959,7 @@ const onReqEditConfirm = async () => {
     const res = await fetchUpdateRequirement({
       requirementId,
       reqContent,
+      reqDetailTxt: editReqDetailTxt.value.trim() || null,
       mandatoryYn: editMandatoryYn.value,
     })
     if (res.result !== 'OK') {
@@ -1323,8 +1339,15 @@ const onDeleteIssue = async (id: string) => {
 
 .pt-req-edit-textarea {
   width: 100%;
-  min-height: 220px;
   line-height: 1.55;
+
+  &--name {
+    min-height: 64px;
+  }
+
+  &--detail {
+    min-height: 220px;
+  }
 }
 
 .pt-tab-usage-hint {
@@ -1377,8 +1400,15 @@ const onDeleteIssue = async (id: string) => {
   }
 
   .pt-req-edit-textarea.ui-textarea {
-    min-height: 220px;
     line-height: 1.55;
+
+    &.pt-req-edit-textarea--name {
+      min-height: 64px;
+    }
+
+    &.pt-req-edit-textarea--detail {
+      min-height: 220px;
+    }
   }
 }
 </style>

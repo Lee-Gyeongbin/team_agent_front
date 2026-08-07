@@ -14,7 +14,7 @@
       <div class="pt-s4-loading-box">
         <div class="pt-s4-loading-spinner" />
         <h3>전략 분석 중입니다</h3>
-        <p>RFP 분석 결과를 바탕으로 문제정의·요구사항 매핑·Win Theme을 생성하고 있어요. 잠시만 기다려주세요.</p>
+        <p>RFP 분석 결과를 바탕으로 문제정의와 Win Theme을 생성하고 있어요. 잠시만 기다려주세요.</p>
         <div class="pt-s4-loading-steps">
           <div
             v-for="(s, i) in loadingSteps"
@@ -130,7 +130,7 @@
                     :key="'i' + id"
                     type="button"
                     class="pt-src-badge is-issue"
-                    @click="emit('go-step2', { tab: 'issue', id })"
+                    @click="emit('go-requirements', { tab: 'issue', id })"
                   >
                     이슈 {{ id }}
                   </button>
@@ -139,7 +139,7 @@
                     :key="'r' + id"
                     type="button"
                     class="pt-src-badge is-req"
-                    @click="emit('go-step2', { tab: 'req', id })"
+                    @click="emit('go-requirements', { tab: 'req', id })"
                   >
                     요구사항 {{ id }}
                   </button>
@@ -322,107 +322,14 @@
           </p>
         </div>
 
-        <!-- 목차매핑 -->
-        <div v-show="activeTab === 'map'">
-          <div
-            v-if="tocMapping?.unassignedRequirementIds?.length"
-            class="pt-alertbar"
-          >
-            ⚠ 어떤 소목차에도 배정되지 않은 요구사항이
-            {{ tocMapping.unassignedRequirementIds.length }}건 있습니다.
-            <UiButton
-              variant="primary-line"
-              size="sm"
-              @click="emit('go-step2', { tab: 'req' })"
-            >
-              미배정 요구사항 보기
-            </UiButton>
-          </div>
-          <div
-            v-else
-            class="pt-toolbar"
-          >
-            <span
-              class="pt-badge"
-              :class="summary?.stage2StatusCd === '003' ? 'is-ok' : 'is-gray'"
-            >
-              {{ summary?.stage2StatusCd === '003' ? '완료' : '대기' }}
-            </span>
-          </div>
-          <div class="pt-tocmap-tree">
-            <template
-              v-for="block in tocMappingBlocks"
-              :key="block.parentTitle"
-            >
-              <div class="pt-tocmap-h1">{{ block.parentTitle }}</div>
-              <div
-                v-for="node in block.children"
-                :key="node.tocId"
-                class="pt-tocmap-row"
-              >
-                <div class="pt-tocmap-title">{{ node.title }}</div>
-                <div class="pt-tocmap-body">
-                  <div class="pt-tocmap-line">
-                    <label>요구사항</label>
-                    <span
-                      v-for="rid in localCovered[node.tocId] || []"
-                      :key="rid"
-                      class="pt-chip"
-                    >
-                      {{ reqLabel(rid) }}
-                      <button
-                        type="button"
-                        class="x"
-                        @click="removeCovered(node.tocId, rid)"
-                      >
-                        ✕
-                      </button>
-                    </span>
-                    <button
-                      type="button"
-                      class="pt-chip-add"
-                      @click="addCovered(node.tocId)"
-                    >
-                      + 추가
-                    </button>
-                  </div>
-                  <div class="pt-tocmap-line">
-                    <label>평가기준</label>
-                    <select
-                      class="pt-ec-select"
-                      :value="localEval[node.tocId] || ''"
-                      @change="onEvalChange(node.tocId, ($event.target as HTMLSelectElement).value)"
-                    >
-                      <option value="">선택 안 함</option>
-                      <option
-                        v-for="ec in tocMapping?.evalCriteriaOptions || []"
-                        :key="ec.evalCriteriaId"
-                        :value="ec.evalCriteriaId"
-                      >
-                        {{ ec.evalItemNm }} ({{ ec.score }}점)
-                      </option>
-                    </select>
-                    <UiButton
-                      variant="ghost"
-                      size="sm"
-                      :loading="savingTocId === node.tocId"
-                      @click="saveTocNode(node.tocId)"
-                    >
-                      저장
-                    </UiButton>
-                  </div>
-                </div>
-              </div>
-            </template>
-          </div>
-        </div>
+        <!-- 목차매핑 UI 제거 — TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동 -->
       </div>
 
       <div class="pt-panel-actions pt-strategy-actions">
         <UiButton
           variant="primary"
           size="md"
-          :disabled="summary?.stage2StatusCd !== '003'"
+          :disabled="!['005', '003'].includes(summary?.stage2StatusCd ?? '')"
           @click="emit('next')"
         >
           이 전략 확정 · 다음 진행
@@ -439,7 +346,8 @@
 import { openToast } from '~/composables/useToast'
 import { openConfirm } from '~/composables/useDialog'
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
-import type { Stage2Summary, ProblemDefinition, WinTheme, TocMappingResult, TocMappingNode } from '~/types/proposal'
+import type { Stage2Summary, ProblemDefinition, WinTheme } from '~/types/proposal'
+// TocMappingResult, TocMappingNode — TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동
 
 const props = defineProps<{
   ptProjectId: string
@@ -449,14 +357,14 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   next: []
-  'go-step2': [payload: { tab: 'toc' | 'req' | 'ec' | 'issue'; id?: string }]
+  'go-requirements': [payload: { tab: 'toc' | 'req' | 'ec' | 'issue'; id?: string }]
 }>()
 
 const {
   fetchSelectStage2Summary,
   fetchSelectStage2ProblemDefinitions,
   fetchSelectStage2WinThemes,
-  fetchSelectStage2TocMapping,
+  // fetchSelectStage2TocMapping,  // TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동
   fetchResetStage2Status,
   streamAnalyzeStage2,
   fetchUpdateStage2ProblemDefinition,
@@ -468,8 +376,8 @@ const {
   fetchDeleteStage2WinTheme,
   fetchRegenerateStage2ProblemDefinitions,
   fetchRegenerateStage2WinThemes,
-  fetchUpdateStage2TocMapping,
-  fetchSelectStage1Result,
+  // fetchUpdateStage2TocMapping,  // TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동
+  // fetchSelectStage1Result,      // TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동
 } = useProposalApi()
 
 const PROBLEM_TYPE_MAP: Record<string, string> = {
@@ -489,13 +397,6 @@ const loadingSteps = [
     waitMsg: '대기 중',
   },
   {
-    key: 'map',
-    title: '요구사항·목차 매핑',
-    doneMsg: '소목차별 요구사항 배정 완료',
-    activeMsg: '소목차별 관련 요구사항 배정 중…',
-    waitMsg: '대기 중',
-  },
-  {
     key: 'wt',
     title: 'Win Theme 도출',
     doneMsg: 'Win Theme 도출 완료',
@@ -507,14 +408,14 @@ const loadingSteps = [
 const summary = ref<Stage2Summary | null>(null)
 const problemDefs = ref<ProblemDefinition[]>([])
 const winThemes = ref<WinTheme[]>([])
-const tocMapping = ref<TocMappingResult | null>(null)
-const reqLabelMap = ref<Record<string, string>>({})
+// const tocMapping = ref<TocMappingResult | null>(null)  // TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동
+// const reqLabelMap = ref<Record<string, string>>({})    // TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동
 
 const activeTab = ref('pd')
 const strategyTabs = [
   { label: '문제정의', value: 'pd' },
   { label: 'Win Theme', value: 'wt' },
-  { label: '목차매핑', value: 'map' },
+  // 목차매핑 탭 제거 — TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동
 ]
 const activeProblemId = ref<string | null>(null)
 const isLoadingStage2 = ref(false)
@@ -525,9 +426,9 @@ const isSavingPd = ref(false)
 const isRefining = ref(false)
 const refineFeedback = ref('')
 const regeneratingWtId = ref<string | null>(null)
-const savingTocId = ref<string | null>(null)
-const localCovered = ref<Record<string, string[]>>({})
-const localEval = ref<Record<string, string | null>>({})
+// const savingTocId = ref<string | null>(null)      // TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동
+// const localCovered = ref<Record<string, string[]>>({})  // TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동
+// const localEval = ref<Record<string, string | null>>({})  // TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동
 const wtDraft = ref<Record<string, Partial<WinTheme>>>({})
 
 const editPd = reactive({
@@ -565,33 +466,16 @@ const pdGroups = computed(() => {
     .map((c) => ({ code: c, label: PROBLEM_TYPE_MAP[c] || '기타', items: map.get(c)! }))
 })
 
-const tocMappingBlocks = computed(() => {
-  const nodes = tocMapping.value?.tocNodes || []
-  const byId = new Map(nodes.map((n) => [n.tocId, n]))
-  const roots = nodes.filter((n) => !n.parentTocId)
-  const childrenOf = (parentId: string | null) => nodes.filter((n) => n.parentTocId === parentId)
-  const blocks: { parentTitle: string; children: TocMappingNode[] }[] = []
-  if (roots.length) {
-    for (const r of roots) {
-      const kids = childrenOf(r.tocId)
-      if (kids.length) blocks.push({ parentTitle: r.title, children: kids })
-      else blocks.push({ parentTitle: r.title, children: [r] })
-    }
-  } else {
-    blocks.push({ parentTitle: '목차', children: nodes })
-  }
-  // orphan leaves whose parent not in list
-  const placed = new Set(blocks.flatMap((b) => b.children.map((c) => c.tocId)))
-  const orphans = nodes.filter((n) => n.parentTocId && !placed.has(n.tocId) && !byId.has(n.parentTocId!))
-  if (orphans.length) blocks.push({ parentTitle: '기타', children: orphans })
-  return blocks
-})
+// tocMappingBlocks — TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동
+// const tocMappingBlocks = computed(() => { ... })
 
 const pdTitle = (pd: ProblemDefinition) => {
   const t = (pd.currentProblem || '').trim()
   return t.length > 28 ? t.slice(0, 28) + '…' : t || '(제목 없음)'
 }
 const isEvidenceMissing = (ev: string) => !ev || ev.includes('[증빙자료 필요]')
+// reqLabel — TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동
+// const reqLabel = (id: string) => reqLabelMap.value[id] || id
 const staleBadgeText = (wt: WinTheme) => {
   const reason = wt.staleDetails?.[0]?.reason
   if (reason === 'DELETED') return '근거 문제정의가 삭제됨'
@@ -602,8 +486,6 @@ const targetPdTitle = (wt: WinTheme) => {
   const pd = problemDefs.value.find((p) => p.problemId === id)
   return pd ? pdTitle(pd) : '선택 필요'
 }
-const reqLabel = (id: string) => reqLabelMap.value[id] || id
-
 watch(activePd, (pd) => {
   if (!pd) return
   editPd.currentProblem = pd.currentProblem || ''
@@ -616,12 +498,12 @@ watch(activePd, (pd) => {
 })
 
 const loadAll = async () => {
-  const [s, pds, wts, map, s1] = await Promise.all([
+  const [s, pds, wts] = await Promise.all([
     fetchSelectStage2Summary(props.ptProjectId),
     fetchSelectStage2ProblemDefinitions(props.ptProjectId),
     fetchSelectStage2WinThemes(props.ptProjectId),
-    fetchSelectStage2TocMapping(props.ptProjectId),
-    fetchSelectStage1Result(props.ptProjectId),
+    // fetchSelectStage2TocMapping(props.ptProjectId),  // TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동
+    // fetchSelectStage1Result(props.ptProjectId),       // TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동
   ])
   if (s.result === 'OK') summary.value = s.data
   if (pds.result === 'OK') {
@@ -631,24 +513,6 @@ const loadAll = async () => {
     }
   }
   if (wts.result === 'OK') winThemes.value = wts.data || []
-  if (map.result === 'OK') {
-    tocMapping.value = map.data
-    const covered: Record<string, string[]> = {}
-    const evals: Record<string, string | null> = {}
-    for (const n of map.data?.tocNodes || []) {
-      covered[n.tocId] = [...(n.coveredReqIds || [])]
-      evals[n.tocId] = n.linkedEvalCriteriaId
-    }
-    localCovered.value = covered
-    localEval.value = evals
-  }
-  if (s1.result === 'OK') {
-    const m: Record<string, string> = {}
-    for (const r of s1.data?.requirements || []) {
-      m[r.requirementId] = r.reqNo || r.requirementId
-    }
-    reqLabelMap.value = m
-  }
 }
 
 const pollSummaryUntilDone = () =>
@@ -660,8 +524,8 @@ const pollSummaryUntilDone = () =>
           summary.value = res.data
           const cd = res.data.stage2StatusCd
           if (cd === '002') loadingStepIdx.value = Math.max(loadingStepIdx.value, 1)
-          if (cd === '003' || cd === '004') {
-            loadingStepIdx.value = 3
+          if (cd === '005' || cd === '003' || cd === '004') {
+            loadingStepIdx.value = 2
             resolve()
             return
           }
@@ -683,10 +547,8 @@ const startStage2 = async (force = false) => {
   await new Promise<void>((resolve) => {
     streamAnalyzeStage2(props.ptProjectId, props.modelId, props.agentId, {
       onProgress: (data) => {
-        if (data.step === 'problem_def' || data.step === 'prompt') loadingStepIdx.value = 0
-        if (data.step === 'req_mapping') loadingStepIdx.value = 1
-        if (data.step === 'win_theme' || data.step === 'extract_ref') loadingStepIdx.value = 2
-        if (data.step === 'save') loadingStepIdx.value = 2
+        if (data.step === 'problem_def' || data.step === 'prompt' || data.step === 'parse') loadingStepIdx.value = 0
+        if (data.step === 'win_theme' || data.step === 'save') loadingStepIdx.value = 1
       },
       onDone: async () => {
         loadingStepIdx.value = 3
@@ -713,8 +575,8 @@ onMounted(async () => {
       const wtCnt = res.data.winThemeCount ?? 0
       const status = res.data.stage2StatusCd
 
-      // 문제정의·Win Theme가 이미 있으면 LLM 스킵하고 조회만 (TOC 매핑도 함께 loadAll)
-      if (status === '003' || (pdCnt > 0 && wtCnt > 0)) {
+      // 문제정의·Win Theme가 이미 있으면 LLM 스킵하고 조회만
+      if (status === '005' || status === '003' || (pdCnt > 0 && wtCnt > 0)) {
         await loadAll()
         return
       }
@@ -918,37 +780,8 @@ const onRegenerateWt = async () => {
   }
 }
 
-const removeCovered = (tocId: string, rid: string) => {
-  localCovered.value[tocId] = (localCovered.value[tocId] || []).filter((x) => x !== rid)
-}
-const addCovered = (tocId: string) => {
-  const unassigned = tocMapping.value?.unassignedRequirementIds || []
-  const pick = unassigned.find((id) => !(localCovered.value[tocId] || []).includes(id))
-  if (!pick) {
-    openToast({ message: '추가할 미배정 요구사항이 없습니다.', type: 'warning' })
-    return
-  }
-  localCovered.value[tocId] = [...(localCovered.value[tocId] || []), pick]
-}
-const onEvalChange = (tocId: string, val: string) => {
-  localEval.value[tocId] = val || null
-}
-const saveTocNode = async (tocId: string) => {
-  savingTocId.value = tocId
-  try {
-    const res = await fetchUpdateStage2TocMapping(props.ptProjectId, {
-      tocId,
-      coveredReqIds: localCovered.value[tocId] || [],
-      linkedEvalCriteriaId: localEval.value[tocId] || null,
-    })
-    if (res.result === 'OK') {
-      openToast({ message: '목차 매핑이 저장되었습니다.' })
-      await loadAll()
-    }
-  } finally {
-    savingTocId.value = null
-  }
-}
+// 목차매핑 관련 함수 — TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동
+// removeCovered / addCovered / onEvalChange / saveTocNode
 </script>
 
 <style lang="scss" scoped>

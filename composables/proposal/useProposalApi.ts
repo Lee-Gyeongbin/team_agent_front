@@ -17,6 +17,8 @@ import type {
   PtSlide,
   Stage2ProgressData,
   Stage2DoneData,
+  Stage2TocProgressData,
+  Stage2TocDoneData,
   Stage2Summary,
   ProblemDefinition,
   WinTheme,
@@ -488,6 +490,58 @@ export const useProposalApi = () => {
   }
 
   /**
+   * D-0T: Stage2 세부목차 생성 SSE 스트림
+   *
+   * @param ptProjectId      프로젝트 ID
+   * @param modelId          LLM 모델 ID
+   * @param agentId          에이전트 ID
+   * @param totalSlideBudget 목표 슬라이드 수 (기본 20)
+   */
+  const streamAnalyzeStage2Toc = (
+    ptProjectId: string,
+    modelId: string,
+    agentId: string,
+    callbacks: {
+      onProgress?: (data: Stage2TocProgressData) => void
+      onDone?: (data: Stage2TocDoneData) => void
+      onError?: (message: string) => void
+    },
+    totalSlideBudget = 20,
+  ): EventSource => {
+    const params = new URLSearchParams({ ptProjectId, modelId, agentId, totalSlideBudget: String(totalSlideBudget) })
+    const es = new EventSource(`/api/ai/proposal/streamAnalyzeStage2Toc.do?${params.toString()}`)
+
+    es.addEventListener('progress', (e) => {
+      try {
+        callbacks.onProgress?.(JSON.parse((e as MessageEvent).data) as Stage2TocProgressData)
+      } catch {
+        /* ignore */
+      }
+    })
+    es.addEventListener('done', (e) => {
+      try {
+        callbacks.onDone?.(JSON.parse((e as MessageEvent).data) as Stage2TocDoneData)
+      } catch {
+        /* ignore */
+      } finally {
+        es.close()
+      }
+    })
+    es.addEventListener('error', (e) => {
+      try {
+        const me = e as MessageEvent
+        callbacks.onError?.(me.data ? (JSON.parse(me.data) as { message: string }).message : 'SSE 연결 오류')
+      } catch {
+        callbacks.onError?.('SSE 연결 오류')
+      } finally {
+        es.close()
+      }
+    })
+
+    return es
+  }
+
+  /**
    * E-1: 소목차 슬라이드 생성 SSE 스트림 (Stage3 + Stage3.5)
    * 이미 슬라이드가 있으면 삭제 후 재생성.
    *
@@ -763,6 +817,7 @@ export const useProposalApi = () => {
     fetchUpdateStage2TocMapping,
     // Step E (본문 생성)
     streamAnalyzeStage2,
+    streamAnalyzeStage2Toc,
     streamGenerateSection,
     fetchSelectSectionSlides,
     fetchChatSection,

@@ -1,15 +1,15 @@
 <template>
   <div class="pt-panel pt-panel--lg">
-    <h3 class="pt-panel-title">제안 설정</h3>
-    <p class="pt-panel-desc">본문 생성에 사용할 참고 자료와 스타일을 지정하세요.</p>
+    <h3 class="pt-panel-title">자사·경쟁사 정보</h3>
+    <p class="pt-panel-desc">Win Theme 도출에 활용할 자사·경쟁사 자료와 기타 참고자료를 첨부하세요.</p>
 
     <!-- 로딩 스켈레톤 -->
     <template v-if="isLoading">
       <div
-        v-for="i in 4"
+        v-for="i in 3"
         :key="i"
         class="pt-skeleton"
-        style="height: 56px; margin-bottom: 12px"
+        style="height: 80px; margin-bottom: 12px"
       />
     </template>
 
@@ -122,74 +122,6 @@
             />
           </div>
         </div>
-
-        <!-- 제안 대상 -->
-        <div class="pt-settings-full">
-          <div class="pt-settings-label">제안 대상</div>
-          <div class="pt-toggle-row">
-            <button
-              :class="['pt-toggle-opt', { 'is-active': targetTypeCd === 'G' }]"
-              :disabled="isTargetSaving"
-              @click="onTargetTypeChange('G')"
-            >
-              공공
-            </button>
-            <button
-              :class="['pt-toggle-opt', { 'is-active': targetTypeCd === 'P' }]"
-              :disabled="isTargetSaving"
-              @click="onTargetTypeChange('P')"
-            >
-              민간
-            </button>
-          </div>
-          <p class="pt-hint">대상에 따라 어조와 강조 요소(정량 성과 vs 준법·공익성 등)가 다르게 적용됩니다.</p>
-        </div>
-
-        <!-- 문체 스타일 -->
-        <div class="pt-settings-full">
-          <div class="pt-settings-label">문체 스타일</div>
-          <div class="pt-toggle-row">
-            <button
-              v-for="opt in WRITING_STYLE_OPTIONS"
-              :key="opt.value"
-              :class="['pt-toggle-opt', { 'is-active': writingStyle === opt.value }]"
-              @click="writingStyle = opt.value"
-            >
-              {{ opt.label }}
-            </button>
-          </div>
-        </div>
-
-        <!-- 제안사명 -->
-        <div class="pt-settings-full">
-          <div class="pt-settings-label">제안사명</div>
-          <UiInput
-            v-model="submitterNm"
-            placeholder="출력물 푸터에 표시될 제안사명을 입력하세요 (선택)"
-            desc="입력하지 않으면 출력물 푸터 우측이 공란으로 처리됩니다."
-          />
-        </div>
-
-        <!-- 컬러 지정 -->
-        <div class="pt-settings-full">
-          <div class="pt-settings-label">컬러 지정</div>
-          <div class="pt-color-block">
-            <div
-              v-for="(item, idx) in COLOR_ROWS"
-              :key="item.key"
-              class="pt-color-row"
-            >
-              <span class="pt-color-clabel">{{ item.label }}</span>
-              <span class="pt-color-rank">{{ item.rank }}</span>
-              <input
-                type="color"
-                class="pt-color-picker"
-                :value="colorValues[idx]"
-                @input="colorValues[idx] = ($event.target as HTMLInputElement).value"
-              />
-            </div>
-          </div>
-        </div>
       </div>
 
       <div class="pt-panel-actions">
@@ -199,7 +131,7 @@
           :disabled="isSaving"
           @click="onNext"
         >
-          {{ isSaving ? '저장 중...' : '다음 · 본문 생성 시작' }}
+          {{ isSaving ? '저장 중...' : '다음 · 전략검토' }}
           <template #icon-right>
             <i class="icon-arrow-right size-14" />
           </template>
@@ -213,7 +145,7 @@
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
 import { useProposalFileStore } from '~/composables/proposal/useProposalFileStore'
 import { openToast } from '~/composables/useToast'
-import type { PtTargetTypeCd, PtWritingStyle } from '~/types/proposal'
+import type { PtWritingStyle } from '~/types/proposal'
 
 const props = defineProps<{
   ptProjectId: string
@@ -223,24 +155,8 @@ const emit = defineEmits<{
   next: []
 }>()
 
-const { fetchSelectProjectSettings, fetchUpdateProjectSettings, fetchUpdateProjectTargetType } = useProposalApi()
+const { fetchSelectProjectSettings, fetchUpdateProjectSettings } = useProposalApi()
 const { handleUploadPtFile } = useProposalFileStore()
-
-// ── 상수 ───────────────────────────────────────────────────────────────────────
-
-const WRITING_STYLE_OPTIONS: { value: PtWritingStyle; label: string }[] = [
-  { value: 'formal', label: '공식·격식체' },
-  { value: 'plain', label: '간결·실무체' },
-  { value: 'persuasive', label: '설득·강조체' },
-]
-
-const COLOR_ROWS = [
-  { key: 'base1', label: '기본색조 1순위', rank: 'Primary' },
-  { key: 'base2', label: '기본색조 2순위', rank: 'Secondary' },
-  { key: 'base3', label: '기본색조 3순위', rank: 'Tertiary' },
-  { key: 'accent1', label: '강조색조 1순위', rank: 'Accent 1' },
-  { key: 'accent2', label: '강조색조 2순위', rank: 'Accent 2' },
-]
 
 // ── 상태 ───────────────────────────────────────────────────────────────────────
 
@@ -248,12 +164,6 @@ type FileSlot = 'company' | 'competitor' | 'etcRef'
 
 const isLoading = ref(true)
 const isSaving = ref(false)
-const isTargetSaving = ref(false)
-
-const targetTypeCd = ref<PtTargetTypeCd>('G')
-const writingStyle = ref<PtWritingStyle>('formal')
-const submitterNm = ref('')
-const colorValues = ref<string[]>(['#5B4FE9', '#8B7FFF', '#EFECFE', '#E08A2C', '#22A06B'])
 
 // 파일 목록: { ptFileId, fileName }
 const companyFiles = ref<{ ptFileId: string; fileName: string }[]>([])
@@ -263,6 +173,12 @@ const etcRefFiles = ref<{ ptFileId: string; fileName: string }[]>([])
 const companyInputRef = ref<HTMLInputElement | null>(null)
 const competitorInputRef = ref<HTMLInputElement | null>(null)
 const etcRefInputRef = ref<HTMLInputElement | null>(null)
+
+// 파일 UI에서 표시하지 않는 설정값 — 저장 시 기존 값 유지를 위해 캐싱
+const cachedWritingStyle = ref<PtWritingStyle>('formal')
+const cachedBaseColors = ref<[string, string, string]>(['#5B4FE9', '#8B7FFF', '#EFECFE'])
+const cachedAccentColors = ref<[string, string]>(['#E08A2C', '#22A06B'])
+const cachedSubmitterNm = ref<string | undefined>(undefined)
 
 // ── 파일 헬퍼 ─────────────────────────────────────────────────────────────────
 
@@ -311,21 +227,6 @@ const onFileChange = async (slot: FileSlot, e: Event) => {
   ;(e.target as HTMLInputElement).value = ''
 }
 
-// ── 제안 대상 즉시 저장 ───────────────────────────────────────────────────────
-
-const onTargetTypeChange = async (cd: PtTargetTypeCd) => {
-  if (cd === targetTypeCd.value || isTargetSaving.value) return
-  isTargetSaving.value = true
-  try {
-    await fetchUpdateProjectTargetType(props.ptProjectId, cd)
-    targetTypeCd.value = cd
-  } catch {
-    openToast({ message: '제안 대상 변경에 실패했습니다.', type: 'error' })
-  } finally {
-    isTargetSaving.value = false
-  }
-}
-
 // ── 초기 데이터 로드 ──────────────────────────────────────────────────────────
 
 const loadSettings = async () => {
@@ -333,13 +234,15 @@ const loadSettings = async () => {
   try {
     const res = await fetchSelectProjectSettings(props.ptProjectId)
     const d = res.data
-    targetTypeCd.value = d.targetTypeCd
-    writingStyle.value = d.writingStyle
-    submitterNm.value = d.submitterNm ?? ''
+    // 파일 UI 표시 필드
     companyFiles.value = d.companyFiles ?? []
     competitorFiles.value = d.competitorFiles ?? []
     etcRefFiles.value = d.etcRefFiles ?? []
-    colorValues.value = [...d.baseColors, ...d.accentColors]
+    // 비표시 설정 캐싱 — 저장 시 기존 값 유지용
+    cachedWritingStyle.value = d.writingStyle
+    cachedBaseColors.value = d.baseColors ?? ['#5B4FE9', '#8B7FFF', '#EFECFE']
+    cachedAccentColors.value = d.accentColors ?? ['#E08A2C', '#22A06B']
+    cachedSubmitterNm.value = d.submitterNm
   } catch {
     openToast({ message: '설정 로드에 실패했습니다.', type: 'error' })
   } finally {
@@ -357,10 +260,10 @@ const onNext = async () => {
       companyFileIds: companyFiles.value.map((f) => f.ptFileId),
       competitorFileIds: competitorFiles.value.map((f) => f.ptFileId),
       etcRefFileIds: etcRefFiles.value.map((f) => f.ptFileId),
-      writingStyle: writingStyle.value,
-      baseColors: [colorValues.value[0], colorValues.value[1], colorValues.value[2]] as [string, string, string],
-      accentColors: [colorValues.value[3], colorValues.value[4]] as [string, string],
-      submitterNm: submitterNm.value.trim() || undefined,
+      writingStyle: cachedWritingStyle.value,
+      baseColors: cachedBaseColors.value,
+      accentColors: cachedAccentColors.value,
+      submitterNm: cachedSubmitterNm.value,
     })
     emit('next')
   } catch {

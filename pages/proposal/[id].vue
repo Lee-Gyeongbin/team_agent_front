@@ -1,7 +1,7 @@
 <template>
   <div
     class="pt-detail-page"
-    :class="{ 'is-page-scroll': currentStep === 1 }"
+    :class="{ 'is-page-scroll': currentStep === 0 }"
   >
     <!-- 헤더 -->
     <div class="pt-detail-head">
@@ -22,7 +22,7 @@
       </div>
     </div>
 
-    <!-- 7단계 스텝바 -->
+    <!-- 8단계 스텝바 -->
     <ProposalStepper
       :steps="steps"
       :max-unlocked-step="maxUnlockedStep"
@@ -30,31 +30,47 @@
     />
 
     <!-- 단계별 콘텐츠 -->
+    <!-- 0요구사항 → 1자사·경쟁사 → 2전략검토 → 3세부목차 → 4템플릿설정 → 5템플릿생성 → 6본문생성 → 7출력 -->
     <div class="pt-step-content">
-      <ProposalStepA
+      <ProposalStepRequirements
         v-if="currentStep === 0"
-        :pt-project-id="ptProjectId"
-        :project-config-json="currentProject?.projectConfigJson"
-        @next="onAdvance"
-      />
-      <ProposalStepB
-        v-else-if="currentStep === 1"
         :pt-project-id="ptProjectId"
         :model-id="modelId"
         :agent-id="agentId"
         :writing-guideline-json="currentProject?.writingGuidelineJson"
-        :focus-tab="stepBFocusTab"
-        :focus-id="stepBFocusId"
+        :focus-tab="requirementsFocusTab"
+        :focus-id="requirementsFocusId"
         @next="onAdvance"
-        @focus-cleared="clearStepBFocus"
+        @focus-cleared="clearRequirementsFocus"
       />
-      <ProposalStepC
-        v-else-if="currentStep === 2"
+      <ProposalStepCompanyInfo
+        v-else-if="currentStep === 1"
         :pt-project-id="ptProjectId"
         @next="onAdvance"
       />
-      <ProposalStepD
+      <ProposalStepStrategy
+        v-else-if="currentStep === 2"
+        :pt-project-id="ptProjectId"
+        :model-id="modelId"
+        :agent-id="agentId"
+        @next="onAdvance"
+        @go-requirements="onGoRequirementsDeepLink"
+      />
+      <ProposalStepToc
         v-else-if="currentStep === 3"
+        :pt-project-id="ptProjectId"
+        :model-id="modelId"
+        :agent-id="agentId"
+        @next="onAdvance"
+      />
+      <ProposalStepTemplateConfig
+        v-else-if="currentStep === 4"
+        :pt-project-id="ptProjectId"
+        :project-config-json="currentProject?.projectConfigJson"
+        @next="onAdvance"
+      />
+      <ProposalStepTemplateGen
+        v-else-if="currentStep === 5"
         :pt-project-id="ptProjectId"
         :model-id="modelId"
         :agent-id="agentId"
@@ -63,16 +79,8 @@
         :doc-size="docSize"
         @next="onAdvance"
       />
-      <ProposalStepStrategy
-        v-else-if="currentStep === 4"
-        :pt-project-id="ptProjectId"
-        :model-id="modelId"
-        :agent-id="agentId"
-        @next="onAdvance"
-        @go-step2="onGoStep2DeepLink"
-      />
-      <ProposalStepE
-        v-else-if="currentStep === 5"
+      <ProposalStepGenerate
+        v-else-if="currentStep === 6"
         :section-list="sectionList"
         :raw-toc-list="rawTocList"
         :slides-cache="slidesCache"
@@ -93,8 +101,8 @@
         @generate-section="onGenerateSection"
         @slides-updated="onSlidesUpdated"
       />
-      <ProposalStepF
-        v-else-if="currentStep === 6"
+      <ProposalStepExport
+        v-else-if="currentStep === 7"
         :pt-project-id="ptProjectId"
         :agent-id="agentId"
       />
@@ -116,7 +124,7 @@ const router = useRouter()
 const ptProjectId = computed(() => String(route.params.id))
 
 // ---- LLM 모델 / 에이전트 설정 ----
-// 상세 페이지 공통 설정 — Step B/E 등 하위 스텝에 props로 전달
+// 상세 페이지 공통 설정 — Requirements/Generate 등 하위 스텝에 props로 전달
 // TODO: 프로젝트 설정 조회 또는 생성 시 선택값으로 교체
 const modelId = ref(PT_PROPOSAL_DEFAULT_MODEL_ID)
 const agentId = ref(PT_PROPOSAL_DEFAULT_AGENT_ID)
@@ -136,13 +144,14 @@ const docSize = computed<'169' | '43' | 'a4'>(() => {
 })
 
 // ---- 스텝바 ----
-// 0템플릿 → 1목차·요구사항 → 2설정 → 3템플릿생성 → 4전략검토 → 5본문생성 → 6출력
+// 0요구사항 → 1자사·경쟁사 → 2전략검토 → 3세부목차 → 4템플릿설정 → 5템플릿생성 → 6본문생성 → 7출력
 const STEP_DEFS = [
-  { key: 'template' as const, label: '템플릿', sub: '보완/생성' },
-  { key: 'toc' as const, label: '목차·요구사항', sub: 'TOC / 요구사항 / 평가기준 / 현황이슈' },
-  { key: 'settings' as const, label: '설정', sub: '자료·스타일·컬러' },
+  { key: 'requirements' as const, label: '요구사항·평가기준·현황이슈', sub: 'TOC / 요구사항 / 평가기준 / 현황이슈' },
+  { key: 'company-info' as const, label: '자사·경쟁사 정보', sub: '자사 / 경쟁사 / 참고자료' },
+  { key: 'strategy' as const, label: '전략검토', sub: '문제정의 / Win Theme' },
+  { key: 'detail-toc' as const, label: '세부목차', sub: '세부 슬라이드 구성' },
+  { key: 'template-config' as const, label: '템플릿 설정', sub: '생성방식 / 사이즈 / 제안대상 / 스타일' },
   { key: 'template-gen' as const, label: '템플릿 생성', sub: '헤더·푸터 레이아웃' },
-  { key: 'strategy' as const, label: '전략검토', sub: '문제정의 / Win Theme / 목차매핑' },
   { key: 'generate' as const, label: '본문 생성', sub: '소목차별 순차 진행' },
   { key: 'export' as const, label: '출력', sub: 'PDF 추출' },
 ]
@@ -150,17 +159,17 @@ const STEP_DEFS = [
 const currentStep = ref(0)
 const maxUnlockedStep = ref(0)
 
-/** Step2 딥링크 (전략검토 source 배지 → 요구사항/이슈 탭) */
-const stepBFocusTab = ref<'toc' | 'req' | 'ec' | 'issue' | null>(null)
-const stepBFocusId = ref<string | null>(null)
-const clearStepBFocus = () => {
-  stepBFocusTab.value = null
-  stepBFocusId.value = null
+/** Requirements 딥링크 (전략검토 source 배지 → 요구사항/이슈 탭, 스텝 0으로 이동) */
+const requirementsFocusTab = ref<'toc' | 'req' | 'ec' | 'issue' | null>(null)
+const requirementsFocusId = ref<string | null>(null)
+const clearRequirementsFocus = () => {
+  requirementsFocusTab.value = null
+  requirementsFocusId.value = null
 }
-const onGoStep2DeepLink = (payload: { tab: 'toc' | 'req' | 'ec' | 'issue'; id?: string }) => {
-  stepBFocusTab.value = payload.tab
-  stepBFocusId.value = payload.id ?? null
-  onGoStep(1)
+const onGoRequirementsDeepLink = (payload: { tab: 'toc' | 'req' | 'ec' | 'issue'; id?: string }) => {
+  requirementsFocusTab.value = payload.tab
+  requirementsFocusId.value = payload.id ?? null
+  onGoStep(0)
 }
 
 const steps = computed<PtStep[]>(() =>
@@ -179,7 +188,7 @@ const onAdvance = () => {
   const next = Math.min(currentStep.value + 1, STEP_DEFS.length - 1)
   currentStep.value = next
   maxUnlockedStep.value = Math.max(maxUnlockedStep.value, next)
-  // Step B(→2) 등 자체 저장 API 없는 단계 커버 (A·C·D는 서버에서 이미 처리, GREATEST로 중복 무해)
+  // Requirements 등 자체 저장 API 없는 단계 커버 (서버 GREATEST로 중복 무해)
   fetchUpdateMaxStepNo(ptProjectId.value, next)
   onStepChanged(next)
 }
@@ -187,12 +196,12 @@ const onAdvance = () => {
 const { fetchSelectPtProject, fetchUpdateMaxStepNo } = useProposalApi()
 
 const onStepChanged = (step: number) => {
-  if (step === 1) handleSelectTocList()
-  // 본문생성(5): 섹션 목록만 로드 — Stage2는 전략검토(4)에서 처리
-  if (step === 5) handleSelectSectionList()
+  if (step === 0) handleSelectTocList()
+  // 본문생성(6): 섹션 목록만 로드 — Stage2는 전략검토(2)에서 처리
+  if (step === 6) handleSelectSectionList()
 }
 
-// ---- TOC (Step B 진입 시 선행 로드; 상세 CRUD는 ProposalStepB 내부) ----
+// ---- TOC (Requirements 진입 시 선행 로드; 상세 CRUD는 ProposalStepRequirements 내부) ----
 const { handleSelectTocList } = useProposalToc(ptProjectId)
 
 // ---- 소목차 생성 ----
@@ -247,7 +256,7 @@ const onGenerateSection = async (tocId: string) => {
 const onConfirmSection = async (sectionId: string) => {
   const allDone = await handleConfirmSection(sectionId)
   if (allDone) {
-    // 모든 소목차 완료 → 출력 단계(Step F)로 자동 이동
+    // 모든 소목차 완료 → 출력 단계(Export)로 자동 이동
     onAdvance()
   }
 }

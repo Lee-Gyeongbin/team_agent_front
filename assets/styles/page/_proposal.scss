@@ -2372,56 +2372,39 @@ body.is-resizing {
   display: inline-block;
 }
 
-// ???????????? ??? ??
-.pt-image-modal {
-  background: #fff;
-  border-radius: $border-radius-lg;
-  width: min(800px, 100%);
-  max-height: calc(100vh - 48px);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-shadow: $shadow-lg;
-}
-
-.pt-image-modal-body {
-  position: relative;
-  flex: 1;
-  min-height: 200px;
-  overflow: auto;
-  padding: $spacing-md;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  @include custom-scrollbar;
-
-  img {
-    width: 100%;
-    height: auto;
-    border-radius: $border-radius-base;
-    display: block;
+// 인포그래픽 이미지 모달 (UiModal)
+.modal-dialog.pt-image-view-modal {
+  .modal-dialog-content {
+    padding: 20px 20px 16px;
   }
-}
 
-.pt-image-modal-error {
-  @include typo($body-medium);
-  color: $color-text-secondary;
-  text-align: center;
-  padding: $spacing-lg;
-}
-
-// UiModal ???? ????? ????????
-.pt-image-modal-img-wrap {
-  max-height: 70vh;
-  overflow-y: auto;
-  @include custom-scrollbar;
-
-  img {
-    width: 100%;
-    height: auto;
-    border-radius: $border-radius-base;
+  .modal-dialog-body {
     display: block;
+    width: 100%;
+    padding: 0;
+    min-height: 0;
+  }
+
+  .pt-image-modal-img-wrap {
+    width: 100%;
+    max-height: min(80vh, calc(100vh - 140px));
+    overflow-y: auto;
+    @include custom-scrollbar;
+  }
+
+  .pt-image-modal-img {
+    width: 100%;
+    max-width: none;
+    height: auto;
+    display: block;
+    border-radius: $border-radius-base;
+  }
+
+  .pt-image-modal-error {
+    @include typo($body-medium);
+    color: $color-text-secondary;
+    text-align: center;
+    padding: $spacing-lg;
   }
 }
 
