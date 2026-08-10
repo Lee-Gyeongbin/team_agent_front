@@ -128,13 +128,13 @@
       <!-- 목적 -->
       <template v-else-if="currentDetailStep.key === 'purpose'">
         <template v-if="hasText && purposeOptions.length">
-          <div class="marketing-image-maker__mood-grid">
+          <div class="marketing-image-maker__mood-grid marketing-image-maker__mood-grid--cols-5">
             <button
               v-for="option in purposeOptions"
               :key="option.value"
               type="button"
               :class="{ 'is-selected': form.purpose === option.value }"
-              @click="form.purpose = option.value"
+              @click="selectPurpose(option.value)"
             >
               <i :class="[resolveOptionIcon(option.value, 'purpose'), 'size-24']" />
               <strong>{{ option.label }}</strong>
@@ -175,15 +175,6 @@
                 :max-length="2000"
                 border
               />
-              <button
-                type="button"
-                class="marketing-image-maker__reference-attach"
-                @click="isReferenceModalOpen = true"
-              >
-                <i class="icon-document size-16" />
-                참고자료 첨부하기
-                <em v-if="form.referenceFiles.length">{{ form.referenceFiles.length }}</em>
-              </button>
             </div>
             <aside class="marketing-image-maker__input-tip">
               <strong>입력 팁</strong>
@@ -197,6 +188,39 @@
               </ul>
             </aside>
           </div>
+        </div>
+
+        <div class="marketing-image-maker__field">
+          <label>참고 자료</label>
+          <button
+            type="button"
+            class="marketing-image-maker__reference-attach"
+            @click="isReferenceModalOpen = true"
+          >
+            <i class="icon-document size-16" />
+            {{ form.referenceFiles.length ? '참고자료 다시 선택하기' : '참고자료 첨부하기' }}
+            <em v-if="form.referenceFiles.length">{{ form.referenceFiles.length }}</em>
+          </button>
+          <ul
+            v-if="form.referenceFiles.length"
+            class="marketing-image-maker__reference-list"
+          >
+            <li
+              v-for="(file, index) in form.referenceFiles"
+              :key="`${file.name}-${index}`"
+            >
+              <i class="icon-document size-14" />
+              <span :title="file.name">{{ file.name }}</span>
+              <button
+                type="button"
+                title="첨부 제거"
+                @click="removeReferenceFile(index)"
+              >
+                <i class="icon-close size-12" />
+              </button>
+            </li>
+          </ul>
+          <p class="marketing-image-maker__reference-hint">문서·이미지 최대 5개 (각 20MB 이하)</p>
         </div>
       </template>
 
@@ -363,6 +387,12 @@
               @update:model-value="form.includeHashtags = $event ? 'Y' : 'N'"
             >
               해시태그 포함
+            </UiCheckbox>
+            <UiCheckbox
+              :model-value="form.allowEmoji === 'Y'"
+              @update:model-value="form.allowEmoji = $event ? 'Y' : 'N'"
+            >
+              이모지 허용
             </UiCheckbox>
           </div>
         </div>
@@ -672,8 +702,12 @@
 
 <script setup lang="ts">
 import type { MarketingAuthoringAgentConfig, MarketingAuthoringOption } from '~/types/agent'
-import type { MarketingAuthoringSubmitPayload, MarketingOutputKind, MarketingUnifiedFormPayload } from '~/types/chat'
-import { useMarketingWizardSteps } from '~/composables/chat/useMarketingWizardSteps'
+import type {
+  MarketingAuthoringSubmitPayload,
+  MarketingOutputKind,
+  MarketingUnifiedFormPayload,
+} from '~/types/marketing'
+import { useMarketingWizardSteps } from '~/composables/marketing/useMarketingWizardSteps'
 import {
   MARKETING_CTA_PRESETS,
   MARKETING_IMAGE_ATMOSPHERES,
@@ -697,7 +731,7 @@ import {
   resolveMarketingImageUsageFromSetup,
   type MarketingConfirmSummaryItem,
   type MarketingWizardStepKey,
-} from '~/utils/chat/marketingAuthoringUtil'
+} from '~/utils/marketing/marketingUtil'
 import { openToast } from '~/composables/useToast'
 
 const props = withDefaults(
@@ -750,12 +784,17 @@ const variantCountOptions = Array.from({ length: MARKETING_AUTHORING_VARIANT_COU
 const referenceAllowedExtensions = 'pdf,doc,docx,ppt,pptx,xls,xlsx,hwp,csv,txt,png,jpg,jpeg,webp'.split(',')
 const referenceAccept = referenceAllowedExtensions.map((ext) => `.${ext}`).join(',')
 
+const removeReferenceFile = (index: number) => {
+  if (index < 0 || index >= form.referenceFiles.length) return
+  form.referenceFiles = form.referenceFiles.filter((_, fileIndex) => fileIndex !== index)
+}
+
 const workflow = computed(() => getMarketingAuthoringWorkflow(props.config))
 const themeStyle = computed(() => resolveMarketingAgentThemeStyle(props.themeColorHex))
 const hasText = computed(() => hasMarketingOutput(form, 'TEXT'))
 const hasImage = computed(() => hasMarketingOutput(form, 'IMAGE'))
 
-const agentSubmitLabel = computed(() => 'Agent로 콘텐츠 생성')
+const agentSubmitLabel = computed(() => String(props.config?.ui?.submitLabel ?? '').trim() || 'Agent로 콘텐츠 생성')
 
 const applyRecommendedOutputSections = () => {
   form.outputSections = resolveDefaultCheckedOutputSections(props.config)
@@ -788,7 +827,20 @@ const stepIndexOfKey = (key: MarketingWizardStepKey) => {
 }
 
 const contentTypeOptions = computed(() => props.config.contentTypes ?? [])
-const purposeOptions = computed(() => workflow.value.purposes ?? [])
+const purposeOptions = computed(() => {
+  const raw = workflow.value.purposes ?? []
+  // 프리셋 최대 4개 + 직접 입력(OTHER) = 5칩
+  const presets = raw.filter((item) => item.value !== 'OTHER').slice(0, 4)
+  const otherFromConfig = raw.find((item) => item.value === 'OTHER')
+  return [
+    ...presets,
+    {
+      value: 'OTHER',
+      label: otherFromConfig?.label?.trim() || '직접 입력',
+      description: otherFromConfig?.description?.trim() || '작성 목적을 직접 입력합니다',
+    },
+  ]
+})
 const audienceOptions = computed(() => {
   const raw = workflow.value.audiences ?? []
   // 프리셋 최대 4개 + 직접 입력(OTHER) = 5칩
@@ -842,6 +894,8 @@ const OPTION_ICON_BY_GROUP: Record<string, Record<string, string>> = {
     LINKEDIN: 'icon-sns',
     X: 'icon-sns',
     YOUTUBE_COMMUNITY: 'icon-sns',
+    KAKAO_TALK: 'icon-sns',
+    SMS: 'icon-sns',
     PROMOTION_EMAIL: 'icon-email',
     NEWSLETTER: 'icon-email',
     OWNED_BLOG: 'icon-document-edit',
@@ -903,6 +957,7 @@ const outputSectionsSummaryLabel = computed(() =>
       (value) => workflow.value.outputSections.find((item) => item.value === value)?.label ?? value,
     ),
     form.includeHashtags === 'Y' ? '해시태그 포함' : '',
+    form.allowEmoji === 'Y' ? '이모지 허용' : '이모지 불가',
   ]
     .filter(Boolean)
     .join(' · '),
@@ -1064,10 +1119,8 @@ const imageStyleSelectionTags = computed(() => {
 
 // ─── 최종 확인 요약 ──────────────────────────────────────────────────────────
 
-type ConfirmSummaryItem = MarketingConfirmSummaryItem
-
-const confirmSummaryItems = computed<ConfirmSummaryItem[]>(() => {
-  const items: ConfirmSummaryItem[] = [
+const confirmSummaryItems = computed<MarketingConfirmSummaryItem[]>(() => {
+  const items: MarketingConfirmSummaryItem[] = [
     {
       label: '콘텐츠 유형',
       value: optionLabel(contentTypeOptions.value, form.contentType),
@@ -1167,6 +1220,11 @@ const toggleOutput = (kind: MarketingOutputKind) => {
 const selectAudience = (value: string) => {
   form.audience = value
   if (value !== 'OTHER') form.customAudience = ''
+}
+
+const selectPurpose = (value: string) => {
+  form.purpose = value
+  if (value !== 'OTHER') form.customPurpose = ''
 }
 
 const selectContentType = (value: string) => {

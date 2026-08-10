@@ -1,13 +1,5 @@
+import { computed, nextTick, ref, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
-import { computed, ref, toValue, watch } from 'vue'
-
-export type MarketingWizardStepMeta = {
-  key: string
-  title: string
-  question: string
-  description?: string
-  navHint?: string
-}
 
 export const useMarketingWizardSteps = (options: {
   /** 고정 숫자 또는 outputs에 따라 변하는 getter */
@@ -80,26 +72,16 @@ export const useMarketingWizardSteps = (options: {
     return true
   }
 
-  const resetWizard = () => {
-    currentStep.value = 0
-    maxReachedStep.value = 0
-    isSummaryEditMode.value = false
-  }
-
   return {
     currentStep,
     maxReachedStep,
     isSummaryEditMode,
     isLastStep,
-    resolvedStepCount,
     canNavigateToStep,
     onEditSummary,
     onJumpToSummaryStep,
     onSelectStep,
     onDetailPrev,
     advanceAfterValidate,
-    resetWizard,
-    scrollBodyTop,
-    clampStepToCount,
   }
 }

@@ -291,5 +291,4 @@ export interface MarketingAuthoringAgentConfig {
   contentTypes: MarketingAuthoringOption[]
   workflow: MarketingAuthoringWorkflowConfig
   channelsByContentType: Record<string, MarketingAuthoringOption[]>
-  constraints: string[]
 }

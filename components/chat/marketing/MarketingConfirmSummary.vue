@@ -41,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import type { MarketingConfirmSummaryItem } from '~/utils/chat/marketingAuthoringUtil'
+import type { MarketingConfirmSummaryItem } from '~/utils/marketing/marketingUtil'
 
 defineProps<{
   items: MarketingConfirmSummaryItem[]

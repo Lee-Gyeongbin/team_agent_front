@@ -16,10 +16,8 @@ export interface MarketingAuthoringConfigForm {
   version: string
   language: string
   contentTypes: MarketingAuthoringOption[]
-  /** 공통 워크플로 (목적·독자·톤·분량·출력 구성) */
   workflow: MarketingAuthoringWorkflowConfig
   channelsByContentType: Record<string, MarketingAuthoringOption[]>
-  constraints: string[]
 }
 
 // ━━━ 옵션 헬퍼 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -30,19 +28,16 @@ const option = (value: string, label: string, description?: string): MarketingAu
   description,
 })
 
-export const cloneContentOption = (item: MarketingAuthoringOption): MarketingAuthoringOption => ({
+const cloneContentOption = (item: MarketingAuthoringOption): MarketingAuthoringOption => ({
   value: item.value,
   label: item.label,
   ...(item.description ? { description: item.description } : {}),
 })
 
-export const cloneContentOptions = (items: MarketingAuthoringOption[]): MarketingAuthoringOption[] =>
+const cloneContentOptions = (items: MarketingAuthoringOption[]): MarketingAuthoringOption[] =>
   items.map(cloneContentOption)
 
-export const parseContentOptionList = (
-  raw: unknown,
-  fallback: MarketingAuthoringOption[],
-): MarketingAuthoringOption[] => {
+const parseContentOptionList = (raw: unknown, fallback: MarketingAuthoringOption[]): MarketingAuthoringOption[] => {
   if (!Array.isArray(raw) || raw.length === 0) return cloneContentOptions(fallback)
   return raw.map((item) => {
     const row = (item ?? {}) as Record<string, unknown>
@@ -55,7 +50,7 @@ export const parseContentOptionList = (
   })
 }
 
-export const sanitizeContentOptions = (items: MarketingAuthoringOption[]): MarketingAuthoringOption[] =>
+const sanitizeContentOptions = (items: MarketingAuthoringOption[]): MarketingAuthoringOption[] =>
   items
     .map((item) => ({
       value: item.value.trim(),
@@ -134,6 +129,8 @@ export const MARKETING_IMAGE_SNS_PLATFORMS: MarketingAuthoringOption[] = [
   option('LINKEDIN', '링크드인', '전문 네트워크 게시물'),
   option('X', 'X', '타임라인 게시물'),
   option('YOUTUBE_COMMUNITY', '유튜브 커뮤니티', '커뮤니티 게시물'),
+  option('KAKAO_TALK', '카카오톡', '카카오톡 메시지·채널 게시물'),
+  option('SMS', '문자메시지', '문자·알림톡 동반 이미지'),
 ]
 
 /** SNS별 기본 화면 비율 */
@@ -144,6 +141,8 @@ export const MARKETING_IMAGE_SNS_DEFAULT_ASPECT_RATIO: Record<string, string> = 
   LINKEDIN: '16:9',
   X: '16:9',
   YOUTUBE_COMMUNITY: '16:9',
+  KAKAO_TALK: '1:1',
+  SMS: '1:1',
 }
 
 /** 이미지 제작 — 표현 방식 (실사·일러스트 등) */
@@ -182,22 +181,15 @@ export const MARKETING_AUTHORING_CHANNELS_BY_TYPE: Record<string, MarketingAutho
     option('LINKEDIN', '링크드인'),
     option('X', 'X'),
     option('YOUTUBE_COMMUNITY', '유튜브 커뮤니티'),
+    option('KAKAO_TALK', '카카오톡'),
+    option('SMS', '문자메시지'),
   ],
   EMAIL: [option('PROMOTION_EMAIL', '프로모션 메일'), option('NEWSLETTER', '뉴스레터')],
   BLOG: [option('OWNED_BLOG', '자사 블로그'), option('NAVER_BLOG', '네이버 블로그')],
 }
 
-/** LLM 제약·지침 기본값 */
-export const MARKETING_AUTHORING_DEFAULT_CONSTRAINTS = [
-  '작성 조건을 반영한 자연스러운 한국어 완성 문안만 작성할 것',
-  'variants[].content에는 항목명 라벨 없이 바로 쓸 수 있는 전체 본문만 넣을 것',
-  '확인되지 않은 수치·사실은 생성하지 말 것',
-  '시안마다 메시지 각도를 다르게 하고, label은 짧은 한국어로 직접 지을 것',
-  'JSON 객체만 응답. 코드블록·마크다운·설명 텍스트 금지',
-]
-
 /** 콘텐츠 작성·편집 기본 UI 문구 */
-export const MARKETING_AUTHORING_DEFAULT_UI = {
+const MARKETING_AUTHORING_DEFAULT_UI = {
   introTitle: '마케팅 콘텐츠 생성',
   introSubtitle: '목적과 채널에 맞는 문구와 이미지를 빠르게 제작해보세요.',
   submitLabel: '내용 생성',
@@ -210,6 +202,7 @@ const DEFAULT_MARKETING_AUTHORING_WORKFLOW: MarketingAuthoringWorkflowConfig = {
     option('SEARCH_TRAFFIC', '검색 유입', '주제와 검색 의도에 맞춰 콘텐츠 발견 가능성을 높임'),
     option('PROMOTION', '제품·서비스 홍보', '제품이나 서비스의 특징과 이점을 자연스럽게 소개'),
     option('BRAND_AWARENESS', '브랜드 인지도', '브랜드의 가치와 이미지를 독자에게 각인'),
+    option('OTHER', '직접 입력', '작성 목적을 직접 입력합니다'),
   ],
   audiences: [
     option('GENERAL', '일반 사용자', '전문지식이 없는 독자도 이해할 수 있는 수준으로 작성'),
@@ -233,10 +226,10 @@ const DEFAULT_MARKETING_AUTHORING_WORKFLOW: MarketingAuthoringWorkflowConfig = {
 }
 
 /** 공통 워크플로 기본값 */
-export const getDefaultMarketingAuthoringWorkflow = (): MarketingAuthoringWorkflowConfig =>
+const getDefaultMarketingAuthoringWorkflow = (): MarketingAuthoringWorkflowConfig =>
   cloneWorkflow(DEFAULT_MARKETING_AUTHORING_WORKFLOW)
 
-/** 채팅·프롬프트용 런타임 설정 기본값 */
+/** 마케팅 페이지·설정용 런타임 설정 기본값 */
 export const getDefaultMarketingAuthoringConfig = (): MarketingAuthoringAgentConfig => ({
   version: '1.0',
   language: 'ko',
@@ -244,18 +237,12 @@ export const getDefaultMarketingAuthoringConfig = (): MarketingAuthoringAgentCon
   contentTypes: cloneContentOptions(MARKETING_AUTHORING_CONTENT_TYPES),
   workflow: getDefaultMarketingAuthoringWorkflow(),
   channelsByContentType: cloneChannelsByType(MARKETING_AUTHORING_CHANNELS_BY_TYPE),
-  constraints: [...MARKETING_AUTHORING_DEFAULT_CONSTRAINTS],
 })
 
 // ━━━ ADDITIONAL_CONFIG 파서 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const parseStringArray = (raw: unknown, fallback: string[]): string[] => {
   if (!Array.isArray(raw) || raw.length === 0) return [...fallback]
-  return raw.map((item) => String(item ?? '').trim()).filter(Boolean)
-}
-
-const parseConstraints = (raw: unknown, fallback: string[]): string[] => {
-  if (!Array.isArray(raw)) return [...fallback]
   return raw.map((item) => String(item ?? '').trim()).filter(Boolean)
 }
 
@@ -282,8 +269,7 @@ const isCompleteMarketingAuthoringAdditional = (config: Record<string, unknown>)
   Array.isArray(config.contentTypes) &&
   config.contentTypes.length > 0 &&
   !!config.workflow &&
-  typeof config.workflow === 'object' &&
-  Array.isArray(config.constraints)
+  typeof config.workflow === 'object'
 
 /** ADDITIONAL_CONFIG raw → 런타임 MarketingAuthoringAgentConfig */
 export const parseMarketingAuthoringAgentConfig = (
@@ -306,7 +292,6 @@ export const parseMarketingAuthoringAgentConfig = (
     contentTypes: textContentOptions(parseContentOptionList(config.contentTypes, defaults.contentTypes)),
     workflow: parseWorkflow(config.workflow, defaults.workflow),
     channelsByContentType,
-    constraints: parseConstraints(config.constraints, defaults.constraints),
   }
 }
 
@@ -322,7 +307,6 @@ export const emptyMarketingAuthoringConfigForm = (): MarketingAuthoringConfigFor
     contentTypes: cloneContentOptions(defaults.contentTypes),
     workflow: cloneWorkflow(defaults.workflow),
     channelsByContentType: cloneChannelsByType(defaults.channelsByContentType),
-    constraints: [...defaults.constraints],
   }
 }
 
@@ -335,7 +319,6 @@ const toMarketingAuthoringConfigForm = (config: MarketingAuthoringAgentConfig): 
   contentTypes: cloneContentOptions(config.contentTypes),
   workflow: cloneWorkflow(config.workflow),
   channelsByContentType: cloneChannelsByType(config.channelsByContentType),
-  constraints: [...config.constraints],
 })
 
 /** ADDITIONAL_CONFIG → 설정 폼 */
@@ -353,31 +336,21 @@ const sanitizeWorkflow = (workflow: MarketingAuthoringWorkflowConfig): Marketing
     defaultOutputSections: workflow.defaultOutputSections.map((value) => value.trim()).filter(Boolean),
   }) as MarketingAuthoringWorkflowConfig
 
-/** 설정 폼 → 저장용 ADDITIONAL_CONFIG (UI 미편집 필드는 preserved로 보존) */
+/** 설정 폼 → 저장용 ADDITIONAL_CONFIG (마케팅 설정은 폼이 전체 스키마를 소유) */
 export const buildMarketingAuthoringAdditionalConfig = (
   form: MarketingAuthoringConfigForm,
-  preserved?: AgtSubAdditionalConfig | null,
-): AgtSubAdditionalConfig => {
-  const base: AgtSubAdditionalConfig = {
-    version: form.version.trim() || '1.0',
-    language: form.language.trim() || 'ko',
-    ui: {
-      introTitle: form.introTitle.trim() || MARKETING_AUTHORING_DEFAULT_UI.introTitle,
-      introSubtitle: form.introSubtitle.trim(),
-      submitLabel: form.submitLabel.trim(),
-    },
-    contentTypes: textContentOptions(sanitizeContentOptions(form.contentTypes)),
-    workflow: sanitizeWorkflow(form.workflow),
-    channelsByContentType: Object.fromEntries(
-      Object.entries(form.channelsByContentType).map(([key, options]) => [key, sanitizeContentOptions(options)]),
-    ),
-    constraints: form.constraints.map((item) => item.trim()).filter(Boolean),
-  }
-  if (preserved && typeof preserved === 'object') {
-    const merged = { ...preserved, ...base } as AgtSubAdditionalConfig
-    delete merged.agentType
-    delete (merged as Record<string, unknown>).variantCount
-    return merged
-  }
-  return base
-}
+  _preserved?: AgtSubAdditionalConfig | null,
+): AgtSubAdditionalConfig => ({
+  version: form.version.trim() || '1.0',
+  language: form.language.trim() || 'ko',
+  ui: {
+    introTitle: form.introTitle.trim() || MARKETING_AUTHORING_DEFAULT_UI.introTitle,
+    introSubtitle: form.introSubtitle.trim(),
+    submitLabel: form.submitLabel.trim(),
+  },
+  contentTypes: textContentOptions(sanitizeContentOptions(form.contentTypes)),
+  workflow: sanitizeWorkflow(form.workflow),
+  channelsByContentType: Object.fromEntries(
+    Object.entries(form.channelsByContentType).map(([key, options]) => [key, sanitizeContentOptions(options)]),
+  ),
+})

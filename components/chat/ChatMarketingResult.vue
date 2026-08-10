@@ -58,7 +58,7 @@
     </div>
 
     <div
-      v-if="!isLoading && draftTabs.length"
+      v-if="draftTabs.length"
       class="chat-marketing-authoring-result__tabs"
     >
       <button
@@ -67,7 +67,7 @@
         type="button"
         class="chat-marketing-authoring-result__tab"
         :class="{ 'is-active': tab.isActive }"
-        @click="onSelectDraftTab(tab.key)"
+        @click="selectDraft(tab.id)"
       >
         {{ tab.title }}
         <span
@@ -83,11 +83,12 @@
     <div class="chat-marketing-authoring-result__body">
       <div class="chat-marketing-authoring-result__main">
         <div
-          v-if="isLoading"
+          v-if="isLoading && !hasDraftContent"
           class="chat-marketing-authoring-result__draft chat-marketing-authoring-result__draft--loading"
         >
           <MarketingPreparingStatus
             :mode="isBothMode ? 'BOTH' : isImageMode ? 'IMAGE' : 'TEXT'"
+            :generating-step="generatingStep"
             :active="isLoading"
             :bordered="false"
           />
@@ -96,6 +97,7 @@
         <div
           v-else-if="hasDraftContent"
           class="chat-marketing-authoring-result__draft"
+          :class="{ 'is-partial': isLoading }"
         >
           <div class="chat-marketing-authoring-result__draft-toolbar">
             <p
@@ -104,11 +106,8 @@
             >
               {{ keyMessage ? `주제 : ${keyMessage}` : '주제' }}
             </p>
-            <div
-              v-if="!isShare"
-              class="chat-marketing-authoring-result__draft-actions"
-            >
-              <template v-if="!isImageResult">
+            <div class="chat-marketing-authoring-result__draft-actions">
+              <template v-if="!isImageMode">
                 <button
                   type="button"
                   :class="{ 'is-active': isEditing }"
@@ -144,7 +143,7 @@
                   v-if="isDownloadOpen"
                   class="chat-marketing-authoring-result__draft-download-menu"
                 >
-                  <template v-if="isImageResult">
+                  <template v-if="isImageMode">
                     <button
                       type="button"
                       @click="downloadImage"
@@ -178,7 +177,7 @@
                       PDF
                     </button>
                     <button
-                      v-if="isBothMode && pairedImageUrl"
+                      v-if="isBothMode && activeImageUrl"
                       type="button"
                       @click="downloadImage"
                     >
@@ -193,13 +192,28 @@
 
           <div class="chat-marketing-authoring-result__draft-scroll">
             <div class="chat-marketing-authoring-result__draft-body">
-              <template v-if="isImageResult">
-                <div class="chat-marketing-authoring-result__image">
+              <template v-if="isImageMode">
+                <div
+                  v-if="activeImageUrl"
+                  class="chat-marketing-authoring-result__image"
+                >
                   <img
                     :src="activeImageUrl"
                     alt="생성된 마케팅 이미지"
                   />
                 </div>
+                <div
+                  v-else-if="isLoading"
+                  class="chat-marketing-authoring-result__image-loading"
+                >
+                  <UiLoading text="이미지를 생성하고 있습니다..." />
+                </div>
+                <p
+                  v-else
+                  class="chat-marketing-authoring-result__image-missing"
+                >
+                  이미지 생성 실패
+                </p>
               </template>
               <template v-else>
                 <UiTextarea
@@ -218,24 +232,35 @@
                 />
                 <!-- eslint-enable vue/no-v-html -->
 
-                <!-- BOTH: 문구 바로 아래 페어링 이미지 -->
                 <section
-                  v-if="isBothMode && pairedImageUrl"
+                  v-if="isBothMode && activeImageUrl"
                   class="chat-marketing-authoring-result__image-stack"
                 >
                   <div class="chat-marketing-authoring-result__image">
                     <img
-                      :src="pairedImageUrl"
-                      :alt="`시안 ${activePairIndex + 1} 마케팅 이미지`"
+                      :src="activeImageUrl"
+                      :alt="`시안 ${activeVariantOrder} 마케팅 이미지`"
                     />
                   </div>
                 </section>
+                <div
+                  v-else-if="isBothMode && isLoading && activeVariant"
+                  class="chat-marketing-authoring-result__image-loading"
+                >
+                  <UiLoading text="이미지를 생성하고 있습니다..." />
+                </div>
+                <p
+                  v-else-if="isBothMode && !activeImageUrl"
+                  class="chat-marketing-authoring-result__image-missing"
+                >
+                  이미지 생성 실패
+                </p>
               </template>
             </div>
           </div>
 
           <div
-            v-if="!isImageResult"
+            v-if="!isImageMode"
             class="chat-marketing-authoring-result__draft-foot"
           >
             <p class="chat-marketing-authoring-result__char-count">
@@ -246,7 +271,7 @@
       </div>
 
       <aside
-        v-if="showAside && !isShare && (isLoading || !isImageMode || isImageResult)"
+        v-if="showAside && (isLoading || !isImageMode)"
         class="chat-marketing-authoring-result__aside"
         :class="{ 'is-preparing': isLoading }"
       >
@@ -272,11 +297,7 @@
               {{
                 isLoading
                   ? '콘텐츠 생성이 완료되면 시안을 기준으로 Agent와 대화할 수 있습니다'
-                  : isImageMode
-                    ? '현재 이미지 시안을 기준으로 Agent와 대화하며 내용을 보완할 수 있습니다'
-                    : isBothMode
-                      ? '현재 시안(문구+이미지)을 기준으로 Agent와 대화하며 내용을 보완할 수 있습니다'
-                      : '현재 시안을 기준으로 Agent와 대화하며 내용을 보완할 수 있습니다'
+                  : '현재 시안을 기준으로 Agent와 대화하며 내용을 보완할 수 있습니다'
               }}
             </p>
           </div>
@@ -307,23 +328,12 @@
               <li
                 v-for="entry in refineChatLog"
                 :key="entry.id"
-                class="chat-marketing-authoring-result__refine-chat-item"
-                :class="entry.role === 'user' ? 'role-user' : 'role-assistant'"
+                class="chat-marketing-authoring-result__refine-chat-item role-user"
               >
-                <i
-                  v-if="entry.role === 'assistant'"
-                  class="chat-marketing-authoring-result__refine-avatar icon-bot size-20"
-                />
                 <div class="chat-marketing-authoring-result__refine-message">
                   <p class="chat-marketing-authoring-result__refine-bubble">
                     {{ entry.text }}
                   </p>
-                  <span
-                    v-if="entry.role === 'user'"
-                    class="chat-marketing-authoring-result__refine-time"
-                  >
-                    {{ entry.timeLabel }}
-                  </span>
                 </div>
               </li>
             </ul>
@@ -374,25 +384,42 @@
 import { openToast } from '~/composables/useToast'
 import { copyToClipboard } from '~/utils/global/clipboardUtil'
 import { formatNumberWithComma } from '~/utils/global/numberUtil'
-import type { MarketingAuthoringResult } from '~/types/chat'
-import { resolveMarketingAgentThemeStyle } from '~/utils/chat/marketingAuthoringUtil'
+import type { MarketingAuthoringAgentConfig } from '~/types/agent'
+import type { MarketingAuthoringResult } from '~/types/marketing'
+import {
+  resolveMarketingAgentThemeStyle,
+  resolveMarketingConditionDisplay,
+  resolveMarketingOptionLabel,
+  type MarketingGeneratingStep,
+  type MarketingRequestCustomFields,
+} from '~/utils/marketing/marketingUtil'
 import { downloadReportAsDocx, downloadReportAsPdf } from '~/utils/chat/reportExportUtil'
+import { MARKETING_IMAGE_ATMOSPHERES, MARKETING_IMAGE_TYPES } from '~/utils/agent/marketingAuthoringConfigUtil'
 
 const props = withDefaults(
   defineProps<{
     result: MarketingAuthoringResult
-    isShare?: boolean
+    config?: MarketingAuthoringAgentConfig | null
     themeColorHex?: string
-    /** 이미지 생성 응답 대기 — 카드 셸 유지 + 본문 스피너 */
+    /** 생성·보완 대기 — PreparingStatus */
     isLoading?: boolean
+    generatingStep?: MarketingGeneratingStep
+    /** BOTH — 글 시안이 모두 도착했고 이미지만 대기 중 */
+    areTextsReady?: boolean
+    areImagesPending?: boolean
     /** /marketing 결과 — 우측 패널 노출 */
     showSidePanel?: boolean
+    request?: MarketingRequestCustomFields | null
   }>(),
   {
-    isShare: false,
+    config: null,
     themeColorHex: '',
     isLoading: false,
+    generatingStep: '',
+    areTextsReady: false,
+    areImagesPending: false,
     showSidePanel: false,
+    request: null,
   },
 )
 
@@ -403,65 +430,46 @@ const emit = defineEmits<{
 const themeStyle = computed(() => resolveMarketingAgentThemeStyle(props.themeColorHex))
 const showAside = computed(() => props.showSidePanel === true)
 
-const imageDataUrls = computed(() => props.result.imageDataUrls ?? [])
-const hasTextVariants = computed(() => (props.result.variants?.length ?? 0) > 0)
-const hasImages = computed(() => imageDataUrls.value.length > 0)
-/** BOTH 또는 문구+이미지가 함께 있는 결과 */
-const isBothMode = computed(() => props.result.mode === 'BOTH' || (hasTextVariants.value && hasImages.value))
-const isImageMode = computed(() => props.result.mode === 'IMAGE' && !isBothMode.value)
-const isImageOnlyResult = computed(() => isImageMode.value && hasImages.value)
-/** IMAGE 전용 결과 — BOTH는 문구 아래 이미지 스택 */
-const isImageResult = computed(() => isImageOnlyResult.value)
+const variants = computed(() => props.result.variants ?? [])
+const images = computed(() => props.result.images ?? [])
+
+const isBothMode = computed(() => props.result.mode === 'BOTH')
+const isImageMode = computed(() => props.result.mode === 'IMAGE')
 
 const headerTitle = computed(() => {
   if (props.isLoading) {
+    if (isBothMode.value && props.areTextsReady && props.areImagesPending) {
+      return '문구 시안이 준비되었습니다. 이미지를 생성하고 있습니다'
+    }
     if (isBothMode.value) return '콘텐츠를 생성하고 있습니다'
     return isImageMode.value ? '마케팅 이미지를 생성하고 있습니다' : '콘텐츠를 생성하고 있습니다'
   }
   if (isBothMode.value) return '콘텐츠 생성이 완료되었습니다!'
-  return isImageOnlyResult.value ? '마케팅 이미지 생성이 완료되었습니다!' : '콘텐츠 생성이 완료되었습니다!'
+  return isImageMode.value ? '마케팅 이미지 생성이 완료되었습니다!' : '콘텐츠 생성이 완료되었습니다!'
 })
 
-const activeImageIndex = ref(0)
-const activeImageUrl = computed(() => imageDataUrls.value[activeImageIndex.value] ?? imageDataUrls.value[0] ?? '')
-
-/** BOTH — 시안 인덱스(문구 N + 이미지 N 페어링) */
-const resolveInitialPairIndex = () => {
-  const variants = props.result.variants
-  const recommendedIdx = variants.findIndex((item) => item.recommended)
-  if (recommendedIdx >= 0) return recommendedIdx
-  return 0
-}
-const activePairIndex = ref(resolveInitialPairIndex())
-
-const pairedImageUrl = computed(() => {
-  if (!isBothMode.value) return ''
-  return imageDataUrls.value[activePairIndex.value] ?? ''
-})
-
-watch(imageDataUrls, (urls) => {
-  if (activeImageIndex.value >= urls.length) activeImageIndex.value = Math.max(0, urls.length - 1)
-  if (isBothMode.value && activePairIndex.value >= Math.max(props.result.variants.length, urls.length)) {
-    activePairIndex.value = 0
+const resolveInitialDraftId = () => {
+  if (isImageMode.value) {
+    const recommended = images.value.find((item) => item.recommended)
+    return recommended?.id ?? images.value[0]?.id ?? 1
   }
-})
+  const recommended = variants.value.find((item) => item.recommended)
+  return recommended?.id ?? variants.value[0]?.id ?? 1
+}
 
-const activeVariantId = ref(props.result.variants.find((item) => item.recommended)?.id ?? props.result.variants[0]?.id)
+const activeDraftId = ref(resolveInitialDraftId())
 const isEditing = ref(false)
 const isDownloadOpen = ref(false)
 const editDraft = ref('')
 const editedContents = ref<Record<number, string>>({})
 
-type RefineChatRole = 'user' | 'assistant'
-interface RefineChatEntry {
+type RefineChatEntry = {
   id: string
-  role: RefineChatRole
   text: string
-  createdAt: number
-  timeLabel: string
 }
 
 interface DraftTab {
+  id: number
   key: string
   title: string
   subLabel?: string
@@ -478,14 +486,6 @@ const nextRefineChatId = () => {
   refineChatIdSeq += 1
   return `marketing-refine-${refineChatIdSeq}`
 }
-
-const toRefineTimeLabel = (timestamp: number) =>
-  new Date(timestamp).toLocaleTimeString('ko-KR', {
-    hour12: false,
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  })
 
 const scrollRefineChatToBottom = () => {
   nextTick(() => {
@@ -507,113 +507,129 @@ const resetDraftChrome = () => {
 }
 
 watch(
-  () => props.result.variants,
-  (variants) => {
-    const preferred = variants.find((item) => item.recommended)?.id ?? variants[0]?.id
-    if (preferred && !variants.some((item) => item.id === activeVariantId.value)) {
-      activeVariantId.value = preferred
-    }
-    if (isBothMode.value) {
-      const idx = variants.findIndex((item) => item.id === activeVariantId.value)
-      activePairIndex.value = idx >= 0 ? idx : 0
-      activeImageIndex.value = activePairIndex.value
+  () => [props.result.mode, props.result.variants, props.result.images] as const,
+  () => {
+    const draftIds = isImageMode.value ? images.value.map((item) => item.id) : variants.value.map((item) => item.id)
+    if (!draftIds.includes(activeDraftId.value)) {
+      activeDraftId.value = resolveInitialDraftId()
     }
   },
   { deep: true },
 )
 
-const activeVariant = computed(() => {
-  if (isBothMode.value) {
-    return props.result.variants[activePairIndex.value] ?? null
+const activeVariant = computed(
+  () => variants.value.find((item) => item.id === activeDraftId.value) ?? variants.value[0] ?? null,
+)
+
+const activeImage = computed(() => {
+  if (isImageMode.value) {
+    return images.value.find((item) => item.id === activeDraftId.value) ?? images.value[0] ?? null
   }
-  return props.result.variants.find((item) => item.id === activeVariantId.value) ?? null
-})
-const hasDraftContent = computed(() => {
-  if (isImageResult.value) return !!activeImageUrl.value
-  if (isBothMode.value) return !!activeVariant.value || !!pairedImageUrl.value
-  return !!activeVariant.value
+  if (isBothMode.value && activeVariant.value) {
+    return images.value.find((item) => item.id === activeVariant.value!.id) ?? null
+  }
+  return null
 })
 
-const activeContent = computed(() => {
+const activeImageUrl = computed(() => activeImage.value?.url ?? '')
+
+const activeVariantOrder = computed(() => {
+  if (isImageMode.value) {
+    const index = images.value.findIndex((item) => item.id === activeDraftId.value)
+    return index >= 0 ? index + 1 : 1
+  }
+  const index = variants.value.findIndex((item) => item.id === activeDraftId.value)
+  return index >= 0 ? index + 1 : (activeVariant.value?.id ?? 1)
+})
+
+const draftText = computed(() => {
   if (!activeVariant.value) return ''
   return editedContents.value[activeVariant.value.id] ?? activeVariant.value.content
 })
 
+const hasDraftContent = computed(() => {
+  if (isImageMode.value) return !!activeImageUrl.value
+  if (isBothMode.value) return !!activeVariant.value || !!activeImageUrl.value
+  return !!activeVariant.value
+})
+
 /** 편집 중이면 입력값, 아니면 확정 본문 기준 글자 수 */
-const displayContentForCount = computed(() => (isEditing.value ? editDraft.value : activeContent.value))
+const displayContentForCount = computed(() => (isEditing.value ? editDraft.value : draftText.value))
 const charCount = computed(() => [...displayContentForCount.value].length)
 const formattedCharCount = computed(() => formatNumberWithComma(charCount.value) || '0')
 
-const bothPairCount = computed(() =>
-  Math.max(props.result.variants.length, isBothMode.value ? imageDataUrls.value.length : 0),
-)
-
 const draftTabs = computed<DraftTab[]>(() => {
   if (isImageMode.value) {
-    return imageDataUrls.value.map((_, index) => ({
-      key: `image-${index}`,
+    const hasRecommended = images.value.some((item) => item.recommended)
+    return images.value.map((image, index) => ({
+      id: image.id,
+      key: `draft-${image.id}`,
       title: `시안 ${index + 1} · 이미지`,
-      recommended: index === 0,
-      isActive: index === activeImageIndex.value,
+      subLabel: String(image.label ?? '').trim() || undefined,
+      recommended: !!image.recommended || (!hasRecommended && index === 0),
+      isActive: image.id === activeDraftId.value,
     }))
   }
 
   if (isBothMode.value) {
-    return Array.from({ length: bothPairCount.value }, (_, index) => {
-      const variant = props.result.variants[index]
-      const hasRecommended = props.result.variants.some((item) => item.recommended)
-      return {
-        key: `both-${index}`,
-        title: `시안 ${index + 1}`,
-        subLabel: String(variant?.label ?? '').trim() || undefined,
-        recommended: !!variant?.recommended || (!hasRecommended && index === 0),
-        isActive: index === activePairIndex.value,
-      }
-    })
+    const hasRecommended = variants.value.some((item) => item.recommended)
+    return variants.value.map((variant, index) => ({
+      id: variant.id,
+      key: `draft-${variant.id}`,
+      title: `시안 ${index + 1}`,
+      subLabel: String(variant.label ?? '').trim() || undefined,
+      recommended: !!variant.recommended || (!hasRecommended && index === 0),
+      isActive: variant.id === activeDraftId.value,
+    }))
   }
 
-  return props.result.variants.map((variant) => ({
-    key: `text-${variant.id}`,
+  return variants.value.map((variant) => ({
+    id: variant.id,
+    key: `draft-${variant.id}`,
     title: `시안 ${variant.id}`,
     subLabel: String(variant.label ?? '').trim() || undefined,
     recommended: !!variant.recommended,
-    isActive: variant.id === activeVariantId.value,
+    isActive: variant.id === activeDraftId.value,
   }))
 })
 
 const draftFootLabel = computed(() => `글자 수 ${formattedCharCount.value}자`)
 
 const metaItems = computed(() => {
-  const conditions = props.result.conditions
+  const display = resolveMarketingConditionDisplay(props.result.conditions, props.config, props.request ?? undefined)
   const imageConditions = props.result.imageConditions
+  const imageStyle = resolveMarketingOptionLabel(MARKETING_IMAGE_TYPES, imageConditions?.contentType)
+  const imageAtmosphere = resolveMarketingOptionLabel(MARKETING_IMAGE_ATMOSPHERES, imageConditions?.tones)
+  const aspectRatio = String(imageConditions?.length ?? '').trim()
+
   const rows = isBothMode.value
     ? [
-        { label: '콘텐츠 유형', value: conditions.contentType },
-        { label: '채널', value: conditions.channel },
-        { label: '작성 목적', value: conditions.purpose },
-        { label: '대상 독자', value: conditions.audience },
-        { label: '톤앤매너', value: conditions.tones },
-        { label: '분량', value: conditions.length },
-        { label: '이미지 스타일', value: imageConditions?.contentType },
-        { label: '이미지 분위기', value: imageConditions?.tones },
-        { label: '화면 비율', value: imageConditions?.length },
+        { label: '콘텐츠 유형', value: display.contentType },
+        { label: '채널', value: display.channel },
+        { label: '작성 목적', value: display.purpose },
+        { label: '대상 독자', value: display.audience },
+        { label: '톤앤매너', value: display.tones },
+        { label: '분량', value: display.length },
+        { label: '이미지 스타일', value: imageStyle },
+        { label: '이미지 분위기', value: imageAtmosphere },
+        { label: '화면 비율', value: aspectRatio },
       ]
     : isImageMode.value
       ? [
-          { label: '표현 방식', value: conditions.contentType },
-          { label: '채널', value: conditions.channel },
-          { label: '제작 목적', value: conditions.purpose },
-          { label: '대상 고객', value: conditions.audience },
-          { label: '톤앤매너', value: conditions.tones },
-          { label: '화면 비율', value: conditions.length },
+          { label: '표현 방식', value: imageStyle || display.contentType },
+          { label: '채널', value: display.channel },
+          { label: '제작 목적', value: display.purpose },
+          { label: '대상 고객', value: display.audience },
+          { label: '톤앤매너', value: imageAtmosphere || display.tones },
+          { label: '화면 비율', value: aspectRatio || display.length },
         ]
       : [
-          { label: '콘텐츠 유형', value: conditions.contentType },
-          { label: '채널', value: conditions.channel },
-          { label: '작성 목적', value: conditions.purpose },
-          { label: '대상 독자', value: conditions.audience },
-          { label: '톤앤매너', value: conditions.tones },
-          { label: '분량', value: conditions.length },
+          { label: '콘텐츠 유형', value: display.contentType },
+          { label: '채널', value: display.channel },
+          { label: '작성 목적', value: display.purpose },
+          { label: '대상 독자', value: display.audience },
+          { label: '톤앤매너', value: display.tones },
+          { label: '분량', value: display.length },
         ]
 
   return rows
@@ -625,14 +641,11 @@ const keyMessage = computed(() => props.result.conditions.keyMessage?.trim() ?? 
 
 /** AI 보완 패널 — 현재 선택된 시안 표시 (시안 2 · 사용감집중) */
 const refineActiveVariantMeta = computed(() => {
-  if (isImageResult.value) {
-    return `시안 ${activeImageIndex.value + 1} · 이미지`
-  }
   if (isBothMode.value) {
     const variant = activeVariant.value
     const label = String(variant?.label ?? '').trim()
-    const base = label ? `시안 ${activePairIndex.value + 1} · ${label}` : `시안 ${activePairIndex.value + 1}`
-    return pairedImageUrl.value ? `${base} · 통합` : base
+    const base = label ? `시안 ${activeVariantOrder.value} · ${label}` : `시안 ${activeVariantOrder.value}`
+    return activeImageUrl.value ? `${base} · 통합` : base
   }
   const variant = activeVariant.value
   if (!variant) return ''
@@ -654,9 +667,9 @@ const escapeHtml = (value: string) =>
     .replace(/'/g, '&#39;')
 
 const renderedContent = computed(() => {
-  const escaped = escapeHtml(activeContent.value)
+  const escaped = escapeHtml(draftText.value)
   return escaped
-    .replace(/(^|\s)(#[\p{L}\p{N}\p{M}_]+)/gu, '$1<span class="is-hashtag">$2</span>')
+    .replace(/(^|\s)(#[^\s]+)/g, '$1<span class="is-hashtag">$2</span>')
     .replace(/\n{2,}/g, '<br /><br />')
     .replace(/\n/g, '<br />')
 })
@@ -692,126 +705,42 @@ const scrollResultToTop = () => {
       return
     }
 
-    const chatList = root.closest('.chat-message-list') as HTMLElement | null
-    if (chatList) {
-      const top = scrollAnchor.getBoundingClientRect().top - chatList.getBoundingClientRect().top + chatList.scrollTop
-      scrollSmoothTo(chatList, Math.max(0, top))
-      return
-    }
-
     scrollAnchor.scrollIntoView({ behavior: 'smooth', block: 'start' })
   })
 }
 
-const selectImage = (index: number) => {
-  if (index < 0 || index >= imageDataUrls.value.length) return
-  activeImageIndex.value = index
-  if (isImageMode.value) {
-    resetDraftChrome()
-    scrollResultToTop()
-  }
-}
-
-/** BOTH 시안 탭 — 문구·이미지를 같은 인덱스로 묶음 */
-const selectBothPair = (index: number) => {
-  if (index < 0 || index >= bothPairCount.value) return
+const selectDraft = (draftId: number) => {
   isEditing.value = false
   editDraft.value = ''
   resetDraftChrome()
-  activePairIndex.value = index
-  const variant = props.result.variants[index]
-  if (variant) activeVariantId.value = variant.id
-  if (index < imageDataUrls.value.length) activeImageIndex.value = index
+  activeDraftId.value = draftId
   scrollResultToTop()
-}
-
-const selectVariant = (variantId: number) => {
-  isEditing.value = false
-  editDraft.value = ''
-  resetDraftChrome()
-  activeVariantId.value = variantId
-  if (isBothMode.value) {
-    const idx = props.result.variants.findIndex((item) => item.id === variantId)
-    if (idx >= 0) {
-      activePairIndex.value = idx
-      if (idx < imageDataUrls.value.length) activeImageIndex.value = idx
-    }
-  }
-  scrollResultToTop()
-}
-
-const onSelectDraftTab = (key: string) => {
-  if (key.startsWith('image-')) {
-    selectImage(Number(key.slice('image-'.length)))
-    return
-  }
-  if (key.startsWith('both-')) {
-    selectBothPair(Number(key.slice('both-'.length)))
-    return
-  }
-  if (key.startsWith('text-')) {
-    selectVariant(Number(key.slice('text-'.length)))
-  }
 }
 
 const onSendRefine = () => {
-  if (props.isLoading) return
+  if (props.isLoading || isImageMode.value) return
   const request = refineDraft.value.trim()
   if (!request) return
 
-  const content = isImageResult.value
-    ? [
-        `[이미지 시안 ${activeImageIndex.value + 1}]`,
-        keyMessage.value ? `주제: ${keyMessage.value}` : '',
-        '현재 선택된 이미지 시안을 기준으로 수정해 주세요.',
-      ]
-        .filter(Boolean)
-        .join('\n')
-    : isBothMode.value
-      ? [
-          `[통합 시안 ${activePairIndex.value + 1}]`,
-          (isEditing.value ? editDraft.value : activeContent.value).trim(),
-          pairedImageUrl.value ? '(현재 시안에 페어링된 이미지가 함께 있습니다)' : '',
-        ]
-          .filter(Boolean)
-          .join('\n')
-      : (isEditing.value ? editDraft.value : activeContent.value).trim()
+  const content = (isEditing.value ? editDraft.value : draftText.value).trim()
 
   if (!content) {
     openToast({ message: '수정할 시안 내용이 없습니다.', type: 'warning' })
     return
   }
 
-  const createdAt = Date.now()
-  const timeLabel = toRefineTimeLabel(createdAt)
   refineChatLog.value.push({
     id: nextRefineChatId(),
-    role: 'user',
     text: request,
-    createdAt,
-    timeLabel,
   })
   refineDraft.value = ''
   scrollRefineChatToBottom()
 
   emit('editWithAgent', {
-    variantId: isImageResult.value
-      ? activeImageIndex.value + 1
-      : isBothMode.value
-        ? activePairIndex.value + 1
-        : (activeVariant.value?.id ?? 1),
+    variantId: activeVariant.value?.id ?? activeDraftId.value,
     content,
     request,
   })
-
-  refineChatLog.value.push({
-    id: nextRefineChatId(),
-    role: 'assistant',
-    text: '시안 수정 요청을 확인했습니다.',
-    createdAt: Date.now(),
-    timeLabel: toRefineTimeLabel(Date.now()),
-  })
-  scrollRefineChatToBottom()
 }
 
 const onToggleDownload = () => {
@@ -830,23 +759,22 @@ const toggleEdit = () => {
     return
   }
   isDownloadOpen.value = false
-  editDraft.value = activeContent.value
+  editDraft.value = draftText.value
   isEditing.value = true
 }
 
 const onCopy = async () => {
   try {
-    await copyToClipboard(isEditing.value ? editDraft.value : activeContent.value)
+    await copyToClipboard(isEditing.value ? editDraft.value : draftText.value)
     openToast({ message: '시안을 클립보드에 복사했습니다.' })
   } catch {
     openToast({ message: '복사에 실패했습니다.', type: 'error' })
   }
 }
 
-const getActiveExportContent = () => (isEditing.value ? editDraft.value : activeContent.value).trim()
+const getActiveExportContent = () => (isEditing.value ? editDraft.value : draftText.value).trim()
 
-const buildExportFileName = () =>
-  `marketing-content-${isBothMode.value ? activePairIndex.value + 1 : (activeVariant.value?.id ?? 1)}`
+const buildExportFileName = () => `marketing-content-${activeVariantOrder.value}`
 
 const buildExportHtml = (content: string) =>
   `<div style="font-family:'Malgun Gothic',sans-serif;font-size:11pt;line-height:1.7;">${escapeHtml(content)
@@ -900,12 +828,11 @@ const onDownloadPdf = async () => {
 }
 
 const downloadImage = () => {
-  const url = isBothMode.value ? pairedImageUrl.value : activeImageUrl.value
+  const url = activeImageUrl.value
   if (!url) return
-  const indexLabel = isBothMode.value ? activePairIndex.value + 1 : activeImageIndex.value + 1
   const anchor = document.createElement('a')
   anchor.href = url
-  anchor.download = `marketing-image-${indexLabel}-${Date.now()}.png`
+  anchor.download = `marketing-image-${activeVariantOrder.value}-${Date.now()}.png`
   anchor.click()
   isDownloadOpen.value = false
 }

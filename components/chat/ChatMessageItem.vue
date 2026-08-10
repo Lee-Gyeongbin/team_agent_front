@@ -42,7 +42,6 @@
           </div>
         </div>
         <template v-else>
-          <!-- 마케팅 결과 카드 (이미지 생성 중에는 카드 + 내부 스피너) -->
           <!-- AUTO_RECOMMEND 답변 JSON 원문은 숨기고 카드 컴포넌트에서만 노출 -->
           <div
             v-if="isAutoRecommendAnswer"
@@ -923,11 +922,6 @@ const messageSurveyConfig = computed(() => {
   return null
 })
 
-// ── MARKETING AUTHORING 에이전트 ─────────────────────────────────────────────
-
-/** 결과 카드는 파싱 완료 후 렌더 — 스트리밍 중에는 JSON 원문 대신 로딩 유지 */
-/** 마케팅 이미지 응답 대기 — 카드 내부 스피너 */
-/** 통합(문구+이미지): 문구·이미지 answer를 합쳐 표시, 문구 단독 카드는 숨김 */
 // ── RECOMMEND 에이전트 ───────────────────────────────────────────────────────
 
 /** RECOMMEND 파이프라인 answer — JSON은 recommend 카드에서만 표시 (일반 채팅 answer와 분리) */

@@ -24,39 +24,43 @@
 <script setup lang="ts">
 import {
   createMarketingPreparingStatusCycle,
+  resolveMarketingGeneratingStepText,
   resolveMarketingPreparingCallout,
   resolveMarketingPreparingStatusTexts,
   resolveMarketingPreparingTitle,
+  type MarketingGeneratingStep,
   type MarketingPreparingMode,
-  type MarketingPreparingPhase,
-} from '~/utils/chat/marketingAuthoringUtil'
+} from '~/utils/marketing/marketingUtil'
 
 const props = withDefaults(
   defineProps<{
     mode?: MarketingPreparingMode
-    phase?: MarketingPreparingPhase
+    generatingStep?: MarketingGeneratingStep
     active?: boolean
     bordered?: boolean
   }>(),
   {
     mode: 'TEXT',
-    phase: 'TEXT',
+    generatingStep: '',
     active: true,
     bordered: true,
   },
 )
 
-const title = computed(() => resolveMarketingPreparingTitle(props.mode, props.phase))
-const callout = computed(() => resolveMarketingPreparingCallout(props.mode, props.phase))
+const title = computed(() => resolveMarketingPreparingTitle(props.mode))
+const callout = computed(() => resolveMarketingPreparingCallout(props.mode))
+const stepText = computed(() => resolveMarketingGeneratingStepText(props.generatingStep))
 
 const {
-  text: statusText,
+  text: cycleText,
   start,
   stop,
-} = createMarketingPreparingStatusCycle(() => resolveMarketingPreparingStatusTexts(props.mode, props.phase))
+} = createMarketingPreparingStatusCycle(() => resolveMarketingPreparingStatusTexts())
+
+const statusText = computed(() => stepText.value || cycleText.value)
 
 watch(
-  () => [props.active, props.mode, props.phase] as const,
+  () => [props.active, props.mode, props.generatingStep] as const,
   ([active]) => {
     if (active) start()
     else stop()

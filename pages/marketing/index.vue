@@ -1,26 +1,8 @@
 ﻿<template>
   <div class="marketing-page wide-center">
-    <!-- 로딩 -->
-    <div
-      v-if="isPageLoading"
-      class="marketing-page-body"
-    >
-      <div class="marketing-page-skeleton">
-        <UiSkeleton
-          height="48px"
-          width="60%"
-          style="margin-bottom: 16px"
-        />
-        <UiSkeleton
-          height="320px"
-          width="100%"
-        />
-      </div>
-    </div>
-
     <!-- 설정/에이전트 없음 -->
     <div
-      v-else-if="!config || !selectedAgent"
+      v-if="!config || !selectedAgent"
       class="marketing-page-body"
     >
       <UiEmpty
@@ -59,7 +41,7 @@
           <UiButton
             variant="primary"
             size="md"
-            @click="onStartNew"
+            @click="handleStartNew"
           >
             <template #icon-left>
               <i class="icon-plus size-16" />
@@ -70,7 +52,7 @@
       </header>
 
       <div
-        v-if="allHistoryItems.length"
+        v-if="allHistoryItems.length || hasActiveHistoryFilter"
         class="marketing-history-filter-bar"
       >
         <div class="marketing-history-filter-chips">
@@ -100,18 +82,6 @@
         </div>
         <span class="marketing-history-filter-divider" />
         <select
-          v-model="historySort"
-          class="marketing-history-filter-select"
-        >
-          <option
-            v-for="opt in HISTORY_SORT_OPTIONS"
-            :key="opt.value"
-            :value="opt.value"
-          >
-            {{ opt.label }}
-          </option>
-        </select>
-        <select
           v-model="historyPeriodFilter"
           class="marketing-history-filter-select"
         >
@@ -126,14 +96,21 @@
       </div>
 
       <p
-        v-if="allHistoryItems.length"
+        v-if="allHistoryItems.length || hasActiveHistoryFilter"
         class="marketing-history-count"
       >
-        총 {{ filteredHistoryItems.length }}건
+        총 {{ allHistoryItems.length }}건
       </p>
 
       <UiEmpty
-        v-if="!allHistoryItems.length"
+        v-if="!allHistoryItems.length && hasActiveHistoryFilter"
+        icon="icon-search"
+        title="검색 결과가 없습니다."
+        description="검색어나 필터 조건을 변경해 보세요."
+      />
+
+      <UiEmpty
+        v-else-if="!allHistoryItems.length"
         icon="icon-edit"
         title="제작 내역이 없습니다."
         description="새 콘텐츠를 만들어 보세요."
@@ -141,30 +118,23 @@
         <UiButton
           variant="primary"
           size="md"
-          @click="onStartNew"
+          @click="handleStartNew"
         >
           새로 만들기
         </UiButton>
       </UiEmpty>
-
-      <UiEmpty
-        v-else-if="!filteredHistoryItems.length"
-        icon="icon-search"
-        title="검색 결과가 없습니다."
-        description="검색어나 필터 조건을 변경해 보세요."
-      />
 
       <div
         v-else
         class="marketing-history-list"
       >
         <button
-          v-for="item in filteredHistoryItems"
-          :key="item.roomId"
+          v-for="item in allHistoryItems"
+          :key="item.contentId"
           type="button"
           class="marketing-history-row"
-          :class="{ 'is-editing': isEditingHistory(item.roomId) }"
-          @click="onHistoryRowClick(item.roomId)"
+          :class="{ 'is-editing': isEditingHistory(item.contentId) }"
+          @click="handleHistoryRowClick(item.contentId)"
         >
           <span
             class="marketing-history-row__mode-badge"
@@ -178,14 +148,14 @@
           </span>
           <div class="marketing-history-row__copy">
             <UiInput
-              v-if="isEditingHistory(item.roomId)"
+              v-if="isEditingHistory(item.contentId)"
               ref="historyTitleInputRef"
               v-model="editingTitle"
               class="marketing-history-row__title-input"
               placeholder="제작 내역 이름"
               @click.stop
-              @keydown.enter.prevent="onSaveHistoryTitle(item.roomId)"
-              @keydown.esc.prevent="onCancelHistoryTitle"
+              @keydown.enter.prevent="handleSaveHistoryTitle(item.contentId)"
+              @keydown.esc.prevent="handleCancelHistoryTitle"
             />
             <strong
               v-else
@@ -194,12 +164,12 @@
               {{ item.displayTitle }}
             </strong>
             <div
-              v-if="item.metaBadges.length && !isEditingHistory(item.roomId)"
+              v-if="item.metaBadges.length && !isEditingHistory(item.contentId)"
               class="marketing-history-row__meta-badges"
             >
               <span
                 v-for="(badge, badgeIndex) in item.metaBadges"
-                :key="`${item.roomId}-meta-${badgeIndex}`"
+                :key="`${item.contentId}-meta-${badgeIndex}`"
                 class="marketing-history-row__meta-badge"
                 :class="{
                   'is-image': item.mode === 'IMAGE',
@@ -219,11 +189,11 @@
               variant="ghost"
               size="sm"
               icon-only
-              :title="isEditingHistory(item.roomId) ? '수정 완료' : '이름 수정'"
-              @click="onToggleHistoryTitleEdit(item)"
+              :title="isEditingHistory(item.contentId) ? '수정 완료' : '이름 수정'"
+              @click="handleToggleHistoryTitleEdit(item)"
             >
               <template #icon-left>
-                <i :class="isEditingHistory(item.roomId) ? 'icon-check size-16' : 'icon-edit size-16'" />
+                <i :class="isEditingHistory(item.contentId) ? 'icon-check size-16' : 'icon-edit size-16'" />
               </template>
             </UiButton>
             <UiButton
@@ -231,8 +201,8 @@
               size="sm"
               icon-only
               title="내역 삭제"
-              :disabled="!!editingRoomId"
-              @click="onDeleteHistory(item.roomId)"
+              :disabled="!!editingContentId"
+              @click="handleDeleteHistory(item.contentId)"
             >
               <template #icon-left>
                 <i class="icon-trashcan size-16" />
@@ -252,19 +222,23 @@
         <button
           type="button"
           class="marketing-page-back"
-          @click="onBackToList"
+          @click="handleBackToList"
         >
           <i class="icon-arrow-right size-16 marketing-page-back__arrow" />
           제작 내역
         </button>
       </div>
-      <ChatMarketingAuthoringCard
-        class="marketing-page-authoring-card"
-        :config="config"
-        :theme-color-hex="themeColorHex"
-        @close="onBackToList"
-        @submit="onSubmit"
-      />
+      <!-- 레이아웃 셸 -->
+      <section class="chat-marketing-authoring-card marketing-page-authoring-card">
+        <div class="chat-marketing-authoring-card__content">
+          <MarketingUnifiedWizard
+            :config="config"
+            :theme-color-hex="themeColorHex"
+            @close="handleBackToList"
+            @submit="handleSubmit"
+          />
+        </div>
+      </section>
     </div>
 
     <!-- 생성 결과 -->
@@ -276,7 +250,7 @@
         <button
           type="button"
           class="marketing-page-back"
-          @click="onBackToList"
+          @click="handleBackToList"
         >
           <i class="icon-arrow-right size-16 marketing-page-back__arrow" />
           제작 내역
@@ -286,18 +260,26 @@
         v-if="displayResult"
         class="marketing-page-result-card"
         :result="displayResult"
-        :is-loading="isResultLoading"
+        :request="displayRequest"
+        :config="config"
+        :is-loading="isSubmitting"
+        :generating-step="generatingStep"
+        :are-texts-ready="areTextsReady"
+        :are-images-pending="areImagesPending"
         :theme-color-hex="themeColorHex"
         :show-side-panel="true"
-        @edit-with-agent="onEditWithAgent"
+        @edit-with-agent="handleEditWithAgent"
       />
-      <MarketingPreparingStatus
-        v-else-if="isGenerating"
-        :mode="generatingMode"
-        :phase="generatingPhase"
-        :active="isGenerating"
-        bordered
-      />
+      <div
+        v-else-if="isSubmitting"
+        class="marketing-page-result-preparing"
+      >
+        <MarketingPreparingStatus
+          :mode="generatingMode"
+          :generating-step="generatingStep"
+          :active="isSubmitting"
+        />
+      </div>
       <UiEmpty
         v-else
         icon="icon-edit"
@@ -306,7 +288,7 @@
         <UiButton
           variant="primary"
           size="md"
-          @click="onReopen"
+          @click="handleStartNew"
         >
           다시 작성하기
         </UiButton>
@@ -321,38 +303,41 @@ definePageMeta({ layout: 'default' })
 const {
   CONTENT_TYPE_FILTER_CHIPS,
   MODE_FILTER_CHIPS,
-  HISTORY_SORT_OPTIONS,
   HISTORY_PERIOD_OPTIONS,
   pagePhase,
-  isPageLoading,
   selectedAgent,
   config,
   themeColorHex,
   historySearchKeyword,
   historyContentTypeFilter,
   historyModeFilter,
-  historySort,
   historyPeriodFilter,
-  filteredHistoryItems,
   allHistoryItems,
-  editingRoomId,
+  hasActiveHistoryFilter,
+  editingContentId,
   editingTitle,
   historyTitleInputRef,
   displayResult,
-  isResultLoading,
-  isGenerating,
+  displayRequest,
+  isSubmitting,
   generatingMode,
-  generatingPhase,
-  onBackToList,
-  onStartNew,
-  onDeleteHistory,
-  onSubmit,
-  onReopen,
-  onEditWithAgent,
-  onHistoryRowClick,
+  generatingStep,
+  areTextsReady,
+  areImagesPending,
+  handleBootstrap,
+  clearHistoryFilterTimer,
+  handleBackToList,
+  handleStartNew,
+  handleDeleteHistory,
+  handleSubmit,
+  handleEditWithAgent,
+  handleHistoryRowClick,
   isEditingHistory,
-  onToggleHistoryTitleEdit,
-  onSaveHistoryTitle,
-  onCancelHistoryTitle,
-} = useMarketingPage()
+  handleToggleHistoryTitleEdit,
+  handleSaveHistoryTitle,
+  handleCancelHistoryTitle,
+} = useMarketingStore()
+
+onMounted(() => void handleBootstrap())
+onBeforeUnmount(clearHistoryFilterTimer)
 </script>

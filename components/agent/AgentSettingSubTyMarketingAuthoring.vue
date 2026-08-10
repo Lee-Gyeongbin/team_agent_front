@@ -1,9 +1,9 @@
-﻿<template>
+<template>
   <div class="agent-content-setting-panel">
     <div class="agent-content-setting-panel__header">
       <span class="com-setting-section-title">콘텐츠 작성·편집 구성</span>
       <p class="com-setting-hint agent-content-setting-panel__summary">
-        기본 설정·콘텐츠 유형·워크플로·출력 구성·게시 채널·제약을 아래 영역에서 설정합니다.
+        기본 설정·콘텐츠 유형·워크플로·출력 구성·게시 채널을 아래 영역에서 설정합니다.
       </p>
     </div>
 
@@ -15,7 +15,9 @@
           collapsible
           label-width="120px"
         >
-          <p class="com-setting-hint ca-section-lead">채팅 콘텐츠 메이커 화면의 기본 동작과 표시 문구를 설정합니다.</p>
+          <p class="com-setting-hint ca-section-lead">
+            마케팅 콘텐츠 메이커 화면의 기본 동작과 표시 문구를 설정합니다.
+          </p>
           <div class="com-setting-field-row">
             <label class="com-setting-label">인트로 제목</label>
             <UiInput
@@ -74,7 +76,7 @@
           :default-collapsed="true"
           label-width="120px"
         >
-          <p class="com-setting-hint ca-section-lead">채팅 화면에서 선택 가능한 콘텐츠 유형입니다.</p>
+          <p class="com-setting-hint ca-section-lead">마케팅 화면에서 선택 가능한 콘텐츠 유형입니다.</p>
           <div class="ca-list-block">
             <div class="ca-list-block__head">
               <span class="com-setting-label">유형</span>
@@ -204,7 +206,7 @@
           label-width="120px"
         >
           <p class="com-setting-hint ca-section-lead">
-            채팅 화면에서 선택할 수 있는 콘텐츠 출력 요소입니다. 기본 체크 시 최초 선택값으로 사용됩니다.
+            마케팅 화면에서 선택할 수 있는 콘텐츠 출력 요소입니다. 기본 체크 시 최초 선택값으로 사용됩니다.
           </p>
 
           <div class="ca-list-block">
@@ -270,7 +272,7 @@
           label-width="120px"
         >
           <p class="com-setting-hint ca-section-lead">
-            콘텐츠 유형별로 채팅 화면에서 선택 가능한 게시 채널입니다. 비워두면 해당 유형에서 채널 선택이 숨겨집니다.
+            콘텐츠 유형별로 마케팅 화면에서 선택 가능한 게시 채널입니다. 비워두면 해당 유형에서 채널 선택이 숨겨집니다.
           </p>
           <div class="com-setting-field-row">
             <label class="com-setting-label">콘텐츠 유형</label>
@@ -333,58 +335,6 @@
                 class="survey-icon-btn"
                 title="삭제"
                 @click="onRemoveChannel(idx)"
-              >
-                <i class="icon-trashcan size-14" />
-              </button>
-            </div>
-          </div>
-        </UiSettingSection>
-      </div>
-
-      <!-- 제약 -->
-      <div class="agent-content-setting-accordion">
-        <UiSettingSection
-          title="제약 (Constraints)"
-          collapsible
-          :default-collapsed="true"
-          label-width="120px"
-        >
-          <p class="com-setting-hint ca-section-lead">
-            LLM이 반드시 준수해야 할 역할·작성 규칙·출력 규칙을 한 줄씩 입력합니다.
-          </p>
-          <div class="ca-list-block">
-            <div class="ca-list-block__head">
-              <span class="com-setting-label">제약 목록</span>
-              <UiButton
-                variant="line-secondary"
-                size="xs"
-                @click="onAddConstraint"
-              >
-                항목 추가
-              </UiButton>
-            </div>
-            <p
-              v-if="!modelValue.constraints.length"
-              class="com-setting-hint"
-            >
-              항목을 추가해 주세요.
-            </p>
-            <div
-              v-for="(_, idx) in modelValue.constraints"
-              :key="`constraint-${idx}`"
-              class="ca-list-block__row"
-            >
-              <UiInput
-                :model-value="modelValue.constraints[idx]"
-                size="sm"
-                placeholder="예: 확인되지 않은 수치나 사실은 생성하지 않기"
-                @update:model-value="onConstraintUpdate(idx, String($event ?? ''))"
-              />
-              <button
-                type="button"
-                class="survey-icon-btn"
-                title="삭제"
-                @click="onRemoveConstraint(idx)"
               >
                 <i class="icon-trashcan size-14" />
               </button>
@@ -575,20 +525,6 @@ const onToggleDefaultOutputSection = (value: string, checked: boolean) => {
     ? [...new Set([...workflow.defaultOutputSections, value])]
     : workflow.defaultOutputSections.filter((item) => item !== value)
   patchWorkflow({ ...workflow, defaultOutputSections })
-}
-
-// ── 제약 ──────────────────────────────────────────────
-const onAddConstraint = () => {
-  emitForm({ ...props.modelValue, constraints: [...props.modelValue.constraints, ''] })
-}
-
-const onConstraintUpdate = (idx: number, value: string) => {
-  const constraints = props.modelValue.constraints.map((item, i) => (i === idx ? value : item))
-  emitForm({ ...props.modelValue, constraints })
-}
-
-const onRemoveConstraint = (idx: number) => {
-  emitForm({ ...props.modelValue, constraints: props.modelValue.constraints.filter((_, i) => i !== idx) })
 }
 </script>
 
