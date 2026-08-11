@@ -51,9 +51,14 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
     isLoading.value = true
     try {
       const res = await fetchSelectTocList(ptProjectId.value)
-      // 전체 목록 저장 (트리 표시용)
       rawTocList.value = res.list ?? []
-      const leafItems = (res.list ?? []).filter((item) => item.parentId !== null)
+
+      // 진짜 리프 판별: 다른 항목이 이 항목을 parentId로 참조하지 않으면 리프
+      const parentIdSet = new Set(
+        (res.list ?? []).map((item) => item.parentId).filter((id): id is string => id !== null),
+      )
+      const leafItems = (res.list ?? []).filter((item) => item.parentId !== null && !parentIdSet.has(item.tocId))
+
       sectionList.value = leafItems.map((item, idx) => ({
         sectionId: item.tocId,
         ptProjectId: ptProjectId.value,
@@ -64,7 +69,6 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
         previewContent: null,
       }))
       activeSectionIndexRef.value = 0
-      // Step E 진입 시 첫 번째 소목차 슬라이드 즉시 조회
       const firstTocId = sectionList.value[0]?.tocId
       if (firstTocId) {
         fetchSelectSectionSlides(firstTocId)
@@ -79,7 +83,6 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
       isLoading.value = false
     }
   }
-
   /**
    * 소목차 슬라이드 목록 조회 (캐시 우선)
    */
@@ -195,7 +198,8 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
         const idx = cached.findIndex((s) => s.slideId === progressData.slideId)
         if (idx > -1) {
           // 배열 교체 방식으로 Vue reactivity 확실하게 트리거
-          const updated = { ...cached[idx], renderStatusCd: progressData.renderStatusCd }
+          const updated: PtSlide = { ...cached[idx] }
+          if (progressData.renderStatusCd) updated.renderStatusCd = progressData.renderStatusCd
           if (progressData.renderedImagePath) updated.renderedImagePath = progressData.renderedImagePath
           slidesCache.value[tocId] = [...cached.slice(0, idx), updated, ...cached.slice(idx + 1)]
         }

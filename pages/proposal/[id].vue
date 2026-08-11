@@ -111,7 +111,7 @@
 </template>
 
 <script setup lang="ts">
-import type { PtStep, PtProject, PtSlide } from '~/types/proposal'
+import type { PtStep, PtStepKey, PtProject, PtSlide } from '~/types/proposal'
 import { useProposalToc } from '~/composables/proposal/useProposalToc'
 import { useProposalSections } from '~/composables/proposal/useProposalSections'
 import { useProposalSectionChat } from '~/composables/proposal/useProposalSectionChat'
@@ -145,15 +145,15 @@ const docSize = computed<'169' | '43' | 'a4'>(() => {
 
 // ---- 스텝바 ----
 // 0요구사항 → 1자사·경쟁사 → 2전략검토 → 3세부목차 → 4템플릿설정 → 5템플릿생성 → 6본문생성 → 7출력
-const STEP_DEFS = [
-  { key: 'requirements' as const, label: '요구사항·평가기준·현황이슈', sub: 'TOC / 요구사항 / 평가기준 / 현황이슈' },
-  { key: 'company-info' as const, label: '자사·경쟁사 정보', sub: '자사 / 경쟁사 / 참고자료' },
-  { key: 'strategy' as const, label: '전략검토', sub: '문제정의 / Win Theme' },
-  { key: 'detail-toc' as const, label: '세부목차', sub: '세부 슬라이드 구성' },
-  { key: 'template-config' as const, label: '템플릿 설정', sub: '생성방식 / 사이즈 / 제안대상 / 스타일' },
-  { key: 'template-gen' as const, label: '템플릿 생성', sub: '헤더·푸터 레이아웃' },
-  { key: 'generate' as const, label: '본문 생성', sub: '소목차별 순차 진행' },
-  { key: 'export' as const, label: '출력', sub: 'PDF 추출' },
+const STEP_DEFS: { key: PtStepKey; label: string; sub: string }[] = [
+  { key: 'requirements', label: '요구사항·평가기준·현황이슈', sub: 'TOC / 요구사항 / 평가기준 / 현황이슈' },
+  { key: 'company-info', label: '자사·경쟁사 정보', sub: '자사 / 경쟁사 / 참고자료' },
+  { key: 'strategy', label: '전략검토', sub: '문제정의 / Win Theme' },
+  { key: 'detail-toc', label: '세부목차', sub: '세부 슬라이드 구성' },
+  { key: 'template-config', label: '템플릿 설정', sub: '생성방식 / 사이즈 / 제안대상 / 스타일' },
+  { key: 'template-gen', label: '템플릿 생성', sub: '헤더·푸터 레이아웃' },
+  { key: 'generate', label: '본문 생성', sub: '소목차별 순차 진행' },
+  { key: 'export', label: '출력', sub: 'PDF 추출' },
 ]
 
 const currentStep = ref(0)

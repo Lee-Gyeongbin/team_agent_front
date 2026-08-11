@@ -11,14 +11,21 @@
           v-for="item in rawTocList"
           :key="item.tocId"
         >
-          <!-- 대목차: 클릭 불가 헤더 -->
+          <!-- 대목차 (parentId=null): 클릭 불가 헤더 -->
           <div
             v-if="item.parentId === null"
             class="pt-sec-group-title"
           >
             {{ item.title }}
           </div>
-          <!-- 소목차: 클릭 가능 -->
+          <!-- 소목차 (자식 있음): 클릭 불가 서브 헤더 -->
+          <div
+            v-else-if="tocParentIdSet.has(item.tocId)"
+            class="pt-sec-group-sub-title"
+          >
+            {{ item.title }}
+          </div>
+          <!-- 세부목차 또는 leaf 소목차: 클릭 가능 -->
           <div
             v-else
             :class="['pt-sec-item', { 'is-active': isLeafActive(item.tocId), 'is-done': isLeafDone(item.tocId) }]"
@@ -514,6 +521,15 @@ const activeSlideComponents = computed<SlideComponent[]>(() => {
 })
 
 // ── 트리 사이드바 헬퍼 ──────────────────────────────────────────────────────────
+
+/** rawTocList 중 자식을 가진 tocId 집합 — 3단계 계층에서 소목차(자식 있음) vs 리프 구분용 */
+const tocParentIdSet = computed(() => {
+  const s = new Set<string>()
+  for (const item of props.rawTocList) {
+    if (item.parentId !== null) s.add(item.parentId)
+  }
+  return s
+})
 
 /** 소목차(tocId)가 현재 활성 소목차인지 확인 */
 const isLeafActive = (tocId: string) => props.sectionList[props.activeSectionIndex]?.tocId === tocId

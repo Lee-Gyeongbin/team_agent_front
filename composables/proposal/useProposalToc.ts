@@ -2,13 +2,8 @@ import { useProposalApi } from '~/composables/proposal/useProposalApi'
 import type { PtTocItem } from '~/types/proposal'
 
 export const useProposalToc = (ptProjectId: Ref<string>) => {
-  const {
-    fetchSelectTocList,
-    fetchInsertTocItem,
-    fetchUpdateTocItem,
-    fetchDeleteTocItem,
-    fetchReorderTocItems,
-  } = useProposalApi()
+  const { fetchSelectTocList, fetchInsertTocItem, fetchUpdateTocItem, fetchDeleteTocItem, fetchReorderTocItems } =
+    useProposalApi()
 
   const tocList = ref<PtTocItem[]>([])
   const isLoading = ref(false)

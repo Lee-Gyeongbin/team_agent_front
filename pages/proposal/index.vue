@@ -295,12 +295,16 @@ const formatDateValueToYyyyMmDd = (value: DateValue | undefined): string => {
 
 const filterStartDateValue = computed<DateValue | undefined>({
   get: () => parseYyyyMmDdToDateValue(filterStartDate.value),
-  set: (value) => { filterStartDate.value = formatDateValueToYyyyMmDd(value) },
+  set: (value) => {
+    filterStartDate.value = formatDateValueToYyyyMmDd(value)
+  },
 })
 
 const filterEndDateValue = computed<DateValue | undefined>({
   get: () => parseYyyyMmDdToDateValue(filterEndDate.value),
-  set: (value) => { filterEndDate.value = formatDateValueToYyyyMmDd(value) },
+  set: (value) => {
+    filterEndDate.value = formatDateValueToYyyyMmDd(value)
+  },
 })
 
 // 기간 옵션 → 날짜 변환
@@ -328,9 +332,7 @@ const filteredList = computed(() => {
   // 키워드 필터 (사업명 · 발주기관)
   const kw = searchKeyword.value.trim().toLowerCase()
   if (kw) {
-    list = list.filter(
-      (p) => p.projectNm.toLowerCase().includes(kw) || p.orgNm.toLowerCase().includes(kw),
-    )
+    list = list.filter((p) => p.projectNm.toLowerCase().includes(kw) || p.orgNm.toLowerCase().includes(kw))
   }
 
   // 기간 필터 (modifyDt 기준)
