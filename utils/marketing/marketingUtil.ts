@@ -7,6 +7,7 @@ import type {
   MarketingOutputKind,
   MarketingUnifiedFormPayload,
 } from '~/types/marketing'
+import { copyToClipboard } from '~/utils/global/clipboardUtil'
 import {
   getDefaultMarketingAuthoringConfig,
   MARKETING_AUTHORING_CHANNELS_BY_TYPE,
@@ -172,7 +173,6 @@ export type MarketingWizardStepDef = {
   description?: string
 }
 
-/** 문구·이미지·통합 생성 공통 로딩 문구 */
 const PREPARING_STATUS_TEXTS = [
   '선택한 조건을 꼼꼼히 읽고 있어요...',
   '핵심 메시지를 정리하는 중입니다...',
@@ -181,15 +181,8 @@ const PREPARING_STATUS_TEXTS = [
   '시안을 구성하는 중입니다...',
 ] as const
 
-export const resolveMarketingPreparingStatusTexts = () => PREPARING_STATUS_TEXTS
-
-export const resolveMarketingPreparingTitle = (mode: MarketingPreparingMode = 'TEXT') =>
-  mode === 'IMAGE' ? 'AI가 마케팅 이미지를 작성 중입니다' : 'AI가 콘텐츠를 작성 중입니다'
-
-export const resolveMarketingPreparingCallout = (mode: MarketingPreparingMode = 'TEXT') => {
-  if (mode === 'BOTH') return '문구와 이미지를 함께 구성합니다.'
-  return mode === 'IMAGE' ? '요청하신 조건에 맞춰 이미지를 구성합니다.' : '요청하신 조건에 맞춰 시안을 구성합니다.'
-}
+export const MARKETING_PREPARING_TITLE = 'AI가 콘텐츠를 작성 중입니다'
+export const MARKETING_PREPARING_CALLOUT = '요청하신 조건에 맞춰 콘텐츠를 구성합니다.'
 
 export const resolveMarketingGeneratingStepText = (step: MarketingGeneratingStep) => {
   switch (step) {
@@ -260,6 +253,18 @@ export const applyConfirmSummaryLayout = <T extends MarketingConfirmSummaryItem>
 }
 
 export const formatMarketingSelectionTag = (category: string, value: string) => `${category} | ${value}`
+
+/** 사용자 입력 문구를 안전한 미리보기 HTML로 변환 */
+export const renderMarketingTextHtml = (value?: string | null) =>
+  String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/(^|\s)(#[^\s]+)/g, '$1<span class="is-hashtag">$2</span>')
+    .replace(/\n{2,}/g, '<br /><br />')
+    .replace(/\n/g, '<br />')
 
 export const getMarketingAuthoringWorkflow = (config?: MarketingAuthoringAgentConfig | null) => {
   const workflow = config?.workflow ?? getDefaultMarketingAuthoringConfig().workflow
@@ -412,4 +417,178 @@ export const preloadMarketingImages = (urls: string[], timeoutMs = MARKETING_IMA
         }),
     ),
   )
+}
+
+// ━━━ 채널로 보내기 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+type ChannelDeliverySeed = {
+  label: string
+  externalUrl?: string
+}
+
+type ChannelDeliverySpec = ChannelDeliverySeed & {
+  channel: string
+  mode: 'EXTERNAL' | 'NONE'
+}
+
+/**
+ * 외부 작성(compose) 진입 URL
+ * - 홈/피드가 아니라 게시물·메일 작성 화면에 최대한 가깝게 연결
+ * - 플랫폼마다 웹 작성 deep link 지원 수준이 다름 (로그인·권한 필요)
+ */
+const MARKETING_EXTERNAL_COMPOSE_URLS = {
+  INSTAGRAM: 'https://www.instagram.com/',
+  /** Meta Business Suite 작성기 — 페이지/비즈니스 게시용 */
+  FACEBOOK: 'https://business.facebook.com/latest/composer',
+  /** 피드 작성 모달 오픈 */
+  LINKEDIN: 'https://www.linkedin.com/feed/?shareActive=true',
+  X: 'https://x.com/compose/post',
+  /** 카카오 채널 관리 — 채널 선택 후 메시지/게시 작성 */
+  KAKAO_TALK: 'https://center-pf.kakao.com/',
+  /** YouTube Studio — 커뮤니티 글은 Studio에서 작성 */
+  YOUTUBE_COMMUNITY: 'https://studio.youtube.com/',
+  /** 네이버 블로그 글쓰기 */
+  NAVER_BLOG: 'https://blog.naver.com/GoBlogWrite.naver',
+  EMAIL: 'https://mail.google.com/mail/u/0/#inbox?compose=new',
+} as const
+
+/**
+ * 채널 배달 맵 — 클립보드 복사 후 외부 작성 화면으로 이동한다.
+ */
+const CHANNEL_DELIVERY_MAP: Record<string, ChannelDeliverySeed> = {
+  INSTAGRAM: {
+    label: '인스타그램',
+    externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.INSTAGRAM,
+  },
+  FACEBOOK: {
+    label: '페이스북',
+    externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.FACEBOOK,
+  },
+  LINKEDIN: {
+    label: '링크드인',
+    externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.LINKEDIN,
+  },
+  X: {
+    label: 'X',
+    externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.X,
+  },
+  OWNED_BLOG: {
+    label: '자사 블로그',
+  },
+  SMS: {
+    label: '문자메시지',
+  },
+  PROMOTION_EMAIL: {
+    label: '프로모션 메일',
+    externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.EMAIL,
+  },
+  NEWSLETTER: {
+    label: '뉴스레터',
+    externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.EMAIL,
+  },
+  KAKAO_TALK: {
+    label: '카카오톡',
+    externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.KAKAO_TALK,
+  },
+  YOUTUBE_COMMUNITY: {
+    label: '유튜브 커뮤니티',
+    externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.YOUTUBE_COMMUNITY,
+  },
+  NAVER_BLOG: {
+    label: '네이버 블로그',
+    externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.NAVER_BLOG,
+  },
+}
+
+const NONE_CHANNEL_DELIVERY = (channel = ''): ChannelDeliverySpec => ({
+  channel,
+  mode: 'NONE',
+  label: '',
+})
+
+/** 채널 코드 → 배달 스펙 */
+export const resolveChannelDelivery = (channel?: string | null): ChannelDeliverySpec => {
+  const normalized = String(channel ?? '').trim()
+  if (!normalized) return NONE_CHANNEL_DELIVERY()
+  const seed = CHANNEL_DELIVERY_MAP[normalized]
+  if (!seed) return NONE_CHANNEL_DELIVERY(normalized)
+  return {
+    channel: normalized,
+    mode: 'EXTERNAL',
+    label: seed.label,
+    externalUrl: seed.externalUrl,
+  }
+}
+
+/** 툴바 [채널로 보내기] 노출 여부 */
+export const isChannelSendSupported = (channel?: string | null): boolean =>
+  resolveChannelDelivery(channel).mode === 'EXTERNAL'
+
+/** 마케팅 이미지 → PNG Blob (클립보드용) */
+const fetchMarketingImageAsPngBlob = async (imageUrl: string): Promise<Blob> => {
+  const response = await fetch(imageUrl)
+  if (!response.ok) throw new Error('image fetch failed')
+  const blob = await response.blob()
+  if (blob.type === 'image/png') return blob
+
+  const bitmap = await createImageBitmap(blob)
+  const canvas = document.createElement('canvas')
+  canvas.width = bitmap.width
+  canvas.height = bitmap.height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('canvas unsupported')
+  ctx.drawImage(bitmap, 0, 0)
+  bitmap.close()
+
+  return await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((result) => {
+      if (result) resolve(result)
+      else reject(new Error('png convert failed'))
+    }, 'image/png')
+  })
+}
+
+export type MarketingCopyPayloadResult = {
+  textCopied: boolean
+  imageCopied: boolean
+}
+
+/** 마케팅 시안 텍스트/이미지 클립보드 복사 */
+export const copyMarketingPayloadToClipboard = async (
+  text: string,
+  imageUrl?: string | null,
+): Promise<MarketingCopyPayloadResult> => {
+  const value = String(text ?? '').trim()
+  const url = String(imageUrl ?? '').trim()
+  if (!value && !url) throw new Error('nothing to copy')
+
+  const canWriteImage = !!navigator.clipboard?.write && typeof ClipboardItem !== 'undefined'
+
+  if (value && url && canWriteImage) {
+    try {
+      const imageBlob = await fetchMarketingImageAsPngBlob(url)
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/plain': new Blob([value], { type: 'text/plain' }),
+          'image/png': imageBlob,
+        }),
+      ])
+      return { textCopied: true, imageCopied: true }
+    } catch {
+      // 동시 기록 실패 — 텍스트만
+    }
+  }
+
+  if (url && !value && canWriteImage) {
+    const imageBlob = await fetchMarketingImageAsPngBlob(url)
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': imageBlob })])
+    return { textCopied: false, imageCopied: true }
+  }
+
+  if (value) {
+    await copyToClipboard(value)
+    return { textCopied: true, imageCopied: false }
+  }
+
+  throw new Error('clipboard copy failed')
 }

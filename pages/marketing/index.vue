@@ -144,7 +144,7 @@
               'is-both': item.mode === 'BOTH',
             }"
           >
-            {{ item.mode === 'BOTH' ? '통합' : item.mode === 'IMAGE' ? '이미지' : '문구' }}
+            {{ resolveMarketingOutputModeLabel(item.mode) }}
           </span>
           <div class="marketing-history-row__copy">
             <UiInput
@@ -228,7 +228,6 @@
           제작 내역
         </button>
       </div>
-      <!-- 레이아웃 셸 -->
       <section class="chat-marketing-authoring-card marketing-page-authoring-card">
         <div class="chat-marketing-authoring-card__content">
           <MarketingUnifiedWizard
@@ -260,14 +259,17 @@
         v-if="displayResult"
         class="marketing-page-result-card"
         :result="displayResult"
+        :content-title="displayTitle"
         :request="displayRequest"
         :config="config"
-        :is-loading="isSubmitting"
+        :is-loading="isSubmitting && !refiningType"
+        :refining-type="refiningType"
+        :refining-variant-id="refiningVariantId"
+        :refine-completed-at="refineCompletedAt"
         :generating-step="generatingStep"
-        :are-texts-ready="areTextsReady"
-        :are-images-pending="areImagesPending"
         :theme-color-hex="themeColorHex"
         :show-side-panel="true"
+        :save-variant="handleSaveVariantText"
         @edit-with-agent="handleEditWithAgent"
       />
       <div
@@ -304,6 +306,7 @@ const {
   CONTENT_TYPE_FILTER_CHIPS,
   MODE_FILTER_CHIPS,
   HISTORY_PERIOD_OPTIONS,
+  resolveMarketingOutputModeLabel,
   pagePhase,
   selectedAgent,
   config,
@@ -318,19 +321,22 @@ const {
   editingTitle,
   historyTitleInputRef,
   displayResult,
+  displayTitle,
   displayRequest,
   isSubmitting,
+  refiningType,
+  refiningVariantId,
+  refineCompletedAt,
   generatingMode,
   generatingStep,
-  areTextsReady,
-  areImagesPending,
   handleBootstrap,
-  clearHistoryFilterTimer,
+  cleanupMarketingSession,
   handleBackToList,
   handleStartNew,
   handleDeleteHistory,
   handleSubmit,
   handleEditWithAgent,
+  handleSaveVariantText,
   handleHistoryRowClick,
   isEditingHistory,
   handleToggleHistoryTitleEdit,
@@ -339,5 +345,5 @@ const {
 } = useMarketingStore()
 
 onMounted(() => void handleBootstrap())
-onBeforeUnmount(clearHistoryFilterTimer)
+onBeforeUnmount(cleanupMarketingSession)
 </script>

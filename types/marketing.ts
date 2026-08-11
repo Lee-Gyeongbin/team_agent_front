@@ -27,7 +27,6 @@ export interface MarketingAuthoringTextOnlyFields {
   referenceUrls: string[]
   outputSections: string[]
   includeHashtags: 'Y' | 'N'
-  /** 이모지 허용 여부 */
   allowEmoji: 'Y' | 'N'
 }
 
@@ -52,7 +51,8 @@ export interface MarketingAuthoringConditionSummary {
   contentType: string
   purpose: string
   audience: string
-  tones: string
+  /** BE는 string[]로 저장·반환할 수 있음 */
+  tones: string | string[]
   length: string
   channel?: string
   keyMessage?: string
@@ -106,7 +106,7 @@ export interface MarketingContentSummary {
   modifyDt: string
 }
 
-/** 상세 request — 저장된 JSON (File 없음) */
+/** 상세 request — DB REQUEST_JSON (File 없음) */
 export type MarketingStoredRequest = Omit<MarketingAuthoringSubmitPayload, 'referenceFiles'> & {
   referenceFiles?: never[]
 }
@@ -137,6 +137,11 @@ export interface MarketingCreateResponse {
   contentId: string
 }
 
+export interface MarketingRefineResponse {
+  successYn?: boolean
+  message?: string
+}
+
 export type MarketingStreamStep = 'title' | 'labels' | 'variant'
 
 export interface MarketingStreamProgressEvent {
@@ -153,8 +158,6 @@ export interface MarketingStreamProgressEvent {
 }
 
 export type MarketingStreamDoneEvent = {
-  contentId: string
-  status: 'COMPLETED'
   result: MarketingAuthoringResult | null
 }
 
@@ -165,4 +168,17 @@ export type MarketingStreamErrorEvent = {
 export interface MarketingRefineRequest {
   content: string
   request: string
+  /** TEXT: 문안 수정, IMAGE: 이미지 재생성 */
+  type: 'TEXT' | 'IMAGE'
+}
+
+export interface MarketingVariantUpdateRequest {
+  textContent: string
+}
+
+export interface MarketingVariantUpdateResponse {
+  successYn: boolean
+  contentId?: string
+  variantId?: number
+  message?: string
 }

@@ -24,10 +24,9 @@
 <script setup lang="ts">
 import {
   createMarketingPreparingStatusCycle,
+  MARKETING_PREPARING_CALLOUT,
+  MARKETING_PREPARING_TITLE,
   resolveMarketingGeneratingStepText,
-  resolveMarketingPreparingCallout,
-  resolveMarketingPreparingStatusTexts,
-  resolveMarketingPreparingTitle,
   type MarketingGeneratingStep,
   type MarketingPreparingMode,
 } from '~/utils/marketing/marketingUtil'
@@ -47,15 +46,11 @@ const props = withDefaults(
   },
 )
 
-const title = computed(() => resolveMarketingPreparingTitle(props.mode))
-const callout = computed(() => resolveMarketingPreparingCallout(props.mode))
+const title = MARKETING_PREPARING_TITLE
+const callout = MARKETING_PREPARING_CALLOUT
 const stepText = computed(() => resolveMarketingGeneratingStepText(props.generatingStep))
 
-const {
-  text: cycleText,
-  start,
-  stop,
-} = createMarketingPreparingStatusCycle(() => resolveMarketingPreparingStatusTexts())
+const { text: cycleText, start, stop } = createMarketingPreparingStatusCycle()
 
 const statusText = computed(() => stepText.value || cycleText.value)
 

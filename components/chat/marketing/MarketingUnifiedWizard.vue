@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <section
     class="marketing-image-maker"
     :style="themeStyle"
@@ -192,35 +192,14 @@
 
         <div class="marketing-image-maker__field">
           <label>참고 자료</label>
-          <button
-            type="button"
-            class="marketing-image-maker__reference-attach"
-            @click="isReferenceModalOpen = true"
-          >
-            <i class="icon-document size-16" />
-            {{ form.referenceFiles.length ? '참고자료 다시 선택하기' : '참고자료 첨부하기' }}
-            <em v-if="form.referenceFiles.length">{{ form.referenceFiles.length }}</em>
-          </button>
-          <ul
-            v-if="form.referenceFiles.length"
-            class="marketing-image-maker__reference-list"
-          >
-            <li
-              v-for="(file, index) in form.referenceFiles"
-              :key="`${file.name}-${index}`"
-            >
-              <i class="icon-document size-14" />
-              <span :title="file.name">{{ file.name }}</span>
-              <button
-                type="button"
-                title="첨부 제거"
-                @click="removeReferenceFile(index)"
-              >
-                <i class="icon-close size-12" />
-              </button>
-            </li>
-          </ul>
-          <p class="marketing-image-maker__reference-hint">문서·이미지 최대 5개 (각 20MB 이하)</p>
+          <UiFileUpload
+            v-model="form.referenceFiles"
+            :max-files="5"
+            :max-size-mb="20"
+            :accept="referenceAccept"
+            :allowed-extensions="referenceAllowedExtensions"
+            hint="문서·이미지 파일을 최대 5개까지 첨부할 수 있습니다. (각 20MB 이하)"
+          />
         </div>
       </template>
 
@@ -430,8 +409,8 @@
             <div
               class="marketing-image-maker__ratio-section"
               :class="{
-                'is-selected': isPresetAspectRatioMode,
-                'is-disabled': !isPresetAspectRatioMode && !!aspectRatioMode,
+                'is-selected': aspectRatioMode === 'preset',
+                'is-disabled': aspectRatioMode !== 'preset' && !!aspectRatioMode,
               }"
               @click="onActivatePresetAspectRatio"
             >
@@ -444,7 +423,7 @@
                     type="radio"
                     name="marketing-unified-aspect-ratio-mode"
                     value="preset"
-                    :checked="isPresetAspectRatioMode"
+                    :checked="aspectRatioMode === 'preset'"
                     @change="onActivatePresetAspectRatio"
                   />
                   <span />
@@ -457,7 +436,7 @@
                   :key="ratio"
                   type="button"
                   :class="{ 'is-selected': aspectRatioMode === 'preset' && form.aspectRatio === ratio }"
-                  :disabled="!isPresetAspectRatioMode && !!aspectRatioMode"
+                  :disabled="aspectRatioMode !== 'preset' && !!aspectRatioMode"
                   @click.stop="onSelectAspectRatioPreset(ratio)"
                 >
                   <strong>{{ ratio }}</strong>
@@ -474,8 +453,8 @@
             <div
               class="marketing-image-maker__ratio-section"
               :class="{
-                'is-selected': isCustomAspectRatioMode,
-                'is-disabled': !isCustomAspectRatioMode && !!aspectRatioMode,
+                'is-selected': aspectRatioMode === 'custom',
+                'is-disabled': aspectRatioMode !== 'custom' && !!aspectRatioMode,
               }"
               @click="onActivateCustomAspectRatio"
             >
@@ -488,7 +467,7 @@
                     type="radio"
                     name="marketing-unified-aspect-ratio-mode"
                     value="custom"
-                    :checked="isCustomAspectRatioMode"
+                    :checked="aspectRatioMode === 'custom'"
                     @change="onActivateCustomAspectRatio"
                   />
                   <span />
@@ -504,7 +483,7 @@
                     placeholder="3"
                     size="sm"
                     number-only
-                    :disabled="!isCustomAspectRatioMode"
+                    :disabled="aspectRatioMode !== 'custom'"
                     @click.stop
                     @update:model-value="onCustomAspectRatioChange"
                   />
@@ -518,7 +497,7 @@
                     placeholder="2"
                     size="sm"
                     number-only
-                    :disabled="!isCustomAspectRatioMode"
+                    :disabled="aspectRatioMode !== 'custom'"
                     @click.stop
                     @update:model-value="onCustomAspectRatioChange"
                   />
@@ -667,41 +646,11 @@
         </template>
       </UiButton>
     </footer>
-
-    <UiModal
-      :is-open="isReferenceModalOpen"
-      title="참고 자료 첨부"
-      position="center"
-      max-width="720px"
-      custom-class="marketing-reference-upload-modal"
-      @close="isReferenceModalOpen = false"
-    >
-      <UiFileUpload
-        v-model="form.referenceFiles"
-        :max-files="5"
-        :max-size-mb="20"
-        :accept="referenceAccept"
-        :allowed-extensions="referenceAllowedExtensions"
-        hint="문서·이미지 파일을 최대 5개까지 첨부할 수 있습니다."
-      />
-      <template #footer>
-        <div class="modal-dialog-footer">
-          <UiButton
-            class="btn-modal-dialog"
-            variant="primary"
-            size="md"
-            @click="isReferenceModalOpen = false"
-          >
-            확인
-          </UiButton>
-        </div>
-      </template>
-    </UiModal>
   </section>
 </template>
 
 <script setup lang="ts">
-import type { MarketingAuthoringAgentConfig, MarketingAuthoringOption } from '~/types/agent'
+import type { MarketingAuthoringAgentConfig } from '~/types/agent'
 import type {
   MarketingAuthoringSubmitPayload,
   MarketingOutputKind,
@@ -729,6 +678,7 @@ import {
   MARKETING_FORM_MESSAGES,
   resolveMarketingAgentThemeStyle,
   resolveMarketingImageUsageFromSetup,
+  resolveMarketingOptionLabel,
   type MarketingConfirmSummaryItem,
   type MarketingWizardStepKey,
 } from '~/utils/marketing/marketingUtil'
@@ -772,7 +722,6 @@ const aspectRatioFieldRef = ref<HTMLElement | null>(null)
 const variantCountFieldRef = ref<HTMLElement | null>(null)
 const customAspectWidthInputRef = ref<{ focus: () => void } | null>(null)
 const customAspectHeightInputRef = ref<{ focus: () => void } | null>(null)
-const isReferenceModalOpen = ref(false)
 const isCustomCta = ref(false)
 
 const ctaPresets = MARKETING_CTA_PRESETS
@@ -783,11 +732,6 @@ const aspectRatioPresets = ['1:1', '3:2', '4:3', '16:9', '9:16'] as const
 const variantCountOptions = Array.from({ length: MARKETING_AUTHORING_VARIANT_COUNT_MAX }, (_, index) => index + 1)
 const referenceAllowedExtensions = 'pdf,doc,docx,ppt,pptx,xls,xlsx,hwp,csv,txt,png,jpg,jpeg,webp'.split(',')
 const referenceAccept = referenceAllowedExtensions.map((ext) => `.${ext}`).join(',')
-
-const removeReferenceFile = (index: number) => {
-  if (index < 0 || index >= form.referenceFiles.length) return
-  form.referenceFiles = form.referenceFiles.filter((_, fileIndex) => fileIndex !== index)
-}
 
 const workflow = computed(() => getMarketingAuthoringWorkflow(props.config))
 const themeStyle = computed(() => resolveMarketingAgentThemeStyle(props.themeColorHex))
@@ -827,8 +771,7 @@ const stepIndexOfKey = (key: MarketingWizardStepKey) => {
 }
 
 const contentTypeOptions = computed(() => props.config.contentTypes ?? [])
-const purposeOptions = computed(() => {
-  const raw = workflow.value.purposes ?? []
+const withCustomOption = (raw: MarketingAuthoringAgentConfig['workflow']['purposes'], description: string) => {
   // 프리셋 최대 4개 + 직접 입력(OTHER) = 5칩
   const presets = raw.filter((item) => item.value !== 'OTHER').slice(0, 4)
   const otherFromConfig = raw.find((item) => item.value === 'OTHER')
@@ -837,24 +780,12 @@ const purposeOptions = computed(() => {
     {
       value: 'OTHER',
       label: otherFromConfig?.label?.trim() || '직접 입력',
-      description: otherFromConfig?.description?.trim() || '작성 목적을 직접 입력합니다',
+      description: otherFromConfig?.description?.trim() || description,
     },
   ]
-})
-const audienceOptions = computed(() => {
-  const raw = workflow.value.audiences ?? []
-  // 프리셋 최대 4개 + 직접 입력(OTHER) = 5칩
-  const presets = raw.filter((item) => item.value !== 'OTHER').slice(0, 4)
-  const otherFromConfig = raw.find((item) => item.value === 'OTHER')
-  return [
-    ...presets,
-    {
-      value: 'OTHER',
-      label: otherFromConfig?.label?.trim() || '직접 입력',
-      description: otherFromConfig?.description?.trim() || '타겟 고객을 직접 입력합니다',
-    },
-  ]
-})
+}
+const purposeOptions = computed(() => withCustomOption(workflow.value.purposes ?? [], '작성 목적을 직접 입력합니다'))
+const audienceOptions = computed(() => withCustomOption(workflow.value.audiences ?? [], '타겟 고객을 직접 입력합니다'))
 const toneOptions = computed(() => workflow.value.tones ?? [])
 const lengthOptions = computed(() => workflow.value.lengths ?? [])
 const channelOptions = computed(() => props.config.channelsByContentType?.[form.contentType] ?? [])
@@ -867,11 +798,6 @@ const currentDetailStep = computed(() => {
   if (!form.outputs.length) return { ...step, description: '생성할 결과(글/그림)를 선택해 주세요.' }
   return { ...step, description: '선택한 내용으로 다음 단계로 진행할 수 있어요.' }
 })
-
-const optionLabel = (options: MarketingAuthoringOption[], value: string, customValue = '') => {
-  if (value === 'OTHER') return customValue.trim()
-  return options.find((item) => item.value === value)?.label ?? value
-}
 
 // ─── 아이콘 ──────────────────────────────────────────────────────────────────
 
@@ -935,11 +861,13 @@ const outputsSummaryLabel = computed(() => {
 
 const purposeSummaryLabel = computed(() =>
   hasText.value && purposeOptions.value.length
-    ? optionLabel(purposeOptions.value, form.purpose, form.customPurpose)
+    ? resolveMarketingOptionLabel(purposeOptions.value, form.purpose, form.customPurpose)
     : form.purpose.trim(),
 )
 
-const audienceSummaryLabel = computed(() => optionLabel(audienceOptions.value, form.audience, form.customAudience))
+const audienceSummaryLabel = computed(() =>
+  resolveMarketingOptionLabel(audienceOptions.value, form.audience, form.customAudience),
+)
 
 const selectedToneItems = computed(() =>
   form.tones
@@ -949,7 +877,6 @@ const selectedToneItems = computed(() =>
     })
     .filter((item): item is { value: string; label: string } => !!item && !!item.label),
 )
-const selectedToneLabels = computed(() => selectedToneItems.value.map((item) => item.label))
 
 const outputSectionsSummaryLabel = computed(() =>
   [
@@ -970,13 +897,12 @@ const IMAGE_USAGE_SHORT_LABEL: Record<string, string> = {
   SNS_VISUAL: 'SNS 이미지',
 }
 
-const displayImageUsage = computed(() => IMAGE_USAGE_SHORT_LABEL[form.imageUsage] ?? '')
 const displaySnsPlatform = computed(() => {
   if (form.imageUsage !== 'SNS_VISUAL') return ''
   return MARKETING_IMAGE_SNS_PLATFORMS.find((item) => item.value === form.snsPlatform)?.label ?? ''
 })
 const imageUsageSummaryLabel = computed(() =>
-  [displayImageUsage.value, displaySnsPlatform.value].filter(Boolean).join(' · '),
+  [IMAGE_USAGE_SHORT_LABEL[form.imageUsage] ?? '', displaySnsPlatform.value].filter(Boolean).join(' · '),
 )
 const displayImageType = computed(() => imageTypeOptions.find((item) => item.value === form.imageType)?.label ?? '')
 
@@ -986,7 +912,6 @@ const selectedAtmosphereItems = computed(() =>
     .map((value) => atmosphereOptions.find((item) => item.value === value))
     .filter((item): item is (typeof atmosphereOptions)[number] => !!item),
 )
-const selectedAtmosphereLabels = computed(() => selectedAtmosphereItems.value.map((item) => item.label))
 
 const displayAspectRatio = computed(() => {
   if (aspectRatioMode.value === 'custom' && form.customAspectRatio) return form.customAspectRatio
@@ -1016,12 +941,15 @@ const setupSelectionTags = computed(() => {
   if (form.contentType) {
     tags.push({
       key: 'contentType',
-      label: formatMarketingSelectionTag('콘텐츠 유형', optionLabel(contentTypeOptions.value, form.contentType)),
+      label: formatMarketingSelectionTag(
+        '콘텐츠 유형',
+        resolveMarketingOptionLabel(contentTypeOptions.value, form.contentType),
+      ),
       clear: clearContentTypeSelection,
     })
   }
   if (form.channel) {
-    const channelLabel = optionLabel(channelOptions.value, form.channel, form.customChannel)
+    const channelLabel = resolveMarketingOptionLabel(channelOptions.value, form.channel, form.customChannel)
     if (channelLabel) {
       tags.push({
         key: 'channel',
@@ -1070,7 +998,7 @@ const textToneLengthSelectionTags = computed(() => {
     })
   })
   if (form.length) {
-    const lengthLabel = optionLabel(lengthOptions.value, form.length, form.customLength)
+    const lengthLabel = resolveMarketingOptionLabel(lengthOptions.value, form.length, form.customLength)
     if (lengthLabel) {
       tags.push({
         key: 'length',
@@ -1123,7 +1051,7 @@ const confirmSummaryItems = computed<MarketingConfirmSummaryItem[]>(() => {
   const items: MarketingConfirmSummaryItem[] = [
     {
       label: '콘텐츠 유형',
-      value: optionLabel(contentTypeOptions.value, form.contentType),
+      value: resolveMarketingOptionLabel(contentTypeOptions.value, form.contentType),
       stepIndex: stepIndexOfKey('setup'),
     },
   ]
@@ -1131,7 +1059,7 @@ const confirmSummaryItems = computed<MarketingConfirmSummaryItem[]>(() => {
   if (channelOptions.value.length) {
     items.push({
       label: '사용 채널',
-      value: optionLabel(channelOptions.value, form.channel, form.customChannel) || '선택 안 함',
+      value: resolveMarketingOptionLabel(channelOptions.value, form.channel, form.customChannel) || '선택 안 함',
       stepIndex: stepIndexOfKey('setup'),
     })
   }
@@ -1164,12 +1092,12 @@ const confirmSummaryItems = computed<MarketingConfirmSummaryItem[]>(() => {
   if (hasText.value) {
     items.push({
       label: '톤앤매너',
-      value: selectedToneLabels.value.join(', '),
+      value: selectedToneItems.value.map((item) => item.label).join(', '),
       stepIndex: stepIndexOfKey('textToneLength'),
     })
     items.push({
       label: '분량',
-      value: optionLabel(lengthOptions.value, form.length, form.customLength),
+      value: resolveMarketingOptionLabel(lengthOptions.value, form.length, form.customLength),
       stepIndex: stepIndexOfKey('textToneLength'),
     })
     items.push({
@@ -1193,7 +1121,7 @@ const confirmSummaryItems = computed<MarketingConfirmSummaryItem[]>(() => {
     })
     items.push({
       label: '이미지 분위기',
-      value: selectedAtmosphereLabels.value.join(', '),
+      value: selectedAtmosphereItems.value.map((item) => item.label).join(', '),
       stepIndex: stepIndexOfKey('imageStyle'),
     })
     items.push({ label: '이미지 스타일', value: displayImageType.value, stepIndex: stepIndexOfKey('imageStyle') })
@@ -1255,17 +1183,25 @@ const selectCtaCustom = () => {
   }
 }
 
+const toggleLimitedMultiSelect = (selected: string[], value: string, max: number, maxMessage: string) => {
+  if (selected.includes(value)) return selected.filter((item) => item !== value)
+  if (selected.length >= max) {
+    openToast({ message: maxMessage, type: 'warning' })
+    return null
+  }
+  return [...selected, value]
+}
+
 const toggleTone = (value: string) => {
-  if (form.tones.includes(value)) {
-    form.tones = form.tones.filter((tone) => tone !== value)
-    if (value === 'OTHER') form.customTone = ''
-    return
-  }
-  if (form.tones.length >= MAX_TONES) {
-    openToast({ message: `톤앤매너는 최대 ${MAX_TONES}개까지 선택할 수 있습니다.`, type: 'warning' })
-    return
-  }
-  form.tones = [...form.tones, value]
+  const next = toggleLimitedMultiSelect(
+    form.tones,
+    value,
+    MAX_TONES,
+    `톤앤매너는 최대 ${MAX_TONES}개까지 선택할 수 있습니다.`,
+  )
+  if (!next) return
+  form.tones = next
+  if (value === 'OTHER' && !next.includes('OTHER')) form.customTone = ''
 }
 
 const selectLength = (value: string) => {
@@ -1284,17 +1220,14 @@ const syncVisualStyle = () => {
 }
 
 const toggleAtmosphere = (value: string) => {
-  const index = selectedAtmospheres.value.indexOf(value)
-  if (index >= 0) {
-    selectedAtmospheres.value.splice(index, 1)
-    syncVisualStyle()
-    return
-  }
-  if (selectedAtmospheres.value.length >= MAX_ATMOSPHERES) {
-    openToast({ message: `이미지 분위기는 최대 ${MAX_ATMOSPHERES}개까지 선택할 수 있습니다.`, type: 'warning' })
-    return
-  }
-  selectedAtmospheres.value.push(value)
+  const next = toggleLimitedMultiSelect(
+    selectedAtmospheres.value,
+    value,
+    MAX_ATMOSPHERES,
+    `이미지 분위기는 최대 ${MAX_ATMOSPHERES}개까지 선택할 수 있습니다.`,
+  )
+  if (!next) return
+  selectedAtmospheres.value = next
   syncVisualStyle()
 }
 
@@ -1303,9 +1236,6 @@ const toggleAtmosphere = (value: string) => {
 const aspectRatioMode = ref<'preset' | 'custom' | ''>('')
 const customAspectWidth = ref('')
 const customAspectHeight = ref('')
-
-const isPresetAspectRatioMode = computed(() => aspectRatioMode.value === 'preset')
-const isCustomAspectRatioMode = computed(() => aspectRatioMode.value === 'custom')
 
 const USAGE_DEFAULT_ASPECT_RATIO: Record<string, (typeof aspectRatioPresets)[number]> = {
   BANNER: '16:9',
@@ -1401,200 +1331,110 @@ const isAspectRatioFilled = () => {
   return false
 }
 
-const validateAspectRatio = async () => {
-  if (aspectRatioMode.value === 'custom') {
-    syncCustomAspectRatio()
-  }
-
-  if (aspectRatioMode.value === 'preset') {
-    if (!form.aspectRatio) {
-      openToast({ message: '화면 비율을 선택해 주세요.', type: 'warning' })
-      await focusMarketingField(aspectRatioFieldRef.value)
-      return false
-    }
-    return true
-  }
-
-  if (aspectRatioMode.value === 'custom') {
-    const width = customAspectWidth.value.trim()
-    const height = customAspectHeight.value.trim()
-    if (!width || Number(width) <= 0) {
-      openToast({ message: '화면 비율의 가로 값을 입력해 주세요.', type: 'warning' })
-      await focusMarketingField(aspectRatioFieldRef.value, customAspectWidthInputRef.value)
-      return false
-    }
-    if (!height || Number(height) <= 0) {
-      openToast({ message: '화면 비율의 세로 값을 입력해 주세요.', type: 'warning' })
-      await focusMarketingField(aspectRatioFieldRef.value, customAspectHeightInputRef.value)
-      return false
-    }
-    return true
-  }
-
-  openToast({ message: '화면 비율을 선택하거나 직접 입력해 주세요.', type: 'warning' })
-  await focusMarketingField(aspectRatioFieldRef.value)
-  return false
-}
-
 // ─── 유효성 검사 ─────────────────────────────────────────────────────────────
 
-/** 스텝별 필수값 충족 여부 (토스트 없이) */
-const isStepFilled = (stepIndex: number) => {
-  const key = detailSteps.value[stepIndex]?.key
-  if (key === 'setup') {
-    if (!form.contentType) return false
-    if (channelOptions.value.length && !form.channel) return false
-    if (form.channel === 'OTHER' && !form.customChannel.trim()) return false
-    return form.outputs.length > 0
-  }
-  if (key === 'purpose') {
-    if (hasText.value && purposeOptions.value.length) {
-      if (!form.purpose) return false
-      if (form.purpose === 'OTHER' && !form.customPurpose.trim()) return false
-    } else if (!form.purpose.trim()) {
-      return false
-    }
-    if (!form.promotionInformation.trim()) return false
-    if (form.referenceFiles.length > 5) return false
-    return true
-  }
-  if (key === 'audienceMessage') {
-    if (!form.audience) return false
-    if (form.audience === 'OTHER' && !form.customAudience.trim()) return false
-    if (!form.keyMessage.trim()) return false
-    if (hasText.value && !form.customCallToAction.trim()) return false
-    return true
-  }
-  if (key === 'textToneLength') {
-    if (!form.tones.length || (form.tones.includes('OTHER') && !form.customTone.trim())) return false
-    if (lengthOptions.value.length && !form.length) return false
-    if (form.length === 'CUSTOM' && !form.customLength.trim()) return false
-    if (workflow.value.outputSections.length && !form.outputSections.length) return false
-    return true
-  }
-  if (key === 'imageStyle') {
-    if (!isAspectRatioFilled()) return false
-    if (!selectedAtmospheres.value.length) return false
-    if (!form.imageType) return false
-    return true
-  }
-  if (key === 'confirm') return form.variantCount >= 1
-  return false
+type StepValidationResult = {
+  valid: boolean
+  message?: string
+  focus?: () => Promise<void>
 }
 
-const validateCurrentStep = async () => {
-  const key = currentDetailStep.value.key
+const VALID_STEP: StepValidationResult = { valid: true }
+const invalidStep = (message: string, focus?: () => Promise<void>): StepValidationResult => ({
+  valid: false,
+  message,
+  focus,
+})
 
+/** 스텝 이동 가능 여부와 다음 버튼 검증에서 함께 사용하는 단일 검증 기준 */
+const validateStep = (stepIndex: number): StepValidationResult => {
+  const key = detailSteps.value[stepIndex]?.key
   if (key === 'setup') {
-    if (!form.contentType) {
-      openToast({ message: '콘텐츠 유형을 선택해 주세요.', type: 'warning' })
-      return false
-    }
-    if (channelOptions.value.length && !form.channel) {
-      openToast({ message: '게시 채널을 선택해 주세요.', type: 'warning' })
-      return false
-    }
-    if (form.channel === 'OTHER' && !form.customChannel.trim()) {
-      openToast({ message: '게시 채널을 입력해 주세요.', type: 'warning' })
-      return false
-    }
+    if (!form.contentType) return invalidStep('콘텐츠 유형을 선택해 주세요.')
+    if (channelOptions.value.length && !form.channel) return invalidStep('게시 채널을 선택해 주세요.')
+    if (form.channel === 'OTHER' && !form.customChannel.trim()) return invalidStep('게시 채널을 입력해 주세요.')
     if (!form.outputs.length) {
-      openToast({ message: '생성할 결과(글/그림)를 하나 이상 선택해 주세요.', type: 'warning' })
-      await focusMarketingField(outputsFieldRef.value)
-      return false
+      return invalidStep('생성할 결과(글/그림)를 하나 이상 선택해 주세요.', () =>
+        focusMarketingField(outputsFieldRef.value),
+      )
     }
-    return true
+    return VALID_STEP
   }
-
   if (key === 'purpose') {
     if (hasText.value && purposeOptions.value.length) {
-      if (!form.purpose) {
-        openToast({ message: REQUIRED_FIELD_MESSAGE, type: 'warning' })
-        return false
-      }
-      if (form.purpose === 'OTHER' && !form.customPurpose.trim()) {
-        openToast({ message: REQUIRED_FIELD_MESSAGE, type: 'warning' })
-        return false
+      if (!form.purpose || (form.purpose === 'OTHER' && !form.customPurpose.trim())) {
+        return invalidStep(REQUIRED_FIELD_MESSAGE)
       }
     } else if (!form.purpose.trim()) {
-      openToast({ message: '제작 목적을 입력해 주세요.', type: 'warning' })
-      return false
+      return invalidStep('제작 목적을 입력해 주세요.')
     }
     if (!form.promotionInformation.trim()) {
-      openToast({ message: MARKETING_FORM_MESSAGES.PROMOTION_REQUIRED, type: 'warning' })
-      await focusMarketingField(promotionFieldRef.value)
-      return false
+      return invalidStep(MARKETING_FORM_MESSAGES.PROMOTION_REQUIRED, () => focusMarketingField(promotionFieldRef.value))
     }
-    if (form.referenceFiles.length > 5) {
-      openToast({ message: MARKETING_FORM_MESSAGES.REFERENCE_FILE_MAX, type: 'warning' })
-      return false
-    }
-    return true
+    if (form.referenceFiles.length > 5) return invalidStep(MARKETING_FORM_MESSAGES.REFERENCE_FILE_MAX)
+    return VALID_STEP
   }
-
   if (key === 'audienceMessage') {
-    if (!form.audience) {
-      openToast({ message: REQUIRED_FIELD_MESSAGE, type: 'warning' })
-      return false
+    if (!form.audience || (form.audience === 'OTHER' && !form.customAudience.trim())) {
+      return invalidStep(REQUIRED_FIELD_MESSAGE)
     }
-    if (form.audience === 'OTHER' && !form.customAudience.trim()) {
-      openToast({ message: REQUIRED_FIELD_MESSAGE, type: 'warning' })
-      return false
+    if (!form.keyMessage.trim() || (hasText.value && !form.customCallToAction.trim())) {
+      return invalidStep(REQUIRED_FIELD_MESSAGE)
     }
-    if (!form.keyMessage.trim()) {
-      openToast({ message: REQUIRED_FIELD_MESSAGE, type: 'warning' })
-      return false
-    }
-    if (hasText.value && !form.customCallToAction.trim()) {
-      openToast({ message: REQUIRED_FIELD_MESSAGE, type: 'warning' })
-      return false
-    }
-    return true
+    return VALID_STEP
   }
-
   if (key === 'textToneLength') {
-    if (!form.tones.length || (form.tones.includes('OTHER') && !form.customTone.trim())) {
-      openToast({ message: REQUIRED_FIELD_MESSAGE, type: 'warning' })
-      return false
-    }
-    if (lengthOptions.value.length && !form.length) {
-      openToast({ message: REQUIRED_FIELD_MESSAGE, type: 'warning' })
-      return false
-    }
-    if (form.length === 'CUSTOM' && !form.customLength.trim()) {
-      openToast({ message: REQUIRED_FIELD_MESSAGE, type: 'warning' })
-      return false
-    }
-    if (workflow.value.outputSections.length && !form.outputSections.length) {
-      openToast({ message: REQUIRED_FIELD_MESSAGE, type: 'warning' })
-      return false
-    }
-    return true
+    const isToneMissing = !form.tones.length || (form.tones.includes('OTHER') && !form.customTone.trim())
+    const isLengthMissing =
+      (lengthOptions.value.length > 0 && !form.length) || (form.length === 'CUSTOM' && !form.customLength.trim())
+    const isOutputSectionMissing = workflow.value.outputSections.length > 0 && !form.outputSections.length
+    return isToneMissing || isLengthMissing || isOutputSectionMissing ? invalidStep(REQUIRED_FIELD_MESSAGE) : VALID_STEP
   }
-
   if (key === 'imageStyle') {
-    if (!(await validateAspectRatio())) return false
-    if (selectedAtmospheres.value.length === 0) {
-      openToast({ message: '이미지 분위기를 선택해 주세요.', type: 'warning' })
-      return false
+    if (!isAspectRatioFilled()) {
+      if (aspectRatioMode.value === 'preset') {
+        return invalidStep('화면 비율을 선택해 주세요.', () => focusMarketingField(aspectRatioFieldRef.value))
+      }
+      if (aspectRatioMode.value === 'custom') {
+        const width = customAspectWidth.value.trim()
+        const isWidthMissing = !width || Number(width) <= 0
+        return invalidStep(
+          isWidthMissing ? '화면 비율의 가로 값을 입력해 주세요.' : '화면 비율의 세로 값을 입력해 주세요.',
+          () =>
+            focusMarketingField(
+              aspectRatioFieldRef.value,
+              isWidthMissing ? customAspectWidthInputRef.value : customAspectHeightInputRef.value,
+            ),
+        )
+      }
+      return invalidStep('화면 비율을 선택하거나 직접 입력해 주세요.', () =>
+        focusMarketingField(aspectRatioFieldRef.value),
+      )
     }
-    if (!form.imageType) {
-      openToast({ message: '이미지 스타일을 선택해 주세요.', type: 'warning' })
-      return false
-    }
-    return true
+    if (!selectedAtmospheres.value.length) return invalidStep('이미지 분위기를 선택해 주세요.')
+    if (!form.imageType) return invalidStep('이미지 스타일을 선택해 주세요.')
+    return VALID_STEP
   }
-
   if (key === 'confirm') {
-    if (form.variantCount < 1) {
-      openToast({ message: MARKETING_FORM_MESSAGES.VARIANT_COUNT_REQUIRED, type: 'warning' })
-      await focusMarketingField(variantCountFieldRef.value)
-      return false
-    }
-    return true
+    return form.variantCount >= 1
+      ? VALID_STEP
+      : invalidStep(MARKETING_FORM_MESSAGES.VARIANT_COUNT_REQUIRED, () =>
+          focusMarketingField(variantCountFieldRef.value),
+        )
   }
+  return invalidStep(REQUIRED_FIELD_MESSAGE)
+}
 
-  return true
+/** 스텝별 필수값 충족 여부 (토스트 없이) */
+const isStepFilled = (stepIndex: number) => validateStep(stepIndex).valid
+
+const validateCurrentStep = async () => {
+  if (currentDetailStep.value.key === 'imageStyle' && aspectRatioMode.value === 'custom') syncCustomAspectRatio()
+  const result = validateStep(currentStep.value)
+  if (result.valid) return true
+  openToast({ message: result.message ?? REQUIRED_FIELD_MESSAGE, type: 'warning' })
+  await result.focus?.()
+  return false
 }
 
 const onSubmit = () => {

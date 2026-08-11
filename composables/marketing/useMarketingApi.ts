@@ -7,6 +7,9 @@ import type {
   MarketingCreateRequest,
   MarketingCreateResponse,
   MarketingRefineRequest,
+  MarketingRefineResponse,
+  MarketingVariantUpdateRequest,
+  MarketingVariantUpdateResponse,
   MarketingStreamDoneEvent,
   MarketingStreamErrorEvent,
   MarketingStreamProgressEvent,
@@ -69,21 +72,25 @@ const subscribeMarketingEvents = (contentId: string, handlers: MarketingStreamHa
     finish()
   })
 
-  es.addEventListener('error', (event: MessageEvent) => {
-    try {
-      const data = event.data ? (JSON.parse(String(event.data)) as MarketingStreamErrorEvent) : undefined
-      handlers.onError?.(data ?? { message: '콘텐츠 생성 중 오류가 발생했습니다.' })
-    } catch {
-      handlers.onError?.({ message: '콘텐츠 생성 중 오류가 발생했습니다.' })
-    }
-    finish()
-  })
-
-  es.onerror = () => {
+  es.addEventListener('error', (event) => {
     if (settled) return
-    handlers.onError?.({ message: '마케팅 생성 이벤트 수신에 실패했습니다.' })
-    finish()
-  }
+    const messageEvent = event as MessageEvent
+    // 서버 named error 이벤트만 실패 처리 (연결 재시도용 error는 무시)
+    if (messageEvent?.data) {
+      try {
+        const data = JSON.parse(String(messageEvent.data)) as MarketingStreamErrorEvent
+        handlers.onError?.(data ?? { message: '마케팅 생성 이벤트 수신에 실패했습니다.' })
+      } catch {
+        handlers.onError?.({ message: '콘텐츠 생성 중 오류가 발생했습니다.' })
+      }
+      finish()
+      return
+    }
+    if (es.readyState === EventSource.CLOSED) {
+      handlers.onError?.({ message: '마케팅 생성 이벤트 수신에 실패했습니다.' })
+      finish()
+    }
+  })
 
   return finish
 }
@@ -99,12 +106,8 @@ export const useMarketingApi = () => {
   const fetchMarketingContent = (contentId: string) =>
     get<MarketingContentDetail>(`/marketing/contents/${encodeURIComponent(contentId)}`)
 
-  const fetchCreateMarketingContent = (payload: MarketingCreateRequest) => {
-    /** File[]는 JSON 직렬화 불가 — referenceFiles 제외 후 전송 */
-    const body = { ...payload } as MarketingCreateRequest & { referenceFiles?: File[] }
-    delete body.referenceFiles
-    return post<MarketingCreateResponse>('/marketing/contents', body)
-  }
+  const fetchCreateMarketingContent = (payload: MarketingCreateRequest) =>
+    post<MarketingCreateResponse>('/marketing/contents', payload)
 
   const fetchUpdateMarketingContentTitle = (contentId: string, title: string) =>
     put<{ successYn: boolean }>(`/marketing/contents/${encodeURIComponent(contentId)}`, { title })
@@ -113,8 +116,14 @@ export const useMarketingApi = () => {
     del<{ successYn: boolean }>(`/marketing/contents/${encodeURIComponent(contentId)}`)
 
   const fetchRefineMarketingVariant = (contentId: string, variantId: number, payload: MarketingRefineRequest) =>
-    post<MarketingCreateResponse>(
+    post<MarketingRefineResponse>(
       `/marketing/contents/${encodeURIComponent(contentId)}/variants/${variantId}/refine`,
+      payload,
+    )
+
+  const fetchUpdateMarketingVariant = (contentId: string, variantId: number, payload: MarketingVariantUpdateRequest) =>
+    put<MarketingVariantUpdateResponse>(
+      `/marketing/contents/${encodeURIComponent(contentId)}/variants/${variantId}`,
       payload,
     )
 
@@ -126,6 +135,7 @@ export const useMarketingApi = () => {
     fetchUpdateMarketingContentTitle,
     fetchDeleteMarketingContent,
     fetchRefineMarketingVariant,
+    fetchUpdateMarketingVariant,
     subscribeMarketingEvents,
   }
 }

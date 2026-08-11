@@ -6,7 +6,6 @@ import type {
   MarketingAuthoringImageVariant,
   MarketingAgentSummary,
   MarketingContentDetail,
-  MarketingContentListParams,
   MarketingContentSummary,
   MarketingOutputMode,
   MarketingStoredRequest,
@@ -42,11 +41,14 @@ export const MODE_FILTER_CHIPS = [
   { value: 'BOTH', label: '통합' },
 ] as const
 
+export const resolveMarketingOutputModeLabel = (mode: MarketingOutputMode) =>
+  MODE_FILTER_CHIPS.find((chip) => chip.value === mode)?.label ?? '문구'
+
 export const HISTORY_PERIOD_OPTIONS: { value: MarketingHistoryPeriodValue; label: string }[] = [
   { value: '', label: '전체 기간' },
-  { value: '30', label: '최근 30일' },
-  { value: '7', label: '최근 7일' },
   { value: '3', label: '최근 3일' },
+  { value: '7', label: '최근 7일' },
+  { value: '30', label: '최근 30일' },
 ]
 
 const {
@@ -57,6 +59,7 @@ const {
   fetchUpdateMarketingContentTitle,
   fetchDeleteMarketingContent,
   fetchRefineMarketingVariant,
+  fetchUpdateMarketingVariant,
   subscribeMarketingEvents,
 } = useMarketingApi()
 
@@ -69,9 +72,10 @@ const currentContent = ref<MarketingContentDetail | null>(null)
 const pendingResult = ref<MarketingAuthoringResult | null>(null)
 const pendingRequest = ref<MarketingStoredRequest | null>(null)
 const isSubmitting = ref(false)
+const refiningType = ref<'TEXT' | 'IMAGE' | null>(null)
+const refiningVariantId = ref<number | null>(null)
+const refineCompletedAt = ref(0)
 const generatingStep = ref<MarketingGeneratingStep>('')
-/** labels SSE — 요청 시안 개수 (글 완료 판정용) */
-const expectedVariantCount = ref(0)
 const editingContentId = ref('')
 const editingTitle = ref('')
 const historyTitleInputRef = ref<{ $el?: HTMLElement } | null>(null)
@@ -81,6 +85,27 @@ const historyModeFilter = ref<'' | MarketingOutputMode>('')
 const historyPeriodFilter = ref<MarketingHistoryPeriodValue>('')
 
 let filterTimer: ReturnType<typeof setTimeout> | null = null
+let activeStreamClose: (() => void) | null = null
+let activeStreamRequestId = 0
+let activeStreamIdleTimer: ReturnType<typeof setTimeout> | null = null
+let activeStreamTotalTimer: ReturnType<typeof setTimeout> | null = null
+let historyListRequestSeq = 0
+
+const MARKETING_STREAM_TOTAL_MS = 15 * 60 * 1000
+const MARKETING_STREAM_IDLE_MS = 3 * 60 * 1000
+
+const closeMarketingStream = () => {
+  activeStreamClose?.()
+  activeStreamClose = null
+  if (activeStreamIdleTimer) {
+    clearTimeout(activeStreamIdleTimer)
+    activeStreamIdleTimer = null
+  }
+  if (activeStreamTotalTimer) {
+    clearTimeout(activeStreamTotalTimer)
+    activeStreamTotalTimer = null
+  }
+}
 
 export const useMarketingStore = () => {
   const route = useRoute()
@@ -92,6 +117,7 @@ export const useMarketingStore = () => {
   const config = computed(() => selectedAgent.value?.config ?? null)
   const themeColorHex = computed(() => selectedAgent.value?.colorHex ?? MARKETING_AGENT_THEME_FALLBACK_HEX)
   const displayResult = computed(() => currentContent.value?.result ?? pendingResult.value)
+  const displayTitle = computed(() => String(currentContent.value?.title ?? '').trim())
   const displayRequest = computed(() => {
     const request = currentContent.value?.request ?? pendingRequest.value
     if (!request) return null
@@ -109,48 +135,19 @@ export const useMarketingStore = () => {
       pendingResult.value?.mode ??
       resolveMarketingSubmitMode(pendingRequest.value?.outputs ?? ['TEXT']),
   )
-  /** BOTH/TEXT — 요청 시안 수만큼 글이 도착했는지 (이미지 대기 헤더용) */
-  const areTextsReady = computed(() => {
-    const mode = generatingMode.value
-    if (mode === 'IMAGE') return false
-    const expected = expectedVariantCount.value || Number(pendingRequest.value?.variantCount ?? 0) || 0
-    if (expected <= 0) return false
-    const readyCount = (pendingResult.value?.variants ?? []).filter(
-      (item) => !!String(item.content ?? '').trim(),
-    ).length
-    return readyCount >= expected
-  })
-  /** BOTH/IMAGE — 생성 중이며 아직 이미지가 비어 있는 시안이 있는지 */
-  const areImagesPending = computed(() => {
-    if (!isSubmitting.value) return false
-    const mode = generatingMode.value
-    if (mode === 'TEXT') return false
-    if (mode === 'IMAGE') {
-      const expected = expectedVariantCount.value || Number(pendingRequest.value?.variantCount ?? 0) || 0
-      const imageCount = (pendingResult.value?.images ?? []).filter((item) => !!String(item.url ?? '').trim()).length
-      return expected > 0 ? imageCount < expected : imageCount === 0
-    }
-    const variants = pendingResult.value?.variants ?? []
-    if (!variants.length) return true
-    const images = pendingResult.value?.images ?? []
-    return variants.some(
-      (variant) => !images.some((image) => image.id === variant.id && !!String(image.url ?? '').trim()),
-    )
-  })
 
   const allHistoryItems = computed(() =>
     historyList.value.map((item) => {
-      const metaBadges = resolveMarketingSummaryLabels(item.summaryLabels, config.value)
+      const agentConfig = agents.value.find((agent) => agent.agentId === item.agentId)?.config ?? config.value ?? null
       return {
         contentId: item.contentId,
         mode: item.outputMode,
         displayTitle: item.title,
-        metaBadges,
+        metaBadges: resolveMarketingSummaryLabels(item.summaryLabels, agentConfig),
         createDt: formatDateTimeDisplay(item.createDt) || item.createDt || '-',
       }
     }),
   )
-  /** 검색·필터가 적용 중인지 — 결과 0건이어도 검색/필터 UI를 유지한다 */
   const hasActiveHistoryFilter = computed(
     () =>
       !!historySearchKeyword.value.trim() ||
@@ -165,15 +162,10 @@ export const useMarketingStore = () => {
   }
 
   const clearPending = () => {
+    closeMarketingStream()
     pendingResult.value = null
     pendingRequest.value = null
     generatingStep.value = ''
-    expectedVariantCount.value = 0
-  }
-
-  const applyLabelsProgress = (data: MarketingStreamProgressEvent) => {
-    const count = Number(data.variantCount ?? 0)
-    if (count > 0) expectedVariantCount.value = count
   }
 
   const mergeVariantProgress = (data: MarketingStreamProgressEvent) => {
@@ -183,12 +175,11 @@ export const useMarketingStore = () => {
     const recommended = !!data.recommended
 
     if (data.part === 'TEXT' || data.text !== undefined) {
-      const content = data.text ?? ''
       const variant: MarketingAuthoringVariant = {
         id,
         label,
         recommended,
-        content,
+        content: data.text ?? '',
       }
       const variants = [...(pendingResult.value.variants ?? [])]
       const index = variants.findIndex((item) => item.id === id)
@@ -232,14 +223,21 @@ export const useMarketingStore = () => {
   }
 
   const handleSelectHistoryList = async () => {
-    const response = await fetchMarketingContents({
-      keyword: historySearchKeyword.value.trim() || undefined,
-      contentType: historyContentTypeFilter.value || undefined,
-      outputMode: historyModeFilter.value || undefined,
-      periodDays: historyPeriodFilter.value ? Number(historyPeriodFilter.value) : undefined,
-      sort: 'MODIFY_DT_DESC',
-    })
-    historyList.value = response.list ?? []
+    const seq = ++historyListRequestSeq
+    try {
+      const response = await fetchMarketingContents({
+        keyword: historySearchKeyword.value.trim() || undefined,
+        contentType: historyContentTypeFilter.value || undefined,
+        outputMode: historyModeFilter.value || undefined,
+        periodDays: historyPeriodFilter.value ? Number(historyPeriodFilter.value) : undefined,
+        sort: 'MODIFY_DT_DESC',
+      })
+      if (seq !== historyListRequestSeq) return
+      historyList.value = response.list ?? []
+    } catch {
+      if (seq !== historyListRequestSeq) return
+      openToast({ message: '제작 내역을 불러오지 못했습니다.', type: 'error' })
+    }
   }
 
   const handleSelectContentDetail = async (contentId: string) => {
@@ -258,6 +256,9 @@ export const useMarketingStore = () => {
     openLoading({ text: '제작 내역을 불러오는 중...' })
     try {
       await handleSelectContentDetail(id)
+    } catch {
+      openToast({ message: '제작 내역을 불러오지 못했습니다.', type: 'error' })
+      pagePhase.value = 'list'
     } finally {
       closeLoading()
     }
@@ -279,62 +280,81 @@ export const useMarketingStore = () => {
   }
 
   const handleSubmit = async (payload: MarketingAuthoringSubmitPayload) => {
-    if (!selectedAgent.value || isSubmitting.value) return
-    const storedRequest: MarketingStoredRequest = { ...payload, referenceFiles: [] }
+    const agent = selectedAgent.value
+    if (!agent || isSubmitting.value) return
+
+    const { referenceFiles: _referenceFiles, ...requestWithoutFiles } = payload
+    const storedRequest: MarketingStoredRequest = { ...requestWithoutFiles, referenceFiles: [] }
     pendingResult.value = buildMarketingPendingResultFromPayload(payload)
     pendingRequest.value = storedRequest
     generatingStep.value = ''
-    expectedVariantCount.value = Number(payload.variantCount ?? 0) || 0
     currentContent.value = null
     isSubmitting.value = true
     pagePhase.value = 'result'
+
     try {
-      const created = await fetchCreateMarketingContent({ ...storedRequest, agentId: selectedAgent.value.agentId })
+      const created = await fetchCreateMarketingContent({ ...storedRequest, agentId: agent.agentId })
       await navigateMarketing({ contentId: created.contentId })
 
-      await new Promise<void>((resolve, reject) => {
-        subscribeMarketingEvents(created.contentId, {
+      closeMarketingStream()
+      const requestId = ++activeStreamRequestId
+      const result = await new Promise<MarketingAuthoringResult>((resolve, reject) => {
+        const settle = (fn: () => void) => {
+          if (requestId !== activeStreamRequestId) return
+          closeMarketingStream()
+          fn()
+        }
+        const resetIdleTimer = () => {
+          if (activeStreamIdleTimer) clearTimeout(activeStreamIdleTimer)
+          activeStreamIdleTimer = setTimeout(() => {
+            settle(() => reject(new Error('마케팅 생성 응답 시간이 초과되었습니다.')))
+          }, MARKETING_STREAM_IDLE_MS)
+        }
+        resetIdleTimer()
+        activeStreamTotalTimer = setTimeout(() => {
+          settle(() => reject(new Error('마케팅 생성 제한 시간이 초과되었습니다.')))
+        }, MARKETING_STREAM_TOTAL_MS)
+
+        activeStreamClose = subscribeMarketingEvents(created.contentId, {
           onProgress: (data) => {
-            if (data.step === 'title' || data.step === 'labels' || data.step === 'variant') {
-              generatingStep.value = data.step
-            }
-            if (data.step === 'labels') applyLabelsProgress(data)
+            if (requestId !== activeStreamRequestId) return
+            resetIdleTimer()
+            generatingStep.value = data.step
             if (data.step === 'variant') mergeVariantProgress(data)
           },
-          onDone: async (event) => {
-            try {
-              if (!event.result) throw new Error('Empty marketing stream result')
-              const result = event.result
-              const mode = result.mode ?? resolveMarketingSubmitMode(payload.outputs)
-              if (mode === 'IMAGE' || mode === 'BOTH') {
-                const urls = (result.images ?? []).map((item) => String(item.url ?? '').trim()).filter(Boolean)
-                await preloadMarketingImages(urls)
-              }
-              currentContent.value = {
-                contentId: created.contentId,
-                agentId: selectedAgent.value!.agentId,
-                title: result.summary || payload.keyMessage.trim() || '마케팅 콘텐츠',
-                outputMode: mode,
-                contentType: payload.contentType,
-                summaryLabels: [],
-                createDt: '',
-                modifyDt: '',
-                request: storedRequest,
-                result: { ...result, mode },
-              }
-              clearPending()
-              await handleSelectHistoryList()
-              resolve()
-            } catch (error) {
-              reject(error instanceof Error ? error : new Error('Stream done failed'))
-            }
+          onDone: (event) => {
+            settle(() => {
+              if (event.result) resolve(event.result)
+              else reject(new Error('Empty marketing stream result'))
+            })
           },
           onError: (data) => {
-            reject(new Error(data?.message || '마케팅 생성 이벤트 수신에 실패했습니다.'))
+            settle(() => reject(new Error(data?.message || '마케팅 생성 이벤트 수신에 실패했습니다.')))
           },
         })
       })
+
+      const mode = result.mode ?? resolveMarketingSubmitMode(payload.outputs)
+      if (mode !== 'TEXT') {
+        const urls = (result.images ?? []).map((item) => String(item.url ?? '').trim()).filter(Boolean)
+        await preloadMarketingImages(urls)
+      }
+      currentContent.value = {
+        contentId: created.contentId,
+        agentId: agent.agentId,
+        title: result.summary || payload.keyMessage.trim() || '마케팅 콘텐츠',
+        outputMode: mode,
+        contentType: payload.contentType,
+        summaryLabels: [],
+        createDt: '',
+        modifyDt: '',
+        request: storedRequest,
+        result: { ...result, mode },
+      }
+      clearPending()
+      await handleSelectHistoryList()
     } catch {
+      closeMarketingStream()
       clearPending()
       currentContent.value = null
       pagePhase.value = 'form'
@@ -352,26 +372,71 @@ export const useMarketingStore = () => {
       cancelText: '취소',
     })
     if (!confirmed) return
-    await fetchDeleteMarketingContent(contentId)
-    openToast({ message: '제작 내역이 삭제되었습니다.' })
-    await handleSelectHistoryList()
-  }
-
-  const handleEditWithAgent = async (payload: { variantId: number; content: string; request: string }) => {
-    if (!currentContent.value || isSubmitting.value) return
-    const contentId = currentContent.value.contentId
-    isSubmitting.value = true
     try {
-      await fetchRefineMarketingVariant(contentId, payload.variantId, {
-        content: payload.content,
-        request: payload.request,
-      })
-      currentContent.value = await fetchMarketingContent(contentId)
+      await fetchDeleteMarketingContent(contentId)
+      openToast({ message: '제작 내역이 삭제되었습니다.' })
       await handleSelectHistoryList()
     } catch {
-      openToast({ message: '시안 보완 요청에 실패했습니다.', type: 'error' })
+      openToast({ message: '제작 내역 삭제에 실패했습니다.', type: 'error' })
+    }
+  }
+
+  const handleEditWithAgent = async (payload: {
+    variantId: number
+    content: string
+    request: string
+    type: 'TEXT' | 'IMAGE'
+  }) => {
+    if (!currentContent.value || isSubmitting.value || refiningType.value) return
+    const contentId = currentContent.value.contentId
+    isSubmitting.value = true
+    refiningType.value = payload.type
+    refiningVariantId.value = payload.variantId
+    try {
+      const response = await fetchRefineMarketingVariant(contentId, payload.variantId, {
+        content: payload.content,
+        request: payload.request,
+        type: payload.type,
+      })
+      if (response?.successYn === false) {
+        openToast({
+          message: response.message || '보완 요청에 실패했습니다.',
+          type: 'error',
+        })
+        return
+      }
+      currentContent.value = await fetchMarketingContent(contentId)
+      await handleSelectHistoryList()
+      refineCompletedAt.value = Date.now()
+    } catch {
+      openToast({
+        message: '보완 요청에 실패했습니다.',
+        type: 'error',
+      })
     } finally {
+      refiningType.value = null
+      refiningVariantId.value = null
       isSubmitting.value = false
+    }
+  }
+
+  const handleSaveVariantText = async (payload: { variantId: number; textContent: string }) => {
+    if (!currentContent.value || isSubmitting.value || refiningType.value) return false
+    const contentId = currentContent.value.contentId
+    try {
+      const response = await fetchUpdateMarketingVariant(contentId, payload.variantId, {
+        textContent: payload.textContent,
+      })
+      if (!response.successYn) {
+        openToast({ message: response.message || '시안 저장에 실패했습니다.', type: 'error' })
+        return false
+      }
+      currentContent.value = await fetchMarketingContent(contentId)
+      openToast({ message: '시안을 저장했습니다.' })
+      return true
+    } catch {
+      openToast({ message: '시안 저장에 실패했습니다.', type: 'error' })
+      return false
     }
   }
 
@@ -401,10 +466,16 @@ export const useMarketingStore = () => {
       await focusHistoryTitleInput()
       return
     }
-    await fetchUpdateMarketingContentTitle(contentId, title)
-    const item = historyList.value.find((history) => history.contentId === contentId)
-    if (item) item.title = title
-    handleCancelHistoryTitle()
+    try {
+      await fetchUpdateMarketingContentTitle(contentId, title)
+      const item = historyList.value.find((history) => history.contentId === contentId)
+      if (item) item.title = title
+      handleCancelHistoryTitle()
+      openToast({ message: '제작 내역 이름을 저장했습니다.' })
+    } catch {
+      openToast({ message: '제작 내역 이름 저장에 실패했습니다.', type: 'error' })
+      await focusHistoryTitleInput()
+    }
   }
 
   const handleToggleHistoryTitleEdit = async (item: { contentId: string; displayTitle: string }) => {
@@ -440,6 +511,12 @@ export const useMarketingStore = () => {
     }
   }
 
+  const cleanupMarketingSession = () => {
+    clearHistoryFilterTimer()
+    closeMarketingStream()
+    historyListRequestSeq += 1
+  }
+
   watch([historySearchKeyword, historyContentTypeFilter, historyModeFilter, historyPeriodFilter], () => {
     if (pagePhase.value !== 'list') return
     clearHistoryFilterTimer()
@@ -449,6 +526,7 @@ export const useMarketingStore = () => {
   return {
     CONTENT_TYPE_FILTER_CHIPS,
     MODE_FILTER_CHIPS,
+    resolveMarketingOutputModeLabel,
     HISTORY_PERIOD_OPTIONS,
     pagePhase,
     selectedAgent,
@@ -464,19 +542,22 @@ export const useMarketingStore = () => {
     editingTitle,
     historyTitleInputRef,
     displayResult,
+    displayTitle,
     displayRequest,
     isSubmitting,
+    refiningType,
+    refiningVariantId,
+    refineCompletedAt,
     generatingMode,
     generatingStep,
-    areTextsReady,
-    areImagesPending,
     handleBootstrap,
-    clearHistoryFilterTimer,
+    cleanupMarketingSession,
     handleBackToList,
     handleStartNew,
     handleDeleteHistory,
     handleSubmit,
     handleEditWithAgent,
+    handleSaveVariantText,
     handleHistoryRowClick,
     isEditingHistory,
     handleToggleHistoryTitleEdit,
