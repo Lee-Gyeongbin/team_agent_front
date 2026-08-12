@@ -30,6 +30,8 @@ import type {
   SectionChatResult,
   SlideRenderProgressData,
   SlideRenderDoneData,
+  SlideImageGenProgressData,
+  SlideImageGenDoneData,
   PtFileUploadUrlRequest,
   PtFileSavePayload,
   PtFileSaveResponse,
@@ -671,6 +673,57 @@ export const useProposalApi = () => {
   }
 
   /**
+   * 슬라이드 단건 인포그래픽 이미지 생성 SSE (버튼 클릭 시 호출)
+   * connected → progress(llm) → progress(parse) → progress(image_gen) → done
+   *
+   * @param slideId 생성 대상 슬라이드 ID
+   * @param modelId LLM 모델 ID
+   * @param agentId 에이전트 ID
+   */
+  const streamGenerateSlideImage = (
+    slideId: string,
+    modelId: string,
+    agentId: string,
+    callbacks: {
+      onProgress?: (data: SlideImageGenProgressData) => void
+      onDone?: (data: SlideImageGenDoneData) => void
+      onError?: (message: string) => void
+    },
+  ): EventSource => {
+    const params = new URLSearchParams({ slideId, modelId, agentId })
+    const es = new EventSource(`/api/ai/proposal/streamGenerateSlideImage.do?${params.toString()}`)
+
+    es.addEventListener('progress', (e) => {
+      try {
+        callbacks.onProgress?.(JSON.parse((e as MessageEvent).data) as SlideImageGenProgressData)
+      } catch {
+        /* ignore */
+      }
+    })
+    es.addEventListener('done', (e) => {
+      try {
+        callbacks.onDone?.(JSON.parse((e as MessageEvent).data) as SlideImageGenDoneData)
+      } catch {
+        /* ignore */
+      } finally {
+        es.close()
+      }
+    })
+    es.addEventListener('error', (e) => {
+      try {
+        const me = e as MessageEvent
+        callbacks.onError?.(me.data ? (JSON.parse(me.data) as { message: string }).message : 'SSE 연결 오류')
+      } catch {
+        callbacks.onError?.('SSE 연결 오류')
+      } finally {
+        es.close()
+      }
+    })
+
+    return es
+  }
+
+  /**
    * E-4: 소목차 확인 → 다음 소목차 전환
    * 미완료 슬라이드 있으면 confirm 거부.
    * done=true 시 출력 단계(Step F)로 이동.
@@ -822,6 +875,7 @@ export const useProposalApi = () => {
     fetchSelectSectionSlides,
     fetchChatSection,
     streamRenderSectionImages,
+    streamGenerateSlideImage,
     fetchConfirmSection,
     fetchViewSlideImage,
     fetchStartExport,

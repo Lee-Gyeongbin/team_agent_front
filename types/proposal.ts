@@ -433,6 +433,19 @@ export interface SlideRenderDoneData {
   success: number
 }
 
+/** 슬라이드 단건 이미지 생성 SSE — 진행 이벤트 */
+export interface SlideImageGenProgressData {
+  step?: 'llm' | 'parse' | 'image_gen'
+}
+
+/** 슬라이드 단건 이미지 생성 SSE — 완료 이벤트 */
+export interface SlideImageGenDoneData {
+  success: boolean
+  renderedImagePath?: string
+  renderStatusCd?: '003' | '004'
+  errorMessage?: string
+}
+
 /** D-4 소목차 확인 결과 */
 export interface SectionConfirmResult {
   ptProjectId: string

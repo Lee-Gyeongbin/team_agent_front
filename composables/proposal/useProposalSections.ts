@@ -15,7 +15,7 @@ const SECTION_GEN_STEP_MESSAGES: Record<string, string> = {
   llm: 'AI가 슬라이드 내용을 생성하는 중...',
   parse: '슬라이드 구조를 분석하는 중...',
   save: '슬라이드를 저장하는 중...',
-  render: '슬라이드 스타일을 조립하는 중...',
+  // render 스텝 제거 — Stage3.5(이미지 힌트 자동 조립) 삭제로 인해 D-1에서 더 이상 전송되지 않음
 }
 
 export const useProposalSections = (ptProjectId: Ref<string>) => {
@@ -99,8 +99,8 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
   }
 
   /**
-   * D-1: 소목차 슬라이드 생성 (Stage3 + Stage3.5)
-   * SSE 스트림으로 진행상황 수신
+   * D-1: 소목차 슬라이드 생성 (Stage3)
+   * SSE 스트림으로 진행상황 수신 (load → llm → parse → save → done)
    *
    * @param tocId   소목차 ID
    * @param modelId LLM 모델 ID

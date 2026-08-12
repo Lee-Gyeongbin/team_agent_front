@@ -136,12 +136,12 @@
               >
                 {{ activeSlide.conclusionRibbonTxt }}
               </div>
-              <!-- 실패 표시 -->
+              <!-- 004: 이미지 생성 실패 표시 -->
               <div
                 v-if="activeSlide.renderStatusCd === '004'"
                 class="pt-slide-fail"
               >
-                렌더링 실패 — 재생성 버튼을 눌러주세요
+                이미지 생성 실패
               </div>
             </div>
 
@@ -150,7 +150,51 @@
               v-if="activeSlide"
               class="pt-slide-image-status"
             >
-              <template v-if="activeSlide.renderedImagePath">
+              <!--
+                001: D-3 채팅으로 본문이 변경된 상태 (이미지 재생성 대기)
+                    renderedImagePath가 있으면 기존 이미지를 "이전 이미지" 레이블로 볼 수 있게 함.
+                    재생성 버튼은 이미지 생성 로직 개선 중이므로 임시 비활성.
+              -->
+              <template v-if="activeSlide.renderStatusCd === '001'">
+                <span class="pt-slide-image-changed">
+                  <i class="icon-edit size-14" />
+                  본문이 변경됨 · 이미지 재생성 필요
+                </span>
+                <UiButton
+                  v-if="activeSlide.renderedImagePath"
+                  variant="outline"
+                  size="sm"
+                  @click="openImageModal"
+                >
+                  <template #icon-left>
+                    <i class="icon-view size-14" />
+                  </template>
+                  이전 이미지 보기
+                </UiButton>
+                <UiButton
+                  variant="outline"
+                  size="sm"
+                  :loading="isGeneratingSlideImage"
+                  :disabled="isGeneratingSlideImage"
+                  @click="onGenerateSlideImage"
+                >
+                  <template #icon-left>
+                    <i class="icon-refresh size-14" />
+                  </template>
+                  이미지 재생성
+                </UiButton>
+              </template>
+
+              <!-- 002: 이미지 생성 중 -->
+              <template v-else-if="activeSlide.renderStatusCd === '002'">
+                <span class="pt-slide-image-rendering">
+                  <i class="icon-sync size-16 pt-spin" />
+                  {{ slideImageGenMsg || '인포그래픽 생성 중...' }}
+                </span>
+              </template>
+
+              <!-- 003 + renderedImagePath: 이미지 있음 (정상 완료) -->
+              <template v-else-if="activeSlide.renderedImagePath">
                 <UiButton
                   variant="outline"
                   size="sm"
@@ -164,8 +208,9 @@
                 <UiButton
                   variant="outline"
                   size="sm"
-                  :loading="isRegeneratingImage"
-                  @click="onRegenerateImage"
+                  :loading="isGeneratingSlideImage"
+                  :disabled="isGeneratingSlideImage"
+                  @click="onGenerateSlideImage"
                 >
                   <template #icon-left>
                     <i class="icon-refresh size-14" />
@@ -173,18 +218,30 @@
                   인포그래픽 재생성
                 </UiButton>
               </template>
-              <template v-else-if="activeSlide.renderStatusCd === '002'">
-                <span class="pt-slide-image-rendering">
-                  <i class="icon-sync size-16 pt-spin" />
-                  인포그래픽 생성 중...
-                </span>
+
+              <!-- 004: 생성 실패 → 재시도 -->
+              <template v-else-if="activeSlide.renderStatusCd === '004'">
+                <UiButton
+                  variant="outline"
+                  size="sm"
+                  :loading="isGeneratingSlideImage"
+                  :disabled="isGeneratingSlideImage"
+                  @click="onGenerateSlideImage"
+                >
+                  <template #icon-left>
+                    <i class="icon-refresh size-14" />
+                  </template>
+                  인포그래픽 재시도
+                </UiButton>
               </template>
+              <!-- 003 이미지 없음: 최초 생성 -->
               <template v-else>
                 <UiButton
                   variant="outline"
                   size="sm"
-                  :loading="isRegeneratingImage"
-                  @click="onRegenerateImage"
+                  :loading="isGeneratingSlideImage"
+                  :disabled="isGeneratingSlideImage"
+                  @click="onGenerateSlideImage"
                 >
                   <template #icon-left>
                     <i class="icon-refresh size-14" />
@@ -202,7 +259,11 @@
               :key="slide.slideId"
               :class="[
                 'pt-slide-thumb',
-                { 'is-active': idx === activeSlideIndex, 'is-fail': slide.renderStatusCd === '004' },
+                {
+                  'is-active': idx === activeSlideIndex,
+                  'is-edited': slide.renderStatusCd === '001',
+                  'is-fail': slide.renderStatusCd === '004',
+                },
               ]"
               @click="activeSlideIndex = idx"
             >
@@ -348,7 +409,7 @@
 </template>
 
 <script setup lang="ts">
-import type { PtSection, PtSectionChatMessage, PtSlide, PtTocItem, SlideComponent } from '~/types/proposal'
+import type { PtSection, PtSectionChatMessage, PtSlide, PtTocItem, SlideComponent, SlideImageGenProgressData, SlideImageGenDoneData } from '~/types/proposal'
 import { useProposalSectionChat } from '~/composables/proposal/useProposalSectionChat'
 import { openToast } from '~/composables/useToast'
 import { openLoading, updateLoadingText, closeLoading } from '~/composables/useLoading'
@@ -359,7 +420,7 @@ const RENDER_IMAGE_STEP_MESSAGES: Record<string, string> = {
   render: '이미지를 생성하는 중...',
 }
 
-const { fetchViewSlideImage, streamRenderSectionImages } = useProposalApi()
+const { fetchViewSlideImage, streamRenderSectionImages, streamGenerateSlideImage } = useProposalApi()
 
 interface Props {
   sectionList: PtSection[]
@@ -438,6 +499,11 @@ const onResizeStart = (target: 'left' | 'right', e: MouseEvent) => {
   document.addEventListener('mousemove', onMouseMove)
   document.addEventListener('mouseup', onMouseUp)
 }
+
+// 슬라이드 단건 이미지 생성 상태
+const isGeneratingSlideImage = ref(false)
+const slideImageGenMsg = ref('')
+let slideImageEventSource: EventSource | null = null
 
 // 인포그래픽 이미지 모달
 const isImageModalOpen = ref(false)
@@ -569,6 +635,61 @@ const onSendChat = () => {
   chatInput.value = ''
 }
 
+/** 슬라이드 단건 인포그래픽 이미지 생성 (버튼 클릭 시 호출) */
+const onGenerateSlideImage = () => {
+  if (!activeSlide.value || isGeneratingSlideImage.value) return
+
+  const targetSlideId = activeSlide.value.slideId
+  isGeneratingSlideImage.value = true
+  slideImageGenMsg.value = '대기 중...'
+
+  // 즉시 002(생성중)으로 UI 반영
+  const initializing = props.currentSlides.map((s) =>
+    s.slideId === targetSlideId ? { ...s, renderStatusCd: '002' as const } : s,
+  )
+  emit('slides-updated', initializing as PtSlide[])
+
+  const STEP_MESSAGES: Record<string, string> = {
+    llm: 'AI가 이미지 구성을 설계하는 중...',
+    parse: '구성 정리 중...',
+    image_gen: '이미지를 생성하는 중...',
+  }
+
+  slideImageEventSource?.close()
+  slideImageEventSource = streamGenerateSlideImage(targetSlideId, props.modelId, props.agentId, {
+    onProgress: (data: SlideImageGenProgressData) => {
+      if (data.step && STEP_MESSAGES[data.step]) {
+        slideImageGenMsg.value = STEP_MESSAGES[data.step]
+      }
+    },
+    onDone: (data: SlideImageGenDoneData) => {
+      isGeneratingSlideImage.value = false
+      slideImageGenMsg.value = ''
+      const newStatusCd = data.success ? '003' : (data.renderStatusCd ?? '004')
+      const updated = props.currentSlides.map((s) =>
+        s.slideId === targetSlideId
+          ? { ...s, renderStatusCd: newStatusCd as PtSlide['renderStatusCd'], ...(data.renderedImagePath ? { renderedImagePath: data.renderedImagePath } : {}) }
+          : s,
+      )
+      emit('slides-updated', updated as PtSlide[])
+      if (data.success) {
+        openToast({ message: '인포그래픽 이미지가 생성되었습니다.' })
+      } else {
+        openToast({ message: data.errorMessage || '이미지 생성에 실패했습니다.', type: 'error' })
+      }
+    },
+    onError: () => {
+      isGeneratingSlideImage.value = false
+      slideImageGenMsg.value = ''
+      const updated = props.currentSlides.map((s) =>
+        s.slideId === targetSlideId ? { ...s, renderStatusCd: '004' as const } : s,
+      )
+      emit('slides-updated', updated as PtSlide[])
+      openToast({ message: '이미지 생성 중 오류가 발생했습니다.', type: 'error' })
+    },
+  })
+}
+
 const onRegenerateImage = () => {
   if (!props.activeSection || isRegeneratingImage.value) return
   isRegeneratingImage.value = true
@@ -633,6 +754,7 @@ const onConfirm = () => {
 
 onUnmounted(() => {
   renderEventSource?.close()
+  slideImageEventSource?.close()
   document.body.classList.remove('is-resizing') // 안전 정리
 })
 </script>
