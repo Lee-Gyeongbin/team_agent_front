@@ -570,6 +570,10 @@ export interface PtTemplate {
   errorMsg: string | null
   /** 템플릿 프레임 이미지 NCP 경로 (Step D 확정 후 비동기 생성) */
   frameImagePath: string | null
+  /** 표지 배경 이미지 NCP 경로 */
+  coverImagePath: string | null
+  /** 표지 이미지 생성 상태 코드 (PT000007 재사용: 001=대기, 002=생성중, 003=완료, 004=실패) */
+  coverGenStatusCd: PtTemplateGenStatusCd | null
   createDt: string
   modifyDt: string | null
 }

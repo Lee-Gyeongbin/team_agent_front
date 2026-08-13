@@ -53,6 +53,11 @@
                 {{ footerStatus === 'done' ? '완료' : footerStatus === 'fail' ? '실패' : '대기' }}
               </span>
             </div>
+            <!-- 표지 상태 (TODO: 백엔드 연동 필요 - 실제 표지 생성 상태 코드로 교체) -->
+            <div class="pt-template-status-item">
+              <span class="pt-template-status-label">표지</span>
+              <span class="pt-template-status-pill is-wait">미생성</span>
+            </div>
           </div>
 
           <!-- 적용 컬러 스와치 -->
@@ -77,14 +82,27 @@
 
           <!-- 액션 버튼들 -->
           <div class="pt-template-gen-actions">
-            <UiButton
-              variant="secondary"
-              size="sm"
-              :disabled="isGenerating"
-              @click="onRegenerate"
-            >
-              {{ isGenerating ? '재생성 중...' : '템플릿 재생성' }}
-            </UiButton>
+            <!-- 본문형: 템플릿 재생성 / 표지형: 표지 재생성 -->
+            <template v-if="selectedLayoutType === 'body'">
+              <UiButton
+                variant="secondary"
+                size="sm"
+                :disabled="isGenerating"
+                @click="onRegenerate"
+              >
+                {{ isGenerating ? '재생성 중...' : '템플릿 재생성' }}
+              </UiButton>
+            </template>
+            <template v-else>
+              <UiButton
+                variant="secondary"
+                size="sm"
+                :disabled="isRegeneratingCover"
+                @click="onRegenerateCover"
+              >
+                {{ isRegeneratingCover ? '재생성 중...' : '표지 재생성' }}
+              </UiButton>
+            </template>
 
             <UiButton
               variant="primary"
@@ -118,7 +136,9 @@
                 표지형
               </button>
             </div>
+            <!-- 슬롯 편집은 본문형만 — 표지형은 이미지 생성만 하므로 미리보기만 표시 -->
             <UiTab
+              v-if="selectedLayoutType === 'body'"
               v-model="activeTab"
               :tabs="[
                 { label: '미리보기', value: 'preview' },
@@ -127,41 +147,63 @@
             />
           </div>
 
+          <!-- 센터 패널 액션 바 -->
+          <div class="pt-template-center-actions">
+            <!-- 본문형 탭 -->
+            <template v-if="selectedLayoutType === 'body'">
+              <span :class="['pt-badge', template?.genStatusCd === '003' ? 'is-ok' : 'is-gray']">
+                {{ template?.genStatusCd === '003' ? '완료' : '대기' }}
+              </span>
+            </template>
+            <!-- 표지형 -->
+            <template v-else>
+              <UiButton
+                variant="secondary"
+                size="xs"
+                :disabled="isRegeneratingCover"
+                @click="onRegenerateCover"
+              >
+                {{ isRegeneratingCover ? '재생성 중...' : '↻ 표지 재생성' }}
+              </UiButton>
+            </template>
+          </div>
+
           <!-- 미리보기 탭 -->
           <div
             v-if="activeTab === 'preview'"
             class="pt-template-preview"
-            :style="{ aspectRatio: previewAspectRatio }"
+            :style="selectedLayoutType === 'body' ? { aspectRatio: previewAspectRatio } : {}"
           >
-            <!-- 헤더 미리보기 — editableSlotCssStyle 사용으로 위치·스타일 모두 동기화 -->
-            <div
-              class="pt-template-preview-header"
-              :style="headerPreviewStyle"
-            >
-              <template v-if="editableHeaderSlots.length > 0">
-                <div
-                  v-for="slot in editableHeaderSlots"
-                  :key="slot.key"
-                  class="pt-template-slot"
-                  :style="editableSlotCssStyle(slot)"
-                >
-                  <span v-if="slot.key !== 'divider'">{{ resolveSlotText(slot) }}</span>
-                </div>
-              </template>
+            <!-- 본문형: 기존 헤더·본문·푸터 미리보기 (변경 없음) -->
+            <template v-if="selectedLayoutType === 'body'">
+              <!-- 헤더 미리보기 — editableSlotCssStyle 사용으로 위치·스타일 모두 동기화 -->
               <div
-                v-else
-                class="pt-template-preview-placeholder"
+                class="pt-template-preview-header"
+                :style="headerPreviewStyle"
               >
-                헤더 생성 중...
+                <template v-if="editableHeaderSlots.length > 0">
+                  <div
+                    v-for="slot in editableHeaderSlots"
+                    :key="slot.key"
+                    class="pt-template-slot"
+                    :style="editableSlotCssStyle(slot)"
+                  >
+                    <span v-if="slot.key !== 'divider'">{{ resolveSlotText(slot) }}</span>
+                  </div>
+                </template>
+                <div
+                  v-else
+                  class="pt-template-preview-placeholder"
+                >
+                  헤더 생성 중...
+                </div>
               </div>
-            </div>
 
-            <!-- 본문 영역 더미 콘텐츠 (미리보기 전용, 저장 대상 아님) -->
-            <div
-              class="pt-template-preview-body"
-              :style="dummyColorStyle"
-            >
-              <template v-if="selectedLayoutType === 'body'">
+              <!-- 본문 영역 더미 콘텐츠 (미리보기 전용, 저장 대상 아님) -->
+              <div
+                class="pt-template-preview-body"
+                :style="dummyColorStyle"
+              >
                 <div class="pt-dummy-body">
                   <div class="pt-dummy-eyebrow">1. 사업이해도</div>
                   <div class="pt-dummy-title">과업 배경 및 추진 방향</div>
@@ -199,43 +241,43 @@
                     </div>
                   </div>
                 </div>
-              </template>
-              <template v-else>
-                <div class="pt-dummy-cover">
-                  <div class="pt-dummy-cover-logo" />
-                  <div class="pt-dummy-cover-title">{{ props.projectNm || '프로젝트명' }}</div>
-                  <div class="pt-dummy-cover-sub">기술 제안서</div>
-                </div>
-              </template>
-            </div>
-
-            <!-- 푸터 미리보기 — editableSlotCssStyle 사용으로 위치·스타일 모두 동기화 -->
-            <div
-              class="pt-template-preview-footer"
-              :style="footerPreviewStyle"
-            >
-              <template v-if="editableFooterSlots.length > 0">
-                <div
-                  v-for="slot in editableFooterSlots"
-                  :key="slot.key"
-                  class="pt-template-slot"
-                  :style="editableSlotCssStyle(slot)"
-                >
-                  <span>{{ resolveSlotText(slot) }}</span>
-                </div>
-              </template>
-              <div
-                v-else
-                class="pt-template-preview-placeholder"
-              >
-                푸터 생성 중...
               </div>
-            </div>
+
+              <!-- 푸터 미리보기 — editableSlotCssStyle 사용으로 위치·스타일 모두 동기화 -->
+              <div
+                class="pt-template-preview-footer"
+                :style="footerPreviewStyle"
+              >
+                <template v-if="editableFooterSlots.length > 0">
+                  <div
+                    v-for="slot in editableFooterSlots"
+                    :key="slot.key"
+                    class="pt-template-slot"
+                    :style="editableSlotCssStyle(slot)"
+                  >
+                    <span>{{ resolveSlotText(slot) }}</span>
+                  </div>
+                </template>
+                <div
+                  v-else
+                  class="pt-template-preview-placeholder"
+                >
+                  푸터 생성 중...
+                </div>
+              </div>
+            </template>
+
+            <!-- 표지형: CoverPreviewTab 컴포넌트로 위임 -->
+            <CoverPreviewTab
+              v-else
+              :pt-project-id="props.ptProjectId"
+              :cover-image-path="template?.coverImagePath"
+            />
           </div>
 
-          <!-- 슬롯 편집 탭 — 미리보기와 동일한 컨테이너, 슬롯만 드래그·텍스트 편집 가능 -->
+          <!-- 슬롯 편집 탭 — 본문형 WYSIWYG 에디터 (표지형은 이미지 생성이라 슬롯 편집 없음) -->
           <div
-            v-else
+            v-else-if="selectedLayoutType === 'body'"
             class="pt-template-preview pt-template-editor"
             :style="{ aspectRatio: previewAspectRatio }"
           >
@@ -286,52 +328,43 @@
               class="pt-template-preview-body"
               :style="dummyColorStyle"
             >
-              <template v-if="selectedLayoutType === 'body'">
-                <div class="pt-dummy-body">
-                  <div class="pt-dummy-eyebrow">1. 사업이해도</div>
-                  <div class="pt-dummy-title">과업 배경 및 추진 방향</div>
-                  <div class="pt-dummy-grid">
-                    <ul class="pt-dummy-list">
-                      <li>핵심 요구사항 요약 문구가 이 위치에 표시됩니다</li>
-                      <li>두 번째 항목 예시 텍스트입니다</li>
-                      <li>세 번째 항목 예시 텍스트입니다</li>
-                      <li>네 번째 항목 예시 텍스트입니다</li>
-                    </ul>
-                    <div>
-                      <div class="pt-dummy-chart">
-                        <div
-                          class="pt-dummy-bar"
-                          style="height: 40%"
-                        />
-                        <div
-                          class="pt-dummy-bar is-accent"
-                          style="height: 65%"
-                        />
-                        <div
-                          class="pt-dummy-bar"
-                          style="height: 52%"
-                        />
-                        <div
-                          class="pt-dummy-bar is-accent"
-                          style="height: 88%"
-                        />
-                        <div
-                          class="pt-dummy-bar"
-                          style="height: 70%"
-                        />
-                      </div>
-                      <div class="pt-dummy-caption">연도별 처리 현황 (예시 데이터)</div>
+              <div class="pt-dummy-body">
+                <div class="pt-dummy-eyebrow">1. 사업이해도</div>
+                <div class="pt-dummy-title">과업 배경 및 추진 방향</div>
+                <div class="pt-dummy-grid">
+                  <ul class="pt-dummy-list">
+                    <li>핵심 요구사항 요약 문구가 이 위치에 표시됩니다</li>
+                    <li>두 번째 항목 예시 텍스트입니다</li>
+                    <li>세 번째 항목 예시 텍스트입니다</li>
+                    <li>네 번째 항목 예시 텍스트입니다</li>
+                  </ul>
+                  <div>
+                    <div class="pt-dummy-chart">
+                      <div
+                        class="pt-dummy-bar"
+                        style="height: 40%"
+                      />
+                      <div
+                        class="pt-dummy-bar is-accent"
+                        style="height: 65%"
+                      />
+                      <div
+                        class="pt-dummy-bar"
+                        style="height: 52%"
+                      />
+                      <div
+                        class="pt-dummy-bar is-accent"
+                        style="height: 88%"
+                      />
+                      <div
+                        class="pt-dummy-bar"
+                        style="height: 70%"
+                      />
                     </div>
+                    <div class="pt-dummy-caption">연도별 처리 현황 (예시 데이터)</div>
                   </div>
                 </div>
-              </template>
-              <template v-else>
-                <div class="pt-dummy-cover">
-                  <div class="pt-dummy-cover-logo" />
-                  <div class="pt-dummy-cover-title">{{ props.projectNm || '프로젝트명' }}</div>
-                  <div class="pt-dummy-cover-sub">기술 제안서</div>
-                </div>
-              </template>
+              </div>
             </div>
 
             <!-- 푸터 편집 영역 (미리보기와 동일한 크기·배경) -->
@@ -374,10 +407,12 @@
             </div>
           </div>
 
-          <!-- 슬롯 스타일 편집 패널 — 캔버스 외부, .pt-template-gen-center 직계 자식 -->
+          <!-- 슬롯 스타일 편집 패널 — 본문형 슬롯 편집 탭에서만 표시 -->
           <Transition name="pt-style-panel">
             <div
-              v-if="activeTab === 'slots' && selectedSlot && selectedSlot.key !== 'divider'"
+              v-if="
+                activeTab === 'slots' && selectedLayoutType === 'body' && selectedSlot && selectedSlot.key !== 'divider'
+              "
               class="pt-slot-style-panel"
             >
               <span class="pt-slot-style-panel-title">스타일 편집</span>
@@ -445,6 +480,7 @@
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
 import { openToast } from '~/composables/useToast'
 import type { PtTemplate } from '~/types/proposal'
+import CoverPreviewTab from './cover/CoverPreviewTab.vue'
 
 const props = defineProps<{
   ptProjectId: string
@@ -452,6 +488,8 @@ const props = defineProps<{
   agentId: string
   projectNm?: string
   orgNm?: string
+  companyNm?: string
+  submissionDate?: string
   /** "169"=16:9, "43"=4:3, "a4"=A4 세로  */
   docSize?: '169' | '43' | 'a4'
 }>()
@@ -460,8 +498,13 @@ const emit = defineEmits<{
   next: []
 }>()
 
-const { fetchSelectPtTemplate, fetchGeneratePtTemplate, fetchRegeneratePtTemplate, fetchUpdatePtTemplate } =
-  useProposalApi()
+const {
+  fetchSelectPtTemplate,
+  fetchGeneratePtTemplate,
+  fetchRegeneratePtTemplate,
+  fetchUpdatePtTemplate,
+  fetchGeneratePtCoverImage,
+} = useProposalApi()
 
 // ── 탭 / 로딩 상태 ─────────────────────────────────────────────────────────────
 
@@ -470,6 +513,24 @@ const activeTab = ref<'preview' | 'slots'>('preview')
 const selectedLayoutType = ref<'body' | 'cover'>('body')
 const isGenerating = ref(false)
 const isSaving = ref(false)
+
+const isRegeneratingCover = ref(false)
+
+const onRegenerateCover = async () => {
+  isRegeneratingCover.value = true
+  try {
+    const res = await fetchGeneratePtCoverImage(props.ptProjectId, props.agentId)
+    if (res.result === 'OK') {
+      template.value = res.data
+    } else {
+      openToast({ message: res.msg ?? '표지 이미지 생성에 실패했습니다.', type: 'error' })
+    }
+  } catch {
+    openToast({ message: '표지 이미지 생성 중 오류가 발생했습니다.', type: 'error' })
+  } finally {
+    isRegeneratingCover.value = false
+  }
+}
 
 // ── 파생 상태 ─────────────────────────────────────────────────────────────────
 
@@ -773,6 +834,11 @@ const initEditableSlots = () => {
 // template 또는 selectedLayoutType 변경 시 editable 슬롯 재초기화
 watch([template, selectedLayoutType], () => {
   initEditableSlots()
+})
+
+// 표지형은 슬롯 편집이 없으므로 미리보기로 되돌림
+watch(selectedLayoutType, (type) => {
+  if (type === 'cover') activeTab.value = 'preview'
 })
 
 // ── WYSIWYG CSS 스타일 ────────────────────────────────────────────────────────

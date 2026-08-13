@@ -4454,3 +4454,230 @@ body.is-resizing {
   }
   .pt-wt-grid { grid-template-columns: 1fr; }
 }
+
+// =============================================
+// Step 6 표지형 탭 UI (미리보기 + AI 보완 요청)
+// =============================================
+
+// ---- 안내 배너 (공통) ----
+.pt-cover-notice {
+  margin: $spacing-md;
+  padding: 10px $spacing-md;
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-radius: $border-radius-base;
+  @include typo($body-xsmall);
+  color: #92400E;
+  line-height: 1.6;
+}
+
+// ---- 표지형 미리보기 3컬럼 ----
+.pt-cover-grid {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  min-height: 540px;
+  border-top: 1px solid $color-border;
+}
+
+.pt-cover-col-title {
+  @include typo($body-xsmall-bold);
+  color: $color-text-muted;
+  letter-spacing: 0.02em;
+  margin-bottom: $spacing-sm;
+  text-transform: uppercase;
+}
+
+// 좌측: 미리보기 캔버스
+.pt-cover-canvas-col {
+  padding: $spacing-lg;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: $color-background;
+  border-right: 1px solid $color-border;
+}
+
+.pt-cover-canvas {
+  width: 100%;
+  max-width: 340px;
+  aspect-ratio: 210 / 297;
+  border-radius: $border-radius-lg;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(76, 29, 149, 0.2);
+  transition: background $transition-base;
+
+  &.is-empty {
+    background: $color-surface;
+    box-shadow: none;
+    border: 1px dashed $color-border;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &.is-clickable {
+    cursor: pointer;
+
+    &:hover .pt-cover-canvas-img {
+      opacity: 0.88;
+    }
+  }
+}
+
+.pt-cover-canvas-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: opacity $transition-fast;
+}
+
+.pt-cover-canvas-deco {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 85% 15%, rgba(245, 158, 11, 0.3), transparent 40%),
+    repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.04) 0 2px, transparent 2px 40px);
+}
+
+.pt-cover-canvas-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 24px 22px;
+  color: #fff;
+}
+
+.pt-cover-canvas-org {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.pt-cover-canvas-title {
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.35;
+  margin-bottom: 10px;
+  word-break: keep-all;
+}
+
+.pt-cover-canvas-bar {
+  width: 32px;
+  height: 3px;
+  background: #F59E0B;
+  border-radius: 2px;
+  margin-bottom: 10px;
+}
+
+.pt-cover-canvas-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9.5px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.pt-cover-canvas-caption {
+  margin-top: 12px;
+  @include typo($body-caption);
+  color: $color-text-muted;
+  text-align: center;
+}
+
+// 우측: 채팅 패널
+.pt-cover-chat-col {
+  padding: $spacing-md;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.pt-cover-chat-log {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  overflow-y: auto;
+  min-height: 200px;
+  max-height: 320px;
+  @include custom-scrollbar;
+}
+
+.pt-cover-chat-bubble {
+  padding: 9px 12px;
+  border-radius: $border-radius-lg;
+  @include typo($body-xsmall);
+  line-height: 1.6;
+  background: $color-surface;
+  color: $color-text-primary;
+  align-self: flex-start;
+
+  &.is-user {
+    align-self: flex-end;
+    background: var(--color-primary);
+    color: #fff;
+    border-bottom-right-radius: 2px;
+  }
+}
+
+.pt-cover-chat-hints {
+  flex-shrink: 0;
+}
+
+.pt-cover-chat-hint {
+  @include typo($body-caption);
+  color: $color-text-muted;
+  line-height: 1.8;
+}
+
+.pt-cover-chat-input-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.pt-cover-chat-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  padding: 9px 11px;
+  @include typo($body-xsmall);
+  font-family: $font-family-base;
+  resize: none;
+  height: 60px;
+  outline: none;
+  transition: border-color $transition-fast;
+
+  &:focus {
+    border-color: var(--color-primary);
+  }
+
+  &:disabled {
+    background: $color-surface;
+    color: $color-text-muted;
+  }
+}
+
+.pt-cover-chat-send {
+  width: 100%;
+  justify-content: center;
+}
+
+// ---- 센터 패널 액션 바 ----
+.pt-template-center-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: 8px $spacing-md;
+  border-bottom: 1px solid $color-border;
+  background: $color-surface;
+  flex-shrink: 0;
+}

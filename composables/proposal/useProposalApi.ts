@@ -755,6 +755,12 @@ export const useProposalApi = () => {
     return post<SlideImageViewResponse>('/ai/proposal/viewSlideImage.do', { slideId })
   }
 
+  /** 표지 배경 이미지 presigned URL 조회 (미리보기용) */
+  const fetchViewPtCoverImage = async (ptProjectId: string): Promise<SlideImageViewResponse> => {
+    const params = new URLSearchParams({ ptProjectId })
+    return post<SlideImageViewResponse>(`/ai/proposal/viewPtCoverImage.do?${params.toString()}`, {})
+  }
+
   // ── Step F: 출력 ────────────────────────────────────────────────────────────
 
   /** F — 출력 시작 (PPTX / PDF). 캐시 재사용 판단 후 신규 빌드 또는 즉시 반환. */
@@ -829,6 +835,18 @@ export const useProposalApi = () => {
     )
   }
 
+  /** D — 표지 이미지 생성 / 재생성 */
+  const fetchGeneratePtCoverImage = async (
+    ptProjectId: string,
+    agentId: string,
+  ): Promise<{ result: string; data: PtTemplate; msg?: string }> => {
+    const params = new URLSearchParams({ ptProjectId, agentId })
+    return post<{ result: string; data: PtTemplate; msg?: string }>(
+      `/ai/proposal/generatePtCoverImage.do?${params.toString()}`,
+      {},
+    )
+  }
+
   return {
     fetchCreatePtFileUploadUrl,
     fetchSavePtFile,
@@ -885,6 +903,7 @@ export const useProposalApi = () => {
     streamGenerateSlideImage,
     fetchConfirmSection,
     fetchViewSlideImage,
+    fetchViewPtCoverImage,
     fetchStartExport,
     fetchSelectExportStatus,
     // Step D (템플릿 생성)
@@ -892,5 +911,6 @@ export const useProposalApi = () => {
     fetchGeneratePtTemplate,
     fetchRegeneratePtTemplate,
     fetchUpdatePtTemplate,
+    fetchGeneratePtCoverImage,
   }
 }
