@@ -3,9 +3,20 @@
     <div class="mail-panel-header">
       <h2 class="mail-panel-title">메일 AI 채팅</h2>
       <div class="mail-ai-badge">
-        <i class="icon-ai size-14" />
+        <i class="icon-ai-chat size-14" />
         메일 컨텍스트
       </div>
+      <button
+        type="button"
+        class="mail-chat-expand-btn"
+        :aria-label="isAnalysisCollapsed ? 'AI 분석 패널 펼치기' : 'AI 분석 패널 접기'"
+        @click="emit('toggle-analysis')"
+      >
+        <i
+          class="icon-arrow-down size-16"
+          :class="{ 'is-up': !isAnalysisCollapsed }"
+        />
+      </button>
     </div>
 
     <div
@@ -45,7 +56,11 @@
       </ul>
     </div>
 
-    <div class="mail-chat-input-row">
+    <form
+      class="mail-chat-input-row"
+      autocomplete="off"
+      @submit.prevent="onSendChat"
+    >
       <div
         class="mail-chat-input-bar"
         :class="{ 'is-active': !!chatDraft.trim() }"
@@ -58,6 +73,8 @@
           v-model="chatDraft"
           size="md"
           class="mail-chat-input-field"
+          name="mail-ai-chat-message"
+          autocomplete="off"
           :spellcheck="false"
           :disabled="isLoadingChat"
           placeholder="예: 지금 당장 처리해야 할 메일이 무엇인가요?"
@@ -77,7 +94,7 @@
           </template>
         </UiButton>
       </div>
-    </div>
+    </form>
   </div>
 </template>
 
@@ -87,6 +104,11 @@ import type { Mail, MailChatHistoryItem } from '~/types/mail'
 
 const props = defineProps<{
   mails: Mail[]
+  isAnalysisCollapsed?: boolean
+}>()
+
+const emit = defineEmits<{
+  'toggle-analysis': []
 }>()
 
 const { isLoadingChat, handleFetchMailChat } = useMailStore()
@@ -109,8 +131,7 @@ const nextChatId = () => {
   return `mail-chat-${chatIdSeq.value}`
 }
 
-const formatChatTime = () =>
-  new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+const formatChatTime = () => new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
 
 const resetChatHistory = () => {
   chatMessages.value = [
@@ -180,6 +201,11 @@ const onSendChat = async () => {
   })
   scrollChatToBottom()
 }
+
+watch(
+  () => props.isAnalysisCollapsed,
+  () => scrollChatToBottom(),
+)
 
 watch(
   () => chatMessages.value.length,

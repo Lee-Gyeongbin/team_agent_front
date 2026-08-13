@@ -154,7 +154,7 @@
             v-show="showThemeArrows"
             type="button"
             class="chat-index-theme-arrow chat-index-theme-arrow--next"
-            :disabled="activeThemeIndex === CHAT_THEMES.length - 1"
+            :disabled="activeThemeIndex === visibleThemes.length - 1"
             aria-label="다음 테마"
             @click="moveToNextTheme"
           >
@@ -186,7 +186,13 @@ import { parseRecommendConfigFromAgent } from '~/utils/chat/recommendAgentUtil'
 import { parseTranslateConfigFromAgent } from '~/utils/chat/translateAgentUtil'
 import { parseCurationConfigFromAgent } from '~/utils/chat/newsCuratorUtil'
 import { parseAutoRecommendConfigFromAgent } from '~/utils/chat/autoRecommendUtil'
-import { CHAT_THEMES, groupAgentsByTheme, getInitialThemeKey, findThemeByKey } from '~/utils/chat/chatThemeUtil'
+import {
+  CHAT_THEMES,
+  groupAgentsByTheme,
+  getVisibleThemes,
+  getInitialThemeKey,
+  findThemeByKey,
+} from '~/utils/chat/chatThemeUtil'
 import { useMailStore } from '~/composables/mail/useMailStore'
 import { useDataQuestionGate } from '~/composables/chat/useDataQuestionGate'
 import { useChatFeatureNotice } from '~/composables/chat/useChatFeatureNotice'
@@ -241,23 +247,28 @@ const chatPageRef = ref<HTMLElement | null>(null)
 /** 현재 활성 테마 키 */
 const activeThemeKey = ref(CHAT_THEMES[0].key)
 
-/** 활성 테마 인덱스 */
-const activeThemeIndex = computed(() => CHAT_THEMES.findIndex((t) => t.key === activeThemeKey.value))
-
-const moveToPrevTheme = () => {
-  if (activeThemeIndex.value > 0) activeThemeKey.value = CHAT_THEMES[activeThemeIndex.value - 1].key
-}
-
-const moveToNextTheme = () => {
-  if (activeThemeIndex.value < CHAT_THEMES.length - 1)
-    activeThemeKey.value = CHAT_THEMES[activeThemeIndex.value + 1].key
-}
-
 /** 테마별로 그룹핑된 에이전트 */
 const groupedAgents = computed(() => groupAgentsByTheme(chatIndexAgents.value))
 
+/** 에이전트가 있는 테마만 (로딩 중에는 전체) */
+const visibleThemes = computed(() =>
+  isLoadingChatIndexAgents.value ? CHAT_THEMES : getVisibleThemes(groupedAgents.value),
+)
+
+/** 활성 테마 인덱스 (visibleThemes 기준) */
+const activeThemeIndex = computed(() => visibleThemes.value.findIndex((t) => t.key === activeThemeKey.value))
+
+const moveToPrevTheme = () => {
+  if (activeThemeIndex.value > 0) activeThemeKey.value = visibleThemes.value[activeThemeIndex.value - 1].key
+}
+
+const moveToNextTheme = () => {
+  if (activeThemeIndex.value < visibleThemes.value.length - 1)
+    activeThemeKey.value = visibleThemes.value[activeThemeIndex.value + 1].key
+}
+
 /** 4테마 중 에이전트가 1개 이상 있으면 true */
-const hasThemeAgents = computed(() => CHAT_THEMES.some((t) => (groupedAgents.value[t.key]?.length ?? 0) > 0))
+const hasThemeAgents = computed(() => getVisibleThemes(groupedAgents.value).length > 0)
 
 /** 화살표 버튼 표시 여부 — v-show 전용 (v-if 사용 시 DOM 동적 추가/제거로 Nuxt 루트 경고 발생) */
 const showThemeArrows = computed(

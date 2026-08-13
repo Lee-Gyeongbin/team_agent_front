@@ -147,25 +147,13 @@
 // ===================================
 
 // 풀너비 기준 래퍼 — .content 영역을 가득 채우며 화살표 버튼의 absolute 기준점
-// 빈 영역 hover 시 grab 커서로 드래그 가능 표시
 .chat-page-wrap {
   position: relative;
   width: 100%;
-  cursor: grab;
 
-  // 드래그 진행 중 — carousel에서 body에 클래스 추가
-  &.is-theme-dragging,
-  .is-theme-dragging & {
-    cursor: grabbing;
+  // 드래그 진행 중 — 텍스트 선택 방지 (커서는 테마 섹션에서 처리)
+  &.is-theme-dragging {
     user-select: none;
-  }
-
-  // 클릭 가능한 요소 위에서는 pointer 커서로 재정의
-  button:not(.chat-index-theme-arrow),
-  a,
-  [role='tab'],
-  [role='button'] {
-    cursor: pointer;
   }
 }
 
@@ -240,12 +228,27 @@
 // 테마 캐러셀 좌우 화살표 (에이전트 목록 바로 좌/우)
 // ===================================
 
+// 테마 영역(탭·카드·화살표)만 grab — 페이지 전체 스와이프 방지
 .chat-index-theme-section {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   width: 100%;
+  cursor: grab;
+
+  .chat-page-wrap.is-theme-dragging &,
+  .is-theme-dragging & {
+    cursor: grabbing;
+  }
+
+  // 클릭 가능한 요소 위에서는 pointer 커서로 재정의
+  button:not(.chat-index-theme-arrow),
+  a,
+  [role='tab'],
+  [role='button'] {
+    cursor: pointer;
+  }
 }
 
 .chat-index-theme-arrow {

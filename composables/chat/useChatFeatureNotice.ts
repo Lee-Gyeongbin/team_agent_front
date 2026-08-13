@@ -3,9 +3,6 @@ import { CHAT_GUIDE_NOTICE_DEFAULT_GUIDE_KEYS } from '~/types/chat-guide'
 /** localStorage — 기능 안내 "다음부터 보지 않기" */
 const HIDE_STORAGE_PREFIX = 'ta_chatFeatureNoticeHide:'
 
-/** 키워드 표시 조건에서 감지할 단어 */
-const FEATURE_NOTICE_KEYWORDS = ['기능', '도움말'] as const
-
 const getHideStorageKey = (guideId: string) => `${HIDE_STORAGE_PREFIX}${guideId || 'NOTICE_FEATURE'}`
 
 const isHiddenByUser = (guideId: string): boolean => {
@@ -36,16 +33,13 @@ const markShownOnFirstVisit = (guideId: string) => {
 /**
  * NOTICE_FEATURE(사용 가능 기능 안내) 모달 표시 로직
  * - enblYn === 'Y' 일 때만 대상
- * - dsplCond: always | first_visit | keyword
+ * - dsplCond: always | first_visit
  * - "다음부터 보지 않기" 는 localStorage에 저장
  */
 export const useChatFeatureNotice = () => {
   const { getChatGuideByKey } = useChatGuide()
-  const { chatMessage } = useChatRooms()
 
   const isOpen = ref(false)
-  /** keyword 조건으로 이미 한 번 연 뒤, 같은 입력 세션에서 반복 오픈 방지 */
-  const keywordTriggered = ref(false)
 
   const featureGuide = computed(() => getChatGuideByKey(CHAT_GUIDE_NOTICE_DEFAULT_GUIDE_KEYS.feature))
 
@@ -94,37 +88,10 @@ export const useChatFeatureNotice = () => {
     }
   }
 
-  /** keyword — 입력에 "기능"/"도움말" 포함 시 표시 */
-  const tryOpenByKeyword = (text: string) => {
-    if (!canShow.value) return
-    if (dsplCond.value !== 'keyword') return
-    if (keywordTriggered.value) return
-    const normalized = text.trim()
-    if (!normalized) {
-      keywordTriggered.value = false
-      return
-    }
-    const hit = FEATURE_NOTICE_KEYWORDS.some((kw) => normalized.includes(kw))
-    if (hit) {
-      keywordTriggered.value = true
-      openModal()
-    }
-  }
-
   /** chat/index 진입 후 가이드 로드 완료 시점에 호출 */
   const initFeatureNotice = () => {
-    keywordTriggered.value = false
     tryOpenOnEnter()
   }
-
-  // keyword 조건: 채팅 입력 감시
-  watch(
-    chatMessage,
-    (text) => {
-      tryOpenByKeyword(String(text ?? ''))
-    },
-    { flush: 'post' },
-  )
 
   return {
     isOpen,

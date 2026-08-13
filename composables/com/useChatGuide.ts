@@ -1,5 +1,5 @@
 import type { ChatGuideItem } from '~/types/com/chatGuide'
-import { useChatGuideApi } from '~/composables/com/useChatGuideApi'
+import { useChatGuideApi } from '~/composables/chat-guide/useChatGuideApi'
 
 const CHAT_GUIDE_STATE_KEY = 'ta_chatGuideList'
 

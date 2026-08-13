@@ -10,6 +10,19 @@ import type {
   FollowupStatusResponse,
   FollowupDraftRequest,
   FollowupDraftResponse,
+  MailSyncResponse,
+  MailKpiResponse,
+  ClassifiedMailListParams,
+  ClassifiedMailListResponse,
+  MailDetailResponse,
+  ReplyDraftRequest,
+  ReplyDraftResponse,
+  ActionCompleteRequest,
+  InboxSummaryResponse,
+  SentClassifiedListParams,
+  SentClassifiedListResponse,
+  SentTopRecipientsResponse,
+  SentWeeklyStatsResponse,
 } from '~/types/mail'
 
 const { get, post } = useApi()
@@ -64,6 +77,96 @@ export const useMailApi = () => {
     return post<FollowupDraftResponse>('/mail/followup-draft.do', body)
   }
 
+  /** 메일 동기화 (수신함 최신 메일 동기화) */
+  const fetchMailSync = async (): Promise<MailSyncResponse> => {
+    return post<MailSyncResponse>('/mail/sync.do', {})
+  }
+
+  /** KPI 요약 조회 */
+  const fetchMailKpi = async (startDate?: string, endDate?: string): Promise<MailKpiResponse> => {
+    const query = new URLSearchParams()
+    if (startDate) query.append('startDate', startDate)
+    if (endDate) query.append('endDate', endDate)
+    return get<MailKpiResponse>(`/mail/kpi.do?${query.toString()}`)
+  }
+
+  /** AI 분류된 받은메일함 목록 조회 */
+  const fetchInboxClassified = async (params: ClassifiedMailListParams): Promise<ClassifiedMailListResponse> => {
+    const query = new URLSearchParams()
+    query.append('tabType', params.tabType)
+    query.append('searchField', params.searchField)
+    if (params.searchKeyword) query.append('searchKeyword', params.searchKeyword)
+    if (params.purposeCds?.length) query.append('purposeCds', params.purposeCds.join(','))
+    if (params.actionCds?.length) query.append('actionCds', params.actionCds.join(','))
+    if (params.urgencyCds?.length) query.append('urgencyCds', params.urgencyCds.join(','))
+    if (params.importanceCds?.length) query.append('importanceCds', params.importanceCds.join(','))
+    if (params.categoryCds?.length) query.append('categoryCds', params.categoryCds.join(','))
+    query.append('pageNum', String(params.pageNum ?? 1))
+    query.append('pageSize', String(params.pageSize ?? 50))
+    if (params.startDate) query.append('startDate', params.startDate)
+    if (params.endDate) query.append('endDate', params.endDate)
+    return get<ClassifiedMailListResponse>(`/mail/inbox-classified.do?${query.toString()}`)
+  }
+
+  /** 분류된 메일 상세 조회 */
+  const fetchMailDetail = async (mailId: string): Promise<MailDetailResponse> => {
+    return get<MailDetailResponse>(`/mail/inbox-detail.do?mailId=${mailId}`)
+  }
+
+  /** AI 회신 초안 생성 */
+  const fetchReplyDraft = async (req: ReplyDraftRequest): Promise<ReplyDraftResponse> => {
+    return post<ReplyDraftResponse>('/mail/reply-draft.do', req)
+  }
+
+  /** 조치 완료 여부 업데이트 */
+  const fetchActionComplete = async (req: ActionCompleteRequest): Promise<{ result: string }> => {
+    return post<{ result: string }>('/mail/action-complete.do', req)
+  }
+
+  /** 날짜 범위 동기화 (DB에 없는 메일만 IMAP → AI 분류) */
+  const fetchSyncRange = async (startDate: string, endDate: string): Promise<{ result: string; newCount: number }> => {
+    return post<{ result: string; newCount: number }>('/mail/sync-range.do', { startDate, endDate })
+  }
+
+  /** 현재 필터 조건 메일 전체 AI 요약 */
+  const fetchInboxSummary = async (params: ClassifiedMailListParams): Promise<InboxSummaryResponse> => {
+    return post<InboxSummaryResponse>('/mail/inbox-summary.do', params)
+  }
+
+  /** 보낸메일함 분류 목록 조회 (LLM 기반, 서브탭/페이징 지원) */
+  const fetchSentClassified = async (params: SentClassifiedListParams): Promise<SentClassifiedListResponse> => {
+    const query = new URLSearchParams()
+    query.append('tabType', params.tabType)
+    query.append('pageNum', String(params.pageNum ?? 1))
+    query.append('pageSize', String(params.pageSize ?? 50))
+    if (params.startDate) query.append('startDate', params.startDate)
+    if (params.endDate) query.append('endDate', params.endDate)
+    return get<SentClassifiedListResponse>(`/mail/sent-classified.do?${query.toString()}`)
+  }
+
+  /** 답장 대기 많은 상대 조회 */
+  const fetchSentTopRecipients = async (startDate?: string, endDate?: string): Promise<SentTopRecipientsResponse> => {
+    const query = new URLSearchParams()
+    if (startDate) query.append('startDate', startDate)
+    if (endDate) query.append('endDate', endDate)
+    return get<SentTopRecipientsResponse>(`/mail/sent-top-recipients.do?${query.toString()}`)
+  }
+
+  /** 이번 주 / 전주 회신 통계 조회 */
+  const fetchSentWeeklyStats = async (): Promise<SentWeeklyStatsResponse> => {
+    return get<SentWeeklyStatsResponse>('/mail/sent-weekly-stats.do')
+  }
+
+  /** 회신 불필요 처리 (REPLY_EXPECTED_YN = 'N' UPDATE) */
+  const fetchReplyNotNeeded = async (mailId: string): Promise<{ result: string }> => {
+    return post<{ result: string }>('/mail/reply-not-needed.do', { mailId })
+  }
+
+  /** 회신 필요 복원 (REPLY_EXPECTED_YN = 'Y' UPDATE) */
+  const fetchReplyNeeded = async (mailId: string): Promise<{ result: string }> => {
+    return post<{ result: string }>('/mail/reply-needed.do', { mailId })
+  }
+
   return {
     fetchMailAuthCheck,
     fetchMailAuth,
@@ -73,5 +176,18 @@ export const useMailApi = () => {
     fetchMailChat,
     fetchFollowupStatus,
     fetchFollowupDraft,
+    fetchMailSync,
+    fetchMailKpi,
+    fetchInboxClassified,
+    fetchMailDetail,
+    fetchReplyDraft,
+    fetchActionComplete,
+    fetchInboxSummary,
+    fetchSyncRange,
+    fetchSentClassified,
+    fetchSentTopRecipients,
+    fetchSentWeeklyStats,
+    fetchReplyNotNeeded,
+    fetchReplyNeeded,
   }
 }

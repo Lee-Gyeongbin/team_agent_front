@@ -265,7 +265,6 @@ const ATTACH_ALLOWED_EXTENSIONS = [
   'md',
   'txt',
   'json',
-  'pptx',
   'py',
   'js',
   'ts',

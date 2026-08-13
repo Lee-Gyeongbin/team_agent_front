@@ -1,4 +1,11 @@
 import type { FetchOptions } from 'ofetch'
+import { notifyApiError } from '~/composables/com/useApiErrorNotice'
+import {
+  isNetworkError,
+  notifyIncidentError,
+  notifyIncidentFromApiBody,
+  resolveFatalServerError,
+} from '~/composables/com/useIncidentErrorNotice'
 
 type Method = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
 
@@ -27,6 +34,16 @@ export const useApi_multipart = <T = unknown>(url: string, options: ApiOptions =
 
   const baseURL = (config.public?.apiBase as string | undefined) ?? '/api'
 
+  const showFatalServerError = (fatalServerError: { statusCode: number; statusMessage: string }, message?: string) => {
+    showError(
+      createError({
+        ...fatalServerError,
+        message: message || '서버 오류가 발생했습니다.',
+        fatal: true,
+      }),
+    )
+  }
+
   const defaults: FetchOptions = {
     baseURL,
     credentials: 'include', // 🔥 JSESSIONID 쿠키를 보내야 세션 인식됨
@@ -50,41 +67,47 @@ export const useApi_multipart = <T = unknown>(url: string, options: ApiOptions =
     },
 
     // 응답 후처리
-    onResponse({ options }) {
+    onResponse({ response, options }) {
       const opts = options as ApiOptions
       if (opts.skipLoading !== true && loadingCount.value > 0) {
         loadingCount.value--
       }
 
-      // 레거시 코드의 'delete' 타입 응답 처리 예시
-      // if (response._data?.responseType === 'delete') {
-      //   showToast({ title: '성공적으로 삭제되었습니다.', color: 'success' });
-      // }
+      const fatalServerError = resolveFatalServerError(response)
+      if (fatalServerError) {
+        showFatalServerError(fatalServerError, response._data?.message)
+        return
+      }
+
+      // HTTP 200 + result FAIL + RESP_SYS_ERROR / RESP_DB_ERROR → 장애 모달
+      if (response.ok) notifyIncidentFromApiBody(response._data)
+    },
+
+    // 요청 자체 실패 (네트워크 단절 등)
+    onRequestError({ error, options }) {
+      const opts = options as ApiOptions
+      if (opts.skipLoading !== true && loadingCount.value > 0) {
+        loadingCount.value--
+      }
+
+      if (isNetworkError(error)) notifyIncidentError()
     },
 
     // 에러 발생 시 후처리
-    onResponseError({ response, options }) {
-      const opts = options as ApiOptions
-      if (opts.skipLoading !== true && loadingCount.value > 0) {
-        loadingCount.value--
-      }
+    onResponseError({ response }) {
+      if (resolveFatalServerError(response)) return
 
       const errorData = response._data
-      let errorMessage = '처리 중 문제가 발생했습니다.'
-
-      if (typeof errorData === 'string') {
-        errorMessage = errorData
-      } else if (errorData?.msg) {
-        errorMessage = errorData.msg
-      }
-
-      if (errorData?.errorType === 'sessionExpired' || response.status === 401) {
-        navigateTo('/login')
-        return
-      }
 
       if (errorData?.errorType === 'secure') {
         return
+      }
+
+      // chatGuide API 오류 문구 toast (500/429/408/401·403)
+      notifyApiError(response.status)
+
+      if (errorData?.errorType === 'sessionExpired' || response.status === 401) {
+        navigateTo('/login')
       }
     },
   }

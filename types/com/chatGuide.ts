@@ -24,3 +24,6 @@ export interface ChatGuideListResponse {
 
 /** 로그인 점검 공지 종류 — 긴급 / 정기 / 복구 */
 export type MaintNoticeKind = 'emergency' | 'scheduled' | 'recovery'
+
+/** 전역 장애 모달 유형 — 네트워크 / 시스템 / DB */
+export type IncidentErrorType = 'network' | 'system' | 'db'

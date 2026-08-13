@@ -4,7 +4,7 @@
     position="center"
     :show-close="true"
     :show-overlay="true"
-    max-width="640px"
+    max-width="800px"
     custom-class="mail-detail-modal-dialog"
     @close="emit('close')"
   >
@@ -42,7 +42,8 @@
             <span
               v-if="senderEmail && senderEmail !== senderName"
               class="mail-detail-sender-email"
-            >&lt;{{ senderEmail }}&gt;</span>
+              >&lt;{{ senderEmail }}&gt;</span
+            >
           </div>
         </div>
         <div class="mail-detail-meta-row">

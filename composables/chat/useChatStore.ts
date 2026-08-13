@@ -478,22 +478,9 @@ export const useChatStore = () => {
       return
     }
 
-    // PROPOSAL(제안서·D): 파일 첨부(RFP) UI 노출을 위해 svcTy='D'로 전송.
-    // 토글(같은 에이전트 재클릭) 시 해제한다.
+    // PROPOSAL(제안서·D): PT 제안서 목록 페이지로 이동
     if (agent.svcTy === 'D' && isProposalAgent(agent)) {
-      if (selectedChatAgentId.value === agent.agentId && wasRiskActive) {
-        // 같은 PROPOSAL 에이전트 재클릭 → 해제
-        activeSearchModes.value = []
-        selectedChatAgentId.value = null
-        subOptions.value = []
-        await selectModelOptions()
-        return
-      }
-      selectedChatAgentId.value = agent.agentId
-      riskAgentActive.value = true
-      activeSearchModes.value = ['M'] // 파일 첨부 UI 재사용 목적
-      await selectRagDsList() // 자사 역량 RAG 데이터셋 콤보 채우기
-      await selectModelOptions()
+      await navigateTo('/proposal')
       return
     }
 

@@ -39,13 +39,44 @@
 
   <!-- 즉시번역(전역 드래그 번역) 오버레이 -->
   <InstantTranslateOverlay />
+
+  <!-- 장애 오류 모달 (네트워크 / 시스템 / DB) — 전역 UI 최상단 -->
+  <IncidentErrorModal
+    v-if="incidentErrorOpen"
+    :is-open="incidentErrorOpen"
+    :is-retrying="incidentErrorRetrying"
+    :error-type="incidentErrorType"
+    :message="incidentErrorMessage"
+    :status-message="incidentErrorStatusMessage"
+    :status-message-type="incidentErrorStatusMessageType"
+    :retry-text="incidentErrorRetryText"
+    :close-text="incidentErrorCloseText"
+    @close="closeIncidentError"
+    @retry="retryIncidentError"
+  />
 </template>
 
 <script setup lang="ts">
 import { UiLoading } from '@leechanyong/ispark-ui'
+import { useIncidentErrorNoticeState, useNetworkErrorOfflineListener } from '~/composables/com/useIncidentErrorNotice'
+
 const { initTheme } = useTheme()
 const { dialogType, dialogOptions, closeDialog } = useDialogState()
 const { isLoading: isGlobalLoading, loadingText: globalLoadingText } = useLoadingState()
+const {
+  isOpen: incidentErrorOpen,
+  isRetrying: incidentErrorRetrying,
+  errorType: incidentErrorType,
+  message: incidentErrorMessage,
+  statusMessage: incidentErrorStatusMessage,
+  statusMessageType: incidentErrorStatusMessageType,
+  retryText: incidentErrorRetryText,
+  closeText: incidentErrorCloseText,
+  close: closeIncidentError,
+  retry: retryIncidentError,
+} = useIncidentErrorNoticeState()
+
+useNetworkErrorOfflineListener()
 
 onMounted(() => initTheme())
 </script>

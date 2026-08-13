@@ -336,13 +336,6 @@ const handleWebSocketMessage = (payload: ChatSocketMessage) => {
         streamingMessage.isStreaming = true
         break
       }
-      // PLANNER PT 슬라이드 JSON — PPTX 다운로드 버튼 표시용
-      if (payload.chunkEvent === 'pptx_data' && payload.content) {
-        streamingMessage.pptxData = payload.content
-        streamingMessage.hasPptx = true
-        streamingMessage.isStreaming = true
-        break
-      }
       // 일반 텍스트 delta는 버퍼에 누적
       appendStreamingChunk(streamingMessage.logId, payload.content ?? '')
       streamingMessage.isStreaming = true
@@ -376,7 +369,15 @@ const handleWebSocketMessage = (payload: ChatSocketMessage) => {
       if (!hasAnyRenderedContent(streamingMessage.logId, streamingMessage.rContent)) {
         updateStreamingError(payload.content || '응답 처리 중 오류가 발생했습니다.')
       } else {
-        // 필요하면 콘솔만 남기기
+        const bufferedContent = messageBufferMap.value[streamingMessage.logId]
+        if (bufferedContent) {
+          streamingMessage.rContent = bufferedContent
+        }
+        streamingMessage.isStreaming = false
+        streamingMessage.streamingStatus = undefined
+        streamingMessage.streamingStatusCode = undefined
+        messageBufferMap.value[streamingMessage.logId] = ''
+        pendingMessageId.value = null
         console.warn('[chat] streaming error after partial content:', payload.content)
       }
       // 에러 이후 잔여 RAF가 남아 콘텐츠를 덮어쓰지 않도록 강제 정리

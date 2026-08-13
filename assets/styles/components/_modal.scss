@@ -164,6 +164,23 @@ body:has(.ui-modal-content.ui-dialog-global) .ui-modal-overlay {
   gap: 8px;
 }
 
+// MailDetailModal.vue — Teleport 모달
+.modal-dialog.mail-detail-modal-dialog {
+  .modal-dialog-content {
+    height: min(700px, calc(100vh - 40px));
+    max-height: calc(100vh - 40px);
+  }
+
+  .modal-dialog-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0;
+  }
+}
+
 //MailLoginModal.vue 모달 style
 .modal-dialog.mail-login-modal-dialog {
   .modal-dialog-content {

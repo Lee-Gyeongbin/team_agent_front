@@ -1,4 +1,5 @@
 import { useMailApi } from '~/composables/mail/useMailApi'
+import { useCommonCodesApi } from '~/composables/com/useCommonCodesApi'
 import { openToast } from '~/composables/useToast'
 import type {
   Mail,
@@ -9,6 +10,15 @@ import type {
   FollowupItem,
   FollowupCompleted,
   FollowupStats,
+  MailKpi,
+  ClassifiedMail,
+  ClassifiedMailListParams,
+  WorkCategory,
+  MailDetailMail,
+  MailAnalysis,
+  SentClassifiedItem,
+  SentClassifiedListParams,
+  SentTopRecipient,
 } from '~/types/mail'
 
 const {
@@ -20,7 +30,21 @@ const {
   fetchMailChat,
   fetchFollowupStatus,
   fetchFollowupDraft,
+  fetchMailSync,
+  fetchMailKpi,
+  fetchInboxClassified,
+  fetchMailDetail,
+  fetchReplyDraft,
+  fetchActionComplete,
+  fetchInboxSummary,
+  fetchSyncRange,
+  fetchSentClassified,
+  fetchSentTopRecipients,
+  fetchReplyNotNeeded,
+  fetchReplyNeeded,
 } = useMailApi()
+
+const { fetchCodes } = useCommonCodesApi()
 
 // ─── 공유 상태 (모듈 스코프) ─────────────────────────────────
 const isLoginModalOpen = ref(false)
@@ -42,6 +66,32 @@ const isLoadingFollowup = ref(false)
 const followupPending = ref<FollowupItem[]>([])
 const followupCompleted = ref<FollowupCompleted[]>([])
 const followupStats = ref<FollowupStats>({ pendingCount: 0, avgWaitDays: 0, completedThisWeek: 0 })
+
+// ─── 신규 상태 (모듈 스코프) ─────────────────────────────────
+const kpi = ref<MailKpi | null>(null)
+const classifiedMails = ref<ClassifiedMail[]>([])
+const classifiedTotalCount = ref(0)
+const classifiedTabCounts = ref({ all: 0, action: 0, reply: 0 })
+const selectedMail = ref<ClassifiedMail | null>(null)
+const workCategories = ref<WorkCategory[]>([])
+const purposeOptions = ref<WorkCategory[]>([])
+const actionOptions = ref<WorkCategory[]>([])
+const urgencyOptions = ref<WorkCategory[]>([])
+const importanceOptions = ref<WorkCategory[]>([])
+const inboxUidValidity = ref<number | null>(null)
+const isLoadingKpi = ref(false)
+const isLoadingClassified = ref(false)
+const isLoadingSync = ref(false)
+const inboxSummary = ref<string>('')
+const isLoadingInboxSummary = ref(false)
+
+// ─── 보낸메일함 분류 (LLM 기반) ─────────────────────────────
+const sentClassifiedList = ref<SentClassifiedItem[]>([])
+const sentClassifiedTotalCount = ref(0)
+const sentClassifiedTabCounts = ref<{ all: number; pending: number; done: number }>({ all: 0, pending: 0, done: 0 })
+const sentTopRecipients = ref<SentTopRecipient[]>([])
+const isLoadingSentClassified = ref(false)
+const isLoadingSentSidebar = ref(false)
 
 export const useMailStore = () => {
   // ─── 로그인 모달 제어 ─────────────────────────────────────
@@ -171,8 +221,278 @@ export const useMailStore = () => {
     }
   }
 
+  // ─── 메일 동기화 ─────────────────────────────────────────
+  const handleMailSync = async (options?: { silent?: boolean }) => {
+    isLoadingSync.value = true
+    try {
+      await fetchMailSync()
+    } catch {
+      if (!options?.silent) {
+        openToast({ message: '메일 동기화에 실패했습니다.', type: 'error' })
+      }
+    } finally {
+      isLoadingSync.value = false
+    }
+  }
+
+  // ─── KPI 조회 ─────────────────────────────────────────────
+  const handleFetchMailKpi = async (startDate?: string, endDate?: string) => {
+    isLoadingKpi.value = true
+    try {
+      const res = await fetchMailKpi(startDate, endDate)
+      kpi.value = res.kpi ?? {
+        totalCount: res.totalCount ?? 0,
+        replyRequiredCount: res.replyRequiredCount ?? 0,
+        urgentCount: res.urgentCount ?? 0,
+        todayDueCount: res.todayDueCount ?? 0,
+      }
+      if (res.inboxUidValidity != null) {
+        inboxUidValidity.value = res.inboxUidValidity
+      }
+    } catch {
+      openToast({ message: 'KPI 조회에 실패했습니다.', type: 'error' })
+    } finally {
+      isLoadingKpi.value = false
+    }
+  }
+
+  // ─── 필터 코드 목록 조회 (공통코드 API 사용) ─────────────
+  // ML000001=메일목적, ML000002=필요조치, ML000003=긴급도, ML000004=중요도, ML000008=업무영역
+  const handleFetchWorkCategories = async () => {
+    try {
+      const toOptions = (items: import('~/types/codes').CodeItem[]): WorkCategory[] =>
+        items.filter((c) => c.useYn === 'Y').map((c) => ({ cd: c.codeId, nm: c.codeNm }))
+
+      const [r1, r2, r3, r4, r5] = await Promise.all([
+        fetchCodes('ML000001'),
+        fetchCodes('ML000002'),
+        fetchCodes('ML000003'),
+        fetchCodes('ML000004'),
+        fetchCodes('ML000008'),
+      ])
+      purposeOptions.value = toOptions(r1.dataList ?? [])
+      actionOptions.value = toOptions(r2.dataList ?? [])
+      urgencyOptions.value = toOptions(r3.dataList ?? [])
+      importanceOptions.value = toOptions(r4.dataList ?? [])
+      workCategories.value = toOptions(r5.dataList ?? [])
+    } catch {
+      openToast({ message: '필터 코드 목록 조회에 실패했습니다.', type: 'error' })
+    }
+  }
+
+  // ─── AI 분류된 받은메일함 조회 ───────────────────────────
+  const handleFetchInboxClassified = async (params: ClassifiedMailListParams) => {
+    isLoadingClassified.value = true
+    try {
+      const res = await fetchInboxClassified(params)
+      classifiedMails.value = res.list ?? []
+      classifiedTotalCount.value = res.totalCount ?? 0
+      classifiedTabCounts.value = res.tabCounts ?? { all: 0, action: 0, reply: 0 }
+    } catch {
+      openToast({ message: '분류된 메일 목록 조회에 실패했습니다.', type: 'error' })
+    } finally {
+      isLoadingClassified.value = false
+    }
+  }
+
+  // ─── 상세 응답(mail + analysis) → ClassifiedMail 병합 ─────
+  const normalizeMailDate = (value: string | number | null | undefined): string | null => {
+    if (value === null || value === undefined || value === '') return null
+    if (typeof value === 'number') return new Date(value).toISOString()
+    return value
+  }
+
+  const resolveCodeName = (options: WorkCategory[], cd?: string) => {
+    if (!cd) return ''
+    return options.find((o) => o.cd === cd)?.nm ?? ''
+  }
+
+  const mergeMailDetail = (
+    mail: MailDetailMail,
+    analysis: MailAnalysis | null | undefined,
+    fallback?: ClassifiedMail | null,
+  ): ClassifiedMail => {
+    const mailPurposeCd = analysis?.mailPurposeCd ?? fallback?.mailPurposeCd ?? ''
+    const actionRequiredCd = analysis?.actionRequiredCd ?? fallback?.actionRequiredCd ?? ''
+    const urgencyCd = analysis?.urgencyCd ?? fallback?.urgencyCd ?? ''
+    const importanceCd = analysis?.importanceCd ?? fallback?.importanceCd ?? ''
+    const workCategoryCd = analysis?.workCategoryCd ?? fallback?.workCategoryCd ?? ''
+
+    return {
+      mailId: mail.mailId,
+      imapUid: fallback?.imapUid ?? '',
+      subject: mail.subject,
+      fromAddr: mail.fromAddr,
+      fromName: mail.fromName,
+      mailDt: normalizeMailDate(mail.mailDt) ?? fallback?.mailDt ?? null,
+      bodyText: mail.bodyText ?? fallback?.bodyText ?? '',
+      folderCd: mail.folderCd ?? fallback?.folderCd ?? '',
+      summary: analysis?.summary ?? fallback?.summary ?? '',
+      actionCompleteYn: analysis?.actionCompleteYn ?? fallback?.actionCompleteYn ?? 'N',
+      dueDt: normalizeMailDate(analysis?.dueDt) ?? fallback?.dueDt ?? null,
+      mailPurposeCd,
+      mailPurposeNm: resolveCodeName(purposeOptions.value, mailPurposeCd) || fallback?.mailPurposeNm || '',
+      actionRequiredCd,
+      actionRequiredNm: resolveCodeName(actionOptions.value, actionRequiredCd) || fallback?.actionRequiredNm || '',
+      urgencyCd,
+      urgencyNm: resolveCodeName(urgencyOptions.value, urgencyCd) || fallback?.urgencyNm || '',
+      importanceCd,
+      importanceNm: resolveCodeName(importanceOptions.value, importanceCd) || fallback?.importanceNm || '',
+      workCategoryCd,
+      workCategoryNm: resolveCodeName(workCategories.value, workCategoryCd) || fallback?.workCategoryNm || '',
+    }
+  }
+
+  // ─── 메일 상세 조회 ───────────────────────────────────────
+  const handleFetchMailBodyText = async (mailId: string): Promise<string> => {
+    try {
+      const res = await fetchMailDetail(mailId)
+      return res.mail?.bodyText ?? ''
+    } catch {
+      openToast({ message: '메일 상세 조회에 실패했습니다.', type: 'error' })
+      return ''
+    }
+  }
+
+  const handleFetchMailDetail = async (mailId: string, fallbackMail?: ClassifiedMail) => {
+    const fromList = fallbackMail ?? classifiedMails.value.find((m) => m.mailId === mailId) ?? null
+    if (fromList) {
+      selectedMail.value = fromList
+    }
+
+    try {
+      const res = await fetchMailDetail(mailId)
+      if (res.mail) {
+        selectedMail.value = mergeMailDetail(res.mail, res.analysis, fromList)
+      }
+    } catch {
+      if (!selectedMail.value) {
+        openToast({ message: '메일 상세 조회에 실패했습니다.', type: 'error' })
+      }
+    }
+  }
+
+  // ─── AI 회신 초안 생성 ────────────────────────────────────
+  const handleFetchReplyDraft = async (mailId: string): Promise<string> => {
+    try {
+      const res = await fetchReplyDraft({ mailId })
+      return res.draftContent ?? res.draft ?? ''
+    } catch {
+      openToast({ message: '회신 초안 생성에 실패했습니다.', type: 'error' })
+      return ''
+    }
+  }
+
+  // ─── 조치 완료 토글 ───────────────────────────────────────
+  const handleToggleActionComplete = async (mailId: string, currentYn: string) => {
+    const newYn = currentYn === 'Y' ? 'N' : 'Y'
+    try {
+      await fetchActionComplete({ mailId, actionCompleteYn: newYn })
+      // 목록에서 해당 메일 상태 업데이트
+      const idx = classifiedMails.value.findIndex((m) => m.mailId === mailId)
+      if (idx !== -1) {
+        classifiedMails.value[idx] = { ...classifiedMails.value[idx], actionCompleteYn: newYn }
+      }
+      // 선택된 메일도 업데이트
+      if (selectedMail.value?.mailId === mailId) {
+        selectedMail.value = { ...selectedMail.value, actionCompleteYn: newYn }
+      }
+    } catch {
+      openToast({ message: '조치 완료 상태 변경에 실패했습니다.', type: 'error' })
+    }
+  }
+
+  // ─── selectedMail 직접 설정 ───────────────────────────────
+  const setSelectedMail = (mail: ClassifiedMail | null) => {
+    selectedMail.value = mail
+  }
+
+  // ─── 현재 필터 조건 메일 전체 AI 요약 ────────────────────
+  const handleFetchInboxSummary = async (params: ClassifiedMailListParams) => {
+    isLoadingInboxSummary.value = true
+    inboxSummary.value = ''
+    try {
+      const res = await fetchInboxSummary(params)
+      inboxSummary.value = res.summary ?? ''
+    } catch {
+      // 요약 실패는 조용히 처리 (UX 방해 안 함)
+    } finally {
+      isLoadingInboxSummary.value = false
+    }
+  }
+
+  // ─── 날짜 범위 동기화 (DB 없는 것만 IMAP → AI 분류) ─────────
+  const handleSyncRange = async (startDate: string, endDate: string) => {
+    isLoadingSync.value = true
+    try {
+      await fetchSyncRange(startDate, endDate)
+    } catch {
+      openToast({ message: '메일 동기화에 실패했습니다.', type: 'error' })
+    } finally {
+      isLoadingSync.value = false
+    }
+  }
+
+  // ─── 보낸메일함 분류 목록 조회 ────────────────────────────
+  const handleFetchSentClassified = async (params: SentClassifiedListParams) => {
+    isLoadingSentClassified.value = true
+    try {
+      const res = await fetchSentClassified(params)
+      sentClassifiedList.value = res.list ?? []
+      sentClassifiedTotalCount.value = res.totalCount ?? 0
+      sentClassifiedTabCounts.value = res.tabCounts ?? { all: 0, pending: 0, done: 0 }
+    } catch {
+      openToast({ message: '보낸메일함 조회에 실패했습니다.', type: 'error' })
+    } finally {
+      isLoadingSentClassified.value = false
+    }
+  }
+
+  // ─── 사이드바 데이터 (상위수신자) 조회 ─────────────────────
+  const handleFetchSentSidebar = async (startDate?: string, endDate?: string) => {
+    isLoadingSentSidebar.value = true
+    try {
+      const recipientsRes = await fetchSentTopRecipients(startDate, endDate)
+      sentTopRecipients.value = recipientsRes.list ?? []
+    } catch {
+      // 사이드바 실패는 조용히 처리
+    } finally {
+      isLoadingSentSidebar.value = false
+    }
+  }
+
+  // ─── 회신 불필요 처리 ─────────────────────────────────────
+  const handleReplyNotNeeded = async (mailId: string, afterRefresh?: () => void) => {
+    try {
+      await fetchReplyNotNeeded(mailId)
+      const idx = sentClassifiedList.value.findIndex((m) => m.mailId === mailId)
+      if (idx !== -1) {
+        sentClassifiedList.value[idx] = { ...sentClassifiedList.value[idx], replyExpectedYn: 'N' }
+      }
+      openToast({ message: '회신 불필요로 처리되었습니다.' })
+      afterRefresh?.()
+    } catch {
+      openToast({ message: '처리에 실패했습니다.', type: 'error' })
+    }
+  }
+
+  // ─── 회신 필요 복원 ───────────────────────────────────────
+  const handleReplyNeeded = async (mailId: string, afterRefresh?: () => void) => {
+    try {
+      await fetchReplyNeeded(mailId)
+      const idx = sentClassifiedList.value.findIndex((m) => m.mailId === mailId)
+      if (idx !== -1) {
+        sentClassifiedList.value[idx] = { ...sentClassifiedList.value[idx], replyExpectedYn: 'Y' }
+      }
+      openToast({ message: '회신 대기로 변경되었습니다.' })
+      afterRefresh?.()
+    } catch {
+      openToast({ message: '처리에 실패했습니다.', type: 'error' })
+    }
+  }
+
   return {
-    // 상태
+    // 기존 상태
     isLoginModalOpen,
     isLoadingList,
     isLoadingSentList,
@@ -190,7 +510,24 @@ export const useMailStore = () => {
     followupPending,
     followupCompleted,
     followupStats,
-    // 액션
+    // 신규 상태
+    kpi,
+    inboxUidValidity,
+    classifiedMails,
+    classifiedTotalCount,
+    classifiedTabCounts,
+    selectedMail,
+    workCategories,
+    purposeOptions,
+    actionOptions,
+    urgencyOptions,
+    importanceOptions,
+    isLoadingKpi,
+    isLoadingClassified,
+    isLoadingSync,
+    inboxSummary,
+    isLoadingInboxSummary,
+    // 기존 액션
     checkMailAuth,
     clearMailAuth: () => {
       isMailAuthed.value = false
@@ -204,5 +541,28 @@ export const useMailStore = () => {
     handleFetchMailChat,
     handleFetchFollowupStatus,
     handleFetchFollowupDraft,
+    // 신규 액션
+    handleMailSync,
+    handleFetchMailKpi,
+    handleFetchWorkCategories,
+    handleFetchInboxClassified,
+    handleFetchMailBodyText,
+    handleFetchMailDetail,
+    handleFetchReplyDraft,
+    handleToggleActionComplete,
+    setSelectedMail,
+    handleFetchInboxSummary,
+    handleSyncRange,
+    // 보낸메일함 분류
+    sentClassifiedList,
+    sentClassifiedTotalCount,
+    sentClassifiedTabCounts,
+    sentTopRecipients,
+    isLoadingSentClassified,
+    isLoadingSentSidebar,
+    handleFetchSentClassified,
+    handleFetchSentSidebar,
+    handleReplyNotNeeded,
+    handleReplyNeeded,
   }
 }

@@ -614,6 +614,9 @@ const iconGroups = [
     title: '사이드바 아이콘',
     icons: [
       { class: 'icon-menu' },
+      { class: 'icon-sidebar-panel' },
+      { class: 'icon-sidebar-panel-expand' },
+      { class: 'icon-sidebar-panel-collapse' },
       { class: 'icon-ai-chat' },
       { class: 'icon-sidebar-database' },
       { class: 'icon-sidebar-settings' },
@@ -639,7 +642,7 @@ const iconGroups = [
   },
   {
     title: '로그인 아이콘',
-    icons: [{ class: 'icon-error' }, { class: 'icon-warning-triangle' }],
+    icons: [{ class: 'icon-error' }, { class: 'icon-warning-triangle' }, { class: 'icon-wifi-off' }],
   },
   {
     title: 'chat 아이콘',
@@ -693,6 +696,7 @@ const iconGroups = [
       { class: 'icon-edit' },
       { class: 'icon-trashcan' },
       { class: 'icon-view' },
+      { class: 'icon-image' },
       { class: 'icon-transfer' },
       { class: 'icon-star-line' },
       { class: 'icon-star-fill' },
@@ -706,6 +710,7 @@ const iconGroups = [
       { class: 'icon-collapse' },
       { class: 'icon-close' },
       { class: 'icon-close-gray' },
+      { class: 'icon-close-bg' },
       { class: 'icon-arrow-right' },
       { class: 'icon-arrow-left-sm' },
       { class: 'icon-arrow-right-sm' },
@@ -715,6 +720,7 @@ const iconGroups = [
       { class: 'icon-agent-microphone' },
       { class: 'icon-agent-translate' },
       { class: 'icon-agent-researcher' },
+      { class: 'icon-globe' },
       { class: 'icon-agent-risk' },
       { class: 'icon-minus' },
       { class: 'icon-plus-zoom' },
@@ -758,6 +764,7 @@ const iconGroups = [
       { class: 'icon-setting-agent' },
       { class: 'icon-lunch-agent' },
       { class: 'icon-weekender-agent' },
+      { class: 'icon-email' },
       { class: 'icon-document' },
       { class: 'icon-chunk' },
       { class: 'icon-sync' },
@@ -796,6 +803,7 @@ const iconGroups = [
   {
     title: '대시보드 아이콘',
     icons: [
+      { class: 'icon-resize-height' },
       { class: 'icon-dash-feedback' },
       { class: 'icon-dash-query' },
       { class: 'icon-dash-satisfaction' },
@@ -813,7 +821,13 @@ const iconGroups = [
       { class: 'icon-meeting-edit' },
       { class: 'icon-meeting-save' },
       { class: 'icon-meeting-mail' },
+      { class: 'icon-grid' },
+      { class: 'icon-list' },
     ],
+  },
+  {
+    title: '에디터 툴바 아이콘',
+    icons: [{ class: 'icon-code' }],
   },
   {
     title: '기타 아이콘',

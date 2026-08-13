@@ -122,7 +122,6 @@ export const CHAT_GUIDE_MAINTENANCE_INCIDENT_UI_SLOTS = [
 
 /** 안내멘트 — 표시 조건 셀렉트 (퍼블리싱용 고정 옵션) */
 export const CHAT_GUIDE_NOTICE_CONDITION_OPTIONS: ChatGuideSelectOption[] = [
-  { label: '사용자가 "기능" 또는 "도움말" 입력 시', value: 'keyword' },
   { label: '첫 방문 시 자동 표시', value: 'first_visit' },
   { label: '항상 표시', value: 'always' },
 ]
@@ -144,6 +143,14 @@ export const CHAT_GUIDE_ERROR_CATALOG = {
     { guideKey: 'API_408', label: '408 Request Timeout' },
     { guideKey: 'API_401_403', label: '401/403 Unauthorized' },
   ],
+} as const
+
+/** API HTTP 오류 메시지 guideKey (chatGuideList · errorMessage 공통) */
+export const CHAT_GUIDE_API_ERROR_KEYS = {
+  status500: 'API_500',
+  status429: 'API_429',
+  status408: 'API_408',
+  status401_403: 'API_401_403',
 } as const
 
 // ============================================

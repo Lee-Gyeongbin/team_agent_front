@@ -108,3 +108,201 @@ export interface FollowupDraftResponse {
   result: string
   draft: string
 }
+
+// ─── 신규: KPI / 분류 메일함 / 팔로업 DB ─────────────────────
+
+export interface MailKpi {
+  totalCount: number
+  replyRequiredCount: number
+  urgentCount: number
+  todayDueCount: number
+}
+
+export interface MailKpiResponse {
+  result: string
+  msg?: string
+  totalCount?: number
+  replyRequiredCount?: number
+  urgentCount?: number
+  todayDueCount?: number
+  inboxUidValidity?: number | null
+  /** @deprecated API는 최상위 필드로 반환 — 하위 호환용 */
+  kpi?: MailKpi
+}
+
+export interface ClassifiedMail {
+  mailId: string
+  imapUid: string
+  subject: string
+  fromAddr: string
+  fromName: string
+  mailDt: string | null
+  mailPurposeCd: string
+  mailPurposeNm: string
+  actionRequiredCd: string
+  actionRequiredNm: string
+  urgencyCd: string
+  urgencyNm: string
+  importanceCd: string
+  importanceNm: string
+  workCategoryCd: string
+  workCategoryNm: string
+  dueDt: string | null
+  summary: string
+  actionCompleteYn: string
+  folderCd: string
+  bodyText: string
+}
+
+export interface ClassifiedMailListResponse {
+  result: string
+  list: ClassifiedMail[]
+  totalCount: number
+  tabCounts: { all: number; action: number; reply: number }
+}
+
+export interface ClassifiedMailListParams {
+  tabType: 'all' | 'action' | 'reply'
+  searchField: string
+  searchKeyword: string
+  purposeCds: string[]
+  actionCds: string[]
+  urgencyCds: string[]
+  importanceCds: string[]
+  categoryCds: string[]
+  pageNum: number
+  pageSize: number
+  startDate?: string
+  endDate?: string
+}
+
+export interface MailDetailMail {
+  mailId: string
+  accountId?: string
+  folderCd: string
+  subject: string
+  fromAddr: string
+  fromName: string
+  mailDt: string | number | null
+  bodyText: string
+}
+
+export interface MailAnalysis {
+  mailId: string
+  mailPurposeCd: string
+  actionRequiredCd: string
+  urgencyCd: string
+  importanceCd: string
+  workCategoryCd: string
+  dueDt: string | number | null
+  summary: string
+  actionCompleteYn: string
+  actionCompleteDt?: string | number | null
+  analyzedDt?: string | number | null
+}
+
+export interface MailDetailResponse {
+  result: string
+  msg?: string
+  mail: MailDetailMail
+  analysis: MailAnalysis | null
+}
+
+export interface ReplyDraftRequest {
+  mailId: string
+}
+
+export interface ReplyDraftResponse {
+  result: string
+  msg?: string
+  draftId?: string
+  draftContent?: string
+  /** @deprecated API는 draftContent로 반환 — 하위 호환용 */
+  draft?: string
+}
+
+export interface ActionCompleteRequest {
+  mailId: string
+  actionCompleteYn: string
+}
+
+export interface WorkCategory {
+  cd: string
+  nm: string
+}
+
+export interface MailSyncResponse {
+  result: string
+  syncedCount: number
+}
+
+export interface WorkCategoryListResponse {
+  result: string
+  list: WorkCategory[]
+}
+
+export interface InboxSummaryResponse {
+  result: string
+  summary: string
+}
+
+// ─── 보낸메일함 분류 (LLM 기반) ──────────────────────────────
+
+export interface SentClassifiedItem {
+  mailId: string
+  imapUid: string // tb_mail_msg.IMAP_UID — 그룹웨어 메일 URL의 uid 파라미터
+  uidValidity: number | null // tb_mail_sync_state.UID_VALIDITY (SENT 메일박스) — boxnameSeq 파라미터
+  subject: string
+  toName: string
+  toAddr: string
+  mailDt: string | null
+  replyExpectedYn: 'Y' | 'N' // AI 분석 — 사용자가 N으로 직접 변경 가능
+  repliedYn: 'Y' | 'N' // IN_REPLY_TO 매칭 기반
+  elapsedDays: number
+  replyElapsedHours: number | null
+}
+
+export interface SentClassifiedListResponse {
+  result: string
+  list: SentClassifiedItem[]
+  totalCount: number
+  tabCounts: { all: number; pending: number; done: number }
+}
+
+export interface SentClassifiedListParams {
+  tabType: 'all' | 'pending' | 'done'
+  startDate?: string
+  endDate?: string
+  pageNum: number
+  pageSize: number
+}
+
+export interface SentTopRecipient {
+  toAddr: string
+  toName: string
+  pendingCount: number
+}
+
+export interface SentTopRecipientsResponse {
+  result: string
+  list: SentTopRecipient[]
+}
+
+export interface SentWeeklyStats {
+  avgReplyDays: number
+  prevAvgReplyDays: number
+  replyRate: number
+  prevReplyRate: number
+  pendingCount: number
+  doneCount: number
+}
+
+export interface SentWeeklyStatsResponse {
+  result: string
+  avgReplyDays: number
+  prevAvgReplyDays: number
+  replyRate: number
+  prevReplyRate: number
+  pendingCount: number
+  doneCount: number
+}
