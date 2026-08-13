@@ -69,14 +69,14 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
         previewContent: null,
       }))
       activeSectionIndexRef.value = 0
-      const firstTocId = sectionList.value[0]?.tocId
-      if (firstTocId) {
-        fetchSelectSectionSlides(firstTocId)
-          .then((res) => {
-            slidesCache.value[firstTocId] = res.list ?? []
-          })
-          .catch(() => {})
-      }
+      // 사이드바 배지·미리보기용: 모든 소목차 슬라이드를 백그라운드에서 미리 조회
+      void Promise.allSettled(
+        sectionList.value.map((s) =>
+          fetchSelectSectionSlides(s.tocId).then((slideRes) => {
+            slidesCache.value[s.tocId] = slideRes.list ?? []
+          }),
+        ),
+      )
     } catch (e) {
       console.warn('[useProposalSections] TOC 조회 실패:', e)
     } finally {
