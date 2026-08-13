@@ -4,7 +4,7 @@ import { useProposalApi } from '~/composables/proposal/useProposalApi'
 import { formatChatStoreFileNameBase } from '~/utils/global/dateUtil'
 import { getChatAttachmentExtension } from '~/utils/chat/chatAttachmentDisplayUtil'
 
-const { fetchCreatePtFileUploadUrl, fetchSavePtFile } = useProposalApi()
+const { fetchCreatePtFileUploadUrl, fetchSavePtFile, fetchDownloadPtFile } = useProposalApi()
 
 /** NCP/DB 저장 파일명: yyyyMMddHHmmssSSS + 확장자 */
 const buildStoreFileName = (originalName: string, at: Date): string => {
@@ -38,7 +38,7 @@ const toPtFileSaveResult = (
 
 export const useProposalFileStore = () => {
   const { user } = useAuth()
-  const { handleUploadByPresignedUrl } = useFileStore()
+  const { handleUploadByPresignedUrl, handleDownloadByUrl } = useFileStore()
 
   /**
    * PT 파일 업로드: presign → NCP PUT → TB_PT_FILE 저장
@@ -98,5 +98,33 @@ export const useProposalFileStore = () => {
     return toPtFileSaveResult(res, { fileName: file.name, filePath })
   }
 
-  return { handleUploadPtFile }
+  /**
+   * PT 파일 다운로드: presigned URL 조회 후 공통 다운로드 트리거
+   */
+  const handleDownloadPtFile = async (ptFileId: string): Promise<boolean> => {
+    const id = String(ptFileId ?? '').trim()
+    if (!id) {
+      openToast({ message: '다운로드할 파일 정보가 없습니다.', type: 'warning' })
+      return false
+    }
+
+    try {
+      const res = await fetchDownloadPtFile(id)
+      const url = String(res.url ?? res.downloadUrl ?? '').trim()
+      if (!url) {
+        openToast({
+          message: res.reason || '파일 다운로드 URL을 가져오는데 실패했습니다.',
+          type: 'error',
+        })
+        return false
+      }
+      return handleDownloadByUrl(url)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '파일 다운로드에 실패했습니다.'
+      openToast({ message, type: 'error' })
+      return false
+    }
+  }
+
+  return { handleUploadPtFile, handleDownloadPtFile }
 }

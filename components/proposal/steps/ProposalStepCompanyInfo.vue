@@ -25,7 +25,15 @@
               class="pt-file-chip"
             >
               <i class="icon-document size-12" />
-              <span class="pt-file-chip-name">{{ f.fileName }}</span>
+              <button
+                type="button"
+                class="pt-file-chip-name"
+                title="다운로드"
+                :disabled="downloadingFileId === f.ptFileId"
+                @click="onDownloadFile(f.ptFileId)"
+              >
+                {{ f.fileName }}
+              </button>
               <button
                 class="pt-file-chip-remove"
                 @click="removeFile('company', f.ptFileId)"
@@ -61,7 +69,15 @@
               class="pt-file-chip"
             >
               <i class="icon-document size-12" />
-              <span class="pt-file-chip-name">{{ f.fileName }}</span>
+              <button
+                type="button"
+                class="pt-file-chip-name"
+                title="다운로드"
+                :disabled="downloadingFileId === f.ptFileId"
+                @click="onDownloadFile(f.ptFileId)"
+              >
+                {{ f.fileName }}
+              </button>
               <button
                 class="pt-file-chip-remove"
                 @click="removeFile('competitor', f.ptFileId)"
@@ -97,7 +113,15 @@
               class="pt-file-chip"
             >
               <i class="icon-document size-12" />
-              <span class="pt-file-chip-name">{{ f.fileName }}</span>
+              <button
+                type="button"
+                class="pt-file-chip-name"
+                title="다운로드"
+                :disabled="downloadingFileId === f.ptFileId"
+                @click="onDownloadFile(f.ptFileId)"
+              >
+                {{ f.fileName }}
+              </button>
               <button
                 class="pt-file-chip-remove"
                 @click="removeFile('etcRef', f.ptFileId)"
@@ -156,7 +180,7 @@ const emit = defineEmits<{
 }>()
 
 const { fetchSelectProjectSettings, fetchUpdateProjectSettings } = useProposalApi()
-const { handleUploadPtFile } = useProposalFileStore()
+const { handleUploadPtFile, handleDownloadPtFile } = useProposalFileStore()
 
 // ── 상태 ───────────────────────────────────────────────────────────────────────
 
@@ -164,11 +188,15 @@ type FileSlot = 'company' | 'competitor' | 'etcRef'
 
 const isLoading = ref(true)
 const isSaving = ref(false)
+const downloadingFileId = ref<string | null>(null)
 
-// 파일 목록: { ptFileId, fileName }
-const companyFiles = ref<{ ptFileId: string; fileName: string }[]>([])
-const competitorFiles = ref<{ ptFileId: string; fileName: string }[]>([])
-const etcRefFiles = ref<{ ptFileId: string; fileName: string }[]>([])
+// 카테고리당 최대 합산 용량: 10MB
+const MAX_CATEGORY_BYTES = 10 * 1024 * 1024
+
+// 파일 목록: { ptFileId, fileName, fileSize }
+const companyFiles = ref<{ ptFileId: string; fileName: string; fileSize: number }[]>([])
+const competitorFiles = ref<{ ptFileId: string; fileName: string; fileSize: number }[]>([])
+const etcRefFiles = ref<{ ptFileId: string; fileName: string; fileSize: number }[]>([])
 
 const companyInputRef = ref<HTMLInputElement | null>(null)
 const competitorInputRef = ref<HTMLInputElement | null>(null)
@@ -203,12 +231,31 @@ const removeFile = (slot: FileSlot, ptFileId: string) => {
   list.value = list.value.filter((f) => f.ptFileId !== ptFileId)
 }
 
+const onDownloadFile = async (ptFileId: string) => {
+  if (!ptFileId || downloadingFileId.value) return
+  downloadingFileId.value = ptFileId
+  try {
+    await handleDownloadPtFile(ptFileId)
+  } finally {
+    downloadingFileId.value = null
+  }
+}
+
 const onFileChange = async (slot: FileSlot, e: Event) => {
   const files = Array.from((e.target as HTMLInputElement).files ?? [])
   if (!files.length) return
 
   const purposeCd = getPurposeCd(slot)
   const fileList = getFileList(slot)
+
+  // 카테고리별 합산 용량 체크 (기존 + 추가 예정 파일)
+  const currentBytes = fileList.value.reduce((sum, f) => sum + f.fileSize, 0)
+  const addBytes = files.reduce((sum, f) => sum + f.size, 0)
+  if (currentBytes + addBytes > MAX_CATEGORY_BYTES) {
+    openToast({ message: '카테고리당 최대 10MB까지 첨부할 수 있습니다.', type: 'warning' })
+    ;(e.target as HTMLInputElement).value = ''
+    return
+  }
 
   for (const file of files) {
     try {
@@ -217,7 +264,7 @@ const onFileChange = async (slot: FileSlot, e: Event) => {
         openToast({ message: `${file.name} 업로드에 실패했습니다.`, type: 'error' })
         continue
       }
-      fileList.value.push({ ptFileId: res.ptFileId, fileName: res.fileName })
+      fileList.value.push({ ptFileId: res.ptFileId, fileName: res.fileName, fileSize: file.size })
     } catch {
       openToast({ message: `${file.name} 업로드에 실패했습니다.`, type: 'error' })
     }

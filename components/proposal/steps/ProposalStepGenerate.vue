@@ -409,7 +409,15 @@
 </template>
 
 <script setup lang="ts">
-import type { PtSection, PtSectionChatMessage, PtSlide, PtTocItem, SlideComponent, SlideImageGenProgressData, SlideImageGenDoneData } from '~/types/proposal'
+import type {
+  PtSection,
+  PtSectionChatMessage,
+  PtSlide,
+  PtTocItem,
+  SlideComponent,
+  SlideImageGenProgressData,
+  SlideImageGenDoneData,
+} from '~/types/proposal'
 import { useProposalSectionChat } from '~/composables/proposal/useProposalSectionChat'
 import { openToast } from '~/composables/useToast'
 import { openLoading, updateLoadingText, closeLoading } from '~/composables/useLoading'
@@ -668,7 +676,11 @@ const onGenerateSlideImage = () => {
       const newStatusCd = data.success ? '003' : (data.renderStatusCd ?? '004')
       const updated = props.currentSlides.map((s) =>
         s.slideId === targetSlideId
-          ? { ...s, renderStatusCd: newStatusCd as PtSlide['renderStatusCd'], ...(data.renderedImagePath ? { renderedImagePath: data.renderedImagePath } : {}) }
+          ? {
+              ...s,
+              renderStatusCd: newStatusCd as PtSlide['renderStatusCd'],
+              ...(data.renderedImagePath ? { renderedImagePath: data.renderedImagePath } : {}),
+            }
           : s,
       )
       emit('slides-updated', updated as PtSlide[])

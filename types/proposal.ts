@@ -55,6 +55,15 @@ export interface PtFileSaveResponse {
   fileName: string
 }
 
+/** PT 파일 다운로드 URL 조회 응답 */
+export interface PtFileDownloadResponse {
+  result?: string
+  url?: string
+  downloadUrl?: string
+  fileName?: string
+  reason?: string
+}
+
 // ── TB_PT_REQUIREMENT ──────────────────────────────────────────────────────────
 
 /** TB_PT_REQUIREMENT - PT 요구사항 */
@@ -474,11 +483,11 @@ export interface ProjectSettingsData {
   /** PROJECT_CONFIG_JSON.settings.writingStyle */
   writingStyle: PtWritingStyle
   /** FILE_PURPOSE_CD='005' 자사 정보 파일 목록 */
-  companyFiles: { ptFileId: string; fileName: string }[]
+  companyFiles: { ptFileId: string; fileName: string; fileSize: number }[]
   /** FILE_PURPOSE_CD='006' 경쟁사 정보 파일 목록 */
-  competitorFiles: { ptFileId: string; fileName: string }[]
+  competitorFiles: { ptFileId: string; fileName: string; fileSize: number }[]
   /** FILE_PURPOSE_CD='004' 기타 참고자료 파일 목록 */
-  etcRefFiles: { ptFileId: string; fileName: string }[]
+  etcRefFiles: { ptFileId: string; fileName: string; fileSize: number }[]
   /** 기본색조 hex 3개 */
   baseColors: [string, string, string]
   /** 강조색조 hex 2개 */

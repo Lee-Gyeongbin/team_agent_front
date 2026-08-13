@@ -1,8 +1,5 @@
 <template>
-  <div
-    class="pt-detail-page"
-    :class="{ 'is-page-scroll': currentStep === 0 }"
-  >
+  <div class="pt-detail-page">
     <!-- 헤더 -->
     <div class="pt-detail-head">
       <button

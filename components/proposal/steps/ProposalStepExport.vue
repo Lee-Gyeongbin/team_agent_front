@@ -27,7 +27,7 @@
 
       <!-- 빌드 진행 상태 -->
       <template v-else>
-        <!-- 빌드 중 (대기/이미지생성중/PPT조립중) -->
+        <!-- 빌드 중 -->
         <div
           v-if="
             exportData.buildStatusCd === '001' ||
@@ -37,7 +37,7 @@
           class="pt-final-status is-building"
         >
           <i class="icon-spinner size-20" />
-          <span>{{ buildStatusLabel }} 중...</span>
+          <span>출력 준비 중...</span>
         </div>
 
         <!-- 완료 -->
@@ -47,7 +47,7 @@
         >
           <i class="icon-check size-20" />
           <span>출력 완료</span>
-          <span class="pt-final-format-badge">{{ exportData.exportTypeCd === '002' ? 'PDF' : 'PPTX' }}</span>
+          <span class="pt-final-format-badge">{{ exportFormatLabel }}</span>
           <template v-if="exportData.fileSize">
             <span class="pt-final-filesize">{{ fileSizeLabel }}</span>
           </template>
@@ -115,18 +115,7 @@ const exportData = ref<PtExportVO | null>(null)
 
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
-const buildStatusLabel = computed(() => {
-  switch (exportData.value?.buildStatusCd) {
-    case '001':
-      return '대기'
-    case '002':
-      return '이미지 생성'
-    case '003':
-      return 'PPT 조립'
-    default:
-      return '처리'
-  }
-})
+const exportFormatLabel = computed(() => (exportData.value?.exportTypeCd === '002' ? 'PDF' : 'PPTX'))
 
 const fileSizeLabel = computed(() => {
   const bytes = exportData.value?.fileSize

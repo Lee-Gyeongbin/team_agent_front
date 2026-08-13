@@ -1,676 +1,713 @@
 <template>
   <div class="pt-panel pt-panel--lg pt-step-b">
-    <h3 class="pt-panel-title">목차·요구사항</h3>
-    <p class="pt-panel-desc">
-      RFP에서 자동 추출된 목차와 함께, 같은 분석으로 함께 추출된 요구사항·평가기준·현황이슈를 확인하고 직접 보완할 수
-      있습니다.
-    </p>
+    <div class="pt-step-b-head">
+      <h3 class="pt-panel-title">목차·요구사항</h3>
+      <p class="pt-panel-desc">RFP에서 추출한 목차·요구사항·평가기준·현황이슈를 확인하고 보완하세요.</p>
+    </div>
 
     <!-- RFP 파일 업로드 -->
-    <div class="pt-section-label">RFP 파일</div>
-    <div
-      class="pt-dropzone"
-      @click="onClickRfpDropzone"
-      @dragover.prevent
-      @drop.prevent="onDropRfp"
-    >
-      <i class="icon-attach-file size-18" />
-      <span
-        v-if="rfpFile"
-        class="pt-dropzone-file"
+    <div class="pt-step-b-rfp">
+      <div
+        class="pt-dropzone pt-step-b-dropzone"
+        @click="onClickRfpDropzone"
+        @dragover.prevent
+        @drop.prevent="onDropRfp"
       >
-        <i class="icon-document size-14" />
-        {{ rfpFile.name }}
-        <button
-          class="pt-dropzone-remove"
-          @click.stop="rfpFile = null"
+        <i class="icon-attach-file size-18" />
+        <span
+          v-if="rfpFile"
+          class="pt-dropzone-file"
         >
-          <i class="icon-close size-12" />
-        </button>
-      </span>
-      <span
-        v-else-if="savedRfpFileNm"
-        class="pt-dropzone-file"
-      >
-        <i class="icon-document size-14" />
-        {{ savedRfpFileNm }}
-        <span class="pt-dropzone-tag">저장됨</span>
-      </span>
-      <span v-else> <b>RFP 파일</b>을 첨부하세요 (.pdf, .hwp, .hwpx, .docx) </span>
-      <input
-        ref="rfpInputRef"
-        type="file"
-        accept=".pdf,.hwp,.hwpx,.docx,.doc"
-        style="display: none"
-        @change="onRfpFileChange"
-      />
-    </div>
-    <div class="pt-rfp-btn-row">
-      <UiButton
-        variant="primary-line"
-        size="sm"
-        :loading="isUploading"
-        :disabled="!rfpFile"
-        @click="onUploadRfp"
-      >
-        RFP 업로드
-      </UiButton>
-      <UiButton
-        variant="primary"
-        size="sm"
-        :loading="isAnalyzing"
-        :disabled="!savedRfpFileNm || isAnalyzing"
-        @click="onExtractStage1"
-      >
-        RFP 데이터 추출
-      </UiButton>
-    </div>
-
-    <UiTab
-      v-model="activeTab"
-      class="pt-step-b-tabs"
-      :tabs="subTabs"
-    />
-
-    <!-- 목차 탭 -->
-    <div v-show="activeTab === 'toc'">
-      <div class="pt-toc-toolbar">
-        <UiButton
-          variant="ghost"
-          size="sm"
-          @click="onAddItem(null)"
+          <i class="icon-document size-14" />
+          {{ rfpFile.name }}
+          <button
+            class="pt-dropzone-remove"
+            @click.stop="rfpFile = null"
+          >
+            <i class="icon-close size-12" />
+          </button>
+        </span>
+        <span
+          v-else-if="savedRfpFileNm"
+          class="pt-dropzone-file"
         >
-          대목차 추가
-        </UiButton>
-      </div>
-      <div class="pt-step-b-scroll-list">
-        <template v-if="isLoading">
-          <div
-            v-for="i in 4"
-            :key="i"
-            class="pt-toc-skeleton"
-          />
-        </template>
-        <draggable
-          v-else-if="tocList.length > 0"
-          v-model="tocList"
-          item-key="tocId"
-          handle=".pt-toc-drag"
-          animation="200"
-          class="pt-toc-list"
-          @end="onDragEnd"
-        >
-          <template #item="{ element }">
-            <div :class="['pt-toc-item', { 'is-sub': element.parentId !== null }]">
-              <span class="pt-toc-drag"><i class="icon-move-handle size-14" /></span>
-              <input
-                :value="element.title"
-                class="pt-toc-input"
-                @blur="onTitleBlur(element.tocId, ($event.target as HTMLInputElement).value)"
-              />
-              <span :class="['pt-toc-tag', element.source === 'rfp' ? 'is-rfp' : 'is-user']">
-                {{ element.source === 'rfp' ? 'RFP 추출' : '사용자 입력' }}
-              </span>
-              <button
-                v-if="element.parentId === null"
-                class="pt-toc-add-child"
-                title="소목차 추가"
-                @click="onAddItem(element.tocId)"
-              >
-                <i class="icon-plus size-12" />
-              </button>
-              <button
-                class="pt-toc-del"
-                @click="onDeleteItem(element.tocId)"
-              >
-                <i class="icon-close size-12" />
-              </button>
-            </div>
-          </template>
-        </draggable>
-        <UiEmpty
-          v-else-if="!isLoading"
-          title="목차가 없습니다. RFP 데이터 추출 또는 직접 추가하세요."
+          <i class="icon-document size-14" />
+          {{ savedRfpFileNm }}
+          <span class="pt-dropzone-tag">저장됨</span>
+          <button
+            type="button"
+            class="pt-dropzone-download"
+            title="RFP 파일 다운로드"
+            :disabled="isDownloading || !savedRfpPtFileId"
+            @click.stop="onDownloadRfp"
+          >
+            <i class="icon-download size-14" />
+          </button>
+        </span>
+        <span v-else>RFP 파일을 첨부하세요</span>
+        <input
+          ref="rfpInputRef"
+          type="file"
+          accept=".pdf,.hwp,.hwpx,.docx,.doc"
+          style="display: none"
+          @change="onRfpFileChange"
         />
       </div>
-    </div>
-
-    <!-- 요구사항 탭 -->
-    <div v-show="activeTab === 'req'">
-      <div
-        v-if="confirmNeededCount"
-        class="pt-alertbar"
-      >
-        ⚠ 확인이 필요한 요구사항이 {{ confirmNeededCount }}건 있습니다.
-      </div>
-      <div class="pt-toolbar">
-        <div
-          class="pt-tab-usage-hint"
-          role="note"
-        >
-          <i
-            class="icon-warning-triangle size-16"
-            aria-hidden="true"
-          />
-          <p class="pt-tab-usage-hint__text">
-            소목차에 매핑되어 슬라이드 본문 작성에 쓰입니다. 현황·이슈가 없을 때는 문제정의 근거로도 활용됩니다.
-          </p>
-        </div>
+      <div class="pt-rfp-btn-row">
         <UiButton
           variant="primary-line"
           size="sm"
-          @click="onAddReq"
+          :loading="isUploading"
+          :disabled="!rfpFile"
+          @click="onUploadRfp"
         >
-          + 요구사항 수동 추가
+          RFP 업로드
+        </UiButton>
+        <UiButton
+          variant="primary"
+          size="sm"
+          :loading="isAnalyzing"
+          :disabled="!savedRfpFileNm || isAnalyzing"
+          @click="onExtractStage1"
+        >
+          RFP 데이터 추출
+        </UiButton>
+        <UiButton
+          variant="primary-line"
+          size="sm"
+          :loading="isDownloading"
+          :disabled="!savedRfpPtFileId || isDownloading"
+          @click="onDownloadRfp"
+        >
+          <template #icon-left>
+            <i class="icon-download size-14" />
+          </template>
+          RFP 다운로드
         </UiButton>
       </div>
-      <div class="pt-req-table-wrap">
-        <UiTable
-          :columns="reqColumns"
-          :data="requirements"
-          size="sm"
-          sticky-header
-          max-height="min(480px, 50vh)"
-          empty-text="요구사항이 없습니다. RFP 데이터 추출 또는 수동 추가하세요."
-          selected-row-key="requirementId"
-          :selected-row-value="focusId ?? undefined"
-        >
-          <template #header-mandatoryYn>
-            <span class="pt-req-mandatory-header">
-              필수
-              <UiTooltip
-                font-size="11px"
-                side="bottom"
-                align="center"
-                content="필수 요구사항은 목차·슬라이드 작성 시 우선 반영되며, 누락되지 않도록 배정됩니다."
-                content-class="pt-req-mandatory-tooltip"
-              >
+    </div>
+
+    <div class="pt-step-b-body">
+      <UiTab
+        v-model="activeTab"
+        class="pt-step-b-tabs"
+        :tabs="subTabs"
+      />
+
+      <!-- 목차 탭 -->
+      <div
+        v-show="activeTab === 'toc'"
+        class="pt-step-b-tab"
+      >
+        <div class="pt-toc-toolbar">
+          <UiButton
+            variant="ghost"
+            size="sm"
+            @click="onAddItem(null)"
+          >
+            대목차 추가
+          </UiButton>
+        </div>
+        <div class="pt-step-b-scroll-list">
+          <template v-if="isLoading">
+            <div
+              v-for="i in 4"
+              :key="i"
+              class="pt-toc-skeleton"
+            />
+          </template>
+          <draggable
+            v-else-if="tocList.length > 0"
+            v-model="tocList"
+            item-key="tocId"
+            handle=".pt-toc-drag"
+            animation="200"
+            class="pt-toc-list"
+            @end="onDragEnd"
+          >
+            <template #item="{ element }">
+              <div :class="['pt-toc-item', { 'is-sub': element.parentId !== null }]">
+                <span class="pt-toc-drag"><i class="icon-move-handle size-14" /></span>
+                <input
+                  :value="element.title"
+                  class="pt-toc-input"
+                  @blur="onTitleBlur(element.tocId, ($event.target as HTMLInputElement).value)"
+                />
+                <span :class="['pt-toc-tag', element.source === 'rfp' ? 'is-rfp' : 'is-user']">
+                  {{ element.source === 'rfp' ? 'RFP 추출' : '사용자 입력' }}
+                </span>
                 <button
-                  type="button"
-                  class="pt-req-mandatory-info"
-                  aria-label="필수 안내"
+                  v-if="element.parentId === null"
+                  class="pt-toc-add-child"
+                  title="소목차 추가"
+                  @click="onAddItem(element.tocId)"
                 >
-                  <i class="icon-info size-12" />
+                  <i class="icon-plus size-12" />
                 </button>
-              </UiTooltip>
-            </span>
-          </template>
-          <template #cell-reqNo="{ row }">
-            <span :id="'req-' + row.requirementId">{{ row.reqNo || '—' }}</span>
-          </template>
-          <template #cell-reqCategoryTxt="{ row }">
-            <span class="pt-badge is-gray">{{ row.reqCategoryTxt || '미분류' }}</span>
-          </template>
-          <template #cell-reqContent="{ row }">
-            <span
-              class="pt-req-content-text"
-              :title="row.reqContent"
-            >
-              {{ row.reqContent }}
-            </span>
-          </template>
-          <template #cell-mandatoryYn="{ row }">
-            <span
-              class="pt-badge"
-              :class="row.mandatoryYn === 'Y' ? 'is-ok' : 'is-gray'"
-            >
-              {{ row.mandatoryYn === 'Y' ? '필수' : '선택' }}
-            </span>
-          </template>
-          <template #cell-sourceTypeCd="{ row }">
-            <span
-              class="pt-badge"
-              :class="sourceBadgeClass(row.sourceTypeCd)"
-            >
-              {{ sourceLabel(row.sourceTypeCd) }}
-            </span>
-          </template>
-          <template #cell-_actions="{ row }">
-            <div class="pt-req-actions">
-              <UiButton
-                variant="ghost"
-                size="sm"
-                @click="openReqEdit(row as PtRequirement)"
-              >
-                수정
-              </UiButton>
-              <UiButton
-                variant="ghost"
-                size="sm"
-                @click="onDeleteReq(row.requirementId)"
-              >
-                삭제
-              </UiButton>
-            </div>
-          </template>
-        </UiTable>
-      </div>
-
-      <!-- 요구사항 수정 모달 -->
-      <UiModal
-        :is-open="isReqEditOpen"
-        title="요구사항 수정"
-        max-width="720px"
-        custom-class="pt-req-edit-modal"
-        @close="closeReqEdit"
-      >
-        <div class="pt-req-edit-form">
-          <div class="pt-req-edit-meta">
-            <span
-              v-if="editingReq?.reqNo"
-              class="pt-req-edit-no"
-            >
-              {{ editingReq.reqNo }}
-            </span>
-            <span class="pt-badge is-gray">{{ editingReq?.reqCategoryTxt || '미분류' }}</span>
-            <span
-              v-if="editingReq"
-              class="pt-badge"
-              :class="sourceBadgeClass(editingReq.sourceTypeCd)"
-            >
-              {{ sourceLabel(editingReq.sourceTypeCd) }}
-            </span>
-          </div>
-
-          <div class="pt-req-edit-field">
-            <label class="pt-req-edit-label">요구사항 명칭</label>
-            <UiTextarea
-              v-model="editReqContent"
-              class="pt-req-edit-textarea pt-req-edit-textarea--name"
-              :rows="2"
-              :auto-resize="false"
-              border
-              size="md"
-              placeholder="요구사항 명칭을 입력하세요"
-            />
-          </div>
-
-          <div class="pt-req-edit-field">
-            <label class="pt-req-edit-label">세부내용</label>
-            <UiTextarea
-              v-model="editReqDetailTxt"
-              class="pt-req-edit-textarea pt-req-edit-textarea--detail"
-              :rows="6"
-              :auto-resize="false"
-              border
-              size="md"
-              placeholder="RFP 상세설명 원문 (없으면 비워두세요)"
-            />
-          </div>
-
-          <div class="pt-req-edit-field">
-            <div class="pt-req-edit-label-row">
-              <label class="pt-req-edit-label">필수 여부</label>
-              <span class="pt-req-edit-hint">필수 요구사항은 목차·슬라이드 작성 시 우선 반영됩니다.</span>
-            </div>
-            <div class="pt-toggle-row">
-              <button
-                type="button"
-                :class="['pt-toggle-opt', { 'is-active': editMandatoryYn === 'Y' }]"
-                @click="editMandatoryYn = 'Y'"
-              >
-                필수
-              </button>
-              <button
-                type="button"
-                :class="['pt-toggle-opt', { 'is-active': editMandatoryYn === 'N' }]"
-                @click="editMandatoryYn = 'N'"
-              >
-                선택
-              </button>
-            </div>
-          </div>
-        </div>
-        <template #footer>
-          <div class="modal-dialog-footer">
-            <UiButton
-              class="btn-modal-dialog"
-              variant="outline"
-              size="xlg"
-              @click="closeReqEdit"
-            >
-              취소
-            </UiButton>
-            <UiButton
-              class="btn-modal-dialog"
-              variant="primary"
-              size="xlg"
-              :loading="isReqSaving"
-              @click="onReqEditConfirm"
-            >
-              저장
-            </UiButton>
-          </div>
-        </template>
-      </UiModal>
-    </div>
-
-    <!-- 평가기준 탭 -->
-    <div v-show="activeTab === 'ec'">
-      <div class="pt-toolbar">
-        <div
-          class="pt-tab-usage-hint"
-          role="note"
-        >
-          <i
-            class="icon-warning-triangle size-16"
-            aria-hidden="true"
+                <button
+                  class="pt-toc-del"
+                  @click="onDeleteItem(element.tocId)"
+                >
+                  <i class="icon-close size-12" />
+                </button>
+              </div>
+            </template>
+          </draggable>
+          <UiEmpty
+            v-else-if="!isLoading"
+            title="목차가 없습니다. RFP 데이터 추출 또는 직접 추가하세요."
           />
-          <p class="pt-tab-usage-hint__text">
-            소목차와 연결되어 슬라이드 배분·본문 작성 시 평가 관점과 배점을 반영합니다.
-          </p>
         </div>
-        <UiButton
-          variant="primary-line"
-          size="sm"
-          @click="onAddEc"
-        >
-          + 평가기준 추가
-        </UiButton>
       </div>
+
+      <!-- 요구사항 탭 -->
       <div
-        class="pt-ec-sumbar"
-        :class="{ bad: evalScoreSum !== 100 }"
+        v-show="activeTab === 'req'"
+        class="pt-step-b-tab"
       >
-        <b>합계 {{ evalScoreSum }}점</b>
-        <span>{{ evalScoreSum === 100 ? '— RFP 명시 총점(100점)과 일치합니다' : '— 총점 100점과 불일치합니다' }}</span>
-      </div>
-      <div class="pt-step-b-scroll-list">
         <div
-          v-for="ec in evalCriteria"
-          :id="'ec-' + ec.evalCriteriaId"
-          :key="ec.evalCriteriaId"
-          class="pt-ec-row"
-          :class="{
-            'is-open': openEcIds.has(ec.evalCriteriaId),
-            'is-editing': editingEcId === ec.evalCriteriaId,
-          }"
+          v-if="confirmNeededCount"
+          class="pt-alertbar"
         >
-          <div
-            class="pt-ec-head"
-            role="button"
-            tabindex="0"
-            :aria-expanded="openEcIds.has(ec.evalCriteriaId)"
-            @click="toggleEc(ec.evalCriteriaId)"
-            @keydown.enter.prevent="toggleEc(ec.evalCriteriaId)"
-            @keydown.space.prevent="toggleEc(ec.evalCriteriaId)"
-          >
-            <div
-              v-if="editingEcId === ec.evalCriteriaId"
-              class="pt-ec-score is-editing"
-              @click.stop
-            >
-              <UiInput
-                id="ec-score-edit"
-                v-model="ecDraft.score"
-                number-only
-                size="sm"
-                aria-label="배점"
-              />
-            </div>
-            <div
-              v-else
-              class="pt-ec-score"
-            >
-              {{ ec.score }}
-            </div>
-            <div class="pt-ec-name-wrap">
-              <UiInput
-                v-if="editingEcId === ec.evalCriteriaId"
-                id="ec-name-edit"
-                v-model="ecDraft.evalItemNm"
-                class="pt-ec-name-input"
-                size="sm"
-                placeholder="평가기준명"
-                @click.stop
-              />
-              <span
-                v-else
-                class="pt-ec-name"
-              >
-                {{ ec.evalItemNm }}
-              </span>
-              <span
-                v-if="!openEcIds.has(ec.evalCriteriaId)"
-                class="pt-ec-hint"
-              >
-                평가의도 · 고득점 조건 · 필수 증빙
-              </span>
-            </div>
-            <button
-              v-if="editingEcId !== ec.evalCriteriaId"
-              type="button"
-              class="pt-rowdel"
-              @click.stop="onDeleteEc(ec.evalCriteriaId)"
-            >
-              ✕
-            </button>
-            <button
-              type="button"
-              class="pt-ec-chev"
-              :aria-label="openEcIds.has(ec.evalCriteriaId) ? '상세 접기' : '상세 펼치기'"
-              @click.stop="toggleEc(ec.evalCriteriaId)"
-            >
-              <i
-                class="icon-chevron-down size-16"
-                :class="{ 'is-open': openEcIds.has(ec.evalCriteriaId) }"
-              />
-            </button>
-          </div>
-          <div
-            v-show="openEcIds.has(ec.evalCriteriaId)"
-            class="pt-ec-detail"
-          >
-            <template v-if="editingEcId === ec.evalCriteriaId">
-              <label>평가 의도</label>
-              <UiTextarea
-                v-model="ecDraft.evalIntent"
-                :rows="3"
-                :auto-resize="false"
-                border
-                size="md"
-                placeholder="평가 의도를 입력하세요"
-              />
-              <label>고득점 조건</label>
-              <UiTextarea
-                v-model="ecDraft.highScoreCondition"
-                :rows="3"
-                :auto-resize="false"
-                border
-                size="md"
-                placeholder="고득점 조건을 입력하세요"
-              />
-              <label>필수 증빙</label>
-              <UiTextarea
-                v-model="ecDraft.requiredEvidence"
-                :rows="3"
-                :auto-resize="false"
-                border
-                size="md"
-                placeholder="필수 증빙을 입력하세요"
-              />
-            </template>
-            <template v-else>
-              <label>평가 의도</label>
-              <p
-                class="pt-ec-view-text"
-                :class="{ 'is-empty': !ec.evalIntent }"
-              >
-                {{ ec.evalIntent || '내용 없음' }}
-              </p>
-              <label>고득점 조건</label>
-              <p
-                class="pt-ec-view-text"
-                :class="{ 'is-empty': !ec.highScoreCondition }"
-              >
-                {{ ec.highScoreCondition || '내용 없음' }}
-              </p>
-              <label>필수 증빙</label>
-              <p
-                class="pt-ec-view-text"
-                :class="{ 'is-empty': !ec.requiredEvidence }"
-              >
-                {{ ec.requiredEvidence || '내용 없음' }}
-              </p>
-            </template>
-
-            <div class="pt-ec-detail-toolbar">
-              <template v-if="editingEcId === ec.evalCriteriaId">
-                <UiButton
-                  variant="outline"
-                  size="sm"
-                  :disabled="isEcSaving"
-                  @click="onCancelEditEc"
-                >
-                  취소
-                </UiButton>
-                <UiButton
-                  variant="primary"
-                  size="sm"
-                  :loading="isEcSaving"
-                  @click="onSaveEc"
-                >
-                  저장
-                </UiButton>
-              </template>
-              <UiButton
-                v-else
-                variant="primary-line"
-                size="sm"
-                @click="onStartEditEc(ec)"
-              >
-                수정
-              </UiButton>
-            </div>
-          </div>
+          ⚠ 확인이 필요한 요구사항이 {{ confirmNeededCount }}건 있습니다.
         </div>
-      </div>
-    </div>
-
-    <!-- 현황·이슈 탭 -->
-    <div v-show="activeTab === 'issue'">
-      <div class="pt-toolbar">
-        <div
-          class="pt-tab-usage-hint"
-          role="note"
-        >
-          <i
-            class="icon-warning-triangle size-16"
-            aria-hidden="true"
-          />
-          <p class="pt-tab-usage-hint__text">
-            발주기관의 현황·문제점으로, 전략분석(문제정의·Win Theme)의 핵심 근거로 사용됩니다.
-          </p>
-        </div>
-        <UiButton
-          variant="primary-line"
-          size="sm"
-          @click="onAddIssue"
-        >
-          + 이슈 수동 추가
-        </UiButton>
-      </div>
-      <div class="pt-step-b-scroll-list">
-        <div class="pt-issue-grid">
+        <div class="pt-toolbar">
           <div
-            v-for="issue in rfpIssues"
-            :id="'issue-' + issue.issueId"
-            :key="issue.issueId"
-            class="pt-issue-card"
-            :class="{
-              'is-focus': focusId === issue.issueId,
-              'is-editing': editingIssueId === issue.issueId,
-            }"
+            class="pt-tab-usage-hint"
+            role="note"
           >
-            <div class="pt-issue-top">
+            <i
+              class="icon-warning-triangle size-16"
+              aria-hidden="true"
+            />
+            <p class="pt-tab-usage-hint__text">
+              소목차에 매핑되어 슬라이드 본문 작성에 쓰입니다. 현황·이슈가 없을 때는 문제정의 근거로도 활용됩니다.
+            </p>
+          </div>
+          <UiButton
+            variant="primary-line"
+            size="sm"
+            @click="onAddReq"
+          >
+            + 요구사항 수동 추가
+          </UiButton>
+        </div>
+        <div class="pt-req-table-wrap">
+          <UiTable
+            :columns="reqColumns"
+            :data="requirements"
+            size="sm"
+            sticky-header
+            max-height="100%"
+            empty-text="요구사항이 없습니다. RFP 데이터 추출 또는 수동 추가하세요."
+            selected-row-key="requirementId"
+            :selected-row-value="focusId ?? undefined"
+          >
+            <template #header-mandatoryYn>
+              <span class="pt-req-mandatory-header">
+                필수
+                <UiTooltip
+                  font-size="11px"
+                  side="bottom"
+                  align="center"
+                  content="필수 요구사항은 목차·슬라이드 작성 시 우선 반영되며, 누락되지 않도록 배정됩니다."
+                  content-class="pt-req-mandatory-tooltip"
+                >
+                  <button
+                    type="button"
+                    class="pt-req-mandatory-info"
+                    aria-label="필수 안내"
+                  >
+                    <i class="icon-info size-12" />
+                  </button>
+                </UiTooltip>
+              </span>
+            </template>
+            <template #cell-reqNo="{ row }">
+              <span :id="'req-' + row.requirementId">{{ row.reqNo || '—' }}</span>
+            </template>
+            <template #cell-reqCategoryTxt="{ row }">
+              <span class="pt-badge is-gray">{{ row.reqCategoryTxt || '미분류' }}</span>
+            </template>
+            <template #cell-reqContent="{ row }">
+              <span
+                class="pt-req-content-text"
+                :title="row.reqContent"
+              >
+                {{ row.reqContent }}
+              </span>
+            </template>
+            <template #cell-mandatoryYn="{ row }">
               <span
                 class="pt-badge"
-                :class="issueTypeBadge(issue.issueTypeCd)"
-                >{{ issueTypeLabel(issue.issueTypeCd) }}</span
+                :class="row.mandatoryYn === 'Y' ? 'is-ok' : 'is-gray'"
               >
-              <UiInput
-                v-if="editingIssueId === issue.issueId"
-                id="issue-label-edit"
-                v-model="issueDraft.issueLabel"
-                class="pt-issue-label-input"
-                size="sm"
-                placeholder="이슈 제목"
-              />
-              <span
-                v-else
-                class="pt-issue-label-text"
-              >
-                {{ issue.issueLabel || '제목 없음' }}
+                {{ row.mandatoryYn === 'Y' ? '필수' : '선택' }}
               </span>
+            </template>
+            <template #cell-sourceTypeCd="{ row }">
+              <span
+                class="pt-badge"
+                :class="sourceBadgeClass(row.sourceTypeCd)"
+              >
+                {{ sourceLabel(row.sourceTypeCd) }}
+              </span>
+            </template>
+            <template #cell-_actions="{ row }">
+              <div class="pt-req-actions">
+                <UiButton
+                  variant="ghost"
+                  size="sm"
+                  @click="openReqEdit(row as PtRequirement)"
+                >
+                  수정
+                </UiButton>
+                <UiButton
+                  variant="ghost"
+                  size="sm"
+                  @click="onDeleteReq(row.requirementId)"
+                >
+                  삭제
+                </UiButton>
+              </div>
+            </template>
+          </UiTable>
+        </div>
+
+        <!-- 요구사항 수정 모달 -->
+        <UiModal
+          :is-open="isReqEditOpen"
+          title="요구사항 수정"
+          max-width="720px"
+          custom-class="pt-req-edit-modal"
+          @close="closeReqEdit"
+        >
+          <div class="pt-req-edit-form">
+            <div class="pt-req-edit-meta">
+              <span
+                v-if="editingReq?.reqNo"
+                class="pt-req-edit-no"
+              >
+                {{ editingReq.reqNo }}
+              </span>
+              <span class="pt-badge is-gray">{{ editingReq?.reqCategoryTxt || '미분류' }}</span>
+              <span
+                v-if="editingReq"
+                class="pt-badge"
+                :class="sourceBadgeClass(editingReq.sourceTypeCd)"
+              >
+                {{ sourceLabel(editingReq.sourceTypeCd) }}
+              </span>
+            </div>
+
+            <div class="pt-req-edit-field">
+              <label class="pt-req-edit-label">요구사항 명칭</label>
+              <UiTextarea
+                v-model="editReqContent"
+                class="pt-req-edit-textarea pt-req-edit-textarea--name"
+                :rows="2"
+                :auto-resize="false"
+                border
+                size="md"
+                placeholder="요구사항 명칭을 입력하세요"
+              />
+            </div>
+
+            <div class="pt-req-edit-field">
+              <label class="pt-req-edit-label">세부내용</label>
+              <UiTextarea
+                v-model="editReqDetailTxt"
+                class="pt-req-edit-textarea pt-req-edit-textarea--detail"
+                :rows="6"
+                :auto-resize="false"
+                border
+                size="md"
+                placeholder="RFP 상세설명 원문 (없으면 비워두세요)"
+              />
+            </div>
+
+            <div class="pt-req-edit-field">
+              <div class="pt-req-edit-label-row">
+                <label class="pt-req-edit-label">필수 여부</label>
+                <span class="pt-req-edit-hint">필수 요구사항은 목차·슬라이드 작성 시 우선 반영됩니다.</span>
+              </div>
+              <div class="pt-toggle-row">
+                <button
+                  type="button"
+                  :class="['pt-toggle-opt', { 'is-active': editMandatoryYn === 'Y' }]"
+                  @click="editMandatoryYn = 'Y'"
+                >
+                  필수
+                </button>
+                <button
+                  type="button"
+                  :class="['pt-toggle-opt', { 'is-active': editMandatoryYn === 'N' }]"
+                  @click="editMandatoryYn = 'N'"
+                >
+                  선택
+                </button>
+              </div>
+            </div>
+          </div>
+          <template #footer>
+            <div class="modal-dialog-footer">
+              <UiButton
+                class="btn-modal-dialog"
+                variant="outline"
+                size="xlg"
+                @click="closeReqEdit"
+              >
+                취소
+              </UiButton>
+              <UiButton
+                class="btn-modal-dialog"
+                variant="primary"
+                size="xlg"
+                :loading="isReqSaving"
+                @click="onReqEditConfirm"
+              >
+                저장
+              </UiButton>
+            </div>
+          </template>
+        </UiModal>
+      </div>
+
+      <!-- 평가기준 탭 -->
+      <div
+        v-show="activeTab === 'ec'"
+        class="pt-step-b-tab"
+      >
+        <div class="pt-toolbar">
+          <div
+            class="pt-tab-usage-hint"
+            role="note"
+          >
+            <i
+              class="icon-warning-triangle size-16"
+              aria-hidden="true"
+            />
+            <p class="pt-tab-usage-hint__text">
+              소목차와 연결되어 슬라이드 배분·본문 작성 시 평가 관점과 배점을 반영합니다.
+            </p>
+          </div>
+          <UiButton
+            variant="primary-line"
+            size="sm"
+            @click="onAddEc"
+          >
+            + 평가기준 추가
+          </UiButton>
+        </div>
+        <div
+          class="pt-ec-sumbar"
+          :class="{ bad: evalScoreSum !== 100 }"
+        >
+          <b>합계 {{ evalScoreSum }}점</b>
+          <span>{{
+            evalScoreSum === 100 ? '— RFP 명시 총점(100점)과 일치합니다' : '— 총점 100점과 불일치합니다'
+          }}</span>
+        </div>
+        <div class="pt-step-b-scroll-list">
+          <div
+            v-for="ec in evalCriteria"
+            :id="'ec-' + ec.evalCriteriaId"
+            :key="ec.evalCriteriaId"
+            class="pt-ec-row"
+            :class="{
+              'is-open': openEcIds.has(ec.evalCriteriaId),
+              'is-editing': editingEcId === ec.evalCriteriaId,
+            }"
+          >
+            <div
+              class="pt-ec-head"
+              role="button"
+              tabindex="0"
+              :aria-expanded="openEcIds.has(ec.evalCriteriaId)"
+              @click="toggleEc(ec.evalCriteriaId)"
+              @keydown.enter.prevent="toggleEc(ec.evalCriteriaId)"
+              @keydown.space.prevent="toggleEc(ec.evalCriteriaId)"
+            >
+              <div
+                v-if="editingEcId === ec.evalCriteriaId"
+                class="pt-ec-score is-editing"
+                @click.stop
+              >
+                <UiInput
+                  id="ec-score-edit"
+                  v-model="ecDraft.score"
+                  number-only
+                  size="sm"
+                  aria-label="배점"
+                />
+              </div>
+              <div
+                v-else
+                class="pt-ec-score"
+              >
+                {{ ec.score }}
+              </div>
+              <div class="pt-ec-name-wrap">
+                <UiInput
+                  v-if="editingEcId === ec.evalCriteriaId"
+                  id="ec-name-edit"
+                  v-model="ecDraft.evalItemNm"
+                  class="pt-ec-name-input"
+                  size="sm"
+                  placeholder="평가기준명"
+                  @click.stop
+                />
+                <span
+                  v-else
+                  class="pt-ec-name"
+                >
+                  {{ ec.evalItemNm }}
+                </span>
+                <span
+                  v-if="!openEcIds.has(ec.evalCriteriaId)"
+                  class="pt-ec-hint"
+                >
+                  평가의도 · 고득점 조건 · 필수 증빙
+                </span>
+              </div>
               <button
-                v-if="editingIssueId !== issue.issueId"
+                v-if="editingEcId !== ec.evalCriteriaId"
                 type="button"
                 class="pt-rowdel"
-                @click="onDeleteIssue(issue.issueId)"
+                @click.stop="onDeleteEc(ec.evalCriteriaId)"
               >
                 ✕
               </button>
-            </div>
-
-            <template v-if="editingIssueId === issue.issueId">
-              <UiTextarea
-                v-model="issueDraft.issueContent"
-                class="pt-issue-content-edit"
-                :rows="3"
-                :auto-resize="false"
-                border
-                size="md"
-                placeholder="이슈 내용을 입력하세요"
-              />
-            </template>
-            <p
-              v-else
-              class="pt-issue-view-text"
-              :class="{ 'is-empty': !issue.issueContent }"
-            >
-              {{ issue.issueContent || '내용 없음' }}
-            </p>
-
-            <div class="pt-issue-meta">
-              출처: {{ issue.sourceSection || '—' }}
-              <template v-if="issue.sourcePage"> · {{ issue.sourcePage }}p</template>
-              · {{ issue.issueId }}
-            </div>
-
-            <div class="pt-issue-detail-toolbar">
-              <template v-if="editingIssueId === issue.issueId">
-                <UiButton
-                  variant="outline"
-                  size="sm"
-                  :disabled="isIssueSaving"
-                  @click="onCancelEditIssue"
-                >
-                  취소
-                </UiButton>
-                <UiButton
-                  variant="primary"
-                  size="sm"
-                  :loading="isIssueSaving"
-                  @click="onSaveIssue"
-                >
-                  저장
-                </UiButton>
-              </template>
-              <UiButton
-                v-else
-                variant="primary-line"
-                size="sm"
-                @click="onStartEditIssue(issue)"
+              <button
+                type="button"
+                class="pt-ec-chev"
+                :aria-label="openEcIds.has(ec.evalCriteriaId) ? '상세 접기' : '상세 펼치기'"
+                @click.stop="toggleEc(ec.evalCriteriaId)"
               >
-                수정
-              </UiButton>
+                <i
+                  class="icon-chevron-down size-16"
+                  :class="{ 'is-open': openEcIds.has(ec.evalCriteriaId) }"
+                />
+              </button>
+            </div>
+            <div
+              v-show="openEcIds.has(ec.evalCriteriaId)"
+              class="pt-ec-detail"
+            >
+              <template v-if="editingEcId === ec.evalCriteriaId">
+                <label>평가 의도</label>
+                <UiTextarea
+                  v-model="ecDraft.evalIntent"
+                  :rows="3"
+                  :auto-resize="false"
+                  border
+                  size="md"
+                  placeholder="평가 의도를 입력하세요"
+                />
+                <label>고득점 조건</label>
+                <UiTextarea
+                  v-model="ecDraft.highScoreCondition"
+                  :rows="3"
+                  :auto-resize="false"
+                  border
+                  size="md"
+                  placeholder="고득점 조건을 입력하세요"
+                />
+                <label>필수 증빙</label>
+                <UiTextarea
+                  v-model="ecDraft.requiredEvidence"
+                  :rows="3"
+                  :auto-resize="false"
+                  border
+                  size="md"
+                  placeholder="필수 증빙을 입력하세요"
+                />
+              </template>
+              <template v-else>
+                <label>평가 의도</label>
+                <p
+                  class="pt-ec-view-text"
+                  :class="{ 'is-empty': !ec.evalIntent }"
+                >
+                  {{ ec.evalIntent || '내용 없음' }}
+                </p>
+                <label>고득점 조건</label>
+                <p
+                  class="pt-ec-view-text"
+                  :class="{ 'is-empty': !ec.highScoreCondition }"
+                >
+                  {{ ec.highScoreCondition || '내용 없음' }}
+                </p>
+                <label>필수 증빙</label>
+                <p
+                  class="pt-ec-view-text"
+                  :class="{ 'is-empty': !ec.requiredEvidence }"
+                >
+                  {{ ec.requiredEvidence || '내용 없음' }}
+                </p>
+              </template>
+
+              <div class="pt-ec-detail-toolbar">
+                <template v-if="editingEcId === ec.evalCriteriaId">
+                  <UiButton
+                    variant="outline"
+                    size="sm"
+                    :disabled="isEcSaving"
+                    @click="onCancelEditEc"
+                  >
+                    취소
+                  </UiButton>
+                  <UiButton
+                    variant="primary"
+                    size="sm"
+                    :loading="isEcSaving"
+                    @click="onSaveEc"
+                  >
+                    저장
+                  </UiButton>
+                </template>
+                <UiButton
+                  v-else
+                  variant="primary-line"
+                  size="sm"
+                  @click="onStartEditEc(ec)"
+                >
+                  수정
+                </UiButton>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 현황·이슈 탭 -->
+      <div
+        v-show="activeTab === 'issue'"
+        class="pt-step-b-tab"
+      >
+        <div class="pt-toolbar">
+          <div
+            class="pt-tab-usage-hint"
+            role="note"
+          >
+            <i
+              class="icon-warning-triangle size-16"
+              aria-hidden="true"
+            />
+            <p class="pt-tab-usage-hint__text">
+              발주기관의 현황·문제점으로, 전략분석(문제정의·Win Theme)의 핵심 근거로 사용됩니다.
+            </p>
+          </div>
+          <UiButton
+            variant="primary-line"
+            size="sm"
+            @click="onAddIssue"
+          >
+            + 이슈 수동 추가
+          </UiButton>
+        </div>
+        <div class="pt-step-b-scroll-list">
+          <div class="pt-issue-grid">
+            <div
+              v-for="issue in rfpIssues"
+              :id="'issue-' + issue.issueId"
+              :key="issue.issueId"
+              class="pt-issue-card"
+              :class="{
+                'is-focus': focusId === issue.issueId,
+                'is-editing': editingIssueId === issue.issueId,
+              }"
+            >
+              <div class="pt-issue-top">
+                <span
+                  class="pt-badge"
+                  :class="issueTypeBadge(issue.issueTypeCd)"
+                  >{{ issueTypeLabel(issue.issueTypeCd) }}</span
+                >
+                <UiInput
+                  v-if="editingIssueId === issue.issueId"
+                  id="issue-label-edit"
+                  v-model="issueDraft.issueLabel"
+                  class="pt-issue-label-input"
+                  size="sm"
+                  placeholder="이슈 제목"
+                />
+                <span
+                  v-else
+                  class="pt-issue-label-text"
+                >
+                  {{ issue.issueLabel || '제목 없음' }}
+                </span>
+                <button
+                  v-if="editingIssueId !== issue.issueId"
+                  type="button"
+                  class="pt-rowdel"
+                  @click="onDeleteIssue(issue.issueId)"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <template v-if="editingIssueId === issue.issueId">
+                <UiTextarea
+                  v-model="issueDraft.issueContent"
+                  class="pt-issue-content-edit"
+                  :rows="3"
+                  :auto-resize="false"
+                  border
+                  size="md"
+                  placeholder="이슈 내용을 입력하세요"
+                />
+              </template>
+              <p
+                v-else
+                class="pt-issue-view-text"
+                :class="{ 'is-empty': !issue.issueContent }"
+              >
+                {{ issue.issueContent || '내용 없음' }}
+              </p>
+
+              <div class="pt-issue-meta">
+                출처: {{ issue.sourceSection || '—' }}
+                <template v-if="issue.sourcePage"> · {{ issue.sourcePage }}p</template>
+                · {{ issue.issueId }}
+              </div>
+
+              <div class="pt-issue-detail-toolbar">
+                <template v-if="editingIssueId === issue.issueId">
+                  <UiButton
+                    variant="outline"
+                    size="sm"
+                    :disabled="isIssueSaving"
+                    @click="onCancelEditIssue"
+                  >
+                    취소
+                  </UiButton>
+                  <UiButton
+                    variant="primary"
+                    size="sm"
+                    :loading="isIssueSaving"
+                    @click="onSaveIssue"
+                  >
+                    저장
+                  </UiButton>
+                </template>
+                <UiButton
+                  v-else
+                  variant="primary-line"
+                  size="sm"
+                  @click="onStartEditIssue(issue)"
+                >
+                  수정
+                </UiButton>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="pt-panel-actions">
+    <div class="pt-panel-actions pt-step-b-actions">
       <UiButton
         variant="primary"
         size="md"
@@ -721,7 +758,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<{ next: []; 'focus-cleared': [] }>()
 
 const ptProjectIdRef = computed(() => props.ptProjectId)
-const { handleUploadPtFile } = useProposalFileStore()
+const { handleUploadPtFile, handleDownloadPtFile } = useProposalFileStore()
 const {
   streamExtractStage1,
   fetchSelectPtRfpFile,
@@ -784,7 +821,7 @@ const subTabs = computed(() => [
 
 const reqColumns: TableColumn[] = [
   { key: 'reqNo', label: '번호', width: '90px', align: 'center', headerAlign: 'center' },
-  { key: 'reqCategoryTxt', label: '분류', width: '120px', align: 'center', headerAlign: 'center' },
+  { key: 'reqCategoryTxt', label: '분류', width: '130px', align: 'center', headerAlign: 'center' },
   { key: 'reqContent', label: '요구사항 명칭', align: 'left', headerAlign: 'left' },
   { key: 'mandatoryYn', label: '필수', width: '84px', align: 'center', headerAlign: 'center' },
   { key: 'sourceTypeCd', label: '출처', width: '80px', align: 'center', headerAlign: 'center' },
@@ -801,7 +838,9 @@ const editMandatoryYn = ref<'Y' | 'N'>('Y')
 const rfpInputRef = ref<HTMLInputElement | null>(null)
 const rfpFile = ref<File | null>(null)
 const savedRfpFileNm = ref<string | null>(null)
+const savedRfpPtFileId = ref<string | null>(null)
 const isUploading = ref(false)
+const isDownloading = ref(false)
 const isAnalyzing = ref(false)
 
 const confirmNeededCount = computed(
@@ -852,6 +891,7 @@ onMounted(async () => {
   await loadStage1()
   if (rfpRes?.result === 'OK' && rfpRes.data?.fileName) {
     savedRfpFileNm.value = rfpRes.data.fileName
+    savedRfpPtFileId.value = rfpRes.data.ptFileId || null
   }
 })
 
@@ -874,12 +914,23 @@ const onUploadRfp = async () => {
       return
     }
     savedRfpFileNm.value = res.fileName || uploadingFileName
+    savedRfpPtFileId.value = res.ptFileId || null
     rfpFile.value = null
     openToast({ message: 'RFP 파일이 업로드되었습니다.' })
   } catch {
     openToast({ message: '업로드 중 오류가 발생했습니다.', type: 'error' })
   } finally {
     isUploading.value = false
+  }
+}
+
+const onDownloadRfp = async () => {
+  if (!savedRfpPtFileId.value || isDownloading.value) return
+  isDownloading.value = true
+  try {
+    await handleDownloadPtFile(savedRfpPtFileId.value)
+  } finally {
+    isDownloading.value = false
   }
 }
 
@@ -1200,29 +1251,120 @@ const onDeleteIssue = async (id: string) => {
 </script>
 
 <style lang="scss" scoped>
+.pt-panel.pt-step-b {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  padding: $spacing-md $spacing-lg;
+}
+
+.pt-step-b-head {
+  display: flex;
+  align-items: baseline;
+  gap: $spacing-sm;
+  flex-shrink: 0;
+  margin-bottom: $spacing-sm;
+
+  .pt-panel-title {
+    @include typo($body-medium-bold);
+    margin: 0;
+  }
+
+  .pt-panel-desc {
+    @include typo($body-small);
+    margin: 0;
+  }
+}
+
+.pt-step-b-rfp {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-shrink: 0;
+  margin-bottom: $spacing-sm;
+}
+
+.pt-step-b-dropzone {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+  padding: 8px 12px;
+  justify-content: flex-start;
+  text-align: left;
+  @include typo($body-small);
+}
+
+.pt-step-b-rfp .pt-rfp-btn-row {
+  margin: 0;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.pt-step-b-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .pt-step-b-tabs {
-  margin: $spacing-md 0;
+  flex-shrink: 0;
+  margin: 0 0 $spacing-sm;
 
   :deep(.ui-tab-inner) {
     max-width: none;
     margin: 0;
     padding: 0;
   }
+
+  :deep(.ui-tab-item) {
+    padding: 8px 12px;
+    @include typo($body-medium);
+  }
+}
+
+.pt-step-b-tab {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pt-step-b-actions {
+  flex-shrink: 0;
+  margin-top: 0;
+  padding-top: $spacing-sm;
+  border-top: 1px solid $color-border;
 }
 
 .pt-step-b-scroll-list {
-  max-height: min(480px, 50vh);
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
   @include custom-scrollbar;
 }
 
 .pt-req-table-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   border: 1px solid $color-border;
   border-radius: $border-radius-lg;
   overflow: hidden;
   background: #fff;
 
   :deep(.ui-table-wrap) {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    max-height: none;
+    overflow: auto;
+    overscroll-behavior: contain;
     @include custom-scrollbar;
   }
 
@@ -1354,7 +1496,7 @@ const onDeleteIssue = async (id: string) => {
   display: flex;
   align-items: flex-start;
   gap: 6px;
-  margin: 10px 0 8px;
+  margin: 0;
   min-width: 0;
 
   > i {
@@ -1362,6 +1504,17 @@ const onDeleteIssue = async (id: string) => {
     margin-top: 2px;
     color: var(--color-primary);
   }
+}
+
+.pt-toolbar {
+  flex-shrink: 0;
+  margin-bottom: 8px;
+}
+
+.pt-toc-toolbar,
+.pt-alertbar,
+.pt-ec-sumbar {
+  flex-shrink: 0;
 }
 
 .pt-toolbar .pt-tab-usage-hint {
@@ -1377,7 +1530,7 @@ const onDeleteIssue = async (id: string) => {
 
 .pt-tab-usage-hint__text {
   margin: 0;
-  @include typo($body-small);
+  @include typo($body-xsmall);
   color: var(--color-primary);
   line-height: $line-height-base;
 }

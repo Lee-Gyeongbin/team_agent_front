@@ -203,7 +203,7 @@ const emit = defineEmits<{
   next: []
 }>()
 
-const { streamAnalyzeStage2Toc, fetchSelectStage2TocMapping } = useProposalApi()
+const { streamAnalyzeStage2Toc, fetchSelectStage2TocMapping, fetchSelectStage2Summary } = useProposalApi()
 
 const loadingSteps = [
   {
@@ -320,8 +320,17 @@ const startToc = () => {
 }
 
 onMounted(async () => {
-  // TODO: fetchSelectStage2Summary로 stage2StatusCd 확인
-  // 003(전체완료)이면 재실행 없이 완료 상태로 바로 표시 (현재는 항상 실행)
+  try {
+    const res = await fetchSelectStage2Summary(props.ptProjectId)
+    if (res.result === 'OK' && res.data?.stage2StatusCd === '003') {
+      // 전체완료 — TOC 재생성 없이 기존 결과 표시
+      isDone.value = true
+      await loadTocResult()
+      return
+    }
+  } catch {
+    /* 조회 실패 시 fallback으로 재생성 */
+  }
   startToc()
 })
 </script>

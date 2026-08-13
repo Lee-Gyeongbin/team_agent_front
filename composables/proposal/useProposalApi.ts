@@ -35,6 +35,7 @@ import type {
   PtFileUploadUrlRequest,
   PtFileSavePayload,
   PtFileSaveResponse,
+  PtFileDownloadResponse,
   SlideImageViewResponse,
   PtExportVO,
   PtExportRequest,
@@ -78,6 +79,11 @@ export const useProposalApi = () => {
   /** PT 파일 메타 저장 (NCP 업로드 완료 후 TB_PT_FILE INSERT) */
   const fetchSavePtFile = async (payload: PtFileSavePayload): Promise<PtFileSaveResponse> => {
     return post<PtFileSaveResponse>('/ai/proposal/savePtFile.do', payload)
+  }
+
+  /** PT 파일 다운로드용 presigned URL 조회 */
+  const fetchDownloadPtFile = async (ptFileId: string): Promise<PtFileDownloadResponse> => {
+    return post<PtFileDownloadResponse>('/ai/proposal/downloadPtFile.do', { ptFileId })
   }
 
   /** PT 프로젝트 단건 조회 (상세 페이지 진입 시) */
@@ -826,6 +832,7 @@ export const useProposalApi = () => {
   return {
     fetchCreatePtFileUploadUrl,
     fetchSavePtFile,
+    fetchDownloadPtFile,
     fetchSelectPtProject,
     fetchPtProjectList,
     fetchSavePtProject,

@@ -1,10 +1,9 @@
 <template>
   <div class="pt-panel pt-panel--lg pt-strategy">
-    <h3 class="pt-panel-title">전략검토</h3>
-    <p class="pt-panel-desc">
-      템플릿 생성이 확정되면 RFP 분석 결과를 바탕으로 문제정의·Win Theme·요구사항 매핑이 자동 생성됩니다. 본문생성으로
-      넘어가기 전 이 화면에서 결과를 확인하고 보완할 수 있습니다.
-    </p>
+    <div class="pt-strategy-head">
+      <h3 class="pt-panel-title">전략검토</h3>
+      <p class="pt-panel-desc">문제정의와 Win Theme를 확인하고 보완하세요.</p>
+    </div>
 
     <!-- 최초 진입 로딩 -->
     <div
@@ -36,42 +35,78 @@
       v-else
       class="pt-s4-wrap"
     >
-      <div class="pt-s4-content">
-        <div class="pt-toolbar pt-strategy-topbar">
-          <UiButton
-            variant="primary-line"
-            size="sm"
-            :loading="isRegeneratingAll"
-            @click="onRegenerateAll"
-          >
-            ↻ 전체 재생성
-          </UiButton>
-        </div>
-
-        <UiTab
-          v-model="activeTab"
-          class="pt-strategy-tabs"
-          :tabs="strategyTabs"
-        />
-
-        <!-- 문제정의 -->
-        <div v-show="activeTab === 'pd'">
-          <div class="pt-toolbar">
-            <span
-              class="pt-badge"
-              :class="summary?.problemDefinitionCount ? 'is-ok' : 'is-gray'"
-            >
-              {{ summary?.problemDefinitionCount ? `완료 ${summary.problemDefinitionCount}건` : '대기' }}
-            </span>
+      <div
+        class="pt-s4-content"
+        :class="{ 'pt-s4-content--pd-fill': activeTab === 'pd' }"
+      >
+        <div class="pt-strategy-chrome">
+          <UiTab
+            v-model="activeTab"
+            class="pt-strategy-tabs"
+            :tabs="strategyTabs"
+          />
+          <div class="pt-strategy-chrome-actions">
+            <template v-if="activeTab === 'pd'">
+              <span
+                class="pt-badge"
+                :class="summary?.problemDefinitionCount ? 'is-ok' : 'is-gray'"
+              >
+                {{ summary?.problemDefinitionCount ? `완료 ${summary.problemDefinitionCount}건` : '대기' }}
+              </span>
+              <UiButton
+                variant="primary-line"
+                size="sm"
+                :loading="isRegeneratingAllPd"
+                @click="onRegenerateAllPd"
+              >
+                ↻ 문제정의 재생성
+              </UiButton>
+            </template>
+            <template v-else>
+              <span
+                class="pt-badge"
+                :class="summary?.winThemeStaleCount ? 'is-warn' : summary?.winThemeCount ? 'is-ok' : 'is-gray'"
+              >
+                {{
+                  summary?.winThemeStaleCount
+                    ? `보완필요 ${summary.winThemeStaleCount}건`
+                    : summary?.winThemeCount
+                      ? `완료 ${summary.winThemeCount}건`
+                      : '대기'
+                }}
+              </span>
+              <UiButton
+                variant="primary-line"
+                size="sm"
+                :loading="regeneratingWtId === 'all'"
+                @click="onRegenerateWt"
+              >
+                ↻ Win Theme 재생성
+              </UiButton>
+              <UiButton
+                variant="primary-line"
+                size="sm"
+                @click="onAddWt"
+              >
+                + Win Theme 수동 추가
+              </UiButton>
+            </template>
             <UiButton
               variant="primary-line"
               size="sm"
-              :loading="isRegeneratingAllPd"
-              @click="onRegenerateAllPd"
+              :loading="isRegeneratingAll"
+              @click="onRegenerateAll"
             >
-              ↻ 문제정의 재생성
+              ↻ 전체 재생성
             </UiButton>
           </div>
+        </div>
+
+        <!-- 문제정의 -->
+        <div
+          v-show="activeTab === 'pd'"
+          class="pt-s4-tab pt-s4-tab--fill"
+        >
           <div class="pt-pd-wrap">
             <div class="pt-pd-list">
               <template
@@ -209,37 +244,6 @@
 
         <!-- Win Theme -->
         <div v-show="activeTab === 'wt'">
-          <div class="pt-toolbar">
-            <span
-              class="pt-badge"
-              :class="summary?.winThemeStaleCount ? 'is-warn' : summary?.winThemeCount ? 'is-ok' : 'is-gray'"
-            >
-              {{
-                summary?.winThemeStaleCount
-                  ? `보완필요 ${summary.winThemeStaleCount}건`
-                  : summary?.winThemeCount
-                    ? `완료 ${summary.winThemeCount}건`
-                    : '대기'
-              }}
-            </span>
-            <div class="pt-toolbar-actions">
-              <UiButton
-                variant="primary-line"
-                size="sm"
-                :loading="regeneratingWtId === 'all'"
-                @click="onRegenerateWt"
-              >
-                ↻ Win Theme 재생성
-              </UiButton>
-              <UiButton
-                variant="primary-line"
-                size="sm"
-                @click="onAddWt"
-              >
-                + Win Theme 수동 추가
-              </UiButton>
-            </div>
-          </div>
           <div class="pt-wt-grid">
             <div
               v-for="wt in winThemes"
@@ -785,17 +789,24 @@ const onRegenerateWt = async () => {
 </script>
 
 <style lang="scss" scoped>
+.pt-strategy-chrome {
+  :deep(.ui-tab) {
+    border-bottom: none;
+  }
+}
+
 .pt-strategy-tabs {
-  margin: 0 0 $spacing-md;
+  border-bottom: none;
 
   :deep(.ui-tab-inner) {
     max-width: none;
     margin: 0;
     padding: 0;
   }
-}
 
-.pt-strategy-topbar {
-  justify-content: flex-end;
+  :deep(.ui-tab-item) {
+    padding: 8px 12px;
+    @include typo($body-medium);
+  }
 }
 </style>
