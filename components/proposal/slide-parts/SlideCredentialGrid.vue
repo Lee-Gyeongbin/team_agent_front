@@ -23,7 +23,11 @@ defineProps<{ content: CredentialGridContent }>()
 .slide-credential-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-auto-rows: 1fr;
   gap: 10px;
+  flex: 1 1 auto;
+  min-height: 0;
+  align-content: stretch;
 }
 
 .slide-credential-item {
@@ -33,6 +37,7 @@ defineProps<{ content: CredentialGridContent }>()
   padding: 10px;
   border-radius: 8px;
   background: #f9fafb;
+  min-height: 0;
 }
 
 .slide-credential-icon {

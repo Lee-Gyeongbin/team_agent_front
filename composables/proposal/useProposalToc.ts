@@ -1,4 +1,5 @@
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
+import { openToast } from '~/composables/useToast'
 import type { PtTocItem } from '~/types/proposal'
 
 export const useProposalToc = (ptProjectId: Ref<string>) => {
@@ -40,12 +41,18 @@ export const useProposalToc = (ptProjectId: Ref<string>) => {
     }
   }
 
-  /** TOC 항목 제목 수정 (blur 시 호출) */
+  /** TOC 항목 제목 수정 (blur 시 호출) — 낙관적 업데이트 + 실패 시 롤백 */
   const handleUpdateTocTitle = async (tocId: string, title: string) => {
     const item = tocList.value.find((t) => t.tocId === tocId)
     if (!item || item.title === title) return
+    const oldTitle = item.title
     item.title = title // 낙관적 업데이트
-    await fetchUpdateTocItem(tocId, title)
+    try {
+      await fetchUpdateTocItem(tocId, title)
+    } catch {
+      item.title = oldTitle // 롤백
+      openToast({ message: '목차 제목 수정에 실패했습니다.', type: 'error' })
+    }
   }
 
   /** TOC 항목 삭제 (소목차 연쇄 삭제) */

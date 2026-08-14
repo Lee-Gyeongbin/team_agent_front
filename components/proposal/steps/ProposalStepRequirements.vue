@@ -44,11 +44,11 @@
             <i class="icon-download size-14" />
           </button>
         </span>
-        <span v-else>RFP 파일을 첨부하세요</span>
+        <span v-else>RFP 파일을 첨부하세요 (PDF · 최대 50MB · 1개)</span>
         <input
           ref="rfpInputRef"
           type="file"
-          accept=".pdf,.hwp,.hwpx,.docx,.doc"
+          accept=".pdf"
           style="display: none"
           @change="onRfpFileChange"
         />
@@ -274,10 +274,10 @@
           </UiTable>
         </div>
 
-        <!-- 요구사항 수정 모달 -->
+        <!-- 요구사항 추가/수정 모달 -->
         <UiModal
           :is-open="isReqEditOpen"
-          title="요구사항 수정"
+          :title="editingReq ? '요구사항 수정' : '요구사항 추가'"
           max-width="720px"
           custom-class="pt-req-edit-modal"
           @close="closeReqEdit"
@@ -285,19 +285,38 @@
           <div class="pt-req-edit-form">
             <div class="pt-req-edit-meta">
               <span
-                v-if="editingReq?.reqNo"
-                class="pt-req-edit-no"
-              >
-                {{ editingReq.reqNo }}
-              </span>
-              <span class="pt-badge is-gray">{{ editingReq?.reqCategoryTxt || '미분류' }}</span>
-              <span
-                v-if="editingReq"
                 class="pt-badge"
-                :class="sourceBadgeClass(editingReq.sourceTypeCd)"
+                :class="sourceBadgeClass(editingReq?.sourceTypeCd || '999')"
               >
-                {{ sourceLabel(editingReq.sourceTypeCd) }}
+                {{ sourceLabel(editingReq?.sourceTypeCd || '999') }}
               </span>
+            </div>
+
+            <div class="pt-req-edit-row">
+              <div class="pt-req-edit-field pt-req-edit-field--no">
+                <label class="pt-req-edit-label">번호</label>
+                <UiInput
+                  v-model="editReqNo"
+                  size="md"
+                  placeholder="예: REQ-001"
+                />
+              </div>
+              <div class="pt-req-edit-field pt-req-edit-field--cat">
+                <label class="pt-req-edit-label">분류</label>
+                <UiSelect
+                  :model-value="editReqCategorySelect"
+                  :options="reqCategoryOptions"
+                  placeholder="분류를 선택해주세요"
+                  size="md"
+                  @update:model-value="onCategorySelect"
+                />
+                <UiInput
+                  v-if="isCategoryCustom"
+                  v-model="editReqCategoryCustom"
+                  size="md"
+                  placeholder="분류를 직접 입력하세요"
+                />
+              </div>
             </div>
 
             <div class="pt-req-edit-field">
@@ -733,6 +752,7 @@ import { useProposalFileStore } from '~/composables/proposal/useProposalFileStor
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
 import type { PtRequirement, PtEvalCriteria, PtRfpIssue } from '~/types/proposal'
 import type { TableColumn } from '~/types/table'
+import type { SelectOption } from '~/components/ui/UiSelect.vue'
 
 const STAGE1_STEP_MESSAGES: Record<string, string> = {
   extract: 'RFP 파일에서 텍스트를 추출하는 중...',
@@ -828,12 +848,69 @@ const reqColumns: TableColumn[] = [
   { key: '_actions', label: '', width: '110px', align: 'center', headerAlign: 'center' },
 ]
 
+const CATEGORY_CUSTOM_VALUE = '__custom__'
+
 const isReqEditOpen = ref(false)
 const isReqSaving = ref(false)
 const editingReq = ref<PtRequirement | null>(null)
+const editReqNo = ref('')
+const editReqCategorySelect = ref('')
+const editReqCategoryCustom = ref('')
 const editReqContent = ref('')
 const editReqDetailTxt = ref<string>('')
 const editMandatoryYn = ref<'Y' | 'N'>('Y')
+
+/** 분류 비교용 — 앞뒤·연속 공백을 정규화 */
+const normalizeCategoryTxt = (value: string | null | undefined) => (value ?? '').replace(/\s+/g, ' ').trim()
+
+/** 목록에 이미 있는 REQ_CATEGORY_TXT (등장 순, 공백 정규화 후 중복 제거) */
+const uniqueCategories = computed(() => {
+  const seen = new Set<string>()
+  const list: string[] = []
+  for (const req of requirements.value) {
+    const txt = normalizeCategoryTxt(req.reqCategoryTxt)
+    if (!txt || seen.has(txt)) continue
+    seen.add(txt)
+    list.push(txt)
+  }
+  return list
+})
+
+const reqCategoryOptions = computed<SelectOption[]>(() => [
+  ...uniqueCategories.value.map((txt) => ({ label: txt, value: txt })),
+  { label: '직접 입력', value: CATEGORY_CUSTOM_VALUE },
+])
+
+const isCategoryCustom = computed(() => editReqCategorySelect.value === CATEGORY_CUSTOM_VALUE)
+
+const onCategorySelect = (val: string | number) => {
+  const next = String(val)
+  editReqCategorySelect.value = next
+  if (next !== CATEGORY_CUSTOM_VALUE) editReqCategoryCustom.value = ''
+}
+
+const initCategoryFields = (categoryTxt: string | null | undefined) => {
+  const cat = normalizeCategoryTxt(categoryTxt)
+  if (!cat) {
+    editReqCategorySelect.value = ''
+    editReqCategoryCustom.value = ''
+    return
+  }
+  if (uniqueCategories.value.includes(cat)) {
+    editReqCategorySelect.value = cat
+    editReqCategoryCustom.value = ''
+    return
+  }
+  editReqCategorySelect.value = CATEGORY_CUSTOM_VALUE
+  editReqCategoryCustom.value = cat
+}
+
+const resolvedCategoryTxt = () => {
+  if (editReqCategorySelect.value === CATEGORY_CUSTOM_VALUE) {
+    return normalizeCategoryTxt(editReqCategoryCustom.value) || null
+  }
+  return normalizeCategoryTxt(editReqCategorySelect.value) || null
+}
 
 const rfpInputRef = ref<HTMLInputElement | null>(null)
 const rfpFile = ref<File | null>(null)
@@ -842,6 +919,42 @@ const savedRfpPtFileId = ref<string | null>(null)
 const isUploading = ref(false)
 const isDownloading = ref(false)
 const isAnalyzing = ref(false)
+
+/** RFP는 1개만, 회사정보(카테고리 합산 10MB)보다 큰 용량 허용 */
+const MAX_RFP_FILE_COUNT = 1
+const MAX_RFP_FILE_MB = 50
+const MAX_RFP_FILE_BYTES = MAX_RFP_FILE_MB * 1024 * 1024
+const ALLOWED_RFP_EXT_SET = new Set(['pdf'])
+
+const getFileExt = (fileName: string): string => {
+  const trimmed = fileName.trim()
+  const lastDot = trimmed.lastIndexOf('.')
+  if (lastDot < 0 || lastDot === trimmed.length - 1) return ''
+  return trimmed.slice(lastDot + 1).toLowerCase()
+}
+
+/** 선택·드롭 파일을 검증하고, 통과한 1개만 반환 */
+const applyRfpFileValidation = (files: File[]): File | null => {
+  if (!files.length) return null
+
+  if (files.length > MAX_RFP_FILE_COUNT) {
+    openToast({ message: 'RFP는 1개 파일만 첨부할 수 있습니다.', type: 'warning' })
+  }
+
+  const file = files[0]
+  if (!file) return null
+
+  const ext = getFileExt(file.name)
+  if (!ALLOWED_RFP_EXT_SET.has(ext)) {
+    openToast({ message: 'PDF 파일만 첨부할 수 있습니다.', type: 'warning' })
+    return null
+  }
+  if (file.size > MAX_RFP_FILE_BYTES) {
+    openToast({ message: `RFP 파일은 최대 ${MAX_RFP_FILE_MB}MB까지 첨부할 수 있습니다.`, type: 'warning' })
+    return null
+  }
+  return file
+}
 
 const confirmNeededCount = computed(
   () => requirements.value.filter((r) => r.sourceTypeCd === '003' || r.confirmNeededYn === 'Y').length,
@@ -895,16 +1008,29 @@ onMounted(async () => {
   }
 })
 
-const onClickRfpDropzone = () => rfpInputRef.value?.click()
+const onClickRfpDropzone = () => {
+  if (rfpFile.value || savedRfpFileNm.value) return
+  rfpInputRef.value?.click()
+}
 const onRfpFileChange = (e: Event) => {
-  rfpFile.value = (e.target as HTMLInputElement).files?.[0] ?? null
+  const input = e.target as HTMLInputElement
+  const validated = applyRfpFileValidation(Array.from(input.files ?? []))
+  if (validated) rfpFile.value = validated
+  input.value = ''
 }
 const onDropRfp = (e: DragEvent) => {
-  rfpFile.value = e.dataTransfer?.files?.[0] ?? null
+  if (rfpFile.value || savedRfpFileNm.value) return
+  const validated = applyRfpFileValidation(Array.from(e.dataTransfer?.files ?? []))
+  if (validated) rfpFile.value = validated
 }
 
 const onUploadRfp = async () => {
   if (!rfpFile.value) return
+  const validated = applyRfpFileValidation([rfpFile.value])
+  if (!validated) {
+    rfpFile.value = null
+    return
+  }
   isUploading.value = true
   const uploadingFileName = rfpFile.value.name
   try {
@@ -976,6 +1102,8 @@ const issueTypeBadge = (cd: string) => (cd === '001' ? 'is-danger' : cd === '002
 
 const openReqEdit = (req: PtRequirement) => {
   editingReq.value = req
+  editReqNo.value = req.reqNo ?? ''
+  initCategoryFields(req.reqCategoryTxt)
   editReqContent.value = req.reqContent
   editReqDetailTxt.value = req.reqDetailTxt ?? ''
   editMandatoryYn.value = req.mandatoryYn
@@ -988,10 +1116,9 @@ const closeReqEdit = () => {
   editingReq.value = null
 }
 
-/** 수정 모달 저장 — openConfirm 후 update */
+/** 추가/수정 모달 저장 — 신규는 insert, 기존은 update */
 const onReqEditConfirm = async () => {
-  const requirementId = editingReq.value?.requirementId
-  if (!requirementId || isReqSaving.value) return
+  if (isReqSaving.value) return
 
   const reqContent = editReqContent.value.trim()
   if (!reqContent) {
@@ -999,26 +1126,48 @@ const onReqEditConfirm = async () => {
     return
   }
 
+  const isAdd = !editingReq.value
   const ok = await openConfirm({
-    title: '요구사항 수정',
-    message: '수정한 내용을 저장하시겠습니까?',
+    title: isAdd ? '요구사항 추가' : '요구사항 수정',
+    message: isAdd ? '입력한 내용으로 요구사항을 추가하시겠습니까?' : '수정한 내용을 저장하시겠습니까?',
   })
   if (!ok) return
 
   isReqSaving.value = true
   try {
-    const res = await fetchUpdateRequirement({
-      requirementId,
+    const payload = {
+      reqNo: editReqNo.value.trim() || null,
+      reqCategoryTxt: resolvedCategoryTxt(),
       reqContent,
       reqDetailTxt: editReqDetailTxt.value.trim() || null,
       mandatoryYn: editMandatoryYn.value,
-    })
-    if (res.result !== 'OK') {
-      openToast({ message: '요구사항 수정에 실패했습니다.', type: 'error' })
-      return
     }
-    await loadStage1()
-    openToast({ message: '요구사항이 수정되었습니다.' })
+
+    if (isAdd) {
+      const res = await fetchInsertRequirement({
+        ptProjectId: props.ptProjectId,
+        ...payload,
+      })
+      if (res.result !== 'OK') {
+        openToast({ message: '요구사항 추가에 실패했습니다.', type: 'error' })
+        return
+      }
+      await loadStage1()
+      openToast({ message: '요구사항이 추가되었습니다.' })
+    } else {
+      const requirementId = editingReq.value!.requirementId
+      const res = await fetchUpdateRequirement({
+        requirementId,
+        ...payload,
+      })
+      if (res.result !== 'OK') {
+        openToast({ message: '요구사항 수정에 실패했습니다.', type: 'error' })
+        return
+      }
+      await loadStage1()
+      openToast({ message: '요구사항이 수정되었습니다.' })
+    }
+
     isReqEditOpen.value = false
     editingReq.value = null
   } finally {
@@ -1026,14 +1175,14 @@ const onReqEditConfirm = async () => {
   }
 }
 
-const onAddReq = async () => {
-  await fetchInsertRequirement({
-    ptProjectId: props.ptProjectId,
-    reqContent: '새 요구사항 내용을 입력하세요',
-    mandatoryYn: 'Y',
-  })
-  await loadStage1()
-  activeTab.value = 'req'
+const onAddReq = () => {
+  editingReq.value = null
+  editReqNo.value = ''
+  initCategoryFields(null)
+  editReqContent.value = ''
+  editReqDetailTxt.value = ''
+  editMandatoryYn.value = 'Y'
+  isReqEditOpen.value = true
 }
 const onDeleteReq = async (id: string) => {
   const ok = await openConfirm({ title: '요구사항 삭제', message: '이 요구사항을 삭제하시겠습니까?' })
@@ -1450,16 +1599,17 @@ const onDeleteIssue = async (id: string) => {
   border-radius: $border-radius-base;
 }
 
-.pt-req-edit-no {
-  @include typo($body-small-bold);
-  color: $color-text-heading;
-  margin-right: 2px;
+.pt-req-edit-row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: $spacing-md;
 }
 
 .pt-req-edit-field {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
 }
 
 .pt-req-edit-label-row {

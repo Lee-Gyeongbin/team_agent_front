@@ -40,6 +40,17 @@
             {{ tocCount > 0 ? `완료 ${tocCount}개` : '완료' }}
           </span>
           <span class="pt-muted">세부목차 생성이 완료되었습니다.</span>
+          <UiButton
+            variant="ghost"
+            size="sm"
+            class="pt-toc-add-root"
+            @click="startAdd(null)"
+          >
+            <template #icon-left>
+              <i class="icon icon-plus size-16" />
+            </template>
+            대목차 추가
+          </UiButton>
         </div>
 
         <div
@@ -51,10 +62,28 @@
         </div>
 
         <div
-          v-else-if="tocTree.length > 0"
+          v-else
           class="pt-detail-toc-tree pt-toc-list--scroll"
           role="tree"
         >
+          <div
+            v-if="isAdding && addingParentId === null"
+            class="pt-dtree-row is-add"
+            @click.stop
+          >
+            <span class="pt-dtree-chevron-placeholder" />
+            <UiInput
+              :ref="bindAddInputRef"
+              v-model="addingName"
+              type="text"
+              class="pt-dtree-name-input"
+              :placeholder="addingPlaceholder"
+              size="sm"
+              radius="base"
+              @enter="submitAdd"
+            />
+          </div>
+
           <div
             v-for="root in tocTree"
             :key="root.tocId"
@@ -62,29 +91,26 @@
             role="treeitem"
             :aria-expanded="openGroups.has(root.tocId)"
           >
-            <button
-              type="button"
-              class="pt-dtree-row is-root"
-              @click="toggleGroup(root.tocId)"
-            >
-              <i
-                class="icon-arrow-down-gray size-16 pt-dtree-chevron"
-                :class="{ 'is-open': openGroups.has(root.tocId) }"
-              />
-              <i
-                :class="[
-                  'size-16',
-                  'pt-dtree-icon',
-                  openGroups.has(root.tocId) ? 'icon-folder-open' : 'icon-folder-close',
-                ]"
-              />
-              <span class="pt-dtree-title">{{ root.title }}</span>
-              <span class="pt-toc-tag is-rfp">대목차</span>
-              <span class="pt-dtree-count">소분류 {{ root.children.length }}</span>
-            </button>
+            <ProposalTocTreeRow
+              variant="root"
+              :title="root.title"
+              tag-label="대목차"
+              tag-class="is-rfp"
+              :count-label="`소분류 ${root.children.length}`"
+              :is-open="openGroups.has(root.tocId)"
+              :has-toggle="hasToggle(root)"
+              :is-editing="editingTocId === root.tocId"
+              :editing-name="editingName"
+              edit-placeholder="대목차명 입력 (엔터)"
+              :menu-items="menuRoot"
+              @toggle="toggleGroup(root.tocId)"
+              @menu-select="onMenuSelect($event, root)"
+              @update:editing-name="editingName = $event"
+              @save-rename="saveRename"
+            />
 
             <div
-              v-show="openGroups.has(root.tocId)"
+              v-show="isChildrenVisible(root)"
               class="pt-dtree-children"
               role="group"
             >
@@ -95,59 +121,89 @@
                 role="treeitem"
                 :aria-expanded="openGroups.has(section.tocId)"
               >
-                <button
-                  type="button"
-                  class="pt-dtree-row is-section"
-                  @click="toggleGroup(section.tocId)"
-                >
-                  <i
-                    class="icon-arrow-down-gray size-16 pt-dtree-chevron"
-                    :class="{ 'is-open': openGroups.has(section.tocId) }"
-                  />
-                  <i
-                    :class="[
-                      'size-16',
-                      'pt-dtree-icon',
-                      openGroups.has(section.tocId) ? 'icon-folder-open' : 'icon-folder-close',
-                    ]"
-                  />
-                  <span class="pt-dtree-title">{{ section.title }}</span>
-                  <span class="pt-toc-tag is-user">소분류</span>
-                  <span class="pt-dtree-count">세부 {{ section.children.length }}</span>
-                </button>
+                <ProposalTocTreeRow
+                  variant="section"
+                  :title="section.title"
+                  tag-label="소분류"
+                  tag-class="is-user"
+                  :count-label="`세부 ${section.children.length}`"
+                  :is-open="openGroups.has(section.tocId)"
+                  :has-toggle="hasToggle(section)"
+                  :is-editing="editingTocId === section.tocId"
+                  :editing-name="editingName"
+                  edit-placeholder="소분류명 입력 (엔터)"
+                  :menu-items="menuSection"
+                  @toggle="toggleGroup(section.tocId)"
+                  @menu-select="onMenuSelect($event, section)"
+                  @update:editing-name="editingName = $event"
+                  @save-rename="saveRename"
+                />
 
                 <div
-                  v-show="openGroups.has(section.tocId)"
+                  v-show="isChildrenVisible(section)"
                   class="pt-dtree-children"
                   role="group"
                 >
-                  <div
+                  <ProposalTocTreeRow
                     v-for="sub in section.children"
                     :key="sub.tocId"
-                    class="pt-dtree-row is-leaf"
-                    role="treeitem"
+                    variant="leaf"
+                    :title="sub.title"
+                    tag-label="세부목차"
+                    tag-class="is-detail"
+                    :is-editing="editingTocId === sub.tocId"
+                    :editing-name="editingName"
+                    edit-placeholder="세부목차명 입력 (엔터)"
+                    :menu-items="menuLeaf"
+                    @menu-select="onMenuSelect($event, sub)"
+                    @update:editing-name="editingName = $event"
+                    @save-rename="saveRename"
+                  />
+                  <div
+                    v-if="isAdding && addingParentId === section.tocId"
+                    class="pt-dtree-row is-add is-leaf"
+                    @click.stop
                   >
                     <span class="pt-dtree-chevron-placeholder" />
-                    <i class="icon-document size-16 pt-dtree-icon is-leaf" />
-                    <span class="pt-dtree-title">{{ sub.title }}</span>
-                    <span class="pt-toc-tag is-detail">세부목차</span>
-                  </div>
-                  <div
-                    v-if="section.children.length === 0"
-                    class="pt-dtree-empty"
-                  >
-                    세부목차 없음
+                    <UiInput
+                      :ref="bindAddInputRef"
+                      v-model="addingName"
+                      type="text"
+                      class="pt-dtree-name-input"
+                      :placeholder="addingPlaceholder"
+                      size="sm"
+                      radius="base"
+                      @enter="submitAdd"
+                    />
                   </div>
                 </div>
               </div>
+
+              <div
+                v-if="isAdding && addingParentId === root.tocId"
+                class="pt-dtree-row is-add is-section"
+                @click.stop
+              >
+                <span class="pt-dtree-chevron-placeholder" />
+                <UiInput
+                  :ref="bindAddInputRef"
+                  v-model="addingName"
+                  type="text"
+                  class="pt-dtree-name-input"
+                  :placeholder="addingPlaceholder"
+                  size="sm"
+                  radius="base"
+                  @enter="submitAdd"
+                />
+              </div>
             </div>
           </div>
-        </div>
 
-        <UiEmpty
-          v-else
-          title="세부목차가 없습니다."
-        />
+          <UiEmpty
+            v-if="tocTree.length === 0 && !(isAdding && addingParentId === null)"
+            title="세부목차가 없습니다."
+          />
+        </div>
       </div>
 
       <div class="pt-panel-actions pt-strategy-actions">
@@ -190,8 +246,12 @@
 </template>
 
 <script setup lang="ts">
+import ProposalTocTreeRow from '~/components/proposal/steps/ProposalTocTreeRow.vue'
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
-import type { TocMappingNode } from '~/types/proposal'
+import { openConfirm } from '~/composables/useDialog'
+import { openToast } from '~/composables/useToast'
+import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
+import type { PtTocItem, TocMappingNode } from '~/types/proposal'
 
 const props = defineProps<{
   ptProjectId: string
@@ -203,7 +263,14 @@ const emit = defineEmits<{
   next: []
 }>()
 
-const { streamAnalyzeStage2Toc, fetchSelectStage2TocMapping, fetchSelectStage2Summary } = useProposalApi()
+const {
+  streamAnalyzeStage2Toc,
+  fetchSelectStage2TocMapping,
+  fetchSelectStage2Summary,
+  fetchInsertTocItem,
+  fetchUpdateTocItem,
+  fetchDeleteTocItem,
+} = useProposalApi()
 
 const loadingSteps = [
   {
@@ -242,6 +309,46 @@ interface TocTreeLeaf extends TocMappingNode {
 const tocTree = ref<TocTreeNode[]>([])
 const openGroups = ref<Set<string>>(new Set())
 
+const editingTocId = ref<string | null>(null)
+const editingName = ref('')
+const isAdding = ref(false)
+const addingParentId = ref<string | null>(null)
+const addingName = ref('')
+const addInputRef = ref<{ focus: () => void } | null>(null)
+const isSavingToc = ref(false)
+
+const bindAddInputRef = (el: unknown) => {
+  if (el) addInputRef.value = el as { focus: () => void }
+}
+
+const focusAddInput = () => {
+  nextTick(() => {
+    nextTick(() => addInputRef.value?.focus())
+  })
+}
+
+const menuRoot: DropdownMenuItemDef[] = [
+  { label: '이름 수정', value: 'rename', icon: 'icon-edit' },
+  { label: '소분류 추가', value: 'addChild', icon: 'icon-plus' },
+  { label: '삭제', value: 'delete', icon: 'icon-trashcan', color: 'danger' },
+]
+const menuSection: DropdownMenuItemDef[] = [
+  { label: '이름 수정', value: 'rename', icon: 'icon-edit' },
+  { label: '세부목차 추가', value: 'addChild', icon: 'icon-plus' },
+  { label: '삭제', value: 'delete', icon: 'icon-trashcan', color: 'danger' },
+]
+const menuLeaf: DropdownMenuItemDef[] = [
+  { label: '이름 수정', value: 'rename', icon: 'icon-edit' },
+  { label: '삭제', value: 'delete', icon: 'icon-trashcan', color: 'danger' },
+]
+
+const addingPlaceholder = computed(() => {
+  if (addingParentId.value === null) return '대목차명 입력 (엔터)'
+  const ctx = findTocContext(addingParentId.value)
+  if (ctx?.level === 1) return '소분류명 입력 (엔터)'
+  return '세부목차명 입력 (엔터)'
+})
+
 const buildTocTree = (nodes: TocMappingNode[]): TocTreeNode[] => {
   const sorted = [...nodes].sort((a, b) => a.sortOrd - b.sortOrd)
   const roots = sorted.filter((n) => !n.parentTocId)
@@ -274,6 +381,188 @@ const toggleGroup = (tocId: string) => {
   openGroups.value = next
 }
 
+const hasToggle = (node: TocTreeNode | TocTreeLeaf) =>
+  node.children.length > 0 || (isAdding.value && addingParentId.value === node.tocId)
+
+const isChildrenVisible = (node: TocTreeNode | TocTreeLeaf) => openGroups.value.has(node.tocId) && hasToggle(node)
+
+const findTocContext = (tocId: string): { node: TocMappingNode; level: 1 | 2 | 3; hasChildren: boolean } | null => {
+  for (const root of tocTree.value) {
+    if (root.tocId === tocId) return { node: root, level: 1, hasChildren: root.children.length > 0 }
+    for (const section of root.children) {
+      if (section.tocId === tocId) return { node: section, level: 2, hasChildren: section.children.length > 0 }
+      for (const sub of section.children) {
+        if (sub.tocId === tocId) return { node: sub, level: 3, hasChildren: false }
+      }
+    }
+  }
+  return null
+}
+
+const cancelEdit = () => {
+  editingTocId.value = null
+  editingName.value = ''
+}
+
+const cancelAdd = () => {
+  isAdding.value = false
+  addingParentId.value = null
+  addingName.value = ''
+}
+
+const startRename = (node: TocMappingNode) => {
+  cancelAdd()
+  editingTocId.value = node.tocId
+  editingName.value = node.title
+}
+
+const startAdd = (parentId: string | null) => {
+  cancelEdit()
+  if (isAdding.value && addingParentId.value === parentId) {
+    cancelAdd()
+    return
+  }
+  isAdding.value = true
+  addingParentId.value = parentId
+  addingName.value = ''
+  if (parentId) {
+    const next = new Set(openGroups.value)
+    next.add(parentId)
+    openGroups.value = next
+  }
+  focusAddInput()
+}
+
+const toMappingNode = (item: PtTocItem): TocMappingNode => ({
+  tocId: item.tocId,
+  title: item.title,
+  parentTocId: item.parentId,
+  coveredReqIds: [],
+  linkedEvalCriteriaId: null,
+  sortOrd: item.order,
+})
+
+const insertTocNode = (item: PtTocItem): boolean => {
+  const node = toMappingNode(item)
+  if (!item.parentId) {
+    tocTree.value = [...tocTree.value, { ...node, children: [] }]
+    return true
+  }
+  for (const root of tocTree.value) {
+    if (root.tocId === item.parentId) {
+      root.children.push({ ...node, children: [] })
+      return true
+    }
+    for (const section of root.children) {
+      if (section.tocId === item.parentId) {
+        section.children.push(node)
+        return true
+      }
+    }
+  }
+  return false
+}
+
+const removeTocNode = (tocId: string) => {
+  tocTree.value = tocTree.value.filter((root) => {
+    if (root.tocId === tocId) return false
+    root.children = root.children.filter((section) => {
+      if (section.tocId === tocId) return false
+      section.children = section.children.filter((sub) => sub.tocId !== tocId)
+      return true
+    })
+    return true
+  })
+}
+
+const updateTocTitleLocal = (tocId: string, title: string) => {
+  const ctx = findTocContext(tocId)
+  if (ctx) ctx.node.title = title
+}
+
+const submitAdd = async () => {
+  const title = addingName.value.trim()
+  if (!title) {
+    openToast({ message: '목차명을 입력해 주세요.', type: 'warning' })
+    nextTick(() => addInputRef.value?.focus())
+    return
+  }
+  if (isSavingToc.value) return
+  isSavingToc.value = true
+  const parentId = addingParentId.value
+  try {
+    const res = await fetchInsertTocItem({
+      ptProjectId: props.ptProjectId,
+      parentTocId: parentId,
+      sectionNm: title,
+    })
+    if (res.result !== 'OK' || !res.data) {
+      openToast({ message: res.msg || '목차 추가에 실패했습니다.', type: 'error' })
+      return
+    }
+    if (!insertTocNode(res.data)) await loadTocResult()
+    cancelAdd()
+    openToast({ message: '목차가 추가되었습니다.' })
+  } catch {
+    openToast({ message: '목차 추가에 실패했습니다.', type: 'error' })
+  } finally {
+    isSavingToc.value = false
+  }
+}
+
+const saveRename = async () => {
+  const tocId = editingTocId.value
+  if (!tocId) return
+  const title = editingName.value.trim()
+  if (!title) {
+    openToast({ message: '목차명을 입력해 주세요.', type: 'warning' })
+    return
+  }
+  const ctx = findTocContext(tocId)
+  if (!ctx || ctx.node.title === title) {
+    cancelEdit()
+    return
+  }
+  const oldTitle = ctx.node.title
+  ctx.node.title = title
+  cancelEdit()
+  try {
+    await fetchUpdateTocItem(tocId, title)
+  } catch {
+    updateTocTitleLocal(tocId, oldTitle)
+    openToast({ message: '목차 제목 수정에 실패했습니다.', type: 'error' })
+  }
+}
+
+const onDeleteItem = async (node: TocMappingNode) => {
+  const ctx = findTocContext(node.tocId)
+  const childMsg = ctx?.hasChildren ? '\n하위 목차도 함께 삭제됩니다.' : ''
+  const confirmed = await openConfirm({
+    title: '목차 삭제',
+    message: `'${node.title}'을(를) 삭제하시겠습니까?${childMsg}`,
+  })
+  if (!confirmed) return
+  try {
+    const res = await fetchDeleteTocItem(node.tocId)
+    if (res.result !== 'OK') {
+      openToast({ message: '목차 삭제에 실패했습니다.', type: 'error' })
+      return
+    }
+    removeTocNode(node.tocId)
+    if (editingTocId.value === node.tocId) cancelEdit()
+    if (addingParentId.value === node.tocId) cancelAdd()
+    openToast({ message: '목차가 삭제되었습니다.' })
+  } catch {
+    openToast({ message: '목차 삭제에 실패했습니다.', type: 'error' })
+  }
+}
+
+const onMenuSelect = (value: string, node: TocMappingNode) => {
+  if (value === 'rename') startRename(node)
+  else if (value === 'addChild') startAdd(node.tocId)
+  else if (value === 'delete') onDeleteItem(node)
+}
+
 const loadTocResult = async () => {
   isLoadingResult.value = true
   try {
@@ -298,6 +587,8 @@ const startToc = () => {
   loadingStepIdx.value = 0
   tocTree.value = []
   openGroups.value = new Set()
+  cancelEdit()
+  cancelAdd()
 
   streamAnalyzeStage2Toc(props.ptProjectId, props.modelId, props.agentId, {
     onProgress: (data) => {

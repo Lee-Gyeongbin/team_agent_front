@@ -1,10 +1,22 @@
 import type { PtFilePurposeCd, PtFileSaveResponse } from '~/types/proposal'
+import { useAuth } from '~/composables/com/useAuth'
 import { useFileStore } from '~/composables/com/useFileStore'
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
+import { openToast } from '~/composables/useToast'
 import { formatChatStoreFileNameBase } from '~/utils/global/dateUtil'
 import { getChatAttachmentExtension } from '~/utils/chat/chatAttachmentDisplayUtil'
 
 const { fetchCreatePtFileUploadUrl, fetchSavePtFile, fetchDownloadPtFile } = useProposalApi()
+
+/** PtFilePurposeCd → NCP 하위 디렉터리 이름 */
+const PURPOSE_CD_DIR: Record<PtFilePurposeCd, string> = {
+  '001': 'rfp',
+  '002': 'evaluation',
+  '003': 'template',
+  '004': 'reference',
+  '005': 'company',
+  '006': 'competitor',
+}
 
 /** NCP/DB 저장 파일명: yyyyMMddHHmmssSSS + 확장자 */
 const buildStoreFileName = (originalName: string, at: Date): string => {
@@ -13,11 +25,12 @@ const buildStoreFileName = (originalName: string, at: Date): string => {
   return ext ? `${base}.${ext}` : base
 }
 
-const buildPtFileStorePath = (userId: string, ptProjectId: string | undefined, storeFileName: string): string => {
-  const safeUser = String(userId ?? '').trim() || 'unknown'
+/** NCP 저장 경로: proposal/{ptProjectId}/{fileType}/{storeFileName} */
+const buildPtFileStorePath = (ptProjectId: string | undefined, filePurposeCd: PtFilePurposeCd, storeFileName: string): string => {
   const safeProject = String(ptProjectId ?? '').trim() || 'draft'
   const safeName = String(storeFileName ?? '').trim()
-  return `proposal/${safeUser}/${safeProject}/${safeName}`
+  const typeDir = PURPOSE_CD_DIR[filePurposeCd] ?? 'files'
+  return `proposal/${safeProject}/${typeDir}/${safeName}`
 }
 
 const toPtFileSaveResult = (
@@ -59,7 +72,7 @@ export const useProposalFileStore = () => {
 
     const at = new Date()
     const storeFileName = buildStoreFileName(file.name, at)
-    const storeFilePath = buildPtFileStorePath(resolvedUserId, ptProjectId, storeFileName)
+    const storeFilePath = buildPtFileStorePath(ptProjectId, filePurposeCd, storeFileName)
 
     const presign = await fetchCreatePtFileUploadUrl({
       fileName: file.name,

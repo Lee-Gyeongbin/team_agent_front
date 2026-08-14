@@ -215,14 +215,14 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
 
   /**
    * 특정 소목차 인덱스로 직접 이동 (자유 이동 — done 상태 유지)
-   * 이동할 때마다 DB에서 최신 슬라이드를 조회하여 캐시 갱신 (LLM 호출 아님)
+   * 캐시가 없을 때만 DB에서 조회한다. 생성 직후 강제 갱신이 필요하면 slidesCache를 먼저 삭제할 것.
    */
   const goToSection = (index: number) => {
     if (index < 0 || index >= sectionList.value.length) return
     activeSectionIndexRef.value = index
     const tocId = sectionList.value[index]?.tocId
     if (!tocId) return
-    // 항상 DB에서 최신 슬라이드 조회 (캐시 우선 아님)
+    if (slidesCache.value[tocId]) return // 캐시 있으면 재조회 생략
     fetchSelectSectionSlides(tocId)
       .then((res) => {
         slidesCache.value[tocId] = res.list ?? []

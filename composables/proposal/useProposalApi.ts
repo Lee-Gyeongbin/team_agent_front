@@ -44,6 +44,24 @@ import type {
   PtTemplateRegenerateRequest,
 } from '~/types/proposal'
 
+/**
+ * SSE EventSource에 공통 에러 리스너를 등록합니다.
+ * 백엔드가 error 이벤트로 JSON `{ message }` 를 보내면 파싱하고,
+ * 연결 자체 오류이면 기본 메시지를 사용합니다.
+ */
+function attachSseErrorListener(es: EventSource, onError?: (msg: string) => void) {
+  es.addEventListener('error', (e) => {
+    try {
+      const me = e as MessageEvent
+      onError?.(me.data ? (JSON.parse(me.data) as { message: string }).message : 'SSE 연결 오류가 발생했습니다.')
+    } catch {
+      onError?.('SSE 연결 오류가 발생했습니다.')
+    } finally {
+      es.close()
+    }
+  })
+}
+
 /** parentTocId 빈 문자열 → null (대목차) 정규화 */
 const normalizeParentTocId = (parentTocId: string | null | undefined): string | null => {
   const trimmed = parentTocId?.trim()
@@ -423,22 +441,7 @@ export const useProposalApi = () => {
       }
     })
 
-    es.addEventListener('error', (e) => {
-      try {
-        // MessageEvent인 경우 data 파싱, 그 외 연결 오류
-        const me = e as MessageEvent
-        if (me.data) {
-          const data = JSON.parse(me.data) as Stage1ErrorData
-          callbacks.onError?.(data.message)
-        } else {
-          callbacks.onError?.('SSE 연결 오류가 발생했습니다.')
-        }
-      } catch {
-        callbacks.onError?.('SSE 연결 오류가 발생했습니다.')
-      } finally {
-        es.close()
-      }
-    })
+    attachSseErrorListener(es, callbacks.onError)
 
     return es
   }
@@ -484,16 +487,7 @@ export const useProposalApi = () => {
         es.close()
       }
     })
-    es.addEventListener('error', (e) => {
-      try {
-        const me = e as MessageEvent
-        callbacks.onError?.(me.data ? (JSON.parse(me.data) as { message: string }).message : 'SSE 연결 오류')
-      } catch {
-        callbacks.onError?.('SSE 연결 오류')
-      } finally {
-        es.close()
-      }
-    })
+    attachSseErrorListener(es, callbacks.onError)
 
     return es
   }
@@ -536,16 +530,7 @@ export const useProposalApi = () => {
         es.close()
       }
     })
-    es.addEventListener('error', (e) => {
-      try {
-        const me = e as MessageEvent
-        callbacks.onError?.(me.data ? (JSON.parse(me.data) as { message: string }).message : 'SSE 연결 오류')
-      } catch {
-        callbacks.onError?.('SSE 연결 오류')
-      } finally {
-        es.close()
-      }
-    })
+    attachSseErrorListener(es, callbacks.onError)
 
     return es
   }
@@ -589,16 +574,7 @@ export const useProposalApi = () => {
         es.close()
       }
     })
-    es.addEventListener('error', (e) => {
-      try {
-        const me = e as MessageEvent
-        callbacks.onError?.(me.data ? (JSON.parse(me.data) as { message: string }).message : 'SSE 연결 오류')
-      } catch {
-        callbacks.onError?.('SSE 연결 오류')
-      } finally {
-        es.close()
-      }
-    })
+    attachSseErrorListener(es, callbacks.onError)
 
     return es
   }
@@ -681,16 +657,7 @@ export const useProposalApi = () => {
         es.close()
       }
     })
-    es.addEventListener('error', (e) => {
-      try {
-        const me = e as MessageEvent
-        callbacks.onError?.(me.data ? (JSON.parse(me.data) as { message: string }).message : 'SSE 연결 오류')
-      } catch {
-        callbacks.onError?.('SSE 연결 오류')
-      } finally {
-        es.close()
-      }
-    })
+    attachSseErrorListener(es, callbacks.onError)
 
     return es
   }
@@ -732,16 +699,7 @@ export const useProposalApi = () => {
         es.close()
       }
     })
-    es.addEventListener('error', (e) => {
-      try {
-        const me = e as MessageEvent
-        callbacks.onError?.(me.data ? (JSON.parse(me.data) as { message: string }).message : 'SSE 연결 오류')
-      } catch {
-        callbacks.onError?.('SSE 연결 오류')
-      } finally {
-        es.close()
-      }
-    })
+    attachSseErrorListener(es, callbacks.onError)
 
     return es
   }

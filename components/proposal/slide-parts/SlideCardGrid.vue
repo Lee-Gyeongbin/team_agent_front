@@ -20,7 +20,11 @@ defineProps<{ content: CardGridContent }>()
 .slide-card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-auto-rows: 1fr;
   gap: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+  align-content: stretch;
 }
 
 .slide-card {

@@ -25,15 +25,23 @@ defineProps<{ content: ProcessFlowContent }>()
 <style lang="scss" scoped>
 .slide-process-flow {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 8px;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .slide-flow-step {
   flex: 1;
   min-width: 100px;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 8px;
+  border-radius: 8px;
+  background: #f9fafb;
 }
 
 .slide-flow-num {
@@ -47,20 +55,24 @@ defineProps<{ content: ProcessFlowContent }>()
   align-items: center;
   justify-content: center;
   margin: 0 auto 6px;
+  flex-shrink: 0;
 }
 
 .slide-flow-title {
   font-weight: 600;
   font-size: 14px;
+  flex-shrink: 0;
 }
 
 .slide-flow-desc {
   font-size: 13px;
   color: #6b7280;
+  flex: 1;
 }
 
 .slide-flow-arrow {
-  margin-top: 8px;
+  align-self: center;
+  flex-shrink: 0;
   color: #d1d5db;
 }
 </style>

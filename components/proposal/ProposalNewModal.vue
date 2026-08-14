@@ -106,13 +106,12 @@ const emit = defineEmits<{
   submit: [form: { projectNm: string; orgNm: string; summary: string; targetTypeCd: 'G' | 'P'; dueDt: string }]
 }>()
 
-// TODO: 테스트용 기본값 — 추후 삭제 예정 (빈 값으로 되돌릴 것)
 const defaultForm = () => ({
-  projectNm: '전자여행허가(K-ETA) 3차 고도화 사업',
-  orgNm: '법무부 서울출입국·외국인청',
-  summary: '사업의 목적, 범위, 주요 요구사항을 간단히 입력하세요 (선택)',
+  projectNm: '',
+  orgNm: '',
+  summary: '',
   targetTypeCd: 'G' as 'G' | 'P',
-  dueDt: '2026-08-30',
+  dueDt: '',
 })
 
 const form = ref(defaultForm())

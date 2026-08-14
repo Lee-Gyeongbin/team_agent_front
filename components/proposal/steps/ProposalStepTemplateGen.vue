@@ -274,6 +274,7 @@
               :model-id="props.modelId"
               :agent-id="props.agentId"
               :cover-image-path="template?.coverImagePath"
+              :aspect-ratio="previewAspectRatio"
               @cover-updated="onCoverChatUpdated"
             />
           </div>

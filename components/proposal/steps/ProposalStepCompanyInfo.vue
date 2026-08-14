@@ -51,7 +51,7 @@
             <input
               ref="companyInputRef"
               type="file"
-              accept=".pdf,.docx,.hwp,.pptx"
+              accept=".pdf"
               multiple
               style="display: none"
               @change="onFileChange('company', $event)"
@@ -95,7 +95,7 @@
             <input
               ref="competitorInputRef"
               type="file"
-              accept=".pdf,.docx,.hwp,.pptx"
+              accept=".pdf"
               multiple
               style="display: none"
               @change="onFileChange('competitor', $event)"
@@ -139,7 +139,7 @@
             <input
               ref="etcRefInputRef"
               type="file"
-              accept=".pdf,.docx,.hwp,.pptx"
+              accept=".pdf"
               multiple
               style="display: none"
               @change="onFileChange('etcRef', $event)"
@@ -190,8 +190,8 @@ const isLoading = ref(true)
 const isSaving = ref(false)
 const downloadingFileId = ref<string | null>(null)
 
-// 카테고리당 최대 합산 용량: 10MB
-const MAX_CATEGORY_BYTES = 10 * 1024 * 1024
+// 카테고리당 최대 합산 용량: 30MB
+const MAX_CATEGORY_BYTES = 30 * 1024 * 1024
 
 // 파일 목록: { ptFileId, fileName, fileSize }
 const companyFiles = ref<{ ptFileId: string; fileName: string; fileSize: number }[]>([])
@@ -252,7 +252,7 @@ const onFileChange = async (slot: FileSlot, e: Event) => {
   const currentBytes = fileList.value.reduce((sum, f) => sum + f.fileSize, 0)
   const addBytes = files.reduce((sum, f) => sum + f.size, 0)
   if (currentBytes + addBytes > MAX_CATEGORY_BYTES) {
-    openToast({ message: '카테고리당 최대 10MB까지 첨부할 수 있습니다.', type: 'warning' })
+    openToast({ message: '카테고리당 최대 30MB까지 첨부할 수 있습니다.', type: 'warning' })
     ;(e.target as HTMLInputElement).value = ''
     return
   }

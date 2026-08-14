@@ -117,20 +117,6 @@ export interface PtEvalCriteria {
 
 // ── Stage1 ─────────────────────────────────────────────────────────────────────
 
-/** Stage1 작성지침 JSON 구조 */
-export interface WritingGuideline {
-  tocMandatoryYn: 'Y' | 'N'
-  mandatedToc: { level: 'main' | 'sub'; no: string; title: string; parentNo: string | null }[]
-  pageLimit: string | null
-  formatRules: string | null
-}
-
-/** Stage1 SSE 이벤트 데이터 */
-export interface Stage1SseEvent {
-  event: 'connected' | 'progress' | 'warn' | 'done' | 'error'
-  data: Stage1ProgressData | Stage1DoneData | Stage1ErrorData | { ptProjectId: string } | { message: string }
-}
-
 export interface Stage1ProgressData {
   step: 'extract' | 'prompt' | 'llm' | 'parse' | 'save'
   message: string
@@ -219,6 +205,11 @@ export interface WinTheme {
   staleDetails: WinThemeStaleDetail[]
 }
 
+/**
+ * Stage2 목차매핑용 TOC 노드.
+ * ※ PtTocItem과 구조가 다름: parentId → parentTocId, order → sortOrd,
+ *    Stage2 전용 필드(coveredReqIds, linkedEvalCriteriaId) 포함
+ */
 export interface TocMappingNode {
   tocId: string
   title: string
@@ -407,9 +398,9 @@ export interface Stage2TocDoneData {
   tocCount?: number
 }
 
-/** D-1 슬라이드 생성 SSE 이벤트 */
+/** D-1 슬라이드 생성 SSE 이벤트 (백엔드 전송 step: load → llm → parse → save) */
 export interface SectionGenProgressData {
-  step: 'load' | 'llm' | 'parse' | 'save' | 'render'
+  step: 'load' | 'llm' | 'parse' | 'save'
   message: string
 }
 
@@ -589,18 +580,4 @@ export interface PtTemplate {
 export interface PtTemplateRegenerateRequest {
   ptProjectId: string
   refineInstruction?: string
-}
-
-/** @deprecated types/proposal.ts 내부 정렬용 — 실제 Step C 에는 ProjectSettingsData 사용 */
-export interface PtSettings {
-  ptProjectId: string
-  templateMode: 'fix' | 'new'
-  templateFileName: string
-  documentSize: 'a4' | '169' | '43'
-  companyFileName: string
-  competitorFileName: string
-  writingStyle: PtWritingStyle
-  proposalTarget: PtTargetTypeCd
-  baseColors: [string, string, string]
-  accentColors: [string, string]
 }

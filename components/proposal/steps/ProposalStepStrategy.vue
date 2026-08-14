@@ -325,8 +325,6 @@
             표시됩니다.
           </p>
         </div>
-
-        <!-- 목차매핑 UI 제거 — TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동 -->
       </div>
 
       <div class="pt-panel-actions pt-strategy-actions">
@@ -351,7 +349,6 @@ import { openToast } from '~/composables/useToast'
 import { openConfirm } from '~/composables/useDialog'
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
 import type { Stage2Summary, ProblemDefinition, WinTheme } from '~/types/proposal'
-// TocMappingResult, TocMappingNode — TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동
 
 const props = defineProps<{
   ptProjectId: string
@@ -368,7 +365,6 @@ const {
   fetchSelectStage2Summary,
   fetchSelectStage2ProblemDefinitions,
   fetchSelectStage2WinThemes,
-  // fetchSelectStage2TocMapping,  // TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동
   fetchResetStage2Status,
   streamAnalyzeStage2,
   fetchUpdateStage2ProblemDefinition,
@@ -380,8 +376,6 @@ const {
   fetchDeleteStage2WinTheme,
   fetchRegenerateStage2ProblemDefinitions,
   fetchRegenerateStage2WinThemes,
-  // fetchUpdateStage2TocMapping,  // TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동
-  // fetchSelectStage1Result,      // TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동
 } = useProposalApi()
 
 const PROBLEM_TYPE_MAP: Record<string, string> = {
@@ -412,14 +406,11 @@ const loadingSteps = [
 const summary = ref<Stage2Summary | null>(null)
 const problemDefs = ref<ProblemDefinition[]>([])
 const winThemes = ref<WinTheme[]>([])
-// const tocMapping = ref<TocMappingResult | null>(null)  // TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동
-// const reqLabelMap = ref<Record<string, string>>({})    // TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동
 
 const activeTab = ref('pd')
 const strategyTabs = [
   { label: '문제정의', value: 'pd' },
   { label: 'Win Theme', value: 'wt' },
-  // 목차매핑 탭 제거 — TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동
 ]
 const activeProblemId = ref<string | null>(null)
 const isLoadingStage2 = ref(false)
@@ -430,9 +421,6 @@ const isSavingPd = ref(false)
 const isRefining = ref(false)
 const refineFeedback = ref('')
 const regeneratingWtId = ref<string | null>(null)
-// const savingTocId = ref<string | null>(null)      // TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동
-// const localCovered = ref<Record<string, string[]>>({})  // TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동
-// const localEval = ref<Record<string, string | null>>({})  // TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동
 const wtDraft = ref<Record<string, Partial<WinTheme>>>({})
 
 const editPd = reactive({

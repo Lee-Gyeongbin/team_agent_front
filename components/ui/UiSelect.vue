@@ -112,7 +112,17 @@ const denormalizeValue = (value: string) => {
   return value
 }
 
-const resolvedModelValue = computed(() => normalizeValue(props.modelValue ?? props.options[0]?.value ?? ''))
+const resolvedModelValue = computed(() => {
+  if (props.modelValue === undefined || props.modelValue === null) {
+    return normalizeValue(props.options[0]?.value ?? '')
+  }
+  // 빈 문자열 + 빈값 옵션 없음 → placeholder 표시 (목록에 dummy 옵션을 넣지 않음)
+  if (props.modelValue === '') {
+    const hasEmptyOption = props.options.some((opt) => opt.value === '')
+    return hasEmptyOption ? EMPTY_VALUE_TOKEN : undefined
+  }
+  return normalizeValue(props.modelValue)
+})
 
 const onUpdate = (val: string) => {
   emit('update:modelValue', denormalizeValue(val))

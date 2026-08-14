@@ -259,20 +259,23 @@ const cachedEtcRefFileIds = ref<string[]>([])
 
 // ── 템플릿 파일 입력 ─────────────────────────────────────────────────────────
 
-// projectConfigJson으로 template.mode / template.docSize 복원
+// projectConfigJson 파싱 (computed로 캐싱 — JSON.parse 는 문자열이 바뀔 때만 실행)
+const parsedProjectConfig = computed(() => {
+  try {
+    return JSON.parse(props.projectConfigJson ?? '{}')
+  } catch {
+    return {}
+  }
+})
+
+// 파싱 결과가 바뀌면 templateMode / documentSize 폼 상태에 동기화
 watch(
-  () => props.projectConfigJson,
-  (raw) => {
-    if (!raw) return
-    try {
-      const config = JSON.parse(raw)
-      const tpl = config?.template
-      if (tpl?.mode === 'fix' || tpl?.mode === 'new') templateMode.value = tpl.mode
-      if (tpl?.docSize === 'a4' || tpl?.docSize === '169' || tpl?.docSize === '43') {
-        documentSize.value = tpl.docSize
-      }
-    } catch {
-      /* 파싱 실패 시 기본값 유지 */
+  parsedProjectConfig,
+  (cfg) => {
+    const tpl = cfg?.template
+    if (tpl?.mode === 'fix' || tpl?.mode === 'new') templateMode.value = tpl.mode
+    if (tpl?.docSize === 'a4' || tpl?.docSize === '169' || tpl?.docSize === '43') {
+      documentSize.value = tpl.docSize
     }
   },
   { immediate: true },
