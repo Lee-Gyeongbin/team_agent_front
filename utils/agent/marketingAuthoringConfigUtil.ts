@@ -88,7 +88,7 @@ const lengthOptions = (short: string, normal: string, detailed: string) => [
   option('SHORT', '짧게', short),
   option('NORMAL', '보통', normal),
   option('DETAILED', '상세하게', detailed),
-  option('CUSTOM', '직접 입력', '원하는 글자 수나 문단 수를 지정'),
+  option('OTHER', '직접 입력', '원하는 글자 수나 문단 수를 지정'),
 ]
 
 /** 신규·폴백 콘텐츠 유형 */
@@ -339,7 +339,6 @@ const sanitizeWorkflow = (workflow: MarketingAuthoringWorkflowConfig): Marketing
 /** 설정 폼 → 저장용 ADDITIONAL_CONFIG (마케팅 설정은 폼이 전체 스키마를 소유) */
 export const buildMarketingAuthoringAdditionalConfig = (
   form: MarketingAuthoringConfigForm,
-  _preserved?: AgtSubAdditionalConfig | null,
 ): AgtSubAdditionalConfig => ({
   version: form.version.trim() || '1.0',
   language: form.language.trim() || 'ko',

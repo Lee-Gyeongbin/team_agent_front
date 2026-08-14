@@ -306,8 +306,6 @@ const autoRecommendForm = ref<AutoRecommendConfigForm>(emptyAutoRecommendConfigF
 const preservedProposalConfig = ref<AgtSubAdditionalConfig | null>(null)
 const proposalForm = ref<ProposalConfigForm>(emptyProposalConfigForm())
 
-// 마케팅 콘텐츠 작성 (MARKETING_AUTHORING) ADDITIONAL_CONFIG — UI 미편집 필드 보존용
-const preservedMarketingAuthoringConfig = ref<AgtSubAdditionalConfig | null>(null)
 const marketingAuthoringForm = ref<MarketingAuthoringConfigForm>(emptyMarketingAuthoringConfigForm())
 
 const loadSurveyConfigFromAgent = (agent: Agent | null) => {
@@ -422,11 +420,9 @@ const loadMarketingAuthoringConfigFromAgent = (agent: Agent | null) => {
   const subCfg = normalizeAgentSubCfg(agent?.subCfg)
   const additional = subCfg?.additionalConfig
   if (additional && typeof additional === 'object' && Object.keys(additional).length > 0) {
-    preservedMarketingAuthoringConfig.value = { ...additional }
     marketingAuthoringForm.value = parseMarketingAuthoringAdditionalConfigToForm(additional as Record<string, unknown>)
     return
   }
-  preservedMarketingAuthoringConfig.value = null
   marketingAuthoringForm.value = emptyMarketingAuthoringConfigForm()
 }
 
@@ -436,7 +432,6 @@ const resetSubTyConfigForms = () => {
   preservedCurationConfig.value = null
   preservedAutoRecommendConfig.value = null
   preservedTranslateConfig.value = null
-  preservedMarketingAuthoringConfig.value = null
   preservedResearcherConfig.value = null
   surveyForm.value = emptySurveyConfigForm()
   recommendForm.value = emptyRecommendConfigForm()
@@ -539,7 +534,6 @@ watch(
         preservedRecommendConfig.value = null
         preservedCurationConfig.value = null
         preservedTranslateConfig.value = null
-        preservedMarketingAuthoringConfig.value = null
         preservedResearcherConfig.value = null
         surveyForm.value = emptySurveyConfigForm()
         recommendForm.value = emptyRecommendConfigForm()
@@ -861,10 +855,7 @@ const onSave = () => {
       subCfgId: existingSubCfg?.subCfgId ?? '',
       agentId: props.agent?.agentId ?? '',
       subTy: existingSubCfg?.subTy ?? '',
-      additionalConfig: buildMarketingAuthoringAdditionalConfig(
-        marketingAuthoringForm.value,
-        preservedMarketingAuthoringConfig.value,
-      ),
+      additionalConfig: buildMarketingAuthoringAdditionalConfig(marketingAuthoringForm.value),
       useYn: existingSubCfg?.useYn ?? 'Y',
       createDt: existingSubCfg?.createDt ?? '',
       modifyDt: existingSubCfg?.modifyDt ?? '',
