@@ -28,18 +28,15 @@ import {
   MARKETING_PREPARING_TITLE,
   resolveMarketingGeneratingStepText,
   type MarketingGeneratingStep,
-  type MarketingPreparingMode,
 } from '~/utils/marketing/marketingUtil'
 
 const props = withDefaults(
   defineProps<{
-    mode?: MarketingPreparingMode
     generatingStep?: MarketingGeneratingStep
     active?: boolean
     bordered?: boolean
   }>(),
   {
-    mode: 'TEXT',
     generatingStep: '',
     active: true,
     bordered: true,
@@ -48,15 +45,15 @@ const props = withDefaults(
 
 const title = MARKETING_PREPARING_TITLE
 const callout = MARKETING_PREPARING_CALLOUT
-const stepText = computed(() => resolveMarketingGeneratingStepText(props.generatingStep))
 
 const { text: cycleText, start, stop } = createMarketingPreparingStatusCycle()
 
-const statusText = computed(() => stepText.value || cycleText.value)
+/** 서버 진행 단계가 오면 그 문구를, 아니면 순환 안내 문구를 보여준다 */
+const statusText = computed(() => resolveMarketingGeneratingStepText(props.generatingStep) || cycleText.value)
 
 watch(
-  () => [props.active, props.mode, props.generatingStep] as const,
-  ([active]) => {
+  () => props.active,
+  (active) => {
     if (active) start()
     else stop()
   },

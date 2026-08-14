@@ -102,27 +102,6 @@
             </button>
           </div>
         </div>
-
-        <div
-          v-if="setupSelectionTags.length"
-          class="marketing-image-maker__selection-panel"
-        >
-          <div class="marketing-image-maker__selected-tags">
-            <span class="marketing-image-maker__selected-label">선택된 내용</span>
-            <div class="marketing-image-maker__tags">
-              <button
-                v-for="item in setupSelectionTags"
-                :key="item.key"
-                type="button"
-                class="marketing-image-maker__tag"
-                @click="item.clear()"
-              >
-                {{ item.label }}
-                <i class="icon-close size-12" />
-              </button>
-            </div>
-          </div>
-        </div>
       </template>
 
       <!-- 목적 -->
@@ -192,13 +171,31 @@
 
         <div class="marketing-image-maker__field">
           <label>참고 자료</label>
+          <div
+            v-if="projectFiles.length"
+            class="marketing-image-maker__existing-files"
+          >
+            <span class="marketing-image-maker__existing-files-label">프로젝트 자료실에서 이번에 사용할 파일 선택</span>
+            <UiCheckbox
+              v-for="file in projectFiles"
+              :key="file.marketingFileId"
+              :model-value="form.selectedExistingFileIds.includes(file.marketingFileId)"
+              :disabled="
+                !form.selectedExistingFileIds.includes(file.marketingFileId) &&
+                referenceFileTotalCount >= MARKETING_REFERENCE_FILE_MAX
+              "
+              @update:model-value="toggleExistingFile(file.marketingFileId, $event)"
+            >
+              {{ file.fileName }}
+            </UiCheckbox>
+          </div>
           <UiFileUpload
             v-model="form.referenceFiles"
-            :max-files="5"
+            :max-files="remainingReferenceUploadSlots"
             :max-size-mb="20"
             :accept="referenceAccept"
             :allowed-extensions="referenceAllowedExtensions"
-            hint="문서·이미지 파일을 최대 5개까지 첨부할 수 있습니다. (각 20MB 이하)"
+            :hint="`자료실 선택 파일을 포함해 총 ${MARKETING_REFERENCE_FILE_MAX}개까지 첨부할 수 있습니다. (각 20MB 이하)`"
           />
         </div>
       </template>
@@ -270,27 +267,6 @@
             size="sm"
           />
         </div>
-
-        <div
-          v-if="audienceMessageSelectionTags.length"
-          class="marketing-image-maker__selection-panel"
-        >
-          <div class="marketing-image-maker__selected-tags">
-            <span class="marketing-image-maker__selected-label">선택된 내용</span>
-            <div class="marketing-image-maker__tags">
-              <button
-                v-for="item in audienceMessageSelectionTags"
-                :key="item.key"
-                type="button"
-                class="marketing-image-maker__tag"
-                @click="item.clear()"
-              >
-                {{ item.label }}
-                <i class="icon-close size-12" />
-              </button>
-            </div>
-          </div>
-        </div>
       </template>
 
       <!-- 톤 · 분량 · 구성 (TEXT 포함 시) -->
@@ -343,7 +319,7 @@
             </button>
           </div>
           <UiInput
-            v-if="form.length === 'CUSTOM'"
+            v-if="form.length === 'OTHER'"
             v-model="form.customLength"
             placeholder="예: 1,000자"
             size="sm"
@@ -373,27 +349,6 @@
             >
               이모지 허용
             </UiCheckbox>
-          </div>
-        </div>
-
-        <div
-          v-if="textToneLengthSelectionTags.length"
-          class="marketing-image-maker__selection-panel"
-        >
-          <div class="marketing-image-maker__selected-tags">
-            <span class="marketing-image-maker__selected-label">선택된 내용</span>
-            <div class="marketing-image-maker__tags">
-              <button
-                v-for="item in textToneLengthSelectionTags"
-                :key="item.key"
-                type="button"
-                class="marketing-image-maker__tag"
-                @click="item.clear()"
-              >
-                {{ item.label }}
-                <i class="icon-close size-12" />
-              </button>
-            </div>
           </div>
         </div>
       </template>
@@ -558,27 +513,6 @@
             />
           </div>
         </div>
-
-        <div
-          v-if="imageStyleSelectionTags.length"
-          class="marketing-image-maker__selection-panel"
-        >
-          <div class="marketing-image-maker__selected-tags">
-            <span class="marketing-image-maker__selected-label">선택된 내용</span>
-            <div class="marketing-image-maker__tags">
-              <button
-                v-for="item in imageStyleSelectionTags"
-                :key="item.key"
-                type="button"
-                class="marketing-image-maker__tag"
-                @click="item.clear()"
-              >
-                {{ item.label }}
-                <i class="icon-close size-12" />
-              </button>
-            </div>
-          </div>
-        </div>
       </template>
 
       <!-- 최종 확인 -->
@@ -622,6 +556,28 @@
           />
         </div>
       </template>
+
+      <!-- 현재 스텝에서 선택된 값 — 클릭 시 해제 -->
+      <div
+        v-if="currentSelectionTags.length"
+        class="marketing-image-maker__selection-panel"
+      >
+        <div class="marketing-image-maker__selected-tags">
+          <span class="marketing-image-maker__selected-label">선택된 내용</span>
+          <div class="marketing-image-maker__tags">
+            <button
+              v-for="item in currentSelectionTags"
+              :key="item.key"
+              type="button"
+              class="marketing-image-maker__tag"
+              @click="item.clear()"
+            >
+              {{ item.label }}
+              <i class="icon-close size-12" />
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <footer class="marketing-image-maker__footer">
@@ -651,11 +607,7 @@
 
 <script setup lang="ts">
 import type { MarketingAuthoringAgentConfig } from '~/types/agent'
-import type {
-  MarketingAuthoringSubmitPayload,
-  MarketingOutputKind,
-  MarketingUnifiedFormPayload,
-} from '~/types/marketing'
+import type { MarketingFile, MarketingFormPayload, MarketingOutputKind } from '~/types/marketing'
 import { useMarketingWizardSteps } from '~/composables/marketing/useMarketingWizardSteps'
 import {
   MARKETING_CTA_PRESETS,
@@ -663,19 +615,19 @@ import {
   MARKETING_IMAGE_SNS_DEFAULT_ASPECT_RATIO,
   MARKETING_IMAGE_SNS_PLATFORMS,
   MARKETING_IMAGE_TYPES,
+  MARKETING_IMAGE_USAGES,
   MARKETING_PROMOTION_INPUT_TIPS,
 } from '~/utils/agent/marketingAuthoringConfigUtil'
 import {
   applyConfirmSummaryLayout,
   buildMarketingWizardSteps,
   clampMarketingAuthoringVariantCount,
-  createEmptyMarketingUnifiedPayload,
+  createEmptyMarketingFormPayload,
   focusMarketingField,
   formatMarketingSelectionTag,
   getMarketingAuthoringWorkflow,
-  hasMarketingOutput,
   MARKETING_AUTHORING_VARIANT_COUNT_MAX,
-  MARKETING_FORM_MESSAGES,
+  MARKETING_REFERENCE_FILE_MAX,
   resolveMarketingAgentThemeStyle,
   resolveMarketingImageUsageFromSetup,
   resolveMarketingOptionLabel,
@@ -688,14 +640,17 @@ const props = withDefaults(
   defineProps<{
     config: MarketingAuthoringAgentConfig
     themeColorHex?: string
+    /** 프로젝트 자료실 — 이번 콘텐츠에 사용할 파일을 여기서 선택 */
+    projectFiles?: MarketingFile[]
   }>(),
   {
     themeColorHex: '',
+    projectFiles: () => [],
   },
 )
 
 const emit = defineEmits<{
-  submit: [payload: MarketingAuthoringSubmitPayload]
+  submit: [payload: MarketingFormPayload]
   close: []
 }>()
 
@@ -710,8 +665,8 @@ const resolveDefaultCheckedOutputSections = (config: MarketingAuthoringAgentConf
   return wf.defaultOutputSections.filter((value) => allowed.has(value))
 }
 
-const form = reactive<MarketingUnifiedFormPayload>({
-  ...createEmptyMarketingUnifiedPayload(),
+const form = reactive<MarketingFormPayload>({
+  ...createEmptyMarketingFormPayload(),
   outputSections: resolveDefaultCheckedOutputSections(props.config),
 })
 
@@ -735,8 +690,15 @@ const referenceAccept = referenceAllowedExtensions.map((ext) => `.${ext}`).join(
 
 const workflow = computed(() => getMarketingAuthoringWorkflow(props.config))
 const themeStyle = computed(() => resolveMarketingAgentThemeStyle(props.themeColorHex))
-const hasText = computed(() => hasMarketingOutput(form, 'TEXT'))
-const hasImage = computed(() => hasMarketingOutput(form, 'IMAGE'))
+const hasText = computed(() => form.outputs.includes('TEXT'))
+const hasImage = computed(() => form.outputs.includes('IMAGE'))
+
+/** 참고 자료 총 개수 — 자료실에서 선택한 파일 + 새로 첨부한 파일 (합쳐서 MARKETING_REFERENCE_FILE_MAX까지) */
+const referenceFileTotalCount = computed(() => form.referenceFiles.length + form.selectedExistingFileIds.length)
+/** 새 파일 첨부에 남은 자리 — 자료실 선택분만큼 차감 */
+const remainingReferenceUploadSlots = computed(() =>
+  Math.max(0, MARKETING_REFERENCE_FILE_MAX - form.selectedExistingFileIds.length),
+)
 
 const agentSubmitLabel = computed(() => String(props.config?.ui?.submitLabel ?? '').trim() || 'Agent로 콘텐츠 생성')
 
@@ -772,9 +734,9 @@ const stepIndexOfKey = (key: MarketingWizardStepKey) => {
 
 const contentTypeOptions = computed(() => props.config.contentTypes ?? [])
 const withCustomOption = (raw: MarketingAuthoringAgentConfig['workflow']['purposes'], description: string) => {
-  // 프리셋 최대 4개 + 직접 입력(OTHER) = 5칩
-  const presets = raw.filter((item) => item.value !== 'OTHER').slice(0, 4)
-  const otherFromConfig = raw.find((item) => item.value === 'OTHER')
+  // 프리셋 최대 4개 + 직접 입력(OTHER) 1개. CUSTOM은 OTHER로만 취급(중복 칩 방지)
+  const presets = raw.filter((item) => item.value !== 'OTHER' && item.value !== 'CUSTOM').slice(0, 4)
+  const otherFromConfig = raw.find((item) => item.value === 'OTHER') ?? raw.find((item) => item.value === 'CUSTOM')
   return [
     ...presets,
     {
@@ -787,7 +749,7 @@ const withCustomOption = (raw: MarketingAuthoringAgentConfig['workflow']['purpos
 const purposeOptions = computed(() => withCustomOption(workflow.value.purposes ?? [], '작성 목적을 직접 입력합니다'))
 const audienceOptions = computed(() => withCustomOption(workflow.value.audiences ?? [], '타겟 고객을 직접 입력합니다'))
 const toneOptions = computed(() => workflow.value.tones ?? [])
-const lengthOptions = computed(() => workflow.value.lengths ?? [])
+const lengthOptions = computed(() => withCustomOption(workflow.value.lengths ?? [], '원하는 글자 수나 문단 수를 지정'))
 const channelOptions = computed(() => props.config.channelsByContentType?.[form.contentType] ?? [])
 
 const currentDetailStep = computed(() => {
@@ -890,19 +852,14 @@ const outputSectionsSummaryLabel = computed(() =>
     .join(' · '),
 )
 
-const IMAGE_USAGE_SHORT_LABEL: Record<string, string> = {
-  BANNER: '배너 이미지',
-  THUMBNAIL: '썸네일',
-  PRODUCT_DETAIL: '상품 상세 이미지',
-  SNS_VISUAL: 'SNS 이미지',
-}
-
 const displaySnsPlatform = computed(() => {
   if (form.imageUsage !== 'SNS_VISUAL') return ''
-  return MARKETING_IMAGE_SNS_PLATFORMS.find((item) => item.value === form.snsPlatform)?.label ?? ''
+  return resolveMarketingOptionLabel(MARKETING_IMAGE_SNS_PLATFORMS, form.snsPlatform)
 })
 const imageUsageSummaryLabel = computed(() =>
-  [IMAGE_USAGE_SHORT_LABEL[form.imageUsage] ?? '', displaySnsPlatform.value].filter(Boolean).join(' · '),
+  [resolveMarketingOptionLabel(MARKETING_IMAGE_USAGES, form.imageUsage), displaySnsPlatform.value]
+    .filter(Boolean)
+    .join(' · '),
 )
 const displayImageType = computed(() => imageTypeOptions.find((item) => item.value === form.imageType)?.label ?? '')
 
@@ -936,7 +893,7 @@ const clearChannelSelection = () => {
   form.customChannel = ''
 }
 
-const setupSelectionTags = computed(() => {
+const setupTags = computed(() => {
   const tags: SelectionTag[] = []
   if (form.contentType) {
     tags.push({
@@ -961,7 +918,7 @@ const setupSelectionTags = computed(() => {
   return tags
 })
 
-const audienceMessageSelectionTags = computed(() => {
+const audienceMessageTags = computed(() => {
   const tags: SelectionTag[] = []
   const audienceLabel = audienceSummaryLabel.value
   if (audienceLabel) {
@@ -988,7 +945,7 @@ const audienceMessageSelectionTags = computed(() => {
   return tags
 })
 
-const textToneLengthSelectionTags = computed(() => {
+const textToneLengthTags = computed(() => {
   const tags: SelectionTag[] = []
   selectedToneItems.value.forEach((item) => {
     tags.push({
@@ -1013,7 +970,7 @@ const textToneLengthSelectionTags = computed(() => {
   return tags
 })
 
-const imageStyleSelectionTags = computed(() => {
+const imageStyleTags = computed(() => {
   const tags: SelectionTag[] = []
   if (displayAspectRatio.value) {
     tags.push({
@@ -1045,6 +1002,22 @@ const imageStyleSelectionTags = computed(() => {
   return tags
 })
 
+/** 스텝별 선택 태그 — 현재 스텝의 태그만 노출 */
+const currentSelectionTags = computed<SelectionTag[]>(() => {
+  switch (currentDetailStep.value.key) {
+    case 'setup':
+      return setupTags.value
+    case 'audienceMessage':
+      return audienceMessageTags.value
+    case 'textToneLength':
+      return textToneLengthTags.value
+    case 'imageStyle':
+      return imageStyleTags.value
+    default:
+      return []
+  }
+})
+
 // ─── 최종 확인 요약 ──────────────────────────────────────────────────────────
 
 const confirmSummaryItems = computed<MarketingConfirmSummaryItem[]>(() => {
@@ -1068,7 +1041,7 @@ const confirmSummaryItems = computed<MarketingConfirmSummaryItem[]>(() => {
   items.push({ label: '목적', value: purposeSummaryLabel.value, stepIndex: stepIndexOfKey('purpose') })
   items.push({
     label: '참고 자료',
-    value: form.referenceFiles.length ? `${form.referenceFiles.length}개 첨부` : '첨부 파일 없음',
+    value: referenceFileTotalCount.value ? `${referenceFileTotalCount.value}개 첨부` : '첨부 파일 없음',
     stepIndex: stepIndexOfKey('purpose'),
     fullWidth: true,
   })
@@ -1206,13 +1179,20 @@ const toggleTone = (value: string) => {
 
 const selectLength = (value: string) => {
   form.length = value
-  if (value !== 'CUSTOM') form.customLength = ''
+  if (value !== 'OTHER') form.customLength = ''
 }
 
 const toggleOutputSection = (value: string, checked: boolean) => {
   form.outputSections = checked
     ? [...new Set([...form.outputSections, value])]
     : form.outputSections.filter((section) => section !== value)
+}
+
+const toggleExistingFile = (marketingFileId: string, checked: boolean) => {
+  if (checked && referenceFileTotalCount.value >= MARKETING_REFERENCE_FILE_MAX) return
+  form.selectedExistingFileIds = checked
+    ? [...new Set([...form.selectedExistingFileIds, marketingFileId])]
+    : form.selectedExistingFileIds.filter((id) => id !== marketingFileId)
 }
 
 const syncVisualStyle = () => {
@@ -1369,9 +1349,13 @@ const validateStep = (stepIndex: number): StepValidationResult => {
       return invalidStep('제작 목적을 입력해 주세요.')
     }
     if (!form.promotionInformation.trim()) {
-      return invalidStep(MARKETING_FORM_MESSAGES.PROMOTION_REQUIRED, () => focusMarketingField(promotionFieldRef.value))
+      return invalidStep('홍보할 상품·서비스를 입력해 주세요.', () => focusMarketingField(promotionFieldRef.value))
     }
-    if (form.referenceFiles.length > 5) return invalidStep(MARKETING_FORM_MESSAGES.REFERENCE_FILE_MAX)
+    if (referenceFileTotalCount.value > MARKETING_REFERENCE_FILE_MAX) {
+      return invalidStep(
+        `참고 파일은 자료실 선택 파일을 포함해 최대 ${MARKETING_REFERENCE_FILE_MAX}개까지 첨부할 수 있습니다.`,
+      )
+    }
     return VALID_STEP
   }
   if (key === 'audienceMessage') {
@@ -1386,7 +1370,7 @@ const validateStep = (stepIndex: number): StepValidationResult => {
   if (key === 'textToneLength') {
     const isToneMissing = !form.tones.length || (form.tones.includes('OTHER') && !form.customTone.trim())
     const isLengthMissing =
-      (lengthOptions.value.length > 0 && !form.length) || (form.length === 'CUSTOM' && !form.customLength.trim())
+      (lengthOptions.value.length > 0 && !form.length) || (form.length === 'OTHER' && !form.customLength.trim())
     const isOutputSectionMissing = workflow.value.outputSections.length > 0 && !form.outputSections.length
     return isToneMissing || isLengthMissing || isOutputSectionMissing ? invalidStep(REQUIRED_FIELD_MESSAGE) : VALID_STEP
   }
@@ -1418,9 +1402,7 @@ const validateStep = (stepIndex: number): StepValidationResult => {
   if (key === 'confirm') {
     return form.variantCount >= 1
       ? VALID_STEP
-      : invalidStep(MARKETING_FORM_MESSAGES.VARIANT_COUNT_REQUIRED, () =>
-          focusMarketingField(variantCountFieldRef.value),
-        )
+      : invalidStep('시안 생성 개수를 선택해 주세요.', () => focusMarketingField(variantCountFieldRef.value))
   }
   return invalidStep(REQUIRED_FIELD_MESSAGE)
 }
@@ -1441,14 +1423,12 @@ const onSubmit = () => {
   syncImageUsageFromSetup()
   syncVisualStyle()
   form.variantCount = clampMarketingAuthoringVariantCount(form.variantCount)
-  form.referenceMode = form.referenceFiles.length ? 'FILE' : ''
-  form.referenceUrls = ['']
   emit('submit', {
     ...form,
     outputs: [...form.outputs],
     tones: [...form.tones],
     referenceFiles: [...form.referenceFiles],
-    referenceUrls: [...form.referenceUrls],
+    selectedExistingFileIds: [...form.selectedExistingFileIds],
     outputSections: [...form.outputSections],
   })
 }

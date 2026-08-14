@@ -87,7 +87,6 @@
           class="chat-marketing-authoring-result__draft chat-marketing-authoring-result__draft--loading"
         >
           <MarketingPreparingStatus
-            :mode="isBothMode ? 'BOTH' : isImageMode ? 'IMAGE' : 'TEXT'"
             :generating-step="generatingStep"
             :active="isLoading"
             :bordered="false"
@@ -460,7 +459,6 @@ import { openToast } from '~/composables/useToast'
 import { openConfirm } from '~/composables/useDialog'
 import { formatNumberWithComma } from '~/utils/global/numberUtil'
 import type { MarketingAuthoringAgentConfig } from '~/types/agent'
-import type { MarketingAuthoringResult } from '~/types/marketing'
 import {
   copyMarketingPayloadToClipboard,
   isChannelSendSupported,
@@ -469,6 +467,7 @@ import {
   resolveMarketingOptionLabel,
   resolveMarketingToneLabels,
   renderMarketingTextHtml,
+  type MarketingAuthoringResult,
   type MarketingGeneratingStep,
   type MarketingRequestCustomFields,
 } from '~/utils/marketing/marketingUtil'
@@ -505,7 +504,7 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  editWithAgent: [payload: { variantId: number; content: string; request: string; type: 'TEXT' | 'IMAGE' }]
+  'edit-with-agent': [payload: { variantId: number; content: string; request: string; type: 'TEXT' | 'IMAGE' }]
 }>()
 
 const variants = computed(() => props.result.variants ?? [])
@@ -830,7 +829,7 @@ const onSendRefine = () => {
   refineDraft.value = ''
   scrollRefineChatToBottom()
 
-  emit('editWithAgent', {
+  emit('edit-with-agent', {
     variantId: activeDraftId.value,
     content,
     request,

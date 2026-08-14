@@ -37,15 +37,6 @@
               <i class="icon-image size-16" />
               이미지 복사하기
             </button>
-            <button
-              type="button"
-              class="marketing-channel-send-modal__copy-btn"
-              :disabled="isBusy || (!body.trim() && !imageUrl)"
-              @click="onCopyBoth"
-            >
-              <i class="icon-copy size-16" />
-              함께 복사하기
-            </button>
           </div>
         </div>
       </div>
@@ -224,19 +215,6 @@ const notifyCopyBothResult = (result: { textCopied: boolean; imageCopied: boolea
   }
   if (result.imageCopied) {
     openToast({ message: '이미지만 복사되었습니다.', type: 'warning' })
-  }
-}
-
-const onCopyBoth = async () => {
-  const content = props.body.trim()
-  const url = props.imageUrl.trim()
-  if (!content && !url) return
-
-  try {
-    const result = await copyMarketingPayloadToClipboard(content, url)
-    notifyCopyBothResult(result)
-  } catch {
-    openToast({ message: '함께 복사에 실패했습니다.', type: 'error' })
   }
 }
 
