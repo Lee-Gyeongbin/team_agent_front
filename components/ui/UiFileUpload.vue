@@ -228,9 +228,9 @@ const addFiles = async (newFiles: FileList | File[]) => {
     return
   }
 
-  // 최대 개수 제한
+  // 최대 개수 제한 (0이면 더 이상 첨부 불가 — cap 미설정일 때만 제한 없음)
   const cap = props.maxFiles
-  if (typeof cap === 'number' && cap >= 1) {
+  if (typeof cap === 'number' && cap >= 0) {
     const room = cap - props.modelValue.length
     if (room <= 0) {
       openToast({ message: `최대 ${cap}개까지 첨부할 수 있습니다.`, type: 'error' })

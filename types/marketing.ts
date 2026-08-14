@@ -1,8 +1,90 @@
 import type { MarketingAuthoringAgentConfig } from '~/types/agent'
 
 export type MarketingOutputKind = 'TEXT' | 'IMAGE'
+export type MarketingOutputMode = 'TEXT' | 'IMAGE' | 'BOTH'
 
-export interface MarketingAuthoringSharedFields {
+// ── 마케팅 프로젝트 / 첨부파일 ──────────────────────────────────────────────
+
+/** TB_CODE CODE_GRP_ID = 'PT000002' 하위 CODE_ID */
+export type MarketingProjectStatusCd = '001' | '002' | '003' | '004'
+// 001=작성중, 002=검수중, 003=완료, 004=보류
+
+/** 마케팅 첨부파일 */
+export interface MarketingFile {
+  marketingFileId: string
+  marketingProjectId: string
+  filePath: string
+  fileName: string
+  fileSize: number
+  fileType: string
+  createDt: string
+}
+
+/** 파일 업로드 presigned URL 발급 요청 */
+export interface MarketingFileUploadUrlRequest {
+  fileName: string
+  fileType: string
+  fileSize: string
+  filePath: string
+  marketingProjectId?: string
+}
+
+/** 파일 메타 저장 요청 (NCP 업로드 완료 후) */
+export interface MarketingFileSavePayload {
+  marketingProjectId?: string
+  fileName: string
+  storeFileName: string
+  filePath: string
+  fileSize: number
+  fileType: string
+  mimeType: string
+}
+
+/** 파일 메타 저장 응답 */
+export interface MarketingFileSaveResponse {
+  result: string
+  marketingFileId: string
+  filePath: string
+  fileName: string
+}
+
+/** 파일명 수정 요청 */
+export interface MarketingFileUpdatePayload {
+  marketingFileId: string
+  fileName: string
+}
+
+/** 마케팅 프로젝트 목록 조회 파라미터 */
+export interface MarketingProjectListFilter {
+  statusCd?: string
+  keyword?: string
+  sortField?: string
+  sortOrder?: string
+  /** 최근 N일 (생성일 기준). 없으면 전체 기간 */
+  periodDays?: number
+  limit?: number
+  offset?: number
+}
+
+/** selectMarketingProjectList 응답 행 / saveMarketingProject.do 요청·응답 */
+export interface MarketingProject {
+  marketingProjectId: string
+  projectNm: string // 프로젝트명
+  orgNm: string // 고객사
+  projectOverview?: string // 캠페인 개요
+  dueDt: string // 마감일 YYYY-MM-DD (없으면 '')
+  statusCd: MarketingProjectStatusCd // STATUS_CD
+  statusNm: string // 작성중 | 검수중 | 완료 | 보류
+  projectConfigJson?: string
+  createDt: string
+  modifyDt: string
+  createUserId?: string
+}
+
+/** 마케팅 작성 마법사 폼 — 그대로 REQUEST_JSON으로 저장된다 (referenceFiles만 업로드 후 제외) */
+export interface MarketingFormPayload {
+  /** 생성할 결과 (글/그림) */
+  outputs: MarketingOutputKind[]
   contentType: string
   channel: string
   customChannel: string
@@ -14,23 +96,19 @@ export interface MarketingAuthoringSharedFields {
   keyMessage: string
   additionalRequirements: string
   referenceFiles: File[]
+  /** 프로젝트 자료실에 이미 있는 파일 중 이번 콘텐츠에 사용할 파일 id */
+  selectedExistingFileIds: string[]
   variantCount: number
-}
-
-export interface MarketingAuthoringTextOnlyFields {
+  /** 글 전용 */
   tones: string[]
+  customTone: string
   length: string
   customLength: string
   customCallToAction: string
-  customTone: string
-  referenceMode: '' | 'FILE' | 'WEB'
-  referenceUrls: string[]
   outputSections: string[]
   includeHashtags: 'Y' | 'N'
   allowEmoji: 'Y' | 'N'
-}
-
-export interface MarketingAuthoringImageOnlyFields {
+  /** 그림 전용 */
   imageUsage: string
   snsPlatform: string
   imageType: string
@@ -41,24 +119,13 @@ export interface MarketingAuthoringImageOnlyFields {
   brandColors: string
 }
 
-export type MarketingUnifiedFormPayload = MarketingAuthoringSharedFields &
-  MarketingAuthoringTextOnlyFields &
-  MarketingAuthoringImageOnlyFields & { outputs: MarketingOutputKind[] }
-
-export type MarketingAuthoringSubmitPayload = MarketingUnifiedFormPayload
-
-export interface MarketingAuthoringConditionSummary {
-  contentType: string
-  purpose: string
-  audience: string
-  /** BE는 string[]로 저장·반환할 수 있음 */
-  tones: string | string[]
-  length: string
-  channel?: string
-  keyMessage?: string
+/** 저장된 요청 조건 (DB REQUEST_JSON) — File 대신 프로젝트 파일 ID를 갖는다 */
+export type MarketingStoredRequest = Omit<MarketingFormPayload, 'referenceFiles' | 'selectedExistingFileIds'> & {
+  marketingProjectId?: string
+  referenceMarketingFileIds: string[]
 }
 
-export interface MarketingAuthoringVariant {
+export interface MarketingVariant {
   id: number
   label: string
   recommended: boolean
@@ -66,26 +133,22 @@ export interface MarketingAuthoringVariant {
 }
 
 /**
- * 이미지 시안 — 문구 시안처럼 시안별 형식 라벨(감성형 등)을 함께 받음.
+ * 이미지 시안 — 문구 시안처럼 시안별 형식 라벨(감성형 등)을 함께 받는다.
  * id는 문구 시안의 id와 같은 시안 번호로, 통합 모드에서 문구·이미지를 짝짓는 기준이다.
  */
-export interface MarketingAuthoringImageVariant {
+export interface MarketingImageVariant {
   id: number
   url: string
   label: string
   recommended: boolean
 }
 
-export interface MarketingAuthoringResult {
-  summary: string
-  conditions: MarketingAuthoringConditionSummary
-  imageConditions?: MarketingAuthoringConditionSummary
-  variants: MarketingAuthoringVariant[]
-  mode?: MarketingOutputMode
-  images?: MarketingAuthoringImageVariant[]
+export interface MarketingResult {
+  title: string
+  mode: MarketingOutputMode
+  variants: MarketingVariant[]
+  images: MarketingImageVariant[]
 }
-
-export type MarketingOutputMode = 'TEXT' | 'IMAGE' | 'BOTH'
 
 export interface MarketingAgentSummary {
   agentId: string
@@ -98,87 +161,72 @@ export interface MarketingAgentSummary {
 export interface MarketingContentSummary {
   contentId: string
   agentId: string
+  marketingProjectId?: string
   title: string
   outputMode: MarketingOutputMode
-  contentType: string
   summaryLabels: string[]
   createDt: string
-  modifyDt: string
-}
-
-/** 상세 request — DB REQUEST_JSON (File 없음) */
-export type MarketingStoredRequest = Omit<MarketingAuthoringSubmitPayload, 'referenceFiles'> & {
-  referenceFiles?: never[]
 }
 
 export interface MarketingContentDetail extends MarketingContentSummary {
-  request: MarketingStoredRequest | MarketingAuthoringSubmitPayload
-  result: MarketingAuthoringResult | null
+  request: MarketingStoredRequest
+  result: MarketingResult
 }
 
 export interface MarketingContentListParams {
+  marketingProjectId?: string
   keyword?: string
   contentType?: string
   outputMode?: MarketingOutputMode
   periodDays?: number
-  sort?: 'MODIFY_DT_DESC' | 'CREATE_DT_DESC' | 'TITLE_ASC'
 }
 
 export interface MarketingContentListResponse {
   list: MarketingContentSummary[]
 }
 
-export interface MarketingCreateRequest extends Omit<MarketingAuthoringSubmitPayload, 'referenceFiles'> {
+export interface MarketingCreateRequest extends MarketingStoredRequest {
   agentId: string
-  referenceFiles?: never[]
+  marketingProjectId: string
 }
 
 export interface MarketingCreateResponse {
   contentId: string
 }
 
-export interface MarketingRefineResponse {
+/** 제목·시안 저장·보완 등 갱신 API 공통 응답 — meeting/repository/org-manage 등과 동일한 successYn/returnMsg 컨벤션 */
+export interface MarketingActionResponse {
   successYn?: boolean
-  message?: string
-}
-
-export type MarketingStreamStep = 'title' | 'labels' | 'variant'
-
-export interface MarketingStreamProgressEvent {
-  step: MarketingStreamStep
-  contentNo?: number
-  label?: string
-  recommended?: boolean
-  text?: string
-  imageUrl?: string
-  /** BE가 TEXT/IMAGE part를 분리 전송할 때 구분값 */
-  part?: 'TEXT' | 'IMAGE'
-  /** labels step — 요청 시안 개수 */
-  variantCount?: number
-}
-
-export type MarketingStreamDoneEvent = {
-  result: MarketingAuthoringResult | null
-}
-
-export type MarketingStreamErrorEvent = {
-  message?: string
+  returnMsg?: string
 }
 
 export interface MarketingRefineRequest {
-  content: string
   request: string
-  /** TEXT: 문안 수정, IMAGE: 이미지 재생성 */
-  type: 'TEXT' | 'IMAGE'
+  type: MarketingOutputKind
 }
 
 export interface MarketingVariantUpdateRequest {
   textContent: string
 }
 
-export interface MarketingVariantUpdateResponse {
-  successYn: boolean
-  contentId?: string
-  variantId?: number
+export type MarketingStreamStep = 'title' | 'labels' | 'variant'
+
+export interface MarketingStreamProgressEvent {
+  step: MarketingStreamStep
+  title?: string
+  variantCount?: number
+  contentNo?: number
+  label?: string
+  recommended?: boolean
+  part?: MarketingOutputKind
+  text?: string
+  imageUrl?: string
+}
+
+export interface MarketingStreamDoneEvent {
+  result: MarketingResult | null
+}
+
+export interface MarketingStreamErrorEvent {
   message?: string
 }

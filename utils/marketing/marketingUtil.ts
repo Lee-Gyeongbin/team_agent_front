@@ -1,11 +1,10 @@
 import { nextTick, ref } from 'vue'
 import type { Agent, MarketingAuthoringAgentConfig, MarketingAuthoringOption } from '~/types/agent'
 import type {
-  MarketingAuthoringConditionSummary,
-  MarketingAuthoringResult,
-  MarketingAuthoringSubmitPayload,
+  MarketingFormPayload,
   MarketingOutputKind,
-  MarketingUnifiedFormPayload,
+  MarketingResult,
+  MarketingStoredRequest,
 } from '~/types/marketing'
 import { copyToClipboard } from '~/utils/global/clipboardUtil'
 import {
@@ -21,15 +20,10 @@ import {
 
 export const MARKETING_AGENT_THEME_FALLBACK_HEX = '#7c5cfc'
 export const MARKETING_AUTHORING_VARIANT_COUNT_MAX = 5
+export const MARKETING_REFERENCE_FILE_MAX = 5
 export const MARKETING_PREPARING_STATUS_INTERVAL_MS = 3000
 export const MARKETING_IMAGE_LOAD_TIMEOUT_MS = 30_000
 export const MARKETING_RESULT_SUMMARY_PENDING = '요청하신 조건으로 콘텐츠를 생성하고 있습니다.'
-
-export const MARKETING_FORM_MESSAGES = {
-  VARIANT_COUNT_REQUIRED: '시안 생성 개수를 선택해 주세요.',
-  REFERENCE_FILE_MAX: '참고 파일은 최대 5개까지 첨부할 수 있습니다.',
-  PROMOTION_REQUIRED: '홍보할 상품·서비스를 입력해 주세요.',
-} as const
 
 const MARKETING_OUTPUT_MODE_LABELS: Record<string, string> = {
   TEXT: '문구',
@@ -123,9 +117,28 @@ export const resolveMarketingToneLabels = (
 }
 
 export type MarketingRequestCustomFields = Pick<
-  MarketingAuthoringSubmitPayload,
+  MarketingFormPayload,
   'customPurpose' | 'customAudience' | 'customTone' | 'customChannel' | 'customLength'
 >
+
+/** 결과 화면 메타·채널 전송용 조건 요약 */
+export interface MarketingAuthoringConditionSummary {
+  contentType: string
+  purpose: string
+  audience: string
+  /** BE는 string[]로 저장·반환할 수 있음 */
+  tones: string | string[]
+  length: string
+  channel?: string
+  keyMessage?: string
+}
+
+/** ChatMarketingResult 등 UI용 — API MarketingResult + 조건 요약 */
+export interface MarketingAuthoringResult extends MarketingResult {
+  summary: string
+  conditions: MarketingAuthoringConditionSummary
+  imageConditions?: MarketingAuthoringConditionSummary
+}
 
 /** result.conditions + request custom 필드 → 메타 표시용 라벨 */
 export const resolveMarketingConditionDisplay = (
@@ -148,7 +161,6 @@ export const resolveMarketingConditionDisplay = (
   }
 }
 
-export type MarketingPreparingMode = 'TEXT' | 'IMAGE' | 'BOTH'
 export type MarketingGeneratingStep = 'title' | 'labels' | 'variant' | ''
 export type MarketingWizardStepKey =
   | 'setup'
@@ -285,7 +297,7 @@ export const clampMarketingAuthoringVariantCount = (raw: unknown) => {
   return Math.min(MARKETING_AUTHORING_VARIANT_COUNT_MAX, Math.floor(count))
 }
 
-export const createEmptyMarketingUnifiedPayload = (): MarketingUnifiedFormPayload => ({
+export const createEmptyMarketingFormPayload = (): MarketingFormPayload => ({
   contentType: '',
   channel: '',
   customChannel: '',
@@ -297,14 +309,13 @@ export const createEmptyMarketingUnifiedPayload = (): MarketingUnifiedFormPayloa
   keyMessage: '',
   additionalRequirements: '',
   referenceFiles: [],
+  selectedExistingFileIds: [],
   variantCount: 0,
   tones: [],
   length: '',
   customLength: '',
   customCallToAction: '',
   customTone: '',
-  referenceMode: '',
-  referenceUrls: [],
   outputSections: [],
   includeHashtags: 'Y',
   allowEmoji: 'Y',
@@ -343,7 +354,7 @@ export const resolveMarketingSubmitMode = (outputs?: MarketingOutputKind[]): 'TE
   return hasImage ? 'IMAGE' : 'TEXT'
 }
 
-export const hasMarketingOutput = (payload: Pick<MarketingUnifiedFormPayload, 'outputs'>, kind: MarketingOutputKind) =>
+export const hasMarketingOutput = (payload: Pick<MarketingFormPayload, 'outputs'>, kind: MarketingOutputKind) =>
   payload.outputs.includes(kind)
 
 const STEP_DEFS: Record<MarketingWizardStepKey, MarketingWizardStepDef> = {
@@ -373,7 +384,12 @@ export const focusMarketingField = async (element?: HTMLElement | null, input?: 
 export const isMarketingAuthoringAgent = (agent?: Agent | null) =>
   !!agent && agent.useYn === 'Y' && agent.svcTy === MARKETING_AUTHORING_SVC_TY
 
-const toConditions = (payload: MarketingAuthoringSubmitPayload): MarketingAuthoringConditionSummary => ({
+const toConditions = (
+  payload: Pick<
+    MarketingFormPayload,
+    'contentType' | 'purpose' | 'audience' | 'tones' | 'length' | 'channel' | 'keyMessage'
+  >,
+): MarketingAuthoringConditionSummary => ({
   contentType: payload.contentType,
   purpose: payload.purpose,
   audience: payload.audience,
@@ -383,15 +399,56 @@ const toConditions = (payload: MarketingAuthoringSubmitPayload): MarketingAuthor
   keyMessage: payload.keyMessage,
 })
 
-export const buildMarketingPendingResultFromPayload = (
-  payload: MarketingAuthoringSubmitPayload,
-): MarketingAuthoringResult => ({
-  mode: resolveMarketingSubmitMode(payload.outputs),
-  summary: MARKETING_RESULT_SUMMARY_PENDING,
-  conditions: toConditions(payload),
-  variants: [],
-  images: [],
+const toImageConditions = (
+  payload: Pick<
+    MarketingFormPayload,
+    | 'imageType'
+    | 'visualStyle'
+    | 'aspectRatio'
+    | 'customAspectRatio'
+    | 'imageText'
+    | 'channel'
+    | 'imageUsage'
+    | 'snsPlatform'
+  >,
+): MarketingAuthoringConditionSummary => ({
+  contentType: payload.imageType,
+  purpose: payload.imageUsage,
+  audience: payload.snsPlatform,
+  tones: payload.visualStyle,
+  length: payload.aspectRatio || payload.customAspectRatio,
+  channel: payload.channel,
+  keyMessage: payload.imageText,
 })
+
+/** API MarketingResult + 저장 요청 → 결과 화면 표시용 */
+export const enrichMarketingResultForDisplay = (
+  result: MarketingResult,
+  request?: MarketingStoredRequest | MarketingFormPayload | null,
+  summary = '',
+): MarketingAuthoringResult => {
+  const baseSummary = summary || result.title || MARKETING_RESULT_SUMMARY_PENDING
+  if (!request) {
+    return {
+      ...result,
+      summary: baseSummary,
+      conditions: {
+        contentType: '',
+        purpose: '',
+        audience: '',
+        tones: '',
+        length: '',
+      },
+    }
+  }
+
+  return {
+    ...result,
+    summary: baseSummary,
+    conditions: toConditions(request),
+    imageConditions: hasMarketingOutput(request, 'IMAGE') ? toImageConditions(request) : undefined,
+  }
+}
 
 /** 수신 images url preload — onload/onerror/timeout 모두 완료로 처리 */
 export const preloadMarketingImages = (urls: string[], timeoutMs = MARKETING_IMAGE_LOAD_TIMEOUT_MS) => {

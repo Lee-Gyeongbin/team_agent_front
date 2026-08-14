@@ -11,6 +11,27 @@ export const getChatAttachmentExtension = (fileName: string): string => {
   return trimmed.slice(lastDot + 1).toLowerCase()
 }
 
+/** 파일명을 표시용 이름과 확장자로 분리 */
+export const splitFileNameBaseAndExtension = (fileName: string): { baseName: string; extension: string } => {
+  const trimmed = fileName.trim()
+  const lastDot = trimmed.lastIndexOf('.')
+  if (lastDot <= 0 || lastDot === trimmed.length - 1) {
+    return { baseName: trimmed, extension: '' }
+  }
+  return {
+    baseName: trimmed.slice(0, lastDot),
+    extension: trimmed.slice(lastDot + 1),
+  }
+}
+
+/** 표시용 이름 + 확장자 → 저장 파일명 */
+export const buildFileNameWithExtension = (baseName: string, extension: string): string => {
+  const trimmedBase = baseName.trim()
+  if (!trimmedBase) return ''
+  const trimmedExt = extension.trim()
+  return trimmedExt ? `${trimmedBase}.${trimmedExt}` : trimmedBase
+}
+
 export const isImageAttachmentExtension = (ext: string): boolean => IMAGE_EXTENSION_SET.has(ext)
 
 /** 비이미지 첨부 패널에 쓰는 아이콘 클래스 (mask 아이콘) */

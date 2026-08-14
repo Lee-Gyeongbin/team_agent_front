@@ -3,7 +3,7 @@
     :is-open="isOpen"
     position="center"
     :max-width="'min(96vw, 900px)'"
-    custom-class="chat-attachment-preview-modal"
+    custom-class="chat-attachment-preview-modal modal-dialog--above-side-panel"
     @close="onClose"
   >
     <template #header>
@@ -93,7 +93,10 @@ import { downloadBlobAsFile } from '~/utils/global/fileDownloadUtil'
 
 interface Props {
   isOpen: boolean
-  chatFileId: string
+  /** 채팅 첨부 — viewChatFile.do */
+  chatFileId?: string
+  /** 마케팅 참고 파일 — viewMarketingFile.do */
+  marketingFileId?: string
   fileName: string
   mimeType: string
   /** 직전에 선택한 파일의 blob URL (이미지 등, 세션 한정) */
@@ -103,6 +106,8 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  chatFileId: '',
+  marketingFileId: '',
   localPreviewUrl: undefined,
   isShare: false,
 })
@@ -113,6 +118,7 @@ const emit = defineEmits<{
 }>()
 
 const { fetchViewChatFile, fetchViewChatFileShare } = useChatApi()
+const { fetchViewMarketingFile } = useMarketingApi()
 const { handleDownloadByUrl } = useFileStore()
 
 /** 공유 페이지 여부에 따라 적절한 API 호출 */
@@ -219,7 +225,9 @@ const loadPreview = async () => {
   resetViewer()
   if (useLocalImageFirst()) return
 
-  if (!props.chatFileId?.trim()) {
+  const marketingFileId = props.marketingFileId?.trim()
+  const chatFileId = props.chatFileId?.trim()
+  if (!marketingFileId && !chatFileId) {
     loadStatus.value = 'error'
     errorMessage.value = '파일 정보가 없습니다.'
     return
@@ -227,7 +235,9 @@ const loadPreview = async () => {
 
   loadStatus.value = 'loading'
   try {
-    const res = await fetchFileView(props.chatFileId.trim())
+    const res = marketingFileId
+      ? await fetchViewMarketingFile(marketingFileId)
+      : await fetchFileView(chatFileId!)
     applyResponse(res)
   } catch (e) {
     errorMessage.value = e instanceof Error ? e.message : '불러오기에 실패했습니다.'
@@ -289,7 +299,7 @@ const onDownload = async () => {
 }
 
 watch(
-  () => [props.isOpen, props.chatFileId, props.localPreviewUrl] as const,
+  () => [props.isOpen, props.chatFileId, props.marketingFileId, props.localPreviewUrl] as const,
   ([open]) => {
     if (!open) {
       resetViewer()

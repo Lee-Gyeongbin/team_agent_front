@@ -989,6 +989,23 @@
     border-radius: 8px;
     background: #f8fafc;
   }
+
+  &__existing-files {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    gap: 10px 20px;
+    padding: 14px;
+    margin-bottom: 12px;
+    border: 1px solid $color-border;
+    border-radius: 8px;
+    background: #f8fafc;
+  }
+
+  &__existing-files-label {
+    @include typo($body-xsmall);
+    color: $color-text-muted;
+  }
 }
 
 @media (max-width: 1100px) {
@@ -2260,13 +2277,16 @@
 // =============================================
 // 마케팅 전용 페이지 (/marketing)
 // =============================================
+
+$marketing-page-max-width: 1200px;
+
 .marketing-page {
   display: flex;
   flex-direction: column;
   gap: $spacing-md;
   padding: $spacing-lg 0 $spacing-md;
   width: 100%;
-  max-width: min(1200px, calc(100vw - 48px));
+  max-width: min($marketing-page-max-width, calc(100vw - 48px));
   height: calc(100vh - #{$header-height});
   max-height: calc(100vh - #{$header-height});
   min-height: 0;
@@ -2365,7 +2385,8 @@
   gap: 10px;
 }
 
-.marketing-history-filter-select {
+// 목록/제작내역 필터 셀렉트 공용 (UiSelect)
+.marketing-filter-select {
   width: 140px;
   flex-shrink: 0;
 
@@ -2374,46 +2395,25 @@
   }
 }
 
-.marketing-history-filter-trigger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  height: 32px;
-  min-width: 140px;
-  padding: 0 10px;
-  border: 1px solid $color-border;
-  border-radius: 8px;
-  background: #fff;
-  color: $color-text-secondary;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1;
-  cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease;
-
-  &:hover {
-    border-color: var(--marketing-agent-theme-color, $color-primary);
-    color: var(--marketing-agent-theme-color, $color-primary);
-  }
-
-  &--type {
-    min-width: 180px;
-  }
-
-  .icon-arrow-down {
-    flex-shrink: 0;
-    color: inherit;
-  }
-}
-
-.marketing-history-mode-segment {
+// 세그먼트 토글(선택형 버튼 그룹) 공용 — 제작 내역 출력 형태 필터, 프로젝트 진행 상태 등에서 재사용
+.marketing-segment-toggle {
   display: inline-flex;
   align-items: stretch;
   border: 1px solid $color-border;
   border-radius: 8px;
   overflow: hidden;
   background: #fff;
+
+  // 폼 필드용 — 가로 전체 + 옵션 균등 분배
+  &--fill {
+    display: flex;
+    width: 100%;
+
+    .marketing-segment-toggle__btn {
+      flex: 1;
+      min-width: 0;
+    }
+  }
 
   &__btn {
     display: inline-flex;
@@ -2698,8 +2698,7 @@
   }
 
   &__copy-actions {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    display: flex;
     gap: 8px;
     width: 100%;
     min-width: 0;
@@ -2707,10 +2706,11 @@
 
   &__copy-btn {
     display: inline-flex;
+    flex: 1 1 0;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    width: 100%;
+    width: auto;
     min-width: 0;
     min-height: 40px;
     padding: 0 10px;
@@ -2805,7 +2805,7 @@
     }
 
     &__copy-actions {
-      grid-template-columns: 1fr;
+      flex-direction: column;
       width: 100%;
     }
   }
@@ -2815,10 +2815,13 @@
 // 마케팅 프로젝트 목록 · 생성 모달 · 상세
 // =============================================
 
-.marketing-list-page {
+.marketing-list-page,
+.marketing-detail-page {
   padding: $spacing-lg;
-  max-width: 1200px;
+  max-width: $marketing-page-max-width;
   margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .marketing-list-header {
@@ -2844,6 +2847,7 @@
 
 .marketing-filter-chips {
   display: flex;
+  flex-wrap: wrap;
   gap: $spacing-sm;
 }
 
@@ -2855,36 +2859,12 @@
   background: $color-border;
 }
 
-.marketing-filter-trigger {
+.marketing-filter-chip {
   display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  height: 30px;
-  min-width: 140px;
-  padding: 0 $spacing-sm;
-  border: 1px solid $color-border;
-  border-radius: $border-radius-base;
-  background: #fff;
-  @include typo($body-small);
-  color: $color-text-dark;
-  cursor: pointer;
-  transition: border-color $transition-fast, color $transition-fast;
-
-  &:hover {
-    border-color: var(--color-primary);
-    color: var(--color-primary);
-  }
-
-  .icon-arrow-down {
-    flex-shrink: 0;
-    color: inherit;
-  }
-}
-
-.marketing-filter-chip {
+  justify-content: center;
   padding: 5px 12px;
-  border-radius: 20px;
+  border-radius: 999px;
   border: 1px solid $color-border;
   background: #fff;
   cursor: pointer;
@@ -2968,92 +2948,47 @@
   padding: 2px 8px;
   border-radius: 12px;
 
-  &.status-001,
-  &.status-PT000001 {
+  &.status-001 {
     background: #fff3e3;
     color: $color-warning;
   }
-  &.status-002,
-  &.status-PT000002 {
+  &.status-002 {
     background: var(--color-primary-bg);
     color: var(--color-primary-dark);
   }
-  &.status-003,
-  &.status-PT000003 {
+  &.status-003 {
     background: rgba($color-success, 0.12);
     color: color.adjust($color-success, $lightness: -10%);
   }
-}
-
-.marketing-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(20, 18, 40, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: $z-modal;
-}
-
-.marketing-modal {
-  background: #fff;
-  border-radius: $border-radius-lg + 4;
-  width: 520px;
-  max-height: 88vh;
-  overflow-y: auto;
-  box-shadow: $shadow-lg;
-}
-
-.marketing-modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: $spacing-lg $spacing-lg $spacing-md;
-  border-bottom: 1px solid $color-border;
-}
-
-.marketing-modal-title {
-  @include typo($body-large-bold);
-  color: $color-text-heading;
-  margin: 0;
-}
-
-.marketing-modal-close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: transparent;
-  border-radius: $border-radius-base;
-  cursor: pointer;
-  color: $color-text-dark;
-
-  &:hover {
-    background: $color-surface;
+  &.status-004 {
+    background: $color-background;
+    color: $color-text-muted;
   }
 }
 
-.marketing-modal-body {
-  padding: $spacing-lg;
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-md;
-}
+// 새/수정 프로젝트 모달 — 본문은 UiModal 기본 modal-dialog-body(가로 중앙정렬)를
+// 세로 폼 레이아웃으로 덮어쓴다
+.marketing-new-modal {
+  .modal-dialog-body {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: $spacing-md;
+    min-height: 0;
+  }
 
-.marketing-modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: $spacing-sm;
-  padding: $spacing-md $spacing-lg;
-  border-top: 1px solid $color-border;
+  // 마감일 DatePicker 가로 전체
+  .ui-datepicker-wrap {
+    display: block;
+    width: 100%;
+  }
 }
 
 .marketing-form-field {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
 }
 
 .marketing-form-label {
@@ -3066,14 +3001,9 @@
 }
 
 .marketing-detail-page {
-  padding: $spacing-lg;
   display: flex;
   flex-direction: column;
   gap: $spacing-md;
-  max-width: 1400px;
-  margin: 0 auto;
-  width: 100%;
-  box-sizing: border-box;
 
   // 작성·결과 화면만 뷰포트 높이를 고정 (원래 마케팅 authoring 레이아웃)
   &.is-authoring {
@@ -3175,16 +3105,31 @@
     max-width: 400px;
   }
 
+  .modal-side-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+    position: relative;
+    z-index: 1;
+  }
+
   &__header {
+    position: relative;
+    z-index: 2;
+    flex-shrink: 0;
     padding: 20px 16px 12px;
+    background: #fff;
   }
 
   &__body {
     display: flex;
+    flex: 1;
     flex-direction: column;
     gap: $spacing-md;
     min-height: 0;
-    height: 100%;
+    position: relative;
+    z-index: 1;
     border-radius: $border-radius-base;
     transition: background-color $transition-fast;
 
@@ -3193,13 +3138,25 @@
     }
   }
 
+  &__desc {
+    @include typo($body-xsmall);
+    flex-shrink: 0;
+    color: $color-text-muted;
+  }
+
   &__list {
     display: flex;
+    flex: 1;
     flex-direction: column;
     gap: 8px;
+    min-height: 0;
     margin: 0;
     padding: 0;
     list-style: none;
+    overflow-y: auto;
+    position: relative;
+    z-index: 1;
+    @include custom-scrollbar;
   }
 
   &__item {
@@ -3211,7 +3168,15 @@
     border-radius: $border-radius-base;
     background: #fff;
     color: $color-text-primary;
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
     @include typo($body-small);
+
+    &.is-editing {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 1px rgba(var(--color-primary-rgb, 60, 105, 219), 0.12);
+    }
 
     .icon-document {
       flex-shrink: 0;
@@ -3219,10 +3184,68 @@
     }
   }
 
+  &__rename {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  &__rename-input {
+    flex: 1;
+    min-width: 0;
+
+    :deep(.ui-input-wrap) {
+      width: 100%;
+      min-width: 0;
+    }
+  }
+
+  &__rename-ext {
+    flex-shrink: 0;
+    color: $color-text-muted;
+    @include typo($body-small);
+  }
+
+  &__rename-check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--color-primary);
+    cursor: pointer;
+    transition: background-color $transition-fast;
+
+    &:hover:not(:disabled) {
+      background: rgba(var(--color-primary-rgb, 60, 105, 219), 0.08);
+    }
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+  }
+
   &__name {
     flex: 1;
     min-width: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
     @include ellipsis(1);
+
+    &:hover {
+      color: var(--color-primary);
+      text-decoration: underline;
+    }
   }
 
   &__add {
@@ -3232,6 +3255,9 @@
     gap: 6px;
     width: 100%;
     height: 44px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
     border: 1px dashed $color-border;
     border-radius: $border-radius-base;
     background: #fff;
@@ -3260,4 +3286,16 @@
       cursor: not-allowed;
     }
   }
+
+  .modal-side-footer {
+    position: relative;
+    z-index: 2;
+    flex-shrink: 0;
+    background: #fff;
+  }
+}
+
+// Portal 드롭다운 — 사이드 패널($z-side-panel) 위에 표시
+.marketing-file-side-panel-dropdown {
+  z-index: $z-side-panel + 1 !important;
 }

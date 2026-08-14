@@ -109,7 +109,7 @@ const router = useRouter()
 const FILTER_CHIPS = [
   { value: '', label: '전체' },
   { value: 'PT000001', label: '작성중' },
-  { value: 'PT000002', label: '검토중' },
+  { value: 'PT000002', label: '검수중' },
   { value: 'PT000003', label: '완료' },
 ]
 
