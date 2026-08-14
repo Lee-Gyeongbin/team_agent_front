@@ -471,6 +471,13 @@ export interface SectionChatResult {
   aiMessage: string
 }
 
+/** 표지 보완요청 채팅 결과 — chatSection 과 동일 패턴 */
+export interface CoverChatResult {
+  aiMessage: string
+  /** 재생성된 표지 이미지 NCP 경로. 동일 키여도 프론트에서 미리보기를 다시 조회함 */
+  coverImagePath?: string | null
+}
+
 /** PROJECT_CONFIG_JSON.settings.writingStyle */
 export type PtWritingStyle = 'formal' | 'plain' | 'persuasive'
 // formal=공식·격식체, plain=간결·실무체, persuasive=설득·강조체

@@ -78,6 +78,12 @@
         >
           {{ msg.text }}
         </div>
+        <div
+          v-if="isSending"
+          class="pt-cover-chat-bubble pt-chat-typing"
+        >
+          <span /><span /><span />
+        </div>
       </div>
 
       <!-- 힌트 예시 -->
@@ -93,17 +99,18 @@
           v-model="chatInput"
           class="pt-cover-chat-input"
           placeholder="표지 스타일 수정을 요청하세요..."
-          :disabled="isSending"
+          :disabled="isSending || !hasCoverImage"
           @keydown.enter.exact.prevent="onSend"
         />
         <UiButton
           variant="primary"
           size="sm"
           class="pt-cover-chat-send"
-          :disabled="isSending || !chatInput.trim()"
+          :loading="isSending"
+          :disabled="isSending || !chatInput.trim() || !hasCoverImage"
           @click="onSend"
         >
-          {{ isSending ? '전송 중...' : '전송' }}
+          전송
         </UiButton>
       </div>
     </div>
@@ -112,25 +119,34 @@
 
 <script setup lang="ts">
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
+import { openToast } from '~/composables/useToast'
 
 // ── 타입 정의 ────────────────────────────────────────────────────────────────
 
 interface CoverChatMessage {
-  role: 'user' | 'assistant'
+  role: 'user' | 'ai'
   text: string
 }
 
-// ── Props ─────────────────────────────────────────────────────────────────────
+// ── Props / Emits ─────────────────────────────────────────────────────────────
 
 const props = defineProps<{
   ptProjectId: string
+  modelId: string
+  agentId: string
   /** TB_PT_TEMPLATE.COVER_IMAGE_PATH (NCP object key). 변경 시 presigned URL 재조회. */
   coverImagePath?: string | null
 }>()
 
+const emit = defineEmits<{
+  'cover-updated': [coverImagePath: string]
+}>()
+
 // ── API ───────────────────────────────────────────────────────────────────────
 
-const { fetchViewPtCoverImage } = useProposalApi()
+const { fetchViewPtCoverImage, fetchChatCover } = useProposalApi()
+
+const hasCoverImage = computed(() => Boolean(props.coverImagePath))
 
 // ── 표지 이미지 presigned URL ─────────────────────────────────────────────────
 
@@ -165,7 +181,7 @@ watch(
 
 const chatMessages = ref<CoverChatMessage[]>([
   {
-    role: 'assistant',
+    role: 'ai',
     text: '사업 특성을 분석해 표지 배경 이미지를 생성했어요. 마음에 들지 않으면 아래에 보완 요청을 해주세요.',
   },
 ])
@@ -182,23 +198,42 @@ const scrollChatToBottom = async () => {
   }
 }
 
+watch(chatMessages, () => scrollChatToBottom(), { deep: true })
+
 const onSend = async () => {
   const text = chatInput.value.trim()
-  if (!text || isSending.value) return
+  if (!text || isSending.value || !hasCoverImage.value) return
 
   chatMessages.value.push({ role: 'user', text })
   chatInput.value = ''
   isSending.value = true
   await scrollChatToBottom()
 
-  await new Promise((r) => setTimeout(r, 800))
+  try {
+    const res = await fetchChatCover(props.ptProjectId, props.agentId, text)
 
-  // TODO: 백엔드 연동 필요 - POST /api/pt/{ptProjectId}/cover/refine
-  chatMessages.value.push({
-    role: 'assistant',
-    text: '요청 사항을 반영해서 표지를 다시 생성할게요. 잠시만 기다려 주세요.',
-  })
-  isSending.value = false
-  await scrollChatToBottom()
+    if (res.result !== 'OK') {
+      openToast({ message: res.msg ?? '보완 요청 처리 중 오류가 발생했습니다.', type: 'error' })
+      chatMessages.value.pop()
+      return
+    }
+
+    const aiMsg = res.data?.aiMessage ?? '보완 요청이 처리되었습니다.'
+    chatMessages.value.push({ role: 'ai', text: aiMsg })
+
+    const newPath = res.data?.coverImagePath
+    if (newPath && newPath !== props.coverImagePath) {
+      emit('cover-updated', newPath)
+    } else {
+      await loadCoverImage(newPath ?? props.coverImagePath)
+    }
+  } catch (e) {
+    console.warn('[CoverPreviewTab] 표지 보완 요청 실패:', e)
+    openToast({ message: '보완 요청 전송 중 오류가 발생했습니다.', type: 'error' })
+    chatMessages.value.pop()
+  } finally {
+    isSending.value = false
+    await scrollChatToBottom()
+  }
 }
 </script>

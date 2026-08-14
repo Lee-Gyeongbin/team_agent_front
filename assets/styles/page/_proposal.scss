@@ -4477,6 +4477,7 @@ body.is-resizing {
   grid-template-columns: 1fr 300px;
   min-height: 540px;
   border-top: 1px solid $color-border;
+  align-items: stretch;
 }
 
 .pt-cover-col-title {
@@ -4591,28 +4592,38 @@ body.is-resizing {
 }
 
 // 우측: 채팅 패널
+// height: 0 + min-height: 100% — 그리드 행 높이는 좌측 캔버스가 결정하고,
+// 채팅 컬럼은 그 높이에 맞춘 뒤 로그 영역만 내부 스크롤
 .pt-cover-chat-col {
   padding: $spacing-md;
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
+  height: 0;
+  min-height: 100%;
+  overflow: hidden;
+
+  .pt-cover-col-title {
+    @include typo($body-small-bold);
+    flex-shrink: 0;
+  }
 }
 
 .pt-cover-chat-log {
-  flex: 1;
+  flex: 1 1 0;
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
   overflow-y: auto;
-  min-height: 200px;
-  max-height: 320px;
+  min-height: 0;
   @include custom-scrollbar;
 }
 
 .pt-cover-chat-bubble {
+  flex-shrink: 0;
   padding: 9px 12px;
   border-radius: $border-radius-lg;
-  @include typo($body-xsmall);
+  @include typo($body-medium);
   line-height: 1.6;
   background: $color-surface;
   color: $color-text-primary;
@@ -4628,10 +4639,11 @@ body.is-resizing {
 
 .pt-cover-chat-hints {
   flex-shrink: 0;
+  margin-top: auto;
 }
 
 .pt-cover-chat-hint {
-  @include typo($body-caption);
+  @include typo($body-small);
   color: $color-text-muted;
   line-height: 1.8;
 }
@@ -4649,10 +4661,10 @@ body.is-resizing {
   border: 1px solid $color-border;
   border-radius: $border-radius-base;
   padding: 9px 11px;
-  @include typo($body-xsmall);
+  @include typo($body-medium);
   font-family: $font-family-base;
   resize: none;
-  height: 60px;
+  height: 72px;
   outline: none;
   transition: border-color $transition-fast;
 

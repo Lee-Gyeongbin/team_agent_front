@@ -28,6 +28,7 @@ import type {
   SectionGenDoneData,
   SectionConfirmResult,
   SectionChatResult,
+  CoverChatResult,
   SlideRenderProgressData,
   SlideRenderDoneData,
   SlideImageGenProgressData,
@@ -633,6 +634,22 @@ export const useProposalApi = () => {
   }
 
   /**
+   * D: 표지 이미지 보완요청 채팅
+   * chatSection.do 와 동일 패턴 — 메시지 + modelId/agentId 로 표지 재생성.
+   */
+  const fetchChatCover = async (
+    ptProjectId: string,
+    agentId: string,
+    message: string,
+  ): Promise<{ result: string; data: CoverChatResult; msg?: string }> => {
+    return post<{ result: string; data: CoverChatResult; msg?: string }>('/ai/proposal/chatCover.do', {
+      ptProjectId,
+      agentId,
+      message,
+    })
+  }
+
+  /**
    * E-5: 소목차 이미지 렌더링 SSE (confirmSection 완료 후 구독)
    * 슬라이드별 progress 이벤트 → done 이벤트 순서로 수신.
    */
@@ -912,5 +929,6 @@ export const useProposalApi = () => {
     fetchRegeneratePtTemplate,
     fetchUpdatePtTemplate,
     fetchGeneratePtCoverImage,
+    fetchChatCover,
   }
 }

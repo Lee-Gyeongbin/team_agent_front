@@ -271,7 +271,10 @@
             <CoverPreviewTab
               v-else
               :pt-project-id="props.ptProjectId"
+              :model-id="props.modelId"
+              :agent-id="props.agentId"
               :cover-image-path="template?.coverImagePath"
+              @cover-updated="onCoverChatUpdated"
             />
           </div>
 
@@ -530,6 +533,11 @@ const onRegenerateCover = async () => {
   } finally {
     isRegeneratingCover.value = false
   }
+}
+
+const onCoverChatUpdated = (coverImagePath: string) => {
+  if (!template.value) return
+  template.value = { ...template.value, coverImagePath }
 }
 
 // ── 파생 상태 ─────────────────────────────────────────────────────────────────
