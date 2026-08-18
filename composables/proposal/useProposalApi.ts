@@ -78,6 +78,7 @@ const mapTocVO = (
     parentTocId: string | null
     sectionNm: string
     sortOrd: number
+    outlineStatusCd?: string
   },
   source: PtTocItem['source'] = 'rfp',
 ): PtTocItem => ({
@@ -87,6 +88,7 @@ const mapTocVO = (
   title: vo.sectionNm ?? '',
   order: vo.sortOrd ?? 0,
   source,
+  outlineStatusCd: vo.outlineStatusCd ?? '001',
 })
 
 export const useProposalApi = () => {
@@ -240,6 +242,43 @@ export const useProposalApi = () => {
       ptProjectId,
       items: items.map((item, idx) => ({ tocId: item.tocId, sortOrd: idx })),
     })
+  }
+
+  // ── 콘텐츠 개요 ────────────────────────────────────────────────────────────
+
+  /** 콘텐츠 개요 텍스트 단건 조회 (노드 클릭 지연 로딩) */
+  const fetchSelectTocOutline = async (
+    tocId: string,
+  ): Promise<{ result: string; data: { tocId: string; contentOutlineTxt: string | null; outlineStatusCd: string } }> => {
+    return get(`/ai/proposal/selectTocOutline.do?tocId=${encodeURIComponent(tocId)}`)
+  }
+
+  /** 콘텐츠 개요 생성 (동기 REST) */
+  const fetchGenerateTocOutline = async (params: {
+    tocId: string
+    modelId: string
+    agentId: string
+  }): Promise<{ result: string; contentOutlineTxt: string; outlineStatusCd: string; msg?: string }> => {
+    const p = new URLSearchParams(params)
+    return post(`/ai/proposal/generateTocOutline.do?${p.toString()}`, {})
+  }
+
+  /** 콘텐츠 개요 보완 채팅 */
+  const fetchChatTocOutline = async (params: {
+    tocId: string
+    message: string
+    modelId: string
+    agentId: string
+  }): Promise<{ result: string; contentOutlineTxt: string; outlineStatusCd: string; msg?: string }> => {
+    return post('/ai/proposal/chatTocOutline.do', params)
+  }
+
+  /** 콘텐츠 개요 확정 */
+  const fetchConfirmTocOutline = async (params: {
+    tocId: string
+    outlineTxt: string
+  }): Promise<{ result: string; msg?: string }> => {
+    return post('/ai/proposal/confirmTocOutline.do', params)
   }
 
   /**
@@ -908,6 +947,10 @@ export const useProposalApi = () => {
     fetchUpdateTocItem,
     fetchDeleteTocItem,
     fetchReorderTocItems,
+    fetchSelectTocOutline,
+    fetchGenerateTocOutline,
+    fetchChatTocOutline,
+    fetchConfirmTocOutline,
     fetchUpdateMaxStepNo,
     fetchSelectStage1Result,
     fetchUpdateRequirement,

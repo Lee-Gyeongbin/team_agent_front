@@ -1,19 +1,21 @@
 <template>
   <div class="pt-panel pt-panel--lg pt-detail-toc">
-    <div class="pt-panel-title-row">
-      <h3 class="pt-panel-title">세부목차</h3>
-      <UiButton
-        variant="ghost"
-        size="sm"
-        @click="isPromptModalOpen = true"
-      >
-        <template #icon-left>
-          <i class="icon-edit size-14" />
-        </template>
-        프롬프트
-      </UiButton>
+    <div class="pt-detail-toc-head">
+      <div class="pt-panel-title-row">
+        <h3 class="pt-panel-title">세부목차</h3>
+        <UiButton
+          variant="ghost"
+          size="sm"
+          @click="isPromptModalOpen = true"
+        >
+          <template #icon-left>
+            <i class="icon-edit size-14" />
+          </template>
+          프롬프트
+        </UiButton>
+      </div>
+      <p class="pt-panel-desc">전략검토 결과를 바탕으로 제안서의 세부목차를 구성하는 단계입니다.</p>
     </div>
-    <p class="pt-panel-desc">전략검토 결과를 바탕으로 제안서의 세부목차를 구성하는 단계입니다.</p>
 
     <!-- 세부목차 생성 로딩 -->
     <div
@@ -41,12 +43,22 @@
       </div>
     </div>
 
-    <!-- 완료 상태 -->
+    <!-- 완료 상태: 세부목차 / 콘텐츠 개요 탭 -->
     <div
       v-else-if="isDone"
-      class="pt-s4-wrap"
+      class="pt-detail-toc-body"
     >
-      <div class="pt-s4-content">
+      <UiTab
+        v-model="activeTab"
+        class="pt-detail-toc-tabs"
+        :tabs="subTabs"
+      />
+
+      <!-- 세부목차 탭 -->
+      <div
+        v-show="activeTab === 'toc'"
+        class="pt-detail-toc-tab"
+      >
         <div class="pt-toc-toolbar">
           <span class="pt-badge is-ok">
             {{ tocCount > 0 ? `완료 ${tocCount}개` : '완료' }}
@@ -75,7 +87,7 @@
 
         <div
           v-else
-          class="pt-detail-toc-tree pt-toc-list--scroll"
+          class="pt-detail-toc-tree"
           role="tree"
         >
           <div
@@ -216,20 +228,49 @@
             title="세부목차가 없습니다."
           />
         </div>
+
+        <div class="pt-panel-actions pt-strategy-actions">
+          <UiButton
+            variant="primary"
+            size="md"
+            @click="activeTab = 'outline'"
+          >
+            콘텐츠 개요 작성
+            <template #icon-right>
+              <i class="icon-arrow-right size-14" />
+            </template>
+          </UiButton>
+        </div>
       </div>
 
-      <div class="pt-panel-actions pt-strategy-actions">
-        <UiButton
-          variant="primary"
-          size="md"
-          :disabled="!isDone"
-          @click="emit('next')"
-        >
-          다음 · 템플릿 설정
-          <template #icon-right>
-            <i class="icon-arrow-right size-14" />
-          </template>
-        </UiButton>
+      <!-- 콘텐츠 개요 탭 -->
+      <div
+        v-show="activeTab === 'outline'"
+        class="pt-detail-toc-tab pt-detail-toc-tab--outline"
+      >
+        <ProposalStepContentOutline
+          :toc-list="outlineTocList"
+          :leaf-nodes="leafNodes"
+          :confirmed-count="confirmedCount"
+          :all-confirmed="allConfirmed"
+          :is-loading-toc="isLoadingOutlineToc"
+          :selected-toc-id="selectedTocId"
+          :selected-item="selectedItem"
+          :is-loading-outline="isLoadingOutline"
+          :is-generating="isGenerating"
+          :is-chating="isChating"
+          :is-confirming="isConfirming"
+          :is-editing="isEditing"
+          :editing-text="editingText"
+          :chat-messages="chatMessages"
+          @select-node="handleSelectNode"
+          @generate="handleGenerate"
+          @chat="handleChat"
+          @confirm="handleConfirm"
+          @start-edit="handleStartEdit"
+          @update:editing-text="editingText = $event"
+          @go-template="emit('next')"
+        />
       </div>
     </div>
 
@@ -256,7 +297,7 @@
     </div>
   </div>
 
-  <!-- 프롬프트 보기/수정 모달 -->
+  <!-- 프롬프트 보기/수정 모달 (항상 렌더링) -->
   <ProposalPromptModal
     :is-open="isPromptModalOpen"
     :stage-cds="['S2C_COVEREDREQNOS']"
@@ -266,7 +307,9 @@
 
 <script setup lang="ts">
 import ProposalTocTreeRow from '~/components/proposal/steps/ProposalTocTreeRow.vue'
+import ProposalStepContentOutline from '~/components/proposal/steps/ProposalStepContentOutline.vue'
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
+import { useProposalOutline } from '~/composables/proposal/useProposalOutline'
 import { openConfirm } from '~/composables/useDialog'
 import { openToast } from '~/composables/useToast'
 import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
@@ -281,6 +324,43 @@ const props = defineProps<{
 const emit = defineEmits<{
   next: []
 }>()
+
+const activeTab = ref<'toc' | 'outline'>('toc')
+
+const {
+  tocList: outlineTocList,
+  leafNodes,
+  confirmedCount,
+  allConfirmed,
+  isLoadingToc: isLoadingOutlineToc,
+  selectedTocId,
+  selectedItem,
+  isLoadingOutline,
+  isGenerating,
+  isChating,
+  isConfirming,
+  isEditing,
+  editingText,
+  chatMessages,
+  handleLoadToc,
+  handleSelectNode,
+  handleGenerate,
+  handleChat,
+  handleConfirm,
+  handleStartEdit,
+} = useProposalOutline(
+  computed(() => props.ptProjectId),
+  computed(() => props.modelId),
+  computed(() => props.agentId),
+)
+
+const subTabs = computed(() => [
+  { label: '세부목차', value: 'toc' },
+  {
+    label: leafNodes.value.length > 0 ? `콘텐츠 개요 ${confirmedCount.value}/${leafNodes.value.length}` : '콘텐츠 개요',
+    value: 'outline',
+  },
+])
 
 const {
   streamAnalyzeStage2Toc,
@@ -631,6 +711,11 @@ const startToc = () => {
     },
   })
 }
+
+// isDone이 true가 되면 콘텐츠 개요용 TOC 목록 로드
+watch(isDone, (val) => {
+  if (val) handleLoadToc()
+})
 
 onMounted(async () => {
   try {

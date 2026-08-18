@@ -300,6 +300,8 @@ export interface PtTocItem {
   title: string
   order: number
   source: 'rfp' | 'user' // 'rfp' = RFP 추출, 'user' = 사용자 입력
+  outlineStatusCd: string // '001'=미생성, '002'=초안, '003'=확정
+  contentOutlineTxt?: string | null // 지연 로딩, 노드 클릭 시 채워짐
 }
 
 export interface PtSection {
