@@ -388,10 +388,7 @@ const activeFilterTags = computed(() => {
   if (filterPeriod.value === 'custom' && (filterStartDate.value || filterEndDate.value)) {
     tags.push({ key: 'period', label: `${filterStartDate.value || '?'} ~ ${filterEndDate.value || '?'}` })
   }
-  if (filterSort.value !== 'MODIFY_DESC') {
-    const opt = SORT_OPTIONS.find((o) => o.value === filterSort.value)
-    if (opt) tags.push({ key: 'sort', label: opt.label })
-  }
+  // 정렬은 결과를 걸러내지 않으므로 필터 태그에서 제외 (셀렉트가 이미 상태를 표시)
   if (searchKeyword.value.trim()) {
     tags.push({ key: 'keyword', label: `"${searchKeyword.value.trim()}"` })
   }
@@ -408,7 +405,6 @@ const removeFilter = (key: string) => {
     filterStartDate.value = ''
     filterEndDate.value = ''
   }
-  if (key === 'sort') filterSort.value = 'MODIFY_DESC'
   if (key === 'keyword') searchKeyword.value = ''
 }
 
