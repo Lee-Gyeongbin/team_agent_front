@@ -1615,6 +1615,14 @@
   flex-direction: column;
   width: 100%;
   overflow: hidden;
+
+  // 표지형·간지형: docSize 비율에 따라 캔버스 높이가 가변(A4는 세로로 긺)
+  // overflow: hidden을 해제해 portrait 캔버스가 잘리지 않도록 하고,
+  // 부모(.pt-template-gen-center)의 overflow-y: auto 가 스크롤 담당
+  &.is-full-height {
+    overflow: visible;
+    flex: 0 0 auto; // 콘텐츠 높이만큼 자연 확장
+  }
 }
 
 .pt-template-preview-header,
@@ -4539,11 +4547,12 @@ body.is-resizing {
 // Step 6 표지형 탭 UI (미리보기 + AI 보완 요청)
 // =============================================
 
-.pt-cover-preview-tab {
+.pt-cover-preview-tab,
+.pt-divider-preview-tab {
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-height: 640px;
+  min-height: 0;
 }
 
 // ---- 안내 배너 (공통) ----
@@ -4563,7 +4572,8 @@ body.is-resizing {
 .pt-cover-grid {
   display: grid;
   grid-template-columns: 1fr 300px;
-  flex: 1;
+  // flex-basis: auto — 캔버스 실제 높이만큼 행이 자라야 A4가 잘리지 않음
+  flex: 1 0 auto;
   min-height: 0;
   border-top: 1px solid $color-border;
   align-items: stretch;
@@ -4590,7 +4600,7 @@ body.is-resizing {
 
 .pt-cover-canvas {
   width: 100%;
-  flex: 0 1 auto;
+  flex: 0 0 auto; // shrink 금지 — height가 줄어들면 aspect-ratio가 무시됨
   aspect-ratio: var(--cover-aspect, 16 / 9);
   background: $color-surface;
   border-radius: $border-radius-lg;
@@ -4614,6 +4624,17 @@ body.is-resizing {
     &:hover .pt-cover-canvas-img {
       opacity: 0.88;
     }
+  }
+}
+
+// A4 등 세로 문서: 가로 100%로 늘리지 않고, 가용 높이 기준으로 페이지 전체가 보이게 축소
+.pt-cover-preview-tab.is-portrait,
+.pt-divider-preview-tab.is-portrait {
+  .pt-cover-canvas {
+    width: min(100%, calc(min(64vh, 680px) * var(--cover-ratio, 0.707)));
+    max-height: min(64vh, 680px);
+    height: auto;
+    align-self: center;
   }
 }
 

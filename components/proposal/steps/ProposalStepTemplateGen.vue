@@ -334,40 +334,20 @@
               :agent-id="props.agentId"
               :cover-image-path="template?.coverImagePath"
               :aspect-ratio="previewAspectRatio"
+              :reload-key="coverReloadKey"
               @cover-updated="onCoverChatUpdated"
             />
 
-            <!-- 간지형: 배경 이미지 + 텍스트 오버레이 더미 -->
-            <div
+            <!-- 간지형: DividerPreviewTab 컴포넌트로 위임 -->
+            <DividerPreviewTab
               v-else-if="selectedLayoutType === 'divider'"
-              class="pt-template-preview pt-divider-preview"
-            >
-              <!-- 배경 이미지 (상단 60%) -->
-              <div
-                class="pt-divider-bg"
-                :style="template?.dividerImagePath ? { backgroundImage: `url(${template.dividerImagePath})` } : {}"
-              >
-                <div
-                  v-if="!template?.dividerImagePath"
-                  class="pt-template-preview-placeholder"
-                >
-                  간지 이미지 생성 전
-                </div>
-              </div>
-              <!-- 텍스트 오버레이 (하단 40%) -->
-              <div class="pt-divider-text-area">
-                <span class="pt-divider-chapter-label">chapter</span>
-                <div class="pt-divider-chapter-title">Ⅱ. 전략 및 방법론</div>
-                <div class="pt-divider-chapter-divider" />
-                <ul class="pt-divider-chapter-items">
-                  <li>1. 사업이해도</li>
-                  <li>2. 추진전략</li>
-                  <li>3. 적용기술</li>
-                  <li>4. 표준 프레임워크 적용</li>
-                  <li>5. 개발 방법론</li>
-                </ul>
-              </div>
-            </div>
+              :pt-project-id="props.ptProjectId"
+              :agent-id="props.agentId"
+              :divider-image-path="template?.dividerImagePath"
+              :aspect-ratio="previewAspectRatio"
+              :reload-key="dividerReloadKey"
+              @divider-updated="onDividerChatUpdated"
+            />
           </div>
 
           <!-- 슬롯 편집 탭 — 본문형 WYSIWYG 에디터 (표지형은 이미지 생성이라 슬롯 편집 없음) -->
@@ -582,6 +562,7 @@ import { useProposalApi } from '~/composables/proposal/useProposalApi'
 import { openToast } from '~/composables/useToast'
 import type { PtTemplate } from '~/types/proposal'
 import CoverPreviewTab from './cover/CoverPreviewTab.vue'
+import DividerPreviewTab from './divider/DividerPreviewTab.vue'
 
 const props = defineProps<{
   ptProjectId: string
@@ -620,12 +601,18 @@ const isPromptModalOpen = ref(false)
 const isRegeneratingCover = ref(false)
 const isRegeneratingDivider = ref(false)
 
+// 경로가 동일해도 이미지를 강제 재조회하기 위한 카운터
+// (재생성 시 NCP 경로는 같지만 파일 내용이 교체되므로 presigned URL을 새로 받아야 함)
+const coverReloadKey = ref(0)
+const dividerReloadKey = ref(0)
+
 const onRegenerateDivider = async () => {
   isRegeneratingDivider.value = true
   try {
     const res = await fetchGeneratePtDividerImage(props.ptProjectId, props.agentId)
     if (res.result === 'OK') {
       template.value = res.data
+      dividerReloadKey.value++ // 경로 변화 없이도 자식 컴포넌트가 이미지 재조회하도록 강제
     } else {
       openToast({ message: res.msg ?? '간지 이미지 생성에 실패했습니다.', type: 'error' })
     }
@@ -642,6 +629,7 @@ const onRegenerateCover = async () => {
     const res = await fetchGeneratePtCoverImage(props.ptProjectId, props.agentId)
     if (res.result === 'OK') {
       template.value = res.data
+      coverReloadKey.value++ // 경로 변화 없이도 자식 컴포넌트가 이미지 재조회하도록 강제
     } else {
       openToast({ message: res.msg ?? '표지 이미지 생성에 실패했습니다.', type: 'error' })
     }
@@ -655,6 +643,11 @@ const onRegenerateCover = async () => {
 const onCoverChatUpdated = (coverImagePath: string) => {
   if (!template.value) return
   template.value = { ...template.value, coverImagePath }
+}
+
+const onDividerChatUpdated = (dividerImagePath: string) => {
+  if (!template.value) return
+  template.value = { ...template.value, dividerImagePath }
 }
 
 // ── 파생 상태 ─────────────────────────────────────────────────────────────────
