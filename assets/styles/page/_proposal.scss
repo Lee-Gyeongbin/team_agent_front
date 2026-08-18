@@ -98,7 +98,8 @@
   &.is-active {
     border-color: var(--color-primary);
     background: rgba(var(--color-primary-rgb), 0.1);
-    color: var(--color-primary);
+    // primary(4.35:1)는 연한 tint 위에서 AA 미달 — dark 계열로 대비 확보
+    color: var(--color-primary-dark);
     font-weight: $font-weight-bold;
   }
 }
