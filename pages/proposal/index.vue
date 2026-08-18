@@ -108,11 +108,8 @@
       </div>
     </div>
 
-    <!-- 활성 필터 태그 -->
-    <div
-      v-if="activeFilterTags.length > 0"
-      class="pt-filter-tags"
-    >
+    <!-- 활성 필터 태그 + 건수 (건수는 항상 노출) -->
+    <div class="pt-filter-tags">
       <div class="pt-filter-tag-list">
         <span
           v-for="tag in activeFilterTags"
