@@ -29,6 +29,7 @@ import type {
   SectionConfirmResult,
   SectionChatResult,
   CoverChatResult,
+  DividerChatResult,
   SlideRenderProgressData,
   SlideRenderDoneData,
   SlideImageGenProgressData,
@@ -737,6 +738,28 @@ export const useProposalApi = () => {
     return post<SlideImageViewResponse>(`/ai/proposal/viewPtCoverImage.do?${params.toString()}`, {})
   }
 
+  /** 간지 배경 이미지 presigned URL 조회 (미리보기용) */
+  const fetchViewPtDividerImage = async (ptProjectId: string): Promise<SlideImageViewResponse> => {
+    const params = new URLSearchParams({ ptProjectId })
+    return post<SlideImageViewResponse>(`/ai/proposal/viewPtDividerImage.do?${params.toString()}`, {})
+  }
+
+  /**
+   * 간지 이미지 보완요청 채팅
+   * chatCover.do 와 동일 패턴 — 메시지 + agentId 로 간지 재생성.
+   */
+  const fetchChatDivider = async (
+    ptProjectId: string,
+    agentId: string,
+    message: string,
+  ): Promise<{ result: string; data: DividerChatResult; msg?: string }> => {
+    return post<{ result: string; data: DividerChatResult; msg?: string }>('/ai/proposal/chatDivider.do', {
+      ptProjectId,
+      agentId,
+      message,
+    })
+  }
+
   // ── Step F: 출력 ────────────────────────────────────────────────────────────
 
   /**
@@ -925,6 +948,7 @@ export const useProposalApi = () => {
     fetchConfirmSection,
     fetchViewSlideImage,
     fetchViewPtCoverImage,
+    fetchViewPtDividerImage,
     fetchSelectReusableExport,
     fetchStartExport,
     fetchSelectExportStatus,
@@ -936,6 +960,7 @@ export const useProposalApi = () => {
     fetchGeneratePtCoverImage,
     fetchGeneratePtDividerImage,
     fetchChatCover,
+    fetchChatDivider,
     // 스텝 프롬프트 조회/수정
     fetchSelectStepPrompts,
     fetchUpdatePromptContent,
