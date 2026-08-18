@@ -2,14 +2,18 @@
   <div class="meeting2-panel">
     <div class="meeting2-panel-header">
       <div class="meeting2-side-tab-group">
-        <button
+        <UiButton
+          variant="ghost"
+          size="sm"
           class="meeting2-side-tab"
           :class="{ 'is-active': activeTab === 'share' }"
           @click="activeTab = 'share'"
         >
           공유/발송
-        </button>
-        <button
+        </UiButton>
+        <UiButton
+          variant="ghost"
+          size="sm"
           class="meeting2-side-tab"
           :class="{ 'is-active': activeTab === 'infographic' }"
           @click="activeTab = 'infographic'"
@@ -19,7 +23,7 @@
             v-if="hasPendingInfographic"
             class="meeting2-side-tab-badge"
           />
-        </button>
+        </UiButton>
       </div>
     </div>
 
@@ -36,6 +40,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton } from '@leechanyong/ispark-ui'
 import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
 
 const { infographicList, activeTab } = useMeetingStore()

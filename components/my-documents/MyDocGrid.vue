@@ -35,6 +35,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiEmpty } from '@leechanyong/ispark-ui'
 import draggable from 'vuedraggable'
 import type { MyDoc } from '~/types/mydoc'
 

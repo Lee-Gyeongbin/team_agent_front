@@ -153,6 +153,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiLoading } from '@leechanyong/ispark-ui'
 import type { FilePreviewModalProps } from '~/types/file'
 import { useFileStore } from '~/composables/com/useFileStore'
 

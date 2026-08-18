@@ -24,6 +24,8 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton } from '@leechanyong/ispark-ui'
+
 const isScrolled = inject('isScrolled', ref(false))
 
 interface Props {

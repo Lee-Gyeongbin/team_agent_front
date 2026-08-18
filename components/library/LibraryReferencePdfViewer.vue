@@ -135,6 +135,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiLoading } from '@leechanyong/ispark-ui'
 import { useFileStore } from '~/composables/com/useFileStore'
 
 interface ReferencePdfItem {

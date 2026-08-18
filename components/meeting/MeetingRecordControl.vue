@@ -33,7 +33,10 @@
         @click="emit('finish')"
       >
         <template #icon-left>
-          <i class="icon-stop size-16" />
+          <UiIcon
+            name="circle-stop"
+            size="16"
+          />
         </template>
         {{ isFinishing ? '회의록 생성 중...' : '회의 종료' }}
       </UiButton>
@@ -46,7 +49,10 @@
           @click="emit('resume')"
         >
           <template #icon-left>
-            <i class="icon-play size-16" />
+            <UiIcon
+              name="play"
+              size="16"
+            />
           </template>
           녹음하기 (이어서)
         </UiButton>
@@ -56,7 +62,10 @@
           @click="emit('generateFromBackup')"
         >
           <template #icon-left>
-            <i class="icon-edit size-16" />
+            <UiIcon
+              name="pencil"
+              size="16"
+            />
           </template>
           기존 음성으로 회의록 생성
         </UiButton>
@@ -72,7 +81,7 @@
         @click="emit('start')"
       >
         <template #icon-left>
-          <i class="icon-play size-16" />
+          <i class="icon-play size-16"></i>
         </template>
         녹음 시작
       </UiButton>
@@ -81,6 +90,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiIcon } from '@leechanyong/ispark-ui'
 import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
 
 const { currentMeeting } = useMeetingStore()

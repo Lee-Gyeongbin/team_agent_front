@@ -70,7 +70,7 @@
   font-size: 17px;
   font-weight: 700;
   line-height: 1.4;
-  color: #6f7a93;
+  color: $color-text-muted;
 }
 
 // ===================================
@@ -208,7 +208,7 @@
 
 .doc-dataset-subsection-desc {
   @include typo($body-small);
-  color: #6f7a93;
+  color: $color-text-muted;
 }
 
 // 체크박스 2열 그리드
@@ -245,7 +245,7 @@
 
 .doc-dataset-source-panel-count {
   @include typo($body-small);
-  color: #6f7a93;
+  color: $color-text-muted;
   font-weight: 400;
 
   strong {
@@ -715,7 +715,7 @@
     height: auto;
     padding: 10px 16px;
     @include typo($body-small-bold);
-    color: #6f7a93;
+    color: $color-text-muted;
     border-top: 1px solid #dce4e9;
     border-bottom: 1px solid #dce4e9;
 

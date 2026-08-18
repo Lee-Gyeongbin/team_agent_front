@@ -50,7 +50,7 @@
 }
 
 .pt-list-title {
-  @include typo($body-xlarge-bold, $color-text-heading);
+  @include typo($body-2xlarge-bold, $color-text-heading);
   margin: 0;
 }
 
@@ -98,7 +98,8 @@
   &.is-active {
     border-color: var(--color-primary);
     background: rgba(var(--color-primary-rgb), 0.1);
-    color: var(--color-primary);
+    // primary(4.35:1)는 연한 tint 위에서 AA 미달 — dark 계열로 대비 확보
+    color: var(--color-primary-dark);
     font-weight: $font-weight-bold;
   }
 }
@@ -108,6 +109,11 @@
   height: 20px;
   background: $color-border;
   flex-shrink: 0;
+
+  // 좁은 화면에선 칩이 줄바꿈되며 구분선만 행 끝에 고아로 남음
+  @include mobile {
+    display: none;
+  }
 }
 
 .pt-filter-select {
@@ -244,7 +250,7 @@
 .pt-card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: $spacing-sm + 2;
+  gap: $spacing-sm;
 }
 
 .pt-card {
@@ -279,7 +285,6 @@
 .pt-card-meta {
   @include typo($body-small);
   color: $color-text-muted;
-  margin-bottom: $spacing-sm;
 }
 
 // ---- ?? ??----
@@ -330,17 +335,22 @@
   padding: 3px 9px;
   border-radius: 12px;
 
-  &.status-PT000001 { // ?????
-    background: #FFF3E3;
-    color: $color-warning;
+  // STATUS_CD 값은 001~004 — 그룹 ID(PT0000XX)가 아니라 코드값으로 매칭해야 함
+  &.status-001 { // 작성중 — 주황 계열은 연한 배경에서 대비가 안 나와 더 어둡게
+    background: #fff3e3;
+    color: color.adjust($color-warning, $lightness: -19%);
   }
-  &.status-PT000002 { // ????
+  &.status-002 { // 검수중
     background: var(--color-primary-bg);
     color: var(--color-primary-dark);
   }
-  &.status-PT000003 { // ???
+  &.status-003 { // 완료
     background: rgba($color-success, 0.12);
-    color: color.adjust($color-success, $lightness: -10%);
+    color: color.adjust($color-success, $lightness: -18%);
+  }
+  &.status-004 { // 보류
+    background: rgba($color-text-muted, 0.12);
+    color: $color-text-dark;
   }
 }
 

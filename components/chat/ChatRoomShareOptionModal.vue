@@ -112,7 +112,7 @@
       <UiButton
         class="btn-modal-dialog"
         variant="outline"
-        size="xlg"
+        size="lg"
         @click="emit('cancel')"
       >
         취소
@@ -120,7 +120,7 @@
       <UiButton
         class="btn-modal-dialog"
         variant="primary"
-        size="xlg"
+        size="lg"
         @click="onConfirm"
       >
         공유 링크 생성
@@ -130,6 +130,8 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton } from '@leechanyong/ispark-ui'
+
 interface Props {
   isOpen?: boolean
 }

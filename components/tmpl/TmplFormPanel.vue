@@ -276,6 +276,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiCheckbox } from '@leechanyong/ispark-ui'
 import draggable from 'vuedraggable'
 import { openConfirm } from '~/composables/useDialog'
 import { openToast } from '~/composables/useToast'

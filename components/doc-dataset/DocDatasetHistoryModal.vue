@@ -100,6 +100,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiPagination } from '@leechanyong/ispark-ui'
 import { useDocDatasetStore } from '~/composables/doc-dataset/useDocDatasetStore'
 import type { TableColumn } from '~/types/table'
 

@@ -3,7 +3,7 @@
     :is-open="isOpen"
     title="문서 만들기"
     :max-width="'min(1720px, calc(100vw - 32px))'"
-    custom-class="doc-dataset-create-modal library-create-doc-modal library-create-doc-report-modal"
+    custom-class="doc-dataset-create-modal library-create-doc-modal library-create-doc-report-modal modal-dialog"
     show-fullscreen
     @close="emit('close')"
   >
@@ -219,6 +219,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiModal, UiBadge, UiButton, UiInput } from '@leechanyong/ispark-ui'
 import { openToast } from '~/composables/useToast'
 import type { LibraryGeneratedReportValues } from '~/types/library'
 import { getLibraryReportRows, printLibraryReportFromHtml } from '~/utils/library/libraryReportPrintUtil'

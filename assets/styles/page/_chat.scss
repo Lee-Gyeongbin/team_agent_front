@@ -884,7 +884,7 @@
       color: $color-text-secondary;
 
       i {
-        color: #6f7a93;
+        color: $color-text-muted;
       }
     }
 
@@ -2009,7 +2009,7 @@
 
 .chat-vis-section-subtitle {
   @include typo($body-small);
-  color: #6f7a93;
+  color: $color-text-muted;
   @include ellipsis(1);
 }
 
@@ -2268,7 +2268,7 @@
   background: #fff;
   @include typo($body-small);
   font-weight: $font-weight-medium;
-  color: #6f7a93;
+  color: $color-text-muted;
   cursor: pointer;
   transition: all $transition-fast;
   border-radius: 0px;

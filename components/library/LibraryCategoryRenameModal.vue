@@ -1,5 +1,10 @@
 <template>
-  <div class="library-category-rename-modal">
+  <UiModal
+    :is-open="isOpen"
+    title="카테고리명 변경"
+    max-width="420px"
+    @close="emit('close')"
+  >
     <div class="library-category-rename-body">
       <div class="form-row">
         <label class="form-label">카테고리명</label>
@@ -17,35 +22,38 @@
     >
       <p class="library-category-rename-error__message">{{ modalErrorMessage }}</p>
     </div>
-    <div class="modal-dialog-footer">
+
+    <template #footer>
       <UiButton
-        class="btn-modal-dialog"
-        variant="outline"
-        size="xlg"
+        variant="secondary"
+        size="lg"
         @click="emit('close')"
       >
         취소
       </UiButton>
       <UiButton
-        class="btn-modal-dialog"
         variant="primary"
-        size="xlg"
+        size="lg"
         @click="onSubmit"
       >
         저장
       </UiButton>
-    </div>
-  </div>
+    </template>
+  </UiModal>
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiInput, UiModal } from '@leechanyong/ispark-ui'
 import type { LibraryCategory } from '~/types/library'
 
 interface Props {
+  isOpen?: boolean
   category: LibraryCategory | null
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  isOpen: false,
+})
 
 const emit = defineEmits<{
   save: [categoryNm: string]
@@ -83,13 +91,6 @@ const onSubmit = () => {
 </script>
 
 <style lang="scss" scoped>
-.library-category-rename-modal {
-  padding: $spacing-md;
-  width: 100%;
-  align-self: stretch;
-  min-width: 0;
-}
-
 .library-category-rename-body {
   display: flex;
   flex-direction: column;
@@ -122,14 +123,5 @@ const onSubmit = () => {
     font-weight: $font-weight-medium;
     color: $color-text-primary;
   }
-
-  :deep(.ui-input-wrap) {
-    width: 100%;
-    min-width: 0;
-  }
-}
-
-.modal-dialog-footer {
-  border-top: none;
 }
 </style>

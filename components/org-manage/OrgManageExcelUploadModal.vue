@@ -2,7 +2,6 @@
   <UiModal
     :is-open="isOpen"
     title="엑셀 업로드"
-    position="center"
     max-width="600px"
     custom-class="org-manage-excel-upload-modal"
     @close="onModalClose"
@@ -42,6 +41,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiModal, UiButton } from '@leechanyong/ispark-ui'
 import { openToast } from '~/composables/useToast'
 
 const props = defineProps<{

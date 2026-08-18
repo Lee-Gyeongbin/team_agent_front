@@ -37,7 +37,7 @@
                 <UiButton
                   icon-only
                   variant="ghost"
-                  size="md"
+                  size="xs"
                 >
                   <template #icon-left>
                     <i class="icon icon-add-dot size-20" />
@@ -86,6 +86,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiDropdownMenu, UiTooltip } from '@leechanyong/ispark-ui'
 import type { MyDoc } from '~/types/mydoc'
 import {
   getMyDocAgentIconClass,

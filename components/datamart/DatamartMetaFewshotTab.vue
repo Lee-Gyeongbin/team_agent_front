@@ -281,6 +281,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiEmpty } from '@leechanyong/ispark-ui'
 import type { SelectOption } from '~/components/ui/UiSelect.vue'
 import type { Datamart } from '~/types/datamart'
 import type { DatamartMetaFewshot, DatamartMetaTableItem } from '~/types/datamartMeta'

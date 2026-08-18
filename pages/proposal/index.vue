@@ -108,11 +108,8 @@
       </div>
     </div>
 
-    <!-- 활성 필터 태그 -->
-    <div
-      v-if="activeFilterTags.length > 0"
-      class="pt-filter-tags"
-    >
+    <!-- 활성 필터 태그 + 건수 (건수는 항상 노출) -->
+    <div class="pt-filter-tags">
       <div class="pt-filter-tag-list">
         <span
           v-for="tag in activeFilterTags"
@@ -162,10 +159,18 @@
     <UiEmpty
       v-else-if="filteredList.length === 0"
       icon="icon-document"
-      :title="ptProjectList.length === 0 ? 'PT 제안서가 없습니다.' : '검색 결과가 없습니다.'"
+      :title="hasActiveFilter ? '조건에 맞는 PT 제안서가 없습니다.' : 'PT 제안서가 없습니다.'"
     >
       <UiButton
-        v-if="ptProjectList.length === 0"
+        v-if="hasActiveFilter"
+        variant="outline"
+        size="md"
+        @click="resetFilters"
+      >
+        필터 초기화
+      </UiButton>
+      <UiButton
+        v-else
         variant="primary"
         size="md"
         @click="isNewModalOpen = true"
@@ -383,10 +388,7 @@ const activeFilterTags = computed(() => {
   if (filterPeriod.value === 'custom' && (filterStartDate.value || filterEndDate.value)) {
     tags.push({ key: 'period', label: `${filterStartDate.value || '?'} ~ ${filterEndDate.value || '?'}` })
   }
-  if (filterSort.value !== 'MODIFY_DESC') {
-    const opt = SORT_OPTIONS.find((o) => o.value === filterSort.value)
-    if (opt) tags.push({ key: 'sort', label: opt.label })
-  }
+  // 정렬은 결과를 걸러내지 않으므로 필터 태그에서 제외 (셀렉트가 이미 상태를 표시)
   if (searchKeyword.value.trim()) {
     tags.push({ key: 'keyword', label: `"${searchKeyword.value.trim()}"` })
   }
@@ -403,8 +405,21 @@ const removeFilter = (key: string) => {
     filterStartDate.value = ''
     filterEndDate.value = ''
   }
-  if (key === 'sort') filterSort.value = 'MODIFY_DESC'
   if (key === 'keyword') searchKeyword.value = ''
+}
+
+// 필터 활성 여부 — 상태 필터는 서버 조회라 ptProjectList 자체가 비므로
+// "데이터 없음"과 "조건에 안 맞음"을 구분하려면 필터 기준으로 판단해야 함
+const hasActiveFilter = computed(() => activeFilterTags.value.length > 0)
+
+const resetFilters = () => {
+  filterStatusCd.value = ''
+  filterPeriod.value = ''
+  filterStartDate.value = ''
+  filterEndDate.value = ''
+  filterSort.value = 'MODIFY_DESC'
+  searchKeyword.value = ''
+  void handleSelectPtProjectList()
 }
 
 // ── 이벤트 핸들러 ────────────────────────────────────────────

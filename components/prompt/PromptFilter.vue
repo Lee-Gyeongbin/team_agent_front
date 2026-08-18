@@ -61,6 +61,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton } from '@leechanyong/ispark-ui'
 import type { PromptFilterData, banWordItem, PromptFilterPolicy } from '~/types/prompt'
 import { usePromptStore } from '~/composables/prompt/usePromptStore'
 

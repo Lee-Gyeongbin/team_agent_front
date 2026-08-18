@@ -13,7 +13,6 @@
   // 테마 색상 변수가 있을 때 사이드바와 동일한 미세 틴트 적용, 없으면 흰색 폴백
   background-color: var(--chat-theme-sidebar-bg-base, #fff);
   border-bottom: 1px solid $color-border;
-  transition: background-color 1000ms ease-in-out;
   isolation: isolate;
 
   &::before {
@@ -152,5 +151,4 @@
   .header-logo {
     cursor: pointer;
   }
-
 }

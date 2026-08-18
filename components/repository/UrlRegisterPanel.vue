@@ -91,6 +91,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiToggle } from '@leechanyong/ispark-ui'
 import type { UrlItem } from '~/types/repository'
 import { openToast } from '~/composables/useToast'
 

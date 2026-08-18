@@ -61,6 +61,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiToggle } from '@leechanyong/ispark-ui'
 import type { Agent } from '~/types/agent'
 
 interface Props {

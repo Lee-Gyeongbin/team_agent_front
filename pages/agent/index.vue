@@ -49,6 +49,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiLoading } from '@leechanyong/ispark-ui'
 import draggable from 'vuedraggable'
 import { useAgentStore } from '~/composables/agent/useAgentStore'
 import type { Agent } from '~/types/agent'

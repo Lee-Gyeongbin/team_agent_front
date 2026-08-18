@@ -88,6 +88,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiLoading } from '@leechanyong/ispark-ui'
 import type { ChatFileViewResponse } from '~/types/chat'
 import { downloadBlobAsFile } from '~/utils/global/fileDownloadUtil'
 

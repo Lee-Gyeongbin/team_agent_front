@@ -37,7 +37,7 @@
       <UiButton
         class="btn-modal-dialog"
         variant="outline"
-        size="xlg"
+        size="lg"
         @click="emit('close')"
       >
         취소
@@ -45,7 +45,7 @@
       <UiButton
         class="btn-modal-dialog"
         variant="primary"
-        size="xlg"
+        size="lg"
         :disabled="!doc || loading"
         @click="onConfirm"
       >
@@ -56,6 +56,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton } from '@leechanyong/ispark-ui'
 import type { MyDoc } from '~/types/mydoc'
 import { getMyDocAgentIconClass, getMyDocDocAreaStyle } from '~/utils/myDocuments/myDocDisplayUtil'
 import { formatDateTimeDisplay } from '~/utils/global/dateUtil'
@@ -149,7 +150,7 @@ const onConfirm = () => {
 
     &.is-default {
       background: #ecf0f3;
-      color: #6f7a93;
+      color: $color-text-muted;
     }
   }
 
@@ -194,7 +195,7 @@ const onConfirm = () => {
     width: 28px;
     height: 28px;
     border-radius: $border-radius-lg;
-    color: #6f7a93;
+    color: $color-text-muted;
     background: #f4f7f9;
   }
 }
