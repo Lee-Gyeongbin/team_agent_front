@@ -134,6 +134,18 @@ $body-xlarge-bold: (
   line-height: 150%,
 );
 
+// Body 2XLarge (20px) — 페이지 제목 전용, 섹션/모달 제목(18px)과 위계 분리
+$body-2xlarge: (
+  font-size: $font-size-2xl,
+  font-weight: $font-weight-normal,
+  line-height: 150%,
+);
+$body-2xlarge-bold: (
+  font-size: $font-size-2xl,
+  font-weight: $font-weight-bold,
+  line-height: 150%,
+);
+
 $body-2xlarge: (
   font-size: $font-size-2xl,
   font-weight: $font-weight-normal,

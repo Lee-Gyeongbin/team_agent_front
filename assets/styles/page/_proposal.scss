@@ -50,7 +50,7 @@
 }
 
 .pt-list-title {
-  @include typo($body-xlarge-bold, $color-text-heading);
+  @include typo($body-2xlarge-bold, $color-text-heading);
   margin: 0;
 }
 
