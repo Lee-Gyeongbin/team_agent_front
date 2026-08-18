@@ -32,7 +32,10 @@
             @click="onRegisterNotice"
           >
             <template #icon-left>
-              <i class="icon icon-plus size-16" />
+              <UiIcon
+                name="plus"
+                size="16"
+              />
             </template>
             등록
           </UiButton>
@@ -42,7 +45,10 @@
             @click="handleSelectNoticeList"
           >
             <template #icon-left>
-              <i class="icon icon-refresh size-16" />
+              <UiIcon
+                name="refresh-cw"
+                size="16"
+              />
             </template>
             새로고침
           </UiButton>
@@ -166,7 +172,7 @@
 </template>
 
 <script setup lang="ts">
-import { UiInput, UiSelect, UiButton, UiLoading, UiTable, UiPagination } from '@leechanyong/ispark-ui'
+import { UiInput, UiSelect, UiButton, UiIcon, UiLoading, UiTable, UiPagination } from '@leechanyong/ispark-ui'
 import type { NoticeRow } from '~/types/notice'
 import { noticeColumns } from '~/types/notice'
 
