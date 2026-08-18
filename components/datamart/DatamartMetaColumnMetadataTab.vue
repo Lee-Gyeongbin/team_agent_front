@@ -572,7 +572,7 @@ const onUploadColumnMetaExcel = async (file: File) => {
   margin: 0 0 2px;
   font-size: 11px;
   line-height: 1.35;
-  color: #6f7a93;
+  color: $color-text-muted;
 }
 
 /* 편집할 테이블 (스크롤) — 한두 줄 더 보이도록 소폭 확대 */
@@ -844,7 +844,7 @@ const onUploadColumnMetaExcel = async (file: File) => {
   margin: 0;
   font-size: 11px;
   line-height: 1.4;
-  color: #6f7a93;
+  color: $color-text-muted;
 }
 
 .datamart-meta-aihint-modal {

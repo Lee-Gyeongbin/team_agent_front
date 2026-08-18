@@ -810,7 +810,7 @@
 // Figma: 14px/400/#6F7A93
 .prompt-version-stat-label {
   @include typo($body-small);
-  color: #6f7a93;
+  color: $color-text-muted;
 }
 
 .prompt-version-stat-value {

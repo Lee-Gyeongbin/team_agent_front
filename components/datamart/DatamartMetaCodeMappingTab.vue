@@ -752,7 +752,7 @@ const onRemoveEntry = (sortOrd: number) => {
 @mixin meta-code-hint-caption {
   font-size: 11px;
   line-height: 1.35;
-  color: #6f7a93;
+  color: $color-text-muted;
 }
 
 @mixin meta-code-aihint-picker-btn {

@@ -309,7 +309,7 @@ const onConfirm = () => {
 
   &__svc-data-icon {
     flex-shrink: 0;
-    color: #6f7a93;
+    color: $color-text-muted;
   }
 }
 </style>

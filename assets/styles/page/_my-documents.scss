@@ -132,7 +132,7 @@
     border-radius: 10px;
     border: 1px solid #dce4e9;
     background: #f4f7f9;
-    color: #6f7a93;
+    color: $color-text-muted;
 
     .icon {
       background-color: #6f7a93;
@@ -367,7 +367,7 @@
     cursor: grab;
 
     &:hover {
-      color: #6f7a93;
+      color: $color-text-muted;
       background: #f0f3f6;
     }
 
@@ -397,7 +397,7 @@
 
     &.is-default {
       background: #ecf0f3;
-      color: #6f7a93;
+      color: $color-text-muted;
     }
   }
 

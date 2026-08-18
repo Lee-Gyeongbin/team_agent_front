@@ -149,7 +149,7 @@ const onConfirm = () => {
 
     &.is-default {
       background: #ecf0f3;
-      color: #6f7a93;
+      color: $color-text-muted;
     }
   }
 
@@ -194,7 +194,7 @@ const onConfirm = () => {
     width: 28px;
     height: 28px;
     border-radius: $border-radius-lg;
-    color: #6f7a93;
+    color: $color-text-muted;
     background: #f4f7f9;
   }
 }

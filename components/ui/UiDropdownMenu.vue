@@ -210,7 +210,7 @@ watch(openState, (v: boolean) => emit('update:open', v))
     .icon {
       width: 20px;
       height: 20px;
-      color: #6f7a93;
+      color: $color-text-muted;
     }
   }
 
