@@ -1,6 +1,18 @@
 <template>
   <div class="pt-panel pt-panel--lg pt-detail-toc">
-    <h3 class="pt-panel-title">세부목차</h3>
+    <div class="pt-panel-title-row">
+      <h3 class="pt-panel-title">세부목차</h3>
+      <UiButton
+        variant="ghost"
+        size="sm"
+        @click="isPromptModalOpen = true"
+      >
+        <template #icon-left>
+          <i class="icon-edit size-14" />
+        </template>
+        프롬프트
+      </UiButton>
+    </div>
     <p class="pt-panel-desc">전략검토 결과를 바탕으로 제안서의 세부목차를 구성하는 단계입니다.</p>
 
     <!-- 세부목차 생성 로딩 -->
@@ -243,6 +255,13 @@
       </div>
     </div>
   </div>
+
+  <!-- 프롬프트 보기/수정 모달 -->
+  <ProposalPromptModal
+    :is-open="isPromptModalOpen"
+    :stage-cds="['S2C_COVEREDREQNOS']"
+    @close="isPromptModalOpen = false"
+  />
 </template>
 
 <script setup lang="ts">
@@ -288,6 +307,9 @@ const loadingSteps = [
     waitMsg: '대기 중',
   },
 ]
+
+// 프롬프트 모달
+const isPromptModalOpen = ref(false)
 
 const isLoadingToc = ref(false)
 const isDone = ref(false)

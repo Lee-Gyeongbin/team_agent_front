@@ -1,7 +1,19 @@
 <template>
   <div class="pt-panel pt-panel--lg pt-strategy">
     <div class="pt-strategy-head">
-      <h3 class="pt-panel-title">전략검토</h3>
+      <div class="pt-panel-title-row">
+        <h3 class="pt-panel-title">전략검토</h3>
+        <UiButton
+          variant="ghost"
+          size="sm"
+          @click="isPromptModalOpen = true"
+        >
+          <template #icon-left>
+            <i class="icon-edit size-14" />
+          </template>
+          프롬프트
+        </UiButton>
+      </div>
       <p class="pt-panel-desc">문제정의와 Win Theme를 확인하고 보완하세요.</p>
     </div>
 
@@ -342,6 +354,12 @@
       </div>
     </div>
   </div>
+
+  <ProposalPromptModal
+    :is-open="isPromptModalOpen"
+    :stage-cds="['S2A_PROBLEM_TOC', 'S2B_WINTHEME']"
+    @close="isPromptModalOpen = false"
+  />
 </template>
 
 <script setup lang="ts">
@@ -412,6 +430,7 @@ const strategyTabs = [
   { label: '문제정의', value: 'pd' },
   { label: 'Win Theme', value: 'wt' },
 ]
+const isPromptModalOpen = ref(false)
 const activeProblemId = ref<string | null>(null)
 const isLoadingStage2 = ref(false)
 const loadingStepIdx = ref(0)

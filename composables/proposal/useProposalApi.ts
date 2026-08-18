@@ -42,6 +42,7 @@ import type {
   PtExportRequest,
   PtTemplate,
   PtTemplateRegenerateRequest,
+  PtPromptItem,
 } from '~/types/proposal'
 
 /**
@@ -738,14 +739,30 @@ export const useProposalApi = () => {
 
   // ── Step F: 출력 ────────────────────────────────────────────────────────────
 
-  /** F — 출력 시작 (PPTX / PDF). 캐시 재사용 판단 후 신규 빌드 또는 즉시 반환. */
+  /**
+   * F — 이전 파일 재사용 가능 여부 조회.
+   * 지문 일치 + NCP 파일 존재 시 data 반환, 아니면 data=null.
+   */
+  const fetchSelectReusableExport = async (
+    ptProjectId: string,
+  ): Promise<{ result: string; data: PtExportVO | null; msg?: string }> => {
+    return get<{ result: string; data: PtExportVO | null; msg?: string }>(
+      `/ai/proposal/selectReusableExport.do?ptProjectId=${encodeURIComponent(ptProjectId)}`,
+    )
+  }
+
+  /**
+   * F — 출력 시작 (PPTX / PDF).
+   * forceRebuild=true: 캐시 무시, 항상 신규 빌드.
+   * forceRebuild 생략/false: 지문 일치 시 즉시 반환(cacheReused=true), 아니면 신규 빌드.
+   */
   const fetchStartExport = async (
     req: PtExportRequest,
   ): Promise<{ result: string; data: PtExportVO; msg?: string }> => {
     return post<{ result: string; data: PtExportVO; msg?: string }>('/ai/proposal/startExport.do', req)
   }
 
-  /** F — 출력 상태 조회 (폴링용). 완료(004)/캐시재사용(003) 시 downloadUrl 포함. */
+  /** F — 출력 상태 조회 (폴링용). 완료(004) 시 downloadUrl 포함. */
   const fetchSelectExportStatus = async (
     exportId: string,
   ): Promise<{ result: string; data: PtExportVO; msg?: string }> => {
@@ -822,6 +839,35 @@ export const useProposalApi = () => {
     )
   }
 
+  /** D — 간지 배경 이미지 생성 / 재생성 */
+  const fetchGeneratePtDividerImage = async (
+    ptProjectId: string,
+    agentId: string,
+  ): Promise<{ result: string; data: PtTemplate; msg?: string }> => {
+    const params = new URLSearchParams({ ptProjectId, agentId })
+    return post<{ result: string; data: PtTemplate; msg?: string }>(
+      `/ai/proposal/generatePtDividerImage.do?${params.toString()}`,
+      {},
+    )
+  }
+
+  // ── 스텝 프롬프트 조회/수정 ────────────────────────────────────────────────
+
+  /** 스텝 프롬프트 목록 조회 (stageCd 목록 기준) */
+  const fetchSelectStepPrompts = async (stageCds: string[]): Promise<{ result: string; list: PtPromptItem[] }> => {
+    return post<{ result: string; list: PtPromptItem[] }>('/ai/proposal/selectStepPrompts.do', { stageCds })
+  }
+
+  /** 스텝 프롬프트 내용 수정 */
+  const fetchUpdatePromptContent = async (promptId: string, content: string): Promise<{ result: string; msg?: string }> => {
+    return post<{ result: string; msg?: string }>('/ai/proposal/updatePromptContent.do', { promptId, content })
+  }
+
+  /** 스텝 프롬프트 원본 복구 (CONTENT = ORIGINAL_CONTENT) */
+  const fetchRestorePromptContent = async (promptId: string): Promise<{ result: string; msg?: string }> => {
+    return post<{ result: string; msg?: string }>('/ai/proposal/restorePromptContent.do', { promptId })
+  }
+
   return {
     fetchCreatePtFileUploadUrl,
     fetchSavePtFile,
@@ -879,6 +925,7 @@ export const useProposalApi = () => {
     fetchConfirmSection,
     fetchViewSlideImage,
     fetchViewPtCoverImage,
+    fetchSelectReusableExport,
     fetchStartExport,
     fetchSelectExportStatus,
     // Step D (템플릿 생성)
@@ -887,6 +934,11 @@ export const useProposalApi = () => {
     fetchRegeneratePtTemplate,
     fetchUpdatePtTemplate,
     fetchGeneratePtCoverImage,
+    fetchGeneratePtDividerImage,
     fetchChatCover,
+    // 스텝 프롬프트 조회/수정
+    fetchSelectStepPrompts,
+    fetchUpdatePromptContent,
+    fetchRestorePromptContent,
   }
 }

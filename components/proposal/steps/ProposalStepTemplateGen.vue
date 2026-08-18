@@ -2,7 +2,19 @@
   <div class="pt-panel pt-panel--lg pt-template-gen-panel">
     <!-- 생성 전 초기 상태 -->
     <template v-if="!template">
-      <h3 class="pt-panel-title">템플릿 생성</h3>
+      <div class="pt-panel-title-row">
+        <h3 class="pt-panel-title">템플릿 생성</h3>
+        <UiButton
+          variant="ghost"
+          size="sm"
+          @click="isPromptModalOpen = true"
+        >
+          <template #icon-left>
+            <i class="icon-edit size-14" />
+          </template>
+          프롬프트
+        </UiButton>
+      </div>
       <p class="pt-panel-desc">
         Step3에서 확정한 컬러와 스타일을 기반으로, AI가 슬라이드 헤더와 푸터 레이아웃을 생성합니다.
       </p>
@@ -23,7 +35,19 @@
       <div class="pt-template-gen-layout">
         <!-- 좌측 패널: 현황 · 컬러 · 액션 -->
         <div class="pt-template-gen-left">
-          <h3 class="pt-panel-title">템플릿 생성</h3>
+          <div class="pt-panel-title-row">
+            <h3 class="pt-panel-title">템플릿 생성</h3>
+            <UiButton
+              variant="ghost"
+              size="sm"
+              @click="isPromptModalOpen = true"
+            >
+              <template #icon-left>
+                <i class="icon-edit size-14" />
+              </template>
+              프롬프트
+            </UiButton>
+          </div>
 
           <!-- 생성 현황 pills -->
           <div class="pt-template-status-list">
@@ -58,6 +82,13 @@
               <span class="pt-template-status-label">표지</span>
               <span class="pt-template-status-pill is-wait">미생성</span>
             </div>
+            <!-- 간지 상태 -->
+            <div class="pt-template-status-item">
+              <span class="pt-template-status-label">간지</span>
+              <span :class="['pt-template-status-pill', template?.dividerImagePath ? 'is-done' : 'is-wait']">
+                {{ template?.dividerImagePath ? '완료' : '미생성' }}
+              </span>
+            </div>
           </div>
 
           <!-- 적용 컬러 스와치 -->
@@ -82,7 +113,7 @@
 
           <!-- 액션 버튼들 -->
           <div class="pt-template-gen-actions">
-            <!-- 본문형: 템플릿 재생성 / 표지형: 표지 재생성 -->
+            <!-- 본문형: 템플릿 재생성 / 표지형: 표지 재생성 / 간지형: 간지 재생성 -->
             <template v-if="selectedLayoutType === 'body'">
               <UiButton
                 variant="secondary"
@@ -93,7 +124,7 @@
                 {{ isGenerating ? '재생성 중...' : '템플릿 재생성' }}
               </UiButton>
             </template>
-            <template v-else>
+            <template v-else-if="selectedLayoutType === 'cover'">
               <UiButton
                 variant="secondary"
                 size="sm"
@@ -101,6 +132,16 @@
                 @click="onRegenerateCover"
               >
                 {{ isRegeneratingCover ? '재생성 중...' : '표지 재생성' }}
+              </UiButton>
+            </template>
+            <template v-else>
+              <UiButton
+                variant="secondary"
+                size="sm"
+                :disabled="isRegeneratingDivider"
+                @click="onRegenerateDivider"
+              >
+                {{ isRegeneratingDivider ? '재생성 중...' : '간지 재생성' }}
               </UiButton>
             </template>
 
@@ -135,8 +176,14 @@
               >
                 표지형
               </button>
+              <button
+                :class="['pt-layout-toggle-btn', { 'is-active': selectedLayoutType === 'divider' }]"
+                @click="selectedLayoutType = 'divider'"
+              >
+                간지형
+              </button>
             </div>
-            <!-- 슬롯 편집은 본문형만 — 표지형은 이미지 생성만 하므로 미리보기만 표시 -->
+            <!-- 슬롯 편집은 본문형만 — 표지형·간지형은 이미지 생성만 하므로 미리보기만 표시 -->
             <UiTab
               v-if="selectedLayoutType === 'body'"
               v-model="activeTab"
@@ -156,7 +203,7 @@
               </span>
             </template>
             <!-- 표지형 -->
-            <template v-else>
+            <template v-else-if="selectedLayoutType === 'cover'">
               <UiButton
                 variant="secondary"
                 size="xs"
@@ -166,6 +213,17 @@
                 {{ isRegeneratingCover ? '재생성 중...' : '↻ 표지 재생성' }}
               </UiButton>
             </template>
+            <!-- 간지형 -->
+            <template v-else>
+              <UiButton
+                variant="secondary"
+                size="xs"
+                :disabled="isRegeneratingDivider"
+                @click="onRegenerateDivider"
+              >
+                {{ isRegeneratingDivider ? '재생성 중...' : '↻ 간지 재생성' }}
+              </UiButton>
+            </template>
           </div>
 
           <!-- 미리보기 탭 -->
@@ -173,6 +231,7 @@
             v-if="activeTab === 'preview'"
             class="pt-template-preview"
             :style="selectedLayoutType === 'body' ? { aspectRatio: previewAspectRatio } : {}"
+            :class="{ 'is-full-height': selectedLayoutType === 'cover' || selectedLayoutType === 'divider' }"
           >
             <!-- 본문형: 기존 헤더·본문·푸터 미리보기 (변경 없음) -->
             <template v-if="selectedLayoutType === 'body'">
@@ -269,7 +328,7 @@
 
             <!-- 표지형: CoverPreviewTab 컴포넌트로 위임 -->
             <CoverPreviewTab
-              v-else
+              v-else-if="selectedLayoutType === 'cover'"
               :pt-project-id="props.ptProjectId"
               :model-id="props.modelId"
               :agent-id="props.agentId"
@@ -277,6 +336,38 @@
               :aspect-ratio="previewAspectRatio"
               @cover-updated="onCoverChatUpdated"
             />
+
+            <!-- 간지형: 배경 이미지 + 텍스트 오버레이 더미 -->
+            <div
+              v-else-if="selectedLayoutType === 'divider'"
+              class="pt-template-preview pt-divider-preview"
+            >
+              <!-- 배경 이미지 (상단 60%) -->
+              <div
+                class="pt-divider-bg"
+                :style="template?.dividerImagePath ? { backgroundImage: `url(${template.dividerImagePath})` } : {}"
+              >
+                <div
+                  v-if="!template?.dividerImagePath"
+                  class="pt-template-preview-placeholder"
+                >
+                  간지 이미지 생성 전
+                </div>
+              </div>
+              <!-- 텍스트 오버레이 (하단 40%) -->
+              <div class="pt-divider-text-area">
+                <span class="pt-divider-chapter-label">chapter</span>
+                <div class="pt-divider-chapter-title">Ⅱ. 전략 및 방법론</div>
+                <div class="pt-divider-chapter-divider" />
+                <ul class="pt-divider-chapter-items">
+                  <li>1. 사업이해도</li>
+                  <li>2. 추진전략</li>
+                  <li>3. 적용기술</li>
+                  <li>4. 표준 프레임워크 적용</li>
+                  <li>5. 개발 방법론</li>
+                </ul>
+              </div>
+            </div>
           </div>
 
           <!-- 슬롯 편집 탭 — 본문형 WYSIWYG 에디터 (표지형은 이미지 생성이라 슬롯 편집 없음) -->
@@ -478,6 +569,12 @@
       </div>
     </template>
   </div>
+
+  <ProposalPromptModal
+    :is-open="isPromptModalOpen"
+    :stage-cds="['S3_TEMPLATE', 'S3_COVER_TEMPLATE']"
+    @close="isPromptModalOpen = false"
+  />
 </template>
 
 <script setup lang="ts">
@@ -508,17 +605,36 @@ const {
   fetchRegeneratePtTemplate,
   fetchUpdatePtTemplate,
   fetchGeneratePtCoverImage,
+  fetchGeneratePtDividerImage,
 } = useProposalApi()
 
 // ── 탭 / 로딩 상태 ─────────────────────────────────────────────────────────────
 
 const template = ref<PtTemplate | null>(null)
 const activeTab = ref<'preview' | 'slots'>('preview')
-const selectedLayoutType = ref<'body' | 'cover'>('body')
+const selectedLayoutType = ref<'body' | 'cover' | 'divider'>('body')
 const isGenerating = ref(false)
 const isSaving = ref(false)
+const isPromptModalOpen = ref(false)
 
 const isRegeneratingCover = ref(false)
+const isRegeneratingDivider = ref(false)
+
+const onRegenerateDivider = async () => {
+  isRegeneratingDivider.value = true
+  try {
+    const res = await fetchGeneratePtDividerImage(props.ptProjectId, props.agentId)
+    if (res.result === 'OK') {
+      template.value = res.data
+    } else {
+      openToast({ message: res.msg ?? '간지 이미지 생성에 실패했습니다.', type: 'error' })
+    }
+  } catch {
+    openToast({ message: '간지 이미지 생성 중 오류가 발생했습니다.', type: 'error' })
+  } finally {
+    isRegeneratingDivider.value = false
+  }
+}
 
 const onRegenerateCover = async () => {
   isRegeneratingCover.value = true
@@ -804,9 +920,16 @@ const initEditableSlots = () => {
   selectedKey.value = null
   selectedZone.value = null
 
+  // 간지형은 슬롯 편집 없으므로 빈 배열로 초기화
+  if (selectedLayoutType.value === 'divider') {
+    editableHeaderSlots.value = []
+    editableFooterSlots.value = []
+    return
+  }
+
   // 헤더
   const headerParsed = parseLayoutAwareJson(template.value?.headerComponentsJson)
-  const headerEntries = Object.entries(headerParsed[selectedLayoutType.value])
+  const headerEntries = Object.entries(headerParsed[selectedLayoutType.value] ?? {})
   editableHeaderSlots.value = headerEntries.map(([key, val], idx) => ({
     key,
     text: val.text ?? '',
@@ -824,7 +947,7 @@ const initEditableSlots = () => {
 
   // 푸터
   const footerParsed = parseLayoutAwareJson(template.value?.footerComponentsJson)
-  const footerEntries = Object.entries(footerParsed[selectedLayoutType.value])
+  const footerEntries = Object.entries(footerParsed[selectedLayoutType.value] ?? {})
   editableFooterSlots.value = footerEntries.map(([key, val], idx) => ({
     key,
     text: val.text ?? '',
@@ -845,9 +968,9 @@ watch([template, selectedLayoutType], () => {
   initEditableSlots()
 })
 
-// 표지형은 슬롯 편집이 없으므로 미리보기로 되돌림
+// 표지형·간지형은 슬롯 편집이 없으므로 미리보기로 되돌림
 watch(selectedLayoutType, (type) => {
-  if (type === 'cover') activeTab.value = 'preview'
+  if (type === 'cover' || type === 'divider') activeTab.value = 'preview'
 })
 
 // ── WYSIWYG CSS 스타일 ────────────────────────────────────────────────────────

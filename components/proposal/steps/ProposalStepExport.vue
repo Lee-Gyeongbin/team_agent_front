@@ -7,21 +7,37 @@
       <h3 class="pt-final-title">제안서 출력 준비 완료</h3>
       <p class="pt-final-desc">전체 소목차가 하나의 문서로 병합됩니다. 문서 크기 설정에 따라 형식이 자동 결정됩니다.</p>
 
-      <!-- 출력 시작 -->
+      <!-- 출력 시작 — 빌드 진행 전 -->
       <div
         v-if="!exportData"
         class="pt-final-actions"
       >
+        <!-- 이전 파일 받기: selectReusableExport 결과가 있을 때만 활성 -->
         <UiButton
-          variant="primary"
+          variant="outline"
           size="md"
-          :loading="isExporting"
-          @click="onExport"
+          :disabled="!reusableExport || isLoadingReusable || isExporting"
+          :loading="isLoadingReusable"
+          @click="onReceivePrevious"
         >
           <template #icon-left>
             <i class="icon-download size-16" />
           </template>
-          내보내기
+          이전 파일 받기
+        </UiButton>
+
+        <!-- 다시 만들기: forceRebuild=true -->
+        <UiButton
+          variant="primary"
+          size="md"
+          :loading="isExporting"
+          :disabled="isLoadingReusable"
+          @click="onRebuild"
+        >
+          <template #icon-left>
+            <i class="icon-refresh size-16" />
+          </template>
+          다시 만들기
         </UiButton>
       </div>
 
@@ -77,7 +93,7 @@
             파일 다운로드
           </UiButton>
 
-          <!-- 재시도 -->
+          <!-- 재시도 / 다시 내보내기 -->
           <UiButton
             variant="ghost"
             size="md"
@@ -108,9 +124,11 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const { fetchStartExport, fetchSelectExportStatus } = useProposalApi()
+const { fetchSelectReusableExport, fetchStartExport, fetchSelectExportStatus } = useProposalApi()
 
+const isLoadingReusable = ref(false)
 const isExporting = ref(false)
+const reusableExport = ref<PtExportVO | null>(null)
 const exportData = ref<PtExportVO | null>(null)
 
 let pollTimer: ReturnType<typeof setInterval> | null = null
@@ -148,20 +166,48 @@ const pollStatus = (exportId: string) => {
   }, 3000)
 }
 
-const onExport = async () => {
+/** 탭 진입 시 이전 파일 재사용 가능 여부 조회 */
+const loadReusableExport = async () => {
+  isLoadingReusable.value = true
+  try {
+    const res = await fetchSelectReusableExport(props.ptProjectId)
+    reusableExport.value = res.result === 'OK' ? (res.data ?? null) : null
+  } catch {
+    reusableExport.value = null
+  } finally {
+    isLoadingReusable.value = false
+  }
+}
+
+/** 이전 파일 받기 — selectReusableExport 결과를 즉시 다운로드 */
+const onReceivePrevious = () => {
+  if (!reusableExport.value?.downloadUrl) {
+    openToast({ message: '재사용 가능한 이전 파일이 없습니다. 다시 만들어 주세요.', type: 'warning' })
+    return
+  }
+  window.open(reusableExport.value.downloadUrl, '_blank')
+}
+
+/**
+ * 다시 만들기 — forceRebuild:true 로 startExport 호출.
+ * cacheReused===true 이면 폴링 없이 즉시 다운로드 가능.
+ */
+const onRebuild = async () => {
   if (isExporting.value) return
   isExporting.value = true
   try {
     const res = await fetchStartExport({
       ptProjectId: props.ptProjectId,
       agentId: props.agentId,
+      forceRebuild: true,
     })
     if (res.result !== 'OK' || !res.data) {
       openToast({ message: res.msg || '출력 요청에 실패했습니다.', type: 'error' })
       return
     }
     exportData.value = res.data
-    // 완료(004) 또는 실패(005)가 아니면 폴링 시작
+
+    // 캐시 히트(cacheReused=true)이면 buildStatusCd가 004이므로 폴링 불필요
     if (!['004', '005'].includes(res.data.buildStatusCd)) {
       pollStatus(res.data.exportId)
     }
@@ -181,6 +227,10 @@ const resetExport = () => {
   stopPoll()
   exportData.value = null
 }
+
+onMounted(() => {
+  loadReusableExport()
+})
 
 onUnmounted(() => {
   stopPoll()

@@ -1,5 +1,32 @@
 // PT 제안 에이전트 타입 정의
 
+// ── TB_PROMPT — 스텝 프롬프트 ──────────────────────────────────────────────────
+
+/** 스텝 프롬프트 단건 (selectStepPrompts 응답) */
+export interface PtPromptItem {
+  promptId: string
+  promptName: string
+  stageCd: string
+  content: string
+  originalContent: string
+}
+
+/** 스텝 프롬프트 조회 요청 */
+export interface PtPromptSelectRequest {
+  stageCds: string[]
+}
+
+/** 스텝 프롬프트 수정 요청 */
+export interface PtPromptUpdateRequest {
+  promptId: string
+  content: string
+}
+
+/** 스텝 프롬프트 원본 복구 요청 */
+export interface PtPromptRestoreRequest {
+  promptId: string
+}
+
 /** TB_CODE CODE_GRP_ID = 'PT000002' 하위 CODE_ID */
 export type PtProjectStatusCd = '001' | '002' | '003' | '004'
 // 001=작성중, 002=검수중, 003=완료, 004=보류
@@ -527,7 +554,7 @@ export type PtExportBuildStatusCd = '001' | '002' | '003' | '004' | '005'
 /** TB_PT_EXPORT - EXPORT_TYPE_CD (PT_EXPORT_TYPE): 001=PPTX, 002=PDF */
 export type PtExportTypeCd = '001' | '002'
 
-/** /ai/proposal/startExport.do · selectExportStatus.do 응답 데이터 */
+/** /ai/proposal/startExport.do · selectExportStatus.do · selectReusableExport.do 응답 데이터 */
 export interface PtExportVO {
   exportId: string
   ptProjectId: string
@@ -542,12 +569,18 @@ export interface PtExportVO {
   completeDt?: string
   /** presigned 다운로드 URL — DB 미저장, 완료 시 동적 발급 */
   downloadUrl?: string
+  /** 캐시 재사용 여부 — true 이면 폴링 없이 즉시 downloadUrl 사용 */
+  cacheReused?: boolean
+  /** 빌드 입력 지문 — selectReusableExport 응답에 포함 */
+  inputFingerprint?: string
 }
 
 /** /ai/proposal/startExport.do 요청 */
 export interface PtExportRequest {
   ptProjectId: string
   agentId: string
+  /** true: 캐시 무시, 항상 신규 빌드 */
+  forceRebuild?: boolean
 }
 
 // ── Step D: 템플릿 생성 ───────────────────────────────────────────────────────
@@ -572,6 +605,8 @@ export interface PtTemplate {
   coverImagePath: string | null
   /** 표지 이미지 생성 상태 코드 (PT000007 재사용: 001=대기, 002=생성중, 003=완료, 004=실패) */
   coverGenStatusCd: PtTemplateGenStatusCd | null
+  /** 간지 배경 이미지 NCP 경로 (모든 챕터 간지에서 공유) */
+  dividerImagePath?: string | null
   createDt: string
   modifyDt: string | null
 }

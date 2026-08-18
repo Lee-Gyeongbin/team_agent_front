@@ -6,6 +6,19 @@
   >
     <!-- 좌측: 목차 트리 (대목차=헤더/클릭불가, 소목차=클릭가능) -->
     <div class="pt-stepD-left">
+      <div class="pt-panel-title-row pt-stepD-left-head">
+        <span class="pt-panel-title">본문 생성</span>
+        <UiButton
+          variant="ghost"
+          size="sm"
+          @click="isPromptModalOpen = true"
+        >
+          <template #icon-left>
+            <i class="icon-edit size-14" />
+          </template>
+          프롬프트
+        </UiButton>
+      </div>
       <div class="pt-sec-list">
         <template
           v-for="item in rawTocList"
@@ -406,6 +419,13 @@
       />
     </div>
   </UiModal>
+
+  <!-- 프롬프트 보기/수정 모달 -->
+  <ProposalPromptModal
+    :is-open="isPromptModalOpen"
+    :stage-cds="['S3_SLIDE', 'S3_IMAGE']"
+    @close="isPromptModalOpen = false"
+  />
 </template>
 
 <script setup lang="ts">
@@ -512,6 +532,9 @@ const onResizeStart = (target: 'left' | 'right', e: MouseEvent) => {
 const isGeneratingSlideImage = ref(false)
 const slideImageGenMsg = ref('')
 let slideImageEventSource: EventSource | null = null
+
+// 프롬프트 모달
+const isPromptModalOpen = ref(false)
 
 // 인포그래픽 이미지 모달
 const isImageModalOpen = ref(false)

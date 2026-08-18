@@ -1,7 +1,19 @@
 <template>
   <div class="pt-panel pt-panel--lg pt-step-b">
     <div class="pt-step-b-head">
-      <h3 class="pt-panel-title">목차·요구사항</h3>
+      <div class="pt-panel-title-row">
+        <h3 class="pt-panel-title">목차·요구사항</h3>
+        <UiButton
+          variant="ghost"
+          size="sm"
+          @click="isPromptModalOpen = true"
+        >
+          <template #icon-left>
+            <i class="icon-edit size-14" />
+          </template>
+          프롬프트
+        </UiButton>
+      </div>
       <p class="pt-panel-desc">RFP에서 추출한 목차·요구사항·평가기준·현황이슈를 확인하고 보완하세요.</p>
     </div>
 
@@ -86,6 +98,12 @@
         </UiButton>
       </div>
     </div>
+
+    <ProposalPromptModal
+      :is-open="isPromptModalOpen"
+      :stage-cds="['S1_EXTRACT']"
+      @close="isPromptModalOpen = false"
+    />
 
     <div class="pt-step-b-body">
       <UiTab
@@ -919,6 +937,7 @@ const savedRfpPtFileId = ref<string | null>(null)
 const isUploading = ref(false)
 const isDownloading = ref(false)
 const isAnalyzing = ref(false)
+const isPromptModalOpen = ref(false)
 
 /** RFP는 1개만, 회사정보(카테고리 합산 10MB)보다 큰 용량 허용 */
 const MAX_RFP_FILE_COUNT = 1
