@@ -109,6 +109,11 @@
   height: 20px;
   background: $color-border;
   flex-shrink: 0;
+
+  // 좁은 화면에선 칩이 줄바꿈되며 구분선만 행 끝에 고아로 남음
+  @include mobile {
+    display: none;
+  }
 }
 
 .pt-filter-select {
