@@ -162,10 +162,18 @@
     <UiEmpty
       v-else-if="filteredList.length === 0"
       icon="icon-document"
-      :title="ptProjectList.length === 0 ? 'PT 제안서가 없습니다.' : '검색 결과가 없습니다.'"
+      :title="hasActiveFilter ? '조건에 맞는 PT 제안서가 없습니다.' : 'PT 제안서가 없습니다.'"
     >
       <UiButton
-        v-if="ptProjectList.length === 0"
+        v-if="hasActiveFilter"
+        variant="outline"
+        size="md"
+        @click="resetFilters"
+      >
+        필터 초기화
+      </UiButton>
+      <UiButton
+        v-else
         variant="primary"
         size="md"
         @click="isNewModalOpen = true"
@@ -405,6 +413,20 @@ const removeFilter = (key: string) => {
   }
   if (key === 'sort') filterSort.value = 'MODIFY_DESC'
   if (key === 'keyword') searchKeyword.value = ''
+}
+
+// 필터 활성 여부 — 상태 필터는 서버 조회라 ptProjectList 자체가 비므로
+// "데이터 없음"과 "조건에 안 맞음"을 구분하려면 필터 기준으로 판단해야 함
+const hasActiveFilter = computed(() => activeFilterTags.value.length > 0)
+
+const resetFilters = () => {
+  filterStatusCd.value = ''
+  filterPeriod.value = ''
+  filterStartDate.value = ''
+  filterEndDate.value = ''
+  filterSort.value = 'MODIFY_DESC'
+  searchKeyword.value = ''
+  void handleSelectPtProjectList()
 }
 
 // ── 이벤트 핸들러 ────────────────────────────────────────────
