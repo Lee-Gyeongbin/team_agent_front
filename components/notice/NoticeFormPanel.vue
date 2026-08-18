@@ -1,9 +1,13 @@
 <template>
-  <UiModal
-    :is-open="isOpen"
+  <UiDrawer
+    :open="isOpen"
     :title="`공지 ${panelActionLabel}`"
     position="right"
-    @close="$emit('close')"
+    @update:open="
+      (value) => {
+        if (!value) $emit('close')
+      }
+    "
   >
     <div class="com-setting-form">
       <div class="url-reg-field">
@@ -34,20 +38,16 @@
         <label class="url-reg-label">옵션</label>
         <div class="notice-option-box">
           <div class="flex flex-wrap items-center gap-8">
-            <label class="notice-option-item flex items-center gap-2">
-              <UiCheckbox
-                :model-value="isDashboardTitle"
-                @update:model-value="(value) => onFieldChange('featuredYn', value ? 'Y' : 'N')"
-              />
-              <span>대시보드 타이틀로 표시하기</span>
-            </label>
-            <label class="notice-option-item flex items-center gap-2">
-              <UiCheckbox
-                :model-value="isTopFixed"
-                @update:model-value="(value) => onFieldChange('pinYn', value ? 'Y' : 'N')"
-              />
-              <span>공지사항 상단에 고정하기</span>
-            </label>
+            <UiCheckbox
+              :model-value="isDashboardTitle"
+              @update:model-value="(value) => onFieldChange('featuredYn', value ? 'Y' : 'N')"
+              label="대시보드 타이틀로 표시하기"
+            />
+            <UiCheckbox
+              :model-value="isTopFixed"
+              @update:model-value="(value) => onFieldChange('pinYn', value ? 'Y' : 'N')"
+              label="공지사항 상단에 고정하기"
+            />
           </div>
         </div>
       </div>
@@ -60,6 +60,7 @@
           placeholder="공지 내용을 입력하세요"
           :rows="10"
           border
+          size="lg"
           :auto-resize="true"
           :max-rows="10"
           @update:model-value="(value) => onFieldChange('content', value)"
@@ -70,7 +71,7 @@
     <template #footer>
       <div class="modal-side-footer">
         <UiButton
-          variant="line-secondary"
+          variant="outline"
           size="md"
           @click="$emit('close')"
         >
@@ -85,10 +86,11 @@
         </UiButton>
       </div>
     </template>
-  </UiModal>
+  </UiDrawer>
 </template>
 
 <script setup lang="ts">
+import { UiDrawer, UiInput, UiSelect, UiCheckbox, UiTextarea, UiButton } from '@leechanyong/ispark-ui'
 import { openToast } from '~/composables/useToast'
 import type { NoticeFormData } from '~/types/notice'
 

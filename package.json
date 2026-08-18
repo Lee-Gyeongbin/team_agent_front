@@ -3,6 +3,7 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "sync": "node scripts/sync.mjs",
     "build": "nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
@@ -13,11 +14,15 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@internationalized/date": "^3.5.0",
+    "@leechanyong/ispark-ui": "github:box3101/ispark-ui#6dd615f22749cc7cbb0631b814d7596ee44a057b",
+    "@lucide/vue": ">=1.0.0",
     "@tiptap/extension-color": "^3.22.4",
     "@tiptap/extension-heading": "^3.22.4",
     "@tiptap/extension-highlight": "^3.22.4",
     "@tiptap/extension-image": "^3.22.4",
     "@tiptap/extension-link": "^3.22.4",
+    "@tiptap/extension-ordered-list": "^3.22.4",
     "@tiptap/extension-paragraph": "^3.22.4",
     "@tiptap/extension-placeholder": "^3.22.4",
     "@tiptap/extension-table": "^3.22.4",

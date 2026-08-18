@@ -10,7 +10,7 @@
           v-model="searchKeyword"
           type="search"
           placeholder="문서명 검색"
-          @keyup.enter="emit('search')"
+          @enter="emit('search')"
           @search="emit('search')"
         />
       </div>
@@ -29,9 +29,12 @@
 </template>
 
 <script setup lang="ts">
+import { UiInput, UiSelect } from '@leechanyong/ispark-ui'
+import type { SelectOption } from '@leechanyong/ispark-ui'
+
 interface Props {
   totalCount: number
-  sortOptions: { label: string; value: string }[]
+  sortOptions: SelectOption[]
 }
 
 defineProps<Props>()

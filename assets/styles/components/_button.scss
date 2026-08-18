@@ -123,7 +123,9 @@ button {
 }
 
 .btn-library-card-add {
+  // UiButton is-icon-only.size-xxs 기본 24px 덮어쓰기
   width: 20px !important;
+  min-width: 20px !important;
   height: 20px !important;
   position: relative !important;
   border-radius: 4px !important;

@@ -1,7 +1,6 @@
 <template>
   <UiModal
     :is-open="isOpen"
-    position="center"
     title="프롬프트 테스트"
     max-width="560px"
     @close="$emit('close')"
@@ -31,7 +30,7 @@
       <UiButton
         class="prompt-test-run-btn"
         variant="primary"
-        size="xlg"
+        size="lg"
         full-width
         :disabled="isTestStreaming || !testPrompt.trim()"
         @click="onRunTest"
@@ -71,6 +70,8 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiModal, UiTextarea } from '@leechanyong/ispark-ui'
+
 interface Props {
   isOpen: boolean
   promptContent: string

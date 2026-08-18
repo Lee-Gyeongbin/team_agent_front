@@ -163,6 +163,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiEmpty } from '@leechanyong/ispark-ui'
 import { useDocDatasetApi } from '~/composables/doc-dataset/useDocDatasetApi'
 import { useDocDatasetStore } from '~/composables/doc-dataset/useDocDatasetStore'
 import type { DocDatasetSearchResult, DocDatasetSearchSummary } from '~/types/doc-dataset'

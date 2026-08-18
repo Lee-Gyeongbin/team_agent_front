@@ -108,6 +108,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiLoading, UiEmpty } from '@leechanyong/ispark-ui'
 import { computed } from 'vue'
 import draggable from 'vuedraggable'
 import OrgManageAddModal from '~/components/org-manage/OrgManageAddModal.vue'

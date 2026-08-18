@@ -2,7 +2,6 @@
   <UiModal
     :is-open="isOpen"
     title="면담 요청"
-    position="center"
     max-width="420px"
     custom-class="mtlcare-request-modal-dialog"
     @close="onClose"
@@ -96,7 +95,7 @@
         <UiButton
           class="btn-modal-dialog"
           variant="outline"
-          size="xlg"
+          size="lg"
           @click="onClose"
         >
           취소
@@ -104,7 +103,7 @@
         <UiButton
           class="btn-modal-dialog"
           variant="primary"
-          size="xlg"
+          size="lg"
           :loading="requesting"
           @click="onSubmit"
         >
@@ -126,6 +125,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiModal } from '@leechanyong/ispark-ui'
 import { useUserSelectStore } from '~/composables/com/useUserSelectStore'
 import { useMtlcareStore } from '~/composables/mtlcare/useMtlcareStore'
 import type { OrgUserItem } from '~/types/org-manage'

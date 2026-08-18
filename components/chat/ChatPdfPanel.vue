@@ -244,6 +244,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiLoading } from '@leechanyong/ispark-ui'
 import type { ChatPdfPanelProps, ChatRefRow, PdfDocumentProxy } from '~/types/chat'
 import { useChatStore } from '~/composables/chat/useChatStore'
 import { loadPdfJs } from '~/utils/chat/pdfJsLoader'

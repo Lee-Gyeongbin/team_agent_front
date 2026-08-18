@@ -2,26 +2,23 @@
   <div class="org-manage-index wide-center">
     <div class="org-manage-header">
       <div class="org-manage-header-actions">
-        <UiButton
-          variant="outline"
-          size="md"
-          @click="handleDownloadOrgExcel"
+        <UiDropdownMenu
+          :items="excelMenuItems"
+          align="start"
+          @select="onExcelMenuSelect"
         >
-          <template #icon-left>
-            <i class="icon icon-download size-16" />
+          <template #trigger>
+            <UiButton
+              variant="ghost"
+              size="md"
+            >
+              엑셀
+              <template #icon-right>
+                <UiIcon name="chevron-down" size="14" />
+              </template>
+            </UiButton>
           </template>
-          엑셀 다운로드
-        </UiButton>
-        <UiButton
-          variant="outline"
-          size="md"
-          @click="openExcelUploadModal"
-        >
-          <template #icon-left>
-            <i class="icon icon-document-search size-16" />
-          </template>
-          엑셀 업로드
-        </UiButton>
+        </UiDropdownMenu>
         <div class="org-manage-header-search">
           <UiInput
             v-model="searchKeyword"
@@ -30,10 +27,13 @@
           />
         </div>
         <UiButton
-          variant="outline"
+          variant="ghost"
           size="md"
           @click="handleRefreshOrgManage"
         >
+          <template #icon-left>
+            <UiIcon name="refresh-cw" size="16" />
+          </template>
           새로고침
         </UiButton>
       </div>
@@ -57,6 +57,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiDropdownMenu, UiIcon, UiInput } from '@leechanyong/ispark-ui'
 import { computed, ref } from 'vue'
 import OrgManageExcelUploadModal from '~/components/org-manage/OrgManageExcelUploadModal.vue'
 import OrgManageMemberPanel from '~/components/org-manage/OrgManageMemberPanel.vue'
@@ -80,6 +81,17 @@ const isExcelUploadModalOpen = ref(false)
 
 const openExcelUploadModal = (): void => {
   isExcelUploadModalOpen.value = true
+}
+
+// 엑셀 드롭다운 (다운로드 / 업로드)
+const excelMenuItems = [
+  { label: '다운로드', value: 'download', icon: 'icon-download' },
+  { label: '업로드', value: 'upload', icon: 'icon-upload' },
+]
+
+const onExcelMenuSelect = (value: string): void => {
+  if (value === 'download') handleDownloadOrgExcel()
+  else if (value === 'upload') openExcelUploadModal()
 }
 
 const closeExcelUploadModal = (): void => {

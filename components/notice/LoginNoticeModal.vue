@@ -2,8 +2,9 @@
   <UiModal
     :is-open="isOpen"
     :title="displayValue(noticeTitle)"
-    position="center"
-    :max-width="'600px'"
+    :show-close="true"
+    :show-overlay="true"
+    max-width="600px"
     custom-class="notice-detail-modal login-notice-modal"
     @close="$emit('close')"
   >
@@ -29,12 +30,14 @@
         <UiBadge
           v-if="notice?.featuredYn === 'Y'"
           variant="default"
+          size="sm"
         >
           대시보드 표시
         </UiBadge>
         <UiBadge
           v-if="notice?.pinYn === 'Y'"
           variant="default"
+          size="sm"
         >
           상단 고정
         </UiBadge>
@@ -48,6 +51,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiBadge, UiModal } from '@leechanyong/ispark-ui'
 import type { NoticeItem } from '~/types/notice'
 
 interface Props {

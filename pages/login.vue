@@ -173,6 +173,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiCheckbox, UiInput } from '@leechanyong/ispark-ui'
 import { isIncidentApiBody, isIncidentHandledError } from '~/composables/com/useIncidentErrorNotice'
 
 definePageMeta({ layout: 'auth' })

@@ -88,12 +88,9 @@
             @row-click="(row) => handleSelectGroup(row as CodeGroupItem)"
           >
             <template #cell-useYn="{ value }">
-              <span
-                class="codes-status"
-                :class="value === 'Y' ? 'is-use' : 'is-unuse'"
-              >
+              <UiBadge :variant="value === 'Y' ? 'success' : 'default'">
                 {{ value === 'Y' ? '사용' : '미사용' }}
-              </span>
+              </UiBadge>
             </template>
             <template #cell-actions="{ row }">
               <div
@@ -177,25 +174,24 @@
             text="상세코드를 불러오는 중..."
           />
           <!-- 그룹 미선택 상태 -->
-          <div
+          <UiEmpty
             v-if="!selectedGroupCode"
-            class="codes-empty-state"
-          >
-            <i class="icon icon-arrow-right size-24" />
-            <p>좌측에서 그룹을 선택하세요</p>
-          </div>
+            icon="icon-arrow-right"
+            title="좌측에서 그룹을 선택하세요"
+          />
 
           <!-- 드래그 정렬 가능 시 -->
-          <UiDragTable
+          <UiTable
             v-else-if="canDrag"
-            v-model="codeList"
+            draggable
+            v-model:data="codeList"
             :columns="codesColumnsWithDrag"
             item-key="codeId"
-            handle=".codes-drag-handle"
+            drag-handle=".codes-drag-handle"
             sticky-header
             max-height="calc(100vh - 280px)"
             empty-text="조회된 공통코드가 없습니다."
-            @drag-end="handleUpdateSortOrder"
+            @reorder-end="handleUpdateSortOrder"
           >
             <template #cell-_drag>
               <span class="codes-drag-handle">
@@ -203,12 +199,9 @@
               </span>
             </template>
             <template #cell-useYn="{ value }">
-              <span
-                class="codes-status"
-                :class="value === 'Y' ? 'is-use' : 'is-unuse'"
-              >
+              <UiBadge :variant="value === 'Y' ? 'success' : 'default'">
                 {{ value === 'Y' ? '사용' : '미사용' }}
-              </span>
+              </UiBadge>
             </template>
             <template #cell-actions="{ row }">
               <div
@@ -234,7 +227,7 @@
                 </UiDropdownMenu>
               </div>
             </template>
-          </UiDragTable>
+          </UiTable>
 
           <!-- 드래그 비활성 시 (검색 중) -->
           <UiTable
@@ -246,12 +239,9 @@
             empty-text="조회된 공통코드가 없습니다."
           >
             <template #cell-useYn="{ value }">
-              <span
-                class="codes-status"
-                :class="value === 'Y' ? 'is-use' : 'is-unuse'"
-              >
+              <UiBadge :variant="value === 'Y' ? 'success' : 'default'">
                 {{ value === 'Y' ? '사용' : '미사용' }}
-              </span>
+              </UiBadge>
             </template>
             <template #cell-actions="{ row }">
               <div
@@ -317,6 +307,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiBadge, UiButton, UiInput, UiTable, UiDropdownMenu, UiEmpty, UiLoading } from '@leechanyong/ispark-ui'
 import type { CodeGroupItem, CodeItem } from '~/types/codes'
 import { codeGroupColumns, codesColumns, codesColumnsWithDrag } from '~/types/codes'
 import { getCodeGroupRowMenuItems, getCodesRowMenuItems, useCodesStore } from '~/composables/codes/useCodesStore'

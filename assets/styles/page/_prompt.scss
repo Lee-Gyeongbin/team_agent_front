@@ -21,7 +21,11 @@
   flex-direction: column;
   gap: $spacing-md;
   flex: 1;
-  padding: $spacing-md $spacing-md $spacing-md;
+  width: 100%;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: $spacing-md 16px $spacing-md;
 }
 
 // 탭 본문 래퍼 (AOS fade-up 대상, 너비만 본문에 맞춤)

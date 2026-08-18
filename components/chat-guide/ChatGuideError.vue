@@ -150,6 +150,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiLoading, UiEmpty, UiInput, UiToggle } from '@leechanyong/ispark-ui'
 import { onMounted, ref } from 'vue'
 import { getChatGuideErrorLabel } from '~/types/chat-guide'
 import { toYn, useChatGuideStore } from '~/composables/chat-guide/useChatGuideStore'

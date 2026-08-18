@@ -576,6 +576,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiLoading, UiTable } from '@leechanyong/ispark-ui'
 import type {
   VisualizationChartSelection,
   VisualizationChartType,

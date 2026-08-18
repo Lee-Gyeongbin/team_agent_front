@@ -64,6 +64,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiLoading } from '@leechanyong/ispark-ui'
 import { KEYWORD_TREND_DEFAULT_DAY_CNT } from '~/composables/dashboard/useDashboardStore'
 
 const { keywordTrend, keywordTrendLoading, handleSelectDashboardKeywordTrend } = useDashboardStore()

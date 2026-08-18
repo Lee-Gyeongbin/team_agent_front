@@ -59,21 +59,3 @@
     color: $color-error;
   }
 }
-
-.login-history-status {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: $border-radius-full;
-  font-size: $font-size-sm;
-  font-weight: $font-weight-medium;
-
-  &.is-success {
-    background: rgba($color-success, 0.12);
-    color: $color-success;
-  }
-
-  &.is-fail {
-    background: rgba($color-error, 0.12);
-    color: $color-error;
-  }
-}

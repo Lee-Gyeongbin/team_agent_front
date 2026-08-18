@@ -44,6 +44,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiEmpty } from '@leechanyong/ispark-ui'
 defineProps<{
   isLoading: boolean
   briefing: string[]

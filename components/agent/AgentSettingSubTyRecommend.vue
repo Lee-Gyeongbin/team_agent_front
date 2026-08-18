@@ -572,6 +572,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiCheckbox } from '@leechanyong/ispark-ui'
 import {
   clampAgentRecommendTopN,
   type RecommendConfigForm,

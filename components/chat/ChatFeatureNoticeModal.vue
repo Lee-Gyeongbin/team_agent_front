@@ -2,7 +2,6 @@
   <UiModal
     :is-open="isOpen"
     title="사용 가능 기능 안내"
-    position="center"
     :show-close="true"
     :show-overlay="true"
     max-width="560px"
@@ -39,6 +38,8 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiModal } from '@leechanyong/ispark-ui'
+
 interface Props {
   isOpen: boolean
   content: string
@@ -72,18 +73,11 @@ const emit = defineEmits<{
 }
 </style>
 
-<!-- Teleport(body) 모달 — scoped 미적용 -->
+<!-- Teleport(body) 모달 — scoped 미적용 (ispark UiModal custom-class) -->
 <style lang="scss">
-.modal-dialog.chat-feature-notice-modal {
-  .modal-dialog-content {
-    max-width: 560px;
-  }
-
-  .modal-dialog-body {
-    display: block;
-    align-items: stretch;
-    min-height: 0;
-    padding: 12px 0;
+.ui-modal-content.chat-feature-notice-modal {
+  .ui-modal-body {
+    padding: 16px;
   }
 }
 </style>

@@ -14,7 +14,10 @@
         @click="toggleSearch"
       >
         <template #icon-left>
-          <i class="icon-search size-16" />
+          <UiIcon
+            name="search"
+            size="16"
+          />
         </template>
         검색
       </UiButton>
@@ -31,12 +34,17 @@
           @click="toggleDownloadPicker"
         >
           <template #icon-left>
-            <i class="icon-download size-20" />
+            <UiIcon
+              name="download"
+              size="16"
+            />
           </template>
           다운로드
           <template #icon-right>
-            <i
-              class="icon-arrow-down-gray size-12 meeting2-stt-download-caret"
+            <UiIcon
+              name="chevron-down"
+              size="12"
+              class="meeting2-stt-download-caret"
               :class="{ 'is-open': isDownloadPickerOpen }"
             />
           </template>
@@ -79,7 +87,10 @@
         @click="onClickPickAudioFile"
       >
         <template #icon-left>
-          <i class="icon-attach-file size-20" />
+          <UiIcon
+            name="paperclip"
+            size="16"
+          />
         </template>
         오디오 첨부
       </UiButton>
@@ -88,6 +99,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiBadge, UiButton, UiIcon, type BadgeVariant } from '@leechanyong/ispark-ui'
 import { openConfirm } from '~/composables/useDialog'
 import { useRealtimeTranscription } from '~/composables/meeting/useRealtimeTranscription'
 import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
@@ -125,10 +137,10 @@ const sttBadgeLabel = computed(() => {
   return 'OFF'
 })
 
-const sttBadgeVariant = computed(() => {
-  if (isRecording.value) return 'success' as const
-  if (isConnecting.value) return 'basic-chat' as const
-  return 'default' as const
+const sttBadgeVariant = computed((): BadgeVariant => {
+  if (isRecording.value) return 'success'
+  if (isConnecting.value) return 'warning'
+  return 'default'
 })
 
 const toggleDownloadPicker = () => {
