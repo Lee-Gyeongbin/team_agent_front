@@ -118,6 +118,16 @@
                 {{ isSavingEdit ? '저장 중...' : isEditing ? '직접 수정 완료' : '내용 직접 수정' }}
               </button>
               <button
+                v-if="canRestoreActive"
+                type="button"
+                :disabled="isRestoring || isRefiningActiveText || isRefiningActiveImage"
+                title="바로 직전 버전으로 되돌립니다 (1회)"
+                @click="onRestore"
+              >
+                <i class="icon-refresh size-16" />
+                {{ isRestoring ? '되돌리는 중...' : '되돌리기' }}
+              </button>
+              <button
                 type="button"
                 :disabled="isRefiningActiveText || isRefiningActiveImage"
                 @click="onCopy"
@@ -125,10 +135,34 @@
                 <i class="icon-copy size-16" />
                 복사
               </button>
+              <UiDropdownMenu
+                v-if="props.contentId"
+                :items="exportMenuItems"
+                align="end"
+                :open="isExportPickerOpen"
+                content-class="marketing-export-dropdown"
+                @update:open="onExportMenuOpenChange"
+                @select="onSelectExportFormat"
+              >
+                <template #trigger>
+                  <button
+                    type="button"
+                    :disabled="isExporting || isRefiningActiveText || isRefiningActiveImage"
+                    title="생성된 시안 전체를 파일로 내보냅니다"
+                  >
+                    <i class="icon-download size-16" />
+                    {{ isExporting ? '내보내는 중...' : '내보내기' }}
+                    <i
+                      class="icon-chevron-down size-16 chat-marketing-authoring-result__export-picker-caret"
+                      :class="{ 'is-open': isExportPickerOpen }"
+                    />
+                  </button>
+                </template>
+              </UiDropdownMenu>
               <button
                 v-if="showChannelSend"
                 type="button"
-                :disabled="isEditing || isRefiningActiveText || isRefiningActiveImage || !draftText.trim()"
+                :disabled="isEditing || isRefiningActiveText || isRefiningActiveImage || !hasDraftContent"
                 title="선택한 시안을 채널로 보냅니다"
                 @click="onOpenChannelSend"
               >
@@ -436,10 +470,11 @@
     </div>
 
     <MarketingChannelSendModal
+      v-if="isChannelSendOpen"
       :is-open="isChannelSendOpen"
       :channel="resolvedChannel"
       :body="channelSendBody"
-      :image-url="isBothMode ? activeImageUrl : ''"
+      :image-url="activeImageUrl"
       @close="isChannelSendOpen = false"
     />
 
@@ -458,10 +493,13 @@
 import { openToast } from '~/composables/useToast'
 import { openConfirm } from '~/composables/useDialog'
 import { formatNumberWithComma } from '~/utils/global/numberUtil'
+import { downloadBlobAsFile } from '~/utils/global/fileDownloadUtil'
+import { formatYyyyMmDdFromDate } from '~/utils/global/dateUtil'
+import { useMarketingApi } from '~/composables/marketing/useMarketingApi'
+import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
 import type { MarketingAuthoringAgentConfig } from '~/types/agent'
 import {
   copyMarketingPayloadToClipboard,
-  isChannelSendSupported,
   resolveMarketingAgentThemeStyle,
   resolveMarketingConditionDisplay,
   resolveMarketingOptionLabel,
@@ -484,9 +522,13 @@ const props = withDefaults(
     refineCompletedAt?: number
     generatingStep?: MarketingGeneratingStep
     showSidePanel?: boolean
+    contentId?: string
     contentTitle?: string
+    orgNm?: string
+    projectNm?: string
     request?: MarketingRequestCustomFields | null
     saveVariant?: (payload: { variantId: number; textContent: string }) => Promise<boolean>
+    restoreVariant?: (variantId: number) => Promise<boolean>
   }>(),
   {
     config: null,
@@ -497,15 +539,21 @@ const props = withDefaults(
     refineCompletedAt: 0,
     generatingStep: '',
     showSidePanel: false,
+    contentId: '',
     contentTitle: '',
+    orgNm: '',
+    projectNm: '',
     request: null,
     saveVariant: undefined,
+    restoreVariant: undefined,
   },
 )
 
 const emit = defineEmits<{
   'edit-with-agent': [payload: { variantId: number; content: string; request: string; type: 'TEXT' | 'IMAGE' }]
 }>()
+
+const { fetchExportMarketingContent } = useMarketingApi()
 
 const variants = computed(() => props.result.variants ?? [])
 const images = computed(() => props.result.images ?? [])
@@ -567,6 +615,8 @@ const isRefiningActiveImage = computed(() => isRefiningActive('IMAGE'))
 const isRefiningActiveText = computed(() => isRefiningActive('TEXT'))
 const isEditing = ref(false)
 const isSavingEdit = ref(false)
+const isExporting = ref(false)
+const isRestoring = ref(false)
 const editDraft = ref('')
 const isChannelSendOpen = ref(false)
 const channelSendBody = ref('')
@@ -662,6 +712,13 @@ const activeImage = computed(() => {
 
 const activeImageUrl = computed(() => activeImage.value?.url ?? '')
 
+/** 이미지 전용 모드는 이미지 시안 기준, 그 외는 문구 시안 기준(통합 모드도 같은 콘텐츠 행이라 동일 값) */
+const canRestoreActive = computed(() =>
+  isImageMode.value
+    ? !!activeImage.value?.canRestore
+    : !!(activeVariant.value?.canRestore ?? activeImage.value?.canRestore),
+)
+
 const activeVariantOrder = computed(() => {
   const index = draftItems.value.findIndex((item) => item.id === activeDraftId.value)
   return index >= 0 ? index + 1 : 1
@@ -683,9 +740,9 @@ const hasEditChanges = computed(() => {
 
 const resolvedChannel = computed(() => String(props.result.conditions.channel ?? '').trim())
 
-const showChannelSend = computed(
-  () => !isImageMode.value && !props.isLoading && isChannelSendSupported(resolvedChannel.value),
-)
+/** 채널로 보내기 노출 여부 — 생성 시 고른 채널 코드와 무관하게, 보낼 문구/이미지가 있으면 항상 노출한다.
+ * 채널을 확정 못 짓는 경우(이미지 전용/직접입력/매핑 안 된 코드)는 모달에서 그때 채널을 고르게 한다. */
+const showChannelSend = computed(() => !props.isLoading && hasDraftContent.value)
 
 const hasDraftContent = computed(() =>
   isImageMode.value ? !!activeImageUrl.value : !!activeVariant.value || (isBothMode.value && !!activeImageUrl.value),
@@ -894,10 +951,89 @@ const onCopy = async () => {
   }
 }
 
+type MarketingExportFormat = 'zip' | 'word' | 'pdf'
+
+const EXPORT_FORMAT_OPTIONS: { format: MarketingExportFormat; label: string; extension: string }[] = [
+  { format: 'zip', label: 'ZIP으로 저장', extension: 'zip' },
+  { format: 'word', label: 'Word로 저장', extension: 'docx' },
+  { format: 'pdf', label: 'PDF로 저장', extension: 'pdf' },
+]
+
+const exportMenuItems = computed<DropdownMenuItemDef[]>(() =>
+  EXPORT_FORMAT_OPTIONS.map((option) => ({ label: option.label, value: option.format })),
+)
+
+const isExportPickerOpen = ref(false)
+
+const onExportMenuOpenChange = (open: boolean) => {
+  if (open && (isExporting.value || isRefiningActiveText.value || isRefiningActiveImage.value)) {
+    isExportPickerOpen.value = false
+    return
+  }
+  isExportPickerOpen.value = open
+}
+
+/** "고객사_프로젝트명_제목_YYYYMMDD" — 고객사·프로젝트명은 없으면 생략, 날짜는 내보내는 시점 기준 */
+const buildExportFileNameBase = () => {
+  const parts = [props.orgNm, props.projectNm, draftTitle.value || '마케팅_콘텐츠']
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => part.replace(/[\\/:*?"<>|]/g, '_'))
+  parts.push(formatYyyyMmDdFromDate(new Date()))
+  return parts.join('_')
+}
+
+const isMarketingExportFormat = (value: string): value is MarketingExportFormat =>
+  EXPORT_FORMAT_OPTIONS.some((option) => option.format === value)
+
+/** 콘텐츠 시안 전체 내보내기 — format=zip|word|pdf, 서버에서 파일을 받아 저장한다 */
+const onSelectExportFormat = async (format: string) => {
+  isExportPickerOpen.value = false
+  if (!isMarketingExportFormat(format)) return
+  const contentId = props.contentId.trim()
+  if (!contentId || isExporting.value) return
+  isExporting.value = true
+  try {
+    const blob = await fetchExportMarketingContent(contentId, format)
+    const extension = EXPORT_FORMAT_OPTIONS.find((option) => option.format === format)?.extension ?? 'zip'
+    downloadBlobAsFile(blob, `${buildExportFileNameBase()}.${extension}`)
+  } catch {
+    openToast({ message: '내보내기에 실패했습니다.', type: 'error' })
+  } finally {
+    isExporting.value = false
+  }
+}
+
+/** 시안을 직전 버전으로 되돌리기 — 1회만 가능하므로 확인 후 진행한다 */
+const onRestore = async () => {
+  if (!canRestoreActive.value || !props.restoreVariant || isRestoring.value) return
+  const confirmed = await openConfirm({
+    title: '시안 복원',
+    message: `현재 시안이 이전 버전으로 변경됩니다. 되돌리기는 한 번만 가능하며, 실행 후에는 현재 버전으로 다시 돌아올 수 없습니다.`,
+    confirmText: '확인',
+    cancelText: '취소',
+  })
+  if (!confirmed) return
+  await doRestore()
+}
+
+const doRestore = async () => {
+  isRestoring.value = true
+  try {
+    if (isEditing.value) {
+      isEditing.value = false
+      editDraft.value = ''
+    }
+    await props.restoreVariant?.(activeDraftId.value)
+  } finally {
+    isRestoring.value = false
+  }
+}
+
 const onOpenChannelSend = () => {
   if (!showChannelSend.value || isEditing.value) return
   const content = draftText.value.trim()
-  if (!content) return
+  if (!content && !activeImageUrl.value) return
   channelSendBody.value = content
   isChannelSendOpen.value = true
 }
