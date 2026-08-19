@@ -626,6 +626,53 @@ export const useProposalApi = () => {
   }
 
   /**
+   * D-1-Edit: 소목차 목표 슬라이드 수 수정 + (기존 슬라이드 있으면) 스테이징 재생성 SSE.
+   * - regenTriggered=false: 기존 슬라이드 없어서 PLANNED_SLIDE_CNT만 수정됨.
+   * - regenTriggered=true: 재생성 완료, slidesCache 갱신 필요.
+   */
+  const streamUpdatePlannedSlideCnt = (
+    ptProjectId: string,
+    tocId: string,
+    plannedSlideCnt: number,
+    modelId: string,
+    agentId: string,
+    callbacks: {
+      onProgress?: (data: SectionGenProgressData) => void
+      onDone?: (data: SectionGenDoneData & { regenTriggered: boolean }) => void
+      onError?: (message: string) => void
+    },
+  ): EventSource => {
+    const params = new URLSearchParams({
+      ptProjectId,
+      tocId,
+      plannedSlideCnt: String(plannedSlideCnt),
+      modelId,
+      agentId,
+    })
+    const es = new EventSource(`/api/ai/proposal/streamUpdatePlannedSlideCnt.do?${params.toString()}`)
+
+    es.addEventListener('progress', (e) => {
+      try {
+        callbacks.onProgress?.(JSON.parse((e as MessageEvent).data) as SectionGenProgressData)
+      } catch {
+        /* ignore */
+      }
+    })
+    es.addEventListener('done', (e) => {
+      try {
+        callbacks.onDone?.(JSON.parse((e as MessageEvent).data) as SectionGenDoneData & { regenTriggered: boolean })
+      } catch {
+        /* ignore */
+      } finally {
+        es.close()
+      }
+    })
+    attachSseErrorListener(es, callbacks.onError)
+
+    return es
+  }
+
+  /**
    * E-1: 소목차 슬라이드 목록 조회 (SLIDE_NO 순)
    * 캐러셀/썸네일 스트립 표시용.
    */
@@ -992,6 +1039,7 @@ export const useProposalApi = () => {
     streamAnalyzeStage2,
     streamAnalyzeStage2Toc,
     streamGenerateSection,
+    streamUpdatePlannedSlideCnt,
     fetchSelectSectionSlides,
     fetchChatSection,
     streamRenderSectionImages,

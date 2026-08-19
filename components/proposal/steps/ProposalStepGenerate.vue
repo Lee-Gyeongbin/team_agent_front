@@ -58,8 +58,24 @@
             <span
               v-if="item.plannedSlideCnt"
               class="pt-sec-slide-badge"
+              :title="'슬라이드 수 편집'"
+              @click.stop="onBadgeClick(item)"
             >
-              {{ item.plannedSlideCnt }}장
+              <template v-if="editingTocId === item.tocId">
+                <UiInput
+                  v-model="editingCntStr"
+                  number-only
+                  size="xs"
+                  class="pt-sec-badge-input"
+                  @click.stop
+                  @keydown.enter.stop="onBadgeConfirm(item)"
+                  @keydown.esc.stop="onBadgeCancel"
+                  @blur="onBadgeCancel"
+                />
+              </template>
+              <template v-else>
+                {{ item.plannedSlideCnt }}장
+              </template>
             </span>
           </div>
         </template>
@@ -485,7 +501,32 @@ const emit = defineEmits<{
   'generate-section': [tocId: string]
   /** 채팅 재생성 후 슬라이드 갱신 */
   'slides-updated': [slides: PtSlide[]]
+  /** 목표 슬라이드 수 변경 */
+  'update-planned-slide-cnt': [payload: { tocId: string; oldCnt: number; newCnt: number }]
 }>()
+
+// ── 슬라이드 수 뱃지 인라인 편집 ─────────────────────────────────────────────
+const editingTocId = ref<string | null>(null)
+const editingCntStr = ref('')
+
+const onBadgeClick = (item: PtTocItem) => {
+  if (props.isGenerating) return
+  editingTocId.value = item.tocId
+  editingCntStr.value = String(item.plannedSlideCnt ?? '')
+}
+
+const onBadgeCancel = () => {
+  editingTocId.value = null
+  editingCntStr.value = ''
+}
+
+const onBadgeConfirm = (item: PtTocItem) => {
+  const newCnt = parseInt(editingCntStr.value, 10)
+  const oldCnt = item.plannedSlideCnt ?? 0
+  onBadgeCancel()
+  if (!newCnt || newCnt < 1 || newCnt === oldCnt) return
+  emit('update-planned-slide-cnt', { tocId: item.tocId, oldCnt, newCnt })
+}
 
 const chatInput = ref('')
 const chatBodyRef = ref<HTMLElement | null>(null)

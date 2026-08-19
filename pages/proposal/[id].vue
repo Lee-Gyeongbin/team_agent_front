@@ -97,6 +97,7 @@
         @send-chat="handleSendMessage"
         @generate-section="onGenerateSection"
         @slides-updated="onSlidesUpdated"
+        @update-planned-slide-cnt="onUpdatePlannedSlideCnt"
       />
       <ProposalStepExport
         v-else-if="currentStep === 7"
@@ -213,6 +214,7 @@ const {
   handleSelectSectionList,
   handleSelectSlides,
   handleGenerateSection,
+  handleUpdatePlannedSlideCnt,
   handleConfirmSection,
   goToSection,
   goToPrevSection,
@@ -245,6 +247,22 @@ const { currentMessages, isSending, handleSendMessage } = useProposalSectionChat
 const onGenerateSection = async (tocId: string) => {
   try {
     await handleGenerateSection(tocId, modelId.value, agentId.value)
+  } catch {
+    // 오류는 useProposalSections 내부에서 openToast 처리
+  }
+}
+
+const onUpdatePlannedSlideCnt = async (payload: { tocId: string; oldCnt: number; newCnt: number }) => {
+  const hasSlides = (slidesCache.value[payload.tocId]?.length ?? 0) > 0
+  try {
+    await handleUpdatePlannedSlideCnt(
+      payload.tocId,
+      payload.oldCnt,
+      payload.newCnt,
+      hasSlides,
+      modelId.value,
+      agentId.value,
+    )
   } catch {
     // 오류는 useProposalSections 내부에서 openToast 처리
   }

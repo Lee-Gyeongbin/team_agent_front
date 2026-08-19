@@ -9,6 +9,7 @@ import type {
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
 import { openToast } from '~/composables/useToast'
 import { openLoading, updateLoadingText, closeLoading } from '~/composables/useLoading'
+import { openConfirm } from '~/composables/useDialog'
 
 const SECTION_GEN_STEP_MESSAGES: Record<string, string> = {
   load: '섹션 데이터를 불러오는 중...',
@@ -22,6 +23,7 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
   const {
     fetchSelectTocList,
     streamGenerateSection,
+    streamUpdatePlannedSlideCnt,
     fetchSelectSectionSlides,
     fetchConfirmSection,
     streamRenderSectionImages,
@@ -146,6 +148,82 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
   }
 
   /**
+   * D-1-Edit: 소목차 목표 슬라이드 수 수정.
+   * - 기존 슬라이드 있으면 확인 모달 → SSE 재생성.
+   * - 기존 슬라이드 없으면 즉시 반영.
+   *
+   * @param tocId          소목차 ID
+   * @param oldCnt         현재 PLANNED_SLIDE_CNT (모달 메시지용)
+   * @param newCnt         변경할 PLANNED_SLIDE_CNT
+   * @param hasSlides      이미 슬라이드가 생성되어 있는지
+   * @param modelId        LLM 모델 ID
+   * @param agentId        에이전트 ID
+   */
+  const handleUpdatePlannedSlideCnt = async (
+    tocId: string,
+    oldCnt: number,
+    newCnt: number,
+    hasSlides: boolean,
+    modelId: string,
+    agentId: string,
+  ): Promise<void> => {
+    if (newCnt < 1 || newCnt === oldCnt) return
+
+    // 기존 슬라이드 있으면 확인 모달
+    if (hasSlides) {
+      const confirmed = await openConfirm({
+        title: '슬라이드 수 변경',
+        message: `슬라이드 수를 ${oldCnt}장 → ${newCnt}장으로 변경하시겠습니까?\n이 소목차는 새로운 구성으로 다시 생성되며, 기존에 생성된 이미지와 채팅으로 수정한 내용은 새 버전에 반영되지 않습니다.\n생성이 실패하면 기존 내용은 그대로 유지됩니다.`,
+      })
+      if (!confirmed) return
+    }
+
+    return new Promise((resolve, reject) => {
+      isGenerating.value = true
+      genProgressMsg.value = '슬라이드 수 변경 중...'
+      openLoading({ text: '슬라이드 수 변경 중...' })
+
+      // 캐시 무효화
+      slidesCache.value = Object.fromEntries(Object.entries(slidesCache.value).filter(([key]) => key !== tocId))
+
+      streamUpdatePlannedSlideCnt(ptProjectId.value, tocId, newCnt, modelId, agentId, {
+        onProgress: (data: SectionGenProgressData) => {
+          const msg = SECTION_GEN_STEP_MESSAGES[data.step] ?? ''
+          genProgressMsg.value = msg
+          if (msg) updateLoadingText(msg)
+        },
+        onDone: (data) => {
+          isGenerating.value = false
+          genProgressMsg.value = ''
+          closeLoading()
+
+          // rawTocList와 sectionList의 plannedSlideCnt 갱신
+          const tIdx = rawTocList.value.findIndex((t) => t.tocId === tocId)
+          if (tIdx > -1) rawTocList.value[tIdx] = { ...rawTocList.value[tIdx], plannedSlideCnt: newCnt }
+          const sIdx = sectionList.value.findIndex((s) => s.tocId === tocId)
+          if (sIdx > -1) sectionList.value[sIdx] = { ...sectionList.value[sIdx], plannedSlideCnt: newCnt }
+
+          if (data.regenTriggered) {
+            // 슬라이드 재생성됨 → 캐시 갱신
+            handleSelectSlides(tocId)
+            openToast({ message: `슬라이드 수가 ${newCnt}장으로 변경되어 재생성됐습니다.` })
+          } else {
+            openToast({ message: `슬라이드 수가 ${newCnt}장으로 변경됐습니다.` })
+          }
+          resolve()
+        },
+        onError: (message: string) => {
+          isGenerating.value = false
+          genProgressMsg.value = ''
+          closeLoading()
+          openToast({ message: message || '슬라이드 수 변경 중 오류가 발생했습니다.', type: 'error' })
+          reject(new Error(message))
+        },
+      })
+    })
+  }
+
+  /**
    * E-4: 소목차 확인 → 다음 소목차 활성화
    * 미완료 슬라이드 있으면 거부 메시지 표시.
    * 확인 성공 시 E-5 이미지 렌더링 SSE를 백그라운드로 구독하여 슬라이드 캐시를 업데이트한다.
@@ -253,6 +331,7 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
     handleSelectSectionList,
     handleSelectSlides,
     handleGenerateSection,
+    handleUpdatePlannedSlideCnt,
     handleConfirmSection,
     startImageRenderStream,
     goToSection,
