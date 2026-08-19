@@ -44,17 +44,22 @@
             :class="['pt-sec-item', { 'is-active': isLeafActive(item.tocId), 'is-done': isLeafDone(item.tocId) }]"
             @click="onSelectLeaf(item.tocId)"
           >
+            <i
+              v-if="isLeafGenerated(item.tocId)"
+              class="icon-check size-14 pt-sec-check"
+            />
             <span
-              :class="['pt-sec-dot', isLeafDone(item.tocId) ? 'is-done' : isLeafActive(item.tocId) ? 'is-active' : '']"
+              v-else
+              :class="['pt-sec-dot', { 'is-active': isLeafActive(item.tocId) }]"
             />
             <span :class="['pt-sec-title', { 'is-bold': isLeafActive(item.tocId) }]">
               {{ item.title }}
             </span>
             <span
-              v-if="leafSlideCount(item.tocId)"
+              v-if="item.plannedSlideCnt"
               class="pt-sec-slide-badge"
             >
-              {{ leafSlideCount(item.tocId) }}장
+              {{ item.plannedSlideCnt }}장
             </span>
           </div>
         </template>
@@ -634,14 +639,14 @@ const isLeafActive = (tocId: string) => props.sectionList[props.activeSectionInd
 /** 소목차(tocId)가 완료 상태인지 확인 */
 const isLeafDone = (tocId: string) => props.sectionList.find((s) => s.tocId === tocId)?.status === 'done'
 
+/** 슬라이드가 생성된 소목차 — 부여 수(plannedSlideCnt)와 별개 */
+const isLeafGenerated = (tocId: string) => (props.slidesCache[tocId]?.length ?? 0) > 0 || isLeafDone(tocId)
+
 /** 소목차 클릭 → sectionList 인덱스로 변환하여 emit */
 const onSelectLeaf = (tocId: string) => {
   const idx = props.sectionList.findIndex((s) => s.tocId === tocId)
   if (idx > -1) emit('select-section', idx)
 }
-
-/** 소목차(tocId)의 생성된 슬라이드 수 (0이면 미생성) */
-const leafSlideCount = (tocId: string) => props.slidesCache[tocId]?.length ?? 0
 
 // 소목차 전환 시 첫 슬라이드로 리셋
 watch(

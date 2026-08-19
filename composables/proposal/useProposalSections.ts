@@ -67,16 +67,20 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
         order: idx,
         status: 'todo' as PtSection['status'],
         previewContent: null,
+        plannedSlideCnt: item.plannedSlideCnt,
       }))
       activeSectionIndexRef.value = 0
-      // 사이드바 배지·미리보기용: 모든 소목차 슬라이드를 백그라운드에서 미리 조회
-      void Promise.allSettled(
-        sectionList.value.map((s) =>
-          fetchSelectSectionSlides(s.tocId).then((slideRes) => {
-            slidesCache.value[s.tocId] = slideRes.list ?? []
-          }),
-        ),
-      )
+
+      // 첫 소목차 슬라이드만 조회 — 나머지는 클릭 시 goToSection에서 지연 로딩
+      const firstTocId = sectionList.value[0]?.tocId
+      if (firstTocId) {
+        try {
+          const slideRes = await fetchSelectSectionSlides(firstTocId)
+          slidesCache.value[firstTocId] = slideRes.list ?? []
+        } catch (e) {
+          console.warn('[useProposalSections] 슬라이드 조회 실패:', e)
+        }
+      }
     } catch (e) {
       console.warn('[useProposalSections] TOC 조회 실패:', e)
     } finally {

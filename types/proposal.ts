@@ -302,6 +302,7 @@ export interface PtTocItem {
   source: 'rfp' | 'user' // 'rfp' = RFP 추출, 'user' = 사용자 입력
   outlineStatusCd: string // '001'=미생성, '002'=초안, '003'=확정
   contentOutlineTxt?: string | null // 지연 로딩, 노드 클릭 시 채워짐
+  plannedSlideCnt?: number // 부여된 슬라이드 수 (selectTocList)
 }
 
 export interface PtSection {

@@ -79,6 +79,7 @@ const mapTocVO = (
     sectionNm: string
     sortOrd: number
     outlineStatusCd?: string
+    plannedSlideCnt?: number
   },
   source: PtTocItem['source'] = 'rfp',
 ): PtTocItem => ({
@@ -89,6 +90,7 @@ const mapTocVO = (
   order: vo.sortOrd ?? 0,
   source,
   outlineStatusCd: vo.outlineStatusCd ?? '001',
+  plannedSlideCnt: vo.plannedSlideCnt != null ? Number(vo.plannedSlideCnt) : undefined,
 })
 
 export const useProposalApi = () => {
@@ -249,7 +251,10 @@ export const useProposalApi = () => {
   /** 콘텐츠 개요 텍스트 단건 조회 (노드 클릭 지연 로딩) */
   const fetchSelectTocOutline = async (
     tocId: string,
-  ): Promise<{ result: string; data: { tocId: string; contentOutlineTxt: string | null; outlineStatusCd: string } }> => {
+  ): Promise<{
+    result: string
+    data: { tocId: string; contentOutlineTxt: string | null; outlineStatusCd: string }
+  }> => {
     return get(`/ai/proposal/selectTocOutline.do?tocId=${encodeURIComponent(tocId)}`)
   }
 
@@ -921,7 +926,10 @@ export const useProposalApi = () => {
   }
 
   /** 스텝 프롬프트 내용 수정 */
-  const fetchUpdatePromptContent = async (promptId: string, content: string): Promise<{ result: string; msg?: string }> => {
+  const fetchUpdatePromptContent = async (
+    promptId: string,
+    content: string,
+  ): Promise<{ result: string; msg?: string }> => {
     return post<{ result: string; msg?: string }>('/ai/proposal/updatePromptContent.do', { promptId, content })
   }
 

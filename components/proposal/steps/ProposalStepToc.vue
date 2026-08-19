@@ -24,9 +24,18 @@
     >
       <div class="pt-s4-loading-box">
         <div class="pt-s4-loading-spinner" />
-        <h3>세부목차 생성 중입니다</h3>
-        <p>Win Theme와 요구사항을 바탕으로 소목차별 슬라이드 구성을 생성하고 있어요. 잠시만 기다려주세요.</p>
-        <div class="pt-s4-loading-steps">
+        <h3>{{ isRegeneratingToc ? '세부목차 재생성 중입니다' : '세부목차 생성 중입니다' }}</h3>
+        <p>
+          {{
+            isRegeneratingToc
+              ? 'Win Theme와 요구사항을 바탕으로 세부목차를 다시 구성하고 있어요. 잠시만 기다려주세요.'
+              : 'Win Theme와 요구사항을 바탕으로 소목차별 슬라이드 구성을 생성하고 있어요. 잠시만 기다려주세요.'
+          }}
+        </p>
+        <div
+          v-if="!isRegeneratingToc"
+          class="pt-s4-loading-steps"
+        >
           <div
             v-for="(s, i) in loadingSteps"
             :key="s.key"
@@ -64,17 +73,27 @@
             {{ tocCount > 0 ? `완료 ${tocCount}개` : '완료' }}
           </span>
           <span class="pt-muted">세부목차 생성이 완료되었습니다.</span>
-          <UiButton
-            variant="ghost"
-            size="sm"
-            class="pt-toc-add-root"
-            @click="startAdd(null)"
-          >
-            <template #icon-left>
-              <i class="icon icon-plus size-16" />
-            </template>
-            대목차 추가
-          </UiButton>
+          <div class="pt-toc-toolbar-actions">
+            <UiButton
+              variant="primary-line"
+              size="sm"
+              :loading="isRegeneratingToc"
+              @click="onRegenerateToc"
+            >
+              ↻ 세부목차 재생성
+            </UiButton>
+            <UiButton
+              variant="ghost"
+              size="sm"
+              class="pt-toc-add-root"
+              @click="startAdd(null)"
+            >
+              <template #icon-left>
+                <i class="icon icon-plus size-16" />
+              </template>
+              대목차 추가
+            </UiButton>
+          </div>
         </div>
 
         <div
@@ -366,6 +385,7 @@ const {
   streamAnalyzeStage2Toc,
   fetchSelectStage2TocMapping,
   fetchSelectStage2Summary,
+  fetchRegenerateStage2Mapping,
   fetchInsertTocItem,
   fetchUpdateTocItem,
   fetchDeleteTocItem,
@@ -392,6 +412,7 @@ const loadingSteps = [
 const isPromptModalOpen = ref(false)
 
 const isLoadingToc = ref(false)
+const isRegeneratingToc = ref(false)
 const isDone = ref(false)
 const hasError = ref(false)
 const errorMessage = ref('')
@@ -665,19 +686,57 @@ const onMenuSelect = (value: string, node: TocMappingNode) => {
   else if (value === 'delete') onDeleteItem(node)
 }
 
+const applyTocNodes = (nodes: TocMappingNode[]) => {
+  const tree = buildTocTree(nodes)
+  tocTree.value = tree
+  expandAllGroups(tree)
+  tocCount.value = nodes.length
+}
+
 const loadTocResult = async () => {
   isLoadingResult.value = true
   try {
     const res = await fetchSelectStage2TocMapping(props.ptProjectId)
-    if (res?.data?.tocNodes) {
-      const tree = buildTocTree(res.data.tocNodes)
-      tocTree.value = tree
-      expandAllGroups(tree)
-    }
+    if (res?.data?.tocNodes) applyTocNodes(res.data.tocNodes)
   } catch (e) {
     console.warn('[ProposalStepToc] 목차 조회 실패:', e)
   } finally {
     isLoadingResult.value = false
+  }
+}
+
+/** 세부목차 재생성 — 기존 목차·콘텐츠 개요를 덮어씀 */
+const onRegenerateToc = async () => {
+  const ok = await openConfirm({
+    title: '세부목차 재생성',
+    message: '세부목차를 다시 생성합니다. 직접 수정한 목차와 작성 중인 콘텐츠 개요가 사라집니다.',
+  })
+  if (!ok) return
+
+  isRegeneratingToc.value = true
+  isLoadingToc.value = true
+  hasError.value = false
+  cancelEdit()
+  cancelAdd()
+
+  try {
+    const res = await fetchRegenerateStage2Mapping({
+      ptProjectId: props.ptProjectId,
+      modelId: props.modelId,
+      agentId: props.agentId,
+    })
+    if (res.result !== 'OK' || !res.data?.tocNodes) {
+      openToast({ message: '세부목차 재생성에 실패했습니다.', type: 'error' })
+      return
+    }
+    applyTocNodes(res.data.tocNodes)
+    await handleLoadToc()
+    openToast({ message: '세부목차가 재생성되었습니다.' })
+  } catch {
+    openToast({ message: '세부목차 재생성에 실패했습니다.', type: 'error' })
+  } finally {
+    isLoadingToc.value = false
+    isRegeneratingToc.value = false
   }
 }
 

@@ -161,7 +161,10 @@
             class="oc-empty-card"
           >
             <div class="oc-empty-icon">💡</div>
-            <p>아직 이 세부목차의 콘텐츠 개요가 없어요.<br>관련 요구사항을 바탕으로 넣을 수 있는 아이디어를 여러 개 던져 드릴게요.</p>
+            <p>
+              아직 이 세부목차의 콘텐츠 개요가 없어요.<br />관련 요구사항을 바탕으로 넣을 수 있는 아이디어를 여러 개
+              던져 드릴게요.
+            </p>
             <button
               class="oc-btn oc-btn-primary"
               @click="$emit('generate')"
@@ -190,7 +193,7 @@
               <span class="oc-outline-card-title">콘텐츠 개요</span>
               <div class="oc-outline-card-actions">
                 <button
-                  v-if="selectedItem.outlineStatusCd === '003' && !isEditing"
+                  v-if="!isEditing"
                   class="oc-btn oc-btn-ghost oc-btn-sm"
                   @click="$emit('start-edit')"
                 >
@@ -206,12 +209,25 @@
               </div>
             </div>
 
-            <textarea
+            <!-- 수정 모드: 원문 편집 / 보기 모드: 마크다운 렌더 -->
+            <UiTextarea
+              v-if="isEditing"
               class="oc-outline-textarea"
-              :value="isEditing ? editingText : (selectedItem.contentOutlineTxt ?? '')"
-              :readonly="selectedItem.outlineStatusCd === '003' && !isEditing"
-              @input="$emit('update:editing-text', ($event.target as HTMLTextAreaElement).value)"
+              :model-value="editingText"
+              :auto-resize="false"
+              :rows="8"
+              border
+              size="md"
+              placeholder="콘텐츠 개요를 입력하세요"
+              @update:model-value="$emit('update:editing-text', $event)"
             />
+            <!-- eslint-disable vue/no-v-html — toHtmlContent 내 DOMPurify 안전 처리 적용 -->
+            <div
+              v-else
+              class="oc-outline-preview markdown-body"
+              v-html="outlineHtml"
+            />
+            <!-- eslint-enable vue/no-v-html -->
 
             <div class="oc-outline-foot">
               <button
@@ -281,7 +297,11 @@
       <!-- 하단 -->
       <div class="oc-footer">
         <span class="oc-footer-note">
-          {{ allConfirmed ? '모든 세부목차의 콘텐츠 개요가 확정되었습니다.' : '모든 세부목차의 콘텐츠 개요를 확정해야 템플릿 설정으로 이동할 수 있어요.' }}
+          {{
+            allConfirmed
+              ? '모든 세부목차의 콘텐츠 개요가 확정되었습니다.'
+              : '모든 세부목차의 콘텐츠 개요를 확정해야 템플릿 설정으로 이동할 수 있어요.'
+          }}
         </span>
         <button
           class="oc-btn oc-btn-primary"
@@ -296,8 +316,9 @@
 </template>
 
 <script setup lang="ts">
-import type { PtTocItem } from '~/types/proposal'
 import type { OutlineChatMessage } from '~/composables/proposal/useProposalOutline'
+import type { PtTocItem } from '~/types/proposal'
+import { toHtmlContent } from '~/utils/chat/htmlUtil'
 
 interface Props {
   tocList: PtTocItem[]
@@ -432,6 +453,14 @@ watch(
     chatInput.value = ''
   },
 )
+
+// ── 개요 마크다운 미리보기 ────────────────────────────────────────────────
+const outlineHtml = computed(() => {
+  const raw = props.selectedItem?.contentOutlineTxt ?? ''
+  // 단일 \n + 불릿 조합은 marked가 리스트로 인식 못함 → 불릿 앞 빈 줄 보장
+  const normalized = raw.replace(/([^\n])\n([ \t]*[-*+] )/g, '$1\n\n$2')
+  return toHtmlContent(normalized)
+})
 
 // ── 확정 ─────────────────────────────────────────────────────────────────
 const onConfirm = () => {
