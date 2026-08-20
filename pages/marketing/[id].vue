@@ -109,6 +109,29 @@
         </div>
 
         <div
+          v-if="dueSoonHistoryItems.length"
+          class="marketing-schedule-banner"
+        >
+          <div class="marketing-schedule-banner__head">
+            <i class="icon-calendar size-16" />
+            오늘·지난 발행 예정 콘텐츠 {{ dueSoonHistoryItems.length }}건
+          </div>
+          <div class="marketing-schedule-banner__list">
+            <button
+              v-for="item in dueSoonHistoryItems"
+              :key="`due-${item.contentId}`"
+              type="button"
+              class="marketing-schedule-banner__item"
+              :class="{ 'is-overdue': item.scheduleStatus === 'overdue' }"
+              :title="item.displayTitle"
+              @click="handleHistoryRowClick(item.contentId)"
+            >
+              {{ item.displayTitle }} · {{ item.scheduleLabel }}
+            </button>
+          </div>
+        </div>
+
+        <div
           v-if="allHistoryItems.length || hasActiveHistoryFilter"
           class="marketing-history-filter-bar"
         >
@@ -127,7 +150,7 @@
           <UiSelect
             :model-value="historyContentTypeFilter"
             class="marketing-filter-select marketing-filter-select--type"
-            :options="contentTypeSelectOptions"
+            :options="CONTENT_TYPE_FILTER_CHIPS"
             placeholder="콘텐츠 유형"
             size="sm"
             @update:model-value="onSelectHistoryContentType"
@@ -136,7 +159,7 @@
           <UiSelect
             :model-value="historyPeriodFilter"
             class="marketing-filter-select"
-            :options="periodSelectOptions"
+            :options="HISTORY_PERIOD_OPTIONS"
             placeholder="전체 기간"
             size="sm"
             @update:model-value="onSelectHistoryPeriod"
@@ -169,13 +192,15 @@
           v-else
           class="marketing-history-list"
         >
-          <button
+          <div
             v-for="item in allHistoryItems"
             :key="item.contentId"
-            type="button"
             class="marketing-history-row"
-            :class="{ 'is-editing': isEditingHistory(item.contentId) }"
+            tabindex="0"
+            :aria-label="`${item.displayTitle} 열기`"
             @click="handleHistoryRowClick(item.contentId)"
+            @keydown.enter.prevent="handleHistoryRowClick(item.contentId)"
+            @keydown.space.prevent="handleHistoryRowClick(item.contentId)"
           >
             <span
               class="marketing-history-row__mode-badge"
@@ -188,20 +213,7 @@
               {{ resolveMarketingOutputModeLabel(item.mode) }}
             </span>
             <div class="marketing-history-row__copy">
-              <UiInput
-                v-if="isEditingHistory(item.contentId)"
-                ref="historyTitleInputRef"
-                v-model="editingTitle"
-                class="marketing-history-row__title-input"
-                placeholder="제작 내역 이름"
-                @click.stop
-                @keydown.enter.prevent="handleSaveHistoryTitle(item.contentId)"
-                @keydown.esc.prevent="handleCancelHistoryTitle"
-              />
-              <strong
-                v-else
-                class="marketing-history-row__title"
-              >
+              <strong class="marketing-history-row__title">
                 {{ item.displayTitle }}
               </strong>
               <div
@@ -220,21 +232,45 @@
                   {{ badge }}
                 </span>
               </div>
-              <span class="marketing-history-row__date">{{ item.createDt }}</span>
+              <div class="marketing-history-row__meta">
+                <span class="marketing-history-row__author">{{ item.createUserNm }} · 작성 {{ item.createDt }}</span>
+                <span
+                  v-if="item.scheduleStatus !== 'none'"
+                  class="marketing-history-row__schedule-badge"
+                  :class="{ 'is-done': item.publishedYn === 'Y' }"
+                >
+                  발행 {{ item.publishedYn === 'Y' ? '완료' : '예정' }} {{ item.scheduleLabel }}
+                </span>
+              </div>
             </div>
             <span
               class="marketing-history-row__actions"
               @click.stop
+              @keydown.stop
             >
+              <UiButton
+                v-if="item.scheduleStatus !== 'none'"
+                variant="ghost"
+                size="sm"
+                icon-only
+                class="marketing-history-row__publish-toggle"
+                :class="{ 'is-active': item.publishedYn === 'Y' }"
+                :title="item.publishedYn === 'Y' ? '발행 예정으로 되돌리기' : '발행 완료로 표시'"
+                @click.stop="handleTogglePublished(item.contentId, item.publishedYn === 'Y' ? 'N' : 'Y')"
+              >
+                <template #icon-left>
+                  <i class="icon-check size-16" />
+                </template>
+              </UiButton>
               <UiButton
                 variant="ghost"
                 size="sm"
                 icon-only
-                :title="isEditingHistory(item.contentId) ? '수정 완료' : '이름 수정'"
-                @click="handleToggleHistoryTitleEdit(item)"
+                title="수정"
+                @click="openEditModal(item)"
               >
                 <template #icon-left>
-                  <i :class="isEditingHistory(item.contentId) ? 'icon-check size-16' : 'icon-edit size-16'" />
+                  <i class="icon-edit size-16" />
                 </template>
               </UiButton>
               <UiButton
@@ -242,7 +278,6 @@
                 size="sm"
                 icon-only
                 title="내역 삭제"
-                :disabled="!!editingContentId"
                 @click="handleDeleteHistory(item.contentId)"
               >
                 <template #icon-left>
@@ -250,8 +285,18 @@
                 </template>
               </UiButton>
             </span>
-          </button>
+          </div>
         </div>
+
+        <MarketingHistoryEditModal
+          v-if="isEditModalOpen"
+          :is-open="isEditModalOpen"
+          :is-saving="isSavingEdit"
+          :content-title="editTarget?.displayTitle ?? ''"
+          :publish-scheduled-dt="editTarget?.publishScheduledDt ?? ''"
+          @close="isEditModalOpen = false"
+          @submit="onSubmitHistoryEdit"
+        />
       </div>
 
       <!-- 작성 폼 -->
@@ -301,11 +346,14 @@
           v-if="isLoadingContent"
           text="제작 내역을 불러오는 중..."
         />
-        <ChatMarketingResult
+        <MarketingResult
           v-else-if="hasDisplayResult && displayAuthoringResult"
           class="marketing-page-result-card"
           :result="displayAuthoringResult"
+          :content-id="currentContent?.contentId ?? ''"
           :content-title="displayTitle"
+          :org-nm="currentProject?.orgNm ?? ''"
+          :project-nm="currentProject?.projectNm ?? ''"
           :request="displayRequest"
           :config="config"
           :is-loading="isSubmitting && !refiningType"
@@ -316,6 +364,7 @@
           :theme-color-hex="themeColorHex"
           :show-side-panel="true"
           :save-variant="handleSaveVariantText"
+          :restore-variant="handleRestoreVariant"
           @edit-with-agent="handleEditWithAgent"
         />
         <UiEmpty
@@ -368,10 +417,11 @@ const {
   historyModeFilter,
   historyPeriodFilter,
   allHistoryItems,
+  dueSoonHistoryItems,
   hasActiveHistoryFilter,
-  editingContentId,
-  editingTitle,
-  historyTitleInputRef,
+  handleTogglePublished,
+  handleSaveHistoryEdit,
+  currentContent,
   displayResult,
   displayTitle,
   displayRequest,
@@ -393,31 +443,39 @@ const {
   handleSubmit,
   handleEditWithAgent,
   handleSaveVariantText,
+  handleRestoreVariant,
   handleHistoryRowClick,
-  isEditingHistory,
-  handleToggleHistoryTitleEdit,
-  handleSaveHistoryTitle,
-  handleCancelHistoryTitle,
 } = useMarketingStore()
 
 const isFilePanelOpen = ref(false)
 const isUploadingFiles = ref(false)
 
-/** 콘텐츠 유형 필터 — 단일 선택 */
-const contentTypeSelectOptions = computed(() =>
-  CONTENT_TYPE_FILTER_CHIPS.map((item) => ({
-    label: item.label,
-    value: item.value,
-  })),
-)
+// ── 제작 내역 수정 모달 (이름 · 발행 예정일) ────────────────────────────
+const isEditModalOpen = ref(false)
+const isSavingEdit = ref(false)
+const editTarget = ref<{ contentId: string; displayTitle: string; publishScheduledDt: string } | null>(null)
 
-/** 기간 필터 — 단일 선택 */
-const periodSelectOptions = computed(() =>
-  HISTORY_PERIOD_OPTIONS.map((item) => ({
-    label: item.label,
-    value: item.value,
-  })),
-)
+const openEditModal = (item: { contentId: string; displayTitle: string; publishScheduledDt: string }) => {
+  editTarget.value = item
+  isEditModalOpen.value = true
+}
+
+const onSubmitHistoryEdit = async (payload: { title: string; publishScheduledDt: string | null }) => {
+  const target = editTarget.value
+  if (!target || isSavingEdit.value) return
+  isSavingEdit.value = true
+  try {
+    const saved = await handleSaveHistoryEdit(target.contentId, {
+      title: payload.title,
+      publishScheduledDt: payload.publishScheduledDt,
+      originalTitle: target.displayTitle,
+      originalPublishScheduledDt: target.publishScheduledDt,
+    })
+    if (saved) isEditModalOpen.value = false
+  } finally {
+    isSavingEdit.value = false
+  }
+}
 
 const onSelectHistoryContentType = (value: string | number) => {
   historyContentTypeFilter.value = String(value)

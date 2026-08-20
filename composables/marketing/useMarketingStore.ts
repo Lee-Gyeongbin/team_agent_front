@@ -20,11 +20,8 @@ export { CONTENT_TYPE_FILTER_CHIPS, MODE_FILTER_CHIPS, HISTORY_PERIOD_OPTIONS, r
 
 const { fetchSelectMarketingProject, fetchUpdateMarketingContentTitle } = useMarketingApi()
 
-// ===== 상태 (프로젝트 메타 / 제작 내역 이름 편집) =====
+// ===== 상태 (프로젝트 메타) =====
 const currentProject = ref<MarketingProject | null>(null)
-const editingContentId = ref('')
-const editingTitle = ref('')
-const historyTitleInputRef = ref<{ $el?: HTMLElement } | null>(null)
 
 export const useMarketingStore = () => {
   const route = useRoute()
@@ -45,9 +42,12 @@ export const useMarketingStore = () => {
     historyModeFilter,
     historyPeriodFilter,
     allHistoryItems,
+    dueSoonHistoryItems,
     hasActiveHistoryFilter,
     handleSelectHistoryList,
     handleDeleteHistory,
+    handleUpdateSchedule,
+    handleTogglePublished,
   } = useMarketingHistoryStore()
   const {
     currentContent,
@@ -65,6 +65,7 @@ export const useMarketingStore = () => {
     handleSubmit,
     handleEditWithAgent,
     handleSaveVariantText,
+    handleRestoreVariant,
   } = useMarketingGenerationStore()
 
   const handleBackToList = async () => {
@@ -95,54 +96,50 @@ export const useMarketingStore = () => {
     await navigateMarketing({ new: '1' })
   }
 
-  const handleCancelHistoryTitle = () => {
-    editingContentId.value = ''
-    editingTitle.value = ''
-  }
-
-  const isEditingHistory = (contentId: string) => editingContentId.value === String(contentId)
-
   const handleHistoryRowClick = (contentId: string) => {
-    if (!editingContentId.value) void handleOpenHistory(contentId)
+    void handleOpenHistory(contentId)
   }
 
-  const focusHistoryTitleInput = async () => {
-    await nextTick()
-    const root = historyTitleInputRef.value?.$el ?? historyTitleInputRef.value
-    const input = root instanceof HTMLElement ? root.querySelector('input') : null
-    input?.focus()
-    input?.select()
-  }
+  /** 제작 내역 이름·발행 예정일 일괄 저장 — 변경된 항목만 API 호출 */
+  const handleSaveHistoryEdit = async (
+    contentId: string,
+    payload: {
+      title: string
+      publishScheduledDt: string | null
+      originalTitle: string
+      originalPublishScheduledDt: string
+    },
+  ) => {
+    const title = payload.title.trim()
+    if (!title) return false
 
-  const handleSaveHistoryTitle = async (contentId: string) => {
-    const title = editingTitle.value.trim()
-    if (!title) {
-      openToast({ message: '제작 내역 이름을 입력해 주세요.', type: 'warning' })
-      await focusHistoryTitleInput()
-      return
-    }
+    const titleChanged = title !== payload.originalTitle.trim()
+    const nextSchedule = payload.publishScheduledDt?.trim() || null
+    const originalSchedule = payload.originalPublishScheduledDt.trim() || null
+    const scheduleChanged = nextSchedule !== originalSchedule
+    if (!titleChanged && !scheduleChanged) return true
+
     try {
-      const response = await fetchUpdateMarketingContentTitle(contentId, title)
-      if (response?.successYn === false) throw new Error(response.returnMsg)
-      const item = historyList.value.find((history) => history.contentId === contentId)
-      if (item) item.title = title
-      if (currentContent.value?.contentId === contentId) currentContent.value.title = title
-      handleCancelHistoryTitle()
-      openToast({ message: '제작 내역 이름을 저장했습니다.' })
+      if (titleChanged) {
+        const response = await fetchUpdateMarketingContentTitle(contentId, title)
+        if (!response.successYn) throw new Error(response.returnMsg)
+        const item = historyList.value.find((history) => history.contentId === contentId)
+        if (item) item.title = title
+        if (currentContent.value?.contentId === contentId) currentContent.value.title = title
+      }
+      if (scheduleChanged) {
+        const saved = await handleUpdateSchedule(contentId, nextSchedule)
+        if (!saved) {
+          openToast({ message: '발행 예정일 저장에 실패했습니다.', type: 'error' })
+          return false
+        }
+      }
+      openToast({ message: '제작 내역을 저장했습니다.' })
+      return true
     } catch {
-      openToast({ message: '제작 내역 이름 저장에 실패했습니다.', type: 'error' })
-      await focusHistoryTitleInput()
+      openToast({ message: '제작 내역 저장에 실패했습니다.', type: 'error' })
+      return false
     }
-  }
-
-  const handleToggleHistoryTitleEdit = async (item: { contentId: string; displayTitle: string }) => {
-    if (isEditingHistory(item.contentId)) {
-      await handleSaveHistoryTitle(item.contentId)
-      return
-    }
-    editingContentId.value = item.contentId
-    editingTitle.value = item.displayTitle
-    await focusHistoryTitleInput()
   }
 
   const handleBootstrap = async () => {
@@ -155,7 +152,7 @@ export const useMarketingStore = () => {
         return
       }
       const projectRes = await fetchSelectMarketingProject(projectId)
-      if (projectRes.result === 'OK') {
+      if (projectRes.successYn) {
         currentProject.value = projectRes.data
       }
       if (!currentProject.value) {
@@ -200,10 +197,11 @@ export const useMarketingStore = () => {
     historyModeFilter,
     historyPeriodFilter,
     allHistoryItems,
+    dueSoonHistoryItems,
     hasActiveHistoryFilter,
-    editingContentId,
-    editingTitle,
-    historyTitleInputRef,
+    handleTogglePublished,
+    handleSaveHistoryEdit,
+    currentContent,
     displayResult,
     displayTitle,
     displayRequest,
@@ -226,10 +224,7 @@ export const useMarketingStore = () => {
     handleSubmit,
     handleEditWithAgent,
     handleSaveVariantText,
+    handleRestoreVariant,
     handleHistoryRowClick,
-    isEditingHistory,
-    handleToggleHistoryTitleEdit,
-    handleSaveHistoryTitle,
-    handleCancelHistoryTitle,
   }
 }

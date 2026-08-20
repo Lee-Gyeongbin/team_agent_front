@@ -2,7 +2,7 @@ import { useMarketingApi } from '~/composables/marketing/useMarketingApi'
 import { agents, useMarketingPageState } from '~/composables/marketing/useMarketingPageState'
 import type { MarketingContentSummary, MarketingOutputMode } from '~/types/marketing'
 import { formatDateTimeDisplay } from '~/utils/global/dateUtil'
-import { resolveMarketingSummaryLabels } from '~/utils/marketing/marketingUtil'
+import { resolveMarketingSummaryLabels, resolveMarketingScheduleStatus } from '~/utils/marketing/marketingUtil'
 import { MARKETING_AUTHORING_CONTENT_TYPES } from '~/utils/agent/marketingAuthoringConfigUtil'
 
 type MarketingHistoryPeriodValue = '' | '30' | '7' | '3'
@@ -29,7 +29,12 @@ export const HISTORY_PERIOD_OPTIONS: { value: MarketingHistoryPeriodValue; label
   { value: '30', label: '최근 30일' },
 ]
 
-const { fetchMarketingContents, fetchDeleteMarketingContent } = useMarketingApi()
+const {
+  fetchMarketingContents,
+  fetchDeleteMarketingContent,
+  fetchUpdateMarketingSchedule,
+  fetchUpdateMarketingPublished,
+} = useMarketingApi()
 
 // ===== 상태 (제작 내역 목록 / 필터) =====
 export const historyList = ref<MarketingContentSummary[]>([])
@@ -65,10 +70,21 @@ export const useMarketingHistoryStore = () => {
         mode: item.outputMode,
         displayTitle: item.title,
         metaBadges: resolveMarketingSummaryLabels(item.summaryLabels, agentConfig),
+        createUserNm: item.createUserNm || '-',
         createDt: formatDateTimeDisplay(item.createDt) || item.createDt || '-',
+        publishScheduledDt: item.publishScheduledDt || '',
+        publishedYn: item.publishedYn,
+        scheduleStatus: resolveMarketingScheduleStatus(item.publishScheduledDt, item.publishedYn),
+        scheduleLabel: formatDateTimeDisplay(item.publishScheduledDt),
       }
     }),
   )
+
+  /** 오늘이거나 이미 지난 발행 예정 콘텐츠 — 상단 리마인더 배너용 */
+  const dueSoonHistoryItems = computed(() =>
+    allHistoryItems.value.filter((item) => item.scheduleStatus === 'today' || item.scheduleStatus === 'overdue'),
+  )
+
   const hasActiveHistoryFilter = computed(
     () =>
       !!historySearchKeyword.value.trim() ||
@@ -85,7 +101,7 @@ export const useMarketingHistoryStore = () => {
     const seq = ++historyListRequestSeq
     try {
       const response = await fetchMarketingContents({
-        marketingProjectId: marketingProjectId.value || undefined,
+        marketingProjectId: marketingProjectId.value,
         keyword: historySearchKeyword.value.trim() || undefined,
         contentType: historyContentTypeFilter.value || undefined,
         outputMode: historyModeFilter.value || undefined,
@@ -109,11 +125,43 @@ export const useMarketingHistoryStore = () => {
     if (!confirmed) return
     try {
       const response = await fetchDeleteMarketingContent(contentId)
-      if (response?.successYn === false) throw new Error(response.returnMsg)
+      if (!response.successYn) throw new Error(response.returnMsg)
       openToast({ message: '제작 내역이 삭제되었습니다.' })
       await handleSelectHistoryList()
     } catch {
       openToast({ message: '제작 내역 삭제에 실패했습니다.', type: 'error' })
+    }
+  }
+
+  /** 발행 예정일 지정/변경 — 해제하려면 publishScheduledDt에 null */
+  const handleUpdateSchedule = async (contentId: string, publishScheduledDt: string | null) => {
+    try {
+      const response = await fetchUpdateMarketingSchedule(contentId, { publishScheduledDt })
+      if (!response.successYn) throw new Error(response.returnMsg)
+      await handleSelectHistoryList()
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  /** 발행 완료 표시/해제 — 리마인더 배지·배너를 끄고 켜는 용도 */
+  const handleTogglePublished = async (contentId: string, publishedYn: 'Y' | 'N') => {
+    const item = historyList.value.find((history) => history.contentId === contentId)
+    const previous = item?.publishedYn ?? 'N'
+    if (item) item.publishedYn = publishedYn
+    try {
+      const response = await fetchUpdateMarketingPublished(contentId, { publishedYn })
+      if (!response.successYn) throw new Error(response.returnMsg)
+      await handleSelectHistoryList()
+      const refreshed = historyList.value.find((history) => history.contentId === contentId)
+      // 재조회 결과가 방금 저장한 값과 다르면(읽기 지연 등) 방금 저장한 값으로 맞춘다
+      if (refreshed && refreshed.publishedYn !== publishedYn) refreshed.publishedYn = publishedYn
+      return true
+    } catch {
+      if (item) item.publishedYn = previous
+      openToast({ message: '발행 상태 변경에 실패했습니다.', type: 'error' })
+      return false
     }
   }
 
@@ -130,8 +178,11 @@ export const useMarketingHistoryStore = () => {
     historyModeFilter,
     historyPeriodFilter,
     allHistoryItems,
+    dueSoonHistoryItems,
     hasActiveHistoryFilter,
     handleSelectHistoryList,
     handleDeleteHistory,
+    handleUpdateSchedule,
+    handleTogglePublished,
   }
 }
