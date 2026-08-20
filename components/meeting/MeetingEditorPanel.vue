@@ -103,6 +103,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton } from '@leechanyong/ispark-ui'
 import { useEditor } from '@tiptap/vue-3'
 import { StarterKit } from '@tiptap/starter-kit'
 import { TextAlign } from '@tiptap/extension-text-align'

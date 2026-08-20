@@ -20,6 +20,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiLoading } from '@leechanyong/ispark-ui'
 import RepositoryFilePage from '~/components/repository/RepositoryFilePage.vue'
 import { useRepositoryStore } from '~/composables/repository/useRepositoryStore'
 const { isLoading, activeRepositoryTab } = useRepositoryStore()

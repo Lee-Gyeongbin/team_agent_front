@@ -229,11 +229,11 @@ const onVisibilityChange = () => {
   if (document.hidden && pointerId !== -1) resetDragState()
 }
 
-// 드래그 이벤트를 .content 영역(사이드바 제외)에만 등록
+// 드래그 이벤트를 테마 섹션(탭·카드·화살표)에만 등록
 let dragTarget: Element | Document = document
 
 onMounted(() => {
-  dragTarget = document.querySelector('.content') ?? document
+  dragTarget = document.querySelector('.chat-index-theme-section') ?? document
   dragTarget.addEventListener('pointerdown', onPointerDown as EventListener)
   dragTarget.addEventListener('pointermove', onPointerMove as EventListener)
   dragTarget.addEventListener('pointerup', onPointerUp as EventListener)
@@ -342,6 +342,7 @@ const trackStyle = computed(() => {
 .chat-theme-carousel__tagline {
   @include typo($body-small);
   color: $color-text-muted;
+  margin-top: 3px;
   margin-bottom: 16px;
   height: 18px;
   text-align: center;

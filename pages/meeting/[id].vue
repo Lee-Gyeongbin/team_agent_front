@@ -7,11 +7,12 @@
         class="meeting2-detail-back"
         @click="onClickBack"
       >
-        <i class="icon-arrow-left-sm size-16" />
+        <i class="icon-arrow-left-sm size-16"></i>
         회의 목록
       </button>
       <span class="meeting2-detail-header-divider"></span>
       <template v-if="currentMeeting">
+        <!-- 제목 인라인 편집: 커스텀 스타일·select() 포커스 유지 — native input 유지 -->
         <input
           v-if="isEditingTitle"
           ref="titleInputRef"
@@ -38,7 +39,7 @@
             title="제목 편집"
             @click="onClickEditTitle"
           >
-            <i class="icon-edit size-16" />
+            <i class="icon-edit size-16"></i>
           </button>
         </div>
       </template>
@@ -50,24 +51,27 @@
       :steps="currentMeeting.steps"
     />
 
-    <!-- 모바일 탭 (1023px 이하) -->
+    <!-- 모바일 탭 (1023px 이하) — 커스텀 탭 스타일 유지 -->
     <div
       v-if="isMobile"
       class="meeting2-layout-tabs"
     >
       <button
+        type="button"
         :class="{ 'is-active': activeMobileTab === 'left' }"
         @click="activeMobileTab = 'left'"
       >
         녹음/STT
       </button>
       <button
+        type="button"
         :class="{ 'is-active': activeMobileTab === 'center' }"
         @click="activeMobileTab = 'center'"
       >
         회의록
       </button>
       <button
+        type="button"
         :class="{ 'is-active': activeMobileTab === 'right' }"
         @click="activeMobileTab = 'right'"
       >

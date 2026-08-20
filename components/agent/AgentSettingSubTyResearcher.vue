@@ -39,6 +39,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiCheckbox } from '@leechanyong/ispark-ui'
 import type { ResearcherConfigForm } from '~/utils/agent/researcherConfigUtil'
 
 const props = defineProps<{

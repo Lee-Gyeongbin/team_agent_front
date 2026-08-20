@@ -100,6 +100,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiEmpty } from '@leechanyong/ispark-ui'
 import type { SentTopRecipient, SentClassifiedItem } from '~/types/mail'
 
 const props = defineProps<{

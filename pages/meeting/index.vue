@@ -4,40 +4,43 @@
     <div class="meeting2-list-header">
       <h2 class="meeting2-list-title">회의록</h2>
       <div class="meeting2-list-toolbar">
-        <UiInput
-          v-model="searchKeyword"
-          type="search"
-          size="sm"
-          placeholder="회의명 검색"
-        />
-        <!-- 통합 모드: 발언자 표시 옵션 -->
-        <label
-          v-if="isIntegrateMode"
-          class="meeting2-integrate-speaker-check"
-        >
-          <input
-            v-model="integrateShowSpeaker"
-            type="checkbox"
+        <div class="meeting2-list-search">
+          <UiInput
+            v-model="searchKeyword"
+            type="search"
+            size="sm"
+            placeholder="회의명 검색"
           />
-          <span>결정사항에 발언자 표시</span>
-        </label>
+        </div>
+        <!-- 통합 모드: 발언자 표시 옵션 -->
+        <UiCheckbox
+          v-if="isIntegrateMode"
+          v-model="integrateShowSpeaker"
+          label="결정사항에 발언자 표시"
+        />
         <UiButton
           variant="primary"
-          size="md"
+          size="sm"
           @click="onClickIntegrate"
         >
           <template #icon-left>
-            <i class="icon-meeting-generate size-16" />
+            <UiIcon
+              name="square-check"
+              size="16"
+            />
           </template>
           {{ integrateButtonLabel }}
         </UiButton>
         <UiButton
           variant="primary"
-          size="md"
+          size="sm"
           @click="onClickNew"
         >
           <template #icon-left>
-            <i class="icon-plus size-16" />
+            <UiIcon
+              name="plus"
+              size="16"
+            />
           </template>
           새 회의
         </UiButton>
@@ -51,6 +54,7 @@
         <button
           v-for="chip in STATUS_CHIPS"
           :key="chip.value"
+          type="button"
           :class="['meeting2-filter-chip', { 'is-active': filterStatus === chip.value }]"
           @click="onSelectStatus(chip.value)"
         >
@@ -60,19 +64,12 @@
       <!-- 구분선 -->
       <div class="meeting2-filter-divider" />
       <!-- 기간 드롭다운 -->
-      <select
+      <UiSelect
         v-model="filterPeriod"
-        class="meeting2-filter-select"
-        @change="onPeriodChange"
-      >
-        <option
-          v-for="opt in PERIOD_OPTIONS"
-          :key="opt.value"
-          :value="opt.value"
-        >
-          {{ opt.label }}
-        </option>
-      </select>
+        class="meeting2-filter-select-wrap"
+        :options="periodOptions"
+        size="sm"
+      />
       <!-- 직접 설정 날짜 입력 -->
       <template v-if="filterPeriod === 'custom'">
         <UiDatePicker
@@ -88,34 +85,35 @@
         />
       </template>
       <!-- 정렬 드롭다운 -->
-      <select
+      <UiSelect
         v-model="filterSort"
-        class="meeting2-filter-select"
-        @change="onSortChange"
-      >
-        <option
-          v-for="opt in SORT_OPTIONS"
-          :key="opt.value"
-          :value="opt.value"
-        >
-          {{ opt.label }}
-        </option>
-      </select>
+        class="meeting2-filter-select-wrap"
+        :options="sortOptions"
+        size="sm"
+      />
       <!-- 뷰 토글 -->
       <div class="meeting2-view-toggle">
         <button
+          type="button"
           :class="['meeting2-view-btn', { 'is-active': viewMode === 'grid' }]"
           title="그리드 뷰"
           @click="setViewMode('grid')"
         >
-          <i class="icon-grid size-16" />
+          <UiIcon
+            name="layout-grid"
+            size="16"
+          />
         </button>
         <button
+          type="button"
           :class="['meeting2-view-btn', { 'is-active': viewMode === 'list' }]"
           title="목록 뷰"
           @click="setViewMode('list')"
         >
-          <i class="icon-list size-16" />
+          <UiIcon
+            name="list"
+            size="16"
+          />
         </button>
       </div>
     </div>
@@ -133,10 +131,15 @@
         >
           {{ tag.label }}
           <button
+            type="button"
             class="meeting2-filter-tag-remove"
+            aria-label="필터 제거"
             @click="removeFilter(tag.key)"
           >
-            <i class="icon-close size-12" />
+            <UiIcon
+              name="x"
+              size="12"
+            />
           </button>
         </span>
       </div>
@@ -144,29 +147,10 @@
     </div>
 
     <!-- 로딩 -->
-    <div
+    <UiLoading
       v-if="isLoadingList"
-      :class="viewMode === 'grid' ? 'meeting2-list-grid' : 'meeting2-list-rows'"
-    >
-      <div
-        v-for="n in 6"
-        :key="n"
-        class="meeting2-list-card is-skeleton"
-      >
-        <UiSkeleton
-          height="20px"
-          width="60%"
-        />
-        <UiSkeleton
-          height="14px"
-          width="40%"
-        />
-        <UiSkeleton
-          height="14px"
-          width="30%"
-        />
-      </div>
-    </div>
+      text="회의록을 불러오는 중..."
+    />
 
     <!-- 빈 상태 -->
     <UiEmpty
@@ -193,14 +177,19 @@
           v-if="isIntegrateMode"
           class="meeting2-list-card-check"
         >
-          {{ isMeetingSelected(meeting.id) ? 'O' : '' }}
+          <!-- 표시만 — 선택은 카드 클릭과 동일 (기존 O 표시와 동일 동작) -->
+          <UiCheckbox
+            :model-value="isMeetingSelected(meeting.id)"
+            label="회의록 선택"
+            label-hidden
+          />
         </div>
         <p class="meeting2-list-card-title">{{ meeting.title }}</p>
         <p class="meeting2-list-card-date">{{ meeting.date }}</p>
         <div class="meeting2-list-card-meta">
           <UiBadge
             v-if="meeting.integrateYn === 'Y'"
-            variant="manual-ai"
+            variant="info"
             size="sm"
           >
             통합 회의록
@@ -224,10 +213,15 @@
             variant="ghost"
             size="sm"
             icon-only
+            aria-label="삭제"
             @click.stop="doDelete(meeting.meetingId)"
           >
             <template #icon-left>
-              <i class="icon-trashcan size-16" />
+              <UiIcon
+                name="trash-2"
+                size="16"
+                color="muted"
+              />
             </template>
           </UiButton>
         </div>
@@ -252,14 +246,19 @@
           v-if="isIntegrateMode"
           class="meeting2-list-row-check"
         >
-          {{ isMeetingSelected(meeting.id) ? 'O' : '' }}
+          <!-- 표시만 — 선택은 행 클릭과 동일 (기존 O 표시와 동일 동작) -->
+          <UiCheckbox
+            :model-value="isMeetingSelected(meeting.id)"
+            label="회의록 선택"
+            label-hidden
+          />
         </div>
         <div class="meeting2-list-row-title">{{ meeting.title }}</div>
         <div class="meeting2-list-row-date">{{ meeting.date }}</div>
         <div class="meeting2-list-row-meta">
           <UiBadge
             v-if="meeting.integrateYn === 'Y'"
-            variant="manual-ai"
+            variant="info"
             size="sm"
           >
             통합 회의록
@@ -283,10 +282,15 @@
             variant="ghost"
             size="sm"
             icon-only
+            aria-label="삭제"
             @click.stop="doDelete(meeting.meetingId)"
           >
             <template #icon-left>
-              <i class="icon-trashcan size-16" />
+              <UiIcon
+                name="trash-2"
+                size="16"
+                color="muted"
+              />
             </template>
           </UiButton>
         </div>
@@ -349,6 +353,19 @@
 
 <script setup lang="ts">
 import { CalendarDate, toCalendarDateTime, type DateValue } from '@internationalized/date'
+import {
+  UiBadge,
+  UiButton,
+  UiCheckbox,
+  UiDatePicker,
+  UiEmpty,
+  UiIcon,
+  UiInput,
+  UiLoading,
+  UiSelect,
+  type BadgeVariant,
+  type SelectOption,
+} from '@leechanyong/ispark-ui'
 import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
 import type { MeetingStep } from '~/types/meeting'
 
@@ -408,6 +425,9 @@ const SORT_OPTIONS = [
 type StatusChipValue = (typeof STATUS_CHIPS)[number]['value']
 type PeriodValue = (typeof PERIOD_OPTIONS)[number]['value']
 type SortValue = (typeof SORT_OPTIONS)[number]['value']
+
+const periodOptions: SelectOption[] = PERIOD_OPTIONS.map((opt) => ({ ...opt }))
+const sortOptions: SelectOption[] = SORT_OPTIONS.map((opt) => ({ ...opt }))
 
 const filterStatus = ref<StatusChipValue>('')
 const filterPeriod = ref<PeriodValue>('')
@@ -520,6 +540,7 @@ const onSelectStatus = (val: StatusChipValue) => {
   fetchWithFilters()
 }
 
+/** 기간 변경 — custom이면 날짜 입력 대기, 그 외 API 재조회 */
 const onPeriodChange = () => {
   if (filterPeriod.value !== 'custom') {
     filterStartDate.value = ''
@@ -528,9 +549,19 @@ const onPeriodChange = () => {
   }
 }
 
+/** 정렬 변경 — API 재조회 */
 const onSortChange = () => {
   fetchWithFilters()
 }
+
+// UiSelect v-model 변경에 묶어 API 재조회 (change emit 의존 제거 — 기존 select @change와 동일 보장)
+watch(filterPeriod, () => {
+  onPeriodChange()
+})
+
+watch(filterSort, () => {
+  onSortChange()
+})
 
 // 직접 설정 날짜 변경 시 API 재호출
 watch([filterStartDate, filterEndDate], () => {
@@ -565,14 +596,22 @@ const activeFilterTags = computed(() => {
 })
 
 const removeFilter = (key: string) => {
-  if (key === 'status') filterStatus.value = ''
+  if (key === 'status') {
+    filterStatus.value = ''
+    fetchWithFilters()
+    return
+  }
   if (key === 'period') {
+    // filterPeriod watch → onPeriodChange → fetch (기존 select @change와 동일)
     filterPeriod.value = ''
     filterStartDate.value = ''
     filterEndDate.value = ''
+    return
   }
-  if (key === 'sort') filterSort.value = 'CREATE_DT_DESC'
-  fetchWithFilters()
+  if (key === 'sort') {
+    // filterSort watch → onSortChange → fetch
+    filterSort.value = 'CREATE_DT_DESC'
+  }
 }
 
 // ===== 기존 로직 (변경 없음) =====
@@ -613,14 +652,14 @@ const deriveDisplaySteps = (status: string): MeetingStep[] => {
   return []
 }
 
-/** 진행 상태 뱃지 — 진행 중/완료 단계만 노출 */
+/** 진행 상태 뱃지 — 진행 중/완료 단계만 노출 (ispark-ui 시맨틱 variant) */
 const progressBadges = (steps: MeetingStep[]) => {
   return steps
     .filter((s) => s.status !== 'wait')
     .map((s) => ({
       key: s.key,
       label: s.label,
-      variant: s.status === 'done' ? ('success' as const) : ('basic-chat' as const),
+      variant: (s.status === 'done' ? 'success' : 'warning') as BadgeVariant,
     }))
 }
 

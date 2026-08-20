@@ -236,6 +236,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiEmpty } from '@leechanyong/ispark-ui'
 import type { ClassifiedMail, ClassifiedMailListParams, WorkCategory } from '~/types/mail'
 import { getMailCategoryTagClass, getMailUrgencyTagClass } from '~/utils/mail/mailTagUtil'
 

@@ -1,21 +1,41 @@
-import type { PtSection, PtSlide, SectionGenProgressData, SectionGenDoneData } from '~/types/proposal'
+import type {
+  PtSection,
+  PtSlide,
+  PtTocItem,
+  SectionGenProgressData,
+  SectionGenDoneData,
+  SlideRenderProgressData,
+} from '~/types/proposal'
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
 import { openToast } from '~/composables/useToast'
 import { openLoading, updateLoadingText, closeLoading } from '~/composables/useLoading'
+import { openConfirm } from '~/composables/useDialog'
 
 const SECTION_GEN_STEP_MESSAGES: Record<string, string> = {
   load: '섹션 데이터를 불러오는 중...',
   llm: 'AI가 슬라이드 내용을 생성하는 중...',
   parse: '슬라이드 구조를 분석하는 중...',
   save: '슬라이드를 저장하는 중...',
-  render: '슬라이드 스타일을 조립하는 중...',
+  // render 스텝 제거 — Stage3.5(이미지 힌트 자동 조립) 삭제로 인해 D-1에서 더 이상 전송되지 않음
 }
 
 export const useProposalSections = (ptProjectId: Ref<string>) => {
-  const { fetchSelectTocList, streamGenerateSection, fetchSelectSectionSlides, fetchConfirmSection } = useProposalApi()
+  const {
+    fetchSelectTocList,
+    streamGenerateSection,
+    streamUpdatePlannedSlideCnt,
+    fetchSelectSectionSlides,
+    fetchConfirmSection,
+    streamRenderSectionImages,
+  } = useProposalApi()
 
   const sectionList = ref<PtSection[]>([])
+  // 트리 사이드바 표시용 — 대목차(root)까지 포함한 전체 flat list
+  const rawTocList = ref<PtTocItem[]>([])
   const isLoading = ref(false)
+
+  // 현재 보고 있는 소목차 인덱스 (status와 분리 — done 마크 유지하면서 자유 이동)
+  const activeSectionIndexRef = ref(0)
 
   // 소목차별 슬라이드 캐시 (소목차 전환해도 유지)
   const slidesCache = ref<Record<string, PtSlide[]>>({})
@@ -33,23 +53,42 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
     isLoading.value = true
     try {
       const res = await fetchSelectTocList(ptProjectId.value)
-      const leafItems = (res.list ?? []).filter((item) => item.parentId !== null)
+      rawTocList.value = res.list ?? []
+
+      // 진짜 리프 판별: 다른 항목이 이 항목을 parentId로 참조하지 않으면 리프
+      const parentIdSet = new Set(
+        (res.list ?? []).map((item) => item.parentId).filter((id): id is string => id !== null),
+      )
+      const leafItems = (res.list ?? []).filter((item) => item.parentId !== null && !parentIdSet.has(item.tocId))
+
       sectionList.value = leafItems.map((item, idx) => ({
         sectionId: item.tocId,
         ptProjectId: ptProjectId.value,
         tocId: item.tocId,
         title: item.title,
         order: idx,
-        status: idx === 0 ? 'active' : ('todo' as PtSection['status']),
+        status: 'todo' as PtSection['status'],
         previewContent: null,
+        plannedSlideCnt: item.plannedSlideCnt,
       }))
+      activeSectionIndexRef.value = 0
+
+      // 첫 소목차 슬라이드만 조회 — 나머지는 클릭 시 goToSection에서 지연 로딩
+      const firstTocId = sectionList.value[0]?.tocId
+      if (firstTocId) {
+        try {
+          const slideRes = await fetchSelectSectionSlides(firstTocId)
+          slidesCache.value[firstTocId] = slideRes.list ?? []
+        } catch (e) {
+          console.warn('[useProposalSections] 슬라이드 조회 실패:', e)
+        }
+      }
     } catch (e) {
       console.warn('[useProposalSections] TOC 조회 실패:', e)
     } finally {
       isLoading.value = false
     }
   }
-
   /**
    * 소목차 슬라이드 목록 조회 (캐시 우선)
    */
@@ -66,8 +105,8 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
   }
 
   /**
-   * D-1: 소목차 슬라이드 생성 (Stage3 + Stage3.5)
-   * SSE 스트림으로 진행상황 수신
+   * D-1: 소목차 슬라이드 생성 (Stage3)
+   * SSE 스트림으로 진행상황 수신 (load → llm → parse → save → done)
    *
    * @param tocId   소목차 ID
    * @param modelId LLM 모델 ID
@@ -93,7 +132,7 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
           isGenerating.value = false
           genProgressMsg.value = ''
           closeLoading()
-          // 캐시 재조회 트리거 (비동기, 결과 대기 안 함)
+          // 슬라이드 캐시 갱신 (이미지 생성은 사용자가 직접 시작)
           handleSelectSlides(tocId)
           resolve(data)
         },
@@ -109,10 +148,87 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
   }
 
   /**
-   * D-4: 소목차 확인 → 다음 소목차 활성화
-   * 미완료 슬라이드 있으면 거부 메시지 표시.
+   * D-1-Edit: 소목차 목표 슬라이드 수 수정.
+   * - 기존 슬라이드 있으면 확인 모달 → SSE 재생성.
+   * - 기존 슬라이드 없으면 즉시 반영.
    *
-   * @returns true: 모든 소목차 완료(Step E로), false: 다음 소목차로 이동
+   * @param tocId          소목차 ID
+   * @param oldCnt         현재 PLANNED_SLIDE_CNT (모달 메시지용)
+   * @param newCnt         변경할 PLANNED_SLIDE_CNT
+   * @param hasSlides      이미 슬라이드가 생성되어 있는지
+   * @param modelId        LLM 모델 ID
+   * @param agentId        에이전트 ID
+   */
+  const handleUpdatePlannedSlideCnt = async (
+    tocId: string,
+    oldCnt: number,
+    newCnt: number,
+    hasSlides: boolean,
+    modelId: string,
+    agentId: string,
+  ): Promise<void> => {
+    if (newCnt < 1 || newCnt === oldCnt) return
+
+    // 기존 슬라이드 있으면 확인 모달
+    if (hasSlides) {
+      const confirmed = await openConfirm({
+        title: '슬라이드 수 변경',
+        message: `슬라이드 수를 ${oldCnt}장 → ${newCnt}장으로 변경하시겠습니까?\n이 소목차는 새로운 구성으로 다시 생성되며, 기존에 생성된 이미지와 채팅으로 수정한 내용은 새 버전에 반영되지 않습니다.\n생성이 실패하면 기존 내용은 그대로 유지됩니다.`,
+      })
+      if (!confirmed) return
+    }
+
+    return new Promise((resolve, reject) => {
+      isGenerating.value = true
+      genProgressMsg.value = '슬라이드 수 변경 중...'
+      openLoading({ text: '슬라이드 수 변경 중...' })
+
+      // 캐시 무효화
+      slidesCache.value = Object.fromEntries(Object.entries(slidesCache.value).filter(([key]) => key !== tocId))
+
+      streamUpdatePlannedSlideCnt(ptProjectId.value, tocId, newCnt, modelId, agentId, {
+        onProgress: (data: SectionGenProgressData) => {
+          const msg = SECTION_GEN_STEP_MESSAGES[data.step] ?? ''
+          genProgressMsg.value = msg
+          if (msg) updateLoadingText(msg)
+        },
+        onDone: (data) => {
+          isGenerating.value = false
+          genProgressMsg.value = ''
+          closeLoading()
+
+          // rawTocList와 sectionList의 plannedSlideCnt 갱신
+          const tIdx = rawTocList.value.findIndex((t) => t.tocId === tocId)
+          if (tIdx > -1) rawTocList.value[tIdx] = { ...rawTocList.value[tIdx], plannedSlideCnt: newCnt }
+          const sIdx = sectionList.value.findIndex((s) => s.tocId === tocId)
+          if (sIdx > -1) sectionList.value[sIdx] = { ...sectionList.value[sIdx], plannedSlideCnt: newCnt }
+
+          if (data.regenTriggered) {
+            // 슬라이드 재생성됨 → 캐시 갱신
+            handleSelectSlides(tocId)
+            openToast({ message: `슬라이드 수가 ${newCnt}장으로 변경되어 재생성됐습니다.` })
+          } else {
+            openToast({ message: `슬라이드 수가 ${newCnt}장으로 변경됐습니다.` })
+          }
+          resolve()
+        },
+        onError: (message: string) => {
+          isGenerating.value = false
+          genProgressMsg.value = ''
+          closeLoading()
+          openToast({ message: message || '슬라이드 수 변경 중 오류가 발생했습니다.', type: 'error' })
+          reject(new Error(message))
+        },
+      })
+    })
+  }
+
+  /**
+   * E-4: 소목차 확인 → 다음 소목차 활성화
+   * 미완료 슬라이드 있으면 거부 메시지 표시.
+   * 확인 성공 시 E-5 이미지 렌더링 SSE를 백그라운드로 구독하여 슬라이드 캐시를 업데이트한다.
+   *
+   * @returns true: 모든 소목차 완료(출력 단계로), false: 다음 소목차로 이동
    */
   const handleConfirmSection = async (tocId: string): Promise<boolean> => {
     const res = await fetchConfirmSection(ptProjectId.value, tocId)
@@ -134,27 +250,78 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
 
     if (data.done) return true
 
-    // 다음 소목차 active 처리
+    // 다음 소목차로 이동
     if (data.nextTocId) {
       const nextIdx = sectionList.value.findIndex((s) => s.tocId === data.nextTocId)
-      if (nextIdx > -1) sectionList.value[nextIdx].status = 'active'
+      if (nextIdx > -1) goToSection(nextIdx)
     }
 
     return false
   }
 
-  const goToPrevSection = () => {
-    const idx = sectionList.value.findIndex((s) => s.status === 'active')
-    if (idx <= 0) return
-    sectionList.value[idx].status = 'todo'
-    sectionList.value[idx - 1].status = 'active'
+  /**
+   * D-5: 이미지 렌더링 SSE 구독 (백그라운드)
+   * 스트림 시작 즉시 캐시 슬라이드를 '002'(생성중)으로 미리 표시하고,
+   * progress 이벤트마다 배열 교체로 reactivity를 확실히 트리거.
+   */
+  const startImageRenderStream = (tocId: string) => {
+    // 렌더링 시작 즉시 전체 슬라이드를 '002'로 표시 → UI에 바로 반영
+    const initial = slidesCache.value[tocId]
+    if (initial?.length) {
+      slidesCache.value[tocId] = initial.map((s) => (s.renderedImagePath ? s : { ...s, renderStatusCd: '002' }))
+    }
+
+    streamRenderSectionImages(ptProjectId.value, tocId, {
+      onProgress: (progressData: SlideRenderProgressData) => {
+        // step 전용 이벤트(slideId 없음)는 캐시 갱신 불필요
+        if (!progressData.slideId) return
+        const cached = slidesCache.value[tocId]
+        if (!cached) return
+        const idx = cached.findIndex((s) => s.slideId === progressData.slideId)
+        if (idx > -1) {
+          // 배열 교체 방식으로 Vue reactivity 확실하게 트리거
+          const updated: PtSlide = { ...cached[idx] }
+          if (progressData.renderStatusCd) updated.renderStatusCd = progressData.renderStatusCd
+          if (progressData.renderedImagePath) updated.renderedImagePath = progressData.renderedImagePath
+          slidesCache.value[tocId] = [...cached.slice(0, idx), updated, ...cached.slice(idx + 1)]
+        }
+      },
+      onDone: (doneData) => {
+        console.warn(`[PT Image] 이미지 렌더링 완료 (tocId=${tocId}, 성공: ${doneData.success}/${doneData.total})`)
+      },
+      onError: (message) => {
+        console.warn(`[PT Image] 이미지 렌더링 SSE 오류 (tocId=${tocId}): ${message}`)
+      },
+    })
   }
 
-  const activeSection = computed(() => sectionList.value.find((s) => s.status === 'active') ?? null)
-  const activeSectionIndex = computed(() => sectionList.value.findIndex((s) => s.status === 'active'))
+  /**
+   * 특정 소목차 인덱스로 직접 이동 (자유 이동 — done 상태 유지)
+   * 캐시가 없을 때만 DB에서 조회한다. 생성 직후 강제 갱신이 필요하면 slidesCache를 먼저 삭제할 것.
+   */
+  const goToSection = (index: number) => {
+    if (index < 0 || index >= sectionList.value.length) return
+    activeSectionIndexRef.value = index
+    const tocId = sectionList.value[index]?.tocId
+    if (!tocId) return
+    if (slidesCache.value[tocId]) return // 캐시 있으면 재조회 생략
+    fetchSelectSectionSlides(tocId)
+      .then((res) => {
+        slidesCache.value[tocId] = res.list ?? []
+      })
+      .catch((e) => console.warn('[useProposalSections] 슬라이드 조회 실패:', e))
+  }
+
+  const goToPrevSection = () => {
+    goToSection(activeSectionIndexRef.value - 1)
+  }
+
+  const activeSection = computed(() => sectionList.value[activeSectionIndexRef.value] ?? null)
+  const activeSectionIndex = computed(() => activeSectionIndexRef.value)
 
   return {
     sectionList,
+    rawTocList,
     isLoading,
     slidesCache,
     isGenerating,
@@ -164,7 +331,10 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
     handleSelectSectionList,
     handleSelectSlides,
     handleGenerateSection,
+    handleUpdatePlannedSlideCnt,
     handleConfirmSection,
+    startImageRenderStream,
+    goToSection,
     goToPrevSection,
   }
 }

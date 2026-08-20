@@ -239,6 +239,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiTooltip } from '@leechanyong/ispark-ui'
 import { getChatAttachmentExtension, getChatFileIconClass } from '~/utils/chat/chatAttachmentDisplayUtil'
 import { buildStopPayload } from '~/utils/chat/chatSocketPayloadUtil'
 import { useChatSocket } from '~/composables/chat/useChatSocket'
@@ -264,7 +265,6 @@ const ATTACH_ALLOWED_EXTENSIONS = [
   'md',
   'txt',
   'json',
-  'pptx',
   'py',
   'js',
   'ts',

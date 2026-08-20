@@ -358,6 +358,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiTooltip, UiTable } from '@leechanyong/ispark-ui'
 import {
   substituteWhereValues,
   buildTodayPeriodValues,

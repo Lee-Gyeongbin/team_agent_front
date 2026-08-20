@@ -123,7 +123,9 @@ button {
 }
 
 .btn-library-card-add {
+  // UiButton is-icon-only.size-xxs 기본 24px 덮어쓰기
   width: 20px !important;
+  min-width: 20px !important;
   height: 20px !important;
   position: relative !important;
   border-radius: 4px !important;
@@ -260,8 +262,9 @@ button {
 
 // 모달 닫기 btn
 .btn-modal-close {
-  width: 22px;
-  height: 22px;
+  // WCAG 2.5.8 최소 타겟 24×24 — 내부 아이콘(12px)은 그대로
+  width: 24px;
+  height: 24px;
 
   .icon-close {
     background-color: #828fa9;

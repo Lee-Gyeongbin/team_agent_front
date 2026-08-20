@@ -46,7 +46,7 @@
               v-model="searchTitle"
               type="search"
               placeholder="검색어를 입력하세요"
-              @keyup.enter="handleFetchCardList"
+              @enter="handleFetchCardList"
               @search="handleFetchCardList"
             />
           </div>
@@ -138,7 +138,7 @@
                       <UiButton
                         icon-only
                         variant="ghost"
-                        size="md"
+                        size="xxs"
                         class="btn btn-library-card-add type-white"
                       >
                         <template #icon-left>
@@ -183,8 +183,11 @@
                             <!-- 제목 -->
                             <h3 class="library-card-title">{{ card.title }}</h3>
 
-                            <!-- 카드 드롭다운 메뉴 -->
-                            <div @click.stop>
+                            <!-- 카드 드롭다운 메뉴 — @click.stop: 카드 openModal 버블링 방지 -->
+                            <div
+                              class="library-card-menu"
+                              @click.stop
+                            >
                               <UiDropdownMenu
                                 :items="getCardMenuItems(card)"
                                 align="end"
@@ -194,7 +197,7 @@
                                   <UiButton
                                     icon-only
                                     variant="ghost"
-                                    size="md"
+                                    size="xxs"
                                     class="btn btn-library-card-add type-white"
                                   >
                                     <template #icon-left>
@@ -327,25 +330,17 @@
       />
 
       <!-- 카테고리명 변경 모달 -->
-      <UiModal
+      <LibraryCategoryRenameModal
         :is-open="isRenameModalOpen"
-        title="카테고리명 변경"
-        position="center"
-        max-width="420px"
+        :category="renamingCategory"
+        @save="handleSaveRename"
         @close="handleRenameModalClose"
-      >
-        <LibraryCategoryRenameModal
-          :category="renamingCategory"
-          @save="handleSaveRename"
-          @close="handleRenameModalClose"
-        />
-      </UiModal>
+      />
 
       <!-- 카드 제목 변경 모달 -->
       <UiModal
         :is-open="isCardTitleRenameModalOpen"
         title="지식 제목 변경"
-        position="center"
         max-width="420px"
         @close="handleCardTitleRenameModalClose"
       >
@@ -360,7 +355,6 @@
       <UiModal
         :is-open="isMoveModalOpen"
         title="카테고리 이동"
-        position="center"
         max-width="420px"
         @close="handleMoveModalClose"
       >
@@ -376,6 +370,13 @@
 </template>
 
 <script setup lang="ts">
+import {
+  UiButton,
+  UiInput,
+  UiSelect,
+  UiDropdownMenu,
+  UiModal,
+} from '@leechanyong/ispark-ui'
 import draggable from 'vuedraggable'
 import defaultLibraryCardImg from '~/assets/images/test_images.png'
 import { useLibraryStore } from '~/composables/library/useLibraryStore'

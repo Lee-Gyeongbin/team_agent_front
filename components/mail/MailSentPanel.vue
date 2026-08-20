@@ -148,6 +148,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiEmpty } from '@leechanyong/ispark-ui'
 import { openConfirm } from '~/composables/useDialog'
 import type { SentClassifiedItem } from '~/types/mail'
 import { useMailStore } from '~/composables/mail/useMailStore'

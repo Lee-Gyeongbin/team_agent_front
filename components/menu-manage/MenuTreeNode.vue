@@ -96,6 +96,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton } from '@leechanyong/ispark-ui'
 import type { MenuTreeItem } from '~/types/menu'
 
 /** 트리 D&D용 custom MIME — 브라우저 구분 */

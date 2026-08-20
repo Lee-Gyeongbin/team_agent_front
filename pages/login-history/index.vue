@@ -20,7 +20,6 @@
           <UiSelect
             id="date-range"
             v-model="dateRangeOption"
-            name="date-range"
             :options="loginHistoryDateRangeOptions"
             size="md"
             @change="handleFetchLoginHistory"
@@ -74,12 +73,9 @@
         empty-text="조회된 로그인 이력이 없습니다."
       >
         <template #cell-result="{ value }">
-          <span
-            class="login-history-status"
-            :class="value === '성공' ? 'is-success' : 'is-fail'"
-          >
+          <UiBadge :variant="value === '성공' ? 'success' : 'danger'">
             {{ value }}
-          </span>
+          </UiBadge>
         </template>
       </UiTable>
     </div>
@@ -87,6 +83,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiBadge, UiLoading, UiTable, UiButton, UiInput, UiSelect } from '@leechanyong/ispark-ui'
 import { loginHistoryColumns, loginHistoryDateRangeOptions } from '~/types/login-history'
 
 const {

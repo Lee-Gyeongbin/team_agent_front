@@ -31,3 +31,4 @@ logs
 
 # 개인용 Cursor rule (팀 공유 제외)
 .cursor/rules/lint-scope.mdc
+.gstack/

@@ -11,6 +11,7 @@
           <UiInput
             v-model="searchKeyword"
             type="search"
+            size="sm"
             placeholder="제목 또는 작성자 검색"
             @search="onSearch"
             @enter="onSearch"
@@ -21,27 +22,33 @@
             v-model="searchCategory"
             :options="categoryOptions"
             placeholder="카테고리 선택"
-            size="md"
+            size="sm"
           />
         </div>
         <div class="notice-btn-grp flex items-center shrink-0 gap-2">
           <UiButton
             variant="primary"
-            size="md"
+            size="sm"
             @click="onRegisterNotice"
           >
             <template #icon-left>
-              <i class="icon icon-plus size-16" />
+              <UiIcon
+                name="plus"
+                size="16"
+              />
             </template>
             등록
           </UiButton>
           <UiButton
             variant="outline"
-            size="md"
+            size="sm"
             @click="handleSelectNoticeList"
           >
             <template #icon-left>
-              <i class="icon icon-refresh size-16" />
+              <UiIcon
+                name="refresh-cw"
+                size="16"
+              />
             </template>
             새로고침
           </UiButton>
@@ -133,6 +140,7 @@
               :total-count="normalTotalCount"
               :page-size="noticeNormalPageSize"
               total-label="개 공지사항"
+              align="center"
               class="notice-pagination"
             />
           </div>
@@ -164,6 +172,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiInput, UiSelect, UiButton, UiIcon, UiLoading, UiTable, UiPagination } from '@leechanyong/ispark-ui'
 import type { NoticeRow } from '~/types/notice'
 import { noticeColumns } from '~/types/notice'
 

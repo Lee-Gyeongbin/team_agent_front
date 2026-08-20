@@ -85,7 +85,7 @@
 
 .card-grid-summary-label {
   @include typo($body-medium);
-  color: #6f7a93;
+  color: $color-text-muted;
 }
 
 .card-grid-summary-value {

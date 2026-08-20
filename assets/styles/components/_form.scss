@@ -14,18 +14,18 @@ textarea {
   resize: none;
 }
 
-// 공통 사이즈
-.size-sm {
+// 공통 사이즈 (레거시 .inp 전용 — 바 .size-* 는 ispark-ui 컴포넌트(Modal/Tab/Textarea 등)와 충돌하므로 .inp로 스코프)
+.inp.size-sm {
   height: 28px;
   font-size: $font-size-xs;
 }
 
-.size-md {
+.inp.size-md {
   height: 32px;
   font-size: $font-size-sm;
 }
 
-.size-lg {
+.inp.size-lg {
   height: 36px;
   font-size: $font-size-base;
 }

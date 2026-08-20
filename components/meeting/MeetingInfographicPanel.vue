@@ -95,6 +95,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiEmpty, UiModal } from '@leechanyong/ispark-ui'
 import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
 import type { MeetingInfographic } from '~/types/meeting'
 

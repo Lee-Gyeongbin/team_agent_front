@@ -2,7 +2,7 @@
   <UiModal
     :is-open="isOpen"
     position="center"
-    :max-width="'min(96vw, 900px)'"
+    :max-width="modalMaxWidth"
     custom-class="chat-attachment-preview-modal modal-dialog--above-side-panel"
     @close="onClose"
   >
@@ -32,7 +32,7 @@
       </div>
     </template>
 
-    <div class="chat-attachment-preview-body">
+    <div :class="['chat-attachment-preview-body', { 'is-large': size === 'large' }]">
       <UiLoading
         v-if="loadStatus === 'loading'"
         overlay
@@ -88,6 +88,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiLoading } from '@leechanyong/ispark-ui'
 import type { ChatFileViewResponse } from '~/types/chat'
 import { downloadBlobAsFile } from '~/utils/global/fileDownloadUtil'
 
@@ -103,6 +104,8 @@ interface Props {
   localPreviewUrl?: string
   /** 공유 채팅 페이지 여부 — true 시 viewChatFile_share.do 호출 */
   isShare?: boolean
+  /** large: 표지 등 세로 이미지를 크게 볼 때 */
+  size?: 'default' | 'large'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -110,7 +113,12 @@ const props = withDefaults(defineProps<Props>(), {
   marketingFileId: '',
   localPreviewUrl: undefined,
   isShare: false,
+  size: 'default',
 })
+
+const modalMaxWidth = computed(() =>
+  props.size === 'large' ? 'min(96vw, 1280px)' : 'min(96vw, 900px)',
+)
 
 const emit = defineEmits<{
   'update:isOpen': [value: boolean]
@@ -316,21 +324,26 @@ watch(
 @use '~/assets/styles/utils/mixins' as *;
 
 .chat-attachment-preview-body {
+  --preview-h: min(70vh, 640px);
   position: relative;
-  min-height: min(70vh, 640px);
-  max-height: min(70vh, 640px);
+  min-height: var(--preview-h);
+  max-height: var(--preview-h);
   display: flex;
   flex-direction: column;
   background: #f8fafc;
   border-radius: 0 0 $border-radius-lg $border-radius-lg;
   overflow: hidden;
   width: 100%;
+
+  &.is-large {
+    --preview-h: calc(100vh - 140px);
+  }
 }
 
 .chat-attachment-preview-iframe {
   flex: 1;
   width: 100%;
-  min-height: min(70vh, 640px);
+  min-height: var(--preview-h);
   border: 0;
   background: #fff;
 }
@@ -338,7 +351,7 @@ watch(
 .chat-attachment-preview-img {
   display: block;
   max-width: 100%;
-  max-height: min(70vh, 640px);
+  max-height: var(--preview-h);
   margin: 0 auto;
   object-fit: contain;
 }
@@ -347,7 +360,7 @@ watch(
   margin: 0;
   padding: 16px;
   overflow: auto;
-  max-height: min(70vh, 640px);
+  max-height: var(--preview-h);
   @include typo($body-small);
   white-space: pre-wrap;
   word-break: break-word;

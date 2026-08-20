@@ -59,6 +59,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiInput, UiSelect } from '@leechanyong/ispark-ui'
 import type { PromptLimitData } from '~/types/prompt'
 
 interface Props {

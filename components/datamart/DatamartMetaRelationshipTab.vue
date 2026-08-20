@@ -236,6 +236,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiEmpty, UiTooltip } from '@leechanyong/ispark-ui'
 import type { Datamart } from '~/types/datamart'
 import type {
   DatamartMetaCardinality,

@@ -6,7 +6,7 @@
         <span class="prompt-box-sub">부서별, 역할별로 다른 시스템 프롬프트를 설정할 수 있습니다.</span>
       </div>
       <UiButton
-        variant="secondary"
+        variant="solid-muted"
         size="sm"
         @click="resetSettingForm"
       >
@@ -127,6 +127,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiInput, UiSelect, UiTextarea } from '@leechanyong/ispark-ui'
 import type { CodeItem } from '~/types/codes'
 import type { SystemPrompt } from '~/types/prompt'
 import { usePromptStore } from '~/composables/prompt/usePromptStore'

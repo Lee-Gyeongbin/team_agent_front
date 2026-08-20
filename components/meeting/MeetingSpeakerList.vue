@@ -36,7 +36,7 @@
         @click="onClickEdit"
       >
         <template #icon-left>
-          <i class="icon-edit size-14" />
+          <i class="icon-edit size-14"></i>
         </template>
         편집
       </UiButton>
@@ -124,6 +124,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiEmpty } from '@leechanyong/ispark-ui'
 import { openConfirm } from '~/composables/useDialog'
 import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
 import { computeSpeakerAvatarMap } from '~/utils/meeting/speakerAvatarUtil'

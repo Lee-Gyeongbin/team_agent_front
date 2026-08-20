@@ -14,6 +14,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiTab } from '@leechanyong/ispark-ui'
 import MenuManagePage from '~/components/menu-manage/MenuManagePage.vue'
 
 definePageMeta({ layout: 'default' })
