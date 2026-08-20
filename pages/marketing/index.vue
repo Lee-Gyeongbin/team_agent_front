@@ -187,6 +187,7 @@ const FILTER_CHIPS = [
   { value: '001', label: '작성중' },
   { value: '002', label: '검수중' },
   { value: '003', label: '완료' },
+  { value: '004', label: '보류' },
 ]
 
 const { selectedAgent, config, handleSelectAgents } = useMarketingStore()
@@ -269,26 +270,11 @@ const listFilter = () => {
 
 const hasActiveListFilter = computed(() => !!filterStatusCd.value || !!filterPeriod.value)
 
+/** 정렬은 selectMarketingProjectList.do가 sortField/sortOrder로 이미 처리해서 내려준다 — 기간 필터만 클라이언트에서 거른다 */
 const displayedProjects = computed(() => {
   const startAt = periodStartTime(filterPeriod.value)
-  const list = marketingProjectList.value.filter((project) => {
-    if (startAt == null) return true
-    const createdAt = toTime(project.createDt)
-    return createdAt >= startAt
-  })
-  list.sort((a, b) => {
-    if (filterSort.value === 'DUE_DT_ASC') {
-      const aDue = toTime(a.dueDt)
-      const bDue = toTime(b.dueDt)
-      if (!aDue && !bDue) return toTime(b.createDt) - toTime(a.createDt)
-      if (!aDue) return 1
-      if (!bDue) return -1
-      return aDue - bDue
-    }
-    const diff = toTime(a.createDt) - toTime(b.createDt)
-    return filterSort.value === 'CREATE_DT_ASC' ? diff : -diff
-  })
-  return list
+  if (startAt == null) return marketingProjectList.value
+  return marketingProjectList.value.filter((project) => toTime(project.createDt) >= startAt)
 })
 
 const onListFilterChange = () => {

@@ -255,7 +255,7 @@ const onCancelRename = () => {
 const onSaveRename = async () => {
   const trimmedBase = editingFileName.value.trim()
   if (!trimmedBase) {
-    openToast({ message: '파일명을 입력해주세요.', type: 'warning' })
+    openToast({ message: '파일명을 입력해 주세요.', type: 'warning' })
     await focusRenameInput()
     return
   }

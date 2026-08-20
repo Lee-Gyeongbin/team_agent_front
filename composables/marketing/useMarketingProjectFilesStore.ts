@@ -54,7 +54,7 @@ export const useMarketingProjectFilesStore = () => {
 
     try {
       const res = await fetchDeleteMarketingFile(marketingFileId)
-      if (res.result !== 'OK') throw new Error('마케팅 참고 파일 삭제 실패')
+      if (!res.successYn) throw new Error(res.returnMsg || '마케팅 참고 파일 삭제 실패')
       projectFiles.value = projectFiles.value.filter((file) => file.marketingFileId !== marketingFileId)
       openToast({ message: '참고 파일을 삭제했습니다.' })
     } catch {
@@ -65,7 +65,7 @@ export const useMarketingProjectFilesStore = () => {
   const handleRenameProjectFile = async (marketingFileId: string, fileName: string) => {
     const trimmed = fileName.trim()
     if (!trimmed) {
-      openToast({ message: '파일명을 입력해주세요.', type: 'warning' })
+      openToast({ message: '파일명을 입력해 주세요.', type: 'warning' })
       return false
     }
 
@@ -74,7 +74,7 @@ export const useMarketingProjectFilesStore = () => {
 
     try {
       const res = await fetchUpdateMarketingFile({ marketingFileId, fileName: trimmed })
-      if (res.result !== 'OK') throw new Error('마케팅 참고 파일명 수정 실패')
+      if (!res.successYn) throw new Error(res.returnMsg || '마케팅 참고 파일명 수정 실패')
       projectFiles.value = projectFiles.value.map((file) =>
         file.marketingFileId === marketingFileId ? { ...file, fileName: trimmed } : file,
       )
@@ -92,7 +92,7 @@ export const useMarketingProjectFilesStore = () => {
     for (const file of files) {
       try {
         const res = await handleUploadMarketingFile(file, id)
-        if (!res || res.result !== 'OK') {
+        if (!res || !res.successYn) {
           openToast({ message: `${file.name} 업로드에 실패했습니다.`, type: 'error' })
           continue
         }

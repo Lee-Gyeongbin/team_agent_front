@@ -42,7 +42,8 @@ export interface MarketingFileSavePayload {
 
 /** 파일 메타 저장 응답 */
 export interface MarketingFileSaveResponse {
-  result: string
+  successYn: boolean
+  returnMsg?: string
   marketingFileId: string
   filePath: string
   fileName: string
@@ -60,8 +61,6 @@ export interface MarketingProjectListFilter {
   keyword?: string
   sortField?: string
   sortOrder?: string
-  /** 최근 N일 (생성일 기준). 없으면 전체 기간 */
-  periodDays?: number
   limit?: number
   offset?: number
 }
@@ -130,6 +129,8 @@ export interface MarketingVariant {
   label: string
   recommended: boolean
   content: string
+  /** 직전 버전으로 되돌리기 가능 여부 (1회 롤백) */
+  canRestore: boolean
 }
 
 /**
@@ -141,6 +142,8 @@ export interface MarketingImageVariant {
   url: string
   label: string
   recommended: boolean
+  /** 직전 버전으로 되돌리기 가능 여부 (1회 롤백) */
+  canRestore: boolean
 }
 
 export interface MarketingResult {
@@ -158,13 +161,24 @@ export interface MarketingAgentSummary {
   config: MarketingAuthoringAgentConfig
 }
 
+/** 콘텐츠 생성 상태 코드 (TB_MKT.STATUS_CD) */
+export type MarketingContentStatusCd = '001' | '002' | '003' | '004'
+// 001=대기, 002=생성중, 003=완료, 004=실패
+
 export interface MarketingContentSummary {
   contentId: string
   agentId: string
   marketingProjectId?: string
   title: string
   outputMode: MarketingOutputMode
+  /** 생성 상태 — 재진입 시 생성중/실패 여부 판단용. 과거 응답과의 호환을 위해 optional */
+  statusCd?: MarketingContentStatusCd
+  /** 발행 예정일시(YYYY-MM-DD HH:mm:ss) — 없으면 '' */
+  publishScheduledDt: string
+  /** 발행 완료 표시 — 리마인더 배지·배너를 끄고 켜는 용도 */
+  publishedYn: 'Y' | 'N'
   summaryLabels: string[]
+  createUserNm: string
   createDt: string
 }
 
@@ -190,14 +204,22 @@ export interface MarketingCreateRequest extends MarketingStoredRequest {
   marketingProjectId: string
 }
 
+/** contentId는 성공 시에만 채워진다 — marketingProjectId 누락 등 검증 실패 시 successYn/returnMsg만 온다 */
 export interface MarketingCreateResponse {
-  contentId: string
+  contentId?: string
+  successYn: boolean
+  returnMsg?: string
 }
 
-/** 제목·시안 저장·보완 등 갱신 API 공통 응답 — meeting/repository/org-manage 등과 동일한 successYn/returnMsg 컨벤션 */
+/** JSON 성공/실패 공통 응답 — 프로젝트/파일 .do 와 콘텐츠 REST 모두 successYn/returnMsg */
 export interface MarketingActionResponse {
-  successYn?: boolean
+  successYn: boolean
   returnMsg?: string
+}
+
+/** word/pdf 프론트 변환용 — 서버는 LLM+템플릿 렌더링 HTML까지만 반환한다 */
+export interface MarketingExportHtmlResponse extends MarketingActionResponse {
+  html?: string
 }
 
 export interface MarketingRefineRequest {
@@ -207,6 +229,16 @@ export interface MarketingRefineRequest {
 
 export interface MarketingVariantUpdateRequest {
   textContent: string
+}
+
+/** 발행 예정일 지정/변경 요청 — 예정일을 해제하려면 null */
+export interface MarketingScheduleUpdateRequest {
+  publishScheduledDt: string | null
+}
+
+/** 발행 완료 표시/해제 요청 */
+export interface MarketingPublishedUpdateRequest {
+  publishedYn: 'Y' | 'N'
 }
 
 export type MarketingStreamStep = 'title' | 'labels' | 'variant'

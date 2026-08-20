@@ -33,7 +33,8 @@ const toMarketingFileSaveResult = (
     throw new Error('마케팅 파일 저장 결과에 marketingFileId가 없습니다.')
   }
   return {
-    result: String(saved.result ?? 'OK'),
+    successYn: saved.successYn,
+    returnMsg: saved.returnMsg,
     marketingFileId,
     filePath: String(saved.filePath ?? fallback.filePath),
     fileName: String(saved.fileName ?? fallback.fileName),
@@ -46,6 +47,7 @@ export const useMarketingFileStore = () => {
 
   /**
    * 마케팅 파일 업로드: presign → NCP PUT → 메타 저장
+   * 실패 토스트는 호출부(스토어)에서 파일명·맥락에 맞게 띄운다 — 여기선 null만 반환한다.
    * @param file                업로드 파일
    * @param marketingProjectId  프로젝트 ID (생성 전이면 생략)
    */
@@ -55,7 +57,6 @@ export const useMarketingFileStore = () => {
   ): Promise<MarketingFileSaveResponse | null> => {
     const resolvedUserId = String(user.value?.userId ?? '').trim()
     if (!resolvedUserId) {
-      openToast({ message: '파일 업로드를 위한 사용자 정보가 없습니다.', type: 'error' })
       return null
     }
 
@@ -74,13 +75,11 @@ export const useMarketingFileStore = () => {
     const uploadUrl = String(presign.uploadUrl ?? '').trim()
     const filePath = String(presign.filePath ?? '').trim()
     if (!uploadUrl || !filePath) {
-      openToast({ message: `업로드 URL 발급 실패: ${file.name}`, type: 'error' })
       return null
     }
 
     const uploaded = await handleUploadByPresignedUrl(uploadUrl, file)
     if (!uploaded) {
-      openToast({ message: `NCP 업로드 실패: ${file.name}`, type: 'error' })
       return null
     }
 

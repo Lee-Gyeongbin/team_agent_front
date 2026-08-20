@@ -14,7 +14,7 @@ const handleSelectMarketingProjectList = async (filter?: MarketingProjectListFil
     const res = await fetchMarketingProjectList(filter)
     marketingProjectList.value = res?.list ?? []
   } catch {
-    openToast({ message: '마케팅 프로젝트 목록 조회 실패', type: 'error' })
+    openToast({ message: '마케팅 프로젝트 목록을 불러오지 못했습니다.', type: 'error' })
     marketingProjectList.value = []
   } finally {
     isLoadingList.value = false
@@ -43,9 +43,10 @@ const handleSaveMarketingProject = async (form: MarketingProjectSaveForm): Promi
     ...(form.statusCd ? { statusCd: form.statusCd as MarketingProject['statusCd'] } : {}),
   }
   const res = await fetchSaveMarketingProject(payload)
-  if (res.result !== 'OK') {
+  if (!res.successYn) {
     throw new Error(
-      form.marketingProjectId ? '마케팅 프로젝트 수정에 실패했습니다.' : '마케팅 프로젝트 생성에 실패했습니다.',
+      res.returnMsg ||
+        (form.marketingProjectId ? '마케팅 프로젝트 수정에 실패했습니다.' : '마케팅 프로젝트 생성에 실패했습니다.'),
     )
   }
   return res.marketingProjectId
@@ -54,8 +55,8 @@ const handleSaveMarketingProject = async (form: MarketingProjectSaveForm): Promi
 /** 마케팅 프로젝트 삭제 */
 const handleDeleteMarketingProject = async (marketingProjectId: string) => {
   const res = await fetchDeleteMarketingProject(marketingProjectId)
-  if (res.result !== 'OK') {
-    throw new Error('마케팅 프로젝트 삭제에 실패했습니다.')
+  if (!res.successYn) {
+    throw new Error(res.returnMsg || '마케팅 프로젝트 삭제에 실패했습니다.')
   }
   marketingProjectList.value = marketingProjectList.value.filter(
     (project) => project.marketingProjectId !== marketingProjectId,
