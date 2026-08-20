@@ -67,7 +67,7 @@
         type="button"
         class="chat-marketing-authoring-result__tab"
         :class="{ 'is-active': tab.isActive }"
-        @click="selectDraft(tab.id)"
+        @click="onSelectDraft(tab.id)"
       >
         {{ tab.title }}
         <span
@@ -121,7 +121,7 @@
                 v-if="canRestoreActive"
                 type="button"
                 :disabled="isRestoring || isRefiningActiveText || isRefiningActiveImage"
-                title="바로 직전 버전으로 되돌립니다 (1회)"
+                title="바로 직전 버전으로 되돌립니다"
                 @click="onRestore"
               >
                 <i class="icon-refresh size-16" />
@@ -349,7 +349,7 @@
                   <button
                     type="button"
                     class="chat-marketing-authoring-result__refine-type-card"
-                    @click="selectRefineType('TEXT')"
+                    @click="onSelectRefineType('TEXT')"
                   >
                     <span>
                       <strong>{{ REFINE_COPY.TEXT.label }}</strong>
@@ -359,7 +359,7 @@
                   <button
                     type="button"
                     class="chat-marketing-authoring-result__refine-type-card"
-                    @click="selectRefineType('IMAGE')"
+                    @click="onSelectRefineType('IMAGE')"
                   >
                     <span>
                       <strong>{{ REFINE_COPY.IMAGE.label }}</strong>
@@ -413,7 +413,7 @@
                 type="button"
                 :class="{ 'is-active': refineType === 'TEXT' }"
                 :disabled="isRefining"
-                @click="selectRefineType('TEXT')"
+                @click="onSelectRefineType('TEXT')"
               >
                 <i
                   class="icon-edit size-14"
@@ -425,7 +425,7 @@
                 type="button"
                 :class="{ 'is-active': refineType === 'IMAGE' }"
                 :disabled="isRefining"
-                @click="selectRefineType('IMAGE')"
+                @click="onSelectRefineType('IMAGE')"
               >
                 <i
                   class="icon-image size-14"
@@ -490,12 +490,15 @@
 </template>
 
 <script setup lang="ts">
-import { openToast } from '~/composables/useToast'
-import { openConfirm } from '~/composables/useDialog'
 import { formatNumberWithComma } from '~/utils/global/numberUtil'
 import { downloadBlobAsFile } from '~/utils/global/fileDownloadUtil'
 import { formatYyyyMmDdFromDate } from '~/utils/global/dateUtil'
 import { useMarketingApi } from '~/composables/marketing/useMarketingApi'
+import {
+  buildMarketingPrintCss,
+  MARKETING_DOCX_CSS,
+  applyMarketingDocxInlineAlign,
+} from '~/composables/marketing/marketingExportStyles'
 import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
 import type { MarketingAuthoringAgentConfig } from '~/types/agent'
 import {
@@ -553,7 +556,7 @@ const emit = defineEmits<{
   'edit-with-agent': [payload: { variantId: number; content: string; request: string; type: 'TEXT' | 'IMAGE' }]
 }>()
 
-const { fetchExportMarketingContent } = useMarketingApi()
+const { fetchExportMarketingContentHtml } = useMarketingApi()
 
 const variants = computed(() => props.result.variants ?? [])
 const images = computed(() => props.result.images ?? [])
@@ -655,7 +658,7 @@ const resetRefineChat = () => {
   refineChatIdSeq = 0
 }
 
-const selectRefineType = (type: RefineType) => {
+const onSelectRefineType = (type: RefineType) => {
   refineType.value = type
   refineDraft.value = ''
 }
@@ -675,21 +678,7 @@ const refineInputPlaceholder = computed(() => {
   return refineType.value ? REFINE_COPY[refineType.value].placeholder : '먼저 수정할 항목을 선택해 주세요'
 })
 
-watch(
-  () => props.refineCompletedAt,
-  (completedAt) => {
-    if (!completedAt || !lastSentRefineType.value) return
-    pushAssistantRefineReply(lastSentRefineType.value)
-    lastSentRefineType.value = null
-  },
-)
-
-watch(isRefiningActiveText, (active) => {
-  if (!active || !isEditing.value) return
-  isEditing.value = false
-  editDraft.value = ''
-})
-
+// 생성 SSE로 시안이 늘어나는 동안 컴포넌트는 유지
 watch(
   () => [props.result.mode, props.result.variants, props.result.images] as const,
   () => {
@@ -697,6 +686,16 @@ watch(
     activeDraftId.value = resolveInitialDraftId()
   },
   { deep: true },
+)
+
+// 보완 완료 시각이 바뀌면 대화 로그에 응답을 추가한다 (컴포넌트가 유지된 채 props만 갱신됨)
+watch(
+  () => props.refineCompletedAt,
+  (completedAt) => {
+    if (!completedAt || !lastSentRefineType.value) return
+    pushAssistantRefineReply(lastSentRefineType.value)
+    lastSentRefineType.value = null
+  },
 )
 
 const activeVariant = computed(
@@ -740,13 +739,13 @@ const hasEditChanges = computed(() => {
 
 const resolvedChannel = computed(() => String(props.result.conditions.channel ?? '').trim())
 
-/** 채널로 보내기 노출 여부 — 생성 시 고른 채널 코드와 무관하게, 보낼 문구/이미지가 있으면 항상 노출한다.
- * 채널을 확정 못 짓는 경우(이미지 전용/직접입력/매핑 안 된 코드)는 모달에서 그때 채널을 고르게 한다. */
-const showChannelSend = computed(() => !props.isLoading && hasDraftContent.value)
-
 const hasDraftContent = computed(() =>
   isImageMode.value ? !!activeImageUrl.value : !!activeVariant.value || (isBothMode.value && !!activeImageUrl.value),
 )
+
+/** 채널로 보내기 노출 여부 — 생성 시 고른 채널 코드와 무관하게, 보낼 문구/이미지가 있으면 항상 노출한다.
+ * 채널을 확정 못 짓는 경우(이미지 전용/직접입력/매핑 안 된 코드)는 모달에서 그때 채널을 고르게 한다. */
+const showChannelSend = computed(() => !props.isLoading && hasDraftContent.value)
 
 const formattedCharCount = computed(() => {
   const text = isEditing.value ? editDraft.value : draftText.value
@@ -761,7 +760,7 @@ const draftTabs = computed<DraftTab[]>(() => {
     key: `draft-${item.id}`,
     title: `시안 ${index + 1}`,
     subLabel: String(item.label ?? '').trim() || undefined,
-    recommended: !!item.recommended || (!hasRecommended && index === 0),
+    recommended: item.recommended || (!hasRecommended && index === 0),
     isActive: item.id === activeDraftId.value,
   }))
 })
@@ -852,7 +851,7 @@ const scrollResultToTop = () => {
   })
 }
 
-const selectDraft = async (draftId: number) => {
+const onSelectDraft = async (draftId: number) => {
   if (draftId === activeDraftId.value) return
   if (isEditing.value && hasEditChanges.value) {
     const confirmed = await openConfirm({
@@ -951,10 +950,9 @@ const onCopy = async () => {
   }
 }
 
-type MarketingExportFormat = 'zip' | 'word' | 'pdf'
+type MarketingExportFormat = 'word' | 'pdf'
 
 const EXPORT_FORMAT_OPTIONS: { format: MarketingExportFormat; label: string; extension: string }[] = [
-  { format: 'zip', label: 'ZIP으로 저장', extension: 'zip' },
   { format: 'word', label: 'Word로 저장', extension: 'docx' },
   { format: 'pdf', label: 'PDF로 저장', extension: 'pdf' },
 ]
@@ -986,7 +984,67 @@ const buildExportFileNameBase = () => {
 const isMarketingExportFormat = (value: string): value is MarketingExportFormat =>
   EXPORT_FORMAT_OPTIONS.some((option) => option.format === value)
 
-/** 콘텐츠 시안 전체 내보내기 — format=zip|word|pdf, 서버에서 파일을 받아 저장한다 */
+const MARKETING_PRINT_HOST_ID = 'marketing-export-print-host'
+const MARKETING_PRINT_STYLE_ID = 'marketing-export-print-style'
+
+/**
+ * PDF 내보내기 — 브라우저 window.print() 사용
+ * 서버는 LLM+템플릿 렌더링 HTML만 주고, 실제 인쇄 스타일은 buildMarketingPrintCss로 여기서 입힌다.
+ */
+const exportAsPdf = async (html: string) => {
+  document.getElementById(MARKETING_PRINT_STYLE_ID)?.remove()
+  document.getElementById(MARKETING_PRINT_HOST_ID)?.remove()
+
+  const styleEl = document.createElement('style')
+  styleEl.id = MARKETING_PRINT_STYLE_ID
+  styleEl.textContent = buildMarketingPrintCss(MARKETING_PRINT_HOST_ID)
+  document.head.appendChild(styleEl)
+
+  const host = document.createElement('div')
+  host.id = MARKETING_PRINT_HOST_ID
+  host.setAttribute('aria-hidden', 'true')
+  host.innerHTML = html
+  document.body.appendChild(host)
+
+  // base64 이미지가 렌더링되기 전에 print()가 호출되면 이미지가 누락됨
+  const images = Array.from(host.querySelectorAll('img'))
+  if (images.length > 0) {
+    await Promise.all(
+      images.map(
+        (img) =>
+          new Promise<void>((resolve) => {
+            if (img.complete) resolve()
+            else {
+              img.onload = () => resolve()
+              img.onerror = () => resolve()
+            }
+          }),
+      ),
+    )
+  }
+
+  const cleanup = () => {
+    document.getElementById(MARKETING_PRINT_STYLE_ID)?.remove()
+    document.getElementById(MARKETING_PRINT_HOST_ID)?.remove()
+    window.removeEventListener('afterprint', cleanup)
+  }
+  window.addEventListener('afterprint', cleanup)
+  window.print()
+}
+
+/**
+ * DOCX 내보내기 — html-docx-js-typescript로 브라우저에서 직접 변환 (회의록과 동일 패턴).
+ * Word는 <style> 블록의 정렬을 안 지키므로 인라인 style로 한 번 더 넣는다.
+ */
+const exportAsDocx = async (html: string, fileName: string) => {
+  const { asBlob } = await import('html-docx-js-typescript')
+  const alignedHtml = applyMarketingDocxInlineAlign(html)
+  const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${MARKETING_DOCX_CSS}</style></head><body>${alignedHtml}</body></html>`
+  const blob = (await asBlob(fullHtml)) as Blob
+  downloadBlobAsFile(blob, `${fileName}.docx`)
+}
+
+/** 콘텐츠 시안 전체 내보내기 — format=word|pdf. HTML만 받아 프론트에서 변환한다(회의록과 동일 패턴) */
 const onSelectExportFormat = async (format: string) => {
   isExportPickerOpen.value = false
   if (!isMarketingExportFormat(format)) return
@@ -994,9 +1052,16 @@ const onSelectExportFormat = async (format: string) => {
   if (!contentId || isExporting.value) return
   isExporting.value = true
   try {
-    const blob = await fetchExportMarketingContent(contentId, format)
-    const extension = EXPORT_FORMAT_OPTIONS.find((option) => option.format === format)?.extension ?? 'zip'
-    downloadBlobAsFile(blob, `${buildExportFileNameBase()}.${extension}`)
+    const { successYn, html, returnMsg } = await fetchExportMarketingContentHtml(contentId)
+    if (!successYn || !html) {
+      openToast({ message: returnMsg || '내보내기에 실패했습니다.', type: 'error' })
+      return
+    }
+    if (format === 'pdf') {
+      await exportAsPdf(html)
+    } else {
+      await exportAsDocx(html, buildExportFileNameBase())
+    }
   } catch {
     openToast({ message: '내보내기에 실패했습니다.', type: 'error' })
   } finally {
