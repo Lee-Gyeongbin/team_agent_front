@@ -15,8 +15,21 @@
         </div>
         <div class="marketing-channel-send-modal__summary-body">
           <div class="marketing-channel-send-modal__channel-value">
-            <i :class="[channelIcon, 'size-20']" />
-            <strong>{{ delivery.label || channel }}</strong>
+            <div
+              v-if="needsChannelPick"
+              ref="channelSelectWrapRef"
+              class="marketing-channel-send-modal__channel-select"
+            >
+              <UiSelect
+                v-model="pickedChannel"
+                :options="channelPickOptions"
+                size="sm"
+              />
+            </div>
+            <template v-else>
+              <i :class="[channelIcon, 'size-20']" />
+              <strong>{{ delivery.label || channel }}</strong>
+            </template>
           </div>
           <div class="marketing-channel-send-modal__copy-actions">
             <button
@@ -69,9 +82,11 @@
         <i class="icon-info size-16" />
         <p>
           {{
-            delivery.externalUrl
+            canNavigateAfterCopy
               ? '위 내용을 클립보드에 복사한 뒤 채널 작성 화면으로 이동합니다. 이동 후 붙여넣어 게시해 주세요.'
-              : '위 내용을 클립보드에 복사합니다. 채널 작성 화면에 붙여넣어 게시해 주세요.'
+              : needsChannelPick
+                ? '보낼 채널을 선택하면 복사 후 작성 화면으로 이동할 수 있습니다.'
+                : '위 내용을 클립보드에 복사합니다. 채널 작성 화면에 붙여넣어 게시해 주세요.'
           }}
         </p>
       </div>
@@ -95,7 +110,7 @@
           :disabled="isBusy || (!body.trim() && !imageUrl)"
           @click="onConfirm"
         >
-          {{ delivery.externalUrl ? '복사 후 이동' : '복사하기' }}
+          {{ needsChannelPick || canNavigateAfterCopy ? '복사 후 이동' : '복사하기' }}
         </UiButton>
       </div>
     </template>
@@ -103,27 +118,14 @@
 </template>
 
 <script setup lang="ts">
-import { openToast } from '~/composables/useToast'
 import { copyToClipboard } from '~/utils/global/clipboardUtil'
 import {
+  CHANNEL_DELIVERY_PICK_OPTIONS,
   copyMarketingPayloadToClipboard,
+  focusMarketingField,
   renderMarketingTextHtml,
   resolveChannelDelivery,
 } from '~/utils/marketing/marketingUtil'
-
-const CHANNEL_ICONS: Record<string, string> = {
-  INSTAGRAM: 'icon-sns',
-  FACEBOOK: 'icon-sns',
-  LINKEDIN: 'icon-sns',
-  X: 'icon-sns',
-  YOUTUBE_COMMUNITY: 'icon-sns',
-  KAKAO_TALK: 'icon-sns',
-  SMS: 'icon-sns',
-  PROMOTION_EMAIL: 'icon-email',
-  NEWSLETTER: 'icon-email',
-  OWNED_BLOG: 'icon-document-edit',
-  NAVER_BLOG: 'icon-document-edit',
-}
 
 const props = withDefaults(
   defineProps<{
@@ -155,8 +157,22 @@ const clearNavigateTimer = () => {
 
 const isBusy = computed(() => isCopying.value || isPendingNavigate.value)
 
-const delivery = computed(() => resolveChannelDelivery(props.channel))
-const channelIcon = computed(() => CHANNEL_ICONS[props.channel] ?? 'icon-globe')
+/** 생성 시 고른 채널만으로 확정 가능한지 — 안 되면(이미지 전용/직접입력/매핑 안 된 코드) 모달에서 직접 고르게 한다 */
+const needsChannelPick = computed(() => resolveChannelDelivery(props.channel).mode === 'PICK')
+const pickedChannel = ref('')
+const channelSelectWrapRef = ref<HTMLElement | null>(null)
+const channelPickOptions = computed(() => [
+  { label: '선택', value: '' },
+  ...CHANNEL_DELIVERY_PICK_OPTIONS.map((option) => ({ label: option.label, value: option.channel })),
+])
+
+/** 생성 시 채널이 이미 확정되면 그대로, 아니면 모달에서 고른 채널을 기준으로 배달 스펙을 계산한다 */
+const delivery = computed(() => resolveChannelDelivery(needsChannelPick.value ? pickedChannel.value : props.channel))
+/** 채널 선택(또는 사전 확정) + 외부 URL이 있을 때만 복사 후 이동 */
+const canNavigateAfterCopy = computed(
+  () => !!delivery.value.externalUrl && (!needsChannelPick.value || !!pickedChannel.value.trim()),
+)
+const channelIcon = computed(() => delivery.value.icon ?? 'icon-globe')
 
 const renderedBody = computed(() => renderMarketingTextHtml(props.body))
 
@@ -191,7 +207,7 @@ const onCopyImage = async () => {
       openToast({ message: '이미지를 클립보드에 복사했습니다.' })
       return
     }
-    throw new Error('image copy failed')
+    throw new Error('이미지 복사에 실패했습니다.')
   } catch {
     try {
       await copyToClipboard(url)
@@ -221,8 +237,14 @@ const notifyCopyBothResult = (result: { textCopied: boolean; imageCopied: boolea
 const onConfirm = async () => {
   if (isBusy.value || (!props.body.trim() && !props.imageUrl)) return
 
+  if (needsChannelPick.value && !pickedChannel.value.trim()) {
+    openToast({ message: '게시할 채널을 선택해 주세요.', type: 'warning' })
+    await focusMarketingField(channelSelectWrapRef.value, null)
+    return
+  }
+
   const content = props.body.trim()
-  const url = delivery.value.externalUrl
+  const url = canNavigateAfterCopy.value ? delivery.value.externalUrl : undefined
   clearNavigateTimer()
   isCopying.value = true
   try {

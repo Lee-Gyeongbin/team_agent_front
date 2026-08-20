@@ -1329,6 +1329,10 @@
     justify-content: flex-end;
     gap: 2px;
 
+    .ui-dropdown-trigger-wrap {
+      display: inline-flex;
+    }
+
     button {
       display: inline-flex;
       align-items: center;
@@ -1349,6 +1353,15 @@
       &:disabled {
         opacity: 0.5;
       }
+    }
+  }
+
+  &__export-picker-caret {
+    margin-left: 2px;
+    transition: transform $transition-fast;
+
+    &.is-open {
+      transform: rotate(180deg);
     }
   }
 
@@ -2491,15 +2504,14 @@ $marketing-page-max-width: 1200px;
     border-color 0.15s ease,
     box-shadow 0.15s ease;
 
-  &:hover:not(.is-editing) {
+  &:hover {
     border-color: color-mix(in srgb, var(--marketing-agent-theme-color, $color-primary) 35%, $color-border);
     box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
   }
 
-  &.is-editing {
-    cursor: default;
-    border-color: color-mix(in srgb, var(--marketing-agent-theme-color, $color-primary) 35%, $color-border);
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+  &:focus-visible {
+    outline: 2px solid var(--marketing-agent-theme-color, $color-primary);
+    outline-offset: 2px;
   }
 
   &__mode-badge {
@@ -2580,18 +2592,40 @@ $marketing-page-max-width: 1200px;
     white-space: nowrap;
   }
 
-  &__title-input {
-    width: 100%;
-    min-width: 0;
+  &__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
   }
 
-  &__date {
-    display: block;
-    min-height: 16px;
+  &__author {
     color: $color-text-muted;
     font-size: 12px;
     font-weight: 500;
     line-height: 1.35;
+  }
+
+  // 발행 예정일 칩 — 예정은 회색, 완료는 초록
+  &__schedule-badge {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    width: fit-content;
+    max-width: 100%;
+    padding: 2px 8px;
+    border-radius: 999px;
+    color: $color-text-muted;
+    background: #f1f5f9;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.35;
+    white-space: nowrap;
+
+    &.is-done {
+      color: #15803d;
+      background: #f0fdf4;
+    }
   }
 
   &__actions {
@@ -2600,6 +2634,60 @@ $marketing-page-max-width: 1200px;
     align-items: center;
     gap: 2px;
     align-self: center;
+  }
+
+  &__publish-toggle.is-active {
+    color: #15803d !important;
+    background: #f0fdf4 !important;
+  }
+}
+
+// 발행 예정일 리마인더 배너 — 오늘/지난 예정 콘텐츠가 있을 때만 노출
+.marketing-schedule-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+  background: #fffbeb;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #92400e;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  &__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  &__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border: 1px solid #fde68a;
+    border-radius: 999px;
+    background: #fff;
+    color: #92400e;
+    font-size: 12px;
+    font-weight: 600;
+
+    &:hover {
+      border-color: #f59e0b;
+    }
+
+    &.is-overdue {
+      border-color: #fecaca;
+      color: #b91c1c;
+      background: #fff5f5;
+    }
   }
 }
 
@@ -2694,6 +2782,17 @@ $marketing-page-max-width: 1200px;
       white-space: nowrap;
       font-size: 15px;
       font-weight: 700;
+    }
+  }
+
+  &__channel-select {
+    flex: 0 0 160px;
+    width: 160px;
+    min-width: 160px;
+    max-width: 160px;
+
+    .ui-select-wrap {
+      width: 100%;
     }
   }
 
@@ -3298,4 +3397,39 @@ $marketing-page-max-width: 1200px;
 // Portal 드롭다운 — 사이드 패널($z-side-panel) 위에 표시
 .marketing-file-side-panel-dropdown {
   z-index: $z-side-panel + 1 !important;
+}
+
+.marketing-export-dropdown {
+  z-index: $z-dropdown + 1 !important;
+}
+
+// 제작 내역 수정 모달 (이름 · 발행 예정일)
+.marketing-history-edit-modal {
+  .modal-dialog-body {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  &__tip {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--marketing-agent-theme-color, #7c5cfc) 8%, #fff);
+    color: #475569;
+    font-size: 12px;
+    line-height: 1.5;
+
+    i {
+      flex: 0 0 auto;
+      margin-top: 1px;
+    }
+
+    p {
+      margin: 0;
+    }
+  }
 }

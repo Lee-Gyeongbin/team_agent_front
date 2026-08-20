@@ -75,6 +75,30 @@ const resolveMarketingSummaryLabel = (value: string, config?: MarketingAuthoring
   return buildMarketingLabelLookup(config).get(key) ?? key
 }
 
+export type MarketingScheduleStatus = 'none' | 'upcoming' | 'today' | 'overdue' | 'done'
+
+/**
+ * 발행 예정일 상태 — 제작 내역 목록의 배지·배너 색상 판단용.
+ * 실제 채널 자동 발행은 없으므로(수동 복사 후 채널 이동) 어디까지나 리마인더 목적이다.
+ */
+export const resolveMarketingScheduleStatus = (
+  publishScheduledDt?: string | null,
+  publishedYn?: string | null,
+): MarketingScheduleStatus => {
+  const raw = String(publishScheduledDt ?? '').trim()
+  if (!raw) return 'none'
+  if (publishedYn === 'Y') return 'done'
+  const scheduled = new Date(raw.replace(' ', 'T'))
+  if (Number.isNaN(scheduled.getTime())) return 'none'
+  const now = new Date()
+  if (scheduled.getTime() <= now.getTime()) return 'overdue'
+  const isSameDay =
+    scheduled.getFullYear() === now.getFullYear() &&
+    scheduled.getMonth() === now.getMonth() &&
+    scheduled.getDate() === now.getDate()
+  return isSameDay ? 'today' : 'upcoming'
+}
+
 export const resolveMarketingSummaryLabels = (labels: string[], config?: MarketingAuthoringAgentConfig | null) =>
   labels.map((label) => resolveMarketingSummaryLabel(label, config)).filter(Boolean)
 
@@ -97,19 +121,17 @@ export const resolveMarketingOptionLabel = (
   return options?.find((option) => option.value === normalized)?.label ?? normalized
 }
 
-/** 톤 코드 목록 → 표시 라벨 (OTHER는 customTone) */
+/** 톤 코드 목록(콤마구분 문자열) → 표시 라벨 (OTHER는 customTone) */
 export const resolveMarketingToneLabels = (
-  tones: string | string[] | undefined,
+  tones: string | undefined,
   options: MarketingAuthoringOption[] | undefined,
   customTone?: string,
 ) => {
-  const list = Array.isArray(tones)
-    ? tones
-    : String(tones ?? '')
-        .replace(/^\[|\]$/g, '')
-        .split(',')
-        .map((tone) => tone.trim())
-        .filter(Boolean)
+  const list = String(tones ?? '')
+    .replace(/^\[|\]$/g, '')
+    .split(',')
+    .map((tone) => tone.trim())
+    .filter(Boolean)
   return list
     .map((tone) => resolveMarketingOptionLabel(options, tone, customTone))
     .filter(Boolean)
@@ -126,14 +148,14 @@ export interface MarketingAuthoringConditionSummary {
   contentType: string
   purpose: string
   audience: string
-  /** BE는 string[]로 저장·반환할 수 있음 */
-  tones: string | string[]
+  /** 항상 콤마구분 문자열 (toConditions/toImageConditions가 생성) */
+  tones: string
   length: string
   channel?: string
   keyMessage?: string
 }
 
-/** ChatMarketingResult 등 UI용 — API MarketingResult + 조건 요약 */
+/** MarketingResult 등 UI용 — API MarketingResult + 조건 요약 */
 export interface MarketingAuthoringResult extends MarketingResult {
   summary: string
   conditions: MarketingAuthoringConditionSummary
@@ -476,28 +498,28 @@ export const preloadMarketingImages = (urls: string[], timeoutMs = MARKETING_IMA
   )
 }
 
-// ━━━ 채널로 보내기 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ── 채널로 보내기 ──────────────────────────────────────────────────────────
 
 type ChannelDeliverySeed = {
   label: string
   externalUrl?: string
+  icon?: string
 }
 
 type ChannelDeliverySpec = ChannelDeliverySeed & {
   channel: string
-  mode: 'EXTERNAL' | 'NONE'
+  mode: 'EXTERNAL' | 'PICK'
 }
 
 /**
- * 외부 작성(compose) 진입 URL
+ * 외부 작성 화면 진입 URL
  * - 홈/피드가 아니라 게시물·메일 작성 화면에 최대한 가깝게 연결
- * - 플랫폼마다 웹 작성 deep link 지원 수준이 다름 (로그인·권한 필요)
+ * - 플랫폼마다 웹 작성 바로가기 지원 수준이 다름 (로그인·권한 필요)
  */
 const MARKETING_EXTERNAL_COMPOSE_URLS = {
   INSTAGRAM: 'https://www.instagram.com/',
   /** Meta Business Suite 작성기 — 페이지/비즈니스 게시용 */
-  FACEBOOK: 'https://business.facebook.com/latest/composer',
-  /** 피드 작성 모달 오픈 */
+  FACEBOOK: 'https://business.facebook.com/',
   LINKEDIN: 'https://www.linkedin.com/feed/?shareActive=true',
   X: 'https://x.com/compose/post',
   /** 카카오 채널 관리 — 채널 선택 후 메시지/게시 작성 */
@@ -516,75 +538,106 @@ const CHANNEL_DELIVERY_MAP: Record<string, ChannelDeliverySeed> = {
   INSTAGRAM: {
     label: '인스타그램',
     externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.INSTAGRAM,
+    icon: 'icon-sns',
   },
   FACEBOOK: {
     label: '페이스북',
     externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.FACEBOOK,
+    icon: 'icon-sns',
   },
   LINKEDIN: {
     label: '링크드인',
     externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.LINKEDIN,
+    icon: 'icon-sns',
   },
   X: {
     label: 'X',
     externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.X,
+    icon: 'icon-sns',
   },
   OWNED_BLOG: {
     label: '자사 블로그',
+    icon: 'icon-document-edit',
   },
   SMS: {
     label: '문자메시지',
+    icon: 'icon-sns',
   },
   PROMOTION_EMAIL: {
     label: '프로모션 메일',
     externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.EMAIL,
+    icon: 'icon-email',
   },
   NEWSLETTER: {
     label: '뉴스레터',
     externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.EMAIL,
+    icon: 'icon-email',
   },
   KAKAO_TALK: {
     label: '카카오톡',
     externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.KAKAO_TALK,
+    icon: 'icon-sns',
   },
   YOUTUBE_COMMUNITY: {
     label: '유튜브 커뮤니티',
     externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.YOUTUBE_COMMUNITY,
+    icon: 'icon-sns',
   },
   NAVER_BLOG: {
     label: '네이버 블로그',
     externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.NAVER_BLOG,
+    icon: 'icon-document-edit',
+  },
+  // 생성 마법사의 SNS 세부 채널 — 도착 화면은 INSTAGRAM과 동일하다.
+  INSTAGRAM_FEED: {
+    label: '인스타그램 피드',
+    externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.INSTAGRAM,
+  },
+  INSTAGRAM_STORY: {
+    label: '인스타그램 스토리·릴스',
+    externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.INSTAGRAM,
   },
 }
 
-const NONE_CHANNEL_DELIVERY = (channel = ''): ChannelDeliverySpec => ({
-  channel,
-  mode: 'NONE',
-  label: '',
-})
+/**
+ * 모달에서 채널을 직접 고를 때 보여줄 선택지 — 코드가 여러 개(INSTAGRAM_FEED/STORY, PROMOTION_EMAIL/NEWSLETTER 등)라도
+ * 도착 화면이 같은 것끼리는 하나로 묶어 사용자에게 중복으로 보이지 않게 한다.
+ */
+export const CHANNEL_DELIVERY_PICK_OPTIONS: { channel: string; label: string }[] = [
+  { channel: 'INSTAGRAM', label: CHANNEL_DELIVERY_MAP.INSTAGRAM.label },
+  { channel: 'FACEBOOK', label: CHANNEL_DELIVERY_MAP.FACEBOOK.label },
+  { channel: 'LINKEDIN', label: CHANNEL_DELIVERY_MAP.LINKEDIN.label },
+  { channel: 'X', label: CHANNEL_DELIVERY_MAP.X.label },
+  { channel: 'KAKAO_TALK', label: CHANNEL_DELIVERY_MAP.KAKAO_TALK.label },
+  { channel: 'YOUTUBE_COMMUNITY', label: CHANNEL_DELIVERY_MAP.YOUTUBE_COMMUNITY.label },
+  { channel: 'NAVER_BLOG', label: CHANNEL_DELIVERY_MAP.NAVER_BLOG.label },
+  { channel: 'OWNED_BLOG', label: CHANNEL_DELIVERY_MAP.OWNED_BLOG.label },
+  { channel: 'PROMOTION_EMAIL', label: '이메일' },
+  { channel: 'SMS', label: CHANNEL_DELIVERY_MAP.SMS.label },
+]
 
-/** 채널 코드 → 배달 스펙 */
+/**
+ * 채널 코드 → 배달 스펙.
+ * 생성 시 고른 채널이 이미 알려진 코드면 그대로 확정(EXTERNAL), 비어 있거나(이미지 전용 등) 직접입력·매핑 안 된
+ * 코드라면 PICK을 반환한다 — 이 경우 버튼을 숨기는 대신 모달에서 사용자가 그때 채널을 고르게 한다.
+ */
 export const resolveChannelDelivery = (channel?: string | null): ChannelDeliverySpec => {
   const normalized = String(channel ?? '').trim()
-  if (!normalized) return NONE_CHANNEL_DELIVERY()
-  const seed = CHANNEL_DELIVERY_MAP[normalized]
-  if (!seed) return NONE_CHANNEL_DELIVERY(normalized)
+  const seed = normalized ? CHANNEL_DELIVERY_MAP[normalized] : undefined
+  if (!seed) return { channel: normalized, mode: 'PICK', label: '' }
   return {
     channel: normalized,
     mode: 'EXTERNAL',
     label: seed.label,
     externalUrl: seed.externalUrl,
+    icon: seed.icon,
   }
 }
-
-/** 툴바 [채널로 보내기] 노출 여부 */
-export const isChannelSendSupported = (channel?: string | null): boolean =>
-  resolveChannelDelivery(channel).mode === 'EXTERNAL'
 
 /** 마케팅 이미지 → PNG Blob (클립보드용) */
 const fetchMarketingImageAsPngBlob = async (imageUrl: string): Promise<Blob> => {
   const response = await fetch(imageUrl)
-  if (!response.ok) throw new Error('image fetch failed')
+  if (!response.ok) throw new Error('이미지 조회에 실패했습니다.')
   const blob = await response.blob()
   if (blob.type === 'image/png') return blob
 
@@ -593,14 +646,14 @@ const fetchMarketingImageAsPngBlob = async (imageUrl: string): Promise<Blob> => 
   canvas.width = bitmap.width
   canvas.height = bitmap.height
   const ctx = canvas.getContext('2d')
-  if (!ctx) throw new Error('canvas unsupported')
+  if (!ctx) throw new Error('캔버스를 사용할 수 없습니다.')
   ctx.drawImage(bitmap, 0, 0)
   bitmap.close()
 
   return await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((result) => {
       if (result) resolve(result)
-      else reject(new Error('png convert failed'))
+      else reject(new Error('PNG 변환에 실패했습니다.'))
     }, 'image/png')
   })
 }
@@ -617,7 +670,7 @@ export const copyMarketingPayloadToClipboard = async (
 ): Promise<MarketingCopyPayloadResult> => {
   const value = String(text ?? '').trim()
   const url = String(imageUrl ?? '').trim()
-  if (!value && !url) throw new Error('nothing to copy')
+  if (!value && !url) throw new Error('복사할 내용이 없습니다.')
 
   const canWriteImage = !!navigator.clipboard?.write && typeof ClipboardItem !== 'undefined'
 
@@ -647,5 +700,5 @@ export const copyMarketingPayloadToClipboard = async (
     return { textCopied: true, imageCopied: false }
   }
 
-  throw new Error('clipboard copy failed')
+  throw new Error('클립보드 복사에 실패했습니다.')
 }
