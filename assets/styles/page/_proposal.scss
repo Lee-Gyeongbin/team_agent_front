@@ -2400,13 +2400,62 @@ body.is-resizing {
 }
 
 .pt-sec-slide-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   flex-shrink: 0;
-  padding: 2px 7px;
+  padding: 2px 7px 2px 8px;
+  border: 1px solid transparent;
   border-radius: 999px;
   @include typo($body-xsmall-bold);
   color: $color-text-muted;
   background: $color-surface;
   line-height: 1.6;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background $transition-fast, border-color $transition-fast, color $transition-fast;
+
+  i {
+    color: $color-text-muted;
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--color-primary-bg);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+
+    i {
+      color: var(--color-primary);
+    }
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+.pt-sec-slide-editor {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.pt-sec-slide-unit {
+  @include typo($body-xsmall);
+  color: $color-text-muted;
+  white-space: nowrap;
+}
+
+.pt-sec-slide-input {
+  width: 40px;
+  flex: none;
+
+  .ui-input-outer {
+    flex: none;
+    width: 100%;
+  }
 }
 
 // ??: ???? ???

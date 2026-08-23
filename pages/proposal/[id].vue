@@ -253,13 +253,11 @@ const onGenerateSection = async (tocId: string) => {
 }
 
 const onUpdatePlannedSlideCnt = async (payload: { tocId: string; oldCnt: number; newCnt: number }) => {
-  const hasSlides = (slidesCache.value[payload.tocId]?.length ?? 0) > 0
   try {
     await handleUpdatePlannedSlideCnt(
       payload.tocId,
       payload.oldCnt,
       payload.newCnt,
-      hasSlides,
       modelId.value,
       agentId.value,
     )

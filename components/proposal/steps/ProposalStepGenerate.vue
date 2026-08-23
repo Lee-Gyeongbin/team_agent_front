@@ -55,28 +55,51 @@
             <span :class="['pt-sec-title', { 'is-bold': isLeafActive(item.tocId) }]">
               {{ item.title }}
             </span>
-            <span
-              v-if="item.plannedSlideCnt"
+            <div
+              v-if="editingTocId === item.tocId"
+              class="pt-sec-slide-editor"
+              @click.stop
+            >
+              <UiInput
+                v-model="editingCntStr"
+                number-only
+                size="xs"
+                class="pt-sec-slide-input"
+                :disabled="isGenerating"
+                :min="1"
+                :max="9"
+                :max-length="1"
+                @keydown.enter.stop="onBadgeConfirm(item)"
+                @keydown.esc.stop="onBadgeCancel"
+              />
+              <span class="pt-sec-slide-unit">장</span>
+              <UiButton
+                variant="primary"
+                size="xxs"
+                :disabled="isGenerating"
+                @click="onBadgeConfirm(item)"
+              >
+                적용
+              </UiButton>
+              <UiButton
+                variant="ghost"
+                size="xxs"
+                @click="onBadgeCancel"
+              >
+                취소
+              </UiButton>
+            </div>
+            <button
+              v-else-if="item.plannedSlideCnt"
+              type="button"
               class="pt-sec-slide-badge"
-              :title="'슬라이드 수 편집'"
+              :disabled="isGenerating"
+              title="슬라이드 수 수정"
               @click.stop="onBadgeClick(item)"
             >
-              <template v-if="editingTocId === item.tocId">
-                <UiInput
-                  v-model="editingCntStr"
-                  number-only
-                  size="xs"
-                  class="pt-sec-badge-input"
-                  @click.stop
-                  @keydown.enter.stop="onBadgeConfirm(item)"
-                  @keydown.esc.stop="onBadgeCancel"
-                  @blur="onBadgeCancel"
-                />
-              </template>
-              <template v-else>
-                {{ item.plannedSlideCnt }}장
-              </template>
-            </span>
+              {{ item.plannedSlideCnt }}장
+              <i class="icon-edit size-12" />
+            </button>
           </div>
         </template>
         <UiEmpty
@@ -107,7 +130,6 @@
               <template v-if="currentSlides.length"> · {{ currentSlides.length }}장</template>
             </div>
           </div>
-          <!-- 생성/재생성 버튼 -->
           <UiButton
             variant="outline"
             size="sm"
@@ -461,6 +483,7 @@ import type {
 } from '~/types/proposal'
 import { useProposalSectionChat } from '~/composables/proposal/useProposalSectionChat'
 import { openToast } from '~/composables/useToast'
+import { openConfirm } from '~/composables/useDialog'
 import { openLoading, updateLoadingText, closeLoading } from '~/composables/useLoading'
 import SlideComponentRenderer from '~/components/proposal/SlideComponentRenderer.vue'
 
@@ -505,14 +528,15 @@ const emit = defineEmits<{
   'update-planned-slide-cnt': [payload: { tocId: string; oldCnt: number; newCnt: number }]
 }>()
 
-// ── 슬라이드 수 뱃지 인라인 편집 ─────────────────────────────────────────────
+// ── 목표 슬라이드 수 수정 (목록 뱃지) ────────────────────────────────────────
 const editingTocId = ref<string | null>(null)
 const editingCntStr = ref('')
 
-const onBadgeClick = (item: PtTocItem) => {
-  if (props.isGenerating) return
-  editingTocId.value = item.tocId
-  editingCntStr.value = String(item.plannedSlideCnt ?? '')
+/** v-for 안 ref는 배열이 되어 UiInput.focus()를 쓸 수 없음 → 실제 input을 찾아 포커스 */
+const focusSlideCntInput = () => {
+  const input = document.querySelector<HTMLInputElement>('.pt-sec-slide-editor input')
+  input?.focus()
+  input?.select()
 }
 
 const onBadgeCancel = () => {
@@ -520,11 +544,40 @@ const onBadgeCancel = () => {
   editingCntStr.value = ''
 }
 
-const onBadgeConfirm = (item: PtTocItem) => {
+const onBadgeClick = async (item: PtTocItem) => {
+  if (props.isGenerating) return
+  editingTocId.value = item.tocId
+  const cnt = item.plannedSlideCnt ?? 1
+  editingCntStr.value = String(Math.min(9, Math.max(1, cnt)))
+  onSelectLeaf(item.tocId)
+  await nextTick()
+  focusSlideCntInput()
+}
+
+const onBadgeConfirm = async (item: PtTocItem) => {
+  if (props.isGenerating) return
   const newCnt = parseInt(editingCntStr.value, 10)
   const oldCnt = item.plannedSlideCnt ?? 0
+  if (!newCnt || newCnt < 1 || newCnt > 9) {
+    openToast({ message: '슬라이드 수는 1~9장까지 입력할 수 있습니다.', type: 'warning' })
+    focusSlideCntInput()
+    return
+  }
+  if (newCnt === oldCnt) {
+    onBadgeCancel()
+    return
+  }
+
+  const hasSlides = (props.slidesCache[item.tocId]?.length ?? 0) > 0
+  const confirmed = await openConfirm({
+    title: '슬라이드 수 변경',
+    message: hasSlides
+      ? `슬라이드 수를 ${oldCnt}장 → ${newCnt}장으로 변경하시겠습니까?\n\n이 소목차는 새로운 구성으로 다시 생성되며, \n기존에 생성된 이미지와 채팅으로 수정한 내용은 \n새 버전에 반영되지 않습니다.\n생성이 실패하면 기존 내용은 그대로 유지됩니다.`
+      : `슬라이드 수를 ${oldCnt}장 → ${newCnt}장으로 변경하시겠습니까?`,
+  })
+  if (!confirmed) return
+
   onBadgeCancel()
-  if (!newCnt || newCnt < 1 || newCnt === oldCnt) return
   emit('update-planned-slide-cnt', { tocId: item.tocId, oldCnt, newCnt })
 }
 
@@ -689,11 +742,12 @@ const onSelectLeaf = (tocId: string) => {
   if (idx > -1) emit('select-section', idx)
 }
 
-// 소목차 전환 시 첫 슬라이드로 리셋
+// 소목차 전환 시 첫 슬라이드로 리셋 + 다른 항목 편집 중이면 취소
 watch(
   () => props.activeSection?.tocId,
-  () => {
+  (newId) => {
     activeSlideIndex.value = 0
+    if (editingTocId.value && editingTocId.value !== newId) onBadgeCancel()
   },
 )
 

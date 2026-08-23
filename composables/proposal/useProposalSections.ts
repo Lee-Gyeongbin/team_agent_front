@@ -9,7 +9,6 @@ import type {
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
 import { openToast } from '~/composables/useToast'
 import { openLoading, updateLoadingText, closeLoading } from '~/composables/useLoading'
-import { openConfirm } from '~/composables/useDialog'
 
 const SECTION_GEN_STEP_MESSAGES: Record<string, string> = {
   load: '섹션 데이터를 불러오는 중...',
@@ -90,17 +89,18 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
     }
   }
   /**
-   * 소목차 슬라이드 목록 조회 (캐시 우선)
+   * 소목차 슬라이드 목록 조회.
+   * @param force true면 캐시를 무시하고 서버에서 다시 조회 (생성/재생성 직후)
    */
-  const handleSelectSlides = async (tocId: string): Promise<PtSlide[]> => {
-    if (slidesCache.value[tocId]) return slidesCache.value[tocId]
+  const handleSelectSlides = async (tocId: string, force = false): Promise<PtSlide[]> => {
+    if (!force && slidesCache.value[tocId]) return slidesCache.value[tocId]
     try {
       const res = await fetchSelectSectionSlides(tocId)
-      slidesCache.value[tocId] = res.list ?? []
+      slidesCache.value = { ...slidesCache.value, [tocId]: [...(res.list ?? [])] }
       return slidesCache.value[tocId]
     } catch (e) {
       console.warn('[useProposalSections] 슬라이드 조회 실패:', e)
-      return []
+      return slidesCache.value[tocId] ?? []
     }
   }
 
@@ -132,9 +132,10 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
           isGenerating.value = false
           genProgressMsg.value = ''
           closeLoading()
-          // 슬라이드 캐시 갱신 (이미지 생성은 사용자가 직접 시작)
-          handleSelectSlides(tocId)
-          resolve(data)
+          // 캐시 무시하고 재조회 — 장 수 변경 후 스트립이 이전 목록에 남는 것 방지
+          handleSelectSlides(tocId, true)
+            .then(() => resolve(data))
+            .catch((err) => reject(err))
         },
         onError: (message: string) => {
           isGenerating.value = false
@@ -149,13 +150,11 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
 
   /**
    * D-1-Edit: 소목차 목표 슬라이드 수 수정.
-   * - 기존 슬라이드 있으면 확인 모달 → SSE 재생성.
-   * - 기존 슬라이드 없으면 즉시 반영.
+   * 확인 모달은 호출 측(적용 클릭)에서 처리한다.
    *
    * @param tocId          소목차 ID
-   * @param oldCnt         현재 PLANNED_SLIDE_CNT (모달 메시지용)
+   * @param oldCnt         현재 PLANNED_SLIDE_CNT
    * @param newCnt         변경할 PLANNED_SLIDE_CNT
-   * @param hasSlides      이미 슬라이드가 생성되어 있는지
    * @param modelId        LLM 모델 ID
    * @param agentId        에이전트 ID
    */
@@ -163,20 +162,10 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
     tocId: string,
     oldCnt: number,
     newCnt: number,
-    hasSlides: boolean,
     modelId: string,
     agentId: string,
   ): Promise<void> => {
     if (newCnt < 1 || newCnt === oldCnt) return
-
-    // 기존 슬라이드 있으면 확인 모달
-    if (hasSlides) {
-      const confirmed = await openConfirm({
-        title: '슬라이드 수 변경',
-        message: `슬라이드 수를 ${oldCnt}장 → ${newCnt}장으로 변경하시겠습니까?\n이 소목차는 새로운 구성으로 다시 생성되며, 기존에 생성된 이미지와 채팅으로 수정한 내용은 새 버전에 반영되지 않습니다.\n생성이 실패하면 기존 내용은 그대로 유지됩니다.`,
-      })
-      if (!confirmed) return
-    }
 
     return new Promise((resolve, reject) => {
       isGenerating.value = true
@@ -203,14 +192,17 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
           const sIdx = sectionList.value.findIndex((s) => s.tocId === tocId)
           if (sIdx > -1) sectionList.value[sIdx] = { ...sectionList.value[sIdx], plannedSlideCnt: newCnt }
 
-          if (data.regenTriggered) {
-            // 슬라이드 재생성됨 → 캐시 갱신
-            handleSelectSlides(tocId)
-            openToast({ message: `슬라이드 수가 ${newCnt}장으로 변경되어 재생성됐습니다.` })
-          } else {
-            openToast({ message: `슬라이드 수가 ${newCnt}장으로 변경됐습니다.` })
-          }
-          resolve()
+          // 재생성 여부와 관계없이 강제 재조회 — 캐시에 이전 1장이 남아 스트립이 안 바뀌는 문제 방지
+          handleSelectSlides(tocId, true)
+            .then(() => {
+              if (data.regenTriggered) {
+                openToast({ message: `슬라이드 수가 ${newCnt}장으로 변경되어 재생성됐습니다.` })
+              } else {
+                openToast({ message: `슬라이드 수가 ${newCnt}장으로 변경됐습니다.` })
+              }
+              resolve()
+            })
+            .catch((err) => reject(err))
         },
         onError: (message: string) => {
           isGenerating.value = false

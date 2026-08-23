@@ -678,7 +678,7 @@ export const useProposalApi = () => {
    */
   const fetchSelectSectionSlides = async (tocId: string): Promise<{ result: string; list: PtSlide[] }> => {
     return get<{ result: string; list: PtSlide[] }>(
-      `/ai/proposal/selectSectionSlides.do?tocId=${encodeURIComponent(tocId)}`,
+      `/ai/proposal/selectSectionSlides.do?tocId=${encodeURIComponent(tocId)}&_ts=${Date.now()}`,
     )
   }
 
