@@ -1,20 +1,7 @@
 <template>
   <div class="pt-panel pt-panel--lg pt-template-gen-panel">
-    <!-- 생성/재생성 로딩 — 패널 전체를 덮음 -->
-    <div
-      v-if="isBusy"
-      class="pt-s4-loading"
-    >
-      <div class="pt-s4-loading-box">
-        <div class="pt-s4-loading-spinner" />
-        <h3>{{ loadingTitle }}</h3>
-        <p>{{ loadingDesc }}</p>
-        <div class="pt-gen-progress-bar" />
-      </div>
-    </div>
-
     <!-- 생성 전 초기 상태 -->
-    <template v-else-if="!template">
+    <template v-if="!template">
       <div class="pt-panel-title-row">
         <h3 class="pt-panel-title">템플릿 생성</h3>
         <UiButton
@@ -572,6 +559,7 @@
 
 <script setup lang="ts">
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
+import { openLoading, closeLoading } from '~/composables/useLoading'
 import { openToast } from '~/composables/useToast'
 import type { PtTemplate } from '~/types/proposal'
 import CoverPreviewTab from './cover/CoverPreviewTab.vue'
@@ -614,22 +602,6 @@ const isPromptModalOpen = ref(false)
 const isRegeneratingCover = ref(false)
 const isRegeneratingDivider = ref(false)
 
-const isBusy = computed(() => isGenerating.value || isRegeneratingCover.value || isRegeneratingDivider.value)
-
-const loadingTitle = computed(() => {
-  if (isRegeneratingCover.value) return '표지 재생성 중입니다'
-  if (isRegeneratingDivider.value) return '간지 재생성 중입니다'
-  if (template.value) return '템플릿 재생성 중입니다'
-  return '템플릿 생성 중입니다'
-})
-
-const loadingDesc = computed(() => {
-  if (isRegeneratingCover.value) return '표지 이미지를 다시 생성하고 있어요. 잠시만 기다려주세요.'
-  if (isRegeneratingDivider.value) return '간지 이미지를 다시 생성하고 있어요. 잠시만 기다려주세요.'
-  if (template.value) return '헤더와 푸터 레이아웃을 다시 생성하고 있어요. 잠시만 기다려주세요.'
-  return '컬러와 스타일을 기반으로 슬라이드 헤더와 푸터를 생성하고 있어요. 잠시만 기다려주세요.'
-})
-
 // 경로가 동일해도 이미지를 강제 재조회하기 위한 카운터
 // (재생성 시 NCP 경로는 같지만 파일 내용이 교체되므로 presigned URL을 새로 받아야 함)
 const coverReloadKey = ref(0)
@@ -637,6 +609,7 @@ const dividerReloadKey = ref(0)
 
 const onRegenerateDivider = async () => {
   isRegeneratingDivider.value = true
+  openLoading({ text: '간지를 재생성하는 중...' })
   try {
     const res = await fetchGeneratePtDividerImage(props.ptProjectId, props.agentId)
     if (res.result === 'OK') {
@@ -649,11 +622,13 @@ const onRegenerateDivider = async () => {
     openToast({ message: '간지 이미지 생성 중 오류가 발생했습니다.', type: 'error' })
   } finally {
     isRegeneratingDivider.value = false
+    closeLoading()
   }
 }
 
 const onRegenerateCover = async () => {
   isRegeneratingCover.value = true
+  openLoading({ text: '표지를 재생성하는 중...' })
   try {
     const res = await fetchGeneratePtCoverImage(props.ptProjectId, props.agentId)
     if (res.result === 'OK') {
@@ -666,6 +641,7 @@ const onRegenerateCover = async () => {
     openToast({ message: '표지 이미지 생성 중 오류가 발생했습니다.', type: 'error' })
   } finally {
     isRegeneratingCover.value = false
+    closeLoading()
   }
 }
 
@@ -1166,6 +1142,7 @@ const onConfirm = async () => {
 
 const onGenerate = async () => {
   isGenerating.value = true
+  openLoading({ text: '템플릿을 생성하는 중...' })
   try {
     const res = await fetchGeneratePtTemplate(props.ptProjectId, props.modelId, props.agentId)
     if (res.result === 'OK') {
@@ -1177,11 +1154,13 @@ const onGenerate = async () => {
     openToast({ message: '템플릿 생성 중 오류가 발생했습니다.', type: 'error' })
   } finally {
     isGenerating.value = false
+    closeLoading()
   }
 }
 
 const onRegenerate = async () => {
   isGenerating.value = true
+  openLoading({ text: '템플릿을 재생성하는 중...' })
   try {
     const res = await fetchRegeneratePtTemplate(props.ptProjectId, '', props.modelId, props.agentId)
     if (res.result === 'OK') {
@@ -1193,6 +1172,7 @@ const onRegenerate = async () => {
     openToast({ message: '재생성 중 오류가 발생했습니다.', type: 'error' })
   } finally {
     isGenerating.value = false
+    closeLoading()
   }
 }
 
