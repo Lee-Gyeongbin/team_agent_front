@@ -1,7 +1,20 @@
 <template>
   <div class="pt-panel pt-panel--lg pt-template-gen-panel">
+    <!-- 생성/재생성 로딩 — 패널 전체를 덮음 -->
+    <div
+      v-if="isBusy"
+      class="pt-s4-loading"
+    >
+      <div class="pt-s4-loading-box">
+        <div class="pt-s4-loading-spinner" />
+        <h3>{{ loadingTitle }}</h3>
+        <p>{{ loadingDesc }}</p>
+        <div class="pt-gen-progress-bar" />
+      </div>
+    </div>
+
     <!-- 생성 전 초기 상태 -->
-    <template v-if="!template">
+    <template v-else-if="!template">
       <div class="pt-panel-title-row">
         <h3 class="pt-panel-title">템플릿 생성</h3>
         <UiButton
@@ -600,6 +613,22 @@ const isPromptModalOpen = ref(false)
 
 const isRegeneratingCover = ref(false)
 const isRegeneratingDivider = ref(false)
+
+const isBusy = computed(() => isGenerating.value || isRegeneratingCover.value || isRegeneratingDivider.value)
+
+const loadingTitle = computed(() => {
+  if (isRegeneratingCover.value) return '표지 재생성 중입니다'
+  if (isRegeneratingDivider.value) return '간지 재생성 중입니다'
+  if (template.value) return '템플릿 재생성 중입니다'
+  return '템플릿 생성 중입니다'
+})
+
+const loadingDesc = computed(() => {
+  if (isRegeneratingCover.value) return '표지 이미지를 다시 생성하고 있어요. 잠시만 기다려주세요.'
+  if (isRegeneratingDivider.value) return '간지 이미지를 다시 생성하고 있어요. 잠시만 기다려주세요.'
+  if (template.value) return '헤더와 푸터 레이아웃을 다시 생성하고 있어요. 잠시만 기다려주세요.'
+  return '컬러와 스타일을 기반으로 슬라이드 헤더와 푸터를 생성하고 있어요. 잠시만 기다려주세요.'
+})
 
 // 경로가 동일해도 이미지를 강제 재조회하기 위한 카운터
 // (재생성 시 NCP 경로는 같지만 파일 내용이 교체되므로 presigned URL을 새로 받아야 함)

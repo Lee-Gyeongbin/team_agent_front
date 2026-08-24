@@ -26,18 +26,33 @@
           이전 파일 받기
         </UiButton>
 
-        <!-- 다시 만들기: forceRebuild=true -->
+        <!-- 인포그래픽 이미지로 출력 (이미지가 있을 때만) -->
+        <UiButton
+          v-if="hasRenderedImages"
+          variant="outline"
+          size="md"
+          :loading="isExporting && exportingMode === 'image'"
+          :disabled="isLoadingReusable || (isExporting && exportingMode !== 'image')"
+          @click="onRebuild('image')"
+        >
+          <template #icon-left>
+            <i class="icon-image size-16" />
+          </template>
+          인포그래픽 이미지로 출력
+        </UiButton>
+
+        <!-- 컴포넌트 기반 출력 (수정 가능) -->
         <UiButton
           variant="primary"
           size="md"
-          :loading="isExporting"
-          :disabled="isLoadingReusable"
-          @click="onRebuild"
+          :loading="isExporting && exportingMode === 'component'"
+          :disabled="isLoadingReusable || (isExporting && exportingMode !== 'component')"
+          @click="onRebuild('component')"
         >
           <template #icon-left>
             <i class="icon-refresh size-16" />
           </template>
-          다시 만들기
+          {{ hasRenderedImages ? '컴포넌트 기반 출력 (수정 가능)' : '출력 (수정 가능)' }}
         </UiButton>
       </div>
 
@@ -120,6 +135,8 @@ import { openToast } from '~/composables/useToast'
 interface Props {
   ptProjectId: string
   agentId: string
+  /** 현재 프로젝트의 슬라이드 중 인포그래픽 이미지가 생성된 슬라이드 존재 여부 */
+  hasRenderedImages: boolean
 }
 
 const props = defineProps<Props>()
@@ -128,6 +145,7 @@ const { fetchSelectReusableExport, fetchStartExport, fetchSelectExportStatus } =
 
 const isLoadingReusable = ref(false)
 const isExporting = ref(false)
+const exportingMode = ref<'image' | 'component'>('component')
 const reusableExport = ref<PtExportVO | null>(null)
 const exportData = ref<PtExportVO | null>(null)
 
@@ -189,17 +207,19 @@ const onReceivePrevious = () => {
 }
 
 /**
- * 다시 만들기 — forceRebuild:true 로 startExport 호출.
+ * 출력 — forceRebuild:true + outputMode 로 startExport 호출.
  * cacheReused===true 이면 폴링 없이 즉시 다운로드 가능.
  */
-const onRebuild = async () => {
+const onRebuild = async (outputMode: 'image' | 'component') => {
   if (isExporting.value) return
   isExporting.value = true
+  exportingMode.value = outputMode
   try {
     const res = await fetchStartExport({
       ptProjectId: props.ptProjectId,
       agentId: props.agentId,
       forceRebuild: true,
+      outputMode,
     })
     if (res.result !== 'OK' || !res.data) {
       openToast({ message: res.msg || '출력 요청에 실패했습니다.', type: 'error' })

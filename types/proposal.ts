@@ -591,6 +591,8 @@ export interface PtExportRequest {
   agentId: string
   /** true: 캐시 무시, 항상 신규 빌드 */
   forceRebuild?: boolean
+  /** 출력 방식: 'image'=인포그래픽 이미지 기반, 'component'=JSON 컴포넌트 기반 (수정 가능) */
+  outputMode?: 'image' | 'component'
 }
 
 // ── Step D: 템플릿 생성 ───────────────────────────────────────────────────────

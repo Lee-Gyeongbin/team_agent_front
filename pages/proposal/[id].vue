@@ -103,6 +103,7 @@
         v-else-if="currentStep === 7"
         :pt-project-id="ptProjectId"
         :agent-id="agentId"
+        :has-rendered-images="hasRenderedImages"
       />
     </div>
   </div>
@@ -226,6 +227,11 @@ const currentSlides = computed<PtSlide[]>(() => {
   if (!tocId) return []
   return slidesCache.value[tocId] ?? []
 })
+
+// 인포그래픽 이미지가 1장 이상 생성된 슬라이드가 존재하는지 여부 (Step F 출력 버튼 분기용)
+const hasRenderedImages = computed(() =>
+  Object.values(slidesCache.value).some((slides) => slides.some((s) => s.renderedImagePath)),
+)
 
 // ---- 소목차별 채팅 ----
 const activeSectionId = computed(() => activeSection.value?.sectionId ?? '')

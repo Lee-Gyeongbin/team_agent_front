@@ -239,6 +239,7 @@ const templateMode = ref<'fix' | 'new'>('fix')
 const documentSize = ref<'a4' | '169' | '43'>('a4')
 const attachedFile = ref<File | null>(null)
 const savedTemplateFileNm = ref<string | null>(null)
+const savedTemplateFileId = ref<string | undefined>() // 기존 저장된 templateFileId 캐시
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
 // ── 상태: 스타일 설정 (구 StepC 잔여) ────────────────────────────────────────
@@ -268,7 +269,7 @@ const parsedProjectConfig = computed(() => {
   }
 })
 
-// 파싱 결과가 바뀌면 templateMode / documentSize 폼 상태에 동기화
+// 파싱 결과가 바뀌면 templateMode / documentSize / savedTemplateFileId 폼 상태에 동기화
 watch(
   parsedProjectConfig,
   (cfg) => {
@@ -277,6 +278,7 @@ watch(
     if (tpl?.docSize === 'a4' || tpl?.docSize === '169' || tpl?.docSize === '43') {
       documentSize.value = tpl.docSize
     }
+    savedTemplateFileId.value = tpl?.templateFileId ?? undefined
   },
   { immediate: true },
 )
@@ -356,13 +358,14 @@ const onClickNext = async () => {
       }
       templateFileId = uploadRes.ptFileId
       savedTemplateFileNm.value = uploadRes.fileName || uploadingName
+      savedTemplateFileId.value = templateFileId
       attachedFile.value = null
     }
 
     const templateRes = await fetchUpdateProjectTemplate({
       ptProjectId: props.ptProjectId,
       mode: templateMode.value,
-      templateFileId,
+      templateFileId: templateFileId ?? savedTemplateFileId.value, // 재업로드 없이 다음 이동 시 기존 ID 유지
       docSize: documentSize.value,
     })
     if (templateRes.result !== 'OK') {

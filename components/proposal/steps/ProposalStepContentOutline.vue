@@ -193,6 +193,12 @@
               <span class="oc-outline-card-title">콘텐츠 개요</span>
               <div class="oc-outline-card-actions">
                 <button
+                  class="oc-btn oc-btn-ghost oc-btn-sm"
+                  @click="isEnlargeOpen = true"
+                >
+                  크게 보기
+                </button>
+                <button
                   v-if="!isEditing"
                   class="oc-btn oc-btn-ghost oc-btn-sm"
                   @click="$emit('start-edit')"
@@ -313,6 +319,31 @@
       </div>
     </div>
   </div>
+
+  <!-- 콘텐츠 개요 크게 보기: 본문만 -->
+  <UiModal
+    :is-open="isEnlargeOpen"
+    :title="selectedItem?.title ?? '콘텐츠 개요'"
+    max-width="960px"
+    show-fullscreen
+    custom-class="pt-outline-enlarge-modal"
+    @close="isEnlargeOpen = false"
+  >
+    <div class="pt-outline-enlarge-body">
+      <p
+        v-if="breadcrumbPath"
+        class="pt-outline-enlarge-path"
+      >
+        {{ breadcrumbPath }}
+      </p>
+      <!-- eslint-disable vue/no-v-html — toHtmlContent 내 DOMPurify 안전 처리 적용 -->
+      <div
+        class="oc-outline-preview markdown-body pt-outline-enlarge-preview"
+        v-html="enlargeHtml"
+      />
+      <!-- eslint-enable vue/no-v-html -->
+    </div>
+  </UiModal>
 </template>
 
 <script setup lang="ts">
@@ -455,12 +486,19 @@ watch(
 )
 
 // ── 개요 마크다운 미리보기 ────────────────────────────────────────────────
-const outlineHtml = computed(() => {
-  const raw = props.selectedItem?.contentOutlineTxt ?? ''
+const toOutlineHtml = (raw: string) => {
   // 단일 \n + 불릿 조합은 marked가 리스트로 인식 못함 → 불릿 앞 빈 줄 보장
   const normalized = raw.replace(/([^\n])\n([ \t]*[-*+] )/g, '$1\n\n$2')
   return toHtmlContent(normalized)
-})
+}
+
+const outlineHtml = computed(() => toOutlineHtml(props.selectedItem?.contentOutlineTxt ?? ''))
+
+const enlargeHtml = computed(() =>
+  toOutlineHtml(props.isEditing ? props.editingText : (props.selectedItem?.contentOutlineTxt ?? '')),
+)
+
+const isEnlargeOpen = ref(false)
 
 // ── 확정 ─────────────────────────────────────────────────────────────────
 const onConfirm = () => {
