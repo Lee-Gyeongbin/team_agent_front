@@ -1,5 +1,5 @@
 <template>
-  <div class="pt-panel pt-panel--lg pt-detail-toc">
+  <div :class="['pt-panel', 'pt-panel--lg', 'pt-detail-toc', { 'is-fullscreen': isFullscreen }]">
     <div class="pt-detail-toc-head">
       <h3 class="pt-panel-title">세부목차</h3>
       <p class="pt-panel-desc">전략검토 결과를 바탕으로 제안서의 세부목차를 구성하는 단계입니다.</p>
@@ -15,6 +15,23 @@
           />
         </template>
         프롬프트
+      </UiButton>
+
+      <UiButton
+        variant="ghost"
+        size="sm"
+        icon-only
+        class="pt-detail-toc-fullscreen"
+        :title="isFullscreen ? '전체화면 해제 (Esc)' : '전체화면으로 보기'"
+        :aria-label="isFullscreen ? '전체화면 해제' : '전체화면으로 보기'"
+        @click="toggleFullscreen"
+      >
+        <template #icon-left>
+          <UiIcon
+            :name="isFullscreen ? 'minimize-2' : 'maximize-2'"
+            size="16"
+          />
+        </template>
       </UiButton>
     </div>
 
@@ -437,6 +454,27 @@ const openGroups = ref<Set<string>>(new Set())
 const editingTocId = ref<string | null>(null)
 const editingName = ref('')
 const isAdding = ref(false)
+
+// ===== 전체화면 =====
+/**
+ * 패널을 뷰포트로 확대 — 사이드바·페이지 헤드·스텝퍼가 쓰던 공간을 회수한다.
+ * 앱 헤더는 덮지 않는다(z-index를 모달 위로 올려야 해서 모달이 뒤로 숨는다).
+ */
+const isFullscreen = ref(false)
+
+const toggleFullscreen = () => {
+  isFullscreen.value = !isFullscreen.value
+}
+
+const onFullscreenEsc = (e: KeyboardEvent) => {
+  // 이름 편집·추가 중 Esc는 그쪽 취소가 먼저여야 하므로 무시
+  if (e.key !== 'Escape' || !isFullscreen.value) return
+  if (editingTocId.value || isAdding.value) return
+  isFullscreen.value = false
+}
+
+onMounted(() => window.addEventListener('keydown', onFullscreenEsc))
+onBeforeUnmount(() => window.removeEventListener('keydown', onFullscreenEsc))
 const addingParentId = ref<string | null>(null)
 const addingName = ref('')
 const addInputRef = ref<{ focus: () => void } | null>(null)

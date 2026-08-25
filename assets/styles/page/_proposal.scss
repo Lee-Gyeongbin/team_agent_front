@@ -1327,6 +1327,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: $spacing-md;
+  margin-top: 20px;
 }
 
 .pt-settings-col {
@@ -1361,24 +1362,30 @@
 }
 
 .pt-mini-upload {
-  border: 1px solid $color-border;
-  border-radius: $border-radius-base;
-  padding: 9px $spacing-sm;
+  // 드롭 대상이므로 한 줄 높이로는 조준이 어렵다 — RFP 드롭존과 같은 무게로 맞춤
+  min-height: 72px;
+  border: 1.5px dashed $color-border;
+  border-radius: $border-radius-lg;
+  padding: $spacing-md;
   @include typo($body-small);
   color: $color-text-muted;
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  transition: border-color $transition-fast;
+  transition:
+    border-color $transition-fast,
+    background $transition-fast,
+    color $transition-fast;
 
   &:hover {
     border-color: var(--color-primary);
+    color: var(--color-primary);
   }
 
   &--add {
-    justify-content: flex-start;
-    gap: 4px;
+    justify-content: center;
+    gap: $spacing-xs;
   }
 
   &.is-dragover {
@@ -4244,6 +4251,20 @@ body.is-resizing {
   box-sizing: border-box;
   padding: $spacing-md $spacing-lg;
 
+  /* 전체화면 — z-index는 사이드바(1) 위, 드롭다운 포털($z-dropdown: 100)·모달·토스트 아래.
+     포털로 띄우는 메뉴/모달이 패널 뒤로 숨지 않도록 일부러 낮게 잡는다. */
+  &.is-fullscreen {
+    position: fixed;
+    top: $header-height;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 10;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+  }
+
   > .pt-strategy-head,
   > .pt-detail-toc-head {
     flex-shrink: 0;
@@ -4261,7 +4282,7 @@ body.is-resizing {
   margin-bottom: $spacing-sm;
 
   .pt-panel-title {
-    @include typo($body-medium-bold);
+    @include typo($body-large-bold);
     margin: 0;
     flex-shrink: 0;
   }
@@ -4278,6 +4299,20 @@ body.is-resizing {
     flex-shrink: 0;
   }
 }
+
+/* 전체화면 토글은 헤더 우측 끝 (요구사항 스텝과 같은 자리) */
+.pt-detail-toc-fullscreen {
+  margin-left: auto;
+}
+/* 헤더 우측 액션 묶음 — 배지 + 재생성 버튼들 */
+.pt-strategy-head-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
 .pt-strategy-chrome {
   display: flex;
   align-items: flex-end;
@@ -4295,15 +4330,6 @@ body.is-resizing {
   &.ui-tab {
     border-bottom: none;
   }
-}
-.pt-strategy-chrome-actions {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
-  flex-shrink: 0;
-  padding-bottom: 6px;
 }
 .pt-s4-wrap {
   display: flex;
@@ -4727,7 +4753,13 @@ body.is-resizing {
 
 .pt-pd-wrap {
   display: grid;
-  grid-template-columns: 230px 1fr 260px;
+  grid-template-columns: 230px 1fr 300px;
+  transition: grid-template-columns $transition-base;
+
+  /* 보완요청 접힘 — 토글 버튼만 남는 레일 폭 */
+  &.is-chat-collapsed {
+    grid-template-columns: 230px 1fr 44px;
+  }
   grid-template-rows: minmax(0, 1fr);
   gap: 0;
   border: 1px solid $color-border;
@@ -4744,12 +4776,64 @@ body.is-resizing {
   overflow-y: auto;
   @include custom-scrollbar;
 }
-.pt-pd-cat {
-  font-size: 11px;
-  color: $color-text-muted;
-  font-weight: 700;
-  margin: 10px 6px 4px;
+
+/* 목록 상단 고정 요약 — 스크롤해도 진행 상황이 보이게 */
+.pt-pd-list-summary {
+  position: sticky;
+  top: -10px; // .pt-pd-list padding 만큼 끌어올려 상단에 붙인다
+  z-index: 1;
+  margin: -10px -10px 6px;
+  padding: 10px;
+  background: #fff;
+  border-bottom: 1px solid $color-border-light;
+  @include typo($body-xsmall, $color-text-muted);
 }
+/* 카테고리 헤더 — 항목과 같은 톤이면 그룹 경계가 안 읽힌다.
+   구분선 + 진한 색 + 건수로 위계를 만든다. */
+.pt-pd-cat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: $spacing-md 6px 6px;
+  padding-top: $spacing-sm;
+  border-top: 1px solid $color-border-light;
+}
+
+/* 첫 그룹은 요약 바 바로 아래라 구분선·여백이 겹친다.
+   :first-of-type은 태그 기준이라 앞선 .pt-pd-list-summary(div) 때문에 안 맞는다 → 인접 형제로 지정 */
+.pt-pd-list-summary + .pt-pd-cat {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.pt-pd-cat-label {
+  @include typo($body-small-bold, $color-text-heading);
+}
+
+.pt-pd-cat-count {
+  @include typo($body-caption-bold, $color-text-muted);
+  background: $color-surface;
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
+/* 7개 필드를 평평하게 나열하면 인과 사슬이 안 보인다 — 구간으로 묶어 관계를 드러낸다 */
+.pt-pd-group {
+  & + & {
+    margin-top: $spacing-xl;
+  }
+}
+
+/* 구분선 없이 여백과 굵기만으로 구간을 나눈다 — 선을 겹칠수록 밀도가 떨어진다 */
+.pt-pd-group-head {
+  margin-bottom: $spacing-sm;
+}
+
+.pt-pd-group-title {
+  @include typo($body-medium-bold, $color-text-heading);
+}
+
 .pt-pd-item {
   padding: 10px;
   border-radius: 7px;
@@ -4766,6 +4850,10 @@ body.is-resizing {
     background: var(--color-primary-bg);
     color: var(--color-primary);
     font-weight: 700;
+    // 우측 경계까지 밀어붙여 상세 패널과 맞붙게 — 목록과 상세가 끊겨 보이던 문제
+    margin-right: -10px;
+    border-radius: 7px 0 0 7px;
+
     .dot {
       background: var(--color-primary);
     }
@@ -4777,10 +4865,38 @@ body.is-resizing {
     background: $color-border;
     display: inline-block;
     margin-right: 6px;
+    flex-shrink: 0;
+  }
+
+  // AI 원본 그대로 = 아직 검토 안 함. 속이 빈 점으로 '미완료'를 표현
+  &.state-ai .dot {
+    background: transparent;
+    border: 1.5px solid $color-warning;
+  }
+
+  // 사람이 수정했거나 직접 추가함 = 검토 완료
+  &.state-edited .dot,
+  &.state-manual .dot {
+    background: $color-success;
+  }
+
+  > span:first-child {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    min-width: 0;
+
+    .dot {
+      margin-top: 6px;
+    }
   }
 }
 .pt-pd-del {
   opacity: 0;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 2px;
   border: none;
   background: none;
   color: $color-text-muted;
@@ -4792,28 +4908,52 @@ body.is-resizing {
     color: #d64545;
   }
 }
+/* 점선 회색 버튼은 목록 배경에 묻혀 안 보였다 → primary-line UiButton.
+   full-width(.is-full)가 width:100%를 강제하므로 좌우 margin을 주면 100%+margin이 되어
+   목록에 가로 스크롤이 생긴다. 좌우 여백은 부모 .pt-pd-list의 padding이 이미 담당한다. */
+/* 목록이 길어지면 추가 버튼이 스크롤 끝까지 내려가야 보인다 → 하단 고정.
+   상단 요약(.pt-pd-list-summary)과 짝을 이뤄 목록만 스크롤된다.
+   padding을 버튼이 아니라 래퍼에 줘야 버튼 높이가 부풀지 않는다. */
+.pt-pd-list-foot {
+  position: sticky;
+  bottom: -10px; // .pt-pd-list padding 만큼 끌어내려 바닥에 붙인다
+  z-index: 1;
+  margin: $spacing-sm -10px -10px;
+  padding: 10px;
+  background: #fff;
+  border-top: 1px solid $color-border-light;
+}
+
 .pt-pd-list-add {
-  margin: 12px 6px 4px;
-  width: calc(100% - 12px);
-  border: 1px dashed $color-border;
-  background: none;
-  color: $color-text-muted;
-  border-radius: 7px;
-  padding: 9px;
-  font-size: 12px;
-  cursor: pointer;
-  &:hover {
-    border-color: var(--color-primary);
-    color: var(--color-primary);
-  }
+  margin: 0;
 }
 .pt-pd-detail {
   display: flex;
   flex-direction: column;
   min-height: 0;
   overflow-y: auto;
+  /* sticky 액션바가 좌우 padding만큼(-26px) 블리드해서 오른쪽에 가로 스크롤이 생긴다.
+     overflow-y만 지정하면 overflow-x가 auto로 계산되므로 명시적으로 막는다. */
+  overflow-x: hidden;
   padding: 22px 26px 0;
   @include custom-scrollbar;
+}
+
+/* 좌측 목록에서 고른 항목을 상세 상단에 되비친다 — 어느 항목을 편집 중인지 명시 */
+.pt-pd-detail-head {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding-bottom: $spacing-md;
+  margin-bottom: $spacing-md;
+  border-bottom: 1px solid $color-border-light;
+}
+
+.pt-pd-detail-title {
+  margin: 0;
+  min-width: 0;
+  @include typo($body-medium-bold, $color-text-heading);
+  @include ellipsis(1);
 }
 .pt-pd-actions {
   position: sticky;
@@ -4830,27 +4970,36 @@ body.is-resizing {
   background: #fff;
 }
 .pt-pd-field {
-  margin-bottom: 14px;
+  margin-bottom: $spacing-md;
   label {
     display: block;
-    font-size: 11px;
-    font-weight: 700;
-    color: $color-text-muted;
-    margin-bottom: 5px;
+    @include typo($body-small-bold, $color-text-muted);
+    margin-bottom: 4px;
   }
 }
+/* 필드마다 테두리를 두르면 세로로 훑을 때 사각형 4개가 시선을 끊는다.
+   테두리 대신 옅은 배경으로 입력 영역임을 알리고, 포커스에서만 윤곽을 준다. */
 .pt-pd-textarea {
   width: 100%;
-  border: 1px solid $color-border;
-  border-radius: 6px;
-  padding: 9px 11px;
-  font: inherit;
-  line-height: 1.6;
-  resize: vertical;
-  min-height: 42px;
-  &:focus {
-    outline: none;
-    border-color: var(--color-primary);
+
+  .ui-textarea {
+    // ispark 기본 min-height:84px 가 auto-resize 결과를 덮어써서 1줄짜리도 4줄 높이가 된다
+    min-height: 0;
+    background: $color-surface;
+    border-radius: $border-radius-base;
+    transition:
+      background $transition-fast,
+      box-shadow $transition-fast;
+
+    &:hover {
+      background: #eef1f4;
+    }
+
+    // box-shadow는 레이아웃을 밀지 않는다 (border면 1px씩 흔들림)
+    &:focus {
+      background: #fff;
+      box-shadow: 0 0 0 1px var(--color-primary);
+    }
   }
 }
 .pt-src-badges {
@@ -4880,18 +5029,34 @@ body.is-resizing {
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+
   h3 {
-    @include typo($body-small-bold);
-    margin: 0 0 12px;
+    @include typo($body-medium-bold);
+    margin: 0;
     color: $color-text-primary;
-    flex-shrink: 0;
+    min-width: 0;
+    word-break: break-word;
   }
+
+  /* 접힘 상태에선 토글 버튼만 남으므로 좌우 여백을 줄인다 */
+  .pt-pd-wrap.is-chat-collapsed & {
+    padding: 16px 6px;
+  }
+}
+
+.pt-pd-chat-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-xs;
+  margin-bottom: 12px;
+  flex-shrink: 0;
 }
 .pt-pd-chat-hint {
   background: $color-surface;
   border-radius: 8px;
   padding: 12px;
-  @include typo($body-xsmall);
+  @include typo($body-small);
   color: $color-text-muted;
   line-height: 1.8;
   flex: 1;
@@ -4905,25 +5070,10 @@ body.is-resizing {
   margin-top: 12px;
   flex-shrink: 0;
 
-  input {
-    width: 100%;
-    box-sizing: border-box;
-    border: 1px solid $color-border;
-    border-radius: $border-radius-base;
-    padding: 10px 12px;
-    font: inherit;
-    @include typo($body-small);
-    color: $color-text-primary;
-    outline: none;
-
-    &:focus {
-      border-color: var(--color-primary);
-    }
-
-    &:disabled {
-      background: $color-surface;
-      color: $color-text-muted;
-    }
+  // 테두리·포커스는 UiTextarea(border prop)가 그린다
+  .pt-pd-chat-textarea .ui-textarea {
+    // ispark 기본 min-height:84px 를 풀어야 auto-resize가 1줄부터 시작한다
+    min-height: 0;
   }
 
   .pt-pd-chat-send {
@@ -4936,53 +5086,50 @@ body.is-resizing {
   color: $color-text-muted;
 }
 
+/* 현황·이슈 카드와 같은 규칙 — 폭에 따라 열 수가 늘고, 같은 행 카드는 높이를 맞춘다 */
 .pt-wt-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fill, minmax(520px, 1fr));
   gap: 14px;
 }
 .pt-wt-card {
+  display: flex;
+  flex-direction: column;
   background: #fff;
   border: 1px solid $color-border;
   border-radius: $border-radius-lg;
   padding: 18px;
-  position: relative;
   &.stale {
     border-color: rgba(#e0762c, 0.4);
     background: #fffcf8;
   }
 }
-.pt-wt-stale-badge {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  background: rgba(#e0762c, 0.12);
-  color: #e0762c;
-  font-size: 10.5px;
-  font-weight: 700;
-  border-radius: 5px;
-  padding: 3px 8px;
+
+/* 겨냥 문제 · stale · 삭제를 한 줄로 — absolute로 겹쳐 두면 stale일 때 위치를 손보게 된다 */
+.pt-wt-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
 }
 .pt-wt-del {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  border: none;
-  background: none;
-  cursor: pointer;
-  color: $color-text-muted;
-  .pt-wt-card.stale & {
-    right: 170px;
-  }
+  margin-left: auto;
+}
+
+/* 삭제만 hover 시 danger — ispark ghost hover(6단계)를 넘기려 선택자를 길게 잡는다 */
+.pt-wt-top .pt-btn-del.ui-button.variant-ghost:hover:not(:disabled) {
+  color: $color-error;
+  background-color: rgba($color-error, 0.08);
 }
 .pt-wt-target {
-  display: inline-block;
-  background: $color\-surface;
-  color: $color\-text-primary;
-  font-size: 11px;
+  border: none;
+  background: $color-surface;
+  color: $color-text-primary;
+  @include typo($body-small);
   border-radius: 5px;
-  padding: 2px 8px;
-  margin-bottom: 10px;
+  padding: 3px 8px;
+  min-width: 0;
+  @include ellipsis(1);
   cursor: pointer;
   &:hover {
     background: var(--color-primary-bg);
@@ -4990,25 +5137,21 @@ body.is-resizing {
   }
 }
 .pt-wt-core {
-  font-size: 14.5px;
-  font-weight: 700;
-  margin: 0 0 10px;
-  line-height: 1.5;
-  padding-right: 90px;
+  @include typo($body-large-bold);
+  margin: 0 0 12px;
 }
 .pt-wt-row {
   margin-bottom: 10px;
   label {
     display: block;
-    font-size: 10.5px;
-    font-weight: 700;
+    @include typo($body-small-bold);
     color: $color-text-muted;
-    margin-bottom: 3px;
+    margin-bottom: 4px;
   }
   .v {
-    font-size: 12.5px;
-    color: $color\-text-primary;
-    line-height: 1.55;
+    @include typo($body-medium);
+    color: $color-text-primary;
+    line-height: 1.6;
     &.is-missing {
       color: #e0762c;
       font-weight: 700;
@@ -5019,10 +5162,12 @@ body.is-resizing {
     }
   }
 }
+/* 카드 높이를 맞추면 내용이 짧은 카드에 빈 공간이 남는다 → 저장 버튼을 바닥에 고정 */
 .pt-wt-foot {
   display: flex;
+  justify-content: flex-end;
   gap: 8px;
-  margin-top: 12px;
+  margin-top: auto;
   padding-top: 12px;
   border-top: 1px solid $color-border;
 }
@@ -6255,5 +6400,34 @@ textarea.oc-outline-textarea.ui-textarea {
 @keyframes pt-file-chip-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* 문제정의 목록 hover 툴팁 — Radix 포탈로 body에 렌더되므로 전역 스타일이어야 한다 */
+.ui-tooltip-content.pt-pd-tip {
+  max-width: 360px;
+  text-align: left;
+  white-space: normal;
+  word-break: keep-all;
+  // 기본 10px은 본문 전문을 담기엔 작다
+  font-size: 12px;
+  line-height: 1.55;
+
+  .pt-pd-tip-state {
+    display: block;
+    margin-bottom: 6px;
+    @include typo($body-caption-bold);
+    opacity: 0.75;
+  }
+
+  .pt-pd-tip-text {
+    margin: 0;
+  }
+
+  .pt-pd-tip-goal {
+    margin: 6px 0 0;
+    padding-top: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    opacity: 0.85;
   }
 }

@@ -539,21 +539,19 @@
                 <label class="pt-req-edit-label">필수 여부</label>
                 <span class="pt-req-edit-hint">필수 요구사항은 목차·슬라이드 작성 시 우선 반영됩니다.</span>
               </div>
-              <div class="pt-toggle-row">
-                <button
-                  type="button"
-                  :class="['pt-toggle-opt', { 'is-active': editMandatoryYn === 'Y' }]"
-                  @click="editMandatoryYn = 'Y'"
-                >
-                  필수
-                </button>
-                <button
-                  type="button"
-                  :class="['pt-toggle-opt', { 'is-active': editMandatoryYn === 'N' }]"
-                  @click="editMandatoryYn = 'N'"
-                >
-                  선택
-                </button>
+              <div class="pt-req-edit-radio-row">
+                <UiRadio
+                  v-model="editMandatoryYn"
+                  value="Y"
+                  name="req-mandatory"
+                  label="필수"
+                />
+                <UiRadio
+                  v-model="editMandatoryYn"
+                  value="N"
+                  name="req-mandatory"
+                  label="선택"
+                />
               </div>
             </div>
           </div>
@@ -976,7 +974,7 @@
 
 <script setup lang="ts">
 import draggable from 'vuedraggable'
-import { UiButton, UiIcon, UiBadge, UiTable, UiTab } from '@leechanyong/ispark-ui'
+import { UiButton, UiIcon, UiBadge, UiTable, UiTab, UiRadio } from '@leechanyong/ispark-ui'
 import { openToast } from '~/composables/useToast'
 import { openConfirm } from '~/composables/useDialog'
 import { openLoading, updateLoadingText, closeLoading } from '~/composables/useLoading'
@@ -1608,16 +1606,35 @@ const onDeleteReq = async (id: string) => {
   await loadStage1()
 }
 
-const toggleEc = (id: string) => {
+/**
+ * 펼친 행을 스크롤 영역 맨 위로 올린다.
+ * scrollIntoView는 스크롤 가능한 조상을 모두 건드려 바깥 레이아웃까지 움직일 수 있어,
+ * 컨테이너 기준 상대 위치를 직접 계산해 이 목록만 스크롤한다.
+ */
+const scrollEcRowToTop = (id: string) => {
+  const row = document.getElementById(`ec-${id}`)
+  const list = row?.closest<HTMLElement>('.pt-step-b-scroll-list')
+  if (!row || !list) return
+  const offset = row.getBoundingClientRect().top - list.getBoundingClientRect().top
+  list.scrollTo({ top: list.scrollTop + offset, behavior: 'smooth' })
+}
+
+const toggleEc = async (id: string) => {
   // 수정 중에는 접기 방지
   if (editingEcId.value === id && openEcIds.value.has(id)) {
     openToast({ message: '수정 중입니다. 저장 또는 취소 후 접어주세요.', type: 'warning' })
     return
   }
   const next = new Set(openEcIds.value)
-  if (next.has(id)) next.delete(id)
-  else next.add(id)
+  const isOpening = !next.has(id)
+  if (isOpening) next.add(id)
+  else next.delete(id)
   openEcIds.value = next
+
+  // 펼칠 때만 — 접을 때 스크롤이 따라가면 방금 본 위치를 잃는다
+  if (!isOpening) return
+  await nextTick()
+  scrollEcRowToTop(id)
 }
 
 const onStartEditEc = (ec: PtEvalCriteria) => {
@@ -1852,7 +1869,7 @@ const onDeleteIssue = async (id: string) => {
   margin-bottom: $spacing-sm;
 
   .pt-panel-title {
-    @include typo($body-medium-bold);
+    @include typo($body-large-bold);
     margin: 0;
     flex-shrink: 0;
   }
@@ -1949,6 +1966,8 @@ const onDeleteIssue = async (id: string) => {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  /* 평가기준 편집 툴바가 좌우 padding만큼 블리드(margin: -14px)해 가로 스크롤이 생긴다 */
+  overflow-x: hidden;
   overscroll-behavior: contain;
   @include custom-scrollbar;
 }
@@ -2003,6 +2022,12 @@ const onDeleteIssue = async (id: string) => {
   word-break: break-word;
   white-space: pre-wrap;
   line-height: 1.5;
+}
+
+.pt-req-edit-radio-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-lg;
 }
 
 .pt-req-actions {

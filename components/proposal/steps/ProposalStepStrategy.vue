@@ -1,5 +1,5 @@
 <template>
-  <div class="pt-panel pt-panel--lg pt-strategy">
+  <div :class="['pt-panel', 'pt-panel--lg', 'pt-strategy', { 'is-fullscreen': isFullscreen }]">
     <div class="pt-strategy-head">
       <h3 class="pt-panel-title">전략검토</h3>
       <p class="pt-panel-desc">문제정의와 Win Theme를 확인하고 보완하세요.</p>
@@ -16,6 +16,71 @@
         </template>
         프롬프트
       </UiButton>
+
+      <!-- 탭별 액션 — 요구사항 스텝과 동일하게 배지 + ⋮ 메뉴 + 전체화면 (로딩 중에는 렌더하지 않음) -->
+      <div
+        v-if="!isLoadingStage2"
+        class="pt-strategy-head-actions"
+      >
+        <UiBadge
+          v-if="activeTab === 'pd'"
+          :variant="summary?.problemDefinitionCount ? 'success' : 'default'"
+          size="sm"
+        >
+          {{ summary?.problemDefinitionCount ? `완료 ${summary.problemDefinitionCount}건` : '대기' }}
+        </UiBadge>
+        <UiBadge
+          v-else
+          :variant="summary?.winThemeStaleCount ? 'warning' : summary?.winThemeCount ? 'success' : 'default'"
+          size="sm"
+        >
+          {{
+            summary?.winThemeStaleCount
+              ? `보완필요 ${summary.winThemeStaleCount}건`
+              : summary?.winThemeCount
+                ? `완료 ${summary.winThemeCount}건`
+                : '대기'
+          }}
+        </UiBadge>
+
+        <UiDropdownMenu
+          :items="strategyMenuItems"
+          @select="onStrategyMenuSelect"
+        >
+          <template #trigger>
+            <UiButton
+              variant="outline"
+              size="sm"
+              icon-only
+              title="생성 작업 더보기"
+              aria-label="생성 작업 더보기"
+            >
+              <template #icon-left>
+                <UiIcon
+                  name="ellipsis-vertical"
+                  size="18"
+                />
+              </template>
+            </UiButton>
+          </template>
+        </UiDropdownMenu>
+
+        <UiButton
+          variant="ghost"
+          size="sm"
+          icon-only
+          :title="isFullscreen ? '전체화면 해제 (Esc)' : '전체화면으로 보기'"
+          :aria-label="isFullscreen ? '전체화면 해제' : '전체화면으로 보기'"
+          @click="toggleFullscreen"
+        >
+          <template #icon-left>
+            <UiIcon
+              :name="isFullscreen ? 'minimize-2' : 'maximize-2'"
+              size="16"
+            />
+          </template>
+        </UiButton>
+      </div>
     </div>
 
     <!-- 최초 진입 로딩 -->
@@ -57,62 +122,8 @@
             v-model="activeTab"
             class="pt-strategy-tabs"
             :tabs="strategyTabs"
+            align="left"
           />
-          <div class="pt-strategy-chrome-actions">
-            <template v-if="activeTab === 'pd'">
-              <span
-                class="pt-badge"
-                :class="summary?.problemDefinitionCount ? 'is-ok' : 'is-gray'"
-              >
-                {{ summary?.problemDefinitionCount ? `완료 ${summary.problemDefinitionCount}건` : '대기' }}
-              </span>
-              <UiButton
-                variant="primary-line"
-                size="sm"
-                :loading="isRegeneratingAllPd"
-                @click="onRegenerateAllPd"
-              >
-                ↻ 문제정의 재생성
-              </UiButton>
-            </template>
-            <template v-else>
-              <span
-                class="pt-badge"
-                :class="summary?.winThemeStaleCount ? 'is-warn' : summary?.winThemeCount ? 'is-ok' : 'is-gray'"
-              >
-                {{
-                  summary?.winThemeStaleCount
-                    ? `보완필요 ${summary.winThemeStaleCount}건`
-                    : summary?.winThemeCount
-                      ? `완료 ${summary.winThemeCount}건`
-                      : '대기'
-                }}
-              </span>
-              <UiButton
-                variant="primary-line"
-                size="sm"
-                :loading="regeneratingWtId === 'all'"
-                @click="onRegenerateWt"
-              >
-                ↻ Win Theme 재생성
-              </UiButton>
-              <UiButton
-                variant="primary-line"
-                size="sm"
-                @click="onAddWt"
-              >
-                + Win Theme 수동 추가
-              </UiButton>
-            </template>
-            <UiButton
-              variant="primary-line"
-              size="sm"
-              :loading="isRegeneratingAll"
-              @click="onRegenerateAll"
-            >
-              ↻ 전체 재생성
-            </UiButton>
-          </div>
         </div>
 
         <!-- 문제정의 -->
@@ -120,92 +131,159 @@
           v-show="activeTab === 'pd'"
           class="pt-s4-tab pt-s4-tab--fill"
         >
-          <div class="pt-pd-wrap">
+          <div :class="['pt-pd-wrap', { 'is-chat-collapsed': !isPdChatOpen }]">
             <div class="pt-pd-list">
+              <!-- 목록이 길어지면 '어디까지 봤더라'가 되므로 진행 상황을 상단에 고정 -->
+              <div class="pt-pd-list-summary">문제정의 {{ problemDefs.length }}건 · 검토 {{ pdReviewedCount }}건</div>
               <template
                 v-for="group in pdGroups"
                 :key="group.code"
               >
-                <div class="pt-pd-cat">{{ group.label }} ({{ group.code }})</div>
-                <div
+                <div class="pt-pd-cat">
+                  <span class="pt-pd-cat-label">{{ group.label }}</span>
+                  <span class="pt-pd-cat-count">{{ group.items.length }}</span>
+                </div>
+                <!-- 목록 제목은 문장 단위로 잘리므로 hover 시 전문을 보여준다 -->
+                <UiTooltip
                   v-for="pd in group.items"
                   :key="pd.problemId"
-                  class="pt-pd-item"
-                  :class="{ active: pd.problemId === activeProblemId }"
-                  @click="activeProblemId = pd.problemId"
+                  side="right"
+                  align="start"
+                  :side-offset="8"
+                  content-class="pt-pd-tip"
                 >
-                  <span><span class="dot" /> {{ pdTitle(pd) }}</span>
-                  <button
-                    type="button"
-                    class="pt-pd-del"
-                    title="삭제"
-                    @click.stop="onDeletePd(pd.problemId)"
+                  <div
+                    class="pt-pd-item"
+                    :class="[`state-${pdReviewState(pd)}`, { active: pd.problemId === activeProblemId }]"
+                    @click="onSelectPd(pd.problemId)"
                   >
-                    ✕
-                  </button>
-                </div>
+                    <span><span class="dot" /> {{ pdTitle(pd) }}</span>
+                    <button
+                      type="button"
+                      class="pt-pd-del"
+                      title="삭제"
+                      :aria-label="`${pdTitle(pd)} 삭제`"
+                      @click.stop="onDeletePd(pd.problemId)"
+                    >
+                      <UiIcon
+                        name="trash-2"
+                        size="14"
+                      />
+                    </button>
+                  </div>
+                  <template #content>
+                    <span class="pt-pd-tip-state">
+                      {{ pdReviewState(pd) === 'ai' ? 'AI 생성 원본 · 미검토' : '검토·수정함' }}
+                    </span>
+                    <p class="pt-pd-tip-text">{{ pd.currentProblem || '(내용 없음)' }}</p>
+                    <p
+                      v-if="pd.goal"
+                      class="pt-pd-tip-goal"
+                    >
+                      목표 · {{ pd.goal }}
+                    </p>
+                  </template>
+                </UiTooltip>
               </template>
-              <button
-                type="button"
-                class="pt-pd-list-add"
-                @click="onAddPd"
-              >
-                + 새 문제정의 추가
-              </button>
+              <div class="pt-pd-list-foot">
+                <UiButton
+                  variant="primary-line"
+                  size="sm"
+                  full-width
+                  class="pt-pd-list-add"
+                  @click="onAddPd"
+                >
+                  <template #icon-left>
+                    <UiIcon
+                      name="plus"
+                      size="14"
+                    />
+                  </template>
+                  새 문제정의 추가
+                </UiButton>
+              </div>
             </div>
 
             <div
               v-if="activePd"
               class="pt-pd-detail"
             >
-              <div
-                v-for="f in pdFields"
-                :key="f.key"
-                class="pt-pd-field"
+              <!-- 좌측에서 무엇을 골랐는지 되비쳐 목록과 상세를 잇는다 -->
+              <div class="pt-pd-detail-head">
+                <UiBadge
+                  variant="info"
+                  size="sm"
+                >
+                  {{ activePdCategory }}
+                </UiBadge>
+                <h4 class="pt-pd-detail-title">{{ pdTitle(activePd) }}</h4>
+              </div>
+              <section
+                v-for="g in pdFieldGroups"
+                :key="g.title"
+                class="pt-pd-group"
               >
-                <label>{{ f.label }}</label>
-                <textarea
-                  v-model="editPd[f.key]"
-                  class="pt-pd-textarea"
-                  rows="2"
-                />
-              </div>
-              <div class="pt-pd-field">
-                <label>근거</label>
-                <div class="pt-src-badges">
-                  <button
-                    v-for="id in activePd.sourceIssueIds"
-                    :key="'i' + id"
-                    type="button"
-                    class="pt-src-badge is-issue"
-                    @click="emit('go-requirements', { tab: 'issue', id })"
-                  >
-                    이슈 {{ id }}
-                  </button>
-                  <button
-                    v-for="id in activePd.sourceRequirementIds"
-                    :key="'r' + id"
-                    type="button"
-                    class="pt-src-badge is-req"
-                    @click="emit('go-requirements', { tab: 'req', id })"
-                  >
-                    요구사항 {{ id }}
-                  </button>
-                  <span
-                    v-if="!activePd.sourceIssueIds.length && !activePd.sourceRequirementIds.length"
-                    class="pt-muted"
-                    >근거 없음 (수동 작성)</span
-                  >
+                <div class="pt-pd-group-head">
+                  <span class="pt-pd-group-title">{{ g.title }}</span>
                 </div>
-              </div>
+                <template
+                  v-for="f in g.fields"
+                  :key="f.key"
+                >
+                  <div class="pt-pd-field">
+                    <label>{{ f.label }}</label>
+                    <!-- rows=2 고정이면 3~5줄짜리 본문이 박스마다 스크롤에 갇혀 검토가 안 된다 -->
+                    <UiTextarea
+                      v-model="editPd[f.key]"
+                      class="pt-pd-textarea"
+                      :rows="2"
+                      :max-rows="14"
+                      auto-resize
+                    />
+                  </div>
+                  <!-- 근거는 '현재 문제' 주장의 출처라 바로 뒤에 둔다 (맨 아래면 검증 동선이 끊김) -->
+                  <div
+                    v-if="g.hasEvidence && f.key === 'currentProblem'"
+                    class="pt-pd-field"
+                  >
+                    <label>근거</label>
+                    <div class="pt-src-badges">
+                      <button
+                        v-for="id in activePd.sourceIssueIds"
+                        :key="'i' + id"
+                        type="button"
+                        class="pt-src-badge is-issue"
+                        @click="emit('go-requirements', { tab: 'issue', id })"
+                      >
+                        이슈 {{ id }}
+                      </button>
+                      <button
+                        v-for="id in activePd.sourceRequirementIds"
+                        :key="'r' + id"
+                        type="button"
+                        class="pt-src-badge is-req"
+                        @click="emit('go-requirements', { tab: 'req', id })"
+                      >
+                        요구사항 {{ id }}
+                      </button>
+                      <span
+                        v-if="!activePd.sourceIssueIds.length && !activePd.sourceRequirementIds.length"
+                        class="pt-muted"
+                        >근거 없음 (수동 작성)</span
+                      >
+                    </div>
+                  </div>
+                </template>
+              </section>
               <div class="pt-pd-actions">
                 <UiButton
                   variant="primary"
                   size="sm"
                   :loading="isSavingPd"
+                  :disabled="!isPdDirty"
                   @click="onSavePd"
                 >
-                  변경사항 저장
+                  {{ isPdDirty ? '변경사항 저장' : '저장됨' }}
                 </UiButton>
                 <UiButton
                   variant="ghost"
@@ -228,17 +306,47 @@
               v-if="activePd"
               class="pt-pd-chat"
             >
-              <h3>"{{ pdTitle(activePd) }}" 보완요청</h3>
-              <div class="pt-pd-chat-hint">
+              <div class="pt-pd-chat-head">
+                <h3 v-show="isPdChatOpen">"{{ pdTitle(activePd) }}" 보완요청</h3>
+                <UiButton
+                  variant="ghost"
+                  size="xs"
+                  icon-only
+                  :title="isPdChatOpen ? '보완요청 접기' : '보완요청 펼치기'"
+                  :aria-label="isPdChatOpen ? '보완요청 접기' : '보완요청 펼치기'"
+                  :aria-expanded="isPdChatOpen"
+                  @click="isPdChatOpen = !isPdChatOpen"
+                >
+                  <template #icon-left>
+                    <UiIcon
+                      :name="isPdChatOpen ? 'chevron-right' : 'chevron-left'"
+                      size="16"
+                    />
+                  </template>
+                </UiButton>
+              </div>
+              <div
+                v-show="isPdChatOpen"
+                class="pt-pd-chat-hint"
+              >
                 예) 방치 시 위험을 더 구체적인 수치로 표현해줘<br />
                 예) 목표에 클라우드 전환 일정도 함께 언급해줘
               </div>
-              <div class="pt-pd-chat-input">
-                <input
+              <div
+                v-show="isPdChatOpen"
+                class="pt-pd-chat-input"
+              >
+                <!-- 보완 요청은 두세 줄이 되기 쉬워 textarea로. Enter 전송 / Shift+Enter 줄바꿈 -->
+                <UiTextarea
                   v-model="refineFeedback"
-                  placeholder="보완 요청을 입력하세요"
+                  class="pt-pd-chat-textarea"
+                  placeholder="보완 요청을 입력하세요 (Enter 전송 · Shift+Enter 줄바꿈)"
                   :disabled="isRefining"
-                  @keyup.enter="onRefinePd(refineFeedback)"
+                  :rows="1"
+                  :max-rows="6"
+                  auto-resize
+                  border
+                  @keydown.enter.exact.prevent="onRefinePd(refineFeedback)"
                 />
                 <UiButton
                   variant="primary"
@@ -264,25 +372,39 @@
               class="pt-wt-card"
               :class="{ stale: wt.stale }"
             >
-              <span
-                v-if="wt.stale"
-                class="pt-wt-stale-badge"
-                >{{ staleBadgeText(wt) }}</span
-              >
-              <button
-                type="button"
-                class="pt-wt-del"
-                title="삭제"
-                @click="onDeleteWt(wt.winThemeId)"
-              >
-                ✕
-              </button>
-              <div
-                class="pt-wt-target"
-                :title="(wt.sourceProblemDefinitionIds || []).join(', ')"
-                @click="focusPd(wt.sourceProblemDefinitionIds?.[0])"
-              >
-                겨냥 문제 · {{ targetPdTitle(wt) }}
+              <!-- 상단 행 — 겨냥 문제 / stale 배지 / 액션. 현황·이슈 카드와 같은 배치 -->
+              <div class="pt-wt-top">
+                <button
+                  type="button"
+                  class="pt-wt-target"
+                  :title="(wt.sourceProblemDefinitionIds || []).join(', ')"
+                  @click="focusPd(wt.sourceProblemDefinitionIds?.[0])"
+                >
+                  겨냥 문제 · {{ targetPdTitle(wt) }}
+                </button>
+                <UiBadge
+                  v-if="wt.stale"
+                  variant="warning"
+                  size="sm"
+                >
+                  {{ staleBadgeText(wt) }}
+                </UiBadge>
+                <UiButton
+                  variant="ghost"
+                  size="xs"
+                  icon-only
+                  class="pt-btn-del pt-wt-del"
+                  title="삭제"
+                  :aria-label="`${targetPdTitle(wt)} Win Theme 삭제`"
+                  @click="onDeleteWt(wt.winThemeId)"
+                >
+                  <template #icon-left>
+                    <UiIcon
+                      name="trash-2"
+                      size="14"
+                    />
+                  </template>
+                </UiButton>
               </div>
               <div
                 class="pt-wt-core"
@@ -364,11 +486,12 @@
 </template>
 
 <script setup lang="ts">
-import { UiButton, UiIcon } from '@leechanyong/ispark-ui'
+import { UiButton, UiIcon, UiBadge, UiTab, UiTextarea, UiTooltip } from '@leechanyong/ispark-ui'
 import { openToast } from '~/composables/useToast'
 import { openConfirm } from '~/composables/useDialog'
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
 import type { Stage2Summary, ProblemDefinition, WinTheme } from '~/types/proposal'
+import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
 
 const props = defineProps<{
   ptProjectId: string
@@ -428,10 +551,10 @@ const problemDefs = ref<ProblemDefinition[]>([])
 const winThemes = ref<WinTheme[]>([])
 
 const activeTab = ref('pd')
-const strategyTabs = [
-  { label: '문제정의', value: 'pd' },
-  { label: 'Win Theme', value: 'wt' },
-]
+const strategyTabs = computed(() => [
+  { label: '문제정의', value: 'pd', count: problemDefs.value.length },
+  { label: 'Win Theme', value: 'wt', count: winThemes.value.length },
+])
 const isPromptModalOpen = ref(false)
 const activeProblemId = ref<string | null>(null)
 const isLoadingStage2 = ref(false)
@@ -441,7 +564,55 @@ const isRegeneratingAllPd = ref(false)
 const isSavingPd = ref(false)
 const isRefining = ref(false)
 const refineFeedback = ref('')
+/** 보완요청 패널 접기 — 좁은 컬럼이라 문제정의 본문을 넓게 보고 싶을 때 접는다 */
+const isPdChatOpen = ref(true)
 const regeneratingWtId = ref<string | null>(null)
+
+// ===== 헤더 액션 =====
+/** 탭에 따라 달라지는 생성 작업 메뉴 — 버튼을 늘어놓지 않고 ⋮ 하나로 모은다 */
+const strategyMenuItems = computed<DropdownMenuItemDef[]>(() =>
+  activeTab.value === 'pd'
+    ? [
+        { value: 'regenPd', label: '문제정의 재생성', icon: 'icon-refresh', disabled: isRegeneratingAllPd.value },
+        { value: 'regenAll', label: '전체 재생성', icon: 'icon-refresh', disabled: isRegeneratingAll.value },
+      ]
+    : [
+        {
+          value: 'regenWt',
+          label: 'Win Theme 재생성',
+          icon: 'icon-refresh',
+          disabled: regeneratingWtId.value === 'all',
+        },
+        { value: 'addWt', label: 'Win Theme 수동 추가', icon: 'icon-plus' },
+        { value: 'regenAll', label: '전체 재생성', icon: 'icon-refresh', disabled: isRegeneratingAll.value },
+      ],
+)
+
+const onStrategyMenuSelect = (value: string) => {
+  if (value === 'regenPd') onRegenerateAllPd()
+  else if (value === 'regenWt') onRegenerateWt()
+  else if (value === 'addWt') onAddWt()
+  else if (value === 'regenAll') onRegenerateAll()
+}
+
+/**
+ * 패널을 뷰포트로 확대 — 사이드바·페이지 헤드·스텝퍼가 쓰던 공간을 회수한다.
+ * 앱 헤더($z-header: 450)는 그대로 두고 그 아래부터 채운다.
+ * 헤더까지 덮으려면 z-index가 모달(451)보다 커져야 하고, 그러면 이 패널에서 연 모달이 뒤로 숨는다.
+ */
+const isFullscreen = ref(false)
+
+const toggleFullscreen = () => {
+  isFullscreen.value = !isFullscreen.value
+}
+
+const onFullscreenEsc = (e: KeyboardEvent) => {
+  if (e.key !== 'Escape' || !isFullscreen.value) return
+  isFullscreen.value = false
+}
+
+onMounted(() => window.addEventListener('keydown', onFullscreenEsc))
+onBeforeUnmount(() => window.removeEventListener('keydown', onFullscreenEsc))
 const wtDraft = ref<Record<string, Partial<WinTheme>>>({})
 
 const editPd = reactive({
@@ -454,17 +625,66 @@ const editPd = reactive({
   kpi: '',
 })
 
-const pdFields = [
-  { key: 'currentProblem' as const, label: '현재 문제' },
-  { key: 'rootCause' as const, label: '원인' },
-  { key: 'riskIfIgnored' as const, label: '방치 시 위험' },
-  { key: 'goal' as const, label: '목표' },
-  { key: 'requiredCapability' as const, label: '필요 역량' },
-  { key: 'strategySummary' as const, label: '전략 요약' },
-  { key: 'kpi' as const, label: 'KPI' },
+/**
+ * 현재 문제 → 원인 → 위험 → 목표 → 역량 → 전략 → KPI 는 하나의 논리 사슬이다.
+ * 평평하게 7개를 나열하면 검토자가 '원인이 문제와 맞는가'를 볼 수 없어 구간으로 묶는다.
+ */
+const pdFieldGroups = [
+  {
+    // 검토자가 '이게 사실인가'를 판단하는 구간 — 근거를 주장 바로 뒤에 붙인다
+    title: '진단',
+    fields: [
+      { key: 'currentProblem' as const, label: '현재 문제' },
+      { key: 'rootCause' as const, label: '원인' },
+      { key: 'riskIfIgnored' as const, label: '방치 시 위험' },
+    ],
+    hasEvidence: true,
+  },
+  {
+    // '말이 되는가'를 판단하는 구간. 목표·역량·전략·KPI는 모두 '무엇을 할 것인가'라 한 덩어리
+    title: '대응',
+    fields: [
+      { key: 'goal' as const, label: '목표' },
+      { key: 'requiredCapability' as const, label: '필요 역량' },
+      { key: 'strategySummary' as const, label: '전략 요약' },
+      { key: 'kpi' as const, label: 'KPI' },
+    ],
+    hasEvidence: false,
+  },
 ]
 
+const PD_EDIT_KEYS = pdFieldGroups.flatMap((g) => g.fields.map((f) => f.key))
+
 const activePd = computed(() => problemDefs.value.find((p) => p.problemId === activeProblemId.value) ?? null)
+
+/** 저장되지 않은 편집이 있는지 — 항목 전환·재생성 전에 확인하기 위함 */
+const isPdDirty = computed(() => {
+  const pd = activePd.value
+  if (!pd) return false
+  return PD_EDIT_KEYS.some((k) => (editPd[k] || '') !== (pd[k] || ''))
+})
+
+/**
+ * 목록에서 다른 문제정의로 이동.
+ * watch(activePd)가 editPd를 조건 없이 덮어쓰므로, 가드 없이 전환하면 편집이 조용히 사라진다.
+ */
+const onSelectPd = async (problemId: string) => {
+  if (problemId === activeProblemId.value) return
+  if (isPdDirty.value) {
+    const confirmed = await openConfirm({
+      title: '저장하지 않은 변경사항',
+      message: '변경사항이 저장되지 않았습니다. 저장하지 않고 이동하시겠습니까?',
+    })
+    if (!confirmed) return
+  }
+  activeProblemId.value = problemId
+}
+
+/** 상세 헤더에 노출할 분류명 — 좌측 목록 그룹 라벨과 같은 형식(코드 없이 라벨만) */
+const activePdCategory = computed(() => {
+  const code = activePd.value?.problemTypeCd || '001'
+  return PROBLEM_TYPE_MAP[code] || '기타'
+})
 
 const pdGroups = computed(() => {
   const order = ['001', '002', '003', '004', '005', '999']
@@ -482,10 +702,25 @@ const pdGroups = computed(() => {
 // tocMappingBlocks — TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동
 // const tocMappingBlocks = computed(() => { ... })
 
+/**
+ * 목록 제목 — 본문을 글자 수로 자르면 문장 중간에서 끊겨 스캔이 안 된다.
+ * 첫 문장(또는 첫 절)까지만 쓰고, 그래도 길면 그때 글자 수로 자른다.
+ */
 const pdTitle = (pd: ProblemDefinition) => {
   const t = (pd.currentProblem || '').trim()
-  return t.length > 28 ? t.slice(0, 28) + '…' : t || '(제목 없음)'
+  if (!t) return '(제목 없음)'
+  const head = t.split(/[.。]\s*/)[0]
+  const clause = head.length > 45 ? head.split(/,\s*/)[0] : head
+  return clause.length > 45 ? clause.slice(0, 45) + '…' : clause
 }
+
+/** 검토 상태 — 서버 필드로 도출(별도 컬럼 없이). manualYn=직접추가 / modifyDt=사람이 손댐 */
+type PdReviewState = 'manual' | 'edited' | 'ai'
+const pdReviewState = (pd: ProblemDefinition): PdReviewState => {
+  if (pd.manualYn === 'Y') return 'manual'
+  return pd.modifyDt ? 'edited' : 'ai'
+}
+const pdReviewedCount = computed(() => problemDefs.value.filter((pd) => pdReviewState(pd) !== 'ai').length)
 const isEvidenceMissing = (ev: string) => !ev || ev.includes('[증빙자료 필요]')
 // reqLabel — TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동
 // const reqLabel = (id: string) => reqLabelMap.value[id] || id
@@ -671,6 +906,14 @@ const onSavePd = async () => {
 
 const onRefinePd = async (feedback: string) => {
   if (!activePd.value || !feedback.trim()) return
+  // AI가 5개 필드를 덮어쓰므로 편집 중이면 먼저 확인받는다
+  if (isPdDirty.value) {
+    const confirmed = await openConfirm({
+      title: '문제정의 재생성',
+      message: '저장하지 않은 변경사항이 있습니다. 재생성하면 현재 편집 내용이 사라집니다. 계속할까요?',
+    })
+    if (!confirmed) return
+  }
   isRefining.value = true
   try {
     const res = await fetchRefineStage2ProblemDefinition({
