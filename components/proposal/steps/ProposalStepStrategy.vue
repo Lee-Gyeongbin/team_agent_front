@@ -1,20 +1,21 @@
 <template>
   <div class="pt-panel pt-panel--lg pt-strategy">
     <div class="pt-strategy-head">
-      <div class="pt-panel-title-row">
-        <h3 class="pt-panel-title">전략검토</h3>
-        <UiButton
-          variant="outline"
-          size="sm"
-          @click="isPromptModalOpen = true"
-        >
-          <template #icon-left>
-            <i class="icon-edit size-14" />
-          </template>
-          프롬프트
-        </UiButton>
-      </div>
+      <h3 class="pt-panel-title">전략검토</h3>
       <p class="pt-panel-desc">문제정의와 Win Theme를 확인하고 보완하세요.</p>
+      <UiButton
+        variant="outline"
+        size="sm"
+        @click="isPromptModalOpen = true"
+      >
+        <template #icon-left>
+          <UiIcon
+            name="pencil"
+            size="14"
+          />
+        </template>
+        프롬프트
+      </UiButton>
     </div>
 
     <!-- 최초 진입 로딩 -->
@@ -363,6 +364,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiIcon } from '@leechanyong/ispark-ui'
 import { openToast } from '~/composables/useToast'
 import { openConfirm } from '~/composables/useDialog'
 import { useProposalApi } from '~/composables/proposal/useProposalApi'

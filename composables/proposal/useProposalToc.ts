@@ -25,13 +25,13 @@ export const useProposalToc = (ptProjectId: Ref<string>) => {
    * TOC 항목 단건 추가
    * @param parentId null=대목차 추가, tocId=해당 대목차 아래 소목차 추가
    */
-  const handleAddTocItem = async (parentId: string | null) => {
+  const handleAddTocItem = async (parentId: string | null): Promise<PtTocItem | null> => {
     const res = await fetchInsertTocItem({
       ptProjectId: ptProjectId.value,
       parentTocId: parentId,
       sectionNm: parentId ? '새 소목차' : '새 대목차',
     })
-    if (res.result !== 'OK') return
+    if (res.result !== 'OK') return null
     // 소목차는 부모 바로 뒤에, 대목차는 맨 뒤에 삽입
     if (parentId) {
       const parentIdx = tocList.value.findLastIndex((t) => t.tocId === parentId || t.parentId === parentId)
@@ -39,6 +39,8 @@ export const useProposalToc = (ptProjectId: Ref<string>) => {
     } else {
       tocList.value.push(res.data)
     }
+    // 호출부에서 방금 만든 항목으로 포커스를 옮길 수 있도록 반환
+    return res.data
   }
 
   /** TOC 항목 제목 수정 (blur 시 호출) — 낙관적 업데이트 + 실패 시 롤백 */

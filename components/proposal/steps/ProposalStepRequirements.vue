@@ -177,6 +177,7 @@
             <template #item="{ element }">
               <div
                 v-show="!hiddenTocIds.has(element.tocId)"
+                :id="'toc-row-' + element.tocId"
                 :class="['pt-toc-item', { 'is-sub': !!element.parentId, 'is-editing': editingTocId === element.tocId }]"
               >
                 <span class="pt-toc-drag">
@@ -1447,7 +1448,8 @@ const editingOrigin = ref('')
 /** input이 붙는 즉시 포커스 (함수 ref 고정 identity → mount/unmount에서만 호출) */
 const setEditInput = (el: unknown) => {
   const input = el as HTMLInputElement | null
-  if (input && document.activeElement !== input) input.focus()
+  // preventScroll — 스크롤은 onAddItem이 scrollIntoView로 부드럽게 처리한다
+  if (input && document.activeElement !== input) input.focus({ preventScroll: true })
 }
 
 const onStartEditTitle = (item: PtTocItem) => {
@@ -1476,9 +1478,21 @@ const onCommitTitle = async () => {
   if (isSaved) openToast({ message: '목차명을 변경했습니다.' })
 }
 
+/**
+ * 목차 추가 — 새 항목은 목록 끝(대목차) 또는 부모 뒤(소목차)에 붙어 화면 밖일 수 있다.
+ * 추가 직후 편집 상태로 열고 그 행으로 스크롤해, 바로 이름을 입력할 수 있게 한다.
+ */
 const onAddItem = async (parentId: string | null) => {
   if (parentId && collapsedTocIds.value.has(parentId)) toggleTocCollapse(parentId)
-  await handleAddTocItem(parentId)
+  const created = await handleAddTocItem(parentId)
+  if (!created) return
+
+  onStartEditTitle(created)
+  await nextTick()
+  const row = document.getElementById(`toc-row-${created.tocId}`)
+  row?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  // 기본값('새 대목차')을 전체 선택해 바로 덮어쓸 수 있게
+  row?.querySelector<HTMLInputElement>('input.pt-toc-input')?.select()
 }
 /** 목차 삭제 — 대목차는 하위 소목차까지 연쇄 삭제되므로 개수를 알려주고 확인받는다 */
 const onDeleteItem = async (item: PtTocItem) => {

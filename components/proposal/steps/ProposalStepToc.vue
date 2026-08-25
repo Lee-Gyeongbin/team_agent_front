@@ -1,20 +1,21 @@
 <template>
   <div class="pt-panel pt-panel--lg pt-detail-toc">
     <div class="pt-detail-toc-head">
-      <div class="pt-panel-title-row">
-        <h3 class="pt-panel-title">세부목차</h3>
-        <UiButton
-          variant="outline"
-          size="sm"
-          @click="isPromptModalOpen = true"
-        >
-          <template #icon-left>
-            <i class="icon-edit size-14" />
-          </template>
-          프롬프트
-        </UiButton>
-      </div>
+      <h3 class="pt-panel-title">세부목차</h3>
       <p class="pt-panel-desc">전략검토 결과를 바탕으로 제안서의 세부목차를 구성하는 단계입니다.</p>
+      <UiButton
+        variant="outline"
+        size="sm"
+        @click="isPromptModalOpen = true"
+      >
+        <template #icon-left>
+          <UiIcon
+            name="pencil"
+            size="14"
+          />
+        </template>
+        프롬프트
+      </UiButton>
     </div>
 
     <!-- 세부목차 생성 로딩 -->
@@ -325,6 +326,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiIcon } from '@leechanyong/ispark-ui'
 import ProposalTocTreeRow from '~/components/proposal/steps/ProposalTocTreeRow.vue'
 import ProposalStepContentOutline from '~/components/proposal/steps/ProposalStepContentOutline.vue'
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
