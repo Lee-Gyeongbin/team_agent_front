@@ -42,16 +42,18 @@ export const useProposalToc = (ptProjectId: Ref<string>) => {
   }
 
   /** TOC 항목 제목 수정 (blur 시 호출) — 낙관적 업데이트 + 실패 시 롤백 */
-  const handleUpdateTocTitle = async (tocId: string, title: string) => {
+  const handleUpdateTocTitle = async (tocId: string, title: string): Promise<boolean> => {
     const item = tocList.value.find((t) => t.tocId === tocId)
-    if (!item || item.title === title) return
+    if (!item || item.title === title) return false
     const oldTitle = item.title
     item.title = title // 낙관적 업데이트
     try {
       await fetchUpdateTocItem(tocId, title)
+      return true
     } catch {
       item.title = oldTitle // 롤백
       openToast({ message: '목차 제목 수정에 실패했습니다.', type: 'error' })
+      return false
     }
   }
 

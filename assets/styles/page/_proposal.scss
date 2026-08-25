@@ -3852,17 +3852,6 @@ body.is-resizing {
   }
 }
 
-.pt-rowdel {
-  border: none;
-  background: none;
-  color: $color-text-muted;
-  cursor: pointer;
-  font-size: 14px;
-  &:hover {
-    color: #d64545;
-  }
-}
-
 .pt-ec-sumbar {
   display: flex;
   align-items: center;
@@ -3882,9 +3871,11 @@ body.is-resizing {
   b {
     color: #1e9e6b;
   }
+
+  // 12px + muted(청회색)는 초록·빨강 틴트 배경 위에서 대비가 낮아 뭉개짐
   span {
-    @include typo($body-xsmall);
-    color: $color-text-muted;
+    @include typo($body-small);
+    color: $color-text-primary;
   }
 }
 
@@ -3898,15 +3889,21 @@ body.is-resizing {
     border-radius: 0 0 8px 8px;
   }
 
+  /* 펼침 표시는 왼쪽 얇은 강조선으로 — 전면 채움은 '선택됨'으로 오독되고
+     점수 원(.pt-ec-score)이 같은 primary-bg라 배경에 묻힌다 */
   &.is-open {
-    background: var(--color-primary-bg);
+    box-shadow: inset 3px 0 0 var(--color-primary);
 
     .pt-ec-head {
+      background: $color-surface;
       border-bottom: 1px solid $color-border;
+
+      &:hover {
+        background: #eef1f4;
+      }
     }
 
-    .pt-ec-chev {
-      background: #fff;
+    .pt-ec-chev.ui-button {
       border-color: var(--color-primary);
       color: var(--color-primary);
     }
@@ -3928,7 +3925,7 @@ body.is-resizing {
   transition: background $transition-fast;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.02);
+    background: $color-surface;
   }
 
   &:focus-visible {
@@ -3982,14 +3979,19 @@ body.is-resizing {
   flex: 1;
   min-width: 0;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.pt-ec-fillbadge {
+  flex-shrink: 0;
 }
 
 .pt-ec-name {
   font-weight: 700;
   font: inherit;
   line-height: 1.4;
+  min-width: 0; // 가로 flex에서 말줄임이 동작하려면 필요
   @include ellipsis(1);
 }
 
@@ -4001,37 +4003,11 @@ body.is-resizing {
   }
 }
 
-.pt-ec-hint {
-  @include typo($body-xsmall);
-  color: $color-text-muted;
-  padding: 0 4px;
-  pointer-events: none;
-}
-
+/* 박스 스타일은 UiButton(outline)이 제공 — 여기선 펼침 회전만 담당 */
 .pt-ec-chev {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  border: 1px solid $color-border;
-  border-radius: $border-radius-base;
-  background: $color-surface;
-  color: $color-text-muted;
-  cursor: pointer;
-  transition:
-    background $transition-fast,
-    border-color $transition-fast,
-    color $transition-fast;
 
-  &:hover {
-    border-color: var(--color-primary);
-    color: var(--color-primary);
-    background: #fff;
-  }
-
-  .icon-chevron-down {
+  svg {
     transition: transform $transition-fast;
 
     &.is-open {
@@ -4040,15 +4016,37 @@ body.is-resizing {
   }
 }
 
+/* 삭제는 행 hover 시에만 — 목차 탭과 동일 패턴 */
+.pt-ec-del {
+  flex-shrink: 0;
+  visibility: hidden;
+  opacity: 0;
+}
+
+.pt-ec-row:hover .pt-ec-del,
+.pt-ec-row:focus-within .pt-ec-del {
+  visibility: visible;
+  opacity: 1;
+}
+
+// ispark UiButton이 [data-v] 특이도로 transition을 background/border/color만 지정 → 3단계로 덮어야 페이드가 걸린다
+.pt-ec-row .pt-ec-del.ui-button {
+  transition:
+    opacity $transition-base,
+    visibility $transition-base,
+    background-color $transition-base,
+    border-color $transition-base,
+    color $transition-base;
+}
+
 .pt-ec-detail {
   padding: 10px 14px 14px;
   background: #fff;
 
   label {
     display: block;
-    font-size: 11px;
+    @include typo($body-small-bold);
     color: $color-text-muted;
-    font-weight: 700;
     margin: 10px 0 4px;
 
     &:first-child {
@@ -4065,30 +4063,46 @@ body.is-resizing {
   margin-top: 14px;
 }
 
+/* 편집 중엔 입력 3개(rows=3) 아래로 버튼이 밀려 화면 밖으로 나감 → 스크롤 영역 하단에 고정 */
+.pt-ec-row.is-editing .pt-ec-detail-toolbar {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  margin: 14px -14px -14px; // .pt-ec-detail 좌우·하단 padding 상쇄 → 폭 꽉 채움
+  padding: 10px 14px;
+  background: #fff;
+  border-top: 1px solid $color-border;
+}
+
 .pt-ec-view-text {
   margin: 0;
   padding: 10px 12px;
   border: 1px solid $color-border-light;
   border-radius: 6px;
   background: $color-surface;
-  @include typo($body-small);
+  @include typo($body-medium);
   color: $color-text-primary;
   white-space: pre-wrap;
   word-break: break-word;
   min-height: 44px;
-  line-height: 1.5;
+  line-height: 1.6;
 
   &.is-empty {
     color: $color-text-muted;
   }
 }
 
+/* 패널이 화면 전폭이라 1열이면 한 줄이 200자를 넘어 읽기 어렵다.
+   2열 이상으로 나눠 한 줄 길이를 45~90자 범위로 끌어내린다. */
 .pt-issue-grid {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(520px, 1fr));
   gap: 10px;
+  /* align-items 미지정(stretch) — 같은 행 카드 높이를 맞춰 아랫변을 정렬한다 */
 }
 .pt-issue-card {
+  display: flex;
+  flex-direction: column;
   border: 1px solid $color-border;
   border-radius: 8px;
   padding: 14px 16px;
@@ -4108,10 +4122,18 @@ body.is-resizing {
   gap: 8px;
   margin-bottom: 8px;
 }
+
+/* 수정·삭제를 카드 우측 상단에 모은다 — 상단 ✕ / 하단 수정으로 흩어져 있으면 시선이 두 번 움직인다 */
+.pt-issue-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
 .pt-issue-label-text {
   flex: 1;
-  font-weight: 700;
-  @include typo($body-small-bold);
+  @include typo($body-medium-bold);
   color: $color-text-heading;
   min-width: 0;
   word-break: break-word;
@@ -4120,18 +4142,14 @@ body.is-resizing {
   flex: 1;
   min-width: 0;
 }
+/* 카드의 본문 — 회색 박스에 가두면 부가 정보처럼 읽힌다. 뷰 모드에서는 배경·테두리 없이 본문답게. */
 .pt-issue-view-text {
   margin: 0;
-  padding: 10px 12px;
-  border: 1px solid $color-border-light;
-  border-radius: 6px;
-  background: $color-surface;
-  @include typo($body-small);
+  @include typo($body-medium);
   color: $color-text-primary;
   white-space: pre-wrap;
   word-break: break-word;
-  min-height: 44px;
-  line-height: 1.5;
+  line-height: 1.7;
 
   &.is-empty {
     color: $color-text-muted;
@@ -4141,8 +4159,9 @@ body.is-resizing {
   width: 100%;
 }
 .pt-issue-meta {
-  margin-top: 8px;
-  @include typo($body-xsmall);
+  margin-top: auto;
+  padding-top: 8px;
+  @include typo($body-small);
   color: $color-text-muted;
 }
 .pt-issue-detail-toolbar {
@@ -4151,6 +4170,12 @@ body.is-resizing {
   align-items: center;
   gap: 8px;
   margin-top: 14px;
+}
+
+/* 삭제만 hover 시 danger — ispark ghost hover(6단계)를 넘기려 선택자를 길게 잡는다 */
+.pt-issue-actions .pt-btn-del.ui-button.variant-ghost:hover:not(:disabled) {
+  color: $color-error;
+  background-color: rgba($color-error, 0.08);
 }
 
 // ---- 전략검토 / 세부목차 공통 패널 레이아웃 ----

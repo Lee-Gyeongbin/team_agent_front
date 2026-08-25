@@ -1,5 +1,5 @@
 <template>
-  <div class="pt-panel pt-panel--lg pt-step-b">
+  <div :class="['pt-panel', 'pt-panel--lg', 'pt-step-b', { 'is-fullscreen': isFullscreen }]">
     <div class="pt-step-b-head">
       <h3 class="pt-panel-title">목차·요구사항</h3>
       <p class="pt-panel-desc">RFP에서 추출한 목차·요구사항·평가기준·현황이슈를 확인하고 보완하세요.</p>
@@ -26,25 +26,37 @@
           @dragover.prevent
           @drop.prevent="onDropRfp"
         >
-          <i class="icon-attach-file size-18" />
+          <UiIcon
+            name="paperclip"
+            size="18"
+          />
           <span
             v-if="rfpFile"
             class="pt-dropzone-file"
           >
-            <i class="icon-document size-14" />
+            <UiIcon
+              name="file-text"
+              size="14"
+            />
             {{ rfpFile.name }}
             <button
               class="pt-dropzone-remove"
               @click.stop="rfpFile = null"
             >
-              <i class="icon-close size-12" />
+              <UiIcon
+                name="x"
+                size="12"
+              />
             </button>
           </span>
           <span
             v-else-if="savedRfpFileNm"
             class="pt-dropzone-file"
           >
-            <i class="icon-document size-14" />
+            <UiIcon
+              name="file-text"
+              size="14"
+            />
             {{ savedRfpFileNm }}
             <span class="pt-dropzone-tag">저장됨</span>
           </span>
@@ -89,6 +101,21 @@
               </UiButton>
             </template>
           </UiDropdownMenu>
+          <UiButton
+            variant="ghost"
+            size="sm"
+            icon-only
+            :title="isFullscreen ? '전체화면 해제 (Esc)' : '전체화면으로 보기'"
+            :aria-label="isFullscreen ? '전체화면 해제' : '전체화면으로 보기'"
+            @click="toggleFullscreen"
+          >
+            <template #icon-left>
+              <UiIcon
+                :name="isFullscreen ? 'minimize-2' : 'maximize-2'"
+                size="16"
+              />
+            </template>
+          </UiButton>
         </div>
       </div>
     </div>
@@ -104,6 +131,8 @@
         v-model="activeTab"
         class="pt-step-b-tabs"
         :tabs="subTabs"
+        align="left"
+        aria-label="요구사항 하위 탭"
       />
 
       <!-- 목차 탭 -->
@@ -266,7 +295,7 @@
                 <UiBadge
                   class="pt-toc-badge"
                   :variant="element.source === 'rfp' ? 'info' : 'warning'"
-                  size="xs"
+                  size="sm"
                 >
                   {{ element.source === 'rfp' ? 'RFP 추출' : '사용자 입력' }}
                 </UiBadge>
@@ -290,14 +319,28 @@
           class="pt-alertbar"
         >
           ⚠ 확인이 필요한 요구사항이 {{ confirmNeededCount }}건 있습니다.
+          <UiButton
+            variant="outline"
+            size="xs"
+            @click="isConfirmNeededOnly = !isConfirmNeededOnly"
+          >
+            <template #icon-left>
+              <UiIcon
+                :name="isConfirmNeededOnly ? 'list' : 'filter'"
+                size="14"
+              />
+            </template>
+            {{ isConfirmNeededOnly ? '전체 보기' : '확인 필요만 보기' }}
+          </UiButton>
         </div>
         <div class="pt-toolbar">
           <div
             class="pt-tab-usage-hint"
             role="note"
           >
-            <i
-              class="icon-warning-triangle size-16"
+            <UiIcon
+              name="info"
+              size="16"
               aria-hidden="true"
             />
             <p class="pt-tab-usage-hint__text">
@@ -315,7 +358,7 @@
         <div class="pt-req-table-wrap">
           <UiTable
             :columns="reqColumns"
-            :data="requirements"
+            :data="visibleRequirements"
             size="sm"
             sticky-header
             max-height="100%"
@@ -338,7 +381,10 @@
                     class="pt-req-mandatory-info"
                     aria-label="필수 안내"
                   >
-                    <i class="icon-info size-12" />
+                    <UiIcon
+                      name="info"
+                      size="15"
+                    />
                   </button>
                 </UiTooltip>
               </span>
@@ -347,7 +393,12 @@
               <span :id="'req-' + row.requirementId">{{ row.reqNo || '—' }}</span>
             </template>
             <template #cell-reqCategoryTxt="{ row }">
-              <span class="pt-badge is-gray">{{ row.reqCategoryTxt || '미분류' }}</span>
+              <UiBadge
+                variant="default"
+                size="sm"
+              >
+                {{ row.reqCategoryTxt || '미분류' }}
+              </UiBadge>
             </template>
             <template #cell-reqContent="{ row }">
               <span
@@ -358,36 +409,53 @@
               </span>
             </template>
             <template #cell-mandatoryYn="{ row }">
-              <span
-                class="pt-badge"
-                :class="row.mandatoryYn === 'Y' ? 'is-ok' : 'is-gray'"
+              <UiBadge
+                :variant="row.mandatoryYn === 'Y' ? 'success' : 'default'"
+                size="sm"
               >
                 {{ row.mandatoryYn === 'Y' ? '필수' : '선택' }}
-              </span>
+              </UiBadge>
             </template>
             <template #cell-sourceTypeCd="{ row }">
-              <span
-                class="pt-badge"
-                :class="sourceBadgeClass(row.sourceTypeCd)"
+              <UiBadge
+                :variant="sourceBadgeVariant(row.sourceTypeCd)"
+                size="sm"
               >
                 {{ sourceLabel(row.sourceTypeCd) }}
-              </span>
+              </UiBadge>
             </template>
             <template #cell-_actions="{ row }">
               <div class="pt-req-actions">
                 <UiButton
                   variant="ghost"
-                  size="sm"
+                  size="xs"
+                  icon-only
+                  title="수정"
+                  aria-label="요구사항 수정"
                   @click="openReqEdit(row as PtRequirement)"
                 >
-                  수정
+                  <template #icon-left>
+                    <UiIcon
+                      name="pencil"
+                      size="14"
+                    />
+                  </template>
                 </UiButton>
                 <UiButton
                   variant="ghost"
-                  size="sm"
+                  size="xs"
+                  icon-only
+                  class="pt-btn-del"
+                  title="삭제"
+                  aria-label="요구사항 삭제"
                   @click="onDeleteReq(row.requirementId)"
                 >
-                  삭제
+                  <template #icon-left>
+                    <UiIcon
+                      name="trash-2"
+                      size="14"
+                    />
+                  </template>
                 </UiButton>
               </div>
             </template>
@@ -404,12 +472,12 @@
         >
           <div class="pt-req-edit-form">
             <div class="pt-req-edit-meta">
-              <span
-                class="pt-badge"
-                :class="sourceBadgeClass(editingReq?.sourceTypeCd || '999')"
+              <UiBadge
+                :variant="sourceBadgeVariant(editingReq?.sourceTypeCd || '999')"
+                size="sm"
               >
                 {{ sourceLabel(editingReq?.sourceTypeCd || '999') }}
-              </span>
+              </UiBadge>
             </div>
 
             <div class="pt-req-edit-row">
@@ -522,8 +590,9 @@
             class="pt-tab-usage-hint"
             role="note"
           >
-            <i
-              class="icon-warning-triangle size-16"
+            <UiIcon
+              name="info"
+              size="16"
               aria-hidden="true"
             />
             <p class="pt-tab-usage-hint__text">
@@ -543,9 +612,7 @@
           :class="{ bad: evalScoreSum !== 100 }"
         >
           <b>합계 {{ evalScoreSum }}점</b>
-          <span>{{
-            evalScoreSum === 100 ? '— RFP 명시 총점(100점)과 일치합니다' : '— 총점 100점과 불일치합니다'
-          }}</span>
+          <span>{{ evalScoreMessage }}</span>
         </div>
         <div class="pt-step-b-scroll-list">
           <div
@@ -602,32 +669,48 @@
                 >
                   {{ ec.evalItemNm }}
                 </span>
-                <span
-                  v-if="!openEcIds.has(ec.evalCriteriaId)"
-                  class="pt-ec-hint"
+                <UiBadge
+                  v-if="editingEcId !== ec.evalCriteriaId"
+                  class="pt-ec-fillbadge"
+                  :variant="ecFilledCount(ec) === 3 ? 'success' : 'warning'"
+                  size="sm"
                 >
-                  평가의도 · 고득점 조건 · 필수 증빙
-                </span>
+                  {{ ecFilledCount(ec) === 0 ? '미작성' : `${ecFilledCount(ec)}/3 작성` }}
+                </UiBadge>
+                <UiButton
+                  v-if="editingEcId !== ec.evalCriteriaId"
+                  variant="ghost"
+                  size="xs"
+                  icon-only
+                  class="pt-ec-del"
+                  aria-label="평가기준 삭제"
+                  title="삭제"
+                  @click.stop="onDeleteEc(ec.evalCriteriaId)"
+                >
+                  <template #icon-left>
+                    <UiIcon
+                      name="trash-2"
+                      size="14"
+                    />
+                  </template>
+                </UiButton>
               </div>
-              <button
-                v-if="editingEcId !== ec.evalCriteriaId"
-                type="button"
-                class="pt-rowdel"
-                @click.stop="onDeleteEc(ec.evalCriteriaId)"
-              >
-                ✕
-              </button>
-              <button
-                type="button"
+              <UiButton
+                variant="outline"
+                size="xs"
+                icon-only
                 class="pt-ec-chev"
                 :aria-label="openEcIds.has(ec.evalCriteriaId) ? '상세 접기' : '상세 펼치기'"
                 @click.stop="toggleEc(ec.evalCriteriaId)"
               >
-                <i
-                  class="icon-chevron-down size-16"
-                  :class="{ 'is-open': openEcIds.has(ec.evalCriteriaId) }"
-                />
-              </button>
+                <template #icon-left>
+                  <UiIcon
+                    name="chevron-down"
+                    size="16"
+                    :class="{ 'is-open': openEcIds.has(ec.evalCriteriaId) }"
+                  />
+                </template>
+              </UiButton>
             </div>
             <div
               v-show="openEcIds.has(ec.evalCriteriaId)"
@@ -729,8 +812,9 @@
             class="pt-tab-usage-hint"
             role="note"
           >
-            <i
-              class="icon-warning-triangle size-16"
+            <UiIcon
+              name="info"
+              size="16"
               aria-hidden="true"
             />
             <p class="pt-tab-usage-hint__text">
@@ -758,11 +842,12 @@
               }"
             >
               <div class="pt-issue-top">
-                <span
-                  class="pt-badge"
-                  :class="issueTypeBadge(issue.issueTypeCd)"
-                  >{{ issueTypeLabel(issue.issueTypeCd) }}</span
+                <UiBadge
+                  :variant="issueTypeVariant(issue.issueTypeCd)"
+                  size="md"
                 >
+                  {{ issueTypeLabel(issue.issueTypeCd) }}
+                </UiBadge>
                 <UiInput
                   v-if="editingIssueId === issue.issueId"
                   id="issue-label-edit"
@@ -777,14 +862,42 @@
                 >
                   {{ issue.issueLabel || '제목 없음' }}
                 </span>
-                <button
+                <div
                   v-if="editingIssueId !== issue.issueId"
-                  type="button"
-                  class="pt-rowdel"
-                  @click="onDeleteIssue(issue.issueId)"
+                  class="pt-issue-actions"
                 >
-                  ✕
-                </button>
+                  <UiButton
+                    variant="ghost"
+                    size="xs"
+                    icon-only
+                    title="수정"
+                    aria-label="이슈 수정"
+                    @click="onStartEditIssue(issue)"
+                  >
+                    <template #icon-left>
+                      <UiIcon
+                        name="pencil"
+                        size="14"
+                      />
+                    </template>
+                  </UiButton>
+                  <UiButton
+                    variant="ghost"
+                    size="xs"
+                    icon-only
+                    class="pt-btn-del"
+                    title="삭제"
+                    aria-label="이슈 삭제"
+                    @click="onDeleteIssue(issue.issueId)"
+                  >
+                    <template #icon-left>
+                      <UiIcon
+                        name="trash-2"
+                        size="14"
+                      />
+                    </template>
+                  </UiButton>
+                </div>
               </div>
 
               <template v-if="editingIssueId === issue.issueId">
@@ -809,35 +922,27 @@
               <div class="pt-issue-meta">
                 출처: {{ issue.sourceSection || '—' }}
                 <template v-if="issue.sourcePage"> · {{ issue.sourcePage }}p</template>
-                · {{ issue.issueId }}
               </div>
 
-              <div class="pt-issue-detail-toolbar">
-                <template v-if="editingIssueId === issue.issueId">
-                  <UiButton
-                    variant="outline"
-                    size="sm"
-                    :disabled="isIssueSaving"
-                    @click="onCancelEditIssue"
-                  >
-                    취소
-                  </UiButton>
-                  <UiButton
-                    variant="primary"
-                    size="sm"
-                    :loading="isIssueSaving"
-                    @click="onSaveIssue"
-                  >
-                    저장
-                  </UiButton>
-                </template>
+              <div
+                v-if="editingIssueId === issue.issueId"
+                class="pt-issue-detail-toolbar"
+              >
                 <UiButton
-                  v-else
-                  variant="primary-line"
+                  variant="outline"
                   size="sm"
-                  @click="onStartEditIssue(issue)"
+                  :disabled="isIssueSaving"
+                  @click="onCancelEditIssue"
                 >
-                  수정
+                  취소
+                </UiButton>
+                <UiButton
+                  variant="primary"
+                  size="sm"
+                  :loading="isIssueSaving"
+                  @click="onSaveIssue"
+                >
+                  저장
                 </UiButton>
               </div>
             </div>
@@ -870,7 +975,7 @@
 
 <script setup lang="ts">
 import draggable from 'vuedraggable'
-import { UiButton, UiIcon, UiBadge } from '@leechanyong/ispark-ui'
+import { UiButton, UiIcon, UiBadge, UiTable, UiTab } from '@leechanyong/ispark-ui'
 import { openToast } from '~/composables/useToast'
 import { openConfirm } from '~/composables/useDialog'
 import { openLoading, updateLoadingText, closeLoading } from '~/composables/useLoading'
@@ -878,7 +983,7 @@ import { useProposalToc } from '~/composables/proposal/useProposalToc'
 import { useProposalFileStore } from '~/composables/proposal/useProposalFileStore'
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
 import type { PtRequirement, PtEvalCriteria, PtRfpIssue, PtTocItem } from '~/types/proposal'
-import type { TableColumn } from '~/types/table'
+import type { TableColumn } from '@leechanyong/ispark-ui'
 import type { SelectOption } from '~/components/ui/UiSelect.vue'
 import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
 
@@ -961,10 +1066,10 @@ const focusIssueField = (id: string) => {
 }
 
 const subTabs = computed(() => [
-  { label: '목차', value: 'toc' },
-  { label: `요구사항 ${requirements.value.length}`, value: 'req' },
-  { label: `평가기준 ${evalCriteria.value.length}`, value: 'ec' },
-  { label: `현황·이슈 ${rfpIssues.value.length}`, value: 'issue' },
+  { label: '목차', value: 'toc', count: tocList.value.length },
+  { label: '요구사항', value: 'req', count: requirements.value.length },
+  { label: '평가기준', value: 'ec', count: evalCriteria.value.length },
+  { label: '현황·이슈', value: 'issue', count: rfpIssues.value.length },
 ])
 
 const reqColumns: TableColumn[] = [
@@ -1106,10 +1211,34 @@ const applyRfpFileValidation = (files: File[]): File | null => {
   return file
 }
 
-const confirmNeededCount = computed(
-  () => requirements.value.filter((r) => r.sourceTypeCd === '003' || r.confirmNeededYn === 'Y').length,
+/** 출처가 '확인필요'거나 확인 플래그가 선 요구사항 */
+const isConfirmNeededReq = (r: PtRequirement) => r.sourceTypeCd === '003' || r.confirmNeededYn === 'Y'
+const confirmNeededCount = computed(() => requirements.value.filter(isConfirmNeededReq).length)
+
+/** 확인 필요 건만 보기 토글 */
+const isConfirmNeededOnly = ref(false)
+const visibleRequirements = computed(() =>
+  isConfirmNeededOnly.value ? requirements.value.filter(isConfirmNeededReq) : requirements.value,
 )
+
+// 확인 필요 건이 0이 되면 알림바가 사라져 토글 버튼도 없어지므로 필터를 자동 해제한다
+watch(confirmNeededCount, (count) => {
+  if (count === 0) isConfirmNeededOnly.value = false
+})
 const evalScoreSum = computed(() => evalCriteria.value.reduce((a, b) => a + (Number(b.score) || 0), 0))
+
+/** 평가기준 상세 3개 항목 중 채워진 개수 — 접힌 상태에서 미작성 기준을 식별하기 위함 */
+const ecFilledCount = (ec: PtEvalCriteria) =>
+  [ec.evalIntent, ec.highScoreCondition, ec.requiredEvidence].filter((v) => !!v?.trim()).length
+
+/** 합계 안내 — 불일치면 차이값과 조치 방향까지 알려준다 */
+const evalScoreMessage = computed(() => {
+  const diff = evalScoreSum.value - 100
+  if (diff === 0) return '— RFP 명시 총점(100점)과 일치합니다'
+  return diff > 0
+    ? `— 총점 100점보다 ${diff}점 많습니다. 각 항목 배점을 낮춰 조정하세요`
+    : `— 총점 100점보다 ${-diff}점 부족합니다. 각 항목 배점을 올리거나 기준을 추가하세요`
+})
 
 const {
   tocList,
@@ -1285,6 +1414,29 @@ const toggleTocCollapse = (tocId: string) => {
   collapsedTocIds.value = next
 }
 
+// ===== 전체화면 =====
+/**
+ * 패널을 뷰포트로 확대 — 사이드바·페이지 헤드·스텝퍼가 쓰던 공간을 회수한다.
+ * 앱 헤더($z-header: 450)는 그대로 두고 그 아래부터 채운다.
+ * 헤더까지 덮으려면 z-index가 모달(451)보다 커져야 하고, 그러면 이 패널에서 연
+ * 수정 모달이 패널 뒤로 숨는다. 헤더 56px을 포기하는 쪽이 안전하다.
+ */
+const isFullscreen = ref(false)
+
+const toggleFullscreen = () => {
+  isFullscreen.value = !isFullscreen.value
+}
+
+const onFullscreenEsc = (e: KeyboardEvent) => {
+  // 인라인 편집 중 Esc는 편집 취소가 먼저 처리되어야 하므로 그때는 무시
+  if (e.key !== 'Escape' || !isFullscreen.value) return
+  if (editingTocId.value || editingEcId.value || editingIssueId.value) return
+  isFullscreen.value = false
+}
+
+onMounted(() => window.addEventListener('keydown', onFullscreenEsc))
+onBeforeUnmount(() => window.removeEventListener('keydown', onFullscreenEsc))
+
 // ===== 목차 제목 인라인 편집 =====
 /** 편집 중인 목차 id — 이 행만 input으로 렌더 */
 const editingTocId = ref<string | null>(null)
@@ -1308,13 +1460,20 @@ const onCancelEditTitle = () => {
   editingTocId.value = null
 }
 
+/**
+ * 제목 확정 — Enter / ✓ 버튼 / 바깥 클릭(blur) 공통.
+ * blur는 취소가 아니라 저장이다. 실수로 옆을 눌렀을 때 입력을 잃지 않게 하고,
+ * 대신 실제로 값이 바뀐 경우에만 토스트로 저장됐음을 알린다. (취소는 Esc / ✕)
+ */
 const onCommitTitle = async () => {
   const tocId = editingTocId.value
   if (!tocId) return
   const title = editingTitle.value.trim()
   editingTocId.value = null
   if (!title || title === editingOrigin.value) return
-  await handleUpdateTocTitle(tocId, title)
+  // 실패 시 store가 롤백 + 에러 토스트를 띄우므로, 성공했을 때만 알린다
+  const isSaved = await handleUpdateTocTitle(tocId, title)
+  if (isSaved) openToast({ message: '목차명을 변경했습니다.' })
 }
 
 const onAddItem = async (parentId: string | null) => {
@@ -1337,10 +1496,12 @@ const onDragEnd = async () => handleReorderToc()
 
 const sourceLabel = (cd: string) =>
   (({ '001': '명시', '002': '추론', '003': '확인필요', '999': '직접입력' }) as Record<string, string>)[cd] || cd
-const sourceBadgeClass = (cd: string) => (cd === '003' ? 'is-warn' : cd === '002' ? 'is-blue' : 'is-gray')
+/** 출처 코드 → ispark UiBadge variant (003=확인필요 / 002=추론 / 그 외) */
+const sourceBadgeVariant = (cd: string) => (cd === '003' ? 'warning' : cd === '002' ? 'info' : 'default')
 const issueTypeLabel = (cd: string) =>
   (({ '001': '문제점', '002': '개선방향', '003': '배경·필요성' }) as Record<string, string>)[cd] || cd
-const issueTypeBadge = (cd: string) => (cd === '001' ? 'is-danger' : cd === '002' ? 'is-ok' : 'is-accent')
+/** 이슈 유형 코드 → ispark UiBadge variant (001=문제점 / 002=개선방향 / 003=배경·필요성) */
+const issueTypeVariant = (cd: string) => (cd === '001' ? 'danger' : cd === '002' ? 'success' : 'warning')
 
 const openReqEdit = (req: PtRequirement) => {
   editingReq.value = req
@@ -1648,6 +1809,20 @@ const onDeleteIssue = async (id: string) => {
   min-height: 0;
   overflow: hidden;
   padding: $spacing-md $spacing-lg;
+
+  /* 전체화면 — z-index는 사이드바(1) 위, 드롭다운 포털($z-dropdown: 100)·모달·토스트 아래.
+     포털로 띄우는 메뉴/모달이 패널 뒤로 숨지 않도록 일부러 낮게 잡는다. */
+  &.is-fullscreen {
+    position: fixed;
+    top: $header-height;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 10;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+  }
 }
 
 /*
@@ -1721,20 +1896,11 @@ const onDeleteIssue = async (id: string) => {
   overflow: hidden;
 }
 
+/* 로컬 UiTab 시절의 기본값(max-width 800px·중앙정렬)을 되돌리던 override는 제거.
+   ispark UiTab은 기본이 full-width·무패딩이고 정렬은 align prop으로 준다. */
 .pt-step-b-tabs {
   flex-shrink: 0;
   margin: $spacing-md 0 $spacing-md;
-
-  :deep(.ui-tab-inner) {
-    max-width: none;
-    margin: 0;
-    padding: 0;
-  }
-
-  :deep(.ui-tab-item) {
-    padding: 8px 12px;
-    @include typo($body-medium);
-  }
 }
 
 .pt-step-b-tab {
@@ -1778,8 +1944,6 @@ const onDeleteIssue = async (id: string) => {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  border: 1px solid $color-border;
-  border-radius: $border-radius-lg;
   overflow: hidden;
   background: #fff;
 
@@ -1833,6 +1997,12 @@ const onDeleteIssue = async (id: string) => {
   justify-content: center;
   gap: 4px;
   white-space: nowrap;
+
+  /* 삭제만 hover 시 danger — ispark ghost hover(6단계)를 넘기려 선택자를 길게 잡는다 */
+  .pt-btn-del.ui-button.variant-ghost:hover:not(:disabled) {
+    color: $color-error;
+    background-color: rgba($color-error, 0.08);
+  }
 }
 
 .pt-req-mandatory-header {
@@ -1842,6 +2012,7 @@ const onDeleteIssue = async (id: string) => {
   gap: 4px;
 }
 
+/* 헤더 안내 아이콘 — muted + 12px이면 헤더 텍스트에 묻혀 안 보인다 */
 .pt-req-mandatory-info {
   display: inline-flex;
   align-items: center;
@@ -1849,11 +2020,11 @@ const onDeleteIssue = async (id: string) => {
   padding: 0;
   border: none;
   background: transparent;
-  color: $color-text-muted;
+  color: var(--color-primary);
   cursor: help;
 
   &:hover {
-    color: $color-text-heading;
+    color: var(--color-primary-dark);
   }
 }
 
@@ -1925,7 +2096,8 @@ const onDeleteIssue = async (id: string) => {
   margin: 0;
   min-width: 0;
 
-  > i {
+  // UiIcon은 svg로 렌더됨 — 텍스트는 중립색이고 파란 아이콘이 '안내' 신호를 담당
+  > svg {
     flex-shrink: 0;
     margin-top: 2px;
     color: var(--color-primary);
@@ -1934,7 +2106,8 @@ const onDeleteIssue = async (id: string) => {
 
 .pt-toolbar {
   flex-shrink: 0;
-  margin-bottom: 8px;
+  margin-top: $spacing-md;
+  margin-bottom: $spacing-sm;
 }
 
 .pt-toc-toolbar,
@@ -1949,16 +2122,16 @@ const onDeleteIssue = async (id: string) => {
   align-items: center;
   padding-right: 12px;
 
-  > i {
+  > svg {
     margin-top: 0;
   }
 }
 
+/* 12px + primary 파랑은 흰 배경에서 대비가 낮아 읽기 어려움 → 14px 중립색, 강조는 아이콘이 담당 */
 .pt-tab-usage-hint__text {
   margin: 0;
-  @include typo($body-xsmall);
-  color: var(--color-primary);
-  line-height: $line-height-base;
+  @include typo($body-small);
+  color: $color-text-muted;
 }
 </style>
 
