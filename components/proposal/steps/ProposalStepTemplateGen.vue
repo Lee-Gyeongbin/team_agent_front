@@ -5,7 +5,7 @@
       <div class="pt-panel-title-row">
         <h3 class="pt-panel-title">템플릿 생성</h3>
         <UiButton
-          variant="ghost"
+          variant="outline"
           size="sm"
           @click="isPromptModalOpen = true"
         >
@@ -38,7 +38,7 @@
           <div class="pt-panel-title-row">
             <h3 class="pt-panel-title">템플릿 생성</h3>
             <UiButton
-              variant="ghost"
+              variant="outline"
               size="sm"
               @click="isPromptModalOpen = true"
             >

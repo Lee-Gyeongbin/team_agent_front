@@ -4,7 +4,7 @@
       <div class="pt-panel-title-row">
         <h3 class="pt-panel-title">세부목차</h3>
         <UiButton
-          variant="ghost"
+          variant="outline"
           size="sm"
           @click="isPromptModalOpen = true"
         >
@@ -83,7 +83,7 @@
               ↻ 세부목차 재생성
             </UiButton>
             <UiButton
-              variant="ghost"
+              variant="primary-line"
               size="sm"
               class="pt-toc-add-root"
               @click="startAdd(null)"

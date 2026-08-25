@@ -3,6 +3,8 @@
     :is-open="isOpen"
     position="right"
     title="프롬프트 보기 · 수정"
+    :show-overlay="!nonModal"
+    :custom-class="nonModal ? 'pt-prompt-side' : ''"
     @close="$emit('close')"
   >
     <div class="pt-prompt-modal">
@@ -151,9 +153,11 @@ interface Props {
   isOpen: boolean
   /** 조회할 stageCd 목록 */
   stageCds: string[]
+  /** true면 배경을 가리지 않는 사이드 패널로 동작 — 뒤 화면을 보면서 프롬프트 수정 가능 */
+  nonModal?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), { nonModal: false })
 
 defineEmits<{ close: [] }>()
 

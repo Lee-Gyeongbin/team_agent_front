@@ -259,7 +259,9 @@
   border-radius: $border-radius-lg;
   padding: $spacing-md;
   cursor: pointer;
-  transition: border-color $transition-base, box-shadow $transition-base;
+  transition:
+    border-color $transition-base,
+    box-shadow $transition-base;
 
   &:hover {
     border-color: var(--color-primary);
@@ -336,19 +338,23 @@
   border-radius: 12px;
 
   // STATUS_CD 값은 001~004 — 그룹 ID(PT0000XX)가 아니라 코드값으로 매칭해야 함
-  &.status-001 { // 작성중 — 주황 계열은 연한 배경에서 대비가 안 나와 더 어둡게
+  &.status-001 {
+    // 작성중 — 주황 계열은 연한 배경에서 대비가 안 나와 더 어둡게
     background: #fff3e3;
     color: color.adjust($color-warning, $lightness: -19%);
   }
-  &.status-002 { // 검수중
+  &.status-002 {
+    // 검수중
     background: var(--color-primary-bg);
     color: var(--color-primary-dark);
   }
-  &.status-003 { // 완료
+  &.status-003 {
+    // 완료
     background: rgba($color-success, 0.12);
     color: color.adjust($color-success, $lightness: -18%);
   }
-  &.status-004 { // 보류
+  &.status-004 {
+    // 보류
     background: rgba($color-text-muted, 0.12);
     color: $color-text-dark;
   }
@@ -488,7 +494,9 @@
   color: $color-text-dark;
   border: none;
   background: transparent;
-  transition: background $transition-fast, color $transition-fast;
+  transition:
+    background $transition-fast,
+    color $transition-fast;
 
   &.is-active {
     background: var(--color-primary);
@@ -652,8 +660,13 @@
       color: #0d8a5b;
     }
 
-    .pt-stepbar-label { color: #0d8a5b; }
-    .pt-stepbar-sub { color: #0d8a5b; font-weight: $font-weight-bold; }
+    .pt-stepbar-label {
+      color: #0d8a5b;
+    }
+    .pt-stepbar-sub {
+      color: #0d8a5b;
+      font-weight: $font-weight-bold;
+    }
   }
 
   &.is-locked,
@@ -674,7 +687,9 @@
   color: $color-text-muted;
   @include typo($body-medium-bold);
   flex-shrink: 0;
-  transition: background $transition-fast, color $transition-fast;
+  transition:
+    background $transition-fast,
+    color $transition-fast;
 }
 
 .pt-stepbar-text {
@@ -729,7 +744,9 @@
   transition: transform $transition-fast;
   transform: rotate(180deg); // ??? ???: ???????
 
-  &.is-collapsed { transform: rotate(0deg); } // ??? ???: ??? ?????
+  &.is-collapsed {
+    transform: rotate(0deg);
+  } // ??? ???: ??? ?????
 }
 
 // ---- ??? ??????? ----
@@ -793,6 +810,11 @@
   .pt-panel-title {
     margin: 0;
   }
+
+  /* 액션 버튼은 우측 끝으로 — 제목 옆에 붙으면 제목의 일부처럼 읽힘 */
+  .ui-button {
+    margin-left: auto;
+  }
 }
 
 .pt-panel-desc {
@@ -834,7 +856,9 @@
   border-radius: $border-radius-lg;
   padding: $spacing-sm + 4;
   cursor: pointer;
-  transition: border-color $transition-fast, background $transition-fast;
+  transition:
+    border-color $transition-fast,
+    background $transition-fast;
 
   &.is-selected {
     border-color: var(--color-primary);
@@ -867,11 +891,25 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: border-color $transition-fast, color $transition-fast;
+  transition:
+    border-color $transition-fast,
+    color $transition-fast;
 
   &:hover {
     border-color: var(--color-primary);
     color: var(--color-primary);
+  }
+
+  /* 파일 확정 상태 — 클릭·드롭이 막히므로 점선(드롭 유도)을 실선(정보 표시)으로 전환 */
+  &.is-filled {
+    border-style: solid;
+    background: $color-surface;
+    cursor: default;
+
+    &:hover {
+      border-color: $color-border;
+      color: $color-text-muted;
+    }
   }
 }
 
@@ -896,31 +934,11 @@
   }
 }
 
-.pt-dropzone-download {
-  display: flex;
-  align-items: center;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  color: $color-text-muted;
-  padding: 2px;
-  border-radius: $border-radius-sm;
-
-  &:hover:not(:disabled) {
-    color: var(--color-primary);
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.4;
-  }
-}
-
 .pt-rfp-btn-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: $spacing-md;
+  gap: $spacing-sm;
   margin-top: $spacing-sm;
   margin-bottom: $spacing-lg;
 }
@@ -941,7 +959,9 @@
   padding: $spacing-sm;
   text-align: center;
   cursor: pointer;
-  transition: border-color $transition-fast, background $transition-fast;
+  transition:
+    border-color $transition-fast,
+    background $transition-fast;
 
   &.is-selected {
     border-color: var(--color-primary);
@@ -967,9 +987,18 @@
   margin: 0 auto 6px;
 }
 
-.pt-size-a4 .pt-size-ratio { width: 22px; height: 30px; }
-.pt-size-169 .pt-size-ratio { width: 46px; height: 26px; }
-.pt-size-43 .pt-size-ratio { width: 38px; height: 28px; }
+.pt-size-a4 .pt-size-ratio {
+  width: 22px;
+  height: 30px;
+}
+.pt-size-169 .pt-size-ratio {
+  width: 46px;
+  height: 26px;
+}
+.pt-size-43 .pt-size-ratio {
+  width: 38px;
+  height: 28px;
+}
 
 // =============================================
 // Step B ????
@@ -994,7 +1023,10 @@
   color: $color-text-muted;
   cursor: pointer;
   margin-bottom: $spacing-sm;
-  transition: border-color $transition-fast, color $transition-fast, background $transition-fast;
+  transition:
+    border-color $transition-fast,
+    color $transition-fast,
+    background $transition-fast;
 
   &:hover {
     border-color: var(--color-primary);
@@ -1075,6 +1107,36 @@
     border-bottom: none;
   }
 
+  /* 배지는 우측 끝 고정 — 상태를 세로로 훑을 수 있게 */
+  .pt-toc-badge {
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  /* 삭제는 행에 마우스를 올리거나 내부에 포커스가 있을 때만 */
+  &:hover .pt-toc-del,
+  &:focus-within .pt-toc-del {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  /* 편집 중엔 액션을 감춰 입력에 집중 */
+  &.is-editing {
+    .pt-toc-add-child,
+    .pt-toc-del {
+      visibility: hidden;
+      opacity: 0;
+    }
+  }
+
+  /* 대목차 — 하위 목차와 굵기로 위계 구분 */
+  &:not(.is-sub):not(.is-detail) {
+    .pt-toc-title,
+    .pt-toc-input {
+      @include typo($body-medium-bold);
+    }
+  }
+
   &.is-sub {
     padding-left: 28px;
     background: $color-surface;
@@ -1087,15 +1149,9 @@
   }
 }
 
-.pt-toc-title {
-  flex: 1;
-  @include typo($body-small);
-  color: $color-text-heading;
-  padding: 3px 4px;
-  min-width: 0;
-}
-
 .pt-toc-drag {
+  display: flex;
+  align-items: center;
   color: $color-text-muted;
   cursor: grab;
   flex-shrink: 0;
@@ -1105,19 +1161,93 @@
   }
 }
 
-.pt-toc-input {
-  flex: 1;
+/* 대목차 접기 토글 */
+.pt-toc-collapse {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  padding: 0;
   border: none;
   background: transparent;
-  @include typo($body-small);
+  border-radius: $border-radius-sm;
+  color: $color-text-muted;
+  cursor: pointer;
+  transition:
+    transform $transition-fast,
+    background $transition-fast;
+
+  &:hover {
+    background: $color-surface;
+    color: $color-text-heading;
+  }
+
+  // 펼침 상태 — chevron-right를 아래로 회전
+  &.is-expanded {
+    transform: rotate(90deg);
+  }
+
+  // 자식이 없으면 조작 대상이 아니지만 자리는 유지해 제목 시작선을 맞춘다
+  &.is-empty {
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+
+/* 평소 상태 — 글자 폭만 차지해서 액션이 제목 바로 옆에 붙음 */
+.pt-toc-title {
+  border: none;
+  background: transparent;
+  @include typo($body-medium);
   color: $color-text-heading;
   padding: 3px 4px;
+  border-radius: $border-radius-sm;
+  text-align: left;
+  cursor: text;
   min-width: 0;
+  @include ellipsis(1);
+
+  &:hover {
+    background: $color-surface;
+  }
+}
+
+/* 편집 확정·취소 — 편집 중에만 렌더되므로 상시 노출 */
+.pt-toc-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  flex-shrink: 0;
+}
+
+// 확정은 주 액션이라 primary, 취소는 중립. ispark ghost color가 [data-v](0,2,0)라 3단계로 덮는다
+.pt-toc-edit-actions .pt-toc-edit-ok.ui-button {
+  color: var(--color-primary);
+
+  &:hover:not(:disabled) {
+    background-color: var(--color-primary-bg);
+    color: var(--color-primary-dark);
+  }
+}
+
+/* 편집 상태 — 클릭 시에만 렌더. ispark 입력 컨벤션(흰 배경 + 테두리, 포커스 시 primary)에 맞춤 */
+.pt-toc-input {
+  @include typo($body-medium);
+  color: $color-text-heading;
+  padding: 3px 8px;
+  min-width: 0;
+  width: 420px;
+  max-width: 100%;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  background: #fff;
+  transition: border-color $transition-fast;
 
   &:focus {
     outline: none;
-    background: var(--color-primary-bg);
-    border-radius: $border-radius-sm;
+    border-color: var(--color-primary);
   }
 }
 
@@ -1144,20 +1274,35 @@
   }
 }
 
-.pt-toc-del {
-  display: flex;
-  align-items: center;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  color: $color-text-muted;
-  padding: 3px;
-  border-radius: $border-radius-sm;
+// 목차 행 우측 액션 그룹 (소목차 추가 / 삭제)
+.pt-toc-add-child {
   flex-shrink: 0;
+}
 
-  &:hover {
-    color: $color-error;
-  }
+/* 삭제는 hover 시에만 — UiButton scoped 스타일과 충돌하지 않도록 display 대신 visibility 사용 */
+.pt-toc-del {
+  flex-shrink: 0;
+  visibility: hidden;
+  opacity: 0;
+}
+
+// ispark UiButton이 [data-v] 특이도(0,2,0)로 transition을 background/border/color만 지정 →
+// 동일 단계 이상으로 덮지 않으면 opacity가 트랜지션 대상에서 빠져 툭 튄다.
+// visibility는 단계 전환이라 opacity와 같이 걸어야 사라질 때도 페이드가 끊기지 않는다.
+.pt-toc-item .pt-toc-del.ui-button {
+  transition:
+    opacity $transition-base,
+    visibility $transition-base,
+    background-color $transition-base,
+    border-color $transition-base,
+    color $transition-base;
+}
+
+// 삭제 — ghost UiButton, hover 시에만 danger 색 (UiIcon은 currentColor 상속)
+// ispark 기본 hover가 [data-v] 포함 6단계 특이도라 동일 단계로 맞춰서 덮는다
+.pt-toc-item .pt-toc-del.ui-button.variant-ghost:hover:not(:disabled) {
+  color: $color-error;
+  background-color: rgba($color-error, 0.08);
 }
 
 .pt-toc-add-sub {
@@ -1598,7 +1743,10 @@
   cursor: pointer;
   @include typo($body-xsmall-bold);
   color: $color-text-muted;
-  transition: background $transition-fast, color $transition-fast, box-shadow $transition-fast;
+  transition:
+    background $transition-fast,
+    color $transition-fast,
+    box-shadow $transition-fast;
 
   &:hover:not(.is-active) {
     color: $color-text-primary;
@@ -1898,7 +2046,9 @@
   padding: 2px 5px;
   cursor: move;
   user-select: none;
-  transition: border-color $transition-fast, box-shadow $transition-fast;
+  transition:
+    border-color $transition-fast,
+    box-shadow $transition-fast;
   min-width: 20px;
 
   &:hover {
@@ -2023,7 +2173,10 @@
     font-weight: $font-weight-bold;
     font-size: 13px;
     color: $color-text-secondary;
-    transition: background $transition-fast, color $transition-fast, border-color $transition-fast;
+    transition:
+      background $transition-fast,
+      color $transition-fast,
+      border-color $transition-fast;
 
     &.is-active {
       background: var(--color-primary-bg);
@@ -2072,7 +2225,9 @@
 // ????????? ?????? ????? ??????
 .pt-style-panel-enter-active,
 .pt-style-panel-leave-active {
-  transition: max-height $transition-base, opacity $transition-base;
+  transition:
+    max-height $transition-base,
+    opacity $transition-base;
   max-height: 60px;
   overflow: hidden;
 }
@@ -2382,7 +2537,9 @@ body.is-resizing {
   flex-shrink: 0;
   transition: background $transition-fast;
 
-  &.is-active { background: var(--color-primary); }
+  &.is-active {
+    background: var(--color-primary);
+  }
 }
 
 .pt-sec-check {
@@ -2396,7 +2553,9 @@ body.is-resizing {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  &.is-bold { font-weight: $font-weight-semibold; }
+  &.is-bold {
+    font-weight: $font-weight-semibold;
+  }
 }
 
 .pt-sec-slide-badge {
@@ -2413,7 +2572,10 @@ body.is-resizing {
   line-height: 1.6;
   cursor: pointer;
   white-space: nowrap;
-  transition: background $transition-fast, border-color $transition-fast, color $transition-fast;
+  transition:
+    background $transition-fast,
+    border-color $transition-fast,
+    color $transition-fast;
 
   i {
     color: $color-text-muted;
@@ -2787,8 +2949,12 @@ body.is-resizing {
 }
 
 @keyframes pt-progress-slide {
-  0% { left: -40%; }
-  100% { left: 100%; }
+  0% {
+    left: -40%;
+  }
+  100% {
+    left: 100%;
+  }
 }
 
 .pt-gen-progress-msg {
@@ -2826,8 +2992,12 @@ body.is-resizing {
     border-radius: 5px;
     background: var(--color-primary-bg);
 
-    &:nth-child(2) { background: color.adjust(#5B4FE9, $lightness: 30%); }
-    &:nth-child(3) { background: color.adjust(#5B4FE9, $lightness: 42%); }
+    &:nth-child(2) {
+      background: color.adjust(#5b4fe9, $lightness: 30%);
+    }
+    &:nth-child(3) {
+      background: color.adjust(#5b4fe9, $lightness: 42%);
+    }
   }
 }
 
@@ -2905,14 +3075,26 @@ body.is-resizing {
     background: $color-text-muted;
     animation: pt-typing 1.2s infinite ease-in-out;
 
-    &:nth-child(2) { animation-delay: 0.2s; }
-    &:nth-child(3) { animation-delay: 0.4s; }
+    &:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+    &:nth-child(3) {
+      animation-delay: 0.4s;
+    }
   }
 }
 
 @keyframes pt-typing {
-  0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
-  40% { transform: scale(1.1); opacity: 1; }
+  0%,
+  80%,
+  100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
 }
 
 .pt-chat-input {
@@ -2987,8 +3169,12 @@ body.is-resizing {
 }
 
 @keyframes skeleton-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 // ---- ???????? ----
@@ -3010,8 +3196,12 @@ body.is-resizing {
 .pt-review-sec-icon {
   flex-shrink: 0;
 
-  &.is-done { color: $color-success; }
-  &.is-rendering { color: var(--color-primary); }
+  &.is-done {
+    color: $color-success;
+  }
+  &.is-rendering {
+    color: var(--color-primary);
+  }
 }
 
 .pt-review-sec-count {
@@ -3040,7 +3230,9 @@ body.is-resizing {
   overflow: hidden;
   background: #fff;
   cursor: pointer;
-  transition: border-color $transition-fast, box-shadow $transition-fast;
+  transition:
+    border-color $transition-fast,
+    box-shadow $transition-fast;
 
   &:hover {
     border-color: var(--color-primary);
@@ -3065,8 +3257,12 @@ body.is-resizing {
   gap: 4px;
   background: linear-gradient(135deg, #f4f3fc, #eceafc);
 
-  &.is-color-1 { background: linear-gradient(135deg, #fdf3e8, #fce4c0); }
-  &.is-color-2 { background: linear-gradient(135deg, #e8f5ee, #c5e8d5); }
+  &.is-color-1 {
+    background: linear-gradient(135deg, #fdf3e8, #fce4c0);
+  }
+  &.is-color-2 {
+    background: linear-gradient(135deg, #e8f5ee, #c5e8d5);
+  }
 }
 
 .pt-review-slide-eyebrow {
@@ -3213,7 +3409,9 @@ body.is-resizing {
   border-radius: $border-radius-base;
   color: $color-text-muted;
   cursor: pointer;
-  transition: background $transition-fast, color $transition-fast;
+  transition:
+    background $transition-fast,
+    color $transition-fast;
 
   &:hover {
     background: $color-surface;
@@ -3245,7 +3443,9 @@ body.is-resizing {
   border-radius: 50%;
   cursor: pointer;
   color: $color-text-primary;
-  transition: background $transition-fast, border-color $transition-fast;
+  transition:
+    background $transition-fast,
+    border-color $transition-fast;
 
   &:hover:not(:disabled) {
     background: $color-surface;
@@ -3335,8 +3535,14 @@ body.is-resizing {
   @include typo($body-caption-bold);
   color: var(--color-primary);
 
-  &.is-color-1 { background: linear-gradient(135deg, #fdf3e8, #fce4c0); color: #c07800; }
-  &.is-color-2 { background: linear-gradient(135deg, #e8f5ee, #c5e8d5); color: #2e7d5a; }
+  &.is-color-1 {
+    background: linear-gradient(135deg, #fdf3e8, #fce4c0);
+    color: #c07800;
+  }
+  &.is-color-2 {
+    background: linear-gradient(135deg, #e8f5ee, #c5e8d5);
+    color: #2e7d5a;
+  }
 }
 
 // ---- ??????????????----
@@ -3352,7 +3558,9 @@ body.is-resizing {
   overflow: hidden;
   background: #fff;
   cursor: pointer;
-  transition: border-color $transition-fast, box-shadow $transition-fast;
+  transition:
+    border-color $transition-fast,
+    box-shadow $transition-fast;
 
   &:hover {
     border-color: var(--color-primary);
@@ -3416,8 +3624,12 @@ body.is-resizing {
     border-radius: 3px;
     background: var(--color-primary-bg);
 
-    &:nth-child(2) { background: #e5e2fb; }
-    &:nth-child(3) { background: #eeedfb; }
+    &:nth-child(2) {
+      background: #e5e2fb;
+    }
+    &:nth-child(3) {
+      background: #eeedfb;
+    }
   }
 }
 
@@ -3445,7 +3657,9 @@ body.is-resizing {
   @include typo($body-xsmall);
   color: $color-text-muted;
 
-  .is-done-icon { color: $color-success; }
+  .is-done-icon {
+    color: $color-success;
+  }
 }
 
 .pt-thumb-skeleton {
@@ -3507,12 +3721,30 @@ body.is-resizing {
   border-radius: 5px;
   padding: 2px 7px;
 
-  &.is-gray { background: $color\-surface; color: $color\-text-primary; }
-  &.is-blue { background: var(--color-primary-bg); color: var(--color-primary); }
-  &.is-warn { background: rgba(#e0762c, 0.12); color: #e0762c; }
-  &.is-ok { background: rgba(#1e9e6b, 0.12); color: #1e9e6b; }
-  &.is-danger { background: rgba(#d64545, 0.12); color: #d64545; }
-  &.is-accent { background: rgba(#e08a2c, 0.12); color: #e08a2c; }
+  &.is-gray {
+    background: $color\-surface;
+    color: $color\-text-primary;
+  }
+  &.is-blue {
+    background: var(--color-primary-bg);
+    color: var(--color-primary);
+  }
+  &.is-warn {
+    background: rgba(#e0762c, 0.12);
+    color: #e0762c;
+  }
+  &.is-ok {
+    background: rgba(#1e9e6b, 0.12);
+    color: #1e9e6b;
+  }
+  &.is-danger {
+    background: rgba(#d64545, 0.12);
+    color: #d64545;
+  }
+  &.is-accent {
+    background: rgba(#e08a2c, 0.12);
+    color: #e08a2c;
+  }
 }
 
 .pt-alertbar {
@@ -3527,7 +3759,9 @@ body.is-resizing {
   @include typo($body-small-bold);
   margin-bottom: 12px;
 
-  .ui-button { margin-left: auto; }
+  .ui-button {
+    margin-left: auto;
+  }
 }
 
 .pt-toolbar {
@@ -3571,7 +3805,9 @@ body.is-resizing {
     vertical-align: top;
   }
 
-  tr.is-focus td { background: var(--color-primary-bg); }
+  tr.is-focus td {
+    background: var(--color-primary-bg);
+  }
 }
 
 .pt-editable {
@@ -3583,8 +3819,15 @@ body.is-resizing {
   resize: vertical;
   background: transparent;
 
-  &:hover { border-color: $color-border; background: $color\-surface; }
-  &:focus { outline: none; border-color: var(--color-primary); background: #fff; }
+  &:hover {
+    border-color: $color-border;
+    background: $color\-surface;
+  }
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    background: #fff;
+  }
 }
 
 .pt-toggle {
@@ -3615,7 +3858,9 @@ body.is-resizing {
   color: $color-text-muted;
   cursor: pointer;
   font-size: 14px;
-  &:hover { color: #d64545; }
+  &:hover {
+    color: #d64545;
+  }
 }
 
 .pt-ec-sumbar {
@@ -3629,11 +3874,18 @@ body.is-resizing {
 
   &.bad {
     background: rgba(#d64545, 0.08);
-    b { color: #d64545; }
+    b {
+      color: #d64545;
+    }
   }
 
-  b { color: #1e9e6b; }
-  span { @include typo($body-xsmall); color: $color-text-muted; }
+  b {
+    color: #1e9e6b;
+  }
+  span {
+    @include typo($body-xsmall);
+    color: $color-text-muted;
+  }
 }
 
 .pt-ec-row {
@@ -3642,7 +3894,9 @@ body.is-resizing {
   background: #fff;
   transition: background $transition-fast;
 
-  &:last-child { border-radius: 0 0 8px 8px; }
+  &:last-child {
+    border-radius: 0 0 8px 8px;
+  }
 
   &.is-open {
     background: var(--color-primary-bg);
@@ -3829,15 +4083,24 @@ body.is-resizing {
   }
 }
 
-.pt-issue-grid { display: flex; flex-direction: column; gap: 10px; }
+.pt-issue-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 .pt-issue-card {
   border: 1px solid $color-border;
   border-radius: 8px;
   padding: 14px 16px;
   background: #fff;
 
-  &.is-focus { border-color: var(--color-primary); background: var(--color-primary-bg); }
-  &.is-editing { border-color: var(--color-primary); }
+  &.is-focus {
+    border-color: var(--color-primary);
+    background: var(--color-primary-bg);
+  }
+  &.is-editing {
+    border-color: var(--color-primary);
+  }
 }
 .pt-issue-top {
   display: flex;
@@ -4287,8 +4550,14 @@ body.is-resizing {
   width: 100%;
   max-width: 560px;
   text-align: center;
-  h3 { margin: 0 0 8px; }
-  p { @include typo($body-small); color: $color-text-muted; margin: 0 0 28px; }
+  h3 {
+    margin: 0 0 8px;
+  }
+  p {
+    @include typo($body-small);
+    color: $color-text-muted;
+    margin: 0 0 28px;
+  }
 }
 .pt-s4-loading-spinner {
   width: 40px;
@@ -4299,7 +4568,11 @@ body.is-resizing {
   margin: 0 auto 20px;
   animation: pt-s4spin 0.9s linear infinite;
 }
-@keyframes pt-s4spin { to { transform: rotate(360deg); } }
+@keyframes pt-s4spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 .pt-s4-loading-steps {
   text-align: left;
   border: 1px solid $color-border;
@@ -4312,14 +4585,37 @@ body.is-resizing {
   gap: 12px;
   padding: 14px 16px;
   border-bottom: 1px solid $color-border;
-  &:last-child { border-bottom: none; }
-  b { display: block; font-size: 12.5px; color: $color-text-muted; }
-  small { display: block; font-size: 11.5px; color: $color-text-muted; margin-top: 2px; }
-  &.done .pt-s4l-dot { background: rgba(#1e9e6b, 0.15); color: #1e9e6b; }
-  &.done b { color: $color\-text-primary; }
-  &.active .pt-s4l-dot { background: var(--color-primary); color: #fff; }
-  &.active b { color: $color-text-heading; }
-  &.active small { color: var(--color-primary); }
+  &:last-child {
+    border-bottom: none;
+  }
+  b {
+    display: block;
+    font-size: 12.5px;
+    color: $color-text-muted;
+  }
+  small {
+    display: block;
+    font-size: 11.5px;
+    color: $color-text-muted;
+    margin-top: 2px;
+  }
+  &.done .pt-s4l-dot {
+    background: rgba(#1e9e6b, 0.15);
+    color: #1e9e6b;
+  }
+  &.done b {
+    color: $color\-text-primary;
+  }
+  &.active .pt-s4l-dot {
+    background: var(--color-primary);
+    color: #fff;
+  }
+  &.active b {
+    color: $color-text-heading;
+  }
+  &.active small {
+    color: var(--color-primary);
+  }
 }
 .pt-s4l-dot {
   width: 22px;
@@ -4369,12 +4665,16 @@ body.is-resizing {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  &:hover { background: $color\-surface; }
+  &:hover {
+    background: $color\-surface;
+  }
   &.active {
     background: var(--color-primary-bg);
     color: var(--color-primary);
     font-weight: 700;
-    .dot { background: var(--color-primary); }
+    .dot {
+      background: var(--color-primary);
+    }
   }
   .dot {
     width: 6px;
@@ -4391,8 +4691,12 @@ body.is-resizing {
   background: none;
   color: $color-text-muted;
   cursor: pointer;
-  .pt-pd-item:hover & { opacity: 1; }
-  &:hover { color: #d64545; }
+  .pt-pd-item:hover & {
+    opacity: 1;
+  }
+  &:hover {
+    color: #d64545;
+  }
 }
 .pt-pd-list-add {
   margin: 12px 6px 4px;
@@ -4404,7 +4708,10 @@ body.is-resizing {
   padding: 9px;
   font-size: 12px;
   cursor: pointer;
-  &:hover { border-color: var(--color-primary); color: var(--color-primary); }
+  &:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
 }
 .pt-pd-detail {
   display: flex;
@@ -4447,17 +4754,30 @@ body.is-resizing {
   line-height: 1.6;
   resize: vertical;
   min-height: 42px;
-  &:focus { outline: none; border-color: var(--color-primary); }
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  }
 }
-.pt-src-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.pt-src-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
 .pt-src-badge {
   border: none;
   border-radius: 5px;
   padding: 3px 8px;
   font-size: 11px;
   cursor: pointer;
-  &.is-req { background: var(--color-primary-bg); color: var(--color-primary); }
-  &.is-issue { background: rgba(#e08a2c, 0.15); color: #c45f16; }
+  &.is-req {
+    background: var(--color-primary-bg);
+    color: var(--color-primary);
+  }
+  &.is-issue {
+    background: rgba(#e08a2c, 0.15);
+    color: #c45f16;
+  }
 }
 .pt-pd-chat {
   border-left: 1px solid $color-border;
@@ -4517,7 +4837,10 @@ body.is-resizing {
     justify-content: center;
   }
 }
-.pt-muted { @include typo($body-small); color: $color-text-muted; }
+.pt-muted {
+  @include typo($body-small);
+  color: $color-text-muted;
+}
 
 .pt-wt-grid {
   display: grid;
@@ -4554,7 +4877,9 @@ body.is-resizing {
   background: none;
   cursor: pointer;
   color: $color-text-muted;
-  .pt-wt-card.stale & { right: 170px; }
+  .pt-wt-card.stale & {
+    right: 170px;
+  }
 }
 .pt-wt-target {
   display: inline-block;
@@ -4565,7 +4890,10 @@ body.is-resizing {
   padding: 2px 8px;
   margin-bottom: 10px;
   cursor: pointer;
-  &:hover { background: var(--color-primary-bg); color: var(--color-primary); }
+  &:hover {
+    background: var(--color-primary-bg);
+    color: var(--color-primary);
+  }
 }
 .pt-wt-core {
   font-size: 14.5px;
@@ -4617,14 +4945,18 @@ body.is-resizing {
   font-size: 13px;
   border-bottom: 1px solid $color-border;
   border-top: 1px solid $color-border;
-  &:first-child { border-top: none; }
+  &:first-child {
+    border-top: none;
+  }
 }
 .pt-tocmap-row {
   display: flex;
   gap: 14px;
   padding: 14px 16px 14px 30px;
   border-bottom: 1px solid $color-border;
-  &:last-child { border-bottom: none; }
+  &:last-child {
+    border-bottom: none;
+  }
 }
 .pt-tocmap-title {
   width: 170px;
@@ -4667,7 +4999,9 @@ body.is-resizing {
     cursor: pointer;
     color: inherit;
     opacity: 0.6;
-    &:hover { opacity: 1; }
+    &:hover {
+      opacity: 1;
+    }
   }
 }
 .pt-chip-add {
@@ -4678,7 +5012,10 @@ body.is-resizing {
   padding: 4px 10px;
   cursor: pointer;
   background: none;
-  &:hover { border-color: var(--color-primary); color: var(--color-primary); }
+  &:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
 }
 .pt-ec-select {
   border: 1px solid $color-border;
@@ -4695,7 +5032,9 @@ body.is-resizing {
     overflow-y: auto;
     @include custom-scrollbar;
   }
-  .pt-wt-grid { grid-template-columns: 1fr; }
+  .pt-wt-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 // =============================================
@@ -4715,11 +5054,11 @@ body.is-resizing {
   flex-shrink: 0;
   margin: $spacing-md;
   padding: 10px $spacing-md;
-  background: #FFFBEB;
-  border: 1px solid #FDE68A;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
   border-radius: $border-radius-base;
   @include typo($body-xsmall);
-  color: #92400E;
+  color: #92400e;
   line-height: 1.6;
 }
 
@@ -4840,7 +5179,7 @@ body.is-resizing {
 .pt-cover-canvas-bar {
   width: 32px;
   height: 3px;
-  background: #F59E0B;
+  background: #f59e0b;
   border-radius: 2px;
   margin-bottom: 10px;
 }
@@ -5004,7 +5343,7 @@ body.is-resizing {
     .pt-divider-chapter-divider {
       width: 40px;
       height: 3px;
-      background: var(--accent-color, #E08A2C);
+      background: var(--accent-color, #e08a2c);
       margin: 4px 0;
     }
 
@@ -5055,7 +5394,9 @@ body.is-resizing {
   border: none;
   border-bottom: 2px solid transparent;
   cursor: pointer;
-  transition: color $transition-fast, border-color $transition-fast;
+  transition:
+    color $transition-fast,
+    border-color $transition-fast;
 
   &.is-active {
     color: var(--color-primary);
@@ -5075,8 +5416,8 @@ body.is-resizing {
   color: $color-text-muted;
 
   &.is-done {
-    background: #E8F5E9;
-    color: #2E7D32;
+    background: #e8f5e9;
+    color: #2e7d32;
   }
 }
 
@@ -5286,15 +5627,15 @@ body.is-resizing {
   flex-shrink: 0;
 
   &.is-none {
-    background: #D6D9E0;
+    background: #d6d9e0;
   }
 
   &.is-draft {
-    background: #E8A93A;
+    background: #e8a93a;
   }
 
   &.is-confirmed {
-    background: #2AA860;
+    background: #2aa860;
   }
 }
 
@@ -5353,13 +5694,13 @@ body.is-resizing {
   }
 
   &.is-draft {
-    background: #FFF4E0;
-    color: #B67A16;
+    background: #fff4e0;
+    color: #b67a16;
   }
 
   &.is-confirmed {
-    background: #E8F5E9;
-    color: #2E7D32;
+    background: #e8f5e9;
+    color: #2e7d32;
   }
 }
 
@@ -5499,18 +5840,33 @@ textarea.oc-outline-textarea.ui-textarea {
   @include typo($body-medium, $color-text-secondary);
   line-height: 1.75;
 
-  h1 { @include typo($body-large-bold, $color-text-heading); margin: 12px 0 8px; }
-  h2 { @include typo($body-medium-bold, $color-text-heading); margin: 12px 0 6px; }
+  h1 {
+    @include typo($body-large-bold, $color-text-heading);
+    margin: 12px 0 8px;
+  }
+  h2 {
+    @include typo($body-medium-bold, $color-text-heading);
+    margin: 12px 0 6px;
+  }
   h3,
-  h4 { @include typo($body-medium-bold, $color-text-heading); margin: 10px 0 4px; }
+  h4 {
+    @include typo($body-medium-bold, $color-text-heading);
+    margin: 10px 0 4px;
+  }
 
   h1:first-child,
   h2:first-child,
   h3:first-child,
-  h4:first-child { margin-top: 0; }
+  h4:first-child {
+    margin-top: 0;
+  }
 
-  p { margin: 0 0 6px; }
-  p:last-child { margin-bottom: 0; }
+  p {
+    margin: 0 0 6px;
+  }
+  p:last-child {
+    margin-bottom: 0;
+  }
 
   // 글로벌 reset(list-style: none) 때문에 마커 없이 padding만 남던 문제 보정
   ul,
@@ -5520,8 +5876,12 @@ textarea.oc-outline-textarea.ui-textarea {
     list-style-position: outside;
   }
 
-  ul { list-style-type: disc; }
-  ol { list-style-type: decimal; }
+  ul {
+    list-style-type: disc;
+  }
+  ol {
+    list-style-type: decimal;
+  }
 
   li {
     margin-bottom: 2px;
@@ -5535,7 +5895,9 @@ textarea.oc-outline-textarea.ui-textarea {
     padding-left: 1.1em;
   }
 
-  strong { font-weight: $font-weight-bold; }
+  strong {
+    font-weight: $font-weight-bold;
+  }
 
   code {
     @include typo($body-small);
@@ -5553,7 +5915,11 @@ textarea.oc-outline-textarea.ui-textarea {
     overflow-x: auto;
     margin: 8px 0;
 
-    code { background: none; border: none; padding: 0; }
+    code {
+      background: none;
+      border: none;
+      padding: 0;
+    }
   }
 
   blockquote {
@@ -5576,13 +5942,17 @@ textarea.oc-outline-textarea.ui-textarea {
     @include typo($body-small);
     margin: 8px 0;
 
-    th, td {
+    th,
+    td {
       border: 1px solid $color-border-light;
       padding: 4px 8px;
       text-align: left;
     }
 
-    th { background: $color-surface; font-weight: $font-weight-bold; }
+    th {
+      background: $color-surface;
+      font-weight: $font-weight-bold;
+    }
   }
 }
 

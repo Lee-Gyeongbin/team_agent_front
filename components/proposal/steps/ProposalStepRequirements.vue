@@ -1,101 +1,95 @@
 <template>
   <div class="pt-panel pt-panel--lg pt-step-b">
     <div class="pt-step-b-head">
-      <div class="pt-panel-title-row">
-        <h3 class="pt-panel-title">목차·요구사항</h3>
-        <UiButton
-          variant="ghost"
-          size="sm"
-          @click="isPromptModalOpen = true"
-        >
-          <template #icon-left>
-            <i class="icon-edit size-14" />
-          </template>
-          프롬프트
-        </UiButton>
-      </div>
+      <h3 class="pt-panel-title">목차·요구사항</h3>
       <p class="pt-panel-desc">RFP에서 추출한 목차·요구사항·평가기준·현황이슈를 확인하고 보완하세요.</p>
-    </div>
-
-    <!-- RFP 파일 업로드 -->
-    <div class="pt-step-b-rfp">
-      <div
-        class="pt-dropzone pt-step-b-dropzone"
-        @click="onClickRfpDropzone"
-        @dragover.prevent
-        @drop.prevent="onDropRfp"
+      <UiButton
+        variant="outline"
+        size="sm"
+        @click="isPromptModalOpen = true"
       >
-        <i class="icon-attach-file size-18" />
-        <span
-          v-if="rfpFile"
-          class="pt-dropzone-file"
+        <template #icon-left>
+          <UiIcon
+            name="pencil"
+            size="14"
+          />
+        </template>
+        프롬프트
+      </UiButton>
+
+      <!-- RFP 파일 업로드 -->
+      <div class="pt-step-b-rfp">
+        <div
+          class="pt-dropzone pt-step-b-dropzone"
+          :class="{ 'is-filled': Boolean(rfpFile || savedRfpFileNm) }"
+          @click="onClickRfpDropzone"
+          @dragover.prevent
+          @drop.prevent="onDropRfp"
         >
-          <i class="icon-document size-14" />
-          {{ rfpFile.name }}
-          <button
-            class="pt-dropzone-remove"
-            @click.stop="rfpFile = null"
+          <i class="icon-attach-file size-18" />
+          <span
+            v-if="rfpFile"
+            class="pt-dropzone-file"
           >
-            <i class="icon-close size-12" />
-          </button>
-        </span>
-        <span
-          v-else-if="savedRfpFileNm"
-          class="pt-dropzone-file"
-        >
-          <i class="icon-document size-14" />
-          {{ savedRfpFileNm }}
-          <span class="pt-dropzone-tag">저장됨</span>
-          <button
-            type="button"
-            class="pt-dropzone-download"
-            title="RFP 파일 다운로드"
-            :disabled="isDownloading || !savedRfpPtFileId"
-            @click.stop="onDownloadRfp"
+            <i class="icon-document size-14" />
+            {{ rfpFile.name }}
+            <button
+              class="pt-dropzone-remove"
+              @click.stop="rfpFile = null"
+            >
+              <i class="icon-close size-12" />
+            </button>
+          </span>
+          <span
+            v-else-if="savedRfpFileNm"
+            class="pt-dropzone-file"
           >
-            <i class="icon-download size-14" />
-          </button>
-        </span>
-        <span v-else>RFP 파일을 첨부하세요 (PDF · 최대 50MB · 1개)</span>
-        <input
-          ref="rfpInputRef"
-          type="file"
-          accept=".pdf"
-          style="display: none"
-          @change="onRfpFileChange"
-        />
-      </div>
-      <div class="pt-rfp-btn-row">
-        <UiButton
-          variant="primary-line"
-          size="sm"
-          :loading="isUploading"
-          :disabled="!rfpFile"
-          @click="onUploadRfp"
-        >
-          RFP 업로드
-        </UiButton>
-        <UiButton
-          variant="primary"
-          size="sm"
-          :loading="isAnalyzing"
-          :disabled="!savedRfpFileNm || isAnalyzing"
-          @click="onExtractStage1"
-        >
-          RFP 데이터 추출
-        </UiButton>
-        <UiButton
-          variant="primary-line"
-          size="sm"
-          :loading="isDownloading"
-          :disabled="!savedRfpPtFileId || isDownloading"
-          @click="onDownloadRfp"
-        >
-          <template #icon-left>
-            <i class="icon-download size-14" />
-          </template>
-          RFP 다운로드
-        </UiButton>
+            <i class="icon-document size-14" />
+            {{ savedRfpFileNm }}
+            <span class="pt-dropzone-tag">저장됨</span>
+          </span>
+          <span v-else>RFP 파일을 첨부하세요 (PDF · 최대 50MB · 1개)</span>
+          <input
+            ref="rfpInputRef"
+            type="file"
+            accept=".pdf"
+            style="display: none"
+            @change="onRfpFileChange"
+          />
+        </div>
+        <div class="pt-rfp-btn-row">
+          <UiButton
+            v-if="!savedRfpFileNm"
+            variant="primary"
+            size="sm"
+            :loading="isUploading"
+            :disabled="!rfpFile"
+            @click="onUploadRfp"
+          >
+            RFP 업로드
+          </UiButton>
+          <UiDropdownMenu
+            :items="rfpMenuItems"
+            @select="onRfpMenuSelect"
+          >
+            <template #trigger>
+              <UiButton
+                variant="outline"
+                size="sm"
+                icon-only
+                title="RFP 작업 더보기"
+                aria-label="RFP 작업 더보기"
+              >
+                <template #icon-left>
+                  <UiIcon
+                    name="ellipsis-vertical"
+                    size="18"
+                  />
+                </template>
+              </UiButton>
+            </template>
+          </UiDropdownMenu>
+        </div>
       </div>
     </div>
 
@@ -118,13 +112,21 @@
         class="pt-step-b-tab"
       >
         <div class="pt-toc-toolbar">
-          <UiButton
-            variant="ghost"
-            size="sm"
-            @click="onAddItem(null)"
-          >
-            대목차 추가
-          </UiButton>
+          <div class="pt-toc-toolbar-actions">
+            <UiButton
+              variant="primary-line"
+              size="sm"
+              @click="onAddItem(null)"
+            >
+              <template #icon-left>
+                <UiIcon
+                  name="plus"
+                  size="14"
+                />
+              </template>
+              대목차 추가
+            </UiButton>
+          </div>
         </div>
         <div class="pt-step-b-scroll-list">
           <template v-if="isLoading">
@@ -144,36 +146,136 @@
             @end="onDragEnd"
           >
             <template #item="{ element }">
-              <div :class="['pt-toc-item', { 'is-sub': element.parentId !== null }]">
-                <span class="pt-toc-drag"><i class="icon-move-handle size-14" /></span>
-                <input
-                  :value="element.title"
-                  class="pt-toc-input"
-                  @blur="onTitleBlur(element.tocId, ($event.target as HTMLInputElement).value)"
-                />
-                <span :class="['pt-toc-tag', element.source === 'rfp' ? 'is-rfp' : 'is-user']">
-                  {{ element.source === 'rfp' ? 'RFP 추출' : '사용자 입력' }}
+              <div
+                v-show="!hiddenTocIds.has(element.tocId)"
+                :class="['pt-toc-item', { 'is-sub': !!element.parentId, 'is-editing': editingTocId === element.tocId }]"
+              >
+                <span class="pt-toc-drag">
+                  <UiIcon
+                    name="grip-vertical"
+                    size="14"
+                  />
                 </span>
+                <!-- 접기 토글 — 자식이 없으면 자리만 차지시켜 제목 시작선을 맞춘다 -->
                 <button
+                  type="button"
+                  :class="[
+                    'pt-toc-collapse',
+                    {
+                      'is-expanded': !collapsedTocIds.has(element.tocId),
+                      'is-empty': !hasChildToc(element.tocId),
+                    },
+                  ]"
+                  :aria-expanded="!collapsedTocIds.has(element.tocId)"
+                  :aria-label="collapsedTocIds.has(element.tocId) ? '소목차 펼치기' : '소목차 접기'"
+                  @click="toggleTocCollapse(element.tocId)"
+                >
+                  <UiIcon
+                    name="chevron-right"
+                    size="16"
+                  />
+                </button>
+                <!-- 편집 중에만 input — 평소엔 글자 폭만 차지하는 button으로 액션을 제목 옆에 붙임 -->
+                <template v-if="editingTocId === element.tocId">
+                  <input
+                    :ref="setEditInput"
+                    v-model="editingTitle"
+                    class="pt-toc-input"
+                    @blur="onCommitTitle"
+                    @keydown.enter.prevent="onCommitTitle"
+                    @keydown.esc="onCancelEditTitle"
+                  />
+                  <!-- mousedown.prevent — 클릭 전에 blur가 먼저 터져 취소가 저장으로 바뀌는 것 방지 -->
+                  <div class="pt-toc-edit-actions">
+                    <UiButton
+                      variant="ghost"
+                      size="xs"
+                      icon-only
+                      class="pt-toc-edit-ok"
+                      aria-label="제목 저장"
+                      title="저장 (Enter)"
+                      @mousedown.prevent
+                      @click="onCommitTitle"
+                    >
+                      <template #icon-left>
+                        <UiIcon
+                          name="check"
+                          size="14"
+                        />
+                      </template>
+                    </UiButton>
+                    <UiButton
+                      variant="ghost"
+                      size="xs"
+                      icon-only
+                      aria-label="편집 취소"
+                      title="취소 (Esc)"
+                      @mousedown.prevent
+                      @click="onCancelEditTitle"
+                    >
+                      <template #icon-left>
+                        <UiIcon
+                          name="x"
+                          size="14"
+                        />
+                      </template>
+                    </UiButton>
+                  </div>
+                </template>
+                <button
+                  v-else
+                  type="button"
+                  class="pt-toc-title"
+                  @click="onStartEditTitle(element)"
+                >
+                  {{ element.title }}
+                </button>
+                <!-- 맥락 액션 — 제목 바로 옆 -->
+                <UiButton
                   v-if="element.parentId === null"
+                  variant="outline"
+                  size="xs"
                   class="pt-toc-add-child"
-                  title="소목차 추가"
                   @click="onAddItem(element.tocId)"
                 >
-                  <i class="icon-plus size-12" />
-                </button>
-                <button
+                  <template #icon-left>
+                    <UiIcon
+                      name="plus"
+                      size="14"
+                    />
+                  </template>
+                  소목차 추가
+                </UiButton>
+                <!-- 삭제 — hover 시에만 노출 -->
+                <UiButton
+                  variant="ghost"
+                  size="xs"
+                  icon-only
                   class="pt-toc-del"
-                  @click="onDeleteItem(element.tocId)"
+                  aria-label="목차 삭제"
+                  title="삭제"
+                  @click="onDeleteItem(element)"
                 >
-                  <i class="icon-close size-12" />
-                </button>
+                  <template #icon-left>
+                    <UiIcon
+                      name="trash-2"
+                      size="14"
+                    />
+                  </template>
+                </UiButton>
+                <UiBadge
+                  class="pt-toc-badge"
+                  :variant="element.source === 'rfp' ? 'info' : 'warning'"
+                  size="xs"
+                >
+                  {{ element.source === 'rfp' ? 'RFP 추출' : '사용자 입력' }}
+                </UiBadge>
               </div>
             </template>
           </draggable>
           <UiEmpty
             v-else-if="!isLoading"
-            title="목차가 없습니다. RFP 데이터 추출 또는 직접 추가하세요."
+            title="목차가 없습니다. 상단 ⋮ 메뉴의 [RFP 데이터 추출] 또는 직접 추가하세요."
           />
         </div>
       </div>
@@ -217,7 +319,7 @@
             size="sm"
             sticky-header
             max-height="100%"
-            empty-text="요구사항이 없습니다. RFP 데이터 추출 또는 수동 추가하세요."
+            empty-text="요구사항이 없습니다. 상단 ⋮ 메뉴의 [RFP 데이터 추출] 또는 수동 추가하세요."
             selected-row-key="requirementId"
             :selected-row-value="focusId ?? undefined"
           >
@@ -745,6 +847,9 @@
     </div>
 
     <div class="pt-panel-actions pt-step-b-actions">
+      <p :class="['pt-step-b-status', { 'is-blocked': tocList.length === 0 }]">
+        {{ nextStatusText }}
+      </p>
       <UiButton
         variant="primary"
         size="md"
@@ -753,7 +858,10 @@
       >
         다음 · 설정 입력
         <template #icon-right>
-          <i class="icon-arrow-right size-14" />
+          <UiIcon
+            name="arrow-right"
+            size="14"
+          />
         </template>
       </UiButton>
     </div>
@@ -762,15 +870,17 @@
 
 <script setup lang="ts">
 import draggable from 'vuedraggable'
+import { UiButton, UiIcon, UiBadge } from '@leechanyong/ispark-ui'
 import { openToast } from '~/composables/useToast'
 import { openConfirm } from '~/composables/useDialog'
 import { openLoading, updateLoadingText, closeLoading } from '~/composables/useLoading'
 import { useProposalToc } from '~/composables/proposal/useProposalToc'
 import { useProposalFileStore } from '~/composables/proposal/useProposalFileStore'
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
-import type { PtRequirement, PtEvalCriteria, PtRfpIssue } from '~/types/proposal'
+import type { PtRequirement, PtEvalCriteria, PtRfpIssue, PtTocItem } from '~/types/proposal'
 import type { TableColumn } from '~/types/table'
 import type { SelectOption } from '~/components/ui/UiSelect.vue'
+import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
 
 const STAGE1_STEP_MESSAGES: Record<string, string> = {
   extract: 'RFP 파일에서 텍스트를 추출하는 중...',
@@ -939,6 +1049,27 @@ const isDownloading = ref(false)
 const isAnalyzing = ref(false)
 const isPromptModalOpen = ref(false)
 
+/** RFP 더보기 메뉴 — 추출·다운로드는 1회성 액션이라 오버플로로 분리 */
+const rfpMenuItems = computed<DropdownMenuItemDef[]>(() => [
+  {
+    value: 'extract',
+    label: 'RFP 데이터 추출',
+    icon: 'icon-refresh',
+    disabled: !savedRfpFileNm.value || isAnalyzing.value,
+  },
+  {
+    value: 'download',
+    label: 'RFP 다운로드',
+    icon: 'icon-download',
+    disabled: !savedRfpPtFileId.value || isDownloading.value,
+  },
+])
+
+const onRfpMenuSelect = (value: string) => {
+  if (value === 'extract') onExtractStage1()
+  if (value === 'download') onDownloadRfp()
+}
+
 /** RFP는 1개만, 회사정보(카테고리 합산 10MB)보다 큰 용량 허용 */
 const MAX_RFP_FILE_COUNT = 1
 const MAX_RFP_FILE_MB = 50
@@ -989,6 +1120,15 @@ const {
   handleDeleteTocItem,
   handleReorderToc,
 } = useProposalToc(ptProjectIdRef)
+
+/** 하단 액션 좌측 안내 — 다음 버튼 비활성 사유를 노출 */
+const nextStatusText = computed(() => {
+  if (isLoading.value) return ''
+  if (tocList.value.length === 0) return '목차를 1건 이상 추가해야 다음 단계로 진행할 수 있습니다.'
+  if (confirmNeededCount.value > 0)
+    return `목차 ${tocList.value.length}건 준비됨 · 확인 필요 요구사항 ${confirmNeededCount.value}건`
+  return `목차 ${tocList.value.length}건 준비됨`
+})
 
 const loadStage1 = async () => {
   const res = await fetchSelectStage1Result(props.ptProjectId)
@@ -1107,9 +1247,92 @@ const onExtractStage1 = async () => {
   })
 }
 
-const onAddItem = async (parentId: string | null) => handleAddTocItem(parentId)
-const onTitleBlur = async (tocId: string, title: string) => handleUpdateTocTitle(tocId, title)
-const onDeleteItem = async (tocId: string) => handleDeleteTocItem(tocId)
+// ===== 목차 접기/펼치기 =====
+/** 접힌 대목차 id 집합 — 기본은 전부 펼침 */
+const collapsedTocIds = ref(new Set<string>())
+
+/** parentId → 직계 자식 tocId 목록. 목차는 3단계 이상 가능(대목차 > 소분류 > 세부목차) */
+const tocChildrenMap = computed(() => {
+  const map = new Map<string, string[]>()
+  tocList.value.forEach((t) => {
+    if (!t.parentId) return
+    const siblings = map.get(t.parentId)
+    if (siblings) siblings.push(t.tocId)
+    else map.set(t.parentId, [t.tocId])
+  })
+  return map
+})
+const hasChildToc = (tocId: string) => tocChildrenMap.value.has(tocId)
+
+/** 접힌 노드의 모든 하위 id — 손자 이하까지 재귀로 모아야 전체가 접힌다 */
+const hiddenTocIds = computed(() => {
+  const hidden = new Set<string>()
+  const collect = (tocId: string) => {
+    tocChildrenMap.value.get(tocId)?.forEach((childId) => {
+      if (hidden.has(childId)) return // 순환 방어
+      hidden.add(childId)
+      collect(childId)
+    })
+  }
+  collapsedTocIds.value.forEach(collect)
+  return hidden
+})
+
+const toggleTocCollapse = (tocId: string) => {
+  const next = new Set(collapsedTocIds.value)
+  if (next.has(tocId)) next.delete(tocId)
+  else next.add(tocId)
+  collapsedTocIds.value = next
+}
+
+// ===== 목차 제목 인라인 편집 =====
+/** 편집 중인 목차 id — 이 행만 input으로 렌더 */
+const editingTocId = ref<string | null>(null)
+const editingTitle = ref('')
+/** 변경 여부 판단용 원본 — 값이 그대로면 저장 API를 호출하지 않는다 */
+const editingOrigin = ref('')
+
+/** input이 붙는 즉시 포커스 (함수 ref 고정 identity → mount/unmount에서만 호출) */
+const setEditInput = (el: unknown) => {
+  const input = el as HTMLInputElement | null
+  if (input && document.activeElement !== input) input.focus()
+}
+
+const onStartEditTitle = (item: PtTocItem) => {
+  editingTocId.value = item.tocId
+  editingTitle.value = item.title
+  editingOrigin.value = item.title
+}
+
+const onCancelEditTitle = () => {
+  editingTocId.value = null
+}
+
+const onCommitTitle = async () => {
+  const tocId = editingTocId.value
+  if (!tocId) return
+  const title = editingTitle.value.trim()
+  editingTocId.value = null
+  if (!title || title === editingOrigin.value) return
+  await handleUpdateTocTitle(tocId, title)
+}
+
+const onAddItem = async (parentId: string | null) => {
+  if (parentId && collapsedTocIds.value.has(parentId)) toggleTocCollapse(parentId)
+  await handleAddTocItem(parentId)
+}
+/** 목차 삭제 — 대목차는 하위 소목차까지 연쇄 삭제되므로 개수를 알려주고 확인받는다 */
+const onDeleteItem = async (item: PtTocItem) => {
+  const childCount = item.parentId === null ? tocList.value.filter((t) => t.parentId === item.tocId).length : 0
+  const ok = await openConfirm({
+    title: item.parentId === null ? '대목차 삭제' : '소목차 삭제',
+    message: childCount
+      ? `'${item.title}' 대목차와 하위 소목차 ${childCount}개가 함께 삭제됩니다. 삭제하시겠습니까?`
+      : `'${item.title}'을(를) 삭제하시겠습니까?`,
+  })
+  if (!ok) return
+  await handleDeleteTocItem(item.tocId)
+}
 const onDragEnd = async () => handleReorderToc()
 
 const sourceLabel = (cd: string) =>
@@ -1427,9 +1650,14 @@ const onDeleteIssue = async (id: string) => {
   padding: $spacing-md $spacing-lg;
 }
 
+/*
+ * 제목 → 설명 → 액션 순으로 전부 좌측 정렬.
+ * 패널이 화면 전폭(1800px+)이라 액션을 우측 끝으로 보내면 설명에서 버튼까지 시선이 너무 멀고,
+ * 제목과 설명 사이에 두면 문장이 끊겨 읽힌다. 설명 뒤가 둘 다 피하는 자리.
+ */
 .pt-step-b-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: $spacing-sm;
   flex-shrink: 0;
   margin-bottom: $spacing-sm;
@@ -1437,30 +1665,46 @@ const onDeleteIssue = async (id: string) => {
   .pt-panel-title {
     @include typo($body-medium-bold);
     margin: 0;
+    flex-shrink: 0;
   }
 
   .pt-panel-desc {
     @include typo($body-small);
     margin: 0;
+    min-width: 0; /* flex 자식 축소 허용 — 없으면 말줄임이 안 걸린다 */
+    @include ellipsis(1);
+    margin-right: $spacing-xs; /* 설명과 액션 사이 최소 간격 */
+  }
+
+  .ui-button {
+    flex-shrink: 0;
   }
 }
 
+/* RFP 파일 상태 + 파일 액션 묶음 — 헤더 우측 끝 (⋮는 대상인 파일 칩과 붙어 다닌다) */
 .pt-step-b-rfp {
   display: flex;
   align-items: center;
   gap: $spacing-sm;
   flex-shrink: 0;
-  margin-bottom: $spacing-sm;
+  margin-left: auto;
 }
 
 .pt-step-b-dropzone {
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
   margin-bottom: 0;
-  padding: 8px 12px;
+  /* 헤더 행의 UiButton(size=sm, 30px)과 높이 일치 */
+  min-height: 30px;
+  padding: 0 12px;
   justify-content: flex-start;
   text-align: left;
   @include typo($body-small);
+
+  /* 미첨부 상태는 드롭 타깃이므로 최소 폭 확보 — 확정 후에는 클릭·드롭이 막혀 내용 폭이면 충분 */
+  &:not(.is-filled) {
+    min-width: 300px;
+  }
 }
 
 .pt-step-b-rfp .pt-rfp-btn-row {
@@ -1479,7 +1723,7 @@ const onDeleteIssue = async (id: string) => {
 
 .pt-step-b-tabs {
   flex-shrink: 0;
-  margin: 0 0 $spacing-sm;
+  margin: $spacing-md 0 $spacing-md;
 
   :deep(.ui-tab-inner) {
     max-width: none;
@@ -1498,14 +1742,27 @@ const onDeleteIssue = async (id: string) => {
   flex-direction: column;
   flex: 1;
   min-height: 0;
+
   overflow: hidden;
 }
 
 .pt-step-b-actions {
   flex-shrink: 0;
   margin-top: 0;
-  padding-top: $spacing-sm;
+  padding-top: $spacing-md;
   border-top: 1px solid $color-border;
+  justify-content: space-between;
+  gap: $spacing-md;
+}
+
+.pt-step-b-status {
+  margin: 0;
+  align-self: center;
+  @include typo($body-small, $color-text-muted);
+
+  &.is-blocked {
+    color: $color-warning;
+  }
 }
 
 .pt-step-b-scroll-list {

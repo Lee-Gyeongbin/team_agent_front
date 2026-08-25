@@ -35,8 +35,10 @@
             :class="{
               'type-danger': item.color === 'danger',
               'is-active': isItemActive(item),
+              'is-disabled': item.disabled,
             }"
-            @select="emit('select', item.value)"
+            :disabled="item.disabled"
+            @select="onItemSelect(item)"
           >
             <i
               v-if="item.icon"
@@ -73,6 +75,8 @@ export interface DropdownMenuItemDef {
   value: string
   /** 위험 액션(삭제 등)은 'danger' 지정 → type-danger 클래스 적용 */
   color?: 'default' | 'danger'
+  /** 비활성 — 클릭·키보드 선택 차단 + is-disabled 스타일 */
+  disabled?: boolean
 }
 
 interface Props {
@@ -120,6 +124,11 @@ const openState = ref(props.open ?? false)
 let hoverCloseTimeoutId: ReturnType<typeof setTimeout> | null = null
 
 const isItemActive = (item: DropdownMenuItemDef) => props.activeValue !== '' && item.value === props.activeValue
+
+const onItemSelect = (item: DropdownMenuItemDef) => {
+  if (item.disabled) return
+  emit('select', item.value)
+}
 
 const clearHoverCloseTimeout = () => {
   if (!hoverCloseTimeoutId) return
@@ -255,6 +264,12 @@ watch(openState, (v: boolean) => emit('update:open', v))
   .dropdown-item__check {
     margin-left: auto;
     flex-shrink: 0;
+  }
+
+  .dropdown-item.is-disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+    pointer-events: none;
   }
 }
 

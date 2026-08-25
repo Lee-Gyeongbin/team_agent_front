@@ -9,7 +9,7 @@
       <div class="pt-panel-title-row pt-stepD-left-head">
         <span class="pt-panel-title">본문 생성</span>
         <UiButton
-          variant="ghost"
+          variant="outline"
           size="sm"
           @click="isPromptModalOpen = true"
         >
