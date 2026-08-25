@@ -4753,12 +4753,12 @@ body.is-resizing {
 
 .pt-pd-wrap {
   display: grid;
-  grid-template-columns: 230px 1fr 300px;
+  grid-template-columns: 190px 1fr 300px;
   transition: grid-template-columns $transition-base;
 
   /* 보완요청 접힘 — 토글 버튼만 남는 레일 폭 */
   &.is-chat-collapsed {
-    grid-template-columns: 230px 1fr 44px;
+    grid-template-columns: 190px 1fr 44px;
   }
   grid-template-rows: minmax(0, 1fr);
   gap: 0;
@@ -4771,7 +4771,7 @@ body.is-resizing {
 }
 .pt-pd-list {
   border-right: 1px solid $color-border;
-  padding: 10px;
+  padding: 8px;
   min-height: 0;
   overflow-y: auto;
   @include custom-scrollbar;
@@ -4780,10 +4780,10 @@ body.is-resizing {
 /* 목록 상단 고정 요약 — 스크롤해도 진행 상황이 보이게 */
 .pt-pd-list-summary {
   position: sticky;
-  top: -10px; // .pt-pd-list padding 만큼 끌어올려 상단에 붙인다
+  top: -8px; // .pt-pd-list padding 만큼 끌어올려 상단에 붙인다
   z-index: 1;
-  margin: -10px -10px 6px;
-  padding: 10px;
+  margin: -8px -8px 6px;
+  padding: 8px;
   background: #fff;
   border-bottom: 1px solid $color-border-light;
   @include typo($body-xsmall, $color-text-muted);
@@ -4828,14 +4828,46 @@ body.is-resizing {
 /* 구분선 없이 여백과 굵기만으로 구간을 나눈다 — 선을 겹칠수록 밀도가 떨어진다 */
 .pt-pd-group-head {
   margin-bottom: $spacing-sm;
+
+  &.is-diagnosis {
+    --pt-pd-group-accent: #e8b4b4;
+    --pt-pd-group-text: #c97878;
+    --pt-pd-group-bg: #fdf3f3;
+  }
+
+  &.is-response {
+    --pt-pd-group-accent: #a8d9bc;
+    --pt-pd-group-text: #5aab7a;
+    --pt-pd-group-bg: #f0faf4;
+  }
+}
+
+.pt-pd-group-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pt-pd-group-bar {
+  width: 4px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--pt-pd-group-accent);
+  flex-shrink: 0;
 }
 
 .pt-pd-group-title {
-  @include typo($body-medium-bold, $color-text-heading);
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: $border-radius-sm;
+  background: var(--pt-pd-group-bg);
+  color: var(--pt-pd-group-text);
+  @include typo($body-small-bold);
 }
 
 .pt-pd-item {
-  padding: 10px;
+  padding: 8px;
   border-radius: 7px;
   font-size: 12.5px;
   cursor: pointer;
@@ -4851,7 +4883,9 @@ body.is-resizing {
     color: var(--color-primary);
     font-weight: 700;
     // 우측 경계까지 밀어붙여 상세 패널과 맞붙게 — 목록과 상세가 끊겨 보이던 문제
-    margin-right: -10px;
+    // margin만 -8px 하면 텍스트 영역이 넓어져 줄바꿈이 바뀐다 → padding으로 폭 보정
+    margin-right: -8px;
+    padding-right: 16px;
     border-radius: 7px 0 0 7px;
 
     .dot {
@@ -4891,23 +4925,6 @@ body.is-resizing {
     }
   }
 }
-.pt-pd-del {
-  opacity: 0;
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  padding: 2px;
-  border: none;
-  background: none;
-  color: $color-text-muted;
-  cursor: pointer;
-  .pt-pd-item:hover & {
-    opacity: 1;
-  }
-  &:hover {
-    color: #d64545;
-  }
-}
 /* 점선 회색 버튼은 목록 배경에 묻혀 안 보였다 → primary-line UiButton.
    full-width(.is-full)가 width:100%를 강제하므로 좌우 margin을 주면 100%+margin이 되어
    목록에 가로 스크롤이 생긴다. 좌우 여백은 부모 .pt-pd-list의 padding이 이미 담당한다. */
@@ -4916,10 +4933,10 @@ body.is-resizing {
    padding을 버튼이 아니라 래퍼에 줘야 버튼 높이가 부풀지 않는다. */
 .pt-pd-list-foot {
   position: sticky;
-  bottom: -10px; // .pt-pd-list padding 만큼 끌어내려 바닥에 붙인다
+  bottom: -8px; // .pt-pd-list padding 만큼 끌어내려 바닥에 붙인다
   z-index: 1;
-  margin: $spacing-sm -10px -10px;
-  padding: 10px;
+  margin: $spacing-sm -8px -8px;
+  padding: 8px;
   background: #fff;
   border-top: 1px solid $color-border-light;
 }
@@ -4942,18 +4959,72 @@ body.is-resizing {
 /* 좌측 목록에서 고른 항목을 상세 상단에 되비친다 — 어느 항목을 편집 중인지 명시 */
 .pt-pd-detail-head {
   display: flex;
-  align-items: center;
-  gap: $spacing-sm;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-md;
   padding-bottom: $spacing-md;
   margin-bottom: $spacing-md;
   border-bottom: 1px solid $color-border-light;
 }
 
+.pt-pd-detail-head-main {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-sm;
+  flex: 1;
+  min-width: 0;
+
+  .ui-badge {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+}
+
+.pt-pd-section-toggle {
+  display: flex;
+  flex-shrink: 0;
+  background: $color-surface;
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.pt-pd-section-toggle-btn {
+  border: none;
+  background: transparent;
+  padding: 4px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  @include typo($body-xsmall-bold, $color-text-muted);
+  transition:
+    background $transition-fast,
+    color $transition-fast,
+    box-shadow $transition-fast;
+
+  &:hover:not(.is-active) {
+    color: $color-text-primary;
+  }
+
+  &.is-active.is-diagnosis {
+    background: #fff;
+    color: #c97878;
+    box-shadow: 0 1px 3px rgba(30, 20, 80, 0.1);
+  }
+
+  &.is-active.is-response {
+    background: #fff;
+    color: #5aab7a;
+    box-shadow: 0 1px 3px rgba(30, 20, 80, 0.1);
+  }
+}
+
 .pt-pd-detail-title {
   margin: 0;
+  flex: 1;
   min-width: 0;
   @include typo($body-medium-bold, $color-text-heading);
-  @include ellipsis(1);
+  overflow-wrap: break-word;
+  word-break: keep-all;
 }
 .pt-pd-actions {
   position: sticky;
@@ -4968,6 +5039,16 @@ body.is-resizing {
   padding: 12px 26px;
   border-top: 1px solid $color-border;
   background: #fff;
+}
+
+/* 삭제는 저장·재생성과 떨어뜨려 실수 클릭을 줄인다 */
+.pt-pd-actions-del {
+  margin-left: auto;
+  color: $color-text-muted;
+
+  &:hover:not(:disabled) {
+    color: $color-error;
+  }
 }
 .pt-pd-field {
   margin-bottom: $spacing-md;

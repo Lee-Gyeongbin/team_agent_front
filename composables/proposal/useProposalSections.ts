@@ -44,6 +44,21 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
   const isGenerating = ref(false)
 
   /**
+   * 소목차 슬라이드를 백그라운드에서 프리페치한다.
+   * 캐시가 있는 tocId는 건너뛴다. 키 단위 할당으로 병렬 완료 시 덮어쓰기를 피한다.
+   */
+  const prefetchLeafSlides = (tocIds: string[]) => {
+    for (const tocId of tocIds) {
+      if (slidesCache.value[tocId]) continue
+      fetchSelectSectionSlides(tocId)
+        .then((res) => {
+          slidesCache.value[tocId] = res.list ?? []
+        })
+        .catch((e) => console.warn('[useProposalSections] 슬라이드 프리페치 실패:', e))
+    }
+  }
+
+  /**
    * TOC flat list 조회 → 소목차(leaf)만 PtSection으로 변환
    * 소목차 = parentId가 있는 항목
    */
@@ -72,9 +87,11 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
       }))
       activeSectionIndexRef.value = 0
 
-      // 첫 소목차 슬라이드만 조회 — 나머지는 클릭 시 goToSection에서 지연 로딩
+      // 첫 소목차는 중앙 패널 표시를 위해 대기, 나머지는 좌측 생성 체크용으로 병렬 프리페치
       const firstTocId = sectionList.value[0]?.tocId
+      const restTocIds = sectionList.value.slice(1).map((s) => s.tocId)
       if (firstTocId) {
+        void prefetchLeafSlides(restTocIds)
         try {
           const slideRes = await fetchSelectSectionSlides(firstTocId)
           slidesCache.value[firstTocId] = slideRes.list ?? []

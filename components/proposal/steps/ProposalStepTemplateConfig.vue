@@ -69,14 +69,14 @@
           <b>{{ templateMode === 'fix' ? '보완 대상 템플릿' : '참조 템플릿(선택)' }}</b>
           {{
             templateMode === 'fix'
-              ? ' 파일을 첨부하세요 (.pptx, .docx)'
-              : ' 파일을 첨부하세요 — 없으면 새 스타일로 생성됩니다'
+              ? ` 파일을 첨부하세요 (${TEMPLATE_FILE_HINT})`
+              : ` 파일을 첨부하세요 (${TEMPLATE_FILE_HINT}) — 없으면 새 스타일로 생성됩니다`
           }}
         </span>
         <input
           ref="fileInputRef"
           type="file"
-          accept=".pptx,.docx"
+          :accept="TEMPLATE_FILE_ACCEPT"
           style="display: none"
           @change="onFileChange"
         />
@@ -233,6 +233,11 @@ const COLOR_ROWS = [
   { key: 'accent2', label: '강조색조 2순위', rank: 'Accent 2' },
 ]
 
+const ALLOWED_TEMPLATE_EXT = ['pdf', 'docx', 'png', 'jpg', 'jpeg'] as const
+const ALLOWED_TEMPLATE_EXT_SET = new Set<string>(ALLOWED_TEMPLATE_EXT)
+const TEMPLATE_FILE_ACCEPT = '.pdf,.docx,.png,.jpg,.jpeg'
+const TEMPLATE_FILE_HINT = '.pdf, .docx, .png, .jpg, .jpeg'
+
 // ── 상태: 템플릿 설정 (구 StepA) ─────────────────────────────────────────────
 
 const templateMode = ref<'fix' | 'new'>('fix')
@@ -283,13 +288,34 @@ watch(
   { immediate: true },
 )
 
+const getFileExt = (fileName: string): string => {
+  const trimmed = fileName.trim()
+  const lastDot = trimmed.lastIndexOf('.')
+  if (lastDot < 0 || lastDot === trimmed.length - 1) return ''
+  return trimmed.slice(lastDot + 1).toLowerCase()
+}
+
+/** 선택·드롭 파일을 검증하고, 통과한 1개만 반환 */
+const applyTemplateFileValidation = (file: File | null | undefined): File | null => {
+  if (!file) return null
+  const ext = getFileExt(file.name)
+  if (!ALLOWED_TEMPLATE_EXT_SET.has(ext)) {
+    openToast({ message: `${TEMPLATE_FILE_HINT} 파일만 첨부할 수 있습니다.`, type: 'warning' })
+    return null
+  }
+  return file
+}
+
 const onClickDropzone = () => fileInputRef.value?.click()
 const onFileChange = (e: Event) => {
   const input = e.target as HTMLInputElement
-  attachedFile.value = input.files?.[0] ?? null
+  const validated = applyTemplateFileValidation(input.files?.[0])
+  if (validated) attachedFile.value = validated
+  input.value = ''
 }
 const onDrop = (e: DragEvent) => {
-  attachedFile.value = e.dataTransfer?.files?.[0] ?? null
+  const validated = applyTemplateFileValidation(e.dataTransfer?.files?.[0])
+  if (validated) attachedFile.value = validated
 }
 
 // ── 제안 대상 즉시 저장 ───────────────────────────────────────────────────────
@@ -341,7 +367,12 @@ const loadSettings = async () => {
 const onClickNext = async () => {
   // fix 모드에서 파일 미첨부 + 저장된 파일도 없으면 차단
   if (templateMode.value === 'fix' && !attachedFile.value && !savedTemplateFileNm.value) {
-    openToast({ message: '보완 모드에서는 템플릿 파일(.pptx, .docx)을 첨부해주세요.', type: 'warning' })
+    openToast({ message: `보완 모드에서는 템플릿 파일(${TEMPLATE_FILE_HINT})을 첨부해주세요.`, type: 'warning' })
+    return
+  }
+
+  if (attachedFile.value && !applyTemplateFileValidation(attachedFile.value)) {
+    attachedFile.value = null
     return
   }
 

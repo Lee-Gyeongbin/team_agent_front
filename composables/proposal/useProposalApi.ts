@@ -381,6 +381,8 @@ export const useProposalApi = () => {
     userFeedback: string
     modelId: string
     agentId: string
+    /** true: "이 문제정의만 재생성" 경로 → LLM이 title도 갱신. false(기본): 채팅 보완요청 → title 불변 */
+    regenerateTitle?: boolean
   }) => post<{ result: string; data: ProblemDefinition }>('/ai/proposal/refineStage2ProblemDefinition.do', vo)
 
   const fetchRegenerateStage2WinThemes = async (vo: {

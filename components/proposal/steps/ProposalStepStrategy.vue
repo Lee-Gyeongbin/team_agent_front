@@ -158,18 +158,6 @@
                     @click="onSelectPd(pd.problemId)"
                   >
                     <span><span class="dot" /> {{ pdTitle(pd) }}</span>
-                    <button
-                      type="button"
-                      class="pt-pd-del"
-                      title="삭제"
-                      :aria-label="`${pdTitle(pd)} 삭제`"
-                      @click.stop="onDeletePd(pd.problemId)"
-                    >
-                      <UiIcon
-                        name="trash-2"
-                        size="14"
-                      />
-                    </button>
                   </div>
                   <template #content>
                     <span class="pt-pd-tip-state">
@@ -210,21 +198,65 @@
             >
               <!-- 좌측에서 무엇을 골랐는지 되비쳐 목록과 상세를 잇는다 -->
               <div class="pt-pd-detail-head">
-                <UiBadge
-                  variant="info"
-                  size="sm"
+                <div class="pt-pd-detail-head-main">
+                  <UiBadge
+                    variant="info"
+                    size="sm"
+                  >
+                    {{ activePdCategory }}
+                  </UiBadge>
+                  <h4 class="pt-pd-detail-title">{{ pdDetailTitle(activePd) }}</h4>
+                </div>
+                <div
+                  class="pt-pd-section-toggle"
+                  role="tablist"
+                  aria-label="진단·대응 구간 이동"
                 >
-                  {{ activePdCategory }}
-                </UiBadge>
-                <h4 class="pt-pd-detail-title">{{ pdTitle(activePd) }}</h4>
+                  <button
+                    type="button"
+                    role="tab"
+                    :aria-selected="activePdSection === 'diagnosis'"
+                    :class="[
+                      'pt-pd-section-toggle-btn',
+                      'is-diagnosis',
+                      { 'is-active': activePdSection === 'diagnosis' },
+                    ]"
+                    @click="onScrollToPdGroup('diagnosis')"
+                  >
+                    진단
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    :aria-selected="activePdSection === 'response'"
+                    :class="[
+                      'pt-pd-section-toggle-btn',
+                      'is-response',
+                      { 'is-active': activePdSection === 'response' },
+                    ]"
+                    @click="onScrollToPdGroup('response')"
+                  >
+                    대응
+                  </button>
+                </div>
               </div>
               <section
                 v-for="g in pdFieldGroups"
+                :id="`pt-pd-group-${g.variant}`"
                 :key="g.title"
                 class="pt-pd-group"
               >
-                <div class="pt-pd-group-head">
-                  <span class="pt-pd-group-title">{{ g.title }}</span>
+                <div
+                  class="pt-pd-group-head"
+                  :class="`is-${g.variant}`"
+                >
+                  <span class="pt-pd-group-label">
+                    <span
+                      class="pt-pd-group-bar"
+                      aria-hidden="true"
+                    />
+                    <span class="pt-pd-group-title">{{ g.title }}</span>
+                  </span>
                 </div>
                 <template
                   v-for="f in g.fields"
@@ -247,31 +279,19 @@
                     class="pt-pd-field"
                   >
                     <label>근거</label>
-                    <div class="pt-src-badges">
-                      <button
-                        v-for="id in activePd.sourceIssueIds"
-                        :key="'i' + id"
-                        type="button"
-                        class="pt-src-badge is-issue"
-                        @click="emit('go-requirements', { tab: 'issue', id })"
-                      >
-                        이슈 {{ id }}
-                      </button>
-                      <button
-                        v-for="id in activePd.sourceRequirementIds"
-                        :key="'r' + id"
-                        type="button"
-                        class="pt-src-badge is-req"
-                        @click="emit('go-requirements', { tab: 'req', id })"
-                      >
-                        요구사항 {{ id }}
-                      </button>
-                      <span
-                        v-if="!activePd.sourceIssueIds.length && !activePd.sourceRequirementIds.length"
-                        class="pt-muted"
-                        >근거 없음 (수동 작성)</span
-                      >
-                    </div>
+                    <UiButton
+                      v-if="hasPdEvidence"
+                      variant="primary-line"
+                      size="xs"
+                      @click="onOpenEvidenceModal"
+                    >
+                      상세 보기
+                    </UiButton>
+                    <span
+                      v-else
+                      class="pt-muted"
+                      >근거 없음 (수동 작성)</span
+                    >
                   </div>
                 </template>
               </section>
@@ -289,9 +309,23 @@
                   variant="ghost"
                   size="sm"
                   :loading="isRefining"
-                  @click="onRefinePd('이 문제정의의 표현을 더 구체적이고 제안서에 맞게 다듬어줘')"
+                  @click="onRefinePd('이 문제정의의 표현을 더 구체적이고 제안서에 맞게 다듬어줘', true)"
                 >
                   ↻ 이 문제정의만 재생성
+                </UiButton>
+                <UiButton
+                  variant="ghost"
+                  size="sm"
+                  class="pt-pd-actions-del"
+                  @click="onDeletePd(activePd.problemId)"
+                >
+                  <template #icon-left>
+                    <UiIcon
+                      name="trash-2"
+                      size="14"
+                    />
+                  </template>
+                  삭제
                 </UiButton>
               </div>
             </div>
@@ -494,6 +528,14 @@
     :stage-cds="['S2A_PROBLEM_TOC', 'S2B_WINTHEME']"
     @close="isPromptModalOpen = false"
   />
+
+  <ProposalPdEvidenceModal
+    :is-open="isEvidenceModalOpen"
+    :pt-project-id="ptProjectId"
+    :issue-ids="activePd?.sourceIssueIds ?? []"
+    :requirement-ids="activePd?.sourceRequirementIds ?? []"
+    @close="isEvidenceModalOpen = false"
+  />
 </template>
 
 <script setup lang="ts">
@@ -567,6 +609,7 @@ const strategyTabs = computed(() => [
   { label: 'Win Theme', value: 'wt', count: winThemes.value.length },
 ])
 const isPromptModalOpen = ref(false)
+const isEvidenceModalOpen = ref(false)
 const activeProblemId = ref<string | null>(null)
 const isLoadingStage2 = ref(false)
 const loadingStepIdx = ref(0)
@@ -642,6 +685,7 @@ const editPd = reactive({
  */
 const pdFieldGroups = [
   {
+    variant: 'diagnosis' as const,
     // 검토자가 '이게 사실인가'를 판단하는 구간 — 근거를 주장 바로 뒤에 붙인다
     title: '진단',
     fields: [
@@ -652,6 +696,7 @@ const pdFieldGroups = [
     hasEvidence: true,
   },
   {
+    variant: 'response' as const,
     // '말이 되는가'를 판단하는 구간. 목표·역량·전략·KPI는 모두 '무엇을 할 것인가'라 한 덩어리
     title: '대응',
     fields: [
@@ -662,11 +707,38 @@ const pdFieldGroups = [
     ],
     hasEvidence: false,
   },
-]
+] as const
+
+type PdGroupVariant = (typeof pdFieldGroups)[number]['variant']
+
+/** 상세 패널 진단·대응 토글 활성 상태 */
+const activePdSection = ref<PdGroupVariant>('diagnosis')
+
+/** 상세 패널 내 진단·대응 구간으로 스크롤 — scrollIntoView는 바깥 레이아웃까지 움직일 수 있어 컨테이너 기준으로 계산 */
+const onScrollToPdGroup = async (variant: PdGroupVariant) => {
+  activePdSection.value = variant
+  await nextTick()
+  const el = document.getElementById(`pt-pd-group-${variant}`)
+  const container = el?.closest<HTMLElement>('.pt-pd-detail')
+  if (!el || !container) return
+  const offset = el.getBoundingClientRect().top - container.getBoundingClientRect().top
+  container.scrollTo({ top: container.scrollTop + offset - 8, behavior: 'smooth' })
+}
 
 const PD_EDIT_KEYS = pdFieldGroups.flatMap((g) => g.fields.map((f) => f.key))
 
 const activePd = computed(() => problemDefs.value.find((p) => p.problemId === activeProblemId.value) ?? null)
+
+/** 근거(이슈·요구사항) 연결 여부 */
+const hasPdEvidence = computed(() => {
+  const pd = activePd.value
+  if (!pd) return false
+  return pd.sourceIssueIds.length > 0 || pd.sourceRequirementIds.length > 0
+})
+
+const onOpenEvidenceModal = () => {
+  isEvidenceModalOpen.value = true
+}
 
 /** 저장되지 않은 편집이 있는지 — 항목 전환·재생성 전에 확인하기 위함 */
 const isPdDirty = computed(() => {
@@ -713,17 +785,27 @@ const pdGroups = computed(() => {
 // tocMappingBlocks — TODO: 세부목차 스텝(ProposalStepToc.vue)으로 이동
 // const tocMappingBlocks = computed(() => { ... })
 
-/**
- * 목록 제목 — 본문을 글자 수로 자르면 문장 중간에서 끊겨 스캔이 안 된다.
- * 첫 문장(또는 첫 절)까지만 쓰고, 그래도 길면 그때 글자 수로 자른다.
- */
-const pdTitle = (pd: ProblemDefinition) => {
+/** 제목용 첫 문장. 목록은 길이 제한, 상세 헤더는 자르지 않는다. */
+const pdHeading = (pd: ProblemDefinition) => {
   const t = (pd.currentProblem || '').trim()
   if (!t) return '(제목 없음)'
-  const head = t.split(/[.。]\s*/)[0]
+  return t.split(/[.。]\s*/)[0]
+}
+
+/**
+ * 목록 제목 — LLM이 생성한 title이 있으면 우선 사용, 없으면 currentProblem 첫 문장으로 폴백.
+ * title은 15~20자 내외로 생성되므로 별도 말줄임 없이 그대로 노출한다.
+ */
+const pdTitle = (pd: ProblemDefinition) => {
+  if (pd.problemTitleTxt) return pd.problemTitleTxt
+  const head = pdHeading(pd)
+  if (head === '(제목 없음)') return head
   const clause = head.length > 45 ? head.split(/,\s*/)[0] : head
   return clause.length > 45 ? clause.slice(0, 45) + '…' : clause
 }
+
+/** 상세 헤더 — title이 있으면 요약, 없으면 currentProblem 첫 문장 전체 */
+const pdDetailTitle = (pd: ProblemDefinition) => pd.problemTitleTxt || pdHeading(pd)
 
 /** 검토 상태 — 서버 필드로 도출(별도 컬럼 없이). manualYn=직접추가 / modifyDt=사람이 손댐 */
 type PdReviewState = 'manual' | 'edited' | 'ai'
@@ -747,6 +829,7 @@ const targetPdTitle = (wt: WinTheme) => {
 }
 watch(activePd, (pd) => {
   if (!pd) return
+  activePdSection.value = 'diagnosis'
   editPd.currentProblem = pd.currentProblem || ''
   editPd.rootCause = pd.rootCause || ''
   editPd.riskIfIgnored = pd.riskIfIgnored || ''
@@ -915,7 +998,12 @@ const onSavePd = async () => {
   }
 }
 
-const onRefinePd = async (feedback: string) => {
+/**
+ * @param feedback - LLM에 전달할 보완 요청 텍스트
+ * @param regenerateTitle - true면 "이 문제정의만 재생성" 경로: LLM이 title도 갱신.
+ *                         false(기본)면 채팅 보완요청 경로: title은 변경하지 않는다.
+ */
+const onRefinePd = async (feedback: string, regenerateTitle = false) => {
   if (!activePd.value || !feedback.trim()) return
   // AI가 5개 필드를 덮어쓰므로 편집 중이면 먼저 확인받는다
   if (isPdDirty.value) {
@@ -933,6 +1021,7 @@ const onRefinePd = async (feedback: string) => {
       userFeedback: feedback.trim(),
       modelId: props.modelId,
       agentId: props.agentId,
+      regenerateTitle,
     })
     if (res.result === 'OK') {
       refineFeedback.value = ''

@@ -208,6 +208,8 @@ export interface ProblemDefinition {
   generatedDt: string | null
   modifyDt: string | null
   manualYn: 'Y' | 'N'
+  /** LLM이 생성한 짧은 제목 (15~20자). null이면 currentProblem 기반 폴백 사용 */
+  problemTitleTxt?: string | null
 }
 
 export interface WinThemeStaleDetail {
