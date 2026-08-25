@@ -1,5 +1,79 @@
 # Component Rules
 
+## ispark-ui 우선 사용 (최우선 규칙)
+
+> 아이콘과 UI 컴포넌트는 **ispark-ui(`@leechanyong/ispark-ui`)를 기본**으로 쓴다.
+> 로컬 `components/ui/*`와 로컬 아이콘 클래스는 ispark-ui에 없는 것에만 사용한다.
+
+### 아이콘 — 항상 `UiIcon`
+
+```vue
+<script setup lang="ts">
+import { UiIcon } from '@leechanyong/ispark-ui'
+</script>
+
+<template>
+  <UiIcon name="trash-2" size="14" />
+</template>
+```
+
+- **`<i class="icon-*">` 신규 작성 금지** — 기존 코드를 만질 때도 UiIcon으로 교체
+- `name`은 **lucide kebab-case** (`plus`, `pencil`, `trash-2`, `info`, `arrow-right`, `grip-vertical`, `ellipsis-vertical`, `refresh-cw`, `download`, `upload`, `chevron-down`)
+- **색은 지정하지 않는다** — 미지정 시 `currentColor`라 부모 버튼/텍스트 색을 상속한다 (`danger-line` 버튼 안이면 자동 빨강)
+- `size`: 버튼 안이면 `14`(xs/sm) ~ `16`(md), 단독 아이콘은 `16`~`20`
+- 존재하지 않는 이름을 주면 에러가 아니라 **콘솔 경고 후 아무것도 안 나온다** — 이름 확인 필수
+- **예외**: `UiDropdownMenu`의 `items[].icon`은 UiIcon이 아니라 아이콘 클래스 문자열(`'icon-download'`)을 받는다
+
+| 액션 | UiIcon name |
+|------|-------------|
+| 수정 | `pencil` |
+| 삭제 | `trash-2` |
+| 추가 | `plus` |
+| 닫기/취소 | `x` |
+| 확인 | `check` |
+| 안내 | `info` |
+| 더보기(⋮) | `ellipsis-vertical` |
+| 드래그 핸들 | `grip-vertical` |
+| 새로고침 | `refresh-cw` |
+| 다운로드 / 업로드 | `download` / `upload` |
+
+### 컴포넌트 — ispark-ui 명시적 import
+
+```ts
+import { UiButton, UiIcon, UiBadge } from '@leechanyong/ispark-ui'
+```
+
+- 로컬 `components/ui/UiButton.vue` 등이 **Nuxt 자동 임포트로 먼저 잡히므로**, ispark를 쓰려면 반드시 명시적 import를 적어야 한다
+- import는 **파일 전체에 적용**된다(로컬 동명 컴포넌트를 shadow) → 한 파일 안에서 로컬/ispark를 섞을 수 없다. **파일 단위로 전환**하고, 전환 시 그 파일의 모든 사용처 variant·size가 ispark에 존재하는지 확인한다
+- 전환 전 확인: 로컬 전용 값(예: UiButton `primary-dark`, UiBadge `category`·`manual-ai`)을 쓰고 있으면 먼저 ispark 값으로 치환
+
+| 로컬 | ispark 대응 |
+|------|-------------|
+| `.pt-badge.is-gray` | UiBadge `variant="default"` |
+| `.is-blue` | `variant="info"` |
+| `.is-ok` | `variant="success"` |
+| `.is-warn` | `variant="warning"` |
+| `.is-danger` | `variant="danger"` |
+| UiButton size | `xxs`(24) `xs`(26) `sm`(30) `md`(32) `lg`(34) `xlg`(36) |
+
+### CSS 오버라이드 시 특이도 주의
+
+ispark 스타일은 `[data-v-...]`가 붙어 hover 규칙이 **6단계 특이도**다.
+전역 SCSS(`assets/styles/page/*.scss`)에서 덮으려면 같은 단계 이상으로 선택자를 늘려야 한다.
+
+```scss
+// 안 먹음 (2단계)
+.pt-btn-del:hover { color: $color-error; }
+
+// 6단계로 맞춤 — main.scss가 ispark CSS 뒤에 로드되므로 동점이면 이김
+.pt-toc-item .pt-btn-del.ui-button.variant-ghost:hover:not(:disabled) {
+  color: $color-error;
+}
+```
+
+컴포넌트 `<style scoped>` 안에 쓰면 우리 쪽 `[data-v]`가 붙어 자동으로 한 단계 높아진다.
+
+
 ## Alert/Confirm 다이얼로그 규칙
 
 - **네이티브 `alert()`, `confirm()` 사용 금지** → 공통 다이얼로그 함수 사용

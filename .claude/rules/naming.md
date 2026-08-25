@@ -51,11 +51,12 @@
 - **삭제 버튼/드롭다운**: `icon-trashcan` 통일 (`icon-delete`는 배경색 필요 시에만 `icon-delete-bg`로 사용)
 - 드롭다운 메뉴 항목에서 삭제는 반드시 `color: 'danger'` 지정
 
-> 위 표는 **레거시(미마이그레이션) 페이지** 기준. ispark-ui 전환 페이지는 아래 표준을 따른다.
+> 위 표는 **아직 전환하지 않은 레거시 페이지**에만 해당한다.
+> **신규 작업과 손대는 파일은 ispark-ui가 기본** — 아래 표준을 따른다. (→ `.claude/rules/components.md` "ispark-ui 우선 사용")
 
 ### 삭제 버튼 — ispark-ui 표준 (danger-line + UiIcon)
 
-ispark-ui 전환 페이지의 **삭제 버튼은 공통 패턴으로 통일**한다:
+**삭제 버튼은 공통 패턴으로 통일**한다:
 
 ```vue
 <UiButton variant="danger-line" size="sm" @click="doDelete">
@@ -76,7 +77,7 @@ ispark-ui 전환 페이지의 **삭제 버튼은 공통 패턴으로 통일**한
 
 ### 아이콘 — `UiIcon`(lucide) 표준
 
-ispark-ui 전환 페이지는 **로컬 `icon-*` 클래스 대신 `<UiIcon>`**(lucide 기반)을 사용한다.
+**로컬 `icon-*` 클래스 대신 `<UiIcon>`**(lucide 기반)을 사용한다. 신규 `<i class="icon-*">` 작성 금지.
 
 ```vue
 <UiIcon name="refresh-cw" size="16" />   <!-- name은 kebab-case -->
@@ -95,7 +96,7 @@ ispark-ui 전환 페이지는 **로컬 `icon-*` 클래스 대신 `<UiIcon>`**(lu
 - **색**: 지정하지 않으면 **currentColor** → 버튼 텍스트 색을 자동 상속. `danger-line` 안이면 빨강.
 - **예외**: `UiDropdownMenu`의 `items[].icon`은 UiIcon이 아니라 **ispark 아이콘 클래스**(`'icon-download'`, `'icon-upload'`)를 받는다.
 
-> 근거: 로컬 아이콘과 lucide가 한 화면에 섞이면 선 굵기·스타일이 어긋난다. 전환 페이지는 UiIcon으로 통일한다.
+> 근거: 로컬 아이콘과 lucide가 한 화면에 섞이면 선 굵기·스타일이 어긋난다. UiIcon으로 통일한다.
 
 ### 헤더 액션 버튼 — 위계
 
