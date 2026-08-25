@@ -406,43 +406,54 @@
                   </template>
                 </UiButton>
               </div>
-              <div
-                class="pt-wt-core"
-                contenteditable="true"
-                @blur="(e) => onWtFieldBlur(wt, 'coreMessage', e)"
-              >
-                {{ wt.coreMessage }}
-              </div>
+              <UiTextarea
+                class="pt-wt-core-input"
+                :model-value="wtFieldValue(wt, 'coreMessage')"
+                :rows="2"
+                :max-rows="6"
+                auto-resize
+                border
+                placeholder="핵심 메시지를 입력하세요"
+                @update:model-value="onWtFieldChange(wt, 'coreMessage', $event)"
+              />
               <div class="pt-wt-row">
                 <label>제안 전략</label>
-                <div
-                  class="v"
-                  contenteditable="true"
-                  @blur="(e) => onWtFieldBlur(wt, 'proposalStrategy', e)"
-                >
-                  {{ wt.proposalStrategy }}
-                </div>
+                <UiTextarea
+                  class="pt-wt-field"
+                  :model-value="wtFieldValue(wt, 'proposalStrategy')"
+                  :rows="2"
+                  :max-rows="10"
+                  auto-resize
+                  border
+                  placeholder="제안 전략을 입력하세요"
+                  @update:model-value="onWtFieldChange(wt, 'proposalStrategy', $event)"
+                />
               </div>
               <div class="pt-wt-row">
                 <label>근거</label>
-                <div
-                  class="v"
-                  :class="{ 'is-missing': isEvidenceMissing(wt.evidence) }"
-                  contenteditable="true"
-                  @blur="(e) => onWtFieldBlur(wt, 'evidence', e)"
-                >
-                  {{ wt.evidence }}
-                </div>
+                <UiTextarea
+                  :class="['pt-wt-field', { 'is-missing': isEvidenceMissing(wt.evidence) }]"
+                  :model-value="wtFieldValue(wt, 'evidence')"
+                  :rows="2"
+                  :max-rows="10"
+                  auto-resize
+                  border
+                  placeholder="근거를 입력하세요"
+                  @update:model-value="onWtFieldChange(wt, 'evidence', $event)"
+                />
               </div>
               <div class="pt-wt-row">
                 <label>기대효과</label>
-                <div
-                  class="v"
-                  contenteditable="true"
-                  @blur="(e) => onWtFieldBlur(wt, 'expectedEffect', e)"
-                >
-                  {{ wt.expectedEffect }}
-                </div>
+                <UiTextarea
+                  class="pt-wt-field"
+                  :model-value="wtFieldValue(wt, 'expectedEffect')"
+                  :rows="2"
+                  :max-rows="10"
+                  auto-resize
+                  border
+                  placeholder="기대효과를 입력하세요"
+                  @update:model-value="onWtFieldChange(wt, 'expectedEffect', $event)"
+                />
               </div>
               <div class="pt-wt-foot">
                 <UiButton
@@ -965,10 +976,13 @@ const focusPd = (problemId?: string) => {
   activeProblemId.value = problemId
 }
 
-const onWtFieldBlur = (wt: WinTheme, field: keyof WinTheme, e: Event) => {
-  const text = (e.target as HTMLElement).innerText?.trim() ?? ''
+/** 초안이 있으면 초안 값, 없으면 서버 값 — 저장 전까지 입력 내용을 wtDraft에 보관한다 */
+const wtFieldValue = (wt: WinTheme, field: keyof WinTheme) =>
+  (wtDraft.value[wt.winThemeId]?.[field] as string | undefined) ?? ((wt[field] as string | null) || '')
+
+const onWtFieldChange = (wt: WinTheme, field: keyof WinTheme, value: string) => {
   if (!wtDraft.value[wt.winThemeId]) wtDraft.value[wt.winThemeId] = {}
-  ;(wtDraft.value[wt.winThemeId] as any)[field] = text
+  ;(wtDraft.value[wt.winThemeId] as Record<string, string>)[field] = value
 }
 
 const onSaveWt = async (wt: WinTheme) => {
