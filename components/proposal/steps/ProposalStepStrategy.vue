@@ -542,6 +542,7 @@
 import { UiButton, UiIcon, UiBadge, UiTab, UiTextarea, UiTooltip } from '@leechanyong/ispark-ui'
 import { openToast } from '~/composables/useToast'
 import { openConfirm } from '~/composables/useDialog'
+import { openLoading, closeLoading } from '~/composables/useLoading'
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
 import type { Stage2Summary, ProblemDefinition, WinTheme } from '~/types/proposal'
 import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
@@ -962,6 +963,7 @@ const onRegenerateAllPd = async () => {
   })
   if (!ok) return
   isRegeneratingAllPd.value = true
+  openLoading({ text: '문제정의를 재생성하는 중...' })
   try {
     const res = await fetchRegenerateStage2ProblemDefinitions({
       ptProjectId: props.ptProjectId,
@@ -977,6 +979,7 @@ const onRegenerateAllPd = async () => {
     }
   } finally {
     isRegeneratingAllPd.value = false
+    closeLoading()
   }
 }
 
@@ -1120,6 +1123,7 @@ const onDeleteWt = async (winThemeId: string) => {
 
 const onRegenerateWt = async () => {
   regeneratingWtId.value = 'all'
+  openLoading({ text: 'Win Theme를 재생성하는 중...' })
   try {
     const res = await fetchRegenerateStage2WinThemes({
       ptProjectId: props.ptProjectId,
@@ -1136,6 +1140,7 @@ const onRegenerateWt = async () => {
       })
   } finally {
     regeneratingWtId.value = null
+    closeLoading()
   }
 }
 

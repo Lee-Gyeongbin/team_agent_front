@@ -325,6 +325,17 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
     goToSection(activeSectionIndexRef.value - 1)
   }
 
+  /**
+   * 모든 소목차 슬라이드를 캐시에 채운다.
+   * 출력 스텝의 hasRenderedImages 판별처럼 '전체'를 봐야 할 때 사용.
+   * force 조회로 서버의 최신 renderedImagePath를 반영한다.
+   */
+  const handleEnsureAllSlidesLoaded = async () => {
+    if (!sectionList.value.length) await handleSelectSectionList()
+    const tocIds = sectionList.value.map((s) => s.tocId)
+    await Promise.all(tocIds.map((tocId) => handleSelectSlides(tocId, true)))
+  }
+
   const activeSection = computed(() => sectionList.value[activeSectionIndexRef.value] ?? null)
   const activeSectionIndex = computed(() => activeSectionIndexRef.value)
 
@@ -339,6 +350,7 @@ export const useProposalSections = (ptProjectId: Ref<string>) => {
     activeSectionIndex,
     handleSelectSectionList,
     handleSelectSlides,
+    handleEnsureAllSlidesLoaded,
     handleGenerateSection,
     handleUpdatePlannedSlideCnt,
     handleConfirmSection,

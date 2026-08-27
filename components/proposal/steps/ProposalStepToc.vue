@@ -300,12 +300,19 @@
           :is-editing="isEditing"
           :editing-text="editingText"
           :chat-messages="chatMessages"
+          :is-batch-generating="isBatchGenerating"
+          :batch-progress="batchProgress"
+          :batch-processing-toc-id="batchProcessingTocId"
+          :batch-fail-items="batchFailItems"
+          :un-generated-count="unGeneratedCount"
           @select-node="handleSelectNode"
           @generate="handleGenerate"
           @chat="handleChat"
           @confirm="handleConfirm"
           @start-edit="handleStartEdit"
           @update:editing-text="editingText = $event"
+          @generate-all="handleGenerateAll"
+          @cancel-batch="cancelBatchGenerate"
           @go-template="emit('next')"
         />
       </div>
@@ -380,12 +387,19 @@ const {
   isEditing,
   editingText,
   chatMessages,
+  isBatchGenerating,
+  batchProgress,
+  batchProcessingTocId,
+  batchFailItems,
+  unGeneratedCount,
   handleLoadToc,
   handleSelectNode,
   handleGenerate,
   handleChat,
   handleConfirm,
   handleStartEdit,
+  handleGenerateAll,
+  cancelBatchGenerate,
 } = useProposalOutline(
   computed(() => props.ptProjectId),
   computed(() => props.modelId),
@@ -812,17 +826,25 @@ const startToc = () => {
 }
 
 // isDone이 true가 되면 콘텐츠 개요용 TOC 목록 로드
+// SSE 완료(onDone 콜백) 경로에서만 실행 — mount 완료 경로는 onMounted에서 직접 호출하여 중복 방지
+let skipNextIsDoneWatch = false
 watch(isDone, (val) => {
-  if (val) handleLoadToc()
+  if (!val) return
+  if (skipNextIsDoneWatch) {
+    skipNextIsDoneWatch = false
+    return
+  }
+  handleLoadToc()
 })
 
 onMounted(async () => {
   try {
     const res = await fetchSelectStage2Summary(props.ptProjectId)
     if (res.result === 'OK' && res.data?.stage2StatusCd === '003') {
-      // 전체완료 — TOC 재생성 없이 기존 결과 표시
+      // 전체완료 — TOC/개요 목록을 직접 로드하고, watch는 건너뜀
+      skipNextIsDoneWatch = true
       isDone.value = true
-      await loadTocResult()
+      await Promise.all([loadTocResult(), handleLoadToc()])
       return
     }
   } catch {

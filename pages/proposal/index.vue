@@ -19,6 +19,30 @@
           size="sm"
           placeholder="사업명 또는 발주기관 검색"
         />
+        <template v-if="selectedIds.size > 0">
+          <span class="pt-selected-count">{{ selectedIds.size }}개 선택</span>
+          <UiButton
+            variant="danger-line"
+            size="sm"
+            :loading="isDeleting"
+            @click="onDeleteSelected"
+          >
+            <template #icon-left>
+              <UiIcon
+                name="trash-2"
+                size="14"
+              />
+            </template>
+            선택 삭제
+          </UiButton>
+          <UiButton
+            variant="outline"
+            size="sm"
+            @click="selectedIds.clear(); selectedIds = new Set()"
+          >
+            선택 해제
+          </UiButton>
+        </template>
         <UiButton
           variant="primary"
           size="sm"
@@ -187,9 +211,15 @@
       <div
         v-for="project in filteredList"
         :key="project.ptProjectId"
-        class="pt-card"
+        :class="['pt-card', { 'is-selected': selectedIds.has(project.ptProjectId) }]"
         @click="onClickCard(project)"
       >
+        <input
+          type="checkbox"
+          class="pt-card-checkbox"
+          :checked="selectedIds.has(project.ptProjectId)"
+          @click.stop="toggleSelect(project.ptProjectId)"
+        />
         <span :class="['pt-status-badge', `status-${project.statusCd}`]">{{ project.statusNm }}</span>
         <div class="pt-card-title">{{ project.projectNm }}</div>
         <div class="pt-card-meta">
@@ -208,9 +238,15 @@
       <div
         v-for="project in filteredList"
         :key="project.ptProjectId"
-        class="pt-list-row"
+        :class="['pt-list-row', { 'is-selected': selectedIds.has(project.ptProjectId) }]"
         @click="onClickCard(project)"
       >
+        <input
+          type="checkbox"
+          class="pt-card-checkbox"
+          :checked="selectedIds.has(project.ptProjectId)"
+          @click.stop="toggleSelect(project.ptProjectId)"
+        />
         <span :class="['pt-status-badge', `status-${project.statusCd}`]">{{ project.statusNm }}</span>
         <div class="pt-list-row-title">{{ project.projectNm }}</div>
         <div class="pt-list-row-meta">
@@ -232,9 +268,11 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiIcon } from '@leechanyong/ispark-ui'
 import { CalendarDate, toCalendarDateTime, type DateValue } from '@internationalized/date'
 import type { PtProject } from '~/types/proposal'
 import { useProposalProjectsStore } from '~/composables/proposal/useProposalProjectsStore'
+import { openConfirm } from '~/composables/useDialog'
 
 const router = useRouter()
 
@@ -263,7 +301,8 @@ const SORT_OPTIONS = [
 type PeriodValue = (typeof PERIOD_OPTIONS)[number]['value']
 type SortValue = (typeof SORT_OPTIONS)[number]['value']
 
-const { ptProjectList, isLoadingList, handleSelectPtProjectList, handleSavePtProject } = useProposalProjectsStore()
+const { ptProjectList, isLoadingList, handleSelectPtProjectList, handleSavePtProject, handleDeletePtProjects } =
+  useProposalProjectsStore()
 
 // ── 뷰 모드 (localStorage 유지) ─────────────────────────────
 const viewMode = ref<'grid' | 'list'>(
@@ -283,6 +322,38 @@ const filterEndDate = ref('')
 const searchKeyword = ref('')
 const isNewModalOpen = ref(false)
 const isSaving = ref(false)
+const isDeleting = ref(false)
+
+// ── 선택 상태 ────────────────────────────────────────────────
+let selectedIds = ref(new Set<string>())
+
+const toggleSelect = (ptProjectId: string) => {
+  const next = new Set(selectedIds.value)
+  if (next.has(ptProjectId)) next.delete(ptProjectId)
+  else next.add(ptProjectId)
+  selectedIds.value = next
+}
+
+const onDeleteSelected = async () => {
+  const ids = [...selectedIds.value]
+  const confirmed = await openConfirm({
+    title: 'PT 제안서 삭제',
+    message: `선택한 ${ids.length}개의 PT 제안서를 삭제합니다.\nNCP에 업로드된 모든 관련 파일도 함께 삭제되며 복구할 수 없습니다.`,
+  })
+  if (!confirmed) return
+
+  isDeleting.value = true
+  try {
+    await handleDeletePtProjects(ids)
+    selectedIds.value = new Set()
+    openToast({ message: `${ids.length}개의 PT 제안서가 삭제되었습니다.` })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : '삭제에 실패했습니다.'
+    openToast({ message: msg, type: 'error' })
+  } finally {
+    isDeleting.value = false
+  }
+}
 
 // ── 날짜 변환 유틸 ──────────────────────────────────────────
 const parseYyyyMmDdToDateValue = (value: string): DateValue | undefined => {
@@ -447,6 +518,11 @@ watch([filterStartDate, filterEndDate], () => {
 })
 
 const onClickCard = (project: PtProject) => {
+  // 선택 모드(1개 이상 선택됨)이면 카드 클릭 시 선택 토글
+  if (selectedIds.value.size > 0) {
+    toggleSelect(project.ptProjectId)
+    return
+  }
   router.push(`/proposal/${project.ptProjectId}`)
 }
 

@@ -11,9 +11,21 @@ export interface OutlineChatMessage {
   text: string
 }
 
+export interface BatchFailItem {
+  tocId: string
+  title: string
+  errorMessage: string
+}
+
 export const useProposalOutline = (ptProjectId: Ref<string>, modelId: Ref<string>, agentId: Ref<string>) => {
-  const { fetchSelectTocList, fetchSelectTocOutline, fetchGenerateTocOutline, fetchChatTocOutline, fetchConfirmTocOutline } =
-    useProposalApi()
+  const {
+    fetchSelectTocList,
+    fetchSelectTocOutline,
+    fetchGenerateTocOutline,
+    fetchChatTocOutline,
+    fetchConfirmTocOutline,
+    streamGenerateAllTocOutline,
+  } = useProposalApi()
 
   // ── TOC 트리 ──────────────────────────────────────────────────────────────
   const tocList = ref<PtTocItem[]>([])
@@ -172,6 +184,80 @@ export const useProposalOutline = (ptProjectId: Ref<string>, modelId: Ref<string
     isEditing.value = true
   }
 
+  // ── 전체 일괄 생성 ────────────────────────────────────────────────────────
+  const isBatchGenerating = ref(false)
+  const batchProgress = ref({ current: 0, total: 0 })
+  const batchProcessingTocId = ref<string | null>(null)
+  const batchFailItems = ref<BatchFailItem[]>([])
+  let _batchEventSource: EventSource | null = null
+
+  /** 미생성 리프 노드 수 */
+  const unGeneratedCount = computed(
+    () => leafNodes.value.filter((t) => !t.contentOutlineTxt || t.contentOutlineTxt.trim() === '').length,
+  )
+
+  const handleGenerateAll = () => {
+    if (isBatchGenerating.value || unGeneratedCount.value === 0) return
+
+    isBatchGenerating.value = true
+    batchProgress.value = { current: 0, total: 0 }
+    batchProcessingTocId.value = null
+    batchFailItems.value = []
+
+    _batchEventSource = streamGenerateAllTocOutline(ptProjectId.value, modelId.value, agentId.value, {
+      onProgress: (data) => {
+        batchProgress.value = { current: data.index, total: data.total }
+        batchProcessingTocId.value = data.status === 'success' ? null : data.tocId
+
+        if (data.status === 'success') {
+          // tocList에서 해당 항목의 상태를 초안(002)으로 갱신
+          const item = tocList.value.find((t) => t.tocId === data.tocId)
+          if (item) {
+            item.outlineStatusCd = '002'
+            // contentOutlineTxt는 SSE로 내용을 받지 않으므로 노드 클릭 시 지연 로딩됨
+            // 빈 문자열 대신 placeholder 처리: null이 아닌 빈 값으로 표시만 바꿔줌
+            if (!item.contentOutlineTxt) item.contentOutlineTxt = ''
+          }
+        } else {
+          batchFailItems.value.push({
+            tocId: data.tocId,
+            title: data.title,
+            errorMessage: data.errorMessage ?? '알 수 없는 오류',
+          })
+        }
+      },
+      onComplete: (data) => {
+        isBatchGenerating.value = false
+        batchProcessingTocId.value = null
+        _batchEventSource = null
+
+        if (data.failCount > 0) {
+          openToast({
+            message: `${data.successCount}건 생성 완료, ${data.failCount}건 실패`,
+            type: 'warning',
+          })
+        } else {
+          openToast({ message: `${data.successCount}건 콘텐츠 개요가 생성되었습니다.` })
+        }
+      },
+      onError: (message) => {
+        isBatchGenerating.value = false
+        batchProcessingTocId.value = null
+        _batchEventSource = null
+        openToast({ message: message || '전체 생성 중 오류가 발생했습니다.', type: 'error' })
+      },
+    })
+  }
+
+  const cancelBatchGenerate = () => {
+    if (_batchEventSource) {
+      _batchEventSource.close()
+      _batchEventSource = null
+    }
+    isBatchGenerating.value = false
+    batchProcessingTocId.value = null
+  }
+
   return {
     tocList,
     leafNodes,
@@ -187,11 +273,18 @@ export const useProposalOutline = (ptProjectId: Ref<string>, modelId: Ref<string
     isEditing,
     editingText,
     chatMessages,
+    isBatchGenerating,
+    batchProgress,
+    batchProcessingTocId,
+    batchFailItems,
+    unGeneratedCount,
     handleLoadToc,
     handleSelectNode,
     handleGenerate,
     handleChat,
     handleConfirm,
     handleStartEdit,
+    handleGenerateAll,
+    cancelBatchGenerate,
   }
 }

@@ -1,7 +1,7 @@
 import type { PtProject, PtProjectListFilter } from '~/types/proposal'
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
 
-const { fetchPtProjectList, fetchSavePtProject } = useProposalApi()
+const { fetchPtProjectList, fetchSavePtProject, fetchDeletePtProject } = useProposalApi()
 
 const ptProjectList = ref<PtProject[]>([])
 const isLoadingList = ref(false)
@@ -46,11 +46,27 @@ const handleSavePtProject = async (
   return res.ptProjectId
 }
 
+/**
+ * PT 제안서 삭제 (NCP 파일 포함 전체 삭제)
+ * @param ptProjectIds 삭제할 프로젝트 ID 배열
+ */
+const handleDeletePtProjects = async (ptProjectIds: string[]): Promise<void> => {
+  for (const ptProjectId of ptProjectIds) {
+    const res = await fetchDeletePtProject(ptProjectId)
+    if (res.result !== 'OK') {
+      throw new Error(res.msg || `삭제 실패: ${ptProjectId}`)
+    }
+  }
+  // 삭제 후 목록 갱신 (현재 필터 초기화)
+  await handleSelectPtProjectList()
+}
+
 export const useProposalProjectsStore = () => {
   return {
     ptProjectList,
     isLoadingList,
     handleSelectPtProjectList,
     handleSavePtProject,
+    handleDeletePtProjects,
   }
 }

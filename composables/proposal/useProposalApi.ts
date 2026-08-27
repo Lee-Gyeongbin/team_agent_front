@@ -800,6 +800,50 @@ export const useProposalApi = () => {
   }
 
   /**
+   * 콘텐츠 개요 전체 일괄 생성 SSE
+   * 미생성(CONTENT_OUTLINE_TXT null/빈 문자열) 리프 항목만 순차 처리.
+   *
+   * 이벤트:
+   *   connected — { ptProjectId }
+   *   progress  — { tocId, title, status: 'success'|'fail', index, total, errorMessage? }
+   *   complete  — { status: 'complete', successCount, failCount, total }
+   *   error     — { message }
+   */
+  const streamGenerateAllTocOutline = (
+    ptProjectId: string,
+    modelId: string,
+    agentId: string,
+    callbacks: {
+      onProgress?: (data: { tocId: string; title: string; status: 'success' | 'fail'; index: number; total: number; errorMessage?: string }) => void
+      onComplete?: (data: { successCount: number; failCount: number; total: number }) => void
+      onError?: (message: string) => void
+    },
+  ): EventSource => {
+    const params = new URLSearchParams({ ptProjectId, modelId, agentId })
+    const es = new EventSource(`/api/ai/proposal/streamGenerateAllTocOutline.do?${params.toString()}`)
+
+    es.addEventListener('progress', (e) => {
+      try {
+        callbacks.onProgress?.(JSON.parse((e as MessageEvent).data))
+      } catch {
+        /* ignore */
+      }
+    })
+    es.addEventListener('complete', (e) => {
+      try {
+        callbacks.onComplete?.(JSON.parse((e as MessageEvent).data))
+      } catch {
+        /* ignore */
+      } finally {
+        es.close()
+      }
+    })
+    attachSseErrorListener(es, callbacks.onError)
+
+    return es
+  }
+
+  /**
    * E-4: 소목차 확인 → 다음 소목차 전환
    * 미완료 슬라이드 있으면 confirm 거부.
    * done=true 시 출력 단계(Step F)로 이동.
@@ -987,6 +1031,11 @@ export const useProposalApi = () => {
     return post<{ result: string; msg?: string }>('/ai/proposal/restorePromptContent.do', { promptId })
   }
 
+  /** PT 프로젝트 삭제 (NCP 파일 포함 전체 삭제) */
+  const fetchDeletePtProject = async (ptProjectId: string): Promise<{ result: string; msg?: string }> => {
+    return post<{ result: string; msg?: string }>('/ai/proposal/deletePtProject.do', { ptProjectId })
+  }
+
   return {
     fetchCreatePtFileUploadUrl,
     fetchSavePtFile,
@@ -1046,6 +1095,7 @@ export const useProposalApi = () => {
     fetchChatSection,
     streamRenderSectionImages,
     streamGenerateSlideImage,
+    streamGenerateAllTocOutline,
     fetchConfirmSection,
     fetchViewSlideImage,
     fetchViewPtCoverImage,
@@ -1066,5 +1116,7 @@ export const useProposalApi = () => {
     fetchSelectStepPrompts,
     fetchUpdatePromptContent,
     fetchRestorePromptContent,
+    // 프로젝트 삭제
+    fetchDeletePtProject,
   }
 }

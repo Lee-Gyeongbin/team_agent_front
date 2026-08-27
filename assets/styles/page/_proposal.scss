@@ -254,6 +254,7 @@
 }
 
 .pt-card {
+  position: relative;
   background: #fff;
   border: 1px solid $color-border;
   border-radius: $border-radius-lg;
@@ -268,6 +269,11 @@
     box-shadow: $shadow-md;
   }
 
+  &.is-selected {
+    border-color: var(--color-primary);
+    background: var(--color-primary-bg);
+  }
+
   &.is-skeleton {
     cursor: default;
     &:hover {
@@ -275,6 +281,21 @@
       box-shadow: none;
     }
   }
+}
+
+.pt-card-checkbox {
+  position: absolute;
+  top: $spacing-sm;
+  right: $spacing-sm;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.pt-selected-count {
+  @include typo($body-small-bold, $color-text-muted);
+  flex-shrink: 0;
 }
 
 .pt-card-title {
@@ -312,6 +333,16 @@
   &:hover {
     border-color: var(--color-primary);
     box-shadow: $shadow-sm;
+  }
+
+  &.is-selected {
+    border-color: var(--color-primary);
+    background: var(--color-primary-bg);
+  }
+
+  .pt-card-checkbox {
+    position: static;
+    flex-shrink: 0;
   }
 }
 
@@ -5993,6 +6024,70 @@ body.is-resizing {
   &.is-confirmed {
     background: #2aa860;
   }
+
+  &.is-processing {
+    background: var(--color-primary);
+    animation: oc-dot-pulse 1s ease-in-out infinite;
+  }
+}
+
+@keyframes oc-dot-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+}
+
+// 전체 일괄 생성 버튼 행
+.oc-batch-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.oc-batch-status {
+  @include typo($body-xsmall);
+  color: $color-text-muted;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+// 실패 항목 요약
+.oc-batch-fail-summary {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: $border-radius-base;
+  background: #fff5f5;
+  border: 1px solid #ffd6d6;
+}
+
+.oc-batch-fail-title {
+  @include typo($body-xsmall-bold);
+  color: $color-error;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.oc-batch-fail-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.oc-batch-fail-item {
+  @include typo($body-xsmall);
+  color: $color-text-secondary;
+  padding: 1px 0;
+
+  .oc-batch-fail-name {
+    @include ellipsis(1);
+    display: block;
+  }
+}
+
+// 배치 처리 중 리프 하이라이트
+.oc-leaf.is-processing {
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
 }
 
 // 우측 영역
@@ -6468,6 +6563,21 @@ textarea.oc-outline-textarea.ui-textarea {
 
     &:hover {
       background: var(--color-primary-dark);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  &.oc-btn-primary-line {
+    background: #fff;
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
+
+    &:hover:not(:disabled) {
+      background: var(--color-primary-bg);
     }
 
     &:disabled {

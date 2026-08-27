@@ -198,6 +198,8 @@ const onStepChanged = (step: number) => {
   if (step === 0) handleSelectTocList()
   // 본문생성(6): 섹션 목록만 로드 — Stage2는 전략검토(2)에서 처리
   if (step === 6) handleSelectSectionList()
+  // 출력(7): 인포그래픽 이미지 유무 판별을 위해 전체 슬라이드를 캐시에 채운다
+  if (step === 7) handleEnsureAllSlidesLoaded()
 }
 
 // ---- TOC (Requirements 진입 시 선행 로드; 상세 CRUD는 ProposalStepRequirements 내부) ----
@@ -214,6 +216,7 @@ const {
   slidesCache,
   handleSelectSectionList,
   handleSelectSlides,
+  handleEnsureAllSlidesLoaded,
   handleGenerateSection,
   handleUpdatePlannedSlideCnt,
   handleConfirmSection,

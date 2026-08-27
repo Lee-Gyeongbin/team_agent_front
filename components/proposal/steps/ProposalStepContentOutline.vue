@@ -17,6 +17,48 @@
           </div>
           <span class="oc-progress-label">{{ confirmedCount }} / {{ leafNodes.length }} 확정</span>
         </div>
+
+        <!-- 전체 생성 버튼 -->
+        <div class="oc-batch-row">
+          <button
+            v-if="!isBatchGenerating"
+            class="oc-btn oc-btn-primary-line oc-btn-sm"
+            :disabled="unGeneratedCount === 0"
+            :title="unGeneratedCount === 0 ? '모두 생성됨' : `미생성 ${unGeneratedCount}건 일괄 생성`"
+            @click="$emit('generate-all')"
+          >
+            {{ unGeneratedCount === 0 ? '모두 생성됨' : `전체 생성 (${unGeneratedCount}건)` }}
+          </button>
+          <template v-else>
+            <span class="oc-batch-status">
+              <span class="oc-spinner oc-spinner-sm" />
+              생성 중... {{ batchProgress.current }}/{{ batchProgress.total }}
+            </span>
+            <button
+              class="oc-btn oc-btn-ghost oc-btn-sm"
+              @click="$emit('cancel-batch')"
+            >
+              취소
+            </button>
+          </template>
+        </div>
+
+        <!-- 실패 항목 요약 (완료 후) -->
+        <div
+          v-if="!isBatchGenerating && batchFailItems.length > 0"
+          class="oc-batch-fail-summary"
+        >
+          <span class="oc-batch-fail-title">{{ batchFailItems.length }}건 생성 실패</span>
+          <ul class="oc-batch-fail-list">
+            <li
+              v-for="item in batchFailItems"
+              :key="item.tocId"
+              class="oc-batch-fail-item"
+            >
+              <span class="oc-batch-fail-name">{{ item.title }}</span>
+            </li>
+          </ul>
+        </div>
       </div>
 
       <div class="oc-tree-scroll">
@@ -83,7 +125,7 @@
                   <span
                     v-else
                     class="oc-status-dot"
-                    :class="statusDotClass(section.outlineStatusCd)"
+                    :class="batchProcessingTocId === section.tocId ? 'is-processing' : statusDotClass(section.outlineStatusCd)"
                   />
                 </div>
 
@@ -93,14 +135,14 @@
                       v-for="leaf in childrenOf(section.tocId)"
                       :key="leaf.tocId"
                       class="oc-leaf"
-                      :class="{ 'is-selected': selectedTocId === leaf.tocId }"
+                      :class="{ 'is-selected': selectedTocId === leaf.tocId, 'is-processing': batchProcessingTocId === leaf.tocId }"
                       @click="$emit('select-node', leaf.tocId)"
                     >
                       <i class="icon-document size-13" />
                       <span class="oc-leaf-title">{{ leaf.title }}</span>
                       <span
                         class="oc-status-dot"
-                        :class="statusDotClass(leaf.outlineStatusCd)"
+                        :class="batchProcessingTocId === leaf.tocId ? 'is-processing' : statusDotClass(leaf.outlineStatusCd)"
                       />
                     </div>
                   </div>
@@ -306,12 +348,11 @@
           {{
             allConfirmed
               ? '모든 세부목차의 콘텐츠 개요가 확정되었습니다.'
-              : '모든 세부목차의 콘텐츠 개요를 확정해야 템플릿 설정으로 이동할 수 있어요.'
+              : `${confirmedCount}/${leafNodes.length}개 확정됨 · 확정하지 않은 항목이 있어도 이동할 수 있습니다.`
           }}
         </span>
         <button
           class="oc-btn oc-btn-primary"
-          :disabled="!allConfirmed"
           @click="$emit('go-template')"
         >
           템플릿 설정으로 이동 ›
@@ -347,7 +388,7 @@
 </template>
 
 <script setup lang="ts">
-import type { OutlineChatMessage } from '~/composables/proposal/useProposalOutline'
+import type { BatchFailItem, OutlineChatMessage } from '~/composables/proposal/useProposalOutline'
 import type { PtTocItem } from '~/types/proposal'
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 
@@ -366,6 +407,11 @@ interface Props {
   isEditing: boolean
   editingText: string
   chatMessages: OutlineChatMessage[]
+  isBatchGenerating: boolean
+  batchProgress: { current: number; total: number }
+  batchProcessingTocId: string | null
+  batchFailItems: BatchFailItem[]
+  unGeneratedCount: number
 }
 
 const props = defineProps<Props>()
@@ -377,6 +423,8 @@ const emit = defineEmits<{
   confirm: [outlineTxt: string]
   'start-edit': []
   'update:editing-text': [value: string]
+  'generate-all': []
+  'cancel-batch': []
   'go-template': []
 }>()
 
