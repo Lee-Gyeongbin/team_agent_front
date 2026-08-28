@@ -74,10 +74,21 @@ export interface MarketingProject {
   dueDt: string // 마감일 YYYY-MM-DD (없으면 '')
   statusCd: MarketingProjectStatusCd // STATUS_CD
   statusNm: string // 작성중 | 검수중 | 완료 | 보류
-  projectConfigJson?: string
   createDt: string
   modifyDt: string
   createUserId?: string
+  createUserNm?: string // 담당자(작성자)명 — 목록 응답
+  contentCnt?: number // 콘텐츠 수 — 목록 응답
+  /** 저장 요청 전용 — 공개범위(멤버) userId 목록. 작성자는 서버가 항상 강제 포함한다 */
+  memberUserIds?: string[]
+}
+
+/** 프로젝트 멤버(공개범위) — selectMarketingProject.do 상세 응답의 members */
+export interface MarketingProjectMember {
+  marketingProjectId: string
+  userId: string
+  userNm: string
+  email: string
 }
 
 /** 마케팅 작성 마법사 폼 — 그대로 REQUEST_JSON으로 저장된다 (referenceFiles만 업로드 후 제외) */

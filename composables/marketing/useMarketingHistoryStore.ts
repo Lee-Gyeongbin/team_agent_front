@@ -1,33 +1,30 @@
 import { useMarketingApi } from '~/composables/marketing/useMarketingApi'
 import { agents, useMarketingPageState } from '~/composables/marketing/useMarketingPageState'
-import type { MarketingContentSummary, MarketingOutputMode } from '~/types/marketing'
+import type { MarketingContentSummary } from '~/types/marketing'
 import { formatDateTimeDisplay } from '~/utils/global/dateUtil'
 import { resolveMarketingSummaryLabels, resolveMarketingScheduleStatus } from '~/utils/marketing/marketingUtil'
-import { MARKETING_AUTHORING_CONTENT_TYPES } from '~/utils/agent/marketingAuthoringConfigUtil'
+import { MARKETING_AUTHORING_CHANNELS_BY_TYPE } from '~/utils/agent/marketingAuthoringConfigUtil'
 
-type MarketingHistoryPeriodValue = '' | '30' | '7' | '3'
+const CHANNEL_CODES = new Set(
+  Object.values(MARKETING_AUTHORING_CHANNELS_BY_TYPE).flatMap((options) => options.map((option) => option.value)),
+)
 
-export const CONTENT_TYPE_FILTER_CHIPS: { value: string; label: string }[] = [
-  { value: '', label: '콘텐츠 유형' },
-  ...MARKETING_AUTHORING_CONTENT_TYPES.map((item) => ({ value: item.value, label: item.label })),
-]
+/** summaryLabels 중 채널 코드만 골라 표시 라벨로 바꾼다 */
+const resolveHistoryChannelNm = (labels: string[], agentConfig: Parameters<typeof resolveMarketingSummaryLabels>[1]) => {
+  const code = labels.find((label) => CHANNEL_CODES.has(label))
+  if (!code) return ''
+  return resolveMarketingSummaryLabels([code], agentConfig)[0] ?? ''
+}
 
-export const MODE_FILTER_CHIPS = [
-  { value: '', label: '전체' },
-  { value: 'TEXT', label: '문구' },
-  { value: 'IMAGE', label: '이미지' },
-  { value: 'BOTH', label: '통합' },
-] as const
-
-export const resolveMarketingOutputModeLabel = (mode: MarketingOutputMode) =>
-  MODE_FILTER_CHIPS.find((chip) => chip.value === mode)?.label ?? '문구'
-
-export const HISTORY_PERIOD_OPTIONS: { value: MarketingHistoryPeriodValue; label: string }[] = [
-  { value: '', label: '전체 기간' },
-  { value: '3', label: '최근 3일' },
-  { value: '7', label: '최근 7일' },
-  { value: '30', label: '최근 30일' },
-]
+/** 목록에 있는 발행·생성 상태만으로 진행 상태를 만든다. 검수 중은 필드가 없다 */
+const resolveContentProgress = (item: MarketingContentSummary, scheduleStatus: string) => {
+  if (item.publishedYn === 'Y') return { key: 'done', label: '발행 완료' }
+  if (scheduleStatus !== 'none') return { key: 'scheduled', label: '예약됨' }
+  if (item.statusCd === '002') return { key: 'generating', label: '생성중' }
+  if (item.statusCd === '004') return { key: 'failed', label: '실패' }
+  if (item.statusCd === '001') return { key: 'waiting', label: '대기' }
+  return { key: 'ready', label: '완료' }
+}
 
 const {
   fetchMarketingContents,
@@ -36,45 +33,37 @@ const {
   fetchUpdateMarketingPublished,
 } = useMarketingApi()
 
-// ===== 상태 (제작 내역 목록 / 필터) =====
+// ===== 상태 (제작 내역 목록) =====
 export const historyList = ref<MarketingContentSummary[]>([])
-const historySearchKeyword = ref('')
-const historyContentTypeFilter = ref('')
-const historyModeFilter = ref<'' | MarketingOutputMode>('')
-const historyPeriodFilter = ref<MarketingHistoryPeriodValue>('')
 
-let filterTimer: ReturnType<typeof setTimeout> | null = null
 let historyListRequestSeq = 0
 
-const clearHistoryFilterTimer = () => {
-  if (filterTimer) {
-    clearTimeout(filterTimer)
-    filterTimer = null
-  }
-}
-
-/** 페이지 이탈 시 호출 — 진행 중인 디바운스/요청을 무효화한다 */
+/** 페이지 이탈 시 호출 — 진행 중인 요청을 무효화한다 */
 export const resetHistorySession = () => {
-  clearHistoryFilterTimer()
   historyListRequestSeq += 1
 }
 
 export const useMarketingHistoryStore = () => {
-  const { config, marketingProjectId, pagePhase } = useMarketingPageState()
+  const { config, marketingProjectId } = useMarketingPageState()
 
   const allHistoryItems = computed(() =>
     historyList.value.map((item) => {
       const agentConfig = agents.value.find((agent) => agent.agentId === item.agentId)?.config ?? config.value ?? null
+      const scheduleStatus = resolveMarketingScheduleStatus(item.publishScheduledDt, item.publishedYn)
+      const progress = resolveContentProgress(item, scheduleStatus)
       return {
         contentId: item.contentId,
         mode: item.outputMode,
         displayTitle: item.title,
         metaBadges: resolveMarketingSummaryLabels(item.summaryLabels, agentConfig),
+        channelNm: resolveHistoryChannelNm(item.summaryLabels, agentConfig),
+        progressKey: progress.key,
+        progressLabel: progress.label,
         createUserNm: item.createUserNm || '-',
         createDt: formatDateTimeDisplay(item.createDt) || item.createDt || '-',
         publishScheduledDt: item.publishScheduledDt || '',
         publishedYn: item.publishedYn,
-        scheduleStatus: resolveMarketingScheduleStatus(item.publishScheduledDt, item.publishedYn),
+        scheduleStatus,
         scheduleLabel: formatDateTimeDisplay(item.publishScheduledDt),
       }
     }),
@@ -83,14 +72,6 @@ export const useMarketingHistoryStore = () => {
   /** 오늘이거나 이미 지난 발행 예정 콘텐츠 — 상단 리마인더 배너용 */
   const dueSoonHistoryItems = computed(() =>
     allHistoryItems.value.filter((item) => item.scheduleStatus === 'today' || item.scheduleStatus === 'overdue'),
-  )
-
-  const hasActiveHistoryFilter = computed(
-    () =>
-      !!historySearchKeyword.value.trim() ||
-      !!historyContentTypeFilter.value ||
-      !!historyModeFilter.value ||
-      !!historyPeriodFilter.value,
   )
 
   const handleSelectHistoryList = async () => {
@@ -102,10 +83,6 @@ export const useMarketingHistoryStore = () => {
     try {
       const response = await fetchMarketingContents({
         marketingProjectId: marketingProjectId.value,
-        keyword: historySearchKeyword.value.trim() || undefined,
-        contentType: historyContentTypeFilter.value || undefined,
-        outputMode: historyModeFilter.value || undefined,
-        periodDays: historyPeriodFilter.value ? Number(historyPeriodFilter.value) : undefined,
       })
       if (seq !== historyListRequestSeq) return
       historyList.value = response.list ?? []
@@ -165,21 +142,10 @@ export const useMarketingHistoryStore = () => {
     }
   }
 
-  watch([historySearchKeyword, historyContentTypeFilter, historyModeFilter, historyPeriodFilter], () => {
-    if (pagePhase.value !== 'list') return
-    clearHistoryFilterTimer()
-    filterTimer = setTimeout(() => void handleSelectHistoryList(), 250)
-  })
-
   return {
     historyList,
-    historySearchKeyword,
-    historyContentTypeFilter,
-    historyModeFilter,
-    historyPeriodFilter,
     allHistoryItems,
     dueSoonHistoryItems,
-    hasActiveHistoryFilter,
     handleSelectHistoryList,
     handleDeleteHistory,
     handleUpdateSchedule,

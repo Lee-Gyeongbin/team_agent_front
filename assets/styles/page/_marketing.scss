@@ -2291,7 +2291,7 @@
 // 마케팅 전용 페이지 (/marketing)
 // =============================================
 
-$marketing-page-max-width: 1200px;
+$marketing-page-max-width: 1440px;
 
 .marketing-page {
   display: flex;
@@ -3042,7 +3042,8 @@ $marketing-page-max-width: 1200px;
   margin-left: auto;
 }
 
-.marketing-list-page .marketing-list-table-wrap {
+.marketing-list-page .marketing-list-table-wrap,
+.marketing-detail-page .marketing-list-table-wrap {
   overflow: hidden;
   border: 1px solid $color-border;
   border-radius: 12px;
@@ -3159,21 +3160,35 @@ $marketing-page-max-width: 1200px;
   padding: 2px 8px;
   border-radius: 12px;
 
-  &.status-001 {
+  &.status-001,
+  &.progress-waiting {
     background: #fff3e3;
     color: $color-warning;
   }
-  &.status-002 {
+  &.status-002,
+  &.progress-scheduled {
     background: var(--color-primary-bg);
     color: var(--color-primary-dark);
   }
-  &.status-003 {
+  &.status-003,
+  &.progress-done,
+  &.progress-ready {
     background: rgba($color-success, 0.12);
     color: color.adjust($color-success, $lightness: -10%);
   }
-  &.status-004 {
+  &.status-004,
+  &.progress-failed {
     background: $color-background;
     color: $color-text-muted;
+  }
+  &.progress-generating,
+  &.progress-in-progress {
+    background: #fff3e3;
+    color: $color-warning;
+  }
+  &.progress-review {
+    background: #fef9c3;
+    color: #a16207;
   }
 }
 
@@ -3350,8 +3365,8 @@ $marketing-page-max-width: 1200px;
 }
 
 .marketing-detail-title {
-  @include typo($body-xlarge-bold);
-  color: $color-text-heading;
+  margin: 0;
+  @include typo($body-2xlarge-bold, $color-text-heading);
 }
 
 .marketing-detail-meta {
@@ -3371,6 +3386,313 @@ $marketing-page-max-width: 1200px;
     margin-left: 4px;
     color: $color-text-secondary;
     font-weight: $font-weight-semibold;
+  }
+}
+
+.marketing-campaign-brief {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  background: $color-surface;
+
+  &__main {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-md;
+
+    > .ui-button {
+      flex-shrink: 0;
+    }
+  }
+
+  &__thumb {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    border-radius: 12px;
+    background: #fff;
+    color: $color-text-muted;
+  }
+
+  &__copy {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+
+    strong {
+      @include typo($body-medium-bold, $color-text-heading);
+    }
+
+    p {
+      margin: 0;
+      @include typo($body-small, $color-text-muted);
+    }
+  }
+
+  &__badge {
+    width: fit-content;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--color-primary-bg);
+    color: var(--color-primary-dark);
+    @include typo($body-xsmall-bold);
+  }
+
+  &__foot {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  &__channels {
+    margin: 0;
+    @include typo($body-small, $color-text-dark);
+  }
+
+  &__notice {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding-top: 10px;
+    border-top: 1px solid $color-border;
+    @include typo($body-small, $color-text-muted);
+
+    i {
+      flex: 0 0 auto;
+    }
+  }
+}
+
+.marketing-content-status {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+
+  &__title {
+    margin: 0;
+    @include typo($body-large-bold, $color-text-heading);
+  }
+}
+
+.marketing-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  gap: $spacing-md;
+  align-items: start;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.marketing-detail-main {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.marketing-channel-section {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-sm;
+  }
+
+  &__title {
+    margin: 0;
+    @include typo($body-large-bold, $color-text-heading);
+
+    span {
+      color: $color-text-muted;
+      font-weight: $font-weight-medium;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+.marketing-content-title {
+  @include typo($body-medium-bold, $color-text-heading);
+}
+
+.marketing-content-rename {
+  min-width: 0;
+  width: 100%;
+}
+
+.marketing-publish-calendar {
+  padding: 16px;
+  border: 1px solid $color-border;
+  border-radius: 12px;
+  background: #fff;
+
+  &__head {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 12px;
+
+    strong {
+      @include typo($body-medium-bold, $color-text-heading);
+    }
+  }
+
+  &__nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    @include typo($body-small-bold, $color-text-dark);
+  }
+
+  &__nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: $color-text-muted;
+    cursor: pointer;
+
+    &:hover {
+      background: $color-surface;
+      color: $color-text-heading;
+    }
+  }
+
+  &__nav-prev {
+    transform: scaleX(-1);
+  }
+
+  &__weekdays,
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+
+  &__weekdays {
+    margin-bottom: 4px;
+
+    span {
+      padding: 4px 0;
+      text-align: center;
+      @include typo($body-xsmall, $color-text-muted);
+    }
+  }
+
+  &__cell {
+    min-height: 64px;
+    padding: 4px;
+    border-top: 1px solid $color-border-light;
+
+    span {
+      display: block;
+      margin-bottom: 4px;
+      @include typo($body-xsmall, $color-text-muted);
+    }
+
+    &.is-today span {
+      color: var(--color-primary);
+      font-weight: $font-weight-bold;
+    }
+
+    &.is-empty {
+      min-height: 24px;
+      border-top-color: transparent;
+    }
+  }
+
+  &__event {
+    display: block;
+    width: 100%;
+    margin-top: 2px;
+    padding: 2px 4px;
+    overflow: hidden;
+    border: 0;
+    border-radius: 4px;
+    background: var(--color-primary-bg);
+    color: var(--color-primary-dark);
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+    @include typo($body-xsmall);
+
+    &.is-done {
+      background: rgba($color-success, 0.12);
+      color: color.adjust($color-success, $lightness: -10%);
+    }
+
+    &.is-scheduled {
+      background: var(--color-primary-bg);
+      color: var(--color-primary-dark);
+    }
+
+    &.is-review {
+      background: #fef9c3;
+      color: #a16207;
+    }
+
+    &.is-in-progress {
+      background: #fff3e3;
+      color: $color-warning;
+    }
+  }
+
+  &__legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 12px;
+    @include typo($body-xsmall, $color-text-muted);
+
+    span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    i {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: $color-border;
+
+      &.is-scheduled {
+        background: var(--color-primary);
+      }
+
+      &.is-review {
+        background: #eab308;
+      }
+
+      &.is-done {
+        background: $color-success;
+      }
+    }
   }
 }
 
@@ -3591,35 +3913,4 @@ $marketing-page-max-width: 1200px;
 
 .marketing-export-dropdown {
   z-index: $z-dropdown + 1 !important;
-}
-
-// 제작 내역 수정 모달 (이름 · 발행 예정일)
-.marketing-history-edit-modal {
-  .modal-dialog-body {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 16px;
-  }
-
-  &__tip {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 12px 14px;
-    border-radius: 10px;
-    background: color-mix(in srgb, var(--marketing-agent-theme-color, #7c5cfc) 8%, #fff);
-    color: #475569;
-    font-size: 12px;
-    line-height: 1.5;
-
-    i {
-      flex: 0 0 auto;
-      margin-top: 1px;
-    }
-
-    p {
-      margin: 0;
-    }
-  }
 }

@@ -46,65 +46,60 @@
             마케팅 프로젝트
           </button>
 
-          <div class="marketing-detail-head__row">
-            <div
-              v-if="currentProject"
-              class="marketing-detail-info"
-            >
+          <div
+            v-if="currentProject"
+            class="marketing-detail-head__row"
+          >
+            <div class="marketing-detail-info">
               <div class="marketing-detail-title">{{ currentProject.projectNm }}</div>
               <div class="marketing-detail-meta">
-                <span v-if="currentProject.orgNm">{{ currentProject.orgNm }}</span>
-                <span
-                  v-if="currentProject.orgNm"
-                  class="marketing-detail-meta__dot"
-                >
-                  ·
-                </span>
-                <span>제작 내역</span>
-                <span
-                  v-if="allHistoryItems.length || hasActiveHistoryFilter"
-                  class="marketing-detail-meta__count"
-                >
-                  총 {{ allHistoryItems.length }}건
-                </span>
+                <span>목표 {{ dummyGoal }}</span>
+                <span class="marketing-detail-meta__dot">·</span>
+                <span>타깃 {{ dummyTarget }}</span>
+                <span class="marketing-detail-meta__dot">·</span>
+                <span>종료일 {{ dueDateLabel }}</span>
+                <span class="marketing-detail-meta__dot">·</span>
+                <span>공개 대상 {{ visibilityLabel }}</span>
               </div>
             </div>
+            <span
+              v-if="currentProject.statusNm"
+              :class="['marketing-status-badge', `status-${currentProject.statusCd}`]"
+            >
+              {{ currentProject.statusNm }}
+            </span>
+          </div>
+        </div>
 
-            <div class="marketing-detail-head__actions">
-              <UiInput
-                v-model="historySearchKeyword"
-                type="search"
-                size="sm"
-                class="marketing-history-search"
-                placeholder="내역 검색"
-              />
-              <UiButton
-                variant="outline"
-                size="md"
-                @click="isFilePanelOpen = true"
-              >
-                <template #icon-left>
-                  <i class="icon-folder-close size-16" />
-                </template>
-                참고 파일
-                <span
-                  v-if="projectFiles.length"
-                  class="marketing-file-count"
-                >
-                  {{ projectFiles.length }}
-                </span>
-              </UiButton>
-              <UiButton
-                variant="primary"
-                size="md"
-                @click="handleStartNew"
-              >
-                <template #icon-left>
-                  <i class="icon-plus size-16" />
-                </template>
-                새로 만들기
-              </UiButton>
+        <div
+          v-if="currentProject"
+          class="marketing-campaign-brief"
+        >
+          <div class="marketing-campaign-brief__main">
+            <div class="marketing-campaign-brief__thumb">
+              <i class="icon-document size-24" />
             </div>
+            <div class="marketing-campaign-brief__copy">
+              <span class="marketing-campaign-brief__badge">캠페인 기획서</span>
+              <strong>{{ currentProject.projectNm }}</strong>
+              <p>핵심 메시지 {{ campaignKeyMessage }}</p>
+            </div>
+            <UiButton
+              variant="outline"
+              size="md"
+              @click="onViewCampaignPlan"
+            >
+              캠페인 기획서 보기
+            </UiButton>
+          </div>
+          <div class="marketing-campaign-brief__foot">
+            <p class="marketing-campaign-brief__channels">
+              추천 채널 {{ dummyRecommendChannels }} · 콘텐츠 제작 계획 총 {{ displayedContentRows.length }}건
+            </p>
+            <p class="marketing-campaign-brief__notice">
+              <i class="icon-info size-14" />
+              모든 채널별 콘텐츠는 이 캠페인 기획서를 기준으로만 생성됩니다.
+            </p>
           </div>
         </div>
 
@@ -131,172 +126,122 @@
           </div>
         </div>
 
-        <div
-          v-if="allHistoryItems.length || hasActiveHistoryFilter"
-          class="marketing-history-filter-bar"
-        >
-          <div class="marketing-filter-chips">
-            <button
-              v-for="chip in MODE_FILTER_CHIPS"
-              :key="chip.value || 'all-mode'"
-              type="button"
-              :class="['marketing-filter-chip', { 'is-active': historyModeFilter === chip.value }]"
-              @click="historyModeFilter = chip.value"
-            >
-              {{ chip.label }}
-            </button>
-          </div>
-
-          <UiSelect
-            :model-value="historyContentTypeFilter"
-            class="marketing-filter-select marketing-filter-select--type"
-            :options="CONTENT_TYPE_FILTER_CHIPS"
-            placeholder="콘텐츠 유형"
-            size="sm"
-            @update:model-value="onSelectHistoryContentType"
-          />
-
-          <UiSelect
-            :model-value="historyPeriodFilter"
-            class="marketing-filter-select"
-            :options="HISTORY_PERIOD_OPTIONS"
-            placeholder="전체 기간"
-            size="sm"
-            @update:model-value="onSelectHistoryPeriod"
-          />
-        </div>
-
-        <UiEmpty
-          v-if="!allHistoryItems.length && hasActiveHistoryFilter"
-          icon="icon-search"
-          title="검색 결과가 없습니다."
-          description="검색어나 필터 조건을 변경해 보세요."
-        />
-
-        <UiEmpty
-          v-else-if="!allHistoryItems.length"
-          icon="icon-edit"
-          title="제작 내역이 없습니다."
-          description="새 콘텐츠를 만들어 보세요."
-        >
-          <UiButton
-            variant="primary"
-            size="md"
-            @click="handleStartNew"
-          >
-            새로 만들기
-          </UiButton>
-        </UiEmpty>
-
-        <div
-          v-else
-          class="marketing-history-list"
-        >
-          <div
-            v-for="item in allHistoryItems"
-            :key="item.contentId"
-            class="marketing-history-row"
-            tabindex="0"
-            :aria-label="`${item.displayTitle} 열기`"
-            @click="handleHistoryRowClick(item.contentId)"
-            @keydown.enter.prevent="handleHistoryRowClick(item.contentId)"
-            @keydown.space.prevent="handleHistoryRowClick(item.contentId)"
-          >
-            <span
-              class="marketing-history-row__mode-badge"
-              :class="{
-                'is-image': item.mode === 'IMAGE',
-                'is-text': item.mode === 'TEXT',
-                'is-both': item.mode === 'BOTH',
-              }"
-            >
-              {{ resolveMarketingOutputModeLabel(item.mode) }}
-            </span>
-            <div class="marketing-history-row__copy">
-              <strong class="marketing-history-row__title">
-                {{ item.displayTitle }}
-              </strong>
-              <div
-                v-if="item.metaBadges.length"
-                class="marketing-history-row__meta-badges"
-              >
-                <span
-                  v-for="(badge, badgeIndex) in item.metaBadges"
-                  :key="`${item.contentId}-meta-${badgeIndex}`"
-                  class="marketing-history-row__meta-badge"
-                  :class="{
-                    'is-image': item.mode === 'IMAGE',
-                    'is-text': item.mode === 'TEXT' || item.mode === 'BOTH',
-                  }"
+        <div class="marketing-detail-layout">
+          <div class="marketing-detail-main">
+            <section class="marketing-content-status">
+              <h2 class="marketing-content-status__title">소속 콘텐츠 진행 현황</h2>
+              <div class="marketing-summary-row">
+                <div
+                  v-for="card in contentSummaryCards"
+                  :key="card.key"
+                  class="marketing-summary-card"
                 >
-                  {{ badge }}
-                </span>
+                  <div class="marketing-summary-card__head">
+                    <span>{{ card.label }}</span>
+                  </div>
+                  <strong class="marketing-summary-card__value">{{ card.count }}</strong>
+                </div>
               </div>
-              <div class="marketing-history-row__meta">
-                <span class="marketing-history-row__author">{{ item.createUserNm }} · 작성 {{ item.createDt }}</span>
-                <span
-                  v-if="item.scheduleStatus !== 'none'"
-                  class="marketing-history-row__schedule-badge"
-                  :class="{ 'is-done': item.publishedYn === 'Y' }"
+            </section>
+
+            <div class="marketing-channel-section">
+              <div class="marketing-channel-section__head">
+                <h2 class="marketing-channel-section__title">
+                  채널별 콘텐츠
+                  <span>({{ displayedContentRows.length }})</span>
+                </h2>
+                <div class="marketing-channel-section__actions">
+                  <UiButton
+                    variant="primary"
+                    size="md"
+                    @click="handleStartNew"
+                  >
+                    <template #icon-left>
+                      <i class="icon-plus size-16" />
+                    </template>
+                    채널별 콘텐츠 생성
+                  </UiButton>
+                </div>
+              </div>
+
+              <div class="marketing-list-table-wrap">
+                <UiTable
+                  :columns="contentTableColumns"
+                  :data="displayedContentRows"
+                  clickable
+                  empty-text="채널별 콘텐츠가 없습니다."
+                  @row-click="onContentTableRowClick"
                 >
-                  발행 {{ item.publishedYn === 'Y' ? '완료' : '예정' }} {{ item.scheduleLabel }}
-                </span>
+                  <template #cell-channelNm="{ value }">
+                    {{ formatCellText(value) }}
+                  </template>
+                  <template #cell-displayTitle="{ row }">
+                    <div
+                      v-if="renamingContentId === row.contentId"
+                      class="marketing-content-rename"
+                      @click.stop
+                      @keydown.esc.stop.prevent="onCancelRename"
+                    >
+                      <UiInput
+                        ref="renameInputRef"
+                        v-model="renamingTitle"
+                        size="sm"
+                        placeholder="콘텐츠명"
+                        :disabled="isSavingRename"
+                        @enter="onSaveRename"
+                      />
+                    </div>
+                    <strong
+                      v-else
+                      class="marketing-content-title"
+                    >
+                      {{ row.displayTitle }}
+                    </strong>
+                  </template>
+                  <template #cell-progressLabel="{ row }">
+                    <span :class="['marketing-status-badge', `progress-${row.progressKey}`]">
+                      {{ row.progressLabel }}
+                    </span>
+                  </template>
+                  <template #cell-scheduleLabel="{ value }">
+                    {{ formatCellText(value) }}
+                  </template>
+                  <template #cell-actions="{ row }">
+                    <div
+                      v-if="renamingContentId !== row.contentId"
+                      class="marketing-list-row-actions"
+                      @click.stop
+                    >
+                      <UiDropdownMenu
+                        :items="contentMenuItems"
+                        align="end"
+                        @select="(value) => onContentMenuSelect(row, value)"
+                      >
+                        <template #trigger>
+                          <UiButton
+                            variant="ghost"
+                            size="sm"
+                            icon-only
+                            title="더보기"
+                          >
+                            <template #icon-left>
+                              <i class="icon-more-vertical size-16" />
+                            </template>
+                          </UiButton>
+                        </template>
+                      </UiDropdownMenu>
+                    </div>
+                  </template>
+                </UiTable>
               </div>
             </div>
-            <span
-              class="marketing-history-row__actions"
-              @click.stop
-              @keydown.stop
-            >
-              <UiButton
-                v-if="item.scheduleStatus !== 'none'"
-                variant="ghost"
-                size="sm"
-                icon-only
-                class="marketing-history-row__publish-toggle"
-                :class="{ 'is-active': item.publishedYn === 'Y' }"
-                :title="item.publishedYn === 'Y' ? '발행 예정으로 되돌리기' : '발행 완료로 표시'"
-                @click.stop="handleTogglePublished(item.contentId, item.publishedYn === 'Y' ? 'N' : 'Y')"
-              >
-                <template #icon-left>
-                  <i class="icon-check size-16" />
-                </template>
-              </UiButton>
-              <UiButton
-                variant="ghost"
-                size="sm"
-                icon-only
-                title="수정"
-                @click="openEditModal(item)"
-              >
-                <template #icon-left>
-                  <i class="icon-edit size-16" />
-                </template>
-              </UiButton>
-              <UiButton
-                variant="ghost"
-                size="sm"
-                icon-only
-                title="내역 삭제"
-                @click="handleDeleteHistory(item.contentId)"
-              >
-                <template #icon-left>
-                  <i class="icon-trashcan size-16" />
-                </template>
-              </UiButton>
-            </span>
           </div>
-        </div>
 
-        <MarketingHistoryEditModal
-          v-if="isEditModalOpen"
-          :is-open="isEditModalOpen"
-          :is-saving="isSavingEdit"
-          :content-title="editTarget?.displayTitle ?? ''"
-          :publish-scheduled-dt="editTarget?.publishScheduledDt ?? ''"
-          @close="isEditModalOpen = false"
-          @submit="onSubmitHistoryEdit"
-        />
+          <MarketingPublishCalendar
+            :items="calendarItems"
+            @select="onCalendarSelect"
+          />
+        </div>
       </div>
 
       <!-- 작성 폼 -->
@@ -398,28 +343,50 @@
 
 <script setup lang="ts">
 import { enrichMarketingResultForDisplay } from '~/utils/marketing/marketingUtil'
+import type { TableColumn } from '~/types/table'
+import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
+import type { MarketingCalendarEvent } from '~/components/marketing/MarketingPublishCalendar.vue'
 
 definePageMeta({ layout: 'default' })
 
+const CONTENT_TABLE_COLUMNS: TableColumn[] = [
+  { key: 'channelNm', label: '채널', width: '112px', align: 'left', headerAlign: 'left' },
+  { key: 'displayTitle', label: '콘텐츠명', align: 'left', headerAlign: 'left' },
+  { key: 'progressLabel', label: '진행 상태', width: '112px' },
+  { key: 'scheduleLabel', label: '예약/발행 일정', width: '148px' },
+  { key: 'createUserNm', label: '담당자', width: '100px' },
+  { key: 'createDt', label: '최근 업데이트', width: '148px' },
+  { key: 'actions', label: '', width: '56px' },
+]
+
+const CONTENT_SUMMARY_CARDS = [
+  { key: 'all', label: '전체' },
+  { key: 'in-progress', label: '진행 중' },
+  { key: 'review', label: '검수 중' },
+  { key: 'scheduled', label: '예약됨' },
+  { key: 'done', label: '발행 완료' },
+] as const
+
+// 🔽 더미 데이터 — 백엔드 연결 시 API로 교체
+const DUMMY_GOAL = '제품 출시'
+const DUMMY_TARGET = '20-30대 여성'
+const DUMMY_DUE_DT = '2025-08-31'
+const DUMMY_VISIBILITY = '유지님 외 2명'
+const DUMMY_KEY_MESSAGE = '땀·물에도 무너지지 않는 쿨링 선케어로 여름 야외 활동을 지키세요.'
+const DUMMY_RECOMMEND_CHANNELS = 'Instagram · Facebook · Email'
+const DUMMY_CHANNEL_NMS = ['인스타그램', '페이스북', '링크드인']
+const DUMMY_OWNERS = ['김지현', '박민수', '이지현']
+
 const {
-  CONTENT_TYPE_FILTER_CHIPS,
-  MODE_FILTER_CHIPS,
-  HISTORY_PERIOD_OPTIONS,
-  resolveMarketingOutputModeLabel,
   pagePhase,
   selectedAgent,
   config,
   themeColorHex,
   currentProject,
+  currentProjectMembers,
   projectFiles,
-  historySearchKeyword,
-  historyContentTypeFilter,
-  historyModeFilter,
-  historyPeriodFilter,
   allHistoryItems,
   dueSoonHistoryItems,
-  hasActiveHistoryFilter,
-  handleTogglePublished,
   handleSaveHistoryEdit,
   currentContent,
   displayResult,
@@ -449,40 +416,249 @@ const {
 
 const isFilePanelOpen = ref(false)
 const isUploadingFiles = ref(false)
+const contentTableColumns = CONTENT_TABLE_COLUMNS
 
-// ── 제작 내역 수정 모달 (이름 · 발행 예정일) ────────────────────────────
-const isEditModalOpen = ref(false)
-const isSavingEdit = ref(false)
-const editTarget = ref<{ contentId: string; displayTitle: string; publishScheduledDt: string } | null>(null)
+type HistoryRow = (typeof allHistoryItems.value)[number]
 
-const openEditModal = (item: { contentId: string; displayTitle: string; publishScheduledDt: string }) => {
-  editTarget.value = item
-  isEditModalOpen.value = true
+const dummyGoal = DUMMY_GOAL
+const dummyTarget = DUMMY_TARGET
+const dummyRecommendChannels = DUMMY_RECOMMEND_CHANNELS
+
+/** YYYY-MM-DD → YYYY.MM.DD. 값 없으면 '' */
+const formatDotDate = (value: string) => {
+  const text = String(value ?? '').trim()
+  if (!text) return ''
+  const matched = text.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (!matched) return text
+  return `${matched[1]}.${matched[2]}.${matched[3]}`
 }
 
-const onSubmitHistoryEdit = async (payload: { title: string; publishScheduledDt: string | null }) => {
-  const target = editTarget.value
-  if (!target || isSavingEdit.value) return
-  isSavingEdit.value = true
-  try {
-    const saved = await handleSaveHistoryEdit(target.contentId, {
-      title: payload.title,
-      publishScheduledDt: payload.publishScheduledDt,
-      originalTitle: target.displayTitle,
-      originalPublishScheduledDt: target.publishScheduledDt,
-    })
-    if (saved) isEditModalOpen.value = false
-  } finally {
-    isSavingEdit.value = false
+const formatCellText = (value: unknown) => {
+  const text = String(value ?? '').trim()
+  return text || '-'
+}
+
+const toDummyDateTime = (dayOffset: number, hour: number) => {
+  const date = new Date()
+  date.setDate(date.getDate() + dayOffset)
+  date.setHours(hour, 0, 0, 0)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hourText = String(date.getHours()).padStart(2, '0')
+  return `${year}-${month}-${day} ${hourText}:00:00`
+}
+
+const formatDateTimeLabel = (raw: string) => {
+  const matched = raw.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/)
+  if (!matched) return ''
+  return `${matched[1]}.${matched[2]}.${matched[3]} ${matched[4]}:${matched[5]}`
+}
+
+type DisplayContentRow = HistoryRow & { isDummy: boolean }
+
+const dummyContentRows = computed<DisplayContentRow[]>(() => {
+  const firstDt = toDummyDateTime(2, 10)
+  const secondDt = toDummyDateTime(5, 18)
+  return [
+    {
+      contentId: 'dummy-1',
+      mode: 'TEXT',
+      displayTitle: '쿨링핏 선크림 인증 이벤트 피드',
+      metaBadges: [],
+      channelNm: '인스타그램',
+      progressKey: 'review',
+      progressLabel: '검수 중',
+      createUserNm: '김지현',
+      createDt: formatDateTimeLabel(toDummyDateTime(-1, 18)),
+      publishScheduledDt: firstDt,
+      publishedYn: 'N',
+      scheduleStatus: 'upcoming',
+      scheduleLabel: formatDateTimeLabel(firstDt),
+      isDummy: true,
+    },
+    {
+      contentId: 'dummy-2',
+      mode: 'TEXT',
+      displayTitle: '쿨링핏 선크림으로 물놀이 피부 고민 끝',
+      metaBadges: [],
+      channelNm: '페이스북',
+      progressKey: 'scheduled',
+      progressLabel: '예약됨',
+      createUserNm: '박민수',
+      createDt: formatDateTimeLabel(toDummyDateTime(-1, 11)),
+      publishScheduledDt: secondDt,
+      publishedYn: 'N',
+      scheduleStatus: 'upcoming',
+      scheduleLabel: formatDateTimeLabel(secondDt),
+      isDummy: true,
+    },
+    {
+      contentId: 'dummy-3',
+      mode: 'TEXT',
+      displayTitle: '새로운 기준의 선케어, 쿨링핏 런칭',
+      metaBadges: [],
+      channelNm: '링크드인',
+      progressKey: 'in-progress',
+      progressLabel: '진행 중',
+      createUserNm: '이지현',
+      createDt: formatDateTimeLabel(toDummyDateTime(-2, 9)),
+      publishScheduledDt: '',
+      publishedYn: 'N',
+      scheduleStatus: 'none',
+      scheduleLabel: '',
+      isDummy: true,
+    },
+  ]
+})
+
+const fillDisplayProgress = (item: HistoryRow, index: number) => {
+  if (item.progressKey === 'done' || item.progressKey === 'scheduled') {
+    return { progressKey: item.progressKey, progressLabel: item.progressLabel }
   }
+  if (index % 2 === 0) return { progressKey: 'in-progress', progressLabel: '진행 중' }
+  return { progressKey: 'review', progressLabel: '검수 중' }
 }
 
-const onSelectHistoryContentType = (value: string | number) => {
-  historyContentTypeFilter.value = String(value)
+const displayedContentRows = computed<DisplayContentRow[]>(() => {
+  const list = allHistoryItems.value
+  if (!list.length) return dummyContentRows.value
+  return list.map((item, index) => ({
+    ...item,
+    isDummy: false,
+    channelNm: item.channelNm || DUMMY_CHANNEL_NMS[index % DUMMY_CHANNEL_NMS.length],
+    createUserNm: item.createUserNm === '-' ? DUMMY_OWNERS[index % DUMMY_OWNERS.length] : item.createUserNm,
+    ...fillDisplayProgress(item, index),
+  }))
+})
+
+const dueDateLabel = computed(() => formatDotDate(currentProject.value?.dueDt ?? '') || formatDotDate(DUMMY_DUE_DT))
+
+const visibilityLabel = computed(() => {
+  const members = currentProjectMembers.value
+  if (!members.length) return DUMMY_VISIBILITY
+  const ownerId = currentProject.value?.createUserId
+  const owner = members.find((member) => member.userId === ownerId) ?? members[0]
+  const others = members.filter((member) => member.userId !== owner.userId).length
+  if (others > 0) return `${owner.userNm}님 외 ${others}명`
+  return `${owner.userNm}님`
+})
+
+const campaignKeyMessage = computed(
+  () => String(currentProject.value?.projectOverview ?? '').trim() || DUMMY_KEY_MESSAGE,
+)
+
+const contentSummaryCards = computed(() => {
+  const list = displayedContentRows.value
+  return CONTENT_SUMMARY_CARDS.map((card) => ({
+    ...card,
+    count: card.key === 'all' ? list.length : list.filter((item) => item.progressKey === card.key).length,
+  }))
+})
+
+const calendarItems = computed<MarketingCalendarEvent[]>(() =>
+  displayedContentRows.value
+    .filter((item) => item.publishScheduledDt)
+    .map((item) => ({
+      contentId: item.contentId,
+      displayTitle: item.displayTitle,
+      channelNm: item.channelNm,
+      publishScheduledDt: item.publishScheduledDt,
+      progressKey: item.progressKey,
+    })),
+)
+
+const isDummyRow = (row: object) => (row as DisplayContentRow).isDummy === true
+
+const onViewCampaignPlan = () => {
+  openToast({ message: '캠페인 기획서는 아직 연결되지 않았습니다.', type: 'warning' })
 }
 
-const onSelectHistoryPeriod = (value: string | number) => {
-  historyPeriodFilter.value = String(value) as typeof historyPeriodFilter.value
+const contentMenuItems: DropdownMenuItemDef[] = [
+  { label: '이름 변경', value: 'rename' },
+  { label: '콘텐츠 삭제', value: 'delete', color: 'danger' },
+]
+
+const onContentTableRowClick = (row: object) => {
+  if (renamingContentId.value) return
+  if (isDummyRow(row)) {
+    openToast({ message: '더미 데이터입니다.', type: 'warning' })
+    return
+  }
+  handleHistoryRowClick((row as DisplayContentRow).contentId)
+}
+
+const onCalendarSelect = (contentId: string) => {
+  if (contentId.startsWith('dummy-')) {
+    openToast({ message: '더미 데이터입니다.', type: 'warning' })
+    return
+  }
+  handleHistoryRowClick(contentId)
+}
+
+const onContentMenuSelect = (row: object, value: string) => {
+  if (isDummyRow(row)) {
+    openToast({ message: '더미 데이터입니다.', type: 'warning' })
+    return
+  }
+  const item = row as DisplayContentRow
+  if (value === 'rename') {
+    startRename(item)
+    return
+  }
+  if (value === 'delete') void handleDeleteHistory(item.contentId)
+}
+
+// ── 콘텐츠 이름 변경 (행 안 인라인) ──────────────────────────────────
+const renameInputRef = ref<{ $el?: HTMLElement } | null>(null)
+const renamingContentId = ref('')
+const renamingTitle = ref('')
+const renamingOriginalTitle = ref('')
+const isSavingRename = ref(false)
+
+const focusRenameInput = async () => {
+  await nextTick()
+  const el = renameInputRef.value?.$el?.querySelector('input') as HTMLInputElement | null
+  el?.focus()
+  el?.select()
+}
+
+const startRename = (item: { contentId: string; displayTitle: string }) => {
+  renamingContentId.value = item.contentId
+  renamingTitle.value = item.displayTitle
+  renamingOriginalTitle.value = item.displayTitle
+  void focusRenameInput()
+}
+
+const onCancelRename = () => {
+  renamingContentId.value = ''
+  renamingTitle.value = ''
+  renamingOriginalTitle.value = ''
+}
+
+const onSaveRename = async () => {
+  const title = renamingTitle.value.trim()
+  if (!title) {
+    openToast({ message: '콘텐츠 이름을 입력해 주세요.', type: 'warning' })
+    await focusRenameInput()
+    return
+  }
+  const contentId = renamingContentId.value
+  if (!contentId || isSavingRename.value) return
+  if (title === renamingOriginalTitle.value.trim()) {
+    onCancelRename()
+    return
+  }
+  isSavingRename.value = true
+  try {
+    const saved = await handleSaveHistoryEdit(contentId, {
+      title,
+      originalTitle: renamingOriginalTitle.value,
+    })
+    if (saved) onCancelRename()
+  } finally {
+    isSavingRename.value = false
+  }
 }
 
 const hasDisplayResult = computed(() => {

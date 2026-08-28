@@ -1,27 +1,19 @@
 import { useMarketingApi } from '~/composables/marketing/useMarketingApi'
 import { useMarketingPageState } from '~/composables/marketing/useMarketingPageState'
 import { useMarketingProjectFilesStore } from '~/composables/marketing/useMarketingProjectFilesStore'
-import {
-  useMarketingHistoryStore,
-  resetHistorySession,
-  CONTENT_TYPE_FILTER_CHIPS,
-  MODE_FILTER_CHIPS,
-  HISTORY_PERIOD_OPTIONS,
-  resolveMarketingOutputModeLabel,
-} from '~/composables/marketing/useMarketingHistoryStore'
+import { useMarketingHistoryStore, resetHistorySession } from '~/composables/marketing/useMarketingHistoryStore'
 import {
   useMarketingGenerationStore,
   closeMarketingStream,
   clearPending,
 } from '~/composables/marketing/useMarketingGenerationStore'
-import type { MarketingProject } from '~/types/marketing'
-
-export { CONTENT_TYPE_FILTER_CHIPS, MODE_FILTER_CHIPS, HISTORY_PERIOD_OPTIONS, resolveMarketingOutputModeLabel }
+import type { MarketingProject, MarketingProjectMember } from '~/types/marketing'
 
 const { fetchSelectMarketingProject, fetchUpdateMarketingContentTitle } = useMarketingApi()
 
 // ===== 상태 (프로젝트 메타) =====
 const currentProject = ref<MarketingProject | null>(null)
+const currentProjectMembers = ref<MarketingProjectMember[]>([])
 
 export const useMarketingStore = () => {
   const route = useRoute()
@@ -37,16 +29,10 @@ export const useMarketingStore = () => {
   } = useMarketingProjectFilesStore()
   const {
     historyList,
-    historySearchKeyword,
-    historyContentTypeFilter,
-    historyModeFilter,
-    historyPeriodFilter,
     allHistoryItems,
     dueSoonHistoryItems,
-    hasActiveHistoryFilter,
     handleSelectHistoryList,
     handleDeleteHistory,
-    handleUpdateSchedule,
     handleTogglePublished,
   } = useMarketingHistoryStore()
   const {
@@ -82,6 +68,7 @@ export const useMarketingStore = () => {
     currentContent.value = null
     isLoadingContent.value = false
     currentProject.value = null
+    currentProjectMembers.value = []
     projectFiles.value = []
     pagePhase.value = 'list'
     const agentId = String(route.query.agentId ?? selectedAgent.value?.agentId ?? '').trim()
@@ -100,44 +87,28 @@ export const useMarketingStore = () => {
     void handleOpenHistory(contentId)
   }
 
-  /** 제작 내역 이름·발행 예정일 일괄 저장 — 변경된 항목만 API 호출 */
+  /** 콘텐츠 이름 저장 — 변경이 없으면 API를 호출하지 않는다 */
   const handleSaveHistoryEdit = async (
     contentId: string,
     payload: {
       title: string
-      publishScheduledDt: string | null
       originalTitle: string
-      originalPublishScheduledDt: string
     },
   ) => {
     const title = payload.title.trim()
     if (!title) return false
-
-    const titleChanged = title !== payload.originalTitle.trim()
-    const nextSchedule = payload.publishScheduledDt?.trim() || null
-    const originalSchedule = payload.originalPublishScheduledDt.trim() || null
-    const scheduleChanged = nextSchedule !== originalSchedule
-    if (!titleChanged && !scheduleChanged) return true
+    if (title === payload.originalTitle.trim()) return true
 
     try {
-      if (titleChanged) {
-        const response = await fetchUpdateMarketingContentTitle(contentId, title)
-        if (!response.successYn) throw new Error(response.returnMsg)
-        const item = historyList.value.find((history) => history.contentId === contentId)
-        if (item) item.title = title
-        if (currentContent.value?.contentId === contentId) currentContent.value.title = title
-      }
-      if (scheduleChanged) {
-        const saved = await handleUpdateSchedule(contentId, nextSchedule)
-        if (!saved) {
-          openToast({ message: '발행 예정일 저장에 실패했습니다.', type: 'error' })
-          return false
-        }
-      }
-      openToast({ message: '제작 내역을 저장했습니다.' })
+      const response = await fetchUpdateMarketingContentTitle(contentId, title)
+      if (!response.successYn) throw new Error(response.returnMsg)
+      const item = historyList.value.find((history) => history.contentId === contentId)
+      if (item) item.title = title
+      if (currentContent.value?.contentId === contentId) currentContent.value.title = title
+      openToast({ message: '이름을 변경했습니다.' })
       return true
     } catch {
-      openToast({ message: '제작 내역 저장에 실패했습니다.', type: 'error' })
+      openToast({ message: '이름 변경에 실패했습니다.', type: 'error' })
       return false
     }
   }
@@ -154,6 +125,7 @@ export const useMarketingStore = () => {
       const projectRes = await fetchSelectMarketingProject(projectId)
       if (projectRes.successYn) {
         currentProject.value = projectRes.data
+        currentProjectMembers.value = projectRes.members ?? []
       }
       if (!currentProject.value) {
         openToast({ message: '마케팅 프로젝트를 찾을 수 없습니다.', type: 'error' })
@@ -182,23 +154,15 @@ export const useMarketingStore = () => {
   }
 
   return {
-    CONTENT_TYPE_FILTER_CHIPS,
-    MODE_FILTER_CHIPS,
-    resolveMarketingOutputModeLabel,
-    HISTORY_PERIOD_OPTIONS,
     pagePhase,
     selectedAgent,
     config,
     themeColorHex,
     currentProject,
+    currentProjectMembers,
     projectFiles,
-    historySearchKeyword,
-    historyContentTypeFilter,
-    historyModeFilter,
-    historyPeriodFilter,
     allHistoryItems,
     dueSoonHistoryItems,
-    hasActiveHistoryFilter,
     handleTogglePublished,
     handleSaveHistoryEdit,
     currentContent,
