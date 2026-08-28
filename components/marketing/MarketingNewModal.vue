@@ -199,14 +199,6 @@ const removeMember = (userId: string) => {
   selectedMembers.value = selectedMembers.value.filter((m) => m.userId !== userId)
 }
 
-/** PT000002 — 작성중→검수중은 마감일이 지나면 서버 스케줄러가 자동 전환, 완료/보류는 여기서 직접 지정 */
-const STATUS_OPTIONS = [
-  { value: '001', label: '작성중' },
-  { value: '002', label: '검수중' },
-  { value: '003', label: '완료' },
-  { value: '004', label: '보류' },
-]
-
 const defaultForm = () => ({
   projectNm: '',
   orgNm: '',
