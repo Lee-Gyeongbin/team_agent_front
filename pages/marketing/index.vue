@@ -21,124 +21,213 @@
 
     <template v-else>
       <div class="marketing-list-header">
-        <h1 class="marketing-list-title">마케팅 프로젝트</h1>
-        <UiButton
-          variant="primary"
-          size="md"
-          @click="openCreateModal"
+        <div class="marketing-list-header__copy">
+          <h1 class="marketing-list-title">마케팅 에이전트</h1>
+          <p class="marketing-list-desc">진행 중인 캠페인의 전체 현황을 한눈에 확인하고 관리하세요.</p>
+        </div>
+        <div class="marketing-list-header__actions">
+          <UiButton
+            variant="outline"
+            size="md"
+          >
+            <template #icon-left>
+              <i class="icon-user size-16" />
+            </template>
+            계정 관리
+          </UiButton>
+          <UiButton
+            variant="outline"
+            size="md"
+          >
+            <template #icon-left>
+              <i class="icon-calendar size-16" />
+            </template>
+            캠페인 캘린더
+          </UiButton>
+          <UiButton
+            variant="primary"
+            size="md"
+            @click="openCreateModal"
+          >
+            <template #icon-left>
+              <i class="icon-plus size-16" />
+            </template>
+            캠페인 생성
+          </UiButton>
+        </div>
+      </div>
+
+      <div class="marketing-summary-row">
+        <div
+          v-for="card in summaryCards"
+          :key="card.key"
+          class="marketing-summary-card"
         >
-          <template #icon-left>
-            <i class="icon-plus size-16" />
-          </template>
-          새 프로젝트
-        </UiButton>
+          <div class="marketing-summary-card__head">
+            <i :class="[card.icon, 'size-16']" />
+            <span>{{ card.label }}</span>
+          </div>
+          <strong
+            v-if="isLoadingList"
+            class="marketing-summary-card__value"
+          >
+            <UiSkeleton
+              height="28px"
+              width="28px"
+            />
+          </strong>
+          <strong
+            v-else
+            class="marketing-summary-card__value"
+          >
+            {{ card.count }}
+          </strong>
+        </div>
       </div>
 
       <div class="marketing-filter-bar">
-        <div class="marketing-filter-chips">
-          <button
-            v-for="chip in FILTER_CHIPS"
-            :key="chip.value || 'all-status'"
-            type="button"
-            :class="['marketing-filter-chip', { 'is-active': filterStatusCd === chip.value }]"
-            @click="onFilterChange(chip.value)"
-          >
-            {{ chip.label }}
-          </button>
+        <div class="marketing-filter-bar__left">
+          <div class="marketing-filter-search">
+            <UiInput
+              v-model="filterKeyword"
+              size="sm"
+              placeholder="캠페인명 검색"
+            >
+              <template #icon-left>
+                <i class="icon-search size-16" />
+              </template>
+            </UiInput>
+          </div>
+          <UiSelect
+            :model-value="filterStatusCd"
+            class="marketing-filter-select"
+            :options="statusSelectOptions"
+            placeholder="상태 전체"
+            size="sm"
+            @update:model-value="onSelectStatus"
+          />
+          <div class="marketing-filter-dates">
+            <UiDatePicker
+              v-model="filterStartDate"
+              size="sm"
+              :max-value="filterEndDate"
+            />
+            <span class="marketing-filter-dates__sep">~</span>
+            <UiDatePicker
+              v-model="filterEndDate"
+              size="sm"
+              :min-value="filterStartDate"
+            />
+          </div>
         </div>
-        <span class="marketing-filter-divider" />
-        <UiSelect
-          :model-value="filterPeriod"
-          class="marketing-filter-select"
-          :options="periodSelectOptions"
-          placeholder="전체 기간"
+        <UiButton
+          class="marketing-filter-reset"
+          variant="outline"
           size="sm"
-          @update:model-value="onSelectPeriod"
-        />
-        <UiSelect
-          :model-value="filterSort"
-          class="marketing-filter-select"
-          :options="sortSelectOptions"
-          placeholder="최신순"
-          size="sm"
-          @update:model-value="onSelectSort"
-        />
+          :disabled="!hasActiveListFilter"
+          @click="onResetFilters"
+        >
+          <template #icon-left>
+            <i class="icon-refresh size-16" />
+          </template>
+          필터 초기화
+        </UiButton>
       </div>
 
       <div
         v-if="isLoadingList"
-        class="marketing-card-grid"
+        class="marketing-list-table-wrap"
       >
         <div
           v-for="n in 6"
           :key="n"
-          class="marketing-card is-skeleton"
+          class="marketing-list-skeleton-row"
         >
           <UiSkeleton
             height="16px"
-            width="50%"
-            style="margin-bottom: 8px"
+            width="36%"
           />
           <UiSkeleton
-            height="20px"
-            width="80%"
-            style="margin-bottom: 6px"
+            height="16px"
+            width="12%"
           />
           <UiSkeleton
-            height="14px"
-            width="60%"
+            height="16px"
+            width="10%"
+          />
+          <UiSkeleton
+            height="16px"
+            width="8%"
+          />
+          <UiSkeleton
+            height="16px"
+            width="12%"
+          />
+          <UiSkeleton
+            height="16px"
+            width="12%"
           />
         </div>
       </div>
 
       <div
         v-else-if="displayedProjects.length > 0"
-        class="marketing-card-grid"
+        class="marketing-list-table-wrap"
       >
-        <div
-          v-for="project in displayedProjects"
-          :key="project.marketingProjectId"
-          class="marketing-card"
-          @click="onClickCard(project)"
+        <UiTable
+          :columns="tableColumns"
+          :data="displayedProjects"
+          clickable
+          empty-text="캠페인이 없습니다."
+          @row-click="onTableRowClick"
         >
-          <div class="marketing-card-top">
-            <span :class="['marketing-status-badge', `status-${project.statusCd}`]">{{ project.statusNm }}</span>
+          <template #cell-projectNm="{ row }">
+            <div class="marketing-list-campaign">
+              <strong>{{ row.projectNm }}</strong>
+              <span v-if="row.orgNm">{{ row.orgNm }}</span>
+            </div>
+          </template>
+          <template #cell-statusNm="{ row }">
+            <span :class="['marketing-status-badge', `status-${row.statusCd}`]">{{ row.statusNm }}</span>
+          </template>
+          <template #cell-createUserNm="{ value }">
+            {{ formatCellText(value) }}
+          </template>
+          <template #cell-contentCnt="{ value }">
+            {{ formatCellText(value) }}
+          </template>
+          <template #cell-dueDt="{ value }">
+            {{ formatDotDate(value) }}
+          </template>
+          <template #cell-modifyDt="{ value }">
+            {{ formatDotDate(value) }}
+          </template>
+          <template #cell-actions="{ row }">
             <div
-              class="marketing-card-actions"
+              class="marketing-list-row-actions"
               @click.stop
             >
-              <UiButton
-                variant="ghost"
-                size="sm"
-                icon-only
-                title="수정"
-                @click="openEditModal(project)"
+              <UiDropdownMenu
+                :items="projectMenuItems"
+                align="end"
+                @select="(value) => onProjectMenuSelect(row, value)"
               >
-                <template #icon-left>
-                  <i class="icon-edit size-16" />
+                <template #trigger>
+                  <UiButton
+                    variant="ghost"
+                    size="sm"
+                    icon-only
+                    title="더보기"
+                  >
+                    <template #icon-left>
+                      <i class="icon-more-vertical size-16" />
+                    </template>
+                  </UiButton>
                 </template>
-              </UiButton>
-              <UiButton
-                variant="ghost"
-                size="sm"
-                icon-only
-                title="삭제"
-                @click="onDeleteProject(project)"
-              >
-                <template #icon-left>
-                  <i class="icon-trashcan size-16" />
-                </template>
-              </UiButton>
+              </UiDropdownMenu>
             </div>
-          </div>
-          <div class="marketing-card-title">{{ project.projectNm }}</div>
-          <div class="marketing-card-meta">
-            <template v-if="project.orgNm">{{ project.orgNm }}</template>
-            <template v-if="project.orgNm && (project.dueDt || project.modifyDt)"> · </template>
-            <template v-if="project.dueDt">마감일 {{ project.dueDt }}</template>
-            <template v-else-if="project.modifyDt">{{ project.modifyDt }}</template>
-          </div>
-        </div>
+          </template>
+        </UiTable>
       </div>
 
       <UiEmpty
@@ -151,14 +240,14 @@
       <UiEmpty
         v-else
         icon="icon-document"
-        title="마케팅 프로젝트가 없습니다."
+        title="캠페인이 없습니다."
       >
         <UiButton
           variant="primary"
           size="md"
           @click="openCreateModal"
         >
-          새 프로젝트 시작
+          캠페인 생성
         </UiButton>
       </UiEmpty>
     </template>
@@ -167,6 +256,7 @@
       :is-open="isProjectModalOpen"
       :is-saving="isSaving"
       :project="editingProject"
+      :members="editingMembers"
       @close="closeProjectModal"
       @submit="onSubmitProject"
     />
@@ -174,20 +264,47 @@
 </template>
 
 <script setup lang="ts">
-import type { MarketingProject } from '~/types/marketing'
+import { toCalendarDateTime, type DateValue } from '@internationalized/date'
+import type { TableColumn } from '~/types/table'
+import type { MarketingProject, MarketingProjectMember } from '~/types/marketing'
 import { useMarketingProjectsStore } from '~/composables/marketing/useMarketingProjectsStore'
+import { useMarketingApi } from '~/composables/marketing/useMarketingApi'
+import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
 
 definePageMeta({ layout: 'default' })
 
 const router = useRouter()
 const route = useRoute()
 
-const FILTER_CHIPS = [
-  { value: '', label: '전체' },
+const STATUS_FILTER_OPTIONS = [
+  { value: '', label: '상태 전체' },
   { value: '001', label: '작성중' },
   { value: '002', label: '검수중' },
   { value: '003', label: '완료' },
   { value: '004', label: '보류' },
+]
+
+const SUMMARY_CARDS = [
+  { key: 'all', label: '전체 캠페인', icon: 'icon-grid', statusCd: '' },
+  { key: '001', label: '작성중', icon: 'icon-play', statusCd: '001' },
+  { key: '002', label: '검수중', icon: 'icon-refresh', statusCd: '002' },
+  { key: '003', label: '완료', icon: 'icon-check', statusCd: '003' },
+  { key: '004', label: '보류', icon: 'icon-warning-triangle', statusCd: '004' },
+] as const
+
+const tableColumns: TableColumn[] = [
+  { key: 'projectNm', label: '캠페인명', align: 'left', headerAlign: 'left' },
+  { key: 'statusNm', label: '진행 상태', width: '140px' },
+  { key: 'createUserNm', label: '담당자', width: '112px' },
+  { key: 'contentCnt', label: '콘텐츠', width: '88px' },
+  { key: 'dueDt', label: '마감일', width: '128px' },
+  { key: 'modifyDt', label: '최종 업데이트', width: '140px' },
+  { key: 'actions', label: '', width: '56px' },
+]
+
+const projectMenuItems: DropdownMenuItemDef[] = [
+  { label: '수정', value: 'edit', icon: 'icon-edit' },
+  { label: '삭제', value: 'delete', icon: 'icon-trashcan', color: 'danger' },
 ]
 
 const { selectedAgent, config, handleSelectAgents } = useMarketingStore()
@@ -198,47 +315,35 @@ const {
   handleSaveMarketingProject,
   handleDeleteMarketingProject,
 } = useMarketingProjectsStore()
-
-const SORT_OPTIONS = [
-  { value: 'CREATE_DT_DESC', label: '최신순' },
-  { value: 'CREATE_DT_ASC', label: '오래된순' },
-  { value: 'DUE_DT_ASC', label: '마감일순' },
-] as const
-
-const PERIOD_OPTIONS = [
-  { value: '', label: '전체 기간' },
-  { value: '3', label: '최근 3일' },
-  { value: '7', label: '최근 7일' },
-  { value: '30', label: '최근 30일' },
-] as const
-
-type SortValue = (typeof SORT_OPTIONS)[number]['value']
-type PeriodValue = (typeof PERIOD_OPTIONS)[number]['value']
+const { fetchSelectMarketingProject } = useMarketingApi()
 
 const filterStatusCd = ref('')
-const filterSort = ref<SortValue>('CREATE_DT_DESC')
-const filterPeriod = ref<PeriodValue>('')
+const filterKeyword = ref('')
+const filterStartDate = ref<DateValue | undefined>()
+const filterEndDate = ref<DateValue | undefined>()
 const isProjectModalOpen = ref(false)
 const editingProject = ref<MarketingProject | null>(null)
+const editingMembers = ref<MarketingProjectMember[]>([])
 const isSaving = ref(false)
 
-const periodSelectOptions = computed(() => PERIOD_OPTIONS.map((item) => ({ label: item.label, value: item.value })))
-const sortSelectOptions = computed(() => SORT_OPTIONS.map((item) => ({ label: item.label, value: item.value })))
+const statusSelectOptions = computed(() =>
+  STATUS_FILTER_OPTIONS.map((item) => ({ label: item.label, value: item.value })),
+)
 
-const onSelectPeriod = (value: string | number) => {
-  filterPeriod.value = String(value) as PeriodValue
-  onListFilterChange()
-}
+const summaryCards = computed(() => {
+  const list = marketingProjectList.value
+  return SUMMARY_CARDS.map((card) => ({
+    ...card,
+    count: card.statusCd ? list.filter((project) => project.statusCd === card.statusCd).length : list.length,
+  }))
+})
 
-const onSelectSort = (value: string | number) => {
-  filterSort.value = String(value) as SortValue
-  onListFilterChange()
-}
-
-const parseSortValue = (val: SortValue) => {
-  if (val === 'CREATE_DT_ASC') return { sortField: 'CREATE_DT', sortOrder: 'ASC' }
-  if (val === 'DUE_DT_ASC') return { sortField: 'DUE_DT', sortOrder: 'ASC' }
-  return { sortField: 'CREATE_DT', sortOrder: 'DESC' }
+const formatDateValueToYyyyMmDd = (value: DateValue | undefined): string => {
+  if (!value) return ''
+  const { year, month, day } = toCalendarDateTime(value)
+  const monthText = String(month).padStart(2, '0')
+  const dayText = String(day).padStart(2, '0')
+  return `${year}-${monthText}-${dayText}`
 }
 
 const toTime = (value: string) => {
@@ -246,44 +351,69 @@ const toTime = (value: string) => {
   return Number.isNaN(time) ? 0 : time
 }
 
-/** 기간 필터 하한 (로컬 자정 기준). 없으면 null = 전체 */
-const periodStartTime = (periodDays: PeriodValue): number | null => {
-  if (!periodDays) return null
-  const days = Number(periodDays)
-  if (!days) return null
-  const start = new Date()
-  start.setHours(0, 0, 0, 0)
-  start.setDate(start.getDate() - (days - 1))
-  return start.getTime()
+const dateValueToStartTime = (value: DateValue | undefined): number | null => {
+  const dateText = formatDateValueToYyyyMmDd(value)
+  if (!dateText) return null
+  const time = new Date(`${dateText}T00:00:00`).getTime()
+  return Number.isNaN(time) ? null : time
 }
 
-const listFilter = () => {
-  const { sortField, sortOrder } = parseSortValue(filterSort.value)
-  // 기간 필터는 selectMarketingProjectList.do가 지원하지 않아 서버로 보내지 않는다
-  // (실제 기간 필터링은 아래 displayedProjects에서 periodStartTime()으로 클라이언트단에서 처리)
-  return {
-    statusCd: filterStatusCd.value || undefined,
-    sortField,
-    sortOrder,
-  }
+const dateValueToEndTime = (value: DateValue | undefined): number | null => {
+  const dateText = formatDateValueToYyyyMmDd(value)
+  if (!dateText) return null
+  const time = new Date(`${dateText}T23:59:59.999`).getTime()
+  return Number.isNaN(time) ? null : time
 }
 
-const hasActiveListFilter = computed(() => !!filterStatusCd.value || !!filterPeriod.value)
+/** YYYY-MM-DD → YYYY.MM.DD. 값 없으면 '-' */
+const formatDotDate = (value: unknown) => {
+  const text = String(value ?? '').trim()
+  if (!text) return '-'
+  const matched = text.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (!matched) return text
+  return `${matched[1]}.${matched[2]}.${matched[3]}`
+}
 
-/** 정렬은 selectMarketingProjectList.do가 sortField/sortOrder로 이미 처리해서 내려준다 — 기간 필터만 클라이언트에서 거른다 */
-const displayedProjects = computed(() => {
-  const startAt = periodStartTime(filterPeriod.value)
-  if (startAt == null) return marketingProjectList.value
-  return marketingProjectList.value.filter((project) => toTime(project.createDt) >= startAt)
+/** 목록 셀 공백은 날짜 열과 같이 '-' */
+const formatCellText = (value: unknown) => {
+  const text = String(value ?? '').trim()
+  return text || '-'
+}
+
+const listFilter = () => ({
+  sortField: 'CREATE_DT',
+  sortOrder: 'DESC',
 })
 
-const onListFilterChange = () => {
-  void handleSelectMarketingProjectList(listFilter())
+const hasActiveListFilter = computed(
+  () => !!filterStatusCd.value || !!filterKeyword.value.trim() || !!filterStartDate.value || !!filterEndDate.value,
+)
+
+/** 목록 API는 전체·최신순만 받고, 검색·상태·기간은 화면에서 거른다 */
+const displayedProjects = computed(() => {
+  const keyword = filterKeyword.value.trim().toLowerCase()
+  const startAt = dateValueToStartTime(filterStartDate.value)
+  const endAt = dateValueToEndTime(filterEndDate.value)
+
+  return marketingProjectList.value.filter((project) => {
+    if (filterStatusCd.value && project.statusCd !== filterStatusCd.value) return false
+    if (keyword && !project.projectNm.toLowerCase().includes(keyword)) return false
+    const createdAt = toTime(project.createDt)
+    if (startAt != null && createdAt < startAt) return false
+    if (endAt != null && createdAt > endAt) return false
+    return true
+  })
+})
+
+const onSelectStatus = (value: string | number) => {
+  filterStatusCd.value = String(value)
 }
 
-const onFilterChange = (statusCd: string) => {
-  filterStatusCd.value = statusCd
-  onListFilterChange()
+const onResetFilters = () => {
+  filterKeyword.value = ''
+  filterStatusCd.value = ''
+  filterStartDate.value = undefined
+  filterEndDate.value = undefined
 }
 
 const onClickCard = (project: MarketingProject) => {
@@ -294,19 +424,46 @@ const onClickCard = (project: MarketingProject) => {
   })
 }
 
+const onTableRowClick = (row: object) => {
+  onClickCard(row as unknown as MarketingProject)
+}
+
+const onProjectMenuSelect = (row: object, value: string) => {
+  const project = row as unknown as MarketingProject
+  if (value === 'edit') {
+    void openEditModal(project)
+    return
+  }
+  if (value === 'delete') void onDeleteProject(project)
+}
+
 const openCreateModal = () => {
   editingProject.value = null
+  editingMembers.value = []
   isProjectModalOpen.value = true
 }
 
-const openEditModal = (project: MarketingProject) => {
-  editingProject.value = project
+/** 수정 모달은 공개범위(멤버) 목록이 필요해 목록 행이 아니라 상세를 다시 조회해서 연다 */
+const openEditModal = async (project: MarketingProject) => {
+  try {
+    const res = await fetchSelectMarketingProject(project.marketingProjectId)
+    if (!res.successYn || !res.data) {
+      openToast({ message: res.returnMsg || '프로젝트 정보를 불러오지 못했습니다.', type: 'error' })
+      return
+    }
+    editingProject.value = res.data
+    editingMembers.value = res.members ?? []
+  } catch {
+    openToast({ message: '프로젝트 정보를 불러오지 못했습니다.', type: 'error' })
+    return
+  }
   isProjectModalOpen.value = true
 }
 
 const closeProjectModal = () => {
   isProjectModalOpen.value = false
   editingProject.value = null
+  editingMembers.value = []
 }
 
 const onSubmitProject = async (form: {
@@ -316,6 +473,7 @@ const onSubmitProject = async (form: {
   summary: string
   dueDt: string
   statusCd: string
+  memberUserIds: string[]
 }) => {
   isSaving.value = true
   try {

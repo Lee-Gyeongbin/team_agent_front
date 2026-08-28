@@ -2923,25 +2923,192 @@ $marketing-page-max-width: 1200px;
   box-sizing: border-box;
 }
 
+.marketing-list-page {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
 .marketing-list-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: $spacing-md;
+  gap: $spacing-md;
+
+  &__copy {
+    min-width: 0;
+  }
+
+  &__actions {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
 }
 
 .marketing-list-title {
-  @include typo($body-xlarge-bold);
-  color: $color-text-heading;
   margin: 0;
+  @include typo($body-2xlarge-bold, $color-text-heading);
+}
+
+.marketing-list-desc {
+  margin: 6px 0 0;
+  @include typo($body-medium, $color-text-muted);
+}
+
+.marketing-summary-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: $spacing-sm;
+}
+
+.marketing-summary-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid $color-border;
+  border-radius: 12px;
+  background: #fff;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: $color-text-muted;
+
+    i {
+      color: currentColor;
+    }
+
+    span {
+      @include typo($body-small, $color-text-muted);
+    }
+  }
+
+  &__value {
+    @include typo($body-2xlarge-bold, $color-text-heading);
+    line-height: 1.2;
+  }
 }
 
 .marketing-filter-bar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   flex-wrap: wrap;
   gap: $spacing-sm;
-  margin-bottom: $spacing-md;
+
+  &__left {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: $spacing-sm;
+    min-width: 0;
+  }
+}
+
+.marketing-filter-search {
+  flex: 0 0 180px;
+  width: 180px;
+
+  .ui-input-outer {
+    flex: none;
+    width: 100%;
+  }
+}
+
+.marketing-filter-dates {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  flex-shrink: 0;
+
+  &__sep {
+    flex-shrink: 0;
+    @include typo($body-medium, $color-text-muted);
+  }
+
+  .ui-datepicker-wrap {
+    width: 148px;
+    flex-shrink: 0;
+  }
+}
+
+.marketing-filter-reset {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.marketing-list-page .marketing-list-table-wrap {
+  overflow: hidden;
+  border: 1px solid $color-border;
+  border-radius: 12px;
+  background: #fff;
+
+  .ui-table-wrap {
+    border-radius: 0;
+  }
+
+  .ui-table thead th {
+    height: 44px;
+    padding: 0 16px;
+    border-right: 0;
+    background: $color-surface;
+  }
+
+  .ui-table tbody td {
+    height: 64px;
+    padding: 10px 16px;
+    border-right: 0;
+  }
+
+  .ui-table tbody tr.is-clickable td:first-child {
+    cursor: pointer;
+  }
+}
+
+.marketing-list-skeleton-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 0.8fr 0.6fr 1fr 1fr;
+  gap: 16px;
+  align-items: center;
+  padding: 18px 16px;
+  border-bottom: 1px solid $color-border-light;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.marketing-list-campaign {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+
+  strong {
+    overflow: hidden;
+    @include typo($body-medium-bold, $color-text-heading);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  span {
+    overflow: hidden;
+    @include typo($body-xsmall, $color-text-muted);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.marketing-list-row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .marketing-filter-chips {
@@ -2982,61 +3149,6 @@ $marketing-page-max-width: 1200px;
     border-color: var(--color-primary);
     color: var(--color-primary);
   }
-}
-
-.marketing-card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: $spacing-sm + 2;
-}
-
-.marketing-card {
-  background: #fff;
-  border: 1px solid $color-border;
-  border-radius: $border-radius-lg;
-  padding: $spacing-md;
-  cursor: pointer;
-  transition: border-color $transition-base, box-shadow $transition-base;
-
-  &:hover {
-    border-color: var(--color-primary);
-    box-shadow: $shadow-md;
-  }
-
-  &.is-skeleton {
-    cursor: default;
-    &:hover {
-      border-color: $color-border;
-      box-shadow: none;
-    }
-  }
-}
-
-.marketing-card-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: $spacing-sm;
-}
-
-.marketing-card-actions {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
-}
-
-.marketing-card-title {
-  @include typo($body-small-bold);
-  color: $color-text-heading;
-  margin: $spacing-sm 0 4px;
-  line-height: 1.4;
-}
-
-.marketing-card-meta {
-  @include typo($body-xsmall);
-  color: $color-text-muted;
-  margin-bottom: 0;
 }
 
 .marketing-status-badge {
@@ -3097,6 +3209,84 @@ $marketing-page-max-width: 1200px;
 
 .marketing-req {
   color: $color-error;
+}
+
+// 프로젝트 생성/수정 모달 — 공개범위(멤버) 선택
+.marketing-form-label-group {
+  display: flex;
+  flex: 1;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+
+  .marketing-form-label {
+    flex-shrink: 0;
+  }
+}
+
+.marketing-member-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.marketing-member-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px 4px 10px;
+  border-radius: 999px;
+  border: 1px solid $color-border;
+  background: #fff;
+  @include typo($body-xsmall);
+  color: $color-text-dark;
+
+  &.is-owner {
+    padding-right: 10px;
+    background: var(--color-primary-bg);
+    border-color: var(--color-primary-bg);
+    color: var(--color-primary-dark);
+
+    em {
+      margin-left: 2px;
+      font-style: normal;
+      opacity: 0.7;
+    }
+  }
+
+  &.is-add {
+    flex-shrink: 0;
+    padding-right: 10px;
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+    cursor: pointer;
+
+    &:hover {
+      background: var(--color-primary-bg);
+    }
+  }
+}
+
+.btn-marketing-member-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  opacity: 0.5;
+  transition: opacity $transition-fast, background $transition-fast;
+
+  &:hover {
+    opacity: 1;
+    background: $color-background;
+  }
+}
+
+.marketing-member-empty,
+.marketing-form-hint {
+  @include typo($body-xsmall);
+  color: $color-text-muted;
 }
 
 .marketing-detail-page {
