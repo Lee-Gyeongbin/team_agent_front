@@ -1,7 +1,7 @@
 <template>
   <div
     ref="layoutRef"
-    class="pt-stepD-layout"
+    :class="['pt-stepD-layout', { 'is-fullscreen': isFullscreen }]"
     :style="layoutStyle"
   >
     <!-- 좌측: 목차 트리 (대목차=헤더/클릭불가, 소목차=클릭가능) -->
@@ -130,17 +130,35 @@
               <template v-if="currentSlides.length"> · {{ currentSlides.length }}장</template>
             </div>
           </div>
-          <UiButton
-            variant="outline"
-            size="sm"
-            :loading="isGenerating"
-            @click="onGenerate"
-          >
-            <template #icon-left>
-              <i class="icon-refresh size-14" />
-            </template>
-            {{ currentSlides.length ? '재생성' : '슬라이드 생성' }}
-          </UiButton>
+          <div class="pt-gen-head-actions">
+            <UiButton
+              variant="outline"
+              size="sm"
+              :loading="isGenerating"
+              @click="onGenerate"
+            >
+              <template #icon-left>
+                <i class="icon-refresh size-14" />
+              </template>
+              {{ currentSlides.length ? '재생성' : '슬라이드 생성' }}
+            </UiButton>
+            <UiButton
+              variant="ghost"
+              size="sm"
+              icon-only
+              class="pt-stepD-fullscreen"
+              :title="isFullscreen ? '전체화면 해제 (Esc)' : '전체화면으로 보기'"
+              :aria-label="isFullscreen ? '전체화면 해제' : '전체화면으로 보기'"
+              @click="toggleFullscreen"
+            >
+              <template #icon-left>
+                <UiIcon
+                  :name="isFullscreen ? 'minimize-2' : 'maximize-2'"
+                  size="16"
+                />
+              </template>
+            </UiButton>
+          </div>
         </div>
 
         <!-- 생성 중 진행 표시 -->
@@ -486,6 +504,7 @@ import { openToast } from '~/composables/useToast'
 import { openConfirm } from '~/composables/useDialog'
 import { openLoading, updateLoadingText, closeLoading } from '~/composables/useLoading'
 import SlideComponentRenderer from '~/components/proposal/SlideComponentRenderer.vue'
+import { UiIcon } from '@leechanyong/ispark-ui'
 
 const RENDER_IMAGE_STEP_MESSAGES: Record<string, string> = {
   load: '슬라이드 목록을 불러오는 중...',
@@ -640,6 +659,28 @@ const isImageModalOpen = ref(false)
 const imageModalStatus = ref<'loading' | 'ready' | 'error'>('loading')
 const imageModalUrl = ref('')
 const imageModalError = ref('')
+
+// ===== 전체화면 =====
+/**
+ * 3열 레이아웃을 뷰포트로 확대 — 사이드바·페이지 헤드·스텝퍼가 쓰던 공간을 회수한다.
+ * 앱 헤더는 덮지 않는다(z-index를 모달 위로 올려야 해서 모달이 뒤로 숨는다).
+ */
+const isFullscreen = ref(false)
+
+const toggleFullscreen = () => {
+  isFullscreen.value = !isFullscreen.value
+}
+
+const onFullscreenEsc = (e: KeyboardEvent) => {
+  // 슬라이드 수 인라인 편집·모달 열림 중 Esc는 그쪽이 먼저여야 하므로 무시
+  if (e.key !== 'Escape' || !isFullscreen.value) return
+  if (editingTocId.value) return
+  if (isImageModalOpen.value || isPromptModalOpen.value) return
+  isFullscreen.value = false
+}
+
+onMounted(() => window.addEventListener('keydown', onFullscreenEsc))
+onBeforeUnmount(() => window.removeEventListener('keydown', onFullscreenEsc))
 
 // 인포그래픽 이미지 생성/재생성
 const isRegeneratingImage = ref(false)

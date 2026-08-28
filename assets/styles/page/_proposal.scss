@@ -2405,6 +2405,21 @@
   min-height: 0;
   overflow: hidden;
 
+  /* 전체화면 — 요구사항/전략/세부목차와 동일 (앱 헤더 아래, 모달·드롭다운 아래 z-index) */
+  &.is-fullscreen {
+    position: fixed;
+    top: $header-height;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 10;
+    margin: 0;
+    padding: $spacing-md;
+    gap: $spacing-xs;
+    background: $color-background;
+    box-sizing: border-box;
+  }
+
   @include mobile {
     grid-template-columns: 1fr;
     height: auto;
@@ -2733,6 +2748,14 @@ body.is-resizing {
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: $spacing-sm;
+  flex-shrink: 0;
+  gap: $spacing-sm;
+}
+
+.pt-gen-head-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
   flex-shrink: 0;
 }
 
@@ -5843,7 +5866,6 @@ body.is-resizing {
 
 .oc-tree-head,
 .oc-detail-head {
-  height: 58px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -5852,12 +5874,21 @@ body.is-resizing {
   box-sizing: border-box;
 }
 
+.oc-detail-head {
+  height: 58px;
+}
+
 .oc-tree-head {
-  padding: 0 16px;
+  /* 제목 + 진행률 + 전체생성 버튼이 들어가므로 고정 높이 금지 (넘침/삐져나옴 방지) */
+  height: auto;
+  min-height: 58px;
+  padding: 12px 16px;
+  justify-content: flex-start;
+  gap: 4px;
 
   h3 {
     @include typo($body-medium-bold);
-    margin: 0 0 4px;
+    margin: 0;
   }
 }
 
@@ -6041,7 +6072,13 @@ body.is-resizing {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: 8px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+  min-width: 0;
+
+  .ui-button {
+    flex-shrink: 0;
+  }
 }
 
 .oc-batch-status {

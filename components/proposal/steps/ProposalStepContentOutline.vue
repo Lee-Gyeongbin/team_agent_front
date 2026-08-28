@@ -20,26 +20,28 @@
 
         <!-- 전체 생성 버튼 -->
         <div class="oc-batch-row">
-          <button
+          <UiButton
             v-if="!isBatchGenerating"
-            class="oc-btn oc-btn-primary-line oc-btn-sm"
+            variant="primary-line"
+            size="sm"
             :disabled="unGeneratedCount === 0"
             :title="unGeneratedCount === 0 ? '모두 생성됨' : `미생성 ${unGeneratedCount}건 일괄 생성`"
             @click="$emit('generate-all')"
           >
             {{ unGeneratedCount === 0 ? '모두 생성됨' : `전체 생성 (${unGeneratedCount}건)` }}
-          </button>
+          </UiButton>
           <template v-else>
             <span class="oc-batch-status">
               <span class="oc-spinner oc-spinner-sm" />
               생성 중... {{ batchProgress.current }}/{{ batchProgress.total }}
             </span>
-            <button
-              class="oc-btn oc-btn-ghost oc-btn-sm"
+            <UiButton
+              variant="ghost"
+              size="sm"
               @click="$emit('cancel-batch')"
             >
               취소
-            </button>
+            </UiButton>
           </template>
         </div>
 
@@ -125,7 +127,9 @@
                   <span
                     v-else
                     class="oc-status-dot"
-                    :class="batchProcessingTocId === section.tocId ? 'is-processing' : statusDotClass(section.outlineStatusCd)"
+                    :class="
+                      batchProcessingTocId === section.tocId ? 'is-processing' : statusDotClass(section.outlineStatusCd)
+                    "
                   />
                 </div>
 
@@ -135,14 +139,19 @@
                       v-for="leaf in childrenOf(section.tocId)"
                       :key="leaf.tocId"
                       class="oc-leaf"
-                      :class="{ 'is-selected': selectedTocId === leaf.tocId, 'is-processing': batchProcessingTocId === leaf.tocId }"
+                      :class="{
+                        'is-selected': selectedTocId === leaf.tocId,
+                        'is-processing': batchProcessingTocId === leaf.tocId,
+                      }"
                       @click="$emit('select-node', leaf.tocId)"
                     >
                       <i class="icon-document size-13" />
                       <span class="oc-leaf-title">{{ leaf.title }}</span>
                       <span
                         class="oc-status-dot"
-                        :class="batchProcessingTocId === leaf.tocId ? 'is-processing' : statusDotClass(leaf.outlineStatusCd)"
+                        :class="
+                          batchProcessingTocId === leaf.tocId ? 'is-processing' : statusDotClass(leaf.outlineStatusCd)
+                        "
                       />
                     </div>
                   </div>

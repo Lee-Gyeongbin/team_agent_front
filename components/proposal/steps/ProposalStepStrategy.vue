@@ -525,7 +525,8 @@
 
   <ProposalPromptModal
     :is-open="isPromptModalOpen"
-    :stage-cds="['S2A_PROBLEM_TOC', 'S2B_WINTHEME']"
+    :stage-cds="strategyPromptStageCds"
+    :groups="strategyPromptGroups"
     @close="isPromptModalOpen = false"
   />
 
@@ -542,9 +543,9 @@
 import { UiButton, UiIcon, UiBadge, UiTab, UiTextarea, UiTooltip } from '@leechanyong/ispark-ui'
 import { openToast } from '~/composables/useToast'
 import { openConfirm } from '~/composables/useDialog'
-import { openLoading, closeLoading } from '~/composables/useLoading'
+import { openLoading, updateLoadingText, closeLoading } from '~/composables/useLoading'
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
-import type { Stage2Summary, ProblemDefinition, WinTheme } from '~/types/proposal'
+import type { Stage2Summary, ProblemDefinition, WinTheme, PtPromptGroup } from '~/types/proposal'
 import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
 
 const props = defineProps<{
@@ -610,6 +611,44 @@ const strategyTabs = computed(() => [
   { label: 'Win Theme', value: 'wt', count: winThemes.value.length },
 ])
 const isPromptModalOpen = ref(false)
+
+/**
+ * Stage2-A는 근거 매핑 → 문제정의 생성 → 최종 정리 순으로 3개 프롬프트를 쓴다.
+ * 상위 탭은 문제정의/승리주제, 문제정의만 하위 3스텝을 보여준다.
+ */
+const strategyPromptGroups: PtPromptGroup[] = [
+  {
+    key: 'pd',
+    label: '문제정의',
+    description: '문제정의 결과를 생성하기 위해 내부적으로 3단계 프롬프트가 순차 실행됩니다.',
+    steps: [
+      {
+        stageCd: 'ISSUE_REQUIREMENT_MAP',
+        label: '근거 매핑',
+        description: 'RFP 문제와 어떤 요구사항·배경·개선방향을 연결할지 결정합니다.',
+        impact: '수정 시 문제정의의 근거 선택 결과가 달라질 수 있습니다.',
+      },
+      {
+        stageCd: 'ISSUE_PD_GENERATE',
+        label: '문제정의 생성',
+        description: '선택된 근거를 바탕으로 문제·원인·위험·목표·전략을 작성합니다.',
+        impact: '수정 시 문제정의 내용과 표현 방식이 달라집니다.',
+      },
+      {
+        stageCd: 'PROBLEM_FINAL',
+        label: '최종 정리',
+        description: '생성된 문제정의 간 중복·상하위 관계를 판단합니다.',
+        impact: '수정 시 최종 문제 개수와 병합 방식이 달라질 수 있습니다.',
+      },
+    ],
+  },
+  {
+    key: 'wt',
+    label: '승리주제',
+    steps: [{ stageCd: 'S2B_WINTHEME', label: '승리주제' }],
+  },
+]
+const strategyPromptStageCds = strategyPromptGroups.flatMap((g) => g.steps.map((s) => s.stageCd))
 const isEvidenceModalOpen = ref(false)
 const activeProblemId = ref<string | null>(null)
 const isLoadingStage2 = ref(false)
@@ -881,17 +920,31 @@ const pollSummaryUntilDone = () =>
     tick()
   })
 
-const startStage2 = async (force = false) => {
-  isLoadingStage2.value = true
-  loadingStepIdx.value = 0
+/**
+ * Stage2 전략 분석 실행.
+ * @param force - true면 상태 리셋 후 재생성
+ * @param opts.usePanelLoading - true(기본): 패널 내 단계 UI. false: 호출측 openLoading만 사용(재생성)
+ */
+const startStage2 = async (force = false, opts: { usePanelLoading?: boolean } = {}) => {
+  const usePanelLoading = opts.usePanelLoading !== false
+  if (usePanelLoading) {
+    isLoadingStage2.value = true
+    loadingStepIdx.value = 0
+  }
   if (force) {
     await fetchResetStage2Status(props.ptProjectId)
   }
   await new Promise<void>((resolve) => {
     streamAnalyzeStage2(props.ptProjectId, props.modelId, props.agentId, {
       onProgress: (data) => {
-        if (data.step === 'problem_def' || data.step === 'prompt' || data.step === 'parse') loadingStepIdx.value = 0
-        if (data.step === 'win_theme' || data.step === 'save') loadingStepIdx.value = 1
+        if (data.step === 'problem_def' || data.step === 'prompt' || data.step === 'parse') {
+          loadingStepIdx.value = 0
+          if (!usePanelLoading) updateLoadingText('문제정의를 생성하는 중...')
+        }
+        if (data.step === 'win_theme' || data.step === 'save') {
+          loadingStepIdx.value = 1
+          if (!usePanelLoading) updateLoadingText('Win Theme를 도출하는 중...')
+        }
       },
       onDone: async () => {
         loadingStepIdx.value = 3
@@ -905,7 +958,7 @@ const startStage2 = async (force = false) => {
     })
   })
   await loadAll()
-  isLoadingStage2.value = false
+  if (usePanelLoading) isLoadingStage2.value = false
 }
 
 onMounted(async () => {
@@ -944,15 +997,18 @@ onMounted(async () => {
 const onRegenerateAll = async () => {
   const ok = await openConfirm({
     title: '전체 재생성',
-    message:
-      '문제정의·목차매핑·Win Theme를 처음부터 다시 생성합니다. 직접 수정한 내용이 사라지고, 이후 슬라이드가 최신 상태가 아닐 수 있습니다.',
+    message: '문제정의·Win Theme를 처음부터 다시 생성합니다. 직접 수정한 내용이 사라집니다.',
   })
   if (!ok) return
   isRegeneratingAll.value = true
+  openLoading({ text: '전략을 재생성하는 중...' })
   try {
-    await startStage2(true)
+    // 패널 내 로딩 UI와 전역 오버레이가 겹치지 않도록 오버레이만 사용
+    await startStage2(true, { usePanelLoading: false })
+    openToast({ message: '전략이 재생성되었습니다.' })
   } finally {
     isRegeneratingAll.value = false
+    closeLoading()
   }
 }
 
@@ -1017,6 +1073,9 @@ const onRefinePd = async (feedback: string, regenerateTitle = false) => {
     if (!confirmed) return
   }
   isRefining.value = true
+  openLoading({
+    text: regenerateTitle ? '문제정의를 재생성하는 중...' : '문제정의를 보완하는 중...',
+  })
   try {
     const res = await fetchRefineStage2ProblemDefinition({
       ptProjectId: props.ptProjectId,
@@ -1028,12 +1087,13 @@ const onRefinePd = async (feedback: string, regenerateTitle = false) => {
     })
     if (res.result === 'OK') {
       refineFeedback.value = ''
-      openToast({ message: '문제정의가 보완되었습니다.' })
+      openToast({ message: regenerateTitle ? '문제정의가 재생성되었습니다.' : '문제정의가 보완되었습니다.' })
       await loadAll()
       activeProblemId.value = res.data.problemId
-    } else openToast({ message: '보완 요청 실패', type: 'error' })
+    } else openToast({ message: regenerateTitle ? '재생성 실패' : '보완 요청 실패', type: 'error' })
   } finally {
     isRefining.value = false
+    closeLoading()
   }
 }
 
@@ -1122,6 +1182,11 @@ const onDeleteWt = async (winThemeId: string) => {
 }
 
 const onRegenerateWt = async () => {
+  const ok = await openConfirm({
+    title: 'Win Theme 재생성',
+    message: 'Win Theme 전체를 다시 생성합니다. 직접 수정한 내용이 사라집니다.',
+  })
+  if (!ok) return
   regeneratingWtId.value = 'all'
   openLoading({ text: 'Win Theme를 재생성하는 중...' })
   try {
@@ -1133,6 +1198,7 @@ const onRegenerateWt = async () => {
     if (res.result === 'OK') {
       winThemes.value = res.data
       await loadAll()
+      openToast({ message: 'Win Theme가 재생성되었습니다.' })
     } else
       openToast({
         message: res.errorCd === 'PROBLEM_DEFINITION_REQUIRED' ? '문제정의가 먼저 필요합니다.' : '재생성 실패',
