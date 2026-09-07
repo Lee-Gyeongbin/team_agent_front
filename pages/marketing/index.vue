@@ -19,28 +19,45 @@
       </UiEmpty>
     </div>
 
+    <MarketingChannelConnect
+      v-else-if="isChannelConnectOpen"
+      @close="closeChannelConnect"
+    />
+    <MarketingCampaignCalendar
+      v-else-if="isCalendarOpen"
+      @close="closeCalendar"
+    />
+
     <template v-else>
       <div class="marketing-list-header">
         <div class="marketing-list-header__copy">
-          <h1 class="marketing-list-title">마케팅 에이전트</h1>
+          <h1 class="marketing-list-title">마케팅 프로젝트</h1>
           <p class="marketing-list-desc">진행 중인 캠페인의 전체 현황을 한눈에 확인하고 관리하세요.</p>
         </div>
         <div class="marketing-list-header__actions">
           <UiButton
             variant="outline"
             size="md"
+            @click="onAccountManage"
           >
             <template #icon-left>
-              <i class="icon-user size-16" />
+              <UiIcon
+                name="user"
+                size="16"
+              />
             </template>
             계정 관리
           </UiButton>
           <UiButton
             variant="outline"
             size="md"
+            @click="openCalendar"
           >
             <template #icon-left>
-              <i class="icon-calendar size-16" />
+              <UiIcon
+                name="calendar"
+                size="16"
+              />
             </template>
             캠페인 캘린더
           </UiButton>
@@ -50,7 +67,10 @@
             @click="openCreateModal"
           >
             <template #icon-left>
-              <i class="icon-plus size-16" />
+              <UiIcon
+                name="plus"
+                size="16"
+              />
             </template>
             캠페인 생성
           </UiButton>
@@ -64,7 +84,10 @@
           class="marketing-summary-card"
         >
           <div class="marketing-summary-card__head">
-            <i :class="[card.icon, 'size-16']" />
+            <UiIcon
+              :name="card.icon"
+              size="16"
+            />
             <span>{{ card.label }}</span>
           </div>
           <strong
@@ -94,7 +117,10 @@
               placeholder="캠페인명 검색"
             >
               <template #icon-left>
-                <i class="icon-search size-16" />
+                <UiIcon
+                  name="search"
+                  size="16"
+                />
               </template>
             </UiInput>
           </div>
@@ -128,7 +154,10 @@
           @click="onResetFilters"
         >
           <template #icon-left>
-            <i class="icon-refresh size-16" />
+            <UiIcon
+              name="refresh-cw"
+              size="16"
+            />
           </template>
           필터 초기화
         </UiButton>
@@ -175,7 +204,7 @@
         class="marketing-list-table-wrap"
       >
         <UiTable
-          :columns="tableColumns"
+          :columns="marketingProjectListColumns"
           :data="displayedProjects"
           clickable
           empty-text="캠페인이 없습니다."
@@ -220,7 +249,10 @@
                     title="더보기"
                   >
                     <template #icon-left>
-                      <i class="icon-more-vertical size-16" />
+                      <UiIcon
+                        name="ellipsis-vertical"
+                        size="16"
+                      />
                     </template>
                   </UiButton>
                 </template>
@@ -265,11 +297,24 @@
 
 <script setup lang="ts">
 import { toCalendarDateTime, type DateValue } from '@internationalized/date'
-import type { TableColumn } from '~/types/table'
-import type { MarketingProject, MarketingProjectMember } from '~/types/marketing'
-import { useMarketingProjectsStore } from '~/composables/marketing/useMarketingProjectsStore'
+import {
+  UiButton,
+  UiDatePicker,
+  UiDropdownMenu,
+  UiEmpty,
+  UiIcon,
+  UiInput,
+  UiSelect,
+  UiTable,
+  type DropdownMenuItemDef,
+} from '@leechanyong/ispark-ui'
+import {
+  marketingProjectListColumns,
+  type MarketingProject,
+  type MarketingProjectMember,
+  type MarketingProjectSaveForm,
+} from '~/types/marketing'
 import { useMarketingApi } from '~/composables/marketing/useMarketingApi'
-import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
 
 definePageMeta({ layout: 'default' })
 
@@ -285,36 +330,28 @@ const STATUS_FILTER_OPTIONS = [
 ]
 
 const SUMMARY_CARDS = [
-  { key: 'all', label: '전체 캠페인', icon: 'icon-grid', statusCd: '' },
-  { key: '001', label: '작성중', icon: 'icon-play', statusCd: '001' },
-  { key: '002', label: '검수중', icon: 'icon-refresh', statusCd: '002' },
-  { key: '003', label: '완료', icon: 'icon-check', statusCd: '003' },
-  { key: '004', label: '보류', icon: 'icon-warning-triangle', statusCd: '004' },
+  { key: 'all', label: '전체 캠페인', icon: 'layout-grid', statusCd: '' },
+  { key: '001', label: '작성중', icon: 'play', statusCd: '001' },
+  { key: '002', label: '검수중', icon: 'refresh-cw', statusCd: '002' },
+  { key: '003', label: '완료', icon: 'check', statusCd: '003' },
+  { key: '004', label: '보류', icon: 'triangle-alert', statusCd: '004' },
 ] as const
-
-const tableColumns: TableColumn[] = [
-  { key: 'projectNm', label: '캠페인명', align: 'left', headerAlign: 'left' },
-  { key: 'statusNm', label: '진행 상태', width: '140px' },
-  { key: 'createUserNm', label: '담당자', width: '112px' },
-  { key: 'contentCnt', label: '콘텐츠', width: '88px' },
-  { key: 'dueDt', label: '마감일', width: '128px' },
-  { key: 'modifyDt', label: '최종 업데이트', width: '140px' },
-  { key: 'actions', label: '', width: '56px' },
-]
 
 const projectMenuItems: DropdownMenuItemDef[] = [
   { label: '수정', value: 'edit', icon: 'icon-edit' },
   { label: '삭제', value: 'delete', icon: 'icon-trashcan', color: 'danger' },
 ]
 
-const { selectedAgent, config, handleSelectAgents } = useMarketingStore()
 const {
+  selectedAgent,
+  config,
+  handleSelectAgents,
   marketingProjectList,
   isLoadingList,
   handleSelectMarketingProjectList,
   handleSaveMarketingProject,
   handleDeleteMarketingProject,
-} = useMarketingProjectsStore()
+} = useMarketingStore()
 const { fetchSelectMarketingProject } = useMarketingApi()
 
 const filterStatusCd = ref('')
@@ -322,6 +359,8 @@ const filterKeyword = ref('')
 const filterStartDate = ref<DateValue | undefined>()
 const filterEndDate = ref<DateValue | undefined>()
 const isProjectModalOpen = ref(false)
+const isChannelConnectOpen = ref(false)
+const isCalendarOpen = ref(false)
 const editingProject = ref<MarketingProject | null>(null)
 const editingMembers = ref<MarketingProjectMember[]>([])
 const isSaving = ref(false)
@@ -402,7 +441,7 @@ const displayedProjects = computed(() => {
     if (startAt != null && createdAt < startAt) return false
     if (endAt != null && createdAt > endAt) return false
     return true
-  })
+  }) as (MarketingProject & Record<string, unknown>)[]
 })
 
 const onSelectStatus = (value: string | number) => {
@@ -416,6 +455,22 @@ const onResetFilters = () => {
   filterEndDate.value = undefined
 }
 
+const onAccountManage = () => {
+  isChannelConnectOpen.value = true
+}
+
+const closeChannelConnect = () => {
+  isChannelConnectOpen.value = false
+}
+
+const openCalendar = () => {
+  isCalendarOpen.value = true
+}
+
+const closeCalendar = () => {
+  isCalendarOpen.value = false
+}
+
 const onClickCard = (project: MarketingProject) => {
   const agentId = String(route.query.agentId ?? selectedAgent.value?.agentId ?? '').trim()
   void router.push({
@@ -424,17 +479,16 @@ const onClickCard = (project: MarketingProject) => {
   })
 }
 
-const onTableRowClick = (row: object) => {
-  onClickCard(row as unknown as MarketingProject)
+const onTableRowClick = (row: MarketingProject) => {
+  onClickCard(row)
 }
 
-const onProjectMenuSelect = (row: object, value: string) => {
-  const project = row as unknown as MarketingProject
+const onProjectMenuSelect = (row: MarketingProject, value: string) => {
   if (value === 'edit') {
-    void openEditModal(project)
+    void openEditModal(row)
     return
   }
-  if (value === 'delete') void onDeleteProject(project)
+  if (value === 'delete') void onDeleteProject(row)
 }
 
 const openCreateModal = () => {
@@ -466,15 +520,7 @@ const closeProjectModal = () => {
   editingMembers.value = []
 }
 
-const onSubmitProject = async (form: {
-  marketingProjectId?: string
-  projectNm: string
-  orgNm: string
-  summary: string
-  dueDt: string
-  statusCd: string
-  memberUserIds: string[]
-}) => {
+const onSubmitProject = async (form: MarketingProjectSaveForm) => {
   isSaving.value = true
   try {
     const marketingProjectId = await handleSaveMarketingProject(form)
