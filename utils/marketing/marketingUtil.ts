@@ -3,8 +3,17 @@ import type { Agent, MarketingAuthoringAgentConfig, MarketingAuthoringOption } f
 import type {
   MarketingFormPayload,
   MarketingOutputKind,
+  MarketingOutputMode,
   MarketingResult,
   MarketingStoredRequest,
+  MarketingChannelOption,
+  MarketingCampaignPlanDraft,
+  MarketingScheduleStatus,
+  MarketingRequestCustomFields,
+  MarketingAuthoringConditionSummary,
+  MarketingAuthoringResult,
+  MarketingGeneratingStep,
+  MarketingCopyPayloadResult,
 } from '~/types/marketing'
 import { copyToClipboard } from '~/utils/global/clipboardUtil'
 import {
@@ -19,8 +28,6 @@ import {
 } from '~/utils/agent/marketingAuthoringConfigUtil'
 
 export const MARKETING_AGENT_THEME_FALLBACK_HEX = '#7c5cfc'
-export const MARKETING_AUTHORING_VARIANT_COUNT_MAX = 5
-export const MARKETING_REFERENCE_FILE_MAX = 5
 export const MARKETING_PREPARING_STATUS_INTERVAL_MS = 3000
 export const MARKETING_IMAGE_LOAD_TIMEOUT_MS = 30_000
 export const MARKETING_RESULT_SUMMARY_PENDING = '요청하신 조건으로 콘텐츠를 생성하고 있습니다.'
@@ -74,8 +81,6 @@ const resolveMarketingSummaryLabel = (value: string, config?: MarketingAuthoring
   if (!key) return ''
   return buildMarketingLabelLookup(config).get(key) ?? key
 }
-
-export type MarketingScheduleStatus = 'none' | 'upcoming' | 'today' | 'overdue' | 'done'
 
 /**
  * 발행 예정일 상태 — 제작 내역 목록의 배지·배너 색상 판단용.
@@ -138,30 +143,6 @@ export const resolveMarketingToneLabels = (
     .join(', ')
 }
 
-export type MarketingRequestCustomFields = Pick<
-  MarketingFormPayload,
-  'customPurpose' | 'customAudience' | 'customTone' | 'customChannel' | 'customLength'
->
-
-/** 결과 화면 메타·채널 전송용 조건 요약 */
-export interface MarketingAuthoringConditionSummary {
-  contentType: string
-  purpose: string
-  audience: string
-  /** 항상 콤마구분 문자열 (toConditions/toImageConditions가 생성) */
-  tones: string
-  length: string
-  channel?: string
-  keyMessage?: string
-}
-
-/** MarketingResult 등 UI용 — API MarketingResult + 조건 요약 */
-export interface MarketingAuthoringResult extends MarketingResult {
-  summary: string
-  conditions: MarketingAuthoringConditionSummary
-  imageConditions?: MarketingAuthoringConditionSummary
-}
-
 /** result.conditions + request custom 필드 → 메타 표시용 라벨 */
 export const resolveMarketingConditionDisplay = (
   conditions: MarketingAuthoringConditionSummary,
@@ -181,30 +162,6 @@ export const resolveMarketingConditionDisplay = (
     tones: resolveMarketingToneLabels(conditions.tones, config?.workflow.tones, custom?.customTone),
     length: resolveMarketingOptionLabel(config?.workflow.lengths, conditions.length, custom?.customLength),
   }
-}
-
-export type MarketingGeneratingStep = 'title' | 'labels' | 'variant' | ''
-export type MarketingWizardStepKey =
-  | 'setup'
-  | 'purpose'
-  | 'audienceMessage'
-  | 'textToneLength'
-  | 'imageStyle'
-  | 'confirm'
-
-export type MarketingConfirmSummaryItem = {
-  label: string
-  value: string
-  stepIndex: number
-  fullWidth?: boolean
-  hasDivider?: boolean
-}
-
-export type MarketingWizardStepDef = {
-  key: MarketingWizardStepKey
-  title: string
-  question: string
-  description?: string
 }
 
 const PREPARING_STATUS_TEXTS = [
@@ -272,22 +229,6 @@ export const resolveMarketingAgentThemeStyle = (themeColorHex?: string) => {
   }
 }
 
-export const applyConfirmSummaryLayout = <T extends MarketingConfirmSummaryItem>(items: T[]): T[] => {
-  const result = items.map((item) => ({ ...item, fullWidth: !!item.fullWidth, hasDivider: false }))
-  for (let index = 0; index < result.length; index += 1) {
-    const current = result[index]
-    if (current.fullWidth) continue
-    const next = result[index + 1]
-    if (next && !next.fullWidth) {
-      current.hasDivider = true
-      index += 1
-    } else current.fullWidth = true
-  }
-  return result
-}
-
-export const formatMarketingSelectionTag = (category: string, value: string) => `${category} | ${value}`
-
 /** 사용자 입력 문구를 안전한 미리보기 HTML로 변환 */
 export const renderMarketingTextHtml = (value?: string | null) =>
   String(value ?? '')
@@ -300,76 +241,7 @@ export const renderMarketingTextHtml = (value?: string | null) =>
     .replace(/\n{2,}/g, '<br /><br />')
     .replace(/\n/g, '<br />')
 
-export const getMarketingAuthoringWorkflow = (config?: MarketingAuthoringAgentConfig | null) => {
-  const workflow = config?.workflow ?? getDefaultMarketingAuthoringConfig().workflow
-  return {
-    ...workflow,
-    purposes: workflow.purposes ?? [],
-    audiences: workflow.audiences ?? [],
-    tones: workflow.tones ?? [],
-    lengths: workflow.lengths ?? [],
-    outputSections: workflow.outputSections ?? [],
-    defaultOutputSections: workflow.defaultOutputSections ?? [],
-  }
-}
-
-export const clampMarketingAuthoringVariantCount = (raw: unknown) => {
-  const count = Number(raw)
-  if (!Number.isFinite(count) || count < 1) return 0
-  return Math.min(MARKETING_AUTHORING_VARIANT_COUNT_MAX, Math.floor(count))
-}
-
-export const createEmptyMarketingFormPayload = (): MarketingFormPayload => ({
-  contentType: '',
-  channel: '',
-  customChannel: '',
-  purpose: '',
-  customPurpose: '',
-  audience: '',
-  customAudience: '',
-  promotionInformation: '',
-  keyMessage: '',
-  additionalRequirements: '',
-  referenceFiles: [],
-  selectedExistingFileIds: [],
-  variantCount: 0,
-  tones: [],
-  length: '',
-  customLength: '',
-  customCallToAction: '',
-  customTone: '',
-  outputSections: [],
-  includeHashtags: 'Y',
-  allowEmoji: 'Y',
-  outputs: [],
-  imageUsage: '',
-  snsPlatform: '',
-  imageType: '',
-  visualStyle: '',
-  aspectRatio: '',
-  customAspectRatio: '',
-  imageText: '',
-  brandColors: '',
-})
-
-export const resolveMarketingImageUsageFromSetup = (contentType: string, channel: string) => {
-  const channelMap: Record<string, string> = {
-    INSTAGRAM: 'INSTAGRAM_FEED',
-    FACEBOOK: 'FACEBOOK',
-    LINKEDIN: 'LINKEDIN',
-    X: 'X',
-    YOUTUBE_COMMUNITY: 'YOUTUBE_COMMUNITY',
-    KAKAO_TALK: 'KAKAO_TALK',
-    SMS: 'SMS',
-  }
-  if (contentType === 'SNS' || channel in channelMap)
-    return { imageUsage: 'SNS_VISUAL', snsPlatform: channelMap[channel] ?? '' }
-  if (contentType === 'BLOG') return { imageUsage: 'THUMBNAIL', snsPlatform: '' }
-  if (contentType === 'LANDING_PAGE') return { imageUsage: 'PRODUCT_DETAIL', snsPlatform: '' }
-  return { imageUsage: 'BANNER', snsPlatform: '' }
-}
-
-export const resolveMarketingSubmitMode = (outputs?: MarketingOutputKind[]): 'TEXT' | 'IMAGE' | 'BOTH' => {
+export const resolveMarketingSubmitMode = (outputs?: MarketingOutputKind[]): MarketingOutputMode => {
   const hasText = outputs?.includes('TEXT') === true
   const hasImage = outputs?.includes('IMAGE') === true
   if (hasText && hasImage) return 'BOTH'
@@ -378,23 +250,6 @@ export const resolveMarketingSubmitMode = (outputs?: MarketingOutputKind[]): 'TE
 
 export const hasMarketingOutput = (payload: Pick<MarketingFormPayload, 'outputs'>, kind: MarketingOutputKind) =>
   payload.outputs.includes(kind)
-
-const STEP_DEFS: Record<MarketingWizardStepKey, MarketingWizardStepDef> = {
-  setup: { key: 'setup', title: '유형·출력', question: '무엇을 어떤 형태로 만들까요?' },
-  purpose: { key: 'purpose', title: '목적', question: '무엇을 홍보하시나요?' },
-  audienceMessage: { key: 'audienceMessage', title: '타겟·메시지', question: '누구에게 무엇을 전할까요?' },
-  textToneLength: { key: 'textToneLength', title: '톤·분량', question: '톤과 분량을 정할까요?' },
-  imageStyle: { key: 'imageStyle', title: '비율·스타일', question: '이미지 스타일을 정할까요?' },
-  confirm: { key: 'confirm', title: '최종 확인', question: '입력한 내용을 확인해 주세요.' },
-}
-
-export const buildMarketingWizardSteps = (outputs: MarketingOutputKind[]) => {
-  const keys: MarketingWizardStepKey[] = ['setup', 'purpose', 'audienceMessage']
-  if (outputs.includes('TEXT')) keys.push('textToneLength')
-  if (outputs.includes('IMAGE')) keys.push('imageStyle')
-  keys.push('confirm')
-  return keys.map((key) => STEP_DEFS[key])
-}
 
 export const focusMarketingField = async (element?: HTMLElement | null, input?: { focus: () => void } | null) => {
   await nextTick()
@@ -658,11 +513,6 @@ const fetchMarketingImageAsPngBlob = async (imageUrl: string): Promise<Blob> => 
   })
 }
 
-export type MarketingCopyPayloadResult = {
-  textCopied: boolean
-  imageCopied: boolean
-}
-
 /** 마케팅 시안 텍스트/이미지 클립보드 복사 */
 export const copyMarketingPayloadToClipboard = async (
   text: string,
@@ -701,4 +551,153 @@ export const copyMarketingPayloadToClipboard = async (
   }
 
   throw new Error('클립보드 복사에 실패했습니다.')
+}
+
+// ── 캠페인 기획서 기반 채널 선택 (멀티채널 콘텐츠 생성) ──────────────────────
+
+type MarketingChannelSeed = {
+  channelCd: string
+  channelNm: string
+  contentType: 'SNS' | 'EMAIL'
+  /** SNS 이미지 생성 시 사용할 snsPlatform 코드 — MARKETING_IMAGE_SNS_PLATFORMS 참고 */
+  snsPlatform?: string
+  formatOptions: string[]
+  imageStrategy: string
+}
+
+/** 캠페인 기획서 화면에서 고를 수 있는 채널 — MARKETING_AUTHORING_CHANNELS_BY_TYPE의 SNS/EMAIL 채널 코드와 동일하게 맞춘다 */
+export const MARKETING_CHANNEL_SEEDS: MarketingChannelSeed[] = [
+  {
+    channelCd: 'INSTAGRAM',
+    channelNm: '인스타그램',
+    contentType: 'SNS',
+    snsPlatform: 'INSTAGRAM_FEED',
+    formatOptions: ['피드', '스토리·릴스'],
+    imageStrategy: '정사각 비율의 제품 중심 비주얼, 밝고 감각적인 톤',
+  },
+  {
+    channelCd: 'FACEBOOK',
+    channelNm: '페이스북',
+    contentType: 'SNS',
+    snsPlatform: 'FACEBOOK',
+    formatOptions: ['피드 게시물'],
+    imageStrategy: '가로형 배너, 정보 전달력이 높은 구성',
+  },
+  {
+    channelCd: 'LINKEDIN',
+    channelNm: '링크드인',
+    contentType: 'SNS',
+    snsPlatform: 'LINKEDIN',
+    formatOptions: ['피드 게시물'],
+    imageStrategy: '전문적이고 신뢰감 있는 톤의 비주얼',
+  },
+  {
+    channelCd: 'X',
+    channelNm: 'X',
+    contentType: 'SNS',
+    snsPlatform: 'X',
+    formatOptions: ['타임라인 게시물'],
+    imageStrategy: '간결한 메시지 중심, 눈에 띄는 컬러 대비',
+  },
+  {
+    channelCd: 'PROMOTION_EMAIL',
+    channelNm: '이메일',
+    contentType: 'EMAIL',
+    formatOptions: ['프로모션 메일'],
+    imageStrategy: '본문 상단 배너형 이미지',
+  },
+  {
+    channelCd: 'SMS',
+    channelNm: 'SMS',
+    contentType: 'SNS',
+    snsPlatform: 'SMS',
+    formatOptions: ['문자메시지'],
+    imageStrategy: '텍스트 위주, 이미지는 선택적으로 동반',
+  },
+  {
+    channelCd: 'KAKAO_TALK',
+    channelNm: '카카오톡',
+    contentType: 'SNS',
+    snsPlatform: 'KAKAO_TALK',
+    formatOptions: ['카카오톡 채널 메시지'],
+    imageStrategy: '썸네일형 이미지, 친근한 톤',
+  },
+]
+
+/** 캠페인 기획서의 recommendChannels 문자열('Instagram · Facebook · Email')에서 채널 코드를 추출 */
+const parseMarketingRecommendedChannelCodes = (recommendChannels: string): string[] => {
+  const text = recommendChannels.toLowerCase()
+  const codes: string[] = []
+  const matchers: [RegExp, string][] = [
+    [/인스타(?:그램)?|instagram/i, 'INSTAGRAM'],
+    [/페이스북|facebook/i, 'FACEBOOK'],
+    [/링크드인|linkedin/i, 'LINKEDIN'],
+    [/트위터|twitter|\bx\b/i, 'X'],
+    [/이메일|email/i, 'PROMOTION_EMAIL'],
+    [/sms|문자/i, 'SMS'],
+    [/카카오|kakao/i, 'KAKAO_TALK'],
+  ]
+  matchers.forEach(([re, code]) => {
+    if (re.test(text)) codes.push(code)
+  })
+  return codes
+}
+
+/** 채널 선택 화면(view-channelSelect) 초기 목록 — 캠페인 기획서 추천 채널을 기본 선택 상태로 켠다 */
+export const buildMarketingChannelOptions = (recommendChannels: string): MarketingChannelOption[] => {
+  const recommendedCodes = new Set(parseMarketingRecommendedChannelCodes(recommendChannels))
+  return MARKETING_CHANNEL_SEEDS.map((seed) => {
+    const recommended = recommendedCodes.has(seed.channelCd)
+    return {
+      channelCd: seed.channelCd,
+      channelNm: seed.channelNm,
+      contentType: seed.contentType,
+      formatOptions: seed.formatOptions,
+      imageStrategy: seed.imageStrategy,
+      recommended,
+      selected: recommended,
+      withImageYn: 'Y',
+    }
+  })
+}
+
+/** 채널 선택 1건 → 콘텐츠 생성에 쓰는 MarketingFormPayload로 변환 (배치 생성용) */
+export const buildMarketingFormPayloadFromChannelPick = (
+  pick: MarketingChannelOption,
+  draft: MarketingCampaignPlanDraft,
+): MarketingFormPayload => {
+  const seed = MARKETING_CHANNEL_SEEDS.find((item) => item.channelCd === pick.channelCd)
+  const withImage = pick.withImageYn === 'Y'
+  return {
+    outputs: withImage ? ['TEXT', 'IMAGE'] : ['TEXT'],
+    contentType: seed?.contentType ?? 'SNS',
+    channel: pick.channelCd,
+    customChannel: '',
+    purpose: draft.goal,
+    customPurpose: '',
+    audience: draft.targetNm,
+    customAudience: '',
+    promotionInformation: draft.productNm,
+    keyMessage: draft.keyMessage,
+    additionalRequirements: draft.requestTxt,
+    referenceFiles: [],
+    selectedExistingFileIds: [],
+    variantCount: 3,
+    tones: [],
+    customTone: '',
+    length: '',
+    customLength: '',
+    customCallToAction: '',
+    outputSections: [],
+    includeHashtags: 'Y',
+    allowEmoji: 'Y',
+    imageUsage: withImage ? 'SNS_VISUAL' : '',
+    snsPlatform: withImage ? (seed?.snsPlatform ?? '') : '',
+    imageType: '',
+    visualStyle: draft.visualTxt,
+    aspectRatio: '',
+    customAspectRatio: '',
+    imageText: '',
+    brandColors: '',
+  }
 }

@@ -4,6 +4,8 @@ import type { ChatFileViewResponse } from '~/types/chat'
 import type {
   MarketingActionResponse,
   MarketingAgentSummary,
+  MarketingApproval,
+  MarketingCalendarEventItem,
   MarketingContentDetail,
   MarketingContentListParams,
   MarketingContentListResponse,
@@ -11,7 +13,9 @@ import type {
   MarketingCreateResponse,
   MarketingExportHtmlResponse,
   MarketingRefineRequest,
+  MarketingReviewResult,
   MarketingVariantUpdateRequest,
+  MarketingScheduleSetting,
   MarketingScheduleUpdateRequest,
   MarketingPublishedUpdateRequest,
   MarketingStreamDoneEvent,
@@ -24,6 +28,7 @@ import type {
   MarketingFileUploadUrlRequest,
   MarketingProject,
   MarketingProjectListFilter,
+  MarketingProjectMember,
 } from '~/types/marketing'
 
 /** GET 쿼리 문자열 */
@@ -59,8 +64,8 @@ export const useMarketingApi = () => {
   /** 마케팅 프로젝트 단건 조회 (상세 페이지 진입 시) */
   const fetchSelectMarketingProject = async (
     marketingProjectId: string,
-  ): Promise<MarketingActionResponse & { data: MarketingProject }> => {
-    return get<MarketingActionResponse & { data: MarketingProject }>(
+  ): Promise<MarketingActionResponse & { data: MarketingProject; members: MarketingProjectMember[] }> => {
+    return get<MarketingActionResponse & { data: MarketingProject; members: MarketingProjectMember[] }>(
       `/ai/marketing/selectMarketingProject.do${toQueryString({ marketingProjectId })}`,
     )
   }
@@ -139,9 +144,12 @@ export const useMarketingApi = () => {
   const fetchDeleteMarketingContent = (contentId: string) =>
     del<MarketingActionResponse>(`/marketing/contents/${encodeURIComponent(contentId)}`)
 
-  /** 발행 예정일 지정/변경 — 해제하려면 publishScheduledDt: null */
+  /** 발행 설정 저장(예정일·방식·알림) — 예정일 해제하려면 publishScheduledDt: null */
   const fetchUpdateMarketingSchedule = (contentId: string, payload: MarketingScheduleUpdateRequest) =>
-    put<MarketingActionResponse>(`/marketing/contents/${encodeURIComponent(contentId)}/schedule`, payload)
+    put<MarketingActionResponse & { data: MarketingScheduleSetting }>(
+      `/marketing/contents/${encodeURIComponent(contentId)}/schedule`,
+      payload,
+    )
 
   /** 발행 완료 표시/해제 */
   const fetchUpdateMarketingPublished = (contentId: string, payload: MarketingPublishedUpdateRequest) =>
@@ -162,6 +170,32 @@ export const useMarketingApi = () => {
       `/marketing/contents/${encodeURIComponent(contentId)}/variants/${variantId}/restore`,
       {},
     )
+
+  // ── AI 검수 / 승인 / 캘린더 ────────────────────────────────────────────────
+
+  /** AI 검수 실행 — 추천 시안(없으면 1번) 기준 */
+  const fetchRunMarketingReview = (contentId: string) =>
+    post<MarketingActionResponse & { data: MarketingReviewResult }>(
+      `/marketing/contents/${encodeURIComponent(contentId)}/review`,
+      {},
+    )
+
+  /** AI 검수 이슈 수정안 적용 — issueId 또는 'ALL' */
+  const fetchApplyMarketingReviewFix = (contentId: string, issueId: string) =>
+    post<MarketingActionResponse & { data: MarketingReviewResult }>(
+      `/marketing/contents/${encodeURIComponent(contentId)}/review/apply-fix`,
+      { issueId },
+    )
+
+  /** 콘텐츠 승인/반려 저장 — reviewerNm은 서버가 세션 사용자로 강제한다 */
+  const fetchSaveMarketingApproval = (contentId: string, payload: { memo: string; approvedYn: 'Y' | 'N' }) =>
+    post<MarketingActionResponse & { data: MarketingApproval }>(
+      `/marketing/contents/${encodeURIComponent(contentId)}/approval`,
+      payload,
+    )
+
+  /** 캠페인 캘린더 이벤트 목록 — 내가 멤버로 속한 프로젝트 전체 */
+  const fetchMarketingCalendarEvents = () => get<{ list: MarketingCalendarEventItem[] }>('/marketing/calendar')
 
   /** 마케팅 생성 SSE — progress 후 done/error. 필요 시 EventSource.close 호출 */
   const streamMarketingEvents = (
@@ -234,6 +268,10 @@ export const useMarketingApi = () => {
     fetchRefineMarketingVariant,
     fetchUpdateMarketingVariant,
     fetchRestoreMarketingVariant,
+    fetchRunMarketingReview,
+    fetchApplyMarketingReviewFix,
+    fetchSaveMarketingApproval,
+    fetchMarketingCalendarEvents,
     streamMarketingEvents,
   }
 }
