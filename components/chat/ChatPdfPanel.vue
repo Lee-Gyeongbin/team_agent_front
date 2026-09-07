@@ -156,15 +156,18 @@
         <div class="chat-pdf-sidebar">
           <div
             v-if="activeTab === 'all'"
-            class="chat-pdf-sidebar-select"
+            class="chat-pdf-doc-list"
           >
-            <UiSelect
-              id="pdf-doc-select"
-              v-model="selectedDocKey"
-              name="pdf-doc-select"
-              :options="documentList"
-              size="lg"
-            />
+            <button
+              v-for="doc in documentList"
+              :key="doc.value"
+              type="button"
+              class="chat-pdf-doc-item"
+              :class="{ 'is-active': doc.value === selectedDocKey }"
+              @click="onSelectPdfDoc(doc.value)"
+            >
+              {{ doc.label }}
+            </button>
           </div>
           <div
             ref="thumbListRef"
@@ -319,13 +322,17 @@ interface RelatedPageEntry {
   pageNum: number
 }
 
-// refList → UiSelect 옵션
+// refList → 전체페이지 탭 문서 목록
 const documentList = computed(() =>
   (props.refList ?? []).map((r) => ({
     label: r.docTitle || r.fileName,
     value: buildDocKey(r.docFileId),
   })),
 )
+
+const onSelectPdfDoc = (docKey: string) => {
+  selectedDocKey.value = docKey
+}
 
 // 현재 선택된 문서 row
 const selectedRef = computed(() => (props.refList ?? []).find((r) => buildDocKey(r.docFileId) === selectedDocKey.value))
