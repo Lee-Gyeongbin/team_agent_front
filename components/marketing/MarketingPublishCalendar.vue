@@ -1,7 +1,21 @@
 <template>
   <section class="marketing-publish-calendar">
     <div class="marketing-publish-calendar__head">
-      <strong>발행 캘린더</strong>
+      <div class="marketing-publish-calendar__title">
+        <strong>발행 캘린더</strong>
+        <button
+          type="button"
+          class="marketing-publish-calendar__nav-btn"
+          title="캠페인 캘린더"
+          aria-label="캠페인 캘린더"
+          @click="onOpenFull"
+        >
+          <UiIcon
+            name="calendar"
+            size="16"
+          />
+        </button>
+      </div>
       <div class="marketing-publish-calendar__nav">
         <button
           type="button"
@@ -9,7 +23,11 @@
           aria-label="이전 달"
           @click="onPrevMonth"
         >
-          <i class="icon-arrow-right size-16 marketing-publish-calendar__nav-prev" />
+          <UiIcon
+            name="arrow-right"
+            size="16"
+            class="marketing-publish-calendar__nav-prev"
+          />
         </button>
         <span>{{ year }}년 {{ month }}월</span>
         <button
@@ -18,7 +36,10 @@
           aria-label="다음 달"
           @click="onNextMonth"
         >
-          <i class="icon-arrow-right size-16" />
+          <UiIcon
+            name="arrow-right"
+            size="16"
+          />
         </button>
       </div>
     </div>
@@ -66,13 +87,8 @@
 </template>
 
 <script setup lang="ts">
-export interface MarketingCalendarEvent {
-  contentId: string
-  displayTitle: string
-  channelNm: string
-  publishScheduledDt: string
-  progressKey: string
-}
+import { UiIcon } from '@leechanyong/ispark-ui'
+import type { MarketingCalendarEvent } from '~/types/marketing'
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const
 
@@ -82,6 +98,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   select: [contentId: string]
+  openFull: []
 }>()
 
 const now = new Date()
@@ -168,5 +185,9 @@ const onNextMonth = () => {
     return
   }
   month.value += 1
+}
+
+const onOpenFull = () => {
+  emit('openFull')
 }
 </script>

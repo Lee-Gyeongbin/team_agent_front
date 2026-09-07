@@ -65,7 +65,10 @@
             class="btn-marketing-member-remove"
             @click="removeMember(member.userId)"
           >
-            <i class="icon icon-close-gray size-12" />
+            <UiIcon
+              name="x"
+              size="12"
+            />
           </button>
         </span>
         <button
@@ -77,10 +80,6 @@
         </button>
       </div>
     </div>
-    <div
-      v-if="isEditMode"
-      class="marketing-form-field"
-    ></div>
     <template #footer>
       <div class="modal-dialog-footer">
         <UiButton
@@ -116,8 +115,8 @@
 
 <script setup lang="ts">
 import { CalendarDate, toCalendarDateTime, type DateValue } from '@internationalized/date'
-import { openToast } from '~/composables/useToast'
-import type { MarketingProject, MarketingProjectMember } from '~/types/marketing'
+import { UiButton, UiDatePicker, UiIcon, UiInput, UiModal, UiTextarea } from '@leechanyong/ispark-ui'
+import type { MarketingProject, MarketingProjectMember, MarketingProjectSaveForm } from '~/types/marketing'
 import type { OrgUserItem } from '~/types/org-manage'
 import { useUserSelectStore } from '~/composables/com/useUserSelectStore'
 
@@ -138,18 +137,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   close: []
-  submit: [
-    form: {
-      marketingProjectId?: string
-      projectNm: string
-      orgNm: string
-      summary: string
-      dueDt: string
-      statusCd: string
-      /** 공개범위(멤버) userId 목록 — 작성자는 서버가 항상 강제 포함한다 */
-      memberUserIds: string[]
-    },
-  ]
+  submit: [form: MarketingProjectSaveForm]
 }>()
 
 const { user } = useAuth()

@@ -11,7 +11,11 @@
     >
       <span class="marketing-preparing-status__ring-track" />
       <span class="marketing-preparing-status__ring-arc" />
-      <i class="icon-sparkle size-24 marketing-preparing-status__ring-icon" />
+      <UiIcon
+        name="sparkle"
+        size="24"
+        class="marketing-preparing-status__ring-icon"
+      />
     </div>
     <p class="marketing-preparing-status__title">{{ title }}</p>
     <p class="marketing-preparing-status__desc">{{ statusText }}</p>
@@ -22,13 +26,14 @@
 </template>
 
 <script setup lang="ts">
+import { UiIcon } from '@leechanyong/ispark-ui'
 import {
   createMarketingPreparingStatusCycle,
   MARKETING_PREPARING_CALLOUT,
   MARKETING_PREPARING_TITLE,
   resolveMarketingGeneratingStepText,
-  type MarketingGeneratingStep,
 } from '~/utils/marketing/marketingUtil'
+import type { MarketingGeneratingStep } from '~/types/marketing'
 
 const props = withDefaults(
   defineProps<{
