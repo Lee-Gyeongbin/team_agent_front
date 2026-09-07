@@ -19,12 +19,6 @@
       >
         {{ hint }}
       </p>
-      <p
-        v-if="maxFiles"
-        class="ui-file-upload-hint"
-      >
-        {{ maxFiles }}개까지 첨부 가능합니다.
-      </p>
     </div>
 
     <input
@@ -132,7 +126,6 @@ const props = withDefaults(defineProps<Props>(), {
   accept: '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.hwp,.csv,.txt',
   hint: 'PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, HWP, CSV, TXT (최대 50MB)',
   maxSize: 50 * 1024 * 1024,
-  maxFiles: 1,
   attachedFileList: () => [],
   isDownloadable: false,
   /** 미설정 시 확장자 제한 없음 */

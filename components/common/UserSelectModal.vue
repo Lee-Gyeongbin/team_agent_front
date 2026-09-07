@@ -80,7 +80,16 @@
                 v-if="selectedOrgId"
                 class="us-org-users"
               >
-                <p class="us-panel-sub-label">소속 팀원</p>
+                <div class="us-panel-sub-label-row">
+                  <p class="us-panel-sub-label">소속 팀원</p>
+                  <button
+                    v-if="canSelectAll"
+                    class="btn-us-select-all"
+                    @click="selectAllVisibleOrgUsers"
+                  >
+                    전체 선택
+                  </button>
+                </div>
 
                 <!-- 사용자 목록 로딩 -->
                 <div
@@ -286,6 +295,20 @@ const visibleOrgUserList = computed(() => {
 })
 
 const isUserSelected = (userId: string) => selectedUsers.value.some((u) => u.userId === userId)
+
+/** 다중 선택이고 표시할 팀원이 있을 때 '전체 선택' 노출 */
+const canSelectAll = computed(
+  () => !props.singleSelect && !orgUserListLoading.value && visibleOrgUserList.value.length > 0,
+)
+
+/** 현재 조직에 표시된 팀원을 모두 선택 목록에 추가 (다중 선택 모드 전용) */
+const selectAllVisibleOrgUsers = () => {
+  visibleOrgUserList.value.forEach((orgMember) => {
+    if (!isUserSelected(orgMember.userId)) {
+      addSelectedUser(orgMember)
+    }
+  })
+}
 
 const onUserClick = (clickedUser: OrgUserItem) => {
   if (props.singleSelect) {
@@ -494,6 +517,30 @@ const onConfirm = () => {
   font-weight: $font-weight-medium;
   margin: 10px 0 6px;
   flex-shrink: 0;
+}
+
+.us-panel-sub-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+
+  .us-panel-sub-label {
+    margin: 10px 0 6px;
+  }
+}
+
+.btn-us-select-all {
+  color: var(--color-primary, $color-primary);
+  font-size: $font-size-xs;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: opacity $transition-fast;
+  white-space: nowrap;
+
+  &:hover {
+    opacity: 0.7;
+  }
 }
 
 // 조직 트리 영역
