@@ -427,8 +427,11 @@ export interface SlideComponent {
 
 /** Stage2 전략 SSE 이벤트 */
 export interface Stage2ProgressData {
-  step: 'load' | 'problem_def' | 'prompt' | 'parse' | 'win_theme' | 'save'
-  message: string
+  step: 'load' | 'prompt' | 'evidence_map' | 'pd_generate' | 'dedup' | 'parse' | 'win_theme' | 'save'
+  /** evidence_map / pd_generate 단계에서 현재 처리 중인 이슈 순번 (1-based) */
+  current?: number
+  /** evidence_map / pd_generate 단계에서 전체 이슈 수 */
+  total?: number
 }
 
 export interface Stage2DoneData {

@@ -90,8 +90,8 @@
     >
       <div class="pt-s4-loading-box">
         <div class="pt-s4-loading-spinner" />
-        <h3>전략 분석 중입니다</h3>
-        <p>RFP 분석 결과를 바탕으로 문제정의와 Win Theme을 생성하고 있어요. 잠시만 기다려주세요.</p>
+        <h3>{{ isRegeneratingAllPd ? '문제정의 재생성 중입니다' : '전략 분석 중입니다' }}</h3>
+        <p>{{ isRegeneratingAllPd ? '이슈 분석 결과를 바탕으로 문제정의를 다시 생성하고 있어요. 잠시만 기다려주세요.' : 'RFP 분석 결과를 바탕으로 문제정의와 Win Theme을 생성하고 있어요. 잠시만 기다려주세요.' }}</p>
         <div class="pt-s4-loading-steps">
           <div
             v-for="(s, i) in loadingSteps"
@@ -572,7 +572,7 @@ const {
   fetchUpdateStage2WinTheme,
   fetchInsertStage2WinTheme,
   fetchDeleteStage2WinTheme,
-  fetchRegenerateStage2ProblemDefinitions,
+  streamRegenerateStage2Pd,
   fetchRegenerateStage2WinThemes,
 } = useProposalApi()
 
@@ -584,12 +584,19 @@ const PROBLEM_TYPE_MAP: Record<string, string> = {
   '005': '보안품질',
 }
 
-const loadingSteps = [
+const loadingSteps = ref([
+  {
+    key: 'evidence',
+    title: '근거 매핑',
+    doneMsg: '이슈별 요구사항 근거 매핑 완료',
+    activeMsg: '이슈를 바탕으로 요구사항을 매핑하고 있습니다…',
+    waitMsg: '대기 중',
+  },
   {
     key: 'pd',
-    title: '문제정의 분석',
-    doneMsg: '발주기관 핵심 문제 도출 완료',
-    activeMsg: '문제 정의 생성 중…',
+    title: '문제정의 생성',
+    doneMsg: '문제정의 생성 및 중복 정리 완료',
+    activeMsg: '문제 정의를 생성하고 있습니다…',
     waitMsg: '대기 중',
   },
   {
@@ -599,7 +606,23 @@ const loadingSteps = [
     activeMsg: '자사·경쟁사 자료 분석 중…',
     waitMsg: '대기 중',
   },
-]
+])
+
+/** 문제정의만 재생성 시: Win Theme 스텝 제외한 2단계 */
+const resetLoadingStepsForPd = () => {
+  loadingSteps.value = [
+    { key: 'evidence', title: '근거 매핑', doneMsg: '이슈별 요구사항 근거 매핑 완료', activeMsg: '이슈를 바탕으로 요구사항을 매핑하고 있습니다…', waitMsg: '대기 중' },
+    { key: 'pd', title: '문제정의 생성', doneMsg: '문제정의 생성 및 중복 정리 완료', activeMsg: '문제 정의를 생성하고 있습니다…', waitMsg: '대기 중' },
+  ]
+}
+/** 전체 분석용 3단계 복원 */
+const resetLoadingStepsForFull = () => {
+  loadingSteps.value = [
+    { key: 'evidence', title: '근거 매핑', doneMsg: '이슈별 요구사항 근거 매핑 완료', activeMsg: '이슈를 바탕으로 요구사항을 매핑하고 있습니다…', waitMsg: '대기 중' },
+    { key: 'pd', title: '문제정의 생성', doneMsg: '문제정의 생성 및 중복 정리 완료', activeMsg: '문제 정의를 생성하고 있습니다…', waitMsg: '대기 중' },
+    { key: 'wt', title: 'Win Theme 도출', doneMsg: 'Win Theme 도출 완료', activeMsg: '자사·경쟁사 자료 분석 중…', waitMsg: '대기 중' },
+  ]
+}
 
 const summary = ref<Stage2Summary | null>(null)
 const problemDefs = ref<ProblemDefinition[]>([])
@@ -905,9 +928,9 @@ const pollSummaryUntilDone = () =>
         if (res.result === 'OK' && res.data) {
           summary.value = res.data
           const cd = res.data.stage2StatusCd
-          if (cd === '002') loadingStepIdx.value = Math.max(loadingStepIdx.value, 1)
+          if (cd === '002') loadingStepIdx.value = Math.max(loadingStepIdx.value, 2)
           if (cd === '005' || cd === '003' || cd === '004') {
-            loadingStepIdx.value = 2
+            loadingStepIdx.value = 3
             resolve()
             return
           }
@@ -937,17 +960,37 @@ const startStage2 = async (force = false, opts: { usePanelLoading?: boolean } = 
   await new Promise<void>((resolve) => {
     streamAnalyzeStage2(props.ptProjectId, props.modelId, props.agentId, {
       onProgress: (data) => {
-        if (data.step === 'problem_def' || data.step === 'prompt' || data.step === 'parse') {
+        if (data.step === 'evidence_map' || data.step === 'prompt') {
           loadingStepIdx.value = 0
-          if (!usePanelLoading) updateLoadingText('문제정의를 생성하는 중...')
+          if (data.step === 'evidence_map' && data.current != null && data.total != null) {
+            const msg = `이슈를 바탕으로 요구사항을 매핑하고 있습니다… (${data.current}/${data.total})`
+            loadingSteps.value[0].activeMsg = msg
+            if (!usePanelLoading) updateLoadingText(msg)
+          } else if (!usePanelLoading) {
+            updateLoadingText('프롬프트를 준비하는 중...')
+          }
+        }
+        if (data.step === 'pd_generate') {
+          loadingStepIdx.value = 0
+          if (data.current != null && data.total != null) {
+            const msg = `문제 정의를 생성하고 있습니다… (${data.current}/${data.total})`
+            loadingSteps.value[0].activeMsg = msg
+            if (!usePanelLoading) updateLoadingText(msg)
+          }
+        }
+        if (data.step === 'dedup' || data.step === 'parse') {
+          loadingStepIdx.value = 1
+          const msg = '문제정의 중복을 정리하고 있습니다…'
+          loadingSteps.value[1].activeMsg = msg
+          if (!usePanelLoading) updateLoadingText(msg)
         }
         if (data.step === 'win_theme' || data.step === 'save') {
-          loadingStepIdx.value = 1
+          loadingStepIdx.value = 2
           if (!usePanelLoading) updateLoadingText('Win Theme를 도출하는 중...')
         }
       },
       onDone: async () => {
-        loadingStepIdx.value = 3
+        loadingStepIdx.value = 4
         resolve()
       },
       onError: async (msg) => {
@@ -1019,23 +1062,48 @@ const onRegenerateAllPd = async () => {
   })
   if (!ok) return
   isRegeneratingAllPd.value = true
-  openLoading({ text: '문제정의를 재생성하는 중...' })
+  isLoadingStage2.value = true
+  loadingStepIdx.value = 0
+  // 로딩 스텝을 문제정의 전용 2단계로 설정 (Win Theme 제외)
+  resetLoadingStepsForPd()
   try {
-    const res = await fetchRegenerateStage2ProblemDefinitions({
-      ptProjectId: props.ptProjectId,
-      modelId: props.modelId,
-      agentId: props.agentId,
+    await new Promise<void>((resolve) => {
+      streamRegenerateStage2Pd(props.ptProjectId, props.modelId, props.agentId, {
+        onProgress: (data) => {
+          if (data.step === 'evidence_map' || data.step === 'prompt') {
+            loadingStepIdx.value = 0
+            if (data.step === 'evidence_map' && data.current != null && data.total != null) {
+              loadingSteps.value[0].activeMsg = `이슈를 바탕으로 요구사항을 매핑하고 있습니다… (${data.current}/${data.total})`
+            }
+          }
+          if (data.step === 'pd_generate') {
+            loadingStepIdx.value = 0
+            if (data.current != null && data.total != null) {
+              loadingSteps.value[0].activeMsg = `문제 정의를 생성하고 있습니다… (${data.current}/${data.total})`
+            }
+          }
+          if (data.step === 'dedup') {
+            loadingStepIdx.value = 1
+            loadingSteps.value[1].activeMsg = '문제정의 중복을 정리하고 있습니다…'
+          }
+        },
+        onDone: () => {
+          loadingStepIdx.value = 3
+          resolve()
+        },
+        onError: (msg) => {
+          openToast({ message: msg || '문제정의 재생성 실패', type: 'error' })
+          resolve()
+        },
+      })
     })
-    if (res.result === 'OK') {
-      openToast({ message: '문제정의가 재생성되었습니다.' })
-      await loadAll()
-      activeProblemId.value = problemDefs.value[0]?.problemId ?? null
-    } else {
-      openToast({ message: '재생성 실패', type: 'error' })
-    }
+    await loadAll()
+    activeProblemId.value = problemDefs.value[0]?.problemId ?? null
+    openToast({ message: '문제정의가 재생성되었습니다.' })
   } finally {
     isRegeneratingAllPd.value = false
-    closeLoading()
+    isLoadingStage2.value = false
+    resetLoadingStepsForFull()
   }
 }
 

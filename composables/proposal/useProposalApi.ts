@@ -541,6 +541,50 @@ export const useProposalApi = () => {
   }
 
   /**
+   * 문제정의 재생성 SSE 스트림 — runS2a만 재실행하며 진행 단계 전달
+   */
+  const streamRegenerateStage2Pd = (
+    ptProjectId: string,
+    modelId: string,
+    agentId: string,
+    callbacks: {
+      onProgress?: (data: Stage2ProgressData) => void
+      onDone?: (data: { ptProjectId: string; problemDefCount: number }) => void
+      onError?: (message: string) => void
+    },
+    opts?: { totalSlideBudget?: number; userFeedback?: string },
+  ): EventSource => {
+    const params = new URLSearchParams({
+      ptProjectId,
+      modelId,
+      agentId,
+      totalSlideBudget: String(opts?.totalSlideBudget ?? 40),
+    })
+    if (opts?.userFeedback) params.set('userFeedback', opts.userFeedback)
+    const es = new EventSource(`/api/ai/proposal/streamRegenerateStage2Pd.do?${params.toString()}`)
+
+    es.addEventListener('progress', (e) => {
+      try {
+        callbacks.onProgress?.(JSON.parse((e as MessageEvent).data) as Stage2ProgressData)
+      } catch {
+        /* ignore */
+      }
+    })
+    es.addEventListener('done', (e) => {
+      try {
+        callbacks.onDone?.(JSON.parse((e as MessageEvent).data) as { ptProjectId: string; problemDefCount: number })
+      } catch {
+        /* ignore */
+      } finally {
+        es.close()
+      }
+    })
+    attachSseErrorListener(es, callbacks.onError)
+
+    return es
+  }
+
+  /**
    * D-0T: Stage2 세부목차 생성 SSE 스트림
    *
    * @param ptProjectId      프로젝트 ID
@@ -1086,6 +1130,7 @@ export const useProposalApi = () => {
     fetchInsertStage2WinTheme,
     fetchDeleteStage2WinTheme,
     fetchUpdateStage2TocMapping,
+    streamRegenerateStage2Pd,
     // Step E (본문 생성)
     streamAnalyzeStage2,
     streamAnalyzeStage2Toc,
