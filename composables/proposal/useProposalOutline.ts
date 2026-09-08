@@ -24,6 +24,7 @@ export const useProposalOutline = (ptProjectId: Ref<string>, modelId: Ref<string
     fetchGenerateTocOutline,
     fetchChatTocOutline,
     fetchConfirmTocOutline,
+    fetchConfirmAllTocOutline,
     streamGenerateAllTocOutline,
   } = useProposalApi()
 
@@ -37,6 +38,10 @@ export const useProposalOutline = (ptProjectId: Ref<string>, modelId: Ref<string
     try {
       const res = await fetchSelectTocList(ptProjectId.value)
       tocList.value = res.list ?? []
+      // 미생성 건수 스냅샷 — 전체 생성 버튼 라벨용 (단건 생성으로 변하지 않음)
+      const parentIdSet = new Set(tocList.value.map((t) => t.parentId).filter(Boolean))
+      const leaves = tocList.value.filter((t) => !parentIdSet.has(t.tocId))
+      unGeneratedCount.value = leaves.filter((t) => !t.contentOutlineTxt || t.contentOutlineTxt.trim() === '').length
     } catch {
       openToast({ message: '목차 로드에 실패했습니다.', type: 'error' })
     } finally {
@@ -191,10 +196,8 @@ export const useProposalOutline = (ptProjectId: Ref<string>, modelId: Ref<string
   const batchFailItems = ref<BatchFailItem[]>([])
   let _batchEventSource: EventSource | null = null
 
-  /** 미생성 리프 노드 수 */
-  const unGeneratedCount = computed(
-    () => leafNodes.value.filter((t) => !t.contentOutlineTxt || t.contentOutlineTxt.trim() === '').length,
-  )
+  /** 미생성 리프 노드 수 — TOC 로드 시점에 고정 (단건 생성으로 변하지 않음) */
+  const unGeneratedCount = ref(0)
 
   const handleGenerateAll = () => {
     if (isBatchGenerating.value || unGeneratedCount.value === 0) return
@@ -230,6 +233,7 @@ export const useProposalOutline = (ptProjectId: Ref<string>, modelId: Ref<string
         isBatchGenerating.value = false
         batchProcessingTocId.value = null
         _batchEventSource = null
+        unGeneratedCount.value = data.failCount ?? 0
 
         if (data.failCount > 0) {
           openToast({
@@ -247,6 +251,32 @@ export const useProposalOutline = (ptProjectId: Ref<string>, modelId: Ref<string
         openToast({ message: message || '전체 생성 중 오류가 발생했습니다.', type: 'error' })
       },
     })
+  }
+
+  // ── 일괄 확정 ────────────────────────────────────────────────────────────
+  const isBatchConfirming = ref(false)
+
+  /** 콘텐츠 개요가 있는 항목을 모두 확정 (단일 API 호출) */
+  const handleConfirmAll = async () => {
+    isBatchConfirming.value = true
+    try {
+      const res = await fetchConfirmAllTocOutline(ptProjectId.value)
+      if (res.result !== 'OK') {
+        openToast({ message: res.msg ?? '일괄 확정에 실패했습니다.', type: 'error' })
+        return
+      }
+      // 프론트 상태 동기화: 개요가 있는 리프 노드를 모두 003으로
+      for (const item of leafNodes.value) {
+        if (item.contentOutlineTxt && item.contentOutlineTxt.trim() !== '') {
+          item.outlineStatusCd = '003'
+        }
+      }
+      openToast({ message: `${res.confirmedCount ?? 0}건 일괄 확정되었습니다.` })
+    } catch {
+      openToast({ message: '일괄 확정 중 오류가 발생했습니다.', type: 'error' })
+    } finally {
+      isBatchConfirming.value = false
+    }
   }
 
   const cancelBatchGenerate = () => {
@@ -278,6 +308,7 @@ export const useProposalOutline = (ptProjectId: Ref<string>, modelId: Ref<string
     batchProcessingTocId,
     batchFailItems,
     unGeneratedCount,
+    isBatchConfirming,
     handleLoadToc,
     handleSelectNode,
     handleGenerate,
@@ -285,6 +316,7 @@ export const useProposalOutline = (ptProjectId: Ref<string>, modelId: Ref<string
     handleConfirm,
     handleStartEdit,
     handleGenerateAll,
+    handleConfirmAll,
     cancelBatchGenerate,
   }
 }

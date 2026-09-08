@@ -286,6 +286,13 @@ export const useProposalApi = () => {
     return post('/ai/proposal/confirmTocOutline.do', params)
   }
 
+  /** 콘텐츠 개요 일괄 확정 (CONTENT_OUTLINE_TXT가 있는 항목 모두 003 처리) */
+  const fetchConfirmAllTocOutline = async (
+    ptProjectId: string,
+  ): Promise<{ result: string; confirmedCount?: number; msg?: string }> => {
+    return post('/ai/proposal/confirmAllTocOutline.do', { ptProjectId })
+  }
+
   /**
    * 프로젝트 용도별 파일 단건 조회 (최근 등록 기준, 없으면 data=null)
    * @param filePurposeCd 001=RFP원문(기본값), 003=템플릿 등
@@ -1101,6 +1108,7 @@ export const useProposalApi = () => {
     fetchGenerateTocOutline,
     fetchChatTocOutline,
     fetchConfirmTocOutline,
+    fetchConfirmAllTocOutline,
     fetchUpdateMaxStepNo,
     fetchSelectStage1Result,
     fetchUpdateRequirement,

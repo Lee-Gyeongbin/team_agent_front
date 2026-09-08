@@ -360,12 +360,24 @@
               : `${confirmedCount}/${leafNodes.length}개 확정됨 · 확정하지 않은 항목이 있어도 이동할 수 있습니다.`
           }}
         </span>
-        <button
-          class="oc-btn oc-btn-primary"
-          @click="$emit('go-template')"
-        >
-          템플릿 설정으로 이동 ›
-        </button>
+        <div class="oc-footer-actions">
+          <UiButton
+            v-if="!allConfirmed"
+            variant="primary-line"
+            size="md"
+            :loading="isBatchConfirming"
+            :disabled="isBatchConfirming"
+            @click="$emit('confirm-all')"
+          >
+            일괄 확정
+          </UiButton>
+          <button
+            class="oc-btn oc-btn-primary"
+            @click="$emit('go-template')"
+          >
+            템플릿 설정으로 이동 ›
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -421,6 +433,7 @@ interface Props {
   batchProcessingTocId: string | null
   batchFailItems: BatchFailItem[]
   unGeneratedCount: number
+  isBatchConfirming: boolean
 }
 
 const props = defineProps<Props>()
@@ -434,6 +447,7 @@ const emit = defineEmits<{
   'update:editing-text': [value: string]
   'generate-all': []
   'cancel-batch': []
+  'confirm-all': []
   'go-template': []
 }>()
 

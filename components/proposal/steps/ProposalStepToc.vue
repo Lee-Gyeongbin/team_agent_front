@@ -305,6 +305,7 @@
           :batch-processing-toc-id="batchProcessingTocId"
           :batch-fail-items="batchFailItems"
           :un-generated-count="unGeneratedCount"
+          :is-batch-confirming="isBatchConfirming"
           @select-node="handleSelectNode"
           @generate="handleGenerate"
           @chat="handleChat"
@@ -313,6 +314,7 @@
           @update:editing-text="editingText = $event"
           @generate-all="handleGenerateAll"
           @cancel-batch="cancelBatchGenerate"
+          @confirm-all="handleConfirmAll"
           @go-template="emit('next')"
         />
       </div>
@@ -344,7 +346,7 @@
   <!-- 프롬프트 보기/수정 모달 (항상 렌더링) -->
   <ProposalPromptModal
     :is-open="isPromptModalOpen"
-    :stage-cds="['S2C_COVEREDREQNOS']"
+    :stage-cds="['S2C_COVEREDREQNOS', 'TOC_STRATEGY']"
     @close="isPromptModalOpen = false"
   />
 </template>
@@ -392,6 +394,7 @@ const {
   batchProcessingTocId,
   batchFailItems,
   unGeneratedCount,
+  isBatchConfirming,
   handleLoadToc,
   handleSelectNode,
   handleGenerate,
@@ -399,6 +402,7 @@ const {
   handleConfirm,
   handleStartEdit,
   handleGenerateAll,
+  handleConfirmAll,
   cancelBatchGenerate,
 } = useProposalOutline(
   computed(() => props.ptProjectId),
