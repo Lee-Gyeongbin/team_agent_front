@@ -47,12 +47,20 @@
             </div>
           </div>
 
-          <!-- 참석자 선택 -->
+          <!-- 참석자 선택 (조직 트리 + 소속 사용자) -->
           <div class="meeting-start-modal-field">
-            <label class="meeting-start-modal-label">참석자</label>
+            <div class="meeting-start-modal-label-row">
+              <label class="meeting-start-modal-label">참석자</label>
+              <span
+                v-if="selectedAttendees.length"
+                class="meeting-attendee-selected"
+              >
+                {{ selectedAttendees.length }}명 선택
+              </span>
+            </div>
             <UiInput
-              v-model="attendeeSearchKeyword"
-              placeholder="참석자 이름으로 검색..."
+              v-model="searchKeyword"
+              placeholder="조직/참석자 이름으로 검색..."
               class="meeting-attendee-search-input"
             >
               <template #icon-right>
@@ -60,24 +68,44 @@
               </template>
             </UiInput>
             <div class="meeting-attendee-list">
-              <label
-                v-for="user in filteredUserList"
-                :key="user.createUserId"
-                class="meeting-attendee-item"
-                :class="{ 'is-selected': isSelected(user.createUserId) }"
-              >
-                <input
-                  type="checkbox"
-                  :value="user.createUserId"
-                  :checked="isSelected(user.createUserId)"
-                  @change="toggleAttendee(user)"
-                />
-                <span class="meeting-attendee-name">{{ user.userNm }}</span>
-              </label>
-              <UiEmpty
-                v-if="filteredUserList.length === 0"
-                title="검색 결과가 없습니다."
+              <UiLoading
+                v-if="isAttendeeTreeLoading"
+                overlay
+                text="조직도를 불러오는 중..."
               />
+              <div
+                v-else-if="attendeeTreeErrorMessage"
+                class="meeting-attendee-state"
+              >
+                <p class="meeting-attendee-state__error">{{ attendeeTreeErrorMessage }}</p>
+                <UiButton
+                  variant="outline"
+                  size="sm"
+                  @click="handleLoadAttendeeTree"
+                >
+                  다시 시도
+                </UiButton>
+              </div>
+              <UiEmpty
+                v-else-if="!filteredAttendeeTree.length"
+                :title="searchKeyword.trim() ? '검색 결과가 없습니다.' : '등록된 조직이 없습니다.'"
+              />
+              <ul
+                v-else
+                class="meeting-attendee-tree-root"
+                role="tree"
+              >
+                <MeetingAttendeeTreeNode
+                  v-for="node in filteredAttendeeTree"
+                  :key="node.orgId"
+                  :node="node"
+                  :depth="0"
+                  :selected-user-ids="selectedUserIds"
+                  @toggle-expand="handleToggleAttendeeOrgExpand"
+                  @toggle-org="onToggleOrg"
+                  @toggle-user="onToggleUser"
+                />
+              </ul>
             </div>
           </div>
 
@@ -124,16 +152,26 @@
 </template>
 
 <script setup lang="ts">
+import { computed, onMounted, reactive, ref } from 'vue'
+import { UiButton, UiEmpty, UiInput, UiLoading } from '@leechanyong/ispark-ui'
 import { openToast } from '~/composables/useToast'
-import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
-import type { MeetingUser } from '~/types/meeting'
+import { collectAttendeeUsers, useMeetingAttendeeTree } from '~/composables/meeting/useMeetingAttendeeTree'
+import MeetingAttendeeTreeNode from '~/components/meeting/MeetingAttendeeTreeNode.vue'
+import type { MeetingAttendeeOrgNode, MeetingAttendeeUserItem, MeetingUser } from '~/types/meeting'
 
 const emit = defineEmits<{
   close: []
   confirm: [params: { meetingTitle: string; attendees: string; isAutoTitle: 'Y' | 'N'; showSpeakerYn: 'Y' | 'N' }]
 }>()
 
-const { userList, handleSelectUserList } = useMeetingStore()
+const {
+  filteredAttendeeTree,
+  isAttendeeTreeLoading,
+  attendeeTreeErrorMessage,
+  searchKeyword,
+  handleLoadAttendeeTree,
+  handleToggleAttendeeOrgExpand,
+} = useMeetingAttendeeTree()
 
 const titleRef = ref<{ $el: HTMLElement } | null>(null)
 
@@ -143,28 +181,47 @@ const form = reactive({
   isAutoTitle: false,
   showSpeaker: true, // 발언자 표시 여부 (기본: 표시)
 })
-const attendeeSearchKeyword = ref('')
 const selectedAttendees = ref<MeetingUser[]>([])
 
-const filteredUserList = computed(() => {
-  const keyword = attendeeSearchKeyword.value.trim().toLowerCase()
-  if (!keyword) return userList.value
-  return userList.value.filter((user) => user.userNm.toLowerCase().includes(keyword))
-})
+const selectedUserIds = computed(() => selectedAttendees.value.map((user) => user.createUserId))
 
 onMounted(() => {
-  handleSelectUserList()
+  void handleLoadAttendeeTree()
 })
 
-const isSelected = (userId: string) => selectedAttendees.value.some((u) => u.createUserId === userId)
+const isSelected = (userId: string): boolean => selectedAttendees.value.some((user) => user.createUserId === userId)
 
-const toggleAttendee = (user: MeetingUser) => {
-  const idx = selectedAttendees.value.findIndex((u) => u.createUserId === user.createUserId)
+const toMeetingUser = (user: MeetingAttendeeUserItem): MeetingUser => ({
+  createUserId: user.userId,
+  userNm: user.userNm,
+})
+
+const onToggleUser = (user: MeetingAttendeeUserItem): void => {
+  const idx = selectedAttendees.value.findIndex((item) => item.createUserId === user.userId)
   if (idx >= 0) {
     selectedAttendees.value.splice(idx, 1)
-  } else {
-    selectedAttendees.value.push(user)
+    return
   }
+  selectedAttendees.value.push(toMeetingUser(user))
+}
+
+const onToggleOrg = (node: MeetingAttendeeOrgNode): void => {
+  const users = collectAttendeeUsers(node)
+  if (!users.length) return
+
+  const allSelected = users.every((user) => isSelected(user.userId))
+  if (allSelected) {
+    const removeIds = new Set(users.map((user) => user.userId))
+    selectedAttendees.value = selectedAttendees.value.filter((item) => !removeIds.has(item.createUserId))
+    return
+  }
+
+  const next = [...selectedAttendees.value]
+  for (const user of users) {
+    if (next.some((item) => item.createUserId === user.userId)) continue
+    next.push(toMeetingUser(user))
+  }
+  selectedAttendees.value = next
 }
 
 const onConfirm = () => {

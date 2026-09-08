@@ -94,6 +94,7 @@ const progressStepIdx = computed(() => props.steps.findIndex((s) => s.status ===
 // 🔽 'icon-meeting-speaker' 등록 후 교체 (현재는 이미 등록된 'icon-user'로 임시 대체)
 // 'icon-meeting-save'는 파일 저장 모달 등에서 사용
 const iconMap: Partial<Record<MeetingStepKey, string>> = {
+  voiceEnroll: 'icon-meeting-mic',
   record: 'icon-meeting-mic',
   speaker: 'icon-meeting-generate',
   generate: 'icon-meeting-edit',

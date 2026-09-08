@@ -5,6 +5,7 @@ import type {
   Meeting as ApiMeeting,
   MeetingDetail,
   MeetingSpeaker as ApiMeetingSpeaker,
+  MeetingVoiceEnrollment,
   MeetingUser as ApiMeetingUser,
   MeetingInfographic,
   MeetingViewModel as Meeting,
@@ -27,6 +28,8 @@ const {
   fetchDeleteMeeting,
   fetchCreateMeeting,
   fetchFinishMeetingWithAudio,
+  fetchVoiceEnroll,
+  fetchVoiceEnrollmentList,
   fetchSaveSpeakerMapping,
   fetchSaveSpeakers,
   fetchSaveSpeakersMerge,
@@ -112,15 +115,20 @@ const parseAttendeesDisplay = (attendees: string): string => {
   return attendees ?? ''
 }
 
+/** 음성등록 완료 여부 (전체 참석자 등록 완료 or 참석자 없음) */
+const voiceEnrollDone = ref(true)
+
 const deriveSteps = (status: string, hasMinutes: boolean): MeetingStep[] => {
   const s = (key: MeetingStepKey, label: string, stepStatus: MeetingStepStatus): MeetingStep => ({
     key,
     label,
     status: stepStatus,
   })
+  const enrollDone = voiceEnrollDone.value
   if (status === '001') {
     return [
-      s('record', '녹음', 'progress'),
+      s('voiceEnroll', '음성 등록', enrollDone ? 'done' : 'progress'),
+      s('record', '녹음', enrollDone ? 'progress' : 'wait'),
       s('speaker', '화자 분리', 'wait'),
       s('generate', '회의록 생성', 'wait'),
       s('edit', '회의록 편집', 'wait'),
@@ -128,6 +136,7 @@ const deriveSteps = (status: string, hasMinutes: boolean): MeetingStep[] => {
     ]
   }
   return [
+    s('voiceEnroll', '음성 등록', 'done'),
     s('record', '녹음', 'done'),
     s('speaker', '화자 분리', hasMinutes ? 'done' : 'wait'),
     s('generate', '회의록 생성', hasMinutes ? 'done' : 'wait'),
@@ -405,6 +414,27 @@ const handleSelectMeetingDetail = async (meetingId: number) => {
     meetingDetail.value = detail
     infographicList.value = detail.infographicList ?? []
 
+    // 음성등록 완료 여부 판정: 참석자가 있고 status='001'(녹음 전)이면 enrollment 조회
+    const speakers = detail.speakers ?? []
+    const attendeesJson = detail.meeting?.attendees
+    const hasAttendees = speakers.length > 0 || (attendeesJson && attendeesJson !== '[]')
+    if (detail.meeting?.status === '001' && hasAttendees) {
+      try {
+        const enrollments = await fetchVoiceEnrollmentList(meetingId)
+        const enrollList = enrollments.list ?? []
+        // 모든 speaker에 대해 003(완료) enrollment이 있는지 확인
+        const doneIds = new Set(enrollList.filter((e) => e.status === '003').map((e) => e.speakerId))
+        const allDone = speakers.length > 0
+          ? speakers.every((sp) => doneIds.has(sp.speakerId))
+          : enrollList.length > 0 && enrollList.every((e) => e.status === '003')
+        voiceEnrollDone.value = allDone
+      } catch {
+        voiceEnrollDone.value = false
+      }
+    } else {
+      voiceEnrollDone.value = true
+    }
+
     const mapped = mapApiDetailToMeeting(detail)
     if (!currentMeeting.value || currentMeeting.value.id !== mapped?.id) {
       currentMeeting.value = mapped
@@ -479,17 +509,53 @@ const handleCreateMeeting = async (params: {
   attendees: string
   isAutoTitle: 'Y' | 'N'
   showSpeakerYn: 'Y' | 'N'
-}): Promise<number | null> => {
+}): Promise<{ meetingId: number; speakers: ApiMeetingSpeaker[] } | null> => {
   try {
     const res = await fetchCreateMeeting(params)
     if (!res.successYn) {
       openToast({ message: '회의를 시작하지 못했습니다.', type: 'error' })
       return null
     }
-    return res.meetingId
+    return { meetingId: res.meetingId, speakers: res.speakers ?? [] }
   } catch {
     openToast({ message: '회의를 시작하지 못했습니다.', type: 'error' })
     return null
+  }
+}
+
+/** 참석자 Voice Enrollment — 녹음 종료 시 호출 (스토리지 업로드 + AI 프로필 생성) */
+const handleVoiceEnroll = async (params: {
+  meetingId: number
+  speakerId: number
+  speakerNm: string
+  audioBlob: Blob
+}): Promise<{ successYn: boolean; returnMsg?: string }> => {
+  openLoading({ text: '음성을 등록하는 중...' })
+  try {
+    const res = await fetchVoiceEnroll(params)
+    if (!res.successYn) {
+      const returnMsg = res.returnMsg || '음성 등록에 실패했습니다.'
+      openToast({ message: returnMsg, type: 'error' })
+      return { successYn: false, returnMsg }
+    }
+    return { successYn: true }
+  } catch {
+    const returnMsg = '음성 등록에 실패했습니다.'
+    openToast({ message: returnMsg, type: 'error' })
+    return { successYn: false, returnMsg }
+  } finally {
+    closeLoading()
+  }
+}
+
+/** 회의별 Voice Enrollment 현황 조회 (NCP 경로·상태. Embedding은 AI 캐시) */
+const handleSelectVoiceEnrollmentList = async (meetingId: number): Promise<MeetingVoiceEnrollment[]> => {
+  try {
+    const res = await fetchVoiceEnrollmentList(meetingId)
+    return res.list ?? []
+  } catch {
+    openToast({ message: '음성 등록 현황을 불러오지 못했습니다.', type: 'error' })
+    return []
   }
 }
 
@@ -1140,6 +1206,7 @@ export const useMeetingStore = () => {
     isInfoEditOpen,
     userSearchResults,
     activeTab,
+    voiceEnrollDone,
     speakerNavSpeakerId,
     focusedSttItemId,
     navigateSpeakerUtterance,
@@ -1155,6 +1222,8 @@ export const useMeetingStore = () => {
     handleSelectMeetingDetail,
     handleStreamInfographic,
     handleCreateMeeting,
+    handleVoiceEnroll,
+    handleSelectVoiceEnrollmentList,
     handleFinishMeetingWithAudio,
     handleFinishResumedMeeting,
     handleProcessRecoveredMeeting,

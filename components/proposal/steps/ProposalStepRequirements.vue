@@ -671,10 +671,10 @@
                 <UiBadge
                   v-if="editingEcId !== ec.evalCriteriaId"
                   class="pt-ec-fillbadge"
-                  :variant="ecFilledCount(ec) === 3 ? 'success' : 'warning'"
+                  :variant="ecFilledCount(ec) === 4 ? 'success' : 'warning'"
                   size="sm"
                 >
-                  {{ ecFilledCount(ec) === 0 ? '미작성' : `${ecFilledCount(ec)}/3 작성` }}
+                  {{ ecFilledCount(ec) === 0 ? '미작성' : `${ecFilledCount(ec)}/4 작성` }}
                 </UiBadge>
                 <UiButton
                   v-if="editingEcId !== ec.evalCriteriaId"
@@ -743,6 +743,15 @@
                   size="md"
                   placeholder="필수 증빙을 입력하세요"
                 />
+                <label>차별화 방향</label>
+                <UiTextarea
+                  v-model="ecDraft.differentiationDirection"
+                  :rows="3"
+                  :auto-resize="false"
+                  border
+                  size="md"
+                  placeholder="차별화 방향을 입력하세요"
+                />
               </template>
               <template v-else>
                 <label>평가 의도</label>
@@ -765,6 +774,13 @@
                   :class="{ 'is-empty': !ec.requiredEvidence }"
                 >
                   {{ ec.requiredEvidence || '내용 없음' }}
+                </p>
+                <label>차별화 방향</label>
+                <p
+                  class="pt-ec-view-text"
+                  :class="{ 'is-empty': !ec.differentiationDirection }"
+                >
+                  {{ ec.differentiationDirection || '내용 없음' }}
                 </p>
               </template>
 
@@ -1039,6 +1055,7 @@ const ecDraft = ref({
   evalIntent: '',
   highScoreCondition: '',
   requiredEvidence: '',
+  differentiationDirection: '',
 })
 const editingIssueId = ref<string | null>(null)
 const isIssueSaving = ref(false)
@@ -1228,7 +1245,7 @@ const evalScoreSum = computed(() => evalCriteria.value.reduce((a, b) => a + (Num
 
 /** 평가기준 상세 3개 항목 중 채워진 개수 — 접힌 상태에서 미작성 기준을 식별하기 위함 */
 const ecFilledCount = (ec: PtEvalCriteria) =>
-  [ec.evalIntent, ec.highScoreCondition, ec.requiredEvidence].filter((v) => !!v?.trim()).length
+  [ec.evalIntent, ec.highScoreCondition, ec.requiredEvidence, ec.differentiationDirection].filter((v) => !!v?.trim()).length
 
 /** 합계 안내 — 불일치면 차이값과 조치 방향까지 알려준다 */
 const evalScoreMessage = computed(() => {
@@ -1645,6 +1662,7 @@ const onStartEditEc = (ec: PtEvalCriteria) => {
     evalIntent: ec.evalIntent || '',
     highScoreCondition: ec.highScoreCondition || '',
     requiredEvidence: ec.requiredEvidence || '',
+    differentiationDirection: ec.differentiationDirection || '',
   }
   // 수정 진입 시 상세 영역 펼침
   if (!openEcIds.value.has(ec.evalCriteriaId)) {
@@ -1693,6 +1711,7 @@ const onSaveEc = async () => {
       evalIntent: ecDraft.value.evalIntent.trim() || null,
       highScoreCondition: ecDraft.value.highScoreCondition.trim() || null,
       requiredEvidence: ecDraft.value.requiredEvidence.trim() || null,
+      differentiationDirection: ecDraft.value.differentiationDirection.trim() || null,
     })
     if (res.result !== 'OK') {
       openToast({ message: '평가기준 수정에 실패했습니다.', type: 'error' })

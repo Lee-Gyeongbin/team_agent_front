@@ -3,6 +3,8 @@ import { useApi_multipart } from '~/composables/com/useApi_multipart'
 import type {
   Meeting as ApiMeeting,
   MeetingDetail,
+  MeetingSpeaker as ApiMeetingSpeaker,
+  MeetingVoiceEnrollment,
   MeetingUser as ApiMeetingUser,
   MeetingInfographic,
   MeetingViewModel as Meeting,
@@ -64,14 +66,17 @@ export const useMeetingApi = () => {
     return post<{ data: Meeting }>(`/ai/meeting/saveMeetingMinutes.do`, meeting)
   }
 
-  /** 회의 시작 */
+  /** 회의 시작 — speakers는 생성 시 insert된 화자 목록 (speakerId = auto_increment PK) */
   const fetchCreateMeeting = async (params: {
     meetingTitle: string
     attendees: string
     isAutoTitle: 'Y' | 'N'
     showSpeakerYn: 'Y' | 'N'
-  }): Promise<{ successYn: boolean; meetingId: number }> => {
-    return post<{ successYn: boolean; meetingId: number }>('/ai/meeting/createMeeting.do', params)
+  }): Promise<{ successYn: boolean; meetingId: number; speakers?: ApiMeetingSpeaker[] }> => {
+    return post<{ successYn: boolean; meetingId: number; speakers?: ApiMeetingSpeaker[] }>(
+      '/ai/meeting/createMeeting.do',
+      params,
+    )
   }
 
   /**
@@ -91,6 +96,56 @@ export const useMeetingApi = () => {
       method: 'POST',
       body: formData,
     })
+  }
+
+  /** Blob MIME → Enrollment 업로드 파일명 (백엔드가 originalFilename에서 확장자 추출) */
+  const getVoiceEnrollFileName = (blob: Blob, speakerId: number): string => {
+    const type = blob.type || 'audio/webm'
+    if (type.includes('mp4')) return `enroll-${speakerId}.m4a`
+    if (type.includes('ogg')) return `enroll-${speakerId}.ogg`
+    return `enroll-${speakerId}.webm`
+  }
+
+  /**
+   * 참석자 Voice Enrollment
+   * - MeetingVO 필드(meetingId, speakerId=PK, speakerNm) + audioFile
+   * - 백엔드: 스토리지 업로드 → TB_MEETING_VOICE_ENROLLMENT 저장 → AI /voice/enroll
+   */
+  const fetchVoiceEnroll = async (params: {
+    meetingId: number
+    speakerId: number
+    speakerNm: string
+    audioBlob: Blob
+  }): Promise<{
+    successYn: boolean
+    returnMsg?: string
+    meetingId?: number
+    speakerId?: number
+    speakerNm?: string
+  }> => {
+    const formData = new FormData()
+    formData.append('meetingId', String(params.meetingId))
+    formData.append('speakerId', String(params.speakerId))
+    formData.append('speakerNm', params.speakerNm)
+    formData.append('audioFile', params.audioBlob, getVoiceEnrollFileName(params.audioBlob, params.speakerId))
+
+    return useApi_multipart<{
+      successYn: boolean
+      returnMsg?: string
+      meetingId?: number
+      speakerId?: number
+      speakerNm?: string
+    }>('/api/ai/meeting/voiceEnroll.do', {
+      method: 'POST',
+      body: formData,
+    })
+  }
+
+  /** 회의별 Voice Enrollment 목록 (TB_MEETING_VOICE_ENROLLMENT) */
+  const fetchVoiceEnrollmentList = async (meetingId: number): Promise<{ list: MeetingVoiceEnrollment[] }> => {
+    return get<{ list: MeetingVoiceEnrollment[] }>(
+      `/ai/meeting/selectMeetingVoiceEnrollmentList.do?meetingId=${meetingId}`,
+    )
   }
 
   /** 화자-참석자 매핑 저장 */
@@ -254,6 +309,8 @@ export const useMeetingApi = () => {
     fetchSaveMeetingMinutes,
     fetchCreateMeeting,
     fetchFinishMeetingWithAudio,
+    fetchVoiceEnroll,
+    fetchVoiceEnrollmentList,
     fetchSaveSpeakerMapping,
     fetchSaveSpeaker,
     fetchSaveSpeakers,

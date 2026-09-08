@@ -701,7 +701,7 @@ const doDelete = (meetingId: number) => {
   handleDeleteMeeting(meetingId)
 }
 
-/** 새 회의 생성 확인 → 녹음 화면으로 이동 */
+/** 새 회의 생성 확인 → 참석자가 있으면 음성 등록 화면, 없으면 바로 녹음 화면 */
 const onConfirmStart = async (params: {
   meetingTitle: string
   attendees: string
@@ -709,10 +709,11 @@ const onConfirmStart = async (params: {
   showSpeakerYn: 'Y' | 'N'
 }) => {
   isModalOpen.value = false
-  const meetingId = await handleCreateMeeting(params)
-  if (meetingId) {
-    navigateTo(`/meeting/${meetingId}`)
-  }
+  const created = await handleCreateMeeting(params)
+  if (!created) return
+
+  const { meetingId } = created
+  navigateTo(`/meeting/${meetingId}`)
 }
 
 /** 복구하기 클릭 → 해당 회의 상세 페이지로 이동 */
