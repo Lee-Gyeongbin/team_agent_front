@@ -69,10 +69,6 @@ export default defineNuxtConfig({
         changeOrigin: true,
         ws: true,
       },
-      '/ta-storage': {
-        target: 'https://kr.object.ncloudstorage.com/ta-storage',
-        changeOrigin: true,
-      },
     },
   },
 
