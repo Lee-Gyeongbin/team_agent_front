@@ -34,7 +34,7 @@
             >
               <UiIcon
                 name="file-text"
-                size="14"
+                size="16"
               />
               <button
                 type="button"
@@ -47,7 +47,7 @@
                 <UiIcon
                   class="pt-file-chip-download"
                   name="download"
-                  size="12"
+                  size="14"
                 />
               </button>
               <button
@@ -59,7 +59,7 @@
               >
                 <UiIcon
                   name="x"
-                  size="14"
+                  size="16"
                 />
               </button>
             </div>
@@ -86,7 +86,7 @@
           >
             <UiIcon
               name="plus"
-              size="14"
+              size="16"
             />
             <span>파일 첨부 (선택) — 끌어다 놓아도 됩니다</span>
             <!-- data-slot으로 어느 슬롯의 input인지 표시 — ref 콜백이 이 값으로 맵에 담는다 -->

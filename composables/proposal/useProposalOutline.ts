@@ -31,21 +31,41 @@ export const useProposalOutline = (ptProjectId: Ref<string>, modelId: Ref<string
   // ── TOC 트리 ──────────────────────────────────────────────────────────────
   const tocList = ref<PtTocItem[]>([])
   const isLoadingToc = ref(false)
+  let tocLoadVersion = 0
 
-  const handleLoadToc = async () => {
+  const handleLoadToc = async ({ preserveOutlineState = false } = {}) => {
     if (!ptProjectId.value) return
+    const version = ++tocLoadVersion
     isLoadingToc.value = true
     try {
       const res = await fetchSelectTocList(ptProjectId.value)
-      tocList.value = res.list ?? []
-      // 미생성 건수 스냅샷 — 전체 생성 버튼 라벨용 (단건 생성으로 변하지 않음)
+      if (version !== tocLoadVersion) return
+      if (res.result !== 'OK') throw new Error('목차 조회 실패')
+      const previous = new Map(tocList.value.map((item) => [item.tocId, item]))
+      tocList.value = (res.list ?? []).map((item) => {
+        const cached = previous.get(item.tocId)
+        return preserveOutlineState &&
+          cached &&
+          item.contentOutlineTxt == null &&
+          item.outlineStatusCd === cached.outlineStatusCd
+          ? { ...item, contentOutlineTxt: cached.contentOutlineTxt }
+          : item
+      })
+      // 목록의 상태 코드로 작성 여부를 구분 (본문은 선택 시 지연 로딩).
       const parentIdSet = new Set(tocList.value.map((t) => t.parentId).filter(Boolean))
       const leaves = tocList.value.filter((t) => !parentIdSet.has(t.tocId))
-      unGeneratedCount.value = leaves.filter((t) => !t.contentOutlineTxt || t.contentOutlineTxt.trim() === '').length
+      // 삭제된 항목 또는 하위 목차가 추가되어 더 이상 개요 대상이 아닌 항목은 선택 해제.
+      if (selectedTocId.value && !leaves.some((item) => item.tocId === selectedTocId.value)) {
+        selectedTocId.value = null
+        isEditing.value = false
+        editingText.value = ''
+        chatMessages.value = []
+      }
+      batchFailItems.value = batchFailItems.value.filter((item) => leaves.some((leaf) => leaf.tocId === item.tocId))
     } catch {
-      openToast({ message: '목차 로드에 실패했습니다.', type: 'error' })
+      if (version === tocLoadVersion) openToast({ message: '목차 로드에 실패했습니다.', type: 'error' })
     } finally {
-      isLoadingToc.value = false
+      if (version === tocLoadVersion) isLoadingToc.value = false
     }
   }
 
@@ -189,6 +209,12 @@ export const useProposalOutline = (ptProjectId: Ref<string>, modelId: Ref<string
     isEditing.value = true
   }
 
+  const handleCancelEdit = () => {
+    if (isConfirming.value) return
+    editingText.value = ''
+    isEditing.value = false
+  }
+
   // ── 전체 일괄 생성 ────────────────────────────────────────────────────────
   const isBatchGenerating = ref(false)
   const batchProgress = ref({ current: 0, total: 0 })
@@ -196,8 +222,13 @@ export const useProposalOutline = (ptProjectId: Ref<string>, modelId: Ref<string
   const batchFailItems = ref<BatchFailItem[]>([])
   let _batchEventSource: EventSource | null = null
 
-  /** 미생성 리프 노드 수 — TOC 로드 시점에 고정 (단건 생성으로 변하지 않음) */
-  const unGeneratedCount = ref(0)
+  /** 본문이 아직 로드되지 않은 초안·확정 항목은 미작성으로 집계하지 않는다. */
+  const unGeneratedCount = computed(
+    () =>
+      leafNodes.value.filter(
+        (item) => item.outlineStatusCd !== '002' && item.outlineStatusCd !== '003' && !item.contentOutlineTxt?.trim(),
+      ).length,
+  )
 
   const handleGenerateAll = () => {
     if (isBatchGenerating.value || unGeneratedCount.value === 0) return
@@ -218,8 +249,7 @@ export const useProposalOutline = (ptProjectId: Ref<string>, modelId: Ref<string
           if (item) {
             item.outlineStatusCd = '002'
             // contentOutlineTxt는 SSE로 내용을 받지 않으므로 노드 클릭 시 지연 로딩됨
-            // 빈 문자열 대신 placeholder 처리: null이 아닌 빈 값으로 표시만 바꿔줌
-            if (!item.contentOutlineTxt) item.contentOutlineTxt = ''
+            if (!item.contentOutlineTxt) item.contentOutlineTxt = null
           }
         } else {
           batchFailItems.value.push({
@@ -233,7 +263,6 @@ export const useProposalOutline = (ptProjectId: Ref<string>, modelId: Ref<string
         isBatchGenerating.value = false
         batchProcessingTocId.value = null
         _batchEventSource = null
-        unGeneratedCount.value = data.failCount ?? 0
 
         if (data.failCount > 0) {
           openToast({
@@ -315,6 +344,7 @@ export const useProposalOutline = (ptProjectId: Ref<string>, modelId: Ref<string
     handleChat,
     handleConfirm,
     handleStartEdit,
+    handleCancelEdit,
     handleGenerateAll,
     handleConfirmAll,
     cancelBatchGenerate,

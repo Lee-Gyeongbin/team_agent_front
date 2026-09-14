@@ -7,19 +7,30 @@
   <div
     class="pt-dtree-row"
     :class="[`is-${variant}`, { 'is-menu-open': isDropdownOpen, 'is-editing': isEditing }]"
-    role="treeitem"
     @click="onRowClick"
   >
-    <i
+    <button
       v-if="hasToggle"
-      class="icon-arrow-down-gray size-16 pt-dtree-chevron"
-      :class="{ 'is-open': isOpen }"
-    />
+      type="button"
+      class="pt-toc-toggle"
+      :aria-label="`${title} ${isOpen ? '접기' : '펼치기'}`"
+      :aria-expanded="isOpen"
+      @click.stop="emit('toggle')"
+    >
+      <UiIcon
+        :name="isOpen ? 'chevron-down' : 'chevron-right'"
+        size="14"
+      />
+    </button>
     <span
       v-else
       class="pt-dtree-chevron-placeholder"
     />
-    <i :class="['size-16', 'pt-dtree-icon', iconClass, { 'is-leaf': variant === 'leaf' }]" />
+    <UiIcon
+      :name="variant === 'leaf' ? 'file-text' : isOpen ? 'folder-open' : 'folder'"
+      size="16"
+      class="pt-dtree-icon"
+    />
 
     <UiInput
       v-if="isEditing"
@@ -32,6 +43,7 @@
       radius="base"
       @click.stop
       @enter="emit('save-rename')"
+      @keydown.esc.stop="emit('cancel-rename')"
     />
     <span
       v-else
@@ -40,7 +52,12 @@
       {{ title }}
     </span>
 
-    <span :class="['pt-toc-tag', tagClass]">{{ tagLabel }}</span>
+    <UiBadge
+      v-if="variant === 'leaf'"
+      size="sm"
+      variant="default"
+      >{{ tagLabel }}</UiBadge
+    >
     <span
       v-if="countLabel"
       class="pt-dtree-count"
@@ -48,7 +65,22 @@
       {{ countLabel }}
     </span>
 
+    <template v-if="isEditing">
+      <UiButton
+        size="sm"
+        variant="primary-line"
+        @click.stop="emit('save-rename')"
+        >저장</UiButton
+      >
+      <UiButton
+        size="sm"
+        variant="ghost"
+        @click.stop="emit('cancel-rename')"
+        >취소</UiButton
+      >
+    </template>
     <div
+      v-else
       class="pt-dtree-more-wrap"
       @click.stop
     >
@@ -65,11 +97,15 @@
             icon-only
             variant="ghost"
             size="xs"
+            :aria-label="`${title} 관리`"
             class="btn-dtree-more"
             :class="{ 'is-active': isDropdownOpen }"
           >
             <template #icon-left>
-              <i class="icon icon-add-dot size-20" />
+              <UiIcon
+                name="ellipsis"
+                size="16"
+              />
             </template>
           </UiButton>
         </template>
@@ -79,7 +115,8 @@
 </template>
 
 <script setup lang="ts">
-import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
+import { UiBadge, UiButton, UiDropdownMenu, UiIcon, UiInput } from '@leechanyong/ispark-ui'
+import type { DropdownMenuItemDef } from '@leechanyong/ispark-ui'
 
 const props = withDefaults(
   defineProps<{
@@ -110,15 +147,11 @@ const emit = defineEmits<{
   'menu-select': [value: string]
   'update:editing-name': [value: string]
   'save-rename': []
+  'cancel-rename': []
 }>()
 
 const inputRef = ref<{ focus: () => void } | null>(null)
 const isDropdownOpen = ref(false)
-
-const iconClass = computed(() => {
-  if (props.variant === 'leaf') return 'icon-document'
-  return props.isOpen ? 'icon-folder-open' : 'icon-folder-close'
-})
 
 const localEditingName = computed({
   get: () => props.editingName,

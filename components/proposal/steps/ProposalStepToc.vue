@@ -87,18 +87,25 @@
         class="pt-detail-toc-tab"
       >
         <div class="pt-toc-toolbar">
-          <span class="pt-badge is-ok">
-            {{ tocCount > 0 ? `완료 ${tocCount}개` : '완료' }}
-          </span>
+          <UiBadge
+            variant="success"
+            size="sm"
+            >완료 {{ displayedTocCount }}개</UiBadge
+          >
           <span class="pt-muted">세부목차 생성이 완료되었습니다.</span>
           <div class="pt-toc-toolbar-actions">
             <UiButton
-              variant="primary-line"
+              variant="outline"
               size="sm"
               :loading="isRegeneratingToc"
               @click="onRegenerateToc"
             >
-              ↻ 세부목차 재생성
+              <template #icon-left
+                ><UiIcon
+                  name="refresh-cw"
+                  size="14"
+              /></template>
+              세부목차 재생성
             </UiButton>
             <UiButton
               variant="primary-line"
@@ -124,125 +131,49 @@
 
         <div
           v-else
-          class="pt-detail-toc-tree"
-          role="tree"
+          class="pt-toc-workspace"
         >
-          <div
-            v-if="isAdding && addingParentId === null"
-            class="pt-dtree-row is-add"
-            @click.stop
+          <nav
+            class="pt-toc-roots"
+            aria-label="대목차 목록"
           >
-            <span class="pt-dtree-chevron-placeholder" />
-            <UiInput
-              :ref="bindAddInputRef"
-              v-model="addingName"
-              type="text"
-              class="pt-dtree-name-input"
-              :placeholder="addingPlaceholder"
-              size="sm"
-              radius="base"
-              @enter="submitAdd"
-            />
-          </div>
-
-          <div
-            v-for="root in tocTree"
-            :key="root.tocId"
-            class="pt-dtree-node"
-            role="treeitem"
-            :aria-expanded="openGroups.has(root.tocId)"
-          >
-            <ProposalTocTreeRow
-              variant="root"
-              :title="root.title"
-              tag-label="대목차"
-              tag-class="is-rfp"
-              :count-label="`소분류 ${root.children.length}`"
-              :is-open="openGroups.has(root.tocId)"
-              :has-toggle="hasToggle(root)"
-              :is-editing="editingTocId === root.tocId"
-              :editing-name="editingName"
-              edit-placeholder="대목차명 입력 (엔터)"
-              :menu-items="menuRoot"
-              @toggle="toggleGroup(root.tocId)"
-              @menu-select="onMenuSelect($event, root)"
-              @update:editing-name="editingName = $event"
-              @save-rename="saveRename"
-            />
-
-            <div
-              v-show="isChildrenVisible(root)"
-              class="pt-dtree-children"
-              role="group"
-            >
-              <div
-                v-for="section in root.children"
-                :key="section.tocId"
-                class="pt-dtree-node"
-                role="treeitem"
-                :aria-expanded="openGroups.has(section.tocId)"
+            <div class="pt-toc-roots-heading">
+              <h4>대목차 목록</h4>
+              <span>{{ tocTree.length }}개</span>
+            </div>
+            <div class="pt-toc-roots-list">
+              <button
+                v-for="(root, index) in tocTree"
+                :key="root.tocId"
+                type="button"
+                class="pt-toc-root-button"
+                :class="{ 'is-selected': selectedRootId === root.tocId }"
+                :aria-current="selectedRootId === root.tocId ? 'true' : undefined"
+                :title="root.title"
+                :disabled="isSavingToc"
+                @click="selectRoot(root.tocId)"
               >
-                <ProposalTocTreeRow
-                  variant="section"
-                  :title="section.title"
-                  tag-label="소분류"
-                  tag-class="is-user"
-                  :count-label="`세부 ${section.children.length}`"
-                  :is-open="openGroups.has(section.tocId)"
-                  :has-toggle="hasToggle(section)"
-                  :is-editing="editingTocId === section.tocId"
-                  :editing-name="editingName"
-                  edit-placeholder="소분류명 입력 (엔터)"
-                  :menu-items="menuSection"
-                  @toggle="toggleGroup(section.tocId)"
-                  @menu-select="onMenuSelect($event, section)"
-                  @update:editing-name="editingName = $event"
-                  @save-rename="saveRename"
+                <span class="pt-toc-root-number">{{ String(index + 1).padStart(2, '0') }}</span>
+                <UiIcon
+                  :name="selectedRootId === root.tocId ? 'folder-open' : 'folder'"
+                  size="16"
                 />
-
-                <div
-                  v-show="isChildrenVisible(section)"
-                  class="pt-dtree-children"
-                  role="group"
+                <span class="pt-toc-root-title">{{ root.title }}</span>
+                <UiBadge
+                  size="sm"
+                  :variant="selectedRootId === root.tocId ? 'info' : 'default'"
                 >
-                  <ProposalTocTreeRow
-                    v-for="sub in section.children"
-                    :key="sub.tocId"
-                    variant="leaf"
-                    :title="sub.title"
-                    tag-label="세부목차"
-                    tag-class="is-detail"
-                    :is-editing="editingTocId === sub.tocId"
-                    :editing-name="editingName"
-                    edit-placeholder="세부목차명 입력 (엔터)"
-                    :menu-items="menuLeaf"
-                    @menu-select="onMenuSelect($event, sub)"
-                    @update:editing-name="editingName = $event"
-                    @save-rename="saveRename"
-                  />
-                  <div
-                    v-if="isAdding && addingParentId === section.tocId"
-                    class="pt-dtree-row is-add is-leaf"
-                    @click.stop
-                  >
-                    <span class="pt-dtree-chevron-placeholder" />
-                    <UiInput
-                      :ref="bindAddInputRef"
-                      v-model="addingName"
-                      type="text"
-                      class="pt-dtree-name-input"
-                      :placeholder="addingPlaceholder"
-                      size="sm"
-                      radius="base"
-                      @enter="submitAdd"
-                    />
-                  </div>
-                </div>
-              </div>
-
+                  {{ root.children.length }}개
+                </UiBadge>
+                <UiIcon
+                  v-if="selectedRootId === root.tocId"
+                  name="chevron-right"
+                  size="14"
+                />
+              </button>
               <div
-                v-if="isAdding && addingParentId === root.tocId"
-                class="pt-dtree-row is-add is-section"
+                v-if="isAdding && addingParentId === null"
+                class="pt-dtree-row is-add"
                 @click.stop
               >
                 <span class="pt-dtree-chevron-placeholder" />
@@ -254,16 +185,219 @@
                   :placeholder="addingPlaceholder"
                   size="sm"
                   radius="base"
+                  :disabled="isSavingToc"
+                  @keydown.esc.stop="cancelAdd"
                   @enter="submitAdd"
                 />
+                <UiButton
+                  size="sm"
+                  variant="primary"
+                  :loading="isSavingToc"
+                  @click="submitAdd"
+                  >추가</UiButton
+                >
+                <UiButton
+                  size="sm"
+                  variant="ghost"
+                  :disabled="isSavingToc"
+                  @click="cancelAdd"
+                  >취소</UiButton
+                >
+              </div>
+              <UiEmpty
+                v-if="tocTree.length === 0 && !isAdding"
+                title="대목차를 추가해 주세요."
+              />
+            </div>
+          </nav>
+
+          <section
+            class="pt-toc-detail"
+            aria-label="선택한 대목차의 하위 목차"
+          >
+            <div
+              v-for="root in selectedRoots"
+              :key="root.tocId"
+              class="pt-toc-detail-content"
+            >
+              <div class="pt-toc-detail-heading">
+                <ProposalTocTreeRow
+                  variant="root"
+                  :title="root.title"
+                  tag-label="대목차"
+                  tag-class="is-rfp"
+                  :count-label="`소분류 ${root.children.length}`"
+                  :is-open="true"
+                  :has-toggle="false"
+                  :is-editing="editingTocId === root.tocId"
+                  :editing-name="editingName"
+                  edit-placeholder="대목차명 입력 (엔터)"
+                  :menu-items="menuRoot"
+                  @toggle="toggleGroup(root.tocId)"
+                  @menu-select="onMenuSelect($event, root)"
+                  @update:editing-name="editingName = $event"
+                  @save-rename="saveRename"
+                  @cancel-rename="cancelEdit"
+                />
+                <UiButton
+                  variant="ghost"
+                  size="sm"
+                  :disabled="isSavingToc"
+                  @click="startAdd(root.tocId)"
+                >
+                  <template #icon-left
+                    ><UiIcon
+                      name="plus"
+                      size="14"
+                  /></template>
+                  소분류 추가
+                </UiButton>
+              </div>
+
+              <div
+                class="pt-toc-sections"
+                :class="{ 'is-empty': root.children.length === 0 && !(isAdding && addingParentId === root.tocId) }"
+              >
+                <div
+                  v-for="section in root.children"
+                  :key="section.tocId"
+                  class="pt-dtree-node pt-toc-section"
+                >
+                  <ProposalTocTreeRow
+                    variant="section"
+                    :title="section.title"
+                    tag-label="소분류"
+                    tag-class="is-user"
+                    :count-label="`세부 ${section.children.length}`"
+                    :is-open="openGroups.has(section.tocId)"
+                    :has-toggle="hasToggle(section)"
+                    :is-editing="editingTocId === section.tocId"
+                    :editing-name="editingName"
+                    edit-placeholder="소분류명 입력 (엔터)"
+                    :menu-items="menuSection"
+                    @toggle="toggleGroup(section.tocId)"
+                    @menu-select="onMenuSelect($event, section)"
+                    @update:editing-name="editingName = $event"
+                    @save-rename="saveRename"
+                    @cancel-rename="cancelEdit"
+                  />
+
+                  <div
+                    v-show="isChildrenVisible(section)"
+                    class="pt-dtree-children"
+                    role="group"
+                  >
+                    <ProposalTocTreeRow
+                      v-for="sub in section.children"
+                      :key="sub.tocId"
+                      variant="leaf"
+                      :title="sub.title"
+                      tag-label="세부목차"
+                      tag-class="is-detail"
+                      :is-editing="editingTocId === sub.tocId"
+                      :editing-name="editingName"
+                      edit-placeholder="세부목차명 입력 (엔터)"
+                      :menu-items="menuLeaf"
+                      @menu-select="onMenuSelect($event, sub)"
+                      @update:editing-name="editingName = $event"
+                      @save-rename="saveRename"
+                      @cancel-rename="cancelEdit"
+                    />
+                    <div
+                      v-if="isAdding && addingParentId === section.tocId"
+                      class="pt-dtree-row is-add is-leaf"
+                      @click.stop
+                    >
+                      <span class="pt-dtree-chevron-placeholder" />
+                      <UiInput
+                        :ref="bindAddInputRef"
+                        v-model="addingName"
+                        type="text"
+                        class="pt-dtree-name-input"
+                        :placeholder="addingPlaceholder"
+                        size="sm"
+                        radius="base"
+                        :disabled="isSavingToc"
+                        @keydown.esc.stop="cancelAdd"
+                        @enter="submitAdd"
+                      />
+                      <UiButton
+                        size="sm"
+                        variant="primary"
+                        :loading="isSavingToc"
+                        @click="submitAdd"
+                        >추가</UiButton
+                      >
+                      <UiButton
+                        size="sm"
+                        variant="ghost"
+                        :disabled="isSavingToc"
+                        @click="cancelAdd"
+                        >취소</UiButton
+                      >
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  v-if="isAdding && addingParentId === root.tocId"
+                  class="pt-dtree-row is-add is-section"
+                  @click.stop
+                >
+                  <span class="pt-dtree-chevron-placeholder" />
+                  <UiInput
+                    :ref="bindAddInputRef"
+                    v-model="addingName"
+                    type="text"
+                    class="pt-dtree-name-input"
+                    :placeholder="addingPlaceholder"
+                    size="sm"
+                    radius="base"
+                    :disabled="isSavingToc"
+                    @keydown.esc.stop="cancelAdd"
+                    @enter="submitAdd"
+                  />
+                  <UiButton
+                    size="sm"
+                    variant="primary"
+                    :loading="isSavingToc"
+                    @click="submitAdd"
+                    >추가</UiButton
+                  >
+                  <UiButton
+                    size="sm"
+                    variant="ghost"
+                    :disabled="isSavingToc"
+                    @click="cancelAdd"
+                    >취소</UiButton
+                  >
+                </div>
+                <UiEmpty
+                  v-if="root.children.length === 0 && !(isAdding && addingParentId === root.tocId)"
+                  title="아직 소분류가 없습니다."
+                  description="소분류를 추가해 하위 목차를 구성하세요."
+                >
+                  <UiButton
+                    variant="primary-line"
+                    size="sm"
+                    @click="startAdd(root.tocId)"
+                  >
+                    <template #icon-left
+                      ><UiIcon
+                        name="plus"
+                        size="14"
+                    /></template>
+                    소분류 추가
+                  </UiButton>
+                </UiEmpty>
               </div>
             </div>
-          </div>
 
-          <UiEmpty
-            v-if="tocTree.length === 0 && !(isAdding && addingParentId === null)"
-            title="세부목차가 없습니다."
-          />
+            <UiEmpty
+              v-if="tocTree.length === 0 && !(isAdding && addingParentId === null)"
+              title="세부목차가 없습니다."
+            />
+          </section>
         </div>
 
         <div class="pt-panel-actions pt-strategy-actions">
@@ -311,6 +445,7 @@
           @chat="handleChat"
           @confirm="handleConfirm"
           @start-edit="handleStartEdit"
+          @cancel-edit="handleCancelEdit"
           @update:editing-text="editingText = $event"
           @generate-all="handleGenerateAll"
           @cancel-batch="cancelBatchGenerate"
@@ -352,7 +487,7 @@
 </template>
 
 <script setup lang="ts">
-import { UiButton, UiIcon } from '@leechanyong/ispark-ui'
+import { UiBadge, UiButton, UiEmpty, UiIcon, UiInput } from '@leechanyong/ispark-ui'
 import ProposalTocTreeRow from '~/components/proposal/steps/ProposalTocTreeRow.vue'
 import ProposalStepContentOutline from '~/components/proposal/steps/ProposalStepContentOutline.vue'
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
@@ -401,6 +536,7 @@ const {
   handleChat,
   handleConfirm,
   handleStartEdit,
+  handleCancelEdit,
   handleGenerateAll,
   handleConfirmAll,
   cancelBatchGenerate,
@@ -467,6 +603,27 @@ interface TocTreeLeaf extends TocMappingNode {
 }
 
 const tocTree = ref<TocTreeNode[]>([])
+const selectedRootId = ref<string | null>(null)
+const selectedRoots = computed(() => tocTree.value.filter((root) => root.tocId === selectedRootId.value))
+const displayedTocCount = computed(() =>
+  tocTree.value.reduce(
+    (total, root) => total + 1 + root.children.reduce((count, section) => count + 1 + section.children.length, 0),
+    0,
+  ),
+)
+watch(
+  () => tocTree.value.map((root) => root.tocId),
+  (ids) => {
+    if (!selectedRootId.value || !ids.includes(selectedRootId.value)) selectedRootId.value = ids[0] ?? null
+  },
+)
+
+const selectRoot = (tocId: string) => {
+  if (selectedRootId.value === tocId || isSavingToc.value) return
+  cancelEdit()
+  cancelAdd()
+  selectedRootId.value = tocId
+}
 const openGroups = ref<Set<string>>(new Set())
 
 const editingTocId = ref<string | null>(null)
@@ -509,18 +666,17 @@ const focusAddInput = () => {
 }
 
 const menuRoot: DropdownMenuItemDef[] = [
-  { label: '이름 수정', value: 'rename', icon: 'icon-edit' },
-  { label: '소분류 추가', value: 'addChild', icon: 'icon-plus' },
-  { label: '삭제', value: 'delete', icon: 'icon-trashcan', color: 'danger' },
+  { label: '이름 수정', value: 'rename', icon: 'pencil' },
+  { label: '삭제', value: 'delete', icon: 'trash-2', color: 'danger' },
 ]
 const menuSection: DropdownMenuItemDef[] = [
-  { label: '이름 수정', value: 'rename', icon: 'icon-edit' },
-  { label: '세부목차 추가', value: 'addChild', icon: 'icon-plus' },
-  { label: '삭제', value: 'delete', icon: 'icon-trashcan', color: 'danger' },
+  { label: '이름 수정', value: 'rename', icon: 'pencil' },
+  { label: '세부목차 추가', value: 'addChild', icon: 'plus' },
+  { label: '삭제', value: 'delete', icon: 'trash-2', color: 'danger' },
 ]
 const menuLeaf: DropdownMenuItemDef[] = [
-  { label: '이름 수정', value: 'rename', icon: 'icon-edit' },
-  { label: '삭제', value: 'delete', icon: 'icon-trashcan', color: 'danger' },
+  { label: '이름 수정', value: 'rename', icon: 'pencil' },
+  { label: '삭제', value: 'delete', icon: 'trash-2', color: 'danger' },
 ]
 
 const addingPlaceholder = computed(() => {
@@ -682,7 +838,9 @@ const submitAdd = async () => {
       return
     }
     if (!insertTocNode(res.data)) await loadTocResult()
+    if (!parentId) selectedRootId.value = res.data.tocId
     cancelAdd()
+    await handleLoadToc({ preserveOutlineState: true })
     openToast({ message: '목차가 추가되었습니다.' })
   } catch {
     openToast({ message: '목차 추가에 실패했습니다.', type: 'error' })
@@ -708,7 +866,9 @@ const saveRename = async () => {
   ctx.node.title = title
   cancelEdit()
   try {
-    await fetchUpdateTocItem(tocId, title)
+    const res = await fetchUpdateTocItem(tocId, title)
+    if (res.result !== 'OK') throw new Error('목차 수정 실패')
+    await handleLoadToc({ preserveOutlineState: true })
   } catch {
     updateTocTitleLocal(tocId, oldTitle)
     openToast({ message: '목차 제목 수정에 실패했습니다.', type: 'error' })
@@ -730,8 +890,9 @@ const onDeleteItem = async (node: TocMappingNode) => {
       return
     }
     removeTocNode(node.tocId)
-    if (editingTocId.value === node.tocId) cancelEdit()
-    if (addingParentId.value === node.tocId) cancelAdd()
+    if (editingTocId.value && !findTocContext(editingTocId.value)) cancelEdit()
+    if (addingParentId.value && !findTocContext(addingParentId.value)) cancelAdd()
+    await handleLoadToc({ preserveOutlineState: true })
     openToast({ message: '목차가 삭제되었습니다.' })
   } catch {
     openToast({ message: '목차 삭제에 실패했습니다.', type: 'error' })
@@ -857,3 +1018,255 @@ onMounted(async () => {
   startToc()
 })
 </script>
+
+<style scoped lang="scss">
+.pt-toc-workspace {
+  display: grid;
+  grid-template-columns: minmax(240px, 27%) minmax(0, 1fr);
+  gap: 14px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pt-toc-roots,
+.pt-toc-detail {
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid $color-border;
+  border-radius: 8px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pt-toc-roots-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  gap: 12px;
+  flex-shrink: 0;
+
+  h4 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  > span {
+    color: $color-text-muted;
+    font-size: 12px;
+  }
+}
+
+.pt-toc-roots-list {
+  overflow-y: auto;
+  padding: 0 8px 12px;
+  @include custom-scrollbar;
+
+  .is-add {
+    padding: 8px 0;
+    flex-wrap: wrap;
+  }
+  .pt-dtree-chevron-placeholder {
+    display: none;
+  }
+}
+
+.pt-toc-root-button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 10px;
+  margin-bottom: 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: $color-text-primary;
+  text-align: left;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+
+  &:hover {
+    background: $color-surface;
+  }
+  &.is-selected {
+    color: var(--color-primary);
+    background: #edf3ff;
+    font-weight: 600;
+  }
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px;
+  }
+  &:disabled {
+    cursor: wait;
+  }
+  > :not(.pt-toc-root-title) {
+    flex-shrink: 0;
+  }
+}
+
+.pt-toc-root-number {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: $color-text-muted;
+}
+.pt-toc-root-title {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.pt-toc-detail-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.pt-toc-detail-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid $color-border;
+  flex-shrink: 0;
+
+  > .ui-button {
+    flex-shrink: 0;
+  }
+  :deep(.pt-dtree-row) {
+    min-width: 0;
+    padding: 4px 0;
+    flex: 1;
+    cursor: default;
+  }
+  :deep(.pt-dtree-row:hover) {
+    background: transparent;
+  }
+  :deep(.pt-dtree-chevron-placeholder) {
+    display: none;
+  }
+  :deep(.pt-dtree-title) {
+    font-size: 14px;
+    font-weight: 600;
+  }
+}
+
+.pt-toc-sections {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 12px;
+  @include custom-scrollbar;
+
+  &.is-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+}
+
+.pt-toc-section {
+  border: 1px solid $color-border;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  overflow: hidden;
+
+  :deep(.pt-dtree-row.is-section) {
+    background: #f7f9fc;
+  }
+  :deep(.pt-dtree-row) {
+    min-height: 40px;
+    padding: 6px 10px;
+  }
+  > .pt-dtree-children {
+    margin: 0;
+    padding: 4px 4px 4px 22px;
+  }
+  > .pt-dtree-children::before {
+    display: none;
+  }
+  :deep(.pt-dtree-children > .pt-dtree-row::before) {
+    display: none;
+  }
+}
+
+.pt-toc-workspace {
+  :deep(.pt-dtree-title) {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    -webkit-line-clamp: 2;
+  }
+  :deep(.pt-dtree-count) {
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #edf3ff;
+    color: var(--color-primary);
+  }
+  :deep(.btn-dtree-more) {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  :deep(.pt-toc-toggle) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 28px;
+    flex-shrink: 0;
+    border: 0;
+    background: transparent;
+    color: $color-text-muted;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  :deep(.pt-toc-toggle:focus-visible) {
+    outline: 2px solid var(--color-primary);
+  }
+}
+
+@media (max-width: 900px) {
+  .pt-toc-workspace {
+    grid-template-columns: minmax(190px, 30%) minmax(0, 1fr);
+    gap: 10px;
+  }
+  .pt-toc-detail-heading {
+    flex-wrap: wrap;
+  }
+  .pt-toc-detail-heading > :first-child {
+    flex-basis: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .pt-toc-workspace {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .pt-toc-roots {
+    max-height: 190px;
+    flex-shrink: 0;
+  }
+  .pt-toc-roots-heading {
+    padding: 10px 12px;
+  }
+  .pt-toc-detail {
+    min-height: 280px;
+    flex: 1 0 280px;
+  }
+  .pt-toc-sections {
+    padding: 8px;
+  }
+  .pt-toc-workspace :deep(.is-add) {
+    flex-wrap: wrap;
+  }
+}
+</style>

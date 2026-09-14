@@ -1388,17 +1388,17 @@
 
 /* 제약을 초과한 뒤에 알리지 않고 미리 보여준다 */
 .pt-settings-hint {
-  @include typo($body-xsmall);
+  @include typo($body-small);
   color: $color-text-muted;
 }
 
 .pt-mini-upload {
   // 드롭 대상이므로 한 줄 높이로는 조준이 어렵다 — RFP 드롭존과 같은 무게로 맞춤
-  min-height: 72px;
+  min-height: 88px;
   border: 1.5px dashed $color-border;
   border-radius: $border-radius-lg;
   padding: $spacing-md;
-  @include typo($body-small);
+  @include typo($body-medium);
   color: $color-text-muted;
   display: flex;
   align-items: center;
@@ -1441,11 +1441,11 @@
 .pt-file-chip {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px $spacing-sm;
+  gap: 8px;
+  padding: 9px 12px;
   background: $color-surface;
-  border-radius: $border-radius-sm;
-  @include typo($body-small);
+  border-radius: $border-radius-base;
+  @include typo($body-medium);
   color: $color-text-primary;
 
   .pt-file-chip-name {
@@ -1611,11 +1611,11 @@
   }
 
   .pt-mini-upload {
-    @include typo($body-small);
+    @include typo($body-medium);
   }
 
   .pt-file-chip {
-    @include typo($body-small);
+    @include typo($body-medium);
   }
 
   .pt-toggle-opt {
@@ -4807,12 +4807,12 @@ body.is-resizing {
 
 .pt-pd-wrap {
   display: grid;
-  grid-template-columns: 190px 1fr 300px;
+  grid-template-columns: 280px 1fr 300px;
   transition: grid-template-columns $transition-base;
 
   /* 보완요청 접힘 — 토글 버튼만 남는 레일 폭 */
   &.is-chat-collapsed {
-    grid-template-columns: 190px 1fr 44px;
+    grid-template-columns: 280px 1fr 44px;
   }
   grid-template-rows: minmax(0, 1fr);
   gap: 0;
@@ -4923,7 +4923,7 @@ body.is-resizing {
 .pt-pd-item {
   padding: 8px;
   border-radius: 7px;
-  font-size: 12.5px;
+  @include typo($body-medium); // 14px — $body-small은 12px이라 기존 12.5px보다 작아진다
   cursor: pointer;
   color: $color\-text-primary;
   display: flex;
@@ -4936,11 +4936,6 @@ body.is-resizing {
     background: var(--color-primary-bg);
     color: var(--color-primary);
     font-weight: 700;
-    // 우측 경계까지 밀어붙여 상세 패널과 맞붙게 — 목록과 상세가 끊겨 보이던 문제
-    // margin만 -8px 하면 텍스트 영역이 넓어져 줄바꿈이 바뀐다 → padding으로 폭 보정
-    margin-right: -8px;
-    padding-right: 16px;
-    border-radius: 7px 0 0 7px;
 
     .dot {
       background: var(--color-primary);
@@ -4975,7 +4970,7 @@ body.is-resizing {
     min-width: 0;
 
     .dot {
-      margin-top: 6px;
+      margin-top: 7px; // 14px/150% 줄 높이(21px) 기준 첫 줄 중앙
     }
   }
 }
@@ -5013,7 +5008,8 @@ body.is-resizing {
 /* 좌측 목록에서 고른 항목을 상세 상단에 되비친다 — 어느 항목을 편집 중인지 명시 */
 .pt-pd-detail-head {
   display: flex;
-  align-items: flex-start;
+  // 우측 토글은 제목 블록 전체 기준 중앙 — flex-start면 제목이 2줄일 때 위로 떠 보인다
+  align-items: center;
   justify-content: space-between;
   gap: $spacing-md;
   padding-bottom: $spacing-md;
@@ -5028,9 +5024,12 @@ body.is-resizing {
   flex: 1;
   min-width: 0;
 
+  /* 뱃지는 제목 '첫 줄' 중앙에 맞춘다 (제목이 2줄이어도 위쪽에 고정).
+     제목 줄 높이 = $body-large-bold 16px × 150% = 24px, 뱃지 size="md" 높이 = 24px.
+     둘이 같으므로 보정값이 필요 없다 — 예전 margin-top:2px 가 뱃지를 2px 내려뜨렸다. */
   .ui-badge {
     flex-shrink: 0;
-    margin-top: 2px;
+    margin-top: 0;
   }
 }
 
@@ -5045,11 +5044,11 @@ body.is-resizing {
 .pt-pd-section-toggle-btn {
   border: none;
   background: transparent;
-  padding: 4px 14px;
+  padding: 5px 16px;
   border-radius: 6px;
   cursor: pointer;
   white-space: nowrap;
-  @include typo($body-xsmall-bold, $color-text-muted);
+  @include typo($body-small-bold, $color-text-muted);
   transition:
     background $transition-fast,
     color $transition-fast,
@@ -5076,7 +5075,7 @@ body.is-resizing {
   margin: 0;
   flex: 1;
   min-width: 0;
-  @include typo($body-medium-bold, $color-text-heading);
+  @include typo($body-large-bold, $color-text-heading);
   overflow-wrap: break-word;
   word-break: keep-all;
 }
@@ -5227,8 +5226,10 @@ body.is-resizing {
 
   // 테두리·포커스는 UiTextarea(border prop)가 그린다
   .pt-pd-chat-textarea .ui-textarea {
-    // ispark 기본 min-height:84px 를 풀어야 auto-resize가 1줄부터 시작한다
-    min-height: 0;
+    /* ispark 기본 min-height:84px 는 너무 높아 풀되, 0으로 두면 placeholder가
+       2줄로 접히면서 아래가 잘린다(placeholder는 auto-resize 계산에 안 잡힘).
+       2줄 기준 바닥을 준다 — 14px × 150%(21px) × 2줄 + 상하 padding 8px×2 = 58px */
+    min-height: 58px;
   }
 
   .pt-pd-chat-send {
