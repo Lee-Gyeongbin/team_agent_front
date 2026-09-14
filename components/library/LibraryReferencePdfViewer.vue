@@ -295,7 +295,7 @@ const onPageInput = (event: Event) => {
 const loadPdfFromItem = async () => {
   if (!props.open) return
 
-  const url = await handleViewFileUrl(props.item.docFileId)
+  const { url } = await handleViewFileUrl(props.item.docFileId)
   currentFilePath.value = url || ''
   if (!currentFilePath.value) return
 
