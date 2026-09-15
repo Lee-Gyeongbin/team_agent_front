@@ -989,7 +989,7 @@
 
 <script setup lang="ts">
 import draggable from 'vuedraggable'
-import { UiButton, UiIcon, UiBadge, UiTable, UiTab, UiRadio } from '@leechanyong/ispark-ui'
+import { UiButton, UiIcon, UiBadge, UiTable, UiTab, UiRadio, UiDropdownMenu } from '@leechanyong/ispark-ui'
 import { openToast } from '~/composables/useToast'
 import { openConfirm } from '~/composables/useDialog'
 import { openLoading, updateLoadingText, closeLoading } from '~/composables/useLoading'
@@ -997,9 +997,8 @@ import { useProposalToc } from '~/composables/proposal/useProposalToc'
 import { useProposalFileStore } from '~/composables/proposal/useProposalFileStore'
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
 import type { PtRequirement, PtEvalCriteria, PtRfpIssue, PtTocItem } from '~/types/proposal'
-import type { TableColumn } from '@leechanyong/ispark-ui'
+import type { TableColumn, DropdownMenuItemDef } from '@leechanyong/ispark-ui'
 import type { SelectOption } from '~/components/ui/UiSelect.vue'
-import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
 
 const STAGE1_STEP_MESSAGES: Record<string, string> = {
   extract: 'RFP 파일에서 텍스트를 추출하는 중...',

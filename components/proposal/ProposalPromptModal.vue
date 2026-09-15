@@ -1,10 +1,12 @@
 <template>
   <UiModal
     :is-open="isOpen"
-    position="right"
+    position="center"
+    max-width="1200px"
+    show-fullscreen
     title="프롬프트 보기 · 수정"
     :show-overlay="!nonModal"
-    :custom-class="nonModal ? 'pt-prompt-side' : ''"
+    custom-class="pt-prompt-reader"
     @close="$emit('close')"
   >
     <div class="pt-prompt-modal">
@@ -27,21 +29,14 @@
       <template v-else>
         <!-- 그룹 모드: 상위 탭(문제정의/승리주제) + 필요 시 하위 스텝 탭 -->
         <template v-if="hasGroups">
-          <div class="pt-prompt-tabs">
-            <button
-              v-for="group in groups"
-              :key="group.key"
-              type="button"
-              :class="['pt-prompt-tab', { 'is-active': activeGroupKey === group.key }]"
-              @click="onSelectGroup(group.key)"
-            >
-              {{ group.label }}
-              <span
-                v-if="isGroupModified(group)"
-                class="pt-prompt-tab__dot"
-              />
-            </button>
-          </div>
+          <UiTab
+            class="pt-prompt-tabs"
+            :model-value="activeGroupKey"
+            :tabs="groupTabs"
+            align="left"
+            aria-label="프롬프트 그룹"
+            @update:model-value="onSelectGroup"
+          />
 
           <div
             v-if="activeGroup"
@@ -103,12 +98,9 @@
               <div class="pt-prompt-item__meta">
                 <span class="pt-prompt-item__name">{{ activeItem.promptName }}</span>
               </div>
-              <UiTextarea
+              <ProposalPromptEditor
                 v-model="editContents[activeItem.promptId]"
-                :rows="isMultiStepGroup ? 28 : 25"
-                border
-                :auto-resize="false"
-                class="pt-prompt-item__textarea"
+                :disabled="isSaving"
               />
               <div class="pt-prompt-item__actions">
                 <button
@@ -138,12 +130,9 @@
             <span class="pt-prompt-item__name">{{ items[0].promptName }}</span>
             <span class="pt-prompt-item__stage">{{ stageCdLabel(items[0].stageCd) }}</span>
           </div>
-          <UiTextarea
+          <ProposalPromptEditor
             v-model="editContents[items[0].promptId]"
-            :rows="25"
-            border
-            :auto-resize="false"
-            class="pt-prompt-item__textarea"
+            :disabled="isSaving"
           />
           <div class="pt-prompt-item__actions">
             <button
@@ -160,21 +149,13 @@
 
         <!-- 복수 프롬프트: 탭으로 전환 -->
         <template v-else>
-          <div class="pt-prompt-tabs">
-            <button
-              v-for="item in items"
-              :key="item.promptId"
-              type="button"
-              :class="['pt-prompt-tab', { 'is-active': activePromptId === item.promptId }]"
-              @click="activePromptId = item.promptId"
-            >
-              {{ stageCdLabel(item.stageCd) }}
-              <span
-                v-if="isModified(item)"
-                class="pt-prompt-tab__dot"
-              />
-            </button>
-          </div>
+          <UiTab
+            v-model="activePromptId"
+            class="pt-prompt-tabs"
+            :tabs="itemTabs"
+            align="left"
+            aria-label="프롬프트 목록"
+          />
 
           <template
             v-for="item in items"
@@ -187,12 +168,9 @@
               <div class="pt-prompt-item__meta">
                 <span class="pt-prompt-item__name">{{ item.promptName }}</span>
               </div>
-              <UiTextarea
+              <ProposalPromptEditor
                 v-model="editContents[item.promptId]"
-                :rows="25"
-                border
-                :auto-resize="false"
-                class="pt-prompt-item__textarea"
+                :disabled="isSaving"
               />
               <div class="pt-prompt-item__actions">
                 <button
@@ -218,7 +196,7 @@
           size="md"
           @click="$emit('close')"
         >
-          닫기
+          취소
         </UiButton>
         <UiButton
           variant="primary"
@@ -227,7 +205,7 @@
           :disabled="!hasAnyChange"
           @click="onSaveAll"
         >
-          저장
+          변경사항 저장
         </UiButton>
       </div>
     </template>
@@ -235,6 +213,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiTab } from '@leechanyong/ispark-ui'
 import { openConfirm } from '~/composables/useDialog'
 import { openToast } from '~/composables/useToast'
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
@@ -327,6 +306,24 @@ const isStepModified = (stageCd: string) => {
 }
 
 const isGroupModified = (group: PtPromptGroup) => group.steps.some((s) => isStepModified(s.stageCd))
+
+/** 상위 그룹 탭 — 수정된 그룹은 count 배지로 '수정' 표시 */
+const groupTabs = computed(() =>
+  groups.value.map((group) => ({
+    label: group.label,
+    value: group.key,
+    count: isGroupModified(group) ? '수정' : undefined,
+  })),
+)
+
+/** 그룹 없이 프롬프트가 여러 건일 때의 탭 */
+const itemTabs = computed(() =>
+  items.value.map((item) => ({
+    label: stageCdLabel(item.stageCd),
+    value: item.promptId,
+    count: isModified(item) ? '수정' : undefined,
+  })),
+)
 
 /** 파이프라인 순서 표기 — ①②③. 4단계 이상이면 숫자로 폴백 */
 const stepOrderMark = (index: number) => ['①', '②', '③', '④', '⑤'][index] ?? String(index + 1)
@@ -451,49 +448,6 @@ watch(
     padding: $spacing-lg 0;
     @include typo($body-small);
     color: $color-text-muted;
-  }
-}
-
-.pt-prompt-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  border-bottom: 1px solid $color-border;
-  padding-bottom: 0;
-}
-
-.pt-prompt-tab {
-  position: relative;
-  padding: 6px 14px;
-  border: none;
-  border-bottom: 2px solid transparent;
-  border-radius: $border-radius-sm $border-radius-sm 0 0;
-  background: transparent;
-  @include typo($body-small);
-  color: $color-text-secondary;
-  cursor: pointer;
-  transition:
-    color $transition-fast,
-    border-color $transition-fast;
-
-  &.is-active {
-    color: var(--color-primary);
-    border-bottom-color: var(--color-primary);
-    font-weight: $font-weight-semibold;
-  }
-
-  &:hover:not(.is-active) {
-    color: $color-text-dark;
-  }
-
-  &__dot {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--color-primary);
   }
 }
 
@@ -674,5 +628,59 @@ watch(
 .pt-prompt-flow-tip {
   max-width: 280px;
   white-space: pre-line;
+}
+.pt-prompt-reader {
+  .modal-dialog-content {
+    width: calc(100vw - 48px);
+    height: min(900px, calc(100dvh - 48px));
+    display: flex;
+    flex-direction: column;
+  }
+  .modal-dialog-body {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .pt-prompt-modal {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .pt-prompt-group,
+  .pt-prompt-item {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .pt-prompt-tabs,
+  .pt-prompt-flow,
+  .pt-prompt-item__meta,
+  .pt-prompt-item__actions {
+    flex-shrink: 0;
+  }
+  .pt-prompt-item__name {
+    font-size: 13px;
+    overflow-wrap: anywhere;
+  }
+  .pt-prompt-item__actions {
+    padding: 8px 0;
+  }
+  .modal-side-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 14px 24px;
+    flex-shrink: 0;
+    border-top: 1px solid #dbe2eb;
+  }
+  &.is-fullscreen .modal-dialog-content {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+  }
 }
 </style>

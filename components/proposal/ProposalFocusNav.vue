@@ -24,26 +24,38 @@
         class="focus-steps"
         aria-label="단계 이동"
       >
-        <button
+        <UiTooltip
           v-for="(step, index) in steps"
           :key="step.key"
-          type="button"
-          class="focus-step"
-          :class="{ 'is-current': step.status === 'current', 'is-done': step.status === 'done' }"
-          :disabled="index > maxUnlockedStep"
-          :aria-current="step.status === 'current' ? 'step' : undefined"
-          :title="`${index + 1}. ${step.label} — ${step.sub}`"
-          @click="emit('go-step', index)"
+          side="right"
+          align="center"
+          :side-offset="12"
+          font-size="13px"
         >
-          <span class="focus-step-number"
-            ><UiIcon
-              v-if="step.status === 'done'"
-              name="check"
-              :size="12"
-            /><template v-else>{{ index + 1 }}</template></span
-          >
-          <span class="focus-step-label">{{ labels[index] ?? step.label }}</span>
-        </button>
+          <span class="focus-step-entry">
+            <button
+              type="button"
+              class="focus-step"
+              :class="{ 'is-current': step.status === 'current', 'is-done': step.status === 'done' }"
+              :disabled="index > maxUnlockedStep"
+              :aria-current="step.status === 'current' ? 'step' : undefined"
+              @click="emit('go-step', index)"
+            >
+              <span class="focus-step-number"
+                ><UiIcon
+                  v-if="step.status === 'done'"
+                  name="check"
+                  :size="12"
+                /><template v-else>{{ index + 1 }}</template></span
+              >
+              <span class="focus-step-label">{{ labels[index] ?? step.label }}</span>
+            </button>
+          </span>
+          <template #content>
+            <strong>{{ index + 1 }}. {{ step.label }}</strong>
+            <div v-if="step.sub">{{ step.sub }}</div>
+          </template>
+        </UiTooltip>
       </nav>
       <div
         class="focus-progress"
@@ -81,6 +93,7 @@
 
 <script setup lang="ts">
 import { UiIcon, UiProgress } from '@leechanyong/ispark-ui'
+import UiTooltip from '~/components/ui/UiTooltip.vue'
 import type { PtStep } from '~/types/proposal'
 const props = defineProps<{ steps: PtStep[]; maxUnlockedStep: number }>()
 const currentStepNumber = computed(() => props.steps.findIndex((step) => step.status === 'current') + 1)
@@ -145,6 +158,10 @@ const labels = [
   padding-bottom: 20px;
   flex-shrink: 0;
 }
+.focus-step-entry {
+  display: block;
+  width: 100%;
+}
 .focus-step {
   position: relative;
   display: flex;
@@ -161,7 +178,7 @@ const labels = [
   color: #596a83;
   cursor: pointer;
   flex-shrink: 0;
-  &:not(:last-child)::after {
+  .focus-step-entry:not(:last-child) &::after {
     content: '';
     position: absolute;
     bottom: -10px;
@@ -176,6 +193,7 @@ const labels = [
   }
 }
 .focus-step:disabled {
+  pointer-events: none;
   cursor: not-allowed;
   color: #8491a4;
 }
