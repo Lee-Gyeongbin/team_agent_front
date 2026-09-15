@@ -1,5 +1,5 @@
 <template>
-  <div :class="['pt-panel', 'pt-panel--lg', 'pt-strategy', { 'is-fullscreen': isFullscreen }]">
+  <div :class="['pt-panel', 'pt-panel--lg', 'pt-strategy']">
     <div class="pt-strategy-head">
       <h3 class="pt-panel-title">전략검토</h3>
       <p class="pt-panel-desc">문제정의와 Win Theme를 확인하고 보완하세요.</p>
@@ -64,22 +64,6 @@
             </UiButton>
           </template>
         </UiDropdownMenu>
-
-        <UiButton
-          variant="ghost"
-          size="sm"
-          icon-only
-          :title="isFullscreen ? '전체화면 해제 (Esc)' : '전체화면으로 보기'"
-          :aria-label="isFullscreen ? '전체화면 해제' : '전체화면으로 보기'"
-          @click="toggleFullscreen"
-        >
-          <template #icon-left>
-            <UiIcon
-              :name="isFullscreen ? 'minimize-2' : 'maximize-2'"
-              size="16"
-            />
-          </template>
-        </UiButton>
       </div>
     </div>
 
@@ -713,24 +697,6 @@ const onStrategyMenuSelect = (value: string) => {
   else if (value === 'regenAll') onRegenerateAll()
 }
 
-/**
- * 패널을 뷰포트로 확대 — 사이드바·페이지 헤드·스텝퍼가 쓰던 공간을 회수한다.
- * 앱 헤더($z-header: 450)는 그대로 두고 그 아래부터 채운다.
- * 헤더까지 덮으려면 z-index가 모달(451)보다 커져야 하고, 그러면 이 패널에서 연 모달이 뒤로 숨는다.
- */
-const isFullscreen = ref(false)
-
-const toggleFullscreen = () => {
-  isFullscreen.value = !isFullscreen.value
-}
-
-const onFullscreenEsc = (e: KeyboardEvent) => {
-  if (e.key !== 'Escape' || !isFullscreen.value) return
-  isFullscreen.value = false
-}
-
-onMounted(() => window.addEventListener('keydown', onFullscreenEsc))
-onBeforeUnmount(() => window.removeEventListener('keydown', onFullscreenEsc))
 const wtDraft = ref<Record<string, Partial<WinTheme>>>({})
 
 const editPd = reactive({

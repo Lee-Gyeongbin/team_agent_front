@@ -1,29 +1,11 @@
 <template>
-  <div class="pt-detail-page">
-    <!-- 헤더 -->
-    <div class="pt-detail-head">
-      <button
-        class="pt-back-btn"
-        @click="router.push('/proposal')"
-      >
-        <i class="icon-arrow-left-sm size-16" />
-        PT 제안서
-      </button>
-      <span class="pt-detail-head-divider" />
-      <div
-        v-if="currentProject"
-        class="pt-detail-title-wrap"
-      >
-        <span class="pt-detail-org">{{ currentProject.orgNm }}</span>
-        <h2 class="pt-detail-title">{{ currentProject.projectNm }}</h2>
-      </div>
-    </div>
-
+  <div class="pt-detail-page pt-focus-page">
     <!-- 8단계 스텝바 -->
-    <ProposalStepper
+    <ProposalFocusNav
       :steps="steps"
       :max-unlocked-step="maxUnlockedStep"
       @go-step="onGoStep"
+      @exit="router.push('/proposal')"
     />
 
     <!-- 단계별 콘텐츠 -->
@@ -118,6 +100,7 @@ import { useProposalApi } from '~/composables/proposal/useProposalApi'
 import { PT_PROPOSAL_DEFAULT_AGENT_ID, PT_PROPOSAL_DEFAULT_MODEL_ID } from '~/utils/proposal/proposalLlmUtil'
 
 const route = useRoute()
+definePageMeta({ layout: false })
 const router = useRouter()
 
 const ptProjectId = computed(() => String(route.params.id))
@@ -263,13 +246,7 @@ const onGenerateSection = async (tocId: string) => {
 
 const onUpdatePlannedSlideCnt = async (payload: { tocId: string; oldCnt: number; newCnt: number }) => {
   try {
-    await handleUpdatePlannedSlideCnt(
-      payload.tocId,
-      payload.oldCnt,
-      payload.newCnt,
-      modelId.value,
-      agentId.value,
-    )
+    await handleUpdatePlannedSlideCnt(payload.tocId, payload.oldCnt, payload.newCnt, modelId.value, agentId.value)
   } catch {
     // 오류는 useProposalSections 내부에서 openToast 처리
   }
@@ -296,3 +273,28 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style lang="scss" scoped>
+.pt-detail-page.pt-focus-page {
+  display: flex;
+  flex-direction: row;
+  height: 100dvh;
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+  background: #f1f4f8;
+}
+.pt-focus-page > .pt-step-content {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: 10px 10px 10px 16px;
+}
+.pt-focus-page :deep(.pt-pd-sidebar),
+.pt-focus-page :deep(.oc-tree) {
+  background: #f5f7fb;
+  border-right: 1px solid #ced8e6;
+}
+</style>
