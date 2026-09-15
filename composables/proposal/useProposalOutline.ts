@@ -11,6 +11,22 @@ export interface OutlineChatMessage {
   text: string
 }
 
+export interface OutlineRevision {
+  tocId: string
+  originalText: string
+  outlineTxt: string
+  targetTitle: string
+  beforeText: string
+  afterText: string
+}
+
+export interface OutlineRefinementRequest {
+  message: string
+  targetStart?: number
+  targetEnd?: number
+  targetTitle?: string
+}
+
 export interface BatchFailItem {
   tocId: string
   title: string
@@ -22,7 +38,8 @@ export const useProposalOutline = (ptProjectId: Ref<string>, modelId: Ref<string
     fetchSelectTocList,
     fetchSelectTocOutline,
     fetchGenerateTocOutline,
-    fetchChatTocOutline,
+    fetchPreviewTocOutline,
+    fetchApplyTocOutlineRevision,
     fetchConfirmTocOutline,
     fetchConfirmAllTocOutline,
     streamGenerateAllTocOutline,
@@ -57,6 +74,9 @@ export const useProposalOutline = (ptProjectId: Ref<string>, modelId: Ref<string
       // 삭제된 항목 또는 하위 목차가 추가되어 더 이상 개요 대상이 아닌 항목은 선택 해제.
       if (selectedTocId.value && !leaves.some((item) => item.tocId === selectedTocId.value)) {
         selectedTocId.value = null
+        revisionRequestVersion++
+        pendingRevision.value = null
+        isChating.value = false
         isEditing.value = false
         editingText.value = ''
         chatMessages.value = []
@@ -86,6 +106,8 @@ export const useProposalOutline = (ptProjectId: Ref<string>, modelId: Ref<string
   const isGenerating = ref(false)
   const isChating = ref(false)
   const isConfirming = ref(false)
+  const pendingRevision = ref<OutlineRevision | null>(null)
+  let revisionRequestVersion = 0
 
   // 선택 노드의 편집 상태 (확정 노드 수정 시 편집 모드 진입)
   const isEditing = ref(false)
@@ -97,6 +119,10 @@ export const useProposalOutline = (ptProjectId: Ref<string>, modelId: Ref<string
   /** 노드 클릭 시 개요 텍스트 지연 로딩 */
   const handleSelectNode = async (tocId: string) => {
     if (selectedTocId.value === tocId) return
+    if (isConfirming.value) return
+    revisionRequestVersion++
+    pendingRevision.value = null
+    isChating.value = false
     selectedTocId.value = tocId
     isEditing.value = false
     chatMessages.value = []
@@ -123,7 +149,7 @@ export const useProposalOutline = (ptProjectId: Ref<string>, modelId: Ref<string
 
   /** 개요 생성 (재생성 포함) */
   const handleGenerate = async () => {
-    if (!selectedTocId.value) return
+    if (!selectedTocId.value || isChating.value || pendingRevision.value) return
     isGenerating.value = true
     try {
       const res = await fetchGenerateTocOutline({
@@ -148,39 +174,88 @@ export const useProposalOutline = (ptProjectId: Ref<string>, modelId: Ref<string
     }
   }
 
-  /** 채팅 보완 */
-  const handleChat = async (message: string) => {
-    if (!selectedTocId.value || !message.trim()) return
+  /** Generate a proposal without saving; stale responses never affect another node. */
+  const handleChat = async (request: OutlineRefinementRequest) => {
+    const { message, targetStart, targetEnd } = request
+    const item = selectedItem.value
+    if (!item || !message.trim() || isChating.value || isConfirming.value) return
+    const tocId = item.tocId
+    const originalText = item.contentOutlineTxt ?? ''
+    if (!originalText.trim()) return
+    const version = ++revisionRequestVersion
+    pendingRevision.value = null
     chatMessages.value.push({ role: 'user', text: message })
     isChating.value = true
     try {
-      const res = await fetchChatTocOutline({
-        tocId: selectedTocId.value,
+      const res = await fetchPreviewTocOutline({
+        tocId,
         message,
         modelId: modelId.value,
         agentId: agentId.value,
+        originalText,
+        targetStart: targetStart == null ? undefined : String(targetStart),
+        targetEnd: targetEnd == null ? undefined : String(targetEnd),
       })
+      if (version !== revisionRequestVersion || selectedTocId.value !== tocId) return
       if (res.result !== 'OK') {
         chatMessages.value.push({ role: 'ai', text: res.msg ?? '요청 처리에 실패했습니다.' })
         return
       }
-      const item = tocList.value.find((t) => t.tocId === selectedTocId.value)
-      if (item) {
-        item.contentOutlineTxt = res.contentOutlineTxt
-        item.outlineStatusCd = res.outlineStatusCd
+      if (selectedItem.value?.contentOutlineTxt !== originalText) {
+        chatMessages.value.push({ role: 'ai', text: '개요가 변경되었습니다. 다시 요청해주세요.' })
+        return
       }
-      chatMessages.value.push({ role: 'ai', text: '요청하신 내용을 반영했습니다. 개요를 확인해보세요.' })
-      isEditing.value = false
+      const start = targetStart ?? 0
+      const suffixLength = originalText.length - (targetEnd ?? originalText.length)
+      pendingRevision.value = {
+        tocId,
+        originalText,
+        outlineTxt: res.contentOutlineTxt,
+        targetTitle: request.targetTitle ?? '개요 전체',
+        beforeText: originalText.slice(start, targetEnd),
+        afterText: res.contentOutlineTxt.slice(start, res.contentOutlineTxt.length - suffixLength),
+      }
+      chatMessages.value.push({ role: 'ai', text: '수정안이 준비되었습니다. 변경 내용을 확인하고 반영해주세요.' })
     } catch {
-      chatMessages.value.push({ role: 'ai', text: '오류가 발생했습니다. 잠시 후 다시 시도해주세요.' })
+      if (version === revisionRequestVersion)
+        chatMessages.value.push({ role: 'ai', text: '오류가 발생했습니다. 잠시 후 다시 시도해주세요.' })
     } finally {
-      isChating.value = false
+      if (version === revisionRequestVersion) isChating.value = false
+    }
+  }
+
+  const handleDiscardRevision = () => {
+    if (!isConfirming.value) pendingRevision.value = null
+  }
+
+  const handleApplyRevision = async () => {
+    const revision = pendingRevision.value
+    if (!revision || isConfirming.value || revision.tocId !== selectedTocId.value) return
+    if (selectedItem.value?.contentOutlineTxt !== revision.originalText) {
+      openToast({ message: '개요가 변경되었습니다. 수정안을 다시 생성해주세요.', type: 'error' })
+      return
+    }
+    isConfirming.value = true
+    try {
+      const res = await fetchApplyTocOutlineRevision(revision)
+      if (res.result !== 'OK') throw new Error(res.msg ?? '수정안 반영에 실패했습니다.')
+      const item = tocList.value.find((item) => item.tocId === revision.tocId)
+      if (item) {
+        item.contentOutlineTxt = revision.outlineTxt
+        item.outlineStatusCd = '002'
+      }
+      pendingRevision.value = null
+      openToast({ message: '수정안을 초안에 반영했습니다. 확인 후 개요를 확정해주세요.' })
+    } catch (error) {
+      openToast({ message: error instanceof Error ? error.message : '수정안 반영에 실패했습니다.', type: 'error' })
+    } finally {
+      isConfirming.value = false
     }
   }
 
   /** 확정 */
   const handleConfirm = async (outlineTxt: string) => {
-    if (!selectedTocId.value) return
+    if (!selectedTocId.value || isChating.value || pendingRevision.value || isConfirming.value) return
     isConfirming.value = true
     try {
       const res = await fetchConfirmTocOutline({ tocId: selectedTocId.value, outlineTxt })
@@ -203,6 +278,7 @@ export const useProposalOutline = (ptProjectId: Ref<string>, modelId: Ref<string
 
   /** 수정 모드 진입 */
   const handleStartEdit = () => {
+    if (pendingRevision.value || isChating.value) return
     const item = selectedItem.value
     if (!item) return
     editingText.value = item.contentOutlineTxt ?? ''
@@ -332,6 +408,9 @@ export const useProposalOutline = (ptProjectId: Ref<string>, modelId: Ref<string
     isEditing,
     editingText,
     chatMessages,
+    pendingRevision,
+    handleApplyRevision,
+    handleDiscardRevision,
     isBatchGenerating,
     batchProgress,
     batchProcessingTocId,

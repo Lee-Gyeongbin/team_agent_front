@@ -336,7 +336,7 @@
                   variant="primary"
                   size="sm"
                   :loading="isConfirming"
-                  :disabled="isConfirming || isChating || isGenerating || isLoadingOutline"
+                  :disabled="isConfirming || isChating || isGenerating || isLoadingOutline || !!pendingRevision"
                   @click="onConfirm"
                   >이 개요로 확정</UiButton
                 >
@@ -357,6 +357,39 @@
               @update:model-value="$emit('update:editing-text', $event)"
             />
             <!-- eslint-disable vue/no-v-html — toHtmlContent 내 DOMPurify 안전 처리 적용 -->
+            <div
+              v-else-if="outlineSections.length"
+              class="oc-outline-preview oc-selectable-outline"
+            >
+              <p class="oc-selection-hint">보완할 항목을 선택하세요. 전체 개요에도 요청할 수 있습니다.</p>
+              <div
+                v-if="outlinePreface"
+                class="markdown-body"
+                v-html="toOutlineHtml(outlinePreface)"
+              />
+              <div
+                v-for="(section, index) in outlineSections"
+                :key="section.start"
+                class="oc-outline-section"
+                :class="{ 'is-selected': selectedSectionIndex === index }"
+                @click="onSectionBodyClick($event, index)"
+              >
+                <button
+                  type="button"
+                  class="oc-section-select"
+                  :aria-label="`${section.title} 보완 대상으로 선택`"
+                  :aria-pressed="selectedSectionIndex === index"
+                  :disabled="chatDisabled || !!pendingRevision"
+                  @click.stop="selectSection(index)"
+                >
+                  {{ selectedSectionIndex === index ? '선택됨' : '이 항목 보완' }}
+                </button>
+                <div
+                  class="markdown-body"
+                  v-html="toOutlineHtml(section.text)"
+                />
+              </div>
+            </div>
             <div
               v-else
               class="oc-outline-preview markdown-body"
@@ -386,7 +419,7 @@
                 :aria-expanded="isChatOpen"
                 @click="isChatOpen = !isChatOpen"
               >
-                채팅 접기
+                보완 패널 접기
                 <template #icon-right
                   ><UiIcon
                     name="panel-right-close"
@@ -394,67 +427,144 @@
                 /></template>
               </UiButton>
             </div>
-            <div
-              ref="chatScrollRef"
-              class="oc-chat-msgs"
-              aria-label="이 목차의 보완 대화 내역"
-            >
-              <div
-                v-if="chatMessages.length === 0"
-                class="oc-chat-empty"
-              >
-                개요에 반영하고 싶은 내용을 자유롭게 요청해보세요.
+
+            <div class="oc-refinement-body">
+              <div class="oc-target-card">
+                <div class="oc-target-label">
+                  보완 대상
+                  <UiButton
+                    v-if="selectedSection && !pendingRevision"
+                    variant="ghost"
+                    size="sm"
+                    :disabled="chatDisabled"
+                    @click="selectedSectionIndex = null"
+                    >전체 선택</UiButton
+                  >
+                </div>
+                <strong>{{ pendingRevision?.targetTitle ?? targetTitle }}</strong>
               </div>
-              <div
-                v-for="(msg, i) in chatMessages"
-                :key="i"
-                class="oc-chat-msg"
-                :class="msg.role === 'user' ? 'is-user' : 'is-ai'"
-              >
-                {{ msg.text }}
-              </div>
-              <div
-                v-if="isChating"
-                class="oc-chat-msg is-ai"
-              >
-                <span class="oc-spinner oc-spinner-sm" />
-              </div>
-            </div>
-            <div class="oc-chat-input-row">
-              <div class="oc-prompt-suggestions">
-                <UiButton
-                  v-for="suggestion in chatSuggestions"
-                  :key="suggestion.label"
-                  variant="primary-line"
-                  size="sm"
-                  :disabled="chatDisabled"
-                  @click="chatInput = suggestion.prompt"
+
+              <template v-if="pendingRevision">
+                <p class="oc-review-notice">아직 개요에 반영되지 않았습니다. 변경 내용을 확인해주세요.</p>
+                <!-- eslint-disable vue/no-v-html — toOutlineHtml uses DOMPurify -->
+                <section class="oc-revision-card is-before">
+                  <h4>변경 전</h4>
+                  <div
+                    class="markdown-body"
+                    v-html="toOutlineHtml(pendingRevision.beforeText)"
+                  />
+                </section>
+                <section class="oc-revision-card is-after">
+                  <h4>수정안</h4>
+                  <div
+                    class="markdown-body"
+                    v-html="toOutlineHtml(pendingRevision.afterText)"
+                  />
+                </section>
+                <!-- eslint-enable vue/no-v-html -->
+              </template>
+              <template v-else>
+                <div class="oc-request-form">
+                  <h4>어떤 방향으로 보완할까요? <span>선택</span></h4>
+                  <div class="oc-prompt-suggestions">
+                    <UiButton
+                      v-for="suggestion in chatSuggestions"
+                      :key="suggestion.label"
+                      :variant="selectedSuggestion === suggestion.label ? 'primary' : 'outline'"
+                      size="sm"
+                      :aria-pressed="selectedSuggestion === suggestion.label"
+                      :disabled="chatDisabled"
+                      @click="selectedSuggestion = selectedSuggestion === suggestion.label ? '' : suggestion.label"
+                    >
+                      {{ suggestion.label }}
+                    </UiButton>
+                  </div>
+                  <label for="outline-refinement-request">어떻게 바꿀까요?</label>
+                  <UiTextarea
+                    id="outline-refinement-request"
+                    v-model="chatInput"
+                    :rows="5"
+                    :auto-resize="false"
+                    :resizable="true"
+                    border
+                    :placeholder="requestPlaceholder"
+                    :disabled="chatDisabled"
+                  />
+                  <p class="oc-request-help">
+                    {{
+                      needsContext
+                        ? '반영할 조건이나 실제 강점을 입력해주세요.'
+                        : '방향을 선택하거나 원하는 내용을 직접 입력하세요.'
+                    }}
+                  </p>
+                  <UiButton
+                    variant="primary"
+                    size="md"
+                    :loading="isChating"
+                    :disabled="!canRequest"
+                    @click="onSendChat"
+                    >{{ isChating ? '수정안 작성 중' : '수정안 만들기' }}</UiButton
+                  >
+                </div>
+                <div
+                  v-if="!chatMessages.length"
+                  class="oc-request-guide"
                 >
-                  {{ suggestion.label }}
-                </UiButton>
-              </div>
-              <UiInput
-                v-model="chatInput"
-                class="oc-refinement-input"
-                size="md"
-                :placeholder="
-                  selectedItem.outlineStatusCd === '001'
-                    ? '개요 생성 후 보완을 요청할 수 있습니다'
-                    : '보완할 내용을 입력하세요'
-                "
-                aria-label="AI 보완 요청 내용"
-                :disabled="chatDisabled"
-                @keydown.enter="onChatEnter"
-              />
+                  <UiIcon
+                    name="info"
+                    size="16"
+                  />
+                  <span>수정안을 먼저 확인하고 반영할 수 있어요. 기존 개요는 그대로 유지됩니다.</span>
+                </div>
+              </template>
+              <details
+                v-if="chatMessages.length"
+                class="oc-request-history"
+                :open="!pendingRevision"
+              >
+                <summary>요청 내역 {{ chatMessages.filter((message) => message.role === 'user').length }}</summary>
+                <div
+                  ref="chatScrollRef"
+                  class="oc-chat-msgs"
+                  aria-live="polite"
+                >
+                  <div
+                    v-for="(msg, i) in chatMessages"
+                    :key="i"
+                    class="oc-chat-msg"
+                    :class="msg.role === 'user' ? 'is-user' : 'is-ai'"
+                  >
+                    {{ msg.text }}
+                  </div>
+                </div>
+              </details>
+            </div>
+            <div
+              v-if="pendingRevision"
+              class="oc-revision-actions"
+            >
+              <UiButton
+                variant="outline"
+                size="sm"
+                :disabled="isConfirming"
+                @click="$emit('discard-revision')"
+                >다시 요청</UiButton
+              >
+              <UiButton
+                variant="ghost"
+                size="sm"
+                :disabled="isConfirming"
+                @click="$emit('discard-revision')"
+                >취소</UiButton
+              >
               <UiButton
                 variant="primary"
-                size="md"
-                :loading="isChating"
-                :disabled="!chatInput.trim() || chatDisabled"
-                @click="onSendChat"
+                size="sm"
+                :loading="isConfirming"
+                :disabled="isConfirming"
+                @click="$emit('apply-revision')"
+                >개요에 반영</UiButton
               >
-                보완 요청
-              </UiButton>
             </div>
           </div>
         </div>
@@ -475,7 +585,7 @@
             variant="primary-line"
             size="md"
             :loading="isBatchConfirming"
-            :disabled="isBatchConfirming"
+            :disabled="isBatchConfirming || isChating || !!pendingRevision"
             @click="$emit('confirm-all')"
           >
             일괄 확정
@@ -525,7 +635,13 @@
 
 <script setup lang="ts">
 import { UiBadge, UiButton, UiDropdownMenu, UiIcon, UiInput, UiProgress, UiTextarea } from '@leechanyong/ispark-ui'
-import type { BatchFailItem, OutlineChatMessage } from '~/composables/proposal/useProposalOutline'
+import type {
+  BatchFailItem,
+  OutlineChatMessage,
+  OutlineRevision,
+  OutlineRefinementRequest,
+} from '~/composables/proposal/useProposalOutline'
+import { splitOutlineSections } from '~/utils/proposal/outlineRefinement'
 import type { PtTocItem } from '~/types/proposal'
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 
@@ -544,6 +660,7 @@ interface Props {
   isEditing: boolean
   editingText: string
   chatMessages: OutlineChatMessage[]
+  pendingRevision: OutlineRevision | null
   isBatchGenerating: boolean
   batchProgress: { current: number; total: number }
   batchProcessingTocId: string | null
@@ -557,7 +674,9 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   'select-node': [tocId: string]
   generate: []
-  chat: [message: string]
+  chat: [request: OutlineRefinementRequest]
+  'apply-revision': []
+  'discard-revision': []
   confirm: [outlineTxt: string]
   'start-edit': []
   'cancel-edit': []
@@ -695,17 +814,42 @@ const progressPct = computed(() => {
 // ── 채팅 ─────────────────────────────────────────────────────────────────
 const chatInput = ref('')
 const isChatOpen = ref(true)
+const selectedSuggestion = ref('')
+const selectedSectionIndex = ref<number | null>(null)
+const outlineSections = computed(() => splitOutlineSections(props.selectedItem?.contentOutlineTxt ?? ''))
+const outlinePreface = computed(() =>
+  (props.selectedItem?.contentOutlineTxt ?? '').slice(0, outlineSections.value[0]?.start ?? 0),
+)
+const selectedSection = computed(() =>
+  selectedSectionIndex.value == null ? null : (outlineSections.value[selectedSectionIndex.value] ?? null),
+)
+const targetTitle = computed(() => selectedSection.value?.title ?? '개요 전체')
+const selectSection = (index: number) => {
+  selectedSectionIndex.value = selectedSectionIndex.value === index ? null : index
+  isChatOpen.value = true
+}
+const onSectionBodyClick = (event: MouseEvent, index: number) => {
+  if (chatDisabled.value || props.pendingRevision || window.getSelection()?.toString()) return
+  if ((event.target as Element).closest('a, button, input')) return
+  selectSection(index)
+}
 const chatSuggestions = [
-  { label: '더 간결하게', prompt: '핵심 내용을 유지하면서 개요를 더 간결하게 정리해줘.' },
-  {
-    label: '근거 보강',
-    prompt: '제공된 자료에서 확인할 수 있는 근거를 보강해줘. 근거가 없는 내용은 확인 필요로 표시해줘.',
-  },
-  {
-    label: '수치 중심으로',
-    prompt: '자료에 있는 수치를 중심으로 기대 효과를 보완해줘. 없는 수치를 임의로 만들지 말고 확인 필요로 표시해줘.',
-  },
+  { label: '구체화', prompt: '수행 방법과 절차를 더 구체적으로 설명해줘.' },
+  { label: '고객 조건 반영', prompt: '입력한 고객 요구사항과 제약 조건을 반영해줘.' },
+  { label: '강점 강조', prompt: '입력한 우리 회사의 강점과 차별점을 강조해줘.' },
+  { label: '간결하게', prompt: '핵심 내용은 유지하면서 중복을 없애고 간결하게 정리해줘.' },
 ]
+const needsContext = computed(() => ['고객 조건 반영', '강점 강조'].includes(selectedSuggestion.value))
+const canRequest = computed(
+  () => !chatDisabled.value && (!!chatInput.value.trim() || (!!selectedSuggestion.value && !needsContext.value)),
+)
+const requestPlaceholder = computed(() =>
+  selectedSuggestion.value === '고객 조건 반영'
+    ? '예: 설치 가능 시간은 22시~06시이며, 서비스 중단은 불가합니다.'
+    : selectedSuggestion.value === '강점 강조'
+      ? '예: 전담 상주 인력과 24시간 원격 지원 체계를 갖추고 있습니다.'
+      : '예: 3단계 수행 절차와 단계별 검증 방법을 구체화해줘.',
+)
 const chatDisabled = computed(
   () =>
     !props.selectedItem ||
@@ -718,18 +862,17 @@ const chatDisabled = computed(
 )
 const chatScrollRef = ref<HTMLElement | null>(null)
 
-const onChatEnter = (event: KeyboardEvent) => {
-  if (event.isComposing) return
-  event.preventDefault()
-  onSendChat()
-}
-
 const onSendChat = () => {
-  const msg = chatInput.value.trim()
-  if (!msg || chatDisabled.value) return
+  if (!canRequest.value) return
+  const direction = chatSuggestions.find((item) => item.label === selectedSuggestion.value)?.prompt
+  const msg = [direction, chatInput.value.trim()].filter(Boolean).join('\n')
   isChatOpen.value = true
-  chatInput.value = ''
-  emit('chat', msg)
+  emit('chat', {
+    message: msg,
+    targetStart: selectedSection.value?.start,
+    targetEnd: selectedSection.value?.end,
+    targetTitle: targetTitle.value,
+  })
 }
 
 // 채팅 메시지 추가 시 자동 스크롤
@@ -746,6 +889,8 @@ watch(
   () => props.selectedTocId,
   () => {
     chatInput.value = ''
+    selectedSuggestion.value = ''
+    selectedSectionIndex.value = null
   },
 )
 
@@ -755,6 +900,13 @@ watch(isChatOpen, (open) => {
       if (chatScrollRef.value) chatScrollRef.value.scrollTop = chatScrollRef.value.scrollHeight
     })
 })
+
+watch(
+  () => props.selectedItem?.contentOutlineTxt,
+  () => {
+    selectedSectionIndex.value = null
+  },
+)
 
 // ── 개요 마크다운 미리보기 ────────────────────────────────────────────────
 const toOutlineHtml = (raw: string) => {
@@ -771,7 +923,8 @@ const enlargeHtml = computed(() =>
 
 const isEnlargeOpen = ref(false)
 const outlineActionBusy = computed(
-  () => props.isGenerating || props.isChating || props.isConfirming || props.isLoadingOutline,
+  () =>
+    props.isGenerating || props.isChating || props.isConfirming || props.isLoadingOutline || !!props.pendingRevision,
 )
 const outlineMenuItems = computed(() => [
   { label: '크게 보기', value: 'enlarge', icon: 'maximize-2' },
@@ -892,6 +1045,45 @@ const onConfirm = () => {
     font-size: 15px;
     line-height: 1.8;
   }
+  .oc-selectable-outline {
+    padding: 12px 16px;
+    line-height: 1.65;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    border: 1px solid $color-border;
+    border-radius: 6px;
+    box-sizing: border-box;
+  }
+  .oc-selectable-outline :deep(ol),
+  .oc-revision-card :deep(ol) {
+    list-style: decimal;
+    padding-left: 24px;
+  }
+  .oc-selectable-outline :deep(ul),
+  .oc-revision-card :deep(ul) {
+    list-style: disc;
+    padding-left: 24px;
+  }
+  .oc-selectable-outline :deep(p),
+  .oc-revision-card :deep(p) {
+    margin: 4px 0;
+  }
+  .oc-selectable-outline :deep(ol),
+  .oc-selectable-outline :deep(ul) {
+    margin-top: 4px;
+    margin-bottom: 4px;
+  }
+  .oc-selectable-outline :deep(li) {
+    margin-bottom: 3px;
+  }
+  .oc-selectable-outline :deep(h1),
+  .oc-selectable-outline :deep(h2),
+  .oc-selectable-outline :deep(h3) {
+    margin: 0 0 6px;
+    font-size: 15px;
+    line-height: 1.65;
+  }
   .oc-outline-textarea :deep(textarea.ui-textarea) {
     font-size: 15px;
     line-height: 1.8;
@@ -903,7 +1095,7 @@ const onConfirm = () => {
     line-height: inherit;
   }
   .oc-outline-preview :deep(li) {
-    margin-bottom: 8px;
+    margin-bottom: 3px;
   }
   .oc-outline-card-actions {
     flex-wrap: wrap;
@@ -924,6 +1116,169 @@ const onConfirm = () => {
     background: #f8faff;
     border: 1px solid $color-border;
     border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .oc-refinement-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 6px 2px;
+  }
+  .oc-target-card {
+    padding: 12px;
+    background: #edf3ff;
+    border: 1px solid #d9e5fc;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+  .oc-target-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #62718a;
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+  .oc-request-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .oc-request-form h4,
+  .oc-request-form label {
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0;
+  }
+  .oc-request-form h4 span {
+    font-size: 11px;
+    color: #75839a;
+    font-weight: 400;
+  }
+  .oc-request-form label {
+    margin-top: 10px;
+  }
+  .oc-request-help,
+  .oc-review-notice {
+    margin: 0;
+    color: #63718b;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .oc-request-guide {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 12px;
+    background: #eef4ff;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #536784;
+    line-height: 1.7;
+  }
+  .oc-request-guide :deep(svg) {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .oc-request-history {
+    margin-top: 20px;
+    font-size: 12px;
+  }
+  .oc-request-history summary {
+    cursor: pointer;
+    padding: 8px 0;
+    color: #63718b;
+  }
+  .oc-request-history .oc-chat-msgs {
+    max-height: 220px;
+    padding: 8px;
+  }
+  .oc-revision-card {
+    border: 1px solid #dce4ef;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 12px;
+    background: white;
+  }
+  .oc-revision-card.is-before {
+    border-color: #ebdfb6;
+    background: #fffcf3;
+  }
+  .oc-revision-card.is-after {
+    border-color: #c9dafd;
+    background: #f2f7ff;
+  }
+  .oc-revision-card h4 {
+    margin: 0 0 10px;
+    font-size: 13px;
+  }
+  .oc-revision-card :deep(.markdown-body) {
+    font-size: 13px;
+    line-height: 1.8;
+    overflow-wrap: anywhere;
+  }
+  .oc-revision-actions {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 6px;
+    flex-shrink: 0;
+    border-top: 1px solid #dce4ef;
+    padding-top: 12px;
+    margin-top: 10px;
+  }
+  .oc-selection-hint {
+    color: #77869a;
+    font-size: 12px;
+    margin: 0 0 8px;
+  }
+  .oc-outline-section {
+    position: relative;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 4px;
+  }
+  .oc-outline-section:hover {
+    background: #f6f8fd;
+  }
+  .oc-outline-section.is-selected {
+    border-color: #b9ceff;
+    background: #eef4ff;
+  }
+  .oc-section-select {
+    float: right;
+    display: block;
+    margin: 0 0 4px 12px;
+    padding: 3px 8px;
+    border: 1px solid #d9e3f3;
+    border-radius: 5px;
+    color: #4467c6;
+    background: white;
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .oc-outline-section {
+    display: flow-root;
+  }
+  .oc-section-select[aria-pressed='true'] {
+    background: #4065e7;
+    border-color: #4065e7;
+    color: white;
+  }
+  .oc-section-select:focus-visible {
+    outline: 2px solid #4065e7;
+    outline-offset: 2px;
+  }
+  .oc-section-select:disabled {
+    cursor: default;
+    opacity: 0.6;
   }
   .oc-chat-head {
     flex-wrap: wrap;

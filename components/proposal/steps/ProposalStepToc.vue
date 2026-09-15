@@ -368,6 +368,7 @@
           :is-editing="isEditing"
           :editing-text="editingText"
           :chat-messages="chatMessages"
+          :pending-revision="pendingRevision"
           :is-batch-generating="isBatchGenerating"
           :batch-progress="batchProgress"
           :batch-processing-toc-id="batchProcessingTocId"
@@ -377,6 +378,8 @@
           @select-node="handleSelectNode"
           @generate="handleGenerate"
           @chat="handleChat"
+          @apply-revision="handleApplyRevision"
+          @discard-revision="handleDiscardRevision"
           @confirm="handleConfirm"
           @start-edit="handleStartEdit"
           @cancel-edit="handleCancelEdit"
@@ -458,6 +461,9 @@ const {
   isEditing,
   editingText,
   chatMessages,
+  pendingRevision,
+  handleApplyRevision,
+  handleDiscardRevision,
   isBatchGenerating,
   batchProgress,
   batchProcessingTocId,

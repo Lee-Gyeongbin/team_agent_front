@@ -279,6 +279,24 @@ export const useProposalApi = () => {
   }
 
   /** 콘텐츠 개요 확정 */
+  const fetchPreviewTocOutline = (params: {
+    tocId: string
+    message: string
+    modelId: string
+    agentId: string
+    originalText: string
+    targetStart?: string
+    targetEnd?: string
+  }): Promise<{ result: string; contentOutlineTxt: string; msg?: string }> =>
+    post('/ai/proposal/previewTocOutline.do', params)
+
+  const fetchApplyTocOutlineRevision = (params: {
+    tocId: string
+    originalText: string
+    outlineTxt: string
+  }): Promise<{ result: string; msg?: string }> => post('/ai/proposal/applyTocOutlineRevision.do', params)
+
+  /** 콘텐츠 개요 확정 */
   const fetchConfirmTocOutline = async (params: {
     tocId: string
     outlineTxt: string
@@ -865,7 +883,14 @@ export const useProposalApi = () => {
     modelId: string,
     agentId: string,
     callbacks: {
-      onProgress?: (data: { tocId: string; title: string; status: 'success' | 'fail'; index: number; total: number; errorMessage?: string }) => void
+      onProgress?: (data: {
+        tocId: string
+        title: string
+        status: 'success' | 'fail'
+        index: number
+        total: number
+        errorMessage?: string
+      }) => void
       onComplete?: (data: { successCount: number; failCount: number; total: number }) => void
       onError?: (message: string) => void
     },
@@ -1107,6 +1132,8 @@ export const useProposalApi = () => {
     fetchSelectTocOutline,
     fetchGenerateTocOutline,
     fetchChatTocOutline,
+    fetchPreviewTocOutline,
+    fetchApplyTocOutlineRevision,
     fetchConfirmTocOutline,
     fetchConfirmAllTocOutline,
     fetchUpdateMaxStepNo,

@@ -25,7 +25,18 @@ function setup() {
     computed,
     require: (id) => {
       if (id.endsWith('useProposalApi'))
-        return { useProposalApi: () => ({ fetchSelectTocList: (...args) => api.fetchSelectTocList(...args) }) }
+        return {
+          useProposalApi: () =>
+            new Proxy(
+              {},
+              {
+                get:
+                  (_, key) =>
+                  (...args) =>
+                    api[key](...args),
+              },
+            ),
+        }
       if (id.endsWith('useToast')) return { openToast: () => {} }
       throw new Error(`Unexpected import: ${id}`)
     },
@@ -40,6 +51,69 @@ function setup() {
     },
   }
 }
+
+test('revision preview leaves confirmed content unchanged; discard makes no save call', async () => {
+  const { state, api, setList } = setup()
+  setList([item('leaf', null, '003', '1. Original\n\n2. Keep')])
+  await state.handleLoadToc()
+  await state.handleSelectNode('leaf')
+  let saveCalls = 0
+  api.fetchPreviewTocOutline = async () => ({ result: 'OK', contentOutlineTxt: '1. Revised\n\n2. Keep' })
+  api.fetchApplyTocOutlineRevision = async () => {
+    saveCalls++
+    return { result: 'OK' }
+  }
+  await state.handleChat({ message: 'revise', targetStart: 0, targetEnd: 13, targetTitle: 'First' })
+  assert.equal(state.selectedItem.value.contentOutlineTxt, '1. Original\n\n2. Keep')
+  assert.equal(state.confirmedCount.value, 1)
+  assert.equal(state.pendingRevision.value.afterText, '1. Revised\n\n')
+  state.handleDiscardRevision()
+  assert.equal(state.pendingRevision.value, null)
+  assert.equal(saveCalls, 0)
+})
+
+test('apply saves accepted revision as draft; failure keeps review available', async () => {
+  const { state, api, setList } = setup()
+  setList([item('leaf', null, '003', 'original')])
+  await state.handleLoadToc()
+  await state.handleSelectNode('leaf')
+  api.fetchPreviewTocOutline = async () => ({ result: 'OK', contentOutlineTxt: 'revised' })
+  api.fetchApplyTocOutlineRevision = async () => ({ result: 'FAIL', msg: 'Conflict' })
+  await state.handleChat({ message: 'revise' })
+  await state.handleApplyRevision()
+  assert.equal(state.selectedItem.value.contentOutlineTxt, 'original')
+  assert.ok(state.pendingRevision.value)
+  api.fetchApplyTocOutlineRevision = async (request) => {
+    assert.equal(request.originalText, 'original')
+    assert.equal(request.tocId, 'leaf')
+    return { result: 'OK' }
+  }
+  await state.handleApplyRevision()
+  assert.equal(state.selectedItem.value.contentOutlineTxt, 'revised')
+  assert.equal(state.selectedItem.value.outlineStatusCd, '002')
+  assert.equal(state.pendingRevision.value, null)
+})
+
+test('late preview cannot follow selection to another node, even if selected back', async () => {
+  const { state, api, setList } = setup()
+  setList([item('a', null, '002', 'original a'), item('b', null, '002', 'original b')])
+  await state.handleLoadToc()
+  await state.handleSelectNode('a')
+  let resolve
+  api.fetchPreviewTocOutline = () =>
+    new Promise((done) => {
+      resolve = done
+    })
+  const work = state.handleChat({ message: 'revise' })
+  await state.handleSelectNode('b')
+  await state.handleSelectNode('a')
+  resolve({ result: 'OK', contentOutlineTxt: 'wrong late revision' })
+  await work
+  assert.equal(state.pendingRevision.value, null)
+  assert.equal(state.selectedItem.value.contentOutlineTxt, 'original a')
+  assert.equal(state.chatMessages.value.length, 0)
+  assert.equal(state.isChating.value, false)
+})
 
 test('deleting a selected subtree removes outline entries, selection, chat and confirmation counts', async () => {
   const { state, setList } = setup()
