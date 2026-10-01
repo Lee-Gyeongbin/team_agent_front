@@ -20,7 +20,7 @@ export const useAuth = () => {
 
     if (res.success && res.user) {
       userCookie.value = res.user
-      // 변경 대상 세션은 메뉴·가이드 API가 거절되므로 조회하지 않는다
+      // 비밀번호 변경 대상은 메인 화면 진입 전이므로 메뉴·가이드를 조회하지 않는다
       if (res.user.pwdChgReqYn !== 'Y') {
         await Promise.all([fetchMenuList(), fetchChatGuideList()])
       }
