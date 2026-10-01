@@ -2,7 +2,6 @@
   <UiModal
     :is-open="isOpen"
     :title="persistent ? '비밀번호 변경 안내' : '비밀번호 변경'"
-    :show-close="!persistent"
     @close="onRequestClose"
   >
     <div class="com-setting-form">
@@ -60,7 +59,6 @@
     <template #footer>
       <div class="modal-dialog-footer">
         <UiButton
-          v-if="!persistent"
           class="btn-modal-dialog"
           variant="outline"
           size="lg"
@@ -88,7 +86,7 @@ import { UiButton, UiInput, UiModal } from '@leechanyong/ispark-ui'
 
 const props = defineProps<{
   isOpen: boolean
-  /** 초기 비밀번호 변경. 닫기·취소 없음 */
+  /** 초기 비밀번호 변경 안내 문구·제목 */
   persistent?: boolean
 }>()
 
@@ -132,7 +130,6 @@ const focusConfirmField = () => {
 }
 
 const onRequestClose = () => {
-  if (props.persistent) return
   emit('close')
 }
 

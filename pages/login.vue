@@ -173,6 +173,7 @@
     <PasswordChangeModal
       :is-open="isPasswordChangeOpen"
       persistent
+      @close="isPasswordChangeOpen = false"
       @success="onPasswordChangeSuccess"
     />
   </div>
