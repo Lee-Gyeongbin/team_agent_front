@@ -20,7 +20,10 @@ export const useAuth = () => {
 
     if (res.success && res.user) {
       userCookie.value = res.user
-      await Promise.all([fetchMenuList(), fetchChatGuideList()])
+      // 변경 대상 세션은 메뉴·가이드 API가 거절되므로 조회하지 않는다
+      if (res.user.pwdChgReqYn !== 'Y') {
+        await Promise.all([fetchMenuList(), fetchChatGuideList()])
+      }
     }
 
     return res
@@ -44,7 +47,9 @@ export const useAuth = () => {
       const res = await get<LoginResponse>('/session/user.do')
       if (res.success && res.user) {
         userCookie.value = res.user
-        await Promise.all([fetchMenuList(), fetchChatGuideList()])
+        if (res.user.pwdChgReqYn !== 'Y') {
+          await Promise.all([fetchMenuList(), fetchChatGuideList()])
+        }
         return true
       }
       userCookie.value = null

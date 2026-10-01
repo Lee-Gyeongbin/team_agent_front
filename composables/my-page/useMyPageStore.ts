@@ -1,4 +1,4 @@
-import { computed, ref, toRaw } from 'vue'
+import { computed, nextTick, ref, toRaw } from 'vue'
 import type { MyPageHistoryParams, MyPageItem, MyPageLoginHistoryItem } from '~/types/my-page'
 import { useMyPageApi } from '~/composables/my-page/useMyPageApi'
 import { useOrgManageStore } from '~/composables/org-manage/useOrgManageStore'
@@ -24,7 +24,6 @@ export const useMyPageStore = () => {
   const {
     fetchInfo,
     fetchUpdateInfo,
-    fetchChangePassword,
     fetchLoginHistory,
     fetchPrepareProfileImageUpload,
     fetchUpdateUserProfileImg,
@@ -216,22 +215,13 @@ export const useMyPageStore = () => {
     isPasswordModalOpen.value = false
   }
 
-  const handleSubmitPasswordChange = async (payload: { oldPassword: string; newPassword: string }) => {
-    try {
-      isPasswordModalOpen.value = false
-      await fetchChangePassword(payload)
-      await openAlert({
-        message: '비밀번호가 변경되었습니다.\n보안을 위해 다시 로그인해 주세요.',
-      })
-      await logout()
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : '비밀번호 수정 중 오류가 발생했습니다.\n다시 시도해주세요.'
-      openToast({
-        message,
-        type: 'error',
-      })
-    }
+  const handlePasswordChangeSuccess = async () => {
+    isPasswordModalOpen.value = false
+    await nextTick()
+    await openAlert({
+      message: '비밀번호가 변경되었습니다.\n보안을 위해 다시 로그인해 주세요.',
+    })
+    await logout()
   }
 
   const onClickChangePhoto = () => {
@@ -336,7 +326,7 @@ export const useMyPageStore = () => {
     // 비밀번호
     openPasswordModal,
     closePasswordModal,
-    handleSubmitPasswordChange,
+    handlePasswordChangeSuccess,
     // 프로필 사진
     onClickChangePhoto,
     onAvatarFileChange,

@@ -4,6 +4,7 @@ export interface UserInfo {
   email: string
   orgId: string
   orgNm: string
+  pwdChgReqYn: 'Y' | 'N'
 }
 
 export interface LoginResponse {
