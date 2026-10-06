@@ -770,6 +770,11 @@ const handleSaveMeeting = async (
 ): Promise<Meeting | null> => {
   try {
     const res = await fetchSaveMeetingMinutes(meeting)
+    // 서버가 실패를 successYn=false로 반환 — 자동저장(silent)이어도 실패는 알림
+    if (res?.successYn === false) {
+      openToast({ message: res.returnMsg || '회의록 저장 실패', type: 'error' })
+      return null
+    }
     if (res?.data && currentMeeting.value) {
       if (options.silent) {
         currentMeeting.value.updatedAt = res.data.updatedAt

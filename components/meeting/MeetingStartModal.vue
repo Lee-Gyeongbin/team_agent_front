@@ -62,6 +62,7 @@
               v-model="searchKeyword"
               placeholder="조직/참석자 이름으로 검색..."
               class="meeting-attendee-search-input"
+              @enter="onEnterAttendeeSearch"
             >
               <template #icon-right>
                 <i class="icon-search size-16" />
@@ -222,6 +223,30 @@ const onToggleOrg = (node: MeetingAttendeeOrgNode): void => {
     next.push(toMeetingUser(user))
   }
   selectedAttendees.value = next
+}
+
+/**
+ * 검색 결과 트리에서 화면상 가장 위에 보이는 사용자 반환
+ * - MeetingAttendeeTreeNode 렌더 순서와 동일: 하위 부서(children) → 소속 사용자(users)
+ */
+const findFirstVisibleUser = (nodes: MeetingAttendeeOrgNode[]): MeetingAttendeeUserItem | null => {
+  for (const node of nodes) {
+    const fromChildren = findFirstVisibleUser(node.children)
+    if (fromChildren) return fromChildren
+    if (node.users.length) return node.users[0] ?? null
+  }
+  return null
+}
+
+/**
+ * 참석자 검색창 Enter — 검색 결과 최상단 사용자를 선택
+ * - 이미 선택된 사용자는 해제하지 않음 (한글 IME로 Enter가 두 번 들어와도 결과 동일)
+ */
+const onEnterAttendeeSearch = (): void => {
+  if (!searchKeyword.value.trim()) return
+  const user = findFirstVisibleUser(filteredAttendeeTree.value)
+  if (!user || isSelected(user.userId)) return
+  selectedAttendees.value.push(toMeetingUser(user))
 }
 
 const onConfirm = () => {

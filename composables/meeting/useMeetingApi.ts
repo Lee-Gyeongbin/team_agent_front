@@ -62,8 +62,13 @@ export const useMeetingApi = () => {
   }
 
   /** 회의 저장 (신규/수정) */
-  const fetchSaveMeetingMinutes = async (meeting: Partial<Meeting>): Promise<{ data: Meeting }> => {
-    return post<{ data: Meeting }>(`/ai/meeting/saveMeetingMinutes.do`, meeting)
+  const fetchSaveMeetingMinutes = async (
+    meeting: Partial<Meeting>,
+  ): Promise<{ data?: Meeting; successYn?: boolean; returnMsg?: string }> => {
+    return post<{ data?: Meeting; successYn?: boolean; returnMsg?: string }>(
+      `/ai/meeting/saveMeetingMinutes.do`,
+      meeting,
+    )
   }
 
   /** 회의 시작 — speakers는 생성 시 insert된 화자 목록 (speakerId = auto_increment PK) */
