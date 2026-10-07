@@ -142,10 +142,10 @@
             </div>
           </section>
         </div>
-        <MyPagePasswordChangeModal
+        <PasswordChangeModal
           :is-open="isPasswordModalOpen"
           @close="closePasswordModal"
-          @submit="handleSubmitPasswordChange"
+          @success="handlePasswordChangeSuccess"
         />
       </div>
     </div>
@@ -178,7 +178,7 @@ const {
   avatarPreviewUrl,
   openPasswordModal,
   closePasswordModal,
-  handleSubmitPasswordChange,
+  handlePasswordChangeSuccess,
   onClickChangePhoto,
   onAvatarFileChange,
   onClickDeletePhoto,

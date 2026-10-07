@@ -243,7 +243,7 @@ const onClose = () => {
 const loadFromApi = async () => {
   if (!props.isOpen || !hasValidIds.value) return
 
-  const url = await handleViewFileUrl(props.docFileId)
+  const { url } = await handleViewFileUrl(props.docFileId)
   currentFilePath.value = url || ''
   if (!currentFilePath.value) return
 

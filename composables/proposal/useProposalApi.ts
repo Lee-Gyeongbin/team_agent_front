@@ -279,11 +279,36 @@ export const useProposalApi = () => {
   }
 
   /** 콘텐츠 개요 확정 */
+  const fetchPreviewTocOutline = (params: {
+    tocId: string
+    message: string
+    modelId: string
+    agentId: string
+    originalText: string
+    targetStart?: string
+    targetEnd?: string
+  }): Promise<{ result: string; contentOutlineTxt: string; msg?: string }> =>
+    post('/ai/proposal/previewTocOutline.do', params)
+
+  const fetchApplyTocOutlineRevision = (params: {
+    tocId: string
+    originalText: string
+    outlineTxt: string
+  }): Promise<{ result: string; msg?: string }> => post('/ai/proposal/applyTocOutlineRevision.do', params)
+
+  /** 콘텐츠 개요 확정 */
   const fetchConfirmTocOutline = async (params: {
     tocId: string
     outlineTxt: string
   }): Promise<{ result: string; msg?: string }> => {
     return post('/ai/proposal/confirmTocOutline.do', params)
+  }
+
+  /** 콘텐츠 개요 일괄 확정 (CONTENT_OUTLINE_TXT가 있는 항목 모두 003 처리) */
+  const fetchConfirmAllTocOutline = async (
+    ptProjectId: string,
+  ): Promise<{ result: string; confirmedCount?: number; msg?: string }> => {
+    return post('/ai/proposal/confirmAllTocOutline.do', { ptProjectId })
   }
 
   /**
@@ -529,6 +554,50 @@ export const useProposalApi = () => {
     es.addEventListener('done', (e) => {
       try {
         callbacks.onDone?.(JSON.parse((e as MessageEvent).data) as Stage2DoneData)
+      } catch {
+        /* ignore */
+      } finally {
+        es.close()
+      }
+    })
+    attachSseErrorListener(es, callbacks.onError)
+
+    return es
+  }
+
+  /**
+   * 문제정의 재생성 SSE 스트림 — runS2a만 재실행하며 진행 단계 전달
+   */
+  const streamRegenerateStage2Pd = (
+    ptProjectId: string,
+    modelId: string,
+    agentId: string,
+    callbacks: {
+      onProgress?: (data: Stage2ProgressData) => void
+      onDone?: (data: { ptProjectId: string; problemDefCount: number }) => void
+      onError?: (message: string) => void
+    },
+    opts?: { totalSlideBudget?: number; userFeedback?: string },
+  ): EventSource => {
+    const params = new URLSearchParams({
+      ptProjectId,
+      modelId,
+      agentId,
+      totalSlideBudget: String(opts?.totalSlideBudget ?? 40),
+    })
+    if (opts?.userFeedback) params.set('userFeedback', opts.userFeedback)
+    const es = new EventSource(`/api/ai/proposal/streamRegenerateStage2Pd.do?${params.toString()}`)
+
+    es.addEventListener('progress', (e) => {
+      try {
+        callbacks.onProgress?.(JSON.parse((e as MessageEvent).data) as Stage2ProgressData)
+      } catch {
+        /* ignore */
+      }
+    })
+    es.addEventListener('done', (e) => {
+      try {
+        callbacks.onDone?.(JSON.parse((e as MessageEvent).data) as { ptProjectId: string; problemDefCount: number })
       } catch {
         /* ignore */
       } finally {
@@ -814,7 +883,14 @@ export const useProposalApi = () => {
     modelId: string,
     agentId: string,
     callbacks: {
-      onProgress?: (data: { tocId: string; title: string; status: 'success' | 'fail'; index: number; total: number; errorMessage?: string }) => void
+      onProgress?: (data: {
+        tocId: string
+        title: string
+        status: 'success' | 'fail'
+        index: number
+        total: number
+        errorMessage?: string
+      }) => void
       onComplete?: (data: { successCount: number; failCount: number; total: number }) => void
       onError?: (message: string) => void
     },
@@ -1056,7 +1132,10 @@ export const useProposalApi = () => {
     fetchSelectTocOutline,
     fetchGenerateTocOutline,
     fetchChatTocOutline,
+    fetchPreviewTocOutline,
+    fetchApplyTocOutlineRevision,
     fetchConfirmTocOutline,
+    fetchConfirmAllTocOutline,
     fetchUpdateMaxStepNo,
     fetchSelectStage1Result,
     fetchUpdateRequirement,
@@ -1086,6 +1165,7 @@ export const useProposalApi = () => {
     fetchInsertStage2WinTheme,
     fetchDeleteStage2WinTheme,
     fetchUpdateStage2TocMapping,
+    streamRegenerateStage2Pd,
     // Step E (본문 생성)
     streamAnalyzeStage2,
     streamAnalyzeStage2Toc,

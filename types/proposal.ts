@@ -27,6 +27,26 @@ export interface PtPromptRestoreRequest {
   promptId: string
 }
 
+/** 프롬프트 모달 하위 스텝 — 한 그룹에서 순차 실행되는 프롬프트 1건 */
+export interface PtPromptGroupStep {
+  stageCd: string
+  /** 파이프라인에 표시할 레이블. 예: '근거 매핑' */
+  label: string
+  /** 선택 스텝 한 줄 설명 */
+  description?: string
+  /** 이 프롬프트를 수정하면 무엇이 달라지는지 */
+  impact?: string
+}
+
+/** 프롬프트 모달 상위 그룹 — 문제정의처럼 여러 프롬프트를 한 탭으로 묶을 때 사용 */
+export interface PtPromptGroup {
+  key: string
+  label: string
+  /** 그룹 상단 안내 — 하위 스텝이 2개 이상일 때 노출 */
+  description?: string
+  steps: PtPromptGroupStep[]
+}
+
 /** TB_CODE CODE_GRP_ID = 'PT000002' 하위 CODE_ID */
 export type PtProjectStatusCd = '001' | '002' | '003' | '004'
 // 001=작성중, 002=검수중, 003=완료, 004=보류
@@ -407,8 +427,11 @@ export interface SlideComponent {
 
 /** Stage2 전략 SSE 이벤트 */
 export interface Stage2ProgressData {
-  step: 'load' | 'problem_def' | 'prompt' | 'parse' | 'win_theme' | 'save'
-  message: string
+  step: 'load' | 'prompt' | 'evidence_map' | 'pd_generate' | 'dedup' | 'parse' | 'win_theme' | 'save'
+  /** evidence_map / pd_generate 단계에서 현재 처리 중인 이슈 순번 (1-based) */
+  current?: number
+  /** evidence_map / pd_generate 단계에서 전체 이슈 수 */
+  total?: number
 }
 
 export interface Stage2DoneData {

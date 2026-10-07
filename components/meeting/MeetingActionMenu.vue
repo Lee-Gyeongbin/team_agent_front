@@ -46,13 +46,13 @@
         </div>
       </div>
 
-      <button
+      <!-- <button
         class="meeting2-side-action-btn"
         @click="onClickMail"
       >
         <i class="icon-send size-16" />
         메일 발송
-      </button>
+      </button> -->
     </div>
   </div>
 </template>

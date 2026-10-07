@@ -72,14 +72,18 @@ assets/styles/page/
 
 `@include typo($변수명)`으로 font-size, font-weight, line-height를 한 줄로 적용. 색상은 포함하지 않음 (컨텍스트별 별도 지정).
 
+> ⚠️ 이름과 px가 한 칸씩 어긋나 있다. `$body-small`은 14px이 아니라 **12px**이다.
+> 실제 값은 `assets/styles/utils/_variables.scss` 기준이며 아래 표가 그 값이다.
+
 | 프리셋 | 사이즈 | weight | line-height |
 |--------|--------|--------|-------------|
 | `$body-caption` / `-bold` | 10px | 400 / 700 | 150% |
-| `$body-xsmall` / `-bold` | 12px | 400 / 700 | 150% |
-| `$body-small` / `-bold` | 14px | 400 / 700 | 150% |
-| `$body-medium` / `-bold` | 16px | 400 / 700 | 150% |
-| `$body-large` / `-bold` | 18px | 400 / 700 | 150% |
-| `$body-xlarge` / `-bold` | 20px | 400 / 700 | 150% |
+| `$body-xsmall` / `-bold` | 10px | 400 / 700 | 150% |
+| `$body-small` / `-bold` | 12px | 400 / 700 | 150% |
+| `$body-medium` / `-medium` / `-bold` | 14px | 400 / 500 / 700 | 150% |
+| `$body-large` / `-bold` | 16px | 400 / 700 | 150% |
+| `$body-xlarge` / `-bold` | 18px | 400 / 700 | 150% |
+| `$body-2xlarge` / `-bold` | 20px | 400 / 700 | 150% |
 
 ```scss
 // 사용 예시

@@ -580,7 +580,7 @@
   background: #fff;
   border-radius: $border-radius-lg;
   box-shadow: $shadow-lg;
-  width: 480px;
+  width: 520px;
   max-width: calc(100vw - $spacing-lg * 2);
 }
 
@@ -630,9 +630,12 @@
 }
 
 .meeting-attendee-list {
+  position: relative;
   display: flex;
   flex-direction: column;
-  max-height: 220px;
+  min-height: 200px;
+  max-height: 300px;
+  overflow-x: hidden;
   overflow-y: auto;
   border: 1px solid #dce4e9;
   border-radius: $border-radius-base;
@@ -644,21 +647,47 @@
   }
 }
 
-.meeting-attendee-item {
-  display: flex;
-  align-items: center;
+.meeting-attendee-state {
+  @include flex-center;
+  flex-direction: column;
+  flex: 1;
+  min-height: 180px;
+  padding: $spacing-lg $spacing-md;
   gap: $spacing-sm;
-  padding: 8px 12px;
+
+  &__error {
+    @include typo($body-small);
+    color: $color-error;
+    text-align: center;
+  }
+}
+
+.meeting-attendee-tree-root,
+.meeting-attendee-tree-children {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.meeting-attendee-tree-root {
+  padding: $spacing-xs 0;
+}
+
+.meeting-attendee-tree-item {
+  margin-bottom: 2px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.meeting-attendee-tree-row {
+  padding-right: 8px;
+  border-radius: $border-radius-sm;
+  gap: 6px;
+  min-height: 36px;
   cursor: pointer;
   transition: background-color $transition-fast;
-
-  &:hover {
-    background: #f8fafc;
-  }
-
-  & + .meeting-attendee-item {
-    border-top: 1px solid #f1f5f9;
-  }
 
   input[type='checkbox'] {
     margin: 0;
@@ -668,14 +697,52 @@
     flex-shrink: 0;
   }
 
-  &.is-selected {
+  &:hover {
+    background: #f8fafc;
+  }
+
+  &.is-selected,
+  &.is-user.is-selected {
     background: rgba(var(--color-primary-rgb, 74, 144, 226), 0.08);
   }
 }
 
-.meeting-attendee-name {
+.meeting-attendee-tree-icon {
+  flex-shrink: 0;
+  color: #aebccb;
+}
+
+.meeting-attendee-tree-label {
+  flex: 1;
+  min-width: 0;
   @include typo($body-small);
   color: $color-text-primary;
+  @include ellipsis(1);
+}
+
+.meeting-attendee-tree-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.meeting-attendee-tree-toggle-placeholder {
+  width: 24px;
+  flex-shrink: 0;
+}
+
+.meeting-attendee-tree-toggle .icon-arrow-down-gray {
+  transition: transform $transition-fast;
+
+  &.is-expanded {
+    transform: rotate(180deg);
+  }
 }
 
 .meeting-attendee-selected {
@@ -1327,6 +1394,11 @@
   width: 1px;
   height: 16px;
   background: $color-border;
+  flex-shrink: 0;
+}
+
+.meeting2-detail-voice-enroll {
+  margin-left: auto;
   flex-shrink: 0;
 }
 
@@ -3511,4 +3583,514 @@
   flex-shrink: 0;
   color: $color-text-muted;
   transition: color $transition-fast;
+}
+
+// =============================================
+// 음성 사전등록 (Voice Enrollment)
+// =============================================
+
+.meeting-enroll-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: $color-bg-secondary;
+}
+
+// ---- 2분할 레이아웃 ----
+.meeting-enroll-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+// ---- 좌측 사이드바 ----
+.meeting-enroll-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: #fff;
+  border-right: 1px solid $color-border;
+  padding: $spacing-lg $spacing-md;
+  overflow-y: auto;
+}
+
+.meeting-enroll-sidebar-title {
+  @include typo($body-xsmall-bold);
+  color: $color-text-muted;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: $spacing-md;
+  padding: 0 $spacing-sm;
+}
+
+.meeting-enroll-sidebar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.meeting-enroll-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm;
+  border-radius: $border-radius-base;
+  cursor: pointer;
+  transition:
+    background $transition-fast,
+    color $transition-fast;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+
+  &.is-active {
+    background: rgba(var(--color-primary-rgb, 74, 144, 226), 0.08);
+
+    .meeting-enroll-sidebar-name {
+      color: var(--color-primary);
+      font-weight: 700;
+    }
+  }
+
+  &.is-done {
+    .meeting-enroll-sidebar-icon {
+      color: #52c41a;
+    }
+  }
+
+  &.is-recording {
+    .meeting-enroll-sidebar-icon {
+      color: $color-error;
+    }
+  }
+
+  &.is-failed {
+    .meeting-enroll-sidebar-icon {
+      color: $color-warning;
+    }
+  }
+}
+
+.meeting-enroll-sidebar-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: $color-text-muted;
+}
+
+.meeting-enroll-sidebar-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: $color-border;
+}
+
+.meeting-enroll-sidebar-name {
+  @include typo($body-small);
+  color: $color-text-primary;
+  flex: 1;
+  @include ellipsis(1);
+}
+
+.meeting-enroll-sidebar-status {
+  @include typo($body-xsmall);
+  flex-shrink: 0;
+
+  &.is-done {
+    color: #52c41a;
+  }
+
+  &.is-recording {
+    color: $color-error;
+  }
+
+  &.is-processing {
+    color: var(--color-primary);
+  }
+
+  &.is-waiting {
+    color: $color-text-muted;
+  }
+
+  &.is-failed {
+    color: $color-warning;
+  }
+}
+
+// ---- 우측 메인 영역 ----
+.meeting-enroll-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-width: 0;
+}
+
+// 콘텐츠 수직 중앙 정렬 래퍼
+.meeting-enroll-main-inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-xl $spacing-xl;
+  max-width: 520px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.meeting-enroll-step {
+  @include typo($body-small-bold);
+  color: $color-text-muted;
+  margin-bottom: $spacing-md;
+}
+
+.meeting-enroll-main-title {
+  @include typo($body-large-bold);
+  color: $color-text-heading;
+  margin-bottom: $spacing-xs;
+  text-align: center;
+}
+
+.meeting-enroll-main-desc {
+  @include typo($body-small);
+  color: $color-text-muted;
+  margin-bottom: $spacing-lg;
+  text-align: center;
+}
+
+// ---- 안내 문장 ----
+.meeting-enroll-script {
+  @include typo($body-medium);
+  color: $color-text-primary;
+  line-height: 1.8;
+  padding: $spacing-md $spacing-lg;
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  margin-bottom: $spacing-lg;
+  text-align: center;
+  font-style: italic;
+  width: 100%;
+}
+
+// ---- 녹음 액션 영역 ----
+.meeting-enroll-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+// 마이크 원형 버튼
+.meeting-enroll-mic-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 2px solid $color-border;
+  background: #fff;
+  color: $color-text-secondary;
+  cursor: pointer;
+  transition:
+    border-color $transition-base,
+    color $transition-base,
+    background $transition-base,
+    box-shadow $transition-base;
+
+  &:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    box-shadow: 0 0 0 4px rgba(var(--color-primary-rgb, 74, 144, 226), 0.1);
+  }
+
+  &.is-recording {
+    border-color: $color-error;
+    background: $color-error;
+    color: #fff;
+    animation: meeting-enroll-mic-pulse 1.5s ease-in-out infinite;
+
+    &:hover {
+      background: darken($color-error, 8%);
+      box-shadow: 0 0 0 4px rgba($color-error, 0.2);
+    }
+  }
+}
+
+@keyframes meeting-enroll-mic-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba($color-error, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 0 12px rgba($color-error, 0);
+  }
+}
+
+.meeting-enroll-action-btns {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+}
+
+.meeting-enroll-mic-btn.is-file {
+  border-color: $color-border;
+  color: $color-text-secondary;
+
+  &:hover {
+    border-color: $color-text-secondary;
+    color: $color-text-primary;
+    box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.05);
+  }
+}
+
+.meeting-enroll-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.meeting-enroll-action-hint {
+  @include typo($body-small);
+  color: $color-text-muted;
+}
+
+// ---- 녹음 중 정보 ----
+.meeting-enroll-recording-info {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.meeting-enroll-timer {
+  @include typo($body-small-bold);
+  color: $color-error;
+}
+
+.meeting-enroll-progress {
+  width: 240px;
+  height: 4px;
+  background: $color-border;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.meeting-enroll-progress-bar {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 2px;
+  transition: width 1s linear;
+}
+
+// ---- 실시간 음량 바 ----
+.meeting-enroll-volume {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 24px;
+}
+
+.meeting-enroll-volume-bar {
+  width: 4px;
+  height: 8px;
+  border-radius: 1px;
+  background: $color-border;
+  transition: height 80ms ease-out, background 80ms ease-out;
+
+  &.is-active {
+    background: var(--color-primary);
+    height: 16px;
+
+    // 높은 바일수록 더 높게
+    &:nth-child(n + 14) {
+      height: 22px;
+      background: $color-warning;
+    }
+
+    &:nth-child(n + 18) {
+      background: $color-error;
+    }
+  }
+}
+
+.meeting-enroll-volume-warn {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  @include typo($body-xsmall);
+  color: $color-warning;
+}
+
+// ---- 검증 실패 ----
+.meeting-enroll-warn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba($color-warning, 0.1);
+  color: $color-warning;
+}
+
+.meeting-enroll-warn-text {
+  @include typo($body-small);
+  color: $color-text-primary;
+  text-align: center;
+  line-height: 1.6;
+}
+
+// ---- 펄스 애니메이션 ----
+.meeting-enroll-pulse {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: $color-error;
+  animation: meeting-enroll-pulse-anim 1.2s ease-in-out infinite;
+
+  &.is-lg {
+    width: 16px;
+    height: 16px;
+    background: var(--color-primary);
+  }
+}
+
+@keyframes meeting-enroll-pulse-anim {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+}
+
+.meeting-enroll-processing-text {
+  @include typo($body-small);
+  color: $color-text-secondary;
+}
+
+// ---- 완료 상태 (개별) ----
+.meeting-enroll-done-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(82, 196, 26, 0.1);
+  color: #52c41a;
+}
+
+.meeting-enroll-done-text {
+  @include typo($body-small);
+  color: #52c41a;
+}
+
+// ---- 전체 완료 ----
+.meeting-enroll-complete {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-md;
+}
+
+.meeting-enroll-complete-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(82, 196, 26, 0.1);
+  color: #52c41a;
+}
+
+.meeting-enroll-complete-title {
+  @include typo($body-large-bold);
+  color: $color-text-heading;
+  text-align: center;
+}
+
+.meeting-enroll-complete-desc {
+  @include typo($body-small);
+  color: $color-text-muted;
+}
+
+// ---- 하단 푸터 ----
+.meeting-enroll-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-md $spacing-xl;
+  border-top: 1px solid $color-border;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.meeting-enroll-progress-text {
+  @include typo($body-small);
+  color: $color-text-muted;
+}
+
+.meeting-enroll-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+// ---- 모바일 대응 ----
+@include mobile {
+  .meeting-enroll-layout {
+    flex-direction: column;
+  }
+
+  .meeting-enroll-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid $color-border;
+    padding: $spacing-md;
+  }
+
+  .meeting-enroll-sidebar-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: $spacing-xs;
+  }
+
+  .meeting-enroll-sidebar-item {
+    padding: $spacing-xs $spacing-sm;
+  }
+
+  .meeting-enroll-sidebar-status {
+    display: none;
+  }
+
+  .meeting-enroll-main-inner {
+    padding: $spacing-lg $spacing-md;
+  }
+
+  .meeting-enroll-footer {
+    padding: $spacing-sm $spacing-md;
+  }
 }

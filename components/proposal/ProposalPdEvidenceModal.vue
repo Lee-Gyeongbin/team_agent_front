@@ -223,7 +223,7 @@ watch(
   flex-direction: column;
   gap: $spacing-lg;
   min-height: 160px;
-  max-height: min(70vh, 640px);
+  max-height: min(74vh, 720px); // 글자를 키운 만큼 한 화면에 담기는 양을 유지
   overflow-y: auto;
   @include custom-scrollbar;
 
@@ -239,32 +239,33 @@ watch(
 .pt-pd-evidence-section {
   display: flex;
   flex-direction: column;
-  gap: $spacing-sm;
+  gap: 10px;
 }
 
+/* 본문과 같은 크기면 '현황·이슈 / 요구사항' 구간 경계가 안 읽힌다 */
 .pt-pd-evidence-section-title {
   margin: 0;
-  @include typo($body-small-bold, $color-text-heading);
+  @include typo($body-medium-bold, $color-text-heading);
 }
 
 .pt-pd-evidence-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .pt-pd-evidence-card {
   border: 1px solid $color-border;
-  border-radius: $border-radius-base;
-  padding: 12px 14px;
+  border-radius: $border-radius-lg;
+  padding: 16px 18px;
   background: #fff;
 
   &.is-issue {
-    border-left: 3px solid rgba(#e08a2c, 0.55);
+    border-left: 4px solid rgba(#e08a2c, 0.55);
   }
 
   &.is-req {
-    border-left: 3px solid rgba(var(--color-primary-rgb), 0.45);
+    border-left: 4px solid rgba(var(--color-primary-rgb), 0.45);
   }
 }
 
@@ -273,7 +274,7 @@ watch(
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .pt-pd-evidence-card-title {
@@ -283,16 +284,18 @@ watch(
   word-break: break-word;
 }
 
+/* 10px이면 16px 제목 옆에서 부속물처럼 묻힌다 — 같은 줄에서 식별 가능한 크기로 */
 .pt-pd-evidence-req-no {
-  margin-right: 6px;
-  @include typo($body-caption-bold, $color-text-muted);
+  margin-right: 8px;
+  @include typo($body-small-bold);
+  color: var(--color-primary);
 }
 
 .pt-pd-evidence-card-body {
   margin: 0;
-  @include typo($body-small, $color-text-primary);
+  @include typo($body-medium, $color-text-primary);
   white-space: pre-wrap;
-  line-height: 1.6;
+  line-height: 1.75; // RFP 원문을 통째로 읽는 영역 — 줄 간격을 본문 기본보다 넓힌다
   word-break: break-word;
 
   &.is-empty {
@@ -301,8 +304,10 @@ watch(
 }
 
 .pt-pd-evidence-card-meta {
-  margin: 8px 0 0;
-  @include typo($body-xsmall, $color-text-muted);
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid $color-border-light;
+  @include typo($body-small, $color-text-muted);
 }
 
 .pt-pd-evidence-missing {

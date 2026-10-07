@@ -8,7 +8,7 @@
         @click="onClickBack"
       >
         <i class="icon-arrow-left-sm size-16"></i>
-        회의 목록
+        돌아가기
       </button>
       <span class="meeting2-detail-header-divider"></span>
       <template v-if="currentMeeting">
@@ -43,80 +43,105 @@
           </button>
         </div>
       </template>
+      <UiButton
+        v-if="canVoiceEnroll"
+        class="meeting2-detail-voice-enroll"
+        :variant="isVoiceEnrollStep ? 'primary' : 'ghost'"
+        size="xs"
+        @click="onClickVoiceEnroll"
+      >
+        <template #icon-left>
+          <UiIcon
+            name="mic"
+            size="14"
+          />
+        </template>
+        음성 등록
+      </UiButton>
     </div>
 
-    <!-- 5단계 진행바 -->
+    <!-- 6단계 진행바 -->
     <MeetingStepper
       v-if="currentMeeting"
       :steps="currentMeeting.steps"
     />
 
-    <!-- 모바일 탭 (1023px 이하) — 커스텀 탭 스타일 유지 -->
-    <div
-      v-if="isMobile"
-      class="meeting2-layout-tabs"
-    >
-      <button
-        type="button"
-        :class="{ 'is-active': activeMobileTab === 'left' }"
-        @click="activeMobileTab = 'left'"
-      >
-        녹음/STT
-      </button>
-      <button
-        type="button"
-        :class="{ 'is-active': activeMobileTab === 'center' }"
-        @click="activeMobileTab = 'center'"
-      >
-        회의록
-      </button>
-      <button
-        type="button"
-        :class="{ 'is-active': activeMobileTab === 'right' }"
-        @click="activeMobileTab = 'right'"
-      >
-        공유
-      </button>
-    </div>
+    <!-- 음성 등록 스텝 -->
+    <MeetingVoiceEnrollPanel
+      v-if="isVoiceEnrollStep"
+      :meeting-id="meetingId"
+      @close="onVoiceEnrollClose"
+    />
 
-    <!-- 3분할 레이아웃 -->
-    <div
-      class="meeting2-layout"
-      :style="layoutStyle"
-    >
+    <!-- 기본 모드: 3분할 레이아웃 -->
+    <template v-else>
+      <!-- 모바일 탭 (1023px 이하) — 커스텀 탭 스타일 유지 -->
       <div
-        class="meeting2-layout-left"
-        :class="{ 'is-active': activeMobileTab === 'left' }"
+        v-if="isMobile"
+        class="meeting2-layout-tabs"
       >
-        <MeetingRecordPanel v-if="currentMeeting" />
+        <button
+          type="button"
+          :class="{ 'is-active': activeMobileTab === 'left' }"
+          @click="activeMobileTab = 'left'"
+        >
+          녹음/STT
+        </button>
+        <button
+          type="button"
+          :class="{ 'is-active': activeMobileTab === 'center' }"
+          @click="activeMobileTab = 'center'"
+        >
+          회의록
+        </button>
+        <button
+          type="button"
+          :class="{ 'is-active': activeMobileTab === 'right' }"
+          @click="activeMobileTab = 'right'"
+        >
+          공유
+        </button>
       </div>
 
+      <!-- 3분할 레이아웃 -->
       <div
-        class="meeting2-layout-resizer"
-        :class="{ 'is-resizing': resizingTarget === 'left' }"
-        @mousedown="onResizeStart('left', $event)"
-      ></div>
-
-      <div
-        class="meeting2-layout-center"
-        :class="{ 'is-active': activeMobileTab === 'center' }"
+        class="meeting2-layout"
+        :style="layoutStyle"
       >
-        <MeetingEditorPanel v-if="currentMeeting" />
-      </div>
+        <div
+          class="meeting2-layout-left"
+          :class="{ 'is-active': activeMobileTab === 'left' }"
+        >
+          <MeetingRecordPanel v-if="currentMeeting" />
+        </div>
 
-      <div
-        class="meeting2-layout-resizer"
-        :class="{ 'is-resizing': resizingTarget === 'right' }"
-        @mousedown="onResizeStart('right', $event)"
-      ></div>
+        <div
+          class="meeting2-layout-resizer"
+          :class="{ 'is-resizing': resizingTarget === 'left' }"
+          @mousedown="onResizeStart('left', $event)"
+        ></div>
 
-      <div
-        class="meeting2-layout-right"
-        :class="{ 'is-active': activeMobileTab === 'right' }"
-      >
-        <MeetingSidePanel v-if="currentMeeting" />
+        <div
+          class="meeting2-layout-center"
+          :class="{ 'is-active': activeMobileTab === 'center' }"
+        >
+          <MeetingEditorPanel v-if="currentMeeting" />
+        </div>
+
+        <div
+          class="meeting2-layout-resizer"
+          :class="{ 'is-resizing': resizingTarget === 'right' }"
+          @mousedown="onResizeStart('right', $event)"
+        ></div>
+
+        <div
+          class="meeting2-layout-right"
+          :class="{ 'is-active': activeMobileTab === 'right' }"
+        >
+          <MeetingSidePanel v-if="currentMeeting" />
+        </div>
       </div>
-    </div>
+    </template>
 
     <!-- 모달 -->
     <MeetingMailSendModal />
@@ -125,6 +150,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiButton, UiIcon } from '@leechanyong/ispark-ui'
 import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
 import { useMeetingApi } from '~/composables/meeting/useMeetingApi'
 import type { MeetingUser } from '~/types/meeting'
@@ -134,12 +160,26 @@ definePageMeta({ path: '/meeting/:id' })
 const route = useRoute()
 const meetingId = computed(() => Number(route.params.id))
 
-const { currentMeeting, meetingDetail, infographicList, activeTab, handleSelectMeetingDetail, handleResetRecord, handleSaveMeeting } =
+const { currentMeeting, meetingDetail, infographicList, activeTab, voiceEnrollDone, handleSelectMeetingDetail, handleResetRecord, handleSaveMeeting } =
   useMeetingStore()
 const { fetchAbnormalMeetingList } = useMeetingApi()
 
 // ── 비정상 종료 상태 ─────────────────────────────────────────────────────
 const isAbnormal = ref(false)
+
+// ── 음성 등록 스텝 ─────────────────────────────────────────────────────
+/** 수동으로 음성등록 패널 열기 */
+const isVoiceEnrollForced = ref(false)
+/** 스텝 기반 자동 표시를 건너뛰기 (사용자가 닫기/스킵한 경우) */
+const isVoiceEnrollSkipped = ref(false)
+
+const isVoiceEnrollStep = computed(() => {
+  if (isVoiceEnrollForced.value) return true
+  if (isVoiceEnrollSkipped.value) return false
+  const steps = currentMeeting.value?.steps ?? []
+  const enrollStep = steps.find((s) => s.key === 'voiceEnroll')
+  return enrollStep?.status === 'progress'
+})
 
 // ── 참석자 목록 (meeting 기존 로직 흡수) ────────────────────────────
 /** 화자-참석자 매핑 모달용 — meetingDetail의 attendees JSON 파싱 */
@@ -279,6 +319,33 @@ watch(
 // ── 네비게이션 ───────────────────────────────────────────────────────
 const onClickBack = () => {
   navigateTo('/meeting')
+}
+
+/** 음성 등록 가능 여부: 참석자가 있으면 표시 (진행/종료/취소 무관) */
+const canVoiceEnroll = computed(() => {
+  return attendeeList.value.length > 0 || (meetingDetail.value.speakers?.length ?? 0) > 0
+})
+
+/** 음성 등록 모드 토글 (수동) */
+const onClickVoiceEnroll = () => {
+  if (isVoiceEnrollStep.value) {
+    // 현재 열려 있으면 닫기
+    isVoiceEnrollForced.value = false
+    isVoiceEnrollSkipped.value = true
+  } else {
+    // 현재 닫혀 있으면 열기
+    isVoiceEnrollForced.value = true
+    isVoiceEnrollSkipped.value = false
+  }
+}
+
+/** 음성 등록 패널 닫기 — 상태 재조회 후 스텝 갱신 */
+const onVoiceEnrollClose = async () => {
+  isVoiceEnrollForced.value = false
+  isVoiceEnrollSkipped.value = false
+  voiceEnrollDone.value = true
+  // 스텝 상태를 갱신하기 위해 상세 재조회
+  if (meetingId.value) await handleSelectMeetingDetail(meetingId.value)
 }
 
 // attendeeList, onSavedSpeakerMapping은 자식 컴포넌트에서

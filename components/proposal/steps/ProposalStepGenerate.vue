@@ -1,7 +1,7 @@
 <template>
   <div
     ref="layoutRef"
-    class="pt-stepD-layout"
+    :class="['pt-stepD-layout']"
     :style="layoutStyle"
   >
     <!-- 좌측: 목차 트리 (대목차=헤더/클릭불가, 소목차=클릭가능) -->
@@ -130,17 +130,19 @@
               <template v-if="currentSlides.length"> · {{ currentSlides.length }}장</template>
             </div>
           </div>
-          <UiButton
-            variant="outline"
-            size="sm"
-            :loading="isGenerating"
-            @click="onGenerate"
-          >
-            <template #icon-left>
-              <i class="icon-refresh size-14" />
-            </template>
-            {{ currentSlides.length ? '재생성' : '슬라이드 생성' }}
-          </UiButton>
+          <div class="pt-gen-head-actions">
+            <UiButton
+              variant="outline"
+              size="sm"
+              :loading="isGenerating"
+              @click="onGenerate"
+            >
+              <template #icon-left>
+                <i class="icon-refresh size-14" />
+              </template>
+              {{ currentSlides.length ? '재생성' : '슬라이드 생성' }}
+            </UiButton>
+          </div>
         </div>
 
         <!-- 생성 중 진행 표시 -->

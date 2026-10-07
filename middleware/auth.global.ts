@@ -1,5 +1,12 @@
+import type { UserInfo } from '~/types/auth'
+
 export default defineNuxtRouteMiddleware((to) => {
   if (to.path === '/login' || to.path === '/signup') return
+
+  const user = useCookie<UserInfo | null>('ta_user')
+  if (user.value?.pwdChgReqYn === 'Y') {
+    return navigateTo('/login')
+  }
 
   /** 미구현 메뉴 TODO : 삭제 */
   if (to.path === '/planned') {
@@ -10,7 +17,6 @@ export default defineNuxtRouteMiddleware((to) => {
     return navigateTo('/')
   }
 
-  const user = useCookie('ta_user')
   if (!user.value) {
     const redirect = to.fullPath !== '/' ? `?redirect=${encodeURIComponent(to.fullPath)}` : ''
     return navigateTo(`/login${redirect}`)

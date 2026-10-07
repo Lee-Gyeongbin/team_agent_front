@@ -1,5 +1,5 @@
 <template>
-  <div :class="['pt-panel', 'pt-panel--lg', 'pt-step-b', { 'is-fullscreen': isFullscreen }]">
+  <div :class="['pt-panel', 'pt-panel--lg', 'pt-step-b']">
     <div class="pt-step-b-head">
       <h3 class="pt-panel-title">목차·요구사항</h3>
       <p class="pt-panel-desc">RFP에서 추출한 목차·요구사항·평가기준·현황이슈를 확인하고 보완하세요.</p>
@@ -101,21 +101,6 @@
               </UiButton>
             </template>
           </UiDropdownMenu>
-          <UiButton
-            variant="ghost"
-            size="sm"
-            icon-only
-            :title="isFullscreen ? '전체화면 해제 (Esc)' : '전체화면으로 보기'"
-            :aria-label="isFullscreen ? '전체화면 해제' : '전체화면으로 보기'"
-            @click="toggleFullscreen"
-          >
-            <template #icon-left>
-              <UiIcon
-                :name="isFullscreen ? 'minimize-2' : 'maximize-2'"
-                size="16"
-              />
-            </template>
-          </UiButton>
         </div>
       </div>
     </div>
@@ -142,6 +127,20 @@
       >
         <div class="pt-toc-toolbar">
           <div class="pt-toc-toolbar-actions">
+            <UiButton
+              variant="outline"
+              size="sm"
+              :disabled="isLoading || !tocList.length"
+              @click="collapsedTocIds = new Set()"
+              >전체 펼치기</UiButton
+            >
+            <UiButton
+              variant="outline"
+              size="sm"
+              :disabled="isLoading || !tocList.length"
+              @click="collapseAllToc"
+              >전체 접기</UiButton
+            >
             <UiButton
               variant="primary-line"
               size="sm"
@@ -211,7 +210,7 @@
                     :ref="setEditInput"
                     v-model="editingTitle"
                     class="pt-toc-input"
-                    @blur="onCommitTitle"
+                    @blur="onCancelEditTitle"
                     @keydown.enter.prevent="onCommitTitle"
                     @keydown.esc="onCancelEditTitle"
                   />
@@ -671,10 +670,10 @@
                 <UiBadge
                   v-if="editingEcId !== ec.evalCriteriaId"
                   class="pt-ec-fillbadge"
-                  :variant="ecFilledCount(ec) === 3 ? 'success' : 'warning'"
+                  :variant="ecFilledCount(ec) === 4 ? 'success' : 'warning'"
                   size="sm"
                 >
-                  {{ ecFilledCount(ec) === 0 ? '미작성' : `${ecFilledCount(ec)}/3 작성` }}
+                  {{ ecFilledCount(ec) === 0 ? '미작성' : `${ecFilledCount(ec)}/4 작성` }}
                 </UiBadge>
                 <UiButton
                   v-if="editingEcId !== ec.evalCriteriaId"
@@ -743,6 +742,15 @@
                   size="md"
                   placeholder="필수 증빙을 입력하세요"
                 />
+                <label>차별화 방향</label>
+                <UiTextarea
+                  v-model="ecDraft.differentiationDirection"
+                  :rows="3"
+                  :auto-resize="false"
+                  border
+                  size="md"
+                  placeholder="차별화 방향을 입력하세요"
+                />
               </template>
               <template v-else>
                 <label>평가 의도</label>
@@ -765,6 +773,13 @@
                   :class="{ 'is-empty': !ec.requiredEvidence }"
                 >
                   {{ ec.requiredEvidence || '내용 없음' }}
+                </p>
+                <label>차별화 방향</label>
+                <p
+                  class="pt-ec-view-text"
+                  :class="{ 'is-empty': !ec.differentiationDirection }"
+                >
+                  {{ ec.differentiationDirection || '내용 없음' }}
                 </p>
               </template>
 
@@ -974,7 +989,7 @@
 
 <script setup lang="ts">
 import draggable from 'vuedraggable'
-import { UiButton, UiIcon, UiBadge, UiTable, UiTab, UiRadio } from '@leechanyong/ispark-ui'
+import { UiButton, UiIcon, UiBadge, UiTable, UiTab, UiRadio, UiDropdownMenu } from '@leechanyong/ispark-ui'
 import { openToast } from '~/composables/useToast'
 import { openConfirm } from '~/composables/useDialog'
 import { openLoading, updateLoadingText, closeLoading } from '~/composables/useLoading'
@@ -982,9 +997,8 @@ import { useProposalToc } from '~/composables/proposal/useProposalToc'
 import { useProposalFileStore } from '~/composables/proposal/useProposalFileStore'
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
 import type { PtRequirement, PtEvalCriteria, PtRfpIssue, PtTocItem } from '~/types/proposal'
-import type { TableColumn } from '@leechanyong/ispark-ui'
+import type { TableColumn, DropdownMenuItemDef } from '@leechanyong/ispark-ui'
 import type { SelectOption } from '~/components/ui/UiSelect.vue'
-import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
 
 const STAGE1_STEP_MESSAGES: Record<string, string> = {
   extract: 'RFP 파일에서 텍스트를 추출하는 중...',
@@ -1039,6 +1053,7 @@ const ecDraft = ref({
   evalIntent: '',
   highScoreCondition: '',
   requiredEvidence: '',
+  differentiationDirection: '',
 })
 const editingIssueId = ref<string | null>(null)
 const isIssueSaving = ref(false)
@@ -1228,7 +1243,8 @@ const evalScoreSum = computed(() => evalCriteria.value.reduce((a, b) => a + (Num
 
 /** 평가기준 상세 3개 항목 중 채워진 개수 — 접힌 상태에서 미작성 기준을 식별하기 위함 */
 const ecFilledCount = (ec: PtEvalCriteria) =>
-  [ec.evalIntent, ec.highScoreCondition, ec.requiredEvidence].filter((v) => !!v?.trim()).length
+  [ec.evalIntent, ec.highScoreCondition, ec.requiredEvidence, ec.differentiationDirection].filter((v) => !!v?.trim())
+    .length
 
 /** 합계 안내 — 불일치면 차이값과 조치 방향까지 알려준다 */
 const evalScoreMessage = computed(() => {
@@ -1412,29 +1428,10 @@ const toggleTocCollapse = (tocId: string) => {
   else next.add(tocId)
   collapsedTocIds.value = next
 }
-
-// ===== 전체화면 =====
-/**
- * 패널을 뷰포트로 확대 — 사이드바·페이지 헤드·스텝퍼가 쓰던 공간을 회수한다.
- * 앱 헤더($z-header: 450)는 그대로 두고 그 아래부터 채운다.
- * 헤더까지 덮으려면 z-index가 모달(451)보다 커져야 하고, 그러면 이 패널에서 연
- * 수정 모달이 패널 뒤로 숨는다. 헤더 56px을 포기하는 쪽이 안전하다.
- */
-const isFullscreen = ref(false)
-
-const toggleFullscreen = () => {
-  isFullscreen.value = !isFullscreen.value
+const collapseAllToc = () => {
+  onCancelEditTitle()
+  collapsedTocIds.value = new Set(tocChildrenMap.value.keys())
 }
-
-const onFullscreenEsc = (e: KeyboardEvent) => {
-  // 인라인 편집 중 Esc는 편집 취소가 먼저 처리되어야 하므로 그때는 무시
-  if (e.key !== 'Escape' || !isFullscreen.value) return
-  if (editingTocId.value || editingEcId.value || editingIssueId.value) return
-  isFullscreen.value = false
-}
-
-onMounted(() => window.addEventListener('keydown', onFullscreenEsc))
-onBeforeUnmount(() => window.removeEventListener('keydown', onFullscreenEsc))
 
 // ===== 목차 제목 인라인 편집 =====
 /** 편집 중인 목차 id — 이 행만 input으로 렌더 */
@@ -1461,8 +1458,7 @@ const onCancelEditTitle = () => {
 }
 
 /**
- * 제목 확정 — Enter / ✓ 버튼 / 바깥 클릭(blur) 공통.
- * blur는 취소가 아니라 저장이다. 실수로 옆을 눌렀을 때 입력을 잃지 않게 하고,
+ * 제목 확정 — Enter / ✓ 버튼. 바깥 클릭은 수정 취소.
  * 대신 실제로 값이 바뀐 경우에만 토스트로 저장됐음을 알린다. (취소는 Esc / ✕)
  */
 const onCommitTitle = async () => {
@@ -1645,6 +1641,7 @@ const onStartEditEc = (ec: PtEvalCriteria) => {
     evalIntent: ec.evalIntent || '',
     highScoreCondition: ec.highScoreCondition || '',
     requiredEvidence: ec.requiredEvidence || '',
+    differentiationDirection: ec.differentiationDirection || '',
   }
   // 수정 진입 시 상세 영역 펼침
   if (!openEcIds.value.has(ec.evalCriteriaId)) {
@@ -1693,6 +1690,7 @@ const onSaveEc = async () => {
       evalIntent: ecDraft.value.evalIntent.trim() || null,
       highScoreCondition: ecDraft.value.highScoreCondition.trim() || null,
       requiredEvidence: ecDraft.value.requiredEvidence.trim() || null,
+      differentiationDirection: ecDraft.value.differentiationDirection.trim() || null,
     })
     if (res.result !== 'OK') {
       openToast({ message: '평가기준 수정에 실패했습니다.', type: 'error' })

@@ -169,6 +169,13 @@
       @confirm="closeMaintNotice"
       @hide="hideMaintNoticeForever"
     />
+
+    <PasswordChangeModal
+      :is-open="isPasswordChangeOpen"
+      persistent
+      @close="isPasswordChangeOpen = false"
+      @success="onPasswordChangeSuccess"
+    />
   </div>
 </template>
 
@@ -178,7 +185,7 @@ import { isIncidentApiBody, isIncidentHandledError } from '~/composables/com/use
 
 definePageMeta({ layout: 'auth' })
 
-const { login } = useAuth()
+const { login, logout, user } = useAuth()
 const route = useRoute()
 const {
   loginNoticeList,
@@ -214,6 +221,7 @@ const errorMessage = ref('')
 const isLoading = ref(false)
 const sessionExpiredMessage = ref('')
 const saveLoginInfo = ref(false)
+const isPasswordChangeOpen = ref(false)
 
 if (route.query.expired === 'true') {
   sessionExpiredMessage.value = '세션이 만료되었습니다. 다시 로그인해주세요.'
@@ -224,6 +232,9 @@ onMounted(() => {
   if (saved) {
     loginId.value = saved
     saveLoginInfo.value = true
+  }
+  if (user.value?.pwdChgReqYn === 'Y') {
+    isPasswordChangeOpen.value = true
   }
   void Promise.all([handleSelectNoticeTypeOptions(), handleSelectLoginNoticeList(), handleSelectMaintNotice()])
 })
@@ -244,6 +255,16 @@ const onNavigateSignup = () => {
   navigateTo('/signup')
 }
 
+const onPasswordChangeSuccess = async () => {
+  isPasswordChangeOpen.value = false
+  loginPassword.value = ''
+  await nextTick()
+  await openAlert({
+    message: '비밀번호가 변경되었습니다.\n보안을 위해 다시 로그인해 주세요.',
+  })
+  await logout()
+}
+
 const onSubmit = async () => {
   errorMessage.value = ''
   sessionExpiredMessage.value = ''
@@ -259,6 +280,10 @@ const onSubmit = async () => {
 
     if (res.success) {
       savedLoginIdCookie.value = saveLoginInfo.value ? loginId.value.trim() : null
+      if (res.user?.pwdChgReqYn === 'Y') {
+        isPasswordChangeOpen.value = true
+        return
+      }
       const redirect = (route.query.redirect as string) || '/chat'
       navigateTo(redirect)
     } else if (!isIncidentApiBody(res)) {

@@ -1,5 +1,5 @@
 <template>
-  <div :class="['pt-panel', 'pt-panel--lg', 'pt-strategy', { 'is-fullscreen': isFullscreen }]">
+  <div :class="['pt-panel', 'pt-panel--lg', 'pt-strategy']">
     <div class="pt-strategy-head">
       <h3 class="pt-panel-title">전략검토</h3>
       <p class="pt-panel-desc">문제정의와 Win Theme를 확인하고 보완하세요.</p>
@@ -64,22 +64,6 @@
             </UiButton>
           </template>
         </UiDropdownMenu>
-
-        <UiButton
-          variant="ghost"
-          size="sm"
-          icon-only
-          :title="isFullscreen ? '전체화면 해제 (Esc)' : '전체화면으로 보기'"
-          :aria-label="isFullscreen ? '전체화면 해제' : '전체화면으로 보기'"
-          @click="toggleFullscreen"
-        >
-          <template #icon-left>
-            <UiIcon
-              :name="isFullscreen ? 'minimize-2' : 'maximize-2'"
-              size="16"
-            />
-          </template>
-        </UiButton>
       </div>
     </div>
 
@@ -201,7 +185,7 @@
                 <div class="pt-pd-detail-head-main">
                   <UiBadge
                     variant="info"
-                    size="sm"
+                    size="md"
                   >
                     {{ activePdCategory }}
                   </UiBadge>
@@ -238,6 +222,48 @@
                   >
                     대응
                   </button>
+                </div>
+                <div class="pt-pd-head-actions">
+                  <PdDropdownMenu
+                    :items="pdDetailMenuItems"
+                    align="end"
+                    @select="onPdDetailMenuSelect"
+                  >
+                    <template #trigger>
+                      <UiButton
+                        variant="ghost"
+                        size="sm"
+                        icon-only
+                        aria-label="문제정의 관리"
+                        :loading="isRefining"
+                      >
+                        <template #icon-left
+                          ><UiIcon
+                            name="ellipsis"
+                            size="18"
+                        /></template>
+                      </UiButton>
+                    </template>
+                  </PdDropdownMenu>
+                  <!-- 취소는 되돌릴 게 있을 때만 노출 — 항상 띄우면 저장 버튼과 무게가 같아진다 -->
+                  <UiButton
+                    v-if="isPdDirty"
+                    variant="outline"
+                    size="sm"
+                    :disabled="isRefining || isSavingPd"
+                    @click="onCancelPdEdit"
+                  >
+                    취소
+                  </UiButton>
+                  <UiButton
+                    variant="primary"
+                    size="sm"
+                    :loading="isSavingPd"
+                    :disabled="!isPdDirty || isRefining || isSavingPd"
+                    @click="onSavePd"
+                  >
+                    {{ isPdDirty ? '변경사항 저장' : '저장됨' }}
+                  </UiButton>
                 </div>
               </div>
               <section
@@ -282,7 +308,7 @@
                     <UiButton
                       v-if="hasPdEvidence"
                       variant="primary-line"
-                      size="xs"
+                      size="md"
                       @click="onOpenEvidenceModal"
                     >
                       상세 보기
@@ -295,39 +321,6 @@
                   </div>
                 </template>
               </section>
-              <div class="pt-pd-actions">
-                <UiButton
-                  variant="primary"
-                  size="sm"
-                  :loading="isSavingPd"
-                  :disabled="!isPdDirty"
-                  @click="onSavePd"
-                >
-                  {{ isPdDirty ? '변경사항 저장' : '저장됨' }}
-                </UiButton>
-                <UiButton
-                  variant="ghost"
-                  size="sm"
-                  :loading="isRefining"
-                  @click="onRefinePd('이 문제정의의 표현을 더 구체적이고 제안서에 맞게 다듬어줘', true)"
-                >
-                  ↻ 이 문제정의만 재생성
-                </UiButton>
-                <UiButton
-                  variant="ghost"
-                  size="sm"
-                  class="pt-pd-actions-del"
-                  @click="onDeletePd(activePd.problemId)"
-                >
-                  <template #icon-left>
-                    <UiIcon
-                      name="trash-2"
-                      size="14"
-                    />
-                  </template>
-                  삭제
-                </UiButton>
-              </div>
             </div>
             <div
               v-else
@@ -525,7 +518,8 @@
 
   <ProposalPromptModal
     :is-open="isPromptModalOpen"
-    :stage-cds="['S2A_PROBLEM_TOC', 'S2B_WINTHEME']"
+    :stage-cds="strategyPromptStageCds"
+    :groups="strategyPromptGroups"
     @close="isPromptModalOpen = false"
   />
 
@@ -539,12 +533,20 @@
 </template>
 
 <script setup lang="ts">
-import { UiButton, UiIcon, UiBadge, UiTab, UiTextarea, UiTooltip } from '@leechanyong/ispark-ui'
+import {
+  UiButton,
+  UiIcon,
+  UiBadge,
+  UiTab,
+  UiTextarea,
+  UiTooltip,
+  UiDropdownMenu as PdDropdownMenu,
+} from '@leechanyong/ispark-ui'
 import { openToast } from '~/composables/useToast'
 import { openConfirm } from '~/composables/useDialog'
-import { openLoading, closeLoading } from '~/composables/useLoading'
+import { openLoading, updateLoadingText, closeLoading } from '~/composables/useLoading'
 import { useProposalApi } from '~/composables/proposal/useProposalApi'
-import type { Stage2Summary, ProblemDefinition, WinTheme } from '~/types/proposal'
+import type { Stage2Summary, ProblemDefinition, WinTheme, PtPromptGroup } from '~/types/proposal'
 import type { DropdownMenuItemDef } from '~/components/ui/UiDropdownMenu.vue'
 
 const props = defineProps<{
@@ -571,7 +573,7 @@ const {
   fetchUpdateStage2WinTheme,
   fetchInsertStage2WinTheme,
   fetchDeleteStage2WinTheme,
-  fetchRegenerateStage2ProblemDefinitions,
+  streamRegenerateStage2Pd,
   fetchRegenerateStage2WinThemes,
 } = useProposalApi()
 
@@ -583,12 +585,19 @@ const PROBLEM_TYPE_MAP: Record<string, string> = {
   '005': '보안품질',
 }
 
-const loadingSteps = [
+const loadingSteps = ref([
+  {
+    key: 'evidence',
+    title: '근거 매핑',
+    doneMsg: '이슈별 요구사항 근거 매핑 완료',
+    activeMsg: '이슈를 바탕으로 요구사항을 매핑하고 있습니다…',
+    waitMsg: '대기 중',
+  },
   {
     key: 'pd',
-    title: '문제정의 분석',
-    doneMsg: '발주기관 핵심 문제 도출 완료',
-    activeMsg: '문제 정의 생성 중…',
+    title: '문제정의 생성',
+    doneMsg: '문제정의 생성 및 중복 정리 완료',
+    activeMsg: '문제 정의를 생성하고 있습니다…',
     waitMsg: '대기 중',
   },
   {
@@ -598,7 +607,7 @@ const loadingSteps = [
     activeMsg: '자사·경쟁사 자료 분석 중…',
     waitMsg: '대기 중',
   },
-]
+])
 
 const summary = ref<Stage2Summary | null>(null)
 const problemDefs = ref<ProblemDefinition[]>([])
@@ -610,6 +619,44 @@ const strategyTabs = computed(() => [
   { label: 'Win Theme', value: 'wt', count: winThemes.value.length },
 ])
 const isPromptModalOpen = ref(false)
+
+/**
+ * Stage2-A는 근거 매핑 → 문제정의 생성 → 최종 정리 순으로 3개 프롬프트를 쓴다.
+ * 상위 탭은 문제정의/승리주제, 문제정의만 하위 3스텝을 보여준다.
+ */
+const strategyPromptGroups: PtPromptGroup[] = [
+  {
+    key: 'pd',
+    label: '문제정의',
+    description: '문제정의 결과를 생성하기 위해 내부적으로 3단계 프롬프트가 순차 실행됩니다.',
+    steps: [
+      {
+        stageCd: 'ISSUE_REQUIREMENT_MAP',
+        label: '근거 매핑',
+        description: 'RFP 문제와 어떤 요구사항·배경·개선방향을 연결할지 결정합니다.',
+        impact: '수정 시 문제정의의 근거 선택 결과가 달라질 수 있습니다.',
+      },
+      {
+        stageCd: 'ISSUE_PD_GENERATE',
+        label: '문제정의 생성',
+        description: '선택된 근거를 바탕으로 문제·원인·위험·목표·전략을 작성합니다.',
+        impact: '수정 시 문제정의 내용과 표현 방식이 달라집니다.',
+      },
+      {
+        stageCd: 'PROBLEM_FINAL',
+        label: '최종 정리',
+        description: '생성된 문제정의 간 중복·상하위 관계를 판단합니다.',
+        impact: '수정 시 최종 문제 개수와 병합 방식이 달라질 수 있습니다.',
+      },
+    ],
+  },
+  {
+    key: 'wt',
+    label: '승리주제',
+    steps: [{ stageCd: 'S2B_WINTHEME', label: '승리주제' }],
+  },
+]
+const strategyPromptStageCds = strategyPromptGroups.flatMap((g) => g.steps.map((s) => s.stageCd))
 const isEvidenceModalOpen = ref(false)
 const activeProblemId = ref<string | null>(null)
 const isLoadingStage2 = ref(false)
@@ -650,24 +697,6 @@ const onStrategyMenuSelect = (value: string) => {
   else if (value === 'regenAll') onRegenerateAll()
 }
 
-/**
- * 패널을 뷰포트로 확대 — 사이드바·페이지 헤드·스텝퍼가 쓰던 공간을 회수한다.
- * 앱 헤더($z-header: 450)는 그대로 두고 그 아래부터 채운다.
- * 헤더까지 덮으려면 z-index가 모달(451)보다 커져야 하고, 그러면 이 패널에서 연 모달이 뒤로 숨는다.
- */
-const isFullscreen = ref(false)
-
-const toggleFullscreen = () => {
-  isFullscreen.value = !isFullscreen.value
-}
-
-const onFullscreenEsc = (e: KeyboardEvent) => {
-  if (e.key !== 'Escape' || !isFullscreen.value) return
-  isFullscreen.value = false
-}
-
-onMounted(() => window.addEventListener('keydown', onFullscreenEsc))
-onBeforeUnmount(() => window.removeEventListener('keydown', onFullscreenEsc))
 const wtDraft = ref<Record<string, Partial<WinTheme>>>({})
 
 const editPd = reactive({
@@ -723,12 +752,27 @@ const onScrollToPdGroup = async (variant: PdGroupVariant) => {
   const container = el?.closest<HTMLElement>('.pt-pd-detail')
   if (!el || !container) return
   const offset = el.getBoundingClientRect().top - container.getBoundingClientRect().top
-  container.scrollTo({ top: container.scrollTop + offset - 8, behavior: 'smooth' })
+  const headerHeight = container.querySelector('.pt-pd-detail-head')?.getBoundingClientRect().height ?? 0
+  container.scrollTo({ top: container.scrollTop + offset - headerHeight - 12, behavior: 'smooth' })
 }
 
 const PD_EDIT_KEYS = pdFieldGroups.flatMap((g) => g.fields.map((f) => f.key))
 
 const activePd = computed(() => problemDefs.value.find((p) => p.problemId === activeProblemId.value) ?? null)
+const pdDetailMenuItems = computed<DropdownMenuItemDef[]>(() => [
+  {
+    label: '이 문제정의만 재생성',
+    value: 'regenerate',
+    icon: 'refresh-cw',
+    disabled: isSavingPd.value || isRefining.value,
+  },
+  { label: '삭제', value: 'delete', icon: 'trash-2', color: 'danger', disabled: isSavingPd.value || isRefining.value },
+])
+const onPdDetailMenuSelect = (value: string) => {
+  if (!activePd.value || isSavingPd.value || isRefining.value) return
+  if (value === 'regenerate') onRefinePd('이 문제정의의 표현을 더 구체적이고 제안서에 맞게 다듬어줘', true)
+  if (value === 'delete') onDeletePd(activePd.value.problemId)
+}
 
 /** 근거(이슈·요구사항) 연결 여부 */
 const hasPdEvidence = computed(() => {
@@ -828,9 +872,8 @@ const targetPdTitle = (wt: WinTheme) => {
   const pd = problemDefs.value.find((p) => p.problemId === id)
   return pd ? pdTitle(pd) : '선택 필요'
 }
-watch(activePd, (pd) => {
-  if (!pd) return
-  activePdSection.value = 'diagnosis'
+/** 편집 버퍼를 서버 값으로 되돌린다 — 항목 전환 시와 '취소'에서 공용 */
+const resetEditPd = (pd: ProblemDefinition) => {
   editPd.currentProblem = pd.currentProblem || ''
   editPd.rootCause = pd.rootCause || ''
   editPd.riskIfIgnored = pd.riskIfIgnored || ''
@@ -838,7 +881,24 @@ watch(activePd, (pd) => {
   editPd.requiredCapability = pd.requiredCapability || ''
   editPd.strategySummary = pd.strategySummary || ''
   editPd.kpi = pd.kpi || ''
+}
+
+watch(activePd, (pd) => {
+  if (!pd) return
+  activePdSection.value = 'diagnosis'
+  resetEditPd(pd)
 })
+
+/** 편집 취소 — 되돌리면 입력이 사라지므로 반드시 확인받는다 */
+const onCancelPdEdit = async () => {
+  if (!activePd.value) return
+  const confirmed = await openConfirm({
+    title: '편집 취소',
+    message: '변경사항을 되돌립니다. 저장하지 않은 내용은 사라집니다.',
+  })
+  if (!confirmed) return
+  resetEditPd(activePd.value)
+}
 
 const loadAll = async () => {
   const [s, pds, wts] = await Promise.all([
@@ -866,9 +926,9 @@ const pollSummaryUntilDone = () =>
         if (res.result === 'OK' && res.data) {
           summary.value = res.data
           const cd = res.data.stage2StatusCd
-          if (cd === '002') loadingStepIdx.value = Math.max(loadingStepIdx.value, 1)
+          if (cd === '002') loadingStepIdx.value = Math.max(loadingStepIdx.value, 2)
           if (cd === '005' || cd === '003' || cd === '004') {
-            loadingStepIdx.value = 2
+            loadingStepIdx.value = 3
             resolve()
             return
           }
@@ -881,20 +941,54 @@ const pollSummaryUntilDone = () =>
     tick()
   })
 
-const startStage2 = async (force = false) => {
-  isLoadingStage2.value = true
-  loadingStepIdx.value = 0
+/**
+ * Stage2 전략 분석 실행.
+ * @param force - true면 상태 리셋 후 재생성
+ * @param opts.usePanelLoading - true(기본): 패널 내 단계 UI. false: 호출측 openLoading만 사용(재생성)
+ */
+const startStage2 = async (force = false, opts: { usePanelLoading?: boolean } = {}) => {
+  const usePanelLoading = opts.usePanelLoading !== false
+  if (usePanelLoading) {
+    isLoadingStage2.value = true
+    loadingStepIdx.value = 0
+  }
   if (force) {
     await fetchResetStage2Status(props.ptProjectId)
   }
   await new Promise<void>((resolve) => {
     streamAnalyzeStage2(props.ptProjectId, props.modelId, props.agentId, {
       onProgress: (data) => {
-        if (data.step === 'problem_def' || data.step === 'prompt' || data.step === 'parse') loadingStepIdx.value = 0
-        if (data.step === 'win_theme' || data.step === 'save') loadingStepIdx.value = 1
+        if (data.step === 'evidence_map' || data.step === 'prompt') {
+          loadingStepIdx.value = 0
+          if (data.step === 'evidence_map' && data.current != null && data.total != null) {
+            const msg = `이슈를 바탕으로 요구사항을 매핑하고 있습니다… (${data.current}/${data.total})`
+            loadingSteps.value[0].activeMsg = msg
+            if (!usePanelLoading) updateLoadingText(msg)
+          } else if (!usePanelLoading) {
+            updateLoadingText('프롬프트를 준비하는 중...')
+          }
+        }
+        if (data.step === 'pd_generate') {
+          loadingStepIdx.value = 0
+          if (data.current != null && data.total != null) {
+            const msg = `문제 정의를 생성하고 있습니다… (${data.current}/${data.total})`
+            loadingSteps.value[0].activeMsg = msg
+            if (!usePanelLoading) updateLoadingText(msg)
+          }
+        }
+        if (data.step === 'dedup' || data.step === 'parse') {
+          loadingStepIdx.value = 1
+          const msg = '문제정의 중복을 정리하고 있습니다…'
+          loadingSteps.value[1].activeMsg = msg
+          if (!usePanelLoading) updateLoadingText(msg)
+        }
+        if (data.step === 'win_theme' || data.step === 'save') {
+          loadingStepIdx.value = 2
+          if (!usePanelLoading) updateLoadingText('Win Theme를 도출하는 중...')
+        }
       },
       onDone: async () => {
-        loadingStepIdx.value = 3
+        loadingStepIdx.value = 4
         resolve()
       },
       onError: async (msg) => {
@@ -905,7 +999,7 @@ const startStage2 = async (force = false) => {
     })
   })
   await loadAll()
-  isLoadingStage2.value = false
+  if (usePanelLoading) isLoadingStage2.value = false
 }
 
 onMounted(async () => {
@@ -944,15 +1038,18 @@ onMounted(async () => {
 const onRegenerateAll = async () => {
   const ok = await openConfirm({
     title: '전체 재생성',
-    message:
-      '문제정의·목차매핑·Win Theme를 처음부터 다시 생성합니다. 직접 수정한 내용이 사라지고, 이후 슬라이드가 최신 상태가 아닐 수 있습니다.',
+    message: '문제정의·Win Theme를 처음부터 다시 생성합니다. 직접 수정한 내용이 사라집니다.',
   })
   if (!ok) return
   isRegeneratingAll.value = true
+  openLoading({ text: '전략을 재생성하는 중...' })
   try {
-    await startStage2(true)
+    // 패널 내 로딩 UI와 전역 오버레이가 겹치지 않도록 오버레이만 사용
+    await startStage2(true, { usePanelLoading: false })
+    openToast({ message: '전략이 재생성되었습니다.' })
   } finally {
     isRegeneratingAll.value = false
+    closeLoading()
   }
 }
 
@@ -965,18 +1062,29 @@ const onRegenerateAllPd = async () => {
   isRegeneratingAllPd.value = true
   openLoading({ text: '문제정의를 재생성하는 중...' })
   try {
-    const res = await fetchRegenerateStage2ProblemDefinitions({
-      ptProjectId: props.ptProjectId,
-      modelId: props.modelId,
-      agentId: props.agentId,
+    await new Promise<void>((resolve) => {
+      streamRegenerateStage2Pd(props.ptProjectId, props.modelId, props.agentId, {
+        onProgress: (data) => {
+          if (data.step === 'evidence_map' && data.current != null && data.total != null) {
+            updateLoadingText(`이슈를 바탕으로 요구사항을 매핑하고 있습니다… (${data.current}/${data.total})`)
+          }
+          if (data.step === 'pd_generate' && data.current != null && data.total != null) {
+            updateLoadingText(`문제 정의를 생성하고 있습니다… (${data.current}/${data.total})`)
+          }
+          if (data.step === 'dedup') {
+            updateLoadingText('문제정의 중복을 정리하고 있습니다…')
+          }
+        },
+        onDone: () => resolve(),
+        onError: (msg) => {
+          openToast({ message: msg || '문제정의 재생성 실패', type: 'error' })
+          resolve()
+        },
+      })
     })
-    if (res.result === 'OK') {
-      openToast({ message: '문제정의가 재생성되었습니다.' })
-      await loadAll()
-      activeProblemId.value = problemDefs.value[0]?.problemId ?? null
-    } else {
-      openToast({ message: '재생성 실패', type: 'error' })
-    }
+    await loadAll()
+    activeProblemId.value = problemDefs.value[0]?.problemId ?? null
+    openToast({ message: '문제정의가 재생성되었습니다.' })
   } finally {
     isRegeneratingAllPd.value = false
     closeLoading()
@@ -1017,6 +1125,9 @@ const onRefinePd = async (feedback: string, regenerateTitle = false) => {
     if (!confirmed) return
   }
   isRefining.value = true
+  openLoading({
+    text: regenerateTitle ? '문제정의를 재생성하는 중...' : '문제정의를 보완하는 중...',
+  })
   try {
     const res = await fetchRefineStage2ProblemDefinition({
       ptProjectId: props.ptProjectId,
@@ -1028,12 +1139,13 @@ const onRefinePd = async (feedback: string, regenerateTitle = false) => {
     })
     if (res.result === 'OK') {
       refineFeedback.value = ''
-      openToast({ message: '문제정의가 보완되었습니다.' })
+      openToast({ message: regenerateTitle ? '문제정의가 재생성되었습니다.' : '문제정의가 보완되었습니다.' })
       await loadAll()
       activeProblemId.value = res.data.problemId
-    } else openToast({ message: '보완 요청 실패', type: 'error' })
+    } else openToast({ message: regenerateTitle ? '재생성 실패' : '보완 요청 실패', type: 'error' })
   } finally {
     isRefining.value = false
+    closeLoading()
   }
 }
 
@@ -1122,6 +1234,11 @@ const onDeleteWt = async (winThemeId: string) => {
 }
 
 const onRegenerateWt = async () => {
+  const ok = await openConfirm({
+    title: 'Win Theme 재생성',
+    message: 'Win Theme 전체를 다시 생성합니다. 직접 수정한 내용이 사라집니다.',
+  })
+  if (!ok) return
   regeneratingWtId.value = 'all'
   openLoading({ text: 'Win Theme를 재생성하는 중...' })
   try {
@@ -1133,6 +1250,7 @@ const onRegenerateWt = async () => {
     if (res.result === 'OK') {
       winThemes.value = res.data
       await loadAll()
+      openToast({ message: 'Win Theme가 재생성되었습니다.' })
     } else
       openToast({
         message: res.errorCd === 'PROBLEM_DEFINITION_REQUIRED' ? '문제정의가 먼저 필요합니다.' : '재생성 실패',
@@ -1149,6 +1267,41 @@ const onRegenerateWt = async () => {
 </script>
 
 <style lang="scss" scoped>
+/* sticky는 border box가 아니라 margin box 기준으로 고정된다.
+   margin-top:-22px 인 채로 top:0 을 주면 margin box가 상단에 붙어
+   실제 박스는 22px 아래로 밀리고 그 틈으로 뒤 내용이 비친다.
+   → 부모 .pt-pd-detail 의 padding-top(22px) 만큼 끌어올린다.
+   (.pt-pd-list-summary 의 top:-8px 과 같은 패턴) */
+.pt-pd-detail-head {
+  position: sticky;
+  top: -22px;
+  z-index: 2;
+  flex-shrink: 0;
+  margin: -22px -26px 16px;
+  padding: 16px 26px;
+  background: #fff;
+}
+
+.pt-pd-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+  .pt-pd-detail-head {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .pt-pd-detail-head-main {
+    flex-basis: 100%;
+  }
+  .pt-pd-head-actions {
+    margin-left: auto;
+  }
+}
+
 .pt-strategy-chrome {
   :deep(.ui-tab) {
     border-bottom: none;

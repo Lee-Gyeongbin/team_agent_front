@@ -143,16 +143,21 @@ const normalizeMinutesHtml = (html: string): string => {
 // ── WYSIWYG 에디터 ───────────────────────────────────────────────────
 
 const isAutoSaving = ref(false)
-const minutesId = meetingDetail.value.minutes?.minutesId
+/**
+ * 회의록 ID — 반드시 computed로 참조
+ * 녹음 중(minutes 없음)에 패널이 마운트된 뒤 같은 라우트에서 회의록이 생성되면
+ * 컴포넌트가 재마운트되지 않으므로, 상수로 캡처하면 undefined가 고정됨
+ */
+const minutesId = computed(() => meetingDetail.value.minutes?.minutesId)
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
 
 const triggerAutoSave = (html: string) => {
   if (!currentMeeting.value) return
   if (autoSaveTimer) clearTimeout(autoSaveTimer)
   autoSaveTimer = setTimeout(async () => {
-    if (!currentMeeting.value) return
+    if (!currentMeeting.value || minutesId.value == null) return
     isAutoSaving.value = true
-    await handleSaveMeeting({ id: String(minutesId), minutesContent: html }, { silent: true })
+    await handleSaveMeeting({ id: String(minutesId.value), minutesContent: html }, { silent: true })
     isAutoSaving.value = false
   }, 800)
 }
@@ -160,11 +165,15 @@ const triggerAutoSave = (html: string) => {
 /** 저장하기 버튼 — 사용자 저장 시 토스트 표시 */
 const onSaveMeetingClick = async () => {
   if (!currentMeeting.value || !editor.value) return
+  if (minutesId.value == null) {
+    openToast({ message: '회의록이 아직 생성되지 않았습니다.', type: 'warning' })
+    return
+  }
   // 소스 모드 → textarea 내용을 에디터에 먼저 반영
   if (sourceView.isSourceView.value) {
     editor.value.commands.setContent(sourceView.sourceHtml.value, { emitUpdate: false })
   }
-  await handleSaveMeeting({ id: String(minutesId), minutesContent: editor.value.getHTML() }, { silent: false })
+  await handleSaveMeeting({ id: String(minutesId.value), minutesContent: editor.value.getHTML() }, { silent: false })
 }
 
 /**
@@ -399,12 +408,12 @@ onBeforeUnmount(() => {
   if (autoSaveTimer) {
     clearTimeout(autoSaveTimer)
     autoSaveTimer = null
-    if (currentMeeting.value && editor.value) {
+    if (currentMeeting.value && editor.value && minutesId.value != null) {
       // 소스 모드면 textarea 내용 기준으로 저장
       if (sourceView.isSourceView.value) {
         editor.value.commands.setContent(sourceView.sourceHtml.value, { emitUpdate: false })
       }
-      handleSaveMeeting({ id: String(minutesId), minutesContent: editor.value.getHTML() }, { silent: true })
+      handleSaveMeeting({ id: String(minutesId.value), minutesContent: editor.value.getHTML() }, { silent: true })
     }
   }
   editor.value?.destroy()

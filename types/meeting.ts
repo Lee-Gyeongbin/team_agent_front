@@ -41,9 +41,39 @@ export interface MeetingSpeaker {
   utterances: string // JSON 배열 [{seq, text}]
 }
 
+/** TB_MEETING_VOICE_ENROLLMENT — NCP 경로/상태. Embedding은 AI 메모리 캐시 */
+export interface MeetingVoiceEnrollment {
+  meetingId: number
+  speakerId: number
+  speakerNm: string
+  speakerUserId?: string
+  filePath?: string
+  originalFilename?: string
+  fileExt?: string
+  fileSize?: number
+  /** 001:대기 002:처리중 003:완료 004:실패 */
+  status: string
+  errorMsg?: string
+}
+
 export interface MeetingUser {
   createUserId: string // userId (SQL alias 상 createUserId로 매핑됨)
   userNm: string
+}
+
+/** 회의 시작 모달 — 조직 트리에 붙는 사용자 */
+export interface MeetingAttendeeUserItem {
+  userId: string
+  userNm: string
+}
+
+/** 회의 시작 모달 — 부서 + 소속 사용자 트리 노드 */
+export interface MeetingAttendeeOrgNode {
+  orgId: string
+  orgNm: string
+  expanded: boolean
+  children: MeetingAttendeeOrgNode[]
+  users: MeetingAttendeeUserItem[]
 }
 
 export interface MeetingDetail {
@@ -136,9 +166,9 @@ export type TranscriptionConnectionStatus =
 
 // ─── Meeting2 이관 타입 ───────────────────────────────────────────
 
-/** 5단계 진행 상태 */
+/** 6단계 진행 상태 */
 export type MeetingStepStatus = 'wait' | 'progress' | 'done'
-export type MeetingStepKey = 'record' | 'speaker' | 'generate' | 'edit' | 'share'
+export type MeetingStepKey = 'voiceEnroll' | 'record' | 'speaker' | 'generate' | 'edit' | 'share'
 
 /** 파일 형식 */
 export type MeetingFileFormat = 'docx' | 'pdf' | 'txt' | 'md'

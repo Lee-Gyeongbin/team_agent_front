@@ -5,6 +5,10 @@
   >
     <div class="meeting2-meta-header">
       <span class="meeting2-section-title">회의 정보</span>
+      <!--
+        TODO: 회의 정보 편집 임시 비활성화
+        - 현재 saveMeetingMinutes.do로 전송되지만 서버에 참석자·일시·장소를 저장하는 로직이 없어 반영되지 않음
+        - 회의록 웹에디터에서 직접 수정 가능하므로 전용 API(updateMeetingInfo) 구현 전까지 숨김
       <UiButton
         variant="ghost"
         size="xs"
@@ -15,6 +19,7 @@
         </template>
         편집
       </UiButton>
+      -->
     </div>
 
     <dl class="meeting2-meta-list">
@@ -58,12 +63,14 @@
 </template>
 
 <script setup lang="ts">
-import { UiButton } from '@leechanyong/ispark-ui'
+// import { UiButton } from '@leechanyong/ispark-ui' // 편집 버튼 임시 비활성화 (템플릿 TODO 참고)
 import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
 
-const { currentMeeting, openInfoEditModal } = useMeetingStore()
+const { currentMeeting } = useMeetingStore()
 
-const onClickEdit = () => {
-  openInfoEditModal()
-}
+// 편집 버튼 임시 비활성화 (템플릿 TODO 참고)
+// const { openInfoEditModal } = useMeetingStore()
+// const onClickEdit = () => {
+//   openInfoEditModal()
+// }
 </script>
