@@ -64,6 +64,7 @@
           <td colspan="3">
             <UiInput
               v-model="phoneDisplay"
+              :use-comma="false"
               placeholder="'-' 없이 숫자만 입력하세요."
               size="sm"
             />

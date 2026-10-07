@@ -85,6 +85,7 @@
                 <UiInput
                   v-model="phoneDisplay"
                   type="tel"
+                  :use-comma="false"
                   number-only
                   placeholder="'-' 없이 숫자만 입력하세요."
                   size="sm"
