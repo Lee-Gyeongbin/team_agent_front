@@ -15,8 +15,8 @@
 
     <div class="marketing-list-header">
       <div class="marketing-list-header__copy">
-        <h1 class="marketing-list-title">캠페인 캘린더</h1>
-        <p class="marketing-list-desc">전체 캠페인의 콘텐츠 발행 일정을 한눈에 확인하세요.</p>
+        <h1 class="marketing-list-title">프로젝트 캘린더</h1>
+        <p class="marketing-list-desc">전체 프로젝트의 콘텐츠 발행 일정을 한눈에 확인하세요.</p>
       </div>
     </div>
 
@@ -55,19 +55,14 @@
           />
         </button>
       </div>
-      <select
-        v-model="campaignFilter"
-        class="marketing-calendar-filter marketing-campaign-calendar__filter"
-      >
-        <option value="">캠페인 전체</option>
-        <option
-          v-for="name in campaignNames"
-          :key="name"
-          :value="name"
-        >
-          {{ name }}
-        </option>
-      </select>
+      <UiSelect
+        :model-value="projectFilter"
+        class="marketing-campaign-calendar__filter"
+        :options="projectSelectOptions"
+        placeholder="전체"
+        size="sm"
+        @update:model-value="onSelectProject"
+      />
     </div>
 
     <UiLoading
@@ -96,8 +91,8 @@
             v-for="event in cell.events"
             :key="event.eventId"
             class="marketing-campaign-calendar__event"
-            :class="`status-${event.statusKey}`"
-            :title="`${event.campaignNm} · ${event.title}`"
+            :class="`status-${event.statusCd}`"
+            :title="`${event.projectNm} · ${event.title}`"
           >
             {{ event.title }}
           </div>
@@ -106,10 +101,10 @@
 
       <div class="marketing-campaign-calendar__legend">
         <span
-          v-for="item in LEGEND"
-          :key="item.key"
+          v-for="item in marketingProjectStatuses"
+          :key="item.statusCd"
         >
-          <i :class="`status-${item.key}`" />{{ item.label }}
+          <i :class="`status-${item.statusCd}`" />{{ item.statusNm }}
         </span>
       </div>
     </template>
@@ -117,8 +112,10 @@
 </template>
 
 <script setup lang="ts">
-import { UiButton, UiIcon, UiLoading } from '@leechanyong/ispark-ui'
+import { UiButton, UiIcon, UiLoading, UiSelect } from '@leechanyong/ispark-ui'
 import { useMarketingStore } from '~/composables/marketing/useMarketingStore'
+import { toMarketingCalendarDateKey, useMarketingCalendarGrid } from '~/composables/marketing/useMarketingCalendarGrid'
+import { marketingProjectStatuses } from '~/types/marketing'
 
 const emit = defineEmits<{
   close: []
@@ -126,57 +123,46 @@ const emit = defineEmits<{
 
 const props = withDefaults(
   defineProps<{
-    selectedCampaignNm?: string
+    selectedProjectNm?: string
   }>(),
   {
-    selectedCampaignNm: '',
+    selectedProjectNm: '',
   },
 )
 
-const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const
+const {
+  calendarEvents,
+  isLoadingCalendarEvents,
+  handleSelectCalendarEvents,
+  marketingProjectList,
+  handleSelectMarketingProjectList,
+} = useMarketingStore()
 
-const LEGEND = [
-  { key: 'draft', label: '초안 작성 중' },
-  { key: 'review', label: '검수 중' },
-  { key: 'needsapprove', label: '승인 필요' },
-  { key: 'approved', label: '승인 완료' },
-  { key: 'scheduled', label: '발행 예약' },
-  { key: 'done', label: '발행 완료' },
-  { key: 'failed', label: '발행 실패' },
-] as const
+/** 빈 값 = 전체. 값은 marketingProjectId */
+const projectFilter = ref('')
 
-const { calendarEvents, isLoadingCalendarEvents, handleSelectCalendarEvents } = useMarketingStore()
+const projectSelectOptions = computed(() => [
+  { label: '전체', value: '' },
+  ...marketingProjectList.value.map((project) => ({
+    label: project.projectNm,
+    value: project.marketingProjectId,
+  })),
+])
 
-const campaignFilter = ref(props.selectedCampaignNm.trim())
-const now = new Date()
-const year = ref(now.getFullYear())
-const month = ref(now.getMonth() + 1)
-
-const campaignNames = computed(() => {
-  const names = [...new Set(calendarEvents.value.map((event) => event.campaignNm))]
-  const selected = props.selectedCampaignNm.trim()
-  if (selected && !names.includes(selected)) names.unshift(selected)
-  return names
-})
+const onSelectProject = (value: string | number) => {
+  projectFilter.value = String(value)
+}
 
 const filteredEvents = computed(() =>
-  campaignFilter.value
-    ? calendarEvents.value.filter((event) => event.campaignNm === campaignFilter.value)
+  projectFilter.value
+    ? calendarEvents.value.filter((event) => event.marketingProjectId === projectFilter.value)
     : calendarEvents.value,
 )
-
-const toDateKey = (raw: string) => {
-  const date = new Date(raw.replace(' ', 'T'))
-  if (Number.isNaN(date.getTime())) return ''
-  const monthText = String(date.getMonth() + 1).padStart(2, '0')
-  const dayText = String(date.getDate()).padStart(2, '0')
-  return `${date.getFullYear()}-${monthText}-${dayText}`
-}
 
 const eventsByDate = computed(() => {
   const map = new Map<string, typeof filteredEvents.value>()
   filteredEvents.value.forEach((event) => {
-    const dateKey = toDateKey(event.eventDt)
+    const dateKey = toMarketingCalendarDateKey(event.eventDt)
     if (!dateKey) return
     const list = map.get(dateKey) ?? []
     list.push(event)
@@ -185,52 +171,9 @@ const eventsByDate = computed(() => {
   return map
 })
 
-const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-
-const cells = computed(() => {
-  const first = new Date(year.value, month.value - 1, 1)
-  const daysInMonth = new Date(year.value, month.value, 0).getDate()
-  const startWeekday = first.getDay()
-  const result: { key: string; day: number | null; isToday: boolean; events: typeof filteredEvents.value }[] = []
-
-  for (let i = 0; i < startWeekday; i += 1) {
-    result.push({ key: `pad-${i}`, day: null, isToday: false, events: [] })
-  }
-  for (let day = 1; day <= daysInMonth; day += 1) {
-    const dateKey = `${year.value}-${String(month.value).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-    result.push({
-      key: dateKey,
-      day,
-      isToday: dateKey === todayKey,
-      events: eventsByDate.value.get(dateKey) ?? [],
-    })
-  }
-  const remainder = result.length % 7
-  if (remainder !== 0) {
-    for (let i = remainder; i < 7; i += 1) {
-      result.push({ key: `pad-end-${i}`, day: null, isToday: false, events: [] })
-    }
-  }
-  return result
+const { WEEKDAYS, year, month, cells, onPrevMonth, onNextMonth } = useMarketingCalendarGrid(eventsByDate, {
+  padEnd: true,
 })
-
-const onPrevMonth = () => {
-  if (month.value === 1) {
-    year.value -= 1
-    month.value = 12
-    return
-  }
-  month.value -= 1
-}
-
-const onNextMonth = () => {
-  if (month.value === 12) {
-    year.value += 1
-    month.value = 1
-    return
-  }
-  month.value += 1
-}
 
 const onToday = () => {
   const today = new Date()
@@ -238,5 +181,16 @@ const onToday = () => {
   month.value = today.getMonth() + 1
 }
 
-onMounted(() => void handleSelectCalendarEvents())
+onMounted(async () => {
+  await Promise.all([
+    handleSelectCalendarEvents(),
+    marketingProjectList.value.length
+      ? Promise.resolve()
+      : handleSelectMarketingProjectList({ sortField: 'CREATE_DT', sortOrder: 'DESC' }),
+  ])
+  const selectedNm = props.selectedProjectNm.trim()
+  if (!selectedNm) return
+  const match = marketingProjectList.value.find((project) => project.projectNm === selectedNm)
+  if (match) projectFilter.value = match.marketingProjectId
+})
 </script>

@@ -129,6 +129,15 @@ const insertImageAsBase64 = (file: File) => {
   reader.readAsDataURL(file)
 }
 
+/** 드롭·붙여넣기한 이미지 파일을 본문에 넣는다. 이미지가 없으면 기본 동작을 둔다 */
+const insertImageFiles = (event: Event, files?: FileList | null) => {
+  const imageFiles = Array.from(files ?? []).filter((file) => file.type.startsWith('image/'))
+  if (imageFiles.length === 0) return false
+  event.preventDefault()
+  imageFiles.forEach(insertImageAsBase64)
+  return true
+}
+
 const editor = useEditor({
   extensions: [
     StarterKit.configure({
@@ -156,23 +165,10 @@ const editor = useEditor({
     attributes: { class: 'meeting2-editor-body', spellcheck: 'false' },
     handleDrop(_view, event, _slice, moved) {
       if (moved) return false
-      const dragEvent = event as DragEvent
-      const files = dragEvent.dataTransfer?.files
-      if (!files || files.length === 0) return false
-      const imageFiles = Array.from(files).filter((file) => file.type.startsWith('image/'))
-      if (imageFiles.length === 0) return false
-      event.preventDefault()
-      imageFiles.forEach(insertImageAsBase64)
-      return true
+      return insertImageFiles(event, (event as DragEvent).dataTransfer?.files)
     },
     handlePaste(_view, event) {
-      const files = event.clipboardData?.files
-      if (!files || files.length === 0) return false
-      const imageFiles = Array.from(files).filter((file) => file.type.startsWith('image/'))
-      if (imageFiles.length === 0) return false
-      event.preventDefault()
-      imageFiles.forEach(insertImageAsBase64)
-      return true
+      return insertImageFiles(event, event.clipboardData?.files)
     },
   },
   onCreate: ({ editor: ed }) => {

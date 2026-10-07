@@ -43,44 +43,35 @@
           <div class="marketing-form-field">
             <label class="marketing-form-label">발행 일시<span class="marketing-req">*</span></label>
             <div class="marketing-schedule-datetime">
-              <input
-                v-model="scheduleDate"
-                type="date"
-                class="marketing-calendar-filter"
+              <UiDatePicker
+                v-model="scheduleDateValue"
+                size="sm"
               />
-              <select
-                v-model="scheduleHour"
-                class="marketing-calendar-filter"
-              >
-                <option
-                  v-for="hour in HOUR_OPTIONS"
-                  :key="hour"
-                  :value="hour"
-                >
-                  {{ hour }}시
-                </option>
-              </select>
+              <UiSelect
+                :model-value="scheduleHour"
+                :options="hourSelectOptions"
+                size="sm"
+                @update:model-value="onSelectHour"
+              />
             </div>
           </div>
           <div class="marketing-form-field">
             <label class="marketing-form-label">발행 전 알림</label>
-            <select
-              v-model.number="alertHour"
-              class="marketing-calendar-filter"
-            >
-              <option :value="0">알림 없음</option>
-              <option :value="1">1시간 전</option>
-              <option :value="3">3시간 전</option>
-              <option :value="6">6시간 전</option>
-            </select>
+            <UiSelect
+              :model-value="String(alertHour)"
+              :options="alertSelectOptions"
+              size="sm"
+              @update:model-value="onSelectAlert"
+            />
           </div>
         </template>
 
+        <p class="marketing-form-hint">외부 채널 게시와 알림 발송은 제공하지 않습니다. 알림 입력값은 저장됩니다.</p>
         <UiButton
           variant="primary"
           size="md"
           full-width
-          :disabled="isSavingSchedule || (publishType === 'SCHEDULE' && !scheduleDate)"
+          :disabled="!canSaveSchedule"
           @click="onSave"
         >
           저장
@@ -89,7 +80,7 @@
 
       <div class="marketing-schedule-summary">
         <div class="marketing-schedule-summary__row">
-          <span>캠페인</span>
+          <span>프로젝트</span>
           <strong>{{ props.projectNm || '-' }}</strong>
         </div>
         <div class="marketing-schedule-summary__row">
@@ -128,7 +119,8 @@
 </template>
 
 <script setup lang="ts">
-import { UiButton, UiIcon } from '@leechanyong/ispark-ui'
+import { CalendarDate, toCalendarDateTime, type DateValue } from '@internationalized/date'
+import { UiButton, UiDatePicker, UiIcon, UiSelect } from '@leechanyong/ispark-ui'
 import { useMarketingStore } from '~/composables/marketing/useMarketingStore'
 import type { MarketingPublishType, MarketingScheduleStateCd } from '~/types/marketing'
 
@@ -141,24 +133,36 @@ const emit = defineEmits<{
 }>()
 
 const PUBLISH_TYPE_OPTIONS: { value: MarketingPublishType; label: string; desc: string }[] = [
-  { value: 'NOW', label: '즉시 발행', desc: '저장 즉시 연결된 채널로 발행합니다.' },
-  { value: 'SCHEDULE', label: '예약 발행', desc: '지정한 일시에 자동으로 발행합니다.' },
+  { value: 'NOW', label: '즉시 완료', desc: '저장 즉시 발행 완료 상태로 변경합니다.' },
+  {
+    value: 'SCHEDULE',
+    label: '예약 발행',
+    desc: '시간 단위로 예약하며, 예약 시각 이후 1시간 간격 배치에서 완료 처리합니다.',
+  },
   { value: 'HOLD', label: '미발행 유지', desc: '발행하지 않고 임시 저장 상태로 둡니다.' },
 ]
 
-const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
+const hourSelectOptions = Array.from({ length: 24 }, (_, i) => {
+  const hour = String(i).padStart(2, '0')
+  return { label: `${hour}시`, value: hour }
+})
+
+const alertSelectOptions = [
+  { label: '알림 없음', value: '0' },
+  { label: '1시간 전', value: '1' },
+  { label: '3시간 전', value: '3' },
+  { label: '6시간 전', value: '6' },
+]
 
 const STEP_TRACK = [
+  { key: 'waiting', label: '미발행' },
   { key: 'queued', label: '예약' },
-  { key: 'waiting', label: '발행 대기' },
-  { key: 'publishing', label: '발행 중' },
   { key: 'done', label: '완료' },
 ] as const
 
 const STATE_LABELS: Record<MarketingScheduleStateCd, string> = {
   WAITING: '미발행 유지',
   QUEUED: '발행 예약됨',
-  PUBLISHING: '발행 중',
   DONE: '발행 완료',
   FAILED: '발행 실패',
 }
@@ -166,26 +170,62 @@ const STATE_LABELS: Record<MarketingScheduleStateCd, string> = {
 const STEP_INDEX: Record<MarketingScheduleStateCd, number> = {
   WAITING: 0,
   QUEUED: 1,
-  PUBLISHING: 2,
-  DONE: 4,
+  DONE: 2,
   FAILED: 2,
 }
 
 const { currentContent, displayTitle, scheduleSetting, isSavingSchedule, handleSaveSchedule } = useMarketingStore()
 
 const contentId = computed(() => currentContent.value?.contentId ?? '')
-const publishType = ref<MarketingPublishType>('SCHEDULE')
-const scheduleDate = ref('')
-const scheduleHour = ref('10')
-const alertHour = ref(1)
+const publishType = ref<MarketingPublishType>(scheduleSetting.value?.publishType ?? 'HOLD')
+const scheduleDate = ref(scheduleSetting.value?.publishScheduledDt?.slice(0, 10) ?? '')
+const scheduleHour = ref(scheduleSetting.value?.publishScheduledDt?.slice(11, 13) || '10')
+const alertHour = ref(scheduleSetting.value?.alertHour ?? 0)
+const canSaveSchedule = computed(
+  () =>
+    !isSavingSchedule.value &&
+    (publishType.value === 'HOLD' || currentContent.value?.approval?.approvedYn === 'Y') &&
+    (publishType.value !== 'SCHEDULE' || !!scheduleDate.value),
+)
+
+const parseYyyyMmDdToDateValue = (value: string): DateValue | undefined => {
+  if (!value) return undefined
+  const [yearText, monthText, dayText] = value.split('-')
+  const year = Number(yearText)
+  const month = Number(monthText)
+  const day = Number(dayText)
+  if (!year || !month || !day) return undefined
+  return new CalendarDate(year, month, day)
+}
+
+const formatDateValueToYyyyMmDd = (value: DateValue | undefined): string => {
+  if (!value) return ''
+  const { year, month, day } = toCalendarDateTime(value)
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
+const scheduleDateValue = computed<DateValue | undefined>({
+  get: () => parseYyyyMmDdToDateValue(scheduleDate.value),
+  set: (value) => {
+    scheduleDate.value = formatDateValueToYyyyMmDd(value)
+  },
+})
+
+const onSelectHour = (value: string | number) => {
+  scheduleHour.value = String(value)
+}
+
+const onSelectAlert = (value: string | number) => {
+  alertHour.value = Number(value)
+}
 
 const stepIndex = computed(() => (scheduleSetting.value ? STEP_INDEX[scheduleSetting.value.scheduleStateCd] : -1))
 
 const summaryDtLabel = computed(() => {
-  if (publishType.value === 'NOW') return '저장 즉시 발행'
-  if (publishType.value === 'HOLD') return '미발행 유지'
-  if (!scheduleDate.value) return '-'
-  return `${scheduleDate.value} ${scheduleHour.value}:00`
+  const saved = scheduleSetting.value
+  if (!saved) return '-'
+  if (saved.publishType === 'SCHEDULE') return saved.publishScheduledDt || '-'
+  return PUBLISH_TYPE_OPTIONS.find((option) => option.value === saved.publishType)?.label ?? '-'
 })
 
 const onSave = async () => {
@@ -197,7 +237,7 @@ const onSave = async () => {
   const ok = await handleSaveSchedule(contentId.value, {
     publishType: publishType.value,
     publishScheduledDt: publishType.value === 'SCHEDULE' ? `${scheduleDate.value} ${scheduleHour.value}:00:00` : '',
-    alertHour: publishType.value === 'SCHEDULE' ? alertHour.value : 0,
+    alertHour: alertHour.value,
   })
   if (ok) openToast({ message: '발행 설정을 저장했습니다.' })
 }

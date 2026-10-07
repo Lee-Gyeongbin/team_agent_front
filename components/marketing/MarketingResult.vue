@@ -27,10 +27,7 @@
       v-if="metaItems.length"
       class="chat-marketing-authoring-result__meta"
     >
-      <div
-        class="chat-marketing-authoring-result__meta-items"
-        :class="{ 'is-collapsed': !isMetaOpen && !showSidePanel }"
-      >
+      <div class="chat-marketing-authoring-result__meta-items">
         <div
           v-for="item in metaItems"
           :key="item.label"
@@ -41,20 +38,6 @@
           <strong>{{ item.value }}</strong>
         </div>
       </div>
-      <button
-        v-if="!showSidePanel"
-        type="button"
-        class="chat-marketing-authoring-result__meta-toggle"
-        :class="{ 'is-open': isMetaOpen }"
-        :aria-expanded="isMetaOpen"
-        :title="isMetaOpen ? '작성 조건 접기' : '작성 조건 펼치기'"
-        @click="toggleMeta"
-      >
-        <UiIcon
-          name="chevron-down"
-          size="16"
-        />
-      </button>
     </div>
 
     <div
@@ -88,7 +71,6 @@
         >
           <MarketingPreparingStatus
             :generating-step="generatingStep"
-            :active="isLoading"
             :bordered="false"
           />
         </div>
@@ -224,7 +206,7 @@
                     :text="draftText"
                     :disabled="isRefiningActiveText || isSavingEdit"
                     @save="onSaveDraftText"
-                    @update:text="onEditorTextChange"
+                    @update:text="liveDraftText = $event"
                     @add-to-prompt="onAddToPrompt"
                   />
                   <div
@@ -287,7 +269,7 @@
             <UiButton
               variant="primary"
               size="sm"
-              :disabled="isLoading || isRefining || !hasDraftContent || isActiveDraftInUse"
+              :disabled="isLoading || isRefining || !hasDraftContent || isSelectingVariant || isActiveDraftInUse"
               @click="onUseDraft"
             >
               이 시안 사용하기
@@ -297,7 +279,6 @@
       </div>
 
       <aside
-        v-if="showSidePanel"
         class="chat-marketing-authoring-result__aside"
         :class="{ 'is-preparing': isLoading }"
       >
@@ -360,36 +341,8 @@
                 v-else-if="refineChatLog.length === 0"
                 class="chat-marketing-authoring-result__refine-chat-empty"
               >
-                <template v-if="isBothMode && !refineType">
-                  <strong>어떤 내용을 수정할까요?</strong>
-                  <span>수정할 항목을 선택하면 요청에 맞는 예시를 안내해 드려요.</span>
-                  <div class="chat-marketing-authoring-result__refine-type-cards">
-                    <button
-                      type="button"
-                      class="chat-marketing-authoring-result__refine-type-card"
-                      @click="onSelectRefineType('TEXT')"
-                    >
-                      <span>
-                        <strong>{{ REFINE_COPY.TEXT.label }}</strong>
-                        <small>문구·표현 보완</small>
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      class="chat-marketing-authoring-result__refine-type-card"
-                      @click="onSelectRefineType('IMAGE')"
-                    >
-                      <span>
-                        <strong>{{ REFINE_COPY.IMAGE.label }}</strong>
-                        <small>이미지 교체·편집</small>
-                      </span>
-                    </button>
-                  </div>
-                </template>
-                <template v-else>
-                  <strong>시안 보완 요청 내역이 없습니다.</strong>
-                  <span>아이디어를 제안하면 더 완성도 높은 콘텐츠를 함께 만들어드릴게요.</span>
-                </template>
+                <strong>시안 보완 요청 내역이 없습니다.</strong>
+                <span>아이디어를 제안하면 더 완성도 높은 콘텐츠를 함께 만들어드릴게요.</span>
               </div>
               <ul
                 v-else
@@ -425,7 +378,7 @@
 
             <div class="chat-marketing-authoring-result__refine-chat-bar-wrap">
               <div
-                v-if="isBothMode && refineType"
+                v-if="isBothMode"
                 class="chat-marketing-authoring-result__refine-type-tabs"
                 aria-label="수정 유형"
               >
@@ -494,103 +447,72 @@
             v-else
             class="chat-marketing-authoring-result__refine-prompt"
           >
-            <template v-if="isBothMode && !refineType">
-              <div class="chat-marketing-authoring-result__refine-chat-empty">
-                <strong>어떤 내용을 수정할까요?</strong>
-                <span>수정할 항목을 선택하면 요청에 맞는 예시를 안내해 드려요.</span>
-                <div class="chat-marketing-authoring-result__refine-type-cards">
-                  <button
-                    type="button"
-                    class="chat-marketing-authoring-result__refine-type-card"
-                    @click="onSelectRefineType('TEXT')"
-                  >
-                    <span>
-                      <strong>{{ REFINE_COPY.TEXT.label }}</strong>
-                      <small>문구·표현 보완</small>
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    class="chat-marketing-authoring-result__refine-type-card"
-                    @click="onSelectRefineType('IMAGE')"
-                  >
-                    <span>
-                      <strong>{{ REFINE_COPY.IMAGE.label }}</strong>
-                      <small>이미지 교체·편집</small>
-                    </span>
-                  </button>
-                </div>
-              </div>
-            </template>
-            <template v-else>
-              <div
-                v-if="isBothMode && refineType"
-                class="chat-marketing-authoring-result__refine-type-tabs"
-                aria-label="수정 유형"
+            <div
+              v-if="isBothMode"
+              class="chat-marketing-authoring-result__refine-type-tabs"
+              aria-label="수정 유형"
+            >
+              <button
+                type="button"
+                :class="{ 'is-active': refineType === 'TEXT' }"
+                :disabled="isRefining"
+                @click="onSelectRefineType('TEXT')"
               >
-                <button
-                  type="button"
-                  :class="{ 'is-active': refineType === 'TEXT' }"
-                  :disabled="isRefining"
-                  @click="onSelectRefineType('TEXT')"
-                >
-                  <UiIcon
-                    name="pencil"
-                    size="14"
-                    aria-hidden="true"
-                  />
-                  {{ REFINE_COPY.TEXT.label }}
-                </button>
-                <button
-                  type="button"
-                  :class="{ 'is-active': refineType === 'IMAGE' }"
-                  :disabled="isRefining"
-                  @click="onSelectRefineType('IMAGE')"
-                >
-                  <UiIcon
-                    name="image"
-                    size="14"
-                    aria-hidden="true"
-                  />
-                  {{ REFINE_COPY.IMAGE.label }}
-                </button>
-              </div>
-              <div class="chat-marketing-authoring-result__refine-prompt-field">
-                <UiTextarea
-                  v-model="promptDraft"
-                  placeholder="수정할 내용을 프롬프트로 입력해 주세요."
-                  :rows="1"
-                  border
-                  size="sm"
-                  :auto-resize="false"
-                  :expandable="false"
-                  :disabled="isLoading || isRefining"
+                <UiIcon
+                  name="pencil"
+                  size="14"
+                  aria-hidden="true"
                 />
-              </div>
-              <div class="chat-marketing-authoring-result__refine-prompt-foot">
-                <UiButton
-                  variant="primary"
-                  size="md"
-                  :disabled="!canSendPromptRefine"
-                  @click="onSendPromptRefine"
-                >
-                  적용하기
-                </UiButton>
-              </div>
-            </template>
+                {{ REFINE_COPY.TEXT.label }}
+              </button>
+              <button
+                type="button"
+                :class="{ 'is-active': refineType === 'IMAGE' }"
+                :disabled="isRefining"
+                @click="onSelectRefineType('IMAGE')"
+              >
+                <UiIcon
+                  name="image"
+                  size="14"
+                  aria-hidden="true"
+                />
+                {{ REFINE_COPY.IMAGE.label }}
+              </button>
+            </div>
+            <div class="chat-marketing-authoring-result__refine-prompt-field">
+              <UiTextarea
+                v-model="promptDraft"
+                placeholder="수정할 내용을 프롬프트로 입력해 주세요."
+                :rows="1"
+                border
+                size="sm"
+                :auto-resize="false"
+                :expandable="false"
+                :disabled="isLoading || isRefining"
+              />
+            </div>
+            <div class="chat-marketing-authoring-result__refine-prompt-foot">
+              <UiButton
+                variant="primary"
+                size="md"
+                :disabled="!canSendPromptRefine"
+                @click="onSendPromptRefine"
+              >
+                적용하기
+              </UiButton>
+            </div>
           </div>
         </section>
       </aside>
     </div>
 
     <UiModal
-      v-if="isChannelPreviewOpen"
       :is-open="isChannelPreviewOpen"
       title="채널 미리보기"
       position="center"
       max-width="560px"
       custom-class="marketing-channel-preview-modal"
-      @close="closeChannelPreview"
+      @close="isChannelPreviewOpen = false"
     >
       <div class="marketing-channel-preview">
         <p
@@ -668,7 +590,6 @@ const props = withDefaults(
     refiningVariantId?: number | null
     refineCompletedAt?: number
     generatingStep?: MarketingGeneratingStep
-    showSidePanel?: boolean
     contentId?: string
     contentTitle?: string
     orgNm?: string
@@ -676,6 +597,7 @@ const props = withDefaults(
     request?: MarketingStoredRequest | null
     saveVariant?: (payload: { variantId: number; textContent: string }) => Promise<boolean>
     adoptedVariantId?: number | null
+    isSelectingVariant?: boolean
   }>(),
   {
     config: null,
@@ -685,7 +607,6 @@ const props = withDefaults(
     refiningVariantId: null,
     refineCompletedAt: 0,
     generatingStep: '',
-    showSidePanel: false,
     contentId: '',
     contentTitle: '',
     orgNm: '',
@@ -693,6 +614,7 @@ const props = withDefaults(
     request: null,
     saveVariant: undefined,
     adoptedVariantId: null,
+    isSelectingVariant: false,
   },
 )
 
@@ -765,32 +687,12 @@ const draftEditorRef = ref<{ save: () => void } | null>(null)
 const isChannelPreviewOpen = ref(false)
 const imagePreview = ref<{ src: string; title: string; mimeType: string } | null>(null)
 
-const ORIGINAL_PROMPT_FIELDS: { key: keyof MarketingStoredRequest; label: string }[] = [
-  { key: 'promotionInformation', label: '홍보할 상품·서비스' },
-  { key: 'keyMessage', label: '핵심 메시지' },
-  { key: 'customCallToAction', label: '유도할 행동' },
-  { key: 'additionalRequirements', label: '추가 요청사항' },
-  { key: 'imageText', label: '이미지 내 문구' },
-]
-
-const originalPrompt = computed(() => {
-  const request = props.request
-  if (!request) return ''
-  return ORIGINAL_PROMPT_FIELDS.map(({ key, label }) => {
-    const value = String(request[key] ?? '').trim()
-    if (!value) return ''
-    return `${label}\n${value}`
-  })
-    .filter(Boolean)
-    .join('\n\n')
-})
-
 const resolveInitialRefineType = (): MarketingOutputKind => (isImageMode.value ? 'IMAGE' : 'TEXT')
 
 const refineDraft = ref('')
 const promptDraft = ref('')
 const refineChatLog = ref<RefineChatEntry[]>([])
-const refineType = ref<MarketingOutputKind | null>(resolveInitialRefineType())
+const refineType = ref<MarketingOutputKind>(resolveInitialRefineType())
 const refineTab = ref<'chat' | 'prompt'>('prompt')
 const refineChatListRef = ref<HTMLElement | null>(null)
 const lastSentRefineType = ref<MarketingOutputKind | null>(null)
@@ -837,13 +739,24 @@ const pushAssistantRefineReply = (type: MarketingOutputKind) => {
 
 const refineInputPlaceholder = computed(() => {
   if (props.refiningType) return `${REFINE_COPY[props.refiningType].progress}...`
-  return refineType.value ? REFINE_COPY[refineType.value].placeholder : '먼저 수정할 항목을 선택해 주세요'
+  return REFINE_COPY[refineType.value].placeholder
 })
 
 const refineLead = computed(() => {
   if (props.isLoading) return '콘텐츠 생성이 완료되면 시안을 기준으로 보완할 수 있습니다'
   if (refineTab.value === 'prompt') return '현재 시안을 기준으로 프롬프트를 수정해 보완할 수 있습니다'
   return '현재 시안을 기준으로 Agent와 대화하며 내용을 보완할 수 있습니다'
+})
+
+/** 선택한 시안·수정 유형에 실제로 사용된 프롬프트 */
+const originalPrompt = computed(() => {
+  const useImage = isImageMode.value || refineType.value === 'IMAGE'
+  const matched = useImage
+    ? images.value.find((item) => item.id === activeDraftId.value)
+    : variants.value.find((item) => item.id === activeDraftId.value)
+  const text = matched?.prompt
+  if (!text) return ''
+  return text.trim()
 })
 
 watch(
@@ -918,19 +831,14 @@ watch(
   { immediate: true },
 )
 
-const canSendRefine = computed(() => {
-  if (props.isLoading || isRefining.value || !refineType.value) return false
-  if (!refineDraft.value.trim()) return false
+/** 진행 중인 작업이 없고 현재 수정 유형의 대상(이미지 또는 문구)이 있는지 */
+const canRefineActive = computed(() => {
+  if (props.isLoading || isRefining.value) return false
   if (refineType.value === 'IMAGE') return !!activeImageUrl.value
   return !!liveDraftText.value.trim()
 })
-
-const canSendPromptRefine = computed(() => {
-  if (props.isLoading || isRefining.value || !refineType.value) return false
-  if (!promptDraft.value.trim()) return false
-  if (refineType.value === 'IMAGE') return !!activeImageUrl.value
-  return !!liveDraftText.value.trim()
-})
+const canSendRefine = computed(() => canRefineActive.value && !!refineDraft.value.trim())
+const canSendPromptRefine = computed(() => canRefineActive.value && !!promptDraft.value.trim())
 
 const hasDraftContent = computed(() =>
   isImageMode.value ? !!activeImageUrl.value : !!activeVariant.value || (isBothMode.value && !!activeImageUrl.value),
@@ -938,9 +846,10 @@ const hasDraftContent = computed(() =>
 
 const formattedCharCount = computed(() => formatNumberWithComma([...liveDraftText.value].length) || '0')
 
-const channelPreviewNm = computed(
-  () => resolveMarketingConditionDisplay(props.result.conditions, props.config, props.request ?? undefined).channel,
+const conditionDisplay = computed(() =>
+  resolveMarketingConditionDisplay(props.result.conditions, props.config, props.request ?? undefined),
 )
+const channelPreviewNm = computed(() => conditionDisplay.value.channel)
 
 const draftTabs = computed<DraftTab[]>(() => {
   const items = draftItems.value
@@ -955,7 +864,7 @@ const draftTabs = computed<DraftTab[]>(() => {
 })
 
 const metaItems = computed(() => {
-  const display = resolveMarketingConditionDisplay(props.result.conditions, props.config, props.request ?? undefined)
+  const display = conditionDisplay.value
   const imageConditions = props.result.imageConditions
   const imageStyle = resolveMarketingOptionLabel(MARKETING_IMAGE_TYPES, imageConditions?.contentType)
   const imageAtmosphere = resolveMarketingToneLabels(imageConditions?.tones, MARKETING_IMAGE_ATMOSPHERES)
@@ -999,11 +908,6 @@ const refineActiveVariantMeta = computed(() => {
   return label ? `시안 ${activeVariantOrder.value} · ${label}` : `시안 ${activeVariantOrder.value}`
 })
 
-const isMetaOpen = ref(true)
-const toggleMeta = () => {
-  isMetaOpen.value = !isMetaOpen.value
-}
-
 const renderedContent = computed(() => renderMarketingTextHtml(liveDraftText.value))
 
 const rootRef = ref<HTMLElement | null>(null)
@@ -1019,7 +923,7 @@ const scrollResultToTop = () => {
 
     root
       .querySelectorAll<HTMLElement>(
-        '.chat-marketing-authoring-result__draft-scroll, .chat-marketing-authoring-result__draft-body, .chat-marketing-authoring-result__content',
+        '.chat-marketing-authoring-result__draft-scroll, .chat-marketing-authoring-result__draft-body',
       )
       .forEach((el) => scrollSmoothTo(el, 0))
 
@@ -1048,7 +952,7 @@ const onSelectDraft = (draftId: number) => {
 }
 
 const onSendRefine = () => {
-  if (!canSendRefine.value || !refineType.value) return
+  if (!canSendRefine.value) return
 
   const request = refineDraft.value.trim()
   const content = liveDraftText.value.trim()
@@ -1073,7 +977,7 @@ const onSendRefine = () => {
 }
 
 const onSendPromptRefine = () => {
-  if (!canSendPromptRefine.value || !refineType.value) return
+  if (!canSendPromptRefine.value) return
 
   const request = promptDraft.value.trim()
   const content = liveDraftText.value.trim()
@@ -1087,10 +991,6 @@ const onSendPromptRefine = () => {
     request,
     type: refineType.value,
   })
-}
-
-const onEditorTextChange = (text: string) => {
-  liveDraftText.value = text
 }
 
 const onSaveDraftText = async (payload: { variantId: number; textContent: string }) => {
@@ -1111,7 +1011,7 @@ const onSaveClick = () => {
 const onAddToPrompt = (text: string) => {
   const selected = text.trim()
   if (!selected) return
-  if (refineType.value !== 'TEXT') refineType.value = 'TEXT'
+  refineType.value = 'TEXT'
   refineTab.value = 'prompt'
   const current = promptDraft.value.trim()
   promptDraft.value = current ? `${current}\n${selected}` : selected
@@ -1120,10 +1020,6 @@ const onAddToPrompt = (text: string) => {
 const openChannelPreview = () => {
   if (props.isLoading || isRefining.value || !hasDraftContent.value) return
   isChannelPreviewOpen.value = true
-}
-
-const closeChannelPreview = () => {
-  isChannelPreviewOpen.value = false
 }
 
 const onCopy = async () => {
@@ -1213,7 +1109,14 @@ const onSelectExportFormat = async (format: string) => {
 }
 
 const onUseDraft = () => {
-  if (props.isLoading || isRefining.value || !hasDraftContent.value || isActiveDraftInUse.value) return
+  if (
+    props.isLoading ||
+    isRefining.value ||
+    !hasDraftContent.value ||
+    props.isSelectingVariant ||
+    isActiveDraftInUse.value
+  )
+    return
   emit('used', activeDraftId.value)
 }
 

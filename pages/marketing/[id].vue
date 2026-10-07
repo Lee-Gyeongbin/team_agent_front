@@ -38,24 +38,29 @@
       <MarketingCampaignPlan
         v-if="isCampaignPlanOpen"
         :project-nm="currentProject?.projectNm ?? ''"
+        :product-nm="campaignDraft?.productNm ?? ''"
         :goal="campaignGoal"
         :target-nm="campaignTarget"
         :due-date-label="dueDateLabel"
         :visibility-label="visibilityLabel"
         :key-message="campaignKeyMessage"
         :recommend-channels="campaignRecommendChannels"
-        :content-items="campaignPlanContentItems"
+        :request-txt="campaignDraft?.requestTxt ?? ''"
+        :visual-txt="campaignDraft?.visualTxt ?? ''"
+        :sections="campaignDraft?.sections"
+        :start-in-result="campaignPlanStartInResult"
         @close="closeCampaignPlan"
+        @generated="handleSaveCampaignDraft"
         @start-content="onStartContentFromPlan"
       />
 
       <MarketingCampaignCalendar
         v-else-if="isCalendarOpen"
-        :selected-campaign-nm="currentProject?.projectNm ?? ''"
-        @close="closeCalendar"
+        :selected-project-nm="currentProject?.projectNm ?? ''"
+        @close="isCalendarOpen = false"
       />
 
-      <!-- 채널 선택 → 멀티채널 생성 결과 → 채널별 콘텐츠 (캠페인 기획서 기반) -->
+      <!-- 채널 선택 → 멀티채널 생성 결과 → 채널별 콘텐츠 (프로젝트 기획서 기반) -->
       <MarketingChannelSelect v-else-if="pagePhase === 'channelSelect'" />
       <MarketingChannelResults v-else-if="pagePhase === 'channelResults'" />
       <MarketingChannelContentTabs v-else-if="pagePhase === 'channelContent'" />
@@ -64,11 +69,12 @@
       <MarketingReview v-else-if="pagePhase === 'review'" />
       <MarketingApproval
         v-else-if="pagePhase === 'approval'"
-        @go-calendar="onApprovalGoCalendar"
+        @go-calendar="isCalendarOpen = true"
         @go-list="handleBackToList"
       />
       <MarketingSchedule
         v-else-if="pagePhase === 'schedule'"
+        :key="currentContent?.contentId"
         :project-nm="currentProject?.projectNm ?? ''"
         @back-to-list="handleBackToList"
       />
@@ -99,13 +105,18 @@
             <div class="marketing-detail-info">
               <div class="marketing-detail-title">{{ currentProject.projectNm }}</div>
               <div class="marketing-detail-meta">
-                <span>목표 {{ campaignGoal }}</span>
-                <span class="marketing-detail-meta__dot">·</span>
-                <span>타깃 {{ campaignTarget }}</span>
-                <span class="marketing-detail-meta__dot">·</span>
-                <span>종료일 {{ dueDateLabel }}</span>
-                <span class="marketing-detail-meta__dot">·</span>
-                <span>공개 대상 {{ visibilityLabel }}</span>
+                <template
+                  v-for="(item, index) in detailMetaItems"
+                  :key="item"
+                >
+                  <span
+                    v-if="index > 0"
+                    class="marketing-detail-meta__dot"
+                  >
+                    ·
+                  </span>
+                  <span>{{ item }}</span>
+                </template>
               </div>
             </div>
             <span
@@ -129,28 +140,29 @@
               />
             </div>
             <div class="marketing-campaign-brief__copy">
-              <span class="marketing-campaign-brief__badge">캠페인 기획서</span>
+              <span class="marketing-campaign-brief__badge">프로젝트 기획서</span>
               <strong>{{ currentProject.projectNm }}</strong>
-              <p>핵심 메시지 {{ campaignKeyMessage }}</p>
+              <p v-if="campaignKeyMessage">핵심 메시지 {{ campaignKeyMessage }}</p>
             </div>
             <UiButton
               variant="outline"
               size="md"
               @click="onViewCampaignPlan"
             >
-              캠페인 기획서 보기
+              {{ hasCampaignPlan ? '프로젝트 기획서 보기' : '프로젝트 기획서 생성' }}
             </UiButton>
           </div>
           <div class="marketing-campaign-brief__foot">
             <p class="marketing-campaign-brief__channels">
-              추천 채널 {{ campaignRecommendChannels }} · 콘텐츠 제작 계획 총 {{ displayedContentRows.length }}건
+              <template v-if="campaignRecommendChannels">추천 채널 {{ campaignRecommendChannels }} · </template>
+              콘텐츠 제작 계획 총 {{ displayedContentRows.length }}건
             </p>
             <p class="marketing-campaign-brief__notice">
               <UiIcon
                 name="info"
                 size="14"
               />
-              모든 채널별 콘텐츠는 캠페인 기획서를 기준으로 생성됩니다.
+              모든 채널별 콘텐츠는 프로젝트 기획서를 기준으로 생성됩니다.
             </p>
           </div>
         </div>
@@ -209,6 +221,7 @@
                   <UiButton
                     variant="primary"
                     size="md"
+                    :disabled="!hasCampaignPlan"
                     @click="onAddChannelContent"
                   >
                     <template #icon-left>
@@ -231,7 +244,7 @@
                   @row-click="onContentTableRowClick"
                 >
                   <template #cell-channelNm="{ value }">
-                    {{ formatCellText(value) }}
+                    {{ formatMarketingCellText(value) }}
                   </template>
                   <template #cell-displayTitle="{ row }">
                     <div
@@ -257,12 +270,12 @@
                     </strong>
                   </template>
                   <template #cell-progressLabel="{ row }">
-                    <span :class="['marketing-status-badge', `progress-${row.progressKey}`]">
+                    <span :class="['marketing-status-badge', `status-${row.progressKey}`]">
                       {{ row.progressLabel }}
                     </span>
                   </template>
                   <template #cell-scheduleLabel="{ value }">
-                    {{ formatCellText(value) }}
+                    {{ formatMarketingCellText(value) }}
                   </template>
                   <template #cell-actions="{ row }">
                     <div
@@ -316,22 +329,12 @@
 
           <MarketingPublishCalendar
             :items="calendarItems"
-            @select="onCalendarSelect"
-            @open-full="openCalendar"
+            @select="handleHistoryRowClick"
+            @open-full="isCalendarOpen = true"
           />
         </div>
       </div>
     </template>
-
-    <MarketingFileSidePanel
-      :is-open="isFilePanelOpen"
-      :files="projectFiles"
-      :is-uploading="isUploadingFiles"
-      :on-rename-file="handleRenameProjectFile"
-      @close="isFilePanelOpen = false"
-      @upload="onUploadProjectFiles"
-      @remove="handleRemoveProjectFile"
-    />
   </div>
 </template>
 
@@ -347,28 +350,24 @@ import {
 } from '@leechanyong/ispark-ui'
 import {
   marketingContentListColumns,
+  marketingProjectStatuses,
   type MarketingCalendarEvent,
-  type MarketingCampaignPlanContentItem,
   type MarketingCampaignPlanDraft,
 } from '~/types/marketing'
+import { formatMarketingCellText, formatMarketingDotDate } from '~/utils/marketing/marketingUtil'
 
 definePageMeta({ layout: 'default' })
 
-const CONTENT_SUMMARY_CARDS = [
-  { key: 'all', label: '전체' },
-  { key: 'in-progress', label: '진행 중' },
-  { key: 'review', label: '검수 중' },
-  { key: 'scheduled', label: '예약됨' },
-  { key: 'done', label: '발행 완료' },
-] as const
+const route = useRoute()
+const router = useRouter()
 
 const {
   pagePhase,
   selectedAgent,
   config,
   currentProject,
+  currentContent,
   currentProjectMembers,
-  projectFiles,
   allHistoryItems,
   dueSoonHistoryItems,
   handleSaveHistoryEdit,
@@ -376,54 +375,30 @@ const {
   cleanupMarketingSession,
   handleBackToList,
   handleBackToProjects,
-  handleUploadProjectFiles,
-  handleRemoveProjectFile,
-  handleRenameProjectFile,
   handleDeleteHistory,
   handleHistoryRowClick,
   handleInitChannelPicks,
+  handleSaveCampaignDraft,
+  campaignDraft,
   pushMarketingPhase,
 } = useMarketingStore()
 
-const isFilePanelOpen = ref(false)
-const isUploadingFiles = ref(false)
 const isCampaignPlanOpen = ref(false)
+const campaignPlanStartInResult = ref(false)
 const isCalendarOpen = ref(false)
 
 const isAuthoringPhase = computed(() => pagePhase.value !== 'list')
 
 type HistoryRow = (typeof allHistoryItems.value)[number]
 
-const campaignGoal = ''
-const campaignTarget = ''
-const campaignRecommendChannels = ''
-
-/** YYYY-MM-DD → YYYY.MM.DD. 값 없으면 '' */
-const formatDotDate = (value: string) => {
-  const text = String(value ?? '').trim()
-  if (!text) return ''
-  const matched = text.match(/^(\d{4})-(\d{2})-(\d{2})/)
-  if (!matched) return text
-  return `${matched[1]}.${matched[2]}.${matched[3]}`
-}
-
-const formatCellText = (value: unknown) => {
-  const text = String(value ?? '').trim()
-  return text || '-'
-}
+const hasCampaignPlan = computed(() => !!campaignDraft.value)
+const campaignGoal = computed(() => campaignDraft.value?.goal ?? '')
+const campaignTarget = computed(() => campaignDraft.value?.targetNm ?? '')
+const campaignRecommendChannels = computed(() => campaignDraft.value?.recommendChannels ?? '')
 
 const displayedContentRows = computed(() => allHistoryItems.value as (HistoryRow & Record<string, unknown>)[])
 
-const campaignPlanContentItems = computed<MarketingCampaignPlanContentItem[]>(() =>
-  displayedContentRows.value.map((row) => ({
-    contentId: row.contentId,
-    displayTitle: row.displayTitle,
-    channelNm: row.channelNm,
-    scheduleLabel: row.scheduleLabel,
-  })),
-)
-
-const dueDateLabel = computed(() => formatDotDate(currentProject.value?.dueDt ?? ''))
+const dueDateLabel = computed(() => formatMarketingDotDate(currentProject.value?.dueDt))
 
 const visibilityLabel = computed(() => {
   const members = currentProjectMembers.value
@@ -435,66 +410,58 @@ const visibilityLabel = computed(() => {
   return `${owner.userNm}님`
 })
 
-const campaignKeyMessage = computed(() => String(currentProject.value?.projectOverview ?? '').trim())
+const campaignKeyMessage = computed(() => String(campaignDraft.value?.keyMessage ?? '').trim())
+
+const detailMetaItems = computed(() => {
+  const items: string[] = []
+  if (hasCampaignPlan.value) {
+    if (campaignGoal.value) items.push(`목표 ${campaignGoal.value}`)
+    if (campaignTarget.value) items.push(`타깃 ${campaignTarget.value}`)
+  }
+  if (dueDateLabel.value) items.push(`종료일 ${dueDateLabel.value}`)
+  if (visibilityLabel.value) items.push(`공개 대상 ${visibilityLabel.value}`)
+  return items
+})
 
 const contentSummaryCards = computed(() => {
   const list = displayedContentRows.value
-  return CONTENT_SUMMARY_CARDS.map((card) => ({
-    ...card,
-    count: card.key === 'all' ? list.length : list.filter((item) => item.progressKey === card.key).length,
-  }))
+  return [
+    { key: 'all', label: '전체', count: list.length },
+    ...marketingProjectStatuses.map((item) => ({
+      key: item.statusCd,
+      label: item.statusNm,
+      count: list.filter((row) => row.progressKey === item.statusCd).length,
+    })),
+  ]
 })
 
 const calendarItems = computed<MarketingCalendarEvent[]>(() =>
-  displayedContentRows.value
-    .filter((item) => item.publishScheduledDt)
-    .map((item) => ({
-      contentId: item.contentId,
-      displayTitle: item.displayTitle,
-      channelNm: item.channelNm,
-      publishScheduledDt: item.publishScheduledDt,
-      progressKey: item.progressKey,
-    })),
+  displayedContentRows.value.filter((item) => item.publishScheduledDt),
 )
 
 const onViewCampaignPlan = () => {
+  campaignPlanStartInResult.value = !!campaignDraft.value
   isCampaignPlanOpen.value = true
 }
 
 const closeCampaignPlan = () => {
   isCampaignPlanOpen.value = false
+  campaignPlanStartInResult.value = false
 }
 
 const onStartContentFromPlan = (draft: MarketingCampaignPlanDraft) => {
   isCampaignPlanOpen.value = false
+  campaignPlanStartInResult.value = false
   handleInitChannelPicks(draft)
   pushMarketingPhase('channelSelect')
 }
 
-/** 캠페인 상세에서 바로 "채널별 콘텐츠 생성" — 기존 캠페인 기획을 그대로 채널 선택에 넘긴다 */
+/** 프로젝트 상세에서 채널별 콘텐츠 생성 — 기획서가 있을 때만 채널 선택으로 간다 */
 const onAddChannelContent = () => {
-  handleInitChannelPicks({
-    goal: campaignGoal,
-    productNm: currentProject.value?.projectNm ?? '',
-    requestTxt: '',
-    targetNm: campaignTarget,
-    keyMessage: campaignKeyMessage.value,
-    recommendChannels: campaignRecommendChannels,
-    visualTxt: '',
-  })
+  const draft = campaignDraft.value
+  if (!draft) return
+  handleInitChannelPicks(draft)
   pushMarketingPhase('channelSelect')
-}
-
-const openCalendar = () => {
-  isCalendarOpen.value = true
-}
-
-const closeCalendar = () => {
-  isCalendarOpen.value = false
-}
-
-const onApprovalGoCalendar = () => {
-  openCalendar()
 }
 
 const contentMenuItems: DropdownMenuItemDef[] = [
@@ -505,10 +472,6 @@ const contentMenuItems: DropdownMenuItemDef[] = [
 const onContentTableRowClick = (row: HistoryRow) => {
   if (renamingContentId.value) return
   handleHistoryRowClick(row.contentId)
-}
-
-const onCalendarSelect = (contentId: string) => {
-  handleHistoryRowClick(contentId)
 }
 
 const onContentMenuSelect = (row: HistoryRow, value: string) => {
@@ -571,16 +534,15 @@ const onSaveRename = async () => {
   }
 }
 
-const onUploadProjectFiles = async (files: File[]) => {
-  if (!files.length) return
-  isUploadingFiles.value = true
-  try {
-    await handleUploadProjectFiles(files)
-  } finally {
-    isUploadingFiles.value = false
-  }
-}
-
-onMounted(() => void handleBootstrap())
+onMounted(async () => {
+  await handleBootstrap()
+  if (!currentProject.value) return
+  if (String(route.query.startPlan ?? '') !== '1') return
+  campaignPlanStartInResult.value = false
+  isCampaignPlanOpen.value = true
+  const query = { ...route.query }
+  delete query.startPlan
+  await router.replace({ path: route.path, query })
+})
 onBeforeUnmount(cleanupMarketingSession)
 </script>

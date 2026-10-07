@@ -1,20 +1,20 @@
 <template>
+  <div
+    v-if="isGeneratingPlan"
+    class="marketing-campaign-plan-preparing"
+  >
+    <MarketingPreparingStatus />
+  </div>
+
   <MarketingCampaignPlanResult
-    v-if="isResultOpen"
+    v-else-if="isResultOpen"
     :project-nm="projectNm"
-    :goal="goal"
-    :product-nm="productNm"
-    :request-txt="requestTxt"
-    :target-nm="targetNm"
+    :draft="form"
     :due-date-label="dueDateLabel"
-    :key-message="keyMessageTxt"
-    :recommend-channels="recommendChannelsTxt"
-    :visual-txt="visualTxt"
     :visibility-label="visibilityLabel"
-    :content-items="contentItems"
     :hero-image-url="heroImageUrl"
     @close="onClose"
-    @back-to-form="onBackToForm"
+    @back-to-form="isResultOpen = false"
     @regenerate="onGenerate"
     @start-content="onStartContent"
     @refined="onRefined"
@@ -39,23 +39,17 @@
 
     <div class="marketing-list-header">
       <div class="marketing-list-header__copy">
-        <h1 class="marketing-list-title">AI 캠페인 기획</h1>
-        <p class="marketing-list-desc">필요한 정보만 입력하면 AI가 캠페인 기획서 초안을 만들어 줍니다.</p>
+        <h1 class="marketing-list-title">AI 프로젝트 기획</h1>
+        <p class="marketing-list-desc">필요한 정보만 입력하면 AI가 프로젝트 기획서 초안을 만들어 줍니다.</p>
       </div>
       <div class="marketing-list-header__actions">
         <UiButton
-          variant="outline"
-          size="md"
-          @click="onSaveDraft"
-        >
-          임시 저장
-        </UiButton>
-        <UiButton
           variant="primary"
           size="md"
+          :disabled="isGeneratingPlan"
           @click="onGenerate"
         >
-          AI 캠페인 기획 생성
+          AI 프로젝트 기획서 생성
           <template #icon-right>
             <UiIcon
               name="arrow-right"
@@ -74,10 +68,10 @@
           ref="goalFieldRef"
           class="marketing-form-field"
         >
-          <label class="marketing-form-label">캠페인 목표 <span class="marketing-req">*</span></label>
+          <label class="marketing-form-label">프로젝트 목표 <span class="marketing-req">*</span></label>
           <UiTextarea
-            v-model="goal"
-            placeholder="캠페인 목표를 입력해 주세요."
+            v-model="form.goal"
+            placeholder="프로젝트 목표를 입력해 주세요."
             :rows="3"
             border
             size="sm"
@@ -92,7 +86,7 @@
           <label class="marketing-form-label">홍보할 제품·서비스 <span class="marketing-req">*</span></label>
           <UiInput
             ref="productInputRef"
-            v-model="productNm"
+            v-model="form.productNm"
             placeholder="홍보할 제품·서비스를 입력해 주세요."
             size="sm"
           />
@@ -101,7 +95,7 @@
         <div class="marketing-form-field">
           <label class="marketing-form-label">핵심 요청사항 (선택)</label>
           <UiTextarea
-            v-model="requestTxt"
+            v-model="form.requestTxt"
             placeholder="강조할 내용, 피해야 할 표현 등을 입력해 주세요."
             :rows="4"
             border
@@ -113,7 +107,7 @@
         <div class="marketing-form-field">
           <label class="marketing-form-label">타깃 고객</label>
           <UiInput
-            v-model="targetNm"
+            v-model="form.targetNm"
             placeholder="타깃 고객을 입력해 주세요."
             size="sm"
           />
@@ -125,35 +119,21 @@
       <section class="marketing-campaign-plan__card">
         <h2 class="marketing-campaign-plan__card-title">참고자료</h2>
 
-        <div class="marketing-form-field">
-          <label class="marketing-form-label">콘텐츠 참고자료 (문서)</label>
+        <div
+          v-for="item in PLAN_FILE_SLOTS"
+          :key="item.slot"
+          class="marketing-form-field"
+        >
+          <label class="marketing-form-label">{{ item.label }}</label>
           <UiFileUpload
-            v-model="contentFiles"
-            hint="PDF, PPTX, DOCX 등 · 20MB까지 첨부 가능합니다."
-            :max-size="20 * 1024 * 1024"
+            v-model="filesBySlot[item.slot]"
+            :attached-file-list="filesOf(item.slot).map(toFileItem)"
+            :accept="PLAN_FILE_ACCEPT"
+            :allowed-extensions="PLAN_FILE_EXTENSIONS"
+            :hint="PLAN_FILE_HINT"
+            :max-size="PLAN_FILE_MAX_SIZE"
             :multiple="true"
-          />
-        </div>
-
-        <div class="marketing-form-field">
-          <label class="marketing-form-label">브랜드 참고자료 (문서)</label>
-          <UiFileUpload
-            v-model="brandFiles"
-            hint="브랜드 가이드, 제품 소개서 · 20MB까지 첨부 가능합니다."
-            :max-size="20 * 1024 * 1024"
-            :multiple="true"
-          />
-        </div>
-
-        <div class="marketing-form-field">
-          <label class="marketing-form-label">이미지 참고자료 (선택)</label>
-          <UiFileUpload
-            v-model="imageFiles"
-            accept=".jpg,.jpeg,.png,.gif,.webp"
-            :allowed-extensions="['jpg', 'jpeg', 'png', 'gif', 'webp']"
-            hint="JPG, PNG, WEBP · 20MB까지 첨부 가능합니다."
-            :max-size="20 * 1024 * 1024"
-            :multiple="true"
+            @remove-attached-file="onRemoveAttached"
           />
         </div>
 
@@ -162,7 +142,7 @@
             name="info"
             size="16"
           />
-          <p>소스 분석 에이전트가 참고자료를 먼저 분석한 뒤, 캠페인 기획 에이전트가 초안을 작성합니다.</p>
+          <p>소스 분석 에이전트가 참고자료를 먼저 분석한 뒤, 프로젝트 기획 에이전트가 초안을 작성합니다.</p>
         </div>
       </section>
     </div>
@@ -170,50 +150,128 @@
 </template>
 
 <script setup lang="ts">
-import { UiButton, UiFileUpload, UiIcon, UiInput, UiTextarea } from '@leechanyong/ispark-ui'
-import type { MarketingCampaignPlanContentItem, MarketingCampaignPlanDraft } from '~/types/marketing'
+import { UiButton, UiIcon, UiInput, UiTextarea } from '@leechanyong/ispark-ui'
+import { useMarketingStore } from '~/composables/marketing/useMarketingStore'
+import type { MarketingCampaignPlanDraft, MarketingCampaignPlanSection, MarketingFile } from '~/types/marketing'
+import { marketingFilePurposes } from '~/types/marketing'
+import type { FileItem } from '~/types/repository'
+
+const { handleUploadProjectFiles, handleRemoveProjectFile, handleGenerateMarketingPlan, projectFiles } =
+  useMarketingStore()
+
+/** 참고자료 칸. 파일은 filePurposeCd(001 / 002 / 003)로 나눈다 */
+type PlanFileSlot = (typeof marketingFilePurposes)[number]['purposeNm']
+
+const PLAN_FILE_SLOT_LABEL: Record<PlanFileSlot, string> = {
+  content: '콘텐츠 참고자료 (문서)',
+  brand: '브랜드 참고자료 (문서)',
+  image: '이미지 참고자료 (선택)',
+}
+
+const PLAN_FILE_SLOTS = marketingFilePurposes.map((item) => ({
+  slot: item.purposeNm,
+  filePurposeCd: item.filePurposeCd,
+  label: PLAN_FILE_SLOT_LABEL[item.purposeNm],
+}))
+
+const PLAN_FILE_EXTENSIONS = [
+  'pdf',
+  'doc',
+  'docx',
+  'ppt',
+  'pptx',
+  'xls',
+  'xlsx',
+  'hwp',
+  'csv',
+  'txt',
+  'jpg',
+  'jpeg',
+  'png',
+  'gif',
+  'webp',
+]
+const PLAN_FILE_ACCEPT = PLAN_FILE_EXTENSIONS.map((ext) => `.${ext}`).join(',')
+const PLAN_FILE_HINT = 'PDF, DOCX, TXT, JPG 등 · 20MB까지 첨부 가능합니다.'
+const PLAN_FILE_MAX_SIZE = 20 * 1024 * 1024
+
+const toFileItem = (file: MarketingFile): FileItem => ({
+  docFileId: file.marketingFileId,
+  fileName: file.fileName,
+  filePath: file.filePath,
+  fileSize: String(file.fileSize),
+  fileType: file.fileType,
+})
+
+const filesBySlot = reactive<Record<PlanFileSlot, File[]>>({
+  content: [],
+  brand: [],
+  image: [],
+})
+
+const filePurposeCdOf = (slot: PlanFileSlot) => PLAN_FILE_SLOTS.find((item) => item.slot === slot)?.filePurposeCd
+
+const filesOf = (slot: PlanFileSlot) => {
+  const filePurposeCd = filePurposeCdOf(slot)
+  return projectFiles.value.filter((file) => file.filePurposeCd === filePurposeCd)
+}
+
+const onRemoveAttached = async (file: FileItem) => {
+  if (!file.docFileId) return
+  await handleRemoveProjectFile(file.docFileId)
+}
 
 const props = withDefaults(
   defineProps<{
     projectNm?: string
+    productNm?: string
     goal?: string
     targetNm?: string
     dueDateLabel?: string
     visibilityLabel?: string
     keyMessage?: string
     recommendChannels?: string
-    contentItems?: MarketingCampaignPlanContentItem[]
+    requestTxt?: string
+    visualTxt?: string
+    sections?: MarketingCampaignPlanSection[]
+    startInResult?: boolean
   }>(),
   {
     projectNm: '',
+    productNm: '',
     goal: '',
     targetNm: '',
     dueDateLabel: '',
     visibilityLabel: '',
     keyMessage: '',
     recommendChannels: '',
-    contentItems: () => [],
+    requestTxt: '',
+    visualTxt: '',
+    sections: () => [],
+    startInResult: false,
   },
 )
 
 const emit = defineEmits<{
   close: []
+  generated: [payload: MarketingCampaignPlanDraft]
   startContent: [payload: MarketingCampaignPlanDraft]
 }>()
 
-const isResultOpen = ref(false)
+const isResultOpen = ref(props.startInResult)
+const isGeneratingPlan = ref(false)
 
-const goal = ref(props.goal)
-const productNm = ref(props.projectNm)
-const requestTxt = ref(props.keyMessage)
-const targetNm = ref(props.targetNm)
-const keyMessageTxt = ref(props.keyMessage)
-const recommendChannelsTxt = ref(props.recommendChannels)
-const visualTxt = ref('')
+const form = reactive<MarketingCampaignPlanDraft>({
+  goal: props.goal,
+  productNm: props.productNm,
+  requestTxt: props.requestTxt,
+  targetNm: props.targetNm,
+  keyMessage: props.keyMessage,
+  recommendChannels: props.recommendChannels,
+  visualTxt: props.visualTxt,
+  sections: props.sections,
+})
 
-const contentFiles = ref<File[]>([])
-const brandFiles = ref<File[]>([])
-const imageFiles = ref<File[]>([])
 const heroImageUrl = ref('')
 
 const goalFieldRef = ref<HTMLElement | null>(null)
@@ -234,39 +292,68 @@ const focusField = (fieldEl: HTMLElement | null, input?: { focus: () => void } |
   fieldEl?.querySelector<HTMLElement>('textarea')?.focus()
 }
 
-const onSaveDraft = () => {
-  openToast({ message: '기획서 임시 저장 API가 없습니다.', type: 'warning' })
+/** 칸별 첨부파일을 올린다. 실패한 파일은 해당 칸에 남긴다 */
+const uploadNewReferenceFiles = async () => {
+  for (const { slot, filePurposeCd } of PLAN_FILE_SLOTS) {
+    const pending = filesBySlot[slot]
+    if (!pending.length) continue
+    const uploaded = await handleUploadProjectFiles(pending, filePurposeCd)
+    const succeeded = new Set(uploaded.map((item) => item.file))
+    filesBySlot[slot] = pending.filter((file) => !succeeded.has(file))
+  }
 }
 
-const onGenerate = () => {
-  if (!goal.value.trim()) {
-    openToast({ message: '캠페인 목표를 입력해 주세요.', type: 'warning' })
+const applyDraftToForm = (draft: MarketingCampaignPlanDraft) => {
+  Object.assign(form, draft)
+}
+
+const onGenerate = async () => {
+  if (!form.goal.trim()) {
+    openToast({ message: '프로젝트 목표를 입력해 주세요.', type: 'warning' })
     focusField(goalFieldRef.value)
     return
   }
-  if (!productNm.value.trim()) {
+  if (!form.productNm.trim()) {
     openToast({ message: '홍보할 제품·서비스를 입력해 주세요.', type: 'warning' })
     focusField(productFieldRef.value, productInputRef.value)
     return
   }
-  revokeHeroImage()
-  const imageFile = imageFiles.value[0]
-  if (imageFile) heroImageUrl.value = URL.createObjectURL(imageFile)
-  isResultOpen.value = true
-}
+  if (isGeneratingPlan.value) return
 
-const onBackToForm = () => {
-  isResultOpen.value = false
+  const pendingFiles = PLAN_FILE_SLOTS.flatMap((item) => filesBySlot[item.slot])
+  const previewImage = pendingFiles.find((file) => file.type.startsWith('image/'))
+  if (previewImage) {
+    revokeHeroImage()
+    heroImageUrl.value = URL.createObjectURL(previewImage)
+  } else if (!projectFiles.value.length) {
+    revokeHeroImage()
+  }
+
+  isGeneratingPlan.value = true
+  try {
+    await uploadNewReferenceFiles()
+    if (PLAN_FILE_SLOTS.some(({ slot }) => filesBySlot[slot].length > 0)) return
+    const plan = await handleGenerateMarketingPlan({
+      goal: form.goal.trim(),
+      productNm: form.productNm.trim(),
+      requestTxt: form.requestTxt.trim(),
+      targetNm: form.targetNm.trim(),
+      contentFileIds: filesOf('content').map((file) => file.marketingFileId),
+      brandFileIds: filesOf('brand').map((file) => file.marketingFileId),
+      imageFileIds: filesOf('image').map((file) => file.marketingFileId),
+    })
+    if (!plan) return
+    applyDraftToForm(plan)
+    emit('generated', plan)
+    isResultOpen.value = true
+  } finally {
+    isGeneratingPlan.value = false
+  }
 }
 
 const onRefined = (payload: MarketingCampaignPlanDraft) => {
-  goal.value = payload.goal
-  productNm.value = payload.productNm
-  requestTxt.value = payload.requestTxt
-  targetNm.value = payload.targetNm
-  keyMessageTxt.value = payload.keyMessage
-  recommendChannelsTxt.value = payload.recommendChannels
-  visualTxt.value = payload.visualTxt
+  applyDraftToForm(payload)
+  emit('generated', payload)
 }
 
 const onStartContent = (payload: MarketingCampaignPlanDraft) => {
@@ -278,4 +365,8 @@ const onClose = () => {
   revokeHeroImage()
   emit('close')
 }
+
+onUnmounted(() => {
+  revokeHeroImage()
+})
 </script>

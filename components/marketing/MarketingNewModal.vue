@@ -1,17 +1,43 @@
 <template>
   <UiModal
-    :is-open="isOpen"
+    :is-open="isOpen && !isPickingMembers"
     position="center"
     max-width="480px"
     :title="isEditMode ? '마케팅 프로젝트 수정' : '새 마케팅 프로젝트'"
     custom-class="marketing-new-modal"
     @close="onClose"
   >
-    <div class="marketing-form-field">
+    <div
+      ref="nameFieldRef"
+      class="marketing-form-field"
+    >
       <label class="marketing-form-label">프로젝트명 <span class="marketing-req">*</span></label>
       <UiInput
+        ref="nameInputRef"
         v-model="form.projectNm"
-        placeholder="예) 여름 시즌 신제품 SNS 캠페인"
+        placeholder="예) AI 제품 출시 프로젝트"
+        size="sm"
+      />
+    </div>
+    <div
+      ref="purposeFieldRef"
+      class="marketing-form-field"
+    >
+      <label class="marketing-form-label">목적 <span class="marketing-req">*</span></label>
+      <UiInput
+        ref="purposeInputRef"
+        v-model="form.summary"
+        placeholder="예) 신제품 출시 인지도 확보"
+        size="sm"
+      />
+    </div>
+    <div
+      ref="dueDtFieldRef"
+      class="marketing-form-field"
+    >
+      <label class="marketing-form-label">종료일 <span class="marketing-req">*</span></label>
+      <UiDatePicker
+        v-model="dueDtValue"
         size="sm"
       />
     </div>
@@ -19,25 +45,7 @@
       <label class="marketing-form-label">고객사</label>
       <UiInput
         v-model="form.orgNm"
-        placeholder="예) 올리브영"
-        size="sm"
-      />
-    </div>
-    <div class="marketing-form-field">
-      <label class="marketing-form-label">캠페인 개요</label>
-      <UiTextarea
-        v-model="form.summary"
-        placeholder="캠페인 목적, 타깃, 핵심 메시지를 간단히 입력하세요 (선택)"
-        :rows="3"
-        border
-        size="sm"
-        :auto-resize="false"
-      />
-    </div>
-    <div class="marketing-form-field">
-      <label class="marketing-form-label">종료일</label>
-      <UiDatePicker
-        v-model="dueDtValue"
+        placeholder="예) 브랜드팀"
         size="sm"
       />
     </div>
@@ -80,6 +88,20 @@
         </button>
       </div>
     </div>
+    <div class="marketing-form-field">
+      <label class="marketing-form-label">승인자 <span class="marketing-req">*</span></label>
+      <UiSelect
+        v-if="canEditApprover"
+        v-model="form.approverUserId"
+        :options="approverOptions"
+        placeholder="승인자를 선택하세요"
+        size="sm"
+      />
+      <p v-else>{{ props.project?.approverUserNm || '미지정' }}</p>
+      <p class="marketing-form-hint">
+        프로젝트 작성자만 지정·변경할 수 있습니다. 변경 시 진행 중인 승인을 다시 받아야 합니다.
+      </p>
+    </div>
     <template #footer>
       <div class="modal-dialog-footer">
         <UiButton
@@ -98,7 +120,7 @@
           :loading="isSaving"
           @click="onSubmit"
         >
-          {{ isEditMode ? '저장' : '시작' }}
+          {{ isEditMode ? '저장' : '프로젝트 생성' }}
         </UiButton>
       </div>
     </template>
@@ -108,14 +130,14 @@
     :is-open="isUserSelectModalOpen"
     title="공개 범위 - 멤버 추가"
     confirm-text="추가"
-    @close="closeUserSelectModal"
+    @close="onCloseMemberSelect"
     @confirm="onMemberSelectConfirm"
   />
 </template>
 
 <script setup lang="ts">
 import { CalendarDate, toCalendarDateTime, type DateValue } from '@internationalized/date'
-import { UiButton, UiDatePicker, UiIcon, UiInput, UiModal, UiTextarea } from '@leechanyong/ispark-ui'
+import { UiButton, UiDatePicker, UiIcon, UiInput, UiModal, UiSelect } from '@leechanyong/ispark-ui'
 import type { MarketingProject, MarketingProjectMember, MarketingProjectSaveForm } from '~/types/marketing'
 import type { OrgUserItem } from '~/types/org-manage'
 import { useUserSelectStore } from '~/composables/com/useUserSelectStore'
@@ -142,6 +164,7 @@ const emit = defineEmits<{
 
 const { user } = useAuth()
 const { isUserSelectModalOpen, openUserSelectModal, closeUserSelectModal } = useUserSelectStore()
+const isPickingMembers = ref(false)
 
 /** 공개범위 — 작성자 외 추가 멤버 (칩 표시/제출용) */
 const selectedMembers = ref<OrgUserItem[]>([])
@@ -167,7 +190,13 @@ const ownerMember = computed<OrgUserItem | null>(() => {
 })
 
 const openMemberSelect = () => {
+  isPickingMembers.value = true
   void openUserSelectModal()
+}
+
+const onCloseMemberSelect = () => {
+  closeUserSelectModal()
+  isPickingMembers.value = false
 }
 
 /** 이미 추가된 멤버·작성자와 중복 없이 병합 */
@@ -184,6 +213,10 @@ const onMemberSelectConfirm = (users: OrgUserItem[]) => {
 }
 
 const removeMember = (userId: string) => {
+  if (form.value.approverUserId === userId) {
+    openToast({ message: '승인자를 먼저 변경한 후 멤버를 제거해 주세요.', type: 'warning' })
+    return
+  }
   selectedMembers.value = selectedMembers.value.filter((m) => m.userId !== userId)
 }
 
@@ -193,11 +226,20 @@ const defaultForm = () => ({
   summary: '',
   dueDt: '',
   statusCd: '001',
+  approverUserId: '',
 })
 
 const form = ref(defaultForm())
 
 const isEditMode = computed(() => !!props.project?.marketingProjectId)
+const canEditApprover = computed(() => !isEditMode.value || props.project?.createUserId === user.value?.userId)
+const approverOptions = computed(() => {
+  const owner = ownerMember.value
+  const members = selectedMembers.value.filter((member) => member.userId !== owner?.userId)
+  const options = members.map((member) => ({ value: member.userId, label: member.userNm }))
+  if (!owner?.userId) return options
+  return [{ value: owner.userId, label: `${owner.userNm} (작성자)` }, ...options]
+})
 
 /** 마감일 YYYY-MM-DD ↔ DateValue */
 const parseYyyyMmDdToDateValue = (value: string): DateValue | undefined => {
@@ -225,6 +267,17 @@ const dueDtValue = computed<DateValue | undefined>({
   },
 })
 
+const nameFieldRef = ref<HTMLElement | null>(null)
+const purposeFieldRef = ref<HTMLElement | null>(null)
+const dueDtFieldRef = ref<HTMLElement | null>(null)
+const nameInputRef = ref<{ focus: () => void } | null>(null)
+const purposeInputRef = ref<{ focus: () => void } | null>(null)
+
+const focusField = (fieldEl: HTMLElement | null, input?: { focus: () => void } | null) => {
+  fieldEl?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  input?.focus()
+}
+
 const syncFormFromProject = () => {
   if (!props.project) {
     form.value = defaultForm()
@@ -237,27 +290,38 @@ const syncFormFromProject = () => {
     summary: props.project.projectOverview ?? '',
     dueDt: props.project.dueDt ?? '',
     statusCd: props.project.statusCd ?? '001',
+    approverUserId: props.project.approverUserId ?? '',
   }
   const ownerId = props.project.createUserId
   selectedMembers.value = props.members.filter((m) => m.userId !== ownerId).map(toOrgUserItem)
 }
 
-watch(
-  () => [props.isOpen, props.project] as const,
-  ([isOpen]) => {
-    if (isOpen) syncFormFromProject()
-  },
-)
+// 부모에서 열릴 때 마운트하므로 입력값은 여기서 한 번만 초기화한다.
+syncFormFromProject()
 
 const onClose = () => {
-  form.value = defaultForm()
-  selectedMembers.value = []
+  if (isPickingMembers.value) return
   emit('close')
 }
 
 const onSubmit = () => {
   if (!form.value.projectNm.trim()) {
     openToast({ message: '프로젝트명을 입력해 주세요.', type: 'warning' })
+    focusField(nameFieldRef.value, nameInputRef.value)
+    return
+  }
+  if (!form.value.summary.trim()) {
+    openToast({ message: '목적을 입력해 주세요.', type: 'warning' })
+    focusField(purposeFieldRef.value, purposeInputRef.value)
+    return
+  }
+  if (!form.value.dueDt.trim()) {
+    openToast({ message: '종료일을 선택해 주세요.', type: 'warning' })
+    focusField(dueDtFieldRef.value)
+    return
+  }
+  if (canEditApprover.value && !form.value.approverUserId) {
+    openToast({ message: '프로젝트 승인자를 선택해 주세요.', type: 'warning' })
     return
   }
   emit('submit', {

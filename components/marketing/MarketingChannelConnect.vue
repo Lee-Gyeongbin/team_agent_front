@@ -1,17 +1,9 @@
 <template>
-  <MarketingRecipientManage
-    v-if="isRecipientManageOpen"
-    :channel-nm="recipientChannelNm"
-    @close="closeRecipientManage"
-  />
-  <div
-    v-else
-    class="marketing-channel-connect"
-  >
+  <div class="marketing-channel-connect">
     <button
       class="marketing-back-btn"
       type="button"
-      @click="onClose"
+      @click="emit('close')"
     >
       <UiIcon
         name="arrow-right"
@@ -22,8 +14,8 @@
     </button>
     <div class="marketing-list-header">
       <div class="marketing-list-header__copy">
-        <h1 class="marketing-list-title">발행 채널 연결</h1>
-        <p class="marketing-list-desc">콘텐츠를 발행할 채널을 연결하고 관리하세요.</p>
+        <h1 class="marketing-list-title">계정 관리</h1>
+        <p class="marketing-list-desc">외부 채널 계정 연결은 준비 중입니다.</p>
       </div>
     </div>
 
@@ -31,19 +23,12 @@
       <UiTable
         :columns="marketingChannelConnectColumns"
         :data="channelAccounts"
-        empty-text="연결된 채널이 없습니다."
       >
         <template #cell-channelNm="{ value }">
           <strong class="marketing-channel-name">{{ value }}</strong>
         </template>
         <template #cell-accountId="{ value }">
-          {{ formatCellText(value) }}
-        </template>
-        <template #cell-recipientCount="{ row }">
-          {{ formatRecipientCount(row.recipientCount) }}
-        </template>
-        <template #cell-recipientSync="{ value }">
-          {{ formatCellText(value) }}
+          {{ formatMarketingCellText(value) }}
         </template>
         <template #cell-status="{ row }">
           <span :class="['marketing-channel-status', `is-${row.status}`]">
@@ -61,17 +46,17 @@
               v-else
               class="marketing-channel-status__circle"
             />
-            {{ statusLabel(row.status) }}
+            {{ STATUS_LABEL[row.status] }}
           </span>
         </template>
-        <template #cell-actions="{ row }">
+        <template #cell-actions>
           <div class="marketing-channel-connect-actions">
             <UiButton
-              :variant="primaryAction(row.status).variant"
+              variant="outline"
               size="sm"
-              @click="onPrimaryAction(row)"
+              :disabled="true"
             >
-              {{ primaryAction(row.status).label }}
+              준비 중
               <template #icon-right>
                 <UiIcon
                   name="chevron-right"
@@ -79,30 +64,12 @@
                 />
               </template>
             </UiButton>
-            <UiButton
-              v-if="row.recipientCount !== null"
-              variant="outline"
-              size="sm"
-              @click="onRecipientManage(row)"
-            >
-              수신 대상 관리
-            </UiButton>
           </div>
         </template>
       </UiTable>
     </div>
 
-    <p class="marketing-channel-connect-guide">
-      채널 연결 시 아래 정보 확인이 필요합니다: OAuth 연결 · 발행/게시 권한 · API Access 상태 · 수신 대상 연결
-    </p>
-
-    <MarketingChannelConnectModal
-      v-if="isConnectModalOpen"
-      :is-open="isConnectModalOpen"
-      :channel-nm="connectingChannelNm"
-      @close="closeConnectModal"
-      @connect="onChannelConnect"
-    />
+    <p class="marketing-channel-connect-guide">이번 버전에서는 발행 일정과 완료 상태를 관리합니다.</p>
   </div>
 </template>
 
@@ -113,6 +80,7 @@ import {
   type MarketingChannelAccount,
   type MarketingChannelConnectionStatus,
 } from '~/types/marketing'
+import { formatMarketingCellText, MARKETING_CHANNEL_SEEDS } from '~/utils/marketing/marketingUtil'
 
 const emit = defineEmits<{
   close: []
@@ -124,62 +92,11 @@ const STATUS_LABEL: Record<MarketingChannelConnectionStatus, string> = {
   disconnected: '연결 안됨',
 }
 
-const PRIMARY_ACTION: Record<MarketingChannelConnectionStatus, { label: string; variant: 'primary' | 'outline' }> = {
-  connected: { label: '연결 관리', variant: 'outline' },
-  verify: { label: '확인하기', variant: 'outline' },
-  disconnected: { label: '연동하기', variant: 'primary' },
-}
-
-const channelAccounts = ref<(MarketingChannelAccount & Record<string, unknown>)[]>([])
-
-const formatCellText = (value: unknown) => {
-  const text = String(value ?? '').trim()
-  return text || '-'
-}
-
-const formatRecipientCount = (count: number | null) => {
-  if (count === null) return '-'
-  return `${formatNumberWithComma(count)}명`
-}
-
-const statusLabel = (status: MarketingChannelConnectionStatus) => STATUS_LABEL[status]
-
-const primaryAction = (status: MarketingChannelConnectionStatus) => PRIMARY_ACTION[status]
-
-const isConnectModalOpen = ref(false)
-const connectingChannelNm = ref('')
-const isRecipientManageOpen = ref(false)
-const recipientChannelNm = ref('')
-
-const openConnectModal = (channelNm: string) => {
-  connectingChannelNm.value = channelNm
-  isConnectModalOpen.value = true
-}
-
-const closeConnectModal = () => {
-  isConnectModalOpen.value = false
-  connectingChannelNm.value = ''
-}
-
-const onPrimaryAction = (row: MarketingChannelAccount) => {
-  openConnectModal(row.channelNm)
-}
-
-const onRecipientManage = (row: MarketingChannelAccount) => {
-  recipientChannelNm.value = row.channelNm
-  isRecipientManageOpen.value = true
-}
-
-const closeRecipientManage = () => {
-  isRecipientManageOpen.value = false
-  recipientChannelNm.value = ''
-}
-
-const onChannelConnect = () => {
-  closeConnectModal()
-}
-
-const onClose = () => {
-  emit('close')
-}
+const channelAccounts = ref<(MarketingChannelAccount & Record<string, unknown>)[]>(
+  MARKETING_CHANNEL_SEEDS.map((seed) => ({
+    channelNm: seed.channelNm,
+    accountId: '',
+    status: 'disconnected',
+  })),
+)
 </script>

@@ -49,7 +49,7 @@
             size="20"
           />
           <strong>캘린더 확인</strong>
-          <span>전체 캠페인의 발행 일정을 확인합니다.</span>
+          <span>전체 프로젝트의 발행 일정을 확인합니다.</span>
         </button>
         <button
           type="button"
@@ -60,7 +60,7 @@
             name="arrow-right"
             size="20"
           />
-          <strong>캠페인으로 돌아가기</strong>
+          <strong>프로젝트로 돌아가기</strong>
           <span>제작 내역 목록으로 이동합니다.</span>
         </button>
       </div>
@@ -91,14 +91,7 @@
           v-if="reviewResult"
           class="marketing-approval-panel__review"
         >
-          <span
-            :class="[
-              'marketing-status-badge',
-              reviewResult.verdict === 'PASS' ? 'status-review-pass' : 'status-review-fail',
-            ]"
-          >
-            AI 검수 {{ reviewResult.verdictLabel }}
-          </span>
+          <span :class="['marketing-status-badge', verdictBadgeClass]"> AI 검수 {{ reviewResult.verdictLabel }} </span>
           <span>{{ reviewResult.score }}점</span>
         </div>
 
@@ -116,12 +109,18 @@
           />
         </div>
 
+        <p
+          v-if="!currentContent?.canApprove"
+          class="marketing-form-hint"
+        >
+          현재 시안 검수 후 지정 승인자만 승인·반려할 수 있습니다.
+        </p>
         <div class="marketing-approval-actions">
           <UiButton
             variant="outline"
             size="md"
             class="marketing-btn-danger"
-            :disabled="isApproving"
+            :disabled="isApproving || !currentContent?.canApprove"
             @click="onReject"
           >
             반려하기
@@ -129,7 +128,7 @@
           <UiButton
             variant="primary"
             size="md"
-            :disabled="isApproving"
+            :disabled="isApproving || !currentContent?.canApprove"
             @click="onApprove"
           >
             승인하기
@@ -142,8 +141,8 @@
 
 <script setup lang="ts">
 import { UiButton, UiIcon, UiTextarea } from '@leechanyong/ispark-ui'
-import { useAuth } from '~/composables/com/useAuth'
 import { useMarketingStore } from '~/composables/marketing/useMarketingStore'
+import { marketingReviewVerdictBadgeClass } from '~/types/marketing'
 
 const emit = defineEmits<{
   'go-calendar': []
@@ -154,29 +153,29 @@ const {
   currentContent,
   displayResult,
   displayTitle,
+  selectedVariantId,
   reviewResult,
   approval,
   isApproving,
   handleApprove,
   handleReject,
-  resetApprovalState,
   pushMarketingPhase,
   popMarketingPhase,
 } = useMarketingStore()
-const { user } = useAuth()
 
 const contentId = computed(() => currentContent.value?.contentId ?? '')
-const reviewerNm = computed(() => String(user.value?.userNm ?? '').trim() || '-')
+const reviewerNm = computed(() => currentContent.value?.approverUserNm || '승인자 미지정')
 const memo = ref('')
+const verdictBadgeClass = computed(() => marketingReviewVerdictBadgeClass[reviewResult.value?.verdict ?? 'REVIEW'])
 
 const previewText = computed(() => {
   const variants = displayResult.value?.variants ?? []
-  return variants.find((variant) => variant.recommended)?.content ?? variants[0]?.content ?? ''
+  return variants.find((variant) => variant.id === selectedVariantId.value)?.content ?? ''
 })
 
 const previewImageUrl = computed(() => {
   const images = displayResult.value?.images ?? []
-  return images.find((image) => image.recommended)?.url ?? images[0]?.url ?? ''
+  return images.find((image) => image.id === selectedVariantId.value)?.url ?? ''
 })
 
 const onApprove = async () => {
@@ -189,8 +188,4 @@ const onReject = async () => {
   const ok = await handleReject(contentId.value, memo.value)
   if (ok) popMarketingPhase()
 }
-
-onMounted(() => {
-  if (currentContent.value && approval.value?.contentId !== currentContent.value.contentId) resetApprovalState()
-})
 </script>

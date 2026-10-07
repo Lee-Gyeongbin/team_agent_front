@@ -17,11 +17,32 @@
       <div class="marketing-list-header__copy">
         <h1 class="marketing-list-title">채널 구성 확인</h1>
         <p class="marketing-list-desc">
-          캠페인 기획서를 바탕으로 AI가 추천한 채널 구성을 확인하고, 생성할 채널을 선택하세요.
+          프로젝트 기획서를 바탕으로 AI가 추천한 채널 구성을 확인하고, 생성할 채널을 선택하세요.
         </p>
+      </div>
+      <div class="marketing-list-header__actions">
+        <UiButton
+          variant="primary"
+          size="md"
+          :disabled="!selectedCount || isGeneratingChannelBatch"
+          @click="onStartGenerate"
+        >
+          멀티채널 콘텐츠 생성 시작
+          <template #icon-right>
+            <UiIcon
+              name="arrow-right"
+              size="16"
+            />
+          </template>
+        </UiButton>
       </div>
     </div>
 
+    <UiEmpty
+      v-if="!channelPicks.length"
+      icon="icon-edit"
+      title="선택할 수 있는 채널이 없습니다."
+    />
     <div
       v-if="recommendedPicks.length"
       class="marketing-channel-select__recommend"
@@ -31,8 +52,7 @@
         <thead>
           <tr>
             <th>채널</th>
-            <th>형식</th>
-            <th>이미지 전략</th>
+            <th>추천 콘텐츠</th>
           </tr>
         </thead>
         <tbody>
@@ -41,14 +61,44 @@
             :key="pick.channelCd"
           >
             <td>{{ pick.channelNm }}</td>
-            <td>{{ pick.formatOptions.join(', ') }}</td>
+            <td>{{ pick.formatOptions.join(' · ') }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div
+      v-if="channelPicks.length"
+      class="marketing-channel-select__strategy"
+    >
+      <h2>AI 채널별 이미지 전략</h2>
+      <p>
+        프로젝트 기획서의 공통 비주얼 방향을 그대로 복제하지 않고, 각 채널에서 이미지가 수행해야 할 역할을 기준으로
+        생성합니다.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>채널</th>
+            <th>AI 생성 전략</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="pick in channelPicks"
+            :key="`strategy-${pick.channelCd}`"
+          >
+            <td>{{ pick.channelNm }}</td>
             <td>{{ pick.imageStrategy }}</td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <div class="marketing-channel-select__grid">
+    <div
+      v-if="channelPicks.length"
+      class="marketing-channel-select__grid"
+    >
       <div
         v-for="pick in channelPicks"
         :key="pick.channelCd"
@@ -61,8 +111,11 @@
         >
           <div class="marketing-channel-select__card-icon">{{ pick.channelNm.slice(0, 2) }}</div>
           <div>
-            <strong>{{ pick.channelNm }}</strong>
-            <span v-if="pick.recommended">AI 추천</span>
+            <strong>
+              {{ pick.channelNm }}
+              <em v-if="pick.recommended">AI 추천</em>
+            </strong>
+            <span>{{ pick.formatOptions.join(' · ') }}</span>
           </div>
           <span class="marketing-channel-select__card-check">
             <UiIcon
@@ -74,38 +127,26 @@
         </div>
         <div class="marketing-channel-select__card-image-row">
           <span>이미지 함께 생성</span>
-          <button
-            type="button"
-            class="marketing-channel-select__image-toggle"
-            :class="{ 'is-on': pick.withImageYn === 'Y' }"
-            @click.stop="handleToggleWithImage(pick.channelCd)"
+          <UiToggle
+            :model-value="pick.withImageYn === 'Y'"
+            @click.stop
+            @update:model-value="(isOn) => handleToggleWithImage(pick.channelCd, isOn)"
           />
         </div>
       </div>
     </div>
 
-    <div class="marketing-channel-select__footer">
-      <span>{{ selectedCount }}개 채널 선택됨</span>
-      <UiButton
-        variant="primary"
-        size="md"
-        :disabled="!selectedCount || isGeneratingChannelBatch"
-        @click="handleGenerateChannelBatch"
-      >
-        멀티채널 콘텐츠 생성 시작
-        <template #icon-right>
-          <UiIcon
-            name="arrow-right"
-            size="16"
-          />
-        </template>
-      </UiButton>
-    </div>
+    <p
+      v-if="channelPicks.length"
+      class="marketing-channel-select__count"
+    >
+      선택됨: {{ selectedCount }}개 채널 · 선택한 채널은 별도 설정 단계 없이 채널 특성에 맞게 생성합니다
+    </p>
   </div>
 </template>
 
 <script setup lang="ts">
-import { UiButton, UiIcon } from '@leechanyong/ispark-ui'
+import { UiButton, UiEmpty, UiIcon, UiToggle } from '@leechanyong/ispark-ui'
 import { useMarketingStore } from '~/composables/marketing/useMarketingStore'
 
 const {
@@ -119,4 +160,9 @@ const {
 
 const recommendedPicks = computed(() => channelPicks.value.filter((pick) => pick.recommended))
 const selectedCount = computed(() => channelPicks.value.filter((pick) => pick.selected).length)
+
+const onStartGenerate = async () => {
+  if (!selectedCount.value || isGeneratingChannelBatch.value) return
+  await handleGenerateChannelBatch()
+}
 </script>

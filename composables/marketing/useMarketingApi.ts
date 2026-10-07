@@ -21,14 +21,18 @@ import type {
   MarketingStreamDoneEvent,
   MarketingStreamErrorEvent,
   MarketingStreamProgressEvent,
+  MarketingCampaignPlanDraft,
   MarketingFile,
   MarketingFileSavePayload,
   MarketingFileSaveResponse,
   MarketingFileUpdatePayload,
   MarketingFileUploadUrlRequest,
+  MarketingGeneratePlanRequest,
+  MarketingPlanResponse,
   MarketingProject,
   MarketingProjectListFilter,
   MarketingProjectMember,
+  MarketingRefinePlanRequest,
 } from '~/types/marketing'
 
 /** GET 쿼리 문자열 */
@@ -61,22 +65,44 @@ export const useMarketingApi = () => {
     return post<MarketingFileSaveResponse>('/ai/marketing/saveMarketingFile.do', payload)
   }
 
-  /** 마케팅 프로젝트 단건 조회 (상세 페이지 진입 시) */
+  /** 마케팅 프로젝트 단건 조회 (상세 페이지 진입 시). plan 이 없으면 null */
   const fetchSelectMarketingProject = async (
     marketingProjectId: string,
-  ): Promise<MarketingActionResponse & { data: MarketingProject; members: MarketingProjectMember[] }> => {
-    return get<MarketingActionResponse & { data: MarketingProject; members: MarketingProjectMember[] }>(
-      `/ai/marketing/selectMarketingProject.do${toQueryString({ marketingProjectId })}`,
-    )
+  ): Promise<
+    MarketingActionResponse & {
+      data: MarketingProject
+      members: MarketingProjectMember[]
+      plan: MarketingCampaignPlanDraft | null
+    }
+  > => {
+    return get<
+      MarketingActionResponse & {
+        data: MarketingProject
+        members: MarketingProjectMember[]
+        plan: MarketingCampaignPlanDraft | null
+      }
+    >(`/ai/marketing/selectMarketingProject.do${toQueryString({ marketingProjectId })}`)
+  }
+
+  /** 기획서 생성. 같은 프로젝트가 있으면 덮어쓴다 */
+  const fetchGenerateMarketingPlan = async (payload: MarketingGeneratePlanRequest): Promise<MarketingPlanResponse> => {
+    return post<MarketingPlanResponse>('/ai/marketing/generateMarketingPlan.do', payload)
+  }
+
+  /** 기획서 대화/프롬프트 수정. 저장된 기획서가 없으면 실패 */
+  const fetchRefineMarketingPlan = async (payload: MarketingRefinePlanRequest): Promise<MarketingPlanResponse> => {
+    return post<MarketingPlanResponse>('/ai/marketing/refineMarketingPlan.do', payload)
   }
 
   /** 마케팅 프로젝트 목록 조회 */
   const fetchMarketingProjectList = async (
     filter?: MarketingProjectListFilter,
   ): Promise<{ list: MarketingProject[] }> => {
-    return get<{ list: MarketingProject[] }>(
+    const response = await get<MarketingActionResponse & { list: MarketingProject[] }>(
       `/ai/marketing/selectMarketingProjectList.do${toQueryString(filter ?? {})}`,
     )
+    if (!response.successYn) throw new Error(response.returnMsg)
+    return response
   }
 
   /** 마케팅 프로젝트 저장 (신규/수정) */
@@ -96,9 +122,11 @@ export const useMarketingApi = () => {
 
   /** 프로젝트 첨부파일 목록 */
   const fetchSelectMarketingFileList = async (marketingProjectId: string): Promise<{ list: MarketingFile[] }> => {
-    return get<{ list: MarketingFile[] }>(
+    const response = await get<MarketingActionResponse & { list: MarketingFile[] }>(
       `/ai/marketing/selectMarketingFileList.do${toQueryString({ marketingProjectId })}`,
     )
+    if (!response.successYn) throw new Error(response.returnMsg)
+    return response
   }
 
   /** 프로젝트 첨부파일 삭제 */
@@ -121,7 +149,7 @@ export const useMarketingApi = () => {
 
   /**
    * 내보내기 문서 HTML 조회 — word/pdf는 이 HTML을 받아 프론트에서 직접 변환한다(회의록과 동일 패턴).
-   * 서버는 LLM+템플릿(TM000009) 렌더링까지만 하고 파일 변환은 하지 않는다.
+   * 서버는 템플릿(TM000009)에 콘텐츠를 채운 HTML까지만 만들고 파일 변환은 하지 않는다.
    */
   const fetchExportMarketingContentHtml = async (contentId: string): Promise<MarketingExportHtmlResponse> => {
     return get<MarketingExportHtmlResponse>(
@@ -129,11 +157,27 @@ export const useMarketingApi = () => {
     )
   }
 
-  const fetchMarketingContents = (params: MarketingContentListParams = {}) =>
-    get<MarketingContentListResponse>(`/marketing/contents${toQueryString(params)}`)
+  const fetchMarketingContents = async (params: MarketingContentListParams = {}) => {
+    const response = await get<MarketingContentListResponse & MarketingActionResponse>(
+      `/marketing/contents${toQueryString(params)}`,
+    )
+    if (!response.successYn) throw new Error(response.returnMsg)
+    return response
+  }
 
-  const fetchMarketingContent = (contentId: string) =>
-    get<MarketingContentDetail>(`/marketing/contents/${encodeURIComponent(contentId)}`)
+  const fetchMarketingContent = async (contentId: string) => {
+    const response = await get<MarketingContentDetail & MarketingActionResponse>(
+      `/marketing/contents/${encodeURIComponent(contentId)}`,
+    )
+    if (!response.successYn) throw new Error(response.returnMsg || '콘텐츠를 불러오지 못했습니다.')
+    return response
+  }
+
+  const fetchSelectMarketingVariant = (contentId: string, variantId: number) =>
+    put<MarketingActionResponse>(
+      `/marketing/contents/${encodeURIComponent(contentId)}/variants/${variantId}/select`,
+      {},
+    )
 
   const fetchCreateMarketingContent = (payload: MarketingCreateRequest) =>
     post<MarketingCreateResponse>('/marketing/contents', payload)
@@ -173,7 +217,7 @@ export const useMarketingApi = () => {
 
   // ── AI 검수 / 승인 / 캘린더 ────────────────────────────────────────────────
 
-  /** AI 검수 실행 — 추천 시안(없으면 1번) 기준 */
+  /** AI 검수 실행 — 저장된 선택 시안 기준 */
   const fetchRunMarketingReview = (contentId: string) =>
     post<MarketingActionResponse & { data: MarketingReviewResult }>(
       `/marketing/contents/${encodeURIComponent(contentId)}/review`,
@@ -194,8 +238,12 @@ export const useMarketingApi = () => {
       payload,
     )
 
-  /** 캠페인 캘린더 이벤트 목록 — 내가 멤버로 속한 프로젝트 전체 */
-  const fetchMarketingCalendarEvents = () => get<{ list: MarketingCalendarEventItem[] }>('/marketing/calendar')
+  /** 프로젝트 캘린더 이벤트 목록 */
+  const fetchMarketingCalendarEvents = async () => {
+    const response = await get<MarketingActionResponse & { list: MarketingCalendarEventItem[] }>('/marketing/calendar')
+    if (!response.successYn) throw new Error(response.returnMsg)
+    return response
+  }
 
   /** 마케팅 생성 SSE — progress 후 done/error. 필요 시 EventSource.close 호출 */
   const streamMarketingEvents = (
@@ -249,6 +297,8 @@ export const useMarketingApi = () => {
     fetchMarketingAgents,
     fetchMarketingProjectList,
     fetchSelectMarketingProject,
+    fetchGenerateMarketingPlan,
+    fetchRefineMarketingPlan,
     fetchSaveMarketingProject,
     fetchDeleteMarketingProject,
     fetchCreateMarketingFileUploadUrl,
@@ -268,6 +318,7 @@ export const useMarketingApi = () => {
     fetchRefineMarketingVariant,
     fetchUpdateMarketingVariant,
     fetchRestoreMarketingVariant,
+    fetchSelectMarketingVariant,
     fetchRunMarketingReview,
     fetchApplyMarketingReviewFix,
     fetchSaveMarketingApproval,

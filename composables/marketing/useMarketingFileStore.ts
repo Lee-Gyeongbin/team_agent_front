@@ -1,4 +1,4 @@
-import type { MarketingFileSaveResponse } from '~/types/marketing'
+import type { MarketingFileSaveResponse, MarketingFilePurposeCd } from '~/types/marketing'
 import { useFileStore } from '~/composables/com/useFileStore'
 import { useMarketingApi } from '~/composables/marketing/useMarketingApi'
 import { formatChatStoreFileNameBase } from '~/utils/global/dateUtil'
@@ -50,10 +50,12 @@ export const useMarketingFileStore = () => {
    * 실패 토스트는 호출부(스토어)에서 파일명·맥락에 맞게 띄운다 — 여기선 null만 반환한다.
    * @param file                업로드 파일
    * @param marketingProjectId  프로젝트 ID (생성 전이면 생략)
+   * @param filePurposeCd          파일 용도. 기본값 001(콘텐츠 참고자료)
    */
   const handleUploadMarketingFile = async (
     file: File,
     marketingProjectId?: string,
+    filePurposeCd: MarketingFilePurposeCd = '001',
   ): Promise<MarketingFileSaveResponse | null> => {
     const resolvedUserId = String(user.value?.userId ?? '').trim()
     if (!resolvedUserId) {
@@ -90,6 +92,7 @@ export const useMarketingFileStore = () => {
       fileSize: Number(file.size),
       fileType: getChatAttachmentExtension(file.name),
       mimeType: file.type || 'application/octet-stream',
+      filePurposeCd,
       ...(marketingProjectId ? { marketingProjectId } : {}),
     }
 

@@ -17,10 +17,10 @@
         class="marketing-preparing-status__ring-icon"
       />
     </div>
-    <p class="marketing-preparing-status__title">{{ title }}</p>
+    <p class="marketing-preparing-status__title">{{ MARKETING_PREPARING_TITLE }}</p>
     <p class="marketing-preparing-status__desc">{{ statusText }}</p>
     <div class="marketing-preparing-status__callout">
-      <p>{{ callout }}</p>
+      <p>{{ MARKETING_PREPARING_CALLOUT }}</p>
     </div>
   </div>
 </template>
@@ -38,32 +38,19 @@ import type { MarketingGeneratingStep } from '~/types/marketing'
 const props = withDefaults(
   defineProps<{
     generatingStep?: MarketingGeneratingStep
-    active?: boolean
     bordered?: boolean
   }>(),
   {
     generatingStep: '',
-    active: true,
     bordered: true,
   },
 )
-
-const title = MARKETING_PREPARING_TITLE
-const callout = MARKETING_PREPARING_CALLOUT
 
 const { text: cycleText, start, stop } = createMarketingPreparingStatusCycle()
 
 /** 서버 진행 단계가 오면 그 문구를, 아니면 순환 안내 문구를 보여준다 */
 const statusText = computed(() => resolveMarketingGeneratingStepText(props.generatingStep) || cycleText.value)
 
-watch(
-  () => props.active,
-  (active) => {
-    if (active) start()
-    else stop()
-  },
-  { immediate: true },
-)
-
+onMounted(start)
 onUnmounted(stop)
 </script>

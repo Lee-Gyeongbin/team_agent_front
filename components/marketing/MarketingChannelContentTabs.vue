@@ -14,9 +14,18 @@
         콘텐츠 목록
       </button>
       <UiButton
+        v-if="currentContent?.aiStatusCd === '004'"
+        variant="outline"
+        size="sm"
+        :disabled="isSubmitting"
+        @click="handleRetryGeneration"
+      >
+        실패한 부분 다시 생성
+      </UiButton>
+      <UiButton
         variant="primary"
         size="sm"
-        :disabled="isSubmitting || !currentContent"
+        :disabled="isSubmitting || isSelectingVariant || currentContent?.aiStatusCd !== '003'"
         @click="pushMarketingPhase('review')"
       >
         저장 및 AI 검수 →
@@ -33,7 +42,7 @@
         type="button"
         class="marketing-channel-tabs__tab"
         :class="{ 'is-active': item.contentId === activeBatchContentId }"
-        :disabled="item.statusCd !== '003'"
+        :disabled="!item.contentId || isSubmitting || isSelectingVariant"
         @click="handleSwitchChannelTab(item.contentId)"
       >
         {{ item.channelNm }}
@@ -60,9 +69,9 @@
       :refine-completed-at="refineCompletedAt"
       :generating-step="generatingStep"
       :theme-color-hex="themeColorHex"
-      :show-side-panel="true"
       :save-variant="handleSaveVariantText"
       :adopted-variant-id="selectedVariantId"
+      :is-selecting-variant="isSelectingVariant"
       @edit-with-agent="handleEditWithAgent"
       @used="handleUseVariant"
     />
@@ -88,6 +97,8 @@ const {
   displayTitle,
   displayRequest,
   selectedVariantId,
+  isSelectingVariant,
+  handleRetryGeneration,
   isSubmitting,
   isLoadingContent,
   refiningType,

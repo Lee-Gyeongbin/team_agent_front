@@ -1,8 +1,4 @@
-// =========================================================
-// 마케팅 콘텐츠 내보내기(PDF/DOCX) 공통 로직
-// MarketingResult.vue에 있던 exportAsPdf/exportAsDocx를 추출 —
-// MarketingReview.vue 등 다른 화면에서도 동일한 다운로드 동작을 재사용한다.
-// =========================================================
+// 마케팅 콘텐츠 내보내기(PDF/DOCX)
 
 import { downloadBlobAsFile } from '~/utils/global/fileDownloadUtil'
 import {
@@ -16,7 +12,7 @@ const MARKETING_PRINT_STYLE_ID = 'marketing-export-print-style'
 
 /**
  * PDF 내보내기 — 브라우저 window.print() 사용
- * 서버는 LLM+템플릿 렌더링 HTML만 주고, 실제 인쇄 스타일은 buildMarketingPrintCss로 여기서 입힌다.
+ * 서버는 템플릿에 콘텐츠를 채운 HTML만 주고, 실제 인쇄 스타일은 buildMarketingPrintCss로 여기서 입힌다.
  */
 const exportMarketingHtmlAsPdf = async (html: string) => {
   document.getElementById(MARKETING_PRINT_STYLE_ID)?.remove()

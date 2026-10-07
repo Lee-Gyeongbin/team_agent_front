@@ -1,4 +1,4 @@
-import { nextTick, ref } from 'vue'
+import { ref } from 'vue'
 import type { Agent, MarketingAuthoringAgentConfig, MarketingAuthoringOption } from '~/types/agent'
 import type {
   MarketingFormPayload,
@@ -28,9 +28,9 @@ import {
 } from '~/utils/agent/marketingAuthoringConfigUtil'
 
 export const MARKETING_AGENT_THEME_FALLBACK_HEX = '#7c5cfc'
-export const MARKETING_PREPARING_STATUS_INTERVAL_MS = 3000
-export const MARKETING_IMAGE_LOAD_TIMEOUT_MS = 30_000
-export const MARKETING_RESULT_SUMMARY_PENDING = '요청하신 조건으로 콘텐츠를 생성하고 있습니다.'
+const MARKETING_PREPARING_STATUS_INTERVAL_MS = 3000
+const MARKETING_IMAGE_LOAD_TIMEOUT_MS = 30_000
+const MARKETING_RESULT_SUMMARY_PENDING = '요청하신 조건으로 콘텐츠를 생성하고 있습니다.'
 
 const MARKETING_OUTPUT_MODE_LABELS: Record<string, string> = {
   TEXT: '문구',
@@ -179,8 +179,6 @@ export const resolveMarketingGeneratingStepText = (step: MarketingGeneratingStep
   switch (step) {
     case 'title':
       return '제목을 정리하고 있어요...'
-    case 'labels':
-      return '시안 방향을 정하고 있어요...'
     case 'variant':
       return '시안을 구성하고 있어요...'
     default:
@@ -188,11 +186,8 @@ export const resolveMarketingGeneratingStepText = (step: MarketingGeneratingStep
   }
 }
 
-export const createMarketingPreparingStatusCycle = (
-  getTexts: () => readonly string[] = () => PREPARING_STATUS_TEXTS,
-  intervalMs = MARKETING_PREPARING_STATUS_INTERVAL_MS,
-) => {
-  const text = ref(getTexts()[0] ?? '')
+export const createMarketingPreparingStatusCycle = () => {
+  const text = ref<string>(PREPARING_STATUS_TEXTS[0] ?? '')
   let timer: ReturnType<typeof setInterval> | null = null
   let index = 0
   const stop = () => {
@@ -202,13 +197,11 @@ export const createMarketingPreparingStatusCycle = (
   const start = () => {
     stop()
     index = 0
-    text.value = getTexts()[0] ?? ''
+    text.value = PREPARING_STATUS_TEXTS[0] ?? ''
     timer = setInterval(() => {
-      const list = getTexts()
-      if (!list.length) return
-      index = (index + 1) % list.length
-      text.value = list[index] ?? ''
-    }, intervalMs)
+      index = (index + 1) % PREPARING_STATUS_TEXTS.length
+      text.value = PREPARING_STATUS_TEXTS[index] ?? ''
+    }, MARKETING_PREPARING_STATUS_INTERVAL_MS)
   }
   return { text, start, stop }
 }
@@ -229,6 +222,16 @@ export const resolveMarketingAgentThemeStyle = (themeColorHex?: string) => {
   }
 }
 
+/** 목록 셀 공백은 '-' */
+export const formatMarketingCellText = (value: unknown) => String(value ?? '').trim() || '-'
+
+/** YYYY-MM-DD → YYYY.MM.DD. 형식이 다르면 원문, 값 없으면 '' */
+export const formatMarketingDotDate = (value: unknown) => {
+  const text = String(value ?? '').trim()
+  const matched = text.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  return matched ? `${matched[1]}.${matched[2]}.${matched[3]}` : text
+}
+
 /** 사용자 입력 문구를 안전한 미리보기 HTML로 변환 */
 export const renderMarketingTextHtml = (value?: string | null) =>
   String(value ?? '')
@@ -246,16 +249,6 @@ export const resolveMarketingSubmitMode = (outputs?: MarketingOutputKind[]): Mar
   const hasImage = outputs?.includes('IMAGE') === true
   if (hasText && hasImage) return 'BOTH'
   return hasImage ? 'IMAGE' : 'TEXT'
-}
-
-export const hasMarketingOutput = (payload: Pick<MarketingFormPayload, 'outputs'>, kind: MarketingOutputKind) =>
-  payload.outputs.includes(kind)
-
-export const focusMarketingField = async (element?: HTMLElement | null, input?: { focus: () => void } | null) => {
-  await nextTick()
-  element?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  if (input) input.focus()
-  else element?.querySelector<HTMLElement>('input, textarea, button, [tabindex]')?.focus()
 }
 
 export const isMarketingAuthoringAgent = (agent?: Agent | null) =>
@@ -302,9 +295,8 @@ const toImageConditions = (
 export const enrichMarketingResultForDisplay = (
   result: MarketingResult,
   request?: MarketingStoredRequest | MarketingFormPayload | null,
-  summary = '',
 ): MarketingAuthoringResult => {
-  const baseSummary = summary || result.title || MARKETING_RESULT_SUMMARY_PENDING
+  const baseSummary = result.title || MARKETING_RESULT_SUMMARY_PENDING
   if (!request) {
     return {
       ...result,
@@ -323,12 +315,12 @@ export const enrichMarketingResultForDisplay = (
     ...result,
     summary: baseSummary,
     conditions: toConditions(request),
-    imageConditions: hasMarketingOutput(request, 'IMAGE') ? toImageConditions(request) : undefined,
+    imageConditions: request.outputs.includes('IMAGE') ? toImageConditions(request) : undefined,
   }
 }
 
 /** 수신 images url preload — onload/onerror/timeout 모두 완료로 처리 */
-export const preloadMarketingImages = (urls: string[], timeoutMs = MARKETING_IMAGE_LOAD_TIMEOUT_MS) => {
+export const preloadMarketingImages = (urls: string[]) => {
   const targets = urls.map((url) => String(url ?? '').trim()).filter(Boolean)
   if (!targets.length) return Promise.resolve()
 
@@ -344,149 +336,13 @@ export const preloadMarketingImages = (urls: string[], timeoutMs = MARKETING_IMA
             window.clearTimeout(timer)
             resolve()
           }
-          const timer = window.setTimeout(done, timeoutMs)
+          const timer = window.setTimeout(done, MARKETING_IMAGE_LOAD_TIMEOUT_MS)
           img.onload = done
           img.onerror = done
           img.src = url
         }),
     ),
   )
-}
-
-// ── 채널로 보내기 ──────────────────────────────────────────────────────────
-
-type ChannelDeliverySeed = {
-  label: string
-  externalUrl?: string
-  icon?: string
-}
-
-type ChannelDeliverySpec = ChannelDeliverySeed & {
-  channel: string
-  mode: 'EXTERNAL' | 'PICK'
-}
-
-/**
- * 외부 작성 화면 진입 URL
- * - 홈/피드가 아니라 게시물·메일 작성 화면에 최대한 가깝게 연결
- * - 플랫폼마다 웹 작성 바로가기 지원 수준이 다름 (로그인·권한 필요)
- */
-const MARKETING_EXTERNAL_COMPOSE_URLS = {
-  INSTAGRAM: 'https://www.instagram.com/',
-  /** Meta Business Suite 작성기 — 페이지/비즈니스 게시용 */
-  FACEBOOK: 'https://business.facebook.com/',
-  LINKEDIN: 'https://www.linkedin.com/feed/?shareActive=true',
-  X: 'https://x.com/compose/post',
-  /** 카카오 채널 관리 — 채널 선택 후 메시지/게시 작성 */
-  KAKAO_TALK: 'https://center-pf.kakao.com/',
-  /** YouTube Studio — 커뮤니티 글은 Studio에서 작성 */
-  YOUTUBE_COMMUNITY: 'https://studio.youtube.com/',
-  /** 네이버 블로그 글쓰기 */
-  NAVER_BLOG: 'https://blog.naver.com/GoBlogWrite.naver',
-  EMAIL: 'https://mail.google.com/mail/u/0/#inbox?compose=new',
-} as const
-
-/**
- * 채널 배달 맵 — 클립보드 복사 후 외부 작성 화면으로 이동한다.
- */
-const CHANNEL_DELIVERY_MAP: Record<string, ChannelDeliverySeed> = {
-  INSTAGRAM: {
-    label: '인스타그램',
-    externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.INSTAGRAM,
-    icon: 'icon-sns',
-  },
-  FACEBOOK: {
-    label: '페이스북',
-    externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.FACEBOOK,
-    icon: 'icon-sns',
-  },
-  LINKEDIN: {
-    label: '링크드인',
-    externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.LINKEDIN,
-    icon: 'icon-sns',
-  },
-  X: {
-    label: 'X',
-    externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.X,
-    icon: 'icon-sns',
-  },
-  OWNED_BLOG: {
-    label: '자사 블로그',
-    icon: 'icon-document-edit',
-  },
-  SMS: {
-    label: '문자메시지',
-    icon: 'icon-sns',
-  },
-  PROMOTION_EMAIL: {
-    label: '프로모션 메일',
-    externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.EMAIL,
-    icon: 'icon-email',
-  },
-  NEWSLETTER: {
-    label: '뉴스레터',
-    externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.EMAIL,
-    icon: 'icon-email',
-  },
-  KAKAO_TALK: {
-    label: '카카오톡',
-    externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.KAKAO_TALK,
-    icon: 'icon-sns',
-  },
-  YOUTUBE_COMMUNITY: {
-    label: '유튜브 커뮤니티',
-    externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.YOUTUBE_COMMUNITY,
-    icon: 'icon-sns',
-  },
-  NAVER_BLOG: {
-    label: '네이버 블로그',
-    externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.NAVER_BLOG,
-    icon: 'icon-document-edit',
-  },
-  // 생성 마법사의 SNS 세부 채널 — 도착 화면은 INSTAGRAM과 동일하다.
-  INSTAGRAM_FEED: {
-    label: '인스타그램 피드',
-    externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.INSTAGRAM,
-  },
-  INSTAGRAM_STORY: {
-    label: '인스타그램 스토리·릴스',
-    externalUrl: MARKETING_EXTERNAL_COMPOSE_URLS.INSTAGRAM,
-  },
-}
-
-/**
- * 모달에서 채널을 직접 고를 때 보여줄 선택지 — 코드가 여러 개(INSTAGRAM_FEED/STORY, PROMOTION_EMAIL/NEWSLETTER 등)라도
- * 도착 화면이 같은 것끼리는 하나로 묶어 사용자에게 중복으로 보이지 않게 한다.
- */
-export const CHANNEL_DELIVERY_PICK_OPTIONS: { channel: string; label: string }[] = [
-  { channel: 'INSTAGRAM', label: CHANNEL_DELIVERY_MAP.INSTAGRAM.label },
-  { channel: 'FACEBOOK', label: CHANNEL_DELIVERY_MAP.FACEBOOK.label },
-  { channel: 'LINKEDIN', label: CHANNEL_DELIVERY_MAP.LINKEDIN.label },
-  { channel: 'X', label: CHANNEL_DELIVERY_MAP.X.label },
-  { channel: 'KAKAO_TALK', label: CHANNEL_DELIVERY_MAP.KAKAO_TALK.label },
-  { channel: 'YOUTUBE_COMMUNITY', label: CHANNEL_DELIVERY_MAP.YOUTUBE_COMMUNITY.label },
-  { channel: 'NAVER_BLOG', label: CHANNEL_DELIVERY_MAP.NAVER_BLOG.label },
-  { channel: 'OWNED_BLOG', label: CHANNEL_DELIVERY_MAP.OWNED_BLOG.label },
-  { channel: 'PROMOTION_EMAIL', label: '이메일' },
-  { channel: 'SMS', label: CHANNEL_DELIVERY_MAP.SMS.label },
-]
-
-/**
- * 채널 코드 → 배달 스펙.
- * 생성 시 고른 채널이 이미 알려진 코드면 그대로 확정(EXTERNAL), 비어 있거나(이미지 전용 등) 직접입력·매핑 안 된
- * 코드라면 PICK을 반환한다 — 이 경우 버튼을 숨기는 대신 모달에서 사용자가 그때 채널을 고르게 한다.
- */
-export const resolveChannelDelivery = (channel?: string | null): ChannelDeliverySpec => {
-  const normalized = String(channel ?? '').trim()
-  const seed = normalized ? CHANNEL_DELIVERY_MAP[normalized] : undefined
-  if (!seed) return { channel: normalized, mode: 'PICK', label: '' }
-  return {
-    channel: normalized,
-    mode: 'EXTERNAL',
-    label: seed.label,
-    externalUrl: seed.externalUrl,
-    icon: seed.icon,
-  }
 }
 
 /** 마케팅 이미지 → PNG Blob (클립보드용) */
@@ -553,7 +409,7 @@ export const copyMarketingPayloadToClipboard = async (
   throw new Error('클립보드 복사에 실패했습니다.')
 }
 
-// ── 캠페인 기획서 기반 채널 선택 (멀티채널 콘텐츠 생성) ──────────────────────
+// ── 프로젝트 기획서 기반 채널 선택 (멀티채널 콘텐츠 생성) ──────────────────────
 
 type MarketingChannelSeed = {
   channelCd: string
@@ -565,7 +421,7 @@ type MarketingChannelSeed = {
   imageStrategy: string
 }
 
-/** 캠페인 기획서 화면에서 고를 수 있는 채널 — MARKETING_AUTHORING_CHANNELS_BY_TYPE의 SNS/EMAIL 채널 코드와 동일하게 맞춘다 */
+// 채널별 화면 표시 문구(포맷·이미지 전략). 노출 여부와 채널명은 에이전트 설정 channelsByContentType을 따른다
 export const MARKETING_CHANNEL_SEEDS: MarketingChannelSeed[] = [
   {
     channelCd: 'INSTAGRAM',
@@ -624,7 +480,7 @@ export const MARKETING_CHANNEL_SEEDS: MarketingChannelSeed[] = [
   },
 ]
 
-/** 캠페인 기획서의 recommendChannels 문자열('Instagram · Facebook · Email')에서 채널 코드를 추출 */
+/** 프로젝트 기획서의 recommendChannels 문자열에서 채널 코드를 추출. 비어 있으면 추천을 켜지 않는다 */
 const parseMarketingRecommendedChannelCodes = (recommendChannels: string): string[] => {
   const text = recommendChannels.toLowerCase()
   const codes: string[] = []
@@ -643,14 +499,19 @@ const parseMarketingRecommendedChannelCodes = (recommendChannels: string): strin
   return codes
 }
 
-/** 채널 선택 화면(view-channelSelect) 초기 목록 — 캠페인 기획서 추천 채널을 기본 선택 상태로 켠다 */
-export const buildMarketingChannelOptions = (recommendChannels: string): MarketingChannelOption[] => {
+/** 채널 선택 화면(view-channelSelect) 초기 목록 — 프로젝트 기획서 추천 채널을 기본 선택 상태로 켠다 */
+export const buildMarketingChannelOptions = (
+  recommendChannels: string,
+  config?: MarketingAuthoringAgentConfig | null,
+): MarketingChannelOption[] => {
   const recommendedCodes = new Set(parseMarketingRecommendedChannelCodes(recommendChannels))
-  return MARKETING_CHANNEL_SEEDS.map((seed) => {
+  return MARKETING_CHANNEL_SEEDS.flatMap((seed) => {
+    const option = config?.channelsByContentType?.[seed.contentType]?.find((item) => item.value === seed.channelCd)
+    if (!option) return []
     const recommended = recommendedCodes.has(seed.channelCd)
     return {
       channelCd: seed.channelCd,
-      channelNm: seed.channelNm,
+      channelNm: option.label,
       contentType: seed.contentType,
       formatOptions: seed.formatOptions,
       imageStrategy: seed.imageStrategy,

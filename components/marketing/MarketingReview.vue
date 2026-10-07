@@ -14,34 +14,10 @@
         시안 수정하기
       </button>
       <div class="marketing-review__actions">
-        <UiDropdownMenu
-          v-if="contentId"
-          :items="EXPORT_MENU_ITEMS"
-          align="end"
-          :open="isExportMenuOpen"
-          @update:open="onExportMenuOpenChange"
-          @select="onExport"
-        >
-          <template #trigger>
-            <UiButton
-              variant="outline"
-              size="sm"
-              :disabled="isExporting"
-            >
-              <template #icon-left>
-                <UiIcon
-                  name="download"
-                  size="14"
-                />
-              </template>
-              다운로드
-            </UiButton>
-          </template>
-        </UiDropdownMenu>
         <UiButton
           variant="primary"
           size="sm"
-          :disabled="isReviewing"
+          :disabled="isReviewing || isApplyingFix"
           @click="onRerunReview"
         >
           <template #icon-left>
@@ -90,20 +66,11 @@
               <span>{{ reviewResult.score }}</span>
             </div>
             <div>
-              <span
-                :class="[
-                  'marketing-status-badge',
-                  reviewResult.verdict === 'PASS' ? 'status-review-pass' : 'status-review-fail',
-                ]"
-              >
+              <span :class="['marketing-status-badge', verdictBadgeClass]">
                 {{ reviewResult.verdictLabel }}
               </span>
               <p class="marketing-review-panel__desc">
-                {{
-                  reviewResult.verdict === 'PASS'
-                    ? '검수를 통과했습니다. 승인 단계로 진행할 수 있습니다.'
-                    : '수정이 필요한 항목이 있습니다. AI 수정안을 적용한 뒤 다시 검수해 주세요.'
-                }}
+                {{ verdictDesc }}
               </p>
             </div>
           </div>
@@ -128,11 +95,13 @@
             <div class="marketing-review-issues__head">
               <h3>발견된 주요 이슈 ({{ reviewResult.issues.length }})</h3>
               <UiButton
+                v-if="reviewResult.issues.some((issue) => issue.targetType === 'TEXT' && issue.fixAppliedYn !== 'Y')"
                 variant="ghost"
                 size="xs"
-                @click="handleApplyAllFixes"
+                :disabled="isApplyingFix || isReviewing"
+                @click="handleApplyFix('ALL')"
               >
-                AI 수정안 모두 적용
+                문구 수정안 모두 적용
               </UiButton>
             </div>
             <div
@@ -146,14 +115,14 @@
                   :name="issue.severity === 'FAIL' ? 'octagon-alert' : 'triangle-alert'"
                   size="14"
                 />
-                {{ issue.title }}
+                {{ issue.targetType === 'IMAGE' ? '[이미지]' : '[문구]' }} {{ issue.title }}
               </div>
               <p>{{ issue.description }}</p>
               <div class="marketing-review-issue__fix">{{ issue.fixSuggestion }}</div>
               <UiButton
                 variant="outline"
                 size="xs"
-                :disabled="issue.fixAppliedYn === 'Y'"
+                :disabled="isApplyingFix || isReviewing || issue.fixAppliedYn === 'Y'"
                 @click="handleApplyFix(issue.issueId)"
               >
                 {{ issue.fixAppliedYn === 'Y' ? '적용됨' : 'AI 수정안 적용' }}
@@ -172,7 +141,7 @@
           </div>
 
           <UiButton
-            v-if="reviewResult.verdict === 'PASS'"
+            v-if="canProceedToApproval"
             variant="primary"
             size="md"
             full-width
@@ -181,81 +150,71 @@
             사용자 승인 진행하기 →
           </UiButton>
         </template>
+        <UiEmpty
+          v-else
+          icon="icon-search"
+          title="검수를 실행하면 결과가 여기에 표시됩니다."
+        />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { UiButton, UiDropdownMenu, UiIcon, UiLoading, type DropdownMenuItemDef } from '@leechanyong/ispark-ui'
-import { useMarketingApi } from '~/composables/marketing/useMarketingApi'
-import { useMarketingExport } from '~/composables/marketing/useMarketingExport'
+import { UiButton, UiEmpty, UiIcon, UiLoading } from '@leechanyong/ispark-ui'
 import { useMarketingStore } from '~/composables/marketing/useMarketingStore'
+import { marketingReviewVerdictBadgeClass, type MarketingReviewVerdict } from '~/types/marketing'
 
 const {
   currentContent,
   displayResult,
   displayTitle,
+  selectedVariantId,
   reviewResult,
   isReviewing,
+  isApplyingFix,
   handleRunReview,
   handleApplyFix,
-  handleApplyAllFixes,
   pushMarketingPhase,
   popMarketingPhase,
 } = useMarketingStore()
-const { fetchExportMarketingContentHtml } = useMarketingApi()
-const { exportMarketingHtmlAsPdf, exportMarketingHtmlAsDocx } = useMarketingExport()
 
 const contentId = computed(() => currentContent.value?.contentId ?? '')
 
 const previewText = computed(() => {
   const variants = displayResult.value?.variants ?? []
-  return variants.find((variant) => variant.recommended)?.content ?? variants[0]?.content ?? ''
+  return variants.find((variant) => variant.id === selectedVariantId.value)?.content ?? ''
 })
 
 const previewImageUrl = computed(() => {
   const images = displayResult.value?.images ?? []
-  return images.find((image) => image.recommended)?.url ?? images[0]?.url ?? ''
+  return images.find((image) => image.id === selectedVariantId.value)?.url ?? ''
 })
 
-const ringColor = computed(() => (reviewResult.value?.verdict === 'PASS' ? '#1e8e5a' : '#b4780f'))
-
-const EXPORT_MENU_ITEMS: DropdownMenuItemDef[] = [
-  { label: 'Word로 저장', value: 'word' },
-  { label: 'PDF로 저장', value: 'pdf' },
-]
-
-const isExportMenuOpen = ref(false)
-const isExporting = ref(false)
-
-const onExportMenuOpenChange = (open: boolean) => {
-  if (open && isExporting.value) {
-    isExportMenuOpen.value = false
-    return
-  }
-  isExportMenuOpen.value = open
+/** 검수 판정 3단계 공통 색상 — PASS(초록)/REVIEW(주황, 확인 필요)/FAIL(빨강, 승인·발행 차단) */
+const VERDICT_RING_COLOR: Record<MarketingReviewVerdict, string> = {
+  PASS: '#1e8e5a',
+  REVIEW: '#b4780f',
+  FAIL: '#ef4444',
+}
+const VERDICT_DESC: Record<MarketingReviewVerdict, string> = {
+  PASS: '검수를 통과했습니다. 승인 단계로 진행할 수 있습니다.',
+  REVIEW: '확인이 필요한 항목이 있습니다. 내용을 확인한 뒤 승인 단계로 진행할 수 있습니다.',
+  FAIL: '승인·발행을 막는 문제가 발견되었습니다. AI 수정안을 적용한 뒤 다시 검수해 주세요.',
 }
 
-const onExport = async (format: string) => {
-  isExportMenuOpen.value = false
-  const id = contentId.value
-  if (!id || isExporting.value || (format !== 'word' && format !== 'pdf')) return
-  isExporting.value = true
-  try {
-    const { successYn, html, returnMsg } = await fetchExportMarketingContentHtml(id)
-    if (!successYn || !html) {
-      openToast({ message: returnMsg || '내보내기에 실패했습니다.', type: 'error' })
-      return
-    }
-    if (format === 'pdf') await exportMarketingHtmlAsPdf(html)
-    else await exportMarketingHtmlAsDocx(html, displayTitle.value || '마케팅_콘텐츠')
-  } catch {
-    openToast({ message: '내보내기에 실패했습니다.', type: 'error' })
-  } finally {
-    isExporting.value = false
-  }
-}
+const ringColor = computed(() => VERDICT_RING_COLOR[reviewResult.value?.verdict ?? 'REVIEW'])
+const verdictBadgeClass = computed(() => marketingReviewVerdictBadgeClass[reviewResult.value?.verdict ?? 'REVIEW'])
+const verdictDesc = computed(() => VERDICT_DESC[reviewResult.value?.verdict ?? 'REVIEW'])
+/** FAIL만 승인 진입을 막는다 — REVIEW는 확인 후 승인 가능. 반려 후(002)에는 재검수가 먼저다 */
+const canProceedToApproval = computed(
+  () =>
+    !!reviewResult.value &&
+    reviewResult.value.verdict !== 'FAIL' &&
+    ['003', '004', '005', '006'].includes(currentContent.value?.statusCd ?? '') &&
+    !isApplyingFix.value &&
+    !isReviewing.value,
+)
 
 const onRerunReview = () => {
   if (!contentId.value) return
