@@ -325,7 +325,10 @@ export const useMarketingStore = () => {
   const allHistoryItems = computed(() =>
     historyList.value.map((item) => {
       const agentConfig = agents.value.find((agent) => agent.agentId === item.agentId)?.config ?? config.value ?? null
-      const scheduleStatus = resolveMarketingScheduleStatus(item.publishScheduledDt, item.publishedYn)
+      const scheduleStatus =
+        item.statusCd === '005' || item.statusCd === '006'
+          ? resolveMarketingScheduleStatus(item.publishScheduledDt, item.publishedYn)
+          : 'none'
       const progress = resolveContentProgress(item)
       return {
         mktContentId: item.mktContentId,
