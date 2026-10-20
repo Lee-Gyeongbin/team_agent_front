@@ -47,52 +47,50 @@
       v-if="recommendedPicks.length"
       class="marketing-channel-select__recommend"
     >
-      <h2>AI 추천 구성</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>채널</th>
-            <th>추천 콘텐츠</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="pick in recommendedPicks"
-            :key="pick.channelCd"
-          >
-            <td>{{ pick.channelNm }}</td>
-            <td>{{ pick.formatOptions.join(' · ') }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <strong>AI 추천 채널</strong>
+      <span>{{ recommendedPicks.map((pick) => pick.channelNm).join(', ') }}</span>
     </div>
 
     <div
       v-if="channelPicks.length"
       class="marketing-channel-select__strategy"
     >
-      <h2>AI 채널별 이미지 전략</h2>
-      <p>
-        프로젝트 기획서의 공통 비주얼 방향을 그대로 복제하지 않고, 각 채널에서 이미지가 수행해야 할 역할을 기준으로
-        생성합니다.
-      </p>
-      <table>
-        <thead>
-          <tr>
-            <th>채널</th>
-            <th>AI 생성 전략</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="pick in channelPicks"
-            :key="`strategy-${pick.channelCd}`"
-          >
-            <td>{{ pick.channelNm }}</td>
-            <td>{{ pick.imageStrategy }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <button
+        type="button"
+        class="marketing-channel-select__strategy-toggle"
+        :aria-expanded="isStrategyOpen"
+        @click="isStrategyOpen = !isStrategyOpen"
+      >
+        <h2>AI 채널별 이미지 전략</h2>
+        <UiIcon
+          name="chevron-down"
+          size="16"
+          :class="{ 'is-open': isStrategyOpen }"
+        />
+      </button>
+      <template v-if="isStrategyOpen">
+        <p>
+          프로젝트 기획서의 공통 비주얼 방향을 그대로 복제하지 않고, 각 채널에서 이미지가 수행해야 할 역할을 기준으로
+          생성합니다.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>채널</th>
+              <th>AI 생성 전략</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="pick in channelPicks"
+              :key="`strategy-${pick.channelCd}`"
+            >
+              <td>{{ pick.channelNm }}</td>
+              <td>{{ pick.imageStrategy }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </template>
     </div>
 
     <div
@@ -142,27 +140,112 @@
     >
       선택됨: {{ selectedCount }}개 채널 · 선택한 채널은 별도 설정 단계 없이 채널 특성에 맞게 생성합니다
     </p>
+
+    <UiModal
+      :is-open="conflicts.length > 0"
+      position="center"
+      max-width="480px"
+      title="기존 콘텐츠 덮어쓰기"
+      custom-class="marketing-overwrite-modal"
+      @close="onCloseOverwrite"
+    >
+      <p class="marketing-overwrite-modal__desc">
+        {{ conflictChannelNames }}에는 기존 발행물이 있습니다. 해당 내용을 덮어씌우시겠습니까?
+      </p>
+      <ul class="marketing-overwrite-modal__list">
+        <li
+          v-for="item in conflicts"
+          :key="item.channelCd"
+        >
+          <strong>{{ item.channelNm }}</strong>
+          <span v-if="item.isLocked">승인 진행 중·승인 완료·예약·발행완료 콘텐츠라 덮어쓸 수 없습니다</span>
+          <UiSelect
+            v-else
+            v-model="overwriteChoices[item.channelCd]"
+            :options="OVERWRITE_OPTIONS"
+            size="sm"
+          />
+        </li>
+      </ul>
+      <p class="marketing-form-hint">덮어쓰면 기존 시안과 검수·승인 내역이 삭제되고 새로 생성합니다.</p>
+      <template #footer>
+        <div class="modal-dialog-footer">
+          <UiButton
+            class="btn-modal-dialog"
+            variant="outline"
+            size="xlg"
+            @click="onCloseOverwrite"
+          >
+            취소
+          </UiButton>
+          <UiButton
+            class="btn-modal-dialog"
+            variant="primary"
+            size="xlg"
+            @click="onConfirmOverwrite"
+          >
+            생성 시작
+          </UiButton>
+        </div>
+      </template>
+    </UiModal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { UiButton, UiEmpty, UiIcon, UiToggle } from '@leechanyong/ispark-ui'
+import { UiButton, UiEmpty, UiIcon, UiModal, UiSelect, UiToggle } from '@leechanyong/ispark-ui'
 import { useMarketingStore } from '~/composables/marketing/useMarketingStore'
+import type { MarketingChannelConflict } from '~/types/marketing'
 
 const {
   channelPicks,
   isGeneratingChannelBatch,
   handleTogglePick,
   handleToggleWithImage,
+  handleSelectChannelConflicts,
   handleGenerateChannelBatch,
   popMarketingPhase,
 } = useMarketingStore()
 
+const OVERWRITE_OPTIONS = [
+  { label: '덮어쓰기', value: 'Y' },
+  { label: '덮어쓰지 않음', value: 'N' },
+]
+
+/** 기존 콘텐츠가 있는 선택 채널 — 비어 있지 않으면 덮어쓰기 확인 모달을 띄운다 */
+const conflicts = ref<MarketingChannelConflict[]>([])
+const overwriteChoices = ref<Record<string, string>>({})
+
+const conflictChannelNames = computed(() => conflicts.value.map((item) => `${item.channelNm} 채널`).join(', '))
+
+/** 이미지 전략은 기본으로 접어 두고 눌렀을 때만 펼친다 */
+const isStrategyOpen = ref(false)
 const recommendedPicks = computed(() => channelPicks.value.filter((pick) => pick.recommended))
 const selectedCount = computed(() => channelPicks.value.filter((pick) => pick.selected).length)
 
 const onStartGenerate = async () => {
   if (!selectedCount.value || isGeneratingChannelBatch.value) return
-  await handleGenerateChannelBatch()
+  const found = await handleSelectChannelConflicts()
+  if (!found.length) {
+    await handleGenerateChannelBatch()
+    return
+  }
+  overwriteChoices.value = Object.fromEntries(
+    found.filter((item) => !item.isLocked).map((item) => [item.channelCd, 'Y']),
+  )
+  conflicts.value = found
+}
+
+const onCloseOverwrite = () => {
+  conflicts.value = []
+}
+
+const onConfirmOverwrite = async () => {
+  const found = conflicts.value
+  const overwriteChannelCds = found
+    .filter((item) => !item.isLocked && overwriteChoices.value[item.channelCd] === 'Y')
+    .map((item) => item.channelCd)
+  conflicts.value = []
+  await handleGenerateChannelBatch(found, overwriteChannelCds)
 }
 </script>
