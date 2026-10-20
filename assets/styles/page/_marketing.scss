@@ -7,8 +7,14 @@
 // =============================================
 
 // ---- 결과 카드 (채팅 인라인 기본) ----
+// 마케팅 화면은 에이전트 고유색 대신 공통 기본색(--color-primary) 하나로 강조색을 맞춘다
+.marketing-list-page,
+.marketing-detail-page {
+  --marketing-agent-theme-color: var(--color-primary);
+}
+
 .chat-marketing-authoring-result {
-  --marketing-authoring-color: var(--marketing-agent-theme-color, #7c5cfc);
+  --marketing-authoring-color: var(--marketing-agent-theme-color, var(--color-primary));
   width: 100%;
   max-width: 920px;
   overflow: hidden;
@@ -1305,26 +1311,62 @@ $marketing-page-max-width: 1440px;
   display: flex;
   flex-shrink: 0;
   align-items: center;
+  gap: 8px;
   margin-bottom: 8px;
 }
 
-.marketing-page-back {
+// 단계 화면 상단 바의 채널 표시 — 돌아가기 바로 옆에 붙이고 오른쪽 버튼은 actions로 민다
+.marketing-page-form-bar__channel {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--color-primary-bg);
+  @include typo($body-small-bold, var(--color-primary-dark));
+}
+
+.marketing-page-form-bar__extra {
+  display: contents;
+}
+
+.marketing-page-form-bar__actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.marketing-content-flow-head {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 8px;
+
+  .marketing-content-stepper,
+  .marketing-page-form-bar {
+    margin-bottom: 0;
+  }
+}
+
+// 상단 바에서 잠금 안내는 문구 길이에 맞춰 잡는다. 채널 칩과 같은 primary 톤을 쓴다
+.marketing-channel-content-tabs__locked {
   display: inline-flex;
+  flex: 0 1 auto;
+  width: fit-content;
+  max-width: 100%;
   align-items: center;
   gap: 6px;
-  padding: 6px 8px;
-  border-radius: 8px;
-  color: $color-text-muted;
-  font-size: 13px;
-  font-weight: $font-weight-semibold;
+  margin: 0;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--color-primary-bg);
+  @include typo($body-xsmall, var(--color-primary-dark));
 
-  &:hover {
-    color: var(--marketing-agent-theme-color, $color-primary);
-    background: color-mix(in srgb, var(--marketing-agent-theme-color, $color-primary) 8%, #fff);
-  }
-
-  &__arrow {
-    transform: scaleX(-1);
+  .ui-icon,
+  svg {
+    flex-shrink: 0;
+    color: var(--color-primary);
   }
 }
 
@@ -1621,9 +1663,22 @@ $marketing-color-approved: #6d4aff;
     color: color.adjust($color-success, $lightness: -10%);
   }
   &.status-007,
-  &.progress-failed {
+  &.progress-failed,
+  &.ai-status-004 {
     background: rgba($color-error, 0.12);
     color: $color-error;
+  }
+  &.ai-status-001 {
+    background: $color-background;
+    color: $color-text-muted;
+  }
+  &.ai-status-002 {
+    background: var(--color-primary-bg);
+    color: var(--color-primary-dark);
+  }
+  &.ai-status-003 {
+    background: rgba($color-success, 0.12);
+    color: color.adjust($color-success, $lightness: -10%);
   }
   &.progress-waiting,
   &.progress-generating,
@@ -1659,9 +1714,10 @@ $marketing-color-approved: #6d4aff;
   }
 }
 
-// DatePicker·승인자 선택은 body 포털. 모달 콘텐츠는 1101.
-// 승인자 목록의 쌓임은 .ui-select-content가 아니라 popper 래퍼(1100 !important)다.
-body:has(.marketing-new-modal) {
+// DatePicker·승인자·덮어쓰기 선택은 body 포털. 모달 콘텐츠는 1101.
+// 선택 목록의 쌓임은 .ui-select-content가 아니라 popper 래퍼(1100 !important)다.
+body:has(.marketing-new-modal),
+body:has(.marketing-overwrite-modal) {
   .ui-datepicker-popover {
     z-index: 1200;
   }
@@ -1802,6 +1858,7 @@ body:has(.marketing-new-modal) {
 
 .marketing-back-btn {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 6px;
   border: none;
@@ -2259,6 +2316,46 @@ body:has(.marketing-new-modal) {
   }
 }
 
+.marketing-overwrite-modal {
+  .ui-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+  }
+
+  &__desc {
+    margin: 0;
+    @include typo($body-small, $color-text-heading);
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    li {
+      display: grid;
+      grid-template-columns: 1fr 160px;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border: 1px solid $color-border;
+      border-radius: 8px;
+    }
+
+    strong {
+      @include typo($body-small-bold, $color-text-heading);
+    }
+
+    span {
+      @include typo($body-small, $color-text-muted);
+    }
+  }
+}
+
 // =============================================
 // AI 프로젝트 기획
 // =============================================
@@ -2354,7 +2451,10 @@ body:has(.marketing-new-modal) {
   .marketing-campaign-plan-preparing,
   .marketing-channel-select,
   .marketing-channel-results,
-  .marketing-channel-content-tabs {
+  .marketing-channel-content-tabs,
+  .marketing-review,
+  .marketing-approval,
+  .marketing-schedule {
     flex: 1;
     min-height: 0;
   }
@@ -2373,14 +2473,58 @@ body:has(.marketing-new-modal) {
     flex-direction: column;
     overflow: hidden;
 
-    .marketing-page-form-bar {
-      justify-content: space-between;
+    .chat-marketing-authoring-result__meta {
+      padding: 8px 16px;
+    }
+
+    .chat-marketing-authoring-result__meta-items {
+      gap: 6px;
+    }
+
+    .chat-marketing-authoring-result__meta-chip {
+      flex-direction: row;
+      align-items: baseline;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 8px;
+    }
+
+    .chat-marketing-authoring-result__tab {
+      padding: 8px 14px;
     }
   }
 
   .marketing-page-result-card {
     flex: 1 1 auto;
     min-height: 0;
+  }
+
+  // AI 검수·승인은 화면 높이 안에서 미리보기·결과 패널을 각각 내부 스크롤한다
+  .marketing-review,
+  .marketing-approval {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+
+    .marketing-review__layout,
+    .marketing-approval__layout {
+      flex: 1;
+      min-height: 0;
+      align-items: stretch;
+    }
+
+    .marketing-review-preview,
+    .marketing-review-panel,
+    .marketing-approval-panel {
+      min-height: 0;
+      overflow-y: auto;
+    }
+  }
+
+  // 승인 완료 안내 카드는 높이가 넘치면 화면 안에서 스크롤한다
+  .marketing-approval-done {
+    overflow-y: auto;
   }
 }
 
@@ -2448,36 +2592,46 @@ body:has(.marketing-new-modal) {
   &__toolbar-actions {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: 8px;
+  }
 
-    button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 32px;
-      height: 32px;
-      border: 0;
-      border-radius: 8px;
-      background: transparent;
-      color: $color-text-muted;
-      cursor: pointer;
+  &__dirty {
+    @include typo($body-small, $color-warning);
+  }
 
-      strong,
-      em,
-      u {
-        font-size: 14px;
-        font-weight: 700;
-        line-height: 1;
-      }
+  // 본문/소제목 형식 선택
+  &__block-select {
+    height: 32px;
+    padding: 0 8px;
+    border: 1px solid $color-border;
+    border-radius: 6px;
+    background: #fff;
+    @include typo($body-small, $color-text-dark);
 
-      em {
-        font-style: italic;
-      }
+    &:disabled {
+      opacity: 0.6;
+    }
+  }
 
-      &:hover {
-        color: $color-text-heading;
-        background: $color-background;
-      }
+  // 기획서 본문 편집 영역 — 문서 모양은 그대로 두고 편집 중임만 테두리로 보여준다
+  &__doc-editor {
+    margin: 0 -12px;
+    padding: 4px 12px 12px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color $transition-fast;
+
+    &:hover {
+      border-color: $color-border-light;
+    }
+
+    &:focus {
+      border-color: var(--color-primary);
+    }
+
+    p {
+      white-space: pre-line;
     }
   }
 
@@ -2486,78 +2640,6 @@ body:has(.marketing-new-modal) {
     min-height: 0;
     overflow: auto;
     padding: 20px 24px 28px;
-  }
-
-  &__hero {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 220px;
-    margin-bottom: 24px;
-    border-radius: 10px;
-    background: #cfeee0;
-  }
-
-  &__hero-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 10px;
-  }
-
-  &__hero-product {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-end;
-    width: 92px;
-    height: 148px;
-    padding: 0 10px 18px;
-    border-radius: 14px 14px 10px 10px;
-    background: linear-gradient(180deg, $color-surface 0%, #fff 55%);
-    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
-    @include typo($body-small-bold, $color-text-heading);
-    text-align: center;
-    overflow: hidden;
-    word-break: keep-all;
-
-    &::before {
-      content: '';
-      position: absolute;
-      top: -12px;
-      left: 50%;
-      width: 36px;
-      height: 16px;
-      margin-left: -18px;
-      border-radius: 6px 6px 2px 2px;
-      background: #e2e8f0;
-    }
-  }
-
-  &__hero-edit {
-    position: absolute;
-    right: 16px;
-    bottom: 16px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 12px;
-    border: 0;
-    border-radius: 8px;
-    background: #3d4654;
-    color: #fff;
-    cursor: pointer;
-    @include typo($body-xsmall-bold);
-
-    i {
-      color: currentColor;
-    }
-
-    &:hover {
-      background: #2f3642;
-    }
   }
 
   &__article {
@@ -2676,33 +2758,27 @@ body:has(.marketing-new-modal) {
 // =============================================
 
 .marketing-channel-select {
+  // AI 추천 채널 한 줄 요약
   &__recommend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin: $spacing-md 0;
-    padding: 14px 16px;
+    padding: 12px 16px;
     border: 1px solid $color-border;
     border-radius: 12px;
     background: $color-surface;
 
-    h2 {
-      margin: 0 0 10px;
-      @include typo($body-small-bold, $color-text-heading);
+    strong {
+      @include typo($body-medium-bold, $color-text-heading);
+
+      &::after {
+        content: ' :';
+      }
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    th,
-    td {
-      padding: 8px 10px;
-      text-align: left;
-      @include typo($body-xsmall, $color-text-dark);
-      border-bottom: 1px solid $color-border-light;
-    }
-
-    th {
-      color: $color-text-muted;
+    span {
+      @include typo($body-medium, var(--color-primary));
       font-weight: $font-weight-bold;
     }
   }
@@ -2714,14 +2790,39 @@ body:has(.marketing-new-modal) {
     border-radius: 12px;
     background: #fff;
 
+    // 제목 줄 전체를 눌러 펼치기/접기
+    &-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      text-align: left;
+
+      h2 {
+        margin: 0;
+      }
+
+      .is-open {
+        transform: rotate(180deg);
+      }
+    }
+
+    &-toggle[aria-expanded='true'] {
+      margin-bottom: 8px;
+    }
+
     h2 {
-      margin: 0 0 8px;
-      @include typo($body-small-bold, $color-text-heading);
+      margin: 0;
+      @include typo($body-large-bold, $color-text-heading);
     }
 
     p {
       margin: 0 0 12px;
-      @include typo($body-xsmall, $color-text-muted);
+      @include typo($body-medium, $color-text-muted);
       line-height: 1.7;
     }
 
@@ -2734,7 +2835,7 @@ body:has(.marketing-new-modal) {
     td {
       padding: 8px 10px;
       text-align: left;
-      @include typo($body-xsmall, $color-text-dark);
+      @include typo($body-medium, $color-text-dark);
       border-bottom: 1px solid $color-border-light;
     }
 
@@ -2777,7 +2878,7 @@ body:has(.marketing-new-modal) {
       display: flex;
       align-items: center;
       gap: 6px;
-      @include typo($body-small-bold, $color-text-heading);
+      @include typo($body-medium-bold, $color-text-heading);
 
       em {
         padding: 1px 6px;
@@ -2785,12 +2886,13 @@ body:has(.marketing-new-modal) {
         background: rgba($color-success, 0.12);
         color: $color-success;
         font-style: normal;
-        @include typo($body-caption, $color-success);
+        white-space: nowrap;
+        @include typo($body-xsmall-bold, $color-success);
       }
     }
 
     span {
-      @include typo($body-caption, $color-text-muted);
+      @include typo($body-small, $color-text-muted);
     }
   }
 
@@ -2803,7 +2905,7 @@ body:has(.marketing-new-modal) {
     height: 38px;
     border-radius: 10px;
     background: $color-background;
-    @include typo($body-xsmall-bold, $color-text-muted);
+    @include typo($body-small-bold, $color-text-muted);
   }
 
   &__card-check {
@@ -2816,10 +2918,10 @@ body:has(.marketing-new-modal) {
     margin-left: auto;
     border: 1.5px solid $color-border;
     border-radius: 6px;
-    color: #fff;
+    color: $color-text-heading;
 
     .is-selected & {
-      background: var(--color-primary);
+      background: var(--color-primary-bg);
       border-color: var(--color-primary);
     }
   }
@@ -2830,7 +2932,7 @@ body:has(.marketing-new-modal) {
     justify-content: space-between;
     padding-top: 10px;
     border-top: 1px solid $color-border-light;
-    @include typo($body-xsmall, $color-text-dark);
+    @include typo($body-small, $color-text-dark);
   }
 
   &__footer {
@@ -2839,12 +2941,12 @@ body:has(.marketing-new-modal) {
     justify-content: space-between;
     padding-top: $spacing-md;
     border-top: 1px solid $color-border;
-    @include typo($body-small, $color-text-muted);
+    @include typo($body-medium, $color-text-muted);
   }
 
   &__count {
     margin: 0 0 $spacing-md;
-    @include typo($body-small, $color-text-muted);
+    @include typo($body-large, $color-text-muted);
   }
 }
 
@@ -2865,6 +2967,11 @@ body:has(.marketing-new-modal) {
       margin: 0 0 12px;
       @include typo($body-xsmall, $color-text-muted);
       line-height: 1.7;
+
+      // 마지막 전략 박스 아래로 여백이 겹쳐 쌓이지 않게 한다
+      &:last-child {
+        margin-bottom: 0;
+      }
     }
   }
 
@@ -2877,18 +2984,22 @@ body:has(.marketing-new-modal) {
     line-height: 1.7;
   }
 
+  // 넓은 화면은 한 줄 4장, 카드 폭은 4장일 때 크기가 최대다. 좁으면 280px 기준으로 줄 수를 줄인다
   &__grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(max(280px, calc((100% - 36px) / 4)), 1fr));
+    gap: 12px;
     margin-top: $spacing-md;
   }
 
+  // 생성 중·완료 카드 높이를 맞추고 내부는 왼쪽 정렬로 채운다
   &__card {
     display: flex;
     flex-direction: column;
+    align-items: stretch;
     gap: 10px;
-    padding: 16px;
+    min-height: 260px;
+    padding: 14px 16px;
     border: 1px solid $color-border;
     border-radius: 14px;
     background: #fff;
@@ -2900,8 +3011,12 @@ body:has(.marketing-new-modal) {
       border-color: var(--color-primary);
     }
 
+    // 생성 중·대기 카드는 누를 수만 없고 흐리게 하지 않는다. 열 수 없는 실패 카드만 흐리게 둔다
     &:disabled {
       cursor: default;
+    }
+
+    &.is-failed:disabled {
       opacity: 0.75;
     }
   }
@@ -2911,6 +3026,11 @@ body:has(.marketing-new-modal) {
     align-items: flex-start;
     justify-content: space-between;
     gap: 8px;
+    width: 100%;
+
+    > div {
+      min-width: 0;
+    }
 
     strong {
       display: block;
@@ -2942,7 +3062,39 @@ body:has(.marketing-new-modal) {
   }
 
   &__card-action {
+    margin-top: auto;
     @include typo($body-small-bold, var(--color-primary-dark));
+  }
+
+  &__card-waiting {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    text-align: center;
+    @include typo($body-small, $color-text-muted);
+  }
+
+  // 카드 안 생성 중 표시는 링·문구만 남기고 남은 높이 가운데에 둔다
+  &__card-preparing.marketing-preparing-status {
+    flex: 1;
+    gap: 10px;
+    max-width: none;
+
+    .marketing-preparing-status__ring {
+      width: 72px;
+      height: 72px;
+      margin-bottom: 4px;
+    }
+
+    .marketing-preparing-status__title {
+      @include typo($body-small-bold, $color-text-heading);
+    }
+
+    .marketing-preparing-status__callout {
+      display: none;
+    }
   }
 
   &__card-desc {
@@ -2986,13 +3138,6 @@ body:has(.marketing-new-modal) {
 // AI 검수 (view-review) — review/approval 공용 미리보기·게이지
 // =============================================
 
-.marketing-review__actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
-}
-
 .marketing-review__layout,
 .marketing-approval__layout {
   display: grid;
@@ -3013,7 +3158,7 @@ body:has(.marketing-new-modal) {
 
   &__title {
     margin: 0 0 12px;
-    @include typo($body-medium-bold, $color-text-heading);
+    @include typo($body-large-bold, $color-text-heading);
   }
 
   &__image {
@@ -3027,7 +3172,7 @@ body:has(.marketing-new-modal) {
   &__text {
     margin: 0;
     white-space: pre-line;
-    @include typo($body-small, $color-text-dark);
+    @include typo($body-medium, $color-text-dark);
   }
 }
 
@@ -3047,7 +3192,7 @@ body:has(.marketing-new-modal) {
     @include typo($body-small, $color-text-dark);
 
     .is-hashtag {
-      color: var(--marketing-agent-theme-color, #7c5cfc);
+      color: var(--marketing-agent-theme-color, var(--color-primary));
       font-weight: 600;
     }
   }
@@ -3077,9 +3222,15 @@ body:has(.marketing-new-modal) {
   gap: 16px;
 }
 
+.marketing-review-panel__foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
+}
+
 .marketing-review-panel__desc {
   margin: 6px 0 0;
-  @include typo($body-xsmall, $color-text-muted);
+  @include typo($body-small, $color-text-muted);
 }
 
 .marketing-score-ring {
@@ -3105,7 +3256,7 @@ body:has(.marketing-new-modal) {
 
   span {
     position: relative;
-    @include typo($body-large-bold, $color-text-heading);
+    @include typo($body-xlarge-bold, $color-text-heading);
   }
 }
 
@@ -3120,14 +3271,14 @@ body:has(.marketing-new-modal) {
   justify-content: space-between;
   padding: 9px 0;
   border-bottom: 1px solid $color-border-light;
-  @include typo($body-small, $color-text-dark);
+  @include typo($body-medium, $color-text-dark);
 
   &:last-child {
     border-bottom: none;
   }
 
   &__status {
-    @include typo($body-xsmall-bold);
+    @include typo($body-small-bold);
 
     &.is-pass {
       color: color.adjust($color-success, $lightness: -10%);
@@ -3155,7 +3306,7 @@ body:has(.marketing-new-modal) {
 
     h3 {
       margin: 0;
-      @include typo($body-small-bold, $color-text-heading);
+      @include typo($body-medium-bold, $color-text-heading);
     }
   }
 }
@@ -3176,7 +3327,7 @@ body:has(.marketing-new-modal) {
     display: flex;
     align-items: center;
     gap: 6px;
-    @include typo($body-small-bold, $color-text-heading);
+    @include typo($body-medium-bold, $color-text-heading);
 
     i {
       color: $color-error;
@@ -3185,19 +3336,24 @@ body:has(.marketing-new-modal) {
 
   p {
     margin: 0;
-    @include typo($body-xsmall, $color-text-muted);
+    @include typo($body-small, $color-text-muted);
   }
 
   &__fix {
     padding: 8px 10px;
     border-radius: 8px;
     background: $color-background;
-    @include typo($body-xsmall, $color-text-dark);
+    @include typo($body-small, $color-text-dark);
   }
 
   .ui-button {
     align-self: flex-start;
   }
+}
+
+.marketing-review-panel__progress {
+  flex: 1;
+  min-height: 240px;
 }
 
 .marketing-review-clean-pass {
@@ -3208,7 +3364,7 @@ body:has(.marketing-new-modal) {
   border-radius: 10px;
   background: rgba($color-success, 0.12);
   color: color.adjust($color-success, $lightness: -10%);
-  @include typo($body-small-bold);
+  @include typo($body-medium-bold);
 }
 
 .marketing-status-badge {
@@ -3236,12 +3392,118 @@ body:has(.marketing-new-modal) {
   display: flex;
   align-items: center;
   gap: 8px;
-  @include typo($body-small, $color-text-muted);
+  @include typo($body-medium, $color-text-muted);
+}
+
+// <details>는 브라우저마다 flex 지원이 달라 블록으로 두고 간격은 여백으로 준다
+.marketing-approval-report {
+  padding: 12px 14px;
+  border: 1px solid $color-border-light;
+  border-radius: 10px;
+
+  summary {
+    cursor: pointer;
+    @include typo($body-medium-bold, $color-text-heading);
+  }
+
+  &[open] summary {
+    margin-bottom: 12px;
+  }
+
+  &__issues {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  &__label {
+    margin: 0;
+    @include typo($body-small-bold, $color-text-muted);
+  }
 }
 
 .marketing-approval-reviewer {
   margin: 0;
-  @include typo($body-small, $color-text-dark);
+  @include typo($body-medium, $color-text-dark);
+}
+
+.marketing-content-stepper {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding: 8px 16px;
+  border: 1px solid $color-border;
+  border-radius: 10px;
+  background: #fff;
+
+  &__step {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    @include typo($body-medium, $color-text-muted);
+
+    &:disabled {
+      cursor: default;
+    }
+
+    &:not(:disabled):not(.is-active):hover {
+      color: var(--color-primary);
+    }
+
+    &.is-active {
+      @include typo($body-medium-bold, $color-text-heading);
+    }
+
+    &.is-done {
+      color: $color-text-dark;
+    }
+  }
+
+  &__num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border: 1px solid $color-border;
+    border-radius: 50%;
+    background: #fff;
+    @include typo($body-small, $color-text-muted);
+
+    .is-active & {
+      border-color: var(--color-primary);
+      background: var(--color-primary);
+      color: #fff;
+    }
+
+    .is-done & {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+  }
+
+  &__line {
+    flex: 1;
+    min-width: 24px;
+    height: 1px;
+    background: $color-border;
+  }
+}
+
+.marketing-approval-waiting {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: $color-background;
+  @include typo($body-medium, $color-text-dark);
 }
 
 .marketing-approval-actions {
@@ -3272,19 +3534,24 @@ body:has(.marketing-new-modal) {
 
   h2 {
     margin: 12px 0 6px;
-    @include typo($body-xlarge-bold, $color-text-heading);
+    @include typo($body-2xlarge-bold, $color-text-heading);
   }
 
   p {
     margin: 0 0 24px;
-    @include typo($body-small, $color-text-muted);
+    @include typo($body-medium, $color-text-muted);
   }
 }
 
 .marketing-approval-next-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr); // 캘린더 확인·승인 취소 카드 숨김 중
   gap: 12px;
+
+  // 승인 취소를 다시 열면 카드가 3장이 된다
+  &.is-three {
+    grid-template-columns: repeat(3, 1fr);
+  }
 
   @include mobile {
     grid-template-columns: 1fr;
@@ -3313,11 +3580,31 @@ body:has(.marketing-new-modal) {
   }
 
   strong {
-    @include typo($body-small-bold, $color-text-heading);
+    @include typo($body-medium-bold, $color-text-heading);
   }
 
   span {
-    @include typo($body-xsmall, $color-text-muted);
+    @include typo($body-small, $color-text-muted);
+  }
+
+  // 승인 취소 — 프로젝트 공통 위험 색($color-error, .marketing-btn-danger와 같은 값)
+  &.is-danger {
+    border-color: rgba($color-error, 0.4);
+
+    i,
+    strong {
+      color: $color-error;
+    }
+
+    &:hover:not(:disabled) {
+      border-color: $color-error;
+      background: rgba($color-error, 0.04);
+    }
+
+    &:disabled {
+      cursor: default;
+      opacity: 0.6;
+    }
   }
 }
 

@@ -12,7 +12,6 @@
     :draft="form"
     :due-date-label="dueDateLabel"
     :visibility-label="visibilityLabel"
-    :hero-image-url="heroImageUrl"
     @close="onClose"
     @back-to-form="isResultOpen = false"
     @regenerate="onGenerate"
@@ -196,7 +195,7 @@ const PLAN_FILE_HINT = 'PDF, DOCX, TXT, JPG 등 · 20MB까지 첨부 가능합�
 const PLAN_FILE_MAX_SIZE = 20 * 1024 * 1024
 
 const toFileItem = (file: MarketingFile): FileItem => ({
-  docFileId: file.marketingFileId,
+  docFileId: file.mktFileId,
   fileName: file.fileName,
   filePath: file.filePath,
   fileSize: String(file.fileSize),
@@ -272,16 +271,9 @@ const form = reactive<MarketingCampaignPlanDraft>({
   sections: props.sections,
 })
 
-const heroImageUrl = ref('')
-
 const goalFieldRef = ref<HTMLElement | null>(null)
 const productFieldRef = ref<HTMLElement | null>(null)
 const productInputRef = ref<{ focus: () => void } | null>(null)
-
-const revokeHeroImage = () => {
-  if (heroImageUrl.value.startsWith('blob:')) URL.revokeObjectURL(heroImageUrl.value)
-  heroImageUrl.value = ''
-}
 
 const focusField = (fieldEl: HTMLElement | null, input?: { focus: () => void } | null) => {
   fieldEl?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -320,15 +312,6 @@ const onGenerate = async () => {
   }
   if (isGeneratingPlan.value) return
 
-  const pendingFiles = PLAN_FILE_SLOTS.flatMap((item) => filesBySlot[item.slot])
-  const previewImage = pendingFiles.find((file) => file.type.startsWith('image/'))
-  if (previewImage) {
-    revokeHeroImage()
-    heroImageUrl.value = URL.createObjectURL(previewImage)
-  } else if (!projectFiles.value.length) {
-    revokeHeroImage()
-  }
-
   isGeneratingPlan.value = true
   try {
     await uploadNewReferenceFiles()
@@ -338,9 +321,9 @@ const onGenerate = async () => {
       productNm: form.productNm.trim(),
       requestTxt: form.requestTxt.trim(),
       targetNm: form.targetNm.trim(),
-      contentFileIds: filesOf('content').map((file) => file.marketingFileId),
-      brandFileIds: filesOf('brand').map((file) => file.marketingFileId),
-      imageFileIds: filesOf('image').map((file) => file.marketingFileId),
+      contentFileIds: filesOf('content').map((file) => file.mktFileId),
+      brandFileIds: filesOf('brand').map((file) => file.mktFileId),
+      imageFileIds: filesOf('image').map((file) => file.mktFileId),
     })
     if (!plan) return
     applyDraftToForm(plan)
@@ -358,15 +341,9 @@ const onRefined = (payload: MarketingCampaignPlanDraft) => {
 
 const onStartContent = (payload: MarketingCampaignPlanDraft) => {
   emit('startContent', payload)
-  revokeHeroImage()
 }
 
 const onClose = () => {
-  revokeHeroImage()
   emit('close')
 }
-
-onUnmounted(() => {
-  revokeHeroImage()
-})
 </script>
