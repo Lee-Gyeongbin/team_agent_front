@@ -1,22 +1,24 @@
 <template>
   <div class="marketing-channel-results">
-    <button
-      class="marketing-back-btn"
-      type="button"
-      @click="popMarketingPhase()"
-    >
-      <UiIcon
-        name="arrow-right"
-        size="16"
-        class="marketing-back-btn__arrow"
-      />
-      채널 구성 확인
-    </button>
-
     <div class="marketing-list-header">
       <div class="marketing-list-header__copy">
         <h1 class="marketing-list-title">멀티채널 생성 결과</h1>
-        <p class="marketing-list-desc">채널별로 시안이 생성되었습니다. 카드를 눌러 콘텐츠를 확인하고 수정하세요.</p>
+        <p class="marketing-list-desc">
+          {{
+            isGeneratingChannelBatch
+              ? '채널별로 시안을 만들고 있습니다. 화면을 나가도 생성은 계속되며 제작 내역에서 확인할 수 있습니다.'
+              : '채널별로 시안이 생성되었습니다. 카드를 눌러 콘텐츠를 확인하고 수정하세요.'
+          }}
+        </p>
+      </div>
+      <div class="marketing-list-header__actions">
+        <UiButton
+          variant="outline"
+          size="md"
+          @click="onLeave"
+        >
+          콘텐츠 목록으로 돌아가기
+        </UiButton>
       </div>
     </div>
 
@@ -43,8 +45,9 @@
         :key="card.channelCd"
         type="button"
         class="marketing-channel-results__card"
-        :disabled="!card.contentId || isGeneratingChannelBatch"
-        @click="handleOpenChannelContent(card.contentId)"
+        :class="{ 'is-failed': card.aiStatusCd === '004' }"
+        :disabled="!card.mktContentId || card.aiStatusCd === '001' || card.aiStatusCd === '002'"
+        @click="handleOpenChannelContent(card.mktContentId)"
       >
         <div class="marketing-channel-results__card-head">
           <div>
@@ -58,7 +61,14 @@
         <MarketingPreparingStatus
           v-if="card.aiStatusCd === '002'"
           :bordered="false"
+          class="marketing-channel-results__card-preparing"
         />
+        <p
+          v-else-if="card.aiStatusCd === '001'"
+          class="marketing-channel-results__card-waiting"
+        >
+          앞 채널 생성이 끝나면 이어서 생성합니다.
+        </p>
         <template v-else>
           <div class="marketing-channel-results__card-meta">
             <span>텍스트 생성</span>
@@ -86,16 +96,13 @@
 </template>
 
 <script setup lang="ts">
-import { UiEmpty, UiIcon } from '@leechanyong/ispark-ui'
+import { UiButton, UiEmpty } from '@leechanyong/ispark-ui'
 import { useMarketingStore } from '~/composables/marketing/useMarketingStore'
-import type { MarketingAiStatusCd } from '~/types/marketing'
+import { marketingAiStatuses, type MarketingAiStatusCd } from '~/types/marketing'
 
-const STATUS_LABEL: Record<MarketingAiStatusCd, string> = {
-  '001': '대기',
-  '002': '생성 중',
-  '003': '생성 완료',
-  '004': '생성 실패',
-}
+const STATUS_LABEL = Object.fromEntries(
+  marketingAiStatuses.map((item) => [item.aiStatusCd, item.aiStatusNm]),
+) as Record<MarketingAiStatusCd, string>
 
 const STATUS_KEY: Record<MarketingAiStatusCd, string> = {
   '001': 'waiting',
@@ -110,8 +117,16 @@ const {
   campaignDraft,
   isGeneratingChannelBatch,
   handleOpenChannelContent,
-  popMarketingPhase,
+  handleBackToList,
 } = useMarketingStore()
+
+/** 생성 중에 나가도 생성은 서버·스토어에서 계속되므로 제작 내역으로 보낸다 */
+const onLeave = async () => {
+  if (isGeneratingChannelBatch.value) {
+    openToast('생성은 계속 진행됩니다. 제작 내역에서 진행 상태를 확인할 수 있습니다.')
+  }
+  await handleBackToList()
+}
 
 const resultCards = computed(() =>
   channelBatch.value.map((item) => {
