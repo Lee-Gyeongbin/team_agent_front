@@ -27,7 +27,6 @@ import {
   MARKETING_IMAGE_USAGES,
 } from '~/utils/agent/marketingAuthoringConfigUtil'
 
-export const MARKETING_AGENT_THEME_FALLBACK_HEX = '#7c5cfc'
 const MARKETING_PREPARING_STATUS_INTERVAL_MS = 3000
 const MARKETING_IMAGE_LOAD_TIMEOUT_MS = 30_000
 const MARKETING_RESULT_SUMMARY_PENDING = '요청하신 조건으로 콘텐츠를 생성하고 있습니다.'
@@ -204,22 +203,6 @@ export const createMarketingPreparingStatusCycle = () => {
     }, MARKETING_PREPARING_STATUS_INTERVAL_MS)
   }
   return { text, start, stop }
-}
-
-const hexToRgb = (hex: string) => {
-  const value = hex.replace('#', '')
-  if (!/^[0-9a-f]{6}$/i.test(value)) return '124, 92, 252'
-  return `${parseInt(value.slice(0, 2), 16)}, ${parseInt(value.slice(2, 4), 16)}, ${parseInt(value.slice(4, 6), 16)}`
-}
-
-export const resolveMarketingAgentThemeStyle = (themeColorHex?: string) => {
-  const color = String(themeColorHex ?? '').trim() || MARKETING_AGENT_THEME_FALLBACK_HEX
-  return {
-    '--marketing-agent-theme-color': color,
-    '--marketing-agent-theme-rgb': hexToRgb(color),
-    '--marketing-image-color': color,
-    '--marketing-authoring-color': color,
-  }
 }
 
 /** 목록 셀 공백은 '-' */
