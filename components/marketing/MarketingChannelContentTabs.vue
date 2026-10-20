@@ -1,18 +1,25 @@
 <template>
   <div class="marketing-channel-content-tabs">
-    <div class="marketing-page-form-bar">
-      <button
-        type="button"
-        class="marketing-page-back"
-        @click="popMarketingPhase()"
+    <Teleport
+      defer
+      to="#marketing-form-bar-extra"
+    >
+      <p
+        v-if="contentEditLock"
+        class="marketing-channel-content-tabs__locked"
+        role="status"
       >
         <UiIcon
-          name="arrow-right"
-          size="16"
-          class="marketing-page-back__arrow"
+          name="lock"
+          size="14"
         />
-        콘텐츠 목록
-      </button>
+        <span>{{ CONTENT_LOCK_MESSAGE[contentEditLock] }}</span>
+      </p>
+    </Teleport>
+    <Teleport
+      defer
+      to="#marketing-form-bar-actions"
+    >
       <UiButton
         v-if="currentContent?.aiStatusCd === '004'"
         variant="outline"
@@ -25,12 +32,12 @@
       <UiButton
         variant="primary"
         size="sm"
-        :disabled="isSubmitting || isSelectingVariant || currentContent?.aiStatusCd !== '003'"
+        :disabled="isSubmitting || isSelectingVariant || currentContent?.aiStatusCd !== '003' || !!contentEditLock"
         @click="pushMarketingPhase('review')"
       >
         저장 및 AI 검수 →
       </UiButton>
-    </div>
+    </Teleport>
 
     <div
       v-if="channelBatch.length > 1"
@@ -41,9 +48,9 @@
         :key="item.channelCd"
         type="button"
         class="marketing-channel-tabs__tab"
-        :class="{ 'is-active': item.contentId === activeBatchContentId }"
-        :disabled="!item.contentId || isSubmitting || isSelectingVariant"
-        @click="handleSwitchChannelTab(item.contentId)"
+        :class="{ 'is-active': item.mktContentId === activeBatchContentId }"
+        :disabled="!item.mktContentId || isSubmitting || isSelectingVariant"
+        @click="handleSwitchChannelTab(item.mktContentId)"
       >
         {{ item.channelNm }}
       </button>
@@ -53,11 +60,13 @@
       v-if="isLoadingContent"
       text="콘텐츠를 불러오는 중..."
     />
+    <!-- 채널 탭을 바꾸면 보완 대화·입력·선택 시안이 섞이지 않도록 콘텐츠마다 새로 그린다 -->
     <MarketingResult
       v-else-if="hasDisplayResult && displayAuthoringResult"
+      :key="currentContent?.mktContentId"
       class="marketing-page-result-card"
       :result="displayAuthoringResult"
-      :content-id="currentContent?.contentId ?? ''"
+      :mkt-content-id="currentContent?.mktContentId ?? ''"
       :content-title="displayTitle"
       :org-nm="currentProject?.orgNm ?? ''"
       :project-nm="currentProject?.projectNm ?? ''"
@@ -68,10 +77,11 @@
       :refining-variant-id="refiningVariantId"
       :refine-completed-at="refineCompletedAt"
       :generating-step="generatingStep"
-      :theme-color-hex="themeColorHex"
       :save-variant="handleSaveVariantText"
+      :restore-variant="handleRestoreVariant"
       :adopted-variant-id="selectedVariantId"
       :is-selecting-variant="isSelectingVariant"
+      :is-locked="!!contentEditLock"
       @edit-with-agent="handleEditWithAgent"
       @used="handleUseVariant"
     />
@@ -90,7 +100,6 @@ import { enrichMarketingResultForDisplay } from '~/utils/marketing/marketingUtil
 
 const {
   config,
-  themeColorHex,
   currentProject,
   currentContent,
   displayResult,
@@ -107,13 +116,20 @@ const {
   generatingStep,
   handleEditWithAgent,
   handleSaveVariantText,
+  handleRestoreVariant,
   handleUseVariant,
   channelBatch,
   activeBatchContentId,
   handleSwitchChannelTab,
   pushMarketingPhase,
-  popMarketingPhase,
+  contentEditLock,
 } = useMarketingStore()
+
+const CONTENT_LOCK_MESSAGE = {
+  APPROVAL: '검토자 승인 진행 중에는 콘텐츠를 수정·재검수할 수 없습니다. 검토자가 반려하면 다시 수정할 수 있습니다.',
+  APPROVED:
+    '승인 완료·예약·발행완료 콘텐츠는 수정·재검수·이름 변경을 할 수 없습니다. 발행 전이라면 승인자가 승인을 취소해 다시 수정할 수 있습니다.',
+} as const
 
 const hasDisplayResult = computed(() => {
   const result = displayResult.value

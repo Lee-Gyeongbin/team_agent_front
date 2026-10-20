@@ -7,7 +7,6 @@
       'is-complete': !isLoading,
       'is-both-mode': isBothMode,
     }"
-    :style="resolveMarketingAgentThemeStyle(themeColorHex)"
   >
     <header
       v-if="isLoading || isRefining"
@@ -22,23 +21,6 @@
         </div>
       </div>
     </header>
-
-    <div
-      v-if="metaItems.length"
-      class="chat-marketing-authoring-result__meta"
-    >
-      <div class="chat-marketing-authoring-result__meta-items">
-        <div
-          v-for="item in metaItems"
-          :key="item.label"
-          class="chat-marketing-authoring-result__meta-chip"
-          :title="`${item.label}: ${item.value}`"
-        >
-          <span>{{ item.label }}</span>
-          <strong>{{ item.value }}</strong>
-        </div>
-      </div>
-    </div>
 
     <div
       v-if="draftTabs.length"
@@ -88,6 +70,8 @@
               {{ draftTitle ? `제목 : ${draftTitle}` : '제목' }}
             </p>
             <div class="chat-marketing-authoring-result__draft-actions">
+              <!-- 채널 미리보기는 채널별 실제 화면 형식 작업 전까지 막아 둔다 -->
+              <!--
               <button
                 type="button"
                 :disabled="isLoading || isRefining || !hasDraftContent"
@@ -99,6 +83,20 @@
                   size="16"
                 />
                 채널 미리보기
+              </button>
+              -->
+              <button
+                v-if="canRestoreActive && props.restoreVariant && !isLocked"
+                type="button"
+                :disabled="isRestoring || isSavingEdit || isRefiningActiveText || isRefiningActiveImage"
+                title="바로 직전 버전으로 되돌립니다"
+                @click="onRestore"
+              >
+                <UiIcon
+                  name="refresh-cw"
+                  size="16"
+                />
+                {{ isRestoring ? '되돌리는 중...' : '되돌리기' }}
               </button>
               <button
                 type="button"
@@ -112,7 +110,7 @@
                 복사
               </button>
               <UiDropdownMenu
-                v-if="props.contentId"
+                v-if="props.mktContentId"
                 :items="exportMenuItems"
                 align="end"
                 :open="isExportPickerOpen"
@@ -141,7 +139,7 @@
                 </template>
               </UiDropdownMenu>
               <button
-                v-if="!isImageMode && props.saveVariant"
+                v-if="!isImageMode && props.saveVariant && !isLocked"
                 type="button"
                 :disabled="isSavingEdit || isRefiningActiveText || isLoading"
                 @mousedown.prevent
@@ -204,7 +202,7 @@
                     :key="activeDraftId"
                     :variant-id="activeDraftId"
                     :text="draftText"
-                    :disabled="isRefiningActiveText || isSavingEdit"
+                    :disabled="isLocked || isRefiningActiveText || isSavingEdit"
                     @save="onSaveDraftText"
                     @update:text="liveDraftText = $event"
                     @add-to-prompt="onAddToPrompt"
@@ -269,7 +267,9 @@
             <UiButton
               variant="primary"
               size="sm"
-              :disabled="isLoading || isRefining || !hasDraftContent || isSelectingVariant || isActiveDraftInUse"
+              :disabled="
+                isLocked || isLoading || isRefining || !hasDraftContent || isSelectingVariant || isActiveDraftInUse
+              "
               @click="onUseDraft"
             >
               이 시안 사용하기
@@ -424,12 +424,13 @@
                   aria-hidden="true"
                 />
                 <input
+                  ref="refineInputRef"
                   v-model="refineDraft"
                   type="text"
                   class="chat-marketing-authoring-result__refine-chat-input"
                   autocomplete="off"
                   :spellcheck="false"
-                  :disabled="isLoading || isRefining"
+                  :disabled="isLocked || isLoading || isRefining"
                   :placeholder="refineInputPlaceholder"
                 />
                 <button
@@ -479,8 +480,12 @@
                 {{ REFINE_COPY.IMAGE.label }}
               </button>
             </div>
-            <div class="chat-marketing-authoring-result__refine-prompt-field">
+            <div
+              class="chat-marketing-authoring-result__refine-prompt-field"
+              @focusin="hasPromptCaret = true"
+            >
               <UiTextarea
+                ref="promptTextareaRef"
                 v-model="promptDraft"
                 placeholder="수정할 내용을 프롬프트로 입력해 주세요."
                 :rows="1"
@@ -488,7 +493,7 @@
                 size="sm"
                 :auto-resize="false"
                 :expandable="false"
-                :disabled="isLoading || isRefining"
+                :disabled="isLocked || isLoading || isRefining"
               />
             </div>
             <div class="chat-marketing-authoring-result__refine-prompt-foot">
@@ -572,49 +577,48 @@ import type {
 } from '~/types/marketing'
 import {
   copyMarketingPayloadToClipboard,
-  resolveMarketingAgentThemeStyle,
   resolveMarketingConditionDisplay,
-  resolveMarketingOptionLabel,
-  resolveMarketingToneLabels,
   renderMarketingTextHtml,
 } from '~/utils/marketing/marketingUtil'
-import { MARKETING_IMAGE_ATMOSPHERES, MARKETING_IMAGE_TYPES } from '~/utils/agent/marketingAuthoringConfigUtil'
 
 const props = withDefaults(
   defineProps<{
     result: MarketingAuthoringResult
     config?: MarketingAuthoringAgentConfig | null
-    themeColorHex?: string
     isLoading?: boolean
     refiningType?: 'TEXT' | 'IMAGE' | null
     refiningVariantId?: number | null
     refineCompletedAt?: number
     generatingStep?: MarketingGeneratingStep
-    contentId?: string
+    mktContentId?: string
     contentTitle?: string
     orgNm?: string
     projectNm?: string
     request?: MarketingStoredRequest | null
     saveVariant?: (payload: { variantId: number; textContent: string }) => Promise<boolean>
+    restoreVariant?: (variantId: number) => Promise<boolean>
     adoptedVariantId?: number | null
     isSelectingVariant?: boolean
+    /** 승인 진행 중 — 보기만 가능하고 수정·보완·시안 변경을 막는다 */
+    isLocked?: boolean
   }>(),
   {
     config: null,
-    themeColorHex: '',
     isLoading: false,
     refiningType: null,
     refiningVariantId: null,
     refineCompletedAt: 0,
     generatingStep: '',
-    contentId: '',
+    mktContentId: '',
     contentTitle: '',
     orgNm: '',
     projectNm: '',
     request: null,
     saveVariant: undefined,
+    restoreVariant: undefined,
     adoptedVariantId: null,
     isSelectingVariant: false,
+    isLocked: false,
   },
 )
 
@@ -683,7 +687,8 @@ const isRefiningActiveImage = computed(() => isRefiningActive('IMAGE'))
 const isRefiningActiveText = computed(() => isRefiningActive('TEXT'))
 const isExporting = ref(false)
 const isSavingEdit = ref(false)
-const draftEditorRef = ref<{ save: () => void } | null>(null)
+const isRestoring = ref(false)
+const draftEditorRef = ref<{ save: () => void; isDirty: () => boolean } | null>(null)
 const isChannelPreviewOpen = ref(false)
 const imagePreview = ref<{ src: string; title: string; mimeType: string } | null>(null)
 
@@ -691,9 +696,13 @@ const resolveInitialRefineType = (): MarketingOutputKind => (isImageMode.value ?
 
 const refineDraft = ref('')
 const promptDraft = ref('')
+const refineInputRef = ref<HTMLInputElement | null>(null)
+const promptTextareaRef = ref<{ el: HTMLTextAreaElement | null } | null>(null)
+/** 프롬프트 입력창에 한 번이라도 커서를 둔 뒤에만 그 위치에 끼워 넣는다 */
+const hasPromptCaret = ref(false)
 const refineChatLog = ref<RefineChatEntry[]>([])
 const refineType = ref<MarketingOutputKind>(resolveInitialRefineType())
-const refineTab = ref<'chat' | 'prompt'>('prompt')
+const refineTab = ref<'chat' | 'prompt'>('chat')
 const refineChatListRef = ref<HTMLElement | null>(null)
 const lastSentRefineType = ref<MarketingOutputKind | null>(null)
 const lastSentRefineSource = ref<'chat' | 'prompt' | null>(null)
@@ -767,13 +776,6 @@ watch(
   { immediate: true },
 )
 
-watch(
-  () => props.contentId,
-  () => {
-    promptDraft.value = originalPrompt.value
-  },
-)
-
 // 생성 SSE로 시안이 늘어나는 동안 컴포넌트는 유지
 watch(
   () => [props.result.mode, props.result.variants, props.result.images] as const,
@@ -810,6 +812,13 @@ const activeImage = computed(() => {
 
 const activeImageUrl = computed(() => activeImage.value?.url ?? '')
 
+/** 이미지 전용 모드는 이미지 시안 기준, 그 외는 문구 시안 기준(통합 모드도 같은 콘텐츠 행이라 동일 값) */
+const canRestoreActive = computed(() =>
+  isImageMode.value
+    ? !!activeImage.value?.canRestore
+    : !!(activeVariant.value?.canRestore ?? activeImage.value?.canRestore),
+)
+
 const isActiveDraftInUse = computed(
   () => props.adoptedVariantId != null && props.adoptedVariantId === activeDraftId.value,
 )
@@ -833,7 +842,7 @@ watch(
 
 /** 진행 중인 작업이 없고 현재 수정 유형의 대상(이미지 또는 문구)이 있는지 */
 const canRefineActive = computed(() => {
-  if (props.isLoading || isRefining.value) return false
+  if (props.isLocked || props.isLoading || isRefining.value) return false
   if (refineType.value === 'IMAGE') return !!activeImageUrl.value
   return !!liveDraftText.value.trim()
 })
@@ -861,43 +870,6 @@ const draftTabs = computed<DraftTab[]>(() => {
     isAdopted: props.adoptedVariantId != null && item.id === props.adoptedVariantId,
     isActive: item.id === activeDraftId.value,
   }))
-})
-
-const metaItems = computed(() => {
-  const display = conditionDisplay.value
-  const imageConditions = props.result.imageConditions
-  const imageStyle = resolveMarketingOptionLabel(MARKETING_IMAGE_TYPES, imageConditions?.contentType)
-  const imageAtmosphere = resolveMarketingToneLabels(imageConditions?.tones, MARKETING_IMAGE_ATMOSPHERES)
-  const aspectRatio = String(imageConditions?.length ?? '').trim()
-
-  const rows = isImageMode.value
-    ? [
-        { label: '표현 방식', value: imageStyle || display.contentType },
-        { label: '채널', value: display.channel },
-        { label: '제작 목적', value: display.purpose },
-        { label: '대상 고객', value: display.audience },
-        { label: '톤앤매너', value: imageAtmosphere || display.tones },
-        { label: '화면 비율', value: aspectRatio || display.length },
-      ]
-    : [
-        { label: '콘텐츠 유형', value: display.contentType },
-        { label: '채널', value: display.channel },
-        { label: '작성 목적', value: display.purpose },
-        { label: '대상 독자', value: display.audience },
-        { label: '톤앤매너', value: display.tones },
-        { label: '분량', value: display.length },
-        ...(isBothMode.value
-          ? [
-              { label: '이미지 스타일', value: imageStyle },
-              { label: '이미지 분위기', value: imageAtmosphere },
-              { label: '화면 비율', value: aspectRatio },
-            ]
-          : []),
-      ]
-
-  return rows
-    .map((item) => ({ label: item.label, value: String(item.value ?? '').trim() }))
-    .filter((item) => !!item.value)
 })
 
 const draftTitle = computed(() => String(props.contentTitle ?? '').trim())
@@ -951,8 +923,39 @@ const onSelectDraft = (draftId: number) => {
   scrollResultToTop()
 }
 
-const onSendRefine = () => {
+/** 시안을 직전 버전으로 되돌리기 — 1회만 가능하고 승인이 해제되므로 확인 후 진행한다 */
+const onRestore = async () => {
+  if (!canRestoreActive.value || !props.restoreVariant || isRestoring.value) return
+  const confirmed = await openConfirm({
+    title: '시안 복원',
+    message:
+      '현재 시안이 이전 버전으로 변경되고 검수·승인이 해제됩니다.\n되돌리기는 한 번만 가능하며, 실행 후에는 현재 버전으로 다시 돌아올 수 없습니다.',
+    confirmText: '확인',
+    cancelText: '취소',
+  })
+  if (!confirmed) return
+  isRestoring.value = true
+  try {
+    await props.restoreVariant(activeDraftId.value)
+  } finally {
+    isRestoring.value = false
+  }
+}
+
+/** 글 보완 결과가 저장 안 한 편집 내용을 덮어쓰므로 진행 여부를 확인한다 */
+const confirmDiscardUnsavedText = async () => {
+  if (refineType.value !== 'TEXT' || !draftEditorRef.value?.isDirty()) return true
+  return openConfirm({
+    title: '저장하지 않은 편집 내용',
+    message: '보완 결과가 저장하지 않은 편집 내용을 덮어씁니다.\n저장하지 않고 보완을 요청할까요?',
+    confirmText: '보완 요청',
+    cancelText: '취소',
+  })
+}
+
+const onSendRefine = async () => {
   if (!canSendRefine.value) return
+  if (!(await confirmDiscardUnsavedText())) return
 
   const request = refineDraft.value.trim()
   const content = liveDraftText.value.trim()
@@ -976,8 +979,9 @@ const onSendRefine = () => {
   })
 }
 
-const onSendPromptRefine = () => {
+const onSendPromptRefine = async () => {
   if (!canSendPromptRefine.value) return
+  if (!(await confirmDiscardUnsavedText())) return
 
   const request = promptDraft.value.trim()
   const content = liveDraftText.value.trim()
@@ -1008,19 +1012,46 @@ const onSaveClick = () => {
   draftEditorRef.value?.save()
 }
 
+// 탭을 오가면 프롬프트 입력창이 새로 그려져 이전 커서 위치가 사라진다
+watch(refineTab, () => {
+  hasPromptCaret.value = false
+})
+
+/** 본문에서 고른 문장을 지금 보고 있는 탭의 입력창에 넣는다 */
 const onAddToPrompt = (text: string) => {
   const selected = text.trim()
   if (!selected) return
   refineType.value = 'TEXT'
-  refineTab.value = 'prompt'
-  const current = promptDraft.value.trim()
-  promptDraft.value = current ? `${current}\n${selected}` : selected
+
+  if (refineTab.value === 'chat') {
+    const current = refineDraft.value.trim()
+    refineDraft.value = current ? `${current} ${selected}` : selected
+    nextTick(() => refineInputRef.value?.focus())
+    return
+  }
+
+  const textarea = promptTextareaRef.value?.el
+  if (!textarea || !hasPromptCaret.value) {
+    const current = promptDraft.value.trim()
+    promptDraft.value = current ? `${current}\n${selected}` : selected
+    return
+  }
+  // 마지막 커서(선택 영역이면 그 자리)에 끼워 넣고 커서를 넣은 문장 뒤로 옮긴다
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const caret = start + selected.length
+  promptDraft.value = `${promptDraft.value.slice(0, start)}${selected}${promptDraft.value.slice(end)}`
+  nextTick(() => {
+    textarea.focus()
+    textarea.setSelectionRange(caret, caret)
+  })
 }
 
-const openChannelPreview = () => {
-  if (props.isLoading || isRefining.value || !hasDraftContent.value) return
-  isChannelPreviewOpen.value = true
-}
+// 채널 미리보기 버튼을 막아 둔 동안 사용하지 않는다 — 버튼 주석을 풀 때 함께 복구
+// const openChannelPreview = () => {
+//   if (props.isLoading || isRefining.value || !hasDraftContent.value) return
+//   isChannelPreviewOpen.value = true
+// }
 
 const onCopy = async () => {
   const content = isImageMode.value ? '' : liveDraftText.value.trim()
@@ -1087,11 +1118,11 @@ const isMarketingExportFormat = (value: string): value is MarketingExportFormat 
 const onSelectExportFormat = async (format: string) => {
   isExportPickerOpen.value = false
   if (!isMarketingExportFormat(format)) return
-  const contentId = props.contentId.trim()
-  if (!contentId || isExporting.value) return
+  const mktContentId = props.mktContentId.trim()
+  if (!mktContentId || isExporting.value) return
   isExporting.value = true
   try {
-    const { successYn, html, returnMsg } = await fetchExportMarketingContentHtml(contentId)
+    const { successYn, html, returnMsg } = await fetchExportMarketingContentHtml(mktContentId)
     if (!successYn || !html) {
       openToast({ message: returnMsg || '내보내기에 실패했습니다.', type: 'error' })
       return

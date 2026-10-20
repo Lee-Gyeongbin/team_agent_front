@@ -1,45 +1,26 @@
 <template>
   <div class="marketing-review">
-    <div class="marketing-page-form-bar">
-      <button
-        type="button"
-        class="marketing-page-back"
-        @click="popMarketingPhase()"
-      >
-        <UiIcon
-          name="arrow-right"
-          size="16"
-          class="marketing-page-back__arrow"
-        />
-        시안 수정하기
-      </button>
-      <div class="marketing-review__actions">
-        <UiButton
-          variant="primary"
-          size="sm"
-          :disabled="isReviewing || isApplyingFix"
-          @click="onRerunReview"
-        >
-          <template #icon-left>
-            <UiIcon
-              name="refresh-cw"
-              size="14"
-            />
-          </template>
-          {{ isReviewing ? '검수 중...' : '검수하기' }}
-        </UiButton>
-      </div>
-    </div>
-
-    <UiLoading
-      v-if="isReviewing && !reviewResult"
-      text="AI가 콘텐츠를 검수하고 있습니다..."
-    />
-
-    <div
-      v-else
-      class="marketing-review__layout"
+    <Teleport
+      defer
+      to="#marketing-form-bar-actions"
     >
+      <UiButton
+        variant="primary"
+        size="sm"
+        :disabled="isReviewing || isApplyingFix || !!contentEditLock"
+        @click="onRerunReview"
+      >
+        <template #icon-left>
+          <UiIcon
+            name="refresh-cw"
+            size="14"
+          />
+        </template>
+        {{ isReviewing ? '검수 중...' : '검수하기' }}
+      </UiButton>
+    </Teleport>
+
+    <div class="marketing-review__layout">
       <div class="marketing-review-preview">
         <h2 class="marketing-review-preview__title">{{ displayTitle || '콘텐츠 미리보기' }}</h2>
         <img
@@ -57,7 +38,32 @@
       </div>
 
       <div class="marketing-review-panel">
-        <template v-if="reviewResult">
+        <!-- 첫 검수·재검수 모두 이전 결과 대신 진행 상태를 패널에 보여준다 -->
+        <UiLoading
+          v-if="isReviewing"
+          class="marketing-review-panel__progress"
+          text="AI가 콘텐츠를 검수하고 있습니다..."
+        />
+        <template v-else-if="reviewResult">
+          <p
+            v-if="contentEditLock === 'APPROVED'"
+            class="marketing-approval-waiting"
+          >
+            승인이 완료된 콘텐츠입니다. 검수 결과만 확인할 수 있습니다.
+          </p>
+          <p
+            v-else-if="contentEditLock === 'APPROVAL'"
+            class="marketing-approval-waiting"
+          >
+            검수를 통과해 검토자 승인이 진행 중입니다. 수정·재검수는 검토자가 반려한 뒤에 할 수 있습니다.
+          </p>
+          <p
+            v-else-if="isRejected"
+            class="marketing-approval-waiting"
+          >
+            검토자가 반려했습니다{{ approval?.memo ? ` (사유: ${approval.memo})` : '' }}. 내용을 수정하거나 다시 검수한
+            뒤 승인을 진행해 주세요.
+          </p>
           <div class="marketing-review-panel__head">
             <div
               class="marketing-score-ring"
@@ -98,7 +104,7 @@
                 v-if="reviewResult.issues.some((issue) => issue.targetType === 'TEXT' && issue.fixAppliedYn !== 'Y')"
                 variant="ghost"
                 size="xs"
-                :disabled="isApplyingFix || isReviewing"
+                :disabled="isApplyingFix || isReviewing || !!contentEditLock"
                 @click="handleApplyFix('ALL')"
               >
                 문구 수정안 모두 적용
@@ -122,7 +128,7 @@
               <UiButton
                 variant="outline"
                 size="xs"
-                :disabled="isApplyingFix || isReviewing || issue.fixAppliedYn === 'Y'"
+                :disabled="isApplyingFix || isReviewing || !!contentEditLock || issue.fixAppliedYn === 'Y'"
                 @click="handleApplyFix(issue.issueId)"
               >
                 {{ issue.fixAppliedYn === 'Y' ? '적용됨' : 'AI 수정안 적용' }}
@@ -140,15 +146,18 @@
             발견된 이슈가 없습니다.
           </div>
 
-          <UiButton
+          <div
             v-if="canProceedToApproval"
-            variant="primary"
-            size="md"
-            full-width
-            @click="pushMarketingPhase('approval')"
+            class="marketing-review-panel__foot"
           >
-            사용자 승인 진행하기 →
-          </UiButton>
+            <UiButton
+              variant="primary"
+              size="sm"
+              @click="pushMarketingPhase('approval')"
+            >
+              사용자 승인 진행하기 →
+            </UiButton>
+          </div>
         </template>
         <UiEmpty
           v-else
@@ -176,10 +185,11 @@ const {
   handleRunReview,
   handleApplyFix,
   pushMarketingPhase,
-  popMarketingPhase,
+  approval,
+  contentEditLock,
 } = useMarketingStore()
 
-const contentId = computed(() => currentContent.value?.contentId ?? '')
+const mktContentId = computed(() => currentContent.value?.mktContentId ?? '')
 
 const previewText = computed(() => {
   const variants = displayResult.value?.variants ?? []
@@ -203,25 +213,30 @@ const VERDICT_DESC: Record<MarketingReviewVerdict, string> = {
   FAIL: '승인·발행을 막는 문제가 발견되었습니다. AI 수정안을 적용한 뒤 다시 검수해 주세요.',
 }
 
+/** 반려되면 검수 중(002)으로 돌아오고 마지막 승인 이력이 반려(N)로 남는다 */
+const isRejected = computed(() => currentContent.value?.statusCd === '002' && approval.value?.approvedYn === 'N')
 const ringColor = computed(() => VERDICT_RING_COLOR[reviewResult.value?.verdict ?? 'REVIEW'])
 const verdictBadgeClass = computed(() => marketingReviewVerdictBadgeClass[reviewResult.value?.verdict ?? 'REVIEW'])
 const verdictDesc = computed(() => VERDICT_DESC[reviewResult.value?.verdict ?? 'REVIEW'])
-/** FAIL만 승인 진입을 막는다 — REVIEW는 확인 후 승인 가능. 반려 후(002)에는 재검수가 먼저다 */
+/** 검수 통과(003)일 때만 승인 단계로 보낸다 — FAIL은 막고, 반려 후(002)는 재검수가 먼저, 승인 완료 이후는 결과 보기만 */
 const canProceedToApproval = computed(
   () =>
     !!reviewResult.value &&
     reviewResult.value.verdict !== 'FAIL' &&
-    ['003', '004', '005', '006'].includes(currentContent.value?.statusCd ?? '') &&
+    currentContent.value?.statusCd === '003' &&
     !isApplyingFix.value &&
     !isReviewing.value,
 )
 
 const onRerunReview = () => {
-  if (!contentId.value) return
-  void handleRunReview(contentId.value)
+  if (!mktContentId.value || contentEditLock.value) return
+  void handleRunReview(mktContentId.value)
 }
 
 onMounted(() => {
-  if (contentId.value && reviewResult.value?.contentId !== contentId.value) onRerunReview()
+  // 결과가 없을 때만 자동 검수한다. 잠긴 콘텐츠는 서버가 막으므로 실행하지 않는다
+  if (mktContentId.value && !contentEditLock.value && reviewResult.value?.mktContentId !== mktContentId.value) {
+    void handleRunReview(mktContentId.value)
+  }
 })
 </script>

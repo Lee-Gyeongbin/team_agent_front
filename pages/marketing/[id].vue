@@ -35,6 +35,41 @@
     </div>
 
     <template v-else>
+      <!-- 콘텐츠 작성 → AI 검수 → 승인 → 발행 설정. 돌아가기·채널은 단계와 같은 자리에 둔다 -->
+      <div
+        v-if="isContentFlowPhase"
+        class="marketing-content-flow-head"
+      >
+        <MarketingContentStepper />
+        <div class="marketing-page-form-bar">
+          <button
+            type="button"
+            class="marketing-back-btn"
+            @click="handleBackToList()"
+          >
+            <UiIcon
+              name="arrow-right"
+              size="16"
+              class="marketing-back-btn__arrow"
+            />
+            콘텐츠 목록으로 돌아가기
+          </button>
+          <span
+            v-if="currentChannelNm"
+            class="marketing-page-form-bar__channel"
+          >
+            {{ currentChannelNm }}
+          </span>
+          <div
+            id="marketing-form-bar-extra"
+            class="marketing-page-form-bar__extra"
+          />
+          <div
+            id="marketing-form-bar-actions"
+            class="marketing-page-form-bar__actions"
+          />
+        </div>
+      </div>
       <MarketingCampaignPlan
         v-if="isCampaignPlanOpen"
         :project-nm="currentProject?.projectNm ?? ''"
@@ -54,12 +89,6 @@
         @start-content="onStartContentFromPlan"
       />
 
-      <MarketingCampaignCalendar
-        v-else-if="isCalendarOpen"
-        :selected-project-nm="currentProject?.projectNm ?? ''"
-        @close="isCalendarOpen = false"
-      />
-
       <!-- 채널 선택 → 멀티채널 생성 결과 → 채널별 콘텐츠 (프로젝트 기획서 기반) -->
       <MarketingChannelSelect v-else-if="pagePhase === 'channelSelect'" />
       <MarketingChannelResults v-else-if="pagePhase === 'channelResults'" />
@@ -69,14 +98,12 @@
       <MarketingReview v-else-if="pagePhase === 'review'" />
       <MarketingApproval
         v-else-if="pagePhase === 'approval'"
-        @go-calendar="isCalendarOpen = true"
         @go-list="handleBackToList"
       />
       <MarketingSchedule
         v-else-if="pagePhase === 'schedule'"
-        :key="currentContent?.contentId"
+        :key="currentContent?.mktContentId"
         :project-nm="currentProject?.projectNm ?? ''"
-        @back-to-list="handleBackToList"
       />
 
       <!-- 제작 내역 목록 -->
@@ -181,12 +208,12 @@
           <div class="marketing-schedule-banner__list">
             <button
               v-for="item in dueSoonHistoryItems"
-              :key="`due-${item.contentId}`"
+              :key="`due-${item.mktContentId}`"
               type="button"
               class="marketing-schedule-banner__item"
               :class="{ 'is-overdue': item.scheduleStatus === 'overdue' }"
               :title="item.displayTitle"
-              @click="handleHistoryRowClick(item.contentId)"
+              @click="handleHistoryRowClick(item.mktContentId)"
             >
               {{ item.displayTitle }} · {{ item.scheduleLabel }}
             </button>
@@ -248,7 +275,7 @@
                   </template>
                   <template #cell-displayTitle="{ row }">
                     <div
-                      v-if="renamingContentId === row.contentId"
+                      v-if="renamingContentId === row.mktContentId"
                       class="marketing-content-rename"
                       @click.stop
                       @keydown.esc.stop.prevent="onCancelRename"
@@ -270,7 +297,7 @@
                     </strong>
                   </template>
                   <template #cell-progressLabel="{ row }">
-                    <span :class="['marketing-status-badge', `status-${row.progressKey}`]">
+                    <span :class="['marketing-status-badge', row.progressBadgeClass]">
                       {{ row.progressLabel }}
                     </span>
                   </template>
@@ -283,7 +310,7 @@
                       @click.stop
                     >
                       <UiButton
-                        v-if="renamingContentId === row.contentId"
+                        v-if="renamingContentId === row.mktContentId"
                         variant="ghost"
                         size="sm"
                         icon-only
@@ -300,7 +327,7 @@
                       </UiButton>
                       <UiDropdownMenu
                         v-else
-                        :items="contentMenuItems"
+                        :items="getContentMenuItems(row)"
                         align="end"
                         @select="(value) => onContentMenuSelect(row, value)"
                       >
@@ -330,7 +357,6 @@
           <MarketingPublishCalendar
             :items="calendarItems"
             @select="handleHistoryRowClick"
-            @open-full="isCalendarOpen = true"
           />
         </div>
       </div>
@@ -381,13 +407,16 @@ const {
   handleSaveCampaignDraft,
   campaignDraft,
   pushMarketingPhase,
+  currentChannelNm,
 } = useMarketingStore()
 
 const isCampaignPlanOpen = ref(false)
 const campaignPlanStartInResult = ref(false)
-const isCalendarOpen = ref(false)
 
 const isAuthoringPhase = computed(() => pagePhase.value !== 'list')
+const isContentFlowPhase = computed(
+  () => !isCampaignPlanOpen.value && ['channelContent', 'review', 'approval', 'schedule'].includes(pagePhase.value),
+)
 
 type HistoryRow = (typeof allHistoryItems.value)[number]
 
@@ -464,14 +493,17 @@ const onAddChannelContent = () => {
   pushMarketingPhase('channelSelect')
 }
 
-const contentMenuItems: DropdownMenuItemDef[] = [
-  { label: '이름 변경', value: 'rename' },
+/** 승인 진행 중·승인 완료·예약·발행완료는 이름을 바꿀 수 없다 (서버 requireEditable과 같은 상태 기준) */
+const RENAME_LOCKED_STATUS_CDS = ['003', '004', '005', '006']
+
+const getContentMenuItems = (row: HistoryRow): DropdownMenuItemDef[] => [
+  { label: '이름 변경', value: 'rename', disabled: RENAME_LOCKED_STATUS_CDS.includes(row.progressKey) },
   { label: '콘텐츠 삭제', value: 'delete', color: 'danger' },
 ]
 
 const onContentTableRowClick = (row: HistoryRow) => {
   if (renamingContentId.value) return
-  handleHistoryRowClick(row.contentId)
+  handleHistoryRowClick(row.mktContentId)
 }
 
 const onContentMenuSelect = (row: HistoryRow, value: string) => {
@@ -479,7 +511,7 @@ const onContentMenuSelect = (row: HistoryRow, value: string) => {
     startRename(row)
     return
   }
-  if (value === 'delete') void handleDeleteHistory(row.contentId)
+  if (value === 'delete') void handleDeleteHistory(row.mktContentId)
 }
 
 // ── 콘텐츠 이름 변경 (행 안 인라인) ──────────────────────────────────
@@ -496,8 +528,8 @@ const focusRenameInput = async () => {
   el?.select()
 }
 
-const startRename = (item: { contentId: string; displayTitle: string }) => {
-  renamingContentId.value = item.contentId
+const startRename = (item: { mktContentId: string; displayTitle: string }) => {
+  renamingContentId.value = item.mktContentId
   renamingTitle.value = item.displayTitle
   renamingOriginalTitle.value = item.displayTitle
   void focusRenameInput()
@@ -516,15 +548,15 @@ const onSaveRename = async () => {
     await focusRenameInput()
     return
   }
-  const contentId = renamingContentId.value
-  if (!contentId || isSavingRename.value) return
+  const mktContentId = renamingContentId.value
+  if (!mktContentId || isSavingRename.value) return
   if (title === renamingOriginalTitle.value.trim()) {
     onCancelRename()
     return
   }
   isSavingRename.value = true
   try {
-    const saved = await handleSaveHistoryEdit(contentId, {
+    const saved = await handleSaveHistoryEdit(mktContentId, {
       title,
       originalTitle: renamingOriginalTitle.value,
     })

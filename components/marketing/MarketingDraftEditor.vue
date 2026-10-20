@@ -62,6 +62,7 @@ const emit = defineEmits<{
 
 const rootRef = ref<HTMLElement | null>(null)
 const showAddToPrompt = ref(false)
+const isDirty = ref(false)
 const selectedText = ref('')
 const addToPromptPos = ref({ top: 0, left: 0 })
 const addToPromptRef = ref<HTMLElement | null>(null)
@@ -175,6 +176,7 @@ const editor = useEditor({
     emit('update:text', ed.getText({ blockSeparator: '\n' }))
   },
   onUpdate: ({ editor: ed }) => {
+    isDirty.value = true
     emit('update:text', ed.getText({ blockSeparator: '\n' }))
   },
   onSelectionUpdate: () => {
@@ -212,9 +214,13 @@ watch(
   () => props.text,
   (next) => {
     if (!editor.value) return
-    if (readEditorHtml() === next || readEditorText() === next) return
+    if (readEditorHtml() === next || readEditorText() === next) {
+      isDirty.value = false
+      return
+    }
     if (editor.value.isFocused && !props.disabled) return
     editor.value.commands.setContent(toEditorHtml(next), { emitUpdate: false })
+    isDirty.value = false
   },
 )
 
@@ -225,5 +231,5 @@ const doSave = () => {
   emit('save', { variantId: props.variantId, textContent: readEditorHtml() })
 }
 
-defineExpose({ save: doSave })
+defineExpose({ save: doSave, isDirty: () => isDirty.value })
 </script>
