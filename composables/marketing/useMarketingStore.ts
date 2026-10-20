@@ -1,11 +1,14 @@
 import { useMarketingApi } from '~/composables/marketing/useMarketingApi'
 import { useMarketingFileStore } from '~/composables/marketing/useMarketingFileStore'
 import {
+  marketingAiStatuses,
   marketingProjectStatuses,
   type MarketingAgentSummary,
   type MarketingCalendarEventItem,
   type MarketingCampaignPlanDraft,
+  type MarketingCampaignPlanSection,
   type MarketingChannelBatchItem,
+  type MarketingChannelConflict,
   type MarketingChannelOption,
   type MarketingContentDetail,
   type MarketingContentSummary,
@@ -32,12 +35,10 @@ import {
 import { getChatAttachmentExtension } from '~/utils/chat/chatAttachmentDisplayUtil'
 import { formatDateTimeDisplay } from '~/utils/global/dateUtil'
 import {
-  MARKETING_AGENT_THEME_FALLBACK_HEX,
   buildMarketingChannelOptions,
   buildMarketingFormPayloadFromChannelPick,
   preloadMarketingImages,
   resolveMarketingScheduleStatus,
-  resolveMarketingSubmitMode,
   resolveMarketingSummaryLabels,
 } from '~/utils/marketing/marketingUtil'
 
@@ -49,13 +50,13 @@ const {
   fetchSelectMarketingProject,
   fetchGenerateMarketingPlan,
   fetchRefineMarketingPlan,
+  fetchUpdateMarketingPlan,
   fetchUpdateMarketingContentTitle,
   fetchSelectMarketingFileList,
   fetchDeleteMarketingFile,
   fetchMarketingContents,
   fetchDeleteMarketingContent,
   fetchUpdateMarketingSchedule,
-  fetchUpdateMarketingPublished,
   fetchMarketingContent,
   fetchCreateMarketingContent,
   fetchRefineMarketingVariant,
@@ -66,6 +67,7 @@ const {
   fetchRunMarketingReview,
   fetchApplyMarketingReviewFix,
   fetchSaveMarketingApproval,
+  fetchCancelMarketingApproval,
   fetchMarketingCalendarEvents,
 } = useMarketingApi()
 
@@ -108,7 +110,6 @@ const generatingStep = ref<MarketingGeneratingStep>('')
 const selectedVariantId = computed(() => currentContent.value?.selectedVariantId ?? null)
 const isSelectingVariant = ref(false)
 const isApplyingFix = ref(false)
-const publishingContentIds = new Set<string>()
 
 const channelPicks = ref<MarketingChannelOption[]>([])
 const channelBatch = ref<MarketingChannelBatchItem[]>([])
@@ -119,6 +120,16 @@ const campaignDraft = ref<MarketingCampaignPlanDraft | null>(null)
 const reviewResult = computed(() => currentContent.value?.review ?? null)
 const isReviewing = ref(false)
 const approval = computed(() => currentContent.value?.approval ?? null)
+/**
+ * 현재 콘텐츠 수정 잠금 — 서버 MarketingServiceImpl.isEditLocked와 같은 기준.
+ * APPROVED: 승인 완료·예약·발행완료 / APPROVAL: 승인 진행 중(검수 판정이 '검토 필요'면 잠그지 않음) / null: 수정 가능
+ */
+const contentEditLock = computed<'APPROVAL' | 'APPROVED' | null>(() => {
+  const statusCd = currentContent.value?.statusCd
+  if (statusCd === '004' || statusCd === '005' || statusCd === '006') return 'APPROVED'
+  if (statusCd === '003' && reviewResult.value?.verdict !== 'REVIEW') return 'APPROVAL'
+  return null
+})
 const isApproving = ref(false)
 const scheduleSetting = computed(() => currentContent.value?.schedule ?? null)
 const isSavingSchedule = ref(false)
@@ -129,15 +140,28 @@ let activeStream: EventSource | null = null
 let activeStreamRequestId = 0
 let activeStreamIdleTimer: ReturnType<typeof setTimeout> | null = null
 let activeStreamTotalTimer: ReturnType<typeof setTimeout> | null = null
+/** 화면을 나가며 스트림을 닫을 때 기다리던 생성 대기를 '중단'으로 끝낸다 (생성 중 표시가 남지 않게) */
+let cancelActiveStreamWait: (() => void) | null = null
+const MARKETING_STREAM_CANCELLED = 'MARKETING_STREAM_CANCELLED'
+/** 생성 중 콘텐츠가 있는 동안 목록 상태를 주기적으로 다시 읽는다 — 제안서 내보내기 상태 조회(ProposalStepExport.pollStatus)와 같은 방식 */
+const MARKETING_HISTORY_POLL_MS = 5000
+let historyPollTimer: ReturnType<typeof setInterval> | null = null
+
+const stopHistoryPoll = () => {
+  if (historyPollTimer) {
+    clearInterval(historyPollTimer)
+    historyPollTimer = null
+  }
+}
 
 const toUploadedMarketingFile = (
-  res: { marketingFileId: string; filePath: string; fileName: string },
+  res: { mktFileId: string; filePath: string; fileName: string },
   file: File,
   projectId: string,
   filePurposeCd: MarketingFilePurposeCd = '001',
 ): MarketingFile => ({
-  marketingFileId: res.marketingFileId,
-  marketingProjectId: projectId,
+  mktFileId: res.mktFileId,
+  mktId: projectId,
   filePath: res.filePath,
   fileName: res.fileName,
   fileSize: file.size,
@@ -158,8 +182,17 @@ const resolveHistoryChannelNm = (
 const resolveProjectStatus = (statusCd: MarketingProjectStatusCd) =>
   marketingProjectStatuses.find((item) => item.statusCd === statusCd) as (typeof marketingProjectStatuses)[number]
 
-/** 서버 업무 상태를 표시한다. AI 생성 실패와 발행 실패는 별개다. */
-const resolveContentProgress = (item: MarketingContentSummary) => resolveProjectStatus(item.statusCd)
+const resolveAiStatus = (aiStatusCd?: string) => marketingAiStatuses.find((item) => item.aiStatusCd === aiStatusCd)
+
+/** 목록 진행 상태 — AI가 끝나기 전(대기·생성중·실패)은 MK000002, 끝나면 MK000001 */
+const resolveContentProgress = (item: MarketingContentSummary) => {
+  const aiStatus = resolveAiStatus(item.aiStatusCd)
+  if (aiStatus && aiStatus.aiStatusCd !== '003') {
+    return { key: item.statusCd, label: aiStatus.aiStatusNm, badgeClass: `ai-status-${aiStatus.aiStatusCd}` }
+  }
+  const progress = resolveProjectStatus(item.statusCd)
+  return { key: progress.statusCd, label: progress.statusNm, badgeClass: `status-${progress.statusCd}` }
+}
 
 const pushMarketingPhase = (next: MarketingPagePhase) => {
   phaseStack.value.push(next)
@@ -176,7 +209,19 @@ const resetMarketingPhaseStack = (initial: MarketingPagePhase = 'list') => {
   pagePhase.value = initial
 }
 
+/** 콘텐츠 작성 단계 순서 — 단계 표시에서 이동할 때 뒤로가기가 앞 단계로 가도록 쌓는다 */
+const MARKETING_CONTENT_STEPS: MarketingPagePhase[] = ['channelContent', 'review', 'approval', 'schedule']
+
+const moveMarketingContentStep = (target: MarketingPagePhase) => {
+  const index = MARKETING_CONTENT_STEPS.indexOf(target)
+  if (index < 0) return
+  phaseStack.value = ['list', ...MARKETING_CONTENT_STEPS.slice(0, index + 1)]
+  pagePhase.value = target
+}
+
 const closeMarketingStream = () => {
+  const cancelWait = cancelActiveStreamWait
+  cancelActiveStreamWait = null
   activeStream?.close()
   activeStream = null
   if (activeStreamIdleTimer) {
@@ -187,6 +232,7 @@ const closeMarketingStream = () => {
     clearTimeout(activeStreamTotalTimer)
     activeStreamTotalTimer = null
   }
+  cancelWait?.()
 }
 
 const clearPending = () => {
@@ -198,19 +244,27 @@ const clearPending = () => {
 
 export const useMarketingStore = () => {
   const route = useRoute()
+  const { user } = useAuth()
 
-  const marketingProjectId = computed(() => String(route.params.id ?? '').trim())
+  const mktId = computed(() => String(route.params.id ?? '').trim())
 
   const selectedAgent = computed(() => {
     const requestedId = String(route.query.agentId ?? selectedAgentId.value).trim()
     return agents.value.find((agent) => agent.agentId === requestedId) ?? agents.value[0] ?? null
   })
   const config = computed(() => selectedAgent.value?.config ?? null)
-  const themeColorHex = computed(() => selectedAgent.value?.colorHex ?? MARKETING_AGENT_THEME_FALLBACK_HEX)
+  /** 현재 콘텐츠 채널명 — 단계 화면 상단 바에 표시. 제작 내역 목록과 같은 규칙 */
+  const currentChannelNm = computed(() =>
+    currentContent.value ? resolveHistoryChannelNm(currentContent.value.summaryLabels, config.value) : '',
+  )
+  /** 로그인 사용자가 현재 콘텐츠 프로젝트의 지정 승인자인지 (서버 saveApproval 권한과 같은 기준) */
+  const isCurrentApprover = computed(
+    () => !!currentContent.value?.approverUserId && currentContent.value.approverUserId === user.value?.userId,
+  )
 
   const navigateMarketing = (query: Record<string, string> = {}) => {
     const agentId = String(route.query.agentId ?? selectedAgent.value?.agentId ?? '').trim()
-    const path = marketingProjectId.value ? `/marketing/${marketingProjectId.value}` : '/marketing'
+    const path = mktId.value ? `/marketing/${mktId.value}` : '/marketing'
     return navigateTo({ path, query: agentId ? { ...query, agentId } : query }, { replace: true })
   }
 
@@ -242,7 +296,7 @@ export const useMarketingStore = () => {
 
   const handleSaveMarketingProject = async (form: MarketingProjectSaveForm): Promise<string> => {
     const payload: Partial<MarketingProject> = {
-      ...(form.marketingProjectId ? { marketingProjectId: form.marketingProjectId } : {}),
+      ...(form.mktId ? { mktId: form.mktId } : {}),
       projectNm: form.projectNm,
       orgNm: form.orgNm,
       projectOverview: form.summary,
@@ -254,21 +308,18 @@ export const useMarketingStore = () => {
     const res = await fetchSaveMarketingProject(payload)
     if (!res.successYn) {
       throw new Error(
-        res.returnMsg ||
-          (form.marketingProjectId ? '마케팅 프로젝트 수정에 실패했습니다.' : '마케팅 프로젝트 생성에 실패했습니다.'),
+        res.returnMsg || (form.mktId ? '마케팅 프로젝트 수정에 실패했습니다.' : '마케팅 프로젝트 생성에 실패했습니다.'),
       )
     }
-    return res.marketingProjectId
+    return res.mktId
   }
 
-  const handleDeleteMarketingProject = async (marketingProjectId: string) => {
-    const res = await fetchDeleteMarketingProject(marketingProjectId)
+  const handleDeleteMarketingProject = async (mktId: string) => {
+    const res = await fetchDeleteMarketingProject(mktId)
     if (!res.successYn) {
       throw new Error(res.returnMsg || '마케팅 프로젝트 삭제에 실패했습니다.')
     }
-    marketingProjectList.value = marketingProjectList.value.filter(
-      (project) => project.marketingProjectId !== marketingProjectId,
-    )
+    marketingProjectList.value = marketingProjectList.value.filter((project) => project.mktId !== mktId)
   }
 
   const allHistoryItems = computed(() =>
@@ -277,11 +328,12 @@ export const useMarketingStore = () => {
       const scheduleStatus = resolveMarketingScheduleStatus(item.publishScheduledDt, item.publishedYn)
       const progress = resolveContentProgress(item)
       return {
-        contentId: item.contentId,
+        mktContentId: item.mktContentId,
         displayTitle: item.title,
         channelNm: resolveHistoryChannelNm(item.summaryLabels, agentConfig),
-        progressKey: progress.statusCd,
-        progressLabel: progress.statusNm,
+        progressKey: progress.key,
+        progressLabel: progress.label,
+        progressBadgeClass: progress.badgeClass,
         createUserNm: item.createUserNm || '-',
         createDt: formatDateTimeDisplay(item.createDt) || item.createDt || '-',
         publishScheduledDt: item.publishScheduledDt || '',
@@ -295,25 +347,50 @@ export const useMarketingStore = () => {
     allHistoryItems.value.filter((item) => item.scheduleStatus === 'today' || item.scheduleStatus === 'overdue'),
   )
 
-  const handleSelectHistoryList = async () => {
-    if (!marketingProjectId.value) {
+  /** 생성 중(002)인 콘텐츠가 있으면 목록 상태 조회를 켜고, 없으면 끈다 */
+  const syncHistoryPoll = () => {
+    if (!mktId.value || !historyList.value.some((item) => item.aiStatusCd === '002')) {
+      stopHistoryPoll()
+      return
+    }
+    if (historyPollTimer) return
+    historyPollTimer = setInterval(() => {
+      void handleSelectHistoryList({ silent: true })
+    }, MARKETING_HISTORY_POLL_MS)
+  }
+
+  /** silent: 주기 조회 — 실패해도 조용히 다음 주기에 다시 읽는다 */
+  const handleSelectHistoryList = async ({ silent = false }: { silent?: boolean } = {}) => {
+    if (!mktId.value) {
       historyList.value = []
+      stopHistoryPoll()
       return
     }
     const seq = ++historyListRequestSeq
     try {
       const response = await fetchMarketingContents({
-        marketingProjectId: marketingProjectId.value,
+        mktId: mktId.value,
       })
       if (seq !== historyListRequestSeq) return
+      const prevGenerating = historyList.value.filter((item) => item.aiStatusCd === '002')
       historyList.value = response.list ?? []
+      // 화면을 나가 있어도 생성이 끝나면 알린다
+      prevGenerating.forEach((prev) => {
+        const next = historyList.value.find((item) => item.mktContentId === prev.mktContentId)
+        if (!next || next.aiStatusCd === '002') return
+        const channelNm = resolveHistoryChannelNm(next.summaryLabels, config.value)
+        const target = channelNm ? `${channelNm} 채널 콘텐츠` : `'${next.title}' 콘텐츠`
+        if (next.aiStatusCd === '003') openToast({ message: `${target} 생성이 완료되었습니다.`, type: 'success' })
+        if (next.aiStatusCd === '004') openToast({ message: `${target} 생성에 실패했습니다.`, type: 'error' })
+      })
+      syncHistoryPoll()
     } catch {
-      if (seq !== historyListRequestSeq) return
+      if (seq !== historyListRequestSeq || silent) return
       openToast({ message: '제작 내역을 불러오지 못했습니다.', type: 'error' })
     }
   }
 
-  const handleDeleteHistory = async (contentId: string) => {
+  const handleDeleteHistory = async (mktContentId: string) => {
     const confirmed = await openConfirm({
       title: '제작 내역 삭제',
       message: '선택한 제작 내역을 삭제할까요?\n삭제 후 복구할 수 없습니다.',
@@ -322,7 +399,7 @@ export const useMarketingStore = () => {
     })
     if (!confirmed) return
     try {
-      const response = await fetchDeleteMarketingContent(contentId)
+      const response = await fetchDeleteMarketingContent(mktContentId)
       if (!response.successYn) throw new Error(response.returnMsg)
       openToast({ message: '제작 내역이 삭제되었습니다.' })
       await handleSelectHistoryList()
@@ -331,33 +408,14 @@ export const useMarketingStore = () => {
     }
   }
 
-  const refreshMarketingContent = async (contentId: string) => {
-    const detail = await fetchMarketingContent(contentId)
-    if (currentContent.value?.contentId === contentId) currentContent.value = detail
+  const refreshMarketingContent = async (mktContentId: string) => {
+    const detail = await fetchMarketingContent(mktContentId)
+    if (currentContent.value?.mktContentId === mktContentId) currentContent.value = detail
     await handleSelectHistoryList()
     return detail
   }
 
-  const handleTogglePublished = async (contentId: string, publishedYn: 'Y' | 'N') => {
-    if (publishingContentIds.has(contentId)) return false
-    publishingContentIds.add(contentId)
-    try {
-      const response = await fetchUpdateMarketingPublished(contentId, { publishedYn })
-      if (!response.successYn) throw new Error(response.returnMsg)
-      await refreshMarketingContent(contentId)
-      return true
-    } catch (error) {
-      openToast({
-        message: error instanceof Error && error.message ? error.message : '발행 상태 변경에 실패했습니다.',
-        type: 'error',
-      })
-      return false
-    } finally {
-      publishingContentIds.delete(contentId)
-    }
-  }
-
-  const handleSelectProjectFiles = async (projectId = marketingProjectId.value) => {
+  const handleSelectProjectFiles = async (projectId = mktId.value) => {
     const id = String(projectId).trim()
     if (!id) {
       projectFiles.value = []
@@ -373,8 +431,8 @@ export const useMarketingStore = () => {
   }
 
   /** 참고 파일 삭제 — 프로젝트 기획서 생성 화면 등에서 이미 올린 파일을 지운다 */
-  const handleRemoveProjectFile = async (marketingFileId: string) => {
-    const target = projectFiles.value.find((file) => file.marketingFileId === marketingFileId)
+  const handleRemoveProjectFile = async (mktFileId: string) => {
+    const target = projectFiles.value.find((file) => file.mktFileId === mktFileId)
     const confirmed = await openConfirm({
       title: '참고 파일 삭제',
       message: `'${target?.fileName ?? '선택한 파일'}'을(를) 삭제할까요?\n삭제 후 복구할 수 없습니다.`,
@@ -384,9 +442,9 @@ export const useMarketingStore = () => {
     if (!confirmed) return
 
     try {
-      const res = await fetchDeleteMarketingFile(marketingFileId)
+      const res = await fetchDeleteMarketingFile(mktFileId)
       if (!res.successYn) throw new Error(res.returnMsg || '마케팅 참고 파일 삭제 실패')
-      projectFiles.value = projectFiles.value.filter((file) => file.marketingFileId !== marketingFileId)
+      projectFiles.value = projectFiles.value.filter((file) => file.mktFileId !== mktFileId)
       // 참조 콘텐츠의 승인이 해제되므로 상태를 다시 조회한다
       await handleSelectHistoryList()
       openToast({ message: '참고 파일을 삭제했습니다.' })
@@ -403,7 +461,7 @@ export const useMarketingStore = () => {
     files: File[],
     filePurposeCd: MarketingFilePurposeCd,
   ): Promise<{ file: File; saved: MarketingFile }[]> => {
-    const id = marketingProjectId.value
+    const id = mktId.value
     if (!id || files.length === 0) return []
     const uploaded: { file: File; saved: MarketingFile }[] = []
     for (const file of files) {
@@ -479,15 +537,17 @@ export const useMarketingStore = () => {
     return preloadMarketingImages((result.images ?? []).map((item) => item.url))
   }
 
-  const awaitMarketingResult = (contentId: string) => {
+  const awaitMarketingResult = (mktContentId: string) => {
     closeMarketingStream()
     const requestId = ++activeStreamRequestId
     return new Promise<MarketingResult>((resolve, reject) => {
       const settle = (fn: () => void) => {
         if (requestId !== activeStreamRequestId) return
+        cancelActiveStreamWait = null
         closeMarketingStream()
         fn()
       }
+      cancelActiveStreamWait = () => reject(new Error(MARKETING_STREAM_CANCELLED))
       const resetIdleTimer = () => {
         if (activeStreamIdleTimer) clearTimeout(activeStreamIdleTimer)
         activeStreamIdleTimer = setTimeout(() => {
@@ -499,7 +559,7 @@ export const useMarketingStore = () => {
         settle(() => reject(new Error('마케팅 생성 제한 시간이 초과되었습니다.')))
       }, MARKETING_STREAM_TOTAL_MS)
 
-      activeStream = streamMarketingEvents(contentId, {
+      activeStream = streamMarketingEvents(mktContentId, {
         onProgress: (data) => {
           if (requestId !== activeStreamRequestId) return
           resetIdleTimer()
@@ -528,15 +588,17 @@ export const useMarketingStore = () => {
     generatingStep.value = ''
     isSubmitting.value = true
     try {
-      await awaitMarketingResult(detail.contentId)
-      const refreshed = await fetchMarketingContent(detail.contentId)
+      await awaitMarketingResult(detail.mktContentId)
+      const refreshed = await fetchMarketingContent(detail.mktContentId)
       await preloadResultImages(refreshed.result)
       currentContent.value = refreshed
       await handleSelectHistoryList()
-    } catch {
+    } catch (error) {
+      // 화면을 나가 대기를 중단한 경우 — 서버 생성은 계속되고 목록 상태 조회가 완료를 반영한다
+      if (error instanceof Error && error.message === MARKETING_STREAM_CANCELLED) return
       openToast({ message: '콘텐츠 생성 결과를 불러오지 못했습니다. 다시 시도해 주세요.', type: 'error' })
       try {
-        currentContent.value = await fetchMarketingContent(detail.contentId)
+        currentContent.value = await fetchMarketingContent(detail.mktContentId)
       } catch {
         // 재조회도 실패하면 직전에 가져온 detail을 그대로 둔다
       }
@@ -548,18 +610,18 @@ export const useMarketingStore = () => {
 
   const handleRetryGeneration = async () => {
     if (!currentContent.value || currentContent.value.aiStatusCd !== '004' || isSubmitting.value) return
-    const contentId = currentContent.value.contentId
+    const mktContentId = currentContent.value.mktContentId
     await resumeMarketingGeneration(currentContent.value)
-    const aiStatusCd = currentContent.value?.contentId === contentId ? currentContent.value.aiStatusCd : undefined
+    const aiStatusCd = currentContent.value?.mktContentId === mktContentId ? currentContent.value.aiStatusCd : undefined
     if (aiStatusCd) {
       channelBatch.value = channelBatch.value.map((item) =>
-        item.contentId === contentId ? { ...item, aiStatusCd } : item,
+        item.mktContentId === mktContentId ? { ...item, aiStatusCd } : item,
       )
     }
   }
 
-  const handleSelectContentDetail = async (contentId: string) => {
-    const id = String(contentId).trim()
+  const handleSelectContentDetail = async (mktContentId: string) => {
+    const id = String(mktContentId).trim()
     if (!id) return
     clearPending()
     currentContent.value = null
@@ -571,8 +633,18 @@ export const useMarketingStore = () => {
     try {
       const detail = await fetchMarketingContent(id)
       currentContent.value = detail
-      await navigateMarketing({ contentId: id })
+      await navigateMarketing({ mktContentId: id })
       isLoadingContent.value = false
+      // 검수 중 콘텐츠는 검수 화면으로 바로 연다. 뒤로가기는 콘텐츠 화면으로 돌아간다
+      if (detail.statusCd === '002' && detail.aiStatusCd === '003') {
+        pushMarketingPhase('review')
+        return
+      }
+      // 승인 필요 콘텐츠는 지정 승인자에게만 승인 화면으로 연다. 다른 팀원은 콘텐츠 확인 화면에 머문다
+      if (detail.statusCd === '003' && isCurrentApprover.value) {
+        moveMarketingContentStep('approval')
+        return
+      }
       if (detail.aiStatusCd === '001' || detail.aiStatusCd === '002') {
         await resumeMarketingGeneration(detail)
       }
@@ -581,8 +653,8 @@ export const useMarketingStore = () => {
     }
   }
 
-  const handleOpenHistory = async (contentId: string) => {
-    const id = String(contentId).trim()
+  const handleOpenHistory = async (mktContentId: string) => {
+    const id = String(mktContentId).trim()
     if (!id) return
     try {
       await handleSelectContentDetail(id)
@@ -592,83 +664,14 @@ export const useMarketingStore = () => {
     }
   }
 
-  const handleSubmit = async (payload: MarketingFormPayload) => {
-    const agent = selectedAgent.value
-    if (!agent || isSubmitting.value) return undefined
-
-    const { referenceFiles, selectedExistingFileIds, ...requestWithoutFiles } = payload
-    let createdContentId = ''
-    const mode = resolveMarketingSubmitMode(payload.outputs)
-    pendingResult.value = { title: '', mode, variants: [], images: [] }
-    pendingRequest.value = { ...requestWithoutFiles, referenceMarketingFileIds: [] }
-    generatingStep.value = ''
-    currentContent.value = null
-    isSubmitting.value = true
-
-    try {
-      const projectId = marketingProjectId.value
-      if (!projectId) throw new Error('마케팅 프로젝트가 없습니다.')
-
-      const uploadedIds: string[] = []
-      for (const file of referenceFiles) {
-        const res = await handleUploadMarketingFile(file, projectId)
-        if (!res || !res.successYn) throw new Error('참고 파일 업로드에 실패했습니다.')
-        uploadedIds.push(res.marketingFileId)
-        projectFiles.value = [...projectFiles.value, toUploadedMarketingFile(res, file, projectId)]
-      }
-
-      const referenceMarketingFileIds = [...new Set([...selectedExistingFileIds, ...uploadedIds])]
-      const storedRequest: MarketingStoredRequest = {
-        ...requestWithoutFiles,
-        marketingProjectId: projectId,
-        referenceMarketingFileIds,
-      }
-      pendingRequest.value = storedRequest
-
-      const created = await fetchCreateMarketingContent({
-        ...storedRequest,
-        agentId: agent.agentId,
-        marketingProjectId: projectId,
-      })
-      if (!created?.contentId) {
-        throw new Error(created?.returnMsg || '콘텐츠 생성 요청에 실패했습니다.')
-      }
-      createdContentId = created.contentId
-      const result = await awaitMarketingResult(created.contentId)
-      await preloadResultImages(result)
-      currentContent.value = await fetchMarketingContent(created.contentId)
-      clearPending()
-      await handleSelectHistoryList()
-      return created.contentId
-    } catch {
-      clearPending()
-      currentContent.value = null
-      if (createdContentId) {
-        try {
-          currentContent.value = await fetchMarketingContent(createdContentId)
-        } catch {
-          /* 목록에서 다시 조회 */
-        }
-        await handleSelectHistoryList()
-      }
-      openToast({
-        message: '콘텐츠 생성에 실패했습니다. 제작 내역에서 실패한 부분을 다시 생성할 수 있습니다.',
-        type: 'error',
-      })
-      return createdContentId || undefined
-    } finally {
-      isSubmitting.value = false
-    }
-  }
-
   const handleEditWithAgent = async (payload: { variantId: number; request: string; type: 'TEXT' | 'IMAGE' }) => {
     if (!currentContent.value || isSubmitting.value || refiningType.value) return
-    const contentId = currentContent.value.contentId
+    const mktContentId = currentContent.value.mktContentId
     isSubmitting.value = true
     refiningType.value = payload.type
     refiningVariantId.value = payload.variantId
     try {
-      const response = await fetchRefineMarketingVariant(contentId, payload.variantId, {
+      const response = await fetchRefineMarketingVariant(mktContentId, payload.variantId, {
         request: payload.request,
         type: payload.type,
       })
@@ -676,7 +679,7 @@ export const useMarketingStore = () => {
         openToast({ message: response.returnMsg || '보완 요청에 실패했습니다.', type: 'error' })
         return
       }
-      await refreshMarketingContent(contentId)
+      await refreshMarketingContent(mktContentId)
       refineCompletedAt.value = Date.now()
     } catch {
       openToast({ message: '보완 요청에 실패했습니다.', type: 'error' })
@@ -689,16 +692,16 @@ export const useMarketingStore = () => {
 
   const handleSaveVariantText = async (payload: { variantId: number; textContent: string }) => {
     if (!currentContent.value || isSubmitting.value || refiningType.value) return false
-    const contentId = currentContent.value.contentId
+    const mktContentId = currentContent.value.mktContentId
     try {
-      const response = await fetchUpdateMarketingVariant(contentId, payload.variantId, {
+      const response = await fetchUpdateMarketingVariant(mktContentId, payload.variantId, {
         textContent: payload.textContent,
       })
       if (!response.successYn) {
         openToast({ message: response.returnMsg || '시안 저장에 실패했습니다.', type: 'error' })
         return false
       }
-      currentContent.value = await fetchMarketingContent(contentId)
+      currentContent.value = await fetchMarketingContent(mktContentId)
       openToast({ message: '시안을 저장했습니다.' })
       return true
     } catch {
@@ -709,14 +712,14 @@ export const useMarketingStore = () => {
 
   const handleRestoreVariant = async (variantId: number) => {
     if (!currentContent.value || isSubmitting.value || refiningType.value) return false
-    const contentId = currentContent.value.contentId
+    const mktContentId = currentContent.value.mktContentId
     try {
-      const response = await fetchRestoreMarketingVariant(contentId, variantId)
+      const response = await fetchRestoreMarketingVariant(mktContentId, variantId)
       if (!response.successYn) {
         openToast({ message: response.returnMsg || '되돌리기에 실패했습니다.', type: 'error' })
         return false
       }
-      currentContent.value = await fetchMarketingContent(contentId)
+      currentContent.value = await fetchMarketingContent(mktContentId)
       openToast({ message: '직전 버전으로 되돌렸습니다.' })
       return true
     } catch {
@@ -726,13 +729,13 @@ export const useMarketingStore = () => {
   }
 
   const handleUseVariant = async (variantId: number) => {
-    const contentId = currentContent.value?.contentId
-    if (!contentId || selectedVariantId.value === variantId || isSelectingVariant.value || isSubmitting.value) return
+    const mktContentId = currentContent.value?.mktContentId
+    if (!mktContentId || selectedVariantId.value === variantId || isSelectingVariant.value || isSubmitting.value) return
     isSelectingVariant.value = true
     try {
-      const response = await fetchSelectMarketingVariant(contentId, variantId)
+      const response = await fetchSelectMarketingVariant(mktContentId, variantId)
       if (!response.successYn) throw new Error(response.returnMsg)
-      await refreshMarketingContent(contentId)
+      await refreshMarketingContent(mktContentId)
       openToast({ message: '선택 시안을 저장했습니다. 변경된 시안은 다시 검수해 주세요.' })
     } catch (error) {
       openToast({
@@ -757,11 +760,11 @@ export const useMarketingStore = () => {
     brandFileIds: string[]
     imageFileIds: string[]
   }) => {
-    const marketingProjectIdValue = marketingProjectId.value
+    const marketingProjectIdValue = mktId.value
     if (!marketingProjectIdValue) return null
     try {
       const response = await fetchGenerateMarketingPlan({
-        marketingProjectId: marketingProjectIdValue,
+        mktId: marketingProjectIdValue,
         ...input,
       })
       if (!response.successYn || !response.plan) throw new Error(response.returnMsg)
@@ -774,12 +777,12 @@ export const useMarketingStore = () => {
   }
 
   const handleRefineMarketingPlan = async (message: string) => {
-    const marketingProjectIdValue = marketingProjectId.value
+    const marketingProjectIdValue = mktId.value
     const text = message.trim()
     if (!marketingProjectIdValue || !text) return null
     try {
       const response = await fetchRefineMarketingPlan({
-        marketingProjectId: marketingProjectIdValue,
+        mktId: marketingProjectIdValue,
         message: text,
       })
       if (!response.successYn || !response.plan) throw new Error(response.returnMsg)
@@ -787,6 +790,24 @@ export const useMarketingStore = () => {
       return response.plan
     } catch {
       openToast({ message: '기획서 수정에 실패했습니다.', type: 'error' })
+      return null
+    }
+  }
+
+  const handleUpdateMarketingPlan = async (sections: MarketingCampaignPlanSection[]) => {
+    const projectId = mktId.value
+    if (!projectId) return null
+    try {
+      const response = await fetchUpdateMarketingPlan({ mktId: projectId, sections })
+      if (!response.successYn || !response.plan) throw new Error(response.returnMsg)
+      campaignDraft.value = response.plan
+      openToast({ message: '기획서를 저장했습니다.' })
+      return response.plan
+    } catch (error) {
+      openToast({
+        message: error instanceof Error && error.message ? error.message : '기획서 저장에 실패했습니다.',
+        type: 'error',
+      })
       return null
     }
   }
@@ -810,60 +831,119 @@ export const useMarketingStore = () => {
     )
   }
 
-  const handleGenerateChannelBatch = async () => {
-    const picks = channelPicks.value.filter((pick) => pick.selected)
+  /** 선택 채널 중 이 프로젝트에 이미 콘텐츠가 있는 채널. 예약·발행완료는 덮어쓸 수 없다 */
+  const handleSelectChannelConflicts = async (): Promise<MarketingChannelConflict[]> => {
+    await handleSelectHistoryList()
+    return channelPicks.value.flatMap((pick) => {
+      if (!pick.selected) return []
+      const existing = historyList.value.find((item) => item.channelCd === pick.channelCd)
+      if (!existing) return []
+      return {
+        channelCd: pick.channelCd,
+        channelNm: pick.channelNm,
+        isLocked: ['003', '004', '005', '006'].includes(existing.statusCd),
+      }
+    })
+  }
+
+  /** 채널 생성 요청에는 업로드 파일·선택 목록 대신 referenceMarketingFileIds만 보낸다 */
+  const toChannelRequest = ({
+    referenceFiles: _files,
+    selectedExistingFileIds: _ids,
+    ...request
+  }: MarketingFormPayload) => request
+
+  /** 기존 콘텐츠가 있는 채널은 overwriteChannelCds에 든 채널만 덮어쓰고 나머지는 생성하지 않는다 */
+  const handleGenerateChannelBatch = async (
+    conflicts: MarketingChannelConflict[] = [],
+    overwriteChannelCds: string[] = [],
+  ) => {
     const draft = campaignDraft.value
-    if (!picks.length || !draft || isGeneratingChannelBatch.value) return
+    const agentId = selectedAgent.value?.agentId ?? ''
+    const projectId = mktId.value
+    const conflictCds = new Set(conflicts.map((item) => item.channelCd))
+    const picks = channelPicks.value.filter(
+      (pick) => pick.selected && (!conflictCds.has(pick.channelCd) || overwriteChannelCds.includes(pick.channelCd)),
+    )
+    if (!draft || !agentId || !projectId || isGeneratingChannelBatch.value) return
+    if (!picks.length) {
+      openToast({ message: '생성할 채널이 없습니다.', type: 'warning' })
+      return
+    }
+    const referenceMarketingFileIds = projectFiles.value
+      .filter((file) => file.filePurposeCd === '001')
+      .slice(0, MARKETING_REFERENCE_FILE_MAX)
+      .map((file) => file.mktFileId)
     isGeneratingChannelBatch.value = true
     channelBatch.value = picks.map((pick) => ({
       channelCd: pick.channelCd,
       channelNm: pick.channelNm,
-      contentId: '',
-      aiStatusCd: '002',
+      mktContentId: '',
+      aiStatusCd: '001',
     }))
     pushMarketingPhase('channelResults')
 
+    const updateBatchItem = (channelCd: string, patch: Partial<MarketingChannelBatchItem>) => {
+      channelBatch.value = channelBatch.value.map((item) =>
+        item.channelCd === channelCd ? { ...item, ...patch } : item,
+      )
+    }
+
     try {
-      for (const [index, pick] of picks.entries()) {
-        const payload = buildMarketingFormPayloadFromChannelPick(pick, draft)
-        payload.selectedExistingFileIds = projectFiles.value
-          .filter((file) => file.filePurposeCd === '001')
-          .slice(0, MARKETING_REFERENCE_FILE_MAX)
-          .map((file) => file.marketingFileId)
-        const contentId = await handleSubmit(payload)
-        channelBatch.value = channelBatch.value.map((item, itemIndex) =>
-          itemIndex === index
-            ? {
-                ...item,
-                contentId: contentId ?? '',
-                aiStatusCd: contentId ? (currentContent.value?.aiStatusCd ?? '004') : '004',
-              }
-            : item,
-        )
+      for (const pick of picks) {
+        const request = toChannelRequest(buildMarketingFormPayloadFromChannelPick(pick, draft))
+        updateBatchItem(pick.channelCd, { aiStatusCd: '002' })
+        try {
+          const created = await fetchCreateMarketingContent({
+            ...request,
+            referenceMarketingFileIds,
+            agentId,
+            mktId: projectId,
+            overwriteYn: conflictCds.has(pick.channelCd) ? 'Y' : 'N',
+          })
+          const createdId = created?.mktContentId
+          if (!createdId) throw new Error(created?.returnMsg || '콘텐츠 생성 요청에 실패했습니다.')
+          updateBatchItem(pick.channelCd, { mktContentId: createdId })
+          // 화면을 나가도 끝까지 진행하도록 전역 스트림·현재 콘텐츠와 분리된 스트림으로 기다린다
+          const isDone = await new Promise<boolean>((resolve) => {
+            streamMarketingEvents(createdId, {
+              onDone: () => resolve(true),
+              onError: () => resolve(false),
+            })
+          })
+          updateBatchItem(pick.channelCd, { aiStatusCd: isDone ? '003' : '004' })
+        } catch (error) {
+          updateBatchItem(pick.channelCd, { aiStatusCd: '004' })
+          openToast({
+            message: error instanceof Error && error.message ? error.message : '콘텐츠 생성에 실패했습니다.',
+            type: 'error',
+          })
+        }
+        // 다른 프로젝트로 이동했으면 목록을 갱신하지 않는다
+        if (mktId.value === projectId) await handleSelectHistoryList()
       }
-      await handleSelectHistoryList()
     } finally {
       isGeneratingChannelBatch.value = false
     }
   }
 
-  const handleOpenChannelContent = async (contentId: string) => {
-    const id = String(contentId ?? '').trim()
+  const handleOpenChannelContent = async (mktContentId: string) => {
+    const id = String(mktContentId ?? '').trim()
     if (!id) return
     currentContent.value = await fetchMarketingContent(id)
     activeBatchContentId.value = id
     pushMarketingPhase('channelContent')
   }
 
-  const handleSwitchChannelTab = async (contentId: string) => {
-    const id = String(contentId ?? '').trim()
+  const handleSwitchChannelTab = async (mktContentId: string) => {
+    const id = String(mktContentId ?? '').trim()
     if (!id || id === activeBatchContentId.value) return
     currentContent.value = await fetchMarketingContent(id)
     activeBatchContentId.value = id
   }
 
-  const handleRunReview = async (contentId: string) => {
-    const id = String(contentId ?? '').trim()
+  const handleRunReview = async (mktContentId: string) => {
+    const id = String(mktContentId ?? '').trim()
     if (!id || isReviewing.value || isApplyingFix.value) return
     isReviewing.value = true
     try {
@@ -881,13 +961,13 @@ export const useMarketingStore = () => {
   }
 
   const handleApplyFix = async (issueId: string) => {
-    const contentId = reviewResult.value?.contentId
-    if (!contentId || isApplyingFix.value || isReviewing.value) return
+    const mktContentId = reviewResult.value?.mktContentId
+    if (!mktContentId || isApplyingFix.value || isReviewing.value) return
     isApplyingFix.value = true
     try {
-      const response = await fetchApplyMarketingReviewFix(contentId, issueId)
+      const response = await fetchApplyMarketingReviewFix(mktContentId, issueId)
       if (!response.successYn) throw new Error(response.returnMsg)
-      await refreshMarketingContent(contentId)
+      await refreshMarketingContent(mktContentId)
       openToast({ message: 'AI 수정안을 적용했습니다. 다시 검수해 주세요.' })
     } catch (error) {
       openToast({
@@ -899,8 +979,8 @@ export const useMarketingStore = () => {
     }
   }
 
-  const saveApproval = async (contentId: string, approvedYn: 'Y' | 'N', memo: string) => {
-    const id = String(contentId ?? '').trim()
+  const saveApproval = async (mktContentId: string, approvedYn: 'Y' | 'N', memo: string) => {
+    const id = String(mktContentId ?? '').trim()
     if (!id || isApproving.value) return false
     isApproving.value = true
     try {
@@ -924,23 +1004,44 @@ export const useMarketingStore = () => {
     }
   }
 
-  const handleApprove = async (contentId: string, memo: string) => {
-    const ok = await saveApproval(contentId, 'Y', memo)
+  const handleApprove = async (mktContentId: string, memo: string) => {
+    const ok = await saveApproval(mktContentId, 'Y', memo)
     if (ok) openToast({ message: '콘텐츠를 승인했습니다.' })
     return ok
   }
 
-  const handleReject = async (contentId: string, memo: string) => {
-    const ok = await saveApproval(contentId, 'N', memo)
+  const handleCancelApproval = async (mktContentId: string) => {
+    const id = String(mktContentId ?? '').trim()
+    if (!id || isApproving.value) return false
+    isApproving.value = true
+    try {
+      const response = await fetchCancelMarketingApproval(id)
+      if (!response.successYn) throw new Error(response.returnMsg)
+      await refreshMarketingContent(id)
+      openToast({ message: '승인을 취소했습니다. 콘텐츠가 검수 중으로 돌아갔습니다.' })
+      return true
+    } catch (error) {
+      openToast({
+        message: error instanceof Error && error.message ? error.message : '승인 취소에 실패했습니다.',
+        type: 'error',
+      })
+      return false
+    } finally {
+      isApproving.value = false
+    }
+  }
+
+  const handleReject = async (mktContentId: string, memo: string) => {
+    const ok = await saveApproval(mktContentId, 'N', memo)
     if (ok) openToast({ message: '콘텐츠를 반려했습니다.' })
     return ok
   }
 
   const handleSaveSchedule = async (
-    contentId: string,
-    payload: { publishType: MarketingPublishType; publishScheduledDt: string; alertHour: number },
+    mktContentId: string,
+    payload: { publishType: MarketingPublishType; publishScheduledDt: string | null; alertHour: number },
   ) => {
-    const id = String(contentId ?? '').trim()
+    const id = String(mktContentId ?? '').trim()
     if (!id || isSavingSchedule.value) return false
     isSavingSchedule.value = true
     try {
@@ -983,6 +1084,7 @@ export const useMarketingStore = () => {
   }
 
   const handleBackToProjects = async () => {
+    stopHistoryPoll()
     clearPending()
     currentContent.value = null
     isLoadingContent.value = false
@@ -995,12 +1097,12 @@ export const useMarketingStore = () => {
     await navigateTo({ path: '/marketing', query: agentId ? { agentId } : {} })
   }
 
-  const handleHistoryRowClick = (contentId: string) => {
-    void handleOpenHistory(contentId)
+  const handleHistoryRowClick = (mktContentId: string) => {
+    void handleOpenHistory(mktContentId)
   }
 
   const handleSaveHistoryEdit = async (
-    contentId: string,
+    mktContentId: string,
     payload: {
       title: string
       originalTitle: string
@@ -1011,10 +1113,10 @@ export const useMarketingStore = () => {
     if (title === payload.originalTitle.trim()) return true
 
     try {
-      const response = await fetchUpdateMarketingContentTitle(contentId, title)
+      const response = await fetchUpdateMarketingContentTitle(mktContentId, title)
       if (!response.successYn) throw new Error(response.returnMsg)
-      // 이름 변경도 승인을 해제하므로 상태를 다시 조회한다
-      if (currentContent.value?.contentId === contentId) await refreshMarketingContent(contentId)
+      // 변경된 이름을 목록·현재 콘텐츠에 반영한다
+      if (currentContent.value?.mktContentId === mktContentId) await refreshMarketingContent(mktContentId)
       else await handleSelectHistoryList()
       openToast({ message: '이름을 변경했습니다.' })
       return true
@@ -1037,7 +1139,7 @@ export const useMarketingStore = () => {
     openLoading({ text: '마케팅 프로젝트를 불러오는 중...' })
     try {
       await handleSelectAgents()
-      const projectId = marketingProjectId.value
+      const projectId = mktId.value
       if (!projectId) {
         resetMarketingPhaseStack('list')
         return
@@ -1054,9 +1156,9 @@ export const useMarketingStore = () => {
         return
       }
       await handleSelectProjectFiles(projectId)
-      const contentId = String(route.query.contentId ?? '').trim()
-      if (contentId) {
-        await handleSelectContentDetail(contentId)
+      const mktContentId = String(route.query.mktContentId ?? '').trim()
+      if (mktContentId) {
+        await handleSelectContentDetail(mktContentId)
       } else {
         resetMarketingPhaseStack('list')
         await handleSelectHistoryList()
@@ -1070,6 +1172,7 @@ export const useMarketingStore = () => {
   }
 
   const cleanupMarketingSession = () => {
+    stopHistoryPoll()
     historyListRequestSeq += 1
     closeMarketingStream()
     currentContent.value = null
@@ -1085,15 +1188,16 @@ export const useMarketingStore = () => {
     pagePhase,
     selectedAgent,
     config,
-    themeColorHex,
+    currentChannelNm,
+    isCurrentApprover,
     pushMarketingPhase,
+    moveMarketingContentStep,
     popMarketingPhase,
     currentProject,
     currentProjectMembers,
     projectFiles,
     allHistoryItems,
     dueSoonHistoryItems,
-    handleTogglePublished,
     handleSaveHistoryEdit,
     currentContent,
     displayResult,
@@ -1136,9 +1240,11 @@ export const useMarketingStore = () => {
     handleSaveCampaignDraft,
     handleGenerateMarketingPlan,
     handleRefineMarketingPlan,
+    handleUpdateMarketingPlan,
     handleInitChannelPicks,
     handleTogglePick,
     handleToggleWithImage,
+    handleSelectChannelConflicts,
     handleGenerateChannelBatch,
     handleOpenChannelContent,
     handleSwitchChannelTab,
@@ -1147,9 +1253,11 @@ export const useMarketingStore = () => {
     handleRunReview,
     handleApplyFix,
     approval,
+    contentEditLock,
     isApproving,
     handleApprove,
     handleReject,
+    handleCancelApproval,
     scheduleSetting,
     isSavingSchedule,
     handleSaveSchedule,

@@ -13,13 +13,9 @@ const buildStoreFileName = (originalName: string, at: Date): string => {
   return ext ? `${base}.${ext}` : base
 }
 
-const buildMarketingFileStorePath = (
-  userId: string,
-  marketingProjectId: string | undefined,
-  storeFileName: string,
-): string => {
+const buildMarketingFileStorePath = (userId: string, mktId: string | undefined, storeFileName: string): string => {
   const safeUser = String(userId ?? '').trim() || 'unknown'
-  const safeProject = String(marketingProjectId ?? '').trim() || 'draft'
+  const safeProject = String(mktId ?? '').trim() || 'draft'
   const safeName = String(storeFileName ?? '').trim()
   return `marketing/${safeUser}/${safeProject}/${safeName}`
 }
@@ -28,14 +24,14 @@ const toMarketingFileSaveResult = (
   saved: MarketingFileSaveResponse,
   fallback: { fileName: string; filePath: string },
 ): MarketingFileSaveResponse => {
-  const marketingFileId = String(saved.marketingFileId ?? '').trim()
-  if (!marketingFileId) {
+  const mktFileId = String(saved.mktFileId ?? '').trim()
+  if (!mktFileId) {
     throw new Error('마케팅 파일 저장 결과에 marketingFileId가 없습니다.')
   }
   return {
     successYn: saved.successYn,
     returnMsg: saved.returnMsg,
-    marketingFileId,
+    mktFileId,
     filePath: String(saved.filePath ?? fallback.filePath),
     fileName: String(saved.fileName ?? fallback.fileName),
   }
@@ -49,12 +45,12 @@ export const useMarketingFileStore = () => {
    * 마케팅 파일 업로드: presign → NCP PUT → 메타 저장
    * 실패 토스트는 호출부(스토어)에서 파일명·맥락에 맞게 띄운다 — 여기선 null만 반환한다.
    * @param file                업로드 파일
-   * @param marketingProjectId  프로젝트 ID (생성 전이면 생략)
+   * @param mktId  프로젝트 ID (생성 전이면 생략)
    * @param filePurposeCd          파일 용도. 기본값 001(콘텐츠 참고자료)
    */
   const handleUploadMarketingFile = async (
     file: File,
-    marketingProjectId?: string,
+    mktId?: string,
     filePurposeCd: MarketingFilePurposeCd = '001',
   ): Promise<MarketingFileSaveResponse | null> => {
     const resolvedUserId = String(user.value?.userId ?? '').trim()
@@ -64,14 +60,14 @@ export const useMarketingFileStore = () => {
 
     const at = new Date()
     const storeFileName = buildStoreFileName(file.name, at)
-    const storeFilePath = buildMarketingFileStorePath(resolvedUserId, marketingProjectId, storeFileName)
+    const storeFilePath = buildMarketingFileStorePath(resolvedUserId, mktId, storeFileName)
 
     const presign = await fetchCreateMarketingFileUploadUrl({
       fileName: file.name,
       fileType: file.type || 'application/octet-stream',
       fileSize: String(file.size),
       filePath: storeFilePath,
-      ...(marketingProjectId ? { marketingProjectId } : {}),
+      ...(mktId ? { mktId } : {}),
     })
 
     const uploadUrl = String(presign.uploadUrl ?? '').trim()
@@ -93,7 +89,7 @@ export const useMarketingFileStore = () => {
       fileType: getChatAttachmentExtension(file.name),
       mimeType: file.type || 'application/octet-stream',
       filePurposeCd,
-      ...(marketingProjectId ? { marketingProjectId } : {}),
+      ...(mktId ? { mktId } : {}),
     }
 
     const res = await fetchSaveMarketingFile(payload)

@@ -38,8 +38,8 @@ export const MARKETING_PROJECT_GOAL_PRESETS = [
 ] as const
 
 export interface MarketingFile {
-  marketingFileId: string
-  marketingProjectId: string
+  mktFileId: string
+  mktId: string
   filePath: string
   fileName: string
   fileSize: number
@@ -54,12 +54,12 @@ export interface MarketingFileUploadUrlRequest {
   fileType: string
   fileSize: string
   filePath: string
-  marketingProjectId?: string
+  mktId?: string
 }
 
 /** 업로드 완료 후 파일 메타 저장 */
 export interface MarketingFileSavePayload {
-  marketingProjectId?: string
+  mktId?: string
   fileName: string
   storeFileName: string
   filePath: string
@@ -72,13 +72,8 @@ export interface MarketingFileSavePayload {
 export interface MarketingFileSaveResponse {
   successYn: boolean
   returnMsg?: string
-  marketingFileId: string
+  mktFileId: string
   filePath: string
-  fileName: string
-}
-
-export interface MarketingFileUpdatePayload {
-  marketingFileId: string
   fileName: string
 }
 
@@ -92,7 +87,7 @@ export interface MarketingProjectListFilter {
 }
 
 export interface MarketingProject {
-  marketingProjectId: string
+  mktId: string
   projectNm: string
   orgNm: string
   projectOverview?: string
@@ -110,7 +105,7 @@ export interface MarketingProject {
 }
 
 export interface MarketingProjectSaveForm {
-  marketingProjectId?: string
+  mktId?: string
   projectNm: string
   orgNm: string
   dueDt: string
@@ -122,7 +117,7 @@ export interface MarketingProjectSaveForm {
 
 /** selectMarketingProject.do members */
 export interface MarketingProjectMember {
-  marketingProjectId: string
+  mktId: string
   userId: string
   userNm: string
   email: string
@@ -183,7 +178,7 @@ export type MarketingRequestCustomFields = Pick<
 
 /** REQUEST_JSON. File 대신 파일 ID */
 export type MarketingStoredRequest = Omit<MarketingFormPayload, 'referenceFiles' | 'selectedExistingFileIds'> & {
-  marketingProjectId?: string
+  mktId?: string
   referenceMarketingFileIds: string[]
 }
 
@@ -239,15 +234,23 @@ export interface MarketingAgentSummary {
   config: MarketingAuthoringAgentConfig
 }
 
-/** MK000002. 001=대기, 002=생성중, 003=완료, 004=실패 */
-export type MarketingAiStatusCd = '001' | '002' | '003' | '004'
+/** MK000002 */
+export const marketingAiStatuses = [
+  { aiStatusCd: '001', aiStatusNm: '대기' },
+  { aiStatusCd: '002', aiStatusNm: '생성중' },
+  { aiStatusCd: '003', aiStatusNm: '완료' },
+  { aiStatusCd: '004', aiStatusNm: '실패' },
+] as const
+
+export type MarketingAiStatusCd = (typeof marketingAiStatuses)[number]['aiStatusCd']
 
 export interface MarketingContentSummary {
-  contentId: string
+  mktContentId: string
   agentId: string
-  marketingProjectId?: string
+  mktId?: string
   title: string
   outputMode: MarketingOutputMode
+  channelCd: string // 프로젝트·채널당 1건. 사용자 지정 채널은 ''
   statusCd: MarketingProjectStatusCd
   statusNm: string
   aiStatusCd?: MarketingAiStatusCd
@@ -273,7 +276,7 @@ export interface MarketingContentDetail extends MarketingContentSummary {
 }
 
 export interface MarketingContentListParams {
-  marketingProjectId?: string
+  mktId?: string
   keyword?: string
   contentType?: string
   outputMode?: MarketingOutputMode
@@ -286,12 +289,21 @@ export interface MarketingContentListResponse {
 
 export interface MarketingCreateRequest extends MarketingStoredRequest {
   agentId: string
-  marketingProjectId: string
+  mktId: string
+  /** 같은 채널 콘텐츠가 있을 때 덮어쓰기 */
+  overwriteYn?: 'Y' | 'N'
 }
 
-/** 실패하면 contentId 없이 successYn, returnMsg */
+/** 채널 생성 전 기존 콘텐츠가 있는 채널 */
+export interface MarketingChannelConflict {
+  channelCd: string
+  channelNm: string
+  isLocked: boolean // 승인 진행 중·승인 완료·예약·발행완료라 덮어쓸 수 없음
+}
+
+/** 실패하면 mktContentId 없이 successYn, returnMsg */
 export interface MarketingCreateResponse {
-  contentId?: string
+  mktContentId?: string
   successYn: boolean
   returnMsg?: string
 }
@@ -323,10 +335,6 @@ export interface MarketingScheduleUpdateRequest {
   alertHour: number
 }
 
-export interface MarketingPublishedUpdateRequest {
-  publishedYn: 'Y' | 'N'
-}
-
 export const marketingContentListColumns: TableColumn[] = [
   { key: 'channelNm', label: '채널', width: '112px', align: 'left', headerAlign: 'left' },
   { key: 'displayTitle', label: '콘텐츠명', align: 'left', headerAlign: 'left' },
@@ -356,7 +364,7 @@ export interface MarketingCampaignPlanDraft {
 }
 
 export interface MarketingGeneratePlanRequest {
-  marketingProjectId: string
+  mktId: string
   goal: string
   productNm: string
   requestTxt: string
@@ -367,8 +375,14 @@ export interface MarketingGeneratePlanRequest {
 }
 
 export interface MarketingRefinePlanRequest {
-  marketingProjectId: string
+  mktId: string
   message: string
+}
+
+/** 기획서 직접 수정 — 섹션 제목·내용만 보낸다 */
+export interface MarketingUpdatePlanRequest {
+  mktId: string
+  sections: MarketingCampaignPlanSection[]
 }
 
 export interface MarketingPlanResponse extends MarketingActionResponse {
@@ -429,7 +443,7 @@ export interface MarketingChannelOption {
 export interface MarketingChannelBatchItem {
   channelCd: string
   channelNm: string
-  contentId: string
+  mktContentId: string
   aiStatusCd: MarketingAiStatusCd
 }
 
@@ -479,7 +493,7 @@ export interface MarketingReviewIssue {
 
 export interface MarketingReviewResult {
   reviewId: string
-  contentId: string
+  mktContentId: string
   score: number
   verdict: MarketingReviewVerdict
   verdictLabel: string
@@ -490,7 +504,7 @@ export interface MarketingReviewResult {
 
 export interface MarketingApproval {
   approvalId: string
-  contentId: string
+  mktContentId: string
   reviewerNm: string
   memo: string
   approvedYn: 'Y' | 'N'
@@ -503,7 +517,7 @@ export type MarketingScheduleStateCd = 'WAITING' | 'QUEUED' | 'DONE' | 'FAILED'
 export type MarketingScheduleStatus = 'none' | 'upcoming' | 'today' | 'overdue' | 'done'
 
 export interface MarketingScheduleSetting {
-  contentId: string
+  mktContentId: string
   publishType: MarketingPublishType
   publishScheduledDt: string
   alertHour: number
@@ -511,7 +525,7 @@ export interface MarketingScheduleSetting {
 }
 
 export interface MarketingCalendarEvent {
-  contentId: string
+  mktContentId: string
   displayTitle: string
   channelNm: string
   publishScheduledDt: string
@@ -520,9 +534,9 @@ export interface MarketingCalendarEvent {
 
 export interface MarketingCalendarEventItem {
   eventId: string
-  marketingProjectId: string
+  mktId: string
   projectNm: string
-  contentId?: string
+  mktContentId?: string
   title: string
   statusCd: MarketingProjectStatusCd
   eventDt: string
