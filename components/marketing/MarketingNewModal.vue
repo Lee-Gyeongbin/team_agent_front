@@ -231,7 +231,7 @@ const defaultForm = () => ({
 
 const form = ref(defaultForm())
 
-const isEditMode = computed(() => !!props.project?.marketingProjectId)
+const isEditMode = computed(() => !!props.project?.mktId)
 const canEditApprover = computed(() => !isEditMode.value || props.project?.createUserId === user.value?.userId)
 const approverOptions = computed(() => {
   const owner = ownerMember.value
@@ -326,7 +326,7 @@ const onSubmit = () => {
   }
   emit('submit', {
     ...form.value,
-    ...(props.project?.marketingProjectId ? { marketingProjectId: props.project.marketingProjectId } : {}),
+    ...(props.project?.mktId ? { mktId: props.project.mktId } : {}),
     memberUserIds: selectedMembers.value.map((m) => m.userId),
   })
 }

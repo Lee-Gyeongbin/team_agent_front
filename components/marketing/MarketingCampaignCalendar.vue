@@ -138,14 +138,14 @@ const {
   handleSelectMarketingProjectList,
 } = useMarketingStore()
 
-/** 빈 값 = 전체. 값은 marketingProjectId */
+/** 빈 값 = 전체. 값은 mktId */
 const projectFilter = ref('')
 
 const projectSelectOptions = computed(() => [
   { label: '전체', value: '' },
   ...marketingProjectList.value.map((project) => ({
     label: project.projectNm,
-    value: project.marketingProjectId,
+    value: project.mktId,
   })),
 ])
 
@@ -155,7 +155,7 @@ const onSelectProject = (value: string | number) => {
 
 const filteredEvents = computed(() =>
   projectFilter.value
-    ? calendarEvents.value.filter((event) => event.marketingProjectId === projectFilter.value)
+    ? calendarEvents.value.filter((event) => event.mktId === projectFilter.value)
     : calendarEvents.value,
 )
 
@@ -191,6 +191,6 @@ onMounted(async () => {
   const selectedNm = props.selectedProjectNm.trim()
   if (!selectedNm) return
   const match = marketingProjectList.value.find((project) => project.projectNm === selectedNm)
-  if (match) projectFilter.value = match.marketingProjectId
+  if (match) projectFilter.value = match.mktId
 })
 </script>
