@@ -3,18 +3,6 @@
     <div class="marketing-publish-calendar__head">
       <div class="marketing-publish-calendar__title">
         <strong>발행 캘린더</strong>
-        <button
-          type="button"
-          class="marketing-publish-calendar__nav-btn"
-          title="프로젝트 캘린더"
-          aria-label="프로젝트 캘린더"
-          @click="emit('openFull')"
-        >
-          <UiIcon
-            name="calendar"
-            size="16"
-          />
-        </button>
       </div>
       <div class="marketing-publish-calendar__nav">
         <button
@@ -66,12 +54,12 @@
         <span v-if="cell.day">{{ cell.day }}</span>
         <button
           v-for="event in cell.events"
-          :key="event.contentId"
+          :key="event.mktContentId"
           type="button"
           class="marketing-publish-calendar__event"
           :class="`is-${event.progressKey}`"
           :title="event.displayTitle"
-          @click="emit('select', event.contentId)"
+          @click="emit('select', event.mktContentId)"
         >
           {{ event.label }}
         </button>
@@ -99,8 +87,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  select: [contentId: string]
-  openFull: []
+  select: [mktContentId: string]
 }>()
 
 const formatHm = (raw: string) => {
@@ -112,7 +99,7 @@ const formatHm = (raw: string) => {
 }
 
 const eventsByDate = computed(() => {
-  const map = new Map<string, { contentId: string; displayTitle: string; progressKey: string; label: string }[]>()
+  const map = new Map<string, { mktContentId: string; displayTitle: string; progressKey: string; label: string }[]>()
   props.items.forEach((item) => {
     const dateKey = toMarketingCalendarDateKey(item.publishScheduledDt)
     if (!dateKey) return
@@ -121,7 +108,7 @@ const eventsByDate = computed(() => {
     const label = time ? `${name} ${time}` : name
     const list = map.get(dateKey) ?? []
     list.push({
-      contentId: item.contentId,
+      mktContentId: item.mktContentId,
       displayTitle: item.displayTitle,
       progressKey: item.progressKey,
       label,

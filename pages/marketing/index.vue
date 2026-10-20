@@ -19,15 +19,6 @@
       </UiEmpty>
     </div>
 
-    <MarketingChannelConnect
-      v-else-if="isChannelConnectOpen"
-      @close="isChannelConnectOpen = false"
-    />
-    <MarketingCampaignCalendar
-      v-else-if="isCalendarOpen"
-      @close="isCalendarOpen = false"
-    />
-
     <template v-else>
       <div class="marketing-list-header">
         <div class="marketing-list-header__copy">
@@ -35,10 +26,12 @@
           <p class="marketing-list-desc">진행 중인 프로젝트의 전체 현황을 한눈에 확인하고 관리하세요.</p>
         </div>
         <div class="marketing-list-header__actions">
+          <!-- 계정 관리·프로젝트 캘린더는 기능 준비 전까지 숨긴다 -->
+          <!--
           <UiButton
             variant="outline"
             size="md"
-            @click="isChannelConnectOpen = true"
+            @click="openToast('현재 준비 중인 기능입니다.')"
           >
             <template #icon-left>
               <UiIcon
@@ -51,7 +44,7 @@
           <UiButton
             variant="outline"
             size="md"
-            @click="isCalendarOpen = true"
+            @click="openToast('현재 준비 중인 기능입니다.')"
           >
             <template #icon-left>
               <UiIcon
@@ -61,6 +54,7 @@
             </template>
             프로젝트 캘린더
           </UiButton>
+          -->
           <UiButton
             variant="primary"
             size="md"
@@ -229,7 +223,7 @@
                     size="sm"
                     icon-only
                     title="더보기"
-                    :disabled="isDeleting && deletingProjectId === row.marketingProjectId"
+                    :disabled="isDeleting && deletingProjectId === row.mktId"
                   >
                     <template #icon-left>
                       <UiIcon
@@ -349,8 +343,6 @@ const filterKeyword = ref('')
 const filterStartDate = ref<DateValue | undefined>()
 const filterEndDate = ref<DateValue | undefined>()
 const isProjectModalOpen = ref(false)
-const isChannelConnectOpen = ref(false)
-const isCalendarOpen = ref(false)
 const editingProject = ref<MarketingProject | null>(null)
 const editingMembers = ref<MarketingProjectMember[]>([])
 const isSaving = ref(false)
@@ -364,9 +356,7 @@ const getProjectMenuItems = (row: MarketingProject): DropdownMenuItemDef[] => [
     value: 'delete',
     icon: 'icon-trashcan',
     color: 'danger',
-    disabled:
-      row.createUserId !== user.value?.userId ||
-      (isDeleting.value && deletingProjectId.value === row.marketingProjectId),
+    disabled: row.createUserId !== user.value?.userId || (isDeleting.value && deletingProjectId.value === row.mktId),
   },
 ]
 
@@ -456,7 +446,7 @@ const resolveAgentId = () => String(route.query.agentId ?? selectedAgent.value?.
 const onTableRowClick = (row: MarketingProject) => {
   const agentId = resolveAgentId()
   void router.push({
-    path: `/marketing/${row.marketingProjectId}`,
+    path: `/marketing/${row.mktId}`,
     query: agentId ? { agentId } : {},
   })
 }
@@ -478,7 +468,7 @@ const openCreateModal = () => {
 /** 수정 모달은 공개범위(멤버) 목록이 필요해 목록 행이 아니라 상세를 다시 조회해서 연다 */
 const openEditModal = async (project: MarketingProject) => {
   try {
-    const res = await fetchSelectMarketingProject(project.marketingProjectId)
+    const res = await fetchSelectMarketingProject(project.mktId)
     if (!res.successYn || !res.data) {
       openToast({ message: res.returnMsg || '프로젝트 정보를 불러오지 못했습니다.', type: 'error' })
       return
@@ -501,8 +491,8 @@ const closeProjectModal = () => {
 const onSubmitProject = async (form: MarketingProjectSaveForm) => {
   isSaving.value = true
   try {
-    const marketingProjectId = await handleSaveMarketingProject(form)
-    const isEdit = !!form.marketingProjectId
+    const mktId = await handleSaveMarketingProject(form)
+    const isEdit = !!form.mktId
     closeProjectModal()
     openToast({ message: isEdit ? '프로젝트를 수정했습니다.' : '프로젝트를 생성했습니다.' })
     if (isEdit) {
@@ -511,7 +501,7 @@ const onSubmitProject = async (form: MarketingProjectSaveForm) => {
     }
     const agentId = resolveAgentId()
     await router.push({
-      path: `/marketing/${marketingProjectId}`,
+      path: `/marketing/${mktId}`,
       query: agentId ? { agentId, startPlan: '1' } : { startPlan: '1' },
     })
   } catch (error) {
@@ -519,7 +509,7 @@ const onSubmitProject = async (form: MarketingProjectSaveForm) => {
       message:
         error instanceof Error && error.message
           ? error.message
-          : form.marketingProjectId
+          : form.mktId
             ? '프로젝트 수정에 실패했습니다.'
             : '프로젝트 생성에 실패했습니다.',
       type: 'error',
@@ -539,9 +529,9 @@ const onDeleteProject = async (project: MarketingProject) => {
   })
   if (!confirmed) return
   isDeleting.value = true
-  deletingProjectId.value = project.marketingProjectId
+  deletingProjectId.value = project.mktId
   try {
-    await handleDeleteMarketingProject(project.marketingProjectId)
+    await handleDeleteMarketingProject(project.mktId)
     openToast({ message: '프로젝트를 삭제했습니다.' })
   } catch (error) {
     openToast({
