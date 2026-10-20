@@ -81,6 +81,7 @@ const MARKETING_STREAM_TOTAL_MS = 15 * 60 * 1000
 const MARKETING_STREAM_IDLE_MS = 3 * 60 * 1000
 /** 콘텐츠 생성 참고파일 최대 개수 — 서버 REFERENCE_FILE_MAX와 같다 */
 const MARKETING_REFERENCE_FILE_MAX = 5
+const MARKETING_APPROVAL_STATUSES = new Set(['003', '004', '005', '006', '007'])
 
 // ===== 상태 — named export 하지 않는다 (auto-import 충돌 방지, 컨벤션: composable 반환만) =====
 const pagePhase = ref<MarketingPagePhase>('list')
@@ -122,12 +123,12 @@ const isReviewing = ref(false)
 const approval = computed(() => currentContent.value?.approval ?? null)
 /**
  * 현재 콘텐츠 수정 잠금 — 서버 MarketingServiceImpl.isEditLocked와 같은 기준.
- * APPROVED: 승인 완료·예약·발행완료 / APPROVAL: 승인 진행 중(검수 판정이 '검토 필요'면 잠그지 않음) / null: 수정 가능
+ * APPROVED: 승인 완료·예약·발행완료·발행실패 / APPROVAL: 승인 진행 중 / null: 수정 가능
  */
 const contentEditLock = computed<'APPROVAL' | 'APPROVED' | null>(() => {
   const statusCd = currentContent.value?.statusCd
-  if (statusCd === '004' || statusCd === '005' || statusCd === '006') return 'APPROVED'
-  if (statusCd === '003' && reviewResult.value?.verdict !== 'REVIEW') return 'APPROVAL'
+  if (statusCd === '004' || statusCd === '005' || statusCd === '006' || statusCd === '007') return 'APPROVED'
+  if (statusCd === '003') return 'APPROVAL'
   return null
 })
 const isApproving = ref(false)
@@ -195,6 +196,7 @@ const resolveContentProgress = (item: MarketingContentSummary) => {
 }
 
 const pushMarketingPhase = (next: MarketingPagePhase) => {
+  if (next === 'review' && MARKETING_APPROVAL_STATUSES.has(currentContent.value?.statusCd ?? '')) return
   phaseStack.value.push(next)
   pagePhase.value = next
 }
@@ -214,7 +216,8 @@ const MARKETING_CONTENT_STEPS: MarketingPagePhase[] = ['channelContent', 'review
 
 const moveMarketingContentStep = (target: MarketingPagePhase) => {
   const index = MARKETING_CONTENT_STEPS.indexOf(target)
-  if (index < 0) return
+  if (index < 0 || (target === 'review' && MARKETING_APPROVAL_STATUSES.has(currentContent.value?.statusCd ?? '')))
+    return
   phaseStack.value = ['list', ...MARKETING_CONTENT_STEPS.slice(0, index + 1)]
   pagePhase.value = target
 }
@@ -947,7 +950,13 @@ export const useMarketingStore = () => {
 
   const handleRunReview = async (mktContentId: string) => {
     const id = String(mktContentId ?? '').trim()
-    if (!id || isReviewing.value || isApplyingFix.value) return
+    if (
+      !id ||
+      isReviewing.value ||
+      isApplyingFix.value ||
+      MARKETING_APPROVAL_STATUSES.has(currentContent.value?.statusCd ?? '')
+    )
+      return
     isReviewing.value = true
     try {
       const response = await fetchRunMarketingReview(id)
