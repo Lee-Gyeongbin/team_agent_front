@@ -21,7 +21,7 @@
     >
       <div class="dq-guide__header-text">
         <div class="dq-guide__header-main">
-          <h2 class="dq-guide__title">질의 전 가이드</h2>
+          <h2 class="dq-guide__title">T2S 질의 가이드</h2>
           <p class="dq-guide__subtitle">단계별로 입력하면 더 정확한 데이터를 조회할 수 있어요</p>
         </div>
         <div class="dq-guide__header-status">
