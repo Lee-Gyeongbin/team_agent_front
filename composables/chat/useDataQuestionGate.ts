@@ -496,6 +496,7 @@ interface DataQuestionGuideProps {
 /** DataQuestionGuide 컴포넌트 전용 — 게이트 상태와 가이드 UI 상태를 함께 제공 */
 export const useDataQuestionGuide = (props: DataQuestionGuideProps) => {
   const { chatMessage } = useChatRooms()
+  const { getStreamingMessage } = useChatMessages()
   const {
     isGateActive,
     showDiagnosis,
@@ -532,9 +533,21 @@ export const useDataQuestionGuide = (props: DataQuestionGuideProps) => {
     }
   }
 
-  watch(chatMessage, (next) => {
+  watch(chatMessage, (next, prev) => {
     if (isGuideDismissed.value && next.trim()) {
       isGuideDismissed.value = false
+    }
+    // 질의 작성 시작(빈 입력 → 입력) 시 자동 펼침 — '항상 접힌 상태' 설정은 존중
+    if (next.trim() && !prev?.trim() && !alwaysCollapsed.value) {
+      isOpen.value = true
+    }
+  })
+
+  // 답변 완료(스트리밍 종료) 시 자동 접힘
+  const isAnswerStreaming = computed(() => !!getStreamingMessage()?.isStreaming)
+  watch(isAnswerStreaming, (next, prev) => {
+    if (prev && !next) {
+      isOpen.value = false
     }
   })
 
@@ -554,7 +567,8 @@ export const useDataQuestionGuide = (props: DataQuestionGuideProps) => {
   })
   const formulaScore = computed(() => scoreFromText(formulaTextSource.value))
   const formulaItems = computed(() => buildFormulaItems(formulaScore.value))
-  const requiredMissingCount = computed(() => countRequiredMissing(formulaScore.value))
+  /** 질문 작성 전(빈 입력)에는 미충족 안내를 띄우지 않는다 */
+  const requiredMissingCount = computed(() => (formulaTextSource.value ? countRequiredMissing(formulaScore.value) : 0))
 
   const onApplyFormulaExample = () => {
     applySuggestedQuestion(FORMULA_EXAMPLE_QUESTION)
