@@ -1,5 +1,8 @@
 <template>
-  <div class="chat-guide-page">
+  <div
+    class="chat-guide-page"
+    :class="{ 'is-fixed-height': activeTab !== 'greeting' }"
+  >
     <div class="chat-guide-page-header">
       <UiTab
         v-model="activeTab"

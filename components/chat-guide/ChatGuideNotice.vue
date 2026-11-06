@@ -107,6 +107,33 @@
         </div>
       </div>
 
+      <!-- 서비스 제한 안내 -->
+      <div class="chat-guide-notice-block">
+        <div class="chat-guide-setting-header">
+          <div class="chat-guide-setting-info">
+            <span class="chat-guide-setting-name">서비스 제한 안내</span>
+            <UiToggle
+              :model-value="localNoticeForm.limitation.enblYn === 'Y'"
+              @update:model-value="(v) => (localNoticeForm.limitation.enblYn = toYn(v))"
+            />
+          </div>
+          <p class="chat-guide-setting-desc">AI의 한계 및 제한사항 설명</p>
+        </div>
+
+        <div class="chat-guide-setting-body">
+          <label class="chat-guide-setting-label">안내 메시지</label>
+          <UiTextarea
+            v-model="localNoticeForm.limitation.content"
+            :rows="5"
+            border
+            size="sm"
+            auto-resize
+            :max-rows="10"
+            placeholder="서비스 제한 안내 메시지를 입력하세요"
+          />
+        </div>
+      </div>
+
       <!-- 개인정보 보호 안내 -->
       <div class="chat-guide-notice-block">
         <div class="chat-guide-setting-header">
@@ -138,33 +165,6 @@
           label="민감정보 패턴 감지 시 자동 표시"
           @update:model-value="(v) => (localNoticeForm.privacy.autoDetectYn = toYn(v))"
         />
-      </div>
-
-      <!-- 서비스 제한 안내 -->
-      <div class="chat-guide-notice-block">
-        <div class="chat-guide-setting-header">
-          <div class="chat-guide-setting-info">
-            <span class="chat-guide-setting-name">서비스 제한 안내</span>
-            <UiToggle
-              :model-value="localNoticeForm.limitation.enblYn === 'Y'"
-              @update:model-value="(v) => (localNoticeForm.limitation.enblYn = toYn(v))"
-            />
-          </div>
-          <p class="chat-guide-setting-desc">AI의 한계 및 제한사항 설명</p>
-        </div>
-
-        <div class="chat-guide-setting-body">
-          <label class="chat-guide-setting-label">안내 메시지</label>
-          <UiTextarea
-            v-model="localNoticeForm.limitation.content"
-            :rows="5"
-            border
-            size="sm"
-            auto-resize
-            :max-rows="10"
-            placeholder="서비스 제한 안내 메시지를 입력하세요"
-          />
-        </div>
       </div>
     </div>
   </div>

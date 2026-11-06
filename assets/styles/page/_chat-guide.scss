@@ -7,6 +7,11 @@
 .chat-guide-page {
   display: flex;
   flex-direction: column;
+
+  // 인사멘트 외 탭: 화면 높이에 맞추고, 스크롤은 패널 내부 목록에서 처리
+  &.is-fixed-height {
+    height: 100%;
+  }
 }
 
 .chat-guide-page-title {
@@ -41,6 +46,7 @@
   flex-direction: column;
   gap: $spacing-md;
   flex: 1;
+  min-height: 0;
   padding: $spacing-md $spacing-md $spacing-md;
 }
 
@@ -53,6 +59,7 @@
   justify-content: space-between;
   padding-bottom: $spacing-md;
   border-bottom: 1px solid #aebccb;
+  flex-shrink: 0;
 }
 
 .chat-guide-section-title {
@@ -308,6 +315,19 @@
   background: #fff;
   border: 1px solid #dce4e9;
   border-radius: 16px;
+}
+
+// 헤더(타이틀+저장/초기화) 아래 본문만 내부 스크롤 (인사멘트 탭 제외)
+.chat-guide-page.is-fixed-height .chat-guide-panel {
+  flex: 1;
+  min-height: 0;
+
+  > :is(.chat-guide-notice-list, .chat-guide-error-body, .maint-body) {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    @include custom-scrollbar;
+  }
 }
 
 // ===================================
