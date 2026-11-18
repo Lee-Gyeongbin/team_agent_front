@@ -1,0 +1,483 @@
+@use '../utils/variables' as *;
+@use '../utils/mixins' as *;
+
+// 아이디어 페이지(`pages/idea/index.vue`) — 목록·상세 구조는 공지사항(_notice.scss)의 notice-* 클래스를 그대로 사용
+// 여기에는 아이디어 전용 요소만 둔다. (값은 게시판 목업 v0.22 기준)
+.idea-index {
+  .idea-empty {
+    min-height: calc(42px + 15 * 42px);
+  }
+
+  // 표가 넘칠 때 제목 등은 말줄임
+  .notice-title-btn .notice-title-text {
+    @include ellipsis(1);
+  }
+}
+
+// '채택' 상태(UiBadge variant-info)는 목업과 같이 보라색으로 표시 — 아이디어 화면에만 적용
+.idea-index,
+.idea-detail-panel {
+  .ui-badge.variant-info {
+    background: $color-badge-accent-bg;
+    color: $color-badge-accent;
+  }
+}
+
+// ===================================
+// 드로어 공통 — 본문이 남는 높이를 채우도록 세로 flex (목업 .mock-drawer-body)
+// UiDrawer는 class를 받지 못하므로 내부 루트 클래스로 body를 찾는다
+// ===================================
+.ui-drawer-body:has(> .idea-detail-panel),
+.ui-drawer-body:has(> .idea-form) {
+  display: flex;
+  flex-direction: column;
+  padding: $spacing-md 20px;
+}
+
+// 서식 있는 본문(에디터 결과) 표시
+.idea-rich,
+.idea-rich.notice-content-box {
+  white-space: normal;
+  line-height: 1.5;
+}
+
+.idea-rich {
+  p {
+    margin: 0 0 0.5em;
+
+    &:empty {
+      min-height: 1lh;
+    }
+  }
+
+  ul {
+    list-style: disc;
+    padding-left: 22px;
+    margin: 0.4em 0;
+  }
+
+  ol {
+    list-style: decimal;
+    padding-left: 22px;
+    margin: 0.4em 0;
+  }
+
+  h3 {
+    @include typo($body-large-bold);
+    margin: 0.6em 0 0.3em;
+  }
+
+  blockquote {
+    margin: 0.5em 0;
+    padding: 4px 12px;
+    border-left: 3px solid $color-answer-border;
+    color: $color-text-secondary;
+  }
+
+  a {
+    color: var(--color-primary);
+    text-decoration: underline;
+  }
+}
+
+// ===================================
+// 상세 드로어(IdeaDetailPanel)
+// ===================================
+.idea-detail-panel {
+  flex: 1;
+  min-height: 0;
+  gap: 12px;
+
+  > *,
+  .idea-manage-pane > * {
+    flex-shrink: 0;
+  }
+
+  // 본문 박스가 남는 높이를 채우고 내부 스크롤
+  > .notice-detail-body,
+  .idea-manage-pane > .notice-detail-body {
+    flex: 1 1 auto;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .notice-content-box {
+    flex: 1;
+    width: 100%;
+    min-height: 140px;
+    box-sizing: border-box;
+  }
+
+  .idea-detail-agent {
+    @include typo($body-small, $color-text-secondary);
+    margin: 0;
+  }
+
+  .idea-like-grp {
+    display: flex;
+  }
+
+  .idea-comment-section {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .idea-comment-title {
+    @include typo($body-medium-bold, $color-text-heading-sub);
+    margin: 4px 0 8px;
+  }
+
+  .idea-comment-box {
+    padding: 12px;
+    border: 1px solid $color-answer-border;
+    border-radius: $border-radius-base;
+    background: $color-answer-bg;
+    color: $color-text-primary;
+    word-break: break-word;
+  }
+
+  .idea-comment-text {
+    @include typo($body-medium);
+  }
+
+  .idea-comment-meta {
+    @include typo($body-small, $color-text-secondary);
+    margin-top: $spacing-sm;
+  }
+
+  .idea-comment-empty {
+    @include typo($body-small, $color-text-secondary);
+    padding: 12px;
+    border: 1px solid $color-border;
+    border-radius: $border-radius-base;
+    background: $color-background;
+    text-align: center;
+  }
+
+  .idea-comment-note {
+    @include typo($body-small, $color-text-secondary);
+    margin-top: $spacing-sm;
+  }
+
+  // 읽기 전용 첨부 목록
+  .idea-file-list-ro {
+    margin-top: 0;
+  }
+}
+
+// ===================================
+// 등록·수정 드로어(IdeaFormPanel)
+// ===================================
+.idea-form {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .url-reg-field {
+    margin: 0;
+  }
+
+  // 구분·에이전트 한 줄 배치 (구분은 항상 절반 너비)
+  .idea-form-row {
+    display: flex;
+    gap: 12px;
+
+    > .url-reg-field {
+      flex: 0 0 calc(50% - 6px);
+      min-width: 0;
+    }
+  }
+
+  // 내용 에디터가 남는 높이를 채움
+  .idea-form-grow {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+
+    .idea-editor {
+      flex: 1;
+      min-height: 220px;
+    }
+  }
+}
+
+// 서식 에디터(IdeaRichEditor)
+.idea-editor {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  background: #fff;
+  overflow: hidden;
+
+  .idea-editor-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 2px;
+    padding: 6px 8px;
+    border-bottom: 1px solid $color-border-light;
+    background: $color-surface;
+  }
+
+  .idea-editor-btn {
+    min-width: 28px;
+    height: 28px;
+    padding: 0 6px;
+    border: 0;
+    border-radius: $border-radius-sm;
+    background: none;
+    color: $color-text-primary;
+    font-size: 13px;
+    cursor: pointer;
+
+    &:hover,
+    &.is-active {
+      background: $color-editor-btn-hover;
+    }
+  }
+
+  .idea-editor-sep {
+    width: 1px;
+    height: 16px;
+    margin: 0 4px;
+    background: $color-border;
+  }
+
+  .idea-editor-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    cursor: text;
+  }
+
+  .tiptap {
+    min-height: 100%;
+    padding: 12px;
+    color: $color-text-primary;
+    font-size: $font-size-base;
+    word-break: break-word;
+    outline: none;
+
+    p.is-editor-empty:first-child::before {
+      content: attr(data-placeholder);
+      float: left;
+      height: 0;
+      color: $color-text-placeholder;
+      pointer-events: none;
+    }
+  }
+}
+
+// ===================================
+// 첨부파일 — 최하단 한 줄 버튼 + 목록 (목업 .mock-attach / ui-file-upload.css)
+// ===================================
+.idea-attach-box {
+  flex-shrink: 0;
+  margin-top: auto;
+
+  .idea-attach-hidden {
+    display: none;
+  }
+
+  .idea-attach {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 42px;
+    padding: 10px 12px;
+    border: 1px solid $color-attach-border;
+    border-radius: $border-radius-base;
+    background: #fff;
+    color: $color-text-primary;
+    cursor: pointer;
+    transition:
+      border-color $transition-fast,
+      background-color $transition-fast;
+
+    &:hover,
+    &.is-dragging {
+      border-color: var(--color-primary);
+      background: rgba(var(--color-primary-rgb), 0.04);
+    }
+  }
+
+  .idea-attach-label {
+    @include typo($body-small-bold, $color-text-heading-sub);
+    white-space: nowrap;
+  }
+
+  .idea-attach-hint {
+    @include typo($body-xsmall, $color-text-disabled);
+    white-space: nowrap;
+  }
+
+  .idea-file-list {
+    margin-top: 8px;
+  }
+}
+
+.idea-file-list {
+  .idea-file-list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .idea-file-list-count {
+    @include typo($body-small-bold, $color-text-primary);
+  }
+
+  .idea-file-clear {
+    @include typo($body-xsmall, $color-text-muted);
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+
+    &:hover {
+      color: $color-error;
+    }
+  }
+
+  .idea-file-items {
+    max-height: 112px;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+  }
+
+  .idea-file-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+    padding: 8px 10px;
+    border-radius: $border-radius-base;
+    background: $color-background;
+    color: $color-text-muted;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    > svg {
+      flex-shrink: 0;
+    }
+  }
+
+  .idea-file-name {
+    @include typo($body-small, $color-text-primary);
+    @include ellipsis(1);
+    flex: 1;
+    min-width: 0;
+  }
+
+  .idea-file-size {
+    @include typo($body-xsmall, $color-text-muted);
+    flex-shrink: 0;
+  }
+
+  .idea-file-remove {
+    display: flex;
+    flex-shrink: 0;
+    padding: 2px;
+    border: none;
+    border-radius: $border-radius-sm;
+    background: none;
+    color: $color-text-disabled;
+    cursor: pointer;
+    transition:
+      color $transition-fast,
+      background-color $transition-fast;
+
+    &:hover {
+      color: $color-error;
+      background: rgba($color-error, 0.08);
+    }
+  }
+}
+
+// ===================================
+// 아이디어 관리(`pages/idea_manage/index.vue`) — 목록 관리 컬럼·상세 상하 분할 (목업 .mock-split)
+// ===================================
+.idea-manage-index {
+  .idea-manage-actions {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .idea-manage-btn-del {
+    justify-content: center;
+    width: 56px;
+  }
+}
+
+.idea-detail-panel.idea-manage-split {
+  .idea-manage-pane {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .idea-manage-pane-title {
+    @include typo($body-small-bold, $color-text-heading-sub);
+    flex-shrink: 0;
+    margin: 0;
+  }
+
+  // 위 절반: 본문은 남는 높이만큼 (최소 60px)
+  .idea-manage-pane-top {
+    > .notice-detail-body {
+      flex: 1 1 0;
+      min-height: 60px;
+    }
+
+    .notice-content-box {
+      min-height: 60px;
+    }
+  }
+
+  // 아래 절반: 진행상태 + 코멘트 에디터
+  .idea-manage-pane-bottom {
+    padding-top: 12px;
+    border-top: 1px solid $color-border;
+
+    .idea-manage-form {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 0;
+
+      .url-reg-field {
+        margin: 0;
+      }
+    }
+
+    .idea-form-grow {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      min-height: 0;
+
+      .idea-editor {
+        flex: 1;
+        min-height: 120px;
+      }
+    }
+  }
+}

@@ -28,6 +28,15 @@ $color-success: #22c55e;
 $color-error: #ef4444;
 $color-warning: #f59e0b;
 $color-info: #3b82f6;
+// 강조 배지(보라) — 아이디어 '채택' 상태 (게시판 목업 ispark-ui.css의 variant-info 값)
+$color-badge-accent: #6d28d9;
+$color-badge-accent-bg: rgba(143, 79, 223, 0.12);
+// 게시판(아이디어) 서식 에디터·관리자 코멘트·첨부 — 게시판 목업 v0.22 값
+$color-editor-btn-hover: #e6ebf0;
+$color-text-placeholder: #9aa5b8;
+$color-answer-border: #cfdcf8;
+$color-answer-bg: #f3f7ff;
+$color-attach-border: #cdd6df;
 // 채팅 전용
 $color-chat-user-bg: #eff6ff;
 $color-chat-assistant-bg: #f8fafc;

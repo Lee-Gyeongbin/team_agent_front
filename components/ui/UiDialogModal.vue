@@ -8,7 +8,13 @@
     @close="handleClose"
   >
     <slot>
-      <p class="ui-dialog-message">{{ message }}</p>
+      <p class="ui-dialog-message">
+        <strong
+          v-if="emphasis"
+          class="ui-dialog-emphasis"
+          >{{ emphasis }}</strong
+        >{{ message }}
+      </p>
     </slot>
 
     <template #footer>
@@ -36,6 +42,8 @@ import { UiButton, UiModal } from '@leechanyong/ispark-ui'
 interface Props {
   isOpen?: boolean
   title?: string
+  /** 메시지 위에 한 줄로 굵게 표시 (예: 삭제할 글 제목) */
+  emphasis?: string
   message?: string
   cancelText?: string
   confirmText?: string
@@ -48,6 +56,7 @@ interface Props {
 withDefaults(defineProps<Props>(), {
   isOpen: false,
   title: '확인',
+  emphasis: '',
   message: '',
   cancelText: '취소',
   confirmText: '확인',
@@ -80,5 +89,11 @@ const handleConfirm = () => {
 .ui-dialog-message {
   margin: 0;
   white-space: pre-line;
+}
+
+.ui-dialog-emphasis {
+  display: block;
+  font-weight: $font-weight-bold;
+  word-break: break-word;
 }
 </style>

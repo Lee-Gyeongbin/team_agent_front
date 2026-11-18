@@ -8,6 +8,8 @@ export interface DialogOptions {
 
 /** Confirm 전용 옵션 (onConfirm / onCancel 콜백) */
 export interface ConfirmOptions extends DialogOptions {
+  /** 메시지 위에 굵게 표시할 문구 (예: 삭제할 글 제목) — 일반 텍스트로만 표시 */
+  emphasis?: string
   /** 확인 클릭 시 실행할 콜백 (async 지원) */
   onConfirm?: () => void | Promise<void>
   /** 취소/닫기 클릭 시 실행할 콜백 (async 지원) */
@@ -20,7 +22,11 @@ type ResolveFn = (value?: boolean) => void
 // 모듈 레벨 singleton 상태
 const dialogType = ref<DialogType>(null)
 const dialogOptions = ref<
-  DialogOptions & { onConfirm?: () => void | Promise<void>; onCancel?: () => void | Promise<void> }
+  DialogOptions & {
+    emphasis?: string
+    onConfirm?: () => void | Promise<void>
+    onCancel?: () => void | Promise<void>
+  }
 >({ message: '' })
 const resolveRef = ref<ResolveFn | null>(null)
 
@@ -78,6 +84,7 @@ export function openConfirm(options: ConfirmOptions): Promise<boolean> {
   dialogType.value = 'confirm'
   dialogOptions.value = {
     title: options.title ?? '확인',
+    emphasis: options.emphasis,
     message: options.message,
     cancelText: options.cancelText ?? '취소',
     confirmText: options.confirmText ?? '확인',

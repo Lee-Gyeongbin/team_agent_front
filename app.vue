@@ -19,6 +19,7 @@
     :is-open="true"
     custom-class="ui-dialog-global"
     :title="dialogOptions.title"
+    :emphasis="dialogOptions.emphasis"
     :message="dialogOptions.message"
     :cancel-text="dialogOptions.cancelText"
     :confirm-text="dialogOptions.confirmText"
