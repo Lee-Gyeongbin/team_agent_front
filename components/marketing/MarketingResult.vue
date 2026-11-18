@@ -70,8 +70,6 @@
               {{ draftTitle ? `제목 : ${draftTitle}` : '제목' }}
             </p>
             <div class="chat-marketing-authoring-result__draft-actions">
-              <!-- 채널 미리보기는 채널별 실제 화면 형식 작업 전까지 막아 둔다 -->
-              <!--
               <button
                 type="button"
                 :disabled="isLoading || isRefining || !hasDraftContent"
@@ -84,7 +82,6 @@
                 />
                 채널 미리보기
               </button>
-              -->
               <button
                 v-if="canRestoreActive && props.restoreVariant && !isLocked"
                 type="button"
@@ -109,8 +106,6 @@
                 />
                 복사
               </button>
-              <!-- 내보내기는 기능 점검 전까지 숨긴다 — 주석을 풀면 버튼·로직이 함께 복구된다 -->
-              <!--
               <UiDropdownMenu
                 v-if="props.mktContentId"
                 :items="exportMenuItems"
@@ -140,7 +135,6 @@
                   </button>
                 </template>
               </UiDropdownMenu>
-              -->
               <button
                 v-if="!isImageMode && props.saveVariant && !isLocked"
                 type="button"
@@ -557,21 +551,27 @@
 </template>
 
 <script setup lang="ts">
-import { UiButton, UiIcon, UiLoading, UiModal, UiTextarea } from '@leechanyong/ispark-ui'
+import {
+  UiButton,
+  UiDropdownMenu,
+  UiIcon,
+  UiLoading,
+  UiModal,
+  UiTextarea,
+  type DropdownMenuItemDef,
+} from '@leechanyong/ispark-ui'
 import { formatNumberWithComma } from '~/utils/global/numberUtil'
 import type { MarketingAuthoringAgentConfig } from '~/types/agent'
 import type {
   MarketingAuthoringResult,
+  MarketingExportFormat,
   MarketingGeneratingStep,
   MarketingStoredRequest,
   MarketingOutputKind,
 } from '~/types/marketing'
-// 내보내기 버튼을 막아 둔 동안 사용하지 않는다 — 버튼 주석을 풀 때 함께 복구
-// import { UiDropdownMenu, type DropdownMenuItemDef } from '@leechanyong/ispark-ui'
-// import { formatYyyyMmDdFromDate } from '~/utils/global/dateUtil'
-// import { useMarketingApi } from '~/composables/marketing/useMarketingApi'
-// import { useMarketingExport } from '~/composables/marketing/useMarketingExport'
-// import type { MarketingExportFormat } from '~/types/marketing'
+import { formatYyyyMmDdFromDate } from '~/utils/global/dateUtil'
+import { useMarketingApi } from '~/composables/marketing/useMarketingApi'
+import { useMarketingExport } from '~/composables/marketing/useMarketingExport'
 import {
   copyMarketingPayloadToClipboard,
   resolveMarketingConditionDisplay,
@@ -624,9 +624,8 @@ const emit = defineEmits<{
   used: [variantId: number]
 }>()
 
-// 내보내기 버튼을 막아 둔 동안 사용하지 않는다 — 버튼 주석을 풀 때 함께 복구
-// const { fetchExportMarketingContentHtml } = useMarketingApi()
-// const { exportMarketingHtmlAsPdf, exportMarketingHtmlAsDocx } = useMarketingExport()
+const { fetchExportMarketingContentHtml } = useMarketingApi()
+const { exportMarketingHtmlAsPdf, exportMarketingHtmlAsDocx } = useMarketingExport()
 
 const variants = computed(() => props.result.variants ?? [])
 const images = computed(() => props.result.images ?? [])
@@ -683,8 +682,7 @@ const isRefiningActive = (type: MarketingOutputKind) =>
   props.refiningType === type && props.refiningVariantId != null && props.refiningVariantId === activeDraftId.value
 const isRefiningActiveImage = computed(() => isRefiningActive('IMAGE'))
 const isRefiningActiveText = computed(() => isRefiningActive('TEXT'))
-// 내보내기 버튼을 막아 둔 동안 사용하지 않는다 — 버튼 주석을 풀 때 함께 복구
-// const isExporting = ref(false)
+const isExporting = ref(false)
 const isSavingEdit = ref(false)
 const isRestoring = ref(false)
 const draftEditorRef = ref<{ save: () => void; isDirty: () => boolean } | null>(null)
@@ -1046,11 +1044,10 @@ const onAddToPrompt = (text: string) => {
   })
 }
 
-// 채널 미리보기 버튼을 막아 둔 동안 사용하지 않는다 — 버튼 주석을 풀 때 함께 복구
-// const openChannelPreview = () => {
-//   if (props.isLoading || isRefining.value || !hasDraftContent.value) return
-//   isChannelPreviewOpen.value = true
-// }
+const openChannelPreview = () => {
+  if (props.isLoading || isRefining.value || !hasDraftContent.value) return
+  isChannelPreviewOpen.value = true
+}
 
 const onCopy = async () => {
   const content = isImageMode.value ? '' : liveDraftText.value.trim()
@@ -1081,63 +1078,62 @@ const onCopy = async () => {
   }
 }
 
-// 내보내기 버튼을 막아 둔 동안 사용하지 않는다 — 버튼 주석을 풀 때 함께 복구
-// const EXPORT_FORMAT_OPTIONS: { format: MarketingExportFormat; label: string; extension: string }[] = [
-//   { format: 'word', label: 'Word로 저장', extension: 'docx' },
-//   { format: 'pdf', label: 'PDF로 저장', extension: 'pdf' },
-// ]
-//
-// const exportMenuItems = computed<DropdownMenuItemDef[]>(() =>
-//   EXPORT_FORMAT_OPTIONS.map((option) => ({ label: option.label, value: option.format })),
-// )
-//
-// const isExportPickerOpen = ref(false)
-//
-// const onExportMenuOpenChange = (open: boolean) => {
-//   if (open && (isExporting.value || isRefiningActiveText.value || isRefiningActiveImage.value)) {
-//     isExportPickerOpen.value = false
-//     return
-//   }
-//   isExportPickerOpen.value = open
-// }
-//
-// /** "고객사_프로젝트명_제목_YYYYMMDD" — 고객사·프로젝트명은 없으면 생략, 날짜는 내보내는 시점 기준 */
-// const buildExportFileNameBase = () => {
-//   const parts = [props.orgNm, props.projectNm, draftTitle.value || '마케팅_콘텐츠']
-//     .map((part) => part.trim())
-//     .filter(Boolean)
-//     .map((part) => part.replace(/[\\/:*?"<>|]/g, '_'))
-//   parts.push(formatYyyyMmDdFromDate(new Date()))
-//   return parts.join('_')
-// }
-//
-// const isMarketingExportFormat = (value: string): value is MarketingExportFormat =>
-//   EXPORT_FORMAT_OPTIONS.some((option) => option.format === value)
-//
-// /** 콘텐츠 시안 전체 내보내기 — format=word|pdf. HTML만 받아 프론트에서 변환한다(회의록과 동일 패턴) */
-// const onSelectExportFormat = async (format: string) => {
-//   isExportPickerOpen.value = false
-//   if (!isMarketingExportFormat(format)) return
-//   const mktContentId = props.mktContentId.trim()
-//   if (!mktContentId || isExporting.value) return
-//   isExporting.value = true
-//   try {
-//     const { successYn, html, returnMsg } = await fetchExportMarketingContentHtml(mktContentId)
-//     if (!successYn || !html) {
-//       openToast({ message: returnMsg || '내보내기에 실패했습니다.', type: 'error' })
-//       return
-//     }
-//     if (format === 'pdf') {
-//       await exportMarketingHtmlAsPdf(html)
-//     } else {
-//       await exportMarketingHtmlAsDocx(html, buildExportFileNameBase())
-//     }
-//   } catch {
-//     openToast({ message: '내보내기에 실패했습니다.', type: 'error' })
-//   } finally {
-//     isExporting.value = false
-//   }
-// }
+const EXPORT_FORMAT_OPTIONS: { format: MarketingExportFormat; label: string; extension: string }[] = [
+  { format: 'word', label: 'Word로 저장', extension: 'docx' },
+  { format: 'pdf', label: 'PDF로 저장', extension: 'pdf' },
+]
+
+const exportMenuItems = computed<DropdownMenuItemDef[]>(() =>
+  EXPORT_FORMAT_OPTIONS.map((option) => ({ label: option.label, value: option.format })),
+)
+
+const isExportPickerOpen = ref(false)
+
+const onExportMenuOpenChange = (open: boolean) => {
+  if (open && (isExporting.value || isRefiningActiveText.value || isRefiningActiveImage.value)) {
+    isExportPickerOpen.value = false
+    return
+  }
+  isExportPickerOpen.value = open
+}
+
+/** "고객사_프로젝트명_제목_YYYYMMDD" — 고객사·프로젝트명은 없으면 생략, 날짜는 내보내는 시점 기준 */
+const buildExportFileNameBase = () => {
+  const parts = [props.orgNm, props.projectNm, draftTitle.value || '마케팅_콘텐츠']
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => part.replace(/[\\/:*?"<>|]/g, '_'))
+  parts.push(formatYyyyMmDdFromDate(new Date()))
+  return parts.join('_')
+}
+
+const isMarketingExportFormat = (value: string): value is MarketingExportFormat =>
+  EXPORT_FORMAT_OPTIONS.some((option) => option.format === value)
+
+/** 콘텐츠 시안 전체 내보내기 — format=word|pdf. HTML만 받아 프론트에서 변환한다(회의록과 동일 패턴) */
+const onSelectExportFormat = async (format: string) => {
+  isExportPickerOpen.value = false
+  if (!isMarketingExportFormat(format)) return
+  const mktContentId = props.mktContentId.trim()
+  if (!mktContentId || isExporting.value) return
+  isExporting.value = true
+  try {
+    const { successYn, html, returnMsg } = await fetchExportMarketingContentHtml(mktContentId)
+    if (!successYn || !html) {
+      openToast({ message: returnMsg || '내보내기에 실패했습니다.', type: 'error' })
+      return
+    }
+    if (format === 'pdf') {
+      await exportMarketingHtmlAsPdf(html)
+    } else {
+      await exportMarketingHtmlAsDocx(html, buildExportFileNameBase())
+    }
+  } catch {
+    openToast({ message: '내보내기에 실패했습니다.', type: 'error' })
+  } finally {
+    isExporting.value = false
+  }
+}
 
 const onUseDraft = () => {
   if (
