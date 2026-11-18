@@ -74,7 +74,7 @@
         v-if="isCampaignPlanOpen"
         :project-nm="currentProject?.projectNm ?? ''"
         :product-nm="campaignDraft?.productNm ?? ''"
-        :goal="campaignGoal"
+        :goal="campaignGoal || (currentProject?.projectOverview ?? '')"
         :target-nm="campaignTarget"
         :due-date-label="dueDateLabel"
         :visibility-label="visibilityLabel"
@@ -89,6 +89,12 @@
         @start-content="onStartContentFromPlan"
       />
 
+      <MarketingCampaignCalendar
+        v-else-if="isCalendarOpen"
+        :selected-project-nm="currentProject?.projectNm ?? ''"
+        @close="isCalendarOpen = false"
+      />
+
       <!-- 채널 선택 → 멀티채널 생성 결과 → 채널별 콘텐츠 (프로젝트 기획서 기반) -->
       <MarketingChannelSelect v-else-if="pagePhase === 'channelSelect'" />
       <MarketingChannelResults v-else-if="pagePhase === 'channelResults'" />
@@ -98,6 +104,7 @@
       <MarketingReview v-else-if="pagePhase === 'review'" />
       <MarketingApproval
         v-else-if="pagePhase === 'approval'"
+        @go-calendar="isCalendarOpen = true"
         @go-list="handleBackToList"
       />
       <MarketingSchedule
@@ -411,11 +418,15 @@ const {
 } = useMarketingStore()
 
 const isCampaignPlanOpen = ref(false)
+const isCalendarOpen = ref(false)
 const campaignPlanStartInResult = ref(false)
 
 const isAuthoringPhase = computed(() => pagePhase.value !== 'list')
 const isContentFlowPhase = computed(
-  () => !isCampaignPlanOpen.value && ['channelContent', 'review', 'approval', 'schedule'].includes(pagePhase.value),
+  () =>
+    !isCampaignPlanOpen.value &&
+    !isCalendarOpen.value &&
+    ['channelContent', 'review', 'approval', 'schedule'].includes(pagePhase.value),
 )
 
 type HistoryRow = (typeof allHistoryItems.value)[number]

@@ -26,8 +26,6 @@
           <p class="marketing-list-desc">진행 중인 프로젝트의 전체 현황을 한눈에 확인하고 관리하세요.</p>
         </div>
         <div class="marketing-list-header__actions">
-          <!-- 계정 관리·프로젝트 캘린더는 기능 준비 전까지 숨긴다 -->
-          <!--
           <UiButton
             variant="outline"
             size="md"
@@ -54,7 +52,6 @@
             </template>
             프로젝트 캘린더
           </UiButton>
-          -->
           <UiButton
             variant="primary"
             size="md"

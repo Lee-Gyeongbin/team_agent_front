@@ -24,8 +24,6 @@
           <strong>발행 설정하기</strong>
           <span>즉시 발행 또는 예약 발행을 설정합니다.</span>
         </button>
-        <!-- 프로젝트 캘린더는 기능 준비 전까지 숨긴다. 다시 열 때 'go-calendar' emit과 [id].vue 연결도 함께 추가 -->
-        <!--
         <button
           type="button"
           class="marketing-approval-next-card"
@@ -38,7 +36,6 @@
           <strong>캘린더 확인</strong>
           <span>전체 프로젝트의 발행 일정을 확인합니다.</span>
         </button>
-        -->
         <button
           type="button"
           class="marketing-approval-next-card"
@@ -51,8 +48,6 @@
           <strong>프로젝트로 돌아가기</strong>
           <span>콘텐츠 목록으로 이동합니다.</span>
         </button>
-        <!-- 승인 취소는 기능 준비 전까지 숨긴다. 다시 열 때 아래 버튼과 canCancelApproval, onCancelApproval, handleCancelApproval 연결을 함께 복구 -->
-        <!--
         <button
           v-if="canCancelApproval"
           type="button"
@@ -67,7 +62,6 @@
           <strong>승인 취소하기</strong>
           <span>검수 중으로 되돌려 작성자가 다시 수정할 수 있게 합니다. 예약도 함께 풀립니다.</span>
         </button>
-        -->
       </div>
     </div>
 
@@ -213,6 +207,7 @@ import { useMarketingStore } from '~/composables/marketing/useMarketingStore'
 import { marketingReviewVerdictBadgeClass } from '~/types/marketing'
 
 const emit = defineEmits<{
+  'go-calendar': []
   'go-list': []
 }>()
 
@@ -226,28 +221,29 @@ const {
   isApproving,
   handleApprove,
   handleReject,
+  handleCancelApproval,
   popMarketingPhase,
   isCurrentApprover,
   moveMarketingContentStep,
 } = useMarketingStore()
 
-// 승인 취소는 기능 준비 전까지 닫아 둔다. 지정 승인자가 승인 완료(004)·예약(005)에서만 가능 (서버 cancelApproval과 같은 기준)
-// const canCancelApproval = computed(
-//   () => isCurrentApprover.value && ['004', '005'].includes(currentContent.value?.statusCd ?? ''),
-// )
-//
-// const onCancelApproval = async () => {
-//   if (!mktContentId.value || !canCancelApproval.value) return
-//   const confirmed = await openConfirm({
-//     title: '승인 취소',
-//     message: '승인을 취소하면 콘텐츠가 검수 중으로 돌아가고, 예약된 발행도 함께 취소됩니다.\n승인을 취소할까요?',
-//     confirmText: '승인 취소',
-//     cancelText: '닫기',
-//   })
-//   if (!confirmed) return
-//   const ok = await handleCancelApproval(mktContentId.value)
-//   if (ok) handleBackToList()
-// }
+// 지정 승인자가 승인 완료(004)·예약(005)에서만 가능 (서버 cancelApproval과 같은 기준)
+const canCancelApproval = computed(
+  () => isCurrentApprover.value && ['004', '005'].includes(currentContent.value?.statusCd ?? ''),
+)
+
+const onCancelApproval = async () => {
+  if (!mktContentId.value || !canCancelApproval.value) return
+  const confirmed = await openConfirm({
+    title: '승인 취소',
+    message: '승인을 취소하면 콘텐츠가 검수 중으로 돌아가고, 예약된 발행도 함께 취소됩니다.\n승인을 취소할까요?',
+    confirmText: '승인 취소',
+    cancelText: '닫기',
+  })
+  if (!confirmed) return
+  const ok = await handleCancelApproval(mktContentId.value)
+  if (ok) emit('go-list')
+}
 
 const mktContentId = computed(() => currentContent.value?.mktContentId ?? '')
 const reviewerNm = computed(() => currentContent.value?.approverUserNm || '승인자 미지정')
