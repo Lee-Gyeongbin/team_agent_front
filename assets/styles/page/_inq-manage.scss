@@ -1,0 +1,66 @@
+@use '../utils/variables' as *;
+
+// 문의하기 관리(`pages/inq-manage`) — 상세 패널 본문·답변 스타일은 `_inq.scss`의 `.inq-manage-detail-panel` 공용 규칙을 쓰고,
+// 여기에는 관리 화면만의 상하 분할 레이아웃과 처리상태 영역을 둔다
+// 상세 — 위 절반은 문의 내용, 아래 절반은 처리상태·답변(구분선 아래 전체 너비)
+.ui-drawer-body:has(.inq-manage-detail-panel) {
+  display: flex;
+  flex-direction: column;
+  overflow-y: hidden;
+}
+
+.inq-manage-detail-panel {
+  flex: 1;
+  min-height: 0;
+
+  .inq-pane-top,
+  .inq-thread-wrap {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  // 답변 입력창은 남은 높이를 채우고, 길어지면 에디터 내부에서 스크롤
+  .inq-composer.is-new {
+    flex: 1;
+    min-height: 0;
+
+    .ui-markdown-editor {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .ui-markdown-editor__content {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+
+      > *,
+      .tiptap {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .tiptap {
+        min-height: 100%;
+      }
+    }
+  }
+
+  .inq-status-row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    flex-shrink: 0;
+
+    .url-reg-label {
+      white-space: nowrap;
+    }
+  }
+}
