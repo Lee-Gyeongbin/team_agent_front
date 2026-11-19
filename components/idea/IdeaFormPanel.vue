@@ -100,7 +100,7 @@ interface Props {
   formData: IdeaFormData
   typeOptions: { label: string; value: string }[]
   agentOptions: { label: string; value: string }[]
-  /** 구분 코드가 '에이전트'인지 (공통코드 코드명 기준) */
+  /** 구분 코드가 '에이전트'인지 (공통코드 코드값 기준) */
   isAgentType: (ideaTypeCd: string) => boolean
   panelActionLabel: '등록' | '수정'
 }

@@ -89,7 +89,7 @@
               </template>
               <template #cell-statusNm="{ row }">
                 <UiBadge
-                  :variant="getIdeaStatusVariant((row as IdeaListItem).statusNm)"
+                  :variant="getIdeaStatusVariant((row as IdeaListItem).statusCd)"
                   size="sm"
                 >
                   {{ row.statusNm }}
@@ -119,7 +119,6 @@
       @like="toggleIdeaLike"
       @edit="onEditIdea"
       @delete="handleDeleteIdea"
-      @download="(file) => handleDownloadIdeaFile(file.ideaFileId)"
       @close="onCloseIdeaDetail"
     />
     <IdeaFormPanel
@@ -174,7 +173,6 @@ const {
   handleSaveIdea,
   handleDeleteIdea,
   toggleIdeaLike,
-  handleDownloadIdeaFile,
 } = useIdeaStore()
 
 onMounted(async () => {

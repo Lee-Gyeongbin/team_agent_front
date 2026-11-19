@@ -23,7 +23,7 @@
       {{ idea.ideaTypeNm }}
     </UiBadge>
     <UiBadge
-      :variant="getIdeaStatusVariant(idea.statusNm)"
+      :variant="getIdeaStatusVariant(idea.statusCd)"
       size="sm"
     >
       {{ idea.statusNm }}
@@ -31,10 +31,9 @@
   </div>
 
   <div class="notice-detail-body">
-    <!-- v-html: toIdeaContentHtml에서 DOMPurify로 정제한 값만 사용 -->
     <div
       class="notice-content-box idea-rich"
-      v-html="toIdeaContentHtml(idea.content)"
+      v-html="idea.content"
     />
   </div>
 
@@ -42,7 +41,15 @@
     v-if="idea.fileList.length"
     class="idea-file-list-ro"
     :file-list="idea.fileList"
-    @download="(file) => $emit('download', file)"
+    @preview="openPreview"
+  />
+
+  <ChatAttachmentPreviewModal
+    :is-open="Boolean(previewFile)"
+    :file-name="previewFile?.fileNm ?? ''"
+    mime-type=""
+    :fetch-preview="fetchPreview"
+    @close="previewFile = null"
   />
 
   <div class="idea-like-grp">
@@ -65,18 +72,29 @@
 
 <script setup lang="ts">
 import { UiBadge, UiButton, UiIcon } from '@leechanyong/ispark-ui'
+import { useIdeaApi } from '~/composables/idea/useIdeaApi'
 import { getIdeaStatusVariant } from '~/types/idea'
 import type { IdeaDetail, IdeaFile } from '~/types/idea'
-import { toIdeaContentHtml } from '~/utils/idea/ideaRichText'
 
 interface Props {
   idea: IdeaDetail
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
+const { fetchIdeaFilePreview } = useIdeaApi()
+const previewFile = ref<IdeaFile | null>(null)
+
+const openPreview = (file: IdeaFile) => {
+  previewFile.value = file
+}
+const fetchPreview = () => {
+  const id = previewFile.value?.ideaFileId
+  if (!id) throw new Error('첨부파일을 찾을 수 없습니다.')
+  return fetchIdeaFilePreview(id)
+}
+watch(() => props.idea.ideaId, () => { previewFile.value = null })
 
 defineEmits<{
   like: []
-  download: [file: IdeaFile]
 }>()
 </script>

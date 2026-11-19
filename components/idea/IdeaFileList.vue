@@ -21,13 +21,13 @@
           name="file"
           size="16"
         />
-        <!-- 저장된 파일은 이름을 눌러 다운로드 (읽기 전용 목록) -->
+        <!-- 저장된 파일은 이름을 눌러 미리보기 (읽기 전용 목록) -->
         <button
           v-if="!removable && file.ideaFileId"
           type="button"
           class="idea-file-name idea-file-download"
           :title="file.fileNm"
-          @click="$emit('download', file)"
+          @click="$emit('preview', file)"
         >
           {{ file.fileNm }}
         </button>
@@ -74,6 +74,6 @@ withDefaults(defineProps<Props>(), {
 defineEmits<{
   remove: [index: number]
   clear: []
-  download: [file: IdeaFile]
+  preview: [file: IdeaFile]
 }>()
 </script>

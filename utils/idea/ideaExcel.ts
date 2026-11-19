@@ -1,8 +1,28 @@
 import { downloadBlobAsFile } from '~/utils/global/fileDownloadUtil'
-import type { IdeaListItem } from '~/types/idea'
+import type { IdeaExcelItem } from '~/types/idea'
 
 const IDEA_EXCEL_GUIDE = '※ 목록 조회 결과를 내려받은 파일입니다. 수정 후 업로드하는 용도가 아닌 참고용입니다.'
-const IDEA_EXCEL_HEADERS = ['번호', '구분', '에이전트', '제목', '작성자', '등록일', '추천수', '진행상태']
+const IDEA_EXCEL_HEADERS = [
+  '번호',
+  '구분',
+  '에이전트',
+  '제목',
+  '아이디어 내용',
+  '작성자',
+  '등록일',
+  '추천수',
+  '관리자 코멘트',
+  '코멘트 일시',
+  '진행상태',
+]
+
+const toExcelText = (value: string | null) => {
+  const template = document.createElement('template')
+  template.innerHTML = value ?? ''
+  template.content.querySelectorAll('br').forEach((node) => node.replaceWith('\n'))
+  template.content.querySelectorAll('p, li, h3, blockquote').forEach((node) => node.after('\n'))
+  return (template.content.textContent ?? '').trim()
+}
 
 const ymd = () => {
   const now = new Date()
@@ -16,7 +36,7 @@ const ymd = () => {
  * - 파일명: yyyyMMdd_아이디어목록.xlsx
  * 데이터는 /idea/manage/excelList.do(현재 조회 조건 전체)로 받아 브라우저에서 파일 생성
  */
-export const downloadIdeaListExcel = async (ideaList: IdeaListItem[]): Promise<boolean> => {
+export const downloadIdeaListExcel = async (ideaList: IdeaExcelItem[]): Promise<boolean> => {
   try {
     const ExcelJS = (await import('exceljs')).default
     const workbook = new ExcelJS.Workbook()
@@ -40,26 +60,41 @@ export const downloadIdeaListExcel = async (ideaList: IdeaListItem[]): Promise<b
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E79' } }
     })
 
-    const rows = ideaList.map((idea) => [
-      idea.ideaId,
-      idea.ideaTypeNm ?? '',
-      idea.agentNm ?? '',
-      idea.title,
-      idea.createNm ?? '',
-      idea.createDt,
-      idea.likeCnt,
-      idea.statusNm ?? '',
-    ])
-    rows.forEach((values) => {
-      sheet.addRow(values).eachCell({ includeEmpty: true }, (cell) => {
-        cell.border = border
-      })
+    const columnWidths = IDEA_EXCEL_HEADERS.map((header) => Math.max(header.length * 2 + 8, 15.6))
+    columnWidths[4] = 60
+    columnWidths[8] = 45
+    ideaList.forEach((idea) => {
+      const comment = toExcelText(idea.cmtContent)
+      sheet
+        .addRow([
+          idea.ideaId,
+          idea.ideaTypeNm ?? '',
+          idea.agentNm ?? '',
+          idea.title,
+          toExcelText(idea.content),
+          idea.createNm ?? '',
+          idea.createDt,
+          idea.likeCnt,
+          comment,
+          comment ? (idea.cmtDt ?? '') : '',
+          idea.statusNm ?? '',
+        ])
+        .eachCell({ includeEmpty: true }, (cell, column) => {
+          cell.border = border
+          if (column === 5 || column === 9) {
+            cell.alignment = { wrapText: true, vertical: 'top' }
+          } else {
+            columnWidths[column - 1] = Math.max(
+              columnWidths[column - 1],
+              Math.min(String(cell.value ?? '').length * 1.6 + 8, 80),
+            )
+          }
+        })
     })
 
     // 글자 수 기준 열 너비 (최소 15.6)
-    IDEA_EXCEL_HEADERS.forEach((header, idx) => {
-      const maxLen = Math.max(header.length * 2, ...rows.map((row) => String(row[idx] ?? '').length * 1.6))
-      sheet.getColumn(idx + 1).width = Math.max(maxLen + 8, 15.6)
+    columnWidths.forEach((width, idx) => {
+      sheet.getColumn(idx + 1).width = width
     })
     sheet.views = [{ state: 'frozen', ySplit: 2 }]
 

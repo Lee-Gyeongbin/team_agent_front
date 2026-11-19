@@ -3,7 +3,7 @@
     :open="isOpen"
     :title="idea?.title || '아이디어'"
     position="right"
-    width="50%"
+    width="65vw"
     show-resize
     show-fullscreen
     persist-key="idea-manage-detail"
@@ -20,7 +20,6 @@
         <IdeaDetailContent
           :idea="idea"
           @like="$emit('like')"
-          @download="(file) => $emit('download', file)"
         />
       </div>
 
@@ -74,7 +73,7 @@
 
 <script setup lang="ts">
 import { UiButton, UiDrawer, UiSelect } from '@leechanyong/ispark-ui'
-import type { IdeaDetail, IdeaFile, IdeaManageFormData } from '~/types/idea'
+import type { IdeaDetail, IdeaManageFormData } from '~/types/idea'
 
 interface Props {
   isOpen: boolean
@@ -90,7 +89,6 @@ const emit = defineEmits<{
   like: []
   save: []
   delete: []
-  download: [file: IdeaFile]
   updateFormData: [payload: IdeaManageFormData]
 }>()
 

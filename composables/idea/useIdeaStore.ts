@@ -1,21 +1,22 @@
 import type { ComputedRef } from 'vue'
+import { useAgentApi } from '~/composables/agent/useAgentApi'
 import { useAuth } from '~/composables/com/useAuth'
 import { useIdeaApi } from '~/composables/idea/useIdeaApi'
 import { openConfirm } from '~/composables/useDialog'
 import { openToast } from '~/composables/useToast'
 import type { UserInfo } from '~/types/auth'
 import type { IdeaAgent, IdeaCode, IdeaDetail, IdeaFormData, IdeaListItem, IdeaResult } from '~/types/idea'
-import { IDEA_TYPE_NM_AGENT } from '~/types/idea'
+import { IDEA_TYPE_CD_AGENT } from '~/types/idea'
+import { getCodes } from '~/utils/global/comCodesUtil'
 
 const {
   fetchIdeaList,
   fetchIdeaDetail,
-  fetchIdeaCodeList,
   fetchSaveIdea,
   fetchDeleteIdea,
   fetchToggleIdeaLike,
-  fetchIdeaFileDownloadUrl,
 } = useIdeaApi()
+const { fetchAgentList } = useAgentApi()
 
 const IDEA_PAGE_SIZE = 15
 
@@ -44,18 +45,29 @@ const ideaStatusOptions = computed(() =>
 const ideaAgentOptions = computed(() =>
   ideaAgentList.value.map(({ agentId, agentNm }) => ({ label: agentNm, value: agentId })),
 )
-/** 구분 코드가 '에이전트'인지 (코드값이 아닌 코드명으로 판단) */
-const isAgentType = (ideaTypeCd: string) =>
-  ideaTypeList.value.some((code) => code.codeId === ideaTypeCd && code.codeNm === IDEA_TYPE_NM_AGENT)
+/** 구분 코드가 '에이전트'인지 (코드값으로 판단) */
+const isAgentType = (ideaTypeCd: string) => ideaTypeCd === IDEA_TYPE_CD_AGENT
 
 /** 공통코드·에이전트 목록 조회 (한 번만) */
 export const handleSelectIdeaCodeList = async () => {
-  if (ideaTypeList.value.length && ideaStatusList.value.length) return
-  const res = await fetchIdeaCodeList()
-  ideaTypeList.value = res.typeList ?? []
-  ideaStatusList.value = res.statusList ?? []
-  ideaAgentList.value = res.agentList ?? []
+  const [typeList, statusList, { dataList: agentList }] = await Promise.all([
+    getCodes('ID000002'),
+    getCodes('ID000001'),
+    fetchAgentList(),
+  ])
+  ideaTypeList.value = typeList
+  ideaStatusList.value = statusList
+  ideaAgentList.value = (agentList ?? []).filter(({ useYn }) => useYn === 'Y')
 }
+
+export const getIdeaAgentName = (agentId?: string | null) =>
+  ideaAgentList.value.find((agent) => agent.agentId === agentId)?.agentNm
+
+/** 구분·진행상태 이름 — 백엔드는 코드값만 주므로 공통코드(getCodes)에서 찾음 (없으면 코드값 표시) */
+export const getIdeaCodeNames = (idea: Partial<Pick<IdeaListItem, 'ideaTypeCd' | 'statusCd'>>) => ({
+  ideaTypeNm: ideaTypeList.value.find(({ codeId }) => codeId === idea.ideaTypeCd)?.codeNm ?? idea.ideaTypeCd ?? '',
+  statusNm: ideaStatusList.value.find(({ codeId }) => codeId === idea.statusCd)?.codeNm ?? idea.statusCd ?? '',
+})
 
 /** result FAIL이면 사유를 알리고 true */
 export const isIdeaFail = (res: Pick<IdeaResult, 'result' | 'msg'> | null | undefined) => {
@@ -97,7 +109,11 @@ export const createIdeaListState = () => {
     const res = await fetchIdeaList({ ...getSearchParams(), pageIndex: currentPage.value })
     totalCount.value = res.totalCnt ?? 0
     const startNo = totalCount.value - (currentPage.value - 1) * IDEA_PAGE_SIZE
-    ideaList.value = (res.dataList ?? []).map((item, idx) => ({ ...item, rowNo: startNo - idx }))
+    ideaList.value = (res.dataList ?? []).map((item, idx) => ({
+      ...item,
+      ...getIdeaCodeNames(item),
+      rowNo: startNo - idx,
+    }))
     // 삭제 등으로 현재 페이지가 비면 앞 페이지로 (페이지 watch가 다시 조회)
     if (!ideaList.value.length && currentPage.value > 1) currentPage.value = totalPages.value
   }
@@ -157,7 +173,7 @@ export const createIdeaListState = () => {
 export const handleSelectIdeaDetail = async (ideaId: string): Promise<IdeaDetail | null> => {
   const res = await fetchIdeaDetail(ideaId)
   if (isIdeaFail(res) || !res.data) return null
-  return { ...res.data, fileList: res.data.fileList ?? [] }
+  return { ...res.data, ...getIdeaCodeNames(res.data), fileList: res.data.fileList ?? [] }
 }
 
 /** 삭제 확인창 (제목 굵게) */
@@ -175,23 +191,6 @@ export const handleToggleIdeaLike = async (detail: IdeaDetail) => {
   if (isIdeaFail(res) || !res.data) return
   detail.likeCnt = res.data.likeCnt
   detail.likedYn = res.data.likedYn
-}
-
-/** 첨부파일 다운로드 */
-export const handleDownloadIdeaFile = async (ideaFileId?: string) => {
-  if (!ideaFileId) return
-  const res = await fetchIdeaFileDownloadUrl(ideaFileId)
-  if (isIdeaFail(res)) return
-  if (!res.url) {
-    openToast({ message: '파일을 찾을 수 없습니다.', type: 'error' })
-    return
-  }
-  // 숨은 iframe으로 다운로드 (presigned URL — Content-Disposition: attachment)
-  const iframe = document.createElement('iframe')
-  iframe.style.display = 'none'
-  iframe.src = res.url
-  document.body.appendChild(iframe)
-  window.setTimeout(() => iframe.remove(), 3000)
 }
 
 export const useIdeaCodeStore = () => ({
@@ -332,6 +331,5 @@ export const useIdeaStore = () => {
     handleSaveIdea,
     handleDeleteIdea,
     toggleIdeaLike,
-    handleDownloadIdeaFile,
   }
 }

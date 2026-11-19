@@ -98,6 +98,7 @@ interface Props {
   chatFileId?: string
   /** 마케팅 참고 파일 — viewMarketingFile.do */
   marketingFileId?: string
+  fetchPreview?: () => Promise<ChatFileViewResponse>
   fileName: string
   mimeType: string
   /** 직전에 선택한 파일의 blob URL (이미지 등, 세션 한정) */
@@ -228,14 +229,16 @@ const useLocalImageFirst = () => {
   return true
 }
 
+let previewRequest = 0
 const loadPreview = async () => {
+  const request = ++previewRequest
   errorMessage.value = ''
   resetViewer()
   if (useLocalImageFirst()) return
 
   const marketingFileId = props.marketingFileId?.trim()
   const chatFileId = props.chatFileId?.trim()
-  if (!marketingFileId && !chatFileId) {
+  if (!props.fetchPreview && !marketingFileId && !chatFileId) {
     loadStatus.value = 'error'
     errorMessage.value = '파일 정보가 없습니다.'
     return
@@ -243,11 +246,14 @@ const loadPreview = async () => {
 
   loadStatus.value = 'loading'
   try {
-    const res = marketingFileId
-      ? await fetchViewMarketingFile(marketingFileId)
-      : await fetchFileView(chatFileId!)
-    applyResponse(res)
+    const res = props.fetchPreview
+      ? await props.fetchPreview()
+      : marketingFileId
+        ? await fetchViewMarketingFile(marketingFileId)
+        : await fetchFileView(chatFileId!)
+    if (request === previewRequest) applyResponse(res)
   } catch (e) {
+    if (request !== previewRequest) return
     errorMessage.value = e instanceof Error ? e.message : '불러오기에 실패했습니다.'
     loadStatus.value = 'error'
   }
@@ -310,6 +316,7 @@ watch(
   () => [props.isOpen, props.chatFileId, props.marketingFileId, props.localPreviewUrl] as const,
   ([open]) => {
     if (!open) {
+      previewRequest++
       resetViewer()
       loadStatus.value = 'ready'
       return
