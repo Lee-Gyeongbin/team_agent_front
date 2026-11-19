@@ -194,6 +194,13 @@
           >
             통합 회의록
           </UiBadge>
+          <UiBadge
+            v-else-if="meeting.abnormalYn === 'Y'"
+            variant="danger"
+            size="sm"
+          >
+            비정상 종료 · 복구 가능
+          </UiBadge>
           <template v-else>
             <UiBadge
               v-for="step in progressBadges(meeting.steps)"
@@ -262,6 +269,13 @@
             size="sm"
           >
             통합 회의록
+          </UiBadge>
+          <UiBadge
+            v-else-if="meeting.abnormalYn === 'Y'"
+            variant="danger"
+            size="sm"
+          >
+            비정상 종료 · 복구 가능
           </UiBadge>
           <template v-else>
             <UiBadge
@@ -342,12 +356,6 @@
       @close="isModalOpen = false"
       @confirm="onConfirmStart"
     />
-
-    <!-- 비정상종료 회의 복구 모달 (페이지 진입 시 자동 조회) -->
-    <MeetingRecoverModal
-      v-model="isRecoverModalOpen"
-      @recover="onRecover"
-    />
   </div>
 </template>
 
@@ -385,7 +393,6 @@ const {
 // ===== 기존 상태 (변경 없음) =====
 const searchKeyword = ref('')
 const isModalOpen = ref(false)
-const isRecoverModalOpen = ref(false)
 const isIntegrateMode = ref(false)
 const selectedMeetingIds = ref<string[]>([])
 const integrateShowSpeaker = ref(true)
@@ -634,6 +641,7 @@ const filteredList = computed(() => {
     date: m.startDt,
     status: m.status,
     integrateYn: m.integrateYn ?? 'N',
+    abnormalYn: m.abnormalYn ?? 'N',
     steps: deriveDisplaySteps(m.status) satisfies MeetingStep[],
   }))
 })
@@ -713,11 +721,6 @@ const onConfirmStart = async (params: {
   if (!created) return
 
   const { meetingId } = created
-  navigateTo(`/meeting/${meetingId}`)
-}
-
-/** 복구하기 클릭 → 해당 회의 상세 페이지로 이동 */
-const onRecover = ({ meetingId }: { meetingId: number }) => {
   navigateTo(`/meeting/${meetingId}`)
 }
 

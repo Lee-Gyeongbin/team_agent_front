@@ -99,10 +99,11 @@ import { UiButton, UiEmpty, UiModal } from '@leechanyong/ispark-ui'
 import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
 import type { MeetingInfographic } from '~/types/meeting'
 
-const route = useRoute()
-const meetingId = computed(() => Number(route.params.id))
+// [인포그래픽 일시 중지 2026-11-19] 스트림 구독 복원 시 주석 해제
+// const route = useRoute()
+// const meetingId = computed(() => Number(route.params.id))
 
-const { infographicList, currentMeeting, handleStreamInfographic } = useMeetingStore()
+const { infographicList, currentMeeting /* , handleStreamInfographic */ } = useMeetingStore()
 
 const isPreviewOpen = ref(false)
 const previewItem = ref<MeetingInfographic | null>(null)
@@ -158,31 +159,33 @@ const doDownload = () => {
   }
 }
 
-/** 생성 중인 항목이 하나라도 있으면 SSE 구독 시작 */
-const hasPending = computed(() =>
-  infographicList.value.some((item) => item.infographicStatus === '001' || item.infographicStatus === '002'),
-)
+// [인포그래픽 일시 중지 2026-11-19] 다시 쓰려면 아래 주석 해제 (useMeetingStore 에서 handleStreamInfographic 도 받을 것)
+// /** 생성 중인 항목이 하나라도 있으면 SSE 구독 시작 */
+// const hasPending = computed(() =>
+//   infographicList.value.some((item) => item.infographicStatus === '001' || item.infographicStatus === '002'),
+// )
 
 let closeStream: (() => void) | null = null
 
-const startStream = () => {
-  if (closeStream) return
-  closeStream = handleStreamInfographic(meetingId.value)
-}
+// const startStream = () => {
+//   if (closeStream) return
+//   closeStream = handleStreamInfographic(meetingId.value)
+// }
 
 const stopStream = () => {
   closeStream?.()
   closeStream = null
 }
 
-watch(
-  hasPending,
-  (pending) => {
-    if (pending) startStream()
-    else stopStream()
-  },
-  { immediate: true },
-)
+// [인포그래픽 일시 중지 2026-11-19] 이미지 생성 스트림 구독 중지 — 다시 쓰려면 주석 해제
+// watch(
+//   hasPending,
+//   (pending) => {
+//     if (pending) startStream()
+//     else stopStream()
+//   },
+//   { immediate: true },
+// )
 
 onBeforeUnmount(() => stopStream())
 </script>

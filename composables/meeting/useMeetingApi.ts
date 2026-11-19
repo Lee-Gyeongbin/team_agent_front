@@ -11,7 +11,10 @@ import type {
   MeetingViewSpeaker as MeetingSpeaker,
   MeetingViewUser as MeetingUser,
   MeetingFileFormat,
-  AbnormalMeeting,
+  MeetingMinutesTmplListResponse,
+  MeetingStartMinutesParams,
+  MeetingStartMinutesResponse,
+  MeetingMinutesStatusResponse,
 } from '~/types/meeting'
 
 // 🔽 Mock — 백엔드 API 없는 항목만 유지 (실제 엔드포인트 완성 시 useApi 패턴으로 교체)
@@ -69,6 +72,29 @@ export const useMeetingApi = () => {
       `/ai/meeting/saveMeetingMinutes.do`,
       meeting,
     )
+  }
+
+  /** 회의록 양식 목록 */
+  const fetchMeetingTmplList = async (): Promise<MeetingMinutesTmplListResponse> => {
+    return post<MeetingMinutesTmplListResponse>('/ai/meeting/selectMeetingTmplList.do', {})
+  }
+
+  /** 회의록 생성 시작 — 서버가 백그라운드로 생성하고 바로 반환 (진행은 fetchMeetingMinutesStatus) */
+  const fetchStartMeetingMinutes = async (params: MeetingStartMinutesParams): Promise<MeetingStartMinutesResponse> => {
+    return post<MeetingStartMinutesResponse>('/ai/meeting/startMeetingMinutes.do', params)
+  }
+
+  /**
+   * 화자 분리 재시도 — 이미 올라간 오디오를 대기 상태로 되돌림 (성공하면 openMeetingProcessingStream 으로 다시 처리)
+   * 화자 분리 중 서버 재기동 · STT 오류로 "화자 분리가 중단되었습니다" 상태일 때
+   */
+  const fetchRetryDiarize = async (meetingId: number): Promise<{ successYn: boolean; returnMsg?: string }> => {
+    return post<{ successYn: boolean; returnMsg?: string }>('/ai/meeting/retryDiarize.do', { meetingId })
+  }
+
+  /** 회의록 생성 상태 — done 이면 회의록 · 회의 정보 포함 */
+  const fetchMeetingMinutesStatus = async (meetingId: number): Promise<MeetingMinutesStatusResponse> => {
+    return post<MeetingMinutesStatusResponse>('/ai/meeting/selectMeetingMinutesStatus.do', { meetingId })
   }
 
   /** 회의 시작 — speakers는 생성 시 insert된 화자 목록 (speakerId = auto_increment PK) */
@@ -265,35 +291,11 @@ export const useMeetingApi = () => {
     return post<{ url: string }>('/ai/meeting/downloadAudioFile.do', { meetingId })
   }
 
-  /** 비정상종료 회의 목록 조회 */
-  const fetchAbnormalMeetingList = async (): Promise<{ list: AbnormalMeeting[] }> => {
-    return get<{ list: AbnormalMeeting[] }>('/meeting/abnormal')
-  }
-
   /** 백업 파일 병합 복구 */
   const fetchRecoverMeeting = async (
     meetingId: number,
   ): Promise<{ successYn: boolean; audioId?: number; returnMsg?: string }> => {
     return post<{ successYn: boolean; audioId?: number; returnMsg?: string }>(`/meeting/${meetingId}/recover`, {})
-  }
-
-  /** 백업 파일 개수 조회 — 이어서 녹음 시 auto-save 인덱스 연속성 유지용 */
-  const fetchBackupFileCount = async (meetingId: number): Promise<{ count: number; successYn: boolean }> => {
-    return get<{ count: number; successYn: boolean }>(`/meeting/${meetingId}/backup-file-count`)
-  }
-
-  /** 백업 오디오 파일 업로드 (multipart/form-data) */
-  const fetchUploadBackupAudio = async (
-    meetingId: number,
-    blob: Blob,
-    filename: string,
-  ): Promise<{ successYn: boolean }> => {
-    const formData = new FormData()
-    formData.append('audioFile', blob, filename)
-    return useApi_multipart<{ successYn: boolean }>(`/api/meeting/${meetingId}/backup-audio`, {
-      method: 'POST',
-      body: formData,
-    })
   }
 
   /** 회의 통합 */
@@ -312,6 +314,10 @@ export const useMeetingApi = () => {
     fetchMeetingList,
     fetchMeetingDetail,
     fetchSaveMeetingMinutes,
+    fetchMeetingTmplList,
+    fetchStartMeetingMinutes,
+    fetchMeetingMinutesStatus,
+    fetchRetryDiarize,
     fetchCreateMeeting,
     fetchFinishMeetingWithAudio,
     fetchVoiceEnroll,
@@ -331,10 +337,7 @@ export const useMeetingApi = () => {
     fetchDownloadAudioFileUrl,
     openMeetingProcessingStream,
     openInfographicStream,
-    fetchAbnormalMeetingList,
     fetchRecoverMeeting,
-    fetchUploadBackupAudio,
-    fetchBackupFileCount,
     fetchIntegrateMeeting,
   }
 }

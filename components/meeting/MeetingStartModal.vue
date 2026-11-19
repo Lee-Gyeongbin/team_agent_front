@@ -10,9 +10,13 @@
           <button
             type="button"
             class="meeting-start-modal-close"
+            aria-label="닫기"
             @click="emit('close')"
           >
-            <i class="icon-close size-20" />
+            <UiIcon
+              name="x"
+              size="20"
+            />
           </button>
         </div>
 
@@ -37,77 +41,190 @@
                 <span>AI 제목 생성</span>
               </label>
             </div>
-            <div class="meeting-start-modal-title-row">
-              <UiInput
-                ref="titleRef"
-                v-model="form.meetingTitle"
-                :disabled="form.isAutoTitle"
-                :placeholder="form.isAutoTitle ? '회의 종료 후 AI가 제목을 생성합니다.' : '회의 제목을 입력하세요'"
-              />
-            </div>
+            <UiInput
+              ref="titleRef"
+              v-model="form.meetingTitle"
+              :disabled="form.isAutoTitle"
+              :placeholder="form.isAutoTitle ? '회의 종료 후 AI가 제목을 생성합니다.' : '회의 제목을 입력하세요'"
+            />
           </div>
 
-          <!-- 참석자 선택 (조직 트리 + 소속 사용자) -->
+          <!-- 참석자 (인사조직 → 직원목록 → 선택된 참석자) -->
           <div class="meeting-start-modal-field">
             <div class="meeting-start-modal-label-row">
               <label class="meeting-start-modal-label">참석자</label>
-              <span
-                v-if="selectedAttendees.length"
-                class="meeting-attendee-selected"
-              >
-                {{ selectedAttendees.length }}명 선택
-              </span>
             </div>
-            <UiInput
-              v-model="searchKeyword"
-              placeholder="조직/참석자 이름으로 검색..."
-              class="meeting-attendee-search-input"
-              @enter="onEnterAttendeeSearch"
-            >
-              <template #icon-right>
-                <i class="icon-search size-16" />
-              </template>
-            </UiInput>
-            <div class="meeting-attendee-list">
-              <UiLoading
-                v-if="isAttendeeTreeLoading"
-                overlay
-                text="조직도를 불러오는 중..."
+            <div class="meeting-attendee-search">
+              <UiInput
+                v-model="searchInput"
+                class="meeting-attendee-search-input"
+                placeholder="사용자명으로 검색 (Enter)"
+                @enter="onSearchAttendee"
               />
-              <div
-                v-else-if="attendeeTreeErrorMessage"
-                class="meeting-attendee-state"
+              <UiButton
+                variant="outline"
+                size="lg"
+                @click="onSearchAttendee"
               >
-                <p class="meeting-attendee-state__error">{{ attendeeTreeErrorMessage }}</p>
-                <UiButton
-                  variant="outline"
-                  size="sm"
-                  @click="handleLoadAttendeeTree"
-                >
-                  다시 시도
-                </UiButton>
+                <template #icon-left>
+                  <UiIcon
+                    name="search"
+                    size="16"
+                  />
+                </template>
+                검색
+              </UiButton>
+            </div>
+
+            <div class="meeting-attendee-panels">
+              <!-- 인사조직 -->
+              <div class="meeting-attendee-panel">
+                <div class="meeting-attendee-panel-header">
+                  <span class="meeting-attendee-panel-title">인사조직</span>
+                  <span class="meeting-attendee-panel-actions">
+                    <button
+                      type="button"
+                      aria-label="모두 접기"
+                      title="모두 접기"
+                      @click="handleSetAllAttendeeOrgExpanded(false)"
+                    >
+                      <UiIcon
+                        name="chevrons-down-up"
+                        size="14"
+                      />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="모두 펼치기"
+                      title="모두 펼치기"
+                      @click="handleSetAllAttendeeOrgExpanded(true)"
+                    >
+                      <UiIcon
+                        name="chevrons-up-down"
+                        size="14"
+                      />
+                    </button>
+                  </span>
+                </div>
+                <div class="meeting-attendee-panel-body">
+                  <UiLoading
+                    v-if="isAttendeeTreeLoading"
+                    overlay
+                    text="조직도를 불러오는 중..."
+                  />
+                  <div
+                    v-else-if="attendeeTreeErrorMessage"
+                    class="meeting-attendee-state"
+                  >
+                    <p class="meeting-attendee-state__error">{{ attendeeTreeErrorMessage }}</p>
+                    <UiButton
+                      variant="outline"
+                      size="sm"
+                      @click="onReloadAttendeeTree"
+                    >
+                      다시 시도
+                    </UiButton>
+                  </div>
+                  <UiEmpty
+                    v-else-if="!attendeeTree.length"
+                    title="등록된 조직이 없습니다."
+                  />
+                  <ul
+                    v-else
+                    class="meeting-attendee-tree-root"
+                    role="tree"
+                  >
+                    <MeetingAttendeeTreeNode
+                      v-for="node in attendeeTree"
+                      :key="node.orgId"
+                      :node="node"
+                      :depth="0"
+                      :active-org-id="appliedKeyword ? null : activeOrgId"
+                      @toggle-expand="handleToggleAttendeeOrgExpand"
+                      @select-org="onSelectOrg"
+                    />
+                  </ul>
+                </div>
               </div>
-              <UiEmpty
-                v-else-if="!filteredAttendeeTree.length"
-                :title="searchKeyword.trim() ? '검색 결과가 없습니다.' : '등록된 조직이 없습니다.'"
-              />
-              <ul
-                v-else
-                class="meeting-attendee-tree-root"
-                role="tree"
-              >
-                <MeetingAttendeeTreeNode
-                  v-for="node in filteredAttendeeTree"
-                  :key="node.orgId"
-                  :node="node"
-                  :depth="0"
-                  :selected-user-ids="selectedUserIds"
-                  @toggle-expand="handleToggleAttendeeOrgExpand"
-                  @toggle-org="onToggleOrg"
-                  @toggle-user="onToggleUser"
-                />
-              </ul>
+
+              <!-- 직원목록 -->
+              <div class="meeting-attendee-panel">
+                <div class="meeting-attendee-panel-header">
+                  <span class="meeting-attendee-panel-title">
+                    {{ appliedKeyword ? `검색 결과 (${visibleUsers.length})` : '직원목록' }}
+                  </span>
+                </div>
+                <div class="meeting-attendee-panel-body">
+                  <UiEmpty
+                    v-if="!visibleUsers.length && !isAttendeeTreeLoading"
+                    :title="appliedKeyword ? '검색 결과가 없습니다.' : '소속 직원이 없습니다.'"
+                  />
+                  <ul
+                    v-else
+                    class="meeting-attendee-user-list"
+                    role="listbox"
+                    aria-multiselectable="true"
+                  >
+                    <li
+                      v-for="user in visibleUsers"
+                      :key="user.userId"
+                      class="meeting-attendee-user-item"
+                      :class="{ 'is-selected': isSelected(user.userId) }"
+                      role="option"
+                      tabindex="0"
+                      :aria-selected="isSelected(user.userId)"
+                      @click="onToggleUser(user)"
+                      @keydown.enter.prevent="onToggleUser(user)"
+                      @keydown.space.prevent="onToggleUser(user)"
+                    >
+                      <span class="meeting-attendee-user-name">{{ user.userNm }}</span>
+                      <UiIcon
+                        v-if="isSelected(user.userId)"
+                        name="check"
+                        size="14"
+                      />
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <!-- 선택된 참석자 -->
+              <div class="meeting-attendee-panel">
+                <div class="meeting-attendee-panel-header">
+                  <span class="meeting-attendee-panel-title">선택된 참석자</span>
+                  <span class="meeting-attendee-panel-count">{{ selectedAttendees.length }}명</span>
+                </div>
+                <div class="meeting-attendee-panel-body">
+                  <UiEmpty
+                    v-if="!selectedAttendees.length"
+                    title="직원목록에서 참석자를 선택하세요."
+                  />
+                  <ul
+                    v-else
+                    class="meeting-attendee-selected-list"
+                  >
+                    <li
+                      v-for="user in selectedAttendees"
+                      :key="user.createUserId"
+                      class="meeting-attendee-selected-item"
+                    >
+                      <span class="meeting-attendee-user-name">{{ user.userNm }}</span>
+                      <button
+                        type="button"
+                        :aria-label="`${user.userNm} 제외`"
+                        @click="onRemoveAttendee(user.createUserId)"
+                      >
+                        <UiIcon
+                          name="x"
+                          size="14"
+                        />
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              </div>
             </div>
+            <p class="meeting-attendee-hint">참석자를 지정하면 회의 시작 전 음성 등록 단계로 이동합니다.</p>
           </div>
 
           <!-- 설명 (AI 제목 생성용) -->
@@ -154,11 +271,15 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { UiButton, UiEmpty, UiInput, UiLoading } from '@leechanyong/ispark-ui'
+import { UiButton, UiEmpty, UiIcon, UiInput, UiLoading } from '@leechanyong/ispark-ui'
 import { openToast } from '~/composables/useToast'
-import { collectAttendeeUsers, useMeetingAttendeeTree } from '~/composables/meeting/useMeetingAttendeeTree'
+import {
+  collectAttendeeUsers,
+  findAttendeeOrgNode,
+  useMeetingAttendeeTree,
+} from '~/composables/meeting/useMeetingAttendeeTree'
 import MeetingAttendeeTreeNode from '~/components/meeting/MeetingAttendeeTreeNode.vue'
-import type { MeetingAttendeeOrgNode, MeetingAttendeeUserItem, MeetingUser } from '~/types/meeting'
+import type { MeetingAttendeeUserItem, MeetingUser } from '~/types/meeting'
 
 const emit = defineEmits<{
   close: []
@@ -166,12 +287,13 @@ const emit = defineEmits<{
 }>()
 
 const {
-  filteredAttendeeTree,
+  attendeeTree,
+  allAttendeeUsers,
   isAttendeeTreeLoading,
   attendeeTreeErrorMessage,
-  searchKeyword,
   handleLoadAttendeeTree,
   handleToggleAttendeeOrgExpand,
+  handleSetAllAttendeeOrgExpanded,
 } = useMeetingAttendeeTree()
 
 const titleRef = ref<{ $el: HTMLElement } | null>(null)
@@ -184,18 +306,47 @@ const form = reactive({
 })
 const selectedAttendees = ref<MeetingUser[]>([])
 
-const selectedUserIds = computed(() => selectedAttendees.value.map((user) => user.createUserId))
+/** 인사조직에서 선택된 조직 */
+const activeOrgId = ref<string | null>(null)
+/** 검색창 입력값 */
+const searchInput = ref('')
+/** 검색 버튼/Enter 로 확정된 검색어 — 있으면 직원목록이 전체 조직 대상 검색 결과로 바뀜 */
+const appliedKeyword = ref('')
+
+/** 직원목록: 검색 중이면 전체 직원 중 이름 일치, 아니면 선택 조직(하위 조직 포함) 소속 직원 */
+const visibleUsers = computed<MeetingAttendeeUserItem[]>(() => {
+  const keyword = appliedKeyword.value.toLowerCase()
+  if (keyword) {
+    return allAttendeeUsers.value.filter((user) => user.userNm.toLowerCase().includes(keyword))
+  }
+  if (!activeOrgId.value) return []
+  const node = findAttendeeOrgNode(attendeeTree.value, activeOrgId.value)
+  return node ? collectAttendeeUsers(node) : []
+})
+
+/** 조직도 로드 후 첫 최상위 조직을 기본 선택 */
+const onReloadAttendeeTree = async (): Promise<void> => {
+  await handleLoadAttendeeTree()
+  activeOrgId.value = attendeeTree.value[0]?.orgId ?? null
+}
 
 onMounted(() => {
-  void handleLoadAttendeeTree()
+  void onReloadAttendeeTree()
 })
 
 const isSelected = (userId: string): boolean => selectedAttendees.value.some((user) => user.createUserId === userId)
 
-const toMeetingUser = (user: MeetingAttendeeUserItem): MeetingUser => ({
-  createUserId: user.userId,
-  userNm: user.userNm,
-})
+const onSelectOrg = (orgId: string): void => {
+  activeOrgId.value = orgId
+  // 조직을 고르면 검색 모드 해제
+  appliedKeyword.value = ''
+  searchInput.value = ''
+}
+
+/** 검색 버튼 / Enter — 한글 IME로 Enter가 두 번 들어와도 결과 동일 */
+const onSearchAttendee = (): void => {
+  appliedKeyword.value = searchInput.value.trim()
+}
 
 const onToggleUser = (user: MeetingAttendeeUserItem): void => {
   const idx = selectedAttendees.value.findIndex((item) => item.createUserId === user.userId)
@@ -203,50 +354,11 @@ const onToggleUser = (user: MeetingAttendeeUserItem): void => {
     selectedAttendees.value.splice(idx, 1)
     return
   }
-  selectedAttendees.value.push(toMeetingUser(user))
+  selectedAttendees.value.push({ createUserId: user.userId, userNm: user.userNm })
 }
 
-const onToggleOrg = (node: MeetingAttendeeOrgNode): void => {
-  const users = collectAttendeeUsers(node)
-  if (!users.length) return
-
-  const allSelected = users.every((user) => isSelected(user.userId))
-  if (allSelected) {
-    const removeIds = new Set(users.map((user) => user.userId))
-    selectedAttendees.value = selectedAttendees.value.filter((item) => !removeIds.has(item.createUserId))
-    return
-  }
-
-  const next = [...selectedAttendees.value]
-  for (const user of users) {
-    if (next.some((item) => item.createUserId === user.userId)) continue
-    next.push(toMeetingUser(user))
-  }
-  selectedAttendees.value = next
-}
-
-/**
- * 검색 결과 트리에서 화면상 가장 위에 보이는 사용자 반환
- * - MeetingAttendeeTreeNode 렌더 순서와 동일: 하위 부서(children) → 소속 사용자(users)
- */
-const findFirstVisibleUser = (nodes: MeetingAttendeeOrgNode[]): MeetingAttendeeUserItem | null => {
-  for (const node of nodes) {
-    const fromChildren = findFirstVisibleUser(node.children)
-    if (fromChildren) return fromChildren
-    if (node.users.length) return node.users[0] ?? null
-  }
-  return null
-}
-
-/**
- * 참석자 검색창 Enter — 검색 결과 최상단 사용자를 선택
- * - 이미 선택된 사용자는 해제하지 않음 (한글 IME로 Enter가 두 번 들어와도 결과 동일)
- */
-const onEnterAttendeeSearch = (): void => {
-  if (!searchKeyword.value.trim()) return
-  const user = findFirstVisibleUser(filteredAttendeeTree.value)
-  if (!user || isSelected(user.userId)) return
-  selectedAttendees.value.push(toMeetingUser(user))
+const onRemoveAttendee = (userId: string): void => {
+  selectedAttendees.value = selectedAttendees.value.filter((item) => item.createUserId !== userId)
 }
 
 const onConfirm = () => {

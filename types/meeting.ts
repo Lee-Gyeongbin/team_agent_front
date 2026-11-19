@@ -10,6 +10,72 @@ export interface Meeting {
   createDt: string
   integrateYn?: string // 'Y' | 'N'
   showSpeakerYn?: string // 'Y' | 'N' — 결정사항 내 발언자 표시 여부
+  /** 비정상 종료 여부 — 이탈 표시(Y) 또는 녹음 중 heartbeat 가 3분 넘게 끊김 */
+  abnormalYn?: string // 'Y' | 'N'
+  /** 회의록 양식 코드 (TB_MEETING_TMPL) — null 이면 기본 양식으로 생성됨 */
+  minutesTmplCd?: string | null
+  /** 문체 — null 이면 양식 기본 문체 */
+  minutesToneCd?: MeetingMinutesToneCd | null
+  /** 분량 — null 이면 normal */
+  minutesLengthCd?: MeetingMinutesLengthCd | null
+}
+
+/** 회의록 문체: 개조식 / 서술형 / 경어체 */
+export type MeetingMinutesToneCd = 'bullet' | 'plain' | 'polite'
+/** 회의록 분량: 표준 / 상세 */
+export type MeetingMinutesLengthCd = 'normal' | 'long'
+
+/** 회의록 양식 (TB_MEETING_TMPL + TB_TMPL) */
+export interface MeetingMinutesTmpl {
+  minutesTmplCd: string
+  tmplId: string
+  tmplNm: string
+  tmplDescription?: string
+  recommendTxt?: string
+  defaultToneCd: MeetingMinutesToneCd
+  defaultYn: string // 'Y' | 'N'
+  sortOrd: number
+  /** 양식 구성 (필드명, 정렬순) */
+  fieldNmList: string[]
+}
+
+/** 회의록 양식 목록 응답 */
+export interface MeetingMinutesTmplListResponse {
+  successYn: boolean
+  returnMsg?: string
+  list: MeetingMinutesTmpl[]
+}
+
+/** 회의록 생성 시작 요청 — "회의록 생성" / "이 양식으로 다시 생성" (양식을 안 보내면 회의에 저장된 값) */
+export interface MeetingStartMinutesParams {
+  meetingId: number
+  minutesTmplCd?: string
+  minutesToneCd?: MeetingMinutesToneCd
+  minutesLengthCd?: MeetingMinutesLengthCd
+}
+
+/** 회의록 생성 시작 응답 */
+export interface MeetingStartMinutesResponse {
+  successYn: boolean
+  returnMsg?: string
+  state?: MeetingMinutesState
+}
+
+/**
+ * 회의록 생성 상태
+ * - none: 화자 분리 전 / diarized: 생성 대기 / processing: 생성 중 / done: 완료 / error: 실패
+ */
+export type MeetingMinutesState = 'none' | 'diarized' | 'processing' | 'done' | 'error'
+
+/** 회의록 생성 상태 응답 — done 이면 회의록 · 회의 정보 포함 */
+export interface MeetingMinutesStatusResponse {
+  successYn: boolean
+  returnMsg?: string
+  state: MeetingMinutesState
+  step?: string
+  message?: string
+  minutes?: MeetingMinutes | null
+  meeting?: Meeting | null
 }
 
 /** 통합 회의록의 원본 회의 항목 */
@@ -83,6 +149,11 @@ export interface MeetingDetail {
   infographicList?: MeetingInfographic[]
   userList?: User[]
   integrationSources?: MeetingIntegrationSource[]
+  /** 서버에 백업된 녹음 조각 번호 (backup_N.webm 의 N, 오름차순) */
+  backupIndexes?: number[]
+  backupCnt?: number
+  /** 이어서 녹음할 때 다음 조각 번호 (마지막 번호 + 1, 중간이 비어도 덮어쓰지 않음) */
+  backupNextIndex?: number
 }
 
 export interface TodoItem {
@@ -167,8 +238,10 @@ export type TranscriptionConnectionStatus =
 // ─── Meeting2 이관 타입 ───────────────────────────────────────────
 
 /** 6단계 진행 상태 */
-export type MeetingStepStatus = 'wait' | 'progress' | 'done'
-export type MeetingStepKey = 'voiceEnroll' | 'record' | 'speaker' | 'generate' | 'edit' | 'share'
+/** skipped: 음성 등록을 마치지 않고 건너뜀 (voiceEnroll 단계 전용) */
+export type MeetingStepStatus = 'wait' | 'progress' | 'done' | 'skipped'
+/** 상세 화면 5단계 — CMB 와 같이 '회의록 생성' 화면에서 편집까지 한다 */
+export type MeetingStepKey = 'voiceEnroll' | 'record' | 'speaker' | 'generate' | 'share'
 
 /** 파일 형식 */
 export type MeetingFileFormat = 'docx' | 'pdf' | 'txt' | 'md'
@@ -229,12 +302,11 @@ export interface MeetingFileSaveForm {
   fileName: string
 }
 
-/** 비정상종료 회의 항목 */
-export interface AbnormalMeeting {
-  meetingId: number
-  meetingTitle: string
-  startDt: string
-  endDt: string
+/** 녹음 백업 조각 (구간 번호는 0부터, 파일명 구간 번호는 1부터) */
+export interface MeetingBackupSegment {
+  index: number
+  blob: Blob
+  error?: unknown
 }
 
 /** 회의록 화면용 회의 단건 */
@@ -245,7 +317,6 @@ export interface MeetingViewModel {
   location?: string // 회의실
   participants: string[] // 참석자 이름 배열
   purpose?: string // 회의 목적
-  steps: MeetingStep[] // 진행 단계
   speakers: MeetingViewSpeaker[] // 화자 목록
   sttList: MeetingSttItem[] // 실시간 STT 발화 리스트
   minutesContent: string // WYSIWYG 회의록 본문 (HTML)
@@ -258,4 +329,5 @@ export interface MeetingViewModel {
   status: string
   integrateYn: string // 'Y' | 'N' — 통합 회의록 여부
   showSpeakerYn: string // 'Y' | 'N' — 결정사항 내 발언자 표시 여부
+  abnormalYn: string // 'Y' | 'N' — 비정상 종료 여부 (상세 조회 시점)
 }

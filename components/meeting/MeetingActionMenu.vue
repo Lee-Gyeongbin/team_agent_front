@@ -32,6 +32,7 @@
           >
             {{ format.toUpperCase() }}로 저장
           </button>
+          <!-- [인포그래픽 일시 중지 2026-11-19] 다시 쓰려면 주석 해제
           <hr class="meeting2-action-picker-divider" />
           <label
             class="meeting2-action-picker-check"
@@ -43,6 +44,7 @@
             />
             인포그래픽 포함
           </label>
+          -->
         </div>
       </div>
 

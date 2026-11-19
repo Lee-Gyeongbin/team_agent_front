@@ -284,9 +284,9 @@ export const buildMeetingPrintCss = (hostId: string): string => {
     font-weight: 450 !important;
     text-align: left !important;
   }
-  /* 정보 표 라벨 컬럼 폭 고정 */
-  ${H} tbody tr > th:first-child { width: 120px !important; }
-  ${H} tbody tr > th:nth-child(3) { width: 100px !important; }
+  /* 정보 표 라벨 컬럼 폭 고정 — 값(td)이 있는 행만, 머리글 행(전부 th)은 제외 */
+  ${H} tbody tr:has(> td) > th:first-child { width: 120px !important; }
+  ${H} tbody tr:has(> td) > th:nth-child(3) { width: 100px !important; }
   /* 표 안 p 초기화 */
   ${H} th p, ${H} td p {
     margin: 0 !important;
@@ -483,11 +483,12 @@ td {
   text-align: left;
 }
 
-tbody tr > th:first-child {
+/* 정보 표 라벨 컬럼 — 값(td)이 있는 행만 (머리글 행 제외). Word 는 :has 미지원 → 열 너비는 colgroup(colwidth) 로 전달됨 */
+tbody tr:has(> td) > th:first-child {
   width: 120px;
 }
 
-tbody tr > th:nth-child(3) {
+tbody tr:has(> td) > th:nth-child(3) {
   width: 100px;
 }
 

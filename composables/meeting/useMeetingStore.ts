@@ -1,6 +1,7 @@
 import { useMeetingApi, type MeetingListFilter } from '~/composables/meeting/useMeetingApi'
 import { buildMeetingPrintCss, MEETING_DOCX_CSS } from '~/composables/meeting/meetingExportStyles'
 import { useFileStore } from '~/composables/com/useFileStore'
+import { useMeetingRecordGuard, isMeetingSessionLost } from '~/composables/meeting/useMeetingRecordGuard'
 import type {
   Meeting as ApiMeeting,
   MeetingDetail,
@@ -17,6 +18,10 @@ import type {
   MeetingViewUser as MeetingUser,
   MeetingFileFormat,
   MergeGroup,
+  MeetingMinutesTmpl,
+  MeetingStartMinutesParams,
+  MeetingMinutesState,
+  MeetingMinutesStatusResponse,
 } from '~/types/meeting'
 
 const {
@@ -24,6 +29,10 @@ const {
   fetchMeetingList,
   fetchMeetingDetail,
   fetchSaveMeetingMinutes,
+  fetchMeetingTmplList,
+  fetchStartMeetingMinutes,
+  fetchMeetingMinutesStatus,
+  fetchRetryDiarize,
   fetchCheckMeetingIntegration,
   fetchDeleteMeeting,
   fetchCreateMeeting,
@@ -44,6 +53,7 @@ const {
   fetchIntegrateMeeting,
 } = useMeetingApi()
 const { handleDownloadByUrl } = useFileStore()
+const { uploadBackupSegment, toSafeFileTitle } = useMeetingRecordGuard()
 
 // ===== 상태 =====
 const meetingList = ref<ApiMeeting[]>([])
@@ -55,6 +65,17 @@ const isLoadingList = ref(false)
 const isLoadingDetail = ref(false)
 const isFinishing = ref(false)
 const isGeneratingTitle = ref(false)
+
+// 회의록 양식 (null = 아직 조회 안 함, [] = 조회했고 0건)
+const minutesTmplList = ref<MeetingMinutesTmpl[] | null>(null)
+const isLoadingMinutesTmpl = ref(false)
+const minutesTmplErrorMessage = ref('')
+/** 회의록 생성 상태 — 서버 상태(selectMeetingMinutesStatus)를 그대로 따름 */
+const minutesState = ref<MeetingMinutesState>('none')
+/** 생성 실패 사유 (state = error) */
+const minutesStatusMessage = ref('')
+/** 실패 단계 — transcribe: 화자 분리 중단 · 실패 (녹음 화면에서 다시 시도) / minutes · save: 회의록 생성 실패 */
+const minutesStatusStep = ref('')
 
 const userList = ref<ApiMeetingUser[]>([])
 const isMailSendOpen = ref(false)
@@ -117,32 +138,74 @@ const parseAttendeesDisplay = (attendees: string): string => {
 
 /** 음성등록 완료 여부 (전체 참석자 등록 완료 or 참석자 없음) */
 const voiceEnrollDone = ref(true)
+// ── 상세 화면 단계 (CMB 와 같이 단계별 화면) ─────────────────────────
+const STEP_DEFS: Array<{ key: MeetingStepKey; label: string }> = [
+  { key: 'voiceEnroll', label: '음성 등록' },
+  { key: 'record', label: '녹음' },
+  { key: 'speaker', label: '화자 분리' },
+  { key: 'generate', label: '회의록 생성' },
+  { key: 'share', label: '공유' },
+]
+const STEP_KEYS = STEP_DEFS.map((d) => d.key)
 
-const deriveSteps = (status: string, hasMinutes: boolean): MeetingStep[] => {
-  const s = (key: MeetingStepKey, label: string, stepStatus: MeetingStepStatus): MeetingStep => ({
-    key,
-    label,
-    status: stepStatus,
+/** 지금 보고 있는 단계 화면 */
+const currentStepKey = ref<MeetingStepKey>('record')
+
+/**
+ * 처리 상태 기준으로 갈 수 있는 마지막 단계
+ * - 회의록 있음 → 공유 / 화자 분리 완료(회의록 생성 대기·생성 중) → 회의록 생성 / 그 외 → 녹음
+ * - CMB 와 같이 화자 분리 후 화자 이름을 정리하고 "회의록 생성" 단계에서 생성한다
+ */
+const reachedStepIdx = computed(() => {
+  const detail = meetingDetail.value
+  if (detail.minutes) return STEP_KEYS.indexOf('share')
+  // 발화가 저장된 화자가 있어야 화자 분리 완료 (참석자로 미리 등록된 화자 행만 있으면 아직 아님 — 중단된 경우 포함)
+  if (detail.meeting?.status === '002' && (detail.speakers ?? []).some((sp) => Boolean(sp.utterances)))
+    return STEP_KEYS.indexOf('generate')
+  return STEP_KEYS.indexOf('record')
+})
+
+const isIntegratedMeeting = computed(() => meetingDetail.value.meeting?.integrateYn === 'Y')
+
+/** 진행바 표시용 단계 — 통합 회의록은 회의록 생성·공유만 */
+const detailSteps = computed<MeetingStep[]>(() => {
+  const curIdx = STEP_KEYS.indexOf(currentStepKey.value)
+  const passedIdx = Math.max(curIdx, reachedStepIdx.value)
+  const steps = STEP_DEFS.map((def, idx): MeetingStep => {
+    let status: MeetingStepStatus = 'wait'
+    if (idx === curIdx) status = 'progress'
+    else if (def.key === 'voiceEnroll') {
+      // 참석자 음성을 다 등록하지 않고 지나쳤으면 건너뜀
+      if (voiceEnrollDone.value) status = 'done'
+      else if (passedIdx > 0) status = 'skipped'
+    } else if (idx < passedIdx) status = 'done'
+    return { ...def, status }
   })
-  const enrollDone = voiceEnrollDone.value
-  if (status === '001') {
-    return [
-      s('voiceEnroll', '음성 등록', enrollDone ? 'done' : 'progress'),
-      s('record', '녹음', enrollDone ? 'progress' : 'wait'),
-      s('speaker', '화자 분리', 'wait'),
-      s('generate', '회의록 생성', 'wait'),
-      s('edit', '회의록 편집', 'wait'),
-      s('share', '공유', 'wait'),
-    ]
-  }
-  return [
-    s('voiceEnroll', '음성 등록', 'done'),
-    s('record', '녹음', 'done'),
-    s('speaker', '화자 분리', hasMinutes ? 'done' : 'wait'),
-    s('generate', '회의록 생성', hasMinutes ? 'done' : 'wait'),
-    s('edit', '회의록 편집', hasMinutes ? 'progress' : 'wait'),
-    s('share', '공유', 'wait'),
-  ]
+  return isIntegratedMeeting.value ? steps.filter((st) => st.key === 'generate' || st.key === 'share') : steps
+})
+
+/** 회의에 들어왔을 때 첫 단계 — 처리 상태 기준 */
+const initDetailStep = () => {
+  const detail = meetingDetail.value
+  if (isIntegratedMeeting.value || detail.minutes) currentStepKey.value = 'generate'
+  // 생성 중이면 진행 상황이 보이는 회의록 생성 단계, 생성 전이면 화자 이름부터 정리
+  else if (minutesState.value === 'processing') currentStepKey.value = 'generate'
+  else if (reachedStepIdx.value >= STEP_KEYS.indexOf('speaker')) currentStepKey.value = 'speaker'
+  // 비정상 종료 회의는 복구 버튼이 있는 녹음 화면부터
+  else if (!voiceEnrollDone.value && detail.meeting?.abnormalYn !== 'Y') currentStepKey.value = 'voiceEnroll'
+  else currentStepKey.value = 'record'
+}
+
+/** 해당 단계로 이동할 수 없는 이유 (없으면 빈 문자열) — 문구는 CMB getStepBlockMsg 기준 */
+const getStepBlockMsg = (target: MeetingStepKey, opts: { isRecording: boolean; hasAttendees: boolean }): string => {
+  if (opts.isRecording) return '녹음 중에는 단계를 이동할 수 없습니다. 회의를 마치면 회의 종료 버튼을 눌러 주세요.'
+  if (isFinishing.value) return '화자 분리가 진행 중입니다. 완료되면 다음 단계로 이동할 수 있습니다.'
+  const targetIdx = STEP_KEYS.indexOf(target)
+  if (isIntegratedMeeting.value && targetIdx < STEP_KEYS.indexOf('generate')) return ''
+  if (target === 'voiceEnroll' && !opts.hasAttendees) return '음성 등록 대상 참석자가 없습니다.'
+  if (targetIdx <= reachedStepIdx.value || targetIdx <= STEP_KEYS.indexOf('record')) return ''
+  if (!isIntegratedMeeting.value && meetingDetail.value.meeting?.status !== '002') return '녹음을 먼저 완료해주세요.'
+  return '회의록이 아직 생성되지 않았습니다.'
 }
 
 const mapApiSpeakers = (apiSpeakers: ApiMeetingSpeaker[]): MeetingSpeaker[] =>
@@ -234,7 +297,6 @@ const DEFAULT_MINUTES_TMPL_ID = 'TM000004'
 const mapApiDetailToMeeting = (detail: MeetingDetail): Meeting | null => {
   const m = detail.meeting
   if (!m) return null
-  const hasMinutes = !!detail.minutes
   return {
     id: String(m.meetingId),
     title: m.meetingTitle,
@@ -245,7 +307,6 @@ const mapApiDetailToMeeting = (detail: MeetingDetail): Meeting | null => {
       .map((s) => s.trim())
       .filter(Boolean),
     purpose: undefined,
-    steps: deriveSteps(m.status, hasMinutes),
     speakers: mapApiSpeakers(detail.speakers ?? []),
     sttList: buildSttListFromSpeakers(detail.speakers ?? []),
     minutesContent: detail.minutes?.editedContent || detail.minutes?.generatedContent || '',
@@ -258,6 +319,7 @@ const mapApiDetailToMeeting = (detail: MeetingDetail): Meeting | null => {
     status: m.status,
     integrateYn: m.integrateYn ?? 'N',
     showSpeakerYn: m.showSpeakerYn ?? 'Y',
+    abnormalYn: m.abnormalYn ?? 'N',
   }
 }
 
@@ -439,7 +501,6 @@ const handleSelectMeetingDetail = async (meetingId: number) => {
     if (!currentMeeting.value || currentMeeting.value.id !== mapped?.id) {
       currentMeeting.value = mapped
     } else if (currentMeeting.value && mapped) {
-      currentMeeting.value.steps = mapped.steps
       currentMeeting.value.speakers = mapped.speakers
       // 녹음 중(status='001')에는 sttList를 덮어쓰지 않음
       // DB에 화자가 없어 mapped.sttList = []이 되어 실시간 STT 블록이 지워지는 것을 방지
@@ -450,6 +511,16 @@ const handleSelectMeetingDetail = async (meetingId: number) => {
         currentMeeting.value.minutesContent = mapped.minutesContent
       }
       currentMeeting.value.status = detail.meeting?.status ?? ''
+      currentMeeting.value.abnormalYn = detail.meeting?.abnormalYn ?? 'N'
+    }
+
+    // 처리 상태 — 회의록이 없으면 서버 상태 확인
+    // (생성 대기 / 생성 중이면 이어서 확인 / 화자 분리 중단 → 녹음 화면에 "다시 시도" 안내, CMB getStatus 와 같음)
+    if (detail.minutes) {
+      if (minutesPollMeetingId !== meetingId) stopMinutesPolling()
+      if (minutesState.value !== 'processing') minutesState.value = 'done'
+    } else {
+      await handleCheckMinutesStatus(meetingId)
     }
   } catch {
     openToast({ message: '회의 정보를 불러오지 못했습니다.', type: 'error' })
@@ -559,84 +630,32 @@ const handleSelectVoiceEnrollmentList = async (meetingId: number): Promise<Meeti
   }
 }
 
-const handleFinishMeetingWithAudio = async (params: { meetingId: number; audioBlob: Blob }): Promise<boolean> => {
-  isFinishing.value = true
-  // step 1-2: 업로드 + DB저장 (빠르게 반환)
-  openLoading({ text: '오디오 파일을 업로드하는 중...' })
-  try {
-    const res = await fetchFinishMeetingWithAudio(params)
-    if (!res.successYn) {
-      openToast({ message: res.returnMsg || '회의 종료에 실패했습니다.', type: 'error' })
-      closeLoading()
-      isFinishing.value = false
-      return false
-    }
-
-    // step 3-5: SSE 스트림 구독 — 로딩 텍스트를 실제 진행 단계로 업데이트
-    return await new Promise<boolean>((resolve) => {
-      const es = openMeetingProcessingStream(params.meetingId)
-
-      const stepMessages: Record<string, string> = {
-        transcribe: '음성 인식 및 화자 분리 중입니다.',
-        minutes: '회의록 생성 중입니다.',
-        save: '데이터를 저장 중입니다.',
-      }
-
-      es.addEventListener('progress', (e: MessageEvent) => {
-        try {
-          const { step } = JSON.parse(e.data) as { step: string }
-          const message = stepMessages[step]
-          if (message) updateLoadingText(message)
-        } catch {
-          // 파싱 실패 무시
-        }
-      })
-
-      es.addEventListener('done', () => {
-        es.close()
-        isFinishing.value = false
-        closeLoading()
-        resolve(true)
-      })
-
-      es.addEventListener('error', () => {
-        es.close()
-        isFinishing.value = false
-        closeLoading()
-        openToast({ message: '회의 처리 중 오류가 발생했습니다.', type: 'error' })
-        resolve(false)
-      })
-    })
-  } catch {
-    openToast({ message: '회의 종료에 실패했습니다.', type: 'error' })
-    closeLoading()
-    isFinishing.value = false
-    return false
-  }
+/** SSE 진행 단계별 로딩 문구 */
+const PROCESSING_STEP_MESSAGES: Record<string, string> = {
+  transcribe: '음성 인식 및 화자 분리 중입니다.',
+  minutes: '회의록 생성 중입니다.',
+  save: '데이터를 저장 중입니다.',
 }
 
 /**
- * 복구된 회의 오디오 처리 (SSE 흐름만 실행)
- * 백업 복구 후 백엔드에 이미 오디오 레코드가 insert된 상태에서 호출
- * finishMeetingWithAudio의 step 3-5(전사·화자분리·회의록생성)만 수행
+ * 회의 처리 SSE 구독 (전사·화자분리·회의록 생성·저장)
+ * - 오디오가 이미 TB_MEETING_AUDIO(001)로 등록된 뒤 호출
+ * - 로딩을 띄우고 진행 단계별 문구를 갱신, 끝나면 닫음
  */
-const handleProcessRecoveredMeeting = async (meetingId: number): Promise<boolean> => {
+const subscribeMeetingProcessing = (
+  meetingId: number,
+  options: { loadingText: string; doneToast?: string; errorToast: string },
+): Promise<boolean> => {
   isFinishing.value = true
-  openLoading({ text: '복구된 녹음을 처리하는 중...' })
+  openLoading({ text: options.loadingText })
 
   return new Promise<boolean>((resolve) => {
     const es = openMeetingProcessingStream(meetingId)
 
-    const stepMessages: Record<string, string> = {
-      transcribe: '음성 인식 및 화자 분리 중입니다.',
-      minutes: '회의록 생성 중입니다.',
-      save: '데이터를 저장 중입니다.',
-    }
-
     es.addEventListener('progress', (e: MessageEvent) => {
       try {
         const { step } = JSON.parse(e.data) as { step: string }
-        const message = stepMessages[step]
+        const message = PROCESSING_STEP_MESSAGES[step]
         if (message) updateLoadingText(message)
       } catch {
         // 파싱 실패 무시
@@ -647,104 +666,246 @@ const handleProcessRecoveredMeeting = async (meetingId: number): Promise<boolean
       es.close()
       isFinishing.value = false
       closeLoading()
+      // 화자 분리 완료 → 화자 이름을 정리하는 화자 분리 단계로 이동 (회의록은 회의록 생성 단계에서 버튼으로 생성)
+      minutesState.value = 'diarized'
+      minutesStatusStep.value = ''
+      minutesStatusMessage.value = ''
+      currentStepKey.value = 'speaker'
+      if (options.doneToast) openToast({ message: options.doneToast })
       resolve(true)
     })
 
-    es.addEventListener('error', () => {
+    // 서버가 보낸 error 이벤트(처리 실패 · 이미 처리 중)는 message 를 담고, 연결 끊김은 data 가 없다
+    es.addEventListener('error', (e: Event) => {
       es.close()
       isFinishing.value = false
       closeLoading()
-      openToast({ message: '복구 처리 중 오류가 발생했습니다.', type: 'error' })
+      let serverMessage = ''
+      try {
+        serverMessage = (JSON.parse((e as MessageEvent).data ?? '{}') as { message?: string }).message ?? ''
+      } catch {
+        // 연결 끊김 등 data 없는 오류
+      }
+      openToast({ message: serverMessage || options.errorToast, type: 'error' })
+      // 녹음 화면의 "화자 분리가 중단되었습니다" 안내는 서버 상태로 다시 판단
+      void handleCheckMinutesStatus(meetingId)
       resolve(false)
     })
   })
 }
 
 /**
- * 이어서 녹음 후 회의 종료 처리
- * 1. 마지막 미저장 청크를 백업 파일로 업로드 (uploadRemainingChunks)
- * 2. recoverMeeting으로 전체 백업 파일 병합 후 SSE 처리
- * MeetingRecordPanel의 [회의 종료] 버튼에서 isResumeMode일 때 호출
+ * 오디오 파일 첨부로 회의 처리 (오디오 첨부 / 비정상 종료 화면의 [다른 오디오로 대체])
+ * - 이전 오디오·회의록·백업 조각을 지우고 첨부 파일 하나로 처리
  */
-const handleFinishResumedMeeting = async (params: {
-  meetingId: number
-  uploadRemainingChunks: () => Promise<boolean>
-}): Promise<boolean> => {
-  openLoading({ text: '오디오를 업로드하는 중...' })
-  try {
-    const uploaded = await params.uploadRemainingChunks()
-    if (!uploaded) {
-      // 업로드 실패해도 기존 백업 파일로 복구 시도
-      console.warn('[handleFinishResumedMeeting] 마지막 청크 업로드 실패 — 기존 백업으로 복구 시도')
-    }
-    closeLoading()
-  } catch {
-    closeLoading()
-    openToast({ message: '오디오 업로드에 실패했습니다.', type: 'error' })
-    return false
-  }
-
-  // 전체 백업 파일 병합 + SSE 처리 (recoverMeeting과 동일한 흐름)
-  return handleRecoverMeeting({ meetingId: params.meetingId })
-}
-
-/**
- * 비정상 종료 회의 복구 — POST /meeting/{meetingId}/recover 호출 후 SSE 처리
- * MeetingRecordPanel의 [기존 음성으로 회의록 생성] 버튼에서 호출
- */
-const handleRecoverMeeting = async (params: { meetingId: number }): Promise<boolean> => {
+const handleFinishMeetingWithAudio = async (params: { meetingId: number; audioBlob: Blob }): Promise<boolean> => {
   isFinishing.value = true
-  openLoading({ text: '백업 파일을 복구하는 중...' })
+  // step 1-2: 업로드 + DB저장 (빠르게 반환)
+  openLoading({ text: '오디오 파일을 업로드하는 중...' })
   try {
-    const res = await fetchRecoverMeeting(params.meetingId)
-    if (!res.successYn || res.audioId == null) {
-      openToast({ message: res.returnMsg ?? '복구에 실패했습니다.', type: 'error' })
-      closeLoading()
+    const res = await fetchFinishMeetingWithAudio(params)
+    closeLoading()
+    if (!res.successYn) {
+      openToast({ message: res.returnMsg || '회의 종료에 실패했습니다.', type: 'error' })
       isFinishing.value = false
       return false
     }
+  } catch {
+    openToast({ message: '회의 종료에 실패했습니다.', type: 'error' })
+    closeLoading()
+    isFinishing.value = false
+    return false
+  }
 
-    // SSE 스트림 구독 — handleProcessRecoveredMeeting과 동일한 흐름
-    return await new Promise<boolean>((resolve) => {
-      const es = openMeetingProcessingStream(params.meetingId)
+  // step 3-5: SSE 스트림 구독 — 로딩 텍스트를 실제 진행 단계로 업데이트
+  return subscribeMeetingProcessing(params.meetingId, {
+    loadingText: '음성 인식 및 화자 분리 중입니다.',
+    errorToast: '회의 처리 중 오류가 발생했습니다.',
+  })
+}
 
-      const stepMessages: Record<string, string> = {
-        transcribe: '음성 인식 및 화자 분리 중입니다.',
-        minutes: '회의록 생성 중입니다.',
-        save: '데이터를 저장 중입니다.',
-      }
+/**
+ * 업로드가 끝난 회의 처리 (녹음 종료 — 10분 미만 녹음을 녹음 보호 모듈이 업로드한 뒤)
+ * finishMeetingWithAudio의 step 3-5(전사·화자분리·회의록생성)만 수행
+ */
+const handleProcessUploadedMeeting = (meetingId: number): Promise<boolean> =>
+  subscribeMeetingProcessing(meetingId, {
+    loadingText: '음성 인식 및 화자 분리 중입니다.',
+    errorToast: '회의 처리 중 오류가 발생했습니다.',
+  })
 
-      es.addEventListener('progress', (e: MessageEvent) => {
-        try {
-          const { step } = JSON.parse(e.data) as { step: string }
-          const message = stepMessages[step]
-          if (message) updateLoadingText(message)
-        } catch {
-          // 파싱 실패 무시
-        }
-      })
+/**
+ * 화자 분리 다시 시도 — "화자 분리가 중단되었습니다" 상태 (화자 분리 중 서버 재기동 · STT 오류, CMB 재시도와 같음)
+ * 서버가 이전 결과를 정리하고 오디오를 대기로 되돌리면, 같은 오디오로 화자 분리를 다시 실행한다
+ */
+const handleRetryDiarize = async (meetingId: number): Promise<boolean> => {
+  isFinishing.value = true
+  try {
+    const res = await fetchRetryDiarize(meetingId)
+    if (!res.successYn) {
+      openToast({ message: res.returnMsg || '화자 분리를 다시 시작하지 못했습니다.', type: 'error' })
+      isFinishing.value = false
+      return false
+    }
+  } catch {
+    openToast({ message: '화자 분리를 다시 시작하지 못했습니다.', type: 'error' })
+    isFinishing.value = false
+    return false
+  }
+  minutesState.value = 'none'
+  minutesStatusStep.value = ''
+  minutesStatusMessage.value = ''
+  return subscribeMeetingProcessing(meetingId, {
+    loadingText: '음성 인식 및 화자 분리 중입니다.',
+    doneToast: '화자 분리가 완료되었습니다. 화자 이름을 확인한 뒤 회의록을 생성하세요.',
+    errorToast: '화자 분리 중 오류가 발생했습니다.',
+  })
+}
 
-      es.addEventListener('done', () => {
-        es.close()
-        isFinishing.value = false
-        closeLoading()
-        openToast({ message: '회의록이 생성되었습니다.' })
-        resolve(true)
-      })
-
-      es.addEventListener('error', () => {
-        es.close()
-        isFinishing.value = false
-        closeLoading()
-        openToast({ message: '복구 처리 중 오류가 발생했습니다.', type: 'error' })
-        resolve(false)
-      })
-    })
+/**
+ * 백업 조각 병합 → 회의 처리 (10분 넘는 녹음 종료 / 비정상 종료 화면의 [기존 음성으로 회의록 생성])
+ * POST /meeting/{meetingId}/recover — STT 서버가 조각을 하나로 합침 (실패하면 조각은 서버에 그대로 남음)
+ */
+const handleRecoverMeeting = async (params: { meetingId: number }): Promise<boolean> => {
+  isFinishing.value = true
+  openLoading({ text: '백업된 녹음을 하나로 합치는 중...' })
+  try {
+    const res = await fetchRecoverMeeting(params.meetingId)
+    closeLoading()
+    if (!res.successYn || res.audioId == null) {
+      openToast({ message: res.returnMsg ?? '복구에 실패했습니다.', type: 'error' })
+      isFinishing.value = false
+      return false
+    }
   } catch {
     openToast({ message: '복구 처리에 실패했습니다.', type: 'error' })
     closeLoading()
     isFinishing.value = false
     return false
+  }
+
+  return subscribeMeetingProcessing(params.meetingId, {
+    loadingText: '음성 인식 및 화자 분리 중입니다.',
+    doneToast: '화자 분리가 완료되었습니다. 화자 이름을 확인한 뒤 회의록을 생성하세요.',
+    errorToast: '복구 처리 중 오류가 발생했습니다.',
+  })
+}
+
+// ===== 누락 구간 첨부 =====
+
+/** 누락 구간 파일 검사 결과 */
+interface MissingSegmentFile {
+  index: number
+  file: File
+}
+
+/** 파일명 목록을 불릿 문자열로 */
+const toBullets = (names: string[]) => names.map((n) => `\n• ${n}`).join('')
+
+/**
+ * 누락 구간 첨부 — 회의 종료 때 내려받은 구간 파일({회의제목}_누락구간_{구간번호}_mt{회의ID}.webm)을 백업 조각으로 올림
+ * - 파일명의 구간 번호로 자리를 찾으므로 여러 파일을 순서와 상관없이 한 번에 선택 가능
+ * - 예전 이름 파일({회의제목}_녹음_{구간번호}.webm / {회의제목}_녹음.webm)도 받되 회의 ID 가 없어 제목만 비교해 경고
+ * @returns 올린 구간 번호 목록 (취소·실패 시 null)
+ */
+const handleAttachMissingSegments = async (params: {
+  meetingId: number
+  meetingTitle: string
+  files: File[]
+  backupIndexes: number[]
+}): Promise<number[] | null> => {
+  const { meetingId, files, backupIndexes } = params
+  if (files.length === 0) return null
+
+  const title = (params.meetingTitle || '회의').trim().normalize('NFC')
+  const safeTitle = toSafeFileTitle(title)
+  const items: MissingSegmentFile[] = []
+  const invalid: string[] = []
+  const otherMeeting: string[] = []
+  // 예전 방식으로 내려받은 파일 (회의 ID 가 없어 제목으로만 확인)
+  const legacy: string[] = []
+
+  files.forEach((file) => {
+    // 같은 이름을 여러 번 받으면 브라우저가 " (1)" 을 붙이므로 허용, macOS 한글 파일명(NFD) 대비 정규화
+    const name = file.name.normalize('NFC')
+    const m = /_누락구간_(\d+)_mt(\d+)(?:\s*\(\d+\))?\.webm$/i.exec(name)
+    const old = m ? null : /_녹음(?:_(\d+))?(?:\s*\(\d+\))?\.webm$/i.exec(name)
+    if (m && Number(m[1]) >= 1) {
+      if (m[2] !== String(meetingId)) otherMeeting.push(file.name)
+      else items.push({ index: Number(m[1]) - 1, file })
+    } else if (old && (old[1] === undefined || Number(old[1]) >= 1)) {
+      items.push({ index: old[1] === undefined ? 0 : Number(old[1]) - 1, file })
+      // 제목이 다르면(다른 회의이거나 제목을 바꾼 경우) 확인창에서 한 번 더 안내
+      const prefix = name.slice(0, old.index).trim()
+      if (prefix !== title && prefix !== safeTitle) legacy.push(file.name)
+    } else {
+      invalid.push(file.name)
+    }
+  })
+
+  if (invalid.length > 0 || otherMeeting.length > 0) {
+    await openAlert({
+      title: '누락 구간 첨부',
+      message:
+        (invalid.length > 0 ? `누락 구간 파일이 아닙니다.${toBullets(invalid)}\n\n` : '') +
+        (otherMeeting.length > 0 ? `다른 회의의 누락 구간 파일입니다.${toBullets(otherMeeting)}\n\n` : '') +
+        '회의 종료 때 내려받은 "누락구간" 파일을 이름을 바꾸지 말고 첨부해 주세요.\n(전체 녹음을 다른 파일로 바꾸려면 [다른 오디오로 대체]를 사용하세요.)',
+    })
+    return null
+  }
+  items.sort((a, b) => a.index - b.index)
+  for (let i = 1; i < items.length; i++) {
+    if (items[i].index === items[i - 1].index) {
+      openToast({
+        message: `같은 구간(${items[i].index + 1}구간) 파일을 두 개 선택했습니다. 하나만 선택해 주세요.`,
+        type: 'warning',
+      })
+      return null
+    }
+  }
+
+  const overwrite = items.filter((item) => backupIndexes.includes(item.index)).map((item) => item.index + 1)
+  // 파일 목록은 한 번만 보여주고, 제목이 다른 파일은 전부면 아래 한 줄로, 일부면 해당 줄에 표시
+  const allLegacy = legacy.length === items.length
+  const confirmed = await openConfirm({
+    title: '누락 구간 첨부',
+    message:
+      `누락 구간 ${items.length}개를 서버 백업에 올립니다.` +
+      toBullets(
+        items.map((item) => {
+          const mark = !allLegacy && legacy.includes(item.file.name) ? ' (회의 제목 다름)' : ''
+          return `${item.index + 1}구간 - ${item.file.name}${mark}`
+        }),
+      ) +
+      (overwrite.length > 0 || legacy.length > 0 ? '\n' : '') +
+      (overwrite.length > 0 ? `\n※ ${overwrite.join(', ')}구간은 이미 서버에 있어 첨부한 파일로 바꿉니다.` : '') +
+      (legacy.length > 0
+        ? `\n※ ${allLegacy ? '파일명의 회의 제목이 지금 회의와 다릅니다.' : '회의 제목이 다른 파일이 있습니다.'} 이 회의 파일이 맞는지 확인해 주세요.`
+        : '') +
+      '\n\n계속하시겠습니까?',
+  })
+  if (!confirmed) return null
+
+  // 한 파일씩 차례로 업로드 — 끝날 때까지 로딩 유지, 진행 중인 파일 번호 표시
+  const uploaded: number[] = []
+  openLoading({ text: `누락 구간을 올리고 있습니다... (0 / ${items.length})` })
+  try {
+    for (let i = 0; i < items.length; i++) {
+      updateLoadingText(`누락 구간을 올리고 있습니다... (${i + 1} / ${items.length})`)
+      await uploadBackupSegment(meetingId, items[i].index, items[i].file, true)
+      uploaded.push(items[i].index)
+    }
+    return uploaded
+  } catch (error) {
+    console.error('[handleAttachMissingSegments] 누락 구간 첨부 실패:', error)
+    const isLost = isMeetingSessionLost(error)
+    openToast({
+      message: `${isLost ? '로그인이 끊겨 ' : ''}누락 구간 업로드에 실패했습니다. ${isLost ? '다시 로그인한 뒤 ' : ''}다시 시도해 주세요. (이미 올라간 구간은 그대로 남습니다)`,
+      type: 'error',
+    })
+    return uploaded.length > 0 ? uploaded : null
+  } finally {
+    closeLoading()
   }
 }
 
@@ -922,6 +1083,111 @@ const handleSaveSpeakers = async (speakers: Partial<MeetingSpeaker>[], mergeGrou
   }
 }
 
+// ===== 회의록 양식 =====
+/** 회의록 양식 목록 조회 — 한 번 받은 목록은 재사용 (force 로 다시 조회) */
+const handleSelectMinutesTmplList = async (force = false): Promise<void> => {
+  if (minutesTmplList.value !== null && !force) return
+  minutesTmplErrorMessage.value = ''
+  isLoadingMinutesTmpl.value = true
+  try {
+    const res = await fetchMeetingTmplList()
+    if (!res.successYn) {
+      minutesTmplErrorMessage.value = res.returnMsg || '회의록 양식을 불러오지 못했습니다.'
+      return
+    }
+    minutesTmplList.value = res.list ?? []
+  } catch {
+    minutesTmplErrorMessage.value = '회의록 양식을 불러오지 못했습니다.'
+  } finally {
+    isLoadingMinutesTmpl.value = false
+  }
+}
+
+// ===== 회의록 생성 (CMB 와 같은 흐름: 화자 분리 → 화자 정리 → "회의록 생성" → 백그라운드 생성 + 상태 확인) =====
+/** 상태 확인 간격 — 서버가 백그라운드로 생성하므로 화면은 주기적으로 상태만 본다 */
+const MINUTES_POLL_INTERVAL_MS = 3000
+let minutesPollTimer: ReturnType<typeof setTimeout> | null = null
+let minutesPollMeetingId: number | null = null
+
+const stopMinutesPolling = () => {
+  if (minutesPollTimer) clearTimeout(minutesPollTimer)
+  minutesPollTimer = null
+  minutesPollMeetingId = null
+}
+
+/** 생성 완료 — 상세의 회의록 · 회의 정보와 에디터 내용, 제목(자동 제목)을 교체 */
+const applyMinutesDone = (meetingId: number, res: MeetingMinutesStatusResponse) => {
+  if (res.minutes) meetingDetail.value.minutes = res.minutes
+  if (res.meeting) meetingDetail.value.meeting = res.meeting
+  if (currentMeeting.value && currentMeeting.value.id === String(meetingId)) {
+    currentMeeting.value.minutesContent = res.minutes?.editedContent || res.minutes?.generatedContent || ''
+    if (res.meeting?.meetingTitle) currentMeeting.value.title = res.meeting.meetingTitle
+    if (res.meeting?.status) currentMeeting.value.status = res.meeting.status
+    currentMeeting.value.updatedAt = res.minutes?.modifyDt || res.minutes?.createDt || currentMeeting.value.updatedAt
+  }
+}
+
+/**
+ * 회의록 생성 상태 확인 — 생성 중이면 끝날 때까지 주기적으로 다시 확인
+ * @param notify 완료·실패 토스트를 띄울지 (화면 진입 시 이미 끝난 상태면 false)
+ */
+const handleCheckMinutesStatus = async (meetingId: number, notify = false): Promise<void> => {
+  if (minutesPollMeetingId !== null && minutesPollMeetingId !== meetingId) stopMinutesPolling()
+  try {
+    const res = await fetchMeetingMinutesStatus(meetingId)
+    // 확인하는 사이 다른 회의로 이동했으면 반영하지 않음
+    if (currentMeeting.value && currentMeeting.value.id !== String(meetingId)) return
+    if (!res.successYn) return
+    minutesState.value = res.state
+    minutesStatusMessage.value = res.message || ''
+    minutesStatusStep.value = res.step || ''
+
+    if (res.state === 'processing') {
+      minutesPollMeetingId = meetingId
+      minutesPollTimer = setTimeout(() => handleCheckMinutesStatus(meetingId, true), MINUTES_POLL_INTERVAL_MS)
+      return
+    }
+    stopMinutesPolling()
+    if (res.state === 'done') {
+      applyMinutesDone(meetingId, res)
+      if (notify) openToast({ message: '회의록을 생성했습니다.' })
+    } else if (res.state === 'error' && notify) {
+      openToast({ message: res.message || '회의록 생성에 실패했습니다.', type: 'error' })
+    }
+  } catch {
+    // 일시적인 네트워크 오류는 다음 확인에서 다시 시도
+    if (minutesState.value === 'processing') {
+      minutesPollMeetingId = meetingId
+      minutesPollTimer = setTimeout(() => handleCheckMinutesStatus(meetingId, true), MINUTES_POLL_INTERVAL_MS)
+    }
+  }
+}
+
+/**
+ * 회의록 생성 시작 — "회의록 생성" / "이 양식으로 다시 생성"
+ * - 서버는 바로 반환하고 백그라운드로 생성한다. 다시 생성이면 기존 회의록은 완료 시점에 교체됨
+ * @returns 시작 여부
+ */
+const handleStartMinutes = async (params: MeetingStartMinutesParams): Promise<boolean> => {
+  if (minutesState.value === 'processing') return false
+  try {
+    const res = await fetchStartMeetingMinutes(params)
+    if (!res.successYn) {
+      openToast({ message: res.returnMsg || '회의록 생성을 시작하지 못했습니다.', type: 'error' })
+      return false
+    }
+    minutesState.value = 'processing'
+    minutesStatusMessage.value = ''
+    stopMinutesPolling()
+    minutesPollMeetingId = params.meetingId
+    minutesPollTimer = setTimeout(() => handleCheckMinutesStatus(params.meetingId, true), MINUTES_POLL_INTERVAL_MS)
+    return true
+  } catch {
+    openToast({ message: '회의록 생성을 시작하지 못했습니다.', type: 'error' })
+    return false
+  }
+}
+
 // ===== 파일 다운로드 =====
 const downloadTextFile = (text: string, fileName: string) => {
   const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
@@ -1039,7 +1305,8 @@ const handleIntegrateMeeting = async (meetingIds: number[], showSpeakerYn: 'Y' |
       openToast({ message: '회의 통합에 실패했습니다.', type: 'error' })
       return false
     }
-    openToast({ message: '회의 통합이 완료되었습니다.' })
+    // 서버가 통합 회의록을 백그라운드로 생성 — 상세 화면에서 진행 상황을 확인
+    openToast({ message: '회의를 통합했습니다. 회의록을 생성하고 있습니다.' })
     const meetingId = res.meetingId
     if (meetingId) {
       navigateTo(`/meeting/${meetingId}`)
@@ -1212,6 +1479,10 @@ export const useMeetingStore = () => {
     userSearchResults,
     activeTab,
     voiceEnrollDone,
+    currentStepKey,
+    detailSteps,
+    initDetailStep,
+    getStepBlockMsg,
     speakerNavSpeakerId,
     focusedSttItemId,
     navigateSpeakerUtterance,
@@ -1230,10 +1501,21 @@ export const useMeetingStore = () => {
     handleVoiceEnroll,
     handleSelectVoiceEnrollmentList,
     handleFinishMeetingWithAudio,
-    handleFinishResumedMeeting,
-    handleProcessRecoveredMeeting,
+    handleProcessUploadedMeeting,
     handleRecoverMeeting,
+    handleRetryDiarize,
+    handleAttachMissingSegments,
     handleSaveMeeting,
+    minutesTmplList,
+    isLoadingMinutesTmpl,
+    minutesTmplErrorMessage,
+    minutesState,
+    minutesStatusMessage,
+    minutesStatusStep,
+    handleSelectMinutesTmplList,
+    handleStartMinutes,
+    handleCheckMinutesStatus,
+    stopMinutesPolling,
     handleDeleteMeeting,
     handleResetRecord,
     handleSaveSpeakerMapping,

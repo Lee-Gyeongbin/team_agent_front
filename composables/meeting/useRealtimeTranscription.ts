@@ -5,8 +5,12 @@
  * 1. 백엔드에서 ephemeral token 발급 (type: "transcription" 세션)
  * 2. WebSocket → wss://api.openai.com/v1/realtime?intent=transcription
  * 3. AudioContext PCM16(24kHz mono) → WebSocket 스트리밍 (실시간 자막)
- * 4. MediaRecorder(webm) → 10분 단위 독립 파일 자동 백업
- * 5. 회의 종료 시 전체 청크 Blob → 백엔드 Python 후처리 (faster-whisper + pyannote)
+ * 4. MediaRecorder(webm) → 10분 단위 독립 파일 자동 백업 (useMeetingRecordGuard)
+ * 5. 회의 종료 시 현재 구간 Blob 반환 → 백업이 없으면 그대로 업로드, 있으면 마지막 조각으로 올려 서버에서 병합
+ *
+ * ── 녹음과 자막은 독립 ────────────────────────────────────────────────
+ * 마이크 + MediaRecorder 를 먼저 시작하고, 자막(토큰·WebSocket)은 실패해도 녹음을 계속한다
+ * (자막 실패 시 화면이 Web Speech API 로 대체)
  *
  * ── 자막 블록 ─────────────────────────────────────────────────────────
  * - interim  : delta 이벤트 수신 중 (회색, 이탤릭)
@@ -25,7 +29,7 @@
  */
 
 import type { TranscriptBlock, SpeechTiming, TranscriptionConnectionStatus } from '~/types/meeting'
-import { useMeetingApi } from '~/composables/meeting/useMeetingApi'
+import { useMeetingRecordGuard } from '~/composables/meeting/useMeetingRecordGuard'
 
 // ─── 상수 ──────────────────────────────────────────────────────────────
 const REALTIME_WS_URL = 'wss://api.openai.com/v1/realtime?intent=transcription'
@@ -70,9 +74,6 @@ let activeRecorder: MediaRecorder | null = null
 let activeChunks: Blob[] = []
 let mimeType = ''
 let autoSaveTimer: ReturnType<typeof setInterval> | null = null
-let autoSaveIndex: number = 0
-/** finishMeetingWithAudio용 전체 청크 누적 */
-let allChunks: Blob[] = []
 
 // ─── 내부: 전사 블록 관리 ────────────────────────────────────────────
 /**
@@ -87,7 +88,7 @@ const interimBlockByItemId = new Map<string, string>()
  */
 const speechTimingByItemId = new Map<string, SpeechTiming>()
 
-const { fetchRealtimeToken } = useMeetingApi()
+const { fetchRealtimeTokenSafe, canRotateSegment, takeNextIndex, registerSegmentUpload } = useMeetingRecordGuard()
 
 // ─── 유틸 ──────────────────────────────────────────────────────────────
 
@@ -314,62 +315,43 @@ const initAudioStreaming = async () => {
   }
 }
 
-// ─── MediaRecorder (10분 단위 stop/restart) ───────────────────────────
+// ─── MediaRecorder (10분 단위 구간 교체) ──────────────────────────────
 
 /**
- * 현재 구간 MediaRecorder 정지 후 청크를 서버에 업로드하고 새 Recorder 시작
- *
- * [선택된 방식: Option A — 10분마다 stop/restart]
- * 각 구간이 독립적인 WebM 파일이 됨 (헤더 포함, 단독 재생 가능)
- * headerChunk 방식의 첫 1초 음성 중복 문제 완전 해결
- * 서버에서 ffmpeg concat 없이 각 파일을 순서대로 처리 가능
+ * 10분 주기 — 현재 구간을 끊어 백업 조각으로 올리고 새 구간 녹음 시작
+ * - 로그인 끊김·업로드 실패 중에는 구간을 끊지 않고 녹음을 이어감 (useMeetingRecordGuard.canRotateSegment)
+ * - 새 구간을 먼저 시작한 뒤 이전 구간을 멈춰 끊기는 틈을 줄임
+ * - 각 구간은 헤더가 있는 독립 WebM 파일 (서버 /audio/merge 가 재인코딩해 병합)
  */
-const rotateRecorder = async (meetingId: string) => {
-  const { fetchUploadBackupAudio } = useMeetingApi()
+const rotateRecorder = async () => {
+  if (!isRecording.value || !activeRecorder || activeRecorder.state === 'inactive') return
+  const canRotate = await canRotateSegment()
+  // 확인하는 사이 녹음이 끝났으면 중단
+  if (!canRotate || !isRecording.value || !activeRecorder || activeRecorder.state === 'inactive') return
 
-  if (!activeRecorder || activeRecorder.state === 'inactive') return
-
-  // 현재 구간 정지 → onstop에서 청크 업로드
-  await new Promise<void>((resolve) => {
-    if (!activeRecorder) {
-      resolve()
-      return
-    }
-
-    activeRecorder.onstop = async () => {
-      if (activeChunks.length > 0) {
-        const blob = new Blob(activeChunks, { type: mimeType || 'audio/webm' })
-        const filename = `backup_${autoSaveIndex++}.webm`
-        try {
-          await fetchUploadBackupAudio(Number(meetingId), blob, filename)
-          console.info('[AutoSave] 구간 백업 완료:', filename, `${blob.size}bytes`)
-        } catch (e) {
-          console.warn('[AutoSave] 구간 백업 실패:', e)
-          autoSaveIndex-- // 실패 시 인덱스 롤백
-        }
-      }
-      resolve()
-    }
-    activeRecorder!.stop()
-  })
-
-  // 새 Recorder 시작
-  if (!mediaStream || !isRecording.value) return
+  const recorder = activeRecorder
+  const chunks = activeChunks
+  const index = takeNextIndex()
+  registerSegmentUpload(
+    index,
+    new Promise<Blob>((resolve) => {
+      recorder.onstop = () => resolve(new Blob(chunks, { type: recorder.mimeType || mimeType || 'audio/webm' }))
+    }),
+  )
   startNewRecorder()
+  recorder.stop()
 }
 
 /** 새로운 MediaRecorder 구간 시작 */
 const startNewRecorder = () => {
   if (!mediaStream) return
 
-  activeChunks = []
+  const chunks: Blob[] = []
+  activeChunks = chunks
   activeRecorder = new MediaRecorder(mediaStream, mimeType ? { mimeType } : undefined)
 
   activeRecorder.ondataavailable = (e) => {
-    if (e.data.size > 0) {
-      activeChunks.push(e.data)
-      allChunks.push(e.data) // finishMeetingWithAudio용 전체 누적
-    }
+    if (e.data.size > 0) chunks.push(e.data)
   }
 
   activeRecorder.start(1000)
@@ -379,16 +361,18 @@ const startNewRecorder = () => {
 const initMediaRecorder = () => {
   if (!mediaStream) return
   mimeType = getSupportedMimeType()
-  allChunks = []
-  autoSaveIndex = 0
   startNewRecorder()
 }
 
+/** 현재 구간 Blob (pagehide 때 마지막 구간 전송용) */
+const getCurrentSegmentBlob = (): Blob | null =>
+  activeChunks.length > 0 ? new Blob(activeChunks, { type: mimeType || 'audio/webm' }) : null
+
 /** 자동 저장 시작 (10분마다 구간 교체) */
-const startAutoSave = (meetingId: string) => {
+const startAutoSave = () => {
   stopAutoSave()
   autoSaveTimer = setInterval(() => {
-    rotateRecorder(meetingId)
+    rotateRecorder()
   }, AUTO_SAVE_INTERVAL_MS)
 }
 
@@ -568,7 +552,7 @@ const scheduleReconnect = () => {
     consecutiveReconnectFailures++
     totalSessionReconnects++
     try {
-      const tokenRes = await fetchRealtimeToken()
+      const tokenRes = await fetchRealtimeTokenSafe()
       if (!tokenRes.token) throw new Error('토큰 발급 실패')
       initWebSocket(tokenRes.token)
       // ✅ 연결 성공 후 consecutiveReconnectFailures는 session.created 수신 시 리셋
@@ -584,50 +568,50 @@ const scheduleReconnect = () => {
 // ─── 녹음 시작 ──────────────────────────────────────────────────────
 
 /**
- * 녹음 시작: 토큰 발급 → 마이크 획득 → WS 연결 → 오디오 스트리밍 → MediaRecorder
- * @param meetingId 회의 ID
- * @param initialBackupIndex 이어서 녹음 시 기존 백업 파일 개수 (auto-save 인덱스 연속성)
+ * 녹음 시작: 마이크 획득 → MediaRecorder(10분 구간 교체) → 자막(토큰 발급 → WS 연결 → 오디오 스트리밍)
+ * - 녹음이 자막보다 먼저 — 자막이 실패해도 녹음은 계속된다
+ * @returns started: 녹음 시작 여부(마이크), captionOk: 실시간 자막 연결 여부
  */
-const startRecording = async (meetingId: string, initialBackupIndex = 0): Promise<boolean> => {
-  if (isRecording.value || connectionStatus.value === 'connecting') return false
+const startRecording = async (): Promise<{ started: boolean; captionOk: boolean }> => {
+  if (isRecording.value || connectionStatus.value === 'connecting') return { started: false, captionOk: false }
 
   connectionStatus.value = 'connecting'
   blocks.value = []
   interimBlockByItemId.clear()
   speechTimingByItemId.clear()
-  allChunks = []
-  autoSaveIndex = initialBackupIndex
   consecutiveReconnectFailures = 0
   totalSessionReconnects = 0
   recordingStartMs = Date.now()
 
+  // 1. 마이크 스트림 획득 + MediaRecorder 시작 (10분 단위 구간 교체)
   try {
-    // 1. 백엔드에서 transcription 세션 ephemeral token 발급
-    const tokenRes = await fetchRealtimeToken()
-    if (!tokenRes.token) throw new Error('임시 토큰 발급 실패')
-
-    // 2. 마이크 스트림 획득
     mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true })
-
-    // 3. WebSocket 연결 (session.created 수신 시 connectionStatus → 'connected')
-    initWebSocket(tokenRes.token)
-
-    // 4. AudioContext + PCM16 스트리밍 (Worklet 우선, 폴백 ScriptProcessor)
-    await initAudioStreaming()
-
-    // 5. MediaRecorder 시작 (10분 단위 구간 교체)
     initMediaRecorder()
-
-    // 6. 자동 저장 인터벌 시작
-    startAutoSave(meetingId)
-
+    startAutoSave()
     isRecording.value = true
-    return true
   } catch (e) {
-    console.warn('[Realtime] 녹음 시작 실패:', e)
+    console.warn('[Realtime] 녹음 시작 실패 (마이크):', e)
     connectionStatus.value = 'idle'
     await cleanup()
-    return false
+    return { started: false, captionOk: false }
+  }
+
+  // 2. 실시간 자막 — 실패해도 녹음은 계속
+  try {
+    const tokenRes = await fetchRealtimeTokenSafe()
+    if (!tokenRes.token) throw new Error('임시 토큰 발급 실패')
+    // session.created 수신 시 connectionStatus → 'connected'
+    initWebSocket(tokenRes.token)
+    // AudioContext + PCM16 스트리밍 (Worklet 우선, 폴백 ScriptProcessor)
+    await initAudioStreaming()
+    return { started: true, captionOk: true }
+  } catch (e) {
+    console.warn('[Realtime] 실시간 자막 시작 실패 — 녹음은 계속:', e)
+    if (ws && ws.readyState !== WebSocket.CLOSED) ws.close()
+    ws = null
+    disconnectAudio()
+    connectionStatus.value = 'failed'
+    return { started: true, captionOk: false }
   }
 }
 
@@ -636,7 +620,8 @@ const startRecording = async (meetingId: string, initialBackupIndex = 0): Promis
 /**
  * 녹음 종료
  * - WS / AudioContext / AudioWorklet / ScriptProcessor 정리
- * - 현재 구간 MediaRecorder 정지 후 전체 오디오 Blob 반환 (finishMeetingWithAudio용)
+ * - 현재 구간 MediaRecorder 정지 후 현재 구간 Blob 반환
+ *   (백업 조각이 없으면 = 녹음 전체, 있으면 = 마지막 백업 이후 구간)
  */
 const stopRecording = (): Promise<Blob | null> => {
   isRecording.value = false
@@ -661,21 +646,22 @@ const stopRecording = (): Promise<Blob | null> => {
   disconnectAudio()
 
   return new Promise((resolve) => {
-    if (!activeRecorder || activeRecorder.state === 'inactive') {
+    const recorder = activeRecorder
+    const chunks = activeChunks
+    const toBlob = () => (chunks.length > 0 ? new Blob(chunks, { type: mimeType || 'audio/webm' }) : null)
+    if (!recorder || recorder.state === 'inactive') {
+      activeRecorder = null
       finalizeMediaStream()
-      const blob = allChunks.length > 0 ? new Blob(allChunks, { type: mimeType || 'audio/webm' }) : null
-      resolve(blob)
+      resolve(toBlob())
       return
     }
 
-    activeRecorder.onstop = () => {
-      // 마지막 구간 청크도 allChunks에 포함됨 (ondataavailable에서 누적)
-      const finalBlob = allChunks.length > 0 ? new Blob(allChunks, { type: mimeType || 'audio/webm' }) : null
+    recorder.onstop = () => {
       activeRecorder = null
       finalizeMediaStream()
-      resolve(finalBlob)
+      resolve(toBlob())
     }
-    activeRecorder.stop()
+    recorder.stop()
   })
 }
 
@@ -742,49 +728,6 @@ const cleanup = async () => {
   connectionStatus.value = 'idle'
 }
 
-// ─── 이어서 녹음: 마지막 청크 업로드 ───────────────────────────────
-
-/**
- * 이어서 녹음 후 종료 시 — 현재 구간 미업로드 청크를 마지막 백업 파일로 업로드
- * stopRecording() 호출 이전에 호출 (activeChunks 확정 전에 recorder stop이 필요하면 rotateRecorder 사용)
- */
-const uploadRemainingChunks = async (meetingId: string): Promise<boolean> => {
-  if (activeChunks.length === 0) return true
-
-  const { fetchUploadBackupAudio } = useMeetingApi()
-  const blob = new Blob(activeChunks, { type: mimeType || 'audio/webm' })
-  const filename = `backup_${autoSaveIndex}.webm`
-
-  try {
-    await fetchUploadBackupAudio(Number(meetingId), blob, filename)
-    console.info('[FinishSave] 마지막 청크 업로드 완료:', filename, `${blob.size}bytes`)
-    return true
-  } catch (e) {
-    console.warn('[FinishSave] 마지막 청크 업로드 실패:', e)
-    return false
-  }
-}
-
-/**
- * 페이지 이탈 시 마지막 구간 청크 sendBeacon 전송
- * beforeunload 핸들러에서 동기 호출
- */
-const sendRemainingChunksBeacon = (meetingId: string): boolean => {
-  if (activeChunks.length === 0) return true
-
-  const blob = new Blob(activeChunks, { type: mimeType || 'audio/webm' })
-  const filename = `backup_${autoSaveIndex}.webm`
-  const formData = new FormData()
-  formData.append('audioFile', blob, filename)
-  const sent = navigator.sendBeacon(`/api/meeting/${meetingId}/backup-audio`, formData)
-  if (sent) {
-    console.info('[UnloadSave] 남은 청크 beacon 전송:', filename, `${blob.size}bytes`)
-  } else {
-    console.warn('[UnloadSave] beacon 전송 실패 (페이로드 초과 가능성)')
-  }
-  return sent
-}
-
 // ─── 기타 Public API ─────────────────────────────────────────────────
 
 /** 브라우저 지원 여부 확인 — onMounted에서 호출 */
@@ -797,7 +740,7 @@ const resetRecording = () => {
   blocks.value = []
   interimBlockByItemId.clear()
   speechTimingByItemId.clear()
-  allChunks = []
+  activeChunks = []
 }
 
 /** 타임스탬프 포맷 유틸 (UI에서 직접 사용 가능) */
@@ -823,9 +766,6 @@ export const useRealtimeTranscription = () => ({
   stopRecording,
   cleanup,
   resetRecording,
-  startAutoSave,
-  stopAutoSave,
-  sendRemainingChunksBeacon,
-  uploadRemainingChunks,
+  getCurrentSegmentBlob,
   formatTimestamp,
 })

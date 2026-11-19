@@ -34,11 +34,13 @@
         :key="step.key"
       >
         <div
-          class="meeting2-stepper-item"
+          class="meeting2-stepper-item is-clickable"
           :class="{
             'is-progress': step.status === 'progress',
             'is-done': step.status === 'done',
           }"
+          :title="step.key === 'voiceEnroll' ? '음성 등록 화면으로 이동' : `${step.label} 단계로 이동`"
+          @click="emit('select', step.key)"
         >
           <span class="meeting2-stepper-item-icon">
             <i
@@ -85,6 +87,11 @@ interface Props {
 
 const props = defineProps<Props>()
 
+const emit = defineEmits<{
+  /** 단계 클릭 — 이동 가능 여부는 상위(페이지)에서 판단 */
+  select: [key: MeetingStepKey]
+}>()
+
 const isCollapsed = ref(false)
 
 const progressStep = computed(() => props.steps.find((s) => s.status === 'progress') ?? null)
@@ -98,13 +105,13 @@ const iconMap: Partial<Record<MeetingStepKey, string>> = {
   record: 'icon-meeting-mic',
   speaker: 'icon-meeting-generate',
   generate: 'icon-meeting-edit',
-  edit: 'icon-meeting-save',
   share: 'icon-meeting-mail',
 }
 
 const statusLabel = (status: MeetingStepStatus) => {
   if (status === 'progress') return '진행 중'
   if (status === 'done') return '완료'
+  if (status === 'skipped') return '건너뜀'
   return '대기'
 }
 </script>

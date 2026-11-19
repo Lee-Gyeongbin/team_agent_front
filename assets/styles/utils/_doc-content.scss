@@ -258,13 +258,14 @@ $doc-content-logo: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAAA/CA
       text-align: left;
     }
 
-    // 정보 표 라벨 컬럼 — tbody 행 첫 번째 th 폭 고정
-    tbody tr > th:first-child {
+    // 정보 표 라벨 컬럼 — 값(td)이 있는 행의 첫 번째 th 폭 고정
+    // 머리글 행(전부 th)은 제외 — Tiptap 이 thead 를 tbody 로 바꾸므로 tbody 만으로는 구분 안 됨
+    tbody tr:has(> td) > th:first-child {
       width: 120px;
     }
 
     // 한 행에 라벨-값 쌍이 두 개일 때 — 두 번째 라벨(3번째 셀) 폭도 고정
-    tbody tr > th:nth-child(3) {
+    tbody tr:has(> td) > th:nth-child(3) {
       width: 100px;
     }
 

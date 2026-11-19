@@ -116,7 +116,7 @@ const {
   isSearchOpen,
   toggleSearch,
   handleSelectMeetingDetail,
-  activeTab,
+  // activeTab, // [인포그래픽 일시 중지 2026-11-19]
   handleFinishMeetingWithAudio,
   handleDownloadSttText,
   handleDownloadMeetingAudio,
@@ -194,7 +194,8 @@ const onAudioFileChange = async (e: Event) => {
   if (success) {
     await handleSelectMeetingDetail(props.meetingId)
     await navigateTo(`/meeting/${props.meetingId}`)
-    activeTab.value = 'infographic'
+    // [인포그래픽 일시 중지 2026-11-19] 다시 쓰려면 주석 해제
+    // activeTab.value = 'infographic'
   }
 }
 

@@ -4,19 +4,51 @@
     @click="onPanelClick"
   >
     <div class="meeting2-panel-header">
-      <span class="meeting2-panel-title"> 자동 생성된 회의록 </span>
-      <UiButton
-        variant="primary"
-        size="sm"
-        @click.stop="onSaveMeetingClick"
+      <span class="meeting2-panel-title">
+        {{ !hasMinutes ? '회의록 생성' : isTmplSelectMode ? '회의록 양식 선택' : '자동 생성된 회의록' }}
+        <UiBadge
+          v-if="!showTmplSelect && currentTmplLabel"
+          variant="primary"
+        >
+          {{ currentTmplLabel }}
+        </UiBadge>
+      </span>
+      <div
+        v-if="!showTmplSelect"
+        class="meeting2-panel-header-actions"
       >
-        저장하기
-      </UiButton>
+        <UiButton
+          variant="outline"
+          size="sm"
+          :disabled="minutesId == null"
+          @click.stop="onOpenTmplSelect"
+        >
+          양식 변경
+        </UiButton>
+        <UiButton
+          variant="primary"
+          size="sm"
+          @click.stop="onSaveMeetingClick"
+        >
+          저장하기
+        </UiButton>
+      </div>
     </div>
 
+    <!-- ── 회의록 생성 / 양식 변경 (에디터는 v-show 로 유지) ───────────────
+         회의록이 없으면 "회의록 생성", 있으면 "양식 변경" 후 다시 생성 (CMB 와 같은 흐름) -->
+    <MeetingMinutesTmplSelect
+      v-if="showTmplSelect"
+      :mode="hasMinutes ? 'regenerate' : 'create'"
+      @cancel="isTmplSelectMode = false"
+    />
+
     <!-- ── WYSIWYG 에디터 ────────────────────────────────────────────── -->
-    <MeetingEditorToolbar />
-    <div class="meeting2-editor-relative">
+    <MeetingEditorToolbar v-show="!showTmplSelect" />
+    <div
+      v-show="!showTmplSelect"
+      class="meeting2-editor-relative"
+    >
       <MeetingEditorBody />
 
       <!-- 표 floating 툴바 — 표 안 커서 있을 때 위에 노출 -->
@@ -95,7 +127,10 @@
       </div>
     </div>
 
-    <div class="meeting2-editor-footer">
+    <div
+      v-show="!showTmplSelect"
+      class="meeting2-editor-footer"
+    >
       <span v-if="isAutoSaving">저장 중…</span>
       <span v-else>마지막 저장: {{ lastSavedLabel }}</span>
     </div>
@@ -103,7 +138,8 @@
 </template>
 
 <script setup lang="ts">
-import { UiButton } from '@leechanyong/ispark-ui'
+import { UiBadge, UiButton } from '@leechanyong/ispark-ui'
+import MeetingMinutesTmplSelect from '~/components/meeting/MeetingMinutesTmplSelect.vue'
 import { useEditor } from '@tiptap/vue-3'
 import { StarterKit } from '@tiptap/starter-kit'
 import { TextAlign } from '@tiptap/extension-text-align'
@@ -122,7 +158,58 @@ import { Highlight } from '@tiptap/extension-highlight'
 import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
 import { meetingEditorKey, meetingSourceViewKey } from '~/composables/meeting/meetingEditorKey'
 import { useEditorSourceView } from '~/composables/com/useEditorSourceView'
-const { currentMeeting, meetingDetail, handleSaveMeeting } = useMeetingStore()
+const { currentMeeting, meetingDetail, handleSaveMeeting, minutesTmplList, minutesState, handleSelectMinutesTmplList } =
+  useMeetingStore()
+
+// ── 회의록 양식 ──────────────────────────────────────────────────────
+/** 양식 변경 화면 표시 여부 (회의록이 있을 때) — 에디터 대신 MeetingMinutesTmplSelect 를 보여준다 */
+const isTmplSelectMode = ref(false)
+
+/** 회의록이 생성돼 있는지 — 서버는 null 을 "" 로 내려주므로 truthy 로 판단 */
+const hasMinutes = computed(() => Boolean(meetingDetail.value.minutes))
+
+/** 회의록이 없으면 생성 화면, 있으면 양식 변경을 눌렀을 때만 */
+const showTmplSelect = computed(() => !hasMinutes.value || isTmplSelectMode.value)
+
+// 다시 생성이 끝나면 새 회의록이 보이도록 양식 변경 화면을 닫는다 (실패면 그대로 둬서 다시 시도)
+watch(minutesState, (state, prev) => {
+  if (prev === 'processing' && state === 'done') isTmplSelectMode.value = false
+})
+
+// 헤더 배지(현재 양식명)용 — 목록은 store 에 캐시되어 한 번만 조회
+void handleSelectMinutesTmplList()
+
+const TONE_LABELS: Record<string, string> = { bullet: '개조식', plain: '서술형', polite: '경어체' }
+
+/** 현재 회의록 양식 라벨 (예: 표준 회의록 · 개조식) — 양식 목록을 못 받았으면 표시 안 함 */
+const currentTmplLabel = computed<string>(() => {
+  const list = minutesTmplList.value
+  if (!list?.length || !meetingDetail.value.minutes) return ''
+  const meeting = meetingDetail.value.meeting
+  const tmpl =
+    list.find((t) => t.minutesTmplCd === meeting?.minutesTmplCd) ?? list.find((t) => t.defaultYn === 'Y') ?? list[0]
+  if (!tmpl) return ''
+  // 서버는 NULL 을 "" 로 내려주므로 `??` 대신 `||` (저장 문체 없으면 양식 기본 문체)
+  const tone = TONE_LABELS[meeting?.minutesToneCd || tmpl.defaultToneCd] ?? ''
+  return tone ? `${tmpl.tmplNm} · ${tone}` : tmpl.tmplNm
+})
+
+/** 양식 변경 — 대기 중인 자동 저장을 먼저 반영해 편집 내용이 다시 생성 결과를 덮어쓰지 않게 한다 */
+const onOpenTmplSelect = async (): Promise<void> => {
+  if (autoSaveTimer) {
+    clearTimeout(autoSaveTimer)
+    autoSaveTimer = null
+    if (currentMeeting.value && editor.value && minutesId.value != null) {
+      if (sourceView.isSourceView.value) {
+        editor.value.commands.setContent(sourceView.sourceHtml.value, { emitUpdate: false })
+      }
+      await handleSaveMeeting({ id: String(minutesId.value), minutesContent: editor.value.getHTML() }, { silent: true })
+    }
+  }
+  sourceView.exitSourceView()
+  void handleSelectMinutesTmplList()
+  isTmplSelectMode.value = true
+}
 
 /**
  * 회의록 콘텐츠 마크업 정리
@@ -400,6 +487,7 @@ watch(editor, (ed) => {
 
 const onPanelClick = (e: MouseEvent) => {
   const target = e.target as HTMLElement
+  if (showTmplSelect.value) return
   if (target.closest('.meeting2-panel-header, .meeting2-editor-toolbar, button, a, input, select')) return
   editor.value?.commands.focus()
 }

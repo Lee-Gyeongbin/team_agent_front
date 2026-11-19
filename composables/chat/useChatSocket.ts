@@ -145,8 +145,8 @@ const finalizeCompletedMessage = (streamingMessage: (typeof messages.value)[numb
   }
   // 서버 logId가 없으면(예: 정지 등으로 로그 미저장) 좋아요/싫어요 등 액션 숨김 처리
   streamingMessage.chatLogMissing = !payload.logId
-  streamingMessage.hasSource =
-    !!payload.docFileId || streamingMessage.hasSource === true || (streamingMessage.groundingSources?.length ?? 0) > 0
+  // 원본보기는 참조 문서(docFileId)가 있을 때만 — 웹 출처(groundingSources)는 제외 (백엔드 DOC_EXIST 기준과 일치)
+  streamingMessage.hasSource = !!payload.docFileId || streamingMessage.hasSource === true
   streamingMessage.hasVisualization = !!payload.tableData
   if (payload.tableData !== undefined && payload.tableData !== '') {
     streamingMessage.tableData = payload.tableData
@@ -324,8 +324,7 @@ const handleWebSocketMessage = (payload: ChatSocketMessage) => {
       if (payload.chunkEvent === 'answer_source' && payload.accumulated) {
         const sourceItems = parseAnswerSourceItems(payload.accumulated)
         if (sourceItems) streamingMessage.groundingSources = sourceItems
-        // answer_source 이벤트가 왔으면 출처 패널 버튼 노출 대상으로 확정
-        streamingMessage.hasSource = true
+        // 웹 출처는 본문 하단 '출처' 링크로만 노출 — '원본보기'(TB_CHAT_REF PDF 패널) 대상 아님
         streamingMessage.isStreaming = true
         break
       }

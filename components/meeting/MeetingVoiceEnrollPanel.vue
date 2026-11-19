@@ -237,22 +237,6 @@
             </div>
           </template>
         </div>
-
-        <!-- 하단 푸터 -->
-        <div class="meeting-enroll-footer">
-          <span class="meeting-enroll-progress-text">
-            음성 확인 {{ doneCount }} / {{ attendees.length }} 완료
-          </span>
-          <div class="meeting-enroll-footer-actions">
-            <UiButton
-              variant="ghost"
-              size="md"
-              @click="emit('close')"
-            >
-              닫기
-            </UiButton>
-          </div>
-        </div>
       </main>
     </div>
   </div>
@@ -273,8 +257,13 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const { handleVoiceEnroll, handleSelectVoiceEnrollmentList, handleSelectMeetingDetail, meetingDetail } =
-  useMeetingStore()
+const {
+  handleVoiceEnroll,
+  handleSelectVoiceEnrollmentList,
+  handleSelectMeetingDetail,
+  meetingDetail,
+  voiceEnrollDone,
+} = useMeetingStore()
 
 /** 최대 녹음 시간 (초) */
 const MAX_DURATION = 10
@@ -347,6 +336,11 @@ const audioFileInputRef = ref<HTMLInputElement | null>(null)
 const currentAttendee = computed(() => attendees.value[activeIndex.value] ?? null)
 const doneCount = computed(() => attendees.value.filter((a) => a.status === 'done').length)
 const isAllDone = computed(() => attendees.value.length > 0 && doneCount.value === attendees.value.length)
+
+// 모두 등록하면 진행바·하단 버튼(건너뛰기 → 다음 단계)에 바로 반영
+watch(isAllDone, (done) => {
+  if (done) voiceEnrollDone.value = true
+})
 
 const statusLabel = (status: EnrollStatus): string => {
   if (status === 'done') return '완료'

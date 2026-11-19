@@ -85,26 +85,22 @@ const toggleOrgExpanded = (nodes: MeetingAttendeeOrgNode[], orgId: string): bool
   return false
 }
 
-const filterAttendeeTree = (nodes: MeetingAttendeeOrgNode[], keyword: string): MeetingAttendeeOrgNode[] => {
-  return nodes.reduce<MeetingAttendeeOrgNode[]>((acc, node) => {
-    const children = filterAttendeeTree(node.children, keyword)
-    const isOrgMatched = String(node.orgNm ?? '')
-      .toLowerCase()
-      .includes(keyword)
-    const users = isOrgMatched
-      ? node.users
-      : node.users.filter((user) => user.userNm.toLowerCase().includes(keyword))
+/** 하위 부서 펼침 상태 일괄 변경 — 접을 때도 최상위(depth 0)는 펼친 채로 둔다 */
+const setOrgExpanded = (nodes: MeetingAttendeeOrgNode[], expanded: boolean, depth: number): void => {
+  for (const node of nodes) {
+    node.expanded = expanded || depth === 0
+    setOrgExpanded(node.children, expanded, depth + 1)
+  }
+}
 
-    if (!isOrgMatched && !children.length && !users.length) return acc
-
-    acc.push({
-      ...node,
-      children,
-      users,
-      expanded: true,
-    })
-    return acc
-  }, [])
+/** orgId 로 트리 노드 찾기 */
+export const findAttendeeOrgNode = (nodes: MeetingAttendeeOrgNode[], orgId: string): MeetingAttendeeOrgNode | null => {
+  for (const node of nodes) {
+    if (node.orgId === orgId) return node
+    const found = findAttendeeOrgNode(node.children, orgId)
+    if (found) return found
+  }
+  return null
 }
 
 export const useMeetingAttendeeTree = () => {
@@ -113,12 +109,19 @@ export const useMeetingAttendeeTree = () => {
   const attendeeTree = ref<MeetingAttendeeOrgNode[]>([])
   const isAttendeeTreeLoading = ref(false)
   const attendeeTreeErrorMessage = ref('')
-  const searchKeyword = ref('')
 
-  const filteredAttendeeTree = computed<MeetingAttendeeOrgNode[]>(() => {
-    const keyword = searchKeyword.value.trim().toLowerCase()
-    if (!keyword) return attendeeTree.value
-    return filterAttendeeTree(attendeeTree.value, keyword)
+  /** 트리 전체 사용자 (userId 기준 중복 제거) — 이름 검색 대상 */
+  const allAttendeeUsers = computed<MeetingAttendeeUserItem[]>(() => {
+    const seen = new Set<string>()
+    const result: MeetingAttendeeUserItem[] = []
+    for (const root of attendeeTree.value) {
+      for (const user of collectAttendeeUsers(root)) {
+        if (seen.has(user.userId)) continue
+        seen.add(user.userId)
+        result.push(user)
+      }
+    }
+    return result
   })
 
   const handleLoadAttendeeTree = async (): Promise<void> => {
@@ -155,13 +158,17 @@ export const useMeetingAttendeeTree = () => {
     toggleOrgExpanded(attendeeTree.value, orgId)
   }
 
+  const handleSetAllAttendeeOrgExpanded = (expanded: boolean): void => {
+    setOrgExpanded(attendeeTree.value, expanded, 0)
+  }
+
   return {
     attendeeTree,
-    filteredAttendeeTree,
+    allAttendeeUsers,
     isAttendeeTreeLoading,
     attendeeTreeErrorMessage,
-    searchKeyword,
     handleLoadAttendeeTree,
     handleToggleAttendeeOrgExpand,
+    handleSetAllAttendeeOrgExpanded,
   }
 }
