@@ -26,19 +26,6 @@ export function patchMenuPaths(items: MenuItem[]): void {
 }
 
 /**
- * 화면에서 숨길 메뉴명 (DB 메뉴는 유지하고 프론트 노출만 제외)
- * 🔽 메뉴 사용 여부를 DB(메뉴관리)에서 정리하면 이 목록은 삭제
- */
-const HIDDEN_MENU_NAMES = ['문의하기', '문의하기 관리', '문의사항', '문의사항 관리']
-
-/** 메뉴 트리에서 숨김 대상 메뉴를 하위 메뉴까지 재귀적으로 제외 */
-export function excludeHiddenMenus(items: MenuItem[]): MenuItem[] {
-  return items
-    .filter((item) => !HIDDEN_MENU_NAMES.includes(item.menuName.trim()))
-    .map((item) => (item.children?.length ? { ...item, children: excludeHiddenMenus(item.children) } : item))
-}
-
-/**
  * 전역 메뉴 상태 composable
  * - useState로 앱 전체 공유 (로그인 시 useAuth에서 fetchMenuList 호출)
  * - 다른 화면에서 사용: const { menuList } = useMenu()
@@ -49,7 +36,7 @@ export const useMenu = () => {
 
   const fetchMenuList = async (): Promise<MenuItem[]> => {
     const res = await get<MenuListResponse>('/menuList.do')
-    const list = excludeHiddenMenus(res.list ?? res.menuList ?? [])
+    const list = res.list ?? res.menuList ?? []
     patchMenuPaths(list)
     menuList.value = list
     return list
