@@ -75,7 +75,7 @@
           </div>
           <div class="notif-body">
             <div class="notif-meta">
-              <span class="notif-sender">{{ item.sendUserNm ?? item.sendUserId }}</span>
+              <span class="notif-sender">{{ getSenderLabel(item) }}</span>
               <span class="notif-time">{{ item.createDt }}</span>
             </div>
             <div class="notif-title">{{ item.title }}</div>
@@ -106,6 +106,18 @@
               <button
                 class="notif-action-btn"
                 @click.stop="onClickMtlcareDetail(item)"
+              >
+                상세보기
+              </button>
+            </div>
+            <!-- 알림 유형 공통코드(ETC1)에 이동 메뉴가 지정된 알림(문의하기 등): 상세보기 버튼 -->
+            <div
+              v-else-if="getNotifyMenuPath(item)"
+              class="notif-action-wrap"
+            >
+              <button
+                class="notif-action-btn"
+                @click.stop="handleOpenNotifyMenu(item)"
               >
                 상세보기
               </button>
@@ -183,8 +195,11 @@ const {
   notifyLoading,
   unreadCount,
   isNotificationOpen,
+  getSenderLabel,
   getInitials,
   getAvatarColor,
+  getNotifyMenuPath,
+  handleOpenNotifyMenu,
   handleMarkRead,
   handleMarkAllRead,
   handleDismissNotify,

@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Notify } from '~/types/global'
+import type { CodeItem } from '~/types/codes'
 import type { KnowledgeItem } from '~/types/chat'
 import type { LibraryCard } from '~/types/library'
 import { useNotifyApi } from '~/composables/com/useNotifyApi'
@@ -8,6 +9,7 @@ import { useLibraryStore } from '~/composables/library/useLibraryStore'
 import { useMyDocApi } from '~/composables/my-documents/useMyDocApi'
 import { useMyDocStore } from '~/composables/my-documents/useMyDocStore'
 import type { MyDoc } from '~/types/mydoc'
+import { getCodes } from '~/utils/global/comCodesUtil'
 
 // ── 전역 상태 (모듈 레벨) ──
 const notifyList = ref<Notify[]>([])
@@ -19,6 +21,13 @@ const isNotificationOpen = ref(false)
 
 /** 화면 첫 진입 시 미읽음 알림 패널 자동 오픈 여부 (세션당 1회) */
 const hasAutoOpenedOnFirstEntry = ref(false)
+
+/** 알림 유형 공통코드 그룹 — 각 코드의 ETC1 에 상세보기로 이동할 메뉴 경로(TB_MENU.SRC_PATH)를 둔다 */
+const NOTIFY_TYPE_GRP_ID = 'NF000001'
+/** 문의하기 알림 유형 코드 (작성자에게) — 서버 InqServiceImpl.NOTIFY_TY_USER 와 같은 값 */
+const NOTIFY_TY_INQ_USER = 'II'
+const notifyTypeList = ref<CodeItem[]>([])
+let isNotifyTypeLoaded = false
 
 /** notifyTyCd==='KS' && saveYn==='N' 인 미수신 지식공유 알림 존재 여부 */
 const hasPendingKsNotify = computed(() => notifyList.value.some((n) => n.notifyTyCd === 'KS' && n.saveYn === 'N'))
@@ -39,10 +48,16 @@ const mdModalLoading = ref(false)
 const selectedMdNotify = ref<Notify | null>(null)
 const mdDocDetail = ref<MyDoc | null>(null)
 
+/**
+ * 발신자 표시 — 문의하기 알림(작성자에게)은 실제 답변자 대신 '관리자'로 보여준다
+ * 🔽 추후 알림 유형 공통코드(ETC2)로 옮겨 DB에서 관리
+ */
+const getSenderLabel = (notify: Notify): string =>
+  notify.notifyTyCd === NOTIFY_TY_INQ_USER ? '관리자' : (notify.sendUserNm ?? notify.sendUserId ?? '')
+
 /** sendUserId / sendUserNm 에서 성(첫 글자) 추출 */
 const getInitials = (notify: Notify): string => {
-  const name = notify.sendUserNm ?? notify.sendUserId ?? ''
-  return name.charAt(0).toUpperCase()
+  return getSenderLabel(notify).charAt(0).toUpperCase()
 }
 
 /** sendUserId 기반 고정 색상 팔레트 배정 */
@@ -65,16 +80,43 @@ export const useNotifyStore = () => {
     fetchSharedCardDetail,
   } = useNotifyApi()
   const { fetchSharedDocDetail, fetchReceiveMyDoc } = useMyDocApi()
+  const { canRead } = usePermission()
 
   /** 미읽음 알림 수 */
   const unreadCount = computed(() => notifyList.value.filter((n) => n.readYn === 'N').length)
+
+  /** 알림 유형 공통코드 조회 — 처음 한 번만 */
+  const handleFetchNotifyTypeList = async () => {
+    if (isNotifyTypeLoaded) return
+    isNotifyTypeLoaded = true
+    try {
+      notifyTypeList.value = await getCodes(NOTIFY_TYPE_GRP_ID)
+    } catch {
+      isNotifyTypeLoaded = false
+    }
+  }
+
+  /** 알림에서 이동할 메뉴 경로 — 유형 코드의 ETC1, 참조 ID가 있고 해당 메뉴 조회 권한이 있을 때만 */
+  const getNotifyMenuPath = (notify: Notify): string => {
+    const path = notifyTypeList.value.find((t) => t.codeId === notify.notifyTyCd)?.etc1?.trim() ?? ''
+    return path && notify.refId && canRead(path) ? path : ''
+  }
+
+  /** 알림 상세보기 — 유형에 지정된 메뉴로 이동하고 참조 ID를 refId 쿼리로 넘긴다 */
+  const handleOpenNotifyMenu = async (notify: Notify) => {
+    const path = getNotifyMenuPath(notify)
+    if (!path) return
+    handleMarkRead(notify.notifyId)
+    isNotificationOpen.value = false
+    await router.push({ path, query: { refId: notify.refId } })
+  }
 
   /** 알림 목록 조회 */
   const handleFetchNotifyList = async () => {
     notifyError.value = ''
     notifyLoading.value = true
     try {
-      const res = await fetchNotifyList()
+      const [res] = await Promise.all([fetchNotifyList(), handleFetchNotifyTypeList()])
       notifyList.value = res.list ?? []
 
       // 화면 첫 진입 시 미읽음 알림이 있으면 알림 패널 자동 오픈
@@ -240,8 +282,11 @@ export const useNotifyStore = () => {
     isNotificationOpen,
     hasPendingKsNotify,
     hasPendingMdNotify,
+    getSenderLabel,
     getInitials,
     getAvatarColor,
+    getNotifyMenuPath,
+    handleOpenNotifyMenu,
     handleFetchNotifyList,
     handleMarkRead,
     handleMarkAllRead,
