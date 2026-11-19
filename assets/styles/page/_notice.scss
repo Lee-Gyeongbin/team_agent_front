@@ -233,3 +233,39 @@
     -webkit-overflow-scrolling: touch;
   }
 }
+
+// 공지 등록/수정 드로어 — 공지 내용 영역이 남은 높이를 모두 채우고, 크기 조절 불가 + 내부 스크롤
+.ui-drawer-body:has(.notice-form-panel) {
+  display: flex;
+  flex-direction: column;
+  overflow-y: hidden;
+}
+
+.notice-form-panel {
+  flex: 1;
+  min-height: 0;
+
+  .notice-content-field {
+    flex: 1;
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+
+    // UiTextarea 래퍼 체인을 모두 flex로 늘림
+    .ui-textarea-outer,
+    .ui-textarea-wrap {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .ui-textarea {
+      flex: 1;
+      height: 100%;
+      min-height: 0;
+      resize: none;
+      overflow-y: auto;
+    }
+  }
+}

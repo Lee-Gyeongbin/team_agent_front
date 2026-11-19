@@ -9,7 +9,7 @@
       }
     "
   >
-    <div class="com-setting-form">
+    <div class="com-setting-form notice-form-panel">
       <div class="url-reg-field">
         <label class="url-reg-label">공지 제목 <span class="required">*</span></label>
         <UiInput
@@ -52,17 +52,14 @@
         </div>
       </div>
 
-      <div class="url-reg-field">
+      <div class="url-reg-field notice-content-field">
         <label class="url-reg-label">공지 내용 <span class="required">*</span></label>
         <UiTextarea
           ref="noticeContentRef"
           :model-value="formData.content"
           placeholder="공지 내용을 입력하세요"
-          :rows="10"
           border
           size="lg"
-          :auto-resize="true"
-          :max-rows="10"
           @update:model-value="(value) => onFieldChange('content', value)"
         />
       </div>
