@@ -249,6 +249,13 @@
     background: $color-border;
   }
 
+  .idea-editor-count {
+    flex-shrink: 0;
+    padding: 4px 12px 8px;
+    text-align: right;
+    @include typo($body-xsmall, $color-text-heading-sub);
+  }
+
   .idea-editor-body {
     flex: 1;
     min-height: 0;
@@ -280,44 +287,6 @@
 .idea-attach-box {
   flex-shrink: 0;
   margin-top: auto;
-
-  .idea-attach-hidden {
-    display: none;
-  }
-
-  .idea-attach {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    min-height: 42px;
-    padding: 10px 12px;
-    border: 1px solid $color-attach-border;
-    border-radius: $border-radius-base;
-    background: #fff;
-    color: $color-text-primary;
-    cursor: pointer;
-    transition:
-      border-color $transition-fast,
-      background-color $transition-fast;
-
-    &:hover,
-    &.is-dragging {
-      border-color: var(--color-primary);
-      background: rgba(var(--color-primary-rgb), 0.04);
-    }
-  }
-
-  .idea-attach-label {
-    @include typo($body-small-bold, $color-text-heading-sub);
-    white-space: nowrap;
-  }
-
-  .idea-attach-hint {
-    @include typo($body-xsmall, $color-text-disabled);
-    white-space: nowrap;
-  }
 
   .idea-file-list {
     margin-top: 8px;
@@ -408,7 +377,7 @@
 }
 
 // ===================================
-// 아이디어 관리(`pages/idea_manage/index.vue`) — 목록 관리 컬럼·상세 상하 분할 (목업 .mock-split)
+// 아이디어 관리(`pages/idea-manage/index.vue`) — 목록 관리 컬럼·상세 상하 분할 (목업 .mock-split)
 // ===================================
 .idea-manage-index {
   .idea-manage-actions {

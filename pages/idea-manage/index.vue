@@ -1,5 +1,4 @@
 <template>
-  <!-- 아이디어 관리 — 메뉴 경로(TB_MENU SRC_PATH)가 /idea_manage 라서 폴더명을 맞춤 -->
   <div class="notice-index idea-index idea-manage-index wide-center">
     <!-- 헤더 -->
     <div class="notice-header flex justify-between items-center">
@@ -110,7 +109,7 @@
               </template>
               <template #cell-statusNm="{ row }">
                 <UiBadge
-                  :variant="getIdeaStatusVariant((row as IdeaListItem).statusNm)"
+                  :variant="getIdeaStatusVariant((row as IdeaListItem).statusCd)"
                   size="sm"
                 >
                   {{ row.statusNm }}
@@ -150,7 +149,6 @@
       :idea="selectedManageIdea"
       :form-data="ideaManageForm"
       :status-options="ideaStatusOptions"
-      @download="(file) => handleDownloadIdeaFile(file.ideaFileId)"
       @update-form-data="(payload) => (ideaManageForm = payload)"
       @like="toggleIdeaManageLike"
       @save="handleSaveIdeaManage"
@@ -172,7 +170,7 @@ import {
   UiSelect,
   UiTable,
 } from '@leechanyong/ispark-ui'
-import { useIdeaManageStore } from '~/composables/idea/useIdeaManageStore'
+import { useIdeaManageStore } from '~/composables/idea-manage/useIdeaManageStore'
 import { getIdeaStatusVariant, ideaManageColumns } from '~/types/idea'
 import type { IdeaListItem } from '~/types/idea'
 
@@ -203,7 +201,6 @@ const {
   handleSaveIdeaManage,
   handleDeleteIdeaManage,
   toggleIdeaManageLike,
-  handleDownloadIdeaFile,
   onIdeaExcelSelect,
 } = useIdeaManageStore()
 

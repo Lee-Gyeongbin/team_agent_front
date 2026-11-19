@@ -1,19 +1,21 @@
 import type { TableColumn } from '~/types/table'
 
-/** 구분 코드명 중 에이전트 선택이 필요한 값 (공통코드 ID000002) */
-export const IDEA_TYPE_NM_AGENT = '에이전트'
+/** 구분 코드 중 에이전트 선택이 필요한 값 (공통코드 ID000002, 백엔드 TYPE_CD_AGENT와 동일) */
+export const IDEA_TYPE_CD_AGENT = '001'
 
-/** 진행상태 코드명별 UiBadge variant (공통코드 ID000001) — 등록되지 않은 이름은 default */
+/** 진행상태 코드별 UiBadge variant (공통코드 ID000001) — 등록되지 않은 코드는 default */
 export const IDEA_STATUS_VARIANT: Record<string, 'default' | 'info' | 'success' | 'warning'> = {
-  검토중: 'default',
-  채택: 'info',
-  반영완료: 'success',
-  보류: 'warning',
+  '001': 'default', // 검토중
+  '002': 'info', // 채택
+  '003': 'success', // 반영완료
+  '004': 'warning', // 보류
 }
-export const getIdeaStatusVariant = (statusNm?: string) => IDEA_STATUS_VARIANT[statusNm ?? ''] ?? 'default'
+export const getIdeaStatusVariant = (statusCd?: string) => IDEA_STATUS_VARIANT[statusCd ?? ''] ?? 'default'
 
-/** 첨부파일 1개당 최대 크기 (50MB) */
-export const IDEA_FILE_MAX_SIZE = 50 * 1024 * 1024
+export const IDEA_TEXT_MAX_LENGTH = 8_000
+
+/** 첨부파일 1개당 최대 크기 (20MB) */
+export const IDEA_FILE_MAX_SIZE = 20 * 1024 * 1024
 export const IDEA_FILE_ACCEPT = '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.hwp,.csv,.txt'
 
 /** 공통코드 항목 (구분·진행상태) */
@@ -42,11 +44,13 @@ export interface IdeaListItem {
   /** 화면 번호 (최신 글이 큰 번호) */
   rowNo?: number
   ideaTypeCd: string
+  /** 화면에서 공통코드로 채움 (getIdeaCodeNames) */
   ideaTypeNm: string
   agentId: string | null
   agentNm: string | null
   title: string
   statusCd: string
+  /** 화면에서 공통코드로 채움 (getIdeaCodeNames) */
   statusNm: string
   likeCnt: number
   /** 관리자 코멘트 존재 여부 */
@@ -54,6 +58,16 @@ export interface IdeaListItem {
   createId: string
   createNm: string
   createDt: string
+}
+
+/** 관리 엑셀 조회 항목 */
+export interface IdeaExcelItem extends Pick<
+  IdeaListItem,
+  'ideaId' | 'title' | 'createNm' | 'createDt' | 'likeCnt'
+>, Partial<Pick<IdeaListItem, 'ideaTypeCd' | 'ideaTypeNm' | 'agentId' | 'agentNm' | 'statusCd' | 'statusNm'>> {
+  content: string | null
+  cmtContent: string | null
+  cmtDt: string | null
 }
 
 /** 상세 */

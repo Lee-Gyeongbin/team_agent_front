@@ -31,14 +31,16 @@
       class="idea-editor-body"
       :editor="editor"
     />
+    <small class="idea-editor-count">{{ characterCount.toLocaleString() }} / {{ IDEA_TEXT_MAX_LENGTH.toLocaleString() }}자</small>
   </div>
 </template>
 
 <script setup lang="ts">
-import { EditorContent, useEditor } from '@tiptap/vue-3'
+import { Plugin } from '@tiptap/pm/state'
+import { EditorContent, Extension, useEditor } from '@tiptap/vue-3'
 import { StarterKit } from '@tiptap/starter-kit'
 import { Placeholder } from '@tiptap/extension-placeholder'
-import { toIdeaContentHtml } from '~/utils/idea/ideaRichText'
+import { IDEA_TEXT_MAX_LENGTH } from '~/types/idea'
 
 interface Props {
   modelValue: string
@@ -54,8 +56,26 @@ const emit = defineEmits<{
 }>()
 
 // 생성 시점의 값으로 초기화 — 드로어를 열 때마다 새로 만들어지므로(v-if) 값 동기화 watch 불필요
+const characterCount = ref(0)
+const countCharacters = (text: string) => Array.from(text).length
+
+const CharacterLimit = Extension.create({
+  name: 'ideaCharacterLimit',
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        filterTransaction(transaction, state) {
+          if (!transaction.docChanged) return true
+          const limit = Math.max(IDEA_TEXT_MAX_LENGTH, countCharacters(state.doc.textContent))
+          return countCharacters(transaction.doc.textContent) <= limit
+        },
+      }),
+    ]
+  },
+})
+
 const editor = useEditor({
-  content: toIdeaContentHtml(props.modelValue),
+  content: props.modelValue,
   // 상세 화면과 같은 서식 스타일(.idea-rich) 적용
   editorProps: { attributes: { class: 'idea-rich' } },
   extensions: [
@@ -66,12 +86,16 @@ const editor = useEditor({
       horizontalRule: false,
       link: { openOnClick: false, HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' } },
     }),
+    CharacterLimit,
     Placeholder.configure({ placeholder: props.placeholder }),
   ],
+  onCreate: ({ editor: instance }) => {
+    characterCount.value = countCharacters(instance.state.doc.textContent)
+  },
   onUpdate: ({ editor: instance }) => {
+    characterCount.value = countCharacters(instance.state.doc.textContent)
     // 글자가 없으면 빈 값으로 전달 (필수값 검사용)
-    // Keep typed angle brackets distinct from formatting escaped by the multipart filter.
-    const html = instance.getText().trim() ? instance.getHTML().replace(/&lt;/g, '&#60;') : ''
+    const html = instance.getText().trim() ? instance.getHTML() : ''
     emit('update:modelValue', html)
   },
 })

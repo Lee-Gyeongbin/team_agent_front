@@ -1,8 +1,9 @@
-import { useIdeaApi } from '~/composables/idea/useIdeaApi'
+import { useIdeaManageApi } from '~/composables/idea-manage/useIdeaManageApi'
 import {
   confirmDeleteIdea,
   createIdeaListState,
-  handleDownloadIdeaFile,
+  getIdeaAgentName,
+  getIdeaCodeNames,
   handleSelectIdeaCodeList,
   handleSelectIdeaDetail,
   handleToggleIdeaLike,
@@ -13,7 +14,7 @@ import { openToast } from '~/composables/useToast'
 import type { IdeaDetail, IdeaListItem, IdeaManageFormData } from '~/types/idea'
 import { downloadIdeaListExcel } from '~/utils/idea/ideaExcel'
 
-const { fetchIdeaExcelList, fetchSaveIdeaManage, fetchDeleteIdeaManage } = useIdeaApi()
+const { fetchIdeaExcelList, fetchSaveIdeaManage, fetchDeleteIdeaManage } = useIdeaManageApi()
 
 // ============================================
 // 아이디어 관리(관리자) — 조회 조건은 사용자 화면과 별도
@@ -85,7 +86,12 @@ const toggleIdeaManageLike = async () => {
 const onIdeaExcelSelect = async (value: string) => {
   if (value !== 'download') return
   const res = await fetchIdeaExcelList(manageList.getSearchParams())
-  const isDone = await downloadIdeaListExcel(res.dataList ?? [])
+  const rows = (res.dataList ?? []).map((idea) => ({
+    ...idea,
+    ...getIdeaCodeNames(idea),
+    agentNm: getIdeaAgentName(idea.agentId) ?? idea.agentNm ?? idea.agentId ?? '',
+  }))
+  const isDone = await downloadIdeaListExcel(rows)
   openToast(
     isDone
       ? { message: '엑셀 다운로드를 시작합니다.', type: 'success' }
@@ -118,7 +124,6 @@ export const useIdeaManageStore = () => {
     handleSaveIdeaManage,
     handleDeleteIdeaManage,
     toggleIdeaManageLike,
-    handleDownloadIdeaFile,
     onIdeaExcelSelect,
   }
 }

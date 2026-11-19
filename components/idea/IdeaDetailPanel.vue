@@ -3,7 +3,7 @@
     :open="isOpen"
     :title="idea?.title || '아이디어'"
     position="right"
-    width="50%"
+    width="65vw"
     show-resize
     show-fullscreen
     persist-key="idea-detail"
@@ -17,7 +17,6 @@
       <IdeaDetailContent
         :idea="idea"
         @like="$emit('like')"
-        @download="(file) => $emit('download', file)"
       />
 
       <div class="idea-comment-section">
@@ -26,10 +25,9 @@
           v-if="idea.cmtContent"
           class="idea-comment-box"
         >
-          <!-- v-html: toIdeaContentHtml에서 DOMPurify로 정제한 값만 사용 -->
           <div
             class="idea-comment-text idea-rich"
-            v-html="toIdeaContentHtml(idea.cmtContent)"
+            v-html="idea.cmtContent"
           />
           <p class="idea-comment-meta">— {{ idea.cmtUserNm || '관리자' }} · {{ idea.cmtDt }}</p>
         </div>
@@ -74,8 +72,7 @@
 
 <script setup lang="ts">
 import { UiButton, UiDrawer } from '@leechanyong/ispark-ui'
-import { toIdeaContentHtml } from '~/utils/idea/ideaRichText'
-import type { IdeaDetail, IdeaFile } from '~/types/idea'
+import type { IdeaDetail } from '~/types/idea'
 
 interface Props {
   isOpen: boolean
@@ -90,6 +87,5 @@ defineEmits<{
   like: []
   edit: []
   delete: []
-  download: [file: IdeaFile]
 }>()
 </script>
