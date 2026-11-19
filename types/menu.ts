@@ -11,6 +11,9 @@ export interface MenuItem {
   sortOrd: number
   useYn: string
   description: string
+  /** 로그인 사용자의 조회·기능 권한 (/userMenuList.do 응답) */
+  readYn?: 'Y' | 'N'
+  funcYn?: 'Y' | 'N'
   children?: MenuItem[]
 }
 

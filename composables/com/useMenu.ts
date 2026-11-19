@@ -35,7 +35,7 @@ export const useMenu = () => {
   const menuList = useState<MenuItem[]>(MENU_STATE_KEY, () => [])
 
   const fetchMenuList = async (): Promise<MenuItem[]> => {
-    const res = await get<MenuListResponse>('/menuList.do')
+    const res = await get<MenuListResponse>('/userMenuList.do')
     const list = res.list ?? res.menuList ?? []
     patchMenuPaths(list)
     menuList.value = list

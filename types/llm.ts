@@ -30,6 +30,9 @@ export interface LlmUsageLimit {
   dayCostLmt: number // 일일 비용 제한 (DAY_COST_LMT)
 }
 
+/** 모델 접근 제어에 쓰는 권한 그룹 ID (TB_ROLE_GRP.ROLE_ID) — 관리자 / 프리미엄 / 일반 */
+export const LLM_ROLE_ID = { admin: 'RI000001', premium: 'RI000002', general: 'RI000003' } as const
+
 /** 접근 제어 (역할별) */
 export interface LlmAccessControl {
   modelId: string // 모델 ID
@@ -67,5 +70,5 @@ export interface LlmBaseInfo {
 /** 마스터 모델 인터페이스 */
 export interface LlmModel extends LlmBaseInfo, LlmApiConfig, LlmModelParams, LlmUsageLimit, LlmProvider {
   accessControlList?: LlmAccessControl[] // 역할별 접근 제어 목록 (레거시)
-  roleIdArr?: string // 역할 ID 배열 (쉼표 구분, 예: ROLE_ADMIN,ROLE_PREMIUM,ROLE_USER)
+  roleIdArr?: string // 권한 그룹 ID 배열 (쉼표 구분, 예: RI000001,RI000002,RI000003)
 }

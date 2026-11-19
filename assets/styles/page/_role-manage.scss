@@ -1,0 +1,403 @@
+@use '../utils/variables' as *;
+@use '../utils/mixins' as *;
+
+// 권한관리 — 코드관리(codes-split) 좌우 분할 구조를 그대로 쓰고, 화면 높이에 맞춰 내부 스크롤
+.role-manage-index {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  height: calc(100vh - #{$header-height});
+  width: 100%;
+  max-width: none;
+  padding: $spacing-md;
+  box-sizing: border-box;
+  overflow: hidden;
+
+  .codes-split {
+    flex: 1;
+    min-height: 0;
+    align-items: stretch;
+  }
+
+  .codes-left,
+  .codes-right {
+    height: 100%;
+    min-height: 0;
+    border-radius: $border-radius-lg;
+  }
+
+  .codes-left {
+    flex-basis: 46%;
+  }
+
+  .codes-left-table-wrap {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}
+
+.role-manage-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-md;
+  padding: $spacing-2xl;
+
+  &__message {
+    font-size: $font-size-sm;
+    color: $color-error;
+  }
+}
+
+.role-manage-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.role-manage-detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden; // 스크롤은 메뉴 권한 표 안에서만 생긴다
+}
+
+.role-perm-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+// 권한 설명 접이식 안내
+.role-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  background: $color-background;
+  color: $color-text-secondary;
+  font-size: $font-size-sm;
+  flex-shrink: 0;
+
+  .icon-arrow-down-gray {
+    transition: transform $transition-fast;
+
+    &.is-expanded {
+      transform: rotate(180deg);
+    }
+  }
+
+  &.is-closed .role-legend-body {
+    display: none;
+  }
+}
+
+.role-legend-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: $font-size-sm;
+}
+
+.role-legend-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.role-legend-note {
+  color: $color-text-disabled;
+}
+
+// 메뉴 접근 권한 표
+.role-perm-scroll {
+  flex: 1 1 0;
+  min-height: 120px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  // 표 밖으로 나온 요소(체크박스 입력)가 바깥 패널을 스크롤시키지 않도록 막는다
+  overflow: hidden;
+
+  .ui-table-wrap {
+    position: relative; // 체크박스 입력의 기준을 스크롤되는 표 영역으로 둔다
+    flex: 1;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+}
+
+.role-perm-th {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.role-menu-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+
+  .icon-arrow-down-gray {
+    transition: transform $transition-fast;
+
+    &.is-expanded {
+      transform: rotate(180deg);
+    }
+  }
+}
+
+.role-menu-arrow-placeholder {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+}
+
+// 사용자 지정 탭
+.ur-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 12px;
+}
+
+.ur-filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  padding: 12px 16px;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+  background: #fff;
+
+  > label {
+    color: $color-text-heading-sub;
+    font-size: $font-size-base;
+    font-weight: $font-weight-bold;
+    white-space: nowrap;
+
+    &:not(:first-child) {
+      margin-left: 8px;
+    }
+  }
+}
+
+.ur-filter-role {
+  width: 170px;
+}
+
+.ur-filter-name {
+  width: 220px;
+}
+
+.ur-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.ur-panels {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: 12px;
+  align-items: stretch;
+
+  .ur-p {
+    flex: 1 1 30%;
+    min-width: 0;
+    height: 100%;
+  }
+}
+
+.ur-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px;
+  @include custom-scrollbar;
+}
+
+.ur-mid {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+.ur-mid-btn {
+  width: 40px;
+  height: 40px;
+  padding: 0 !important;
+}
+
+.ur-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  margin-left: 4px;
+  background: var(--color-primary, $color-primary);
+  color: #fff;
+  font-size: 10px;
+  font-weight: $font-weight-bold;
+  border-radius: 9px;
+}
+
+.ur-link-btn {
+  color: var(--color-primary, $color-primary);
+  font-size: $font-size-xs;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+
+  &:hover {
+    opacity: 0.7;
+  }
+
+  &.is-danger {
+    color: $color-text-secondary;
+
+    &:hover {
+      color: $color-error;
+      opacity: 1;
+    }
+  }
+}
+
+.ur-state-box {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 12px;
+}
+
+.ur-state-text {
+  color: $color-text-disabled;
+  font-size: $font-size-sm;
+  text-align: center;
+}
+
+.ur-user-list {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  margin: 0;
+}
+
+.ur-user-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: $border-radius-base;
+  cursor: pointer;
+  transition: background $transition-fast;
+
+  &:hover {
+    background: $color-background;
+  }
+
+  &.is-selected {
+    background: rgba(var(--color-primary-rgb, 60, 105, 219), 0.06);
+  }
+
+  &.is-assigned {
+    cursor: default;
+    opacity: 0.55;
+  }
+}
+
+.ur-check-icon {
+  flex-shrink: 0;
+  margin-left: auto;
+  background-color: var(--color-primary, $color-primary);
+}
+
+.ur-assigned-tag {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: $color-text-secondary;
+  font-size: $font-size-xs;
+}
+
+.ur-user-avatar {
+  @include flex-center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #f1f6fe;
+  color: #5e87d7;
+}
+
+.ur-user-info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ur-user-name {
+  color: $color-text-primary;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  @include ellipsis(1);
+}
+
+.ur-user-email {
+  color: $color-text-disabled;
+  font-size: $font-size-xs;
+  @include ellipsis(1);
+}
+
+.ur-remove-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: $border-radius-sm;
+  opacity: 0.4;
+  transition:
+    opacity $transition-fast,
+    background $transition-fast;
+
+  &:hover {
+    opacity: 1;
+    background: $color-background;
+  }
+}

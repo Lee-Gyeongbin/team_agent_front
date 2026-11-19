@@ -54,6 +54,7 @@
 <script setup lang="ts">
 import { UiDrawer } from '@leechanyong/ispark-ui'
 import type { LlmModel } from '~/types/llm'
+import { LLM_ROLE_ID } from '~/types/llm'
 
 const { handleFetchProviderOptions } = useLlmStore()
 
@@ -102,7 +103,7 @@ const defaultUsage = () => ({
   rpmLimit: 0,
   tpmLimit: 0,
   dayCostLmt: 0,
-  roleIdArr: 'ROLE_USER',
+  roleIdArr: LLM_ROLE_ID.general as string,
 })
 
 const formRef = ref<HTMLElement | null>(null)
@@ -148,9 +149,10 @@ watch(
           m.roleIdArr ??
           (m.accessControlList
             ?.filter((a) => a.allowedYn)
-            .map((a) => `ROLE_${a.roleId.toUpperCase()}`)
+            .map((a) => LLM_ROLE_ID[a.roleId as keyof typeof LLM_ROLE_ID])
+            .filter(Boolean)
             .join(',') ||
-            'ROLE_ADMIN,ROLE_PREMIUM,ROLE_USER'),
+            Object.values(LLM_ROLE_ID).join(',')),
       }
       nextTick(() => formRef.value?.closest('.ui-drawer-body')?.scrollTo(0, 0))
     } else {

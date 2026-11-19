@@ -119,7 +119,9 @@
 </template>
 
 <script setup lang="ts">
-const ROLE_MAP: Record<string, string> = { admin: 'ROLE_ADMIN', premium: 'ROLE_PREMIUM', general: 'ROLE_USER' }
+import { LLM_ROLE_ID } from '~/types/llm'
+
+const ROLE_MAP: Record<string, string> = LLM_ROLE_ID
 
 interface UsageForm {
   inputCost: number
