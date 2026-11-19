@@ -3,6 +3,7 @@
     :open="isOpen"
     :title="inq?.title ?? ''"
     position="right"
+    width="65vw"
     persist-key="inq-manage-detail"
     :confirm-before-close="false"
     @update:open="(v) => !v && $emit('close')"
@@ -96,7 +97,6 @@
 <script setup lang="ts">
 import { UiButton, UiDrawer, UiSelect } from '@leechanyong/ispark-ui'
 import type { InqAnsr, InqComposer, InqFile, InqItem } from '~/types/inq'
-import { selectHalfDrawer } from '~/utils/global/drawerUtil'
 import InqAnswerList from '~/components/inq/InqAnswerList.vue'
 import InqAnsrComposer from '~/components/inq/InqAnsrComposer.vue'
 import InqDetailContent from '~/components/inq/InqDetailContent.vue'
@@ -134,15 +134,6 @@ defineEmits<{
   'save-composer': []
   'cancel-composer': []
 }>()
-
-// 열릴 때마다 1/2 너비를 기본 선택 (헤더의 가운데 버튼이 선택된 상태)
-watch(
-  () => props.isOpen,
-  (open) => {
-    if (open) selectHalfDrawer('inq-manage-detail')
-  },
-  { flush: 'sync' },
-)
 
 /** 관리자 화면은 기능 권한이 있으면 모든 답변·댓글을 수정·삭제할 수 있다 */
 const canEditAnsr = () => props.hasFunc

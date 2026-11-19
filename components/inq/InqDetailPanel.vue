@@ -3,6 +3,7 @@
     :open="isOpen"
     :title="inq?.title ?? ''"
     position="right"
+    width="65vw"
     persist-key="inq-detail"
     :confirm-before-close="false"
     @update:open="(v) => !v && $emit('close')"
@@ -67,11 +68,10 @@
 <script setup lang="ts">
 import { UiButton, UiDrawer } from '@leechanyong/ispark-ui'
 import type { InqAnsr, InqComposer, InqFile, InqItem } from '~/types/inq'
-import { selectHalfDrawer } from '~/utils/global/drawerUtil'
 import InqAnswerList from '~/components/inq/InqAnswerList.vue'
 import InqDetailContent from '~/components/inq/InqDetailContent.vue'
 
-const props = defineProps<{
+defineProps<{
   isOpen: boolean
   inq: InqItem | null
   files: InqFile[]
@@ -102,13 +102,4 @@ defineEmits<{
   'save-composer': []
   'cancel-composer': []
 }>()
-
-// 열릴 때마다 1/2 너비를 기본 선택 (헤더의 가운데 버튼이 선택된 상태)
-watch(
-  () => props.isOpen,
-  (open) => {
-    if (open) selectHalfDrawer('inq-detail')
-  },
-  { flush: 'sync' },
-)
 </script>

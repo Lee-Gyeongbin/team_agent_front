@@ -3,6 +3,7 @@
     :open="isOpen"
     :title="`문의사항 ${panelActionLabel}`"
     position="right"
+    width="50%"
     persist-key="inq-form"
     @update:open="(value) => !value && $emit('close')"
   >
@@ -101,7 +102,6 @@ import { UiDrawer, UiInput, UiSelect, UiCheckbox, UiMarkdownEditor, UiButton } f
 import { INQ_FILE_ACCEPT, INQ_FILE_EXTENSIONS, INQ_FILE_MAX_SIZE, INQ_TITLE_MAX_LENGTH } from '~/types/inq'
 import type { InqFormData } from '~/types/inq'
 import type { FileItem } from '~/types/repository'
-import { selectHalfDrawer } from '~/utils/global/drawerUtil'
 
 const props = defineProps<{
   isOpen: boolean
@@ -123,15 +123,6 @@ const emit = defineEmits<{
   save: [payload: InqFormData]
   close: []
 }>()
-
-// 열릴 때마다 1/2 너비를 기본 선택 (헤더의 가운데 버튼이 선택된 상태)
-watch(
-  () => props.isOpen,
-  (open) => {
-    if (open) selectHalfDrawer('inq-form')
-  },
-  { flush: 'sync' },
-)
 
 const onFieldChange = <K extends keyof InqFormData>(key: K, value: InqFormData[K]) => {
   emit('update:formData', { ...props.formData, [key]: value })
