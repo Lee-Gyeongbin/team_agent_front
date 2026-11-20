@@ -2929,6 +2929,20 @@
 // utils/_doc-content.scss ??doc-content-styles mixin ?�로 ?�일 ??HTML 문서 ?�플�??�디?�도 ?�일 mixin ?�용
 .meeting2-editor-body {
   @include doc-content-styles;
+
+  // 회의록 전용 여백 — 공통 mixin(HTML 문서 템플릿과 공유)은 그대로 두고 여기서만 덮어씀
+  p {
+    margin: 0 0 5px;
+  }
+
+  ul li {
+    margin-bottom: 3px;
+  }
+
+  // 하위 목록을 가진 항목(주제) 사이는 간격을 더 둠
+  ul > li:has(> ul):not(:last-child) {
+    margin-bottom: 12px;
+  }
 }
 
 // ??리사?�즈 �??�용???�택 방�?

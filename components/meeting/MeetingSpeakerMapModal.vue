@@ -1,9 +1,6 @@
 <template>
   <Teleport to="body">
-    <div
-      class="modal-overlay"
-      @click.self="emit('close')"
-    >
+    <div class="modal-overlay">
       <div class="meeting-speaker-modal">
         <div class="meeting-speaker-modal-header">
           <h3 class="meeting-speaker-modal-title">화자 매핑</h3>

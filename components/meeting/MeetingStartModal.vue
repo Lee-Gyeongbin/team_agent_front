@@ -1,9 +1,6 @@
 <template>
   <Teleport to="body">
-    <div
-      class="modal-overlay"
-      @click.self="emit('close')"
-    >
+    <div class="modal-overlay">
       <div class="meeting-start-modal">
         <div class="meeting-start-modal-header">
           <h3 class="meeting-start-modal-title">새 회의 시작</h3>
