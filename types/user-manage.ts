@@ -1,7 +1,7 @@
 import type { TableColumn } from '~/types/table'
 
 /** 사용자 행 데이터 (이력 테이블 스키마 기준) */
-export interface UserItem {
+export type UserItem = {
   userId: string
   userNm: string
   email: string
@@ -31,13 +31,13 @@ export interface UserExcelUploadResponse {
 
 /** 사용자 테이블 컬럼 정의 */
 export const userColumns: TableColumn[] = [
-  { key: 'userId', label: 'ID', width: '100px', align: 'center', headerAlign: 'center' },
+  { key: 'userId', label: 'ID', width: '110px', align: 'center', headerAlign: 'center' },
   { key: 'userNm', label: '성명', width: '130px', align: 'center', headerAlign: 'center' },
-  { key: 'email', label: '이메일', width: '200px', align: 'center', headerAlign: 'center' },
-  { key: 'phone', label: '전화번호', width: '100px', align: 'center', headerAlign: 'center' },
-  { key: 'orgId', label: '조직', width: '100px', align: 'center', headerAlign: 'center' },
-  { key: 'lastLoginDt', label: '마지막 로그인 일시', width: '150px', align: 'center', headerAlign: 'center' },
-  { key: 'pwdChgDt', label: '비밀번호 변경 일시', width: '150px', align: 'center', headerAlign: 'center' },
+  { key: 'email', label: '이메일', width: '220px', align: 'center', headerAlign: 'center' },
+  { key: 'phone', label: '전화번호', width: '130px', align: 'center', headerAlign: 'center' },
+  { key: 'orgId', label: '조직', align: 'left', headerAlign: 'center' },
+  { key: 'lastLoginDt', label: '마지막 로그인 일시', width: '170px', align: 'center', headerAlign: 'center' },
+  { key: 'pwdChgDt', label: '비밀번호 변경 일시', width: '170px', align: 'center', headerAlign: 'center' },
   { key: 'acctStatusDesc', label: '계정 상태', width: '80px', align: 'center', headerAlign: 'center' },
-  { key: 'actions', label: '관리', width: '160px', align: 'center', headerAlign: 'center' },
+  { key: 'actions', label: '관리', width: '250px', align: 'center', headerAlign: 'center' },
 ]

@@ -15,7 +15,10 @@
             >
               엑셀
               <template #icon-right>
-                <UiIcon name="chevron-down" size="14" />
+                <UiIcon
+                  name="chevron-down"
+                  size="14"
+                />
               </template>
             </UiButton>
           </template>
@@ -38,7 +41,10 @@
           @click="handleFetchUserManageList"
         >
           <template #icon-left>
-            <UiIcon name="refresh-cw" size="16" />
+            <UiIcon
+              name="refresh-cw"
+              size="16"
+            />
           </template>
           새로고침
         </UiButton>
@@ -94,7 +100,7 @@
             {{ formatPhone(value) }}
           </template>
           <template #cell-orgId="{ value }">
-            {{ getOrgName(value) }}
+            {{ getOrgPathName(value) }}
           </template>
           <template #cell-acctStatusDesc="{ row }">
             <UiBadge
@@ -180,7 +186,7 @@ const {
   handleFetchUserManageList,
   handleResetUserPassword,
   handleDownloadUserExcel,
-  getOrgName,
+  getOrgPathName,
   formatPhone,
 } = useUserManageStore()
 

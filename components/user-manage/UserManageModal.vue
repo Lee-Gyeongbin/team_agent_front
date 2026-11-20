@@ -30,22 +30,14 @@
             />
           </td>
         </tr>
-        <tr class="user-modal__row-double">
+        <tr>
           <th scope="row">조직</th>
-          <td>
+          <td colspan="3">
             <UiSelect
               v-model="form.orgId"
-              :options="orgOptions"
+              :options="orgPathOptions"
               placeholder="조직 선택"
               size="sm"
-            />
-          </td>
-          <th scope="row">계정 상태</th>
-          <td>
-            <UiInput
-              :model-value="form.acctStatusDesc"
-              size="sm"
-              disabled
             />
           </td>
         </tr>
@@ -146,8 +138,13 @@ const emit = defineEmits<{
   confirm: [payload: Partial<UserItem>]
 }>()
 
-const { formatPhone, toPhoneDigits } = useUserManageStore()
-const { orgOptions } = useOrgManageStore()
+const { formatPhone, toPhoneDigits, getOrgPathName } = useUserManageStore()
+const { orgList } = useOrgManageStore()
+
+/** 같은 팀명을 구분하도록 '상위 > 하위' 경로 라벨 사용 */
+const orgPathOptions = computed(() =>
+  orgList.value.map((item) => ({ label: getOrgPathName(item.orgId), value: item.orgId })),
+)
 const isEditMode = computed(() => !!props.user?.userId)
 
 /** 모달 내 편집용 로컬 폼 */

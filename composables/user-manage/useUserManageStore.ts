@@ -29,6 +29,7 @@ export const useUserManageStore = (): {
   handleDownloadUserExcel: () => Promise<void>
   handleUploadUserExcel: (file: File) => Promise<boolean>
   getOrgName: (orgId: string | undefined | null) => string
+  getOrgPathName: (orgId: string | undefined | null) => string
   formatPhone: (value: string | undefined | null) => string
   toPhoneDigits: (value: string | undefined | null) => string
 } => {
@@ -169,6 +170,22 @@ export const useUserManageStore = (): {
     return orgList.value.find((item) => item.orgId === orgId)?.orgNm ?? orgId
   }
 
+  /** 최상위 → 해당 조직까지 " > "로 연결한 전체 조직 경로 */
+  const getOrgPathName = (orgId: string | undefined | null): string => {
+    if (orgId == null || orgId === '') return ''
+    const path: string[] = []
+    const visited = new Set<string>()
+    let current = orgList.value.find((item) => item.orgId === orgId)
+    if (!current) return orgId
+    while (current && !visited.has(current.orgId)) {
+      visited.add(current.orgId)
+      path.unshift(current.orgNm)
+      const parentId = current.parentOrgId
+      current = parentId ? orgList.value.find((item) => item.orgId === parentId) : undefined
+    }
+    return path.join(' > ')
+  }
+
   const EXCEL_UPLOAD_ACCEPT_EXT = ['.xlsx', '.xls']
 
   const isUserExcelFile = (file: File): boolean => {
@@ -224,6 +241,7 @@ export const useUserManageStore = (): {
     handleDownloadUserExcel,
     handleUploadUserExcel,
     getOrgName,
+    getOrgPathName,
     formatPhone,
     toPhoneDigits,
   }
