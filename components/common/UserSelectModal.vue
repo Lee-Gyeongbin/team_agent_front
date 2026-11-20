@@ -59,16 +59,8 @@
             <template v-else>
               <!-- 조직 트리 -->
               <div class="us-org-tree">
-                <div
-                  v-if="orgTree.length === 0"
-                  class="us-state-box"
-                >
-                  <p class="us-state-text">조직 정보가 없습니다.</p>
-                </div>
-                <UserSelectOrgTreeNode
-                  v-for="node in orgTree"
-                  :key="node.orgId"
-                  :node="node"
+                <OrgTree
+                  :tree="orgTree"
                   :selected-org-id="selectedOrgId"
                   @select="handleSelectOrg"
                   @toggle="handleToggleOrgExpand"

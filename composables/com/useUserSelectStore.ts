@@ -1,52 +1,7 @@
 import { ref } from 'vue'
-import type { OrgItem, OrgTreeItem, OrgUserItem } from '~/types/org-manage'
+import type { OrgTreeItem, OrgUserItem } from '~/types/org-manage'
 import { useUserSelectApi } from '~/composables/com/useUserSelectApi'
-
-/** 플랫 배열 → 트리 구조 변환 */
-function buildOrgTree(items: OrgItem[]): OrgTreeItem[] {
-  if (!items.length) return []
-
-  const idSet = new Set(items.map((x) => x.orgId))
-  const map = new Map<string, OrgTreeItem>()
-
-  for (const item of items) {
-    map.set(item.orgId, { ...item, children: [], expanded: true })
-  }
-
-  const roots: OrgTreeItem[] = []
-
-  for (const item of items) {
-    const node = map.get(item.orgId)
-    if (!node) continue
-
-    const parentId = String(item.parentOrgId ?? '').trim()
-    const isRoot = !parentId || parentId === '0' || parentId === '-1' || !idSet.has(parentId)
-
-    if (isRoot) {
-      roots.push(node)
-    } else {
-      const parent = map.get(parentId)
-      if (parent) {
-        ;(parent.children ??= []).push(node)
-      } else {
-        roots.push(node)
-      }
-    }
-  }
-
-  return roots
-}
-
-function toggleNode(nodes: OrgTreeItem[], orgId: string): boolean {
-  for (const n of nodes) {
-    if (n.orgId === orgId) {
-      n.expanded = !(n.expanded ?? true)
-      return true
-    }
-    if (n.children?.length && toggleNode(n.children, orgId)) return true
-  }
-  return false
-}
+import { buildOrgTree, toggleOrgNode } from '~/utils/global/orgTreeUtil'
 
 // ── 사용자 선택 모달 전역 상태 ──
 const isUserSelectModalOpen = ref(false)
@@ -101,7 +56,7 @@ export const useUserSelectStore = () => {
 
   /** 조직 트리 노드 펼침/접힘 토글 */
   const handleToggleOrgExpand = (orgId: string) => {
-    toggleNode(orgTree.value, orgId)
+    toggleOrgNode(orgTree.value, orgId)
   }
 
   /** 사용자 선택 추가 (중복 방지) */

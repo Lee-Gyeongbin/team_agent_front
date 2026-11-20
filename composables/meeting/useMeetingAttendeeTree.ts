@@ -1,42 +1,8 @@
 import { computed, ref } from 'vue'
 import { useUserSelectApi } from '~/composables/com/useUserSelectApi'
-import type { OrgItem, OrgTreeItem, OrgUserItem } from '~/types/org-manage'
+import type { OrgTreeItem, OrgUserItem } from '~/types/org-manage'
 import type { MeetingAttendeeOrgNode, MeetingAttendeeUserItem } from '~/types/meeting'
-
-/** 플랫 조직 목록 → 트리 */
-const buildOrgTree = (items: OrgItem[]): OrgTreeItem[] => {
-  if (!items.length) return []
-
-  const idSet = new Set(items.map((x) => x.orgId))
-  const map = new Map<string, OrgTreeItem>()
-
-  for (const item of items) {
-    map.set(item.orgId, { ...item, children: [], expanded: true })
-  }
-
-  const roots: OrgTreeItem[] = []
-
-  for (const item of items) {
-    const node = map.get(item.orgId)
-    if (!node) continue
-
-    const parentId = String(item.parentOrgId ?? '').trim()
-    const isRoot = !parentId || parentId === '0' || parentId === '-1' || !idSet.has(parentId)
-
-    if (isRoot) {
-      roots.push(node)
-    } else {
-      const parent = map.get(parentId)
-      if (parent) {
-        ;(parent.children ??= []).push(node)
-      } else {
-        roots.push(node)
-      }
-    }
-  }
-
-  return roots
-}
+import { buildOrgTree } from '~/utils/global/orgTreeUtil'
 
 const toAttendeeUser = (user: OrgUserItem): MeetingAttendeeUserItem => ({
   userId: String(user.userId ?? '').trim(),
