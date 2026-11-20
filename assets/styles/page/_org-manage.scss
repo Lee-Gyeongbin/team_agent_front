@@ -63,7 +63,7 @@
   min-height: 0;
   background: #fff;
   border: 1px solid $color-border;
-  border-radius: $border-radius-base;
+  border-radius: $border-radius-lg;
   overflow: hidden;
 }
 
@@ -210,7 +210,7 @@
   padding: 0 8px 0 0;
   border-radius: $border-radius-sm;
   gap: 4px;
-  min-height: 40px;
+  min-height: 42px;
   cursor: pointer;
 
   &.is-selected {
@@ -323,7 +323,7 @@
 
 .org-manage-member-card {
   border: 1px solid $color-border;
-  border-radius: $border-radius-base;
+  border-radius: $border-radius-lg;
   background: #fff;
   padding: $spacing-lg;
 }
@@ -461,7 +461,7 @@
 .org-manage-parent-picker-tree {
   margin-top: $spacing-xs;
   border: 1px solid $color-border;
-  border-radius: $border-radius-base;
+  border-radius: $border-radius-lg;
   max-height: 250px;
   overflow: auto;
   background: #fff;
@@ -543,7 +543,7 @@
 .org-manage-add-error {
   margin-top: $spacing-md;
   padding: $spacing-sm $spacing-md;
-  border-radius: $border-radius-base;
+  border-radius: $border-radius-lg;
   background: rgba($color-error, 0.06);
   color: $color-error;
   font-size: $font-size-sm;
