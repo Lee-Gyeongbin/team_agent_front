@@ -137,4 +137,18 @@ defineEmits<{
 
 /** 관리자 화면은 기능 권한이 있으면 모든 답변·댓글을 수정·삭제할 수 있다 */
 const canEditAnsr = () => props.hasFunc
+
+// 열릴 때마다 1/2 너비를 기본 선택 (헤더의 가운데 버튼이 선택된 상태)
+watch(
+  () => props.isOpen,
+  (open) => {
+    if (!open) return
+    try {
+      localStorage.setItem('ui-drawer-preset:inq-manage-detail', 'half')
+    } catch {
+      // 저장소 차단 시 기본 너비로 열린다
+    }
+  },
+  { flush: 'sync' },
+)
 </script>

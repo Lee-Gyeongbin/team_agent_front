@@ -80,7 +80,7 @@ interface Props {
   isMine: boolean
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 
 defineEmits<{
   close: []
@@ -88,4 +88,18 @@ defineEmits<{
   edit: []
   delete: []
 }>()
+
+// 열릴 때마다 1/2 너비를 기본 선택 (헤더의 가운데 버튼이 선택된 상태)
+watch(
+  () => props.isOpen,
+  (open) => {
+    if (!open) return
+    try {
+      localStorage.setItem('ui-drawer-preset:idea-detail', 'half')
+    } catch {
+      // 저장소 차단 시 기본 너비로 열린다
+    }
+  },
+  { flush: 'sync' },
+)
 </script>

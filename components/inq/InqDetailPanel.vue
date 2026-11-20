@@ -71,7 +71,7 @@ import type { InqAnsr, InqComposer, InqFile, InqItem } from '~/types/inq'
 import InqAnswerList from '~/components/inq/InqAnswerList.vue'
 import InqDetailContent from '~/components/inq/InqDetailContent.vue'
 
-defineProps<{
+const props = defineProps<{
   isOpen: boolean
   inq: InqItem | null
   files: InqFile[]
@@ -102,4 +102,18 @@ defineEmits<{
   'save-composer': []
   'cancel-composer': []
 }>()
+
+// 열릴 때마다 1/2 너비를 기본 선택 (헤더의 가운데 버튼이 선택된 상태)
+watch(
+  () => props.isOpen,
+  (open) => {
+    if (!open) return
+    try {
+      localStorage.setItem('ui-drawer-preset:inq-detail', 'half')
+    } catch {
+      // 저장소 차단 시 기본 너비로 열린다
+    }
+  },
+  { flush: 'sync' },
+)
 </script>
