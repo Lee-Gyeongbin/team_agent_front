@@ -52,48 +52,14 @@
       <main class="meeting-enroll-main">
         <!-- 콘텐츠 래퍼 (수직 중앙 정렬) -->
         <div class="meeting-enroll-main-inner">
-          <!-- 전체 완료 상태 -->
-          <div
-            v-if="isAllDone"
-            class="meeting-enroll-complete"
-          >
-            <div class="meeting-enroll-complete-icon">
-              <UiIcon
-                name="check"
-                size="32"
-              />
-            </div>
-            <p class="meeting-enroll-complete-title">모든 참석자의 음성 확인이 완료되었습니다.</p>
-            <p class="meeting-enroll-complete-desc">음성 등록을 닫고 회의를 진행할 수 있습니다.</p>
-            <UiButton
-              variant="primary"
-              size="md"
-              @click="emit('close')"
-            >
-              음성 등록 닫기
-              <template #icon-right>
-                <UiIcon
-                  name="check"
-                  size="16"
-                />
-              </template>
-            </UiButton>
-          </div>
-
-          <!-- 현재 대상 녹음 영역 -->
-          <template v-else-if="currentAttendee">
+          <!-- 현재 대상 녹음 영역 (전원 완료여도 선택된 참석자 화면 — 다시 녹음으로 재등록) -->
+          <template v-if="currentAttendee">
             <!-- 전체 진행률 -->
-            <p class="meeting-enroll-step">
-              참석자 음성 확인 {{ activeIndex + 1 }} / {{ attendees.length }}
-            </p>
+            <p class="meeting-enroll-step">참석자 음성 확인 {{ activeIndex + 1 }} / {{ attendees.length }}</p>
 
             <!-- 타이틀 + 안내 문구 -->
-            <p class="meeting-enroll-main-title">
-              {{ currentAttendee.userNm }}님의 음성을 확인합니다.
-            </p>
-            <p class="meeting-enroll-main-desc">
-              아래 문장을 자연스럽게 읽어주세요.
-            </p>
+            <p class="meeting-enroll-main-title">{{ currentAttendee.userNm }}님의 음성을 확인합니다.</p>
+            <p class="meeting-enroll-main-desc">아래 문장을 자연스럽게 읽어주세요.</p>
 
             <!-- 안내 문장 카드 -->
             <div class="meeting-enroll-script">
@@ -157,7 +123,9 @@
               </button>
               <div class="meeting-enroll-recording-info">
                 <span class="meeting-enroll-pulse"></span>
-                <span class="meeting-enroll-timer">{{ formatTime(currentAttendee.elapsed) }}</span>
+                <span class="meeting-enroll-timer">
+                  {{ formatTime(currentAttendee.elapsed) }} / {{ formatTime(MAX_DURATION) }}
+                </span>
               </div>
               <!-- 실시간 음량 레벨 -->
               <div class="meeting-enroll-volume">
@@ -177,12 +145,6 @@
                 />
                 음성이 작습니다. 마이크에 가까이 말씀해주세요.
               </p>
-              <div class="meeting-enroll-progress">
-                <div
-                  class="meeting-enroll-progress-bar"
-                  :style="{ width: `${Math.min((currentAttendee.elapsed / MAX_DURATION) * 100, 100)}%` }"
-                ></div>
-              </div>
             </div>
 
             <!-- 등록 중 (백엔드 Enrollment + AI 처리) -->
@@ -228,10 +190,16 @@
               </div>
               <p class="meeting-enroll-done-text">음성 확인 완료</p>
               <UiButton
-                variant="ghost"
-                size="xs"
+                variant="outline"
+                size="sm"
                 @click="onRetry"
               >
+                <template #icon-left>
+                  <UiIcon
+                    name="mic"
+                    size="16"
+                  />
+                </template>
                 다시 녹음
               </UiButton>
             </div>
@@ -431,9 +399,7 @@ const applyEnrollmentStatus = (list: MeetingVoiceEnrollment[]) => {
 
   attendees.value.forEach((attendee) => {
     const enroll =
-      latestBySpeaker.get(attendee.speakerId) ??
-      latestByUser.get(attendee.userId) ??
-      latestByName.get(attendee.userNm)
+      latestBySpeaker.get(attendee.speakerId) ?? latestByUser.get(attendee.userId) ?? latestByName.get(attendee.userNm)
     if (!enroll) return
     if (attendee.speakerId <= 0 && Number(enroll.speakerId) > 0) {
       attendee.speakerId = Number(enroll.speakerId)
@@ -675,6 +641,7 @@ const validateAudio = (durationSec: number): { ok: boolean; message: string } =>
 
 // ── 다음 미완료 참석자로 자동 이동 ──────────────────────────────────
 const advanceToNext = () => {
+  // 미완료 참석자가 없으면(전원 완료·재등록 완료) 현재 참석자에 머무름
   const len = attendees.value.length
   for (let i = 1; i <= len; i++) {
     const idx = (activeIndex.value + i) % len

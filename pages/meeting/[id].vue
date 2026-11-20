@@ -75,6 +75,7 @@
         <MeetingRecordPanel
           v-if="currentMeeting"
           :view="currentStepKey === 'record' ? 'record' : 'speaker'"
+          :split="currentStepKey === 'record' || currentStepKey === 'speaker'"
         />
       </div>
 
@@ -210,6 +211,8 @@ const stepNavHint = computed(() => {
     case 'record':
       if (isRecording.value) return '회의를 마치면 회의 종료 버튼을 눌러 주세요. 녹음 파일로 화자 분리를 진행합니다.'
       if (isFinishing.value) return '화자 분리가 끝나면 회의록 생성 단계로 이동합니다.'
+      if (status === '001' && currentMeeting.value?.pauseYn === 'Y')
+        return '일시정지 중입니다. 이어서 녹음하거나, 회의 종료를 눌러 지금까지 녹음으로 회의록을 만드세요.'
       if (status === '002') return '녹음이 완료되었습니다. 다음 단계에서 화자 분리 결과를 확인하세요.'
       return '녹음 시작 또는 오디오 첨부로 회의를 기록합니다.'
     case 'speaker':

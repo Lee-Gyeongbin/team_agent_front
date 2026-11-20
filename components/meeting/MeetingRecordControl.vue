@@ -1,13 +1,20 @@
 <template>
   <div class="meeting2-record-control">
     <div class="meeting2-record-status-row">
-      <span
-        class="meeting2-record-status"
-        :class="statusClass"
-      >
-        <span class="meeting2-record-status-dot"></span>
-        {{ statusLabel }}
-      </span>
+      <!-- 왼쪽: 녹음 상태 + 실시간 STT 현재 모드 (OpenAI / 브라우저 음성 인식 등) -->
+      <div class="meeting2-record-status-group">
+        <span
+          class="meeting2-record-status"
+          :class="statusClass"
+        >
+          <span class="meeting2-record-status-dot"></span>
+          {{ statusLabel }}
+        </span>
+        <span class="meeting2-stt-toggle">
+          실시간 STT
+          <UiBadge :variant="sttBadge.variant">{{ sttBadge.label }}</UiBadge>
+        </span>
+      </div>
       <span class="meeting2-record-time">{{ formattedTime }}</span>
     </div>
 
@@ -23,23 +30,73 @@
         연결 중...
       </UiButton>
 
-      <!-- 회의 종료 (녹음 중) -->
-      <UiButton
-        v-else-if="isRecording"
-        variant="dark"
-        size="sm"
-        full-width
-        :disabled="isFinishing"
-        @click="emit('finish')"
-      >
-        <template #icon-left>
-          <UiIcon
-            name="circle-stop"
-            size="16"
-          />
-        </template>
-        {{ isFinishing ? '회의록 생성 중...' : '회의 종료' }}
-      </UiButton>
+      <!-- 녹음 중: 일시정지 / 회의 종료 -->
+      <template v-else-if="isRecording">
+        <UiButton
+          variant="outline"
+          size="sm"
+          class="meeting2-record-action-half"
+          :disabled="isFinishing"
+          @click="emit('pause')"
+        >
+          <template #icon-left>
+            <UiIcon
+              name="pause"
+              size="16"
+            />
+          </template>
+          일시정지
+        </UiButton>
+        <UiButton
+          variant="dark"
+          size="sm"
+          class="meeting2-record-action-half"
+          :disabled="isFinishing"
+          @click="emit('finish')"
+        >
+          <template #icon-left>
+            <UiIcon
+              name="circle-stop"
+              size="16"
+            />
+          </template>
+          {{ isFinishing ? '회의록 생성 중...' : '회의 종료' }}
+        </UiButton>
+      </template>
+
+      <!-- 일시정지: 이어서 녹음 / 회의 종료 (지금까지 녹음을 합쳐 회의록 생성) -->
+      <template v-else-if="isPaused">
+        <UiButton
+          variant="primary"
+          size="sm"
+          class="meeting2-record-action-half"
+          :disabled="isFinishing"
+          @click="emit('resume')"
+        >
+          <template #icon-left>
+            <UiIcon
+              name="play"
+              size="16"
+            />
+          </template>
+          이어서 녹음
+        </UiButton>
+        <UiButton
+          variant="dark"
+          size="sm"
+          class="meeting2-record-action-half"
+          :disabled="isFinishing"
+          @click="emit('finish')"
+        >
+          <template #icon-left>
+            <UiIcon
+              name="circle-stop"
+              size="16"
+            />
+          </template>
+          {{ isFinishing ? '회의록 생성 중...' : '회의 종료' }}
+        </UiButton>
+      </template>
 
       <!-- 비정상 종료 — 서버 백업 있음: 이어서 녹음 / 기존 음성으로 회의록 생성 -->
       <template v-else-if="isAbnormal && backupCnt > 0">
@@ -148,16 +205,20 @@
 </template>
 
 <script setup lang="ts">
-import { UiButton, UiIcon } from '@leechanyong/ispark-ui'
+import { UiBadge, UiButton, UiIcon } from '@leechanyong/ispark-ui'
 import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
+import { useSttMode } from '~/composables/meeting/useSttMode'
 
 const { currentMeeting } = useMeetingStore()
+const { sttBadge } = useSttMode()
 
 const props = defineProps<{
   isRecording: boolean
   isConnecting: boolean
   isFinishing: boolean
   isAbnormal?: boolean
+  /** 일시정지 상태 (녹음 중이 아님) — 이어서 녹음 / 회의 종료 */
+  isPaused?: boolean
   /** 서버에 백업된 녹음 구간 수 (비정상 종료 화면 버튼 분기) */
   backupCnt?: number
   elapsed?: number
@@ -165,6 +226,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   start: []
+  pause: []
   finish: []
   resume: []
   generateFromBackup: []
@@ -186,13 +248,14 @@ const formattedTime = computed(() => {
 const statusClass = computed(() => {
   if (props.isRecording) return 'is-recording'
   if (props.isConnecting) return 'is-connecting'
-  if (props.isAbnormal) return 'is-paused'
+  if (props.isPaused || props.isAbnormal) return 'is-paused'
   return 'is-idle'
 })
 
 const statusLabel = computed(() => {
   if (props.isRecording) return '녹음 중'
   if (props.isConnecting) return '연결 중'
+  if (props.isPaused) return '일시정지'
   if (props.isAbnormal) return '비정상 종료'
   return '대기 중'
 })

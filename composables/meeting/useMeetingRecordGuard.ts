@@ -112,6 +112,9 @@ const uploadFinishAudio = (meetingId: number, blob: Blob) => {
   return backgroundRequest('/api/ai/meeting/finishMeetingWithAudio.do', { method: 'POST', body: formData })
 }
 
+/** 서버에 일시정지 표시 — heartbeat 해제 + PAUSE_YN=Y (마지막 구간 백업 조각을 올린 뒤 호출) */
+const pauseOnServer = (meetingId: number) => backgroundRequest(`/api/meeting/${meetingId}/pause`, { method: 'POST' })
+
 /** 서버에 비정상 종료 표시 (녹음 중인 회의만 반영 — 로그인이 끊겼으면 실패, 3분 뒤 heartbeat 판정으로 표시됨) */
 const markAbnormalOnServer = async (meetingId: number) => {
   try {
@@ -427,6 +430,7 @@ export const useMeetingRecordGuard = () => ({
   flushBackups,
   downloadUnsentSegments,
   markAbnormalOnServer,
+  pauseOnServer,
   uploadBackupSegment,
   uploadFinishAudio,
   fetchRealtimeTokenSafe,

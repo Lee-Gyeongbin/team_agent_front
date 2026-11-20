@@ -1046,16 +1046,95 @@
   border-top: 1px solid $color-border;
 }
 
-// ---- 필터 바 ----
+// ---- 검색조건 ----
 .meeting2-filter-bar {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: $spacing-sm;
-  padding: $spacing-sm $spacing-md;
+  gap: $spacing-sm $spacing-lg;
+  padding: 12px $spacing-md;
   background: $color-surface;
   border: 1px solid $color-border;
   border-radius: $border-radius-base;
+}
+
+.meeting2-filter-group {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.meeting2-filter-label {
+  @include typo($body-medium-bold, $color-text-dark);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+// 기간 프리셋 (세그먼트 버튼)
+.meeting2-filter-period {
+  display: flex;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.meeting2-filter-period-btn {
+  height: 28px;
+  padding: 0 12px;
+  border: none;
+  border-left: 1px solid $color-border;
+  background: #fff;
+  @include typo($body-small, $color-text-secondary);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:first-child {
+    border-left: none;
+  }
+
+  &:hover {
+    color: var(--color-primary);
+  }
+
+  &.is-active {
+    background: var(--color-primary);
+    color: #fff;
+    font-weight: $font-weight-bold;
+  }
+}
+
+.meeting2-filter-input {
+  width: 200px;
+  flex: none;
+}
+
+.meeting2-filter-search {
+  margin-left: auto;
+}
+
+// ---- 건수 + 정렬 + 뷰 토글 ----
+.meeting2-result-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+}
+
+.meeting2-result-count {
+  @include typo($body-medium, $color-text-secondary);
+
+  strong {
+    color: $color-text-dark;
+    font-weight: $font-weight-bold;
+  }
+}
+
+.meeting2-result-tools {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
 }
 
 .meeting2-filter-chips {
@@ -1091,15 +1170,8 @@
   }
 }
 
-.meeting2-filter-divider {
-  width: 1px;
-  height: 20px;
-  background: $color-border;
-  flex-shrink: 0;
-}
-
 // UiSelect 래퍼 — 라이브러리 .ui-select-outer { flex: 1 } 해제 후 고정 폭
-.meeting2-filter-bar .meeting2-filter-select-wrap.ui-select-outer {
+.meeting2-result-tools .meeting2-filter-select-wrap.ui-select-outer {
   flex: none;
   width: 120px;
   flex-shrink: 0;
@@ -1151,7 +1223,6 @@
   display: flex;
   align-items: center;
   gap: 2px;
-  margin-left: auto;
 }
 
 .meeting2-view-btn {
@@ -1177,60 +1248,6 @@
     background: rgba(var(--color-primary-rgb), 0.1);
     color: var(--color-primary);
   }
-}
-
-// ---- 활성 필터 태그 ----
-.meeting2-filter-tags {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: $spacing-sm;
-  flex-wrap: wrap;
-}
-
-.meeting2-filter-tag-list {
-  display: flex;
-  align-items: center;
-  gap: $spacing-xs;
-  flex-wrap: wrap;
-}
-
-.meeting2-filter-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 26px;
-  padding: 0 4px 0 10px;
-  border: 1px solid $color-border;
-  border-radius: 20px;
-  background: #fff;
-  @include typo($body-xsmall, $color-text-dark);
-}
-
-.meeting2-filter-tag-remove {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: $color-text-muted;
-  cursor: pointer;
-  padding: 0;
-  transition: all $transition-fast;
-
-  &:hover {
-    background: $color-border-light;
-    color: $color-text-dark;
-  }
-}
-
-.meeting2-filter-count {
-  @include typo($body-small-bold, $color-text-secondary);
-  flex-shrink: 0;
-  margin-left: auto;
 }
 
 // ---- 목록 뷰 ----
@@ -1396,11 +1413,6 @@
   display: flex;
   align-items: center;
   gap: $spacing-sm;
-}
-
-.meeting2-list-search {
-  width: 220px;
-  flex-shrink: 0;
 }
 
 .meeting2-list-grid {
@@ -1981,7 +1993,7 @@
   align-items: center;
   gap: $spacing-xs;
   padding: 6px 16px;
-  @include typo($body-xsmall);
+  @include typo($body-small);
 
   &.is-info {
     color: #92400e;
@@ -1993,6 +2005,13 @@
     color: #991b1b;
     background: #fff1f0;
     border-bottom: 1px solid #fecaca;
+  }
+
+  // 실시간 STT 모드 안내 — 에러가 아닌 일반 정보 (중립 톤)
+  &.is-mode {
+    color: $color-text-secondary;
+    background: var(--color-primary-bg);
+    border-bottom: 1px solid $color-border;
   }
 
   // 안내 + 버튼 (화자 분리 중단 → 다시 시도)
@@ -2011,13 +2030,232 @@
   }
 }
 
-.meeting2-record-scroll {
+// ---- 녹음 중 안내 카드 (제목 + 항목: 아이콘 · 한 줄 요약 · 설명) ----
+.meeting2-record-guide {
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-lg;
+}
+
+.meeting2-record-guide-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  @include typo($body-small-bold, $color-text-dark);
+  font-size: 13px;
+
+  .ui-icon {
+    color: var(--color-primary);
+  }
+}
+
+.meeting2-record-guide-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid $color-border-light;
+
+  &:first-of-type {
+    padding-top: 0;
+    border-top: none;
+  }
+
+  &:last-child {
+    padding-bottom: 0;
+  }
+}
+
+.meeting2-record-guide-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: $border-radius-base;
+  flex-shrink: 0;
+
+  &.is-warn {
+    color: #d97706;
+    background: #fff4e5;
+  }
+
+  &.is-info {
+    color: var(--color-primary);
+    background: var(--color-primary-bg);
+  }
+}
+
+.meeting2-record-guide-body {
+  min-width: 0;
+}
+
+.meeting2-record-guide-head {
+  @include typo($body-small-bold, $color-text-dark);
+  font-size: 13px;
+}
+
+.meeting2-record-guide-sub {
+  margin-top: 2px;
+  @include typo($body-small, $color-text-secondary);
+  line-height: 1.6;
+
+  strong {
+    color: $color-text-dark;
+    font-weight: $font-weight-bold;
+  }
+}
+
+// ---- 녹음 패널 본문 ----
+// 기본(회의록 생성 단계 좁은 칸): 위아래 — 안내 → 컨트롤·툴바 → STT 목록 → 화자 목록
+.meeting2-record-body {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-  padding: 8px 14px 8px 16px;
+
+  .meeting2-record-side {
+    display: contents;
+  }
+
+  .meeting2-record-side-notices {
+    order: 0;
+  }
+
+  .meeting2-record-fixed {
+    order: 1;
+  }
+
+  .meeting2-record-main {
+    order: 2;
+    padding: 8px 14px 0 16px;
+  }
+
+  .meeting2-record-guide {
+    order: 4;
+  }
+
+  .meeting2-record-speakers {
+    order: 3;
+    flex-shrink: 0;
+    padding: 0 14px 8px 16px;
+  }
+}
+
+.meeting2-record-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+// 분할(녹음·화자 분리 단계): 좌 STT 목록 / 우 컨트롤·안내·툴바·화자
+.meeting2-record-body.is-split {
+  flex-direction: row;
+
+  // 위아래 배치용 order 를 덮어써서 좌(목록) → 우(사이드) 순서 고정
+  // 좌우 경계선을 위 진행바의 "3. 화자 분리" 오른쪽 끝에 맞춤 (진행바와 패널의 좌우 폭이 같다는 전제)
+  // 진행바(.meeting2-stepper): 좌우 padding 16 · 항목 5개 flex:1 · 화살표 4개(28) · 토글(28) · 간격 9개(4)
+  //   항목 폭 w = (B - 32 - 4*28 - 28 - 9*4) / 5 = (B - 208) / 5   (B = 패널 안쪽 폭 = 이 영역 폭)
+  //   3단계 끝 = 16 + 3w + 2*28 + 4*4 = 0.6B - 36.8px
+  // 진행바 padding · 화살표 · 토글 크기를 바꾸면 여기 값도 같이 바꿔야 함
+  .meeting2-record-main {
+    order: 0;
+    flex: 0 0 calc(60% - 36.8px);
+    padding: 10px 16px;
+    border-right: 1px solid $color-border;
+  }
+
+  .meeting2-record-side {
+    order: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+    padding: 12px 16px;
+    overflow-y: auto;
+    background: $color-surface;
+    @include custom-scrollbar;
+  }
+
+  .meeting2-record-side-notices {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+
+    &:empty {
+      display: none;
+    }
+  }
+
+  // 안내 배너 — 전체 폭 띠 → 카드형 (12px 프리셋은 작고 14px 는 커서 13px)
+  .meeting2-record-notice {
+    align-items: flex-start;
+    padding: 8px 10px;
+    @include typo($body-small);
+    font-size: 13px;
+    border-radius: $border-radius-base;
+
+    &.is-info {
+      border: 1px solid #fde68a;
+    }
+
+    &.is-warning {
+      border: 1px solid #fecaca;
+    }
+
+    &.is-mode {
+      border: 1px solid $color-border;
+    }
+
+    // 아이콘을 첫 줄에 맞춤 (여러 줄 안내)
+    > .ui-icon,
+    > svg {
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+  }
+
+  .meeting2-record-fixed,
+  .meeting2-record-speakers {
+    padding: 12px;
+    background: #fff;
+    border: 1px solid $color-border;
+    border-radius: $border-radius-lg;
+  }
+
+  .meeting2-record-fixed .meeting2-waveform {
+    padding: 0;
+  }
+
+  .meeting2-record-speakers .meeting2-speaker-list {
+    padding-top: 0;
+    border-top: none;
+  }
+
+  // 1024px 미만 — 위아래 (컨트롤 먼저)
+  @include mobile {
+    flex-direction: column;
+    overflow-y: auto;
+
+    .meeting2-record-main {
+      flex: 1 1 auto;
+      min-height: 320px;
+      border-right: none;
+    }
+
+    .meeting2-record-side {
+      order: -1;
+      flex: none;
+      width: auto;
+      overflow-y: visible;
+    }
+  }
 }
 
 // ---- 좌측: ?�음 컨트�?----
@@ -2035,6 +2273,14 @@
   align-items: center;
   justify-content: space-between;
   gap: $spacing-sm;
+}
+
+// 녹음 상태 바로 옆에 실시간 STT 모드
+.meeting2-record-status-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
 }
 
 .meeting2-record-status {
@@ -2092,6 +2338,11 @@
   display: flex;
   align-items: center;
   gap: $spacing-xs;
+
+  // 일시정지 / 회의 종료 · 이어서 녹음 / 회의 종료 — 두 버튼 같은 폭
+  .meeting2-record-action-half {
+    flex: 1;
+  }
 }
 
 // ---- 좌측: ?�형 (?��?) ----
@@ -2146,8 +2397,23 @@
   display: inline-flex;
   align-items: center;
   gap: $spacing-xs;
+  flex-shrink: 0;
+  white-space: nowrap; // "실시간 STT" 두 줄로 떨어지지 않게
   @include typo($body-small);
   color: $color-text-muted;
+}
+
+// 폭이 모자라면 라벨은 한 줄 유지, 버튼 묶음이 다음 줄로 (오른쪽 정렬)
+.meeting2-stt-toolbar {
+  flex-wrap: wrap;
+}
+
+.meeting2-stt-toolbar-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-left: auto;
 }
 
 // ---- 좌측: STT 발화 리스??----
@@ -2309,6 +2575,99 @@
   @include typo($body-small, $color-text-dark);
   word-break: break-word;
   white-space: pre-wrap;
+}
+
+// ---- 실시간 STT 타임라인 (녹음 중, 화자 분리 전) ----
+// 세로선은 항목마다 그려 다음 항목까지 이어 붙이고(목록 gap 6px 만큼 연장), 점은 시각 줄에 맞춤
+.meeting2-stt-item.is-timeline {
+  position: relative;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 8px 4px 28px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: 0;
+    bottom: -6px;
+    width: 2px;
+    background: $color-border-light;
+  }
+
+  &:first-child::before {
+    top: 10px;
+  }
+
+  &:last-child::before {
+    bottom: auto;
+    height: 10px;
+  }
+
+  &:only-child::before {
+    display: none;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 6px;
+    width: 10px;
+    height: 10px;
+    border: 2px solid $color-border;
+    border-radius: 50%;
+    background: #fff;
+    box-sizing: border-box;
+  }
+
+  .meeting2-stt-item-time {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .meeting2-stt-item-text {
+    @include typo($body-medium);
+    color: $color-text-dark;
+  }
+
+  // 인식 중(확정 전) 문장 — 채워진 점 + 흐린 글자 + 점 애니메이션
+  &.is-live {
+    &::after {
+      border-color: var(--color-primary);
+      background: var(--color-primary);
+    }
+
+    .meeting2-stt-item-time {
+      color: var(--color-primary);
+    }
+
+    .meeting2-stt-item-text {
+      color: $color-text-secondary;
+    }
+  }
+}
+
+.meeting2-stt-live-dots {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: 4px;
+  vertical-align: middle;
+
+  i {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    animation: meeting2-pulse 1.2s ease-in-out infinite;
+
+    &:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    &:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+  }
 }
 
 // ---- 좌측: ?�자 목록 ----
@@ -3760,7 +4119,9 @@
   border-radius: $border-radius-base;
   background: $color-background;
   cursor: pointer;
-  transition: background $transition-fast, border-color $transition-fast;
+  transition:
+    background $transition-fast,
+    border-color $transition-fast;
 
   &:hover {
     background: var(--color-primary-bg);
@@ -4099,21 +4460,6 @@
   color: $color-error;
 }
 
-.meeting-enroll-progress {
-  width: 240px;
-  height: 4px;
-  background: $color-border;
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.meeting-enroll-progress-bar {
-  height: 100%;
-  background: var(--color-primary);
-  border-radius: 2px;
-  transition: width 1s linear;
-}
-
 // ---- 실시간 음량 바 ----
 .meeting-enroll-volume {
   display: flex;
@@ -4127,7 +4473,9 @@
   height: 8px;
   border-radius: 1px;
   background: $color-border;
-  transition: height 80ms ease-out, background 80ms ease-out;
+  transition:
+    height 80ms ease-out,
+    background 80ms ease-out;
 
   &.is-active {
     background: var(--color-primary);
@@ -4221,36 +4569,6 @@
 .meeting-enroll-done-text {
   @include typo($body-small);
   color: #52c41a;
-}
-
-// ---- 전체 완료 ----
-.meeting-enroll-complete {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: $spacing-md;
-}
-
-.meeting-enroll-complete-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: rgba(82, 196, 26, 0.1);
-  color: #52c41a;
-}
-
-.meeting-enroll-complete-title {
-  @include typo($body-large-bold);
-  color: $color-text-heading;
-  text-align: center;
-}
-
-.meeting-enroll-complete-desc {
-  @include typo($body-small);
-  color: $color-text-muted;
 }
 
 // ---- 하단 푸터 ----

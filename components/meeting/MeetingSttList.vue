@@ -52,28 +52,57 @@
 
     <div
       v-else
+      ref="sttListRef"
       class="meeting2-stt-list"
+      @scroll="onListScroll"
     >
       <div
         v-for="item in filteredSttList"
         :id="`stt-item-${item.id}`"
         :key="item.id"
         class="meeting2-stt-item"
-        :class="{ 'is-focused': focusedSttItemId === item.id }"
+        :class="{
+          'is-focused': focusedSttItemId === item.id,
+          'is-timeline': isRealtimeItem(item.speakerId),
+          'is-live': item.isLive,
+        }"
       >
-        <span
-          class="meeting2-stt-item-avatar"
-          :class="`meeting2-speaker-color-${getSpeakerColor(item.speakerId)}`"
-        >
-          {{ getSpeakerAvatar(item.speakerId, item.speakerName) }}
-        </span>
-        <div class="meeting2-stt-item-body">
-          <div class="meeting2-stt-item-meta">
-            <span class="meeting2-stt-item-name">{{ item.speakerName }}</span>
-            <span class="meeting2-stt-item-time">{{ item.time }}</span>
+        <!-- 실시간 STT(녹음 중): 화자 분리 전이라 화자 없이 타임라인(시각 + 발화) -->
+        <template v-if="isRealtimeItem(item.speakerId)">
+          <span class="meeting2-stt-item-time">
+            {{ item.time }}
+            <template v-if="item.isLive">· 인식 중</template>
+          </span>
+          <p class="meeting2-stt-item-text">
+            {{ item.text }}
+            <span
+              v-if="item.isLive"
+              class="meeting2-stt-live-dots"
+              aria-hidden="true"
+            >
+              <i />
+              <i />
+              <i />
+            </span>
+          </p>
+        </template>
+
+        <!-- 화자 분리 결과: 아바타 + 화자명 + 시각 + 발화 -->
+        <template v-else>
+          <span
+            class="meeting2-stt-item-avatar"
+            :class="`meeting2-speaker-color-${getSpeakerColor(item.speakerId)}`"
+          >
+            {{ getSpeakerAvatar(item.speakerId, item.speakerName) }}
+          </span>
+          <div class="meeting2-stt-item-body">
+            <div class="meeting2-stt-item-meta">
+              <span class="meeting2-stt-item-name">{{ item.speakerName }}</span>
+              <span class="meeting2-stt-item-time">{{ item.time }}</span>
+            </div>
+            <p class="meeting2-stt-item-text">{{ item.text }}</p>
           </div>
-          <p class="meeting2-stt-item-text">{{ item.text }}</p>
-        </div>
+        </template>
       </div>
     </div>
   </div>
@@ -81,12 +110,55 @@
 
 <script setup lang="ts">
 import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
+import { useRealtimeTranscription } from '~/composables/meeting/useRealtimeTranscription'
 import { computeSpeakerAvatarMap } from '~/utils/meeting/speakerAvatarUtil'
 
 const { currentMeeting, focusedSttItemId, isSearchOpen, searchType, searchKeyword, filteredSttList } = useMeetingStore()
 
 const speakers = computed(() => currentMeeting.value?.speakers ?? [])
 const avatarMap = computed(() => computeSpeakerAvatarMap(speakers.value))
+
+// ── 녹음 중 자동 스크롤 ─────────────────────────────────────────────
+// 맨 아래 근처를 보고 있을 때만 새 발화를 따라 내려감 (위로 올려 읽는 중이면 그대로 둠)
+const { isRecording } = useRealtimeTranscription()
+const sttListRef = ref<HTMLDivElement | null>(null)
+const isNearBottom = ref(true)
+const NEAR_BOTTOM_PX = 80
+
+const onListScroll = () => {
+  const el = sttListRef.value
+  if (!el) return
+  isNearBottom.value = el.scrollHeight - el.scrollTop - el.clientHeight <= NEAR_BOTTOM_PX
+}
+
+const scrollToBottom = () => {
+  const el = sttListRef.value
+  if (el) el.scrollTop = el.scrollHeight
+}
+
+// 새 발화 추가 + 마지막 발화 텍스트가 이어 붙는 경우(중간 결과)까지 감지
+watch(
+  () => {
+    const list = filteredSttList.value
+    return `${list.length}:${list[list.length - 1]?.text.length ?? 0}`
+  },
+  async () => {
+    if (!isRecording.value || !isNearBottom.value) return
+    await nextTick()
+    scrollToBottom()
+  },
+)
+
+// 녹음 시작 시 맨 아래부터 따라가도록 초기화
+watch(isRecording, async (recording) => {
+  if (!recording) return
+  isNearBottom.value = true
+  await nextTick()
+  scrollToBottom()
+})
+
+/** 녹음 중 실시간 STT 항목 (MeetingRecordPanel 에서 speakerId 'realtime' 으로 만듦) */
+const isRealtimeItem = (speakerId: string) => speakerId === 'realtime'
 
 const getSpeakerColor = (speakerId: string) => {
   const speaker = speakers.value.find((s) => s.id === speakerId)
