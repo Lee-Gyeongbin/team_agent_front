@@ -4,7 +4,6 @@
       <p class="notice-description">문의사항을 확인하고 답변·처리상태를 관리합니다.</p>
       <div class="right-grp flex items-center">
         <UiDropdownMenu
-          v-if="hasFunc"
           :items="excelMenuItems"
           align="start"
           @select="onInqManageExcelSelect"
