@@ -6,7 +6,6 @@
         <p class="com-setting-section-title is-inline">권한 그룹 목록</p>
         <div class="flex items-center gap-2">
           <UiDropdownMenu
-            v-if="hasFunc"
             :items="excelMenuItems"
             align="end"
             @select="onExcelMenuSelect"
@@ -119,6 +118,7 @@
                 v-model="roleForm.roleName"
                 placeholder="권한명을 입력하세요"
                 size="sm"
+                :disabled="!hasFunc"
               />
             </div>
             <div class="com-setting-field-row">
@@ -127,6 +127,7 @@
                 v-model="roleForm.description"
                 placeholder="권한 그룹 설명을 입력하세요"
                 size="sm"
+                :disabled="!hasFunc"
               />
             </div>
             <div class="com-setting-field-row">
@@ -135,6 +136,7 @@
                 :model-value="roleForm.useYn"
                 :options="useYnOptions"
                 size="sm"
+                :disabled="!hasFunc"
                 @update:model-value="(value) => handleChangeRoleUseYn(String(value))"
               />
             </div>
@@ -142,7 +144,7 @@
               <label class="com-setting-label">기본 적용</label>
               <UiCheckbox
                 :model-value="roleForm.defaultYn === 'Y'"
-                :disabled="roleForm.useYn === 'N'"
+                :disabled="!hasFunc || roleForm.useYn === 'N'"
                 label="사용자 생성 시 기본 권한으로 적용"
                 @update:model-value="(checked) => (roleForm.defaultYn = checked ? 'Y' : 'N')"
               />
@@ -178,10 +180,10 @@
               <strong>권한 설명</strong>
             </button>
             <div class="role-legend-body">
-              <span><b>조회</b> — 메뉴 접근과 목록·상세 화면 조회</span>
+              <span><b>조회</b> — 메뉴 접근, 목록·상세 화면 조회, 엑셀 다운로드</span>
               <span
-                ><b>등록·수정·삭제·엑셀</b> — 조회 외 모든 기능을 한 번에 허용 (데이터 등록·수정·삭제, 엑셀
-                다운로드·업로드)</span
+                ><b>등록·수정·삭제·업로드</b> — 조회 외 모든 기능을 한 번에 허용 (데이터 등록·수정·삭제, 엑셀
+                업로드)</span
               >
               <span class="role-legend-note">※ 데이터 범위(본인 데이터만 / 전체)는 메뉴별 업무 규칙에 따릅니다.</span>
             </div>
@@ -213,6 +215,7 @@
                     :model-value="isAllChecked(perm.key)"
                     :indeterminate="isAllIndeterminate(perm.key)"
                     :label="perm.label"
+                    :disabled="!hasFunc"
                     @update:model-value="(checked) => toggleAllPerm(perm.key, checked)"
                   />
                 </span>
@@ -250,6 +253,7 @@
                   :indeterminate="isMenuIndeterminate((row as RoleMenuRow).menuId, perm.key)"
                   label-hidden
                   :label="`${(row as RoleMenuRow).menuName} ${perm.label}`"
+                  :disabled="!hasFunc"
                   @update:model-value="(checked) => toggleMenuPerm((row as RoleMenuRow).menuId, perm.key, checked)"
                 />
               </template>
@@ -321,10 +325,11 @@ const {
 
 const roleTableData = computed(() => roleList.value.map((role, index) => ({ ...role, no: index + 1 })))
 
-const excelMenuItems = [
+/** 다운로드는 조회 권한, 업로드는 기능 권한 */
+const excelMenuItems = computed(() => [
   { label: '다운로드', value: 'download', icon: 'icon-download' },
-  { label: '업로드', value: 'upload', icon: 'icon-upload' },
-]
+  ...(hasFunc.value ? [{ label: '업로드', value: 'upload', icon: 'icon-upload' }] : []),
+])
 
 const onExcelMenuSelect = (value: string): void => {
   if (value === 'download') handleDownloadExcel('role')

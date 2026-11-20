@@ -23,16 +23,16 @@ export interface RoleMenuItem {
   funcYn: string
 }
 
-/** 메뉴 권한 항목 키 — 조회(readYn) / 기능(funcYn: 등록·수정·삭제·엑셀) */
+/** 메뉴 권한 항목 키 — 조회(readYn) / 기능(funcYn: 등록·수정·삭제·엑셀 업로드) */
 export type RolePermKey = 'readYn' | 'funcYn'
 
 /** 메뉴 권한 항목 정의 */
 export const rolePermItems: { key: RolePermKey; label: string; tip: string }[] = [
-  { key: 'readYn', label: '조회', tip: '메뉴 접근과 목록·상세 화면을 볼 수 있습니다.' },
+  { key: 'readYn', label: '조회', tip: '메뉴 접근, 목록·상세 화면 조회, 엑셀 다운로드를 사용할 수 있습니다.' },
   {
     key: 'funcYn',
-    label: '등록·수정·삭제·엑셀',
-    tip: '조회 외 모든 기능(데이터 등록·수정·삭제, 엑셀 다운로드·업로드)을 사용할 수 있습니다.',
+    label: '등록·수정·삭제·업로드',
+    tip: '조회 외 모든 기능(데이터 등록·수정·삭제, 엑셀 업로드)을 사용할 수 있습니다.',
   },
 ]
 
@@ -110,5 +110,5 @@ export const roleColumns: TableColumn[] = [
 export const roleMenuColumns: TableColumn[] = [
   { key: 'menuName', label: '메뉴명', align: 'left', headerAlign: 'left' },
   { key: 'readYn', label: '조회', width: '190px', align: 'center', headerAlign: 'center' },
-  { key: 'funcYn', label: '등록·수정·삭제·엑셀', width: '190px', align: 'center', headerAlign: 'center' },
+  { key: 'funcYn', label: '등록·수정·삭제·업로드', width: '190px', align: 'center', headerAlign: 'center' },
 ]

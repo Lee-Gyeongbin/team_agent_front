@@ -12,7 +12,7 @@
           @update:model-value="(value) => handleChangeUserRole(String(value))"
         />
       </div>
-      <label>성명</label>
+      <label>검색</label>
       <div class="ur-filter-name">
         <UiInput
           v-model="nameKeyword"
@@ -25,7 +25,6 @@
       </div>
       <div class="ur-right">
         <UiDropdownMenu
-          v-if="hasFunc"
           :items="excelMenuItems"
           align="end"
           @select="onExcelMenuSelect"
@@ -46,19 +45,6 @@
           </template>
         </UiDropdownMenu>
         <UiButton
-          variant="outline"
-          size="md"
-          @click="handleSearchUser"
-        >
-          <template #icon-left>
-            <UiIcon
-              name="search"
-              size="16"
-            />
-          </template>
-          검색
-        </UiButton>
-        <UiButton
           v-if="hasFunc"
           variant="primary"
           size="md"
@@ -71,27 +57,11 @@
 
     <div class="ur-panels">
       <!-- 인사조직 -->
-      <div class="codes-left ur-p">
-        <div class="codes-left-header flex items-center">
-          <p class="com-setting-section-title is-inline">인사조직</p>
-        </div>
-        <div class="ur-org-tree ur-scroll">
-          <div
-            v-if="orgTree.length === 0"
-            class="ur-state-box"
-          >
-            <p class="ur-state-text">조직 정보가 없습니다.</p>
-          </div>
-          <UserSelectOrgTreeNode
-            v-for="node in orgTree"
-            :key="node.orgId"
-            :node="node"
-            :selected-org-id="selectedOrgId"
-            @select="handleSelectOrg"
-            @toggle="handleToggleOrgExpand"
-          />
-        </div>
-      </div>
+      <OrgTreePanel
+        class="ur-p"
+        :selected-org-id="selectedOrgId"
+        @select="handleSelectOrg"
+      />
 
       <!-- 직원목록 -->
       <div class="codes-left ur-p">
@@ -121,7 +91,7 @@
           <li
             v-for="user in visibleOrgUserList"
             :key="user.userId"
-            class="ur-user-item"
+            class="ur-user-item org-manage-tree-item org-manage-tree-row flex items-center"
             :class="{
               'is-assigned': isUserSelected(user.userId),
               'is-selected': highlightLeftIds.includes(user.userId),
@@ -162,6 +132,7 @@
           size="md"
           icon-only
           aria-label="선택직원에 추가"
+          :disabled="!hasFunc"
           @click="addSelectedUsers()"
         >
           <template #icon-left>
@@ -177,6 +148,7 @@
           size="md"
           icon-only
           aria-label="선택직원에서 제외"
+          :disabled="!hasFunc"
           @click="removeSelectedUsers()"
         >
           <template #icon-left>
@@ -195,7 +167,7 @@
             선택직원 <span class="ur-count">{{ selectedUserList.length }}</span>
           </p>
           <button
-            v-if="selectedUserList.length > 0"
+            v-if="hasFunc && selectedUserList.length > 0"
             type="button"
             class="ur-link-btn is-danger"
             @click="clearSelectedUsers"
@@ -210,7 +182,7 @@
           <li
             v-for="user in selectedUserList"
             :key="user.userId"
-            class="ur-user-item"
+            class="ur-user-item org-manage-tree-item org-manage-tree-row flex items-center"
             :class="{ 'is-selected': highlightRightIds.includes(user.userId) }"
             @click="toggleHighlight('right', user.userId)"
             @dblclick="removeSelectedUsers([user.userId])"
@@ -221,6 +193,7 @@
               <span class="ur-user-email">{{ user.email }}</span>
             </div>
             <button
+              v-if="hasFunc"
               type="button"
               class="ur-remove-btn"
               aria-label="선택 해제"
@@ -243,7 +216,7 @@
 
 <script setup lang="ts">
 import { UiButton, UiDropdownMenu, UiIcon, UiInput, UiSelect } from '@leechanyong/ispark-ui'
-import UserSelectOrgTreeNode from '~/components/common/UserSelectOrgTreeNode.vue'
+import OrgTreePanel from '~/components/common/OrgTreePanel.vue'
 
 const emit = defineEmits<{
   'open-excel-upload': []
@@ -252,7 +225,6 @@ const emit = defineEmits<{
 const {
   userRoleId,
   activeRoleOptions,
-  orgTree,
   selectedOrgId,
   nameKeyword,
   visibleOrgUserList,
@@ -262,7 +234,6 @@ const {
   isUserLoading,
   handleChangeUserRole,
   handleSelectOrg,
-  handleToggleOrgExpand,
   handleSearchUser,
   isUserSelected,
   toggleHighlight,
@@ -275,10 +246,11 @@ const {
   hasFunc,
 } = useRoleManageStore()
 
-const excelMenuItems = [
+/** 다운로드는 조회 권한, 업로드는 기능 권한 */
+const excelMenuItems = computed(() => [
   { label: '다운로드', value: 'download', icon: 'icon-download' },
-  { label: '업로드', value: 'upload', icon: 'icon-upload' },
-]
+  ...(hasFunc.value ? [{ label: '업로드', value: 'upload', icon: 'icon-upload' }] : []),
+])
 
 const onExcelMenuSelect = (value: string): void => {
   if (value === 'download') handleDownloadExcel('user')

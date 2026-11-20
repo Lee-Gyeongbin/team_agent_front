@@ -1,5 +1,4 @@
 import { computed, ref } from 'vue'
-import type { OrgItem, OrgTreeItem } from '~/types/org-manage'
 import type {
   RoleExcelKind,
   RoleFormData,
@@ -13,7 +12,6 @@ import type {
 } from '~/types/role-manage'
 import { createDefaultRoleForm } from '~/types/role-manage'
 import { useRoleManageApi } from '~/composables/role-manage/useRoleManageApi'
-import { useUserSelectApi } from '~/composables/com/useUserSelectApi'
 import { openToast } from '~/composables/useToast'
 
 const {
@@ -27,7 +25,6 @@ const {
   fetchDownloadExcel,
   fetchUploadExcel,
 } = useRoleManageApi()
-const { fetchOrgList } = useUserSelectApi()
 
 type RolePermState = Record<string, Record<RolePermKey, boolean>>
 
@@ -63,33 +60,6 @@ const filterMenuTree = (nodes: RoleMenuTreeNode[], keyword: string): RoleMenuTre
     })
     .filter((node): node is RoleMenuTreeNode => node !== null)
 
-/** 조직 플랫 목록 → 트리 */
-const buildOrgTree = (items: OrgItem[]): OrgTreeItem[] => {
-  const idSet = new Set(items.map((item) => item.orgId))
-  const nodeMap = new Map<string, OrgTreeItem>()
-  items.forEach((item) => nodeMap.set(item.orgId, { ...item, children: [], expanded: true }))
-
-  const roots: OrgTreeItem[] = []
-  items.forEach((item) => {
-    const node = nodeMap.get(item.orgId)
-    if (!node) return
-    const parentId = String(item.parentOrgId ?? '').trim()
-    const parent = parentId && idSet.has(parentId) ? nodeMap.get(parentId) : undefined
-    if (parent) (parent.children ??= []).push(node)
-    else roots.push(node)
-  })
-  return roots
-}
-
-const findOrgNode = (nodes: OrgTreeItem[], orgId: string): OrgTreeItem | null => {
-  for (const node of nodes) {
-    if (node.orgId === orgId) return node
-    const found = findOrgNode(node.children ?? [], orgId)
-    if (found) return found
-  }
-  return null
-}
-
 const errorMessageOf = (error: unknown, fallback: string): string => (error instanceof Error ? error.message : fallback)
 
 // ── 공통 ──
@@ -111,7 +81,6 @@ const isLegendOpen = ref(true)
 
 // ── 사용자 지정 탭 ──
 const userRoleId = ref('')
-const orgTree = ref<OrgTreeItem[]>([])
 const selectedOrgId = ref<string | null>(null)
 const orgUserList = ref<RoleUserItem[]>([])
 const appliedNameKeyword = ref('')
@@ -124,7 +93,7 @@ const isUserLoading = ref(false)
 
 export const useRoleManageStore = () => {
   const { canFunc } = usePermission()
-  /** 권한관리 메뉴의 기능 권한(등록·수정·삭제·엑셀) */
+  /** 권한관리 메뉴의 기능 권한(등록·수정·삭제·엑셀 업로드) */
   const hasFunc = computed(() => canFunc('/role-manage'))
 
   // ==============================
@@ -211,6 +180,7 @@ export const useRoleManageStore = () => {
   }
 
   const toggleMenuPerm = (menuId: string, key: RolePermKey, checked: boolean) => {
+    if (!hasFunc.value) return
     const node = findMenuNode(menuId)
     if (!node) return
     getLeaves(node).forEach((leaf) => applyPerm(leaf.menuId, key, checked))
@@ -224,6 +194,7 @@ export const useRoleManageStore = () => {
     return checkedCount > 0 && checkedCount < allLeaves.value.length
   }
   const toggleAllPerm = (key: RolePermKey, checked: boolean) => {
+    if (!hasFunc.value) return
     allLeaves.value.forEach((leaf) => applyPerm(leaf.menuId, key, checked))
   }
 
@@ -325,7 +296,7 @@ export const useRoleManageStore = () => {
     if (!role) return
     const ok = await openConfirm({
       title: '권한 그룹 삭제',
-      message: `'${role.roleName}' 권한 그룹을 삭제하시겠습니까?\n지정된 사용자는 기본 권한 그룹으로 이동합니다.`,
+      message: `'${role.roleName}' 권한 그룹을 삭제하시겠습니까?\n다른 권한 그룹이 없는 사용자는 기본 권한 그룹으로 이동합니다.`,
       confirmText: '삭제',
     })
     if (!ok) return
@@ -364,8 +335,6 @@ export const useRoleManageStore = () => {
   const handleSelectOrg = async (orgId: string) => {
     selectedOrgId.value = orgId
     highlightLeftIds.value = []
-    const node = findOrgNode(orgTree.value, orgId)
-    if (!node) return
     isUserLoading.value = true
     try {
       orgUserList.value = await fetchOrgUserList(orgId)
@@ -377,22 +346,9 @@ export const useRoleManageStore = () => {
     }
   }
 
-  const handleToggleOrgExpand = (orgId: string) => {
-    const node = findOrgNode(orgTree.value, orgId)
-    if (node) node.expanded = !(node.expanded ?? true)
-  }
-
-  /** 사용자 지정 탭 진입 — 권한 그룹·조직 목록을 불러오고 첫 그룹의 사용자를 보여준다 */
+  /** 사용자 지정 탭 진입 — 권한 그룹을 불러오고 첫 그룹의 사용자를 보여준다 (조직도는 OrgTreePanel 이 불러온다) */
   const handleInitUserTab = async () => {
     if (roleList.value.length === 0) await handleFetchRoleList()
-    if (orgTree.value.length === 0) {
-      try {
-        orgTree.value = buildOrgTree(await fetchOrgList())
-      } catch (error) {
-        openToast({ message: errorMessageOf(error, '조직 목록 조회에 실패했습니다.'), type: 'error' })
-      }
-    }
-    if (!selectedOrgId.value && orgTree.value[0]) await handleSelectOrg(orgTree.value[0].orgId)
     const roleId = activeRoleOptions.value.some((option) => option.value === userRoleId.value)
       ? userRoleId.value
       : (activeRoleOptions.value[0]?.value ?? '')
@@ -428,12 +384,14 @@ export const useRoleManageStore = () => {
 
   /** 선택한(또는 지정한) 직원을 선택직원 목록에 추가 */
   const addSelectedUsers = (userIds: string[] = highlightLeftIds.value) => {
+    if (!hasFunc.value) return
     const addList = orgUserList.value.filter((user) => userIds.includes(user.userId) && !isUserSelected(user.userId))
     selectedUserList.value = [...selectedUserList.value, ...addList]
     highlightLeftIds.value = []
   }
 
   const removeSelectedUsers = (userIds: string[] = highlightRightIds.value) => {
+    if (!hasFunc.value) return
     selectedUserList.value = selectedUserList.value.filter((user) => !userIds.includes(user.userId))
     highlightRightIds.value = []
   }
@@ -529,7 +487,6 @@ export const useRoleManageStore = () => {
     handleDeleteRole,
     userRoleId,
     activeRoleOptions,
-    orgTree,
     selectedOrgId,
     nameKeyword,
     visibleOrgUserList,
@@ -541,7 +498,6 @@ export const useRoleManageStore = () => {
     handleInitUserTab,
     handleChangeUserRole,
     handleSelectOrg,
-    handleToggleOrgExpand,
     handleSearchUser,
     isUserSelected,
     toggleHighlight,
