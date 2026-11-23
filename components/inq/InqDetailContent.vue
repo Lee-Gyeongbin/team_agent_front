@@ -45,10 +45,12 @@
       </p>
 
       <div class="notice-detail-body">
-        <UiMarkdownEditor
-          :model-value="inq.content ?? ''"
-          :editable="false"
+        <!-- eslint-disable vue/no-v-html — sanitizeMyDocPreviewHtml(DOMPurify) 적용 -->
+        <div
+          class="inq-rich"
+          v-html="contentHtml"
         />
+        <!-- eslint-enable vue/no-v-html -->
       </div>
 
       <ul
@@ -62,33 +64,72 @@
           <button
             type="button"
             class="inq-file-btn"
-            @click="$emit('download-file', file)"
+            @click="previewFile = file"
           >
             {{ file.fileNm }}
           </button>
           <span class="inq-file-size">{{ formatFileSize(file.fileSize) }}</span>
+          <button
+            type="button"
+            class="inq-file-download"
+            title="다운로드"
+            aria-label="다운로드"
+            @click="$emit('download-file', file)"
+          >
+            <UiIcon
+              name="download"
+              size="16"
+            />
+          </button>
         </li>
       </ul>
     </template>
+
+    <ChatAttachmentPreviewModal
+      :is-open="Boolean(previewFile)"
+      :file-name="previewFile?.fileNm ?? ''"
+      mime-type=""
+      :fetch-preview="fetchPreviewFile"
+      @close="previewFile = null"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { UiBadge, UiMarkdownEditor } from '@leechanyong/ispark-ui'
-import type { InqFile, InqItem } from '~/types/inq'
+import { UiBadge, UiIcon } from '@leechanyong/ispark-ui'
+import ChatAttachmentPreviewModal from '~/components/chat/ChatAttachmentPreviewModal.vue'
+import type { InqFile, InqFilePreviewResponse, InqItem } from '~/types/inq'
 import { formatFileSize } from '~/utils/global/byteUtil'
 import { getInqStatusVariant, toInqDateOnly } from '~/utils/inq/inqUtil'
+import { sanitizeMyDocPreviewHtml } from '~/utils/myDocuments/myDocPreviewUtil'
 
-defineProps<{
+const props = defineProps<{
   inq: InqItem
   files: InqFile[]
   /** 현재 문의 처리상태의 배지 구분값 — 배지 색 */
   statusFlag: string | null
   /** 비밀글이라 본문을 볼 수 없는 상태 */
   isMasked?: boolean
+  /** 첨부파일 미리보기 URL 발급 — 사용자·관리자 화면의 API가 달라 부모에서 받는다 */
+  fetchPreview: (inqFileId: string) => Promise<InqFilePreviewResponse>
 }>()
 
 defineEmits<{
   'download-file': [file: InqFile]
 }>()
+
+const contentHtml = computed(() => sanitizeMyDocPreviewHtml(props.inq.content))
+
+/** 미리보기 중인 첨부파일 — 다른 문의로 바뀌면 닫는다 */
+const previewFile = ref<InqFile | null>(null)
+const fetchPreviewFile = () => {
+  if (!previewFile.value) throw new Error('첨부파일을 찾을 수 없습니다.')
+  return props.fetchPreview(previewFile.value.inqFileId)
+}
+watch(
+  () => props.inq.inqId,
+  () => {
+    previewFile.value = null
+  },
+)
 </script>

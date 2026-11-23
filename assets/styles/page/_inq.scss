@@ -1,5 +1,6 @@
 @use '../utils/variables' as *;
 @use '../utils/mixins' as *;
+@use '../utils/doc-content' as *;
 
 // 목록 검색 조건 — select 좌측 설명 라벨
 .inq-filter-grp {
@@ -35,6 +36,27 @@
   }
 }
 
+// 목록이 비었을 때 — 패널이 남은 높이를 모두 쓰고 빈 상태 안내를 가로·세로 중앙에 둔다 (문의하기·문의하기 관리 공통)
+.inq-index,
+.inq-manage-index {
+  .notice-list-panel:has(.ui-empty) {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .notice-content:has(> .ui-empty) {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+
+    > .ui-empty {
+      flex: 1;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+}
+
 // 문의하기(`pages/inq`) — 목록은 notice 스타일을 재사용하고 상세·등록 패널만 추가
 // 상세 패널의 본문·첨부·답변 스타일은 문의하기 관리(`.inq-manage-detail-panel`)도 함께 쓴다
 // 등록·수정 드로어 — 내용 영역이 남은 높이를 모두 채우고, 길어지면 에디터 내부에서 스크롤
@@ -54,31 +76,13 @@
     display: flex;
     flex-direction: column;
 
-    .ui-markdown-editor {
+    // 회의록 에디터 레이아웃(.meeting2-editor*)을 쓰므로 박스(테두리·둥글기)만 지정
+    .inq-rich-editor {
       flex: 1;
       min-height: 0;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    .ui-markdown-editor__content {
-      flex: 1;
-      min-height: 0;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-
-      > *,
-      .tiptap {
-        flex: 1 1 auto;
-        display: flex;
-        flex-direction: column;
-      }
-
-      .tiptap {
-        min-height: 100%;
-      }
+      border: 1px solid $color-border;
+      border-radius: $border-radius-base;
+      background: #fff;
     }
   }
 
@@ -171,6 +175,21 @@
     @include typo($body-medium, $color-text-secondary);
   }
 
+  .inq-file-download {
+    display: inline-flex;
+    align-items: center;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: $color-text-secondary;
+    cursor: pointer;
+    transition: color $transition-fast;
+
+    &:hover {
+      color: var(--color-primary);
+    }
+  }
+
   .inq-thread-wrap {
     display: flex;
     flex-direction: column;
@@ -246,6 +265,22 @@
     display: flex;
     flex-direction: column;
     gap: $spacing-sm;
+  }
+}
+
+// 문의 본문(Tiptap) — 에디터와 상세 화면이 같은 모양(문서 본문 공통 스타일)으로 보이도록 한다
+.inq-rich {
+  @include doc-content-styles;
+}
+
+.inq-detail-panel,
+.inq-manage-detail-panel {
+  .notice-detail-body .inq-rich {
+    min-height: 120px;
+    overflow-x: auto;
+    border: 1px solid $color-border;
+    border-radius: $border-radius-base;
+    background: #fff;
   }
 }
 
