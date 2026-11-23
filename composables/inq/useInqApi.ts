@@ -4,6 +4,7 @@ import type {
   InqCodeInfoResponse,
   InqDetailResponse,
   InqFileDownloadResponse,
+  InqFilePreviewResponse,
   InqFileUploadUrlResponse,
   InqListResponse,
   InqResponse,
@@ -55,6 +56,10 @@ export const useInqApi = () => {
   const fetchInqFileDownloadUrl = async (inqFileId: string) =>
     assertOk(await post<InqFileDownloadResponse>('/inq/downloadFile.do', { inqFileId }))
 
+  /** 첨부파일 미리보기 URL 발급 */
+  const fetchInqFilePreview = async (inqFileId: string) =>
+    assertOk(await post<InqFilePreviewResponse>('/inq/filePreview.do', { inqFileId }))
+
   return {
     fetchSelectInqCodeInfo,
     fetchSelectInqList,
@@ -65,5 +70,6 @@ export const useInqApi = () => {
     fetchDeleteInqAnsr,
     fetchCreateInqFileUploadUrl,
     fetchInqFileDownloadUrl,
+    fetchInqFilePreview,
   }
 }

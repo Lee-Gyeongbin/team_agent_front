@@ -1,3 +1,4 @@
+import type { ChatFileViewResponse } from '~/types/chat'
 import type { TableColumn } from '~/types/table'
 
 /** 문의사항 응답 공통 (successYn / returnMsg) */
@@ -113,6 +114,9 @@ export interface InqFileDownloadResponse extends InqResponse {
   url?: string
 }
 
+/** 첨부파일 미리보기 응답 — 파일 서비스 뷰 응답(viewType·url 등)과 같은 키 */
+export interface InqFilePreviewResponse extends InqResponse, ChatFileViewResponse {}
+
 /** 답변·댓글 입력창 상태 — reply: targetId=부모 답변 ID / edit: targetId=수정 대상 답변 ID */
 export type InqComposerMode = 'new' | 'reply' | 'edit'
 
@@ -167,7 +171,23 @@ export const inqColumns: TableColumn[] = [
 export const INQ_TITLE_MAX_LENGTH = 300
 
 /** 첨부파일 정책 — 파일당 최대 크기와 허용 확장자 (서버는 검증하지 않는다) */
-export const INQ_FILE_EXTENSIONS = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'hwp', 'csv', 'txt']
+export const INQ_FILE_EXTENSIONS = [
+  'pdf',
+  'doc',
+  'docx',
+  'ppt',
+  'pptx',
+  'xls',
+  'xlsx',
+  'hwp',
+  'csv',
+  'txt',
+  'png',
+  'jpg',
+  'jpeg',
+  'gif',
+  'webp',
+]
 export const INQ_FILE_ACCEPT = INQ_FILE_EXTENSIONS.map((ext) => `.${ext}`).join(',')
 export const INQ_FILE_MAX_SIZE = 50 * 1024 * 1024
 

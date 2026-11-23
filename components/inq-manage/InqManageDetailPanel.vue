@@ -16,6 +16,7 @@
         :inq="inq"
         :files="files"
         :status-flag="statusFlag"
+        :fetch-preview="fetchPreview"
         @download-file="(file) => $emit('download-file', file)"
       />
 
@@ -96,7 +97,7 @@
 
 <script setup lang="ts">
 import { UiButton, UiDrawer, UiSelect } from '@leechanyong/ispark-ui'
-import type { InqAnsr, InqComposer, InqFile, InqItem } from '~/types/inq'
+import type { InqAnsr, InqComposer, InqFile, InqFilePreviewResponse, InqItem } from '~/types/inq'
 import InqAnswerList from '~/components/inq/InqAnswerList.vue'
 import InqAnsrComposer from '~/components/inq/InqAnsrComposer.vue'
 import InqDetailContent from '~/components/inq/InqDetailContent.vue'
@@ -118,6 +119,8 @@ const props = defineProps<{
   hasFunc: boolean
   /** 관리자 답변(1단계) 신규 등록 가능 여부 */
   canWriteAnswer: boolean
+  /** 첨부파일 미리보기 URL 발급 */
+  fetchPreview: (inqFileId: string) => Promise<InqFilePreviewResponse>
 }>()
 
 defineEmits<{

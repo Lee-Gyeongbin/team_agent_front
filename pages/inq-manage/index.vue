@@ -167,6 +167,7 @@
       :status-options="adminStatusOptions"
       :has-func="hasFunc"
       :can-write-answer="canWriteAnswer"
+      :fetch-preview="fetchInqManageFilePreview"
       @close="onCloseInqManageDetail"
       @delete="onDeleteInqManage"
       @download-file="onDownloadInqManageFile"
@@ -242,6 +243,7 @@ const {
   onSaveComposer,
   onDeleteAnsr,
   onDownloadInqManageFile,
+  fetchInqManageFilePreview,
 } = useInqManageStore()
 
 const page = computed({

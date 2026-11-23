@@ -20,6 +20,7 @@ const {
   fetchSaveInqManageAnsr,
   fetchDeleteInqManageAnsr,
   fetchInqManageFileDownloadUrl,
+  fetchInqManageFilePreview,
 } = useInqManageApi()
 
 const excelMenuItems = [{ label: '다운로드', value: 'download', icon: 'icon-download' }]
@@ -331,5 +332,6 @@ export const useInqManageStore = () => {
     onSaveComposer,
     onDeleteAnsr,
     onDownloadInqManageFile,
+    fetchInqManageFilePreview,
   }
 }

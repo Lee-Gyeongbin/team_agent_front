@@ -4,6 +4,7 @@ import type {
   InqCodeInfoResponse,
   InqDetailResponse,
   InqFileDownloadResponse,
+  InqFilePreviewResponse,
   InqListResponse,
   InqResponse,
   InqSearchParams,
@@ -54,6 +55,10 @@ export const useInqManageApi = () => {
   const fetchInqManageFileDownloadUrl = async (inqFileId: string) =>
     assertOk(await post<InqFileDownloadResponse>('/inq/manage/downloadFile.do', { inqFileId }))
 
+  /** 첨부파일 미리보기 URL 발급 */
+  const fetchInqManageFilePreview = async (inqFileId: string) =>
+    assertOk(await post<InqFilePreviewResponse>('/inq/manage/filePreview.do', { inqFileId }))
+
   return {
     fetchSelectInqManageCodeInfo,
     fetchSelectInqManageList,
@@ -64,5 +69,6 @@ export const useInqManageApi = () => {
     fetchSaveInqManageAnsr,
     fetchDeleteInqManageAnsr,
     fetchInqManageFileDownloadUrl,
+    fetchInqManageFilePreview,
   }
 }

@@ -17,6 +17,7 @@
         :files="files"
         :status-flag="statusFlag"
         :is-masked="isMasked"
+        :fetch-preview="fetchPreview"
         @download-file="(file) => $emit('download-file', file)"
       />
 
@@ -67,7 +68,7 @@
 
 <script setup lang="ts">
 import { UiButton, UiDrawer } from '@leechanyong/ispark-ui'
-import type { InqAnsr, InqComposer, InqFile, InqItem } from '~/types/inq'
+import type { InqAnsr, InqComposer, InqFile, InqFilePreviewResponse, InqItem } from '~/types/inq'
 import InqAnswerList from '~/components/inq/InqAnswerList.vue'
 import InqDetailContent from '~/components/inq/InqDetailContent.vue'
 
@@ -88,6 +89,8 @@ const props = defineProps<{
   canEdit: boolean
   canReply: boolean
   canEditAnsr: (a: InqAnsr) => boolean
+  /** 첨부파일 미리보기 URL 발급 */
+  fetchPreview: (inqFileId: string) => Promise<InqFilePreviewResponse>
 }>()
 
 defineEmits<{

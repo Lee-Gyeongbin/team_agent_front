@@ -24,6 +24,7 @@ const {
   fetchDeleteInqAnsr,
   fetchCreateInqFileUploadUrl,
   fetchInqFileDownloadUrl,
+  fetchInqFilePreview,
 } = useInqApi()
 
 /** 문의하기(/inq) 스토어 */
@@ -419,6 +420,7 @@ export const useInqStore = () => {
     onSaveComposer,
     onDeleteAnsr,
     onDownloadInqFile,
+    fetchInqFilePreview,
     // 등록·수정
     isFormOpen,
     inqForm,

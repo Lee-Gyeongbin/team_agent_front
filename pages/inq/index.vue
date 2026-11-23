@@ -176,6 +176,7 @@
       :can-edit="canEditInq"
       :can-reply="canReply"
       :can-edit-ansr="canEditAnsr"
+      :fetch-preview="fetchInqFilePreview"
       @close="onCloseInqDetail"
       @edit="onEditInq"
       @delete="onDeleteInq"
@@ -253,6 +254,7 @@ const {
   onSaveComposer,
   onDeleteAnsr,
   onDownloadInqFile,
+  fetchInqFilePreview,
   onRegisterInq,
   onEditInq,
   onCloseInqForm,
