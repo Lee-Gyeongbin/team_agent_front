@@ -191,8 +191,9 @@ const initDetailStep = () => {
   // 생성 중이면 진행 상황이 보이는 회의록 생성 단계, 생성 전이면 화자 이름부터 정리
   else if (minutesState.value === 'processing') currentStepKey.value = 'generate'
   else if (reachedStepIdx.value >= STEP_KEYS.indexOf('speaker')) currentStepKey.value = 'speaker'
-  // 비정상 종료 회의는 복구 버튼이 있는 녹음 화면부터
-  else if (!voiceEnrollDone.value && detail.meeting?.abnormalYn !== 'Y') currentStepKey.value = 'voiceEnroll'
+  // 비정상 종료 · 일시정지 회의는 이어서 녹음 버튼이 있는 녹음 화면부터
+  else if (!voiceEnrollDone.value && detail.meeting?.abnormalYn !== 'Y' && detail.meeting?.pauseYn !== 'Y')
+    currentStepKey.value = 'voiceEnroll'
   else currentStepKey.value = 'record'
 }
 
@@ -320,6 +321,7 @@ const mapApiDetailToMeeting = (detail: MeetingDetail): Meeting | null => {
     integrateYn: m.integrateYn ?? 'N',
     showSpeakerYn: m.showSpeakerYn ?? 'Y',
     abnormalYn: m.abnormalYn ?? 'N',
+    pauseYn: m.pauseYn || 'N',
   }
 }
 
@@ -486,9 +488,10 @@ const handleSelectMeetingDetail = async (meetingId: number) => {
         const enrollList = enrollments.list ?? []
         // 모든 speaker에 대해 003(완료) enrollment이 있는지 확인
         const doneIds = new Set(enrollList.filter((e) => e.status === '003').map((e) => e.speakerId))
-        const allDone = speakers.length > 0
-          ? speakers.every((sp) => doneIds.has(sp.speakerId))
-          : enrollList.length > 0 && enrollList.every((e) => e.status === '003')
+        const allDone =
+          speakers.length > 0
+            ? speakers.every((sp) => doneIds.has(sp.speakerId))
+            : enrollList.length > 0 && enrollList.every((e) => e.status === '003')
         voiceEnrollDone.value = allDone
       } catch {
         voiceEnrollDone.value = false
@@ -512,6 +515,7 @@ const handleSelectMeetingDetail = async (meetingId: number) => {
       }
       currentMeeting.value.status = detail.meeting?.status ?? ''
       currentMeeting.value.abnormalYn = detail.meeting?.abnormalYn ?? 'N'
+      currentMeeting.value.pauseYn = detail.meeting?.pauseYn || 'N'
     }
 
     // 처리 상태 — 회의록이 없으면 서버 상태 확인

@@ -12,6 +12,8 @@ export interface Meeting {
   showSpeakerYn?: string // 'Y' | 'N' — 결정사항 내 발언자 표시 여부
   /** 비정상 종료 여부 — 이탈 표시(Y) 또는 녹음 중 heartbeat 가 3분 넘게 끊김 */
   abnormalYn?: string // 'Y' | 'N'
+  /** 녹음 일시정지 여부 — 이어서 녹음하면 N 으로 돌아감 */
+  pauseYn?: string // 'Y' | 'N'
   /** 회의록 양식 코드 (TB_MEETING_TMPL) — null 이면 기본 양식으로 생성됨 */
   minutesTmplCd?: string | null
   /** 문체 — null 이면 양식 기본 문체 */
@@ -229,11 +231,11 @@ export interface SpeechTiming {
 
 /** 실시간 전사 연결 상태 */
 export type TranscriptionConnectionStatus =
-  | 'idle'         // 미연결
-  | 'connecting'   // 연결 중
-  | 'connected'    // 정상 연결
+  | 'idle' // 미연결
+  | 'connecting' // 연결 중
+  | 'connected' // 정상 연결
   | 'reconnecting' // 재연결 시도 중 (녹음은 계속됨)
-  | 'failed'       // 재연결 한도 초과 (녹음은 계속됨)
+  | 'failed' // 재연결 한도 초과 (녹음은 계속됨)
 
 // ─── Meeting2 이관 타입 ───────────────────────────────────────────
 
@@ -279,6 +281,8 @@ export interface MeetingSttItem {
   speakerName: string
   time: string // HH:MM:SS
   text: string
+  /** 실시간 STT 에서 아직 인식 중(확정 전)인 문장 */
+  isLive?: boolean
 }
 
 /** 메일 수신자 */
@@ -330,4 +334,5 @@ export interface MeetingViewModel {
   integrateYn: string // 'Y' | 'N' — 통합 회의록 여부
   showSpeakerYn: string // 'Y' | 'N' — 결정사항 내 발언자 표시 여부
   abnormalYn: string // 'Y' | 'N' — 비정상 종료 여부 (상세 조회 시점)
+  pauseYn: string // 'Y' | 'N' — 녹음 일시정지 여부 (상세 조회 시점)
 }

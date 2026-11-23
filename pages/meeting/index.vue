@@ -4,14 +4,6 @@
     <div class="meeting2-list-header">
       <h2 class="meeting2-list-title">회의록</h2>
       <div class="meeting2-list-toolbar">
-        <div class="meeting2-list-search">
-          <UiInput
-            v-model="searchKeyword"
-            type="search"
-            size="sm"
-            placeholder="회의명 검색"
-          />
-        </div>
         <!-- 통합 모드: 발언자 표시 옵션 -->
         <UiCheckbox
           v-if="isIntegrateMode"
@@ -47,103 +39,126 @@
       </div>
     </div>
 
-    <!-- 필터 바 -->
+    <!-- 검색조건 -->
     <div class="meeting2-filter-bar">
-      <!-- 상태 칩 -->
-      <div class="meeting2-filter-chips">
-        <button
-          v-for="chip in STATUS_CHIPS"
-          :key="chip.value"
-          type="button"
-          :class="['meeting2-filter-chip', { 'is-active': filterStatus === chip.value }]"
-          @click="onSelectStatus(chip.value)"
-        >
-          {{ chip.label }}
-        </button>
+      <!-- 상태 (클릭 즉시 조회) -->
+      <div class="meeting2-filter-group">
+        <span class="meeting2-filter-label">상태</span>
+        <div class="meeting2-filter-chips">
+          <button
+            v-for="chip in STATUS_CHIPS"
+            :key="chip.value"
+            type="button"
+            :class="['meeting2-filter-chip', { 'is-active': filterStatus === chip.value }]"
+            @click="onSelectStatus(chip.value)"
+          >
+            {{ chip.label }}
+          </button>
+        </div>
       </div>
-      <!-- 구분선 -->
-      <div class="meeting2-filter-divider" />
-      <!-- 기간 드롭다운 -->
-      <UiSelect
-        v-model="filterPeriod"
-        class="meeting2-filter-select-wrap"
-        :options="periodOptions"
-        size="sm"
-      />
-      <!-- 직접 설정 날짜 입력 -->
-      <template v-if="filterPeriod === 'custom'">
+      <!-- 기간 (프리셋은 날짜만 채움, 조회는 검색 버튼) -->
+      <div class="meeting2-filter-group">
+        <span class="meeting2-filter-label">기간</span>
         <UiDatePicker
           v-model="filterStartDateValue"
           size="xs"
           class="meeting2-filter-date"
+          :disabled="filterPeriod !== 'custom'"
         />
         <span class="meeting2-filter-date-sep">~</span>
         <UiDatePicker
           v-model="filterEndDateValue"
           size="xs"
           class="meeting2-filter-date"
+          :disabled="filterPeriod !== 'custom'"
         />
-      </template>
-      <!-- 정렬 드롭다운 -->
-      <UiSelect
-        v-model="filterSort"
-        class="meeting2-filter-select-wrap"
-        :options="sortOptions"
-        size="sm"
-      />
-      <!-- 뷰 토글 -->
-      <div class="meeting2-view-toggle">
-        <button
-          type="button"
-          :class="['meeting2-view-btn', { 'is-active': viewMode === 'grid' }]"
-          title="그리드 뷰"
-          @click="setViewMode('grid')"
-        >
-          <UiIcon
-            name="layout-grid"
-            size="16"
-          />
-        </button>
-        <button
-          type="button"
-          :class="['meeting2-view-btn', { 'is-active': viewMode === 'list' }]"
-          title="목록 뷰"
-          @click="setViewMode('list')"
-        >
-          <UiIcon
-            name="list"
-            size="16"
-          />
-        </button>
+        <div class="meeting2-filter-period">
+          <button
+            v-for="opt in PERIOD_OPTIONS"
+            :key="opt.value"
+            type="button"
+            :class="['meeting2-filter-period-btn', { 'is-active': filterPeriod === opt.value }]"
+            @click="onSelectPeriod(opt.value)"
+          >
+            {{ opt.label }}
+          </button>
+        </div>
       </div>
+      <!-- 회의명 -->
+      <div class="meeting2-filter-group">
+        <span class="meeting2-filter-label">회의명</span>
+        <UiInput
+          v-model="filterTitleInput"
+          class="meeting2-filter-input"
+          size="sm"
+          placeholder="회의명 검색"
+          @enter="onClickSearch"
+        />
+      </div>
+      <!-- 참석자/공유자 (공유 기능 없음 — 참석자만 검색) -->
+      <div class="meeting2-filter-group">
+        <span class="meeting2-filter-label">참석자/공유자</span>
+        <UiInput
+          v-model="filterAttendeeInput"
+          class="meeting2-filter-input"
+          size="sm"
+          placeholder="참석자/공유자 검색"
+          @enter="onClickSearch"
+        />
+      </div>
+      <UiButton
+        class="meeting2-filter-search"
+        variant="primary"
+        size="sm"
+        @click="onClickSearch"
+      >
+        검색
+        <template #icon-right>
+          <UiIcon
+            name="search"
+            size="16"
+          />
+        </template>
+      </UiButton>
     </div>
 
-    <!-- 활성 필터 표시줄 -->
-    <div
-      v-if="activeFilterTags.length > 0"
-      class="meeting2-filter-tags"
-    >
-      <div class="meeting2-filter-tag-list">
-        <span
-          v-for="tag in activeFilterTags"
-          :key="tag.key"
-          class="meeting2-filter-tag"
-        >
-          {{ tag.label }}
+    <!-- 건수 + 정렬 + 뷰 토글 -->
+    <div class="meeting2-result-bar">
+      <span class="meeting2-result-count">
+        총 <strong>{{ filteredList.length }}</strong> 건
+      </span>
+      <div class="meeting2-result-tools">
+        <UiSelect
+          v-model="filterSort"
+          class="meeting2-filter-select-wrap"
+          :options="sortOptions"
+          size="sm"
+        />
+        <div class="meeting2-view-toggle">
           <button
             type="button"
-            class="meeting2-filter-tag-remove"
-            aria-label="필터 제거"
-            @click="removeFilter(tag.key)"
+            :class="['meeting2-view-btn', { 'is-active': viewMode === 'grid' }]"
+            title="그리드 뷰"
+            @click="setViewMode('grid')"
           >
             <UiIcon
-              name="x"
-              size="12"
+              name="layout-grid"
+              size="16"
             />
           </button>
-        </span>
+          <button
+            type="button"
+            :class="['meeting2-view-btn', { 'is-active': viewMode === 'list' }]"
+            title="목록 뷰"
+            @click="setViewMode('list')"
+          >
+            <UiIcon
+              name="list"
+              size="16"
+            />
+          </button>
+        </div>
       </div>
-      <span class="meeting2-filter-count">총 {{ filteredList.length }}건</span>
     </div>
 
     <!-- 로딩 -->
@@ -200,6 +215,13 @@
             size="sm"
           >
             비정상 종료 · 복구 가능
+          </UiBadge>
+          <UiBadge
+            v-else-if="meeting.pauseYn === 'Y'"
+            variant="warning"
+            size="sm"
+          >
+            일시정지
           </UiBadge>
           <template v-else>
             <UiBadge
@@ -276,6 +298,13 @@
             size="sm"
           >
             비정상 종료 · 복구 가능
+          </UiBadge>
+          <UiBadge
+            v-else-if="meeting.pauseYn === 'Y'"
+            variant="warning"
+            size="sm"
+          >
+            일시정지
           </UiBadge>
           <template v-else>
             <UiBadge
@@ -391,7 +420,6 @@ const {
 } = useMeetingStore()
 
 // ===== 기존 상태 (변경 없음) =====
-const searchKeyword = ref('')
 const isModalOpen = ref(false)
 const isIntegrateMode = ref(false)
 const selectedMeetingIds = ref<string[]>([])
@@ -416,11 +444,10 @@ const STATUS_CHIPS = [
 ] as const
 
 const PERIOD_OPTIONS = [
-  { value: '', label: '전체 기간' },
-  { value: 'today', label: '오늘' },
-  { value: '7d', label: '최근 7일' },
-  { value: '30d', label: '최근 30일' },
-  { value: 'custom', label: '직접 설정' },
+  { value: 'custom', label: '직접입력' },
+  { value: '1w', label: '1주일' },
+  { value: '1m', label: '1개월' },
+  { value: '3m', label: '3개월' },
 ] as const
 
 const SORT_OPTIONS = [
@@ -433,14 +460,18 @@ type StatusChipValue = (typeof STATUS_CHIPS)[number]['value']
 type PeriodValue = (typeof PERIOD_OPTIONS)[number]['value']
 type SortValue = (typeof SORT_OPTIONS)[number]['value']
 
-const periodOptions: SelectOption[] = PERIOD_OPTIONS.map((opt) => ({ ...opt }))
 const sortOptions: SelectOption[] = SORT_OPTIONS.map((opt) => ({ ...opt }))
 
 const filterStatus = ref<StatusChipValue>('')
-const filterPeriod = ref<PeriodValue>('')
+const filterPeriod = ref<PeriodValue>('1m')
 const filterSort = ref<SortValue>('CREATE_DT_DESC')
 const filterStartDate = ref('')
 const filterEndDate = ref('')
+// 입력 중인 값 — 검색 버튼(또는 Enter) 시점에 적용값으로 복사
+const filterTitleInput = ref('')
+const filterAttendeeInput = ref('')
+const appliedTitle = ref('')
+const appliedAttendee = ref('')
 
 const parseYyyyMmDdToDateValue = (value: string): DateValue | undefined => {
   if (!value) return undefined
@@ -474,22 +505,24 @@ const filterEndDateValue = computed<DateValue | undefined>({
   },
 })
 
-// 기간 옵션 → 날짜 변환
-const getPeriodDates = (period: PeriodValue): { start: string; end: string } => {
+// 로컬 날짜 → yyyy-MM-dd (toISOString 은 UTC 라 KST 오전 9시 이전엔 하루 전으로 나옴)
+const formatLocalDate = (d: Date) => {
+  const monthText = String(d.getMonth() + 1).padStart(2, '0')
+  const dayText = String(d.getDate()).padStart(2, '0')
+  return `${d.getFullYear()}-${monthText}-${dayText}`
+}
+
+// 기간 프리셋 → 날짜 변환 (오늘 포함, 예: 1개월 = 10.21 ~ 11.20)
+const getPeriodDates = (period: Exclude<PeriodValue, 'custom'>): { start: string; end: string } => {
   const today = new Date()
-  const fmt = (d: Date) => d.toISOString().slice(0, 10)
-  if (period === 'today') return { start: fmt(today), end: fmt(today) }
-  if (period === '7d') {
-    const start = new Date(today)
+  const start = new Date(today)
+  if (period === '1w') {
     start.setDate(today.getDate() - 6)
-    return { start: fmt(start), end: fmt(today) }
+  } else {
+    start.setMonth(today.getMonth() - (period === '3m' ? 3 : 1))
+    start.setDate(start.getDate() + 1)
   }
-  if (period === '30d') {
-    const start = new Date(today)
-    start.setDate(today.getDate() - 29)
-    return { start: fmt(start), end: fmt(today) }
-  }
-  return { start: '', end: '' }
+  return { start: formatLocalDate(start), end: formatLocalDate(today) }
 }
 
 // sort 값 → sortField/sortOrder 분리
@@ -514,111 +547,67 @@ const buildApiParams = () => {
     integrateYn = 'Y'
   }
 
-  let startDate = ''
-  let endDate = ''
-  if (filterPeriod.value === 'custom') {
-    startDate = filterStartDate.value
-    endDate = filterEndDate.value
-  } else if (filterPeriod.value) {
-    const dates = getPeriodDates(filterPeriod.value)
-    startDate = dates.start
-    endDate = dates.end
+  return {
+    statusCd,
+    startDate: filterStartDate.value,
+    endDate: filterEndDate.value,
+    sortField,
+    sortOrder,
+    integrateYn,
   }
-
-  return { statusCd, startDate, endDate, sortField, sortOrder, integrateYn }
 }
 
-const validateCustomDateRange = () => {
-  if (filterPeriod.value !== 'custom') return true
+const validateDateRange = () => {
   if (!filterStartDate.value || !filterEndDate.value) return true
   if (filterStartDate.value <= filterEndDate.value) return true
   openToast({ message: '시작일은 종료일보다 늦을 수 없습니다.', type: 'warning' })
   return false
 }
 
-const fetchWithFilters = () => {
-  if (!validateCustomDateRange()) return false
+/** 검색 — 입력 중인 회의명/참석자를 적용값으로 확정하고 API 재조회 */
+const onClickSearch = () => {
+  if (!validateDateRange()) return false
+  appliedTitle.value = filterTitleInput.value.trim()
+  appliedAttendee.value = filterAttendeeInput.value.trim()
   handleSelectMeetingList(buildApiParams())
   return true
 }
 
+/** 상태 칩 — 클릭 즉시 조회 */
 const onSelectStatus = (val: StatusChipValue) => {
   filterStatus.value = val
-  fetchWithFilters()
+  onClickSearch()
 }
 
-/** 기간 변경 — custom이면 날짜 입력 대기, 그 외 API 재조회 */
-const onPeriodChange = () => {
-  if (filterPeriod.value !== 'custom') {
-    filterStartDate.value = ''
-    filterEndDate.value = ''
-    fetchWithFilters()
-  }
+/** 기간 프리셋 — 날짜만 채움 (조회는 검색 버튼), 직접입력은 날짜 입력칸 활성화 */
+const onSelectPeriod = (val: PeriodValue) => {
+  filterPeriod.value = val
+  if (val === 'custom') return
+  const { start, end } = getPeriodDates(val)
+  filterStartDate.value = start
+  filterEndDate.value = end
 }
 
-/** 정렬 변경 — API 재조회 */
-const onSortChange = () => {
-  fetchWithFilters()
-}
-
-// UiSelect v-model 변경에 묶어 API 재조회 (change emit 의존 제거 — 기존 select @change와 동일 보장)
-watch(filterPeriod, () => {
-  onPeriodChange()
-})
-
+// 정렬 변경 — 즉시 재조회
 watch(filterSort, () => {
-  onSortChange()
-})
-
-// 직접 설정 날짜 변경 시 API 재호출
-watch([filterStartDate, filterEndDate], () => {
-  if (filterPeriod.value === 'custom') {
-    fetchWithFilters()
-  }
+  onClickSearch()
 })
 
 onMounted(() => {
-  fetchWithFilters()
+  onSelectPeriod('1m')
+  onClickSearch()
 })
 
-// ===== 활성 필터 태그 =====
-const activeFilterTags = computed(() => {
-  const tags: Array<{ key: string; label: string }> = []
-  if (filterStatus.value) {
-    const chip = STATUS_CHIPS.find((c) => c.value === filterStatus.value)
-    if (chip) tags.push({ key: 'status', label: chip.label })
+/** 참석자 JSON([{userId, userNm}]) → 이름 목록 (구 형식 평문이면 그대로) */
+const getAttendeeNames = (attendees: string | null | undefined): string => {
+  if (!attendees) return ''
+  try {
+    const arr = JSON.parse(attendees)
+    if (Array.isArray(arr)) return arr.map((u: { userNm?: string }) => u?.userNm || '').join(',')
+  } catch {
+    // 구 형식(평문)
   }
-  if (filterPeriod.value && filterPeriod.value !== 'custom') {
-    const opt = PERIOD_OPTIONS.find((o) => o.value === filterPeriod.value)
-    if (opt) tags.push({ key: 'period', label: opt.label })
-  }
-  if (filterPeriod.value === 'custom' && (filterStartDate.value || filterEndDate.value)) {
-    tags.push({ key: 'period', label: `${filterStartDate.value || '?'} ~ ${filterEndDate.value || '?'}` })
-  }
-  if (filterSort.value !== 'CREATE_DT_DESC') {
-    const opt = SORT_OPTIONS.find((o) => o.value === filterSort.value)
-    if (opt) tags.push({ key: 'sort', label: opt.label })
-  }
-  return tags
-})
-
-const removeFilter = (key: string) => {
-  if (key === 'status') {
-    filterStatus.value = ''
-    fetchWithFilters()
-    return
-  }
-  if (key === 'period') {
-    // filterPeriod watch → onPeriodChange → fetch (기존 select @change와 동일)
-    filterPeriod.value = ''
-    filterStartDate.value = ''
-    filterEndDate.value = ''
-    return
-  }
-  if (key === 'sort') {
-    // filterSort watch → onSortChange → fetch
-    filterSort.value = 'CREATE_DT_DESC'
-  }
+  return attendees
 }
 
 // ===== 기존 로직 (변경 없음) =====
@@ -631,9 +620,13 @@ const integrateButtonLabel = computed(() => {
  * steps는 meeting API 미지원 — 상태값에서 파생
  */
 const filteredList = computed(() => {
-  const kw = searchKeyword.value.trim().toLowerCase()
-  const list = meetingList.value
-  const filtered = kw ? list.filter((m) => m.meetingTitle.toLowerCase().includes(kw)) : list
+  const titleKw = appliedTitle.value.toLowerCase()
+  const attendeeKw = appliedAttendee.value.toLowerCase()
+  const filtered = meetingList.value.filter((m) => {
+    if (titleKw && !(m.meetingTitle || '').toLowerCase().includes(titleKw)) return false
+    if (attendeeKw && !getAttendeeNames(m.attendees).toLowerCase().includes(attendeeKw)) return false
+    return true
+  })
   return filtered.map((m) => ({
     meetingId: m.meetingId, // 삭제/이동 시 원본 ID 사용
     id: String(m.meetingId),
@@ -642,6 +635,7 @@ const filteredList = computed(() => {
     status: m.status,
     integrateYn: m.integrateYn ?? 'N',
     abnormalYn: m.abnormalYn ?? 'N',
+    pauseYn: m.pauseYn || 'N',
     steps: deriveDisplaySteps(m.status) satisfies MeetingStep[],
   }))
 })

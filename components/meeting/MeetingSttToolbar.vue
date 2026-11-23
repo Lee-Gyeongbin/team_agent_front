@@ -1,10 +1,5 @@
 <template>
   <div class="meeting2-stt-toolbar">
-    <span class="meeting2-stt-toggle">
-      실시간 STT
-      <UiBadge :variant="sttBadgeVariant">{{ sttBadgeLabel }}</UiBadge>
-    </span>
-
     <div class="meeting2-stt-toolbar-actions">
       <UiButton
         variant="ghost"
@@ -72,6 +67,7 @@
       </div>
 
       <input
+        v-if="isRecordView"
         ref="audioFileInputRef"
         type="file"
         accept="audio/*"
@@ -79,11 +75,17 @@
         @change="onAudioFileChange"
       />
 
+      <!-- 오디오 첨부 — 녹음 단계에서만 (화자 분리·회의록 생성 단계는 녹음 단계로 돌아가서 첨부) -->
       <UiButton
+        v-if="isRecordView"
         variant="ghost"
         size="xs"
-        :disabled="!isMeetingIdValid || isFinishing"
-        title="로컬 오디오 파일로 전사·회의록 생성 (테스트용)"
+        :disabled="!isMeetingIdValid || isFinishing || hasMinutes"
+        :title="
+          hasMinutes
+            ? '이미 회의록이 생성된 회의는 오디오를 첨부할 수 없습니다.'
+            : '로컬 오디오 파일로 전사·회의록 생성 (테스트용)'
+        "
         @click="onClickPickAudioFile"
       >
         <template #icon-left>
@@ -99,19 +101,25 @@
 </template>
 
 <script setup lang="ts">
-import { UiBadge, UiButton, UiIcon, type BadgeVariant } from '@leechanyong/ispark-ui'
+import { UiButton, UiIcon } from '@leechanyong/ispark-ui'
 import { openConfirm } from '~/composables/useDialog'
-import { useRealtimeTranscription } from '~/composables/meeting/useRealtimeTranscription'
 import { useMeetingStore } from '~/composables/meeting/useMeetingStore'
 
-const props = defineProps<{
-  /** 라우트 회의 ID — finishMeetingWithAudio 전송에 사용 */
-  meetingId: number
-}>()
+const props = withDefaults(
+  defineProps<{
+    /** 라우트 회의 ID — finishMeetingWithAudio 전송에 사용 */
+    meetingId: number
+    /** record: 녹음 단계 (STT 배지·오디오 첨부 표시) / speaker: 화자 분리·회의록 생성 (검색·다운로드만) */
+    view?: 'record' | 'speaker'
+  }>(),
+  { view: 'record' },
+)
 
-const { isRecording, isConnecting } = useRealtimeTranscription()
+const isRecordView = computed(() => props.view === 'record')
+
 const {
   currentMeeting,
+  meetingDetail,
   isFinishing,
   isSearchOpen,
   toggleSearch,
@@ -130,17 +138,11 @@ const isMeetingIdValid = computed(() => Number.isFinite(props.meetingId) && prop
 
 const sttList = computed(() => currentMeeting.value?.sttList ?? [])
 
-/** 녹음 상태별 STT 뱃지 라벨/색 */
-const sttBadgeLabel = computed(() => {
-  if (isRecording.value) return 'ON'
-  if (isConnecting.value) return '연결 중'
-  return 'OFF'
-})
-
-const sttBadgeVariant = computed((): BadgeVariant => {
-  if (isRecording.value) return 'success'
-  if (isConnecting.value) return 'warning'
-  return 'default'
+/** 회의록 생성 여부 — 이미 만들어졌으면 오디오 첨부(재전사·덮어쓰기) 차단 (null = 아직 생성 안 됨) */
+const hasMinutes = computed(() => {
+  const minutes = meetingDetail.value.minutes
+  // 생성 실패로 행만 있고 내용이 비어 있으면 다시 첨부할 수 있게 내용 기준으로 판단
+  return !!(minutes?.editedContent || minutes?.generatedContent)
 })
 
 const toggleDownloadPicker = () => {
