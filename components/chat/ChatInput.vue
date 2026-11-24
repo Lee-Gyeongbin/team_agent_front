@@ -318,38 +318,36 @@ const handleSelectNextQuestion = (question: string) => {
 }
 
 // ===== 데이터분석(S) 질문 품질 게이트 — 검증 통과 전 전송 차단 =====
-const { isGateActive, isValidating, canSend, requiredFilled, validate, finalizeDataQuestionSend } =
-  useDataQuestionGate()
+const { isGateActive, isValidating, canSend, validate, finalizeDataQuestionSend } = useDataQuestionGate()
 const isValidateMode = computed(() => isGateActive.value && !canSend.value && !isAnswerStreaming.value)
 
-/** 전송 버튼 비활성 — 게이트 활성 시 검증 통과 전엔 전송 불가(검증 모드일 땐 검증 가능 여부로 판정) */
+/** 전송 버튼 비활성 — 입력·옵션만 확인(필수항목 미충족이어도 검증/전송은 항상 가능) */
 const isPrimaryDisabled = computed(() => {
   if (isAnswerStreaming.value) return false
-  const baseDisabled =
+  return (
     props.disabled ||
     isSearchModeMissingSubOptions.value ||
     (riskAgentActive.value
       ? previewItems.value.length === 0
       : !props.modelValue.trim() || selectedSubOptions.value.length === 0)
-  if (baseDisabled) return true
-  // 검증 모드: 필수항목(무엇을·기간) 미충족이면 검증 요청 불가
-  if (isValidateMode.value && !requiredFilled.value) return true
-  return false
+  )
 })
 
-/** 버튼 클릭 — 응답중지 / 검증 / 전송 분기 */
+/** 검증 후 통과(80점 이상)하면 추가 클릭 없이 바로 전송 */
+const validateAndSend = async () => {
+  if (await validate()) await handleSend()
+}
+
+/** 버튼 클릭 — 응답중지 / 검증(통과 시 즉시 전송) / 전송 분기 */
 const onPrimaryClick = () => {
   if (isAnswerStreaming.value) return handleStop()
-  if (isValidateMode.value) return void validate()
+  if (isValidateMode.value) return void validateAndSend()
   return void handleSend()
 }
 
-/** Enter — 검증 모드면 검증(필수항목 충족 시), 아니면 전송 */
+/** Enter — 검증 모드면 검증(통과 시 즉시 전송), 아니면 전송 */
 const onPrimaryEnter = () => {
-  if (isValidateMode.value) {
-    if (!requiredFilled.value) return
-    return void validate()
-  }
+  if (isValidateMode.value) return void validateAndSend()
   return void handleSend()
 }
 

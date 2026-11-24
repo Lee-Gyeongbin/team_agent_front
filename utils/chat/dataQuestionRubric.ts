@@ -16,17 +16,17 @@ interface CriterionDef {
 
 const CRITERIA: CriterionDef[] = [
   {
-    key: 'metric',
-    label: '무엇을 (지표·대상)',
-    required: true,
-    detect: /\S{2,}/,
-  },
-  {
     key: 'period',
     label: '기간',
     required: true,
     detect:
       /(\d{4}\s*년|\d{1,2}\s*월|\d{1,2}\s*분기|이번\s*달|지난\s*달|전월|올해|작년|최근\s*\d+\s*(개월|일|주|년)|전년\s*동월)/,
+  },
+  {
+    key: 'metric',
+    label: '무엇을 (지표·대상)',
+    required: true,
+    detect: /\S{2,}/,
   },
   {
     key: 'groupBy',
@@ -55,8 +55,8 @@ const CRITERIA: CriterionDef[] = [
 ]
 
 export const FORMULA_DISPLAY_ORDER: FormulaDisplayKey[] = [
-  'metric',
   'period',
+  'metric',
   'groupBy',
   'calculationAnalysis',
   'comparison',

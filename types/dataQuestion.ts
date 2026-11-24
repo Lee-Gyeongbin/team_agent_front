@@ -68,8 +68,8 @@ export interface QuestionDiagnosis {
 export type FormulaDisplayKey = 'period' | 'metric' | 'groupBy' | 'calculationAnalysis' | 'comparison'
 
 export const FORMULA_DISPLAY_LABELS: Record<FormulaDisplayKey, string> = {
-  period: '기간',
   metric: '무엇을 (지표·대상)',
+  period: '기간',
   groupBy: '구분 단위',
   calculationAnalysis: '계산·분석 방식',
   comparison: '비교 기준',
