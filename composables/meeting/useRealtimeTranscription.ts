@@ -42,6 +42,8 @@ const RECONNECT_MAX_DELAY_MS = 30000
 
 // ─── module-scope 상태 (컴포넌트 간 공유) ────────────────────────────
 const isRecording = ref(false)
+/** 실시간 전사 대상 회의 ID — 토큰 발급(최초 · 재연결) 때 문맥 힌트용으로 전달 */
+let transcriptionMeetingId: number | null = null
 const connectionStatus = ref<TranscriptionConnectionStatus>('idle')
 const isSupported = ref(false)
 const blocks = ref<TranscriptBlock[]>([])
@@ -552,7 +554,7 @@ const scheduleReconnect = () => {
     consecutiveReconnectFailures++
     totalSessionReconnects++
     try {
-      const tokenRes = await fetchRealtimeTokenSafe()
+      const tokenRes = await fetchRealtimeTokenSafe(transcriptionMeetingId)
       if (!tokenRes.token) throw new Error('토큰 발급 실패')
       initWebSocket(tokenRes.token)
       // ✅ 연결 성공 후 consecutiveReconnectFailures는 session.created 수신 시 리셋
@@ -570,10 +572,12 @@ const scheduleReconnect = () => {
 /**
  * 녹음 시작: 마이크 획득 → MediaRecorder(10분 구간 교체) → 자막(토큰 발급 → WS 연결 → 오디오 스트리밍)
  * - 녹음이 자막보다 먼저 — 자막이 실패해도 녹음은 계속된다
+ * @param meetingId 회의 ID — 서버가 회의 제목 · 참석자를 전사 문맥 힌트로 사용 (재연결에도 같은 값)
  * @returns started: 녹음 시작 여부(마이크), captionOk: 실시간 자막 연결 여부
  */
-const startRecording = async (): Promise<{ started: boolean; captionOk: boolean }> => {
+const startRecording = async (meetingId?: number): Promise<{ started: boolean; captionOk: boolean }> => {
   if (isRecording.value || connectionStatus.value === 'connecting') return { started: false, captionOk: false }
+  transcriptionMeetingId = meetingId ?? null
 
   connectionStatus.value = 'connecting'
   blocks.value = []
@@ -598,7 +602,7 @@ const startRecording = async (): Promise<{ started: boolean; captionOk: boolean 
 
   // 2. 실시간 자막 — 실패해도 녹음은 계속
   try {
-    const tokenRes = await fetchRealtimeTokenSafe()
+    const tokenRes = await fetchRealtimeTokenSafe(transcriptionMeetingId)
     if (!tokenRes.token) throw new Error('임시 토큰 발급 실패')
     // session.created 수신 시 connectionStatus → 'connected'
     initWebSocket(tokenRes.token)
