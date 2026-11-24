@@ -1,6 +1,7 @@
 import type { ChatMessage, ChatSocketMessage, ChatSocketPayload } from '~/types/chat'
 import { useChatMessages } from '~/composables/chat/useChatMessages'
 import { getWebSocketUrl } from '~/utils/chat/chatWebSocketUtil'
+import { parseGeneratedFiles } from '~/utils/chat/generatedFileUtil'
 import { migrateRecommendMessagesForAnswerLogId } from '~/utils/chat/recommendAgentUtil'
 import { NEWS_CURATOR_AGENT_ID } from '~/utils/chat/newsCuratorUtil'
 const {
@@ -325,6 +326,13 @@ const handleWebSocketMessage = (payload: ChatSocketMessage) => {
         const sourceItems = parseAnswerSourceItems(payload.accumulated)
         if (sourceItems) streamingMessage.groundingSources = sourceItems
         // 웹 출처는 본문 하단 '출처' 링크로만 노출 — '원본보기'(TB_CHAT_REF PDF 패널) 대상 아님
+        streamingMessage.isStreaming = true
+        break
+      }
+      // AI 생성 파일 — 답변 본문 하단 파일 목록으로만 노출 (본문 버퍼에 합치지 않음)
+      if (payload.chunkEvent === 'answer_file' && payload.accumulated) {
+        const generatedFiles = parseGeneratedFiles(payload.accumulated)
+        if (generatedFiles) streamingMessage.generatedFiles = generatedFiles
         streamingMessage.isStreaming = true
         break
       }

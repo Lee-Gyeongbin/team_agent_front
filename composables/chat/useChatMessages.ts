@@ -2,6 +2,7 @@ import type { ChatGroundingSourceItem, ChatLogListRow, ChatMessage, ChatMessageA
 import type { Agent } from '~/types/agent'
 import { toHtmlContent } from '~/utils/chat/htmlUtil'
 import { parseChatAttachmentsFromLogRow } from '~/utils/chat/chatAttachmentDisplayUtil'
+import { parseGeneratedFiles } from '~/utils/chat/generatedFileUtil'
 import { parseSurveyAnswersFromPrompt, isSurveyChatLogRow } from '~/utils/chat/surveyUtil'
 import {
   buildRecommendMessagesFromLogRow,
@@ -137,6 +138,7 @@ export const useChatMessages = () => {
         /* ignore */
       }
     }
+    const generatedFiles = parseGeneratedFiles(row.generatedFileJson)
     const reportHtmlRaw = typeof row.reportHtml === 'string' ? row.reportHtml.trim() : ''
 
     const answerMessage: ChatMessage = {
@@ -160,6 +162,7 @@ export const useChatMessages = () => {
       tableData: typeof row.tableData === 'string' ? row.tableData : undefined,
       chartOption: typeof row.chartOption === 'string' ? row.chartOption : undefined,
       ...(groundingSources?.length ? { groundingSources } : {}),
+      ...(generatedFiles?.length ? { generatedFiles } : {}),
       ...(reportHtmlRaw ? { reportHtml: reportHtmlRaw, hasReport: true } : {}),
       chatLogReaction: {
         logId,

@@ -93,6 +93,59 @@
             @click="onMarkdownClick"
             v-html="renderedHtml"
           />
+          <div
+            v-if="message.generatedFiles?.length"
+            class="message-generated-files"
+          >
+            <ul class="generated-file-list">
+              <li
+                v-for="(file, idx) in message.generatedFiles"
+                :key="`${getGeneratedFileKey(file)}-${idx}`"
+                class="chat-attachment-item generated-file-item"
+                :class="{ 'is-expired': !isShare && isGeneratedFileExpired(file) }"
+              >
+                <UiIcon
+                  :class="['generated-file-icon', getGeneratedFileColorClass(file.fileName)]"
+                  :name="getGeneratedFileIconName(file.fileName)"
+                  size="24"
+                />
+                <div class="generated-file-info">
+                  <p
+                    class="chat-attachment-name"
+                    :title="file.fileName"
+                  >
+                    {{ getGeneratedFileBaseName(file.fileName) }}
+                  </p>
+                  <p class="generated-file-meta">
+                    <span class="generated-file-ext">{{ getGeneratedFileExt(file.fileName) }}</span>
+                    <span v-if="getGeneratedFileMetaText(file)">{{ getGeneratedFileMetaText(file) }}</span>
+                  </p>
+                </div>
+                <UiBadge
+                  v-if="isShare || isGeneratedFileExpired(file)"
+                  variant="default"
+                  size="sm"
+                >
+                  {{ isShare ? '공유되지 않음' : '만료됨' }}
+                </UiBadge>
+                <UiButton
+                  v-else
+                  variant="outline"
+                  size="sm"
+                  :loading="downloadingGeneratedFileKey === getGeneratedFileKey(file)"
+                  @click="onDownloadGeneratedFile(file)"
+                >
+                  <template #icon-left>
+                    <UiIcon
+                      name="download"
+                      size="14"
+                    />
+                  </template>
+                  다운로드
+                </UiButton>
+              </li>
+            </ul>
+          </div>
           <template v-if="message.groundingSources?.length">
             <p class="message-grounding-sources-head">
               <UiBadge
@@ -368,7 +421,9 @@
 </template>
 
 <script setup lang="ts">
+import { UiIcon } from '@leechanyong/ispark-ui'
 import type {
+  ChatGeneratedFile,
   ChatGroundingSourceItem,
   ChatMessage,
   KnowledgeItem,
@@ -424,6 +479,15 @@ import {
 } from '~/utils/chat/translateAgentUtil'
 import { findLinkedNewsCuratorAnswer, resolveNewsCuratorItemsForCard } from '~/utils/chat/newsCuratorUtil'
 import { attachmentsRequireSummaryIndicator } from '~/utils/chat/chatAttachmentDisplayUtil'
+import {
+  downloadGeneratedFile,
+  getGeneratedFileBaseName,
+  getGeneratedFileColorClass,
+  getGeneratedFileExt,
+  getGeneratedFileIconName,
+  getGeneratedFileMeta,
+  isGeneratedFileExpired,
+} from '~/utils/chat/generatedFileUtil'
 import {
   parseSurveyConfigFromAgent,
   resolveSurveyConfigByAgentId,
@@ -1187,6 +1251,27 @@ const translateDownloadFormatOptions = [
 
 const onDownloadTranslationResult = () => {
   downloadTranslationResult(props.message.rContent ?? '', translateDownloadFormat.value, '번역결과')
+}
+
+/** 다운로드 진행 중인 생성 파일 키 — 한 번에 하나만 받는다 */
+const downloadingGeneratedFileKey = ref('')
+
+const getGeneratedFileKey = (file: ChatGeneratedFile) => file.downloadUrl ?? file.fileName
+
+/** 공유 화면 — 생성 파일은 공유 옵션과 무관하게 목록만 보이고 다운로드는 불가 */
+const getGeneratedFileMetaText = (file: ChatGeneratedFile) =>
+  props.isShare ? '공유되지 않은 파일입니다' : getGeneratedFileMeta(file)
+
+const onDownloadGeneratedFile = async (file: ChatGeneratedFile) => {
+  if (downloadingGeneratedFileKey.value) return
+  downloadingGeneratedFileKey.value = getGeneratedFileKey(file)
+  try {
+    await downloadGeneratedFile(file)
+  } catch (err) {
+    openToast({ message: err instanceof Error ? err.message : '파일을 다운로드할 수 없습니다.', type: 'error' })
+  } finally {
+    downloadingGeneratedFileKey.value = ''
+  }
 }
 
 /** AUTO_RECOMMEND 카드에 대응하는 answer가 아직 스트리밍 중인지 */

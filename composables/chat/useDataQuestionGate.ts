@@ -17,7 +17,7 @@ import { EPHEMERAL_VALIDATION_ROOM_ID, isEphemeralValidationRoomId } from '~/uti
 /**
  * 데이터분석(SVC_TY='S') 질문 품질 게이트
  *
- * 흐름: 질문 작성 → [검증] LLM 진단 → 통과 시에만 [요청](Text-to-SQL) 활성.
+ * 흐름: 질문 작성 → [검증] LLM 진단 → 통과(80점 이상) 시 즉시 자동 전송(Text-to-SQL), 미통과 시 보완.
  * - 평가기준/배점/임계는 백엔드 LLM 프롬프트에 위치 (프론트는 결과만 소비)
  * - 게이트는 'S' 모드에서만 적용 — 다른 에이전트 동작에 영향 없음
  * - 검증 후 질문을 수정하면 자동으로 다시 검증 필요 상태가 됨(파생 계산)
@@ -319,12 +319,6 @@ export const useDataQuestionGate = () => {
   /** 진단 결과(보완 등) 노출 여부 — 편집으로 stale 되면 숨김 */
   const showDiagnosis = computed(() => !!diagnosis.value && matchesValidated.value)
 
-  /** 필수항목(무엇을·기간) 충족 여부 — 미충족 시 검증 요청 자체를 막는다 */
-  const requiredFilled = computed(() => {
-    const sc = scoreFromText(chatMessage.value)
-    return sc.criteria.filter((c) => c.required).every((c) => c.met)
-  })
-
   /** 전송 가능 — 게이트 비활성(다른 에이전트)이면 항상 true */
   const canSend = computed(() => (isGateActive.value ? isValidated.value : true))
 
@@ -382,10 +376,10 @@ export const useDataQuestionGate = () => {
     )
   }
 
-  /** 검증 실행 — 백엔드 LLM 진단 호출 (필수항목 미충족 시 차단) */
-  const validate = async () => {
+  /** 검증 실행 — 백엔드 LLM 진단 호출, 통과(READY·80점 이상) 여부 반환 */
+  const validate = async (): Promise<boolean> => {
     const question = chatMessage.value.trim()
-    if (!question || isValidating.value || !requiredFilled.value) return
+    if (!question || isValidating.value) return false
     isValidating.value = true
     gateStatus.value = 'validating'
     try {
@@ -394,15 +388,15 @@ export const useDataQuestionGate = () => {
       validatedQuestion.value = chatMessage.value
       gateStatus.value = result.status === 'READY' && result.sqlGenerationAllowed ? 'passed' : 'needs_fix'
 
-      if (gateStatus.value === 'passed') {
-        return
-      }
+      if (gateStatus.value === 'passed') return true
 
       await showValidationPreview(question, result)
+      return false
     } catch {
       diagnosis.value = null
       gateStatus.value = 'idle'
       openToast({ message: '질의 검증에 실패했습니다. 잠시 후 다시 시도해주세요.', type: 'error' })
+      return false
     } finally {
       isValidating.value = false
     }
@@ -470,7 +464,6 @@ export const useDataQuestionGate = () => {
     isGateActive,
     isValidating,
     isValidated,
-    requiredFilled,
     canSend,
     diagnosis,
     showDiagnosis,
@@ -567,8 +560,10 @@ export const useDataQuestionGuide = (props: DataQuestionGuideProps) => {
   })
   const formulaScore = computed(() => scoreFromText(formulaTextSource.value))
   const formulaItems = computed(() => buildFormulaItems(formulaScore.value))
-  /** 질문 작성 전(빈 입력)에는 미충족 안내를 띄우지 않는다 */
-  const requiredMissingCount = computed(() => (formulaTextSource.value ? countRequiredMissing(formulaScore.value) : 0))
+  /** 검증 요청 전·통과 후에는 미충족 안내를 띄우지 않는다 — 검증 결과가 보완 필요일 때만 노출 */
+  const requiredMissingCount = computed(() =>
+    showDiagnosis.value && !isReadyPass.value ? countRequiredMissing(formulaScore.value) : 0,
+  )
 
   const onApplyFormulaExample = () => {
     applySuggestedQuestion(FORMULA_EXAMPLE_QUESTION)

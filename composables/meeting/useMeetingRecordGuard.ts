@@ -99,9 +99,10 @@ const uploadBackupSegment = (meetingId: number, index: number, blob: Blob, attac
 }
 
 /** 실시간 자막 임시 토큰 — 녹음 중 재연결에도 쓰이므로 로그인 끊김 시 화면을 옮기지 않음 */
-const fetchRealtimeTokenSafe = () =>
+const fetchRealtimeTokenSafe = (meetingId?: number | null) =>
   backgroundRequest<{ successYn?: boolean; returnMsg?: string; token: string; expiresAt: number }>(
-    '/api/meeting/realtime-token',
+    // meetingId 가 있으면 서버가 회의 제목 · 참석자를 전사 문맥 힌트로 넣음
+    meetingId ? `/api/meeting/realtime-token?meetingId=${meetingId}` : '/api/meeting/realtime-token',
   )
 
 /** 회의 종료 오디오 업로드 (10분 미만 녹음 — 백업 조각 없음) */

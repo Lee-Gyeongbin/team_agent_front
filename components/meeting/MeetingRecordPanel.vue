@@ -637,7 +637,7 @@ onBeforeRouteLeave(async (_to, _from, next) => {
  * @param startIndex 첫 백업 조각 번호 (이어서 녹음이면 서버의 마지막 번호 + 1)
  */
 const onClickStart = async (startIndex = 0, isResumeFromPause = false) => {
-  const { started, captionOk } = await startRecording()
+  const { started, captionOk } = await startRecording(meetingId.value)
   if (!started) {
     openToast({ message: '녹음을 시작할 수 없습니다. 마이크 권한을 확인해주세요.', type: 'error' })
     return

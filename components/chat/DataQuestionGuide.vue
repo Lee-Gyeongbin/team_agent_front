@@ -22,7 +22,6 @@
       <div class="dq-guide__header-text">
         <div class="dq-guide__header-main">
           <h2 class="dq-guide__title">T2S 질의 가이드</h2>
-          <p class="dq-guide__subtitle">단계별로 입력하면 더 정확한 데이터를 조회할 수 있어요</p>
         </div>
         <div class="dq-guide__header-status">
           <p
@@ -45,8 +44,10 @@
         class="dq-guide__toggle"
         aria-hidden="true"
       >
-        <i
-          class="size-14 dq-guide__toggle-icon icon-chevron-down"
+        <UiIcon
+          name="chevron-down"
+          size="14"
+          class="dq-guide__toggle-icon"
           :style="{ transform: isOpen ? 'rotate(0deg)' : 'rotate(180deg)' }"
         />
       </span>
@@ -110,6 +111,7 @@
 </template>
 
 <script setup lang="ts">
+import { UiIcon } from '@leechanyong/ispark-ui'
 import { useDataQuestionGuide } from '~/composables/chat/useDataQuestionGate'
 
 interface Props {
@@ -231,14 +233,7 @@ const {
 
   &__title {
     margin: 0;
-    @include typo($body-large-bold, $color-text-heading);
-    font-size: 18px;
-  }
-
-  &__subtitle {
-    margin: 2px 0 0;
-    @include typo($body-small, $color-text-secondary);
-    font-size: 13px;
+    @include typo($body-xlarge-bold, $color-text-heading);
   }
 
   &__score {
@@ -247,8 +242,7 @@ const {
     justify-content: flex-end;
     gap: 6px;
     margin: 0;
-    @include typo($body-caption-bold, $color-text-secondary);
-    font-size: 13px;
+    @include typo($body-small-bold, $color-text-secondary);
 
     &.is-pass {
       color: var(--dq-theme-color, var(--color-primary, #{$color-primary}));
@@ -262,10 +256,7 @@ const {
     padding: 4px 12px;
     border-radius: 999px;
     background: #e25555;
-    color: #fff;
-    font-weight: 500;
-    font-size: 13px;
-    line-height: 1.2;
+    @include typo($body-small-bold, #fff);
   }
 
   &__toggle {
@@ -334,16 +325,17 @@ const {
 
   &__formula-card {
     display: flex;
-    flex-direction: column;
-    padding: 16px 18px 14px;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 18px;
     border-radius: $border-radius-lg;
   }
 
   &__formula-head {
     display: flex;
     align-items: center;
+    flex-shrink: 0;
     gap: 8px;
-    margin-bottom: 14px;
   }
 
   &__formula-icon {
@@ -359,10 +351,12 @@ const {
 
   &__formula-row {
     display: flex;
-    flex-wrap: wrap;
+    flex: 1;
+    min-width: 0;
+    flex-wrap: nowrap;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
   }
 
   &__formula-plus {
@@ -423,7 +417,6 @@ const {
     background: rgba(var(--dq-theme-rgb, 46, 163, 242), 0.14);
     line-height: 1;
     @include typo($body-small-bold, var(--dq-theme-color, var(--color-primary, #{$color-primary})));
-    font-size: 13px;
   }
 
   &__formula-example-text {
@@ -437,7 +430,6 @@ const {
     cursor: pointer;
     line-height: 1.55;
     @include typo($body-medium, $color-text-primary);
-    font-size: 15px;
 
     &:hover {
       color: var(--dq-theme-color, var(--color-primary, #{$color-primary}));
@@ -452,6 +444,17 @@ const {
 
     &__content {
       padding: 14px 16px 16px;
+    }
+
+    &__formula-card {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    &__formula-row {
+      flex-wrap: wrap;
+      justify-content: flex-start;
     }
   }
 }
