@@ -113,7 +113,43 @@
         />
       </div>
 
-      <!-- 사용 여부 -->
+      <div v-if="canAssign" class="com-setting-field-row is-top">
+        <label id="menu-role-groups-label" class="com-setting-label">권한그룹 지정</label>
+        <div class="com-setting-field-input menu-role-permissions" role="group" aria-labelledby="menu-role-groups-label">
+          <p v-if="rolesLoading">권한그룹을 불러오는 중입니다.</p>
+          <p v-else-if="rolesError">
+            {{ rolesError }}
+            <UiButton variant="outline" size="sm" @click="loadRoles">다시 불러오기</UiButton>
+          </p>
+          <p v-else-if="!roles.length">사용 가능한 권한그룹이 없습니다.</p>
+          <UiTable
+            v-else
+            class="menu-role-table"
+            :columns="roleGroupColumns"
+            :data="roles"
+          >
+            <template v-for="column in permissionColumns" :key="column.key" #[`header-${column.key}`]>
+              <span class="role-perm-th" :title="column.tip">
+                <UiCheckbox
+                  :label="column.label"
+                  :model-value="column.all"
+                  :disabled="menu.useYn === 'N' || !column.targets.length"
+                  @update:model-value="(checked) => setPermissions(column.targets, column.key, checked === true)"
+                />
+              </span>
+            </template>
+            <template v-for="column in permissionColumns" :key="column.key" #[`cell-${column.key}`]="{ row }">
+              <UiCheckbox
+                :label="`${(row as RoleItem).roleName} ${column.label}`"
+                label-hidden
+                :disabled="menu.useYn === 'N'"
+                :model-value="permissions.get((row as RoleItem).roleId)?.[column.key] === 'Y'"
+                @update:model-value="(checked) => setPermissions([(row as RoleItem).roleId], column.key, checked === true)"
+              />
+            </template>
+          </UiTable>
+        </div>
+      </div>
       <div class="com-setting-field-row">
         <label class="com-setting-label">사용 여부</label>
         <div class="menu-use-yn-field flex items-center gap-2">
@@ -138,10 +174,13 @@
 </template>
 
 <script setup lang="ts">
-import { UiButton, UiInput, UiSelect, UiToggle } from '@leechanyong/ispark-ui'
+import { UiButton, UiCheckbox, UiInput, UiSelect, UiTable, UiToggle } from '@leechanyong/ispark-ui'
 import AgentIconSelectModal from '~/components/agent/AgentIconSelectModal.vue'
 import { useAgentStore } from '~/composables/agent/useAgentStore'
+import { useRoleManageApi } from '~/composables/role-manage/useRoleManageApi'
 import type { MenuTreeItem } from '~/types/menu'
+import { roleMenuColumns, rolePermItems } from '~/types/role-manage'
+import type { RoleItem } from '~/types/role-manage'
 import type { SelectOption } from '~/components/ui/UiSelect.vue'
 
 interface Props {
@@ -163,6 +202,60 @@ const isIconModalOpen = ref(false)
 
 const onPatch = (partial: Partial<MenuTreeItem>) => {
   menu.value = { ...menu.value, ...partial }
+}
+
+const { canRead, canFunc } = usePermission()
+const { fetchRoleList } = useRoleManageApi()
+const canAssign = computed(() => !menu.value.menuId
+  && canFunc('/menu-manage') && canRead('/role-manage') && canFunc('/role-manage'))
+const roles = ref<RoleItem[]>([])
+const rolesLoading = ref(false)
+const rolesError = ref('')
+const permissions = computed(() => new Map(menu.value.rolePermissions?.map((row) => [row.roleId, row])))
+
+async function loadRoles() {
+  if (rolesLoading.value) return
+  rolesLoading.value = true
+  rolesError.value = ''
+  try {
+    roles.value = (await fetchRoleList()).filter((role) => role.useYn === 'Y')
+  } catch (error) {
+    rolesError.value = error instanceof Error ? error.message : '권한그룹을 불러오지 못했습니다.'
+  } finally {
+    rolesLoading.value = false
+  }
+}
+
+watch(canAssign, (visible) => {
+  if (visible) void loadRoles()
+}, { immediate: true })
+
+const roleGroupColumns = roleMenuColumns.map((column) => {
+  if (column.key === 'menuName') return { ...column, key: 'roleName', label: '권한그룹', headerAlign: 'center' as const }
+  if (column.key === 'funcYn') return { ...column, label: '편집', width: '170px' }
+  return { ...column, width: '100px' }
+})
+
+const permissionColumns = computed(() => rolePermItems.map((column) => {
+  const targets = roles.value.map(({ roleId }) => roleId)
+  const selected = targets.filter((roleId) => permissions.value.get(roleId)?.[column.key] === 'Y').length
+  return { ...column, label: column.key === 'funcYn' ? '편집' : column.label, targets, all: selected > 0 && selected === targets.length }
+}))
+
+function setPermissions(roleIds: string[], key: 'readYn' | 'funcYn', enabled: boolean) {
+  const next = new Map(permissions.value)
+  for (const roleId of roleIds) {
+    const row = next.get(roleId)
+    if (key === 'readYn') {
+      if (enabled) next.set(roleId, row ?? { roleId, readYn: 'Y', funcYn: 'N' })
+      else next.delete(roleId)
+    } else if (enabled) {
+      next.set(roleId, { roleId, readYn: 'Y', funcYn: 'Y' })
+    } else if (row) {
+      next.set(roleId, { ...row, funcYn: 'N' })
+    }
+  }
+  onPatch({ rolePermissions: [...next.values()] })
 }
 
 /** 트리에서 menuId → 메뉴명 */
@@ -305,6 +398,49 @@ onMounted(() => {
 
 .menu-detail-form-body {
   width: 100%;
+}
+
+.menu-role-permissions {
+  flex: 1;
+  min-width: 0;
+}
+
+.menu-role-table {
+  width: 100%;
+
+  :deep(.ui-table) {
+    width: 100%;
+
+    th,
+    td {
+      font-size: $font-size-base;
+    }
+
+    tbody td {
+      height: 40px;
+      padding-block: 6px;
+    }
+  }
+
+  :deep(.ui-checkbox) {
+    align-items: center;
+  }
+
+  :deep(.ui-checkbox-label) {
+    font-size: $font-size-base;
+  }
+
+  :deep(thead th),
+  :deep(thead .ui-checkbox-label) {
+    font-weight: 700;
+    text-align: center;
+  }
+
+  :deep(.ui-checkbox-box) {
+    width: 15px;
+    height: 15px;
+    margin-top: 0;
+  }
 }
 
 .menu-icon-picker-row {

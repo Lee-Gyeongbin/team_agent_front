@@ -144,8 +144,10 @@ const handleAddMenu = (parent: MenuTreeItem | null = null) => {
  * 메뉴 저장 — 신규(isNewMenu=true)·수정(isNewMenu=false) 모두 fetchSaveMenu 단일 API 사용
  * 신규: 저장 후 selectedMenu 초기화 / 수정: 트리 갱신 후 해당 노드 재선택
  */
+let menuSaveInProgress = false
+
 const handleSaveMenu = async (): Promise<void> => {
-  if (!selectedMenu.value) return
+  if (!selectedMenu.value || menuSaveInProgress) return
   if (!selectedMenu.value.menuName.trim()) {
     openToast({ message: '메뉴명을 입력해 주세요.', type: 'warning' })
     return
@@ -157,9 +159,11 @@ const handleSaveMenu = async (): Promise<void> => {
 
   const savingNew = isNewMenu.value
   const menuId = selectedMenu.value.menuId
+  menuSaveInProgress = true
 
   try {
-    await fetchSaveMenu(selectedMenu.value)
+    const menu = selectedMenu.value
+    await fetchSaveMenu(menu.useYn === 'N' ? { ...menu, rolePermissions: undefined } : menu)
     await handleFetchMenuManageTree()
 
     if (savingNew) {
@@ -173,8 +177,10 @@ const handleSaveMenu = async (): Promise<void> => {
     }
 
     openToast({ message: '저장되었습니다.', type: 'success' })
-  } catch {
-    openToast({ message: '메뉴 저장에 실패했습니다.', type: 'error' })
+  } catch (error) {
+    openToast({ message: error instanceof Error ? error.message : '메뉴 저장에 실패했습니다.', type: 'error' })
+  } finally {
+    menuSaveInProgress = false
   }
 }
 

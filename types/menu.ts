@@ -19,8 +19,15 @@ export interface MenuItem {
 
 /** 트리 렌더링용 메뉴 아이템 (펼침 상태 포함) */
 export interface MenuTreeItem extends MenuItem {
+  rolePermissions?: MenuRolePermission[]
   expanded?: boolean
   children?: MenuTreeItem[]
+}
+
+export interface MenuRolePermission {
+  roleId: string
+  readYn: 'Y' | 'N'
+  funcYn: 'Y' | 'N'
 }
 
 /** /menuList.do API 응답 */

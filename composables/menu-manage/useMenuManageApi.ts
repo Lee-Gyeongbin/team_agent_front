@@ -27,7 +27,8 @@ export const useMenuManageApi = () => {
 
   /** 현재 메뉴 상세 수정 저장 */
   const fetchSaveMenu = async (item: MenuTreeItem): Promise<void> => {
-    await post('/menumanage/save.do', item)
+    const res = await post<{ result: string; msg?: string }>('/menumanage/save.do', item)
+    if (res.result !== 'SUCCESS') throw new Error(res.msg || '메뉴 저장에 실패했습니다.')
   }
 
   return { fetchMenuManageList, fetchUpdateMenuOrder, fetchSaveMenu }
