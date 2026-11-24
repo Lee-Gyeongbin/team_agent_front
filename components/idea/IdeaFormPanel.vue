@@ -10,8 +10,8 @@
     :confirm-before-close="false"
     @update:open="(value) => !value && $emit('close')"
   >
-    <div class="com-setting-form idea-form">
-      <div class="idea-form-row">
+    <div class="com-setting-form inq-form-panel">
+      <div class="inq-form-row">
         <div class="url-reg-field">
           <label class="url-reg-label">구분 <span class="required">*</span></label>
           <UiSelect
@@ -51,22 +51,24 @@
         />
       </div>
 
-      <div class="url-reg-field idea-form-grow">
+      <div class="url-reg-field inq-content-field">
         <label class="url-reg-label">아이디어 내용 <span class="required">*</span></label>
         <!-- 드로어를 열 때마다 새로 만들어 입력값으로 초기화 -->
-        <IdeaRichEditor
+        <InqRichEditor
           v-if="isOpen"
           ref="contentRef"
           :model-value="formData.content"
-          placeholder="내용을 입력하세요"
           @update:model-value="(value) => onFieldChange('content', value)"
         />
       </div>
 
-      <IdeaAttachBox
-        :model-value="formData.files"
-        @update:model-value="onFilesChange"
-      />
+      <div class="url-reg-field inq-attach">
+        <label class="url-reg-label">첨부파일</label>
+        <IdeaAttachBox
+          :model-value="formData.files"
+          @update:model-value="onFilesChange"
+        />
+      </div>
     </div>
 
     <template #footer>
@@ -92,6 +94,7 @@
 
 <script setup lang="ts">
 import { UiDrawer, UiInput, UiSelect, UiButton } from '@leechanyong/ispark-ui'
+import InqRichEditor from '~/components/inq/InqRichEditor.vue'
 import { openToast } from '~/composables/useToast'
 import type { IdeaFile, IdeaFormData } from '~/types/idea'
 

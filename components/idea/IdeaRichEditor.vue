@@ -12,6 +12,7 @@
         <button
           v-else
           type="button"
+          :disabled="disabled"
           class="idea-editor-btn"
           :class="{ 'is-active': tool.isActive?.() }"
           :title="tool.title"
@@ -45,6 +46,7 @@ import { IDEA_TEXT_MAX_LENGTH } from '~/types/idea'
 interface Props {
   modelValue: string
   placeholder?: string
+  disabled?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -76,6 +78,7 @@ const CharacterLimit = Extension.create({
 
 const editor = useEditor({
   content: props.modelValue,
+  editable: !props.disabled,
   // 상세 화면과 같은 서식 스타일(.idea-rich) 적용
   editorProps: { attributes: { class: 'idea-rich' } },
   extensions: [
@@ -99,6 +102,8 @@ const editor = useEditor({
     emit('update:modelValue', html)
   },
 })
+
+watch(() => props.disabled, (disabled) => editor.value?.setEditable(!disabled, false))
 
 type ToolItem = { key: string; label: string; title: string; run: () => void; isActive?: () => boolean }
 

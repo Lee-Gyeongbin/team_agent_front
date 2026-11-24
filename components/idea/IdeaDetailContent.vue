@@ -25,7 +25,7 @@
 
   <div class="notice-detail-body">
     <div
-      class="notice-content-box idea-rich"
+      class="notice-content-box inq-rich"
       v-html="idea.content"
     />
   </div>

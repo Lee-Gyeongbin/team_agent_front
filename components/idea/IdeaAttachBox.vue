@@ -1,48 +1,47 @@
 <template>
-  <div class="idea-attach-box">
-    <UiFileUpload
-      variant="dropzone"
-      label="첨부파일 추가"
-      hint="클릭하거나 파일을 끌어다 놓으세요. 한 번에 한 파일, 최대 20MB"
-      :accept="IDEA_FILE_ACCEPT"
-      :max-size="IDEA_FILE_MAX_SIZE"
-      @upload="addFile"
-    />
-
-    <IdeaFileList
-      v-if="modelValue.length"
-      :file-list="modelValue"
-      removable
-      @remove="removeFile"
-      @clear="$emit('update:modelValue', [])"
-    />
-  </div>
+  <UiFileUpload
+    :model-value="newFiles"
+    :accept="IDEA_FILE_ACCEPT"
+    :allowed-extensions="allowedExtensions"
+    :max-size="IDEA_FILE_MAX_SIZE"
+    hint="PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, HWP, CSV, TXT (20MB)"
+    :attached-file-list="attachedFileItems"
+    @update:model-value="updateNewFiles"
+    @remove-attached-file="removeAttachedFile"
+  />
 </template>
 
 <script setup lang="ts">
-import { UiFileUpload } from '@leechanyong/ispark-ui'
+import UiFileUpload from '~/components/ui/UiFileUpload.vue'
 import { IDEA_FILE_ACCEPT, IDEA_FILE_MAX_SIZE } from '~/types/idea'
 import type { IdeaFile } from '~/types/idea'
+import type { FileItem } from '~/types/repository'
 
-interface Props {
-  modelValue: IdeaFile[]
+const props = defineProps<{ modelValue: IdeaFile[] }>()
+const emit = defineEmits<{ 'update:modelValue': [files: IdeaFile[]] }>()
+
+const allowedExtensions = IDEA_FILE_ACCEPT.split(',')
+const newFiles = computed(() => props.modelValue.flatMap(({ file }) => (file ? [file] : [])))
+const attachedFiles = computed(() => props.modelValue.filter(({ file }) => !file))
+const attachedFileItems = computed<FileItem[]>(() =>
+  attachedFiles.value.map((file) => ({
+    docFileId: file.ideaFileId ?? '',
+    fileName: file.fileNm,
+    fileSize: String(file.fileSize),
+    filePath: '',
+    fileType: '',
+  })),
+)
+
+const updateNewFiles = (files: File[]) => {
+  emit('update:modelValue', [
+    ...attachedFiles.value,
+    ...files.map((file) => ({ fileNm: file.name, fileSize: file.size, file })),
+  ])
 }
 
-const props = defineProps<Props>()
-
-const emit = defineEmits<{
-  'update:modelValue': [files: IdeaFile[]]
-}>()
-
-const addFile = (file: File) => {
-  if (props.modelValue.some((item) => item.fileNm === file.name && item.fileSize === file.size)) return
-  emit('update:modelValue', [...props.modelValue, { fileNm: file.name, fileSize: file.size, file }])
-}
-
-const removeFile = (index: number) => {
-  emit(
-    'update:modelValue',
-    props.modelValue.filter((_, idx) => idx !== index),
-  )
+const removeAttachedFile = (_file: FileItem, index: number) => {
+  const attachedFile = attachedFiles.value[index]
+  emit('update:modelValue', props.modelValue.filter((file) => file !== attachedFile))
 }
 </script>
