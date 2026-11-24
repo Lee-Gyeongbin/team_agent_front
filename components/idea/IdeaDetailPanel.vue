@@ -51,6 +51,7 @@
 
 <script setup lang="ts">
 import { UiButton, UiDrawer } from '@leechanyong/ispark-ui'
+import IdeaComments from '~/components/idea/IdeaComments.vue'
 import type { IdeaDetail } from '~/types/idea'
 
 interface Props {

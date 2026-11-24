@@ -5,6 +5,15 @@ export const IDEA_TYPE_CD_AGENT = '001'
 
 export const IDEA_TEXT_MAX_LENGTH = 8_000
 
+export interface IdeaComment {
+  commentId: string
+  parentId: string | null
+  content: string
+  createId: string
+  createNm: string | null
+  createDt: string
+}
+
 /** 첨부파일 1개당 최대 크기 (20MB) */
 export const IDEA_FILE_MAX_SIZE = 20 * 1024 * 1024
 export const IDEA_FILE_ACCEPT = '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.hwp,.csv,.txt'

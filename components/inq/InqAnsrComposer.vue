@@ -5,15 +5,20 @@
     :class="{ 'is-new': isNew }"
   >
     <p class="inq-sub-title">{{ title }}</p>
-    <UiMarkdownEditor
-      :model-value="text"
-      :placeholder="isNew ? '관리자 답변 내용을 입력하세요' : '내용을 입력하세요'"
-      @update:model-value="(value) => $emit('update:text', value)"
-    />
+    <slot>
+      <UiMarkdownEditor
+        :model-value="text"
+        :placeholder="placeholder ?? (isNew ? '관리자 답변 내용을 입력하세요' : '내용을 입력하세요')"
+        :editable="!disabled"
+        @update:model-value="(value) => $emit('update:text', value)"
+      />
+    </slot>
     <div class="inq-cmt-actions end">
       <UiButton
+        v-if="!hideCancel"
         variant="outline"
         size="sm"
+        :disabled="disabled"
         @click="$emit('cancel')"
       >
         취소
@@ -21,9 +26,10 @@
       <UiButton
         variant="primary"
         size="sm"
+        :disabled="disabled || saveDisabled"
         @click="$emit('save')"
       >
-        저장
+        {{ saveLabel ?? '저장' }}
       </UiButton>
     </div>
   </div>
@@ -32,11 +38,17 @@
 <script setup lang="ts">
 import { UiButton, UiMarkdownEditor } from '@leechanyong/ispark-ui'
 
-defineProps<{
+const props = defineProps<{
   title: string
   text: string
   /** 관리자 답변 신규 등록 입력창 */
   isNew?: boolean
+  hideCancel?: boolean
+  disabled?: boolean
+  saveDisabled?: boolean
+  saveLabel?: string
+  skipAutoScroll?: boolean
+  placeholder?: string
 }>()
 
 defineEmits<{
@@ -50,6 +62,7 @@ const root = ref<HTMLElement | null>(null)
 let resizeObserver: ResizeObserver | null = null
 let stopTimer: ReturnType<typeof setTimeout> | null = null
 onMounted(() => {
+  if (props.skipAutoScroll) return
   const el = root.value
   if (!el) return
   const reveal = () => el.scrollIntoView({ block: 'nearest' })

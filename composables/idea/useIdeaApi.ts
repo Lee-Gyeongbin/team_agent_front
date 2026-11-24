@@ -2,6 +2,7 @@ import { useApi } from '~/composables/com/useApi'
 import { useApi_multipart } from '~/composables/com/useApi_multipart'
 import type { ChatFileViewResponse } from '~/types/chat'
 import type {
+  IdeaComment,
   IdeaDetail,
   IdeaFormData,
   IdeaListResponse,
@@ -18,6 +19,17 @@ export const useIdeaApi = () => {
 
   /** 상세 (첨부파일·내 추천 여부 포함) */
   const fetchIdeaDetail = (ideaId: string) => post<IdeaResult<IdeaDetail>>('/idea/detail.do', { ideaId })
+
+  const fetchIdeaComments = (ideaId: string) =>
+    post<IdeaResult<IdeaComment[]>>('/idea/comment/list.do', { ideaId })
+
+  const saveIdeaComment = (
+    ideaId: string,
+    comment: Pick<IdeaComment, 'content'> & Partial<Pick<IdeaComment, 'commentId' | 'parentId'>>,
+  ) => post<IdeaResult>('/idea/comment/save.do', { ideaId, ...comment, richText: true })
+
+  const deleteIdeaComment = (ideaId: string, commentId: string) =>
+    post<IdeaResult>('/idea/comment/delete.do', { ideaId, commentId })
 
   const fetchSaveIdea = ({ files, ...idea }: IdeaFormData) => {
     const newFiles = files.flatMap(({ file }) => (file ? [file] : []))
@@ -42,6 +54,9 @@ export const useIdeaApi = () => {
   return {
     fetchIdeaList,
     fetchIdeaDetail,
+    fetchIdeaComments,
+    saveIdeaComment,
+    deleteIdeaComment,
     fetchSaveIdea,
     fetchDeleteIdea,
     fetchToggleIdeaLike,

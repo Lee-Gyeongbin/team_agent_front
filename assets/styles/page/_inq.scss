@@ -132,7 +132,8 @@
 
 // 문의 상세 — 본문·첨부·답변
 .inq-detail-panel,
-.inq-manage-detail-panel {
+.inq-manage-detail-panel,
+.idea-comment-thread {
   gap: $spacing-md;
 
   .inq-pane-top {
