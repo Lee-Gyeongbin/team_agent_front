@@ -18,7 +18,7 @@
           v-model="nameKeyword"
           type="search"
           size="md"
-          placeholder="전사 성명 검색"
+          placeholder="성명 또는 아이디 검색"
           @search="handleSearchUser"
           @enter="handleSearchUser"
         />
@@ -56,7 +56,7 @@
       <div class="codes-left ur-p">
         <div class="codes-left-header flex justify-between items-center">
           <p class="com-setting-section-title is-inline">
-            직원목록 <span class="ur-count">{{ visibleOrgUserList.length }}</span>
+            직원목록 <span class="ur-count">{{ highlightLeftIds.length }}</span>
           </p>
           <button
             v-if="visibleOrgUserList.length > 0"
@@ -95,7 +95,7 @@
                 <span class="ur-user-name">{{ user.userNm }}</span>
                 <span class="ur-user-secondary">{{ user.userId }}</span>
               </div>
-              <span class="ur-user-secondary">{{ (user.orgId && orgPaths.get(user.orgId)) || user.orgNm || '소속 조직 없음' }}</span>
+              <span class="ur-user-secondary">{{ getOrgPath(user) }}</span>
             </div>
             <span
               v-if="isUserSelected(user.userId)"
@@ -156,7 +156,7 @@
       <div class="codes-left ur-p">
         <div class="codes-left-header flex justify-between items-center">
           <p class="com-setting-section-title is-inline">
-            선택직원 <span class="ur-count">{{ selectedUserList.length }}</span>
+            선택직원 <span class="ur-count">{{ highlightRightIds.length }}</span>
           </p>
           <button
             v-if="hasFunc && selectedUserList.length > 0"
@@ -185,7 +185,7 @@
                 <span class="ur-user-name">{{ user.userNm }}</span>
                 <span class="ur-user-secondary">{{ user.userId }}</span>
               </div>
-              <span class="ur-user-secondary">{{ user.orgNm || '소속 조직 없음' }}</span>
+              <span class="ur-user-secondary ur-selected-user-org">{{ getOrgPath(user) }}</span>
             </div>
             <button
               v-if="hasFunc"
@@ -214,12 +214,16 @@ import excelIcon from '~/assets/icons/svg/xlsx_icon.svg'
 import { UiButton, UiIcon, UiInput, UiSelect } from '@leechanyong/ispark-ui'
 import OrgTreePanel from '~/components/common/OrgTreePanel.vue'
 import type { OrgTreeItem } from '~/types/org-manage'
+import type { RoleUserItem } from '~/types/role-manage'
 
 const emit = defineEmits<{
   'open-excel-upload': []
 }>()
 
 const orgPaths = shallowRef(new Map<string, string>())
+
+const getOrgPath = ({ orgId, orgNm }: RoleUserItem) =>
+  (orgId && orgPaths.value.get(orgId)) || orgNm || '소속 조직 없음'
 
 const setOrgPaths = (nodes: OrgTreeItem[]) => {
   const paths = new Map<string, string>()

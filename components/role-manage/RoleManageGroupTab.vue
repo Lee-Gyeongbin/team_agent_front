@@ -101,10 +101,10 @@
             style="--label-width: 80px"
           >
             <div class="com-setting-field-row">
-              <label class="com-setting-label"><span class="is-required">*</span>권한명</label>
+              <label class="com-setting-label"><span class="is-required">*</span>권한그룹</label>
               <UiInput
                 v-model="roleForm.roleName"
-                placeholder="권한명을 입력하세요"
+                placeholder="권한그룹을 입력하세요"
                 size="sm"
                 :disabled="!hasFunc"
               />

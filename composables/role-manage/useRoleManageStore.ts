@@ -269,7 +269,7 @@ export const useRoleManageStore = () => {
   const handleSaveRole = async () => {
     const roleName = roleForm.value.roleName.trim()
     if (!roleName) {
-      openToast({ message: '권한명을 입력해주세요.', type: 'warning' })
+      openToast({ message: '권한그룹을 입력해주세요.', type: 'warning' })
       return
     }
     try {

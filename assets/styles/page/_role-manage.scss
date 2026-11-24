@@ -394,6 +394,11 @@ button.ui-button.role-excel-button.variant-outline:hover:not(:disabled):not([ari
   @include ellipsis(1);
 }
 
+.ur-selected-user-org {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .ur-remove-btn {
   display: flex;
   align-items: center;
