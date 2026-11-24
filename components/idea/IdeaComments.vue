@@ -15,8 +15,14 @@
         @save="submitComment(true)"
       />
 
-      <div class="inq-answer-list" :class="{ 'idea-comment-list-separated': canComment }">
-        <h4 class="inq-sub-title">댓글</h4>
+      <div
+        ref="commentsList"
+        class="inq-answer-list"
+        :class="{ 'idea-comment-list-separated': canComment }"
+      >
+        <h4 ref="commentsHeading" class="inq-sub-title" tabindex="-1">
+          댓글<span v-if="commentCount > 0" class="idea-comment-count"> [{{ commentCount }}]</span>
+        </h4>
         <p v-if="loadError" role="status">
           {{ loadError }}
           <UiButton size="xs" variant="outline" @click="loadComments">다시 불러오기</UiButton>
@@ -79,11 +85,32 @@ import { openConfirm } from '~/composables/useDialog'
 import InqAnsrComposer from '~/components/inq/InqAnsrComposer.vue'
 import type { IdeaComment, IdeaResult } from '~/types/idea'
 
-const props = defineProps<{ ideaId: string }>()
+const props = defineProps<{ ideaId: string; commentCount: number; jumpToComments: boolean }>()
+const emit = defineEmits<{ 'comment-count': [ideaId: string, count: number] }>()
 const { user } = useAuth()
 const { canFunc } = usePermission()
 const { fetchIdeaComments, saveIdeaComment, deleteIdeaComment } = useIdeaApi()
 const comments = ref<IdeaComment[]>([])
+const commentsHeading = ref<HTMLElement | null>(null)
+const commentsList = ref<HTMLElement | null>(null)
+const initialCommentsLoaded = ref(false)
+watch(
+  () => props.jumpToComments && initialCommentsLoaded.value ? commentsList.value : null,
+  (list, _previousList, onCleanup) => {
+    const drawerBody = list?.closest<HTMLElement>('.ui-drawer-body')
+    if (!list || !drawerBody) return
+    // UiDrawer focuses its first control on the opening frame.
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => {
+        const offset = list.getBoundingClientRect().top - drawerBody.getBoundingClientRect().top
+        commentsHeading.value?.focus({ preventScroll: true })
+        drawerBody.scrollTop += offset - 6
+      })
+    })
+    onCleanup(() => cancelAnimationFrame(frame))
+  },
+  { flush: 'post' },
+)
 const loading = ref(true)
 const loadError = ref('')
 const saving = ref(false)
@@ -136,6 +163,7 @@ async function loadComments() {
     const result = await fetchIdeaComments(props.ideaId)
     checkResult(result, '댓글을 불러오지 못했습니다.')
     comments.value = result.data ?? []
+    emit('comment-count', props.ideaId, comments.value.length)
   } catch {
     loadError.value = '댓글을 불러오지 못했습니다.'
   } finally {
@@ -196,5 +224,8 @@ async function removeComment(comment: IdeaComment) {
   }
 }
 
-onMounted(loadComments)
+onMounted(async () => {
+  await loadComments()
+  initialCommentsLoaded.value = true
+})
 </script>

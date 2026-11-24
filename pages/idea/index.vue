@@ -79,13 +79,24 @@
               sticky-header
             >
               <template #cell-title="{ row }">
-                <button
-                  type="button"
-                  class="notice-title-btn"
-                  @click.stop="onOpenIdeaDetail(row as IdeaListItem)"
-                >
-                  <span class="notice-title-text">{{ row.title }}</span>
-                </button>
+                <div class="idea-title-actions">
+                  <button
+                    type="button"
+                    class="notice-title-btn idea-title-link"
+                    @click.stop="onOpenIdeaDetail(row as IdeaListItem)"
+                  >
+                    <span class="notice-title-text">{{ row.title }}</span>
+                  </button>
+                  <button
+                    v-if="row.commentCnt > 0"
+                    type="button"
+                    class="notice-title-btn idea-comment-link idea-comment-count"
+                    :aria-label="`${row.title} 댓글 ${row.commentCnt}개 보기`"
+                    @click.stop="onOpenIdeaDetail(row as IdeaListItem, true)"
+                  >
+                    [{{ row.commentCnt }}]
+                  </button>
+                </div>
               </template>
             </UiTable>
           </div>
@@ -107,8 +118,10 @@
     <IdeaDetailPanel
       :is-open="isIdeaDetailPanelOpen"
       :idea="selectedIdea"
+      :jump-to-comments="jumpToIdeaComments"
       :is-mine="selectedIdea ? isMyIdea(selectedIdea) : false"
       @like="toggleIdeaLike"
+      @comment-count="updateIdeaCommentCount"
       @edit="onEditIdea"
       @delete="handleDeleteIdea"
       @close="onCloseIdeaDetail"
@@ -150,6 +163,7 @@ const {
   isIdeaFormPanelOpen,
   ideaForm,
   selectedIdea,
+  jumpToIdeaComments,
   panelActionLabel,
   isMyIdea,
   handleSelectIdeaCodeList,
@@ -165,6 +179,7 @@ const {
   handleSaveIdea,
   handleDeleteIdea,
   toggleIdeaLike,
+  updateIdeaCommentCount,
 } = useIdeaStore()
 
 onMounted(async () => {

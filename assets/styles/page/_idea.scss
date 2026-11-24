@@ -12,6 +12,27 @@
   .notice-title-btn .notice-title-text {
     @include ellipsis(1);
   }
+
+  .idea-title-actions {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+  }
+
+  .idea-title-link {
+    min-width: 0;
+  }
+
+  .idea-comment-link {
+    flex: none;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+}
+
+.idea-index .notice-title-btn.idea-comment-count,
+.idea-detail-panel .idea-comment-count {
+  color: $color-error;
 }
 
 // ===================================

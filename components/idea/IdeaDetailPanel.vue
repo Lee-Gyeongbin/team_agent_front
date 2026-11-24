@@ -22,6 +22,9 @@
         v-if="isOpen"
         :key="idea.ideaId"
         :idea-id="idea.ideaId"
+        :comment-count="idea.commentCnt"
+        :jump-to-comments="jumpToComments"
+        @comment-count="(ideaId, count) => $emit('comment-count', ideaId, count)"
       />
     </div>
 
@@ -57,6 +60,7 @@ import type { IdeaDetail } from '~/types/idea'
 interface Props {
   isOpen: boolean
   idea: IdeaDetail | null
+  jumpToComments: boolean
   isMine: boolean
 }
 
@@ -65,6 +69,7 @@ const props = defineProps<Props>()
 defineEmits<{
   close: []
   like: []
+  'comment-count': [ideaId: string, count: number]
   edit: []
   delete: []
 }>()

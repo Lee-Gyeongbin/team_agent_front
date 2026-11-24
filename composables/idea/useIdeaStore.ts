@@ -194,6 +194,7 @@ const userList = createIdeaListState()
 
 const selectedIdea = ref<IdeaDetail | null>(null)
 const isIdeaDetailPanelOpen = ref(false)
+const jumpToIdeaComments = ref(false)
 const isIdeaFormPanelOpen = ref(false)
 
 const createEmptyForm = (): IdeaFormData => ({
@@ -211,10 +212,11 @@ const panelActionLabel = computed<'등록' | '수정'>(() => (ideaForm.value.ide
 /** 본인 글 여부 */
 const isMyIdea = (idea: Pick<IdeaListItem, 'createId'>) => !!idea.createId && idea.createId === getLoginUserId()
 
-const onOpenIdeaDetail = async (idea: IdeaListItem) => {
+const onOpenIdeaDetail = async (idea: IdeaListItem, jumpToComments = false) => {
   const detail = await handleSelectIdeaDetail(idea.ideaId)
   if (!detail) return
   selectedIdea.value = detail
+  jumpToIdeaComments.value = jumpToComments
   isIdeaDetailPanelOpen.value = true
 }
 
@@ -284,6 +286,13 @@ const toggleIdeaLike = async () => {
   if (row) row.likeCnt = idea.likeCnt
 }
 
+const updateIdeaCommentCount = (ideaId: string, count: number) => {
+  const idea = selectedIdea.value
+  if (idea?.ideaId === ideaId) idea.commentCnt = count
+  const row = userList.ideaList.value.find((item) => item.ideaId === ideaId)
+  if (row) row.commentCnt = count
+}
+
 export const useIdeaStore = () => {
   bindIdeaLoginUser()
   return {
@@ -299,6 +308,7 @@ export const useIdeaStore = () => {
     isIdeaFormPanelOpen,
     ideaForm,
     selectedIdea,
+    jumpToIdeaComments,
     panelActionLabel,
     isMyIdea,
     handleSelectIdeaCodeList,
@@ -314,5 +324,6 @@ export const useIdeaStore = () => {
     handleSaveIdea,
     handleDeleteIdea,
     toggleIdeaLike,
+    updateIdeaCommentCount,
   }
 }

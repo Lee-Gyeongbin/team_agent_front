@@ -49,6 +49,7 @@ export interface IdeaListItem {
   agentId: string | null
   agentNm: string | null
   title: string
+  commentCnt: number
   likeCnt: number
   createId: string
   createNm: string
