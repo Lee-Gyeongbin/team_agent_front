@@ -73,6 +73,15 @@ export interface ChatGroundingSourceItem {
   fileName?: string
 }
 
+/** AI 서버가 생성한 파일 1건 — answer_file 이벤트 또는 이력(DB 저장분) */
+export interface ChatGeneratedFile {
+  fileName: string
+  /** AI 서버 기준 다운로드 경로 — 없으면(공유 화면·공유 복사본, 기능 적용 전 이력) 다운로드 불가 */
+  downloadUrl?: string
+  /** 다운로드 링크 만료 시각 (ISO-8601, 오프셋 포함) */
+  expiresAt?: string
+}
+
 export interface ChatSocketMessage {
   type: string
   content?: string
@@ -143,6 +152,8 @@ export interface ChatMessage {
   attachments?: ChatMessageAttachment[]
   /** Web 검색/그라운딩 출처 (answer_source 스트리밍 청크로 수신) */
   groundingSources?: ChatGroundingSourceItem[]
+  /** AI 생성 파일 (answer_file 스트리밍 청크 또는 이력 JSON으로 수신) */
+  generatedFiles?: ChatGeneratedFile[]
   /** 리서치 리포트 HTML (report_html 스트리밍 이벤트로 수신) */
   reportHtml?: string
   /** 리포트 존재 여부 */
@@ -363,6 +374,8 @@ export interface ChatLogListRow {
   chartOption?: VisualizationChartOptionPayload | string
   /** Web 그라운딩 출처 JSON 문자열 — {"items":[{"url","title"},...]} */
   webGroundingJson?: string
+  /** 생성 파일 JSON 문자열 — {"files":[{"filename","mime_type","download_url","expires_at"},...]} */
+  generatedFileJson?: string
   /** 리서치 리포트 HTML */
   reportHtml?: string
   /** 만족도 Y/N (목록 조회 시) */

@@ -565,6 +565,79 @@
       }
     }
 
+    // 생성 파일(answer_file) 목록 — 기존 첨부 칩(.chat-attachment-*)을 세로 목록으로 재사용
+    .message-generated-files {
+      width: 100%;
+
+      .generated-file-list {
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-sm;
+        max-width: 420px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .generated-file-item {
+        flex: none;
+        width: 100%;
+
+        // 만료된 파일 — 이름 흐리게, 클릭 대상 없음(만료됨 배지)
+        &.is-expired {
+          .generated-file-icon {
+            opacity: 0.6;
+          }
+
+          .chat-attachment-name {
+            color: $color-text-placeholder;
+            text-decoration: line-through;
+          }
+        }
+      }
+
+      .chat-attachment-name {
+        @include typo($body-medium);
+        padding-right: 0;
+      }
+
+      .generated-file-info {
+        flex: 1;
+        min-width: 0;
+      }
+
+      // 파일 종류별 색 — pdf·doc은 파일 아이콘(_icons.custom.scss .icon-file-pdf/-doc)의 기존 색, 엑셀은 성공 토큰
+      .generated-file-icon {
+        flex-shrink: 0;
+        color: $color-text-secondary;
+
+        &.type-green {
+          color: $color-success;
+        }
+
+        &.type-red {
+          color: #db3b76;
+        }
+
+        &.type-blue {
+          color: #3c69db;
+        }
+      }
+
+      // 확장자 + 다운로드 시간을 한 줄에 나란히 표시
+      .generated-file-meta {
+        @include typo($body-small, $color-text-secondary);
+        display: flex;
+        align-items: center;
+        gap: $spacing-sm;
+        margin: 0;
+      }
+
+      .generated-file-ext {
+        @include typo($body-small-bold, $color-text-secondary);
+      }
+    }
+
     .message-content-wrap {
       display: flex;
       flex-direction: column;
