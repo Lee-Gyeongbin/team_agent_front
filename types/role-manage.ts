@@ -100,7 +100,7 @@ export type RoleExcelKind = 'role' | 'user'
 /** 권한 그룹 목록 컬럼 */
 export const roleColumns: TableColumn[] = [
   { key: 'no', label: 'No.', width: '60px', align: 'center', headerAlign: 'center' },
-  { key: 'roleName', label: '권한명', width: '160px', align: 'left', headerAlign: 'center' },
+  { key: 'roleName', label: '권한그룹명', width: '160px', align: 'left', headerAlign: 'center' },
   { key: 'description', label: '설명', align: 'left', headerAlign: 'center' },
   { key: 'useYn', label: '사용 여부', width: '84px', align: 'center', headerAlign: 'center' },
   { key: 'defaultYn', label: '기본 적용', width: '84px', align: 'center', headerAlign: 'center' },

@@ -84,6 +84,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   select: [orgId: string]
+  loaded: [nodes: OrgTreeItem[]]
 }>()
 
 const { fetchOrgList } = useUserSelectApi()
@@ -97,6 +98,7 @@ const handleLoadOrgTree = async (): Promise<void> => {
   isLoading.value = true
   try {
     orgTree.value = buildOrgTree(await fetchOrgList())
+    emit('loaded', orgTree.value)
     const firstOrgId = orgTree.value[0]?.orgId
     if (props.autoSelectFirst && !props.selectedOrgId && firstOrgId) emit('select', firstOrgId)
   } catch (error) {

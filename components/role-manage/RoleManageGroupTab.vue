@@ -2,29 +2,17 @@
   <div class="codes-split">
     <!-- 왼쪽: 권한 그룹 목록 -->
     <div class="codes-left">
-      <div class="codes-left-header flex justify-between items-center">
+      <div class="codes-left-header flex flex-wrap justify-between items-center gap-2">
         <p class="com-setting-section-title is-inline">권한 그룹 목록</p>
-        <div class="flex items-center gap-2">
-          <UiDropdownMenu
-            :items="excelMenuItems"
-            align="end"
-            @select="onExcelMenuSelect"
-          >
-            <template #trigger>
-              <UiButton
-                variant="ghost"
-                size="sm"
-              >
-                엑셀
-                <template #icon-right>
-                  <UiIcon
-                    name="chevron-down"
-                    size="14"
-                  />
-                </template>
-              </UiButton>
-            </template>
-          </UiDropdownMenu>
+        <div class="role-list-actions flex flex-wrap items-center">
+          <UiButton class="role-excel-button" variant="outline" size="sm" @click="handleDownloadExcel('role')">
+            <template #icon-left><img :src="excelIcon" class="role-excel-icon" alt="" /></template>
+            엑셀양식다운로드
+          </UiButton>
+          <UiButton v-if="hasFunc" class="role-excel-button" variant="outline" size="sm" @click="emit('open-excel-upload')">
+            <template #icon-left><img :src="excelIcon" class="role-excel-icon" alt="" /></template>
+            엑셀업로드
+          </UiButton>
           <UiButton
             v-if="hasFunc"
             variant="primary"
@@ -182,7 +170,7 @@
             <div class="role-legend-body">
               <span><b>조회</b> — 메뉴 접근, 목록·상세 화면 조회, 엑셀 다운로드</span>
               <span
-                ><b>등록·수정·삭제·업로드</b> — 조회 외 모든 기능을 한 번에 허용 (데이터 등록·수정·삭제, 엑셀
+                ><b>편집</b> — 조회 외 모든 기능을 한 번에 허용 (데이터 등록·수정·삭제, 엑셀
                 업로드)</span
               >
               <span class="role-legend-note">※ 데이터 범위(본인 데이터만 / 전체)는 메뉴별 업무 규칙에 따릅니다.</span>
@@ -197,13 +185,13 @@
             />
             <UiTable
               v-else
-              :columns="roleMenuColumns"
+              :columns="accessMenuColumns"
               :data="menuRows"
               sticky-header
               empty-text="검색된 메뉴가 없습니다."
             >
               <template
-                v-for="perm in rolePermItems"
+                v-for="perm in accessPermissionItems"
                 :key="perm.key"
                 #[`header-${perm.key}`]
               >
@@ -244,7 +232,7 @@
                 </div>
               </template>
               <template
-                v-for="perm in rolePermItems"
+                v-for="perm in accessPermissionItems"
                 :key="perm.key"
                 #[`cell-${perm.key}`]="{ row }"
               >
@@ -275,13 +263,12 @@
 </template>
 
 <script setup lang="ts">
+import excelIcon from '~/assets/icons/svg/xlsx_icon.svg'
 import {
   UiBadge,
   UiButton,
   UiCheckbox,
-  UiDropdownMenu,
   UiEmpty,
-  UiIcon,
   UiInput,
   UiLoading,
   UiSelect,
@@ -325,14 +312,22 @@ const {
 
 const roleTableData = computed(() => roleList.value.map((role, index) => ({ ...role, no: index + 1 })))
 
-/** 다운로드는 조회 권한, 업로드는 기능 권한 */
-const excelMenuItems = computed(() => [
-  { label: '다운로드', value: 'download', icon: 'icon-download' },
-  ...(hasFunc.value ? [{ label: '업로드', value: 'upload', icon: 'icon-upload' }] : []),
-])
+const accessPermissionItems = rolePermItems.map((item) =>
+  item.key === 'funcYn' ? { ...item, label: '편집' } : item,
+)
 
-const onExcelMenuSelect = (value: string): void => {
-  if (value === 'download') handleDownloadExcel('role')
-  else if (value === 'upload') emit('open-excel-upload')
-}
+const accessMenuColumns = roleMenuColumns.map((column) =>
+  column.key === 'funcYn' ? { ...column, label: '편집' } : column,
+)
 </script>
+
+<style scoped lang="scss">
+.role-list-actions {
+  gap: $spacing-sm;
+}
+
+.role-list-actions > :deep(button) {
+  box-sizing: border-box;
+  height: $height-sm;
+}
+</style>

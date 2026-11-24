@@ -36,6 +36,19 @@
   }
 }
 
+button.ui-button.role-excel-button.variant-outline:hover:not(:disabled):not([aria-disabled='true']) {
+  border-color: #64748b;
+  color: #2d3139;
+}
+
+.role-excel-icon {
+  display: block;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
 .role-manage-error {
   display: flex;
   flex-direction: column;
@@ -368,7 +381,14 @@
   @include ellipsis(1);
 }
 
-.ur-user-email {
+.ur-user-identity {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ur-user-secondary {
   @include typo($body-small);
   color: $color-text-disabled;
   @include ellipsis(1);

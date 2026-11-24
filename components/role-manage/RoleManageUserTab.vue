@@ -18,32 +18,20 @@
           v-model="nameKeyword"
           type="search"
           size="md"
-          placeholder="성명·ID·이메일 입력"
+          placeholder="전사 성명 검색"
           @search="handleSearchUser"
           @enter="handleSearchUser"
         />
       </div>
       <div class="ur-right">
-        <UiDropdownMenu
-          :items="excelMenuItems"
-          align="end"
-          @select="onExcelMenuSelect"
-        >
-          <template #trigger>
-            <UiButton
-              variant="ghost"
-              size="md"
-            >
-              엑셀
-              <template #icon-right>
-                <UiIcon
-                  name="chevron-down"
-                  size="14"
-                />
-              </template>
-            </UiButton>
-          </template>
-        </UiDropdownMenu>
+        <UiButton class="role-excel-button" variant="outline" size="md" @click="handleDownloadExcel('user')">
+          <template #icon-left><img :src="excelIcon" class="role-excel-icon" alt="" /></template>
+          엑셀양식다운로드
+        </UiButton>
+        <UiButton v-if="hasFunc" class="role-excel-button" variant="outline" size="md" @click="emit('open-excel-upload')">
+          <template #icon-left><img :src="excelIcon" class="role-excel-icon" alt="" /></template>
+          엑셀업로드
+        </UiButton>
         <UiButton
           v-if="hasFunc"
           variant="primary"
@@ -61,6 +49,7 @@
         class="ur-p"
         :selected-org-id="selectedOrgId"
         @select="handleSelectOrg"
+        @loaded="setOrgPaths"
       />
 
       <!-- 직원목록 -->
@@ -102,8 +91,11 @@
           >
             <div class="ur-user-avatar"><i class="icon icon-user size-16" /></div>
             <div class="ur-user-info">
-              <span class="ur-user-name">{{ user.userNm }}</span>
-              <span class="ur-user-email">{{ user.email }}</span>
+              <div class="ur-user-identity">
+                <span class="ur-user-name">{{ user.userNm }}</span>
+                <span class="ur-user-secondary">{{ user.userId }}</span>
+              </div>
+              <span class="ur-user-secondary">{{ (user.orgId && orgPaths.get(user.orgId)) || user.orgNm || '소속 조직 없음' }}</span>
             </div>
             <span
               v-if="isUserSelected(user.userId)"
@@ -189,8 +181,11 @@
           >
             <div class="ur-user-avatar"><i class="icon icon-user size-16" /></div>
             <div class="ur-user-info">
-              <span class="ur-user-name">{{ user.userNm }}</span>
-              <span class="ur-user-email">{{ user.email }}</span>
+              <div class="ur-user-identity">
+                <span class="ur-user-name">{{ user.userNm }}</span>
+                <span class="ur-user-secondary">{{ user.userId }}</span>
+              </div>
+              <span class="ur-user-secondary">{{ user.orgNm || '소속 조직 없음' }}</span>
             </div>
             <button
               v-if="hasFunc"
@@ -215,12 +210,29 @@
 </template>
 
 <script setup lang="ts">
-import { UiButton, UiDropdownMenu, UiIcon, UiInput, UiSelect } from '@leechanyong/ispark-ui'
+import excelIcon from '~/assets/icons/svg/xlsx_icon.svg'
+import { UiButton, UiIcon, UiInput, UiSelect } from '@leechanyong/ispark-ui'
 import OrgTreePanel from '~/components/common/OrgTreePanel.vue'
+import type { OrgTreeItem } from '~/types/org-manage'
 
 const emit = defineEmits<{
   'open-excel-upload': []
 }>()
+
+const orgPaths = shallowRef(new Map<string, string>())
+
+const setOrgPaths = (nodes: OrgTreeItem[]) => {
+  const paths = new Map<string, string>()
+  const visit = (items: OrgTreeItem[], parentPath = '') => {
+    for (const item of items) {
+      const path = [parentPath, item.orgNm].filter(Boolean).join(' > ')
+      paths.set(item.orgId, path.replace(/^\(주\)이즈파크 > ISPARK > /, ''))
+      visit(item.children ?? [], path)
+    }
+  }
+  visit(nodes)
+  orgPaths.value = paths
+}
 
 const {
   userRoleId,
@@ -246,14 +258,4 @@ const {
   hasFunc,
 } = useRoleManageStore()
 
-/** 다운로드는 조회 권한, 업로드는 기능 권한 */
-const excelMenuItems = computed(() => [
-  { label: '다운로드', value: 'download', icon: 'icon-download' },
-  ...(hasFunc.value ? [{ label: '업로드', value: 'upload', icon: 'icon-upload' }] : []),
-])
-
-const onExcelMenuSelect = (value: string): void => {
-  if (value === 'download') handleDownloadExcel('user')
-  else if (value === 'upload') emit('open-excel-upload')
-}
 </script>

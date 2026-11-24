@@ -86,11 +86,11 @@ export const useRoleManageApi = () => {
   }
 
   /** 조직(하위 조직 포함) 사용자 목록 조회 — 사용 중인 사용자만 */
-  const fetchOrgUserList = async (orgId: string): Promise<RoleUserItem[]> => {
+  const fetchOrgUserList = async (orgId: string, nameKeyword = ''): Promise<RoleUserItem[]> => {
     const res = assertSuccess(
       await post<{ successYn?: boolean; returnMsg?: string; list?: RoleUserItem[] }>(
         '/rolemanage/selectOrgUserList.do',
-        { orgId },
+        { orgId, nameKeyword },
       ),
       '직원 목록 조회에 실패했습니다.',
     )

@@ -4,6 +4,7 @@
     <UiTab
       v-model="activeTab"
       :tabs="tabItems"
+      align="left"
     />
 
     <RoleManageGroupTab

@@ -83,7 +83,7 @@ const isLegendOpen = ref(true)
 const userRoleId = ref('')
 const selectedOrgId = ref<string | null>(null)
 const orgUserList = ref<RoleUserItem[]>([])
-const appliedNameKeyword = ref('')
+let employeeRequestId = 0
 const nameKeyword = ref('')
 const selectedUserList = ref<RoleUserItem[]>([])
 const baseUserIdList = ref<string[]>([])
@@ -127,16 +127,7 @@ export const useRoleManageStore = () => {
     return rows
   })
 
-  const visibleOrgUserList = computed(() => {
-    const keyword = appliedNameKeyword.value.trim().toLowerCase()
-    return orgUserList.value.filter(
-      (user) =>
-        !keyword ||
-        user.userNm.toLowerCase().includes(keyword) ||
-        user.userId.toLowerCase().includes(keyword) ||
-        user.email.toLowerCase().includes(keyword),
-    )
-  })
+  const visibleOrgUserList = computed(() => orgUserList.value)
 
   const isUserDirty = computed(
     () =>
@@ -332,18 +323,27 @@ export const useRoleManageStore = () => {
     }
   }
 
-  const handleSelectOrg = async (orgId: string) => {
-    selectedOrgId.value = orgId
+  const loadEmployees = async (orgId: string, keyword = '') => {
+    const requestId = ++employeeRequestId
     highlightLeftIds.value = []
-    isUserLoading.value = true
+    orgUserList.value = []
+    isUserLoading.value = Boolean(orgId || keyword)
+    if (!isUserLoading.value) return
     try {
-      orgUserList.value = await fetchOrgUserList(orgId)
+      const users = await fetchOrgUserList(orgId, keyword)
+      if (requestId === employeeRequestId) orgUserList.value = users
     } catch (error) {
-      orgUserList.value = []
+      if (requestId !== employeeRequestId) return
       openToast({ message: errorMessageOf(error, '직원 목록 조회에 실패했습니다.'), type: 'error' })
     } finally {
-      isUserLoading.value = false
+      if (requestId === employeeRequestId) isUserLoading.value = false
     }
+  }
+
+  const handleSelectOrg = async (orgId: string) => {
+    selectedOrgId.value = orgId
+    nameKeyword.value = ''
+    await loadEmployees(orgId)
   }
 
   /** 사용자 지정 탭 진입 — 권한 그룹을 불러오고 첫 그룹의 사용자를 보여준다 (조직도는 OrgTreePanel 이 불러온다) */
@@ -368,9 +368,9 @@ export const useRoleManageStore = () => {
     await handleLoadRoleUsers(roleId)
   }
 
-  const handleSearchUser = () => {
-    appliedNameKeyword.value = nameKeyword.value
-    highlightLeftIds.value = []
+  const handleSearchUser = async () => {
+    const keyword = nameKeyword.value.trim()
+    await loadEmployees(keyword ? '' : selectedOrgId.value ?? '', keyword)
   }
 
   const isUserSelected = (userId: string) => selectedUserList.value.some((user) => user.userId === userId)
