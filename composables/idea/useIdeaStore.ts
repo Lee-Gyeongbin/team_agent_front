@@ -25,22 +25,14 @@ const IDEA_PAGE_SIZE = 15
 // ============================================
 
 const ideaTypeList = ref<IdeaCode[]>([])
-const ideaStatusList = ref<IdeaCode[]>([])
 const ideaAgentList = ref<IdeaAgent[]>([])
 
 const ideaTypeFilterOptions = computed(() => [
   { label: '전체 구분', value: 'ALL' },
   ...ideaTypeList.value.map(({ codeId, codeNm }) => ({ label: codeNm, value: codeId })),
 ])
-const ideaStatusFilterOptions = computed(() => [
-  { label: '전체 진행상태', value: 'ALL' },
-  ...ideaStatusList.value.map(({ codeId, codeNm }) => ({ label: codeNm, value: codeId })),
-])
 const ideaTypeOptions = computed(() =>
   ideaTypeList.value.map(({ codeId, codeNm }) => ({ label: codeNm, value: codeId })),
-)
-const ideaStatusOptions = computed(() =>
-  ideaStatusList.value.map(({ codeId, codeNm }) => ({ label: codeNm, value: codeId })),
 )
 const ideaAgentOptions = computed(() =>
   ideaAgentList.value.map(({ agentId, agentNm }) => ({ label: agentNm, value: agentId })),
@@ -50,23 +42,20 @@ const isAgentType = (ideaTypeCd: string) => ideaTypeCd === IDEA_TYPE_CD_AGENT
 
 /** 공통코드·에이전트 목록 조회 (한 번만) */
 export const handleSelectIdeaCodeList = async () => {
-  const [typeList, statusList, { dataList: agentList }] = await Promise.all([
+  const [typeList, { dataList: agentList }] = await Promise.all([
     getCodes('ID000002'),
-    getCodes('ID000001'),
     fetchAgentList(),
   ])
   ideaTypeList.value = typeList
-  ideaStatusList.value = statusList
   ideaAgentList.value = (agentList ?? []).filter(({ useYn }) => useYn === 'Y')
 }
 
 export const getIdeaAgentName = (agentId?: string | null) =>
   ideaAgentList.value.find((agent) => agent.agentId === agentId)?.agentNm
 
-/** 구분·진행상태 이름 — 백엔드는 코드값만 주므로 공통코드(getCodes)에서 찾음 (없으면 코드값 표시) */
-export const getIdeaCodeNames = (idea: Partial<Pick<IdeaListItem, 'ideaTypeCd' | 'statusCd'>>) => ({
+/** 구분 이름 — 공통코드에서 찾고, 없으면 코드값 표시 */
+export const getIdeaCodeNames = (idea: Partial<Pick<IdeaListItem, 'ideaTypeCd'>>) => ({
   ideaTypeNm: ideaTypeList.value.find(({ codeId }) => codeId === idea.ideaTypeCd)?.codeNm ?? idea.ideaTypeCd ?? '',
-  statusNm: ideaStatusList.value.find(({ codeId }) => codeId === idea.statusCd)?.codeNm ?? idea.statusCd ?? '',
 })
 
 /** result FAIL이면 사유를 알리고 true */
@@ -76,7 +65,7 @@ export const isIdeaFail = (res: Pick<IdeaResult, 'result' | 'msg'> | null | unde
   return true
 }
 
-/** 로그인 사용자 — 페이지 setup에서 useIdeaStore/useIdeaManageStore 호출 시 연결 */
+/** 로그인 사용자 — 페이지 setup에서 useIdeaStore 호출 시 연결 */
 let loginUser: ComputedRef<UserInfo | null> | null = null
 export const bindIdeaLoginUser = () => {
   if (!loginUser) loginUser = useAuth().user
@@ -92,7 +81,6 @@ export const createIdeaListState = () => {
   const searchInput = ref('')
   const searchKeyword = ref('')
   const searchTypeCd = ref('ALL')
-  const searchStatusCd = ref('ALL')
   const currentPage = ref(1)
   const ideaList = ref<IdeaListItem[]>([])
   const totalCount = ref(0)
@@ -101,7 +89,6 @@ export const createIdeaListState = () => {
   const getSearchParams = () => ({
     searchKeyword: searchKeyword.value.trim(),
     searchTypeCd: searchTypeCd.value === 'ALL' ? '' : searchTypeCd.value,
-    searchStatusCd: searchStatusCd.value === 'ALL' ? '' : searchStatusCd.value,
   })
 
   /** 목록 조회 — 번호는 최신 글이 큰 번호 */
@@ -146,7 +133,6 @@ export const createIdeaListState = () => {
     searchInput.value = ''
     searchKeyword.value = ''
     searchTypeCd.value = 'ALL'
-    searchStatusCd.value = 'ALL'
     await handleSelectFirstPage()
     openToast({ message: '조회 조건을 초기화하고 새로고침했습니다.', type: 'info' })
   }
@@ -155,7 +141,6 @@ export const createIdeaListState = () => {
     searchInput,
     searchKeyword,
     searchTypeCd,
-    searchStatusCd,
     currentPage,
     ideaList,
     totalCount,
@@ -195,9 +180,7 @@ export const handleToggleIdeaLike = async (detail: IdeaDetail) => {
 
 export const useIdeaCodeStore = () => ({
   ideaTypeFilterOptions,
-  ideaStatusFilterOptions,
   ideaTypeOptions,
-  ideaStatusOptions,
   ideaAgentOptions,
   isAgentType,
   ideaPageSize: IDEA_PAGE_SIZE,

@@ -36,6 +36,10 @@
   @include icon-file-bg('sidebar-database');
 }
 
+.icon-sidebar-idea {
+  @include icon-file-bg('sidebar-idea');
+}
+
 .icon-sidebar-settings {
   @include icon-file-bg('sidebar-settings');
 }

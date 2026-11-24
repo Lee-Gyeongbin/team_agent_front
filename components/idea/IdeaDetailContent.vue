@@ -1,5 +1,4 @@
 <template>
-  <!-- 사용자 아이디어 내역 — 사용자 상세·관리자 상세 공통 (부모 flex 안에 바로 배치되도록 다중 루트) -->
   <div class="notice-detail-header">
     <div class="notice-detail-meta flex items-center">
       <p class="notice-detail-writer">{{ idea.createNm }}</p>
@@ -21,12 +20,6 @@
       size="sm"
     >
       {{ idea.ideaTypeNm }}
-    </UiBadge>
-    <UiBadge
-      :variant="getIdeaStatusVariant(idea.statusCd)"
-      size="sm"
-    >
-      {{ idea.statusNm }}
     </UiBadge>
   </div>
 
@@ -73,7 +66,6 @@
 <script setup lang="ts">
 import { UiBadge, UiButton, UiIcon } from '@leechanyong/ispark-ui'
 import { useIdeaApi } from '~/composables/idea/useIdeaApi'
-import { getIdeaStatusVariant } from '~/types/idea'
 import type { IdeaDetail, IdeaFile } from '~/types/idea'
 
 interface Props {

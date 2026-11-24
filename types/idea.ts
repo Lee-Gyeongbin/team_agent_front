@@ -3,22 +3,13 @@ import type { TableColumn } from '~/types/table'
 /** 구분 코드 중 에이전트 선택이 필요한 값 (공통코드 ID000002, 백엔드 TYPE_CD_AGENT와 동일) */
 export const IDEA_TYPE_CD_AGENT = '001'
 
-/** 진행상태 코드별 UiBadge variant (공통코드 ID000001) — 등록되지 않은 코드는 default */
-export const IDEA_STATUS_VARIANT: Record<string, 'default' | 'info' | 'success' | 'warning'> = {
-  '001': 'default', // 검토중
-  '002': 'info', // 채택
-  '003': 'success', // 반영완료
-  '004': 'warning', // 보류
-}
-export const getIdeaStatusVariant = (statusCd?: string) => IDEA_STATUS_VARIANT[statusCd ?? ''] ?? 'default'
-
 export const IDEA_TEXT_MAX_LENGTH = 8_000
 
 /** 첨부파일 1개당 최대 크기 (20MB) */
 export const IDEA_FILE_MAX_SIZE = 20 * 1024 * 1024
 export const IDEA_FILE_ACCEPT = '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.hwp,.csv,.txt'
 
-/** 공통코드 항목 (구분·진행상태) */
+/** 공통코드 항목 (구분) */
 export interface IdeaCode {
   codeId: string
   codeNm: string
@@ -49,25 +40,10 @@ export interface IdeaListItem {
   agentId: string | null
   agentNm: string | null
   title: string
-  statusCd: string
-  /** 화면에서 공통코드로 채움 (getIdeaCodeNames) */
-  statusNm: string
   likeCnt: number
-  /** 관리자 코멘트 존재 여부 */
-  cmtYn: 'Y' | 'N'
   createId: string
   createNm: string
   createDt: string
-}
-
-/** 관리 엑셀 조회 항목 */
-export interface IdeaExcelItem extends Pick<
-  IdeaListItem,
-  'ideaId' | 'title' | 'createNm' | 'createDt' | 'likeCnt'
->, Partial<Pick<IdeaListItem, 'ideaTypeCd' | 'ideaTypeNm' | 'agentId' | 'agentNm' | 'statusCd' | 'statusNm'>> {
-  content: string | null
-  cmtContent: string | null
-  cmtDt: string | null
 }
 
 /** 상세 */
@@ -75,9 +51,6 @@ export interface IdeaDetail extends IdeaListItem {
   /** 서식 에디터 HTML */
   content: string
   likedYn: 'Y' | 'N'
-  cmtContent: string | null
-  cmtUserNm: string | null
-  cmtDt: string | null
   fileList: IdeaFile[]
 }
 
@@ -85,7 +58,6 @@ export interface IdeaDetail extends IdeaListItem {
 export interface IdeaSearchParams {
   searchKeyword: string
   searchTypeCd: string
-  searchStatusCd: string
   pageIndex: number
 }
 
@@ -115,13 +87,6 @@ export interface IdeaFormData {
   deleteFileIds: string[]
 }
 
-/** 아이디어 관리 상세 하단 — 진행상태·관리자 코멘트 */
-export interface IdeaManageFormData {
-  statusCd: string
-  /** 서식 에디터 HTML (비우면 코멘트 삭제) */
-  cmtContent: string
-}
-
 export const ideaColumns: TableColumn[] = [
   { key: 'rowNo', label: '번호', width: '80px', align: 'center', headerAlign: 'center' },
   { key: 'ideaTypeNm', label: '구분', width: '120px', align: 'center', headerAlign: 'center' },
@@ -129,11 +94,4 @@ export const ideaColumns: TableColumn[] = [
   { key: 'createNm', label: '작성자', width: '120px', align: 'center', headerAlign: 'center' },
   { key: 'likeCnt', label: '추천', width: '88px', align: 'center', headerAlign: 'center' },
   { key: 'createDt', label: '등록일', width: '120px', align: 'center', headerAlign: 'center' },
-  { key: 'statusNm', label: '진행상태', width: '110px', align: 'center', headerAlign: 'center' },
-]
-
-/** 아이디어 관리 목록 — 사용자 목록 컬럼 + 관리(삭제) */
-export const ideaManageColumns: TableColumn[] = [
-  ...ideaColumns,
-  { key: 'manage', label: '관리', width: '100px', align: 'center', headerAlign: 'center' },
 ]

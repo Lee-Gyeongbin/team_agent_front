@@ -14,21 +14,11 @@
   }
 }
 
-// '채택' 상태(UiBadge variant-info)는 목업과 같이 보라색으로 표시 — 아이디어 화면에만 적용
-.idea-index,
-.idea-detail-panel {
-  .ui-badge.variant-info {
-    background: $color-badge-accent-bg;
-    color: $color-badge-accent;
-  }
-}
-
 // ===================================
 // 드로어 공통 — 본문이 남는 높이를 채우도록 세로 flex (목업 .mock-drawer-body)
 // UiDrawer는 class를 받지 못하므로 내부 루트 클래스로 body를 찾는다
 // ===================================
-.ui-drawer-body:has(> .idea-detail-panel),
-.ui-drawer-body:has(> .idea-form) {
+.ui-drawer-body:has(> .idea-detail-panel) {
   display: flex;
   flex-direction: column;
   padding: $spacing-md 20px;
@@ -88,25 +78,32 @@
   min-height: 0;
   gap: 12px;
 
-  > *,
-  .idea-manage-pane > * {
+  > * {
     flex-shrink: 0;
   }
 
-  // 본문 박스가 남는 높이를 채우고 내부 스크롤
-  > .notice-detail-body,
-  .idea-manage-pane > .notice-detail-body {
-    flex: 1 1 auto;
-    min-height: 140px;
-    display: flex;
-    flex-direction: column;
+  .idea-comment-thread {
+    padding-bottom: 24px;
   }
 
-  .notice-content-box {
-    flex: 1;
+  .idea-comment-list-separated {
+    margin-top: $spacing-sm;
+    padding-top: $spacing-md;
+    border-top: 1px solid $color-border;
+  }
+
+  // 본문 박스가 남는 높이를 채우고 내부 스크롤
+  > .notice-detail-body {
+    flex: 0 0 auto;
+  }
+
+  > .notice-detail-body > .notice-content-box {
     width: 100%;
-    min-height: 140px;
+    height: auto;
+    min-height: 120px;
     box-sizing: border-box;
+    background: #fff;
+    overflow: visible;
   }
 
   .idea-detail-agent {
@@ -118,90 +115,9 @@
     display: flex;
   }
 
-  .idea-comment-section {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .idea-comment-title {
-    @include typo($body-medium-bold, $color-text-heading-sub);
-    margin: 4px 0 8px;
-  }
-
-  .idea-comment-box {
-    padding: 12px;
-    border: 1px solid $color-answer-border;
-    border-radius: $border-radius-base;
-    background: $color-answer-bg;
-    color: $color-text-primary;
-    word-break: break-word;
-  }
-
-  .idea-comment-text {
-    @include typo($body-medium);
-  }
-
-  .idea-comment-meta {
-    @include typo($body-small, $color-text-secondary);
-    margin-top: $spacing-sm;
-  }
-
-  .idea-comment-empty {
-    @include typo($body-small, $color-text-secondary);
-    padding: 12px;
-    border: 1px solid $color-border;
-    border-radius: $border-radius-base;
-    background: $color-background;
-    text-align: center;
-  }
-
-  .idea-comment-note {
-    @include typo($body-small, $color-text-secondary);
-    margin-top: $spacing-sm;
-  }
-
   // 읽기 전용 첨부 목록
   .idea-file-list-ro {
     margin-top: 0;
-  }
-}
-
-// ===================================
-// 등록·수정 드로어(IdeaFormPanel)
-// ===================================
-.idea-form {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-
-  .url-reg-field {
-    margin: 0;
-  }
-
-  // 구분·에이전트 한 줄 배치 (구분은 항상 절반 너비)
-  .idea-form-row {
-    display: flex;
-    gap: 12px;
-
-    > .url-reg-field {
-      flex: 0 0 calc(50% - 6px);
-      min-width: 0;
-    }
-  }
-
-  // 내용 에디터가 남는 높이를 채움
-  .idea-form-grow {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-
-    .idea-editor {
-      flex: 1;
-      min-height: 220px;
-    }
   }
 }
 
@@ -372,81 +288,6 @@
     &:hover {
       color: $color-error;
       background: rgba($color-error, 0.08);
-    }
-  }
-}
-
-// ===================================
-// 아이디어 관리(`pages/idea-manage/index.vue`) — 목록 관리 컬럼·상세 상하 분할 (목업 .mock-split)
-// ===================================
-.idea-manage-index {
-  .idea-manage-actions {
-    display: flex;
-    justify-content: center;
-    gap: 6px;
-  }
-
-  .idea-manage-btn-del {
-    justify-content: center;
-    width: 56px;
-  }
-}
-
-.idea-detail-panel.idea-manage-split {
-  .idea-manage-pane {
-    display: flex;
-    flex: 1 1 0;
-    flex-direction: column;
-    gap: 10px;
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  .idea-manage-pane-title {
-    @include typo($body-small-bold, $color-text-heading-sub);
-    flex-shrink: 0;
-    margin: 0;
-  }
-
-  // 위 절반: 본문은 남는 높이만큼 (최소 60px)
-  .idea-manage-pane-top {
-    > .notice-detail-body {
-      flex: 1 1 0;
-      min-height: 60px;
-    }
-
-    .notice-content-box {
-      min-height: 60px;
-    }
-  }
-
-  // 아래 절반: 진행상태 + 코멘트 에디터
-  .idea-manage-pane-bottom {
-    padding-top: 12px;
-    border-top: 1px solid $color-border;
-
-    .idea-manage-form {
-      display: flex;
-      flex: 1;
-      flex-direction: column;
-      gap: 10px;
-      min-height: 0;
-
-      .url-reg-field {
-        margin: 0;
-      }
-    }
-
-    .idea-form-grow {
-      display: flex;
-      flex: 1;
-      flex-direction: column;
-      min-height: 0;
-
-      .idea-editor {
-        flex: 1;
-        min-height: 120px;
-      }
     }
   }
 }

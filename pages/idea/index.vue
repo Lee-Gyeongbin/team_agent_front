@@ -87,14 +87,6 @@
                   <span class="notice-title-text">{{ row.title }}</span>
                 </button>
               </template>
-              <template #cell-statusNm="{ row }">
-                <UiBadge
-                  :variant="getIdeaStatusVariant((row as IdeaListItem).statusCd)"
-                  size="sm"
-                >
-                  {{ row.statusNm }}
-                </UiBadge>
-              </template>
             </UiTable>
           </div>
 
@@ -136,9 +128,9 @@
 </template>
 
 <script setup lang="ts">
-import { UiInput, UiSelect, UiButton, UiIcon, UiTable, UiPagination, UiBadge, UiEmpty } from '@leechanyong/ispark-ui'
+import { UiInput, UiSelect, UiButton, UiIcon, UiTable, UiPagination, UiEmpty } from '@leechanyong/ispark-ui'
 import { useIdeaStore } from '~/composables/idea/useIdeaStore'
-import { getIdeaStatusVariant, ideaColumns } from '~/types/idea'
+import { ideaColumns } from '~/types/idea'
 import type { IdeaListItem } from '~/types/idea'
 
 const {

@@ -635,8 +635,36 @@ onUnmounted(() => {
   }
 })
 
+const sidebarMenuList = computed(() => {
+  let ideaMenu: MenuItem | undefined
+
+  const filterMenus = (items: MenuItem[]): MenuItem[] =>
+    items.flatMap((item) => {
+      const path = item.srcPath?.replace(/\/$/, '')
+      if (path === '/idea') {
+        ideaMenu ??= { ...item, srcPath: path, icon: 'icon-sidebar-idea' }
+        return []
+      }
+      if (path === '/idea-manage' || path === '/idea_manage') return []
+      if (!item.children?.length) return [item]
+
+      const children = filterMenus(item.children)
+      return children.length || item.srcPath ? [{ ...item, children }] : []
+    })
+
+  const menus = filterMenus(menuList.value)
+  if (ideaMenu) {
+    const dashboardIndex = menus.findIndex((item) => item.srcPath?.replace(/\/$/, '') === '/data-dashboard')
+    const settingsIndex = menus.findIndex((item) => item.menuId === SETTING_MENU_ID)
+    const fallbackIndex = settingsIndex >= 0 ? settingsIndex : menus.length
+    const ideaIndex = dashboardIndex >= 0 ? dashboardIndex + 1 : fallbackIndex
+    menus.splice(ideaIndex, 0, ideaMenu)
+  }
+  return menus
+})
+
 const topNavItems = computed(() => {
-  return menuList.value
+  return sidebarMenuList.value
     .filter((item: MenuItem) => item.menuId !== SETTING_MENU_ID)
     .map((item: MenuItem) => ({
       menuId: item.menuId,
@@ -647,7 +675,7 @@ const topNavItems = computed(() => {
 })
 
 const bottomMenu = computed(() => {
-  return menuList.value.find((item: MenuItem) => item.menuId === SETTING_MENU_ID) ?? null
+  return sidebarMenuList.value.find((item: MenuItem) => item.menuId === SETTING_MENU_ID) ?? null
 })
 
 type NavItem = (typeof topNavItems)['value'][number]
@@ -673,7 +701,7 @@ function findActiveMenuId(items: MenuItem[], path: string): { menuId: string; pa
 }
 
 const activeMenuId = computed(() => {
-  const result = findActiveMenuId(menuList.value, route.path)
+  const result = findActiveMenuId(sidebarMenuList.value, route.path)
   return result?.menuId ?? null
 })
 
