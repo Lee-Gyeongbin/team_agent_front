@@ -115,15 +115,15 @@
 
       <div v-if="canAssign" class="com-setting-field-row is-top">
         <label id="menu-role-groups-label" class="com-setting-label">권한그룹 지정</label>
-        <div class="com-setting-field-input menu-role-permissions" role="group" aria-labelledby="menu-role-groups-label">
-          <p v-if="rolesLoading">권한그룹을 불러오는 중입니다.</p>
-          <p v-else-if="rolesError">
+        <div class="com-setting-field-input menu-role-permissions" role="group" aria-labelledby="menu-role-groups-label" :aria-busy="rolesLoading">
+          <p v-if="rolesLoading && !rolesLoaded">권한그룹을 불러오는 중입니다.</p>
+          <p v-if="rolesError">
             {{ rolesError }}
             <UiButton variant="outline" size="sm" @click="loadRoles">다시 불러오기</UiButton>
           </p>
-          <p v-else-if="!roles.length">사용 가능한 권한그룹이 없습니다.</p>
+          <p v-if="rolesLoaded && !roles.length && !rolesError">사용 가능한 권한그룹이 없습니다.</p>
           <UiTable
-            v-else
+            v-if="roles.length"
             class="menu-role-table"
             :columns="roleGroupColumns"
             :data="roles"
@@ -133,7 +133,7 @@
                 <UiCheckbox
                   :label="column.label"
                   :model-value="column.all"
-                  :disabled="menu.useYn === 'N' || !column.targets.length"
+                  :disabled="permissionsDisabled || !column.targets.length"
                   @update:model-value="(checked) => setPermissions(column.targets, column.key, checked === true)"
                 />
               </span>
@@ -142,7 +142,7 @@
               <UiCheckbox
                 :label="`${(row as RoleItem).roleName} ${column.label}`"
                 label-hidden
-                :disabled="menu.useYn === 'N'"
+                :disabled="permissionsDisabled"
                 :model-value="permissions.get((row as RoleItem).roleId)?.[column.key] === 'Y'"
                 @update:model-value="(checked) => setPermissions([(row as RoleItem).roleId], column.key, checked === true)"
               />
@@ -177,8 +177,9 @@
 import { UiButton, UiCheckbox, UiInput, UiSelect, UiTable, UiToggle } from '@leechanyong/ispark-ui'
 import AgentIconSelectModal from '~/components/agent/AgentIconSelectModal.vue'
 import { useAgentStore } from '~/composables/agent/useAgentStore'
+import { useMenuManageApi } from '~/composables/menu-manage/useMenuManageApi'
 import { useRoleManageApi } from '~/composables/role-manage/useRoleManageApi'
-import type { MenuTreeItem } from '~/types/menu'
+import type { MenuRolePermission, MenuTreeItem } from '~/types/menu'
 import { roleMenuColumns, rolePermItems } from '~/types/role-manage'
 import type { RoleItem } from '~/types/role-manage'
 import type { SelectOption } from '~/components/ui/UiSelect.vue'
@@ -206,33 +207,66 @@ const onPatch = (partial: Partial<MenuTreeItem>) => {
 
 const { canRead, canFunc } = usePermission()
 const { fetchRoleList } = useRoleManageApi()
-const canAssign = computed(() => !menu.value.menuId
+const { fetchMenuRolePermissions } = useMenuManageApi()
+const canAssign = computed(() => menu.value.isLeaf === 'Y'
   && canFunc('/menu-manage') && canRead('/role-manage') && canFunc('/role-manage'))
 const roles = ref<RoleItem[]>([])
+const rolesLoaded = ref(false)
 const rolesLoading = ref(false)
 const rolesError = ref('')
-const permissions = computed(() => new Map(menu.value.rolePermissions?.map((row) => [row.roleId, row])))
+const permissionsDisabled = computed(() => rolesLoading.value || !!rolesError.value || menu.value.useYn !== 'Y')
+const savedPermissions = ref<MenuRolePermission[]>([])
+const permissions = computed(() => new Map(
+  (menu.value.rolePermissions ?? savedPermissions.value).map((row) => [row.roleId, row]),
+))
+let roleRequestId = 0
+let roleListRequest: Promise<RoleItem[]> | undefined
+
+function loadRoleList() {
+  roleListRequest ??= fetchRoleList()
+    .then((groups) => {
+      roles.value = groups.filter((role) => role.useYn === 'Y')
+      rolesLoaded.value = true
+      return roles.value
+    })
+    .catch((error) => {
+      roleListRequest = undefined
+      throw error
+    })
+  return roleListRequest
+}
 
 async function loadRoles() {
-  if (rolesLoading.value) return
+  const requestId = ++roleRequestId
+  const menuId = menu.value.menuId
   rolesLoading.value = true
   rolesError.value = ''
+  savedPermissions.value = []
   try {
-    roles.value = (await fetchRoleList()).filter((role) => role.useYn === 'Y')
+    const [groups, grants] = await Promise.all([loadRoleList(), menuId ? fetchMenuRolePermissions(menuId) : []])
+    if (requestId !== roleRequestId) return
+    const activeIds = new Set(groups.map(({ roleId }) => roleId))
+    savedPermissions.value = grants.filter(({ roleId }) => activeIds.has(roleId))
   } catch (error) {
+    if (requestId !== roleRequestId) return
     rolesError.value = error instanceof Error ? error.message : '권한그룹을 불러오지 못했습니다.'
   } finally {
-    rolesLoading.value = false
+    if (requestId === roleRequestId) rolesLoading.value = false
   }
 }
 
-watch(canAssign, (visible) => {
-  if (visible) void loadRoles()
-}, { immediate: true })
+watch(
+  [canAssign, () => menu.value.menuId, () => menu.value.rolePermissions === undefined],
+  ([visible, , isPristine]) => {
+    if (visible && isPristine) void loadRoles()
+    if (!visible) roleRequestId++
+  },
+  { immediate: true },
+)
 
 const roleGroupColumns = roleMenuColumns.map((column) => {
   if (column.key === 'menuName') return { ...column, key: 'roleName', label: '권한그룹', headerAlign: 'center' as const }
-  if (column.key === 'funcYn') return { ...column, label: '편집', width: '170px' }
+  if (column.key === 'funcYn') return { ...column, label: '편집', width: '100px' }
   return { ...column, width: '100px' }
 })
 
@@ -243,6 +277,7 @@ const permissionColumns = computed(() => rolePermItems.map((column) => {
 }))
 
 function setPermissions(roleIds: string[], key: 'readYn' | 'funcYn', enabled: boolean) {
+  if (permissionsDisabled.value) return
   const next = new Map(permissions.value)
   for (const roleId of roleIds) {
     const row = next.get(roleId)

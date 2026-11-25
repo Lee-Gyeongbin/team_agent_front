@@ -1,6 +1,6 @@
 import { useApi } from '~/composables/com/useApi'
 import { patchMenuPaths } from '~/composables/com/useMenu'
-import type { MenuItem, MenuListResponse, MenuOrderSortItem, MenuTreeItem } from '~/types/menu'
+import type { MenuItem, MenuListResponse, MenuOrderSortItem, MenuRolePermission, MenuTreeItem } from '~/types/menu'
 
 export const useMenuManageApi = () => {
   const { get, post } = useApi()
@@ -31,5 +31,14 @@ export const useMenuManageApi = () => {
     if (res.result !== 'SUCCESS') throw new Error(res.msg || '메뉴 저장에 실패했습니다.')
   }
 
-  return { fetchMenuManageList, fetchUpdateMenuOrder, fetchSaveMenu }
+  const fetchMenuRolePermissions = async (menuId: string): Promise<MenuRolePermission[]> => {
+    const query = new URLSearchParams({ menuId })
+    const res = await get<{ result: string; msg?: string; list?: MenuRolePermission[] }>(
+      `/menumanage/rolePermissions.do?${query}`,
+    )
+    if (res.result !== 'SUCCESS') throw new Error(res.msg || '메뉴 권한을 불러오지 못했습니다.')
+    return res.list ?? []
+  }
+
+  return { fetchMenuManageList, fetchUpdateMenuOrder, fetchSaveMenu, fetchMenuRolePermissions }
 }

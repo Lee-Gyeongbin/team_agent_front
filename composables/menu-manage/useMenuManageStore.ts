@@ -163,7 +163,7 @@ const handleSaveMenu = async (): Promise<void> => {
 
   try {
     const menu = selectedMenu.value
-    await fetchSaveMenu(menu.useYn === 'N' ? { ...menu, rolePermissions: undefined } : menu)
+    await fetchSaveMenu(menu.useYn !== 'Y' || menu.isLeaf !== 'Y' ? { ...menu, rolePermissions: undefined } : menu)
     await handleFetchMenuManageTree()
 
     if (savingNew) {
