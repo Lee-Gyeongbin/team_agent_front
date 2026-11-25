@@ -170,6 +170,7 @@
       링크
     </button>
     <div
+      v-if="allowImages"
       ref="imagePickerRef"
       class="meeting2-image-picker"
     >
@@ -204,6 +205,7 @@
       </div>
     </div>
     <input
+      v-if="allowImages"
       ref="imageInputRef"
       type="file"
       accept="image/*"
@@ -242,6 +244,7 @@
                 class="meeting2-table-grid-cell"
                 :class="{ 'is-hovered': isCellHovered(idx - 1) }"
                 @mouseenter="onCellHover(idx - 1)"
+                @mousedown.prevent
                 @click="onCellSelect(idx - 1)"
               />
             </div>
@@ -372,6 +375,8 @@
 import type { ChainedCommands } from '@tiptap/vue-3'
 import { meetingEditorKey, meetingSourceViewKey } from '~/composables/meeting/meetingEditorKey'
 
+withDefaults(defineProps<{ allowImages?: boolean }>(), { allowImages: true })
+
 const editor = inject(meetingEditorKey)
 const sourceView = inject(meetingSourceViewKey)
 
@@ -470,11 +475,11 @@ const onChangeHeading = (e: Event) => {
   if (value === 'paragraph') {
     chain.setParagraph().run()
   } else if (value === 'heading-1') {
-    chain.toggleHeading({ level: 1 }).run()
+    chain.setHeading({ level: 1 }).run()
   } else if (value === 'heading-2') {
-    chain.toggleHeading({ level: 2 }).run()
+    chain.setHeading({ level: 2 }).run()
   } else if (value === 'heading-3') {
-    chain.toggleHeading({ level: 3 }).run()
+    chain.setHeading({ level: 3 }).run()
   }
 }
 
@@ -521,12 +526,34 @@ const onClickFileUpload = () => {
   imageInputRef.value?.click()
 }
 
-const onClickImageUrl = () => {
+const onClickImageUrl = async () => {
   isImagePickerOpen.value = false
-  if (!editor?.value) return
-  const url = window.prompt('이미지 URL을 입력하세요')
-  if (!url) return
-  editor.value.chain().focus().setImage({ src: url }).run()
+  const instance = editor?.value
+  if (!instance?.isEditable) return
+  const input = window.prompt('이미지 URL을 입력하세요')?.trim()
+  if (!input) return
+
+  let url: URL
+  try {
+    url = new URL(input)
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new Error('Unsupported protocol')
+  } catch {
+    openToast({ message: 'http 또는 https로 시작하는 이미지 주소를 입력해주세요.', type: 'warning' })
+    return
+  }
+
+  const image = new Image()
+  image.src = url.href
+  try {
+    await image.decode()
+  } catch {
+    openToast({ message: '이미지를 불러올 수 없습니다. 이미지 자체의 주소를 복사하거나 파일을 업로드해주세요.', type: 'warning' })
+    return
+  }
+
+  if (!instance.isDestroyed && instance.isEditable) {
+    instance.chain().focus().setImage({ src: url.href }).run()
+  }
 }
 
 // 외부 클릭 시 드롭다운 닫기

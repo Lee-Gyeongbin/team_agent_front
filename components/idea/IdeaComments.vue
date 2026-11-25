@@ -48,7 +48,7 @@
             >
               → {{ writer(commentsById.get(comment.parentId)) }}님에게 답변
             </button>
-            <div class="idea-rich" v-html="comment.content" />
+            <div class="inq-rich inq-comment-content" v-html="comment.content" />
             <div v-if="canComment" class="inq-cmt-actions">
               <UiButton size="xs" variant="outline" :disabled="busy" @click="startComposer('reply', comment)">답글</UiButton>
               <template v-if="comment.createId === user?.userId">
@@ -79,7 +79,6 @@
 
 <script setup lang="ts">
 import { UiButton } from '@leechanyong/ispark-ui'
-import { marked } from 'marked'
 import { useIdeaApi } from '~/composables/idea/useIdeaApi'
 import { openConfirm } from '~/composables/useDialog'
 import InqAnsrComposer from '~/components/inq/InqAnsrComposer.vue'
@@ -188,7 +187,7 @@ async function submitComment(isNew: boolean) {
   try {
     const current = isNew ? null : composer.value
     const result = await saveIdeaComment(props.ideaId, {
-      content: marked.parse(content, { async: false }),
+      content,
       commentId: current?.mode === 'edit' ? current.target.commentId : undefined,
       parentId: current?.mode === 'reply' ? current.target.commentId : undefined,
     })

@@ -1,6 +1,6 @@
 <template>
-  <div class="meeting2-editor inq-rich-editor">
-    <InqEditorToolbar />
+  <div class="meeting2-editor inq-rich-editor" :inert="disabled">
+    <MeetingEditorToolbar :allow-images="allowImages" />
     <div class="meeting2-editor-relative">
       <MeetingEditorBody />
     </div>
@@ -9,24 +9,15 @@
 
 <script setup lang="ts">
 import { useEditor } from '@tiptap/vue-3'
-import { StarterKit } from '@tiptap/starter-kit'
-import { TextAlign } from '@tiptap/extension-text-align'
-import { Table } from '@tiptap/extension-table'
-import { TableRow } from '@tiptap/extension-table-row'
-import { TableHeader } from '@tiptap/extension-table-header'
-import { TableCell } from '@tiptap/extension-table-cell'
-import { Placeholder } from '@tiptap/extension-placeholder'
-import { TextStyle } from '@tiptap/extension-text-style'
-import { Color } from '@tiptap/extension-color'
-import { Highlight } from '@tiptap/extension-highlight'
-import InqEditorToolbar from '~/components/inq/InqEditorToolbar.vue'
+import MeetingEditorToolbar from '~/components/meeting/MeetingEditorToolbar.vue'
+import { meetingEditorExtensions } from '~/composables/meeting/meetingEditorExtensions'
 import MeetingEditorBody from '~/components/meeting/MeetingEditorBody.vue'
-import { TableShortcuts } from '~/composables/meeting/tableShortcuts'
-import { FontSize } from '~/composables/meeting/fontSize'
 import { meetingEditorKey, meetingSourceViewKey } from '~/composables/meeting/meetingEditorKey'
 import { useEditorSourceView } from '~/composables/com/useEditorSourceView'
 
-const props = defineProps<{ modelValue: string }>()
+const props = withDefaults(defineProps<{ modelValue: string; placeholder?: string; disabled?: boolean; allowImages?: boolean }>(), {
+  placeholder: '내용을 입력하세요',
+})
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
 // ── 내용 에디터(Tiptap) — 회의록 에디터(MeetingEditorPanel)와 같은 확장·툴바, HTML 문자열로 저장 (이미지는 첨부파일로) ──
@@ -36,26 +27,8 @@ let lastHtml = props.modelValue
 
 const editor = useEditor({
   content: props.modelValue,
-  extensions: [
-    StarterKit.configure({
-      // StarterKit 내장 확장 설정으로 중복 등록(link/underline) 경고를 방지
-      link: {
-        openOnClick: false,
-        HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
-      },
-    }),
-    TextAlign.configure({ types: ['heading', 'paragraph'] }),
-    FontSize,
-    Table.configure({ resizable: true }),
-    TableRow,
-    TableHeader,
-    TableCell,
-    Placeholder.configure({ placeholder: '내용을 입력하세요' }),
-    TextStyle,
-    Color,
-    Highlight.configure({ multicolor: true }),
-    TableShortcuts,
-  ],
+  editable: !props.disabled,
+  extensions: meetingEditorExtensions({ placeholder: props.placeholder, allowImages: props.allowImages }),
   onUpdate: ({ editor: instance }) => {
     // 내용이 없으면 빈 값으로 전달 (필수값 검사용, 표만 있어도 내용으로 본다)
     lastHtml = instance.isEmpty ? '' : instance.getHTML()
@@ -89,6 +62,11 @@ watch(sourceView.sourceHtml, (html) => {
   lastHtml = html.trim()
   emit('update:modelValue', lastHtml)
 })
+
+watch(
+  () => props.disabled,
+  (disabled) => editor.value?.setEditable(!disabled, false),
+)
 
 onBeforeUnmount(() => {
   editor.value?.destroy()

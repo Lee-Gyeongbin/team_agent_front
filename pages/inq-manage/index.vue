@@ -166,14 +166,12 @@
       :status-draft="statusDraft"
       :status-options="adminStatusOptions"
       :has-func="hasFunc"
-      :can-write-answer="canWriteAnswer"
       :fetch-preview="fetchInqManageFilePreview"
       @close="onCloseInqManageDetail"
       @delete="onDeleteInqManage"
       @download-file="onDownloadInqManageFile"
       @update:status-draft="(value) => (statusDraft = value)"
       @save-status="onSaveInqManageStatus"
-      @start-new-answer="onStartNewAnswer"
       @start-reply="onStartReply"
       @start-edit="onStartEditAnsr"
       @delete-ansr="onDeleteAnsr"
@@ -223,7 +221,6 @@ const {
   statusDraft,
   adminStatusOptions,
   hasFunc,
-  canWriteAnswer,
   handleSelectInqManageOptions,
   handleSelectInqManageList,
   getInqManageOrderLabel,
@@ -235,7 +232,6 @@ const {
   onCloseInqManageDetail,
   onDeleteInqManage,
   onSaveInqManageStatus,
-  onStartNewAnswer,
   onStartReply,
   onStartEditAnsr,
   onChangeComposerText,

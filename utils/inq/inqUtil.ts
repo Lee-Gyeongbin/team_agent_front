@@ -1,8 +1,22 @@
+import { marked } from 'marked'
+import { sanitizeMyDocPreviewHtml } from '~/utils/myDocuments/myDocPreviewUtil'
 import type { InqAnsr, InqCodeItem, InqResponse, InqRow } from '~/types/inq'
 import { INQ_STATUS_FLAG_VARIANT } from '~/types/inq'
 
 /** 목록 제목 표시 최대 글자 수 */
 const INQ_TITLE_LABEL_MAX_LENGTH = 50
+
+// Stored Markdown answers remain readable after adding TipTap HTML.
+export const INQ_ANSWER_HTML_PREFIX = '<!-- inq-answer:html -->'
+
+export const isInqAnswerHtml = (content: string) => content.startsWith(INQ_ANSWER_HTML_PREFIX)
+
+export const toInqAnswerHtml = (content: string) =>
+  sanitizeMyDocPreviewHtml(
+    isInqAnswerHtml(content)
+      ? content.slice(INQ_ANSWER_HTML_PREFIX.length)
+      : marked.parse(content, { async: false, breaks: true }),
+  )
 
 /** 응답이 successYn=false 이면 returnMsg 로 에러를 던진다 */
 export const assertInqOk = <T extends InqResponse>(res: T): T => {

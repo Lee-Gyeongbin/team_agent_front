@@ -62,19 +62,12 @@
           v-if="composer?.mode === 'new'"
           title="관리자 답변 등록"
           :text="composer.text"
+          :save-disabled="!composer.text.trim()"
           is-new
+          hide-cancel
           @update:text="(value) => $emit('update:composerText', value)"
           @save="$emit('save-composer')"
-          @cancel="$emit('cancel-composer')"
         />
-        <UiButton
-          v-else-if="!composer && canWriteAnswer"
-          variant="outline"
-          size="sm"
-          @click="$emit('start-new-answer')"
-        >
-          관리자 답변 등록
-        </UiButton>
       </div>
     </div>
 
@@ -117,8 +110,6 @@ const props = defineProps<{
   statusOptions: { label: string; value: string }[]
   /** 메뉴 기능 권한 — 상태 변경·답변·삭제 */
   hasFunc: boolean
-  /** 관리자 답변(1단계) 신규 등록 가능 여부 */
-  canWriteAnswer: boolean
   /** 첨부파일 미리보기 URL 발급 */
   fetchPreview: (inqFileId: string) => Promise<InqFilePreviewResponse>
 }>()
@@ -129,7 +120,6 @@ defineEmits<{
   'download-file': [file: InqFile]
   'update:statusDraft': [value: string]
   'save-status': []
-  'start-new-answer': []
   'start-reply': [a: InqAnsr]
   'start-edit': [a: InqAnsr]
   'delete-ansr': [a: InqAnsr]

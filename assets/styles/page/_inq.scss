@@ -75,15 +75,6 @@
     min-height: 160px;
     display: flex;
     flex-direction: column;
-
-    // 회의록 에디터 레이아웃(.meeting2-editor*)을 쓰므로 박스(테두리·둥글기)만 지정
-    .inq-rich-editor {
-      flex: 1;
-      min-height: 0;
-      border: 1px solid $color-border;
-      border-radius: $border-radius-base;
-      background: #fff;
-    }
   }
 
   // 구분은 에이전트 선택 여부와 관계없이 항상 절반 폭
@@ -219,8 +210,9 @@
     border-radius: $border-radius-base;
     background: #fff;
 
-    &.is-ans {
-      background: $color-background;
+    img {
+      max-width: 100%;
+      height: auto;
     }
   }
 
@@ -266,12 +258,34 @@
     display: flex;
     flex-direction: column;
     gap: $spacing-sm;
+
+    .inq-rich-editor {
+      min-height: 120px;
+    }
+  }
+}
+
+.inq-rich-editor {
+  flex: 1;
+  min-height: 0;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-base;
+  background: #fff;
+
+  .meeting2-image-picker-pop {
+    inset-inline: auto 0;
   }
 }
 
 // 문의 본문(Tiptap) — 에디터와 상세 화면이 같은 모양(문서 본문 공통 스타일)으로 보이도록 한다
 .inq-rich {
   @include doc-content-styles;
+}
+
+.inq-rich.inq-comment-content {
+  min-height: 0;
+  padding: 0;
+  overflow-x: auto;
 }
 
 .inq-detail-panel,

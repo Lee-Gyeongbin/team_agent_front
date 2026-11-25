@@ -6,6 +6,8 @@ import {
   countInqDescendants,
   getInqErrorMessage,
   getInqOrderNo,
+  INQ_ANSWER_HTML_PREFIX,
+  toInqAnswerHtml,
   orderInqAnswers,
   toInqOptions,
 } from '~/utils/inq/inqUtil'
@@ -73,7 +75,6 @@ export const useInqManageStore = () => {
   /** 메뉴 기능 권한(답변·상태 변경·삭제) */
   const hasFunc = computed(() => canFunc(INQ_MANAGE_MENU_PATH))
   /** 관리자 답변(1단계)은 한 건만 둘 수 있다 */
-  const canWriteAnswer = computed(() => hasFunc.value && selectedInq.value?.answerYn !== 'Y')
 
   // ==============================
   // 옵션 조회
@@ -151,7 +152,7 @@ export const useInqManageStore = () => {
       statusDraft.value = ''
       // 관리자 답변이 아직 없으면 새 답변 입력창을 기본으로 연다
       if (!keepComposer) {
-        composer.value = res.data.answerYn !== 'Y' ? { mode: 'new', targetId: '', text: '' } : null
+        composer.value = hasFunc.value && res.data.answerYn !== 'Y' ? { mode: 'new', targetId: '', text: '' } : null
       }
       isDetailOpen.value = true
     } catch (error) {
@@ -209,16 +210,12 @@ export const useInqManageStore = () => {
   // ==============================
   // 답변·댓글
   // ==============================
-  const onStartNewAnswer = () => {
-    composer.value = { mode: 'new', targetId: '', text: '' }
-  }
-
   const onStartReply = (a: InqAnsr) => {
     composer.value = { mode: 'reply', targetId: a.ansrId, text: '' }
   }
 
   const onStartEditAnsr = (a: InqAnsr) => {
-    composer.value = { mode: 'edit', targetId: a.ansrId, text: a.content }
+    composer.value = { mode: 'edit', targetId: a.ansrId, text: toInqAnswerHtml(a.content) }
   }
 
   const onChangeComposerText = (text: string) => {
@@ -243,7 +240,7 @@ export const useInqManageStore = () => {
         inqId: item.inqId,
         ...(c.mode === 'edit' ? { ansrId: c.targetId } : {}),
         ...(c.mode === 'reply' ? { upAnsrId: c.targetId } : {}),
-        content: text,
+        content: INQ_ANSWER_HTML_PREFIX + text,
       })
       openToast({ message: '저장되었습니다.' })
       await Promise.all([handleSelectInqManageList(), handleSelectInqManageDetail(item.inqId)])
@@ -319,12 +316,10 @@ export const useInqManageStore = () => {
     statusDraft,
     adminStatusOptions,
     hasFunc,
-    canWriteAnswer,
     onOpenInqManageDetail,
     onCloseInqManageDetail,
     onDeleteInqManage,
     onSaveInqManageStatus,
-    onStartNewAnswer,
     onStartReply,
     onStartEditAnsr,
     onChangeComposerText,

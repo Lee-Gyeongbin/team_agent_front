@@ -10,6 +10,8 @@ import {
   countInqDescendants,
   getInqErrorMessage,
   getInqOrderNo,
+  INQ_ANSWER_HTML_PREFIX,
+  toInqAnswerHtml,
   orderInqAnswers,
   toInqOptions,
 } from '~/utils/inq/inqUtil'
@@ -308,7 +310,7 @@ export const useInqStore = () => {
   }
 
   const onStartEditAnsr = (a: InqAnsr) => {
-    composer.value = { mode: 'edit', targetId: a.ansrId, text: a.content }
+    composer.value = { mode: 'edit', targetId: a.ansrId, text: toInqAnswerHtml(a.content) }
   }
 
   const onChangeComposerText = (text: string) => {
@@ -332,7 +334,7 @@ export const useInqStore = () => {
       await fetchSaveInqAnsr({
         inqId: item.inqId,
         ...(c.mode === 'edit' ? { ansrId: c.targetId } : { upAnsrId: c.targetId }),
-        content: text,
+        content: INQ_ANSWER_HTML_PREFIX + text,
       })
       openToast({ message: '저장되었습니다.' })
       await Promise.all([handleSelectInqList(), handleSelectInqDetail(item.inqId)])

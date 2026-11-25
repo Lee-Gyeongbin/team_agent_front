@@ -12,7 +12,6 @@
         v-if="!isEditing(a)"
         :id="`inq-ansr-${a.ansrId}`"
         class="inq-cmt"
-        :class="{ 'is-ans': a.depth === 1 }"
         :style="indentStyle(a)"
       >
         <div class="inq-cmt-head">
@@ -27,7 +26,15 @@
         >
           → {{ writerOfId(a.upAnsrId) }}님에게 답변
         </button>
+        <!-- eslint-disable vue/no-v-html -- Sanitized by toInqAnswerHtml -->
+        <div
+          v-if="isInqAnswerHtml(a.content)"
+          class="inq-rich inq-comment-content"
+          v-html="toInqAnswerHtml(a.content)"
+        />
+        <!-- eslint-enable vue/no-v-html -->
         <UiMarkdownEditor
+          v-else
           :model-value="a.content"
           :editable="false"
         />
@@ -63,6 +70,8 @@
       </div>
       <InqAnsrComposer
         v-if="isComposerOn(a)"
+        :key="composer?.mode"
+        :save-disabled="!composer?.text.trim()"
         :title="composerTitle"
         :text="composer?.text ?? ''"
         class="inq-composer-inline"
@@ -78,7 +87,7 @@
 <script setup lang="ts">
 import { UiButton, UiMarkdownEditor } from '@leechanyong/ispark-ui'
 import type { InqAnsr, InqComposer } from '~/types/inq'
-import { toInqDateOnly } from '~/utils/inq/inqUtil'
+import { isInqAnswerHtml, toInqAnswerHtml, toInqDateOnly } from '~/utils/inq/inqUtil'
 import InqAnsrComposer from '~/components/inq/InqAnsrComposer.vue'
 
 /** 단계당 들여쓰기(px) */

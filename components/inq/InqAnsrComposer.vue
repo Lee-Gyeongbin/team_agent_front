@@ -6,10 +6,11 @@
   >
     <p class="inq-sub-title">{{ title }}</p>
     <slot>
-      <UiMarkdownEditor
+      <InqRichEditor
         :model-value="text"
+        allow-images
         :placeholder="placeholder ?? (isNew ? '관리자 답변 내용을 입력하세요' : '내용을 입력하세요')"
-        :editable="!disabled"
+        :disabled="disabled"
         @update:model-value="(value) => $emit('update:text', value)"
       />
     </slot>
@@ -36,7 +37,8 @@
 </template>
 
 <script setup lang="ts">
-import { UiButton, UiMarkdownEditor } from '@leechanyong/ispark-ui'
+import { UiButton } from '@leechanyong/ispark-ui'
+import InqRichEditor from '~/components/inq/InqRichEditor.vue'
 
 const props = defineProps<{
   title: string
