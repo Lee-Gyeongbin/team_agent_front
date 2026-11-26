@@ -24,10 +24,12 @@
   </div>
 
   <div class="notice-detail-body">
+    <!-- eslint-disable vue/no-v-html — sanitizeMyDocPreviewHtml(DOMPurify) 적용 -->
     <div
       class="notice-content-box inq-rich"
-      v-html="idea.content"
+      v-html="contentHtml"
     />
+    <!-- eslint-enable vue/no-v-html -->
   </div>
 
   <IdeaFileList
@@ -67,12 +69,15 @@
 import { UiBadge, UiButton, UiIcon } from '@leechanyong/ispark-ui'
 import { useIdeaApi } from '~/composables/idea/useIdeaApi'
 import type { IdeaDetail, IdeaFile } from '~/types/idea'
+import { sanitizeMyDocPreviewHtml } from '~/utils/myDocuments/myDocPreviewUtil'
 
 interface Props {
   idea: IdeaDetail
 }
 
 const props = defineProps<Props>()
+/** 서버는 받은 HTML을 그대로 저장하므로 출력 직전에 DOMPurify로 거른다 */
+const contentHtml = computed(() => sanitizeMyDocPreviewHtml(props.idea.content))
 const { fetchIdeaFilePreview } = useIdeaApi()
 const previewFile = ref<IdeaFile | null>(null)
 

@@ -48,7 +48,8 @@
             >
               → {{ writer(commentsById.get(comment.parentId)) }}님에게 답변
             </button>
-            <div class="inq-rich inq-comment-content" v-html="comment.content" />
+            <!-- eslint-disable-next-line vue/no-v-html -- sanitizeMyDocPreviewHtml(DOMPurify) 적용 -->
+            <div class="inq-rich inq-comment-content" v-html="sanitizeMyDocPreviewHtml(comment.content)" />
             <div v-if="canComment" class="inq-cmt-actions">
               <UiButton size="xs" variant="outline" :disabled="busy" @click="startComposer('reply', comment)">답글</UiButton>
               <template v-if="comment.createId === user?.userId">
@@ -83,6 +84,7 @@ import { useIdeaApi } from '~/composables/idea/useIdeaApi'
 import { openConfirm } from '~/composables/useDialog'
 import InqAnsrComposer from '~/components/inq/InqAnsrComposer.vue'
 import type { IdeaComment, IdeaResult } from '~/types/idea'
+import { sanitizeMyDocPreviewHtml } from '~/utils/myDocuments/myDocPreviewUtil'
 
 const props = defineProps<{ ideaId: string; commentCount: number; jumpToComments: boolean }>()
 const emit = defineEmits<{ 'comment-count': [ideaId: string, count: number] }>()
