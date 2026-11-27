@@ -32,6 +32,15 @@ export interface OrgUserItem {
   profileImgUrl: string | null
 }
 
+/**
+ * 공통 사용자 조회(OrgUserPicker) 선택 사용자 — userId·userNm 만 필수.
+ * 사용처가 저장된 값(예: 회의 참석자 JSON)으로 초기 선택을 넘길 때 나머지 필드는 없을 수 있다.
+ */
+export type OrgUserPickerUser = Pick<OrgUserItem, 'userId' | 'userNm'> & Partial<Omit<OrgUserItem, 'userId' | 'userNm'>>
+
+/** OrgUserPicker 검색 범위 — org: 선택 조직 안에서 / all: 전체 직원 대상 */
+export type OrgUserPickerSearchScope = 'org' | 'all'
+
 export interface OrgUserListResponse {
   list: OrgUserItem[]
 }

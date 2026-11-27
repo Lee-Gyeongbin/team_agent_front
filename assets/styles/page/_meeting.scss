@@ -864,6 +864,11 @@
   }
 }
 
+// 참석자 선택 (공통 OrgUserPicker) — 높이는 사용처에서 지정
+.meeting-attendee-picker {
+  height: 400px;
+}
+
 .meeting-attendee-hint {
   @include typo($body-small);
   color: $color-text-muted;
@@ -912,6 +917,10 @@
 }
 
 @include mobile {
+  .meeting-attendee-picker {
+    height: auto;
+  }
+
   .meeting-attendee-panels {
     grid-template-columns: 1fr;
   }
