@@ -90,6 +90,25 @@ const interimBlockByItemId = new Map<string, string>()
  */
 const speechTimingByItemId = new Map<string, SpeechTiming>()
 
+/**
+ * 문맥 힌트를 그대로 받아 적은 item_id 모음 (화면에서 제외)
+ * 백엔드(MeetingServiceImpl.buildRealtimeContext)가 전사 prompt 로 "회의: …\n참석자: …" 를 넘기는데,
+ * 무음·잡음 구간에서 전사 모델이 이 힌트를 그대로 출력하는 경우가 있어 걸러낸다.
+ */
+const hintEchoItemIds = new Set<string>()
+
+/** 전사 텍스트가 문맥 힌트("회의:", "참석자:")로 시작하면 힌트 반복으로 판단 */
+const isContextHintEcho = (text: string): boolean => /^\s*(참석자|회의)\s*:/.test(text)
+
+/** 블록 제거 + 해당 item_id 를 힌트 반복으로 표시 */
+const dropHintEchoBlock = (itemId: string, blockId?: string) => {
+  if (blockId) blocks.value = blocks.value.filter((b) => b.id !== blockId)
+  if (itemId) {
+    interimBlockByItemId.delete(itemId)
+    hintEchoItemIds.add(itemId)
+  }
+}
+
 const { fetchRealtimeTokenSafe, canRotateSegment, takeNextIndex, registerSegmentUpload } = useMeetingRecordGuard()
 
 // ─── 유틸 ──────────────────────────────────────────────────────────────
@@ -440,11 +459,17 @@ const initWebSocket = (token: string) => {
         const itemId: string = msg.item_id ?? ''
         const delta: string = msg.delta ?? ''
         if (!delta) return
+        // 이미 힌트 반복으로 판정된 발화는 이후 delta 무시
+        if (itemId && hintEchoItemIds.has(itemId)) return
 
         const existingBlockId = interimBlockByItemId.get(itemId)
 
         if (!existingBlockId) {
           // 해당 item_id 최초 delta — 새 임시 블록 생성
+          if (isContextHintEcho(delta)) {
+            dropHintEchoBlock(itemId)
+            return
+          }
           const id = genId()
           const timing = itemId ? speechTimingByItemId.get(itemId) : undefined
           blocks.value.push({
@@ -460,9 +485,15 @@ const initWebSocket = (token: string) => {
           // 동일 item_id 후속 delta — 기존 블록에 이어 붙임
           const idx = blocks.value.findIndex((b) => b.id === existingBlockId)
           if (idx !== -1) {
+            const nextText = blocks.value[idx].text + delta
+            // 누적 텍스트가 문맥 힌트로 시작하면 블록 제거 (delta 가 "참", "석자:" 처럼 쪼개져 오는 경우)
+            if (isContextHintEcho(nextText)) {
+              dropHintEchoBlock(itemId, existingBlockId)
+              return
+            }
             blocks.value[idx] = {
               ...blocks.value[idx],
-              text: blocks.value[idx].text + delta,
+              text: nextText,
             }
           }
         }
@@ -475,6 +506,16 @@ const initWebSocket = (token: string) => {
         const timing = itemId ? speechTimingByItemId.get(itemId) : undefined
 
         const existingBlockId = itemId ? interimBlockByItemId.get(itemId) : undefined
+
+        // 문맥 힌트를 그대로 받아 적은 발화 — 화면에 남기지 않음
+        if ((itemId && hintEchoItemIds.has(itemId)) || isContextHintEcho(finalText)) {
+          dropHintEchoBlock(itemId, existingBlockId)
+          if (itemId) {
+            hintEchoItemIds.delete(itemId)
+            speechTimingByItemId.delete(itemId)
+          }
+          return
+        }
 
         if (existingBlockId) {
           // 기존 interim 블록을 confirmed로 업데이트
@@ -582,6 +623,7 @@ const startRecording = async (meetingId?: number): Promise<{ started: boolean; c
   connectionStatus.value = 'connecting'
   blocks.value = []
   interimBlockByItemId.clear()
+  hintEchoItemIds.clear()
   speechTimingByItemId.clear()
   consecutiveReconnectFailures = 0
   totalSessionReconnects = 0
@@ -726,6 +768,7 @@ const cleanup = async () => {
   finalizeMediaStream()
 
   interimBlockByItemId.clear()
+  hintEchoItemIds.clear()
   speechTimingByItemId.clear()
 
   isRecording.value = false
@@ -743,6 +786,7 @@ const checkSupport = () => {
 const resetRecording = () => {
   blocks.value = []
   interimBlockByItemId.clear()
+  hintEchoItemIds.clear()
   speechTimingByItemId.clear()
   activeChunks = []
 }
