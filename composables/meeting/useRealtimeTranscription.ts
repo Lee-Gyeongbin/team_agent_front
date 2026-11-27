@@ -614,9 +614,13 @@ const scheduleReconnect = () => {
  * 녹음 시작: 마이크 획득 → MediaRecorder(10분 구간 교체) → 자막(토큰 발급 → WS 연결 → 오디오 스트리밍)
  * - 녹음이 자막보다 먼저 — 자막이 실패해도 녹음은 계속된다
  * @param meetingId 회의 ID — 서버가 회의 제목 · 참석자를 전사 문맥 힌트로 사용 (재연결에도 같은 값)
+ * @param options.caption false 면 OpenAI 실시간 자막을 연결하지 않고 녹음만 시작 (자막은 호출측이 Web Speech 로 표시)
  * @returns started: 녹음 시작 여부(마이크), captionOk: 실시간 자막 연결 여부
  */
-const startRecording = async (meetingId?: number): Promise<{ started: boolean; captionOk: boolean }> => {
+const startRecording = async (
+  meetingId?: number,
+  options: { caption?: boolean } = {},
+): Promise<{ started: boolean; captionOk: boolean }> => {
   if (isRecording.value || connectionStatus.value === 'connecting') return { started: false, captionOk: false }
   transcriptionMeetingId = meetingId ?? null
 
@@ -642,7 +646,13 @@ const startRecording = async (meetingId?: number): Promise<{ started: boolean; c
     return { started: false, captionOk: false }
   }
 
-  // 2. 실시간 자막 — 실패해도 녹음은 계속
+  // 2. 실시간 자막 — 호출측이 OpenAI 자막을 쓰지 않으면 녹음만 (connectionStatus 는 idle 유지)
+  if (options.caption === false) {
+    connectionStatus.value = 'idle'
+    return { started: true, captionOk: false }
+  }
+
+  // 실시간 자막 — 실패해도 녹음은 계속
   try {
     const tokenRes = await fetchRealtimeTokenSafe(transcriptionMeetingId)
     if (!tokenRes.token) throw new Error('임시 토큰 발급 실패')

@@ -296,7 +296,7 @@ const { sttMode } = useSttMode()
 const STT_MODE_NOTICES: Partial<Record<SttMode, { icon: string; text: string }>> = {
   webspeech: {
     icon: 'info',
-    text: '실시간 자막을 OpenAI 대신 브라우저 음성 인식(Chrome)으로 표시하고 있습니다. 자막 정확도는 조금 낮을 수 있지만, 녹음은 그대로 저장됩니다. 회의를 마치면 화자 분리와 회의록은 저장된 녹음 파일로 만들어지므로 결과 품질에는 영향이 없습니다.',
+    text: '실시간 자막을 브라우저 음성 인식(Chrome)으로 표시하고 있습니다. 녹음은 그대로 저장되며, 회의를 마치면 화자 분리와 회의록은 저장된 녹음 파일로 만들어지므로 결과 품질에는 영향이 없습니다.',
   },
   reconnecting: {
     icon: 'refresh-cw',
@@ -362,6 +362,14 @@ const recordGuides = computed<RecordGuide[]>(() => {
 })
 
 const sttModeNotice = computed(() => STT_MODE_NOTICES[sttMode.value] ?? null)
+
+/**
+ * 실시간 자막 기본 엔진
+ * - 'webspeech': 브라우저 음성 인식(Chrome·Edge) 우선, 미지원 브라우저면 OpenAI Realtime
+ * - 'openai': OpenAI Realtime 우선, 실패 시 브라우저 음성 인식
+ * ※ 화면 자막만 바뀜 — 화자 분리·회의록은 회의 종료 후 녹음 파일로 다시 전사
+ */
+const REALTIME_STT_ENGINE: 'webspeech' | 'openai' = 'webspeech'
 
 /** OpenAI 자막 실패 시 브라우저 음성 인식으로 전환 (중복 호출 안전 — startRecognition 내부 가드) */
 const startSpeechFallback = () => {
@@ -633,11 +641,13 @@ onBeforeRouteLeave(async (_to, _from, next) => {
 // ── 이벤트 핸들러 ────────────────────────────────────────────────────
 
 /**
- * 녹음 시작 — 녹음(마이크)을 먼저 시작하고 자막은 Realtime WebSocket 우선, 실패 시 Web Speech API
+ * 녹음 시작 — 녹음(마이크)을 먼저 시작하고 자막은 REALTIME_STT_ENGINE 에 따라
+ * Web Speech API 우선(미지원 시 Realtime WebSocket) 또는 Realtime WebSocket 우선(실패 시 Web Speech API)
  * @param startIndex 첫 백업 조각 번호 (이어서 녹음이면 서버의 마지막 번호 + 1)
  */
 const onClickStart = async (startIndex = 0, isResumeFromPause = false) => {
-  const { started, captionOk } = await startRecording(meetingId.value)
+  const useWebSpeech = REALTIME_STT_ENGINE === 'webspeech' && isSpeechSupported.value
+  const { started, captionOk } = await startRecording(meetingId.value, { caption: !useWebSpeech })
   if (!started) {
     openToast({ message: '녹음을 시작할 수 없습니다. 마이크 권한을 확인해주세요.', type: 'error' })
     return
@@ -646,8 +656,8 @@ const onClickStart = async (startIndex = 0, isResumeFromPause = false) => {
   if (!isResumeFromPause) pausedSttItems.value = []
   // 이어서 녹음해도 자막 id(speech-1 등)가 다시 쓰이므로 시각 기록은 매번 비움 (이전 구간 시각은 보관 목록에 있음)
   sttTimeById.clear()
-  // 자막 실패 → 브라우저 음성 인식 전환 (경고 대신 툴바 모드 배지 + 안내 카드로 표시)
-  if (!captionOk) startSpeechFallback()
+  // 브라우저 음성 인식 기본 사용 / OpenAI 자막 실패 → 브라우저 음성 인식 전환 (툴바 모드 배지로 표시)
+  if (useWebSpeech || !captionOk) startSpeechFallback()
   // heartbeat(PAUSE_YN 해제 포함) · 10분 백업 번호 · 탭 닫기 감지 · 화면 꺼짐 방지
   startRecordGuard(meetingId.value, typeof startIndex === 'number' ? startIndex : 0, getCurrentSegmentBlob)
   startTimer(isResumeFromPause)
